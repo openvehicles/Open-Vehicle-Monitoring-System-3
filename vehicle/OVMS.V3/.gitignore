@@ -52,4 +52,5 @@ Mkfile.old
 dkms.conf
 
 # ESP32 stuff
+build
 sdkconfig.old
