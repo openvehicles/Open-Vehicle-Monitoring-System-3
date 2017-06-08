@@ -54,3 +54,9 @@ dkms.conf
 # ESP32 stuff
 build
 sdkconfig.old
+
+# PlatformIO
+.pioenvs
+.piolibdeps
+.clang_complete
+.gcc-flags.json
