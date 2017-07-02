@@ -5,8 +5,12 @@
 #include "freertos/task.h"
 #include "esp_system.h"
 #include "nvs_flash.h"
+#include <stdio.h>
+#include <string.h>
+#include "ovms.h"
+#include "console_async.h"
 
-static char tag[]="ovms";
+ConsoleAsync *usbconsole;
 
 extern "C"
   {
@@ -17,5 +21,5 @@ void app_main(void)
   {
   nvs_flash_init();
 
-  ESP_LOGI(tag, "Welcome to the Open Vehicle Monitoring System (OVMS)");
+  usbconsole = new ConsoleAsync();
   }

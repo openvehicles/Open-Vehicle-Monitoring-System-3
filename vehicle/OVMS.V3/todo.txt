@@ -1,0 +1,69 @@
+Open Vehicle Monitor System - v3 - TODO list
+
+Who     Status     Topic
+======= ========== =================================================
+
+                   Peripherals
+MWJ     Prototype    1. CAN base
+MWJ     Done         2. ESP32ADC
+MWJ     90%          3. ESP32CAN
+MWJ     Prototype    4. MAX7317
+        Stub         5. MCP2515
+        Stub         6. PCP
+MWJ     Done         7. SDCARD
+MWJ     Done         8. SPINODMA
+
+                   Metrics
+MWJ     Done         Base metric system
+
+                   Vehicle
+        20%          Base vehicle support
+                     OBDII Poll support
+MWJ                  Tesla roadster port
+                     Kia Soul port
+                     Kyburz port
+                     Mitsubishi iMiev port
+                     Nissan Leaf port
+                     OBDII port
+                     TRACK vehicle port
+                     Tazzari port
+                     Think City port
+                     Renault Twizy port
+                     Volt Ampera port
+                     Renault Zoe port
+
+                   OBDII console
+                     OBDII console framework
+                     OBDII PID mapping
+
+                   Console/Command
+                     Microrl tab expansion
+                     Microrl cursor history display bug
+                     Command argument specification
+                     SMS <-> Command gateway
+                     Bluetooth gateway
+                     Wifi gateway
+
+                   Config system
+MWJ                  SPIFS wear-leveled filesystem in flash
+MWJ                  Config system
+MWJ                  Component launch based on config
+
+                   Event system
+                     Event system
+                     Event hooks in key components
+
+                   Comms system
+                     SIMCOM modem support
+                     SIMCOM GPS support
+                     WIFI support
+                     BLUETOOTH support
+
+                   Server Comms
+                     OVMS v2 protocol
+                     MQTT protocol
+
+                   OTA
+                     OTA update system
+                     CFCARD update system
+                     WIFI update system

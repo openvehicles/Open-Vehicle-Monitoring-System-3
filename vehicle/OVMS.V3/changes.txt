@@ -1,0 +1,5 @@
+Open Vehicle Monitor System - v3 - Change logon
+
+2017-07-02 MWJ          First GITHUB release.
+2017-06-25 MWJ          Rough implementation of 'test sleep' command.
+2017-06-24 MWJ          Initial test firmware created.
