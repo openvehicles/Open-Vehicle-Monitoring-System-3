@@ -15,6 +15,7 @@ MWJ     Done         8. SPINODMA
 
                    Metrics
 MWJ     Done         Base metric system
+MWJ                  Metric formatting
 
                    Vehicle
         20%          Base vehicle support
