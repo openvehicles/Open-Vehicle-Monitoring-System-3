@@ -147,7 +147,7 @@ void help(int verbosity, OvmsWriter* writer, int argc, const char* const* argv)
 
 OvmsCommandApp::OvmsCommandApp()
   {
-  puts("Initialisting COMMAND Framework");
+  puts("Initialising COMMAND Framework");
   m_root.RegisterCommand("help","Ask for help",help);
   }
 
