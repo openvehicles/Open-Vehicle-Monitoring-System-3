@@ -38,9 +38,10 @@ MWJ                  Tesla roadster port
                      OBDII PID mapping
 
                    Console/Command
-                     Microrl tab expansion
-                     Microrl cursor history display bug
-                     Command argument specification
+SC                   Microrl tab expansion
+SC                   Microrl cursor history display bug
+SC                   Command argument specification
+                     Alert/progress messages
                      SMS <-> Command gateway
                      Bluetooth gateway
                      Wifi gateway
