@@ -56,6 +56,24 @@ void spi::UnlockBus()
   xSemaphoreGive(m_mtx);
   }
 
+void spi::spi_cmd0(spi_nodma_device_handle_t spi, uint8_t cmd)
+  {
+  esp_err_t ret;
+  spi_nodma_transaction_t t;
+
+  memset(&t, 0, sizeof(t));       //Zero out the transaction
+  t.length=8;                     // 8 bits
+  t.tx_buffer=&cmd;               // Buffer to send
+  t.user=(void*)0;                // D/C needs to be set to 0
+  if (LockBus(portMAX_DELAY))
+    {
+    ret=spi_nodma_device_select(spi, 1);
+    ret=spi_nodma_device_transmit(spi, &t, portMAX_DELAY);  // Transmit!
+    assert(ret==ESP_OK);            // Should have had no issues.
+    UnlockBus();
+    }
+  }
+
 uint8_t spi::spi_cmd1(spi_nodma_device_handle_t spi, uint8_t cmd, uint8_t data)
   {
   uint8_t inst[2];
@@ -70,9 +88,52 @@ uint8_t spi::spi_cmd1(spi_nodma_device_handle_t spi, uint8_t cmd, uint8_t data)
   t.user=(void*)0;                // D/C needs to be set to 0
   if (LockBus(portMAX_DELAY))
     {
+    ret=spi_nodma_device_select(spi, 1);
     ret=spi_nodma_device_transmit(spi, &t, portMAX_DELAY);  // Transmit!
     assert(ret==ESP_OK);            // Should have had no issues.
     UnlockBus();
     }
   return inst[1];
+  }
+
+void spi::spi_cmd2(spi_nodma_device_handle_t spi, uint8_t cmd, uint8_t data1, uint8_t data2)
+  {
+  uint8_t inst[3];
+  esp_err_t ret;
+  spi_nodma_transaction_t t;
+
+  memset(&t, 0, sizeof(t));       //Zero out the transaction
+  inst[0] = cmd;
+  inst[1] = data1;
+  inst[2] = data2;
+  t.length=24;                    // 24 bits
+  t.tx_buffer=&inst;              // Buffer to send
+  t.user=(void*)0;                // D/C needs to be set to 0
+  if (LockBus(portMAX_DELAY))
+    {
+    ret=spi_nodma_device_select(spi, 1);
+    ret=spi_nodma_device_transmit(spi, &t, portMAX_DELAY);  // Transmit!
+    assert(ret==ESP_OK);            // Should have had no issues.
+    UnlockBus();
+    }
+  }
+
+uint8_t* spi::spi_readx(spi_nodma_device_handle_t spi, uint8_t* buf, int txlen, int rxlen)
+  {
+  esp_err_t ret;
+  spi_nodma_transaction_t t;
+
+  memset(&t, 0, sizeof(t));       //Zero out the transaction
+  t.length=(txlen+rxlen)*8;       // Transmit length (in bits)
+  t.rxlength=(rxlen*8);           // Receive length (in bits)
+  t.tx_buffer=buf;                // Buffer to send
+  t.rx_buffer=buf;                // Buffer to receive
+  t.user=(void*)0;                // D/C needs to be set to 0
+  if (LockBus(portMAX_DELAY))
+    {
+    ret=spi_nodma_device_transmit(spi, &t, portMAX_DELAY);  // Transmit!
+    assert(ret==ESP_OK);            // Should have had no issues.
+    UnlockBus();
+    }
+  return buf + txlen;
   }

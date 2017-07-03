@@ -30,10 +30,34 @@
 
 #include <stdio.h>
 #include <string.h>
+#include "command.h"
 #include "driver/gpio.h"
 #include "peripherals.h"
 
 Peripherals MyPeripherals __attribute__ ((init_priority (3000)));
+
+void power_sleep(int verbosity, OvmsWriter* writer, int argc, const char* const* argv)
+  {
+  if (argc!=1)
+    {
+    writer->puts("Please specify peripheral to sleep");
+    return;
+    }
+  if (strcmp(argv[0],"mcp2515a")==0)
+    {
+    MyPeripherals.m_mcp2515_1->SetPowerMode(Sleep);
+    }
+  else if (strcmp(argv[0],"mcp2515b")==0)
+    {
+    MyPeripherals.m_mcp2515_2->SetPowerMode(Sleep);
+    }
+  else
+    {
+    puts("Error: Unrecognised peripheral");
+    return;
+    }
+  writer->printf("Put %s to sleep\n",argv[0]);
+  }
 
 Peripherals::Peripherals()
   {
@@ -65,6 +89,9 @@ Peripherals::Peripherals()
   m_mcp2515_2 = new mcp2515(m_spibus, VSPI_HOST, 10000, VSPI_PIN_MCP2515_2_CS);
   puts("  SD CARD...");
   m_sdcard = new sdcard(false,true,SDCARD_PIN_CD);
+
+  OvmsCommand* cmd_power = MyCommandApp.RegisterCommand("power","Power control",NULL);
+  cmd_power->RegisterCommand("sleep","Force a peripheral to sleep",power_sleep);
   }
 
 Peripherals::~Peripherals()
