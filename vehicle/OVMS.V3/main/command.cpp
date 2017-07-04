@@ -111,6 +111,11 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
   else
     {
     //puts("Looking for a matching command");
+    if (argc <= 0)
+      {
+      writer->puts("Error: Subcommand required");
+      return;
+      }
     if (strcmp(argv[0],"?")==0)
       {
       // Show available commands
