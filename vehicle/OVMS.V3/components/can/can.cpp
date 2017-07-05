@@ -34,6 +34,50 @@
 */
 
 #include "can.h"
+#include <algorithm>
+
+can MyCan;
+
+can::can()
+  {
+  }
+
+can::~can()
+  {
+  }
+
+void can::IncomingFrame(CAN_frame_t* p_frame)
+  {
+  printf("CAN rx id %03x len %d %02x %02x %02x %02x %02x %02x %02x %02x\n",
+  p_frame->MsgID, p_frame->FIR.B.DLC,
+  p_frame->data.u8[0],p_frame->data.u8[1],p_frame->data.u8[2],p_frame->data.u8[3],
+  p_frame->data.u8[4],p_frame->data.u8[5],p_frame->data.u8[6],p_frame->data.u8[7]);
+//  printf("CAN rx id %03x (len:%d)",p_frame->MsgID,p_frame->FIR.B.DLC);
+//  for (int k=0;k<p_frame->FIR.B.DLC;k++)
+//    {
+//    printf(" %02x",p_frame->data.u8[k]);
+//    }
+//  puts("");
+
+  for (auto n : m_listeners)
+    {
+    xQueueSendFromISR(n,p_frame,NULL);
+    }
+  }
+
+void can::RegisterListener(QueueHandle_t *queue)
+  {
+  m_listeners.push_back(queue);
+  }
+
+void can::DeregisterListener(QueueHandle_t *queue)
+  {
+  auto it = std::find(m_listeners.begin(), m_listeners.end(), queue);
+  if (it != m_listeners.end())
+    {
+    m_listeners.erase(it);
+    }
+  }
 
 canbus::canbus()
   {
