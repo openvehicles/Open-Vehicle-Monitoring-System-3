@@ -40,32 +40,12 @@
 #include "can.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
+#include "freertos/task.h"
 #include "driver/gpio.h"
 #include "esp_intr.h"
 #include "soc/dport_reg.h"
 #include <math.h>
-
-/**
- * \brief Initialize the CAN Module
- *
- * \return 0 CAN Module had been initialized
- */
-int CAN_init(void);
-
-/**
- * \brief Send a can frame
- *
- * \param	p_frame	Pointer to the frame to be send, see #CAN_frame_t
- * \return  0 Frame has been written to the module
- */
-int CAN_write_frame(const CAN_frame_t* p_frame);
-
-/**
- * \brief Stops the CAN Module
- *
- * \return 0 CAN Module was stopped
- */
-int CAN_stop(void);
 
 class esp32can : public canbus
   {
@@ -81,9 +61,13 @@ class esp32can : public canbus
     esp_err_t Write(const CAN_frame_t* p_frame);
 
   public:
+    void SetPowerMode(PowerMode powermode);
+
+  public:
     gpio_num_t m_txpin;               // TX pin
     gpio_num_t m_rxpin;               // RX pin
-    QueueHandle_t m_rxqueue;          // Handler to FreeROS TX queue
+    SemaphoreHandle_t m_rxsem;        // Semaphore to sync RX task
+    TaskHandle_t m_rxtask;            // Task to handle reception
   };
 
 #endif //#ifndef __ESP32CAN_H__
