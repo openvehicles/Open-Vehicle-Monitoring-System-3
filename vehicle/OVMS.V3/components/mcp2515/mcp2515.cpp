@@ -54,3 +54,29 @@ mcp2515::mcp2515(spi* spibus, spi_nodma_host_device_t host, int clockspeed, int 
 mcp2515::~mcp2515()
   {
   }
+
+void mcp2515::SetPowerMode(PowerMode powermode)
+  {
+  m_spibus->spi_cmd0(m_spi,0b11000000); // RESET command
+  vTaskDelay(1 / portTICK_PERIOD_MS);
+
+  uint8_t buf[16];
+  memset(buf,0,sizeof(buf));
+  buf[0] = 0b00000011;
+  buf[1] = 0x0E;
+  m_spibus->spi_readx(m_spi,buf,2,2);
+  printf("Got back status %02x error flag %02x\n",buf[2],buf[3]);
+  vTaskDelay(1 / portTICK_PERIOD_MS);
+
+  switch (powermode)
+    {
+    case  On:
+      m_spibus->spi_cmd2(m_spi,0x02,0x0f,0x00); // Normal mode
+      break;
+    case Sleep:
+    case DeepSleep:
+    case Off:
+      m_spibus->spi_cmd2(m_spi,0x02,0x0f,0x20); // Sleep mode
+      break;
+    }
+  }
