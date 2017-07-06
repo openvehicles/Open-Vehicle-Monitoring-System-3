@@ -88,10 +88,14 @@ OvmsCommand::OvmsCommand()
   {
   }
 
-OvmsCommand::OvmsCommand(std::string title, void (*execute)(int, OvmsWriter*, int, const char* const*))
+OvmsCommand::OvmsCommand(std::string title, void (*execute)(int, OvmsWriter*, int, const char* const*),
+                         const char *usage, int min, int max)
   {
   m_title = title;
   m_execute = execute;
+  m_usage = usage;
+  m_min = min;
+  m_max = max;
   }
 
 OvmsCommand::~OvmsCommand()
@@ -103,9 +107,10 @@ std::string OvmsCommand::GetTitle()
   return m_title;
   }
 
-OvmsCommand* OvmsCommand::RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, int, const char* const*))
+OvmsCommand* OvmsCommand::RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, int, const char* const*),
+                                          const char *usage, int min, int max)
   {
-  OvmsCommand* cmd = new OvmsCommand(title,execute);
+  OvmsCommand* cmd = new OvmsCommand(title, execute, usage, min, max);
   m_children[name] = cmd;
   //printf("Registered '%s' under '%s'\n",name.c_str(),m_title.c_str());
   return cmd;
@@ -139,6 +144,11 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
   if (m_execute)
     {
     //puts("Executing directly...");
+    if (argc < m_min || argc > m_max)
+      {
+      writer->puts(m_usage.c_str());
+      return;
+      }
     m_execute(verbosity,writer,argc,argv);
     return;
     }
@@ -186,16 +196,17 @@ void help(int verbosity, OvmsWriter* writer, int argc, const char* const* argv)
 OvmsCommandApp::OvmsCommandApp()
   {
   puts("Initialising COMMAND Framework");
-  m_root.RegisterCommand("help","Ask for help",help);
+  m_root.RegisterCommand("help", "Ask for help", help, "Usage: help", 0, 0);
   }
 
 OvmsCommandApp::~OvmsCommandApp()
   {
   }
 
-OvmsCommand* OvmsCommandApp::RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, int, const char* const*))
+OvmsCommand* OvmsCommandApp::RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, int, const char* const*),
+                                             const char *usage, int min, int max)
   {
-  return m_root.RegisterCommand(name,title,execute);
+  return m_root.RegisterCommand(name,title,execute, usage, min, max);
   }
 
 char ** OvmsCommandApp::Complete(OvmsWriter* writer, int argc, const char * const * argv)

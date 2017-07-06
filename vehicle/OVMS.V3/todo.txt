@@ -40,8 +40,8 @@ MWJ                  Tesla roadster port
                    Console/Command
 SC      Done         Microrl tab expansion
 SC      Done         Microrl cursor history display bug       (not our bug, but in pyserial 3.2.1 and fixed in 3.3)
-SC                   Command argument specification
-                     Alert/progress messages
+SC      Done         Command argument specification
+SC                   Alert/progress messages
                      SMS <-> Command gateway
                      Bluetooth gateway
                      Wifi gateway
