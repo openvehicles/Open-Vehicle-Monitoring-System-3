@@ -40,6 +40,9 @@ class mcp2515 : public canbus
     mcp2515(spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin);
     ~mcp2515();
 
+  public:
+    virtual void SetPowerMode(PowerMode powermode);
+
   protected:
     spi* m_spibus;
     spi_nodma_device_interface_config_t m_devcfg;

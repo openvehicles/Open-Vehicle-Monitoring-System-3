@@ -36,9 +36,14 @@
 #ifndef __CAN_H__
 #define __CAN_H__
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 #include <stdint.h>
+#include <list>
 #include "pcp.h"
 #include <esp_err.h>
+
+class canbus; // Forward definition
 
 // CAN link speed (100kbps -> 1MHz)
 typedef enum
@@ -82,6 +87,7 @@ typedef union
 // CAN Frame
 typedef struct
   {
+  canbus*     origin;                   // Origin of the frame
   CAN_FIR_t   FIR;                      // Frame information record
   uint32_t    MsgID;                    // Message ID
   union
@@ -95,7 +101,7 @@ class canbus : public pcp
   {
   public:
     canbus();
-    ~canbus();
+    virtual ~canbus();
 
   public:
     virtual esp_err_t Init(CAN_speed_t speed);
@@ -107,5 +113,24 @@ class canbus : public pcp
   public:
     CAN_speed_t m_speed;
   };
+
+class can
+  {
+  public:
+     can();
+     ~can();
+
+  public:
+    void IncomingFrame(CAN_frame_t* p_frame);
+
+  public:
+    void RegisterListener(QueueHandle_t *queue);
+    void DeregisterListener(QueueHandle_t *queue);
+
+  private:
+    std::list<QueueHandle_t*> m_listeners;
+  };
+
+extern can MyCan;
 
 #endif //#ifndef __CAN_H__

@@ -67,7 +67,6 @@ void spi::spi_cmd0(spi_nodma_device_handle_t spi, uint8_t cmd)
   t.user=(void*)0;                // D/C needs to be set to 0
   if (LockBus(portMAX_DELAY))
     {
-    ret=spi_nodma_device_select(spi, 1);
     ret=spi_nodma_device_transmit(spi, &t, portMAX_DELAY);  // Transmit!
     assert(ret==ESP_OK);            // Should have had no issues.
     UnlockBus();
@@ -88,7 +87,6 @@ uint8_t spi::spi_cmd1(spi_nodma_device_handle_t spi, uint8_t cmd, uint8_t data)
   t.user=(void*)0;                // D/C needs to be set to 0
   if (LockBus(portMAX_DELAY))
     {
-    ret=spi_nodma_device_select(spi, 1);
     ret=spi_nodma_device_transmit(spi, &t, portMAX_DELAY);  // Transmit!
     assert(ret==ESP_OK);            // Should have had no issues.
     UnlockBus();
@@ -111,7 +109,6 @@ void spi::spi_cmd2(spi_nodma_device_handle_t spi, uint8_t cmd, uint8_t data1, ui
   t.user=(void*)0;                // D/C needs to be set to 0
   if (LockBus(portMAX_DELAY))
     {
-    ret=spi_nodma_device_select(spi, 1);
     ret=spi_nodma_device_transmit(spi, &t, portMAX_DELAY);  // Transmit!
     assert(ret==ESP_OK);            // Should have had no issues.
     UnlockBus();
