@@ -52,10 +52,13 @@ class ConsoleAsync : public OvmsWriter
 
     ssize_t write(const void *buf, size_t nbyte);
     void finalise();
+    char ** GetCompletion(OvmsCommandMap& children, const char* token);
 
   protected:
     microrl_t m_rl;
     TaskHandle_t m_taskid;
+    char *m_completions[COMPLETION_MAX_TOKENS+2];
+    char m_space[COMPLETION_MAX_TOKENS+2][TOKEN_MAX_LENGTH];
   };
 
 #endif //#ifndef __CONSOLE_ASYNC_H__

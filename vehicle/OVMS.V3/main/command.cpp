@@ -64,6 +64,26 @@ void OvmsWriter::finalise()
   {
   }
 
+OvmsCommand* OvmsCommandMap::FindUniquePrefix(const std::string& key)
+  {
+  OvmsCommand* found = NULL;
+  for (iterator it = begin(); it != end(); ++it)
+    {
+    if (it->first.compare(0, key.size(), key) == 0)
+      {
+      if (found)
+	{
+	return NULL;
+	}
+      else
+	{
+	found = it->second;
+	}
+      }
+    }
+  return found;
+  }
+
 OvmsCommand::OvmsCommand()
   {
   }
@@ -89,6 +109,20 @@ OvmsCommand* OvmsCommand::RegisterCommand(std::string name, std::string title, v
   m_children[name] = cmd;
   //printf("Registered '%s' under '%s'\n",name.c_str(),m_title.c_str());
   return cmd;
+  }
+
+char ** OvmsCommand::Complete(OvmsWriter* writer, int argc, const char * const * argv)
+  {
+  if (argc <= 1)
+    {
+    return writer->GetCompletion(m_children, argc > 0 ? argv[0] : "");
+    }
+  OvmsCommand* cmd = m_children.FindUniquePrefix(argv[0]);
+  if (!cmd)
+    {
+    return writer->GetCompletion(m_children, NULL);
+    }
+  return cmd->Complete(writer, argc-1, ++argv);
   }
 
 void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const char * const * argv)
@@ -119,7 +153,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     if (strcmp(argv[0],"?")==0)
       {
       // Show available commands
-      for (std::map<std::string, OvmsCommand*>::iterator it=m_children.begin(); it!=m_children.end(); ++it)
+      for (OvmsCommandMap::iterator it=m_children.begin(); it!=m_children.end(); ++it)
         {
         const char* k = it->first.c_str();
         const char* v = it->second->GetTitle().c_str();
@@ -127,13 +161,12 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
         }
       return;
       }
-    std::map<std::string, OvmsCommand*>::iterator it = m_children.find(argv[0]);
-    if (it == m_children.end())
+    OvmsCommand* cmd = m_children.FindUniquePrefix(argv[0]);
+    if (!cmd)
       {
       writer->puts("Error: Unrecognised command");
       return;
       }
-    OvmsCommand* cmd = it->second;
     if (argc>1)
       {
       cmd->Execute(verbosity,writer,argc-1,++argv);
@@ -163,6 +196,11 @@ OvmsCommandApp::~OvmsCommandApp()
 OvmsCommand* OvmsCommandApp::RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, int, const char* const*))
   {
   return m_root.RegisterCommand(name,title,execute);
+  }
+
+char ** OvmsCommandApp::Complete(OvmsWriter* writer, int argc, const char * const * argv)
+  {
+  return m_root.Complete(writer, argc, argv);
   }
 
 void OvmsCommandApp::Execute(int verbosity, OvmsWriter* writer, int argc, const char * const * argv)

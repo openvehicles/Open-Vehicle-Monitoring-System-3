@@ -38,6 +38,12 @@
 #define COMMAND_RESULT_NORMAL     1024
 #define COMMAND_RESULT_VERBOSE    65535
 
+#define TOKEN_MAX_LENGTH 32
+#define COMPLETION_MAX_TOKENS 5
+
+class OvmsCommand;
+class OvmsCommandMap;
+
 class OvmsWriter
   {
   public:
@@ -49,6 +55,13 @@ class OvmsWriter
     virtual int printf(const char* fmt, ...);
     virtual ssize_t write(const void *buf, size_t nbyte);
     virtual void finalise();
+    virtual char ** GetCompletion(OvmsCommandMap& children, const char* token) = 0;
+  };
+
+class OvmsCommandMap : public std::map<std::string, OvmsCommand*>
+  {
+  public:
+    OvmsCommand* FindUniquePrefix(const std::string& key);
   };
 
 class OvmsCommand
@@ -61,12 +74,13 @@ class OvmsCommand
   public:
     OvmsCommand* RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, int, const char* const*));
     std::string GetTitle();
+    char ** Complete(OvmsWriter* writer, int argc, const char * const * argv);
     void Execute(int verbosity, OvmsWriter* writer, int argc, const char * const * argv);
 
   protected:
     std::string m_title;
     void (*m_execute)(int, OvmsWriter*, int, const char* const*);
-    std::map<std::string, OvmsCommand*> m_children;
+    OvmsCommandMap m_children;
   };
 
 class OvmsCommandApp
@@ -79,6 +93,7 @@ class OvmsCommandApp
     OvmsCommand* RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, int, const char* const*));
 
   public:
+    char ** Complete(OvmsWriter* writer, int argc, const char * const * argv);
     void Execute(int verbosity, OvmsWriter* writer, int argc, const char * const * argv);
 
   private:

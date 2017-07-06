@@ -43,6 +43,11 @@ void ConsoleAsyncPrint(microrl_t* rl, const char * str)
   fflush(stdout);
   }
 
+char ** ConsoleAsyncComplete (microrl_t* rl, int argc, const char * const * argv )
+  {
+  return MyCommandApp.Complete((ConsoleAsync*)rl->userdata, argc, argv);
+  }
+
 int ConsoleAsyncExecute (microrl_t* rl, int argc, const char * const * argv )
   {
   MyCommandApp.Execute(COMMAND_RESULT_VERBOSE, (OvmsWriter*)rl->userdata, argc, argv);
@@ -68,6 +73,7 @@ ConsoleAsync::ConsoleAsync()
 
   microrl_init (&m_rl, ConsoleAsyncPrint);
   m_rl.userdata = (void*)this;
+	microrl_set_complete_callback (&m_rl, ConsoleAsyncComplete);
 	microrl_set_execute_callback (&m_rl, ConsoleAsyncExecute);
 
   xTaskCreatePinnedToCore(ConsoleAsyncTask, "ConsoleAsyncTask", 4096, (void*)this, 5, &m_taskid, 1);
@@ -106,4 +112,32 @@ ssize_t ConsoleAsync::write(const void *buf, size_t nbyte)
 
 void ConsoleAsync::finalise()
   {
+  }
+
+char ** ConsoleAsync::GetCompletion(OvmsCommandMap& children, const char* token)
+  {
+  unsigned int index = 0;
+  if (token)
+    {
+    for (OvmsCommandMap::iterator it = children.begin(); it != children.end(); ++it)
+      {
+      const char *key = it->first.c_str();
+      if (strncmp(key, token, strlen(token)) == 0)
+        {
+        if (index < COMPLETION_MAX_TOKENS+1)
+          {
+          if (index == COMPLETION_MAX_TOKENS)
+            {
+            key = "...";
+            }
+          strncpy(m_space[index], key, TOKEN_MAX_LENGTH-1);
+          m_space[index][TOKEN_MAX_LENGTH-1] = '\0';
+          m_completions[index] = m_space[index];
+          ++index;
+          }
+        }
+      }
+    }
+  m_completions[index] = NULL;
+  return m_completions;
   }
