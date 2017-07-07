@@ -35,6 +35,8 @@
 #include "spi.h"
 #include "max7317.h"
 #include "esp32can.h"
+#include "esp32wifi.h"
+#include "esp32bluetooth.h"
 #include "esp32adc.h"
 #include "mcp2515.h"
 #include "sdcard.h"
@@ -57,7 +59,7 @@
 #define ESP32CAN_PIN_TX           25
 #define ESP32CAN_PIN_RX           26
 
-class Peripherals : public pcp
+class Peripherals
   {
   public:
      Peripherals();
@@ -67,6 +69,8 @@ class Peripherals : public pcp
     spi* m_spibus;
     max7317* m_max7317;
     esp32can* m_esp32can;
+    esp32wifi* m_esp32wifi;
+    esp32bluetooth* m_esp32bluetooth;
     esp32adc* m_esp32adc;
     mcp2515* m_mcp2515_1;
     mcp2515* m_mcp2515_2;

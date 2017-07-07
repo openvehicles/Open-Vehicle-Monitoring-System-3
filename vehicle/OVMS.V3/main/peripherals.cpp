@@ -51,6 +51,14 @@ void power_sleep(int verbosity, OvmsWriter* writer, int argc, const char* const*
     {
     MyPeripherals.m_mcp2515_2->SetPowerMode(Sleep);
     }
+  else if (strcmp(argv[0],"esp32can")==0)
+    {
+    MyPeripherals.m_esp32can->SetPowerMode(Off);
+    }
+  else if (strcmp(argv[0],"wifi")==0)
+    {
+    MyPeripherals.m_esp32wifi->SetPowerMode(Off);
+    }
   else
     {
     puts("Error: Unrecognised peripheral");
@@ -78,15 +86,20 @@ Peripherals::Peripherals()
   m_spibus = new spi(VSPI_PIN_MISO, VSPI_PIN_MOSI, VSPI_PIN_CLK);
 
   puts("  MAX7317 I/O Expander...");
-  m_max7317 = new max7317(m_spibus, VSPI_HOST, 10000, VSPI_PIN_MAX7317_CS);
+  m_max7317 = new max7317(m_spibus, VSPI_HOST, 1000000, VSPI_PIN_MAX7317_CS);
   puts("  ESP32 CAN...");
   m_esp32can = new esp32can(ESP32CAN_PIN_TX,ESP32CAN_PIN_RX);
+  m_esp32can->Init(CAN_SPEED_1000KBPS);
+  puts("  ESP32 WIFI...");
+  m_esp32wifi = new esp32wifi();
+  puts("  ESP32 BLUETOOTH...");
+  m_esp32bluetooth = new esp32bluetooth();
   puts("  ESP32 ADC...");
   m_esp32adc = new esp32adc(ADC1_CHANNEL_0,ADC_WIDTH_12Bit,ADC_ATTEN_11db);
   puts("  MCP2515 CAN 1/2...");
-  m_mcp2515_1 = new mcp2515(m_spibus, VSPI_HOST, 10000, VSPI_PIN_MCP2515_1_CS);
+  m_mcp2515_1 = new mcp2515(m_spibus, VSPI_HOST, 1000000, VSPI_PIN_MCP2515_1_CS);
   puts("  MCP2515 CAN 2/2...");
-  m_mcp2515_2 = new mcp2515(m_spibus, VSPI_HOST, 10000, VSPI_PIN_MCP2515_2_CS);
+  m_mcp2515_2 = new mcp2515(m_spibus, VSPI_HOST, 1000000, VSPI_PIN_MCP2515_2_CS);
   puts("  SD CARD...");
   m_sdcard = new sdcard(false,true,SDCARD_PIN_CD);
 
