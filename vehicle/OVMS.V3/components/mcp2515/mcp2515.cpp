@@ -94,37 +94,38 @@ mcp2515::~mcp2515()
 
 esp_err_t mcp2515::Init(CAN_speed_t speed)
   {
-  m_spibus->spi_cmd0(m_spi,0b11000000); // RESET command
-  vTaskDelay(5 / portTICK_PERIOD_MS);
+  uint8_t buf[4];
 
   m_speed = speed;
-  m_spibus->spi_cmd2(m_spi,0x02,0x0f,0x00); // Normal mode
 
-  uint8_t buf[16];
-  memset(buf,0,sizeof(buf));
-  buf[0] = 0b00000011;
-  buf[1] = 0x0E;
-  m_spibus->spi_readx(m_spi,buf,2,2);
-  printf("Got back status %02x error flag %02x\n",buf[2],buf[3]);
-  vTaskDelay(1 / portTICK_PERIOD_MS);
+  // RESET commmand
+  m_spibus->spi_cmd(m_spi, buf, 0, 1, 0b11000000);
+  vTaskDelay(5 / portTICK_PERIOD_MS);
+
+  // Set NORMAL mode
+  m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x0f, 0x00);
+
+  // Get STATUS
+  uint8_t* p = m_spibus->spi_cmd(m_spi, buf, 2, 2, 0b00000011, 0x0e);
+  printf("Got back status %02x error flag %02x\n",p[0],p[1]);
 
   return ESP_OK;
   }
 
 esp_err_t mcp2515::Stop()
   {
-  m_spibus->spi_cmd0(m_spi,0b11000000); // RESET command
+  uint8_t buf[4];
+
+  // RESET command
+  m_spibus->spi_cmd(m_spi, buf, 0, 1, 0b11000000);
   vTaskDelay(5 / portTICK_PERIOD_MS);
 
-  m_spibus->spi_cmd2(m_spi,0x02,0x0f,0x30); // Sleep mode
+  // Set SLEEP mode
+  m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x0f, 0x30);
 
-  uint8_t buf[16];
-  memset(buf,0,sizeof(buf));
-  buf[0] = 0b00000011;
-  buf[1] = 0x0E;
-  m_spibus->spi_readx(m_spi,buf,2,2);
-  printf("Got back status %02x error flag %02x\n",buf[2],buf[3]);
-  vTaskDelay(1 / portTICK_PERIOD_MS);
+  // Get STATUS
+  uint8_t* p = m_spibus->spi_cmd(m_spi, buf, 2, 2, 0b00000011, 0x0e);
+  printf("Got back status %02x error flag %02x\n",p[0],p[1]);
 
   return ESP_OK;
   }

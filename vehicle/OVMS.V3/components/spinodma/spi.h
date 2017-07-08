@@ -48,10 +48,7 @@ class spi : public pcp
   public:
     bool LockBus(TickType_t delay = portMAX_DELAY);
     void UnlockBus();
-    void spi_cmd0(spi_nodma_device_handle_t spi, uint8_t cmd);
-    uint8_t spi_cmd1(spi_nodma_device_handle_t spi, uint8_t cmd, uint8_t data);
-    void spi_cmd2(spi_nodma_device_handle_t spi, uint8_t cmd, uint8_t data1, uint8_t data2);
-    uint8_t* spi_readx(spi_nodma_device_handle_t spi, uint8_t* buf, int txlen, int rxlen);
+    uint8_t* spi_cmd(spi_nodma_device_handle_t spi, uint8_t* buf, int rxlen, int txlen, ...);
 
   public:
     spi_nodma_bus_config_t m_buscfg;
