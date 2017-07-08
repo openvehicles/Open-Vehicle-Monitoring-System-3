@@ -36,6 +36,14 @@
 #include "command.h"
 #include "console_async.h"
 #include "microrl.h"
+#include "driver/uart.h"
+#include "freertos/queue.h"
+#include "esp_log.h"
+
+#define EX_UART_NUM UART_NUM_0
+#define BUF_SIZE (1024)
+static QueueHandle_t uart0_queue;
+static const char *TAG = "uart_events";
 
 void ConsoleAsyncPrint(microrl_t* rl, const char * str)
   {
@@ -56,19 +64,73 @@ int ConsoleAsyncExecute (microrl_t* rl, int argc, const char * const * argv )
 
 void ConsoleAsyncTask(void *pvParameters)
   {
+  uart_event_t event;
+  size_t buffered_size;
+  uint8_t* data = (uint8_t*) malloc(BUF_SIZE);
   ConsoleAsync* me = (ConsoleAsync*)pvParameters;
 
   vTaskDelay(50 / portTICK_PERIOD_MS);
 
-	while (1) {
-		// put received char from stdin to microrl lib
-		char ch = uart_rx_one_char_block();
-		microrl_insert_char (me->GetRL(), ch);
-	  }
+  for (;;)
+    {
+    // Waiting for UART RX event.
+    if (xQueueReceive(uart0_queue, (void * )&event, (portTickType)portMAX_DELAY))
+      {
+      switch (event.type)
+        {
+        // Event of UART receving data
+        case UART_DATA:
+          uart_get_buffered_data_len(EX_UART_NUM, &buffered_size);
+          if (buffered_size > 0)
+            {
+            int len = uart_read_bytes(EX_UART_NUM, data, BUF_SIZE, 100 / portTICK_RATE_MS);
+            for (int i = 0; i < len; ++i)
+              {
+              // put received char from UART to microrl lib
+              microrl_insert_char (me->GetRL(), data[i]);
+              }
+            }
+          break;
+          // Event of HW FIFO overflow detected
+        case UART_FIFO_OVF:
+          ESP_LOGI(TAG, "hw fifo overflow\n");
+          // If fifo overflow happened, you should consider adding flow control for your application.
+          // We can read data out out the buffer, or directly flush the rx buffer.
+          uart_flush(EX_UART_NUM);
+          break;
+          // Event of UART ring buffer full
+        case UART_BUFFER_FULL:
+          ESP_LOGI(TAG, "ring buffer full\n");
+          // If buffer full happened, you should consider encreasing your buffer size
+          // We can read data out out the buffer, or directly flush the rx buffer.
+          uart_flush(EX_UART_NUM);
+          break;
+          // Others
+        default:
+          ESP_LOGI(TAG, "uart event type: %d\n", event.type);
+          break;
+        }
+      }
+    }
   }
 
 ConsoleAsync::ConsoleAsync()
   {
+  uart_config_t uart_config =
+    {
+    .baud_rate = 115200,
+    .data_bits = UART_DATA_8_BITS,
+    .parity = UART_PARITY_DISABLE,
+    .stop_bits = UART_STOP_BITS_1,
+    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+    .rx_flow_ctrl_thresh = 122,
+    };
+  // Set UART parameters
+  uart_param_config(EX_UART_NUM, &uart_config);
+
+  // Install UART driver, and get the queue.
+  uart_driver_install(EX_UART_NUM, BUF_SIZE * 2, BUF_SIZE * 2, 10, &uart0_queue, 0);
+
   puts("\n\033[32mWelcome to the Open Vehicle Monitoring System (OVMS) - async console\033[0m");
 
   microrl_init (&m_rl, ConsoleAsyncPrint);
