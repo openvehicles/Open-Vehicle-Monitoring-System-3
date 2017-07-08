@@ -55,4 +55,3 @@ OvmsVehicleTeslaRoadsterInit::OvmsVehicleTeslaRoadsterInit()
 
   MyVehicleFactory.RegisterVehicle<OvmsVehicleTeslaRoadster>("TR");
   }
-

@@ -28,34 +28,37 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __SDCARD_H__
-#define __SDCARD_H__
+#include <string.h>
+#include "esp_system.h"
+#include "esp_event.h"
+#include "esp_event_loop.h"
+#include "esp_deep_sleep.h"
+#include "esp32system.h"
 
-#include "pcp.h"
-#include "esp_err.h"
-#include "esp_vfs_fat.h"
-#include "driver/sdmmc_host.h"
-#include "driver/sdmmc_defs.h"
-#include <driver/adc.h>
-#include "sdmmc_cmd.h"
-
-class sdcard : public pcp
+esp32system::esp32system(std::string name)
+  : pcp(name)
   {
-  public:
-    sdcard(std::string name, bool mode1bit=false, bool autoformat=false, int cdpin=0);
-    ~sdcard();
+  }
 
-  public:
-    esp_err_t mount();
-    esp_err_t unmount();
-    bool ismounted();
+esp32system::~esp32system()
+  {
+  }
 
-  public:
-    sdmmc_host_t m_host;
-    sdmmc_slot_config_t m_slot;
-    esp_vfs_fat_sdmmc_mount_config_t m_mount;
-    sdmmc_card_t* m_card;
-    bool m_mounted;
-  };
-
-#endif //#ifndef __SDCARD_H__
+void esp32system::SetPowerMode(PowerMode powermode)
+  {
+  switch (powermode)
+    {
+    case On:
+      break;
+    case Sleep:
+      break;
+    case DeepSleep:
+      esp_deep_sleep(1000000LL * 60);
+      break;
+    case Off:
+      esp_deep_sleep_start();
+      break;
+    default:
+      break;
+    };
+  }

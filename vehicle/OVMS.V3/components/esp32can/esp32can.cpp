@@ -60,8 +60,8 @@ static void ESP32CAN_rxtask(void *pvParameters)
       msg.origin = MyESP32can;
 
       //get FIR
-      msg.FIR.U=MODULE_ESP32CAN->MBX_CTRL.FCTRL.FIR.U;
-
+      msg.FIR.U = MODULE_ESP32CAN->MBX_CTRL.FCTRL.FIR.U;
+      printf("ESP32CAN_rxtask got one len=%d type=%d data[0]=%d",msg.FIR.B.DLC,msg.FIR.B.FF,MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[0]); puts("");
       //check if this is a standard or extended CAN frame
       if (msg.FIR.B.FF==CAN_frame_std)
         { // Standard frame
@@ -69,7 +69,7 @@ static void ESP32CAN_rxtask(void *pvParameters)
         msg.MsgID = ESP32CAN_GET_STD_ID;
         //deep copy data bytes
         for (int k=0 ; k<msg.FIR.B.DLC ; k++)
-        	msg.data.u8[k]=MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[k];
+        	msg.data.u8[k] = MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[k];
         }
       else
         { // Extended frame
@@ -77,7 +77,7 @@ static void ESP32CAN_rxtask(void *pvParameters)
         msg.MsgID = ESP32CAN_GET_EXT_ID;
         //deep copy data bytes
         for (int k=0 ; k<msg.FIR.B.DLC ; k++)
-        	msg.data.u8[k]=MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.EXT.data[k];
+        	msg.data.u8[k] = MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.EXT.data[k];
         }
 
       //send frame to listeners
@@ -120,7 +120,8 @@ static void ESP32CAN_isr(void *arg_p)
     }
   }
 
-esp32can::esp32can(int txpin, int rxpin)
+esp32can::esp32can(std::string name, int txpin, int rxpin)
+  : canbus(name)
   {
   m_txpin = (gpio_num_t)txpin;
   m_rxpin = (gpio_num_t)rxpin;
@@ -270,6 +271,8 @@ void esp32can::SetPowerMode(PowerMode powermode)
     case DeepSleep:
     case Off:
       Stop();
+      break;
+    default:
       break;
     };
   }

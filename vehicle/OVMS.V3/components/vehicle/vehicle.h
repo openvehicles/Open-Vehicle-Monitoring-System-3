@@ -32,11 +32,10 @@
 #define __VEHICLE_H__
 
 #include <map>
-#include "pcp.h"
 
 using namespace std;
 
-class OvmsVehicle : public pcp
+class OvmsVehicle
   {
   public:
     OvmsVehicle();

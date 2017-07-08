@@ -33,7 +33,8 @@
 #include "command.h"
 #include "peripherals.h"
 
-max7317::max7317(spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin)
+max7317::max7317(std::string name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin)
+  : pcp(name)
   {
   m_spibus = spibus;
   m_host = host;
@@ -59,12 +60,17 @@ max7317::~max7317()
 
 void max7317::Output(uint8_t port, uint8_t level)
   {
-  m_spibus->spi_cmd1(m_spi,port,level);
+  uint8_t buf[4];
+
+  m_spibus->spi_cmd(m_spi, buf, 0, 2, port, level);
   }
 
 uint8_t max7317::Input(uint8_t port)
   {
-  return m_spibus->spi_cmd1(m_spi,port + 0x80,0);
+  uint8_t buf[4];
+
+  uint8_t* p = m_spibus->spi_cmd(m_spi, buf, 1, 1, port + 0x80);
+  return *p;
   }
 
 void max7317_output(int verbosity, OvmsWriter* writer, int argc, const char* const* argv)

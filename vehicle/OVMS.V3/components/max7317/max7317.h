@@ -38,7 +38,7 @@
 class max7317 : public pcp
   {
   public:
-    max7317(spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin);
+    max7317(std::string name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin);
     ~max7317();
 
   public:

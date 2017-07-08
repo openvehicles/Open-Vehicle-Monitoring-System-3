@@ -28,34 +28,35 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __SDCARD_H__
-#define __SDCARD_H__
-
-#include "pcp.h"
+#include <string.h>
+#include "esp32wifi.h"
 #include "esp_err.h"
-#include "esp_vfs_fat.h"
-#include "driver/sdmmc_host.h"
-#include "driver/sdmmc_defs.h"
-#include <driver/adc.h>
-#include "sdmmc_cmd.h"
+#include "esp_wifi.h"
 
-class sdcard : public pcp
+esp32wifi::esp32wifi(std::string name)
+  : pcp(name)
   {
-  public:
-    sdcard(std::string name, bool mode1bit=false, bool autoformat=false, int cdpin=0);
-    ~sdcard();
+  }
 
-  public:
-    esp_err_t mount();
-    esp_err_t unmount();
-    bool ismounted();
+esp32wifi::~esp32wifi()
+  {
+  }
 
-  public:
-    sdmmc_host_t m_host;
-    sdmmc_slot_config_t m_slot;
-    esp_vfs_fat_sdmmc_mount_config_t m_mount;
-    sdmmc_card_t* m_card;
-    bool m_mounted;
-  };
-
-#endif //#ifndef __SDCARD_H__
+void esp32wifi::SetPowerMode(PowerMode powermode)
+  {
+  switch (powermode)
+    {
+    case On:
+      //esp_wifi_start();
+      break;
+    case Sleep:
+      //esp_wifi_set_ps(WIFI_PS_MODEM);
+      break;
+    case DeepSleep:
+    case Off:
+      //esp_wifi_stop();
+      break;
+    default:
+      break;
+    };
+  }

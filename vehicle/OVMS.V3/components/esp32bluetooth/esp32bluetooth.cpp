@@ -28,34 +28,28 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __SDCARD_H__
-#define __SDCARD_H__
+#include <string.h>
+#include "esp32bluetooth.h"
 
-#include "pcp.h"
-#include "esp_err.h"
-#include "esp_vfs_fat.h"
-#include "driver/sdmmc_host.h"
-#include "driver/sdmmc_defs.h"
-#include <driver/adc.h>
-#include "sdmmc_cmd.h"
-
-class sdcard : public pcp
+esp32bluetooth::esp32bluetooth(std::string name)
+  : pcp(name)
   {
-  public:
-    sdcard(std::string name, bool mode1bit=false, bool autoformat=false, int cdpin=0);
-    ~sdcard();
+  }
 
-  public:
-    esp_err_t mount();
-    esp_err_t unmount();
-    bool ismounted();
+esp32bluetooth::~esp32bluetooth()
+  {
+  }
 
-  public:
-    sdmmc_host_t m_host;
-    sdmmc_slot_config_t m_slot;
-    esp_vfs_fat_sdmmc_mount_config_t m_mount;
-    sdmmc_card_t* m_card;
-    bool m_mounted;
-  };
-
-#endif //#ifndef __SDCARD_H__
+void esp32bluetooth::SetPowerMode(PowerMode powermode)
+  {
+  switch (powermode)
+    {
+    case On:
+    case Sleep:
+    case DeepSleep:
+    case Off:
+      break;
+    default:
+      break;
+    };
+  }
