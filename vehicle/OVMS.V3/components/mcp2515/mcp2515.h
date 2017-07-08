@@ -28,17 +28,28 @@
 ; THE SOFTWARE.
 */
 
-#include "can.h"
-#include "spi.h"
-
 #ifndef __MCP2515_H__
 #define __MCP2515_H__
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include "freertos/semphr.h"
+#include "freertos/task.h"
+#include "can.h"
+#include "spi.h"
 
 class mcp2515 : public canbus
   {
   public:
-    mcp2515(std::string name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin);
+    mcp2515(std::string name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin, int intpin);
     ~mcp2515();
+
+  public:
+    esp_err_t Init(CAN_speed_t speed);
+    esp_err_t Stop();
+
+  public:
+    esp_err_t Write(const CAN_frame_t* p_frame);
 
   public:
     virtual void SetPowerMode(PowerMode powermode);
@@ -49,7 +60,12 @@ class mcp2515 : public canbus
     spi_nodma_host_device_t m_host;
     int m_clockspeed;
     int m_cspin;
+    int m_intpin;
     spi_nodma_device_handle_t m_spi;
+    TaskHandle_t m_rxtask;
+
+  public:
+    SemaphoreHandle_t m_rxsem;
   };
 
 #endif //#ifndef __MCP2515_H__

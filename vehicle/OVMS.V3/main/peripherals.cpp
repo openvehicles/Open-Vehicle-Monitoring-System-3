@@ -31,7 +31,9 @@
 #include <stdio.h>
 #include <string.h>
 #include "command.h"
+#include "esp_intr_alloc.h"
 #include "driver/gpio.h"
+#include "esp_intr.h"
 #include "peripherals.h"
 
 Peripherals MyPeripherals __attribute__ ((init_priority (3000)));
@@ -39,6 +41,8 @@ Peripherals MyPeripherals __attribute__ ((init_priority (3000)));
 Peripherals::Peripherals()
   {
   puts("Initialising OVMS Peripherals...");
+
+  gpio_install_isr_service(0);
 
   gpio_set_direction((gpio_num_t)VSPI_PIN_MISO, GPIO_MODE_INPUT);
   gpio_set_direction((gpio_num_t)VSPI_PIN_MOSI, GPIO_MODE_OUTPUT);
@@ -66,9 +70,9 @@ Peripherals::Peripherals()
   puts("  ESP32 ADC...");
   m_esp32adc = new esp32adc("adc", ADC1_CHANNEL_0, ADC_WIDTH_12Bit, ADC_ATTEN_11db);
   puts("  MCP2515 CAN 1/2...");
-  m_mcp2515_1 = new mcp2515("can2", m_spibus, VSPI_HOST, 1000000, VSPI_PIN_MCP2515_1_CS);
+  m_mcp2515_1 = new mcp2515("can2", m_spibus, VSPI_HOST, 1000000, VSPI_PIN_MCP2515_1_CS, VSPI_PIN_MCP2515_1_INT);
   puts("  MCP2515 CAN 2/2...");
-  m_mcp2515_2 = new mcp2515("can3", m_spibus, VSPI_HOST, 1000000, VSPI_PIN_MCP2515_2_CS);
+  m_mcp2515_2 = new mcp2515("can3", m_spibus, VSPI_HOST, 1000000, VSPI_PIN_MCP2515_2_CS, VSPI_PIN_MCP2515_2_INT);
   puts("  SD CARD...");
   m_sdcard = new sdcard("sdcard", false,true,SDCARD_PIN_CD);
   }
