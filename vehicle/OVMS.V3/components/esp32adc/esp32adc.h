@@ -38,7 +38,7 @@
 class esp32adc : public pcp
   {
   public:
-    esp32adc(adc1_channel_t channel, adc_bits_width_t width, adc_atten_t attn);
+    esp32adc(std::string name, adc1_channel_t channel, adc_bits_width_t width, adc_atten_t attn);
     virtual ~esp32adc();
 
   public:

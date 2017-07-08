@@ -33,7 +33,8 @@
 #include "command.h"
 #include "peripherals.h"
 
-max7317::max7317(spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin)
+max7317::max7317(std::string name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin)
+  : pcp(name)
   {
   m_spibus = spibus;
   m_host = host;

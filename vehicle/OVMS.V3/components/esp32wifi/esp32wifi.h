@@ -37,7 +37,7 @@
 class esp32wifi : public pcp
   {
   public:
-    esp32wifi();
+    esp32wifi(std::string name);
     ~esp32wifi();
 
   public:

@@ -31,19 +31,49 @@
 #ifndef __PCP_H__
 #define __PCP_H__
 
-enum PowerMode { On, Sleep, DeepSleep, Off };
+#include <sys/types.h>
+#include <string>
+#include <map>
+#include "command.h"
+
+enum PowerMode { Undefined, On, Sleep, DeepSleep, Off };
 
 class pcp
   {
   public:
-    pcp();
+    pcp(std::string name);
     virtual ~pcp();
 
   public:
     virtual void SetPowerMode(PowerMode powermode);
+    std::string GetName();
 
   protected:
+    std::string m_name;
     PowerMode m_powermode;
   };
+
+typedef std::map<std::string, pcp*> pcpmap_t;
+typedef std::map<std::string, PowerMode> pcpmappm_t;
+
+class pcpapp
+  {
+  public:
+    pcpapp();
+    virtual ~pcpapp();
+
+  public:
+    void Register(std::string name, pcp* device);
+    void Deregister(std::string name);
+    pcp* FindDeviceByName(std::string name);
+    PowerMode FindPowerModeByName(std::string name);
+    void ShowDevices(OvmsWriter* writer);
+
+  public:
+    pcpmap_t m_map;
+    pcpmappm_t m_mappm;
+  };
+
+extern pcpapp MyPcpApp;
 
 #endif //#ifndef __PCP_H__

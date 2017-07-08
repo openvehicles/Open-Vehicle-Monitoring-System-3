@@ -34,7 +34,8 @@
 #include "command.h"
 #include "peripherals.h"
 
-sdcard::sdcard(bool mode1bit, bool autoformat, int cdpin)
+sdcard::sdcard(std::string name, bool mode1bit, bool autoformat, int cdpin)
+  : pcp(name)
   {
   m_host = SDMMC_HOST_DEFAULT();
   if (mode1bit)

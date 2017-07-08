@@ -33,7 +33,8 @@
 #include "esp_err.h"
 #include "esp_wifi.h"
 
-esp32wifi::esp32wifi()
+esp32wifi::esp32wifi(std::string name)
+  : pcp(name)
   {
   }
 
@@ -54,6 +55,8 @@ void esp32wifi::SetPowerMode(PowerMode powermode)
     case DeepSleep:
     case Off:
       //esp_wifi_stop();
+      break;
+    default:
       break;
     };
   }

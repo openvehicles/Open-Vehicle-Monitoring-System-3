@@ -31,7 +31,8 @@
 #include <string.h>
 #include "spi.h"
 
-spi::spi(int misopin, int mosipin, int clkpin)
+spi::spi(std::string name, int misopin, int mosipin, int clkpin)
+  : pcp(name)
   {
   m_mtx = xSemaphoreCreateMutex();
   memset(&m_buscfg, 0, sizeof(spi_nodma_bus_config_t));

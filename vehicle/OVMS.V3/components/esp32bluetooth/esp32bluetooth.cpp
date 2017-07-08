@@ -31,7 +31,8 @@
 #include <string.h>
 #include "esp32bluetooth.h"
 
-esp32bluetooth::esp32bluetooth()
+esp32bluetooth::esp32bluetooth(std::string name)
+  : pcp(name)
   {
   }
 
@@ -47,6 +48,8 @@ void esp32bluetooth::SetPowerMode(PowerMode powermode)
     case Sleep:
     case DeepSleep:
     case Off:
+      break;
+    default:
       break;
     };
   }

@@ -42,7 +42,7 @@
 class sdcard : public pcp
   {
   public:
-    sdcard(bool mode1bit=false, bool autoformat=false, int cdpin=0);
+    sdcard(std::string name, bool mode1bit=false, bool autoformat=false, int cdpin=0);
     ~sdcard();
 
   public:

@@ -31,7 +31,8 @@
 #include <string.h>
 #include "mcp2515.h"
 
-mcp2515::mcp2515(spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin)
+mcp2515::mcp2515(std::string name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin)
+  : canbus(name)
   {
   m_spibus = spibus;
   m_host = host;
@@ -58,7 +59,7 @@ mcp2515::~mcp2515()
 void mcp2515::SetPowerMode(PowerMode powermode)
   {
   m_spibus->spi_cmd0(m_spi,0b11000000); // RESET command
-  vTaskDelay(1 / portTICK_PERIOD_MS);
+  vTaskDelay(5 / portTICK_PERIOD_MS);
 
   uint8_t buf[16];
   memset(buf,0,sizeof(buf));
@@ -76,7 +77,9 @@ void mcp2515::SetPowerMode(PowerMode powermode)
     case Sleep:
     case DeepSleep:
     case Off:
-      m_spibus->spi_cmd2(m_spi,0x02,0x0f,0x20); // Sleep mode
+      m_spibus->spi_cmd2(m_spi,0x02,0x0f,0x30); // Sleep mode
+      break;
+    default:
       break;
     }
   }

@@ -79,7 +79,8 @@ void can::DeregisterListener(QueueHandle_t *queue)
     }
   }
 
-canbus::canbus()
+canbus::canbus(std::string name)
+  : pcp(name)
   {
   }
 

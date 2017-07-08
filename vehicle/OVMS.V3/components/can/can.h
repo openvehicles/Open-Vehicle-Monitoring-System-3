@@ -100,7 +100,7 @@ typedef struct
 class canbus : public pcp
   {
   public:
-    canbus();
+    canbus(std::string name);
     virtual ~canbus();
 
   public:
