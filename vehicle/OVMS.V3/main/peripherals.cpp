@@ -55,9 +55,10 @@ Peripherals::Peripherals()
   gpio_set_direction((gpio_num_t)SDCARD_PIN_CMD, GPIO_MODE_OUTPUT);
   gpio_set_direction((gpio_num_t)SDCARD_PIN_CD, GPIO_MODE_INPUT);
 
-  puts ("  SPI bus...");
+  puts("  ESP32 system...");
+  m_esp32 = new esp32system("esp32");
+  puts("  SPI bus...");
   m_spibus = new spi("spi", VSPI_PIN_MISO, VSPI_PIN_MOSI, VSPI_PIN_CLK);
-
   puts("  MAX7317 I/O Expander...");
   m_max7317 = new max7317("egpio", m_spibus, VSPI_HOST, 1000000, VSPI_PIN_MAX7317_CS);
   puts("  ESP32 CAN...");

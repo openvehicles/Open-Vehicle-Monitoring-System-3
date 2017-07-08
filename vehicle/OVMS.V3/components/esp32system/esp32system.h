@@ -28,59 +28,20 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __PERIPHERALS_H__
-#define __PERIPHERALS_H__
+#ifndef __ESP32SYSTEM_H__
+#define __ESP32SYSTEM_H__
 
+#include <stdint.h>
 #include "pcp.h"
-#include "spi.h"
-#include "esp32system.h"
-#include "max7317.h"
-#include "esp32can.h"
-#include "esp32wifi.h"
-#include "esp32bluetooth.h"
-#include "esp32adc.h"
-#include "mcp2515.h"
-#include "sdcard.h"
 
-#define VSPI_PIN_MISO             19
-#define VSPI_PIN_MOSI             23
-#define VSPI_PIN_CLK              18
-#define VSPI_PIN_MCP2515_1_CS     5
-#define VSPI_PIN_MAX7317_CS       21
-#define VSPI_PIN_MCP2515_2_CS     27
-#define VSPI_PIN_MCP2515_1_INT    34
-#define VSPI_PIN_MCP2515_2_INT    35
-
-#define SDCARD_PIN_CLK            14
-#define SDCARD_PIN_CMD            15
-#define SDCARD_PIN_D0             2
-#define SDCARD_PIN_D1             4
-#define SDCARD_PIN_D2             12
-#define SDCARD_PIN_D3             12
-#define SDCARD_PIN_CD             39
-
-#define ESP32CAN_PIN_TX           25
-#define ESP32CAN_PIN_RX           26
-
-class Peripherals
+class esp32system : public pcp
   {
   public:
-     Peripherals();
-     ~Peripherals();
+    esp32system(std::string name);
+    ~esp32system();
 
   public:
-    esp32system* m_esp32;
-    spi* m_spibus;
-    max7317* m_max7317;
-    esp32can* m_esp32can;
-    esp32wifi* m_esp32wifi;
-    esp32bluetooth* m_esp32bluetooth;
-    esp32adc* m_esp32adc;
-    mcp2515* m_mcp2515_1;
-    mcp2515* m_mcp2515_2;
-    sdcard* m_sdcard;
+    void SetPowerMode(PowerMode powermode);
   };
 
-extern Peripherals MyPeripherals;
-
-#endif //#ifndef __PERIPHERALS_H__
+#endif //#ifndef __ESP32SYSTEM_H__
