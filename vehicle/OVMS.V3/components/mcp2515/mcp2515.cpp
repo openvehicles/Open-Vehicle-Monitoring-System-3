@@ -43,10 +43,7 @@ static void MCP2515_rxtask(void *pvParameters)
     {
     if (xSemaphoreTake(device->m_rxsem, pdMS_TO_TICKS(500)))
       {
-      //send frame to listeners
-      //MyCan.IncomingFrame(&msg);
-
-      //Let the hardware know the frame has been read.
+      device->PollRX();
       }
     }
   }
@@ -132,7 +129,80 @@ esp_err_t mcp2515::Stop()
 
 esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
   {
+  uint8_t buf[16];
+  uint8_t id[4];
+
+  if (p_frame->FIR.B.FF == CAN_frame_std)
+    {
+    // Transmit a standard frame
+    id[0] = p_frame->MsgID >> 3;     // HIGH 8 bits of standard ID
+    id[1] = p_frame->MsgID << 5;     // LOW 3 bits of standard ID
+    id[2] = 0;
+    id[3] = 0;
+    }
+  else
+    {
+    // Transmit an extended frame
+    id[0] = 0;
+    id[1] = (p_frame->MsgID >> 16) + 0x08;  // HIGH 2 bits of extended ID
+    id[2] = (p_frame->MsgID >> 8) & 0xff;   // MID 8 bits of extended ID
+    id[3] = (p_frame->MsgID & 0xff);        // LOW 8 bits of extended ID
+    }
+
+  // MCP2515 Transmit Buffer
+  m_spibus->spi_cmd(m_spi, buf, 0, 14,
+    0x40, id[0], id[1], id[2], id[3], p_frame->FIR.B.DLC,
+    p_frame->data.u8[0],
+    p_frame->data.u8[1],
+    p_frame->data.u8[2],
+    p_frame->data.u8[3],
+    p_frame->data.u8[4],
+    p_frame->data.u8[5],
+    p_frame->data.u8[6],
+    p_frame->data.u8[7]);
+
+  // MCP2515 RTS
+  m_spibus->spi_cmd(m_spi, buf, 0, 1, 0x81);
+
   return ESP_OK;
+  }
+
+void mcp2515::PollRX()
+  {
+  uint8_t buf[16];
+
+  uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 2, 2, 0b00000011, 0x2c);
+  uint8_t intstat = p[0];
+  uint8_t errflag = p[1];
+  printf("MCP2515 %s CAN status is %02x error flag %02x\n",m_name.c_str(),intstat,errflag);
+
+  // MCP2515 BITMODIFY CANINTE (Interrupt Enable) Clear flags
+  m_spibus->spi_cmd(m_spi, buf, 0, 4, 0b00000101, 0x2c, *p, 0x00);
+
+  int rxbuf = -1;
+  if (intstat & 0x01)
+    {
+    // RX buffer 0 is full, handle it
+    rxbuf = 0;
+    }
+  else if (intstat & 0x02)
+    {
+    // RX buffer 1 is full, handle it
+    rxbuf = 4;
+    }
+
+  if (rxbuf >= 0)
+    {
+    // The indicated RX buffer has a message to be read
+    CAN_frame_t msg;
+    memset(&msg,0,sizeof(msg));
+
+    uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 13, 1, 0x90+rxbuf);
+    msg.MsgID = (*p << 3) + (p[1] >> 5);
+    msg.FIR.B.DLC = p[4] & 0x0f;
+    memcpy(p+5,&msg.data,8);
+    MyCan.IncomingFrame(&msg);
+    }
   }
 
 void mcp2515::SetPowerMode(PowerMode powermode)

@@ -52,6 +52,9 @@ class mcp2515 : public canbus
     esp_err_t Write(const CAN_frame_t* p_frame);
 
   public:
+    void PollRX();
+
+  public:
     virtual void SetPowerMode(PowerMode powermode);
 
   protected:
