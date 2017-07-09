@@ -79,6 +79,7 @@ class OvmsCommand
     std::string GetTitle();
     char ** Complete(OvmsWriter* writer, int argc, const char * const * argv);
     void Execute(int verbosity, OvmsWriter* writer, int argc, const char * const * argv);
+    OvmsCommand* GetParent();
 
   protected:
     std::string m_title;
@@ -87,6 +88,7 @@ class OvmsCommand
     int m_min;
     int m_max;
     OvmsCommandMap m_children;
+    OvmsCommand* m_parent;
   };
 
 class OvmsCommandApp

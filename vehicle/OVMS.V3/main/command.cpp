@@ -86,6 +86,7 @@ OvmsCommand* OvmsCommandMap::FindUniquePrefix(const std::string& key)
 
 OvmsCommand::OvmsCommand()
   {
+  m_parent = NULL;
   }
 
 OvmsCommand::OvmsCommand(std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
@@ -96,6 +97,7 @@ OvmsCommand::OvmsCommand(std::string title, void (*execute)(int, OvmsWriter*, Ov
   m_usage = usage;
   m_min = min;
   m_max = max;
+  m_parent = NULL;
   }
 
 OvmsCommand::~OvmsCommand()
@@ -112,6 +114,7 @@ OvmsCommand* OvmsCommand::RegisterCommand(std::string name, std::string title, v
   {
   OvmsCommand* cmd = new OvmsCommand(title, execute, usage, min, max);
   m_children[name] = cmd;
+  cmd->m_parent = this;
   //printf("Registered '%s' under '%s'\n",name.c_str(),m_title.c_str());
   return cmd;
   }
@@ -186,6 +189,11 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
       cmd->Execute(verbosity,writer,0,NULL);
       }
     }
+  }
+
+OvmsCommand* OvmsCommand::GetParent()
+  {
+  return m_parent;
   }
 
 void help(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
