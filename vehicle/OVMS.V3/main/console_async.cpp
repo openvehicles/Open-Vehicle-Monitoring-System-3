@@ -135,8 +135,8 @@ ConsoleAsync::ConsoleAsync()
 
   microrl_init (&m_rl, ConsoleAsyncPrint);
   m_rl.userdata = (void*)this;
-	microrl_set_complete_callback (&m_rl, ConsoleAsyncComplete);
-	microrl_set_execute_callback (&m_rl, ConsoleAsyncExecute);
+  microrl_set_complete_callback (&m_rl, ConsoleAsyncComplete);
+  microrl_set_execute_callback (&m_rl, ConsoleAsyncExecute);
 
   xTaskCreatePinnedToCore(ConsoleAsyncTask, "ConsoleAsyncTask", 4096, (void*)this, 5, &m_taskid, 1);
   }
