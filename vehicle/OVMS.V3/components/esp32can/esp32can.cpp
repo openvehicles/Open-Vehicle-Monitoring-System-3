@@ -39,60 +39,45 @@
 
 esp32can* MyESP32can = NULL;
 
-static void ESP32CAN_rxtask(void *pvParameters)
+static void ESP32CAN_rxframe(esp32can *me)
   {
   CAN_frame_t msg;
 
-  for(;;)
-    {
-    if (xSemaphoreTake(MyESP32can->m_rxsem, pdMS_TO_TICKS(500)))
-      {
-      // Quick exit if this is spurious
-      if (MyESP32can == NULL)
-        {
-        // Let the hardware know the frame has been read.
-        MODULE_ESP32CAN->CMR.B.RRB=1;
-        continue;
-        }
+  // Record the origin
+  memset(&msg,0,sizeof(msg));
+  msg.origin = me;
 
-      // Record the origin
-      memset(&msg,0,sizeof(msg));
-      msg.origin = MyESP32can;
+  //get FIR
+  msg.FIR.U = MODULE_ESP32CAN->MBX_CTRL.FCTRL.FIR.U;
 
-      //get FIR
-      msg.FIR.U = MODULE_ESP32CAN->MBX_CTRL.FCTRL.FIR.U;
-      printf("ESP32CAN_rxtask got one len=%d type=%d data[0]=%d",msg.FIR.B.DLC,msg.FIR.B.FF,MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[0]); puts("");
-      //check if this is a standard or extended CAN frame
-      if (msg.FIR.B.FF==CAN_frame_std)
-        { // Standard frame
-        //Get Message ID
-        msg.MsgID = ESP32CAN_GET_STD_ID;
-        //deep copy data bytes
-        for (int k=0 ; k<msg.FIR.B.DLC ; k++)
-        	msg.data.u8[k] = MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[k];
-        }
-      else
-        { // Extended frame
-        //Get Message ID
-        msg.MsgID = ESP32CAN_GET_EXT_ID;
-        //deep copy data bytes
-        for (int k=0 ; k<msg.FIR.B.DLC ; k++)
-        	msg.data.u8[k] = MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.EXT.data[k];
-        }
-
-      //send frame to listeners
-      MyCan.IncomingFrame(&msg);
-
-      //Let the hardware know the frame has been read.
-      MODULE_ESP32CAN->CMR.B.RRB=1;
-      }
+  //check if this is a standard or extended CAN frame
+  if (msg.FIR.B.FF==CAN_frame_std)
+    { // Standard frame
+    //Get Message ID
+    msg.MsgID = ESP32CAN_GET_STD_ID;
+    //deep copy data bytes
+    for (int k=0 ; k<msg.FIR.B.DLC ; k++)
+    	msg.data.u8[k] = MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[k];
     }
+  else
+    { // Extended frame
+    //Get Message ID
+    msg.MsgID = ESP32CAN_GET_EXT_ID;
+    //deep copy data bytes
+    for (int k=0 ; k<msg.FIR.B.DLC ; k++)
+    	msg.data.u8[k] = MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.EXT.data[k];
+    }
+
+  //send frame to main CAN processor task
+  xQueueSendFromISR(MyCan.m_rxqueue,&msg,0);
+
+  //Let the hardware know the frame has been read.
+  MODULE_ESP32CAN->CMR.B.RRB=1;
   }
 
-static void ESP32CAN_isr(void *arg_p)
+static void ESP32CAN_isr(void *pvParameters)
   {
-  if (!MyESP32can)
-    { return; }
+  esp32can *me = (esp32can*)pvParameters;
 
   // Read interrupt status and clear flags
   ESP32CAN_IRQ_t interrupt = (ESP32CAN_IRQ_t)MODULE_ESP32CAN->IR.U;
@@ -105,7 +90,7 @@ static void ESP32CAN_isr(void *arg_p)
 
   // Handle RX frame available interrupt
   if ((interrupt & __CAN_IRQ_RX) != 0)
-    xSemaphoreGiveFromISR(MyESP32can->m_rxsem, NULL);
+    ESP32CAN_rxframe(me);
 
   // Handle error interrupts.
   if ((interrupt & (__CAN_IRQ_ERR						//0x4
@@ -126,9 +111,6 @@ esp32can::esp32can(std::string name, int txpin, int rxpin)
   m_txpin = (gpio_num_t)txpin;
   m_rxpin = (gpio_num_t)rxpin;
   MyESP32can = this;
-
-  m_rxsem = xSemaphoreCreateBinary();
-  xTaskCreatePinnedToCore(ESP32CAN_rxtask, "ESP32CanRxTask", 4096, (void*)this, 5, &m_rxtask, 1);
   }
 
 esp32can::~esp32can()
@@ -214,7 +196,7 @@ esp_err_t esp32can::Init(CAN_speed_t speed)
   (void)MODULE_ESP32CAN->IR.U;
 
   // Install CAN ISR
-  esp_intr_alloc(ETS_CAN_INTR_SOURCE,0,ESP32CAN_isr,NULL,NULL);
+  esp_intr_alloc(ETS_CAN_INTR_SOURCE,0,ESP32CAN_isr,this,NULL);
 
   // Showtime. Release Reset Mode.
   MODULE_ESP32CAN->MOD.B.RM = 0;

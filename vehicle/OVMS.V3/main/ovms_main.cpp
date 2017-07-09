@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "ovms.h"
+#include "peripherals.h"
 #include "console_async.h"
 
 ConsoleAsync *usbconsole;
@@ -22,4 +23,7 @@ void app_main(void)
   nvs_flash_init();
 
   usbconsole = new ConsoleAsync();
+  MyPeripherals.m_esp32can->Init(CAN_SPEED_1000KBPS);
+  MyPeripherals.m_mcp2515_1->Init(CAN_SPEED_1000KBPS);
+  MyPeripherals.m_mcp2515_2->Init(CAN_SPEED_1000KBPS);
   }

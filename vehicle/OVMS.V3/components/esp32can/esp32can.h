@@ -66,8 +66,6 @@ class esp32can : public canbus
   public:
     gpio_num_t m_txpin;               // TX pin
     gpio_num_t m_rxpin;               // RX pin
-    SemaphoreHandle_t m_rxsem;        // Semaphore to sync RX task
-    TaskHandle_t m_rxtask;            // Task to handle reception
   };
 
 #endif //#ifndef __ESP32CAN_H__

@@ -52,23 +52,18 @@ class mcp2515 : public canbus
     esp_err_t Write(const CAN_frame_t* p_frame);
 
   public:
-    void PollRX();
-
-  public:
     virtual void SetPowerMode(PowerMode powermode);
 
-  protected:
+  public:
     spi* m_spibus;
+    spi_nodma_device_handle_t m_spi;
+
+  protected:
     spi_nodma_device_interface_config_t m_devcfg;
     spi_nodma_host_device_t m_host;
     int m_clockspeed;
     int m_cspin;
     int m_intpin;
-    spi_nodma_device_handle_t m_spi;
-    TaskHandle_t m_rxtask;
-
-  public:
-    SemaphoreHandle_t m_rxsem;
   };
 
 #endif //#ifndef __MCP2515_H__

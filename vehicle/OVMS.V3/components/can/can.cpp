@@ -38,8 +38,36 @@
 
 can MyCan;
 
+static void CAN_rxtask(void *pvParameters)
+  {
+  can *me = (can*)pvParameters;
+  CAN_frame_t frame;
+
+  while(1)
+    {
+    if (xQueueReceive(me->m_rxqueue,&frame, (portTickType)portMAX_DELAY)==pdTRUE)
+      {
+      printf("CAN rx origin %s id %03x len %d %02x %02x %02x %02x %02x %02x %02x %02x\n",
+      frame.origin->GetName().c_str(),
+      frame.MsgID, frame.FIR.B.DLC,
+      frame.data.u8[0],frame.data.u8[1],frame.data.u8[2],frame.data.u8[3],
+      frame.data.u8[4],frame.data.u8[5],frame.data.u8[6],frame.data.u8[7]);
+      //  printf("CAN rx id %03x (len:%d)",p_frame->MsgID,p_frame->FIR.B.DLC);
+      //  for (int k=0;k<p_frame->FIR.B.DLC;k++)
+      //    {
+      //    printf(" %02x",p_frame->data.u8[k]);
+      //    }
+      //  puts("");
+
+      me->IncomingFrame(&frame);
+      }
+    }
+  }
+
 can::can()
   {
+  m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
+  xTaskCreatePinnedToCore(CAN_rxtask, "CanRxTask", 4096, (void*)this, 5, &m_rxtask, 1);
   }
 
 can::~can()
@@ -48,18 +76,6 @@ can::~can()
 
 void can::IncomingFrame(CAN_frame_t* p_frame)
   {
-  printf("CAN rx origin %s id %03x len %d %02x %02x %02x %02x %02x %02x %02x %02x\n",
-  p_frame->origin->GetName().c_str(),
-  p_frame->MsgID, p_frame->FIR.B.DLC,
-  p_frame->data.u8[0],p_frame->data.u8[1],p_frame->data.u8[2],p_frame->data.u8[3],
-  p_frame->data.u8[4],p_frame->data.u8[5],p_frame->data.u8[6],p_frame->data.u8[7]);
-//  printf("CAN rx id %03x (len:%d)",p_frame->MsgID,p_frame->FIR.B.DLC);
-//  for (int k=0;k<p_frame->FIR.B.DLC;k++)
-//    {
-//    printf(" %02x",p_frame->data.u8[k]);
-//    }
-//  puts("");
-
   for (auto n : m_listeners)
     {
     xQueueSend(n,p_frame,0);

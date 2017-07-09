@@ -37,6 +37,7 @@
 #define __CAN_H__
 
 #include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "freertos/queue.h"
 #include <stdint.h>
 #include <list>
@@ -124,11 +125,15 @@ class can
     void IncomingFrame(CAN_frame_t* p_frame);
 
   public:
+    QueueHandle_t m_rxqueue;
+
+  public:
     void RegisterListener(QueueHandle_t *queue);
     void DeregisterListener(QueueHandle_t *queue);
 
   private:
     std::list<QueueHandle_t*> m_listeners;
+    TaskHandle_t m_rxtask;            // Task to handle reception
   };
 
 extern can MyCan;
