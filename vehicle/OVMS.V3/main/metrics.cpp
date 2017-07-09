@@ -53,9 +53,6 @@ void metrics_list(int verbosity, OvmsWriter* writer, int argc, const char* const
 
 void metrics_set(int verbosity, OvmsWriter* writer, int argc, const char* const* argv)
   {
-  if (argc != 2)
-    writer->puts("Error: Syntax is    metric set <metric> <value>");
-
   if (MyMetrics.Set(argv[0],argv[1]))
     writer->puts("Metric set");
   else
@@ -81,7 +78,8 @@ OvmsMetrics::OvmsMetrics()
   // Register our commands
   OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework",NULL);
   cmd_metric->RegisterCommand("list","Show all metrics",metrics_list);
-  cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set);
+  cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set,
+			      "Error: Syntax is    metric set <metric> <value>", 2, 2);
 
   // Register the different types of metric
   MyMetricFactory.RegisterMetric<OvmsMetricInt>("int");
