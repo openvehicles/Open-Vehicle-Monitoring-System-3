@@ -95,7 +95,7 @@ bool sdcard::ismounted()
   return m_mounted;
   }
 
-void sdcard_mount(int verbosity, OvmsWriter* writer, int argc, const char* const* argv)
+void sdcard_mount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   MyPeripherals.m_sdcard->mount();
   if (MyPeripherals.m_sdcard->ismounted())
@@ -120,7 +120,7 @@ void sdcard_mount(int verbosity, OvmsWriter* writer, int argc, const char* const
     }
   }
 
-void sdcard_unmount(int verbosity, OvmsWriter* writer, int argc, const char* const* argv)
+void sdcard_unmount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   MyPeripherals.m_sdcard->unmount();
   writer->puts("Unmounted SD CARD");

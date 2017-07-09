@@ -69,12 +69,12 @@ class OvmsCommand
   {
   public:
     OvmsCommand();
-    OvmsCommand(std::string title, void (*execute)(int, OvmsWriter*, int, const char* const*),
+    OvmsCommand(std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                 const char *usage, int min, int max);
     virtual ~OvmsCommand();
 
   public:
-    OvmsCommand* RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, int, const char* const*),
+    OvmsCommand* RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                                  const char *usage = "", int min = 0, int max = INT_MAX);
     std::string GetTitle();
     char ** Complete(OvmsWriter* writer, int argc, const char * const * argv);
@@ -82,7 +82,7 @@ class OvmsCommand
 
   protected:
     std::string m_title;
-    void (*m_execute)(int, OvmsWriter*, int, const char* const*);
+    void (*m_execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*);
     std::string m_usage;
     int m_min;
     int m_max;
@@ -96,7 +96,7 @@ class OvmsCommandApp
     virtual ~OvmsCommandApp();
 
   public:
-    OvmsCommand* RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, int, const char* const*),
+    OvmsCommand* RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                                  const char *usage = "", int min = 0, int max = INT_MAX);
 
   public:

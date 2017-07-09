@@ -40,7 +40,7 @@ using namespace std;
 
 OvmsMetrics MyMetrics __attribute__ ((init_priority (1910)));
 
-void metrics_list(int verbosity, OvmsWriter* writer, int argc, const char* const* argv)
+void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   for (std::map<std::string, OvmsMetric*>::iterator it=MyMetrics.m_metrics.begin(); it!=MyMetrics.m_metrics.end(); ++it)
     {
@@ -51,7 +51,7 @@ void metrics_list(int verbosity, OvmsWriter* writer, int argc, const char* const
     }
   }
 
-void metrics_set(int verbosity, OvmsWriter* writer, int argc, const char* const* argv)
+void metrics_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (MyMetrics.Set(argv[0],argv[1]))
     writer->puts("Metric set");

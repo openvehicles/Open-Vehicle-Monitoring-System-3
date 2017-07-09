@@ -88,7 +88,7 @@ OvmsCommand::OvmsCommand()
   {
   }
 
-OvmsCommand::OvmsCommand(std::string title, void (*execute)(int, OvmsWriter*, int, const char* const*),
+OvmsCommand::OvmsCommand(std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                          const char *usage, int min, int max)
   {
   m_title = title;
@@ -107,7 +107,7 @@ std::string OvmsCommand::GetTitle()
   return m_title;
   }
 
-OvmsCommand* OvmsCommand::RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, int, const char* const*),
+OvmsCommand* OvmsCommand::RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                                           const char *usage, int min, int max)
   {
   OvmsCommand* cmd = new OvmsCommand(title, execute, usage, min, max);
@@ -149,7 +149,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
       writer->puts(m_usage.c_str());
       return;
       }
-    m_execute(verbosity,writer,argc,argv);
+    m_execute(verbosity,writer,this,argc,argv);
     return;
     }
   else
@@ -188,7 +188,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     }
   }
 
-void help(int verbosity, OvmsWriter* writer, int argc, const char* const* argv)
+void help(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
     {
     writer->puts("This isn't really much help, is it?");
     }
@@ -203,10 +203,10 @@ OvmsCommandApp::~OvmsCommandApp()
   {
   }
 
-OvmsCommand* OvmsCommandApp::RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, int, const char* const*),
+OvmsCommand* OvmsCommandApp::RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                                              const char *usage, int min, int max)
   {
-  return m_root.RegisterCommand(name,title,execute, usage, min, max);
+  return m_root.RegisterCommand(name, title, execute, usage, min, max);
   }
 
 char ** OvmsCommandApp::Complete(OvmsWriter* writer, int argc, const char * const * argv)

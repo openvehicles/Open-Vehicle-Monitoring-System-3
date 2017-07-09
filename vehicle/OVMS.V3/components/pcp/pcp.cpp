@@ -33,7 +33,7 @@
 
 pcpapp MyPcpApp __attribute__ ((init_priority (1100)));
 
-void power_cmd(int verbosity, OvmsWriter* writer, int argc, const char* const* argv)
+void power_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (argc != 2)
     {
@@ -65,7 +65,7 @@ pcpapp::pcpapp()
   m_mappm["deepsleep"] = DeepSleep;
   m_mappm["off"] = Off;
   MyCommandApp.RegisterCommand("power","Power control",power_cmd,
-    "power <device> <on|sleep|deepsleep|off>",2,2);
+    "power <device> <on|sleep|deepsleep|off>", 2, 2);
   }
 
 pcpapp::~pcpapp()

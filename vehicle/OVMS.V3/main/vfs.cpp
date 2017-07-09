@@ -38,7 +38,7 @@
 #include <libgen.h>
 #include "command.h"
 
-void vfs_ls(int verbosity, OvmsWriter* writer, int argc, const char* const* argv)
+void vfs_ls(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   DIR *dir;
   struct dirent *dp;
@@ -67,7 +67,7 @@ void vfs_ls(int verbosity, OvmsWriter* writer, int argc, const char* const* argv
   closedir(dir);
   }
 
-void vfs_cat(int verbosity, OvmsWriter* writer, int argc, const char* const* argv)
+void vfs_cat(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (argc == 0)
     {
@@ -90,7 +90,7 @@ void vfs_cat(int verbosity, OvmsWriter* writer, int argc, const char* const* arg
   fclose(f);
   }
 
-void vfs_rm(int verbosity, OvmsWriter* writer, int argc, const char* const* argv)
+void vfs_rm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (argc != 1)
     {
@@ -104,7 +104,7 @@ void vfs_rm(int verbosity, OvmsWriter* writer, int argc, const char* const* argv
     { writer->puts("Error: Could not delete VFS file"); }
   }
 
-void vfs_mv(int verbosity, OvmsWriter* writer, int argc, const char* const* argv)
+void vfs_mv(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (argc != 2)
     {

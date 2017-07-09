@@ -73,7 +73,7 @@ uint8_t max7317::Input(uint8_t port)
   return *p;
   }
 
-void max7317_output(int verbosity, OvmsWriter* writer, int argc, const char* const* argv)
+void max7317_output(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (argc != 2)
     {

@@ -36,7 +36,7 @@
 #include "test_framework.h"
 #include "command.h"
 
-void test_deepsleep(int verbosity, OvmsWriter* writer, int argc, const char* const* argv)
+void test_deepsleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   int sleeptime = 60;
   if (argc==1)
