@@ -59,7 +59,7 @@ void power_cmd(int verbosity, OvmsWriter* writer, int argc, const char* const* a
 
 pcpapp::pcpapp()
   {
-  puts("Initialised Power Controlled Peripherals App");
+  puts("Initialising POWER Framework");
   m_mappm["on"] = On;
   m_mappm["sleep"] = Sleep;
   m_mappm["deepsleep"] = DeepSleep;

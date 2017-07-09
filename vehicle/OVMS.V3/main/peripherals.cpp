@@ -55,26 +55,26 @@ Peripherals::Peripherals()
   gpio_set_direction((gpio_num_t)SDCARD_PIN_CMD, GPIO_MODE_OUTPUT);
   gpio_set_direction((gpio_num_t)SDCARD_PIN_CD, GPIO_MODE_INPUT);
 
-  puts("  ESP32 system...");
+  puts("  ESP32 system");
   m_esp32 = new esp32system("esp32");
-  puts("  SPI bus...");
+  puts("  SPI bus");
   m_spibus = new spi("spi", VSPI_PIN_MISO, VSPI_PIN_MOSI, VSPI_PIN_CLK);
-  puts("  MAX7317 I/O Expander...");
+  puts("  MAX7317 I/O Expander");
   m_max7317 = new max7317("egpio", m_spibus, VSPI_HOST, 1000000, VSPI_PIN_MAX7317_CS);
-  puts("  ESP32 CAN...");
+  puts("  ESP32 CAN");
   m_esp32can = new esp32can("can1", ESP32CAN_PIN_TX, ESP32CAN_PIN_RX);
   m_esp32can->Init(CAN_SPEED_1000KBPS);
-  puts("  ESP32 WIFI...");
+  puts("  ESP32 WIFI");
   m_esp32wifi = new esp32wifi("wifi");
-  puts("  ESP32 BLUETOOTH...");
+  puts("  ESP32 BLUETOOTH");
   m_esp32bluetooth = new esp32bluetooth("bluetooth");
-  puts("  ESP32 ADC...");
+  puts("  ESP32 ADC");
   m_esp32adc = new esp32adc("adc", ADC1_CHANNEL_0, ADC_WIDTH_12Bit, ADC_ATTEN_11db);
-  puts("  MCP2515 CAN 1/2...");
+  puts("  MCP2515 CAN 1/2");
   m_mcp2515_1 = new mcp2515("can2", m_spibus, VSPI_HOST, 1000000, VSPI_PIN_MCP2515_1_CS, VSPI_PIN_MCP2515_1_INT);
-  puts("  MCP2515 CAN 2/2...");
+  puts("  MCP2515 CAN 2/2");
   m_mcp2515_2 = new mcp2515("can3", m_spibus, VSPI_HOST, 1000000, VSPI_PIN_MCP2515_2_CS, VSPI_PIN_MCP2515_2_INT);
-  puts("  SD CARD...");
+  puts("  SD CARD");
   m_sdcard = new sdcard("sdcard", false,true,SDCARD_PIN_CD);
   }
 
