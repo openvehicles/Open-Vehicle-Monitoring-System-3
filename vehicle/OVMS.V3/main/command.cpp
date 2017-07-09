@@ -45,25 +45,6 @@ OvmsWriter::~OvmsWriter()
   {
   }
 
-int OvmsWriter::puts(const char* s)
-  {
-  return 0;
-  }
-
-int OvmsWriter::printf(const char* fmt, ...)
-  {
-  return 0;
-  }
-
-ssize_t OvmsWriter::write(const void *buf, size_t nbyte)
-  {
-  return 0;
-  }
-
-void OvmsWriter::finalise()
-  {
-  }
-
 OvmsCommand* OvmsCommandMap::FindUniquePrefix(const std::string& key)
   {
   OvmsCommand* found = NULL;

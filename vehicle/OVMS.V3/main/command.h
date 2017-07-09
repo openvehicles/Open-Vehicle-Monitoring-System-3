@@ -52,10 +52,10 @@ class OvmsWriter
     ~OvmsWriter();
 
   public:
-    virtual int puts(const char* s);
-    virtual int printf(const char* fmt, ...);
-    virtual ssize_t write(const void *buf, size_t nbyte);
-    virtual void finalise();
+    virtual int puts(const char* s) = 0;
+    virtual int printf(const char* fmt, ...) = 0;
+    virtual ssize_t write(const void *buf, size_t nbyte) = 0;
+    virtual void finalise() = 0;
     virtual char ** GetCompletion(OvmsCommandMap& children, const char* token) = 0;
   };
 
