@@ -69,19 +69,21 @@ class OvmsCommand
   {
   public:
     OvmsCommand();
-    OvmsCommand(std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
+    OvmsCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                 const char *usage, int min, int max);
     virtual ~OvmsCommand();
 
   public:
     OvmsCommand* RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                                  const char *usage = "", int min = 0, int max = INT_MAX);
+    std::string GetName();
     std::string GetTitle();
     char ** Complete(OvmsWriter* writer, int argc, const char * const * argv);
     void Execute(int verbosity, OvmsWriter* writer, int argc, const char * const * argv);
     OvmsCommand* GetParent();
 
   protected:
+    std::string m_name;
     std::string m_title;
     void (*m_execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*);
     std::string m_usage;

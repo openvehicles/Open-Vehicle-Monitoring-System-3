@@ -89,9 +89,10 @@ OvmsCommand::OvmsCommand()
   m_parent = NULL;
   }
 
-OvmsCommand::OvmsCommand(std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
+OvmsCommand::OvmsCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                          const char *usage, int min, int max)
   {
+  m_name = name;
   m_title = title;
   m_execute = execute;
   m_usage = usage;
@@ -104,6 +105,11 @@ OvmsCommand::~OvmsCommand()
   {
   }
 
+std::string OvmsCommand::GetName()
+  {
+  return m_name;
+  }
+
 std::string OvmsCommand::GetTitle()
   {
   return m_title;
@@ -112,7 +118,7 @@ std::string OvmsCommand::GetTitle()
 OvmsCommand* OvmsCommand::RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                                           const char *usage, int min, int max)
   {
-  OvmsCommand* cmd = new OvmsCommand(title, execute, usage, min, max);
+  OvmsCommand* cmd = new OvmsCommand(name, title, execute, usage, min, max);
   m_children[name] = cmd;
   cmd->m_parent = this;
   //printf("Registered '%s' under '%s'\n",name.c_str(),m_title.c_str());
