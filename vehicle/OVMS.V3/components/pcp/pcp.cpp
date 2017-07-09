@@ -32,19 +32,15 @@
 #include "pcp.h"
 
 pcpapp MyPcpApp __attribute__ ((init_priority (1100)));
+OvmsCommand* powercmd = NULL;
 
 void power_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (argc != 2)
-    {
-    writer->puts("Syntax: power <device> <on|sleep|deepsleep|off>");
-    writer->printf("  Available devices: ");
-    MyPcpApp.ShowDevices(writer);
-    return;
-    }
+  std::string devname = cmd->GetParent()->GetName();
+  std::string pmname = cmd->GetName();
 
-  pcp* device = MyPcpApp.FindDeviceByName(argv[0]);
-  PowerMode pm = MyPcpApp.FindPowerModeByName(argv[1]);
+  pcp* device = MyPcpApp.FindDeviceByName(devname);
+  PowerMode pm = MyPcpApp.FindPowerModeByName(pmname);
   if ((device == NULL)||(pm == PowerMode::Undefined))
     {
     writer->puts("Syntax: power <device> <on|sleep|deepsleep|off>");
@@ -54,7 +50,7 @@ void power_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     }
 
   device->SetPowerMode(pm);
-  writer->printf("Power mode of %s is now %s\n",argv[0],argv[1]);
+  writer->printf("Power mode of %s is now %s\n",devname.c_str(),pmname.c_str());
   }
 
 pcpapp::pcpapp()
@@ -64,8 +60,8 @@ pcpapp::pcpapp()
   m_mappm["sleep"] = Sleep;
   m_mappm["deepsleep"] = DeepSleep;
   m_mappm["off"] = Off;
-  MyCommandApp.RegisterCommand("power","Power control",power_cmd,
-    "power <device> <on|sleep|deepsleep|off>", 2, 2);
+  powercmd = MyCommandApp.RegisterCommand("power","Power control",NULL,
+    "power <device> <on|sleep|deepsleep|off>");
   }
 
 pcpapp::~pcpapp()
@@ -75,6 +71,11 @@ pcpapp::~pcpapp()
 void pcpapp::Register(std::string name, pcp* device)
   {
   m_map[name] = device;
+  OvmsCommand* devcmd = powercmd->RegisterCommand(name,"Power control",NULL);
+  for (auto it=m_mappm.begin(); it!=m_mappm.end(); ++it)
+    {
+    devcmd->RegisterCommand(it->first,"Power control",power_cmd,"Power control",0,0);
+    }
   }
 
 void pcpapp::Deregister(std::string name)
