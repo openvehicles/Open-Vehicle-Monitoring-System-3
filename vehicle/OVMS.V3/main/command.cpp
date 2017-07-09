@@ -147,7 +147,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     //puts("Looking for a matching command");
     if (argc <= 0)
       {
-      writer->puts("Error: Subcommand required");
+      writer->puts(m_usage.empty() ? "Error: Subcommand required" : m_usage.c_str());
       return;
       }
     if (strcmp(argv[0],"?")==0)
