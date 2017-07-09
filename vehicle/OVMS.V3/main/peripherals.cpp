@@ -72,8 +72,10 @@ Peripherals::Peripherals()
   m_esp32adc = new esp32adc("adc", ADC1_CHANNEL_0, ADC_WIDTH_12Bit, ADC_ATTEN_11db);
   puts("  MCP2515 CAN 1/2");
   m_mcp2515_1 = new mcp2515("can2", m_spibus, VSPI_HOST, 1000000, VSPI_PIN_MCP2515_1_CS, VSPI_PIN_MCP2515_1_INT);
+//  m_mcp2515_1->Init(CAN_SPEED_1000KBPS);
   puts("  MCP2515 CAN 2/2");
   m_mcp2515_2 = new mcp2515("can3", m_spibus, VSPI_HOST, 1000000, VSPI_PIN_MCP2515_2_CS, VSPI_PIN_MCP2515_2_INT);
+//  m_mcp2515_2->Init(CAN_SPEED_1000KBPS);
   puts("  SD CARD");
   m_sdcard = new sdcard("sdcard", false,true,SDCARD_PIN_CD);
   }

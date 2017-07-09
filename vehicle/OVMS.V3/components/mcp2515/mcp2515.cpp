@@ -91,7 +91,7 @@ mcp2515::~mcp2515()
 
 esp_err_t mcp2515::Init(CAN_speed_t speed)
   {
-  uint8_t buf[4];
+  uint8_t buf[16];
 
   m_speed = speed;
 
@@ -99,19 +99,53 @@ esp_err_t mcp2515::Init(CAN_speed_t speed)
   m_spibus->spi_cmd(m_spi, buf, 0, 1, 0b11000000);
   vTaskDelay(5 / portTICK_PERIOD_MS);
 
+  // Set CONFIG mode (abort transmisions, one-shot mode, clkout disabled)
+  m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x0f, 0b10011000);
+
+  // Rx Buffer 0 control (rececive all and enable buffer 1 rollover)
+  m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x60, 0b01100100);
+
+  // CANINTE (interrupt enable), all interrupts
+  m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x2b, 0b11111111);
+
+  // Bus speed
+  // Figures from https://www.kvaser.com/support/calculators/bit-timing-calculator/
+  // Using SJW=1, SP%=75
+  uint8_t cnf0 = 0;
+  uint8_t cnf1 = 0;
+  uint8_t cnf2 = 0;
+  switch (m_speed)
+    {
+    case CAN_SPEED_100KBPS:
+      cnf0=0x04; cnf1=0xb6; cnf2=0x03;
+      break;
+    case CAN_SPEED_125KBPS:
+      cnf0=0x03; cnf1=0xac; cnf2=0x03;
+      break;
+    case CAN_SPEED_250KBPS:
+      cnf0=0x03; cnf1=0xac; cnf2=0x01;
+      break;
+    case CAN_SPEED_500KBPS:
+      cnf0=0x03; cnf1=0xac; cnf2=0x00;
+      break;
+    case CAN_SPEED_800KBPS:
+      cnf0=0x02; cnf1=0x92; cnf2=0x00;
+      break;
+    case CAN_SPEED_1000KBPS:
+      cnf0=0x01; cnf1=0x91; cnf2=0x00;
+      break;
+    }
+  m_spibus->spi_cmd(m_spi, buf, 0, 5, 0x02, 0x28, cnf0, cnf1, cnf2);
+
   // Set NORMAL mode
   m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x0f, 0x00);
-
-  // Get STATUS
-  uint8_t* p = m_spibus->spi_cmd(m_spi, buf, 2, 2, 0b00000011, 0x0e);
-  printf("Got back status %02x error flag %02x\n",p[0],p[1]);
 
   return ESP_OK;
   }
 
 esp_err_t mcp2515::Stop()
   {
-  uint8_t buf[4];
+  uint8_t buf[16];
 
   // RESET command
   m_spibus->spi_cmd(m_spi, buf, 0, 1, 0b11000000);
