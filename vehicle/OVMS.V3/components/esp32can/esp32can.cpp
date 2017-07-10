@@ -154,10 +154,6 @@ esp_err_t esp32can::Init(CAN_speed_t speed)
       MODULE_ESP32CAN->BTR1.B.TSEG1=0x4;
       __tq = 0.125;
       break;
-    case CAN_SPEED_800KBPS:
-      MODULE_ESP32CAN->BTR1.B.TSEG1=0x6;
-      __tq = 0.125;
-      break;
     default:
       MODULE_ESP32CAN->BTR1.B.TSEG1=0xc;
       __tq = ((float)1000/MyESP32can->m_speed) / 16;

@@ -53,7 +53,6 @@ typedef enum
   CAN_SPEED_125KBPS=125,     // CAN Node runs at 125kBit/s
   CAN_SPEED_250KBPS=250,     // CAN Node runs at 250kBit/s
   CAN_SPEED_500KBPS=500,     // CAN Node runs at 500kBit/s
-  CAN_SPEED_800KBPS=800,     // CAN Node runs at 800kBit/s
   CAN_SPEED_1000KBPS=1000    // CAN Node runs at 1000kBit/s
   } CAN_speed_t;
 

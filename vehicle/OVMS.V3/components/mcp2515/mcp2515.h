@@ -57,6 +57,8 @@ class mcp2515 : public canbus
   public:
     spi* m_spibus;
     spi_nodma_device_handle_t m_spi;
+    TaskHandle_t m_rxtask;            // Task to handle reception
+    SemaphoreHandle_t m_rxsem;        // Semaphore to signal incoming packet
 
   protected:
     spi_nodma_device_interface_config_t m_devcfg;

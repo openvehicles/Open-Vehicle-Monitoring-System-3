@@ -35,46 +35,52 @@
 #include "esp_intr.h"
 #include "soc/dport_reg.h"
 
-static void MCP2515_rxframe(mcp2515 *me)
+static void MCP2515_rxtask(void *pvParameters)
   {
-  uint8_t buf[16];
-
+  mcp2515 *me = (mcp2515*)pvParameters;
+  uint8_t buf[32];
   spi* spibus = me->m_spibus;
   spi_nodma_device_handle_t spi = me->m_spi;
 
-  uint8_t *p = spibus->spi_cmd(spi, buf, 2, 2, 0b00000011, 0x2c);
-  uint8_t intstat = p[0];
-  //uint8_t errflag = p[1];
-//  printf("MCP2515 %s CAN status is %02x error flag %02x\n",m_name.c_str(),intstat,errflag);
-
-  // MCP2515 BITMODIFY CANINTE (Interrupt Enable) Clear flags
-  spibus->spi_cmd(spi, buf, 0, 4, 0b00000101, 0x2c, *p, 0x00);
-
-  int rxbuf = -1;
-  if (intstat & 0x01)
+  while(1)
     {
-    // RX buffer 0 is full, handle it
-    rxbuf = 0;
-    }
-  else if (intstat & 0x02)
-    {
-    // RX buffer 1 is full, handle it
-    rxbuf = 4;
-    }
+    if (xSemaphoreTake(me->m_rxsem, portMAX_DELAY) == pdTRUE)
+      {
+      uint8_t *p = spibus->spi_cmd(spi, buf, 2, 2, 0b00000011, 0x2c);
+      uint8_t intstat = p[0];
+      //uint8_t errflag = p[1];
 
-  if (rxbuf >= 0)
-    {
-    // The indicated RX buffer has a message to be read
-    CAN_frame_t msg;
-    memset(&msg,0,sizeof(msg));
+      // MCP2515 BITMODIFY CANINTE (Interrupt Enable) Clear flags
+      spibus->spi_cmd(spi, buf, 0, 4, 0b00000101, 0x2c, *p, 0x00);
 
-    uint8_t *p = spibus->spi_cmd(spi, buf, 13, 1, 0x90+rxbuf);
-    msg.MsgID = (*p << 3) + (p[1] >> 5);
-    msg.FIR.B.DLC = p[4] & 0x0f;
-    memcpy(p+5,&msg.data,8);
+      int rxbuf = -1;
+      if (intstat & 0x01)
+        {
+        // RX buffer 0 is full, handle it
+        rxbuf = 0;
+        }
+      else if (intstat & 0x02)
+        {
+        // RX buffer 1 is full, handle it
+        rxbuf = 4;
+        }
 
-    //send frame to main CAN processor task
-    xQueueSendFromISR(MyCan.m_rxqueue,&msg,0);
+      if (rxbuf >= 0)
+        {
+        // The indicated RX buffer has a message to be read
+        CAN_frame_t msg;
+        memset(&msg,0,sizeof(msg));
+        msg.origin = me;
+
+        uint8_t *p = spibus->spi_cmd(spi, buf, 13, 1, 0x90+rxbuf);
+        msg.MsgID = (p[0] << 3) + (p[1] >> 5);
+        msg.FIR.B.DLC = p[4] & 0x0f;
+        memcpy(&msg.data,p+5,8);
+
+        //send frame to main CAN processor task
+        MyCan.IncomingFrame(&msg);
+        }
+      }
     }
   }
 
@@ -82,7 +88,7 @@ static void MCP2515_isr(void *pvParameters)
   {
   mcp2515 *me = (mcp2515*)pvParameters;
 
-  MCP2515_rxframe(me);
+  xSemaphoreGive(me->m_rxsem);
   }
 
 mcp2515::mcp2515(std::string name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin, int intpin)
@@ -106,12 +112,17 @@ mcp2515::mcp2515(std::string name, spi* spibus, spi_nodma_host_device_t host, in
   esp_err_t ret = spi_nodma_bus_add_device(m_host, &m_spibus->m_buscfg, &m_devcfg, &m_spi);
   assert(ret==ESP_OK);
 
+  m_rxsem = xSemaphoreCreateBinary();
+  xTaskCreatePinnedToCore(MCP2515_rxtask, "MCP2515RxTask", 4096, (void*)this, 5, &m_rxtask, 1);
+
   gpio_set_intr_type((gpio_num_t)m_intpin, GPIO_INTR_NEGEDGE);
   gpio_isr_handler_add((gpio_num_t)m_intpin, MCP2515_isr, (void*)this);
   }
 
 mcp2515::~mcp2515()
   {
+  vTaskDelete(m_rxtask);
+  vSemaphoreDelete(m_rxsem);
   gpio_isr_handler_remove((gpio_num_t)m_intpin);
   }
 
@@ -135,33 +146,28 @@ esp_err_t mcp2515::Init(CAN_speed_t speed)
   m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x2b, 0b11111111);
 
   // Bus speed
-  // Figures from https://www.kvaser.com/support/calculators/bit-timing-calculator/
-  // Using SJW=1, SP%=75
-  uint8_t cnf0 = 0;
   uint8_t cnf1 = 0;
   uint8_t cnf2 = 0;
+  uint8_t cnf3 = 0;
   switch (m_speed)
     {
     case CAN_SPEED_100KBPS:
-      cnf0=0x04; cnf1=0xb6; cnf2=0x03;
+      cnf1=0x03; cnf2=0xfa; cnf3=0x87;
       break;
     case CAN_SPEED_125KBPS:
-      cnf0=0x03; cnf1=0xac; cnf2=0x03;
+      cnf1=0x03; cnf2=0xf0; cnf3=0x86;
       break;
     case CAN_SPEED_250KBPS:
-      cnf0=0x03; cnf1=0xac; cnf2=0x01;
+      cnf1=0x41; cnf2=0xf1; cnf3=0x85;
       break;
     case CAN_SPEED_500KBPS:
-      cnf0=0x03; cnf1=0xac; cnf2=0x00;
-      break;
-    case CAN_SPEED_800KBPS:
-      cnf0=0x02; cnf1=0x92; cnf2=0x00;
+      cnf1=0x00; cnf2=0xf0; cnf3=0x86;
       break;
     case CAN_SPEED_1000KBPS:
-      cnf0=0x01; cnf1=0x91; cnf2=0x00;
+      cnf1=0x00; cnf2=0xd0; cnf3=0x82;
       break;
     }
-  m_spibus->spi_cmd(m_spi, buf, 0, 5, 0x02, 0x28, cnf0, cnf1, cnf2);
+  m_spibus->spi_cmd(m_spi, buf, 0, 5, 0x02, 0x28, cnf3, cnf2, cnf1);
 
   // Set NORMAL mode
   m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x0f, 0x00);
@@ -180,10 +186,6 @@ esp_err_t mcp2515::Stop()
   // Set SLEEP mode
   m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x0f, 0x30);
 
-  // Get STATUS
-  uint8_t* p = m_spibus->spi_cmd(m_spi, buf, 2, 2, 0b00000011, 0x0e);
-  printf("Got back status %02x error flag %02x\n",p[0],p[1]);
-
   return ESP_OK;
   }
 
@@ -191,6 +193,9 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
   {
   uint8_t buf[16];
   uint8_t id[4];
+
+//  uint8_t* p = m_spibus->spi_cmd(m_spi, buf, 1, 2, 0b00000011, 0x30);
+//  printf("MCP2515 TXB0CTRL(0x30) is %02x\n",p[0]);
 
   if (p_frame->FIR.B.FF == CAN_frame_std)
     {
