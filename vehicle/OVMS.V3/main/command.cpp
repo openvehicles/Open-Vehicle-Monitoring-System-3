@@ -164,7 +164,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     OvmsCommand* cmd = m_children.FindUniquePrefix(argv[0]);
     if (!cmd)
       {
-      writer->puts("Error: Unrecognised command");
+      writer->puts(m_usage.empty() ? "Error: Unrecognised command" : m_usage.c_str());
       return;
       }
     if (argc>1)
