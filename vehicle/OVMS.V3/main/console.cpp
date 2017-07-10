@@ -43,7 +43,7 @@ OvmsConsole::~OvmsConsole()
 
 void OvmsConsole::Initialize(const char* console)
   {
-  printf("\n\033[32mWelcome to the Open Vehicle Monitoring System (OVMS) - %s\033[0m\n", console);
+  printf("\n\033[32mWelcome to the Open Vehicle Monitoring System (OVMS) - %s\033[0m", console);
   microrl_init (&m_rl, Print);
   m_rl.userdata = (void*)this;
   microrl_set_complete_callback(&m_rl, Complete);
