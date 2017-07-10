@@ -75,7 +75,7 @@ Print prompt at 'microrl_init', if enable, prompt will print at startup,
 otherwise first prompt will print after first press Enter in terminal
 NOTE!: Enable it, if you call 'microrl_init' after your communication subsystem
 already initialize and ready to print message */
-#define _ENABLE_INIT_PROMPT
+//#define _ENABLE_INIT_PROMPT
 
 /*
 New line symbol */
