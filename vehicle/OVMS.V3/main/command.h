@@ -39,9 +39,6 @@
 #define COMMAND_RESULT_NORMAL     1024
 #define COMMAND_RESULT_VERBOSE    65535
 
-#define TOKEN_MAX_LENGTH 32
-#define COMPLETION_MAX_TOKENS 20
-
 class OvmsCommand;
 class OvmsCommandMap;
 
