@@ -28,28 +28,36 @@
 ; THE SOFTWARE.
 */
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "console.h"
+#include "command.h"
+#include "microrl.h"
 
-#ifndef __CONSOLE_ASYNC_H__
-#define __CONSOLE_ASYNC_H__
+#ifndef __CONSOLE_H__
+#define __CONSOLE_H__
 
-class ConsoleAsync : public OvmsConsole
+#define TOKEN_MAX_LENGTH 32
+#define COMPLETION_MAX_TOKENS 20
+
+class OvmsCommandMap;
+
+class OvmsConsole : public OvmsWriter
   {
   public:
-    ConsoleAsync();
-    virtual ~ConsoleAsync();
+    OvmsConsole();
+    ~OvmsConsole();
 
   public:
-    int puts(const char* s);
-    int printf(const char* fmt, ...);
-
-    ssize_t write(const void *buf, size_t nbyte);
-    void finalise();
+    void Initialize(const char* console);
+    void ProcessChar(const char c);
+    void ProcessChars(const char* buf, int len);
+    char ** GetCompletion(OvmsCommandMap& children, const char* token);
+    static void Print(microrl_t* rl, const char * str);
+    static char ** Complete(microrl_t* rl, int argc, const char * const * argv );
+    static int Execute (microrl_t* rl, int argc, const char * const * argv );
 
   protected:
-    TaskHandle_t m_taskid;
+    microrl_t m_rl;
+    char *m_completions[COMPLETION_MAX_TOKENS+2];
+    char m_space[COMPLETION_MAX_TOKENS+2][TOKEN_MAX_LENGTH];
   };
 
-#endif //#ifndef __CONSOLE_ASYNC_H__
+#endif //#ifndef __CONSOLE_H__
