@@ -75,9 +75,13 @@ class OvmsCommand
                                  const char *usage = "", int min = 0, int max = INT_MAX);
     std::string GetName();
     std::string GetTitle();
+    std::string GetUsage();
     char ** Complete(OvmsWriter* writer, int argc, const char * const * argv);
     void Execute(int verbosity, OvmsWriter* writer, int argc, const char * const * argv);
     OvmsCommand* GetParent();
+
+  private:
+      size_t ExpandUsage(std::string usage, std::string& result);
 
   protected:
     std::string m_name;

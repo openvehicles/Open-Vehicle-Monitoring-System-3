@@ -96,6 +96,75 @@ std::string OvmsCommand::GetTitle()
   return m_title;
   }
 
+// Dynamic generation of "Usage:" messages.  Syntax of the usage template string:
+// - Prefix is "Usage: " followed by names from ancestors (if any) and name of self
+// - "<$C>" expands to children as <child1|child2|child3>
+// - "[$C]" expands to optional children as [child1|child2|child3]
+// - $G$ expands to the usage of the first child (typically used after $C)
+// - $Gfoo$ expands to the usage of the child named "foo"
+// - Parameters after command and subcommand tokens may be explicit like " <metric>"
+// - Empty usage template "" defaults to "<$C>" for non-terminal OvmsCommand
+std::string OvmsCommand::GetUsage()
+  {
+  std::string usage = m_usage.empty() && !m_execute ? "<$C>" : m_usage;
+  std::string result("Usage: ");
+  size_t pos = result.size();
+  for (OvmsCommand* parent = m_parent; parent && parent->m_parent; parent = parent->m_parent)
+    {
+    result.insert(pos, " ");
+    result.insert(pos, parent->m_name);
+    }
+  result += m_name + " ";
+  pos = ExpandUsage(usage, result);
+  result += usage.substr(pos);
+  return result;
+  }
+
+size_t OvmsCommand::ExpandUsage(std::string usage, std::string& result)
+  {
+  size_t pos;
+  if ((pos = usage.find_first_of("$C")) != std::string::npos)
+    {
+    result += usage.substr(0, pos);
+    pos += 2;
+    for (OvmsCommandMap::iterator it = m_children.begin(); ; )
+      {
+      result += it->first;
+      if (++it == m_children.end())
+        break;
+      result += "|";
+      }
+    }
+  else pos = 0;
+  size_t pos2;
+  if ((pos2 = usage.find_first_of("$G", pos)) != std::string::npos)
+    {
+    result += usage.substr(pos, pos2-pos);
+    pos2 += 2;
+    size_t pos3;
+    OvmsCommandMap::iterator it = m_children.end();
+    if ((pos3 = usage.find_first_of("$", pos2)) != std::string::npos)
+      {
+      if (pos3 == pos2)
+        it = m_children.begin();
+      else
+        it = m_children.find(usage.substr(pos2, pos3-pos2));
+      pos = pos3 + 1;
+      if (it != m_children.end())
+        {
+        OvmsCommand* child = it->second;
+        pos3 = child->ExpandUsage(child->m_usage, result);
+        result += child->m_usage.substr(pos3);
+        }
+      }
+    else
+      pos = pos2;
+    if (it == m_children.end())
+      result += "ERROR IN USAGE TEMPLATE";
+    }
+  return pos;
+  }
+
 OvmsCommand* OvmsCommand::RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                                           const char *usage, int min, int max)
   {
@@ -134,9 +203,9 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
   if (m_execute)
     {
     //puts("Executing directly...");
-    if (argc < m_min || argc > m_max)
+    if (argc < m_min || argc > m_max || (argc > 0 && strcmp(argv[argc-1],"?")==0))
       {
-      writer->puts(m_usage.c_str());
+      writer->puts(GetUsage().c_str());
       return;
       }
     m_execute(verbosity,writer,this,argc,argv);
@@ -147,7 +216,8 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     //puts("Looking for a matching command");
     if (argc <= 0)
       {
-      writer->puts(m_usage.empty() ? "Error: Subcommand required" : m_usage.c_str());
+      writer->puts("Subcommand required");
+      writer->puts(GetUsage().c_str());
       return;
       }
     if (strcmp(argv[0],"?")==0)
@@ -164,7 +234,9 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     OvmsCommand* cmd = m_children.FindUniquePrefix(argv[0]);
     if (!cmd)
       {
-      writer->puts(m_usage.empty() ? "Error: Unrecognised command" : m_usage.c_str());
+      writer->puts("Unrecognised command");
+      if (!m_usage.empty())
+        writer->puts(GetUsage().c_str());
       return;
       }
     if (argc>1)
@@ -191,7 +263,7 @@ void help(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const c
 OvmsCommandApp::OvmsCommandApp()
   {
   puts("Initialising COMMAND Framework");
-  m_root.RegisterCommand("help", "Ask for help", help, "Usage: help", 0, 0);
+  m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0);
   }
 
 OvmsCommandApp::~OvmsCommandApp()

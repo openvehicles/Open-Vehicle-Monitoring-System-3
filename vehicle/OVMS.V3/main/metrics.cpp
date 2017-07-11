@@ -42,13 +42,19 @@ OvmsMetrics MyMetrics __attribute__ ((init_priority (1910)));
 
 void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
+  bool found = false;
   for (std::map<std::string, OvmsMetric*>::iterator it=MyMetrics.m_metrics.begin(); it!=MyMetrics.m_metrics.end(); ++it)
     {
     const char* k = it->first.c_str();
     const char* v = it->second->AsString().c_str();
     if ((argc==0)||(strstr(k,argv[0])))
+      {
       writer->printf("%-30.30s %s\n",k,v);
+      found = true;
+      }
     }
+  if (!found)
+    puts("Unrecognised metric name");
   }
 
 void metrics_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -76,10 +82,9 @@ OvmsMetrics::OvmsMetrics()
   puts("Initialising METRICS Framework");
 
   // Register our commands
-  OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework",NULL);
-  cmd_metric->RegisterCommand("list","Show all metrics",metrics_list);
-  cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set,
-			      "Error: Syntax is    metric set <metric> <value>", 2, 2);
+  OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework",NULL, "", 1);
+  cmd_metric->RegisterCommand("list","Show all metrics",metrics_list, "[metric]", 0, 1);
+  cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set, "<metric> <value>", 2, 2);
 
   // Register the different types of metric
   MyMetricFactory.RegisterMetric<OvmsMetricInt>("int");

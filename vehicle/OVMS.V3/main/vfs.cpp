@@ -126,9 +126,9 @@ class VfsInit
 VfsInit::VfsInit()
   {
   puts("Initialising VFS Framework");
-  OvmsCommand* cmd_vfs = MyCommandApp.RegisterCommand("vfs","VFS framework",NULL);
-  cmd_vfs->RegisterCommand("ls","VFS Directory Listing",vfs_ls);
-  cmd_vfs->RegisterCommand("cat","VFS Display a file",vfs_cat);
-  cmd_vfs->RegisterCommand("rm","VFS Delete a file",vfs_rm);
-  cmd_vfs->RegisterCommand("mv","VFS Rename a file",vfs_mv);
+  OvmsCommand* cmd_vfs = MyCommandApp.RegisterCommand("vfs","VFS framework",NULL,"<$C> <file(s)>");
+  cmd_vfs->RegisterCommand("ls","VFS Directory Listing",vfs_ls, "[file]", 0, 1);
+  cmd_vfs->RegisterCommand("cat","VFS Display a file",vfs_cat, "<file>", 1, 1);
+  cmd_vfs->RegisterCommand("rm","VFS Delete a file",vfs_rm, "<file>", 1, 1);
+  cmd_vfs->RegisterCommand("mv","VFS Rename a file",vfs_mv, "<source> <target>", 2, 2);
   }

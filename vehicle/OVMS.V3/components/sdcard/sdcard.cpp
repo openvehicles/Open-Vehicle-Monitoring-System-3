@@ -134,7 +134,7 @@ class SDCardInit
 SDCardInit::SDCardInit()
   {
   puts("Initialising SD CARD Framework");
-  OvmsCommand* cmd_sd = MyCommandApp.RegisterCommand("sd","SD CARD framework",NULL);
-  cmd_sd->RegisterCommand("mount","Mount SD CARD",sdcard_mount);
-  cmd_sd->RegisterCommand("unmount","Unmount SD CARD",sdcard_unmount);
+  OvmsCommand* cmd_sd = MyCommandApp.RegisterCommand("sd","SD CARD framework",NULL,"<$C>",1,1);
+  cmd_sd->RegisterCommand("mount","Mount SD CARD",sdcard_mount,"",0,0);
+  cmd_sd->RegisterCommand("unmount","Unmount SD CARD",sdcard_unmount,"",0,0);
   }
