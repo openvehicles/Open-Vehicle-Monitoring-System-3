@@ -29,6 +29,7 @@
 */
 
 #include <stdio.h>
+#include <string.h>
 #include "housekeeping.h"
 #include "peripherals.h"
 #include "metrics.h"
@@ -40,11 +41,27 @@ void HousekeepingTask(void *pvParameters)
   {
   vTaskDelay(50 / portTICK_PERIOD_MS);
 
-	while (1)
+  while (1)
     {
     MyHousekeeping.adcvoltage();
+
+    // Test CAN
+//    CAN_frame_t c;
+//    memset(&c,0,sizeof(CAN_frame_t));
+//    c.origin = NULL;
+//    c.MsgID = 0x42;
+//    c.FIR.B.DLC = 7;
+//    c.data.u8[0] = 'E';
+//    c.data.u8[1] = 'S';
+//    c.data.u8[2] = 'P';
+//    c.data.u8[3] = 'O';
+//    c.data.u8[4] = 'V';
+//    c.data.u8[5] = 'M';
+//    c.data.u8[6] = 'S';
+//    MyPeripherals.m_mcp2515_1->Write(&c);
+
     vTaskDelay(5000 / portTICK_PERIOD_MS);
-	  }
+    }
   }
 
 Housekeeping::Housekeeping()
