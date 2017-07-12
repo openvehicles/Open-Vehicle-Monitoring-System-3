@@ -34,6 +34,8 @@
 #include "metrics.h"
 #include "metrics_standard.h"
 
+#include "esp_heap_alloc_caps.h"
+
 Housekeeping MyHousekeeping __attribute__ ((init_priority (9999)));
 
 void HousekeepingTask(void *pvParameters)
@@ -44,6 +46,10 @@ void HousekeepingTask(void *pvParameters)
     {
     MyHousekeeping.adcvoltage();
     vTaskDelay(5000 / portTICK_PERIOD_MS);
+    MyCommandApp.Log("SHOULD NOT BE SEEN\r");
+    uint32_t caps = MALLOC_CAP_8BIT;
+    MyCommandApp.Log("Free %zu  ", xPortGetFreeHeapSizeCaps(caps));
+    MyCommandApp.Log("Housekeeping 12V %f\r\n", MyPeripherals.m_esp32adc->read() / 194);
 	  }
   }
 
