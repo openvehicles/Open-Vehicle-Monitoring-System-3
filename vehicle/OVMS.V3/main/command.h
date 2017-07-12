@@ -30,6 +30,7 @@
 
 #include <string>
 #include <map>
+#include <set>
 #include <limits.h>
 
 #ifndef __COMMAND_H__
@@ -54,6 +55,7 @@ class OvmsWriter
     virtual ssize_t write(const void *buf, size_t nbyte) = 0;
     virtual void finalise() = 0;
     virtual char ** GetCompletion(OvmsCommandMap& children, const char* token) = 0;
+    virtual void Log(char* message) = 0;
   };
 
 class OvmsCommandMap : public std::map<std::string, OvmsCommand*>
@@ -103,6 +105,9 @@ class OvmsCommandApp
   public:
     OvmsCommand* RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                                  const char *usage = "", int min = 0, int max = INT_MAX);
+    void RegisterConsole(OvmsWriter* writer);
+    void DeregisterConsole(OvmsWriter* writer);
+    int Log(const char* fmt, ...);
 
   public:
     char ** Complete(OvmsWriter* writer, int argc, const char * const * argv);
@@ -110,6 +115,8 @@ class OvmsCommandApp
 
   private:
     OvmsCommand m_root;
+    typedef std::set<OvmsWriter*> ConsoleSet;
+    ConsoleSet m_consoles;
   };
 
 extern OvmsCommandApp MyCommandApp;

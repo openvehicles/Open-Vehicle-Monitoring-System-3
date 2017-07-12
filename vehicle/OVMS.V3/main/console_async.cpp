@@ -30,8 +30,8 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
 #include "console_async.h"
-#include "driver/uart.h"
 #include "freertos/queue.h"
 #include "esp_log.h"
 
@@ -39,10 +39,41 @@
 #define BUF_SIZE (1024)
 static QueueHandle_t uart0_queue;
 static const char *TAG = "uart_events";
+static char CRbuf[1] = { '\r' };
+static char NLbuf[1] = { '\n' };
+static char ctrlRbuf[1] = { 'R'-0100 };
+
+typedef enum
+  {
+  AT_PROMPT,
+  AWAITING_NL,
+  NO_NL
+  } DisplayState;
+
+typedef enum
+  {
+  ASYNC_BUFFER = UART_EVENT_MAX+1
+  } async_event_type_t;
+
+// In order to share a queue with the UART driver, the following struct typedef
+// shows how we are implicitly making a union with the typedef in driver/uart.h
+typedef union
+  {
+  uart_event_t uart;            // Actual queue event struct, consisting of:
+  //uart_event_type_t type;     /* UART event type enum */
+  //size_t size;                /* UART data size for UART_DATA event */
+  struct
+    {
+    async_event_type_t type;    // Our extended event type enum
+    char* buffer;               // Pointer to dynamically allocated buffer
+    } async;
+  } AsyncEvent;
 
 void ConsoleAsyncTask(void *pvParameters)
   {
-  uart_event_t event;
+  DisplayState state = AT_PROMPT;
+  portTickType ticks = portMAX_DELAY;
+  AsyncEvent event;
   size_t buffered_size;
   uint8_t* data = (uint8_t*) malloc(BUF_SIZE);
   ConsoleAsync* me = (ConsoleAsync*)pvParameters;
@@ -51,13 +82,44 @@ void ConsoleAsyncTask(void *pvParameters)
 
   for (;;)
     {
-    // Waiting for UART RX event.
-    if (xQueueReceive(uart0_queue, (void * )&event, (portTickType)portMAX_DELAY))
+    // Waiting for UART RX event or async log message event
+    if (xQueueReceive(uart0_queue, (void * )&event, ticks))
       {
-      switch (event.type)
+      if (event.async.type == ASYNC_BUFFER)
         {
-        // Event of UART receving data
+        // We remove the newline from the end of a log message so that we can later
+        // output a newline as part of restoring the command prompt and its line
+        // without leaving a blank line above it.  So before we display a new log
+        // message we need to output a newline if the last action was displaying a
+        // log message, or output a carriage return to back over the prompt.
+        if (state == AWAITING_NL)
+          fwrite(NLbuf, 1, 1, stdout);
+        else if (state == AT_PROMPT)
+          fwrite(CRbuf, 1, 1, stdout);
+        size_t len = strlen(event.async.buffer);
+        if (event.async.buffer[len-1] == '\n')
+          {
+          event.async.buffer[--len] = '\0';
+          if (event.async.buffer[len-1] == '\r')  // Remove CR, too, in case of \r\n
+            event.async.buffer[--len] = '\0';
+          state = AWAITING_NL;
+          fwrite(event.async.buffer, len, 1, stdout);
+          fflush(stdout);
+          }
+        else
+          {
+          state = NO_NL;
+          fwrite(event.async.buffer, len, 1, stdout);
+          }
+        free(event.async.buffer);
+        ticks = 200 / portTICK_PERIOD_MS;
+        }
+      else switch (event.uart.type)
+        {
         case UART_DATA:
+          if (state != AT_PROMPT)
+            me->ProcessChars(ctrlRbuf, 1);    // Restore the prompt plus any type-in on a new line
+          state = AT_PROMPT;
           uart_get_buffered_data_len(EX_UART_NUM, &buffered_size);
           if (buffered_size > 0)
             {
@@ -65,25 +127,30 @@ void ConsoleAsyncTask(void *pvParameters)
             me->ProcessChars((char*)data, len);
             }
           break;
-          // Event of HW FIFO overflow detected
         case UART_FIFO_OVF:
           ESP_LOGI(TAG, "hw fifo overflow\n");
           // If fifo overflow happened, you should consider adding flow control for your application.
           // We can read data out out the buffer, or directly flush the rx buffer.
           uart_flush(EX_UART_NUM);
           break;
-          // Event of UART ring buffer full
         case UART_BUFFER_FULL:
           ESP_LOGI(TAG, "ring buffer full\n");
           // If buffer full happened, you should consider encreasing your buffer size
           // We can read data out out the buffer, or directly flush the rx buffer.
           uart_flush(EX_UART_NUM);
           break;
-          // Others
         default:
-          ESP_LOGI(TAG, "uart event type: %d\n", event.type);
+          ESP_LOGI(TAG, "uart event type: %d\n", event.uart.type);
           break;
         }
+      }
+    else
+      {
+      // Timeout indicates the queue is empty
+      if (state != AT_PROMPT)
+        me->ProcessChars(ctrlRbuf, 1);    // Restore the prompt plus any type-in on a new line
+      state = AT_PROMPT;
+      ticks = portMAX_DELAY;
       }
     }
   }
@@ -108,10 +175,12 @@ ConsoleAsync::ConsoleAsync()
   xTaskCreatePinnedToCore(ConsoleAsyncTask, "ConsoleAsyncTask", 4096, (void*)this, 5, &m_taskid, 1);
 
   Initialize("async console");
+  MyCommandApp.RegisterConsole(this);
   }
 
 ConsoleAsync::~ConsoleAsync()
   {
+  MyCommandApp.DeregisterConsole(this);
   }
 
 int ConsoleAsync::puts(const char* s)
@@ -138,4 +207,17 @@ ssize_t ConsoleAsync::write(const void *buf, size_t nbyte)
 
 void ConsoleAsync::finalise()
   {
+  }
+
+void ConsoleAsync::Log(char* message)
+  {
+  AsyncEvent event;
+  event.async.type = ASYNC_BUFFER;
+  event.async.buffer = message;
+  BaseType_t ret = xQueueSendToBack(uart0_queue, (void * )&event, (portTickType)(1000 / portTICK_PERIOD_MS));
+  if (ret != pdPASS)
+    {
+    free(event.async.buffer);
+    ESP_LOGI(TAG, "Timeout queueing message in ConsoleAsync::Log\n");
+    }
   }
