@@ -666,6 +666,14 @@ void microrl_insert_char (microrl_t * pThis, int ch)
 				microrl_backspace (pThis);
 				terminal_print_line (pThis, pThis->cursor, pThis->cursor);
 			break;
+			//-----------------------------------------------------
+			case KEY_DC2: // ^R
+				terminal_newline (pThis);
+				print_prompt (pThis);
+				terminal_reset_cursor (pThis);
+				terminal_print_line (pThis, 0, pThis->cursor);
+			break;
+			//-----------------------------------------------------
 #ifdef _USE_CTLR_C
 			case KEY_ETX:
 			if (pThis->sigint != NULL)

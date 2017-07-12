@@ -30,6 +30,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "driver/uart.h"
 #include "console.h"
 
 #ifndef __CONSOLE_ASYNC_H__
@@ -47,6 +48,7 @@ class ConsoleAsync : public OvmsConsole
 
     ssize_t write(const void *buf, size_t nbyte);
     void finalise();
+    void Log(char* buffer);
 
   protected:
     TaskHandle_t m_taskid;

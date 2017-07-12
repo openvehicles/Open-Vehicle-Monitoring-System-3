@@ -65,28 +65,23 @@ can::~can()
 
 void can::IncomingFrame(CAN_frame_t* p_frame)
   {
-//  printf("CAN rx origin %s id %03x len %d %02x %02x %02x %02x %02x %02x %02x %02x\n",
-//  p_frame->origin->GetName().c_str(),
-//  p_frame->MsgID, p_frame->FIR.B.DLC,
-//  p_frame->data.u8[0],p_frame->data.u8[1],p_frame->data.u8[2],p_frame->data.u8[3],
-//  p_frame->data.u8[4],p_frame->data.u8[5],p_frame->data.u8[6],p_frame->data.u8[7]);
-  printf("CAN rx origin %s id %03x (len:%d)",
+  MyCommandApp.Log("CAN rx origin %s id %03x (len:%d)",
     p_frame->origin->GetName().c_str(),p_frame->MsgID,p_frame->FIR.B.DLC);
   for (int k=0;k<8;k++)
     {
     if (k<p_frame->FIR.B.DLC)
-      printf(" %02x",p_frame->data.u8[k]);
+      MyCommandApp.Log(" %02x",p_frame->data.u8[k]);
     else
-      printf("   ");
+      MyCommandApp.Log("   ");
     }
   for (int k=0;k<p_frame->FIR.B.DLC;k++)
     {
     if (isprint(p_frame->data.u8[k]))
-      printf("%c",p_frame->data.u8[k]);
+      MyCommandApp.Log("%c",p_frame->data.u8[k]);
     else
-      printf(".");
+      MyCommandApp.Log(".");
     }
-  puts("");
+  MyCommandApp.Log("\r\n");
   for (auto n : m_listeners)
     {
     xQueueSend(n,p_frame,0);

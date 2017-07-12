@@ -35,6 +35,8 @@
 #include "freertos/FreeRTOS.h"
 #include "command.h"
 
+#include "console_async.h"
+
 OvmsCommandApp MyCommandApp __attribute__ ((init_priority (1000)));
 
 OvmsWriter::OvmsWriter()
@@ -274,6 +276,31 @@ OvmsCommand* OvmsCommandApp::RegisterCommand(std::string name, std::string title
                                              const char *usage, int min, int max)
   {
   return m_root.RegisterCommand(name, title, execute, usage, min, max);
+  }
+
+void OvmsCommandApp::RegisterConsole(OvmsWriter* writer)
+  {
+  m_consoles.insert(writer);
+  }
+
+void OvmsCommandApp::DeregisterConsole(OvmsWriter* writer)
+  {
+  m_consoles.erase(writer);
+  }
+
+int OvmsCommandApp::Log(const char* fmt, ...)
+  {
+  size_t ret = 0;
+  va_list args;
+  for (ConsoleSet::iterator it = m_consoles.begin(); it != m_consoles.end(); ++it)
+    {
+    char *buffer;
+    va_start(args, fmt);
+    ret = vasprintf(&buffer, fmt, args);
+    va_end(args);
+    (*it)->Log(buffer);
+    }
+  return ret;
   }
 
 char ** OvmsCommandApp::Complete(OvmsWriter* writer, int argc, const char * const * argv)

@@ -78,7 +78,8 @@ static void MCP2515_rxtask(void *pvParameters)
         memcpy(&msg.data,p+5,8);
 
         //send frame to main CAN processor task
-        MyCan.IncomingFrame(&msg);
+        xQueueSend(MyCan.m_rxqueue,&msg,0);
+        // MyCan.IncomingFrame(&msg);
         }
       }
     }
