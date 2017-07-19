@@ -140,11 +140,14 @@ esp_err_t mcp2515::Init(CAN_speed_t speed)
   // Set CONFIG mode (abort transmisions, one-shot mode, clkout disabled)
   m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x0f, 0b10011000);
 
-  // Rx Buffer 0 control (rececive all and enable buffer 1 rollover)
+  // Rx Buffer 0 control (receive all and enable buffer 1 rollover)
   m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x60, 0b01100100);
 
   // CANINTE (interrupt enable), all interrupts
   m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x2b, 0b11111111);
+
+  // BFPCTRL – RXnBF PIN CONTROL AND STATUS
+  m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x0c,  0b00001100);
 
   // Bus speed
   uint8_t cnf1 = 0;
@@ -183,6 +186,9 @@ esp_err_t mcp2515::Stop()
   // RESET command
   m_spibus->spi_cmd(m_spi, buf, 0, 1, 0b11000000);
   vTaskDelay(5 / portTICK_PERIOD_MS);
+
+  // BFPCTRL – RXnBF PIN CONTROL AND STATUS
+  m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x0c,  0b00000000);
 
   // Set SLEEP mode
   m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x0f, 0x30);

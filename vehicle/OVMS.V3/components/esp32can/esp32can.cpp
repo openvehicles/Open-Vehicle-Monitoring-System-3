@@ -36,6 +36,7 @@
 #include <string.h>
 #include "esp32can.h"
 #include "esp32can_regdef.h"
+#include "peripherals.h"
 
 esp32can* MyESP32can = NULL;
 
@@ -244,10 +245,12 @@ void esp32can::SetPowerMode(PowerMode powermode)
     {
     case On:
       Init(m_speed);
+      MyPeripherals.m_max7317->Output(MAX7317_CAN1_EN, 0);
       break;
     case Sleep:
     case DeepSleep:
     case Off:
+      MyPeripherals.m_max7317->Output(MAX7317_CAN1_EN, 1);
       Stop();
       break;
     default:
