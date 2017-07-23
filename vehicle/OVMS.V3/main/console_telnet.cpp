@@ -27,7 +27,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
-
+#define LWIP_POSIX_SOCKETS_IO_NAMES 0
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h> // Required for libtelnet.h
@@ -192,7 +192,7 @@ void ConsoleTelnet::HandleDeviceEvent(void* pEvent)
 
 void ConsoleTelnet::Exit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  close(((ConsoleTelnet*)writer)->m_socket);
+  closesocket(((ConsoleTelnet*)writer)->m_socket);
   }
 
 void ConsoleTelnet::TelnetReceiverTask(void *pvParameters)

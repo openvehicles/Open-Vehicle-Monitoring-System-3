@@ -35,9 +35,6 @@
 #include <set>
 #include <limits.h>
 
-// Somebody is defining a write macro but I haven't found it yet.
-#undef write
-
 #define COMMAND_RESULT_MINIMAL    140
 #define COMMAND_RESULT_NORMAL     1024
 #define COMMAND_RESULT_VERBOSE    65535
