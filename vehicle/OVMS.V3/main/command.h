@@ -27,14 +27,16 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
+#ifndef __COMMAND_H__
+#define __COMMAND_H__
 
 #include <string>
 #include <map>
 #include <set>
 #include <limits.h>
 
-#ifndef __COMMAND_H__
-#define __COMMAND_H__
+// Somebody is defining a write macro but I haven't found it yet.
+#undef write
 
 #define COMMAND_RESULT_MINIMAL    140
 #define COMMAND_RESULT_NORMAL     1024

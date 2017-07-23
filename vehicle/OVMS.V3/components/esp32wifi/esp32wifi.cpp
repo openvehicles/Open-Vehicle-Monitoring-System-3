@@ -30,8 +30,15 @@
 
 #include <string.h>
 #include "esp32wifi.h"
-#include "esp_err.h"
 #include "esp_wifi.h"
+#include "esp_event_loop.h"
+#include "console_telnet.h"
+
+// YOUR network SSID
+#define SSID "yourssid"
+
+// YOUR network password
+#define PASSWORD "yourpassword"
 
 esp32wifi::esp32wifi(std::string name)
   : pcp(name)
@@ -48,6 +55,7 @@ void esp32wifi::SetPowerMode(PowerMode powermode)
     {
     case On:
       //esp_wifi_start();
+      InitStation();
       break;
     case Sleep:
       //esp_wifi_set_ps(WIFI_PS_MODEM);
@@ -55,8 +63,42 @@ void esp32wifi::SetPowerMode(PowerMode powermode)
     case DeepSleep:
     case Off:
       //esp_wifi_stop();
+      StopStation();
       break;
     default:
       break;
     };
+  }
+
+void esp32wifi::InitStation()
+  {
+  tcpip_adapter_init();
+  ESP_ERROR_CHECK(esp_event_loop_init(HandleEvent, (void*)this));
+  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+  ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+  ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+  wifi_config_t sta_config;
+  strcpy((char*)sta_config.sta.ssid, SSID);
+  strcpy((char*)sta_config.sta.password, PASSWORD);
+  sta_config.sta.bssid_set = 0;
+  ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta_config));
+  ESP_ERROR_CHECK(esp_wifi_start());
+  ESP_ERROR_CHECK(esp_wifi_connect());
+  }
+
+esp_err_t esp32wifi::HandleEvent(void *ctx, system_event_t *event)
+  {
+  if (event->event_id == SYSTEM_EVENT_STA_GOT_IP)
+    {
+    esp32wifi* me =(esp32wifi*)ctx;
+    me->m_ip_info = event->event_info.got_ip.ip_info;
+    me->m_telnet_server = new TelnetServer();
+    }
+  return ESP_OK;
+  }
+
+void esp32wifi::StopStation()
+  {
+  delete m_telnet_server;
   }

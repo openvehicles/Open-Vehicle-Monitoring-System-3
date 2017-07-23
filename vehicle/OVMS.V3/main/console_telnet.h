@@ -27,19 +27,32 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
-#ifndef __CONSOLE_ASYNC_H__
-#define __CONSOLE_ASYNC_H__
+#ifndef __CONSOLE_TELNET_H__
+#define __CONSOLE_TELNET_H__
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "libtelnet.h"
 #include "console.h"
-#include "driver/uart.h"
 
-#define BUF_SIZE (1024)
-
-class ConsoleAsync : public OvmsConsole
+class TelnetServer
   {
   public:
-    ConsoleAsync();
-    virtual ~ConsoleAsync();
+    TelnetServer();
+    ~TelnetServer();
+
+  private:
+    static void Task(void*);
+
+  protected:
+    TaskHandle_t m_taskid;
+  };
+
+class ConsoleTelnet : public OvmsConsole
+  {
+  public:
+    ConsoleTelnet(int socket);
+    virtual ~ConsoleTelnet();
 
   public:
     int puts(const char* s);
@@ -48,10 +61,20 @@ class ConsoleAsync : public OvmsConsole
     void finalise();
 
   private:
+    static void TelnetReceiverTask(void *pvParameters);
+    void DoTelnet();
+    static void TelnetCallback(telnet_t *telnet, telnet_event_t *event, void *userData);
+    void TelnetHandler(telnet_event_t *event);
     void HandleDeviceEvent(void* pEvent);
+    static void Exit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   protected:
-    uint8_t data[BUF_SIZE];
+    TaskHandle_t m_receiver_taskid;
+    int m_socket;
+    telnet_t *m_telnet;
+    int m_split_eol;
+    SemaphoreHandle_t m_semaphore;
+    uint8_t m_buffer[1024];
   };
 
-#endif //#ifndef __CONSOLE_ASYNC_H__
+#endif //#ifndef __CONSOLE_TELNET_H__

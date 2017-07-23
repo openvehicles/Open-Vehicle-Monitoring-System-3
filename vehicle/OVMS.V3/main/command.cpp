@@ -35,8 +35,6 @@
 #include "freertos/FreeRTOS.h"
 #include "command.h"
 
-#include "console_async.h"
-
 OvmsCommandApp MyCommandApp __attribute__ ((init_priority (1000)));
 
 OvmsWriter::OvmsWriter()
@@ -258,9 +256,9 @@ OvmsCommand* OvmsCommand::GetParent()
   }
 
 void help(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-    {
-    writer->puts("This isn't really much help, is it?");
-    }
+  {
+  writer->puts("This isn't really much help, is it?");
+  }
 
 OvmsCommandApp::OvmsCommandApp()
   {

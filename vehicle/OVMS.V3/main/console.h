@@ -27,12 +27,14 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
-
-#include "command.h"
-#include "microrl.h"
-
 #ifndef __CONSOLE_H__
 #define __CONSOLE_H__
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
+#include "command.h"
+#include "microrl.h"
 
 #define TOKEN_MAX_LENGTH 32
 #define COMPLETION_MAX_TOKENS 20
@@ -46,6 +48,27 @@ class OvmsConsole : public OvmsWriter
     ~OvmsConsole();
 
   public:
+    // In order to share a queue with the UART driver (and possibly other
+    // drivers for console devices), we implicitly make a union with the
+    // uart_event_t typedef in driver/uart.h and we start our event type enum
+    // with a value large enough to leave plenty of space below.  Note that the
+    // queue elements allocated by the UART driver are not large enough to
+    // contain the size member, but it's not used in ConsoleAsync.
+    typedef enum
+      {
+      INPUT = 0x10000,
+      ALERT,
+      EXIT
+      } event_type_t;
+
+    typedef struct
+      {
+      event_type_t type;  // Our extended event type enum
+      char* buffer;       // Pointer to INPUT or ALERT buffer
+      size_t size;        // Buffer size (for INPUT only)
+      } Event;
+
+  public:
     void Initialize(const char* console);
     void ProcessChar(const char c);
     void ProcessChars(const char* buf, int len);
@@ -53,11 +76,22 @@ class OvmsConsole : public OvmsWriter
     static void Print(microrl_t* rl, const char * str);
     static char ** Complete(microrl_t* rl, int argc, const char * const * argv );
     static int Execute (microrl_t* rl, int argc, const char * const * argv );
+    void Log(char* buffer);
+
+  private:
+    static void ConsoleTask(void *pvParameters);
+    void EventLoop();
 
   protected:
+    virtual void HandleDeviceEvent(void* event) = 0;
+
+  protected:
+    bool m_ready;
     microrl_t m_rl;
     char *m_completions[COMPLETION_MAX_TOKENS+2];
     char m_space[COMPLETION_MAX_TOKENS+2][TOKEN_MAX_LENGTH];
+    TaskHandle_t m_taskid;
+    QueueHandle_t m_queue;
   };
 
 #endif //#ifndef __CONSOLE_H__

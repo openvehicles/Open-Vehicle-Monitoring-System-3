@@ -32,23 +32,41 @@
 #include <stdlib.h>
 #include <string.h>
 #include "console.h"
+#include "esp_log.h"
+
+static const char *TAG = "Console";
+static char CRbuf[1] = { '\r' };
+static char NLbuf[1] = { '\n' };
+static char ctrlRbuf[1] = { 'R'-0100 };
 
 OvmsConsole::OvmsConsole()
   {
+  m_ready = false;
   }
 
 OvmsConsole::~OvmsConsole()
   {
+  m_ready = false;
+  MyCommandApp.DeregisterConsole(this);
+  vTaskDelete(NULL);
   }
 
 void OvmsConsole::Initialize(const char* console)
   {
-  printf("\n\033[32mWelcome to the Open Vehicle Monitoring System (OVMS) - %s\033[0m", console);
+  std::string task = "Console";
+  task += console;
+  task += "Task";
+  xTaskCreatePinnedToCore(ConsoleTask, task.c_str(), 4096, (void*)this, 5, &m_taskid, 1);
+
+  printf("\n\033[32mWelcome to the Open Vehicle Monitoring System (OVMS) - %s Console\033[0m", console);
   microrl_init (&m_rl, Print);
   m_rl.userdata = (void*)this;
   microrl_set_complete_callback(&m_rl, Complete);
   microrl_set_execute_callback(&m_rl, Execute);
   ProcessChar('\n');
+
+  MyCommandApp.RegisterConsole(this);
+  m_ready = true;
   }
 
 void OvmsConsole::ProcessChar(const char c)
@@ -108,4 +126,94 @@ int OvmsConsole::Execute (microrl_t* rl, int argc, const char * const * argv )
   {
   MyCommandApp.Execute(COMMAND_RESULT_VERBOSE, (OvmsWriter*)rl->userdata, argc, argv);
   return 0;
+  }
+
+void OvmsConsole::Log(char* message)
+  {
+  if (!m_ready)
+    {
+    free(message);
+    return;
+    }
+  Event event;
+  event.type = ALERT;
+  event.buffer = message;
+  BaseType_t ret = xQueueSendToBack(m_queue, (void * )&event, (portTickType)(1000 / portTICK_PERIOD_MS));
+  if (ret != pdPASS)
+    {
+    free(message);
+    ESP_LOGI(TAG, "Timeout queueing message in Console::Log\n");
+    }
+  }
+
+typedef enum
+  {
+  AT_PROMPT,
+  AWAITING_NL,
+  NO_NL
+  } DisplayState;
+
+void OvmsConsole::ConsoleTask(void *pvParameters)
+  {
+  ((OvmsConsole*)pvParameters)->EventLoop();
+  }
+
+void OvmsConsole::EventLoop()
+  {
+  DisplayState state = AT_PROMPT;
+  portTickType ticks = portMAX_DELAY;
+  Event event;
+
+  vTaskDelay(50 / portTICK_PERIOD_MS);
+
+  for (;;)
+    {
+    // Waiting for UART RX event or async log message event
+    if (xQueueReceive(m_queue, (void*)&event, ticks))
+      {
+      if (event.type == ALERT)
+        {
+        // We remove the newline from the end of a log message so that we can later
+        // output a newline as part of restoring the command prompt and its line
+        // without leaving a blank line above it.  So before we display a new log
+        // message we need to output a newline if the last action was displaying a
+        // log message, or output a carriage return to back over the prompt.
+        if (state == AWAITING_NL)
+          write(NLbuf, 1);
+        else if (state == AT_PROMPT)
+          write(CRbuf, 1);
+        size_t len = strlen(event.buffer);
+        if (event.buffer[len-1] == '\n')
+          {
+          event.buffer[--len] = '\0';
+          if (event.buffer[len-1] == '\r')  // Remove CR, too, in case of \r\n
+            event.buffer[--len] = '\0';
+          state = AWAITING_NL;
+          write(event.buffer, len);
+          }
+        else
+          {
+          state = NO_NL;
+          write(event.buffer, len);
+          }
+        free(event.buffer);
+        ticks = 200 / portTICK_PERIOD_MS;
+        }
+      else
+        {
+        if (state != AT_PROMPT)
+          ProcessChars(ctrlRbuf, 1);    // Restore the prompt plus any type-in on a new line
+        state = AT_PROMPT;
+        HandleDeviceEvent(&event);
+        }
+      }
+    else
+      {
+      // Timeout indicates the queue is empty
+      if (state != AT_PROMPT)
+        ProcessChars(ctrlRbuf, 1);    // Restore the prompt plus any type-in on a new line
+      state = AT_PROMPT;
+      ticks = portMAX_DELAY;
+      }
+    }
   }

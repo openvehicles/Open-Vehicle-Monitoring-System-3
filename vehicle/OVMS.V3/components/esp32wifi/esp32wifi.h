@@ -33,6 +33,10 @@
 
 #include <stdint.h>
 #include "pcp.h"
+#include "esp_err.h"
+#include "esp_event.h"
+
+class TelnetServer;
 
 class esp32wifi : public pcp
   {
@@ -42,6 +46,15 @@ class esp32wifi : public pcp
 
   public:
     void SetPowerMode(PowerMode powermode);
+
+  private:
+    void InitStation();
+    void StopStation();
+    static esp_err_t HandleEvent(void *ctx, system_event_t *event);
+
+  private:
+    tcpip_adapter_ip_info_t m_ip_info;
+    TelnetServer* m_telnet_server;
   };
 
 #endif //#ifndef __ESP32WIFI_H__
