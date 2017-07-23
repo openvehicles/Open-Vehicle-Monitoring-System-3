@@ -62,6 +62,18 @@
 #define ESP32CAN_PIN_TX           25
 #define ESP32CAN_PIN_RX           26
 
+#define MAX7317_MDM_EN            0
+#define MAX7317_SW_CTL            1
+#define MAX7317_CAN1_EN           2
+#define MAX7317_EGPIO_1           2
+#define MAX7317_EGPIO_2           3
+#define MAX7317_EGPIO_3           4
+#define MAX7317_EGPIO_4           5
+#define MAX7317_EGPIO_5           6
+#define MAX7317_EGPIO_6           7
+#define MAX7317_EGPIO_7           8
+#define MAX7317_EGPIO_8           9
+
 class Peripherals
   {
   public:
