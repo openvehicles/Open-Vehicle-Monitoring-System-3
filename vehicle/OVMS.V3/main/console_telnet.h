@@ -30,28 +30,41 @@
 #ifndef __CONSOLE_TELNET_H__
 #define __CONSOLE_TELNET_H__
 
+#include <forward_list>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "libtelnet.h"
 #include "console.h"
 
+class ConsoleTelnet;
+
 class TelnetServer
   {
+  public:
+  typedef std::forward_list<OvmsWriter*> Consoles;
+
   public:
     TelnetServer();
     ~TelnetServer();
 
+  public:
+    void DeleteConsole(ConsoleTelnet* console);
+
   private:
-    static void Task(void*);
+    static void Task(void *pvParameters);
+    void Server();
 
   protected:
     TaskHandle_t m_taskid;
+    int m_socket;
+    Consoles m_consoles;
+    bool m_exiting;
   };
 
 class ConsoleTelnet : public OvmsConsole
   {
   public:
-    ConsoleTelnet(int socket);
+    ConsoleTelnet(int socket, TelnetServer* server);
     virtual ~ConsoleTelnet();
 
   public:
@@ -66,9 +79,10 @@ class ConsoleTelnet : public OvmsConsole
     static void TelnetCallback(telnet_t *telnet, telnet_event_t *event, void *userData);
     void TelnetHandler(telnet_event_t *event);
     void HandleDeviceEvent(void* pEvent);
-    static void Exit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    void DoExit();
 
   protected:
+    TelnetServer* m_server;
     TaskHandle_t m_receiver_taskid;
     int m_socket;
     telnet_t *m_telnet;

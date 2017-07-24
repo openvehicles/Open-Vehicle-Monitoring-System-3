@@ -46,7 +46,7 @@ class OvmsWriter
   {
   public:
     OvmsWriter();
-    ~OvmsWriter();
+    virtual ~OvmsWriter();
 
   public:
     virtual int puts(const char* s) = 0;
@@ -55,6 +55,8 @@ class OvmsWriter
     virtual void finalise() = 0;
     virtual char ** GetCompletion(OvmsCommandMap& children, const char* token) = 0;
     virtual void Log(char* message) = 0;
+    static void Exit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    virtual void DoExit();
   };
 
 class OvmsCommandMap : public std::map<std::string, OvmsCommand*>

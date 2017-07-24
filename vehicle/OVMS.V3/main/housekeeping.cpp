@@ -65,6 +65,7 @@ void HousekeepingTask(void *pvParameters)
     MyCommandApp.Log("SHOULD NOT BE SEEN\r");
     uint32_t caps = MALLOC_CAP_8BIT;
     MyCommandApp.Log("Free %zu  ", xPortGetFreeHeapSizeCaps(caps));
+    MyCommandApp.Log("Tasks %u  ", uxTaskGetNumberOfTasks());
     MyCommandApp.Log("Housekeeping 12V %f\r\n", MyPeripherals.m_esp32adc->read() / 194);
 
     vTaskDelay(5000 / portTICK_PERIOD_MS);

@@ -48,7 +48,7 @@ OvmsConsole::~OvmsConsole()
   {
   m_ready = false;
   MyCommandApp.DeregisterConsole(this);
-  vTaskDelete(NULL);
+  vTaskDelete(m_taskid);
   }
 
 void OvmsConsole::Initialize(const char* console)

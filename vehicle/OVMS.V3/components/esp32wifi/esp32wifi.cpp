@@ -43,6 +43,8 @@
 esp32wifi::esp32wifi(std::string name)
   : pcp(name)
   {
+  tcpip_adapter_init();
+  ESP_ERROR_CHECK(esp_event_loop_init(HandleEvent, (void*)this));
   }
 
 esp32wifi::~esp32wifi()
@@ -72,8 +74,6 @@ void esp32wifi::SetPowerMode(PowerMode powermode)
 
 void esp32wifi::InitStation()
   {
-  tcpip_adapter_init();
-  ESP_ERROR_CHECK(esp_event_loop_init(HandleEvent, (void*)this));
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
   ESP_ERROR_CHECK(esp_wifi_init(&cfg));
   ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
@@ -101,4 +101,7 @@ esp_err_t esp32wifi::HandleEvent(void *ctx, system_event_t *event)
 void esp32wifi::StopStation()
   {
   delete m_telnet_server;
+  ESP_ERROR_CHECK(esp_wifi_disconnect());
+  ESP_ERROR_CHECK(esp_wifi_stop());
+  ESP_ERROR_CHECK(esp_wifi_deinit());
   }

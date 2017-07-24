@@ -45,6 +45,16 @@ OvmsWriter::~OvmsWriter()
   {
   }
 
+void OvmsWriter::Exit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->DoExit();
+  }
+
+void OvmsWriter::DoExit()
+  {
+  puts("This console cannot exit.");
+  }
+
 OvmsCommand* OvmsCommandMap::FindUniquePrefix(const std::string& key)
   {
   OvmsCommand* found = NULL;
@@ -264,6 +274,7 @@ OvmsCommandApp::OvmsCommandApp()
   {
   puts("Initialising COMMAND Framework");
   m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0);
+  m_root.RegisterCommand("exit", "End console session", OvmsWriter::Exit , "", 0, 0);
   }
 
 OvmsCommandApp::~OvmsCommandApp()
