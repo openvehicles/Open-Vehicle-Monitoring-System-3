@@ -29,14 +29,58 @@
 */
 
 #include "config.h"
+#include "command.h"
+#include "spiffs_vfs.h"
 
-OvmsConfig MyConfig __attribute__ ((init_priority (900)));
+OvmsConfig MyConfig __attribute__ ((init_priority (1010)));
+
+void spiffs_mount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyConfig.mount();
+  writer->puts("Mounted SPIFFS");
+  }
+
+void spiffs_unmount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyConfig.unmount();
+  writer->puts("Unmounted SPIFFS");
+  }
 
 OvmsConfig::OvmsConfig()
   {
+  puts("Initialising SPIFFS Framework");
+  OvmsCommand* cmd_spiffs = MyCommandApp.RegisterCommand("spiffs","SPIFFS framework",NULL,"<$C>",1,1);
+  cmd_spiffs->RegisterCommand("mount","Mount SPIFFS",spiffs_mount,"",0,0);
+  cmd_spiffs->RegisterCommand("unmount","Unmount SPIFFS",spiffs_unmount,"",0,0);
   }
 
 OvmsConfig::~OvmsConfig()
   {
+  }
+
+esp_err_t OvmsConfig::mount()
+  {
+  if (!spiffs_is_registered)
+    vfs_spiffs_register();
+
+  if (!spiffs_is_mounted)
+    spiffs_mount();
+
+  m_mounted = true;
+  return ESP_OK;
+  }
+
+esp_err_t OvmsConfig::unmount()
+  {
+  if (spiffs_is_mounted)
+    spiffs_unmount(0);
+
+  m_mounted = false;
+  return ESP_OK;
+  }
+
+bool OvmsConfig::ismounted()
+  {
+  return m_mounted;
   }
 

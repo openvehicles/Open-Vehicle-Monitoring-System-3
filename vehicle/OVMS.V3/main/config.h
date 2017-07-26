@@ -31,11 +31,21 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
+#include "esp_err.h"
+
 class OvmsConfig
   {
   public:
     OvmsConfig();
     ~OvmsConfig();
+
+  public:
+    esp_err_t mount();
+    esp_err_t unmount();
+    bool ismounted();
+
+  public:
+    bool m_mounted;
   };
 
 extern OvmsConfig MyConfig;
