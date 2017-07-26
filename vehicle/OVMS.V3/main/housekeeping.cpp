@@ -45,7 +45,7 @@ void HousekeepingTask(void *pvParameters)
 
   while (1)
     {
-    MyHousekeeping.adcvoltage();
+    MyHousekeeping.metrics();
 
     // Test CAN
     CAN_frame_t c;
@@ -62,13 +62,13 @@ void HousekeepingTask(void *pvParameters)
     c.data.u8[6] = 'S';
     MyPeripherals.m_mcp2515_1->Write(&c);
 
-    MyCommandApp.Log("SHOULD NOT BE SEEN\r");
-    uint32_t caps = MALLOC_CAP_8BIT;
-    MyCommandApp.Log("Free %zu  ", xPortGetFreeHeapSizeCaps(caps));
-    MyCommandApp.Log("Tasks %u  ", uxTaskGetNumberOfTasks());
-    MyCommandApp.Log("Housekeeping 12V %f\r\n", MyPeripherals.m_esp32adc->read() / 194);
+//    MyCommandApp.Log("SHOULD NOT BE SEEN\r");
+//    uint32_t caps = MALLOC_CAP_8BIT;
+//    MyCommandApp.Log("Free %zu  ", xPortGetFreeHeapSizeCaps(caps));
+//    MyCommandApp.Log("Tasks %u  ", uxTaskGetNumberOfTasks());
+//    MyCommandApp.Log("Housekeeping 12V %f\r\n", MyPeripherals.m_esp32adc->read() / 194);
 
-    vTaskDelay(5000 / portTICK_PERIOD_MS);
+    vTaskDelay(10000 / portTICK_PERIOD_MS);
     }
   }
 
@@ -83,12 +83,26 @@ Housekeeping::~Housekeeping()
   {
   }
 
-void Housekeeping::adcvoltage()
+void Housekeeping::metrics()
   {
-  OvmsMetricFloat* m = (OvmsMetricFloat*)MyMetrics.Find(MS_V_BAT_12V);
-  if (m == NULL)
+  OvmsMetricFloat* m1 = (OvmsMetricFloat*)MyMetrics.Find(MS_V_BAT_12V);
+  if (m1 == NULL)
     return;
 
   float v = MyPeripherals.m_esp32adc->read() / 194;
-  m->SetValue(v);
+  m1->SetValue(v);
+
+  OvmsMetricInt* m2 = (OvmsMetricInt*)MyMetrics.Find(MS_M_TASKS);
+  if (m2 == NULL)
+    return;
+
+  uint32_t caps = MALLOC_CAP_8BIT;
+  m2->SetValue(uxTaskGetNumberOfTasks());
+
+  OvmsMetricInt* m3 = (OvmsMetricInt*)MyMetrics.Find(MS_M_FREERAM);
+  if (m3 == NULL)
+    return;
+
+  m3->SetValue(xPortGetFreeHeapSizeCaps(caps));
   }
+

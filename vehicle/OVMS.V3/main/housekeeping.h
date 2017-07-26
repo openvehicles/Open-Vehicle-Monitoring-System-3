@@ -41,7 +41,7 @@ class Housekeeping
     virtual ~Housekeeping();
 
   public:
-    void adcvoltage();
+    void metrics();
 
   protected:
     TaskHandle_t m_taskid;

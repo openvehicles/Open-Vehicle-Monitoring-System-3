@@ -32,6 +32,8 @@
 #define __METRICS_STANDARD_H__
 
 #define MS_M_VERSION                "m.version"
+#define MS_M_TASKS                  "m.tasks"
+#define MS_M_FREERAM                "m.freeram"
 
 #define MS_V_TYPE                   "v.type"
 #define MS_V_VIN                    "v.vin"
@@ -75,6 +77,8 @@ typedef struct
 const MetricStandard_t MetricStandard[] =
   {
   { MS_M_VERSION,                 "string" },
+  { MS_M_TASKS,                   "int" },
+  { MS_M_FREERAM,                 "int" },
   { MS_V_TYPE,                    "string" },
   { MS_V_VIN,                     "string" },
   { MS_V_BAT_SOC,                 "int" },
