@@ -1,0 +1,12 @@
+menuconfig OVMS
+    bool "OVMS"
+    default y
+    help
+        Select this option to enable OVMS specific features
+
+config OVMS_CONSOLE_LOG_STATUS
+    bool "Periodically log status on OVMS console"
+    default n
+    depends on OVMS
+    help
+        Enable to periodically log status on OVMS console

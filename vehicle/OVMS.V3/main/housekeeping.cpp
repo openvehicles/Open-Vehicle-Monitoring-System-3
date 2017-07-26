@@ -62,11 +62,13 @@ void HousekeepingTask(void *pvParameters)
     c.data.u8[6] = 'S';
     MyPeripherals.m_mcp2515_1->Write(&c);
 
-//    MyCommandApp.Log("SHOULD NOT BE SEEN\r");
-//    uint32_t caps = MALLOC_CAP_8BIT;
-//    MyCommandApp.Log("Free %zu  ", xPortGetFreeHeapSizeCaps(caps));
-//    MyCommandApp.Log("Tasks %u  ", uxTaskGetNumberOfTasks());
-//    MyCommandApp.Log("Housekeeping 12V %f\r\n", MyPeripherals.m_esp32adc->read() / 194);
+#ifdef CONFIG_OVMS_CONSOLE_LOG_STATUS
+    MyCommandApp.Log("SHOULD NOT BE SEEN\r");
+    uint32_t caps = MALLOC_CAP_8BIT;
+    MyCommandApp.Log("Free %zu  ", xPortGetFreeHeapSizeCaps(caps));
+    MyCommandApp.Log("Tasks %u  ", uxTaskGetNumberOfTasks());
+    MyCommandApp.Log("Housekeeping 12V %f\r\n", MyPeripherals.m_esp32adc->read() / 194);
+#endif
 
     vTaskDelay(10000 / portTICK_PERIOD_MS);
     }
