@@ -30,6 +30,8 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <esp_ota_ops.h>
+#include "ovms.h"
 #include "housekeeping.h"
 #include "peripherals.h"
 #include "metrics.h"
@@ -42,6 +44,8 @@ Housekeeping MyHousekeeping __attribute__ ((init_priority (9999)));
 void HousekeepingTask(void *pvParameters)
   {
   vTaskDelay(50 / portTICK_PERIOD_MS);
+
+  MyHousekeeping.version();
 
   while (1)
     {
@@ -83,6 +87,26 @@ Housekeeping::Housekeeping()
 
 Housekeeping::~Housekeeping()
   {
+  }
+
+void Housekeeping::version()
+  {
+  std::string version(OVMS_VERSION);
+
+  const esp_partition_t *p = esp_ota_get_running_partition();
+  if (p != NULL)
+    {
+    version.append("/");
+    version.append(p->label);
+    }
+  version.append("/");
+  version.append(CONFIG_OVMS_VERSION_TAG);
+
+  version.append(" build ");
+  version.append(__DATE__);
+  version.append(" ");
+  version.append(__TIME__);
+  MyMetrics.Set(MS_M_VERSION, version.c_str());
   }
 
 void Housekeeping::metrics()

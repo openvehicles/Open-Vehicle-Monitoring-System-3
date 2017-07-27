@@ -31,6 +31,6 @@
 #ifndef __OVMS_H__
 #define __OVMS_H__
 
-
+#define OVMS_VERSION "3.0.0"
 
 #endif //#ifndef __OVMS_H__

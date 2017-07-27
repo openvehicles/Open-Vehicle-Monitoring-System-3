@@ -41,6 +41,7 @@ class Housekeeping
     virtual ~Housekeeping();
 
   public:
+    void version();
     void metrics();
 
   protected:
