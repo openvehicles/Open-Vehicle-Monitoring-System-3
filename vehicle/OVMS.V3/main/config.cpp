@@ -84,3 +84,43 @@ bool OvmsConfig::ismounted()
   return m_mounted;
   }
 
+void OvmsConfig::RegisterParam(std::string name, std::string title, bool writable, bool readable)
+  {
+  OvmsConfigParam* p = new OvmsConfigParam(name, title, writable, readable);
+  m_map[name] = p;
+  }
+
+void OvmsConfig::DeregisterParam(std::string name)
+  {
+  }
+
+void OvmsConfig::SetParamValue(std::string param, std::string instance, std::string value)
+  {
+  }
+
+std::string OvmsConfig::GetParamValue(std::string param, std::string instance)
+  {
+  return std::string("");
+  }
+
+OvmsConfigParam::OvmsConfigParam(std::string name, std::string title, bool writable, bool readable)
+  {
+  m_name = name;
+  m_title = title;
+  m_writable = writable;
+  m_readable = readable;
+  }
+
+OvmsConfigParam::~OvmsConfigParam()
+  {
+  }
+
+void OvmsConfigParam::SetValue(std::string instance, std::string value)
+  {
+  }
+
+std::string OvmsConfigParam::GetValue(std::string instance)
+  {
+  return std::string("");
+  }
+

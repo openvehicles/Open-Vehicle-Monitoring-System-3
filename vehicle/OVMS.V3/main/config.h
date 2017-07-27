@@ -31,7 +31,26 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
+#include "string"
+#include "map"
 #include "esp_err.h"
+
+class OvmsConfigParam
+  {
+  public:
+    OvmsConfigParam(std::string name, std::string title, bool writable, bool readable);
+    ~OvmsConfigParam();
+
+  public:
+    void SetValue(std::string instance, std::string value);
+    std::string GetValue(std::string instance);
+    
+  public:
+    std::string m_name;
+    std::string m_title;
+    bool m_writable;
+    bool m_readable;
+  };
 
 class OvmsConfig
   {
@@ -40,12 +59,21 @@ class OvmsConfig
     ~OvmsConfig();
 
   public:
+    void RegisterParam(std::string name, std::string title, bool writable=true, bool readable=true);
+    void DeregisterParam(std::string name);
+
+  public:
+    void SetParamValue(std::string param, std::string instance, std::string value);
+    std::string GetParamValue(std::string param, std::string instance);
+
+  public:
     esp_err_t mount();
     esp_err_t unmount();
     bool ismounted();
 
   public:
     bool m_mounted;
+    std::map<std::string, OvmsConfigParam*> m_map;
   };
 
 extern OvmsConfig MyConfig;
