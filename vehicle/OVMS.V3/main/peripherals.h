@@ -41,6 +41,7 @@
 #include "esp32adc.h"
 #include "mcp2515.h"
 #include "sdcard.h"
+#include "simcom.h"
 
 #define VSPI_PIN_MISO             19
 #define VSPI_PIN_MOSI             23
@@ -74,6 +75,10 @@
 #define MAX7317_EGPIO_7           8
 #define MAX7317_EGPIO_8           9
 
+#define MODEM_PIN_RX              28
+#define MODEM_PIN_TX              27
+#define MODEM_EGPIO_PWR           0
+
 class Peripherals
   {
   public:
@@ -91,6 +96,7 @@ class Peripherals
     mcp2515* m_mcp2515_1;
     mcp2515* m_mcp2515_2;
     sdcard* m_sdcard;
+    simcom* m_simcom;
   };
 
 extern Peripherals MyPeripherals;

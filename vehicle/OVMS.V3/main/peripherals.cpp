@@ -77,6 +77,8 @@ Peripherals::Peripherals()
   m_mcp2515_2 = new mcp2515("can3", m_spibus, VSPI_HOST, 1000000, VSPI_PIN_MCP2515_2_CS, VSPI_PIN_MCP2515_2_INT);
   puts("  SD CARD");
   m_sdcard = new sdcard("sdcard", false,true,SDCARD_PIN_CD);
+  puts ("  SIMCOM MODEM");
+  m_simcom = new simcom("simcom", UART_NUM_1, 9600, MODEM_PIN_RX, MODEM_PIN_TX, MODEM_EGPIO_PWR);
   }
 
 Peripherals::~Peripherals()
