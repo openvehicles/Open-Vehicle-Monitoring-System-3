@@ -39,6 +39,12 @@
 
 #include "esp_heap_alloc_caps.h"
 
+#ifdef CONFIG_OVMS_CONSOLE_LOG_STATUS
+int TestAlerts = true;
+#else
+int TestAlerts = false;
+#endif
+
 Housekeeping MyHousekeeping __attribute__ ((init_priority (9999)));
 
 void HousekeepingTask(void *pvParameters)
@@ -66,13 +72,14 @@ void HousekeepingTask(void *pvParameters)
     c.data.u8[6] = 'S';
     MyPeripherals.m_mcp2515_1->Write(&c);
 
-#ifdef CONFIG_OVMS_CONSOLE_LOG_STATUS
-    MyCommandApp.Log("SHOULD NOT BE SEEN\r");
-    uint32_t caps = MALLOC_CAP_8BIT;
-    MyCommandApp.Log("Free %zu  ", xPortGetFreeHeapSizeCaps(caps));
-    MyCommandApp.Log("Tasks %u  ", uxTaskGetNumberOfTasks());
-    MyCommandApp.Log("Housekeeping 12V %f\r\n", MyPeripherals.m_esp32adc->read() / 194);
-#endif
+    if (TestAlerts)
+      {
+      MyCommandApp.Log("SHOULD NOT BE SEEN\r");
+      uint32_t caps = MALLOC_CAP_8BIT;
+      MyCommandApp.Log("Free %zu  ", xPortGetFreeHeapSizeCaps(caps));
+      MyCommandApp.Log("Tasks %u  ", uxTaskGetNumberOfTasks());
+      MyCommandApp.Log("Housekeeping 12V %f\r\n", MyPeripherals.m_esp32adc->read() / 194);
+      }
 
     vTaskDelay(10000 / portTICK_PERIOD_MS);
     }

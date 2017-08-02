@@ -29,12 +29,20 @@
 */
 
 #include <stdio.h>
+#include "freertos/FreeRTOSConfig.h"
 #include "esp_system.h"
 #include "esp_event.h"
 #include "esp_event_loop.h"
 #include "esp_deep_sleep.h"
 #include "test_framework.h"
 #include "command.h"
+
+#ifdef CONFIG_ENABLE_MEMORY_DEBUG
+extern "C"
+  {
+  void mem_debug_malloc_show();
+  }
+#endif
 
 void test_deepsleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -48,6 +56,45 @@ void test_deepsleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   esp_deep_sleep(1000000LL * sleeptime);
   }
 
+void test_alerts(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  extern int TestAlerts;
+  TestAlerts = !TestAlerts;
+  }
+
+void test_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+#ifdef CONFIG_ENABLE_MEMORY_DEBUG
+#ifndef CONFIG_INT_WDT
+  mem_debug_malloc_show();
+#else
+  writer->printf("Must not set CONFIG_INT_WDT\n");
+#endif
+#else
+  writer->printf("Must set CONFIG_ENABLE_MEMORY_DEBUG\n");
+#endif
+  }
+
+void test_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+#if configUSE_TRACE_FACILITY
+#ifndef CONFIG_FREERTOS_ASSERT_ON_UNTESTED_FUNCTION
+  TaskStatus_t tasks[20];
+  writer->printf("Number of Tasks = %u\n", uxTaskGetNumberOfTasks());
+  UBaseType_t n = uxTaskGetSystemState(tasks, 20, NULL);
+  for (UBaseType_t i = 0; i < n; ++i)
+    {
+    writer->printf("Task %08X %2u %-15s  Max Stack %5u\n", tasks[i].xHandle, tasks[i].xTaskNumber,
+      tasks[i].pcTaskName, tasks[i].usStackHighWaterMark);
+    }
+#else
+  writer->printf("Must not set CONFIG_FREERTOS_ASSERT_ON_UNTESTED_FUNCTION\n");
+#endif
+#else
+  writer->printf("Must set configUSE_TRACE_FACILITY=1 in FreeRTOSConfig.h\n");
+#endif
+  }
+
 class TestFrameworkInit
   {
   public: TestFrameworkInit();
@@ -58,4 +105,7 @@ TestFrameworkInit::TestFrameworkInit()
   puts("Initialising TEST Framework");
   OvmsCommand* cmd_test = MyCommandApp.RegisterCommand("test","Test framework",NULL);
   cmd_test->RegisterCommand("sleep","Test Deep Sleep",test_deepsleep,"[seconds]",0,1);
+  cmd_test->RegisterCommand("alerts","Toggle testing alerts in Housekeeping",test_alerts,"",0,0);
+  cmd_test->RegisterCommand("memory","Show allocated memory",test_memory,"",0,0);
+  cmd_test->RegisterCommand("tasks","Show list of tasks",test_tasks,"",0,0);
   }
