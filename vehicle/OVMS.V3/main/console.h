@@ -30,9 +30,7 @@
 #ifndef __CONSOLE_H__
 #define __CONSOLE_H__
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
+#include "task_base.h"
 #include "command.h"
 #include "microrl.h"
 
@@ -40,32 +38,33 @@
 #define COMPLETION_MAX_TOKENS 20
 
 class OvmsCommandMap;
+class Parent;
 
-class OvmsConsole : public OvmsWriter
+class OvmsConsole : public OvmsWriter, public TaskBase
   {
   public:
-    OvmsConsole();
+    OvmsConsole(Parent* parent = NULL);
     ~OvmsConsole();
 
   public:
     // In order to share a queue with the UART driver (and possibly other
     // drivers for console devices), we implicitly make a union with the
     // uart_event_t typedef in driver/uart.h and we start our event type enum
-    // with a value large enough to leave plenty of space below.  Note that the
-    // queue elements allocated by the UART driver are not large enough to
-    // contain the size member, but it's not used in ConsoleAsync.
+    // with a value large enough to leave plenty of space below.
     typedef enum
       {
-      INPUT = 0x10000,
-      ALERT,
-      EXIT
+      ALERT = 0x10000,
+      RECV
       } event_type_t;
 
     typedef struct
       {
       event_type_t type;  // Our extended event type enum
-      char* buffer;       // Pointer to INPUT or ALERT buffer
-      size_t size;        // Buffer size (for INPUT only)
+      union
+        {
+        char* buffer;       // Pointer to ALERT buffer
+        ssize_t size;       // Buffer size for RECV
+        };
       } Event;
 
   public:
@@ -79,8 +78,7 @@ class OvmsConsole : public OvmsWriter
     void Log(char* buffer);
 
   private:
-    static void ConsoleTask(void *pvParameters);
-    void EventLoop();
+    void Service();
 
   protected:
     virtual void HandleDeviceEvent(void* event) = 0;
@@ -90,7 +88,6 @@ class OvmsConsole : public OvmsWriter
     microrl_t m_rl;
     char *m_completions[COMPLETION_MAX_TOKENS+2];
     char m_space[COMPLETION_MAX_TOKENS+2][TOKEN_MAX_LENGTH];
-    TaskHandle_t m_taskid;
     QueueHandle_t m_queue;
   };
 

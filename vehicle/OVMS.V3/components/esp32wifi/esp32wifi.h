@@ -33,12 +33,11 @@
 
 #include <stdint.h>
 #include "pcp.h"
+#include "task_base.h"
 #include "esp_err.h"
 #include "esp_event.h"
 
-class TelnetServer;
-
-class esp32wifi : public pcp
+class esp32wifi : public pcp, public Parent
   {
   public:
     esp32wifi(std::string name);
@@ -54,7 +53,6 @@ class esp32wifi : public pcp
 
   private:
     tcpip_adapter_ip_info_t m_ip_info;
-    TelnetServer* m_telnet_server;
   };
 
 #endif //#ifndef __ESP32WIFI_H__

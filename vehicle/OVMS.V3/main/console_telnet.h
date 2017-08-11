@@ -30,41 +30,49 @@
 #ifndef __CONSOLE_TELNET_H__
 #define __CONSOLE_TELNET_H__
 
-#include <forward_list>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "libtelnet.h"
 #include "console.h"
 
+#define BUFFER_SIZE 1024
+
 class ConsoleTelnet;
 
-class TelnetServer
+class TelnetServer : public TaskBase, public Parent
   {
   public:
-  typedef std::forward_list<OvmsWriter*> Consoles;
-
-  public:
-    TelnetServer();
+    TelnetServer(Parent* parent);
     ~TelnetServer();
 
-  public:
-    void DeleteConsole(ConsoleTelnet* console);
-
   private:
-    static void Task(void *pvParameters);
-    void Server();
+    void Service();
+    void Cleanup();
 
   protected:
-    TaskHandle_t m_taskid;
     int m_socket;
-    Consoles m_consoles;
-    bool m_exiting;
   };
 
-class ConsoleTelnet : public OvmsConsole
+class TelnetReceiver : public TaskBase
   {
   public:
-    ConsoleTelnet(int socket, TelnetServer* server);
+    TelnetReceiver(ConsoleTelnet* parent, int socket, char* buffer, QueueHandle_t queue, SemaphoreHandle_t sem);
+    ~TelnetReceiver();
+
+  private:
+    void Service();
+
+  protected:
+    int m_socket;
+    char* m_buffer;
+    QueueHandle_t m_queue;
+    SemaphoreHandle_t m_semaphore;
+  };
+
+class ConsoleTelnet : public OvmsConsole, public Parent
+  {
+  public:
+    ConsoleTelnet(TelnetServer* server, int socket);
     virtual ~ConsoleTelnet();
 
   public:
@@ -74,21 +82,19 @@ class ConsoleTelnet : public OvmsConsole
     void finalise();
 
   private:
-    static void TelnetReceiverTask(void *pvParameters);
-    void DoTelnet();
+    void HandleDeviceEvent(void* pEvent);
     static void TelnetCallback(telnet_t *telnet, telnet_event_t *event, void *userData);
     void TelnetHandler(telnet_event_t *event);
-    void HandleDeviceEvent(void* pEvent);
+
+  public:
     void DoExit();
 
   protected:
-    TelnetServer* m_server;
-    TaskHandle_t m_receiver_taskid;
-    int m_socket;
     telnet_t *m_telnet;
-    int m_split_eol;
+    int m_socket;
     SemaphoreHandle_t m_semaphore;
-    uint8_t m_buffer[1024];
+    int m_split_eol;
+    char m_buffer[BUFFER_SIZE];
   };
 
 #endif //#ifndef __CONSOLE_TELNET_H__

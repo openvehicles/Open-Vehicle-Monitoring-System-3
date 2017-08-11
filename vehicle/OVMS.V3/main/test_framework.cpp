@@ -37,13 +37,6 @@
 #include "test_framework.h"
 #include "command.h"
 
-#ifdef CONFIG_ENABLE_MEMORY_DEBUG
-extern "C"
-  {
-  void mem_debug_malloc_show();
-  }
-#endif
-
 void test_deepsleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   int sleeptime = 60;
@@ -64,15 +57,7 @@ void test_alerts(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
 void test_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-#ifdef CONFIG_ENABLE_MEMORY_DEBUG
-#ifndef CONFIG_INT_WDT
-  mem_debug_malloc_show();
-#else
-  writer->printf("Must not set CONFIG_INT_WDT\n");
-#endif
-#else
-  writer->printf("Must set CONFIG_ENABLE_MEMORY_DEBUG\n");
-#endif
+  writer->printf("Implementation removed\n");
   }
 
 void test_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)

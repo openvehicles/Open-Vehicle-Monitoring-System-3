@@ -39,7 +39,8 @@ static char CRbuf[1] = { '\r' };
 static char NLbuf[1] = { '\n' };
 static char ctrlRbuf[1] = { 'R'-0100 };
 
-OvmsConsole::OvmsConsole()
+OvmsConsole::OvmsConsole(Parent* parent)
+  : TaskBase(parent)
   {
   m_ready = false;
   }
@@ -48,7 +49,6 @@ OvmsConsole::~OvmsConsole()
   {
   m_ready = false;
   MyCommandApp.DeregisterConsole(this);
-  vTaskDelete(m_taskid);
   }
 
 void OvmsConsole::Initialize(const char* console)
@@ -56,7 +56,7 @@ void OvmsConsole::Initialize(const char* console)
   std::string task = "Console";
   task += console;
   task += "Task";
-  xTaskCreatePinnedToCore(ConsoleTask, task.c_str(), 4096, (void*)this, 5, &m_taskid, 1);
+  CreateTaskPinned(1, task.c_str());
 
   printf("\n\033[32mWelcome to the Open Vehicle Monitoring System (OVMS) - %s Console\033[0m", console);
   microrl_init (&m_rl, Print);
@@ -153,12 +153,7 @@ typedef enum
   NO_NL
   } DisplayState;
 
-void OvmsConsole::ConsoleTask(void *pvParameters)
-  {
-  ((OvmsConsole*)pvParameters)->EventLoop();
-  }
-
-void OvmsConsole::EventLoop()
+void OvmsConsole::Service()
   {
   DisplayState state = AT_PROMPT;
   portTickType ticks = portMAX_DELAY;

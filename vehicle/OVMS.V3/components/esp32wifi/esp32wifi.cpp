@@ -93,14 +93,14 @@ esp_err_t esp32wifi::HandleEvent(void *ctx, system_event_t *event)
     {
     esp32wifi* me =(esp32wifi*)ctx;
     me->m_ip_info = event->event_info.got_ip.ip_info;
-    me->m_telnet_server = new TelnetServer();
+    me->AddChild(new TelnetServer(me));
     }
   return ESP_OK;
   }
 
 void esp32wifi::StopStation()
   {
-  delete m_telnet_server;
+  DeleteChildren();
   ESP_ERROR_CHECK(esp_wifi_disconnect());
   ESP_ERROR_CHECK(esp_wifi_stop());
   ESP_ERROR_CHECK(esp_wifi_deinit());

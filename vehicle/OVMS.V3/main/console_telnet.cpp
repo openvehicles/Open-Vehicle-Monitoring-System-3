@@ -50,45 +50,25 @@ static const char *tag = "telnet";
 //    Class TelnetServer
 //-----------------------------------------------------------------------------
 
-TelnetServer::TelnetServer()
+TelnetServer::TelnetServer(Parent* parent)
+  : TaskBase(parent)
   {
-  m_socket = 0;
-  m_exiting = false;
-  xTaskCreatePinnedToCore(TelnetServer::Task, "TelnetServerTask", 4096, (void*)this, 5, &m_taskid, 1);
+  m_socket = -1;
+  CreateTaskPinned(1, "TelnetServerTask");
   }
 
 TelnetServer::~TelnetServer()
   {
-  m_exiting = true;
-  ESP_LOGI(tag, "Reached ~TelnetServer");
-  closesocket(m_socket);
-  for (Consoles::iterator itr = m_consoles.begin(); itr != m_consoles.end(); ++itr)
-    {
-    delete *itr;
-    }
-  ESP_LOGI(tag, "About to delete TelnetServerTask");
-  vTaskDelete(m_taskid);
+  Cleanup();
   }
 
-void TelnetServer::DeleteConsole(ConsoleTelnet* console)
+void TelnetServer::Service()
   {
-  m_consoles.remove(console);
-  delete console;
-  }
-
-void TelnetServer::Task(void *pvParameters)
-  {
-  TelnetServer* me = (TelnetServer*)pvParameters;
-  me->Server();
-  if (!me->m_exiting)
-    delete me;
-  while (true); // Illegal instruction abort occurs if this function returns
-  }
-
-void TelnetServer::Server()
-  {
-  ESP_LOGI(tag, ">> telnet_listenForClients");
   m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if (m_socket < 0) {
+    ESP_LOGE(tag, "socket: %d (%s)", errno, strerror(errno));
+    return;
+    }
 
   struct sockaddr_in serverAddr;
   serverAddr.sin_family = AF_INET;
@@ -107,17 +87,89 @@ void TelnetServer::Server()
     return;
     }
 
+  fd_set readfds, writefds, errorfds;
+  FD_ZERO(&readfds);
+  FD_ZERO(&writefds);
+  FD_ZERO(&errorfds);
+  FD_SET(m_socket, &readfds);
   while (true) {
+    int rc = select(m_socket+1, &readfds, &writefds, &errorfds, (struct timeval *)NULL);
+    if (rc < 0)
+      {
+      ESP_LOGE(tag, "select: %d (%s)", errno, strerror(errno));
+      break;
+      }
+    if (m_socket < 0)   // Was server socket closed (by wifi shutting down)?
+      break;
+
     socklen_t len = sizeof(serverAddr);
     int partnerSocket = accept(m_socket, (struct sockaddr *)&serverAddr, &len);
-    if (partnerSocket < 0) {
+    if (partnerSocket < 0)
+      {
       if (errno != ECONNABORTED)
         ESP_LOGE(tag, "accept: %d (%s)", errno, strerror(errno));
       break;
       }
 
-    ESP_LOGI(tag, "We have a new client connection!");
-    m_consoles.push_front(new ConsoleTelnet(partnerSocket, this));
+    AddChild(new ConsoleTelnet(this, partnerSocket));
+    }
+  }
+
+void TelnetServer::Cleanup()
+  {
+  if (m_socket >= 0)
+    {
+    int socket = m_socket;
+    m_socket = -1;
+    if (closesocket(socket) < 0)
+      {
+      ESP_LOGE(tag, "closesocket %d: %d (%s)", socket, errno, strerror(errno));
+      }
+    }
+  }
+
+//-----------------------------------------------------------------------------
+//    Class TelnetReceiver
+//-----------------------------------------------------------------------------
+
+// The TelnetReceiverTask is required so that we can use a blocking recv() to
+// take input from the telnet connection.  It must queue Events to the
+// ConsoleTelnetTask, rather than taking direct actions itself, so that
+// libtelnet code is not executed simultaneously by both tasks.
+
+TelnetReceiver::TelnetReceiver(ConsoleTelnet* parent, int socket, char* buffer,
+                               QueueHandle_t queue, SemaphoreHandle_t sem)
+  : TaskBase(parent)
+  {
+  m_socket = socket;
+  m_buffer = buffer;
+  m_queue = queue;
+  m_semaphore = sem;
+  CreateTaskPinned(1, "TelnetReceiverTask");
+  }
+
+TelnetReceiver::~TelnetReceiver()
+  {
+  }
+
+void TelnetReceiver::Service()
+  {
+  while (true)
+    {
+    OvmsConsole::Event event;
+    event.type = OvmsConsole::event_type_t::RECV;
+    event.size = recv(m_socket, m_buffer, BUFFER_SIZE, 0);
+    BaseType_t ret = xQueueSendToBack(m_queue, (void * )&event, (portTickType)(1000 / portTICK_PERIOD_MS));
+    if (ret == pdPASS)
+      {
+      // Block here until the queued message has been taken.
+      xSemaphoreTake(m_semaphore, portMAX_DELAY);
+      }
+    else
+      ESP_LOGE(tag, "Timeout queueing message in TelnetReceiver::Service\n");
+    // Stop if recv() got nothing (because the connection was closed).
+    if (event.size == 0)
+      break;
     }
   }
 
@@ -125,11 +177,10 @@ void TelnetServer::Server()
 //    Class ConsoleTelnet
 //-----------------------------------------------------------------------------
 
-ConsoleTelnet::ConsoleTelnet(int socket, TelnetServer* server)
+ConsoleTelnet::ConsoleTelnet(TelnetServer* server, int socket)
+  : OvmsConsole(server)
   {
-  m_split_eol = 0;
   m_socket = socket;
-  m_server = server;
   m_queue = xQueueCreate(100, sizeof(Event));
   m_semaphore = xSemaphoreCreateCounting(1, 0);
 
@@ -147,12 +198,10 @@ ConsoleTelnet::ConsoleTelnet(int socket, TelnetServer* server)
     { -1, 0, 0 }
     };
   m_telnet = telnet_init(options, TelnetCallback, 0, (void*)this);
+  AddChild(new TelnetReceiver(this, socket, m_buffer, m_queue, m_semaphore));
   telnet_negotiate(m_telnet, TELNET_WILL, TELNET_TELOPT_ECHO);
 
   Initialize("Telnet");
-
-  xTaskCreatePinnedToCore(ConsoleTelnet::TelnetReceiverTask, "TelnetReceiverTask",
-                          4096, (void*)this, 5, &m_receiver_taskid, 1);
   }
 
 // This destructor may be called by ConsoleTelnetTask to delete itself or by
@@ -160,18 +209,17 @@ ConsoleTelnet::ConsoleTelnet(int socket, TelnetServer* server)
 
 ConsoleTelnet::~ConsoleTelnet()
   {
-  ESP_LOGI(tag, "Reached ~ConsoleTelnet");
   m_ready = false;
+  DeleteChildren();
   int socket = m_socket;
-  m_socket = 0;
-  closesocket(socket);
+  m_socket = -1;
+  if (socket >= 0 && closesocket(socket) < 0)
+    ESP_LOGE(tag, "closesocket %d: %d (%s)", socket, errno, strerror(errno));
   telnet_t *telnet = m_telnet;
   m_telnet = NULL;
   telnet_free(telnet);
   vSemaphoreDelete(m_semaphore);
   vQueueDelete(m_queue);
-  ESP_LOGI(tag, "About to delete receiver task");
-  vTaskDelete(m_receiver_taskid);
   }
 
 int ConsoleTelnet::puts(const char* s)
@@ -220,66 +268,27 @@ void ConsoleTelnet::HandleDeviceEvent(void* pEvent)
   Event event = *(Event*)pEvent;
   switch (event.type)
     {
-    case INPUT:
-      ProcessChars(event.buffer, event.size);
-      // Unblock TelnetReceiverTask in DoTelnet() now that we are finished with
-      // the buffer
-      xSemaphoreGive(m_semaphore);
-      break;
-
-    case EXIT:
-      ESP_LOGI(tag, "About to delete ConsoleTelnet");
-      m_server->DeleteConsole(this);
+    case RECV:
+      if (event.size > 0)
+        {
+        telnet_recv(m_telnet, m_buffer, event.size);
+        // Unblock TelnetReceiverTask now that we are finished with
+        // the buffer.
+        xSemaphoreGive(m_semaphore);
+        }
+      else
+        {
+        // Unblock TelnetReceiverTask to let it exit.
+        xSemaphoreGive(m_semaphore);
+        DeleteFromParent();
+        // Execution does not return here because this task kills itself.
+        }
       break;
 
     default:
-      ESP_LOGI(tag, "Unknown event type in ConsoleTelnet");
+      ESP_LOGE(tag, "Unknown event type in ConsoleTelnet");
       break;
     }
-  }
-
-void ConsoleTelnet::DoExit()
-  {
-  m_server->DeleteConsole(this);
-  }
-
-//-----------------------------------------------------------------------------
-//    TelnetReceiverTask
-//-----------------------------------------------------------------------------
-
-// The remainder of this code is executed by the TelnetReceiverTask and
-// therefore must queue Events to the ConsoleTelnetTask rather than taking
-// direct actions itself.  This task is required so that we can use a blocking
-// recv() to take input from the telnet connection.
-
-void ConsoleTelnet::TelnetReceiverTask(void *pvParameters)
-  {
-  ConsoleTelnet* me = (ConsoleTelnet*)pvParameters;
-  me->DoTelnet();
-  while (true); // Illegal instruction abort occurs if this function returns
-  }
-
-void ConsoleTelnet::DoTelnet()
-  {
-  while (true)
-    {
-    if (m_socket)
-      {
-      ssize_t len = recv(m_socket, (char *)m_buffer, sizeof(m_buffer), 0);
-      if (len == 0)
-        break;
-      telnet_recv(m_telnet, (char *)m_buffer, len);
-      }
-    }
-  ESP_LOGI(tag, "Telnet partner finished");
-  Event event;
-  event.type = EXIT;
-  BaseType_t ret = xQueueSendToBack(m_queue, (void * )&event, (portTickType)(1000 / portTICK_PERIOD_MS));
-  if (ret != pdPASS)
-    {
-    ESP_LOGI(tag, "Timeout queueing message in ConsoleTelnet::DoTelnet\n");
-    }
-  ESP_LOGI(tag, "Leaving DoTelnet\n");
   }
 
 void ConsoleTelnet::TelnetCallback(telnet_t *telnet, telnet_event_t *event, void *userData)
@@ -295,16 +304,7 @@ void ConsoleTelnet::TelnetHandler(telnet_event_t *event)
     case TELNET_EV_SEND:
       rc = send(m_socket, event->data.buffer, event->data.size, 0);
       if (rc < 0)
-        {
-        ESP_LOGI(tag, "Telnet connection closed");
-        Event event;
-        event.type = EXIT;
-        BaseType_t ret = xQueueSendToBack(m_queue, (void * )&event, (portTickType)(1000 / portTICK_PERIOD_MS));
-        if (ret != pdPASS)
-          {
-          ESP_LOGI(tag, "Timeout queueing message in ConsoleTelnet::TelnetHandler\n");
-          }
-        }
+        DeleteFromParent();
       break;
 
     case TELNET_EV_DATA:
@@ -318,18 +318,7 @@ void ConsoleTelnet::TelnetHandler(telnet_event_t *event)
         if (buffer[i] == '\r')
           buffer[i] = '\n';
         }
-      Event event;
-      event.type = INPUT;
-      event.buffer = buffer;
-      event.size = size;
-      BaseType_t ret = xQueueSendToBack(m_queue, (void * )&event, (portTickType)(1000 / portTICK_PERIOD_MS));
-      if (ret != pdPASS)
-        {
-        ESP_LOGI(tag, "Timeout queueing message in ConsoleTelnet::TelnetHandler\n");
-        break;
-        }
-      // Block here until the queued message has been taken;
-      xSemaphoreTake(m_semaphore, portMAX_DELAY);
+      ProcessChars(buffer, size);
       break;
       }
 
@@ -339,6 +328,12 @@ void ConsoleTelnet::TelnetHandler(telnet_event_t *event)
 #endif
       break;
     }
+  }
+
+// This is called to shut down the Telnet connection when the "exit" command is input.
+void ConsoleTelnet::DoExit()
+  {
+  DeleteFromParent();
   }
 
 /**
