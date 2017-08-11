@@ -25,6 +25,8 @@
 #include "esp_intr_alloc.h"
 #include "rom/lldesc.h"
 
+#include "driver/spi_common.h"
+#include "driver/spi_master.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -36,9 +38,9 @@ extern "C"
  * @brief Enum with the three SPI peripherals that are software-accessible in it
  */
 typedef enum {
-    SPI_HOST=0,                     ///< SPI1, SPI; Cannot be used in this driver!
-    HSPI_HOST=1,                    ///< SPI2, HSPI
-    VSPI_HOST=2                     ///< SPI3, VSPI
+    SPI_NODMA_HOST=0,                     ///< SPI1, SPI; Cannot be used in this driver!
+    HSPI_NODMA_HOST=1,                    ///< SPI2, HSPI
+    VSPI_NODMA_HOST=2                     ///< SPI3, VSPI
 } spi_nodma_host_device_t;
 
 
@@ -69,7 +71,9 @@ typedef struct {
 #define SPI_ERR_OTHER_CONFIG 7001
 
 typedef struct spi_nodma_transaction_t spi_nodma_transaction_t;
-typedef void(*transaction_cb_t)(spi_nodma_transaction_t *trans);
+
+// This is already defined in SPI MASTER, so no need to redefine it here
+typedef void(*nodma_transaction_cb_t)(spi_nodma_transaction_t *trans);
 
 /**
  * @brief This is a configuration for a SPI slave device that is connected to one of the SPI buses.
@@ -87,17 +91,18 @@ typedef struct {
     int spics_ext_io_num;           ///< CS GPIO pin for this device, handled by software (spi_nodma_device_select/spi_nodma_device_deselect); only used if spics_io_num=-1
     uint32_t flags;                 ///< Bitwise OR of SPI_DEVICE_* flags
     int queue_size;                 ///< Transaction queue size. This sets how many transactions can be 'in the air' (queued using spi_device_queue_trans but not yet finished using spi_device_get_trans_result) at the same time
-    transaction_cb_t pre_cb;        ///< Callback to be called before a transmission is started. This callback from 'spi_nodma_transfer_data' function.
-    transaction_cb_t post_cb;       ///< Callback to be called after a transmission has completed. This callback from 'spi_nodma_transfer_data' function.
+    nodma_transaction_cb_t pre_cb;  ///< Callback to be called before a transmission is started. This callback from 'spi_nodma_transfer_data' function.
+    nodma_transaction_cb_t post_cb; ///< Callback to be called after a transmission has completed. This callback from 'spi_nodma_transfer_data' function.
     uint8_t selected;               ///< **INTERNAL** 1 if the device's CS pin is active
 } spi_nodma_device_interface_config_t;
 
 
-#define SPI_TRANS_MODE_DIO            (1<<0)  ///< Transmit/receive data in 2-bit mode
-#define SPI_TRANS_MODE_QIO            (1<<1)  ///< Transmit/receive data in 4-bit mode
-#define SPI_TRANS_MODE_DIOQIO_ADDR    (1<<2)  ///< Also transmit address in mode selected by SPI_MODE_DIO/SPI_MODE_QIO
-#define SPI_TRANS_USE_RXDATA          (1<<3)  ///< Receive into rx_data member of spi_nodma_transaction_t instead into memory at rx_buffer.
-#define SPI_TRANS_USE_TXDATA          (1<<4)  ///< Transmit tx_data member of spi_nodma_transaction_t instead of data at tx_buffer. Do not set tx_buffer when using this.
+// These are defined in SPI MASTER, so don't redefine here
+//#define SPI_TRANS_MODE_DIO            (1<<0)  ///< Transmit/receive data in 2-bit mode
+//#define SPI_TRANS_MODE_QIO            (1<<1)  ///< Transmit/receive data in 4-bit mode
+//#define SPI_TRANS_MODE_DIOQIO_ADDR    (1<<2)  ///< Also transmit address in mode selected by SPI_MODE_DIO/SPI_MODE_QIO
+//#define SPI_TRANS_USE_RXDATA          (1<<3)  ///< Receive into rx_data member of spi_nodma_transaction_t instead into memory at rx_buffer.
+//#define SPI_TRANS_USE_TXDATA          (1<<4)  ///< Transmit tx_data member of spi_nodma_transaction_t instead of data at tx_buffer. Do not set tx_buffer when using this.
 
 /**
  * This structure describes one SPI transmission

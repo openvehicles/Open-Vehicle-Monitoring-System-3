@@ -37,7 +37,9 @@
 #include "metrics.h"
 #include "metrics_standard.h"
 
-#include "esp_heap_alloc_caps.h"
+extern "C" {
+#include "esp_heap_caps.h"
+}
 
 #ifdef CONFIG_OVMS_CONSOLE_LOG_STATUS
 int TestAlerts = true;
@@ -76,7 +78,8 @@ void HousekeepingTask(void *pvParameters)
       {
       MyCommandApp.Log("SHOULD NOT BE SEEN\r");
       uint32_t caps = MALLOC_CAP_8BIT;
-      MyCommandApp.Log("Free %zu  ", xPortGetFreeHeapSizeCaps(caps));
+      size_t free = heap_caps_get_free_size(caps);
+      MyCommandApp.Log("Free %zu  ",free);
       MyCommandApp.Log("Tasks %u  ", uxTaskGetNumberOfTasks());
       MyCommandApp.Log("Housekeeping 12V %f\r\n", MyPeripherals.m_esp32adc->read() / 194);
       }
@@ -129,13 +132,12 @@ void Housekeeping::metrics()
   if (m2 == NULL)
     return;
 
-  uint32_t caps = MALLOC_CAP_8BIT;
   m2->SetValue(uxTaskGetNumberOfTasks());
 
   OvmsMetricInt* m3 = (OvmsMetricInt*)MyMetrics.Find(MS_M_FREERAM);
   if (m3 == NULL)
     return;
-
-  m3->SetValue(xPortGetFreeHeapSizeCaps(caps));
+  uint32_t caps = MALLOC_CAP_8BIT;
+  size_t free = heap_caps_get_free_size(caps);
+  m3->SetValue(free);
   }
-

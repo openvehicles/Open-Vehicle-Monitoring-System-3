@@ -62,7 +62,7 @@ Peripherals::Peripherals()
   puts("  SPI bus");
   m_spibus = new spi("spi", VSPI_PIN_MISO, VSPI_PIN_MOSI, VSPI_PIN_CLK);
   puts("  MAX7317 I/O Expander");
-  m_max7317 = new max7317("egpio", m_spibus, VSPI_HOST, 1000000, VSPI_PIN_MAX7317_CS);
+  m_max7317 = new max7317("egpio", m_spibus, VSPI_NODMA_HOST, 1000000, VSPI_PIN_MAX7317_CS);
   puts("  ESP32 CAN");
   m_esp32can = new esp32can("can1", ESP32CAN_PIN_TX, ESP32CAN_PIN_RX);
   puts("  ESP32 WIFI");
@@ -72,9 +72,9 @@ Peripherals::Peripherals()
   puts("  ESP32 ADC");
   m_esp32adc = new esp32adc("adc", ADC1_CHANNEL_0, ADC_WIDTH_12Bit, ADC_ATTEN_11db);
   puts("  MCP2515 CAN 1/2");
-  m_mcp2515_1 = new mcp2515("can2", m_spibus, VSPI_HOST, 1000000, VSPI_PIN_MCP2515_1_CS, VSPI_PIN_MCP2515_1_INT);
+  m_mcp2515_1 = new mcp2515("can2", m_spibus, VSPI_NODMA_HOST, 1000000, VSPI_PIN_MCP2515_1_CS, VSPI_PIN_MCP2515_1_INT);
   puts("  MCP2515 CAN 2/2");
-  m_mcp2515_2 = new mcp2515("can3", m_spibus, VSPI_HOST, 1000000, VSPI_PIN_MCP2515_2_CS, VSPI_PIN_MCP2515_2_INT);
+  m_mcp2515_2 = new mcp2515("can3", m_spibus, VSPI_NODMA_HOST, 1000000, VSPI_PIN_MCP2515_2_CS, VSPI_PIN_MCP2515_2_INT);
   puts("  SD CARD");
   m_sdcard = new sdcard("sdcard", false,true,SDCARD_PIN_CD);
   puts ("  SIMCOM MODEM");
