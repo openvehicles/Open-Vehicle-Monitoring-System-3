@@ -270,11 +270,30 @@ void help(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const c
   writer->puts("This isn't really much help, is it?");
   }
 
+void level(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* tag = "*";
+  if (argc > 0)
+    tag = argv[0];
+  const std::string& title = cmd->GetTitle();
+  esp_log_level_t level_num = (esp_log_level_t)atoi(title.substr(title.size()-2, 1).c_str());
+  esp_log_level_set(tag, level_num);
+  const char* t = title.c_str();
+  writer->printf("%02x %02x %02x %02x %02x %02x\n", t[0], t[1], t[2], t[3], t[4], t[5]);
+  }
+
 OvmsCommandApp::OvmsCommandApp()
   {
   puts("Initialising COMMAND Framework");
   m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0);
   m_root.RegisterCommand("exit", "End console session", OvmsWriter::Exit , "", 0, 0);
+  OvmsCommand* level_cmd = m_root.RegisterCommand("level", "Set logging level", NULL, "<$C> [tag]");
+  level_cmd->RegisterCommand("verbose", "Log at the VERBOSE level (5)", level , "[tag]", 0, 1);
+  level_cmd->RegisterCommand("debug", "Log at the DEBUG level (4)", level , "[tag]", 0, 1);
+  level_cmd->RegisterCommand("info", "Log at the INFO level (3)", level , "[tag]", 0, 1);
+  level_cmd->RegisterCommand("warn", "Log at the WARN level (2)", level , "[tag]", 0, 1);
+  level_cmd->RegisterCommand("error", "Log at the ERROR level (1)", level , "[tag]", 0, 1);
+  level_cmd->RegisterCommand("none", "No logging (0)", level , "[tag]", 0, 1);
   }
 
 OvmsCommandApp::~OvmsCommandApp()
