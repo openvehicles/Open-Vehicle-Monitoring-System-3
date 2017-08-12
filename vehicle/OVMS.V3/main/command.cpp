@@ -236,8 +236,8 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
       for (OvmsCommandMap::iterator it=m_children.begin(); it!=m_children.end(); ++it)
         {
         const char* k = it->first.c_str();
-        const char* v = it->second->GetTitle().c_str();
-        writer->printf("%-20.20s %s\n",k,v);
+        const std::string v = it->second->GetTitle();
+        writer->printf("%-20.20s %s\n",k,v.c_str());
         }
       return;
       }
