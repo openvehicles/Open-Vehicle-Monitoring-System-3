@@ -75,11 +75,6 @@ uint8_t max7317::Input(uint8_t port)
 
 void max7317_output(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (argc != 2)
-    {
-    writer->puts("Error: Syntax: egpio output <port> <level>");
-    return;
-    }
   int port = atoi(argv[0]);
   if ((port <0)||(port>9))
     {

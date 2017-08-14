@@ -69,12 +69,6 @@ void vfs_ls(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
 
 void vfs_cat(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (argc == 0)
-    {
-    writer->puts("Error: Please specify file path to display");
-    return;
-    }
-
   FILE* f = fopen(argv[0], "r");
   if (f == NULL)
     {
@@ -92,12 +86,6 @@ void vfs_cat(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 
 void vfs_rm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (argc != 1)
-    {
-    writer->puts("Error: Please specify file path to remove");
-    return;
-    }
-
   if (unlink(argv[0]) == 0)
     { writer->puts("VFS File deleted"); }
   else
@@ -106,12 +94,6 @@ void vfs_rm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
 
 void vfs_mv(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (argc != 2)
-    {
-    writer->puts("Error: Please specify file path to rename and destination");
-    return;
-    }
-
   if (rename(argv[0],argv[1]) == 0)
     { writer->puts("VFS File renamed"); }
   else

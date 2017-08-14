@@ -43,9 +43,7 @@ void power_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
   PowerMode pm = MyPcpApp.FindPowerModeByName(pmname);
   if ((device == NULL)||(pm == PowerMode::Undefined))
     {
-    writer->puts("Syntax: power <device> <on|sleep|deepsleep|off>");
-    writer->printf("  Available devices: ");
-    MyPcpApp.ShowDevices(writer);
+    writer->puts("Internal error: finding device or power mode name failed");
     return;
     }
 
@@ -100,15 +98,6 @@ PowerMode pcpapp::FindPowerModeByName(std::string name)
     return iter->second;
     }
   return PowerMode::Undefined;
-  }
-
-void pcpapp::ShowDevices(OvmsWriter* writer)
-  {
-  for (auto it=m_map.begin(); it!=m_map.end(); ++it)
-    {
-    writer->printf("%s ",it->first.c_str());
-    }
-  writer->puts("");
   }
 
 pcp::pcp(std::string name)

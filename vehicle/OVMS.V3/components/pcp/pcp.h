@@ -67,7 +67,6 @@ class pcpapp
     void Deregister(std::string name);
     pcp* FindDeviceByName(std::string name);
     PowerMode FindPowerModeByName(std::string name);
-    void ShowDevices(OvmsWriter* writer);
 
   public:
     pcpmap_t m_map;
