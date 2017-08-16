@@ -112,6 +112,9 @@ esp32can::esp32can(std::string name, int txpin, int rxpin)
   m_txpin = (gpio_num_t)txpin;
   m_rxpin = (gpio_num_t)rxpin;
   MyESP32can = this;
+
+  // Install CAN ISR
+  esp_intr_alloc(ETS_CAN_INTR_SOURCE,0,ESP32CAN_isr,this,NULL);
   }
 
 esp32can::~esp32can()
@@ -192,11 +195,8 @@ esp_err_t esp32can::Init(CAN_speed_t speed)
   // Clear interrupt flags
   (void)MODULE_ESP32CAN->IR.U;
 
-  // Install CAN ISR
-  esp_intr_alloc(ETS_CAN_INTR_SOURCE,0,ESP32CAN_isr,this,NULL);
-
   // Power up the matching SN65 transciever
-  MyPeripherals.m_max7317->Output(MAX7317_CAN1_EN, 1);
+  MyPeripherals.m_max7317->Output(MAX7317_CAN1_EN, 0);
 
   // Showtime. Release Reset Mode.
   MODULE_ESP32CAN->MOD.B.RM = 0;
@@ -207,7 +207,7 @@ esp_err_t esp32can::Init(CAN_speed_t speed)
 esp_err_t esp32can::Stop()
   {
   // Power down the matching SN65 transciever
-  MyPeripherals.m_max7317->Output(MAX7317_CAN1_EN, 0);
+  MyPeripherals.m_max7317->Output(MAX7317_CAN1_EN, 1);
 
   // Enter reset mode
   MODULE_ESP32CAN->MOD.B.RM = 1;
