@@ -195,6 +195,9 @@ esp_err_t esp32can::Init(CAN_speed_t speed)
   // Install CAN ISR
   esp_intr_alloc(ETS_CAN_INTR_SOURCE,0,ESP32CAN_isr,this,NULL);
 
+  // Power up the matching SN65 transciever
+  MyPeripherals.m_max7317->Output(MAX7317_CAN1_EN, 1);
+
   // Showtime. Release Reset Mode.
   MODULE_ESP32CAN->MOD.B.RM = 0;
 
@@ -203,6 +206,9 @@ esp_err_t esp32can::Init(CAN_speed_t speed)
 
 esp_err_t esp32can::Stop()
   {
+  // Power down the matching SN65 transciever
+  MyPeripherals.m_max7317->Output(MAX7317_CAN1_EN, 0);
+
   // Enter reset mode
   MODULE_ESP32CAN->MOD.B.RM = 1;
 
@@ -245,12 +251,10 @@ void esp32can::SetPowerMode(PowerMode powermode)
     {
     case On:
       Init(m_speed);
-      MyPeripherals.m_max7317->Output(MAX7317_CAN1_EN, 0);
       break;
     case Sleep:
     case DeepSleep:
     case Off:
-      MyPeripherals.m_max7317->Output(MAX7317_CAN1_EN, 1);
       Stop();
       break;
     default:
