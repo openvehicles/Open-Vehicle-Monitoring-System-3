@@ -117,6 +117,11 @@ void pcp::SetPowerMode(PowerMode powermode)
   m_powermode = powermode;
   }
 
+PowerMode pcp::GetPowerMode()
+  {
+  return m_powermode;
+  }
+
 std::string pcp::GetName()
   {
   return m_name;

@@ -47,6 +47,7 @@ class pcp
   public:
     virtual void SetPowerMode(PowerMode powermode);
     std::string GetName();
+    PowerMode GetPowerMode();
 
   protected:
     std::string m_name;
