@@ -59,20 +59,23 @@ void HousekeepingTask(void *pvParameters)
     {
     MyHousekeeping.metrics();
 
-    // Test CAN
-    CAN_frame_t c;
-    memset(&c,0,sizeof(CAN_frame_t));
-    c.origin = NULL;
-    c.MsgID = 0x42;
-    c.FIR.B.DLC = 7;
-    c.data.u8[0] = 'E';
-    c.data.u8[1] = 'S';
-    c.data.u8[2] = 'P';
-    c.data.u8[3] = 'O';
-    c.data.u8[4] = 'V';
-    c.data.u8[5] = 'M';
-    c.data.u8[6] = 'S';
-    MyPeripherals.m_mcp2515_1->Write(&c);
+    if (MyPeripherals.m_mcp2515_1->GetPowerMode() == On)
+      {
+      // Test CAN
+      CAN_frame_t c;
+      memset(&c,0,sizeof(CAN_frame_t));
+      c.origin = NULL;
+      c.MsgID = 0x42;
+      c.FIR.B.DLC = 7;
+      c.data.u8[0] = 'E';
+      c.data.u8[1] = 'S';
+      c.data.u8[2] = 'P';
+      c.data.u8[3] = 'O';
+      c.data.u8[4] = 'V';
+      c.data.u8[5] = 'M';
+      c.data.u8[6] = 'S';
+      MyPeripherals.m_mcp2515_1->Write(&c);
+      }
 
     if (TestAlerts)
       {
