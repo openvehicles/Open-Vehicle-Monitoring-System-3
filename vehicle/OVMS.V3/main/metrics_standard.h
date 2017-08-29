@@ -88,7 +88,7 @@ const MetricStandard_t MetricStandard[] =
   { MS_V_BAT_RANGE_EST,           "int" },
   { MS_V_BAT_12V,                 "float" },
   { MS_V_TEMP_PEM,                "int" },
-  { MS_V_TEMP_MOTOR,              "int" },
+  { MS_V_TEMP_BATTERY,            "int" },
   { MS_V_TEMP_MOTOR,              "int" },
   { MS_V_TEMP_CHARGER,            "int" },
   { MS_V_TEMP_AMBIENT,            "int" },
