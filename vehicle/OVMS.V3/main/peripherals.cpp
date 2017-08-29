@@ -57,6 +57,9 @@ Peripherals::Peripherals()
   gpio_set_direction((gpio_num_t)SDCARD_PIN_CMD, GPIO_MODE_OUTPUT);
   gpio_set_direction((gpio_num_t)SDCARD_PIN_CD, GPIO_MODE_INPUT);
 
+  gpio_set_direction((gpio_num_t)MODEM_GPIO_TX, GPIO_MODE_OUTPUT);
+  gpio_set_direction((gpio_num_t)MODEM_GPIO_RX, GPIO_MODE_INPUT);
+
   puts("  ESP32 system");
   m_esp32 = new esp32system("esp32");
   puts("  SPI bus");
@@ -78,7 +81,8 @@ Peripherals::Peripherals()
   puts("  SD CARD");
   m_sdcard = new sdcard("sdcard", false,true,SDCARD_PIN_CD);
   puts ("  SIMCOM MODEM");
-  m_simcom = new simcom("simcom", UART_NUM_1, 9600, MODEM_PIN_RX, MODEM_PIN_TX, MODEM_EGPIO_PWR);
+  m_simcom = new simcom("simcom", UART_NUM_1, 115200, MODEM_GPIO_RX, MODEM_GPIO_TX, MODEM_EGPIO_PWR);
+  m_obd2ecu = NULL;
   }
 
 Peripherals::~Peripherals()

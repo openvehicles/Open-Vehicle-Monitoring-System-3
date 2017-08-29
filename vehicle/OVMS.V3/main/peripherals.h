@@ -42,6 +42,7 @@
 #include "mcp2515.h"
 #include "sdcard.h"
 #include "simcom.h"
+#include "obd2ecu.h"
 
 #define VSPI_PIN_MISO             19
 #define VSPI_PIN_MOSI             23
@@ -75,8 +76,10 @@
 #define MAX7317_EGPIO_7           8
 #define MAX7317_EGPIO_8           9
 
-#define MODEM_PIN_RX              28
-#define MODEM_PIN_TX              27
+#define MODEM_GPIO_RX             16
+#define MODEM_GPIO_TX             17
+#define MODEM_PIN_RX              27
+#define MODEM_PIN_TX              28
 #define MODEM_EGPIO_PWR           0
 
 class Peripherals
@@ -97,6 +100,7 @@ class Peripherals
     mcp2515* m_mcp2515_2;
     sdcard* m_sdcard;
     simcom* m_simcom;
+    obd2ecu* m_obd2ecu;
   };
 
 extern Peripherals MyPeripherals;
