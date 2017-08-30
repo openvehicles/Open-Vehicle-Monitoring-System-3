@@ -109,6 +109,7 @@ class OvmsCommandApp
     void RegisterConsole(OvmsWriter* writer);
     void DeregisterConsole(OvmsWriter* writer);
     int Log(const char* fmt, ...);
+    int HexDump(const char* prefix, const char* data, size_t length);
 
   public:
     char ** Complete(OvmsWriter* writer, int argc, const char * const * argv);

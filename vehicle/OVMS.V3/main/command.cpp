@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <esp_log.h>
 #include "freertos/FreeRTOS.h"
 #include "command.h"
@@ -329,6 +330,55 @@ int OvmsCommandApp::Log(const char* fmt, ...)
     (*it)->Log(buffer);
     }
   return ret;
+  }
+
+int OvmsCommandApp::HexDump(const char* prefix, const char* data, size_t length)
+  {
+  char buffer[128]; // Plenty of space for 16x3 + 2 + 16 + 1(\0)
+  const char *s = data;
+  int rlength = (int)length;
+
+  while (rlength>0)
+    {
+    char *p = buffer;
+    const char *os = s;
+    for (int k=0;k<16;k++)
+      {
+      if (k<rlength)
+        {
+        sprintf(p,"%2.2x ",*s);
+        s++;
+        }
+      else
+        {
+        sprintf(p,"   ");
+        }
+      p+=3;
+      }
+    sprintf(p,"  ");
+    s = os;
+    for (int k=0;k<16;k++)
+      {
+      if (k<rlength)
+        {
+        if (isprint((int)*s))
+          { *p = *s; }
+        else
+          { *p = '.'; }
+        s++;
+        }
+      else
+        {
+        *p = ' ';
+        }
+      p++;
+    }
+    *p = 0;
+    Log("%s %s\n",prefix,buffer);
+    rlength -= 16;
+    }
+
+  return length;
   }
 
 char ** OvmsCommandApp::Complete(OvmsWriter* writer, int argc, const char * const * argv)
