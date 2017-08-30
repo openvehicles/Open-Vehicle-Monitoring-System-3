@@ -76,10 +76,10 @@
 #define MAX7317_EGPIO_7           8
 #define MAX7317_EGPIO_8           9
 
-#define MODEM_GPIO_RX             16
-#define MODEM_GPIO_TX             17
-#define MODEM_PIN_RX              27
-#define MODEM_PIN_TX              28
+#define MODEM_GPIO_RX             17
+#define MODEM_GPIO_TX             16
+#define MODEM_PIN_RX              28
+#define MODEM_PIN_TX              27
 #define MODEM_EGPIO_PWR           0
 
 class Peripherals

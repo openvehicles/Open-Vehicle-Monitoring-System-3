@@ -47,8 +47,11 @@ class simcom : public pcp
 
   public:
     virtual void SetPowerMode(PowerMode powermode);
+    void Start();
+    void Stop();
 
   public:
+    void tx(const char* data, size_t size);
     void EventHandler();
 
   protected:

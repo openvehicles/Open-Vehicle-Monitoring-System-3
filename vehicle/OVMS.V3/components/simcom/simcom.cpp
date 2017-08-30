@@ -28,7 +28,9 @@
 ; THE SOFTWARE.
 */
 
+#include <string.h>
 #include "simcom.h"
+#include "peripherals.h"
 
 static void SIMCOM_task(void *pvParameters)
   {
@@ -44,13 +46,18 @@ static void SIMCOM_task(void *pvParameters)
 void simcom::EventHandler()
   {
   uart_event_t event;
-  size_t buffered_size;
+  size_t buffered_size = 0;
+
+  if (!m_task) return; // Quick exit if no task running (we are stopped)
+
   if (xQueueReceive(m_queue, (void *)&event, (portTickType)portMAX_DELAY))
     {
     switch(event.type)
       {
       case UART_DATA:
-        uart_get_buffered_data_len(m_uartnum, &buffered_size);
+        {
+        buffered_size = 1;
+        }
         break;
       case UART_FIFO_OVF:
         uart_flush(m_uartnum);
@@ -66,6 +73,18 @@ void simcom::EventHandler()
         break;
       }
     }
+
+  while (buffered_size>0)
+    {
+    char data[16];
+    uart_get_buffered_data_len(m_uartnum, &buffered_size);
+    if (buffered_size>16) buffered_size = 16;
+    if (buffered_size>0)
+      {
+      int len = uart_read_bytes(m_uartnum, (uint8_t*)data, buffered_size, 100 / portTICK_RATE_MS);
+      MyCommandApp.HexDump("SIMCOM rx",data,len);
+      }
+    }
   }
 
 simcom::simcom(std::string name, uart_port_t uartnum, int baud, int rxpin, int txpin, int pwregpio)
@@ -77,28 +96,46 @@ simcom::simcom(std::string name, uart_port_t uartnum, int baud, int rxpin, int t
   m_pwregpio = pwregpio;
   m_rxpin = rxpin;
   m_txpin = txpin;
-
-  uart_config_t uart_config =
-    {
-    .baud_rate = baud,
-    .data_bits = UART_DATA_8_BITS,
-    .parity = UART_PARITY_DISABLE,
-    .stop_bits = UART_STOP_BITS_1,
-    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-    .rx_flow_ctrl_thresh = 122,
-    };
-  // Set UART parameters
-  uart_param_config(uartnum, &uart_config);
-
-  // Install UART driver, and get the queue.
-  uart_driver_install(uartnum, SIMCOM_BUF_SIZE * 2, SIMCOM_BUF_SIZE * 2, 10, &m_queue, 0);
-
-  // Set UART pins
-  uart_set_pin(uartnum, txpin, rxpin, 0, 0);
   }
 
 simcom::~simcom()
   {
+  }
+
+void simcom::Start()
+  {
+  if (!m_task)
+    {
+    uart_config_t uart_config =
+      {
+      .baud_rate = m_baud,
+      .data_bits = UART_DATA_8_BITS,
+      .parity = UART_PARITY_DISABLE,
+      .stop_bits = UART_STOP_BITS_1,
+      .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+      .rx_flow_ctrl_thresh = 122,
+      };
+    // Set UART parameters
+    uart_param_config(m_uartnum, &uart_config);
+
+    // Install UART driver, and get the queue.
+    uart_driver_install(m_uartnum, SIMCOM_BUF_SIZE * 2, SIMCOM_BUF_SIZE * 2, 10, &m_queue, 0);
+
+    // Set UART pins
+    uart_set_pin(m_uartnum, m_txpin, m_rxpin, 0, 0);
+
+    xTaskCreatePinnedToCore(SIMCOM_task, "SIMCOMTask", 4096, (void*)this, 5, &m_task, 1);
+    }
+  }
+
+void simcom::Stop()
+  {
+  if (m_task)
+    {
+    uart_driver_delete(m_uartnum);
+    vTaskDelete(m_task);
+    m_task = 0;
+    }
   }
 
 void simcom::SetPowerMode(PowerMode powermode)
@@ -106,18 +143,45 @@ void simcom::SetPowerMode(PowerMode powermode)
   switch (powermode)
     {
     case On:
-      xTaskCreatePinnedToCore(SIMCOM_task, "SIMCOMTask", 4096, (void*)this, 5, &m_task, 1);
+      Start();
       break;
     case Sleep:
     case DeepSleep:
     case Off:
-      if (m_task)
-        {
-        vTaskDelete(m_task);
-        m_task = 0;
-        }
+      Stop();
       break;
     default:
       break;
     }
+  }
+
+void simcom::tx(const char* data, size_t size)
+  {
+  if (!m_task) return; // Quick exit if not task (we are stopped)
+  uart_write_bytes(m_uartnum, data, size);
+  }
+
+void simcom_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  for (int k=0; k<argc; k++)
+    {
+    if (k>0)
+      {
+      MyPeripherals.m_simcom->tx(" ",1);
+      }
+    MyPeripherals.m_simcom->tx(argv[k],strlen(argv[k]));
+    }
+  MyPeripherals.m_simcom->tx("\r\n",2);
+  }
+
+class SimcomInit
+  {
+  public: SimcomInit();
+} SimcomInit  __attribute__ ((init_priority (6000)));
+
+SimcomInit::SimcomInit()
+  {
+  puts("Initialising SIMCOM Command Framework");
+  OvmsCommand* cmd_simcom = MyCommandApp.RegisterCommand("simcom","SIMCOM framework",NULL, "", 1);
+  cmd_simcom->RegisterCommand("tx","Transmit data on SIMCOM",simcom_tx, "", 1);
   }
