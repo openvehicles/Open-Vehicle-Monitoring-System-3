@@ -30,6 +30,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <esp_system.h>
 #include <esp_ota_ops.h>
 #include "ovms.h"
 #include "housekeeping.h"
@@ -115,11 +116,30 @@ void Housekeeping::version()
   version.append("/");
   version.append(CONFIG_OVMS_VERSION_TAG);
 
-  version.append(" build ");
+  version.append(" build (idf ");
+  version.append(esp_get_idf_version());
+  version.append(") ");
   version.append(__DATE__);
   version.append(" ");
   version.append(__TIME__);
   MyMetrics.Set(MS_M_VERSION, version.c_str());
+
+  std::string hardware("OVMS ");
+  esp_chip_info_t chip;
+  esp_chip_info(&chip);
+  if (chip.features & CHIP_FEATURE_EMB_FLASH) hardware.append("EMBFLASH ");
+  if (chip.features & CHIP_FEATURE_WIFI_BGN) hardware.append("WIFI ");
+  if (chip.features & CHIP_FEATURE_BLE) hardware.append("BLE ");
+  if (chip.features & CHIP_FEATURE_BT) hardware.append("BT ");
+  char buf[32]; sprintf(buf,"cores=%d ",chip.cores); hardware.append(buf);
+  sprintf(buf,"rev=ESP32/%d",chip.revision); hardware.append(buf);
+  MyMetrics.Set(MS_M_HARDWARE, hardware.c_str());
+
+  uint8_t mac[6];
+  esp_efuse_mac_get_default(mac);
+  sprintf(buf,"%02x:%02x:%02x:%02x:%02x:%02x",
+          mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+  MyMetrics.Set(MS_M_SERIAL, buf);
   }
 
 void Housekeeping::metrics()
