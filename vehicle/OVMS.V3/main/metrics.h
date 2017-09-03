@@ -62,6 +62,7 @@ class OvmsMetricInt : public OvmsMetric
 
   public:
     std::string AsString();
+    int AsInt();
     void SetValue(int value);
     void SetValue(std::string value);
 
@@ -77,6 +78,7 @@ class OvmsMetricFloat : public OvmsMetric
 
   public:
     std::string AsString();
+    float AsFloat();
     void SetValue(float value);
     void SetValue(std::string value);
 

@@ -174,6 +174,11 @@ std::string OvmsMetricInt::AsString()
     }
   }
 
+int OvmsMetricInt::AsInt()
+  {
+  return m_value;
+  }
+
 void OvmsMetricInt::SetValue(int value)
   {
   m_value = value;
@@ -208,6 +213,11 @@ std::string OvmsMetricFloat::AsString()
     {
     return std::string("");
     }
+  }
+
+float OvmsMetricFloat::AsFloat()
+  {
+  return m_value;
   }
 
 void OvmsMetricFloat::SetValue(float value)
