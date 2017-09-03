@@ -46,10 +46,10 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   for (std::map<std::string, OvmsMetric*>::iterator it=MyMetrics.m_metrics.begin(); it!=MyMetrics.m_metrics.end(); ++it)
     {
     const char* k = it->first.c_str();
-    const char* v = it->second->AsString().c_str();
+    std::string v = it->second->AsString();
     if ((argc==0)||(strstr(k,argv[0])))
       {
-      writer->printf("%-30.30s %s\n",k,v);
+      writer->printf("%-30.30s %s\n",k,v.c_str());
       found = true;
       }
     }
