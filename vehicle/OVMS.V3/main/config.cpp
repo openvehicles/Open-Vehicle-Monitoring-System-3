@@ -33,32 +33,31 @@
 #include <string.h>
 #include "config.h"
 #include "command.h"
-#include "spiffs_vfs.h"
 
-#define OVMS_CONFIGPATH "/spiffs/ovms_config"
+#define OVMS_CONFIGPATH "/store/ovms_config"
 #define OVMS_MAXVALSIZE 1024
 
 OvmsConfig MyConfig __attribute__ ((init_priority (1010)));
 
-void spiffs_mount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void store_mount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   MyConfig.mount();
-  writer->puts("Mounted SPIFFS");
+  writer->puts("Mounted STORE");
   }
 
-void spiffs_unmount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void store_unmount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   MyConfig.unmount();
-  writer->puts("Unmounted SPIFFS");
+  writer->puts("Unmounted STORE");
   }
 
 OvmsConfig::OvmsConfig()
   {
-  puts("Initialising SPIFFS Framework");
+  puts("Initialising CONFIG Framework");
 
-  OvmsCommand* cmd_spiffs = MyCommandApp.RegisterCommand("spiffs","SPIFFS framework",NULL,"<$C>",1,1);
-  cmd_spiffs->RegisterCommand("mount","Mount SPIFFS",spiffs_mount,"",0,0);
-  cmd_spiffs->RegisterCommand("unmount","Unmount SPIFFS",spiffs_unmount,"",0,0);
+  OvmsCommand* cmd_store= MyCommandApp.RegisterCommand("store","STORE framework",NULL,"<$C>",1,1);
+  cmd_store->RegisterCommand("mount","Mount STORE",store_mount,"",0,0);
+  cmd_store->RegisterCommand("unmount","Unmount STORE",store_unmount,"",0,0);
   }
 
 OvmsConfig::~OvmsConfig()
@@ -67,16 +66,24 @@ OvmsConfig::~OvmsConfig()
 
 esp_err_t OvmsConfig::mount()
   {
-  if (!spiffs_is_registered)
-    vfs_spiffs_register();
+//  if (!spiffs_is_registered)
+//    vfs_spiffs_register();
 
-  if (!spiffs_is_mounted)
-    spiffs_mount();
+//  if (!spiffs_is_mounted)
+//    spiffs_mount();
+
+  if (! m_mounted)
+    {
+    memset(&m_store_fat,0,sizeof(esp_vfs_fat_sdmmc_mount_config_t));
+    m_store_fat.format_if_mount_failed = true;
+    m_store_fat.max_files = 5;
+    esp_vfs_fat_spiflash_mount("/store", "store", &m_store_fat, &m_store_wlh);
+    }
 
   struct stat ds;
   if (stat(OVMS_CONFIGPATH, &ds) != 0)
     {
-    puts("Initialising OVMS CONFIG storage within SPIFFS");
+    puts("Initialising OVMS CONFIG within STORE");
     mkdir(OVMS_CONFIGPATH,0);
     }
 
@@ -86,10 +93,15 @@ esp_err_t OvmsConfig::mount()
 
 esp_err_t OvmsConfig::unmount()
   {
-  if (spiffs_is_mounted)
-    spiffs_unmount(0);
+//  if (spiffs_is_mounted)
+//    spiffs_unmount(0);
 
-  m_mounted = false;
+  if (m_mounted)
+    {
+    esp_vfs_fat_spiflash_unmount("/store", m_store_wlh);
+    m_mounted = false;
+    }
+
   return ESP_OK;
   }
 

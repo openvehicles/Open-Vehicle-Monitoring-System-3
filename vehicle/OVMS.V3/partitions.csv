@@ -6,4 +6,4 @@ phy_init, data, phy,     0xf000,  0x1000
 factory,  app,  factory, 0x10000,  4M
 ota_0,    app,  ota_0,   ,         4M
 ota_1,    app,  ota_1,   ,         4M
-store,    data, spiffs,  ,         1M
+store,    data, fat,     ,         1M

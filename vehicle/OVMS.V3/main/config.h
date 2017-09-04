@@ -34,6 +34,8 @@
 #include "string"
 #include "map"
 #include "esp_err.h"
+#include "esp_vfs_fat.h"
+#include "wear_levelling.h"
 
 class OvmsConfigParam
   {
@@ -81,6 +83,8 @@ class OvmsConfig
 
   protected:
     bool m_mounted;
+    esp_vfs_fat_mount_config_t m_store_fat;
+    wl_handle_t m_store_wlh;
     std::map<std::string, OvmsConfigParam*> m_map;
 
   protected:
