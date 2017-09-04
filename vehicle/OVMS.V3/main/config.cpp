@@ -59,8 +59,6 @@ OvmsConfig::OvmsConfig()
   OvmsCommand* cmd_spiffs = MyCommandApp.RegisterCommand("spiffs","SPIFFS framework",NULL,"<$C>",1,1);
   cmd_spiffs->RegisterCommand("mount","Mount SPIFFS",spiffs_mount,"",0,0);
   cmd_spiffs->RegisterCommand("unmount","Unmount SPIFFS",spiffs_unmount,"",0,0);
-
-  mount();
   }
 
 OvmsConfig::~OvmsConfig()
