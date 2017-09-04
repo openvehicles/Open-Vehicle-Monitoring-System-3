@@ -31,11 +31,12 @@
 #include <string>
 #include <string.h>
 #include <stdio.h>
-#include "vfs.h"
 #include <sys/types.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <libgen.h>
+#include "vfs.h"
+#include "config.h"
 #include "command.h"
 
 void vfs_ls(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -52,6 +53,11 @@ void vfs_ls(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
     }
   else
     {
+    if (MyConfig.ProtectedPath(argv[0]))
+      {
+      writer->puts("Error: protected path");
+      return;
+      }
     if ((dir = opendir (argv[0])) == NULL)
       {
       writer->puts("Error: VFS cannot open directory listing for that directory");
@@ -69,6 +75,12 @@ void vfs_ls(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
 
 void vfs_cat(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
+  if (MyConfig.ProtectedPath(argv[0]))
+    {
+    writer->puts("Error: protected path");
+    return;
+    }
+
   FILE* f = fopen(argv[0], "r");
   if (f == NULL)
     {
@@ -86,6 +98,12 @@ void vfs_cat(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 
 void vfs_rm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
+  if (MyConfig.ProtectedPath(argv[0]))
+    {
+    writer->puts("Error: protected path");
+    return;
+    }
+
   if (unlink(argv[0]) == 0)
     { writer->puts("VFS File deleted"); }
   else
@@ -94,6 +112,16 @@ void vfs_rm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
 
 void vfs_mv(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
+  if (MyConfig.ProtectedPath(argv[0]))
+    {
+    writer->puts("Error: protected path");
+    return;
+    }
+  if (MyConfig.ProtectedPath(argv[1]))
+    {
+    writer->puts("Error: protected path");
+    return;
+    }
   if (rename(argv[0],argv[1]) == 0)
     { writer->puts("VFS File renamed"); }
   else
