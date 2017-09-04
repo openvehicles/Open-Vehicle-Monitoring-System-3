@@ -161,7 +161,11 @@ OvmsConfigParam* OvmsConfig::CachedParam(std::string param)
 
 bool OvmsConfig::ProtectedPath(std::string path)
   {
+#ifdef CONFIG_OVMS_DEV_CONFIGVFS
+  return false;
+#else
   return (path.find(OVMS_CONFIGPATH) == std::string::npos);
+#endif // #ifdef CONFIG_OVMS_DEV_CONFIGVFS
   }
 
 OvmsConfigParam::OvmsConfigParam(std::string name, std::string title, bool writable, bool readable)

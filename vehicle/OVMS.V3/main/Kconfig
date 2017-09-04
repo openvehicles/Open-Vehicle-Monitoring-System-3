@@ -1,5 +1,5 @@
 menuconfig OVMS
-    bool "OVMS"
+    bool "Open Vehicle Monitoring System (OVMS)"
     default y
     help
         Select this option to enable OVMS specific features
@@ -17,3 +17,22 @@ config OVMS_CONSOLE_LOG_STATUS
     depends on OVMS
     help
         Enable to periodically log status on OVMS console
+
+menu "Developer Options"
+    depends on OVMS
+
+config OVMS_DEV_CONFIGVFS
+    bool "Disable the usual protections for configuration visibility in VFS"
+    default n
+    depends on OVMS
+    help
+        Enable to permit VFS access to configuration files (danger: insecure)
+
+config OVMS_DEV_DEBUGRAM
+    bool "Enable extended RAM memory allocation statistics"
+    default n
+    depends on OVMS
+    help
+        Enable to store extended RAM memory allocation statistics (danger: performance impact)
+
+endmenu # Developer Options
