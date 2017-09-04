@@ -28,6 +28,7 @@
 ; THE SOFTWARE.
 */
 
+#include <unistd.h>
 #include <sys/stat.h>
 #include <string.h>
 #include "config.h"
@@ -107,6 +108,13 @@ void OvmsConfig::RegisterParam(std::string name, std::string title, bool writabl
 
 void OvmsConfig::DeregisterParam(std::string name)
   {
+  auto k = m_map.find(name);
+  if (k != m_map.end())
+    {
+    k->second->DeleteParam();
+    delete k->second;
+    m_map.erase(k);
+    }
   }
 
 void OvmsConfig::SetParamValue(std::string param, std::string instance, std::string value)
@@ -115,6 +123,15 @@ void OvmsConfig::SetParamValue(std::string param, std::string instance, std::str
   if (p)
     {
     p->SetValue(instance,value);
+    }
+  }
+
+void OvmsConfig::DeleteInstance(std::string param, std::string instance)
+  {
+  OvmsConfigParam *p = CachedParam(param);
+  if (p)
+    {
+    p->DeleteInstance(instance);
     }
   }
 
@@ -184,6 +201,24 @@ void OvmsConfigParam::SetValue(std::string instance, std::string value)
   {
   m_map[instance] = value;
   RewriteConfig();
+  }
+
+void OvmsConfigParam::DeleteParam()
+  {
+  std::string path(OVMS_CONFIGPATH);
+  path.append("/");
+  path.append(m_name);
+  unlink(path.c_str());
+  }
+
+void OvmsConfigParam::DeleteInstance(std::string instance)
+  {
+  auto k = m_map.find(instance);
+  if (k != m_map.end())
+    {
+    m_map.erase(k);
+    RewriteConfig();
+    }
   }
 
 std::string OvmsConfigParam::GetValue(std::string instance)

@@ -43,6 +43,8 @@ class OvmsConfigParam
 
   public:
     void SetValue(std::string instance, std::string value);
+    void DeleteParam();
+    void DeleteInstance(std::string instance);
     std::string GetValue(std::string instance);
 
   protected:
@@ -68,6 +70,7 @@ class OvmsConfig
 
   public:
     void SetParamValue(std::string param, std::string instance, std::string value);
+    void DeleteInstance(std::string param, std::string instance);
     std::string GetParamValue(std::string param, std::string instance);
     bool ProtectedPath(std::string path);
 
