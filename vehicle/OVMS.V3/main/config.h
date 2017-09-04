@@ -44,12 +44,16 @@ class OvmsConfigParam
   public:
     void SetValue(std::string instance, std::string value);
     std::string GetValue(std::string instance);
-    
-  public:
+
+  protected:
+    void RewriteConfig();
+
+  protected:
     std::string m_name;
     std::string m_title;
     bool m_writable;
     bool m_readable;
+    std::map<std::string, std::string> m_map;
   };
 
 class OvmsConfig
@@ -65,15 +69,19 @@ class OvmsConfig
   public:
     void SetParamValue(std::string param, std::string instance, std::string value);
     std::string GetParamValue(std::string param, std::string instance);
+    bool ProtectedPath(std::string path);
 
   public:
     esp_err_t mount();
     esp_err_t unmount();
     bool ismounted();
 
-  public:
+  protected:
     bool m_mounted;
     std::map<std::string, OvmsConfigParam*> m_map;
+
+  protected:
+    OvmsConfigParam* CachedParam(std::string param);
   };
 
 extern OvmsConfig MyConfig;
