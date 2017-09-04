@@ -30,6 +30,7 @@
 #ifndef __COMMAND_H__
 #define __COMMAND_H__
 
+#include <unistd.h>
 #include <string>
 #include <map>
 #include <set>
