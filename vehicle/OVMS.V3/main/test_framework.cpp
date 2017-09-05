@@ -28,6 +28,9 @@
 ; THE SOFTWARE.
 */
 
+#include "esp_log.h"
+static const char *TAG = "test";
+
 #include <stdio.h>
 #include "freertos/FreeRTOSConfig.h"
 #include "esp_system.h"
@@ -87,7 +90,7 @@ class TestFrameworkInit
 
 TestFrameworkInit::TestFrameworkInit()
   {
-  puts("Framework: Initialising TEST (5000)");
+  ESP_LOGI(TAG, "Initialising TEST (5000)");
 
   OvmsCommand* cmd_test = MyCommandApp.RegisterCommand("test","Test framework",NULL);
   cmd_test->RegisterCommand("sleep","Test Deep Sleep",test_deepsleep,"[seconds]",0,1);

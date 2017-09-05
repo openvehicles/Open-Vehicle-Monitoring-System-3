@@ -28,6 +28,9 @@
 ; THE SOFTWARE.
 */
 
+#include "esp_log.h"
+static const char *TAG = "ota";
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/stat.h>
@@ -206,7 +209,7 @@ void ota_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
 
 OvmsOTA::OvmsOTA()
   {
-  puts("Framework: Initialising OTA (4400)");
+  ESP_LOGI(TAG, "Initialising OTA (4400)");
 
   MyCommandApp.RegisterCommand("reset","Reset system",ota_reset,"",0,0);
 

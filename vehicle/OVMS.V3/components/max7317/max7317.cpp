@@ -28,6 +28,9 @@
 ; THE SOFTWARE.
 */
 
+#include "esp_log.h"
+static const char *TAG = "max7317";
+
 #include <string.h>
 #include "max7317.h"
 #include "command.h"
@@ -99,7 +102,7 @@ class Max7317Init
 
 Max7317Init::Max7317Init()
   {
-  puts("Framework: Initialising MAX7317 EGPIO (4200)");
+  ESP_LOGI(TAG, "Initialising MAX7317 EGPIO (4200)");
 
   OvmsCommand* cmd_egpio = MyCommandApp.RegisterCommand("egpio","EGPIO framework",NULL, "", 1);
   cmd_egpio->RegisterCommand("output","Set EGPIO output level",max7317_output, "<port> <level>", 2, 2);

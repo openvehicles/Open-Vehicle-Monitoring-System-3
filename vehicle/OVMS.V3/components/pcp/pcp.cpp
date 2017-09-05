@@ -28,6 +28,9 @@
 ; THE SOFTWARE.
 */
 
+#include "esp_log.h"
+static const char *TAG = "pcp";
+
 #include <stdio.h>
 #include "pcp.h"
 
@@ -53,7 +56,7 @@ void power_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
 
 pcpapp::pcpapp()
   {
-  puts("Framework: Initialising POWER (4000)");
+  ESP_LOGI(TAG, "Initialising POWER (4000)");
 
   m_mappm["on"] = On;
   m_mappm["sleep"] = Sleep;

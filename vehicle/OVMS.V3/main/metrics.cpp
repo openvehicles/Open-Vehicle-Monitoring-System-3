@@ -28,6 +28,9 @@
 ; THE SOFTWARE.
 */
 
+#include "esp_log.h"
+static const char *TAG = "metrics";
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <sstream>
@@ -68,7 +71,7 @@ void metrics_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
 OvmsMetricFactory::OvmsMetricFactory()
   {
-  puts("Framework: Initialising METRIC FACTORY (1800)");
+  ESP_LOGI(TAG, "Initialising METRIC FACTORY (1800)");
   }
 
 OvmsMetricFactory::~OvmsMetricFactory()
@@ -87,7 +90,7 @@ OvmsMetric* OvmsMetricFactory::NewMetric(const char* MetricType)
 
 OvmsMetrics::OvmsMetrics()
   {
-  puts("Framework: Initialising METRICS (1810)");
+  ESP_LOGI(TAG, "Initialising METRICS (1810)");
 
   // Register our commands
   OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework",NULL, "", 1);

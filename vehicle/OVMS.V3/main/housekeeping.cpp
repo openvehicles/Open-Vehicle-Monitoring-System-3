@@ -28,6 +28,9 @@
 ; THE SOFTWARE.
 */
 
+#include "esp_log.h"
+static const char *TAG = "housekeeping";
+
 #include <stdio.h>
 #include <string.h>
 #include <esp_system.h>
@@ -98,7 +101,7 @@ void HousekeepingTask(void *pvParameters)
 
 Housekeeping::Housekeeping()
   {
-  puts("Initialising HOUSEKEEPING Framework...");
+  ESP_LOGI(TAG, "Initialising HOUSEKEEPING Framework...");
 
   xTaskCreatePinnedToCore(HousekeepingTask, "HousekeepingTask", 4096, (void*)this, 5, &m_taskid, 1);
   }

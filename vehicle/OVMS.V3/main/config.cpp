@@ -28,6 +28,9 @@
 ; THE SOFTWARE.
 */
 
+#include "esp_log.h"
+static const char *TAG = "config";
+
 #include <unistd.h>
 #include <sys/stat.h>
 #include <string.h>
@@ -53,7 +56,7 @@ void store_unmount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 
 OvmsConfig::OvmsConfig()
   {
-  puts("Framework: Initialising CONFIG (1400)");
+  ESP_LOGI(TAG, "Initialising CONFIG (1400)");
 
   OvmsCommand* cmd_store= MyCommandApp.RegisterCommand("store","STORE framework",NULL,"<$C>",1,1);
   cmd_store->RegisterCommand("mount","Mount STORE",store_mount,"",0,0);

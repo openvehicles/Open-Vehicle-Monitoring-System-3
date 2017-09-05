@@ -28,6 +28,9 @@
 ; THE SOFTWARE.
 */
 
+#include "esp_log.h"
+static const char *TAG = "simcom";
+
 #include <string.h>
 #include "simcom.h"
 #include "peripherals.h"
@@ -181,7 +184,7 @@ class SimcomInit
 
 SimcomInit::SimcomInit()
   {
-  puts("Framework: Initialising SIMCOM (4600)");
+  ESP_LOGI(TAG, "Initialising SIMCOM (4600)");
 
   OvmsCommand* cmd_simcom = MyCommandApp.RegisterCommand("simcom","SIMCOM framework",NULL, "", 1);
   cmd_simcom->RegisterCommand("tx","Transmit data on SIMCOM",simcom_tx, "", 1);

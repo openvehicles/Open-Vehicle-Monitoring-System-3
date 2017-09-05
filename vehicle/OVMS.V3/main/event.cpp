@@ -28,6 +28,9 @@
 ; THE SOFTWARE.
 */
 
+#include "esp_log.h"
+static const char *TAG = "events";
+
 #include <string.h>
 #include <stdio.h>
 #include "event.h"
@@ -37,7 +40,7 @@ OvmsEvents MyEvents __attribute__ ((init_priority (1200)));
 
 OvmsEvents::OvmsEvents()
   {
-  puts("Framework: Initialising EVENTS (1200)");
+  ESP_LOGI(TAG, "Initialising EVENTS (1200)");
   }
 
 OvmsEvents::~OvmsEvents()

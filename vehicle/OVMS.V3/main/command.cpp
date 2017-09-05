@@ -28,6 +28,9 @@
 ; THE SOFTWARE.
 */
 
+#include "esp_log.h"
+static const char *TAG = "command";
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -285,7 +288,7 @@ void level(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const 
 
 OvmsCommandApp::OvmsCommandApp()
   {
-  puts("Framework: Initialising COMMAND (1000)");
+  ESP_LOGI(TAG, "Initialising COMMAND (1000)");
 
   m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0);
   m_root.RegisterCommand("exit", "End console session", OvmsWriter::Exit , "", 0, 0);

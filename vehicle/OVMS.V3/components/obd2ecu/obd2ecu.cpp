@@ -28,6 +28,9 @@
 ; THE SOFTWARE.
 */
 
+#include "esp_log.h"
+static const char *TAG = "obd2ecu";
+
 #include <string.h>
 #include "obd2ecu.h"
 #include "command.h"
@@ -100,7 +103,7 @@ class obd2ecuInit
 
 obd2ecuInit::obd2ecuInit()
   {
-  puts("Framework: Initialising OBD2ECU (7000)");
+  ESP_LOGI(TAG, "Initialising OBD2ECU (7000)");
 
   OvmsCommand* cmd_obdii = MyCommandApp.RegisterCommand("obdii","OBDII framework",NULL, "", 1);
   OvmsCommand* cmd_ecu = cmd_obdii->RegisterCommand("ecu","OBDII ECU framework",NULL, "", 1);

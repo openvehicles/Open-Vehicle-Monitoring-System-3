@@ -28,6 +28,9 @@
 ; THE SOFTWARE.
 */
 
+#include "esp_log.h"
+static const char *TAG = "teslaroadster";
+
 #include <stdio.h>
 #include "vehicle_teslaroadster.h"
 
@@ -51,7 +54,7 @@ class OvmsVehicleTeslaRoadsterInit
 
 OvmsVehicleTeslaRoadsterInit::OvmsVehicleTeslaRoadsterInit()
   {
-  puts("Registering Vehicle: Tesla Roadster (8000)");
+  ESP_LOGI(TAG, "Registering Vehicle: Tesla Roadster (8000)");
 
   MyVehicleFactory.RegisterVehicle<OvmsVehicleTeslaRoadster>("TR");
   }

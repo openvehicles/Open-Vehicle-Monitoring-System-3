@@ -28,6 +28,9 @@
 ; THE SOFTWARE.
 */
 
+#include "esp_log.h"
+static const char *TAG = "script";
+
 #include <string.h>
 #include <stdio.h>
 #include "script.h"
@@ -37,7 +40,7 @@ OvmsScripts MyScripts __attribute__ ((init_priority (1600)));
 
 OvmsScripts::OvmsScripts()
   {
-  puts("Framework: Initialising SCRIPTS (1600)");
+  ESP_LOGI(TAG, "Initialising SCRIPTS (1600)");
   }
 
 OvmsScripts::~OvmsScripts()

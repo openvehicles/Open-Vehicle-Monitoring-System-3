@@ -1,4 +1,6 @@
-#include <esp_log.h>
+#include "esp_log.h"
+static const char *TAG = "ovms_main";
+
 #include <string>
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
@@ -27,17 +29,17 @@ void app_main(void)
   {
   nvs_flash_init();
 
-  printf("ovms_main: Executing on CPU core %d\n",xPortGetCoreID());
+  ESP_LOGI(TAG, "Executing on CPU core %d",xPortGetCoreID());
 
-  puts("omvs_main: Mounting CONFIG...");
+  ESP_LOGI(TAG, "Mounting CONFIG...");
   MyConfig.mount();
 
-  puts("ovms_main: Starting PERIPHERALS...");
+  ESP_LOGI(TAG, "Starting PERIPHERALS...");
   MyPeripherals = new Peripherals();
 
-  puts("ovms_main: Starting HOUSEKEEPING...");
+  ESP_LOGI(TAG, "Starting HOUSEKEEPING...");
   MyHousekeeping = new Housekeeping();
 
-  puts("ovms_main: Starting USB console...");
+  ESP_LOGI(TAG, "Starting USB console...");
   usbconsole = new ConsoleAsync();
   }

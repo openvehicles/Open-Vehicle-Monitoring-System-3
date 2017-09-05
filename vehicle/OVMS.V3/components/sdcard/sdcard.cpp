@@ -28,6 +28,9 @@
 ; THE SOFTWARE.
 */
 
+#include "esp_log.h"
+static const char *TAG = "sdcard";
+
 #include <string>
 #include <string.h>
 #include "sdcard.h"
@@ -133,7 +136,7 @@ class SDCardInit
 
 SDCardInit::SDCardInit()
   {
-  puts("Framework: Initialising SD CARD (4400)");
+  ESP_LOGI(TAG, "Initialising SD CARD (4400)");
 
   OvmsCommand* cmd_sd = MyCommandApp.RegisterCommand("sd","SD CARD framework",NULL,"<$C>",1,1);
   cmd_sd->RegisterCommand("mount","Mount SD CARD",sdcard_mount,"",0,0);

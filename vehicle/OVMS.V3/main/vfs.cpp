@@ -28,6 +28,9 @@
 ; THE SOFTWARE.
 */
 
+#include "esp_log.h"
+static const char *TAG = "vfs";
+
 #include <string>
 #include <string.h>
 #include <stdio.h>
@@ -135,7 +138,7 @@ class VfsInit
 
 VfsInit::VfsInit()
   {
-  puts("Framework: Initialising VFS (5200)");
+  ESP_LOGI(TAG, "Initialising VFS (5200)");
 
   OvmsCommand* cmd_vfs = MyCommandApp.RegisterCommand("vfs","VFS framework",NULL,"<$C> <file(s)>");
   cmd_vfs->RegisterCommand("ls","VFS Directory Listing",vfs_ls, "[file]", 0, 1);
