@@ -37,7 +37,7 @@
 #define OVMS_CONFIGPATH "/store/ovms_config"
 #define OVMS_MAXVALSIZE 1024
 
-OvmsConfig MyConfig __attribute__ ((init_priority (1010)));
+OvmsConfig MyConfig __attribute__ ((init_priority (1400)));
 
 void store_mount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -53,7 +53,7 @@ void store_unmount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 
 OvmsConfig::OvmsConfig()
   {
-  puts("Initialising CONFIG Framework");
+  puts("Framework: Initialising CONFIG (1400)");
 
   OvmsCommand* cmd_store= MyCommandApp.RegisterCommand("store","STORE framework",NULL,"<$C>",1,1);
   cmd_store->RegisterCommand("mount","Mount STORE",store_mount,"",0,0);

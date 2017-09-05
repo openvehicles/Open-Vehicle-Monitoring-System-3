@@ -9,6 +9,7 @@
 #include <string.h>
 #include "ovms.h"
 #include "peripherals.h"
+#include "housekeeping.h"
 #include "console_async.h"
 #include "config.h"
 
@@ -19,13 +20,24 @@ extern "C"
   void app_main(void);
   }
 
+Housekeeping* MyHousekeeping = NULL;
+Peripherals* MyPeripherals = NULL;
+
 void app_main(void)
   {
   nvs_flash_init();
 
+  printf("ovms_main: Executing on CPU core %d\n",xPortGetCoreID());
+
+  puts("omvs_main: Mounting CONFIG...");
   MyConfig.mount();
+
+  puts("ovms_main: Starting PERIPHERALS...");
+  MyPeripherals = new Peripherals();
+
+  puts("ovms_main: Starting HOUSEKEEPING...");
+  MyHousekeeping = new Housekeeping();
+
+  puts("ovms_main: Starting USB console...");
   usbconsole = new ConsoleAsync();
-  MyPeripherals.m_esp32can->Init(CAN_SPEED_1000KBPS);
-  MyPeripherals.m_mcp2515_1->Init(CAN_SPEED_1000KBPS);
-  MyPeripherals.m_mcp2515_2->Init(CAN_SPEED_1000KBPS);
   }

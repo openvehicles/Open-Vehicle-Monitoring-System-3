@@ -33,11 +33,11 @@
 #include "script.h"
 #include "command.h"
 
-OvmsScripts MyScripts __attribute__ ((init_priority (1020)));
+OvmsScripts MyScripts __attribute__ ((init_priority (1600)));
 
 OvmsScripts::OvmsScripts()
   {
-  puts("Initialising SCRIPTS Framework");
+  puts("Framework: Initialising SCRIPTS (1600)");
   }
 
 OvmsScripts::~OvmsScripts()

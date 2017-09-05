@@ -108,6 +108,10 @@ template<typename Type> OvmsMetric* CreateMetric()
 class OvmsMetricFactory
   {
   public:
+    OvmsMetricFactory();
+    virtual ~OvmsMetricFactory();
+
+  public:
     typedef OvmsMetric* (*FactoryFuncPtr)();
     typedef map<const char*, FactoryFuncPtr> map_type;
 

@@ -49,19 +49,21 @@ int TestAlerts = true;
 int TestAlerts = false;
 #endif
 
-Housekeeping MyHousekeeping __attribute__ ((init_priority (9999)));
-
 void HousekeepingTask(void *pvParameters)
   {
+  Housekeeping* me = (Housekeeping*)pvParameters;
+
   vTaskDelay(50 / portTICK_PERIOD_MS);
 
-  MyHousekeeping.version();
+  me->init();
+
+  me->version();
 
   while (1)
     {
-    MyHousekeeping.metrics();
+    me->metrics();
 
-    if (MyPeripherals.m_mcp2515_1->GetPowerMode() == On)
+    if (MyPeripherals->m_mcp2515_1->GetPowerMode() == On)
       {
       // Test CAN
       CAN_frame_t c;
@@ -76,7 +78,7 @@ void HousekeepingTask(void *pvParameters)
       c.data.u8[4] = 'V';
       c.data.u8[5] = 'M';
       c.data.u8[6] = 'S';
-      MyPeripherals.m_mcp2515_1->Write(&c);
+      MyPeripherals->m_mcp2515_1->Write(&c);
       }
 
     if (TestAlerts)
@@ -87,7 +89,7 @@ void HousekeepingTask(void *pvParameters)
 //      size_t free = heap_caps_get_free_size(caps);
       MyCommandApp.Log("Free %zu  ",free);
       MyCommandApp.Log("Tasks %u  ", uxTaskGetNumberOfTasks());
-      MyCommandApp.Log("Housekeeping 12V %f\r\n", MyPeripherals.m_esp32adc->read() / 194);
+      MyCommandApp.Log("Housekeeping 12V %f\r\n", MyPeripherals->m_esp32adc->read() / 194);
       }
 
     vTaskDelay(10000 / portTICK_PERIOD_MS);
@@ -103,6 +105,13 @@ Housekeeping::Housekeeping()
 
 Housekeeping::~Housekeeping()
   {
+  }
+
+void Housekeeping::init()
+  {
+  MyPeripherals->m_esp32can->Init(CAN_SPEED_1000KBPS);
+  MyPeripherals->m_mcp2515_1->Init(CAN_SPEED_1000KBPS);
+  MyPeripherals->m_mcp2515_2->Init(CAN_SPEED_1000KBPS);
   }
 
 void Housekeeping::version()
@@ -150,7 +159,7 @@ void Housekeeping::metrics()
   if (m1 == NULL)
     return;
 
-  float v = MyPeripherals.m_esp32adc->read() / 194;
+  float v = MyPeripherals->m_esp32adc->read() / 194;
   m1->SetValue(v);
 
   OvmsMetricInt* m2 = (OvmsMetricInt*)MyMetrics.Find(MS_M_TASKS);

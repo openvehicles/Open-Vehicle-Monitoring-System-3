@@ -33,11 +33,11 @@
 #include "event.h"
 #include "command.h"
 
-OvmsEvents MyEvents __attribute__ ((init_priority (500)));
+OvmsEvents MyEvents __attribute__ ((init_priority (1200)));
 
 OvmsEvents::OvmsEvents()
   {
-  puts("Initialising EVENTS Framework");
+  puts("Framework: Initialising EVENTS (1200)");
   }
 
 OvmsEvents::~OvmsEvents()

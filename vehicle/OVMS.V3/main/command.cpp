@@ -285,7 +285,8 @@ void level(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const 
 
 OvmsCommandApp::OvmsCommandApp()
   {
-  puts("Initialising COMMAND Framework");
+  puts("Framework: Initialising COMMAND (1000)");
+
   m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0);
   m_root.RegisterCommand("exit", "End console session", OvmsWriter::Exit , "", 0, 0);
   OvmsCommand* level_cmd = m_root.RegisterCommand("level", "Set logging level", NULL, "<$C> [tag]");

@@ -131,11 +131,12 @@ void vfs_mv(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
 class VfsInit
   {
   public: VfsInit();
-} MyVfsInit  __attribute__ ((init_priority (8000)));
+} MyVfsInit  __attribute__ ((init_priority (5200)));
 
 VfsInit::VfsInit()
   {
-  puts("Initialising VFS Framework");
+  puts("Framework: Initialising VFS (5200)");
+
   OvmsCommand* cmd_vfs = MyCommandApp.RegisterCommand("vfs","VFS framework",NULL,"<$C> <file(s)>");
   cmd_vfs->RegisterCommand("ls","VFS Directory Listing",vfs_ls, "[file]", 0, 1);
   cmd_vfs->RegisterCommand("cat","VFS Display a file",vfs_cat, "<file>", 1, 1);

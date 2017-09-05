@@ -40,7 +40,7 @@
 #include "metrics.h"
 #include "metrics_standard.h"
 
-OvmsOTA MyOTA __attribute__ ((init_priority (8010)));
+OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
 
 void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -206,7 +206,7 @@ void ota_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
 
 OvmsOTA::OvmsOTA()
   {
-  puts("Initialising OTA Framework");
+  puts("Framework: Initialising OTA (4400)");
 
   MyCommandApp.RegisterCommand("reset","Reset system",ota_reset,"",0,0);
 

@@ -103,6 +103,6 @@ class Peripherals
     obd2ecu* m_obd2ecu;
   };
 
-extern Peripherals MyPeripherals;
+extern Peripherals* MyPeripherals;
 
 #endif //#ifndef __PERIPHERALS_H__

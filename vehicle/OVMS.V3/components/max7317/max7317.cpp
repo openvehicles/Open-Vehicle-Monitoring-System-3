@@ -88,18 +88,19 @@ void max7317_output(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     return;
     }
 
-  MyPeripherals.m_max7317->Output((uint8_t)port,(uint8_t)level);
+  MyPeripherals->m_max7317->Output((uint8_t)port,(uint8_t)level);
   writer->printf("EGPIO port %d set to output level %d\n", port, level);
   }
 
 class Max7317Init
   {
   public: Max7317Init();
-} MyMax7317Init  __attribute__ ((init_priority (6000)));
+} MyMax7317Init  __attribute__ ((init_priority (4200)));
 
 Max7317Init::Max7317Init()
   {
-  puts("Initialising MAX7317 EGPIO Framework");
+  puts("Framework: Initialising MAX7317 EGPIO (4200)");
+
   OvmsCommand* cmd_egpio = MyCommandApp.RegisterCommand("egpio","EGPIO framework",NULL, "", 1);
   cmd_egpio->RegisterCommand("output","Set EGPIO output level",max7317_output, "<port> <level>", 2, 2);
   }

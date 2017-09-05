@@ -97,12 +97,12 @@ bool sdcard::ismounted()
 
 void sdcard_mount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  MyPeripherals.m_sdcard->mount();
-  if (MyPeripherals.m_sdcard->ismounted())
+  MyPeripherals->m_sdcard->mount();
+  if (MyPeripherals->m_sdcard->ismounted())
     {
     if (verbosity > COMMAND_RESULT_MINIMAL)
       {
-      sdmmc_card_t* card = MyPeripherals.m_sdcard->m_card;
+      sdmmc_card_t* card = MyPeripherals->m_sdcard->m_card;
       writer->printf("Name: %s\n", card->cid.name);
       writer->printf("Type: %s\n", (card->ocr & SD_OCR_SDHC_CAP)?"SDHC/SDXC":"SDSC");
       writer->printf("Speed: %s\n", (card->csd.tr_speed > 25000000)?"high speed":"default speed");
@@ -122,18 +122,19 @@ void sdcard_mount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 
 void sdcard_unmount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  MyPeripherals.m_sdcard->unmount();
+  MyPeripherals->m_sdcard->unmount();
   writer->puts("Unmounted SD CARD");
   }
 
 class SDCardInit
   {
   public: SDCardInit();
-} MySDCardInit  __attribute__ ((init_priority (6000)));
+} MySDCardInit  __attribute__ ((init_priority (4400)));
 
 SDCardInit::SDCardInit()
   {
-  puts("Initialising SD CARD Framework");
+  puts("Framework: Initialising SD CARD (4400)");
+
   OvmsCommand* cmd_sd = MyCommandApp.RegisterCommand("sd","SD CARD framework",NULL,"<$C>",1,1);
   cmd_sd->RegisterCommand("mount","Mount SD CARD",sdcard_mount,"",0,0);
   cmd_sd->RegisterCommand("unmount","Unmount SD CARD",sdcard_unmount,"",0,0);

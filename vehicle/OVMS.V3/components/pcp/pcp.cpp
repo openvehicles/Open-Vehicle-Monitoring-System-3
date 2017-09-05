@@ -31,7 +31,7 @@
 #include <stdio.h>
 #include "pcp.h"
 
-pcpapp MyPcpApp __attribute__ ((init_priority (1100)));
+pcpapp MyPcpApp __attribute__ ((init_priority (4000)));
 OvmsCommand* powercmd = NULL;
 
 void power_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -53,7 +53,8 @@ void power_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
 
 pcpapp::pcpapp()
   {
-  puts("Initialising POWER Framework");
+  puts("Framework: Initialising POWER (4000)");
+
   m_mappm["on"] = On;
   m_mappm["sleep"] = Sleep;
   m_mappm["deepsleep"] = DeepSleep;

@@ -36,8 +36,6 @@
 #include "esp_intr.h"
 #include "peripherals.h"
 
-Peripherals MyPeripherals __attribute__ ((init_priority (3000)));
-
 Peripherals::Peripherals()
   {
   puts("Initialising OVMS Peripherals...");

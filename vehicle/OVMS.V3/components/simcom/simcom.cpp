@@ -167,21 +167,22 @@ void simcom_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     {
     if (k>0)
       {
-      MyPeripherals.m_simcom->tx(" ",1);
+      MyPeripherals->m_simcom->tx(" ",1);
       }
-    MyPeripherals.m_simcom->tx(argv[k],strlen(argv[k]));
+    MyPeripherals->m_simcom->tx(argv[k],strlen(argv[k]));
     }
-  MyPeripherals.m_simcom->tx("\r\n",2);
+  MyPeripherals->m_simcom->tx("\r\n",2);
   }
 
 class SimcomInit
   {
   public: SimcomInit();
-} SimcomInit  __attribute__ ((init_priority (6000)));
+} SimcomInit  __attribute__ ((init_priority (4600)));
 
 SimcomInit::SimcomInit()
   {
-  puts("Initialising SIMCOM Command Framework");
+  puts("Framework: Initialising SIMCOM (4600)");
+
   OvmsCommand* cmd_simcom = MyCommandApp.RegisterCommand("simcom","SIMCOM framework",NULL, "", 1);
   cmd_simcom->RegisterCommand("tx","Transmit data on SIMCOM",simcom_tx, "", 1);
   }

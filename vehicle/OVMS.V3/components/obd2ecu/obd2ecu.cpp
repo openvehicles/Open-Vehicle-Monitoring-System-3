@@ -75,20 +75,20 @@ void obd2ecu::SetPowerMode(PowerMode powermode)
 
 void obd2ecu_create(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (! MyPeripherals.m_obd2ecu)
+  if (! MyPeripherals->m_obd2ecu)
     {
     std::string bus = cmd->GetName();
-    MyPeripherals.m_obd2ecu = new obd2ecu("OBD2ECU", (canbus*)MyPcpApp.FindDeviceByName(bus));
+    MyPeripherals->m_obd2ecu = new obd2ecu("OBD2ECU", (canbus*)MyPcpApp.FindDeviceByName(bus));
     writer->puts("OBDII ECU has been created");
     }
   }
 
 void obd2ecu_destroy(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (MyPeripherals.m_obd2ecu)
+  if (MyPeripherals->m_obd2ecu)
     {
-    delete MyPeripherals.m_obd2ecu;
-    MyPeripherals.m_obd2ecu = NULL;
+    delete MyPeripherals->m_obd2ecu;
+    MyPeripherals->m_obd2ecu = NULL;
     writer->puts("OBDII ECU has been destroyed");
     }
   }
@@ -96,11 +96,12 @@ void obd2ecu_destroy(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
 class obd2ecuInit
     {
     public: obd2ecuInit();
-  } obd2ecuInit  __attribute__ ((init_priority (6000)));
+  } obd2ecuInit  __attribute__ ((init_priority (7000)));
 
 obd2ecuInit::obd2ecuInit()
   {
-  puts("Initialising OBD2ECU Framework");
+  puts("Framework: Initialising OBD2ECU (7000)");
+
   OvmsCommand* cmd_obdii = MyCommandApp.RegisterCommand("obdii","OBDII framework",NULL, "", 1);
   OvmsCommand* cmd_ecu = cmd_obdii->RegisterCommand("ecu","OBDII ECU framework",NULL, "", 1);
   OvmsCommand* cmd_create = cmd_ecu->RegisterCommand("create","Create an OBDII ECU",NULL, "", 1);

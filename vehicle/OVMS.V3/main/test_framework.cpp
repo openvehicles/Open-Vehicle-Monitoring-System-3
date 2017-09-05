@@ -87,7 +87,8 @@ class TestFrameworkInit
 
 TestFrameworkInit::TestFrameworkInit()
   {
-  puts("Initialising TEST Framework");
+  puts("Framework: Initialising TEST (5000)");
+
   OvmsCommand* cmd_test = MyCommandApp.RegisterCommand("test","Test framework",NULL);
   cmd_test->RegisterCommand("sleep","Test Deep Sleep",test_deepsleep,"[seconds]",0,1);
   cmd_test->RegisterCommand("alerts","Toggle testing alerts in Housekeeping",test_alerts,"",0,0);

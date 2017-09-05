@@ -41,13 +41,12 @@ class Housekeeping
     virtual ~Housekeeping();
 
   public:
+    void init();
     void version();
     void metrics();
 
   protected:
     TaskHandle_t m_taskid;
   };
-
-extern Housekeeping MyHousekeeping;
 
 #endif //#ifndef __HOUSEKEEPING_H__

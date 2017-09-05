@@ -38,7 +38,8 @@
 
 using namespace std;
 
-OvmsMetrics MyMetrics __attribute__ ((init_priority (1910)));
+OvmsMetricFactory MyMetricFactory __attribute__ ((init_priority (1800)));
+OvmsMetrics       MyMetrics       __attribute__ ((init_priority (1810)));
 
 void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -65,7 +66,14 @@ void metrics_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     writer->puts("Metric could not be set");
   }
 
-OvmsMetricFactory MyMetricFactory __attribute__ ((init_priority (1900)));
+OvmsMetricFactory::OvmsMetricFactory()
+  {
+  puts("Framework: Initialising METRIC FACTORY (1800)");
+  }
+
+OvmsMetricFactory::~OvmsMetricFactory()
+  {
+  }
 
 OvmsMetric* OvmsMetricFactory::NewMetric(const char* MetricType)
   {
@@ -79,7 +87,7 @@ OvmsMetric* OvmsMetricFactory::NewMetric(const char* MetricType)
 
 OvmsMetrics::OvmsMetrics()
   {
-  puts("Initialising METRICS Framework");
+  puts("Framework: Initialising METRICS (1810)");
 
   // Register our commands
   OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework",NULL, "", 1);
