@@ -28,4 +28,26 @@
 ; THE SOFTWARE.
 */
 
-#include "ovms_utils.h"
+#include "esp_log.h"
+static const char *TAG = "location";
+
+#include "ovms_location.h"
+
+OvmsLocation::OvmsLocation()
+  {
+  }
+
+OvmsLocation::~OvmsLocation()
+  {
+  }
+
+OvmsLocations MyLocations __attribute__ ((init_priority (1500)));
+
+OvmsLocations::OvmsLocations()
+  {
+  ESP_LOGI(TAG, "Initialising LOCATIONS (1500)");
+  }
+
+OvmsLocations::~OvmsLocations()
+  {
+  }
