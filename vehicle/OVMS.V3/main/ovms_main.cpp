@@ -25,6 +25,15 @@ extern "C"
 Housekeeping* MyHousekeeping = NULL;
 Peripherals* MyPeripherals = NULL;
 
+int console_logger(const char *format, va_list arg)
+  {
+  char *buffer = (char*)malloc(512);
+  vsnprintf(buffer, 512, format, arg);
+  int k = strlen(buffer);
+  usbconsole->Log(buffer);
+  return k;
+  }
+
 void app_main(void)
   {
   nvs_flash_init();
@@ -42,4 +51,6 @@ void app_main(void)
 
   ESP_LOGI(TAG, "Starting USB console...");
   usbconsole = new ConsoleAsync();
+
+  esp_log_set_vprintf(console_logger);
   }

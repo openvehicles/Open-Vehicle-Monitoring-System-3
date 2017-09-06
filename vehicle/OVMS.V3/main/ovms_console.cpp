@@ -34,7 +34,7 @@
 #include "ovms_console.h"
 #include "esp_log.h"
 
-static const char *TAG = "Console";
+//static const char *TAG = "Console";
 static char CRbuf[1] = { '\r' };
 static char NLbuf[1] = { '\n' };
 static char ctrlRbuf[1] = { 'R'-0100 };
@@ -142,7 +142,7 @@ void OvmsConsole::Log(char* message)
   if (ret != pdPASS)
     {
     free(message);
-    ESP_LOGI(TAG, "Timeout queueing message in Console::Log\n");
+//    ESP_LOGI(TAG, "Timeout queueing message in Console::Log\n");
     }
   }
 
