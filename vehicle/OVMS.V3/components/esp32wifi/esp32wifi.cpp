@@ -114,7 +114,6 @@ void esp32wifi::SetPowerMode(PowerMode powermode)
   switch (powermode)
     {
     case On:
-      esp_wifi_start();
       break;
     case Sleep:
       esp_wifi_set_ps(WIFI_PS_MODEM);
@@ -122,7 +121,6 @@ void esp32wifi::SetPowerMode(PowerMode powermode)
     case DeepSleep:
     case Off:
       StopStation();
-      esp_wifi_stop();
       break;
     default:
       break;
