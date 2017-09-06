@@ -10,10 +10,10 @@ static const char *TAG = "ovms_main";
 #include <stdio.h>
 #include <string.h>
 #include "ovms.h"
-#include "peripherals.h"
-#include "housekeeping.h"
+#include "ovms_peripherals.h"
+#include "ovms_housekeeping.h"
 #include "console_async.h"
-#include "config.h"
+#include "ovms_config.h"
 
 ConsoleAsync *usbconsole;
 

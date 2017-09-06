@@ -36,7 +36,7 @@
 #include <string.h>
 #include "esp32can.h"
 #include "esp32can_regdef.h"
-#include "peripherals.h"
+#include "ovms_peripherals.h"
 
 esp32can* MyESP32can = NULL;
 

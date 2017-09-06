@@ -33,7 +33,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "libtelnet.h"
-#include "console.h"
+#include "ovms_console.h"
 
 #define BUFFER_SIZE 1024
 

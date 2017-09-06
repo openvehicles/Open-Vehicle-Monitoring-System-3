@@ -48,6 +48,8 @@ class OvmsConfigParam
     void DeleteParam();
     void DeleteInstance(std::string instance);
     std::string GetValue(std::string instance);
+    bool Writable();
+    bool Readable();
 
   protected:
     void RewriteConfig();
@@ -57,6 +59,8 @@ class OvmsConfigParam
     std::string m_title;
     bool m_writable;
     bool m_readable;
+
+  public:
     std::map<std::string, std::string> m_map;
   };
 
@@ -75,6 +79,7 @@ class OvmsConfig
     void DeleteInstance(std::string param, std::string instance);
     std::string GetParamValue(std::string param, std::string instance);
     bool ProtectedPath(std::string path);
+    OvmsConfigParam* CachedParam(std::string param);
 
   public:
     esp_err_t mount();
@@ -85,10 +90,9 @@ class OvmsConfig
     bool m_mounted;
     esp_vfs_fat_mount_config_t m_store_fat;
     wl_handle_t m_store_wlh;
-    std::map<std::string, OvmsConfigParam*> m_map;
 
-  protected:
-    OvmsConfigParam* CachedParam(std::string param);
+  public:
+    std::map<std::string, OvmsConfigParam*> m_map;
   };
 
 extern OvmsConfig MyConfig;

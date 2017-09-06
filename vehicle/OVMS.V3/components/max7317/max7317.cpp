@@ -33,8 +33,8 @@ static const char *TAG = "max7317";
 
 #include <string.h>
 #include "max7317.h"
-#include "command.h"
-#include "peripherals.h"
+#include "ovms_command.h"
+#include "ovms_peripherals.h"
 
 max7317::max7317(std::string name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin)
   : pcp(name)

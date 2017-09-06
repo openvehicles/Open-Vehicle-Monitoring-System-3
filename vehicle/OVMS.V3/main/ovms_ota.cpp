@@ -37,10 +37,10 @@ static const char *TAG = "ota";
 #include <string>
 #include <esp_system.h>
 #include <esp_ota_ops.h>
-#include "ota.h"
-#include "command.h"
-#include "config.h"
-#include "metrics.h"
+#include "ovms_ota.h"
+#include "ovms_command.h"
+#include "ovms_config.h"
+#include "ovms_metrics.h"
 #include "metrics_standard.h"
 
 OvmsOTA MyOTA __attribute__ ((init_priority (4400)));

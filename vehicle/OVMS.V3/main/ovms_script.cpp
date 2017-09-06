@@ -33,8 +33,8 @@ static const char *TAG = "script";
 
 #include <string.h>
 #include <stdio.h>
-#include "script.h"
-#include "command.h"
+#include "ovms_script.h"
+#include "ovms_command.h"
 
 OvmsScripts MyScripts __attribute__ ((init_priority (1600)));
 

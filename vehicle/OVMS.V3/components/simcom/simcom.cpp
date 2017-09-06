@@ -33,7 +33,7 @@ static const char *TAG = "simcom";
 
 #include <string.h>
 #include "simcom.h"
-#include "peripherals.h"
+#include "ovms_peripherals.h"
 
 static void SIMCOM_task(void *pvParameters)
   {

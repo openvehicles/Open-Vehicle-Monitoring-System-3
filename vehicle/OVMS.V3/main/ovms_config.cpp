@@ -34,8 +34,8 @@ static const char *TAG = "config";
 #include <unistd.h>
 #include <sys/stat.h>
 #include <string.h>
-#include "config.h"
-#include "command.h"
+#include "ovms_config.h"
+#include "ovms_command.h"
 
 #define OVMS_CONFIGPATH "/store/ovms_config"
 #define OVMS_MAXVALSIZE 1024
@@ -54,13 +54,67 @@ void store_unmount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   writer->puts("Unmounted STORE");
   }
 
+void config_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyConfig.ismounted()) return;
+
+  if (argc == 0)
+    {
+    // Show all parameters
+    for (std::map<std::string, OvmsConfigParam*>::iterator it=MyConfig.m_map.begin(); it!=MyConfig.m_map.end(); ++it)
+      {
+      writer->puts(it->first.c_str());
+      }
+    }
+  else
+    {
+    // Show all instances for a particular parameter
+    OvmsConfigParam *p = MyConfig.CachedParam(argv[0]);
+    if (p)
+      {
+      writer->puts(argv[0]);
+      for (std::map<std::string, std::string>::iterator it=p->m_map.begin(); it!=p->m_map.end(); ++it)
+        {
+        if (p->Readable())
+          { writer->printf("  %s: %s\n",it->first.c_str(), it->second.c_str()); }
+        else
+          { writer->printf("  %s\n",it->first.c_str()); }
+        }
+      }
+    }
+  }
+
+void config_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyConfig.ismounted()) return;
+
+  OvmsConfigParam *p = MyConfig.CachedParam(argv[0]);
+  if (p==NULL)
+    {
+    writer->puts("Error: parameter not found");
+    return;
+    }
+
+  if (!p->Writable())
+    {
+    writer->puts("Error: parameter is not writeable");
+    return;
+    }
+
+  p->SetValue(argv[1],argv[2]);
+  }
+
 OvmsConfig::OvmsConfig()
   {
   ESP_LOGI(TAG, "Initialising CONFIG (1400)");
 
-  OvmsCommand* cmd_store= MyCommandApp.RegisterCommand("store","STORE framework",NULL,"<$C>",1,1);
+  OvmsCommand* cmd_store = MyCommandApp.RegisterCommand("store","STORE framework",NULL,"<$C>",1,1);
   cmd_store->RegisterCommand("mount","Mount STORE",store_mount,"",0,0);
   cmd_store->RegisterCommand("unmount","Unmount STORE",store_unmount,"",0,0);
+
+  OvmsCommand* cmd_config = MyCommandApp.RegisterCommand("config","CONFIG framework",NULL,"<$C>",1,1);
+  cmd_config->RegisterCommand("list","Show configuration parameters/instances",config_list,"",0,1);
+  cmd_config->RegisterCommand("set","Set parameter:instance=value",config_set,"<param> <instance> <value>",3,3);
   }
 
 OvmsConfig::~OvmsConfig()
@@ -115,8 +169,14 @@ bool OvmsConfig::ismounted()
 
 void OvmsConfig::RegisterParam(std::string name, std::string title, bool writable, bool readable)
   {
-  OvmsConfigParam* p = new OvmsConfigParam(name, title, writable, readable);
-  m_map[name] = p;
+  ESP_LOGI(TAG, "Registered %s",name.c_str());
+
+  auto k = m_map.find(name);
+  if (k == m_map.end())
+    {
+    OvmsConfigParam* p = new OvmsConfigParam(name, title, writable, readable);
+    m_map[name] = p;
+    }
   }
 
 void OvmsConfig::DeregisterParam(std::string name)
@@ -245,6 +305,16 @@ std::string OvmsConfigParam::GetValue(std::string instance)
     return std::string("");
   else
     return k->second;
+  }
+
+bool OvmsConfigParam::Writable()
+  {
+  return m_writable;
+  }
+
+bool OvmsConfigParam::Readable()
+  {
+  return m_readable;
   }
 
 void OvmsConfigParam::RewriteConfig()

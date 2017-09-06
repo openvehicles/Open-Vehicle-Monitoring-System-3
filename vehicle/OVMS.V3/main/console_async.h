@@ -30,7 +30,7 @@
 #ifndef __CONSOLE_ASYNC_H__
 #define __CONSOLE_ASYNC_H__
 
-#include "console.h"
+#include "ovms_console.h"
 #include "driver/uart.h"
 
 #define BUF_SIZE (1024)

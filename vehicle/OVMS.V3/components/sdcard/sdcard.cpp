@@ -34,8 +34,8 @@ static const char *TAG = "sdcard";
 #include <string>
 #include <string.h>
 #include "sdcard.h"
-#include "command.h"
-#include "peripherals.h"
+#include "ovms_command.h"
+#include "ovms_peripherals.h"
 
 sdcard::sdcard(std::string name, bool mode1bit, bool autoformat, int cdpin)
   : pcp(name)

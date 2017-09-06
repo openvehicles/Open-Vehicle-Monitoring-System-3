@@ -36,9 +36,9 @@ static const char *TAG = "housekeeping";
 #include <esp_system.h>
 #include <esp_ota_ops.h>
 #include "ovms.h"
-#include "housekeeping.h"
-#include "peripherals.h"
-#include "metrics.h"
+#include "ovms_housekeeping.h"
+#include "ovms_peripherals.h"
+#include "ovms_metrics.h"
 #include "metrics_standard.h"
 
 #include "esp_heap_alloc_caps.h"

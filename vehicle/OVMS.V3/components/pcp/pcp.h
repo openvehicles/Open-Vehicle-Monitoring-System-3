@@ -34,7 +34,7 @@
 #include <sys/types.h>
 #include <string>
 #include <map>
-#include "command.h"
+#include "ovms_command.h"
 
 enum PowerMode { Undefined, On, Sleep, DeepSleep, Off };
 

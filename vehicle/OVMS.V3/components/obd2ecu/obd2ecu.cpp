@@ -33,8 +33,8 @@ static const char *TAG = "obd2ecu";
 
 #include <string.h>
 #include "obd2ecu.h"
-#include "command.h"
-#include "peripherals.h"
+#include "ovms_command.h"
+#include "ovms_peripherals.h"
 
 static void OBD2ECU_task(void *pvParameters)
   {

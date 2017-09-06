@@ -32,6 +32,7 @@
 #include "esp32wifi.h"
 #include "esp_wifi.h"
 #include "esp_event_loop.h"
+#include "ovms_config.h"
 #include "console_telnet.h"
 
 // YOUR network SSID

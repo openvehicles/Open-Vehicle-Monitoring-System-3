@@ -38,7 +38,7 @@ static const char *TAG = "test";
 #include "esp_event_loop.h"
 #include "esp_deep_sleep.h"
 #include "test_framework.h"
-#include "command.h"
+#include "ovms_command.h"
 
 void test_deepsleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {

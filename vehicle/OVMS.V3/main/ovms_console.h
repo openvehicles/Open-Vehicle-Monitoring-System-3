@@ -31,7 +31,7 @@
 #define __CONSOLE_H__
 
 #include "task_base.h"
-#include "command.h"
+#include "ovms_command.h"
 #include "microrl.h"
 
 #define TOKEN_MAX_LENGTH 32

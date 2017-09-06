@@ -37,7 +37,7 @@ static const char *TAG = "command";
 #include <ctype.h>
 #include <esp_log.h>
 #include "freertos/FreeRTOS.h"
-#include "command.h"
+#include "ovms_command.h"
 
 OvmsCommandApp MyCommandApp __attribute__ ((init_priority (1000)));
 

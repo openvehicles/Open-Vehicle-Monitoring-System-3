@@ -34,9 +34,9 @@ static const char *TAG = "metrics";
 #include <stdlib.h>
 #include <stdio.h>
 #include <sstream>
-#include "metrics.h"
+#include "ovms_metrics.h"
 #include "metrics_standard.h"
-#include "command.h"
+#include "ovms_command.h"
 #include "string.h"
 
 using namespace std;

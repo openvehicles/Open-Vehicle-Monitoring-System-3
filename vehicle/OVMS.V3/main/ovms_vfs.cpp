@@ -38,9 +38,9 @@ static const char *TAG = "vfs";
 #include <dirent.h>
 #include <unistd.h>
 #include <libgen.h>
-#include "vfs.h"
-#include "config.h"
-#include "command.h"
+#include "ovms_vfs.h"
+#include "ovms_config.h"
+#include "ovms_command.h"
 
 void vfs_ls(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
