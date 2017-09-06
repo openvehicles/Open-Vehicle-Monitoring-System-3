@@ -46,12 +46,14 @@ class esp32wifi : public pcp, public Parent
   public:
     void SetPowerMode(PowerMode powermode);
 
-  private:
-    void InitStation();
+  public:
+    void StartClientMode(std::string ssid, std::string password);
     void StopStation();
+
+  protected:
     static esp_err_t HandleEvent(void *ctx, system_event_t *event);
 
-  private:
+  protected:
     tcpip_adapter_ip_info_t m_ip_info;
   };
 
