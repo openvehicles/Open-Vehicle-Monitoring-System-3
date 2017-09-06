@@ -50,11 +50,11 @@ const char* OvmsVehicleTeslaRoadster::VehicleName()
 class OvmsVehicleTeslaRoadsterInit
   {
   public: OvmsVehicleTeslaRoadsterInit();
-} MyOvmsVehicleTeslaRoadsterInit  __attribute__ ((init_priority (8000)));
+} MyOvmsVehicleTeslaRoadsterInit  __attribute__ ((init_priority (9000)));
 
 OvmsVehicleTeslaRoadsterInit::OvmsVehicleTeslaRoadsterInit()
   {
-  ESP_LOGI(TAG, "Registering Vehicle: Tesla Roadster (8000)");
+  ESP_LOGI(TAG, "Registering Vehicle: Tesla Roadster (9000)");
 
   MyVehicleFactory.RegisterVehicle<OvmsVehicleTeslaRoadster>("TR");
   }
