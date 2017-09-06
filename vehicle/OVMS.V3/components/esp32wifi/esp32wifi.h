@@ -37,6 +37,13 @@
 #include "esp_err.h"
 #include "esp_event.h"
 
+typedef enum {
+    ESP32WIFI_MODE_OFF = 0,   // Modem is off
+    ESP32WIFI_MODE_CLIENT,    // Client mode
+    ESP32WIFI_MODE_AP,        // Access point mode
+    ESP32WIFI_MODE_MAX
+} esp32wifi_mode_t;
+
 class esp32wifi : public pcp, public Parent
   {
   public:
@@ -54,6 +61,7 @@ class esp32wifi : public pcp, public Parent
     static esp_err_t HandleEvent(void *ctx, system_event_t *event);
 
   protected:
+    esp32wifi_mode_t m_mode;
     tcpip_adapter_ip_info_t m_ip_info;
   };
 

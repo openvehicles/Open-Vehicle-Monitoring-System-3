@@ -62,12 +62,6 @@ void wifi_mode_client(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
     return;
     }
 
-  if (me->GetPowerMode() != On)
-    {
-    writer->puts("Powering on WIFI...");
-    me->SetPowerMode(On);
-    }
-
   writer->puts("Starting WIFI as a client...");
   me->StartClientMode(argv[0],password);
   }
@@ -103,8 +97,11 @@ esp32wifiInit::esp32wifiInit()
 esp32wifi::esp32wifi(std::string name)
   : pcp(name)
   {
+  m_mode = ESP32WIFI_MODE_OFF;
   MyConfig.RegisterParam("wifi.ssid", "WIFI SSID", true, false);
+
   tcpip_adapter_init();
+
   ESP_ERROR_CHECK(esp_event_loop_init(HandleEvent, (void*)this));
   }
 
@@ -130,10 +127,19 @@ void esp32wifi::SetPowerMode(PowerMode powermode)
     default:
       break;
     };
+
+  m_powermode = powermode;
   }
 
 void esp32wifi::StartClientMode(std::string ssid, std::string password)
   {
+  m_mode = ESP32WIFI_MODE_CLIENT;
+
+  if (m_powermode != On)
+    {
+    SetPowerMode(On);
+    }
+
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
   ESP_ERROR_CHECK(esp_wifi_init(&cfg));
   ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
@@ -149,10 +155,14 @@ void esp32wifi::StartClientMode(std::string ssid, std::string password)
 
 void esp32wifi::StopStation()
   {
-  DeleteChildren();
-  ESP_ERROR_CHECK(esp_wifi_disconnect());
-  ESP_ERROR_CHECK(esp_wifi_stop());
-  ESP_ERROR_CHECK(esp_wifi_deinit());
+  if (m_mode != ESP32WIFI_MODE_OFF)
+    {
+    DeleteChildren();
+    ESP_ERROR_CHECK(esp_wifi_disconnect());
+    ESP_ERROR_CHECK(esp_wifi_stop());
+    ESP_ERROR_CHECK(esp_wifi_deinit());
+    m_mode = ESP32WIFI_MODE_OFF;
+    }
   }
 
 esp_err_t esp32wifi::HandleEvent(void *ctx, system_event_t *event)
