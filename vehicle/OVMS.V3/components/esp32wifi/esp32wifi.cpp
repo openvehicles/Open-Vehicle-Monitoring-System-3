@@ -44,6 +44,7 @@
 esp32wifi::esp32wifi(std::string name)
   : pcp(name)
   {
+  MyConfig.RegisterParam("wifi.ssid", "WIFI SSID", true, false);
   tcpip_adapter_init();
   ESP_ERROR_CHECK(esp_event_loop_init(HandleEvent, (void*)this));
   }
