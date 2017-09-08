@@ -31,11 +31,12 @@
 #ifndef __ESP32WIFI_H__
 #define __ESP32WIFI_H__
 
+#include <string>
 #include <stdint.h>
 #include "pcp.h"
 #include "task_base.h"
 #include "esp_err.h"
-#include "esp_event.h"
+#include "ovms_events.h"
 
 typedef enum {
     ESP32WIFI_MODE_OFF = 0,   // Modem is off
@@ -57,8 +58,8 @@ class esp32wifi : public pcp, public Parent
     void StartClientMode(std::string ssid, std::string password);
     void StopStation();
 
-  protected:
-    static esp_err_t HandleEvent(void *ctx, system_event_t *event);
+  public:
+    void EventWifiGotIp(std::string event, void* data);
 
   protected:
     esp32wifi_mode_t m_mode;

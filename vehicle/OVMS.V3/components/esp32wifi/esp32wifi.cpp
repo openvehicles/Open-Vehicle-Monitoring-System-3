@@ -35,7 +35,6 @@ static const char *TAG = "obd2wifi";
 #include <string>
 #include "esp32wifi.h"
 #include "esp_wifi.h"
-#include "esp_event_loop.h"
 #include "ovms_config.h"
 #include "ovms_peripherals.h"
 #include "console_telnet.h"
@@ -102,7 +101,9 @@ esp32wifi::esp32wifi(std::string name)
 
   tcpip_adapter_init();
 
-  ESP_ERROR_CHECK(esp_event_loop_init(HandleEvent, (void*)this));
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG,"system.wifi.sta.gotip",std::bind(&esp32wifi::EventWifiGotIp, this, _1, _2));
   }
 
 esp32wifi::~esp32wifi()
@@ -163,13 +164,10 @@ void esp32wifi::StopStation()
     }
   }
 
-esp_err_t esp32wifi::HandleEvent(void *ctx, system_event_t *event)
+void esp32wifi::EventWifiGotIp(std::string event, void* data)
   {
-  if (event->event_id == SYSTEM_EVENT_STA_GOT_IP)
-    {
-    esp32wifi* me =(esp32wifi*)ctx;
-    me->m_ip_info = event->event_info.got_ip.ip_info;
-    me->AddChild(new TelnetServer(me));
-    }
-  return ESP_OK;
+  system_event_info_t *info = (system_event_info_t*)data;
+  m_ip_info = info->got_ip.ip_info;
+  ESP_LOGI(TAG, "Launching telnet server");
+  AddChild(new TelnetServer(this));
   }

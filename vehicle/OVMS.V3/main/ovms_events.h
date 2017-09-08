@@ -35,17 +35,23 @@
 #include <functional>
 #include <map>
 #include <list>
+#include <esp_event.h>
 
 typedef std::function<void(std::string,void*)> EventCallback;
 
-typedef struct
+class EventCallbackEntry
   {
-  std::string caller;
-  EventCallback callback;
-  } EventCallbackEntry;
+  public:
+    EventCallbackEntry(std::string caller, EventCallback callback);
+    virtual ~EventCallbackEntry();
 
-typedef std::list<EventCallbackEntry> EventCallbackList;
-typedef std::map<std::string, EventCallbackList> EventMap;
+  public:
+    std::string m_caller;
+    EventCallback m_callback;
+  };
+
+typedef std::list<EventCallbackEntry*> EventCallbackList;
+typedef std::map<std::string, EventCallbackList*> EventMap;
 
 class OvmsEvents
   {
@@ -57,6 +63,10 @@ class OvmsEvents
     void RegisterEvent(std::string caller, std::string event, EventCallback callback);
     void DeregisterEvent(std::string caller);
     void SignalEvent(std::string event, void* data);
+
+  public:
+    static esp_err_t ReceiveSystemEvent(void *ctx, system_event_t *event);
+    void SignalSystemEvent(system_event_t *event);
 
   protected:
     EventMap m_map;
