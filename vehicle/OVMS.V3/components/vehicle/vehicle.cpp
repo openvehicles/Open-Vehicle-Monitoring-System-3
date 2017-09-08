@@ -28,12 +28,49 @@
 ; THE SOFTWARE.
 */
 
+#include "esp_log.h"
+static const char *TAG = "vehicle";
+
 #include <stdio.h>
+#include <ovms_command.h>
+#include <ovms_metrics.h>
+#include <metrics_standard.h>
 #include "vehicle.h"
 
 OvmsVehicleFactory MyVehicleFactory __attribute__ ((init_priority (2000)));
 
-OvmsVehicle* OvmsVehicleFactory::NewVehicle(const char* VehicleType)
+void vehicle_module(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (argc == 0)
+    {
+    MyVehicleFactory.ClearVehicle();
+    }
+  else
+    {
+    MyVehicleFactory.SetVehicle(argv[0]);
+    }
+  }
+
+OvmsVehicleFactory::OvmsVehicleFactory()
+  {
+  ESP_LOGI(TAG, "Initialising VEHICLE Factory (2000)");
+
+  m_currentvehicle = NULL;
+
+  OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework",NULL,"<$C>",1,1);
+  cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1);
+  }
+
+OvmsVehicleFactory::~OvmsVehicleFactory()
+  {
+  if (m_currentvehicle)
+    {
+    delete m_currentvehicle;
+    m_currentvehicle = NULL;
+    }
+  }
+
+OvmsVehicle* OvmsVehicleFactory::NewVehicle(std::string VehicleType)
   {
   OvmsVehicleFactory::map_type::iterator iter = m_map.find(VehicleType);
   if (iter != m_map.end())
@@ -41,6 +78,27 @@ OvmsVehicle* OvmsVehicleFactory::NewVehicle(const char* VehicleType)
     return iter->second();
     }
   return NULL;
+  }
+
+void OvmsVehicleFactory::ClearVehicle()
+  {
+  if (m_currentvehicle)
+    {
+    delete m_currentvehicle;
+    m_currentvehicle = NULL;
+    MyMetrics.Set(MS_V_TYPE, "");
+    }
+  }
+
+void OvmsVehicleFactory::SetVehicle(std::string type)
+  {
+  if (m_currentvehicle)
+    {
+    delete m_currentvehicle;
+    m_currentvehicle = NULL;
+    }
+  m_currentvehicle = NewVehicle(type);
+  MyMetrics.Set(MS_V_TYPE, type.c_str());
   }
 
 OvmsVehicle::OvmsVehicle()
@@ -51,7 +109,7 @@ OvmsVehicle::~OvmsVehicle()
   {
   }
 
-const char* OvmsVehicle::VehicleName()
+const std::string OvmsVehicle::VehicleName()
   {
-  return "unknown";
+  return std::string("unknown");
   }

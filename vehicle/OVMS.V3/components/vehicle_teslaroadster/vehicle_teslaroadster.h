@@ -42,7 +42,7 @@ class OvmsVehicleTeslaRoadster : public OvmsVehicle
     ~OvmsVehicleTeslaRoadster();
 
   public:
-    const char* VehicleName();
+    const std::string VehicleName();
   };
 
 #endif //#ifndef __VEHICLE_TESLAROADSTER_H__

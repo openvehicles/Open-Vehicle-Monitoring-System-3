@@ -32,6 +32,7 @@
 #define __VEHICLE_H__
 
 #include <map>
+#include <string>
 
 using namespace std;
 
@@ -39,10 +40,10 @@ class OvmsVehicle
   {
   public:
     OvmsVehicle();
-    ~OvmsVehicle();
+    virtual ~OvmsVehicle();
 
   public:
-    virtual const char* VehicleName();
+    virtual const std::string VehicleName();
   };
 
 template<typename Type> OvmsVehicle* CreateVehicle()
@@ -53,20 +54,27 @@ template<typename Type> OvmsVehicle* CreateVehicle()
 class OvmsVehicleFactory
   {
   public:
-    typedef OvmsVehicle* (*FactoryFuncPtr)();
-    typedef map<const char*, FactoryFuncPtr> map_type;
+    OvmsVehicleFactory();
+    ~OvmsVehicleFactory();
 
+  public:
+    typedef OvmsVehicle* (*FactoryFuncPtr)();
+    typedef map<std::string, FactoryFuncPtr> map_type;
+
+    OvmsVehicle *m_currentvehicle;
     map_type m_map;
 
   public:
     template<typename Type>
-    short RegisterVehicle(const char* VehicleType)
+    short RegisterVehicle(std::string VehicleType)
       {
       FactoryFuncPtr function = &CreateVehicle<Type>;
         m_map.insert(std::make_pair(VehicleType, function));
       return 0;
       };
-    OvmsVehicle* NewVehicle(const char* VehicleType);
+    OvmsVehicle* NewVehicle(std::string VehicleType);
+    void ClearVehicle();
+    void SetVehicle(std::string type);
   };
 
 extern OvmsVehicleFactory MyVehicleFactory;

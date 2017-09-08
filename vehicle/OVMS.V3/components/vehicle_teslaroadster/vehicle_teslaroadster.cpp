@@ -36,15 +36,17 @@ static const char *TAG = "teslaroadster";
 
 OvmsVehicleTeslaRoadster::OvmsVehicleTeslaRoadster()
   {
+  ESP_LOGI(TAG, "Tesla Roadster v1.x, v2.x and v3.0 Vehicle Module");
   }
 
 OvmsVehicleTeslaRoadster::~OvmsVehicleTeslaRoadster()
   {
+  ESP_LOGI(TAG, "Shutdown Tesla Roadster vehicle module");
   }
 
-const char* OvmsVehicleTeslaRoadster::VehicleName()
+const std::string OvmsVehicleTeslaRoadster::VehicleName()
   {
-  return "Tesla Roadster";
+  return std::string("Tesla Roadster");
   }
 
 class OvmsVehicleTeslaRoadsterInit
