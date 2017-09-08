@@ -31,11 +31,35 @@
 #ifndef __EVENT_H__
 #define __EVENT_H__
 
+#include <string>
+#include <functional>
+#include <map>
+#include <list>
+
+typedef std::function<void(std::string,void*)> EventCallback;
+
+typedef struct
+  {
+  std::string caller;
+  EventCallback callback;
+  } EventCallbackEntry;
+
+typedef std::list<EventCallbackEntry> EventCallbackList;
+typedef std::map<std::string, EventCallbackList> EventMap;
+
 class OvmsEvents
   {
   public:
     OvmsEvents();
     ~OvmsEvents();
+
+  public:
+    void RegisterEvent(std::string caller, std::string event, EventCallback callback);
+    void DeregisterEvent(std::string caller);
+    void SignalEvent(std::string event, void* data);
+
+  protected:
+    EventMap m_map;
   };
 
 extern OvmsEvents MyEvents;

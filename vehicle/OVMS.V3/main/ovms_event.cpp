@@ -46,3 +46,16 @@ OvmsEvents::OvmsEvents()
 OvmsEvents::~OvmsEvents()
   {
   }
+
+void OvmsEvents::RegisterEvent(std::string caller, std::string event, EventCallback)
+  {
+  }
+
+void OvmsEvents::DeregisterEvent(std::string caller)
+  {
+  }
+
+void OvmsEvents::SignalEvent(std::string event, void* data)
+  {
+  }
+
