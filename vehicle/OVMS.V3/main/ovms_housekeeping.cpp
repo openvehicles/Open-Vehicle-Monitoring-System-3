@@ -39,6 +39,7 @@ static const char *TAG = "housekeeping";
 #include "ovms_housekeeping.h"
 #include "ovms_peripherals.h"
 #include "ovms_events.h"
+#include "ovms_config.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
 
@@ -98,8 +99,7 @@ void HousekeepingTask(void *pvParameters)
       size_t free = xPortGetFreeHeapSizeCaps(caps);
 //      size_t free = heap_caps_get_free_size(caps);
       MyCommandApp.Log("Free %zu  ",free);
-      MyCommandApp.Log("Tasks %u  ", uxTaskGetNumberOfTasks());
-      MyCommandApp.Log("Housekeeping 12V %f\r\n", MyPeripherals->m_esp32adc->read() / 194);
+      MyCommandApp.Log("Tasks %u\r\n", uxTaskGetNumberOfTasks());
       }
 
     vTaskDelay(10000 / portTICK_PERIOD_MS);
@@ -109,6 +109,8 @@ void HousekeepingTask(void *pvParameters)
 Housekeeping::Housekeeping()
   {
   ESP_LOGI(TAG, "Initialising HOUSEKEEPING Framework...");
+
+  MyConfig.RegisterParam("system.adc", "ADC configuration", true, true);
 
   xTaskCreatePinnedToCore(HousekeepingTask, "HousekeepingTask", 4096, (void*)this, 5, &m_taskid, 1);
   }
@@ -173,7 +175,10 @@ void Housekeeping::metrics()
   if (m1 == NULL)
     return;
 
-  float v = MyPeripherals->m_esp32adc->read() / 194;
+  // Allow the user to adjust the ADC conversion factor
+  float f = MyConfig.GetParamValueFloat("system.adc","factor12v");
+  if (f == 0) f = 196;
+  float v = (float)MyPeripherals->m_esp32adc->read() / f;
   m1->SetValue(v);
 
   OvmsMetricInt* m2 = (OvmsMetricInt*)MyMetrics.Find(MS_M_TASKS);
