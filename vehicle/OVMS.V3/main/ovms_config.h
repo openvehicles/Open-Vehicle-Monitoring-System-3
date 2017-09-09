@@ -78,6 +78,8 @@ class OvmsConfig
     void SetParamValue(std::string param, std::string instance, std::string value);
     void DeleteInstance(std::string param, std::string instance);
     std::string GetParamValue(std::string param, std::string instance);
+    int GetParamValueInt(std::string param, std::string instance);
+    float GetParamValueFloat(std::string param, std::string instance);
     bool ProtectedPath(std::string path);
     OvmsConfigParam* CachedParam(std::string param);
 
