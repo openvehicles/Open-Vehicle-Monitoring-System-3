@@ -91,8 +91,11 @@ void OvmsEvents::DeregisterEvent(std::string caller)
 
 void OvmsEvents::SignalEvent(std::string event, void* data)
   {
-  ESP_LOGI(TAG, "Signal(%s)",event.c_str());
-
+  if (event.compare(0,7,"ticker.") != 0)
+    {
+    // Log everything but the excessively verbose ticker signals
+    ESP_LOGI(TAG, "Signal(%s)",event.c_str());
+    }
   auto k = m_map.find(event);
   if (k == m_map.end()) return;
 

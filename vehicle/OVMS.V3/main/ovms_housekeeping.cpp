@@ -38,6 +38,7 @@ static const char *TAG = "housekeeping";
 #include "ovms.h"
 #include "ovms_housekeeping.h"
 #include "ovms_peripherals.h"
+#include "ovms_events.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
 
@@ -51,6 +52,12 @@ int TestAlerts = true;
 #else
 int TestAlerts = false;
 #endif
+
+void HousekeepingTicker1( TimerHandle_t timer )
+  {
+  Housekeeping* h = (Housekeeping*)pvTimerGetTimerID(timer);
+  h->Ticker1();
+  }
 
 void HousekeepingTask(void *pvParameters)
   {
@@ -112,6 +119,10 @@ Housekeeping::~Housekeeping()
 
 void Housekeeping::init()
   {
+  m_tick = 0;
+  m_timer1 = xTimerCreate("Housekeep ticker",1000 / portTICK_PERIOD_MS,pdTRUE,this,HousekeepingTicker1);
+  xTimerStart(m_timer1, 0);
+
   MyPeripherals->m_esp32can->Init(CAN_SPEED_1000KBPS);
   MyPeripherals->m_mcp2515_1->Init(CAN_SPEED_1000KBPS);
   MyPeripherals->m_mcp2515_2->Init(CAN_SPEED_1000KBPS);
@@ -178,4 +189,20 @@ void Housekeeping::metrics()
   size_t free = xPortGetFreeHeapSizeCaps(caps);
 //  size_t free = heap_caps_get_free_size(caps);
   m3->SetValue(free);
+  }
+
+void Housekeeping::Ticker1()
+  {
+  MyEvents.SignalEvent("ticker.1", NULL);
+
+  m_tick++;
+  if ((m_tick % 10)==0) MyEvents.SignalEvent("ticker.10", NULL);
+  if ((m_tick % 60)==0) MyEvents.SignalEvent("ticker.60", NULL);
+  if ((m_tick % 300)==0) MyEvents.SignalEvent("ticker.300", NULL);
+  if ((m_tick % 600)==0) MyEvents.SignalEvent("ticker.600", NULL);
+  if ((m_tick % 3600)==0)
+    {
+    m_tick = 0;
+    MyEvents.SignalEvent("ticker.3600", NULL);
+    }
   }

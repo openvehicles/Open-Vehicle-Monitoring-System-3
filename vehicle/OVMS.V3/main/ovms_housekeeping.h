@@ -33,6 +33,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/timers.h"
 
 class Housekeeping
   {
@@ -44,9 +45,12 @@ class Housekeeping
     void init();
     void version();
     void metrics();
+    void Ticker1();
 
   protected:
     TaskHandle_t m_taskid;
+    TimerHandle_t m_timer1;
+    int m_tick;
   };
 
 #endif //#ifndef __HOUSEKEEPING_H__
