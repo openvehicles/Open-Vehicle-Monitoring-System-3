@@ -125,9 +125,9 @@ void Housekeeping::init()
   m_timer1 = xTimerCreate("Housekeep ticker",1000 / portTICK_PERIOD_MS,pdTRUE,this,HousekeepingTicker1);
   xTimerStart(m_timer1, 0);
 
-  MyPeripherals->m_esp32can->Init(CAN_SPEED_1000KBPS);
-  MyPeripherals->m_mcp2515_1->Init(CAN_SPEED_1000KBPS);
-  MyPeripherals->m_mcp2515_2->Init(CAN_SPEED_1000KBPS);
+  MyPeripherals->m_esp32can->Start(CAN_MODE_ACTIVE, CAN_SPEED_1000KBPS);
+  MyPeripherals->m_mcp2515_1->Start(CAN_MODE_ACTIVE, CAN_SPEED_1000KBPS);
+  MyPeripherals->m_mcp2515_2->Start(CAN_MODE_ACTIVE, CAN_SPEED_1000KBPS);
   }
 
 void Housekeeping::version()

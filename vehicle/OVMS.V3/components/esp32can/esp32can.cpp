@@ -122,10 +122,11 @@ esp32can::~esp32can()
   MyESP32can = NULL;
   }
 
-esp_err_t esp32can::Init(CAN_speed_t speed)
+esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
   {
   double __tq; // Time quantum
 
+  m_mode = mode;
   m_speed = speed;
 
   // Enable module
@@ -250,7 +251,7 @@ void esp32can::SetPowerMode(PowerMode powermode)
   switch (powermode)
     {
     case On:
-      Init(m_speed);
+      if (m_mode != CAN_MODE_OFF) Start(m_mode,m_speed);
       break;
     case Sleep:
     case DeepSleep:

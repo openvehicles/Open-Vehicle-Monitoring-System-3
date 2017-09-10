@@ -33,11 +33,106 @@
 ; https://github.com/ThomasBarth/ESP32-CAN-Driver
 */
 
+#include "esp_log.h"
+static const char *TAG = "can";
+
 #include "can.h"
 #include <algorithm>
 #include <ctype.h>
+#include "ovms_command.h"
 
-can MyCan;
+can MyCan __attribute__ ((init_priority (4500)));;
+
+void can_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string bus = cmd->GetParent()->GetParent()->GetName();
+  std::string mode = cmd->GetName();
+  int baud = atoi(argv[0]);
+
+  CAN_mode_t smode = CAN_MODE_LISTEN;
+  if (mode.compare("active")==0) smode = CAN_MODE_ACTIVE;
+
+  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->puts("Error: Cannot find named CAN bus");
+    return;
+    }
+  if (sbus->GetPowerMode() != On)
+    {
+    sbus->SetPowerMode(On);
+    }
+
+  switch (baud)
+    {
+    case 100000:
+      sbus->Start(smode,CAN_SPEED_100KBPS);
+      break;
+    case 125000:
+      sbus->Start(smode,CAN_SPEED_125KBPS);
+      break;
+    case 250000:
+      sbus->Start(smode,CAN_SPEED_250KBPS);
+      break;
+    case 500000:
+      sbus->Start(smode,CAN_SPEED_500KBPS);
+      break;
+    case 1000000:
+      sbus->Start(smode,CAN_SPEED_1000KBPS);
+      break;
+    default:
+      writer->puts("Error: Unrecognised speed (100000, 125000, 250000, 500000, 1000000 are accepted)");
+      return;
+    }
+  writer->printf("Can bus %s started in mode %s at speed %dKbps\n",
+                 bus.c_str(), mode.c_str(), baud);
+  }
+
+void can_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string bus = cmd->GetParent()->GetName();
+  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->puts("Error: Cannot find named CAN bus");
+    return;
+    }
+  sbus->Stop();
+  writer->printf("Can bus %s stapped\n",bus.c_str());
+  sbus->SetPowerMode(Off);
+  }
+
+void can_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string bus = cmd->GetParent()->GetParent()->GetName();
+  std::string mode = cmd->GetName();
+  CAN_frame_format_t smode = CAN_frame_std;
+  if (mode.compare("extended")==0) smode = CAN_frame_ext;
+
+  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->puts("Error: Cannot find named CAN bus");
+    return;
+    }
+  if (sbus->GetPowerMode() != On)
+    {
+    writer->puts("Error: Can bus is not powered on");
+    return;
+    }
+
+  CAN_frame_t frame;
+  frame.origin = NULL;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = argc-1;
+  frame.FIR.B.FF = smode;
+  frame.MsgID = atoi(argv[0]);
+  for(int k=0;k<(argc-1);k++)
+    {
+    frame.data.u8[k] = atoi(argv[k+1]);
+    }
+  sbus->Write(&frame);
+  }
 
 static void CAN_rxtask(void *pvParameters)
   {
@@ -55,6 +150,22 @@ static void CAN_rxtask(void *pvParameters)
 
 can::can()
   {
+  ESP_LOGI(TAG, "Initialising CAN (4500)");
+
+  OvmsCommand* cmd_can = MyCommandApp.RegisterCommand("can","CAN framework",NULL, "", 1);
+  for (int k=1;k<4;k++)
+    {
+    char name[5]; sprintf(name,"can%d",k);
+    OvmsCommand* cmd_canx = cmd_can->RegisterCommand(name,"CANx framework",NULL, "", 1);
+    OvmsCommand* cmd_canstart = cmd_canx->RegisterCommand("start","CAN start framework", NULL, "", 1);
+    cmd_canstart->RegisterCommand("listen","Start CAN bus in listen mode",can_start,"<baud>", 1, 1);
+    cmd_canstart->RegisterCommand("active","Start CAN bus in active mode",can_start,"<baud>", 1, 1);
+    cmd_canx->RegisterCommand("stop","Stop CAN bus",can_stop, "", 0, 0);
+    OvmsCommand* cmd_cantx = cmd_canx->RegisterCommand("tx","CAN tx framework", NULL, "", 1);
+    cmd_cantx->RegisterCommand("standard","Transmit standard CAN frame",can_tx,"<id><data...>", 1, 9);
+    cmd_cantx->RegisterCommand("extended","Transmit extended CAN frame",can_tx,"<id><data...>", 1, 9);
+    }
+
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
   xTaskCreatePinnedToCore(CAN_rxtask, "CanRxTask", 4096, (void*)this, 5, &m_rxtask, 1);
   }
@@ -105,13 +216,14 @@ void can::DeregisterListener(QueueHandle_t *queue)
 canbus::canbus(std::string name)
   : pcp(name)
   {
+  m_mode = CAN_MODE_OFF;
   }
 
 canbus::~canbus()
   {
   }
 
-esp_err_t canbus::Init(CAN_speed_t speed)
+esp_err_t canbus::Start(CAN_mode_t mode, CAN_speed_t speed)
   {
   return ESP_FAIL; // Not implemented by base implementation
   }

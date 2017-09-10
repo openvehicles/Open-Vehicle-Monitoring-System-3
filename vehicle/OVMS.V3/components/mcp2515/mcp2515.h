@@ -45,7 +45,7 @@ class mcp2515 : public canbus
     ~mcp2515();
 
   public:
-    esp_err_t Init(CAN_speed_t speed);
+    esp_err_t Start(CAN_mode_t mode, CAN_speed_t speed);
     esp_err_t Stop();
 
   public:

@@ -46,6 +46,14 @@
 
 class canbus; // Forward definition
 
+// CAN mode
+typedef enum
+  {
+  CAN_MODE_OFF=0,
+  CAN_MODE_LISTEN=1,
+  CAN_MODE_ACTIVE=2
+  } CAN_mode_t;
+
 // CAN link speed (100kbps -> 1MHz)
 typedef enum
   {
@@ -104,7 +112,7 @@ class canbus : public pcp
     virtual ~canbus();
 
   public:
-    virtual esp_err_t Init(CAN_speed_t speed);
+    virtual esp_err_t Start(CAN_mode_t mode, CAN_speed_t speed);
     virtual esp_err_t Stop();
 
   public:
@@ -112,6 +120,7 @@ class canbus : public pcp
 
   public:
     CAN_speed_t m_speed;
+    CAN_mode_t m_mode;
   };
 
 class can

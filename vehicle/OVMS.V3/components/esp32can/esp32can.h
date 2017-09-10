@@ -54,7 +54,7 @@ class esp32can : public canbus
     ~esp32can();
 
   public:
-    esp_err_t Init(CAN_speed_t speed);
+    esp_err_t Start(CAN_mode_t mode, CAN_speed_t speed);
     esp_err_t Stop();
 
   public:

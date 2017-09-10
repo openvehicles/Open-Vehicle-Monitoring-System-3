@@ -127,10 +127,11 @@ mcp2515::~mcp2515()
   gpio_isr_handler_remove((gpio_num_t)m_intpin);
   }
 
-esp_err_t mcp2515::Init(CAN_speed_t speed)
+esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   {
   uint8_t buf[16];
 
+  m_mode = mode;
   m_speed = speed;
 
   // RESET commmand
@@ -245,8 +246,11 @@ void mcp2515::SetPowerMode(PowerMode powermode)
   switch (powermode)
     {
     case  On:
-      Init(m_speed);
-      Init(m_speed); // Kludgy, but for the moment works
+      if (m_mode != CAN_MODE_OFF)
+        {
+        Start(m_mode, m_speed);
+        Start(m_mode, m_speed); // Kludgy, but for the moment works
+        }
       break;
     case Sleep:
     case DeepSleep:
