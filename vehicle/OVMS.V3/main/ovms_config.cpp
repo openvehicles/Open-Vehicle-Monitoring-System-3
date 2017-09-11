@@ -169,8 +169,6 @@ bool OvmsConfig::ismounted()
 
 void OvmsConfig::RegisterParam(std::string name, std::string title, bool writable, bool readable)
   {
-  ESP_LOGI(TAG, "Registered %s",name.c_str());
-
   auto k = m_map.find(name);
   if (k == m_map.end())
     {

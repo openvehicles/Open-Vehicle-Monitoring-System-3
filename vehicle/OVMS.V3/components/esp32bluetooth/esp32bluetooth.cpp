@@ -42,6 +42,7 @@ esp32bluetooth::~esp32bluetooth()
 
 void esp32bluetooth::SetPowerMode(PowerMode powermode)
   {
+  m_powermode = powermode;
   switch (powermode)
     {
     case On:

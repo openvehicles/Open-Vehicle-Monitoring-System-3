@@ -143,6 +143,7 @@ void simcom::Stop()
 
 void simcom::SetPowerMode(PowerMode powermode)
   {
+  m_powermode = powermode;
   switch (powermode)
     {
     case On:

@@ -42,11 +42,24 @@ static const char *TAG = "housekeeping";
 #include "ovms_config.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
+#include "console_async.h"
+#include "ovms_config.h"
 
 #include "esp_heap_alloc_caps.h"
 //extern "C" {
 //#include "esp_heap_caps.h"
 //}
+
+ConsoleAsync *usbconsole;
+
+int console_logger(const char *format, va_list arg)
+  {
+  char *buffer = (char*)malloc(512);
+  vsnprintf(buffer, 512, format, arg);
+  int k = strlen(buffer);
+  usbconsole->Log(buffer);
+  return k;
+  }
 
 #ifdef CONFIG_OVMS_CONSOLE_LOG_STATUS
 int TestAlerts = true;
@@ -73,24 +86,6 @@ void HousekeepingTask(void *pvParameters)
   while (1)
     {
     me->metrics();
-
-    if (MyPeripherals->m_mcp2515_1->GetPowerMode() == On)
-      {
-      // Test CAN
-      CAN_frame_t c;
-      memset(&c,0,sizeof(CAN_frame_t));
-      c.origin = NULL;
-      c.MsgID = 0x42;
-      c.FIR.B.DLC = 7;
-      c.data.u8[0] = 'E';
-      c.data.u8[1] = 'S';
-      c.data.u8[2] = 'P';
-      c.data.u8[3] = 'O';
-      c.data.u8[4] = 'V';
-      c.data.u8[5] = 'M';
-      c.data.u8[6] = 'S';
-      MyPeripherals->m_mcp2515_1->Write(&c);
-      }
 
     if (TestAlerts)
       {
@@ -121,13 +116,21 @@ Housekeeping::~Housekeeping()
 
 void Housekeeping::init()
   {
+  ESP_LOGI(TAG, "Executing on CPU core %d",xPortGetCoreID());
+
   m_tick = 0;
   m_timer1 = xTimerCreate("Housekeep ticker",1000 / portTICK_PERIOD_MS,pdTRUE,this,HousekeepingTicker1);
   xTimerStart(m_timer1, 0);
 
-  MyPeripherals->m_esp32can->Start(CAN_MODE_ACTIVE, CAN_SPEED_1000KBPS);
-  MyPeripherals->m_mcp2515_1->Start(CAN_MODE_ACTIVE, CAN_SPEED_1000KBPS);
-  MyPeripherals->m_mcp2515_2->Start(CAN_MODE_ACTIVE, CAN_SPEED_1000KBPS);
+  ESP_LOGI(TAG, "Starting PERIPHERALS...");
+  MyPeripherals = new Peripherals();
+
+  ESP_LOGI(TAG, "Starting USB console...");
+  usbconsole = new ConsoleAsync();
+
+  esp_log_set_vprintf(console_logger);
+
+  MyEvents.SignalEvent("system.start",NULL);
   }
 
 void Housekeeping::version()

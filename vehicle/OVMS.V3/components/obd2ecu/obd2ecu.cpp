@@ -61,6 +61,7 @@ obd2ecu::~obd2ecu()
 
 void obd2ecu::SetPowerMode(PowerMode powermode)
   {
+  m_powermode = powermode;
   switch (powermode)
     {
     case On:

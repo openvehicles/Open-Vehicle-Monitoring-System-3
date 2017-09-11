@@ -46,6 +46,7 @@ esp32system::~esp32system()
 
 void esp32system::SetPowerMode(PowerMode powermode)
   {
+  m_powermode = powermode;
   switch (powermode)
     {
     case On:

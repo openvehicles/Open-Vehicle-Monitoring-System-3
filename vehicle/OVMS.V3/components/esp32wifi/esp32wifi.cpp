@@ -112,6 +112,7 @@ esp32wifi::~esp32wifi()
 
 void esp32wifi::SetPowerMode(PowerMode powermode)
   {
+  m_powermode = powermode;
   switch (powermode)
     {
     case On:

@@ -115,6 +115,10 @@ esp32can::esp32can(std::string name, int txpin, int rxpin)
 
   // Install CAN ISR
   esp_intr_alloc(ETS_CAN_INTR_SOURCE,0,ESP32CAN_isr,this,NULL);
+
+  // Initialise in powered down mode
+  m_powermode = Off;
+  MODULE_ESP32CAN->MOD.B.RM = 1;
   }
 
 esp32can::~esp32can()
@@ -248,6 +252,7 @@ esp_err_t esp32can::Write(const CAN_frame_t* p_frame)
 
 void esp32can::SetPowerMode(PowerMode powermode)
   {
+  m_powermode = powermode;
   switch (powermode)
     {
     case On:

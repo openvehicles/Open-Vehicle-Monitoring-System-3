@@ -118,6 +118,9 @@ mcp2515::mcp2515(std::string name, spi* spibus, spi_nodma_host_device_t host, in
 
   gpio_set_intr_type((gpio_num_t)m_intpin, GPIO_INTR_NEGEDGE);
   gpio_isr_handler_add((gpio_num_t)m_intpin, MCP2515_isr, (void*)this);
+
+  // Initialise in powered down mode
+  SetPowerMode(Off);
   }
 
 mcp2515::~mcp2515()
@@ -243,6 +246,7 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
 
 void mcp2515::SetPowerMode(PowerMode powermode)
   {
+  m_powermode = powermode;
   switch (powermode)
     {
     case  On:
