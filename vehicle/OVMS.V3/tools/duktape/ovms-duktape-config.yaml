@@ -1,0 +1,29 @@
+#
+# After changing any of these values, be sure and run "make duktape_configure"
+# to rebuild the duktape environment to utilize the new settings.  If you don't
+# when you build your software, the values will not be seen to take effect.
+#
+DUK_USE_BUFFEROBJECT_SUPPORT: true
+
+# Disabled by MWJ, for testing
+#DUK_USE_DATE_GET_NOW: esp32_duktape_get_now
+
+# Error reporting
+DUK_USE_VERBOSE_ERRORS: true
+DUK_USE_TRACEBACKS: true
+DUK_USE_AUGMENT_ERROR_CREATE: true
+DUK_USE_FUNC_FILENAME_PROPERTY: true
+DUK_USE_PC2LINE: true
+
+# Disabled by kolban
+#DUK_USE_REFERENCE_COUNTING: false
+#DUK_USE_DOUBLE_LINKED_HEAP: false
+
+DUK_USE_ROM_STRINGS: true
+DUK_USE_ROM_OBJECTS: true
+DUK_USE_ROM_GLOBAL_INHERIT: true
+
+DUK_USE_FAST_REFCOUNT_DEFAULT: true
+
+# Disabled by MWJ for testing
+#DUK_USE_FATAL_HANDLER: true

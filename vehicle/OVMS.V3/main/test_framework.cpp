@@ -39,6 +39,7 @@ static const char *TAG = "test";
 #include "esp_deep_sleep.h"
 #include "test_framework.h"
 #include "ovms_command.h"
+#include "duktape.h"
 
 void test_deepsleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -83,6 +84,14 @@ void test_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
 #endif
   }
 
+void test_javascript(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  duk_context *ctx = duk_create_heap_default();
+  duk_eval_string(ctx, "1+2");
+  writer->printf("Javascript 1+2=%d\n", (int) duk_get_int(ctx, -1));
+  duk_destroy_heap(ctx);
+  }
+
 class TestFrameworkInit
   {
   public: TestFrameworkInit();
@@ -97,4 +106,5 @@ TestFrameworkInit::TestFrameworkInit()
   cmd_test->RegisterCommand("alerts","Toggle testing alerts in Housekeeping",test_alerts,"",0,0);
   cmd_test->RegisterCommand("memory","Show allocated memory",test_memory,"",0,0);
   cmd_test->RegisterCommand("tasks","Show list of tasks",test_tasks,"",0,0);
+  cmd_test->RegisterCommand("javascript","Test Javascript",test_javascript,"",0,0);
   }
