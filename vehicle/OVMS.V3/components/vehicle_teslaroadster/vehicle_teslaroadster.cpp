@@ -29,7 +29,7 @@
 */
 
 #include "esp_log.h"
-static const char *TAG = "teslaroadster";
+static const char *TAG = "v-teslaroadster";
 
 #include <stdio.h>
 #include "vehicle_teslaroadster.h"

@@ -29,7 +29,7 @@
 */
 
 #include "esp_log.h"
-static const char *TAG = "obdii";
+static const char *TAG = "v-obdii";
 
 #include <stdio.h>
 #include "vehicle_obdii.h"
