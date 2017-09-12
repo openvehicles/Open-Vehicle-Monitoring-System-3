@@ -36,6 +36,7 @@
 #include "pcp.h"
 #include "task_base.h"
 #include "esp_err.h"
+#include "esp_wifi.h"
 #include "ovms_events.h"
 
 typedef enum {
@@ -56,7 +57,9 @@ class esp32wifi : public pcp, public Parent
 
   public:
     void StartClientMode(std::string ssid, std::string password);
+    void StartAccessPointMode(std::string ssid, std::string password);
     void StopStation();
+    esp32wifi_mode_t GetMode();
 
   public:
     void EventWifiGotIp(std::string event, void* data);
@@ -64,6 +67,8 @@ class esp32wifi : public pcp, public Parent
   protected:
     esp32wifi_mode_t m_mode;
     tcpip_adapter_ip_info_t m_ip_info;
+    wifi_init_config_t m_wifi_init_cfg;
+    wifi_config_t m_wifi_apsta_cfg;
   };
 
 #endif //#ifndef __ESP32WIFI_H__

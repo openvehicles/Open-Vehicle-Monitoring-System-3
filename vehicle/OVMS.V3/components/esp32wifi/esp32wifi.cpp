@@ -65,6 +65,32 @@ void wifi_mode_client(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
   me->StartClientMode(argv[0],password);
   }
 
+void wifi_mode_ap(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  esp32wifi *me = MyPeripherals->m_esp32wifi;
+  if (me == NULL)
+    {
+    writer->puts("Error: wifi peripheral could not be found");
+    return;
+    }
+
+  std::string password = MyConfig.GetParamValue("wifi.ap", argv[0]);
+  if (password.empty())
+    {
+    writer->puts("Error: SSID password must be defined in config wifi.ap");
+    return;
+    }
+
+  if (password.length() < 8)
+    {
+    writer->puts("Error: SSID password must be at least 8 characters");
+    return;
+    }
+
+  writer->puts("Starting WIFI as access point...");
+  me->StartAccessPointMode(argv[0],password);
+  }
+
 void wifi_mode_off(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   esp32wifi *me = MyPeripherals->m_esp32wifi;
@@ -90,6 +116,7 @@ esp32wifiInit::esp32wifiInit()
   OvmsCommand* cmd_wifi = MyCommandApp.RegisterCommand("wifi","WIFI framework",NULL, "", 1);
   OvmsCommand* cmd_mode = cmd_wifi->RegisterCommand("mode","WIFI mode framework",NULL, "", 1);
   cmd_mode->RegisterCommand("client","Connect to a WIFI network as a client",wifi_mode_client, "<ssid>", 0, 1);
+  cmd_mode->RegisterCommand("ap","Acts as a WIFI Access Point",wifi_mode_ap, "<ssid>", 1, 1);
   cmd_mode->RegisterCommand("off","Turn off wifi networking",wifi_mode_off, "", 0, 0);
   }
 
@@ -98,7 +125,7 @@ esp32wifi::esp32wifi(std::string name)
   {
   m_mode = ESP32WIFI_MODE_OFF;
   MyConfig.RegisterParam("wifi.ssid", "WIFI SSID", true, false);
-
+  MyConfig.RegisterParam("wifi.ap", "WIFI Access Point", true, false);
   tcpip_adapter_init();
 
   using std::placeholders::_1;
@@ -140,17 +167,43 @@ void esp32wifi::StartClientMode(std::string ssid, std::string password)
     SetPowerMode(On);
     }
 
-  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-  ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+  m_wifi_init_cfg = WIFI_INIT_CONFIG_DEFAULT();
+  ESP_ERROR_CHECK(esp_wifi_init(&m_wifi_init_cfg));
   ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-  wifi_config_t sta_config;
-  strcpy((char*)sta_config.sta.ssid, ssid.c_str());
-  strcpy((char*)sta_config.sta.password, password.c_str());
-  sta_config.sta.bssid_set = 0;
-  ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta_config));
+  memset(&m_wifi_apsta_cfg,0,sizeof(m_wifi_apsta_cfg));
+  strcpy((char*)m_wifi_apsta_cfg.sta.ssid, ssid.c_str());
+  strcpy((char*)m_wifi_apsta_cfg.sta.password, password.c_str());
+  m_wifi_apsta_cfg.sta.bssid_set = 0;
+  ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_apsta_cfg));
   ESP_ERROR_CHECK(esp_wifi_start());
   ESP_ERROR_CHECK(esp_wifi_connect());
+  }
+
+void esp32wifi::StartAccessPointMode(std::string ssid, std::string password)
+  {
+  m_mode = ESP32WIFI_MODE_AP;
+
+  if (m_powermode != On)
+    {
+    SetPowerMode(On);
+    }
+
+  m_wifi_init_cfg = WIFI_INIT_CONFIG_DEFAULT();
+  ESP_ERROR_CHECK(esp_wifi_init(&m_wifi_init_cfg));
+  ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+  memset(&m_wifi_apsta_cfg,0,sizeof(m_wifi_apsta_cfg));
+  m_wifi_apsta_cfg.ap.ssid_len = 0;
+  m_wifi_apsta_cfg.ap.channel = 0;
+  m_wifi_apsta_cfg.ap.authmode = WIFI_AUTH_WPA2_PSK;
+  m_wifi_apsta_cfg.ap.ssid_hidden = 0;
+  m_wifi_apsta_cfg.ap.max_connection = 4;
+  m_wifi_apsta_cfg.ap.beacon_interval=100;
+  strcpy((char*)m_wifi_apsta_cfg.ap.ssid, ssid.c_str());
+  strcpy((char*)m_wifi_apsta_cfg.ap.password, password.c_str());
+  ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &m_wifi_apsta_cfg));
+  ESP_ERROR_CHECK(esp_wifi_start());
   }
 
 void esp32wifi::StopStation()
@@ -158,11 +211,17 @@ void esp32wifi::StopStation()
   if (m_mode != ESP32WIFI_MODE_OFF)
     {
     DeleteChildren();
-    ESP_ERROR_CHECK(esp_wifi_disconnect());
+    if (m_mode == ESP32WIFI_MODE_CLIENT)
+      { ESP_ERROR_CHECK(esp_wifi_disconnect()); }
     ESP_ERROR_CHECK(esp_wifi_stop());
     ESP_ERROR_CHECK(esp_wifi_deinit());
     m_mode = ESP32WIFI_MODE_OFF;
     }
+  }
+
+esp32wifi_mode_t esp32wifi::GetMode()
+  {
+  return m_mode;
   }
 
 void esp32wifi::EventWifiGotIp(std::string event, void* data)

@@ -31,6 +31,7 @@
 #include "esp_log.h"
 static const char *TAG = "ovms-mdns";
 
+#include "ovms_peripherals.h"
 #include "ovms_config.h"
 #include "ovms_mdns.h"
 
@@ -39,7 +40,19 @@ OvmsMDNS MyMDNS __attribute__ ((init_priority (8100)));
 void OvmsMDNS::WifiUp(std::string event, void* data)
   {
   ESP_LOGI(TAG, "Launching MDNS service");
-  esp_err_t err = mdns_init(TCPIP_ADAPTER_IF_STA, &m_mdns);
+  esp_err_t err;
+  if (MyPeripherals->m_esp32wifi->GetMode() == ESP32WIFI_MODE_CLIENT)
+    {
+    err = mdns_init(TCPIP_ADAPTER_IF_STA, &m_mdns);
+    }
+  else if (MyPeripherals->m_esp32wifi->GetMode() == ESP32WIFI_MODE_AP)
+    {
+    err = mdns_init(TCPIP_ADAPTER_IF_AP, &m_mdns);
+    }
+  else
+    {
+    return; // wifi is not up in AP or STA mode
+    }
   if (err)
     {
     ESP_LOGE(TAG, "MDNS Init failed: %d", err);
@@ -63,9 +76,9 @@ void OvmsMDNS::WifiUp(std::string event, void* data)
 
 void OvmsMDNS::WifiDown(std::string event, void* data)
   {
-  ESP_LOGI(TAG, "Stopping MDNS service");
   if (m_mdns)
     {
+    ESP_LOGI(TAG, "Stopping MDNS service");
     mdns_free(m_mdns);
     m_mdns = NULL;
     }
@@ -78,7 +91,9 @@ OvmsMDNS::OvmsMDNS()
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.gotip", std::bind(&OvmsMDNS::WifiUp, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.wifi.ap.start", std::bind(&OvmsMDNS::WifiUp, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.stop", std::bind(&OvmsMDNS::WifiDown, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.wifi.ap.stop", std::bind(&OvmsMDNS::WifiDown, this, _1, _2));
   }
 
 OvmsMDNS::~OvmsMDNS()
