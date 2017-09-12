@@ -35,6 +35,8 @@
 #include <map>
 #include <set>
 #include <limits.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 #define COMMAND_RESULT_MINIMAL    140
 #define COMMAND_RESULT_NORMAL     1024
@@ -42,6 +44,8 @@
 
 class OvmsCommand;
 class OvmsCommandMap;
+class LogBuffers;
+typedef std::map<TaskHandle_t, LogBuffers*> PartialLogs;
 
 class OvmsWriter
   {
@@ -56,6 +60,7 @@ class OvmsWriter
     virtual void finalise() = 0;
     virtual char ** GetCompletion(OvmsCommandMap& children, const char* token) = 0;
     virtual void Log(char* message) = 0;
+    virtual void Log(LogBuffers* message) = 0;
     static void Exit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     virtual void DoExit();
   };
@@ -110,6 +115,7 @@ class OvmsCommandApp
     void RegisterConsole(OvmsWriter* writer);
     void DeregisterConsole(OvmsWriter* writer);
     int Log(const char* fmt, ...);
+    int LogPartial(const char* fmt, ...);
     int HexDump(const char* prefix, const char* data, size_t length);
 
   public:
@@ -120,6 +126,7 @@ class OvmsCommandApp
     OvmsCommand m_root;
     typedef std::set<OvmsWriter*> ConsoleSet;
     ConsoleSet m_consoles;
+    PartialLogs m_partials;
   };
 
 extern OvmsCommandApp MyCommandApp;

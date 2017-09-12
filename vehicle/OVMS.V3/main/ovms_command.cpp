@@ -38,6 +38,7 @@ static const char *TAG = "command";
 #include <esp_log.h>
 #include "freertos/FreeRTOS.h"
 #include "ovms_command.h"
+#include "log_buffers.h"
 
 OvmsCommandApp MyCommandApp __attribute__ ((init_priority (1000)));
 
@@ -323,16 +324,46 @@ void OvmsCommandApp::DeregisterConsole(OvmsWriter* writer)
 
 int OvmsCommandApp::Log(const char* fmt, ...)
   {
-  size_t ret = 0;
+  LogBuffers* lb;
+  TaskHandle_t task = xTaskGetCurrentTaskHandle();
+  PartialLogs::iterator it = m_partials.find(task);
+  if (it == m_partials.end())
+    lb = new LogBuffers();
+  else
+    {
+    lb = it->second;
+    m_partials.erase(task);
+    }
   va_list args;
+  va_start(args, fmt);
+  size_t ret = lb->append(fmt, args);
+  va_end(args);
+  lb->set(m_consoles.size());
   for (ConsoleSet::iterator it = m_consoles.begin(); it != m_consoles.end(); ++it)
     {
-    char *buffer;
-    va_start(args, fmt);
-    ret = vasprintf(&buffer, fmt, args);
-    va_end(args);
-    (*it)->Log(buffer);
+    (*it)->Log(lb);
     }
+  return ret;
+  }
+
+int OvmsCommandApp::LogPartial(const char* fmt, ...)
+  {
+  LogBuffers* lb;
+  TaskHandle_t task = xTaskGetCurrentTaskHandle();
+  PartialLogs::iterator it = m_partials.find(task);
+  if (it == m_partials.end())
+    {
+    lb = new LogBuffers();
+    m_partials[task] = lb;
+    }
+  else
+    {
+    lb = it->second;
+    }
+  va_list args;
+  va_start(args, fmt);
+  size_t ret = lb->append(fmt, args);
+  va_end(args);
   return ret;
   }
 

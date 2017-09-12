@@ -31,8 +31,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "ovms_console.h"
 #include "esp_log.h"
+#include "ovms_console.h"
+#include "log_buffers.h"
 
 //static const char *TAG = "Console";
 static char CRbuf[1] = { '\r' };
@@ -146,6 +147,24 @@ void OvmsConsole::Log(char* message)
     }
   }
 
+void OvmsConsole::Log(LogBuffers* message)
+  {
+  if (!m_ready)
+    {
+    message->release();
+    return;
+    }
+  Event event;
+  event.type = ALERT_MULTI;
+  event.multi = message;
+  BaseType_t ret = xQueueSendToBack(m_queue, (void * )&event, (portTickType)(1000 / portTICK_PERIOD_MS));
+  if (ret != pdPASS)
+    {
+    message->release();
+//    ESP_LOGI(TAG, "Timeout queueing message in Console::Log\n");
+    }
+  }
+
 typedef enum
   {
   AT_PROMPT,
@@ -166,41 +185,63 @@ void OvmsConsole::Service()
     // Waiting for UART RX event or async log message event
     if (xQueueReceive(m_queue, (void*)&event, ticks))
       {
-      if (event.type == ALERT)
-        {
-        // We remove the newline from the end of a log message so that we can later
-        // output a newline as part of restoring the command prompt and its line
-        // without leaving a blank line above it.  So before we display a new log
-        // message we need to output a newline if the last action was displaying a
-        // log message, or output a carriage return to back over the prompt.
-        if (state == AWAITING_NL)
-          write(NLbuf, 1);
-        else if (state == AT_PROMPT)
-          write(CRbuf, 1);
-        size_t len = strlen(event.buffer);
-        if (event.buffer[len-1] == '\n')
-          {
-          event.buffer[--len] = '\0';
-          if (event.buffer[len-1] == '\r')  // Remove CR, too, in case of \r\n
-            event.buffer[--len] = '\0';
-          state = AWAITING_NL;
-          write(event.buffer, len);
-          }
-        else
-          {
-          state = NO_NL;
-          write(event.buffer, len);
-          }
-        free(event.buffer);
-        ticks = 200 / portTICK_PERIOD_MS;
-        }
-      else
+      if (event.type <= RECV)
         {
         if (state != AT_PROMPT)
           ProcessChars(ctrlRbuf, 1);    // Restore the prompt plus any type-in on a new line
         state = AT_PROMPT;
         HandleDeviceEvent(&event);
+        continue;
         }
+      // We remove the newline from the end of a log message so that we can later
+      // output a newline as part of restoring the command prompt and its line
+      // without leaving a blank line above it.  So before we display a new log
+      // message we need to output a newline if the last action was displaying a
+      // log message, or output a carriage return to back over the prompt.
+      if (state == AWAITING_NL)
+        write(NLbuf, 1);
+      else if (state == AT_PROMPT)
+        write(CRbuf, 1);
+      char* buffer;
+      size_t len;
+      if (event.type == ALERT_MULTI)
+        {
+        LogBuffers::iterator before = event.multi->begin(), after;
+        while (true)
+          {
+          buffer = *before;
+          len = strlen(buffer);
+          after = before;
+          ++after;
+          if (after == event.multi->end())
+            break;
+          write(buffer, len);
+          before = after;
+          }
+        }
+      else
+        {
+        buffer = event.buffer;
+        len = strlen(buffer);
+        }
+      if (buffer[len-1] == '\n')
+        {
+        buffer[--len] = '\0';
+        if (buffer[len-1] == '\r')  // Remove CR, too, in case of \r\n
+          buffer[--len] = '\0';
+        state = AWAITING_NL;
+        write(buffer, len);
+        }
+      else
+        {
+        state = NO_NL;
+        write(buffer, len);
+        }
+      if (event.type == ALERT_MULTI)
+        event.multi->release();
+      else
+        free(event.buffer);
+      ticks = 200 / portTICK_PERIOD_MS;
       }
     else
       {

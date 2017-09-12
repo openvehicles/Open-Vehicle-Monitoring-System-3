@@ -89,11 +89,11 @@ void HousekeepingTask(void *pvParameters)
 
     if (TestAlerts)
       {
-      MyCommandApp.Log("SHOULD NOT BE SEEN\r");
+      MyCommandApp.LogPartial("SHOULD NOT BE SEEN\r");
       uint32_t caps = MALLOC_CAP_8BIT;
       size_t free = xPortGetFreeHeapSizeCaps(caps);
 //      size_t free = heap_caps_get_free_size(caps);
-      MyCommandApp.Log("Free %zu  ",free);
+      MyCommandApp.LogPartial("Free %zu  ",free);
       MyCommandApp.Log("Tasks %u\r\n", uxTaskGetNumberOfTasks());
       }
 

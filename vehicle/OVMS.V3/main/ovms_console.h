@@ -39,6 +39,7 @@
 
 class OvmsCommandMap;
 class Parent;
+class LogBuffers;
 
 class OvmsConsole : public OvmsWriter, public TaskBase
   {
@@ -53,8 +54,9 @@ class OvmsConsole : public OvmsWriter, public TaskBase
     // with a value large enough to leave plenty of space below.
     typedef enum
       {
-      ALERT = 0x10000,
-      RECV
+      RECV = 0x10000,
+      ALERT,
+      ALERT_MULTI      
       } event_type_t;
 
     typedef struct
@@ -63,6 +65,7 @@ class OvmsConsole : public OvmsWriter, public TaskBase
       union
         {
         char* buffer;       // Pointer to ALERT buffer
+        LogBuffers* multi;  // Pointer to ALERT_MULTI message
         ssize_t size;       // Buffer size for RECV
         };
       } Event;
@@ -75,7 +78,8 @@ class OvmsConsole : public OvmsWriter, public TaskBase
     static void Print(microrl_t* rl, const char * str);
     static char ** Complete(microrl_t* rl, int argc, const char * const * argv );
     static int Execute (microrl_t* rl, int argc, const char * const * argv );
-    void Log(char* buffer);
+    void Log(char* message);
+    void Log(LogBuffers* message);
 
   private:
     void Service();
