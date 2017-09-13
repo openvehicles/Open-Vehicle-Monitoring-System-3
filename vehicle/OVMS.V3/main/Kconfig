@@ -35,4 +35,11 @@ config OVMS_DEV_DEBUGRAM
     help
         Enable to store extended RAM memory allocation statistics (danger: performance impact)
 
+config OVMS_DEV_DEBUGEVENTS
+    bool "Enable extended event tracing"
+    default n
+    depends on OVMS
+    help
+        Enable to show events signalled
+
 endmenu # Developer Options
