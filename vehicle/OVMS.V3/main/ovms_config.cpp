@@ -36,6 +36,7 @@ static const char *TAG = "config";
 #include <string.h>
 #include "ovms_config.h"
 #include "ovms_command.h"
+#include "ovms_events.h"
 
 #define OVMS_CONFIGPATH "/store/ovms_config"
 #define OVMS_MAXVALSIZE 1024
@@ -135,6 +136,8 @@ esp_err_t OvmsConfig::mount()
     m_store_fat.format_if_mount_failed = true;
     m_store_fat.max_files = 5;
     esp_vfs_fat_spiflash_mount("/store", "store", &m_store_fat, &m_store_wlh);
+    m_mounted = true;
+    MyEvents.SignalEvent("config.mounted", NULL);
     }
 
   struct stat ds;
@@ -144,7 +147,6 @@ esp_err_t OvmsConfig::mount()
     mkdir(OVMS_CONFIGPATH,0);
     }
 
-  m_mounted = true;
   return ESP_OK;
   }
 
@@ -157,6 +159,7 @@ esp_err_t OvmsConfig::unmount()
     {
     esp_vfs_fat_spiflash_unmount("/store", m_store_wlh);
     m_mounted = false;
+    MyEvents.SignalEvent("config.unmounted", NULL);
     }
 
   return ESP_OK;
@@ -245,7 +248,7 @@ bool OvmsConfig::ProtectedPath(std::string path)
 #ifdef CONFIG_OVMS_DEV_CONFIGVFS
   return false;
 #else
-  return (path.find(OVMS_CONFIGPATH) == std::string::npos);
+  return (path.find(OVMS_CONFIGPATH) != std::string::npos);
 #endif // #ifdef CONFIG_OVMS_DEV_CONFIGVFS
   }
 
