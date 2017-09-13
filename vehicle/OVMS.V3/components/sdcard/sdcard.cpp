@@ -33,9 +33,33 @@ static const char *TAG = "sdcard";
 
 #include <string>
 #include <string.h>
+#include "esp_intr_alloc.h"
+#include "driver/gpio.h"
 #include "sdcard.h"
 #include "ovms_command.h"
 #include "ovms_peripherals.h"
+
+void sdcard::Ticker10(std::string event, void* data)
+  {
+  bool cd = (gpio_get_level((gpio_num_t)m_slot.gpio_cd)==0)?true:false;
+
+  if (cd != m_cd)
+    {
+    m_cd = cd;
+    if (m_cd)
+      {
+      // SD CARD has been inserted. Let's auto-mount
+      ESP_LOGI(TAG, "SD CARD has been inserted. Auto-mounting...");
+      mount();
+      }
+    else
+      {
+      // SD CARD has been removed. A bit late, but let's dismount
+      ESP_LOGI(TAG, "SD CARD has been removed.");
+      if (m_mounted) unmount();
+      }
+    }
+  }
 
 sdcard::sdcard(std::string name, bool mode1bit, bool autoformat, int cdpin)
   : pcp(name)
@@ -57,6 +81,19 @@ sdcard::sdcard(std::string name, bool mode1bit, bool autoformat, int cdpin)
   m_mount.max_files = 5;
 
   m_mounted = false;
+
+  m_cd = (gpio_get_level((gpio_num_t)cdpin)==0)?true:false;
+
+  if (m_cd)
+    {
+    // SDCARD is inserted, so let's auto-mount (on boot)
+    mount();
+    ESP_LOGI(TAG, "SD CARD detected and auto-mounted");
+    }
+
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG,"ticker.10", std::bind(&sdcard::Ticker10, this, _1, _2));
   }
 
 sdcard::~sdcard()
@@ -98,6 +135,11 @@ bool sdcard::ismounted()
   return m_mounted;
   }
 
+bool sdcard::isinserted()
+  {
+  return m_cd;
+  }
+
 void sdcard_mount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   MyPeripherals->m_sdcard->mount();
@@ -129,6 +171,33 @@ void sdcard_unmount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   writer->puts("Unmounted SD CARD");
   }
 
+void sdcard_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyPeripherals->m_sdcard->isinserted())
+    {
+    writer->puts("SD CARD is inserted");
+    }
+  else
+    {
+    writer->puts("SD CARD is not inserted");
+    }
+  if (MyPeripherals->m_sdcard->ismounted())
+    {
+    if (verbosity > COMMAND_RESULT_MINIMAL)
+      {
+      sdmmc_card_t* card = MyPeripherals->m_sdcard->m_card;
+      writer->printf("Name: %s\n", card->cid.name);
+      writer->printf("Type: %s\n", (card->ocr & SD_OCR_SDHC_CAP)?"SDHC/SDXC":"SDSC");
+      writer->printf("Speed: %s\n", (card->csd.tr_speed > 25000000)?"high speed":"default speed");
+      writer->printf("Size: %lluMB\n", ((uint64_t) card->csd.capacity) * card->csd.sector_size / (1024 * 1024));
+      writer->printf("CSD: ver=%d, sector_size=%d, capacity=%d read_bl_len=%d\n",
+                     card->csd.csd_ver,
+                     card->csd.sector_size, card->csd.capacity, card->csd.read_block_len);
+      writer->printf("SCR: sd_spec=%d, bus_width=%d\n", card->scr.sd_spec, card->scr.bus_width);
+      }
+    }
+  }
+
 class SDCardInit
   {
   public: SDCardInit();
@@ -141,4 +210,5 @@ SDCardInit::SDCardInit()
   OvmsCommand* cmd_sd = MyCommandApp.RegisterCommand("sd","SD CARD framework",NULL,"<$C>",1,1);
   cmd_sd->RegisterCommand("mount","Mount SD CARD",sdcard_mount,"",0,0);
   cmd_sd->RegisterCommand("unmount","Unmount SD CARD",sdcard_unmount,"",0,0);
+  cmd_sd->RegisterCommand("status","Show SD CARD status",sdcard_status,"",0,0);
   }

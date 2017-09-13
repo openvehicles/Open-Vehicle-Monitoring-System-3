@@ -44,11 +44,13 @@ class sdcard : public pcp
   public:
     sdcard(std::string name, bool mode1bit=false, bool autoformat=false, int cdpin=0);
     ~sdcard();
+    void Ticker10(std::string event, void* data);
 
   public:
     esp_err_t mount();
     esp_err_t unmount();
     bool ismounted();
+    bool isinserted();
 
   public:
     sdmmc_host_t m_host;
@@ -56,6 +58,7 @@ class sdcard : public pcp
     esp_vfs_fat_sdmmc_mount_config_t m_mount;
     sdmmc_card_t* m_card;
     bool m_mounted;
+    bool m_cd;
   };
 
 #endif //#ifndef __SDCARD_H__
