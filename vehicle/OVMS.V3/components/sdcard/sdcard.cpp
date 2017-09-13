@@ -33,32 +33,27 @@ static const char *TAG = "sdcard";
 
 #include <string>
 #include <string.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/timers.h"
 #include "esp_intr_alloc.h"
 #include "driver/gpio.h"
 #include "sdcard.h"
 #include "ovms_command.h"
 #include "ovms_peripherals.h"
+#include "ovms_events.h"
 
-void sdcard::Ticker10(std::string event, void* data)
+TimerHandle_t sdcard_timer;
+
+void sdcardTimer( TimerHandle_t timer )
   {
-  bool cd = (gpio_get_level((gpio_num_t)m_slot.gpio_cd)==0)?true:false;
+  sdcard* h = (sdcard*)pvTimerGetTimerID(timer);
+  h->CheckCardState();
+  }
 
-  if (cd != m_cd)
-    {
-    m_cd = cd;
-    if (m_cd)
-      {
-      // SD CARD has been inserted. Let's auto-mount
-      ESP_LOGI(TAG, "SD CARD has been inserted. Auto-mounting...");
-      mount();
-      }
-    else
-      {
-      // SD CARD has been removed. A bit late, but let's dismount
-      ESP_LOGI(TAG, "SD CARD has been removed.");
-      if (m_mounted) unmount();
-      }
-    }
+static void IRAM_ATTR sdcard_isr_handler(void* arg)
+  {
+  xTimerStart(sdcard_timer, 0);
   }
 
 sdcard::sdcard(std::string name, bool mode1bit, bool autoformat, int cdpin)
@@ -81,19 +76,14 @@ sdcard::sdcard(std::string name, bool mode1bit, bool autoformat, int cdpin)
   m_mount.max_files = 5;
 
   m_mounted = false;
+  m_cd = false;
 
-  m_cd = (gpio_get_level((gpio_num_t)cdpin)==0)?true:false;
+  sdcard_timer = xTimerCreate("SDCARD timer",500 / portTICK_PERIOD_MS,pdFALSE,this,sdcardTimer);
+  xTimerStart(sdcard_timer, 0);
 
-  if (m_cd)
-    {
-    // SDCARD is inserted, so let's auto-mount (on boot)
-    mount();
-    ESP_LOGI(TAG, "SD CARD detected and auto-mounted");
-    }
-
-  using std::placeholders::_1;
-  using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG,"ticker.10", std::bind(&sdcard::Ticker10, this, _1, _2));
+  gpio_pullup_en((gpio_num_t)cdpin);
+  gpio_set_intr_type((gpio_num_t)cdpin, GPIO_INTR_ANYEDGE);
+  gpio_isr_handler_add((gpio_num_t)cdpin, sdcard_isr_handler, (void*) this);
   }
 
 sdcard::~sdcard()
@@ -115,6 +105,7 @@ esp_err_t sdcard::mount()
   if (ret == ESP_OK)
     {
     m_mounted = true;
+    MyEvents.SignalEvent("sd.mounted", NULL);
     }
 
   return ret;
@@ -126,6 +117,7 @@ esp_err_t sdcard::unmount()
   if (ret == ESP_OK)
     {
     m_mounted = false;
+    MyEvents.SignalEvent("sd.unmounted", NULL);
     }
   return ret;
   }
@@ -139,6 +131,31 @@ bool sdcard::isinserted()
   {
   return m_cd;
   }
+
+void sdcard::CheckCardState()
+  {
+  bool cd = (gpio_get_level((gpio_num_t)m_slot.gpio_cd)==0)?true:false;
+
+  if (cd != m_cd)
+    {
+    m_cd = cd;
+    if (m_cd)
+      {
+      // SD CARD has been inserted. Let's auto-mount
+      ESP_LOGI(TAG, "SD CARD has been inserted. Auto-mounting...");
+      MyEvents.SignalEvent("sd.insert", NULL);
+      mount();
+      }
+    else
+      {
+      // SD CARD has been removed. A bit late, but let's dismount
+      ESP_LOGI(TAG, "SD CARD has been removed.");
+      if (m_mounted) unmount();
+      MyEvents.SignalEvent("sd.remove", NULL);
+      }
+    }
+  }
+
 
 void sdcard_mount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {

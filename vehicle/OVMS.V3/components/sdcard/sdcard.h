@@ -44,7 +44,7 @@ class sdcard : public pcp
   public:
     sdcard(std::string name, bool mode1bit=false, bool autoformat=false, int cdpin=0);
     ~sdcard();
-    void Ticker10(std::string event, void* data);
+    void CheckCardState();
 
   public:
     esp_err_t mount();
