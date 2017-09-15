@@ -1,0 +1,3 @@
+
+// STUB mongoose library
+
