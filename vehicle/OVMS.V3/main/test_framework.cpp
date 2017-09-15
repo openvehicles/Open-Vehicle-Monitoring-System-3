@@ -42,7 +42,10 @@ static const char *TAG = "test";
 #include "esp_heap_alloc_caps.h"
 #include "test_framework.h"
 #include "ovms_command.h"
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 #include "duktape.h"
+#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
 void test_deepsleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
