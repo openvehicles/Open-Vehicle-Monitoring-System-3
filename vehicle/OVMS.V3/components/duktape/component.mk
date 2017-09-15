@@ -7,6 +7,11 @@
 # please read the ESP-IDF documents if you need to do this.
 #
 
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 COMPONENT_ADD_INCLUDEDIRS:=src
 COMPONENT_SRCDIRS:=src
 #COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive
+#else
+COMPONENT_ADD_INCLUDEDIRS:=stub
+COMPONENT_SRCDIRS:=stub
+#endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE

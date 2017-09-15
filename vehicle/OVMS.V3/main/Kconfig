@@ -4,6 +4,13 @@ menuconfig OVMS
     help
         Select this option to enable OVMS specific features
 
+config OVMS_VERSION_TAG
+    string "A tag to describe the current build version"
+    default main
+    depends on OVMS
+    help
+        Custom builds should change this tag to describe themselves
+
 choice OVMS_HW_MODEL
     prompt "Select the OVMS hardware model being built for"
         default OVMS_HW_BASE_3_0
@@ -18,29 +25,35 @@ config OVMS_HW_BASE_3_0
 
 endchoice # OVMS_HW_MODEL
 
-config OVMS_VERSION_TAG
-    string "A tag to describe the current build version"
-    default main
-    depends on OVMS
+choice OVMS_SC_JAVASCRIPT
+    prompt "Select the OVMS javascript library to use"
+        default OVMS_SC_JAVASCRIPT_NONE
+        depends on OVMS
+        help
+                OVMS_SC_JAVASCRIPT_NONE         No javascript support
+                OVMS_SC_JAVASCRIPT_DUKTAPE      DUKTAPE (MIT license)
+                OVMS_SC_JAVASCRIPT_MJS          MJS (GPL license)
+
+config OVMS_SC_JAVASCRIPT_NONE
+    bool "No javascript support"
     help
-        Custom builds should change this tag to describe themselves
+        Select this: No javascript support
 
-menu "OVMS Sub-Component Options"
-    depends on OVMS
-
-config OVMS_SC_MIT_DUKTAPE
-    bool "Include the MIT licensed DUKTAPE library (Javascript)"
+config OVMS_SC_JAVASCRIPT_DUKTAPE
+    bool "Use the MIT licensed DUKTAPE library"
     default n
     depends on OVMS
     help
-        Enable to include the MIT licensed DUKTAPE library (for Javascript)
+        Use the MIT licensed DUKTAPE library (for Javascript)
 
-config OVMS_SC_GPL_MJS
-    bool "Include the GPL licensed MJS library (Javascript)"
+config OVMS_SC_JAVASCRIPT_MJS
+    bool "Use the GPL licensed MJS library"
     default n
     depends on OVMS
     help
-        Enable to include the GPL licensed MJS library (Javascript)
+        Use the GPL licensed MJS library (Javascript)
+
+endchoice # OVMS_SC_JAVASCRIPT
 
 config OVMS_SC_GPL_MONGOOSE
     bool "Include the GPL licensed MONGOOSE networking library (web server, etc)"
@@ -48,8 +61,6 @@ config OVMS_SC_GPL_MONGOOSE
     depends on OVMS
     help
         Enable to include the GPL licensed MONGOOSE networking library
-
-endmenu # OVMS Sub-Component Options
 
 menu "Developer Options"
     depends on OVMS

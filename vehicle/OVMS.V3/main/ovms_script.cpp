@@ -41,6 +41,15 @@ OvmsScripts MyScripts __attribute__ ((init_priority (1600)));
 OvmsScripts::OvmsScripts()
   {
   ESP_LOGI(TAG, "Initialising SCRIPTS (1600)");
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_NONE
+  ESP_LOGI(TAG, "No javascript engines enabled (command scripting only)");
+#endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_NONE
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  ESP_LOGI(TAG, "Using DUKTAPE javascript engine");
+#endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_MJS
+  ESP_LOGI(TAG, "Using MJS javascript engine");
+#endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_MJS
   }
 
 OvmsScripts::~OvmsScripts()
