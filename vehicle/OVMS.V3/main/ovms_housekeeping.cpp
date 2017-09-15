@@ -61,7 +61,7 @@ int console_logger(const char *format, va_list arg)
   return k;
   }
 
-#ifdef CONFIG_OVMS_CONSOLE_LOG_STATUS
+#ifdef CONFIG_OVMS_DEV_LOGSTATUS
 int TestAlerts = true;
 #else
 int TestAlerts = false;

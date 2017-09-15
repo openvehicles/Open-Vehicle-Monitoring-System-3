@@ -4,6 +4,20 @@ menuconfig OVMS
     help
         Select this option to enable OVMS specific features
 
+choice OVMS_HW_MODEL
+    prompt "Select the OVMS hardware model being built for"
+        default OVMS_HW_BASE_3_0
+        depends on OVMS
+        help
+                OVMS_HW_BASE_3_0                OVMS base hardware v3.0
+
+config OVMS_HW_BASE_3_0
+    bool "OVMS base hardware v3.0"
+    help
+        Select this: OVMS base hardware v3.0
+
+endchoice # OVMS_HW_MODEL
+
 config OVMS_VERSION_TAG
     string "A tag to describe the current build version"
     default main
@@ -11,15 +25,41 @@ config OVMS_VERSION_TAG
     help
         Custom builds should change this tag to describe themselves
 
-config OVMS_CONSOLE_LOG_STATUS
+menu "OVMS Sub-Component Options"
+    depends on OVMS
+
+config OVMS_SC_MIT_DUKTAPE
+    bool "Include the MIT licensed DUKTAPE library (Javascript)"
+    default n
+    depends on OVMS
+    help
+        Enable to include the MIT licensed DUKTAPE library (for Javascript)
+
+config OVMS_SC_GPL_MJS
+    bool "Include the GPL licensed MJS library (Javascript)"
+    default n
+    depends on OVMS
+    help
+        Enable to include the GPL licensed MJS library (Javascript)
+
+config OVMS_SC_GPL_MONGOOSE
+    bool "Include the GPL licensed MONGOOSE networking library (web server, etc)"
+    default n
+    depends on OVMS
+    help
+        Enable to include the GPL licensed MONGOOSE networking library
+
+endmenu # OVMS Sub-Component Options
+
+menu "Developer Options"
+    depends on OVMS
+
+config OVMS_DEV_LOGSTATUS
     bool "Periodically log status on OVMS console"
     default n
     depends on OVMS
     help
         Enable to periodically log status on OVMS console
-
-menu "Developer Options"
-    depends on OVMS
 
 config OVMS_DEV_CONFIGVFS
     bool "Disable the usual protections for configuration visibility in VFS"

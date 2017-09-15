@@ -31,7 +31,9 @@
 #ifndef __SCRIPT_H__
 #define __SCRIPT_H__
 
+#ifdef CONFIG_OVMS_SC_MIT_DUKTAPE
 #include "duktape.h"
+#endif //#ifdef OVMS_SC_MIT_DUKTAPE
 
 class OvmsScripts
   {
