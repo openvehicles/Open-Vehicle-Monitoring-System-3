@@ -105,6 +105,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrame(CAN_frame_t* p_frame)
           int estrange = (int)d[6] + ((int)d[7]<<8);
           if (estrange>6000) estrange=0; // Sanity check (limit rng->std)
           MyMetrics.SetInt(MS_V_BAT_RANGE_EST, estrange);
+          break;
           }
         case 0x82: // Ambient Temperature
           MyMetrics.SetInt(MS_V_TEMP_AMBIENT,d[1]);
