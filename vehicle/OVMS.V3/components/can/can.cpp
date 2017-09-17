@@ -199,12 +199,12 @@ void can::IncomingFrame(CAN_frame_t* p_frame)
     }
   }
 
-void can::RegisterListener(QueueHandle_t *queue)
+void can::RegisterListener(QueueHandle_t queue)
   {
   m_listeners.push_back(queue);
   }
 
-void can::DeregisterListener(QueueHandle_t *queue)
+void can::DeregisterListener(QueueHandle_t queue)
   {
   auto it = std::find(m_listeners.begin(), m_listeners.end(), queue);
   if (it != m_listeners.end())
