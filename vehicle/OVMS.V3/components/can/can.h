@@ -136,11 +136,11 @@ class can
     QueueHandle_t m_rxqueue;
 
   public:
-    void RegisterListener(QueueHandle_t *queue);
-    void DeregisterListener(QueueHandle_t *queue);
+    void RegisterListener(QueueHandle_t queue);
+    void DeregisterListener(QueueHandle_t queue);
 
   private:
-    std::list<QueueHandle_t*> m_listeners;
+    std::list<QueueHandle_t> m_listeners;
     TaskHandle_t m_rxtask;            // Task to handle reception
   };
 
