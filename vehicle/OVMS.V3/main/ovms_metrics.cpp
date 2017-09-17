@@ -128,6 +128,28 @@ bool OvmsMetrics::Set(const char* metric, const char* value)
   return true;
   }
 
+bool OvmsMetrics::SetInt(const char* metric, int value)
+  {
+  auto k = m_metrics.find(metric);
+  if (k == m_metrics.end())
+    return false;
+
+  OvmsMetricInt* m = (OvmsMetricInt*)k->second;
+  m->SetValue(value);
+  return true;
+  }
+
+bool OvmsMetrics::SetFloat(const char* metric, float value)
+  {
+  auto k = m_metrics.find(metric);
+  if (k == m_metrics.end())
+    return false;
+
+  OvmsMetricFloat* m = (OvmsMetricFloat*)k->second;
+  m->SetValue(value);
+  return true;
+  }
+
 OvmsMetric* OvmsMetrics::Find(const char* metric)
   {
   auto k = m_metrics.find(metric);

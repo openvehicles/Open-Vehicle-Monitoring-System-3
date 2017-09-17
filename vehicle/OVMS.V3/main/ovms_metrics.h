@@ -138,6 +138,8 @@ class OvmsMetrics
 
   public:
     bool Set(const char* metric, const char* value);
+    bool SetInt(const char* metric, int value);
+    bool SetFloat(const char* metric, float value);
     OvmsMetric* Find(const char* metric);
 
   public:
