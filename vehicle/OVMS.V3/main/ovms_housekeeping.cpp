@@ -42,7 +42,6 @@ static const char *TAG = "housekeeping";
 #include "ovms_config.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
-#include "console_async.h"
 #include "ovms_config.h"
 
 #include "esp_heap_alloc_caps.h"
@@ -50,14 +49,14 @@ static const char *TAG = "housekeeping";
 //#include "esp_heap_caps.h"
 //}
 
-ConsoleAsync *usbconsole;
+ConsoleAsync *MyUsbConsole;
 
 int console_logger(const char *format, va_list arg)
   {
   char *buffer = (char*)malloc(512);
   vsnprintf(buffer, 512, format, arg);
   int k = strlen(buffer);
-  usbconsole->Log(buffer);
+  MyUsbConsole->Log(buffer);
   return k;
   }
 
@@ -126,7 +125,7 @@ void Housekeeping::init()
   MyPeripherals = new Peripherals();
 
   ESP_LOGI(TAG, "Starting USB console...");
-  usbconsole = new ConsoleAsync();
+  MyUsbConsole = new ConsoleAsync();
 
   esp_log_set_vprintf(console_logger);
 

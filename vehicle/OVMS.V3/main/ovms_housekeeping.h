@@ -34,6 +34,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/timers.h"
+#include "console_async.h"
 
 class Housekeeping
   {
@@ -52,5 +53,7 @@ class Housekeeping
     TimerHandle_t m_timer1;
     int m_tick;
   };
+
+extern ConsoleAsync *MyUsbConsole;
 
 #endif //#ifndef __HOUSEKEEPING_H__
