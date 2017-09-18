@@ -52,7 +52,7 @@ ConsoleAsync::ConsoleAsync()
   uart_param_config(EX_UART_NUM, &uart_config);
 
   // Install UART driver, and get the queue.
-  uart_driver_install(EX_UART_NUM, BUF_SIZE * 2, BUF_SIZE * 2, 10, &m_queue, 0);
+  uart_driver_install(EX_UART_NUM, BUF_SIZE * 2, BUF_SIZE * 2, 30, &m_queue, 0);
 
   Initialize("Async");
   }
