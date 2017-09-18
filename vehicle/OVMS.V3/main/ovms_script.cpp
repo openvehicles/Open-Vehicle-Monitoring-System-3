@@ -31,12 +31,89 @@
 #include "esp_log.h"
 static const char *TAG = "script";
 
+#include <string>
 #include <string.h>
 #include <stdio.h>
 #include "ovms_script.h"
 #include "ovms_command.h"
+#include "ovms_command.h"
+#include "ovms_events.h"
 
 OvmsScripts MyScripts __attribute__ ((init_priority (1600)));
+
+void script_ovms(int verbosity, OvmsWriter* writer, FILE* sf)
+  {
+  char cmdline[_COMMAND_LINE_LEN];
+
+  while(fgets(cmdline, _COMMAND_LINE_LEN, sf) != NULL )
+    {
+    char* tkn_arr [_COMMAND_TOKEN_NMB];
+    while ((strlen(cmdline)>0)&&
+           ((cmdline[strlen(cmdline)-1]=='\n')||
+            (cmdline[strlen(cmdline)-1]=='\r')))
+      cmdline[strlen(cmdline)-1] = 0;
+    if (cmdline[0] != 0)
+      {
+      // Tokenise the command line...
+      int nt = 0;
+      int ind = 0;
+      int limit = strlen(cmdline);
+      for (int k=0;k<limit;k++) { if (cmdline[k]==' ') cmdline[k]=0; }
+      while (ind < limit)
+        {
+        // go past the first whitespace
+        while ((cmdline[ind] == 0) && (ind < limit))
+          {
+          ind++;
+          }
+        if (ind < limit)
+          {
+          tkn_arr[nt++] = cmdline + ind;
+          if (nt >= _COMMAND_TOKEN_NMB)
+            {
+            writer->puts("Error: command too long");
+            return;
+            }
+          // go to the first NOT whitespace
+          while ((cmdline [ind] != 0) && (ind < limit))
+            { ind++; }
+          }
+        }
+      // OK, at this point the command line is tokenised and we are ready to go...
+      MyCommandApp.Execute(verbosity, writer, nt, tkn_arr);
+      }
+    }
+  }
+
+void script_run(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  FILE *sf;
+
+  if (argv[0][0] == '/')
+    {
+    // A direct path specification
+    sf = fopen(argv[0], "r");
+    }
+  else
+    {
+    std::string path("/sdcard/scripts/");
+    path.append(argv[0]);
+    sf = fopen(path.c_str(), "r");
+    if (sf == NULL)
+      {
+      path = std::string("/store/scripts");
+      path.append(argv[0]);
+      sf = fopen(path.c_str(), "r");
+      }
+    }
+  if (sf == NULL)
+    {
+    writer->puts("Error: Script not found");
+    return;
+    }
+  script_ovms(verbosity, writer, sf);
+  fclose(sf);
+  }
 
 OvmsScripts::OvmsScripts()
   {
@@ -50,6 +127,9 @@ OvmsScripts::OvmsScripts()
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_MJS
   ESP_LOGI(TAG, "Using MJS javascript engine");
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_MJS
+
+  MyCommandApp.RegisterCommand("script","Run a script",script_run,"<path>",1,1);
+  MyCommandApp.RegisterCommand(".","Run a script",script_run,"<path>",1,1);
   }
 
 OvmsScripts::~OvmsScripts()

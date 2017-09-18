@@ -37,6 +37,7 @@
 #include <limits.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "microrl_config.h"
 
 #define COMMAND_RESULT_MINIMAL    140
 #define COMMAND_RESULT_NORMAL     1024
