@@ -34,10 +34,12 @@ static const char *TAG = "script";
 #include <string>
 #include <string.h>
 #include <stdio.h>
+#include <dirent.h>
 #include "ovms_script.h"
 #include "ovms_command.h"
 #include "ovms_command.h"
 #include "ovms_events.h"
+#include "ovms_housekeeping.h"
 
 OvmsScripts MyScripts __attribute__ ((init_priority (1600)));
 
@@ -113,6 +115,92 @@ void script_run(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     }
   script_ovms(verbosity, writer, sf);
   fclose(sf);
+  }
+
+void OvmsScripts::AllScripts(std::string path)
+  {
+  DIR *dir;
+  struct dirent *dp;
+  FILE *sf;
+
+  if ((dir = opendir (path.c_str())) != NULL)
+    {
+    while ((dp = readdir (dir)) != NULL)
+      {
+      std::string fpath = path;
+      fpath.append("/");
+      fpath.append(dp->d_name);
+      sf = fopen(fpath.c_str(), "r");
+      if (sf)
+        {
+        ESP_LOGI(TAG, "Running script %s", fpath.c_str());
+        script_ovms(COMMAND_RESULT_MINIMAL, this, sf);
+        fclose(sf);
+        }
+      }
+    closedir(dir);
+    }
+  }
+
+void OvmsScripts::EventScript(std::string event, void* data)
+  {
+  std::string path("/sdcard/events/");
+  path.append(event);
+  AllScripts(path);
+
+  path=std::string("/store/events/");
+  path.append(event);
+  AllScripts(path);
+  }
+
+int OvmsScripts::puts(const char* s)
+  {
+  MyUsbConsole->Log((char*)s);
+  MyUsbConsole->Log((char*)"\n");
+  return strlen(s);
+  }
+
+int OvmsScripts::printf(const char* fmt, ...)
+  {
+  char *buffer = (char*)malloc(512);
+
+  va_list args;
+  va_start(args,fmt);
+  vsnprintf(buffer, 512, fmt, args);
+  va_end(args);
+  int k = strlen(buffer);
+  MyUsbConsole->Log(buffer);
+  return k;
+  }
+
+ssize_t OvmsScripts::write(const void *buf, size_t nbyte)
+  {
+  MyUsbConsole->Log((char*)buf);
+  return 0;
+  }
+
+void OvmsScripts::finalise()
+  {
+  }
+
+char ** OvmsScripts::GetCompletion(OvmsCommandMap& children, const char* token)
+  {
+  return NULL;
+  }
+
+void OvmsScripts::Log(char* message)
+  {
+  // Ignore this
+  }
+
+void OvmsScripts::Log(LogBuffers* message)
+  {
+  // Ignore this
+  }
+
+void OvmsScripts::DoExit()
+  {
+  // Ignore this
   }
 
 OvmsScripts::OvmsScripts()

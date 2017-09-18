@@ -36,6 +36,7 @@ static const char *TAG = "events";
 #include "esp_event_loop.h"
 #include "ovms_events.h"
 #include "ovms_command.h"
+#include "ovms_script.h"
 
 OvmsEvents MyEvents __attribute__ ((init_priority (1200)));
 
@@ -100,17 +101,20 @@ void OvmsEvents::SignalEvent(std::string event, void* data)
 #endif // #ifdef CONFIG_OVMS_DEV_DEBUGEVENTS
 
   auto k = m_map.find(event);
-  if (k == m_map.end()) return;
-
-  EventCallbackList* el = k->second;
-  if (el)
+  if (k != m_map.end())
     {
-    for (EventCallbackList::iterator itc=el->begin(); itc!=el->end(); ++itc)
+    EventCallbackList* el = k->second;
+    if (el)
       {
-      EventCallbackEntry* ec = *itc;
-      ec->m_callback(event, data);
+      for (EventCallbackList::iterator itc=el->begin(); itc!=el->end(); ++itc)
+        {
+        EventCallbackEntry* ec = *itc;
+        ec->m_callback(event, data);
+        }
       }
     }
+
+  MyScripts.EventScript(event, data);
   }
 
 esp_err_t OvmsEvents::ReceiveSystemEvent(void *ctx, system_event_t *event)
