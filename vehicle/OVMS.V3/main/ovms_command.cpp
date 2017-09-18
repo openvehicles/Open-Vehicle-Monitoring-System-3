@@ -67,6 +67,10 @@ OvmsCommand* OvmsCommandMap::FindUniquePrefix(const std::string& key)
     {
     if (it->first.compare(0, key.size(), key) == 0)
       {
+      if (key.size() == it->first.size())
+        {
+        return it->second;
+        }
       if (found)
         {
         return NULL;
