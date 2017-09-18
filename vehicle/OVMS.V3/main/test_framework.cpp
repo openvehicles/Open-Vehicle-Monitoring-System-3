@@ -42,6 +42,7 @@ static const char *TAG = "test";
 #include "esp_heap_alloc_caps.h"
 #include "test_framework.h"
 #include "ovms_command.h"
+#include "ovms_peripherals.h"
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 #include "duktape.h"
@@ -329,6 +330,47 @@ void test_abort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
 #endif
   }
 
+void test_sdcard(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  sdcard *sd = MyPeripherals->m_sdcard;
+
+  if (!sd->isinserted())
+    {
+    writer->puts("Error: No SD CARD inserted");
+    return;
+    }
+  if (!sd->ismounted())
+    {
+    writer->puts("Error: SD CARD not mounted");
+    return;
+    }
+
+  unlink("/sd/ovmstest.txt");
+  char buffer[512];
+  memset(buffer,'A',sizeof(buffer));
+
+  FILE *fd = fopen("/sd/ovmstest.txt","w");
+  if (fd == NULL)
+    {
+    writer->puts("Error: /sd/ovmstest.txt could not be opened for writing");
+    return;
+    }
+
+  writer->puts("SD CARD test starts...");
+  for (int k=0;k<2048;k++)
+    {
+    fwrite(buffer, sizeof(buffer), 1, fd);
+    if ((k % 128)==0)
+      writer->printf("SD CARD written %d/%d\n",k,2048);
+    }
+  fclose(fd);
+
+  writer->puts("Cleaning up");
+  unlink("/sd/ovmstest.txt");
+
+  writer->puts("SD CARD test completes");
+  }
+
 class TestFrameworkInit
   {
   public: TestFrameworkInit();
@@ -343,6 +385,7 @@ TestFrameworkInit::TestFrameworkInit()
   cmd_test->RegisterCommand("housekeeping","Toggle testing alerts in Housekeeping",test_alerts,"",0,0);
   cmd_test->RegisterCommand("memory","Show allocated memory",test_memory,"",0);
   cmd_test->RegisterCommand("tasks","Show list of tasks",test_tasks,"",0,0);
+  cmd_test->RegisterCommand("sdcard","Test CD CARD",test_sdcard,"",0,0);
   cmd_test->RegisterCommand("javascript","Test Javascript",test_javascript,"",0,0);
   cmd_test->RegisterCommand("abort","Set trap to abort on malloc",test_abort,"<task> <count> [size]",2,3);
   }

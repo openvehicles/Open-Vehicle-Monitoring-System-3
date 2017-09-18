@@ -103,7 +103,7 @@ esp_err_t sdcard::mount()
     unmount();
     }
 
-  esp_err_t ret = esp_vfs_fat_sdmmc_mount("/sdcard", &m_host, &m_slot, &m_mount, &m_card);
+  esp_err_t ret = esp_vfs_fat_sdmmc_mount("/sd", &m_host, &m_slot, &m_mount, &m_card);
   if (ret == ESP_OK)
     {
     m_mounted = true;

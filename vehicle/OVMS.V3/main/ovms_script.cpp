@@ -98,7 +98,7 @@ void script_run(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     }
   else
     {
-    std::string path("/sdcard/scripts/");
+    std::string path("/sd/scripts/");
     path.append(argv[0]);
     sf = fopen(path.c_str(), "r");
     if (sf == NULL)
@@ -144,7 +144,7 @@ void OvmsScripts::AllScripts(std::string path)
 
 void OvmsScripts::EventScript(std::string event, void* data)
   {
-  std::string path("/sdcard/events/");
+  std::string path("/sd/events/");
   path.append(event);
   AllScripts(path);
 
