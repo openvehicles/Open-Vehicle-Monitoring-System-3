@@ -35,6 +35,7 @@ static const char *TAG = "vfs";
 #include <string.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <libgen.h>
@@ -131,6 +132,72 @@ void vfs_mv(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
     { writer->puts("Error: Could not rename VFS file"); }
   }
 
+void vfs_mkdir(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyConfig.ProtectedPath(argv[0]))
+    {
+    writer->puts("Error: protected path");
+    return;
+    }
+
+  if (mkdir(argv[0],0) == 0)
+    { writer->puts("VFS directory created"); }
+  else
+    { writer->puts("Error: Could not create VFS directory"); }
+  }
+
+void vfs_rmdir(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyConfig.ProtectedPath(argv[0]))
+    {
+    writer->puts("Error: protected path");
+    return;
+    }
+
+  if (rmdir(argv[0]) == 0)
+    { writer->puts("VFS directory removed"); }
+  else
+    { writer->puts("Error: Could not remove VFS directory"); }
+  }
+
+void vfs_cp(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyConfig.ProtectedPath(argv[0]))
+    {
+    writer->puts("Error: protected path");
+    return;
+    }
+  if (MyConfig.ProtectedPath(argv[1]))
+    {
+    writer->puts("Error: protected path");
+    return;
+    }
+
+  FILE* f = fopen(argv[0], "r");
+  if (f == NULL)
+    {
+    writer->puts("Error: VFS source file cannot be opened");
+    return;
+    }
+
+  FILE* w = fopen(argv[1], "w");
+  if (w == NULL)
+    {
+    writer->puts("Error: VFS target file cannot be opened");
+    fclose(f);
+    return;
+    }
+
+  char buf[512];
+  while(size_t n = fread(buf, sizeof(char), sizeof(buf), f))
+    {
+    fwrite(buf,n,1,w);
+    }
+  fclose(w);
+  fclose(f);
+  writer->puts("VFS copy complete");
+  }
+
 class VfsInit
   {
   public: VfsInit();
@@ -143,6 +210,10 @@ VfsInit::VfsInit()
   OvmsCommand* cmd_vfs = MyCommandApp.RegisterCommand("vfs","VFS framework",NULL,"<$C> <file(s)>");
   cmd_vfs->RegisterCommand("ls","VFS Directory Listing",vfs_ls, "[file]", 0, 1);
   cmd_vfs->RegisterCommand("cat","VFS Display a file",vfs_cat, "<file>", 1, 1);
+  cmd_vfs->RegisterCommand("mkdir","VFS Create a directory",vfs_mkdir, "<path>", 1, 1);
+  cmd_vfs->RegisterCommand("rmdir","VFS Delete a directory",vfs_rmdir, "<path>", 1, 1);
   cmd_vfs->RegisterCommand("rm","VFS Delete a file",vfs_rm, "<file>", 1, 1);
+  cmd_vfs->RegisterCommand("del","VFS Delete a file",vfs_rm, "<file>", 1, 1);
   cmd_vfs->RegisterCommand("mv","VFS Rename a file",vfs_mv, "<source> <target>", 2, 2);
+  cmd_vfs->RegisterCommand("cp","VFS Copy a file",vfs_cp, "<source> <target>", 2, 2);
   }
