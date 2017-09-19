@@ -62,6 +62,25 @@ config OVMS_SC_GPL_MONGOOSE
     help
         Enable to include the GPL licensed MONGOOSE networking library
 
+menu "Component Options"
+    depends on OVMS
+
+config OVMS_COMP_SERVER_V2
+    bool "Include support for V2 server connections"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for V2 server connections.
+
+config OVMS_COMP_SERVER_V2
+    bool "Include support for V3 server connections"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for V3 server connections.
+
+endmenu # Component Options
+
 menu "Developer Options"
     depends on OVMS
 

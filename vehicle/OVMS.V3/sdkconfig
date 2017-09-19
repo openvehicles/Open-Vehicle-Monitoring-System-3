@@ -316,6 +316,11 @@ CONFIG_OVMS_SC_JAVASCRIPT_NONE=y
 CONFIG_OVMS_SC_GPL_MONGOOSE=y
 
 #
+# Component Options
+#
+CONFIG_OVMS_COMP_SERVER_V2=y
+
+#
 # Developer Options
 #
 # CONFIG_OVMS_DEV_LOGSTATUS is not set
