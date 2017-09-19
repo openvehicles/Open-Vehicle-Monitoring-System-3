@@ -72,7 +72,7 @@ config OVMS_COMP_SERVER_V2
     help
         Enable to include support for V2 server connections.
 
-config OVMS_COMP_SERVER_V2
+config OVMS_COMP_SERVER_V3
     bool "Include support for V3 server connections"
     default y
     depends on OVMS
