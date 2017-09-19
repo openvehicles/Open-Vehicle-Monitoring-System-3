@@ -89,6 +89,7 @@ class OvmsCommand
     char ** Complete(OvmsWriter* writer, int argc, const char * const * argv);
     void Execute(int verbosity, OvmsWriter* writer, int argc, const char * const * argv);
     OvmsCommand* GetParent();
+    OvmsCommand* FindCommand(std::string name);
 
   private:
       size_t ExpandUsage(std::string usage, std::string& result);
@@ -113,6 +114,7 @@ class OvmsCommandApp
   public:
     OvmsCommand* RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                                  const char *usage = "", int min = 0, int max = INT_MAX);
+    OvmsCommand* FindCommand(std::string name);
     void RegisterConsole(OvmsWriter* writer);
     void DeregisterConsole(OvmsWriter* writer);
     int Log(const char* fmt, ...);

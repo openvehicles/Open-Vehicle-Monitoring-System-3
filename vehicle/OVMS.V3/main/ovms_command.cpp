@@ -274,6 +274,11 @@ OvmsCommand* OvmsCommand::GetParent()
   return m_parent;
   }
 
+OvmsCommand* OvmsCommand::FindCommand(std::string name)
+  {
+  return m_children.FindUniquePrefix(name);
+  }
+
 void help(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   writer->puts("This isn't really much help, is it?");
@@ -314,6 +319,11 @@ OvmsCommand* OvmsCommandApp::RegisterCommand(std::string name, std::string title
                                              const char *usage, int min, int max)
   {
   return m_root.RegisterCommand(name, title, execute, usage, min, max);
+  }
+
+OvmsCommand* OvmsCommandApp::FindCommand(std::string name)
+  {
+  return m_root.FindCommand(name);
   }
 
 void OvmsCommandApp::RegisterConsole(OvmsWriter* writer)
