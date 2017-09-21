@@ -35,7 +35,11 @@ static const char *TAG = "ovms-server-v2";
 #include "ovms_server_v2.h"
 #include "ovms_command.h"
 #include "ovms_config.h"
+#include "crypt_base64.h"
+#include "crypt_hmac.h"
+#include "crypt_md5.h"
 
+#include "esp_system.h"
 #include "lwip/err.h"
 #include "lwip/sockets.h"
 #include "lwip/sys.h"
@@ -147,6 +151,29 @@ void OvmsServerV2::Disconnect()
 
 bool OvmsServerV2::Login()
   {
+  char token[OVMS_PROTOCOL_V2_TOKENSIZE+1];
+
+  for (int k=0;k<OVMS_PROTOCOL_V2_TOKENSIZE;k++)
+    {
+    token[k] = (char)cb64[esp_random()%64];
+    }
+  token[OVMS_PROTOCOL_V2_TOKENSIZE+1] = 0;
+  m_token = std::string(token);
+
+  uint8_t digest[MD5_SIZE];
+  hmac_md5((uint8_t*) token, OVMS_PROTOCOL_V2_TOKENSIZE+1, (uint8_t*)m_password.c_str(), m_password.length(), digest);
+
+  char hello[256] = "";
+  strcat(hello,"MP-C 0 ");
+  strcat(hello,token);
+  strcat(hello," ");
+  base64encode(digest, MD5_SIZE, (uint8_t*)(hello+strlen(hello)));
+  strcat(hello," ");
+  strcat(hello,m_vehicleid.c_str());
+  strcat(hello,"\r\n");
+
+  write(m_sock, hello, strlen(hello));
+
   return false;
   }
 

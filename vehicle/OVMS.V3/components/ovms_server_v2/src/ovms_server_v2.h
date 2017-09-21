@@ -34,6 +34,8 @@
 #include <string>
 #include "ovms_server.h"
 
+#define OVMS_PROTOCOL_V2_TOKENSIZE 22
+
 class OvmsServerV2 : public OvmsServer
   {
   public:
@@ -57,6 +59,8 @@ class OvmsServerV2 : public OvmsServer
     std::string m_server;
     std::string m_password;
     std::string m_port;
+
+    std::string m_token;
   };
 
 #endif //#ifndef __OVMS_SERVER_V2_H__
