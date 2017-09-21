@@ -137,6 +137,10 @@ esp_err_t OvmsConfig::mount()
     m_store_fat.max_files = 5;
     esp_vfs_fat_spiflash_mount("/store", "store", &m_store_fat, &m_store_wlh);
     m_mounted = true;
+    for (std::map<std::string, OvmsConfigParam*>::iterator it=MyConfig.m_map.begin(); it!=MyConfig.m_map.end(); ++it)
+      {
+      it->second->Load();
+      }
     MyEvents.SignalEvent("config.mounted", NULL);
     }
 
@@ -258,10 +262,26 @@ OvmsConfigParam::OvmsConfigParam(std::string name, std::string title, bool writa
   m_title = title;
   m_writable = writable;
   m_readable = readable;
+  m_loaded = false;
+
+  if (MyConfig.ismounted())
+    {
+    LoadConfig();
+    }
+  }
+
+OvmsConfigParam::~OvmsConfigParam()
+  {
+  }
+
+void OvmsConfigParam::LoadConfig()
+  {
+  if (m_loaded) return;  // Protected against loading more tghan once
 
   std::string path(OVMS_CONFIGPATH);
   path.append("/");
-  path.append(name);
+  path.append(m_name);
+  // ESP_LOGI(TAG, "Trying %s",path.c_str());
   FILE* f = fopen(path.c_str(), "r");
   if (f)
     {
@@ -275,14 +295,12 @@ OvmsConfigParam::OvmsConfigParam(std::string name, std::string title, bool writa
         *p = 0; // Null terminate the key
         p++;    // and point to the value
         m_map[std::string(buf)] = std::string(p);
+        // ESP_LOGI(TAG, "Loaded %s/%s=%s", m_name.c_str(), buf, p);
         }
       }
     fclose(f);
     }
-  }
-
-OvmsConfigParam::~OvmsConfigParam()
-  {
+  m_loaded = true;
   }
 
 void OvmsConfigParam::SetValue(std::string instance, std::string value)
@@ -344,3 +362,7 @@ void OvmsConfigParam::RewriteConfig()
     }
   }
 
+void OvmsConfigParam::Load()
+  {
+  if (!m_loaded) LoadConfig();
+  }

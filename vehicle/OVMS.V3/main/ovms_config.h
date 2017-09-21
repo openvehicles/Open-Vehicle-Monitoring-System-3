@@ -50,15 +50,18 @@ class OvmsConfigParam
     std::string GetValue(std::string instance);
     bool Writable();
     bool Readable();
+    void Load();
 
   protected:
     void RewriteConfig();
+    void LoadConfig();
 
   protected:
     std::string m_name;
     std::string m_title;
     bool m_writable;
     bool m_readable;
+    bool m_loaded;
 
   public:
     std::map<std::string, std::string> m_map;
