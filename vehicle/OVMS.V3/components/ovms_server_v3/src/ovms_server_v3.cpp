@@ -37,7 +37,7 @@ static const char *TAG = "ovms-server-v3";
 
 OvmsServerV3 *MyOvmsServerV3 = NULL;
 
-static void OvmsServerV3_task(void *pvParameters)
+void OvmsServerV3::ServerTask()
   {
   while(1)
     {
@@ -48,12 +48,10 @@ static void OvmsServerV3_task(void *pvParameters)
 OvmsServerV3::OvmsServerV3(std::string name)
   : OvmsServer(name)
   {
-  xTaskCreatePinnedToCore(OvmsServerV3_task, "OVMS V3 Task", 4096, (void*)this, 5, &m_task, 1);
   }
 
 OvmsServerV3::~OvmsServerV3()
   {
-  vTaskDelete(m_task);
   }
 
 void OvmsServerV3::SetPowerMode(PowerMode powermode)

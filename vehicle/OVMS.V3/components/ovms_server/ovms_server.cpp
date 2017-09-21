@@ -35,13 +35,22 @@ static const char *TAG = "ovms-server";
 #include "ovms_server.h"
 #include "ovms_command.h"
 
+static void OvmsServer_task(void *pvParameters)
+  {
+  OvmsServer *me = (OvmsServer*)pvParameters;
+
+  me->ServerTask();
+  }
+
 OvmsServer::OvmsServer(std::string name)
   : pcp(name)
   {
+  xTaskCreatePinnedToCore(OvmsServer_task, "OVMS Server Task", 4096, (void*)this, 5, &m_task, 1);
   }
 
 OvmsServer::~OvmsServer()
   {
+  vTaskDelete(m_task);
   }
 
 void OvmsServer::SetPowerMode(PowerMode powermode)

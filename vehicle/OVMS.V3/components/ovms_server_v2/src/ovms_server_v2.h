@@ -31,8 +31,6 @@
 #ifndef __OVMS_SERVER_V2_H__
 #define __OVMS_SERVER_V2_H__
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "ovms_server.h"
 
 class OvmsServerV2 : public OvmsServer
@@ -44,8 +42,8 @@ class OvmsServerV2 : public OvmsServer
   public:
     virtual void SetPowerMode(PowerMode powermode);
 
-  protected:
-    TaskHandle_t m_task;
+  public:
+    void ServerTask();
   };
 
 #endif //#ifndef __OVMS_SERVER_V2_H__
