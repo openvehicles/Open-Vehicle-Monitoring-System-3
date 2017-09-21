@@ -34,6 +34,7 @@
 #include <string>
 #include <sys/time.h>
 #include "ovms_server.h"
+#include "ovms_buffer.h"
 
 #define OVMS_PROTOCOL_V2_TOKENSIZE 22
 
@@ -55,10 +56,12 @@ class OvmsServerV2 : public OvmsServer
     bool Login();
 
   protected:
-    std::string ReadLine(size_t maxlen, struct timeval* timeout);
+    void PollForData(long timeoutms);
+    std::string ReadLine();
 
   protected:
     int m_sock;
+    OvmsBuffer* m_buffer;
     std::string m_vehicleid;
     std::string m_server;
     std::string m_password;

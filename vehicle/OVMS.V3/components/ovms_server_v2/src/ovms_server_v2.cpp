@@ -39,6 +39,7 @@ static const char *TAG = "ovms-server-v2";
 #include "crypt_hmac.h"
 #include "crypt_md5.h"
 
+#include <sys/socket.h>
 #include "esp_system.h"
 #include "lwip/err.h"
 #include "lwip/sockets.h"
@@ -170,17 +171,50 @@ bool OvmsServerV2::Login()
   base64encode(digest, MD5_SIZE, (uint8_t*)(hello+strlen(hello)));
   strcat(hello," ");
   strcat(hello,m_vehicleid.c_str());
+  ESP_LOGI(TAG, "Sending server login: %s",hello);
   strcat(hello,"\r\n");
 
   write(m_sock, hello, strlen(hello));
 
+  // Wait 20 seconds for a server response
+  PollForData(20000);
+
+  if (m_buffer->HasLine())
+    {
+    std::string line = m_buffer->ReadLine();
+    if (line.compare(0,7,"MP-S 0 ") == 0)
+      {
+      ESP_LOGI(TAG, "Got server response: %s",line.c_str());
+      }
+    }
+
   return false;
   }
 
-std::string OvmsServerV2::ReadLine(size_t maxlen, struct timeval* timeout)
+void OvmsServerV2::PollForData(long timeoutms)
   {
-  char linebuf[maxlen];
+  fd_set fds;
 
+  FD_ZERO(&fds);
+  FD_SET(m_sock,&fds);
+
+  struct timeval timeout;
+  timeout.tv_sec = timeoutms/1000;
+  timeout.tv_usec = (timeoutms%1000)*1000;
+
+  int result = select(m_sock, &fds, NULL, NULL, &timeout);
+  if (result > 0)
+    {
+    // We have some data ready to read
+    size_t avail = m_buffer->FreeSpace();
+    uint8_t buf[avail];
+    size_t n = read(m_sock, &buf, avail);
+    if (n > 0) m_buffer->Push(buf,n);
+    }
+  }
+
+std::string OvmsServerV2::ReadLine()
+  {
   return std::string("");
   }
 
@@ -188,6 +222,7 @@ OvmsServerV2::OvmsServerV2(std::string name)
   : OvmsServer(name)
   {
   m_sock = -1;
+  m_buffer = new OvmsBuffer(1024);
   }
 
 OvmsServerV2::~OvmsServerV2()
@@ -196,6 +231,11 @@ OvmsServerV2::~OvmsServerV2()
     {
     close(m_sock);
     m_sock = -1;
+    }
+  if (m_buffer)
+    {
+    delete m_buffer;
+    m_buffer = NULL;
     }
   }
 
