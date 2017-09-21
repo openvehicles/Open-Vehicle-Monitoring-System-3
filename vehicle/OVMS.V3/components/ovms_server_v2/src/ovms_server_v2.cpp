@@ -177,6 +177,13 @@ bool OvmsServerV2::Login()
   return false;
   }
 
+std::string OvmsServerV2::ReadLine(size_t maxlen, struct timeval* timeout)
+  {
+  char linebuf[maxlen];
+
+  return std::string("");
+  }
+
 OvmsServerV2::OvmsServerV2(std::string name)
   : OvmsServer(name)
   {
