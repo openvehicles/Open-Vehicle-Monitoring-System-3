@@ -31,6 +31,7 @@
 #ifndef __OVMS_SERVER_V2_H__
 #define __OVMS_SERVER_V2_H__
 
+#include <string>
 #include "ovms_server.h"
 
 class OvmsServerV2 : public OvmsServer
@@ -44,6 +45,18 @@ class OvmsServerV2 : public OvmsServer
 
   public:
     void ServerTask();
+
+  protected:
+    bool Connect();
+    void Disconnect();
+    bool Login();
+
+  protected:
+    int m_sock;
+    std::string m_vehicleid;
+    std::string m_server;
+    std::string m_password;
+    std::string m_port;
   };
 
 #endif //#ifndef __OVMS_SERVER_V2_H__

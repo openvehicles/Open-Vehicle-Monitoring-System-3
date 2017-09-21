@@ -34,24 +34,135 @@ static const char *TAG = "ovms-server-v2";
 #include <string.h>
 #include "ovms_server_v2.h"
 #include "ovms_command.h"
+#include "ovms_config.h"
+
+#include "lwip/err.h"
+#include "lwip/sockets.h"
+#include "lwip/sys.h"
+#include "lwip/netdb.h"
+#include "lwip/dns.h"
 
 OvmsServerV2 *MyOvmsServerV2 = NULL;
 
 void OvmsServerV2::ServerTask()
   {
+  ESP_LOGI(TAG, "OVMS Server v2 task running");
+
   while(1)
     {
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    if (!Connect())
+      {
+      vTaskDelay(10000 / portTICK_PERIOD_MS);
+      continue;
+      }
+
+    if (!Login())
+      {
+      Disconnect();
+      vTaskDelay(10000 / portTICK_PERIOD_MS);
+      continue;
+      }
+
+    while(1)
+      {
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
+      }
     }
+  }
+
+bool OvmsServerV2::Connect()
+  {
+  m_vehicleid = MyConfig.GetParamValue("vehicle", "id");
+  m_server = MyConfig.GetParamValue("server.v2", "server");
+  m_password = MyConfig.GetParamValue("server.v2", "password");
+  m_port = MyConfig.GetParamValue("server.v2", "port");
+  if (m_port.empty()) m_port = "6867";
+
+  ESP_LOGI(TAG, "Connection is %s:%s %s/%s",
+    m_server.c_str(), m_port.c_str(),
+    m_vehicleid.c_str(), m_password.c_str());
+
+  if (m_vehicleid.empty())
+    {
+    ESP_LOGW(TAG, "Parameter vehicle/id must be defined");
+    return false;
+    }
+  if (m_server.empty())
+    {
+    ESP_LOGW(TAG, "Parameter server.v2/server must be defined");
+    return false;
+    }
+  if (m_password.empty())
+    {
+    ESP_LOGW(TAG, "Parameter server.v2/password must be defined");
+    return false;
+    }
+
+  struct addrinfo hints;
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+  struct addrinfo *res;
+  struct in_addr *addr;
+  int err = getaddrinfo(m_server.c_str(), m_port.c_str(), &hints, &res);
+  if ((err != 0) || (res == NULL))
+    {
+    ESP_LOGW(TAG, "Could not resolve DNS for %s",m_server.c_str());
+    return false;
+    }
+
+  addr = &((struct sockaddr_in *)res->ai_addr)->sin_addr;
+  ESP_LOGI(TAG, "DNS lookup for %s is %s", m_server.c_str(), inet_ntoa(*addr));
+
+  m_sock = socket(res->ai_family, res->ai_socktype, 0);
+  if (m_sock < 0)
+    {
+    ESP_LOGE(TAG, "Failed to allocate socket");
+    freeaddrinfo(res);
+    return false;
+    }
+
+  if (connect(m_sock, res->ai_addr, res->ai_addrlen) != 0)
+    {
+    ESP_LOGE(TAG, "socket connect failed errno=%d", errno);
+    close(m_sock); m_sock = -1;
+    freeaddrinfo(res);
+    return false;
+    }
+
+  ESP_LOGI(TAG, "Connected to OVMS Server V2 at %s",m_server.c_str());
+  freeaddrinfo(res);
+
+  return true;
+  }
+
+void OvmsServerV2::Disconnect()
+  {
+  if (m_sock >= 0)
+    {
+    ESP_LOGI(TAG, "Disconnected from OVMS Server V2");
+    close(m_sock);
+    m_sock = -1;
+    }
+  }
+
+bool OvmsServerV2::Login()
+  {
+  return false;
   }
 
 OvmsServerV2::OvmsServerV2(std::string name)
   : OvmsServer(name)
   {
+  m_sock = -1;
   }
 
 OvmsServerV2::~OvmsServerV2()
   {
+  if (m_sock>0)
+    {
+    close(m_sock);
+    m_sock = -1;
+    }
   }
 
 void OvmsServerV2::SetPowerMode(PowerMode powermode)
@@ -74,8 +185,9 @@ void OvmsServerV2::SetPowerMode(PowerMode powermode)
 
 void ovmsv2_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (MyOvmsServerV2 != NULL)
+  if (MyOvmsServerV2 == NULL)
     {
+    writer->puts("Launching OVMS Server V2 connection (oscv2)");
     MyOvmsServerV2 = new OvmsServerV2("oscv2");
     }
   }
@@ -84,6 +196,7 @@ void ovmsv2_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   {
   if (MyOvmsServerV2 != NULL)
     {
+    writer->puts("Stopping OVMS Server V2 connection (oscv2)");
     delete MyOvmsServerV2;
     MyOvmsServerV2 = NULL;
     }
@@ -106,4 +219,12 @@ OvmsServerV2Init::OvmsServerV2Init()
   cmd_server->FindCommand("start")->RegisterCommand("v2","Start an OVMS V2 Server Connection",ovmsv2_start, "", 0, 0);
   cmd_server->FindCommand("stop")->RegisterCommand("v2","Stop an OVMS V2 Server Connection",ovmsv2_stop, "", 0, 0);
   cmd_server->FindCommand("status")->RegisterCommand("v2","Show OVMS V2 Server connection status",ovmsv2_status, "", 0, 0);
+
+  MyConfig.RegisterParam("server.v2", "V2 Server Configuration", true, false);
+  // Our instances:
+  //   'server': The server name/ip
+  //   'password': The server password
+  //   'port': The port to connect to (default: 6867)
+  // Also note:
+  //  Parameter "vehicle", instance "id", is the vehicle ID
   }

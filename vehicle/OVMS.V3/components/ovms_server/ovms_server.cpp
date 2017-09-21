@@ -39,6 +39,7 @@ static void OvmsServer_task(void *pvParameters)
   {
   OvmsServer *me = (OvmsServer*)pvParameters;
 
+  ESP_LOGI(TAG, "Launching OVMS Server V2 connection task (%s)",me->GetName().c_str());
   me->ServerTask();
   }
 

@@ -74,7 +74,7 @@ void OvmsServerV3::SetPowerMode(PowerMode powermode)
 
 void ovmsv3_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (MyOvmsServerV3 != NULL)
+  if (MyOvmsServerV3 == NULL)
     {
     MyOvmsServerV3 = new OvmsServerV3("oscv3");
     }

@@ -33,7 +33,6 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "ovms_command.h"
 #include "pcp.h"
 
 class OvmsServer : public pcp
