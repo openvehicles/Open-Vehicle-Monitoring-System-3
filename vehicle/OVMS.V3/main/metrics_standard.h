@@ -37,6 +37,9 @@
 #define MS_M_TASKS                  "m.tasks"
 #define MS_M_FREERAM                "m.freeram"
 
+#define MS_S_V2_CONNECTED           "s.v2.connected"
+#define MS_S_V2_PEERS               "s.v2.peers"
+
 #define MS_V_TYPE                   "v.type"
 #define MS_V_VIN                    "v.vin"
 
@@ -83,6 +86,8 @@ const MetricStandard_t MetricStandard[] =
   { MS_M_SERIAL,                  "string" },
   { MS_M_TASKS,                   "int" },
   { MS_M_FREERAM,                 "int" },
+  { MS_S_V2_CONNECTED,            "bool" },
+  { MS_S_V2_PEERS,                "int" },
   { MS_V_TYPE,                    "string" },
   { MS_V_VIN,                     "string" },
   { MS_V_BAT_SOC,                 "int" },

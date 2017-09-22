@@ -54,6 +54,22 @@ class OvmsMetric
     bool m_modified;
   };
 
+class OvmsMetricBool : public OvmsMetric
+  {
+  public:
+    OvmsMetricBool();
+    virtual ~OvmsMetricBool();
+
+  public:
+    std::string AsString();
+    int AsBool();
+    void SetValue(bool value);
+    void SetValue(std::string value);
+
+  protected:
+    bool m_value;
+  };
+
 class OvmsMetricInt : public OvmsMetric
   {
   public:
@@ -139,6 +155,7 @@ class OvmsMetrics
   public:
     bool Set(const char* metric, const char* value);
     bool SetInt(const char* metric, int value);
+    bool SetBool(const char* metric, bool value);
     bool SetFloat(const char* metric, float value);
     OvmsMetric* Find(const char* metric);
 

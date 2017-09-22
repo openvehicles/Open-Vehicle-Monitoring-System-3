@@ -99,6 +99,7 @@ OvmsMetrics::OvmsMetrics()
 
   // Register the different types of metric
   MyMetricFactory.RegisterMetric<OvmsMetricInt>("int");
+  MyMetricFactory.RegisterMetric<OvmsMetricBool>("bool");
   MyMetricFactory.RegisterMetric<OvmsMetricString>("string");
   MyMetricFactory.RegisterMetric<OvmsMetricFloat>("float");
 
@@ -135,6 +136,17 @@ bool OvmsMetrics::SetInt(const char* metric, int value)
     return false;
 
   OvmsMetricInt* m = (OvmsMetricInt*)k->second;
+  m->SetValue(value);
+  return true;
+  }
+
+bool OvmsMetrics::SetBool(const char* metric, bool value)
+  {
+  auto k = m_metrics.find(metric);
+  if (k == m_metrics.end())
+    return false;
+
+  OvmsMetricBool* m = (OvmsMetricBool*)k->second;
   m->SetValue(value);
   return true;
   }
@@ -221,6 +233,50 @@ void OvmsMetricInt::SetValue(int value)
 void OvmsMetricInt::SetValue(std::string value)
   {
   m_value = atoi(value.c_str());
+  SetModified();
+  }
+
+OvmsMetricBool::OvmsMetricBool()
+  {
+  m_value = false;
+  }
+
+OvmsMetricBool::~OvmsMetricBool()
+  {
+  }
+
+std::string OvmsMetricBool::AsString()
+  {
+  if (m_defined)
+    {
+    if (m_value)
+      return std::string("yes");
+    else
+      return std::string("no");
+    }
+  else
+    {
+    return std::string("");
+    }
+  }
+
+int OvmsMetricBool::AsBool()
+  {
+  return m_value;
+  }
+
+void OvmsMetricBool::SetValue(bool value)
+  {
+  m_value = value;
+  SetModified();
+  }
+
+void OvmsMetricBool::SetValue(std::string value)
+  {
+  if ((value == "yes")||(value == "1")||(value == "true"))
+    m_value = true;
+  else
+    m_value = false;
   SetModified();
   }
 
