@@ -92,7 +92,7 @@ void decodeblock(uint8_t *in, uint8_t *out )
   out[ 2 ] = (unsigned char ) (((in[2] << 6) & 0xc0) | in[3]);
   }
 
-int base64decode(const uint8_t *inputData, uint8_t *outputData)
+int base64decode(const char *inputData, uint8_t *outputData)
   {
   uint8_t in[4];
   uint8_t out[4];

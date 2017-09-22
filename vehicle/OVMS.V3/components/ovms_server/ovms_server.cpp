@@ -81,8 +81,5 @@ OvmsServerInit::OvmsServerInit()
   {
   ESP_LOGI(TAG, "Initialising OVMS Server (6000)");
 
-  OvmsCommand* cmd_server = MyCommandApp.RegisterCommand("server","OVMS Server Connection framework",NULL, "", 1);
-  cmd_server->RegisterCommand("start","Start an Ovms Server Connection",NULL, "", 1);
-  cmd_server->RegisterCommand("stop","Stop an Ovms Server Connection",NULL, "", 1);
-  cmd_server->RegisterCommand("status","Show Ovms Server connection status",NULL, "", 1);
+  MyCommandApp.RegisterCommand("server","OVMS Server Connection framework",NULL, "", 1);
   }

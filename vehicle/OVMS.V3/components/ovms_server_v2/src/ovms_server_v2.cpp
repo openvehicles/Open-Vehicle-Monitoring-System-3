@@ -35,6 +35,8 @@ static const char *TAG = "ovms-server-v2";
 #include "ovms_server_v2.h"
 #include "ovms_command.h"
 #include "ovms_config.h"
+#include "ovms_metrics.h"
+#include "metrics_standard.h"
 #include "crypt_base64.h"
 #include "crypt_hmac.h"
 #include "crypt_md5.h"
@@ -68,11 +70,83 @@ void OvmsServerV2::ServerTask()
       continue;
       }
 
+    MyMetrics.SetBool(MS_S_V2_CONNECTED,true);
     while(1)
       {
-      vTaskDelay(1000 / portTICK_PERIOD_MS);
+      if (m_sock < 0)
+        {
+        vTaskDelay(10000 / portTICK_PERIOD_MS);
+        continue;
+        }
+      while ((m_buffer->HasLine() >= 0)&&(m_sock >= 0))
+        {
+        ProcessServerMsg();
+        }
+      PollForData(1000);
       }
     }
+  }
+
+void OvmsServerV2::ProcessServerMsg()
+  {
+  std::string line = m_buffer->ReadLine();
+
+  uint8_t b[line.length()+1];
+  int len = base64decode(line.c_str(),b);
+
+  RC4_crypt(&m_crypto_rx1, &m_crypto_rx2, b, len);
+  b[len]=0;
+  line = std::string((char*)b);
+  ESP_LOGI(TAG, "Incoming Msg: %s",line.c_str());
+
+  if (line.compare(0, 5, "MP-0 ") != 0)
+    {
+    ESP_LOGI(TAG, "Invalid server message. Disconnecting.");
+    Disconnect();
+    return;
+    }
+
+  char code = line[5];
+  std::string payload = std::string(line,6,line.length()-6);
+
+  switch(code)
+    {
+    case 'A': // PING
+      {
+      Transmit("MP-0 a");
+      break;
+      }
+    case 'Z': // Peer connections
+      {
+      int nc = atoi(payload.c_str());
+      MyMetrics.SetInt(MS_S_V2_PEERS,nc);
+      break;
+      }
+    case 'h': // Historical data acknowledgement
+      {
+      break;
+      }
+    case 'C': // Command
+      {
+      break;
+      }
+    default:
+      break;
+    }
+  }
+
+void OvmsServerV2::Transmit(std::string message)
+  {
+  int len = message.length();
+  char s[len];
+  memcpy(s,message.c_str(),len);
+  char buf[(len*2)+4];
+
+  RC4_crypt(&m_crypto_tx1, &m_crypto_tx2, (uint8_t*)s, len);
+  base64encode((uint8_t*)s, len, (uint8_t*)buf);
+  ESP_LOGI(TAG, "Send %s",buf);
+  strcat(buf,"\r\n");
+  write(m_sock,buf,strlen(buf));
   }
 
 bool OvmsServerV2::Connect()
@@ -148,6 +222,7 @@ void OvmsServerV2::Disconnect()
     close(m_sock);
     m_sock = -1;
     }
+  MyMetrics.SetBool(MS_S_V2_CONNECTED,false);
   }
 
 bool OvmsServerV2::Login()
@@ -158,11 +233,11 @@ bool OvmsServerV2::Login()
     {
     token[k] = (char)cb64[esp_random()%64];
     }
-  token[OVMS_PROTOCOL_V2_TOKENSIZE+1] = 0;
+  token[OVMS_PROTOCOL_V2_TOKENSIZE] = 0;
   m_token = std::string(token);
 
   uint8_t digest[MD5_SIZE];
-  hmac_md5((uint8_t*) token, OVMS_PROTOCOL_V2_TOKENSIZE+1, (uint8_t*)m_password.c_str(), m_password.length(), digest);
+  hmac_md5((uint8_t*) token, OVMS_PROTOCOL_V2_TOKENSIZE, (uint8_t*)m_password.c_str(), m_password.length(), digest);
 
   char hello[256] = "";
   strcat(hello,"MP-C 0 ");
@@ -178,38 +253,108 @@ bool OvmsServerV2::Login()
 
   // Wait 20 seconds for a server response
   PollForData(20000);
+  if (m_sock<0) return false;
 
   if (m_buffer->HasLine())
     {
     std::string line = m_buffer->ReadLine();
+    ESP_LOGI(TAG, "Received welcome response %s",line.c_str());
     if (line.compare(0,7,"MP-S 0 ") == 0)
       {
       ESP_LOGI(TAG, "Got server response: %s",line.c_str());
+      size_t sep = line.find(' ',7);
+      if (sep == std::string::npos)
+        {
+        ESP_LOGI(TAG, "Server response invalid (no token/digest separator)");
+        return false;
+        }
+      std::string token = std::string(line,7,sep-7);
+      std::string digest = std::string(line,sep+1,line.length()-sep);
+      ESP_LOGI(TAG, "Server token is %s and digest is %s",token.c_str(),digest.c_str());
+      if (m_token == token)
+        {
+        ESP_LOGI(TAG, "Detected token replay attack/collision");
+        return false;
+        }
+      uint8_t sdigest[MD5_SIZE];
+      hmac_md5((uint8_t*) token.c_str(), token.length(), (uint8_t*)m_password.c_str(), m_password.length(), sdigest);
+      uint8_t sdb[MD5_SIZE*2];
+      base64encode(sdigest, MD5_SIZE, sdb);
+      if (digest.compare((char*)sdb) != 0)
+        {
+        ESP_LOGI(TAG, "Server digest does not authenticate");
+        return false;
+        }
+      ESP_LOGI(TAG, "Server authentication is successful. Prime the crypto...");
+      std::string key(token);
+      key.append(m_token);
+      ESP_LOGI(TAG, "Shared secret key is %s (%d bytes)",key.c_str(),key.length());
+      hmac_md5((uint8_t*)key.c_str(), key.length(), (uint8_t*)m_password.c_str(), m_password.length(), sdigest);
+      RC4_setup(&m_crypto_rx1, &m_crypto_rx2, sdigest, MD5_SIZE);
+      for (int k=0;k<1024;k++)
+        {
+        uint8_t v = 0;
+        RC4_crypt(&m_crypto_rx1, &m_crypto_rx2, &v, 1);
+        }
+      RC4_setup(&m_crypto_tx1, &m_crypto_tx2, sdigest, MD5_SIZE);
+      for (int k=0;k<1024;k++)
+        {
+        uint8_t v = 0;
+        RC4_crypt(&m_crypto_tx1, &m_crypto_tx2, &v, 1);
+        }
+      ESP_LOGI(TAG, "OVMS V2 login successful, and crypto channel established");
+      return true;
+      }
+    else
+      {
+      ESP_LOGI(TAG, "Server response was not a welcome MP-S");
+      return false;
       }
     }
-
-  return false;
+  else
+    {
+    ESP_LOGI(TAG, "Server response is incomplete (%d bytes)",m_buffer->UsedSpace());
+    return false;
+    }
   }
 
 void OvmsServerV2::PollForData(long timeoutms)
   {
   fd_set fds;
 
-  FD_ZERO(&fds);
-  FD_SET(m_sock,&fds);
+  if (m_sock < 0) return;
 
-  struct timeval timeout;
-  timeout.tv_sec = timeoutms/1000;
-  timeout.tv_usec = (timeoutms%1000)*1000;
-
-  int result = select(m_sock, &fds, NULL, NULL, &timeout);
-  if (result > 0)
+  while (m_buffer->HasLine() < 0)
     {
+    FD_ZERO(&fds);
+    FD_SET(m_sock,&fds);
+
+    struct timeval timeout;
+    timeout.tv_sec = timeoutms/1000;
+    timeout.tv_usec = (timeoutms%1000)*1000;
+
+    // ESP_LOGI(TAG, "Polling for data on fd#%d (%ld ms timeout)",m_sock,timeoutms);
+    int result = select(FD_SETSIZE, &fds, 0, 0, &timeout);
+    // ESP_LOGI(TAG, "Poll result was %d",result);
+    if (result <= 0) return;
+
     // We have some data ready to read
     size_t avail = m_buffer->FreeSpace();
+    // ESP_LOGI(TAG, "Data is ready to be read, with %d bytes of buffer free",avail);
     uint8_t buf[avail];
     size_t n = read(m_sock, &buf, avail);
-    if (n > 0) m_buffer->Push(buf,n);
+    // ESP_LOGI(TAG, "Got %d bytes from socket",n);
+    if (n == 0)
+      {
+      ESP_LOGI(TAG, "Server connection has been disconnected");
+      Disconnect();
+      return;
+      }
+    else if (n > 0)
+      {
+      MyCommandApp.HexDump("OVMSv2",(const char *)buf,n);
+      m_buffer->Push(buf,n);
+      }
     }
   }
 
@@ -227,11 +372,7 @@ OvmsServerV2::OvmsServerV2(std::string name)
 
 OvmsServerV2::~OvmsServerV2()
   {
-  if (m_sock>0)
-    {
-    close(m_sock);
-    m_sock = -1;
-    }
+  Disconnect();
   if (m_buffer)
     {
     delete m_buffer;
@@ -290,9 +431,10 @@ OvmsServerV2Init::OvmsServerV2Init()
   ESP_LOGI(TAG, "Initialising OVMS V2 Server (6100)");
 
   OvmsCommand* cmd_server = MyCommandApp.FindCommand("server");
-  cmd_server->FindCommand("start")->RegisterCommand("v2","Start an OVMS V2 Server Connection",ovmsv2_start, "", 0, 0);
-  cmd_server->FindCommand("stop")->RegisterCommand("v2","Stop an OVMS V2 Server Connection",ovmsv2_stop, "", 0, 0);
-  cmd_server->FindCommand("status")->RegisterCommand("v2","Show OVMS V2 Server connection status",ovmsv2_status, "", 0, 0);
+  OvmsCommand* cmd_v2 = cmd_server->RegisterCommand("v2","OVMS Server V2 Protocol", NULL, "", 0, 0);
+  cmd_v2->RegisterCommand("start","Start an OVMS V2 Server Connection",ovmsv2_start, "", 0, 0);
+  cmd_v2->RegisterCommand("stop","Stop an OVMS V2 Server Connection",ovmsv2_stop, "", 0, 0);
+  cmd_v2->RegisterCommand("status","Show OVMS V2 Server connection status",ovmsv2_status, "", 0, 0);
 
   MyConfig.RegisterParam("server.v2", "V2 Server Configuration", true, false);
   // Our instances:

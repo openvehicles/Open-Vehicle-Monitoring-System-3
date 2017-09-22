@@ -35,6 +35,7 @@
 #include <sys/time.h>
 #include "ovms_server.h"
 #include "ovms_buffer.h"
+#include "crypt_rc4.h"
 
 #define OVMS_PROTOCOL_V2_TOKENSIZE 22
 
@@ -54,6 +55,8 @@ class OvmsServerV2 : public OvmsServer
     bool Connect();
     void Disconnect();
     bool Login();
+    void ProcessServerMsg();
+    void Transmit(std::string message);
 
   protected:
     void PollForData(long timeoutms);
@@ -68,6 +71,10 @@ class OvmsServerV2 : public OvmsServer
     std::string m_port;
 
     std::string m_token;
+    RC4_CTX1 m_crypto_rx1;
+    RC4_CTX2 m_crypto_rx2;
+    RC4_CTX1 m_crypto_tx1;
+    RC4_CTX2 m_crypto_tx2;
   };
 
 #endif //#ifndef __OVMS_SERVER_V2_H__
