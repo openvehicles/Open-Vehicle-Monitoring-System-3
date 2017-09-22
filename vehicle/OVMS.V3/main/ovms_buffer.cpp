@@ -28,6 +28,9 @@
 ; THE SOFTWARE.
 */
 
+// #include "esp_log.h"
+// static const char *TAG = "buffer";
+
 #include "ovms_buffer.h"
 
 OvmsBuffer::OvmsBuffer(size_t size)
@@ -84,7 +87,8 @@ bool OvmsBuffer::Push(uint8_t *byte, size_t count)
   m_used += count;
   for (size_t k=0;k<count;k++)
     {
-    m_buffer[m_head++] = byte[count];
+    // ESP_LOGI(TAG, "Push() %02x at %d",byte[k],m_head);
+    m_buffer[m_head++] = byte[k];
     if (m_head >= m_size) m_head=0;
     }
 
@@ -141,14 +145,22 @@ int OvmsBuffer::HasLine()
   {
   size_t tail = m_tail;
 
+  if (m_used==0) return -1;
+
+  // ESP_LOGI(TAG, "HasLine() with tail at %d (%d used)",m_tail,m_used);
   for (size_t done=0;done<m_used;done++)
     {
+    // ESP_LOGI(TAG, "HasLine() at tail %d is %02x (%d done)",tail,m_buffer[tail],done);
     if ((m_buffer[tail]=='\r')||(m_buffer[tail]=='\n'))
+      {
+      // ESP_LOGI(TAG, "HasLine() found a CR/LF at tail %d (done=%d)",tail,done);
       return done;
+      }
     tail++;
     if (tail >= m_size) tail=0;
     }
 
+  // ESP_LOGI(TAG, "HasLine() didnt find a CR/LF");
   return -1;
   }
 
