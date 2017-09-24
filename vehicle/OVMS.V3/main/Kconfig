@@ -57,7 +57,7 @@ endchoice # OVMS_SC_JAVASCRIPT
 
 config OVMS_SC_GPL_MONGOOSE
     bool "Include the GPL licensed MONGOOSE networking library (web server, etc)"
-    default n
+    default y
     depends on OVMS
     help
         Enable to include the GPL licensed MONGOOSE networking library
