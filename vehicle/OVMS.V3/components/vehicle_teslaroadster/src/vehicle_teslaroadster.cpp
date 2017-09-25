@@ -98,23 +98,23 @@ void OvmsVehicleTeslaRoadster::IncomingFrame(CAN_frame_t* p_frame)
         {
         case 0x80: // Range / State of Charge
           {
-          MyMetrics.SetInt(MS_V_BAT_SOC, d[1]);
+          StandardMetrics.ms_v_bat_soc->SetValue(d[1]);
           int idealrange = (int)d[2] + ((int)d[3]<<8);
           if (idealrange>6000) idealrange=0; // Sanity check (limit rng->std)
-          MyMetrics.SetInt(MS_V_BAT_RANGE_IDEAL, idealrange);
+          StandardMetrics.ms_v_bat_range_ideal->SetValue(idealrange);
           int estrange = (int)d[6] + ((int)d[7]<<8);
           if (estrange>6000) estrange=0; // Sanity check (limit rng->std)
-          MyMetrics.SetInt(MS_V_BAT_RANGE_EST, estrange);
+          StandardMetrics.ms_v_bat_range_est->SetValue(estrange);
           break;
           }
         case 0x82: // Ambient Temperature
-          MyMetrics.SetInt(MS_V_TEMP_AMBIENT,d[1]);
+          StandardMetrics.ms_v_temp_ambient->SetValue(d[1]);
           break;
         case 0xA3: // PEM, MOTOR, BATTERY temperatures
-          MyMetrics.SetInt(MS_V_TEMP_PEM,d[1]);
-          MyMetrics.SetInt(MS_V_TEMP_CHARGER,d[1]);
-          MyMetrics.SetInt(MS_V_TEMP_MOTOR,d[2]);
-          MyMetrics.SetInt(MS_V_TEMP_BATTERY,d[6]);
+          StandardMetrics.ms_v_temp_pem->SetValue(d[1]);
+          StandardMetrics.ms_v_temp_charger->SetValue(d[1]);
+          StandardMetrics.ms_v_temp_motor->SetValue(d[2]);
+          StandardMetrics.ms_v_temp_battery->SetValue(d[6]);
           break;
         case 0xA4: // 7 bytes start of VIN bytes i.e. "SFZRE2B"
           memcpy(m_vin,d+1,7);
@@ -126,14 +126,14 @@ void OvmsVehicleTeslaRoadster::IncomingFrame(CAN_frame_t* p_frame)
           if ((d[3]=='A')||(d[3]=='B')) m_type[2] = '2'; else m_type[2] = '1';
           if (d[1] == '3') m_type[3] = 'S'; else m_type[3] = 'N';
           m_type[4] = 0;
-          MyMetrics.Set(MS_V_TYPE,m_type);
+          StandardMetrics.ms_v_type->SetValue(m_type);
           break;
         case 0xA6: // 3 bytes last of VIN bytes i.e. "359"
           if ((m_vin[0] != 0)&&(m_vin[7] != 0))
             {
             memcpy(m_vin+14,p_frame->data.u8+1,3);
             m_vin[17] = 0;
-            MyMetrics.Set(MS_V_VIN, m_vin);
+            StandardMetrics.ms_v_vin->SetValue(m_vin);
             }
           break;
         default:
@@ -145,23 +145,23 @@ void OvmsVehicleTeslaRoadster::IncomingFrame(CAN_frame_t* p_frame)
       {
       if (d[1]>0) // Front-left
         {
-        MyMetrics.SetFloat(MS_V_TPMS_FL_P,(float)d[0] / 2.755);
-        MyMetrics.SetFloat(MS_V_TPMS_FL_T,(float)d[1] - 40);
+        StandardMetrics.ms_v_tpms_fl_p->SetValue((float)d[0] / 2.755);
+        StandardMetrics.ms_v_tpms_fl_t->SetValue((float)d[1] - 40);
         }
       if (d[3]>0) // Front-right
         {
-        MyMetrics.SetFloat(MS_V_TPMS_FR_P,(float)d[2] / 2.755);
-        MyMetrics.SetFloat(MS_V_TPMS_FR_T,(float)d[3] - 40);
+        StandardMetrics.ms_v_tpms_fr_p->SetValue((float)d[2] / 2.755);
+        StandardMetrics.ms_v_tpms_fr_t->SetValue((float)d[3] - 40);
         }
       if (d[5]>0) // Rear-left
         {
-        MyMetrics.SetFloat(MS_V_TPMS_RL_P,(float)d[4] / 2.755);
-        MyMetrics.SetFloat(MS_V_TPMS_RL_T,(float)d[5] - 40);
+        StandardMetrics.ms_v_tpms_rl_p->SetValue((float)d[4] / 2.755);
+        StandardMetrics.ms_v_tpms_rl_p->SetValue((float)d[5] - 40);
         }
       if (d[7]>0) // Rear-right
         {
-        MyMetrics.SetFloat(MS_V_TPMS_RR_P,(float)d[6] / 2.755);
-        MyMetrics.SetFloat(MS_V_TPMS_RR_T,(float)d[7] - 40);
+        StandardMetrics.ms_v_tpms_rr_p->SetValue((float)d[6] / 2.755);
+        StandardMetrics.ms_v_tpms_rr_p->SetValue((float)d[7] - 40);
         }
       break;
       }
@@ -174,10 +174,10 @@ void OvmsVehicleTeslaRoadster::IncomingFrame(CAN_frame_t* p_frame)
       unsigned int odometer = (unsigned int)d[3]
                             + ((unsigned int)d[4]<<8)
                             + ((unsigned int)d[5]<<16);
-      MyMetrics.SetFloat(MS_V_POS_ODOMETER,(float)odometer/10);
+      StandardMetrics.ms_v_pos_odometer->SetValue((float)odometer/10);
       unsigned int trip = (unsigned int)d[6]
                         + ((unsigned int)d[7]<<8);
-      MyMetrics.SetFloat(MS_V_POS_TRIP,(float)trip/10);
+      StandardMetrics.ms_v_pos_trip->SetValue((float)trip/10);
       break;
       }
     }

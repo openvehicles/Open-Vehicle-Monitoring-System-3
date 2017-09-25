@@ -70,7 +70,7 @@ void OvmsServerV2::ServerTask()
       continue;
       }
 
-    MyMetrics.SetBool(MS_S_V2_CONNECTED,true);
+    StandardMetrics.ms_s_v2_connected->SetValue(true);
     while(1)
       {
       if (m_sock < 0)
@@ -119,7 +119,7 @@ void OvmsServerV2::ProcessServerMsg()
     case 'Z': // Peer connections
       {
       int nc = atoi(payload.c_str());
-      MyMetrics.SetInt(MS_S_V2_PEERS,nc);
+      StandardMetrics.ms_s_v2_peers->SetValue(nc);
       break;
       }
     case 'h': // Historical data acknowledgement
@@ -222,7 +222,7 @@ void OvmsServerV2::Disconnect()
     close(m_sock);
     m_sock = -1;
     }
-  MyMetrics.SetBool(MS_S_V2_CONNECTED,false);
+  StandardMetrics.ms_s_v2_connected->SetValue(false);
   }
 
 bool OvmsServerV2::Login()

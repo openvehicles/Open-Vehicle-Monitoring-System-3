@@ -47,7 +47,7 @@ OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
 
 void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  OvmsMetricString* m = (OvmsMetricString*)MyMetrics.Find(MS_M_VERSION);
+  OvmsMetricString* m = StandardMetrics.ms_m_version;
   if (m != NULL)
     {
     std::string v = m->AsString();

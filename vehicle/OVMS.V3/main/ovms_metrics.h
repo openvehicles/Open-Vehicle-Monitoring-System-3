@@ -39,7 +39,7 @@ using namespace std;
 class OvmsMetric
   {
   public:
-    OvmsMetric();
+    OvmsMetric(std::string name);
     virtual ~OvmsMetric();
 
   public:
@@ -57,7 +57,7 @@ class OvmsMetric
 class OvmsMetricBool : public OvmsMetric
   {
   public:
-    OvmsMetricBool();
+    OvmsMetricBool(std::string name);
     virtual ~OvmsMetricBool();
 
   public:
@@ -73,7 +73,7 @@ class OvmsMetricBool : public OvmsMetric
 class OvmsMetricInt : public OvmsMetric
   {
   public:
-    OvmsMetricInt();
+    OvmsMetricInt(std::string name);
     virtual ~OvmsMetricInt();
 
   public:
@@ -89,7 +89,7 @@ class OvmsMetricInt : public OvmsMetric
 class OvmsMetricFloat : public OvmsMetric
   {
   public:
-    OvmsMetricFloat();
+    OvmsMetricFloat(std::string name);
     virtual ~OvmsMetricFloat();
 
   public:
@@ -105,7 +105,7 @@ class OvmsMetricFloat : public OvmsMetric
 class OvmsMetricString : public OvmsMetric
   {
   public:
-    OvmsMetricString();
+    OvmsMetricString(std::string name);
     virtual ~OvmsMetricString();
 
   public:
@@ -116,41 +116,14 @@ class OvmsMetricString : public OvmsMetric
     std::string m_value;
   };
 
-template<typename Type> OvmsMetric* CreateMetric()
-  {
-  return new Type;
-  }
-
-class OvmsMetricFactory
-  {
-  public:
-    OvmsMetricFactory();
-    virtual ~OvmsMetricFactory();
-
-  public:
-    typedef OvmsMetric* (*FactoryFuncPtr)();
-    typedef map<const char*, FactoryFuncPtr> map_type;
-
-    map_type m_map;
-
-  public:
-    template<typename Type>
-    short RegisterMetric(const char* MetricType)
-      {
-      FactoryFuncPtr function = &CreateMetric<Type>;
-        m_map.insert(std::make_pair(MetricType, function));
-      return 0;
-      };
-    OvmsMetric* NewMetric(const char* MetricType);
-  };
-
-extern OvmsMetricFactory MyMetricFactory;
-
 class OvmsMetrics
   {
   public:
     OvmsMetrics();
     virtual ~OvmsMetrics();
+
+  public:
+    void RegisterMetric(OvmsMetric* metric, std::string name);
 
   public:
     bool Set(const char* metric, const char* value);

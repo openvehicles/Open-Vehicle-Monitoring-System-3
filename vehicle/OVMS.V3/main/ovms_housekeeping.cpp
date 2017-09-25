@@ -151,7 +151,7 @@ void Housekeeping::version()
   version.append(__DATE__);
   version.append(" ");
   version.append(__TIME__);
-  MyMetrics.Set(MS_M_VERSION, version.c_str());
+  StandardMetrics.ms_m_version->SetValue(version.c_str());
 
   std::string hardware("OVMS ");
   esp_chip_info_t chip;
@@ -162,18 +162,18 @@ void Housekeeping::version()
   if (chip.features & CHIP_FEATURE_BT) hardware.append("BT ");
   char buf[32]; sprintf(buf,"cores=%d ",chip.cores); hardware.append(buf);
   sprintf(buf,"rev=ESP32/%d",chip.revision); hardware.append(buf);
-  MyMetrics.Set(MS_M_HARDWARE, hardware.c_str());
+  StandardMetrics.ms_m_hardware->SetValue(hardware.c_str());
 
   uint8_t mac[6];
   esp_efuse_mac_get_default(mac);
   sprintf(buf,"%02x:%02x:%02x:%02x:%02x:%02x",
           mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
-  MyMetrics.Set(MS_M_SERIAL, buf);
+  StandardMetrics.ms_m_serial->SetValue(buf);
   }
 
 void Housekeeping::metrics()
   {
-  OvmsMetricFloat* m1 = (OvmsMetricFloat*)MyMetrics.Find(MS_V_BAT_12V);
+  OvmsMetricFloat* m1 = StandardMetrics.ms_v_bat_12v;
   if (m1 == NULL)
     return;
 
@@ -183,13 +183,13 @@ void Housekeeping::metrics()
   float v = (float)MyPeripherals->m_esp32adc->read() / f;
   m1->SetValue(v);
 
-  OvmsMetricInt* m2 = (OvmsMetricInt*)MyMetrics.Find(MS_M_TASKS);
+  OvmsMetricInt* m2 = StandardMetrics.ms_m_tasks;
   if (m2 == NULL)
     return;
 
   m2->SetValue(uxTaskGetNumberOfTasks());
 
-  OvmsMetricInt* m3 = (OvmsMetricInt*)MyMetrics.Find(MS_M_FREERAM);
+  OvmsMetricInt* m3 = StandardMetrics.ms_m_freeram;
   if (m3 == NULL)
     return;
   uint32_t caps = MALLOC_CAP_8BIT;

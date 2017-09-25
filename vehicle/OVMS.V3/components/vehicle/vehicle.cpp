@@ -86,7 +86,7 @@ void OvmsVehicleFactory::ClearVehicle()
     {
     delete m_currentvehicle;
     m_currentvehicle = NULL;
-    MyMetrics.Set(MS_V_TYPE, "");
+    StandardMetrics.ms_v_type->SetValue("");
     }
   }
 
@@ -98,7 +98,7 @@ void OvmsVehicleFactory::SetVehicle(std::string type)
     m_currentvehicle = NULL;
     }
   m_currentvehicle = NewVehicle(type);
-  MyMetrics.Set(MS_V_TYPE, type.c_str());
+  StandardMetrics.ms_v_type->SetValue(type.c_str());
   }
 
 OvmsVehicle::OvmsVehicle()

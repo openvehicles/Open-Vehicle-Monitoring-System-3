@@ -35,14 +35,12 @@ static const char *TAG = "metrics";
 #include <stdio.h>
 #include <sstream>
 #include "ovms_metrics.h"
-#include "metrics_standard.h"
 #include "ovms_command.h"
 #include "string.h"
 
 using namespace std;
 
-OvmsMetricFactory MyMetricFactory __attribute__ ((init_priority (1800)));
-OvmsMetrics       MyMetrics       __attribute__ ((init_priority (1810)));
+OvmsMetrics       MyMetrics       __attribute__ ((init_priority (1800)));
 
 void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -69,25 +67,6 @@ void metrics_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     writer->puts("Metric could not be set");
   }
 
-OvmsMetricFactory::OvmsMetricFactory()
-  {
-  ESP_LOGI(TAG, "Initialising METRIC FACTORY (1800)");
-  }
-
-OvmsMetricFactory::~OvmsMetricFactory()
-  {
-  }
-
-OvmsMetric* OvmsMetricFactory::NewMetric(const char* MetricType)
-  {
-  OvmsMetricFactory::map_type::iterator iter = m_map.find(MetricType);
-  if (iter != m_map.end())
-    {
-    return iter->second();
-    }
-  return NULL;
-  }
-
 OvmsMetrics::OvmsMetrics()
   {
   ESP_LOGI(TAG, "Initialising METRICS (1810)");
@@ -96,26 +75,15 @@ OvmsMetrics::OvmsMetrics()
   OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework",NULL, "", 1);
   cmd_metric->RegisterCommand("list","Show all metrics",metrics_list, "[metric]", 0, 1);
   cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set, "<metric> <value>", 2, 2);
-
-  // Register the different types of metric
-  MyMetricFactory.RegisterMetric<OvmsMetricInt>("int");
-  MyMetricFactory.RegisterMetric<OvmsMetricBool>("bool");
-  MyMetricFactory.RegisterMetric<OvmsMetricString>("string");
-  MyMetricFactory.RegisterMetric<OvmsMetricFloat>("float");
-
-  // Register all the standard metrics
-  for (const MetricStandard_t* p=MetricStandard ; p->name[0] != 0 ; p++)
-    {
-    OvmsMetric* m = MyMetricFactory.NewMetric(p->type);
-    if (m != NULL)
-      {
-      m_metrics[p->name] = m;
-      }
-    }
   }
 
 OvmsMetrics::~OvmsMetrics()
   {
+  }
+
+void OvmsMetrics::RegisterMetric(OvmsMetric* metric, std::string name)
+  {
+  m_metrics[name] = metric;
   }
 
 bool OvmsMetrics::Set(const char* metric, const char* value)
@@ -171,10 +139,11 @@ OvmsMetric* OvmsMetrics::Find(const char* metric)
     return k->second;
   }
 
-OvmsMetric::OvmsMetric()
+OvmsMetric::OvmsMetric(std::string name)
   {
   m_defined = false;
   m_modified = false;
+  MyMetrics.RegisterMetric(this, name);
   }
 
 OvmsMetric::~OvmsMetric()
@@ -196,7 +165,8 @@ void OvmsMetric::SetModified()
   m_modified = true;
   }
 
-OvmsMetricInt::OvmsMetricInt()
+OvmsMetricInt::OvmsMetricInt(std::string name)
+  : OvmsMetric(name)
   {
   m_value = 0;
   }
@@ -236,7 +206,8 @@ void OvmsMetricInt::SetValue(std::string value)
   SetModified();
   }
 
-OvmsMetricBool::OvmsMetricBool()
+OvmsMetricBool::OvmsMetricBool(std::string name)
+  : OvmsMetric(name)
   {
   m_value = false;
   }
@@ -280,7 +251,8 @@ void OvmsMetricBool::SetValue(std::string value)
   SetModified();
   }
 
-OvmsMetricFloat::OvmsMetricFloat()
+OvmsMetricFloat::OvmsMetricFloat(std::string name)
+  : OvmsMetric(name)
   {
   m_value = 0;
   }
@@ -321,7 +293,8 @@ void OvmsMetricFloat::SetValue(std::string value)
   SetModified();
   }
 
-OvmsMetricString::OvmsMetricString()
+OvmsMetricString::OvmsMetricString(std::string name)
+  : OvmsMetric(name)
   {
   }
 

@@ -31,6 +31,8 @@
 #ifndef __METRICS_STANDARD_H__
 #define __METRICS_STANDARD_H__
 
+#include "ovms_metrics.h"
+
 #define MS_M_VERSION                "m.version"
 #define MS_M_HARDWARE               "m.hardware"
 #define MS_M_SERIAL                 "m.serial"
@@ -73,50 +75,50 @@
 #define MS_V_TPMS_RR_P              "v.tp.rr.p"
 #define MS_V_TPMS_RL_P              "v.tp.rl.p"
 
-typedef struct
+class MetricsStandard
   {
-  const char* name;
-  const char* type;
-  } MetricStandard_t;
+  public:
+    MetricsStandard();
+    virtual ~MetricsStandard();
 
-const MetricStandard_t MetricStandard[] =
-  {
-  { MS_M_VERSION,                 "string" },
-  { MS_M_HARDWARE,                "string" },
-  { MS_M_SERIAL,                  "string" },
-  { MS_M_TASKS,                   "int" },
-  { MS_M_FREERAM,                 "int" },
-  { MS_S_V2_CONNECTED,            "bool" },
-  { MS_S_V2_PEERS,                "int" },
-  { MS_V_TYPE,                    "string" },
-  { MS_V_VIN,                     "string" },
-  { MS_V_BAT_SOC,                 "int" },
-  { MS_V_BAT_SOH,                 "int" },
-  { MS_V_BAT_CAC,                 "float" },
-  { MS_V_BAT_RANGE_IDEAL,         "int" },
-  { MS_V_BAT_RANGE_EST,           "int" },
-  { MS_V_BAT_12V,                 "float" },
-  { MS_V_TEMP_PEM,                "int" },
-  { MS_V_TEMP_BATTERY,            "int" },
-  { MS_V_TEMP_MOTOR,              "int" },
-  { MS_V_TEMP_CHARGER,            "int" },
-  { MS_V_TEMP_AMBIENT,            "int" },
-  { MS_V_POS_LATITUDE,            "int" },
-  { MS_V_POS_LONGITUDE,           "int" },
-  { MS_V_POS_DIRECTION,           "int" },
-  { MS_V_POS_ALTITUDE,            "int" },
-  { MS_V_POS_SPEED,               "int" },
-  { MS_V_POS_ODOMETER,            "float" },
-  { MS_V_POS_TRIP,                "float" },
-  { MS_V_TPMS_FL_T,               "float" },
-  { MS_V_TPMS_FR_T,               "float" },
-  { MS_V_TPMS_RR_T,               "float" },
-  { MS_V_TPMS_RL_T,               "float" },
-  { MS_V_TPMS_FL_P,               "float" },
-  { MS_V_TPMS_FR_P,               "float" },
-  { MS_V_TPMS_RR_P,               "float" },
-  { MS_V_TPMS_RL_P,               "float" },
-  { "", "" }
+  public:
+    OvmsMetricString* ms_m_version;
+    OvmsMetricString* ms_m_hardware;
+    OvmsMetricString* ms_m_serial;
+    OvmsMetricInt*    ms_m_tasks;
+    OvmsMetricInt*    ms_m_freeram;
+    OvmsMetricBool*   ms_s_v2_connected;
+    OvmsMetricInt*    ms_s_v2_peers;
+    OvmsMetricString* ms_v_type;
+    OvmsMetricString* ms_v_vin;
+    OvmsMetricInt*    ms_v_bat_soc;
+    OvmsMetricInt*    ms_v_bat_soh;
+    OvmsMetricFloat*  ms_v_bat_cac;
+    OvmsMetricInt*    ms_v_bat_range_ideal;
+    OvmsMetricInt*    ms_v_bat_range_est;
+    OvmsMetricFloat*  ms_v_bat_12v;
+    OvmsMetricInt*    ms_v_temp_pem;
+    OvmsMetricInt*    ms_v_temp_battery;
+    OvmsMetricInt*    ms_v_temp_motor;
+    OvmsMetricInt*    ms_v_temp_charger;
+    OvmsMetricInt*    ms_v_temp_ambient;
+    OvmsMetricFloat*  ms_v_pos_latitude;
+    OvmsMetricFloat*  ms_v_pos_longitude;
+    OvmsMetricInt*    ms_v_pos_direction;
+    OvmsMetricInt*    ms_v_pos_altitude;
+    OvmsMetricInt*    ms_v_pos_speed;
+    OvmsMetricFloat*  ms_v_pos_odometer;
+    OvmsMetricFloat*  ms_v_pos_trip;
+    OvmsMetricFloat*  ms_v_tpms_fl_t;
+    OvmsMetricFloat*  ms_v_tpms_fr_t;
+    OvmsMetricFloat*  ms_v_tpms_rr_t;
+    OvmsMetricFloat*  ms_v_tpms_rl_t;
+    OvmsMetricFloat*  ms_v_tpms_fl_p;
+    OvmsMetricFloat*  ms_v_tpms_fr_p;
+    OvmsMetricFloat*  ms_v_tpms_rr_p;
+    OvmsMetricFloat*  ms_v_tpms_rl_p;
   };
+
+extern MetricsStandard StandardMetrics;
 
 #endif //#ifndef __METRICS_STANDARD_H__
