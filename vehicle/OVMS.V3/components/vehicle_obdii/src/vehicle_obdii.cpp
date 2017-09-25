@@ -29,34 +29,34 @@
 */
 
 #include "esp_log.h"
-static const char *TAG = "v-track";
+static const char *TAG = "v-obdii";
 
 #include <stdio.h>
-#include "vehicle_track.h"
+#include "vehicle_obdii.h"
 
-OvmsVehicleTrack::OvmsVehicleTrack()
+OvmsVehicleOBDII::OvmsVehicleOBDII()
   {
-  ESP_LOGI(TAG, "Generic TRACK Vehicle Module");
+  ESP_LOGI(TAG, "Generic OBDII vehicle module");
   }
 
-OvmsVehicleTrack::~OvmsVehicleTrack()
+OvmsVehicleOBDII::~OvmsVehicleOBDII()
   {
-  ESP_LOGI(TAG, "Shutdown TRACK vehicle module");
+  ESP_LOGI(TAG, "Shutdown OBDII vehicle module");
   }
 
-const std::string OvmsVehicleTrack::VehicleName()
+const std::string OvmsVehicleOBDII::VehicleName()
   {
-  return std::string("TRACK");
+  return std::string("OBDII");
   }
 
-class OvmsVehicleTrackInit
+class OvmsVehicleOBDIIInit
   {
-  public: OvmsVehicleTrackInit();
-} MyOvmsVehicleTrackInit  __attribute__ ((init_priority (9000)));
+  public: OvmsVehicleOBDIIInit();
+} MyOvmsVehicleOBDIIInit  __attribute__ ((init_priority (9000)));
 
-OvmsVehicleTrackInit::OvmsVehicleTrackInit()
+OvmsVehicleOBDIIInit::OvmsVehicleOBDIIInit()
   {
-  ESP_LOGI(TAG, "Registering Vehicle: TRACK (9000)");
+  ESP_LOGI(TAG, "Registering Vehicle: OBDII (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleTrack>("XX");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleOBDII>("O2");
   }

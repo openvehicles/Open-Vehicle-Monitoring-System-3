@@ -29,34 +29,35 @@
 */
 
 #include "esp_log.h"
-static const char *TAG = "v-obdii";
+static const char *TAG = "v-none";
 
 #include <stdio.h>
-#include "vehicle_obdii.h"
+#include "vehicle_none.h"
 
-OvmsVehicleOBDII::OvmsVehicleOBDII()
+OvmsVehicleNone::OvmsVehicleNone()
   {
-  ESP_LOGI(TAG, "Generic OBDII Vehicle Module");
+  ESP_LOGI(TAG, "Generic NONE vehicle module");
   }
 
-OvmsVehicleOBDII::~OvmsVehicleOBDII()
+OvmsVehicleNone::~OvmsVehicleNone()
   {
-  ESP_LOGI(TAG, "Shutdown OBDII vehicle module");
+  ESP_LOGI(TAG, "Shutdown NONE vehicle module");
   }
 
-const std::string OvmsVehicleOBDII::VehicleName()
+const std::string OvmsVehicleNone::VehicleName()
   {
-  return std::string("OBDII");
+  return std::string("NONE");
   }
 
-class OvmsVehicleOBDIIInit
+class OvmsVehicleNoneInit
   {
-  public: OvmsVehicleOBDIIInit();
-} MyOvmsVehicleOBDIIInit  __attribute__ ((init_priority (9000)));
+  public: OvmsVehicleNoneInit();
+} MyOvmsVehicleNoneInit  __attribute__ ((init_priority (9000)));
 
-OvmsVehicleOBDIIInit::OvmsVehicleOBDIIInit()
+OvmsVehicleNoneInit::OvmsVehicleNoneInit()
   {
-  ESP_LOGI(TAG, "Registering Vehicle: OBDII (9000)");
+  ESP_LOGI(TAG, "Registering Vehicle: NONE (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleOBDII>("O2");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleNone>("NONE");
   }
+

@@ -54,7 +54,7 @@ static void TR_rxtask(void *pvParameters)
 
 OvmsVehicleTeslaRoadster::OvmsVehicleTeslaRoadster()
   {
-  ESP_LOGI(TAG, "Tesla Roadster v1.x, v2.x and v3.0 Vehicle Module");
+  ESP_LOGI(TAG, "Tesla Roadster v1.x, v2.x and v3.0 vehicle module");
 
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
   xTaskCreatePinnedToCore(TR_rxtask, "v_TR Rx Task", 4096, (void*)this, 5, &m_rxtask, 1);

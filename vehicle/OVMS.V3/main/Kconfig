@@ -62,6 +62,39 @@ config OVMS_SC_GPL_MONGOOSE
     help
         Enable to include the GPL licensed MONGOOSE networking library
 
+menu "Vehicle Support"
+    depends on OVMS
+
+config OVMS_VEHICLE_NONE
+    bool "Include support for base NONE vehicle stub"
+    default n
+    depends on OVMS
+    help
+        Enable to include support for base NONE vehicle stub.
+
+config OVMS_VEHICLE_OBDII
+    bool "Include support for OBDII vehicles"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for OBDII vehicles.
+
+config OVMS_VEHICLE_TRACK
+    bool "Include support for TRACK vehicle"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for tracker vehicles.
+
+config OVMS_VEHICLE_TESLAROADSTER
+    bool "Include support for Tesla Roadster vehicles"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Tesla Roadster vehicles.
+
+endmenu # Vehicle Support
+
 menu "Component Options"
     depends on OVMS
 
