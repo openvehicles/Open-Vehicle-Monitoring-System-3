@@ -35,6 +35,10 @@
 #include <map>
 #include <list>
 #include <string>
+#include <bitset>
+#include <stdint.h>
+
+#define METRICS_MAX_MODIFIERS 32
 
 using namespace std;
 
@@ -50,11 +54,13 @@ class OvmsMetric
 
   protected:
     virtual void SetModified();
+    virtual bool IsModified(size_t modifier);
+    virtual void ClearModified(size_t modifier);
 
   public:
     std::string m_name;
     bool m_defined;
-    bool m_modified;
+    std::bitset<METRICS_MAX_MODIFIERS> m_modified;
   };
 
 class OvmsMetricBool : public OvmsMetric
@@ -158,6 +164,12 @@ class OvmsMetrics
 
   protected:
     MetricMap m_listeners;
+
+  public:
+    size_t RegisterModifier();
+
+  protected:
+    size_t m_nextmodifier;
 
   public:
     std::map<std::string, OvmsMetric*> m_metrics;

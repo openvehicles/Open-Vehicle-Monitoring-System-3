@@ -50,6 +50,7 @@ static const char *TAG = "ovms-server-v2";
 #include "lwip/dns.h"
 
 OvmsServerV2 *MyOvmsServerV2 = NULL;
+size_t MyOvmsServerV2Modifier = 0;
 
 void OvmsServerV2::ServerTask()
   {
@@ -367,6 +368,11 @@ OvmsServerV2::OvmsServerV2(std::string name)
   : OvmsServer(name)
   {
   m_sock = -1;
+  if (MyOvmsServerV2Modifier == 0)
+    {
+    MyOvmsServerV2Modifier = MyMetrics.RegisterModifier();
+    ESP_LOGI(TAG, "OVMS Server V2 registered metric modifier is #%d",MyOvmsServerV2Modifier);
+    }
   m_buffer = new OvmsBuffer(1024);
   }
 

@@ -71,6 +71,8 @@ OvmsMetrics::OvmsMetrics()
   {
   ESP_LOGI(TAG, "Initialising METRICS (1810)");
 
+  m_nextmodifier = 1;
+
   // Register our commands
   OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework",NULL, "", 1);
   cmd_metric->RegisterCommand("list","Show all metrics",metrics_list, "[metric]", 0, 1);
@@ -195,10 +197,15 @@ void OvmsMetrics::NotifyModified(OvmsMetric* metric)
     }
   }
 
+size_t OvmsMetrics::RegisterModifier()
+  {
+  return m_nextmodifier++;
+  }
+
 OvmsMetric::OvmsMetric(std::string name)
   {
   m_defined = false;
-  m_modified = false;
+  m_modified.reset();
   m_name = name;
   MyMetrics.RegisterMetric(this, name);
   }
@@ -219,8 +226,18 @@ void OvmsMetric::SetValue(std::string value)
 void OvmsMetric::SetModified()
   {
   m_defined = true;
-  m_modified = true;
+  m_modified.set();
   MyMetrics.NotifyModified(this);
+  }
+
+bool OvmsMetric::IsModified(size_t modifier)
+  {
+  return m_modified[modifier];
+  }
+
+void OvmsMetric::ClearModified(size_t modifier)
+  {
+  m_modified.reset(modifier);
   }
 
 OvmsMetricInt::OvmsMetricInt(std::string name)

@@ -32,10 +32,13 @@
 static const char *TAG = "ovms-server-v3";
 
 #include <string.h>
+#include <stdint.h>
 #include "ovms_server_v3.h"
 #include "ovms_command.h"
+#include "ovms_metrics.h"
 
 OvmsServerV3 *MyOvmsServerV3 = NULL;
+size_t MyOvmsServerV3Modifier = 0;
 
 void OvmsServerV3::ServerTask()
   {
@@ -48,6 +51,11 @@ void OvmsServerV3::ServerTask()
 OvmsServerV3::OvmsServerV3(std::string name)
   : OvmsServer(name)
   {
+  if (MyOvmsServerV3Modifier == 0)
+    {
+    MyOvmsServerV3Modifier = MyMetrics.RegisterModifier();
+    ESP_LOGI(TAG, "OVMS Server V3 registered metric modifier is #%d",MyOvmsServerV3Modifier);
+    }
   }
 
 OvmsServerV3::~OvmsServerV3()
