@@ -139,10 +139,67 @@ OvmsMetric* OvmsMetrics::Find(const char* metric)
     return k->second;
   }
 
+void OvmsMetrics::RegisterListener(std::string caller, std::string name, MetricCallback callback)
+  {
+  auto k = m_listeners.find(name);
+  if (k == m_listeners.end())
+    {
+    m_listeners[name] = new MetricCallbackList();
+    k = m_listeners.find(name);
+    }
+  if (k == m_listeners.end())
+    {
+    ESP_LOGE(TAG, "Problem registering metric %s for caller %s",name.c_str(),caller.c_str());
+    return;
+    }
+
+  MetricCallbackList *ml = k->second;
+  ml->push_back(new MetricCallbackEntry(caller,callback));
+  }
+
+void OvmsMetrics::DeregisterListener(std::string caller)
+  {
+  for (MetricMap::iterator itm=m_listeners.begin(); itm!=m_listeners.end(); ++itm)
+    {
+    MetricCallbackList* ml = itm->second;
+    for (MetricCallbackList::iterator itc=ml->begin(); itc!=ml->end(); ++itc)
+      {
+      MetricCallbackEntry* ec = *itc;
+      if (ec->m_caller == caller)
+        {
+        ml->erase(itc);
+        }
+      }
+    if (ml->empty())
+      {
+      delete ml;
+      m_listeners.erase(itm);
+      }
+    }
+  }
+
+void OvmsMetrics::NotifyModified(OvmsMetric* metric)
+  {
+  auto k = m_listeners.find(metric->m_name);
+  if (k != m_listeners.end())
+    {
+    MetricCallbackList* ml = k->second;
+    if (ml)
+      {
+      for (MetricCallbackList::iterator itc=ml->begin(); itc!=ml->end(); ++itc)
+        {
+        MetricCallbackEntry* ec = *itc;
+        ec->m_callback(metric);
+        }
+      }
+    }
+  }
+
 OvmsMetric::OvmsMetric(std::string name)
   {
   m_defined = false;
   m_modified = false;
+  m_name = name;
   MyMetrics.RegisterMetric(this, name);
   }
 
@@ -163,6 +220,7 @@ void OvmsMetric::SetModified()
   {
   m_defined = true;
   m_modified = true;
+  MyMetrics.NotifyModified(this);
   }
 
 OvmsMetricInt::OvmsMetricInt(std::string name)

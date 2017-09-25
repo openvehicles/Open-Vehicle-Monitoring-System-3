@@ -31,7 +31,9 @@
 #ifndef __METRICS_H__
 #define __METRICS_H__
 
+#include <functional>
 #include <map>
+#include <list>
 #include <string>
 
 using namespace std;
@@ -47,9 +49,10 @@ class OvmsMetric
     virtual void SetValue(std::string value);
 
   protected:
-    void SetModified();
+    virtual void SetModified();
 
   public:
+    std::string m_name;
     bool m_defined;
     bool m_modified;
   };
@@ -116,6 +119,22 @@ class OvmsMetricString : public OvmsMetric
     std::string m_value;
   };
 
+typedef std::function<void(OvmsMetric*)> MetricCallback;
+
+class MetricCallbackEntry
+  {
+  public:
+    MetricCallbackEntry(std::string caller, MetricCallback callback);
+    virtual ~MetricCallbackEntry();
+
+  public:
+    std::string m_caller;
+    MetricCallback m_callback;
+  };
+
+typedef std::list<MetricCallbackEntry*> MetricCallbackList;
+typedef std::map<std::string, MetricCallbackList*> MetricMap;
+
 class OvmsMetrics
   {
   public:
@@ -131,6 +150,14 @@ class OvmsMetrics
     bool SetBool(const char* metric, bool value);
     bool SetFloat(const char* metric, float value);
     OvmsMetric* Find(const char* metric);
+
+  public:
+    void RegisterListener(std::string caller, std::string name, MetricCallback callback);
+    void DeregisterListener(std::string caller);
+    void NotifyModified(OvmsMetric* metric);
+
+  protected:
+    MetricMap m_listeners;
 
   public:
     std::map<std::string, OvmsMetric*> m_metrics;
