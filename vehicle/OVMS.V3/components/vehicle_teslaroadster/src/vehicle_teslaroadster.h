@@ -46,13 +46,11 @@ class OvmsVehicleTeslaRoadster : public OvmsVehicle
     void IncomingFrame(CAN_frame_t* p_frame);
 
   protected:
-    canbus* m_can1;
-
-  protected:
     char m_vin[18];
     char m_type[5];
 
   public:
+    canbus* m_can1;
     QueueHandle_t m_rxqueue;
     TaskHandle_t m_rxtask;
     const std::string VehicleName();
