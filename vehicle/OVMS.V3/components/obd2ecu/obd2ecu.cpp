@@ -8,7 +8,7 @@
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011        Sonny Chen @ EPRO/DX
-;    (C) 2017       Greg Dolkas
+;    (C) 2017       Gregory Dolkas
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -64,6 +64,9 @@ obd2ecu::obd2ecu(std::string name, canbus* can)
     
   m_can->Start(CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   m_can->SetPowerMode(On);
+  
+  m_starttime = time(NULL);
+  m_private = PRIVACY;      /* default privacy mode (e.g. hiding VIN)  */
     
   MyCan.RegisterListener(m_rxqueue);
   }
@@ -207,8 +210,8 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
   int jitter;
   uint8_t mapped_pid;
   float metric;
-  time_t since_start = 0;
-  time_t start_time = 0;
+  time_t since_start;
+  char vin_string[18];
 
   uint8_t *p_d = p_frame->data.u8;  /* Incoming frame data from HUD / Dongle */
   uint8_t *r_d = r_frame.data.u8;  /* Response frame data being sent back to HUD / Dongle */
@@ -333,7 +336,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           m_can->Write(&r_frame);
           break;
         case 0x31:	/* Distance since codes cleared - simulate @ 60mph */
-          since_start = (time(NULL)-start_time)/60;
+          since_start = (time(NULL)-m_starttime)/60;
           metric = since_start;
           FillFrame(&r_frame,reply,mapped_pid,metric,5);
           m_can->Write(&r_frame);
@@ -344,7 +347,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           m_can->Write(&r_frame);
           break;
         case 0x1f:	/* Runtime since engine start - #secs since prog start */
-          since_start = time(NULL)-start_time;
+          since_start = time(NULL)-m_starttime;
           if (verbose) ESP_LOGI(TAG, "Reporting running for %d seconds",(int)since_start);
           metric = since_start;
           FillFrame(&r_frame,reply,mapped_pid,metric,5);
@@ -397,9 +400,12 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
         {
         case 2:
           if(verbose) ESP_LOGI(TAG, "Requested VIN");
-#if PRIVACY
-          break;  /* ignore request for privacy's sake. Doesn't seem to matter to Dongle. */
-#else
+          
+          if(m_private) break;  /* ignore request for privacy's sake. Doesn't seem to matter to Dongle. */
+
+          memcpy(vin_string,StandardMetrics.ms_v_vin->AsString(),17);
+          vin_string[17] = '\0';  /* force null termination, just because */
+            
           r_frame.origin = NULL;
           r_frame.FIR.U = 0;
           r_frame.FIR.B.DLC = 8;
@@ -410,33 +416,24 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[2] = 0x49;  /* Mode 9 reply */
           r_d[3] = 0x02;  /* PID */
           r_d[4] = 0x01;  /* not sure what this is for */
-          r_d[5] = 'M';
-          r_d[6] = 'F';
-          r_d[7] = 'G';
+          memcpy(&r_d[5],vin_string,3);  /* grab the first 3 bytes of VIN */
+
           m_can->Write(&r_frame);
 
           vTaskDelay(10 / portTICK_PERIOD_MS);  /* let the flow control frame pass */
+          
           r_d[0] = 0x21;
-          r_d[1] = 'a';
-          r_d[2] = 't';
-          r_d[3] = 't';
-          r_d[4] = 'r';
-          r_d[5] = 'b';
-          r_d[6] = 'x';
-          r_d[7] = 'Y';
+          memcpy(&r_d[1],vin_string+3,7);  /* grab the next 7 bytes of VIN */
+
           m_can->Write(&r_frame);
 
           r_d[0] = 0x22;
-          r_d[1] = 'P';
-          r_d[2] = '1';
-          r_d[3] = '2';
-          r_d[4] = '3';
-          r_d[5] = '4';
-          r_d[6] = '5';
-          r_d[7] = '6';
+          memcpy(&r_d[1],vin_string+10,7);  /* grab the last 7 bytes of VIN */
+
           m_can->Write(&r_frame);
+          
           break;
-#endif                        
+                       
         case 0x0a: /* ECU Name */
           if (verbose) ESP_LOGI(TAG, "ECU Name requested");
           /* Perhaps a good place for arbitrary text, e.g. fleet asset #?  20 char avail. */
