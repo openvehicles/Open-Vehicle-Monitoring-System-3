@@ -292,8 +292,7 @@ void level(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const 
   const std::string& title = cmd->GetTitle();
   esp_log_level_t level_num = (esp_log_level_t)atoi(title.substr(title.size()-2, 1).c_str());
   esp_log_level_set(tag, level_num);
-  const char* t = title.c_str();
-  writer->printf("%02x %02x %02x %02x %02x %02x\n", t[0], t[1], t[2], t[3], t[4], t[5]);
+  writer->printf("Logging level for %s set to %s\n",tag,cmd->GetName().c_str());
   }
 
 OvmsCommandApp::OvmsCommandApp()
