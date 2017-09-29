@@ -49,6 +49,8 @@ class obd2ecu : public pcp
     canbus* m_can;
     QueueHandle_t m_rxqueue;
     TaskHandle_t m_task;
+    time_t m_starttime;
+    uint8_t m_private;
 
   public:
     void IncomingFrame(CAN_frame_t* p_frame);
