@@ -45,12 +45,16 @@ class obd2ecu : public pcp
   public:
     virtual void SetPowerMode(PowerMode powermode);
 
-  protected:
+  public:
     canbus* m_can;
+    QueueHandle_t m_rxqueue;
     TaskHandle_t m_task;
-    
+
+  public:
+    void IncomingFrame(CAN_frame_t* p_frame);
+ 
   protected:
-      void fill_frame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint8_t format);
+    void FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint8_t format);
   };
   
       
