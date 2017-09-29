@@ -48,6 +48,20 @@ class obd2ecu : public pcp
   protected:
     canbus* m_can;
     TaskHandle_t m_task;
+    
+  protected:
+      void fill_frame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint8_t format);
   };
+  
+      
+#define REQUEST_PID  0x7df
+#define RESPONSE_PID 0x738
+#define REQUEST_EXT_PID  0x98db33f1
+#define RESPONSE_EXT_PID 0x99daf10e
+  
+#define verbose 1
 
+#define PRIVACY 1  /* Ignore return dummy info for sensitive items */  
+  
+  
 #endif //#ifndef __OBD2ECU_H__
