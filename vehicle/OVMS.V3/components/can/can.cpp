@@ -134,6 +134,38 @@ void can_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
   sbus->Write(&frame);
   }
 
+void can_rx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string bus = cmd->GetParent()->GetParent()->GetName();
+  std::string mode = cmd->GetName();
+  CAN_frame_format_t smode = CAN_frame_std;
+  if (mode.compare("extended")==0) smode = CAN_frame_ext;
+
+  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->puts("Error: Cannot find named CAN bus");
+    return;
+    }
+  if (sbus->GetPowerMode() != On)
+    {
+    writer->puts("Error: Can bus is not powered on");
+    return;
+    }
+
+  CAN_frame_t frame;
+  frame.origin = sbus;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = argc-1;
+  frame.FIR.B.FF = smode;
+  frame.MsgID = (int)strtol(argv[0],NULL,16);
+  for(int k=0;k<(argc-1);k++)
+    {
+    frame.data.u8[k] = strtol(argv[k+1],NULL,16);
+    }
+  MyCan.IncomingFrame(&frame);
+  }
+
 static void CAN_rxtask(void *pvParameters)
   {
   can *me = (can*)pvParameters;
@@ -164,6 +196,9 @@ can::can()
     OvmsCommand* cmd_cantx = cmd_canx->RegisterCommand("tx","CAN tx framework", NULL, "", 1);
     cmd_cantx->RegisterCommand("standard","Transmit standard CAN frame",can_tx,"<id><data...>", 1, 9);
     cmd_cantx->RegisterCommand("extended","Transmit extended CAN frame",can_tx,"<id><data...>", 1, 9);
+    OvmsCommand* cmd_canrx = cmd_canx->RegisterCommand("rx","CAN rx framework", NULL, "", 1);
+    cmd_canrx->RegisterCommand("standard","Simulate reception of standard CAN frame",can_rx,"<id><data...>", 1, 9);
+    cmd_canrx->RegisterCommand("extended","Simulate reception of extended CAN frame",can_rx,"<id><data...>", 1, 9);
     }
 
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
