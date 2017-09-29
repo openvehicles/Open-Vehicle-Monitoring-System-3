@@ -203,6 +203,7 @@ esp_err_t mcp2515::Stop()
 
 esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
   {
+  canbus::Write(p_frame);
   uint8_t buf[16];
   uint8_t id[4];
 

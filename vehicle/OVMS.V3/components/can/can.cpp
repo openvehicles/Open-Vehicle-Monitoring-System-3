@@ -126,10 +126,10 @@ void can_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
   frame.FIR.U = 0;
   frame.FIR.B.DLC = argc-1;
   frame.FIR.B.FF = smode;
-  frame.MsgID = atoi(argv[0]);
+  frame.MsgID = (int)strtol(argv[0],NULL,16);
   for(int k=0;k<(argc-1);k++)
     {
-    frame.data.u8[k] = atoi(argv[k+1]);
+    frame.data.u8[k] = strtol(argv[k+1],NULL,16);
     }
   sbus->Write(&frame);
   }
@@ -192,7 +192,7 @@ void can::IncomingFrame(CAN_frame_t* p_frame)
     else
       MyCommandApp.Log(".");
     }
-  MyCommandApp.Log("\r\n");
+  MyCommandApp.Log("\n");
   for (auto n : m_listeners)
     {
     xQueueSend(n,p_frame,0);
@@ -235,5 +235,23 @@ esp_err_t canbus::Stop()
 
 esp_err_t canbus::Write(const CAN_frame_t* p_frame)
   {
-  return ESP_FAIL; // Not implemented by base implementation
+  MyCommandApp.Log("CAN tx origin %s id %03x (len:%d)",
+    GetName().c_str(),p_frame->MsgID,p_frame->FIR.B.DLC);
+  for (int k=0;k<8;k++)
+    {
+    if (k<p_frame->FIR.B.DLC)
+      MyCommandApp.Log(" %02x",p_frame->data.u8[k]);
+    else
+      MyCommandApp.Log("   ");
+    }
+  for (int k=0;k<p_frame->FIR.B.DLC;k++)
+    {
+    if (isprint(p_frame->data.u8[k]))
+      MyCommandApp.Log("%c",p_frame->data.u8[k]);
+    else
+      MyCommandApp.Log(".");
+    }
+  MyCommandApp.Log("\n");
+
+  return ESP_OK; // Not implemented by base implementation
   }

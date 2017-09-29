@@ -222,6 +222,7 @@ esp_err_t esp32can::Stop()
 
 esp_err_t esp32can::Write(const CAN_frame_t* p_frame)
   {
+  canbus::Write(p_frame);
   uint8_t __byte_i; // Byte iterator
 
   // copy frame information record
