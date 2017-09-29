@@ -121,6 +121,7 @@ class canbus : public pcp
   public:
     CAN_speed_t m_speed;
     CAN_mode_t m_mode;
+    bool m_trace;
   };
 
 class can

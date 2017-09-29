@@ -166,6 +166,24 @@ void can_rx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
   MyCan.IncomingFrame(&frame);
   }
 
+void can_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string bus = cmd->GetParent()->GetParent()->GetName();
+  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->puts("Error: Cannot find named CAN bus");
+    return;
+    }
+
+  if (cmd->GetName().compare("on")==0)
+    sbus->m_trace = true;
+  else
+    sbus->m_trace = false;
+
+  writer->printf("Tracing for CAN bus %s is now %s\n",bus.c_str(),cmd->GetName().c_str());
+  }
+
 static void CAN_rxtask(void *pvParameters)
   {
   can *me = (can*)pvParameters;
@@ -189,6 +207,9 @@ can::can()
     {
     char name[5]; sprintf(name,"can%d",k);
     OvmsCommand* cmd_canx = cmd_can->RegisterCommand(name,"CANx framework",NULL, "", 1);
+    OvmsCommand* cmd_cantrace = cmd_canx->RegisterCommand("trace","CAN trace framework", NULL, "", 1);
+    cmd_cantrace->RegisterCommand("on","Turn CAN bus tracing ON",can_trace,"", 0, 0);
+    cmd_cantrace->RegisterCommand("off","Turn CAN bus tracing OFF",can_trace,"", 0, 0);
     OvmsCommand* cmd_canstart = cmd_canx->RegisterCommand("start","CAN start framework", NULL, "", 1);
     cmd_canstart->RegisterCommand("listen","Start CAN bus in listen mode",can_start,"<baud>", 1, 1);
     cmd_canstart->RegisterCommand("active","Start CAN bus in active mode",can_start,"<baud>", 1, 1);
@@ -211,23 +232,26 @@ can::~can()
 
 void can::IncomingFrame(CAN_frame_t* p_frame)
   {
-  MyCommandApp.Log("CAN rx origin %s id %03x (len:%d)",
-    p_frame->origin->GetName().c_str(),p_frame->MsgID,p_frame->FIR.B.DLC);
-  for (int k=0;k<8;k++)
+  if (p_frame->origin->m_trace)
     {
-    if (k<p_frame->FIR.B.DLC)
-      MyCommandApp.Log(" %02x",p_frame->data.u8[k]);
-    else
-      MyCommandApp.Log("   ");
+    MyCommandApp.Log("CAN rx origin %s id %03x (len:%d)",
+      p_frame->origin->GetName().c_str(),p_frame->MsgID,p_frame->FIR.B.DLC);
+    for (int k=0;k<8;k++)
+      {
+      if (k<p_frame->FIR.B.DLC)
+        MyCommandApp.Log(" %02x",p_frame->data.u8[k]);
+      else
+        MyCommandApp.Log("   ");
+      }
+    for (int k=0;k<p_frame->FIR.B.DLC;k++)
+      {
+      if (isprint(p_frame->data.u8[k]))
+        MyCommandApp.Log("%c",p_frame->data.u8[k]);
+      else
+        MyCommandApp.Log(".");
+      }
+    MyCommandApp.Log("\n");
     }
-  for (int k=0;k<p_frame->FIR.B.DLC;k++)
-    {
-    if (isprint(p_frame->data.u8[k]))
-      MyCommandApp.Log("%c",p_frame->data.u8[k]);
-    else
-      MyCommandApp.Log(".");
-    }
-  MyCommandApp.Log("\n");
   for (auto n : m_listeners)
     {
     xQueueSend(n,p_frame,0);
@@ -252,6 +276,7 @@ canbus::canbus(std::string name)
   : pcp(name)
   {
   m_mode = CAN_MODE_OFF;
+  m_trace = false;
   }
 
 canbus::~canbus()
@@ -270,23 +295,26 @@ esp_err_t canbus::Stop()
 
 esp_err_t canbus::Write(const CAN_frame_t* p_frame)
   {
-  MyCommandApp.Log("CAN tx origin %s id %03x (len:%d)",
-    GetName().c_str(),p_frame->MsgID,p_frame->FIR.B.DLC);
-  for (int k=0;k<8;k++)
+  if (m_trace)
     {
-    if (k<p_frame->FIR.B.DLC)
-      MyCommandApp.Log(" %02x",p_frame->data.u8[k]);
-    else
-      MyCommandApp.Log("   ");
+    MyCommandApp.Log("CAN tx origin %s id %03x (len:%d)",
+      GetName().c_str(),p_frame->MsgID,p_frame->FIR.B.DLC);
+    for (int k=0;k<8;k++)
+      {
+      if (k<p_frame->FIR.B.DLC)
+        MyCommandApp.Log(" %02x",p_frame->data.u8[k]);
+      else
+        MyCommandApp.Log("   ");
+      }
+    for (int k=0;k<p_frame->FIR.B.DLC;k++)
+      {
+      if (isprint(p_frame->data.u8[k]))
+        MyCommandApp.Log("%c",p_frame->data.u8[k]);
+      else
+        MyCommandApp.Log(".");
+      }
+    MyCommandApp.Log("\n");
     }
-  for (int k=0;k<p_frame->FIR.B.DLC;k++)
-    {
-    if (isprint(p_frame->data.u8[k]))
-      MyCommandApp.Log("%c",p_frame->data.u8[k]);
-    else
-      MyCommandApp.Log(".");
-    }
-  MyCommandApp.Log("\n");
 
   return ESP_OK; // Not implemented by base implementation
   }
