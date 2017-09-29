@@ -48,7 +48,8 @@ static void OBD2ECU_task(void *pvParameters)
     {
     if (xQueueReceive(me->m_rxqueue, &frame, (portTickType)portMAX_DELAY)==pdTRUE)
       {
-      me->IncomingFrame(&frame);
+      // Only handle incoming frames on our CAN bus
+      if (frame.origin == me->m_can) me->IncomingFrame(&frame);
       }
     }
   }
@@ -61,8 +62,8 @@ obd2ecu::obd2ecu(std::string name, canbus* can)
   
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
     
-  m_can->SetPowerMode(On);
   m_can->Start(CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
+  m_can->SetPowerMode(On);
     
   MyCan.RegisterListener(m_rxqueue);
   }
@@ -144,7 +145,7 @@ void obd2ecu::FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint
     case 3:  /* 16 bit integer divided by 4: (256*A+B)/4  */
       if (verbose && (data > 16383.75)) 
         {
-        printf("Data out of range %f\n",data);
+        ESP_LOGI(TAG, "Data out of range %f",data);
         a = b = 0xff;  /* use max value */
         break;
         }
@@ -166,7 +167,7 @@ void obd2ecu::FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint
     case 6:  /* 0 to 655.35:  (256*A+B)/100 */
       if (verbose && data > 655.35) 
         {
-        printf("Data out of range %f\n",data);
+        ESP_LOGI(TAG, "Data out of range %f",data);
         a = b = 0xff;  /* use max value */
         break;
         }
@@ -176,7 +177,7 @@ void obd2ecu::FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint
       break;
 			
     default:
-      if (verbose) printf("Unsupported format %d\n",format);
+      if (verbose) ESP_LOGI(TAG, "Unsupported format %d",format);
       a = b = 0;  /* default to empty data */
       break;
     }
@@ -212,7 +213,8 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
   uint8_t *p_d = p_frame->data.u8;  /* Incoming frame data from HUD / Dongle */
   uint8_t *r_d = r_frame.data.u8;  /* Response frame data being sent back to HUD / Dongle */
 
-  if (verbose) printf("Rcv %x: %x (%x %x %x %x %x %x %x %x)\n",
+  if (verbose)
+    ESP_LOGI(TAG, "Rcv %x: %x (%x %x %x %x %x %x %x %x)",
                       p_frame->MsgID,
                       p_frame->FIR.B.DLC,
                       p_d[0],p_d[1],p_d[2],p_d[3],p_d[4],p_d[5],p_d[6],p_d[7]);
@@ -224,10 +226,10 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
     {
     if ((p_frame->MsgID == RESPONSE_PID || p_frame->MsgID == RESPONSE_EXT_PID) && p_frame->data.u8[0] == 0x30)
       {
-      if (verbose) printf("flow control frame\n");
+      if (verbose) ESP_LOGI(TAG, "flow control frame");
 	return;  /* ignore it.  We just sleep for a bit instead */
       }
-    else printf("unknown can_id %x\n",p_frame->MsgID);
+    else ESP_LOGI(TAG, "unknown can_id %x",p_frame->MsgID);
       return;
     }
 
@@ -343,7 +345,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           break;
         case 0x1f:	/* Runtime since engine start - #secs since prog start */
           since_start = time(NULL)-start_time;
-          if (verbose) printf("Reporting running for %d seconds\n",(int)since_start);
+          if (verbose) ESP_LOGI(TAG, "Reporting running for %d seconds",(int)since_start);
           metric = since_start;
           FillFrame(&r_frame,reply,mapped_pid,metric,5);
           m_can->Write(&r_frame);
@@ -386,7 +388,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           m_can->Write(&r_frame);
           break;
         default:
-          printf("unknown capability requested %x\n",r_frame.data.u8[2]);
+          ESP_LOGI(TAG, "unknown capability requested %x",r_frame.data.u8[2]);
 	}
       break;
 
@@ -394,7 +396,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
       switch (p_frame->data.u8[2])
         {
         case 2:
-          if(verbose) printf("Requested VIN\n");
+          if(verbose) ESP_LOGI(TAG, "Requested VIN");
 #if PRIVACY
           break;  /* ignore request for privacy's sake. Doesn't seem to matter to Dongle. */
 #else
@@ -436,7 +438,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           break;
 #endif                        
         case 0x0a: /* ECU Name */
-          if (verbose) printf("ECU Name requested\n");
+          if (verbose) ESP_LOGI(TAG, "ECU Name requested");
           /* Perhaps a good place for arbitrary text, e.g. fleet asset #?  20 char avail. */
           r_frame.origin = NULL;
           r_frame.FIR.U = 0;
@@ -486,24 +488,24 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           break;
 
         default:
-          if (verbose) printf("unknown ID=9 frame %x\n",p_d[2]);
+          if (verbose) ESP_LOGI(TAG, "unknown ID=9 frame %x",p_d[2]);
         }
         break;
 
     case 0x03:  /* request DTCs */
-      if (verbose) printf("Request DTCs; ignored\n");
+      if (verbose) ESP_LOGI(TAG, "Request DTCs; ignored");
       break;
 
     case 0x07: /* pending DTCs */
-      if (verbose) printf("Pending DTCs; ignored\n");
+      if (verbose) ESP_LOGI(TAG, "Pending DTCs; ignored");
       break;
 				
     case 0x0a:  /* permanent / cleared DTCs */
-      if (verbose) printf("permanent / cleared DTCs; ignored\n");
+      if (verbose) ESP_LOGI(TAG, "permanent / cleared DTCs; ignored");
       break;
 				
     default:
-      if (verbose) printf("Unknown Mode %x\n",p_d[1]);
+      if (verbose) ESP_LOGI(TAG, "Unknown Mode %x",p_d[1]);
     }
 
   return;
