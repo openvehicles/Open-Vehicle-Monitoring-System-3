@@ -236,6 +236,16 @@ float OvmsConfig::GetParamValueFloat(std::string param, std::string instance)
   return atof(GetParamValue(param,instance).c_str());
   }
 
+bool OvmsConfig::GetParamValueBool(std::string param, std::string instance)
+  {
+  std::string value = GetParamValue(param,instance);
+  if (value.length() == 0) return false;
+  if (value.compare("yes")==0)
+    return true;
+  else
+    return false;
+  }
+
 OvmsConfigParam* OvmsConfig::CachedParam(std::string param)
   {
   if (!m_mounted) return NULL;

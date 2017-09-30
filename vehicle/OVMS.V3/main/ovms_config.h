@@ -83,6 +83,7 @@ class OvmsConfig
     std::string GetParamValue(std::string param, std::string instance);
     int GetParamValueInt(std::string param, std::string instance);
     float GetParamValueFloat(std::string param, std::string instance);
+    bool GetParamValueBool(std::string param, std::string instance);
     bool ProtectedPath(std::string path);
     OvmsConfigParam* CachedParam(std::string param);
 
