@@ -98,23 +98,23 @@ void obd2ecu::SetPowerMode(PowerMode powermode)
     }
   }
 
-void obd2ecu_create(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void obd2ecu_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (! MyPeripherals->m_obd2ecu)
     {
     std::string bus = cmd->GetName();
     MyPeripherals->m_obd2ecu = new obd2ecu("OBD2ECU", (canbus*)MyPcpApp.FindDeviceByName(bus));
-    writer->puts("OBDII ECU has been created");
+    writer->puts("OBDII ECU has been started");
     }
   }
 
-void obd2ecu_destroy(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void obd2ecu_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (MyPeripherals->m_obd2ecu)
     {
     delete MyPeripherals->m_obd2ecu;
     MyPeripherals->m_obd2ecu = NULL;
-    writer->puts("OBDII ECU has been destroyed");
+    writer->puts("OBDII ECU has been stopped");
     }
   }
   
@@ -519,9 +519,9 @@ obd2ecuInit::obd2ecuInit()
 
   OvmsCommand* cmd_obdii = MyCommandApp.RegisterCommand("obdii","OBDII framework",NULL, "", 1);
   OvmsCommand* cmd_ecu = cmd_obdii->RegisterCommand("ecu","OBDII ECU framework",NULL, "", 1);
-  OvmsCommand* cmd_create = cmd_ecu->RegisterCommand("create","Create an OBDII ECU",NULL, "", 1);
-  cmd_create->RegisterCommand("can1","Create an OBDII ECU on can1",obd2ecu_create, "", 0, 0);
-  cmd_create->RegisterCommand("can2","Create an OBDII ECU on can2",obd2ecu_create, "", 0, 0);
-  cmd_create->RegisterCommand("can3","Create an OBDII ECU on can3",obd2ecu_create, "", 0, 0);
-  cmd_ecu->RegisterCommand("destroy","Destroy the OBDII ECU",obd2ecu_destroy, "", 0, 0);
+  OvmsCommand* cmd_start = cmd_ecu->RegisterCommand("start","Start an OBDII ECU",NULL, "", 1);
+  cmd_start->RegisterCommand("can1","start an OBDII ECU on can1",obd2ecu_start, "", 0, 0);
+  cmd_start->RegisterCommand("can2","Start an OBDII ECU on can2",obd2ecu_start, "", 0, 0);
+  cmd_start->RegisterCommand("can3","Start an OBDII ECU on can3",obd2ecu_start, "", 0, 0);
+  cmd_ecu->RegisterCommand("stop","Stop the OBDII ECU",obd2ecu_stop, "", 0, 0);
   }
