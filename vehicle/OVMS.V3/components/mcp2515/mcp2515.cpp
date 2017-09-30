@@ -120,6 +120,7 @@ mcp2515::mcp2515(std::string name, spi* spibus, spi_nodma_host_device_t host, in
   gpio_isr_handler_add((gpio_num_t)m_intpin, MCP2515_isr, (void*)this);
 
   // Initialise in powered down mode
+  m_powermode = Off; // Stop an event being raised
   SetPowerMode(Off);
   }
 
@@ -139,11 +140,11 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
 
   // RESET commmand
   m_spibus->spi_cmd(m_spi, buf, 0, 1, 0b11000000);
-  vTaskDelay(5 / portTICK_PERIOD_MS);
+  vTaskDelay(50 / portTICK_PERIOD_MS);
 
   // Set CONFIG mode (abort transmisions, one-shot mode, clkout disabled)
   m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x0f, 0b10011000);
-  vTaskDelay(5 / portTICK_PERIOD_MS);
+  vTaskDelay(50 / portTICK_PERIOD_MS);
 
   // Rx Buffer 0 control (receive all and enable buffer 1 rollover)
   m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x60, 0b01100100);
@@ -151,7 +152,7 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   // CANINTE (interrupt enable), all interrupts
   m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x2b, 0b11111111);
 
-  // BFPCTRL – RXnBF PIN CONTROL AND STATUS
+  // BFPCTRL RXnBF PIN CONTROL AND STATUS
   m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x0c,  0b00001100);
 
   // Bus speed
@@ -181,6 +182,9 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   // Set NORMAL mode
   m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x0f, 0x00);
 
+  // And record that we are powered on
+  pcp::SetPowerMode(On);
+
   return ESP_OK;
   }
 
@@ -192,11 +196,14 @@ esp_err_t mcp2515::Stop()
   m_spibus->spi_cmd(m_spi, buf, 0, 1, 0b11000000);
   vTaskDelay(5 / portTICK_PERIOD_MS);
 
-  // BFPCTRL – RXnBF PIN CONTROL AND STATUS
-  m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x0c, 0b00000000);
+  // BFPCTRL RXnBF PIN CONTROL AND STATUS
+  m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x0c, 0b00111100);
 
   // Set SLEEP mode
   m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x0f, 0x30);
+
+  // And record that we are powered down
+  pcp::SetPowerMode(Off);
 
   return ESP_OK;
   }
@@ -247,14 +254,13 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
 
 void mcp2515::SetPowerMode(PowerMode powermode)
   {
-  m_powermode = powermode;
+  pcp::SetPowerMode(powermode);
   switch (powermode)
     {
     case  On:
       if (m_mode != CAN_MODE_OFF)
         {
         Start(m_mode, m_speed);
-        Start(m_mode, m_speed); // Kludgy, but for the moment works
         }
       break;
     case Sleep:

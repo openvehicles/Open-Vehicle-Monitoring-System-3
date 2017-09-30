@@ -118,7 +118,10 @@ pcp::~pcp()
 
 void pcp::SetPowerMode(PowerMode powermode)
   {
-  m_powermode = powermode;
+  if (m_powermode != powermode)
+    {
+    m_powermode = powermode;
+    }
   }
 
 PowerMode pcp::GetPowerMode()

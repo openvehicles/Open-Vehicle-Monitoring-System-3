@@ -124,6 +124,8 @@ void Housekeeping::init()
   ESP_LOGI(TAG, "Starting PERIPHERALS...");
   MyPeripherals = new Peripherals();
 
+  MyPeripherals->m_esp32can->SetPowerMode(Off);
+
   ESP_LOGI(TAG, "Starting USB console...");
   MyUsbConsole = new ConsoleAsync();
 

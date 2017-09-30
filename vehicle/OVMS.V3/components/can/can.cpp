@@ -58,10 +58,6 @@ void can_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     writer->puts("Error: Cannot find named CAN bus");
     return;
     }
-  if (sbus->GetPowerMode() != On)
-    {
-    sbus->SetPowerMode(On);
-    }
 
   switch (baud)
     {
@@ -99,7 +95,6 @@ void can_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     }
   sbus->Stop();
   writer->printf("Can bus %s stapped\n",bus.c_str());
-  sbus->SetPowerMode(Off);
   }
 
 void can_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)

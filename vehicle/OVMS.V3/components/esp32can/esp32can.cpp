@@ -116,7 +116,10 @@ esp32can::esp32can(std::string name, int txpin, int rxpin)
   // Install CAN ISR
   esp_intr_alloc(ETS_CAN_INTR_SOURCE,0,ESP32CAN_isr,this,NULL);
 
-  // Initialise in powered down mode
+  // Due to startup order, we can't talk to MAX7317 during
+  // initialisation. So, we'll just enter reset mode for the
+  // on-chip controller, and let housekeeping power us down
+  // after startup.
   m_powermode = Off;
   MODULE_ESP32CAN->MOD.B.RM = 1;
   }
@@ -206,6 +209,9 @@ esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
   // Showtime. Release Reset Mode.
   MODULE_ESP32CAN->MOD.B.RM = 0;
 
+  // And record that we are powered on
+  pcp::SetPowerMode(On);
+
   return ESP_OK;
   }
 
@@ -216,6 +222,9 @@ esp_err_t esp32can::Stop()
 
   // Enter reset mode
   MODULE_ESP32CAN->MOD.B.RM = 1;
+
+  // And record that we are powered down
+  pcp::SetPowerMode(Off);
 
   return ESP_OK;
   }
@@ -253,7 +262,7 @@ esp_err_t esp32can::Write(const CAN_frame_t* p_frame)
 
 void esp32can::SetPowerMode(PowerMode powermode)
   {
-  m_powermode = powermode;
+  pcp::SetPowerMode(powermode);
   switch (powermode)
     {
     case On:
