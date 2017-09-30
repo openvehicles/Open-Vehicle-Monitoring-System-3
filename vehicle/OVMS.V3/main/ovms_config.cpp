@@ -246,6 +246,13 @@ bool OvmsConfig::GetParamValueBool(std::string param, std::string instance)
     return false;
   }
 
+bool OvmsConfig::IsDefined(std::string param, std::string instance)
+  {
+  OvmsConfigParam *p = CachedParam(param);
+  if (p == NULL) return false;
+  return p->IsDefined(instance);
+  }
+
 OvmsConfigParam* OvmsConfig::CachedParam(std::string param)
   {
   if (!m_mounted) return NULL;
@@ -344,6 +351,15 @@ std::string OvmsConfigParam::GetValue(std::string instance)
     return std::string("");
   else
     return k->second;
+  }
+
+bool OvmsConfigParam::IsDefined(std::string instance)
+  {
+  auto k = m_map.find(instance);
+  if (k == m_map.end())
+    return false;
+  else
+    return true;
   }
 
 bool OvmsConfigParam::Writable()
