@@ -227,7 +227,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
   else if (p_frame->FIR.B.FF == CAN_frame_ext) reply = RESPONSE_EXT_PID;
   else /* check for flow control frames - they're received on the response MsgID minus 8 */
     {
-    if ((p_frame->MsgID == RESPONSE_PID-8 || p_frame->MsgID == RESPONSE_EXT_PID-8) && p_frame->data.u8[0] == 0x30)
+    if ((p_frame->MsgID == FLOWCONTROL_PID || p_frame->MsgID == FLOWCONTROL_EXT_PID) && p_frame->data.u8[0] == 0x30)
       {
       if (verbose) ESP_LOGI(TAG, "flow control frame");
 	return;  /* ignore it.  We just sleep for a bit instead */
