@@ -34,6 +34,7 @@ static const char *TAG = "obd2ecu";
 
 #include <string.h>
 #include "obd2ecu.h"
+#include "ovms_config.h"
 #include "ovms_command.h"
 #include "ovms_peripherals.h"
 #include "ovms_metrics.h"
@@ -59,15 +60,15 @@ obd2ecu::obd2ecu(std::string name, canbus* can)
   { 
   m_can = can;
   xTaskCreatePinnedToCore(OBD2ECU_task, "OBDII ECU Task", 4096, (void*)this, 5, &m_task, 1);
-  
+ 
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
-    
+
   m_can->Start(CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   m_can->SetPowerMode(On);
-  
+
   m_starttime = time(NULL);
-  m_private = PRIVACY;      /* default privacy mode (e.g. hiding VIN)  */
-    
+  m_private = MyConfig.GetParamValueBool("obd2ecu","private");
+
   MyCan.RegisterListener(m_rxqueue);
   }
 
@@ -524,4 +525,6 @@ obd2ecuInit::obd2ecuInit()
   cmd_start->RegisterCommand("can2","Start an OBDII ECU on can2",obd2ecu_start, "", 0, 0);
   cmd_start->RegisterCommand("can3","Start an OBDII ECU on can3",obd2ecu_start, "", 0, 0);
   cmd_ecu->RegisterCommand("stop","Stop the OBDII ECU",obd2ecu_stop, "", 0, 0);
+
+  MyConfig.RegisterParam("obd2ecu", "OBD2ECU configuration", true, true);
   }

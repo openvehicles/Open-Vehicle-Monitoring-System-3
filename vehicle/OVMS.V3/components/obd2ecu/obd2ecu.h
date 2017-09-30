@@ -70,7 +70,4 @@ class obd2ecu : public pcp
   
 #define verbose 1
 
-#define PRIVACY 1  /* Ignore return dummy info for sensitive items */  
-  
-  
 #endif //#ifndef __OBD2ECU_H__
