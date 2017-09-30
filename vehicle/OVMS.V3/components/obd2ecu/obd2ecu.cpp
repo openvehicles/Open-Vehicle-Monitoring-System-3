@@ -403,14 +403,14 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           
           if(m_private) break;  /* ignore request for privacy's sake. Doesn't seem to matter to Dongle. */
 
-          memcpy(vin_string,StandardMetrics.ms_v_vin->AsString(),17);
+          memcpy(vin_string,StandardMetrics.ms_v_vin->AsString().c_str(),17);
           vin_string[17] = '\0';  /* force null termination, just because */
             
           r_frame.origin = NULL;
           r_frame.FIR.U = 0;
           r_frame.FIR.B.DLC = 8;
           r_frame.FIR.B.FF = CAN_frame_format_t (reply != RESPONSE_PID);
-          r_frame.MsgID = reply;					
+          r_frame.MsgID = reply;
           r_d[0] = 0x10;  /* not sure what this is for */
           r_d[1] = 0x14;  /* overall length, starting with next byte, not including pad */
           r_d[2] = 0x49;  /* Mode 9 reply */
