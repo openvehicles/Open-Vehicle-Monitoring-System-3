@@ -32,6 +32,7 @@
 // static const char *TAG = "buffer";
 
 #include "ovms_buffer.h"
+#include <sys/socket.h>
 
 OvmsBuffer::OvmsBuffer(size_t size)
   {
@@ -178,5 +179,42 @@ std::string OvmsBuffer::ReadLine()
     }
 
   return std::string((char*)result,hl);
+  }
+
+int OvmsBuffer::PollSocket(int sock, long timeoutms)
+  {
+  fd_set fds;
+
+  if (sock < 0) return -1;
+
+  // ESP_LOGI(TAG, "Polling Socket %d", sock);
+  FD_ZERO(&fds);
+  FD_SET(sock,&fds);
+
+  struct timeval timeout;
+  timeout.tv_sec = timeoutms/1000;
+  timeout.tv_usec = (timeoutms%1000)*1000;
+
+  int result = select(FD_SETSIZE, &fds, 0, 0, &timeout);
+  // ESP_LOGI(TAG, "Polling Socket select result %d",result);
+  if (result <= 0) return 0;
+
+  // We have some data ready to read
+  size_t avail = FreeSpace();
+  if (avail==0) return 0;
+  // ESP_LOGI(TAG,"Polling Socket allocating %d bytes",avail);
+  uint8_t *buf = new uint8_t[avail];
+  size_t n = read(sock, buf, avail);
+  // ESP_LOGI(TAG,"Polling Socket read %d bytes",n);
+  if (n == 0)
+    {
+    n = -1;
+    }
+  else if (n > 0)
+    {
+    Push(buf,n);
+    }
+  delete [] buf;
+  return n;
   }
 

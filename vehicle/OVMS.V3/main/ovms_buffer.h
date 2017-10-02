@@ -58,6 +58,9 @@ class OvmsBuffer
     int HasLine();
     std::string ReadLine();
 
+  public:
+    int PollSocket(int sock, long timeoutms);
+
   protected:
     uint8_t *m_buffer;
     int m_head;
