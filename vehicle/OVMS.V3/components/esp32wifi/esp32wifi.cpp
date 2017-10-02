@@ -104,6 +104,19 @@ void wifi_mode_off(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   me->StopStation();
   }
 
+void wifi_scan(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  esp32wifi *me = MyPeripherals->m_esp32wifi;
+  if (me == NULL)
+    {
+    writer->puts("Error: wifi peripheral could not be found");
+    return;
+    }
+
+  writer->puts("Starting wifi scan...");
+  me->Scan();
+  }
+
 class esp32wifiInit
     {
     public: esp32wifiInit();
@@ -114,6 +127,8 @@ esp32wifiInit::esp32wifiInit()
   ESP_LOGI(TAG, "Initialising ESP32WIFI (8000)");
 
   OvmsCommand* cmd_wifi = MyCommandApp.RegisterCommand("wifi","WIFI framework",NULL, "", 1);
+  cmd_wifi->RegisterCommand("scan","Perform a wifi scan",wifi_scan, "", 0, 0);
+
   OvmsCommand* cmd_mode = cmd_wifi->RegisterCommand("mode","WIFI mode framework",NULL, "", 1);
   cmd_mode->RegisterCommand("client","Connect to a WIFI network as a client",wifi_mode_client, "<ssid>", 0, 1);
   cmd_mode->RegisterCommand("ap","Acts as a WIFI Access Point",wifi_mode_ap, "<ssid>", 1, 1);
@@ -131,6 +146,7 @@ esp32wifi::esp32wifi(std::string name)
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.gotip",std::bind(&esp32wifi::EventWifiGotIp, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.wifi.scan.done",std::bind(&esp32wifi::EventWifiScanDone, this, _1, _2));
   }
 
 esp32wifi::~esp32wifi()
@@ -219,6 +235,30 @@ void esp32wifi::StopStation()
     }
   }
 
+void esp32wifi::Scan()
+  {
+  if (m_powermode != On)
+    {
+    SetPowerMode(On);
+    }
+  if (m_mode != ESP32WIFI_MODE_CLIENT)
+    {
+    m_wifi_init_cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&m_wifi_init_cfg));
+    ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    ESP_ERROR_CHECK(esp_wifi_start());
+    m_mode = ESP32WIFI_MODE_SCAN;
+    }
+
+  wifi_scan_config_t scanConf;
+  scanConf.ssid = NULL;
+  scanConf.bssid = NULL;
+  scanConf.channel = 0;
+  scanConf.show_hidden = true;
+  ESP_ERROR_CHECK(esp_wifi_scan_start(&scanConf, false));
+  }
+
 esp32wifi_mode_t esp32wifi::GetMode()
   {
   return m_mode;
@@ -230,4 +270,44 @@ void esp32wifi::EventWifiGotIp(std::string event, void* data)
   m_ip_info = info->got_ip.ip_info;
   ESP_LOGI(TAG, "Launching telnet server");
   AddChild(new TelnetServer(this));
+  }
+
+void esp32wifi::EventWifiScanDone(std::string event, void* data)
+  {
+  uint16_t apCount = 0;
+  esp_wifi_scan_get_ap_num(&apCount);
+  wifi_ap_record_t *list = (wifi_ap_record_t *)malloc(sizeof(wifi_ap_record_t) * apCount);
+  ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&apCount, list));
+  ESP_LOGI(TAG, "SSID scan results...");
+  for (int k=0; k<apCount; k++)
+    {
+    std::string authmode;
+    switch(list[k].authmode)
+      {
+      case WIFI_AUTH_OPEN:
+        authmode = "WIFI_AUTH_OPEN";
+        break;
+      case WIFI_AUTH_WEP:
+        authmode = "WIFI_AUTH_WEP";
+        break;
+      case WIFI_AUTH_WPA_PSK:
+        authmode = "WIFI_AUTH_WPA_PSK";
+        break;
+      case WIFI_AUTH_WPA2_PSK:
+        authmode = "WIFI_AUTH_WPA2_PSK";
+        break;
+      case WIFI_AUTH_WPA_WPA2_PSK:
+        authmode = "WIFI_AUTH_WPA_WPA2_PSK";
+        break;
+      default:
+        authmode = "Unknown";
+        break;
+      }
+    ESP_LOGI(TAG, "Found %s (RSSI %d, AUTH %s)",list[k].ssid, list[k].rssi, authmode.c_str());
+    }
+  ESP_LOGI(TAG, "SSID scan completed");
+  if (m_mode == ESP32WIFI_MODE_SCAN)
+    {
+    StopStation();
+    }
   }

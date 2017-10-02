@@ -43,6 +43,7 @@ typedef enum {
     ESP32WIFI_MODE_OFF = 0,   // Modem is off
     ESP32WIFI_MODE_CLIENT,    // Client mode
     ESP32WIFI_MODE_AP,        // Access point mode
+    ESP32WIFI_MODE_SCAN,      // SCAN mode
     ESP32WIFI_MODE_MAX
 } esp32wifi_mode_t;
 
@@ -59,10 +60,12 @@ class esp32wifi : public pcp, public Parent
     void StartClientMode(std::string ssid, std::string password);
     void StartAccessPointMode(std::string ssid, std::string password);
     void StopStation();
+    void Scan();
     esp32wifi_mode_t GetMode();
 
   public:
     void EventWifiGotIp(std::string event, void* data);
+    void EventWifiScanDone(std::string event, void* data);
 
   protected:
     esp32wifi_mode_t m_mode;
