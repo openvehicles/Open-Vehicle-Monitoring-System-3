@@ -35,6 +35,7 @@ static const char *TAG = "ota";
 #include <stdio.h>
 #include <sys/stat.h>
 #include <string>
+#include <string.h>
 #include <esp_system.h>
 #include <esp_ota_ops.h>
 #include "ovms_ota.h"
@@ -42,6 +43,13 @@ static const char *TAG = "ota";
 #include "ovms_config.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
+#include "ovms_buffer.h"
+
+#include "lwip/err.h"
+#include "lwip/sockets.h"
+#include "lwip/sys.h"
+#include "lwip/netdb.h"
+#include "lwip/dns.h"
 
 OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
 
@@ -66,10 +74,8 @@ void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     }
   }
 
-void ota_flashvfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void ota_flash_vfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  std::string tn = cmd->GetName();
-
   const esp_partition_t *running = esp_ota_get_running_partition();
   const esp_partition_t *target = esp_ota_get_next_update_partition(running);
 
@@ -159,6 +165,141 @@ void ota_flashvfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
                  ds.st_size,argv[0],target->label);
   }
 
+void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string url;
+  const esp_partition_t *running = esp_ota_get_running_partition();
+  const esp_partition_t *target = esp_ota_get_next_update_partition(running);
+
+  if (running==NULL)
+    {
+    writer->puts("Error: Current running image cannot be determined - aborting");
+    return;
+    }
+  writer->printf("Current running partition is: %s\n",running->label);
+
+  if (target==NULL)
+    {
+    writer->puts("Error: Target partition cannot be determined - aborting");
+    return;
+    }
+  writer->printf("Target partition is: %s\n",target->label);
+
+  if (running == target)
+    {
+    writer->puts("Error: Cannot flash to running image partition");
+    return;
+    }
+
+  // URL
+  if (argc == 0)
+    {
+    // Automatically build the URL based on firmware
+    url = "api.openvehicles.com/firmware/ota/v3/";
+    url.append(CONFIG_OVMS_VERSION_TAG);
+    url.append("/ovms3.bin");
+    }
+  writer->printf("Download firmware from %s to %s\n",url.c_str(),target->label);
+
+  // Server name
+  size_t delim = url.find('/');
+  if (delim==std::string::npos)
+    {
+    writer->puts("Error: HTTP should be server/path");
+    return;
+    }
+  std::string server = url.substr(0,delim);
+  std::string path = url.substr(delim);
+
+  // DNS lookup the server
+  struct addrinfo hints;
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+  struct addrinfo *res;
+  struct in_addr *addr;
+  int err = getaddrinfo(server.c_str(), "80", &hints, &res);
+  if ((err != 0) || (res == NULL))
+    {
+    writer->printf("Error: DNS lookup on %s failed err=%d\n",server.c_str(),err);
+    return;
+    }
+  addr = &((struct sockaddr_in *)res->ai_addr)->sin_addr;
+  writer->printf("Server %s is at %s\n",server.c_str(),inet_ntoa(*addr));
+
+  // Connect to the server...
+  int sock = socket(res->ai_family, res->ai_socktype, 0);
+  if (sock < 0)
+    {
+    writer->puts("Error: Failed to allocate socket");
+    freeaddrinfo(res);
+    return;
+    }
+
+  if (connect(sock, res->ai_addr, res->ai_addrlen) != 0)
+    {
+    writer->printf("Error: Failed to connect server %s (error: %d)\n",server.c_str(),errno);
+    close(sock);
+    freeaddrinfo(res);
+    return;
+    }
+
+  writer->printf("Connected to OTA update server %s\n",server.c_str());
+  freeaddrinfo(res);
+
+  // Now, we need to send the HTTP request...
+  writer->printf("Server is %s(%d), path is %s(%d)\n",server.c_str(),server.length(),path.c_str(),path.length());
+  char *req = new char[server.length() + path.length() + 200];
+  strcat(req,"GET ");
+  strcat(req,path.c_str());
+  strcat(req," HTTP/1.0\r\nHost: ");
+  strcat(req,server.c_str());
+  strcat(req,"\r\nUser-Agent: ovms/3\r\n\r\n");
+  writer->puts("Sending request to server...");
+
+  if (write(sock, req, strlen(req)) < 0)
+    {
+    writer->puts("Error: Failure sending http request to server");
+    delete [] req;
+    close(sock);
+    return;
+    }
+  delete [] req;
+  writer->puts("Sent request to server");
+
+  // Now, retrieve the http headers
+  OvmsBuffer lb(4096);
+  bool inheaders = true;
+  writer->puts("Reading headers...");
+  while((inheaders)&&(lb.PollSocket(sock, 10000) >= 0))
+    {
+    writer->printf("Now buffered %d bytes",lb.UsedSpace());
+    int k = lb.HasLine();
+    while ((inheaders)&&(k >= 0))
+      {
+      if (k == 0)
+        {
+        inheaders = 0;
+        }
+      else
+        {
+        writer->printf("Got response %s\n",lb.ReadLine().c_str());
+        k = lb.HasLine();
+        }
+      }
+    }
+  if (inheaders)
+    {
+    writer->puts("Error: Premature end of server response");
+    close(sock);
+    return;
+    }
+
+  // OK, Now let's process the response body...
+  writer->puts("Processing response body...");
+
+  close(sock);
+  }
+
 void ota_boot(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   std::string tn = cmd->GetName();
@@ -218,7 +359,8 @@ OvmsOTA::OvmsOTA()
   cmd_ota->RegisterCommand("status","Show OTA status",ota_status,"",0,0);
 
   OvmsCommand* cmd_otaflash = cmd_ota->RegisterCommand("flash","OTA flash",NULL,"<$C>",1,1);
-  cmd_otaflash->RegisterCommand("vfs","OTA flash vfs",ota_flashvfs,"<file>",1,1);
+  cmd_otaflash->RegisterCommand("vfs","OTA flash vfs",ota_flash_vfs,"<file>",1,1);
+  cmd_otaflash->RegisterCommand("http","OTA flash auto",ota_flash_http,"<url>",0,1);
 
   OvmsCommand* cmd_otaboot = cmd_ota->RegisterCommand("boot","OTA boot",NULL,"<$C>",1,1);
   cmd_otaboot->RegisterCommand("factory","Boot from factory image",ota_boot, "", 0, 0);
