@@ -48,7 +48,7 @@ void wifi_mode_client(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
     return;
     }
 
-  if (argc != 1)
+  if (argc == 0)
     {
     writer->puts("Error: Promiscous client mode not currently supported; please specify SSID");
     return;
@@ -61,8 +61,31 @@ void wifi_mode_client(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
     return;
     }
 
-  writer->puts("Starting WIFI as a client...");
-  me->StartClientMode(argv[0],password);
+  if (argc == 1)
+    {
+    writer->printf("Starting WIFI as a client to %s...\n",argv[0]);
+    me->StartClientMode(argv[0],password);
+    }
+  else
+    {
+    uint8_t bssid[6];
+    const char *p = argv[1];
+    if (strlen(p)!=17)
+      {
+      writer->puts("Error: If specified, bssid must be in format aa:aa:aa:aa:aa:aa");
+      return;
+      }
+    for (int k=0;k<6;k++)
+      {
+      char x[3] = { p[0], p[1], 0 };
+      p += 3;
+      bssid[k] = (uint8_t)strtol(x,NULL,16);
+      }
+    writer->printf("Starting WIFI as a client to %s (%02x:%02x:%02x:%02x:%02x:%02x)...\n",
+      argv[0],
+      bssid[0],bssid[1],bssid[2],bssid[3],bssid[4],bssid[5]);
+    me->StartClientMode(argv[0],password,bssid);
+    }
   }
 
 void wifi_mode_ap(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -130,7 +153,7 @@ esp32wifiInit::esp32wifiInit()
   cmd_wifi->RegisterCommand("scan","Perform a wifi scan",wifi_scan, "", 0, 0);
 
   OvmsCommand* cmd_mode = cmd_wifi->RegisterCommand("mode","WIFI mode framework",NULL, "", 1);
-  cmd_mode->RegisterCommand("client","Connect to a WIFI network as a client",wifi_mode_client, "<ssid>", 0, 1);
+  cmd_mode->RegisterCommand("client","Connect to a WIFI network as a client",wifi_mode_client, "<ssid> <bssid>", 0, 2);
   cmd_mode->RegisterCommand("ap","Acts as a WIFI Access Point",wifi_mode_ap, "<ssid>", 1, 1);
   cmd_mode->RegisterCommand("off","Turn off wifi networking",wifi_mode_off, "", 0, 0);
   }
@@ -174,7 +197,7 @@ void esp32wifi::SetPowerMode(PowerMode powermode)
   m_powermode = powermode;
   }
 
-void esp32wifi::StartClientMode(std::string ssid, std::string password)
+void esp32wifi::StartClientMode(std::string ssid, std::string password, uint8_t* bssid)
   {
   m_mode = ESP32WIFI_MODE_CLIENT;
 
@@ -190,7 +213,15 @@ void esp32wifi::StartClientMode(std::string ssid, std::string password)
   memset(&m_wifi_apsta_cfg,0,sizeof(m_wifi_apsta_cfg));
   strcpy((char*)m_wifi_apsta_cfg.sta.ssid, ssid.c_str());
   strcpy((char*)m_wifi_apsta_cfg.sta.password, password.c_str());
-  m_wifi_apsta_cfg.sta.bssid_set = 0;
+  if (bssid == NULL)
+    {
+    m_wifi_apsta_cfg.sta.bssid_set = 0;
+    }
+  else
+    {
+    m_wifi_apsta_cfg.sta.bssid_set = 1;
+    memcpy(&m_wifi_apsta_cfg.sta.bssid,bssid,6);
+    }
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_apsta_cfg));
   ESP_ERROR_CHECK(esp_wifi_start());
   ESP_ERROR_CHECK(esp_wifi_connect());
@@ -303,7 +334,11 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
         authmode = "Unknown";
         break;
       }
-    ESP_LOGI(TAG, "Found %s (RSSI %d, AUTH %s)",list[k].ssid, list[k].rssi, authmode.c_str());
+    ESP_LOGI(TAG, "Found %s %02x:%02x:%02x:%02x:%02x:%02x (CHANNEL %d, RSSI %d, AUTH %s)",
+      list[k].ssid,
+      list[k].bssid[0], list[k].bssid[1], list[k].bssid[2],
+      list[k].bssid[3], list[k].bssid[4], list[k].bssid[5],
+      list[k].primary, list[k].rssi, authmode.c_str());
     }
   ESP_LOGI(TAG, "SSID scan completed");
   if (m_mode == ESP32WIFI_MODE_SCAN)

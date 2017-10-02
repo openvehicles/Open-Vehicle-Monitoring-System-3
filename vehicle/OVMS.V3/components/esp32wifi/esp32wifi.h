@@ -57,7 +57,7 @@ class esp32wifi : public pcp, public Parent
     void SetPowerMode(PowerMode powermode);
 
   public:
-    void StartClientMode(std::string ssid, std::string password);
+    void StartClientMode(std::string ssid, std::string password, uint8_t* bssid=NULL);
     void StartAccessPointMode(std::string ssid, std::string password);
     void StopStation();
     void Scan();
