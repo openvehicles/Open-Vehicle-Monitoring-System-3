@@ -237,6 +237,16 @@ void OvmsMetric::SetModified()
   MyMetrics.NotifyModified(this);
   }
 
+bool OvmsMetric::IsStale()
+  {
+  return m_stale;
+  }
+
+void OvmsMetric::SetStale(bool stale)
+  {
+  m_stale = stale;
+  }
+
 bool OvmsMetric::IsModified(size_t modifier)
   {
   return m_modified[modifier];

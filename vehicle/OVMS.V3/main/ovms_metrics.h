@@ -53,6 +53,8 @@ class OvmsMetric
     virtual std::string AsString();
     virtual void SetValue(std::string value);
     virtual time_t LastModified();
+    virtual bool IsStale();
+    virtual void SetStale(bool stale);
 
   protected:
     virtual void SetModified();
@@ -62,6 +64,7 @@ class OvmsMetric
   public:
     std::string m_name;
     bool m_defined;
+    bool m_stale;
     std::bitset<METRICS_MAX_MODIFIERS> m_modified;
     time_t m_lastmodified;
   };
