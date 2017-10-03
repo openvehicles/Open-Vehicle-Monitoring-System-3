@@ -288,14 +288,25 @@ int OvmsMetricInt::AsInt()
 
 void OvmsMetricInt::SetValue(int value)
   {
-  m_value = value;
-  SetModified();
+  if (m_value != value)
+    {
+    m_value = value;
+    SetModified();
+    }
+  else
+    m_lastmodified = time(0);
   }
 
 void OvmsMetricInt::SetValue(std::string value)
   {
-  m_value = atoi(value.c_str());
-  SetModified();
+  int nvalue = atoi(value.c_str());
+  if (m_value != nvalue)
+    {
+    m_value = nvalue;
+    SetModified();
+    }
+  else
+    m_lastmodified = time(0);
   }
 
 OvmsMetricBool::OvmsMetricBool(std::string name)
@@ -330,17 +341,29 @@ int OvmsMetricBool::AsBool()
 
 void OvmsMetricBool::SetValue(bool value)
   {
-  m_value = value;
-  SetModified();
+  if (m_value != value)
+    {
+    m_value = value;
+    SetModified();
+    }
+  else
+    m_lastmodified = time(0);
   }
 
 void OvmsMetricBool::SetValue(std::string value)
   {
+  bool nvalue;
   if ((value == "yes")||(value == "1")||(value == "true"))
-    m_value = true;
+    nvalue = true;
   else
-    m_value = false;
-  SetModified();
+    nvalue = false;
+  if (m_value != nvalue)
+    {
+    m_value = nvalue;
+    SetModified();
+    }
+  else
+    m_lastmodified = time(0);
   }
 
 OvmsMetricFloat::OvmsMetricFloat(std::string name)
@@ -375,14 +398,25 @@ float OvmsMetricFloat::AsFloat()
 
 void OvmsMetricFloat::SetValue(float value)
   {
-  m_value = value;
-  SetModified();
+  if (m_value != value)
+    {
+    m_value = value;
+    SetModified();
+    }
+  else
+    m_lastmodified = time(0);
   }
 
 void OvmsMetricFloat::SetValue(std::string value)
   {
-  m_value = atof(value.c_str());
-  SetModified();
+  float nvalue = atof(value.c_str());
+  if (m_value != nvalue)
+    {
+    m_value = nvalue;
+    SetModified();
+    }
+  else
+    m_lastmodified = time(0);
   }
 
 OvmsMetricString::OvmsMetricString(std::string name)
