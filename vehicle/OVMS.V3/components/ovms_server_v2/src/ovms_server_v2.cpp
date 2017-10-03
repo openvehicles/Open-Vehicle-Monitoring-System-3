@@ -349,6 +349,56 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
 
 void OvmsServerV2::TransmitMsgTPMS(bool always)
   {
+  bool modified = 
+    StandardMetrics.ms_v_tpms_fl_t->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_tpms_fr_t->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_tpms_rl_t->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_tpms_rr_t->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_tpms_fl_p->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_tpms_fr_p->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_tpms_rl_p->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_tpms_rr_p->IsModifiedAndClear(MyOvmsServerV2Modifier);
+
+  // Quick exit if nothing modified
+  if ((!always)&&(!modified)) return;
+
+  char* buffer = new char[512];
+  buffer[0] = 0;
+  strcat(buffer, "MP-0 W");
+  strcat(buffer, StandardMetrics.ms_v_tpms_fr_p->AsString().c_str());
+  strcat(buffer, ",");
+  strcat(buffer, StandardMetrics.ms_v_tpms_fr_t->AsString().c_str());
+  strcat(buffer, ",");
+  strcat(buffer, StandardMetrics.ms_v_tpms_rr_p->AsString().c_str());
+  strcat(buffer, ",");
+  strcat(buffer, StandardMetrics.ms_v_tpms_rr_t->AsString().c_str());
+  strcat(buffer, ",");
+  strcat(buffer, StandardMetrics.ms_v_tpms_fl_p->AsString().c_str());
+  strcat(buffer, ",");
+  strcat(buffer, StandardMetrics.ms_v_tpms_fl_t->AsString().c_str());
+  strcat(buffer, ",");
+  strcat(buffer, StandardMetrics.ms_v_tpms_rl_p->AsString().c_str());
+  strcat(buffer, ",");
+  strcat(buffer, StandardMetrics.ms_v_tpms_rl_t->AsString().c_str());
+
+  bool stale =
+    StandardMetrics.ms_v_tpms_fl_t->IsStale() ||
+    StandardMetrics.ms_v_tpms_fr_t->IsStale() ||
+    StandardMetrics.ms_v_tpms_rl_t->IsStale() ||
+    StandardMetrics.ms_v_tpms_rr_t->IsStale() ||
+    StandardMetrics.ms_v_tpms_fl_p->IsStale() ||
+    StandardMetrics.ms_v_tpms_fr_p->IsStale() ||
+    StandardMetrics.ms_v_tpms_rl_p->IsStale() ||
+    StandardMetrics.ms_v_tpms_rr_p->IsStale();
+
+  strcat(buffer, ",");
+  if (stale)
+    strcat(buffer,"0");
+  else
+    strcat(buffer,"1");
+
+  Transmit(buffer);
+  delete [] buffer;
   }
 
 void OvmsServerV2::TransmitMsgFirmware(bool always)
