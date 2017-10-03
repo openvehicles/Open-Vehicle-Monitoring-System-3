@@ -37,6 +37,7 @@
 #include <string>
 #include <bitset>
 #include <stdint.h>
+#include <time.h>
 
 #define METRICS_MAX_MODIFIERS 32
 
@@ -51,6 +52,7 @@ class OvmsMetric
   public:
     virtual std::string AsString();
     virtual void SetValue(std::string value);
+    virtual time_t LastModified();
 
   protected:
     virtual void SetModified();
@@ -61,6 +63,7 @@ class OvmsMetric
     std::string m_name;
     bool m_defined;
     std::bitset<METRICS_MAX_MODIFIERS> m_modified;
+    time_t m_lastmodified;
   };
 
 class OvmsMetricBool : public OvmsMetric

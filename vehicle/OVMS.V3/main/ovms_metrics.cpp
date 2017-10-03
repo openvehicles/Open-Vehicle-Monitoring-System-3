@@ -207,6 +207,7 @@ OvmsMetric::OvmsMetric(std::string name)
   m_defined = false;
   m_modified.reset();
   m_name = name;
+  m_lastmodified = 0;
   MyMetrics.RegisterMetric(this, name);
   }
 
@@ -223,10 +224,16 @@ void OvmsMetric::SetValue(std::string value)
   {
   }
 
+time_t OvmsMetric::LastModified()
+  {
+  return m_lastmodified;
+  }
+
 void OvmsMetric::SetModified()
   {
   m_defined = true;
   m_modified.set();
+  m_lastmodified = time(0);
   MyMetrics.NotifyModified(this);
   }
 
