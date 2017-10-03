@@ -59,8 +59,26 @@ class OvmsServerV2 : public OvmsServer
     void Transmit(std::string message);
 
   protected:
-    void PollForData(long timeoutms);
     std::string ReadLine();
+
+  protected:
+    void TransmitAndCRC(bool always, uint16_t &crc, char *msg);
+    void TransmitMsgStat();
+    void TransmitMsgGPS();
+    void TransmitMsgTPMS();
+    void TransmitMsgFirmware();
+    void TransmitMsgEnvironment();
+    void TransmitMsgCapabilities();
+    void TransmitMsgGroup();
+
+  protected:
+    uint16_t m_crc_stat;
+    uint16_t m_crc_gps;
+    uint16_t m_crc_tpms;
+    uint16_t m_crc_firmware;
+    uint16_t m_crc_environment;
+    uint16_t m_crc_capabilities;
+    uint16_t m_crc_group;
 
   protected:
     int m_sock;

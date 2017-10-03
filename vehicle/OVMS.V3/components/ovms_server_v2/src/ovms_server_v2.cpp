@@ -40,6 +40,7 @@ static const char *TAG = "ovms-server-v2";
 #include "crypt_base64.h"
 #include "crypt_hmac.h"
 #include "crypt_md5.h"
+#include "crypt_crc.h"
 
 #include <sys/socket.h>
 #include "esp_system.h"
@@ -83,7 +84,11 @@ void OvmsServerV2::ServerTask()
         {
         ProcessServerMsg();
         }
-      PollForData(1000);
+      if (m_buffer->PollSocket(m_sock,20000) < 0)
+        {
+        close(m_sock);
+        m_sock = -1;
+        }
       }
     }
   }
@@ -253,110 +258,103 @@ bool OvmsServerV2::Login()
   write(m_sock, hello, strlen(hello));
 
   // Wait 20 seconds for a server response
-  PollForData(20000);
-  if (m_sock<0) return false;
-
-  if (m_buffer->HasLine())
+  while (m_buffer->HasLine() < 0)
     {
-    std::string line = m_buffer->ReadLine();
-    ESP_LOGI(TAG, "Received welcome response %s",line.c_str());
-    if (line.compare(0,7,"MP-S 0 ") == 0)
+    int result = m_buffer->PollSocket(m_sock,20000);
+    if (result <= 0)
       {
-      ESP_LOGI(TAG, "Got server response: %s",line.c_str());
-      size_t sep = line.find(' ',7);
-      if (sep == std::string::npos)
-        {
-        ESP_LOGI(TAG, "Server response invalid (no token/digest separator)");
-        return false;
-        }
-      std::string token = std::string(line,7,sep-7);
-      std::string digest = std::string(line,sep+1,line.length()-sep);
-      ESP_LOGI(TAG, "Server token is %s and digest is %s",token.c_str(),digest.c_str());
-      if (m_token == token)
-        {
-        ESP_LOGI(TAG, "Detected token replay attack/collision");
-        return false;
-        }
-      uint8_t sdigest[MD5_SIZE];
-      hmac_md5((uint8_t*) token.c_str(), token.length(), (uint8_t*)m_password.c_str(), m_password.length(), sdigest);
-      uint8_t sdb[MD5_SIZE*2];
-      base64encode(sdigest, MD5_SIZE, sdb);
-      if (digest.compare((char*)sdb) != 0)
-        {
-        ESP_LOGI(TAG, "Server digest does not authenticate");
-        return false;
-        }
-      ESP_LOGI(TAG, "Server authentication is successful. Prime the crypto...");
-      std::string key(token);
-      key.append(m_token);
-      ESP_LOGI(TAG, "Shared secret key is %s (%d bytes)",key.c_str(),key.length());
-      hmac_md5((uint8_t*)key.c_str(), key.length(), (uint8_t*)m_password.c_str(), m_password.length(), sdigest);
-      RC4_setup(&m_crypto_rx1, &m_crypto_rx2, sdigest, MD5_SIZE);
-      for (int k=0;k<1024;k++)
-        {
-        uint8_t v = 0;
-        RC4_crypt(&m_crypto_rx1, &m_crypto_rx2, &v, 1);
-        }
-      RC4_setup(&m_crypto_tx1, &m_crypto_tx2, sdigest, MD5_SIZE);
-      for (int k=0;k<1024;k++)
-        {
-        uint8_t v = 0;
-        RC4_crypt(&m_crypto_tx1, &m_crypto_tx2, &v, 1);
-        }
-      ESP_LOGI(TAG, "OVMS V2 login successful, and crypto channel established");
-      return true;
-      }
-    else
-      {
-      ESP_LOGI(TAG, "Server response was not a welcome MP-S");
+      ESP_LOGI(TAG, "Server response is incomplete (%d bytes)",m_buffer->UsedSpace());
+      close(m_sock);
+      m_sock = -1;
       return false;
       }
     }
+
+  std::string line = m_buffer->ReadLine();
+  ESP_LOGI(TAG, "Received welcome response %s",line.c_str());
+  if (line.compare(0,7,"MP-S 0 ") == 0)
+    {
+    ESP_LOGI(TAG, "Got server response: %s",line.c_str());
+    size_t sep = line.find(' ',7);
+    if (sep == std::string::npos)
+      {
+      ESP_LOGI(TAG, "Server response invalid (no token/digest separator)");
+      return false;
+      }
+    std::string token = std::string(line,7,sep-7);
+    std::string digest = std::string(line,sep+1,line.length()-sep);
+    ESP_LOGI(TAG, "Server token is %s and digest is %s",token.c_str(),digest.c_str());
+    if (m_token == token)
+      {
+      ESP_LOGI(TAG, "Detected token replay attack/collision");
+      return false;
+      }
+    uint8_t sdigest[MD5_SIZE];
+    hmac_md5((uint8_t*) token.c_str(), token.length(), (uint8_t*)m_password.c_str(), m_password.length(), sdigest);
+    uint8_t sdb[MD5_SIZE*2];
+    base64encode(sdigest, MD5_SIZE, sdb);
+    if (digest.compare((char*)sdb) != 0)
+      {
+      ESP_LOGI(TAG, "Server digest does not authenticate");
+      return false;
+      }
+    ESP_LOGI(TAG, "Server authentication is successful. Prime the crypto...");
+    std::string key(token);
+    key.append(m_token);
+    ESP_LOGI(TAG, "Shared secret key is %s (%d bytes)",key.c_str(),key.length());
+    hmac_md5((uint8_t*)key.c_str(), key.length(), (uint8_t*)m_password.c_str(), m_password.length(), sdigest);
+    RC4_setup(&m_crypto_rx1, &m_crypto_rx2, sdigest, MD5_SIZE);
+    for (int k=0;k<1024;k++)
+      {
+      uint8_t v = 0;
+      RC4_crypt(&m_crypto_rx1, &m_crypto_rx2, &v, 1);
+      }
+    RC4_setup(&m_crypto_tx1, &m_crypto_tx2, sdigest, MD5_SIZE);
+    for (int k=0;k<1024;k++)
+      {
+      uint8_t v = 0;
+      RC4_crypt(&m_crypto_tx1, &m_crypto_tx2, &v, 1);
+      }
+    ESP_LOGI(TAG, "OVMS V2 login successful, and crypto channel established");
+    return true;
+    }
   else
     {
-    ESP_LOGI(TAG, "Server response is incomplete (%d bytes)",m_buffer->UsedSpace());
+    ESP_LOGI(TAG, "Server response was not a welcome MP-S");
     return false;
     }
   }
 
-void OvmsServerV2::PollForData(long timeoutms)
+void OvmsServerV2::TransmitAndCRC(bool always, uint16_t &crc, char *msg)
   {
-  fd_set fds;
+  }
 
-  if (m_sock < 0) return;
+void OvmsServerV2::TransmitMsgStat()
+  {
+  }
 
-  while (m_buffer->HasLine() < 0)
-    {
-    FD_ZERO(&fds);
-    FD_SET(m_sock,&fds);
+void OvmsServerV2::TransmitMsgGPS()
+  {
+  }
 
-    struct timeval timeout;
-    timeout.tv_sec = timeoutms/1000;
-    timeout.tv_usec = (timeoutms%1000)*1000;
+void OvmsServerV2::TransmitMsgTPMS()
+  {
+  }
 
-    // ESP_LOGI(TAG, "Polling for data on fd#%d (%ld ms timeout)",m_sock,timeoutms);
-    int result = select(FD_SETSIZE, &fds, 0, 0, &timeout);
-    // ESP_LOGI(TAG, "Poll result was %d",result);
-    if (result <= 0) return;
+void OvmsServerV2::TransmitMsgFirmware()
+  {
+  }
 
-    // We have some data ready to read
-    size_t avail = m_buffer->FreeSpace();
-    // ESP_LOGI(TAG, "Data is ready to be read, with %d bytes of buffer free",avail);
-    uint8_t buf[avail];
-    size_t n = read(m_sock, &buf, avail);
-    // ESP_LOGI(TAG, "Got %d bytes from socket",n);
-    if (n == 0)
-      {
-      ESP_LOGI(TAG, "Server connection has been disconnected");
-      Disconnect();
-      return;
-      }
-    else if (n > 0)
-      {
-      MyCommandApp.HexDump("OVMSv2",(const char *)buf,n);
-      m_buffer->Push(buf,n);
-      }
-    }
+void OvmsServerV2::TransmitMsgEnvironment()
+  {
+  }
+
+void OvmsServerV2::TransmitMsgCapabilities()
+  {
+  }
+
+void OvmsServerV2::TransmitMsgGroup()
+  {
   }
 
 std::string OvmsServerV2::ReadLine()
@@ -374,6 +372,13 @@ OvmsServerV2::OvmsServerV2(std::string name)
     ESP_LOGI(TAG, "OVMS Server V2 registered metric modifier is #%d",MyOvmsServerV2Modifier);
     }
   m_buffer = new OvmsBuffer(1024);
+  m_crc_stat = 0;
+  m_crc_gps = 0;
+  m_crc_tpms = 0;
+  m_crc_firmware = 0;
+  m_crc_environment = 0;
+  m_crc_capabilities = 0;
+  m_crc_group = 0;
   }
 
 OvmsServerV2::~OvmsServerV2()
