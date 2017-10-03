@@ -63,23 +63,13 @@ class OvmsServerV2 : public OvmsServer
     std::string ReadLine();
 
   protected:
-    void TransmitAndCRC(bool always, uint16_t *crc, const char *msg);
-    void TransmitMsgStat();
-    void TransmitMsgGPS();
-    void TransmitMsgTPMS();
-    void TransmitMsgFirmware();
-    void TransmitMsgEnvironment();
-    void TransmitMsgCapabilities();
-    void TransmitMsgGroup();
-
-  protected:
-    uint16_t m_crc_stat;
-    uint16_t m_crc_gps;
-    uint16_t m_crc_tpms;
-    uint16_t m_crc_firmware;
-    uint16_t m_crc_environment;
-    uint16_t m_crc_capabilities;
-    uint16_t m_crc_group;
+    void TransmitMsgStat(bool always);
+    void TransmitMsgGPS(bool always);
+    void TransmitMsgTPMS(bool always);
+    void TransmitMsgFirmware(bool always);
+    void TransmitMsgEnvironment(bool always);
+    void TransmitMsgCapabilities(bool always);
+    void TransmitMsgGroup(bool always);
 
   protected:
     int m_sock;

@@ -339,41 +339,31 @@ bool OvmsServerV2::Login()
     }
   }
 
-void OvmsServerV2::TransmitAndCRC(bool always, uint16_t *crc, const char *msg)
-  {
-  uint16_t newcrc = crc16(msg, strlen(msg));
-
-  if ((!always)&&(newcrc == *crc)) return; // No change, so quick exit
-
-  *crc = newcrc;
-  Transmit(msg);
-  }
-
-void OvmsServerV2::TransmitMsgStat()
+void OvmsServerV2::TransmitMsgStat(bool always)
   {
   }
 
-void OvmsServerV2::TransmitMsgGPS()
+void OvmsServerV2::TransmitMsgGPS(bool always)
   {
   }
 
-void OvmsServerV2::TransmitMsgTPMS()
+void OvmsServerV2::TransmitMsgTPMS(bool always)
   {
   }
 
-void OvmsServerV2::TransmitMsgFirmware()
+void OvmsServerV2::TransmitMsgFirmware(bool always)
   {
   }
 
-void OvmsServerV2::TransmitMsgEnvironment()
+void OvmsServerV2::TransmitMsgEnvironment(bool always)
   {
   }
 
-void OvmsServerV2::TransmitMsgCapabilities()
+void OvmsServerV2::TransmitMsgCapabilities(bool always)
   {
   }
 
-void OvmsServerV2::TransmitMsgGroup()
+void OvmsServerV2::TransmitMsgGroup(bool always)
   {
   }
 
@@ -392,13 +382,6 @@ OvmsServerV2::OvmsServerV2(std::string name)
     ESP_LOGI(TAG, "OVMS Server V2 registered metric modifier is #%d",MyOvmsServerV2Modifier);
     }
   m_buffer = new OvmsBuffer(1024);
-  m_crc_stat = 0;
-  m_crc_gps = 0;
-  m_crc_tpms = 0;
-  m_crc_firmware = 0;
-  m_crc_environment = 0;
-  m_crc_capabilities = 0;
-  m_crc_group = 0;
   }
 
 OvmsServerV2::~OvmsServerV2()
