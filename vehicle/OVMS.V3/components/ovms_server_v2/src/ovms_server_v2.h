@@ -57,12 +57,13 @@ class OvmsServerV2 : public OvmsServer
     bool Login();
     void ProcessServerMsg();
     void Transmit(std::string message);
+    void Transmit(const char* message);
 
   protected:
     std::string ReadLine();
 
   protected:
-    void TransmitAndCRC(bool always, uint16_t &crc, char *msg);
+    void TransmitAndCRC(bool always, uint16_t *crc, const char *msg);
     void TransmitMsgStat();
     void TransmitMsgGPS();
     void TransmitMsgTPMS();

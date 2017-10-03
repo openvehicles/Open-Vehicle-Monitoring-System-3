@@ -155,6 +155,20 @@ void OvmsServerV2::Transmit(std::string message)
   write(m_sock,buf,strlen(buf));
   }
 
+void OvmsServerV2::Transmit(const char* message)
+  {
+  int len = strlen(message);
+  char s[len];
+  memcpy(s,message,len);
+  char buf[(len*2)+4];
+
+  RC4_crypt(&m_crypto_tx1, &m_crypto_tx2, (uint8_t*)s, len);
+  base64encode((uint8_t*)s, len, (uint8_t*)buf);
+  ESP_LOGI(TAG, "Send %s",buf);
+  strcat(buf,"\r\n");
+  write(m_sock,buf,strlen(buf));
+  }
+
 bool OvmsServerV2::Connect()
   {
   m_vehicleid = MyConfig.GetParamValue("vehicle", "id");
@@ -325,8 +339,14 @@ bool OvmsServerV2::Login()
     }
   }
 
-void OvmsServerV2::TransmitAndCRC(bool always, uint16_t &crc, char *msg)
+void OvmsServerV2::TransmitAndCRC(bool always, uint16_t *crc, const char *msg)
   {
+  uint16_t newcrc = crc16(msg, strlen(msg));
+
+  if ((!always)&&(newcrc == *crc)) return; // No change, so quick exit
+
+  *crc = newcrc;
+  Transmit(msg);
   }
 
 void OvmsServerV2::TransmitMsgStat()
