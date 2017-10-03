@@ -55,11 +55,10 @@ class OvmsMetric
     virtual time_t LastModified();
     virtual bool IsStale();
     virtual void SetStale(bool stale);
-
-  protected:
-    virtual void SetModified();
     virtual bool IsModified(size_t modifier);
+    virtual bool IsModifiedAndClear(size_t modifier);
     virtual void ClearModified(size_t modifier);
+    virtual void SetModified();
 
   public:
     std::string m_name;

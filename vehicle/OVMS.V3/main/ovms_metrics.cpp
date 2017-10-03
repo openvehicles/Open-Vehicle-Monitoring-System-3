@@ -252,6 +252,13 @@ bool OvmsMetric::IsModified(size_t modifier)
   return m_modified[modifier];
   }
 
+bool OvmsMetric::IsModifiedAndClear(size_t modifier)
+  {
+  bool modified = m_modified[modifier];
+  if (modified) m_modified.reset(modifier);
+  return modified;
+  }
+
 void OvmsMetric::ClearModified(size_t modifier)
   {
   m_modified.reset(modifier);
