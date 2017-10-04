@@ -184,27 +184,92 @@ static int hist_restore_line (ring_history_t * pThis, char * line, int dir)
 
 
 
+#ifdef _USE_QUOTING
+//*****************************************************************************
+// restore end quote marks in cmdline
+static void restore (microrl_t * pThis)
+{
+	int iq;
+	for (iq = 0; iq < _QUOTED_TOKEN_NMB; ++iq) {
+		if (pThis->quotes[iq].end == 0)
+			break;
+		*pThis->quotes[iq].end = *pThis->quotes[iq].begin;
+		pThis->quotes[iq].begin = 0;
+		pThis->quotes[iq].end = 0;
+	}
+}
+#endif
+
 //*****************************************************************************
 // split cmdline to tkn array and return nmb of token
 static int split (microrl_t * pThis, int limit, char const ** tkn_arr)
 {
 	int i = 0;
 	int ind = 0;
+#ifdef _USE_QUOTING
+	int iq = 0;
+	char quote = 0;
+	for (iq = 0; iq < _QUOTED_TOKEN_NMB; ++iq) {
+		pThis->quotes[iq].begin = 0;
+		pThis->quotes[iq].end = 0;
+	}
+	iq = 0;
+#endif
 	while (1) {
-		// go to the first whitespace (zerro for us)
+		// go to the first NOT whitespace (not zerro for us)
 		while ((pThis->cmdline [ind] == '\0') && (ind < limit)) {
 			ind++;
 		}
 		if (!(ind < limit)) return i;
-		tkn_arr[i++] = pThis->cmdline + ind;
-		if (i >= _COMMAND_TOKEN_NMB) {
-			return -1;
-		}
-		// go to the first NOT whitespace (not zerro for us)
-		while ((pThis->cmdline [ind] != '\0') && (ind < limit)) {
+#ifdef _USE_QUOTING
+		if (pThis->cmdline [ind] == '\'' || pThis->cmdline [ind] == '"') {
+			if (iq >= _QUOTED_TOKEN_NMB) {
+				restore (pThis);
+				return -1;
+			}
+			quote = pThis->cmdline [ind];
+			pThis->quotes[iq].begin = pThis->cmdline + ind;
 			ind++;
 		}
-		if (!(ind < limit)) return i;
+#endif
+		tkn_arr[i++] = pThis->cmdline + ind;
+		if (i >= _COMMAND_TOKEN_NMB) {
+#ifdef _USE_QUOTING
+			restore (pThis);
+#endif
+			return -1;
+		}
+		// go to the first whitespace (zerro for us)
+		while (ind < limit) {
+			if (pThis->cmdline [ind] == '\0') {
+#ifdef _USE_QUOTING
+				if (!quote)
+#endif
+					break;
+#ifdef _USE_QUOTING
+				pThis->cmdline [ind] = ' ';
+			} else if (pThis->cmdline [ind] == quote) {
+				if (pThis->cmdline [ind + 1] != '\0') {
+					restore (pThis);
+					return -1;
+				}
+				quote = 0;
+				pThis->quotes[iq++].end = pThis->cmdline + ind;
+				pThis->cmdline [ind++] = '\0';
+				break;
+#endif
+			}
+			ind++;
+		}
+		if (!(ind < limit)) {
+#ifdef _USE_QUOTING
+			if (quote) {
+				restore (pThis);
+				return -1;
+			}
+#endif
+			return i;
+		}
 	}
 	return i;
 }
@@ -499,9 +564,14 @@ static void microrl_get_complite (microrl_t * pThis)
 		return;
 
 	int status = split (pThis, pThis->cursor, tkn_arr);
+	if (status < 0)
+		return;
 	if (pThis->cmdline[pThis->cursor-1] == '\0')
 		tkn_arr[status++] = "";
 	compl_token = pThis->get_completion (pThis, status, tkn_arr);
+#ifdef _USE_QUOTING
+	restore (pThis);
+#endif
 	if (compl_token[0] != NULL) {
 		int i = 0;
 		int len;
@@ -545,11 +615,18 @@ void new_line_handler(microrl_t * pThis){
 	status = split (pThis, pThis->cmdlen, tkn_arr);
 	if (status == -1){
 		//          pThis->print ("ERROR: Max token amount exseed\n");
+#ifdef _USE_QUOTING
+		pThis->print (pThis, "ERROR:too many tokens or invalid quoting");
+#else
 		pThis->print (pThis, "ERROR:too many tokens");
+#endif
 		pThis->print (pThis, ENDL);
 	}
 	if ((status > 0) && (pThis->execute != NULL))
 		pThis->execute (pThis, status, tkn_arr);
+#ifdef _USE_QUOTING
+	restore (pThis);
+#endif
 	print_prompt (pThis);
 	pThis->cmdlen = 0;
 	pThis->cursor = 0;
