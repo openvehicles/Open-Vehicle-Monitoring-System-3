@@ -230,12 +230,16 @@ time_t OvmsMetric::LastModified()
   return m_lastmodified;
   }
 
-void OvmsMetric::SetModified()
+void OvmsMetric::SetModified(bool changed)
   {
   m_defined = true;
-  m_modified.set();
+  m_stale = false;
   m_lastmodified = time(0);
-  MyMetrics.NotifyModified(this);
+  if (changed)
+    {
+    m_modified.set();
+    MyMetrics.NotifyModified(this);
+    }
   }
 
 bool OvmsMetric::IsStale()
@@ -308,13 +312,14 @@ int OvmsMetricInt::AsInt()
 
 void OvmsMetricInt::SetValue(int value)
   {
+  m_value = value;
   if (m_value != value)
     {
     m_value = value;
-    SetModified();
+    SetModified(true);
     }
   else
-    m_lastmodified = time(0);
+    SetModified(false);
   }
 
 void OvmsMetricInt::SetValue(std::string value)
@@ -323,10 +328,10 @@ void OvmsMetricInt::SetValue(std::string value)
   if (m_value != nvalue)
     {
     m_value = nvalue;
-    SetModified();
+    SetModified(true);
     }
   else
-    m_lastmodified = time(0);
+    SetModified(false);
   }
 
 OvmsMetricBool::OvmsMetricBool(std::string name, int autostale)
@@ -364,10 +369,10 @@ void OvmsMetricBool::SetValue(bool value)
   if (m_value != value)
     {
     m_value = value;
-    SetModified();
+    SetModified(true);
     }
   else
-    m_lastmodified = time(0);
+    SetModified(false);
   }
 
 void OvmsMetricBool::SetValue(std::string value)
@@ -380,10 +385,10 @@ void OvmsMetricBool::SetValue(std::string value)
   if (m_value != nvalue)
     {
     m_value = nvalue;
-    SetModified();
+    SetModified(true);
     }
   else
-    m_lastmodified = time(0);
+    SetModified(false);
   }
 
 OvmsMetricFloat::OvmsMetricFloat(std::string name, int autostale)
@@ -421,10 +426,10 @@ void OvmsMetricFloat::SetValue(float value)
   if (m_value != value)
     {
     m_value = value;
-    SetModified();
+    SetModified(true);
     }
   else
-    m_lastmodified = time(0);
+    SetModified(false);
   }
 
 void OvmsMetricFloat::SetValue(std::string value)
@@ -433,10 +438,10 @@ void OvmsMetricFloat::SetValue(std::string value)
   if (m_value != nvalue)
     {
     m_value = nvalue;
-    SetModified();
+    SetModified(true);
     }
   else
-    m_lastmodified = time(0);
+    SetModified(false);
   }
 
 OvmsMetricString::OvmsMetricString(std::string name, int autostale)
@@ -455,6 +460,11 @@ std::string OvmsMetricString::AsString()
 
 void OvmsMetricString::SetValue(std::string value)
   {
-  m_value = value;
-  SetModified();
+  if (m_value.compare(value)!=0)
+    {
+    m_value = value;
+    SetModified(true);
+    }
+  else
+    SetModified(false);
   }

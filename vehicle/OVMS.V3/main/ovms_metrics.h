@@ -59,7 +59,7 @@ class OvmsMetric
     virtual bool IsModified(size_t modifier);
     virtual bool IsModifiedAndClear(size_t modifier);
     virtual void ClearModified(size_t modifier);
-    virtual void SetModified();
+    virtual void SetModified(bool changed=true);
 
   public:
     std::string m_name;
