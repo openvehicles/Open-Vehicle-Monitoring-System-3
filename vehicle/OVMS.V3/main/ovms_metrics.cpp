@@ -202,12 +202,13 @@ size_t OvmsMetrics::RegisterModifier()
   return m_nextmodifier++;
   }
 
-OvmsMetric::OvmsMetric(std::string name)
+OvmsMetric::OvmsMetric(std::string name, int autostale)
   {
   m_defined = false;
   m_modified.reset();
   m_name = name;
   m_lastmodified = 0;
+  m_autostale = autostale;
   MyMetrics.RegisterMetric(this, name);
   }
 
@@ -239,12 +240,24 @@ void OvmsMetric::SetModified()
 
 bool OvmsMetric::IsStale()
   {
+  if (m_autostale>0)
+    {
+    if (m_lastmodified < (time(0)-m_autostale))
+      m_stale=true;
+    else
+      m_stale=false;
+    }
   return m_stale;
   }
 
 void OvmsMetric::SetStale(bool stale)
   {
   m_stale = stale;
+  }
+
+void OvmsMetric::SetAutoStale(int seconds)
+  {
+  m_autostale = seconds;
   }
 
 bool OvmsMetric::IsModified(size_t modifier)
@@ -264,8 +277,8 @@ void OvmsMetric::ClearModified(size_t modifier)
   m_modified.reset(modifier);
   }
 
-OvmsMetricInt::OvmsMetricInt(std::string name)
-  : OvmsMetric(name)
+OvmsMetricInt::OvmsMetricInt(std::string name, int autostale)
+  : OvmsMetric(name, autostale)
   {
   m_value = 0;
   }
@@ -316,8 +329,8 @@ void OvmsMetricInt::SetValue(std::string value)
     m_lastmodified = time(0);
   }
 
-OvmsMetricBool::OvmsMetricBool(std::string name)
-  : OvmsMetric(name)
+OvmsMetricBool::OvmsMetricBool(std::string name, int autostale)
+  : OvmsMetric(name, autostale)
   {
   m_value = false;
   }
@@ -373,8 +386,8 @@ void OvmsMetricBool::SetValue(std::string value)
     m_lastmodified = time(0);
   }
 
-OvmsMetricFloat::OvmsMetricFloat(std::string name)
-  : OvmsMetric(name)
+OvmsMetricFloat::OvmsMetricFloat(std::string name, int autostale)
+  : OvmsMetric(name, autostale)
   {
   m_value = 0;
   }
@@ -426,8 +439,8 @@ void OvmsMetricFloat::SetValue(std::string value)
     m_lastmodified = time(0);
   }
 
-OvmsMetricString::OvmsMetricString(std::string name)
-  : OvmsMetric(name)
+OvmsMetricString::OvmsMetricString(std::string name, int autostale)
+  : OvmsMetric(name, autostale)
   {
   }
 

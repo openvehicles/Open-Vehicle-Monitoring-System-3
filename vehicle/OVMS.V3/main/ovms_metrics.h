@@ -46,7 +46,7 @@ using namespace std;
 class OvmsMetric
   {
   public:
-    OvmsMetric(std::string name);
+    OvmsMetric(std::string name, int autostale=0);
     virtual ~OvmsMetric();
 
   public:
@@ -55,6 +55,7 @@ class OvmsMetric
     virtual time_t LastModified();
     virtual bool IsStale();
     virtual void SetStale(bool stale);
+    virtual void SetAutoStale(int seconds);
     virtual bool IsModified(size_t modifier);
     virtual bool IsModifiedAndClear(size_t modifier);
     virtual void ClearModified(size_t modifier);
@@ -64,6 +65,7 @@ class OvmsMetric
     std::string m_name;
     bool m_defined;
     bool m_stale;
+    int m_autostale;
     std::bitset<METRICS_MAX_MODIFIERS> m_modified;
     time_t m_lastmodified;
   };
@@ -71,7 +73,7 @@ class OvmsMetric
 class OvmsMetricBool : public OvmsMetric
   {
   public:
-    OvmsMetricBool(std::string name);
+    OvmsMetricBool(std::string name, int autostale=0);
     virtual ~OvmsMetricBool();
 
   public:
@@ -87,7 +89,7 @@ class OvmsMetricBool : public OvmsMetric
 class OvmsMetricInt : public OvmsMetric
   {
   public:
-    OvmsMetricInt(std::string name);
+    OvmsMetricInt(std::string name, int autostale=0);
     virtual ~OvmsMetricInt();
 
   public:
@@ -103,7 +105,7 @@ class OvmsMetricInt : public OvmsMetric
 class OvmsMetricFloat : public OvmsMetric
   {
   public:
-    OvmsMetricFloat(std::string name);
+    OvmsMetricFloat(std::string name, int autostale=0);
     virtual ~OvmsMetricFloat();
 
   public:
@@ -119,7 +121,7 @@ class OvmsMetricFloat : public OvmsMetric
 class OvmsMetricString : public OvmsMetric
   {
   public:
-    OvmsMetricString(std::string name);
+    OvmsMetricString(std::string name, int autostale=0);
     virtual ~OvmsMetricString();
 
   public:

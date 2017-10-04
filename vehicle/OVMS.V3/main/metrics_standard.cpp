@@ -32,43 +32,48 @@
 
 MetricsStandard StandardMetrics __attribute__ ((init_priority (1810)));
 
+#define SM_STALE_MIN 10
+#define SM_STALE_MID 120
+#define SM_STALE_HIGH 3600
+#define SM_STALE_MAX 86400
+
 MetricsStandard::MetricsStandard()
   {
   ms_m_version = new OvmsMetricString(MS_M_VERSION);
   ms_m_hardware = new OvmsMetricString(MS_M_HARDWARE);
   ms_m_serial = new OvmsMetricString(MS_M_SERIAL);
-  ms_m_tasks = new OvmsMetricInt(MS_M_TASKS);
-  ms_m_freeram = new OvmsMetricInt(MS_M_FREERAM);
+  ms_m_tasks = new OvmsMetricInt(MS_M_TASKS, SM_STALE_MID);
+  ms_m_freeram = new OvmsMetricInt(MS_M_FREERAM, SM_STALE_MID);
   ms_s_v2_connected = new OvmsMetricBool(MS_S_V2_CONNECTED);
   ms_s_v2_peers = new OvmsMetricInt(MS_S_V2_PEERS);
   ms_v_type = new OvmsMetricString(MS_V_TYPE);
   ms_v_vin = new OvmsMetricString(MS_V_VIN);
-  ms_v_bat_soc = new OvmsMetricInt(MS_V_BAT_SOC);
-  ms_v_bat_soh = new OvmsMetricInt(MS_V_BAT_SOH);
-  ms_v_bat_cac = new OvmsMetricFloat(MS_V_BAT_CAC);
-  ms_v_bat_range_ideal = new OvmsMetricInt(MS_V_BAT_RANGE_IDEAL);
-  ms_v_bat_range_est = new OvmsMetricInt(MS_V_BAT_RANGE_EST);
-  ms_v_bat_12v = new OvmsMetricFloat(MS_V_BAT_12V);
-  ms_v_temp_pem = new OvmsMetricInt(MS_V_TEMP_PEM);
-  ms_v_temp_battery = new OvmsMetricInt(MS_V_TEMP_BATTERY);
-  ms_v_temp_motor = new OvmsMetricInt(MS_V_TEMP_MOTOR);
-  ms_v_temp_charger = new OvmsMetricInt(MS_V_TEMP_CHARGER);
-  ms_v_temp_ambient = new OvmsMetricInt(MS_V_TEMP_AMBIENT);
-  ms_v_pos_latitude = new OvmsMetricFloat(MS_V_POS_LATITUDE);
-  ms_v_pos_longitude = new OvmsMetricFloat(MS_V_POS_LONGITUDE);
-  ms_v_pos_direction = new OvmsMetricInt(MS_V_POS_DIRECTION);
-  ms_v_pos_altitude = new OvmsMetricInt(MS_V_POS_ALTITUDE);
-  ms_v_pos_speed = new OvmsMetricInt(MS_V_POS_SPEED);
-  ms_v_pos_odometer = new OvmsMetricFloat(MS_V_POS_ODOMETER);
-  ms_v_pos_trip = new OvmsMetricFloat(MS_V_POS_TRIP);
-  ms_v_tpms_fl_t = new OvmsMetricFloat(MS_V_TPMS_FL_T);
-  ms_v_tpms_fr_t = new OvmsMetricFloat(MS_V_TPMS_FR_T);
-  ms_v_tpms_rr_t = new OvmsMetricFloat(MS_V_TPMS_RR_T);
-  ms_v_tpms_rl_t = new OvmsMetricFloat(MS_V_TPMS_RL_T);
-  ms_v_tpms_fl_p = new OvmsMetricFloat(MS_V_TPMS_FL_P);
-  ms_v_tpms_fr_p = new OvmsMetricFloat(MS_V_TPMS_FR_P);
-  ms_v_tpms_rr_p = new OvmsMetricFloat(MS_V_TPMS_RR_P);
-  ms_v_tpms_rl_p = new OvmsMetricFloat(MS_V_TPMS_RL_P);
+  ms_v_bat_soc = new OvmsMetricInt(MS_V_BAT_SOC, SM_STALE_HIGH);
+  ms_v_bat_soh = new OvmsMetricInt(MS_V_BAT_SOH, SM_STALE_HIGH);
+  ms_v_bat_cac = new OvmsMetricFloat(MS_V_BAT_CAC, SM_STALE_HIGH);
+  ms_v_bat_range_ideal = new OvmsMetricInt(MS_V_BAT_RANGE_IDEAL, SM_STALE_HIGH);
+  ms_v_bat_range_est = new OvmsMetricInt(MS_V_BAT_RANGE_EST, SM_STALE_HIGH);
+  ms_v_bat_12v = new OvmsMetricFloat(MS_V_BAT_12V, SM_STALE_HIGH);
+  ms_v_temp_pem = new OvmsMetricInt(MS_V_TEMP_PEM, SM_STALE_MID);
+  ms_v_temp_battery = new OvmsMetricInt(MS_V_TEMP_BATTERY, SM_STALE_MID);
+  ms_v_temp_motor = new OvmsMetricInt(MS_V_TEMP_MOTOR, SM_STALE_MID);
+  ms_v_temp_charger = new OvmsMetricInt(MS_V_TEMP_CHARGER, SM_STALE_MID);
+  ms_v_temp_ambient = new OvmsMetricInt(MS_V_TEMP_AMBIENT, SM_STALE_MID);
+  ms_v_pos_latitude = new OvmsMetricFloat(MS_V_POS_LATITUDE, SM_STALE_MID);
+  ms_v_pos_longitude = new OvmsMetricFloat(MS_V_POS_LONGITUDE, SM_STALE_MID);
+  ms_v_pos_direction = new OvmsMetricInt(MS_V_POS_DIRECTION, SM_STALE_MID);
+  ms_v_pos_altitude = new OvmsMetricInt(MS_V_POS_ALTITUDE, SM_STALE_MID);
+  ms_v_pos_speed = new OvmsMetricInt(MS_V_POS_SPEED, SM_STALE_MID);
+  ms_v_pos_odometer = new OvmsMetricFloat(MS_V_POS_ODOMETER, SM_STALE_MID);
+  ms_v_pos_trip = new OvmsMetricFloat(MS_V_POS_TRIP, SM_STALE_MID);
+  ms_v_tpms_fl_t = new OvmsMetricFloat(MS_V_TPMS_FL_T, SM_STALE_MID);
+  ms_v_tpms_fr_t = new OvmsMetricFloat(MS_V_TPMS_FR_T, SM_STALE_MID);
+  ms_v_tpms_rr_t = new OvmsMetricFloat(MS_V_TPMS_RR_T, SM_STALE_MID);
+  ms_v_tpms_rl_t = new OvmsMetricFloat(MS_V_TPMS_RL_T, SM_STALE_MID);
+  ms_v_tpms_fl_p = new OvmsMetricFloat(MS_V_TPMS_FL_P, SM_STALE_MID);
+  ms_v_tpms_fr_p = new OvmsMetricFloat(MS_V_TPMS_FR_P, SM_STALE_MID);
+  ms_v_tpms_rr_p = new OvmsMetricFloat(MS_V_TPMS_RR_P, SM_STALE_MID);
+  ms_v_tpms_rl_p = new OvmsMetricFloat(MS_V_TPMS_RL_P, SM_STALE_MID);
   }
 
 MetricsStandard::~MetricsStandard()
