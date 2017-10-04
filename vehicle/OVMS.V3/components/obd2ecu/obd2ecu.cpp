@@ -402,7 +402,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
         case 2:
           if(verbose) ESP_LOGI(TAG, "Requested VIN");
           
-          if(m_private) break;  /* ignore request for privacy's sake. Doesn't seem to matter to Dongle. */
+//          if(m_private) break;  /* ignore request for privacy's sake. Doesn't seem to matter to Dongle. */
 
           memcpy(vin_string,StandardMetrics.ms_v_vin->AsString().c_str(),17);
           vin_string[17] = '\0';  /* force null termination, just because */
@@ -425,8 +425,10 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           
           r_d[0] = 0x21;
           memcpy(&r_d[1],vin_string+3,7);  /* grab the next 7 bytes of VIN */
-
+          
           m_can->Write(&r_frame);
+          
+          vTaskDelay(10 / portTICK_PERIOD_MS);
 
           r_d[0] = 0x22;
           memcpy(&r_d[1],vin_string+10,7);  /* grab the last 7 bytes of VIN */
@@ -454,6 +456,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           m_can->Write(&r_frame);
 
           vTaskDelay(10 / portTICK_PERIOD_MS);  /* let the flow control frame pass */
+          
           r_d[0] = 0x21;
           r_d[1] = 'c';
           r_d[2] = 'e';
@@ -463,6 +466,8 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[6] = 'r';
           r_d[7] = ' ';
           m_can->Write(&r_frame);
+          
+          vTaskDelay(10 / portTICK_PERIOD_MS);
 
           r_d[0] = 0x22;
           r_d[1] = 't';
@@ -473,6 +478,8 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[6] = 'h';
           r_d[7] = 'e';
           m_can->Write(&r_frame);
+          
+          vTaskDelay(10 / portTICK_PERIOD_MS);
 
           r_d[0] = 0x23;
           r_d[1] = 'r';
