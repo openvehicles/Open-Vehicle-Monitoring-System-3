@@ -43,6 +43,7 @@
 #include "sdcard.h"
 #include "simcom.h"
 #include "obd2ecu.h"
+#include "ext12v.h"
 
 #define VSPI_PIN_MISO             19
 #define VSPI_PIN_MOSI             23
@@ -101,6 +102,7 @@ class Peripherals
     sdcard* m_sdcard;
     simcom* m_simcom;
     obd2ecu* m_obd2ecu;
+    ext12v* m_ext12v;
   };
 
 extern Peripherals* MyPeripherals;

@@ -84,6 +84,7 @@ Peripherals::Peripherals()
   ESP_LOGI(TAG, "  SIMCOM MODEM");
   m_simcom = new simcom("simcom", UART_NUM_1, 115200, MODEM_GPIO_RX, MODEM_GPIO_TX, MODEM_EGPIO_PWR);
   m_obd2ecu = NULL;
+  m_ext12v = new ext12v("ext12v");
   }
 
 Peripherals::~Peripherals()
