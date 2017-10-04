@@ -202,6 +202,9 @@ void Housekeeping::metrics()
 
 void Housekeeping::Ticker1()
   {
+  monotonictime++;
+  StandardMetrics.ms_m_monotonic->SetValue((int)monotonictime);
+
   MyEvents.SignalEvent("ticker.1", NULL);
 
   m_tick++;

@@ -44,6 +44,7 @@ MetricsStandard::MetricsStandard()
   ms_m_serial = new OvmsMetricString(MS_M_SERIAL);
   ms_m_tasks = new OvmsMetricInt(MS_M_TASKS, SM_STALE_MID);
   ms_m_freeram = new OvmsMetricInt(MS_M_FREERAM, SM_STALE_MID);
+  ms_m_monotonic = new OvmsMetricInt(MS_M_MONOTONIC, SM_STALE_MIN);
   ms_s_v2_connected = new OvmsMetricBool(MS_S_V2_CONNECTED);
   ms_s_v2_peers = new OvmsMetricInt(MS_S_V2_PEERS);
   ms_v_type = new OvmsMetricString(MS_V_TYPE);

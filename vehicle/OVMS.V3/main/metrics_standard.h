@@ -38,6 +38,7 @@
 #define MS_M_SERIAL                 "m.serial"
 #define MS_M_TASKS                  "m.tasks"
 #define MS_M_FREERAM                "m.freeram"
+#define MS_M_MONOTONIC              "m.monotonic"
 
 #define MS_S_V2_CONNECTED           "s.v2.connected"
 #define MS_S_V2_PEERS               "s.v2.peers"
@@ -87,6 +88,7 @@ class MetricsStandard
     OvmsMetricString* ms_m_serial;
     OvmsMetricInt*    ms_m_tasks;
     OvmsMetricInt*    ms_m_freeram;
+    OvmsMetricInt*    ms_m_monotonic;
     OvmsMetricBool*   ms_s_v2_connected;
     OvmsMetricInt*    ms_s_v2_peers;
     OvmsMetricString* ms_v_type;

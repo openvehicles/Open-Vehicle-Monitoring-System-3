@@ -31,6 +31,10 @@
 #ifndef __OVMS_H__
 #define __OVMS_H__
 
+#include <stdint.h>
+
 #define OVMS_VERSION "3.0.0"
+
+extern uint16_t monotonictime;
 
 #endif //#ifndef __OVMS_H__

@@ -34,6 +34,7 @@ static const char *TAG = "metrics";
 #include <stdlib.h>
 #include <stdio.h>
 #include <sstream>
+#include "ovms.h"
 #include "ovms_metrics.h"
 #include "ovms_command.h"
 #include "string.h"
@@ -225,7 +226,7 @@ void OvmsMetric::SetValue(std::string value)
   {
   }
 
-time_t OvmsMetric::LastModified()
+uint32_t OvmsMetric::LastModified()
   {
   return m_lastmodified;
   }
@@ -234,7 +235,7 @@ void OvmsMetric::SetModified(bool changed)
   {
   m_defined = true;
   m_stale = false;
-  m_lastmodified = time(0);
+  m_lastmodified = monotonictime;
   if (changed)
     {
     m_modified.set();
@@ -246,7 +247,7 @@ bool OvmsMetric::IsStale()
   {
   if (m_autostale>0)
     {
-    if (m_lastmodified < (time(0)-m_autostale))
+    if (m_lastmodified < (monotonictime-m_autostale))
       m_stale=true;
     else
       m_stale=false;
