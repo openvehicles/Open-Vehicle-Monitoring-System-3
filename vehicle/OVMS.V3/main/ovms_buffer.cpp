@@ -173,10 +173,8 @@ std::string OvmsBuffer::ReadLine()
   uint8_t result[hl+1];
   Pop(hl, result);
 
-  while ((Peek() == '\r')||(Peek() == '\n'))
-    {
-    Pop();
-    }
+  if (Peek() == '\r') Pop();
+  if (Peek() == '\n') Pop();
 
   return std::string((char*)result,hl);
   }
