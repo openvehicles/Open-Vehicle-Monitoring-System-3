@@ -40,6 +40,19 @@ NULL to callback ptr and do not use it, but for memory saving tune,
 if you are not going to use it - disable this define.*/
 #define _USE_COMPLETE
 
+/*Define it, if you want to allow quoting command arguments to include spaces.
+Depends upon _QUOTED_TOKEN_NMB parameter */
+#define _USE_QUOTING
+
+/*
+Quoted token number, define max number of tokens allowed to be quoted.  If the
+number of quoted tokens typed in the command line exceeds this value, then
+prints message about it and the command line is not parsed and 'execute'
+callback is not called.
+Quoting protects whitespace, for example 2 quoted tokens:
+"IRin> set wifi 'Home Net' 'this is a secret'" */
+#define _QUOTED_TOKEN_NMB 2
+
 /*Define it, if you wanna use history. It s work's like bash history, and
 set stored value to cmdline, if UP and DOWN key pressed. Using history add
 memory consuming, depends from _RING_HISTORY_LEN parametr */
