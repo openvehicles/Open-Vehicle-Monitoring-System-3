@@ -28,10 +28,11 @@
 ; THE SOFTWARE.
 */
 
-// #include "esp_log.h"
-// static const char *TAG = "buffer";
+#include "esp_log.h"
+static const char *TAG = "buffer";
 
 #include "ovms_buffer.h"
+#include "ovms_command.h"
 #include <sys/socket.h>
 
 OvmsBuffer::OvmsBuffer(size_t size)
@@ -142,6 +143,13 @@ size_t OvmsBuffer::Peek(size_t count, uint8_t *dest)
   return done;
   }
 
+void OvmsBuffer::Diagnostics()
+  {
+  size_t hl = HasLine();
+  ESP_LOGI(TAG, "OvmsBuffer has %d/%d bytes (head %d, tail %d), hasline %d",
+    m_used,m_size,m_head,m_tail,hl);
+  }
+
 int OvmsBuffer::HasLine()
   {
   size_t tail = m_tail;
@@ -204,6 +212,7 @@ int OvmsBuffer::PollSocket(int sock, long timeoutms)
   uint8_t *buf = new uint8_t[avail];
   size_t n = read(sock, buf, avail);
   // ESP_LOGI(TAG,"Polling Socket read %d bytes",n);
+  // MyCommandApp.HexDump(TAG,(const char*)buf,n);
   if (n == 0)
     {
     n = -1;

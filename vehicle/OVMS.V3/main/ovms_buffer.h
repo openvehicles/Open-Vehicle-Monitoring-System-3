@@ -53,6 +53,7 @@ class OvmsBuffer
     size_t Pop(size_t count, uint8_t *dest);
     uint8_t Peek();
     size_t Peek(size_t count, uint8_t *dest);
+    void Diagnostics();
 
   public:
     int HasLine();
