@@ -624,9 +624,6 @@ void new_line_handler(microrl_t * pThis){
 	}
 	if ((status > 0) && (pThis->execute != NULL))
 		pThis->execute (pThis, status, tkn_arr);
-#ifdef _USE_QUOTING
-	restore (pThis);
-#endif
 	print_prompt (pThis);
 	pThis->cmdlen = 0;
 	pThis->cursor = 0;
