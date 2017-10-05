@@ -39,6 +39,7 @@
 static char CRbuf[1] = { '\r' };
 static char NLbuf[1] = { '\n' };
 static char ctrlRbuf[1] = { 'R'-0100 };
+static char ctrlUbuf[1] = { 'U'-0100 };
 
 OvmsConsole::OvmsConsole(Parent* parent)
   : TaskBase(parent)
@@ -213,6 +214,7 @@ void OvmsConsole::Service()
           HandleDeviceEvent(&event);
           continue;
           }
+        ProcessChars(ctrlUbuf, 1);      // Wipe out any partial command
         char cmdline[_COMMAND_LINE_LEN];
         while(fgets(cmdline, _COMMAND_LINE_LEN, event.file) != NULL )
           {
