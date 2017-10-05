@@ -34,6 +34,7 @@
 #include <string>
 #include <sys/time.h>
 #include "ovms_server.h"
+#include "ovms_net.h"
 #include "ovms_buffer.h"
 #include "crypt_rc4.h"
 
@@ -72,7 +73,7 @@ class OvmsServerV2 : public OvmsServer
     void TransmitMsgGroup(bool always);
 
   protected:
-    int m_sock;
+    OvmsNetTcpConnection m_conn;
     OvmsBuffer* m_buffer;
     std::string m_vehicleid;
     std::string m_server;

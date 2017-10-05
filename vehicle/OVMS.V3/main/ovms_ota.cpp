@@ -43,13 +43,9 @@ static const char *TAG = "ota";
 #include "ovms_config.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
+#include "ovms_http.h"
 #include "ovms_buffer.h"
-
-#include "lwip/err.h"
-#include "lwip/sockets.h"
-#include "lwip/sys.h"
-#include "lwip/netdb.h"
-#include "lwip/dns.h"
+#include "crypt_md5.h"
 
 OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
 
@@ -201,103 +197,106 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
   writer->printf("Download firmware from %s to %s\n",url.c_str(),target->label);
 
-  // Server name
-  size_t delim = url.find('/');
-  if (delim==std::string::npos)
+  // HTTP client request...
+  OvmsHttpClient http(url);
+  if (!http.IsOpen())
     {
-    writer->puts("Error: HTTP should be server/path");
-    return;
-    }
-  std::string server = url.substr(0,delim);
-  std::string path = url.substr(delim);
-
-  // DNS lookup the server
-  struct addrinfo hints;
-  hints.ai_family = AF_INET;
-  hints.ai_socktype = SOCK_STREAM;
-  struct addrinfo *res;
-  struct in_addr *addr;
-  int err = getaddrinfo(server.c_str(), "80", &hints, &res);
-  if ((err != 0) || (res == NULL))
-    {
-    writer->printf("Error: DNS lookup on %s failed err=%d\n",server.c_str(),err);
-    return;
-    }
-  addr = &((struct sockaddr_in *)res->ai_addr)->sin_addr;
-  writer->printf("Server %s is at %s\n",server.c_str(),inet_ntoa(*addr));
-
-  // Connect to the server...
-  int sock = socket(res->ai_family, res->ai_socktype, 0);
-  if (sock < 0)
-    {
-    writer->puts("Error: Failed to allocate socket");
-    freeaddrinfo(res);
+    writer->puts("Error: Request failed");
     return;
     }
 
-  if (connect(sock, res->ai_addr, res->ai_addrlen) != 0)
+  if (http.BodyHasLine()<0)
     {
-    writer->printf("Error: Failed to connect server %s (error: %d)\n",server.c_str(),errno);
-    close(sock);
-    freeaddrinfo(res);
+    writer->puts("Error: Invalid server response");
+    http.Disconnect();
+    return;
+    }
+  std::string checksum = http.BodyReadLine();
+  size_t expected = http.BodySize();
+  writer->printf("Checksum is %s and expected file size is %d\n",checksum.c_str(),expected);
+
+  writer->puts("Preparing flash partition...");
+  esp_ota_handle_t otah;
+  esp_err_t err = esp_ota_begin(target, expected, &otah);
+  if (err != ESP_OK)
+    {
+    writer->printf("Error: ESP32 error #%d when starting OTA operation\n",err);
+    http.Disconnect();
     return;
     }
 
-  writer->printf("Connected to OTA update server %s\n",server.c_str());
-  freeaddrinfo(res);
-
-  // Now, we need to send the HTTP request...
-  writer->printf("Server is %s(%d), path is %s(%d)\n",server.c_str(),server.length(),path.c_str(),path.length());
-  char *req = new char[server.length() + path.length() + 200];
-  strcat(req,"GET ");
-  strcat(req,path.c_str());
-  strcat(req," HTTP/1.0\r\nHost: ");
-  strcat(req,server.c_str());
-  strcat(req,"\r\nUser-Agent: ovms/3\r\n\r\n");
-  writer->puts("Sending request to server...");
-
-  if (write(sock, req, strlen(req)) < 0)
+  // Now, process the body
+  MD5_CTX* md5 = new MD5_CTX;
+  uint8_t* rbuf = new uint8_t[1024];
+  uint8_t* rmd5 = new uint8_t[16];
+  MD5_Init(md5);
+  int filesize = 0;
+  int sofar = 0;
+  while (int k = http.BodyRead(rbuf,1024))
     {
-    writer->puts("Error: Failure sending http request to server");
-    delete [] req;
-    close(sock);
-    return;
-    }
-  delete [] req;
-  writer->puts("Sent request to server");
-
-  // Now, retrieve the http headers
-  OvmsBuffer lb(4096);
-  bool inheaders = true;
-  writer->puts("Reading headers...");
-  while((inheaders)&&(lb.PollSocket(sock, 10000) >= 0))
-    {
-    writer->printf("Now buffered %d bytes",lb.UsedSpace());
-    int k = lb.HasLine();
-    while ((inheaders)&&(k >= 0))
+    MD5_Update(md5, rbuf, k);
+    filesize += k;
+    sofar += k;
+    if (sofar > 100000)
       {
-      if (k == 0)
-        {
-        inheaders = 0;
-        }
-      else
-        {
-        writer->printf("Got response %s\n",lb.ReadLine().c_str());
-        k = lb.HasLine();
-        }
+      writer->printf("Downloading... (%d bytes so far)\n",filesize);
+      sofar = 0;
+      }
+    if (filesize > target->size)
+      {
+      writer->printf("Error: Download firmware is bigger than available partition space - state is inconsistent\n");
+      esp_ota_end(otah);
+      http.Disconnect();
+      return;
+      }
+    err = esp_ota_write(otah, rbuf, k);
+    if (err != ESP_OK)
+      {
+      writer->printf("Error: ESP32 error #%d when writing to flash - state is inconsistent\n",err);
+      esp_ota_end(otah);
+      http.Disconnect();
+      return;
       }
     }
-  if (inheaders)
+  MD5_Final(rmd5, md5);
+  char dchecksum[33];
+  sprintf(dchecksum,"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+    rmd5[0],rmd5[1],rmd5[2],rmd5[3],rmd5[4],rmd5[5],rmd5[6],rmd5[7],
+    rmd5[8],rmd5[9],rmd5[10],rmd5[11],rmd5[12],rmd5[13],rmd5[14],rmd5[15]);
+  writer->printf("Download file length is %d and digest %s\n",
+    filesize,dchecksum);
+  delete [] rmd5;
+  delete [] rbuf;
+  delete md5;
+
+  if (checksum.compare(dchecksum) != 0)
     {
-    writer->puts("Error: Premature end of server response");
-    close(sock);
+    writer->printf("Error: Checksum mismatch - state is inconsistent\n");
+    http.Disconnect();
     return;
     }
 
-  // OK, Now let's process the response body...
-  writer->puts("Processing response body...");
+  err = esp_ota_end(otah);
+  if (err != ESP_OK)
+    {
+    writer->printf("Error: ESP32 error #%d finalising OTA operation - state is inconsistent\n",err);
+    return;
+    }
 
-  close(sock);
+  // OK. Now ready to start the work...
+  http.Disconnect();
+
+  // All done
+  writer->puts("Setting boot partition...");
+  err = esp_ota_set_boot_partition(target);
+  if (err != ESP_OK)
+    {
+    writer->printf("Error: ESP32 error #%d setting boot partition - check before rebooting\n",err);
+    return;
+    }
+
+  writer->printf("OTA flash was successfull\n  Flashed %d bytes from %s\n  Next boot will be from '%s'\n",
+                 filesize,url.c_str(),target->label);
   }
 
 void ota_boot(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)

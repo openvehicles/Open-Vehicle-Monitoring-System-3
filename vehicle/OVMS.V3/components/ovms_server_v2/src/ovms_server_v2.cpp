@@ -32,7 +32,6 @@
 static const char *TAG = "ovms-server-v2";
 
 #include <string.h>
-#include "ovms_server_v2.h"
 #include "ovms_command.h"
 #include "ovms_config.h"
 #include "ovms_metrics.h"
@@ -41,14 +40,8 @@ static const char *TAG = "ovms-server-v2";
 #include "crypt_hmac.h"
 #include "crypt_md5.h"
 #include "crypt_crc.h"
-
-#include <sys/socket.h>
+#include "ovms_server_v2.h"
 #include "esp_system.h"
-#include "lwip/err.h"
-#include "lwip/sockets.h"
-#include "lwip/sys.h"
-#include "lwip/netdb.h"
-#include "lwip/dns.h"
 
 OvmsServerV2 *MyOvmsServerV2 = NULL;
 size_t MyOvmsServerV2Modifier = 0;
@@ -75,19 +68,18 @@ void OvmsServerV2::ServerTask()
     StandardMetrics.ms_s_v2_connected->SetValue(true);
     while(1)
       {
-      if (m_sock < 0)
+      if (!m_conn.IsOpen())
         {
         vTaskDelay(10000 / portTICK_PERIOD_MS);
         continue;
         }
-      while ((m_buffer->HasLine() >= 0)&&(m_sock >= 0))
+      while ((m_buffer->HasLine() >= 0)&&(m_conn.IsOpen()))
         {
         ProcessServerMsg();
         }
-      if (m_buffer->PollSocket(m_sock,20000) < 0)
+      if (m_buffer->PollSocket(m_conn.Socket(),20000) < 0)
         {
-        close(m_sock);
-        m_sock = -1;
+        m_conn.Disconnect();
         }
       }
     }
@@ -152,7 +144,7 @@ void OvmsServerV2::Transmit(std::string message)
   base64encode((uint8_t*)s, len, (uint8_t*)buf);
   ESP_LOGI(TAG, "Send %s",buf);
   strcat(buf,"\r\n");
-  write(m_sock,buf,strlen(buf));
+  m_conn.Write(buf,strlen(buf));
   }
 
 void OvmsServerV2::Transmit(const char* message)
@@ -166,7 +158,7 @@ void OvmsServerV2::Transmit(const char* message)
   base64encode((uint8_t*)s, len, (uint8_t*)buf);
   ESP_LOGI(TAG, "Send %s",buf);
   strcat(buf,"\r\n");
-  write(m_sock,buf,strlen(buf));
+  m_conn.Write(buf,strlen(buf));
   }
 
 bool OvmsServerV2::Connect()
@@ -197,50 +189,23 @@ bool OvmsServerV2::Connect()
     return false;
     }
 
-  struct addrinfo hints;
-  hints.ai_family = AF_INET;
-  hints.ai_socktype = SOCK_STREAM;
-  struct addrinfo *res;
-  struct in_addr *addr;
-  int err = getaddrinfo(m_server.c_str(), m_port.c_str(), &hints, &res);
-  if ((err != 0) || (res == NULL))
+  m_conn.Connect(m_server.c_str(), m_port.c_str());
+  if (!m_conn.IsOpen())
     {
-    ESP_LOGW(TAG, "Could not resolve DNS for %s",m_server.c_str());
-    return false;
-    }
-
-  addr = &((struct sockaddr_in *)res->ai_addr)->sin_addr;
-  ESP_LOGI(TAG, "DNS lookup for %s is %s", m_server.c_str(), inet_ntoa(*addr));
-
-  m_sock = socket(res->ai_family, res->ai_socktype, 0);
-  if (m_sock < 0)
-    {
-    ESP_LOGE(TAG, "Failed to allocate socket");
-    freeaddrinfo(res);
-    return false;
-    }
-
-  if (connect(m_sock, res->ai_addr, res->ai_addrlen) != 0)
-    {
-    ESP_LOGE(TAG, "socket connect failed errno=%d", errno);
-    close(m_sock); m_sock = -1;
-    freeaddrinfo(res);
+    ESP_LOGE(TAG, "Socket connect failed errno=%d", errno);
     return false;
     }
 
   ESP_LOGI(TAG, "Connected to OVMS Server V2 at %s",m_server.c_str());
-  freeaddrinfo(res);
-
   return true;
   }
 
 void OvmsServerV2::Disconnect()
   {
-  if (m_sock >= 0)
+  if (m_conn.IsOpen())
     {
+    m_conn.Disconnect();
     ESP_LOGI(TAG, "Disconnected from OVMS Server V2");
-    close(m_sock);
-    m_sock = -1;
     }
   StandardMetrics.ms_s_v2_connected->SetValue(false);
   }
@@ -269,17 +234,16 @@ bool OvmsServerV2::Login()
   ESP_LOGI(TAG, "Sending server login: %s",hello);
   strcat(hello,"\r\n");
 
-  write(m_sock, hello, strlen(hello));
+  m_conn.Write(hello, strlen(hello));
 
   // Wait 20 seconds for a server response
   while (m_buffer->HasLine() < 0)
     {
-    int result = m_buffer->PollSocket(m_sock,20000);
+    int result = m_buffer->PollSocket(m_conn.Socket(),20000);
     if (result <= 0)
       {
       ESP_LOGI(TAG, "Server response is incomplete (%d bytes)",m_buffer->UsedSpace());
-      close(m_sock);
-      m_sock = -1;
+      m_conn.Disconnect();
       return false;
       }
     }
@@ -425,7 +389,6 @@ std::string OvmsServerV2::ReadLine()
 OvmsServerV2::OvmsServerV2(std::string name)
   : OvmsServer(name)
   {
-  m_sock = -1;
   if (MyOvmsServerV2Modifier == 0)
     {
     MyOvmsServerV2Modifier = MyMetrics.RegisterModifier();
