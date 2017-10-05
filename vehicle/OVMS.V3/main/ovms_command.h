@@ -62,8 +62,7 @@ class OvmsWriter
     virtual char ** GetCompletion(OvmsCommandMap& children, const char* token) = 0;
     virtual void Log(char* message) = 0;
     virtual void Log(LogBuffers* message) = 0;
-    static void Exit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-    virtual void DoExit();
+    virtual void Exit();
     virtual void Script(FILE* file) = 0;
   };
 

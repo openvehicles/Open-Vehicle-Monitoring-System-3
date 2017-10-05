@@ -87,7 +87,7 @@ class ConsoleTelnet : public OvmsConsole, public Parent
     void TelnetHandler(telnet_event_t *event);
 
   public:
-    void DoExit();
+    void Exit();
 
   protected:
     telnet_t *m_telnet;

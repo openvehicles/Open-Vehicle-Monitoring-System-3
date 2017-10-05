@@ -331,7 +331,7 @@ void ConsoleTelnet::TelnetHandler(telnet_event_t *event)
   }
 
 // This is called to shut down the Telnet connection when the "exit" command is input.
-void ConsoleTelnet::DoExit()
+void ConsoleTelnet::Exit()
   {
   DeleteFromParent();
   }

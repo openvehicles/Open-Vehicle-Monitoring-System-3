@@ -50,12 +50,7 @@ OvmsWriter::~OvmsWriter()
   {
   }
 
-void OvmsWriter::Exit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  writer->DoExit();
-  }
-
-void OvmsWriter::DoExit()
+void OvmsWriter::Exit()
   {
   puts("This console cannot exit.");
   }
@@ -284,6 +279,11 @@ void help(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const c
   writer->puts("This isn't really much help, is it?");
   }
 
+void Exit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->Exit();
+  }
+
 void level(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   const char* tag = "*";
@@ -300,7 +300,7 @@ OvmsCommandApp::OvmsCommandApp()
   ESP_LOGI(TAG, "Initialising COMMAND (1000)");
 
   m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0);
-  m_root.RegisterCommand("exit", "End console session", OvmsWriter::Exit , "", 0, 0);
+  m_root.RegisterCommand("exit", "End console session", Exit , "", 0, 0);
   OvmsCommand* level_cmd = m_root.RegisterCommand("level", "Set logging level", NULL, "<$C> [tag]");
   level_cmd->RegisterCommand("verbose", "Log at the VERBOSE level (5)", level , "[tag]", 0, 1);
   level_cmd->RegisterCommand("debug", "Log at the DEBUG level (4)", level , "[tag]", 0, 1);

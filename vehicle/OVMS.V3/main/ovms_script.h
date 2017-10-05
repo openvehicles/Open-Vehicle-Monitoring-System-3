@@ -55,7 +55,7 @@ class OvmsScripts : public OvmsWriter
     char ** GetCompletion(OvmsCommandMap& children, const char* token);
     void Log(char* message);
     void Log(LogBuffers* message);
-    virtual void DoExit();
+    virtual void Exit();
     virtual void Script(FILE* file);
   };
 

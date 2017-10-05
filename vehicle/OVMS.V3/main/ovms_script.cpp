@@ -227,7 +227,7 @@ void OvmsScripts::Log(LogBuffers* message)
   // Ignore this
   }
 
-void OvmsScripts::DoExit()
+void OvmsScripts::Exit()
   {
   // Ignore this
   }
