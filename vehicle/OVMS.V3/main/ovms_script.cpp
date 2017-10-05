@@ -87,6 +87,35 @@ void script_ovms(int verbosity, OvmsWriter* writer, FILE* sf)
     }
   }
 
+void script_test(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  FILE *sf;
+
+  if (argv[0][0] == '/')
+    {
+    // A direct path specification
+    sf = fopen(argv[0], "r");
+    }
+  else
+    {
+    std::string path("/sd/scripts/");
+    path.append(argv[0]);
+    sf = fopen(path.c_str(), "r");
+    if (sf == NULL)
+      {
+      path = std::string("/store/scripts/");
+      path.append(argv[0]);
+      sf = fopen(path.c_str(), "r");
+      }
+    }
+  if (sf == NULL)
+    {
+    writer->puts("Error: Script not found");
+    return;
+    }
+  writer->Script(sf);
+  }
+
 void script_run(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   FILE *sf;
@@ -203,6 +232,10 @@ void OvmsScripts::DoExit()
   // Ignore this
   }
 
+void OvmsScripts::Script(FILE* file)
+  {
+  }
+
 OvmsScripts::OvmsScripts()
   {
   ESP_LOGI(TAG, "Initialising SCRIPTS (1600)");
@@ -218,6 +251,7 @@ OvmsScripts::OvmsScripts()
 
   MyCommandApp.RegisterCommand("script","Run a script",script_run,"<path>",1,1);
   MyCommandApp.RegisterCommand(".","Run a script",script_run,"<path>",1,1);
+  MyCommandApp.RegisterCommand("source","Run a script",script_test,"<path>",0,1);
   }
 
 OvmsScripts::~OvmsScripts()

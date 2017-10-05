@@ -64,6 +64,7 @@ class OvmsWriter
     virtual void Log(LogBuffers* message) = 0;
     static void Exit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     virtual void DoExit();
+    virtual void Script(FILE* file) = 0;
   };
 
 class OvmsCommandMap : public std::map<std::string, OvmsCommand*>

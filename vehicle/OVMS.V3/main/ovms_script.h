@@ -56,6 +56,7 @@ class OvmsScripts : public OvmsWriter
     void Log(char* message);
     void Log(LogBuffers* message);
     virtual void DoExit();
+    virtual void Script(FILE* file);
   };
 
 extern OvmsScripts MyScripts;

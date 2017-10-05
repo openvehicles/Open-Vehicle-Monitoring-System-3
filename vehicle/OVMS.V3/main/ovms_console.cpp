@@ -165,6 +165,24 @@ void OvmsConsole::Log(LogBuffers* message)
     }
   }
 
+void OvmsConsole::Script(FILE* file)
+  {
+  if (!m_ready)
+    {
+    fclose(file);
+    return;
+    }
+  Event event;
+  event.type = SCRIPT;
+  event.file = file;
+  BaseType_t ret = xQueueSendToBack(m_queue, (void * )&event, (portTickType)(1000 / portTICK_PERIOD_MS));
+  if (ret != pdPASS)
+    {
+    fclose(file);
+//    ESP_LOGI(TAG, "Timeout queueing message in Console::Script\n");
+    }
+  }
+
 typedef enum
   {
   AT_PROMPT,
@@ -185,12 +203,22 @@ void OvmsConsole::Service()
     // Waiting for UART RX event or async log message event
     if (xQueueReceive(m_queue, (void*)&event, ticks))
       {
-      if (event.type <= RECV)
+      if (event.type <= SCRIPT)
         {
         if (state != AT_PROMPT)
           ProcessChars(ctrlRbuf, 1);    // Restore the prompt plus any type-in on a new line
         state = AT_PROMPT;
-        HandleDeviceEvent(&event);
+        if (event.type < SCRIPT)
+          {
+          HandleDeviceEvent(&event);
+          continue;
+          }
+        char cmdline[_COMMAND_LINE_LEN];
+        while(fgets(cmdline, _COMMAND_LINE_LEN, event.file) != NULL )
+          {
+          ProcessChars(cmdline, strlen(cmdline));
+          }
+        fclose(event.file);
         continue;
         }
       // We remove the newline from the end of a log message so that we can later
