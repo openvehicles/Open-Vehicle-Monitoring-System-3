@@ -198,6 +198,27 @@ void vfs_cp(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
   writer->puts("VFS copy complete");
   }
 
+void vfs_append(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyConfig.ProtectedPath(argv[1]))
+    {
+    writer->puts("Error: protected path");
+    return;
+    }
+
+  FILE* w = fopen(argv[1], "a");
+  if (w == NULL)
+    {
+    writer->puts("Error: VFS target file cannot be opened");
+    return;
+    }
+
+  int len = strlen(argv[0]);
+  fwrite(argv[0], len, 1, w);
+  fwrite("\n", 1, 1, w);
+  fclose(w);
+  }
+
 class VfsInit
   {
   public: VfsInit();
@@ -215,4 +236,5 @@ VfsInit::VfsInit()
   cmd_vfs->RegisterCommand("rm","VFS Delete a file",vfs_rm, "<file>", 1, 1);
   cmd_vfs->RegisterCommand("mv","VFS Rename a file",vfs_mv, "<source> <target>", 2, 2);
   cmd_vfs->RegisterCommand("cp","VFS Copy a file",vfs_cp, "<source> <target>", 2, 2);
+  cmd_vfs->RegisterCommand("append","VFS Append a line to a file",vfs_append, "<quoted line> <file>", 2, 2);
   }
