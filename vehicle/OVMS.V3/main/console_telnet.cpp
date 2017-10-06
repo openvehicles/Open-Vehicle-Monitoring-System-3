@@ -197,7 +197,7 @@ ConsoleTelnet::ConsoleTelnet(TelnetServer* server, int socket)
     { TELNET_TELOPT_NAWS,      TELNET_WONT, TELNET_DONT },
     { -1, 0, 0 }
     };
-  m_telnet = telnet_init(options, TelnetCallback, 0, (void*)this);
+  m_telnet = telnet_init(options, TelnetCallback, TELNET_FLAG_NVT_EOL, (void*)this);
   AddChild(new TelnetReceiver(this, socket, m_buffer, m_queue, m_semaphore));
   telnet_negotiate(m_telnet, TELNET_WILL, TELNET_TELOPT_ECHO);
 
@@ -311,7 +311,6 @@ void ConsoleTelnet::TelnetHandler(telnet_event_t *event)
       {
       char *buffer = (char *)event->data.buffer;
       size_t size = (size_t)event->data.size;
-      size = telnet_translate_eol(m_telnet, buffer, size, &m_split_eol);
       // Translate CR (Enter) from telnet client into \n for microrl
       for (size_t i = 0; i < size; ++i)
         {
