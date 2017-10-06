@@ -90,13 +90,14 @@ void simcom::EventHandler()
     }
   }
 
-simcom::simcom(std::string name, uart_port_t uartnum, int baud, int rxpin, int txpin, int pwregpio)
+simcom::simcom(std::string name, uart_port_t uartnum, int baud, int rxpin, int txpin, int pwregpio, int dtregpio)
   : pcp(name)
   {
   m_task = 0;
   m_uartnum = uartnum;
   m_baud = baud;
   m_pwregpio = pwregpio;
+  m_dtregpio = dtregpio;
   m_rxpin = rxpin;
   m_txpin = txpin;
   }

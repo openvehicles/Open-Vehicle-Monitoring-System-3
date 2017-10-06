@@ -42,7 +42,7 @@
 class simcom : public pcp
   {
   public:
-    simcom(std::string name, uart_port_t uartnum, int baud, int rxpin, int txpin, int pwregpio);
+    simcom(std::string name, uart_port_t uartnum, int baud, int rxpin, int txpin, int pwregpio, int dtregpio);
     ~simcom();
 
   public:
@@ -62,6 +62,7 @@ class simcom : public pcp
     int m_rxpin;
     int m_txpin;
     int m_pwregpio;
+    int m_dtregpio;
     uint8_t m_data[SIMCOM_BUF_SIZE];
   };
 

@@ -68,6 +68,7 @@
 #define MAX7317_MDM_EN            0
 #define MAX7317_SW_CTL            1
 #define MAX7317_CAN1_EN           2
+#define MAX7317_MDM_DTR           3
 #define MAX7317_EGPIO_1           2
 #define MAX7317_EGPIO_2           3
 #define MAX7317_EGPIO_3           4
@@ -82,6 +83,7 @@
 #define MODEM_PIN_RX              27
 #define MODEM_PIN_TX              28
 #define MODEM_EGPIO_PWR           0
+#define MODEM_EGPIO_DTR           3
 
 class Peripherals
   {
