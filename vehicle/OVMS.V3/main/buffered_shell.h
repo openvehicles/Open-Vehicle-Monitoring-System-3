@@ -38,7 +38,7 @@ class OvmsCommandMap;
 class BufferedShell : public OvmsShell
   {
   public:
-    BufferedShell(bool print);
+    BufferedShell();
     BufferedShell(bool print, LogBuffers* output);
     ~BufferedShell();
 

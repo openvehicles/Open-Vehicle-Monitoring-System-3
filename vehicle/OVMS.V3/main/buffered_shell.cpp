@@ -34,11 +34,11 @@
 #include "log_buffers.h"
 
 
-BufferedShell::BufferedShell(bool print)
+BufferedShell::BufferedShell()
   {
-  m_print = print;
+  m_print = false;
   m_output = NULL;
-  Initialize(print);
+  Initialize(m_print);
   }
 
 BufferedShell::BufferedShell(bool print, LogBuffers* output)
@@ -48,7 +48,7 @@ BufferedShell::BufferedShell(bool print, LogBuffers* output)
     m_output = output;
   else
     m_output = new LogBuffers;
-  Initialize(print);
+  Initialize(m_print);
   }
 
 BufferedShell::~BufferedShell()
