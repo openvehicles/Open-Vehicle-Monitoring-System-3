@@ -279,7 +279,7 @@ void test_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   UBaseType_t n = uxTaskGetSystemState(tasks, 20, NULL);
   for (UBaseType_t i = 0; i < n; ++i)
     {
-    writer->printf("Task %08X %2u %-15s  Max Stack %5u\n", tasks[i].xHandle, tasks[i].xTaskNumber,
+    writer->printf("Task %08X %2u %-15s  Min Free Stack %5u\n", tasks[i].xHandle, tasks[i].xTaskNumber,
       tasks[i].pcTaskName, tasks[i].usStackHighWaterMark);
     }
 #else
