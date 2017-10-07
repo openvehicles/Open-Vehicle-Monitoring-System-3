@@ -40,6 +40,8 @@ static const char *TAG = "script";
 #include "ovms_command.h"
 #include "ovms_events.h"
 #include "ovms_housekeeping.h"
+#include "log_buffers.h"
+#include "buffered_shell.h"
 
 OvmsScripts MyScripts __attribute__ ((init_priority (1600)));
 
@@ -87,6 +89,50 @@ void script_ovms(int verbosity, OvmsWriter* writer, FILE* sf)
     }
   }
 
+void script_test(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  FILE *sf;
+
+  if (argv[0][0] == '/')
+    {
+    // A direct path specification
+    sf = fopen(argv[0], "r");
+    }
+  else
+    {
+    std::string path("/sd/scripts/");
+    path.append(argv[0]);
+    sf = fopen(path.c_str(), "r");
+    if (sf == NULL)
+      {
+      path = std::string("/store/scripts/");
+      path.append(argv[0]);
+      sf = fopen(path.c_str(), "r");
+      }
+    }
+  if (sf == NULL)
+    {
+    writer->puts("Error: Script not found");
+    return;
+    }
+  BufferedShell* bs = new BufferedShell(true, NULL);
+  char* cmdline = new char[_COMMAND_LINE_LEN];
+  while(fgets(cmdline, _COMMAND_LINE_LEN, sf) != NULL )
+    {
+    bs->ProcessChars(cmdline, strlen(cmdline));
+    }
+  fclose(sf);
+#if 1
+  bs->Output(writer);
+#else
+  char* buf = bs->Dump();
+  writer->write(buf, strlen(buf));
+  free(buf);
+#endif
+  delete bs;
+  delete [] cmdline;
+  }
+
 void script_run(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   FILE *sf;
@@ -103,7 +149,7 @@ void script_run(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     sf = fopen(path.c_str(), "r");
     if (sf == NULL)
       {
-      path = std::string("/store/scripts");
+      path = std::string("/store/scripts/");
       path.append(argv[0]);
       sf = fopen(path.c_str(), "r");
       }
@@ -218,6 +264,7 @@ OvmsScripts::OvmsScripts()
 
   MyCommandApp.RegisterCommand("script","Run a script",script_run,"<path>",1,1);
   MyCommandApp.RegisterCommand(".","Run a script",script_run,"<path>",1,1);
+  MyCommandApp.RegisterCommand("source","Run a script",script_test,"<path>",0,1);
   }
 
 OvmsScripts::~OvmsScripts()

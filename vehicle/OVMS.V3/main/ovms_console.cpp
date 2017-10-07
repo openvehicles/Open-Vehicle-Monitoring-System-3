@@ -40,6 +40,11 @@ static char CRbuf[1] = { '\r' };
 static char NLbuf[1] = { '\n' };
 static char ctrlRbuf[1] = { 'R'-0100 };
 
+char ** Complete (microrl_t* rl, int argc, const char * const * argv )
+  {
+  return MyCommandApp.Complete((OvmsWriter*)rl->userdata, argc, argv);
+  }
+
 OvmsConsole::OvmsConsole(Parent* parent)
   : TaskBase(parent)
   {
@@ -57,32 +62,15 @@ void OvmsConsole::Initialize(const char* console)
   std::string task = "Console";
   task += console;
   task += "Task";
-  CreateTaskPinned(1, task.c_str());
+  CreateTaskPinned(1, task.c_str(), 5000);
 
   printf("\n\033[32mWelcome to the Open Vehicle Monitoring System (OVMS) - %s Console\033[0m", console);
-  microrl_init (&m_rl, Print);
-  m_rl.userdata = (void*)this;
+  OvmsShell::Initialize(true);
   microrl_set_complete_callback(&m_rl, Complete);
-  microrl_set_execute_callback(&m_rl, Execute);
   ProcessChar('\n');
 
   MyCommandApp.RegisterConsole(this);
   m_ready = true;
-  }
-
-void OvmsConsole::ProcessChar(const char c)
-  {
-  // put received char ino microrl lib
-  microrl_insert_char(&m_rl, c);
-  }
-
-void OvmsConsole::ProcessChars(const char* buf, int len)
-  {
-  for (int i = 0; i < len; ++i)
-    {
-    // put received char from UART to microrl lib
-    microrl_insert_char(&m_rl, *buf++);
-    }
   }
 
 char ** OvmsConsole::GetCompletion(OvmsCommandMap& children, const char* token)
@@ -111,22 +99,6 @@ char ** OvmsConsole::GetCompletion(OvmsCommandMap& children, const char* token)
     }
   m_completions[index] = NULL;
   return m_completions;
-  }
-
-void OvmsConsole::Print(microrl_t* rl, const char * str)
-  {
-  ((OvmsWriter*)rl->userdata)->write(str,strlen(str));
-  }
-
-char ** OvmsConsole::Complete (microrl_t* rl, int argc, const char * const * argv )
-  {
-  return MyCommandApp.Complete((OvmsWriter*)rl->userdata, argc, argv);
-  }
-
-int OvmsConsole::Execute (microrl_t* rl, int argc, const char * const * argv )
-  {
-  MyCommandApp.Execute(COMMAND_RESULT_VERBOSE, (OvmsWriter*)rl->userdata, argc, argv);
-  return 0;
   }
 
 void OvmsConsole::Log(char* message)

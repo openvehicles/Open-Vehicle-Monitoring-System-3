@@ -27,65 +27,36 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
-#ifndef __CONSOLE_H__
-#define __CONSOLE_H__
+#ifndef __BUFFERED_SHELL_H__
+#define __BUFFERED_SHELL_H__
 
-#include "task_base.h"
 #include "ovms_shell.h"
 
-#define TOKEN_MAX_LENGTH 32
-#define COMPLETION_MAX_TOKENS 20
-
-class OvmsCommandMap;
-class Parent;
 class LogBuffers;
+class OvmsCommandMap;
 
-class OvmsConsole : public OvmsShell, public TaskBase
+class BufferedShell : public OvmsShell
   {
   public:
-    OvmsConsole(Parent* parent = NULL);
-    ~OvmsConsole();
+    BufferedShell();
+    BufferedShell(bool print, LogBuffers* output);
+    ~BufferedShell();
 
   public:
-    // In order to share a queue with the UART driver (and possibly other
-    // drivers for console devices), we implicitly make a union with the
-    // uart_event_t typedef in driver/uart.h and we start our event type enum
-    // with a value large enough to leave plenty of space below.
-    typedef enum
-      {
-      RECV = 0x10000,
-      ALERT,
-      ALERT_MULTI
-      } event_type_t;
-
-    typedef struct
-      {
-      event_type_t type;  // Our extended event type enum
-      union
-        {
-        char* buffer;       // Pointer to ALERT buffer
-        LogBuffers* multi;  // Pointer to ALERT_MULTI message
-        ssize_t size;       // Buffer size for RECV
-        };
-      } Event;
-
-  public:
-    void Initialize(const char* console);
+    void Initialize(bool print);
+    int puts(const char* s);
+    int printf(const char* fmt, ...);
+    ssize_t write(const void *buf, size_t nbyte);
+    void finalise();
     char ** GetCompletion(OvmsCommandMap& children, const char* token);
     void Log(char* message);
     void Log(LogBuffers* message);
-
-  private:
-    void Service();
-
-  protected:
-    virtual void HandleDeviceEvent(void* event) = 0;
+    void Output(OvmsWriter*);
+    char* Dump();
 
   protected:
-    bool m_ready;
-    char *m_completions[COMPLETION_MAX_TOKENS+2];
-    char m_space[COMPLETION_MAX_TOKENS+2][TOKEN_MAX_LENGTH];
-    QueueHandle_t m_queue;
+    bool m_print;
+    LogBuffers* m_output;
   };
 
-#endif //#ifndef __CONSOLE_H__
+#endif //#ifndef __BUFFERED_SHELL_H__
