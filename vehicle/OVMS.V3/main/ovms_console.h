@@ -55,7 +55,6 @@ class OvmsConsole : public OvmsWriter, public TaskBase
     typedef enum
       {
       RECV = 0x10000,
-      SCRIPT,
       ALERT,
       ALERT_MULTI
       } event_type_t;
@@ -65,7 +64,6 @@ class OvmsConsole : public OvmsWriter, public TaskBase
       event_type_t type;  // Our extended event type enum
       union
         {
-        FILE* file;         // Pointer to SCRIPT file
         char* buffer;       // Pointer to ALERT buffer
         LogBuffers* multi;  // Pointer to ALERT_MULTI message
         ssize_t size;       // Buffer size for RECV
@@ -82,7 +80,6 @@ class OvmsConsole : public OvmsWriter, public TaskBase
     static int Execute (microrl_t* rl, int argc, const char * const * argv );
     void Log(char* message);
     void Log(LogBuffers* message);
-    void Script(FILE* file);
 
   private:
     void Service();
