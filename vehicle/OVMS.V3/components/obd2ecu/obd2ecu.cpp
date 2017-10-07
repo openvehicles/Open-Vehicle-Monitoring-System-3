@@ -119,6 +119,22 @@ void obd2ecu_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     }
   }
   
+ void obd2ecu_privacy(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+    if(MyPeripherals->m_obd2ecu == NULL) 
+    { writer->puts("OBDII:  Need to start ecu process first");
+      return;
+    }
+    if(!strcmp(argv[0],"on")) MyPeripherals->m_obd2ecu->m_private = 1;
+       else if(!strcmp(argv[0],"off")) MyPeripherals->m_obd2ecu->m_private = 0;
+        else 
+        { writer->puts("OBDII Privacy: Need 'on' or 'off'");
+          return;
+        }
+    
+    writer->puts("OBDII Privacy has been set");
+  } 
+  
 //
 // Fill Mode 1 frames with data based on format specified
 //
@@ -402,7 +418,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
         case 2:
           if(verbose) ESP_LOGI(TAG, "Requested VIN");
           
-//          if(m_private) break;  /* ignore request for privacy's sake. Doesn't seem to matter to Dongle. */
+          if(m_private) break;  /* ignore request for privacy's sake. Doesn't seem to matter to Dongle. */
 
           memcpy(vin_string,StandardMetrics.ms_v_vin->AsString().c_str(),17);
           vin_string[17] = '\0';  /* force null termination, just because */
@@ -532,6 +548,7 @@ obd2ecuInit::obd2ecuInit()
   cmd_start->RegisterCommand("can2","Start an OBDII ECU on can2",obd2ecu_start, "", 0, 0);
   cmd_start->RegisterCommand("can3","Start an OBDII ECU on can3",obd2ecu_start, "", 0, 0);
   cmd_ecu->RegisterCommand("stop","Stop the OBDII ECU",obd2ecu_stop, "", 0, 0);
+  cmd_ecu->RegisterCommand("privacy","Set Privacy on/off (hide / allow VIN reporting)",obd2ecu_privacy, "", 1, 1);
 
   MyConfig.RegisterParam("obd2ecu", "OBD2ECU configuration", true, true);
   }
