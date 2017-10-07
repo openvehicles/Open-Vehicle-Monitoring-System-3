@@ -149,7 +149,7 @@ void script_run(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     sf = fopen(path.c_str(), "r");
     if (sf == NULL)
       {
-      path = std::string("/store/scripts");
+      path = std::string("/store/scripts/");
       path.append(argv[0]);
       sf = fopen(path.c_str(), "r");
       }
