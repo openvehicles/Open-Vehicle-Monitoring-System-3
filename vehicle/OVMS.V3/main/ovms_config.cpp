@@ -105,6 +105,26 @@ void config_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   p->SetValue(argv[1],argv[2]);
   }
 
+void config_rm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyConfig.ismounted()) return;
+
+  OvmsConfigParam *p = MyConfig.CachedParam(argv[0]);
+  if (p==NULL)
+    {
+    writer->puts("Error: parameter not found");
+    return;
+    }
+
+  if (!p->Writable())
+    {
+    writer->puts("Error: parameter is not writeable");
+    return;
+    }
+
+  p->DeleteInstance(argv[1]);
+  }
+
 OvmsConfig::OvmsConfig()
   {
   ESP_LOGI(TAG, "Initialising CONFIG (1400)");
@@ -116,6 +136,7 @@ OvmsConfig::OvmsConfig()
   OvmsCommand* cmd_config = MyCommandApp.RegisterCommand("config","CONFIG framework",NULL,"<$C>",1,1);
   cmd_config->RegisterCommand("list","Show configuration parameters/instances",config_list,"",0,1);
   cmd_config->RegisterCommand("set","Set parameter:instance=value",config_set,"<param> <instance> <value>",3,3);
+  cmd_config->RegisterCommand("rm","Remove parameter:instance",config_rm,"<param> <instance>",2,2);
   }
 
 OvmsConfig::~OvmsConfig()
