@@ -38,6 +38,10 @@ static const char *TAG = "v-nissanleaf";
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
 
+#define GEN_1_NEW_CAR_GIDS 281l
+#define GEN_1_NEW_CAR_GIDS_S "281"
+#define GEN_1_NEW_CAR_RANGE_MILES 84
+
 static void NL_rxtask(void *pvParameters)
   {
   OvmsVehicleNissanLeaf *me = (OvmsVehicleNissanLeaf*)pvParameters;
@@ -61,7 +65,15 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
 
   m_can1 = (canbus*)MyPcpApp.FindDeviceByName("can1");
   m_can1->SetPowerMode(On);
-  m_can1->Start(CAN_MODE_ACTIVE,CAN_SPEED_1000KBPS);
+  m_can1->Start(CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
+
+  m_can2 = (canbus*)MyPcpApp.FindDeviceByName("can2");
+  m_can2->SetPowerMode(On);
+  m_can2->Start(CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
+
+  m_can3 = (canbus*)MyPcpApp.FindDeviceByName("can3");
+  m_can3->SetPowerMode(On);
+  m_can3->Start(CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
 
   MyCan.RegisterListener(m_rxqueue);
   }
@@ -82,15 +94,98 @@ const std::string OvmsVehicleNissanLeaf::VehicleName()
   return std::string("Nissan Leaf");
   }
 
-void OvmsVehicleNissanLeaf::IncomingFrame(CAN_frame_t* p_frame)
+void OvmsVehicleNissanLeaf::IncomingFrameEVBus(CAN_frame_t* p_frame)
   {
-  if (p_frame->origin != m_can1) return; // Only handle CAN1
-
+  //ESP_LOGI(TAG, "EV Bus Frame");
   uint8_t *d = p_frame->data.u8;
+
+  uint16_t nl_battery_current;
+  uint16_t nl_battery_voltage;
+  uint16_t car_battvoltage;
+  uint16_t nl_gids;
+  uint16_t nl_max_gids = GEN_1_NEW_CAR_GIDS;
+
+
 
   switch (p_frame->MsgID)
     {
-    // todo
+    case 0x1db:
+      // sent by the LBC, measured inside the battery box
+      // current is 11 bit twos complement big endian starting at bit 0
+      nl_battery_current = ((int16_t) d[0] << 3) | (d[1] & 0xe0) >> 5;
+      if (nl_battery_current & 0x0400)
+        {
+        // negative so extend the sign bit
+        nl_battery_current |= 0xf800;
+        }
+      // voltage is 10 bits unsigned big endian starting at bit 16
+      nl_battery_voltage = ((uint16_t) d[2] << 2) | (d[3] & 0xc0) >> 6;
+      // can bus data is 0.5v per bit, car_battvoltage is 0.1v per bit, so multiply by 5
+      car_battvoltage = nl_battery_voltage * 5;
+      break;
+    case 0x284:
+    {
+      // TODO
+      //vehicle_nissanleaf_car_on(TRUE);
+
+      uint16_t car_speed16 = d[4];
+      car_speed16 = car_speed16 << 8;
+      car_speed16 = car_speed16 | d[5];
+      // this ratio determined by comparing with the dashboard speedometer
+      // it is approximately correct and converts to km/h on my car with km/h speedo
+      StandardMetrics.ms_v_pos_speed->SetValue(car_speed16 / 92);
+      break;
+    }
+    case 0x54c:
+    {
+      if (d[6] == 0xff)
+        {
+        break;
+        }
+      // TODO this temperature isn't quite right
+      int8_t ambient_temp = d[6] - 56; // Fahrenheit
+      ambient_temp = (ambient_temp - 32) / 1.8f; // Celsius
+      StandardMetrics.ms_v_temp_ambient->SetValue(ambient_temp);
+      break;
+    }
+    case 0x5bc:
+    {
+      uint16_t nl_gids_candidate = ((uint16_t) d[0] << 2) | ((d[1] & 0xc0) >> 6);
+      if (nl_gids_candidate == 1023)
+        {
+        // ignore invalid data seen during startup
+        break;
+        }
+      nl_gids = nl_gids_candidate;
+      StandardMetrics.ms_v_bat_soc->SetValue((nl_gids * 100 + (nl_max_gids / 2)) / nl_max_gids);
+      StandardMetrics.ms_v_bat_range_ideal->SetValue((nl_gids * GEN_1_NEW_CAR_RANGE_MILES + (GEN_1_NEW_CAR_GIDS / 2)) / GEN_1_NEW_CAR_GIDS);
+    }
+      break;
+    case 0x5c0:
+      if (d[0] == 0x40)
+        {
+        StandardMetrics.ms_v_temp_battery->SetValue(d[2] / 2 - 40);
+        }
+      break;
+    }
+  }
+
+void OvmsVehicleNissanLeaf::IncomingFrame(CAN_frame_t* p_frame)
+  {
+  if (p_frame->origin == m_can1)
+    {
+    IncomingFrameEVBus(p_frame);
+    }
+  // TODO replace can bus testing with actual can bus decoding:
+  if (p_frame->origin == m_can2)
+    {
+    ESP_LOGI(TAG, "Can 2 Frame");
+    m_can2 = NULL;
+    }
+  if (p_frame->origin == m_can3)
+    {
+    ESP_LOGI(TAG, "Can 3 Frame");
+    m_can3 = NULL;
     }
   }
 
