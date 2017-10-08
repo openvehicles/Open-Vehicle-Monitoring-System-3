@@ -56,6 +56,8 @@ class BufferedShell : public OvmsShell
 
   protected:
     bool m_print;
+    size_t m_left;
+    char* m_buffer;
     LogBuffers* m_output;
   };
 

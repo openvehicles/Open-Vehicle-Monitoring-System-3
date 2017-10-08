@@ -35,7 +35,7 @@
 #include "log_buffers.h"
 
 
-LogBuffers::LogBuffers() : refcount(0)
+LogBuffers::LogBuffers() : m_refcount(0)
   {
   }
 
@@ -52,6 +52,12 @@ int LogBuffers::append(const char* fmt, va_list args)
   {
   char *buffer;
   size_t ret = vasprintf(&buffer, fmt, args);
+  append(buffer);
+  return ret;
+  }
+
+void LogBuffers::append(char* buffer)
+  {  
   if (empty())
     {
     push_front(buffer);
@@ -69,17 +75,21 @@ int LogBuffers::append(const char* fmt, va_list args)
       }
     insert_after(before, buffer);
     }
-  return ret;
   }
 
 void LogBuffers::set(int count)
   {
-  refcount = count;
+  m_refcount = count;
   }
 
 void LogBuffers::release()
   {
-  int before = std::atomic_fetch_add(&refcount, -1);
+  int before = std::atomic_fetch_add(&m_refcount, -1);
   if (before == 1)
     delete this;
+  }
+
+bool LogBuffers::last()
+  {
+  return m_refcount == 1;
   }

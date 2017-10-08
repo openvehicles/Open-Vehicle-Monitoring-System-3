@@ -28,15 +28,19 @@
 ; THE SOFTWARE.
 */
 
+#include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 #include "buffered_shell.h"
 #include "log_buffers.h"
 
+#define BUFFER_SIZE 64
 
 BufferedShell::BufferedShell()
   {
   m_print = false;
+  m_left = 0;
+  m_buffer = NULL;
   m_output = NULL;
   Initialize(m_print);
   }
@@ -44,10 +48,15 @@ BufferedShell::BufferedShell()
 BufferedShell::BufferedShell(bool print, LogBuffers* output)
   {
   m_print = print;
+  m_left = 0;
+  m_buffer = NULL;
   if (output)
     m_output = output;
   else
+    {
     m_output = new LogBuffers;
+    m_output->set(1);
+    }
   Initialize(m_print);
   }
 
@@ -63,24 +72,47 @@ void BufferedShell::Initialize(bool print)
 
 int BufferedShell::puts(const char* s)
   {
-  return printf("%s\n", s);
+  write(s, strlen(s));
+  write("\n", 1);
+  return 0;
   }
 
 int BufferedShell::printf(const char* fmt, ...)
   {
   if (!m_output)
     return 0;
+  char *buffer;
   va_list args;
   va_start(args, fmt);
-  m_output->append(fmt, args);
+  size_t ret = vasprintf(&buffer, fmt, args);
   va_end(args);
-  m_output->set(1);
+  write(buffer, ret);
+  free(buffer);
   return 0;
   }
 
 ssize_t BufferedShell::write(const void *buf, size_t nbyte)
   {
-  printf("%.*s", nbyte, buf);
+  if (!m_output)
+    return nbyte;
+  int done = 0;
+  while (nbyte > 0)
+    {
+    if (m_left == 0)
+      {
+      m_buffer = (char*)malloc(BUFFER_SIZE);
+      m_left = BUFFER_SIZE - 1;
+      m_output->append(m_buffer);
+      }
+    size_t n = nbyte;
+    if (n > m_left)
+      n = m_left;
+    memcpy(m_buffer + BUFFER_SIZE - 1 - m_left, (char*)buf + done, n);
+    done += n;
+    m_left -= n;
+    *(m_buffer + BUFFER_SIZE - 1 - m_left) = '\0';
+    nbyte -= n;
+    }
   return nbyte;
   }
 
@@ -105,8 +137,25 @@ void BufferedShell::Log(LogBuffers* message)
     message->release();
     return;
     }
-  for (LogBuffers::iterator i = message->begin(); i != message->end(); ++i)
-    printf("%s", *i);
+  if (message->last())
+    {
+    LogBuffers::iterator before = m_output->begin(), after;
+    while (true)
+      {
+      after = before;
+      ++after;
+      if (after == m_output->end())
+        break;
+      before = after;
+      }
+    m_output->splice_after(before, *message);
+    m_left = 0;
+    }
+  else
+    {
+    for (LogBuffers::iterator i = message->begin(); i != message->end(); ++i)
+      write(*i, strlen(*i));
+    }
   message->release();
   return;
   }
