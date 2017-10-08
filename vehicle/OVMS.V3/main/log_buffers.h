@@ -42,11 +42,13 @@ class LogBuffers : public std::forward_list<char*>
 
   public:
     int append(const char* fmt, va_list args);
+    void append(char* buffer);
     void set(int count);
     void release();
+    bool last();
 
   private:
-    std::atomic<int> refcount;
+    std::atomic<int> m_refcount;
   };
 
 #endif //#ifndef __LOG_BUFFERS_H__
