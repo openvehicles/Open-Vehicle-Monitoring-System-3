@@ -96,33 +96,30 @@ const std::string OvmsVehicleNissanLeaf::VehicleName()
 
 void OvmsVehicleNissanLeaf::IncomingFrameEVBus(CAN_frame_t* p_frame)
   {
-  //ESP_LOGI(TAG, "EV Bus Frame");
   uint8_t *d = p_frame->data.u8;
 
-  uint16_t nl_battery_current;
-  uint16_t nl_battery_voltage;
-  uint16_t car_battvoltage;
   uint16_t nl_gids;
   uint16_t nl_max_gids = GEN_1_NEW_CAR_GIDS;
-
-
 
   switch (p_frame->MsgID)
     {
     case 0x1db:
+    {
       // sent by the LBC, measured inside the battery box
       // current is 11 bit twos complement big endian starting at bit 0
-      nl_battery_current = ((int16_t) d[0] << 3) | (d[1] & 0xe0) >> 5;
+      int16_t nl_battery_current = ((int16_t) d[0] << 3) | (d[1] & 0xe0) >> 5;
       if (nl_battery_current & 0x0400)
         {
         // negative so extend the sign bit
         nl_battery_current |= 0xf800;
         }
+      StandardMetrics.ms_v_bat_current->SetValue(nl_battery_current / 2.0f);
+
       // voltage is 10 bits unsigned big endian starting at bit 16
-      nl_battery_voltage = ((uint16_t) d[2] << 2) | (d[3] & 0xc0) >> 6;
-      // can bus data is 0.5v per bit, car_battvoltage is 0.1v per bit, so multiply by 5
-      car_battvoltage = nl_battery_voltage * 5;
+      int16_t nl_battery_voltage = ((uint16_t) d[2] << 2) | (d[3] & 0xc0) >> 6;
+      StandardMetrics.ms_v_bat_voltage->SetValue(nl_battery_voltage / 2.0f);
       break;
+    }
     case 0x284:
     {
       // TODO

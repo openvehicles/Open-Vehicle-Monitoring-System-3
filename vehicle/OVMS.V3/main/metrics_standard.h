@@ -57,6 +57,7 @@
 #define MS_V_BAT_SOH                "v.b.soh"
 #define MS_V_BAT_CAC                "v.b.cac"
 #define MS_V_BAT_VOLTAGE            "v.b.voltage"
+#define MS_V_BAT_CURRENT            "v.b.current"
 #define MS_V_BAT_RANGE_IDEAL        "v.b.range.i"
 #define MS_V_BAT_RANGE_EST          "v.b.range.e"
 #define MS_V_BAT_12V                "v.b.12v"
@@ -150,7 +151,8 @@ class MetricsStandard
     OvmsMetricInt*    ms_v_bat_soc;
     OvmsMetricInt*    ms_v_bat_soh;
     OvmsMetricFloat*  ms_v_bat_cac;
-    OvmsMetricInt*    ms_v_bat_voltage;
+    OvmsMetricFloat*  ms_v_bat_voltage;
+    OvmsMetricFloat*  ms_v_bat_current;
     OvmsMetricInt*    ms_v_bat_range_ideal;
     OvmsMetricInt*    ms_v_bat_range_est;
     OvmsMetricFloat*  ms_v_bat_12v;
