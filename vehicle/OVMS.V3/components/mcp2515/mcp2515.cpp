@@ -73,8 +73,14 @@ static void MCP2515_rxtask(void *pvParameters)
         msg.origin = me;
 
         uint8_t *p = spibus->spi_cmd(spi, buf, 13, 1, 0x90+rxbuf);
-        msg.MsgID = (p[0] << 3) + (p[1] >> 5);
+        if(p[1] & 0x20) //check for extended mode=0, or std mode=1, though this seems backwards from standard
+          msg.MsgID = (p[0] << 3) | (p[1] >> 5);  // Standard mode
+        else
+        { msg.FIR.B.FF = CAN_frame_ext;           // Extended mode
+          msg.MsgID = (p[0]<<21) | ((p[1]&0x80)<<13) | ((p[1]&0x0f)<<16) | (p[2]<<8) | (p[3]);
+        }
         msg.FIR.B.DLC = p[4] & 0x0f;
+      
         memcpy(&msg.data,p+5,8);
 
         //send frame to main CAN processor task
@@ -228,10 +234,10 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
   else
     {
     // Transmit an extended frame
-    id[0] = 0;
-    id[1] = (p_frame->MsgID >> 16) + 0x08;  // HIGH 2 bits of extended ID
-    id[2] = (p_frame->MsgID >> 8) & 0xff;   // MID 8 bits of extended ID
-    id[3] = (p_frame->MsgID & 0xff);        // LOW 8 bits of extended ID
+    id[0] = (p_frame->MsgID >> 21) & 0xff;    // HIGH bits
+    id[1] = ((p_frame->MsgID >> 13) & 0xf6)+0x08;  // Next middle bits of extended ID; set the EXT bit too.
+    id[2] = (p_frame->MsgID >> 8)  & 0xff;    // MID 8 bits of extended ID
+    id[3] = (p_frame->MsgID & 0xff);          // LOW 8 bits of extended ID
     }
 
   // MCP2515 Transmit Buffer
