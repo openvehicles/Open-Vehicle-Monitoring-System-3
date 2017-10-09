@@ -49,7 +49,7 @@ class OvmsMetric
     virtual ~OvmsMetric();
 
   public:
-    virtual std::string AsString();
+    virtual std::string AsString(const char* defvalue = "");
     virtual void SetValue(std::string value);
     virtual uint32_t LastModified();
     virtual bool IsStale();
@@ -76,8 +76,8 @@ class OvmsMetricBool : public OvmsMetric
     virtual ~OvmsMetricBool();
 
   public:
-    std::string AsString();
-    int AsBool();
+    std::string AsString(const char* defvalue = "");
+    int AsBool(const bool defvalue = false);
     void SetValue(bool value);
     void SetValue(std::string value);
 
@@ -92,8 +92,8 @@ class OvmsMetricInt : public OvmsMetric
     virtual ~OvmsMetricInt();
 
   public:
-    std::string AsString();
-    int AsInt();
+    std::string AsString(const char* defvalue = "");
+    int AsInt(const int defvalue = 0);
     void SetValue(int value);
     void SetValue(std::string value);
 
@@ -108,8 +108,8 @@ class OvmsMetricFloat : public OvmsMetric
     virtual ~OvmsMetricFloat();
 
   public:
-    std::string AsString();
-    float AsFloat();
+    std::string AsString(const char* defvalue = "");
+    float AsFloat(const float defvalue = 0);
     void SetValue(float value);
     void SetValue(std::string value);
 
@@ -124,7 +124,7 @@ class OvmsMetricString : public OvmsMetric
     virtual ~OvmsMetricString();
 
   public:
-    std::string AsString();
+    std::string AsString(const char* defvalue = "");
     void SetValue(std::string value);
 
   protected:
