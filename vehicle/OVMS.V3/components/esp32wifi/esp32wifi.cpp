@@ -295,6 +295,11 @@ esp32wifi_mode_t esp32wifi::GetMode()
   return m_mode;
   }
 
+std::string esp32wifi::GetSSID()
+  {
+  return std::string((char*)m_wifi_apsta_cfg.sta.ssid);
+  }
+
 void esp32wifi::EventWifiGotIp(std::string event, void* data)
   {
   system_event_info_t *info = (system_event_info_t*)data;

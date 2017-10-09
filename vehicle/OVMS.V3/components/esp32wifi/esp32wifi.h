@@ -62,6 +62,7 @@ class esp32wifi : public pcp, public Parent
     void StopStation();
     void Scan();
     esp32wifi_mode_t GetMode();
+    std::string GetSSID();
 
   public:
     void EventWifiGotIp(std::string event, void* data);
