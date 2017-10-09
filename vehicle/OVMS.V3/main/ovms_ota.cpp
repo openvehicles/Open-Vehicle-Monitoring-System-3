@@ -157,7 +157,7 @@ void ota_flash_vfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     return;
     }
 
-  writer->printf("OTA flash was successfull\n  Flashed %d bytes from %s\n  Next boot will be from '%s'\n",
+  writer->printf("OTA flash was successful\n  Flashed %d bytes from %s\n  Next boot will be from '%s'\n",
                  ds.st_size,argv[0],target->label);
   }
 
@@ -295,7 +295,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     return;
     }
 
-  writer->printf("OTA flash was successfull\n  Flashed %d bytes from %s\n  Next boot will be from '%s'\n",
+  writer->printf("OTA flash was successful\n  Flashed %d bytes from %s\n  Next boot will be from '%s'\n",
                  filesize,url.c_str(),target->label);
   }
 

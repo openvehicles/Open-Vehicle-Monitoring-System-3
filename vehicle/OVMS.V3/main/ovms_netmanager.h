@@ -28,42 +28,25 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __SIMCOM_H__
-#define __SIMCOM_H__
+#ifndef __OVMS_NETMANAGER_H__
+#define __OVMS_NETMANAGER_H__
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-#include "driver/uart.h"
-#include "pcp.h"
-
-#define SIMCOM_BUF_SIZE (1024)
-
-class simcom : public pcp
+class OvmsNetManager
   {
   public:
-    simcom(std::string name, uart_port_t uartnum, int baud, int rxpin, int txpin, int pwregpio, int dtregpio);
-    ~simcom();
+    OvmsNetManager();
+    ~OvmsNetManager();
 
   public:
-    virtual void SetPowerMode(PowerMode powermode);
-    void Start();
-    void Stop();
+    void WifiUp(std::string event, void* data);
+    void WifiDown(std::string event, void* data);
 
   public:
-    void tx(const char* data, size_t size);
-    void EventHandler();
-
-  protected:
-    TaskHandle_t m_task;
-    QueueHandle_t m_queue;
-    uart_port_t m_uartnum;
-    int m_baud;
-    int m_rxpin;
-    int m_txpin;
-    int m_pwregpio;
-    int m_dtregpio;
-    uint8_t m_data[SIMCOM_BUF_SIZE];
+    bool m_connected_wifi;
+    bool m_connected_modem;
+    bool m_connected_any;
   };
 
-#endif //#ifndef __SIMCOM_H__
+extern OvmsNetManager MyNetManager;
+
+#endif //#ifndef __OVMS_NETMANAGER_H__

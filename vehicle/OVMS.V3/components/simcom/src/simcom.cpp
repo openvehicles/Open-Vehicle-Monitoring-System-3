@@ -38,60 +38,56 @@ static const char *TAG = "simcom";
 static void SIMCOM_task(void *pvParameters)
   {
   simcom *me = (simcom*)pvParameters;
-
-  for(;;)
-    {
-    // Waiting for UART event.
-    me->EventHandler();
-    }
+  me->Task();
   }
 
-void simcom::EventHandler()
+void simcom::Task()
   {
   uart_event_t event;
   size_t buffered_size = 0;
 
-  if (!m_task) return; // Quick exit if no task running (we are stopped)
-
-  if (xQueueReceive(m_queue, (void *)&event, (portTickType)portMAX_DELAY))
+  for(;;)
     {
-    switch(event.type)
+    if (xQueueReceive(m_queue, (void *)&event, (portTickType)portMAX_DELAY))
       {
-      case UART_DATA:
+      switch(event.type)
         {
-        buffered_size = 1;
+        case UART_DATA:
+          {
+          buffered_size = 1;
+          }
+          break;
+        case UART_FIFO_OVF:
+          uart_flush(m_uartnum);
+          break;
+        case UART_BUFFER_FULL:
+          uart_flush(m_uartnum);
+          break;
+        case UART_BREAK:
+        case UART_PARITY_ERR:
+        case UART_FRAME_ERR:
+        case UART_PATTERN_DET:
+        default:
+          break;
         }
-        break;
-      case UART_FIFO_OVF:
-        uart_flush(m_uartnum);
-        break;
-      case UART_BUFFER_FULL:
-        uart_flush(m_uartnum);
-        break;
-      case UART_BREAK:
-      case UART_PARITY_ERR:
-      case UART_FRAME_ERR:
-      case UART_PATTERN_DET:
-      default:
-        break;
       }
-    }
-
-  while (buffered_size>0)
-    {
-    char data[16];
-    uart_get_buffered_data_len(m_uartnum, &buffered_size);
-    if (buffered_size>16) buffered_size = 16;
-    if (buffered_size>0)
+    while (buffered_size>0)
       {
-      int len = uart_read_bytes(m_uartnum, (uint8_t*)data, buffered_size, 100 / portTICK_RATE_MS);
-      MyCommandApp.HexDump("SIMCOM rx",data,len);
+      uint8_t data[16];
+      uart_get_buffered_data_len(m_uartnum, &buffered_size);
+      if (buffered_size>16) buffered_size = 16;
+      if (buffered_size>0)
+        {
+        int len = uart_read_bytes(m_uartnum, (uint8_t*)data, buffered_size, 100 / portTICK_RATE_MS);
+        m_buffer.Push(data,len);
+        MyCommandApp.HexDump("SIMCOM rx",(const char*)data,len);
+        }
       }
     }
   }
 
 simcom::simcom(std::string name, uart_port_t uartnum, int baud, int rxpin, int txpin, int pwregpio, int dtregpio)
-  : pcp(name)
+  : pcp(name), m_buffer(SIMCOM_BUF_SIZE)
   {
   m_task = 0;
   m_uartnum = uartnum;
@@ -100,13 +96,16 @@ simcom::simcom(std::string name, uart_port_t uartnum, int baud, int rxpin, int t
   m_dtregpio = dtregpio;
   m_rxpin = rxpin;
   m_txpin = txpin;
+  m_state1 = Undefined;
+  StartTask();
   }
 
 simcom::~simcom()
   {
+  StopTask();
   }
 
-void simcom::Start()
+void simcom::StartTask()
   {
   if (!m_task)
     {
@@ -132,7 +131,7 @@ void simcom::Start()
     }
   }
 
-void simcom::Stop()
+void simcom::StopTask()
   {
   if (m_task)
     {
@@ -144,16 +143,14 @@ void simcom::Stop()
 
 void simcom::SetPowerMode(PowerMode powermode)
   {
-  m_powermode = powermode;
+  pcp::SetPowerMode(powermode);
   switch (powermode)
     {
     case On:
-      Start();
       break;
     case Sleep:
     case DeepSleep:
     case Off:
-      Stop();
       break;
     default:
       break;

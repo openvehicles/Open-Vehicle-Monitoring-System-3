@@ -28,51 +28,70 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __ESP32WIFI_H__
-#define __ESP32WIFI_H__
+#ifndef __SIMCOM_H__
+#define __SIMCOM_H__
 
-#include <string>
-#include <stdint.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
+#include "driver/uart.h"
 #include "pcp.h"
-#include "task_base.h"
-#include "esp_err.h"
-#include "esp_wifi.h"
-#include "ovms_events.h"
+#include "ovms_buffer.h"
 
-typedef enum {
-    ESP32WIFI_MODE_OFF = 0,   // Modem is off
-    ESP32WIFI_MODE_CLIENT,    // Client mode
-    ESP32WIFI_MODE_AP,        // Access point mode
-    ESP32WIFI_MODE_SCAN,      // SCAN mode
-    ESP32WIFI_MODE_MAX
-} esp32wifi_mode_t;
+#define SIMCOM_BUF_SIZE 1024
 
-class esp32wifi : public pcp, public Parent
+class simcom : public pcp
   {
   public:
-    esp32wifi(std::string name);
-    ~esp32wifi();
+    simcom(std::string name, uart_port_t uartnum, int baud, int rxpin, int txpin, int pwregpio, int dtregpio);
+    ~simcom();
 
   public:
-    void SetPowerMode(PowerMode powermode);
+    enum SimcomState1
+      {
+      Undefined,
+      PoweringOn,
+      PoweredOn,
+      PoweringOff,
+      PoweredOff
+      };
+    typedef enum
+      {
+      SETSTATE = 0x10000
+      } event_type_t;
+    typedef struct
+      {
+      event_type_t type;  // Our extended event type enum
+      union
+        {
+        SimcomState1 newstate;
+        };
+      } Event;
 
   public:
-    void StartClientMode(std::string ssid, std::string password, uint8_t* bssid=NULL);
-    void StartAccessPointMode(std::string ssid, std::string password);
-    void StopStation();
-    void Scan();
-    esp32wifi_mode_t GetMode();
-    std::string GetSSID();
+    virtual void SetPowerMode(PowerMode powermode);
 
   public:
-    void EventWifiGotIp(std::string event, void* data);
-    void EventWifiScanDone(std::string event, void* data);
+    void tx(const char* data, size_t size);
+
+  public:
+    void StartTask();
+    void StopTask();
+    void Task();
 
   protected:
-    esp32wifi_mode_t m_mode;
-    tcpip_adapter_ip_info_t m_ip_info;
-    wifi_init_config_t m_wifi_init_cfg;
-    wifi_config_t m_wifi_apsta_cfg;
+    TaskHandle_t m_task;
+    QueueHandle_t m_queue;
+    uart_port_t m_uartnum;
+    int m_baud;
+    int m_rxpin;
+    int m_txpin;
+    int m_pwregpio;
+    int m_dtregpio;
+
+  protected:
+    SimcomState1 m_state1;
+    OvmsBuffer m_buffer;
   };
 
-#endif //#ifndef __ESP32WIFI_H__
+#endif //#ifndef __SIMCOM_H__

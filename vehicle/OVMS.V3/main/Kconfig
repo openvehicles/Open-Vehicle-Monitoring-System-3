@@ -112,6 +112,13 @@ config OVMS_COMP_SERVER_V3
     help
         Enable to include support for V3 server connections.
 
+config OVMS_COMP_MODEM_SIMCOM
+    bool "Include support for SIMCOM modems"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for SIMCOM modems
+
 endmenu # Component Options
 
 menu "Developer Options"

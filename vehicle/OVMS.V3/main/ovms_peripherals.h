@@ -41,7 +41,9 @@
 #include "esp32adc.h"
 #include "mcp2515.h"
 #include "sdcard.h"
+#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
 #include "simcom.h"
+#endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
 #include "obd2ecu.h"
 #include "ext12v.h"
 
@@ -102,7 +104,9 @@ class Peripherals
     mcp2515* m_mcp2515_1;
     mcp2515* m_mcp2515_2;
     sdcard* m_sdcard;
+#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
     simcom* m_simcom;
+#endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
     obd2ecu* m_obd2ecu;
     ext12v* m_ext12v;
   };

@@ -217,9 +217,9 @@ OvmsMetric::~OvmsMetric()
   {
   }
 
-std::string OvmsMetric::AsString()
+std::string OvmsMetric::AsString(const char* defvalue)
   {
-  return std::string("invalid");
+  return std::string(defvalue);
   }
 
 void OvmsMetric::SetValue(std::string value)
@@ -292,7 +292,7 @@ OvmsMetricInt::~OvmsMetricInt()
   {
   }
 
-std::string OvmsMetricInt::AsString()
+std::string OvmsMetricInt::AsString(const char* defvalue)
   {
   if (m_defined)
     {
@@ -302,13 +302,16 @@ std::string OvmsMetricInt::AsString()
     }
   else
     {
-    return std::string("");
+    return std::string(defvalue);
     }
   }
 
-int OvmsMetricInt::AsInt()
+int OvmsMetricInt::AsInt(const int defvalue)
   {
-  return m_value;
+  if (m_defined)
+    return m_value;
+  else
+    return defvalue;
   }
 
 void OvmsMetricInt::SetValue(int value)
@@ -345,7 +348,7 @@ OvmsMetricBool::~OvmsMetricBool()
   {
   }
 
-std::string OvmsMetricBool::AsString()
+std::string OvmsMetricBool::AsString(const char* defvalue)
   {
   if (m_defined)
     {
@@ -356,13 +359,16 @@ std::string OvmsMetricBool::AsString()
     }
   else
     {
-    return std::string("");
+    return std::string(defvalue);
     }
   }
 
-int OvmsMetricBool::AsBool()
+int OvmsMetricBool::AsBool(const bool defvalue)
   {
-  return m_value;
+  if (m_defined)
+    return m_value;
+  else
+    return defvalue;
   }
 
 void OvmsMetricBool::SetValue(bool value)
@@ -402,7 +408,7 @@ OvmsMetricFloat::~OvmsMetricFloat()
   {
   }
 
-std::string OvmsMetricFloat::AsString()
+std::string OvmsMetricFloat::AsString(const char* defvalue)
   {
   if (m_defined)
     {
@@ -413,13 +419,16 @@ std::string OvmsMetricFloat::AsString()
     }
   else
     {
-    return std::string("");
+    return std::string(defvalue);
     }
   }
 
-float OvmsMetricFloat::AsFloat()
+float OvmsMetricFloat::AsFloat(const float defvalue)
   {
-  return m_value;
+  if (m_defined)
+    return m_value;
+  else
+    return defvalue;
   }
 
 void OvmsMetricFloat::SetValue(float value)
@@ -454,9 +463,12 @@ OvmsMetricString::~OvmsMetricString()
   {
   }
 
-std::string OvmsMetricString::AsString()
+std::string OvmsMetricString::AsString(const char* defvalue)
   {
-  return m_value;
+  if (m_defined)
+    return m_value;
+  else
+    return std::string(defvalue);
   }
 
 void OvmsMetricString::SetValue(std::string value)
