@@ -126,9 +126,9 @@ void Housekeeping::init()
 
   MyPeripherals->m_esp32can->SetPowerMode(Off);
   MyPeripherals->m_ext12v->SetPowerMode(Off);
-#ifdef CONFIG_OVMS_SC_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
   MyPeripherals->m_simcom->SetPowerMode(Off);
-#endif // #ifdef CONFIG_OVMS_SC_MODEM_SIMCOM
+#endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
   ESP_LOGI(TAG, "Starting USB console...");
   MyUsbConsole = new ConsoleAsync();
 

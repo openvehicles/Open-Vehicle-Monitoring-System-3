@@ -36,8 +36,9 @@
 #include "freertos/queue.h"
 #include "driver/uart.h"
 #include "pcp.h"
+#include "ovms_buffer.h"
 
-#define SIMCOM_BUF_SIZE (1024)
+#define SIMCOM_BUF_SIZE 1024
 
 class simcom : public pcp
   {
@@ -46,13 +47,37 @@ class simcom : public pcp
     ~simcom();
 
   public:
+    enum SimcomState1
+      {
+      Undefined,
+      PoweringOn,
+      PoweredOn,
+      PoweringOff,
+      PoweredOff
+      };
+    typedef enum
+      {
+      SETSTATE = 0x10000
+      } event_type_t;
+    typedef struct
+      {
+      event_type_t type;  // Our extended event type enum
+      union
+        {
+        SimcomState1 newstate;
+        };
+      } Event;
+
+  public:
     virtual void SetPowerMode(PowerMode powermode);
-    void Start();
-    void Stop();
 
   public:
     void tx(const char* data, size_t size);
-    void EventHandler();
+
+  public:
+    void StartTask();
+    void StopTask();
+    void Task();
 
   protected:
     TaskHandle_t m_task;
@@ -63,7 +88,10 @@ class simcom : public pcp
     int m_txpin;
     int m_pwregpio;
     int m_dtregpio;
-    uint8_t m_data[SIMCOM_BUF_SIZE];
+
+  protected:
+    SimcomState1 m_state1;
+    OvmsBuffer m_buffer;
   };
 
 #endif //#ifndef __SIMCOM_H__

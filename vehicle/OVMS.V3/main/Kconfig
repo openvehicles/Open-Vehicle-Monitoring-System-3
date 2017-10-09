@@ -55,13 +55,6 @@ config OVMS_SC_JAVASCRIPT_MJS
 
 endchoice # OVMS_SC_JAVASCRIPT
 
-config OVMS_SC_MODEM_SIMCOM
-    bool "Include support for SIMCOM modems"
-    default y
-    depends on OVMS
-    help
-        Enable to include support for SIMCOM modems
-
 config OVMS_SC_GPL_MONGOOSE
     bool "Include the GPL licensed MONGOOSE networking library (web server, etc)"
     default y
@@ -118,6 +111,13 @@ config OVMS_COMP_SERVER_V3
     depends on OVMS
     help
         Enable to include support for V3 server connections.
+
+config OVMS_COMP_MODEM_SIMCOM
+    bool "Include support for SIMCOM modems"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for SIMCOM modems
 
 endmenu # Component Options
 
