@@ -82,7 +82,9 @@ Peripherals::Peripherals()
   ESP_LOGI(TAG, "  SD CARD");
   m_sdcard = new sdcard("sdcard", false,true,SDCARD_PIN_CD);
   ESP_LOGI(TAG, "  SIMCOM MODEM");
+#ifdef CONFIG_OVMS_SC_MODEM_SIMCOM
   m_simcom = new simcom("simcom", UART_NUM_1, 115200, MODEM_GPIO_RX, MODEM_GPIO_TX, MODEM_EGPIO_PWR, MODEM_EGPIO_DTR);
+#endif // #ifdef CONFIG_OVMS_SC_MODEM_SIMCOM
   m_obd2ecu = NULL;
   m_ext12v = new ext12v("ext12v");
   }
