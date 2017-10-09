@@ -35,12 +35,14 @@ static const char *TAG = "http";
 
 OvmsHttpClient::OvmsHttpClient()
   {
+  m_buf = NULL;
   m_bodysize = 0;
   m_responsecode = 0;
   }
 
 OvmsHttpClient::OvmsHttpClient(std::string url, const char* method)
   {
+  m_buf = NULL;
   Request(url, method);
   }
 
