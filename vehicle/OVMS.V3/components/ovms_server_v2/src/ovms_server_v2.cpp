@@ -81,6 +81,9 @@ void OvmsServerV2::ServerTask()
         {
         m_conn.Disconnect();
         }
+      // FIXME sending messages almost certainly probably shouldn't be wedged into this loop
+      // also shouldn't there be a delay to avoid sending as fast as we get messages from the can bus?
+      TransmitMsgStat(false);
       }
     }
   }
@@ -305,6 +308,93 @@ bool OvmsServerV2::Login()
 
 void OvmsServerV2::TransmitMsgStat(bool always)
   {
+  ESP_LOGI(TAG, "Sending MP-0 S");
+  bool modified =
+    StandardMetrics.ms_v_bat_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_bat_range_ideal->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_bat_range_est->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_bat_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_bat_soh->IsModifiedAndClear(MyOvmsServerV2Modifier);
+
+  // Quick exit if nothing modified
+  if ((!always)&&(!modified)) return;
+
+  // FIXME fixed size buffer asks to be overflowed
+  char* buffer = new char[512];
+  buffer[0] = 0;
+  strcat(buffer, "MP-0 S");
+  strcat(buffer, StandardMetrics.ms_v_bat_soc->AsString("0").c_str());
+  strcat(buffer, ",");
+  strcat(buffer, "K");  // units
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_linevoltage
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_chargecurrent
+  strcat(buffer, ",");
+  strcat(buffer, "stopped");  // car_chargestate
+  strcat(buffer, ",");
+  strcat(buffer, "standard");  // car_chargemode
+  strcat(buffer, ",");
+  // TODO convert to miles/km if necessary
+  strcat(buffer, StandardMetrics.ms_v_bat_range_ideal->AsString("0").c_str());
+  strcat(buffer, ",");
+  strcat(buffer, StandardMetrics.ms_v_bat_range_est->AsString("0").c_str());
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // charge limit
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // charge duration
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_charge_b4
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_chargekwh
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_chargesubstate
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_chargestate
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_chargemode
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_timermode
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_timerstart
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_stale_timer
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_cac100
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_chargefull_minsremaining
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_chargelimit_minsremaining_range
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_chargelimit_rangelimit
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_chargelimit_soclimit
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_coolingdown
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_cooldown_tbattery
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_cooldown_timelimit
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_chargeestimate
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_chargelimit_minsremaining_range
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_chargelimit_minsremaining_soc
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_max_idealrange
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_chargetype
+  strcat(buffer, ",");
+  strcat(buffer, "0");  // car_chargepower
+  strcat(buffer, ",");
+  strcat(buffer, StandardMetrics.ms_v_bat_voltage->AsString("0").c_str());
+  strcat(buffer, ",");
+  strcat(buffer, StandardMetrics.ms_v_bat_soh->AsString("0").c_str());
+
+  ESP_LOGI(TAG, "Sending: %s", buffer);
+  Transmit(buffer);
+  delete [] buffer;
   }
 
 void OvmsServerV2::TransmitMsgGPS(bool always)
