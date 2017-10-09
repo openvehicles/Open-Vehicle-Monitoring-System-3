@@ -64,9 +64,9 @@ class obd2ecu : public pcp
 #define REQUEST_PID  0x7df
 #define RESPONSE_PID 0x7e8
 #define FLOWCONTROL_PID 0x7e0
-#define REQUEST_EXT_PID  0x98db33f1
-#define RESPONSE_EXT_PID 0x98daf10e
-#define FLOWCONTROL_EXT_PID 0x98da0ef1
+#define REQUEST_EXT_PID  0x18db33f1
+#define RESPONSE_EXT_PID 0x18daf10e
+#define FLOWCONTROL_EXT_PID 0x18da0ef1
   
 #define verbose 0
 
