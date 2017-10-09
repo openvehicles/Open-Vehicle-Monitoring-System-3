@@ -326,24 +326,24 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
 
-  char* buffer = new char[512];
-  buffer[0] = 0;
-  strcat(buffer, "MP-0 W");
-  strcat(buffer, StandardMetrics.ms_v_tpms_fr_p->AsString().c_str());
-  strcat(buffer, ",");
-  strcat(buffer, StandardMetrics.ms_v_tpms_fr_t->AsString().c_str());
-  strcat(buffer, ",");
-  strcat(buffer, StandardMetrics.ms_v_tpms_rr_p->AsString().c_str());
-  strcat(buffer, ",");
-  strcat(buffer, StandardMetrics.ms_v_tpms_rr_t->AsString().c_str());
-  strcat(buffer, ",");
-  strcat(buffer, StandardMetrics.ms_v_tpms_fl_p->AsString().c_str());
-  strcat(buffer, ",");
-  strcat(buffer, StandardMetrics.ms_v_tpms_fl_t->AsString().c_str());
-  strcat(buffer, ",");
-  strcat(buffer, StandardMetrics.ms_v_tpms_rl_p->AsString().c_str());
-  strcat(buffer, ",");
-  strcat(buffer, StandardMetrics.ms_v_tpms_rl_t->AsString().c_str());
+  std::string buffer;
+  buffer.reserve(512);
+  buffer.append("MP-0 W");
+  buffer.append(StandardMetrics.ms_v_tpms_fr_p->AsString());
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_tpms_fr_t->AsString());
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_tpms_rr_p->AsString());
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_tpms_rr_t->AsString());
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_tpms_fl_p->AsString());
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_tpms_fl_t->AsString());
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_tpms_rl_p->AsString());
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_tpms_rl_t->AsString());
 
   bool stale =
     StandardMetrics.ms_v_tpms_fl_t->IsStale() ||
@@ -355,14 +355,12 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
     StandardMetrics.ms_v_tpms_rl_p->IsStale() ||
     StandardMetrics.ms_v_tpms_rr_p->IsStale();
 
-  strcat(buffer, ",");
   if (stale)
-    strcat(buffer,"0");
+    buffer.append(",0");
   else
-    strcat(buffer,"1");
+    buffer.append(",1");
 
-  Transmit(buffer);
-  delete [] buffer;
+  Transmit(buffer.c_str());
   }
 
 void OvmsServerV2::TransmitMsgFirmware(bool always)
