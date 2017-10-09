@@ -223,7 +223,7 @@ void obd2ecu::FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint
 void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
   { 
   CAN_frame_t r_frame;  /* build the response frame here */
-  int reply;
+  uint32_t reply;
   int jitter;
   uint8_t mapped_pid;
   float metric;
@@ -241,20 +241,20 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
 
   /* handle both standard and extended frame types - return like for like */
   if (p_frame->FIR.B.FF == CAN_frame_std) reply = RESPONSE_PID;
-  else if (p_frame->FIR.B.FF == CAN_frame_ext) reply = RESPONSE_EXT_PID;
+  else if (p_frame->FIR.B.FF == CAN_frame_ext) reply = RESPONSE_EXT_PID;  // seems that extd frames are 0x636?
   else /* check for flow control frames - they're received on the response MsgID minus 8 */
     {
     if ((p_frame->MsgID == FLOWCONTROL_PID || p_frame->MsgID == FLOWCONTROL_EXT_PID) && p_frame->data.u8[0] == 0x30)
       {
-      if (verbose) ESP_LOGI(TAG, "flow control frame");
-	return;  /* ignore it.  We just sleep for a bit instead */
+        if (verbose) ESP_LOGI(TAG, "flow control frame");
+        return;  /* ignore it.  We just sleep for a bit instead */
       }
     else ESP_LOGI(TAG, "unknown can_id %x",p_frame->MsgID);
       return;
     }
 
   jitter = time(NULL)&0xf;  /* 0-15 range for simulation purposes */
-		
+
   switch(p_d[1])  /* switch on the incoming frame mode */
     {
     case 1:  /* Mode 1 (main real-time PIDs are here */
@@ -269,7 +269,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_frame.origin = NULL;
           r_frame.FIR.U = 0;
           r_frame.FIR.B.DLC = 8;
-          r_frame.FIR.B.FF = CAN_frame_format_t (reply != RESPONSE_PID);
+          r_frame.FIR.B.FF = p_frame->FIR.B.FF;
           r_frame.MsgID = reply;
           r_d[0] = 6;		/* # additional bytes (ok to have extra) */
           r_d[1] = 0x41;  /* Mode 1 + 0x40 indicating a reply */
