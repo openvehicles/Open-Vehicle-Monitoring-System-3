@@ -324,7 +324,7 @@ simcom::SimcomState1 simcom::State1Ticker1()
       switch (m_state1_ticker)
         {
         case 10:
-          tx("AT+CPIN?;+CREG=1;+CLIP=1;+CMGF=1;+CNMI=1,2,0,0,0;+CSDH=1;+CMEE=2;E0\r\n");
+          tx("AT+CPIN?;+CREG=1;+CLIP=1;+CMGF=1;+CNMI=1,2,0,0,0;+CSDH=1;+CMEE=2;+CSQ;+AUTOCSQ=1,1;E0\r\n");
           break;
         case 12:
           tx("AT+CGMR;+ICCID\r\n");
@@ -353,6 +353,13 @@ void simcom::StandardLineHandler(std::string line)
   else if (line.compare(0, 7, "+CGMR: ") == 0)
     {
     StandardMetrics.ms_m_net_mdm_model->SetValue(line.substr(7));
+    }
+  else if (line.compare(0, 6, "+CSQ: ") == 0)
+    {
+    int csq = atoi(line.substr(6).c_str());
+    int dbm = 0;
+    if (csq <= 31) dbm = -113 + (csq*2);
+    StandardMetrics.ms_m_net_sq->SetValue(dbm);
     }
   }
 
