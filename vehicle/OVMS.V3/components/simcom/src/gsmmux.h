@@ -36,14 +36,30 @@
 #include "ovms_buffer.h"
 
 class simcom; // Forward declared
+class GsmMux; // Forward declared
 
 class GsmMuxChannel
   {
   public:
-    GsmMuxChannel(size_t buffersize);
+    GsmMuxChannel(GsmMux* mux, int channel, size_t buffersize);
     ~GsmMuxChannel();
 
   public:
+    enum GsmMuxChannelState
+      {
+      ChanClosed,    // DLCI closed
+      ChanOpening,   // SABM sent, awaiting UA
+      ChanOpen,      // DLCI open (SABM sent, UA received)
+      ChanClosing    // DISC sent, awaiting UA/DM
+      };
+
+  public:
+    void ProcessFrame(uint8_t* frame, size_t length);
+
+  public:
+    GsmMuxChannelState m_state;
+    GsmMux* m_mux;
+    int m_channel;
     OvmsBuffer m_buffer;
   };
 
@@ -59,14 +75,30 @@ class GsmMux
     void StartChannel(int channel);
     void StopChannel(int channel);
     void Process(OvmsBuffer* buf);
-    void tx(int channel, uint8_t data, ssize_t size);
+    void ProcessFrame();
+    void tx(int channel, uint8_t* data, ssize_t size);
+
+  protected:
+    void txfcs(uint8_t* data, size_t size);
+
+  public:
+    enum GsmMuxState
+      {
+      DlciClosed,    // DLCI closed
+      DlciOpening,   // SABM sent, awaiting UA
+      DlciOpen,      // DLCI open (SABM sent, UA received)
+      DlciClosing    // DISC sent, awaiting UA/DM
+      };
 
   public:
     simcom* m_modem;
+    GsmMuxState m_state;
     uint8_t* m_frame;
     size_t m_framesize;
     size_t m_framepos;
-    std::vector<GsmMuxChannel> m_channels;
+    size_t m_framelen;
+    bool m_framemorelen;
+    std::vector<GsmMuxChannel*> m_channels;
   };
 
 #endif //#ifndef __GSM_MUX__

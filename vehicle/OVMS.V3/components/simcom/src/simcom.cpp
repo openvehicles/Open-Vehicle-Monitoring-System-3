@@ -374,6 +374,18 @@ void simcom::StandardLineHandler(std::string line)
     if (csq <= 31) dbm = -113 + (csq*2);
     StandardMetrics.ms_m_net_sq->SetValue(dbm);
     }
+  else if (line.compare(0, 7, "+COPS: ") == 0)
+    {
+    size_t qp = line.find('"');
+    if (qp != string::npos)
+      {
+      size_t qp2 = line.find('"',qp+1);
+      if (qp2 != string::npos)
+        {
+        StandardMetrics.ms_m_net_provider->SetValue(line.substr(qp+1,qp2-qp-1));
+        }
+      }
+    }
   }
 
 void simcom::PowerCycle()

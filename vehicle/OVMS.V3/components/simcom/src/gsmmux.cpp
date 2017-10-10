@@ -34,21 +34,135 @@ static const char *TAG = "gsm-mux";
 #include "gsmmux.h"
 #include "simcom.h"
 
-GsmMuxChannel::GsmMuxChannel(size_t buffersize)
+#define GSM_CR         0x02
+#define GSM_EA         0x01
+#define GSM_PF         0x10
+
+#define GSM_RR         0x01
+#define GSM_UI         0x03
+#define GSM_RNR        0x05
+#define GSM_REJ        0x09
+#define GSM_DM         0x0F
+#define GSM_SABM       0x2F
+#define GSM_DISC       0x43
+#define GSM_UA         0x63
+#define GSM_UIH        0xEF
+
+#define GSM_CMD_NSC    0x09
+#define GSM_CMD_TEST   0x11
+#define GSM_CMD_PSC    0x21
+#define GSM_CMD_RLS    0x29
+#define GSM_CMD_FCOFF  0x31
+#define GSM_CMD_PN     0x41
+#define GSM_CMD_RPN    0x49
+#define GSM_CMD_FCON   0x51
+#define GSM_CMD_CLD    0x61
+#define GSM_CMD_SNC    0x69
+#define GSM_CMD_MSC    0x71
+
+#define GSM_MDM_FC     0x01
+#define GSM_MDM_RTC    0x02
+#define GSM_MDM_RTR    0x04
+#define GSM_MDM_IC     0x20
+#define GSM_MDM_DV     0x40
+
+#define GSM0_SOF       0xF9
+#define XON            0x11
+#define XOFF           0x13
+
+static const uint8_t gsm_fcs8[256] =
+  {
+  0x00, 0x91, 0xE3, 0x72, 0x07, 0x96, 0xE4, 0x75,
+  0x0E, 0x9F, 0xED, 0x7C, 0x09, 0x98, 0xEA, 0x7B,
+  0x1C, 0x8D, 0xFF, 0x6E, 0x1B, 0x8A, 0xF8, 0x69,
+  0x12, 0x83, 0xF1, 0x60, 0x15, 0x84, 0xF6, 0x67,
+  0x38, 0xA9, 0xDB, 0x4A, 0x3F, 0xAE, 0xDC, 0x4D,
+  0x36, 0xA7, 0xD5, 0x44, 0x31, 0xA0, 0xD2, 0x43,
+  0x24, 0xB5, 0xC7, 0x56, 0x23, 0xB2, 0xC0, 0x51,
+  0x2A, 0xBB, 0xC9, 0x58, 0x2D, 0xBC, 0xCE, 0x5F,
+  0x70, 0xE1, 0x93, 0x02, 0x77, 0xE6, 0x94, 0x05,
+  0x7E, 0xEF, 0x9D, 0x0C, 0x79, 0xE8, 0x9A, 0x0B,
+  0x6C, 0xFD, 0x8F, 0x1E, 0x6B, 0xFA, 0x88, 0x19,
+  0x62, 0xF3, 0x81, 0x10, 0x65, 0xF4, 0x86, 0x17,
+  0x48, 0xD9, 0xAB, 0x3A, 0x4F, 0xDE, 0xAC, 0x3D,
+  0x46, 0xD7, 0xA5, 0x34, 0x41, 0xD0, 0xA2, 0x33,
+  0x54, 0xC5, 0xB7, 0x26, 0x53, 0xC2, 0xB0, 0x21,
+  0x5A, 0xCB, 0xB9, 0x28, 0x5D, 0xCC, 0xBE, 0x2F,
+  0xE0, 0x71, 0x03, 0x92, 0xE7, 0x76, 0x04, 0x95,
+  0xEE, 0x7F, 0x0D, 0x9C, 0xE9, 0x78, 0x0A, 0x9B,
+  0xFC, 0x6D, 0x1F, 0x8E, 0xFB, 0x6A, 0x18, 0x89,
+  0xF2, 0x63, 0x11, 0x80, 0xF5, 0x64, 0x16, 0x87,
+  0xD8, 0x49, 0x3B, 0xAA, 0xDF, 0x4E, 0x3C, 0xAD,
+  0xD6, 0x47, 0x35, 0xA4, 0xD1, 0x40, 0x32, 0xA3,
+  0xC4, 0x55, 0x27, 0xB6, 0xC3, 0x52, 0x20, 0xB1,
+  0xCA, 0x5B, 0x29, 0xB8, 0xCD, 0x5C, 0x2E, 0xBF,
+  0x90, 0x01, 0x73, 0xE2, 0x97, 0x06, 0x74, 0xE5,
+  0x9E, 0x0F, 0x7D, 0xEC, 0x99, 0x08, 0x7A, 0xEB,
+  0x8C, 0x1D, 0x6F, 0xFE, 0x8B, 0x1A, 0x68, 0xF9,
+  0x82, 0x13, 0x61, 0xF0, 0x85, 0x14, 0x66, 0xF7,
+  0xA8, 0x39, 0x4B, 0xDA, 0xAF, 0x3E, 0x4C, 0xDD,
+  0xA6, 0x37, 0x45, 0xD4, 0xA1, 0x30, 0x42, 0xD3,
+  0xB4, 0x25, 0x57, 0xC6, 0xB3, 0x22, 0x50, 0xC1,
+  0xBA, 0x2B, 0x59, 0xC8, 0xBD, 0x2C, 0x5E, 0xCF
+  };
+
+#define FCS_INIT 0xFF
+#define FCS_GOOD 0xCF
+
+static inline uint8_t gsm_fcs_add(uint8_t fcs, uint8_t c)
+  {
+  return gsm_fcs8[fcs ^ c];
+  }
+
+static inline uint8_t gsm_fcs_add_block(uint8_t fcs, uint8_t *c, size_t len)
+  {
+  while (len--) fcs = gsm_fcs8[fcs ^ *c++];
+  return fcs;
+  }
+
+GsmMuxChannel::GsmMuxChannel(GsmMux* mux, int channel, size_t buffersize)
   : m_buffer(buffersize)
   {
+  m_state = ChanClosed;
+  m_mux = mux;
+  m_channel = channel;
   }
 
 GsmMuxChannel::~GsmMuxChannel()
   {
   }
 
+void GsmMuxChannel::ProcessFrame(uint8_t* frame, size_t length)
+  {
+  switch (m_state)
+    {
+    case ChanClosed:
+      break;
+    case ChanOpening:
+      if (frame[1] == (GSM_UA + GSM_PF))
+        {
+        m_state = ChanOpen; // SABM established
+        if (m_channel==0) m_mux->m_state = GsmMux::DlciOpen;
+        if (m_channel<3) m_mux->StartChannel(m_channel+1);
+        }
+    case ChanOpen:
+      break;
+    case ChanClosing:
+      break;
+    default:
+      break;
+    }
+  }
+
 GsmMux::GsmMux(simcom* modem, size_t maxframesize)
   {
+  m_state = DlciClosed;
   m_modem = modem;
   m_frame = new uint8_t[maxframesize];
   m_framesize = maxframesize;
   m_framepos = 0;
+  m_framelen = 0;
+  m_framemorelen = false;
   }
 
 GsmMux::~GsmMux()
@@ -59,8 +173,12 @@ GsmMux::~GsmMux()
 void GsmMux::Start()
   {
   ESP_LOGI(TAG, "Start MUX");
-  uint8_t sabm[] = {0xf9, 0x03, 0x3f, 0x01, 0x1c, 0xf9};
-  m_modem->tx(sabm,6);
+  m_channels.insert(m_channels.end(),new GsmMuxChannel(this,0,8));
+  m_channels.insert(m_channels.end(),new GsmMuxChannel(this,1,1024));
+  m_channels.insert(m_channels.end(),new GsmMuxChannel(this,2,1024));
+  m_channels.insert(m_channels.end(),new GsmMuxChannel(this,3,1024));
+  StartChannel(0);
+  m_state = DlciOpening;
   }
 
 void GsmMux::Stop()
@@ -71,6 +189,18 @@ void GsmMux::Stop()
 void GsmMux::StartChannel(int channel)
   {
   ESP_LOGI(TAG, "StartChannel(%d)",channel);
+  int cn = (channel<<2)+GSM_EA+GSM_CR;
+  uint8_t sabm[] =
+    {
+    GSM0_SOF,
+    (uint8_t)cn,      // Address: EA=1, CR=1, DLCI=channel
+    GSM_SABM+GSM_PF,  // Control: SABM (0x2f) + Poll (0x10)
+    GSM_EA+0,         // Length: EA=1, Length=0
+    0x00,             // FCS
+    GSM0_SOF
+    };
+  txfcs(sabm,6);
+  m_channels[channel]->m_state = GsmMuxChannel::ChanOpening;
   }
 
 void GsmMux::StopChannel(int channel)
@@ -80,9 +210,66 @@ void GsmMux::StopChannel(int channel)
 
 void GsmMux::Process(OvmsBuffer* buf)
   {
+  while (buf->UsedSpace()>0)
+    {
+    if (m_framepos == m_framesize)
+      {
+      // Overflow frame
+      ESP_LOGW(TAG, "Frame overflow (%d bytes)",m_framesize);
+      m_framepos = 0;
+      m_framelen = 0;
+      m_framemorelen = false;
+      continue;
+      }
+    uint8_t b = buf->Pop();
+    if ((m_framepos == 0)&&(b != GSM0_SOF)) continue; // Skip to start of frame
+    if ((m_framepos == 1)&&(b == GSM0_SOF)) continue; // We found end of previous frame, so just skip it
+    // ESP_LOGI(TAG, "Got %02x at %d (length sofar = %d)",b,m_framepos,m_framelen);
+    m_frame[m_framepos++] = b;
+    if ((m_framepos == 4)||(m_framemorelen))
+      {
+      m_framemorelen = !(b & GSM_EA);
+      m_framelen = (m_framelen <<7) + (b >>1);
+      if (!m_framemorelen) m_framelen += (m_framepos+2);
+      // ESP_LOGI(TAG, "Frame length (so far) = %d",m_framelen);
+      }
+    if ((m_framepos == m_framelen)&&(b == GSM0_SOF))
+      {
+      // We have a complete frame...
+      ProcessFrame();
+      }
+    }
   }
 
-void GsmMux::tx(int channel, uint8_t data, ssize_t size)
+void GsmMux::ProcessFrame()
+  {
+  ESP_LOGI(TAG, "ProcessFrame(ADDR=%02x, CONTROL=%02x, FCS=%02x, LENGTH=%d)", m_frame[1], m_frame[2], m_frame[m_framelen-2], m_framelen);
+
+  uint8_t fcs = 0xFF - gsm_fcs_add_block(FCS_INIT, m_frame+1, m_framelen-3);
+  if (fcs != m_frame[m_framelen-2])
+    {
+    ESP_LOGW(TAG, "FCS mismatch (%02x != %02x)",fcs,m_frame[m_framelen-2]);
+    m_framepos = 0;
+    m_framelen = 0;
+    m_framemorelen = false;
+    return;
+    }
+
+  int channel = m_frame[1] >>2;
+  m_channels[channel]->ProcessFrame(m_frame+1,m_framelen-3);
+
+  m_framepos = 0;
+  m_framelen = 0;
+  m_framemorelen = false;
+  }
+
+void GsmMux::txfcs(uint8_t* data, size_t size)
+  {
+  data[size-2] = 0xFF - gsm_fcs_add_block(FCS_INIT, data+1, size-3);
+  m_modem->tx(data,size);
+  }
+
+void GsmMux::tx(int channel, uint8_t* data, ssize_t size)
   {
   ESP_LOGI(TAG, "tx(%d bytes)",size);
   }
