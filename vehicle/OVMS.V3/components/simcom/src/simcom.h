@@ -51,7 +51,7 @@ class simcom : public pcp
     virtual void SetPowerMode(PowerMode powermode);
 
   public:
-    void tx(const char* data, size_t size);
+    void tx(const char* data, ssize_t size = -1);
 
   public:
     void StartTask();
@@ -100,6 +100,7 @@ class simcom : public pcp
   protected:
     OvmsBuffer m_buffer;
     SimcomState1 m_state1;
+    int          m_state1_ticker;
     SimcomState1 m_state1_timeout_goto;
     int          m_state1_timeout_ticks;
 
@@ -109,6 +110,7 @@ class simcom : public pcp
     void State1Enter(SimcomState1 newstate);
     SimcomState1 State1Activity();
     SimcomState1 State1Ticker1();
+    void StandardLineHandler(std::string line);
     void PowerCycle();
     void PowerSleep(bool onoff);
   };

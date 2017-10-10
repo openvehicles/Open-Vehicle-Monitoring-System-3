@@ -34,6 +34,7 @@ static const char *TAG = "simcom";
 #include <string.h>
 #include "simcom.h"
 #include "ovms_peripherals.h"
+#include "metrics_standard.h"
 
 static void SIMCOM_task(void *pvParameters)
   {
@@ -110,6 +111,7 @@ simcom::simcom(std::string name, uart_port_t uartnum, int baud, int rxpin, int t
   m_rxpin = rxpin;
   m_txpin = txpin;
   m_state1 = None;
+  m_state1_ticker = 0;
   m_state1_timeout_goto = None;
   m_state1_timeout_ticks = -1;
   StartTask();
@@ -180,6 +182,7 @@ void simcom::SetPowerMode(PowerMode powermode)
 
 void simcom::Ticker(std::string event, void* data)
   {
+  m_state1_ticker++;
   SimcomState1 newstate = State1Ticker1();
   if ((newstate != m_state1)&&(newstate != None)) SetState1(newstate);
 
@@ -228,6 +231,7 @@ void simcom::State1Leave(SimcomState1 oldstate)
 void simcom::State1Enter(SimcomState1 newstate)
   {
   m_state1 = newstate;
+  m_state1_ticker = 0;
 
   switch (m_state1)
     {
@@ -284,6 +288,10 @@ simcom::SimcomState1 simcom::State1Activity()
       return PoweredOn;
       break;
     case PoweredOn:
+      while (m_buffer.HasLine() >= 0)
+        {
+        StandardLineHandler(m_buffer.ReadLine());
+        }
       break;
     case PoweringOff:
       m_buffer.EmptyAll(); // Drain it
@@ -307,12 +315,23 @@ simcom::SimcomState1 simcom::State1Ticker1()
       return CheckPowerOff;
       break;
     case CheckPowerOff:
-      tx("AT\r\n",4);
+      tx("AT\r\n");
       break;
     case PoweringOn:
-      tx("AT\r\n",4);
+      tx("AT\r\n");
       break;
     case PoweredOn:
+      switch (m_state1_ticker)
+        {
+        case 10:
+          tx("AT+CPIN?;+CREG=1;+CLIP=1;+CMGF=1;+CNMI=1,2,0,0,0;+CSDH=1;+CMEE=2;E0\r\n");
+          break;
+        case 12:
+          tx("AT+CGMR;+ICCID\r\n");
+          break;
+        default:
+          break;
+        }
       break;
     case PoweringOff:
       break;
@@ -323,6 +342,18 @@ simcom::SimcomState1 simcom::State1Ticker1()
     }
 
   return None;
+  }
+
+void simcom::StandardLineHandler(std::string line)
+  {
+  if (line.compare(0, 8, "+ICCID: ") == 0)
+    {
+    StandardMetrics.ms_m_net_mdm_iccid->SetValue(line.substr(8));
+    }
+  else if (line.compare(0, 7, "+CGMR: ") == 0)
+    {
+    StandardMetrics.ms_m_net_mdm_model->SetValue(line.substr(7));
+    }
   }
 
 void simcom::PowerCycle()
@@ -342,9 +373,10 @@ void simcom::PowerSleep(bool onoff)
     MyPeripherals->m_max7317->Output(MODEM_EGPIO_DTR, 0);
   }
 
-void simcom::tx(const char* data, size_t size)
+void simcom::tx(const char* data, ssize_t size)
   {
   if (!m_task) return; // Quick exit if not task (we are stopped)
+  if (size == -1) size = strlen(data);
   MyCommandApp.HexDump("SIMCOM tx",data,size);
   uart_write_bytes(m_uartnum, data, size);
   }
