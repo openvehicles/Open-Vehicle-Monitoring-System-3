@@ -43,44 +43,57 @@ static void SIMCOM_task(void *pvParameters)
 
 void simcom::Task()
   {
-  uart_event_t event;
-  size_t buffered_size = 0;
+  SimcomOrUartEvent event;
 
   for(;;)
     {
     if (xQueueReceive(m_queue, (void *)&event, (portTickType)portMAX_DELAY))
       {
-      switch(event.type)
+      if (event.uart.type <= UART_EVENT_MAX)
         {
-        case UART_DATA:
+        // Must be a UART event
+        switch(event.uart.type)
           {
-          buffered_size = 1;
+          case UART_DATA:
+            {
+            size_t buffered_size = event.uart.size;
+            while (buffered_size > 0)
+              {
+              uint8_t data[16];
+              if (buffered_size>16) buffered_size = 16;
+              int len = uart_read_bytes(m_uartnum, (uint8_t*)data, buffered_size, 100 / portTICK_RATE_MS);
+              m_buffer.Push(data,len);
+              MyCommandApp.HexDump("SIMCOM rx",(const char*)data,len);
+              uart_get_buffered_data_len(m_uartnum, &buffered_size);
+              SimcomState1 newstate = State1Activity();
+              if ((newstate != m_state1)&&(newstate != None)) SetState1(newstate);
+              }
+            }
+            break;
+          case UART_FIFO_OVF:
+            uart_flush(m_uartnum);
+            break;
+          case UART_BUFFER_FULL:
+            uart_flush(m_uartnum);
+            break;
+          case UART_BREAK:
+          case UART_PARITY_ERR:
+          case UART_FRAME_ERR:
+          case UART_PATTERN_DET:
+          default:
+            break;
           }
-          break;
-        case UART_FIFO_OVF:
-          uart_flush(m_uartnum);
-          break;
-        case UART_BUFFER_FULL:
-          uart_flush(m_uartnum);
-          break;
-        case UART_BREAK:
-        case UART_PARITY_ERR:
-        case UART_FRAME_ERR:
-        case UART_PATTERN_DET:
-        default:
-          break;
         }
-      }
-    while (buffered_size>0)
-      {
-      uint8_t data[16];
-      uart_get_buffered_data_len(m_uartnum, &buffered_size);
-      if (buffered_size>16) buffered_size = 16;
-      if (buffered_size>0)
+      else
         {
-        int len = uart_read_bytes(m_uartnum, (uint8_t*)data, buffered_size, 100 / portTICK_RATE_MS);
-        m_buffer.Push(data,len);
-        MyCommandApp.HexDump("SIMCOM rx",(const char*)data,len);
+        // Must be a SIMCOM event
+        switch (event.simcom.type)
+          {
+          case SETSTATE:
+            break;
+          default:
+            break;
+          }
         }
       }
     }
@@ -96,8 +109,14 @@ simcom::simcom(std::string name, uart_port_t uartnum, int baud, int rxpin, int t
   m_dtregpio = dtregpio;
   m_rxpin = rxpin;
   m_txpin = txpin;
-  m_state1 = Undefined;
+  m_state1 = None;
+  m_state1_timeout_goto = None;
+  m_state1_timeout_ticks = -1;
   StartTask();
+
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG,"ticker.1", std::bind(&simcom::Ticker, this, _1, _2));
   }
 
 simcom::~simcom()
@@ -147,19 +166,186 @@ void simcom::SetPowerMode(PowerMode powermode)
   switch (powermode)
     {
     case On:
+      SetState1(PoweringOn);
       break;
     case Sleep:
     case DeepSleep:
     case Off:
+      SetState1(PoweringOff);
       break;
     default:
       break;
     }
   }
 
+void simcom::Ticker(std::string event, void* data)
+  {
+  SimcomState1 newstate = State1Ticker1();
+  if ((newstate != m_state1)&&(newstate != None)) SetState1(newstate);
+
+  // Handle auto-state transitions
+  if (m_state1_timeout_ticks > 0)
+    {
+    m_state1_timeout_ticks--;
+    if (m_state1_timeout_ticks <= 0)
+      {
+      ESP_LOGI(TAG, "State timeout, transition to %d",m_state1_timeout_goto);
+      SimcomState1 newstate = m_state1_timeout_goto;
+      SetState1(newstate);
+      }
+    }
+  }
+
+void simcom::SetState1(SimcomState1 newstate)
+  {
+  m_state1_timeout_ticks = -1;
+  m_state1_timeout_goto = None;
+  if (m_state1 != None) State1Leave(m_state1);
+  State1Enter(newstate);
+  }
+
+void simcom::State1Leave(SimcomState1 oldstate)
+  {
+  ESP_LOGI(TAG,"State: Leave %d",oldstate);
+
+  switch (oldstate)
+    {
+    case CheckPowerOff:
+      break;
+    case PoweringOn:
+      break;
+    case PoweredOn:
+      break;
+    case PoweringOff:
+      break;
+    case PoweredOff:
+      break;
+    default:
+      break;
+    }
+  }
+
+void simcom::State1Enter(SimcomState1 newstate)
+  {
+  m_state1 = newstate;
+
+  switch (m_state1)
+    {
+    case CheckPowerOff:
+      ESP_LOGI(TAG,"State: Enter CheckPowerOff state");
+      // We need to power off the modem (or leave it powered off if it already is)
+      // Need to init the modem control lines...
+      PowerSleep(false);
+      MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
+      m_state1_timeout_ticks = 10;
+      m_state1_timeout_goto = PoweredOff;
+      break;
+    case PoweringOn:
+      ESP_LOGI(TAG,"State: Enter PoweringOn state");
+      PowerCycle();
+      m_state1_timeout_ticks = 10;
+      m_state1_timeout_goto = PoweringOn;
+      break;
+    case PoweredOn:
+      ESP_LOGI(TAG,"State: Enter PoweredOn state");
+      pcp::SetPowerMode(On);
+      break;
+    case PoweringOff:
+      ESP_LOGI(TAG,"State: Enter PoweringOff state");
+      PowerCycle();
+      m_state1_timeout_ticks = 10;
+      m_state1_timeout_goto = CheckPowerOff;
+      break;
+    case PoweredOff:
+      ESP_LOGI(TAG,"State: Enter PoweredOff state");
+      pcp::SetPowerMode(Off);
+      break;
+    default:
+      break;
+    }
+  }
+
+simcom::SimcomState1 simcom::State1Activity()
+  {
+  ESP_LOGI(TAG,"State: Activity %d",m_state1);
+
+  switch (m_state1)
+    {
+    case None:
+      break;
+    case CheckPowerOff:
+      // We have activity, so modem is powered on
+      m_buffer.EmptyAll(); // Drain it
+      return PoweringOff;
+      break;
+    case PoweringOn:
+      // We have activity, so modem is powered on
+      m_buffer.EmptyAll(); // Drain it
+      return PoweredOn;
+      break;
+    case PoweredOn:
+      break;
+    case PoweringOff:
+      m_buffer.EmptyAll(); // Drain it
+      break;
+    case PoweredOff:
+      // We shouldn't have any activity while powered off, so try again...
+      return PoweringOff;
+      break;
+    default:
+      break;
+    }
+
+  return None;
+  }
+
+simcom::SimcomState1 simcom::State1Ticker1()
+  {
+  switch (m_state1)
+    {
+    case None:
+      return CheckPowerOff;
+      break;
+    case CheckPowerOff:
+      tx("AT\r\n",4);
+      break;
+    case PoweringOn:
+      tx("AT\r\n",4);
+      break;
+    case PoweredOn:
+      break;
+    case PoweringOff:
+      break;
+    case PoweredOff:
+      break;
+    default:
+      break;
+    }
+
+  return None;
+  }
+
+void simcom::PowerCycle()
+  {
+  ESP_LOGI(TAG, "Power Cycle");
+  MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
+  MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 1); // Modem EN/PWR line high
+  vTaskDelay(1000 / portTICK_PERIOD_MS);
+  MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
+  }
+
+void simcom::PowerSleep(bool onoff)
+  {
+  if (onoff)
+    MyPeripherals->m_max7317->Output(MODEM_EGPIO_DTR, 1);
+  else
+    MyPeripherals->m_max7317->Output(MODEM_EGPIO_DTR, 0);
+  }
+
 void simcom::tx(const char* data, size_t size)
   {
   if (!m_task) return; // Quick exit if not task (we are stopped)
+  MyCommandApp.HexDump("SIMCOM tx",data,size);
   uart_write_bytes(m_uartnum, data, size);
   }
 

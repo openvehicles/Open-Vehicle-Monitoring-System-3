@@ -36,6 +36,7 @@
 #include "freertos/queue.h"
 #include "driver/uart.h"
 #include "pcp.h"
+#include "ovms_events.h"
 #include "ovms_buffer.h"
 
 #define SIMCOM_BUF_SIZE 1024
@@ -47,28 +48,6 @@ class simcom : public pcp
     ~simcom();
 
   public:
-    enum SimcomState1
-      {
-      Undefined,
-      PoweringOn,
-      PoweredOn,
-      PoweringOff,
-      PoweredOff
-      };
-    typedef enum
-      {
-      SETSTATE = 0x10000
-      } event_type_t;
-    typedef struct
-      {
-      event_type_t type;  // Our extended event type enum
-      union
-        {
-        SimcomState1 newstate;
-        };
-      } Event;
-
-  public:
     virtual void SetPowerMode(PowerMode powermode);
 
   public:
@@ -78,6 +57,7 @@ class simcom : public pcp
     void StartTask();
     void StopTask();
     void Task();
+    void Ticker(std::string event, void* data);
 
   protected:
     TaskHandle_t m_task;
@@ -89,9 +69,48 @@ class simcom : public pcp
     int m_pwregpio;
     int m_dtregpio;
 
+  public:
+    enum SimcomState1
+      {
+      None,
+      CheckPowerOff,
+      PoweringOn,
+      PoweredOn,
+      PoweringOff,
+      PoweredOff
+      };
+    typedef enum
+      {
+      SETSTATE = UART_EVENT_MAX+1000
+      } event_type_t;
+    typedef struct
+      {
+      event_type_t type;
+      union
+        {
+        SimcomState1 newstate; // For SETSTATE
+        } data;
+      } simcom_event_t;
+    typedef union
+      {
+      uart_event_t uart;
+      simcom_event_t simcom;
+      } SimcomOrUartEvent;
+
   protected:
-    SimcomState1 m_state1;
     OvmsBuffer m_buffer;
+    SimcomState1 m_state1;
+    SimcomState1 m_state1_timeout_goto;
+    int          m_state1_timeout_ticks;
+
+  protected:
+    void SetState1(SimcomState1 newstate);
+    void State1Leave(SimcomState1 oldstate);
+    void State1Enter(SimcomState1 newstate);
+    SimcomState1 State1Activity();
+    SimcomState1 State1Ticker1();
+    void PowerCycle();
+    void PowerSleep(bool onoff);
   };
 
 #endif //#ifndef __SIMCOM_H__
