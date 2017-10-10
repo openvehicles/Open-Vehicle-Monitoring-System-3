@@ -45,6 +45,7 @@
 #define MS_N_SQ                     "m.net.sq"
 #define MS_N_PROVIDER               "m.net.provider"
 #define MS_N_MDM_ICCID              "m.net.mdm.iccid"
+#define MS_N_MDM_MODEL              "m.net.mdm.model"
 
 #define MS_S_V2_CONNECTED           "s.v2.connected"
 #define MS_S_V2_PEERS               "s.v2.peers"
@@ -141,6 +142,7 @@ class MetricsStandard
     OvmsMetricInt*    ms_m_net_sq;
     OvmsMetricString* ms_m_net_provider;
     OvmsMetricString* ms_m_net_mdm_iccid;
+    OvmsMetricString* ms_m_net_mdm_model;
     OvmsMetricBool*   ms_s_v2_connected;
     OvmsMetricInt*    ms_s_v2_peers;
     OvmsMetricString* ms_v_type;
