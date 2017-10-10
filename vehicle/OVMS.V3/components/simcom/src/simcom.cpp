@@ -101,7 +101,7 @@ void simcom::Task()
   }
 
 simcom::simcom(std::string name, uart_port_t uartnum, int baud, int rxpin, int txpin, int pwregpio, int dtregpio)
-  : pcp(name), m_buffer(SIMCOM_BUF_SIZE)
+  : pcp(name), m_buffer(SIMCOM_BUF_SIZE), m_mux(this)
   {
   m_task = 0;
   m_uartnum = uartnum;
@@ -219,6 +219,8 @@ void simcom::State1Leave(SimcomState1 oldstate)
       break;
     case PoweredOn:
       break;
+    case MuxMode:
+      break;
     case PoweringOff:
       break;
     case PoweredOff:
@@ -253,6 +255,9 @@ void simcom::State1Enter(SimcomState1 newstate)
     case PoweredOn:
       ESP_LOGI(TAG,"State: Enter PoweredOn state");
       pcp::SetPowerMode(On);
+      break;
+    case MuxMode:
+      m_mux.Start();
       break;
     case PoweringOff:
       ESP_LOGI(TAG,"State: Enter PoweringOff state");
@@ -291,7 +296,11 @@ simcom::SimcomState1 simcom::State1Activity()
       while (m_buffer.HasLine() >= 0)
         {
         StandardLineHandler(m_buffer.ReadLine());
+        if (m_state1_ticker >= 15) return MuxMode;
         }
+      break;
+    case MuxMode:
+      m_mux.Process(&m_buffer);
       break;
     case PoweringOff:
       m_buffer.EmptyAll(); // Drain it
@@ -329,9 +338,13 @@ simcom::SimcomState1 simcom::State1Ticker1()
         case 12:
           tx("AT+CGMR;+ICCID\r\n");
           break;
+        case 15:
+          tx("AT+CMUXSRVPORT=0,0;+CMUXSRVPORT=1,5;+CMUXSRVPORT=2,1;+CMUXSRVPORT=3,1;+CMUX=0\r\n");
         default:
           break;
         }
+      break;
+    case MuxMode:
       break;
     case PoweringOff:
       break;
@@ -378,6 +391,13 @@ void simcom::PowerSleep(bool onoff)
     MyPeripherals->m_max7317->Output(MODEM_EGPIO_DTR, 1);
   else
     MyPeripherals->m_max7317->Output(MODEM_EGPIO_DTR, 0);
+  }
+
+void simcom::tx(uint8_t* data, size_t size)
+  {
+  if (!m_task) return; // Quick exit if not task (we are stopped)
+  MyCommandApp.HexDump("SIMCOM tx",(const char*)data,size);
+  uart_write_bytes(m_uartnum, (const char*)data, size);
   }
 
 void simcom::tx(const char* data, ssize_t size)

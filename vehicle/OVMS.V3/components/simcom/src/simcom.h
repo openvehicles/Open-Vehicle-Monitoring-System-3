@@ -37,6 +37,7 @@
 #include "driver/uart.h"
 #include "pcp.h"
 #include "ovms_events.h"
+#include "gsmmux.h"
 #include "ovms_buffer.h"
 
 #define SIMCOM_BUF_SIZE 1024
@@ -51,6 +52,7 @@ class simcom : public pcp
     virtual void SetPowerMode(PowerMode powermode);
 
   public:
+    void tx(uint8_t* data, size_t size);
     void tx(const char* data, ssize_t size = -1);
 
   public:
@@ -76,6 +78,7 @@ class simcom : public pcp
       CheckPowerOff,
       PoweringOn,
       PoweredOn,
+      MuxMode,
       PoweringOff,
       PoweredOff
       };
@@ -98,11 +101,12 @@ class simcom : public pcp
       } SimcomOrUartEvent;
 
   protected:
-    OvmsBuffer m_buffer;
+    OvmsBuffer   m_buffer;
     SimcomState1 m_state1;
     int          m_state1_ticker;
     SimcomState1 m_state1_timeout_goto;
     int          m_state1_timeout_ticks;
+    GsmMux       m_mux;
 
   protected:
     void SetState1(SimcomState1 newstate);
