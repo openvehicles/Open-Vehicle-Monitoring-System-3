@@ -162,6 +162,7 @@ GsmMux::GsmMux(simcom* modem, size_t maxframesize)
   m_frame = new uint8_t[maxframesize];
   m_framesize = maxframesize;
   m_framepos = 0;
+  m_frameipos = 0;
   m_framelen = 0;
   m_framemorelen = false;
   }
@@ -227,12 +228,29 @@ void GsmMux::Process(OvmsBuffer* buf)
     if ((m_framepos == 1)&&(b == GSM0_SOF)) continue; // We found end of previous frame, so just skip it
     // ESP_LOGI(TAG, "Got %02x at %d (length sofar = %d)",b,m_framepos,m_framelen);
     m_frame[m_framepos++] = b;
-    if ((m_framepos == 4)||(m_framemorelen))
+    if (m_framepos == 4)
       {
+      // First byte of length field
       m_framemorelen = !(b & GSM_EA);
-      m_framelen = (m_framelen <<7) + (b >>1);
-      if (!m_framemorelen) m_framelen += (m_framepos+2);
-      // ESP_LOGI(TAG, "Frame length (so far) = %d",m_framelen);
+      m_framelen = (b>>1);
+      if (!m_framemorelen)
+        {
+        m_framelen += (m_framepos+2);
+        m_frameipos = m_framepos;
+        }
+      else
+        {
+        m_framelen += (m_framepos+3);
+        m_frameipos = m_framepos+1;
+        }
+      // ESP_LOGI(TAG, "Frame length (first byte) = %d",m_framelen);
+      }
+    if ((m_framepos == 5)&&(m_framemorelen))
+      {
+      // Second byte of length field
+      m_framelen += (b<<7);
+      m_framemorelen = false;
+      // ESP_LOGI(TAG, "Frame length (second byte) = %d",m_framelen);
       }
     if ((m_framepos == m_framelen)&&(b == GSM0_SOF))
       {
@@ -249,11 +267,12 @@ void GsmMux::ProcessFrame()
   ESP_LOGI(TAG, "ProcessFrame(CHAN=%d, ADDR=%02x, CTRL=%02x, FCS=%02x, LEN=%d)",
     channel, m_frame[1], m_frame[2], m_frame[m_framelen-2], m_framelen);
 
-  uint8_t fcs = 0xFF - gsm_fcs_add_block(FCS_INIT, m_frame+1, m_framelen-3);
+  uint8_t fcs = 0xFF - gsm_fcs_add_block(FCS_INIT, m_frame+1, m_frameipos-1);
   if (fcs != m_frame[m_framelen-2])
     {
     ESP_LOGW(TAG, "FCS mismatch (%02x != %02x)",fcs,m_frame[m_framelen-2]);
     m_framepos = 0;
+    m_frameipos = 0;
     m_framelen = 0;
     m_framemorelen = false;
     return;
@@ -270,6 +289,7 @@ void GsmMux::ProcessFrame()
     }
 
   m_framepos = 0;
+  m_frameipos = 0;
   m_framelen = 0;
   m_framemorelen = false;
   }

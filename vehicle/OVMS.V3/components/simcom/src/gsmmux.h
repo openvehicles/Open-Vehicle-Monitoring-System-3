@@ -96,6 +96,7 @@ class GsmMux
     uint8_t* m_frame;
     size_t m_framesize;
     size_t m_framepos;
+    size_t m_frameipos;
     size_t m_framelen;
     bool m_framemorelen;
     std::vector<GsmMuxChannel*> m_channels;
