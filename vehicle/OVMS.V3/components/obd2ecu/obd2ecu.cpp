@@ -603,8 +603,7 @@ void obd2ecu::LoadMap()
         {
         std::string fpath("/store/obd2ecu/");
         fpath.append(dp->d_name);
-        auto search = m_pidmap.find(pid);
-        if (search == m_pidmap.end())
+        if (m_pidmap.find(pid) == m_pidmap.end())
           m_pidmap[pid] = new obd2pid(pid,false);
         else
           m_pidmap[pid]->SetInternal(false);
