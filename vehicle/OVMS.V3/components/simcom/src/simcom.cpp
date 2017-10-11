@@ -276,8 +276,6 @@ void simcom::State1Enter(SimcomState1 newstate)
 
 simcom::SimcomState1 simcom::State1Activity()
   {
-  ESP_LOGI(TAG,"State: Activity %d",m_state1);
-
   switch (m_state1)
     {
     case None:

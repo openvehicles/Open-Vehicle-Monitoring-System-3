@@ -141,6 +141,7 @@ void GsmMuxChannel::ProcessFrame(uint8_t* frame, size_t length)
     case ChanOpening:
       if (frame[1] == (GSM_UA + GSM_PF))
         {
+        ESP_LOGI(TAG, "Channel #%d is open",m_channel);
         m_state = ChanOpen; // SABM established
         if (m_channel==0) m_mux->m_state = GsmMux::DlciOpen;
         if (m_channel<3) m_mux->StartChannel(m_channel+1);
@@ -243,7 +244,10 @@ void GsmMux::Process(OvmsBuffer* buf)
 
 void GsmMux::ProcessFrame()
   {
-  ESP_LOGI(TAG, "ProcessFrame(ADDR=%02x, CONTROL=%02x, FCS=%02x, LENGTH=%d)", m_frame[1], m_frame[2], m_frame[m_framelen-2], m_framelen);
+  int channel = m_frame[1] >>2;
+
+  ESP_LOGI(TAG, "ProcessFrame(CHAN=%d, ADDR=%02x, CTRL=%02x, FCS=%02x, LEN=%d)",
+    channel, m_frame[1], m_frame[2], m_frame[m_framelen-2], m_framelen);
 
   uint8_t fcs = 0xFF - gsm_fcs_add_block(FCS_INIT, m_frame+1, m_framelen-3);
   if (fcs != m_frame[m_framelen-2])
@@ -255,8 +259,15 @@ void GsmMux::ProcessFrame()
     return;
     }
 
-  int channel = m_frame[1] >>2;
-  m_channels[channel]->ProcessFrame(m_frame+1,m_framelen-3);
+  GsmMuxChannel* chan = m_channels[channel];
+  if (chan)
+    {
+    chan->ProcessFrame(m_frame+1,m_framelen-3);
+    }
+  else
+    {
+    ESP_LOGW(TAG, "Incoming message for unrecognised channel #%d",channel);
+    }
 
   m_framepos = 0;
   m_framelen = 0;
