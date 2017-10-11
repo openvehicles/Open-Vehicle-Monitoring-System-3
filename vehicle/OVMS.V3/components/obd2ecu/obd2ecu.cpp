@@ -56,6 +56,11 @@ bool obd2pid::IsInternal()
   return m_internal;
   }
 
+void obd2pid::SetInternal(bool internal)
+  {
+  m_internal = internal;
+  }
+
 static void OBD2ECU_task(void *pvParameters)
   {
   obd2ecu *me = (obd2ecu*)pvParameters;
@@ -569,7 +574,14 @@ void obd2ecu::LoadMap()
       {
       int pid = atoi(dp->d_name);
       ESP_LOGI(TAG, "Using custom scripting for pid#%d",pid);
-      if (pid) m_pidmap[pid] = new obd2pid(pid,false);
+      if (pid)
+        {
+        auto search = m_pidmap.find(pid);
+        if (search == m_pidmap.end())
+          m_pidmap[pid] = new obd2pid(pid,false);
+        else
+          m_pidmap[pid]->SetInternal(false);
+        }
       }
     closedir(dir);
     }

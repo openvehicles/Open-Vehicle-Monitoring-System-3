@@ -45,6 +45,7 @@ class obd2pid
 
   public:
     bool IsInternal();
+    void SetInternal(bool internal=true);
 
   protected:
     int m_pid;
