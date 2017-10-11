@@ -300,13 +300,42 @@ void GsmMux::ProcessFrame()
   m_framemorelen = false;
   }
 
-void GsmMux::txfcs(uint8_t* data, size_t size)
+void GsmMux::txfcs(uint8_t* data, size_t size, size_t ipos)
   {
-  data[size-2] = 0xFF - gsm_fcs_add_block(FCS_INIT, data+1, size-3);
+  data[size-2] = 0xFF - gsm_fcs_add_block(FCS_INIT, data+1, ipos-1);
   m_modem->tx(data,size);
   }
 
 void GsmMux::tx(int channel, uint8_t* data, ssize_t size)
   {
-  ESP_LOGI(TAG, "tx(%d bytes)",size);
+  uint8_t* buf = new uint8_t[size+7];
+  size_t ipos;
+  int len;
+
+  int cn = (channel<<2)+GSM_EA;
+  buf[0] = GSM0_SOF;
+  buf[1] = (uint8_t)cn;    // Address: EA=1, DLCI=channel
+  buf[2] = GSM_UIH+GSM_PF; // Control: UIH + Poll
+  if (size < 128)
+    {
+    len = (size<<1) + GSM_EA;
+    buf[3] = (uint8_t)len; // Length: EA=1, Length=size
+    ipos = 4;
+    }
+  else
+    {
+    len = ((size%128)<<1);
+    buf[3] = (uint8_t)len; // Length: lower 7 bit, shifted once
+    len = (size/128);
+    buf[4] = (uint8_t)len; // Length: upper 7 bits
+    ipos = 5;
+    }
+  for (size_t k=0; k<size; k++)
+    {
+    buf[ipos+k] = data[k];
+    }
+  buf[ipos+size] = 0; // For FCS
+  buf[ipos+size+1] = GSM0_SOF;
+  txfcs(buf,ipos+size+2,ipos);
+  delete [] buf;
   }

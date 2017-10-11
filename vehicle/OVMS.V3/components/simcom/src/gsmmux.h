@@ -79,7 +79,7 @@ class GsmMux
     void tx(int channel, uint8_t* data, ssize_t size);
 
   protected:
-    void txfcs(uint8_t* data, size_t size);
+    void txfcs(uint8_t* data, size_t size, size_t ipos = 4);
 
   public:
     enum GsmMuxState

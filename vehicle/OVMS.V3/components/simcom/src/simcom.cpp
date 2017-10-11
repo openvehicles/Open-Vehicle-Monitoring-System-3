@@ -448,6 +448,21 @@ void simcom::tx(const char* data, ssize_t size)
   uart_write_bytes(m_uartnum, data, size);
   }
 
+void simcom::muxtx(int channel, uint8_t* data, size_t size)
+  {
+  if (!m_task) return; // Quick exit if not task (we are stopped)
+  MyCommandApp.HexDump("SIMCOM mux tx",(const char*)data,size);
+  m_mux.tx(channel, data, size);
+  }
+
+void simcom::muxtx(int channel, const char* data, ssize_t size)
+  {
+  if (!m_task) return; // Quick exit if not task (we are stopped)
+  if (size == -1) size = strlen(data);
+  MyCommandApp.HexDump("SIMCOM mux tx",data,size);
+  m_mux.tx(channel, (uint8_t*)data, size);
+  }
+
 void simcom_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   for (int k=0; k<argc; k++)
@@ -461,6 +476,21 @@ void simcom_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
   MyPeripherals->m_simcom->tx("\r\n",2);
   }
 
+void simcom_muxtx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  int channel = atoi(argv[0]);
+
+  for (int k=1; k<argc; k++)
+    {
+    if (k>1)
+      {
+      MyPeripherals->m_simcom->muxtx(channel, " ",1);
+      }
+    MyPeripherals->m_simcom->muxtx(channel,argv[k],strlen(argv[k]));
+    }
+  MyPeripherals->m_simcom->muxtx(channel,"\r\n",2);
+  }
+
 class SimcomInit
   {
   public: SimcomInit();
@@ -472,4 +502,5 @@ SimcomInit::SimcomInit()
 
   OvmsCommand* cmd_simcom = MyCommandApp.RegisterCommand("simcom","SIMCOM framework",NULL, "", 1);
   cmd_simcom->RegisterCommand("tx","Transmit data on SIMCOM",simcom_tx, "", 1);
+  cmd_simcom->RegisterCommand("muxtx","Transmit data on SIMCOM MUX",simcom_muxtx, "<chan> <data>", 2);
   }

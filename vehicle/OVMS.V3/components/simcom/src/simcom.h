@@ -54,6 +54,8 @@ class simcom : public pcp
   public:
     void tx(uint8_t* data, size_t size);
     void tx(const char* data, ssize_t size = -1);
+    void muxtx(int channel, uint8_t* data, size_t size);
+    void muxtx(int channel, const char* data, ssize_t size = -1);
 
   public:
     void StartTask();
