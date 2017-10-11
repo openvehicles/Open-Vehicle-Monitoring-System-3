@@ -39,6 +39,7 @@ static const char *TAG = "can";
 #include "can.h"
 #include <algorithm>
 #include <ctype.h>
+#include <string.h>
 #include "ovms_command.h"
 
 can MyCan __attribute__ ((init_priority (4500)));;
@@ -171,12 +172,12 @@ void can_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     return;
     }
 
-  if (cmd->GetName().compare("on")==0)
+  if (strcmp(cmd->GetName(),"on")==0)
     sbus->m_trace = true;
   else
     sbus->m_trace = false;
 
-  writer->printf("Tracing for CAN bus %s is now %s\n",bus.c_str(),cmd->GetName().c_str());
+  writer->printf("Tracing for CAN bus %s is now %s\n",bus.c_str(),cmd->GetName());
   }
 
 static void CAN_rxtask(void *pvParameters)

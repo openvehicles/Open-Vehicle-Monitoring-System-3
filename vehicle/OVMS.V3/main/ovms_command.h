@@ -83,21 +83,22 @@ class OvmsCommand
   public:
     OvmsCommand* RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                                  const char *usage = "", int min = 0, int max = INT_MAX);
-    std::string GetName();
-    std::string GetTitle();
-    std::string GetUsage();
+    const char* GetName();
+    const char* GetTitle();
+    const char* GetUsage();
     char ** Complete(OvmsWriter* writer, int argc, const char * const * argv);
     void Execute(int verbosity, OvmsWriter* writer, int argc, const char * const * argv);
     OvmsCommand* GetParent();
     OvmsCommand* FindCommand(std::string name);
 
   private:
-      size_t ExpandUsage(std::string usage, std::string& result);
+      size_t ExpandUsage(std::string usage);
 
   protected:
     std::string m_name;
     std::string m_title;
     void (*m_execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*);
+    const char* m_usage_template;
     std::string m_usage;
     int m_min;
     int m_max;

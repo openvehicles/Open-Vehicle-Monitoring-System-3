@@ -101,7 +101,7 @@ OvmsCommand::OvmsCommand(std::string name, std::string title, void (*execute)(in
   m_name = name;
   m_title = title;
   m_execute = execute;
-  m_usage = usage;
+  m_usage_template= usage;
   m_min = min;
   m_max = max;
   m_parent = NULL;
@@ -111,14 +111,14 @@ OvmsCommand::~OvmsCommand()
   {
   }
 
-std::string OvmsCommand::GetName()
+const char* OvmsCommand::GetName()
   {
-  return m_name;
+  return m_name.c_str();
   }
 
-std::string OvmsCommand::GetTitle()
+const char* OvmsCommand::GetTitle()
   {
-  return m_title;
+  return m_title.c_str();
   }
 
 // Dynamic generation of "Usage:" messages.  Syntax of the usage template string:
@@ -129,42 +129,44 @@ std::string OvmsCommand::GetTitle()
 // - $Gfoo$ expands to the usage of the child named "foo"
 // - Parameters after command and subcommand tokens may be explicit like " <metric>"
 // - Empty usage template "" defaults to "<$C>" for non-terminal OvmsCommand
-std::string OvmsCommand::GetUsage()
+const char* OvmsCommand::GetUsage()
   {
-  std::string usage = m_usage.empty() && !m_execute ? "<$C>" : m_usage;
-  std::string result("Usage: ");
-  size_t pos = result.size();
+  if (!m_usage.empty())
+    return m_usage.c_str();
+  std::string usage = !m_usage_template ? "" : (!*m_usage_template && !m_execute) ? "<$C>" : m_usage_template;
+  m_usage ="Usage: ";
+  size_t pos = m_usage.size();
   for (OvmsCommand* parent = m_parent; parent && parent->m_parent; parent = parent->m_parent)
     {
-    result.insert(pos, " ");
-    result.insert(pos, parent->m_name);
+    m_usage.insert(pos, " ");
+    m_usage.insert(pos, parent->m_name);
     }
-  result += m_name + " ";
-  pos = ExpandUsage(usage, result);
-  result += usage.substr(pos);
-  return result;
+  m_usage += m_name + " ";
+  pos = ExpandUsage(usage);
+  m_usage += usage.substr(pos);
+  return m_usage.c_str();
   }
 
-size_t OvmsCommand::ExpandUsage(std::string usage, std::string& result)
+size_t OvmsCommand::ExpandUsage(std::string usage)
   {
   size_t pos;
   if ((pos = usage.find_first_of("$C")) != std::string::npos)
     {
-    result += usage.substr(0, pos);
+    m_usage += usage.substr(0, pos);
     pos += 2;
     for (OvmsCommandMap::iterator it = m_children.begin(); ; )
       {
-      result += it->first;
+      m_usage += it->first;
       if (++it == m_children.end())
         break;
-      result += "|";
+      m_usage += "|";
       }
     }
   else pos = 0;
   size_t pos2;
   if ((pos2 = usage.find_first_of("$G", pos)) != std::string::npos)
     {
-    result += usage.substr(pos, pos2-pos);
+    m_usage += usage.substr(pos, pos2-pos);
     pos2 += 2;
     size_t pos3;
     OvmsCommandMap::iterator it = m_children.end();
@@ -178,14 +180,14 @@ size_t OvmsCommand::ExpandUsage(std::string usage, std::string& result)
       if (it != m_children.end())
         {
         OvmsCommand* child = it->second;
-        pos3 = child->ExpandUsage(child->m_usage, result);
-        result += child->m_usage.substr(pos3);
+        pos3 = child->ExpandUsage(child->m_usage);
+        m_usage += child->m_usage.substr(pos3);
         }
       }
     else
       pos = pos2;
     if (it == m_children.end())
-      result += "ERROR IN USAGE TEMPLATE";
+      m_usage += "ERROR IN USAGE TEMPLATE";
     }
   return pos;
   }
@@ -230,7 +232,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     //puts("Executing directly...");
     if (argc < m_min || argc > m_max || (argc > 0 && strcmp(argv[argc-1],"?")==0))
       {
-      writer->puts(GetUsage().c_str());
+      writer->puts(GetUsage());
       return;
       }
     m_execute(verbosity,writer,this,argc,argv);
@@ -242,7 +244,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     if (argc <= 0)
       {
       writer->puts("Subcommand required");
-      writer->puts(GetUsage().c_str());
+      writer->puts(GetUsage());
       return;
       }
     if (strcmp(argv[0],"?")==0)
@@ -261,7 +263,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
       {
       writer->puts("Unrecognised command");
       if (!m_usage.empty())
-        writer->puts(GetUsage().c_str());
+        writer->puts(GetUsage());
       return;
       }
     if (argc>1)
@@ -303,7 +305,7 @@ void level(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const 
   const std::string& title = cmd->GetTitle();
   esp_log_level_t level_num = (esp_log_level_t)atoi(title.substr(title.size()-2, 1).c_str());
   esp_log_level_set(tag, level_num);
-  writer->printf("Logging level for %s set to %s\n",tag,cmd->GetName().c_str());
+  writer->printf("Logging level for %s set to %s\n",tag,cmd->GetName());
   }
 
 OvmsCommandApp::OvmsCommandApp()
