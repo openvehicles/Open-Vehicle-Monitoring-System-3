@@ -319,82 +319,80 @@ void OvmsServerV2::TransmitMsgStat(bool always)
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
 
-  // FIXME fixed size buffer asks to be overflowed
-  char* buffer = new char[512];
-  buffer[0] = 0;
-  strcat(buffer, "MP-0 S");
-  strcat(buffer, StandardMetrics.ms_v_bat_soc->AsString("0").c_str());
-  strcat(buffer, ",");
-  strcat(buffer, "K");  // units
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_linevoltage
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_chargecurrent
-  strcat(buffer, ",");
-  strcat(buffer, "stopped");  // car_chargestate
-  strcat(buffer, ",");
-  strcat(buffer, "standard");  // car_chargemode
-  strcat(buffer, ",");
+  std::string buffer;
+  buffer.reserve(512);
+  buffer.append("MP-0 S");
+  buffer.append(StandardMetrics.ms_v_bat_soc->AsString("0").c_str());
+  buffer.append(",");
+  buffer.append("K");  // units
+  buffer.append(",");
+  buffer.append("0");  // car_linevoltage
+  buffer.append(",");
+  buffer.append("0");  // car_chargecurrent
+  buffer.append(",");
+  buffer.append("stopped");  // car_chargestate
+  buffer.append(",");
+  buffer.append("standard");  // car_chargemode
+  buffer.append(",");
   // TODO convert to miles/km if necessary
-  strcat(buffer, StandardMetrics.ms_v_bat_range_ideal->AsString("0").c_str());
-  strcat(buffer, ",");
-  strcat(buffer, StandardMetrics.ms_v_bat_range_est->AsString("0").c_str());
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // charge limit
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // charge duration
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_charge_b4
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_chargekwh
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_chargesubstate
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_chargestate
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_chargemode
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_timermode
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_timerstart
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_stale_timer
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_cac100
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_chargefull_minsremaining
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_chargelimit_minsremaining_range
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_chargelimit_rangelimit
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_chargelimit_soclimit
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_coolingdown
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_cooldown_tbattery
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_cooldown_timelimit
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_chargeestimate
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_chargelimit_minsremaining_range
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_chargelimit_minsremaining_soc
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_max_idealrange
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_chargetype
-  strcat(buffer, ",");
-  strcat(buffer, "0");  // car_chargepower
-  strcat(buffer, ",");
-  strcat(buffer, StandardMetrics.ms_v_bat_voltage->AsString("0").c_str());
-  strcat(buffer, ",");
-  strcat(buffer, StandardMetrics.ms_v_bat_soh->AsString("0").c_str());
+  buffer.append(StandardMetrics.ms_v_bat_range_ideal->AsString("0").c_str());
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_bat_range_est->AsString("0").c_str());
+  buffer.append(",");
+  buffer.append("0");  // charge limit
+  buffer.append(",");
+  buffer.append("0");  // charge duration
+  buffer.append(",");
+  buffer.append("0");  // car_charge_b4
+  buffer.append(",");
+  buffer.append("0");  // car_chargekwh
+  buffer.append(",");
+  buffer.append("0");  // car_chargesubstate
+  buffer.append(",");
+  buffer.append("0");  // car_chargestate
+  buffer.append(",");
+  buffer.append("0");  // car_chargemode
+  buffer.append(",");
+  buffer.append("0");  // car_timermode
+  buffer.append(",");
+  buffer.append("0");  // car_timerstart
+  buffer.append(",");
+  buffer.append("0");  // car_stale_timer
+  buffer.append(",");
+  buffer.append("0");  // car_cac100
+  buffer.append(",");
+  buffer.append("0");  // car_chargefull_minsremaining
+  buffer.append(",");
+  buffer.append("0");  // car_chargelimit_minsremaining_range
+  buffer.append(",");
+  buffer.append("0");  // car_chargelimit_rangelimit
+  buffer.append(",");
+  buffer.append("0");  // car_chargelimit_soclimit
+  buffer.append(",");
+  buffer.append("0");  // car_coolingdown
+  buffer.append(",");
+  buffer.append("0");  // car_cooldown_tbattery
+  buffer.append(",");
+  buffer.append("0");  // car_cooldown_timelimit
+  buffer.append(",");
+  buffer.append("0");  // car_chargeestimate
+  buffer.append(",");
+  buffer.append("0");  // car_chargelimit_minsremaining_range
+  buffer.append(",");
+  buffer.append("0");  // car_chargelimit_minsremaining_soc
+  buffer.append(",");
+  buffer.append("0");  // car_max_idealrange
+  buffer.append(",");
+  buffer.append("0");  // car_chargetype
+  buffer.append(",");
+  buffer.append("0");  // car_chargepower
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_bat_voltage->AsString("0").c_str());
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_bat_soh->AsString("0").c_str());
 
-  ESP_LOGI(TAG, "Sending: %s", buffer);
-  Transmit(buffer);
-  delete [] buffer;
+  ESP_LOGI(TAG, "Sending: %s", buffer.c_str());
+  Transmit(buffer.c_str());
   }
 
 void OvmsServerV2::TransmitMsgGPS(bool always)
