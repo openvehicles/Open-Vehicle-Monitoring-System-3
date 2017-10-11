@@ -27,7 +27,7 @@ endchoice # OVMS_HW_MODEL
 
 choice OVMS_SC_JAVASCRIPT
     prompt "Select the OVMS javascript library to use"
-        default OVMS_SC_JAVASCRIPT_NONE
+        default OVMS_SC_JAVASCRIPT_DUKTAPE
         depends on OVMS
         help
                 OVMS_SC_JAVASCRIPT_NONE         No javascript support
@@ -40,7 +40,6 @@ config OVMS_SC_JAVASCRIPT_NONE
 
 config OVMS_SC_JAVASCRIPT_DUKTAPE
     bool "Use the MIT licensed DUKTAPE library"
-    default n
     depends on OVMS
     help
         Use the MIT licensed DUKTAPE library (for Javascript)
