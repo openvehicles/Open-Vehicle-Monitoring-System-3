@@ -199,6 +199,34 @@ void simcom::Ticker(std::string event, void* data)
     }
   }
 
+void simcom::IncomingMuxData(int channel, OvmsBuffer* buf)
+  {
+  // The MUX has indicated there is data on the specified channel
+  switch (channel)
+    {
+    case 0:
+      buf->EmptyAll();
+      break;
+    case 1:
+      buf->EmptyAll();
+      break;
+    case 2:
+      while (buf->HasLine() >= 0)
+        {
+        StandardLineHandler(buf->ReadLine());
+        }
+      break;
+    case 3:
+      while (buf->HasLine() >= 0)
+        {
+        StandardLineHandler(buf->ReadLine());
+        }
+      break;
+    default:
+      break;
+    }
+  }
+
 void simcom::SetState1(SimcomState1 newstate)
   {
   m_state1_timeout_ticks = -1;
@@ -357,6 +385,8 @@ simcom::SimcomState1 simcom::State1Ticker1()
 
 void simcom::StandardLineHandler(std::string line)
   {
+  MyCommandApp.HexDump("SIMCOM line",line.c_str(),line.length());
+
   if (line.compare(0, 8, "+ICCID: ") == 0)
     {
     StandardMetrics.ms_m_net_mdm_iccid->SetValue(line.substr(8));

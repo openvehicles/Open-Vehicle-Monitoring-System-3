@@ -54,7 +54,7 @@ class GsmMuxChannel
       };
 
   public:
-    void ProcessFrame(uint8_t* frame, size_t length);
+    void ProcessFrame(uint8_t* frame, size_t length, size_t iframepos);
 
   public:
     GsmMuxChannelState m_state;

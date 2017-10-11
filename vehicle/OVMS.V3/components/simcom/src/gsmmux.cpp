@@ -132,7 +132,7 @@ GsmMuxChannel::~GsmMuxChannel()
   {
   }
 
-void GsmMuxChannel::ProcessFrame(uint8_t* frame, size_t length)
+void GsmMuxChannel::ProcessFrame(uint8_t* frame, size_t length, size_t iframepos)
   {
   switch (m_state)
     {
@@ -147,6 +147,12 @@ void GsmMuxChannel::ProcessFrame(uint8_t* frame, size_t length)
         if (m_channel<3) m_mux->StartChannel(m_channel+1);
         }
     case ChanOpen:
+      if (frame[1] == (GSM_UIH + GSM_PF))
+        {
+        for (size_t k=iframepos;k<(length-2);k++)
+          m_buffer.Push(frame[k]);
+        m_mux->m_modem->IncomingMuxData(m_channel, &m_buffer);
+        }
       break;
     case ChanClosing:
       break;
@@ -281,7 +287,7 @@ void GsmMux::ProcessFrame()
   GsmMuxChannel* chan = m_channels[channel];
   if (chan)
     {
-    chan->ProcessFrame(m_frame+1,m_framelen-3);
+    chan->ProcessFrame(m_frame+1,m_framelen-3,m_frameipos);
     }
   else
     {

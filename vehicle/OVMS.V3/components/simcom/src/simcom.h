@@ -60,6 +60,7 @@ class simcom : public pcp
     void StopTask();
     void Task();
     void Ticker(std::string event, void* data);
+    void IncomingMuxData(int channel, OvmsBuffer* buf);
 
   protected:
     TaskHandle_t m_task;
