@@ -302,10 +302,6 @@ void test_javascript(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
   writer->printf("Javascript 1+2=%d\n", (int) duk_get_int(ctx, -1));
   duk_destroy_heap(ctx);
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-
-#ifdef CONFIG_OVMS_SC_JAVASCRIPT_MJS
-  writer->puts("MJS tests not currently implemented");
-#endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_MJS
   }
 
 void test_abort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)

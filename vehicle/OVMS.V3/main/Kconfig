@@ -32,7 +32,6 @@ choice OVMS_SC_JAVASCRIPT
         help
                 OVMS_SC_JAVASCRIPT_NONE         No javascript support
                 OVMS_SC_JAVASCRIPT_DUKTAPE      DUKTAPE (MIT license)
-                OVMS_SC_JAVASCRIPT_MJS          MJS (GPL license)
 
 config OVMS_SC_JAVASCRIPT_NONE
     bool "No javascript support"
@@ -45,13 +44,6 @@ config OVMS_SC_JAVASCRIPT_DUKTAPE
     depends on OVMS
     help
         Use the MIT licensed DUKTAPE library (for Javascript)
-
-config OVMS_SC_JAVASCRIPT_MJS
-    bool "Use the GPL licensed MJS library"
-    default n
-    depends on OVMS
-    help
-        Use the GPL licensed MJS library (Javascript)
 
 endchoice # OVMS_SC_JAVASCRIPT
 

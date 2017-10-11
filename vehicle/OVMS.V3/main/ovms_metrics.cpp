@@ -37,6 +37,7 @@ static const char *TAG = "metrics";
 #include "ovms.h"
 #include "ovms_metrics.h"
 #include "ovms_command.h"
+#include "ovms_script.h"
 #include "string.h"
 
 using namespace std;
@@ -68,6 +69,23 @@ void metrics_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     writer->puts("Metric could not be set");
   }
 
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
+static duk_ret_t DukOvmsMetricValue(duk_context *ctx)
+  {
+  const char *mn = duk_to_string(ctx,0);
+  OvmsMetric *m = MyMetrics.Find(mn);
+  if (m)
+    {
+    duk_push_string(ctx, m->AsString().c_str());
+    return 1;  /* one return value */
+    }
+  else
+    return 0;
+  }
+
+#endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
 OvmsMetrics::OvmsMetrics()
   {
   ESP_LOGI(TAG, "Initialising METRICS (1810)");
@@ -78,6 +96,13 @@ OvmsMetrics::OvmsMetrics()
   OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework",NULL, "", 1);
   cmd_metric->RegisterCommand("list","Show all metrics",metrics_list, "[metric]", 0, 1);
   cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set, "<metric> <value>", 2, 2);
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
+  duk_context* ctx = MyScripts.Duktape();
+  duk_push_c_function(ctx, DukOvmsMetricValue, 1 /*nargs*/);
+  duk_put_global_string(ctx, "OvmsMetricValue");
+#endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
 OvmsMetrics::~OvmsMetrics()

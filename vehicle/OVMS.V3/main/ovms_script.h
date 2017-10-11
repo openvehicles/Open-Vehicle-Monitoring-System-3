@@ -47,6 +47,14 @@ class OvmsScripts : public OvmsWriter
     void EventScript(std::string event, void* data);
     void AllScripts(std::string path);
 
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  public:
+    duk_context* Duktape();
+
+  protected:
+    duk_context* m_dukctx;
+#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
   public:
     int puts(const char* s);
     int printf(const char* fmt, ...);

@@ -249,18 +249,27 @@ void OvmsScripts::Exit()
   // Ignore this
   }
 
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
+duk_context* OvmsScripts::Duktape()
+  {
+  return m_dukctx;
+  }
+
+#endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
 OvmsScripts::OvmsScripts()
   {
   ESP_LOGI(TAG, "Initialising SCRIPTS (1600)");
+
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_NONE
   ESP_LOGI(TAG, "No javascript engines enabled (command scripting only)");
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_NONE
+
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   ESP_LOGI(TAG, "Using DUKTAPE javascript engine");
+  m_dukctx = duk_create_heap_default();
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-#ifdef CONFIG_OVMS_SC_JAVASCRIPT_MJS
-  ESP_LOGI(TAG, "Using MJS javascript engine");
-#endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_MJS
 
   MyCommandApp.RegisterCommand("script","Run a script",script_run,"<path>",1,1);
   MyCommandApp.RegisterCommand(".","Run a script",script_run,"<path>",1,1);
@@ -269,4 +278,8 @@ OvmsScripts::OvmsScripts()
 
 OvmsScripts::~OvmsScripts()
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  duk_destroy_heap(m_dukctx);
+  m_dukctx = NULL;
+#endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
