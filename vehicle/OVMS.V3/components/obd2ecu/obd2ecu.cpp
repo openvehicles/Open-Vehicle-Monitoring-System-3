@@ -79,6 +79,13 @@ std::string obd2pid::GetScript()
   return m_script;
   }
 
+void obd2pid::Execute()
+  {
+  // TODO:
+  // For internal, we should put the code here to implement the PID
+  // For external, we should run the script
+  }
+
 static void OBD2ECU_task(void *pvParameters)
   {
   obd2ecu *me = (obd2ecu*)pvParameters;

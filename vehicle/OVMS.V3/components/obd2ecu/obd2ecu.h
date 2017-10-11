@@ -48,6 +48,7 @@ class obd2pid
     void SetInternal(bool internal=true);
     void LoadScript(std::string path);
     std::string GetScript();
+    void Execute();
 
   protected:
     int m_pid;
