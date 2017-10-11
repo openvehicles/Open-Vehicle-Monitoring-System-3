@@ -33,12 +33,28 @@
 static const char *TAG = "obd2ecu";
 
 #include <string.h>
+#include <dirent.h>
 #include "obd2ecu.h"
 #include "ovms_config.h"
 #include "ovms_command.h"
 #include "ovms_peripherals.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
+
+obd2pid::obd2pid(int pid, bool internal)
+  {
+  m_pid = pid;
+  m_internal = internal;
+  }
+
+obd2pid::~obd2pid()
+  {
+  }
+
+bool obd2pid::IsInternal()
+  {
+  return m_internal;
+  }
 
 static void OBD2ECU_task(void *pvParameters)
   {
@@ -69,6 +85,8 @@ obd2ecu::obd2ecu(std::string name, canbus* can)
   m_starttime = time(NULL);
   m_private = MyConfig.GetParamValueBool("obd2ecu","private");
 
+  LoadMap();
+
   MyCan.RegisterListener(m_rxqueue);
   }
 
@@ -79,6 +97,8 @@ obd2ecu::~obd2ecu()
 
   vQueueDelete(m_rxqueue);
   vTaskDelete(m_task);
+
+  ClearMap();
   }
 
 void obd2ecu::SetPowerMode(PowerMode powermode)
@@ -530,6 +550,39 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
     }
 
   return;
+  }
+
+void obd2ecu::LoadMap()
+  {
+  m_pidmap[0x05] = new obd2pid(0x05);  // Coolant Temperature
+  m_pidmap[0x0c] = new obd2pid(0x0c);  // Engine RPM
+  m_pidmap[0x0d] = new obd2pid(0x0d);  // Vehicle Speed
+  m_pidmap[0x10] = new obd2pid(0x10);  // Mass Air Flow
+
+  #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  // We have javascript enabled, so let's try to load pid support scripts
+  DIR *dir;
+  struct dirent *dp;
+  if ((dir = opendir ("/store/obd2ecu")) != NULL)
+    {
+    while ((dp = readdir (dir)) != NULL)
+      {
+      int pid = atoi(dp->d_name);
+      ESP_LOGI(TAG, "Using custom scripting for pid#%d",pid);
+      if (pid) m_pidmap[pid] = new obd2pid(pid,false);
+      }
+    closedir(dir);
+    }
+  #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  }
+
+void obd2ecu::ClearMap()
+  {
+  for (PidMap::iterator it=m_pidmap.begin(); it!=m_pidmap.end(); ++it)
+    {
+    delete it->second;
+    }
+  m_pidmap.clear();
   }
 
 class obd2ecuInit

@@ -37,6 +37,22 @@
 #include "pcp.h"
 #include "can.h"
 
+class obd2pid
+  {
+  public:
+    obd2pid(int pid, bool internal=true);
+    ~obd2pid();
+
+  public:
+    bool IsInternal();
+
+  protected:
+    int m_pid;
+    bool m_internal;
+  };
+
+typedef std::map<int, obd2pid*> PidMap;
+
 class obd2ecu : public pcp
   {
   public:
@@ -52,10 +68,13 @@ class obd2ecu : public pcp
     TaskHandle_t m_task;
     time_t m_starttime;
     uint8_t m_private;
+    PidMap m_pidmap;
 
   public:
     void IncomingFrame(CAN_frame_t* p_frame);
- 
+    void LoadMap();
+    void ClearMap();
+
   protected:
     void FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint8_t format);
   };
