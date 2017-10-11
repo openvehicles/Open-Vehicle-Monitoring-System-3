@@ -61,6 +61,24 @@ void obd2pid::SetInternal(bool internal)
   m_internal = internal;
   }
 
+void obd2pid::LoadScript(std::string path)
+  {
+  FILE* f = fopen(path.c_str(), "r");
+  if (f == NULL) return;
+  m_script.clear();
+  char buf[128];
+  while(size_t n = fread(buf, sizeof(char), sizeof(buf), f))
+    {
+    m_script.append(buf,n);
+    }
+  fclose(f);
+  }
+
+std::string obd2pid::GetScript()
+  {
+  return m_script;
+  }
+
 static void OBD2ECU_task(void *pvParameters)
   {
   obd2ecu *me = (obd2ecu*)pvParameters;
@@ -576,11 +594,14 @@ void obd2ecu::LoadMap()
       ESP_LOGI(TAG, "Using custom scripting for pid#%d",pid);
       if (pid)
         {
+        std::string fpath("/store/obd2ecu/");
+        fpath.append(dp->d_name);
         auto search = m_pidmap.find(pid);
         if (search == m_pidmap.end())
           m_pidmap[pid] = new obd2pid(pid,false);
         else
           m_pidmap[pid]->SetInternal(false);
+        m_pidmap[pid]->LoadScript(fpath);
         }
       }
     closedir(dir);

@@ -46,10 +46,13 @@ class obd2pid
   public:
     bool IsInternal();
     void SetInternal(bool internal=true);
+    void LoadScript(std::string path);
+    std::string GetScript();
 
   protected:
     int m_pid;
     bool m_internal;
+    std::string m_script;
   };
 
 typedef std::map<int, obd2pid*> PidMap;
