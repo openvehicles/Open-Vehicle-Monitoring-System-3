@@ -46,7 +46,7 @@ char ** Complete (microrl_t* rl, int argc, const char * const * argv )
   }
 
 OvmsConsole::OvmsConsole(Parent* parent)
-  : TaskBase(parent)
+  : OvmsShell(COMMAND_RESULT_VERBOSE), TaskBase(parent)
   {
   m_ready = false;
   }

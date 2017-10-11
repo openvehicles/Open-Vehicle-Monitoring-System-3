@@ -37,7 +37,7 @@
 #include "duktape.h"
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
-class OvmsScripts : public OvmsWriter
+class OvmsScripts
   {
   public:
     OvmsScripts();
@@ -54,16 +54,6 @@ class OvmsScripts : public OvmsWriter
   protected:
     duk_context* m_dukctx;
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-
-  public:
-    int puts(const char* s);
-    int printf(const char* fmt, ...);
-    ssize_t write(const void *buf, size_t nbyte);
-    void finalise();
-    char ** GetCompletion(OvmsCommandMap& children, const char* token);
-    void Log(char* message);
-    void Log(LogBuffers* message);
-    virtual void Exit();
   };
 
 extern OvmsScripts MyScripts;

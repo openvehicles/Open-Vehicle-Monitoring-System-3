@@ -45,7 +45,8 @@ BufferedShell::BufferedShell()
   Initialize(m_print);
   }
 
-BufferedShell::BufferedShell(bool print, LogBuffers* output)
+BufferedShell::BufferedShell(bool print, int verbosity, LogBuffers* output) :
+  OvmsShell(verbosity)
   {
   m_print = print;
   m_left = 0;

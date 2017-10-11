@@ -39,12 +39,18 @@
 class OvmsShell : public OvmsWriter
   {
   public:
+    OvmsShell(int verbosity = COMMAND_RESULT_MINIMAL);
+
+  public:
     void Initialize(bool print);
     void ProcessChar(const char c);
     void ProcessChars(const char* buf, int len);
 
   protected:
     microrl_t m_rl;
+
+  public:
+    int m_verbosity;
   };
 
 #endif //#ifndef __OVMS_SHELL_H__

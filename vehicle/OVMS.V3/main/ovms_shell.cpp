@@ -43,9 +43,12 @@ void NoPrint(microrl_t* rl, const char * str)
 
 int Execute (microrl_t* rl, int argc, const char * const * argv )
   {
-  MyCommandApp.Execute(COMMAND_RESULT_VERBOSE, (OvmsWriter*)rl->userdata, argc, argv);
+  OvmsShell* shell = (OvmsShell*)rl->userdata;
+  MyCommandApp.Execute(shell->m_verbosity, shell, argc, argv);
   return 0;
   }
+
+OvmsShell::OvmsShell(int verbosity) : m_verbosity(verbosity) {}
 
 void OvmsShell::Initialize(bool print)
   {

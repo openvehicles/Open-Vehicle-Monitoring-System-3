@@ -39,7 +39,7 @@ class BufferedShell : public OvmsShell
   {
   public:
     BufferedShell();
-    BufferedShell(bool print, LogBuffers* output);
+    BufferedShell(bool print, int verbosity, LogBuffers* output = NULL);
     ~BufferedShell();
 
   public:
