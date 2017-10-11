@@ -515,7 +515,7 @@ void ovmsv2_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   {
   if (MyOvmsServerV2 == NULL)
     {
-    writer->puts("Launching OVMS Server V2 connection (oscv2)");
+    ESP_LOGI(TAG, "Launching OVMS Server V2 connection (oscv2)");
     MyOvmsServerV2 = new OvmsServerV2("oscv2");
     }
   }
