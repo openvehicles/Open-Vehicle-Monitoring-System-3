@@ -43,22 +43,12 @@ static const char *TAG = "housekeeping";
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
 #include "ovms_config.h"
+#include "console_async.h"
 
 #include "esp_heap_alloc_caps.h"
 //extern "C" {
 //#include "esp_heap_caps.h"
 //}
-
-ConsoleAsync *MyUsbConsole;
-
-int console_logger(const char *format, va_list arg)
-  {
-  char *buffer = (char*)malloc(512);
-  vsnprintf(buffer, 512, format, arg);
-  int k = strlen(buffer);
-  MyUsbConsole->Log(buffer);
-  return k;
-  }
 
 #ifdef CONFIG_OVMS_DEV_LOGSTATUS
 int TestAlerts = true;
@@ -127,9 +117,7 @@ void Housekeeping::init()
   MyPeripherals->m_esp32can->SetPowerMode(Off);
   MyPeripherals->m_ext12v->SetPowerMode(Off);
   ESP_LOGI(TAG, "Starting USB console...");
-  MyUsbConsole = new ConsoleAsync();
-
-  esp_log_set_vprintf(console_logger);
+  new ConsoleAsync();
 
   MyEvents.SignalEvent("system.start",NULL);
   }

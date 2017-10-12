@@ -72,7 +72,6 @@ class OvmsConsole : public OvmsShell, public TaskBase
   public:
     void Initialize(const char* console);
     char ** GetCompletion(OvmsCommandMap& children, const char* token);
-    void Log(char* message);
     void Log(LogBuffers* message);
 
   private:

@@ -30,6 +30,7 @@
 #ifndef __CONSOLE_ASYNC_H__
 #define __CONSOLE_ASYNC_H__
 
+#include <stdarg.h>
 #include "ovms_console.h"
 #include "driver/uart.h"
 
@@ -45,12 +46,17 @@ class ConsoleAsync : public OvmsConsole
     int puts(const char* s);
     int printf(const char* fmt, ...);
     ssize_t write(const void *buf, size_t nbyte);
+    static int Log(const char* fmt, ...);
 
   private:
+    static int ConsoleLogger(const char* fmt, va_list arg);
+    void Log(char* message);
     void HandleDeviceEvent(void* pEvent);
 
   protected:
     uint8_t data[BUF_SIZE];
   };
+
+extern ConsoleAsync *MyUsbConsole;
 
 #endif //#ifndef __CONSOLE_ASYNC_H__

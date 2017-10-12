@@ -55,17 +55,6 @@ void OvmsWriter::Exit()
   puts("This console cannot exit.");
   }
 
-int OvmsWriter::Logf(const char* fmt, ...)
-  {
-  char *buffer;
-  va_list args;
-  va_start(args, fmt);
-  size_t ret = vasprintf(&buffer, fmt, args);
-  va_end(args);
-  Log(buffer);
-  return ret;
-  }
-
 OvmsCommand* OvmsCommandMap::FindUniquePrefix(const std::string& key)
   {
   OvmsCommand* found = NULL;

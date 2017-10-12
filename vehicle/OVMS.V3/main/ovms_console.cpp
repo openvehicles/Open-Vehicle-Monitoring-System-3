@@ -101,24 +101,6 @@ char ** OvmsConsole::GetCompletion(OvmsCommandMap& children, const char* token)
   return m_completions;
   }
 
-void OvmsConsole::Log(char* message)
-  {
-  if (!m_ready)
-    {
-    free(message);
-    return;
-    }
-  Event event;
-  event.type = ALERT;
-  event.buffer = message;
-  BaseType_t ret = xQueueSendToBack(m_queue, (void * )&event, (portTickType)(1000 / portTICK_PERIOD_MS));
-  if (ret != pdPASS)
-    {
-    free(message);
-//    ESP_LOGI(TAG, "Timeout queueing message in Console::Log\n");
-    }
-  }
-
 void OvmsConsole::Log(LogBuffers* message)
   {
   if (!m_ready)

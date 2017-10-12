@@ -37,6 +37,8 @@
 #define EX_UART_NUM UART_NUM_0
 static const char *TAG = "uart_events";
 
+ConsoleAsync* MyUsbConsole = NULL;
+
 ConsoleAsync::ConsoleAsync()
   {
   uart_config_t uart_config =
@@ -55,6 +57,8 @@ ConsoleAsync::ConsoleAsync()
   uart_driver_install(EX_UART_NUM, BUF_SIZE * 2, BUF_SIZE * 2, 30, &m_queue, 0);
 
   Initialize("Async");
+  MyUsbConsole = this;
+  esp_log_set_vprintf(ConsoleLogger);
   }
 
 ConsoleAsync::~ConsoleAsync()
@@ -81,6 +85,43 @@ ssize_t ConsoleAsync::write(const void *buf, size_t nbyte)
   ssize_t n = fwrite(buf, nbyte, 1, stdout);
   fflush(stdout);
   return n;
+  }
+
+int ConsoleAsync::Log(const char* fmt, ...)
+  {
+  va_list args;
+  va_start(args, fmt);
+  size_t ret = ConsoleLogger(fmt, args);
+  va_end(args);
+  return ret;
+  }
+
+int ConsoleAsync::ConsoleLogger(const char* fmt, va_list args)
+  {
+  if (!MyUsbConsole)
+    return ::vprintf(fmt, args);
+  char *buffer;
+  size_t ret = vasprintf(&buffer, fmt, args);
+  MyUsbConsole->Log(buffer);
+  return ret;
+  }
+
+void ConsoleAsync::Log(char* message)
+  {
+  if (!m_ready)
+    {
+    free(message);
+    return;
+    }
+  Event event;
+  event.type = ALERT;
+  event.buffer = message;
+  BaseType_t ret = xQueueSendToBack(m_queue, (void * )&event, (portTickType)(1000 / portTICK_PERIOD_MS));
+  if (ret != pdPASS)
+    {
+    free(message);
+//    ESP_LOGI(TAG, "Timeout queueing message in Console::Log\n");
+    }
   }
 
 void ConsoleAsync::HandleDeviceEvent(void* pEvent)

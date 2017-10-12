@@ -59,10 +59,8 @@ class OvmsWriter
     virtual int printf(const char* fmt, ...) = 0;
     virtual ssize_t write(const void *buf, size_t nbyte) = 0;
     virtual char ** GetCompletion(OvmsCommandMap& children, const char* token) = 0;
-    virtual void Log(char* message) = 0;
     virtual void Log(LogBuffers* message) = 0;
     virtual void Exit();
-    int Logf(const char* fmt, ...);
   };
 
 class OvmsCommandMap : public std::map<std::string, OvmsCommand*>
