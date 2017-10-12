@@ -45,6 +45,7 @@ static const char *eventToString(telnet_event_type_t type);
 #endif
 
 static const char *tag = "telnet";
+static const char newline = '\n';
 
 //-----------------------------------------------------------------------------
 //    Class TelnetServer
@@ -224,22 +225,20 @@ ConsoleTelnet::~ConsoleTelnet()
 
 int ConsoleTelnet::puts(const char* s)
   {
-  const char nl = '\n';
   if (!m_telnet)
     return -1;
   telnet_send_text(m_telnet, s, strlen(s));
-  telnet_send_text(m_telnet, &nl, 1);
+  telnet_send_text(m_telnet, &newline, 1);
   return 0;
   }
 
 int ConsoleTelnet::printf(const char* fmt, ...)
   {
-  int ret;
-  va_list args;
   if (!m_telnet)
     return 0;
+  va_list args;
   va_start(args,fmt);
-  ret = telnet_vprintf(m_telnet, fmt, args);
+  int ret = telnet_vprintf(m_telnet, fmt, args);
   va_end(args);
   return ret;
   }

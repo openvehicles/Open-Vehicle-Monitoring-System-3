@@ -80,10 +80,10 @@ int ConsoleAsync::printf(const char* fmt, ...)
   {
   va_list args;
   va_start(args,fmt);
-  vprintf(fmt,args);
+  int ret = vprintf(fmt,args);
   va_end(args);
   fflush(stdout);
-  return 0;
+  return ret;
   }
 
 ssize_t ConsoleAsync::write(const void *buf, size_t nbyte)

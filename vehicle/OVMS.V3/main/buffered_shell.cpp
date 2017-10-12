@@ -85,11 +85,11 @@ int BufferedShell::printf(const char* fmt, ...)
   char *buffer;
   va_list args;
   va_start(args, fmt);
-  size_t ret = vasprintf(&buffer, fmt, args);
+  int ret = vasprintf(&buffer, fmt, args);
   va_end(args);
   write(buffer, ret);
   free(buffer);
-  return 0;
+  return ret;
   }
 
 ssize_t BufferedShell::write(const void *buf, size_t nbyte)
@@ -120,11 +120,6 @@ ssize_t BufferedShell::write(const void *buf, size_t nbyte)
 char ** BufferedShell::GetCompletion(OvmsCommandMap& children, const char* token)
   {
   return NULL;
-  }
-
-void BufferedShell::Log(char* message)
-  {
-  printf("%s", message);
   }
 
 void BufferedShell::Log(LogBuffers* message)

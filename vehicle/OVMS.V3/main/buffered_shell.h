@@ -48,7 +48,6 @@ class BufferedShell : public OvmsShell
     int printf(const char* fmt, ...);
     ssize_t write(const void *buf, size_t nbyte);
     char ** GetCompletion(OvmsCommandMap& children, const char* token);
-    void Log(char* message);
     void Log(LogBuffers* message);
     void Output(OvmsWriter*);
     char* Dump();
