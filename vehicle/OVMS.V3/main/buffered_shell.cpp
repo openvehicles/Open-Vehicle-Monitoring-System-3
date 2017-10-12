@@ -117,10 +117,6 @@ ssize_t BufferedShell::write(const void *buf, size_t nbyte)
   return nbyte;
   }
 
-void BufferedShell::finalise()
-  {
-  }
-
 char ** BufferedShell::GetCompletion(OvmsCommandMap& children, const char* token)
   {
   return NULL;

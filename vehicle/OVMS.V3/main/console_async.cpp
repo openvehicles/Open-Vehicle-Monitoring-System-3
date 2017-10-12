@@ -83,10 +83,6 @@ ssize_t ConsoleAsync::write(const void *buf, size_t nbyte)
   return n;
   }
 
-void ConsoleAsync::finalise()
-  {
-  }
-
 void ConsoleAsync::HandleDeviceEvent(void* pEvent)
   {
   uart_event_t event = *(uart_event_t*)pEvent;

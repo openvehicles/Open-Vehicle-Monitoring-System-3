@@ -252,10 +252,6 @@ ssize_t ConsoleTelnet::write(const void *buf, size_t nbyte)
   return nbyte;
   }
 
-void ConsoleTelnet::finalise()
-  {
-  }
-
 //-----------------------------------------------------------------------------
 //    ConsoleTelnetTask
 //-----------------------------------------------------------------------------

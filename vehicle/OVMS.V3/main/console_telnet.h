@@ -79,7 +79,6 @@ class ConsoleTelnet : public OvmsConsole, public Parent
     int puts(const char* s);
     int printf(const char* fmt, ...);
     ssize_t write(const void *buf, size_t nbyte);
-    void finalise();
 
   private:
     void HandleDeviceEvent(void* pEvent);
