@@ -117,7 +117,7 @@ void Housekeeping::init()
   MyPeripherals->m_esp32can->SetPowerMode(Off);
   MyPeripherals->m_ext12v->SetPowerMode(Off);
   ESP_LOGI(TAG, "Starting USB console...");
-  new ConsoleAsync();
+  ConsoleAsync::Instance();
 
   MyEvents.SignalEvent("system.start",NULL);
   }

@@ -38,11 +38,12 @@
 
 class ConsoleAsync : public OvmsConsole
   {
-  public:
+  private:
     ConsoleAsync();
     virtual ~ConsoleAsync();
 
   public:
+    static ConsoleAsync* Instance();
     int puts(const char* s);
     int printf(const char* fmt, ...);
     ssize_t write(const void *buf, size_t nbyte);
@@ -53,10 +54,9 @@ class ConsoleAsync : public OvmsConsole
     void Log(char* message);
     void HandleDeviceEvent(void* pEvent);
 
-  protected:
+  private:
+    static ConsoleAsync* m_instance;
     uint8_t data[BUF_SIZE];
   };
-
-extern ConsoleAsync *MyUsbConsole;
 
 #endif //#ifndef __CONSOLE_ASYNC_H__

@@ -37,7 +37,14 @@
 #define EX_UART_NUM UART_NUM_0
 static const char *TAG = "uart_events";
 
-ConsoleAsync* MyUsbConsole = NULL;
+ConsoleAsync* ConsoleAsync::m_instance = NULL;
+
+ConsoleAsync* ConsoleAsync::Instance()
+  {
+  if (!m_instance)
+    m_instance = new ConsoleAsync();
+  return m_instance;
+  }
 
 ConsoleAsync::ConsoleAsync()
   {
@@ -57,7 +64,6 @@ ConsoleAsync::ConsoleAsync()
   uart_driver_install(EX_UART_NUM, BUF_SIZE * 2, BUF_SIZE * 2, 30, &m_queue, 0);
 
   Initialize("Async");
-  MyUsbConsole = this;
   esp_log_set_vprintf(ConsoleLogger);
   }
 
@@ -98,11 +104,11 @@ int ConsoleAsync::Log(const char* fmt, ...)
 
 int ConsoleAsync::ConsoleLogger(const char* fmt, va_list args)
   {
-  if (!MyUsbConsole)
+  if (!m_instance)
     return ::vprintf(fmt, args);
   char *buffer;
   size_t ret = vasprintf(&buffer, fmt, args);
-  MyUsbConsole->Log(buffer);
+  m_instance->Log(buffer);
   return ret;
   }
 

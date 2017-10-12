@@ -104,7 +104,7 @@ void OvmsScripts::AllScripts(std::string path)
       if (sf)
         {
         ESP_LOGI(TAG, "Running script %s", fpath.c_str());
-        script_ovms(false, COMMAND_RESULT_MINIMAL, MyUsbConsole, sf);
+        script_ovms(false, COMMAND_RESULT_MINIMAL, ConsoleAsync::Instance(), sf);
         fclose(sf);
         }
       }
