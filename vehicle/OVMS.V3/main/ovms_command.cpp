@@ -42,6 +42,11 @@ static const char *TAG = "command";
 
 OvmsCommandApp MyCommandApp __attribute__ ((init_priority (1000)));
 
+bool CompareCharPtr::operator()(const char* a, const char* b)
+  {
+  return strcmp(a, b) < 0;
+  }
+
 OvmsWriter::OvmsWriter()
   {
   }
@@ -55,14 +60,15 @@ void OvmsWriter::Exit()
   puts("This console cannot exit.");
   }
 
-OvmsCommand* OvmsCommandMap::FindUniquePrefix(const std::string& key)
+OvmsCommand* OvmsCommandMap::FindUniquePrefix(const char* key)
   {
+  int len = strlen(key);
   OvmsCommand* found = NULL;
   for (iterator it = begin(); it != end(); ++it)
     {
-    if (it->first.compare(0, key.size(), key) == 0)
+    if (strncmp(it->first, key, len) == 0)
       {
-      if (key.size() == it->first.size())
+      if (len == strlen(it->first))
         {
         return it->second;
         }
@@ -84,7 +90,7 @@ OvmsCommand::OvmsCommand()
   m_parent = NULL;
   }
 
-OvmsCommand::OvmsCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
+OvmsCommand::OvmsCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                          const char *usage, int min, int max)
   {
   m_name = name;
@@ -102,12 +108,12 @@ OvmsCommand::~OvmsCommand()
 
 const char* OvmsCommand::GetName()
   {
-  return m_name.c_str();
+  return m_name;
   }
 
 const char* OvmsCommand::GetTitle()
   {
-  return m_title.c_str();
+  return m_title;
   }
 
 // Dynamic generation of "Usage:" messages.  Syntax of the usage template string:
@@ -130,7 +136,8 @@ const char* OvmsCommand::GetUsage()
     m_usage.insert(pos, " ");
     m_usage.insert(pos, parent->m_name);
     }
-  m_usage += m_name + " ";
+  m_usage += m_name;
+  m_usage += " ";
   pos = ExpandUsage(usage);
   m_usage += usage.substr(pos);
   return m_usage.c_str();
@@ -164,7 +171,7 @@ size_t OvmsCommand::ExpandUsage(std::string usage)
       if (pos3 == pos2)
         it = m_children.begin();
       else
-        it = m_children.find(usage.substr(pos2, pos3-pos2));
+        it = m_children.find(usage.substr(pos2, pos3-pos2).c_str());
       pos = pos3 + 1;
       if (it != m_children.end())
         {
@@ -181,13 +188,13 @@ size_t OvmsCommand::ExpandUsage(std::string usage)
   return pos;
   }
 
-OvmsCommand* OvmsCommand::RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
+OvmsCommand* OvmsCommand::RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                                           const char *usage, int min, int max)
   {
   OvmsCommand* cmd = new OvmsCommand(name, title, execute, usage, min, max);
   m_children[name] = cmd;
   cmd->m_parent = this;
-  //printf("Registered '%s' under '%s'\n",name.c_str(),m_title.c_str());
+  //printf("Registered '%s' under '%s'\n",name,m_title);
   return cmd;
   }
 
@@ -209,13 +216,15 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
   {
 //  if (argc>0)
 //    {
-//    printf("Execute(%s/%d) verbosity=%d argc=%d first=%s\n",m_title.c_str(), m_children.size(), verbosity,argc,argv[0]);
+//    printf("Execute(%s/%d) verbosity=%d argc=%d first=%s\n",m_title, m_children.size(), verbosity,argc,argv[0]);
 //    }
 //  else
 //    {
-//    printf("Execute(%s/%d) verbosity=%d (no args)\n",m_title.c_str(), m_children.size(), verbosity);
+//    printf("Execute(%s/%d) verbosity=%d (no args)\n",m_title, m_children.size(), verbosity);
 //    }
 
+  extern void* stack();
+  ::printf("sp=%p\n", stack());
   if (m_execute)
     {
     //puts("Executing directly...");
@@ -241,9 +250,9 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
       // Show available commands
       for (OvmsCommandMap::iterator it=m_children.begin(); it!=m_children.end(); ++it)
         {
-        const char* k = it->first.c_str();
-        const std::string v = it->second->GetTitle();
-        writer->printf("%-20.20s %s\n",k,v.c_str());
+        const char* k = it->first;
+        const char* v = it->second->GetTitle();
+        writer->printf("%-20.20s %s\n",k,v);
         }
       return;
       }
@@ -271,7 +280,7 @@ OvmsCommand* OvmsCommand::GetParent()
   return m_parent;
   }
 
-OvmsCommand* OvmsCommand::FindCommand(std::string name)
+OvmsCommand* OvmsCommand::FindCommand(const char* name)
   {
   return m_children.FindUniquePrefix(name);
   }
@@ -291,8 +300,8 @@ void level(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const 
   const char* tag = "*";
   if (argc > 0)
     tag = argv[0];
-  const std::string& title = cmd->GetTitle();
-  esp_log_level_t level_num = (esp_log_level_t)atoi(title.substr(title.size()-2, 1).c_str());
+  const char* title = cmd->GetTitle();
+  esp_log_level_t level_num = (esp_log_level_t)(*(title+strlen(title)-2) - '0');
   esp_log_level_set(tag, level_num);
   writer->printf("Logging level for %s set to %s\n",tag,cmd->GetName());
   }
@@ -316,13 +325,13 @@ OvmsCommandApp::~OvmsCommandApp()
   {
   }
 
-OvmsCommand* OvmsCommandApp::RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
+OvmsCommand* OvmsCommandApp::RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                                              const char *usage, int min, int max)
   {
   return m_root.RegisterCommand(name, title, execute, usage, min, max);
   }
 
-OvmsCommand* OvmsCommandApp::FindCommand(std::string name)
+OvmsCommand* OvmsCommandApp::FindCommand(const char* name)
   {
   return m_root.FindCommand(name);
   }

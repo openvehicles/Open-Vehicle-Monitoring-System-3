@@ -72,10 +72,10 @@ pcpapp::~pcpapp()
 void pcpapp::Register(std::string name, pcp* device)
   {
   m_map[name] = device;
-  OvmsCommand* devcmd = powercmd->RegisterCommand(name,"Power control",NULL,"<$C>");
+  OvmsCommand* devcmd = powercmd->RegisterCommand(name.c_str(),"Power control",NULL,"<$C>");
   for (auto it=m_mappm.begin(); it!=m_mappm.end(); ++it)
     {
-    devcmd->RegisterCommand(it->first,"Power control",power_cmd,"",0,0);
+    devcmd->RegisterCommand(it->first.c_str(),"Power control",power_cmd,"",0,0);
     }
   }
 

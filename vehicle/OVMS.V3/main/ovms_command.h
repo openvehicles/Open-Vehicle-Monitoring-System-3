@@ -63,22 +63,27 @@ class OvmsWriter
     virtual void Exit();
   };
 
-class OvmsCommandMap : public std::map<std::string, OvmsCommand*>
+struct CompareCharPtr
+  {
+  bool operator()(const char* a, const char* b);
+  };
+
+class OvmsCommandMap : public std::map<const char*, OvmsCommand*, CompareCharPtr>
   {
   public:
-    OvmsCommand* FindUniquePrefix(const std::string& key);
+    OvmsCommand* FindUniquePrefix(const char* key);
   };
 
 class OvmsCommand
   {
   public:
     OvmsCommand();
-    OvmsCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
+    OvmsCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                 const char *usage, int min, int max);
     virtual ~OvmsCommand();
 
   public:
-    OvmsCommand* RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
+    OvmsCommand* RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                                  const char *usage = "", int min = 0, int max = INT_MAX);
     const char* GetName();
     const char* GetTitle();
@@ -86,14 +91,14 @@ class OvmsCommand
     char ** Complete(OvmsWriter* writer, int argc, const char * const * argv);
     void Execute(int verbosity, OvmsWriter* writer, int argc, const char * const * argv);
     OvmsCommand* GetParent();
-    OvmsCommand* FindCommand(std::string name);
+    OvmsCommand* FindCommand(const char* name);
 
   private:
       size_t ExpandUsage(std::string usage);
 
   protected:
-    std::string m_name;
-    std::string m_title;
+    const char* m_name;
+    const char* m_title;
     void (*m_execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*);
     const char* m_usage_template;
     std::string m_usage;
@@ -110,9 +115,9 @@ class OvmsCommandApp
     virtual ~OvmsCommandApp();
 
   public:
-    OvmsCommand* RegisterCommand(std::string name, std::string title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
+    OvmsCommand* RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                                  const char *usage = "", int min = 0, int max = INT_MAX);
-    OvmsCommand* FindCommand(std::string name);
+    OvmsCommand* FindCommand(const char* name);
     void RegisterConsole(OvmsWriter* writer);
     void DeregisterConsole(OvmsWriter* writer);
     int Log(const char* fmt, ...);

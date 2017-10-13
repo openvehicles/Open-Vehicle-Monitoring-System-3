@@ -80,7 +80,7 @@ char ** OvmsConsole::GetCompletion(OvmsCommandMap& children, const char* token)
     {
     for (OvmsCommandMap::iterator it = children.begin(); it != children.end(); ++it)
       {
-      const char *key = it->first.c_str();
+      const char *key = it->first;
       if (strncmp(key, token, strlen(token)) == 0)
         {
         if (index < COMPLETION_MAX_TOKENS+1)
