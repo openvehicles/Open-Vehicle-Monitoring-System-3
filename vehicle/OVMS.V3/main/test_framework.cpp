@@ -275,6 +275,7 @@ void test_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
 #if configUSE_TRACE_FACILITY
 #ifndef CONFIG_FREERTOS_ASSERT_ON_UNTESTED_FUNCTION
   TaskStatus_t tasks[20];
+  bzero(tasks, sizeof(tasks));
   writer->printf("Number of Tasks = %u\n", uxTaskGetNumberOfTasks());
   UBaseType_t n = uxTaskGetSystemState(tasks, 20, NULL);
   for (UBaseType_t i = 0; i < n; ++i)
