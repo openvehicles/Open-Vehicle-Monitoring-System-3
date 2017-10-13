@@ -107,7 +107,7 @@ int ConsoleAsync::ConsoleLogger(const char* fmt, va_list args)
   if (!m_instance)
     return ::vprintf(fmt, args);
   char *buffer;
-  size_t ret = vasprintf(&buffer, fmt, args);
+  int ret = vasprintf(&buffer, fmt, args);
   m_instance->Log(buffer);
   return ret;
   }

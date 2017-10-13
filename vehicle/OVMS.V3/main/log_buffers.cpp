@@ -51,7 +51,7 @@ LogBuffers::~LogBuffers()
 int LogBuffers::append(const char* fmt, va_list args)
   {
   char *buffer;
-  size_t ret = vasprintf(&buffer, fmt, args);
+  int ret = vasprintf(&buffer, fmt, args);
   append(buffer);
   return ret;
   }
