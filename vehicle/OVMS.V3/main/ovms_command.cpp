@@ -223,8 +223,6 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
 //    printf("Execute(%s/%d) verbosity=%d (no args)\n",m_title, m_children.size(), verbosity);
 //    }
 
-  extern void* stack();
-  ::printf("sp=%p\n", stack());
   if (m_execute)
     {
     //puts("Executing directly...");
