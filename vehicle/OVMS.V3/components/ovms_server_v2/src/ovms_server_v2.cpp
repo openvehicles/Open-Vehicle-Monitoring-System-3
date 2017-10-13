@@ -84,6 +84,7 @@ void OvmsServerV2::ServerTask()
       // FIXME sending messages almost certainly probably shouldn't be wedged into this loop
       // also shouldn't there be a delay to avoid sending as fast as we get messages from the can bus?
       TransmitMsgStat(false);
+      TransmitMsgEnvironment(false);
       }
     }
   }
@@ -311,8 +312,13 @@ void OvmsServerV2::TransmitMsgStat(bool always)
   ESP_LOGI(TAG, "Sending MP-0 S");
   bool modified =
     StandardMetrics.ms_v_bat_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_current->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_bat_range_ideal->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_bat_range_est->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_climit->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_kwh->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_bat_cac->IsModifiedAndClear(MyOvmsServerV2Modifier);
     StandardMetrics.ms_v_bat_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_bat_soh->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
@@ -326,9 +332,9 @@ void OvmsServerV2::TransmitMsgStat(bool always)
   buffer.append(",");
   buffer.append("K");  // units
   buffer.append(",");
-  buffer.append("0");  // car_linevoltage
+  buffer.append(StandardMetrics.ms_v_charge_voltage->AsString("0").c_str());
   buffer.append(",");
-  buffer.append("0");  // car_chargecurrent
+  buffer.append(StandardMetrics.ms_v_charge_current->AsString("0").c_str());
   buffer.append(",");
   buffer.append("stopped");  // car_chargestate
   buffer.append(",");
@@ -339,13 +345,13 @@ void OvmsServerV2::TransmitMsgStat(bool always)
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_bat_range_est->AsString("0").c_str());
   buffer.append(",");
-  buffer.append("0");  // charge limit
+  buffer.append(StandardMetrics.ms_v_charge_climit->AsString("0").c_str());
   buffer.append(",");
   buffer.append("0");  // charge duration
   buffer.append(",");
   buffer.append("0");  // car_charge_b4
   buffer.append(",");
-  buffer.append("0");  // car_chargekwh
+  buffer.append(StandardMetrics.ms_v_charge_kwh->AsString("0"));
   buffer.append(",");
   buffer.append("0");  // car_chargesubstate
   buffer.append(",");
@@ -359,7 +365,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
   buffer.append(",");
   buffer.append("0");  // car_stale_timer
   buffer.append(",");
-  buffer.append("0");  // car_cac100
+  buffer.append(StandardMetrics.ms_v_bat_cac->AsString("0"));  // car_cac100
   buffer.append(",");
   buffer.append("0");  // car_chargefull_minsremaining
   buffer.append(",");
@@ -457,6 +463,69 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
 
 void OvmsServerV2::TransmitMsgEnvironment(bool always)
   {
+  ESP_LOGI(TAG, "Sending MP-0 D");
+  bool modified =
+    StandardMetrics.ms_v_temp_pem->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_temp_motor->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_temp_battery->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_pos_speed->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_temp_ambient->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_bat_12v->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_temp_charger->IsModifiedAndClear(MyOvmsServerV2Modifier);
+
+  // Quick exit if nothing modified
+  if ((!always)&&(!modified)) return;
+
+  std::string buffer;
+  buffer.reserve(512);
+  buffer.append("MP-0 D");
+  buffer.append("0");  // car_doors1
+  buffer.append(",");
+  buffer.append("0");  // car_doors2
+  buffer.append(",");
+  buffer.append("0");  // car_lockstate
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_temp_pem->AsString("0").c_str());
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_temp_motor->AsString("0").c_str());
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_temp_battery->AsString("0").c_str());
+  buffer.append(",");
+  buffer.append("0");  // car_trip
+  buffer.append(",");
+  buffer.append("0");  // car_odometer
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_pos_speed->AsString("0").c_str());
+  buffer.append(",");
+  buffer.append("0");  // park
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_temp_ambient->AsString("0").c_str());
+  buffer.append(",");
+  buffer.append("0");  // car_doors3
+  buffer.append(",");
+  bool stale_temps =
+    StandardMetrics.ms_v_temp_pem->IsStale() ||
+    StandardMetrics.ms_v_temp_motor->IsStale() ||
+    StandardMetrics.ms_v_temp_battery->IsStale() ||
+    StandardMetrics.ms_v_temp_charger->IsStale();
+  buffer.append(stale_temps ? "0" : "1");
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_temp_ambient->IsStale() ? "0" : "1");
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_bat_12v->AsString("0").c_str());
+  buffer.append(",");
+  buffer.append("0");  // car_doors4
+  buffer.append(",");
+  buffer.append("0");  // car_12vline_ref
+  buffer.append(",");
+  buffer.append("0");  // car_doors5
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_temp_charger->AsString("0").c_str());
+  buffer.append(",");
+  buffer.append("0");  // car_12v_current
+
+  ESP_LOGI(TAG, "Sending: %s", buffer.c_str());
+  Transmit(buffer.c_str());
   }
 
 void OvmsServerV2::TransmitMsgCapabilities(bool always)
