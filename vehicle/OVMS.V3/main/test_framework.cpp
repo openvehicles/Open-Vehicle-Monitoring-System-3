@@ -385,3 +385,14 @@ TestFrameworkInit::TestFrameworkInit()
   cmd_test->RegisterCommand("javascript","Test Javascript",test_javascript,"",0,0);
   cmd_test->RegisterCommand("abort","Set trap to abort on malloc",test_abort,"<task> <count> [size]",2,3);
   }
+
+// Returns the value of the stack pointer in the calling function.
+// The stack frame for this function is 32 bytes, hence the add.
+
+void* stack() {
+    __asm__(
+"   addi a2, sp, 32\n"
+"   retw.n\n"
+    );
+    return 0;
+}
