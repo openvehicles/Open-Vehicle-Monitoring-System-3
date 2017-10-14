@@ -640,7 +640,7 @@ obd2ecuInit::obd2ecuInit()
   cmd_start->RegisterCommand("can2","Start an OBDII ECU on can2",obd2ecu_start, "", 0, 0);
   cmd_start->RegisterCommand("can3","Start an OBDII ECU on can3",obd2ecu_start, "", 0, 0);
   cmd_ecu->RegisterCommand("stop","Stop the OBDII ECU",obd2ecu_stop, "", 0, 0);
-  cmd_ecu->RegisterCommand("privacy","Set Privacy on/off (hide / allow VIN reporting)",obd2ecu_privacy, "", 1, 1);
+  cmd_ecu->RegisterCommand("privacy","Set Privacy on/off (hide / allow VIN reporting)",obd2ecu_privacy, "", 1, 1, true);
 
   MyConfig.RegisterParam("obd2ecu", "OBD2ECU configuration", true, true);
   }

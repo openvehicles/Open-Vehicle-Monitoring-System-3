@@ -358,13 +358,13 @@ OvmsOTA::OvmsOTA()
   cmd_ota->RegisterCommand("status","Show OTA status",ota_status,"",0,0);
 
   OvmsCommand* cmd_otaflash = cmd_ota->RegisterCommand("flash","OTA flash",NULL,"<$C>",1,1);
-  cmd_otaflash->RegisterCommand("vfs","OTA flash vfs",ota_flash_vfs,"<file>",1,1);
-  cmd_otaflash->RegisterCommand("http","OTA flash auto",ota_flash_http,"<url>",0,1);
+  cmd_otaflash->RegisterCommand("vfs","OTA flash vfs",ota_flash_vfs,"<file>",1,1,true);
+  cmd_otaflash->RegisterCommand("http","OTA flash auto",ota_flash_http,"<url>",0,1,true);
 
   OvmsCommand* cmd_otaboot = cmd_ota->RegisterCommand("boot","OTA boot",NULL,"<$C>",1,1);
-  cmd_otaboot->RegisterCommand("factory","Boot from factory image",ota_boot, "", 0, 0);
-  cmd_otaboot->RegisterCommand("ota_0","Boot from ota_0 image",ota_boot, "", 0, 0);
-  cmd_otaboot->RegisterCommand("ota_1","Boot from ota_1 image",ota_boot, "", 0, 0);
+  cmd_otaboot->RegisterCommand("factory","Boot from factory image",ota_boot, "", 0, 0, true);
+  cmd_otaboot->RegisterCommand("ota_0","Boot from ota_0 image",ota_boot, "", 0, 0, true);
+  cmd_otaboot->RegisterCommand("ota_1","Boot from ota_1 image",ota_boot, "", 0, 0, true);
   }
 
 OvmsOTA::~OvmsOTA()

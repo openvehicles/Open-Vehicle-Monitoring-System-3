@@ -378,13 +378,13 @@ TestFrameworkInit::TestFrameworkInit()
   ESP_LOGI(TAG, "Initialising TEST (5000)");
 
   OvmsCommand* cmd_test = MyCommandApp.RegisterCommand("test","Test framework",NULL);
-  cmd_test->RegisterCommand("sleep","Test Deep Sleep",test_deepsleep,"[seconds]",0,1);
-  cmd_test->RegisterCommand("housekeeping","Toggle testing alerts in Housekeeping",test_alerts,"",0,0);
-  cmd_test->RegisterCommand("memory","Show allocated memory",test_memory,"",0);
-  cmd_test->RegisterCommand("tasks","Show list of tasks",test_tasks,"",0,0);
-  cmd_test->RegisterCommand("sdcard","Test CD CARD",test_sdcard,"",0,0);
-  cmd_test->RegisterCommand("javascript","Test Javascript",test_javascript,"",0,0);
-  cmd_test->RegisterCommand("abort","Set trap to abort on malloc",test_abort,"<task> <count> [size]",2,3);
+  cmd_test->RegisterCommand("sleep","Test Deep Sleep",test_deepsleep,"[seconds]",0,1,true);
+  cmd_test->RegisterCommand("housekeeping","Toggle testing alerts in Housekeeping",test_alerts,"",0,0,true);
+  cmd_test->RegisterCommand("memory","Show allocated memory",test_memory,"",0,0,true);
+  cmd_test->RegisterCommand("tasks","Show list of tasks",test_tasks,"",0,0,true);
+  cmd_test->RegisterCommand("sdcard","Test CD CARD",test_sdcard,"",0,0,true);
+  cmd_test->RegisterCommand("javascript","Test Javascript",test_javascript,"",0,0,true);
+  cmd_test->RegisterCommand("abort","Set trap to abort on malloc",test_abort,"<task> <count> [size]",2,3,true);
   }
 
 // Returns the value of the stack pointer in the calling function.

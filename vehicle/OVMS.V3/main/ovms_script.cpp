@@ -145,8 +145,8 @@ OvmsScripts::OvmsScripts()
   m_dukctx = duk_create_heap_default();
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
-  MyCommandApp.RegisterCommand("script","Run a script",script_run,"<path>",1,1);
-  MyCommandApp.RegisterCommand(".","Run a script",script_run,"<path>",1,1);
+  MyCommandApp.RegisterCommand("script","Run a script",script_run,"<path>",1,1,true);
+  MyCommandApp.RegisterCommand(".","Run a script",script_run,"<path>",1,1,true);
   }
 
 OvmsScripts::~OvmsScripts()

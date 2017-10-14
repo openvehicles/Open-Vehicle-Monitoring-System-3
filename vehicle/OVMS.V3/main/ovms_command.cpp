@@ -38,6 +38,7 @@ static const char *TAG = "command";
 #include <esp_log.h>
 #include "freertos/FreeRTOS.h"
 #include "ovms_command.h"
+#include "ovms_config.h"
 #include "log_buffers.h"
 
 OvmsCommandApp MyCommandApp __attribute__ ((init_priority (1000)));
@@ -49,6 +50,7 @@ bool CompareCharPtr::operator()(const char* a, const char* b)
 
 OvmsWriter::OvmsWriter()
   {
+  m_issecure = false;
   }
 
 OvmsWriter::~OvmsWriter()
@@ -58,6 +60,16 @@ OvmsWriter::~OvmsWriter()
 void OvmsWriter::Exit()
   {
   puts("This console cannot exit.");
+  }
+
+bool OvmsWriter::IsSecure()
+  {
+  return m_issecure;
+  }
+
+void OvmsWriter::SetSecure(bool secure)
+  {
+  m_issecure = secure;
   }
 
 OvmsCommand* OvmsCommandMap::FindUniquePrefix(const char* key)
@@ -91,7 +103,7 @@ OvmsCommand::OvmsCommand()
   }
 
 OvmsCommand::OvmsCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
-                         const char *usage, int min, int max)
+                         const char *usage, int min, int max, bool secure)
   {
   m_name = name;
   m_title = title;
@@ -100,6 +112,7 @@ OvmsCommand::OvmsCommand(const char* name, const char* title, void (*execute)(in
   m_min = min;
   m_max = max;
   m_parent = NULL;
+  m_secure = secure;
   }
 
 OvmsCommand::~OvmsCommand()
@@ -189,9 +202,9 @@ size_t OvmsCommand::ExpandUsage(std::string usage)
   }
 
 OvmsCommand* OvmsCommand::RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
-                                          const char *usage, int min, int max)
+                                          const char *usage, int min, int max, bool secure)
   {
-  OvmsCommand* cmd = new OvmsCommand(name, title, execute, usage, min, max);
+  OvmsCommand* cmd = new OvmsCommand(name, title, execute, usage, min, max, secure);
   m_children[name] = cmd;
   cmd->m_parent = this;
   //printf("Registered '%s' under '%s'\n",name,m_title);
@@ -231,7 +244,10 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
       writer->puts(GetUsage());
       return;
       }
-    m_execute(verbosity,writer,this,argc,argv);
+    if ((!m_secure)||(m_secure && writer->m_issecure))
+      m_execute(verbosity,writer,this,argc,argv);
+    else
+      writer->puts("Error: Secure command requires 'enable' mode");
     return;
     }
   else
@@ -304,6 +320,26 @@ void level(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const 
   writer->printf("Logging level for %s set to %s\n",tag,cmd->GetName());
   }
 
+void enable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string p = MyConfig.GetParamValue("password","module");
+  if ((p.empty())||((argc==1)&&(p.compare(argv[0])==0)))
+    {
+    writer->SetSecure(true);
+    writer->puts("Secure mode");
+    }
+  else
+    {
+    vTaskDelay(5000 / portTICK_PERIOD_MS);
+    writer->puts("Error: Invalid or missing password");
+    }
+  }
+
+void disable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->SetSecure(false);
+  }
+
 OvmsCommandApp::OvmsCommandApp()
   {
   ESP_LOGI(TAG, "Initialising COMMAND (1000)");
@@ -317,6 +353,8 @@ OvmsCommandApp::OvmsCommandApp()
   level_cmd->RegisterCommand("warn", "Log at the WARN level (2)", level , "[tag]", 0, 1);
   level_cmd->RegisterCommand("error", "Log at the ERROR level (1)", level , "[tag]", 0, 1);
   level_cmd->RegisterCommand("none", "No logging (0)", level , "[tag]", 0, 1);
+  m_root.RegisterCommand("enable","Enter secure mode", enable, "", 0, 1);
+  m_root.RegisterCommand("disable","Leave secure mode", disable, "", 0, 0, true);
   }
 
 OvmsCommandApp::~OvmsCommandApp()
@@ -324,9 +362,9 @@ OvmsCommandApp::~OvmsCommandApp()
   }
 
 OvmsCommand* OvmsCommandApp::RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
-                                             const char *usage, int min, int max)
+                                             const char *usage, int min, int max, bool secure)
   {
-  return m_root.RegisterCommand(name, title, execute, usage, min, max);
+  return m_root.RegisterCommand(name, title, execute, usage, min, max, secure);
   }
 
 OvmsCommand* OvmsCommandApp::FindCommand(const char* name)

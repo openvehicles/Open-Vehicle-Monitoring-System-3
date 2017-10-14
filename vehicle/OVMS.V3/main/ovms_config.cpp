@@ -130,13 +130,15 @@ OvmsConfig::OvmsConfig()
   ESP_LOGI(TAG, "Initialising CONFIG (1400)");
 
   OvmsCommand* cmd_store = MyCommandApp.RegisterCommand("store","STORE framework",NULL,"<$C>",1,1);
-  cmd_store->RegisterCommand("mount","Mount STORE",store_mount,"",0,0);
-  cmd_store->RegisterCommand("unmount","Unmount STORE",store_unmount,"",0,0);
+  cmd_store->RegisterCommand("mount","Mount STORE",store_mount,"",0,0,true);
+  cmd_store->RegisterCommand("unmount","Unmount STORE",store_unmount,"",0,0,true);
 
   OvmsCommand* cmd_config = MyCommandApp.RegisterCommand("config","CONFIG framework",NULL,"<$C>",1,1);
   cmd_config->RegisterCommand("list","Show configuration parameters/instances",config_list,"",0,1);
-  cmd_config->RegisterCommand("set","Set parameter:instance=value",config_set,"<param> <instance> <value>",3,3);
-  cmd_config->RegisterCommand("rm","Remove parameter:instance",config_rm,"<param> <instance>",2,2);
+  cmd_config->RegisterCommand("set","Set parameter:instance=value",config_set,"<param> <instance> <value>",3,3,true);
+  cmd_config->RegisterCommand("rm","Remove parameter:instance",config_rm,"<param> <instance>",2,2,true);
+
+  RegisterParam("password", "Password store", true, false);
   }
 
 OvmsConfig::~OvmsConfig()

@@ -105,5 +105,5 @@ Max7317Init::Max7317Init()
   ESP_LOGI(TAG, "Initialising MAX7317 EGPIO (4200)");
 
   OvmsCommand* cmd_egpio = MyCommandApp.RegisterCommand("egpio","EGPIO framework",NULL, "", 1);
-  cmd_egpio->RegisterCommand("output","Set EGPIO output level",max7317_output, "<port> <level>", 2, 2);
+  cmd_egpio->RegisterCommand("output","Set EGPIO output level",max7317_output, "<port> <level>", 2, 2, true);
   }

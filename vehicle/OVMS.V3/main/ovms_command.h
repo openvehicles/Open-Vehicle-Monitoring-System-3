@@ -61,6 +61,13 @@ class OvmsWriter
     virtual char ** GetCompletion(OvmsCommandMap& children, const char* token) = 0;
     virtual void Log(LogBuffers* message) = 0;
     virtual void Exit();
+
+  public:
+    bool IsSecure();
+    void SetSecure(bool secure=true);
+
+  public:
+    bool m_issecure;
   };
 
 struct CompareCharPtr
@@ -79,12 +86,12 @@ class OvmsCommand
   public:
     OvmsCommand();
     OvmsCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
-                const char *usage, int min, int max);
+                const char *usage, int min, int max, bool secure = false);
     virtual ~OvmsCommand();
 
   public:
     OvmsCommand* RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
-                                 const char *usage = "", int min = 0, int max = INT_MAX);
+                                 const char *usage = "", int min = 0, int max = INT_MAX, bool secure = false);
     const char* GetName();
     const char* GetTitle();
     const char* GetUsage();
@@ -104,6 +111,7 @@ class OvmsCommand
     std::string m_usage;
     int m_min;
     int m_max;
+    bool m_secure;
     OvmsCommandMap m_children;
     OvmsCommand* m_parent;
   };
@@ -116,7 +124,7 @@ class OvmsCommandApp
 
   public:
     OvmsCommand* RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
-                                 const char *usage = "", int min = 0, int max = INT_MAX);
+                                 const char *usage = "", int min = 0, int max = INT_MAX, bool secure = false);
     OvmsCommand* FindCommand(const char* name);
     void RegisterConsole(OvmsWriter* writer);
     void DeregisterConsole(OvmsWriter* writer);
