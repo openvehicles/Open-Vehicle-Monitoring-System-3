@@ -50,7 +50,11 @@ bool CompareCharPtr::operator()(const char* a, const char* b)
 
 OvmsWriter::OvmsWriter()
   {
-  m_issecure = false;
+  std::string p = MyConfig.GetParamValue("password","module");
+  if (p.empty())
+    m_issecure = true;
+  else
+    m_issecure = false;
   }
 
 OvmsWriter::~OvmsWriter()
