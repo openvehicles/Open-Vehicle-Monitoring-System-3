@@ -50,6 +50,7 @@ void OvmsServerV2::ServerTask()
   {
   ESP_LOGI(TAG, "OVMS Server v2 task running");
 
+  int lasttx = 0;
   while(1)
     {
     if (!Connect())
@@ -70,21 +71,32 @@ void OvmsServerV2::ServerTask()
       {
       if (!m_conn.IsOpen())
         {
+        // Loop until connection is open
         vTaskDelay(10000 / portTICK_PERIOD_MS);
         continue;
         }
+
+      // Handle incoming requests
       while ((m_buffer->HasLine() >= 0)&&(m_conn.IsOpen()))
         {
         ProcessServerMsg();
         }
+
+      // Periodic transmission of metrics
+      int now = StandardMetrics.ms_m_monotonic->AsInt();
+      int next = (StandardMetrics.ms_s_v2_peers->AsInt()==0)?600:60;
+      if ((lasttx==0)||(now>(lasttx+next)))
+        {
+        TransmitMsgStat(false);
+        TransmitMsgEnvironment(false);
+        lasttx = now;
+        }
+
+      // Poll for new data
       if (m_buffer->PollSocket(m_conn.Socket(),20000) < 0)
         {
         m_conn.Disconnect();
         }
-      // FIXME sending messages almost certainly probably shouldn't be wedged into this loop
-      // also shouldn't there be a delay to avoid sending as fast as we get messages from the can bus?
-      TransmitMsgStat(false);
-      TransmitMsgEnvironment(false);
       }
     }
   }
@@ -584,7 +596,7 @@ void ovmsv2_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   {
   if (MyOvmsServerV2 == NULL)
     {
-    ESP_LOGI(TAG, "Launching OVMS Server V2 connection (oscv2)");
+    writer->puts("Launching OVMS Server V2 connection (oscv2)");
     MyOvmsServerV2 = new OvmsServerV2("oscv2");
     }
   }

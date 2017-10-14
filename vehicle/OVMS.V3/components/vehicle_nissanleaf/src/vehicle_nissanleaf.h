@@ -28,8 +28,8 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __VEHICLE_TESLAROADSTER_H__
-#define __VEHICLE_TESLAROADSTER_H__
+#ifndef __VEHICLE_NISSANLEAF_H__
+#define __VEHICLE_NISSANLEAF_H__
 
 #include "can.h"
 #include "vehicle.h"
@@ -59,4 +59,4 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     const std::string VehicleName();
   };
 
-#endif //#ifndef __VEHICLE_TESLAROADSTER_H__
+#endif //#ifndef __VEHICLE_NISSANLEAF_H__
