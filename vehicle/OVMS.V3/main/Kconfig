@@ -84,6 +84,13 @@ config OVMS_VEHICLE_TESLAROADSTER
     help
         Enable to include support for Tesla Roadster vehicles.
 
+config OVMS_VEHICLE_NISSANLEAF
+    bool "Include support for Nissan Leaf vehicles"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Nissan Leaf vehicles.
+
 endmenu # Vehicle Support
 
 menu "Component Options"

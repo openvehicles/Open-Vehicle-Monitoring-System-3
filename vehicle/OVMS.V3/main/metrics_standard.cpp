@@ -58,7 +58,8 @@ MetricsStandard::MetricsStandard()
   ms_v_bat_soc = new OvmsMetricInt(MS_V_BAT_SOC, SM_STALE_HIGH);
   ms_v_bat_soh = new OvmsMetricInt(MS_V_BAT_SOH, SM_STALE_HIGH);
   ms_v_bat_cac = new OvmsMetricFloat(MS_V_BAT_CAC, SM_STALE_HIGH);
-  ms_v_bat_voltage = new OvmsMetricInt(MS_V_BAT_VOLTAGE, SM_STALE_MID);
+  ms_v_bat_voltage = new OvmsMetricFloat(MS_V_BAT_VOLTAGE, SM_STALE_MID);
+  ms_v_bat_current = new OvmsMetricFloat(MS_V_BAT_CURRENT, SM_STALE_MID);
   ms_v_bat_range_ideal = new OvmsMetricInt(MS_V_BAT_RANGE_IDEAL, SM_STALE_HIGH);
   ms_v_bat_range_est = new OvmsMetricInt(MS_V_BAT_RANGE_EST, SM_STALE_HIGH);
   ms_v_bat_12v = new OvmsMetricFloat(MS_V_BAT_12V, SM_STALE_HIGH);
