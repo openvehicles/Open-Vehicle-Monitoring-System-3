@@ -501,7 +501,7 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
   {
   }
 
-void AppendDoors1(std::string buffer)
+void AppendDoors1(std::string *buffer)
   {
   uint8_t car_doors1;
   car_doors1bits.FrontLeftDoor = StandardMetrics.ms_v_door_fl->AsBool();
@@ -512,12 +512,12 @@ void AppendDoors1(std::string buffer)
   car_doors1bits.HandBrake = StandardMetrics.ms_v_env_handbrake->AsBool();
   car_doors1bits.CarON = StandardMetrics.ms_v_env_on->AsBool();
 
-  std::ostringstream s;
-  s << car_doors1;
-  buffer.append(s.str().c_str());
+  char b[5];
+  itoa(car_doors1, b, 10);
+  buffer->append(b);
   }
 
-void AppendDoors5(std::string buffer)
+void AppendDoors5(std::string *buffer)
   {
   uint8_t car_doors5;
   car_doors5bits.RearLeftDoor = StandardMetrics.ms_v_door_rl->AsBool();
@@ -526,9 +526,9 @@ void AppendDoors5(std::string buffer)
   car_doors5bits.Charging12V = StandardMetrics.ms_v_env_charging12v->AsBool();
   car_doors5bits.HVAC = StandardMetrics.ms_v_env_hvac->AsBool();
 
-  std::ostringstream s;
-  s << car_doors5;
-  buffer.append(s.str().c_str());
+  char b[5];
+  itoa(car_doors5, b, 10);
+  buffer->append(b);
   }
 
 void OvmsServerV2::TransmitMsgEnvironment(bool always)
@@ -565,7 +565,7 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
   std::string buffer;
   buffer.reserve(512);
   buffer.append("MP-0 D");
-  AppendDoors1(buffer);
+  AppendDoors1(&buffer);
   buffer.append(",");
   buffer.append("0");  // car_doors2
   buffer.append(",");
@@ -604,7 +604,7 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
   buffer.append(",");
   buffer.append("0");  // car_12vline_ref
   buffer.append(",");
-  AppendDoors5(buffer);
+  AppendDoors5(&buffer);
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_temp_charger->AsString("0").c_str());
   buffer.append(",");
