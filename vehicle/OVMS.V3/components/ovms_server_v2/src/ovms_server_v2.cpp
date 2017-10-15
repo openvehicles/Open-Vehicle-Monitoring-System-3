@@ -45,7 +45,8 @@ static const char *TAG = "ovms-server-v2";
 #include "esp_system.h"
 
 // should this go in the .h or in the .cpp?
-typedef struct {
+typedef union {
+  struct {
   unsigned FrontLeftDoor:1;     // 0x01
   unsigned FrontRightDoor:1;    // 0x02
   unsigned ChargePort:1;        // 0x04
@@ -54,11 +55,12 @@ typedef struct {
   unsigned :1;                  // 0x20
   unsigned HandBrake:1;         // 0x40
   unsigned CarON:1;             // 0x80
-} car_doors1bits_t;
-// there has to be a better way than this, a union perhaps?
-#define car_doors1bits (*((car_doors1bits_t*)&car_doors1))
+  } bits;
+  uint8_t flags;
+} car_doors1_t;
 
-typedef struct {
+typedef union {
+  struct {
   unsigned RearLeftDoor:1;      // 0x01
   unsigned RearRightDoor:1;     // 0x02
   unsigned Frunk:1;             // 0x04
@@ -67,9 +69,9 @@ typedef struct {
   unsigned :1;                  // 0x20
   unsigned :1;                  // 0x40
   unsigned HVAC:1;              // 0x80
-} car_doors5bits_t;
-// there has to be a better way than this, a union perhaps?
-#define car_doors5bits (*((car_doors5bits_t*)&car_doors5))
+  } bits;
+  uint8_t flags;
+} car_doors5_t;
 
 OvmsServerV2 *MyOvmsServerV2 = NULL;
 size_t MyOvmsServerV2Modifier = 0;
@@ -503,31 +505,31 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
 
 void AppendDoors1(std::string *buffer)
   {
-  uint8_t car_doors1;
-  car_doors1bits.FrontLeftDoor = StandardMetrics.ms_v_door_fl->AsBool();
-  car_doors1bits.FrontRightDoor = StandardMetrics.ms_v_door_fr->AsBool();
-  car_doors1bits.ChargePort = StandardMetrics.ms_v_door_chargeport->AsBool();
-  car_doors1bits.PilotSignal = StandardMetrics.ms_v_charge_pilot->AsBool();
-  car_doors1bits.Charging = StandardMetrics.ms_v_charge_inprogress->AsBool();
-  car_doors1bits.HandBrake = StandardMetrics.ms_v_env_handbrake->AsBool();
-  car_doors1bits.CarON = StandardMetrics.ms_v_env_on->AsBool();
+  car_doors1_t car_doors1;
+  car_doors1.bits.FrontLeftDoor = StandardMetrics.ms_v_door_fl->AsBool();
+  car_doors1.bits.FrontRightDoor = StandardMetrics.ms_v_door_fr->AsBool();
+  car_doors1.bits.ChargePort = StandardMetrics.ms_v_door_chargeport->AsBool();
+  car_doors1.bits.PilotSignal = StandardMetrics.ms_v_charge_pilot->AsBool();
+  car_doors1.bits.Charging = StandardMetrics.ms_v_charge_inprogress->AsBool();
+  car_doors1.bits.HandBrake = StandardMetrics.ms_v_env_handbrake->AsBool();
+  car_doors1.bits.CarON = StandardMetrics.ms_v_env_on->AsBool();
 
   char b[5];
-  itoa(car_doors1, b, 10);
+  itoa(car_doors1.flags, b, 10);
   buffer->append(b);
   }
 
 void AppendDoors5(std::string *buffer)
   {
-  uint8_t car_doors5;
-  car_doors5bits.RearLeftDoor = StandardMetrics.ms_v_door_rl->AsBool();
-  car_doors5bits.RearRightDoor = StandardMetrics.ms_v_door_rr->AsBool();
-  car_doors5bits.Frunk = false; // should this be hood or something else?
-  car_doors5bits.Charging12V = StandardMetrics.ms_v_env_charging12v->AsBool();
-  car_doors5bits.HVAC = StandardMetrics.ms_v_env_hvac->AsBool();
+  car_doors5_t car_doors5;
+  car_doors5.bits.RearLeftDoor = StandardMetrics.ms_v_door_rl->AsBool();
+  car_doors5.bits.RearRightDoor = StandardMetrics.ms_v_door_rr->AsBool();
+  car_doors5.bits.Frunk = false; // should this be hood or something else?
+  car_doors5.bits.Charging12V = StandardMetrics.ms_v_env_charging12v->AsBool();
+  car_doors5.bits.HVAC = StandardMetrics.ms_v_env_hvac->AsBool();
 
   char b[5];
-  itoa(car_doors5, b, 10);
+  itoa(car_doors5.flags, b, 10);
   buffer->append(b);
   }
 
