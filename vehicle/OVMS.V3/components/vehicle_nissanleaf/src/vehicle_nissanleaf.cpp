@@ -60,7 +60,7 @@ static void NL_rxtask(void *pvParameters)
     {
     if (xQueueReceive(me->m_rxqueue, &frame, (portTickType)portMAX_DELAY)==pdTRUE)
       {
-      if (me->m_can1 == frame.origin) me->IncomingFrame(&frame);
+      me->IncomingFrame(&frame);
       }
     }
   }
