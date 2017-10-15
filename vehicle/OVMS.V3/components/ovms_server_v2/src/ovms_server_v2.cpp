@@ -32,6 +32,7 @@
 static const char *TAG = "ovms-server-v2";
 
 #include <string.h>
+#include <sstream>
 #include "ovms_command.h"
 #include "ovms_config.h"
 #include "ovms_metrics.h"
@@ -42,6 +43,33 @@ static const char *TAG = "ovms-server-v2";
 #include "crypt_crc.h"
 #include "ovms_server_v2.h"
 #include "esp_system.h"
+
+// should this go in the .h or in the .cpp?
+typedef struct {
+  unsigned FrontLeftDoor:1;     // 0x01
+  unsigned FrontRightDoor:1;    // 0x02
+  unsigned ChargePort:1;        // 0x04
+  unsigned PilotSignal:1;       // 0x08
+  unsigned Charging:1;          // 0x10
+  unsigned :1;                  // 0x20
+  unsigned HandBrake:1;         // 0x40
+  unsigned CarON:1;             // 0x80
+} car_doors1bits_t;
+// there has to be a better way than this, a union perhaps?
+#define car_doors1bits (*((car_doors1bits_t*)&car_doors1))
+
+typedef struct {
+  unsigned RearLeftDoor:1;      // 0x01
+  unsigned RearRightDoor:1;     // 0x02
+  unsigned Frunk:1;             // 0x04
+  unsigned :1;                  // 0x08
+  unsigned Charging12V:1;       // 0x10
+  unsigned :1;                  // 0x20
+  unsigned :1;                  // 0x40
+  unsigned HVAC:1;              // 0x80
+} car_doors5bits_t;
+// there has to be a better way than this, a union perhaps?
+#define car_doors5bits (*((car_doors5bits_t*)&car_doors5))
 
 OvmsServerV2 *MyOvmsServerV2 = NULL;
 size_t MyOvmsServerV2Modifier = 0;
@@ -473,16 +501,62 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
   {
   }
 
+void AppendDoors1(std::string buffer)
+  {
+  uint8_t car_doors1;
+  car_doors1bits.FrontLeftDoor = StandardMetrics.ms_v_door_fl->AsBool();
+  car_doors1bits.FrontRightDoor = StandardMetrics.ms_v_door_fr->AsBool();
+  car_doors1bits.ChargePort = StandardMetrics.ms_v_door_chargeport->AsBool();
+  car_doors1bits.PilotSignal = StandardMetrics.ms_v_charge_pilot->AsBool();
+  car_doors1bits.Charging = StandardMetrics.ms_v_charge_inprogress->AsBool();
+  car_doors1bits.HandBrake = StandardMetrics.ms_v_env_handbrake->AsBool();
+  car_doors1bits.CarON = StandardMetrics.ms_v_env_on->AsBool();
+
+  std::ostringstream s;
+  s << car_doors1;
+  buffer.append(s.str().c_str());
+  }
+
+void AppendDoors5(std::string buffer)
+  {
+  uint8_t car_doors5;
+  car_doors5bits.RearLeftDoor = StandardMetrics.ms_v_door_rl->AsBool();
+  car_doors5bits.RearRightDoor = StandardMetrics.ms_v_door_rr->AsBool();
+  car_doors5bits.Frunk = false; // should this be hood or something else?
+  car_doors5bits.Charging12V = StandardMetrics.ms_v_env_charging12v->AsBool();
+  car_doors5bits.HVAC = StandardMetrics.ms_v_env_hvac->AsBool();
+
+  std::ostringstream s;
+  s << car_doors5;
+  buffer.append(s.str().c_str());
+  }
+
 void OvmsServerV2::TransmitMsgEnvironment(bool always)
   {
   ESP_LOGI(TAG, "Sending MP-0 D");
   bool modified =
+    // doors 1
+    StandardMetrics.ms_v_door_fl->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_door_fr->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_door_chargeport->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_pilot->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_inprogress->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_env_handbrake->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_env_on->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+
     StandardMetrics.ms_v_temp_pem->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_temp_motor->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_temp_battery->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_pos_speed->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_temp_ambient->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_bat_12v->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+
+    // doors 5
+    StandardMetrics.ms_v_door_rl->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_door_rr->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_env_charging12v->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_env_hvac->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+
     StandardMetrics.ms_v_temp_charger->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
@@ -491,7 +565,7 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
   std::string buffer;
   buffer.reserve(512);
   buffer.append("MP-0 D");
-  buffer.append("0");  // car_doors1
+  AppendDoors1(buffer);
   buffer.append(",");
   buffer.append("0");  // car_doors2
   buffer.append(",");
@@ -530,7 +604,7 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
   buffer.append(",");
   buffer.append("0");  // car_12vline_ref
   buffer.append(",");
-  buffer.append("0");  // car_doors5
+  AppendDoors5(buffer);
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_temp_charger->AsString("0").c_str());
   buffer.append(",");
