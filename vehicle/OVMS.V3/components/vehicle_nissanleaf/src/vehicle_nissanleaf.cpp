@@ -92,6 +92,8 @@ OvmsVehicleNissanLeaf::~OvmsVehicleNissanLeaf()
   ESP_LOGI(TAG, "Shutdown Nissan Leaf vehicle module");
 
   m_can1->SetPowerMode(Off);
+  m_can2->SetPowerMode(Off);
+  m_can3->SetPowerMode(Off);
   MyCan.DeregisterListener(m_rxqueue);
 
   vQueueDelete(m_rxqueue);
