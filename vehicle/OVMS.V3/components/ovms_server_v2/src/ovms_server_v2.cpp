@@ -591,13 +591,17 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
   buffer.append(",");
   buffer.append("0");  // car_doors3
   buffer.append(",");
+
+  // v2 has one "stale" flag for 4 temperatures, we say they're stale only if
+  // all are stale, IE one valid temperature makes them all valid
   bool stale_temps =
-    StandardMetrics.ms_v_temp_pem->IsStale() ||
-    StandardMetrics.ms_v_temp_motor->IsStale() ||
-    StandardMetrics.ms_v_temp_battery->IsStale() ||
+    StandardMetrics.ms_v_temp_pem->IsStale() &&
+    StandardMetrics.ms_v_temp_motor->IsStale() &&
+    StandardMetrics.ms_v_temp_battery->IsStale() &&
     StandardMetrics.ms_v_temp_charger->IsStale();
   buffer.append(stale_temps ? "0" : "1");
   buffer.append(",");
+
   buffer.append(StandardMetrics.ms_v_temp_ambient->IsStale() ? "0" : "1");
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_bat_12v->AsString("0").c_str());
