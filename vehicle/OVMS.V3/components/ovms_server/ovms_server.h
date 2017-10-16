@@ -38,7 +38,7 @@
 class OvmsServer : public pcp
   {
   public:
-    OvmsServer(std::string name);
+    OvmsServer(const char* name);
     ~OvmsServer();
 
   public:

@@ -101,7 +101,7 @@ static void OBD2ECU_task(void *pvParameters)
     }
   }
 
-obd2ecu::obd2ecu(std::string name, canbus* can)
+obd2ecu::obd2ecu(const char* name, canbus* can)
   : pcp(name)
   { 
   m_can = can;
@@ -153,7 +153,7 @@ void obd2ecu_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   {
   if (! MyPeripherals->m_obd2ecu)
     {
-    std::string bus = cmd->GetName();
+    const char* bus = cmd->GetName();
     MyPeripherals->m_obd2ecu = new obd2ecu("OBD2ECU", (canbus*)MyPcpApp.FindDeviceByName(bus));
     writer->puts("OBDII ECU has been started");
     }

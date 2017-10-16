@@ -36,7 +36,7 @@
 class OvmsServerV3 : public OvmsServer
   {
   public:
-    OvmsServerV3(std::string name);
+    OvmsServerV3(const char* name);
     ~OvmsServerV3();
 
   public:

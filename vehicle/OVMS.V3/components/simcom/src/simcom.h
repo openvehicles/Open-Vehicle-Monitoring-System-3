@@ -45,7 +45,7 @@
 class simcom : public pcp
   {
   public:
-    simcom(std::string name, uart_port_t uartnum, int baud, int rxpin, int txpin, int pwregpio, int dtregpio);
+    simcom(const char* name, uart_port_t uartnum, int baud, int rxpin, int txpin, int pwregpio, int dtregpio);
     ~simcom();
 
   public:

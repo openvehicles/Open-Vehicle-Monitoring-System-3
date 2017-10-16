@@ -98,7 +98,7 @@ static void MCP2515_isr(void *pvParameters)
   xSemaphoreGive(me->m_rxsem);
   }
 
-mcp2515::mcp2515(std::string name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin, int intpin)
+mcp2515::mcp2515(const char* name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin, int intpin)
   : canbus(name)
   {
   m_spibus = spibus;

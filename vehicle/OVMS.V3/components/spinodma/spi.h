@@ -42,7 +42,7 @@
 class spi : public pcp
   {
   public:
-    spi(std::string name, int misopin, int mosipin, int clkpin);
+    spi(const char* name, int misopin, int mosipin, int clkpin);
     virtual ~spi();
 
   public:

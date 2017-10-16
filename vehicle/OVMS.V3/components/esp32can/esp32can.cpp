@@ -106,7 +106,7 @@ static void ESP32CAN_isr(void *pvParameters)
     }
   }
 
-esp32can::esp32can(std::string name, int txpin, int rxpin)
+esp32can::esp32can(const char* name, int txpin, int rxpin)
   : canbus(name)
   {
   m_txpin = (gpio_num_t)txpin;

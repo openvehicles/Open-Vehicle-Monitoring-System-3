@@ -553,7 +553,7 @@ std::string OvmsServerV2::ReadLine()
   return std::string("");
   }
 
-OvmsServerV2::OvmsServerV2(std::string name)
+OvmsServerV2::OvmsServerV2(const char* name)
   : OvmsServer(name)
   {
   if (MyOvmsServerV2Modifier == 0)

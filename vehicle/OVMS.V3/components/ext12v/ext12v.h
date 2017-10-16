@@ -36,7 +36,7 @@
 class ext12v : public pcp
   {
   public:
-    ext12v(std::string name);
+    ext12v(const char* name);
     ~ext12v();
 
   public:

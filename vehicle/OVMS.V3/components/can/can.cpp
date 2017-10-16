@@ -46,12 +46,12 @@ can MyCan __attribute__ ((init_priority (4500)));;
 
 void can_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  std::string bus = cmd->GetParent()->GetParent()->GetName();
-  std::string mode = cmd->GetName();
+  const char* bus = cmd->GetParent()->GetParent()->GetName();
+  const char* mode = cmd->GetName();
   int baud = atoi(argv[0]);
 
   CAN_mode_t smode = CAN_MODE_LISTEN;
-  if (mode.compare("active")==0) smode = CAN_MODE_ACTIVE;
+  if (strcmp(mode, "active")==0) smode = CAN_MODE_ACTIVE;
 
   canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
   if (sbus == NULL)
@@ -82,12 +82,12 @@ void can_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
       return;
     }
   writer->printf("Can bus %s started in mode %s at speed %dKbps\n",
-                 bus.c_str(), mode.c_str(), baud);
+                 bus, mode, baud);
   }
 
 void can_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  std::string bus = cmd->GetParent()->GetName();
+  const char* bus = cmd->GetParent()->GetName();
   canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
   if (sbus == NULL)
     {
@@ -95,15 +95,15 @@ void can_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     return;
     }
   sbus->Stop();
-  writer->printf("Can bus %s stapped\n",bus.c_str());
+  writer->printf("Can bus %s stapped\n",bus);
   }
 
 void can_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  std::string bus = cmd->GetParent()->GetParent()->GetName();
-  std::string mode = cmd->GetName();
+  const char* bus = cmd->GetParent()->GetParent()->GetName();
+  const char* mode = cmd->GetName();
   CAN_frame_format_t smode = CAN_frame_std;
-  if (mode.compare("extended")==0) smode = CAN_frame_ext;
+  if (strcmp(mode, "extended")==0) smode = CAN_frame_ext;
 
   canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
   if (sbus == NULL)
@@ -132,10 +132,10 @@ void can_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
 
 void can_rx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  std::string bus = cmd->GetParent()->GetParent()->GetName();
-  std::string mode = cmd->GetName();
+  const char* bus = cmd->GetParent()->GetParent()->GetName();
+  const char* mode = cmd->GetName();
   CAN_frame_format_t smode = CAN_frame_std;
-  if (mode.compare("extended")==0) smode = CAN_frame_ext;
+  if (strcmp(mode, "extended")==0) smode = CAN_frame_ext;
 
   canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
   if (sbus == NULL)
@@ -164,7 +164,7 @@ void can_rx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
 
 void can_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  std::string bus = cmd->GetParent()->GetParent()->GetName();
+  const char* bus = cmd->GetParent()->GetParent()->GetName();
   canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
   if (sbus == NULL)
     {
@@ -177,7 +177,7 @@ void can_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
   else
     sbus->m_trace = false;
 
-  writer->printf("Tracing for CAN bus %s is now %s\n",bus.c_str(),cmd->GetName());
+  writer->printf("Tracing for CAN bus %s is now %s\n",bus,cmd->GetName());
   }
 
 static void CAN_rxtask(void *pvParameters)
@@ -231,7 +231,7 @@ void can::IncomingFrame(CAN_frame_t* p_frame)
   if (p_frame->origin->m_trace)
     {
     MyCommandApp.Log("CAN rx origin %s id %03x (len:%d)",
-      p_frame->origin->GetName().c_str(),p_frame->MsgID,p_frame->FIR.B.DLC);
+      p_frame->origin->GetName(),p_frame->MsgID,p_frame->FIR.B.DLC);
     for (int k=0;k<8;k++)
       {
       if (k<p_frame->FIR.B.DLC)
@@ -268,7 +268,7 @@ void can::DeregisterListener(QueueHandle_t queue)
     }
   }
 
-canbus::canbus(std::string name)
+canbus::canbus(const char* name)
   : pcp(name)
   {
   m_mode = CAN_MODE_OFF;
@@ -294,7 +294,7 @@ esp_err_t canbus::Write(const CAN_frame_t* p_frame)
   if (m_trace)
     {
     MyCommandApp.Log("CAN tx origin %s id %03x (len:%d)",
-      GetName().c_str(),p_frame->MsgID,p_frame->FIR.B.DLC);
+      GetName(),p_frame->MsgID,p_frame->FIR.B.DLC);
     for (int k=0;k<8;k++)
       {
       if (k<p_frame->FIR.B.DLC)

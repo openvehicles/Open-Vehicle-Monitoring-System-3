@@ -41,7 +41,7 @@
 class mcp2515 : public canbus
   {
   public:
-    mcp2515(std::string name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin, int intpin);
+    mcp2515(const char* name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin, int intpin);
     ~mcp2515();
 
   public:

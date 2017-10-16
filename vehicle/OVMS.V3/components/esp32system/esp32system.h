@@ -37,7 +37,7 @@
 class esp32system : public pcp
   {
   public:
-    esp32system(std::string name);
+    esp32system(const char* name);
     ~esp32system();
 
   public:

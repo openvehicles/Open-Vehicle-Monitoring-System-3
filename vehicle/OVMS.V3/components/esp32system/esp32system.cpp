@@ -35,7 +35,7 @@
 #include "esp_deep_sleep.h"
 #include "esp32system.h"
 
-esp32system::esp32system(std::string name)
+esp32system::esp32system(const char* name)
   : pcp(name)
   {
   }

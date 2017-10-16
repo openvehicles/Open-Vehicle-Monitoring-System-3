@@ -32,7 +32,7 @@
 #include <cstdarg>
 #include "spi.h"
 
-spi::spi(std::string name, int misopin, int mosipin, int clkpin)
+spi::spi(const char* name, int misopin, int mosipin, int clkpin)
   : pcp(name)
   {
   m_mtx = xSemaphoreCreateMutex();

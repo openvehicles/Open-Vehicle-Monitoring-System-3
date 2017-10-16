@@ -39,8 +39,8 @@ OvmsCommand* powercmd = NULL;
 
 void power_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  std::string devname = cmd->GetParent()->GetName();
-  std::string pmname = cmd->GetName();
+  const char* devname = cmd->GetParent()->GetName();
+  const char* pmname = cmd->GetName();
 
   pcp* device = MyPcpApp.FindDeviceByName(devname);
   PowerMode pm = MyPcpApp.FindPowerModeByName(pmname);
@@ -51,7 +51,7 @@ void power_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     }
 
   device->SetPowerMode(pm);
-  writer->printf("Power mode of %s is now %s\n",devname.c_str(),pmname.c_str());
+  writer->printf("Power mode of %s is now %s\n",devname,pmname);
   }
 
 pcpapp::pcpapp()
@@ -69,22 +69,22 @@ pcpapp::~pcpapp()
   {
   }
 
-void pcpapp::Register(std::string name, pcp* device)
+void pcpapp::Register(const char* name, pcp* device)
   {
   m_map[name] = device;
-  OvmsCommand* devcmd = powercmd->RegisterCommand(name.c_str(),"Power control",NULL,"<$C>");
+  OvmsCommand* devcmd = powercmd->RegisterCommand(name,"Power control",NULL,"<$C>");
   for (auto it=m_mappm.begin(); it!=m_mappm.end(); ++it)
     {
-    devcmd->RegisterCommand(it->first.c_str(),"Power control",power_cmd,"",0,0, true);
+    devcmd->RegisterCommand(it->first,"Power control",power_cmd,"",0,0, true);
     }
   }
 
-void pcpapp::Deregister(std::string name)
+void pcpapp::Deregister(const char* name)
   {
   m_map.erase(name);
   }
 
-pcp* pcpapp::FindDeviceByName(std::string name)
+pcp* pcpapp::FindDeviceByName(const char* name)
   {
   auto iter = m_map.find(name);
   if (iter != m_map.end())
@@ -94,7 +94,7 @@ pcp* pcpapp::FindDeviceByName(std::string name)
   return NULL;
   }
 
-PowerMode pcpapp::FindPowerModeByName(std::string name)
+PowerMode pcpapp::FindPowerModeByName(const char* name)
   {
   auto iter = m_mappm.find(name);
   if (iter != m_mappm.end())
@@ -104,7 +104,7 @@ PowerMode pcpapp::FindPowerModeByName(std::string name)
   return PowerMode::Undefined;
   }
 
-pcp::pcp(std::string name)
+pcp::pcp(const char* name)
   {
   m_name = name;
   m_powermode = On;
@@ -129,7 +129,7 @@ PowerMode pcp::GetPowerMode()
   return m_powermode;
   }
 
-std::string pcp::GetName()
+const char* pcp::GetName()
   {
   return m_name;
   }

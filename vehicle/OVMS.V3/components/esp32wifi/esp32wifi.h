@@ -50,7 +50,7 @@ typedef enum {
 class esp32wifi : public pcp, public Parent
   {
   public:
-    esp32wifi(std::string name);
+    esp32wifi(const char* name);
     ~esp32wifi();
 
   public:

@@ -48,7 +48,7 @@ void OvmsServerV3::ServerTask()
     }
   }
 
-OvmsServerV3::OvmsServerV3(std::string name)
+OvmsServerV3::OvmsServerV3(const char* name)
   : OvmsServer(name)
   {
   if (MyOvmsServerV3Modifier == 0)

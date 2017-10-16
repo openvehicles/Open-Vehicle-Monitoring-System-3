@@ -50,7 +50,7 @@
 class esp32can : public canbus
   {
   public:
-    esp32can(std::string name, int txpin, int rxpin);
+    esp32can(const char* name, int txpin, int rxpin);
     ~esp32can();
 
   public:

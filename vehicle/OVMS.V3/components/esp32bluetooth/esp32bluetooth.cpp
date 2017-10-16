@@ -31,7 +31,7 @@
 #include <string.h>
 #include "esp32bluetooth.h"
 
-esp32bluetooth::esp32bluetooth(std::string name)
+esp32bluetooth::esp32bluetooth(const char* name)
   : pcp(name)
   {
   }

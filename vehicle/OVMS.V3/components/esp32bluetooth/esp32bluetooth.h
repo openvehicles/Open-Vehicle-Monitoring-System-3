@@ -37,7 +37,7 @@
 class esp32bluetooth : public pcp
   {
   public:
-    esp32bluetooth(std::string name);
+    esp32bluetooth(const char* name);
     ~esp32bluetooth();
 
   public:

@@ -39,11 +39,11 @@ static void OvmsServer_task(void *pvParameters)
   {
   OvmsServer *me = (OvmsServer*)pvParameters;
 
-  ESP_LOGI(TAG, "Launching OVMS Server V2 connection task (%s)",me->GetName().c_str());
+  ESP_LOGI(TAG, "Launching OVMS Server V2 connection task (%s)",me->GetName());
   me->ServerTask();
   }
 
-OvmsServer::OvmsServer(std::string name)
+OvmsServer::OvmsServer(const char* name)
   : pcp(name)
   {
   xTaskCreatePinnedToCore(OvmsServer_task, "OVMS Server Task", 4096, (void*)this, 5, &m_task, 1);

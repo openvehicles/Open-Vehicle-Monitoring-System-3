@@ -56,7 +56,7 @@ static void IRAM_ATTR sdcard_isr_handler(void* arg)
   xTimerStart(sdcard_timer, 0);
   }
 
-sdcard::sdcard(std::string name, bool mode1bit, bool autoformat, int cdpin)
+sdcard::sdcard(const char* name, bool mode1bit, bool autoformat, int cdpin)
   : pcp(name)
   {
   m_host = SDMMC_HOST_DEFAULT();

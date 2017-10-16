@@ -41,21 +41,21 @@ enum PowerMode { Undefined, On, Sleep, DeepSleep, Off };
 class pcp
   {
   public:
-    pcp(std::string name);
+    pcp(const char* name);
     virtual ~pcp();
 
   public:
     virtual void SetPowerMode(PowerMode powermode);
-    std::string GetName();
+    const char* GetName();
     PowerMode GetPowerMode();
 
   protected:
-    std::string m_name;
+    const char* m_name;
     PowerMode m_powermode;
   };
 
-typedef std::map<std::string, pcp*> pcpmap_t;
-typedef std::map<std::string, PowerMode> pcpmappm_t;
+typedef std::map<const char*, pcp*, CompareCharPtr> pcpmap_t;
+typedef std::map<const char*, PowerMode, CompareCharPtr> pcpmappm_t;
 
 class pcpapp
   {
@@ -64,10 +64,10 @@ class pcpapp
     virtual ~pcpapp();
 
   public:
-    void Register(std::string name, pcp* device);
-    void Deregister(std::string name);
-    pcp* FindDeviceByName(std::string name);
-    PowerMode FindPowerModeByName(std::string name);
+    void Register(const char* name, pcp* device);
+    void Deregister(const char* name);
+    pcp* FindDeviceByName(const char* name);
+    PowerMode FindPowerModeByName(const char* name);
 
   public:
     pcpmap_t m_map;

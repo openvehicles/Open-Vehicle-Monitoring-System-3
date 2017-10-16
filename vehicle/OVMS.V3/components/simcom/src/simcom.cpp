@@ -100,7 +100,7 @@ void simcom::Task()
     }
   }
 
-simcom::simcom(std::string name, uart_port_t uartnum, int baud, int rxpin, int txpin, int pwregpio, int dtregpio)
+simcom::simcom(const char* name, uart_port_t uartnum, int baud, int rxpin, int txpin, int pwregpio, int dtregpio)
   : pcp(name), m_buffer(SIMCOM_BUF_SIZE), m_mux(this)
   {
   m_task = 0;

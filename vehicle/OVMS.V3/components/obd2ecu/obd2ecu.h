@@ -61,7 +61,7 @@ typedef std::map<int, obd2pid*> PidMap;
 class obd2ecu : public pcp
   {
   public:
-    obd2ecu(std::string name, canbus* can);
+    obd2ecu(const char* name, canbus* can);
     ~obd2ecu();
 
   public:

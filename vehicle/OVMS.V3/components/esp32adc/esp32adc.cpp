@@ -30,7 +30,7 @@
 
 #include "esp32adc.h"
 
-esp32adc::esp32adc(std::string name, adc1_channel_t channel, adc_bits_width_t width, adc_atten_t attn)
+esp32adc::esp32adc(const char* name, adc1_channel_t channel, adc_bits_width_t width, adc_atten_t attn)
   : pcp(name)
   {
   m_channel = channel;

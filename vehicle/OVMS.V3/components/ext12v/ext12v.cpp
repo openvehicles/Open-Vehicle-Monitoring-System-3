@@ -34,7 +34,7 @@ static const char *TAG = "ext12v";
 #include "ext12v.h"
 #include "ovms_peripherals.h"
 
-ext12v::ext12v(std::string name)
+ext12v::ext12v(const char* name)
   : pcp(name)
   {
   }

@@ -158,7 +158,7 @@ esp32wifiInit::esp32wifiInit()
   cmd_mode->RegisterCommand("off","Turn off wifi networking",wifi_mode_off, "", 0, 0, true);
   }
 
-esp32wifi::esp32wifi(std::string name)
+esp32wifi::esp32wifi(const char* name)
   : pcp(name)
   {
   m_mode = ESP32WIFI_MODE_OFF;
