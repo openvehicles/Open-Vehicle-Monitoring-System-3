@@ -47,6 +47,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
 
   private:
     void IncomingFrameEVBus(CAN_frame_t* p_frame);
+    void Ticker1(std::string event, void* data);
 
   protected:
 

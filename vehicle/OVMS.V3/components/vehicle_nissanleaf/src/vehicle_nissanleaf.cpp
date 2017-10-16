@@ -35,6 +35,7 @@ static const char *TAG = "v-nissanleaf";
 #include <string.h>
 #include "pcp.h"
 #include "vehicle_nissanleaf.h"
+#include "ovms_events.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
 
@@ -85,6 +86,10 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_can3->Start(CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
 
   MyCan.RegisterListener(m_rxqueue);
+
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicleNissanLeaf::Ticker1, this, _1, _2));
   }
 
 OvmsVehicleNissanLeaf::~OvmsVehicleNissanLeaf()
@@ -347,6 +352,21 @@ void OvmsVehicleNissanLeaf::IncomingFrame(CAN_frame_t* p_frame)
     {
     ESP_LOGI(TAG, "Can 3 Frame");
     m_can3 = NULL;
+    }
+  }
+
+void OvmsVehicleNissanLeaf::Ticker1(std::string event, void* data)
+  {
+  // FIXME
+  // detecting that on is stale and therefor should turn off probably shouldn't
+  // be done like this
+  // perhaps there should be a car on-off state tracker and event generator in
+  // the core framework?
+  // perhaps interested code should be able to subscribe to "onChange" and
+  // "onStale" events for each metric?
+  if (StandardMetrics.ms_v_env_on->IsStale())
+    {
+    vehicle_nissanleaf_car_on(false);
     }
   }
 
