@@ -230,8 +230,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameEVBus(CAN_frame_t* p_frame)
       break;
     case 0x284:
     {
-      // TODO
-      //vehicle_nissanleaf_car_on(TRUE);
+      vehicle_nissanleaf_car_on(true);
 
       uint16_t car_speed16 = d[4];
       car_speed16 = car_speed16 << 8;
