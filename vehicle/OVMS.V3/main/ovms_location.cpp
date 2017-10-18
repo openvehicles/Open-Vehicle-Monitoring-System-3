@@ -151,6 +151,30 @@ void location_rm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   writer->puts("Location removed");
   }
 
+void location_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->printf("Currently at %0.6f,%0.6f ",MyLocations.m_latitude,MyLocations.m_longitude);
+  if (MyLocations.m_gpslock)
+    writer->puts("(with good GPS lock)");
+  else
+    writer->puts("(without GPS lock)");
+
+  bool found = false;
+  for (LocationMap::iterator it=MyLocations.m_locations.begin(); it!=MyLocations.m_locations.end(); ++it)
+    {
+    if (it->second->m_inlocation)
+      {
+      if (!found) writer->printf("Active locations:");
+      writer->printf(" %s",it->second->m_name.c_str());
+      found = true;
+      }
+    }
+  if (found)
+    writer->puts("");
+  else
+    writer->puts("No active locations");
+  }
+
 OvmsLocations MyLocations __attribute__ ((init_priority (1900)));
 
 OvmsLocations::OvmsLocations()
@@ -166,6 +190,7 @@ OvmsLocations::OvmsLocations()
   cmd_location->RegisterCommand("list","Show all locations",location_list, "", 0, 0, true);
   cmd_location->RegisterCommand("set","Set the position of a location",location_set, "<name> <latitude> <longitude> {<radius>}", 3, 4, true);
   cmd_location->RegisterCommand("rm","Remove a defined location",location_rm, "<name>", 1, 1, true);
+  cmd_location->RegisterCommand("status","Show location status",location_status, "", 0, 0, true);
 
   // Register our parameters
   MyConfig.RegisterParam(LOCATIONS_PARAM, "Geo Locations", true, true);
