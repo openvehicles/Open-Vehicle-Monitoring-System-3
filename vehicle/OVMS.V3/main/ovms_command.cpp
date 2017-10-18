@@ -141,10 +141,8 @@ const char* OvmsCommand::GetTitle()
 // - $Gfoo$ expands to the usage of the child named "foo"
 // - Parameters after command and subcommand tokens may be explicit like " <metric>"
 // - Empty usage template "" defaults to "<$C>" for non-terminal OvmsCommand
-const char* OvmsCommand::GetUsage()
+const char* OvmsCommand::GetUsage(OvmsWriter* writer)
   {
-  if (!m_usage.empty())
-    return m_usage.c_str();
   std::string usage = !m_usage_template ? "" : (!*m_usage_template && !m_execute) ? "<$C>" : m_usage_template;
   m_usage ="Usage: ";
   size_t pos = m_usage.size();
@@ -155,24 +153,32 @@ const char* OvmsCommand::GetUsage()
     }
   m_usage += m_name;
   m_usage += " ";
-  pos = ExpandUsage(usage);
+  pos = ExpandUsage(usage, writer);
   m_usage += usage.substr(pos);
   return m_usage.c_str();
   }
 
-size_t OvmsCommand::ExpandUsage(std::string usage)
+size_t OvmsCommand::ExpandUsage(std::string usage, OvmsWriter* writer)
   {
   size_t pos;
   if ((pos = usage.find_first_of("$C")) != std::string::npos)
     {
     m_usage += usage.substr(0, pos);
     pos += 2;
+    size_t z = m_usage.size();
     for (OvmsCommandMap::iterator it = m_children.begin(); ; )
       {
-      m_usage += it->first;
+      if (!it->second->m_secure || writer->m_issecure)
+        m_usage += it->first;
       if (++it == m_children.end())
         break;
-      m_usage += "|";
+      if (!it->second->m_secure || writer->m_issecure)
+        m_usage += "|";
+      }
+    if (m_usage.size() == z)
+      {
+      m_usage = "All subcommands require 'enable' mode";
+      pos = usage.size();       // Don't append any more
       }
     }
   else pos = 0;
@@ -190,10 +196,10 @@ size_t OvmsCommand::ExpandUsage(std::string usage)
       else
         it = m_children.find(usage.substr(pos2, pos3-pos2).c_str());
       pos = pos3 + 1;
-      if (it != m_children.end())
+      if (it != m_children.end() && (!it->second->m_secure || writer->m_issecure))
         {
         OvmsCommand* child = it->second;
-        pos3 = child->ExpandUsage(child->m_usage);
+        pos3 = child->ExpandUsage(child->m_usage_template, writer);
         m_usage += child->m_usage.substr(pos3);
         }
       }
@@ -245,7 +251,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     //puts("Executing directly...");
     if (argc < m_min || argc > m_max || (argc > 0 && strcmp(argv[argc-1],"?")==0))
       {
-      writer->puts(GetUsage());
+      writer->puts(GetUsage(writer));
       return;
       }
     if ((!m_secure)||(m_secure && writer->m_issecure))
@@ -260,18 +266,24 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     if (argc <= 0)
       {
       writer->puts("Subcommand required");
-      writer->puts(GetUsage());
+      writer->puts(GetUsage(writer));
       return;
       }
     if (strcmp(argv[0],"?")==0)
       {
       // Show available commands
+      int avail = 0;
       for (OvmsCommandMap::iterator it=m_children.begin(); it!=m_children.end(); ++it)
         {
+        if (it->second->IsSecure() && !writer->m_issecure)
+          continue;
         const char* k = it->first;
         const char* v = it->second->GetTitle();
         writer->printf("%-20.20s %s\n",k,v);
+        ++avail;
         }
+      if (!avail)
+        writer->printf("All subcommands require 'enable' mode\n");
       return;
       }
     OvmsCommand* cmd = m_children.FindUniquePrefix(argv[0]);
@@ -279,7 +291,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
       {
       writer->puts("Unrecognised command");
       if (!m_usage.empty())
-        writer->puts(GetUsage());
+        writer->puts(GetUsage(writer));
       return;
       }
     if (argc>1)
