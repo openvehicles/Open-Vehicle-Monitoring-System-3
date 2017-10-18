@@ -271,7 +271,7 @@ void simcom::State1Enter(SimcomState1 newstate)
       // Need to init the modem control lines...
       PowerSleep(false);
       MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
-      m_state1_timeout_ticks = 10;
+      m_state1_timeout_ticks = 15;
       m_state1_timeout_goto = PoweredOff;
       break;
     case PoweringOn:
@@ -350,7 +350,7 @@ simcom::SimcomState1 simcom::State1Ticker1()
       return CheckPowerOff;
       break;
     case CheckPowerOff:
-      tx("AT\r\n");
+      if (m_state1_ticker > 10) tx("AT\r\n");
       break;
     case PoweringOn:
       tx("AT\r\n");
