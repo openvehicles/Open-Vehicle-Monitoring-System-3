@@ -31,18 +31,50 @@
 #ifndef __LOCATION_H__
 #define __LOCATION_H__
 
+#include "ovms_metrics.h"
+#include "ovms_utils.h"
+
 class OvmsLocation
   {
   public:
-    OvmsLocation();
+    OvmsLocation(std::string name, float latitude, float longitude, int radius);
     ~OvmsLocation();
+
+  public:
+    bool IsInLocation(float latitude, float longitude);
+    void Update(float latitude, float longitude, int radius);
+
+  public:
+    std::string m_name;
+    float m_latitude;
+    float m_longitude;
+    int m_radius;
+    bool m_inlocation;
   };
+
+typedef std::map<std::string, OvmsLocation*> LocationMap;
 
 class OvmsLocations
   {
   public:
     OvmsLocations();
     ~OvmsLocations();
+
+  public:
+    bool m_gpslock;
+    float m_latitude;
+    float m_longitude;
+    LocationMap m_locations;
+
+  public:
+    void ReloadMap();
+    void UpdateLocations();
+
+  public:
+    void UpdatedGpsLock(OvmsMetric* metric);
+    void UpdatedLatitude(OvmsMetric* metric);
+    void UpdatedLongitude(OvmsMetric* metric);
+    void UpdatedConfig(std::string event, void* data);
   };
 
 extern OvmsLocations MyLocations;
