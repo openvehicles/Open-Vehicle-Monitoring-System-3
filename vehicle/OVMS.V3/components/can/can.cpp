@@ -201,8 +201,8 @@ can::can()
   OvmsCommand* cmd_can = MyCommandApp.RegisterCommand("can","CAN framework",NULL, "", 1);
   for (int k=1;k<4;k++)
     {
-    char name[5]; sprintf(name,"can%d",k);
-    OvmsCommand* cmd_canx = cmd_can->RegisterCommand(name,"CANx framework",NULL, "", 1);
+    static const char* name[4] = {"can1", "can2", "can3"};
+    OvmsCommand* cmd_canx = cmd_can->RegisterCommand(name[k-1],"CANx framework",NULL, "", 1);
     OvmsCommand* cmd_cantrace = cmd_canx->RegisterCommand("trace","CAN trace framework", NULL, "", 1);
     cmd_cantrace->RegisterCommand("on","Turn CAN bus tracing ON",can_trace,"", 0, 0, true);
     cmd_cantrace->RegisterCommand("off","Turn CAN bus tracing OFF",can_trace,"", 0, 0, true);
