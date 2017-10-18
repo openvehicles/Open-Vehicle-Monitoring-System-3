@@ -37,6 +37,7 @@
 #include <string>
 #include <bitset>
 #include <stdint.h>
+#include "ovms_utils.h"
 
 #define METRICS_MAX_MODIFIERS 32
 
@@ -45,7 +46,7 @@ using namespace std;
 class OvmsMetric
   {
   public:
-    OvmsMetric(std::string name, int autostale=0);
+    OvmsMetric(const char* name, int autostale=0);
     virtual ~OvmsMetric();
 
   public:
@@ -61,7 +62,7 @@ class OvmsMetric
     virtual void SetModified(bool changed=true);
 
   public:
-    std::string m_name;
+    const char* m_name;
     bool m_defined;
     bool m_stale;
     int m_autostale;
@@ -72,7 +73,7 @@ class OvmsMetric
 class OvmsMetricBool : public OvmsMetric
   {
   public:
-    OvmsMetricBool(std::string name, int autostale=0);
+    OvmsMetricBool(const char* name, int autostale=0);
     virtual ~OvmsMetricBool();
 
   public:
@@ -88,7 +89,7 @@ class OvmsMetricBool : public OvmsMetric
 class OvmsMetricInt : public OvmsMetric
   {
   public:
-    OvmsMetricInt(std::string name, int autostale=0);
+    OvmsMetricInt(const char* name, int autostale=0);
     virtual ~OvmsMetricInt();
 
   public:
@@ -104,7 +105,7 @@ class OvmsMetricInt : public OvmsMetric
 class OvmsMetricFloat : public OvmsMetric
   {
   public:
-    OvmsMetricFloat(std::string name, int autostale=0);
+    OvmsMetricFloat(const char* name, int autostale=0);
     virtual ~OvmsMetricFloat();
 
   public:
@@ -120,7 +121,7 @@ class OvmsMetricFloat : public OvmsMetric
 class OvmsMetricString : public OvmsMetric
   {
   public:
-    OvmsMetricString(std::string name, int autostale=0);
+    OvmsMetricString(const char* name, int autostale=0);
     virtual ~OvmsMetricString();
 
   public:
@@ -136,16 +137,17 @@ typedef std::function<void(OvmsMetric*)> MetricCallback;
 class MetricCallbackEntry
   {
   public:
-    MetricCallbackEntry(std::string caller, MetricCallback callback);
+    MetricCallbackEntry(const char* caller, MetricCallback callback);
     virtual ~MetricCallbackEntry();
 
   public:
-    std::string m_caller;
+    const char *m_caller;
     MetricCallback m_callback;
   };
 
 typedef std::list<MetricCallbackEntry*> MetricCallbackList;
-typedef std::map<std::string, MetricCallbackList*> MetricMap;
+typedef std::map<const char*, MetricCallbackList*, CmpStrOp> MetricCallbackMap;
+typedef std::map<const char*, OvmsMetric*, CmpStrOp> MetricMap;
 
 class OvmsMetrics
   {
@@ -154,7 +156,7 @@ class OvmsMetrics
     virtual ~OvmsMetrics();
 
   public:
-    void RegisterMetric(OvmsMetric* metric, std::string name);
+    void RegisterMetric(OvmsMetric* metric, const char* name);
 
   public:
     bool Set(const char* metric, const char* value);
@@ -164,12 +166,12 @@ class OvmsMetrics
     OvmsMetric* Find(const char* metric);
 
   public:
-    void RegisterListener(std::string caller, std::string name, MetricCallback callback);
-    void DeregisterListener(std::string caller);
+    void RegisterListener(const char* caller, const char* name, MetricCallback callback);
+    void DeregisterListener(const char* caller);
     void NotifyModified(OvmsMetric* metric);
 
   protected:
-    MetricMap m_listeners;
+    MetricCallbackMap m_listeners;
 
   public:
     size_t RegisterModifier();
@@ -178,7 +180,7 @@ class OvmsMetrics
     size_t m_nextmodifier;
 
   public:
-    std::map<std::string, OvmsMetric*> m_metrics;
+    MetricMap m_metrics;
   };
 
 extern OvmsMetrics MyMetrics;

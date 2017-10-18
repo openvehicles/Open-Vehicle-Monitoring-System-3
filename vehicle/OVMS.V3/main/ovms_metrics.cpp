@@ -47,9 +47,9 @@ OvmsMetrics       MyMetrics       __attribute__ ((init_priority (1800)));
 void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   bool found = false;
-  for (std::map<std::string, OvmsMetric*>::iterator it=MyMetrics.m_metrics.begin(); it!=MyMetrics.m_metrics.end(); ++it)
+  for (MetricMap::iterator it=MyMetrics.m_metrics.begin(); it!=MyMetrics.m_metrics.end(); ++it)
     {
-    const char* k = it->first.c_str();
+    const char* k = it->first;
     std::string v = it->second->AsString();
     if ((argc==0)||(strstr(k,argv[0])))
       {
@@ -86,6 +86,16 @@ static duk_ret_t DukOvmsMetricValue(duk_context *ctx)
 
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
+MetricCallbackEntry::MetricCallbackEntry(const char* caller, MetricCallback callback)
+  {
+  m_caller = caller;
+  m_callback = callback;
+  }
+
+MetricCallbackEntry::~MetricCallbackEntry()
+  {
+  }
+
 OvmsMetrics::OvmsMetrics()
   {
   ESP_LOGI(TAG, "Initialising METRICS (1810)");
@@ -109,13 +119,14 @@ OvmsMetrics::~OvmsMetrics()
   {
   }
 
-void OvmsMetrics::RegisterMetric(OvmsMetric* metric, std::string name)
+void OvmsMetrics::RegisterMetric(OvmsMetric* metric, const char* name)
   {
   m_metrics[name] = metric;
   }
 
 bool OvmsMetrics::Set(const char* metric, const char* value)
   {
+ESP_LOGI(TAG, "Set %s=%s",metric,value);
   auto k = m_metrics.find(metric);
   if (k == m_metrics.end())
     return false;
@@ -167,7 +178,7 @@ OvmsMetric* OvmsMetrics::Find(const char* metric)
     return k->second;
   }
 
-void OvmsMetrics::RegisterListener(std::string caller, std::string name, MetricCallback callback)
+void OvmsMetrics::RegisterListener(const char* caller, const char* name, MetricCallback callback)
   {
   auto k = m_listeners.find(name);
   if (k == m_listeners.end())
@@ -177,7 +188,7 @@ void OvmsMetrics::RegisterListener(std::string caller, std::string name, MetricC
     }
   if (k == m_listeners.end())
     {
-    ESP_LOGE(TAG, "Problem registering metric %s for caller %s",name.c_str(),caller.c_str());
+    ESP_LOGE(TAG, "Problem registering metric %s for caller %s",name,caller);
     return;
     }
 
@@ -185,9 +196,9 @@ void OvmsMetrics::RegisterListener(std::string caller, std::string name, MetricC
   ml->push_back(new MetricCallbackEntry(caller,callback));
   }
 
-void OvmsMetrics::DeregisterListener(std::string caller)
+void OvmsMetrics::DeregisterListener(const char* caller)
   {
-  for (MetricMap::iterator itm=m_listeners.begin(); itm!=m_listeners.end(); ++itm)
+  for (MetricCallbackMap::iterator itm=m_listeners.begin(); itm!=m_listeners.end(); ++itm)
     {
     MetricCallbackList* ml = itm->second;
     for (MetricCallbackList::iterator itc=ml->begin(); itc!=ml->end(); ++itc)
@@ -228,7 +239,7 @@ size_t OvmsMetrics::RegisterModifier()
   return m_nextmodifier++;
   }
 
-OvmsMetric::OvmsMetric(std::string name, int autostale)
+OvmsMetric::OvmsMetric(const char* name, int autostale)
   {
   m_defined = false;
   m_modified.reset();
@@ -307,7 +318,7 @@ void OvmsMetric::ClearModified(size_t modifier)
   m_modified.reset(modifier);
   }
 
-OvmsMetricInt::OvmsMetricInt(std::string name, int autostale)
+OvmsMetricInt::OvmsMetricInt(const char* name, int autostale)
   : OvmsMetric(name, autostale)
   {
   m_value = 0;
@@ -363,7 +374,7 @@ void OvmsMetricInt::SetValue(std::string value)
     SetModified(false);
   }
 
-OvmsMetricBool::OvmsMetricBool(std::string name, int autostale)
+OvmsMetricBool::OvmsMetricBool(const char* name, int autostale)
   : OvmsMetric(name, autostale)
   {
   m_value = false;
@@ -423,7 +434,7 @@ void OvmsMetricBool::SetValue(std::string value)
     SetModified(false);
   }
 
-OvmsMetricFloat::OvmsMetricFloat(std::string name, int autostale)
+OvmsMetricFloat::OvmsMetricFloat(const char* name, int autostale)
   : OvmsMetric(name, autostale)
   {
   m_value = 0;
@@ -479,7 +490,7 @@ void OvmsMetricFloat::SetValue(std::string value)
     SetModified(false);
   }
 
-OvmsMetricString::OvmsMetricString(std::string name, int autostale)
+OvmsMetricString::OvmsMetricString(const char* name, int autostale)
   : OvmsMetric(name, autostale)
   {
   }
