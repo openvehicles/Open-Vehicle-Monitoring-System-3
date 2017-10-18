@@ -102,7 +102,7 @@ class OvmsCommand
     bool IsSecure() { return m_secure; }
 
   private:
-      size_t ExpandUsage(std::string usage, OvmsWriter* writer);
+    void ExpandUsage(std::string usage, OvmsWriter* writer);
 
   protected:
     const char* m_name;
