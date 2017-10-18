@@ -126,7 +126,6 @@ void OvmsMetrics::RegisterMetric(OvmsMetric* metric, const char* name)
 
 bool OvmsMetrics::Set(const char* metric, const char* value)
   {
-ESP_LOGI(TAG, "Set %s=%s",metric,value);
   auto k = m_metrics.find(metric);
   if (k == m_metrics.end())
     return false;
