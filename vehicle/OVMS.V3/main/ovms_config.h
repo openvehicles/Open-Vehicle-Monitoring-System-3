@@ -37,6 +37,8 @@
 #include "esp_vfs_fat.h"
 #include "wear_levelling.h"
 
+typedef std::map<std::string, std::string> ConfigParamMap;
+
 class OvmsConfigParam
   {
   public:
@@ -51,6 +53,7 @@ class OvmsConfigParam
     bool IsDefined(std::string instance);
     bool Writable();
     bool Readable();
+    std::string GetName();
     void Load();
 
   protected:
@@ -65,8 +68,10 @@ class OvmsConfigParam
     bool m_loaded;
 
   public:
-    std::map<std::string, std::string> m_map;
+    ConfigParamMap m_map;
   };
+
+typedef std::map<std::string, OvmsConfigParam*> ConfigMap;
 
 class OvmsConfig
   {
@@ -100,7 +105,7 @@ class OvmsConfig
     wl_handle_t m_store_wlh;
 
   public:
-    std::map<std::string, OvmsConfigParam*> m_map;
+    ConfigMap m_map;
   };
 
 extern OvmsConfig MyConfig;

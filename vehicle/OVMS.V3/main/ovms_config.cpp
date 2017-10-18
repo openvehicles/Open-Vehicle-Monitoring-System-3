@@ -62,7 +62,7 @@ void config_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   if (argc == 0)
     {
     // Show all parameters
-    for (std::map<std::string, OvmsConfigParam*>::iterator it=MyConfig.m_map.begin(); it!=MyConfig.m_map.end(); ++it)
+    for (ConfigMap::iterator it=MyConfig.m_map.begin(); it!=MyConfig.m_map.end(); ++it)
       {
       writer->puts(it->first.c_str());
       }
@@ -74,7 +74,7 @@ void config_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     if (p)
       {
       writer->puts(argv[0]);
-      for (std::map<std::string, std::string>::iterator it=p->m_map.begin(); it!=p->m_map.end(); ++it)
+      for (ConfigParamMap::iterator it=p->m_map.begin(); it!=p->m_map.end(); ++it)
         {
         if (p->Readable())
           { writer->printf("  %s: %s\n",it->first.c_str(), it->second.c_str()); }
@@ -160,7 +160,7 @@ esp_err_t OvmsConfig::mount()
     m_store_fat.max_files = 5;
     esp_vfs_fat_spiflash_mount("/store", "store", &m_store_fat, &m_store_wlh);
     m_mounted = true;
-    for (std::map<std::string, OvmsConfigParam*>::iterator it=MyConfig.m_map.begin(); it!=MyConfig.m_map.end(); ++it)
+    for (ConfigMap::iterator it=MyConfig.m_map.begin(); it!=MyConfig.m_map.end(); ++it)
       {
       it->second->Load();
       }
@@ -347,6 +347,7 @@ void OvmsConfigParam::SetValue(std::string instance, std::string value)
   {
   m_map[instance] = value;
   RewriteConfig();
+  MyEvents.SignalEvent("config.changed", this);
   }
 
 void OvmsConfigParam::DeleteParam()
@@ -355,6 +356,7 @@ void OvmsConfigParam::DeleteParam()
   path.append("/");
   path.append(m_name);
   unlink(path.c_str());
+  MyEvents.SignalEvent("config.changed", this);
   }
 
 void OvmsConfigParam::DeleteInstance(std::string instance)
@@ -365,6 +367,7 @@ void OvmsConfigParam::DeleteInstance(std::string instance)
     m_map.erase(k);
     RewriteConfig();
     }
+  MyEvents.SignalEvent("config.changed", this);
   }
 
 std::string OvmsConfigParam::GetValue(std::string instance)
@@ -395,6 +398,11 @@ bool OvmsConfigParam::Readable()
   return m_readable;
   }
 
+std::string OvmsConfigParam::GetName()
+  {
+  return m_name;
+  }
+
 void OvmsConfigParam::RewriteConfig()
   {
   std::string path(OVMS_CONFIGPATH);
@@ -403,7 +411,7 @@ void OvmsConfigParam::RewriteConfig()
   FILE* f = fopen(path.c_str(), "w");
   if (f)
     {
-    for (std::map<std::string, std::string>::iterator it=m_map.begin(); it!=m_map.end(); ++it)
+    for (ConfigParamMap::iterator it=m_map.begin(); it!=m_map.end(); ++it)
       {
       fprintf(f,"%s %s\n",it->first.c_str(),it->second.c_str());
       }
