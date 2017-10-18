@@ -57,7 +57,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
 
   m_currentvehicle = NULL;
 
-  OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework",NULL,"<$C>",1,1);
+  OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework",NULL,"",1,1);
   cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1);
   }
 

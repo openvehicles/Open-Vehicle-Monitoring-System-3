@@ -188,7 +188,7 @@ OvmsLocations::OvmsLocations()
   // Register our commands
   OvmsCommand* cmd_location = MyCommandApp.RegisterCommand("location","LOCATION framework",NULL, "", 1);
   cmd_location->RegisterCommand("list","Show all locations",location_list, "", 0, 0, true);
-  cmd_location->RegisterCommand("set","Set the position of a location",location_set, "<name> <latitude> <longitude> {<radius>}", 3, 4, true);
+  cmd_location->RegisterCommand("set","Set the position of a location",location_set, "<name> <latitude> <longitude> [<radius>]", 3, 4, true);
   cmd_location->RegisterCommand("rm","Remove a defined location",location_rm, "<name>", 1, 1, true);
   cmd_location->RegisterCommand("status","Show location status",location_status, "", 0, 0, true);
 

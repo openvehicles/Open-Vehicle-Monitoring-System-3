@@ -135,15 +135,15 @@ const char* OvmsCommand::GetTitle()
 
 // Dynamic generation of "Usage:" messages.  Syntax of the usage template string:
 // - Prefix is "Usage: " followed by names from ancestors (if any) and name of self
-// - "<$C>" expands to children as <child1|child2|child3>
+// - "$C" expands to children as child1|child2|child3
 // - "[$C]" expands to optional children as [child1|child2|child3]
 // - $G$ expands to the usage of the first child (typically used after $C)
 // - $Gfoo$ expands to the usage of the child named "foo"
 // - Parameters after command and subcommand tokens may be explicit like " <metric>"
-// - Empty usage template "" defaults to "<$C>" for non-terminal OvmsCommand
+// - Empty usage template "" defaults to "$C" for non-terminal OvmsCommand
 const char* OvmsCommand::GetUsage(OvmsWriter* writer)
   {
-  std::string usage = !m_usage_template ? "" : (!*m_usage_template && !m_execute) ? "<$C>" : m_usage_template;
+  std::string usage = !m_usage_template ? "" : (!*m_usage_template && !m_execute) ? "$C" : m_usage_template;
   m_usage ="Usage: ";
   size_t pos = m_usage.size();
   for (OvmsCommand* parent = m_parent; parent && parent->m_parent; parent = parent->m_parent)
@@ -361,13 +361,13 @@ OvmsCommandApp::OvmsCommandApp()
 
   m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0);
   m_root.RegisterCommand("exit", "End console session", Exit , "", 0, 0);
-  OvmsCommand* level_cmd = m_root.RegisterCommand("level", "Set logging level", NULL, "<$C> [tag]");
-  level_cmd->RegisterCommand("verbose", "Log at the VERBOSE level (5)", level , "[tag]", 0, 1);
-  level_cmd->RegisterCommand("debug", "Log at the DEBUG level (4)", level , "[tag]", 0, 1);
-  level_cmd->RegisterCommand("info", "Log at the INFO level (3)", level , "[tag]", 0, 1);
-  level_cmd->RegisterCommand("warn", "Log at the WARN level (2)", level , "[tag]", 0, 1);
-  level_cmd->RegisterCommand("error", "Log at the ERROR level (1)", level , "[tag]", 0, 1);
-  level_cmd->RegisterCommand("none", "No logging (0)", level , "[tag]", 0, 1);
+  OvmsCommand* level_cmd = m_root.RegisterCommand("level", "Set logging level", NULL, "$C [<tag>]");
+  level_cmd->RegisterCommand("verbose", "Log at the VERBOSE level (5)", level , "[<tag>]", 0, 1);
+  level_cmd->RegisterCommand("debug", "Log at the DEBUG level (4)", level , "[<tag>]", 0, 1);
+  level_cmd->RegisterCommand("info", "Log at the INFO level (3)", level , "[<tag>]", 0, 1);
+  level_cmd->RegisterCommand("warn", "Log at the WARN level (2)", level , "[<tag>]", 0, 1);
+  level_cmd->RegisterCommand("error", "Log at the ERROR level (1)", level , "[<tag>]", 0, 1);
+  level_cmd->RegisterCommand("none", "No logging (0)", level , "[<tag>]", 0, 1);
   m_root.RegisterCommand("enable","Enter secure mode", enable, "", 0, 1);
   m_root.RegisterCommand("disable","Leave secure mode", disable, "", 0, 0, true);
   }
