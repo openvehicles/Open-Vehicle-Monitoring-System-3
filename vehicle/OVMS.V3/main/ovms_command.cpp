@@ -153,12 +153,11 @@ const char* OvmsCommand::GetUsage(OvmsWriter* writer)
     }
   m_usage += m_name;
   m_usage += " ";
-  pos = ExpandUsage(usage, writer);
-  m_usage += usage.substr(pos);
+  ExpandUsage(usage, writer);
   return m_usage.c_str();
   }
 
-size_t OvmsCommand::ExpandUsage(std::string usage, OvmsWriter* writer)
+void OvmsCommand::ExpandUsage(std::string usage, OvmsWriter* writer)
   {
   size_t pos;
   if ((pos = usage.find_first_of("$C")) != std::string::npos)
@@ -199,8 +198,8 @@ size_t OvmsCommand::ExpandUsage(std::string usage, OvmsWriter* writer)
       if (it != m_children.end() && (!it->second->m_secure || writer->m_issecure))
         {
         OvmsCommand* child = it->second;
-        pos3 = child->ExpandUsage(child->m_usage_template, writer);
-        m_usage += child->m_usage.substr(pos3);
+        child->ExpandUsage(child->m_usage_template, writer);
+        m_usage += child->m_usage;
         }
       }
     else
@@ -208,7 +207,7 @@ size_t OvmsCommand::ExpandUsage(std::string usage, OvmsWriter* writer)
     if (it == m_children.end())
       m_usage += "ERROR IN USAGE TEMPLATE";
     }
-  return pos;
+  m_usage += usage.substr(pos);
   }
 
 OvmsCommand* OvmsCommand::RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
