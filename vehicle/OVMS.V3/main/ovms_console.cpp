@@ -85,10 +85,10 @@ char ** OvmsConsole::GetCompletion(OvmsCommandMap& children, const char* token)
         {
         if (index < COMPLETION_MAX_TOKENS+1)
           {
+          if (it->second->IsSecure() && !m_issecure)
+            continue;
           if (index == COMPLETION_MAX_TOKENS)
-            {
             key = "...";
-            }
           strncpy(m_space[index], key, TOKEN_MAX_LENGTH-1);
           m_space[index][TOKEN_MAX_LENGTH-1] = '\0';
           m_completions[index] = m_space[index];

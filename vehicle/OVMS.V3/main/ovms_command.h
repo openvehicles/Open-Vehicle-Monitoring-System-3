@@ -94,14 +94,15 @@ class OvmsCommand
                                  const char *usage = "", int min = 0, int max = INT_MAX, bool secure = false);
     const char* GetName();
     const char* GetTitle();
-    const char* GetUsage();
+    const char* GetUsage(OvmsWriter* writer);
     char ** Complete(OvmsWriter* writer, int argc, const char * const * argv);
     void Execute(int verbosity, OvmsWriter* writer, int argc, const char * const * argv);
     OvmsCommand* GetParent();
     OvmsCommand* FindCommand(const char* name);
+    bool IsSecure() { return m_secure; }
 
   private:
-      size_t ExpandUsage(std::string usage);
+      size_t ExpandUsage(std::string usage, OvmsWriter* writer);
 
   protected:
     const char* m_name;
