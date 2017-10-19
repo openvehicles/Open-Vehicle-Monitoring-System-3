@@ -228,7 +228,7 @@ VfsInit::VfsInit()
   {
   ESP_LOGI(TAG, "Initialising VFS (5200)");
 
-  OvmsCommand* cmd_vfs = MyCommandApp.RegisterCommand("vfs","VFS framework",NULL,"$C <file(s)>");
+  OvmsCommand* cmd_vfs = MyCommandApp.RegisterCommand("vfs","VFS framework",NULL,"$C <file(s)>",0,0,true);
   cmd_vfs->RegisterCommand("ls","VFS Directory Listing",vfs_ls, "[<file>]", 0, 1, true);
   cmd_vfs->RegisterCommand("cat","VFS Display a file",vfs_cat, "<file>", 1, 1, true);
   cmd_vfs->RegisterCommand("mkdir","VFS Create a directory",vfs_mkdir, "<path>", 1, 1, true);

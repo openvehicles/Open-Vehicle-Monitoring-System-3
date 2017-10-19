@@ -198,22 +198,22 @@ can::can()
   {
   ESP_LOGI(TAG, "Initialising CAN (4500)");
 
-  OvmsCommand* cmd_can = MyCommandApp.RegisterCommand("can","CAN framework",NULL, "", 1);
+  OvmsCommand* cmd_can = MyCommandApp.RegisterCommand("can","CAN framework",NULL, "", 0, 0, true);
   for (int k=1;k<4;k++)
     {
     static const char* name[4] = {"can1", "can2", "can3"};
-    OvmsCommand* cmd_canx = cmd_can->RegisterCommand(name[k-1],"CANx framework",NULL, "", 1);
-    OvmsCommand* cmd_cantrace = cmd_canx->RegisterCommand("trace","CAN trace framework", NULL, "", 1);
+    OvmsCommand* cmd_canx = cmd_can->RegisterCommand(name[k-1],"CANx framework",NULL, "", 0, 0, true);
+    OvmsCommand* cmd_cantrace = cmd_canx->RegisterCommand("trace","CAN trace framework", NULL, "", 0, 0, true);
     cmd_cantrace->RegisterCommand("on","Turn CAN bus tracing ON",can_trace,"", 0, 0, true);
     cmd_cantrace->RegisterCommand("off","Turn CAN bus tracing OFF",can_trace,"", 0, 0, true);
-    OvmsCommand* cmd_canstart = cmd_canx->RegisterCommand("start","CAN start framework", NULL, "", 1);
+    OvmsCommand* cmd_canstart = cmd_canx->RegisterCommand("start","CAN start framework", NULL, "", 0, 0, true);
     cmd_canstart->RegisterCommand("listen","Start CAN bus in listen mode",can_start,"<baud>", 1, 1, true);
     cmd_canstart->RegisterCommand("active","Start CAN bus in active mode",can_start,"<baud>", 1, 1, true);
     cmd_canx->RegisterCommand("stop","Stop CAN bus",can_stop, "", 0, 0, true);
-    OvmsCommand* cmd_cantx = cmd_canx->RegisterCommand("tx","CAN tx framework", NULL, "", 1);
+    OvmsCommand* cmd_cantx = cmd_canx->RegisterCommand("tx","CAN tx framework", NULL, "", 0, 0, true);
     cmd_cantx->RegisterCommand("standard","Transmit standard CAN frame",can_tx,"<id><data...>", 1, 9, true);
     cmd_cantx->RegisterCommand("extended","Transmit extended CAN frame",can_tx,"<id><data...>", 1, 9, true);
-    OvmsCommand* cmd_canrx = cmd_canx->RegisterCommand("rx","CAN rx framework", NULL, "", 1);
+    OvmsCommand* cmd_canrx = cmd_canx->RegisterCommand("rx","CAN rx framework", NULL, "", 0, 0, true);
     cmd_canrx->RegisterCommand("standard","Simulate reception of standard CAN frame",can_rx,"<id><data...>", 1, 9, true);
     cmd_canrx->RegisterCommand("extended","Simulate reception of extended CAN frame",can_rx,"<id><data...>", 1, 9, true);
     }
