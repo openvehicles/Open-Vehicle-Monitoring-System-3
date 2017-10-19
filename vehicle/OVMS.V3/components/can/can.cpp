@@ -211,11 +211,11 @@ can::can()
     cmd_canstart->RegisterCommand("active","Start CAN bus in active mode",can_start,"<baud>", 1, 1, true);
     cmd_canx->RegisterCommand("stop","Stop CAN bus",can_stop, "", 0, 0, true);
     OvmsCommand* cmd_cantx = cmd_canx->RegisterCommand("tx","CAN tx framework", NULL, "", 0, 0, true);
-    cmd_cantx->RegisterCommand("standard","Transmit standard CAN frame",can_tx,"<id><data...>", 1, 9, true);
-    cmd_cantx->RegisterCommand("extended","Transmit extended CAN frame",can_tx,"<id><data...>", 1, 9, true);
+    cmd_cantx->RegisterCommand("standard","Transmit standard CAN frame",can_tx,"<id> <data...>", 1, 9, true);
+    cmd_cantx->RegisterCommand("extended","Transmit extended CAN frame",can_tx,"<id> <data...>", 1, 9, true);
     OvmsCommand* cmd_canrx = cmd_canx->RegisterCommand("rx","CAN rx framework", NULL, "", 0, 0, true);
-    cmd_canrx->RegisterCommand("standard","Simulate reception of standard CAN frame",can_rx,"<id><data...>", 1, 9, true);
-    cmd_canrx->RegisterCommand("extended","Simulate reception of extended CAN frame",can_rx,"<id><data...>", 1, 9, true);
+    cmd_canrx->RegisterCommand("standard","Simulate reception of standard CAN frame",can_rx,"<id> <data...>", 1, 9, true);
+    cmd_canrx->RegisterCommand("extended","Simulate reception of extended CAN frame",can_rx,"<id> <data...>", 1, 9, true);
     }
 
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
