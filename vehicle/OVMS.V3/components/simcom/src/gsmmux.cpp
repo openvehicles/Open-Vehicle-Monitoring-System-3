@@ -134,6 +134,9 @@ GsmMuxChannel::~GsmMuxChannel()
 
 void GsmMuxChannel::ProcessFrame(uint8_t* frame, size_t length, size_t iframepos)
   {
+  // Note the <length> provided excludes the start byte, stop byte, and checksum
+  // The <frame> pointer itself points to the byte after the start byte
+  ESP_LOGI(TAG, "ChanProcessFrame(CHAN=%d, ADDR=%02x, CTRL=%02x, LEN=%d, IFP=%d)", m_channel, frame[0], frame[1], length, iframepos);
   switch (m_state)
     {
     case ChanClosed:
@@ -149,7 +152,7 @@ void GsmMuxChannel::ProcessFrame(uint8_t* frame, size_t length, size_t iframepos
     case ChanOpen:
       if (frame[1] == (GSM_UIH + GSM_PF))
         {
-        for (size_t k=iframepos;k<(length-2);k++)
+        for (size_t k=iframepos;k<length;k++)
           m_buffer.Push(frame[k]);
         m_mux->m_modem->IncomingMuxData(m_channel, &m_buffer);
         }
@@ -287,7 +290,7 @@ void GsmMux::ProcessFrame()
   GsmMuxChannel* chan = m_channels[channel];
   if (chan)
     {
-    chan->ProcessFrame(m_frame+1,m_framelen-3,m_frameipos);
+    chan->ProcessFrame(m_frame+1,m_framelen-3,m_frameipos-1);
     }
   else
     {

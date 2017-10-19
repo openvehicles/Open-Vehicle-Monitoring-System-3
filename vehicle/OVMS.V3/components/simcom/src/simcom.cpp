@@ -202,6 +202,7 @@ void simcom::Ticker(std::string event, void* data)
 void simcom::IncomingMuxData(int channel, OvmsBuffer* buf)
   {
   // The MUX has indicated there is data on the specified channel
+  // ESP_LOGI(TAG, "IncomingMuxData(CHAN=%d, buffer used=%d)",channel,buf->UsedSpace());
   switch (channel)
     {
     case 0:
