@@ -122,13 +122,6 @@ endmenu # Component Options
 menu "Developer Options"
     depends on OVMS
 
-config OVMS_DEV_LOGSTATUS
-    bool "Periodically log status on OVMS console"
-    default n
-    depends on OVMS
-    help
-        Enable to periodically log status on OVMS console
-
 config OVMS_DEV_CONFIGVFS
     bool "Disable the usual protections for configuration visibility in VFS"
     default n

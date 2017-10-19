@@ -50,12 +50,6 @@ static const char *TAG = "housekeeping";
 //#include "esp_heap_caps.h"
 //}
 
-#ifdef CONFIG_OVMS_DEV_LOGSTATUS
-int TestAlerts = true;
-#else
-int TestAlerts = false;
-#endif
-
 void HousekeepingTicker1( TimerHandle_t timer )
   {
   Housekeeping* h = (Housekeeping*)pvTimerGetTimerID(timer);
@@ -75,17 +69,6 @@ void HousekeepingTask(void *pvParameters)
   while (1)
     {
     me->metrics();
-
-    if (TestAlerts)
-      {
-      MyCommandApp.LogPartial("SHOULD NOT BE SEEN\r");
-      uint32_t caps = MALLOC_CAP_8BIT;
-      size_t free = xPortGetFreeHeapSizeCaps(caps);
-//      size_t free = heap_caps_get_free_size(caps);
-      MyCommandApp.LogPartial("Free %zu  ",free);
-      MyCommandApp.Log("Tasks %u\r\n", uxTaskGetNumberOfTasks());
-      }
-
     vTaskDelay(10000 / portTICK_PERIOD_MS);
     }
   }
