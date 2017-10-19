@@ -69,6 +69,7 @@ class OvmsLocations
   public:
     void ReloadMap();
     void UpdateLocations();
+    OvmsLocation* Find(std::string name);
 
   public:
     void UpdatedGpsLock(OvmsMetric* metric);

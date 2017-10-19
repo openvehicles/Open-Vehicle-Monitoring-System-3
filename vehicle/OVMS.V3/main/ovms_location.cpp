@@ -34,6 +34,7 @@ static const char *TAG = "location";
 #include "ovms_location.h"
 #include "ovms_config.h"
 #include "ovms_events.h"
+#include "ovms_script.h"
 #include "ovms_command.h"
 #include "metrics_standard.h"
 #include <math.h>
@@ -175,6 +176,23 @@ void location_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     writer->puts("No active locations");
   }
 
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
+static duk_ret_t DukOvmsLocationStatus(duk_context *ctx)
+  {
+  const char *mn = duk_to_string(ctx,0);
+  OvmsLocation *loc = MyLocations.Find(mn);
+  if (loc)
+    {
+    duk_push_boolean(ctx, loc->m_inlocation);
+    return 1;  /* one return value */
+    }
+  else
+    return 0;
+  }
+
+#endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
 OvmsLocations MyLocations __attribute__ ((init_priority (1900)));
 
 OvmsLocations::OvmsLocations()
@@ -203,6 +221,13 @@ OvmsLocations::OvmsLocations()
   MyMetrics.RegisterListener(TAG, MS_V_POS_LONGITUDE, std::bind(&OvmsLocations::UpdatedLongitude, this, _1));
   MyEvents.RegisterEvent(TAG,"config.mounted", std::bind(&OvmsLocations::UpdatedConfig, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsLocations::UpdatedConfig, this, _1, _2));
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
+  duk_context* ctx = MyScripts.Duktape();
+  duk_push_c_function(ctx, DukOvmsLocationStatus, 1 /*nargs*/);
+  duk_put_global_string(ctx, "OvmsLocationStatus");
+#endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
 OvmsLocations::~OvmsLocations()
@@ -288,6 +313,15 @@ void OvmsLocations::UpdateLocations()
     {
     it->second->IsInLocation(m_latitude,m_longitude);
     }
+  }
+
+OvmsLocation* OvmsLocations::Find(std::string name)
+  {
+  auto k = m_locations.find(name);
+  if (k == m_locations.end())
+    return NULL;
+  else
+    return k->second;
   }
 
 void OvmsLocations::UpdatedConfig(std::string event, void* data)
