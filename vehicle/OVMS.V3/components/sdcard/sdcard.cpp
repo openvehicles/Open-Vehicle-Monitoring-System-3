@@ -226,8 +226,8 @@ SDCardInit::SDCardInit()
   {
   ESP_LOGI(TAG, "Initialising SD CARD (4400)");
 
-  OvmsCommand* cmd_sd = MyCommandApp.RegisterCommand("sd","SD CARD framework",NULL,"",1,1);
-  cmd_sd->RegisterCommand("mount","Mount SD CARD",sdcard_mount,"",0,0);
-  cmd_sd->RegisterCommand("unmount","Unmount SD CARD",sdcard_unmount,"",0,0);
-  cmd_sd->RegisterCommand("status","Show SD CARD status",sdcard_status,"",0,0);
+  OvmsCommand* cmd_sd = MyCommandApp.RegisterCommand("sd","SD CARD framework",NULL,"",0,0,true);
+  cmd_sd->RegisterCommand("mount","Mount SD CARD",sdcard_mount,"",0,0,true);
+  cmd_sd->RegisterCommand("unmount","Unmount SD CARD",sdcard_unmount,"",0,0,true);
+  cmd_sd->RegisterCommand("status","Show SD CARD status",sdcard_status,"",0,0,true);
   }

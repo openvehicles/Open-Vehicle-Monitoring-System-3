@@ -202,6 +202,7 @@ void simcom::Ticker(std::string event, void* data)
 void simcom::IncomingMuxData(int channel, OvmsBuffer* buf)
   {
   // The MUX has indicated there is data on the specified channel
+  // ESP_LOGI(TAG, "IncomingMuxData(CHAN=%d, buffer used=%d)",channel,buf->UsedSpace());
   switch (channel)
     {
     case 0:
@@ -465,30 +466,34 @@ void simcom::muxtx(int channel, const char* data, ssize_t size)
 
 void simcom_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
+  std::string msg;
   for (int k=0; k<argc; k++)
     {
     if (k>0)
       {
-      MyPeripherals->m_simcom->tx(" ",1);
+      msg.append(" ");
       }
-    MyPeripherals->m_simcom->tx(argv[k],strlen(argv[k]));
+    msg.append(argv[k]);
     }
-  MyPeripherals->m_simcom->tx("\r\n",2);
+  msg.append("\r\n");
+  MyPeripherals->m_simcom->tx(msg.c_str(),msg.length());
   }
 
 void simcom_muxtx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   int channel = atoi(argv[0]);
 
+  std::string msg;
   for (int k=1; k<argc; k++)
     {
     if (k>1)
       {
-      MyPeripherals->m_simcom->muxtx(channel, " ",1);
+      msg.append(" ");
       }
-    MyPeripherals->m_simcom->muxtx(channel,argv[k],strlen(argv[k]));
+    msg.append(argv[k]);
     }
-  MyPeripherals->m_simcom->muxtx(channel,"\r\n",2);
+  msg.append("\r\n");
+  MyPeripherals->m_simcom->muxtx(channel,msg.c_str(),msg.length());
   }
 
 class SimcomInit

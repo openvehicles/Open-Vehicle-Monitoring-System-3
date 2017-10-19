@@ -353,15 +353,15 @@ OvmsOTA::OvmsOTA()
 
   MyCommandApp.RegisterCommand("reset","Reset system",ota_reset,"",0,0);
 
-  OvmsCommand* cmd_ota = MyCommandApp.RegisterCommand("ota","OTA framework",NULL,"",1,1);
+  OvmsCommand* cmd_ota = MyCommandApp.RegisterCommand("ota","OTA framework",NULL,"",0,0,true);
 
-  cmd_ota->RegisterCommand("status","Show OTA status",ota_status,"",0,0);
+  cmd_ota->RegisterCommand("status","Show OTA status",ota_status,"",0,0,true);
 
-  OvmsCommand* cmd_otaflash = cmd_ota->RegisterCommand("flash","OTA flash",NULL,"",1,1);
+  OvmsCommand* cmd_otaflash = cmd_ota->RegisterCommand("flash","OTA flash",NULL,"",0,0,true);
   cmd_otaflash->RegisterCommand("vfs","OTA flash vfs",ota_flash_vfs,"<file>",1,1,true);
   cmd_otaflash->RegisterCommand("http","OTA flash auto",ota_flash_http,"<url>",0,1,true);
 
-  OvmsCommand* cmd_otaboot = cmd_ota->RegisterCommand("boot","OTA boot",NULL,"",1,1);
+  OvmsCommand* cmd_otaboot = cmd_ota->RegisterCommand("boot","OTA boot",NULL,"",0,0,true);
   cmd_otaboot->RegisterCommand("factory","Boot from factory image",ota_boot, "", 0, 0, true);
   cmd_otaboot->RegisterCommand("ota_0","Boot from ota_0 image",ota_boot, "", 0, 0, true);
   cmd_otaboot->RegisterCommand("ota_1","Boot from ota_1 image",ota_boot, "", 0, 0, true);

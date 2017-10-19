@@ -121,7 +121,7 @@ TestFrameworkInit::TestFrameworkInit()
   {
   ESP_LOGI(TAG, "Initialising TEST (5000)");
 
-  OvmsCommand* cmd_test = MyCommandApp.RegisterCommand("test","Test framework",NULL);
+  OvmsCommand* cmd_test = MyCommandApp.RegisterCommand("test","Test framework",NULL,"",0,0,true);
   cmd_test->RegisterCommand("sleep","Test Deep Sleep",test_deepsleep,"[<seconds>]",0,1,true);
   cmd_test->RegisterCommand("sdcard","Test CD CARD",test_sdcard,"",0,0,true);
   cmd_test->RegisterCommand("javascript","Test Javascript",test_javascript,"",0,0,true);
