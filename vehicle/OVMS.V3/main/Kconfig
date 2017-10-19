@@ -136,6 +136,13 @@ config OVMS_DEV_DEBUGRAM
     help
         Enable to store extended RAM memory allocation statistics (danger: performance impact)
 
+config OVMS_DEV_DEBUGTASKS
+    bool "Enable extended TASK allocation statistics"
+    default n
+    depends on OVMS
+    help
+        Enable to store extended TASK allocation statistics (danger: performance impact)
+
 config OVMS_DEV_DEBUGEVENTS
     bool "Enable extended event tracing"
     default n
