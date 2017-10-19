@@ -66,7 +66,7 @@ class GsmMuxChannel
 class GsmMux
   {
   public:
-    GsmMux(simcom* modem, size_t maxframesize = 255);
+    GsmMux(simcom* modem, size_t maxframesize = 2048);
     ~GsmMux();
 
   public:
