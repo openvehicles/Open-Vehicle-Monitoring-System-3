@@ -204,7 +204,7 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
 
 bool mcp2515::RxCallback(CAN_frame_t* frame)
   {
-  uint8_t buf[32];
+  uint8_t buf[16];
 
   while(1)
     {
