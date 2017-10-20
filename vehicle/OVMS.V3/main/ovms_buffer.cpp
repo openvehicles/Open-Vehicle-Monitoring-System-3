@@ -35,13 +35,14 @@ static const char *TAG = "buffer";
 #include "ovms_command.h"
 #include <sys/socket.h>
 
-OvmsBuffer::OvmsBuffer(size_t size)
+OvmsBuffer::OvmsBuffer(size_t size, void* userdata)
   {
   m_buffer = new uint8_t[size];
   m_head = 0;
   m_tail = 0;
   m_size = size;
   m_used = 0;
+  m_userdata = userdata;
   }
 
 OvmsBuffer::~OvmsBuffer()

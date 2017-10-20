@@ -62,7 +62,7 @@ class simcom : public pcp
     void StopTask();
     void Task();
     void Ticker(std::string event, void* data);
-    void IncomingMuxData(int channel, OvmsBuffer* buf);
+    void IncomingMuxData(GsmMuxChannel* channel);
 
   protected:
     TaskHandle_t m_task;
@@ -117,7 +117,9 @@ class simcom : public pcp
     void State1Enter(SimcomState1 newstate);
     SimcomState1 State1Activity();
     SimcomState1 State1Ticker1();
-    void StandardLineHandler(std::string line);
+    bool StandardIncomingHandler(OvmsBuffer* buf);
+    void StandardDataHandler(OvmsBuffer* buf);
+    void StandardLineHandler(OvmsBuffer* buf, std::string line);
     void PowerCycle();
     void PowerSleep(bool onoff);
   };
