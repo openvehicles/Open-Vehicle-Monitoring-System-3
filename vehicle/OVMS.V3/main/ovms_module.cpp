@@ -247,14 +247,30 @@ void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   {
 #if configUSE_TRACE_FACILITY
 #ifndef CONFIG_FREERTOS_ASSERT_ON_UNTESTED_FUNCTION
-  TaskStatus_t tasks[20];
+#define MAX_TASKS 30
+  TaskStatus_t tasks[MAX_TASKS];
   bzero(tasks, sizeof(tasks));
-  writer->printf("Number of Tasks = %u\n", uxTaskGetNumberOfTasks());
-  UBaseType_t n = uxTaskGetSystemState(tasks, 20, NULL);
-  for (UBaseType_t i = 0; i < n; ++i)
+  UBaseType_t num = uxTaskGetNumberOfTasks();
+  writer->printf("Number of Tasks =%3u%s   Stack:  Now   Max Total\n", num,
+    num > MAX_TASKS ? ">max" : "    ");
+    
+  UBaseType_t n = uxTaskGetSystemState(tasks, MAX_TASKS, NULL);
+  num = 0;
+  for (UBaseType_t j = 0; j < n; )
     {
-    writer->printf("Task %08X %2u %-15s  Min Free Stack %5u\n", tasks[i].xHandle, tasks[i].xTaskNumber,
-      tasks[i].pcTaskName, tasks[i].usStackHighWaterMark);
+    for (UBaseType_t i = 0; i < n; ++i)
+      {
+      if (tasks[i].xTaskNumber == num)
+        {
+        uint32_t total = (uint32_t)tasks[i].pxStackBase >> 16;
+        writer->printf("Task %08X %2u %-15s %5u %5u %5u\n", tasks[i].xHandle, tasks[i].xTaskNumber,
+          tasks[i].pcTaskName, total - ((uint32_t)tasks[i].pxStackBase & 0xFFFF),
+          total - tasks[i].usStackHighWaterMark, total);
+        ++j;
+        break;
+        }
+      }
+    ++num;
     }
 #else
   writer->printf("Must not set CONFIG_FREERTOS_ASSERT_ON_UNTESTED_FUNCTION\n");
