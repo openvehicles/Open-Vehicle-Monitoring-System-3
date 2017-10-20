@@ -199,29 +199,23 @@ void simcom::Ticker(std::string event, void* data)
     }
   }
 
-void simcom::IncomingMuxData(int channel, OvmsBuffer* buf)
+void simcom::IncomingMuxData(GsmMuxChannel* channel)
   {
   // The MUX has indicated there is data on the specified channel
-  // ESP_LOGI(TAG, "IncomingMuxData(CHAN=%d, buffer used=%d)",channel,buf->UsedSpace());
-  switch (channel)
+  // ESP_LOGI(TAG, "IncomingMuxData(CHAN=%d, buffer used=%d)",channel->m_channel,channel->m_buffer.UsedSpace());
+  switch (channel->m_channel)
     {
     case 0:
-      buf->EmptyAll();
+      channel->m_buffer.EmptyAll();
       break;
     case 1:
-      buf->EmptyAll();
+      channel->m_buffer.EmptyAll();
       break;
     case 2:
-      while (buf->HasLine() >= 0)
-        {
-        StandardLineHandler(buf->ReadLine());
-        }
+      StandardIncomingHandler(&channel->m_buffer);
       break;
     case 3:
-      while (buf->HasLine() >= 0)
-        {
-        StandardLineHandler(buf->ReadLine());
-        }
+      StandardIncomingHandler(&channel->m_buffer);
       break;
     default:
       break;
@@ -320,9 +314,8 @@ simcom::SimcomState1 simcom::State1Activity()
       return PoweredOn;
       break;
     case PoweredOn:
-      while (m_buffer.HasLine() >= 0)
+      if (StandardIncomingHandler(&m_buffer))
         {
-        StandardLineHandler(m_buffer.ReadLine());
         if (m_state1_ticker >= 15) return MuxMode;
         }
       break;
@@ -384,7 +377,48 @@ simcom::SimcomState1 simcom::State1Ticker1()
   return None;
   }
 
-void simcom::StandardLineHandler(std::string line)
+bool simcom::StandardIncomingHandler(OvmsBuffer* buf)
+  {
+  bool result = false;
+
+  while(1)
+    {
+    if (buf->m_userdata != 0)
+      {
+      // Expecting N bytes of data mode
+      if (buf->UsedSpace() < (size_t)buf->m_userdata) return false;
+      StandardDataHandler(buf);
+      result = true;
+      }
+    else
+      {
+      // Normal line mode
+      if (buf->HasLine() >= 0)
+        {
+        StandardLineHandler(buf, buf->ReadLine());
+        result = true;
+        }
+      else
+        return result;
+      }
+    }
+  }
+
+void simcom::StandardDataHandler(OvmsBuffer* buf)
+  {
+  // We have SMS data ready...
+  size_t needed = (size_t)buf->m_userdata;
+
+  char* result = new char[needed+1];
+  buf->Pop(needed, (uint8_t*)result);
+  result[needed] = 0;
+  MyCommandApp.HexDump("SIMCOM data",result,needed);
+
+  delete [] result;
+  buf->m_userdata = 0;
+  }
+
+void simcom::StandardLineHandler(OvmsBuffer* buf, std::string line)
   {
   MyCommandApp.HexDump("SIMCOM line",line.c_str(),line.length());
 
@@ -413,6 +447,15 @@ void simcom::StandardLineHandler(std::string line)
         {
         StandardMetrics.ms_m_net_provider->SetValue(line.substr(qp+1,qp2-qp-1));
         }
+      }
+    }
+  else if (line.compare(0, 6, "+CMT: ") == 0)
+    {
+    size_t qp = line.find_last_of(',');
+    if (qp != string::npos)
+      {
+      buf->m_userdata = (void*)atoi(line.substr(qp+1).c_str());
+      ESP_LOGI(TAG,"SMS length is %d",(int)buf->m_userdata);
       }
     }
   }

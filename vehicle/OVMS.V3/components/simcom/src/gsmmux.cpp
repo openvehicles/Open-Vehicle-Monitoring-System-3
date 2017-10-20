@@ -154,7 +154,7 @@ void GsmMuxChannel::ProcessFrame(uint8_t* frame, size_t length, size_t iframepos
         {
         for (size_t k=iframepos;k<length;k++)
           m_buffer.Push(frame[k]);
-        m_mux->m_modem->IncomingMuxData(m_channel, &m_buffer);
+        m_mux->m_modem->IncomingMuxData(this);
         }
       break;
     case ChanClosing:
