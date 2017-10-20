@@ -31,6 +31,16 @@
 #ifndef __OVMS_NETMANAGER_H__
 #define __OVMS_NETMANAGER_H__
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "ovms_events.h"
+
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+#define ESP_PLATFORM 1
+#define MG_ENABLE_HTTP 1
+#include "mongoose.h"
+#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
 class OvmsNetManager
   {
   public:
@@ -45,6 +55,23 @@ class OvmsNetManager
     bool m_connected_wifi;
     bool m_connected_modem;
     bool m_connected_any;
+
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+  protected:
+    void StartMongooseTask();
+    void StopMongooseTask();
+
+  protected:
+    TaskHandle_t m_mongoose_task;
+    struct mg_mgr m_mongoose_mgr;
+    bool m_mongoose_running;
+
+  public:
+    void MongooseTask();
+    struct mg_mgr* GetMongooseMgr();
+    bool MongooseRunning();
+    
+#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   };
 
 extern OvmsNetManager MyNetManager;
