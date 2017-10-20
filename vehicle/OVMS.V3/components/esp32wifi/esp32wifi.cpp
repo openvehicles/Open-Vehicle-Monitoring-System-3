@@ -29,7 +29,7 @@
 */
 
 #include "esp_log.h"
-static const char *TAG = "obd2wifi";
+static const char *TAG = "esp32wifi";
 
 #include <string.h>
 #include <string>
