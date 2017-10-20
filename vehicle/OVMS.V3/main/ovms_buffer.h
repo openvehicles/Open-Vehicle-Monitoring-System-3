@@ -37,7 +37,7 @@
 class OvmsBuffer
   {
   public:
-    OvmsBuffer(size_t size);
+    OvmsBuffer(size_t size, void* userdata = 0);
     virtual ~OvmsBuffer();
 
   public:
@@ -61,6 +61,9 @@ class OvmsBuffer
 
   public:
     int PollSocket(int sock, long timeoutms);
+
+  public:
+    void* m_userdata;
 
   protected:
     uint8_t *m_buffer;
