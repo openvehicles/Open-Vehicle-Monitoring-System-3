@@ -33,8 +33,6 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
-#include "freertos/semphr.h"
-#include "freertos/task.h"
 #include "can.h"
 #include "spi.h"
 
@@ -50,6 +48,8 @@ class mcp2515 : public canbus
 
   public:
     esp_err_t Write(const CAN_frame_t* p_frame);
+    virtual bool RxCallback(CAN_frame_t* frame);
+    virtual void TxCallback();
 
   public:
     virtual void SetPowerMode(PowerMode powermode);
@@ -57,8 +57,6 @@ class mcp2515 : public canbus
   public:
     spi* m_spibus;
     spi_nodma_device_handle_t m_spi;
-    TaskHandle_t m_rxtask;            // Task to handle reception
-    SemaphoreHandle_t m_rxsem;        // Semaphore to signal incoming packet
 
   protected:
     spi_nodma_device_interface_config_t m_devcfg;

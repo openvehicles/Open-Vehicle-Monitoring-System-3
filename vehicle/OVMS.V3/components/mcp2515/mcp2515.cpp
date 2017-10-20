@@ -35,67 +35,16 @@
 #include "esp_intr.h"
 #include "soc/dport_reg.h"
 
-static void MCP2515_rxtask(void *pvParameters)
-  {
-  mcp2515 *me = (mcp2515*)pvParameters;
-  uint8_t buf[32];
-  spi* spibus = me->m_spibus;
-  spi_nodma_device_handle_t spi = me->m_spi;
-
-  while(1)
-    {
-    if (xSemaphoreTake(me->m_rxsem, portMAX_DELAY) == pdTRUE)
-      {
-      uint8_t *p = spibus->spi_cmd(spi, buf, 2, 2, 0b00000011, 0x2c);
-      uint8_t intstat = p[0];
-      //uint8_t errflag = p[1];
-
-      // MCP2515 BITMODIFY CANINTE (Interrupt Enable) Clear flags
-      spibus->spi_cmd(spi, buf, 0, 4, 0b00000101, 0x2c, *p, 0x00);
-
-      int rxbuf = -1;
-      if (intstat & 0x01)
-        {
-        // RX buffer 0 is full, handle it
-        rxbuf = 0;
-        }
-      else if (intstat & 0x02)
-        {
-        // RX buffer 1 is full, handle it
-        rxbuf = 4;
-        }
-
-      if (rxbuf >= 0)
-        {
-        // The indicated RX buffer has a message to be read
-        CAN_frame_t msg;
-        memset(&msg,0,sizeof(msg));
-        msg.origin = me;
-
-        uint8_t *p = spibus->spi_cmd(spi, buf, 13, 1, 0x90+rxbuf);
-        if(p[1] & 0x20) //check for extended mode=0, or std mode=1, though this seems backwards from standard
-          msg.MsgID = (p[0] << 3) | (p[1] >> 5);  // Standard mode
-        else
-        { msg.FIR.B.FF = CAN_frame_ext;           // Extended mode
-          msg.MsgID = (p[0]<<21) | ((p[1]&0x80)<<13) | ((p[1]&0x0f)<<16) | (p[2]<<8) | (p[3]);
-        }
-        msg.FIR.B.DLC = p[4] & 0x0f;
-      
-        memcpy(&msg.data,p+5,8);
-
-        //send frame to main CAN processor task
-        xQueueSend(MyCan.m_rxqueue,&msg,0);
-        // MyCan.IncomingFrame(&msg);
-        }
-      }
-    }
-  }
-
 static void MCP2515_isr(void *pvParameters)
   {
   mcp2515 *me = (mcp2515*)pvParameters;
 
-  xSemaphoreGive(me->m_rxsem);
+  CAN_msg_t msg;
+  msg.type = CAN_rxcallback;
+  msg.body.bus = me;
+
+  //send callback request to main CAN processor task
+  xQueueSendFromISR(MyCan.m_rxqueue,&msg,0);
   }
 
 mcp2515::mcp2515(const char* name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin, int intpin)
@@ -119,9 +68,6 @@ mcp2515::mcp2515(const char* name, spi* spibus, spi_nodma_host_device_t host, in
   esp_err_t ret = spi_nodma_bus_add_device(m_host, &m_spibus->m_buscfg, &m_devcfg, &m_spi);
   assert(ret==ESP_OK);
 
-  m_rxsem = xSemaphoreCreateBinary();
-  xTaskCreatePinnedToCore(MCP2515_rxtask, "MCP2515RxTask", 4096, (void*)this, 5, &m_rxtask, 1);
-
   gpio_set_intr_type((gpio_num_t)m_intpin, GPIO_INTR_NEGEDGE);
   gpio_isr_handler_add((gpio_num_t)m_intpin, MCP2515_isr, (void*)this);
 
@@ -132,8 +78,6 @@ mcp2515::mcp2515(const char* name, spi* spibus, spi_nodma_host_device_t host, in
 
 mcp2515::~mcp2515()
   {
-  vTaskDelete(m_rxtask);
-  vSemaphoreDelete(m_rxsem);
   gpio_isr_handler_remove((gpio_num_t)m_intpin);
   }
 
@@ -256,6 +200,63 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
   m_spibus->spi_cmd(m_spi, buf, 0, 1, 0x81);
 
   return ESP_OK;
+  }
+
+bool mcp2515::RxCallback(CAN_frame_t* frame)
+  {
+  uint8_t buf[32];
+
+  while(1)
+    {
+    uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 2, 2, 0b00000011, 0x2c);
+    uint8_t intstat = p[0];
+    //uint8_t errflag = p[1];
+
+    // MCP2515 BITMODIFY CANINTE (Interrupt Enable) Clear flags
+    m_spibus->spi_cmd(m_spi, buf, 0, 4, 0b00000101, 0x2c, *p, 0x00);
+
+    int rxbuf = -1;
+    if (intstat & 0x01)
+      {
+      // RX buffer 0 is full, handle it
+      rxbuf = 0;
+      }
+    else if (intstat & 0x02)
+      {
+      // RX buffer 1 is full, handle it
+      rxbuf = 4;
+      }
+
+    if (rxbuf < 0)
+      return false; // No more
+    else
+      {
+      // The indicated RX buffer has a message to be reada
+      memset(frame,0,sizeof(*frame));
+      frame->origin = this;
+
+      uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 13, 1, 0x90+rxbuf);
+      if (p[1] & 0x20) //check for extended mode=0, or std mode=1, though this seems backwards from standard
+        {
+        frame->FIR.B.FF = CAN_frame_std;
+        frame->MsgID = (p[0] << 3) | (p[1] >> 5);  // Standard mode
+        }
+      else
+        {
+        frame->FIR.B.FF = CAN_frame_ext;           // Extended mode
+        frame->MsgID = (p[0]<<21) | ((p[1]&0x80)<<13) | ((p[1]&0x0f)<<16) | (p[2]<<8) | (p[3]);
+        }
+      frame->FIR.B.DLC = p[4] & 0x0f;
+
+      memcpy(&frame->data,p+5,8);
+
+      return true;
+      }
+    }
+  }
+
+void mcp2515::TxCallback()
+  {
   }
 
 void mcp2515::SetPowerMode(PowerMode powermode)

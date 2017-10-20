@@ -183,13 +183,29 @@ void can_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
 static void CAN_rxtask(void *pvParameters)
   {
   can *me = (can*)pvParameters;
-  CAN_frame_t frame;
+  CAN_msg_t msg;
 
   while(1)
     {
-    if (xQueueReceive(me->m_rxqueue,&frame, (portTickType)portMAX_DELAY)==pdTRUE)
+    if (xQueueReceive(me->m_rxqueue,&msg, (portTickType)portMAX_DELAY)==pdTRUE)
       {
-      me->IncomingFrame(&frame);
+      switch(msg.type)
+        {
+        case CAN_frame:
+          me->IncomingFrame(&msg.body.frame);
+          break;
+        case CAN_rxcallback:
+          while (msg.body.bus->RxCallback(&msg.body.frame))
+            {
+            me->IncomingFrame(&msg.body.frame);
+            }
+          break;
+        case CAN_txcallback:
+          msg.body.bus->TxCallback();
+          break;
+        default:
+          break;
+        }
       }
     }
   }
@@ -314,3 +330,13 @@ esp_err_t canbus::Write(const CAN_frame_t* p_frame)
 
   return ESP_OK; // Not implemented by base implementation
   }
+
+bool canbus::RxCallback(CAN_frame_t* frame)
+  {
+  return false;
+  }
+
+void canbus::TxCallback()
+  {
+  }
+

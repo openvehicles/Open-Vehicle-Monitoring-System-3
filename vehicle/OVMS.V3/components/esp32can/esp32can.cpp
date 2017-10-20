@@ -42,31 +42,32 @@ esp32can* MyESP32can = NULL;
 
 static void ESP32CAN_rxframe(esp32can *me)
   {
-  CAN_frame_t msg;
+  CAN_msg_t msg;
 
   // Record the origin
   memset(&msg,0,sizeof(msg));
-  msg.origin = me;
+  msg.type = CAN_frame;
+  msg.body.frame.origin = me;
 
   //get FIR
-  msg.FIR.U = MODULE_ESP32CAN->MBX_CTRL.FCTRL.FIR.U;
+  msg.body.frame.FIR.U = MODULE_ESP32CAN->MBX_CTRL.FCTRL.FIR.U;
 
   //check if this is a standard or extended CAN frame
-  if (msg.FIR.B.FF==CAN_frame_std)
+  if (msg.body.frame.FIR.B.FF==CAN_frame_std)
     { // Standard frame
     //Get Message ID
-    msg.MsgID = ESP32CAN_GET_STD_ID;
+    msg.body.frame.MsgID = ESP32CAN_GET_STD_ID;
     //deep copy data bytes
-    for (int k=0 ; k<msg.FIR.B.DLC ; k++)
-    	msg.data.u8[k] = MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[k];
+    for (int k=0 ; k<msg.body.frame.FIR.B.DLC ; k++)
+    	msg.body.frame.data.u8[k] = MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[k];
     }
   else
     { // Extended frame
     //Get Message ID
-    msg.MsgID = ESP32CAN_GET_EXT_ID;
+    msg.body.frame.MsgID = ESP32CAN_GET_EXT_ID;
     //deep copy data bytes
-    for (int k=0 ; k<msg.FIR.B.DLC ; k++)
-    	msg.data.u8[k] = MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.EXT.data[k];
+    for (int k=0 ; k<msg.body.frame.FIR.B.DLC ; k++)
+    	msg.body.frame.data.u8[k] = MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.EXT.data[k];
     }
 
   //send frame to main CAN processor task

@@ -105,6 +105,25 @@ typedef struct
     } data;
   } CAN_frame_t;
 
+// CAN message type
+typedef enum
+  {
+  CAN_frame = 0,
+  CAN_rxcallback,
+  CAN_txcallback
+  } CAN_MSGID_t;
+
+// CAN message
+typedef struct
+  {
+  CAN_MSGID_t type;
+  union
+    {
+    CAN_frame_t frame;  // CAN_frame
+    canbus* bus;        // CAN_rxcallback, CAN_txcallback
+    } body;
+  } CAN_msg_t;
+
 class canbus : public pcp
   {
   public:
@@ -117,6 +136,8 @@ class canbus : public pcp
 
   public:
     virtual esp_err_t Write(const CAN_frame_t* p_frame);
+    virtual bool RxCallback(CAN_frame_t* frame);
+    virtual void TxCallback();
 
   public:
     CAN_speed_t m_speed;
