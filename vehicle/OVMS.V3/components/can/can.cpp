@@ -235,7 +235,7 @@ can::can()
     }
 
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
-  xTaskCreatePinnedToCore(CAN_rxtask, "CanRxTask", 4096, (void*)this, 5, &m_rxtask, 1);
+  xTaskCreatePinnedToCore(CAN_rxtask, "CanRxTask", 2048, (void*)this, 5, &m_rxtask, 1);
   }
 
 can::~can()
