@@ -37,11 +37,56 @@ static const char *TAG = "webserver";
 
 OvmsWebServer MyWebServer __attribute__ ((init_priority (8200)));
 
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
+static void OvmsWebServerMongooseHandler(struct mg_connection *nc, int ev, void *p)
+  {
+  // ESP_LOGI(TAG, "Event %d",ev);
+  switch (ev)
+    {
+    case MG_EV_HTTP_REQUEST:
+      {
+      struct http_message *h = (struct http_message *)p;
+      std::string method(h->method.p, h->method.len);
+      std::string uri(h->uri.p, h->uri.len);
+      ESP_LOGI(TAG, "HTTP %s %s",method.c_str(),uri.c_str());
+      mg_printf(nc, "%s", "HTTP/1.1 200 OK\r\n\r\nNothing to see here\r\n");
+      nc->flags |= MG_F_SEND_AND_CLOSE;
+      }
+      break;
+    default:
+      break;
+    }
+  }
+
+void OvmsWebServer::NetManInit(std::string event, void* data)
+  {
+  ESP_LOGI(TAG,"Launching Web Server");
+
+  struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
+
+  struct mg_connection *nc = mg_bind(mgr, ":80", OvmsWebServerMongooseHandler);
+  mg_set_protocol_http_websocket(nc);
+  }
+
+void OvmsWebServer::NetManStop(std::string event, void* data)
+  {
+  ESP_LOGI(TAG,"Stopping Web Server");
+  }
+
+#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
 OvmsWebServer::OvmsWebServer()
   {
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   ESP_LOGI(TAG, "Initialising WEBSERVER (8200)");
   ESP_LOGI(TAG, "Using MONGOOSE engine");
+
+  #undef bind  // Kludgy, but works
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG,"network.mgr.init", std::bind(&OvmsWebServer::NetManInit, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"network.mgr.stop", std::bind(&OvmsWebServer::NetManStop, this, _1, _2));
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   }
 
