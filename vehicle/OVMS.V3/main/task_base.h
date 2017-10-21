@@ -49,7 +49,7 @@ class Parent
     ~Parent();
 
   protected:
-    void AddChild(TaskBase* child);
+    bool AddChild(TaskBase* child);
     void DeleteChildren();
 
   public:
@@ -69,10 +69,12 @@ class TaskBase
     virtual ~TaskBase();
 
   protected:
-    void CreateTask(const char* name, int stack = DEFAULT_STACK,
-                    UBaseType_t priority = DEFAULT_PRIORITY);
-    void CreateTaskPinned(const BaseType_t core, const char* name, int stack = DEFAULT_STACK,
-                          UBaseType_t priority = DEFAULT_PRIORITY);
+    friend class Parent;
+    virtual bool Instantiate() = 0;
+    BaseType_t CreateTask(const char* name, int stack = DEFAULT_STACK,
+      UBaseType_t priority = DEFAULT_PRIORITY);
+    BaseType_t CreateTaskPinned(const BaseType_t core, const char* name, int stack = DEFAULT_STACK,
+      UBaseType_t priority = DEFAULT_PRIORITY);
     static void Task(void *object);
     virtual void Service() = 0;
     virtual void Cleanup();

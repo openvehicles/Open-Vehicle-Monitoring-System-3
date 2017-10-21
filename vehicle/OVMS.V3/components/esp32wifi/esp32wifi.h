@@ -34,7 +34,6 @@
 #include <string>
 #include <stdint.h>
 #include "pcp.h"
-#include "task_base.h"
 #include "esp_err.h"
 #include "esp_wifi.h"
 #include "ovms_events.h"
@@ -47,7 +46,7 @@ typedef enum {
     ESP32WIFI_MODE_MAX
 } esp32wifi_mode_t;
 
-class esp32wifi : public pcp, public Parent
+class esp32wifi : public pcp
   {
   public:
     esp32wifi(const char* name);

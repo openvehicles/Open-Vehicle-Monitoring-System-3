@@ -59,11 +59,6 @@ OvmsConsole::~OvmsConsole()
 
 void OvmsConsole::Initialize(const char* console)
   {
-  std::string task = "Console";
-  task += console;
-  task += "Task";
-  CreateTaskPinned(1, task.c_str(), 5000);
-
   printf("\n\033[32mWelcome to the Open Vehicle Monitoring System (OVMS) - %s Console\033[0m", console);
   OvmsShell::Initialize(true);
   microrl_set_complete_callback(&m_rl, Complete);

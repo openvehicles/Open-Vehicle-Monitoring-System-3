@@ -39,11 +39,17 @@ Parent::~Parent()
   vSemaphoreDelete(m_mutex);
   }
 
-void Parent::AddChild(TaskBase* child)
+bool Parent::AddChild(TaskBase* child)
   {
+  if (!child->Instantiate())
+    {
+    delete child;
+    return false;
+    }
   xSemaphoreTake(m_mutex, portMAX_DELAY);
   m_children.push_front(child);
   xSemaphoreGive(m_mutex);
+  return true;
   }
 
 // This function would typically be called from the child's task to divorce
@@ -97,20 +103,21 @@ void Parent::DeleteChildren()
 TaskBase::TaskBase(Parent* parent)
   {
   m_parent = parent;
+  m_taskid = 0;
   }
 
 TaskBase::~TaskBase()
   {
   }
 
-void TaskBase::CreateTask(const char* name, int stack, UBaseType_t priority)
+BaseType_t TaskBase::CreateTask(const char* name, int stack, UBaseType_t priority)
   {
-  xTaskCreate(Task, name, stack, (void*)this, priority, &m_taskid);
+  return xTaskCreate(Task, name, stack, (void*)this, priority, &m_taskid);
   }
 
-void TaskBase::CreateTaskPinned(const BaseType_t core, const char* name, int stack, UBaseType_t priority)
+BaseType_t TaskBase::CreateTaskPinned(const BaseType_t core, const char* name, int stack, UBaseType_t priority)
   {
-  xTaskCreatePinnedToCore(Task, name, stack, (void*)this, priority, &m_taskid, core);
+  return xTaskCreatePinnedToCore(Task, name, stack, (void*)this, priority, &m_taskid, core);
   }
 
 void TaskBase::Task(void *object)
@@ -134,7 +141,8 @@ void TaskBase::DeleteFromParent()
     {
     TaskHandle_t taskid = m_taskid;
     delete this;
-    vTaskDelete(taskid);
+    if (taskid)
+      vTaskDelete(taskid);
     }
   }
 
@@ -144,6 +152,7 @@ void TaskBase::DeleteFromParent()
 void TaskBase::DeleteTask()
   {
   Cleanup();
-  vTaskDelete(m_taskid);
+  if (m_taskid)
+    vTaskDelete(m_taskid);
   delete this;
   }

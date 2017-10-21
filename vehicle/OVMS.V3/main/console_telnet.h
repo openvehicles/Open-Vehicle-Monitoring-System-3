@@ -39,6 +39,16 @@
 
 class ConsoleTelnet;
 
+class OvmsTelnet : public Parent
+  {
+  public:
+    OvmsTelnet();
+
+  public:
+    void WifiUp(std::string event, void* data);
+    void WifiDown(std::string event, void* data);
+  };
+
 class TelnetServer : public TaskBase, public Parent
   {
   public:
@@ -46,6 +56,7 @@ class TelnetServer : public TaskBase, public Parent
     ~TelnetServer();
 
   private:
+    bool Instantiate();
     void Service();
     void Cleanup();
 
@@ -60,6 +71,7 @@ class TelnetReceiver : public TaskBase
     ~TelnetReceiver();
 
   private:
+    bool Instantiate();
     void Service();
 
   protected:
@@ -81,6 +93,7 @@ class ConsoleTelnet : public OvmsConsole, public Parent
     ssize_t write(const void *buf, size_t nbyte);
 
   private:
+    bool Instantiate();
     void HandleDeviceEvent(void* pEvent);
     static void TelnetCallback(telnet_t *telnet, telnet_event_t *event, void *userData);
     void TelnetHandler(telnet_event_t *event);

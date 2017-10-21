@@ -50,6 +50,7 @@ class ConsoleAsync : public OvmsConsole
     static int Log(const char* fmt, ...);
 
   private:
+    bool Instantiate();
     static int ConsoleLogger(const char* fmt, va_list arg);
     void Log(char* message);
     void HandleDeviceEvent(void* pEvent);

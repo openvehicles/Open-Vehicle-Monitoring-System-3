@@ -35,8 +35,10 @@
 #include <errno.h>
 #include <lwip/def.h>
 #include <lwip/sockets.h>
+#undef bind
 #include "freertos/queue.h"
 #include "esp_log.h"
+#include "ovms_events.h"
 #include "console_telnet.h"
 
 //#define LOGEVENTS
@@ -48,6 +50,36 @@ static const char *tag = "telnet";
 static const char newline = '\n';
 
 //-----------------------------------------------------------------------------
+//    Class OvmsTelnet
+//-----------------------------------------------------------------------------
+
+OvmsTelnet MyTelnet __attribute__ ((init_priority (8300)));
+
+OvmsTelnet::OvmsTelnet()
+  {
+  ESP_LOGI(tag, "Initialising Telnet (8300)");
+
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(tag,"system.wifi.sta.gotip", std::bind(&OvmsTelnet::WifiUp, this, _1, _2));
+  MyEvents.RegisterEvent(tag,"system.wifi.ap.start", std::bind(&OvmsTelnet::WifiUp, this, _1, _2));
+  MyEvents.RegisterEvent(tag,"system.wifi.sta.stop", std::bind(&OvmsTelnet::WifiDown, this, _1, _2));
+  MyEvents.RegisterEvent(tag,"system.wifi.ap.stop", std::bind(&OvmsTelnet::WifiDown, this, _1, _2));
+  }
+
+void OvmsTelnet::WifiUp(std::string event, void* data)
+  {
+  ESP_LOGI(tag, "Launching Telnet Server");
+  AddChild(new TelnetServer(this));
+  }
+
+void OvmsTelnet::WifiDown(std::string event, void* data)
+  {
+  ESP_LOGI(tag, "Stopping Telnet Server");
+  DeleteChildren();
+  }
+
+//-----------------------------------------------------------------------------
 //    Class TelnetServer
 //-----------------------------------------------------------------------------
 
@@ -55,7 +87,16 @@ TelnetServer::TelnetServer(Parent* parent)
   : TaskBase(parent)
   {
   m_socket = -1;
-  CreateTaskPinned(1, "TelnetServerTask");
+  }
+
+bool TelnetServer::Instantiate()
+  {
+  if (CreateTaskPinned(1, "TSTelnetServer", 3000) != pdPASS)
+    {
+    ::printf("\nInsufficient memory to create TelnetServer task\n");
+    return false;
+    }
+  return true;
   }
 
 TelnetServer::~TelnetServer()
@@ -76,7 +117,7 @@ void TelnetServer::Service()
   serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
   serverAddr.sin_port = htons(23);
 
-  int rc = bind(m_socket, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
+  int rc = lwip_bind(m_socket, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
   if (rc < 0) {
     ESP_LOGE(tag, "bind socket %d: %d (%s)", m_socket, errno, strerror(errno));
     return;
@@ -146,7 +187,16 @@ TelnetReceiver::TelnetReceiver(ConsoleTelnet* parent, int socket, char* buffer,
   m_buffer = buffer;
   m_queue = queue;
   m_semaphore = sem;
-  CreateTaskPinned(1, "TelnetReceiverTask");
+  }
+
+bool TelnetReceiver::Instantiate()
+  {
+  if (CreateTaskPinned(1, "TRTelnetReceiver", 1000) != pdPASS)
+    {
+    ::printf("\nInsufficient memory to create TelnetReceiver task\n");
+    return false;
+    }
+  return true;
   }
 
 TelnetReceiver::~TelnetReceiver()
@@ -199,14 +249,10 @@ ConsoleTelnet::ConsoleTelnet(TelnetServer* server, int socket)
     { -1, 0, 0 }
     };
   m_telnet = telnet_init(options, TelnetCallback, TELNET_FLAG_NVT_EOL, (void*)this);
-  AddChild(new TelnetReceiver(this, socket, m_buffer, m_queue, m_semaphore));
-  telnet_negotiate(m_telnet, TELNET_WILL, TELNET_TELOPT_ECHO);
-
-  Initialize("Telnet");
   }
 
 // This destructor may be called by ConsoleTelnetTask to delete itself or by
-// TelnetServerTask if the server gets shut down, but not by TelnetReceiverTask.
+// TelnetServer task if the server gets shut down, but not by TelnetReceiver task.
 
 ConsoleTelnet::~ConsoleTelnet()
   {
@@ -221,6 +267,23 @@ ConsoleTelnet::~ConsoleTelnet()
   telnet_free(telnet);
   vSemaphoreDelete(m_semaphore);
   vQueueDelete(m_queue);
+  }
+
+bool ConsoleTelnet::Instantiate()
+  {
+  if (AddChild(new TelnetReceiver(this, m_socket, m_buffer, m_queue, m_semaphore)))
+    {
+    telnet_negotiate(m_telnet, TELNET_WILL, TELNET_TELOPT_ECHO);
+    if (CreateTaskPinned(1, "TelnetConsole", 4000) == pdPASS)
+      {
+      Initialize("Telnet");
+      return true;
+      }
+    else
+      ::printf("\nInsufficient memory to create TelnetConsole task\n");
+    }
+  printf("Insufficient memory for connection\n");
+  return false;
   }
 
 int ConsoleTelnet::puts(const char* s)

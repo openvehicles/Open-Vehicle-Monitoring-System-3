@@ -257,7 +257,6 @@ void esp32wifi::StopStation()
   {
   if (m_mode != ESP32WIFI_MODE_OFF)
     {
-    DeleteChildren();
     if (m_mode == ESP32WIFI_MODE_CLIENT)
       { ESP_ERROR_CHECK(esp_wifi_disconnect()); }
     ESP_ERROR_CHECK(esp_wifi_stop());
@@ -304,8 +303,6 @@ void esp32wifi::EventWifiGotIp(std::string event, void* data)
   {
   system_event_info_t *info = (system_event_info_t*)data;
   m_ip_info = info->got_ip.ip_info;
-  ESP_LOGI(TAG, "Launching telnet server");
-  AddChild(new TelnetServer(this));
   }
 
 void esp32wifi::EventWifiScanDone(std::string event, void* data)

@@ -63,12 +63,24 @@ ConsoleAsync::ConsoleAsync()
   // Install UART driver, and get the queue.
   uart_driver_install(EX_UART_NUM, BUF_SIZE * 2, BUF_SIZE * 2, 30, &m_queue, 0);
 
+  if (!Instantiate())
+    return;
   Initialize("Async");
   esp_log_set_vprintf(ConsoleLogger);
   }
 
 ConsoleAsync::~ConsoleAsync()
   {
+  }
+
+bool ConsoleAsync::Instantiate()
+  {
+  if (CreateTaskPinned(1, "AsyncConsole", 4000) != pdPASS)
+    {
+    printf("\nInsufficient memory to create async console task\n");
+    return false;
+    }
+  return true;
   }
 
 int ConsoleAsync::puts(const char* s)
