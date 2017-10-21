@@ -91,6 +91,13 @@ config OVMS_VEHICLE_NISSANLEAF
     help
         Enable to include support for Nissan Leaf vehicles.
 
+config OVMS_VEHICLE_RENAULTTWIZY
+    bool "Include support for Renault Twizy vehicles"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Renault Twizy vehicles.
+
 endmenu # Vehicle Support
 
 menu "Component Options"
