@@ -37,6 +37,7 @@ static const char *TAG = "esp32wifi";
 #include "esp_wifi.h"
 #include "ovms_config.h"
 #include "ovms_peripherals.h"
+#include "ovms_events.h"
 #include "console_telnet.h"
 
 void wifi_mode_client(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -199,6 +200,10 @@ void esp32wifi::SetPowerMode(PowerMode powermode)
 
 void esp32wifi::StartClientMode(std::string ssid, std::string password, uint8_t* bssid)
   {
+  if (m_mode == ESP32WIFI_MODE_AP)
+    {
+    MyEvents.SignalEvent("system.wifi.down",NULL);
+    }
   m_mode = ESP32WIFI_MODE_CLIENT;
 
   if (m_powermode != On)
@@ -229,6 +234,10 @@ void esp32wifi::StartClientMode(std::string ssid, std::string password, uint8_t*
 
 void esp32wifi::StartAccessPointMode(std::string ssid, std::string password)
   {
+  if (m_mode == ESP32WIFI_MODE_CLIENT)
+    {
+    MyEvents.SignalEvent("system.wifi.down",NULL);
+    }
   m_mode = ESP32WIFI_MODE_AP;
 
   if (m_powermode != On)
@@ -257,6 +266,7 @@ void esp32wifi::StopStation()
   {
   if (m_mode != ESP32WIFI_MODE_OFF)
     {
+    MyEvents.SignalEvent("system.wifi.down",NULL);
     if (m_mode == ESP32WIFI_MODE_CLIENT)
       { ESP_ERROR_CHECK(esp_wifi_disconnect()); }
     ESP_ERROR_CHECK(esp_wifi_stop());

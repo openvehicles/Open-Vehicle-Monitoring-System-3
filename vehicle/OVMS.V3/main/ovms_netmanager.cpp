@@ -58,6 +58,7 @@ OvmsNetManager::OvmsNetManager()
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.gotip", std::bind(&OvmsNetManager::WifiUp, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.stop", std::bind(&OvmsNetManager::WifiDown, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.stop", std::bind(&OvmsNetManager::WifiDown, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.wifi.down", std::bind(&OvmsNetManager::WifiDown, this, _1, _2));
   }
 
 OvmsNetManager::~OvmsNetManager()
@@ -78,16 +79,19 @@ void OvmsNetManager::WifiUp(std::string event, void* data)
 
 void OvmsNetManager::WifiDown(std::string event, void* data)
   {
-  m_connected_wifi = false;
-  m_connected_any = m_connected_wifi || m_connected_modem;
-  if (!m_connected_any)
+  if (m_connected_wifi)
     {
-    StandardMetrics.ms_m_net_type->SetValue("none");
-    StandardMetrics.ms_m_net_provider->SetValue("");
-    MyEvents.SignalEvent("network.down",NULL);
+    m_connected_wifi = false;
+    m_connected_any = m_connected_wifi || m_connected_modem;
+    if (!m_connected_any)
+      {
+      StandardMetrics.ms_m_net_type->SetValue("none");
+      StandardMetrics.ms_m_net_provider->SetValue("");
+      MyEvents.SignalEvent("network.down",NULL);
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-    StopMongooseTask();
+      StopMongooseTask();
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+      }
     }
   }
 
