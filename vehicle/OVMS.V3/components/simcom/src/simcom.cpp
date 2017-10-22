@@ -278,6 +278,8 @@ void simcom::State1Enter(SimcomState1 newstate)
     case PoweredOn:
       ESP_LOGI(TAG,"State: Enter PoweredOn state");
       pcp::SetPowerMode(On);
+      m_state1_timeout_ticks = 30;
+      m_state1_timeout_goto = PoweringOn;
       break;
     case MuxMode:
       m_mux.Start();
@@ -316,7 +318,7 @@ simcom::SimcomState1 simcom::State1Activity()
     case PoweredOn:
       if (StandardIncomingHandler(&m_buffer))
         {
-        if (m_state1_ticker >= 15) return MuxMode;
+        if (m_state1_ticker >= 20) return MuxMode;
         }
       break;
     case MuxMode:
@@ -359,7 +361,23 @@ simcom::SimcomState1 simcom::State1Ticker1()
           tx("AT+CGMR;+ICCID\r\n");
           break;
         case 15:
-          tx("AT+CMUXSRVPORT=0,0;+CMUXSRVPORT=1,5;+CMUXSRVPORT=2,1;+CMUXSRVPORT=3,1;+CMUX=0\r\n");
+          tx("AT+COPS?");
+          break;
+        case 16:
+          tx("AT+CMUXSRVPORT=3,1\r\n");
+          break;
+        case 17:
+          tx("AT+CMUXSRVPORT=2,1\r\n");
+          break;
+        case 18:
+          tx("AT+CMUXSRVPORT=1,1\r\n");
+          break;
+        case 19:
+          tx("AT+CMUXSRVPORT=0,5\r\n");
+          break;
+        case 20:
+          tx("AT+CMUX=0\r\n");
+          break;
         default:
           break;
         }

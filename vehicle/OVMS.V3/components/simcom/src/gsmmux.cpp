@@ -147,7 +147,7 @@ void GsmMuxChannel::ProcessFrame(uint8_t* frame, size_t length, size_t iframepos
         ESP_LOGI(TAG, "Channel #%d is open",m_channel);
         m_state = ChanOpen; // SABM established
         if (m_channel==0) m_mux->m_state = GsmMux::DlciOpen;
-        if (m_channel<3) m_mux->StartChannel(m_channel+1);
+        if (m_channel<4) m_mux->StartChannel(m_channel+1);
         }
     case ChanOpen:
       if (frame[1] == (GSM_UIH + GSM_PF))
@@ -188,6 +188,7 @@ void GsmMux::Start()
   m_channels.insert(m_channels.end(),new GsmMuxChannel(this,1,1024));
   m_channels.insert(m_channels.end(),new GsmMuxChannel(this,2,1024));
   m_channels.insert(m_channels.end(),new GsmMuxChannel(this,3,1024));
+  m_channels.insert(m_channels.end(),new GsmMuxChannel(this,4,1024));
   StartChannel(0);
   m_state = DlciOpening;
   }
