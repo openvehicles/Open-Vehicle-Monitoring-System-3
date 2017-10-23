@@ -60,5 +60,5 @@ OvmsVehicleKiaSoulEvInit::OvmsVehicleKiaSoulEvInit()
   {
   ESP_LOGI(TAG, "Registering Vehicle: Kia Soul EV (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleKiaSoulEv>("NL");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleKiaSoulEv>("KS");
   }
