@@ -98,6 +98,13 @@ config OVMS_VEHICLE_RENAULTTWIZY
     help
         Enable to include support for Renault Twizy vehicles.
 
+config OVMS_VEHICLE_KIASOULEV
+    bool "Include support for Kia Soul EV vehicles"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Kia Soul EV vehicles.
+
 endmenu # Vehicle Support
 
 menu "Component Options"
