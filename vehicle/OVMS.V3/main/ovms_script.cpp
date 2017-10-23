@@ -104,7 +104,6 @@ void OvmsScripts::AllScripts(std::string path)
         {
         ESP_LOGI(TAG, "Running script %s", fpath.c_str());
         script_ovms(false, COMMAND_RESULT_MINIMAL, ConsoleAsync::Instance(), sf);
-        fclose(sf);
         }
       }
     closedir(dir);
