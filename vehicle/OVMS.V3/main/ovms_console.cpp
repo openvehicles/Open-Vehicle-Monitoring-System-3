@@ -188,11 +188,11 @@ void OvmsConsole::Service()
           state = NO_NL;
           write(buffer, len);
           }
-        if (event.type == ALERT_MULTI)
-          event.multi->release();
-        else
-          free(event.buffer);
         }
+      if (event.type == ALERT_MULTI)
+        event.multi->release();
+      else
+        free(event.buffer);
       ticks = 200 / portTICK_PERIOD_MS;
       }
     else
