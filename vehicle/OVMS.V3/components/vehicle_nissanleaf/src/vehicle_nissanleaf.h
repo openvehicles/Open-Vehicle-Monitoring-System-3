@@ -7,7 +7,8 @@
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
-;    (C) 2011        Sonny Chen @ EPRO/DX
+;    (C) 2011       Sonny Chen @ EPRO/DX
+;    (C) 2017       Tom Parker
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +35,10 @@
 #include "can.h"
 #include "vehicle.h"
 
+#define GEN_1_NEW_CAR_GIDS 281l
+#define GEN_1_NEW_CAR_GIDS_S "281"
+#define GEN_1_NEW_CAR_RANGE_MILES 84
+
 using namespace std;
 
 class OvmsVehicleNissanLeaf : public OvmsVehicle
@@ -47,6 +52,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
 
   private:
     void IncomingFrameEVBus(CAN_frame_t* p_frame);
+    void Ticker1(std::string event, void* data);
 
   protected:
 
