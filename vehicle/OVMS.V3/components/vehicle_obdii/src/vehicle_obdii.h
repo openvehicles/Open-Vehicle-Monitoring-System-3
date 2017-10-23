@@ -41,6 +41,12 @@ class OvmsVehicleOBDII : public OvmsVehicle
     OvmsVehicleOBDII();
     ~OvmsVehicleOBDII();
 
+  protected:
+    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+
+  protected:
+    char m_vin[18];
+
   public:
     const std::string VehicleName();
   };
