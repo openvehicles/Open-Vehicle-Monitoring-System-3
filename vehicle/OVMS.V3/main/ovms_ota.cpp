@@ -194,7 +194,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     url = "api.openvehicles.com/firmware/ota/";
 #ifdef CONFIG_OVMS_HW_BASE_3_0
     url.append("v3/");
-#enndif //#ifdef CONFIG_OVMS_HW_BASE_3_0
+#endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
     url.append(CONFIG_OVMS_VERSION_TAG);
     url.append("/ovms3.bin");
     }
