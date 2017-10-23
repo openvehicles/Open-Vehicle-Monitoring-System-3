@@ -7,7 +7,8 @@
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
-;    (C) 2011        Sonny Chen @ EPRO/DX
+;    (C) 2011       Sonny Chen @ EPRO/DX
+;    (C) 2017       Tom Parker
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -38,10 +39,6 @@ static const char *TAG = "v-nissanleaf";
 #include "ovms_events.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
-
-#define GEN_1_NEW_CAR_GIDS 281l
-#define GEN_1_NEW_CAR_GIDS_S "281"
-#define GEN_1_NEW_CAR_RANGE_MILES 84
 
 typedef enum
   {
