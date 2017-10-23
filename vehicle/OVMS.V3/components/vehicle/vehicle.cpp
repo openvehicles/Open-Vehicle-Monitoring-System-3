@@ -101,15 +101,97 @@ void OvmsVehicleFactory::SetVehicle(std::string type)
   StandardMetrics.ms_v_type->SetValue(type.c_str());
   }
 
+static void OvmsVehicleRxTask(void *pvParameters)
+  {
+  OvmsVehicle *me = (OvmsVehicle*)pvParameters;
+  me->RxTask();
+  }
+
 OvmsVehicle::OvmsVehicle()
   {
+  m_can1 = NULL;
+  m_can2 = NULL;
+  m_can3 = NULL;
+  m_registeredlistener = false;
+
+  m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
+  xTaskCreatePinnedToCore(OvmsVehicleRxTask, "Vrx Task", 4096, (void*)this, 5, &m_rxtask, 1);
   }
 
 OvmsVehicle::~OvmsVehicle()
   {
+  if (m_can1) m_can1->SetPowerMode(Off);
+  if (m_can2) m_can2->SetPowerMode(Off);
+  if (m_can3) m_can3->SetPowerMode(Off);
+
+  if (m_registeredlistener)
+    {
+    MyCan.DeregisterListener(m_rxqueue);
+    m_registeredlistener = false;
+    }
+
+  vQueueDelete(m_rxqueue);
+  vTaskDelete(m_rxtask);
   }
 
 const std::string OvmsVehicle::VehicleName()
   {
   return std::string("unknown");
+  }
+
+void OvmsVehicle::RxTask()
+  {
+  CAN_frame_t frame;
+
+  while(1)
+    {
+    if (xQueueReceive(m_rxqueue, &frame, (portTickType)portMAX_DELAY)==pdTRUE)
+      {
+      if (m_can1 == frame.origin) IncomingFrameCan1(&frame);
+      else if (m_can2 == frame.origin) IncomingFrameCan2(&frame);
+      else if (m_can3 == frame.origin) IncomingFrameCan3(&frame);
+      }
+    }
+  }
+
+void OvmsVehicle::IncomingFrameCan1(CAN_frame_t* p_frame)
+  {
+  }
+
+void OvmsVehicle::IncomingFrameCan2(CAN_frame_t* p_frame)
+  {
+  }
+
+void OvmsVehicle::IncomingFrameCan3(CAN_frame_t* p_frame)
+  {
+  }
+
+void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed)
+  {
+  switch (bus)
+    {
+    case 1:
+      m_can1 = (canbus*)MyPcpApp.FindDeviceByName("can1");
+      m_can1->SetPowerMode(On);
+      m_can1->Start(mode,speed);
+      break;
+    case 2:
+      m_can2 = (canbus*)MyPcpApp.FindDeviceByName("can2");
+      m_can2->SetPowerMode(On);
+      m_can2->Start(mode,speed);
+      break;
+    case 3:
+      m_can3 = (canbus*)MyPcpApp.FindDeviceByName("can3");
+      m_can3->SetPowerMode(On);
+      m_can3->Start(mode,speed);
+      break;
+    default:
+      break;
+    }
+
+  if (!m_registeredlistener)
+    {
+    m_registeredlistener = true;
+    MyCan.RegisterListener(m_rxqueue);
+    }
   }

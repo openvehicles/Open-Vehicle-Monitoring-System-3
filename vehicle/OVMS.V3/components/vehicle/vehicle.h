@@ -33,6 +33,7 @@
 
 #include <map>
 #include <string>
+#include "can.h"
 
 using namespace std;
 
@@ -42,7 +43,24 @@ class OvmsVehicle
     OvmsVehicle();
     virtual ~OvmsVehicle();
 
+  protected:
+    canbus* m_can1;
+    canbus* m_can2;
+    canbus* m_can3;
+    QueueHandle_t m_rxqueue;
+    TaskHandle_t m_rxtask;
+    bool m_registeredlistener;
+
+  protected:
+    virtual void IncomingFrameCan1(CAN_frame_t* p_frame);
+    virtual void IncomingFrameCan2(CAN_frame_t* p_frame);
+    virtual void IncomingFrameCan3(CAN_frame_t* p_frame);
+
+  protected:
+    void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed);
+
   public:
+    virtual void RxTask();
     virtual const std::string VehicleName();
   };
 
