@@ -42,6 +42,7 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
     void IncomingFrameCan2(CAN_frame_t* p_frame);
+    void Ticker1(std::string event, void* data);
 
   protected:
 
