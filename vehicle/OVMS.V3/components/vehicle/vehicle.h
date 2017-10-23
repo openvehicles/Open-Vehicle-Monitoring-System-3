@@ -33,8 +33,26 @@
 
 #include <map>
 #include <string>
+#include "can.h"
+#include "ovms_events.h"
+#include "ovms_metrics.h"
+#include "metrics_standard.h"
 
 using namespace std;
+
+// Polling types supported:
+//  (see https://en.wikipedia.org/wiki/OBD-II_PIDs
+//   and https://en.wikipedia.org/wiki/Unified_Diagnostic_Services)
+
+#define VEHICLE_POLL_TYPE_NONE          0x00
+#define VEHICLE_POLL_TYPE_OBDIICURRENT  0x01 // Mode 01 "current data"
+#define VEHICLE_POLL_TYPE_OBDIIFREEZE   0x02 // Mode 02 "freeze frame data"
+#define VEHICLE_POLL_TYPE_OBDIIVEHICLE  0x09 // Mode 09 "vehicle information"
+#define VEHICLE_POLL_TYPE_OBDIISESSION  0x10 // UDS: Diagnostic Session Control
+#define VEHICLE_POLL_TYPE_OBDIIGROUP    0x21 // enhanced data by 8 bit PID
+#define VEHICLE_POLL_TYPE_OBDIIEXTENDED 0x22 // enhanced data by 16 bit PID
+
+#define VEHICLE_POLL_NSTATES            4
 
 class OvmsVehicle
   {
@@ -42,8 +60,69 @@ class OvmsVehicle
     OvmsVehicle();
     virtual ~OvmsVehicle();
 
+  protected:
+    canbus* m_can1;
+    canbus* m_can2;
+    canbus* m_can3;
+    QueueHandle_t m_rxqueue;
+    TaskHandle_t m_rxtask;
+    bool m_registeredlistener;
+
+  private:
+    void VehicleTicker1(std::string event, void* data);
+    void PollerSend();
+    void PollerReceive(CAN_frame_t* frame);
+
+  protected:
+    virtual void IncomingFrameCan1(CAN_frame_t* p_frame);
+    virtual void IncomingFrameCan2(CAN_frame_t* p_frame);
+    virtual void IncomingFrameCan3(CAN_frame_t* p_frame);
+    virtual void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+
+  protected:
+    uint32_t m_ticker;
+    virtual void Ticker1(uint32_t ticker);
+    virtual void Ticker10(uint32_t ticker);
+    virtual void Ticker60(uint32_t ticker);
+    virtual void Ticker300(uint32_t ticker);
+    virtual void Ticker600(uint32_t ticker);
+    virtual void Ticker3600(uint32_t ticker);
+
+  protected:
+    void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed);
+
   public:
+    virtual void RxTask();
     virtual const std::string VehicleName();
+
+  public:
+    typedef struct
+      {
+      uint32_t txmoduleid;
+      uint32_t rxmoduleid;
+      uint16_t type;
+      uint16_t pid;
+      uint16_t polltime[VEHICLE_POLL_NSTATES];
+      } poll_pid_t;
+
+  protected:
+    uint8_t       m_poll_state;                 // Current poll state
+    canbus*       m_poll_bus;                   // Bus to poll on
+    poll_pid_t*   m_poll_plist;                 // Head of poll list
+    poll_pid_t*   m_poll_plcur;                 // Current position in poll list
+    uint32_t      m_poll_ticker;                // Polling ticker
+    uint32_t      m_poll_moduleid_sent;         // ModuleID last sent
+    uint32_t      m_poll_moduleid_low;          // Expected response moduleid low mark
+    uint32_t      m_poll_moduleid_high;         // Expected response moduleid high mark
+    uint16_t      m_poll_type;                  // Expected type
+    uint16_t      m_poll_pid;                   // Expected PID
+    uint16_t      m_poll_ml_remain;             // Bytes remainign for ML poll
+    uint16_t      m_poll_ml_offset;             // Offset of ML poll
+    uint16_t      m_poll_ml_frame;              // Frame number for ML poll
+
+  protected:
+    void PollSetPidList(canbus* bus, poll_pid_t* plist);
+    void PollSetState(uint8_t state);
   };
 
 template<typename Type> OvmsVehicle* CreateVehicle()

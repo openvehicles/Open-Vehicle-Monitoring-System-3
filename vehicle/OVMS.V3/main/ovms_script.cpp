@@ -39,7 +39,6 @@ static const char *TAG = "script";
 #include "ovms_command.h"
 #include "ovms_events.h"
 #include "console_async.h"
-#include "log_buffers.h"
 #include "buffered_shell.h"
 
 OvmsScripts MyScripts __attribute__ ((init_priority (1600)));
@@ -84,7 +83,7 @@ static void script_run(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int 
     writer->puts("Error: Script not found");
     return;
     }
-  script_ovms(true, verbosity, writer, sf);
+  script_ovms(verbosity != COMMAND_RESULT_MINIMAL, verbosity, writer, sf);
   }
 
 void OvmsScripts::AllScripts(std::string path)
@@ -105,7 +104,6 @@ void OvmsScripts::AllScripts(std::string path)
         {
         ESP_LOGI(TAG, "Running script %s", fpath.c_str());
         script_ovms(false, COMMAND_RESULT_MINIMAL, ConsoleAsync::Instance(), sf);
-        fclose(sf);
         }
       }
     closedir(dir);

@@ -147,44 +147,47 @@ void OvmsConsole::Service()
       // without leaving a blank line above it.  So before we display a new log
       // message we need to output a newline if the last action was displaying a
       // log message, or output a carriage return to back over the prompt.
-      if (state == AWAITING_NL)
-        write(NLbuf, 1);
-      else if (state == AT_PROMPT)
-        write(CRbuf, 1);
-      char* buffer;
-      size_t len;
-      if (event.type == ALERT_MULTI)
+      if (event.type != ALERT_MULTI || event.multi->begin() != event.multi->end())
         {
-        LogBuffers::iterator before = event.multi->begin(), after;
-        while (true)
+        if (state == AWAITING_NL)
+          write(NLbuf, 1);
+        else if (state == AT_PROMPT)
+          write(CRbuf, 1);
+        char* buffer;
+        size_t len;
+        if (event.type == ALERT_MULTI)
           {
-          buffer = *before;
-          len = strlen(buffer);
-          after = before;
-          ++after;
-          if (after == event.multi->end())
-            break;
-          write(buffer, len);
-          before = after;
+          LogBuffers::iterator before = event.multi->begin(), after;
+          while (true)
+            {
+            buffer = *before;
+            len = strlen(buffer);
+            after = before;
+            ++after;
+            if (after == event.multi->end())
+              break;
+            write(buffer, len);
+            before = after;
+            }
           }
-        }
-      else
-        {
-        buffer = event.buffer;
-        len = strlen(buffer);
-        }
-      if (buffer[len-1] == '\n')
-        {
-        buffer[--len] = '\0';
-        if (buffer[len-1] == '\r')  // Remove CR, too, in case of \r\n
+        else
+          {
+          buffer = event.buffer;
+          len = strlen(buffer);
+          }
+        if (buffer[len-1] == '\n')
+          {
           buffer[--len] = '\0';
-        state = AWAITING_NL;
-        write(buffer, len);
-        }
-      else
-        {
-        state = NO_NL;
-        write(buffer, len);
+          if (buffer[len-1] == '\r')  // Remove CR, too, in case of \r\n
+            buffer[--len] = '\0';
+          state = AWAITING_NL;
+          write(buffer, len);
+          }
+        else
+          {
+          state = NO_NL;
+          write(buffer, len);
+          }
         }
       if (event.type == ALERT_MULTI)
         event.multi->release();

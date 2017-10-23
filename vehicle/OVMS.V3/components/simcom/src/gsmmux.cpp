@@ -31,6 +31,7 @@
 #include "esp_log.h"
 static const char *TAG = "gsm-mux";
 
+#include <string.h>
 #include "gsmmux.h"
 #include "simcom.h"
 
@@ -342,4 +343,12 @@ void GsmMux::tx(int channel, uint8_t* data, ssize_t size)
   buf[ipos+size+1] = GSM0_SOF;
   txfcs(buf,ipos+size+2,ipos);
   delete [] buf;
+  }
+
+void GsmMux::tx(int channel, const char* data, ssize_t size)
+  {
+  if (size >= 0)
+    tx(channel, (uint8_t*)data,size);
+  else
+    tx(channel, (uint8_t*)data,strlen(data));
   }

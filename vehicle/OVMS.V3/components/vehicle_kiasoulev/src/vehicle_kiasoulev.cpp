@@ -46,6 +46,14 @@ OvmsVehicleKiaSoulEv::~OvmsVehicleKiaSoulEv()
   ESP_LOGI(TAG, "Shutdown Kia Soul EV vehicle module");
   }
 
+void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
+  {
+  }
+
+void OvmsVehicleKiaSoulEv::IncomingFrameCan2(CAN_frame_t* p_frame)
+  {
+  }
+
 const std::string OvmsVehicleKiaSoulEv::VehicleName()
   {
   return std::string("Kia Soul EV");
@@ -60,5 +68,5 @@ OvmsVehicleKiaSoulEvInit::OvmsVehicleKiaSoulEvInit()
   {
   ESP_LOGI(TAG, "Registering Vehicle: Kia Soul EV (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleKiaSoulEv>("NL");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleKiaSoulEv>("KS");
   }

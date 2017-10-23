@@ -31,7 +31,6 @@
 #ifndef __VEHICLE_TESLAROADSTER_H__
 #define __VEHICLE_TESLAROADSTER_H__
 
-#include "can.h"
 #include "vehicle.h"
 
 using namespace std;
@@ -43,16 +42,13 @@ class OvmsVehicleTeslaRoadster : public OvmsVehicle
     ~OvmsVehicleTeslaRoadster();
 
   public:
-    void IncomingFrame(CAN_frame_t* p_frame);
+    void IncomingFrameCan1(CAN_frame_t* p_frame);
 
   protected:
     char m_vin[18];
     char m_type[5];
 
   public:
-    canbus* m_can1;
-    QueueHandle_t m_rxqueue;
-    TaskHandle_t m_rxtask;
     const std::string VehicleName();
   };
 

@@ -89,6 +89,14 @@ class simcom : public pcp
       {
       SETSTATE = UART_EVENT_MAX+1000
       } event_type_t;
+    typedef enum
+      {
+      NotRegistered = 0,
+      Searching = 2,
+      DeniedRegistration = 3,
+      RegisteredHome = 1,
+      RegisteredRoaming = 5
+      } network_registration_t;
     typedef struct
       {
       event_type_t type;
@@ -109,6 +117,7 @@ class simcom : public pcp
     int          m_state1_ticker;
     SimcomState1 m_state1_timeout_goto;
     int          m_state1_timeout_ticks;
+    network_registration_t m_netreg;
     GsmMux       m_mux;
 
   protected:

@@ -114,6 +114,7 @@ simcom::simcom(const char* name, uart_port_t uartnum, int baud, int rxpin, int t
   m_state1_ticker = 0;
   m_state1_timeout_goto = None;
   m_state1_timeout_ticks = -1;
+  m_netreg = NotRegistered;
   StartTask();
 
   using std::placeholders::_1;
@@ -355,7 +356,7 @@ simcom::SimcomState1 simcom::State1Ticker1()
       switch (m_state1_ticker)
         {
         case 10:
-          tx("AT+CPIN?;+CREG=1;+CLIP=1;+CMGF=1;+CNMI=1,2,0,0,0;+CSDH=1;+CMEE=2;+CSQ;+AUTOCSQ=1,1;E0\r\n");
+          tx("AT+CPIN?;+CREG=1;+CTZU=1;+CTZR=1;+CLIP=1;+CMGF=1;+CNMI=1,2,0,0,0;+CSDH=1;+CMEE=2;+CSQ;+AUTOCSQ=1,1;E0\r\n");
           break;
         case 12:
           tx("AT+CGMR;+ICCID\r\n");
@@ -383,6 +384,8 @@ simcom::SimcomState1 simcom::State1Ticker1()
         }
       break;
     case MuxMode:
+      if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
+        m_mux.tx(3, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
       break;
     case PoweringOff:
       break;
@@ -454,6 +457,37 @@ void simcom::StandardLineHandler(OvmsBuffer* buf, std::string line)
     int dbm = 0;
     if (csq <= 31) dbm = -113 + (csq*2);
     StandardMetrics.ms_m_net_sq->SetValue(dbm);
+    }
+  else if (line.compare(0, 7, "+CREG: ") == 0)
+    {
+    size_t qp = line.find(',');
+    int creg;
+    if (qp != string::npos)
+      creg = atoi(line.substr(qp+1,1).c_str());
+    else
+      creg = atoi(line.substr(7,1).c_str());
+    switch (creg)
+      {
+      case 0:
+      case 4:
+        m_netreg = NotRegistered;
+        break;
+      case 1:
+        m_netreg = RegisteredHome;
+        break;
+      case 2:
+        m_netreg = Searching;
+        break;
+      case 3:
+        m_netreg = DeniedRegistration;
+        break;
+      case 5:
+        m_netreg = RegisteredRoaming;
+        break;
+      default:
+        break;
+      }
+    ESP_LOGI(TAG, "CREG Network Registration %d",m_netreg);
     }
   else if (line.compare(0, 7, "+COPS: ") == 0)
     {

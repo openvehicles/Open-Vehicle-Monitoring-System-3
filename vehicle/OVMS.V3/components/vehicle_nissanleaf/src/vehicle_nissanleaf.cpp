@@ -7,7 +7,8 @@
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
-;    (C) 2011        Sonny Chen @ EPRO/DX
+;    (C) 2011       Sonny Chen @ EPRO/DX
+;    (C) 2017       Tom Parker
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -35,12 +36,9 @@ static const char *TAG = "v-nissanleaf";
 #include <string.h>
 #include "pcp.h"
 #include "vehicle_nissanleaf.h"
+#include "ovms_events.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
-
-#define GEN_1_NEW_CAR_GIDS 281l
-#define GEN_1_NEW_CAR_GIDS_S "281"
-#define GEN_1_NEW_CAR_RANGE_MILES 84
 
 typedef enum
   {
@@ -51,51 +49,21 @@ typedef enum
   CHARGER_STATUS_FINISHED
   } ChargerStatus;
 
-static void NL_rxtask(void *pvParameters)
-  {
-  OvmsVehicleNissanLeaf *me = (OvmsVehicleNissanLeaf*)pvParameters;
-  CAN_frame_t frame;
-
-  while(1)
-    {
-    if (xQueueReceive(me->m_rxqueue, &frame, (portTickType)portMAX_DELAY)==pdTRUE)
-      {
-      if (me->m_can1 == frame.origin) me->IncomingFrame(&frame);
-      }
-    }
-  }
-
 OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   {
   ESP_LOGI(TAG, "Nissan Leaf v3.0 vehicle module");
 
-  m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
-  xTaskCreatePinnedToCore(NL_rxtask, "v_NL Rx Task", 4096, (void*)this, 5, &m_rxtask, 1);
+  RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
+  RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
 
-  m_can1 = (canbus*)MyPcpApp.FindDeviceByName("can1");
-  m_can1->SetPowerMode(On);
-  m_can1->Start(CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
-
-  m_can2 = (canbus*)MyPcpApp.FindDeviceByName("can2");
-  m_can2->SetPowerMode(On);
-  m_can2->Start(CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
-
-  m_can3 = (canbus*)MyPcpApp.FindDeviceByName("can3");
-  m_can3->SetPowerMode(On);
-  m_can3->Start(CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
-
-  MyCan.RegisterListener(m_rxqueue);
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicleNissanLeaf::Ticker1, this, _1, _2));
   }
 
 OvmsVehicleNissanLeaf::~OvmsVehicleNissanLeaf()
   {
   ESP_LOGI(TAG, "Shutdown Nissan Leaf vehicle module");
-
-  m_can1->SetPowerMode(Off);
-  MyCan.DeregisterListener(m_rxqueue);
-
-  vQueueDelete(m_rxqueue);
-  vTaskDelete(m_rxtask);
   }
 
 const std::string OvmsVehicleNissanLeaf::VehicleName()
@@ -202,7 +170,7 @@ void vehicle_nissanleaf_charger_status(ChargerStatus status)
     }
   }
 
-void OvmsVehicleNissanLeaf::IncomingFrameEVBus(CAN_frame_t* p_frame)
+void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
 
@@ -230,8 +198,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameEVBus(CAN_frame_t* p_frame)
       break;
     case 0x284:
     {
-      // TODO
-      //vehicle_nissanleaf_car_on(TRUE);
+      vehicle_nissanleaf_car_on(true);
 
       uint16_t car_speed16 = d[4];
       car_speed16 = car_speed16 << 8;
@@ -240,6 +207,68 @@ void OvmsVehicleNissanLeaf::IncomingFrameEVBus(CAN_frame_t* p_frame)
       // it is approximately correct and converts to km/h on my car with km/h speedo
       StandardMetrics.ms_v_pos_speed->SetValue(car_speed16 / 92);
     }
+      break;
+    case 0x390:
+      // Gen 2 Charger
+      //
+      // When the data is valid, can_databuffer[6] is the J1772 maximum
+      // available current if we're plugged in, and 0 when we're not.
+      // can_databuffer[3] seems to govern when it's valid, and is probably a
+      // bit field, but I don't have a full decoding
+      //
+      // specifically the last few frames before shutdown to wait for the charge
+      // timer contain zero in can_databuffer[6] so we ignore them and use the
+      // valid data in the earlier frames
+      //
+      // During plug in with charge timer activated, byte 3 & 6:
+      //
+      // 0x390 messages start
+      // 0x00 0x21
+      // 0x60 0x21
+      // 0x60 0x00
+      // 0xa0 0x00
+      // 0xb0 0x00
+      // 0xb2 0x15 -- byte 6 now contains valid j1772 pilot amps
+      // 0xb3 0x15
+      // 0xb1 0x00
+      // 0x71 0x00
+      // 0x69 0x00
+      // 0x61 0x00
+      // 0x390 messages stop
+      //
+      // byte 3 is 0xb3 during charge, and byte 6 contains the valid pilot amps
+      //
+      // so far, except briefly during startup, when byte 3 is 0x00 or 0x03,
+      // byte 6 is 0x00, correctly indicating we're unplugged, so we use that
+      // for unplugged detection.
+      //
+      if (d[3] == 0xb3 ||
+        d[3] == 0x00 ||
+        d[3] == 0x03)
+        {
+        // can_databuffer[6] is the J1772 pilot current, 0.5A per bit
+        // TODO enum?
+        StandardMetrics.ms_v_charge_type->SetValue("J1772");
+        uint8_t current_limit = (d[6] + 1) / 2;
+        StandardMetrics.ms_v_charge_climit->SetValue(current_limit);
+        StandardMetrics.ms_v_charge_pilot->SetValue(current_limit != 0);
+        StandardMetrics.ms_v_door_chargeport->SetValue(current_limit != 0);
+        }
+      switch (d[5])
+        {
+        case 0x80:
+          vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
+          break;
+        case 0x83:
+          vehicle_nissanleaf_charger_status(CHARGER_STATUS_QUICK_CHARGING);
+          break;
+        case 0x88:
+          vehicle_nissanleaf_charger_status(CHARGER_STATUS_CHARGING);
+          break;
+        case 0x98:
+          vehicle_nissanleaf_charger_status(CHARGER_STATUS_PLUGGED_IN_TIMER_WAIT);
+          break;
+        }
       break;
     case 0x54b:
     {
@@ -330,22 +359,22 @@ void OvmsVehicleNissanLeaf::IncomingFrameEVBus(CAN_frame_t* p_frame)
     }
   }
 
-void OvmsVehicleNissanLeaf::IncomingFrame(CAN_frame_t* p_frame)
+void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
   {
-  if (p_frame->origin == m_can1)
+  }
+
+void OvmsVehicleNissanLeaf::Ticker1(std::string event, void* data)
+  {
+  // FIXME
+  // detecting that on is stale and therefor should turn off probably shouldn't
+  // be done like this
+  // perhaps there should be a car on-off state tracker and event generator in
+  // the core framework?
+  // perhaps interested code should be able to subscribe to "onChange" and
+  // "onStale" events for each metric?
+  if (StandardMetrics.ms_v_env_on->IsStale())
     {
-    IncomingFrameEVBus(p_frame);
-    }
-  // TODO replace can bus testing with actual can bus decoding:
-  if (p_frame->origin == m_can2)
-    {
-    ESP_LOGI(TAG, "Can 2 Frame");
-    m_can2 = NULL;
-    }
-  if (p_frame->origin == m_can3)
-    {
-    ESP_LOGI(TAG, "Can 3 Frame");
-    m_can3 = NULL;
+    vehicle_nissanleaf_car_on(false);
     }
   }
 
