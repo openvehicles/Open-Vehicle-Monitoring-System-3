@@ -131,6 +131,12 @@ void BufferedShell::Log(LogBuffers* message)
     }
   if (message->last())
     {
+    if (m_output->empty())
+      {
+      m_output->release();
+      m_output = message;
+      return;
+      }
     LogBuffers::iterator before = m_output->begin(), after;
     while (true)
       {
@@ -158,7 +164,10 @@ void BufferedShell::Output(OvmsWriter* writer)
   {
   if (m_print)
     printf("\n");
-  writer->Log(m_output);
+  if (m_output->empty())
+    m_output->release();
+  else
+    writer->Log(m_output);
   m_output = NULL;
   }
 
