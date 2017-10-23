@@ -49,40 +49,12 @@ typedef enum
   CHARGER_STATUS_FINISHED
   } ChargerStatus;
 
-static void NL_rxtask(void *pvParameters)
-  {
-  OvmsVehicleNissanLeaf *me = (OvmsVehicleNissanLeaf*)pvParameters;
-  CAN_frame_t frame;
-
-  while(1)
-    {
-    if (xQueueReceive(me->m_rxqueue, &frame, (portTickType)portMAX_DELAY)==pdTRUE)
-      {
-      me->IncomingFrame(&frame);
-      }
-    }
-  }
-
 OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   {
   ESP_LOGI(TAG, "Nissan Leaf v3.0 vehicle module");
 
-  m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
-  xTaskCreatePinnedToCore(NL_rxtask, "v_NL Rx Task", 4096, (void*)this, 5, &m_rxtask, 1);
-
-  m_can1 = (canbus*)MyPcpApp.FindDeviceByName("can1");
-  m_can1->SetPowerMode(On);
-  m_can1->Start(CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
-
-  m_can2 = (canbus*)MyPcpApp.FindDeviceByName("can2");
-  m_can2->SetPowerMode(On);
-  m_can2->Start(CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
-
-  m_can3 = (canbus*)MyPcpApp.FindDeviceByName("can3");
-  m_can3->SetPowerMode(On);
-  m_can3->Start(CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
-
-  MyCan.RegisterListener(m_rxqueue);
+  RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
+  RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
 
   using std::placeholders::_1;
   using std::placeholders::_2;
@@ -92,14 +64,6 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
 OvmsVehicleNissanLeaf::~OvmsVehicleNissanLeaf()
   {
   ESP_LOGI(TAG, "Shutdown Nissan Leaf vehicle module");
-
-  m_can1->SetPowerMode(Off);
-  m_can2->SetPowerMode(Off);
-  m_can3->SetPowerMode(Off);
-  MyCan.DeregisterListener(m_rxqueue);
-
-  vQueueDelete(m_rxqueue);
-  vTaskDelete(m_rxtask);
   }
 
 const std::string OvmsVehicleNissanLeaf::VehicleName()
@@ -206,7 +170,7 @@ void vehicle_nissanleaf_charger_status(ChargerStatus status)
     }
   }
 
-void OvmsVehicleNissanLeaf::IncomingFrameEVBus(CAN_frame_t* p_frame)
+void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
 
@@ -395,23 +359,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameEVBus(CAN_frame_t* p_frame)
     }
   }
 
-void OvmsVehicleNissanLeaf::IncomingFrame(CAN_frame_t* p_frame)
+void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
   {
-  if (p_frame->origin == m_can1)
-    {
-    IncomingFrameEVBus(p_frame);
-    }
-  // TODO replace can bus testing with actual can bus decoding:
-  if (p_frame->origin == m_can2)
-    {
-    ESP_LOGI(TAG, "Can 2 Frame");
-    m_can2 = NULL;
-    }
-  if (p_frame->origin == m_can3)
-    {
-    ESP_LOGI(TAG, "Can 3 Frame");
-    m_can3 = NULL;
-    }
   }
 
 void OvmsVehicleNissanLeaf::Ticker1(std::string event, void* data)

@@ -38,45 +38,18 @@ static const char *TAG = "v-teslaroadster";
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
 
-static void TR_rxtask(void *pvParameters)
-  {
-  OvmsVehicleTeslaRoadster *me = (OvmsVehicleTeslaRoadster*)pvParameters;
-  CAN_frame_t frame;
-
-  while(1)
-    {
-    if (xQueueReceive(me->m_rxqueue, &frame, (portTickType)portMAX_DELAY)==pdTRUE)
-      {
-      if (me->m_can1 == frame.origin) me->IncomingFrame(&frame);
-      }
-    }
-  }
-
 OvmsVehicleTeslaRoadster::OvmsVehicleTeslaRoadster()
   {
   ESP_LOGI(TAG, "Tesla Roadster v1.x, v2.x and v3.0 vehicle module");
 
-  m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
-  xTaskCreatePinnedToCore(TR_rxtask, "v_TR Rx Task", 4096, (void*)this, 5, &m_rxtask, 1);
-
-  m_can1 = (canbus*)MyPcpApp.FindDeviceByName("can1");
-  m_can1->SetPowerMode(On);
-  m_can1->Start(CAN_MODE_ACTIVE,CAN_SPEED_1000KBPS);
-
-  MyCan.RegisterListener(m_rxqueue);
-
   memset(m_vin,0,sizeof(m_vin));
+
+  RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_1000KBPS);
   }
 
 OvmsVehicleTeslaRoadster::~OvmsVehicleTeslaRoadster()
   {
   ESP_LOGI(TAG, "Shutdown Tesla Roadster vehicle module");
-
-  m_can1->SetPowerMode(Off);
-  MyCan.DeregisterListener(m_rxqueue);
-
-  vQueueDelete(m_rxqueue);
-  vTaskDelete(m_rxtask);
   }
 
 const std::string OvmsVehicleTeslaRoadster::VehicleName()
@@ -84,10 +57,8 @@ const std::string OvmsVehicleTeslaRoadster::VehicleName()
   return std::string("Tesla Roadster");
   }
 
-void OvmsVehicleTeslaRoadster::IncomingFrame(CAN_frame_t* p_frame)
+void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
-  if (p_frame->origin != m_can1) return; // Only handle CAN1
-
   uint8_t *d = p_frame->data.u8;
 
   switch (p_frame->MsgID)

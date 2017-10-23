@@ -29,7 +29,6 @@
 #ifndef __VEHICLE_KIASOULEV_H__
 #define __VEHICLE_KIASOULEV_H__
 
-#include "can.h"
 #include "vehicle.h"
 
 using namespace std;
@@ -41,19 +40,12 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     ~OvmsVehicleKiaSoulEv();
 
   public:
-    void IncomingFrame(CAN_frame_t* p_frame);
-
-  private:
-    void IncomingFrameEVBus(CAN_frame_t* p_frame);
+    void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingFrameCan2(CAN_frame_t* p_frame);
 
   protected:
 
   public:
-    canbus* m_can1;
-    canbus* m_can2;
-    canbus* m_can3;
-    QueueHandle_t m_rxqueue;
-    TaskHandle_t m_rxtask;
     const std::string VehicleName();
   };
 
