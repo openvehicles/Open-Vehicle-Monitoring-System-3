@@ -147,8 +147,9 @@ void GsmMuxChannel::ProcessFrame(uint8_t* frame, size_t length, size_t iframepos
         {
         ESP_LOGI(TAG, "Channel #%d is open",m_channel);
         m_state = ChanOpen; // SABM established
+        if (m_channel != 0) m_mux->m_openchannels++;
         if (m_channel==0) m_mux->m_state = GsmMux::DlciOpen;
-        if (m_channel<4) m_mux->StartChannel(m_channel+1);
+        if (m_channel<GSM_MUX_CHANNELS) m_mux->StartChannel(m_channel+1);
         }
     case ChanOpen:
       if (frame[1] == (GSM_UIH + GSM_PF))
@@ -175,6 +176,7 @@ GsmMux::GsmMux(simcom* modem, size_t maxframesize)
   m_frameipos = 0;
   m_framelen = 0;
   m_framemorelen = false;
+  m_openchannels = 0;
   }
 
 GsmMux::~GsmMux()
@@ -186,10 +188,10 @@ void GsmMux::Start()
   {
   ESP_LOGI(TAG, "Start MUX");
   m_channels.insert(m_channels.end(),new GsmMuxChannel(this,0,8));
-  m_channels.insert(m_channels.end(),new GsmMuxChannel(this,1,1024));
-  m_channels.insert(m_channels.end(),new GsmMuxChannel(this,2,1024));
-  m_channels.insert(m_channels.end(),new GsmMuxChannel(this,3,1024));
-  m_channels.insert(m_channels.end(),new GsmMuxChannel(this,4,1024));
+  for (int k=1; k<=GSM_MUX_CHANNELS; k++)
+    {
+    m_channels.insert(m_channels.end(),new GsmMuxChannel(this,k,1024));
+    }
   StartChannel(0);
   m_state = DlciOpening;
   }
