@@ -313,7 +313,7 @@ void GsmMux::txfcs(uint8_t* data, size_t size, size_t ipos)
   m_modem->tx(data,size);
   }
 
-void GsmMux::tx(int channel, uint8_t* data, ssize_t size)
+size_t GsmMux::tx(int channel, uint8_t* data, ssize_t size)
   {
   uint8_t* buf = new uint8_t[size+7];
   size_t ipos;
@@ -345,12 +345,14 @@ void GsmMux::tx(int channel, uint8_t* data, ssize_t size)
   buf[ipos+size+1] = GSM0_SOF;
   txfcs(buf,ipos+size+2,ipos);
   delete [] buf;
+
+  return size;
   }
 
-void GsmMux::tx(int channel, const char* data, ssize_t size)
+size_t GsmMux::tx(int channel, const char* data, ssize_t size)
   {
   if (size >= 0)
-    tx(channel, (uint8_t*)data,size);
+    return tx(channel, (uint8_t*)data,size);
   else
-    tx(channel, (uint8_t*)data,strlen(data));
+    return tx(channel, (uint8_t*)data,strlen(data));
   }
