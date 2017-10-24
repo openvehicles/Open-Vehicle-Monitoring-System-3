@@ -60,14 +60,14 @@ static void SimcomPPPStatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
     {
     case PPPERR_NONE:
       {
-      ESP_LOGI(TAG, "status_cb: Connected\n");
+      ESP_LOGI(TAG, "status_cb: Connected");
 #if PPP_IPV4_SUPPORT
-      ESP_LOGI(TAG, "   our_ipaddr  = %s\n", ipaddr_ntoa(&pppif->ip_addr));
-      ESP_LOGI(TAG, "   his_ipaddr  = %s\n", ipaddr_ntoa(&pppif->gw));
-      ESP_LOGI(TAG, "   netmask     = %s\n", ipaddr_ntoa(&pppif->netmask));
+      ESP_LOGI(TAG, "   our_ipaddr  = %s", ipaddr_ntoa(&pppif->ip_addr));
+      ESP_LOGI(TAG, "   his_ipaddr  = %s", ipaddr_ntoa(&pppif->gw));
+      ESP_LOGI(TAG, "   netmask     = %s", ipaddr_ntoa(&pppif->netmask));
 #endif /* PPP_IPV4_SUPPORT */
 #if PPP_IPV6_SUPPORT
-      ESP_LOGI(TAG, "   our6_ipaddr = %s\n", ip6addr_ntoa(netif_ip6_addr(pppif, 0)));
+      ESP_LOGI(TAG, "   our6_ipaddr = %s", ip6addr_ntoa(netif_ip6_addr(pppif, 0)));
 #endif /* PPP_IPV6_SUPPORT */
       break;
       }
@@ -336,7 +336,8 @@ void simcom::IncomingMuxData(GsmMuxChannel* channel)
       if (m_state1 == NetMode)
         {
         uint8_t buf[32];
-        while (size_t n = channel->m_buffer.Pop(sizeof(buf),buf) > 0)
+        size_t n;
+        while ((n = channel->m_buffer.Pop(sizeof(buf),buf)) > 0)
           {
           MyCommandApp.HexDump("SIMCOM ppp rx",(const char*)buf,n);
           pppos_input_tcpip(m_ppp, (u8_t*)buf, (int)n);
@@ -444,7 +445,7 @@ void simcom::State1Enter(SimcomState1 newstate)
       pppapi_set_auth(m_ppp, PPPAUTHTYPE_PAP,
         MyConfig.GetParamValue("modem", "apn.user").c_str(),
         MyConfig.GetParamValue("modem", "apn.password").c_str());
-//      pppapi_connect(m_ppp, 0);
+      pppapi_connect(m_ppp, 0);
       break;
     case PoweringOff:
       ESP_LOGI(TAG,"State: Enter PoweringOff state");
