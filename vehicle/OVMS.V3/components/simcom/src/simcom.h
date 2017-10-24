@@ -82,6 +82,9 @@ class simcom : public pcp
       PoweringOn,
       PoweredOn,
       MuxMode,
+      NetStart,
+      NetHold,
+      NetMode,
       PoweringOff,
       PoweredOff
       };
@@ -117,6 +120,7 @@ class simcom : public pcp
     int          m_state1_ticker;
     SimcomState1 m_state1_timeout_goto;
     int          m_state1_timeout_ticks;
+    int          m_state1_userdata;
     network_registration_t m_netreg;
     GsmMux       m_mux;
 
