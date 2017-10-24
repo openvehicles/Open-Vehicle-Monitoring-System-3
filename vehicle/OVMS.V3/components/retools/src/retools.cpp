@@ -56,6 +56,7 @@ void re::Task()
       std::string key = GetKey(&frame);
       auto k = m_rmap.find(key);
       re_record_t* r;
+      if (m_rmap.size() == 0) m_started = monotonictime;
       if (k == m_rmap.end())
         {
         r = k->second;
@@ -69,6 +70,7 @@ void re::Task()
         }
       memcpy(&r->last,&frame,sizeof(frame));
       r->rxcount++;
+      m_finished = monotonictime;
       // ESP_LOGI(TAG,"rx Key=%s Count=%d",key.c_str(),r->rxcount);
       xSemaphoreGive(m_mutex);
       }
@@ -109,6 +111,7 @@ re::re(const char* name)
   : pcp(name)
   {
   m_started = monotonictime;
+  m_finished = monotonictime;
   xTaskCreatePinnedToCore(RE_task, "RE Task", 4096, (void*)this, 5, &m_task, 1);
   m_mutex = xSemaphoreCreateMutex();
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
@@ -164,6 +167,7 @@ void re::Clear()
     }
   m_rmap.clear();
   m_started = monotonictime;
+  m_finished = monotonictime;
   xSemaphoreGive(m_mutex);
   }
 
@@ -202,7 +206,7 @@ void re_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
     return;
     }
 
-  uint32_t tdiff = (monotonictime - MyRE->m_started)*1000;
+  uint32_t tdiff = (MyRE->m_finished - MyRE->m_started)*1000;
   if (tdiff == 0) tdiff = 1000;
 
   writer->printf("%-20.20s %10s %6s %s\n","key","records","ms","last");

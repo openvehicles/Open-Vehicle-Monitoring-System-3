@@ -73,6 +73,7 @@ class re : public pcp
     re_id_map_t m_idmap;
     re_record_map_t m_rmap;
     uint32_t m_started;
+    uint32_t m_finished;
   };
 
 #endif //#ifndef __RETOOLS_H__
