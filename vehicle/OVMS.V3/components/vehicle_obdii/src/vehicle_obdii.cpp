@@ -34,7 +34,7 @@ static const char *TAG = "v-obdii";
 #include <stdio.h>
 #include "vehicle_obdii.h"
 
-OvmsVehicle::poll_pid_t obdii_polls[]
+static const OvmsVehicle::poll_pid_t obdii_polls[]
   =
   {
     { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x05, {  0, 30, 30 } }, // Engine coolant temp

@@ -271,7 +271,7 @@ void OvmsVehicle::Ticker3600(uint32_t ticker)
   {
   }
 
-void OvmsVehicle::PollSetPidList(canbus* bus, poll_pid_t* plist)
+void OvmsVehicle::PollSetPidList(canbus* bus, const poll_pid_t* plist)
   {
   m_poll_bus = bus;
   m_poll_plist = plist;

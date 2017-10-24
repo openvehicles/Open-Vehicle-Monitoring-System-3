@@ -106,22 +106,22 @@ class OvmsVehicle
       } poll_pid_t;
 
   protected:
-    uint8_t       m_poll_state;                 // Current poll state
-    canbus*       m_poll_bus;                   // Bus to poll on
-    poll_pid_t*   m_poll_plist;                 // Head of poll list
-    poll_pid_t*   m_poll_plcur;                 // Current position in poll list
-    uint32_t      m_poll_ticker;                // Polling ticker
-    uint32_t      m_poll_moduleid_sent;         // ModuleID last sent
-    uint32_t      m_poll_moduleid_low;          // Expected response moduleid low mark
-    uint32_t      m_poll_moduleid_high;         // Expected response moduleid high mark
-    uint16_t      m_poll_type;                  // Expected type
-    uint16_t      m_poll_pid;                   // Expected PID
-    uint16_t      m_poll_ml_remain;             // Bytes remainign for ML poll
-    uint16_t      m_poll_ml_offset;             // Offset of ML poll
-    uint16_t      m_poll_ml_frame;              // Frame number for ML poll
+    uint8_t           m_poll_state;           // Current poll state
+    canbus*           m_poll_bus;             // Bus to poll on
+    const poll_pid_t* m_poll_plist;           // Head of poll list
+    const poll_pid_t* m_poll_plcur;           // Current position in poll list
+    uint32_t          m_poll_ticker;          // Polling ticker
+    uint32_t          m_poll_moduleid_sent;   // ModuleID last sent
+    uint32_t          m_poll_moduleid_low;    // Expected response moduleid low mark
+    uint32_t          m_poll_moduleid_high;   // Expected response moduleid high mark
+    uint16_t          m_poll_type;            // Expected type
+    uint16_t          m_poll_pid;             // Expected PID
+    uint16_t          m_poll_ml_remain;       // Bytes remainign for ML poll
+    uint16_t          m_poll_ml_offset;       // Offset of ML poll
+    uint16_t          m_poll_ml_frame;        // Frame number for ML poll
 
   protected:
-    void PollSetPidList(canbus* bus, poll_pid_t* plist);
+    void PollSetPidList(canbus* bus, const poll_pid_t* plist);
     void PollSetState(uint8_t state);
   };
 
