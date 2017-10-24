@@ -35,6 +35,7 @@ static const char *TAG = "ovms-module";
 #include <string.h>
 #include "freertos/FreeRTOSConfig.h"
 #include "freertos/heap_regions_debug.h"
+#include <esp_system.h>
 #include "esp_heap_alloc_caps.h"
 #include "ovms_module.h"
 #include "ovms_command.h"
@@ -361,6 +362,12 @@ void module_abort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 #endif
   }
 
+void module_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->puts("Resetting system...");
+  esp_restart();
+  }
+
 class OvmsModuleInit
   {
   public:
@@ -372,6 +379,7 @@ class OvmsModuleInit
     cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"",0,0,true);
     cmd_module->RegisterCommand("tasks","Show module task usage",module_tasks,"",0,0,true);
     cmd_module->RegisterCommand("abort","Set trap to abort on malloc",module_abort,"<task> <count> [<size>]",2,3,true);
+    cmd_module->RegisterCommand("reset","Reset module",module_reset,"",0,0,true);
     }
   } MyOvmsModuleInit  __attribute__ ((init_priority (5100)));
 

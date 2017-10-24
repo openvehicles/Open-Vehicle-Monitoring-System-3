@@ -344,17 +344,9 @@ void ota_boot(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     }
   }
 
-void ota_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  writer->puts("Resetting system...");
-  esp_restart();
-  }
-
 OvmsOTA::OvmsOTA()
   {
   ESP_LOGI(TAG, "Initialising OTA (4400)");
-
-  MyCommandApp.RegisterCommand("reset","Reset system",ota_reset,"",0,0);
 
   OvmsCommand* cmd_ota = MyCommandApp.RegisterCommand("ota","OTA framework",NULL,"",0,0,true);
 
