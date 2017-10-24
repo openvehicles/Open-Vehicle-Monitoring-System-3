@@ -75,13 +75,15 @@
 #define MS_V_CHARGE_TYPE            "v.c.type"
 #define MS_V_CHARGE_PILOT           "v.c.pilot"
 #define MS_V_CHARGE_INPROGRESS      "v.c.charging"
-#define MS_V_CHARGE_ESTIMATE        "v.c.estimate"
+#define MS_V_CHARGE_DURATION_FULL   "v.c.duration.full"
+#define MS_V_CHARGE_DURATION_RANGE  "v.c.duration.range"
+#define MS_V_CHARGE_DURATION_SOC    "v.c.duration.soc"
 
-#define MS_V_TEMP_PEM               "v.b.temp.pem"
-#define MS_V_TEMP_BATTERY           "v.b.temp.battery"
-#define MS_V_TEMP_MOTOR             "v.b.temp.motor"
-#define MS_V_TEMP_CHARGER           "v.b.temp.charger"
-#define MS_V_TEMP_AMBIENT           "v.b.temp.ambient"
+#define MS_V_INV_TEMP               "v.i.temp"
+#define MS_V_BAT_TEMP               "v.b.temp"
+#define MS_V_MOT_TEMP               "v.m.temp"
+#define MS_V_CHARGE_TEMP            "v.c.temp"
+#define MS_V_ENV_TEMP               "v.e.temp"
 
 #define MS_V_DOOR_FL                "v.d.fl"
 #define MS_V_DOOR_FR                "v.d.fr"
@@ -90,6 +92,7 @@
 #define MS_V_DOOR_CHARGEPORT        "v.d.cp"
 #define MS_V_DOOR_HOOD              "v.d.hood"
 #define MS_V_DOOR_TRUNK             "v.d.trunk"
+
 #define MS_V_ENV_DRIVEMODE          "v.e.drivemode"
 #define MS_V_ENV_HANDBRAKE          "v.e.handbrake"
 #define MS_V_ENV_AWAKE              "v.e.awake"
@@ -139,42 +142,51 @@ class MetricsStandard
     OvmsMetricInt*    ms_m_freeram;
     OvmsMetricInt*    ms_m_monotonic;
     OvmsMetricInt*    ms_m_timeutc;
+    
     OvmsMetricString* ms_m_net_type;          // none, wifi, gsm
-    OvmsMetricInt*    ms_m_net_sq;
-    OvmsMetricString* ms_m_net_provider;
+    OvmsMetricInt*    ms_m_net_sq;            // Network signal quality [%?]
+    OvmsMetricString* ms_m_net_provider;      // Network provider name
     OvmsMetricString* ms_m_net_mdm_iccid;
     OvmsMetricString* ms_m_net_mdm_model;
-    OvmsMetricBool*   ms_s_v2_connected;
-    OvmsMetricInt*    ms_s_v2_peers;
-    OvmsMetricString* ms_v_type;
-    OvmsMetricString* ms_v_vin;
-    OvmsMetricInt*    ms_v_bat_soc;
-    OvmsMetricInt*    ms_v_bat_soh;
-    OvmsMetricFloat*  ms_v_bat_cac;
-    OvmsMetricFloat*  ms_v_bat_voltage;
-    OvmsMetricFloat*  ms_v_bat_current;
-    OvmsMetricInt*    ms_v_bat_range_ideal;
-    OvmsMetricInt*    ms_v_bat_range_est;
-    OvmsMetricFloat*  ms_v_bat_12v;
-    OvmsMetricInt*    ms_v_charge_voltage;
-    OvmsMetricInt*    ms_v_charge_current;
-    OvmsMetricInt*    ms_v_charge_climit;
-    OvmsMetricInt*    ms_v_charge_minutes;
-    OvmsMetricFloat*  ms_v_charge_kwh;
+    
+    OvmsMetricBool*   ms_s_v2_connected;      // True = V2 server connected [1]
+    OvmsMetricInt*    ms_s_v2_peers;          // V2 clients connected [1]
+    
+    OvmsMetricString* ms_v_type;              // Vehicle type code
+    OvmsMetricString* ms_v_vin;               // Vehicle identification number
+    
+    OvmsMetricFloat*  ms_v_bat_soc;           // State of charge [%]
+    OvmsMetricFloat*  ms_v_bat_soh;           // State of health [%]
+    OvmsMetricFloat*  ms_v_bat_cac;           // Calculated capacity [Ah]
+    OvmsMetricFloat*  ms_v_bat_voltage;       // Momentary voltage [V]
+    OvmsMetricFloat*  ms_v_bat_current;       // Momentary current [A]
+    OvmsMetricFloat*  ms_v_bat_range_ideal;   // Ideal range [v.units → km/mi]
+    OvmsMetricFloat*  ms_v_bat_range_est;     // Estimated range [v.units → km/mi]
+    OvmsMetricFloat*  ms_v_bat_12v;           // Auxiliary battery momentary voltage [V]
+    
+    OvmsMetricFloat*  ms_v_charge_voltage;    // Momentary charger supply voltage [V]
+    OvmsMetricFloat*  ms_v_charge_current;    // Momentary charger output current [A]
+    OvmsMetricFloat*  ms_v_charge_climit;     // Maximum charger output current [A]
+    OvmsMetricInt*    ms_v_charge_minutes;    // Duration of running charge [min]
+    OvmsMetricFloat*  ms_v_charge_kwh;        // Energy sum for running charge [kWh]
     OvmsMetricString* ms_v_charge_mode;       // standard, range, performance, storage
     OvmsMetricBool*   ms_v_charge_timermode;  // True if timer enabled
     OvmsMetricInt*    ms_v_charge_timerstart; // Time timer is due to start
     OvmsMetricString* ms_v_charge_state;      // charging, topoff, done, preparing, stopped
     OvmsMetricString* ms_v_charge_substate;   // tba...
     OvmsMetricString* ms_v_charge_type;       // undefined, type1, type2, chademo, roadster, teslaus, supercharger, ccs
-    OvmsMetricBool*   ms_v_charge_pilot;
-    OvmsMetricBool*   ms_v_charge_inprogress;
-    OvmsMetricInt*    ms_v_charge_estimate;   // Estimated seconds remaining for charge
-    OvmsMetricInt*    ms_v_temp_pem;
-    OvmsMetricInt*    ms_v_temp_battery;
-    OvmsMetricInt*    ms_v_temp_motor;
-    OvmsMetricInt*    ms_v_temp_charger;
-    OvmsMetricInt*    ms_v_temp_ambient;
+    OvmsMetricBool*   ms_v_charge_pilot;      // Pilot signal present
+    OvmsMetricBool*   ms_v_charge_inprogress; // True = currently charging
+    OvmsMetricInt*    ms_v_charge_duration_full;    // Estimated time remaing for full charge [min]
+    OvmsMetricInt*    ms_v_charge_duration_range;   // … for sufficient range [min]
+    OvmsMetricInt*    ms_v_charge_duration_soc;     // … for sufficient SOC [min]
+    
+    OvmsMetricInt*    ms_v_inv_temp;          // Inverter temperature [°C]
+    OvmsMetricInt*    ms_v_bat_temp;          // Battery temperature [°C]
+    OvmsMetricInt*    ms_v_mot_temp;          // Motor temperature [°C]
+    OvmsMetricInt*    ms_v_charge_temp;       // Charger temperature [°C]
+    OvmsMetricInt*    ms_v_env_temp;          // Ambient temperature [°C]
+    
     OvmsMetricBool*   ms_v_door_fl;
     OvmsMetricBool*   ms_v_door_fr;
     OvmsMetricBool*   ms_v_door_rl;
@@ -182,6 +194,7 @@ class MetricsStandard
     OvmsMetricBool*   ms_v_door_chargeport;
     OvmsMetricBool*   ms_v_door_hood;
     OvmsMetricBool*   ms_v_door_trunk;
+    
     OvmsMetricString* ms_v_env_drivemode;     // standard, range, performance, storage
     OvmsMetricBool*   ms_v_env_handbrake;
     OvmsMetricBool*   ms_v_env_awake;
@@ -197,15 +210,17 @@ class MetricsStandard
     OvmsMetricInt*    ms_v_env_parktime;
     OvmsMetricBool*   ms_v_env_ctrl_login;
     OvmsMetricBool*   ms_v_env_ctrl_config;
+    
     OvmsMetricBool*   ms_v_pos_gpslock;
     OvmsMetricInt*    ms_v_pos_satcount;
     OvmsMetricFloat*  ms_v_pos_latitude;
     OvmsMetricFloat*  ms_v_pos_longitude;
     OvmsMetricInt*    ms_v_pos_direction;
     OvmsMetricInt*    ms_v_pos_altitude;
-    OvmsMetricInt*    ms_v_pos_speed;
+    OvmsMetricFloat*  ms_v_pos_speed;
     OvmsMetricFloat*  ms_v_pos_odometer;
     OvmsMetricFloat*  ms_v_pos_trip;
+    
     OvmsMetricFloat*  ms_v_tpms_fl_t;
     OvmsMetricFloat*  ms_v_tpms_fr_t;
     OvmsMetricFloat*  ms_v_tpms_rr_t;

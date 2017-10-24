@@ -352,18 +352,18 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           /* This item (only) needs to vary to prevent SyncUp Drive dongle from going to sleep */
           /* For now, derive RPM from vehicle speed. Roadster ratio:  14,000 rpm div by 201 km/h = 70 */
           /* adding "jitter" to keep the dongle from going to sleep. ASSUME: speed is in km/h, not mph*/
-          metric = StandardMetrics.ms_v_pos_speed->AsInt()*70+jitter;
-          if(StandardMetrics.ms_v_pos_speed->AsInt() == 0) metric = 500+jitter;   // Minimum RPM to keep HUD from going to sleep if not moving
+          metric = StandardMetrics.ms_v_pos_speed->AsFloat()*70+jitter;
+          if(StandardMetrics.ms_v_pos_speed->AsFloat() == 0) metric = 500+jitter;   // Minimum RPM to keep HUD from going to sleep if not moving
           FillFrame(&r_frame,reply,mapped_pid,metric,3);
           m_can->Write(&r_frame);
           break;
         case 0x0d:	/* Vehicle speed */
-          metric = StandardMetrics.ms_v_pos_speed->AsInt();
+          metric = StandardMetrics.ms_v_pos_speed->AsFloat();
           FillFrame(&r_frame,reply,mapped_pid,metric,1);
           m_can->Write(&r_frame);
           break;
         case 0x05:	/* Coolant Temp - Use Motor temp */
-          metric = StandardMetrics.ms_v_temp_motor->AsInt();
+          metric = StandardMetrics.ms_v_mot_temp->AsInt();
           FillFrame(&r_frame,reply,mapped_pid,metric,4);
           m_can->Write(&r_frame);
           break;
@@ -372,7 +372,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           /* NO clue what the conversion formula is, but seems to have a display range of 0-19.9 */
           /* If configured with 11 as "Emission Setting" and 52% for "fuel connsumption" metrics */
           /* will display 0-10.0 for 0-100% with input of 0-33.  Use with display sete to L/hr (not L/km).  */
-          metric = (float)StandardMetrics.ms_v_bat_soc->AsInt()/(float)3.3;
+          metric = StandardMetrics.ms_v_bat_soc->AsFloat()/(float)3.3;
           FillFrame(&r_frame,reply,mapped_pid,metric,6);
           m_can->Write(&r_frame);
           break;

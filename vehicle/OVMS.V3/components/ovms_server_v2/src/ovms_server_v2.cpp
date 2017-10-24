@@ -546,11 +546,11 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
     StandardMetrics.ms_v_env_handbrake->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_env_on->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
 
-    StandardMetrics.ms_v_temp_pem->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_temp_motor->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_temp_battery->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_inv_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_mot_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_bat_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_pos_speed->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_temp_ambient->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_env_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_bat_12v->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
 
     // doors 5
@@ -559,7 +559,7 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
     StandardMetrics.ms_v_env_charging12v->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_env_hvac->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
 
-    StandardMetrics.ms_v_temp_charger->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_v_charge_temp->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -573,11 +573,11 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
   buffer.append(",");
   buffer.append("0");  // car_lockstate
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_temp_pem->AsString("0").c_str());
+  buffer.append(StandardMetrics.ms_v_inv_temp->AsString("0").c_str());
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_temp_motor->AsString("0").c_str());
+  buffer.append(StandardMetrics.ms_v_mot_temp->AsString("0").c_str());
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_temp_battery->AsString("0").c_str());
+  buffer.append(StandardMetrics.ms_v_bat_temp->AsString("0").c_str());
   buffer.append(",");
   buffer.append("0");  // car_trip
   buffer.append(",");
@@ -587,7 +587,7 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
   buffer.append(",");
   buffer.append("0");  // park
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_temp_ambient->AsString("0").c_str());
+  buffer.append(StandardMetrics.ms_v_env_temp->AsString("0").c_str());
   buffer.append(",");
   buffer.append("0");  // car_doors3
   buffer.append(",");
@@ -595,14 +595,14 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
   // v2 has one "stale" flag for 4 temperatures, we say they're stale only if
   // all are stale, IE one valid temperature makes them all valid
   bool stale_temps =
-    StandardMetrics.ms_v_temp_pem->IsStale() &&
-    StandardMetrics.ms_v_temp_motor->IsStale() &&
-    StandardMetrics.ms_v_temp_battery->IsStale() &&
-    StandardMetrics.ms_v_temp_charger->IsStale();
+    StandardMetrics.ms_v_inv_temp->IsStale() &&
+    StandardMetrics.ms_v_mot_temp->IsStale() &&
+    StandardMetrics.ms_v_bat_temp->IsStale() &&
+    StandardMetrics.ms_v_charge_temp->IsStale();
   buffer.append(stale_temps ? "0" : "1");
   buffer.append(",");
 
-  buffer.append(StandardMetrics.ms_v_temp_ambient->IsStale() ? "0" : "1");
+  buffer.append(StandardMetrics.ms_v_env_temp->IsStale() ? "0" : "1");
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_bat_12v->AsString("0").c_str());
   buffer.append(",");
@@ -612,7 +612,7 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
   buffer.append(",");
   AppendDoors5(&buffer);
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_temp_charger->AsString("0").c_str());
+  buffer.append(StandardMetrics.ms_v_charge_temp->AsString("0").c_str());
   buffer.append(",");
   buffer.append("0");  // car_12v_current
 
