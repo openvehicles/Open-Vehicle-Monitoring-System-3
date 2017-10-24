@@ -35,6 +35,6 @@
 
 #define OVMS_VERSION "3.0.0"
 
-extern uint16_t monotonictime;
+extern uint32_t monotonictime;
 
 #endif //#ifndef __OVMS_H__
