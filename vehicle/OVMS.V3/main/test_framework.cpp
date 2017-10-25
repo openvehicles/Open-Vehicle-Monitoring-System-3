@@ -40,10 +40,7 @@ static const char *TAG = "test";
 #include "test_framework.h"
 #include "ovms_command.h"
 #include "ovms_peripherals.h"
-
-#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-#include "duktape.h"
-#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+#include "ovms_script.h"
 
 void test_deepsleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -64,10 +61,9 @@ void test_javascript(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_NONE
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-  duk_context *ctx = duk_create_heap_default();
+  duk_context *ctx = MyScripts.Duktape();
   duk_eval_string(ctx, "1+2");
   writer->printf("Javascript 1+2=%d\n", (int) duk_get_int(ctx, -1));
-  duk_destroy_heap(ctx);
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
