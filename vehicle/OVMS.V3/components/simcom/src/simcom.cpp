@@ -35,11 +35,130 @@ static const char *TAG = "simcom";
 #include "simcom.h"
 #include "ovms_peripherals.h"
 #include "metrics_standard.h"
+#include "ovms_config.h"
 
 static void SIMCOM_task(void *pvParameters)
   {
   simcom *me = (simcom*)pvParameters;
   me->Task();
+  }
+
+static u32_t SimcomPPPOutputCallback(ppp_pcb *pcb, u8_t *data, u32_t len, void *ctx)
+  {
+  simcom* me = (simcom*)ctx;
+
+  MyCommandApp.HexDump("SIMCOM ppp tx",(const char*)data, len);
+  return me->m_mux.tx(GSM_MUX_CHAN_DATA, data, len);
+  }
+
+static void SimcomPPPStatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
+  {
+//  simcom* me = (simcom*)ctx;
+  struct netif *pppif = ppp_netif(pcb);
+
+  switch (err_code)
+    {
+    case PPPERR_NONE:
+      {
+      ESP_LOGI(TAG, "status_cb: Connected");
+#if PPP_IPV4_SUPPORT
+      ESP_LOGI(TAG, "   our_ipaddr  = %s", ipaddr_ntoa(&pppif->ip_addr));
+      ESP_LOGI(TAG, "   his_ipaddr  = %s", ipaddr_ntoa(&pppif->gw));
+      ESP_LOGI(TAG, "   netmask     = %s", ipaddr_ntoa(&pppif->netmask));
+#endif /* PPP_IPV4_SUPPORT */
+#if PPP_IPV6_SUPPORT
+      ESP_LOGI(TAG, "   our6_ipaddr = %s", ip6addr_ntoa(netif_ip6_addr(pppif, 0)));
+#endif /* PPP_IPV6_SUPPORT */
+      break;
+      }
+    case PPPERR_PARAM:
+      {
+      ESP_LOGE(TAG, "status_cb: Invalid parameter\n");
+      break;
+      }
+    case PPPERR_OPEN:
+      {
+      ESP_LOGE(TAG, "status_cb: Unable to open PPP session\n");
+      break;
+      }
+    case PPPERR_DEVICE:
+      {
+      ESP_LOGE(TAG, "status_cb: Invalid I/O device for PPP\n");
+      break;
+      }
+    case PPPERR_ALLOC:
+      {
+      ESP_LOGE(TAG, "status_cb: Unable to allocate resources\n");
+      break;
+      }
+    case PPPERR_USER:
+      {
+      ESP_LOGE(TAG, "status_cb: User interrupt\n");
+      break;
+      }
+    case PPPERR_CONNECT:
+      {
+      ESP_LOGE(TAG, "status_cb: Connection lost\n");
+      break;
+      }
+    case PPPERR_AUTHFAIL:
+      {
+      ESP_LOGE(TAG, "status_cb: Failed authentication challenge\n");
+      break;
+      }
+    case PPPERR_PROTOCOL:
+      {
+      ESP_LOGE(TAG, "status_cb: Failed to meet protocol\n");
+      break;
+      }
+    case PPPERR_PEERDEAD:
+      {
+      ESP_LOGE(TAG, "status_cb: Connection timeout\n");
+      break;
+      }
+    case PPPERR_IDLETIMEOUT:
+      {
+      ESP_LOGE(TAG, "status_cb: Idle Timeout\n");
+      break;
+      }
+    case PPPERR_CONNECTTIME:
+      {
+      ESP_LOGE(TAG, "status_cb: Max connect time reached\n");
+      break;
+      }
+    case PPPERR_LOOPBACK:
+      {
+      ESP_LOGE(TAG, "status_cb: Loopback detected\n");
+      break;
+      }
+    default:
+      {
+      ESP_LOGE(TAG, "status_cb: Unknown error code %d\n", err_code);
+      break;
+      }
+    }
+  /*
+   * This should be in the switch case, this is put outside of the switch
+   * case for example readability.
+   */
+  if (err_code == PPPERR_NONE)
+    {
+    return;
+    }
+
+  /* ppp_close() was previously called, don't reconnect */
+  if (err_code == PPPERR_USER)
+    {
+    /* ppp_free(); -- can be called here */
+    return;
+    }
+
+  /*
+   * Try to reconnect in 30 seconds, if you need a modem chatscript you have
+   * to do a much better signaling here ;-)
+   */
+  //ppp_connect(pcb, 30);
+  /* OR ppp_listen(pcb); */
   }
 
 void simcom::Task()
@@ -114,6 +233,7 @@ simcom::simcom(const char* name, uart_port_t uartnum, int baud, int rxpin, int t
   m_state1_ticker = 0;
   m_state1_timeout_goto = None;
   m_state1_timeout_ticks = -1;
+  m_state1_userdata = 0;
   m_netreg = NotRegistered;
   StartTask();
 
@@ -206,16 +326,30 @@ void simcom::IncomingMuxData(GsmMuxChannel* channel)
   // ESP_LOGI(TAG, "IncomingMuxData(CHAN=%d, buffer used=%d)",channel->m_channel,channel->m_buffer.UsedSpace());
   switch (channel->m_channel)
     {
-    case 0:
+    case GSM_MUX_CHAN_CTRL:
       channel->m_buffer.EmptyAll();
       break;
-    case 1:
+    case GSM_MUX_CHAN_NMEA:
       channel->m_buffer.EmptyAll();
       break;
-    case 2:
+    case GSM_MUX_CHAN_DATA:
+      if (m_state1 == NetMode)
+        {
+        uint8_t buf[32];
+        size_t n;
+        while ((n = channel->m_buffer.Pop(sizeof(buf),buf)) > 0)
+          {
+          MyCommandApp.HexDump("SIMCOM ppp rx",(const char*)buf,n);
+          pppos_input_tcpip(m_ppp, (u8_t*)buf, (int)n);
+          }
+        }
+      else
+        StandardIncomingHandler(&channel->m_buffer);
+      break;
+    case GSM_MUX_CHAN_POLL:
       StandardIncomingHandler(&channel->m_buffer);
       break;
-    case 3:
+    case GSM_MUX_CHAN_CMD:
       StandardIncomingHandler(&channel->m_buffer);
       break;
     default:
@@ -233,8 +367,6 @@ void simcom::SetState1(SimcomState1 newstate)
 
 void simcom::State1Leave(SimcomState1 oldstate)
   {
-  ESP_LOGI(TAG,"State: Leave %d",oldstate);
-
   switch (oldstate)
     {
     case CheckPowerOff:
@@ -244,6 +376,12 @@ void simcom::State1Leave(SimcomState1 oldstate)
     case PoweredOn:
       break;
     case MuxMode:
+      break;
+    case NetStart:
+      break;
+    case NetHold:
+      break;
+    case NetMode:
       break;
     case PoweringOff:
       break;
@@ -258,6 +396,7 @@ void simcom::State1Enter(SimcomState1 newstate)
   {
   m_state1 = newstate;
   m_state1_ticker = 0;
+  m_state1_userdata = 0;
 
   switch (m_state1)
     {
@@ -283,7 +422,30 @@ void simcom::State1Enter(SimcomState1 newstate)
       m_state1_timeout_goto = PoweringOn;
       break;
     case MuxMode:
+      ESP_LOGI(TAG,"State: Enter MuxMode state");
       m_mux.Start();
+      break;
+    case NetStart:
+      ESP_LOGI(TAG,"State: Enter NetStart state");
+      break;
+    case NetHold:
+      ESP_LOGI(TAG,"State: Enter NetHold state");
+      break;
+    case NetMode:
+      ESP_LOGI(TAG,"State: Enter NetMode state");
+      tcpip_adapter_init();
+      m_ppp = pppapi_pppos_create(&m_ppp_netif,
+                SimcomPPPOutputCallback, SimcomPPPStatusCallback, this);
+      if (m_ppp == NULL)
+        {
+        ESP_LOGE(TAG, "Error init pppos");
+        return;
+        }
+      pppapi_set_default(m_ppp);
+      pppapi_set_auth(m_ppp, PPPAUTHTYPE_PAP,
+        MyConfig.GetParamValue("modem", "apn.user").c_str(),
+        MyConfig.GetParamValue("modem", "apn.password").c_str());
+      pppapi_connect(m_ppp, 0);
       break;
     case PoweringOff:
       ESP_LOGI(TAG,"State: Enter PoweringOff state");
@@ -323,6 +485,15 @@ simcom::SimcomState1 simcom::State1Activity()
         }
       break;
     case MuxMode:
+      m_mux.Process(&m_buffer);
+      break;
+    case NetStart:
+      m_mux.Process(&m_buffer);
+      break;
+    case NetHold:
+      m_mux.Process(&m_buffer);
+      break;
+    case NetMode:
       m_mux.Process(&m_buffer);
       break;
     case PoweringOff:
@@ -385,7 +556,50 @@ simcom::SimcomState1 simcom::State1Ticker1()
       break;
     case MuxMode:
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
-        m_mux.tx(3, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
+        m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
+      if (m_mux.m_openchannels == GSM_MUX_CHANNELS)
+        return NetStart;
+      break;
+    case NetStart:
+      if (m_state1_ticker == 1)
+        {
+        // Check for exit out of this state...
+        std::string p = MyConfig.GetParamValue("modem", "enable.net");
+        if ((p.empty())||(p.compare("yes")==0))
+          {
+          p = MyConfig.GetParamValue("modem", "apn");
+          if (!p.empty())
+            {
+            // Ready to start a PPP
+            return None; // Stay in this state...
+            }
+          }
+        return NetHold; // Just hold, without starting the network
+        }
+      else if ((m_state1_ticker > 1)&&((m_netreg==RegisteredHome)||(m_netreg==RegisteredRoaming)))
+        {
+        // OK. We have a network registration, and are ready to start
+        if (m_state1_userdata == 0)
+          {
+          m_state1_userdata = 1;
+          std::string apncmd("AT+CGDCONT=1,\"IP\",\"");
+          apncmd.append(MyConfig.GetParamValue("modem", "apn"));
+          apncmd.append("\";+CGDATA=\"PPP\",1\r\n");
+          m_mux.tx(GSM_MUX_CHAN_DATA,apncmd.c_str());
+          }
+        else if (m_state1_userdata == 2)
+          return NetMode;
+        }
+      if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
+        m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
+      break;
+    case NetHold:
+      if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
+        m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
+      break;
+    case NetMode:
+      if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
+        m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
       break;
     case PoweringOff:
       break;
@@ -443,7 +657,12 @@ void simcom::StandardLineHandler(OvmsBuffer* buf, std::string line)
   {
   MyCommandApp.HexDump("SIMCOM line",line.c_str(),line.length());
 
-  if (line.compare(0, 8, "+ICCID: ") == 0)
+  if ((line.compare(0, 8, "CONNECT ") == 0)&&(m_state1 == NetStart)&&(m_state1_userdata == 1))
+    {
+    ESP_LOGI(TAG, "PPP Connection is ready to start");
+    m_state1_userdata = 2;
+    }
+  else if (line.compare(0, 8, "+ICCID: ") == 0)
     {
     StandardMetrics.ms_m_net_mdm_iccid->SetValue(line.substr(8));
     }
@@ -603,4 +822,13 @@ SimcomInit::SimcomInit()
   OvmsCommand* cmd_simcom = MyCommandApp.RegisterCommand("simcom","SIMCOM framework",NULL, "", 1);
   cmd_simcom->RegisterCommand("tx","Transmit data on SIMCOM",simcom_tx, "", 1);
   cmd_simcom->RegisterCommand("muxtx","Transmit data on SIMCOM MUX",simcom_muxtx, "<chan> <data>", 2);
+
+  MyConfig.RegisterParam("modem", "Modem Configuration", true, true);
+  // Our instances:
+  //   'gsmlock': GSM network to lock to (at COPS stage)
+  //   'apn': GSM APN
+  //   'apn.user': GSM username
+  //   'apn.password': GMS password
+  //   'enable.sms': Is SMS enabled? yes/no (default: yes)
+  //   'enable.net': Is NET enabled? yes/no (default: yes)
   }

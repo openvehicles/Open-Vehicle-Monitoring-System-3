@@ -35,6 +35,13 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "driver/uart.h"
+#include "tcpip_adapter.h"
+extern "C"
+  {
+#include "netif/ppp/pppos.h"
+#include "netif/ppp/ppp.h"
+#include "lwip/pppapi.h"
+  };
 #include "pcp.h"
 #include "ovms_events.h"
 #include "gsmmux.h"
@@ -82,6 +89,9 @@ class simcom : public pcp
       PoweringOn,
       PoweredOn,
       MuxMode,
+      NetStart,
+      NetHold,
+      NetMode,
       PoweringOff,
       PoweredOff
       };
@@ -111,14 +121,19 @@ class simcom : public pcp
       simcom_event_t simcom;
       } SimcomOrUartEvent;
 
-  protected:
+  public:
     OvmsBuffer   m_buffer;
     SimcomState1 m_state1;
     int          m_state1_ticker;
     SimcomState1 m_state1_timeout_goto;
     int          m_state1_timeout_ticks;
+    int          m_state1_userdata;
     network_registration_t m_netreg;
     GsmMux       m_mux;
+
+  public:
+    ppp_pcb*     m_ppp;
+    struct netif m_ppp_netif;
 
   protected:
     void SetState1(SimcomState1 newstate);

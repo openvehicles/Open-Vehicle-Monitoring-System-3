@@ -234,7 +234,7 @@ can::can()
     cmd_canrx->RegisterCommand("extended","Simulate reception of extended CAN frame",can_rx,"<id> <data...>", 1, 9, true);
     }
 
-  m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
+  m_rxqueue = xQueueCreate(20,sizeof(CAN_msg_t));
   xTaskCreatePinnedToCore(CAN_rxtask, "CanRxTask", 2048, (void*)this, 5, &m_rxtask, 1);
   }
 

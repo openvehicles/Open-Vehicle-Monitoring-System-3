@@ -20,7 +20,7 @@ extern "C"
   void app_main(void);
   }
 
-uint16_t monotonictime = 0;
+uint32_t monotonictime = 0;
 Housekeeping* MyHousekeeping = NULL;
 Peripherals* MyPeripherals = NULL;
 

@@ -34,7 +34,7 @@ static const char *TAG = "v-obdii";
 #include <stdio.h>
 #include "vehicle_obdii.h"
 
-OvmsVehicle::poll_pid_t obdii_polls[]
+static const OvmsVehicle::poll_pid_t obdii_polls[]
   =
   {
     { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x05, {  0, 30, 30 } }, // Engine coolant temp
@@ -85,16 +85,16 @@ void OvmsVehicleOBDII::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
         }
       break;
     case 0x05:  // Engine coolant temperature
-      StandardMetrics.ms_v_temp_battery->SetValue(value1 - 0x28);
+      StandardMetrics.ms_v_bat_temp->SetValue(value1 - 0x28);
       break;
     case 0x0f:  // Engine intake air temperature
-      StandardMetrics.ms_v_temp_pem->SetValue(value1 - 0x28);
+      StandardMetrics.ms_v_inv_temp->SetValue(value1 - 0x28);
       break;
     case 0x5c:  // Engine oil temperature
-      StandardMetrics.ms_v_temp_motor->SetValue(value1 - 0x28);
+      StandardMetrics.ms_v_mot_temp->SetValue(value1 - 0x28);
       break;
     case 0x46:  // Ambient temperature
-      StandardMetrics.ms_v_temp_ambient->SetValue(value1 - 0x28);
+      StandardMetrics.ms_v_env_temp->SetValue(value1 - 0x28);
       break;
     case 0x0d:  // Speed
       StandardMetrics.ms_v_pos_speed->SetValue(value1);

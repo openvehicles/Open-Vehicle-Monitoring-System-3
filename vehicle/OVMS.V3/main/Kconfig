@@ -131,6 +131,13 @@ config OVMS_COMP_MODEM_SIMCOM
     help
         Enable to include support for SIMCOM modems
 
+config OVMS_COMP_RE_TOOLS
+    bool "Include support for Reverse Engineering tools"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Reverse Engineering tools
+
 endmenu # Component Options
 
 menu "Developer Options"

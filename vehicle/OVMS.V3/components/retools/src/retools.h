@@ -28,13 +28,52 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __OVMS_H__
-#define __OVMS_H__
+#ifndef __RETOOLS_H__
+#define __RETOOLS_H__
 
-#include <stdint.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
+#include <string>
+#include <map>
+#include "can.h"
+#include "pcp.h"
 
-#define OVMS_VERSION "3.0.0"
+typedef struct
+  {
+  CAN_frame_t last;
+  uint32_t rxcount;
+  } re_record_t;
 
-extern uint32_t monotonictime;
+typedef std::map<uint32_t, uint8_t> re_id_map_t;
+typedef std::map<std::string, re_record_t*> re_record_map_t;
 
-#endif //#ifndef __OVMS_H__
+class re : public pcp
+  {
+  public:
+    re(const char* name);
+    ~re();
+
+  public:
+    virtual void SetPowerMode(PowerMode powermode);
+
+  public:
+    void Task();
+    void Lock();
+    void Unlock();
+    void Clear();
+    std::string GetKey(CAN_frame_t* frame);
+
+  protected:
+    TaskHandle_t m_task;
+    QueueHandle_t m_rxqueue;
+
+  public:
+    QueueHandle_t m_mutex;
+    re_id_map_t m_idmap;
+    re_record_map_t m_rmap;
+    uint32_t m_started;
+    uint32_t m_finished;
+  };
+
+#endif //#ifndef __RETOOLS_H__

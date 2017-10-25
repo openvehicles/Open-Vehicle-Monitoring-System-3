@@ -79,13 +79,13 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           break;
           }
         case 0x82: // Ambient Temperature
-          StandardMetrics.ms_v_temp_ambient->SetValue(d[1]);
+          StandardMetrics.ms_v_env_temp->SetValue(d[1]);
           break;
         case 0xA3: // PEM, MOTOR, BATTERY temperatures
-          StandardMetrics.ms_v_temp_pem->SetValue(d[1]);
-          StandardMetrics.ms_v_temp_charger->SetValue(d[1]);
-          StandardMetrics.ms_v_temp_motor->SetValue(d[2]);
-          StandardMetrics.ms_v_temp_battery->SetValue(d[6]);
+          StandardMetrics.ms_v_inv_temp->SetValue(d[1]);
+          StandardMetrics.ms_v_charge_temp->SetValue(d[1]);
+          StandardMetrics.ms_v_mot_temp->SetValue(d[2]);
+          StandardMetrics.ms_v_bat_temp->SetValue(d[6]);
           break;
         case 0xA4: // 7 bytes start of VIN bytes i.e. "SFZRE2B"
           memcpy(m_vin,d+1,7);

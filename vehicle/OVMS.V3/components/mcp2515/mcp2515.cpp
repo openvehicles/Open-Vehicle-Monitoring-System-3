@@ -28,6 +28,9 @@
 ; THE SOFTWARE.
 */
 
+// #include "esp_log.h"
+// static const char *TAG = "mcp2515";
+
 #include <string.h>
 #include "mcp2515.h"
 #include "soc/gpio_struct.h"
@@ -179,8 +182,10 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
     {
     // Transmit an extended frame
     id[0] = (p_frame->MsgID >> 21) & 0xff;    // HIGH bits
-    id[1] = ((p_frame->MsgID >> 13) & 0xf6)+0x08;  // Next middle bits of extended ID; set the EXT bit too.
-    id[2] = (p_frame->MsgID >> 8)  & 0xff;    // MID 8 bits of extended ID
+    id[1] = ((p_frame->MsgID >> 13) & 0xe0)   // Next middle bits of extended ID; set the EXT bit too.
+          + ((p_frame->MsgID >> 16) & 0x03)
+          + 0x08;
+    id[2] = (p_frame->MsgID >> 8) & 0xff;     // MID 8 bits of extended ID
     id[3] = (p_frame->MsgID & 0xff);          // LOW 8 bits of extended ID
     }
 
@@ -236,15 +241,19 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
       frame->origin = this;
 
       uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 13, 1, 0x90+rxbuf);
-      if (p[1] & 0x20) //check for extended mode=0, or std mode=1, though this seems backwards from standard
+      if (p[1] & 0x08) //check for extended mode=1, or std mode=0
         {
-        frame->FIR.B.FF = CAN_frame_std;
-        frame->MsgID = (p[0] << 3) | (p[1] >> 5);  // Standard mode
+        frame->FIR.B.FF = CAN_frame_ext;           // Extended mode
+        frame->MsgID = ((uint32_t)p[0]<<21)
+                     + (((uint32_t)p[1]&0xe0)<<13)
+                     + (((uint32_t)p[1]&0x03)<<16)
+                     + ((uint32_t)p[2]<<8)
+                     + ((uint32_t)p[3]);
         }
       else
         {
-        frame->FIR.B.FF = CAN_frame_ext;           // Extended mode
-        frame->MsgID = (p[0]<<21) | ((p[1]&0x80)<<13) | ((p[1]&0x0f)<<16) | (p[2]<<8) | (p[3]);
+        frame->FIR.B.FF = CAN_frame_std;
+        frame->MsgID = ((uint32_t)p[0] << 3) + (p[1] >> 5);  // Standard mode
         }
       frame->FIR.B.DLC = p[4] & 0x0f;
 

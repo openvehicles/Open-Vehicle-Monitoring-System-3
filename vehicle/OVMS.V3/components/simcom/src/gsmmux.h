@@ -38,6 +38,13 @@
 class simcom; // Forward declared
 class GsmMux; // Forward declared
 
+#define GSM_MUX_CHANNELS  4
+#define GSM_MUX_CHAN_CTRL 0
+#define GSM_MUX_CHAN_NMEA 1
+#define GSM_MUX_CHAN_DATA 2
+#define GSM_MUX_CHAN_POLL 3
+#define GSM_MUX_CHAN_CMD  4
+
 class GsmMuxChannel
   {
   public:
@@ -76,8 +83,8 @@ class GsmMux
     void StopChannel(int channel);
     void Process(OvmsBuffer* buf);
     void ProcessFrame();
-    void tx(int channel, uint8_t* data, ssize_t size);
-    void tx(int channel, const char* data, ssize_t size = -1);
+    size_t tx(int channel, uint8_t* data, ssize_t size);
+    size_t tx(int channel, const char* data, ssize_t size = -1);
 
   protected:
     void txfcs(uint8_t* data, size_t size, size_t ipos = 4);
@@ -92,8 +99,11 @@ class GsmMux
       };
 
   public:
-    simcom* m_modem;
     GsmMuxState m_state;
+    int m_openchannels;
+
+  public:
+    simcom* m_modem;
     uint8_t* m_frame;
     size_t m_framesize;
     size_t m_framepos;

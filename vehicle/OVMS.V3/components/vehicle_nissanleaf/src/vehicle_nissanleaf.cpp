@@ -293,7 +293,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       // TODO this temperature isn't quite right
       int8_t ambient_temp = d[6] - 56; // Fahrenheit
       ambient_temp = (ambient_temp - 32) / 1.8f; // Celsius
-      StandardMetrics.ms_v_temp_ambient->SetValue(ambient_temp);
+      StandardMetrics.ms_v_env_temp->SetValue(ambient_temp);
       break;
     }
     case 0x5bc:
@@ -353,7 +353,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
     case 0x5c0:
       if (d[0] == 0x40)
         {
-        StandardMetrics.ms_v_temp_battery->SetValue(d[2] / 2 - 40);
+        StandardMetrics.ms_v_bat_temp->SetValue(d[2] / 2 - 40);
         }
       break;
     }
