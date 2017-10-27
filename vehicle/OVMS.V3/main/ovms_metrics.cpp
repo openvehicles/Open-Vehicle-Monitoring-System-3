@@ -358,12 +358,14 @@ int OvmsMetricInt::AsInt(const int defvalue)
     return defvalue;
   }
 
-void OvmsMetricInt::SetValue(int value)
+void OvmsMetricInt::SetValue(int value, metric_unit_t units)
   {
-  m_value = value;
-  if (m_value != value)
+  int nvalue = value;
+  if ((units != Other)&&(units != m_units)) nvalue=UnitConvert(units,m_units,value);
+
+  if (m_value != nvalue)
     {
-    m_value = value;
+    m_value = nvalue;
     SetModified(true);
     }
   else
@@ -475,11 +477,14 @@ float OvmsMetricFloat::AsFloat(const float defvalue)
     return defvalue;
   }
 
-void OvmsMetricFloat::SetValue(float value)
+void OvmsMetricFloat::SetValue(float value, metric_unit_t units)
   {
-  if (m_value != value)
+  float nvalue = value;
+  if ((units != Other)&&(units != m_units)) nvalue=UnitConvert(units,m_units,value);
+
+  if (m_value != nvalue)
     {
-    m_value = value;
+    m_value = nvalue;
     SetModified(true);
     }
   else
@@ -552,3 +557,108 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
     default:           return "";
     }
   }
+
+int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
+  {
+  switch (from)
+    {
+    case Kilometers:
+      if (to == Miles) return (value*5)/8;
+      else if (to == Meters) return value/1000;
+      break;
+    case Miles:
+      if (to == Kilometers) return (value*8)/5;
+      else if (to == Meters) return (value*8000)/5;
+      break;
+    case Celcius:
+      if (to == Fahrenheit) return ((value*9)/5) + 32;
+      break;
+    case Fahrenheit:
+      if (to == Celcius) return ((value-32)*5)/9;
+      break;
+    case kPa:
+      if (to == Pa) return value*1000;
+      else if (to == PSI) return int((float)value * 0.14503773773020923);
+    case Pa:
+      if (to == kPa) return value/1000;
+      else if (to == PSI) return int((float)value * 0.00014503773773020923);
+    case PSI:
+      if (to == kPa) return int((float)value * 6.894757293168361);
+      else if (to == Pa) return int((float)value * 0.006894757293168361);
+      break;
+    case Seconds:
+      if (to == Minutes) return value/60;
+      else if (to == Hours) return value/3600;
+      break;
+    case Minutes:
+      if (to == Seconds) return value*60;
+      else if (to == Hours) return value/60;
+      break;
+    case Hours:
+      if (to == Seconds) return value*3600;
+      else if (to == Minutes) return value*60;
+      break;
+    case Kph:
+      if (to == Mph) return (value*5)/8;
+      break;
+    case Mph:
+      if (to == Kph) return (value*8)/5;
+      break;
+    default:
+      return value;
+    }
+  return value;
+  }
+
+float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
+  {
+  switch (from)
+    {
+    case Kilometers:
+      if (to == Miles) return (value*5)/8;
+      else if (to == Meters) return value/1000;
+      break;
+    case Miles:
+      if (to == Kilometers) return (value*8)/5;
+      else if (to == Meters) return (value*8000)/5;
+      break;
+    case Celcius:
+      if (to == Fahrenheit) return ((value*9)/5) + 32;
+      break;
+    case Fahrenheit:
+      if (to == Celcius) return ((value-32)*5)/9;
+      break;
+    case kPa:
+      if (to == Pa) return value*1000;
+      else if (to == PSI) return value * 0.14503773773020923;
+    case Pa:
+      if (to == kPa) return value/1000;
+      else if (to == PSI) return value * 0.00014503773773020923;
+    case PSI:
+      if (to == kPa) return value * 6.894757293168361;
+      else if (to == Pa) return value * 0.006894757293168361;
+      break;
+    case Seconds:
+      if (to == Minutes) return value/60;
+      else if (to == Hours) return value/3600;
+      break;
+    case Minutes:
+      if (to == Seconds) return value*60;
+      else if (to == Hours) return value/60;
+      break;
+    case Hours:
+      if (to == Seconds) return value*3600;
+      else if (to == Minutes) return value*60;
+      break;
+    case Kph:
+      if (to == Mph) return (value*5)/8;
+      break;
+    case Mph:
+      if (to == Kph) return (value*8)/5;
+      break;
+    default:
+      return value;
+    }
+  return value;
+  }
+

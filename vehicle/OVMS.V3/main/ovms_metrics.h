@@ -76,6 +76,8 @@ typedef enum
   } metric_unit_t;
 
 extern const char* OvmsMetricUnitLabel(metric_unit_t units);
+extern int UnitConvert(metric_unit_t from, metric_unit_t to, int value);
+extern float UnitConvert(metric_unit_t from, metric_unit_t to, float value);
 
 class OvmsMetric
   {
@@ -131,7 +133,7 @@ class OvmsMetricInt : public OvmsMetric
   public:
     std::string AsString(const char* defvalue = "");
     int AsInt(const int defvalue = 0);
-    void SetValue(int value);
+    void SetValue(int value, metric_unit_t units = Other);
     void SetValue(std::string value);
 
   protected:
@@ -147,7 +149,7 @@ class OvmsMetricFloat : public OvmsMetric
   public:
     std::string AsString(const char* defvalue = "");
     float AsFloat(const float defvalue = 0);
-    void SetValue(float value);
+    void SetValue(float value, metric_unit_t units = Other);
     void SetValue(std::string value);
 
   protected:
