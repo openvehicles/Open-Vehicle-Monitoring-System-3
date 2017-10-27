@@ -41,6 +41,7 @@ static const char *TAG = "obd2ecu";
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
 
+
 obd2pid::obd2pid(int pid, bool internal)
   {
   m_pid = pid;
@@ -113,7 +114,6 @@ obd2ecu::obd2ecu(const char* name, canbus* can)
   m_can->SetPowerMode(On);
 
   m_starttime = time(NULL);
-  m_private = MyConfig.GetParamValueBool("obd2ecu","private");
 
   LoadMap();
 
@@ -169,21 +169,6 @@ void obd2ecu_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     }
   }
   
- void obd2ecu_privacy(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-    if(MyPeripherals->m_obd2ecu == NULL) 
-    { writer->puts("OBDII:  Need to start ecu process first");
-      return;
-    }
-    if(!strcmp(argv[0],"on")) MyPeripherals->m_obd2ecu->m_private = 1;
-       else if(!strcmp(argv[0],"off")) MyPeripherals->m_obd2ecu->m_private = 0;
-        else 
-        { writer->puts("OBDII Privacy: Need 'on' or 'off'");
-          return;
-        }
-    
-    writer->puts("OBDII Privacy has been set");
-  } 
   
 //
 // Fill Mode 1 frames with data based on format specified
@@ -267,7 +252,7 @@ void obd2ecu::FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint
   frame->data.u8[6] = 0;			
   frame->data.u8[7] = 0x55;   /* pad 0x55 */
 
-  return;			
+  return;
   }
 
 void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
@@ -353,7 +338,8 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           /* For now, derive RPM from vehicle speed. Roadster ratio:  14,000 rpm div by 201 km/h = 70 */
           /* adding "jitter" to keep the dongle from going to sleep. ASSUME: speed is in km/h, not mph*/
           metric = StandardMetrics.ms_v_pos_speed->AsFloat()*70+jitter;
-          if(StandardMetrics.ms_v_pos_speed->AsFloat() == 0) metric = 500+jitter;   // Minimum RPM to keep HUD from going to sleep if not moving
+          // Minimum "idle" RPM to keep HUD from going to sleep, but only if not moving.
+          if(StandardMetrics.ms_v_pos_speed->AsFloat() < 1.0) metric = 500+jitter; 
           FillFrame(&r_frame,reply,mapped_pid,metric,3);
           m_can->Write(&r_frame);
           break;
@@ -372,7 +358,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           /* NO clue what the conversion formula is, but seems to have a display range of 0-19.9 */
           /* If configured with 11 as "Emission Setting" and 52% for "fuel connsumption" metrics */
           /* will display 0-10.0 for 0-100% with input of 0-33.  Use with display sete to L/hr (not L/km).  */
-          metric = StandardMetrics.ms_v_bat_soc->AsFloat()/(float)3.3;
+          metric = StandardMetrics.ms_v_bat_soc->AsFloat()*3.0;
           FillFrame(&r_frame,reply,mapped_pid,metric,6);
           m_can->Write(&r_frame);
           break;
@@ -469,7 +455,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
         case 2:
           if(verbose) ESP_LOGI(TAG, "Requested VIN");
           
-          if(m_private)   /* ignore request for privacy's sake. Doesn't seem to matter to Dongle. */
+          if(MyConfig.GetParamValueBool("obd2ecu","private"))   /* ignore request for privacy's sake. Doesn't seem to matter to Dongle. */
           { if(verbose) ESP_LOGI(TAG, "VIN request ignored");
             break;
           }
@@ -644,7 +630,6 @@ obd2ecuInit::obd2ecuInit()
   cmd_start->RegisterCommand("can2","Start an OBDII ECU on can2",obd2ecu_start, "", 0, 0);
   cmd_start->RegisterCommand("can3","Start an OBDII ECU on can3",obd2ecu_start, "", 0, 0);
   cmd_ecu->RegisterCommand("stop","Stop the OBDII ECU",obd2ecu_stop, "", 0, 0);
-  cmd_ecu->RegisterCommand("privacy","Set Privacy on/off (hide / allow VIN reporting)",obd2ecu_privacy, "", 1, 1, true);
 
   MyConfig.RegisterParam("obd2ecu", "OBD2ECU configuration", true, true);
   }
