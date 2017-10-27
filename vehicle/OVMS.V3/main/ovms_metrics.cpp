@@ -256,7 +256,7 @@ OvmsMetric::~OvmsMetric()
   {
   }
 
-std::string OvmsMetric::AsString(const char* defvalue)
+std::string OvmsMetric::AsString(const char* defvalue, metric_unit_t units)
   {
   return std::string(defvalue);
   }
@@ -402,7 +402,7 @@ OvmsMetricBool::~OvmsMetricBool()
   {
   }
 
-std::string OvmsMetricBool::AsString(const char* defvalue)
+std::string OvmsMetricBool::AsString(const char* defvalue, metric_unit_t units)
   {
   if (m_defined)
     {
@@ -528,7 +528,7 @@ OvmsMetricString::~OvmsMetricString()
   {
   }
 
-std::string OvmsMetricString::AsString(const char* defvalue)
+std::string OvmsMetricString::AsString(const char* defvalue, metric_unit_t units)
   {
   if (m_defined)
     return m_value;

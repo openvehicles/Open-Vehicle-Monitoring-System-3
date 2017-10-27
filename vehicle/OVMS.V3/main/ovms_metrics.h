@@ -86,7 +86,7 @@ class OvmsMetric
     virtual ~OvmsMetric();
 
   public:
-    virtual std::string AsString(const char* defvalue = "");
+    virtual std::string AsString(const char* defvalue = "", metric_unit_t units = Other);
     virtual void SetValue(std::string value);
     virtual uint32_t LastModified();
     virtual bool IsStale();
@@ -115,7 +115,7 @@ class OvmsMetricBool : public OvmsMetric
     virtual ~OvmsMetricBool();
 
   public:
-    std::string AsString(const char* defvalue = "");
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other);
     int AsBool(const bool defvalue = false);
     void SetValue(bool value);
     void SetValue(std::string value);
@@ -163,7 +163,7 @@ class OvmsMetricString : public OvmsMetric
     virtual ~OvmsMetricString();
 
   public:
-    std::string AsString(const char* defvalue = "");
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other);
     void SetValue(std::string value);
 
   protected:
