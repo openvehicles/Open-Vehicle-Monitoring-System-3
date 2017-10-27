@@ -35,7 +35,6 @@ static const char *TAG = "ovms-server-v2";
 #include <sstream>
 #include "ovms_command.h"
 #include "ovms_config.h"
-#include "ovms_metrics.h"
 #include "metrics_standard.h"
 #include "crypt_base64.h"
 #include "crypt_hmac.h"
@@ -79,6 +78,11 @@ size_t MyOvmsServerV2Modifier = 0;
 void OvmsServerV2::ServerTask()
   {
   ESP_LOGI(TAG, "OVMS Server v2 task running");
+
+  if (MyConfig.GetParamValue("vehicle", "units.distance").compare("M") == 0)
+    m_units_distance = Miles;
+  else
+    m_units_distance = Kilometers;
 
   int lasttx = 0;
   while(1)
@@ -372,7 +376,10 @@ void OvmsServerV2::TransmitMsgStat(bool always)
   buffer.append("MP-0 S");
   buffer.append(StandardMetrics.ms_v_bat_soc->AsString("0").c_str());
   buffer.append(",");
-  buffer.append("K");  // units
+  if (m_units_distance == Kilometers)
+    buffer.append("K");
+  else
+    buffer.append("M");
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_charge_voltage->AsString("0").c_str());
   buffer.append(",");
@@ -382,10 +389,9 @@ void OvmsServerV2::TransmitMsgStat(bool always)
   buffer.append(",");
   buffer.append("standard");  // car_chargemode
   buffer.append(",");
-  // TODO convert to miles/km if necessary
-  buffer.append(StandardMetrics.ms_v_bat_range_ideal->AsString("0").c_str());
+  buffer.append(StandardMetrics.ms_v_bat_range_ideal->AsString("0",m_units_distance).c_str());
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_bat_range_est->AsString("0").c_str());
+  buffer.append(StandardMetrics.ms_v_bat_range_est->AsString("0",m_units_distance).c_str());
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_charge_climit->AsString("0").c_str());
   buffer.append(",");
@@ -465,19 +471,19 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
   std::string buffer;
   buffer.reserve(512);
   buffer.append("MP-0 W");
-  buffer.append(StandardMetrics.ms_v_tpms_fr_p->AsString());
+  buffer.append(StandardMetrics.ms_v_tpms_fr_p->AsString("0",PSI));
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_tpms_fr_t->AsString());
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_rr_p->AsString());
+  buffer.append(StandardMetrics.ms_v_tpms_rr_p->AsString("0",PSI));
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_tpms_rr_t->AsString());
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_fl_p->AsString());
+  buffer.append(StandardMetrics.ms_v_tpms_fl_p->AsString("0",PSI));
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_tpms_fl_t->AsString());
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_rl_p->AsString());
+  buffer.append(StandardMetrics.ms_v_tpms_rl_p->AsString("0",PSI));
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_tpms_rl_t->AsString());
 

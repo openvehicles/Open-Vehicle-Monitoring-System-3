@@ -37,6 +37,7 @@
 #include "ovms_net.h"
 #include "ovms_buffer.h"
 #include "crypt_rc4.h"
+#include "ovms_metrics.h"
 
 #define OVMS_PROTOCOL_V2_TOKENSIZE 22
 
@@ -73,6 +74,7 @@ class OvmsServerV2 : public OvmsServer
     void TransmitMsgGroup(bool always);
 
   protected:
+    metric_unit_t m_units_distance;
     OvmsNetTcpConnection m_conn;
     OvmsBuffer* m_buffer;
     std::string m_vehicleid;
