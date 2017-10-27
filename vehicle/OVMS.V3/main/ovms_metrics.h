@@ -131,8 +131,8 @@ class OvmsMetricInt : public OvmsMetric
     virtual ~OvmsMetricInt();
 
   public:
-    std::string AsString(const char* defvalue = "");
-    int AsInt(const int defvalue = 0);
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other);
+    int AsInt(const int defvalue = 0, metric_unit_t units = Other);
     void SetValue(int value, metric_unit_t units = Other);
     void SetValue(std::string value);
 
@@ -147,8 +147,8 @@ class OvmsMetricFloat : public OvmsMetric
     virtual ~OvmsMetricFloat();
 
   public:
-    std::string AsString(const char* defvalue = "");
-    float AsFloat(const float defvalue = 0);
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other);
+    float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     void SetValue(float value, metric_unit_t units = Other);
     void SetValue(std::string value);
 

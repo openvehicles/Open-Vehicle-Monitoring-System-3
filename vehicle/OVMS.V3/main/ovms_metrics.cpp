@@ -336,12 +336,15 @@ OvmsMetricInt::~OvmsMetricInt()
   {
   }
 
-std::string OvmsMetricInt::AsString(const char* defvalue)
+std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units)
   {
   if (m_defined)
     {
     char buffer[33];
-    itoa (m_value,buffer,10);
+    if ((units != Other)&&(units != m_units))
+      itoa(UnitConvert(m_units,units,m_value),buffer,10);
+    else
+      itoa (m_value,buffer,10);
     return buffer;
     }
   else
@@ -350,10 +353,15 @@ std::string OvmsMetricInt::AsString(const char* defvalue)
     }
   }
 
-int OvmsMetricInt::AsInt(const int defvalue)
+int OvmsMetricInt::AsInt(const int defvalue, metric_unit_t units)
   {
   if (m_defined)
-    return m_value;
+    {
+    if ((units != Other)&&(units != m_units))
+      return UnitConvert(m_units,units,m_value);
+    else
+      return m_value;
+    }
   else
     return defvalue;
   }
@@ -454,12 +462,15 @@ OvmsMetricFloat::~OvmsMetricFloat()
   {
   }
 
-std::string OvmsMetricFloat::AsString(const char* defvalue)
+std::string OvmsMetricFloat::AsString(const char* defvalue, metric_unit_t units)
   {
   if (m_defined)
     {
     std::ostringstream ss;
-    ss << m_value;
+    if ((units != Other)&&(units != m_units))
+      ss << UnitConvert(m_units,units,m_value);
+    else
+      ss << m_value;
     std::string s(ss.str());
     return s;
     }
@@ -469,10 +480,15 @@ std::string OvmsMetricFloat::AsString(const char* defvalue)
     }
   }
 
-float OvmsMetricFloat::AsFloat(const float defvalue)
+float OvmsMetricFloat::AsFloat(const float defvalue, metric_unit_t units)
   {
   if (m_defined)
-    return m_value;
+    {
+    if ((units != Other)&&(units != m_units))
+      return UnitConvert(m_units,units,m_value);
+    else
+      return m_value;
+    }
   else
     return defvalue;
   }
