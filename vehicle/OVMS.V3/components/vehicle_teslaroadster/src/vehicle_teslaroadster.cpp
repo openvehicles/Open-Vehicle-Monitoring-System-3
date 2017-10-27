@@ -40,7 +40,7 @@ static const char *TAG = "v-teslaroadster";
 
 float TeslaRoadsterLatLon(int v)
   {
-  return (((float)v) / 2048 / 3600)*1000000;
+  return (((float)v) / 2048 / 3600);
   }
 
 OvmsVehicleTeslaRoadster::OvmsVehicleTeslaRoadster()
