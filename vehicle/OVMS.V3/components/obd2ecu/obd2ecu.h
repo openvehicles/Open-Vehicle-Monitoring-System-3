@@ -72,7 +72,6 @@ class obd2ecu : public pcp
     QueueHandle_t m_rxqueue;
     TaskHandle_t m_task;
     time_t m_starttime;
-    uint8_t m_private;
     PidMap m_pidmap;
 
   public:
