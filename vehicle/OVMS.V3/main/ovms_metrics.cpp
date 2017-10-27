@@ -53,7 +53,10 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     std::string v = it->second->AsString();
     if ((argc==0)||(strstr(k,argv[0])))
       {
-      writer->printf("%-30.30s %s\n",k,v.c_str());
+      if (v.empty())
+        writer->printf("%-30.30s\n",k);
+      else
+        writer->printf("%-30.30s %s%s\n",k,v.c_str(),OvmsMetricUnitLabel(it->second->GetUnits()));
       found = true;
       }
     }
@@ -238,13 +241,14 @@ size_t OvmsMetrics::RegisterModifier()
   return m_nextmodifier++;
   }
 
-OvmsMetric::OvmsMetric(const char* name, int autostale)
+OvmsMetric::OvmsMetric(const char* name, int autostale, metric_unit_t units)
   {
   m_defined = false;
   m_modified.reset();
   m_name = name;
   m_lastmodified = 0;
   m_autostale = autostale;
+  m_units = units;
   MyMetrics.RegisterMetric(this, name);
   }
 
@@ -300,6 +304,11 @@ void OvmsMetric::SetAutoStale(int seconds)
   m_autostale = seconds;
   }
 
+metric_unit_t OvmsMetric::GetUnits()
+  {
+  return m_units;
+  }
+
 bool OvmsMetric::IsModified(size_t modifier)
   {
   return m_modified[modifier];
@@ -317,8 +326,8 @@ void OvmsMetric::ClearModified(size_t modifier)
   m_modified.reset(modifier);
   }
 
-OvmsMetricInt::OvmsMetricInt(const char* name, int autostale)
-  : OvmsMetric(name, autostale)
+OvmsMetricInt::OvmsMetricInt(const char* name, int autostale, metric_unit_t units)
+  : OvmsMetric(name, autostale, units)
   {
   m_value = 0;
   }
@@ -373,8 +382,8 @@ void OvmsMetricInt::SetValue(std::string value)
     SetModified(false);
   }
 
-OvmsMetricBool::OvmsMetricBool(const char* name, int autostale)
-  : OvmsMetric(name, autostale)
+OvmsMetricBool::OvmsMetricBool(const char* name, int autostale, metric_unit_t units)
+  : OvmsMetric(name, autostale, units)
   {
   m_value = false;
   }
@@ -433,8 +442,8 @@ void OvmsMetricBool::SetValue(std::string value)
     SetModified(false);
   }
 
-OvmsMetricFloat::OvmsMetricFloat(const char* name, int autostale)
-  : OvmsMetric(name, autostale)
+OvmsMetricFloat::OvmsMetricFloat(const char* name, int autostale, metric_unit_t units)
+  : OvmsMetric(name, autostale, units)
   {
   m_value = 0;
   }
@@ -489,8 +498,8 @@ void OvmsMetricFloat::SetValue(std::string value)
     SetModified(false);
   }
 
-OvmsMetricString::OvmsMetricString(const char* name, int autostale)
-  : OvmsMetric(name, autostale)
+OvmsMetricString::OvmsMetricString(const char* name, int autostale, metric_unit_t units)
+  : OvmsMetric(name, autostale, units)
   {
   }
 
@@ -515,4 +524,31 @@ void OvmsMetricString::SetValue(std::string value)
     }
   else
     SetModified(false);
+  }
+
+const char* OvmsMetricUnitLabel(metric_unit_t units)
+  {
+  switch (units)
+    {
+    case Kilometers:   return "Km";
+    case Miles:        return "M";
+    case Meters:       return "m";
+    case Celcius:      return "°C";
+    case Fahrenheit:   return "°F";
+    case kPa:          return "kPa";
+    case Pa:           return "Pa";
+    case PSI:          return "psi";
+    case Volts:        return "V";
+    case Amps:         return "A";
+    case AmpHours:     return "Ah";
+    case kWh:          return "kWh";
+    case Seconds:      return "Sec";
+    case Minutes:      return "Min";
+    case Hours:        return "Hour";
+    case Degrees:      return "°";
+    case Kph:          return "Kph";
+    case Mph:          return "Mph";
+    case Percentage:   return "%";
+    default:           return "";
+    }
   }
