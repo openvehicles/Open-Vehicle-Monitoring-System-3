@@ -355,9 +355,9 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           break;
         case 0x10:	/* MAF (Mass Air flow) rate - Map to SoC */
           /* For some reason, the HUD uses this param as a proxy for fuel rate */
-          /* NO clue what the conversion formula is, but seems to have a display range of 0-19.9 */
-          /* If configured with 11 as "Emission Setting" and 52% for "fuel connsumption" metrics */
-          /* will display 0-10.0 for 0-100% with input of 0-33.  Use with display sete to L/hr (not L/km).  */
+          /* HUD devices seem to have a display range of 0-19.9 */
+          /* Scaling provides a 1:1 metric pass-through, so be aware of limmits of the display device */
+          /* Use with display set to L/hr (not L/km).  */
           metric = StandardMetrics.ms_v_bat_soc->AsFloat()*3.0;
           FillFrame(&r_frame,reply,mapped_pid,metric,6);
           m_can->Write(&r_frame);
