@@ -53,7 +53,10 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     std::string v = it->second->AsString();
     if ((argc==0)||(strstr(k,argv[0])))
       {
-      writer->printf("%-30.30s %s\n",k,v.c_str());
+      if (v.empty())
+        writer->printf("%-30.30s\n",k);
+      else
+        writer->printf("%-30.30s %s%s\n",k,v.c_str(),OvmsMetricUnitLabel(it->second->GetUnits()));
       found = true;
       }
     }
@@ -238,13 +241,14 @@ size_t OvmsMetrics::RegisterModifier()
   return m_nextmodifier++;
   }
 
-OvmsMetric::OvmsMetric(const char* name, int autostale)
+OvmsMetric::OvmsMetric(const char* name, int autostale, metric_unit_t units)
   {
   m_defined = false;
   m_modified.reset();
   m_name = name;
   m_lastmodified = 0;
   m_autostale = autostale;
+  m_units = units;
   MyMetrics.RegisterMetric(this, name);
   }
 
@@ -300,6 +304,11 @@ void OvmsMetric::SetAutoStale(int seconds)
   m_autostale = seconds;
   }
 
+metric_unit_t OvmsMetric::GetUnits()
+  {
+  return m_units;
+  }
+
 bool OvmsMetric::IsModified(size_t modifier)
   {
   return m_modified[modifier];
@@ -317,8 +326,8 @@ void OvmsMetric::ClearModified(size_t modifier)
   m_modified.reset(modifier);
   }
 
-OvmsMetricInt::OvmsMetricInt(const char* name, int autostale)
-  : OvmsMetric(name, autostale)
+OvmsMetricInt::OvmsMetricInt(const char* name, int autostale, metric_unit_t units)
+  : OvmsMetric(name, autostale, units)
   {
   m_value = 0;
   }
@@ -327,12 +336,15 @@ OvmsMetricInt::~OvmsMetricInt()
   {
   }
 
-std::string OvmsMetricInt::AsString(const char* defvalue)
+std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units)
   {
   if (m_defined)
     {
     char buffer[33];
-    itoa (m_value,buffer,10);
+    if ((units != Other)&&(units != m_units))
+      itoa(UnitConvert(m_units,units,m_value),buffer,10);
+    else
+      itoa (m_value,buffer,10);
     return buffer;
     }
   else
@@ -341,20 +353,27 @@ std::string OvmsMetricInt::AsString(const char* defvalue)
     }
   }
 
-int OvmsMetricInt::AsInt(const int defvalue)
+int OvmsMetricInt::AsInt(const int defvalue, metric_unit_t units)
   {
   if (m_defined)
-    return m_value;
+    {
+    if ((units != Other)&&(units != m_units))
+      return UnitConvert(m_units,units,m_value);
+    else
+      return m_value;
+    }
   else
     return defvalue;
   }
 
-void OvmsMetricInt::SetValue(int value)
+void OvmsMetricInt::SetValue(int value, metric_unit_t units)
   {
-  m_value = value;
-  if (m_value != value)
+  int nvalue = value;
+  if ((units != Other)&&(units != m_units)) nvalue=UnitConvert(units,m_units,value);
+
+  if (m_value != nvalue)
     {
-    m_value = value;
+    m_value = nvalue;
     SetModified(true);
     }
   else
@@ -373,8 +392,8 @@ void OvmsMetricInt::SetValue(std::string value)
     SetModified(false);
   }
 
-OvmsMetricBool::OvmsMetricBool(const char* name, int autostale)
-  : OvmsMetric(name, autostale)
+OvmsMetricBool::OvmsMetricBool(const char* name, int autostale, metric_unit_t units)
+  : OvmsMetric(name, autostale, units)
   {
   m_value = false;
   }
@@ -433,8 +452,8 @@ void OvmsMetricBool::SetValue(std::string value)
     SetModified(false);
   }
 
-OvmsMetricFloat::OvmsMetricFloat(const char* name, int autostale)
-  : OvmsMetric(name, autostale)
+OvmsMetricFloat::OvmsMetricFloat(const char* name, int autostale, metric_unit_t units)
+  : OvmsMetric(name, autostale, units)
   {
   m_value = 0;
   }
@@ -443,12 +462,15 @@ OvmsMetricFloat::~OvmsMetricFloat()
   {
   }
 
-std::string OvmsMetricFloat::AsString(const char* defvalue)
+std::string OvmsMetricFloat::AsString(const char* defvalue, metric_unit_t units)
   {
   if (m_defined)
     {
     std::ostringstream ss;
-    ss << m_value;
+    if ((units != Other)&&(units != m_units))
+      ss << UnitConvert(m_units,units,m_value);
+    else
+      ss << m_value;
     std::string s(ss.str());
     return s;
     }
@@ -458,19 +480,27 @@ std::string OvmsMetricFloat::AsString(const char* defvalue)
     }
   }
 
-float OvmsMetricFloat::AsFloat(const float defvalue)
+float OvmsMetricFloat::AsFloat(const float defvalue, metric_unit_t units)
   {
   if (m_defined)
-    return m_value;
+    {
+    if ((units != Other)&&(units != m_units))
+      return UnitConvert(m_units,units,m_value);
+    else
+      return m_value;
+    }
   else
     return defvalue;
   }
 
-void OvmsMetricFloat::SetValue(float value)
+void OvmsMetricFloat::SetValue(float value, metric_unit_t units)
   {
-  if (m_value != value)
+  float nvalue = value;
+  if ((units != Other)&&(units != m_units)) nvalue=UnitConvert(units,m_units,value);
+
+  if (m_value != nvalue)
     {
-    m_value = value;
+    m_value = nvalue;
     SetModified(true);
     }
   else
@@ -489,8 +519,8 @@ void OvmsMetricFloat::SetValue(std::string value)
     SetModified(false);
   }
 
-OvmsMetricString::OvmsMetricString(const char* name, int autostale)
-  : OvmsMetric(name, autostale)
+OvmsMetricString::OvmsMetricString(const char* name, int autostale, metric_unit_t units)
+  : OvmsMetric(name, autostale, units)
   {
   }
 
@@ -516,3 +546,135 @@ void OvmsMetricString::SetValue(std::string value)
   else
     SetModified(false);
   }
+
+const char* OvmsMetricUnitLabel(metric_unit_t units)
+  {
+  switch (units)
+    {
+    case Kilometers:   return "Km";
+    case Miles:        return "M";
+    case Meters:       return "m";
+    case Celcius:      return "°C";
+    case Fahrenheit:   return "°F";
+    case kPa:          return "kPa";
+    case Pa:           return "Pa";
+    case PSI:          return "psi";
+    case Volts:        return "V";
+    case Amps:         return "A";
+    case AmpHours:     return "Ah";
+    case kWh:          return "kWh";
+    case Seconds:      return "Sec";
+    case Minutes:      return "Min";
+    case Hours:        return "Hour";
+    case Degrees:      return "°";
+    case Kph:          return "Kph";
+    case Mph:          return "Mph";
+    case Percentage:   return "%";
+    default:           return "";
+    }
+  }
+
+int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
+  {
+  switch (from)
+    {
+    case Kilometers:
+      if (to == Miles) return (value*5)/8;
+      else if (to == Meters) return value/1000;
+      break;
+    case Miles:
+      if (to == Kilometers) return (value*8)/5;
+      else if (to == Meters) return (value*8000)/5;
+      break;
+    case Celcius:
+      if (to == Fahrenheit) return ((value*9)/5) + 32;
+      break;
+    case Fahrenheit:
+      if (to == Celcius) return ((value-32)*5)/9;
+      break;
+    case kPa:
+      if (to == Pa) return value*1000;
+      else if (to == PSI) return int((float)value * 0.14503773773020923);
+    case Pa:
+      if (to == kPa) return value/1000;
+      else if (to == PSI) return int((float)value * 0.00014503773773020923);
+    case PSI:
+      if (to == kPa) return int((float)value * 6.894757293168361);
+      else if (to == Pa) return int((float)value * 0.006894757293168361);
+      break;
+    case Seconds:
+      if (to == Minutes) return value/60;
+      else if (to == Hours) return value/3600;
+      break;
+    case Minutes:
+      if (to == Seconds) return value*60;
+      else if (to == Hours) return value/60;
+      break;
+    case Hours:
+      if (to == Seconds) return value*3600;
+      else if (to == Minutes) return value*60;
+      break;
+    case Kph:
+      if (to == Mph) return (value*5)/8;
+      break;
+    case Mph:
+      if (to == Kph) return (value*8)/5;
+      break;
+    default:
+      return value;
+    }
+  return value;
+  }
+
+float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
+  {
+  switch (from)
+    {
+    case Kilometers:
+      if (to == Miles) return (value*5)/8;
+      else if (to == Meters) return value/1000;
+      break;
+    case Miles:
+      if (to == Kilometers) return (value*8)/5;
+      else if (to == Meters) return (value*8000)/5;
+      break;
+    case Celcius:
+      if (to == Fahrenheit) return ((value*9)/5) + 32;
+      break;
+    case Fahrenheit:
+      if (to == Celcius) return ((value-32)*5)/9;
+      break;
+    case kPa:
+      if (to == Pa) return value*1000;
+      else if (to == PSI) return value * 0.14503773773020923;
+    case Pa:
+      if (to == kPa) return value/1000;
+      else if (to == PSI) return value * 0.00014503773773020923;
+    case PSI:
+      if (to == kPa) return value * 6.894757293168361;
+      else if (to == Pa) return value * 0.006894757293168361;
+      break;
+    case Seconds:
+      if (to == Minutes) return value/60;
+      else if (to == Hours) return value/3600;
+      break;
+    case Minutes:
+      if (to == Seconds) return value*60;
+      else if (to == Hours) return value/60;
+      break;
+    case Hours:
+      if (to == Seconds) return value*3600;
+      else if (to == Minutes) return value*60;
+      break;
+    case Kph:
+      if (to == Mph) return (value*5)/8;
+      break;
+    case Mph:
+      if (to == Kph) return (value*8)/5;
+      break;
+    default:
+      return value;
+    }
+  return value;
+  }
+

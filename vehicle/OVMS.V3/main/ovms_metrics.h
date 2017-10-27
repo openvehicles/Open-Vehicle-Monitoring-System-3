@@ -43,10 +43,46 @@
 
 using namespace std;
 
+typedef enum
+  {
+  Other         = 0,
+
+  Kilometers    = 10,
+  Miles         = 11,
+  Meters        = 12,
+
+  Celcius       = 20,
+  Fahrenheit    = 21,
+
+  kPa           = 30,
+  Pa            = 31,
+  PSI           = 32,
+
+  Volts         = 40,
+  Amps          = 41,
+  AmpHours      = 42,
+  kWh           = 43,
+
+  Seconds       = 50,
+  Minutes       = 51,
+  Hours         = 52,
+
+  Degrees       = 60,
+
+  Kph           = 61,
+  Mph           = 62,
+
+  Percentage    = 90
+  } metric_unit_t;
+
+extern const char* OvmsMetricUnitLabel(metric_unit_t units);
+extern int UnitConvert(metric_unit_t from, metric_unit_t to, int value);
+extern float UnitConvert(metric_unit_t from, metric_unit_t to, float value);
+
 class OvmsMetric
   {
   public:
-    OvmsMetric(const char* name, int autostale=0);
+    OvmsMetric(const char* name, int autostale=0, metric_unit_t units = Other);
     virtual ~OvmsMetric();
 
   public:
@@ -56,6 +92,7 @@ class OvmsMetric
     virtual bool IsStale();
     virtual void SetStale(bool stale);
     virtual void SetAutoStale(int seconds);
+    virtual metric_unit_t GetUnits();
     virtual bool IsModified(size_t modifier);
     virtual bool IsModifiedAndClear(size_t modifier);
     virtual void ClearModified(size_t modifier);
@@ -66,6 +103,7 @@ class OvmsMetric
     bool m_defined;
     bool m_stale;
     int m_autostale;
+    metric_unit_t m_units;
     std::bitset<METRICS_MAX_MODIFIERS> m_modified;
     uint32_t m_lastmodified;
   };
@@ -73,7 +111,7 @@ class OvmsMetric
 class OvmsMetricBool : public OvmsMetric
   {
   public:
-    OvmsMetricBool(const char* name, int autostale=0);
+    OvmsMetricBool(const char* name, int autostale=0, metric_unit_t units = Other);
     virtual ~OvmsMetricBool();
 
   public:
@@ -89,13 +127,13 @@ class OvmsMetricBool : public OvmsMetric
 class OvmsMetricInt : public OvmsMetric
   {
   public:
-    OvmsMetricInt(const char* name, int autostale=0);
+    OvmsMetricInt(const char* name, int autostale=0, metric_unit_t units = Other);
     virtual ~OvmsMetricInt();
 
   public:
-    std::string AsString(const char* defvalue = "");
-    int AsInt(const int defvalue = 0);
-    void SetValue(int value);
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other);
+    int AsInt(const int defvalue = 0, metric_unit_t units = Other);
+    void SetValue(int value, metric_unit_t units = Other);
     void SetValue(std::string value);
 
   protected:
@@ -105,13 +143,13 @@ class OvmsMetricInt : public OvmsMetric
 class OvmsMetricFloat : public OvmsMetric
   {
   public:
-    OvmsMetricFloat(const char* name, int autostale=0);
+    OvmsMetricFloat(const char* name, int autostale=0, metric_unit_t units = Other);
     virtual ~OvmsMetricFloat();
 
   public:
-    std::string AsString(const char* defvalue = "");
-    float AsFloat(const float defvalue = 0);
-    void SetValue(float value);
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other);
+    float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
+    void SetValue(float value, metric_unit_t units = Other);
     void SetValue(std::string value);
 
   protected:
@@ -121,7 +159,7 @@ class OvmsMetricFloat : public OvmsMetric
 class OvmsMetricString : public OvmsMetric
   {
   public:
-    OvmsMetricString(const char* name, int autostale=0);
+    OvmsMetricString(const char* name, int autostale=0, metric_unit_t units = Other);
     virtual ~OvmsMetricString();
 
   public:
