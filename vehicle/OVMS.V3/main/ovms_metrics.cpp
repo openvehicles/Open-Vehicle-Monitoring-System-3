@@ -54,9 +54,9 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     if ((argc==0)||(strstr(k,argv[0])))
       {
       if (v.empty())
-        writer->printf("%-30.30s\n",k);
+        writer->printf("%-40.40s\n",k);
       else
-        writer->printf("%-30.30s %s%s\n",k,v.c_str(),OvmsMetricUnitLabel(it->second->GetUnits()));
+        writer->printf("%-40.40s %s%s\n",k,v.c_str(),OvmsMetricUnitLabel(it->second->GetUnits()));
       found = true;
       }
     }
@@ -122,9 +122,14 @@ OvmsMetrics::~OvmsMetrics()
   {
   }
 
-void OvmsMetrics::RegisterMetric(OvmsMetric* metric, const char* name)
+void OvmsMetrics::RegisterMetric(OvmsMetric* metric)
   {
-  m_metrics[name] = metric;
+  m_metrics[metric->m_name] = metric;
+  }
+
+void OvmsMetrics::DeregisterMetric(OvmsMetric* metric)
+  {
+  m_metrics.erase(metric->m_name);
   }
 
 bool OvmsMetrics::Set(const char* metric, const char* value)
@@ -178,6 +183,55 @@ OvmsMetric* OvmsMetrics::Find(const char* metric)
     return NULL;
   else
     return k->second;
+  }
+
+OvmsMetricString* OvmsMetrics::InitString(const char* metric, int autostale, const char* value, metric_unit_t units)
+  {
+  OvmsMetricString *m;
+  auto k = m_metrics.find(metric);
+  if (k == m_metrics.end())
+    m = new OvmsMetricString(metric, autostale, units);
+  else
+    m = (OvmsMetricString *) k->second;
+  if (value)
+    m->SetValue(value);
+  return m;
+  }
+
+OvmsMetricInt* OvmsMetrics::InitInt(const char* metric, int autostale, int value, metric_unit_t units)
+  {
+  OvmsMetricInt *m;
+  auto k = m_metrics.find(metric);
+  if (k == m_metrics.end())
+    m = new OvmsMetricInt(metric, autostale, units);
+  else
+    m = (OvmsMetricInt *) k->second;
+  m->SetValue(value);
+  return m;
+  }
+
+OvmsMetricBool* OvmsMetrics::InitBool(const char* metric, int autostale, bool value, metric_unit_t units)
+  {
+  OvmsMetricBool *m;
+  auto k = m_metrics.find(metric);
+  if (k == m_metrics.end())
+    m = new OvmsMetricBool(metric, autostale, units);
+  else
+    m = (OvmsMetricBool *) k->second;
+  m->SetValue(value);
+  return m;
+  }
+
+OvmsMetricFloat* OvmsMetrics::InitFloat(const char* metric, int autostale, float value, metric_unit_t units)
+  {
+  OvmsMetricFloat *m;
+  auto k = m_metrics.find(metric);
+  if (k == m_metrics.end())
+    m = new OvmsMetricFloat(metric, autostale, units);
+  else
+    m = (OvmsMetricFloat *) k->second;
+  m->SetValue(value);
+  return m;
   }
 
 void OvmsMetrics::RegisterListener(const char* caller, const char* name, MetricCallback callback)
@@ -249,11 +303,16 @@ OvmsMetric::OvmsMetric(const char* name, int autostale, metric_unit_t units)
   m_lastmodified = 0;
   m_autostale = autostale;
   m_units = units;
-  MyMetrics.RegisterMetric(this, name);
+  MyMetrics.RegisterMetric(this);
   }
 
 OvmsMetric::~OvmsMetric()
   {
+  MyMetrics.DeregisterMetric(this);
+  
+  // Warning: pointers to a deleted OvmsMetric can still be held locally in
+  //  other modules. If you delete metrics, take care to inform all readers
+  //  (i.e. by broadcasting a module shutdown event).
   }
 
 std::string OvmsMetric::AsString(const char* defvalue, metric_unit_t units)
@@ -262,6 +321,10 @@ std::string OvmsMetric::AsString(const char* defvalue, metric_unit_t units)
   }
 
 void OvmsMetric::SetValue(std::string value)
+  {
+  }
+
+void OvmsMetric::operator=(std::string value)
   {
   }
 
@@ -562,6 +625,7 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
     case Volts:        return "V";
     case Amps:         return "A";
     case AmpHours:     return "Ah";
+    case kW:           return "kW";
     case kWh:          return "kWh";
     case Seconds:      return "Sec";
     case Minutes:      return "Min";
@@ -569,6 +633,9 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
     case Degrees:      return "°";
     case Kph:          return "Kph";
     case Mph:          return "Mph";
+    case KphPS:        return "Kph/s";
+    case MphPS:        return "Mph/s";
+    case MetersPSS:    return "m/s²";
     case Percentage:   return "%";
     default:           return "";
     }
@@ -585,6 +652,14 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
     case Miles:
       if (to == Kilometers) return (value*8)/5;
       else if (to == Meters) return (value*8000)/5;
+      break;
+    case KphPS:
+      if (to == MphPS) return (value*5)/8;
+      else if (to == MetersPSS) return value/1000;
+      break;
+    case MphPS:
+      if (to == KphPS) return (value*8)/5;
+      else if (to == MetersPSS) return (value*8000)/5;
       break;
     case Celcius:
       if (to == Fahrenheit) return ((value*9)/5) + 32;
@@ -637,6 +712,14 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
     case Miles:
       if (to == Kilometers) return (value*8)/5;
       else if (to == Meters) return (value*8000)/5;
+      break;
+    case KphPS:
+      if (to == MphPS) return (value*5)/8;
+      else if (to == MetersPSS) return value/1000;
+      break;
+    case MphPS:
+      if (to == KphPS) return (value*8)/5;
+      else if (to == MetersPSS) return (value*8000)/5;
       break;
     case Celcius:
       if (to == Fahrenheit) return ((value*9)/5) + 32;

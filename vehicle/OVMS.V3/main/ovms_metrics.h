@@ -61,8 +61,9 @@ typedef enum
   Volts         = 40,
   Amps          = 41,
   AmpHours      = 42,
-  kWh           = 43,
-
+  kW            = 43,
+  kWh           = 44,
+  
   Seconds       = 50,
   Minutes       = 51,
   Hours         = 52,
@@ -71,6 +72,11 @@ typedef enum
 
   Kph           = 61,
   Mph           = 62,
+  
+  // Acceleration:
+  KphPS         = 71,   // Kph per second
+  MphPS         = 72,   // Mph per second
+  MetersPSS     = 73,   // Meters per second^2
 
   Percentage    = 90
   } metric_unit_t;
@@ -88,6 +94,7 @@ class OvmsMetric
   public:
     virtual std::string AsString(const char* defvalue = "", metric_unit_t units = Other);
     virtual void SetValue(std::string value);
+    virtual void operator=(std::string value);
     virtual uint32_t LastModified();
     virtual bool IsStale();
     virtual void SetStale(bool stale);
@@ -118,8 +125,10 @@ class OvmsMetricBool : public OvmsMetric
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other);
     int AsBool(const bool defvalue = false);
     void SetValue(bool value);
+    void operator=(bool value) { SetValue(value); }
     void SetValue(std::string value);
-
+    void operator=(std::string value) { SetValue(value); }
+    
   protected:
     bool m_value;
   };
@@ -134,8 +143,10 @@ class OvmsMetricInt : public OvmsMetric
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other);
     int AsInt(const int defvalue = 0, metric_unit_t units = Other);
     void SetValue(int value, metric_unit_t units = Other);
+    void operator=(int value) { SetValue(value); }
     void SetValue(std::string value);
-
+    void operator=(std::string value) { SetValue(value); }
+    
   protected:
     int m_value;
   };
@@ -150,8 +161,10 @@ class OvmsMetricFloat : public OvmsMetric
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other);
     float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     void SetValue(float value, metric_unit_t units = Other);
+    void operator=(float value) { SetValue(value); }
     void SetValue(std::string value);
-
+    void operator=(std::string value) { SetValue(value); }
+    
   protected:
     float m_value;
   };
@@ -165,7 +178,8 @@ class OvmsMetricString : public OvmsMetric
   public:
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other);
     void SetValue(std::string value);
-
+    void operator=(std::string value) { SetValue(value); }
+    
   protected:
     std::string m_value;
   };
@@ -194,7 +208,8 @@ class OvmsMetrics
     virtual ~OvmsMetrics();
 
   public:
-    void RegisterMetric(OvmsMetric* metric, const char* name);
+    void RegisterMetric(OvmsMetric* metric);
+    void DeregisterMetric(OvmsMetric* metric);
 
   public:
     bool Set(const char* metric, const char* value);
@@ -202,7 +217,12 @@ class OvmsMetrics
     bool SetBool(const char* metric, bool value);
     bool SetFloat(const char* metric, float value);
     OvmsMetric* Find(const char* metric);
-
+    
+    OvmsMetricString *InitString(const char* metric, int autostale=0, const char* value=NULL, metric_unit_t units = Other);
+    OvmsMetricInt *InitInt(const char* metric, int autostale=0, int value=0, metric_unit_t units = Other);
+    OvmsMetricBool *InitBool(const char* metric, int autostale=0, bool value=0, metric_unit_t units = Other);
+    OvmsMetricFloat *InitFloat(const char* metric, int autostale=0, float value=0, metric_unit_t units = Other);
+    
   public:
     void RegisterListener(const char* caller, const char* name, MetricCallback callback);
     void DeregisterListener(const char* caller);
