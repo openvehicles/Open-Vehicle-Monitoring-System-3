@@ -557,7 +557,7 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
     StandardMetrics.ms_v_bat_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_pos_speed->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_env_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_bat_12v->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_bat_12v_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
 
     // doors 5
     StandardMetrics.ms_v_door_rl->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
@@ -610,7 +610,7 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
 
   buffer.append(StandardMetrics.ms_v_env_temp->IsStale() ? "0" : "1");
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_bat_12v->AsString("0").c_str());
+  buffer.append(StandardMetrics.ms_v_bat_12v_voltage->AsString("0").c_str());
   buffer.append(",");
   buffer.append("0");  // car_doors4
   buffer.append(",");

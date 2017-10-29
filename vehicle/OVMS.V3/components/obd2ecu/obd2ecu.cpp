@@ -363,7 +363,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           m_can->Write(&r_frame);
           break;
         case 0x05:	/* Coolant Temp - Use Motor temp */
-          metric = StandardMetrics.ms_v_mot_temp->AsInt();
+          metric = StandardMetrics.ms_v_mot_temp->AsFloat();
           FillFrame(&r_frame,reply,mapped_pid,metric,4);
           m_can->Write(&r_frame);
           break;
