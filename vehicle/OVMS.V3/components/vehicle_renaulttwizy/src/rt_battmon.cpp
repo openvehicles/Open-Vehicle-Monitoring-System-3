@@ -31,6 +31,22 @@
 #include "vehicle_renaulttwizy.h"
 
 
+// Battery cell/cmod deviation alert thresholds:
+#define BATT_DEV_TEMP_ALERT         3       // = 3 °C
+#define BATT_DEV_VOLT_ALERT         6       // = 30 mV
+
+// ...thresholds for overall stddev:
+#define BATT_STDDEV_TEMP_WATCH      2       // = 2 °C
+#define BATT_STDDEV_TEMP_ALERT      3       // = 3 °C
+#define BATT_STDDEV_VOLT_WATCH      3       // = 15 mV
+#define BATT_STDDEV_VOLT_ALERT      5       // = 25 mV
+
+// watch/alert flags for overall stddev:
+#define BATT_STDDEV_TEMP_FLAG       31  // bit #31
+#define BATT_STDDEV_VOLT_FLAG       31  // bit #31
+
+
+
 /**
  * BatteryInit:
  */
@@ -209,9 +225,15 @@ void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
       // switch to overall stddev alert mode?
       // (resetting cmod flags to build new alert set)
       if (stddev >= BATT_STDDEV_TEMP_ALERT)
-        twizy_batt[0].temp_alerts = BATT_STDDEV_TEMP_FLAG;
+      {
+        twizy_batt[0].temp_alerts.reset();
+        twizy_batt[0].temp_alerts.set(BATT_STDDEV_TEMP_FLAG);
+      }
       else if (stddev >= BATT_STDDEV_TEMP_WATCH)
-        twizy_batt[0].temp_watches = BATT_STDDEV_TEMP_FLAG;
+      {
+        twizy_batt[0].temp_watches.reset();
+        twizy_batt[0].temp_watches.set(BATT_STDDEV_TEMP_FLAG);
+      }
     }
     
     // check cmod deviations:
@@ -223,14 +245,14 @@ void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
       
       // Set watch/alert flags:
       // (applying overall thresholds only in stddev alert mode)
-      if ((twizy_batt[0].temp_alerts & BATT_STDDEV_TEMP_FLAG) && (absdev >= BATT_STDDEV_TEMP_ALERT))
-        twizy_batt[0].temp_alerts |= (1 << i);
+      if ((twizy_batt[0].temp_alerts[BATT_STDDEV_TEMP_FLAG]) && (absdev >= BATT_STDDEV_TEMP_ALERT))
+        twizy_batt[0].temp_alerts.set(i);
       else if (absdev >= BATT_DEV_TEMP_ALERT)
-        twizy_batt[0].temp_alerts |= (1 << i);
-      else if ((twizy_batt[0].temp_watches & BATT_STDDEV_TEMP_FLAG) && (absdev >= BATT_STDDEV_TEMP_WATCH))
-        twizy_batt[0].temp_watches |= (1 << i);
+        twizy_batt[0].temp_alerts.set(i);
+      else if ((twizy_batt[0].temp_watches[BATT_STDDEV_TEMP_FLAG]) && (absdev >= BATT_STDDEV_TEMP_WATCH))
+        twizy_batt[0].temp_watches.set(i);
       else if (absdev > stddev)
-        twizy_batt[0].temp_watches |= (1 << i);
+        twizy_batt[0].temp_watches.set(i);
       
       // Remember max deviation:
       if (absdev > ABS(twizy_cmod[i].temp_maxdev))
@@ -288,9 +310,15 @@ void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
       // switch to overall stddev alert mode?
       // (resetting cell flags to build new alert set)
       if (stddev >= BATT_STDDEV_VOLT_ALERT)
-        twizy_batt[0].volt_alerts = BATT_STDDEV_VOLT_FLAG;
+      {
+        twizy_batt[0].volt_alerts.reset();
+        twizy_batt[0].volt_alerts.set(BATT_STDDEV_VOLT_FLAG);
+      }
       else if (stddev >= BATT_STDDEV_VOLT_WATCH)
-        twizy_batt[0].volt_watches = BATT_STDDEV_VOLT_FLAG;
+      {
+        twizy_batt[0].volt_watches.reset();
+        twizy_batt[0].volt_watches.set(BATT_STDDEV_VOLT_FLAG);
+      }
     }
     
     // check cell deviations:
@@ -302,14 +330,14 @@ void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
       
       // Set watch/alert flags:
       // (applying overall thresholds only in stddev alert mode)
-      if ((twizy_batt[0].volt_alerts & BATT_STDDEV_VOLT_FLAG) && (absdev >= BATT_STDDEV_VOLT_ALERT))
-        twizy_batt[0].volt_alerts |= (1L << i);
+      if ((twizy_batt[0].volt_alerts[BATT_STDDEV_VOLT_FLAG]) && (absdev >= BATT_STDDEV_VOLT_ALERT))
+        twizy_batt[0].volt_alerts.set(i);
       else if (absdev >= BATT_DEV_VOLT_ALERT)
-        twizy_batt[0].volt_alerts |= (1L << i);
-      else if ((twizy_batt[0].volt_watches & BATT_STDDEV_VOLT_FLAG) && (absdev >= BATT_STDDEV_VOLT_WATCH))
-        twizy_batt[0].volt_watches |= (1L << i);
+        twizy_batt[0].volt_alerts.set(i);
+      else if ((twizy_batt[0].volt_watches[BATT_STDDEV_VOLT_FLAG]) && (absdev >= BATT_STDDEV_VOLT_WATCH))
+        twizy_batt[0].volt_watches.set(i);
       else if (absdev > stddev)
-        twizy_batt[0].volt_watches |= (1L << i);
+        twizy_batt[0].volt_watches.set(i);
       
       // Remember max deviation:
       if (absdev > ABS(twizy_cell[i].volt_maxdev))
@@ -338,6 +366,14 @@ void battery_pack::InitMetrics(const string prefix)
   m_volt_min = MyMetrics.InitFloat(PNAME("voltage.min"), SM_STALE_HIGH, 0, Volts);
   m_volt_max = MyMetrics.InitFloat(PNAME("voltage.max"), SM_STALE_HIGH, 0, Volts);
   
+  //ESP_LOGI("battery_pack", "sizeof(bitset<32>) = %d", sizeof(volt_watches));
+  
+  m_volt_watches = MyMetrics.InitBitset<32>(PNAME("voltage.watches"), SM_STALE_HIGH);
+  m_volt_alerts = MyMetrics.InitBitset<32>(PNAME("voltage.alerts"), SM_STALE_HIGH);
+  
+  m_temp_watches = MyMetrics.InitBitset<32>(PNAME("temp.watches"), SM_STALE_HIGH);
+  m_temp_alerts = MyMetrics.InitBitset<32>(PNAME("temp.alerts"), SM_STALE_HIGH);
+  
   m_cell_volt_stddev_max = MyMetrics.InitFloat(PNAME("voltage.stddev.max"), SM_STALE_HIGH, 0, Volts);
   m_cmod_temp_stddev_max = MyMetrics.InitFloat(PNAME("temp.stddev.max"), SM_STALE_HIGH, 0, Celcius);
 }
@@ -347,6 +383,12 @@ void battery_pack::UpdateMetrics()
   *m_volt_min = (float) volt_min / 10;
   *m_volt_max = (float) volt_max / 10;
   
+  *m_volt_watches = volt_watches;
+  *m_volt_alerts = volt_alerts;
+  
+  *m_temp_watches = temp_watches;
+  *m_temp_alerts = temp_alerts;
+
   *m_cell_volt_stddev_max = (float) cell_volt_stddev_max / 200;
   *m_cmod_temp_stddev_max = (float) cmod_temp_stddev_max;
 }

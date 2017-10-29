@@ -40,13 +40,13 @@ struct battery_pack
   UINT volt_min = 1000; // charge cycle min voltage
   UINT volt_max = 0; // charge cycle max voltage
   
-  UINT volt_watches = 0; // bitfield: dev > stddev
-  UINT volt_alerts = 0; // bitfield: dev > BATT_DEV_VOLT_ALERT
-  UINT last_volt_alerts = 0; // recognize alert state changes
+  std::bitset<32> volt_watches = 0; // bitfield: cell dev > stddev
+  std::bitset<32> volt_alerts = 0; // bitfield: cell dev > BATT_DEV_VOLT_ALERT
+  std::bitset<32> last_volt_alerts = 0; // recognize alert state changes
   
-  UINT8 temp_watches = 0; // bitfield: dev > stddev
-  UINT8 temp_alerts = 0; // bitfield: dev > BATT_DEV_TEMP_ALERT
-  UINT8 last_temp_alerts = 0; // recognize alert state changes
+  std::bitset<32> temp_watches = 0; // bitfield: dev > stddev
+  std::bitset<32> temp_alerts = 0; // bitfield: dev > BATT_DEV_TEMP_ALERT
+  std::bitset<32> last_temp_alerts = 0; // recognize alert state changes
   
   float cell_volt_stddev_max = 0; // max cell voltage std deviation
                               // => watch/alert bit #15 (1<<15)
@@ -63,6 +63,12 @@ struct battery_pack
   
   OvmsMetricFloat *m_volt_min;
   OvmsMetricFloat *m_volt_max;
+  
+  OvmsMetricBitset<32> *m_volt_watches;
+  OvmsMetricBitset<32> *m_volt_alerts;
+  
+  OvmsMetricBitset<32> *m_temp_watches;
+  OvmsMetricBitset<32> *m_temp_alerts;
   
   OvmsMetricFloat *m_cell_volt_stddev_max;
   OvmsMetricFloat *m_cmod_temp_stddev_max;

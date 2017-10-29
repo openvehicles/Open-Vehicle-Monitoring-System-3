@@ -304,20 +304,6 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     battery_cmod twizy_cmod[BATT_CMODS];
     battery_cell twizy_cell[BATT_CELLS];
     
-    // Battery cell/cmod deviation alert thresholds:
-    #define BATT_DEV_TEMP_ALERT         3       // = 3 °C
-    #define BATT_DEV_VOLT_ALERT         6       // = 30 mV
-    
-    // ...thresholds for overall stddev:
-    #define BATT_STDDEV_TEMP_WATCH      2       // = 2 °C
-    #define BATT_STDDEV_TEMP_ALERT      3       // = 3 °C
-    #define BATT_STDDEV_VOLT_WATCH      3       // = 15 mV
-    #define BATT_STDDEV_VOLT_ALERT      5       // = 25 mV
-    
-    // watch/alert flags for overall stddev:
-    #define BATT_STDDEV_TEMP_FLAG       0x80    // bit #7
-    #define BATT_STDDEV_VOLT_FLAG       0x8000  // bit #15
-    
     
     // --------------------------------------------------------------------------
     // Twizy SEVCON subsystem
