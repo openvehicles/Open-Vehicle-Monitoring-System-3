@@ -35,6 +35,7 @@
 #include <string>
 #include "can.h"
 #include "ovms_events.h"
+#include "ovms_config.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
 
@@ -70,6 +71,7 @@ class OvmsVehicle
 
   private:
     void VehicleTicker1(std::string event, void* data);
+    void VehicleConfigChanged(std::string event, void* data);
     void PollerSend();
     void PollerReceive(CAN_frame_t* frame);
 
@@ -88,6 +90,9 @@ class OvmsVehicle
     virtual void Ticker600(uint32_t ticker);
     virtual void Ticker3600(uint32_t ticker);
 
+  protected:
+    virtual void ConfigChanged(OvmsConfigParam* param);
+  
   protected:
     void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed);
 
