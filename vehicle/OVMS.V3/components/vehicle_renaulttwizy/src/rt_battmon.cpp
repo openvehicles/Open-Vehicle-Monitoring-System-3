@@ -424,7 +424,7 @@ void battery_cell::UpdateMetrics()
   *m_volt_act = (float) volt_act / 200;
   *m_volt_min = (float) volt_min / 200;
   *m_volt_max = (float) volt_max / 200;
-  *m_volt_maxdev = (float) volt_maxdev;
+  *m_volt_maxdev = (float) volt_maxdev / 200;
 }
 
 
