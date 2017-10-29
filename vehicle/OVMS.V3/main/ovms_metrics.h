@@ -37,6 +37,8 @@
 #include <string>
 #include <bitset>
 #include <stdint.h>
+#include <sstream>
+#include <set>
 #include "ovms_utils.h"
 
 #define METRICS_MAX_MODIFIERS 32
@@ -184,6 +186,150 @@ class OvmsMetricString : public OvmsMetric
     std::string m_value;
   };
 
+
+/**
+ * OvmsMetricBitset<bits>: metric wrapper for std::bitset<bits>
+ *  - string representation as comma separated bit positions (beginning at 1) of set bits
+ */
+template <size_t N>
+class OvmsMetricBitset : public OvmsMetric
+  {
+  public:
+    OvmsMetricBitset(const char* name, int autostale=0, metric_unit_t units = Other)
+      : OvmsMetric(name, autostale, units)
+      {
+      }
+    virtual ~OvmsMetricBitset()
+      {
+      }
+
+  public:
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other)
+      {
+      if (!m_defined)
+        return std::string(defvalue);
+      std::ostringstream ss;
+      for (int i = 0; i < N; i++)
+        {
+        if (m_value[i])
+          {
+          if (ss.tellp() > 0)
+            ss << ',';
+          ss << i+1;
+          }
+        }
+      return ss.str();
+      }
+    
+    void SetValue(std::string value)
+      {
+      std::bitset<N> n_value;
+      std::istringstream vs(value);
+      std::string token;
+      int elem;
+      while(std::getline(vs, token, ','))
+        {
+        std::istringstream ts(token);
+        ts >> elem;
+        if (elem > 0 && elem <= N)
+          n_value[elem-1] = 1;
+        }
+      SetValue(n_value);
+      }
+    void operator=(std::string value) { SetValue(value); }
+    
+    std::bitset<N> AsBitset(const std::bitset<N> defvalue = std::bitset<N>(0), metric_unit_t units = Other)
+      {
+      return m_defined ? m_value : defvalue;
+      }
+    
+    void SetValue(std::bitset<N> value, metric_unit_t units = Other)
+      {
+      if (m_value != value)
+        {
+        m_value = value;
+        SetModified(true);
+        }
+      else
+        SetModified(false);
+      }
+    void operator=(std::bitset<N> value) { SetValue(value); }
+    
+  protected:
+    std::bitset<N> m_value;
+  };
+
+
+/**
+ * OvmsMetricSet<type>: metric wrapper for std::set<type>
+ *  - string representation as comma separated values
+ *  - be aware this is a memory eater, only use if necessary
+ */
+template <typename ElemType>
+class OvmsMetricSet : public OvmsMetric
+  {
+  public:
+    OvmsMetricSet(const char* name, int autostale=0, metric_unit_t units = Other)
+      : OvmsMetric(name, autostale, units)
+      {
+      }
+    virtual ~OvmsMetricSet()
+      {
+      }
+
+  public:
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other)
+      {
+      if (!m_defined)
+        return std::string(defvalue);
+      std::ostringstream ss;
+      for (auto i = m_value.begin(); i != m_value.end(); i++)
+        {
+        if (ss.tellp() > 0)
+          ss << ',';
+        ss << *i;
+        }
+      return ss.str();
+      }
+    
+    void SetValue(std::string value)
+      {
+      std::set<ElemType> n_value;
+      std::istringstream vs(value);
+      std::string token;
+      ElemType elem;
+      while(std::getline(vs, token, ','))
+        {
+        std::istringstream ts(token);
+        ts >> elem;
+        n_value.insert(elem);
+        }
+      SetValue(n_value);
+      }
+    void operator=(std::string value) { SetValue(value); }
+    
+    std::set<ElemType> AsSet(const std::set<ElemType> defvalue = std::set<ElemType>(), metric_unit_t units = Other)
+      {
+      return m_defined ? m_value : defvalue;
+      }
+    
+    void SetValue(std::set<ElemType> value, metric_unit_t units = Other)
+      {
+      if (m_value != value)
+        {
+        m_value = value;
+        SetModified(true);
+        }
+      else
+        SetModified(false);
+      }
+    void operator=(std::set<ElemType> value) { SetValue(value); }
+    
+  protected:
+    std::set<ElemType> m_value;
+  };
+
+
 typedef std::function<void(OvmsMetric*)> MetricCallback;
 
 class MetricCallbackEntry
@@ -222,6 +368,32 @@ class OvmsMetrics
     OvmsMetricInt *InitInt(const char* metric, int autostale=0, int value=0, metric_unit_t units = Other);
     OvmsMetricBool *InitBool(const char* metric, int autostale=0, bool value=0, metric_unit_t units = Other);
     OvmsMetricFloat *InitFloat(const char* metric, int autostale=0, float value=0, metric_unit_t units = Other);
+    template <size_t N>
+    OvmsMetricBitset<N> *InitBitset(const char* metric, int autostale=0, const char* value=NULL, metric_unit_t units = Other)
+      {
+      OvmsMetricBitset<N> *m;
+      auto k = m_metrics.find(metric);
+      if (k == m_metrics.end())
+        m = new OvmsMetricBitset<N>(metric, autostale, units);
+      else
+        m = (OvmsMetricBitset<N> *) k->second;
+      if (value)
+        m->SetValue(value);
+      return m;
+      }
+    template <typename ElemType>
+    OvmsMetricSet<ElemType> *InitSet(const char* metric, int autostale=0, const char* value=NULL, metric_unit_t units = Other)
+      {
+      OvmsMetricSet<ElemType> *m;
+      auto k = m_metrics.find(metric);
+      if (k == m_metrics.end())
+        m = new OvmsMetricSet<ElemType>(metric, autostale, units);
+      else
+        m = (OvmsMetricSet<ElemType> *) k->second;
+      if (value)
+        m->SetValue(value);
+      return m;
+      }
     
   public:
     void RegisterListener(const char* caller, const char* name, MetricCallback callback);
