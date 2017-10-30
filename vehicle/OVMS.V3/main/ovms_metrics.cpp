@@ -185,7 +185,7 @@ OvmsMetric* OvmsMetrics::Find(const char* metric)
     return k->second;
   }
 
-OvmsMetricString* OvmsMetrics::InitString(const char* metric, int autostale, const char* value, metric_unit_t units)
+OvmsMetricString* OvmsMetrics::InitString(const char* metric, uint16_t autostale, const char* value, metric_unit_t units)
   {
   OvmsMetricString *m;
   auto k = m_metrics.find(metric);
@@ -198,7 +198,7 @@ OvmsMetricString* OvmsMetrics::InitString(const char* metric, int autostale, con
   return m;
   }
 
-OvmsMetricInt* OvmsMetrics::InitInt(const char* metric, int autostale, int value, metric_unit_t units)
+OvmsMetricInt* OvmsMetrics::InitInt(const char* metric, uint16_t autostale, int value, metric_unit_t units)
   {
   OvmsMetricInt *m;
   auto k = m_metrics.find(metric);
@@ -210,7 +210,7 @@ OvmsMetricInt* OvmsMetrics::InitInt(const char* metric, int autostale, int value
   return m;
   }
 
-OvmsMetricBool* OvmsMetrics::InitBool(const char* metric, int autostale, bool value, metric_unit_t units)
+OvmsMetricBool* OvmsMetrics::InitBool(const char* metric, uint16_t autostale, bool value, metric_unit_t units)
   {
   OvmsMetricBool *m;
   auto k = m_metrics.find(metric);
@@ -222,7 +222,7 @@ OvmsMetricBool* OvmsMetrics::InitBool(const char* metric, int autostale, bool va
   return m;
   }
 
-OvmsMetricFloat* OvmsMetrics::InitFloat(const char* metric, int autostale, float value, metric_unit_t units)
+OvmsMetricFloat* OvmsMetrics::InitFloat(const char* metric, uint16_t autostale, float value, metric_unit_t units)
   {
   OvmsMetricFloat *m;
   auto k = m_metrics.find(metric);
@@ -295,7 +295,7 @@ size_t OvmsMetrics::RegisterModifier()
   return m_nextmodifier++;
   }
 
-OvmsMetric::OvmsMetric(const char* name, int autostale, metric_unit_t units)
+OvmsMetric::OvmsMetric(const char* name, uint16_t autostale, metric_unit_t units)
   {
   m_defined = false;
   m_modified.reset();
@@ -362,7 +362,7 @@ void OvmsMetric::SetStale(bool stale)
   m_stale = stale;
   }
 
-void OvmsMetric::SetAutoStale(int seconds)
+void OvmsMetric::SetAutoStale(uint16_t seconds)
   {
   m_autostale = seconds;
   }
@@ -389,7 +389,7 @@ void OvmsMetric::ClearModified(size_t modifier)
   m_modified.reset(modifier);
   }
 
-OvmsMetricInt::OvmsMetricInt(const char* name, int autostale, metric_unit_t units)
+OvmsMetricInt::OvmsMetricInt(const char* name, uint16_t autostale, metric_unit_t units)
   : OvmsMetric(name, autostale, units)
   {
   m_value = 0;
@@ -455,7 +455,7 @@ void OvmsMetricInt::SetValue(std::string value)
     SetModified(false);
   }
 
-OvmsMetricBool::OvmsMetricBool(const char* name, int autostale, metric_unit_t units)
+OvmsMetricBool::OvmsMetricBool(const char* name, uint16_t autostale, metric_unit_t units)
   : OvmsMetric(name, autostale, units)
   {
   m_value = false;
@@ -515,7 +515,7 @@ void OvmsMetricBool::SetValue(std::string value)
     SetModified(false);
   }
 
-OvmsMetricFloat::OvmsMetricFloat(const char* name, int autostale, metric_unit_t units)
+OvmsMetricFloat::OvmsMetricFloat(const char* name, uint16_t autostale, metric_unit_t units)
   : OvmsMetric(name, autostale, units)
   {
   m_value = 0;
@@ -582,7 +582,7 @@ void OvmsMetricFloat::SetValue(std::string value)
     SetModified(false);
   }
 
-OvmsMetricString::OvmsMetricString(const char* name, int autostale, metric_unit_t units)
+OvmsMetricString::OvmsMetricString(const char* name, uint16_t autostale, metric_unit_t units)
   : OvmsMetric(name, autostale, units)
   {
   }
