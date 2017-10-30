@@ -64,18 +64,18 @@
 
 #include <stdint.h>
 
-#define MD5_SIZE    16
+#define OVMS_MD5_SIZE    16
 
 typedef struct
 {
   uint32_t state[4];        /* state (ABCD) */
   uint32_t count[2];        /* number of bits, modulo 2^64 (lsb first) */
   uint8_t buffer[64];       /* input buffer */
-} MD5_CTX;
+} OVMS_MD5_CTX;
 
-void MD5_Init(MD5_CTX *);
-void MD5_Update(MD5_CTX *, const uint8_t *msg, int len);
-void MD5_Final(uint8_t *digest, MD5_CTX *);
+void OVMS_MD5_Init(OVMS_MD5_CTX *);
+void OVMS_MD5_Update(OVMS_MD5_CTX *, const uint8_t *msg, int len);
+void OVMS_MD5_Final(uint8_t *digest, OVMS_MD5_CTX *);
 
 #endif //#ifndef __CRYPT_MD5_H
 
