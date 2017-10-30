@@ -228,6 +228,30 @@ void vehicle_charge_mode(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
     }
   }
 
+void vehicle_charge_current(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  int limit = atoi(argv[0]);
+
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+
+  switch(MyVehicleFactory.m_currentvehicle->CommandSetChargeCurrent((uint16_t) limit))
+    {
+    case OvmsVehicle::Success:
+      writer->printf("Charge current limit set to %dA\n",limit);
+      break;
+    case OvmsVehicle::Fail:
+      writer->printf("Error: Could not sst charge current limit to %dA\n",limit);
+      break;
+    default:
+      writer->puts("Error: Charge current limit functionality not available");
+      break;
+    }
+  }
+
 void vehicle_charge_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (MyVehicleFactory.m_currentvehicle==NULL)
@@ -317,6 +341,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   cmd_chargemode->RegisterCommand("performance","Set vehicle standard charge mode",vehicle_charge_mode,"",0,0,true);
   cmd_charge->RegisterCommand("start","Start a vehicle charge",vehicle_charge_start,"",0,0,true);
   cmd_charge->RegisterCommand("stop","Stop a vehicle charge",vehicle_charge_stop,"",0,0,true);
+  cmd_charge->RegisterCommand("current","Limit charge current",vehicle_charge_current,"<amps>",1,1,true);
   cmd_charge->RegisterCommand("cooldown","Start a vehicle cooldown",vehicle_charge_cooldown,"",0,0,true);
   }
 
