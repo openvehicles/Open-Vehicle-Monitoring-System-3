@@ -36,7 +36,7 @@ MetricsStandard StandardMetrics __attribute__ ((init_priority (1810)));
 #define SM_STALE_MIN   10
 #define SM_STALE_MID   120
 #define SM_STALE_HIGH  3600
-#define SM_STALE_MAX   86400
+#define SM_STALE_MAX   65535
 
 MetricsStandard::MetricsStandard()
   {
