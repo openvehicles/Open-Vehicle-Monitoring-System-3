@@ -65,7 +65,7 @@ void vehicle_wakeup(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
       writer->puts("Vehicle has been woken");
       break;
     case OvmsVehicle::Fail:
-      writer->printf("Error: vehicle could not be woken");
+      writer->puts("Error: vehicle could not be woken");
       break;
     default:
       writer->puts("Error: Vehicle wake functionality not available");
@@ -116,7 +116,7 @@ void vehicle_lock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
       writer->puts("Vehicle locked");
       break;
     case OvmsVehicle::Fail:
-      writer->printf("Error: vehicle could not be locked");
+      writer->puts("Error: vehicle could not be locked");
       break;
     default:
       writer->puts("Error: Vehicle lock functionality not available");
@@ -138,7 +138,7 @@ void vehicle_unlock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
       writer->puts("Vehicle unlocked");
       break;
     case OvmsVehicle::Fail:
-      writer->printf("Error: vehicle could not be unlocked");
+      writer->puts("Error: vehicle could not be unlocked");
       break;
     default:
       writer->puts("Error: Vehicle unlock functionality not available");
@@ -160,7 +160,7 @@ void vehicle_valet(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
       writer->puts("Vehicle valet mode activated");
       break;
     case OvmsVehicle::Fail:
-      writer->printf("Error: vehicle could not activate valet mode");
+      writer->puts("Error: vehicle could not activate valet mode");
       break;
     default:
       writer->puts("Error: Vehicle valet functionality not available");
@@ -182,7 +182,7 @@ void vehicle_unvalet(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
       writer->puts("Vehicle valet mode deactivated");
       break;
     case OvmsVehicle::Fail:
-      writer->printf("Error: vehicle could not deactivate valet mode");
+      writer->puts("Error: vehicle could not deactivate valet mode");
       break;
     default:
       writer->puts("Error: Vehicle valet functionality not available");
@@ -217,10 +217,10 @@ void vehicle_charge_mode(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
   switch(MyVehicleFactory.m_currentvehicle->CommandSetChargeMode(mode))
     {
     case OvmsVehicle::Success:
-      writer->printf("Charge mode '%s' set",smode);
+      writer->printf("Charge mode '%s' set\n",smode);
       break;
     case OvmsVehicle::Fail:
-      writer->printf("Error: Could not set charge mode");
+      writer->puts("Error: Could not set charge mode");
       break;
     default:
       writer->puts("Error: Charge mode functionality not available");
@@ -242,7 +242,7 @@ void vehicle_charge_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
       writer->puts("Charge has been started");
       break;
     case OvmsVehicle::Fail:
-      writer->printf("Error: Could not start charge");
+      writer->puts("Error: Could not start charge");
       break;
     default:
       writer->puts("Error: Charge start functionality not available");
@@ -264,7 +264,7 @@ void vehicle_charge_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
       writer->puts("Charge has been stopped");
       break;
     case OvmsVehicle::Fail:
-      writer->printf("Error: Could not stop charge");
+      writer->puts("Error: Could not stop charge");
       break;
     default:
       writer->puts("Error: Charge stop functionality not available");
@@ -286,7 +286,7 @@ void vehicle_charge_cooldown(int verbosity, OvmsWriter* writer, OvmsCommand* cmd
       writer->puts("Cooldown has been started");
       break;
     case OvmsVehicle::Fail:
-      writer->printf("Error: Could not start cooldown");
+      writer->puts("Error: Could not start cooldown");
       break;
     default:
       writer->puts("Error: Cooldown functionality not available");
