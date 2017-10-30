@@ -108,6 +108,7 @@ class OvmsMetric
     virtual void SetModified(bool changed=true);
 
   public:
+    OvmsMetric* m_next;
     const char* m_name;
     metric_unit_t m_units;
     std::bitset<METRICS_MAX_MODIFIERS> m_modified;
@@ -345,7 +346,6 @@ class MetricCallbackEntry
 
 typedef std::list<MetricCallbackEntry*> MetricCallbackList;
 typedef std::map<const char*, MetricCallbackList*, CmpStrOp> MetricCallbackMap;
-typedef std::map<const char*, OvmsMetric*, CmpStrOp> MetricMap;
 
 class OvmsMetrics
   {
@@ -371,12 +371,8 @@ class OvmsMetrics
     template <size_t N>
     OvmsMetricBitset<N> *InitBitset(const char* metric, uint16_t autostale=0, const char* value=NULL, metric_unit_t units = Other)
       {
-      OvmsMetricBitset<N> *m;
-      auto k = m_metrics.find(metric);
-      if (k == m_metrics.end())
-        m = new OvmsMetricBitset<N>(metric, autostale, units);
-      else
-        m = (OvmsMetricBitset<N> *) k->second;
+      OvmsMetricBitset<N> *m = (OvmsMetricBitset<N> *)Find(metric);
+      if (m==NULL) m = new OvmsMetricBitset<N>(metric, autostale, units);
       if (value)
         m->SetValue(value);
       return m;
@@ -384,12 +380,8 @@ class OvmsMetrics
     template <typename ElemType>
     OvmsMetricSet<ElemType> *InitSet(const char* metric, uint16_t autostale=0, const char* value=NULL, metric_unit_t units = Other)
       {
-      OvmsMetricSet<ElemType> *m;
-      auto k = m_metrics.find(metric);
-      if (k == m_metrics.end())
-        m = new OvmsMetricSet<ElemType>(metric, autostale, units);
-      else
-        m = (OvmsMetricSet<ElemType> *) k->second;
+      OvmsMetricSet<ElemType> *m = (OvmsMetricSet<ElemType> *)Find(metric);
+      if (m==NULL) m = new OvmsMetricSet<ElemType>(metric, autostale, units);
       if (value)
         m->SetValue(value);
       return m;
@@ -410,7 +402,7 @@ class OvmsMetrics
     size_t m_nextmodifier;
 
   public:
-    MetricMap m_metrics;
+    OvmsMetric* m_first;
   };
 
 extern OvmsMetrics MyMetrics;
