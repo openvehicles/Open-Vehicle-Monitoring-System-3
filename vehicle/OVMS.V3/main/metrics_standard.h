@@ -58,9 +58,14 @@
 #define MS_V_BAT_CAC                "v.b.cac"
 #define MS_V_BAT_VOLTAGE            "v.b.voltage"
 #define MS_V_BAT_CURRENT            "v.b.current"
-#define MS_V_BAT_RANGE_IDEAL        "v.b.range.i"
-#define MS_V_BAT_RANGE_EST          "v.b.range.e"
-#define MS_V_BAT_12V                "v.b.12v"
+#define MS_V_BAT_POWER              "v.b.power"
+#define MS_V_BAT_ENERGY_USED        "v.b.energy.used"
+#define MS_V_BAT_ENERGY_RECD        "v.b.energy.recd"
+#define MS_V_BAT_RANGE_FULL         "v.b.range.full"
+#define MS_V_BAT_RANGE_IDEAL        "v.b.range.ideal"
+#define MS_V_BAT_RANGE_EST          "v.b.range.est"
+#define MS_V_BAT_12V_VOLTAGE        "v.b.12v.voltage"
+#define MS_V_BAT_12V_CURRENT        "v.b.12v.current"
 
 #define MS_V_CHARGE_VOLTAGE         "v.c.voltage"
 #define MS_V_CHARGE_CURRENT         "v.c.current"
@@ -158,11 +163,16 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_bat_soc;           // State of charge [%]
     OvmsMetricFloat*  ms_v_bat_soh;           // State of health [%]
     OvmsMetricFloat*  ms_v_bat_cac;           // Calculated capacity [Ah]
-    OvmsMetricFloat*  ms_v_bat_voltage;       // Momentary voltage [V]
-    OvmsMetricFloat*  ms_v_bat_current;       // Momentary current [A]
-    OvmsMetricFloat*  ms_v_bat_range_ideal;   // Ideal range [v.units → km/mi]
-    OvmsMetricFloat*  ms_v_bat_range_est;     // Estimated range [v.units → km/mi]
-    OvmsMetricFloat*  ms_v_bat_12v;           // Auxiliary battery momentary voltage [V]
+    OvmsMetricFloat*  ms_v_bat_voltage;       // Main battery momentary voltage [V]
+    OvmsMetricFloat*  ms_v_bat_current;       // Main battery momentary current [A]
+    OvmsMetricFloat*  ms_v_bat_power;         // Main battery momentary power [kW]
+    OvmsMetricFloat*  ms_v_bat_energy_used;   // Main battery energy used on trip [kWh]
+    OvmsMetricFloat*  ms_v_bat_energy_recd;   // Main battery energy recovered on trip [kWh]
+    OvmsMetricFloat*  ms_v_bat_range_full;    // Ideal range at 100% SOC & current conditions [km]
+    OvmsMetricFloat*  ms_v_bat_range_ideal;   // Ideal range [km]
+    OvmsMetricFloat*  ms_v_bat_range_est;     // Estimated range [km]
+    OvmsMetricFloat*  ms_v_bat_12v_voltage;   // Auxiliary 12V battery momentary voltage [V]
+    OvmsMetricFloat*  ms_v_bat_12v_current;   // Auxiliary 12V battery momentary current [A]
     
     OvmsMetricFloat*  ms_v_charge_voltage;    // Momentary charger supply voltage [V]
     OvmsMetricFloat*  ms_v_charge_current;    // Momentary charger output current [A]
@@ -181,11 +191,11 @@ class MetricsStandard
     OvmsMetricInt*    ms_v_charge_duration_range;   // … for sufficient range [min]
     OvmsMetricInt*    ms_v_charge_duration_soc;     // … for sufficient SOC [min]
     
-    OvmsMetricInt*    ms_v_inv_temp;          // Inverter temperature [°C]
-    OvmsMetricInt*    ms_v_bat_temp;          // Battery temperature [°C]
-    OvmsMetricInt*    ms_v_mot_temp;          // Motor temperature [°C]
-    OvmsMetricInt*    ms_v_charge_temp;       // Charger temperature [°C]
-    OvmsMetricInt*    ms_v_env_temp;          // Ambient temperature [°C]
+    OvmsMetricFloat*  ms_v_inv_temp;          // Inverter temperature [°C]
+    OvmsMetricFloat*  ms_v_bat_temp;          // Battery temperature [°C]
+    OvmsMetricFloat*  ms_v_mot_temp;          // Motor temperature [°C]
+    OvmsMetricFloat*  ms_v_charge_temp;       // Charger temperature [°C]
+    OvmsMetricFloat*  ms_v_env_temp;          // Ambient temperature [°C]
     
     OvmsMetricBool*   ms_v_door_fl;
     OvmsMetricBool*   ms_v_door_fr;
@@ -232,5 +242,6 @@ class MetricsStandard
   };
 
 extern MetricsStandard StandardMetrics;
+#define StdMetrics StandardMetrics
 
 #endif //#ifndef __METRICS_STANDARD_H__

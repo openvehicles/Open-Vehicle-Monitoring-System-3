@@ -146,7 +146,7 @@ void Housekeeping::version()
 
 void Housekeeping::metrics()
   {
-  OvmsMetricFloat* m1 = StandardMetrics.ms_v_bat_12v;
+  OvmsMetricFloat* m1 = StandardMetrics.ms_v_bat_12v_voltage;
   if (m1 == NULL)
     return;
 

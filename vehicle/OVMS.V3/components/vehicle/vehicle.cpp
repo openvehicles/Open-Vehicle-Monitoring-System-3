@@ -131,10 +131,12 @@ OvmsVehicle::OvmsVehicle()
 
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
   xTaskCreatePinnedToCore(OvmsVehicleRxTask, "Vrx Task", 4096, (void*)this, 5, &m_rxtask, 1);
-
+  
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicle::VehicleTicker1, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
   }
 
 OvmsVehicle::~OvmsVehicle()
@@ -268,6 +270,15 @@ void OvmsVehicle::Ticker600(uint32_t ticker)
   }
 
 void OvmsVehicle::Ticker3600(uint32_t ticker)
+  {
+  }
+
+void OvmsVehicle::VehicleConfigChanged(std::string event, void* param)
+  {
+  ConfigChanged((OvmsConfigParam*) param);
+  }
+
+void OvmsVehicle::ConfigChanged(OvmsConfigParam* param)
   {
   }
 

@@ -47,16 +47,16 @@ OvmsMetrics       MyMetrics       __attribute__ ((init_priority (1800)));
 void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   bool found = false;
-  for (MetricMap::iterator it=MyMetrics.m_metrics.begin(); it!=MyMetrics.m_metrics.end(); ++it)
+  for (OvmsMetric* m=MyMetrics.m_first; m != NULL; m=m->m_next)
     {
-    const char* k = it->first;
-    std::string v = it->second->AsString();
+    const char *k = m->m_name;
+    std::string v = m->AsString();
     if ((argc==0)||(strstr(k,argv[0])))
       {
       if (v.empty())
-        writer->printf("%-30.30s\n",k);
+        writer->printf("%-40.40s\n",k);
       else
-        writer->printf("%-30.30s %s%s\n",k,v.c_str(),OvmsMetricUnitLabel(it->second->GetUnits()));
+        writer->printf("%-40.40s %s%s\n",k,v.c_str(),OvmsMetricUnitLabel(m->GetUnits()));
       found = true;
       }
     }
@@ -102,8 +102,11 @@ MetricCallbackEntry::~MetricCallbackEntry()
 OvmsMetrics::OvmsMetrics()
   {
   ESP_LOGI(TAG, "Initialising METRICS (1810)");
+  ESP_LOGI(TAG, "  OvmsMetric is %d bytes",sizeof(OvmsMetric));
+  ESP_LOGI(TAG, "  OvmsMetricBool is %d bytes",sizeof(OvmsMetricBool));
 
   m_nextmodifier = 1;
+  m_first = NULL;
 
   // Register our commands
   OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework",NULL, "", 1);
@@ -120,64 +123,150 @@ OvmsMetrics::OvmsMetrics()
 
 OvmsMetrics::~OvmsMetrics()
   {
+  for (OvmsMetric* m = m_first; m!=NULL;)
+    {
+    OvmsMetric* c = m;
+    m = m->m_next;
+    delete c;
+    }
   }
 
-void OvmsMetrics::RegisterMetric(OvmsMetric* metric, const char* name)
+void OvmsMetrics::RegisterMetric(OvmsMetric* metric)
   {
-  m_metrics[name] = metric;
+  // Quick simple check for if we are the first metric.
+  if (m_first == NULL)
+    {
+    m_first = metric;
+    return;
+    }
+
+  // Now, check if we are before the first
+  if (strcmp(m_first->m_name,metric->m_name)>=0)
+    {
+    metric->m_next = m_first;
+    m_first = metric;
+    return;
+    }
+
+  // Search for the correct place to insert
+  for (OvmsMetric*m = m_first; m!=NULL; m=m->m_next)
+    {
+    if (m->m_next == NULL)
+      {
+      m->m_next = metric;
+      return;
+      }
+    if (strcmp(m->m_next->m_name,metric->m_name)>=0)
+      {
+      metric->m_next = m->m_next;
+      m->m_next = metric;
+      return;
+      }
+    }
+  }
+
+void OvmsMetrics::DeregisterMetric(OvmsMetric* metric)
+  {
+  if (m_first == metric)
+    {
+    m_first = metric->m_next;
+    delete metric;
+    return;
+    }
+
+  for (OvmsMetric* m=m_first;m!=NULL;m=m->m_next)
+    {
+    if (m->m_next == metric)
+      {
+      m->m_next = metric->m_next;
+      delete metric;
+      return;
+      }
+    }
   }
 
 bool OvmsMetrics::Set(const char* metric, const char* value)
   {
-  auto k = m_metrics.find(metric);
-  if (k == m_metrics.end())
-    return false;
+  OvmsMetric* m = Find(metric);
+  if (m == NULL) return false;
 
-  OvmsMetric* m = k->second;
   m->SetValue(std::string(value));
   return true;
   }
 
 bool OvmsMetrics::SetInt(const char* metric, int value)
   {
-  auto k = m_metrics.find(metric);
-  if (k == m_metrics.end())
-    return false;
+  OvmsMetricInt* m = (OvmsMetricInt*)Find(metric);
+  if (m == NULL) return false;
 
-  OvmsMetricInt* m = (OvmsMetricInt*)k->second;
   m->SetValue(value);
   return true;
   }
 
 bool OvmsMetrics::SetBool(const char* metric, bool value)
   {
-  auto k = m_metrics.find(metric);
-  if (k == m_metrics.end())
-    return false;
+  OvmsMetricBool* m = (OvmsMetricBool*)Find(metric);
+  if (m == NULL) return false;
 
-  OvmsMetricBool* m = (OvmsMetricBool*)k->second;
   m->SetValue(value);
   return true;
   }
 
 bool OvmsMetrics::SetFloat(const char* metric, float value)
   {
-  auto k = m_metrics.find(metric);
-  if (k == m_metrics.end())
-    return false;
+  OvmsMetricFloat* m = (OvmsMetricFloat*)Find(metric);
+  if (m == NULL) return false;
 
-  OvmsMetricFloat* m = (OvmsMetricFloat*)k->second;
   m->SetValue(value);
   return true;
   }
 
 OvmsMetric* OvmsMetrics::Find(const char* metric)
   {
-  auto k = m_metrics.find(metric);
-  if (k == m_metrics.end())
-    return NULL;
-  else
-    return k->second;
+  for (OvmsMetric* m=m_first; m != NULL; m=m->m_next)
+    {
+    if (strcmp(m->m_name,metric)==0) return m;
+    }
+  return NULL;
+  }
+
+OvmsMetricString* OvmsMetrics::InitString(const char* metric, uint16_t autostale, const char* value, metric_unit_t units)
+  {
+  OvmsMetricString *m = (OvmsMetricString*)Find(metric);
+  if (m==NULL) m = new OvmsMetricString(metric, autostale, units);
+
+  if (value)
+    m->SetValue(value);
+  return m;
+  }
+
+OvmsMetricInt* OvmsMetrics::InitInt(const char* metric, uint16_t autostale, int value, metric_unit_t units)
+  {
+  OvmsMetricInt *m = (OvmsMetricInt*)Find(metric);
+  if (m==NULL) m = new OvmsMetricInt(metric, autostale, units);
+
+  m->SetValue(value);
+  return m;
+  }
+
+OvmsMetricBool* OvmsMetrics::InitBool(const char* metric, uint16_t autostale, bool value, metric_unit_t units)
+  {
+  OvmsMetricBool *m = (OvmsMetricBool*)Find(metric);
+
+  if (m==NULL) m = new OvmsMetricBool(metric, autostale, units);
+
+  m->SetValue(value);
+  return m;
+  }
+
+OvmsMetricFloat* OvmsMetrics::InitFloat(const char* metric, uint16_t autostale, float value, metric_unit_t units)
+  {
+  OvmsMetricFloat *m = (OvmsMetricFloat*)Find(metric);
+
+  if (m==NULL) m = new OvmsMetricFloat(metric, autostale, units);
+
+  m->SetValue(value);
+  return m;
   }
 
 void OvmsMetrics::RegisterListener(const char* caller, const char* name, MetricCallback callback)
@@ -241,7 +330,7 @@ size_t OvmsMetrics::RegisterModifier()
   return m_nextmodifier++;
   }
 
-OvmsMetric::OvmsMetric(const char* name, int autostale, metric_unit_t units)
+OvmsMetric::OvmsMetric(const char* name, uint16_t autostale, metric_unit_t units)
   {
   m_defined = false;
   m_modified.reset();
@@ -249,11 +338,17 @@ OvmsMetric::OvmsMetric(const char* name, int autostale, metric_unit_t units)
   m_lastmodified = 0;
   m_autostale = autostale;
   m_units = units;
-  MyMetrics.RegisterMetric(this, name);
+  m_next = NULL;
+  MyMetrics.RegisterMetric(this);
   }
 
 OvmsMetric::~OvmsMetric()
   {
+  MyMetrics.DeregisterMetric(this);
+  
+  // Warning: pointers to a deleted OvmsMetric can still be held locally in
+  //  other modules. If you delete metrics, take care to inform all readers
+  //  (i.e. by broadcasting a module shutdown event).
   }
 
 std::string OvmsMetric::AsString(const char* defvalue, metric_unit_t units)
@@ -262,6 +357,10 @@ std::string OvmsMetric::AsString(const char* defvalue, metric_unit_t units)
   }
 
 void OvmsMetric::SetValue(std::string value)
+  {
+  }
+
+void OvmsMetric::operator=(std::string value)
   {
   }
 
@@ -299,7 +398,7 @@ void OvmsMetric::SetStale(bool stale)
   m_stale = stale;
   }
 
-void OvmsMetric::SetAutoStale(int seconds)
+void OvmsMetric::SetAutoStale(uint16_t seconds)
   {
   m_autostale = seconds;
   }
@@ -326,7 +425,7 @@ void OvmsMetric::ClearModified(size_t modifier)
   m_modified.reset(modifier);
   }
 
-OvmsMetricInt::OvmsMetricInt(const char* name, int autostale, metric_unit_t units)
+OvmsMetricInt::OvmsMetricInt(const char* name, uint16_t autostale, metric_unit_t units)
   : OvmsMetric(name, autostale, units)
   {
   m_value = 0;
@@ -392,7 +491,7 @@ void OvmsMetricInt::SetValue(std::string value)
     SetModified(false);
   }
 
-OvmsMetricBool::OvmsMetricBool(const char* name, int autostale, metric_unit_t units)
+OvmsMetricBool::OvmsMetricBool(const char* name, uint16_t autostale, metric_unit_t units)
   : OvmsMetric(name, autostale, units)
   {
   m_value = false;
@@ -452,7 +551,7 @@ void OvmsMetricBool::SetValue(std::string value)
     SetModified(false);
   }
 
-OvmsMetricFloat::OvmsMetricFloat(const char* name, int autostale, metric_unit_t units)
+OvmsMetricFloat::OvmsMetricFloat(const char* name, uint16_t autostale, metric_unit_t units)
   : OvmsMetric(name, autostale, units)
   {
   m_value = 0;
@@ -519,7 +618,7 @@ void OvmsMetricFloat::SetValue(std::string value)
     SetModified(false);
   }
 
-OvmsMetricString::OvmsMetricString(const char* name, int autostale, metric_unit_t units)
+OvmsMetricString::OvmsMetricString(const char* name, uint16_t autostale, metric_unit_t units)
   : OvmsMetric(name, autostale, units)
   {
   }
@@ -562,6 +661,7 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
     case Volts:        return "V";
     case Amps:         return "A";
     case AmpHours:     return "Ah";
+    case kW:           return "kW";
     case kWh:          return "kWh";
     case Seconds:      return "Sec";
     case Minutes:      return "Min";
@@ -569,6 +669,9 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
     case Degrees:      return "°";
     case Kph:          return "Kph";
     case Mph:          return "Mph";
+    case KphPS:        return "Kph/s";
+    case MphPS:        return "Mph/s";
+    case MetersPSS:    return "m/s²";
     case Percentage:   return "%";
     default:           return "";
     }
@@ -585,6 +688,14 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
     case Miles:
       if (to == Kilometers) return (value*8)/5;
       else if (to == Meters) return (value*8000)/5;
+      break;
+    case KphPS:
+      if (to == MphPS) return (value*5)/8;
+      else if (to == MetersPSS) return value/1000;
+      break;
+    case MphPS:
+      if (to == KphPS) return (value*8)/5;
+      else if (to == MetersPSS) return (value*8000)/5;
       break;
     case Celcius:
       if (to == Fahrenheit) return ((value*9)/5) + 32;
@@ -637,6 +748,14 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
     case Miles:
       if (to == Kilometers) return (value*8)/5;
       else if (to == Meters) return (value*8000)/5;
+      break;
+    case KphPS:
+      if (to == MphPS) return (value*5)/8;
+      else if (to == MetersPSS) return value/1000;
+      break;
+    case MphPS:
+      if (to == KphPS) return (value*8)/5;
+      else if (to == MetersPSS) return (value*8000)/5;
       break;
     case Celcius:
       if (to == Fahrenheit) return ((value*9)/5) + 32;
