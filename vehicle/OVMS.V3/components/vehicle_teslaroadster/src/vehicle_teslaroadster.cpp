@@ -317,6 +317,257 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
   }
 
+OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandSetChargeMode(vehicle_mode_t mode)
+  {
+  CAN_frame_t frame;
+  memset(&frame,0,sizeof(frame));
+
+  frame.origin = m_can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 8;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x102;
+  frame.data.u8[0] = 0x05;
+  frame.data.u8[1] = 0x19;
+  frame.data.u8[2] = 0x00;
+  frame.data.u8[3] = 0x00;
+  frame.data.u8[4] = (uint8_t)mode;
+  frame.data.u8[5] = 0x00;
+  frame.data.u8[6] = 0x00;
+  frame.data.u8[7] = 0x00;
+  m_can1->Write(&frame);
+
+  return Success;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandSetChargeCurrent(uint16_t limit)
+  {
+  CAN_frame_t frame;
+  memset(&frame,0,sizeof(frame));
+
+  frame.origin = m_can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 8;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x102;
+  frame.data.u8[0] = 0x05;
+  frame.data.u8[1] = 0x02;
+  frame.data.u8[2] = 0x00;
+  frame.data.u8[3] = 0x00;
+  frame.data.u8[4] = (uint8_t)limit;
+  frame.data.u8[5] = 0x00;
+  frame.data.u8[6] = 0x00;
+  frame.data.u8[7] = 0x00;
+  m_can1->Write(&frame);
+
+  return Success;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandStartCharge()
+  {
+  CAN_frame_t frame;
+  memset(&frame,0,sizeof(frame));
+
+  frame.origin = m_can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 8;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x102;
+  frame.data.u8[0] = 0x05;
+  frame.data.u8[1] = 0x03;
+  frame.data.u8[2] = 0x00;
+  frame.data.u8[3] = 0x00;
+  frame.data.u8[4] = 1;    // Start charge
+  frame.data.u8[5] = 0x00;
+  frame.data.u8[6] = 0x00;
+  frame.data.u8[7] = 0x00;
+  m_can1->Write(&frame);
+
+  return Success;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandStopCharge()
+  {
+  CAN_frame_t frame;
+  memset(&frame,0,sizeof(frame));
+
+  frame.origin = m_can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 8;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x102;
+  frame.data.u8[0] = 0x05;
+  frame.data.u8[1] = 0x03;
+  frame.data.u8[2] = 0x00;
+  frame.data.u8[3] = 0x00;
+  frame.data.u8[4] = 0;    // Stop charge
+  frame.data.u8[5] = 0x00;
+  frame.data.u8[6] = 0x00;
+  frame.data.u8[7] = 0x00;
+  m_can1->Write(&frame);
+
+  return Success;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandSetChargeTimer(bool timeron, uint16_t timerstart)
+  {
+  return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandCooldown(bool cooldownon)
+  {
+  return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandWakeup()
+  {
+  CAN_frame_t frame;
+  memset(&frame,0,sizeof(frame));
+
+  frame.origin = m_can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 1;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x102;
+  frame.data.u8[0] = 0x0a;
+  m_can1->Write(&frame);
+
+  frame.origin = m_can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 8;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x102;
+  frame.data.u8[0] = 0x06;
+  frame.data.u8[1] = 0x2c;
+  frame.data.u8[2] = 0x01;
+  frame.data.u8[3] = 0x00;
+  frame.data.u8[4] = 0x00;
+  frame.data.u8[5] = 0x09;
+  frame.data.u8[6] = 0x10;
+  frame.data.u8[7] = 0x00;
+  m_can1->Write(&frame);
+  
+  return Success;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandLock(const char* pin)
+  {
+  long lpin = atol(pin);
+
+  CAN_frame_t frame;
+  memset(&frame,0,sizeof(frame));
+
+  frame.origin = m_can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 8;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x102;
+  frame.data.u8[0] = 0x0b;
+  frame.data.u8[1] = 2;   // Lock car
+  frame.data.u8[2] = 0x00;
+  frame.data.u8[3] = 0x00;
+  frame.data.u8[4] = lpin & 0xff;
+  frame.data.u8[5] = (lpin>>8) & 0xff;
+  frame.data.u8[6] = (lpin>>16) & 0xff;
+  frame.data.u8[7] = (strlen(pin)<<4) + ((lpin>>24) & 0x0f);
+  m_can1->Write(&frame);
+
+  return Success;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandUnlock(const char* pin)
+  {
+  long lpin = atol(pin);
+
+  CAN_frame_t frame;
+  memset(&frame,0,sizeof(frame));
+
+  frame.origin = m_can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 8;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x102;
+  frame.data.u8[0] = 0x0b;
+  frame.data.u8[1] = 3;   // Unlock car
+  frame.data.u8[2] = 0x00;
+  frame.data.u8[3] = 0x00;
+  frame.data.u8[4] = lpin & 0xff;
+  frame.data.u8[5] = (lpin>>8) & 0xff;
+  frame.data.u8[6] = (lpin>>16) & 0xff;
+  frame.data.u8[7] = (strlen(pin)<<4) + ((lpin>>24) & 0x0f);
+  m_can1->Write(&frame);
+
+  return Success;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandActivateValet(const char* pin)
+  {
+  long lpin = atol(pin);
+
+  CAN_frame_t frame;
+  memset(&frame,0,sizeof(frame));
+
+  frame.origin = m_can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 8;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x102;
+  frame.data.u8[0] = 0x0b;
+  frame.data.u8[1] = 0;   // Activate valet mode
+  frame.data.u8[2] = 0x00;
+  frame.data.u8[3] = 0x00;
+  frame.data.u8[4] = lpin & 0xff;
+  frame.data.u8[5] = (lpin>>8) & 0xff;
+  frame.data.u8[6] = (lpin>>16) & 0xff;
+  frame.data.u8[7] = (strlen(pin)<<4) + ((lpin>>24) & 0x0f);
+  m_can1->Write(&frame);
+
+  return Success;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandDeactivateValet(const char* pin)
+  {
+  long lpin = atol(pin);
+
+  CAN_frame_t frame;
+  memset(&frame,0,sizeof(frame));
+
+  frame.origin = m_can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 8;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x102;
+  frame.data.u8[0] = 0x0b;
+  frame.data.u8[1] = 1;   // Deactivate valet mode
+  frame.data.u8[2] = 0x00;
+  frame.data.u8[3] = 0x00;
+  frame.data.u8[4] = lpin & 0xff;
+  frame.data.u8[5] = (lpin>>8) & 0xff;
+  frame.data.u8[6] = (lpin>>16) & 0xff;
+  frame.data.u8[7] = (strlen(pin)<<4) + ((lpin>>24) & 0x0f);
+  m_can1->Write(&frame);
+
+  return Success;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandHomelink(uint8_t button)
+  {
+  CAN_frame_t frame;
+  memset(&frame,0,sizeof(frame));
+
+  frame.origin = m_can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 3;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x102;
+  frame.data.u8[0] = 0x09;
+  frame.data.u8[1] = 0x00;
+  frame.data.u8[2] = button;
+  m_can1->Write(&frame);
+
+  return Success;
+  }
+
 class OvmsVehicleTeslaRoadsterInit
   {
   public: OvmsVehicleTeslaRoadsterInit();

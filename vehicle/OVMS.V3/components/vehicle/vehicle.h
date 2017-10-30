@@ -101,6 +101,35 @@ class OvmsVehicle
     virtual const std::string VehicleName();
 
   public:
+    typedef enum
+      {
+      NotImplemented = 0,
+      Success,
+      Fail
+      } vehicle_command_t;
+    typedef enum
+      {
+      Standard = 0,
+      Storage,
+      Range,
+      Performance
+      } vehicle_mode_t;
+
+  public:
+    virtual vehicle_command_t CommandSetChargeMode(vehicle_mode_t mode);
+    virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
+    virtual vehicle_command_t CommandStartCharge();
+    virtual vehicle_command_t CommandStopCharge();
+    virtual vehicle_command_t CommandSetChargeTimer(bool timeron, uint16_t timerstart);
+    virtual vehicle_command_t CommandCooldown(bool cooldownon);
+    virtual vehicle_command_t CommandWakeup();
+    virtual vehicle_command_t CommandLock(const char* pin);
+    virtual vehicle_command_t CommandUnlock(const char* pin);
+    virtual vehicle_command_t CommandActivateValet(const char* pin);
+    virtual vehicle_command_t CommandDeactivateValet(const char* pin);
+    virtual vehicle_command_t CommandHomelink(uint8_t button);
+
+  public:
     typedef struct
       {
       uint32_t txmoduleid;
