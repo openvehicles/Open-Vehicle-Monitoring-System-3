@@ -50,6 +50,8 @@ class OvmsNetManager
   public:
     void WifiUp(std::string event, void* data);
     void WifiDown(std::string event, void* data);
+    void ModemUp(std::string event, void* data);
+    void ModemDown(std::string event, void* data);
 
   public:
     bool m_connected_wifi;
