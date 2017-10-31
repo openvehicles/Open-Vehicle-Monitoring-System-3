@@ -58,6 +58,7 @@ OvmsNetManager::OvmsNetManager()
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.gotip", std::bind(&OvmsNetManager::WifiUp, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.stop", std::bind(&OvmsNetManager::WifiDown, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.stop", std::bind(&OvmsNetManager::WifiDown, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.wifi.sta.disconnected", std::bind(&OvmsNetManager::WifiDown, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.down", std::bind(&OvmsNetManager::WifiDown, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.gotip", std::bind(&OvmsNetManager::ModemUp, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.stop", std::bind(&OvmsNetManager::ModemDown, this, _1, _2));
@@ -74,6 +75,7 @@ void OvmsNetManager::WifiUp(std::string event, void* data)
   m_connected_any = m_connected_wifi || m_connected_modem;
   StandardMetrics.ms_m_net_type->SetValue("wifi");
   StandardMetrics.ms_m_net_provider->SetValue(MyPeripherals->m_esp32wifi->GetSSID());
+  MyEvents.SignalEvent("network.wifi.up",NULL);
   MyEvents.SignalEvent("network.up",NULL);
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   StartMongooseTask();
@@ -86,6 +88,7 @@ void OvmsNetManager::WifiDown(std::string event, void* data)
     {
     m_connected_wifi = false;
     m_connected_any = m_connected_wifi || m_connected_modem;
+    MyEvents.SignalEvent("network.wifi.down",NULL);
     if (!m_connected_any)
       {
       StandardMetrics.ms_m_net_type->SetValue("none");
@@ -103,6 +106,7 @@ void OvmsNetManager::ModemUp(std::string event, void* data)
   m_connected_modem = true;
   m_connected_any = m_connected_wifi || m_connected_modem;
   StandardMetrics.ms_m_net_type->SetValue("modem");
+  MyEvents.SignalEvent("network.modem.up",NULL);
   MyEvents.SignalEvent("network.up",NULL);
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   StartMongooseTask();
@@ -115,6 +119,7 @@ void OvmsNetManager::ModemDown(std::string event, void* data)
     {
     m_connected_modem = false;
     m_connected_any = m_connected_wifi || m_connected_modem;
+    MyEvents.SignalEvent("network.modem.down",NULL);
     if (!m_connected_any)
       {
       StandardMetrics.ms_m_net_type->SetValue("none");
