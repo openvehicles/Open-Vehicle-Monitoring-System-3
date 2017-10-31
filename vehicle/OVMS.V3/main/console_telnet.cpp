@@ -61,9 +61,8 @@ OvmsTelnet::OvmsTelnet()
 
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(tag,"system.wifi.sta.gotip", std::bind(&OvmsTelnet::WifiUp, this, _1, _2));
-  MyEvents.RegisterEvent(tag,"system.wifi.ap.start", std::bind(&OvmsTelnet::WifiUp, this, _1, _2));
-  MyEvents.RegisterEvent(tag,"system.wifi.down", std::bind(&OvmsTelnet::WifiDown, this, _1, _2));
+  MyEvents.RegisterEvent(tag,"network.wifi.up", std::bind(&OvmsTelnet::WifiUp, this, _1, _2));
+  MyEvents.RegisterEvent(tag,"network.wifi.down", std::bind(&OvmsTelnet::WifiDown, this, _1, _2));
   }
 
 void OvmsTelnet::WifiUp(std::string event, void* data)

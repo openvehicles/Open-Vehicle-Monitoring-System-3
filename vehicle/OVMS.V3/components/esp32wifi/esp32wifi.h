@@ -65,6 +65,8 @@ class esp32wifi : public pcp
 
   public:
     void EventWifiGotIp(std::string event, void* data);
+    void EventWifiStaDisconnected(std::string event, void* data);
+    void EventTimer10(std::string event, void* data);
     void EventWifiScanDone(std::string event, void* data);
 
   protected:
@@ -72,6 +74,7 @@ class esp32wifi : public pcp
     tcpip_adapter_ip_info_t m_ip_info;
     wifi_init_config_t m_wifi_init_cfg;
     wifi_config_t m_wifi_apsta_cfg;
+    bool m_stareconnect;
   };
 
 #endif //#ifndef __ESP32WIFI_H__
