@@ -36,6 +36,7 @@ static const char *TAG = "simcom";
 #include "ovms_peripherals.h"
 #include "metrics_standard.h"
 #include "ovms_config.h"
+#include "ovms_events.h"
 
 static void SIMCOM_task(void *pvParameters)
   {
@@ -69,6 +70,7 @@ static void SimcomPPPStatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
 #if PPP_IPV6_SUPPORT
       ESP_LOGI(TAG, "   our6_ipaddr = %s", ip6addr_ntoa(netif_ip6_addr(pppif, 0)));
 #endif /* PPP_IPV6_SUPPORT */
+      MyEvents.SignalEvent("system.modem.gotip",NULL);
       break;
       }
     case PPPERR_PARAM:
@@ -145,6 +147,8 @@ static void SimcomPPPStatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
     {
     return;
     }
+
+  MyEvents.SignalEvent("system.modem.down",NULL);
 
   /* ppp_close() was previously called, don't reconnect */
   if (err_code == PPPERR_USER)
@@ -449,6 +453,7 @@ void simcom::State1Enter(SimcomState1 newstate)
       break;
     case PoweringOff:
       ESP_LOGI(TAG,"State: Enter PoweringOff state");
+      MyEvents.SignalEvent("system.modem.stop",NULL);
       PowerCycle();
       m_state1_timeout_ticks = 10;
       m_state1_timeout_goto = CheckPowerOff;

@@ -42,7 +42,7 @@
 void hmac_md5(const uint8_t *msg, int length, const uint8_t *key,
               int key_len, uint8_t *digest)
   {
-  MD5_CTX context;
+  OVMS_MD5_CTX context;
   int i;
   uint8_t k_ipad[64];
   uint8_t k_opad[64];
@@ -58,12 +58,12 @@ void hmac_md5(const uint8_t *msg, int length, const uint8_t *key,
     k_opad[i] ^= 0x5c;
     }
 
-  MD5_Init(&context);
-  MD5_Update(&context, k_ipad, 64);
-  MD5_Update(&context, msg, length);
-  MD5_Final(digest,&context);
-  MD5_Init(&context);
-  MD5_Update(&context, k_opad, 64);
-  MD5_Update(&context, digest, 16);
-  MD5_Final(digest,&context);
+  OVMS_MD5_Init(&context);
+  OVMS_MD5_Update(&context, k_ipad, 64);
+  OVMS_MD5_Update(&context, msg, length);
+  OVMS_MD5_Final(digest,&context);
+  OVMS_MD5_Init(&context);
+  OVMS_MD5_Update(&context, k_opad, 64);
+  OVMS_MD5_Update(&context, digest, 16);
+  OVMS_MD5_Final(digest,&context);
   }

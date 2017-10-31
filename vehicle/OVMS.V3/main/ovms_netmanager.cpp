@@ -59,6 +59,9 @@ OvmsNetManager::OvmsNetManager()
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.stop", std::bind(&OvmsNetManager::WifiDown, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.stop", std::bind(&OvmsNetManager::WifiDown, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.down", std::bind(&OvmsNetManager::WifiDown, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.modem.gotip", std::bind(&OvmsNetManager::ModemUp, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.modem.stop", std::bind(&OvmsNetManager::ModemDown, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.modem.down", std::bind(&OvmsNetManager::ModemDown, this, _1, _2));
   }
 
 OvmsNetManager::~OvmsNetManager()
@@ -82,6 +85,35 @@ void OvmsNetManager::WifiDown(std::string event, void* data)
   if (m_connected_wifi)
     {
     m_connected_wifi = false;
+    m_connected_any = m_connected_wifi || m_connected_modem;
+    if (!m_connected_any)
+      {
+      StandardMetrics.ms_m_net_type->SetValue("none");
+      StandardMetrics.ms_m_net_provider->SetValue("");
+      MyEvents.SignalEvent("network.down",NULL);
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+      StopMongooseTask();
+#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+      }
+    }
+  }
+
+void OvmsNetManager::ModemUp(std::string event, void* data)
+  {
+  m_connected_modem = true;
+  m_connected_any = m_connected_wifi || m_connected_modem;
+  StandardMetrics.ms_m_net_type->SetValue("modem");
+  MyEvents.SignalEvent("network.up",NULL);
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+  StartMongooseTask();
+#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+  }
+
+void OvmsNetManager::ModemDown(std::string event, void* data)
+  {
+  if (m_connected_modem)
+    {
+    m_connected_modem = false;
     m_connected_any = m_connected_wifi || m_connected_modem;
     if (!m_connected_any)
       {
@@ -133,8 +165,11 @@ bool OvmsNetManager::MongooseRunning()
 
 void OvmsNetManager::StartMongooseTask()
   {
-  m_mongoose_running = true;
-  xTaskCreatePinnedToCore(MongooseRawTask, "NetManTask", 4096, (void*)this, 5, &m_mongoose_task, 1);
+  if (!m_mongoose_running)
+    {
+    m_mongoose_running = true;
+    xTaskCreatePinnedToCore(MongooseRawTask, "NetManTask", 4096, (void*)this, 5, &m_mongoose_task, 1);
+    }
   }
 
 void OvmsNetManager::StopMongooseTask()
