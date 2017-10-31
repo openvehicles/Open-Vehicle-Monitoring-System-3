@@ -136,7 +136,8 @@ void OvmsServerV2::ServerTask()
         }
 
       // Poll for new data
-      if (m_buffer->PollSocket(m_conn.Socket(),20000) < 0)
+      if ((m_buffer->PollSocket(m_conn.Socket(),20000) < 0)||
+          (!MyNetManager.m_connected_any))
         {
         Disconnect();
         }
