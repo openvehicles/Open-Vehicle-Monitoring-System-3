@@ -31,17 +31,7 @@
 #ifndef __SIMCOM_H__
 #define __SIMCOM_H__
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-#include "driver/uart.h"
-#include "tcpip_adapter.h"
-extern "C"
-  {
-#include "netif/ppp/pppos.h"
-#include "netif/ppp/ppp.h"
-#include "lwip/pppapi.h"
-  };
+#include "gsmpppos.h"
 #include "pcp.h"
 #include "ovms_events.h"
 #include "gsmmux.h"
@@ -91,6 +81,7 @@ class simcom : public pcp
       MuxMode,
       NetStart,
       NetHold,
+      NetSleep,
       NetMode,
       PoweringOff,
       PoweredOff
@@ -130,10 +121,7 @@ class simcom : public pcp
     int          m_state1_userdata;
     network_registration_t m_netreg;
     GsmMux       m_mux;
-
-  public:
-    ppp_pcb*     m_ppp;
-    struct netif m_ppp_netif;
+    GsmPPPOS     m_ppp;
 
   protected:
     void SetState1(SimcomState1 newstate);
