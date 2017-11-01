@@ -68,6 +68,7 @@ class pcpapp
     void Deregister(const char* name);
     pcp* FindDeviceByName(const char* name);
     PowerMode FindPowerModeByName(const char* name);
+    const char* FindPowerModeByType(PowerMode mode);
 
   public:
     pcpmap_t m_map;

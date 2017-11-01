@@ -32,7 +32,9 @@
 static const char *TAG = "pcp";
 
 #include <stdio.h>
+#include <string.h>
 #include "pcp.h"
+#include "ovms_events.h"
 
 pcpapp MyPcpApp __attribute__ ((init_priority (4000)));
 OvmsCommand* powercmd = NULL;
@@ -59,13 +61,7 @@ void power_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   const char* devname = cmd->GetParent()->GetName();
 
   pcp* device = MyPcpApp.FindDeviceByName(devname);
-  const char* pmname= NULL;
-  for (auto it=MyPcpApp.m_mappm.begin(); it!=MyPcpApp.m_mappm.end(); ++it)
-    {
-    if (it->second == device->GetPowerMode())
-      pmname = it->first;
-    }
-  if (pmname == NULL) pmname = "undefined";
+  const char* pmname = MyPcpApp.FindPowerModeByType(device->GetPowerMode());
 
   writer->printf("Power for %s is %s\n",devname,pmname);
   }
@@ -121,6 +117,18 @@ PowerMode pcpapp::FindPowerModeByName(const char* name)
   return PowerMode::Undefined;
   }
 
+const char* pcpapp::FindPowerModeByType(PowerMode mode)
+  {
+  const char* pmname= NULL;
+  for (auto it=m_mappm.begin(); it!=m_mappm.end(); ++it)
+    {
+    if (it->second == mode)
+      pmname = it->first;
+    }
+  if (pmname == NULL) pmname = "undefined";
+  return pmname;
+  }
+
 pcp::pcp(const char* name)
   {
   m_name = name;
@@ -138,6 +146,12 @@ void pcp::SetPowerMode(PowerMode powermode)
   if (m_powermode != powermode)
     {
     m_powermode = powermode;
+    const char* pmname = MyPcpApp.FindPowerModeByType(m_powermode);
+    char event[32] = "power.";
+    strcat(event,m_name);
+    strcat(event,".");
+    strcat(event,pmname);
+    MyEvents.SignalEvent(event,NULL);
     }
   }
 
