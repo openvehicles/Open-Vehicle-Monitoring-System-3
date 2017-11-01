@@ -410,7 +410,15 @@ void OvmsServerV2::TransmitMsgStat(bool always)
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_charge_current->AsString("0").c_str());
   buffer.append(",");
-  buffer.append("stopped");  // car_chargestate
+  // TODO v2 protocol defines more charge states in car_chargestate
+  if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+  {
+    buffer.append("charging");
+  }
+  else
+  {
+    buffer.append("stopped");
+  }
   buffer.append(",");
   buffer.append("standard");  // car_chargemode
   buffer.append(",");
