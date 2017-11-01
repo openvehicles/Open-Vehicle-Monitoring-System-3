@@ -89,7 +89,7 @@ TelnetServer::TelnetServer(Parent* parent)
 
 bool TelnetServer::Instantiate()
   {
-  if (CreateTaskPinned(1, "TSTelnetServer", 3000) != pdPASS)
+  if (CreateTaskPinned(1, "TelnetServer", 3000) != pdPASS)
     {
     ::printf("\nInsufficient memory to create TelnetServer task\n");
     return false;
@@ -189,7 +189,7 @@ TelnetReceiver::TelnetReceiver(ConsoleTelnet* parent, int socket, char* buffer,
 
 bool TelnetReceiver::Instantiate()
   {
-  if (CreateTaskPinned(1, "TRTelnetReceiver", 1000) != pdPASS)
+  if (CreateTaskPinned(1, "TelnetReceiver", 1000) != pdPASS)
     {
     ::printf("\nInsufficient memory to create TelnetReceiver task\n");
     return false;

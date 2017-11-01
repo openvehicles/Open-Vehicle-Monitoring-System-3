@@ -14,6 +14,7 @@ static const char *TAG = "ovms_main";
 #include "ovms_housekeeping.h"
 #include "ovms_events.h"
 #include "ovms_config.h"
+#include "ovms_module.h"
 
 extern "C"
   {
@@ -29,6 +30,7 @@ void app_main(void)
   nvs_flash_init();
 
   ESP_LOGI(TAG, "Executing on CPU core %d",xPortGetCoreID());
+  AddTaskToMap(xTaskGetCurrentTaskHandle());
 
   ESP_LOGI(TAG, "Mounting CONFIG...");
   MyConfig.mount();

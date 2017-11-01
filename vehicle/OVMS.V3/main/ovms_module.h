@@ -29,6 +29,9 @@
 */
 
 #ifndef __OVMS_MODULE_H__
+
+extern void AddTaskToMap(TaskHandle_t task);
+
 #define __OVMS_MODULE_H__
 
 #endif //#ifndef __OVMS_MODULE_H__
