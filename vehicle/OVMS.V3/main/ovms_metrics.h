@@ -80,7 +80,8 @@ typedef enum
   MphPS         = 72,   // Mph per second
   MetersPSS     = 73,   // Meters per second^2
 
-  Percentage    = 90
+  Percentage    = 90,
+  Integer       = 91,
   } metric_unit_t;
 
 extern const char* OvmsMetricUnitLabel(metric_unit_t units);

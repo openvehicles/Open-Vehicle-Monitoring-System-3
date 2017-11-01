@@ -566,7 +566,12 @@ std::string OvmsMetricFloat::AsString(const char* defvalue, metric_unit_t units)
   if (m_defined)
     {
     std::ostringstream ss;
-    if ((units != Other)&&(units != m_units))
+    if (units == Integer)
+      {
+      // special case float to integer string without converting units
+      ss << (int) m_value;
+      }
+    else if ((units != Other)&&(units != m_units))
       ss << UnitConvert(m_units,units,m_value);
     else
       ss << m_value;
