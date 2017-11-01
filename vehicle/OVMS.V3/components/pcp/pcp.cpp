@@ -54,6 +54,22 @@ void power_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
   writer->printf("Power mode of %s is now %s\n",devname,pmname);
   }
 
+void power_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* devname = cmd->GetParent()->GetName();
+
+  pcp* device = MyPcpApp.FindDeviceByName(devname);
+  const char* pmname= NULL;
+  for (auto it=MyPcpApp.m_mappm.begin(); it!=MyPcpApp.m_mappm.end(); ++it)
+    {
+    if (it->second == device->GetPowerMode())
+      pmname = it->first;
+    }
+  if (pmname == NULL) pmname = "undefined";
+
+  writer->printf("Power for %s is %s\n",devname,pmname);
+  }
+
 pcpapp::pcpapp()
   {
   ESP_LOGI(TAG, "Initialising POWER (4000)");
@@ -77,6 +93,7 @@ void pcpapp::Register(const char* name, pcp* device)
     {
     devcmd->RegisterCommand(it->first,"Power control",power_cmd,"",0,0, true);
     }
+  devcmd->RegisterCommand("status","Power control status",power_status,"",0,0, true);
   }
 
 void pcpapp::Deregister(const char* name)
