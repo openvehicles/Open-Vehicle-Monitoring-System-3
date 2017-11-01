@@ -107,15 +107,17 @@ void vehicle_nissanleaf_car_on(bool isOn)
   StandardMetrics.ms_v_env_on->SetValue(isOn);
   StandardMetrics.ms_v_env_awake->SetValue(isOn);
   // We don't know if handbrake is on or off, but it's usually off when the car is on.
-  StandardMetrics.ms_v_env_handbrake->SetValue(isOn);
-  if (isOn)
-    {
-    StandardMetrics.ms_v_door_chargeport->SetValue(false);
-    StandardMetrics.ms_v_charge_pilot->SetValue(false);
-    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-    StandardMetrics.ms_v_charge_state->SetValue("stopped");
-    StandardMetrics.ms_v_charge_substate->SetValue("stopped");
-    }
+  StandardMetrics.ms_v_env_handbrake->SetValue(!isOn);
+// TODO this is supposed to be a one-shot but car_parktime doesn't work in v3 yet
+// further it's not clear if we even need to do this
+//  if (isOn && car_parktime != 0)
+//    {
+//    StandardMetrics.ms_v_door_chargeport->SetValue(false);
+//    StandardMetrics.ms_v_charge_pilot->SetValue(false);
+//    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+//    StandardMetrics.ms_v_charge_state->SetValue("stopped");
+//    StandardMetrics.ms_v_charge_substate->SetValue("stopped");
+//    }
   }
 
 ////////////////////////////////////////////////////////////////////////
