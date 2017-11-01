@@ -118,6 +118,7 @@ simcom::simcom(const char* name, uart_port_t uartnum, int baud, int rxpin, int t
   m_state1_timeout_ticks = -1;
   m_state1_userdata = 0;
   m_netreg = NotRegistered;
+  m_powermode = Off;
   StartTask();
 
   using std::placeholders::_1;
@@ -168,12 +169,14 @@ void simcom::StopTask()
 
 void simcom::SetPowerMode(PowerMode powermode)
   {
+  PowerMode original = m_powermode;
   pcp::SetPowerMode(powermode);
   switch (powermode)
     {
     case On:
     case Sleep:
-      SetState1(PoweringOn);
+      if ((original!=On)&&(original!=Sleep))
+        SetState1(PoweringOn);
       break;
     case DeepSleep:
     case Off:
@@ -301,7 +304,6 @@ void simcom::State1Enter(SimcomState1 newstate)
       break;
     case PoweredOn:
       ESP_LOGI(TAG,"State: Enter PoweredOn state");
-      pcp::SetPowerMode(On);
       m_state1_timeout_ticks = 30;
       m_state1_timeout_goto = PoweringOn;
       break;
@@ -333,7 +335,6 @@ void simcom::State1Enter(SimcomState1 newstate)
       break;
     case PoweredOff:
       ESP_LOGI(TAG,"State: Enter PoweredOff state");
-      pcp::SetPowerMode(Off);
       break;
     default:
       break;
