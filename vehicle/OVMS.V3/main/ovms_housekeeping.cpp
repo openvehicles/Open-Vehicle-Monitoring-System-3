@@ -44,6 +44,7 @@ static const char *TAG = "housekeeping";
 #include "metrics_standard.h"
 #include "ovms_config.h"
 #include "console_async.h"
+#include "ovms_module.h"
 
 #include "esp_heap_alloc_caps.h"
 //extern "C" {
@@ -79,7 +80,8 @@ Housekeeping::Housekeeping()
 
   MyConfig.RegisterParam("system.adc", "ADC configuration", true, true);
 
-  xTaskCreatePinnedToCore(HousekeepingTask, "HousekeepingTask", 4096, (void*)this, 5, &m_taskid, 1);
+  xTaskCreatePinnedToCore(HousekeepingTask, "Housekeeping", 4096, (void*)this, 5, &m_taskid, 1);
+  AddTaskToMap(m_taskid);
   }
 
 Housekeeping::~Housekeeping()

@@ -28,10 +28,39 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __OVMS_MODULE_H__
+#ifndef __GSM_PPPOS_H__
+#define __GSM_PPPOS_H__
 
-extern void AddTaskToMap(TaskHandle_t task);
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
+#include "driver/uart.h"
+#include "tcpip_adapter.h"
+extern "C"
+  {
+#include "netif/ppp/pppos.h"
+#include "netif/ppp/ppp.h"
+#include "lwip/pppapi.h"
+  };
+#include "gsmmux.h"
 
-#define __OVMS_MODULE_H__
+class GsmPPPOS
+  {
+  public:
+    GsmPPPOS(GsmMux* mux, int channel);
+    ~GsmPPPOS();
 
-#endif //#ifndef __OVMS_MODULE_H__
+  public:
+    void IncomingData(uint8_t *data, size_t len);
+    void Startup();
+    void Shutdown();
+
+  public:
+    GsmMux*      m_mux;
+    int          m_channel;
+    ppp_pcb*     m_ppp;
+    struct netif m_ppp_netif;
+    bool         m_connected;
+  };
+
+#endif //#ifndef __GSM_PPPOS__

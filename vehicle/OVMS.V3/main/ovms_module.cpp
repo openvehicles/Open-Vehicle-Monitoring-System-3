@@ -33,6 +33,8 @@ static const char *TAG = "ovms-module";
 
 #include <stdio.h>
 #include <string.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "freertos/FreeRTOSConfig.h"
 #include "freertos/heap_regions_debug.h"
 #include <esp_system.h>
@@ -40,10 +42,208 @@ static const char *TAG = "ovms-module";
 #include "ovms_module.h"
 #include "ovms_command.h"
 
-#ifdef configENABLE_MEMORY_DEBUG_DUMP
+#define MAX_TASKS 30
 #define DUMPSIZE 1000
 #define NUMTASKS 32
 #define NUMTAGS 3
+#define NAMELEN 16
+#define TASKLIST 10
+
+#ifndef configENABLE_MEMORY_DEBUG_DUMP
+#define NOGO 1
+#endif
+#if configUSE_TRACE_FACILITY==0
+#define NOGO 1
+#endif
+#ifdef CONFIG_FREERTOS_ASSERT_ON_UNTESTED_FUNCTION
+#define NOGO 1
+#endif
+#ifndef configENABLE_MEMORY_DEBUG_ABORT
+#define NOGO 1
+#endif
+
+#ifdef NOGO
+static void must(OvmsWriter* writer)
+  {
+  writer->printf("To use these debugging tools, must set CONFIG_OVMS_DEV_DEBUGRAM=y\n");
+  writer->printf("and CONFIG_OVMS_DEV_DEBUGTASKS=y and have updated IDF\n");
+  }
+
+static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  must(writer);
+  }
+
+static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  must(writer);
+  }
+
+static void module_abort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  must(writer);
+  }
+
+void AddTaskToMap(TaskHandle_t task) {}
+
+#else
+
+class HeapTotals;
+
+static TaskHandle_t* tasklist = NULL;
+static TaskStatus_t* taskstatus = NULL;
+static mem_dump_block_t* before = NULL;
+static mem_dump_block_t* after = NULL;
+static size_t numbefore = 0, numafter = 0;
+static HeapTotals* changes = NULL;
+
+
+class Name
+  {
+  public:
+    inline Name() {}
+    inline Name(const char *name)
+      {
+      for (int i = 0; i < NAMELEN/4; ++i)
+        words[i] = 0;
+      strncpy(bytes, name, NAMELEN-1);
+      }
+    inline Name(const Name& name)
+      {
+      for (int i = 0; i < NAMELEN/4; ++i)
+        words[i] = name.words[i];
+      bytes[NAMELEN-1] = '\0';
+      }
+    inline bool operator==(Name& a)
+      {
+      for (int i = 0; i < NAMELEN/4 - 1; ++i)
+        if (a.words[i] != words[i]) return false;
+      if (a.words[NAMELEN/4-1] != (words[NAMELEN/4-1] & 0x7FFFFFFF)) return false;
+      return true;                                      
+      }
+  public:
+    union
+      {
+      char bytes[NAMELEN];
+      int words[NAMELEN/4];
+      };
+  };
+
+
+class TaskMap
+  {
+  private:
+    TaskMap() : count(0) {}
+    typedef struct
+      {
+      TaskHandle_t id;
+      Name name;
+      } TaskPair;
+
+  public:
+    inline static TaskMap* instance()
+      {
+      if (!taskmap)
+        {
+        void* p = pvPortMallocCaps(sizeof(TaskMap), MALLOC_CAP_32BIT);
+        if (!p)
+          return NULL;
+        taskmap = new(p) TaskMap;
+        }
+      return taskmap;
+      }
+    bool insert(TaskHandle_t taskid, const char* name)
+      {
+      int i;
+      for (i = 0; i < count; ++i)
+        {
+        if (map[i].id == taskid)
+          break;
+        }
+      if (i == count)
+        {
+        if (count == NUMTASKS)
+          return false;
+        ++count;
+        }
+      map[i].id = taskid;
+      map[i].name = Name(name);
+      return true;
+      }
+    bool find(TaskHandle_t taskid, Name& name)
+      {
+      for (int i = 0; i < count; ++i)
+        {
+        if (map[i].id == taskid)
+          {
+          name = map[i].name;
+          name.bytes[NAMELEN-1] = '\0';
+          return true;
+          }
+        }
+      sprintf(name.bytes, "%08X", (unsigned int)taskid);
+      return false;
+      }
+    TaskHandle_t find(Name& name)
+      {
+      for (int i = 0; i < count; ++i)
+        {
+        if (map[i].name == name)
+          return map[i].id;
+        }
+      char* end;
+      TaskHandle_t task = (TaskHandle_t)strtoul(name.bytes, &end, 16);
+      if (*end == '\0')
+        return task;
+      return NULL;
+      }
+    UBaseType_t populate()
+      {
+      for (int i = 0; i < count; ++i)
+        {
+        map[i].name.words[3] |= 0x80000000;
+        }
+      UBaseType_t n = uxTaskGetSystemState(taskstatus, MAX_TASKS, NULL);
+      for (UBaseType_t i = 0; i < n; ++i)
+        {
+        insert(taskstatus[i].xHandle, taskstatus[i].pcTaskName);
+        }
+      return n;
+      }
+    bool zero(TaskHandle_t taskid)
+      {
+      for (int i = 0; i < count; ++i)
+        {
+        if (map[i].id == taskid)
+          {
+          if (map[i].name.words[3] > 0)
+            return false;
+          for (++i ; i < count; ++i)
+            {
+            map[i-1] = map[i];
+            }
+          --count;
+          return true;
+          }
+        }
+      return false;
+      }
+    void dump()
+      {
+      for (int i = 0; i < count; ++i)
+        {
+        Name name = map[i].name;
+        ::printf("taskmap %d %p %s\n", i, map[i].id, name.bytes);
+        }
+      }
+
+  private:
+    static TaskMap* taskmap;
+    int count;
+    TaskPair map[NUMTASKS];
+  };
+TaskMap* TaskMap::taskmap = NULL;
+
 
 class FreeHeap
   {
@@ -61,18 +261,18 @@ class FreeHeap
     size_t m_free_32bit;
   } initial  __attribute__ ((init_priority (0150)));
 
+
 class HeapTask
   {
   public:
     HeapTask()
       {
       for (int i = 0; i < NUMTAGS; ++i)
-        before[i] = after[i] = 0;
+        totals.before[i] = totals.after[i] = 0;
       }
-    char task[4];
-    int before[NUMTAGS];
-    int after[NUMTAGS];
+    mem_dump_totals_t totals;
   };
+
 
 class HeapTotals
   {
@@ -80,12 +280,25 @@ class HeapTotals
     HeapTotals() : count(0) {}
     int begin() { return 0; }
     int end() { return count; }
+    mem_dump_totals_t* array() { return &tasks[0].totals; }
+    size_t* size() { return (size_t*)&count; }
     HeapTask& operator[](size_t index) { return tasks[index]; };
-    void clear() { count = 0; }
-    int find(char* task)
+    void clear()
       {
       for (int i = 0; i < count; ++i)
-        if (*(int*)task == *(int*)(tasks[i].task))
+        for (int j = 0; j < NUMTAGS; ++j)
+          tasks[i].totals.after[j] = 0;
+      }
+    void transfer()
+      {
+      for (int i = 0; i < count; ++i)
+        for (int j = 0; j < NUMTAGS; ++j)
+          tasks[i].totals.before[j] = tasks[i].totals.after[j];
+      }
+    int find(TaskHandle_t task)
+      {
+      for (int i = 0; i < count; ++i)
+        if (task == tasks[i].totals.task)
           return i;
       return -1;
       }
@@ -103,18 +316,22 @@ class HeapTotals
     int count;
   };
 
-static mem_dump_block_t* before = NULL;
-static mem_dump_block_t* after = NULL;
-static size_t numbefore = 0, numafter = 0;
-static HeapTotals* changes = NULL;
 
-static void print_blocks(OvmsWriter* writer, const char* task)
+void AddTaskToMap(TaskHandle_t task)
+  {
+  TaskMap::instance()->insert(task, pcTaskGetTaskName(task));
+  }
+
+
+static void print_blocks(OvmsWriter* writer, TaskHandle_t task)
   {
   int count = 0, total = 0;
   bool separate = false;
+  Name name;
+  TaskMap* tm = TaskMap::instance();
   for (int i = 0; i < numbefore; ++i)
     {
-    if (*(int*)(before[i].task) != *(int*)task)
+    if (before[i].task != task)
       continue;
     int j = 0;
     for ( ; j < numafter; ++j)
@@ -122,9 +339,8 @@ static void print_blocks(OvmsWriter* writer, const char* task)
         break;
     if (j == numafter)
       {
-      char task[4];
-      *(int*)task = *(int*)(before[i].task);
-      writer->printf("- t=%s s=%4d a=%p\n", task, before[i].size, before[i].address);
+      tm->find(before[i].task, name);
+      writer->printf("- t=%s s=%4d a=%p\n", name.bytes, before[i].size, before[i].address);
       ++count;
       }
     }
@@ -134,7 +350,7 @@ static void print_blocks(OvmsWriter* writer, const char* task)
   count = 0;
   for (int i = 0; i < numafter; ++i)
     {
-    if (*(int*)(after[i].task) != *(int*)task)
+    if (after[i].task != task)
       continue;
     int j = 0;
     for ( ; j < numbefore; ++j)
@@ -148,10 +364,9 @@ static void print_blocks(OvmsWriter* writer, const char* task)
         writer->printf("----------------------------\n");
         separate = false;
         }
-      char task[4];
-      *(int*)task = *(int*)(after[i].task);
+      tm->find(after[i].task, name);
       writer->printf("  t=%s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X\n",
-        task, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
+        name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
       ++count;
       }
     }
@@ -160,7 +375,7 @@ static void print_blocks(OvmsWriter* writer, const char* task)
   total += count;
   for (int i = 0; i < numafter; ++i)
     {
-    if (*(int*)(after[i].task) != *(int*)task)
+    if (after[i].task != task)
       continue;
     int j = 0;
     for ( ; j < numbefore; ++j)
@@ -174,22 +389,67 @@ static void print_blocks(OvmsWriter* writer, const char* task)
         writer->printf("----------------------------\n");
         separate = false;
         }
-      char task[4];
-      *(int*)task = *(int*)(after[i].task);
+      tm->find(after[i].task, name);
       writer->printf("+ t=%s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X\n",
-        task, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
+        name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
       ++total;
       }
     }
   if (total)
     writer->printf("============================\n");
   }
-#endif
 
-void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+
+static bool allocate()
   {
-#ifdef configENABLE_MEMORY_DEBUG_DUMP
-  static const char *ctasks[] = {0}; //{ "TST", "CTe", "CAs", "TRT", "tiT", "wif", 0};
+  if (!before)
+    {
+    before = (mem_dump_block_t*)pvPortMallocCaps(sizeof(mem_dump_block_t)*DUMPSIZE, MALLOC_CAP_32BIT);
+    after = (mem_dump_block_t*)pvPortMallocCaps(sizeof(mem_dump_block_t)*DUMPSIZE, MALLOC_CAP_32BIT);
+    taskstatus = (TaskStatus_t*)pvPortMallocCaps(sizeof(TaskStatus_t)*MAX_TASKS, MALLOC_CAP_32BIT);
+    tasklist = (TaskHandle_t*)pvPortMallocCaps(sizeof(TaskHandle_t)*(TASKLIST), MALLOC_CAP_32BIT);
+    void* p = pvPortMallocCaps(sizeof(HeapTotals), MALLOC_CAP_32BIT);
+    changes = new(p) HeapTotals();
+    if (!before || !after || !taskstatus || !tasklist || !changes)
+      {
+      if (before)
+        free(before);
+      if (after)
+        free(after);
+      if (taskstatus)
+        free(taskstatus);
+      if (tasklist)
+        free(tasklist);
+      if (changes)
+        delete(changes);
+      return false;
+      }
+    }
+  return true;
+  }
+
+
+static UBaseType_t get_tasks()
+  {
+  TaskMap* tm = TaskMap::instance();
+  UBaseType_t numtasks = 0;
+  if (tm)
+    numtasks = tm->populate();
+  return numtasks;
+  }
+
+
+static void get_memory(TaskHandle_t* tasks, size_t taskslen)
+  {
+  changes->clear();
+  numafter = mem_debug_malloc_dump_totals(changes->array(), changes->size(), NUMTASKS,
+    tasks, taskslen, after, DUMPSIZE);
+  }
+
+
+static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  static const char* ctasks[] = {}; // { "tiT", "wifi"};
   const char* const* tasks = ctasks;
   if (argc > 0)
     {
@@ -198,85 +458,69 @@ void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     else
       tasks = argv;
     }
-  if (!before)
+  else
+    argc = sizeof(ctasks) / sizeof(char*);
+  if (!allocate())
     {
-    before = (mem_dump_block_t*)pvPortMallocCaps(sizeof(mem_dump_block_t)*DUMPSIZE, MALLOC_CAP_32BIT);
-    after = (mem_dump_block_t*)pvPortMallocCaps(sizeof(mem_dump_block_t)*DUMPSIZE, MALLOC_CAP_32BIT);
-    changes = (HeapTotals*)pvPortMallocCaps(sizeof(HeapTotals), MALLOC_CAP_32BIT);
+    writer->printf("Can't allocate storage for memory diagnostics\n");
+    return;
     }
-
-  numafter = mem_debug_malloc_dump(0, after, DUMPSIZE);
-
-  changes->clear();
-  for (int i = 0; i < numbefore; ++i)
+  get_tasks();
+  TaskMap* tm = TaskMap::instance();
+  TaskHandle_t* tl = NULL;
+  size_t tln = 0;
+  if (tasks)
     {
-    int tag = before[i].xtag;
-    if (tag >= NUMTAGS)
-      continue;
-    int index = changes->find(before[i].task);
-    if (index >= 0)
+    tl = tasklist;
+    for ( ; argc > 0; --argc, ++tasks)
       {
-      (*changes)[index].before[tag] += before[i].size;
+      Name name(*tasks);
+      TaskHandle_t tk = tm->find(name);
+      if (tk)
+        {
+        *tl++ = tk;
+        if (++tln == TASKLIST)
+          break;
+        }
+      else
+        writer->printf("Task %s unknown\n", *tasks);
       }
-    else
-      {
-      HeapTask task;
-      *(int*)task.task = *(int*)before[i].task;
-      task.before[tag] = before[i].size;
-      changes->append(task);
-      }
+    tl = tasklist;
     }
-  for (int i = 0; i < numafter; ++i)
-    {
-    int tag = after[i].xtag;
-    if (tag >= NUMTAGS)
-      continue;
-    int index = changes->find(after[i].task);
-    if (index >= 0)
-      {
-      (*changes)[index].after[tag] += after[i].size;
-      }
-    else
-      {
-      HeapTask task;
-      *(int*)task.task = *(int*)after[i].task;
-      task.after[tag] = after[i].size;
-      changes->append(task);
-      }
-    }
+  get_memory(tl, tln);
 
   writer->printf("============================\n");
   FreeHeap now;
-  writer->printf("Free 8-bit %zu/%zu, 32-bit %zu/%zu, numafter = %d\n",
-    now.Free8bit(), initial.Free8bit(), now.Free32bit(), initial.Free32bit(), numafter);
+  writer->printf("Free 8-bit %zu/%zu, 32-bit %zu/%zu, blocks dumped = %d%s\n",
+    now.Free8bit(), initial.Free8bit(), now.Free32bit(), initial.Free32bit(), numafter,
+    numafter < DUMPSIZE ? "" : " (limited)");
   for (int i = changes->begin(); i < changes->end(); ++i)
     {
     int change[NUMTAGS];
     bool any = false;
     for (int j = 0; j < NUMTAGS; ++j)
       {
-      change[j] = (*changes)[i].after[j] - (*changes)[i].before[j];
+      change[j] = (*changes)[i].totals.after[j] - (*changes)[i].totals.before[j];
       if (change[j])
         any = true;
       }
     if (any)
       {
-      char task[4];
-      *(int*)task = *(int*)((*changes)[i].task);
-      writer->printf("task=%s total=%7d%7d%7d change=%+7d%+7d%+7d\n", task,
-        (*changes)[i].after[0], (*changes)[i].after[1], (*changes)[i].after[2],
+      Name name("NoTaskMap");
+      if (tm)
+        tm->find((*changes)[i].totals.task, name);
+      writer->printf("task=%-15s total=%7d%7d%7d change=%+7d%+7d%+7d\n", name.bytes,
+        (*changes)[i].totals.after[0], (*changes)[i].totals.after[1], (*changes)[i].totals.after[2],
         change[0], change[1], change[2]);
       }
     }
 
   writer->printf("============================\n");
-  if (tasks)
+  if (tln)
     {
-    while (*tasks)
-      {
-      print_blocks(writer, *tasks);
-      ++tasks;
-      }
+    tl = tasklist;
+    for (int i = 0; i < tln; ++i, ++tl)
+      print_blocks(writer, *tl);
     }
   else
     {
@@ -285,84 +529,96 @@ void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
       bool any = false;
       for (int j = 0; j < NUMTAGS; ++j)
         {
-        if ((*changes)[i].after[j] - (*changes)[i].before[j] != 0)
+        if ((*changes)[i].totals.after[j] - (*changes)[i].totals.before[j] != 0)
           any = true;
         }
       if (any)
-        print_blocks(writer, (*changes)[i].task);
+        print_blocks(writer, (*changes)[i].totals.task);
       }
     }
 
+  for (int i = changes->begin(); i < changes->end(); ++i)
+    {
+    if (tm && (*changes)[i].totals.after[0] == 0 && (*changes)[i].totals.after[1] == 0 && (*changes)[i].totals.after[2] == 0)
+      tm->zero((*changes)[i].totals.task);
+    }
+  changes->transfer();
   for (int i = 0; i < numafter; ++i)
     {
     before[i] = after[i];
     }
   numbefore = numafter;
-#else
-  writer->printf("Must set CONFIG_ENABLE_MEMORY_DEBUG and have updated IDF with mem_debug_malloc_dump()\n");
-#endif
   }
 
-void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+
+static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-#if configUSE_TRACE_FACILITY
-#ifndef CONFIG_FREERTOS_ASSERT_ON_UNTESTED_FUNCTION
-#define MAX_TASKS 30
-  TaskStatus_t tasks[MAX_TASKS];
-  bzero(tasks, sizeof(tasks));
   UBaseType_t num = uxTaskGetNumberOfTasks();
-  writer->printf("Number of Tasks =%3u%s   Stack:  Now   Max Total\n", num,
+  writer->printf("Number of Tasks =%3u%s   Stack:  Now   Max Total    Heap\n", num,
     num > MAX_TASKS ? ">max" : "    ");
-    
-  UBaseType_t n = uxTaskGetSystemState(tasks, MAX_TASKS, NULL);
+  if (!allocate())
+    {
+    writer->printf("Can't allocate storage for task diagnostics\n");
+    return;
+    }
+  UBaseType_t n = get_tasks();
+  get_memory(tasklist, 0);
   num = 0;
   for (UBaseType_t j = 0; j < n; )
     {
     for (UBaseType_t i = 0; i < n; ++i)
       {
-      if (tasks[i].xTaskNumber == num)
+      if (taskstatus[i].xTaskNumber == num)
         {
-        uint32_t total = (uint32_t)tasks[i].pxStackBase >> 16;
-        writer->printf("Task %08X %2u %-15s %5u %5u %5u\n", tasks[i].xHandle, tasks[i].xTaskNumber,
-          tasks[i].pcTaskName, total - ((uint32_t)tasks[i].pxStackBase & 0xFFFF),
-          total - tasks[i].usStackHighWaterMark, total);
+        int k = changes->find(taskstatus[i].xHandle);
+        int heaptotal = 0;
+        if (k >= 0)
+          heaptotal = (*changes)[k].totals.after[0] + (*changes)[k].totals.after[1];
+        uint32_t total = (uint32_t)taskstatus[i].pxStackBase >> 16;
+        writer->printf("Task %08X %2u %-15s %5u %5u %5u  %6u\n", taskstatus[i].xHandle, taskstatus[i].xTaskNumber,
+          taskstatus[i].pcTaskName, total - ((uint32_t)taskstatus[i].pxStackBase & 0xFFFF),
+          total - taskstatus[i].usStackHighWaterMark, total, heaptotal);
         ++j;
         break;
         }
       }
     ++num;
     }
-#else
-  writer->printf("Must not set CONFIG_FREERTOS_ASSERT_ON_UNTESTED_FUNCTION\n");
-#endif
-#else
-  writer->printf("Must set configUSE_TRACE_FACILITY=1 in FreeRTOSConfig.h\n");
-#endif
   }
 
-void module_abort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+
+static void module_abort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-#ifdef configENABLE_MEMORY_DEBUG_DUMP
-#if configENABLE_MEMORY_DEBUG_ABORT
+  TaskHandle_t task = 0;
+  if (*argv[0] != '*')
+    {
+    if (!allocate())
+      {
+      writer->printf("Can't allocate storage for memory diagnostics\n");
+      return;
+      }
+    Name name(argv[0]);
+    get_tasks();
+    get_memory(tasklist, 0);
+    task = TaskMap::instance()->find(name);
+    if (!task)
+      {
+      writer->printf("Task %s does not exist\n", name.bytes);
+      return;
+      }
+    }
+  int count = atoi(argv[1]);
   int size = 0;
-  int count;
-  char task[4] = {0};
-  strncpy(task, argv[0], 3);
-  count = atoi(argv[1]);
   if (argc == 3)
     {
     size = atoi(argv[2]);
     }
-  mem_malloc_set_abort(*(int*)task, size, count);
-#else
-  writer->printf("Must set configENABLE_MEMORY_DEBUG_ABORT\n");
-#endif
-#else
-  writer->printf("Must set CONFIG_ENABLE_MEMORY_DEBUG and have updated IDF with mem_malloc_set_abort()\n");
-#endif
+  mem_malloc_set_abort(task, size, count);
   }
+#endif
 
-void module_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+
+static void module_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   writer->puts("Resetting system...");
   esp_restart();
@@ -376,7 +632,7 @@ class OvmsModuleInit
     ESP_LOGI(TAG, "Initialising MODULE (5100)");
 
     OvmsCommand* cmd_module = MyCommandApp.RegisterCommand("module","Module framework",NULL);
-    cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"",0,0,true);
+    cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"[<task names or ids>]",0,TASKLIST,true);
     cmd_module->RegisterCommand("tasks","Show module task usage",module_tasks,"",0,0,true);
     cmd_module->RegisterCommand("abort","Set trap to abort on malloc",module_abort,"<task> <count> [<size>]",2,3,true);
     cmd_module->RegisterCommand("reset","Reset module",module_reset,"",0,0,true);

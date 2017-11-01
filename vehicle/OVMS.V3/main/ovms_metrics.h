@@ -95,6 +95,7 @@ class OvmsMetric
 
   public:
     virtual std::string AsString(const char* defvalue = "", metric_unit_t units = Other);
+    virtual float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     virtual void SetValue(std::string value);
     virtual void operator=(std::string value);
     virtual uint32_t LastModified();
@@ -126,6 +127,7 @@ class OvmsMetricBool : public OvmsMetric
 
   public:
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other);
+    float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     int AsBool(const bool defvalue = false);
     void SetValue(bool value);
     void operator=(bool value) { SetValue(value); }
@@ -144,6 +146,7 @@ class OvmsMetricInt : public OvmsMetric
 
   public:
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other);
+    float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     int AsInt(const int defvalue = 0, metric_unit_t units = Other);
     void SetValue(int value, metric_unit_t units = Other);
     void operator=(int value) { SetValue(value); }

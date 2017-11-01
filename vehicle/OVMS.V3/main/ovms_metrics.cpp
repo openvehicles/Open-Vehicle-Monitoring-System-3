@@ -87,6 +87,19 @@ static duk_ret_t DukOvmsMetricValue(duk_context *ctx)
     return 0;
   }
 
+static duk_ret_t DukOvmsMetricFloat(duk_context *ctx)
+  {
+  const char *mn = duk_to_string(ctx,0);
+  OvmsMetric *m = MyMetrics.Find(mn);
+  if (m)
+    {
+    duk_push_number(ctx, m->AsFloat());
+    return 1;  /* one return value */
+    }
+  else
+    return 0;
+  }
+
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
 MetricCallbackEntry::MetricCallbackEntry(const char* caller, MetricCallback callback)
@@ -118,6 +131,8 @@ OvmsMetrics::OvmsMetrics()
   duk_context* ctx = MyScripts.Duktape();
   duk_push_c_function(ctx, DukOvmsMetricValue, 1 /*nargs*/);
   duk_put_global_string(ctx, "OvmsMetricValue");
+  duk_push_c_function(ctx, DukOvmsMetricFloat, 1 /*nargs*/);
+  duk_put_global_string(ctx, "OvmsMetricFloat");
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
@@ -356,6 +371,11 @@ std::string OvmsMetric::AsString(const char* defvalue, metric_unit_t units)
   return std::string(defvalue);
   }
 
+float OvmsMetric::AsFloat(const float defvalue, metric_unit_t units)
+  {
+  return defvalue;
+  }
+
 void OvmsMetric::SetValue(std::string value)
   {
   }
@@ -452,6 +472,11 @@ std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units)
     }
   }
 
+float OvmsMetricInt::AsFloat(const float defvalue, metric_unit_t units)
+  {
+  return (float)AsInt((int)defvalue, units);
+  }
+
 int OvmsMetricInt::AsInt(const int defvalue, metric_unit_t units)
   {
   if (m_defined)
@@ -514,6 +539,11 @@ std::string OvmsMetricBool::AsString(const char* defvalue, metric_unit_t units)
     {
     return std::string(defvalue);
     }
+  }
+
+float OvmsMetricBool::AsFloat(const float defvalue, metric_unit_t units)
+  {
+  return (float)AsBool((bool)defvalue);
   }
 
 int OvmsMetricBool::AsBool(const bool defvalue)
