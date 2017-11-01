@@ -80,7 +80,7 @@ Housekeeping::Housekeeping()
 
   MyConfig.RegisterParam("system.adc", "ADC configuration", true, true);
 
-  xTaskCreatePinnedToCore(HousekeepingTask, "HousekeepingTask", 4096, (void*)this, 5, &m_taskid, 1);
+  xTaskCreatePinnedToCore(HousekeepingTask, "Housekeeping", 4096, (void*)this, 5, &m_taskid, 1);
   AddTaskToMap(m_taskid);
   }
 
