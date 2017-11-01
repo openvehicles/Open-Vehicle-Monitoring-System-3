@@ -46,13 +46,14 @@ static u32_t GsmPPPOS_OutputCallback(ppp_pcb *pcb, u8_t *data, u32_t len, void *
 
 static void GsmPPPOS_StatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
   {
-//  GsmPPPOS* me = (GsmPPPOS*)ctx;
+  GsmPPPOS* me = (GsmPPPOS*)ctx;
   struct netif *pppif = ppp_netif(pcb);
 
   switch (err_code)
     {
     case PPPERR_NONE:
       {
+      me->m_connected = true;
       ESP_LOGI(TAG, "status_cb: Connected");
 #if PPP_IPV4_SUPPORT
       ESP_LOGI(TAG, "   our_ipaddr  = %s", ipaddr_ntoa(&pppif->ip_addr));
@@ -133,12 +134,14 @@ static void GsmPPPOS_StatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
       }
     }
 
+  me->m_connected = false;
   MyEvents.SignalEvent("system.modem.down",NULL);
 
   /* ppp_close() was previously called, don't reconnect */
   if (err_code == PPPERR_USER)
     {
-    /* ppp_free(); -- can be called here */
+    pppapi_free(me->m_ppp);
+    me->m_ppp = NULL;
     return;
     }
 
@@ -155,6 +158,7 @@ GsmPPPOS::GsmPPPOS(GsmMux* mux, int channel)
   m_mux = mux;
   m_channel = channel;
   m_ppp = NULL;
+  m_connected = false;
   }
 
 GsmPPPOS::~GsmPPPOS()
@@ -190,7 +194,7 @@ void GsmPPPOS::Shutdown()
     {
     u8_t nocarrier = 0;
     pppapi_close(m_ppp, nocarrier);
-    pppapi_free(m_ppp);
-    m_ppp = NULL;
     }
+  else
+    m_connected = false;
   }

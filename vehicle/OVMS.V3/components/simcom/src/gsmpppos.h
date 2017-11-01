@@ -60,6 +60,7 @@ class GsmPPPOS
     int          m_channel;
     ppp_pcb*     m_ppp;
     struct netif m_ppp_netif;
+    bool         m_connected;
   };
 
 #endif //#ifndef __GSM_PPPOS__
