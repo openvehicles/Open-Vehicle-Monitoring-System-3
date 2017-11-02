@@ -616,7 +616,8 @@ static void module_abort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
     }
   mem_malloc_set_abort(task, size, count);
   }
-#endif
+
+#endif // NOGO
 
 
 static void module_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -631,7 +632,9 @@ class OvmsModuleInit
   OvmsModuleInit()
     {
     ESP_LOGI(TAG, "Initialising MODULE (5100)");
-    TaskMap::instance()->insert(0x00000000, "no task");
+#ifndef NOGO
+	TaskMap::instance()->insert(0x00000000, "no task");
+#endif
 
     OvmsCommand* cmd_module = MyCommandApp.RegisterCommand("module","Module framework",NULL);
     cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"[<task names or ids>]",0,TASKLIST,true);
