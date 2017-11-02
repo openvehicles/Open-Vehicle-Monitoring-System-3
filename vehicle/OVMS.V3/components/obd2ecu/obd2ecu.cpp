@@ -713,6 +713,7 @@ void obd2ecu::LoadMap()
     OvmsMetric* m = MyMetrics.Find(it->second.c_str());
     if ((pid>0)&&m)
       {
+      ESP_LOGI(TAG, "Using custom metric for pid#%d",pid);
       if (m_pidmap.find(pid) == m_pidmap.end())
         m_pidmap[pid] = new obd2pid(pid,obd2pid::Metric,m);
       else
