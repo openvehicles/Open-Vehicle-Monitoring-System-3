@@ -89,6 +89,44 @@ std::string re::GetKey(CAN_frame_t* frame)
     sprintf(id,"%08x",frame->MsgID);
   key.append(id);
 
+  if (((m_obdii_std_min>0) &&
+       (frame->FIR.B.FF == CAN_frame_std) &&
+       (frame->MsgID >= m_obdii_std_min) &&
+       (frame->MsgID <= m_obdii_std_max))
+      ||
+       ((m_obdii_ext_min>0) &&
+       (frame->FIR.B.FF == CAN_frame_ext) &&
+       (frame->MsgID >= m_obdii_ext_min) &&
+       (frame->MsgID <= m_obdii_ext_max)))
+    {
+    // It is an OBDII request
+    if (frame->data.u8[0] > 8)
+      {
+      // Probably just a continuation frame. Ignore it.
+      return key;
+      }
+    uint8_t mode = frame->data.u8[1];
+    char req[16];
+    if (mode > 0x4a)
+      {
+      sprintf(req,":O2Pm%d:%d",mode-0x40,((int)frame->data.u8[2]<<8)+frame->data.u8[3]);
+      }
+    else if (mode > 0x40)
+      {
+      sprintf(req,":O2Pm%d:%d",mode-0x40,(int)frame->data.u8[2]);
+      }
+    else if (mode > 0x0a)
+      {
+      sprintf(req,":O2Qm%d:%d",mode,((int)frame->data.u8[2]<<8)+frame->data.u8[3]);
+      }
+    else
+      {
+      sprintf(req,":O2Qm%d:%d",mode,(int)frame->data.u8[2]);
+      }
+    key.append(req);
+    return key;
+    }
+
   auto k = m_idmap.find(frame->MsgID);
   if (k != m_idmap.end())
     {
@@ -110,6 +148,10 @@ std::string re::GetKey(CAN_frame_t* frame)
 re::re(const char* name)
   : pcp(name)
   {
+  m_obdii_std_min = 0;
+  m_obdii_std_max = 0;
+  m_obdii_ext_min = 0;
+  m_obdii_ext_max = 0;
   m_started = monotonictime;
   m_finished = monotonictime;
   xTaskCreatePinnedToCore(RE_task, "RE Task", 4096, (void*)this, 5, &m_task, 1);
@@ -269,6 +311,34 @@ void re_keyset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
   MyRE->Unlock();
   }
 
+void re_obdii_std(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyRE)
+    {
+    writer->puts("Error: RE tools not running");
+    return;
+    }
+
+  MyRE->m_obdii_std_min = (uint32_t)strtol(argv[0],NULL,16);
+  MyRE->m_obdii_std_max = (uint32_t)strtol(argv[1],NULL,16);
+
+  writer->printf("Set OBDII standard ID range %03x-%03x\n",MyRE->m_obdii_std_min,MyRE->m_obdii_std_max);
+  }
+
+void re_obdii_ext(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyRE)
+    {
+    writer->puts("Error: RE tools not running");
+    return;
+    }
+
+  MyRE->m_obdii_ext_min = (uint32_t)strtol(argv[0],NULL,16);
+  MyRE->m_obdii_ext_max = (uint32_t)strtol(argv[1],NULL,16);
+
+  writer->printf("Set OBDII extended ID range %08x-%08x\n",MyRE->m_obdii_ext_min,MyRE->m_obdii_ext_max);
+  }
+
 class REInit
   {
   public: REInit();
@@ -283,7 +353,10 @@ REInit::REInit()
   cmd_re->RegisterCommand("stop","Stop RE tools",re_stop, "", 0, 0, true);
   cmd_re->RegisterCommand("clear","Clear RE records",re_clear, "", 0, 0, true);
   cmd_re->RegisterCommand("list","List RE records",re_list, "", 0, 1, true);
-  OvmsCommand* cmd_rekey = cmd_re->RegisterCommand("key","RE KEY framewrok",NULL, "", 0, 0, true);
+  OvmsCommand* cmd_rekey = cmd_re->RegisterCommand("key","RE KEY framework",NULL, "", 0, 0, true);
   cmd_rekey->RegisterCommand("clear","Clear RE key",re_keyclear, "<id>", 1, 1, true);
   cmd_rekey->RegisterCommand("set","Set RE key",re_keyset, "<id> {<bytes>}", 2, 9, true);
+  OvmsCommand* cmd_reobdii = cmd_re->RegisterCommand("obdii","RE OBDII framework",NULL, "", 0, 0, true);
+  cmd_reobdii->RegisterCommand("standard","Set OBDII standard ID range",re_obdii_std, "<min> <max>", 2, 2, true);
+  cmd_reobdii->RegisterCommand("extended","Set OBDII extended ID range",re_obdii_ext, "<min> <max>", 2, 2, true);
   }

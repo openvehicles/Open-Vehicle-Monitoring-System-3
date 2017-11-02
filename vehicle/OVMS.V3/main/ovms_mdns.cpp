@@ -90,10 +90,8 @@ OvmsMDNS::OvmsMDNS()
 
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG,"system.wifi.sta.gotip", std::bind(&OvmsMDNS::WifiUp, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"system.wifi.ap.start", std::bind(&OvmsMDNS::WifiUp, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"system.wifi.sta.stop", std::bind(&OvmsMDNS::WifiDown, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"system.wifi.ap.stop", std::bind(&OvmsMDNS::WifiDown, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"network.wifi.up", std::bind(&OvmsMDNS::WifiUp, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"network.wifi.down", std::bind(&OvmsMDNS::WifiDown, this, _1, _2));
   }
 
 OvmsMDNS::~OvmsMDNS()

@@ -55,11 +55,11 @@
 #define S44 21
 
 /* ----- static functions ----- */
-static void MD5Transform(uint32_t state[4], const uint8_t block[64]);
-static void Encode(uint8_t *output, uint32_t *input, uint32_t len);
-static void Decode(uint32_t *output, const uint8_t *input, uint32_t len);
+static void OVMS_MD5Transform(uint32_t state[4], const uint8_t block[64]);
+static void OVMS_Encode(uint8_t *output, uint32_t *input, uint32_t len);
+static void OVMS_Decode(uint32_t *output, const uint8_t *input, uint32_t len);
 
-uint32_t t_x[MD5_SIZE];
+uint32_t t_x[OVMS_MD5_SIZE];
 
 /* F, G, H and I are basic MD5 functions.
  */
@@ -97,7 +97,7 @@ uint32_t t_x[MD5_SIZE];
 /**
  * MD5 initialization - begins an MD5 operation, writing a new ctx.
  */
-void MD5_Init(MD5_CTX *ctx)
+void OVMS_MD5_Init(OVMS_MD5_CTX *ctx)
 {
     ctx->count[0] = ctx->count[1] = 0;
 
@@ -112,7 +112,7 @@ void MD5_Init(MD5_CTX *ctx)
 /**
  * Accepts an array of octets as the next portion of the message.
  */
-void MD5_Update(MD5_CTX *ctx, const uint8_t * msg, int len)
+void OVMS_MD5_Update(OVMS_MD5_CTX *ctx, const uint8_t * msg, int len)
 {
     uint32_t x;
     int i, partLen;
@@ -131,10 +131,10 @@ void MD5_Update(MD5_CTX *ctx, const uint8_t * msg, int len)
     if (len >= partLen)
     {
         memcpy(&ctx->buffer[x], msg, partLen);
-        MD5Transform(ctx->state, ctx->buffer);
+        OVMS_MD5Transform(ctx->state, ctx->buffer);
 
         for (i = partLen; i + 63 < len; i += 64)
-            MD5Transform(ctx->state, &msg[i]);
+            OVMS_MD5Transform(ctx->state, &msg[i]);
 
         x = 0;
     }
@@ -148,14 +148,14 @@ void MD5_Update(MD5_CTX *ctx, const uint8_t * msg, int len)
 /**
  * Return the 128-bit message digest into the user's array
  */
-void MD5_Final(uint8_t *digest, MD5_CTX *ctx)
+void OVMS_MD5_Final(uint8_t *digest, OVMS_MD5_CTX *ctx)
 {
     uint8_t bits[8];
     uint32_t x, padLen;
     uint8_t PADDING;
 
     /* Save number of bits */
-    Encode(bits, ctx->count, 8);
+    OVMS_Encode(bits, ctx->count, 8);
 
     /* Pad out to 56 mod 64.
      */
@@ -164,27 +164,27 @@ void MD5_Final(uint8_t *digest, MD5_CTX *ctx)
     if (padLen>0)
       {
       PADDING = 0x80;
-      MD5_Update(ctx, (const uint8_t*)&PADDING, 1);
+      OVMS_MD5_Update(ctx, (const uint8_t*)&PADDING, 1);
       }
     PADDING = 0x00;
     for (padLen--;padLen>0;padLen--)
-      MD5_Update(ctx, (const uint8_t*)&PADDING, 1);
+      OVMS_MD5_Update(ctx, (const uint8_t*)&PADDING, 1);
 
     /* Append length (before padding) */
-    MD5_Update(ctx, bits, 8);
+    OVMS_MD5_Update(ctx, bits, 8);
 
     /* Store state in digest */
-    Encode(digest, ctx->state, MD5_SIZE);
+    OVMS_Encode(digest, ctx->state, OVMS_MD5_SIZE);
 }
 
 /**
  * MD5 basic transformation. Transforms state based on block.
  */
-static void MD5Transform(uint32_t state[4], const uint8_t block[64])
+static void OVMS_MD5Transform(uint32_t state[4], const uint8_t block[64])
 {
     uint32_t a = state[0], b = state[1], c = state[2], d = state[3];
 
-    Decode(t_x, block, 64);
+    OVMS_Decode(t_x, block, 64);
 
     /* Round 1 */
     FF (a, b, c, d, t_x[ 0], S11, 0xd76aa478); /* 1 */
@@ -268,7 +268,7 @@ static void MD5Transform(uint32_t state[4], const uint8_t block[64])
  * Encodes input (uint32_t) into output (uint8_t). Assumes len is
  *   a multiple of 4.
  */
-static void Encode(uint8_t *output, uint32_t *input, uint32_t len)
+static void OVMS_Encode(uint8_t *output, uint32_t *input, uint32_t len)
 {
     uint32_t i, j;
 
@@ -285,7 +285,7 @@ static void Encode(uint8_t *output, uint32_t *input, uint32_t len)
  *  Decodes input (uint8_t) into output (uint32_t). Assumes len is
  *   a multiple of 4.
  */
-static void Decode(uint32_t *output, const uint8_t *input, uint32_t len)
+static void OVMS_Decode(uint32_t *output, const uint8_t *input, uint32_t len)
 {
     uint32_t i, j;
 

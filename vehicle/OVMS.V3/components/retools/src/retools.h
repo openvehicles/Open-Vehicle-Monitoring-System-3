@@ -71,6 +71,10 @@ class re : public pcp
   public:
     QueueHandle_t m_mutex;
     re_id_map_t m_idmap;
+    uint32_t m_obdii_std_min;
+    uint32_t m_obdii_std_max;
+    uint32_t m_obdii_ext_min;
+    uint32_t m_obdii_ext_max;
     re_record_map_t m_rmap;
     uint32_t m_started;
     uint32_t m_finished;

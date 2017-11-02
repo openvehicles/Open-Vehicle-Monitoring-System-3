@@ -73,6 +73,9 @@ class OvmsServerV2 : public OvmsServer
     void TransmitMsgCapabilities(bool always);
     void TransmitMsgGroup(bool always);
 
+  public:
+    std::string m_status;
+
   protected:
     metric_unit_t m_units_distance;
     OvmsNetTcpConnection m_conn;

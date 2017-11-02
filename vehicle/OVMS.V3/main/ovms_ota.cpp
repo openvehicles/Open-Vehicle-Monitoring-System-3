@@ -229,15 +229,15 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
 
   // Now, process the body
-  MD5_CTX* md5 = new MD5_CTX;
+  OVMS_MD5_CTX* md5 = new OVMS_MD5_CTX;
   uint8_t* rbuf = new uint8_t[1024];
   uint8_t* rmd5 = new uint8_t[16];
-  MD5_Init(md5);
+  OVMS_MD5_Init(md5);
   int filesize = 0;
   int sofar = 0;
   while (int k = http.BodyRead(rbuf,1024))
     {
-    MD5_Update(md5, rbuf, k);
+    OVMS_MD5_Update(md5, rbuf, k);
     filesize += k;
     sofar += k;
     if (sofar > 100000)
@@ -261,7 +261,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
       return;
       }
     }
-  MD5_Final(rmd5, md5);
+  OVMS_MD5_Final(rmd5, md5);
   char dchecksum[33];
   sprintf(dchecksum,"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
     rmd5[0],rmd5[1],rmd5[2],rmd5[3],rmd5[4],rmd5[5],rmd5[6],rmd5[7],

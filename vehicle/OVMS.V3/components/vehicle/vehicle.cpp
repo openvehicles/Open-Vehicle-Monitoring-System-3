@@ -51,14 +51,298 @@ void vehicle_module(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
   }
 
+void vehicle_wakeup(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+
+  switch(MyVehicleFactory.m_currentvehicle->CommandWakeup())
+    {
+    case OvmsVehicle::Success:
+      writer->puts("Vehicle has been woken");
+      break;
+    case OvmsVehicle::Fail:
+      writer->puts("Error: vehicle could not be woken");
+      break;
+    default:
+      writer->puts("Error: Vehicle wake functionality not available");
+      break;
+    }
+  }
+
+void vehicle_homelink(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  int homelink = atoi(argv[0]);
+  if ((homelink<1)||(homelink>3))
+    {
+    writer->puts("Error: Homelink button should be in range 1..3");
+    return;
+    }
+
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+
+  switch(MyVehicleFactory.m_currentvehicle->CommandHomelink((uint8_t) homelink))
+    {
+    case OvmsVehicle::Success:
+      writer->printf("Homelink #%d activated\n",homelink);
+      break;
+    case OvmsVehicle::Fail:
+      writer->printf("Error: Could not activate homelink #%d\n",homelink);
+      break;
+    default:
+      writer->puts("Error: Homelink functionality not available");
+      break;
+    }
+  }
+
+void vehicle_lock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+
+  switch(MyVehicleFactory.m_currentvehicle->CommandLock(argv[0]))
+    {
+    case OvmsVehicle::Success:
+      writer->puts("Vehicle locked");
+      break;
+    case OvmsVehicle::Fail:
+      writer->puts("Error: vehicle could not be locked");
+      break;
+    default:
+      writer->puts("Error: Vehicle lock functionality not available");
+      break;
+    }
+  }
+
+void vehicle_unlock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+
+  switch(MyVehicleFactory.m_currentvehicle->CommandUnlock(argv[0]))
+    {
+    case OvmsVehicle::Success:
+      writer->puts("Vehicle unlocked");
+      break;
+    case OvmsVehicle::Fail:
+      writer->puts("Error: vehicle could not be unlocked");
+      break;
+    default:
+      writer->puts("Error: Vehicle unlock functionality not available");
+      break;
+    }
+  }
+
+void vehicle_valet(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+
+  switch(MyVehicleFactory.m_currentvehicle->CommandActivateValet(argv[0]))
+    {
+    case OvmsVehicle::Success:
+      writer->puts("Vehicle valet mode activated");
+      break;
+    case OvmsVehicle::Fail:
+      writer->puts("Error: vehicle could not activate valet mode");
+      break;
+    default:
+      writer->puts("Error: Vehicle valet functionality not available");
+      break;
+    }
+  }
+
+void vehicle_unvalet(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+
+  switch(MyVehicleFactory.m_currentvehicle->CommandDeactivateValet(argv[0]))
+    {
+    case OvmsVehicle::Success:
+      writer->puts("Vehicle valet mode deactivated");
+      break;
+    case OvmsVehicle::Fail:
+      writer->puts("Error: vehicle could not deactivate valet mode");
+      break;
+    default:
+      writer->puts("Error: Vehicle valet functionality not available");
+      break;
+    }
+  }
+
+void vehicle_charge_mode(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+
+  const char* smode = cmd->GetName();
+  OvmsVehicle::vehicle_mode_t mode = OvmsVehicle::Standard;
+  if (strcmp(smode,"storage")==0)
+    mode = OvmsVehicle::Storage;
+  else if (strcmp(smode,"range")==0)
+    mode = OvmsVehicle::Range;
+  else if (strcmp(smode,"performance")==0)
+    mode = OvmsVehicle::Performance;
+  else if (strcmp(smode,"standard")==0)
+    mode = OvmsVehicle::Standard;
+  else
+    {
+    writer->printf("Error: Unrecognised charge mode (%s) not standard/storage/range/performance\n",smode);
+    return;
+    }
+
+  switch(MyVehicleFactory.m_currentvehicle->CommandSetChargeMode(mode))
+    {
+    case OvmsVehicle::Success:
+      writer->printf("Charge mode '%s' set\n",smode);
+      break;
+    case OvmsVehicle::Fail:
+      writer->puts("Error: Could not set charge mode");
+      break;
+    default:
+      writer->puts("Error: Charge mode functionality not available");
+      break;
+    }
+  }
+
+void vehicle_charge_current(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  int limit = atoi(argv[0]);
+
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+
+  switch(MyVehicleFactory.m_currentvehicle->CommandSetChargeCurrent((uint16_t) limit))
+    {
+    case OvmsVehicle::Success:
+      writer->printf("Charge current limit set to %dA\n",limit);
+      break;
+    case OvmsVehicle::Fail:
+      writer->printf("Error: Could not sst charge current limit to %dA\n",limit);
+      break;
+    default:
+      writer->puts("Error: Charge current limit functionality not available");
+      break;
+    }
+  }
+
+void vehicle_charge_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+
+  switch(MyVehicleFactory.m_currentvehicle->CommandStartCharge())
+    {
+    case OvmsVehicle::Success:
+      writer->puts("Charge has been started");
+      break;
+    case OvmsVehicle::Fail:
+      writer->puts("Error: Could not start charge");
+      break;
+    default:
+      writer->puts("Error: Charge start functionality not available");
+      break;
+    }
+  }
+
+void vehicle_charge_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+
+  switch(MyVehicleFactory.m_currentvehicle->CommandStopCharge())
+    {
+    case OvmsVehicle::Success:
+      writer->puts("Charge has been stopped");
+      break;
+    case OvmsVehicle::Fail:
+      writer->puts("Error: Could not stop charge");
+      break;
+    default:
+      writer->puts("Error: Charge stop functionality not available");
+      break;
+    }
+  }
+
+void vehicle_charge_cooldown(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+
+  switch(MyVehicleFactory.m_currentvehicle->CommandCooldown(true))
+    {
+    case OvmsVehicle::Success:
+      writer->puts("Cooldown has been started");
+      break;
+    case OvmsVehicle::Fail:
+      writer->puts("Error: Could not start cooldown");
+      break;
+    default:
+      writer->puts("Error: Cooldown functionality not available");
+      break;
+    }
+  }
+
 OvmsVehicleFactory::OvmsVehicleFactory()
   {
   ESP_LOGI(TAG, "Initialising VEHICLE Factory (2000)");
 
   m_currentvehicle = NULL;
 
-  OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework",NULL,"",1,1);
+  OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework",NULL,"",0,0);
   cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1);
+
+  MyCommandApp.RegisterCommand("wakeup","Wake up vehicle",vehicle_wakeup,"",0,0,true);
+  MyCommandApp.RegisterCommand("homelink","Activate specified homelink button",vehicle_homelink,"<homelink>",1,1,true);
+  MyCommandApp.RegisterCommand("lock","Lock vehicle",vehicle_lock,"<pin>",1,1,true);
+  MyCommandApp.RegisterCommand("unlock","Unlock vehicle",vehicle_unlock,"<pin>",1,1,true);
+  MyCommandApp.RegisterCommand("valet","Activate valet mode",vehicle_valet,"<pin>",1,1,true);
+  MyCommandApp.RegisterCommand("unvalet","Deactivate valuet mode",vehicle_unvalet,"<pin>",1,1,true);
+  OvmsCommand* cmd_charge = MyCommandApp.RegisterCommand("charge","Charging framework",NULL,"",0,0,true);
+  OvmsCommand* cmd_chargemode = cmd_charge->RegisterCommand("mode","Set vehicle charge mode",NULL,"",0,0,true);
+  cmd_chargemode->RegisterCommand("standard","Set vehicle standard charge mode",vehicle_charge_mode,"",0,0,true);
+  cmd_chargemode->RegisterCommand("storage","Set vehicle standard charge mode",vehicle_charge_mode,"",0,0,true);
+  cmd_chargemode->RegisterCommand("range","Set vehicle standard charge mode",vehicle_charge_mode,"",0,0,true);
+  cmd_chargemode->RegisterCommand("performance","Set vehicle standard charge mode",vehicle_charge_mode,"",0,0,true);
+  cmd_charge->RegisterCommand("start","Start a vehicle charge",vehicle_charge_start,"",0,0,true);
+  cmd_charge->RegisterCommand("stop","Stop a vehicle charge",vehicle_charge_stop,"",0,0,true);
+  cmd_charge->RegisterCommand("current","Limit charge current",vehicle_charge_current,"<amps>",1,1,true);
+  cmd_charge->RegisterCommand("cooldown","Start a vehicle cooldown",vehicle_charge_cooldown,"",0,0,true);
   }
 
 OvmsVehicleFactory::~OvmsVehicleFactory()
@@ -131,10 +415,12 @@ OvmsVehicle::OvmsVehicle()
 
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
   xTaskCreatePinnedToCore(OvmsVehicleRxTask, "Vrx Task", 4096, (void*)this, 5, &m_rxtask, 1);
-
+  
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicle::VehicleTicker1, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
   }
 
 OvmsVehicle::~OvmsVehicle()
@@ -268,6 +554,75 @@ void OvmsVehicle::Ticker600(uint32_t ticker)
   }
 
 void OvmsVehicle::Ticker3600(uint32_t ticker)
+  {
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicle::CommandSetChargeMode(vehicle_mode_t mode)
+  {
+  return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicle::CommandSetChargeCurrent(uint16_t limit)
+  {
+  return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStartCharge()
+  {
+  return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStopCharge()
+  {
+  return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicle::CommandSetChargeTimer(bool timeron, uint16_t timerstart)
+  {
+  return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicle::CommandCooldown(bool cooldownon)
+  {
+  return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicle::CommandWakeup()
+  {
+  return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicle::CommandLock(const char* pin)
+  {
+  return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicle::CommandUnlock(const char* pin)
+  {
+  return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicle::CommandActivateValet(const char* pin)
+  {
+  return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicle::CommandDeactivateValet(const char* pin)
+  {
+  return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicle::CommandHomelink(uint8_t button)
+  {
+  return NotImplemented;
+  }
+
+void OvmsVehicle::VehicleConfigChanged(std::string event, void* param)
+  {
+  ConfigChanged((OvmsConfigParam*) param);
+  }
+
+void OvmsVehicle::ConfigChanged(OvmsConfigParam* param)
   {
   }
 

@@ -61,9 +61,8 @@ OvmsTelnet::OvmsTelnet()
 
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(tag,"system.wifi.sta.gotip", std::bind(&OvmsTelnet::WifiUp, this, _1, _2));
-  MyEvents.RegisterEvent(tag,"system.wifi.ap.start", std::bind(&OvmsTelnet::WifiUp, this, _1, _2));
-  MyEvents.RegisterEvent(tag,"system.wifi.down", std::bind(&OvmsTelnet::WifiDown, this, _1, _2));
+  MyEvents.RegisterEvent(tag,"network.wifi.up", std::bind(&OvmsTelnet::WifiUp, this, _1, _2));
+  MyEvents.RegisterEvent(tag,"network.wifi.down", std::bind(&OvmsTelnet::WifiDown, this, _1, _2));
   }
 
 void OvmsTelnet::WifiUp(std::string event, void* data)
@@ -90,7 +89,7 @@ TelnetServer::TelnetServer(Parent* parent)
 
 bool TelnetServer::Instantiate()
   {
-  if (CreateTaskPinned(1, "TSTelnetServer", 3000) != pdPASS)
+  if (CreateTaskPinned(1, "TelnetServer", 3000) != pdPASS)
     {
     ::printf("\nInsufficient memory to create TelnetServer task\n");
     return false;
@@ -190,7 +189,7 @@ TelnetReceiver::TelnetReceiver(ConsoleTelnet* parent, int socket, char* buffer,
 
 bool TelnetReceiver::Instantiate()
   {
-  if (CreateTaskPinned(1, "TRTelnetReceiver", 1000) != pdPASS)
+  if (CreateTaskPinned(1, "TelnetReceiver", 1000) != pdPASS)
     {
     ::printf("\nInsufficient memory to create TelnetReceiver task\n");
     return false;

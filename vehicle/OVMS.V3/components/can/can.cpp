@@ -180,6 +180,26 @@ void can_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
   writer->printf("Tracing for CAN bus %s is now %s\n",bus,cmd->GetName());
   }
 
+void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* bus = cmd->GetParent()->GetName();
+  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->puts("Error: Cannot find named CAN bus");
+    return;
+    }
+
+  writer->printf("CAN:       %s\n",sbus->GetName());
+  writer->printf("Mode:      %s\n",(sbus->m_mode==CAN_MODE_OFF)?"Off":
+                                   ((sbus->m_mode==CAN_MODE_LISTEN)?"Listen":"Active"));
+  writer->printf("Speed:     %d\n",(sbus->m_speed)*1000);
+  writer->printf("Rx pkt:    %20d\n",sbus->m_packets_rx);
+  writer->printf("Rx err:    %20d\n",sbus->m_errors_rx);
+  writer->printf("Tx pkt:    %20d\n",sbus->m_packets_tx);
+  writer->printf("Tx err:    %20d\n",sbus->m_errors_tx);
+  }
+
 static void CAN_rxtask(void *pvParameters)
   {
   can *me = (can*)pvParameters;
@@ -232,6 +252,7 @@ can::can()
     OvmsCommand* cmd_canrx = cmd_canx->RegisterCommand("rx","CAN rx framework", NULL, "", 0, 0, true);
     cmd_canrx->RegisterCommand("standard","Simulate reception of standard CAN frame",can_rx,"<id> <data...>", 1, 9, true);
     cmd_canrx->RegisterCommand("extended","Simulate reception of extended CAN frame",can_rx,"<id> <data...>", 1, 9, true);
+    cmd_canx->RegisterCommand("status","Show CAN status",can_status,"", 0, 0, true);
     }
 
   m_rxqueue = xQueueCreate(20,sizeof(CAN_msg_t));
@@ -244,6 +265,8 @@ can::~can()
 
 void can::IncomingFrame(CAN_frame_t* p_frame)
   {
+  p_frame->origin->m_packets_rx++;
+
   if (p_frame->origin->m_trace)
     {
     MyCommandApp.Log("CAN rx origin %s id %03x (len:%d)",
@@ -288,7 +311,12 @@ canbus::canbus(const char* name)
   : pcp(name)
   {
   m_mode = CAN_MODE_OFF;
+  m_speed = CAN_SPEED_1000KBPS;
   m_trace = false;
+  m_packets_rx = 0;
+  m_errors_rx = 0;
+  m_packets_tx = 0;
+  m_errors_tx = 0;
   }
 
 canbus::~canbus()
@@ -327,6 +355,8 @@ esp_err_t canbus::Write(const CAN_frame_t* p_frame)
       }
     MyCommandApp.Log("\n");
     }
+
+  m_packets_tx++;
 
   return ESP_OK; // Not implemented by base implementation
   }

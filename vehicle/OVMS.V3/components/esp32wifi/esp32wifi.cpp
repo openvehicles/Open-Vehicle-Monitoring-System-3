@@ -163,6 +163,7 @@ esp32wifi::esp32wifi(const char* name)
   : pcp(name)
   {
   m_mode = ESP32WIFI_MODE_OFF;
+  m_stareconnect = false;
   MyConfig.RegisterParam("wifi.ssid", "WIFI SSID", true, false);
   MyConfig.RegisterParam("wifi.ap", "WIFI Access Point", true, false);
   tcpip_adapter_init();
@@ -170,6 +171,8 @@ esp32wifi::esp32wifi(const char* name)
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.gotip",std::bind(&esp32wifi::EventWifiGotIp, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.wifi.sta.disconnected",std::bind(&esp32wifi::EventWifiStaDisconnected, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"ticker.10",std::bind(&esp32wifi::EventTimer10, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.scan.done",std::bind(&esp32wifi::EventWifiScanDone, this, _1, _2));
   }
 
@@ -200,6 +203,8 @@ void esp32wifi::SetPowerMode(PowerMode powermode)
 
 void esp32wifi::StartClientMode(std::string ssid, std::string password, uint8_t* bssid)
   {
+  m_stareconnect = false;
+
   if (m_mode == ESP32WIFI_MODE_AP)
     {
     MyEvents.SignalEvent("system.wifi.down",NULL);
@@ -234,6 +239,8 @@ void esp32wifi::StartClientMode(std::string ssid, std::string password, uint8_t*
 
 void esp32wifi::StartAccessPointMode(std::string ssid, std::string password)
   {
+  m_stareconnect = false;
+
   if (m_mode == ESP32WIFI_MODE_CLIENT)
     {
     MyEvents.SignalEvent("system.wifi.down",NULL);
@@ -264,6 +271,8 @@ void esp32wifi::StartAccessPointMode(std::string ssid, std::string password)
 
 void esp32wifi::StopStation()
   {
+  m_stareconnect = false;
+
   if (m_mode != ESP32WIFI_MODE_OFF)
     {
     MyEvents.SignalEvent("system.wifi.down",NULL);
@@ -311,8 +320,25 @@ std::string esp32wifi::GetSSID()
 
 void esp32wifi::EventWifiGotIp(std::string event, void* data)
   {
+  m_stareconnect = false;
   system_event_info_t *info = (system_event_info_t*)data;
   m_ip_info = info->got_ip.ip_info;
+  }
+
+void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
+  {
+  if (m_mode == ESP32WIFI_MODE_CLIENT)
+    {
+    m_stareconnect = true;
+    }
+  }
+
+void esp32wifi::EventTimer10(std::string event, void* data)
+  {
+  if ((m_mode == ESP32WIFI_MODE_CLIENT)&&(m_stareconnect))
+    {
+    esp_wifi_connect();
+    }
   }
 
 void esp32wifi::EventWifiScanDone(std::string event, void* data)

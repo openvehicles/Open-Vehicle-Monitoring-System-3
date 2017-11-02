@@ -35,6 +35,7 @@
 #include <string>
 #include "can.h"
 #include "ovms_events.h"
+#include "ovms_config.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
 
@@ -70,6 +71,7 @@ class OvmsVehicle
 
   private:
     void VehicleTicker1(std::string event, void* data);
+    void VehicleConfigChanged(std::string event, void* data);
     void PollerSend();
     void PollerReceive(CAN_frame_t* frame);
 
@@ -89,11 +91,43 @@ class OvmsVehicle
     virtual void Ticker3600(uint32_t ticker);
 
   protected:
+    virtual void ConfigChanged(OvmsConfigParam* param);
+  
+  protected:
     void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed);
 
   public:
     virtual void RxTask();
     virtual const std::string VehicleName();
+
+  public:
+    typedef enum
+      {
+      NotImplemented = 0,
+      Success,
+      Fail
+      } vehicle_command_t;
+    typedef enum
+      {
+      Standard = 0,
+      Storage,
+      Range,
+      Performance
+      } vehicle_mode_t;
+
+  public:
+    virtual vehicle_command_t CommandSetChargeMode(vehicle_mode_t mode);
+    virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
+    virtual vehicle_command_t CommandStartCharge();
+    virtual vehicle_command_t CommandStopCharge();
+    virtual vehicle_command_t CommandSetChargeTimer(bool timeron, uint16_t timerstart);
+    virtual vehicle_command_t CommandCooldown(bool cooldownon);
+    virtual vehicle_command_t CommandWakeup();
+    virtual vehicle_command_t CommandLock(const char* pin);
+    virtual vehicle_command_t CommandUnlock(const char* pin);
+    virtual vehicle_command_t CommandActivateValet(const char* pin);
+    virtual vehicle_command_t CommandDeactivateValet(const char* pin);
+    virtual vehicle_command_t CommandHomelink(uint8_t button);
 
   public:
     typedef struct

@@ -34,6 +34,7 @@ static const char *TAG = "config";
 #include <unistd.h>
 #include <sys/stat.h>
 #include <string.h>
+#include <sstream>
 #include "ovms_config.h"
 #include "ovms_command.h"
 #include "ovms_events.h"
@@ -227,6 +228,25 @@ void OvmsConfig::SetParamValue(std::string param, std::string instance, std::str
     }
   }
 
+void OvmsConfig::SetParamValueInt(std::string param, std::string instance, int value)
+  {
+  std::ostringstream ss;
+  ss << value;
+  SetParamValue(param, instance, std::string(ss.str()));
+  }
+
+void OvmsConfig::SetParamValueFloat(std::string param, std::string instance, float value)
+  {
+  std::ostringstream ss;
+  ss << value;
+  SetParamValue(param, instance, std::string(ss.str()));
+  }
+
+void OvmsConfig::SetParamValueBool(std::string param, std::string instance, bool value)
+  {
+  SetParamValue(param, instance, std::string(value ? "yes" : "no"));
+  }
+
 void OvmsConfig::DeleteInstance(std::string param, std::string instance)
   {
   OvmsConfigParam *p = CachedParam(param);
@@ -236,7 +256,7 @@ void OvmsConfig::DeleteInstance(std::string param, std::string instance)
     }
   }
 
-std::string OvmsConfig::GetParamValue(std::string param, std::string instance)
+std::string OvmsConfig::GetParamValue(std::string param, std::string instance, std::string defvalue)
   {
   OvmsConfigParam *p = CachedParam(param);
   if (p)
@@ -245,25 +265,29 @@ std::string OvmsConfig::GetParamValue(std::string param, std::string instance)
     }
   else
     {
-    return std::string("");
+    return defvalue;
     }
   }
 
-int OvmsConfig::GetParamValueInt(std::string param, std::string instance)
-  {
-  return atoi(GetParamValue(param,instance).c_str());
-  }
-
-float OvmsConfig::GetParamValueFloat(std::string param, std::string instance)
-  {
-  return atof(GetParamValue(param,instance).c_str());
-  }
-
-bool OvmsConfig::GetParamValueBool(std::string param, std::string instance)
+int OvmsConfig::GetParamValueInt(std::string param, std::string instance, int defvalue)
   {
   std::string value = GetParamValue(param,instance);
-  if (value.length() == 0) return false;
-  if (value.compare("yes")==0)
+  if (value.length() == 0) return defvalue;
+  return atoi(value.c_str());
+  }
+
+float OvmsConfig::GetParamValueFloat(std::string param, std::string instance, float defvalue)
+  {
+  std::string value = GetParamValue(param,instance);
+  if (value.length() == 0) return defvalue;
+  return atof(value.c_str());
+  }
+
+bool OvmsConfig::GetParamValueBool(std::string param, std::string instance, bool defvalue)
+  {
+  std::string value = GetParamValue(param,instance);
+  if (value.length() == 0) return defvalue;
+  if ((value == "yes")||(value == "1")||(value == "true"))
     return true;
   else
     return false;

@@ -27,6 +27,7 @@
 */
 
 #include "task_base.h"
+#include "ovms_module.h"
 
 Parent::Parent()
   {
@@ -112,12 +113,16 @@ TaskBase::~TaskBase()
 
 BaseType_t TaskBase::CreateTask(const char* name, int stack, UBaseType_t priority)
   {
-  return xTaskCreate(Task, name, stack, (void*)this, priority, &m_taskid);
+  BaseType_t task = xTaskCreate(Task, name, stack, (void*)this, priority, &m_taskid);
+  AddTaskToMap(m_taskid);
+  return task;
   }
 
 BaseType_t TaskBase::CreateTaskPinned(const BaseType_t core, const char* name, int stack, UBaseType_t priority)
   {
-  return xTaskCreatePinnedToCore(Task, name, stack, (void*)this, priority, &m_taskid, core);
+  BaseType_t task = xTaskCreatePinnedToCore(Task, name, stack, (void*)this, priority, &m_taskid, core);
+  AddTaskToMap(m_taskid);
+  return task;
   }
 
 void TaskBase::Task(void *object)
