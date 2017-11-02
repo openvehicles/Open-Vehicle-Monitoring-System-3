@@ -35,30 +35,58 @@ static const char *TAG = "obd2ecu";
 #include <string.h>
 #include <dirent.h>
 #include "obd2ecu.h"
+#include "ovms_script.h"
 #include "ovms_config.h"
 #include "ovms_command.h"
 #include "ovms_peripherals.h"
-#include "ovms_metrics.h"
 #include "metrics_standard.h"
 
-obd2pid::obd2pid(int pid, bool internal)
+obd2pid::obd2pid(int pid, pid_t type, OvmsMetric* metric)
   {
   m_pid = pid;
-  m_internal = internal;
+  m_type = type;
+  m_metric = metric;
   }
 
 obd2pid::~obd2pid()
   {
   }
 
-bool obd2pid::IsInternal()
+int obd2pid::GetPid()
   {
-  return m_internal;
+  return m_pid;
   }
 
-void obd2pid::SetInternal(bool internal)
+obd2pid::pid_t obd2pid::GetType()
   {
-  m_internal = internal;
+  return m_type;
+  }
+
+const char* obd2pid::GetTypeString()
+  {
+  switch (m_type)
+    {
+    case Unimplemented:  return "unimplemented";
+    case Internal:       return "internal";
+    case Metric:         return "metric";
+    case Script:         return "script";
+    default:             return "unknown";
+    }
+  }
+
+OvmsMetric* obd2pid::GetMetric()
+  {
+  return m_metric;
+  }
+
+void obd2pid::SetType(pid_t type)
+  {
+  m_type = type;
+  }
+
+void obd2pid::SetMetric(OvmsMetric* metric)
+  {
+  m_metric = metric;
   }
 
 void obd2pid::LoadScript(std::string path)
@@ -74,16 +102,59 @@ void obd2pid::LoadScript(std::string path)
   fclose(f);
   }
 
-std::string obd2pid::GetScript()
-  {
-  return m_script;
-  }
-
-void obd2pid::Execute()
+float obd2pid::Execute()
   {
   // TODO:
   // For internal, we should put the code here to implement the PID
   // For external, we should run the script
+  switch (m_type)
+    {
+    case Unimplemented:
+      return 0;
+    case Internal:
+      return InternalPid();
+    case Metric:
+      if (m_metric)
+        return m_metric->AsFloat();
+      else
+        return 0;
+    case Script:
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+      {
+      duk_context *ctx = MyScripts.Duktape();
+      duk_eval_string(ctx, m_script.c_str());
+      return (float)duk_get_number(ctx,-1);
+      }
+#else // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+      return 0;
+#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+    default:
+      return 0;
+    }
+  }
+
+float obd2pid::InternalPid()
+  {
+  if (m_metric) return m_metric->AsFloat();
+
+  int jitter = time(NULL)&0xf;  /* 0-15 range for simulation purposes */
+
+  float result = 0;
+  switch (m_pid)
+    {
+    case 0x0c:
+      result = StandardMetrics.ms_v_pos_speed->AsFloat()*70+jitter;
+      if (StandardMetrics.ms_v_pos_speed->AsFloat() == 0)
+        result = 500+jitter; // Minimum RPM to keep HUD from going to sleep if not moving
+      break;
+    case 0x10:
+      result = StandardMetrics.ms_v_bat_soc->AsFloat()/(float)3.3;
+      break;
+    default:
+      return 0;
+    }
+
+  return result;
   }
 
 static void OBD2ECU_task(void *pvParameters)
@@ -169,7 +240,7 @@ void obd2ecu_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     }
   }
   
- void obd2ecu_privacy(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void obd2ecu_privacy(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
     if(MyPeripherals->m_obd2ecu == NULL) 
     { writer->puts("OBDII:  Need to start ecu process first");
@@ -184,7 +255,47 @@ void obd2ecu_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     
     writer->puts("OBDII Privacy has been set");
   } 
-  
+
+void obd2ecu_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyPeripherals->m_obd2ecu == NULL)
+    {
+    writer->puts("Need to start ecu process first");
+    return;
+    }
+
+  writer->printf("%-7s %14s %12s %s\n","PID","Type","Value","Metric");
+
+  for (PidMap::iterator it=MyPeripherals->m_obd2ecu->m_pidmap.begin(); it!=MyPeripherals->m_obd2ecu->m_pidmap.end(); ++it)
+    {
+    if ((argc==0)||(it->second->GetPid() == atoi(argv[0])))
+      {
+      const char *ms;
+      if (it->second->GetMetric())
+        ms = it->second->GetMetric()->m_name;
+      else
+        ms = "";
+      writer->printf("%-7d %14s %12f %s\n",
+        it->first,
+        it->second->GetTypeString(),
+        it->second->Execute(),
+        ms);
+      }
+    }
+  }
+
+void obd2ecu_reload(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyPeripherals->m_obd2ecu == NULL)
+    {
+    writer->puts("Need to start ecu process first");
+    return;
+    }
+
+  MyPeripherals->m_obd2ecu->LoadMap();
+  writer->puts("OBDII ECU pid map reloaded");
+  }
+
 //
 // Fill Mode 1 frames with data based on format specified
 //
@@ -588,13 +699,32 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
 
 void obd2ecu::LoadMap()
   {
-  m_pidmap[0x05] = new obd2pid(0x05);  // Coolant Temperature
-  m_pidmap[0x0c] = new obd2pid(0x0c);  // Engine RPM
-  m_pidmap[0x0d] = new obd2pid(0x0d);  // Vehicle Speed
-  m_pidmap[0x10] = new obd2pid(0x10);  // Mass Air Flow
+  ClearMap();
+  m_pidmap[0x05] = new obd2pid(0x05,obd2pid::Internal,StandardMetrics.ms_v_mot_temp);   // Coolant Temperature
+  m_pidmap[0x0c] = new obd2pid(0x0c,obd2pid::Internal);                                 // Engine RPM
+  m_pidmap[0x0d] = new obd2pid(0x0d,obd2pid::Internal,StandardMetrics.ms_v_pos_speed);  // Vehicle Speed
+  m_pidmap[0x10] = new obd2pid(0x10,obd2pid::Internal);                                 // Mass Air Flow
 
+  // Look for metric overrides...
+  OvmsConfigParam* cm = MyConfig.CachedParam("obd2ecu.map");
+  for (ConfigParamMap::iterator it=cm->m_map.begin(); it!=cm->m_map.end(); ++it)
+    {
+    int pid = atoi(it->first.c_str());
+    OvmsMetric* m = MyMetrics.Find(it->second.c_str());
+    if ((pid>0)&&m)
+      {
+      if (m_pidmap.find(pid) == m_pidmap.end())
+        m_pidmap[pid] = new obd2pid(pid,obd2pid::Metric,m);
+      else
+        {
+        m_pidmap[pid]->SetType(obd2pid::Metric);
+        m_pidmap[pid]->SetMetric(m);
+        }
+      }
+    }
+
+  // Look for scripts (if javascript enabled)...
   #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-  // We have javascript enabled, so let's try to load pid support scripts
   DIR *dir;
   struct dirent *dp;
   if ((dir = opendir ("/store/obd2ecu")) != NULL)
@@ -608,9 +738,9 @@ void obd2ecu::LoadMap()
         std::string fpath("/store/obd2ecu/");
         fpath.append(dp->d_name);
         if (m_pidmap.find(pid) == m_pidmap.end())
-          m_pidmap[pid] = new obd2pid(pid,false);
+          m_pidmap[pid] = new obd2pid(pid,obd2pid::Script);
         else
-          m_pidmap[pid]->SetInternal(false);
+          m_pidmap[pid]->SetType(obd2pid::Script);
         m_pidmap[pid]->LoadScript(fpath);
         }
       }
@@ -645,6 +775,9 @@ obd2ecuInit::obd2ecuInit()
   cmd_start->RegisterCommand("can3","Start an OBDII ECU on can3",obd2ecu_start, "", 0, 0);
   cmd_ecu->RegisterCommand("stop","Stop the OBDII ECU",obd2ecu_stop, "", 0, 0);
   cmd_ecu->RegisterCommand("privacy","Set Privacy on/off (hide / allow VIN reporting)",obd2ecu_privacy, "", 1, 1, true);
+  cmd_ecu->RegisterCommand("list","Show OBDII ECU pid list",obd2ecu_list, "", 0, 1);
+  cmd_ecu->RegisterCommand("reload","Reload OBDII ECU pid map",obd2ecu_reload, "", 0, 0);
 
   MyConfig.RegisterParam("obd2ecu", "OBD2ECU configuration", true, true);
+  MyConfig.RegisterParam("obd2ecu.map", "OBD2ECU metric map", true, true);
   }
