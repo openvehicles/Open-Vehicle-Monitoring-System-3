@@ -130,8 +130,8 @@ void OvmsServerV2::ServerTask()
       int next = (StandardMetrics.ms_s_v2_peers->AsInt()==0)?600:60;
       if ((lasttx==0)||(now>(lasttx+next)))
         {
-        TransmitMsgStat(false);
-        TransmitMsgEnvironment(false);
+        TransmitMsgStat(lasttx==0);
+        TransmitMsgEnvironment(lasttx==0);
         lasttx = now;
         }
 
@@ -406,9 +406,9 @@ void OvmsServerV2::TransmitMsgStat(bool always)
   else
     buffer.append("M");
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_charge_voltage->AsString("0").c_str());
+  buffer.append(StandardMetrics.ms_v_charge_voltage->AsString("0",Other,0).c_str());
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_charge_current->AsString("0").c_str());
+  buffer.append(StandardMetrics.ms_v_charge_current->AsString("0",Other,0).c_str());
   buffer.append(",");
   buffer.append("stopped");  // car_chargestate
   buffer.append(",");
@@ -418,7 +418,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_bat_range_est->AsString("0",m_units_distance).c_str());
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_charge_climit->AsString("0").c_str());
+  buffer.append(StandardMetrics.ms_v_charge_climit->AsString("0",Other,0).c_str());
   buffer.append(",");
   buffer.append("0");  // charge duration
   buffer.append(",");
