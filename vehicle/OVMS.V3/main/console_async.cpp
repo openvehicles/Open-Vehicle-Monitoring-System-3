@@ -32,10 +32,11 @@
 #include <unistd.h>
 #include <string.h>
 #include "console_async.h"
-#include "esp_log.h"
+
+#include "ovms_log.h"
+static const char *TAG = "uart_events";
 
 #define EX_UART_NUM UART_NUM_0
-static const char *TAG = "uart_events";
 
 ConsoleAsync* ConsoleAsync::m_instance = NULL;
 

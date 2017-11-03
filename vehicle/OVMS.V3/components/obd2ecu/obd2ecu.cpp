@@ -29,7 +29,7 @@
 ; THE SOFTWARE.
 */
 
-#include "esp_log.h"
+#include "ovms_log.h"
 static const char *TAG = "obd2ecu";
 
 #include <string.h>

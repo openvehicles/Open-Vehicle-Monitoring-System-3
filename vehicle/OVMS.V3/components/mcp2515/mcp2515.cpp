@@ -28,8 +28,8 @@
 ; THE SOFTWARE.
 */
 
-// #include "esp_log.h"
-// static const char *TAG = "mcp2515";
+#include "ovms_log.h"
+static const char *TAG = "mcp2515";
 
 #include <string.h>
 #include "mcp2515.h"

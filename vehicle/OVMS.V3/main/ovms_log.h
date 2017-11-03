@@ -28,68 +28,21 @@
 ; THE SOFTWARE.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ovms_log.h>
-#include "log_buffers.h"
+#ifndef __OVMS_LOG_H__
+#define __OVMS_LOG_H__
 
+#include "esp_log.h"
 
-LogBuffers::LogBuffers() : m_refcount(0)
-  {
-  }
+#undef ESP_LOGE
+#undef ESP_LOGW
+#undef ESP_LOGI
+#undef ESP_LOGD
+#undef ESP_LOGV
 
-LogBuffers::~LogBuffers()
-  {
-  // Free all the buffers in the list.
-  for (iterator itr = begin(); itr != end(); ++itr)
-    {
-    free(*itr);
-    }
-  }
+#define ESP_LOGE( tag, format, ... ) esp_log_write(ESP_LOG_ERROR,   tag, LOG_FORMAT(E, format), esp_log_timestamp(), tag, ##__VA_ARGS__);
+#define ESP_LOGW( tag, format, ... ) esp_log_write(ESP_LOG_WARN,    tag, LOG_FORMAT(W, format), esp_log_timestamp(), tag, ##__VA_ARGS__);
+#define ESP_LOGI( tag, format, ... ) esp_log_write(ESP_LOG_INFO,    tag, LOG_FORMAT(I, format), esp_log_timestamp(), tag, ##__VA_ARGS__);
+#define ESP_LOGD( tag, format, ... ) esp_log_write(ESP_LOG_DEBUG,   tag, LOG_FORMAT(D, format), esp_log_timestamp(), tag, ##__VA_ARGS__);
+#define ESP_LOGV( tag, format, ... ) esp_log_write(ESP_LOG_VERBOSE, tag, LOG_FORMAT(V, format), esp_log_timestamp(), tag, ##__VA_ARGS__);
 
-int LogBuffers::append(const char* fmt, va_list args)
-  {
-  char *buffer;
-  int ret = vasprintf(&buffer, fmt, args);
-  append(buffer);
-  return ret;
-  }
-
-void LogBuffers::append(char* buffer)
-  {  
-  if (empty())
-    {
-    push_front(buffer);
-    }
-  else
-    {
-    iterator before = begin(), after;
-    while (true)
-      {
-      after = before;
-      ++after;
-      if (after == end())
-        break;
-      before = after;
-      }
-    insert_after(before, buffer);
-    }
-  }
-
-void LogBuffers::set(int count)
-  {
-  m_refcount = count;
-  }
-
-void LogBuffers::release()
-  {
-  int before = std::atomic_fetch_add(&m_refcount, -1);
-  if (before == 1)
-    delete this;
-  }
-
-bool LogBuffers::last()
-  {
-  return m_refcount == 1;
-  }
+#endif //#ifndef __OVMS_LOG_H__
