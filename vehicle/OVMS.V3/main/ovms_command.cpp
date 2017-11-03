@@ -484,7 +484,7 @@ int OvmsCommandApp::HexDump(const char* prefix, const char* data, size_t length)
       p++;
     }
     *p = 0;
-    Log("%s %s\n",prefix,buffer);
+    ESP_LOGD(prefix,"%s",buffer);
     rlength -= 16;
     }
 
