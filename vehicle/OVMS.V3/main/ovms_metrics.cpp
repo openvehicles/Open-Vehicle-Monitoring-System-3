@@ -366,7 +366,7 @@ OvmsMetric::~OvmsMetric()
   //  (i.e. by broadcasting a module shutdown event).
   }
 
-std::string OvmsMetric::AsString(const char* defvalue, metric_unit_t units)
+std::string OvmsMetric::AsString(const char* defvalue, metric_unit_t units, int precision)
   {
   return std::string(defvalue);
   }
@@ -455,7 +455,7 @@ OvmsMetricInt::~OvmsMetricInt()
   {
   }
 
-std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units)
+std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units, int precision)
   {
   if (m_defined)
     {
@@ -526,7 +526,7 @@ OvmsMetricBool::~OvmsMetricBool()
   {
   }
 
-std::string OvmsMetricBool::AsString(const char* defvalue, metric_unit_t units)
+std::string OvmsMetricBool::AsString(const char* defvalue, metric_unit_t units, int precision)
   {
   if (m_defined)
     {
@@ -591,11 +591,16 @@ OvmsMetricFloat::~OvmsMetricFloat()
   {
   }
 
-std::string OvmsMetricFloat::AsString(const char* defvalue, metric_unit_t units)
+std::string OvmsMetricFloat::AsString(const char* defvalue, metric_unit_t units, int precision)
   {
   if (m_defined)
     {
     std::ostringstream ss;
+    if (precision > 0)
+      {
+      ss.precision(precision); // Set desired precision
+      ss << fixed;
+      }
     if ((units != Other)&&(units != m_units))
       ss << UnitConvert(m_units,units,m_value);
     else
@@ -657,7 +662,7 @@ OvmsMetricString::~OvmsMetricString()
   {
   }
 
-std::string OvmsMetricString::AsString(const char* defvalue, metric_unit_t units)
+std::string OvmsMetricString::AsString(const char* defvalue, metric_unit_t units, int precision)
   {
   if (m_defined)
     return m_value;
