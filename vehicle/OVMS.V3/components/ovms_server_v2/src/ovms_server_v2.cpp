@@ -122,7 +122,13 @@ void OvmsServerV2::ServerTask()
       // Handle incoming requests
       while ((m_buffer->HasLine() >= 0)&&(m_conn.IsOpen()))
         {
+        int peers = StandardMetrics.ms_s_v2_peers->AsInt();
         ProcessServerMsg();
+        if ((StandardMetrics.ms_s_v2_peers->AsInt() != peers)&&(peers==0))
+          {
+          ESP_LOGI(TAG, "One or more peers have connected");
+          lasttx = 0; // A peer has connected, so force a transmission of status messages
+          }
         }
 
       // Periodic transmission of metrics
