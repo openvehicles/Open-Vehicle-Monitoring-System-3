@@ -136,8 +136,8 @@ void OvmsServerV2::ServerTask()
       int next = (StandardMetrics.ms_s_v2_peers->AsInt()==0)?600:60;
       if ((lasttx==0)||(now>(lasttx+next)))
         {
-        TransmitMsgStat(lasttx==0);
-        TransmitMsgEnvironment(lasttx==0);
+        TransmitMsgStat(true);          // Send always, periodically
+        TransmitMsgEnvironment(true);   // Send always, periodically
         TransmitMsgGPS(lasttx==0);
         TransmitMsgGroup(lasttx==0);
         TransmitMsgTPMS(lasttx==0);
@@ -155,7 +155,7 @@ void OvmsServerV2::ServerTask()
       if (m_now_capabilities) TransmitMsgCapabilities();
 
       // Poll for new data
-      if ((m_buffer->PollSocket(m_conn.Socket(),20000) < 0)||
+      if ((m_buffer->PollSocket(m_conn.Socket(),1000) < 0)||
           (!MyNetManager.m_connected_any))
         {
         Disconnect();
