@@ -138,8 +138,21 @@ void OvmsServerV2::ServerTask()
         {
         TransmitMsgStat(lasttx==0);
         TransmitMsgEnvironment(lasttx==0);
+        TransmitMsgGPS(lasttx==0);
+        TransmitMsgGroup(lasttx==0);
+        TransmitMsgTPMS(lasttx==0);
+        TransmitMsgFirmware(lasttx==0);
+        TransmitMsgCapabilities(lasttx==0);
         lasttx = now;
         }
+
+      if (m_now_stat) TransmitMsgStat();
+      if (m_now_environment) TransmitMsgEnvironment();
+      if (m_now_gps) TransmitMsgGPS();
+      if (m_now_group) TransmitMsgGroup();
+      if (m_now_tpms) TransmitMsgTPMS();
+      if (m_now_firmware) TransmitMsgFirmware();
+      if (m_now_capabilities) TransmitMsgCapabilities();
 
       // Poll for new data
       if ((m_buffer->PollSocket(m_conn.Socket(),20000) < 0)||
@@ -386,7 +399,8 @@ bool OvmsServerV2::Login()
 
 void OvmsServerV2::TransmitMsgStat(bool always)
   {
-  ESP_LOGI(TAG, "Sending MP-0 S");
+  m_now_stat = false;
+
   bool modified =
     StandardMetrics.ms_v_bat_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_charge_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
@@ -482,10 +496,66 @@ void OvmsServerV2::TransmitMsgStat(bool always)
 
 void OvmsServerV2::TransmitMsgGPS(bool always)
   {
+  m_now_gps = false;
+
+  bool modified =
+    StandardMetrics.ms_v_pos_latitude->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_pos_longitude->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_pos_direction->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_pos_altitude->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_pos_gpslock->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_pos_speed->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_env_drivemode->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_bat_power->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_bat_energy_used->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_bat_energy_recd->IsModifiedAndClear(MyOvmsServerV2Modifier);
+
+  // Quick exit if nothing modified
+  if ((!always)&&(!modified)) return;
+
+  bool stale =
+    StandardMetrics.ms_v_pos_latitude->IsStale() ||
+    StandardMetrics.ms_v_pos_longitude->IsStale() ||
+    StandardMetrics.ms_v_pos_direction->IsStale() ||
+    StandardMetrics.ms_v_pos_altitude->IsStale();
+
+  std::string buffer;
+  buffer.reserve(512);
+  buffer.append("MP-0 L");
+  buffer.append(StandardMetrics.ms_v_pos_latitude->AsString("0",Other,6).c_str());
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_pos_longitude->AsString("0",Other,6).c_str());
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_pos_direction->AsString("0").c_str());
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_pos_altitude->AsString("0").c_str());
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_pos_gpslock->AsString("0").c_str());
+  if (stale)
+    buffer.append(",0,");
+  else
+    buffer.append(",1,");
+  if (m_units_distance == Kilometers)
+    buffer.append(StandardMetrics.ms_v_pos_speed->AsString("0").c_str());
+  else
+    buffer.append(StandardMetrics.ms_v_pos_speed->AsString("0",Mph).c_str());
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_env_drivemode->AsString("standard").c_str());
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_bat_power->AsString("0",Other,1).c_str());
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_bat_energy_used->AsString("0",Other,0).c_str());
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_bat_energy_recd->AsString("0",Other,0).c_str());
+
+  ESP_LOGI(TAG, "Sending: %s", buffer.c_str());
+  Transmit(buffer.c_str());
   }
 
 void OvmsServerV2::TransmitMsgTPMS(bool always)
   {
+  m_now_tpms = false;
+
   bool modified = 
     StandardMetrics.ms_v_tpms_fl_t->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_tpms_fr_t->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
@@ -538,6 +608,7 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
 
 void OvmsServerV2::TransmitMsgFirmware(bool always)
   {
+  m_now_firmware = false;
   }
 
 void AppendDoors1(std::string *buffer)
@@ -572,7 +643,8 @@ void AppendDoors5(std::string *buffer)
 
 void OvmsServerV2::TransmitMsgEnvironment(bool always)
   {
-  ESP_LOGI(TAG, "Sending MP-0 D");
+  m_now_environment = false;
+
   bool modified =
     // doors 1
     StandardMetrics.ms_v_door_fl->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
@@ -659,10 +731,12 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
 
 void OvmsServerV2::TransmitMsgCapabilities(bool always)
   {
+  m_now_capabilities = false;
   }
 
 void OvmsServerV2::TransmitMsgGroup(bool always)
   {
+  m_now_group = false;
   }
 
 std::string OvmsServerV2::ReadLine()
@@ -680,6 +754,13 @@ OvmsServerV2::OvmsServerV2(const char* name)
     }
   m_buffer = new OvmsBuffer(1024);
   m_status = "Starting";
+  m_now_stat = false;
+  m_now_gps = false;
+  m_now_tpms = false;
+  m_now_firmware = false;
+  m_now_environment = false;
+  m_now_capabilities = false;
+  m_now_group = false;
   }
 
 OvmsServerV2::~OvmsServerV2()
