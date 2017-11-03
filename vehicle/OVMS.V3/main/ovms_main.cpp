@@ -29,6 +29,9 @@ void app_main(void)
   {
   nvs_flash_init();
 
+  ESP_LOGI(TAG, "Set default logging level to */%d",CONFIG_LOG_DEFAULT_LEVEL);
+  esp_log_level_set("*",(esp_log_level_t)CONFIG_LOG_DEFAULT_LEVEL);
+
   ESP_LOGI(TAG, "Executing on CPU core %d",xPortGetCoreID());
   AddTaskToMap(xTaskGetCurrentTaskHandle());
 
