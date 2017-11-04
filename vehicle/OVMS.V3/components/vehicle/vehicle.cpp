@@ -357,7 +357,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   cmd_charge->RegisterCommand("stop","Stop a vehicle charge",vehicle_charge_stop,"",0,0,true);
   cmd_charge->RegisterCommand("current","Limit charge current",vehicle_charge_current,"<amps>",1,1,true);
   cmd_charge->RegisterCommand("cooldown","Start a vehicle cooldown",vehicle_charge_cooldown,"",0,0,true);
-  MyCommandApp.RegisterCommand("stat","Show vehicle status",vehicle_stat,"",0,0,true);
+  MyCommandApp.RegisterCommand("stat","Show vehicle status",vehicle_stat,"",0,0,false);
   }
 
 OvmsVehicleFactory::~OvmsVehicleFactory()
