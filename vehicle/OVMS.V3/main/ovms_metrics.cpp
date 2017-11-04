@@ -325,18 +325,22 @@ void OvmsMetrics::DeregisterListener(const char* caller)
 
 void OvmsMetrics::NotifyModified(OvmsMetric* metric)
   {
-  auto k = m_listeners.find(metric->m_name);
-  if (k != m_listeners.end())
+  auto k = m_listeners.find("*");
+  for (int x=0;x<1;x++)
     {
-    MetricCallbackList* ml = k->second;
-    if (ml)
+    if (k != m_listeners.end())
       {
-      for (MetricCallbackList::iterator itc=ml->begin(); itc!=ml->end(); ++itc)
+      MetricCallbackList* ml = k->second;
+      if (ml)
         {
-        MetricCallbackEntry* ec = *itc;
-        ec->m_callback(metric);
+        for (MetricCallbackList::iterator itc=ml->begin(); itc!=ml->end(); ++itc)
+          {
+          MetricCallbackEntry* ec = *itc;
+          ec->m_callback(metric);
+          }
         }
       }
+    k = m_listeners.find(metric->m_name);
     }
   }
 
