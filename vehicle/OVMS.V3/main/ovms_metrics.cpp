@@ -596,7 +596,7 @@ std::string OvmsMetricFloat::AsString(const char* defvalue, metric_unit_t units,
   if (m_defined)
     {
     std::ostringstream ss;
-    if (precision > 0)
+    if (precision >= 0)
       {
       ss.precision(precision); // Set desired precision
       ss << fixed;
