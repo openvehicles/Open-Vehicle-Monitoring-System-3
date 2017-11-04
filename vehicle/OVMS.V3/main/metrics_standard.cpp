@@ -87,6 +87,8 @@ MetricsStandard::MetricsStandard()
   ms_v_charge_type = new OvmsMetricString(MS_V_CHARGE_TYPE, SM_STALE_MID);
   ms_v_charge_pilot = new OvmsMetricBool(MS_V_CHARGE_PILOT, SM_STALE_MID);
   ms_v_charge_inprogress = new OvmsMetricBool(MS_V_CHARGE_INPROGRESS, SM_STALE_MID);
+  ms_v_charge_limit_range = new OvmsMetricFloat(MS_V_CHARGE_LIMIT_RANGE, SM_STALE_HIGH, Kilometers);
+  ms_v_charge_limit_soc = new OvmsMetricFloat(MS_V_CHARGE_LIMIT_SOC, SM_STALE_HIGH, Percentage);
   ms_v_charge_duration_full = new OvmsMetricInt(MS_V_CHARGE_DURATION_FULL, SM_STALE_MID, Minutes);
   ms_v_charge_duration_range = new OvmsMetricInt(MS_V_CHARGE_DURATION_RANGE, SM_STALE_MID, Minutes);
   ms_v_charge_duration_soc = new OvmsMetricInt(MS_V_CHARGE_DURATION_SOC, SM_STALE_MID, Minutes);
