@@ -72,6 +72,16 @@ void metrics_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     writer->puts("Metric could not be set");
   }
 
+void metrics_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (strcmp(cmd->GetName(),"on")==0)
+    MyMetrics.m_trace = true;
+  else
+    MyMetrics.m_trace = false;
+
+  writer->printf("Metric tracing is now %s\n",cmd->GetName());
+  }
+
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
 static duk_ret_t DukOvmsMetricValue(duk_context *ctx)
@@ -120,11 +130,15 @@ OvmsMetrics::OvmsMetrics()
 
   m_nextmodifier = 1;
   m_first = NULL;
+  m_trace = false;
 
   // Register our commands
   OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework",NULL, "", 1);
   cmd_metric->RegisterCommand("list","Show all metrics",metrics_list, "[<metric>]", 0, 1);
   cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set, "<metric> <value>", 2, 2, true);
+  OvmsCommand* cmd_metrictrace = cmd_metric->RegisterCommand("trace","METRIC trace framework", NULL, "", 0, 0, false);
+  cmd_metrictrace->RegisterCommand("on","Turn metric tracing ON",metrics_trace,"", 0, 0, false);
+  cmd_metrictrace->RegisterCommand("off","Turn metrictracing OFF",metrics_trace,"", 0, 0, false);
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
@@ -325,6 +339,12 @@ void OvmsMetrics::DeregisterListener(const char* caller)
 
 void OvmsMetrics::NotifyModified(OvmsMetric* metric)
   {
+  if ((m_trace)&&(strcmp(metric->m_name,"m.monotonic")!=0))
+    {
+    ESP_LOGI(TAG, "Modified metric %s: %s",
+      metric->m_name, metric->AsUnitString().c_str());
+    }
+
   auto k = m_listeners.find("*");
   for (int x=0;x<1;x++)
     {

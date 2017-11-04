@@ -413,6 +413,7 @@ class OvmsMetrics
 
   public:
     OvmsMetric* m_first;
+    bool m_trace;
   };
 
 extern OvmsMetrics MyMetrics;
