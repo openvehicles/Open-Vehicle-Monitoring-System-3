@@ -540,7 +540,9 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
   else
     buffer.append(StandardMetrics.ms_v_pos_speed->AsString("0",Mph).c_str());
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_env_drivemode->AsString("standard").c_str());
+  char hex[10];
+  sprintf(hex, "%x", StandardMetrics.ms_v_env_drivemode->AsInt());
+  buffer.append(hex);
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_bat_power->AsString("0",Other,1).c_str());
   buffer.append(",");
@@ -574,19 +576,19 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
   buffer.append("MP-0 W");
   buffer.append(StandardMetrics.ms_v_tpms_fr_p->AsString("0",PSI));
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_fr_t->AsString());
+  buffer.append(StandardMetrics.ms_v_tpms_fr_t->AsString("0"));
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_tpms_rr_p->AsString("0",PSI));
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_rr_t->AsString());
+  buffer.append(StandardMetrics.ms_v_tpms_rr_t->AsString("0"));
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_tpms_fl_p->AsString("0",PSI));
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_fl_t->AsString());
+  buffer.append(StandardMetrics.ms_v_tpms_fl_t->AsString("0"));
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_tpms_rl_p->AsString("0",PSI));
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_rl_t->AsString());
+  buffer.append(StandardMetrics.ms_v_tpms_rl_t->AsString("0"));
 
   bool stale =
     StandardMetrics.ms_v_tpms_fl_t->IsStale() ||
@@ -729,6 +731,24 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
   Transmit(buffer.c_str());
   }
 
+void OvmsServerV2::MetricModified(OvmsMetric* metric)
+  {
+  // A metric has been changed...
+
+  if ((metric == StandardMetrics.ms_v_charge_climit)||
+      (metric == StandardMetrics.ms_v_charge_state)||
+      (metric == StandardMetrics.ms_v_charge_substate)||
+      (metric == StandardMetrics.ms_v_charge_mode)||
+      (metric == StandardMetrics.ms_v_bat_cac))
+    {
+    m_now_environment = true;
+    m_now_stat = true;
+    }
+
+  if (StandardMetrics.ms_s_v2_peers->AsInt() > 0)
+    m_now_environment = true; // Transmit environment message if necessary
+  }
+
 void OvmsServerV2::TransmitMsgCapabilities(bool always)
   {
   m_now_capabilities = false;
@@ -761,10 +781,16 @@ OvmsServerV2::OvmsServerV2(const char* name)
   m_now_environment = false;
   m_now_capabilities = false;
   m_now_group = false;
+
+  #undef bind  // Kludgy, but works
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyMetrics.RegisterListener(TAG, "*", std::bind(&OvmsServerV2::MetricModified, this, _1));
   }
 
 OvmsServerV2::~OvmsServerV2()
   {
+  MyMetrics.DeregisterListener(TAG);
   Disconnect();
   if (m_buffer)
     {

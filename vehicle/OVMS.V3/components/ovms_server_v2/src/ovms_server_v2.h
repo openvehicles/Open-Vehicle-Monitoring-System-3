@@ -74,6 +74,9 @@ class OvmsServerV2 : public OvmsServer
     void TransmitMsgGroup(bool always = false);
 
   public:
+    void MetricModified(OvmsMetric* metric);
+
+  public:
     std::string m_status;
 
   protected:
