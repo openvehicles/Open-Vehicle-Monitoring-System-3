@@ -209,7 +209,7 @@ class MetricsStandard
     OvmsMetricBool*   ms_v_door_hood;
     OvmsMetricBool*   ms_v_door_trunk;
     
-    OvmsMetricString* ms_v_env_drivemode;     // standard, range, performance, storage
+    OvmsMetricInt*    ms_v_env_drivemode;     // Active drive profile number [1]
     OvmsMetricBool*   ms_v_env_handbrake;
     OvmsMetricBool*   ms_v_env_awake;
     OvmsMetricBool*   ms_v_env_charging12v;

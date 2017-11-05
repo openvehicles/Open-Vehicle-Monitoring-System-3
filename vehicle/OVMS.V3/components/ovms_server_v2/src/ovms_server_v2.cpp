@@ -540,7 +540,9 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
   else
     buffer.append(StandardMetrics.ms_v_pos_speed->AsString("0",Mph).c_str());
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_env_drivemode->AsString("standard").c_str());
+  char hex[10];
+  sprintf(hex, "%x", StandardMetrics.ms_v_env_drivemode->AsInt());
+  buffer.append(hex);
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_bat_power->AsString("0",Other,1).c_str());
   buffer.append(",");
