@@ -731,6 +731,24 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
   Transmit(buffer.c_str());
   }
 
+void OvmsServerV2::MetricModified(OvmsMetric* metric)
+  {
+  // A metric has been changed...
+
+  if ((metric == StandardMetrics.ms_v_charge_climit)||
+      (metric == StandardMetrics.ms_v_charge_state)||
+      (metric == StandardMetrics.ms_v_charge_substate)||
+      (metric == StandardMetrics.ms_v_charge_mode)||
+      (metric == StandardMetrics.ms_v_bat_cac))
+    {
+    m_now_environment = true;
+    m_now_stat = true;
+    }
+
+  if (StandardMetrics.ms_s_v2_peers->AsInt() > 0)
+    m_now_environment = true; // Transmit environment message if necessary
+  }
+
 void OvmsServerV2::TransmitMsgCapabilities(bool always)
   {
   m_now_capabilities = false;
@@ -763,10 +781,16 @@ OvmsServerV2::OvmsServerV2(const char* name)
   m_now_environment = false;
   m_now_capabilities = false;
   m_now_group = false;
+
+  #undef bind  // Kludgy, but works
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyMetrics.RegisterListener(TAG, "*", std::bind(&OvmsServerV2::MetricModified, this, _1));
   }
 
 OvmsServerV2::~OvmsServerV2()
   {
+  MyMetrics.DeregisterListener(TAG);
   Disconnect();
   if (m_buffer)
     {
