@@ -37,7 +37,7 @@
 #include <lwip/sockets.h>
 #undef bind
 #include "freertos/queue.h"
-#include "esp_log.h"
+#include "ovms_log.h"
 #include "ovms_events.h"
 #include "console_telnet.h"
 

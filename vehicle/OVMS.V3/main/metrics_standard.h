@@ -80,6 +80,8 @@
 #define MS_V_CHARGE_TYPE            "v.c.type"
 #define MS_V_CHARGE_PILOT           "v.c.pilot"
 #define MS_V_CHARGE_INPROGRESS      "v.c.charging"
+#define MS_V_CHARGE_LIMIT_RANGE     "v.c.limit.range"
+#define MS_V_CHARGE_LIMIT_SOC       "v.c.limit.soc"
 #define MS_V_CHARGE_DURATION_FULL   "v.c.duration.full"
 #define MS_V_CHARGE_DURATION_RANGE  "v.c.duration.range"
 #define MS_V_CHARGE_DURATION_SOC    "v.c.duration.soc"
@@ -182,11 +184,13 @@ class MetricsStandard
     OvmsMetricString* ms_v_charge_mode;       // standard, range, performance, storage
     OvmsMetricBool*   ms_v_charge_timermode;  // True if timer enabled
     OvmsMetricInt*    ms_v_charge_timerstart; // Time timer is due to start
-    OvmsMetricString* ms_v_charge_state;      // charging, topoff, done, preparing, stopped
+    OvmsMetricString* ms_v_charge_state;      // charging, topoff, done, preparing, heating, stopped
     OvmsMetricString* ms_v_charge_substate;   // tba...
     OvmsMetricString* ms_v_charge_type;       // undefined, type1, type2, chademo, roadster, teslaus, supercharger, ccs
     OvmsMetricBool*   ms_v_charge_pilot;      // Pilot signal present
     OvmsMetricBool*   ms_v_charge_inprogress; // True = currently charging
+    OvmsMetricFloat*  ms_v_charge_limit_range;      // Sufficient range limit for current charge [km]
+    OvmsMetricFloat*  ms_v_charge_limit_soc;        // Sufficient SOC limit for current charge [%]
     OvmsMetricInt*    ms_v_charge_duration_full;    // Estimated time remaing for full charge [min]
     OvmsMetricInt*    ms_v_charge_duration_range;   // … for sufficient range [min]
     OvmsMetricInt*    ms_v_charge_duration_soc;     // … for sufficient SOC [min]

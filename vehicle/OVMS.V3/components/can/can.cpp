@@ -33,7 +33,7 @@
 ; https://github.com/ThomasBarth/ESP32-CAN-Driver
 */
 
-#include "esp_log.h"
+#include "ovms_log.h"
 static const char *TAG = "can";
 
 #include "can.h"

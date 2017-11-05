@@ -130,6 +130,9 @@ class OvmsVehicle
     virtual vehicle_command_t CommandHomelink(uint8_t button);
 
   public:
+    virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
+
+  public:
     typedef struct
       {
       uint32_t txmoduleid;

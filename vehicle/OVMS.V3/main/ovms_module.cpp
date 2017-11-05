@@ -28,7 +28,7 @@
 ; THE SOFTWARE.
 */
 
-#include "esp_log.h"
+#include "ovms_log.h"
 static const char *TAG = "ovms-module";
 
 #include <stdio.h>
@@ -48,6 +48,7 @@ static const char *TAG = "ovms-module";
 #define NUMTAGS 3
 #define NAMELEN 16
 #define TASKLIST 10
+#define NOT_FOUND (TaskHandle_t)0xFFFFFFFF
 
 #ifndef configENABLE_MEMORY_DEBUG_DUMP
 #define NOGO 1
@@ -195,7 +196,7 @@ class TaskMap
       TaskHandle_t task = (TaskHandle_t)strtoul(name.bytes, &end, 16);
       if (*end == '\0')
         return task;
-      return NULL;
+      return NOT_FOUND;
       }
     UBaseType_t populate()
       {
@@ -476,7 +477,7 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
       {
       Name name(*tasks);
       TaskHandle_t tk = tm->find(name);
-      if (tk)
+      if (tk != NOT_FOUND)
         {
         *tl++ = tk;
         if (++tln == TASKLIST)
@@ -601,7 +602,7 @@ static void module_abort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
     get_tasks();
     get_memory(tasklist, 0);
     task = TaskMap::instance()->find(name);
-    if (!task)
+    if (task == NOT_FOUND)
       {
       writer->printf("Task %s does not exist\n", name.bytes);
       return;
@@ -615,7 +616,8 @@ static void module_abort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
     }
   mem_malloc_set_abort(task, size, count);
   }
-#endif
+
+#endif // NOGO
 
 
 static void module_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -630,6 +632,9 @@ class OvmsModuleInit
   OvmsModuleInit()
     {
     ESP_LOGI(TAG, "Initialising MODULE (5100)");
+#ifndef NOGO
+	TaskMap::instance()->insert(0x00000000, "no task");
+#endif
 
     OvmsCommand* cmd_module = MyCommandApp.RegisterCommand("module","Module framework",NULL);
     cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"[<task names or ids>]",0,TASKLIST,true);

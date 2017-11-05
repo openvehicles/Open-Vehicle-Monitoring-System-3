@@ -23,7 +23,7 @@
  * THE SOFTWARE.
  */
 
-#include "esp_log.h"
+#include "ovms_log.h"
 static const char *TAG = "v-renaulttwizy";
 
 #define VERSION "0.1.0"
@@ -103,7 +103,10 @@ void OvmsVehicleRenaultTwizy::ConfigChanged(OvmsConfigParam* param)
     cfg_maxrange = CFG_DEFAULT_MAXRANGE;
   
   cfg_suffsoc = MyConfig.GetParamValueInt("x.rt", "suffsoc");
+  *StdMetrics.ms_v_charge_limit_soc = (float) cfg_suffsoc;
+  
   cfg_suffrange = MyConfig.GetParamValueInt("x.rt", "suffrange");
+  *StdMetrics.ms_v_charge_limit_range = (float) cfg_suffrange;
   
   cfg_chargemode = MyConfig.GetParamValueInt("x.rt", "chargemode");
   cfg_chargelevel = MyConfig.GetParamValueInt("x.rt", "chargelevel");

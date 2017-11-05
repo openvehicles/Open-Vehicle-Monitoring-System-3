@@ -36,24 +36,41 @@
 #include "freertos/task.h"
 #include "pcp.h"
 #include "can.h"
+#include "ovms_metrics.h"
 
 class obd2pid
   {
   public:
-    obd2pid(int pid, bool internal=true);
+    typedef enum
+      {
+      Unimplemented,
+      Internal,
+      Metric,
+      Script
+      } pid_t;
+
+  public:
+    obd2pid(int pid, pid_t type=Unimplemented, OvmsMetric* metric=NULL);
     ~obd2pid();
 
   public:
-    bool IsInternal();
-    void SetInternal(bool internal=true);
+    int GetPid();
+    pid_t GetType();
+    const char* GetTypeString();
+    OvmsMetric* GetMetric();
+    void SetType(pid_t type);
+    void SetMetric(OvmsMetric* metric);
     void LoadScript(std::string path);
-    std::string GetScript();
-    void Execute();
+    float Execute();
+
+  public:
+    float InternalPid();
 
   protected:
     int m_pid;
-    bool m_internal;
+    pid_t m_type;
     std::string m_script;
+    OvmsMetric* m_metric;
   };
 
 typedef std::map<int, obd2pid*> PidMap;
