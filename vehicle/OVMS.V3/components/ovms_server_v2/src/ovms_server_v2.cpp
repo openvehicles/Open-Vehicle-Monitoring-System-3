@@ -574,19 +574,19 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
   buffer.append("MP-0 W");
   buffer.append(StandardMetrics.ms_v_tpms_fr_p->AsString("0",PSI));
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_fr_t->AsString());
+  buffer.append(StandardMetrics.ms_v_tpms_fr_t->AsString("0"));
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_tpms_rr_p->AsString("0",PSI));
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_rr_t->AsString());
+  buffer.append(StandardMetrics.ms_v_tpms_rr_t->AsString("0"));
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_tpms_fl_p->AsString("0",PSI));
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_fl_t->AsString());
+  buffer.append(StandardMetrics.ms_v_tpms_fl_t->AsString("0"));
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_tpms_rl_p->AsString("0",PSI));
   buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_rl_t->AsString());
+  buffer.append(StandardMetrics.ms_v_tpms_rl_t->AsString("0"));
 
   bool stale =
     StandardMetrics.ms_v_tpms_fl_t->IsStale() ||
