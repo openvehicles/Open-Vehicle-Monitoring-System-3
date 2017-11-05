@@ -49,7 +49,13 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
     void IncomingFrameCan2(CAN_frame_t* p_frame);
+
+  private:
+    void PollStart(void);
+    void PollContinue(CAN_frame_t* p_frame);
+    void SendCanMessage(uint16_t id, uint8_t length, uint8_t *data);
     void Ticker1(std::string event, void* data);
+    void Ticker60(std::string event, void* data);
   };
 
 #endif //#ifndef __VEHICLE_NISSANLEAF_H__

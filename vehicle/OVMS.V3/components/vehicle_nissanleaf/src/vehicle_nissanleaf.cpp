@@ -49,6 +49,19 @@ typedef enum
   CHARGER_STATUS_FINISHED
   } ChargerStatus;
 
+typedef enum
+  {
+  ZERO = 0,
+  ONE = 1,
+  TWO = 2,
+  THREE = 3,
+  FOUR = 4,
+  FIVE = 5,
+  IDLE = 6
+  } PollState;
+
+PollState nl_poll_state = IDLE;
+
 OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   {
   ESP_LOGI(TAG, "Nissan Leaf v3.0 vehicle module");
@@ -59,11 +72,40 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicleNissanLeaf::Ticker1, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "ticker.60", std::bind(&OvmsVehicleNissanLeaf::Ticker60, this, _1, _2));
   }
 
 OvmsVehicleNissanLeaf::~OvmsVehicleNissanLeaf()
   {
   ESP_LOGI(TAG, "Shutdown Nissan Leaf vehicle module");
+  }
+
+////////////////////////////////////////////////////////////////////////
+// vehicle_nissanleaf_SendCanMessage()
+// Send the specified can frame. Does nothing if FEATURE_CANWRITE is not set,
+// does nothing if length > 8.
+//
+// TODO is there already a similar method somewhere? Move to the can object?
+
+void OvmsVehicleNissanLeaf::SendCanMessage(uint16_t id, uint8_t length, uint8_t *data)
+  {
+  // TODO
+  //if (sys_features[FEATURE_CANWRITE] == 0 || length > 8)
+  if (length > 8)
+    {
+    return;
+    }
+
+  CAN_frame_t frame;
+  memset(&frame,0,sizeof(frame));
+
+  frame.origin = m_can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = length;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = id;
+  memcpy(frame.data.u8, data, length);
+  m_can1->Write(&frame);
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -162,6 +204,83 @@ void vehicle_nissanleaf_charger_status(ChargerStatus status)
     // TODO the charger probably knows the line voltage, when we find where it's
     // coded, don't zero it out when we're plugged in but not charging
     StandardMetrics.ms_v_charge_voltage->SetValue(0);
+    }
+  }
+
+////////////////////////////////////////////////////////////////////////
+// PollStart()
+// Send the initial message to poll for data. Further data is requested
+// in vehicle_nissanleaf_poll_continue() after the recept of each page.
+//
+
+void OvmsVehicleNissanLeaf::PollStart(void)
+  {
+  // Request Group 1
+  uint8_t data[] = {0x02, 0x21, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00};
+  nl_poll_state = ZERO;
+  SendCanMessage(0x79b, 8, data);
+  }
+
+////////////////////////////////////////////////////////////////////////
+// vehicle_nissanleaf_poll_continue()
+// Process a 0x7bb polling response and request the next page
+//
+
+void OvmsVehicleNissanLeaf::PollContinue(CAN_frame_t* p_frame)
+  {
+  uint8_t *d = p_frame->data.u8;
+  uint16_t hx;
+  uint32_t ah;
+  if (nl_poll_state == IDLE)
+    {
+    // we're not expecting anything, maybe something else is polling?
+    return;
+    }
+  if ((d[0] & 0x0f) != nl_poll_state)
+    {
+    // not the page we were expecting, abort
+    nl_poll_state = IDLE;
+    return;
+    }
+
+  switch (nl_poll_state)
+    {
+    case IDLE:
+      // this isn't possible due to the idle check above
+      abort();
+    case ZERO:
+    case ONE:
+    case TWO:
+    case THREE:
+      // TODO this might not be idomatic C++ but I want to keep the delta to
+      // the v2 code small until the porting is finished
+      nl_poll_state = static_cast<PollState>(static_cast<int>(nl_poll_state) + 1);
+      break;
+    case FOUR:
+      hx = d[2];
+      hx = hx << 8;
+      hx = hx | d[3];
+      // LeafSpy calculates SOH by dividing Ah by the nominal capacity.
+      // Since SOH is derived from Ah, we don't bother storing it separately.
+      // Instead we store Ah in CAC (below) and store Hx in SOH.
+      StandardMetrics.ms_v_bat_soh->SetValue(hx / 100.0);
+      nl_poll_state = static_cast<PollState>(static_cast<int>(nl_poll_state) + 1);
+      break;
+    case FIVE:
+      ah = d[2];
+      ah = ah << 8;
+      ah = ah | d[3];
+      ah = ah << 8;
+      ah = ah | d[4];
+      StandardMetrics.ms_v_bat_cac->SetValue(ah / 10000.0);
+      nl_poll_state = IDLE;
+      break;
+    }
+  if (nl_poll_state != IDLE)
+    {
+    // request the next page of data
+    uint8_t next[] = {0x30, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    this->SendCanMessage(0x79b, 8, next);
     }
   }
 
@@ -351,6 +470,9 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_bat_temp->SetValue(d[2] / 2 - 40);
         }
       break;
+    case 0x7bb:
+      PollContinue(p_frame);
+      break;
     }
   }
 
@@ -370,6 +492,16 @@ void OvmsVehicleNissanLeaf::Ticker1(std::string event, void* data)
   if (StandardMetrics.ms_v_env_on->IsStale())
     {
     vehicle_nissanleaf_car_on(false);
+    }
+  }
+
+void OvmsVehicleNissanLeaf::Ticker60(std::string event, void* data)
+  {
+  if (StandardMetrics.ms_v_env_on->AsBool())
+    {
+    // we only poll while the car is on -- polling at other times causes a
+    // relay to click
+    PollStart();
     }
   }
 
