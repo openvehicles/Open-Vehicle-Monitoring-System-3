@@ -66,6 +66,7 @@
 #define MS_V_BAT_RANGE_EST          "v.b.range.est"
 #define MS_V_BAT_12V_VOLTAGE        "v.b.12v.voltage"
 #define MS_V_BAT_12V_CURRENT        "v.b.12v.current"
+#define MS_V_BAT_TEMP               "v.b.temp"
 
 #define MS_V_CHARGE_VOLTAGE         "v.c.voltage"
 #define MS_V_CHARGE_CURRENT         "v.c.current"
@@ -85,12 +86,12 @@
 #define MS_V_CHARGE_DURATION_FULL   "v.c.duration.full"
 #define MS_V_CHARGE_DURATION_RANGE  "v.c.duration.range"
 #define MS_V_CHARGE_DURATION_SOC    "v.c.duration.soc"
+#define MS_V_CHARGE_TEMP            "v.c.temp"
 
 #define MS_V_INV_TEMP               "v.i.temp"
-#define MS_V_BAT_TEMP               "v.b.temp"
+
+#define MS_V_MOT_RPM                "v.m.rpm"
 #define MS_V_MOT_TEMP               "v.m.temp"
-#define MS_V_CHARGE_TEMP            "v.c.temp"
-#define MS_V_ENV_TEMP               "v.e.temp"
 
 #define MS_V_DOOR_FL                "v.d.fl"
 #define MS_V_DOOR_FR                "v.d.fr"
@@ -115,6 +116,7 @@
 #define MS_V_ENV_PARKTIME           "v.e.parktime"
 #define MS_V_ENV_CTRL_LOGIN         "v.e.c.login"
 #define MS_V_ENV_CTRL_CONFIG        "v.e.c.config"
+#define MS_V_ENV_TEMP               "v.e.temp"
 
 #define MS_V_POS_GPSLOCK            "v.p.gpslock"
 #define MS_V_POS_SATCOUNT           "v.p.satcount"
@@ -175,7 +177,8 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_bat_range_est;     // Estimated range [km]
     OvmsMetricFloat*  ms_v_bat_12v_voltage;   // Auxiliary 12V battery momentary voltage [V]
     OvmsMetricFloat*  ms_v_bat_12v_current;   // Auxiliary 12V battery momentary current [A]
-    
+    OvmsMetricFloat*  ms_v_bat_temp;          // Battery temperature [°C]
+
     OvmsMetricFloat*  ms_v_charge_voltage;    // Momentary charger supply voltage [V]
     OvmsMetricFloat*  ms_v_charge_current;    // Momentary charger output current [A]
     OvmsMetricFloat*  ms_v_charge_climit;     // Maximum charger output current [A]
@@ -194,13 +197,13 @@ class MetricsStandard
     OvmsMetricInt*    ms_v_charge_duration_full;    // Estimated time remaing for full charge [min]
     OvmsMetricInt*    ms_v_charge_duration_range;   // … for sufficient range [min]
     OvmsMetricInt*    ms_v_charge_duration_soc;     // … for sufficient SOC [min]
-    
-    OvmsMetricFloat*  ms_v_inv_temp;          // Inverter temperature [°C]
-    OvmsMetricFloat*  ms_v_bat_temp;          // Battery temperature [°C]
-    OvmsMetricFloat*  ms_v_mot_temp;          // Motor temperature [°C]
     OvmsMetricFloat*  ms_v_charge_temp;       // Charger temperature [°C]
-    OvmsMetricFloat*  ms_v_env_temp;          // Ambient temperature [°C]
-    
+
+    OvmsMetricFloat*  ms_v_inv_temp;          // Inverter temperature [°C]
+
+    OvmsMetricInt*    ms_v_mot_rpm;           // Motor speed (RPM)
+    OvmsMetricFloat*  ms_v_mot_temp;          // Motor temperature [°C]
+
     OvmsMetricBool*   ms_v_door_fl;
     OvmsMetricBool*   ms_v_door_fr;
     OvmsMetricBool*   ms_v_door_rl;
@@ -224,7 +227,8 @@ class MetricsStandard
     OvmsMetricInt*    ms_v_env_parktime;
     OvmsMetricBool*   ms_v_env_ctrl_login;
     OvmsMetricBool*   ms_v_env_ctrl_config;
-    
+    OvmsMetricFloat*  ms_v_env_temp;          // Ambient temperature [°C]
+
     OvmsMetricBool*   ms_v_pos_gpslock;
     OvmsMetricInt*    ms_v_pos_satcount;
     OvmsMetricFloat*  ms_v_pos_latitude;
