@@ -41,6 +41,7 @@ static const char *TAG = "obd2ecu";
 #include "ovms_peripherals.h"
 #include "metrics_standard.h"
 
+
 obd2pid::obd2pid(int pid, pid_t type, OvmsMetric* metric)
   {
   m_pid = pid;
@@ -135,26 +136,11 @@ float obd2pid::Execute()
 
 float obd2pid::InternalPid()
   {
-  if (m_metric) return m_metric->AsFloat();
-
-  int jitter = time(NULL)&0xf;  /* 0-15 range for simulation purposes */
-
-  float result = 0;
-  switch (m_pid)
-    {
-    case 0x0c:
-      result = StandardMetrics.ms_v_pos_speed->AsFloat()*70+jitter;
-      if (StandardMetrics.ms_v_pos_speed->AsFloat() == 0)
-        result = 500+jitter; // Minimum RPM to keep HUD from going to sleep if not moving
-      break;
-    case 0x10:
-      result = StandardMetrics.ms_v_bat_soc->AsFloat()/(float)3.3;
-      break;
-    default:
+    if (m_metric) return m_metric->AsFloat();
+    else
+    { printf("InternalPID %x not a metric\n",m_pid);
       return 0;
     }
-
-  return result;
   }
 
 static void OBD2ECU_task(void *pvParameters)
@@ -184,7 +170,6 @@ obd2ecu::obd2ecu(const char* name, canbus* can)
   m_can->SetPowerMode(On);
 
   m_starttime = time(NULL);
-  m_private = MyConfig.GetParamValueBool("obd2ecu","private");
 
   LoadMap();
 
@@ -240,21 +225,6 @@ void obd2ecu_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     }
   }
   
-void obd2ecu_privacy(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-    if(MyPeripherals->m_obd2ecu == NULL) 
-    { writer->puts("OBDII:  Need to start ecu process first");
-      return;
-    }
-    if(!strcmp(argv[0],"on")) MyPeripherals->m_obd2ecu->m_private = 1;
-       else if(!strcmp(argv[0],"off")) MyPeripherals->m_obd2ecu->m_private = 0;
-        else 
-        { writer->puts("OBDII Privacy: Need 'on' or 'off'");
-          return;
-        }
-    
-    writer->puts("OBDII Privacy has been set");
-  } 
 
 void obd2ecu_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -296,31 +266,119 @@ void obd2ecu_reload(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   writer->puts("OBDII ECU pid map reloaded");
   }
 
+  
+  /* PID Format Table  (see: https://en.wikipedia.org/widi/OBD-II_PIDs )
+
+00 = no data (return zeros)
+01 = A (one byte)
+02 = Percent:  100*A/255
+03 = 16 bit integer divided by 4:  (256*A+B)/4
+04 = A offset by 40:  A-40
+05 = 16 bit unsigned integer:  256*A+B
+06 = 0 to 655.35:  (256*A+B)/100
+07 = 3A:  A*3
+08 = A/2 - 64:  (A/2)-64
+09 = 100A/128-100
+10 = Bit Vector - A / B / C / D
+
+99 = not implemented
+
+*/
+
+/* Index this table by PID */
+
+static uint8_t pid_format[] = 
+{10,  // 00 PIDs supported
+ 10,  // 01 Monitor status since DTCs cleared (bit vector)
+  0,  // 02 Freeze DTC
+ 10,  // 03 Fuel System Status
+  2,  // 04 Engine load
+  4,  // 05 Coolant Temperature
+  9,  // 06 short term fuel trim bank 1
+  9,  // 07 long term fuel trim bank 1
+  9,  // 08 short term fuel trim bank 2
+  9,  // 09 long term fuel trim bank 2
+  7,  // 10 Fuel pressure
+  1,  // 11 Intake manifold pressure
+  3,  // 12 Engine RPM
+  1,  // 13 vehicle speed
+  8,  // 14 Timing Advance
+  4,  // 15 Intake air Temperature
+  6,  // 16 MAF Air flow rate
+  2,  // 17 Throttle position
+ 10,  // 18 Commanded secondary air status
+ 99,  // 19 O2 sensors present (huh?)
+ 99,  // 20 O2 sensor 1
+ 99,  // 21 O2 sensor 2
+ 99,  // 22 O2 sensor 3
+ 99,  // 23 O2 sensor 4
+ 99,  // 24 O2 sensor 5
+ 99,  // 25 O2 sensor 6
+ 99,  // 26 O2 sensor 7
+ 99,  // 27 O2 sensor 8
+ 10,  // 28 OBD standards
+ 99,  // 29 O2 sensors present (huh?)
+ 99,  // 30 PTO status
+  5,  // 31 Run time since engine start
+ 10,  // 32 PIDs supported
+  5,  // 33 Distance traveled with check engine light on
+ 99,  // 34 
+ 99,  // 35 
+ 99,  // 36 
+ 99,  // 37 
+ 99,  // 38 
+ 99,  // 39 
+ 99,  // 40 
+ 99,  // 41 
+ 99,  // 42 
+ 99,  // 43 
+ 99,  // 44 
+ 99,  // 45 
+ 99,  // 46 
+  2,  // 47 Fuel tank level
+ 99,  // 48 
+ 99,  // 49 
+ 99,  // 50 
+  1,  // 51 Barometric pressure
+ 99,  // 52 
+ 99,  // 53 
+ 99,  // 54 
+ 99,  // 55 
+ 99,  // 56 
+ 99,  // 57 
+ 99,  // 58 
+ 99,  // 59 
+ 99,  // 60 
+ 99,  // 61 
+ 99,  // 62 
+ 99,  // 63 
+ 10   // 64 PIDs supported 
+};
+  
 //
 // Fill Mode 1 frames with data based on format specified
 //
 void obd2ecu::FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint8_t format)
   {
-  uint8_t a,b;
+  uint8_t a,b,c,d;
   int i;
 
   /* Formats are defined as "Formula" on Wikipedia "OBD-II_PIDs" page. */
   /* Note that we need to apply the inverse, to derive the A and B values from the intended metric */
-
+  
+  a=b=c=d=0;
+  
   switch(format)  
     {
     case 0:  /* no data (send zeros) */
-      a = b = 0;
       break;
 			
     case 1:  /* A only (one byte) */
       a = (int)data;
-      b = 0;
       break;
 		
     case 2:  /* Percent: 100*A/255 */
       a = (int)((data*255)/100);
-      b = 0;
       break;
 			
     case 3:  /* 16 bit integer divided by 4: (256*A+B)/4  */
@@ -337,7 +395,6 @@ void obd2ecu::FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint
 			
     case 4:  /* A offset by 40:  A-40  */
       a = (int)data+40;
-      b = 0;
       break;
 			
     case 5:  /* 16 bit unsigned data:  256*A+B */
@@ -356,10 +413,32 @@ void obd2ecu::FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint
       a = (i&0xff00)>>8;
       b = i&0xff;
       break;
-			
+      
+    case 7:  /* 3A:  A*3  */
+      a = data/3.0;
+      break;
+      
+    case 8:  /* A/2 - 64:  (A/2)-64 */
+      a = (data+64)*2.0;
+      break;
+      
+    case 9:  /* (100*A)/128 - 100 */
+      a = (data+100.0)*1.28;
+      break;
+      
+    case 10:  /* A, B, C, D Bit vector */
+      a = (((int)data) >> 24) & 0xff;
+      b = (((int)data) >> 16) & 0xff;
+			c = (((int)data) >> 8) & 0xff;
+      d = ((int)data) & 0xff;
+      break;
+      
+    case 99:  /* Unimplemented but not an error. return zeros */ 
+      break;
+      
     default:
       if (verbose) ESP_LOGI(TAG, "Unsupported format %d",format);
-      a = b = 0;  /* default to empty data */
+      /* default to empty data */
       break;
     }
     
@@ -374,12 +453,13 @@ void obd2ecu::FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint
   frame->data.u8[2] = pid;
   frame->data.u8[3] = a;
   frame->data.u8[4] = b;
-  frame->data.u8[5] = 0;
-  frame->data.u8[6] = 0;			
+  frame->data.u8[5] = c;
+  frame->data.u8[6] = d;			
   frame->data.u8[7] = 0x55;   /* pad 0x55 */
 
-  return;			
+  return;
   }
+  
 
 void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
   { 
@@ -419,14 +499,22 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
   switch(p_d[1])  /* switch on the incoming frame mode */
     {
     case 1:  /* Mode 1 (main real-time PIDs are here */
-      /* Fetch what the HUD/Dongle request maps to for the simulated vehicle */
-      /* For now, just use a static mapping for the common items, and simulate the rest. */
-      /* Eventually, the link to Duktape will probably be in here, somehow */
-      mapped_pid = p_d[2];  
+
+      mapped_pid = p_d[2];
+      if (m_pidmap.find(mapped_pid) != m_pidmap.end()) // m_pidmap[pid] contains the obd2pid object to work with
+      { metric = m_pidmap[mapped_pid]->Execute();
+      }
+      else
+      { if (MyConfig.GetParamValueBool("obd2ecu","autocreate"))
+        m_pidmap[mapped_pid] = new obd2pid(mapped_pid); // Creates it as Unimplemented, by default
+        metric = 0.0;
+      }
+      
       switch (mapped_pid)  /* switch on the what the requested PID maps to. */
         {
         case 0:  /* request capabilities */
           /* This is a bitmap of the Mode 1 PIDs that we will act on from the HUD/Dongle */
+// TODO: need to create proper bitmap based on what PIDs are actually mapped          
           r_frame.origin = NULL;
           r_frame.FIR.U = 0;
           r_frame.FIR.B.DLC = 8;
@@ -442,6 +530,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[7] = 0x55;  /* pad 0x55 */
           m_can->Write(&r_frame);
           break;
+          
         case 1: /* request status since DTC Cleared */
           /* Note: Even setting [7]=0xff and DTC count=0, the dongle still requests DTC stuff. */
           r_frame.origin = NULL;
@@ -459,84 +548,30 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[7] = 0xff;  /* nothing ready yet (or ever) */
           m_can->Write(&r_frame);
           break;
+          
         case 0x0c:	/* Engine RPM */
           /* This item (only) needs to vary to prevent SyncUp Drive dongle from going to sleep */
-          /* For now, derive RPM from vehicle speed. Roadster ratio:  14,000 rpm div by 201 km/h = 70 */
-          /* adding "jitter" to keep the dongle from going to sleep. ASSUME: speed is in km/h, not mph*/
-          metric = StandardMetrics.ms_v_pos_speed->AsFloat()*70+jitter;
-          if(StandardMetrics.ms_v_pos_speed->AsFloat() == 0) metric = 500+jitter;   // Minimum RPM to keep HUD from going to sleep if not moving
-          FillFrame(&r_frame,reply,mapped_pid,metric,3);
+          /* Also a Minimum "idle" RPM, but only if not moving, for HUD device */
+          
+          metric = metric*70.0+jitter;  //TODO: remove this when real RPM metric is created
+          
+// TODO: test if metric is from a script; if so, don't do the dongle workarounds (script will do this if needed)     
+
+          if(metric < 1.0) metric = 500+jitter; 
+          FillFrame(&r_frame,reply,mapped_pid,metric,pid_format[mapped_pid]);
           m_can->Write(&r_frame);
           break;
-        case 0x0d:	/* Vehicle speed */
-          metric = StandardMetrics.ms_v_pos_speed->AsFloat();
-          FillFrame(&r_frame,reply,mapped_pid,metric,1);
-          m_can->Write(&r_frame);
-          break;
-        case 0x05:	/* Coolant Temp - Use Motor temp */
-          metric = StandardMetrics.ms_v_mot_temp->AsFloat();
-          FillFrame(&r_frame,reply,mapped_pid,metric,4);
-          m_can->Write(&r_frame);
-          break;
+
         case 0x10:	/* MAF (Mass Air flow) rate - Map to SoC */
           /* For some reason, the HUD uses this param as a proxy for fuel rate */
-          /* NO clue what the conversion formula is, but seems to have a display range of 0-19.9 */
-          /* If configured with 11 as "Emission Setting" and 52% for "fuel connsumption" metrics */
-          /* will display 0-10.0 for 0-100% with input of 0-33.  Use with display sete to L/hr (not L/km).  */
-          metric = StandardMetrics.ms_v_bat_soc->AsFloat()/(float)3.3;
-          FillFrame(&r_frame,reply,mapped_pid,metric,6);
+          /* HUD devices seem to have a display range of 0-19.9 */
+          /* Scaling provides a 1:1 metric pass-through, so be aware of limmits of the display device */
+          /* Use with display set to L/hr (not L/km).  */
+          metric = metric*3.0;
+          FillFrame(&r_frame,reply,mapped_pid,metric,pid_format[mapped_pid]);
           m_can->Write(&r_frame);
           break;
 			
-        //  Simulations below for additional PIDs requested by "SyncUp Drive" dongle.  Reply is apparently not critical                  
-        case 0x04:	/* Engine load - simulate 45% */
-          metric = 0x75-jitter;
-          FillFrame(&r_frame,reply,mapped_pid,metric,1);
-          m_can->Write(&r_frame);
-          break;
-        case 0x0f:	/* Air intake temp - simulate 20c */
-          metric = 0x3c+jitter;
-          FillFrame(&r_frame,reply,mapped_pid,metric,1);
-          m_can->Write(&r_frame);
-          break;
-        case 0x11:	/* throttle position - simulate 15% */
-          metric = 15+jitter;
-          FillFrame(&r_frame,reply,mapped_pid,metric,2);
-          m_can->Write(&r_frame);
-          break;
-        case 0x21:	/* Distance traveled with check engine - say none */
-          metric = 0;
-          FillFrame(&r_frame,reply,mapped_pid,metric,0);
-          m_can->Write(&r_frame);
-          break;
-        case 0x2f:	/* Fuel tank level - simulate 80% */
-          metric = 0xcc-jitter;
-          FillFrame(&r_frame,reply,mapped_pid,metric,1);
-          m_can->Write(&r_frame);
-          break;
-        case 0x31:	/* Distance since codes cleared - simulate @ 60mph */
-          since_start = (time(NULL)-m_starttime)/60;
-          metric = since_start;
-          FillFrame(&r_frame,reply,mapped_pid,metric,5);
-          m_can->Write(&r_frame);
-          break;
-        case 0x0b:	/* Manifold pressure - simulate 10kpa */
-          metric = 10+jitter;
-          FillFrame(&r_frame,reply,mapped_pid,metric,1);
-          m_can->Write(&r_frame);
-          break;
-        case 0x1f:	/* Runtime since engine start - #secs since prog start */
-          since_start = time(NULL)-m_starttime;
-          if (verbose) ESP_LOGI(TAG, "Reporting running for %d seconds",(int)since_start);
-          metric = since_start;
-          FillFrame(&r_frame,reply,mapped_pid,metric,5);
-          m_can->Write(&r_frame);
-          break;
-        case 0x0a:	/* fuel pressure - simulate 18kpa */
-          metric = 18+jitter;
-          FillFrame(&r_frame,reply,mapped_pid,metric,1);
-          m_can->Write(&r_frame);
-          break;
         case 0x20:  /* request more capabilities */
           r_frame.origin = NULL;
           r_frame.FIR.U = 0;
@@ -553,6 +588,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[7] = 0x55;  /* pad 0x55 */
           m_can->Write(&r_frame);
           break;
+          
         case 0x40:  /* request more capabilities: none */
           r_frame.origin = NULL;
           r_frame.FIR.U = 0;
@@ -569,8 +605,24 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[7] = 0x55;  /* pad 0x55 */
           m_can->Write(&r_frame);
           break;
-        default:
-          ESP_LOGI(TAG, "unknown capability requested %x",r_frame.data.u8[2]);
+          
+        case 0x1f:	/* Runtime since engine start - #secs since prog start */
+          since_start = time(NULL)-m_starttime;
+          if (verbose) ESP_LOGI(TAG, "Reporting running for %d seconds",(int)since_start);
+          metric = since_start;
+          FillFrame(&r_frame,reply,mapped_pid,metric,pid_format[mapped_pid]);
+          m_can->Write(&r_frame);
+          break;
+          
+        default:  /* most PIDs get processed here */
+          if(mapped_pid > sizeof(pid_format))
+          { ESP_LOGI(TAG, "unknown capability requested %x",r_frame.data.u8[2]);
+            break;
+          }
+          
+          FillFrame(&r_frame,reply,mapped_pid,metric,pid_format[mapped_pid]);
+          m_can->Write(&r_frame);
+          
 	}
       break;
 
@@ -580,7 +632,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
         case 2:
           if(verbose) ESP_LOGI(TAG, "Requested VIN");
           
-          if(m_private)   /* ignore request for privacy's sake. Doesn't seem to matter to Dongle. */
+          if(MyConfig.GetParamValueBool("obd2ecu","private"))   /* ignore request for privacy's sake. Doesn't seem to matter to Dongle. */
           { if(verbose) ESP_LOGI(TAG, "VIN request ignored");
             break;
           }
@@ -700,28 +752,33 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
 void obd2ecu::LoadMap()
   {
   ClearMap();
-  m_pidmap[0x05] = new obd2pid(0x05,obd2pid::Internal,StandardMetrics.ms_v_mot_temp);   // Coolant Temperature
-  m_pidmap[0x0c] = new obd2pid(0x0c,obd2pid::Internal);                                 // Engine RPM
+  // Create default PID maps
+  m_pidmap[0x04] = new obd2pid(0x04,obd2pid::Internal,StandardMetrics.ms_v_bat_soc);    // Engine load (use as proxy for SoC)
+  m_pidmap[0x05] = new obd2pid(0x05,obd2pid::Internal,StandardMetrics.ms_v_mot_temp);   // Coolant Temperature (use motor temp)
+  m_pidmap[0x0c] = new obd2pid(0x0c,obd2pid::Internal,StandardMetrics.ms_v_pos_speed);  // Engine RPM TODO:  Need real metric for RPM
   m_pidmap[0x0d] = new obd2pid(0x0d,obd2pid::Internal,StandardMetrics.ms_v_pos_speed);  // Vehicle Speed
-  m_pidmap[0x10] = new obd2pid(0x10,obd2pid::Internal);                                 // Mass Air Flow
+  m_pidmap[0x10] = new obd2pid(0x10,obd2pid::Internal,StandardMetrics.ms_v_bat_power);  // Mass Air Flow  (Note: display limited 0-19.9 on HUDs)
 
   // Look for metric overrides...
   OvmsConfigParam* cm = MyConfig.CachedParam("obd2ecu.map");
   for (ConfigParamMap::iterator it=cm->m_map.begin(); it!=cm->m_map.end(); ++it)
     {
     int pid = atoi(it->first.c_str());
+
     OvmsMetric* m = MyMetrics.Find(it->second.c_str());
-    if ((pid>0)&&m)
+    if ((pid>0) && m)
       {
-      ESP_LOGI(TAG, "Using custom metric for pid#%d",pid);
+      ESP_LOGI(TAG, "Using custom metric for pid #%d (0x%02x)",pid,pid);
       if (m_pidmap.find(pid) == m_pidmap.end())
-        m_pidmap[pid] = new obd2pid(pid,obd2pid::Metric,m);
+      { m_pidmap[pid] = new obd2pid(pid,obd2pid::Metric,m);
+      }
       else
-        {
-        m_pidmap[pid]->SetType(obd2pid::Metric);
-        m_pidmap[pid]->SetMetric(m);
+        { ESP_LOGI(TAG, "Updating custom metric for pid #%d (0x%02x)",pid,pid);
+          m_pidmap[pid]->SetType(obd2pid::Metric);
+          m_pidmap[pid]->SetMetric(m);
         }
       }
+      else if(pid) ESP_LOGI(TAG, "Metric '%s' not found",it->second.c_str());
     }
 
   // Look for scripts (if javascript enabled)...
@@ -775,7 +832,6 @@ obd2ecuInit::obd2ecuInit()
   cmd_start->RegisterCommand("can2","Start an OBDII ECU on can2",obd2ecu_start, "", 0, 0);
   cmd_start->RegisterCommand("can3","Start an OBDII ECU on can3",obd2ecu_start, "", 0, 0);
   cmd_ecu->RegisterCommand("stop","Stop the OBDII ECU",obd2ecu_stop, "", 0, 0);
-  cmd_ecu->RegisterCommand("privacy","Set Privacy on/off (hide / allow VIN reporting)",obd2ecu_privacy, "", 1, 1, true);
   cmd_ecu->RegisterCommand("list","Show OBDII ECU pid list",obd2ecu_list, "", 0, 1);
   cmd_ecu->RegisterCommand("reload","Reload OBDII ECU pid map",obd2ecu_reload, "", 0, 0);
 
