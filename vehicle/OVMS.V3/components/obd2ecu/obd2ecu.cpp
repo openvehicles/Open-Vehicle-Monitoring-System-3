@@ -281,7 +281,7 @@ void obd2ecu_reload(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
 07 = 3A:  A*3
 08 = A/2 - 64:  (A/2)-64
 09 = 100A/128-100
-10 = Bit Vector - A / B / C / D
+10 = Bit Vector - A / B / C / D  (FIXME: this doesn't quite work due to precision)
 
 99 = not implemented
 
@@ -516,7 +516,8 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
         {
         case 0:  /* request capabilities */
           /* This is a bitmap of the Mode 1 PIDs that we will act on from the HUD/Dongle */
-// TODO: need to create proper bitmap based on what PIDs are actually mapped          
+// TODO: need to create proper bitmap based on what PIDs are actually mapped, also for PID 0x20 and 0x40
+//       For now, report default PIDs.  Use 'obdii ecu list' to see what was requested
           r_frame.origin = NULL;
           r_frame.FIR.U = 0;
           r_frame.FIR.B.DLC = 8;
@@ -526,9 +527,9 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[1] = 0x41;  /* Mode 1 + 0x40 indicating a reply */
           r_d[2] = 0x00;
           r_d[3] = 0x18;  /* 04, 05 */
-          r_d[4] = 0x3b;  /* 0b, 0c, 0d, 0f, 10 */
-          r_d[5] = 0x80;  /* 11 */
-          r_d[6] = 0x02;  /* 1f */	
+          r_d[4] = 0x19;  /* 0c, 0d, 10 */
+          r_d[5] = 0x00;
+          r_d[6] = 0x00;	
           r_d[7] = 0x55;  /* pad 0x55 */
           m_can->Write(&r_frame);
           break;
@@ -555,11 +556,11 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           /* This item (only) needs to vary to prevent SyncUp Drive dongle from going to sleep */
           /* Also a Minimum "idle" RPM, but only if not moving, for HUD device */
           
-          metric = metric*70.0+jitter;  //TODO: remove this when real RPM metric is created
-          
-// TODO: test if metric is from a script; if so, don't do the dongle workarounds (script will do this if needed)     
+// TODO: test if metric is from a script; if so, don't do the dongle workarounds (script will do this if needed)
 
-          if(metric < 1.0) metric = 500+jitter; 
+          metric = metric+jitter;
+          if(StandardMetrics.ms_v_pos_speed->AsFloat() < 1.0) metric = 500+jitter;
+          
           FillFrame(&r_frame,reply,mapped_pid,metric,pid_format[mapped_pid]);
           m_can->Write(&r_frame);
           break;
@@ -583,9 +584,9 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[0] = 6;		/* # additional bytes (ok to have extra) */
           r_d[1] = 0x41;  /* Mode 1 + 0x40 indicating a reply */
           r_d[2] = 0x20;
-          r_d[3] = 0x08;  /* 21 */
-          r_d[4] = 0x02;  /* 2f */
-          r_d[5] = 0x80;  /* 31 */
+          r_d[3] = 0x00;
+          r_d[4] = 0x00;
+          r_d[5] = 0x00;
           r_d[6] = 0x00;	
           r_d[7] = 0x55;  /* pad 0x55 */
           m_can->Write(&r_frame);
@@ -757,7 +758,7 @@ void obd2ecu::LoadMap()
   // Create default PID maps
   m_pidmap[0x04] = new obd2pid(0x04,obd2pid::Internal,StandardMetrics.ms_v_bat_soc);    // Engine load (use as proxy for SoC)
   m_pidmap[0x05] = new obd2pid(0x05,obd2pid::Internal,StandardMetrics.ms_v_mot_temp);   // Coolant Temperature (use motor temp)
-  m_pidmap[0x0c] = new obd2pid(0x0c,obd2pid::Internal,StandardMetrics.ms_v_pos_speed);  // Engine RPM TODO:  Need real metric for RPM
+  m_pidmap[0x0c] = new obd2pid(0x0c,obd2pid::Internal,StandardMetrics.ms_v_mot_rpm);    // Engine RPM TODO:  Need real metric for RPM
   m_pidmap[0x0d] = new obd2pid(0x0d,obd2pid::Internal,StandardMetrics.ms_v_pos_speed);  // Vehicle Speed
   m_pidmap[0x10] = new obd2pid(0x10,obd2pid::Internal,StandardMetrics.ms_v_bat_power);  // Mass Air Flow  (Note: display limited 0-19.9 on HUDs)
 
