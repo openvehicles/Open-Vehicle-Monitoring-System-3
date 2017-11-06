@@ -319,7 +319,7 @@ static uint8_t pid_format[] =
  10,  // 28 OBD standards
  99,  // 29 O2 sensors present (huh?)
  99,  // 30 PTO status
-  3,  // 31 Run time since engine start
+  5,  // 31 Run time since engine start
  10,  // 32 PIDs supported
   5,  // 33 Distance traveled with check engine light on
  99,  // 34 
@@ -610,7 +610,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           since_start = time(NULL)-m_starttime;
           if (verbose) ESP_LOGI(TAG, "Reporting running for %d seconds",(int)since_start);
           metric = since_start;
-          FillFrame(&r_frame,reply,mapped_pid,metric,5);
+          FillFrame(&r_frame,reply,mapped_pid,metric,pid_format[mapped_pid]);
           m_can->Write(&r_frame);
           break;
           
