@@ -430,7 +430,15 @@ void OvmsServerV2::TransmitMsgStat(bool always)
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_charge_current->AsString("0",Other,0).c_str());
   buffer.append(",");
-  buffer.append("stopped");  // car_chargestate
+  // TODO v2 protocol defines more charge states in car_chargestate
+  if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+    {
+    buffer.append("charging");
+    }
+  else
+    {
+    buffer.append("stopped");
+    }
   buffer.append(",");
   buffer.append("standard");  // car_chargemode
   buffer.append(",");
@@ -446,9 +454,19 @@ void OvmsServerV2::TransmitMsgStat(bool always)
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_charge_kwh->AsString("0"));
   buffer.append(",");
-  buffer.append("0");  // car_chargesubstate
-  buffer.append(",");
-  buffer.append("0");  // car_chargestate
+  // TODO v2 protocol defines more charge states in car_chargesubstate and car_chargestate
+  if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+    {
+    buffer.append("3");  // car_chargesubstate
+    buffer.append(",");
+    buffer.append("1");  // car_chargestate
+    }
+  else
+    {
+    buffer.append("0");  // car_chargesubstate
+    buffer.append(",");
+    buffer.append("21"); // car_chargestate
+    }
   buffer.append(",");
   buffer.append("0");  // car_chargemode
   buffer.append(",");
