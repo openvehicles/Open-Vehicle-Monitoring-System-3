@@ -33,6 +33,8 @@ static const char *TAG = "ovms-server-v2";
 
 #include <string.h>
 #include <sstream>
+#include <iostream>
+#include <iomanip>
 #include "ovms_command.h"
 #include "ovms_config.h"
 #include "metrics_standard.h"
@@ -405,93 +407,111 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     StandardMetrics.ms_v_bat_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_charge_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_charge_current->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_state->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_mode->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_bat_range_ideal->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_bat_range_est->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_charge_climit->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_minutes->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_charge_kwh->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_timermode->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_timerstart->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_bat_cac->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_duration_full->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_duration_range->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_duration_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_inprogress->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_limit_range->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_limit_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_env_cooling->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_bat_range_full->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_bat_power->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_bat_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_bat_soh->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
+  
+  int mins_range = StandardMetrics.ms_v_charge_duration_range->AsInt();
+  int mins_soc = StandardMetrics.ms_v_charge_duration_soc->AsInt();
+  bool charging = StandardMetrics.ms_v_charge_inprogress->AsBool();
+  
+  std::ostringstream buffer;
+  buffer
+    << std::fixed
+    << std::setprecision(2)
+    << "MP-0 S"
+    << StandardMetrics.ms_v_bat_soc->AsInt()
+    << ","
+    << ((m_units_distance == Kilometers) ? "K" : "M")
+    << ","
+    << StandardMetrics.ms_v_charge_voltage->AsInt()
+    << ","
+    << StandardMetrics.ms_v_charge_current->AsInt()
+    << ","
+    << StandardMetrics.ms_v_charge_state->AsString("stopped")
+    << ","
+    << StandardMetrics.ms_v_charge_mode->AsString("standard")
+    << ","
+    << StandardMetrics.ms_v_bat_range_ideal->AsInt(0, m_units_distance)
+    << ","
+    << StandardMetrics.ms_v_bat_range_est->AsInt(0, m_units_distance)
+    << ","
+    << StandardMetrics.ms_v_charge_climit->AsInt()
+    << ","
+    << StandardMetrics.ms_v_charge_minutes->AsInt()
+    << ","
+    << "0"  // car_charge_b4
+    << ","
+    << StandardMetrics.ms_v_charge_kwh->AsInt()
+    << ","
+    << "0"  // car_chargesubstate
+    << ","
+    << chargestate_key(StandardMetrics.ms_v_charge_state->AsString("stopped"))
+    << ","
+    << chargemode_key(StandardMetrics.ms_v_charge_mode->AsString("standard"))
+    << ","
+    << StandardMetrics.ms_v_charge_timermode->AsBool()
+    << ","
+    << StandardMetrics.ms_v_charge_timerstart->AsInt()
+    << ","
+    << "0"  // car_stale_timer
+    << ","
+    << StandardMetrics.ms_v_bat_cac->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_charge_duration_full->AsInt()
+    << ","
+    << (((mins_range >= 0) && (mins_range < mins_soc)) ? mins_range : mins_soc)
+    << ","
+    << (int) StandardMetrics.ms_v_charge_limit_range->AsFloat(0, m_units_distance)
+    << ","
+    << StandardMetrics.ms_v_charge_limit_soc->AsInt()
+    << ","
+    << (StandardMetrics.ms_v_env_cooling->AsBool() ? 0 : -1)
+    << ","
+    << "0"  // car_cooldown_tbattery
+    << ","
+    << "0"  // car_cooldown_timelimit
+    << ","
+    << "0"  // car_chargeestimate
+    << ","
+    << mins_range
+    << ","
+    << mins_soc
+    << ","
+    << StandardMetrics.ms_v_bat_range_full->AsInt(0, m_units_distance)
+    << ","
+    << "0"  // car_chargetype
+    << ","
+    << (charging ? -StandardMetrics.ms_v_bat_power->AsFloat() : 0)
+    << ","
+    << StandardMetrics.ms_v_bat_voltage->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_bat_soh->AsInt()
+    ;
 
-  std::string buffer;
-  buffer.reserve(512);
-  buffer.append("MP-0 S");
-  buffer.append(StandardMetrics.ms_v_bat_soc->AsString("0").c_str());
-  buffer.append(",");
-  if (m_units_distance == Kilometers)
-    buffer.append("K");
-  else
-    buffer.append("M");
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_charge_voltage->AsString("0",Other,0).c_str());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_charge_current->AsString("0",Other,0).c_str());
-  buffer.append(",");
-  buffer.append("stopped");  // car_chargestate
-  buffer.append(",");
-  buffer.append("standard");  // car_chargemode
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_bat_range_ideal->AsString("0",m_units_distance).c_str());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_bat_range_est->AsString("0",m_units_distance).c_str());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_charge_climit->AsString("0",Other,0).c_str());
-  buffer.append(",");
-  buffer.append("0");  // charge duration
-  buffer.append(",");
-  buffer.append("0");  // car_charge_b4
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_charge_kwh->AsString("0"));
-  buffer.append(",");
-  buffer.append("0");  // car_chargesubstate
-  buffer.append(",");
-  buffer.append("0");  // car_chargestate
-  buffer.append(",");
-  buffer.append("0");  // car_chargemode
-  buffer.append(",");
-  buffer.append("0");  // car_timermode
-  buffer.append(",");
-  buffer.append("0");  // car_timerstart
-  buffer.append(",");
-  buffer.append("0");  // car_stale_timer
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_bat_cac->AsString("0"));  // car_cac100
-  buffer.append(",");
-  buffer.append("0");  // car_chargefull_minsremaining
-  buffer.append(",");
-  buffer.append("0");  // car_chargelimit_minsremaining_range
-  buffer.append(",");
-  buffer.append("0");  // car_chargelimit_rangelimit
-  buffer.append(",");
-  buffer.append("0");  // car_chargelimit_soclimit
-  buffer.append(",");
-  buffer.append("0");  // car_coolingdown
-  buffer.append(",");
-  buffer.append("0");  // car_cooldown_tbattery
-  buffer.append(",");
-  buffer.append("0");  // car_cooldown_timelimit
-  buffer.append(",");
-  buffer.append("0");  // car_chargeestimate
-  buffer.append(",");
-  buffer.append("0");  // car_chargelimit_minsremaining_range
-  buffer.append(",");
-  buffer.append("0");  // car_chargelimit_minsremaining_soc
-  buffer.append(",");
-  buffer.append("0");  // car_max_idealrange
-  buffer.append(",");
-  buffer.append("0");  // car_chargetype
-  buffer.append(",");
-  buffer.append("0");  // car_chargepower
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_bat_voltage->AsString("0").c_str());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_bat_soh->AsString("0").c_str());
-
-  ESP_LOGI(TAG, "Sending: %s", buffer.c_str());
-  Transmit(buffer.c_str());
+  ESP_LOGI(TAG, "Sending: %s", buffer.str().c_str());
+  Transmit(buffer.str().c_str());
   }
 
 void OvmsServerV2::TransmitMsgGPS(bool always)

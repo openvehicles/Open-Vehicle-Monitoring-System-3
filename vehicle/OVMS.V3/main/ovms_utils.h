@@ -32,6 +32,7 @@
 #define __UTILS_H__
 
 #include <cstring>
+#include <string>
 
 struct CmpStrOp
   {
@@ -40,5 +41,26 @@ struct CmpStrOp
     return std::strcmp(a, b) < 0;
     }
   };
+
+/**
+ * chargestate_code: convert legacy chargestate key to code
+ */
+std::string chargestate_code(const int key);
+
+/**
+ * chargestate_key: convert chargestate code to legacy key
+ */
+int chargestate_key(const std::string code);
+  
+/**
+ * chargemode_code: convert legacy chargemode key to code
+ */
+std::string chargemode_code(const int key);
+
+/**
+ * chargemode_key: convert chargemode code to legacy key
+ */
+int chargemode_key(const std::string code);
+
 
 #endif //#ifndef __UTILS_H__
