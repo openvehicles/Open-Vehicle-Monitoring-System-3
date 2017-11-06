@@ -146,6 +146,9 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
         case 0x89:  // Charging Voltage / Iavailable
           {
           StandardMetrics.ms_v_pos_speed->SetValue((float)d[1],Mph);
+          // https://en.wikipedia.org/wiki/Tesla_Roadster#Transmission
+          // Motor RPM given as 14,000rpm for top speed 125mph (201kph) = 112rpm/mph
+          StandardMetrics.ms_v_mot_rpm->SetValue((int)d[1]*112);
           StandardMetrics.ms_v_charge_voltage->SetValue(((float)d[3]*256)+d[2]);
           break;
           }
