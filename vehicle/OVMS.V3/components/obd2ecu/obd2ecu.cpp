@@ -136,10 +136,12 @@ float obd2pid::Execute()
 
 float obd2pid::InternalPid()
   {
-    if (m_metric) return m_metric->AsFloat();
-    else
-    { printf("InternalPID %x not a metric\n",m_pid);
-      return 0;
+  if (m_metric)
+    return m_metric->AsFloat();
+  else
+    {
+    ESP_LOGI(TAG, "InternalPID %x not a metric",m_pid);
+    return 0;
     }
   }
 
