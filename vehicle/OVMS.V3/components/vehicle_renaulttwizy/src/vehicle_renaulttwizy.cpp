@@ -1046,21 +1046,11 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   // --------------------------------------------------------------------------
   // Publish metrics:
   
-  string label;
-  
   *StdMetrics.ms_v_charge_mode = (string)
     ((cfg_chargemode == TWIZY_CHARGEMODE_AUTOSTOP) ? "storage" : "standard");
   
-  switch (twizy_chargestate)
-  {
-    case 1: label = "charging"; break;
-    case 2: label = "topoff"; break;
-    case 4: label = "done"; break;
-    case 21: label = "stopped"; break;
-    default: label = ""; break;
-  }
-  *StdMetrics.ms_v_charge_state = (string) label;
-  *StdMetrics.ms_v_charge_substate = (string) ((twizy_chg_stop_request) ? "stop" : "go");
+  *StdMetrics.ms_v_charge_state = (string) chargestate_code(twizy_chargestate);
+  *StdMetrics.ms_v_charge_substate = (string) chargesubstate_code(twizy_chg_stop_request);
   
   *StdMetrics.ms_v_bat_range_ideal = (float) twizy_range_ideal;
   *StdMetrics.ms_v_bat_range_est = (float) twizy_range_est;
