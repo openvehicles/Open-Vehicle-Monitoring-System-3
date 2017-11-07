@@ -204,6 +204,10 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
   // MCP2515 RTS
   m_spibus->spi_cmd(m_spi, buf, 0, 1, 0x81);
 
+  // Nasty hack to delay task to allow time to write
+  // TOD: A better way would be to wait for the previous Write to complete before starting this one
+  vTaskDelay(10 / portTICK_PERIOD_MS);
+
   return ESP_OK;
   }
 
