@@ -303,7 +303,7 @@ static uint8_t pid_format[] =
  99,  // 23 O2 sensor 4
  99,  // 24 O2 sensor 5
  99,  // 25 O2 sensor 6
- 99,  // 26 O2 sensor 7
+ 99,  // 26 O2 sensor 7  (PIDs 40 and above not supported)
  99,  // 27 O2 sensor 8
  10,  // 28 OBD standards
  99,  // 29 O2 sensors present (huh?)
@@ -405,7 +405,6 @@ void obd2ecu::FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint
       
     case 7:  /* 3A:  A*3  */
       a = data/3.0;  
-  if(pid == 0x20) return;  // PID 0x20 is assumed
       break;
       
     case 8:  /* A/2 - 64:  (A/2)-64 */
@@ -544,10 +543,11 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           /* This item (only) needs to vary to prevent SyncUp Drive dongle from going to sleep */
           /* Also a Minimum "idle" RPM, but only if not moving, for HUD device */
           
-// TODO: test if metric is from a script; if so, don't do the dongle workarounds (script will do this if needed)
-          
-          metric = metric+jitter;
-          if(StandardMetrics.ms_v_pos_speed->AsFloat() < 1.0) metric = 500+jitter;
+          // Test if metric is from a script; if so, don't do the dongle workarounds (script will do this if needed)
+          if(m_pidmap[mapped_pid]->GetType() != obd2pid::Script)
+          { metric = metric+jitter;
+            if(StandardMetrics.ms_v_pos_speed->AsFloat() < 1.0) metric = 500+jitter;
+          }
           
           FillFrame(&r_frame,reply,mapped_pid,metric,pid_format[mapped_pid]);
           m_can->Write(&r_frame);
