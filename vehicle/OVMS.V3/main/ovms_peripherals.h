@@ -61,7 +61,7 @@
 #define SDCARD_PIN_D0             2
 #define SDCARD_PIN_D1             4
 #define SDCARD_PIN_D2             12
-#define SDCARD_PIN_D3             12
+#define SDCARD_PIN_D3             13
 #define SDCARD_PIN_CD             39
 
 #define ESP32CAN_PIN_TX           25
