@@ -651,6 +651,11 @@ float OvmsMetricFloat::AsFloat(const float defvalue, metric_unit_t units)
     return defvalue;
   }
 
+int OvmsMetricFloat::AsInt(const int defvalue, metric_unit_t units)
+  {
+  return (int) AsFloat((float) defvalue, units);
+  }
+
 void OvmsMetricFloat::SetValue(float value, metric_unit_t units)
   {
   float nvalue = value;

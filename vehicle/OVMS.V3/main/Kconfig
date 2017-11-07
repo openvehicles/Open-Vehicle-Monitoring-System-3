@@ -53,6 +53,14 @@ config OVMS_SC_GPL_MONGOOSE
     help
         Enable to include the GPL licensed MONGOOSE networking library
 
+config OVMS_SC_GPL_WOLF
+    bool "Include the GPL licensed WOLFSSH and WOLFSSL libraries (ssh server)"
+    default y
+    depends on OVMS
+    help
+        Enable to include the GPL licensed WOLFSSH and WOLFSSL libraries
+        (required for SSH server functionality)
+
 menu "Vehicle Support"
     depends on OVMS
 
