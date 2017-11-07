@@ -90,11 +90,14 @@ class obd2ecu : public pcp
     TaskHandle_t m_task;
     time_t m_starttime;
     PidMap m_pidmap;
+    uint32_t m_supported_01_20;  // bitmap of PIDs configured 0x01 through 0x20
+    uint32_t m_supported_21_40;  // bitmap of PIDs configured 0x21 through 0x40
 
   public:
     void IncomingFrame(CAN_frame_t* p_frame);
     void LoadMap();
     void ClearMap();
+    void Addpid(uint8_t pid);
 
   protected:
     void FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint8_t format);
