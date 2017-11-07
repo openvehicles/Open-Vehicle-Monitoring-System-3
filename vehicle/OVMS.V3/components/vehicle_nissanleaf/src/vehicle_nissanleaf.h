@@ -40,6 +40,17 @@
 
 using namespace std;
 
+typedef enum
+  {
+  ZERO = 0,
+  ONE = 1,
+  TWO = 2,
+  THREE = 3,
+  FOUR = 4,
+  FIVE = 5,
+  IDLE = 6
+  } PollState;
+
 class OvmsVehicleNissanLeaf : public OvmsVehicle
   {
   public:
@@ -56,6 +67,8 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void SendCanMessage(uint16_t id, uint8_t length, uint8_t *data);
     void Ticker1(std::string event, void* data);
     void Ticker60(std::string event, void* data);
+
+    PollState nl_poll_state = IDLE;
   };
 
 #endif //#ifndef __VEHICLE_NISSANLEAF_H__

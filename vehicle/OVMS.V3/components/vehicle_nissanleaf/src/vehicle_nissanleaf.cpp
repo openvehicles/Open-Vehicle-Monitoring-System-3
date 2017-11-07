@@ -49,19 +49,6 @@ typedef enum
   CHARGER_STATUS_FINISHED
   } ChargerStatus;
 
-typedef enum
-  {
-  ZERO = 0,
-  ONE = 1,
-  TWO = 2,
-  THREE = 3,
-  FOUR = 4,
-  FIVE = 5,
-  IDLE = 6
-  } PollState;
-
-PollState nl_poll_state = IDLE;
-
 OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   {
   ESP_LOGI(TAG, "Nissan Leaf v3.0 vehicle module");
