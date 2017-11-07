@@ -187,8 +187,8 @@ class MetricsStandard
     OvmsMetricString* ms_v_charge_mode;       // standard, range, performance, storage
     OvmsMetricBool*   ms_v_charge_timermode;  // True if timer enabled
     OvmsMetricInt*    ms_v_charge_timerstart; // Time timer is due to start
-    OvmsMetricString* ms_v_charge_state;      // charging, topoff, done, preparing, heating, stopped
-    OvmsMetricString* ms_v_charge_substate;   // tba...
+    OvmsMetricString* ms_v_charge_state;      // charging, topoff, done, prepare, timerwait, heating, stopped
+    OvmsMetricString* ms_v_charge_substate;   // scheduledstop, scheduledstart, onrequest, timerwait, powerwait, stopped, interrupted
     OvmsMetricString* ms_v_charge_type;       // undefined, type1, type2, chademo, roadster, teslaus, supercharger, ccs
     OvmsMetricBool*   ms_v_charge_pilot;      // Pilot signal present
     OvmsMetricBool*   ms_v_charge_inprogress; // True = currently charging

@@ -38,10 +38,11 @@ std::string chargestate_code(const int key)
   std::string code;
   switch (key)
     {
-    case 1: code = "charging";    break;
-    case 2: code = "topoff";      break;
-    case 4: code = "done";        break;
+    case  1: code = "charging";   break;
+    case  2: code = "topoff";     break;
+    case  4: code = "done";       break;
     case 13: code = "prepare";    break;
+    case 14: code = "timerwait";  break;
     case 15: code = "heating";    break;
     case 21: code = "stopped";    break;
     default: code = "";
@@ -55,12 +56,50 @@ std::string chargestate_code(const int key)
 int chargestate_key(const std::string code)
   {
   int key;
-  if (code == "charging")         key = 1;
+  if      (code == "charging")    key = 1;
   else if (code == "topoff")      key = 2;
   else if (code == "done")        key = 4;
   else if (code == "prepare")     key = 13;
+  else if (code == "timerwait")   key = 14;
   else if (code == "heating")     key = 15;
   else if (code == "stopped")     key = 21;
+  else key = 0;
+  return key;
+  }
+
+/**
+ * chargesubstate_code: convert legacy charge substate key to code
+ */
+std::string chargesubstate_code(const int key)
+  {
+  std::string code;
+  switch (key)
+    {
+    case 0x01: code = "scheduledstop";    break;
+    case 0x02: code = "scheduledstart";   break;
+    case 0x03: code = "onrequest";        break;
+    case 0x05: code = "timerwait";        break;
+    case 0x07: code = "powerwait";        break;
+    case 0x0d: code = "stopped";          break;
+    case 0x0e: code = "interrupted";      break;
+    default: code = "";
+    }
+  return code;
+  }
+
+/**
+ * chargesubstate_key: convert charge substate code to legacy key
+ */
+int chargesubstate_key(const std::string code)
+  {
+  int key;
+  if      (code == "scheduledstop")       key = 0x01;
+  else if (code == "scheduledstart")      key = 0x02;
+  else if (code == "onrequest")           key = 0x03;
+  else if (code == "timerwait")           key = 0x05;
+  else if (code == "powerwait")           key = 0x07;
+  else if (code == "stopped")             key = 0x0d;
+  else if (code == "interrupted")         key = 0x0e;
   else key = 0;
   return key;
   }
@@ -88,7 +127,7 @@ std::string chargemode_code(const int key)
 int chargemode_key(const std::string code)
   {
   int key;
-  if (code == "standard")           key = 0;
+  if      (code == "standard")      key = 0;
   else if (code == "storage")       key = 1;
   else if (code == "range")         key = 2;
   else if (code == "performance")   key = 3;

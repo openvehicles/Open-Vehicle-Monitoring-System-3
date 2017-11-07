@@ -44,22 +44,23 @@ struct CmpStrOp
 
 /**
  * chargestate_code: convert legacy chargestate key to code
- */
-std::string chargestate_code(const int key);
-
-/**
  * chargestate_key: convert chargestate code to legacy key
  */
+std::string chargestate_code(const int key);
 int chargestate_key(const std::string code);
   
 /**
- * chargemode_code: convert legacy chargemode key to code
+ * chargesubstate_code: convert legacy charge substate key to code
+ * chargesubstate_key: convert charge substate code to legacy key
  */
-std::string chargemode_code(const int key);
-
+std::string chargesubstate_code(const int key);
+int chargesubstate_key(const std::string code);
+  
 /**
+ * chargemode_code: convert legacy chargemode key to code
  * chargemode_key: convert chargemode code to legacy key
  */
+std::string chargemode_code(const int key);
 int chargemode_key(const std::string code);
 
 
