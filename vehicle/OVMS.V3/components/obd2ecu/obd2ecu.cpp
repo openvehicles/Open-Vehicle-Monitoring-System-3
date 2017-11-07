@@ -105,20 +105,17 @@ void obd2pid::LoadScript(std::string path)
 
 float obd2pid::Execute()
   {
-  // TODO:
-  // For internal, we should put the code here to implement the PID
-  // For external, we should run the script
+
   switch (m_type)
     {
-    case Unimplemented:
+    case Unimplemented:   // PIDs requested by device but not already known
       return 0;
-    case Internal:
-      return InternalPid();
-    case Metric:
+    case Internal:        // Pre-configured PIDs
+    case Metric:          // PIDs defined or redefined by Config command
       if (m_metric)
         return m_metric->AsFloat();
       else
-        return 0;
+        return 0.0;
     case Script:
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
       {
@@ -134,17 +131,7 @@ float obd2pid::Execute()
     }
   }
 
-float obd2pid::InternalPid()
-  {
-  if (m_metric)
-    return m_metric->AsFloat();
-  else
-    {
-    ESP_LOGI(TAG, "InternalPID %x not a metric",m_pid);
-    return 0;
-    }
-  }
-
+  
 static void OBD2ECU_task(void *pvParameters)
   {
   obd2ecu *me = (obd2ecu*)pvParameters;
@@ -281,7 +268,7 @@ void obd2ecu_reload(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
 07 = 3A:  A*3
 08 = A/2 - 64:  (A/2)-64
 09 = 100A/128-100
-10 = Bit Vector - A / B / C / D  (FIXME: this doesn't quite work due to precision)
+10 = Bit Vector - A / B / C / D  (NOTE: only have 6 digits of precision!)
 
 99 = not implemented
 
@@ -417,7 +404,8 @@ void obd2ecu::FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint
       break;
       
     case 7:  /* 3A:  A*3  */
-      a = data/3.0;
+      a = data/3.0;  
+  if(pid == 0x20) return;  // PID 0x20 is assumed
       break;
       
     case 8:  /* A/2 - 64:  (A/2)-64 */
@@ -429,6 +417,7 @@ void obd2ecu::FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint
       break;
       
     case 10:  /* A, B, C, D Bit vector */
+      
       a = (((int)data) >> 24) & 0xff;
       b = (((int)data) >> 16) & 0xff;
 			c = (((int)data) >> 8) & 0xff;
@@ -458,7 +447,7 @@ void obd2ecu::FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint
   frame->data.u8[5] = c;
   frame->data.u8[6] = d;			
   frame->data.u8[7] = 0x55;   /* pad 0x55 */
-
+  
   return;
   }
   
@@ -508,16 +497,15 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
       }
       else
       { if (MyConfig.GetParamValueBool("obd2ecu","autocreate"))
-        m_pidmap[mapped_pid] = new obd2pid(mapped_pid); // Creates it as Unimplemented, by default
+          m_pidmap[mapped_pid] = new obd2pid(mapped_pid); // Creates it as Unimplemented, if enabled
+          // note: don't 'Addpid' the PID to the supported vectors.  Only done when support set by config.
         metric = 0.0;
       }
       
-      switch (mapped_pid)  /* switch on the what the requested PID maps to. */
+      switch (mapped_pid)  /* switch on the what the requested PID was (before mapping!) */
         {
-        case 0:  /* request capabilities */
-          /* This is a bitmap of the Mode 1 PIDs that we will act on from the HUD/Dongle */
-// TODO: need to create proper bitmap based on what PIDs are actually mapped, also for PID 0x20 and 0x40
-//       For now, report default PIDs.  Use 'obdii ecu list' to see what was requested
+        case 0:  /* request capabilities PIDs 01-0x20 */
+          
           r_frame.origin = NULL;
           r_frame.FIR.U = 0;
           r_frame.FIR.B.DLC = 8;
@@ -526,10 +514,10 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[0] = 6;		/* # additional bytes (ok to have extra) */
           r_d[1] = 0x41;  /* Mode 1 + 0x40 indicating a reply */
           r_d[2] = 0x00;
-          r_d[3] = 0x18;  /* 04, 05 */
-          r_d[4] = 0x19;  /* 0c, 0d, 10 */
-          r_d[5] = 0x00;
-          r_d[6] = 0x00;	
+          r_d[3] = (m_supported_01_20 >> 24) & 0xff;
+          r_d[4] = (m_supported_01_20 >> 16) & 0xff;
+          r_d[5] = (m_supported_01_20 >> 8) & 0xff;
+          r_d[6] =  m_supported_01_20 & 0xff;
           r_d[7] = 0x55;  /* pad 0x55 */
           m_can->Write(&r_frame);
           break;
@@ -557,7 +545,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           /* Also a Minimum "idle" RPM, but only if not moving, for HUD device */
           
 // TODO: test if metric is from a script; if so, don't do the dongle workarounds (script will do this if needed)
-
+          
           metric = metric+jitter;
           if(StandardMetrics.ms_v_pos_speed->AsFloat() < 1.0) metric = 500+jitter;
           
@@ -575,7 +563,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           m_can->Write(&r_frame);
           break;
 			
-        case 0x20:  /* request more capabilities */
+        case 0x20:  /* request more capabilities, PIDs 0x21 - 0x40 */
           r_frame.origin = NULL;
           r_frame.FIR.U = 0;
           r_frame.FIR.B.DLC = 8;
@@ -584,15 +572,16 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[0] = 6;		/* # additional bytes (ok to have extra) */
           r_d[1] = 0x41;  /* Mode 1 + 0x40 indicating a reply */
           r_d[2] = 0x20;
-          r_d[3] = 0x00;
-          r_d[4] = 0x00;
-          r_d[5] = 0x00;
-          r_d[6] = 0x00;	
+          r_d[3] = (m_supported_21_40 >> 24) & 0xff;
+          r_d[4] = (m_supported_21_40 >> 16) & 0xff;
+          r_d[5] = (m_supported_21_40 >> 8) & 0xff;
+          r_d[6] =  m_supported_21_40 & 0xff;
           r_d[7] = 0x55;  /* pad 0x55 */
           m_can->Write(&r_frame);
           break;
           
-        case 0x40:  /* request more capabilities: none */
+        case 0x40:  /* request more capabilities: none 
+            (would need to expand the pid_format table to do so) */
           r_frame.origin = NULL;
           r_frame.FIR.U = 0;
           r_frame.FIR.B.DLC = 8;
@@ -756,11 +745,20 @@ void obd2ecu::LoadMap()
   {
   ClearMap();
   // Create default PID maps
+  m_pidmap[0x00] = new obd2pid(0x00,obd2pid::Internal);                                 // PIDs 1-20 supported (internally)
+  // PID 00 is assumed; don't addpid it
   m_pidmap[0x04] = new obd2pid(0x04,obd2pid::Internal,StandardMetrics.ms_v_bat_soc);    // Engine load (use as proxy for SoC)
+  Addpid(0x04);
   m_pidmap[0x05] = new obd2pid(0x05,obd2pid::Internal,StandardMetrics.ms_v_mot_temp);   // Coolant Temperature (use motor temp)
-  m_pidmap[0x0c] = new obd2pid(0x0c,obd2pid::Internal,StandardMetrics.ms_v_mot_rpm);    // Engine RPM TODO:  Need real metric for RPM
+  Addpid(0x05);
+  m_pidmap[0x0c] = new obd2pid(0x0c,obd2pid::Internal,StandardMetrics.ms_v_mot_rpm);    // Engine RPM
+  Addpid(0x0c);
   m_pidmap[0x0d] = new obd2pid(0x0d,obd2pid::Internal,StandardMetrics.ms_v_pos_speed);  // Vehicle Speed
+  Addpid(0x0d);
   m_pidmap[0x10] = new obd2pid(0x10,obd2pid::Internal,StandardMetrics.ms_v_bat_power);  // Mass Air Flow  (Note: display limited 0-19.9 on HUDs)
+  Addpid(0x10);
+  m_pidmap[0x20] = new obd2pid(0x20,obd2pid::Internal);                                 // PIDs 21-40 supported (internally)
+  Addpid(0x20);
 
   // Look for metric overrides...
   OvmsConfigParam* cm = MyConfig.CachedParam("obd2ecu.map");
@@ -817,7 +815,30 @@ void obd2ecu::ClearMap()
     delete it->second;
     }
   m_pidmap.clear();
+  m_supported_01_20 = 0;
+  m_supported_21_40 = 0;
+  
   }
+/* procedure to add a PID to the vectors of supported PIDS, used with PID 0 & 0x20 */
+
+void obd2ecu::Addpid(uint8_t pid)
+{
+  if(pid == 0) return;  // pid 0 assumed
+         
+  if(pid <= 0x20)       // PIDs 1-20
+  { m_supported_01_20 |= 1 << (32-pid);
+    if(verbose) ESP_LOGI(TAG, "Added 0x%02x resulting 0x%08x",pid,m_supported_01_20); 
+    return;
+  }
+         
+  if(pid <= 0x40)        // PIDs 21-40
+  { m_supported_21_40 |= 1 << (32-pid-0x40);
+    return;
+  } 
+  
+  ESP_LOGI(TAG, "PID %d (0x%02x) unsupportable",pid,pid);
+  return;
+}
 
 class obd2ecuInit
     {
