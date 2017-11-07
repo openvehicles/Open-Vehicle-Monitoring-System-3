@@ -37,8 +37,6 @@ static const char *TAG = "webserver";
 
 OvmsWebServer MyWebServer __attribute__ ((init_priority (8200)));
 
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-
 static void OvmsWebServerMongooseHandler(struct mg_connection *nc, int ev, void *p)
   {
   // ESP_LOGI(TAG, "Event %d",ev);
@@ -74,11 +72,8 @@ void OvmsWebServer::NetManStop(std::string event, void* data)
   ESP_LOGI(TAG,"Stopping Web Server");
   }
 
-#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-
 OvmsWebServer::OvmsWebServer()
   {
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   ESP_LOGI(TAG, "Initialising WEBSERVER (8200)");
   ESP_LOGI(TAG, "Using MONGOOSE engine");
 
@@ -87,7 +82,6 @@ OvmsWebServer::OvmsWebServer()
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"network.mgr.init", std::bind(&OvmsWebServer::NetManInit, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"network.mgr.stop", std::bind(&OvmsWebServer::NetManStop, this, _1, _2));
-#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   }
 
 OvmsWebServer::~OvmsWebServer()

@@ -40,11 +40,9 @@ class OvmsWebServer
     OvmsWebServer();
     ~OvmsWebServer();
 
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   public:
     void NetManInit(std::string event, void* data);
     void NetManStop(std::string event, void* data);
-#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   };
 
 extern OvmsWebServer MyWebServer;
