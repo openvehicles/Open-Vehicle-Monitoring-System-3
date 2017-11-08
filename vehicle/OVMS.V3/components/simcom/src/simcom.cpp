@@ -568,10 +568,8 @@ void simcom::StandardLineHandler(OvmsBuffer* buf, std::string line)
     }
   else if (line.compare(0, 6, "+CSQ: ") == 0)
     {
-    int csq = atoi(line.substr(6).c_str());
-    int dbm = 0;
-    if (csq <= 31) dbm = -113 + (csq*2);
-    StandardMetrics.ms_m_net_sq->SetValue(dbm);
+    int val = atoi(line.substr(6).c_str());
+    StandardMetrics.ms_m_net_sq->SetValue(val,sq);
     }
   else if (line.compare(0, 7, "+CREG: ") == 0)
     {

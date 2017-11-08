@@ -49,7 +49,7 @@ MetricsStandard::MetricsStandard()
   ms_m_timeutc = new OvmsMetricInt(MS_M_TIME_UTC, SM_STALE_MIN, Seconds);
   
   ms_m_net_type = new OvmsMetricString(MS_N_TYPE, SM_STALE_MAX);
-  ms_m_net_sq = new OvmsMetricInt(MS_N_SQ, SM_STALE_MAX);
+  ms_m_net_sq = new OvmsMetricInt(MS_N_SQ, SM_STALE_MAX, dbm);
   ms_m_net_provider = new OvmsMetricString(MS_N_PROVIDER, SM_STALE_MAX);
   ms_m_net_mdm_iccid = new OvmsMetricString(MS_N_MDM_ICCID, SM_STALE_MAX);
   ms_m_net_mdm_model = new OvmsMetricString(MS_N_MDM_MODEL, SM_STALE_MAX);
