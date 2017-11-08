@@ -127,70 +127,167 @@ OvmsVehicleDemo::~OvmsVehicleDemo()
 
 void OvmsVehicleDemo::Ticker1(uint32_t ticker)
   {
+  if (StandardMetrics.ms_v_env_on->AsBool())
+    {
+    // We are driving
+    int speed = StandardMetrics.ms_v_pos_speed->AsInt() + (rand()%3) -1;
+    if (speed<0) speed = 0;
+    else if (speed>100) speed = 100;
+    StandardMetrics.ms_v_pos_speed->SetValue(speed);
+    StandardMetrics.ms_v_mot_rpm->SetValue(speed*112);
+    }
   }
 
 void OvmsVehicleDemo::Ticker10(uint32_t ticker)
   {
+  if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+    {
+    // We are charging
+    float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
+    if (soc < 100)
+      {
+      soc += 0.1;
+      StandardMetrics.ms_v_bat_soc->SetValue(soc);
+      }
+    else
+      {
+      // Car full
+      StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+      StandardMetrics.ms_v_door_chargeport->SetValue(false);
+      StandardMetrics.ms_v_charge_state->SetValue("done");
+      StandardMetrics.ms_v_charge_substate->SetValue("stopped");
+      StandardMetrics.ms_v_charge_pilot->SetValue(false);
+      StandardMetrics.ms_v_charge_voltage->SetValue(0);
+      StandardMetrics.ms_v_charge_current->SetValue(0);
+      }
+    }
+  else if (StandardMetrics.ms_v_env_on->AsBool())
+    {
+    // We are driving
+    float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
+    if (soc > 0)
+      {
+      int speed = StandardMetrics.ms_v_pos_speed->AsInt() + (rand()%3) -1;
+      if (speed<0) speed = 0;
+      else if (speed>100) speed = 100;
+      soc -= 0.1;
+      StandardMetrics.ms_v_bat_soc->SetValue(soc);
+      StandardMetrics.ms_v_pos_speed->SetValue(speed);
+      StandardMetrics.ms_v_mot_rpm->SetValue(speed*112);
+      }
+    else
+      {
+      // Battery is empty. Charge the car...
+      StandardMetrics.ms_v_pos_speed->SetValue(0);
+      StandardMetrics.ms_v_mot_rpm->SetValue(0);
+      StandardMetrics.ms_v_env_on->SetValue(false);
+      StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+      StandardMetrics.ms_v_door_chargeport->SetValue(true);
+      StandardMetrics.ms_v_charge_state->SetValue("charging");
+      StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+      StandardMetrics.ms_v_charge_pilot->SetValue(true);
+      StandardMetrics.ms_v_charge_voltage->SetValue(220);
+      StandardMetrics.ms_v_charge_current->SetValue(32);
+      }
+    }
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleDemo::CommandSetChargeMode(vehicle_mode_t mode)
   {
-  return Success;
+  return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleDemo::CommandSetChargeCurrent(uint16_t limit)
   {
+  StandardMetrics.ms_v_charge_climit->SetValue(limit);
+
   return Success;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleDemo::CommandStartCharge()
   {
+  StandardMetrics.ms_v_pos_speed->SetValue(0);
+  StandardMetrics.ms_v_mot_rpm->SetValue(0);
+  StandardMetrics.ms_v_env_on->SetValue(false);
+  StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+  StandardMetrics.ms_v_door_chargeport->SetValue(true);
+  StandardMetrics.ms_v_charge_state->SetValue("charging");
+  StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+  StandardMetrics.ms_v_charge_pilot->SetValue(true);
+  StandardMetrics.ms_v_charge_voltage->SetValue(220);
+  StandardMetrics.ms_v_charge_current->SetValue(32);
+
   return Success;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleDemo::CommandStopCharge()
   {
+  StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+  StandardMetrics.ms_v_door_chargeport->SetValue(false);
+  StandardMetrics.ms_v_charge_state->SetValue("done");
+  StandardMetrics.ms_v_charge_substate->SetValue("stopped");
+  StandardMetrics.ms_v_charge_pilot->SetValue(false);
+  StandardMetrics.ms_v_charge_voltage->SetValue(0);
+  StandardMetrics.ms_v_charge_current->SetValue(0);
+
   return Success;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleDemo::CommandSetChargeTimer(bool timeron, uint16_t timerstart)
   {
-  return Success;
+  return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleDemo::CommandCooldown(bool cooldownon)
   {
-  return Success;
+  return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleDemo::CommandWakeup()
   {
+  StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+  StandardMetrics.ms_v_door_chargeport->SetValue(false);
+  StandardMetrics.ms_v_charge_state->SetValue("done");
+  StandardMetrics.ms_v_charge_substate->SetValue("stopped");
+  StandardMetrics.ms_v_charge_pilot->SetValue(false);
+  StandardMetrics.ms_v_charge_voltage->SetValue(0);
+  StandardMetrics.ms_v_charge_current->SetValue(0);
+  StandardMetrics.ms_v_env_on->SetValue(true);
+
   return Success;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleDemo::CommandLock(const char* pin)
   {
+  StandardMetrics.ms_v_env_locked->SetValue(true);
+
   return Success;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleDemo::CommandUnlock(const char* pin)
   {
+  StandardMetrics.ms_v_env_locked->SetValue(false);
+
   return Success;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleDemo::CommandActivateValet(const char* pin)
   {
+  StandardMetrics.ms_v_env_valet->SetValue(true);
+
   return Success;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleDemo::CommandDeactivateValet(const char* pin)
   {
+  StandardMetrics.ms_v_env_valet->SetValue(false);
+
   return Success;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleDemo::CommandHomelink(uint8_t button)
   {
-  return Success;
+  return NotImplemented;
   }
 
 class OvmsVehicleDemoInit
