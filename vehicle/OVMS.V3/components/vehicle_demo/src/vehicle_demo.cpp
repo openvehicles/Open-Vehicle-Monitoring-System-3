@@ -75,6 +75,7 @@ OvmsVehicleDemo::OvmsVehicleDemo()
   StandardMetrics.ms_v_charge_duration_range->SetValue(0);
   StandardMetrics.ms_v_charge_duration_soc->SetValue(0);
   StandardMetrics.ms_v_charge_temp->SetValue(22);
+  StandardMetrics.ms_v_inv_temp->SetValue(22);
   StandardMetrics.ms_v_mot_rpm->SetValue(0);
   StandardMetrics.ms_v_mot_temp->SetValue(30);
   StandardMetrics.ms_v_door_fl->SetValue(false);
@@ -199,7 +200,7 @@ class OvmsVehicleDemoInit
 
 OvmsVehicleDemoInit::OvmsVehicleDemoInit()
   {
-  ESP_LOGI(TAG, "Registering Vehicle: DEM (9000)");
+  ESP_LOGI(TAG, "Registering Vehicle: DEMO (9000)");
 
   MyVehicleFactory.RegisterVehicle<OvmsVehicleDemo>("DEMO","Demonstration vehicle");
   }
