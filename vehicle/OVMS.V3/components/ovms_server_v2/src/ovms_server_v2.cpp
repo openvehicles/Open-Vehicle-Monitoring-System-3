@@ -632,6 +632,31 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
 void OvmsServerV2::TransmitMsgFirmware(bool always)
   {
   m_now_firmware = false;
+
+  bool modified =
+    StandardMetrics.ms_m_version->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_vin->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_m_net_sq->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_type->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_m_net_provider->IsModifiedAndClear(MyOvmsServerV2Modifier);
+
+  // Quick exit if nothing modified
+  if ((!always)&&(!modified)) return;
+
+  std::string buffer;
+  buffer.reserve(512);
+  buffer.append("MP-0 F");
+  buffer.append(StandardMetrics.ms_m_version->AsString(""));
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_v_vin->AsString(""));
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_m_net_sq->AsString("0",sq));
+  buffer.append(",1,");
+  buffer.append(StandardMetrics.ms_v_type->AsString(""));
+  buffer.append(",");
+  buffer.append(StandardMetrics.ms_m_net_provider->AsString(""));
+
+  Transmit(buffer.c_str());
   }
 
 void AppendDoors1(std::string *buffer)
