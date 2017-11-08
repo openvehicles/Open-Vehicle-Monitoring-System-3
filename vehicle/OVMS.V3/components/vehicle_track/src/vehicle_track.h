@@ -40,9 +40,6 @@ class OvmsVehicleTrack : public OvmsVehicle
   public:
     OvmsVehicleTrack();
     ~OvmsVehicleTrack();
-
-  public:
-    const std::string VehicleName();
   };
 
 #endif //#ifndef __VEHICLE_TRACK_H__

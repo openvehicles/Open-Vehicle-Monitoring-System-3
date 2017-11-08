@@ -40,9 +40,6 @@ class OvmsVehicleNone : public OvmsVehicle
   public:
     OvmsVehicleNone();
     ~OvmsVehicleNone();
-
-  public:
-    const std::string VehicleName();
   };
 
 #endif //#ifndef __VEHICLE_NONE_H__

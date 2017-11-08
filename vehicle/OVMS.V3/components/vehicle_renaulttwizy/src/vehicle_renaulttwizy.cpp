@@ -135,18 +135,13 @@ class OvmsVehicleRenaultTwizyInit
 OvmsVehicleRenaultTwizyInit::OvmsVehicleRenaultTwizyInit()
 {
   ESP_LOGI(TAG, "Registering Vehicle: Renault Twizy (9000)");
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleRenaultTwizy>("RT");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleRenaultTwizy>("RT","Renault Twizy");
 }
 
 
 /**
  * Framework callbacks
  */
-
-const string OvmsVehicleRenaultTwizy::VehicleName()
-{
-  return string("Renault Twizy");
-}
 
 
 /**

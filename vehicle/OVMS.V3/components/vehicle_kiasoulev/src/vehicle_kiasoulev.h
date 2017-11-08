@@ -42,11 +42,6 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
     void IncomingFrameCan2(CAN_frame_t* p_frame);
-
-  protected:
-
-  public:
-    const std::string VehicleName();
   };
 
 #endif //#ifndef __VEHICLE_KIASOULEV_H__

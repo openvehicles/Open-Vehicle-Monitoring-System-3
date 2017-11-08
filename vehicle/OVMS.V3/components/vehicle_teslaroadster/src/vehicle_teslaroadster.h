@@ -61,9 +61,6 @@ class OvmsVehicleTeslaRoadster : public OvmsVehicle
   protected:
     char m_vin[18];
     char m_type[5];
-
-  public:
-    const std::string VehicleName();
   };
 
 #endif //#ifndef __VEHICLE_TESLAROADSTER_H__

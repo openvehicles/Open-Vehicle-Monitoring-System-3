@@ -57,11 +57,6 @@ OvmsVehicleTeslaRoadster::~OvmsVehicleTeslaRoadster()
   ESP_LOGI(TAG, "Shutdown Tesla Roadster vehicle module");
   }
 
-const std::string OvmsVehicleTeslaRoadster::VehicleName()
-  {
-  return std::string("Tesla Roadster");
-  }
-
 void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
@@ -580,5 +575,5 @@ OvmsVehicleTeslaRoadsterInit::OvmsVehicleTeslaRoadsterInit()
   {
   ESP_LOGI(TAG, "Registering Vehicle: Tesla Roadster (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleTeslaRoadster>("TR");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleTeslaRoadster>("TR","Tesla Roadster");
   }
