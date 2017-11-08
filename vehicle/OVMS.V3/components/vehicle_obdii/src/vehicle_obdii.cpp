@@ -64,11 +64,6 @@ OvmsVehicleOBDII::~OvmsVehicleOBDII()
   ESP_LOGI(TAG, "Shutdown OBDII vehicle module");
   }
 
-const std::string OvmsVehicleOBDII::VehicleName()
-  {
-  return std::string("OBDII");
-  }
-
 void OvmsVehicleOBDII::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
   {
   int value1 = (int)data[0];
@@ -129,5 +124,5 @@ OvmsVehicleOBDIIInit::OvmsVehicleOBDIIInit()
   {
   ESP_LOGI(TAG, "Registering Vehicle: OBDII (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleOBDII>("O2");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleOBDII>("O2","OBDII");
   }

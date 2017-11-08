@@ -85,6 +85,13 @@ config OVMS_VEHICLE_TRACK
     help
         Enable to include support for tracker vehicles.
 
+config OVMS_VEHICLE_DEMO
+    bool "Include support for DEMO vehicle"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for demonstration vehicles.
+
 config OVMS_VEHICLE_TESLAROADSTER
     bool "Include support for Tesla Roadster vehicles"
     default y

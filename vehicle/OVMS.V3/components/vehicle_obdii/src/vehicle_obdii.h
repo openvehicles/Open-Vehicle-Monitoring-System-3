@@ -46,9 +46,6 @@ class OvmsVehicleOBDII : public OvmsVehicle
 
   protected:
     char m_vin[18];
-
-  public:
-    const std::string VehicleName();
   };
 
 #endif //#ifndef __VEHICLE_OBDII_H__

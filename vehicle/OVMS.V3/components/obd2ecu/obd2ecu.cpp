@@ -223,7 +223,7 @@ void obd2ecu_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     return;
     }
 
-  writer->printf("%-7s %14s %12s %s\n","PID","Type","Value","Metric");
+  writer->printf("%-7s %14s %12s %s\n","  PID","Type","Value","Metric");
 
   for (PidMap::iterator it=MyPeripherals->m_obd2ecu->m_pidmap.begin(); it!=MyPeripherals->m_obd2ecu->m_pidmap.end(); ++it)
     {
@@ -234,8 +234,8 @@ void obd2ecu_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
         ms = it->second->GetMetric()->m_name;
       else
         ms = "";
-      writer->printf("%-7d %14s %12f %s\n",
-        it->first,
+      writer->printf("%-3d (0x%02x) %14s %12f %s\n",
+        it->first, it->first,
         it->second->GetTypeString(),
         it->second->Execute(),
         ms);
@@ -371,9 +371,9 @@ void obd2ecu::FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint
       break;
 			
     case 3:  /* 16 bit integer divided by 4: (256*A+B)/4  */
-      if (verbose && (data > 16383.75)) 
+      if (data > 16383.75) 
         {
-        ESP_LOGI(TAG, "Data out of range %f",data);
+        ESP_LOGD(TAG, "Data out of range %f",data);
         a = b = 0xff;  /* use max value */
         break;
         }
@@ -392,9 +392,9 @@ void obd2ecu::FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint
       break;
 			
     case 6:  /* 0 to 655.35:  (256*A+B)/100 */
-      if (verbose && data > 655.35) 
+      if (data > 655.35) 
         {
-        ESP_LOGI(TAG, "Data out of range %f",data);
+        ESP_LOGD(TAG, "Data out of range %f",data);
         a = b = 0xff;  /* use max value */
         break;
         }
@@ -427,7 +427,7 @@ void obd2ecu::FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint
       break;
       
     default:
-      if (verbose) ESP_LOGI(TAG, "Unsupported format %d",format);
+      ESP_LOGD(TAG, "Unsupported PID format %d",format);
       /* default to empty data */
       break;
     }
@@ -458,14 +458,12 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
   int jitter;
   uint8_t mapped_pid;
   float metric;
-  time_t since_start;
   char vin_string[18];
 
   uint8_t *p_d = p_frame->data.u8;  /* Incoming frame data from HUD / Dongle */
   uint8_t *r_d = r_frame.data.u8;  /* Response frame data being sent back to HUD / Dongle */
 
-  if (verbose)
-    ESP_LOGI(TAG, "Rcv %x: %x (%x %x %x %x %x %x %x %x)",
+  ESP_LOGD(TAG, "Rcv %x: %x (%x %x %x %x %x %x %x %x)",
                       p_frame->MsgID,
                       p_frame->FIR.B.DLC,
                       p_d[0],p_d[1],p_d[2],p_d[3],p_d[4],p_d[5],p_d[6],p_d[7]);
@@ -476,11 +474,11 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
        else
        { /* check for flow control frames - they're received on the response MsgID minus 8 */
          if ((p_frame->MsgID == FLOWCONTROL_PID || p_frame->MsgID == FLOWCONTROL_EXT_PID) && p_frame->data.u8[0] == 0x30)
-         {  if (verbose) ESP_LOGI(TAG, "flow control frame - ignored");
+         {  ESP_LOGD(TAG, "flow control frame - ignored");
            return;  /* ignore it.  We just sleep for a bit instead */
          }
          /* if none of the above, no idea what it is.  Ignore */
-         ESP_LOGI(TAG, "unknown MsgID %x",p_frame->MsgID);
+         ESP_LOGD(TAG, "unknown MsgID %x",p_frame->MsgID);
          return;
        }
   
@@ -598,14 +596,6 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           m_can->Write(&r_frame);
           break;
           
-        case 0x1f:	/* Runtime since engine start - #secs since prog start */
-          since_start = time(NULL)-m_starttime;
-          if (verbose) ESP_LOGI(TAG, "Reporting running for %d seconds",(int)since_start);
-          metric = since_start;
-          FillFrame(&r_frame,reply,mapped_pid,metric,pid_format[mapped_pid]);
-          m_can->Write(&r_frame);
-          break;
-          
         default:  /* most PIDs get processed here */
           if(mapped_pid > sizeof(pid_format))
           { ESP_LOGI(TAG, "unknown capability requested %x",r_frame.data.u8[2]);
@@ -622,10 +612,10 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
       switch (p_frame->data.u8[2])
         {
         case 2:
-          if(verbose) ESP_LOGI(TAG, "Requested VIN");
+          ESP_LOGD(TAG, "Requested VIN");
           
           if(MyConfig.GetParamValueBool("obd2ecu","private"))   /* ignore request for privacy's sake. Doesn't seem to matter to Dongle. */
-          { if(verbose) ESP_LOGI(TAG, "VIN request ignored");
+          { ESP_LOGD(TAG, "VIN request ignored");
             break;
           }
 
@@ -652,8 +642,6 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           memcpy(&r_d[1],vin_string+3,7);  /* grab the next 7 bytes of VIN */
           
           m_can->Write(&r_frame);
-          
-          vTaskDelay(10 / portTICK_PERIOD_MS);
 
           r_d[0] = 0x22;
           memcpy(&r_d[1],vin_string+10,7);  /* grab the last 7 bytes of VIN */
@@ -663,7 +651,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           break;
                        
         case 0x0a: /* ECU Name */
-          if (verbose) ESP_LOGI(TAG, "ECU Name requested");
+          ESP_LOGD(TAG, "ECU Name requested");
           /* Perhaps a good place for arbitrary text, e.g. fleet asset #?  20 char avail. */
           r_frame.origin = NULL;
           r_frame.FIR.U = 0;
@@ -692,8 +680,6 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[7] = ' ';
           m_can->Write(&r_frame);
           
-          vTaskDelay(10 / portTICK_PERIOD_MS);
-
           r_d[0] = 0x22;
           r_d[1] = 't';
           r_d[2] = 'e';
@@ -703,8 +689,6 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[6] = 'h';
           r_d[7] = 'e';
           m_can->Write(&r_frame);
-          
-          vTaskDelay(10 / portTICK_PERIOD_MS);
 
           r_d[0] = 0x23;
           r_d[1] = 'r';
@@ -718,24 +702,24 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           break;
 
         default:
-          if (verbose) ESP_LOGI(TAG, "unknown ID=9 frame %x",p_d[2]);
+          ESP_LOGD(TAG, "unknown ID=9 frame %x",p_d[2]);
         }
         break;
 
     case 0x03:  /* request DTCs */
-      if (verbose) ESP_LOGI(TAG, "Request DTCs; ignored");
+      ESP_LOGD(TAG, "Request DTCs; ignored");
       break;
 
     case 0x07: /* pending DTCs */
-      if (verbose) ESP_LOGI(TAG, "Pending DTCs; ignored");
+      ESP_LOGD(TAG, "Pending DTCs; ignored");
       break;
 				
     case 0x0a:  /* permanent / cleared DTCs */
-      if (verbose) ESP_LOGI(TAG, "permanent / cleared DTCs; ignored");
+      ESP_LOGD(TAG, "permanent / cleared DTCs; ignored");
       break;
 				
     default:
-      if (verbose) ESP_LOGI(TAG, "Unknown Mode %x",p_d[1]);
+      ESP_LOGD(TAG, "Unknown Mode %x",p_d[1]);
     }
 
   return;
@@ -779,7 +763,7 @@ void obd2ecu::LoadMap()
           m_pidmap[pid]->SetMetric(m);
         }
       }
-      else if(pid) ESP_LOGI(TAG, "Metric '%s' not found",it->second.c_str());
+      else if(pid) ESP_LOGI(TAG, "Metric '%s' not found; ignored.",it->second.c_str());
     }
 
   // Look for scripts (if javascript enabled)...
@@ -791,7 +775,7 @@ void obd2ecu::LoadMap()
     while ((dp = readdir (dir)) != NULL)
       {
       int pid = atoi(dp->d_name);
-      ESP_LOGI(TAG, "Using custom scripting for pid#%d",pid);
+      ESP_LOGI(TAG, "Using custom scripting for pid#%d (0x%02x)",pid,pid);
       if (pid)
         {
         std::string fpath("/store/obd2ecu/");
@@ -827,7 +811,7 @@ void obd2ecu::Addpid(uint8_t pid)
          
   if(pid <= 0x20)       // PIDs 1-20
   { m_supported_01_20 |= 1 << (32-pid);
-    if(verbose) ESP_LOGI(TAG, "Added 0x%02x resulting 0x%08x",pid,m_supported_01_20); 
+    ESP_LOGD(TAG, "Added 0x%02x resulting 0x%08x",pid,m_supported_01_20); 
     return;
   }
          

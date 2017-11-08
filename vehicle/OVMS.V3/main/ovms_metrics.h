@@ -75,11 +75,14 @@ typedef enum
 
   Kph           = 61,
   Mph           = 62,
-  
+ 
   // Acceleration:
   KphPS         = 71,   // Kph per second
   MphPS         = 72,   // Mph per second
   MetersPSS     = 73,   // Meters per second^2
+
+  dbm           = 80,   // Signal Quality (in dBm)
+  sq            = 81,   // Signal Quality (in SQ units)
 
   Percentage    = 90
   } metric_unit_t;

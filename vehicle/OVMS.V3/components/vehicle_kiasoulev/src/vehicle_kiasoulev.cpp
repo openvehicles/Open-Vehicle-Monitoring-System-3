@@ -54,10 +54,6 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan2(CAN_frame_t* p_frame)
   {
   }
 
-const std::string OvmsVehicleKiaSoulEv::VehicleName()
-  {
-  return std::string("Kia Soul EV");
-  }
 
 class OvmsVehicleKiaSoulEvInit
   {
@@ -68,5 +64,5 @@ OvmsVehicleKiaSoulEvInit::OvmsVehicleKiaSoulEvInit()
   {
   ESP_LOGI(TAG, "Registering Vehicle: Kia Soul EV (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleKiaSoulEv>("KS");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleKiaSoulEv>("KS","Kia Soul EV");
   }

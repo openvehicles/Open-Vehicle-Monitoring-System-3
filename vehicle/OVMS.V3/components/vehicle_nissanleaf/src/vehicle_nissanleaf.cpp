@@ -66,11 +66,6 @@ OvmsVehicleNissanLeaf::~OvmsVehicleNissanLeaf()
   ESP_LOGI(TAG, "Shutdown Nissan Leaf vehicle module");
   }
 
-const std::string OvmsVehicleNissanLeaf::VehicleName()
-  {
-  return std::string("Nissan Leaf");
-  }
-
 ////////////////////////////////////////////////////////////////////////
 // vehicle_nissanleaf_car_on()
 // Takes care of setting all the state appropriate when the car is on
@@ -387,5 +382,5 @@ OvmsVehicleNissanLeafInit::OvmsVehicleNissanLeafInit()
   {
   ESP_LOGI(TAG, "Registering Vehicle: Nissan Leaf (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleNissanLeaf>("NL");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleNissanLeaf>("NL","Nissan Leaf");
   }

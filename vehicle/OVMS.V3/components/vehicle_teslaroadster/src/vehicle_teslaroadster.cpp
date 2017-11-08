@@ -57,11 +57,6 @@ OvmsVehicleTeslaRoadster::~OvmsVehicleTeslaRoadster()
   ESP_LOGI(TAG, "Shutdown Tesla Roadster vehicle module");
   }
 
-const std::string OvmsVehicleTeslaRoadster::VehicleName()
-  {
-  return std::string("Tesla Roadster");
-  }
-
 void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
@@ -175,7 +170,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
             case 0x19: // interrupted
               StandardMetrics.ms_v_charge_state->SetValue("stopped"); break;
             case 0x0d: // preparing
-              StandardMetrics.ms_v_charge_state->SetValue("preparing"); break;
+              StandardMetrics.ms_v_charge_state->SetValue("prepare"); break;
             case 0x0e: // timer wait
               StandardMetrics.ms_v_charge_state->SetValue("timerwait"); break;
             case 0x0f: // heating
@@ -580,5 +575,5 @@ OvmsVehicleTeslaRoadsterInit::OvmsVehicleTeslaRoadsterInit()
   {
   ESP_LOGI(TAG, "Registering Vehicle: Tesla Roadster (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleTeslaRoadster>("TR");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleTeslaRoadster>("TR","Tesla Roadster");
   }

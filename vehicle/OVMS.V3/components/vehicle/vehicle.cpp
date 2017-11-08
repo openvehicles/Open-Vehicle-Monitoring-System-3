@@ -51,6 +51,15 @@ void vehicle_module(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
   }
 
+void vehicle_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->puts("Type Name");
+  for (OvmsVehicleFactory::map_vehicle_t::iterator k=MyVehicleFactory.m_vmap.begin(); k!=MyVehicleFactory.m_vmap.end(); ++k)
+    {
+    writer->printf("%-4.4s %s\n",k->first,k->second.name);
+    }
+  }
+
 void vehicle_wakeup(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (MyVehicleFactory.m_currentvehicle==NULL)
@@ -340,6 +349,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
 
   OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework",NULL,"",0,0);
   cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1);
+  cmd_vehicle->RegisterCommand("list","Show list of available vehicle modules",vehicle_list,"",0,0);
 
   MyCommandApp.RegisterCommand("wakeup","Wake up vehicle",vehicle_wakeup,"",0,0,true);
   MyCommandApp.RegisterCommand("homelink","Activate specified homelink button",vehicle_homelink,"<homelink>",1,1,true);
@@ -369,12 +379,12 @@ OvmsVehicleFactory::~OvmsVehicleFactory()
     }
   }
 
-OvmsVehicle* OvmsVehicleFactory::NewVehicle(std::string VehicleType)
+OvmsVehicle* OvmsVehicleFactory::NewVehicle(const char* VehicleType)
   {
-  OvmsVehicleFactory::map_type::iterator iter = m_map.find(VehicleType);
-  if (iter != m_map.end())
+  OvmsVehicleFactory::map_vehicle_t::iterator iter = m_vmap.find(VehicleType);
+  if (iter != m_vmap.end())
     {
-    return iter->second();
+    return iter->second.construct();
     }
   return NULL;
   }
@@ -389,7 +399,7 @@ void OvmsVehicleFactory::ClearVehicle()
     }
   }
 
-void OvmsVehicleFactory::SetVehicle(std::string type)
+void OvmsVehicleFactory::SetVehicle(const char* type)
   {
   if (m_currentvehicle)
     {
@@ -397,7 +407,7 @@ void OvmsVehicleFactory::SetVehicle(std::string type)
     m_currentvehicle = NULL;
     }
   m_currentvehicle = NewVehicle(type);
-  StandardMetrics.ms_v_type->SetValue(type.c_str());
+  StandardMetrics.ms_v_type->SetValue(type);
   }
 
 static void OvmsVehicleRxTask(void *pvParameters)
@@ -454,11 +464,6 @@ OvmsVehicle::~OvmsVehicle()
   vTaskDelete(m_rxtask);
 
   MyEvents.DeregisterEvent(TAG);
-  }
-
-const std::string OvmsVehicle::VehicleName()
-  {
-  return std::string("unknown");
   }
 
 void OvmsVehicle::RxTask()

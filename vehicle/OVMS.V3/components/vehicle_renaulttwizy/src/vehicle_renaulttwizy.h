@@ -45,8 +45,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   public:
     OvmsVehicleRenaultTwizy();
     ~OvmsVehicleRenaultTwizy();
-    const std::string VehicleName();
-	
+
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
 
