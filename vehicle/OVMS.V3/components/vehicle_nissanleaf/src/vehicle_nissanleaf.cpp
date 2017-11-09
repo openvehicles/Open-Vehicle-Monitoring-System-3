@@ -113,9 +113,8 @@ void vehicle_nissanleaf_car_on(bool isOn)
     StandardMetrics.ms_v_door_chargeport->SetValue(false);
     StandardMetrics.ms_v_charge_pilot->SetValue(false);
     StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-    // TODO
-    // car_chargestate = 0;
-    // car_chargesubstate = 0;
+    StandardMetrics.ms_v_charge_state->SetValue("stopped");
+    StandardMetrics.ms_v_charge_substate->SetValue("stopped");
     }
   }
 
@@ -132,15 +131,13 @@ void vehicle_nissanleaf_charger_status(ChargerStatus status)
     {
     case CHARGER_STATUS_IDLE:
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-      // TODO
-      // car_chargestate = 0;
-      // car_chargesubstate = 0;
+      StandardMetrics.ms_v_charge_state->SetValue("stopped");
+      StandardMetrics.ms_v_charge_substate->SetValue("stopped");
       break;
     case CHARGER_STATUS_PLUGGED_IN_TIMER_WAIT:
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-      // TODO
-      // car_chargestate = 0;
-      // car_chargesubstate = 0;
+      StandardMetrics.ms_v_charge_state->SetValue("stopped");
+      StandardMetrics.ms_v_charge_substate->SetValue("stopped");
       break;
     case CHARGER_STATUS_QUICK_CHARGING:
     case CHARGER_STATUS_CHARGING:
@@ -149,9 +146,8 @@ void vehicle_nissanleaf_charger_status(ChargerStatus status)
         StandardMetrics.ms_v_charge_kwh->SetValue(0); // Reset charge kWh
         }
       StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-      // TODO
-      // car_chargestate = 1;
-      // car_chargesubstate = 3; // Charging by request
+      StandardMetrics.ms_v_charge_state->SetValue("charging");
+      StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
 
       // TODO only use battery current for Quick Charging, for regular charging
       // we should return AC line current and voltage, not battery
@@ -180,9 +176,8 @@ void vehicle_nissanleaf_charger_status(ChargerStatus status)
       // coded, don't zero it out when we're plugged in but not charging
       StandardMetrics.ms_v_charge_voltage->SetValue(0);
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-      // TODO
-      // car_chargestate = 4; // Charge DONE
-      // car_chargesubstate = 3; // Charging by request
+      StandardMetrics.ms_v_charge_state->SetValue("done");
+      StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
       break;
     }
   if (status != CHARGER_STATUS_CHARGING && status != CHARGER_STATUS_QUICK_CHARGING)
