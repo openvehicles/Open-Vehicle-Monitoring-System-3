@@ -199,6 +199,10 @@ void OvmsServerV2::ProcessServerMsg()
       {
       int nc = atoi(payload.c_str());
       StandardMetrics.ms_s_v2_peers->SetValue(nc);
+      if (nc > 0)
+        MyEvents.SignalEvent("app.connected",NULL);
+      else
+        MyEvents.SignalEvent("app.disconnected",NULL);
       break;
       }
     case 'h': // Historical data acknowledgement
