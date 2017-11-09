@@ -344,7 +344,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
         // can_databuffer[6] is the J1772 pilot current, 0.5A per bit
         // TODO enum?
-        StandardMetrics.ms_v_charge_type->SetValue("J1772");
+        StandardMetrics.ms_v_charge_type->SetValue("type1");
         uint8_t current_limit = (d[6] + 1) / 2;
         StandardMetrics.ms_v_charge_climit->SetValue(current_limit);
         StandardMetrics.ms_v_charge_pilot->SetValue(current_limit != 0);
@@ -410,7 +410,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
         // Quick Charging
         // TODO enum?
-        StandardMetrics.ms_v_charge_type->SetValue("CHAdeMO");
+        StandardMetrics.ms_v_charge_type->SetValue("chademo");
         StandardMetrics.ms_v_charge_climit->SetValue(120);
         StandardMetrics.ms_v_charge_pilot->SetValue(true);
         StandardMetrics.ms_v_door_chargeport->SetValue(true);
@@ -420,7 +420,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         // Maybe J1772 is connected
         // can_databuffer[2] is the J1772 maximum available current, 0 if we're not plugged in
         // TODO enum?
-        StandardMetrics.ms_v_charge_type->SetValue("J1772");
+        StandardMetrics.ms_v_charge_type->SetValue("type1");
         uint8_t current_limit = d[2] / 5;
         StandardMetrics.ms_v_charge_climit->SetValue(current_limit);
         StandardMetrics.ms_v_charge_pilot->SetValue(current_limit != 0);
