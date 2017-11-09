@@ -446,6 +446,8 @@ OvmsVehicle::OvmsVehicle()
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicle::VehicleTicker1, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
+
+  MyMetrics.RegisterListener(TAG, "*", std::bind(&OvmsVehicle::MetricModified, this, _1));
   }
 
 OvmsVehicle::~OvmsVehicle()
@@ -464,6 +466,7 @@ OvmsVehicle::~OvmsVehicle()
   vTaskDelete(m_rxtask);
 
   MyEvents.DeregisterEvent(TAG);
+  MyMetrics.DeregisterListener(TAG);
   }
 
 void OvmsVehicle::RxTask()
@@ -737,6 +740,81 @@ void OvmsVehicle::VehicleConfigChanged(std::string event, void* param)
 
 void OvmsVehicle::ConfigChanged(OvmsConfigParam* param)
   {
+  }
+
+void OvmsVehicle::MetricModified(OvmsMetric* metric)
+  {
+  if (metric == StandardMetrics.ms_v_env_on)
+    {
+    if (StandardMetrics.ms_v_env_on->AsBool())
+      MyEvents.SignalEvent("vehicle.on",NULL);
+    else
+      MyEvents.SignalEvent("vehicle.off",NULL);
+    }
+  else if (metric == StandardMetrics.ms_v_charge_inprogress)
+    {
+    if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+      MyEvents.SignalEvent("vehicle.charge.start",NULL);
+    else
+      MyEvents.SignalEvent("vehicle.charge.stop",NULL);
+    }
+  else if (metric == StandardMetrics.ms_v_door_chargeport)
+    {
+    if (StandardMetrics.ms_v_door_chargeport->AsBool())
+      MyEvents.SignalEvent("vehicle.charge.prepare",NULL);
+    else
+      MyEvents.SignalEvent("vehicle.charge.finish",NULL);
+    }
+  else if (metric == StandardMetrics.ms_v_charge_pilot)
+    {
+    if (StandardMetrics.ms_v_charge_pilot->AsBool())
+      MyEvents.SignalEvent("vehicle.charge.pilot.on",NULL);
+    else
+      MyEvents.SignalEvent("vehicle.charge.pilot.off",NULL);
+    }
+  else if (metric == StandardMetrics.ms_v_env_locked)
+    {
+    if (StandardMetrics.ms_v_env_locked->AsBool())
+      MyEvents.SignalEvent("vehicle.locked",NULL);
+    else
+      MyEvents.SignalEvent("vehicle.unlocked",NULL);
+    }
+  else if (metric == StandardMetrics.ms_v_env_valet)
+    {
+    if (StandardMetrics.ms_v_env_valet->AsBool())
+      MyEvents.SignalEvent("vehicle.valet.on",NULL);
+    else
+      MyEvents.SignalEvent("vehicle.valet.off",NULL);
+    }
+  else if (metric == StandardMetrics.ms_v_env_headlights)
+    {
+    if (StandardMetrics.ms_v_env_headlights->AsBool())
+      MyEvents.SignalEvent("vehicle.headlights.on",NULL);
+    else
+      MyEvents.SignalEvent("vehicle.headlights.off",NULL);
+    }
+  else if (metric == StandardMetrics.ms_v_env_alarm)
+    {
+    if (StandardMetrics.ms_v_env_alarm->AsBool())
+      MyEvents.SignalEvent("vehicle.alarm.on",NULL);
+    else
+      MyEvents.SignalEvent("vehicle.alarm.off",NULL);
+    }
+  else if (metric == StandardMetrics.ms_v_pos_gpslock)
+    {
+    if (StandardMetrics.ms_v_pos_gpslock->AsBool())
+      MyEvents.SignalEvent("gps.lock.on",NULL);
+    else
+      MyEvents.SignalEvent("gps.lock.los",NULL);
+    }
+  else if (metric == StandardMetrics.ms_v_charge_mode)
+    {
+    MyEvents.SignalEvent("vehicle.charge.mode",(void*)metric->AsString().c_str());
+    }
+  else if (metric == StandardMetrics.ms_v_charge_state)
+    {
+    MyEvents.SignalEvent("vehicle.charge.state",(void*)metric->AsString().c_str());
+    }
   }
 
 void OvmsVehicle::PollSetPidList(canbus* bus, const poll_pid_t* plist)
