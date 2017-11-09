@@ -63,6 +63,48 @@ typedef union {
 
 typedef union {
   struct {
+  unsigned :1;                  // 0x01
+  unsigned :1;                  // 0x02
+  unsigned :1;                  // 0x04
+  unsigned CarLocked:1;         // 0x08
+  unsigned ValetMode:1;         // 0x10
+  unsigned Headlights:1;        // 0x20
+  unsigned Bonnet:1;            // 0x40
+  unsigned Trunk:1;             // 0x80
+  } bits;
+  uint8_t flags;
+} car_doors2_t;
+
+typedef union {
+  struct {
+  unsigned CarAwake:1;          // 0x01
+  unsigned CoolingPump:1;       // 0x02
+  unsigned :1;                  // 0x04
+  unsigned :1;                  // 0x08
+  unsigned :1;                  // 0x10
+  unsigned :1;                  // 0x20
+  unsigned CtrlLoggedIn:1;      // 0x40 - logged into controller
+  unsigned CtrlCfgMode:1;       // 0x80 - controller in configuration mode
+  } bits;
+  uint8_t flags;
+} car_doors3_t;
+
+typedef union {
+  struct {
+  unsigned :1;                  // 0x01
+  unsigned AlarmSounds:1;       // 0x02
+  unsigned :1;                  // 0x04
+  unsigned :1;                  // 0x08
+  unsigned :1;                  // 0x10
+  unsigned :1;                  // 0x20
+  unsigned :1;                  // 0x40
+  unsigned :1;                  // 0x80
+  } bits;
+  uint8_t flags;
+} car_doors4_t;
+
+typedef union {
+  struct {
   unsigned RearLeftDoor:1;      // 0x01
   unsigned RearRightDoor:1;     // 0x02
   unsigned Frunk:1;             // 0x04
@@ -679,6 +721,43 @@ void AppendDoors1(std::string *buffer)
   buffer->append(b);
   }
 
+void AppendDoors2(std::string *buffer)
+  {
+  car_doors2_t car_doors2;
+  car_doors2.bits.CarLocked = StandardMetrics.ms_v_env_locked->AsBool();
+  car_doors2.bits.ValetMode = StandardMetrics.ms_v_env_valet->AsBool();
+  car_doors2.bits.Headlights = StandardMetrics.ms_v_env_headlights->AsBool();
+  car_doors2.bits.Bonnet = StandardMetrics.ms_v_door_hood->AsBool();
+  car_doors2.bits.Trunk = StandardMetrics.ms_v_door_trunk->AsBool();
+
+  char b[5];
+  itoa(car_doors2.flags, b, 10);
+  buffer->append(b);
+  }
+
+void AppendDoors3(std::string *buffer)
+  {
+  car_doors3_t car_doors3;
+  car_doors3.bits.CarAwake = StandardMetrics.ms_v_env_awake->AsBool();
+  car_doors3.bits.CoolingPump = StandardMetrics.ms_v_env_cooling->AsBool();
+  car_doors3.bits.CtrlLoggedIn = StandardMetrics.ms_v_env_ctrl_login->AsBool();
+  car_doors3.bits.CtrlCfgMode = StandardMetrics.ms_v_env_ctrl_config->AsBool();
+
+  char b[5];
+  itoa(car_doors3.flags, b, 10);
+  buffer->append(b);
+  }
+
+void AppendDoors4(std::string *buffer)
+  {
+  car_doors4_t car_doors4;
+  car_doors4.bits.AlarmSounds = StandardMetrics.ms_v_env_alarm->AsBool();
+
+  char b[5];
+  itoa(car_doors4.flags, b, 10);
+  buffer->append(b);
+  }
+
 void AppendDoors5(std::string *buffer)
   {
   car_doors5_t car_doors5;
@@ -730,9 +809,9 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
   buffer.append("MP-0 D");
   AppendDoors1(&buffer);
   buffer.append(",");
-  buffer.append("0");  // car_doors2
+  AppendDoors2(&buffer);
   buffer.append(",");
-  buffer.append("0");  // car_lockstate
+  buffer.append(StandardMetrics.ms_v_env_locked->AsBool()?"4":"5");
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_inv_temp->AsString("0").c_str());
   buffer.append(",");
@@ -740,17 +819,26 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_bat_temp->AsString("0").c_str());
   buffer.append(",");
-  buffer.append("0");  // car_trip
+
+  float v = StandardMetrics.ms_v_pos_trip->AsFloat(0, m_units_distance);
+  std::ostringstream vs;
+  vs << int(v*10);
+  buffer.append(vs.str());
   buffer.append(",");
-  buffer.append("0");  // car_odometer
+
+  v = StandardMetrics.ms_v_pos_odometer->AsFloat(0, m_units_distance);
+  vs = std::ostringstream();
+  vs << int(v*10);
+  buffer.append(vs.str());
   buffer.append(",");
+
   buffer.append(StandardMetrics.ms_v_pos_speed->AsString("0").c_str());
   buffer.append(",");
-  buffer.append("0");  // park
+  buffer.append(StandardMetrics.ms_v_env_parktime->AsString("0"));
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_env_temp->AsString("0").c_str());
   buffer.append(",");
-  buffer.append("0");  // car_doors3
+  AppendDoors3(&buffer);
   buffer.append(",");
 
   // v2 has one "stale" flag for 4 temperatures, we say they're stale only if
@@ -767,7 +855,7 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_bat_12v_voltage->AsString("0").c_str());
   buffer.append(",");
-  buffer.append("0");  // car_doors4
+  AppendDoors4(&buffer);
   buffer.append(",");
   buffer.append("0");  // car_12vline_ref
   buffer.append(",");
@@ -775,7 +863,7 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_charge_temp->AsString("0").c_str());
   buffer.append(",");
-  buffer.append("0");  // car_12v_current
+  buffer.append(StandardMetrics.ms_v_bat_12v_current->AsString("0"));
 
   ESP_LOGI(TAG, "Sending: %s", buffer.c_str());
   Transmit(buffer.c_str());
