@@ -44,6 +44,7 @@ static const char *TAG = "ovms-server-v2";
 #include "crypt_crc.h"
 #include "ovms_server_v2.h"
 #include "ovms_netmanager.h"
+#include "vehicle.h"
 #include "esp_system.h"
 
 // should this go in the .h or in the .cpp?
@@ -293,10 +294,13 @@ void OvmsServerV2::ProcessCommand(std::string* payload)
   size_t sep = payload->find(',');
   // std::string token = std::string(line,7,sep-7);
 
+  OvmsVehicle* vehicle = MyVehicleFactory.ActiveVehicle();
+
   std::ostringstream buffer;
   switch (command)
     {
     case 1: // Request feature list
+      {
       for (int k=0;k<16;k++)
         {
         buffer = std::ostringstream();
@@ -304,10 +308,14 @@ void OvmsServerV2::ProcessCommand(std::string* payload)
         Transmit(buffer.str());
         }
       break;
+      }
     case 2: // Set feature
+      {
       Transmit("MP-0 c2,1");
       break;
+      }
     case 3: // Request parameter list
+      {
       for (int k=0;k<32;k++)
         {
         buffer = std::ostringstream();
@@ -319,7 +327,9 @@ void OvmsServerV2::ProcessCommand(std::string* payload)
         Transmit(buffer.str());
         }
       break;
+      }
     case 4: // Set parameter
+      {
       if (sep != std::string::npos)
         {
         int k = atoi(payload->substr(sep+1).c_str());
@@ -331,19 +341,89 @@ void OvmsServerV2::ProcessCommand(std::string* payload)
         }
       Transmit("MP-0 c4,0");
       break;
+      }
     case 5: // Reboot
+      {
       esp_restart();
       break;
-    case 6: // Charge alert
-    case 7: // Execute command
+      }
     case 10: // Set Charge Mode
+      {
+      int result = 1;
+      if ((vehicle)&&(sep != std::string::npos))
+        {
+        if (vehicle->CommandSetChargeMode((OvmsVehicle::vehicle_mode_t)atoi(payload->substr(sep+1).c_str())) == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c10," << result;
+      Transmit(buffer.str());
+      break;
+      }
     case 11: // Start Charge
+      {
+      int result = 1;
+      if (vehicle)
+        {
+        if (vehicle->CommandStartCharge() == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c11," << result;
+      Transmit(buffer.str());
+      break;
+      }
     case 12: // Stop Charge
+      {
+      int result = 1;
+      if (vehicle)
+        {
+        if (vehicle->CommandStopCharge() == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c12," << result;
+      Transmit(buffer.str());
+      break;
+      }
     case 15: // Set Charge Current
+      {
+      int result = 1;
+      if ((vehicle)&&(sep != std::string::npos))
+        {
+        if (vehicle->CommandSetChargeCurrent(atoi(payload->substr(sep+1).c_str())) == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c15," << result;
+      Transmit(buffer.str());
+      break;
+      }
     case 16: // Set Charge Mode and Current
-    case 17: // Set Charge Timer Mode and Start Time
+      {
+      int result = 1;
+      if ((vehicle)&&(sep != std::string::npos))
+        {
+        OvmsVehicle::vehicle_mode_t mode = (OvmsVehicle::vehicle_mode_t)atoi(payload->substr(sep+1).c_str());
+        sep = payload->find(',',sep+1);
+        if (sep != std::string::npos)
+          {
+          if (vehicle->CommandSetChargeMode(mode) == OvmsVehicle::Success) result = 0;
+          if ((result == 0)&&(vehicle->CommandSetChargeCurrent(atoi(payload->substr(sep+1).c_str())) != OvmsVehicle::Success))
+            result = 1;
+          }
+        }
+      buffer << "MP-0 c16," << result;
+      Transmit(buffer.str());
+      break;
+      }
     case 18: // Wakeup Car
     case 19: // Wakeup Temperature Subsystem
+      {
+      int result = 1;
+      if (vehicle)
+        {
+        if (vehicle->CommandWakeup() == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c" << command << "," << result;
+      Transmit(buffer.str());
+      break;
+      }
+    case 6: // Charge alert
+    case 7: // Execute command
+    case 17: // Set Charge Timer Mode and Start Time
     case 20: // Lock Car
     case 21: // Activate Valet Mode
     case 22: // Unlock Car
@@ -357,7 +437,7 @@ void OvmsServerV2::ProcessCommand(std::string* payload)
     case 41: // Send MMI/USSD codes
     case 49: // Send raw AT command
     default:
-      buffer << "MP-0 c" << command << ",1";
+      buffer << "MP-0 c" << command << ",2";
       break;
     }
   }
