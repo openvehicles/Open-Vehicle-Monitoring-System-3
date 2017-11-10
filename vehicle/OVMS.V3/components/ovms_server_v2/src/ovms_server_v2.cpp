@@ -421,13 +421,53 @@ void OvmsServerV2::ProcessCommand(std::string* payload)
       Transmit(buffer.str());
       break;
       }
+    case 20: // Lock Car
+      {
+      int result = 1;
+      if ((vehicle)&&(sep != std::string::npos))
+        {
+        if (vehicle->CommandLock(payload->substr(sep+1).c_str()) == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c20," << result;
+      Transmit(buffer.str());
+      break;
+      }
+    case 21: // Activate Valet Mode
+      {
+      int result = 1;
+      if ((vehicle)&&(sep != std::string::npos))
+        {
+        if (vehicle->CommandActivateValet(payload->substr(sep+1).c_str()) == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c21," << result;
+      Transmit(buffer.str());
+      break;
+      }
+    case 22: // Unlock Car
+      {
+      int result = 1;
+      if ((vehicle)&&(sep != std::string::npos))
+        {
+        if (vehicle->CommandUnlock(payload->substr(sep+1).c_str()) == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c22," << result;
+      Transmit(buffer.str());
+      break;
+      }
+    case 23: // Deactivate Valet Mode
+      {
+      int result = 1;
+      if ((vehicle)&&(sep != std::string::npos))
+        {
+        if (vehicle->CommandDeactivateValet(payload->substr(sep+1).c_str()) == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c23," << result;
+      Transmit(buffer.str());
+      break;
+      }
     case 6: // Charge alert
     case 7: // Execute command
     case 17: // Set Charge Timer Mode and Start Time
-    case 20: // Lock Car
-    case 21: // Activate Valet Mode
-    case 22: // Unlock Car
-    case 23: // Deactivate Valet Mode
     case 24: // Homelink
     case 25: // Cooldown
     case 30: // request GPRS utilisation data
