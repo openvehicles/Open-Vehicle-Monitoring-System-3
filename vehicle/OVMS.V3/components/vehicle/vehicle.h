@@ -110,9 +110,9 @@ class OvmsVehicle
     typedef enum
       {
       Standard = 0,
-      Storage,
-      Range,
-      Performance
+      Storage = 1,
+      Range = 3,
+      Performance = 4
       } vehicle_mode_t;
 
   public:
