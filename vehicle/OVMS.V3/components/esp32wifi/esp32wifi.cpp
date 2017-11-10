@@ -262,7 +262,9 @@ void esp32wifi::StartScanningClientMode()
   memset(&m_wifi_apsta_cfg,0,sizeof(m_wifi_apsta_cfg));
   ESP_ERROR_CHECK(esp_wifi_start());
 
-  m_nextscan = monotonictime;
+  // if we are triggered by a startup script, monotonictime will be zero which
+  // won't pass the test in EventTimer10()
+  m_nextscan = monotonictime+1;
   }
 
 void esp32wifi::StartAccessPointMode(std::string ssid, std::string password)
