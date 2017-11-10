@@ -465,11 +465,31 @@ void OvmsServerV2::ProcessCommand(std::string* payload)
       Transmit(buffer.str());
       break;
       }
+    case 24: // Homelink
+      {
+      int result = 1;
+      if ((vehicle)&&(sep != std::string::npos))
+        {
+        if (vehicle->CommandHomelink(atoi(payload->substr(sep+1).c_str())) == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c24," << result;
+      Transmit(buffer.str());
+      break;
+      }
+    case 25: // Cooldown
+      {
+      int result = 1;
+      if (vehicle)
+        {
+        if (vehicle->CommandCooldown(true) == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c25," << result;
+      Transmit(buffer.str());
+      break;
+      }
     case 6: // Charge alert
     case 7: // Execute command
     case 17: // Set Charge Timer Mode and Start Time
-    case 24: // Homelink
-    case 25: // Cooldown
     case 30: // request GPRS utilisation data
     case 31: // Request historical data summary
     case 32: // Request historical data records
