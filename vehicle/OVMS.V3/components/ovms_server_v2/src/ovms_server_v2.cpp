@@ -117,6 +117,32 @@ typedef union {
   uint8_t flags;
 } car_doors5_t;
 
+#define PMAX_MAX 15
+static struct
+  {
+  const char* param;
+  const char* instance;
+  } pmap[]
+  =
+  {
+  { "vehicle",   "registered.phone" },     //  0 PARAM_REGPHONE
+  { "password",  "module" },               //  1 PARAM_MODULEPASS
+  { "vehicle",   "units.distance" },       //  2 PARAM_MILESKM
+  { "",          "" },                     //  3 PARAM_NOTIFIES
+  { "server.v2", "server" },               //  4 PARAM_SERVERIP
+  { "modem",     "apn" },                  //  5 PARAM_GPRSAPN
+  { "modem",     "apn.user" },             //  6 PARAM_GPRSUSER
+  { "modem",     "apn.password" },         //  7 PARAM_GPRSPASS
+  { "vehicle",   "id" },                   //  8 PARAM_VEHICLEID
+  { "server.v2", "password" },             //  9 PARAM_SERVERPASS
+  { "",          "" },                     // 10 PARAM_PARANOID
+  { "",          "" },                     // 11 PARAM_S_GROUP1
+  { "",          "" },                     // 12 PARAM_S_GROUP2
+  { "",          "" },                     // 13 PARAM_GSMLOCK
+  { "",          "" },                     // 14 PARAM_VEHICLETYPE
+  { "",          "" }                      // 15 PARAM_COOLDOWN
+  };
+
 OvmsServerV2 *MyOvmsServerV2 = NULL;
 size_t MyOvmsServerV2Modifier = 0;
 
@@ -253,9 +279,85 @@ void OvmsServerV2::ProcessServerMsg()
       }
     case 'C': // Command
       {
+      ProcessCommand(&payload);
       break;
       }
     default:
+      break;
+    }
+  }
+
+void OvmsServerV2::ProcessCommand(std::string* payload)
+  {
+  int command = atoi(payload->c_str());
+  size_t sep = payload->find(',');
+  // std::string token = std::string(line,7,sep-7);
+
+  std::ostringstream buffer;
+  switch (command)
+    {
+    case 1: // Request feature list
+      for (int k=0;k<16;k++)
+        {
+        buffer = std::ostringstream();
+        buffer << "MP-0 c1,0," << k << ",16,0";
+        Transmit(buffer.str());
+        }
+      break;
+    case 2: // Set feature
+      Transmit("MP-0 c2,1");
+      break;
+    case 3: // Request parameter list
+      for (int k=0;k<32;k++)
+        {
+        buffer = std::ostringstream();
+        buffer << "MP-0 c3,0," << k << ",32,";
+        if ((k<PMAX_MAX)&&(pmap[k].param[0] != 0))
+          {
+          buffer << MyConfig.GetParamValue(pmap[k].param, pmap[k].instance);
+          }
+        Transmit(buffer.str());
+        }
+      break;
+    case 4: // Set parameter
+      if (sep != std::string::npos)
+        {
+        int k = atoi(payload->substr(sep+1).c_str());
+        if ((k<PMAX_MAX)&&(pmap[k].param[0] != 0))
+          {
+          sep = payload->find(',',sep+1);
+          MyConfig.SetParamValue(pmap[k].param, pmap[k].instance, payload->substr(sep+1));
+          }
+        }
+      Transmit("MP-0 c4,0");
+      break;
+    case 5: // Reboot
+      esp_restart();
+      break;
+    case 6: // Charge alert
+    case 7: // Execute command
+    case 10: // Set Charge Mode
+    case 11: // Start Charge
+    case 12: // Stop Charge
+    case 15: // Set Charge Current
+    case 16: // Set Charge Mode and Current
+    case 17: // Set Charge Timer Mode and Start Time
+    case 18: // Wakeup Car
+    case 19: // Wakeup Temperature Subsystem
+    case 20: // Lock Car
+    case 21: // Activate Valet Mode
+    case 22: // Unlock Car
+    case 23: // Deactivate Valet Mode
+    case 24: // Homelink
+    case 25: // Cooldown
+    case 30: // request GPRS utilisation data
+    case 31: // Request historical data summary
+    case 32: // Request historical data records
+    case 40: // Send SMS
+    case 41: // Send MMI/USSD codes
+    case 49: // Send raw AT command
+    default:
+      buffer << "MP-0 c" << command << ",1";
       break;
     }
   }
@@ -267,9 +369,10 @@ void OvmsServerV2::Transmit(std::string message)
   memcpy(s,message.c_str(),len);
   char buf[(len*2)+4];
 
+  ESP_LOGI(TAG, "Send %s",message.c_str());
+
   RC4_crypt(&m_crypto_tx1, &m_crypto_tx2, (uint8_t*)s, len);
   base64encode((uint8_t*)s, len, (uint8_t*)buf);
-  ESP_LOGI(TAG, "Send %s",buf);
   strcat(buf,"\r\n");
   m_conn.Write(buf,strlen(buf));
   }
@@ -281,9 +384,10 @@ void OvmsServerV2::Transmit(const char* message)
   memcpy(s,message,len);
   char buf[(len*2)+4];
 
+  ESP_LOGI(TAG, "Send %s",message);
+
   RC4_crypt(&m_crypto_tx1, &m_crypto_tx2, (uint8_t*)s, len);
   base64encode((uint8_t*)s, len, (uint8_t*)buf);
-  ESP_LOGI(TAG, "Send %s",buf);
   strcat(buf,"\r\n");
   m_conn.Write(buf,strlen(buf));
   }
@@ -557,7 +661,6 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << StandardMetrics.ms_v_bat_soh->AsInt()
     ;
 
-  ESP_LOGI(TAG, "Sending: %s", buffer.str().c_str());
   Transmit(buffer.str().c_str());
   }
 
@@ -617,7 +720,6 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_bat_energy_recd->AsString("0",Other,0).c_str());
 
-  ESP_LOGI(TAG, "Sending: %s", buffer.c_str());
   Transmit(buffer.c_str());
   }
 
@@ -880,7 +982,6 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
   buffer.append(",");
   buffer.append(StandardMetrics.ms_v_bat_12v_current->AsString("0"));
 
-  ESP_LOGI(TAG, "Sending: %s", buffer.c_str());
   Transmit(buffer.c_str());
   }
 
