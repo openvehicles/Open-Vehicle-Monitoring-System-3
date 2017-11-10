@@ -266,12 +266,13 @@ void OvmsServerV2::ProcessServerMsg()
       }
     case 'Z': // Peer connections
       {
+      int oldpeers = StandardMetrics.ms_s_v2_peers->AsInt();
       int nc = atoi(payload.c_str());
       StandardMetrics.ms_s_v2_peers->SetValue(nc);
-      if (nc > 0)
-        MyEvents.SignalEvent("app.connected",NULL);
-      else
+      if ((nc == 0)&&(oldpeers != 0))
         MyEvents.SignalEvent("app.disconnected",NULL);
+      else
+        MyEvents.SignalEvent("app.connected",NULL);
       break;
       }
     case 'h': // Historical data acknowledgement
@@ -841,38 +842,34 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
     StandardMetrics.ms_v_pos_direction->IsStale() ||
     StandardMetrics.ms_v_pos_altitude->IsStale();
 
-  std::string buffer;
-  buffer.reserve(512);
-  buffer.append("MP-0 L");
-  buffer.append(StandardMetrics.ms_v_pos_latitude->AsString("0",Other,6).c_str());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_pos_longitude->AsString("0",Other,6).c_str());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_pos_direction->AsString("0").c_str());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_pos_altitude->AsString("0").c_str());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_pos_gpslock->AsString("0").c_str());
-  if (stale)
-    buffer.append(",0,");
-  else
-    buffer.append(",1,");
-  if (m_units_distance == Kilometers)
-    buffer.append(StandardMetrics.ms_v_pos_speed->AsString("0").c_str());
-  else
-    buffer.append(StandardMetrics.ms_v_pos_speed->AsString("0",Mph).c_str());
-  buffer.append(",");
-  char hex[10];
-  sprintf(hex, "%x", StandardMetrics.ms_v_env_drivemode->AsInt());
-  buffer.append(hex);
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_bat_power->AsString("0",Other,1).c_str());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_bat_energy_used->AsString("0",Other,0).c_str());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_bat_energy_recd->AsString("0",Other,0).c_str());
+  char drivemode[10];
+  sprintf(drivemode, "%x", StandardMetrics.ms_v_env_drivemode->AsInt());
 
-  Transmit(buffer.c_str());
+  std::ostringstream buffer;
+  buffer
+    << "MP-0 L"
+    << StandardMetrics.ms_v_pos_latitude->AsString("0",Other,6)
+    << ","
+    << StandardMetrics.ms_v_pos_longitude->AsString("0",Other,6)
+    << ","
+    << StandardMetrics.ms_v_pos_direction->AsString("0")
+    << ","
+    << StandardMetrics.ms_v_pos_altitude->AsString("0")
+    << ","
+    << StandardMetrics.ms_v_pos_gpslock->AsBool(false)
+    << ((stale)?",0,":",1,")
+    << ((m_units_distance == Kilometers)? StandardMetrics.ms_v_pos_speed->AsString("0") : StandardMetrics.ms_v_pos_speed->AsString("0",Mph))
+    << ","
+    << drivemode
+    << ","
+    << StandardMetrics.ms_v_bat_power->AsString("0",Other,1)
+    << ","
+    << StandardMetrics.ms_v_bat_energy_used->AsString("0",Other,0)
+    << ","
+    << StandardMetrics.ms_v_bat_energy_recd->AsString("0",Other,0)
+    ;
+
+  Transmit(buffer.str().c_str());
   }
 
 void OvmsServerV2::TransmitMsgTPMS(bool always)
@@ -892,25 +889,6 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
 
-  std::string buffer;
-  buffer.reserve(512);
-  buffer.append("MP-0 W");
-  buffer.append(StandardMetrics.ms_v_tpms_fr_p->AsString("0",PSI));
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_fr_t->AsString("0"));
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_rr_p->AsString("0",PSI));
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_rr_t->AsString("0"));
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_fl_p->AsString("0",PSI));
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_fl_t->AsString("0"));
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_rl_p->AsString("0",PSI));
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_rl_t->AsString("0"));
-
   bool stale =
     StandardMetrics.ms_v_tpms_fl_t->IsStale() ||
     StandardMetrics.ms_v_tpms_fr_t->IsStale() ||
@@ -921,12 +899,28 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
     StandardMetrics.ms_v_tpms_rl_p->IsStale() ||
     StandardMetrics.ms_v_tpms_rr_p->IsStale();
 
-  if (stale)
-    buffer.append(",0");
-  else
-    buffer.append(",1");
+  std::ostringstream buffer;
+  buffer
+    << "MP-0 W"
+    << StandardMetrics.ms_v_tpms_fr_p->AsString("0",PSI)
+    << ","
+    << StandardMetrics.ms_v_tpms_fr_t->AsString("0")
+    << ","
+    << StandardMetrics.ms_v_tpms_rr_p->AsString("0",PSI)
+    << ","
+    << StandardMetrics.ms_v_tpms_rr_t->AsString("0")
+    << ","
+    << StandardMetrics.ms_v_tpms_fl_p->AsString("0",PSI)
+    << ","
+    << StandardMetrics.ms_v_tpms_fl_t->AsString("0")
+    << ","
+    << StandardMetrics.ms_v_tpms_rl_p->AsString("0",PSI)
+    << ","
+    << StandardMetrics.ms_v_tpms_rl_t->AsString("0")
+    << ((stale)?",0":",1")
+    ;
 
-  Transmit(buffer.c_str());
+  Transmit(buffer.str().c_str());
   }
 
 void OvmsServerV2::TransmitMsgFirmware(bool always)
@@ -943,23 +937,24 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
 
-  std::string buffer;
-  buffer.reserve(512);
-  buffer.append("MP-0 F");
-  buffer.append(StandardMetrics.ms_m_version->AsString(""));
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_vin->AsString(""));
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_m_net_sq->AsString("0",sq));
-  buffer.append(",1,");
-  buffer.append(StandardMetrics.ms_v_type->AsString(""));
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_m_net_provider->AsString(""));
+  std::ostringstream buffer;
+  buffer
+    << "MP-0 F"
+    << StandardMetrics.ms_m_version->AsString("")
+    << ","
+    << StandardMetrics.ms_v_vin->AsString("")
+    << ","
+    << StandardMetrics.ms_m_net_sq->AsString("0",sq)
+    << ",1,"
+    << StandardMetrics.ms_v_type->AsString("")
+    << ","
+    << StandardMetrics.ms_m_net_provider->AsString("")
+    ;
 
-  Transmit(buffer.c_str());
+  Transmit(buffer.str().c_str());
   }
 
-void AppendDoors1(std::string *buffer)
+uint8_t Doors1()
   {
   car_doors1_t car_doors1;
   car_doors1.bits.FrontLeftDoor = StandardMetrics.ms_v_door_fl->AsBool();
@@ -970,12 +965,10 @@ void AppendDoors1(std::string *buffer)
   car_doors1.bits.HandBrake = StandardMetrics.ms_v_env_handbrake->AsBool();
   car_doors1.bits.CarON = StandardMetrics.ms_v_env_on->AsBool();
 
-  char b[5];
-  itoa(car_doors1.flags, b, 10);
-  buffer->append(b);
+  return car_doors1.flags;
   }
 
-void AppendDoors2(std::string *buffer)
+uint8_t Doors2()
   {
   car_doors2_t car_doors2;
   car_doors2.bits.CarLocked = StandardMetrics.ms_v_env_locked->AsBool();
@@ -984,12 +977,10 @@ void AppendDoors2(std::string *buffer)
   car_doors2.bits.Bonnet = StandardMetrics.ms_v_door_hood->AsBool();
   car_doors2.bits.Trunk = StandardMetrics.ms_v_door_trunk->AsBool();
 
-  char b[5];
-  itoa(car_doors2.flags, b, 10);
-  buffer->append(b);
+  return car_doors2.flags;
   }
 
-void AppendDoors3(std::string *buffer)
+uint8_t Doors3()
   {
   car_doors3_t car_doors3;
   car_doors3.bits.CarAwake = StandardMetrics.ms_v_env_awake->AsBool();
@@ -997,22 +988,18 @@ void AppendDoors3(std::string *buffer)
   car_doors3.bits.CtrlLoggedIn = StandardMetrics.ms_v_env_ctrl_login->AsBool();
   car_doors3.bits.CtrlCfgMode = StandardMetrics.ms_v_env_ctrl_config->AsBool();
 
-  char b[5];
-  itoa(car_doors3.flags, b, 10);
-  buffer->append(b);
+  return car_doors3.flags;
   }
 
-void AppendDoors4(std::string *buffer)
+uint8_t Doors4()
   {
   car_doors4_t car_doors4;
   car_doors4.bits.AlarmSounds = StandardMetrics.ms_v_env_alarm->AsBool();
 
-  char b[5];
-  itoa(car_doors4.flags, b, 10);
-  buffer->append(b);
+  return car_doors4.flags;
   }
 
-void AppendDoors5(std::string *buffer)
+uint8_t Doors5()
   {
   car_doors5_t car_doors5;
   car_doors5.bits.RearLeftDoor = StandardMetrics.ms_v_door_rl->AsBool();
@@ -1021,9 +1008,7 @@ void AppendDoors5(std::string *buffer)
   car_doors5.bits.Charging12V = StandardMetrics.ms_v_env_charging12v->AsBool();
   car_doors5.bits.HVAC = StandardMetrics.ms_v_env_hvac->AsBool();
 
-  char b[5];
-  itoa(car_doors5.flags, b, 10);
-  buffer->append(b);
+  return car_doors5.flags;
   }
 
 void OvmsServerV2::TransmitMsgEnvironment(bool always)
@@ -1073,43 +1058,6 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
 
-  std::string buffer;
-  buffer.reserve(512);
-  buffer.append("MP-0 D");
-  AppendDoors1(&buffer);
-  buffer.append(",");
-  AppendDoors2(&buffer);
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_env_locked->AsBool()?"4":"5");
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_inv_temp->AsString("0").c_str());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_mot_temp->AsString("0").c_str());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_bat_temp->AsString("0").c_str());
-  buffer.append(",");
-
-  float v = StandardMetrics.ms_v_pos_trip->AsFloat(0, m_units_distance);
-  std::ostringstream vs;
-  vs << int(v*10);
-  buffer.append(vs.str());
-  buffer.append(",");
-
-  v = StandardMetrics.ms_v_pos_odometer->AsFloat(0, m_units_distance);
-  vs = std::ostringstream();
-  vs << int(v*10);
-  buffer.append(vs.str());
-  buffer.append(",");
-
-  buffer.append(StandardMetrics.ms_v_pos_speed->AsString("0").c_str());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_env_parktime->AsString("0"));
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_env_temp->AsString("0").c_str());
-  buffer.append(",");
-  AppendDoors3(&buffer);
-  buffer.append(",");
-
   // v2 has one "stale" flag for 4 temperatures, we say they're stale only if
   // all are stale, IE one valid temperature makes them all valid
   bool stale_temps =
@@ -1117,24 +1065,52 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
     StandardMetrics.ms_v_mot_temp->IsStale() &&
     StandardMetrics.ms_v_bat_temp->IsStale() &&
     StandardMetrics.ms_v_charge_temp->IsStale();
-  buffer.append(stale_temps ? "0" : "1");
-  buffer.append(",");
 
-  buffer.append(StandardMetrics.ms_v_env_temp->IsStale() ? "0" : "1");
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_bat_12v_voltage->AsString("0").c_str());
-  buffer.append(",");
-  AppendDoors4(&buffer);
-  buffer.append(",");
-  buffer.append("0");  // car_12vline_ref
-  buffer.append(",");
-  AppendDoors5(&buffer);
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_charge_temp->AsString("0").c_str());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_bat_12v_current->AsString("0"));
+  std::ostringstream buffer;
+  buffer
+    << "MP-0 D"
+    << (int)Doors1()
+    << ","
+    << (int)Doors2()
+    << ","
+    << (StandardMetrics.ms_v_env_locked->AsBool()?"4":"5")
+    << ","
+    << StandardMetrics.ms_v_inv_temp->AsString("0")
+    << ","
+    << StandardMetrics.ms_v_mot_temp->AsString("0")
+    << ","
+    << StandardMetrics.ms_v_bat_temp->AsString("0")
+    << ","
+    << int(StandardMetrics.ms_v_pos_trip->AsFloat(0, m_units_distance)*10)
+    << ","
+    << int(StandardMetrics.ms_v_pos_odometer->AsFloat(0, m_units_distance)*10)
+    << ","
+    << StandardMetrics.ms_v_pos_speed->AsString("0")
+    << ","
+    << StandardMetrics.ms_v_env_parktime->AsString("0")
+    << ","
+    << StandardMetrics.ms_v_env_temp->AsString("0")
+    << ","
+    << (int)Doors3()
+    << ","
+    << (stale_temps ? "0" : "1")
+    << ","
+    << (StandardMetrics.ms_v_env_temp->IsStale() ? "0" : "1")
+    << ","
+    << StandardMetrics.ms_v_bat_12v_voltage->AsString("0")
+    << ","
+    << (int)Doors4()
+    << ","
+    << "0"  // car_12vline_ref
+    << ","
+    << (int)Doors5()
+    << ","
+    << StandardMetrics.ms_v_charge_temp->AsString("0")
+    << ","
+    << StandardMetrics.ms_v_bat_12v_current->AsString("0")
+    ;
 
-  Transmit(buffer.c_str());
+  Transmit(buffer.str().c_str());
   }
 
 void OvmsServerV2::MetricModified(OvmsMetric* metric)
