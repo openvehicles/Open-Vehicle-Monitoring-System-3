@@ -410,6 +410,11 @@ void OvmsVehicleFactory::SetVehicle(const char* type)
   StandardMetrics.ms_v_type->SetValue(type);
   }
 
+OvmsVehicle* OvmsVehicleFactory::ActiveVehicle()
+  {
+  return m_currentvehicle;
+  }
+
 static void OvmsVehicleRxTask(void *pvParameters)
   {
   OvmsVehicle *me = (OvmsVehicle*)pvParameters;

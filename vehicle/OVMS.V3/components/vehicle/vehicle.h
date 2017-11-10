@@ -196,6 +196,7 @@ class OvmsVehicleFactory
     OvmsVehicle* NewVehicle(const char* VehicleType);
     void ClearVehicle();
     void SetVehicle(const char* type);
+    OvmsVehicle* ActiveVehicle();
   };
 
 extern OvmsVehicleFactory MyVehicleFactory;
