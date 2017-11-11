@@ -151,7 +151,7 @@ obd2ecu::obd2ecu(const char* name, canbus* can)
   : pcp(name)
   { 
   m_can = can;
-  xTaskCreatePinnedToCore(OBD2ECU_task, "OBDII ECU Task", 4096, (void*)this, 5, &m_task, 1);
+  xTaskCreatePinnedToCore(OBD2ECU_task, "OBDII ECU Task", 6144, (void*)this, 5, &m_task, 1);
  
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
 
