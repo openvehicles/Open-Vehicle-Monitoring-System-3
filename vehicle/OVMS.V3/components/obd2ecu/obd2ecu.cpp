@@ -151,7 +151,7 @@ obd2ecu::obd2ecu(const char* name, canbus* can)
   : pcp(name)
   { 
   m_can = can;
-  xTaskCreatePinnedToCore(OBD2ECU_task, "OBDII ECU Task", 4096, (void*)this, 5, &m_task, 1);
+  xTaskCreatePinnedToCore(OBD2ECU_task, "OBDII ECU Task", 6144, (void*)this, 5, &m_task, 1);
  
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
 
@@ -223,7 +223,7 @@ void obd2ecu_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     return;
     }
 
-  writer->printf("%-7s %14s %12s %s\n","  PID","Type","Value","Metric");
+  writer->printf("%-7s %14s %12s %s\n","  PID","Type","Value","   Metric");
 
   for (PidMap::iterator it=MyPeripherals->m_obd2ecu->m_pidmap.begin(); it!=MyPeripherals->m_obd2ecu->m_pidmap.end(); ++it)
     {
@@ -555,8 +555,9 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           /* For some reason, the HUD uses this param as a proxy for fuel rate */
           /* HUD devices seem to have a display range of 0-19.9 */
           /* Scaling provides a 1:1 metric pass-through, so be aware of limmits of the display device */
-          /* Use with display set to L/hr (not L/km).  */
-          metric = metric*3.0;
+          /* Use with display set to L/hr (not L/km).  Note: scripting this metric is not pre-scaled. */
+          
+          if(m_pidmap[mapped_pid]->GetType() != obd2pid::Script) metric = metric*3.0;
           FillFrame(&r_frame,reply,mapped_pid,metric,pid_format[mapped_pid]);
           m_can->Write(&r_frame);
           break;
@@ -739,7 +740,7 @@ void obd2ecu::LoadMap()
   Addpid(0x0c);
   m_pidmap[0x0d] = new obd2pid(0x0d,obd2pid::Internal,StandardMetrics.ms_v_pos_speed);  // Vehicle Speed
   Addpid(0x0d);
-  m_pidmap[0x10] = new obd2pid(0x10,obd2pid::Internal,StandardMetrics.ms_v_bat_power);  // Mass Air Flow  (Note: display limited 0-19.9 on HUDs)
+  m_pidmap[0x10] = new obd2pid(0x10,obd2pid::Internal,StandardMetrics.ms_v_bat_12v_voltage);  // Mass Air Flow  (Note: display limited 0-19.9 on HUDs)
   Addpid(0x10);
   m_pidmap[0x20] = new obd2pid(0x20,obd2pid::Internal);                                 // PIDs 21-40 supported (internally)
   Addpid(0x20);
@@ -775,7 +776,7 @@ void obd2ecu::LoadMap()
     while ((dp = readdir (dir)) != NULL)
       {
       int pid = atoi(dp->d_name);
-      ESP_LOGI(TAG, "Using custom scripting for pid#%d (0x%02x)",pid,pid);
+      ESP_LOGI(TAG, "Using custom scripting for pid #%d (0x%02x)",pid,pid);
       if (pid)
         {
         std::string fpath("/store/obd2ecu/");
