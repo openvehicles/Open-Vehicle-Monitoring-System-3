@@ -230,10 +230,11 @@ void obd2ecu_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     if ((argc==0)||(it->second->GetPid() == atoi(argv[0])))
       {
       const char *ms;
-      if (it->second->GetMetric())
+      if (it->second->GetMetric() && it->second->GetType() != obd2pid::Script)
         ms = it->second->GetMetric()->m_name;
       else
         ms = "";
+      
       writer->printf("%-3d (0x%02x) %14s %12f %s\n",
         it->first, it->first,
         it->second->GetTypeString(),
