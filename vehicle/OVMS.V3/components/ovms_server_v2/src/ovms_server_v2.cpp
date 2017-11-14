@@ -271,7 +271,7 @@ void OvmsServerV2::ProcessServerMsg()
       StandardMetrics.ms_s_v2_peers->SetValue(nc);
       if ((nc == 0)&&(oldpeers != 0))
         MyEvents.SignalEvent("app.disconnected",NULL);
-      else
+      else if (nc > 0)
         MyEvents.SignalEvent("app.connected",NULL);
       break;
       }
