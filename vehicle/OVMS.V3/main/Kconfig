@@ -139,6 +139,20 @@ config OVMS_COMP_SERVER_V3
     help
         Enable to include support for V3 server connections.
 
+config OVMS_COMP_WEBSERVER
+    bool "Include support for Network Web Server"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Web Server.
+
+config OVMS_COMP_MDNS
+    bool "Include support for Network MDNS"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for MDNS.
+
 config OVMS_COMP_MODEM_SIMCOM
     bool "Include support for SIMCOM modems"
     default y
