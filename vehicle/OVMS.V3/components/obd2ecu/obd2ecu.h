@@ -69,7 +69,7 @@ class obd2pid
   protected:
     int m_pid;
     pid_t m_type;
-    std::string m_script;
+    char* m_script;
     OvmsMetric* m_metric;
   };
 

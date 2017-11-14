@@ -46,11 +46,17 @@ obd2pid::obd2pid(int pid, pid_t type, OvmsMetric* metric)
   {
   m_pid = pid;
   m_type = type;
+  m_script = NULL;
   m_metric = metric;
   }
 
 obd2pid::~obd2pid()
   {
+  if (m_script)
+    {
+    free(m_script);
+    m_script = NULL;
+    }
   }
 
 int obd2pid::GetPid()
@@ -94,18 +100,25 @@ void obd2pid::LoadScript(std::string path)
   {
   FILE* f = fopen(path.c_str(), "r");
   if (f == NULL) return;
-  m_script.clear();
-  char buf[128];
-  while(size_t n = fread(buf, sizeof(char), sizeof(buf), f))
+
+  fseek(f, 0L, SEEK_END);
+  size_t fsz = ftell(f);
+  fseek(f, 0L, SEEK_SET);
+
+  if (m_script)
     {
-    m_script.append(buf,n);
+    free(m_script);
+    m_script = NULL;
     }
+  m_script = (char*)malloc(fsz+1);
+  fread(m_script, 1, fsz, f);
+  m_script[fsz] = 0;
+
   fclose(f);
   }
 
 float obd2pid::Execute()
   {
-
   switch (m_type)
     {
     case Unimplemented:   // PIDs requested by device but not already known
@@ -120,7 +133,7 @@ float obd2pid::Execute()
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
       {
       duk_context *ctx = MyScripts.Duktape();
-      duk_eval_string(ctx, m_script.c_str());
+      duk_eval_string(ctx, m_script);
       return (float)duk_get_number(ctx,-1);
       }
 #else // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
