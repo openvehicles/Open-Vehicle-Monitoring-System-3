@@ -299,7 +299,7 @@ WOLFSSH* SshInit(WOLFSSH* ssh, WOLFSSH_CTX* ctx)
         WLOG(WS_LOG_DEBUG, "SshInit: Cannot allocate memory.\n");
         WFREE(handshake, heap, DYNTYPE_HS);
         WFREE(rng, heap, DYNTYPE_RNG);
-        wolfSSH_free(ssh);
+        WFREE(ssh, heap, DYNTYPE_SSH);
         return NULL;
     }
 
@@ -810,7 +810,7 @@ static int SendBuffered(WOLFSSH* ssh)
     while (ssh->outputBuffer.length > 0) {
         int sent = ssh->ctx->ioSendCb(ssh,
                                ssh->outputBuffer.buffer + ssh->outputBuffer.idx,
-                               ssh->outputBuffer.length, ssh->ioReadCtx);
+                               ssh->outputBuffer.length, ssh->ioWriteCtx);
 
         if (sent < 0) {
             switch (sent) {
