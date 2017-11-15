@@ -105,7 +105,6 @@ class ConsoleTelnet : public OvmsConsole, public Parent
     telnet_t *m_telnet;
     int m_socket;
     SemaphoreHandle_t m_semaphore;
-    int m_split_eol;
     char m_buffer[BUFFER_SIZE];
   };
 
