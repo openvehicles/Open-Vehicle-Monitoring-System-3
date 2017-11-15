@@ -64,6 +64,7 @@ class TaskBase
   {
   public:
     TaskBase(Parent* parent = NULL);
+    Parent* parent() { return m_parent; }
 
   protected:
     virtual ~TaskBase();
