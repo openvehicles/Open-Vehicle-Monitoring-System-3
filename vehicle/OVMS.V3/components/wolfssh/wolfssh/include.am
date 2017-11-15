@@ -1,0 +1,20 @@
+# vim:ft=automake
+# All paths should be given relative to the root
+#
+
+
+nobase_include_HEADERS+= \
+                         wolfssh/version.h \
+                         wolfssh/ssh.h \
+                         wolfssh/keygen.h \
+                         wolfssh/port.h \
+                         wolfssh/memory.h \
+                         wolfssh/settings.h \
+                         wolfssh/error.h \
+                         wolfssh/visibility.h \
+                         wolfssh/misc.h \
+                         wolfssh/log.h
+
+noinst_HEADERS+= \
+                         wolfssh/internal.h
+
