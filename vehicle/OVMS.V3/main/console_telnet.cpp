@@ -122,7 +122,8 @@ void TelnetServer::Service()
     }
 
   rc = listen(m_socket, 5);
-  if (rc < 0) {
+  if (rc < 0)
+    {
     ESP_LOGE(tag, "listen: %d (%s)", errno, strerror(errno));
     return;
     }
@@ -132,7 +133,8 @@ void TelnetServer::Service()
   FD_ZERO(&writefds);
   FD_ZERO(&errorfds);
   FD_SET(m_socket, &readfds);
-  while (true) {
+  while (true)
+    {
     int rc = select(m_socket+1, &readfds, &writefds, &errorfds, (struct timeval *)NULL);
     if (rc < 0)
       {
