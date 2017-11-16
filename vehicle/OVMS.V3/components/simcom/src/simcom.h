@@ -83,6 +83,7 @@ class simcom : public pcp
       NetHold,
       NetSleep,
       NetMode,
+      NetDeepSleep,
       PoweringOff,
       PoweredOff
       };

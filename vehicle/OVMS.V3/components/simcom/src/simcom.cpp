@@ -175,10 +175,10 @@ void simcom::SetPowerMode(PowerMode powermode)
     {
     case On:
     case Sleep:
-      if ((original!=On)&&(original!=Sleep))
+    case DeepSleep:
+      if ((original!=On)&&(original!=Sleep)&&(original!=DeepSleep))
         SetState1(PoweringOn);
       break;
-    case DeepSleep:
     case Off:
       SetState1(PoweringOff);
       break;
@@ -270,6 +270,8 @@ void simcom::State1Leave(SimcomState1 oldstate)
       break;
     case NetMode:
       break;
+    case NetDeepSleep:
+      break;
     case PoweringOff:
       break;
     case PoweredOff:
@@ -325,6 +327,10 @@ void simcom::State1Enter(SimcomState1 newstate)
       ESP_LOGI(TAG,"State: Enter NetMode state");
       m_ppp.Startup();
       break;
+    case NetDeepSleep:
+      ESP_LOGI(TAG,"State: Enter NetDeepSleep state");
+      m_ppp.Shutdown();
+      break;
     case PoweringOff:
       ESP_LOGI(TAG,"State: Enter PoweringOff state");
       m_ppp.Shutdown();
@@ -378,6 +384,9 @@ simcom::SimcomState1 simcom::State1Activity()
     case NetMode:
       m_mux.Process(&m_buffer);
       break;
+    case NetDeepSleep:
+      m_buffer.EmptyAll(); // Drain it
+      break;
     case PoweringOff:
       m_buffer.EmptyAll(); // Drain it
       break;
@@ -406,6 +415,10 @@ simcom::SimcomState1 simcom::State1Ticker1()
       tx("AT\r\n");
       break;
     case PoweredOn:
+      if (m_powermode == DeepSleep)
+        {
+        return NetDeepSleep; // Just hold, without starting the network
+        }
       switch (m_state1_ticker)
         {
         case 10:
@@ -485,6 +498,7 @@ simcom::SimcomState1 simcom::State1Ticker1()
       break;
     case NetSleep:
       if (m_powermode == On) return NetStart;
+      if (m_powermode != Sleep) return PoweringOn;
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
         m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
       break;
@@ -496,6 +510,9 @@ simcom::SimcomState1 simcom::State1Ticker1()
         }
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
         m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
+      break;
+    case NetDeepSleep:
+      if (m_powermode != DeepSleep) return PoweringOn;
       break;
     case PoweringOff:
       break;
