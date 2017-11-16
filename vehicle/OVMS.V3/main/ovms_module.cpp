@@ -457,10 +457,16 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
   {
   static const char* ctasks[] = {}; // { "tiT", "wifi"};
   const char* const* tasks = ctasks;
+  bool all = false;
   if (argc > 0)
     {
     if (**argv == '*')
       tasks = NULL;
+    else if (**argv == '=')
+      {
+      all = true;
+      argc = sizeof(ctasks) / sizeof(char*);
+      }
     else
       tasks = argv;
     }
@@ -510,7 +516,7 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
       if (change[j])
         any = true;
       }
-    if (any)
+    if (any || all)
       {
       Name name("NoTaskMap");
       if (tm)
@@ -528,7 +534,7 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
     for (int i = 0; i < tln; ++i, ++tl)
       print_blocks(writer, *tl);
     }
-  else
+  else if (!tasks)
     {
     for (int i = changes->begin(); i < changes->end(); ++i)
       {
