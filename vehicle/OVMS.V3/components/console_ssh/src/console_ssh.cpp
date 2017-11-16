@@ -28,30 +28,12 @@
 ; THE SOFTWARE.
 */
 #define LWIP_POSIX_SOCKETS_IO_NAMES 0
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h> // Required for libssh.h
-#include <string.h>
-#include <errno.h>
-
-// #include <ctype.h>
-// #include <string.h>
-// #include <netdb.h>
-// #include <netinet/in.h>
-// #include <arpa/inet.h>
-// #include <sys/time.h>
-// #include <sys/socket.h>
-
-//#include <sys/ioctl.h>
-//#include <netinet/tcp.h>
-
 #include <lwip/def.h>
 #include <lwip/sockets.h>
 #undef bind
 #include "freertos/queue.h"
 #include "ovms_log.h"
 #include "ovms_events.h"
-#include <user_settings.h>
 #include <wolfssl/wolfcrypt/sha256.h>
 #include <wolfssl/wolfcrypt/coding.h>
 #include <wolfssh/ssh.h>
