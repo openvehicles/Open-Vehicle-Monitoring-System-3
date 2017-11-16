@@ -39,7 +39,6 @@ static const char *TAG = "esp32wifi";
 #include "ovms_config.h"
 #include "ovms_peripherals.h"
 #include "ovms_events.h"
-#include "console_telnet.h"
 
 void wifi_mode_client(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
