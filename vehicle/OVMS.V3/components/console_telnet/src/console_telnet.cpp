@@ -99,7 +99,6 @@ bool TelnetServer::Instantiate()
 
 TelnetServer::~TelnetServer()
   {
-  Cleanup();
   }
 
 void TelnetServer::Service()

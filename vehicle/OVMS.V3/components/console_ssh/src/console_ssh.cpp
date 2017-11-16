@@ -194,7 +194,6 @@ bool SSHServer::Instantiate()
 
 SSHServer::~SSHServer()
   {
-  Cleanup();
   }
 
 void SSHServer::Service()

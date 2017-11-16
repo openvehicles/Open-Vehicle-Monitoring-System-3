@@ -44,6 +44,7 @@ bool Parent::AddChild(TaskBase* child)
   {
   if (!child->Instantiate())
     {
+    child->Cleanup();
     delete child;
     return false;
     }
@@ -135,6 +136,10 @@ void TaskBase::Task(void *object)
 
 // This function should be overridden in the derived class to perform any
 // cleanup operations that must be done before the task is deleted.
+// This function should NOT be called from the destructor because it is
+// called explicitly here before the object is deleted.  That separation
+// is needed so DeleteTask can clean up before deleting the task and still
+// wait to delete the object until after the task is deleted.
 void TaskBase::Cleanup()
   {
   }
@@ -145,6 +150,7 @@ void TaskBase::DeleteFromParent()
   if (!m_parent || m_parent->RemoveChild(this))
     {
     TaskHandle_t taskid = m_taskid;
+    Cleanup();
     delete this;
     if (taskid)
       vTaskDelete(taskid);
