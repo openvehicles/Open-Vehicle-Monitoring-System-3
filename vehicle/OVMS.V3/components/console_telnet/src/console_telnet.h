@@ -37,7 +37,7 @@
 
 #define BUFFER_SIZE 1024
 
-class ConsoleTelnet;
+struct mg_connection;
 
 class OvmsTelnet : public Parent
   {
@@ -45,65 +45,34 @@ class OvmsTelnet : public Parent
     OvmsTelnet();
 
   public:
-    void WifiUp(std::string event, void* data);
-    void WifiDown(std::string event, void* data);
+    void NetManInit(std::string event, void* data);
+    void NetManStop(std::string event, void* data);
+    void EventHandler(struct mg_connection *nc, int ev, void *p);
   };
 
-class TelnetServer : public TaskBase, public Parent
+class ConsoleTelnet : public OvmsConsole
   {
   public:
-    TelnetServer(Parent* parent);
-    ~TelnetServer();
-
-  private:
-    bool Instantiate();
-    void Service();
-    void Cleanup();
-
-  protected:
-    int m_socket;
-  };
-
-class TelnetReceiver : public TaskBase
-  {
-  public:
-    TelnetReceiver(ConsoleTelnet* parent, int socket, char* buffer, QueueHandle_t queue, SemaphoreHandle_t sem);
-    ~TelnetReceiver();
-
-  private:
-    bool Instantiate();
-    void Service();
-
-  protected:
-    int m_socket;
-    char* m_buffer;
-    QueueHandle_t m_queue;
-    SemaphoreHandle_t m_semaphore;
-  };
-
-class ConsoleTelnet : public OvmsConsole, public Parent
-  {
-  public:
-    ConsoleTelnet(TelnetServer* server, int socket);
+    ConsoleTelnet(OvmsTelnet* parent, struct mg_connection* nc);
     virtual ~ConsoleTelnet();
 
-  public:
-    int puts(const char* s);
-    int printf(const char* fmt, ...);
-    ssize_t write(const void *buf, size_t nbyte);
-
   private:
     bool Instantiate();
+    void Service();
     void HandleDeviceEvent(void* pEvent);
     static void TelnetCallback(telnet_t *telnet, telnet_event_t *event, void *userData);
     void TelnetHandler(telnet_event_t *event);
 
   public:
+    void Receive();
     void Exit();
+    int puts(const char* s);
+    int printf(const char* fmt, ...);
+    ssize_t write(const void *buf, size_t nbyte);
 
   protected:
+    mg_connection* m_connection;
     telnet_t *m_telnet;
-    int m_socket;
     SemaphoreHandle_t m_semaphore;
     char m_buffer[BUFFER_SIZE];
   };

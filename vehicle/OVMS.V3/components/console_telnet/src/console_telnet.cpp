@@ -40,6 +40,7 @@
 #include "ovms_log.h"
 #include "ovms_events.h"
 #include "console_telnet.h"
+#include "ovms_netmanager.h"
 
 //#define LOGEVENTS
 #ifdef LOGEVENTS
@@ -55,182 +56,75 @@ static const char newline = '\n';
 
 OvmsTelnet MyTelnet __attribute__ ((init_priority (8300)));
 
+static void MongooseHandler(struct mg_connection *nc, int ev, void *p)
+  {
+  MyTelnet.EventHandler(nc, ev, p);
+  }
+
+void OvmsTelnet::EventHandler(struct mg_connection *nc, int ev, void *p)
+  {
+  //ESP_LOGI(tag, "Event %d conn %p, data %p", ev, nc, p);
+  switch (ev)
+    {
+    case MG_EV_ACCEPT:
+      {
+      ConsoleTelnet* child = new ConsoleTelnet(this, nc);
+      nc->user_data = child;
+      AddChild(child);
+      break;
+      }
+
+    case MG_EV_RECV:
+      {
+      ConsoleTelnet* child = (ConsoleTelnet*)nc->user_data;
+      child->Receive();
+      }
+      break;
+
+    case MG_EV_CLOSE:
+      {
+      ConsoleTelnet* child = (ConsoleTelnet*)nc->user_data;
+      DeleteChild(child);
+      }
+      break;
+
+    default:
+      break;
+    }
+  }
+
 OvmsTelnet::OvmsTelnet()
   {
   ESP_LOGI(tag, "Initialising Telnet (8300)");
 
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(tag,"network.wifi.up", std::bind(&OvmsTelnet::WifiUp, this, _1, _2));
-  MyEvents.RegisterEvent(tag,"network.wifi.down", std::bind(&OvmsTelnet::WifiDown, this, _1, _2));
+  MyEvents.RegisterEvent(tag,"network.mgr.init", std::bind(&OvmsTelnet::NetManInit, this, _1, _2));
+  MyEvents.RegisterEvent(tag,"network.mgr.stop", std::bind(&OvmsTelnet::NetManStop, this, _1, _2));
   }
 
-void OvmsTelnet::WifiUp(std::string event, void* data)
+void OvmsTelnet::NetManInit(std::string event, void* data)
   {
   ESP_LOGI(tag, "Launching Telnet Server");
-  AddChild(new TelnetServer(this));
+  struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
+  if (!mg_bind(mgr, ":23", MongooseHandler))
+    ESP_LOGE(tag, "Launching Telnet Server failed");
   }
 
-void OvmsTelnet::WifiDown(std::string event, void* data)
+void OvmsTelnet::NetManStop(std::string event, void* data)
   {
   ESP_LOGI(tag, "Stopping Telnet Server");
   DeleteChildren();
   }
 
 //-----------------------------------------------------------------------------
-//    Class TelnetServer
-//-----------------------------------------------------------------------------
-
-TelnetServer::TelnetServer(Parent* parent)
-  : TaskBase(parent)
-  {
-  m_socket = -1;
-  }
-
-bool TelnetServer::Instantiate()
-  {
-  if (CreateTaskPinned(1, "TelnetServer", 3000) != pdPASS)
-    {
-    ::printf("\nInsufficient memory to create TelnetServer task\n");
-    return false;
-    }
-  return true;
-  }
-
-TelnetServer::~TelnetServer()
-  {
-  }
-
-void TelnetServer::Service()
-  {
-  m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-  if (m_socket < 0) {
-    ESP_LOGE(tag, "socket: %d (%s)", errno, strerror(errno));
-    return;
-    }
-
-  struct sockaddr_in serverAddr;
-  serverAddr.sin_family = AF_INET;
-  serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-  serverAddr.sin_port = htons(23);
-
-  int rc = lwip_bind(m_socket, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
-  if (rc < 0) {
-    ESP_LOGE(tag, "bind socket %d: %d (%s)", m_socket, errno, strerror(errno));
-    return;
-    }
-
-  rc = listen(m_socket, 5);
-  if (rc < 0)
-    {
-    ESP_LOGE(tag, "listen: %d (%s)", errno, strerror(errno));
-    return;
-    }
-
-  fd_set readfds, writefds, errorfds;
-  FD_ZERO(&readfds);
-  FD_ZERO(&writefds);
-  FD_ZERO(&errorfds);
-  FD_SET(m_socket, &readfds);
-  while (true)
-    {
-    int rc = select(m_socket+1, &readfds, &writefds, &errorfds, (struct timeval *)NULL);
-    if (rc < 0)
-      {
-      ESP_LOGE(tag, "select: %d (%s)", errno, strerror(errno));
-      break;
-      }
-    if (m_socket < 0)   // Was server socket closed (by wifi shutting down)?
-      break;
-
-    socklen_t len = sizeof(serverAddr);
-    int partnerSocket = accept(m_socket, (struct sockaddr *)&serverAddr, &len);
-    if (partnerSocket < 0)
-      {
-      if (errno != ECONNABORTED)
-        ESP_LOGE(tag, "accept: %d (%s)", errno, strerror(errno));
-      break;
-      }
-
-    AddChild(new ConsoleTelnet(this, partnerSocket));
-    }
-  }
-
-void TelnetServer::Cleanup()
-  {
-  if (m_socket >= 0)
-    {
-    int socket = m_socket;
-    m_socket = -1;
-    if (closesocket(socket) < 0)
-      {
-      ESP_LOGE(tag, "closesocket %d: %d (%s)", socket, errno, strerror(errno));
-      }
-    }
-  }
-
-//-----------------------------------------------------------------------------
-//    Class TelnetReceiver
-//-----------------------------------------------------------------------------
-
-// The TelnetReceiverTask is required so that we can use a blocking recv() to
-// take input from the telnet connection.  It must queue Events to the
-// ConsoleTelnetTask, rather than taking direct actions itself, so that
-// libtelnet code is not executed simultaneously by both tasks.
-
-TelnetReceiver::TelnetReceiver(ConsoleTelnet* parent, int socket, char* buffer,
-                               QueueHandle_t queue, SemaphoreHandle_t sem)
-  : TaskBase(parent)
-  {
-  m_socket = socket;
-  m_buffer = buffer;
-  m_queue = queue;
-  m_semaphore = sem;
-  }
-
-bool TelnetReceiver::Instantiate()
-  {
-  if (CreateTaskPinned(1, "TelnetReceiver", 1000) != pdPASS)
-    {
-    ::printf("\nInsufficient memory to create TelnetReceiver task\n");
-    return false;
-    }
-  return true;
-  }
-
-TelnetReceiver::~TelnetReceiver()
-  {
-  }
-
-void TelnetReceiver::Service()
-  {
-  while (true)
-    {
-    OvmsConsole::Event event;
-    event.type = OvmsConsole::event_type_t::RECV;
-    event.size = recv(m_socket, m_buffer, BUFFER_SIZE, 0);
-    BaseType_t ret = xQueueSendToBack(m_queue, (void * )&event, (portTickType)(1000 / portTICK_PERIOD_MS));
-    if (ret == pdPASS)
-      {
-      // Block here until the queued message has been taken.
-      xSemaphoreTake(m_semaphore, portMAX_DELAY);
-      }
-    else
-      ESP_LOGE(tag, "Timeout queueing message in TelnetReceiver::Service\n");
-    // Stop if recv() got nothing (because the connection was closed).
-    if (event.size == 0)
-      break;
-    }
-  }
-
-//-----------------------------------------------------------------------------
 //    Class ConsoleTelnet
 //-----------------------------------------------------------------------------
 
-ConsoleTelnet::ConsoleTelnet(TelnetServer* server, int socket)
-  : OvmsConsole(server)
+ConsoleTelnet::ConsoleTelnet(OvmsTelnet* parent, struct mg_connection* nc)
+  : OvmsConsole(parent)
   {
-  m_socket = socket;
+  m_connection = nc;
   m_queue = xQueueCreate(100, sizeof(Event));
   m_semaphore = xSemaphoreCreateCounting(1, 0);
 
@@ -256,11 +150,6 @@ ConsoleTelnet::ConsoleTelnet(TelnetServer* server, int socket)
 ConsoleTelnet::~ConsoleTelnet()
   {
   m_ready = false;
-  DeleteChildren();
-  int socket = m_socket;
-  m_socket = -1;
-  if (socket >= 0 && closesocket(socket) < 0)
-    ESP_LOGE(tag, "closesocket %d: %d (%s)", socket, errno, strerror(errno));
   telnet_t *telnet = m_telnet;
   m_telnet = NULL;
   telnet_free(telnet);
@@ -270,55 +159,59 @@ ConsoleTelnet::~ConsoleTelnet()
 
 bool ConsoleTelnet::Instantiate()
   {
-  if (AddChild(new TelnetReceiver(this, m_socket, m_buffer, m_queue, m_semaphore)))
+  if (CreateTaskPinned(1, "TelnetConsole", 4000) == pdPASS)
     {
-    telnet_negotiate(m_telnet, TELNET_WILL, TELNET_TELOPT_ECHO);
-    if (CreateTaskPinned(1, "TelnetConsole", 4000) == pdPASS)
-      {
-      Initialize("Telnet");
-      return true;
-      }
-    else
-      ::printf("\nInsufficient memory to create TelnetConsole task\n");
+    return true;
     }
+  ::printf("\nInsufficient memory to create TelnetConsole task\n");
   printf("Insufficient memory for connection\n");
   return false;
   }
 
-int ConsoleTelnet::puts(const char* s)
+void ConsoleTelnet::Receive()
   {
-  if (!m_telnet)
-    return -1;
-  telnet_send_text(m_telnet, s, strlen(s));
-  telnet_send_text(m_telnet, &newline, 1);
-  return 0;
-  }
-
-int ConsoleTelnet::printf(const char* fmt, ...)
-  {
-  if (!m_telnet)
-    return 0;
-  va_list args;
-  va_start(args,fmt);
-  int ret = telnet_vprintf(m_telnet, fmt, args);
-  va_end(args);
-  return ret;
-  }
-
-ssize_t ConsoleTelnet::write(const void *buf, size_t nbyte)
-  {
-  if (!m_telnet)
-    return 0;
-  telnet_send_text(m_telnet, (const char*)buf, nbyte);
-  return nbyte;
+  OvmsConsole::Event event;
+  event.type = OvmsConsole::event_type_t::RECV;
+  struct mbuf *io = &m_connection->recv_mbuf;
+  char *buf = io->buf;
+  int len = io->len;
+  while (true)
+    {
+    int chunk = len;
+    if (chunk > BUFFER_SIZE)
+      chunk = BUFFER_SIZE;
+    memcpy(m_buffer, buf, chunk);
+    event.size = chunk;
+    BaseType_t ret = xQueueSendToBack(m_queue, (void * )&event, (portTickType)(1000 / portTICK_PERIOD_MS));
+    if (ret == pdPASS)
+      {
+      // Block here until the queued message has been taken.
+      xSemaphoreTake(m_semaphore, portMAX_DELAY);
+      }
+    else
+      ESP_LOGE(tag, "Timeout queueing message in ConsoleTelnet::Receive\n");
+    buf += chunk;
+    len -= chunk;
+    if (len == 0)
+      break;
+    }
+  mbuf_remove(io, io->len);
   }
 
 //-----------------------------------------------------------------------------
 //    ConsoleTelnetTask
 //-----------------------------------------------------------------------------
 
-// The following code is executed by the ConsoleTelnetTask created by the
-// constructor calling OvmsConsole::Initialize().
+// The following code is executed by the TelnetConsole task created by the
+// TaskBase::AddChild() calling ConsoleTelnet::Instantiate() and must not be
+// executed by any other task.
+
+void ConsoleTelnet::Service()
+  {
+  telnet_negotiate(m_telnet, TELNET_WILL, TELNET_TELOPT_ECHO);
+  Initialize("Telnet");
+  OvmsConsole::Service();
+  }
 
 void ConsoleTelnet::HandleDeviceEvent(void* pEvent)
   {
@@ -326,20 +219,10 @@ void ConsoleTelnet::HandleDeviceEvent(void* pEvent)
   switch (event.type)
     {
     case RECV:
-      if (event.size > 0)
-        {
-        telnet_recv(m_telnet, m_buffer, event.size);
-        // Unblock TelnetReceiverTask now that we are finished with
-        // the buffer.
-        xSemaphoreGive(m_semaphore);
-        }
-      else
-        {
-        // Unblock TelnetReceiverTask to let it exit.
-        xSemaphoreGive(m_semaphore);
-        DeleteFromParent();
-        // Execution does not return here because this task kills itself.
-        }
+      telnet_recv(m_telnet, m_buffer, event.size);
+      // Unblock NetManTask now that we are finished with
+      // the buffer.
+      xSemaphoreGive(m_semaphore);
       break;
 
     default:
@@ -355,13 +238,10 @@ void ConsoleTelnet::TelnetCallback(telnet_t *telnet, telnet_event_t *event, void
 
 void ConsoleTelnet::TelnetHandler(telnet_event_t *event)
   {
-  int rc;
   switch (event->type)
     {
     case TELNET_EV_SEND:
-      rc = send(m_socket, event->data.buffer, event->data.size, 0);
-      if (rc < 0)
-        DeleteFromParent();
+      mg_send(m_connection, event->data.buffer, event->data.size);
       break;
 
     case TELNET_EV_DATA:
@@ -389,7 +269,36 @@ void ConsoleTelnet::TelnetHandler(telnet_event_t *event)
 // This is called to shut down the Telnet connection when the "exit" command is input.
 void ConsoleTelnet::Exit()
   {
-  DeleteFromParent();
+  printf("logout\n");
+  m_connection->flags |= MG_F_SEND_AND_CLOSE;
+  }
+
+int ConsoleTelnet::puts(const char* s)
+  {
+  if (!m_telnet)
+    return -1;
+  telnet_send_text(m_telnet, s, strlen(s));
+  telnet_send_text(m_telnet, &newline, 1);
+  return 0;
+  }
+
+int ConsoleTelnet::printf(const char* fmt, ...)
+  {
+  if (!m_telnet)
+    return 0;
+  va_list args;
+  va_start(args,fmt);
+  int ret = telnet_vprintf(m_telnet, fmt, args);
+  va_end(args);
+  return ret;
+  }
+
+ssize_t ConsoleTelnet::write(const void *buf, size_t nbyte)
+  {
+  if (!m_telnet || (m_connection->flags & MG_F_SEND_AND_CLOSE))
+    return 0;
+  telnet_send_text(m_telnet, (const char*)buf, nbyte);
+  return nbyte;
   }
 
 /**

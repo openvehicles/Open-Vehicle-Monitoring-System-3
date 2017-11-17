@@ -54,6 +54,12 @@ bool Parent::AddChild(TaskBase* child)
   return true;
   }
 
+void Parent::DeleteChild(TaskBase* child)
+  {
+  if (RemoveChild(child))
+    child->DeleteTask();
+  }
+
 // This function would typically be called from the child's task to divorce
 // itself from the parent because it is closing down on its own.
 bool Parent::RemoveChild(TaskBase* child)

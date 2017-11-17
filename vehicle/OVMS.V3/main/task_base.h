@@ -50,6 +50,7 @@ class Parent
 
   protected:
     bool AddChild(TaskBase* child);
+    void DeleteChild(TaskBase* child);
     void DeleteChildren();
 
   public:
