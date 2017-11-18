@@ -35,8 +35,6 @@
 #include "libtelnet.h"
 #include "ovms_console.h"
 
-#define BUFFER_SIZE 1024
-
 struct mg_connection;
 
 class OvmsTelnet : public Parent
@@ -74,7 +72,6 @@ class ConsoleTelnet : public OvmsConsole
     mg_connection* m_connection;
     telnet_t *m_telnet;
     SemaphoreHandle_t m_semaphore;
-    char m_buffer[BUFFER_SIZE];
   };
 
 #endif //#ifndef __CONSOLE_TELNET_H__

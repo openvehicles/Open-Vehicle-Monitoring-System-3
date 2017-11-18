@@ -144,8 +144,7 @@ ConsoleTelnet::ConsoleTelnet(OvmsTelnet* parent, struct mg_connection* nc)
   m_telnet = telnet_init(options, TelnetCallback, TELNET_FLAG_NVT_EOL, (void*)this);
   }
 
-// This destructor may be called by ConsoleTelnetTask to delete itself or by
-// TelnetServer task if the server gets shut down, but not by TelnetReceiver task.
+// This destructor is only called by NetManTask deleting the ConsoleTelnet child.
 
 ConsoleTelnet::~ConsoleTelnet()
   {
@@ -172,30 +171,16 @@ void ConsoleTelnet::Receive()
   {
   OvmsConsole::Event event;
   event.type = OvmsConsole::event_type_t::RECV;
-  struct mbuf *io = &m_connection->recv_mbuf;
-  char *buf = io->buf;
-  int len = io->len;
-  while (true)
+  event.mbuf = &m_connection->recv_mbuf;
+  BaseType_t ret = xQueueSendToBack(m_queue, (void * )&event, (portTickType)(1000 / portTICK_PERIOD_MS));
+  if (ret == pdPASS)
     {
-    int chunk = len;
-    if (chunk > BUFFER_SIZE)
-      chunk = BUFFER_SIZE;
-    memcpy(m_buffer, buf, chunk);
-    event.size = chunk;
-    BaseType_t ret = xQueueSendToBack(m_queue, (void * )&event, (portTickType)(1000 / portTICK_PERIOD_MS));
-    if (ret == pdPASS)
-      {
-      // Block here until the queued message has been taken.
-      xSemaphoreTake(m_semaphore, portMAX_DELAY);
-      }
-    else
-      ESP_LOGE(tag, "Timeout queueing message in ConsoleTelnet::Receive\n");
-    buf += chunk;
-    len -= chunk;
-    if (len == 0)
-      break;
+    // Block here until the queued message has been taken.
+    xSemaphoreTake(m_semaphore, portMAX_DELAY);
     }
-  mbuf_remove(io, io->len);
+  else
+    ESP_LOGE(tag, "Timeout queueing message in ConsoleTelnet::Receive\n");
+  mbuf_remove(event.mbuf, event.mbuf->len);
   }
 
 //-----------------------------------------------------------------------------
@@ -219,7 +204,7 @@ void ConsoleTelnet::HandleDeviceEvent(void* pEvent)
   switch (event.type)
     {
     case RECV:
-      telnet_recv(m_telnet, m_buffer, event.size);
+      telnet_recv(m_telnet, event.mbuf->buf, event.mbuf->len);
       // Unblock NetManTask now that we are finished with
       // the buffer.
       xSemaphoreGive(m_semaphore);

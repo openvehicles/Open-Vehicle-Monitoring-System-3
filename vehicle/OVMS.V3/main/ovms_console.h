@@ -39,6 +39,7 @@
 class OvmsCommandMap;
 class Parent;
 class LogBuffers;
+struct mbuf;
 
 class OvmsConsole : public OvmsShell, public TaskBase
   {
@@ -66,6 +67,7 @@ class OvmsConsole : public OvmsShell, public TaskBase
         char* buffer;       // Pointer to ALERT buffer
         LogBuffers* multi;  // Pointer to ALERT_MULTI message
         ssize_t size;       // Buffer size for RECV
+        struct mbuf* mbuf;  // Buffer pointer for RECV with Mongoose
         };
       } Event;
 
