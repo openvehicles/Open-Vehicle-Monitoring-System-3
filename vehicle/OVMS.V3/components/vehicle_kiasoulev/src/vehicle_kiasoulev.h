@@ -58,24 +58,40 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     void IncomingFrameCan2(CAN_frame_t* p_frame);
     void Ticker1(std::string event, void* data);
     void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void ConfigChanged(OvmsConfigParam* param);
+
+    virtual OvmsVehicle::vehicle_command_t CommandLock(const char* pin);
+    virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
+
 
   protected:
     void vehicle_kiasoulev_car_on(bool isOn);
-    float vehicle_kiasoulev_get_maxrange(void);
+    void UpdateMaxRange(void);
     uint16_t calcMinutesRemaining(float target);
+    bool SendCanMessage_sync(uint16_t id, uint8_t count,
+    		uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
+    		uint8_t b5, uint8_t b6);
+    bool SetTemporarySessionMode(uint16_t id, uint8_t mode);
+    bool SetDoorLock(bool open, const char* password);
+    bool OpenTrunk(const char* password);
+    bool IsPasswordOk(const char *password);
 
-    float ks_battery_capacity = 27000; //TODO Detect battery capacity from VIN
-    float ks_maxRange = 160; //Real world range at current temperature
+    OvmsMetricString *m_version;
+	#define CFG_DEFAULT_MAXRANGE 160
+    int ks_maxrange = CFG_DEFAULT_MAXRANGE;        // Configured max range at 20 °C
+
+	#define CGF_DEFAULT_BATTERY_CAPACITY 27000
+    float ks_battery_capacity = CGF_DEFAULT_BATTERY_CAPACITY; //TODO Detect battery capacity from VIN or number of batterycells
 
     uint32_t ks_tpms_id[4];
     float ks_obc_volt;
-    uint8_t ks_chargepower; // in [1/256 kW]
     char m_vin[18];
     KsShiftBits ks_shift_bits;
 
     float ks_trip_start_odo;
     float ks_last_soc;
     float ks_last_ideal_range;
+    uint8_t ks_bms_soc;
     uint32_t ks_start_cdc; 			// Used to calculate trip power use (Cumulated discharge)
     uint32_t ks_start_cc;  			// Used to calculate trip recuperation (Cumulated charge)
     uint32_t ks_cum_charge_start; 	// Used to calculate charged power.
@@ -97,7 +113,7 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     uint32_t ks_battery_cum_discharge; 			//Cumulated discharge power   02 21 01 -> 26 4-7
     uint8_t ks_battery_cum_op_time[3]; 			//Cumulated operating time    02 21 01 -> 27 1-4
 
-    uint8_t ks_battery_cell_voltage[32];
+    uint8_t ks_battery_cell_voltage[100];
 
     uint8_t ks_battery_min_temperature; 		//02 21 05 -> 21 7
     uint8_t ks_battery_inlet_temperature; 	//02 21 05 -> 21 6
@@ -105,9 +121,9 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     uint8_t ks_battery_heat_1_temperature; 	//02 21 05 -> 23 6
     uint8_t ks_battery_heat_2_temperature; 	//02 21 05 -> 23 7
 
-    UINT ks_battery_max_detoriation; 			//02 21 05 -> 24 1+2
+    uint16_t ks_battery_max_detoriation; 			//02 21 05 -> 24 1+2
     uint8_t ks_battery_max_detoriation_cell_no; 	//02 21 05 -> 24 3
-    UINT ks_battery_min_detoriation; 			//02 21 05 -> 24 4+5
+    uint16_t ks_battery_min_detoriation; 			//02 21 05 -> 24 4+5
     uint8_t ks_battery_min_detoriation_cell_no; 	//02 21 05 -> 24 6
 
     uint8_t ks_heatsink_temperature; //TODO Remove?
@@ -122,6 +138,14 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
       unsigned char : 1;
       unsigned char FanStatus : 4;
     } ks_charge_bits;
+
+    struct {
+      uint8_t byte[8];
+      uint8_t status;
+      uint16_t id;
+    }  ks_send_can;
+
+	const TickType_t xDelay = 50 / portTICK_PERIOD_MS;
   };
 
 #define SQR(n) ((n)*(n))
@@ -139,5 +163,10 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 #define CAN_NIBL(b)     (can_databuffer[b] & 0x0f)
 #define CAN_NIBH(b)     (can_databuffer[b] >> 4)
 #define CAN_NIB(n)      (((n)&1) ? CAN_NIBL((n)>>1) : CAN_NIBH((n)>>1))
+
+#define VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID 0x2F // InputOutputControlByIdentifier
+
+#define SMART_JUNCTION_BOX 0x771
+#define BODY_CONTROL_MODULE  0x7A0
 
 #endif //#ifndef __VEHICLE_KIASOULEV_H__
