@@ -131,6 +131,39 @@ simcom::~simcom()
   StopTask();
   }
 
+const char* simcom::State1Name(SimcomState1 state)
+  {
+  switch (state)
+    {
+    case None:           return "None";
+    case CheckPowerOff:  return "CheckPowerOff";
+    case PoweringOn:     return "PoweringOn";
+    case PoweredOn:      return "PoweredOff";
+    case MuxMode:        return "MuxMode";
+    case NetStart:       return "NetStart";
+    case NetHold:        return "NetHold";
+    case NetSleep:       return "NetSleep";
+    case NetMode:        return "NetMode";
+    case NetDeepSleep:   return "NetDeepSleep";
+    case PoweringOff:    return "PoweringOff";
+    case PoweredOff:     return "PoweredOff";
+    default:             return "Undefined";
+    };
+  }
+
+const char* simcom::NetRegName(network_registration_t netreg)
+  {
+  switch (netreg)
+    {
+    case NotRegistered:      return "NotRegistered";
+    case Searching:          return "Searching";
+    case DeniedRegistration: return "DeniedRegistration";
+    case RegisteredHome:     return "RegisteredHome";
+    case RegisteredRoaming:  return "RegisteredRoaming";
+    default:                 return "Undefined";
+    };
+  }
+
 void simcom::StartTask()
   {
   if (!m_task)
