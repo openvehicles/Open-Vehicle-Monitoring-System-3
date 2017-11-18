@@ -508,6 +508,12 @@ simcom::SimcomState1 simcom::State1Ticker1()
         // Need to shutdown ppp, and get back to NetSleep mode
         return NetSleep;
         }
+      if ((m_netreg!=RegisteredHome)||(m_netreg!=RegisteredRoaming))
+        {
+        // We've lost the network connection
+        m_ppp.Shutdown();
+        return NetStart;
+        }
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
         m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
       break;
