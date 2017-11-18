@@ -50,6 +50,7 @@ class Parent
 
   protected:
     bool AddChild(TaskBase* child);
+    void DeleteChild(TaskBase* child);
     void DeleteChildren();
 
   public:
@@ -64,6 +65,7 @@ class TaskBase
   {
   public:
     TaskBase(Parent* parent = NULL);
+    Parent* parent() { return m_parent; }
 
   protected:
     virtual ~TaskBase();

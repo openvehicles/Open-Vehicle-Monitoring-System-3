@@ -1,0 +1,12 @@
+# vim:ft=automake
+# included from Top Level Makefile.am
+# All paths should be given relative to the root
+
+
+EXTRA_DIST+= \
+            keys/server-key.der \
+            keys/server-key.pem \
+            keys/key-hansel.pem \
+            keys/key-gretel.pem \
+            keys/publickeys.txt \
+            keys/passwd.txt
