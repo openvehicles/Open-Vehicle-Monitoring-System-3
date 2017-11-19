@@ -353,7 +353,8 @@ void OvmsConfigParam::LoadConfig()
     while (fgets(buf,sizeof(buf),f))
       {
       buf[strlen(buf)-1] = 0; // Remove trailing newline
-      char *p = index(buf,' ');
+      char *p = index(buf,char(9));
+      if (p == NULL) p = index(buf,' ');
       if (p)
         {
         *p = 0; // Null terminate the key
@@ -437,7 +438,7 @@ void OvmsConfigParam::RewriteConfig()
     {
     for (ConfigParamMap::iterator it=m_map.begin(); it!=m_map.end(); ++it)
       {
-      fprintf(f,"%s %s\n",it->first.c_str(),it->second.c_str());
+      fprintf(f,"%s\t%s\n",it->first.c_str(),it->second.c_str());
       }
     fclose(f);
     }
