@@ -64,10 +64,7 @@ ConsoleAsync::ConsoleAsync()
   // Install UART driver, and get the queue.
   uart_driver_install(EX_UART_NUM, BUF_SIZE * 2, BUF_SIZE * 2, 30, &m_queue, 0);
 
-  if (!Instantiate())
-    return;
-  Initialize("Async");
-  esp_log_set_vprintf(ConsoleLogger);
+  Instantiate();
   }
 
 ConsoleAsync::~ConsoleAsync()
@@ -82,6 +79,13 @@ bool ConsoleAsync::Instantiate()
     return false;
     }
   return true;
+  }
+
+void ConsoleAsync::Service()
+  {
+  Initialize("Async");
+  esp_log_set_vprintf(ConsoleLogger);
+  OvmsConsole::Service();
   }
 
 int ConsoleAsync::puts(const char* s)

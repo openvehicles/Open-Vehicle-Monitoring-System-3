@@ -38,6 +38,7 @@
 #include <wolfssl/wolfcrypt/coding.h>
 #include <wolfssh/ssh.h>
 #include "console_ssh.h"
+#include "ovms_netmanager.h"
 
 static const char *tag = "ssh";
 static uint8_t CRLF[2] = { '\r', '\n' };
@@ -149,55 +150,73 @@ static const char samplePublicKeyBuffer[] =
 
 OvmsSSH MySSH __attribute__ ((init_priority (8300)));
 
+static void MongooseHandler(struct mg_connection *nc, int ev, void *p)
+  {
+  MySSH.EventHandler(nc, ev, p);
+  }
+
+void OvmsSSH::EventHandler(struct mg_connection *nc, int ev, void *p)
+  {
+  //ESP_LOGI(tag, "Event %d conn %p, data %p", ev, nc, p);
+  switch (ev)
+    {
+    case MG_EV_ACCEPT:
+      {
+      ConsoleSSH* child = new ConsoleSSH(this, nc);
+      nc->user_data = child;
+      break;
+      }
+
+    case MG_EV_POLL:
+      {
+      ConsoleSSH* child = (ConsoleSSH*)nc->user_data;
+      if (child)
+        child->Poll(0);
+      }
+      break;
+
+    case MG_EV_RECV:
+      {
+      ConsoleSSH* child = (ConsoleSSH*)nc->user_data;
+      child->Receive();
+      child->Poll(0);
+      }
+      break;
+
+    case MG_EV_CLOSE:
+      {
+      ConsoleSSH* child = (ConsoleSSH*)nc->user_data;
+      if (child)
+        delete child;
+      }
+      break;
+
+    default:
+      break;
+    }
+  }
+
 OvmsSSH::OvmsSSH()
   {
   ESP_LOGI(tag, "Initialising SSH (8300)");
 
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(tag,"network.wifi.up", std::bind(&OvmsSSH::WifiUp, this, _1, _2));
-  MyEvents.RegisterEvent(tag,"network.wifi.down", std::bind(&OvmsSSH::WifiDown, this, _1, _2));
+  MyEvents.RegisterEvent(tag,"network.mgr.init", std::bind(&OvmsSSH::NetManInit, this, _1, _2));
+  MyEvents.RegisterEvent(tag,"network.mgr.stop", std::bind(&OvmsSSH::NetManStop, this, _1, _2));
   }
 
-void OvmsSSH::WifiUp(std::string event, void* data)
+void OvmsSSH::NetManInit(std::string event, void* data)
   {
   ESP_LOGI(tag, "Launching SSH Server");
-  AddChild(new SSHServer(this));
-  }
+  struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
+  mg_connection* nc = mg_bind(mgr, ":22", MongooseHandler);
+  if (nc)
+    nc->user_data = NULL;
+  else
+    ESP_LOGE(tag, "Launching SSH Server failed");
 
-void OvmsSSH::WifiDown(std::string event, void* data)
-  {
-  ESP_LOGI(tag, "Stopping SSH Server");
-  DeleteChildren();
-  }
-
-//-----------------------------------------------------------------------------
-//    Class SSHServer
-//-----------------------------------------------------------------------------
-
-SSHServer::SSHServer(Parent* parent)
-  : TaskBase(parent)
-  {
   m_ctx = NULL;
-  m_socket = -1;
-  }
-
-bool SSHServer::Instantiate()
-  {
-  if (CreateTaskPinned(1, "SSHServer", 3000) != pdPASS)
-    {
-    ::printf("\nInsufficient memory to create SSHServer task\n");
-    return false;
-    }
-  return true;
-  }
-
-SSHServer::~SSHServer()
-  {
-  }
-
-void SSHServer::Service()
-  {
   if (wolfSSH_Init() != WS_SUCCESS)
     {
     ESP_LOGE(tag, "Couldn't initialize wolfSSH.");
@@ -233,145 +252,16 @@ void SSHServer::Service()
   memcpy(buf, samplePublicKeyBuffer, bufSz);
   buf[bufSz] = 0;
   LoadPublicKeyBuffer(buf, bufSz, &pwMapList);
-
-  m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-  if (m_socket < 0)
-    {
-    ESP_LOGE(tag, "socket: %d (%s)", errno, strerror(errno));
-    return;
-    }
-
-  struct sockaddr_in serverAddr;
-  serverAddr.sin_family = AF_INET;
-  serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-  serverAddr.sin_port = htons(22);
-
-  if (lwip_bind(m_socket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
-    {
-    ESP_LOGE(tag, "bind socket %d: %d (%s)", m_socket, errno, strerror(errno));
-    return;
-    }
-
-  if (listen(m_socket, 5) < 0)
-    {
-    ESP_LOGE(tag, "listen: %d (%s)", errno, strerror(errno));
-    return;
-    }
-
-  fd_set readfds, writefds, errorfds;
-  FD_ZERO(&readfds);
-  FD_ZERO(&writefds);
-  FD_ZERO(&errorfds);
-  FD_SET(m_socket, &readfds);
-  while (true) {
-    int rc = select(m_socket+1, &readfds, &writefds, &errorfds, (struct timeval *)NULL);
-    if (rc < 0)
-      {
-      ESP_LOGE(tag, "select: %d (%s)", errno, strerror(errno));
-      break;
-      }
-    if (m_socket < 0)   // Was server socket closed (by wifi shutting down)?
-      break;
-
-    struct sockaddr_in clientAddr;
-    socklen_t len = sizeof(clientAddr);
-    int partnerSocket = accept(m_socket, (struct sockaddr *)&clientAddr, &len);
-    if (partnerSocket < 0)
-      {
-      if (errno != ECONNABORTED)
-        ESP_LOGE(tag, "accept: %d (%s)", errno, strerror(errno));
-      break;
-      }
-
-    AddChild(new ConsoleSSH(this, partnerSocket));
-    }
   }
 
-void SSHServer::Cleanup()
+void OvmsSSH::NetManStop(std::string event, void* data)
   {
+  ESP_LOGI(tag, "Stopping SSH Server");
   PwMapListDelete(&pwMapList);
   wolfSSH_CTX_free(m_ctx);
   if (wolfSSH_Cleanup() != WS_SUCCESS)
     {
     ESP_LOGE(tag, "Couldn't clean up wolfSSH.");
-    }
-
-  if (m_socket >= 0)
-    {
-    int socket = m_socket;
-    m_socket = -1;
-    if (closesocket(socket) < 0)
-      {
-      ESP_LOGE(tag, "closesocket %d: %d (%s)", socket, errno, strerror(errno));
-      }
-    }
-  }
-
-//-----------------------------------------------------------------------------
-//    Class SSHReceiver
-//-----------------------------------------------------------------------------
-
-// The SSHReceiver task is required so that we can use select() to learn when
-// input is available on the ssh connection and then queue a RECV Event to the
-// ConsoleSSH task so that task can wait either for these Events or for ALERT
-// Events to output messages on this console.  This task must not directly
-// execute code in WolfSSH.
-
-SSHReceiver::SSHReceiver(ConsoleSSH* parent, int socket,
-                         QueueHandle_t queue, SemaphoreHandle_t sem)
-  : TaskBase(parent)
-  {
-  m_socket = socket;
-  m_queue = queue;
-  m_semaphore = sem;
-  }
-
-bool SSHReceiver::Instantiate()
-  {
-  if (CreateTaskPinned(1, "SSHReceiver", 1000) != pdPASS)
-    {
-    ::printf("\nInsufficient memory to create SSHReceiver task\n");
-    return false;
-    }
-  return true;
-  }
-
-SSHReceiver::~SSHReceiver()
-  {
-  }
-
-void SSHReceiver::Service()
-  {
-  int rc;
-  if ((rc = lwip_fcntl(m_socket, F_SETFL, O_NONBLOCK) < 0))
-    {
-    ::printf("fcntl SETFL returned %d, errno = %d\n", rc, errno);
-    }
-  fd_set readfds, writefds, errorfds;
-  FD_ZERO(&readfds);
-  FD_ZERO(&writefds);
-  FD_ZERO(&errorfds);
-  FD_SET(m_socket, &readfds);
-  while (true) {
-    int rc = select(m_socket+1, &readfds, &writefds, &errorfds, (struct timeval *)NULL);
-    if (rc < 0)
-      {
-      ESP_LOGE(tag, "select: %d (%s)", errno, strerror(errno));
-      break;
-      }
-    if (m_socket < 0)   // Was socket closed (by client exiting)?
-      break;
-    OvmsConsole::Event event;
-    event.type = OvmsConsole::event_type_t::RECV;
-    event.size = 0;
-    BaseType_t ret = xQueueSendToBack(m_queue, (void * )&event, (portTickType)(1000 / portTICK_PERIOD_MS));
-    if (ret == pdPASS)
-      {
-      // Block here until the queued message has been taken.
-      xSemaphoreTake(m_semaphore, portMAX_DELAY);
-      }
-    else
-      ESP_LOGE(tag, "Timeout queueing message in SSHReceiver::Service\n");
     }
   }
 
@@ -379,78 +269,70 @@ void SSHReceiver::Service()
 //    Class ConsoleSSH
 //-----------------------------------------------------------------------------
 
-ConsoleSSH::ConsoleSSH(SSHServer* server, int socket)
-  : OvmsConsole(server)
+int RecvCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx);
+int SendCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx);
+
+ConsoleSSH::ConsoleSSH(OvmsSSH* server, struct mg_connection* nc)
   {
-  m_socket = socket;
+  m_server = server;
+  m_connection = nc;
   m_queue = xQueueCreate(100, sizeof(Event));
-  m_semaphore = xSemaphoreCreateCounting(1, 0);
   m_ssh = NULL;
-  }
-
-// This destructor may be called by ConsoleSSHTask to delete itself or by
-// SSHServer task if the server gets shut down, but not by SSHReceiver task.
-
-ConsoleSSH::~ConsoleSSH()
-  {
-  m_ready = false;
-  DeleteChildren();
-  int socket = m_socket;
-  m_socket = -1;
-  if (socket >= 0 && closesocket(socket) < 0)
-    ESP_LOGE(tag, "closesocket %d: %d (%s)", socket, errno, strerror(errno));
-  WOLFSSH* ssh = m_ssh;
-  m_ssh = NULL;
-  wolfSSH_free(ssh);
-  vSemaphoreDelete(m_semaphore);
-  vQueueDelete(m_queue);
-  }
-
-bool ConsoleSSH::Instantiate()
-  {
-  if (CreateTaskPinned(1, "SSHConsole", 6000) != pdPASS)
-    {
-    ::printf("\nInsufficient memory to create SSHConsole task\n");
-    return false;
-    }
-  return true;
-  }
-
-//-----------------------------------------------------------------------------
-//    SSH Console Task
-//-----------------------------------------------------------------------------
-
-// The following code is executed by the SSHConsole task created by the
-// TaskBase::AddChild() calling ConsoleSSH::Instantiate() and must not be
-// executed by any other task.
-
-void ConsoleSSH::Service()
-  {
-  m_ssh = wolfSSH_new(server()->ctx());
+  m_accepted = false;
+  m_pending = false;
+  m_rekey = false;
+  m_ssh = wolfSSH_new(m_server->ctx());
   if (m_ssh == NULL)
     {
     ::printf("Couldn't allocate SSH data.\n");
     return;
     }
-  wolfSSH_SetUserAuthCtx(m_ssh, &server()->pwMapList);
+  wolfSSH_SetIORecv(m_server->ctx(), ::RecvCallback);
+  wolfSSH_SetIOSend(m_server->ctx(), SendCallback);
+  wolfSSH_SetIOReadCtx(m_ssh, this);
+  wolfSSH_SetIOWriteCtx(m_ssh, m_connection);
+  wolfSSH_SetUserAuthCtx(m_ssh, &m_server->pwMapList);
   /* Use the session object for its own highwater callback ctx */
   wolfSSH_SetHighwaterCtx(m_ssh, (void*)m_ssh);
   wolfSSH_SetHighwater(m_ssh, DEFAULT_HIGHWATER_MARK);
-  wolfSSH_set_fd(m_ssh, m_socket);
   //wolfSSH_Debugging_ON();
-  if (wolfSSH_accept(m_ssh) != WS_SUCCESS)
+  int rc = wolfSSH_accept(m_ssh);
+  if (rc == WS_SUCCESS)
     {
-    ::printf("wolfSSH_accept failed\n");
+    m_accepted = true;
+    Initialize("SSH");
+    }
+  else if (wolfSSH_get_error(m_ssh) != WS_WANT_READ)
+    {
+    ESP_LOGE(tag, "wolfSSH_accept failed");
     return;
     }
-  if (!AddChild(new SSHReceiver(this, m_socket, m_queue, m_semaphore)))
+  }
+
+ConsoleSSH::~ConsoleSSH()
+  {
+  WOLFSSH* ssh = m_ssh;
+  m_ssh = NULL;
+  wolfSSH_free(ssh);
+  vQueueDelete(m_queue);
+  }
+
+void ConsoleSSH::Receive()
+  {
+  OvmsConsole::Event event;
+  event.type = OvmsConsole::event_type_t::RECV;
+  BaseType_t ret = xQueueSendToBack(m_queue, (void * )&event, (portTickType)(1000 / portTICK_PERIOD_MS));
+  if (ret == pdPASS)
     {
-    ::printf("\nInsufficient memory to create SSHReceiver object\n");
-    printf("Insufficient memory for connection\n");
-    return;
+    // Process this input in sequence with any queued logging.
+    Poll(0);
     }
-  Initialize("SSH");
-  OvmsConsole::Service();
+  else
+    {
+    ESP_LOGE(tag, "Timeout queueing message in ConsoleSSH::Receive\n");
+    mbuf *io = &m_connection->recv_mbuf;
+    mbuf_remove(io, io->len);
+    }
   }
 
 void ConsoleSSH::HandleDeviceEvent(void* pEvent)
@@ -459,7 +341,22 @@ void ConsoleSSH::HandleDeviceEvent(void* pEvent)
   switch (event.type)
     {
     case RECV:
-      while (true)
+      m_pending = true;         // We have data waiting to be taken
+      if (!m_accepted)
+        {
+        int rc = wolfSSH_accept(m_ssh);
+        if (rc == WS_SUCCESS)
+          {
+          m_accepted = true;
+          Initialize("SSH");
+          }
+        else if (wolfSSH_get_error(m_ssh) != WS_WANT_READ)
+          {
+          ESP_LOGE(tag, "wolfSSH_accept continuation failed");
+          break;
+          }
+        }
+      else while (true)
         {
         int size = wolfSSH_stream_read(m_ssh, (uint8_t*)m_buffer, BUFFER_SIZE);
         if (size > 0)
@@ -474,14 +371,10 @@ void ConsoleSSH::HandleDeviceEvent(void* pEvent)
           }
         else
           {
-          // Unblock SSHReceiverTask now that we have consumed all the
-          // available data.
-          xSemaphoreGive(m_semaphore);
-          if (size == WS_WANT_READ)
-            break;
-          // Some error occurred, presume it is connection closing.
-          DeleteFromParent();
-          // Execution does not return here because this task kills itself.
+          if (size != WS_WANT_READ)
+            // Some error occurred, presume it is connection closing.
+            m_connection->flags |= MG_F_SEND_AND_CLOSE;
+          break;
           }
         }
       break;
@@ -495,7 +388,8 @@ void ConsoleSSH::HandleDeviceEvent(void* pEvent)
 // This is called to shut down the SSH connection when the "exit" command is input.
 void ConsoleSSH::Exit()
   {
-  DeleteFromParent();
+  printf("logout\n");
+  m_connection->flags |= MG_F_SEND_AND_CLOSE;
   }
 
 int ConsoleSSH::puts(const char* s)
@@ -529,7 +423,7 @@ int ConsoleSSH::printf(const char* fmt, ...)
 
 ssize_t ConsoleSSH::write(const void *buf, size_t nbyte)
   {
-  if (!m_ssh || !nbyte)
+  if (!m_ssh || !nbyte || (m_connection->flags & MG_F_SEND_AND_CLOSE))
     return 0;
   uint8_t* start = (uint8_t*)buf;
   uint8_t* eol = start;
@@ -558,12 +452,53 @@ ssize_t ConsoleSSH::write(const void *buf, size_t nbyte)
   
   if (ret <= 0)
     {
-    ::printf("wolfSSH_stream_send returned %d, wolfSSH_get_error = %d\n", ret, wolfSSH_get_error(m_ssh));
     if (ret != WS_REKEYING)
-      DeleteFromParent();
+      {
+      ESP_LOGE(tag, "wolfSSH_stream_send returned %d", ret);
+      m_connection->flags |= MG_F_SEND_AND_CLOSE;
+      }
+    else
+      {
+      if (!m_rekey)
+        ESP_LOGW(tag, "wolfSSH rekeying, some output will be lost");
+      m_rekey = true;
+      }
     }
+  else
+    m_rekey = false;
   return ret;
   }
+
+// Routines to be called from within WolfSSH to receive and send data from and
+// to the network socket.
+
+int RecvCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx)
+  {
+  ConsoleSSH* me = (ConsoleSSH*)ctx;
+  return me->RecvCallback((char*)data, size);
+  }
+
+int ConsoleSSH::RecvCallback(char* buf, uint32_t size)
+  {
+  if (!m_pending)
+    return WS_CBIO_ERR_WANT_READ;       // No more data available
+  mbuf *io = &m_connection->recv_mbuf;
+  size_t len = io->len;
+  if (size < len)
+    len = size;
+  else
+    m_pending = false;
+  memcpy(buf, io->buf, len);
+  mbuf_remove(io, len);
+  return len;
+  }
+
+int SendCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx)
+  {
+  mg_send((mg_connection*)ctx, (char*)data, size);
+  return size;
+  }
+
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -693,7 +628,7 @@ static int LoadPublicKeyBuffer(uint8_t* buf, uint32_t bufSz, PwMapList* list)
 }
 
 
-int SSHServer::SSHUserAuthCallback(uint8_t authType, const WS_UserAuthData* authData, void* ctx)
+int OvmsSSH::SSHUserAuthCallback(uint8_t authType, const WS_UserAuthData* authData, void* ctx)
 {
     uint8_t authHash[SHA256_DIGEST_SIZE];
     if (ctx == NULL) {

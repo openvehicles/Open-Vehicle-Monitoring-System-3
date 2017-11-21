@@ -55,7 +55,6 @@ class ConsoleTelnet : public OvmsConsole
     virtual ~ConsoleTelnet();
 
   private:
-    bool Instantiate();
     void Service();
     void HandleDeviceEvent(void* pEvent);
     static void TelnetCallback(telnet_t *telnet, telnet_event_t *event, void *userData);
@@ -71,7 +70,6 @@ class ConsoleTelnet : public OvmsConsole
   protected:
     mg_connection* m_connection;
     telnet_t *m_telnet;
-    SemaphoreHandle_t m_semaphore;
   };
 
 #endif //#ifndef __CONSOLE_TELNET_H__

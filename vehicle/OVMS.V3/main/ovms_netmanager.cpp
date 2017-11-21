@@ -173,7 +173,7 @@ void OvmsNetManager::StartMongooseTask()
   if (!m_mongoose_running)
     {
     m_mongoose_running = true;
-    xTaskCreatePinnedToCore(MongooseRawTask, "NetManTask", 4096, (void*)this, 5, &m_mongoose_task, 1);
+    xTaskCreatePinnedToCore(MongooseRawTask, "NetManTask", 6*1024, (void*)this, 5, &m_mongoose_task, 1);
     }
   }
 

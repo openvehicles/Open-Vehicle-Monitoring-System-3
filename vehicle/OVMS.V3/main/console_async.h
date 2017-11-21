@@ -36,7 +36,7 @@
 
 #define BUF_SIZE (1024)
 
-class ConsoleAsync : public OvmsConsole
+class ConsoleAsync : public OvmsConsole, public TaskBase
   {
   private:
     ConsoleAsync();
@@ -51,6 +51,7 @@ class ConsoleAsync : public OvmsConsole
 
   private:
     bool Instantiate();
+    void Service();
     static int ConsoleLogger(const char* fmt, va_list arg);
     void Log(char* message);
     void HandleDeviceEvent(void* pEvent);

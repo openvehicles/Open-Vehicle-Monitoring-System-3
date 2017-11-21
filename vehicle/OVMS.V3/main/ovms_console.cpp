@@ -45,10 +45,11 @@ char ** Complete (microrl_t* rl, int argc, const char * const * argv )
   return MyCommandApp.Complete((OvmsWriter*)rl->userdata, argc, argv);
   }
 
-OvmsConsole::OvmsConsole(Parent* parent)
-  : OvmsShell(COMMAND_RESULT_VERBOSE), TaskBase(parent)
+OvmsConsole::OvmsConsole()
+  : OvmsShell(COMMAND_RESULT_VERBOSE)
   {
   m_ready = false;
+  m_state = AT_PROMPT;
   }
 
 OvmsConsole::~OvmsConsole()
@@ -114,20 +115,19 @@ void OvmsConsole::Log(LogBuffers* message)
     }
   }
 
-typedef enum
-  {
-  AT_PROMPT,
-  AWAITING_NL,
-  NO_NL
-  } DisplayState;
-
 void OvmsConsole::Service()
   {
-  DisplayState state = AT_PROMPT;
-  portTickType ticks = portMAX_DELAY;
-  Event event;
-
   vTaskDelay(50 / portTICK_PERIOD_MS);
+
+  for (;;)
+    {
+    Poll(portMAX_DELAY);
+    }
+  }
+
+void OvmsConsole::Poll(portTickType ticks)
+  {
+  Event event;
 
   for (;;)
     {
@@ -136,9 +136,9 @@ void OvmsConsole::Service()
       {
       if (event.type <= RECV)
         {
-        if (state != AT_PROMPT)
+        if (m_state != AT_PROMPT)
           ProcessChars(ctrlRbuf, 1);    // Restore the prompt plus any type-in on a new line
-        state = AT_PROMPT;
+        m_state = AT_PROMPT;
         HandleDeviceEvent(&event);
         continue;
         }
@@ -149,9 +149,9 @@ void OvmsConsole::Service()
       // log message, or output a carriage return to back over the prompt.
       if (event.type != ALERT_MULTI || event.multi->begin() != event.multi->end())
         {
-        if (state == AWAITING_NL)
+        if (m_state == AWAITING_NL)
           write(NLbuf, 1);
-        else if (state == AT_PROMPT)
+        else if (m_state == AT_PROMPT)
           write(CRbuf, 1);
         char* buffer;
         size_t len;
@@ -180,12 +180,12 @@ void OvmsConsole::Service()
           buffer[--len] = '\0';
           if (buffer[len-1] == '\r')  // Remove CR, too, in case of \r\n
             buffer[--len] = '\0';
-          state = AWAITING_NL;
+          m_state = AWAITING_NL;
           write(buffer, len);
           }
         else
           {
-          state = NO_NL;
+          m_state = NO_NL;
           write(buffer, len);
           }
         }
@@ -198,10 +198,10 @@ void OvmsConsole::Service()
     else
       {
       // Timeout indicates the queue is empty
-      if (state != AT_PROMPT)
+      if (m_state != AT_PROMPT)
         ProcessChars(ctrlRbuf, 1);    // Restore the prompt plus any type-in on a new line
-      state = AT_PROMPT;
-      ticks = portMAX_DELAY;
+      m_state = AT_PROMPT;
+      return;
       }
     }
   }
