@@ -174,6 +174,13 @@ config OVMS_COMP_MODEM_SIMCOM
     help
         Enable to include support for SIMCOM modems
 
+config OVMS_COMP_SDCARD
+    bool "Include support for SD CARDs"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for SD CARDs
+
 config OVMS_COMP_RE_TOOLS
     bool "Include support for Reverse Engineering tools"
     default y
