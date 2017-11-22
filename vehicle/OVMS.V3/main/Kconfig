@@ -207,6 +207,13 @@ config OVMS_DEV_CONFIGVFS
     help
         Enable to permit VFS access to configuration files (danger: insecure)
 
+config OMMS_DEV_SDCARDSCRIPTS
+    bool "Run event scripts from /sd, as well as /store (note: may be insecure)"
+    default n
+    depends on OVMS
+    help
+        Enable to run events script from /sd, as well as /store (danger: insecure)
+
 config OVMS_DEV_DEBUGRAM
     bool "Enable extended RAM memory allocation statistics"
     default n
