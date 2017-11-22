@@ -7,10 +7,12 @@
 # please read the ESP-IDF documents if you need to do this.
 #
 
+ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 ifdef CONFIG_OVMS_SC_GPL_WOLF
 COMPONENT_ADD_INCLUDEDIRS:=src
 COMPONENT_EXTRA_INCLUDES := ${IDF_PATH}/components/freertos/include/freertos
 COMPONENT_SRCDIRS:=src
 COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive
 CXXFLAGS += -DWOLFSSL_USER_SETTINGS
+endif
 endif
