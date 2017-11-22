@@ -181,6 +181,13 @@ config OVMS_COMP_SDCARD
     help
         Enable to include support for SD CARDs
 
+config OVMS_COMP_OBD2ECU
+    bool "Include support for OBDII ECU"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for OBDII ECU
+
 config OVMS_COMP_RE_TOOLS
     bool "Include support for Reverse Engineering tools"
     default y

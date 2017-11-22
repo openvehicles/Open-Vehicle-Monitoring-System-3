@@ -49,7 +49,10 @@
 #include "simcom.h"
 #endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
 
+#ifdef CONFIG_OVMS_COMP_SDCARD
 #include "obd2ecu.h"
+#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
+
 #include "ext12v.h"
 
 #define VSPI_PIN_MISO             19
@@ -114,7 +117,9 @@ class Peripherals
 #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
     simcom* m_simcom;
 #endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_SDCARD
     obd2ecu* m_obd2ecu;
+#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
     ext12v* m_ext12v;
   };
 
