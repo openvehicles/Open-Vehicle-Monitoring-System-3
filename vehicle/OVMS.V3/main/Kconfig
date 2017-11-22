@@ -160,6 +160,13 @@ config OVMS_COMP_TELNET
     help
         Enable to include support for Telnet server.
 
+config OVMS_COMP_SSH
+    bool "Include support for SSH server"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for SSH server.
+
 config OVMS_COMP_MODEM_SIMCOM
     bool "Include support for SIMCOM modems"
     default y
