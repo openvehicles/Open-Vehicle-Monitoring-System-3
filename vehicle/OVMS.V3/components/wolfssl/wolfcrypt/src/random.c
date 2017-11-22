@@ -1647,14 +1647,31 @@ int wc_GenerateSeed(OS_Seed* os, byte* output, word32 sz)
 
 #elif defined(NO_DEV_RANDOM)
 
+    extern uint32_t esp_random();
+
     int wc_GenerateSeed(OS_Seed* os, byte* output, word32 sz)
     {
         word32 i;
-        for (i = 0; i < sz; i++ )
-            output[i] = i;
-
+	word32 rem = sz & 0x3;
+	sz &= ~0x3;
+        for (i = 0; i < sz; ) {
+	    uint32_t rand = esp_random();
+            output[i++] = rand;
+	    rand >>= 8;
+            output[i++] = rand;
+	    rand >>= 8;
+            output[i++] = rand;
+	    rand >>= 8;
+            output[i++] = rand;
+	}
+	if (rem) {
+	    uint32_t rand = esp_random();
+	    for (i = 0; i < rem; ) {
+		output[i++] = rand;
+		rand >>= 8;
+	    }
+	}
         (void)os;
-
         return 0;
     }
 

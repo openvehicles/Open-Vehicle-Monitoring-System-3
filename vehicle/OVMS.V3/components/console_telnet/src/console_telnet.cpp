@@ -70,21 +70,30 @@ void OvmsTelnet::EventHandler(struct mg_connection *nc, int ev, void *p)
       {
       ConsoleTelnet* child = new ConsoleTelnet(this, nc);
       nc->user_data = child;
-      AddChild(child);
       break;
       }
+
+    case MG_EV_POLL:
+      {
+      ConsoleTelnet* child = (ConsoleTelnet*)nc->user_data;
+      if (child)
+        child->Poll(0);
+      }
+      break;
 
     case MG_EV_RECV:
       {
       ConsoleTelnet* child = (ConsoleTelnet*)nc->user_data;
       child->Receive();
+      child->Poll(0);
       }
       break;
 
     case MG_EV_CLOSE:
       {
       ConsoleTelnet* child = (ConsoleTelnet*)nc->user_data;
-      DeleteChild(child);
+      if (child)
+        delete child;
       }
       break;
 
@@ -107,14 +116,16 @@ void OvmsTelnet::NetManInit(std::string event, void* data)
   {
   ESP_LOGI(tag, "Launching Telnet Server");
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
-  if (!mg_bind(mgr, ":23", MongooseHandler))
+  mg_connection* nc = mg_bind(mgr, ":23", MongooseHandler);
+  if (nc)
+    nc->user_data = NULL;
+  else
     ESP_LOGE(tag, "Launching Telnet Server failed");
   }
 
 void OvmsTelnet::NetManStop(std::string event, void* data)
   {
   ESP_LOGI(tag, "Stopping Telnet Server");
-  DeleteChildren();
   }
 
 //-----------------------------------------------------------------------------
@@ -122,11 +133,9 @@ void OvmsTelnet::NetManStop(std::string event, void* data)
 //-----------------------------------------------------------------------------
 
 ConsoleTelnet::ConsoleTelnet(OvmsTelnet* parent, struct mg_connection* nc)
-  : OvmsConsole(parent)
   {
   m_connection = nc;
   m_queue = xQueueCreate(100, sizeof(Event));
-  m_semaphore = xSemaphoreCreateCounting(1, 0);
 
   static const telnet_telopt_t options[] =
     {
@@ -142,29 +151,18 @@ ConsoleTelnet::ConsoleTelnet(OvmsTelnet* parent, struct mg_connection* nc)
     { -1, 0, 0 }
     };
   m_telnet = telnet_init(options, TelnetCallback, TELNET_FLAG_NVT_EOL, (void*)this);
+  telnet_negotiate(m_telnet, TELNET_WILL, TELNET_TELOPT_ECHO);
+  Initialize("Telnet");
   }
 
 // This destructor is only called by NetManTask deleting the ConsoleTelnet child.
 
 ConsoleTelnet::~ConsoleTelnet()
   {
-  m_ready = false;
   telnet_t *telnet = m_telnet;
   m_telnet = NULL;
   telnet_free(telnet);
-  vSemaphoreDelete(m_semaphore);
   vQueueDelete(m_queue);
-  }
-
-bool ConsoleTelnet::Instantiate()
-  {
-  if (CreateTaskPinned(1, "TelnetConsole", 4000) == pdPASS)
-    {
-    return true;
-    }
-  ::printf("\nInsufficient memory to create TelnetConsole task\n");
-  printf("Insufficient memory for connection\n");
-  return false;
   }
 
 void ConsoleTelnet::Receive()
@@ -175,27 +173,12 @@ void ConsoleTelnet::Receive()
   BaseType_t ret = xQueueSendToBack(m_queue, (void * )&event, (portTickType)(1000 / portTICK_PERIOD_MS));
   if (ret == pdPASS)
     {
-    // Block here until the queued message has been taken.
-    xSemaphoreTake(m_semaphore, portMAX_DELAY);
+    // Process this input in sequence with any queued logging.
+    Poll(0);
     }
   else
     ESP_LOGE(tag, "Timeout queueing message in ConsoleTelnet::Receive\n");
   mbuf_remove(event.mbuf, event.mbuf->len);
-  }
-
-//-----------------------------------------------------------------------------
-//    ConsoleTelnetTask
-//-----------------------------------------------------------------------------
-
-// The following code is executed by the TelnetConsole task created by the
-// TaskBase::AddChild() calling ConsoleTelnet::Instantiate() and must not be
-// executed by any other task.
-
-void ConsoleTelnet::Service()
-  {
-  telnet_negotiate(m_telnet, TELNET_WILL, TELNET_TELOPT_ECHO);
-  Initialize("Telnet");
-  OvmsConsole::Service();
   }
 
 void ConsoleTelnet::HandleDeviceEvent(void* pEvent)
@@ -205,9 +188,6 @@ void ConsoleTelnet::HandleDeviceEvent(void* pEvent)
     {
     case RECV:
       telnet_recv(m_telnet, event.mbuf->buf, event.mbuf->len);
-      // Unblock NetManTask now that we are finished with
-      // the buffer.
-      xSemaphoreGive(m_semaphore);
       break;
 
     default:

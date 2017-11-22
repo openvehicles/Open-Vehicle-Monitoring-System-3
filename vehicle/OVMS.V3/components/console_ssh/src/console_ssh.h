@@ -53,76 +53,53 @@ typedef struct PwMapList {
     PwMap* head;
 } PwMapList;
 
+struct mg_connection;
+
 class OvmsSSH : public Parent
   {
   public:
     OvmsSSH();
 
   public:
-    void WifiUp(std::string event, void* data);
-    void WifiDown(std::string event, void* data);
-  };
-
-class SSHServer : public TaskBase, public Parent
-  {
-  public:
-    SSHServer(Parent* parent);
-    ~SSHServer();
-    WOLFSSH_CTX* ctx() { return m_ctx; }
-
-  private:
-    bool Instantiate();
-    void Service();
-    void Cleanup();
+    void NetManInit(std::string event, void* data);
+    void NetManStop(std::string event, void* data);
+    void EventHandler(struct mg_connection *nc, int ev, void *p);
     static int SSHUserAuthCallback(uint8_t authType, const WS_UserAuthData* authData, void* ctx);
+    WOLFSSH_CTX* ctx() { return m_ctx; }
 
   protected:
     WOLFSSH_CTX* m_ctx;
-    int m_socket;
 
   public:
     PwMapList pwMapList;
   };
 
-class SSHReceiver : public TaskBase
+class ConsoleSSH : public OvmsConsole
   {
   public:
-    SSHReceiver(ConsoleSSH* parent, int socket, QueueHandle_t queue, SemaphoreHandle_t sem);
-    ~SSHReceiver();
-
-  private:
-    bool Instantiate();
-    void Service();
-
-  protected:
-    int m_socket;
-    QueueHandle_t m_queue;
-    SemaphoreHandle_t m_semaphore;
-  };
-
-class ConsoleSSH : public OvmsConsole, public Parent
-  {
-  public:
-    ConsoleSSH(SSHServer* server, int socket);
+    ConsoleSSH(OvmsSSH* server, struct mg_connection* nc);
     virtual ~ConsoleSSH();
 
   private:
-    SSHServer* server() { return (SSHServer*)parent(); }
-    bool Instantiate();
     void Service();
     void HandleDeviceEvent(void* pEvent);
 
   public:
+    void Receive();
     void Exit();
     int puts(const char* s);
     int printf(const char* fmt, ...);
     ssize_t write(const void *buf, size_t nbyte);
+    int RecvCallback(char* buf, uint32_t size);
 
   protected:
+    OvmsSSH* m_server;
+    mg_connection* m_connection;
     WOLFSSH* m_ssh;
-    int m_socket;
-    SemaphoreHandle_t m_semaphore;
     char m_buffer[BUFFER_SIZE];
+    bool m_accepted;
+    bool m_pending;
+    bool m_rekey;
   };
 
 #endif //#ifndef __CONSOLE_SSH_H__
