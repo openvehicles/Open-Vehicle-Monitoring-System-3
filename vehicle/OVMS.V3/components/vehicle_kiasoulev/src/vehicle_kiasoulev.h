@@ -93,10 +93,10 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     float ks_last_soc;
     float ks_last_ideal_range;
     uint8_t ks_bms_soc;
-    uint32_t ks_start_cdc; 			// Used to calculate trip power use (Cumulated discharge)
-    uint32_t ks_start_cc;  			// Used to calculate trip recuperation (Cumulated charge)
+    uint32_t ks_start_cdc; 					// Used to calculate trip power use (Cumulated discharge)
+    uint32_t ks_start_cc;  					// Used to calculate trip recuperation (Cumulated charge)
     uint32_t ks_cum_charge_start; 	// Used to calculate charged power.
-    uint16_t ks_chargeduration = 0;  // charge duration in seconds
+    time_t ks_charge_start = 0;  		// charge start time
 
     int8_t ks_battery_module_temp[8];
 

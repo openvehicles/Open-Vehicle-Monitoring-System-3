@@ -97,16 +97,11 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
   ESP_LOGD(TAG, "Kia Soul EV reload configuration");
 
   // Instances:
-  //
+  // x.ks
+  //	  batteryCapacity   Battery capacity in wH (Default: 270000)
   //  suffsoc           Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange         Sufficient range [km] (Default: 0=disabled)
-  //  maxrange          Maximum ideal range at 20 °C [km] (Default: 80)
-  //
-  //  cap_act_prc       Battery actual capacity level [%] (Default: 100.0)
-  //  cap_nom_ah        Battery nominal capacity [Ah] (Default: 108.0)
-  //
-  //  chargelevel       Charge power level [1-7] (Default: 0=unlimited)
-  //  chargemode        Charge mode: 0=notify, 1=stop at sufficient SOC/range (Default: 0)
+  //  maxrange          Maximum ideal range at 20 °C [km] (Default: 160)
   //
   //  canwrite          Bool: CAN write enabled (Default: no)
   //  autoreset         Bool: SEVCON reset on error (Default: yes)
@@ -115,7 +110,7 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
   //  console           Bool: SimpleConsole inputs enabled (Default: no)
   //
 
-  //TODO ks_battery_capacity = MyConfig.GetParamValueInt("x.ks", "batteryCapacity", CGF_DEFAULT_BATTERY_CAPACITY);
+  ks_battery_capacity = (float)MyConfig.GetParamValueInt("x.ks", "batteryCapacity", CGF_DEFAULT_BATTERY_CAPACITY);
 
   ks_maxrange = MyConfig.GetParamValueInt("x.ks", "maxrange", CFG_DEFAULT_MAXRANGE);
   if (ks_maxrange <= 0)
@@ -123,11 +118,6 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
 
   *StdMetrics.ms_v_charge_limit_soc = (float) MyConfig.GetParamValueInt("x.ks", "suffsoc");
   *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("x.ks", "suffrange");
-/*
-  cfg_chargemode = MyConfig.GetParamValueInt("x.ks", "chargemode");
-  cfg_chargelevel = MyConfig.GetParamValueInt("x.ks", "chargelevel");
-  twizy_flags.EnableWrite = MyConfig.GetParamValueBool("x.ks", "canwrite", false);
-*/
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -140,38 +130,28 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
 void OvmsVehicleKiaSoulEv::vehicle_kiasoulev_car_on(bool isOn)
   {
 
-  if (isOn)
+  if (isOn && !StdMetrics.ms_v_env_on->AsBool())
     {
-	// Car is ON
-	if (!StdMetrics.ms_v_env_on->AsBool())
-	  {
-	  StdMetrics.ms_v_env_on->SetValue(isOn);
-	  StdMetrics.ms_v_env_awake->SetValue(isOn);
+		// Car is ON
+		StdMetrics.ms_v_env_on->SetValue(isOn);
+		StdMetrics.ms_v_env_awake->SetValue(isOn);
 
-	  // Start trip, save current state
-	  //ODO at Start of trip
-	  ks_trip_start_odo = POS_ODO;
-	  ks_start_cdc = ks_battery_cum_discharge; 	//Cumulated discharge
-	  ks_start_cc = ks_battery_cum_charge; 		//Cumulated charge
-	  }
-	if ( StdMetrics.ms_v_env_parktime->AsInt() > 0)
-	  {
-	  StdMetrics.ms_v_env_parktime->SetValue(0); // No longer parking
-	  //TODO net_req_notification(NET_NOTIFY_ENV);
-	  }
-  } else {
-    // Car is OFF
-	StdMetrics.ms_v_env_on->SetValue(isOn);
-	StdMetrics.ms_v_env_awake->SetValue(isOn);
-
-	StdMetrics.ms_v_pos_speed->SetValue(0);
-
-	if (StdMetrics.ms_v_env_parktime->AsInt() == 0) {
-	  StdMetrics.ms_v_env_parktime->SetValue((int) (time(NULL) - 1));
-	  //TODO net_req_notification(NET_NOTIFY_ENV);
-	  }
+		// Start trip, save current state
+		ks_trip_start_odo = POS_ODO;								// ODO at Start of trip
+		ks_start_cdc = ks_battery_cum_discharge; 		// Register Cumulated discharge
+		ks_start_cc = ks_battery_cum_charge; 				// Register Cumulated charge
+		//TODO net_req_notification(NET_NOTIFY_ENV);
     }
-  StdMetrics.ms_v_pos_trip->SetValue( POS_ODO- ks_trip_start_odo );
+  else if(!isOn && StdMetrics.ms_v_env_on->AsBool())
+    {
+    // Car is OFF
+  		StdMetrics.ms_v_env_on->SetValue(isOn);
+  		StdMetrics.ms_v_env_awake->SetValue(isOn);
+  		StdMetrics.ms_v_pos_speed->SetValue(0);
+  		ks_park_start = time(NULL);
+  	  StdMetrics.ms_v_pos_trip->SetValue( POS_ODO- ks_trip_start_odo );
+  		//TODO net_req_notification(NET_NOTIFY_ENV);
+    }
   }
 
 /**
@@ -211,6 +191,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
       case 0x200:
         {
           // Estimated range:
+          //TODO   float ekstraRange = d[0]/10.0;  //Ekstra range when heating is off.
           uint16_t estRange = d[2] + ((d[1] & 1)<<9);
           if (estRange > 0){
         	    StdMetrics.ms_v_bat_range_est->SetValue((float)(estRange<<1), Kilometers );
@@ -222,6 +203,14 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
           // Parking brake status
         	  StdMetrics.ms_v_env_handbrake->SetValue((d[2] & 0x10) > 0);
+        }
+        break;
+
+      case 0x4b0:
+        {
+          // Motor RPM based on wheel rotation
+        	  int rpm = (d[0]+(d[1]<<8)) * 8.206;
+        	  StdMetrics.ms_v_mot_rpm->SetValue( rpm );
         }
         break;
 
@@ -500,217 +489,196 @@ void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
  * Ticker1: Called every second
  */
 void OvmsVehicleKiaSoulEv::Ticker1(std::string event, void* data)
-  {
-	  // ---------------------------------------------------------------------------
-	  //
-	  // Check CAN bus activity timeout:
-	  //
-	  //TODO
-	  /*
-	  if (ks_busactive > 0)
-	    ks_busactive--;
+	{
+	//
+	// Convert KS status data to OVMS framework:
+	//
 
-	  if (ks_busactive == 0) {
-	    // CAN bus is inactive, switch OFF:
-	    ks_doors1.CarON = 0;
-	    ks_doors1.Charging = 0;
-	    ks_chargepower = 0;
-	    car_speed = 0; //Clear speed
-	  }
-	   */
-	  /***************************************************************************
-	   * Read feature configuration:
-	   */
+	UpdateMaxRange();
 
-	  UpdateMaxRange();
+	*StdMetrics.ms_m_timeutc = (int) time(NULL); // → framework? roadster fetches from CAN…
 
-	  //
-	  // Convert KS status data to OVMS framework:
-	  //
-	  *StdMetrics.ms_m_timeutc = (int) time(NULL); // → framework? roadster fetches from CAN…
+	if (FULL_RANGE > 0)
+		{
+	  	StdMetrics.ms_v_bat_range_ideal->SetValue( FULL_RANGE * BAT_SOC / 100.0, Kilometers);
+	  	}
 
-	  if (FULL_RANGE > 0)
-		StdMetrics.ms_v_bat_range_ideal->SetValue( FULL_RANGE * BAT_SOC / 100.0, Kilometers);
-
-
-	  StdMetrics.ms_v_bat_temp->SetValue(((float) ks_battery_module_temp[0] + (float) ks_battery_module_temp[1] +
+	// Get battery temperature
+	StdMetrics.ms_v_bat_temp->SetValue(((float) ks_battery_module_temp[0] + (float) ks_battery_module_temp[1] +
 	          (float) ks_battery_module_temp[2] + (float) ks_battery_module_temp[3] +
 	          (float) ks_battery_module_temp[4] + (float) ks_battery_module_temp[5] +
 	          (float) ks_battery_module_temp[6] + (float) ks_battery_module_temp[7]) / 8, Celcius);
 
-	  // Update trip
-	  if (StdMetrics.ms_v_env_on->AsBool()){
-		  StdMetrics.ms_v_pos_trip->SetValue( POS_ODO - ks_trip_start_odo , Kilometers);
-		  StdMetrics.ms_v_bat_energy_used->SetValue( ks_battery_cum_discharge - ks_start_cdc - (ks_battery_cum_charge - ks_start_cc), kWh );
-		  StdMetrics.ms_v_bat_energy_recd->SetValue( ks_battery_cum_charge - ks_start_cc, kWh );
+	// Update trip
+	if (StdMetrics.ms_v_env_on->AsBool())
+		{
+		StdMetrics.ms_v_pos_trip->SetValue( POS_ODO - ks_trip_start_odo , Kilometers);
+		StdMetrics.ms_v_bat_energy_used->SetValue( ks_battery_cum_discharge - ks_start_cdc - (ks_battery_cum_charge - ks_start_cc), kWh );
+		StdMetrics.ms_v_bat_energy_recd->SetValue( ks_battery_cum_charge - ks_start_cc, kWh );
 	  }
 
-	  //
-	  // Check for car status changes:
-	  //
-/*	  if( car_doors1bits.FrontLeftDoor!=ks_doors1.FrontLeftDoor ||
-	      car_doors1bits.FrontRightDoor!=ks_doors1.FrontRightDoor ||
-	      car_doors1bits.ChargePort != ks_doors1.ChargePort ||
-	      car_doors1bits.HandBrake != ks_doors1.HandBrake ||
-	      car_doors2bits.CarLocked != ks_doors2.CarLocked
-	      ){
-	    car_doors1bits.FrontLeftDoor = ks_doors1.FrontLeftDoor;
-	    car_doors1bits.FrontRightDoor = ks_doors1.FrontRightDoor;
-	    car_doors1bits.ChargePort = ks_doors1.ChargePort;
-	    car_doors1bits.HandBrake = ks_doors1.HandBrake;
-	    car_doors2bits.CarLocked = ks_doors2.CarLocked;
-	    net_req_notification(NET_NOTIFY_ENV);
+	//Keep charging metrics up to date
+	if (ks_charge_bits.ChargingJ1772)  				//**** J1772 - Type 1  charging ****
+		{
+		SetChargeMetrics(ks_obc_volt, StdMetrics.ms_v_bat_power->AsFloat(kW) * 1000 / CHARGE_VOLTAGE,
+				"standard", 6600 / CHARGE_VOLTAGE, "type1");
+	  }
+	else if (ks_charge_bits.ChargingChademo)  //**** ChaDeMo charging ****
+		{
+		SetChargeMetrics(ks_battery_DC_voltage, -ks_battery_current / 10.0,
+				"performance", (float) ks_battery_avail_charge * 10 / ks_battery_DC_voltage, "chademo");
 	  }
 
-*/
-	  //Update charging information
-	  if (ks_charge_bits.ChargingJ1772) { // J1772 - Type 1  charging
-		  SetChargeMetrics(ks_obc_volt,
-				StdMetrics.ms_v_bat_power->AsFloat(kW) * 1000 / CHARGE_VOLTAGE,
-				"standard",
-				6600 / CHARGE_VOLTAGE,
-				"type1");
-	  } else if (ks_charge_bits.ChargingChademo) { //ChaDeMo charging
-		  SetChargeMetrics(ks_battery_DC_voltage,
-				-ks_battery_current / 10.0,
-				"performance",
-				(float) ks_battery_avail_charge * 10 / ks_battery_DC_voltage,
-				"chademo");
-	  }
+	//
+	// Check for charging status changes:
+	bool isCharging = StdMetrics.ms_v_charge_pilot->AsBool()
+			  						&& (ks_charge_bits.ChargingChademo || ks_charge_bits.ChargingJ1772)
+									&& (CHARGE_CURRENT > 0);
 
-	  //
-	  // Check for charging status changes:
-	  bool isCharging = StdMetrics.ms_v_charge_pilot->AsBool()
-				  && (ks_charge_bits.ChargingChademo || ks_charge_bits.ChargingJ1772)
-		          && (CHARGE_CURRENT > 0);
+	if (isCharging)
+		{
+	  if (!StdMetrics.ms_v_charge_inprogress->AsBool() )
+	  		{
+	    // ******* Charging started: **********
+	    StdMetrics.ms_v_charge_duration_full->SetValue( 60*24, Minutes ); // Lets assume 24H to full.
+	    StdMetrics.ms_v_charge_minutes->SetValue( 0, Minutes );
+	    StdMetrics.ms_v_charge_state->SetValue( "charging" );
+			StdMetrics.ms_v_charge_kwh->SetValue( 0, kWh );  // kWh charged
 
-	  if (isCharging) {
-	    if (!StdMetrics.ms_v_charge_inprogress->AsBool() ) {
-	      // ******* Charging started: **********
-	    	  StdMetrics.ms_v_charge_duration_full->SetValue( 60*24, Minutes ); //Lets start at 24H to full.
-	    	  StdMetrics.ms_v_charge_minutes->SetValue( 0, Minutes );
-	      StdMetrics.ms_v_charge_state->SetValue( "charging" );
-	      StdMetrics.ms_v_charge_kwh->SetValue( 0, kWh );  // kWh charged
-	      //TODO ks_sms_bits.NotifyCharge = 1; // Send SMS when charging is fully initiated
-	      ks_cum_charge_start = ks_battery_cum_charge;
-	      ks_chargeduration = 0;
+			ks_cum_charge_start = ks_battery_cum_charge; // Battery charge base point
+			ks_charge_start = time(NULL);								// Charge start time
 
-	      StdMetrics.ms_v_charge_inprogress->SetValue( isCharging );
+			StdMetrics.ms_v_charge_inprogress->SetValue( isCharging );
 
+			//TODO ks_sms_bits.NotifyCharge = 1; // Send SMS when charging is fully initiated
+			//TODO net_req_notification(NET_NOTIFY_CHARGE);
+			//TODO net_req_notification(NET_NOTIFY_STAT);
+	    }
+	  else
+	  		{
+	    // ******* Charging continues: *******
+	    StdMetrics.ms_v_charge_minutes->SetValue( (int) (time(null) - ks_charge_start) / 60, Minutes );
+
+	    if (((BAT_SOC > 0) && (LIMIT_SOC > 0) && (BAT_SOC >= LIMIT_SOC) && (ks_last_soc < LIMIT_SOC))
+	    			|| ((EST_RANGE > 0) && (LIMIT_RANGE > 0)
+	    					&& (IDEAL_RANGE >= LIMIT_RANGE )
+								&& (ks_last_ideal_range < LIMIT_RANGE )))
+	    		{
+	      // ...enter state 2=topping off when we've reach the needed range / SOC:
+		    StdMetrics.ms_v_charge_state->SetValue("topoff");
+
+	      // ...send charge alert:
 	      //TODO net_req_notification(NET_NOTIFY_CHARGE);
-	      //TODO net_req_notification(NET_NOTIFY_STAT);
-	    } else {
-	      // ******* Charging continues: *******
-	    	  ks_chargeduration++;
-	      StdMetrics.ms_v_charge_minutes->SetValue( (int) ks_chargeduration / 60, Minutes );
-
-	      if (((BAT_SOC > 0) && (LIMIT_SOC > 0)
-	    		  && (BAT_SOC >= LIMIT_SOC) && (ks_last_soc < LIMIT_SOC)) ||
-	              ((EST_RANGE > 0) && (LIMIT_RANGE > 0)
-	            		  && (IDEAL_RANGE >= LIMIT_RANGE )
-	            		  && (ks_last_ideal_range < LIMIT_RANGE ))) {
-	        // ...enter state 2=topping off:
-		    StdMetrics.ms_v_charge_state->SetValue("topoff");
-
-	        // ...send charge alert:
-	        //TODO net_req_notification(NET_NOTIFY_CHARGE);
 		    //TODO net_req_notification(NET_NOTIFY_STAT);
-	      }        // ...else set "topping off" from 94% SOC:
-	      else if (BAT_SOC >= 95) {
+	      }
+	    else if (BAT_SOC >= 95) // ...else set "topping off" from 94% SOC:
+	    		{
 		    StdMetrics.ms_v_charge_state->SetValue("topoff");
-	        //TODO net_req_notification(NET_NOTIFY_ENV);
+	      //TODO net_req_notification(NET_NOTIFY_ENV);
 	      }
 	    }
 
-	    // Check if we have what is needed to calculate remaining minutes
-	    if (CHARGE_VOLTAGE > 0 && CHARGE_CURRENT > 0) {
-	    	  //Calculate remaining charge time
-	    	  float chargeTarget_full = ks_battery_capacity;
-	    	  float chargeTarget_soc = ks_battery_capacity;
-	    	  float chargeTarget_range = ks_battery_capacity;
+	  // Check if we have what is needed to calculate remaining minutes
+	  if (CHARGE_VOLTAGE > 0 && CHARGE_CURRENT > 0)
+	  		{
+	    	//Calculate remaining charge time
+			float chargeTarget_full 	= ks_battery_capacity;
+			float chargeTarget_soc 		= ks_battery_capacity;
+			float chargeTarget_range 	= ks_battery_capacity;
 
-	      if (LIMIT_SOC > 0) {
-	        chargeTarget_soc = ks_battery_capacity * LIMIT_SOC / 100.0;
-	      } else if (LIMIT_RANGE > 0) {
-	        chargeTarget_range = LIMIT_RANGE * ks_battery_capacity / FULL_RANGE;
-	      }
-	      if (ks_charge_bits.ChargingChademo) { //ChaDeMo charging
-	        chargeTarget_full = MIN(chargeTarget_full, ks_battery_capacity*0.83); //Limit charge target to 83% when using ChaDeMo
-	        chargeTarget_soc = MIN(chargeTarget_soc, ks_battery_capacity*0.83); //Limit charge target to 83% when using ChaDeMo
-	        chargeTarget_range = MIN(chargeTarget_range, ks_battery_capacity*0.83); //Limit charge target to 83% when using ChaDeMo
-	      }
+			if (LIMIT_SOC > 0) //If SOC limit is set, lets calculate target battery capacity
+				{
+				chargeTarget_soc = ks_battery_capacity * LIMIT_SOC / 100.0;
+				}
+			else if (LIMIT_RANGE > 0)  //If range limit is set, lets calculate target battery capacity
+				{
+				chargeTarget_range = LIMIT_RANGE * ks_battery_capacity / FULL_RANGE;
+				}
 
-	      StdMetrics.ms_v_charge_duration_full->SetValue( calcMinutesRemaining(chargeTarget_full), Minutes);
-	      StdMetrics.ms_v_charge_duration_soc->SetValue( calcMinutesRemaining(chargeTarget_soc), Minutes);
-	      StdMetrics.ms_v_charge_duration_range->SetValue( calcMinutesRemaining(chargeTarget_range), Minutes);
+			if (ks_charge_bits.ChargingChademo)
+				{ //ChaDeMo charging means that we will reach maximum 83%.
+				chargeTarget_full = MIN(chargeTarget_full, ks_battery_capacity*0.83); //Limit charge target to 83% when using ChaDeMo
+				chargeTarget_soc = MIN(chargeTarget_soc, ks_battery_capacity*0.83); //Limit charge target to 83% when using ChaDeMo
+				chargeTarget_range = MIN(chargeTarget_range, ks_battery_capacity*0.83); //Limit charge target to 83% when using ChaDeMo
+				//TODO calculate the needed capacity above 83% as 32A
+				}
 
-	      //TODO if (ks_sms_bits.NotifyCharge == 1) { //Send Charge SMS after we have initialized the voltage and current settings
-	      //  ks_sms_bits.NotifyCharge = 0;
-	        //TODO net_req_notification(NET_NOTIFY_CHARGE);
-	        //TODO net_req_notification(NET_NOTIFY_STAT);
-	      //}
-	    } else {
-	      StdMetrics.ms_v_charge_state->SetValue("heating");
+			// Calculate time to full, SOC-limit and range-limit.
+			StdMetrics.ms_v_charge_duration_full->SetValue( calcMinutesRemaining(chargeTarget_full), Minutes);
+			StdMetrics.ms_v_charge_duration_soc->SetValue( calcMinutesRemaining(chargeTarget_soc), Minutes);
+			StdMetrics.ms_v_charge_duration_range->SetValue( calcMinutesRemaining(chargeTarget_range), Minutes);
+
+			//TODO if (ks_sms_bits.NotifyCharge == 1) { //Send Charge SMS after we have initialized the voltage and current settings
+			//  ks_sms_bits.NotifyCharge = 0;
+			//TODO net_req_notification(NET_NOTIFY_CHARGE);
+			//TODO net_req_notification(NET_NOTIFY_STAT);
+			//}
 	    }
-	    StdMetrics.ms_v_charge_kwh->SetValue((float)(ks_battery_cum_charge - ks_cum_charge_start) / 10.0, kWh); // kWh charged
-	    ks_last_soc = BAT_SOC;
-	    ks_last_ideal_range = IDEAL_RANGE;
+	  else
+	  		{
+	  		StdMetrics.ms_v_charge_state->SetValue("heating");
+	    }
+	  StdMetrics.ms_v_charge_kwh->SetValue((float)(ks_battery_cum_charge - ks_cum_charge_start) / 10.0, kWh); // kWh charged
+	  ks_last_soc = BAT_SOC;
+	  ks_last_ideal_range = IDEAL_RANGE;
 
-	  } else if (!isCharging && StdMetrics.ms_v_charge_inprogress->AsBool()) {
-	    // ** Charge completed or interrupted: **
+		}
+	else if (!isCharging && StdMetrics.ms_v_charge_inprogress->AsBool())
+		{
+	  // ** Charge completed or interrupted: **
 		StdMetrics.ms_v_charge_current->SetValue( 0 );
-	    StdMetrics.ms_v_charge_climit->SetValue( 0 );
-	    if (BAT_SOC == 100)
-		    StdMetrics.ms_v_charge_state->SetValue("done");
-	    else
-		    StdMetrics.ms_v_charge_state->SetValue("stopped");
+	  StdMetrics.ms_v_charge_climit->SetValue( 0 );
+	  if (BAT_SOC == 100)
+	  		StdMetrics.ms_v_charge_state->SetValue("done");
+	  else
+	  		StdMetrics.ms_v_charge_state->SetValue("stopped");
 
-	    StdMetrics.ms_v_charge_kwh->SetValue( (float)(ks_battery_cum_charge - ks_cum_charge_start) / 10, kWh );  // kWh charged
+	  StdMetrics.ms_v_charge_kwh->SetValue( (float)(ks_battery_cum_charge - ks_cum_charge_start) / 10, kWh );  // kWh charged
 
-	    ks_cum_charge_start = 0;
-	    StdMetrics.ms_v_charge_inprogress->SetValue( false );
+	  ks_cum_charge_start = 0;
+	  StdMetrics.ms_v_charge_inprogress->SetValue( false );
 
-	    //TODO net_req_notification(NET_NOTIFY_CHARGE);
-	    //TODO net_req_notification(NET_NOTIFY_STAT);
+	  //TODO net_req_notification(NET_NOTIFY_CHARGE);
+	  //TODO net_req_notification(NET_NOTIFY_STAT);
+	}
+
+	//Check aux battery and send alert
+	if( StdMetrics.ms_v_bat_12v_voltage->AsFloat()<12.2 )
+		{
+	  //TODO Send SMS-varsel.
 	  }
+	}
 
-	  //Check aux battery and send alert
-	  if( StdMetrics.ms_v_bat_12v_voltage->AsFloat()<12.2 ){
-		  //TODO Send SMS-varsel.
-	  }
-  }
+/**
+ *  Sets the charge metrics
+ */
+void OvmsVehicleKiaSoulEv::SetChargeMetrics(float voltage, float current, const char* mode, float climit, const char* type)
+	{
+	StdMetrics.ms_v_charge_voltage->SetValue( voltage, Volts );
+	StdMetrics.ms_v_charge_current->SetValue( current, Amps );
+	StdMetrics.ms_v_charge_mode->SetValue( mode );
+	StdMetrics.ms_v_charge_climit->SetValue( climit, Amps);
+	StdMetrics.ms_v_charge_type->SetValue( type );
+	}
 
-  /**
-   *  Sets the charge metrics
-   */
-  void OvmsVehicleKiaSoulEv::SetChargeMetrics(float voltage, float current, const char* mode, float climit, const char* type){
-	  StdMetrics.ms_v_charge_voltage->SetValue( voltage, Volts );
-	  StdMetrics.ms_v_charge_current->SetValue( current, Amps );
-	  StdMetrics.ms_v_charge_mode->SetValue( mode );
-	  StdMetrics.ms_v_charge_climit->SetValue( climit, Amps);
-	  StdMetrics.ms_v_charge_type->SetValue( type );
-  }
-
-  /**
-   * Calculates minutes remaining before target is reached. Based on current charge speed.
-   * TODO: Should be calculated based on actual charge curve. Maybe in a later version?
-   */
-  uint16_t OvmsVehicleKiaSoulEv::calcMinutesRemaining(float target)
-  {
-	  return MIN( 1440, (uint16_t)
-              (((target - (ks_battery_capacity * BAT_SOC) / 100.0)*60.0) /
+/**
+ * Calculates minutes remaining before target is reached. Based on current charge speed.
+ * TODO: Should be calculated based on actual charge curve. Maybe in a later version?
+ */
+uint16_t OvmsVehicleKiaSoulEv::calcMinutesRemaining(float target)
+  		{
+	  return MIN( 1440, (uint16_t) (((target - (ks_battery_capacity * BAT_SOC) / 100.0)*60.0) /
               (CHARGE_VOLTAGE * CHARGE_CURRENT)));
-  }
+  		}
 
 /**
  * Updates the maximum real world range at current temperature.
  * Also updates the State of Health
  */
 void OvmsVehicleKiaSoulEv::UpdateMaxRange(void)
-{
+	{
 	//Update State of Health using following assumption: 10% buffer
 	StdMetrics.ms_v_bat_soh->SetValue(110-(ks_battery_max_detoriation+ks_battery_min_detoriation)/2);
-
 	StdMetrics.ms_v_bat_cac->SetValue( (ks_battery_capacity * BAT_SOH * BAT_SOC/10000.0) / 400, AmpHours);
 
 	float maxRange = ks_maxrange * BAT_SOH / 100.0;
@@ -720,11 +688,12 @@ void OvmsVehicleKiaSoulEv::UpdateMaxRange(void)
 	// Temperature compensation:
 	//   - Assumes standard maxRange specified at 20 degrees C
 	//   - Range halved at -20C.
-	if (maxRange != 0) {
+	if (maxRange != 0)
+		{
 		maxRange = (maxRange * (100.0 - (int) (ABS(20.0 - (amb_temp+bat_temp)/2)* 1.25))) / 100.0;
-	}
+		}
 	StdMetrics.ms_v_bat_range_full->SetValue(maxRange, Kilometers);
-}
+	}
 
 /**
  * Send a can message and wait for the response before continuing.
@@ -733,7 +702,7 @@ void OvmsVehicleKiaSoulEv::UpdateMaxRange(void)
 bool OvmsVehicleKiaSoulEv::SendCanMessage_sync(uint16_t id, uint8_t count,
 		uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
 		uint8_t b5, uint8_t b6)
-{
+	{
 	uint16_t timeout;
 
 	ks_send_can.id=serviceId;
@@ -760,58 +729,72 @@ bool OvmsVehicleKiaSoulEv::SendCanMessage_sync(uint16_t id, uint8_t count,
 
 	//Now wait for the response
 	timeout = 300; // ~1500 ms
-	do {
+	do
+		{
 		 /* Block for 50ms. */
 		 vTaskDelay( xDelay );
-	} while (ks_send_can.status == 0xff && --timeout);
+		} while (ks_send_can.status == 0xff && --timeout);
 
 	//Did we get the response?
-	if(timeout != 0 ){
-		if( ks_send_can.byte[1]==serviceId+0x40 ){
+	if(timeout != 0 )
+		{
+		if( ks_send_can.byte[1]==serviceId+0x40 )
+			{
 			return true;
-		}else{
+			}
+		else
+			{
 			ks_send_can.status = 0x2;
+			}
 		}
-	}else{
+	else
+		{
 		ks_send_can.status = 0x1; //Timeout
-	}
+		}
 	return false;
  }
 
 /**
  * Send a can message to set ECU in Diagnostic session mode
  */
-bool OvmsVehicleKiaSoulEv::SetTemporarySessionMode(uint16_t id, uint8_t mode){
+bool OvmsVehicleKiaSoulEv::SetTemporarySessionMode(uint16_t id, uint8_t mode)
+	{
   return SendCanMessage_sync(id, 2,VEHICLE_POLL_TYPE_OBDIISESSION, mode,0,0,0,0,0);
-}
+	}
 
 /**
  * Open or lock the doors
  */
-bool OvmsVehicleKiaSoulEv::SetDoorLock(bool open, const char* password){
-  if( ks_shift_bits.Park ){
+bool OvmsVehicleKiaSoulEv::SetDoorLock(bool open, const char* password)
+	{
+  if( ks_shift_bits.Park )
+  		{
     //TODO if( IsPasswordOk(password) ){
-	if( SetTemporarySessionMode(SMART_JUNCTION_BOX, 3)){ //0x771 0x02 0x10 0x03
-		  // 0x771 0x04 0x2F 0xBC 0x1[0,1] 0x03
-	  return SendCanMessage_sync(SMART_JUNCTION_BOX, 4,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, 0xbc, open?0x10:0x11, 0x03, 0,0,0 );
-	}
+  		if( SetTemporarySessionMode(SMART_JUNCTION_BOX, 3))
+  			{ //0x771 0x02 0x10 0x03
+  				// 0x771 0x04 0x2F 0xBC 0x1[0,1] 0x03
+  			return SendCanMessage_sync(SMART_JUNCTION_BOX, 4,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, 0xbc, open?0x10:0x11, 0x03, 0,0,0 );
+  			}
     //}
-  }
-  return false;
-}
+  		}
+		return false;
+	}
 
 //(04) 2F BC 09 03 --> Open the trunk lock
-bool OvmsVehicleKiaSoulEv::OpenTrunk(const char* password){
-  if( ks_shift_bits.Park ){
-    //TODO if( IsPasswordOk(password) ){
-	if( SetTemporarySessionMode(SMART_JUNCTION_BOX, 3)){ //0x771 0x02 0x10 0x03
-		  // 0x771 0x04 0x2F 0xBC 0x09 0x03
-	  return SendCanMessage_sync(SMART_JUNCTION_BOX, 4,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, 0xbc, 0x09, 0x03, 0,0,0 );
-	}
+bool OvmsVehicleKiaSoulEv::OpenTrunk(const char* password)
+	{
+  if( ks_shift_bits.Park )
+  		{
+		//TODO if( IsPasswordOk(password) ){
+  		if( SetTemporarySessionMode(SMART_JUNCTION_BOX, 3))
+  			{ //0x771 0x02 0x10 0x03
+  				// 0x771 0x04 0x2F 0xBC 0x09 0x03
+  			return SendCanMessage_sync(SMART_JUNCTION_BOX, 4,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, 0xbc, 0x09, 0x03, 0,0,0 );
+  			}
     //}
-  }
-  return false;
-}
+  		}
+		return false;
+	}
 
 /**
  * Check if the password is ok
