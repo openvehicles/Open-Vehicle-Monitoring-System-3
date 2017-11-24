@@ -97,7 +97,6 @@ OvmsVehicleDemo::OvmsVehicleDemo()
   StandardMetrics.ms_v_env_valet->SetValue(false);
   StandardMetrics.ms_v_env_headlights->SetValue(false);
   StandardMetrics.ms_v_env_alarm->SetValue(false);
-  StandardMetrics.ms_v_env_parktime->SetValue(0);
   StandardMetrics.ms_v_env_ctrl_login->SetValue(false);
   StandardMetrics.ms_v_env_ctrl_config->SetValue(false);
   StandardMetrics.ms_v_env_temp->SetValue(22);
