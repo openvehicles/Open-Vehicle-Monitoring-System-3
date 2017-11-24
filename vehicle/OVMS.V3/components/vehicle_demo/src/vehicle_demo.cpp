@@ -127,6 +127,8 @@ OvmsVehicleDemo::~OvmsVehicleDemo()
 
 void OvmsVehicleDemo::Ticker1(uint32_t ticker)
   {
+  OvmsVehicle::Ticker1(ticker);
+
   if (StandardMetrics.ms_v_env_on->AsBool())
     {
     // We are driving
@@ -140,6 +142,8 @@ void OvmsVehicleDemo::Ticker1(uint32_t ticker)
 
 void OvmsVehicleDemo::Ticker10(uint32_t ticker)
   {
+  OvmsVehicle::Ticker10(ticker);
+
   if (StandardMetrics.ms_v_charge_inprogress->AsBool())
     {
     // We are charging
