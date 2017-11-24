@@ -736,6 +736,8 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
     case KphPS:        return "Kph/s";
     case MphPS:        return "Mph/s";
     case MetersPSS:    return "m/s²";
+    case dbm:          return "dBm";
+    case sq:           return "sq";
     case Percentage:   return "%";
     default:           return "";
     }

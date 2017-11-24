@@ -635,8 +635,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     // CAR has just been turned ON & CAN bus is online
     twizy_flags.CarAwake = 1;
     
-    *StdMetrics.ms_v_env_parktime = (int) 0; // No longer parking
-    
     // set trip references:
     twizy_soc_tripstart = twizy_soc;
     twizy_odometer_tripstart = twizy_odometer;
@@ -660,8 +658,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     // CAR has just been turned OFF
     twizy_flags.CarAwake = 0;
     twizy_flags.CtrlLoggedIn = 0;
-    
-    *StdMetrics.ms_v_env_parktime = (int) (time(NULL) - 1); // Record it as 1 second ago, so non zero report
     
     // set trip references:
     twizy_soc_tripend = twizy_soc;

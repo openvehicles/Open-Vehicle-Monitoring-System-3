@@ -97,7 +97,6 @@ OvmsVehicleDemo::OvmsVehicleDemo()
   StandardMetrics.ms_v_env_valet->SetValue(false);
   StandardMetrics.ms_v_env_headlights->SetValue(false);
   StandardMetrics.ms_v_env_alarm->SetValue(false);
-  StandardMetrics.ms_v_env_parktime->SetValue(0);
   StandardMetrics.ms_v_env_ctrl_login->SetValue(false);
   StandardMetrics.ms_v_env_ctrl_config->SetValue(false);
   StandardMetrics.ms_v_env_temp->SetValue(22);
@@ -127,6 +126,8 @@ OvmsVehicleDemo::~OvmsVehicleDemo()
 
 void OvmsVehicleDemo::Ticker1(uint32_t ticker)
   {
+  OvmsVehicle::Ticker1(ticker);
+
   if (StandardMetrics.ms_v_env_on->AsBool())
     {
     // We are driving
@@ -140,6 +141,8 @@ void OvmsVehicleDemo::Ticker1(uint32_t ticker)
 
 void OvmsVehicleDemo::Ticker10(uint32_t ticker)
   {
+  OvmsVehicle::Ticker10(ticker);
+
   if (StandardMetrics.ms_v_charge_inprogress->AsBool())
     {
     // We are charging
