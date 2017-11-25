@@ -136,6 +136,7 @@ class canbus : public pcp
 
   public:
     virtual esp_err_t Write(const CAN_frame_t* p_frame);
+    virtual esp_err_t Write(uint16_t id, uint8_t length, uint8_t *data);
     virtual bool RxCallback(CAN_frame_t* frame);
     virtual void TxCallback();
 

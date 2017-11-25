@@ -68,34 +68,6 @@ OvmsVehicleNissanLeaf::~OvmsVehicleNissanLeaf()
   }
 
 ////////////////////////////////////////////////////////////////////////
-// vehicle_nissanleaf_SendCanMessage()
-// Send the specified can frame. Does nothing if FEATURE_CANWRITE is not set,
-// does nothing if length > 8.
-//
-// TODO is there already a similar method somewhere? Move to the can object?
-
-void OvmsVehicleNissanLeaf::SendCanMessage(uint16_t id, uint8_t length, uint8_t *data)
-  {
-  // TODO
-  //if (sys_features[FEATURE_CANWRITE] == 0 || length > 8)
-  if (length > 8)
-    {
-    return;
-    }
-
-  CAN_frame_t frame;
-  memset(&frame,0,sizeof(frame));
-
-  frame.origin = m_can1;
-  frame.FIR.U = 0;
-  frame.FIR.B.DLC = length;
-  frame.FIR.B.FF = CAN_frame_std;
-  frame.MsgID = id;
-  memcpy(frame.data.u8, data, length);
-  m_can1->Write(&frame);
-  }
-
-////////////////////////////////////////////////////////////////////////
 // vehicle_nissanleaf_car_on()
 // Takes care of setting all the state appropriate when the car is on
 // or off. Centralized so we can more easily make on and off mirror
@@ -202,7 +174,7 @@ void OvmsVehicleNissanLeaf::PollStart(void)
   // Request Group 1
   uint8_t data[] = {0x02, 0x21, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00};
   nl_poll_state = ZERO;
-  SendCanMessage(0x79b, 8, data);
+  m_can1->Write(0x79b, 8, data);
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -264,7 +236,7 @@ void OvmsVehicleNissanLeaf::PollContinue(CAN_frame_t* p_frame)
     {
     // request the next page of data
     uint8_t next[] = {0x30, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    this->SendCanMessage(0x79b, 8, next);
+    this->m_can1->Write(0x79b, 8, next);
     }
   }
 
