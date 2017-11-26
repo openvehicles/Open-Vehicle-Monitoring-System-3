@@ -59,7 +59,6 @@ OvmsVehicleDemo::OvmsVehicleDemo()
   StandardMetrics.ms_v_charge_voltage->SetValue(0);
   StandardMetrics.ms_v_charge_current->SetValue(0);
   StandardMetrics.ms_v_charge_climit->SetValue(0);
-  StandardMetrics.ms_v_charge_minutes->SetValue(0);
   StandardMetrics.ms_v_charge_kwh->SetValue(0);
   StandardMetrics.ms_v_charge_mode->SetValue("standard");
   StandardMetrics.ms_v_charge_timermode->SetValue(false);
