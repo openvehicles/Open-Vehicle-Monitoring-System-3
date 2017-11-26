@@ -336,7 +336,6 @@ bool OvmsConfig::IsDefined(std::string param, std::string instance)
   {
   OvmsConfigParam *p = CachedParam(param);
   if (p == NULL) return false;
-  if (instance.empty()) return true;
   return p->IsDefined(instance);
   }
 
@@ -447,6 +446,8 @@ std::string OvmsConfigParam::GetValue(std::string instance)
 
 bool OvmsConfigParam::IsDefined(std::string instance)
   {
+  if (instance.empty())
+    return !m_map.empty();
   auto k = m_map.find(instance);
   if (k == m_map.end())
     return false;
