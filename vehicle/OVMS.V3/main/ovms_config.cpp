@@ -336,6 +336,7 @@ bool OvmsConfig::IsDefined(std::string param, std::string instance)
   {
   OvmsConfigParam *p = CachedParam(param);
   if (p == NULL) return false;
+  if (instance.empty()) return true;
   return p->IsDefined(instance);
   }
 
