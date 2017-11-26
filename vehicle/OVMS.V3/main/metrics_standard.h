@@ -71,7 +71,7 @@
 #define MS_V_CHARGE_VOLTAGE         "v.c.voltage"
 #define MS_V_CHARGE_CURRENT         "v.c.current"
 #define MS_V_CHARGE_CLIMIT          "v.c.climit"
-#define MS_V_CHARGE_MINUTES         "v.c.minutes"
+#define MS_V_CHARGE_TIME            "v.c.time"
 #define MS_V_CHARGE_KWH             "v.c.kwh"
 #define MS_V_CHARGE_MODE            "v.c.mode"
 #define MS_V_CHARGE_TIMERMODE       "v.c.timermode"
@@ -182,7 +182,7 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_charge_voltage;    // Momentary charger supply voltage [V]
     OvmsMetricFloat*  ms_v_charge_current;    // Momentary charger output current [A]
     OvmsMetricFloat*  ms_v_charge_climit;     // Maximum charger output current [A]
-    OvmsMetricInt*    ms_v_charge_minutes;    // Duration of running charge [min]
+    OvmsMetricInt*    ms_v_charge_time;       // Duration of running charge [sec]
     OvmsMetricFloat*  ms_v_charge_kwh;        // Energy sum for running charge [kWh]
     OvmsMetricString* ms_v_charge_mode;       // standard, range, performance, storage
     OvmsMetricBool*   ms_v_charge_timermode;  // True if timer enabled

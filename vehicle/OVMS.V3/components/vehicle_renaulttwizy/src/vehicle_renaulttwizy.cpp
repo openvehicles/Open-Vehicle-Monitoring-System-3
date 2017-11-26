@@ -702,7 +702,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     
     twizy_chargeduration++;
     
-    *StdMetrics.ms_v_charge_minutes = (int) twizy_chargeduration / 60;
     *StdMetrics.ms_v_charge_kwh = (float) twizy_speedpwr[CAN_SPEED_CONST].rec / WH_DIV / 1000;
     
     *StdMetrics.ms_v_charge_current = (float) -twizy_current / 4;

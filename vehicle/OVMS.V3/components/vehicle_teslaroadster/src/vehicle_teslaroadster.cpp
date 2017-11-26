@@ -135,7 +135,6 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           {
           StandardMetrics.ms_v_charge_current->SetValue((float)d[1]);
           StandardMetrics.ms_v_charge_climit->SetValue((float)d[6]);
-          StandardMetrics.ms_v_charge_minutes->SetValue(((int)d[3]<<8)+d[2]);
           break;
           }
         case 0x89:  // Charging Voltage / Iavailable
