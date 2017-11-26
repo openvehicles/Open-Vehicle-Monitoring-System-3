@@ -66,7 +66,7 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 
   protected:
     void vehicle_kiasoulev_car_on(bool isOn);
-    void UpdateMaxRange(void);
+    void UpdateMaxRangeAndSOH(void);
     uint16_t calcMinutesRemaining(float target);
     bool SendCanMessage_sync(uint16_t id, uint8_t count,
     		uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
@@ -75,7 +75,7 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     bool SetDoorLock(bool open, const char* password);
     bool OpenTrunk(const char* password);
     bool IsPasswordOk(const char *password);
-    void SetChargeMetrics(float voltage, float current, const char* mode, float climit, const char* type);
+    void SetChargeMetrics(float voltage, float current, float climit, bool chademo);
 
     OvmsMetricString *m_version;
 	#define CFG_DEFAULT_MAXRANGE 160
@@ -166,16 +166,16 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 #define TO_CELCIUS(n)	((float)n-40)
 #define TO_PSI(n)		((float)i/4.0)
 
-#define BAT_SOC			StdMetrics.ms_v_bat_soc->AsFloat()
-#define BAT_SOH			StdMetrics.ms_v_bat_soh->AsFloat()
-#define LIMIT_SOC		StdMetrics.ms_v_charge_limit_soc->AsFloat()
-#define LIMIT_RANGE		StdMetrics.ms_v_charge_limit_range->AsFloat(Kilometers)
-#define EST_RANGE		StdMetrics.ms_v_bat_range_est->AsFloat(Kilometers)
-#define IDEAL_RANGE		StdMetrics.ms_v_bat_range_ideal->AsFloat(Kilometers)
-#define FULL_RANGE		StdMetrics.ms_v_bat_range_full->AsFloat(Kilometers)
-#define POS_ODO			StdMetrics.ms_v_pos_odometer->AsFloat(Kilometers)
-#define CHARGE_CURRENT	StdMetrics.ms_v_charge_current->AsFloat(Amps)
-#define CHARGE_VOLTAGE	StdMetrics.ms_v_charge_voltage->AsFloat(Volts)
+#define BAT_SOC			StdMetrics.ms_v_bat_soc->AsFloat(100)
+#define BAT_SOH			StdMetrics.ms_v_bat_soh->AsFloat(100)
+#define LIMIT_SOC		StdMetrics.ms_v_charge_limit_soc->AsFloat(0)
+#define LIMIT_RANGE		StdMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers)
+#define EST_RANGE		StdMetrics.ms_v_bat_range_est->AsFloat(100, Kilometers)
+#define IDEAL_RANGE		StdMetrics.ms_v_bat_range_ideal->AsFloat(100, Kilometers)
+#define FULL_RANGE		StdMetrics.ms_v_bat_range_full->AsFloat(160, Kilometers)
+#define POS_ODO			StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers)
+#define CHARGE_CURRENT	StdMetrics.ms_v_charge_current->AsFloat(0, Amps)
+#define CHARGE_VOLTAGE	StdMetrics.ms_v_charge_voltage->AsFloat(0, Volts)
 
 #define VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID 0x2F // InputOutputControlByIdentifier
 

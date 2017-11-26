@@ -38,19 +38,18 @@ static const char *TAG = "v-kiasoulev";
 
 #define VERSION "0.1.0"
 
-static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[]
-  =
+static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
-    { 0x7e2, 0, 	    VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, { 0, 120, 120 } }, // VIN
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP, 	0x01, { 30, 10, 10 } }, 	// Diag page 01
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP, 	0x02, { 0, 30, 10 } }, 	// Diag page 02
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP, 	0x03, { 0, 30, 10 } }, 	// Diag page 03
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP, 	0x04, { 0, 30, 10 } }, 	// Diag page 04
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP, 	0x05, { 120, 10, 10 } }, // Diag page 05
-    { 0x794, 0x79c, VEHICLE_POLL_TYPE_OBDIIGROUP, 	0x02, { 0, 0, 10 } }, 	// On board charger
-    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP, 	0x00, { 30, 10, 10 } }, 	// VMCU  Shift-stick
-    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP, 	0x02, { 30, 10, 0 } }, 	// Motor temp++
-    { 0x7df, 0x7de, VEHICLE_POLL_TYPE_OBDIIGROUP, 	0x06, { 30, 10, 0 } }, 	// TMPS
+    { 0x7e2, 0, 	   VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, { 0, 120, 120 } }, // VIN
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, { 30, 10, 10 } }, 	// Diag page 01
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, { 0, 30, 10 } }, 	// Diag page 02
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x03, { 0, 30, 10 } }, 	// Diag page 03
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x04, { 0, 30, 10 } }, 	// Diag page 04
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x05, { 120, 10, 10 } }, // Diag page 05
+    { 0x794, 0x79c, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, { 0, 0, 10 } }, 	// On board charger
+    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x00, { 30, 10, 10 } }, 	// VMCU  Shift-stick
+    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, { 30, 10, 0 } }, 	// Motor temp++
+    { 0x7df, 0x7de, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x06, { 30, 10, 0 } }, 	// TMPS
     { 0, 0, 0, 0, { 0, 0, 0 } }
   };
 
@@ -58,17 +57,19 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   {
   ESP_LOGI(TAG, "Kia Soul EV v3.0 vehicle module");
 
-  memset(m_vin,0,sizeof(m_vin));
-  memset(ks_battery_cell_voltage,0,sizeof(ks_battery_cell_voltage));
-  memset(ks_battery_module_temp,0,sizeof(ks_battery_module_temp));
-  memset(ks_battery_cum_op_time,0,sizeof(ks_battery_cum_op_time));
-  memset(ks_tpms_id,0,sizeof(ks_tpms_id));
+  memset( m_vin, 0, sizeof(m_vin));
+  memset( ks_battery_cell_voltage ,0, sizeof(ks_battery_cell_voltage));
+  memset( ks_battery_module_temp, 0, sizeof(ks_battery_module_temp));
+  memset( ks_battery_cum_op_time, 0, sizeof(ks_battery_cum_op_time));
+  memset( ks_tpms_id, 0, sizeof(ks_tpms_id));
   ks_battery_max_detoriation = 0;
   ks_battery_min_detoriation = 0;
   ks_maxrange = CFG_DEFAULT_MAXRANGE;
 
-  RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
-  RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_100KBPS);
+  // C-Bus
+  RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+  // M-Bus
+  RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
 
   MyConfig.RegisterParam("x.ks", "Kia Soul EV", true, true);
   ConfigChanged(NULL);
@@ -125,8 +126,6 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
 // Takes care of setting all the state appropriate when the car is on
 // or off. Centralized so we can more easily make on and off mirror
 // images.
-//
-
 void OvmsVehicleKiaSoulEv::vehicle_kiasoulev_car_on(bool isOn)
   {
 
@@ -140,25 +139,27 @@ void OvmsVehicleKiaSoulEv::vehicle_kiasoulev_car_on(bool isOn)
 		ks_trip_start_odo = POS_ODO;								// ODO at Start of trip
 		ks_start_cdc = ks_battery_cum_discharge; 		// Register Cumulated discharge
 		ks_start_cc = ks_battery_cum_charge; 				// Register Cumulated charge
+    PollSetState(1);
 		//TODO net_req_notification(NET_NOTIFY_ENV);
     }
   else if(!isOn && StdMetrics.ms_v_env_on->AsBool())
     {
     // Car is OFF
-  		StdMetrics.ms_v_env_on->SetValue(isOn);
-  		StdMetrics.ms_v_env_awake->SetValue(isOn);
-  		StdMetrics.ms_v_pos_speed->SetValue(0);
-  		ks_park_start = time(NULL);
+  		StdMetrics.ms_v_env_on->SetValue( isOn );
+  		StdMetrics.ms_v_env_awake->SetValue( isOn );
+  		StdMetrics.ms_v_pos_speed->SetValue( 0 );
   	  StdMetrics.ms_v_pos_trip->SetValue( POS_ODO- ks_trip_start_odo );
   		//TODO net_req_notification(NET_NOTIFY_ENV);
     }
   }
 
 /**
- * Handles incoming CAN-frames on bus 1
+ * Handles incoming CAN-frames on bus 1, the C-bus
  */
 void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
+  ESP_LOGI(TAG, "Kia Soul EV IncomingFrameCan1");
+
   uint8_t *d = p_frame->data.u8;
 
   switch (p_frame->MsgID)
@@ -288,6 +289,9 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 
   }
 
+/**
+ * Handle incoming CAN-frames on bus 2, the M-bus
+ */
 void OvmsVehicleKiaSoulEv::IncomingFrameCan2(CAN_frame_t* p_frame)
   {
   }
@@ -297,6 +301,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan2(CAN_frame_t* p_frame)
  */
 void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
   {
+    	ESP_LOGI(TAG, "Kia Soul EV IncomingPollReply");
 	  uint8_t i;
 	  UINT base;
 	  uint32_t val;
@@ -490,15 +495,13 @@ void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
  */
 void OvmsVehicleKiaSoulEv::Ticker1(std::string event, void* data)
 	{
-	//
-	// Convert KS status data to OVMS framework:
-	//
+  ESP_LOGI(TAG, "Kia Soul EV Ticker1");
 
-	UpdateMaxRange();
+	UpdateMaxRangeAndSOH();
 
 	*StdMetrics.ms_m_timeutc = (int) time(NULL); // → framework? roadster fetches from CAN…
 
-	if (FULL_RANGE > 0)
+	if (FULL_RANGE > 0) //  If we have the battery full range, we can calculate the ideal range too
 		{
 	  	StdMetrics.ms_v_bat_range_ideal->SetValue( FULL_RANGE * BAT_SOC / 100.0, Kilometers);
 	  	}
@@ -518,15 +521,15 @@ void OvmsVehicleKiaSoulEv::Ticker1(std::string event, void* data)
 	  }
 
 	//Keep charging metrics up to date
-	if (ks_charge_bits.ChargingJ1772)  				//**** J1772 - Type 1  charging ****
+	if (ks_charge_bits.ChargingJ1772)  				// **** J1772 - Type 1  charging ****
 		{
-		SetChargeMetrics(ks_obc_volt, StdMetrics.ms_v_bat_power->AsFloat(kW) * 1000 / CHARGE_VOLTAGE,
-				"standard", 6600 / CHARGE_VOLTAGE, "type1");
+	  ESP_LOGI(TAG, "J1772");
+		SetChargeMetrics(ks_obc_volt, StdMetrics.ms_v_bat_power->AsFloat(0, kW) * 1000 / CHARGE_VOLTAGE, 6600 / CHARGE_VOLTAGE, false);
 	  }
-	else if (ks_charge_bits.ChargingChademo)  //**** ChaDeMo charging ****
+	else if (ks_charge_bits.ChargingChademo)  // **** ChaDeMo charging ****
 		{
-		SetChargeMetrics(ks_battery_DC_voltage, -ks_battery_current / 10.0,
-				"performance", (float) ks_battery_avail_charge * 10 / ks_battery_DC_voltage, "chademo");
+	  ESP_LOGI(TAG, "ChaDeMo");
+		SetChargeMetrics(ks_battery_DC_voltage, -ks_battery_current / 10.0, (float) ks_battery_avail_charge * 10 / ks_battery_DC_voltage, true);
 	  }
 
 	//
@@ -537,8 +540,11 @@ void OvmsVehicleKiaSoulEv::Ticker1(std::string event, void* data)
 
 	if (isCharging)
 		{
-	  if (!StdMetrics.ms_v_charge_inprogress->AsBool() )
+	  ESP_LOGI(TAG, "IsCharging");
+
+		if (!StdMetrics.ms_v_charge_inprogress->AsBool() )
 	  		{
+		  ESP_LOGI(TAG, "Charging starting");
 	    // ******* Charging started: **********
 	    StdMetrics.ms_v_charge_duration_full->SetValue( 60*24, Minutes ); // Lets assume 24H to full.
 	    StdMetrics.ms_v_charge_minutes->SetValue( 0, Minutes );
@@ -556,8 +562,9 @@ void OvmsVehicleKiaSoulEv::Ticker1(std::string event, void* data)
 	    }
 	  else
 	  		{
+		  ESP_LOGI(TAG, "Charging...");
 	    // ******* Charging continues: *******
-	    StdMetrics.ms_v_charge_minutes->SetValue( (int) (time(null) - ks_charge_start) / 60, Minutes );
+	    StdMetrics.ms_v_charge_minutes->SetValue( (int) (time(NULL) - ks_charge_start) / 60, Minutes );
 
 	    if (((BAT_SOC > 0) && (LIMIT_SOC > 0) && (BAT_SOC >= LIMIT_SOC) && (ks_last_soc < LIMIT_SOC))
 	    			|| ((EST_RANGE > 0) && (LIMIT_RANGE > 0)
@@ -625,6 +632,8 @@ void OvmsVehicleKiaSoulEv::Ticker1(std::string event, void* data)
 		}
 	else if (!isCharging && StdMetrics.ms_v_charge_inprogress->AsBool())
 		{
+	  ESP_LOGI(TAG, "Charging done...");
+
 	  // ** Charge completed or interrupted: **
 		StdMetrics.ms_v_charge_current->SetValue( 0 );
 	  StdMetrics.ms_v_charge_climit->SetValue( 0 );
@@ -640,25 +649,30 @@ void OvmsVehicleKiaSoulEv::Ticker1(std::string event, void* data)
 
 	  //TODO net_req_notification(NET_NOTIFY_CHARGE);
 	  //TODO net_req_notification(NET_NOTIFY_STAT);
-	}
+		}
+
+	//TODO Check if car is off and no charging is going on
+	//Then set PollSetState(0);
 
 	//Check aux battery and send alert
 	if( StdMetrics.ms_v_bat_12v_voltage->AsFloat()<12.2 )
 		{
 	  //TODO Send SMS-varsel.
+	  ESP_LOGI(TAG, "Aux Battery voltage low");
 	  }
+  ESP_LOGI(TAG, "Kia Soul EV Ticker1 - End");
 	}
 
 /**
  *  Sets the charge metrics
  */
-void OvmsVehicleKiaSoulEv::SetChargeMetrics(float voltage, float current, const char* mode, float climit, const char* type)
+void OvmsVehicleKiaSoulEv::SetChargeMetrics(float voltage, float current, float climit, bool chademo)
 	{
 	StdMetrics.ms_v_charge_voltage->SetValue( voltage, Volts );
 	StdMetrics.ms_v_charge_current->SetValue( current, Amps );
-	StdMetrics.ms_v_charge_mode->SetValue( mode );
+	StdMetrics.ms_v_charge_mode->SetValue( chademo ? "performance" : "standard");
 	StdMetrics.ms_v_charge_climit->SetValue( climit, Amps);
-	StdMetrics.ms_v_charge_type->SetValue( type );
+	StdMetrics.ms_v_charge_type->SetValue( chademo ? "chademo" : "type1");
 	}
 
 /**
@@ -675,15 +689,15 @@ uint16_t OvmsVehicleKiaSoulEv::calcMinutesRemaining(float target)
  * Updates the maximum real world range at current temperature.
  * Also updates the State of Health
  */
-void OvmsVehicleKiaSoulEv::UpdateMaxRange(void)
+void OvmsVehicleKiaSoulEv::UpdateMaxRangeAndSOH(void)
 	{
 	//Update State of Health using following assumption: 10% buffer
-	StdMetrics.ms_v_bat_soh->SetValue(110-(ks_battery_max_detoriation+ks_battery_min_detoriation)/2);
+	StdMetrics.ms_v_bat_soh->SetValue( 110 - (ks_battery_max_detoriation + ks_battery_min_detoriation) / 2 );
 	StdMetrics.ms_v_bat_cac->SetValue( (ks_battery_capacity * BAT_SOH * BAT_SOC/10000.0) / 400, AmpHours);
 
 	float maxRange = ks_maxrange * BAT_SOH / 100.0;
-	float amb_temp = StdMetrics.ms_v_env_temp->AsFloat(Celcius);
-	float bat_temp = StdMetrics.ms_v_bat_temp->AsFloat(Celcius);
+	float amb_temp = StdMetrics.ms_v_env_temp->AsFloat(20, Celcius);
+	float bat_temp = StdMetrics.ms_v_bat_temp->AsFloat(20, Celcius);
 
 	// Temperature compensation:
 	//   - Assumes standard maxRange specified at 20 degrees C
