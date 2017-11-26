@@ -40,7 +40,7 @@ static const char *TAG = "config";
 #include "ovms_events.h"
 
 #define OVMS_CONFIGPATH "/store/ovms_config"
-#define OVMS_MAXVALSIZE 1024
+#define OVMS_MAXVALSIZE 2500
 
 OvmsConfig MyConfig __attribute__ ((init_priority (1400)));
 
@@ -228,6 +228,21 @@ void OvmsConfig::SetParamValue(std::string param, std::string instance, std::str
     }
   }
 
+void OvmsConfig::SetParamValueBinary(std::string param, std::string instance, std::string value)
+  {
+  size_t len = value.length();
+  std::string hex;
+  hex.reserve(len * 2);
+  char buf[4];
+  for (size_t i = 0; i < len; ++i)
+    {
+    unsigned char c = value.at(i);
+    snprintf(buf, sizeof(buf), "%02X", c);
+    hex += buf;
+    }
+  SetParamValue(param, instance, hex);
+  }
+
 void OvmsConfig::SetParamValueInt(std::string param, std::string instance, int value)
   {
   std::ostringstream ss;
@@ -267,6 +282,30 @@ std::string OvmsConfig::GetParamValue(std::string param, std::string instance, s
     {
     return defvalue;
     }
+  }
+
+std::string OvmsConfig::GetParamValueBinary(std::string param, std::string instance, std::string defvalue)
+  {
+  std::string hex = GetParamValue(param,instance);
+  size_t len = hex.length();
+  if (len == 0) return defvalue;
+  if (hex.find_first_not_of("0123456789ABCDEF", 0) != std::string::npos || (len & 1))
+    {
+    ESP_LOGE(TAG, "Invalid non-hex value for config param %s instance %s",
+      param.c_str(), instance.c_str());
+    return defvalue;
+    }
+  std::string value;
+  value.reserve(len / 2);
+  char buf[4] = {0};
+  for (size_t i = 0; i < len; i += 2)
+    {
+    buf[0] = hex.at(i);
+    buf[1] = hex.at(i + 1);
+    unsigned char c = strtoul(buf, NULL, 16);
+    value += c;
+    }
+  return value;
   }
 
 int OvmsConfig::GetParamValueInt(std::string param, std::string instance, int defvalue)
@@ -349,8 +388,8 @@ void OvmsConfigParam::LoadConfig()
   FILE* f = fopen(path.c_str(), "r");
   if (f)
     {
-    char buf[OVMS_MAXVALSIZE];
-    while (fgets(buf,sizeof(buf),f))
+    char* buf = new char[OVMS_MAXVALSIZE];
+    while (fgets(buf, OVMS_MAXVALSIZE, f))
       {
       buf[strlen(buf)-1] = 0; // Remove trailing newline
       char *p = index(buf,char(9));
@@ -363,6 +402,7 @@ void OvmsConfigParam::LoadConfig()
         // ESP_LOGI(TAG, "Loaded %s/%s=%s", m_name.c_str(), buf, p);
         }
       }
+    delete[] buf;
     fclose(f);
     }
   m_loaded = true;
