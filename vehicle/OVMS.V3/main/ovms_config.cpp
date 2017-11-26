@@ -379,7 +379,7 @@ OvmsConfigParam::~OvmsConfigParam()
 
 void OvmsConfigParam::LoadConfig()
   {
-  if (m_loaded) return;  // Protected against loading more tghan once
+  if (m_loaded) return;  // Protected against loading more than once
 
   std::string path(OVMS_CONFIGPATH);
   path.append("/");
