@@ -28,7 +28,7 @@
 ; THE SOFTWARE.
 */
 
-#include "esp_log.h"
+#include "ovms_log.h"
 static const char *TAG = "simcom";
 
 #include <string.h>
@@ -131,6 +131,39 @@ simcom::~simcom()
   StopTask();
   }
 
+const char* simcom::State1Name(SimcomState1 state)
+  {
+  switch (state)
+    {
+    case None:           return "None";
+    case CheckPowerOff:  return "CheckPowerOff";
+    case PoweringOn:     return "PoweringOn";
+    case PoweredOn:      return "PoweredOff";
+    case MuxMode:        return "MuxMode";
+    case NetStart:       return "NetStart";
+    case NetHold:        return "NetHold";
+    case NetSleep:       return "NetSleep";
+    case NetMode:        return "NetMode";
+    case NetDeepSleep:   return "NetDeepSleep";
+    case PoweringOff:    return "PoweringOff";
+    case PoweredOff:     return "PoweredOff";
+    default:             return "Undefined";
+    };
+  }
+
+const char* simcom::NetRegName(network_registration_t netreg)
+  {
+  switch (netreg)
+    {
+    case NotRegistered:      return "NotRegistered";
+    case Searching:          return "Searching";
+    case DeniedRegistration: return "DeniedRegistration";
+    case RegisteredHome:     return "RegisteredHome";
+    case RegisteredRoaming:  return "RegisteredRoaming";
+    default:                 return "Undefined";
+    };
+  }
+
 void simcom::StartTask()
   {
   if (!m_task)
@@ -175,10 +208,10 @@ void simcom::SetPowerMode(PowerMode powermode)
     {
     case On:
     case Sleep:
-      if ((original!=On)&&(original!=Sleep))
+    case DeepSleep:
+      if ((original!=On)&&(original!=Sleep)&&(original!=DeepSleep))
         SetState1(PoweringOn);
       break;
-    case DeepSleep:
     case Off:
       SetState1(PoweringOff);
       break;
@@ -270,6 +303,8 @@ void simcom::State1Leave(SimcomState1 oldstate)
       break;
     case NetMode:
       break;
+    case NetDeepSleep:
+      break;
     case PoweringOff:
       break;
     case PoweredOff:
@@ -325,6 +360,10 @@ void simcom::State1Enter(SimcomState1 newstate)
       ESP_LOGI(TAG,"State: Enter NetMode state");
       m_ppp.Startup();
       break;
+    case NetDeepSleep:
+      ESP_LOGI(TAG,"State: Enter NetDeepSleep state");
+      m_ppp.Shutdown();
+      break;
     case PoweringOff:
       ESP_LOGI(TAG,"State: Enter PoweringOff state");
       m_ppp.Shutdown();
@@ -378,6 +417,9 @@ simcom::SimcomState1 simcom::State1Activity()
     case NetMode:
       m_mux.Process(&m_buffer);
       break;
+    case NetDeepSleep:
+      m_buffer.EmptyAll(); // Drain it
+      break;
     case PoweringOff:
       m_buffer.EmptyAll(); // Drain it
       break;
@@ -406,6 +448,10 @@ simcom::SimcomState1 simcom::State1Ticker1()
       tx("AT\r\n");
       break;
     case PoweredOn:
+      if (m_powermode == DeepSleep)
+        {
+        return NetDeepSleep; // Just hold, without starting the network
+        }
       switch (m_state1_ticker)
         {
         case 10:
@@ -462,7 +508,7 @@ simcom::SimcomState1 simcom::State1Ticker1()
           }
         return NetHold; // Just hold, without starting the network
         }
-      else if ((m_state1_ticker > 1)&&((m_netreg==RegisteredHome)||(m_netreg==RegisteredRoaming)))
+      else if ((m_state1_ticker > 5)&&((m_netreg==RegisteredHome)||(m_netreg==RegisteredRoaming)))
         {
         // OK. We have a network registration, and are ready to start
         if (m_state1_userdata == 0)
@@ -475,8 +521,13 @@ simcom::SimcomState1 simcom::State1Ticker1()
           }
         else if (m_state1_userdata == 2)
           return NetMode;
+        else if (m_state1_userdata == 99)
+          {
+          m_state1_ticker = 0;
+          m_state1_userdata = 0;
+          }
         }
-      if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
+      if ((m_state1_ticker>10)&&((m_state1_ticker % 30) == 0))
         m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
       break;
     case NetHold:
@@ -485,6 +536,7 @@ simcom::SimcomState1 simcom::State1Ticker1()
       break;
     case NetSleep:
       if (m_powermode == On) return NetStart;
+      if (m_powermode != Sleep) return PoweringOn;
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
         m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
       break;
@@ -494,8 +546,25 @@ simcom::SimcomState1 simcom::State1Ticker1()
         // Need to shutdown ppp, and get back to NetSleep mode
         return NetSleep;
         }
+      if ((m_netreg!=RegisteredHome)&&(m_netreg!=RegisteredRoaming))
+        {
+        // We've lost the network connection
+        ESP_LOGI(TAG, "Lost network connection (NetworkRegistration in NetMode)");
+        m_ppp.Shutdown();
+        return NetStart;
+        }
+      if (m_state1_userdata == 99)
+        {
+        // We've lost the network connection
+        ESP_LOGI(TAG, "Lost network connection (+PPP disconnect in NetMode)");
+        m_ppp.Shutdown();
+        return NetStart;
+        }
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
         m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
+      break;
+    case NetDeepSleep:
+      if (m_powermode != DeepSleep) return PoweringOn;
       break;
     case PoweringOff:
       break;
@@ -558,6 +627,11 @@ void simcom::StandardLineHandler(OvmsBuffer* buf, std::string line)
     ESP_LOGI(TAG, "PPP Connection is ready to start");
     m_state1_userdata = 2;
     }
+  else if ((line.compare(0, 19, "+PPPD: DISCONNECTED") == 0)&&((m_state1 == NetStart)||(m_state1 == NetMode)))
+    {
+    ESP_LOGI(TAG, "PPP Connection disconnected");
+    m_state1_userdata = 99;
+    }
   else if (line.compare(0, 8, "+ICCID: ") == 0)
     {
     StandardMetrics.ms_m_net_mdm_iccid->SetValue(line.substr(8));
@@ -568,10 +642,8 @@ void simcom::StandardLineHandler(OvmsBuffer* buf, std::string line)
     }
   else if (line.compare(0, 6, "+CSQ: ") == 0)
     {
-    int csq = atoi(line.substr(6).c_str());
-    int dbm = 0;
-    if (csq <= 31) dbm = -113 + (csq*2);
-    StandardMetrics.ms_m_net_sq->SetValue(dbm);
+    int val = atoi(line.substr(6).c_str());
+    StandardMetrics.ms_m_net_sq->SetValue(val,sq);
     }
   else if (line.compare(0, 7, "+CREG: ") == 0)
     {
@@ -602,7 +674,7 @@ void simcom::StandardLineHandler(OvmsBuffer* buf, std::string line)
       default:
         break;
       }
-    ESP_LOGI(TAG, "CREG Network Registration %d",m_netreg);
+    ESP_LOGI(TAG, "CREG Network Registration: %s",NetRegName(m_netreg));
     }
   else if (line.compare(0, 7, "+COPS: ") == 0)
     {
@@ -706,6 +778,38 @@ void simcom_muxtx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   MyPeripherals->m_simcom->muxtx(channel,msg.c_str(),msg.length());
   }
 
+void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->printf("SIMCOM\n  Network Registration: %s\n  State: %s\n  Ticker: %d\n  User Data: %d\n",
+    MyPeripherals->m_simcom->NetRegName(MyPeripherals->m_simcom->m_netreg),
+    MyPeripherals->m_simcom->State1Name(MyPeripherals->m_simcom->m_state1),
+    MyPeripherals->m_simcom->m_state1_ticker,
+    MyPeripherals->m_simcom->m_state1_userdata);
+
+  if (MyPeripherals->m_simcom->m_state1_timeout_goto != simcom::None)
+    {
+    writer->printf("  State Timeout Goto: %s (in %d seconds)\n",
+      MyPeripherals->m_simcom->State1Name(MyPeripherals->m_simcom->m_state1_timeout_goto),
+      MyPeripherals->m_simcom->m_state1_timeout_ticks);
+    }
+
+  writer->printf("  Mux Open Channels: %d\n",
+    MyPeripherals->m_simcom->m_mux.m_openchannels);
+
+  if (MyPeripherals->m_simcom->m_ppp.m_connected)
+    {
+    writer->printf("  PPP Connected on channel: #%d\n",
+      MyPeripherals->m_simcom->m_ppp.m_channel);
+    }
+  else
+    {
+    writer->puts("  PPP Not Connected");
+    }
+
+  writer->printf("  PPP Last Error: %s\n",
+    MyPeripherals->m_simcom->m_ppp.ErrCodeName(MyPeripherals->m_simcom->m_ppp.m_lasterrcode));
+  }
+
 class SimcomInit
   {
   public: SimcomInit();
@@ -718,6 +822,7 @@ SimcomInit::SimcomInit()
   OvmsCommand* cmd_simcom = MyCommandApp.RegisterCommand("simcom","SIMCOM framework",NULL, "", 1);
   cmd_simcom->RegisterCommand("tx","Transmit data on SIMCOM",simcom_tx, "", 1);
   cmd_simcom->RegisterCommand("muxtx","Transmit data on SIMCOM MUX",simcom_muxtx, "<chan> <data>", 2);
+  cmd_simcom->RegisterCommand("status","Show SIMCOM status",simcom_status, "", 0);
 
   MyConfig.RegisterParam("modem", "Modem Configuration", true, true);
   // Our instances:

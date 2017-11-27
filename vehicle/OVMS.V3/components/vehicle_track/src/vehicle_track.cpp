@@ -28,7 +28,7 @@
 ; THE SOFTWARE.
 */
 
-#include "esp_log.h"
+#include "ovms_log.h"
 static const char *TAG = "v-track";
 
 #include <stdio.h>
@@ -44,11 +44,6 @@ OvmsVehicleTrack::~OvmsVehicleTrack()
   ESP_LOGI(TAG, "Shutdown TRACK vehicle module");
   }
 
-const std::string OvmsVehicleTrack::VehicleName()
-  {
-  return std::string("TRACK");
-  }
-
 class OvmsVehicleTrackInit
   {
   public: OvmsVehicleTrackInit();
@@ -58,5 +53,5 @@ OvmsVehicleTrackInit::OvmsVehicleTrackInit()
   {
   ESP_LOGI(TAG, "Registering Vehicle: TRACK (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleTrack>("XX");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleTrack>("XX","TRACK");
   }

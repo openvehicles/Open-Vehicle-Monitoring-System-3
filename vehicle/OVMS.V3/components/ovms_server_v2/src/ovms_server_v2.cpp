@@ -28,11 +28,13 @@
 ; THE SOFTWARE.
 */
 
-#include "esp_log.h"
+#include "ovms_log.h"
 static const char *TAG = "ovms-server-v2";
 
 #include <string.h>
 #include <sstream>
+#include <iostream>
+#include <iomanip>
 #include "ovms_command.h"
 #include "ovms_config.h"
 #include "metrics_standard.h"
@@ -42,6 +44,7 @@ static const char *TAG = "ovms-server-v2";
 #include "crypt_crc.h"
 #include "ovms_server_v2.h"
 #include "ovms_netmanager.h"
+#include "vehicle.h"
 #include "esp_system.h"
 
 // should this go in the .h or in the .cpp?
@@ -61,6 +64,48 @@ typedef union {
 
 typedef union {
   struct {
+  unsigned :1;                  // 0x01
+  unsigned :1;                  // 0x02
+  unsigned :1;                  // 0x04
+  unsigned CarLocked:1;         // 0x08
+  unsigned ValetMode:1;         // 0x10
+  unsigned Headlights:1;        // 0x20
+  unsigned Bonnet:1;            // 0x40
+  unsigned Trunk:1;             // 0x80
+  } bits;
+  uint8_t flags;
+} car_doors2_t;
+
+typedef union {
+  struct {
+  unsigned CarAwake:1;          // 0x01
+  unsigned CoolingPump:1;       // 0x02
+  unsigned :1;                  // 0x04
+  unsigned :1;                  // 0x08
+  unsigned :1;                  // 0x10
+  unsigned :1;                  // 0x20
+  unsigned CtrlLoggedIn:1;      // 0x40 - logged into controller
+  unsigned CtrlCfgMode:1;       // 0x80 - controller in configuration mode
+  } bits;
+  uint8_t flags;
+} car_doors3_t;
+
+typedef union {
+  struct {
+  unsigned :1;                  // 0x01
+  unsigned AlarmSounds:1;       // 0x02
+  unsigned :1;                  // 0x04
+  unsigned :1;                  // 0x08
+  unsigned :1;                  // 0x10
+  unsigned :1;                  // 0x20
+  unsigned :1;                  // 0x40
+  unsigned :1;                  // 0x80
+  } bits;
+  uint8_t flags;
+} car_doors4_t;
+
+typedef union {
+  struct {
   unsigned RearLeftDoor:1;      // 0x01
   unsigned RearRightDoor:1;     // 0x02
   unsigned Frunk:1;             // 0x04
@@ -72,6 +117,32 @@ typedef union {
   } bits;
   uint8_t flags;
 } car_doors5_t;
+
+#define PMAX_MAX 15
+static struct
+  {
+  const char* param;
+  const char* instance;
+  } pmap[]
+  =
+  {
+  { "vehicle",   "registered.phone" },     //  0 PARAM_REGPHONE
+  { "password",  "module" },               //  1 PARAM_MODULEPASS
+  { "vehicle",   "units.distance" },       //  2 PARAM_MILESKM
+  { "",          "" },                     //  3 PARAM_NOTIFIES
+  { "server.v2", "server" },               //  4 PARAM_SERVERIP
+  { "modem",     "apn" },                  //  5 PARAM_GPRSAPN
+  { "modem",     "apn.user" },             //  6 PARAM_GPRSUSER
+  { "modem",     "apn.password" },         //  7 PARAM_GPRSPASS
+  { "vehicle",   "id" },                   //  8 PARAM_VEHICLEID
+  { "server.v2", "password" },             //  9 PARAM_SERVERPASS
+  { "",          "" },                     // 10 PARAM_PARANOID
+  { "",          "" },                     // 11 PARAM_S_GROUP1
+  { "",          "" },                     // 12 PARAM_S_GROUP2
+  { "",          "" },                     // 13 PARAM_GSMLOCK
+  { "",          "" },                     // 14 PARAM_VEHICLETYPE
+  { "",          "" }                      // 15 PARAM_COOLDOWN
+  };
 
 OvmsServerV2 *MyOvmsServerV2 = NULL;
 size_t MyOvmsServerV2Modifier = 0;
@@ -122,7 +193,13 @@ void OvmsServerV2::ServerTask()
       // Handle incoming requests
       while ((m_buffer->HasLine() >= 0)&&(m_conn.IsOpen()))
         {
+        int peers = StandardMetrics.ms_s_v2_peers->AsInt();
         ProcessServerMsg();
+        if ((StandardMetrics.ms_s_v2_peers->AsInt() != peers)&&(peers==0))
+          {
+          ESP_LOGI(TAG, "One or more peers have connected");
+          lasttx = 0; // A peer has connected, so force a transmission of status messages
+          }
         }
 
       // Periodic transmission of metrics
@@ -130,13 +207,26 @@ void OvmsServerV2::ServerTask()
       int next = (StandardMetrics.ms_s_v2_peers->AsInt()==0)?600:60;
       if ((lasttx==0)||(now>(lasttx+next)))
         {
-        TransmitMsgStat(false);
-        TransmitMsgEnvironment(false);
+        TransmitMsgStat(true);          // Send always, periodically
+        TransmitMsgEnvironment(true);   // Send always, periodically
+        TransmitMsgGPS(lasttx==0);
+        TransmitMsgGroup(lasttx==0);
+        TransmitMsgTPMS(lasttx==0);
+        TransmitMsgFirmware(lasttx==0);
+        TransmitMsgCapabilities(lasttx==0);
         lasttx = now;
         }
 
+      if (m_now_stat) TransmitMsgStat();
+      if (m_now_environment) TransmitMsgEnvironment();
+      if (m_now_gps) TransmitMsgGPS();
+      if (m_now_group) TransmitMsgGroup();
+      if (m_now_tpms) TransmitMsgTPMS();
+      if (m_now_firmware) TransmitMsgFirmware();
+      if (m_now_capabilities) TransmitMsgCapabilities();
+
       // Poll for new data
-      if ((m_buffer->PollSocket(m_conn.Socket(),20000) < 0)||
+      if ((m_buffer->PollSocket(m_conn.Socket(),1000) < 0)||
           (!MyNetManager.m_connected_any))
         {
         Disconnect();
@@ -176,8 +266,13 @@ void OvmsServerV2::ProcessServerMsg()
       }
     case 'Z': // Peer connections
       {
+      int oldpeers = StandardMetrics.ms_s_v2_peers->AsInt();
       int nc = atoi(payload.c_str());
       StandardMetrics.ms_s_v2_peers->SetValue(nc);
+      if ((nc == 0)&&(oldpeers != 0))
+        MyEvents.SignalEvent("app.disconnected",NULL);
+      else if (nc > 0)
+        MyEvents.SignalEvent("app.connected",NULL);
       break;
       }
     case 'h': // Historical data acknowledgement
@@ -186,9 +281,236 @@ void OvmsServerV2::ProcessServerMsg()
       }
     case 'C': // Command
       {
+      ProcessCommand(&payload);
       break;
       }
     default:
+      break;
+    }
+  }
+
+void OvmsServerV2::ProcessCommand(std::string* payload)
+  {
+  int command = atoi(payload->c_str());
+  size_t sep = payload->find(',');
+  // std::string token = std::string(line,7,sep-7);
+
+  OvmsVehicle* vehicle = MyVehicleFactory.ActiveVehicle();
+
+  std::ostringstream buffer;
+  switch (command)
+    {
+    case 1: // Request feature list
+      {
+      for (int k=0;k<16;k++)
+        {
+        buffer = std::ostringstream();
+        buffer << "MP-0 c1,0," << k << ",16,0";
+        Transmit(buffer.str());
+        }
+      break;
+      }
+    case 2: // Set feature
+      {
+      Transmit("MP-0 c2,1");
+      break;
+      }
+    case 3: // Request parameter list
+      {
+      for (int k=0;k<32;k++)
+        {
+        buffer = std::ostringstream();
+        buffer << "MP-0 c3,0," << k << ",32,";
+        if ((k<PMAX_MAX)&&(pmap[k].param[0] != 0))
+          {
+          buffer << MyConfig.GetParamValue(pmap[k].param, pmap[k].instance);
+          }
+        Transmit(buffer.str());
+        }
+      break;
+      }
+    case 4: // Set parameter
+      {
+      if (sep != std::string::npos)
+        {
+        int k = atoi(payload->substr(sep+1).c_str());
+        if ((k<PMAX_MAX)&&(pmap[k].param[0] != 0))
+          {
+          sep = payload->find(',',sep+1);
+          MyConfig.SetParamValue(pmap[k].param, pmap[k].instance, payload->substr(sep+1));
+          }
+        }
+      Transmit("MP-0 c4,0");
+      break;
+      }
+    case 5: // Reboot
+      {
+      esp_restart();
+      break;
+      }
+    case 10: // Set Charge Mode
+      {
+      int result = 1;
+      if ((vehicle)&&(sep != std::string::npos))
+        {
+        if (vehicle->CommandSetChargeMode((OvmsVehicle::vehicle_mode_t)atoi(payload->substr(sep+1).c_str())) == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c10," << result;
+      Transmit(buffer.str());
+      break;
+      }
+    case 11: // Start Charge
+      {
+      int result = 1;
+      if (vehicle)
+        {
+        if (vehicle->CommandStartCharge() == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c11," << result;
+      Transmit(buffer.str());
+      break;
+      }
+    case 12: // Stop Charge
+      {
+      int result = 1;
+      if (vehicle)
+        {
+        if (vehicle->CommandStopCharge() == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c12," << result;
+      Transmit(buffer.str());
+      break;
+      }
+    case 15: // Set Charge Current
+      {
+      int result = 1;
+      if ((vehicle)&&(sep != std::string::npos))
+        {
+        if (vehicle->CommandSetChargeCurrent(atoi(payload->substr(sep+1).c_str())) == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c15," << result;
+      Transmit(buffer.str());
+      break;
+      }
+    case 16: // Set Charge Mode and Current
+      {
+      int result = 1;
+      if ((vehicle)&&(sep != std::string::npos))
+        {
+        OvmsVehicle::vehicle_mode_t mode = (OvmsVehicle::vehicle_mode_t)atoi(payload->substr(sep+1).c_str());
+        sep = payload->find(',',sep+1);
+        if (sep != std::string::npos)
+          {
+          if (vehicle->CommandSetChargeMode(mode) == OvmsVehicle::Success) result = 0;
+          if ((result == 0)&&(vehicle->CommandSetChargeCurrent(atoi(payload->substr(sep+1).c_str())) != OvmsVehicle::Success))
+            result = 1;
+          }
+        }
+      buffer << "MP-0 c16," << result;
+      Transmit(buffer.str());
+      break;
+      }
+    case 17: // Set Charge Timer Mode and Start Time
+      {
+      int result = 1;
+      if ((vehicle)&&(sep != std::string::npos))
+        {
+        bool timermode = atoi(payload->substr(sep+1).c_str());
+        sep = payload->find(',',sep+1);
+        if (sep != std::string::npos)
+          {
+          if (vehicle->CommandSetChargeTimer(timermode,atoi(payload->substr(sep+1).c_str())) == OvmsVehicle::Success) result = 0;
+          }
+        }
+      buffer << "MP-0 c17," << result;
+      Transmit(buffer.str());
+      break;
+      }
+    case 18: // Wakeup Car
+    case 19: // Wakeup Temperature Subsystem
+      {
+      int result = 1;
+      if (vehicle)
+        {
+        if (vehicle->CommandWakeup() == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c" << command << "," << result;
+      Transmit(buffer.str());
+      break;
+      }
+    case 20: // Lock Car
+      {
+      int result = 1;
+      if ((vehicle)&&(sep != std::string::npos))
+        {
+        if (vehicle->CommandLock(payload->substr(sep+1).c_str()) == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c20," << result;
+      Transmit(buffer.str());
+      break;
+      }
+    case 21: // Activate Valet Mode
+      {
+      int result = 1;
+      if ((vehicle)&&(sep != std::string::npos))
+        {
+        if (vehicle->CommandActivateValet(payload->substr(sep+1).c_str()) == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c21," << result;
+      Transmit(buffer.str());
+      break;
+      }
+    case 22: // Unlock Car
+      {
+      int result = 1;
+      if ((vehicle)&&(sep != std::string::npos))
+        {
+        if (vehicle->CommandUnlock(payload->substr(sep+1).c_str()) == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c22," << result;
+      Transmit(buffer.str());
+      break;
+      }
+    case 23: // Deactivate Valet Mode
+      {
+      int result = 1;
+      if ((vehicle)&&(sep != std::string::npos))
+        {
+        if (vehicle->CommandDeactivateValet(payload->substr(sep+1).c_str()) == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c23," << result;
+      Transmit(buffer.str());
+      break;
+      }
+    case 24: // Homelink
+      {
+      int result = 1;
+      if ((vehicle)&&(sep != std::string::npos))
+        {
+        if (vehicle->CommandHomelink(atoi(payload->substr(sep+1).c_str())) == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c24," << result;
+      Transmit(buffer.str());
+      break;
+      }
+    case 25: // Cooldown
+      {
+      int result = 1;
+      if (vehicle)
+        {
+        if (vehicle->CommandCooldown(true) == OvmsVehicle::Success) result = 0;
+        }
+      buffer << "MP-0 c25," << result;
+      Transmit(buffer.str());
+      break;
+      }
+    case 6: // Charge alert
+    case 7: // Execute command
+    case 40: // Send SMS
+    case 41: // Send MMI/USSD codes
+    case 49: // Send raw AT command
+    default:
+      buffer << "MP-0 c" << command << ",2";
       break;
     }
   }
@@ -200,9 +522,10 @@ void OvmsServerV2::Transmit(std::string message)
   memcpy(s,message.c_str(),len);
   char buf[(len*2)+4];
 
+  ESP_LOGI(TAG, "Send %s",message.c_str());
+
   RC4_crypt(&m_crypto_tx1, &m_crypto_tx2, (uint8_t*)s, len);
   base64encode((uint8_t*)s, len, (uint8_t*)buf);
-  ESP_LOGI(TAG, "Send %s",buf);
   strcat(buf,"\r\n");
   m_conn.Write(buf,strlen(buf));
   }
@@ -214,9 +537,10 @@ void OvmsServerV2::Transmit(const char* message)
   memcpy(s,message,len);
   char buf[(len*2)+4];
 
+  ESP_LOGI(TAG, "Send %s",message);
+
   RC4_crypt(&m_crypto_tx1, &m_crypto_tx2, (uint8_t*)s, len);
   base64encode((uint8_t*)s, len, (uint8_t*)buf);
-  ESP_LOGI(TAG, "Send %s",buf);
   strcat(buf,"\r\n");
   m_conn.Write(buf,strlen(buf));
   }
@@ -380,106 +704,178 @@ bool OvmsServerV2::Login()
 
 void OvmsServerV2::TransmitMsgStat(bool always)
   {
-  ESP_LOGI(TAG, "Sending MP-0 S");
+  m_now_stat = false;
+
   bool modified =
     StandardMetrics.ms_v_bat_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_charge_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_charge_current->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_state->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_substate->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_mode->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_bat_range_ideal->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_bat_range_est->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_charge_climit->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_time->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_charge_kwh->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_timermode->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_timerstart->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_bat_cac->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_duration_full->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_duration_range->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_duration_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_inprogress->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_limit_range->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_charge_limit_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_env_cooling->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_bat_range_full->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_bat_power->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_bat_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_bat_soh->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
+  
+  int mins_range = StandardMetrics.ms_v_charge_duration_range->AsInt();
+  int mins_soc = StandardMetrics.ms_v_charge_duration_soc->AsInt();
+  bool charging = StandardMetrics.ms_v_charge_inprogress->AsBool();
+  
+  std::ostringstream buffer;
+  buffer
+    << std::fixed
+    << std::setprecision(2)
+    << "MP-0 S"
+    << StandardMetrics.ms_v_bat_soc->AsInt()
+    << ","
+    << ((m_units_distance == Kilometers) ? "K" : "M")
+    << ","
+    << StandardMetrics.ms_v_charge_voltage->AsInt()
+    << ","
+    << StandardMetrics.ms_v_charge_current->AsInt()
+    << ","
+    << StandardMetrics.ms_v_charge_state->AsString("stopped")
+    << ","
+    << StandardMetrics.ms_v_charge_mode->AsString("standard")
+    << ","
+    << StandardMetrics.ms_v_bat_range_ideal->AsInt(0, m_units_distance)
+    << ","
+    << StandardMetrics.ms_v_bat_range_est->AsInt(0, m_units_distance)
+    << ","
+    << StandardMetrics.ms_v_charge_climit->AsInt()
+    << ","
+    << StandardMetrics.ms_v_charge_time->AsInt(0,Minutes)
+    << ","
+    << "0"  // car_charge_b4
+    << ","
+    << StandardMetrics.ms_v_charge_kwh->AsInt()
+    << ","
+    << chargesubstate_key(StandardMetrics.ms_v_charge_substate->AsString(""))
+    << ","
+    << chargestate_key(StandardMetrics.ms_v_charge_state->AsString("stopped"))
+    << ","
+    << chargemode_key(StandardMetrics.ms_v_charge_mode->AsString("standard"))
+    << ","
+    << StandardMetrics.ms_v_charge_timermode->AsBool()
+    << ","
+    << StandardMetrics.ms_v_charge_timerstart->AsInt()
+    << ","
+    << "0"  // car_stale_timer
+    << ","
+    << StandardMetrics.ms_v_bat_cac->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_charge_duration_full->AsInt()
+    << ","
+    << (((mins_range >= 0) && (mins_range < mins_soc)) ? mins_range : mins_soc)
+    << ","
+    << (int) StandardMetrics.ms_v_charge_limit_range->AsFloat(0, m_units_distance)
+    << ","
+    << StandardMetrics.ms_v_charge_limit_soc->AsInt()
+    << ","
+    << (StandardMetrics.ms_v_env_cooling->AsBool() ? 0 : -1)
+    << ","
+    << "0"  // car_cooldown_tbattery
+    << ","
+    << "0"  // car_cooldown_timelimit
+    << ","
+    << "0"  // car_chargeestimate
+    << ","
+    << mins_range
+    << ","
+    << mins_soc
+    << ","
+    << StandardMetrics.ms_v_bat_range_full->AsInt(0, m_units_distance)
+    << ","
+    << "0"  // car_chargetype
+    << ","
+    << (charging ? -StandardMetrics.ms_v_bat_power->AsFloat() : 0)
+    << ","
+    << StandardMetrics.ms_v_bat_voltage->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_bat_soh->AsInt()
+    ;
 
-  std::string buffer;
-  buffer.reserve(512);
-  buffer.append("MP-0 S");
-  buffer.append(StandardMetrics.ms_v_bat_soc->AsString("0").c_str());
-  buffer.append(",");
-  if (m_units_distance == Kilometers)
-    buffer.append("K");
-  else
-    buffer.append("M");
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_charge_voltage->AsString("0").c_str());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_charge_current->AsString("0").c_str());
-  buffer.append(",");
-  buffer.append("stopped");  // car_chargestate
-  buffer.append(",");
-  buffer.append("standard");  // car_chargemode
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_bat_range_ideal->AsString("0",m_units_distance).c_str());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_bat_range_est->AsString("0",m_units_distance).c_str());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_charge_climit->AsString("0").c_str());
-  buffer.append(",");
-  buffer.append("0");  // charge duration
-  buffer.append(",");
-  buffer.append("0");  // car_charge_b4
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_charge_kwh->AsString("0"));
-  buffer.append(",");
-  buffer.append("0");  // car_chargesubstate
-  buffer.append(",");
-  buffer.append("0");  // car_chargestate
-  buffer.append(",");
-  buffer.append("0");  // car_chargemode
-  buffer.append(",");
-  buffer.append("0");  // car_timermode
-  buffer.append(",");
-  buffer.append("0");  // car_timerstart
-  buffer.append(",");
-  buffer.append("0");  // car_stale_timer
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_bat_cac->AsString("0"));  // car_cac100
-  buffer.append(",");
-  buffer.append("0");  // car_chargefull_minsremaining
-  buffer.append(",");
-  buffer.append("0");  // car_chargelimit_minsremaining_range
-  buffer.append(",");
-  buffer.append("0");  // car_chargelimit_rangelimit
-  buffer.append(",");
-  buffer.append("0");  // car_chargelimit_soclimit
-  buffer.append(",");
-  buffer.append("0");  // car_coolingdown
-  buffer.append(",");
-  buffer.append("0");  // car_cooldown_tbattery
-  buffer.append(",");
-  buffer.append("0");  // car_cooldown_timelimit
-  buffer.append(",");
-  buffer.append("0");  // car_chargeestimate
-  buffer.append(",");
-  buffer.append("0");  // car_chargelimit_minsremaining_range
-  buffer.append(",");
-  buffer.append("0");  // car_chargelimit_minsremaining_soc
-  buffer.append(",");
-  buffer.append("0");  // car_max_idealrange
-  buffer.append(",");
-  buffer.append("0");  // car_chargetype
-  buffer.append(",");
-  buffer.append("0");  // car_chargepower
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_bat_voltage->AsString("0").c_str());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_bat_soh->AsString("0").c_str());
-
-  ESP_LOGI(TAG, "Sending: %s", buffer.c_str());
-  Transmit(buffer.c_str());
+  Transmit(buffer.str().c_str());
   }
 
 void OvmsServerV2::TransmitMsgGPS(bool always)
   {
+  m_now_gps = false;
+
+  bool modified =
+    StandardMetrics.ms_v_pos_latitude->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_pos_longitude->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_pos_direction->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_pos_altitude->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_pos_gpslock->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_pos_speed->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_env_drivemode->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_bat_power->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_bat_energy_used->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_bat_energy_recd->IsModifiedAndClear(MyOvmsServerV2Modifier);
+
+  // Quick exit if nothing modified
+  if ((!always)&&(!modified)) return;
+
+  bool stale =
+    StandardMetrics.ms_v_pos_latitude->IsStale() ||
+    StandardMetrics.ms_v_pos_longitude->IsStale() ||
+    StandardMetrics.ms_v_pos_direction->IsStale() ||
+    StandardMetrics.ms_v_pos_altitude->IsStale();
+
+  char drivemode[10];
+  sprintf(drivemode, "%x", StandardMetrics.ms_v_env_drivemode->AsInt());
+
+  std::ostringstream buffer;
+  buffer
+    << "MP-0 L"
+    << StandardMetrics.ms_v_pos_latitude->AsString("0",Other,6)
+    << ","
+    << StandardMetrics.ms_v_pos_longitude->AsString("0",Other,6)
+    << ","
+    << StandardMetrics.ms_v_pos_direction->AsString("0")
+    << ","
+    << StandardMetrics.ms_v_pos_altitude->AsString("0")
+    << ","
+    << StandardMetrics.ms_v_pos_gpslock->AsBool(false)
+    << ((stale)?",0,":",1,")
+    << ((m_units_distance == Kilometers)? StandardMetrics.ms_v_pos_speed->AsString("0") : StandardMetrics.ms_v_pos_speed->AsString("0",Mph))
+    << ","
+    << drivemode
+    << ","
+    << StandardMetrics.ms_v_bat_power->AsString("0",Other,1)
+    << ","
+    << StandardMetrics.ms_v_bat_energy_used->AsString("0",Other,0)
+    << ","
+    << StandardMetrics.ms_v_bat_energy_recd->AsString("0",Other,0)
+    ;
+
+  Transmit(buffer.str().c_str());
   }
 
 void OvmsServerV2::TransmitMsgTPMS(bool always)
   {
+  m_now_tpms = false;
+
   bool modified = 
     StandardMetrics.ms_v_tpms_fl_t->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_tpms_fr_t->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
@@ -493,25 +889,6 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
 
-  std::string buffer;
-  buffer.reserve(512);
-  buffer.append("MP-0 W");
-  buffer.append(StandardMetrics.ms_v_tpms_fr_p->AsString("0",PSI));
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_fr_t->AsString());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_rr_p->AsString("0",PSI));
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_rr_t->AsString());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_fl_p->AsString("0",PSI));
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_fl_t->AsString());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_rl_p->AsString("0",PSI));
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_tpms_rl_t->AsString());
-
   bool stale =
     StandardMetrics.ms_v_tpms_fl_t->IsStale() ||
     StandardMetrics.ms_v_tpms_fr_t->IsStale() ||
@@ -522,19 +899,62 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
     StandardMetrics.ms_v_tpms_rl_p->IsStale() ||
     StandardMetrics.ms_v_tpms_rr_p->IsStale();
 
-  if (stale)
-    buffer.append(",0");
-  else
-    buffer.append(",1");
+  std::ostringstream buffer;
+  buffer
+    << "MP-0 W"
+    << StandardMetrics.ms_v_tpms_fr_p->AsString("0",PSI)
+    << ","
+    << StandardMetrics.ms_v_tpms_fr_t->AsString("0")
+    << ","
+    << StandardMetrics.ms_v_tpms_rr_p->AsString("0",PSI)
+    << ","
+    << StandardMetrics.ms_v_tpms_rr_t->AsString("0")
+    << ","
+    << StandardMetrics.ms_v_tpms_fl_p->AsString("0",PSI)
+    << ","
+    << StandardMetrics.ms_v_tpms_fl_t->AsString("0")
+    << ","
+    << StandardMetrics.ms_v_tpms_rl_p->AsString("0",PSI)
+    << ","
+    << StandardMetrics.ms_v_tpms_rl_t->AsString("0")
+    << ((stale)?",0":",1")
+    ;
 
-  Transmit(buffer.c_str());
+  Transmit(buffer.str().c_str());
   }
 
 void OvmsServerV2::TransmitMsgFirmware(bool always)
   {
+  m_now_firmware = false;
+
+  bool modified =
+    StandardMetrics.ms_m_version->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_vin->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_m_net_sq->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_type->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_m_net_provider->IsModifiedAndClear(MyOvmsServerV2Modifier);
+
+  // Quick exit if nothing modified
+  if ((!always)&&(!modified)) return;
+
+  std::ostringstream buffer;
+  buffer
+    << "MP-0 F"
+    << StandardMetrics.ms_m_version->AsString("")
+    << ","
+    << StandardMetrics.ms_v_vin->AsString("")
+    << ","
+    << StandardMetrics.ms_m_net_sq->AsString("0",sq)
+    << ",1,"
+    << StandardMetrics.ms_v_type->AsString("")
+    << ","
+    << StandardMetrics.ms_m_net_provider->AsString("")
+    ;
+
+  Transmit(buffer.str().c_str());
   }
 
-void AppendDoors1(std::string *buffer)
+uint8_t Doors1()
   {
   car_doors1_t car_doors1;
   car_doors1.bits.FrontLeftDoor = StandardMetrics.ms_v_door_fl->AsBool();
@@ -545,12 +965,41 @@ void AppendDoors1(std::string *buffer)
   car_doors1.bits.HandBrake = StandardMetrics.ms_v_env_handbrake->AsBool();
   car_doors1.bits.CarON = StandardMetrics.ms_v_env_on->AsBool();
 
-  char b[5];
-  itoa(car_doors1.flags, b, 10);
-  buffer->append(b);
+  return car_doors1.flags;
   }
 
-void AppendDoors5(std::string *buffer)
+uint8_t Doors2()
+  {
+  car_doors2_t car_doors2;
+  car_doors2.bits.CarLocked = StandardMetrics.ms_v_env_locked->AsBool();
+  car_doors2.bits.ValetMode = StandardMetrics.ms_v_env_valet->AsBool();
+  car_doors2.bits.Headlights = StandardMetrics.ms_v_env_headlights->AsBool();
+  car_doors2.bits.Bonnet = StandardMetrics.ms_v_door_hood->AsBool();
+  car_doors2.bits.Trunk = StandardMetrics.ms_v_door_trunk->AsBool();
+
+  return car_doors2.flags;
+  }
+
+uint8_t Doors3()
+  {
+  car_doors3_t car_doors3;
+  car_doors3.bits.CarAwake = StandardMetrics.ms_v_env_awake->AsBool();
+  car_doors3.bits.CoolingPump = StandardMetrics.ms_v_env_cooling->AsBool();
+  car_doors3.bits.CtrlLoggedIn = StandardMetrics.ms_v_env_ctrl_login->AsBool();
+  car_doors3.bits.CtrlCfgMode = StandardMetrics.ms_v_env_ctrl_config->AsBool();
+
+  return car_doors3.flags;
+  }
+
+uint8_t Doors4()
+  {
+  car_doors4_t car_doors4;
+  car_doors4.bits.AlarmSounds = StandardMetrics.ms_v_env_alarm->AsBool();
+
+  return car_doors4.flags;
+  }
+
+uint8_t Doors5()
   {
   car_doors5_t car_doors5;
   car_doors5.bits.RearLeftDoor = StandardMetrics.ms_v_door_rl->AsBool();
@@ -559,14 +1008,13 @@ void AppendDoors5(std::string *buffer)
   car_doors5.bits.Charging12V = StandardMetrics.ms_v_env_charging12v->AsBool();
   car_doors5.bits.HVAC = StandardMetrics.ms_v_env_hvac->AsBool();
 
-  char b[5];
-  itoa(car_doors5.flags, b, 10);
-  buffer->append(b);
+  return car_doors5.flags;
   }
 
 void OvmsServerV2::TransmitMsgEnvironment(bool always)
   {
-  ESP_LOGI(TAG, "Sending MP-0 D");
+  m_now_environment = false;
+
   bool modified =
     // doors 1
     StandardMetrics.ms_v_door_fl->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
@@ -577,10 +1025,25 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
     StandardMetrics.ms_v_env_handbrake->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_env_on->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
 
+    // doors 2
+    StandardMetrics.ms_v_env_locked->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_env_valet->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_env_headlights->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_door_hood->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_door_trunk->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+
+    // doors 3
+    StandardMetrics.ms_v_env_awake->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_env_cooling->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_env_ctrl_login->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_env_ctrl_config->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+
+    // doors 4
+    StandardMetrics.ms_v_env_alarm->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+
     StandardMetrics.ms_v_inv_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_mot_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_bat_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_pos_speed->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_env_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_bat_12v_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
 
@@ -595,34 +1058,6 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
 
-  std::string buffer;
-  buffer.reserve(512);
-  buffer.append("MP-0 D");
-  AppendDoors1(&buffer);
-  buffer.append(",");
-  buffer.append("0");  // car_doors2
-  buffer.append(",");
-  buffer.append("0");  // car_lockstate
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_inv_temp->AsString("0").c_str());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_mot_temp->AsString("0").c_str());
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_bat_temp->AsString("0").c_str());
-  buffer.append(",");
-  buffer.append("0");  // car_trip
-  buffer.append(",");
-  buffer.append("0");  // car_odometer
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_pos_speed->AsString("0").c_str());
-  buffer.append(",");
-  buffer.append("0");  // park
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_env_temp->AsString("0").c_str());
-  buffer.append(",");
-  buffer.append("0");  // car_doors3
-  buffer.append(",");
-
   // v2 has one "stale" flag for 4 temperatures, we say they're stale only if
   // all are stale, IE one valid temperature makes them all valid
   bool stale_temps =
@@ -630,33 +1065,80 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
     StandardMetrics.ms_v_mot_temp->IsStale() &&
     StandardMetrics.ms_v_bat_temp->IsStale() &&
     StandardMetrics.ms_v_charge_temp->IsStale();
-  buffer.append(stale_temps ? "0" : "1");
-  buffer.append(",");
 
-  buffer.append(StandardMetrics.ms_v_env_temp->IsStale() ? "0" : "1");
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_bat_12v_voltage->AsString("0").c_str());
-  buffer.append(",");
-  buffer.append("0");  // car_doors4
-  buffer.append(",");
-  buffer.append("0");  // car_12vline_ref
-  buffer.append(",");
-  AppendDoors5(&buffer);
-  buffer.append(",");
-  buffer.append(StandardMetrics.ms_v_charge_temp->AsString("0").c_str());
-  buffer.append(",");
-  buffer.append("0");  // car_12v_current
+  std::ostringstream buffer;
+  buffer
+    << "MP-0 D"
+    << (int)Doors1()
+    << ","
+    << (int)Doors2()
+    << ","
+    << (StandardMetrics.ms_v_env_locked->AsBool()?"4":"5")
+    << ","
+    << StandardMetrics.ms_v_inv_temp->AsString("0")
+    << ","
+    << StandardMetrics.ms_v_mot_temp->AsString("0")
+    << ","
+    << StandardMetrics.ms_v_bat_temp->AsString("0")
+    << ","
+    << int(StandardMetrics.ms_v_pos_trip->AsFloat(0, m_units_distance)*10)
+    << ","
+    << int(StandardMetrics.ms_v_pos_odometer->AsFloat(0, m_units_distance)*10)
+    << ","
+    << StandardMetrics.ms_v_pos_speed->AsString("0")
+    << ","
+    << StandardMetrics.ms_m_monotonic->AsString("0")
+    << ","
+    << StandardMetrics.ms_v_env_temp->AsString("0")
+    << ","
+    << (int)Doors3()
+    << ","
+    << (stale_temps ? "0" : "1")
+    << ","
+    << (StandardMetrics.ms_v_env_temp->IsStale() ? "0" : "1")
+    << ","
+    << StandardMetrics.ms_v_bat_12v_voltage->AsString("0")
+    << ","
+    << (int)Doors4()
+    << ","
+    << "0"  // car_12vline_ref
+    << ","
+    << (int)Doors5()
+    << ","
+    << StandardMetrics.ms_v_charge_temp->AsString("0")
+    << ","
+    << StandardMetrics.ms_v_bat_12v_current->AsString("0")
+    ;
 
-  ESP_LOGI(TAG, "Sending: %s", buffer.c_str());
-  Transmit(buffer.c_str());
+  Transmit(buffer.str().c_str());
+  }
+
+void OvmsServerV2::MetricModified(OvmsMetric* metric)
+  {
+  // A metric has been changed...
+
+  if ((metric == StandardMetrics.ms_v_charge_climit)||
+      (metric == StandardMetrics.ms_v_charge_state)||
+      (metric == StandardMetrics.ms_v_charge_substate)||
+      (metric == StandardMetrics.ms_v_charge_mode)||
+      (metric == StandardMetrics.ms_v_bat_cac))
+    {
+    m_now_environment = true;
+    m_now_stat = true;
+    }
+
+  if (StandardMetrics.ms_s_v2_peers->AsInt() > 0)
+    m_now_environment = true; // Transmit environment message if necessary
   }
 
 void OvmsServerV2::TransmitMsgCapabilities(bool always)
   {
+  m_now_capabilities = false;
   }
 
 void OvmsServerV2::TransmitMsgGroup(bool always)
   {
+  m_now_group = false;
   }
 
 std::string OvmsServerV2::ReadLine()
@@ -674,10 +1156,23 @@ OvmsServerV2::OvmsServerV2(const char* name)
     }
   m_buffer = new OvmsBuffer(1024);
   m_status = "Starting";
+  m_now_stat = false;
+  m_now_gps = false;
+  m_now_tpms = false;
+  m_now_firmware = false;
+  m_now_environment = false;
+  m_now_capabilities = false;
+  m_now_group = false;
+
+  #undef bind  // Kludgy, but works
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyMetrics.RegisterListener(TAG, "*", std::bind(&OvmsServerV2::MetricModified, this, _1));
   }
 
 OvmsServerV2::~OvmsServerV2()
   {
+  MyMetrics.DeregisterListener(TAG);
   Disconnect();
   if (m_buffer)
     {

@@ -29,7 +29,7 @@
 ; THE SOFTWARE.
 */
 
-#include "esp_log.h"
+#include "ovms_log.h"
 static const char *TAG = "v-nissanleaf";
 
 #include <stdio.h>
@@ -64,11 +64,6 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
 OvmsVehicleNissanLeaf::~OvmsVehicleNissanLeaf()
   {
   ESP_LOGI(TAG, "Shutdown Nissan Leaf vehicle module");
-  }
-
-const std::string OvmsVehicleNissanLeaf::VehicleName()
-  {
-  return std::string("Nissan Leaf");
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -387,5 +382,5 @@ OvmsVehicleNissanLeafInit::OvmsVehicleNissanLeafInit()
   {
   ESP_LOGI(TAG, "Registering Vehicle: Nissan Leaf (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleNissanLeaf>("NL");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleNissanLeaf>("NL","Nissan Leaf");
   }

@@ -28,7 +28,7 @@
 ; THE SOFTWARE.
 */
 
-#include "esp_log.h"
+#include "ovms_log.h"
 static const char *TAG = "vehicle";
 
 #include <stdio.h>
@@ -48,6 +48,15 @@ void vehicle_module(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   else
     {
     MyVehicleFactory.SetVehicle(argv[0]);
+    }
+  }
+
+void vehicle_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->puts("Type Name");
+  for (OvmsVehicleFactory::map_vehicle_t::iterator k=MyVehicleFactory.m_vmap.begin(); k!=MyVehicleFactory.m_vmap.end(); ++k)
+    {
+    writer->printf("%-4.4s %s\n",k->first,k->second.name);
     }
   }
 
@@ -318,6 +327,20 @@ void vehicle_charge_cooldown(int verbosity, OvmsWriter* writer, OvmsCommand* cmd
     }
   }
 
+void vehicle_stat(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+
+  if (MyVehicleFactory.m_currentvehicle->CommandStat(verbosity, writer) == OvmsVehicle::NotImplemented)
+    {
+    writer->puts("Error: Functionality not available");
+    }
+  }
+
 OvmsVehicleFactory::OvmsVehicleFactory()
   {
   ESP_LOGI(TAG, "Initialising VEHICLE Factory (2000)");
@@ -326,6 +349,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
 
   OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework",NULL,"",0,0);
   cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1);
+  cmd_vehicle->RegisterCommand("list","Show list of available vehicle modules",vehicle_list,"",0,0);
 
   MyCommandApp.RegisterCommand("wakeup","Wake up vehicle",vehicle_wakeup,"",0,0,true);
   MyCommandApp.RegisterCommand("homelink","Activate specified homelink button",vehicle_homelink,"<homelink>",1,1,true);
@@ -343,6 +367,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   cmd_charge->RegisterCommand("stop","Stop a vehicle charge",vehicle_charge_stop,"",0,0,true);
   cmd_charge->RegisterCommand("current","Limit charge current",vehicle_charge_current,"<amps>",1,1,true);
   cmd_charge->RegisterCommand("cooldown","Start a vehicle cooldown",vehicle_charge_cooldown,"",0,0,true);
+  MyCommandApp.RegisterCommand("stat","Show vehicle status",vehicle_stat,"",0,0,true);
   }
 
 OvmsVehicleFactory::~OvmsVehicleFactory()
@@ -354,12 +379,12 @@ OvmsVehicleFactory::~OvmsVehicleFactory()
     }
   }
 
-OvmsVehicle* OvmsVehicleFactory::NewVehicle(std::string VehicleType)
+OvmsVehicle* OvmsVehicleFactory::NewVehicle(const char* VehicleType)
   {
-  OvmsVehicleFactory::map_type::iterator iter = m_map.find(VehicleType);
-  if (iter != m_map.end())
+  OvmsVehicleFactory::map_vehicle_t::iterator iter = m_vmap.find(VehicleType);
+  if (iter != m_vmap.end())
     {
-    return iter->second();
+    return iter->second.construct();
     }
   return NULL;
   }
@@ -374,7 +399,7 @@ void OvmsVehicleFactory::ClearVehicle()
     }
   }
 
-void OvmsVehicleFactory::SetVehicle(std::string type)
+void OvmsVehicleFactory::SetVehicle(const char* type)
   {
   if (m_currentvehicle)
     {
@@ -382,7 +407,12 @@ void OvmsVehicleFactory::SetVehicle(std::string type)
     m_currentvehicle = NULL;
     }
   m_currentvehicle = NewVehicle(type);
-  StandardMetrics.ms_v_type->SetValue(type.c_str());
+  StandardMetrics.ms_v_type->SetValue(type);
+  }
+
+OvmsVehicle* OvmsVehicleFactory::ActiveVehicle()
+  {
+  return m_currentvehicle;
   }
 
 static void OvmsVehicleRxTask(void *pvParameters)
@@ -421,6 +451,8 @@ OvmsVehicle::OvmsVehicle()
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicle::VehicleTicker1, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
+
+  MyMetrics.RegisterListener(TAG, "*", std::bind(&OvmsVehicle::MetricModified, this, _1));
   }
 
 OvmsVehicle::~OvmsVehicle()
@@ -439,11 +471,7 @@ OvmsVehicle::~OvmsVehicle()
   vTaskDelete(m_rxtask);
 
   MyEvents.DeregisterEvent(TAG);
-  }
-
-const std::string OvmsVehicle::VehicleName()
-  {
-  return std::string("unknown");
+  MyMetrics.DeregisterListener(TAG);
   }
 
 void OvmsVehicle::RxTask()
@@ -531,6 +559,16 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
   if ((m_ticker % 300) == 0) Ticker300(m_ticker);
   if ((m_ticker % 600) == 0) Ticker600(m_ticker);
   if ((m_ticker % 3600) == 0) Ticker3600(m_ticker);
+
+  if (StandardMetrics.ms_v_env_on->AsBool())
+    StandardMetrics.ms_v_env_parktime->SetValue(0);
+  else
+    StandardMetrics.ms_v_env_parktime->SetValue(StandardMetrics.ms_v_env_parktime->AsInt() + 1);
+
+  if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+    StandardMetrics.ms_v_charge_time->SetValue(StandardMetrics.ms_v_charge_time->AsInt() + 1);
+  else
+    StandardMetrics.ms_v_charge_time->SetValue(0);
   }
 
 void OvmsVehicle::Ticker1(uint32_t ticker)
@@ -617,6 +655,99 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandHomelink(uint8_t button)
   return NotImplemented;
   }
 
+/**
+ * CommandStat: default implementation of vehicle status output
+ */
+OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWriter* writer)
+  {
+  metric_unit_t rangeUnit = Native; // TODO: use user config if set
+  
+  bool chargeport_open = StdMetrics.ms_v_door_chargeport->AsBool();
+  if (chargeport_open)
+    {
+    std::string charge_mode = StdMetrics.ms_v_charge_mode->AsString();
+    std::string charge_state = StdMetrics.ms_v_charge_state->AsString();
+    bool show_details = !(charge_state == "done" || charge_state == "stopped");
+    
+    // Translate mode codes:
+    if (charge_mode == "standard")
+      charge_mode = "Standard";
+    else if (charge_mode == "storage")
+      charge_mode = "Storage";
+    else if (charge_mode == "range")
+      charge_mode = "Range";
+    else if (charge_mode == "performance")
+      charge_mode = "Performance";
+    
+    // Translate state codes:
+    if (charge_state == "charging")
+      charge_state = "Charging";
+    else if (charge_state == "topoff")
+      charge_state = "Topping off";
+    else if (charge_state == "done")
+      charge_state = "Charge Done";
+    else if (charge_state == "preparing")
+      charge_state = "Preparing";
+    else if (charge_state == "heating")
+      charge_state = "Charging, Heating";
+    else if (charge_state == "stopped")
+      charge_state = "Charge Stopped";
+    
+    writer->printf("%s - %s\n", charge_mode.c_str(), charge_state.c_str());
+    
+    if (show_details)
+      {
+      writer->printf("%s/%s\n",
+        (char*) StdMetrics.ms_v_charge_voltage->AsUnitString("-", Native, 1).c_str(),
+        (char*) StdMetrics.ms_v_charge_current->AsUnitString("-", Native, 1).c_str());
+      
+      int duration_full = StdMetrics.ms_v_charge_duration_full->AsInt();
+      if (duration_full)
+        writer->printf("Full: %d mins\n", duration_full);
+      
+      int duration_soc = StdMetrics.ms_v_charge_duration_soc->AsInt();
+      if (duration_soc)
+        writer->printf("%s: %d mins\n",
+          (char*) StdMetrics.ms_v_charge_limit_soc->AsUnitString("SOC", Native, 0).c_str(),
+          duration_soc);
+      
+      int duration_range = StdMetrics.ms_v_charge_duration_range->AsInt();
+      if (duration_full)
+        writer->printf("%s: %d mins\n",
+          (char*) StdMetrics.ms_v_charge_limit_range->AsUnitString("Range", rangeUnit, 0).c_str(),
+          duration_range);
+      }
+    }
+  else
+    {
+    writer->puts("Not charging");
+    }
+  
+  writer->printf("SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
+  
+  const char* range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("-", rangeUnit, 0).c_str();
+  if (*range_ideal != '-')
+    writer->printf("Ideal range: %s\n", range_ideal);
+  
+  const char* range_est = StdMetrics.ms_v_bat_range_est->AsUnitString("-", rangeUnit, 0).c_str();
+  if (*range_est != '-')
+    writer->printf("Est. range: %s\n", range_est);
+
+  const char* odometer = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
+  if (*odometer != '-')
+    writer->printf("ODO: %s\n", odometer);
+  
+  const char* cac = StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str();
+  if (*cac != '-')
+    writer->printf("CAC: %s\n", cac);
+  
+  const char* soh = StdMetrics.ms_v_bat_soh->AsUnitString("-", Native, 0).c_str();
+  if (*soh != '-')
+    writer->printf("SOH: %s\n", soh);
+  
+  return Success;
+  }
+
 void OvmsVehicle::VehicleConfigChanged(std::string event, void* param)
   {
   ConfigChanged((OvmsConfigParam*) param);
@@ -624,6 +755,81 @@ void OvmsVehicle::VehicleConfigChanged(std::string event, void* param)
 
 void OvmsVehicle::ConfigChanged(OvmsConfigParam* param)
   {
+  }
+
+void OvmsVehicle::MetricModified(OvmsMetric* metric)
+  {
+  if (metric == StandardMetrics.ms_v_env_on)
+    {
+    if (StandardMetrics.ms_v_env_on->AsBool())
+      MyEvents.SignalEvent("vehicle.on",NULL);
+    else
+      MyEvents.SignalEvent("vehicle.off",NULL);
+    }
+  else if (metric == StandardMetrics.ms_v_charge_inprogress)
+    {
+    if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+      MyEvents.SignalEvent("vehicle.charge.start",NULL);
+    else
+      MyEvents.SignalEvent("vehicle.charge.stop",NULL);
+    }
+  else if (metric == StandardMetrics.ms_v_door_chargeport)
+    {
+    if (StandardMetrics.ms_v_door_chargeport->AsBool())
+      MyEvents.SignalEvent("vehicle.charge.prepare",NULL);
+    else
+      MyEvents.SignalEvent("vehicle.charge.finish",NULL);
+    }
+  else if (metric == StandardMetrics.ms_v_charge_pilot)
+    {
+    if (StandardMetrics.ms_v_charge_pilot->AsBool())
+      MyEvents.SignalEvent("vehicle.charge.pilot.on",NULL);
+    else
+      MyEvents.SignalEvent("vehicle.charge.pilot.off",NULL);
+    }
+  else if (metric == StandardMetrics.ms_v_env_locked)
+    {
+    if (StandardMetrics.ms_v_env_locked->AsBool())
+      MyEvents.SignalEvent("vehicle.locked",NULL);
+    else
+      MyEvents.SignalEvent("vehicle.unlocked",NULL);
+    }
+  else if (metric == StandardMetrics.ms_v_env_valet)
+    {
+    if (StandardMetrics.ms_v_env_valet->AsBool())
+      MyEvents.SignalEvent("vehicle.valet.on",NULL);
+    else
+      MyEvents.SignalEvent("vehicle.valet.off",NULL);
+    }
+  else if (metric == StandardMetrics.ms_v_env_headlights)
+    {
+    if (StandardMetrics.ms_v_env_headlights->AsBool())
+      MyEvents.SignalEvent("vehicle.headlights.on",NULL);
+    else
+      MyEvents.SignalEvent("vehicle.headlights.off",NULL);
+    }
+  else if (metric == StandardMetrics.ms_v_env_alarm)
+    {
+    if (StandardMetrics.ms_v_env_alarm->AsBool())
+      MyEvents.SignalEvent("vehicle.alarm.on",NULL);
+    else
+      MyEvents.SignalEvent("vehicle.alarm.off",NULL);
+    }
+  else if (metric == StandardMetrics.ms_v_pos_gpslock)
+    {
+    if (StandardMetrics.ms_v_pos_gpslock->AsBool())
+      MyEvents.SignalEvent("gps.lock.on",NULL);
+    else
+      MyEvents.SignalEvent("gps.lock.los",NULL);
+    }
+  else if (metric == StandardMetrics.ms_v_charge_mode)
+    {
+    MyEvents.SignalEvent("vehicle.charge.mode",(void*)metric->AsString().c_str());
+    }
+  else if (metric == StandardMetrics.ms_v_charge_state)
+    {
+    MyEvents.SignalEvent("vehicle.charge.state",(void*)metric->AsString().c_str());
+    }
   }
 
 void OvmsVehicle::PollSetPidList(canbus* bus, const poll_pid_t* plist)

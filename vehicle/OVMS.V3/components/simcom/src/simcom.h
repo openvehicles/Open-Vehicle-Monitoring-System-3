@@ -83,6 +83,7 @@ class simcom : public pcp
       NetHold,
       NetSleep,
       NetMode,
+      NetDeepSleep,
       PoweringOff,
       PoweredOff
       };
@@ -122,6 +123,10 @@ class simcom : public pcp
     network_registration_t m_netreg;
     GsmMux       m_mux;
     GsmPPPOS     m_ppp;
+
+  public:
+    const char* State1Name(SimcomState1 state);
+    const char* NetRegName(network_registration_t netreg);
 
   protected:
     void SetState1(SimcomState1 newstate);

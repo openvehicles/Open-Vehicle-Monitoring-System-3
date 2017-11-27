@@ -92,13 +92,13 @@ class OvmsVehicle
 
   protected:
     virtual void ConfigChanged(OvmsConfigParam* param);
-  
+    virtual void MetricModified(OvmsMetric* metric);
+
   protected:
     void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed);
 
   public:
     virtual void RxTask();
-    virtual const std::string VehicleName();
 
   public:
     typedef enum
@@ -110,9 +110,9 @@ class OvmsVehicle
     typedef enum
       {
       Standard = 0,
-      Storage,
-      Range,
-      Performance
+      Storage = 1,
+      Range = 3,
+      Performance = 4
       } vehicle_mode_t;
 
   public:
@@ -128,6 +128,9 @@ class OvmsVehicle
     virtual vehicle_command_t CommandActivateValet(const char* pin);
     virtual vehicle_command_t CommandDeactivateValet(const char* pin);
     virtual vehicle_command_t CommandHomelink(uint8_t button);
+
+  public:
+    virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
 
   public:
     typedef struct
@@ -172,22 +175,28 @@ class OvmsVehicleFactory
 
   public:
     typedef OvmsVehicle* (*FactoryFuncPtr)();
-    typedef map<std::string, FactoryFuncPtr> map_type;
+    typedef struct
+      {
+      FactoryFuncPtr construct;
+      const char* name;
+      } vehicle_t;
+    typedef map<const char*, vehicle_t, CmpStrOp> map_vehicle_t;
 
     OvmsVehicle *m_currentvehicle;
-    map_type m_map;
+    map_vehicle_t m_vmap;
 
   public:
     template<typename Type>
-    short RegisterVehicle(std::string VehicleType)
+    short RegisterVehicle(const char* VehicleType, const char* VehicleName = "")
       {
       FactoryFuncPtr function = &CreateVehicle<Type>;
-        m_map.insert(std::make_pair(VehicleType, function));
+        m_vmap.insert(std::make_pair(VehicleType, (vehicle_t){ function, VehicleName }));
       return 0;
       };
-    OvmsVehicle* NewVehicle(std::string VehicleType);
+    OvmsVehicle* NewVehicle(const char* VehicleType);
     void ClearVehicle();
-    void SetVehicle(std::string type);
+    void SetVehicle(const char* type);
+    OvmsVehicle* ActiveVehicle();
   };
 
 extern OvmsVehicleFactory MyVehicleFactory;

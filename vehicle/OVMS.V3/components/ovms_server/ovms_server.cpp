@@ -28,7 +28,7 @@
 ; THE SOFTWARE.
 */
 
-#include "esp_log.h"
+#include "ovms_log.h"
 static const char *TAG = "ovms-server";
 
 #include <string.h>
@@ -46,7 +46,7 @@ static void OvmsServer_task(void *pvParameters)
 OvmsServer::OvmsServer(const char* name)
   : pcp(name)
   {
-  xTaskCreatePinnedToCore(OvmsServer_task, "OVMS Server Task", 4096, (void*)this, 5, &m_task, 1);
+  xTaskCreatePinnedToCore(OvmsServer_task, "OVMS Server", 6144, (void*)this, 5, &m_task, 1);
   }
 
 OvmsServer::~OvmsServer()

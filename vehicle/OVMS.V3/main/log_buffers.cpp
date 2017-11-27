@@ -31,7 +31,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <esp_log.h>
+#include <ovms_log.h>
 #include "log_buffers.h"
 
 

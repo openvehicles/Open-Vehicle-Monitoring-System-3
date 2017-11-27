@@ -48,6 +48,7 @@ using namespace std;
 typedef enum
   {
   Other         = 0,
+  Native        = Other,
 
   Kilometers    = 10,
   Miles         = 11,
@@ -74,11 +75,14 @@ typedef enum
 
   Kph           = 61,
   Mph           = 62,
-  
+ 
   // Acceleration:
   KphPS         = 71,   // Kph per second
   MphPS         = 72,   // Mph per second
   MetersPSS     = 73,   // Meters per second^2
+
+  dbm           = 80,   // Signal Quality (in dBm)
+  sq            = 81,   // Signal Quality (in SQ units)
 
   Percentage    = 90
   } metric_unit_t;
@@ -94,7 +98,13 @@ class OvmsMetric
     virtual ~OvmsMetric();
 
   public:
-    virtual std::string AsString(const char* defvalue = "", metric_unit_t units = Other);
+    virtual std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
+    std::string AsUnitString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
+      {
+      if (!m_defined)
+        return std::string(defvalue);
+      return AsString(defvalue, units, precision) + OvmsMetricUnitLabel(GetUnits());
+      }
     virtual float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     virtual void SetValue(std::string value);
     virtual void operator=(std::string value);
@@ -126,7 +136,7 @@ class OvmsMetricBool : public OvmsMetric
     virtual ~OvmsMetricBool();
 
   public:
-    std::string AsString(const char* defvalue = "", metric_unit_t units = Other);
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
     float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     int AsBool(const bool defvalue = false);
     void SetValue(bool value);
@@ -145,7 +155,7 @@ class OvmsMetricInt : public OvmsMetric
     virtual ~OvmsMetricInt();
 
   public:
-    std::string AsString(const char* defvalue = "", metric_unit_t units = Other);
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
     float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     int AsInt(const int defvalue = 0, metric_unit_t units = Other);
     void SetValue(int value, metric_unit_t units = Other);
@@ -164,8 +174,9 @@ class OvmsMetricFloat : public OvmsMetric
     virtual ~OvmsMetricFloat();
 
   public:
-    std::string AsString(const char* defvalue = "", metric_unit_t units = Other);
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
     float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
+    int AsInt(const int defvalue = 0, metric_unit_t units = Other);
     void SetValue(float value, metric_unit_t units = Other);
     void operator=(float value) { SetValue(value); }
     void SetValue(std::string value);
@@ -182,7 +193,7 @@ class OvmsMetricString : public OvmsMetric
     virtual ~OvmsMetricString();
 
   public:
-    std::string AsString(const char* defvalue = "", metric_unit_t units = Other);
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
     void SetValue(std::string value);
     void operator=(std::string value) { SetValue(value); }
     
@@ -208,7 +219,7 @@ class OvmsMetricBitset : public OvmsMetric
       }
 
   public:
-    std::string AsString(const char* defvalue = "", metric_unit_t units = Other)
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
       {
       if (!m_defined)
         return std::string(defvalue);
@@ -282,7 +293,7 @@ class OvmsMetricSet : public OvmsMetric
       }
 
   public:
-    std::string AsString(const char* defvalue = "", metric_unit_t units = Other)
+    std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
       {
       if (!m_defined)
         return std::string(defvalue);
@@ -406,6 +417,7 @@ class OvmsMetrics
 
   public:
     OvmsMetric* m_first;
+    bool m_trace;
   };
 
 extern OvmsMetrics MyMetrics;

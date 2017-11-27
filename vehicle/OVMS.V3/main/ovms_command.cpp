@@ -28,7 +28,7 @@
 ; THE SOFTWARE.
 */
 
-#include "esp_log.h"
+#include "ovms_log.h"
 static const char *TAG = "command";
 
 #include <stdio.h>
@@ -362,9 +362,9 @@ OvmsCommandApp::OvmsCommandApp()
   m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0);
   m_root.RegisterCommand("exit", "End console session", Exit , "", 0, 0);
   OvmsCommand* level_cmd = m_root.RegisterCommand("level", "Set logging level", NULL, "$C [<tag>]");
-  level_cmd->RegisterCommand("verbose", "Log at the VERBOSE level (5)", level , "[<tag>]", 0, 1);
-  level_cmd->RegisterCommand("debug", "Log at the DEBUG level (4)", level , "[<tag>]", 0, 1);
-  level_cmd->RegisterCommand("info", "Log at the INFO level (3)", level , "[<tag>]", 0, 1);
+  level_cmd->RegisterCommand("verbose", "Log at the VERBOSE level (5)", level , "[<tag>]", 0, 1, true);
+  level_cmd->RegisterCommand("debug", "Log at the DEBUG level (4)", level , "[<tag>]", 0, 1, true);
+  level_cmd->RegisterCommand("info", "Log at the INFO level (3)", level , "[<tag>]", 0, 1, true);
   level_cmd->RegisterCommand("warn", "Log at the WARN level (2)", level , "[<tag>]", 0, 1);
   level_cmd->RegisterCommand("error", "Log at the ERROR level (1)", level , "[<tag>]", 0, 1);
   level_cmd->RegisterCommand("none", "No logging (0)", level , "[<tag>]", 0, 1);
@@ -484,7 +484,7 @@ int OvmsCommandApp::HexDump(const char* prefix, const char* data, size_t length)
       p++;
     }
     *p = 0;
-    Log("%s %s\n",prefix,buffer);
+    ESP_LOGD(prefix,"%s",buffer);
     rlength -= 16;
     }
 

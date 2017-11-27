@@ -39,11 +39,12 @@
 class OvmsCommandMap;
 class Parent;
 class LogBuffers;
+struct mbuf;
 
-class OvmsConsole : public OvmsShell, public TaskBase
+class OvmsConsole : public OvmsShell
   {
   public:
-    OvmsConsole(Parent* parent = NULL);
+    OvmsConsole();
     ~OvmsConsole();
 
   public:
@@ -66,15 +67,24 @@ class OvmsConsole : public OvmsShell, public TaskBase
         char* buffer;       // Pointer to ALERT buffer
         LogBuffers* multi;  // Pointer to ALERT_MULTI message
         ssize_t size;       // Buffer size for RECV
+        struct mbuf* mbuf;  // Buffer pointer for RECV with Mongoose
         };
       } Event;
+
+    typedef enum
+      {
+      AT_PROMPT,
+      AWAITING_NL,
+      NO_NL
+      } DisplayState;
 
   public:
     void Initialize(const char* console);
     char ** GetCompletion(OvmsCommandMap& children, const char* token);
     void Log(LogBuffers* message);
+    void Poll(portTickType ticks);
 
-  private:
+  protected:
     void Service();
 
   protected:
@@ -85,6 +95,7 @@ class OvmsConsole : public OvmsShell, public TaskBase
     char *m_completions[COMPLETION_MAX_TOKENS+2];
     char m_space[COMPLETION_MAX_TOKENS+2][TOKEN_MAX_LENGTH];
     QueueHandle_t m_queue;
+    DisplayState m_state;
   };
 
 #endif //#ifndef __CONSOLE_H__

@@ -40,11 +40,19 @@
 #include "esp32bluetooth.h"
 #include "esp32adc.h"
 #include "mcp2515.h"
+
+#ifdef CONFIG_OVMS_COMP_SDCARD
 #include "sdcard.h"
+#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
+
 #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
 #include "simcom.h"
 #endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+
+#ifdef CONFIG_OVMS_COMP_SDCARD
 #include "obd2ecu.h"
+#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
+
 #include "ext12v.h"
 
 #define VSPI_PIN_MISO             19
@@ -61,7 +69,7 @@
 #define SDCARD_PIN_D0             2
 #define SDCARD_PIN_D1             4
 #define SDCARD_PIN_D2             12
-#define SDCARD_PIN_D3             12
+#define SDCARD_PIN_D3             13
 #define SDCARD_PIN_CD             39
 
 #define ESP32CAN_PIN_TX           25
@@ -103,11 +111,15 @@ class Peripherals
     esp32adc* m_esp32adc;
     mcp2515* m_mcp2515_1;
     mcp2515* m_mcp2515_2;
+#ifdef CONFIG_OVMS_COMP_SDCARD
     sdcard* m_sdcard;
+#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
     simcom* m_simcom;
 #endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_SDCARD
     obd2ecu* m_obd2ecu;
+#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
     ext12v* m_ext12v;
   };
 

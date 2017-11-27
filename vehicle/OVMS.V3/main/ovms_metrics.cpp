@@ -28,7 +28,7 @@
 ; THE SOFTWARE.
 */
 
-#include "esp_log.h"
+#include "ovms_log.h"
 static const char *TAG = "metrics";
 
 #include <stdlib.h>
@@ -70,6 +70,16 @@ void metrics_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     writer->puts("Metric set");
   else
     writer->puts("Metric could not be set");
+  }
+
+void metrics_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (strcmp(cmd->GetName(),"on")==0)
+    MyMetrics.m_trace = true;
+  else
+    MyMetrics.m_trace = false;
+
+  writer->printf("Metric tracing is now %s\n",cmd->GetName());
   }
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
@@ -120,11 +130,15 @@ OvmsMetrics::OvmsMetrics()
 
   m_nextmodifier = 1;
   m_first = NULL;
+  m_trace = false;
 
   // Register our commands
   OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework",NULL, "", 1);
   cmd_metric->RegisterCommand("list","Show all metrics",metrics_list, "[<metric>]", 0, 1);
   cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set, "<metric> <value>", 2, 2, true);
+  OvmsCommand* cmd_metrictrace = cmd_metric->RegisterCommand("trace","METRIC trace framework", NULL, "", 0, 0, false);
+  cmd_metrictrace->RegisterCommand("on","Turn metric tracing ON",metrics_trace,"", 0, 0, false);
+  cmd_metrictrace->RegisterCommand("off","Turn metrictracing OFF",metrics_trace,"", 0, 0, false);
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
@@ -325,18 +339,28 @@ void OvmsMetrics::DeregisterListener(const char* caller)
 
 void OvmsMetrics::NotifyModified(OvmsMetric* metric)
   {
-  auto k = m_listeners.find(metric->m_name);
-  if (k != m_listeners.end())
+  if ((m_trace)&&(strcmp(metric->m_name,"m.monotonic")!=0))
     {
-    MetricCallbackList* ml = k->second;
-    if (ml)
+    ESP_LOGI(TAG, "Modified metric %s: %s",
+      metric->m_name, metric->AsUnitString().c_str());
+    }
+
+  auto k = m_listeners.find("*");
+  for (int x=0;x<1;x++)
+    {
+    if (k != m_listeners.end())
       {
-      for (MetricCallbackList::iterator itc=ml->begin(); itc!=ml->end(); ++itc)
+      MetricCallbackList* ml = k->second;
+      if (ml)
         {
-        MetricCallbackEntry* ec = *itc;
-        ec->m_callback(metric);
+        for (MetricCallbackList::iterator itc=ml->begin(); itc!=ml->end(); ++itc)
+          {
+          MetricCallbackEntry* ec = *itc;
+          ec->m_callback(metric);
+          }
         }
       }
+    k = m_listeners.find(metric->m_name);
     }
   }
 
@@ -366,7 +390,7 @@ OvmsMetric::~OvmsMetric()
   //  (i.e. by broadcasting a module shutdown event).
   }
 
-std::string OvmsMetric::AsString(const char* defvalue, metric_unit_t units)
+std::string OvmsMetric::AsString(const char* defvalue, metric_unit_t units, int precision)
   {
   return std::string(defvalue);
   }
@@ -455,7 +479,7 @@ OvmsMetricInt::~OvmsMetricInt()
   {
   }
 
-std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units)
+std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units, int precision)
   {
   if (m_defined)
     {
@@ -526,7 +550,7 @@ OvmsMetricBool::~OvmsMetricBool()
   {
   }
 
-std::string OvmsMetricBool::AsString(const char* defvalue, metric_unit_t units)
+std::string OvmsMetricBool::AsString(const char* defvalue, metric_unit_t units, int precision)
   {
   if (m_defined)
     {
@@ -591,11 +615,16 @@ OvmsMetricFloat::~OvmsMetricFloat()
   {
   }
 
-std::string OvmsMetricFloat::AsString(const char* defvalue, metric_unit_t units)
+std::string OvmsMetricFloat::AsString(const char* defvalue, metric_unit_t units, int precision)
   {
   if (m_defined)
     {
     std::ostringstream ss;
+    if (precision >= 0)
+      {
+      ss.precision(precision); // Set desired precision
+      ss << fixed;
+      }
     if ((units != Other)&&(units != m_units))
       ss << UnitConvert(m_units,units,m_value);
     else
@@ -620,6 +649,11 @@ float OvmsMetricFloat::AsFloat(const float defvalue, metric_unit_t units)
     }
   else
     return defvalue;
+  }
+
+int OvmsMetricFloat::AsInt(const int defvalue, metric_unit_t units)
+  {
+  return (int) AsFloat((float) defvalue, units);
   }
 
 void OvmsMetricFloat::SetValue(float value, metric_unit_t units)
@@ -657,7 +691,7 @@ OvmsMetricString::~OvmsMetricString()
   {
   }
 
-std::string OvmsMetricString::AsString(const char* defvalue, metric_unit_t units)
+std::string OvmsMetricString::AsString(const char* defvalue, metric_unit_t units, int precision)
   {
   if (m_defined)
     return m_value;
@@ -702,6 +736,8 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
     case KphPS:        return "Kph/s";
     case MphPS:        return "Mph/s";
     case MetersPSS:    return "m/s²";
+    case dbm:          return "dBm";
+    case sq:           return "sq";
     case Percentage:   return "%";
     default:           return "";
     }
@@ -760,6 +796,12 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
       break;
     case Mph:
       if (to == Kph) return (value*8)/5;
+      break;
+    case dbm:
+      if (to == sq) return (value <= -51)?((value + 113)/2):0;
+      break;
+    case sq:
+      if (to == dbm) return (value <= 31)?(-113 + (value*2)):0;
       break;
     default:
       return value;
@@ -820,6 +862,12 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
       break;
     case Mph:
       if (to == Kph) return (value*8)/5;
+      break;
+    case dbm:
+      if (to == sq) return int((value <= -51)?((value + 113)/2):0);
+      break;
+    case sq:
+      if (to == dbm) return int((value <= 31)?(-113 + (value*2)):0);
       break;
     default:
       return value;

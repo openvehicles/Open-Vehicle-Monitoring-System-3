@@ -28,7 +28,7 @@
 ; THE SOFTWARE.
 */
 
-#include "esp_log.h"
+#include "ovms_log.h"
 static const char *TAG = "gsm-ppp";
 
 #include "gsmpppos.h"
@@ -48,6 +48,9 @@ static void GsmPPPOS_StatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
   {
   GsmPPPOS* me = (GsmPPPOS*)ctx;
   struct netif *pppif = ppp_netif(pcb);
+
+  me->m_lasterrcode = err_code;
+  ESP_LOGI(TAG, "StatusCallBack: %s",me->ErrCodeName(err_code));
 
   switch (err_code)
     {
@@ -134,6 +137,7 @@ static void GsmPPPOS_StatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
       }
     }
 
+  ESP_LOGI(TAG, "Shutdown (via status callback)");
   me->m_connected = false;
   MyEvents.SignalEvent("system.modem.down",NULL);
 
@@ -159,6 +163,7 @@ GsmPPPOS::GsmPPPOS(GsmMux* mux, int channel)
   m_channel = channel;
   m_ppp = NULL;
   m_connected = false;
+  m_lasterrcode = -1;
   }
 
 GsmPPPOS::~GsmPPPOS()
@@ -173,6 +178,8 @@ void GsmPPPOS::IncomingData(uint8_t *data, size_t len)
 
 void GsmPPPOS::Startup()
   {
+  ESP_LOGI(TAG, "Startup");
+
   tcpip_adapter_init();
   m_ppp = pppapi_pppos_create(&m_ppp_netif,
             GsmPPPOS_OutputCallback, GsmPPPOS_StatusCallback, this);
@@ -188,13 +195,46 @@ void GsmPPPOS::Startup()
   pppapi_connect(m_ppp, 0);
   }
 
-void GsmPPPOS::Shutdown()
+void GsmPPPOS::Shutdown(bool hard)
   {
   if (m_ppp)
     {
-    u8_t nocarrier = 0;
+    u8_t nocarrier = (u8_t)hard;
+    if (hard)
+      {
+      ESP_LOGI(TAG, "Shutting down (hard)...");
+      }
+    else
+      {
+      ESP_LOGI(TAG, "Shutting down (soft)...");
+      }
     pppapi_close(m_ppp, nocarrier);
     }
   else
+    {
+    ESP_LOGI(TAG, "Shutdown (direct)");
     m_connected = false;
+    }
   }
+
+const char* GsmPPPOS::ErrCodeName(int errcode)
+  {
+  switch (errcode)
+    {
+    case PPPERR_NONE:        return "None";
+    case PPPERR_PARAM:       return "Invalid Parameter";
+    case PPPERR_OPEN:        return "Unable to Open PPP";
+    case PPPERR_DEVICE:      return "Invalid I/O Device";
+    case PPPERR_ALLOC:       return "Unable to Allocate Resources";
+    case PPPERR_USER:        return "User Interrupt";
+    case PPPERR_CONNECT:     return "Connection Lost";
+    case PPPERR_AUTHFAIL:    return "Authentication Failed";
+    case PPPERR_PROTOCOL:    return "Failed to meet Protocol";
+    case PPPERR_PEERDEAD:    return "Peer Dead";
+    case PPPERR_IDLETIMEOUT: return "Idle Timeout";
+    case PPPERR_CONNECTTIME: return "Max Connect Time Reached";
+    case PPPERR_LOOPBACK:    return "Loopback Detected";
+    default:                 return "Undefined";
+    };
+  }
+

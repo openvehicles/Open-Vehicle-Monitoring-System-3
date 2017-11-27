@@ -28,7 +28,7 @@
 ; THE SOFTWARE.
 */
 
-#include "esp_log.h"
+#include "ovms_log.h"
 static const char *TAG = "v-teslaroadster";
 
 #include <stdio.h>
@@ -55,11 +55,6 @@ OvmsVehicleTeslaRoadster::OvmsVehicleTeslaRoadster()
 OvmsVehicleTeslaRoadster::~OvmsVehicleTeslaRoadster()
   {
   ESP_LOGI(TAG, "Shutdown Tesla Roadster vehicle module");
-  }
-
-const std::string OvmsVehicleTeslaRoadster::VehicleName()
-  {
-  return std::string("Tesla Roadster");
   }
 
 void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
@@ -140,12 +135,14 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           {
           StandardMetrics.ms_v_charge_current->SetValue((float)d[1]);
           StandardMetrics.ms_v_charge_climit->SetValue((float)d[6]);
-          StandardMetrics.ms_v_charge_minutes->SetValue(((int)d[3]<<8)+d[2]);
           break;
           }
         case 0x89:  // Charging Voltage / Iavailable
           {
           StandardMetrics.ms_v_pos_speed->SetValue((float)d[1],Mph);
+          // https://en.wikipedia.org/wiki/Tesla_Roadster#Transmission
+          // Motor RPM given as 14,000rpm for top speed 125mph (201kph) = 112rpm/mph
+          StandardMetrics.ms_v_mot_rpm->SetValue((int)d[1]*112);
           StandardMetrics.ms_v_charge_voltage->SetValue(((float)d[3]*256)+d[2]);
           break;
           }
@@ -172,7 +169,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
             case 0x19: // interrupted
               StandardMetrics.ms_v_charge_state->SetValue("stopped"); break;
             case 0x0d: // preparing
-              StandardMetrics.ms_v_charge_state->SetValue("preparing"); break;
+              StandardMetrics.ms_v_charge_state->SetValue("prepare"); break;
             case 0x0e: // timer wait
               StandardMetrics.ms_v_charge_state->SetValue("timerwait"); break;
             case 0x0f: // heating
@@ -577,5 +574,5 @@ OvmsVehicleTeslaRoadsterInit::OvmsVehicleTeslaRoadsterInit()
   {
   ESP_LOGI(TAG, "Registering Vehicle: Tesla Roadster (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleTeslaRoadster>("TR");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleTeslaRoadster>("TR","Tesla Roadster");
   }

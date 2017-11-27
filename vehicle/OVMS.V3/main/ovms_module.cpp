@@ -28,7 +28,7 @@
 ; THE SOFTWARE.
 */
 
-#include "esp_log.h"
+#include "ovms_log.h"
 static const char *TAG = "ovms-module";
 
 #include <stdio.h>
@@ -81,6 +81,11 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
   }
 
 static void module_abort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  must(writer);
+  }
+
+static void module_check(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   must(writer);
   }
@@ -452,10 +457,16 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
   {
   static const char* ctasks[] = {}; // { "tiT", "wifi"};
   const char* const* tasks = ctasks;
+  bool all = false;
   if (argc > 0)
     {
     if (**argv == '*')
       tasks = NULL;
+    else if (**argv == '=')
+      {
+      all = true;
+      argc = sizeof(ctasks) / sizeof(char*);
+      }
     else
       tasks = argv;
     }
@@ -505,7 +516,7 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
       if (change[j])
         any = true;
       }
-    if (any)
+    if (any || all)
       {
       Name name("NoTaskMap");
       if (tm)
@@ -523,7 +534,7 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
     for (int i = 0; i < tln; ++i, ++tl)
       print_blocks(writer, *tl);
     }
-  else
+  else if (!tasks)
     {
     for (int i = changes->begin(); i < changes->end(); ++i)
       {
@@ -616,7 +627,12 @@ static void module_abort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
     }
   mem_malloc_set_abort(task, size, count);
   }
-#endif
+
+static void module_check(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  mem_check_all(NULL);
+  }
+#endif // NOGO
 
 
 static void module_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -631,13 +647,16 @@ class OvmsModuleInit
   OvmsModuleInit()
     {
     ESP_LOGI(TAG, "Initialising MODULE (5100)");
-    TaskMap::instance()->insert(0x00000000, "no task");
+#ifndef NOGO
+	TaskMap::instance()->insert(0x00000000, "no task");
+#endif
 
     OvmsCommand* cmd_module = MyCommandApp.RegisterCommand("module","Module framework",NULL);
     cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"[<task names or ids>]",0,TASKLIST,true);
     cmd_module->RegisterCommand("tasks","Show module task usage",module_tasks,"",0,0,true);
     cmd_module->RegisterCommand("abort","Set trap to abort on malloc",module_abort,"<task> <count> [<size>]",2,3,true);
     cmd_module->RegisterCommand("reset","Reset module",module_reset,"",0,0,true);
+    cmd_module->RegisterCommand("check","Check heap validity",module_check,"",0,0,true);
     }
   } MyOvmsModuleInit  __attribute__ ((init_priority (5100)));
 

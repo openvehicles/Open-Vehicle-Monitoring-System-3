@@ -28,7 +28,7 @@
 ; THE SOFTWARE.
 */
 
-#include "esp_log.h"
+#include "ovms_log.h"
 static const char *TAG = "v-none";
 
 #include <stdio.h>
@@ -44,11 +44,6 @@ OvmsVehicleNone::~OvmsVehicleNone()
   ESP_LOGI(TAG, "Shutdown NONE vehicle module");
   }
 
-const std::string OvmsVehicleNone::VehicleName()
-  {
-  return std::string("NONE");
-  }
-
 class OvmsVehicleNoneInit
   {
   public: OvmsVehicleNoneInit();
@@ -58,6 +53,6 @@ OvmsVehicleNoneInit::OvmsVehicleNoneInit()
   {
   ESP_LOGI(TAG, "Registering Vehicle: NONE (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleNone>("NONE");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleNone>("NONE","Empty vehicle");
   }
 

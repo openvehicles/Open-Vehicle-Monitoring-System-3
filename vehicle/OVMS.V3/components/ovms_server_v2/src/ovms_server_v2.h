@@ -58,6 +58,7 @@ class OvmsServerV2 : public OvmsServer
     void Disconnect();
     bool Login();
     void ProcessServerMsg();
+    void ProcessCommand(std::string* payload);
     void Transmit(std::string message);
     void Transmit(const char* message);
 
@@ -65,13 +66,16 @@ class OvmsServerV2 : public OvmsServer
     std::string ReadLine();
 
   protected:
-    void TransmitMsgStat(bool always);
-    void TransmitMsgGPS(bool always);
-    void TransmitMsgTPMS(bool always);
-    void TransmitMsgFirmware(bool always);
-    void TransmitMsgEnvironment(bool always);
-    void TransmitMsgCapabilities(bool always);
-    void TransmitMsgGroup(bool always);
+    void TransmitMsgStat(bool always = false);
+    void TransmitMsgGPS(bool always = false);
+    void TransmitMsgTPMS(bool always = false);
+    void TransmitMsgFirmware(bool always = false);
+    void TransmitMsgEnvironment(bool always = false);
+    void TransmitMsgCapabilities(bool always = false);
+    void TransmitMsgGroup(bool always = false);
+
+  public:
+    void MetricModified(OvmsMetric* metric);
 
   public:
     std::string m_status;
@@ -90,6 +94,14 @@ class OvmsServerV2 : public OvmsServer
     RC4_CTX2 m_crypto_rx2;
     RC4_CTX1 m_crypto_tx1;
     RC4_CTX2 m_crypto_tx2;
+
+    bool m_now_stat;
+    bool m_now_gps;
+    bool m_now_tpms;
+    bool m_now_firmware;
+    bool m_now_environment;
+    bool m_now_capabilities;
+    bool m_now_group;
   };
 
 #endif //#ifndef __OVMS_SERVER_V2_H__

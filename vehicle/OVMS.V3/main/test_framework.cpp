@@ -28,7 +28,7 @@
 ; THE SOFTWARE.
 */
 
-#include "esp_log.h"
+#include "ovms_log.h"
 static const char *TAG = "test";
 
 #include <stdio.h>
@@ -67,6 +67,7 @@ void test_javascript(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
+#ifdef CONFIG_OVMS_COMP_SDCARD
 void test_sdcard(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   sdcard *sd = MyPeripherals->m_sdcard;
@@ -107,6 +108,34 @@ void test_sdcard(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
   writer->puts("SD CARD test completes");
   }
+#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
+
+// Spew lines of the ASCII printable characters in the style of RFC 864.
+void test_chargen(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  int numlines = 1000;
+  if (argc==1)
+    {
+    numlines = atoi(argv[0]);
+    }
+  char buf[74];
+  buf[72] = '\n';
+  buf[73] = '\0';
+  char start = '!';
+  for (int line = 0; line < numlines; ++line)
+    {
+    char ch = start;
+    for (int col = 0; col < 72; ++col)
+      {
+      buf[col] = ch;
+      if (++ch == 0x7F)
+        ch = ' ';
+      }
+    writer->write(buf, 73);
+    if (++start == 0x7F)
+        start = ' ';
+    }
+  }
 
 class TestFrameworkInit
   {
@@ -119,6 +148,9 @@ TestFrameworkInit::TestFrameworkInit()
 
   OvmsCommand* cmd_test = MyCommandApp.RegisterCommand("test","Test framework",NULL,"",0,0,true);
   cmd_test->RegisterCommand("sleep","Test Deep Sleep",test_deepsleep,"[<seconds>]",0,1,true);
+#ifdef CONFIG_OVMS_COMP_SDCARD
   cmd_test->RegisterCommand("sdcard","Test CD CARD",test_sdcard,"",0,0,true);
+#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
   cmd_test->RegisterCommand("javascript","Test Javascript",test_javascript,"",0,0,true);
+  cmd_test->RegisterCommand("chargen","Character generator [<#lines>]",test_chargen,"",0,1,false);
   }

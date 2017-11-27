@@ -28,7 +28,7 @@
 ; THE SOFTWARE.
 */
 
-#include "esp_log.h"
+#include "ovms_log.h"
 static const char *TAG = "peripherals";
 
 #include <stdio.h>
@@ -80,12 +80,16 @@ Peripherals::Peripherals()
   ESP_LOGI(TAG, "  MCP2515 CAN 2/2");
   m_mcp2515_2 = new mcp2515("can3", m_spibus, VSPI_NODMA_HOST, 1000000, VSPI_PIN_MCP2515_2_CS, VSPI_PIN_MCP2515_2_INT);
   ESP_LOGI(TAG, "  SD CARD");
+#ifdef CONFIG_OVMS_COMP_SDCARD
   m_sdcard = new sdcard("sdcard", false,true,SDCARD_PIN_CD);
+#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
   ESP_LOGI(TAG, "  SIMCOM MODEM");
   m_simcom = new simcom("simcom", UART_NUM_1, 115200, MODEM_GPIO_RX, MODEM_GPIO_TX, MODEM_EGPIO_PWR, MODEM_EGPIO_DTR);
 #endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_SDCARD
   m_obd2ecu = NULL;
+#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
   m_ext12v = new ext12v("ext12v");
   }
 

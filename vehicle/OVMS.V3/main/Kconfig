@@ -53,6 +53,14 @@ config OVMS_SC_GPL_MONGOOSE
     help
         Enable to include the GPL licensed MONGOOSE networking library
 
+config OVMS_SC_GPL_WOLF
+    bool "Include the GPL licensed WOLFSSH and WOLFSSL libraries (ssh server)"
+    default y
+    depends on OVMS
+    help
+        Enable to include the GPL licensed WOLFSSH and WOLFSSL libraries
+        (required for SSH server functionality)
+
 menu "Vehicle Support"
     depends on OVMS
 
@@ -76,6 +84,13 @@ config OVMS_VEHICLE_TRACK
     depends on OVMS
     help
         Enable to include support for tracker vehicles.
+
+config OVMS_VEHICLE_DEMO
+    bool "Include support for DEMO vehicle"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for demonstration vehicles.
 
 config OVMS_VEHICLE_TESLAROADSTER
     bool "Include support for Tesla Roadster vehicles"
@@ -124,12 +139,54 @@ config OVMS_COMP_SERVER_V3
     help
         Enable to include support for V3 server connections.
 
+config OVMS_COMP_WEBSERVER
+    bool "Include support for Network Web Server"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Web Server.
+
+config OVMS_COMP_MDNS
+    bool "Include support for Network MDNS"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for MDNS.
+
+config OVMS_COMP_TELNET
+    bool "Include support for Telnet server"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Telnet server.
+
+config OVMS_COMP_SSH
+    bool "Include support for SSH server"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for SSH server.
+
 config OVMS_COMP_MODEM_SIMCOM
     bool "Include support for SIMCOM modems"
     default y
     depends on OVMS
     help
         Enable to include support for SIMCOM modems
+
+config OVMS_COMP_SDCARD
+    bool "Include support for SD CARDs"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for SD CARDs
+
+config OVMS_COMP_OBD2ECU
+    bool "Include support for OBDII ECU"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for OBDII ECU
 
 config OVMS_COMP_RE_TOOLS
     bool "Include support for Reverse Engineering tools"
@@ -149,6 +206,13 @@ config OVMS_DEV_CONFIGVFS
     depends on OVMS
     help
         Enable to permit VFS access to configuration files (danger: insecure)
+
+config OMMS_DEV_SDCARDSCRIPTS
+    bool "Run event scripts from /sd, as well as /store (note: may be insecure)"
+    default n
+    depends on OVMS
+    help
+        Enable to run events script from /sd, as well as /store (danger: insecure)
 
 config OVMS_DEV_DEBUGRAM
     bool "Enable extended RAM memory allocation statistics"

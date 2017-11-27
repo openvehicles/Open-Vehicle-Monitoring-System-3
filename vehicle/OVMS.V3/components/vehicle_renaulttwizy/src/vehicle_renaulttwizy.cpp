@@ -23,7 +23,7 @@
  * THE SOFTWARE.
  */
 
-#include "esp_log.h"
+#include "ovms_log.h"
 static const char *TAG = "v-renaulttwizy";
 
 #define VERSION "0.1.0"
@@ -103,7 +103,10 @@ void OvmsVehicleRenaultTwizy::ConfigChanged(OvmsConfigParam* param)
     cfg_maxrange = CFG_DEFAULT_MAXRANGE;
   
   cfg_suffsoc = MyConfig.GetParamValueInt("x.rt", "suffsoc");
+  *StdMetrics.ms_v_charge_limit_soc = (float) cfg_suffsoc;
+  
   cfg_suffrange = MyConfig.GetParamValueInt("x.rt", "suffrange");
+  *StdMetrics.ms_v_charge_limit_range = (float) cfg_suffrange;
   
   cfg_chargemode = MyConfig.GetParamValueInt("x.rt", "chargemode");
   cfg_chargelevel = MyConfig.GetParamValueInt("x.rt", "chargelevel");
@@ -132,18 +135,13 @@ class OvmsVehicleRenaultTwizyInit
 OvmsVehicleRenaultTwizyInit::OvmsVehicleRenaultTwizyInit()
 {
   ESP_LOGI(TAG, "Registering Vehicle: Renault Twizy (9000)");
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleRenaultTwizy>("RT");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleRenaultTwizy>("RT","Renault Twizy");
 }
 
 
 /**
  * Framework callbacks
  */
-
-const string OvmsVehicleRenaultTwizy::VehicleName()
-{
-  return string("Renault Twizy");
-}
 
 
 /**
@@ -637,8 +635,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     // CAR has just been turned ON & CAN bus is online
     twizy_flags.CarAwake = 1;
     
-    *StdMetrics.ms_v_env_parktime = (int) 0; // No longer parking
-    
     // set trip references:
     twizy_soc_tripstart = twizy_soc;
     twizy_odometer_tripstart = twizy_odometer;
@@ -662,8 +658,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     // CAR has just been turned OFF
     twizy_flags.CarAwake = 0;
     twizy_flags.CtrlLoggedIn = 0;
-    
-    *StdMetrics.ms_v_env_parktime = (int) (time(NULL) - 1); // Record it as 1 second ago, so non zero report
     
     // set trip references:
     twizy_soc_tripend = twizy_soc;
@@ -708,7 +702,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     
     twizy_chargeduration++;
     
-    *StdMetrics.ms_v_charge_minutes = (int) twizy_chargeduration / 60;
     *StdMetrics.ms_v_charge_kwh = (float) twizy_speedpwr[CAN_SPEED_CONST].rec / WH_DIV / 1000;
     
     *StdMetrics.ms_v_charge_current = (float) -twizy_current / 4;
@@ -1043,21 +1036,11 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   // --------------------------------------------------------------------------
   // Publish metrics:
   
-  string label;
-  
   *StdMetrics.ms_v_charge_mode = (string)
     ((cfg_chargemode == TWIZY_CHARGEMODE_AUTOSTOP) ? "storage" : "standard");
   
-  switch (twizy_chargestate)
-  {
-    case 1: label = "charging"; break;
-    case 2: label = "topoff"; break;
-    case 4: label = "done"; break;
-    case 21: label = "stopped"; break;
-    default: label = ""; break;
-  }
-  *StdMetrics.ms_v_charge_state = (string) label;
-  *StdMetrics.ms_v_charge_substate = (string) ((twizy_chg_stop_request) ? "stop" : "go");
+  *StdMetrics.ms_v_charge_state = (string) chargestate_code(twizy_chargestate);
+  *StdMetrics.ms_v_charge_substate = (string) chargesubstate_code(twizy_chg_stop_request);
   
   *StdMetrics.ms_v_bat_range_ideal = (float) twizy_range_ideal;
   *StdMetrics.ms_v_bat_range_est = (float) twizy_range_est;

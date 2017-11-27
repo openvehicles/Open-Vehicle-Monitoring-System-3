@@ -28,7 +28,7 @@
 ; THE SOFTWARE.
 */
 
-#include "esp_log.h"
+#include "ovms_log.h"
 static const char *TAG = "script";
 
 #include <string>
@@ -59,7 +59,7 @@ static void script_ovms(bool print, int verbosity, OvmsWriter* writer, FILE* sf)
 
 static void script_run(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  FILE *sf;
+  FILE *sf = NULL;
 
   if (argv[0][0] == '/')
     {
@@ -68,9 +68,12 @@ static void script_run(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int 
     }
   else
     {
-    std::string path("/sd/scripts/");
+    std::string path;
+#ifdef CONFIG_OMMS_DEV_SDCARDSCRIPTS
+    path = std::string("/sd/scripts/");
     path.append(argv[0]);
     sf = fopen(path.c_str(), "r");
+#endif // #ifdef CONFIG_OMMS_DEV_SDCARDSCRIPTS
     if (sf == NULL)
       {
       path = std::string("/store/scripts/");
@@ -112,9 +115,13 @@ void OvmsScripts::AllScripts(std::string path)
 
 void OvmsScripts::EventScript(std::string event, void* data)
   {
-  std::string path("/sd/events/");
+  std::string path;
+
+#ifdef CONFIG_OMMS_DEV_SDCARDSCRIPTS
+  path=std::string("/sd/events/");
   path.append(event);
   AllScripts(path);
+#endif // #ifdef CONFIG_OMMS_DEV_SDCARDSCRIPTS
 
   path=std::string("/store/events/");
   path.append(event);
