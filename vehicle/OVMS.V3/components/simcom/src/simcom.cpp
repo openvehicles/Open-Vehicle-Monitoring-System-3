@@ -508,7 +508,7 @@ simcom::SimcomState1 simcom::State1Ticker1()
           }
         return NetHold; // Just hold, without starting the network
         }
-      else if ((m_state1_ticker > 1)&&((m_netreg==RegisteredHome)||(m_netreg==RegisteredRoaming)))
+      else if ((m_state1_ticker > 5)&&((m_netreg==RegisteredHome)||(m_netreg==RegisteredRoaming)))
         {
         // OK. We have a network registration, and are ready to start
         if (m_state1_userdata == 0)
@@ -521,8 +521,13 @@ simcom::SimcomState1 simcom::State1Ticker1()
           }
         else if (m_state1_userdata == 2)
           return NetMode;
+        else if (m_state1_userdata == 99)
+          {
+          m_state1_ticker = 0;
+          m_state1_userdata = 0;
+          }
         }
-      if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
+      if ((m_state1_ticker>10)&&((m_state1_ticker % 30) == 0))
         m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
       break;
     case NetHold:
@@ -541,9 +546,17 @@ simcom::SimcomState1 simcom::State1Ticker1()
         // Need to shutdown ppp, and get back to NetSleep mode
         return NetSleep;
         }
-      if ((m_netreg!=RegisteredHome)||(m_netreg!=RegisteredRoaming))
+      if ((m_netreg!=RegisteredHome)&&(m_netreg!=RegisteredRoaming))
         {
         // We've lost the network connection
+        ESP_LOGI(TAG, "Lost network connection (NetworkRegistration in NetMode)");
+        m_ppp.Shutdown();
+        return NetStart;
+        }
+      if (m_state1_userdata == 99)
+        {
+        // We've lost the network connection
+        ESP_LOGI(TAG, "Lost network connection (+PPP disconnect in NetMode)");
         m_ppp.Shutdown();
         return NetStart;
         }
@@ -614,6 +627,11 @@ void simcom::StandardLineHandler(OvmsBuffer* buf, std::string line)
     ESP_LOGI(TAG, "PPP Connection is ready to start");
     m_state1_userdata = 2;
     }
+  else if ((line.compare(0, 19, "+PPPD: DISCONNECTED") == 0)&&((m_state1 == NetStart)||(m_state1 == NetMode)))
+    {
+    ESP_LOGI(TAG, "PPP Connection disconnected");
+    m_state1_userdata = 99;
+    }
   else if (line.compare(0, 8, "+ICCID: ") == 0)
     {
     StandardMetrics.ms_m_net_mdm_iccid->SetValue(line.substr(8));
@@ -656,7 +674,7 @@ void simcom::StandardLineHandler(OvmsBuffer* buf, std::string line)
       default:
         break;
       }
-    ESP_LOGI(TAG, "CREG Network Registration %d",m_netreg);
+    ESP_LOGI(TAG, "CREG Network Registration: %s",NetRegName(m_netreg));
     }
   else if (line.compare(0, 7, "+COPS: ") == 0)
     {
@@ -760,6 +778,38 @@ void simcom_muxtx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   MyPeripherals->m_simcom->muxtx(channel,msg.c_str(),msg.length());
   }
 
+void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->printf("SIMCOM\n  Network Registration: %s\n  State: %s\n  Ticker: %d\n  User Data: %d\n",
+    MyPeripherals->m_simcom->NetRegName(MyPeripherals->m_simcom->m_netreg),
+    MyPeripherals->m_simcom->State1Name(MyPeripherals->m_simcom->m_state1),
+    MyPeripherals->m_simcom->m_state1_ticker,
+    MyPeripherals->m_simcom->m_state1_userdata);
+
+  if (MyPeripherals->m_simcom->m_state1_timeout_goto != simcom::None)
+    {
+    writer->printf("  State Timeout Goto: %s (in %d seconds)\n",
+      MyPeripherals->m_simcom->State1Name(MyPeripherals->m_simcom->m_state1_timeout_goto),
+      MyPeripherals->m_simcom->m_state1_timeout_ticks);
+    }
+
+  writer->printf("  Mux Open Channels: %d\n",
+    MyPeripherals->m_simcom->m_mux.m_openchannels);
+
+  if (MyPeripherals->m_simcom->m_ppp.m_connected)
+    {
+    writer->printf("  PPP Connected on channel: #%d\n",
+      MyPeripherals->m_simcom->m_ppp.m_channel);
+    }
+  else
+    {
+    writer->puts("  PPP Not Connected");
+    }
+
+  writer->printf("  PPP Last Error: %s\n",
+    MyPeripherals->m_simcom->m_ppp.ErrCodeName(MyPeripherals->m_simcom->m_ppp.m_lasterrcode));
+  }
+
 class SimcomInit
   {
   public: SimcomInit();
@@ -772,6 +822,7 @@ SimcomInit::SimcomInit()
   OvmsCommand* cmd_simcom = MyCommandApp.RegisterCommand("simcom","SIMCOM framework",NULL, "", 1);
   cmd_simcom->RegisterCommand("tx","Transmit data on SIMCOM",simcom_tx, "", 1);
   cmd_simcom->RegisterCommand("muxtx","Transmit data on SIMCOM MUX",simcom_muxtx, "<chan> <data>", 2);
+  cmd_simcom->RegisterCommand("status","Show SIMCOM status",simcom_status, "", 0);
 
   MyConfig.RegisterParam("modem", "Modem Configuration", true, true);
   // Our instances:
