@@ -77,54 +77,58 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     bool IsPasswordOk(const char *password);
     void SetChargeMetrics(float voltage, float current, float climit, bool chademo);
 
-    OvmsMetricString *m_version;
-	#define CFG_DEFAULT_MAXRANGE 160
+    // Kia Soul EV specific metrics
+    OvmsMetricString* m_version;
+    OvmsMetricFloat*  m_b_cell_volt_max;           // Battery cell maximum voltage
+    OvmsMetricFloat*  m_b_cell_volt_min;           // Battery cell minimum voltage
+    OvmsMetricFloat*  m_b_cell_det_max;           // Battery cell maximum detoriation
+    OvmsMetricFloat*  m_b_cell_det_min;           // Battery cell minimum detoriation
+    OvmsMetricFloat*  m_c_power;            				// Available charge power
+    //float ks_battery_max_detoriation; 				//02 21 05 -> 24 1+2
+    //float ks_battery_min_detoriation; 				//02 21 05 -> 24 4+5
+
+
+		#define CFG_DEFAULT_MAXRANGE 160
     int ks_maxrange = CFG_DEFAULT_MAXRANGE;        // Configured max range at 20 °C
 
-	#define CGF_DEFAULT_BATTERY_CAPACITY 27000
+		#define CGF_DEFAULT_BATTERY_CAPACITY 27000
     float ks_battery_capacity = CGF_DEFAULT_BATTERY_CAPACITY; //TODO Detect battery capacity from VIN or number of batterycells
+
+    char m_vin[18];
 
     uint32_t ks_tpms_id[4];
     float ks_obc_volt;
-    char m_vin[18];
     KsShiftBits ks_shift_bits;
 
     float ks_trip_start_odo;
     float ks_last_soc;
     float ks_last_ideal_range;
     uint8_t ks_bms_soc;
-    uint32_t ks_start_cdc; 					// Used to calculate trip power use (Cumulated discharge)
-    uint32_t ks_start_cc;  					// Used to calculate trip recuperation (Cumulated charge)
-    uint32_t ks_cum_charge_start; 	// Used to calculate charged power.
-    time_t ks_charge_start = 0;  		// charge start time
+    float ks_start_cdc; 					// Used to calculate trip power use (Cumulated discharge)
+    float ks_start_cc;  					// Used to calculate trip recuperation (Cumulated charge)
+    float ks_cum_charge_start; 	// Used to calculate charged power.
 
     int8_t ks_battery_module_temp[8];
 
-    float ks_battery_DC_voltage; 				//DC voltage                    02 21 01 -> 22 2+3
-    INT ks_battery_current; 					//Battery current               02 21 01 -> 21 7+22 1
-    UINT ks_battery_avail_charge; 			//Available charge              02 21 01 -> 21 2+3
-    uint8_t ks_battery_max_cell_voltage; 	//Max cell voltage              02 21 01 -> 23 6
+    INT ks_battery_current; 								//Battery current               02 21 01 -> 21 7+22 1
     uint8_t ks_battery_max_cell_voltage_no; 	//Max cell voltage no           02 21 01 -> 23 7
-    uint8_t ks_battery_min_cell_voltage; 	//Min cell voltage              02 21 01 -> 24 1
     uint8_t ks_battery_min_cell_voltage_no; 	//Min cell voltage no           02 21 01 -> 24 2
 
     uint32_t ks_battery_cum_charge_current; 		//Cumulated charge current    02 21 01 -> 24 6+7 & 25 1+2
-    uint32_t ks_battery_cum_discharge_current; 	//Cumulated discharge current 02 21 01 -> 25 3-6
-    uint32_t ks_battery_cum_charge; 				//Cumulated charge power      02 21 01 -> 25 7 + 26 1-3
-    uint32_t ks_battery_cum_discharge; 			//Cumulated discharge power   02 21 01 -> 26 4-7
-    uint8_t ks_battery_cum_op_time[3]; 			//Cumulated operating time    02 21 01 -> 27 1-4
+    uint32_t ks_battery_cum_discharge_current;	//Cumulated discharge current 02 21 01 -> 25 3-6
+    uint32_t ks_battery_cum_charge; 						//Cumulated charge power      02 21 01 -> 25 7 + 26 1-3
+    uint32_t ks_battery_cum_discharge; 				//Cumulated discharge power   02 21 01 -> 26 4-7
+    uint32_t ks_battery_cum_op_time; 					//Cumulated operating time    02 21 01 -> 27 1-4
 
     uint8_t ks_battery_cell_voltage[100];
 
-    uint8_t ks_battery_min_temperature; 		//02 21 05 -> 21 7
-    uint8_t ks_battery_inlet_temperature; 	//02 21 05 -> 21 6
-    uint8_t ks_battery_max_temperature; 		//02 21 05 -> 22 1
+    uint8_t ks_battery_min_temperature; 			//02 21 05 -> 21 7
+    uint8_t ks_battery_inlet_temperature; 		//02 21 05 -> 21 6
+    uint8_t ks_battery_max_temperature; 			//02 21 05 -> 22 1
     uint8_t ks_battery_heat_1_temperature; 	//02 21 05 -> 23 6
     uint8_t ks_battery_heat_2_temperature; 	//02 21 05 -> 23 7
 
-    uint16_t ks_battery_max_detoriation; 			//02 21 05 -> 24 1+2
     uint8_t ks_battery_max_detoriation_cell_no; 	//02 21 05 -> 24 3
-    uint16_t ks_battery_min_detoriation; 			//02 21 05 -> 24 4+5
     uint8_t ks_battery_min_detoriation_cell_no; 	//02 21 05 -> 24 6
 
     uint8_t ks_heatsink_temperature; //TODO Remove?
@@ -164,7 +168,7 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 #define CAN_NIB(n)      (((n)&1) ? CAN_NIBL((n)>>1) : CAN_NIBH((n)>>1))
 
 #define TO_CELCIUS(n)	((float)n-40)
-#define TO_PSI(n)		((float)i/4.0)
+#define TO_PSI(n)		((float)n/4.0)
 
 #define BAT_SOC			StdMetrics.ms_v_bat_soc->AsFloat(100)
 #define BAT_SOH			StdMetrics.ms_v_bat_soh->AsFloat(100)
@@ -176,6 +180,7 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 #define POS_ODO			StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers)
 #define CHARGE_CURRENT	StdMetrics.ms_v_charge_current->AsFloat(0, Amps)
 #define CHARGE_VOLTAGE	StdMetrics.ms_v_charge_voltage->AsFloat(0, Volts)
+#define SET_CHARGE_STATE(n)		//StdMetrics.ms_v_charge_state->SetValue(n)
 
 #define VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID 0x2F // InputOutputControlByIdentifier
 
