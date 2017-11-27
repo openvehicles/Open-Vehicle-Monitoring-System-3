@@ -170,7 +170,6 @@ void OvmsVehicleKiaSoulEv::vehicle_kiasoulev_car_on(bool isOn)
 void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
   //ESP_LOGI(TAG, "Kia Soul EV IncomingFrameCan1");
-
   uint8_t *d = p_frame->data.u8;
 
   switch (p_frame->MsgID)
@@ -213,16 +212,16 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       case 0x433:
         {
-          // Parking brake status
-        	  StdMetrics.ms_v_env_handbrake->SetValue((d[2] & 0x10) > 0);
+        // Parking brake status
+        StdMetrics.ms_v_env_handbrake->SetValue((d[2] & 0x10) > 0);
         }
         break;
 
       case 0x4b0:
         {
-          // Motor RPM based on wheel rotation
-        	  int rpm = (d[0]+(d[1]<<8)) * 8.206;
-					StdMetrics.ms_v_mot_rpm->SetValue( rpm );
+        // Motor RPM based on wheel rotation
+        int rpm = (d[0]+(d[1]<<8)) * 8.206;
+		StdMetrics.ms_v_mot_rpm->SetValue( rpm );
         }
         break;
 
@@ -299,7 +298,6 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 		ks_send_can.byte[6]=d[6];
 		ks_send_can.byte[7]=d[7];
 	}
-
   }
 
 /**
