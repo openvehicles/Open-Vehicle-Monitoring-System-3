@@ -85,11 +85,13 @@ class OvmsConfig
 
   public:
     void SetParamValue(std::string param, std::string instance, std::string value);
+    void SetParamValueBinary(std::string param, std::string instance, std::string value);
     void SetParamValueInt(std::string param, std::string instance, int value);
     void SetParamValueFloat(std::string param, std::string instance, float value);
     void SetParamValueBool(std::string param, std::string instance, bool value);
     void DeleteInstance(std::string param, std::string instance);
     std::string GetParamValue(std::string param, std::string instance, std::string defvalue = "");
+    std::string GetParamValueBinary(std::string param, std::string instance, std::string defvalue = "");
     int GetParamValueInt(std::string param, std::string instance, int defvalue = 0);
     float GetParamValueFloat(std::string param, std::string instance, float defvalue = 0);
     bool GetParamValueBool(std::string param, std::string instance, bool defvalue = false);
