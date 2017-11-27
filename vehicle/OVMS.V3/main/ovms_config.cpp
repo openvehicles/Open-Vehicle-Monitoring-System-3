@@ -66,7 +66,7 @@ void config_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     // Show all parameters
     for (ConfigMap::iterator it=MyConfig.m_map.begin(); it!=MyConfig.m_map.end(); ++it)
       {
-      writer->puts(it->first.c_str());
+      writer->printf("%-20s %s\n", it->first.c_str(), it->second->GetTitle());
       }
     }
   else

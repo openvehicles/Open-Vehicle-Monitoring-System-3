@@ -54,6 +54,7 @@ class OvmsConfigParam
     bool Writable();
     bool Readable();
     std::string GetName();
+    const char* GetTitle() { return m_title.c_str(); }
     void Load();
 
   protected:
