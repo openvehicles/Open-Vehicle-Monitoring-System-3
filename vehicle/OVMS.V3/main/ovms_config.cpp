@@ -35,6 +35,7 @@ static const char *TAG = "config";
 #include <sys/stat.h>
 #include <string.h>
 #include <sstream>
+#include <dirent.h>
 #include "ovms_config.h"
 #include "ovms_command.h"
 #include "ovms_events.h"
@@ -123,7 +124,11 @@ void config_rm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     return;
     }
 
-  p->DeleteInstance(argv[1]);
+  if (p->DeleteInstance(argv[1]))
+    return;
+  if (strcmp(argv[1], "*") != 0)
+    return;
+  MyConfig.DeregisterParam(argv[0]);
   }
 
 OvmsConfig::OvmsConfig()
@@ -137,7 +142,7 @@ OvmsConfig::OvmsConfig()
   OvmsCommand* cmd_config = MyCommandApp.RegisterCommand("config","CONFIG framework",NULL,"",0,0,true);
   cmd_config->RegisterCommand("list","Show configuration parameters/instances",config_list,"[<param>]",0,1,true);
   cmd_config->RegisterCommand("set","Set parameter:instance=value",config_set,"<param> <instance> <value>",3,3,true);
-  cmd_config->RegisterCommand("rm","Remove parameter:instance",config_rm,"<param> <instance>",2,2,true);
+  cmd_config->RegisterCommand("rm","Remove parameter:instance",config_rm,"<param> {<instance> | *}",2,2,true);
 
   RegisterParam("password", "Password store", true, false);
   }
@@ -154,19 +159,14 @@ esp_err_t OvmsConfig::mount()
 //  if (!spiffs_is_mounted)
 //    spiffs_mount();
 
-  if (! m_mounted)
-    {
-    memset(&m_store_fat,0,sizeof(esp_vfs_fat_sdmmc_mount_config_t));
-    m_store_fat.format_if_mount_failed = true;
-    m_store_fat.max_files = 5;
-    esp_vfs_fat_spiflash_mount("/store", "store", &m_store_fat, &m_store_wlh);
-    m_mounted = true;
-    for (ConfigMap::iterator it=MyConfig.m_map.begin(); it!=MyConfig.m_map.end(); ++it)
-      {
-      it->second->Load();
-      }
-    MyEvents.SignalEvent("config.mounted", NULL);
-    }
+  if (m_mounted)
+    return ESP_OK;
+
+  memset(&m_store_fat,0,sizeof(esp_vfs_fat_sdmmc_mount_config_t));
+  m_store_fat.format_if_mount_failed = true;
+  m_store_fat.max_files = 5;
+  esp_vfs_fat_spiflash_mount("/store", "store", &m_store_fat, &m_store_wlh);
+  m_mounted = true;
 
   struct stat ds;
   if (stat(OVMS_CONFIGPATH, &ds) != 0)
@@ -175,6 +175,25 @@ esp_err_t OvmsConfig::mount()
     mkdir(OVMS_CONFIGPATH,0);
     }
 
+  DIR *dir;
+  struct dirent *dp;
+  if ((dir = opendir(OVMS_CONFIGPATH)) == NULL)
+    {
+    ESP_LOGE(TAG, "Error: Cannot open config store directory");
+    return ESP_ERR_NOT_FOUND;
+    }
+  while ((dp = readdir(dir)) != NULL)
+    {
+    // Register the param in case this was not already done
+    RegisterParam(dp->d_name, "", true, false);
+    }
+  closedir(dir);
+
+  for (ConfigMap::iterator it=MyConfig.m_map.begin(); it!=MyConfig.m_map.end(); ++it)
+    {
+    it->second->Load();
+    }
+  MyEvents.SignalEvent("config.mounted", NULL);
   return ESP_OK;
   }
 
@@ -424,15 +443,18 @@ void OvmsConfigParam::DeleteParam()
   MyEvents.SignalEvent("config.changed", this);
   }
 
-void OvmsConfigParam::DeleteInstance(std::string instance)
+bool OvmsConfigParam::DeleteInstance(std::string instance)
   {
+  bool ret = false;
   auto k = m_map.find(instance);
   if (k != m_map.end())
     {
     m_map.erase(k);
     RewriteConfig();
+    ret = true;
     }
   MyEvents.SignalEvent("config.changed", this);
+  return ret;
   }
 
 std::string OvmsConfigParam::GetValue(std::string instance)
