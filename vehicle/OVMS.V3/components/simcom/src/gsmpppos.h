@@ -53,7 +53,8 @@ class GsmPPPOS
   public:
     void IncomingData(uint8_t *data, size_t len);
     void Startup();
-    void Shutdown();
+    void Shutdown(bool hard=false);
+    const char* ErrCodeName(int errcode);
 
   public:
     GsmMux*      m_mux;
@@ -61,6 +62,7 @@ class GsmPPPOS
     ppp_pcb*     m_ppp;
     struct netif m_ppp_netif;
     bool         m_connected;
+    int          m_lasterrcode;
   };
 
 #endif //#ifndef __GSM_PPPOS__
