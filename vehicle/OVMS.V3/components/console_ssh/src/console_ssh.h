@@ -37,41 +37,23 @@
 #define BUFFER_SIZE 512
 
 class ConsoleSSH;
-
-/* Map user names to passwords */
-/* Use arrays for username and p. The password or public key can
- * be hashed and the hash stored here. Then I won't need the type. */
-typedef struct PwMap {
-    uint8_t type;
-    uint8_t username[32];
-    uint32_t usernameSz;
-    uint8_t p[SHA256_DIGEST_SIZE];
-    struct PwMap* next;
-} PwMap;
-
-typedef struct PwMapList {
-    PwMap* head;
-} PwMapList;
-
 struct mg_connection;
 
-class OvmsSSH : public Parent
+class OvmsSSH
   {
   public:
     OvmsSSH();
 
   public:
+    void EventHandler(struct mg_connection *nc, int ev, void *p);
     void NetManInit(std::string event, void* data);
     void NetManStop(std::string event, void* data);
-    void EventHandler(struct mg_connection *nc, int ev, void *p);
-    static int SSHUserAuthCallback(uint8_t authType, const WS_UserAuthData* authData, void* ctx);
+    static int Authenticate(uint8_t type, const WS_UserAuthData* data, void* ctx);
     WOLFSSH_CTX* ctx() { return m_ctx; }
 
   protected:
     WOLFSSH_CTX* m_ctx;
-
-  public:
-    PwMapList pwMapList;
+    bool m_keyed;
   };
 
 class ConsoleSSH : public OvmsConsole
@@ -102,4 +84,16 @@ class ConsoleSSH : public OvmsConsole
     bool m_rekey;
   };
 
+class RSAKeyGenerator : public TaskBase
+  {
+  public:
+    RSAKeyGenerator();
+    virtual ~RSAKeyGenerator() {}
+
+  private:
+    void Service();
+
+  private:
+  byte m_der[1200];   // Big enough for 2048-bit private key
+  };
 #endif //#ifndef __CONSOLE_SSH_H__
