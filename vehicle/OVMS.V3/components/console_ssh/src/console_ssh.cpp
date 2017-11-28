@@ -213,7 +213,7 @@ int OvmsSSH::Authenticate(uint8_t type, const WS_UserAuthData* data, void* ctx)
     std::string key = MyConfig.GetParamValue("ssh.keys", user, std::string());
     if (key.empty())
       return WOLFSSH_USERAUTH_INVALID_USER;
-    byte der[300];
+    byte der[560];
     uint32_t len;
     if (Base64_Decode((const byte*)key.data(), key.size(), der, &len) != 0 ||
       len != data->sf.publicKey.publicKeySz ||
