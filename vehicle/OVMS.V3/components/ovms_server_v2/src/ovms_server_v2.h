@@ -38,6 +38,7 @@
 #include "ovms_buffer.h"
 #include "crypt_rc4.h"
 #include "ovms_metrics.h"
+#include "ovms_notify.h"
 
 #define OVMS_PROTOCOL_V2_TOKENSIZE 22
 
@@ -76,6 +77,7 @@ class OvmsServerV2 : public OvmsServer
 
   public:
     void MetricModified(OvmsMetric* metric);
+    bool IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry);
 
   public:
     std::string m_status;

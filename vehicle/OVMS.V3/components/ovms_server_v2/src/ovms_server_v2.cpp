@@ -146,6 +146,15 @@ static struct
 
 OvmsServerV2 *MyOvmsServerV2 = NULL;
 size_t MyOvmsServerV2Modifier = 0;
+size_t MyOvmsServerV2Reader = 0;
+
+bool OvmsServerV2ReaderCallback(OvmsNotifyType* type, OvmsNotifyEntry* entry)
+  {
+  if (MyOvmsServerV2)
+    return MyOvmsServerV2->IncomingNotification(type, entry);
+  else
+    return true; // No server v2 running, so just discard
+  }
 
 void OvmsServerV2::ServerTask()
   {
@@ -735,11 +744,11 @@ void OvmsServerV2::TransmitMsgStat(bool always)
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
-  
+
   int mins_range = StandardMetrics.ms_v_charge_duration_range->AsInt();
   int mins_soc = StandardMetrics.ms_v_charge_duration_soc->AsInt();
   bool charging = StandardMetrics.ms_v_charge_inprogress->AsBool();
-  
+
   std::ostringstream buffer;
   buffer
     << std::fixed
@@ -876,7 +885,7 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
   {
   m_now_tpms = false;
 
-  bool modified = 
+  bool modified =
     StandardMetrics.ms_v_tpms_fl_t->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_tpms_fr_t->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
     StandardMetrics.ms_v_tpms_rl_t->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
@@ -1131,6 +1140,24 @@ void OvmsServerV2::MetricModified(OvmsMetric* metric)
     m_now_environment = true; // Transmit environment message if necessary
   }
 
+bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry)
+  {
+  if (strcmp(type->m_name,"info")==0)
+    {
+    // Info notifications
+    if (!StandardMetrics.ms_s_v2_connected->AsBool())
+      return false; // No connection, so leave it queued for when we do
+    std::ostringstream buffer;
+    buffer
+      << "MP-0 PA"
+      << entry->GetValue(COMMAND_RESULT_NORMAL);
+    Transmit(buffer.str().c_str());
+    return true; // Mark it as read, as we've managed to send it
+    }
+  else
+    return true; // Mark it read, as no interest to us
+  }
+
 void OvmsServerV2::TransmitMsgCapabilities(bool always)
   {
   m_now_capabilities = false;
@@ -1154,6 +1181,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
     MyOvmsServerV2Modifier = MyMetrics.RegisterModifier();
     ESP_LOGI(TAG, "OVMS Server V2 registered metric modifier is #%d",MyOvmsServerV2Modifier);
     }
+
   m_buffer = new OvmsBuffer(1024);
   m_status = "Starting";
   m_now_stat = false;
@@ -1168,11 +1196,17 @@ OvmsServerV2::OvmsServerV2(const char* name)
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyMetrics.RegisterListener(TAG, "*", std::bind(&OvmsServerV2::MetricModified, this, _1));
+
+  if (MyOvmsServerV2Reader == 0)
+    {
+    MyOvmsServerV2Reader = MyNotify.RegisterReader(TAG, std::bind(OvmsServerV2ReaderCallback, _1, _2));
+    }
   }
 
 OvmsServerV2::~OvmsServerV2()
   {
   MyMetrics.DeregisterListener(TAG);
+  MyNotify.ClearReader(TAG);
   Disconnect();
   if (m_buffer)
     {
