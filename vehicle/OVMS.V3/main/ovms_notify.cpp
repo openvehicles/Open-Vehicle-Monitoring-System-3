@@ -102,6 +102,10 @@ void notify_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 OvmsNotifyEntry::OvmsNotifyEntry()
   {
   m_readers.reset();
+  for (size_t k = 0; k < MyNotify.CountReaders(); k++)
+    {
+    m_readers.set(k+1);
+    }
   m_id = 0;
   }
 
@@ -111,7 +115,7 @@ OvmsNotifyEntry::~OvmsNotifyEntry()
 
 bool OvmsNotifyEntry::IsAllRead()
   {
-  return (m_readers == 0);
+  return (m_readers.count() == 0);
   }
 
 void OvmsNotifyEntry::MarkRead(size_t reader)
@@ -197,12 +201,34 @@ uint32_t OvmsNotifyType::QueueEntry(OvmsNotifyEntry* entry)
   event.append(m_name);
   MyEvents.SignalEvent(event, (void*)entry);
 
+  // Dispatch the callbacks...
+  MyNotify.NotifyReaders(this, entry);
+
+  // Check if we can cleanup...
+  Cleanup(entry);
+
   return id;
   }
 
 uint32_t OvmsNotifyType::AllocateNextID()
   {
   return m_nextid++;
+  }
+
+void OvmsNotifyType::Cleanup(OvmsNotifyEntry* entry)
+  {
+  if (entry->IsAllRead())
+    {
+    // We can cleanup...
+    auto k = m_entries.find(entry->m_id);
+    if (k != m_entries.end())
+       {
+       m_entries.erase(k);
+       }
+    if (MyNotify.m_trace)
+      ESP_LOGI(TAG,"Cleanup type %s id %d",m_name,entry->m_id);
+    delete entry;
+    }
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -275,6 +301,16 @@ OvmsNotifyType* OvmsNotify::GetType(const char* type)
     return NULL;
   else
     return k->second;
+  }
+
+void OvmsNotify::NotifyReaders(OvmsNotifyType* type, OvmsNotifyEntry* entry)
+  {
+  for (OvmsNotifyCallbackMap_t::iterator itc=m_readers.begin(); itc!=m_readers.end(); ++itc)
+    {
+    OvmsNotifyCallbackEntry* mc = itc->second;
+    bool result = mc->m_callback(type,entry);
+    if (result) entry->MarkRead(mc->m_reader);
+    }
   }
 
 void OvmsNotify::RegisterType(const char* type)
