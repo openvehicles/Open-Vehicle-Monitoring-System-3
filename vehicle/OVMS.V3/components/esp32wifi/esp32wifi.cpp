@@ -352,6 +352,8 @@ void esp32wifi::EventWifiGotIp(std::string event, void* data)
   m_stareconnect = false;
   system_event_info_t *info = (system_event_info_t*)data;
   m_ip_info = info->got_ip.ip_info;
+  MyCommandApp.Log("WiFi UP with SSID: %s, IP: " IPSTR ", mask: " IPSTR ", gw: " IPSTR "\n",
+    m_wifi_apsta_cfg.sta.ssid, IP2STR(&m_ip_info.ip), IP2STR(&m_ip_info.netmask), IP2STR(&m_ip_info.gw));
   }
 
 void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
