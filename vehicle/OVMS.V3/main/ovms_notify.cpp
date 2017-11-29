@@ -211,7 +211,12 @@ OvmsNotify::OvmsNotify()
   ESP_LOGI(TAG, "Initialising NOTIFICATIONS (1820)");
 
   m_nextreader = 1;
+
+#ifdef CONFIG_OVMS_DEV_DEBUGNOTIFICATIONS
+  m_trace = true;
+#else
   m_trace = false;
+#endif // #ifdef CONFIG_OVMS_DEV_DEBUGNOTIFICATIONS
 
   // Register our commands
   OvmsCommand* cmd_notify = MyCommandApp.RegisterCommand("notify","NOTIFICATION framework",NULL, "", 1);

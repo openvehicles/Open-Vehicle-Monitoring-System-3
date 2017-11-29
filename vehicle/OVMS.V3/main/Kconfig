@@ -235,4 +235,11 @@ config OVMS_DEV_DEBUGEVENTS
     help
         Enable to show events signalled
 
+config OVMS_DEV_DEBUGNOTIFICATIONS
+    bool "Enable extended notification tracing"
+    default n
+    depends on OVMS
+    help
+        Enable to show notifications raised
+
 endmenu # Developer Options
