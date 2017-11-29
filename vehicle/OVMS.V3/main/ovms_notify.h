@@ -98,6 +98,7 @@ class OvmsNotifyType
   public:
     uint32_t QueueEntry(OvmsNotifyEntry* entry);
     uint32_t AllocateNextID();
+    void ClearReader(size_t reader);
 
   protected:
     void Cleanup(OvmsNotifyEntry* entry);
@@ -133,6 +134,7 @@ class OvmsNotify
 
   public:
     size_t RegisterReader(const char* caller, OvmsNotifyCallback_t callback);
+    void ClearReader(const char* caller);
     size_t CountReaders();
     OvmsNotifyType* GetType(const char* type);
     void NotifyReaders(OvmsNotifyType* type, OvmsNotifyEntry* entry);
