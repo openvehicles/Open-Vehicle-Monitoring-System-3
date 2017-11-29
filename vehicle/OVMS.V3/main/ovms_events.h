@@ -70,6 +70,9 @@ class OvmsEvents
 
   protected:
     EventMap m_map;
+
+  public:
+    bool m_trace;
   };
 
 extern OvmsEvents MyEvents;
