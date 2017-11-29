@@ -70,6 +70,12 @@ void notify_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
       OvmsNotifyType* mt = itm->second;
       writer->printf("  %s: %d entries\n",
         mt->m_name, mt->m_entries.size());
+      for (NotifyEntryMap_t::iterator ite=mt->m_entries.begin(); ite!=mt->m_entries.end(); ++ite)
+        {
+        OvmsNotifyEntry* e = ite->second;
+        writer->printf("    %d: %s\n",
+          ite->first, e->GetValue(COMMAND_RESULT_VERBOSE));
+        }
       }
     }
   }
@@ -124,11 +130,17 @@ const char* OvmsNotifyEntry::GetValue(int verbosity)
 
 OvmsNotifyEntryString::OvmsNotifyEntryString(const char* value)
   {
-  m_value = value;
+  m_value = new char[strlen(value)+1];
+  strcpy(m_value,value);
   }
 
 OvmsNotifyEntryString::~OvmsNotifyEntryString()
   {
+  if (m_value)
+    {
+    delete [] m_value;
+    m_value = NULL;
+    }
   }
 
 const char* OvmsNotifyEntryString::GetValue(int verbosity)
@@ -142,11 +154,17 @@ const char* OvmsNotifyEntryString::GetValue(int verbosity)
 
 OvmsNotifyEntryCommand::OvmsNotifyEntryCommand(const char* cmd)
   {
-  m_cmd = cmd;
+  m_cmd = new char[strlen(cmd)+1];
+  strcpy(m_cmd,cmd);
   }
 
 OvmsNotifyEntryCommand::~OvmsNotifyEntryCommand()
   {
+  if (m_cmd)
+    {
+    delete [] m_cmd;
+    m_cmd = NULL;
+    }
   }
 
 const char* OvmsNotifyEntryCommand::GetValue(int verbosity)

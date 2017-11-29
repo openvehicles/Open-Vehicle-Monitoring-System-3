@@ -71,7 +71,7 @@ class OvmsNotifyEntryString : public OvmsNotifyEntry
     virtual const char* GetValue(int verbosity);
 
   public:
-    const char* m_value;
+     char* m_value;
   };
 
 class OvmsNotifyEntryCommand : public OvmsNotifyEntry
@@ -84,7 +84,7 @@ class OvmsNotifyEntryCommand : public OvmsNotifyEntry
     virtual const char* GetValue(int verbosity);
 
   public:
-    const char* m_cmd;
+     char* m_cmd;
   };
 
 typedef std::map<uint32_t, OvmsNotifyEntry*> NotifyEntryMap_t;
