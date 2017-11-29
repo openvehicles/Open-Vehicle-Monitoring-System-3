@@ -37,6 +37,7 @@ static const char *TAG = "notify";
 #include "ovms.h"
 #include "ovms_notify.h"
 #include "ovms_command.h"
+#include "ovms_events.h"
 #include "string.h"
 
 using namespace std;
@@ -76,9 +77,9 @@ void notify_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 void notify_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   writer->printf("Raise %s notification for %s as %s\n",
-    cmd->GetParent()->GetName(), argv[0], argv[1]);
+    cmd->GetName(), argv[0], argv[1]);
 
-  if (strcmp(cmd->GetParent()->GetName(),"text")==0)
+  if (strcmp(cmd->GetName(),"text")==0)
     MyNotify.NotifyString(argv[0],argv[1]);
   else
     MyNotify.NotifyCommand(argv[0],argv[1]);
@@ -173,6 +174,10 @@ uint32_t OvmsNotifyType::QueueEntry(OvmsNotifyEntry* entry)
 
   entry->m_id = id;
   m_entries[id] = entry;
+
+  std::string event("notify.");
+  event.append(m_name);
+  MyEvents.SignalEvent(event, (void*)entry);
 
   return id;
   }
