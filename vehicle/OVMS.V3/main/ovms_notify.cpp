@@ -242,6 +242,15 @@ OvmsNotifyEntry* OvmsNotifyType::FirstUnreadEntry(size_t reader, uint32_t floor)
   return NULL;
   }
 
+OvmsNotifyEntry* OvmsNotifyType::FindEntry(uint32_t id)
+  {
+  auto k = m_entries.find(id);
+  if (k == m_entries.end())
+    return NULL;
+  else
+    return k->second;
+  }
+
 void OvmsNotifyType::MarkRead(size_t reader, OvmsNotifyEntry* entry)
   {
   entry->m_readers.reset(reader);

@@ -101,6 +101,7 @@ class OvmsNotifyType
     uint32_t AllocateNextID();
     void ClearReader(size_t reader);
     OvmsNotifyEntry* FirstUnreadEntry(size_t reader, uint32_t floor);
+    OvmsNotifyEntry* FindEntry(uint32_t id);
     void MarkRead(size_t reader, OvmsNotifyEntry* entry);
 
   protected:
