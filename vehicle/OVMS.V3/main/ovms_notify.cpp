@@ -107,6 +107,7 @@ OvmsNotifyEntry::OvmsNotifyEntry()
     m_readers.set(k+1);
     }
   m_id = 0;
+  m_created = monotonictime;
   ESP_LOGD(TAG,"Created entry has %d readers pending",m_readers.count());
   }
 

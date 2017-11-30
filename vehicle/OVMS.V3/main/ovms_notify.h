@@ -59,6 +59,7 @@ class OvmsNotifyEntry
   public:
     std::bitset<NOTIFY_MAX_READERS> m_readers;
     uint32_t m_id;
+    uint32_t m_created;
   };
 
 class OvmsNotifyEntryString : public OvmsNotifyEntry
