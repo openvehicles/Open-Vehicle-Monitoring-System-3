@@ -291,6 +291,7 @@ OvmsNotify::OvmsNotify()
 
   RegisterType("info");
   RegisterType("alert");
+  RegisterType("data");
   }
 
 OvmsNotify::~OvmsNotify()
