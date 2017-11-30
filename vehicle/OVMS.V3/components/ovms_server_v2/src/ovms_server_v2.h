@@ -75,6 +75,12 @@ class OvmsServerV2 : public OvmsServer
     void TransmitMsgCapabilities(bool always = false);
     void TransmitMsgGroup(bool always = false);
 
+  protected:
+    void TransmitNotifyInfo();
+    void TransmitNotifyAlert();
+    void TransmitNotifyData();
+    void HandleNotifyDataAck(uint32_t ack);
+
   public:
     void MetricModified(OvmsMetric* metric);
     bool IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry);
@@ -104,6 +110,11 @@ class OvmsServerV2 : public OvmsServer
     bool m_now_environment;
     bool m_now_capabilities;
     bool m_now_group;
+
+    bool m_pending_notify_info;
+    bool m_pending_notify_alert;
+    bool m_pending_notify_data;
+    uint32_t m_pending_notify_data_last;
   };
 
 #endif //#ifndef __OVMS_SERVER_V2_H__

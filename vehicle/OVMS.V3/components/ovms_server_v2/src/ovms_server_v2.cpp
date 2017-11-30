@@ -35,6 +35,7 @@ static const char *TAG = "ovms-server-v2";
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+#include "ovms.h"
 #include "ovms_command.h"
 #include "ovms_config.h"
 #include "metrics_standard.h"
@@ -189,6 +190,10 @@ void OvmsServerV2::ServerTask()
       }
 
     m_status = "Connected and logged in";
+    m_pending_notify_info = true;
+    m_pending_notify_alert = true;
+    m_pending_notify_data = true;
+    m_pending_notify_data_last = 0;
     StandardMetrics.ms_s_v2_connected->SetValue(true);
     while(1)
       {
@@ -233,6 +238,10 @@ void OvmsServerV2::ServerTask()
       if (m_now_tpms) TransmitMsgTPMS();
       if (m_now_firmware) TransmitMsgFirmware();
       if (m_now_capabilities) TransmitMsgCapabilities();
+
+      if (m_pending_notify_info) TransmitNotifyInfo();
+      if (m_pending_notify_alert) TransmitNotifyAlert();
+      if (m_pending_notify_data) TransmitNotifyData();
 
       // Poll for new data
       if ((m_buffer->PollSocket(m_conn.Socket(),1000) < 0)||
@@ -286,6 +295,7 @@ void OvmsServerV2::ProcessServerMsg()
       }
     case 'h': // Historical data acknowledgement
       {
+      HandleNotifyDataAck(atoi(payload.c_str()));
       break;
       }
     case 'C': // Command
@@ -1122,6 +1132,93 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
   Transmit(buffer.str().c_str());
   }
 
+void OvmsServerV2::TransmitNotifyInfo()
+  {
+  m_pending_notify_info = false;
+
+  // Find the type object
+  OvmsNotifyType* info = MyNotify.GetType("info");
+  if (info == NULL) return;
+
+  while(1)
+    {
+    // Find the first entry
+    OvmsNotifyEntry* e = info->FirstUnreadEntry(MyOvmsServerV2Reader, 0);
+    if (e == NULL) return;
+
+    std::ostringstream buffer;
+    buffer
+      << "MP-0 PA"
+      << e->GetValue(COMMAND_RESULT_NORMAL);
+    Transmit(buffer.str().c_str());
+
+    info->MarkRead(MyOvmsServerV2Reader, e);
+    }
+  }
+
+void OvmsServerV2::TransmitNotifyAlert()
+  {
+  m_pending_notify_alert = false;
+
+  // Find the type object
+  OvmsNotifyType* alert = MyNotify.GetType("alert");
+  if (alert == NULL) return;
+
+  while(1)
+    {
+    // Find the first entry
+    OvmsNotifyEntry* e = alert->FirstUnreadEntry(MyOvmsServerV2Reader, 0);
+    if (e == NULL) return;
+
+    std::ostringstream buffer;
+    buffer
+      << "MP-0 PE"
+      << e->GetValue(COMMAND_RESULT_NORMAL);
+    Transmit(buffer.str().c_str());
+
+    alert->MarkRead(MyOvmsServerV2Reader, e);
+    }
+  }
+
+void OvmsServerV2::TransmitNotifyData()
+  {
+  m_pending_notify_data = false;
+
+  // Find the type object
+  OvmsNotifyType* data = MyNotify.GetType("data");
+  if (data == NULL) return;
+
+  while(1)
+    {
+    // Find the first entry
+    OvmsNotifyEntry* e = data->FirstUnreadEntry(MyOvmsServerV2Reader, m_pending_notify_data_last);
+    if (e == NULL) return;
+
+    std::ostringstream buffer;
+    buffer
+      << "MP-0 h"
+      << e->m_id
+      << ","
+      << monotonictime - e->m_created
+      << ","
+      << e->GetValue(COMMAND_RESULT_NORMAL);
+    Transmit(buffer.str().c_str());
+    m_pending_notify_data_last = e->m_id;
+    }
+  }
+
+void OvmsServerV2::HandleNotifyDataAck(uint32_t ack)
+  {
+  OvmsNotifyType* data = MyNotify.GetType("data");
+  if (data == NULL) return;
+
+  OvmsNotifyEntry* e = data->FindEntry(ack);
+  if (e)
+    {
+    data->MarkRead(MyOvmsServerV2Reader, e);
+    }
+  }
+
 void OvmsServerV2::MetricModified(OvmsMetric* metric)
   {
   // A metric has been changed...
@@ -1146,13 +1243,37 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     {
     // Info notifications
     if (!StandardMetrics.ms_s_v2_connected->AsBool())
+      {
+      m_pending_notify_info = true;
       return false; // No connection, so leave it queued for when we do
+      }
     std::ostringstream buffer;
     buffer
       << "MP-0 PA"
       << entry->GetValue(COMMAND_RESULT_NORMAL);
     Transmit(buffer.str().c_str());
     return true; // Mark it as read, as we've managed to send it
+    }
+  else if (strcmp(type->m_name,"alert")==0)
+    {
+    // Info notifications
+    if (!StandardMetrics.ms_s_v2_connected->AsBool())
+      {
+      m_pending_notify_alert = true;
+      return false; // No connection, so leave it queued for when we do
+      }
+    std::ostringstream buffer;
+    buffer
+      << "MP-0 PE"
+      << entry->GetValue(COMMAND_RESULT_NORMAL);
+    Transmit(buffer.str().c_str());
+    return true; // Mark it as read, as we've managed to send it
+    }
+  else if (strcmp(type->m_name,"data")==0)
+    {
+    // Data notifications
+    m_pending_notify_data = true;
+    return false; // We just flag it for later transmission
     }
   else
     return true; // Mark it read, as no interest to us
@@ -1191,6 +1312,11 @@ OvmsServerV2::OvmsServerV2(const char* name)
   m_now_environment = false;
   m_now_capabilities = false;
   m_now_group = false;
+
+  m_pending_notify_info = false;
+  m_pending_notify_alert = false;
+  m_pending_notify_data = false;
+  m_pending_notify_data_last = 0;
 
   #undef bind  // Kludgy, but works
   using std::placeholders::_1;
