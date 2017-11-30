@@ -53,8 +53,8 @@ class OvmsNotifyEntry
 
   public:
     virtual const char* GetValue(int verbosity);
+    virtual bool IsRead(size_t reader);
     virtual bool IsAllRead();
-    virtual void MarkRead(size_t reader);
 
   public:
     std::bitset<NOTIFY_MAX_READERS> m_readers;
@@ -100,6 +100,8 @@ class OvmsNotifyType
     uint32_t QueueEntry(OvmsNotifyEntry* entry);
     uint32_t AllocateNextID();
     void ClearReader(size_t reader);
+    OvmsNotifyEntry* FirstUnreadEntry(size_t reader, uint32_t floor);
+    void MarkRead(size_t reader, OvmsNotifyEntry* entry);
 
   protected:
     void Cleanup(OvmsNotifyEntry* entry);

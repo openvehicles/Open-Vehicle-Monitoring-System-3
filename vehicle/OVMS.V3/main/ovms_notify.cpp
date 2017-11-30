@@ -115,15 +115,14 @@ OvmsNotifyEntry::~OvmsNotifyEntry()
   {
   }
 
+bool OvmsNotifyEntry::IsRead(size_t reader)
+  {
+  return !m_readers[reader];
+  }
+
 bool OvmsNotifyEntry::IsAllRead()
   {
   return (m_readers.count() == 0);
-  }
-
-void OvmsNotifyEntry::MarkRead(size_t reader)
-  {
-  m_readers.reset(reader);
-  ESP_LOGD(TAG,"Entry %d reader %d read, and now has %d readers pending",m_id,reader,m_readers.count());
   }
 
 const char* OvmsNotifyEntry::GetValue(int verbosity)
@@ -226,10 +225,27 @@ void OvmsNotifyType::ClearReader(size_t reader)
       {
       OvmsNotifyEntry* e = ite->second;
       ++ite;
-      e->MarkRead(reader);
+      e->m_readers.reset(reader);
       Cleanup(e);
       }
     }
+  }
+
+OvmsNotifyEntry* OvmsNotifyType::FirstUnreadEntry(size_t reader, uint32_t floor)
+  {
+  for (NotifyEntryMap_t::iterator ite=m_entries.begin(); ite!=m_entries.end(); ++ite)
+    {
+    OvmsNotifyEntry* e = ite->second;
+    if ((!e->IsRead(reader))&&(e->m_id > floor))
+      return e;
+    }
+  return NULL;
+  }
+
+void OvmsNotifyType::MarkRead(size_t reader, OvmsNotifyEntry* entry)
+  {
+  entry->m_readers.reset(reader);
+  Cleanup(entry);
   }
 
 void OvmsNotifyType::Cleanup(OvmsNotifyEntry* entry)
@@ -340,7 +356,7 @@ void OvmsNotify::NotifyReaders(OvmsNotifyType* type, OvmsNotifyEntry* entry)
     {
     OvmsNotifyCallbackEntry* mc = itc->second;
     bool result = mc->m_callback(type,entry);
-    if (result) entry->MarkRead(mc->m_reader);
+    if (result) entry->m_readers.reset(mc->m_reader);
     }
   }
 
