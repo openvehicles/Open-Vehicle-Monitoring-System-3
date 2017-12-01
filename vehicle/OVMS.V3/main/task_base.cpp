@@ -25,7 +25,12 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
+#include "ovms_log.h"
+static const char *TAG = "task_base";
 
+#include <stdio.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "task_base.h"
 #include "ovms_module.h"
 
@@ -108,14 +113,27 @@ void Parent::DeleteChildren()
     }
   }
 
-TaskBase::TaskBase(Parent* parent)
+TaskBase::TaskBase(const char* name, int stack, Parent* parent)
   {
+  m_name = name;
+  m_stack = stack;
   m_parent = parent;
   m_taskid = 0;
   }
 
 TaskBase::~TaskBase()
   {
+  }
+
+bool TaskBase::Instantiate()
+  {
+  if (CreateTaskPinned(1, m_name, m_stack) != pdPASS)
+    {
+    // Use printf here because ESP_LOG requires heap allocations
+    ::printf("\nInsufficient memory to create %s task\n", m_name);
+    return false;
+    }
+  return true;
   }
 
 BaseType_t TaskBase::CreateTask(const char* name, int stack, UBaseType_t priority)
@@ -136,6 +154,7 @@ void TaskBase::Task(void *object)
   {
   TaskBase* me = (TaskBase*)object;
   me->Service();
+  ESP_LOGI(TAG, "Task %s finished with %u stack free", me->m_name, uxTaskGetStackHighWaterMark(me->m_taskid));
   me->DeleteFromParent();
   while (true); // Illegal instruction abort occurs if this function returns
   }

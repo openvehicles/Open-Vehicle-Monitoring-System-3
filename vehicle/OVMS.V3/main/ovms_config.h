@@ -48,12 +48,13 @@ class OvmsConfigParam
   public:
     void SetValue(std::string instance, std::string value);
     void DeleteParam();
-    void DeleteInstance(std::string instance);
+    bool DeleteInstance(std::string instance);
     std::string GetValue(std::string instance);
     bool IsDefined(std::string instance);
     bool Writable();
     bool Readable();
     std::string GetName();
+    const char* GetTitle() { return m_title.c_str(); }
     void Load();
 
   protected:

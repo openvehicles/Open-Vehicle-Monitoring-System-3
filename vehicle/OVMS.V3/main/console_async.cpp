@@ -47,7 +47,7 @@ ConsoleAsync* ConsoleAsync::Instance()
   return m_instance;
   }
 
-ConsoleAsync::ConsoleAsync()
+ConsoleAsync::ConsoleAsync() : TaskBase("AsyncConsole", 4000)
   {
   uart_config_t uart_config =
     {
@@ -69,16 +69,6 @@ ConsoleAsync::ConsoleAsync()
 
 ConsoleAsync::~ConsoleAsync()
   {
-  }
-
-bool ConsoleAsync::Instantiate()
-  {
-  if (CreateTaskPinned(1, "AsyncConsole", 4000) != pdPASS)
-    {
-    printf("\nInsufficient memory to create async console task\n");
-    return false;
-    }
-  return true;
   }
 
 void ConsoleAsync::Service()
