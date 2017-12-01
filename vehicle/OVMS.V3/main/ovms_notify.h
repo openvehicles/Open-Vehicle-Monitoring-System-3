@@ -52,7 +52,7 @@ class OvmsNotifyEntry
     virtual ~OvmsNotifyEntry();
 
   public:
-    virtual const char* GetValue(int verbosity);
+    virtual const std::string GetValue(int verbosity);
     virtual bool IsRead(size_t reader);
     virtual bool IsAllRead();
 
@@ -69,10 +69,10 @@ class OvmsNotifyEntryString : public OvmsNotifyEntry
     virtual ~OvmsNotifyEntryString();
 
   public:
-    virtual const char* GetValue(int verbosity);
+    virtual const std::string GetValue(int verbosity);
 
   public:
-     char* m_value;
+     std::string m_value;
   };
 
 class OvmsNotifyEntryCommand : public OvmsNotifyEntry
@@ -82,10 +82,11 @@ class OvmsNotifyEntryCommand : public OvmsNotifyEntry
     virtual ~OvmsNotifyEntryCommand();
 
   public:
-    virtual const char* GetValue(int verbosity);
+    virtual const std::string GetValue(int verbosity);
 
   public:
      char* m_cmd;
+     std::string m_value;
   };
 
 typedef std::map<uint32_t, OvmsNotifyEntry*> NotifyEntryMap_t;

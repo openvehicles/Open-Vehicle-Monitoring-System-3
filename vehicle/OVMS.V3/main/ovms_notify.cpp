@@ -75,7 +75,7 @@ void notify_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
         {
         OvmsNotifyEntry* e = ite->second;
         writer->printf("    %d: %s\n",
-          ite->first, e->GetValue(COMMAND_RESULT_VERBOSE));
+          ite->first, e->GetValue(COMMAND_RESULT_VERBOSE).c_str());
         }
       }
     }
@@ -126,9 +126,9 @@ bool OvmsNotifyEntry::IsAllRead()
   return (m_readers.count() == 0);
   }
 
-const char* OvmsNotifyEntry::GetValue(int verbosity)
+const std::string OvmsNotifyEntry::GetValue(int verbosity)
   {
-  return "";
+  return std::string("");
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -137,20 +137,14 @@ const char* OvmsNotifyEntry::GetValue(int verbosity)
 
 OvmsNotifyEntryString::OvmsNotifyEntryString(const char* value)
   {
-  m_value = new char[strlen(value)+1];
-  strcpy(m_value,value);
+  m_value = std::string(value);
   }
 
 OvmsNotifyEntryString::~OvmsNotifyEntryString()
   {
-  if (m_value)
-    {
-    delete [] m_value;
-    m_value = NULL;
-    }
   }
 
-const char* OvmsNotifyEntryString::GetValue(int verbosity)
+const std::string OvmsNotifyEntryString::GetValue(int verbosity)
   {
   return m_value;
   }
@@ -174,16 +168,21 @@ OvmsNotifyEntryCommand::~OvmsNotifyEntryCommand()
     }
   }
 
-const char* OvmsNotifyEntryCommand::GetValue(int verbosity)
+const std::string OvmsNotifyEntryCommand::GetValue(int verbosity)
   {
-  std::string cmdline(m_cmd);
-  cmdline.append("\n");
-  BufferedShell* bs = new BufferedShell(false, verbosity);
-  bs->ProcessChars(cmdline.c_str(), cmdline.size());
-  bs->write("\n", 1);
-  char* ret = bs->Dump();
-  delete bs;
-  return ret;
+  if (m_value.empty())
+    {
+    std::string cmdline(m_cmd);
+    cmdline.append("\n");
+    BufferedShell* bs = new BufferedShell(false, verbosity);
+    bs->ProcessChars(cmdline.c_str(), cmdline.size());
+    bs->write("\n", 1);
+    char* ret = bs->Dump();
+    m_value = std::string(ret);
+    delete ret;
+    delete bs;
+    }
+  return m_value;
   }
 
 ////////////////////////////////////////////////////////////////////////
