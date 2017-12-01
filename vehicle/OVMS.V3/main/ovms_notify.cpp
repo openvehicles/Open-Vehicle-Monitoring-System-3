@@ -172,14 +172,12 @@ const std::string OvmsNotifyEntryCommand::GetValue(int verbosity)
   {
   if (m_value.empty())
     {
-    std::string cmdline(m_cmd);
-    cmdline.append("\n");
     BufferedShell* bs = new BufferedShell(false, verbosity);
-    bs->ProcessChars(cmdline.c_str(), cmdline.size());
-    bs->write("\n", 1);
+    bs->ProcessChars(m_cmd, strlen(m_cmd));
+    bs->ProcessChar('\n');
     char* ret = bs->Dump();
     m_value = std::string(ret);
-    delete ret;
+    free(ret);
     delete bs;
     }
   return m_value;
