@@ -38,6 +38,7 @@ static const char *TAG = "notify";
 #include "ovms_notify.h"
 #include "ovms_command.h"
 #include "ovms_events.h"
+#include "buffered_shell.h"
 #include "string.h"
 
 using namespace std;
@@ -175,7 +176,14 @@ OvmsNotifyEntryCommand::~OvmsNotifyEntryCommand()
 
 const char* OvmsNotifyEntryCommand::GetValue(int verbosity)
   {
-  return m_cmd; // TODO: Should be execute command, and return result
+  std::string cmdline(m_cmd);
+  cmdline.append("\n");
+  BufferedShell* bs = new BufferedShell(false, verbosity);
+  bs->ProcessChars(cmdline.c_str(), cmdline.size());
+  bs->write("\n", 1);
+  char* ret = bs->Dump();
+  delete bs;
+  return ret;
   }
 
 ////////////////////////////////////////////////////////////////////////
