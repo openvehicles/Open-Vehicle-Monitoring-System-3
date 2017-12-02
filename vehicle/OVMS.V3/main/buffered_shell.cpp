@@ -171,6 +171,26 @@ void BufferedShell::Output(OvmsWriter* writer)
   m_output = NULL;
   }
 
+// Concatenate all of the buffered output into the provided string.
+// This releases the LogBuffers object so it is freed.
+void BufferedShell::Dump(std::string& buf)
+  {
+  if (!m_output)
+    return;
+  size_t total = 0;
+  for (LogBuffers::iterator i = m_output->begin(); i != m_output->end(); ++i)
+    total += strlen(*i);
+  if (m_print)
+    ++total;
+  buf.reserve(total);
+  for (LogBuffers::iterator i = m_output->begin(); i != m_output->end(); ++i)
+    buf.append(*i);
+  if (m_print)
+    buf.append("\n");
+  m_output->release();
+  m_output = NULL;
+  }
+
 // Concatenate all of the buffered output into one contiguous buffer allocated
 // from the heap.  This releases the LogBuffers object so it is freed.
 char* BufferedShell::Dump()
