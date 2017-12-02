@@ -65,8 +65,8 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void PollStart(void);
     void PollContinue(CAN_frame_t* p_frame);
     void SendCanMessage(uint16_t id, uint8_t length, uint8_t *data);
-    void Ticker1(std::string event, void* data);
-    void Ticker60(std::string event, void* data);
+    void Ticker1(uint32_t ticker);
+    void Ticker60(uint32_t ticker);
 
     PollState nl_poll_state = IDLE;
   };

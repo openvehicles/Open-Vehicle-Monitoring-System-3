@@ -58,8 +58,6 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
 
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicleNissanLeaf::Ticker1, this, _1, _2));
-  MyEvents.RegisterEvent(TAG, "ticker.60", std::bind(&OvmsVehicleNissanLeaf::Ticker60, this, _1, _2));
   }
 
 OvmsVehicleNissanLeaf::~OvmsVehicleNissanLeaf()
@@ -436,7 +434,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
   {
   }
 
-void OvmsVehicleNissanLeaf::Ticker1(std::string event, void* data)
+void OvmsVehicleNissanLeaf::Ticker1(uint32_t ticker)
   {
   // FIXME
   // detecting that on is stale and therefor should turn off probably shouldn't
@@ -451,7 +449,7 @@ void OvmsVehicleNissanLeaf::Ticker1(std::string event, void* data)
     }
   }
 
-void OvmsVehicleNissanLeaf::Ticker60(std::string event, void* data)
+void OvmsVehicleNissanLeaf::Ticker60(uint32_t ticker)
   {
   if (StandardMetrics.ms_v_env_on->AsBool())
     {
