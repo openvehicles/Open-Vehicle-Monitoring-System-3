@@ -1132,6 +1132,38 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
   Transmit(buffer.str().c_str());
   }
 
+/**
+ * mp_encode: encode string for MP transport;
+ *  - replace '\r\n' by '\r'
+ *  - replace '\n' by '\r'
+ *  - replace ',' by ';'
+ */
+std::string mp_encode(const std::string text)
+  {
+  std::string res;
+  char lc = 0;
+  res.reserve(text.length());
+  for (int i=0; i<text.length(); i++)
+    {
+    if (text[i] == '\n')
+      {
+      if (lc != '\r')
+        res += '\r';
+      }
+    else if (text[i] == ',')
+      {
+      res += ';';
+      }
+    else
+      {
+      res += text[i];
+      }
+    
+    lc = text[i];
+    }
+  return res;
+  }
+
 void OvmsServerV2::TransmitNotifyInfo()
   {
   m_pending_notify_info = false;
@@ -1149,7 +1181,7 @@ void OvmsServerV2::TransmitNotifyInfo()
     std::ostringstream buffer;
     buffer
       << "MP-0 PA"
-      << e->GetValue();
+      << mp_encode(e->GetValue());
     Transmit(buffer.str().c_str());
 
     info->MarkRead(MyOvmsServerV2Reader, e);
@@ -1173,7 +1205,7 @@ void OvmsServerV2::TransmitNotifyAlert()
     std::ostringstream buffer;
     buffer
       << "MP-0 PE"
-      << e->GetValue();
+      << mp_encode(e->GetValue());
     Transmit(buffer.str().c_str());
 
     alert->MarkRead(MyOvmsServerV2Reader, e);
@@ -1250,7 +1282,7 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     std::ostringstream buffer;
     buffer
       << "MP-0 PA"
-      << entry->GetValue();
+      << mp_encode(entry->GetValue());
     Transmit(buffer.str().c_str());
     return true; // Mark it as read, as we've managed to send it
     }
@@ -1265,7 +1297,7 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     std::ostringstream buffer;
     buffer
       << "MP-0 PE"
-      << entry->GetValue();
+      << mp_encode(entry->GetValue());
     Transmit(buffer.str().c_str());
     return true; // Mark it as read, as we've managed to send it
     }
