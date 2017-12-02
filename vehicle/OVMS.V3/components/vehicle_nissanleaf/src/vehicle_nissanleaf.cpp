@@ -58,7 +58,6 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
 
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicleNissanLeaf::Ticker1, this, _1, _2));
   }
 
 OvmsVehicleNissanLeaf::~OvmsVehicleNissanLeaf()
@@ -78,16 +77,17 @@ void vehicle_nissanleaf_car_on(bool isOn)
   StandardMetrics.ms_v_env_on->SetValue(isOn);
   StandardMetrics.ms_v_env_awake->SetValue(isOn);
   // We don't know if handbrake is on or off, but it's usually off when the car is on.
-  StandardMetrics.ms_v_env_handbrake->SetValue(isOn);
-  if (isOn)
-    {
-    StandardMetrics.ms_v_door_chargeport->SetValue(false);
-    StandardMetrics.ms_v_charge_pilot->SetValue(false);
-    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-    // TODO
-    // car_chargestate = 0;
-    // car_chargesubstate = 0;
-    }
+  StandardMetrics.ms_v_env_handbrake->SetValue(!isOn);
+// TODO this is supposed to be a one-shot but car_parktime doesn't work in v3 yet
+// further it's not clear if we even need to do this
+//  if (isOn && car_parktime != 0)
+//    {
+//    StandardMetrics.ms_v_door_chargeport->SetValue(false);
+//    StandardMetrics.ms_v_charge_pilot->SetValue(false);
+//    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+//    StandardMetrics.ms_v_charge_state->SetValue("stopped");
+//    StandardMetrics.ms_v_charge_substate->SetValue("stopped");
+//    }
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -103,15 +103,13 @@ void vehicle_nissanleaf_charger_status(ChargerStatus status)
     {
     case CHARGER_STATUS_IDLE:
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-      // TODO
-      // car_chargestate = 0;
-      // car_chargesubstate = 0;
+      StandardMetrics.ms_v_charge_state->SetValue("stopped");
+      StandardMetrics.ms_v_charge_substate->SetValue("stopped");
       break;
     case CHARGER_STATUS_PLUGGED_IN_TIMER_WAIT:
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-      // TODO
-      // car_chargestate = 0;
-      // car_chargesubstate = 0;
+      StandardMetrics.ms_v_charge_state->SetValue("stopped");
+      StandardMetrics.ms_v_charge_substate->SetValue("stopped");
       break;
     case CHARGER_STATUS_QUICK_CHARGING:
     case CHARGER_STATUS_CHARGING:
@@ -120,9 +118,8 @@ void vehicle_nissanleaf_charger_status(ChargerStatus status)
         StandardMetrics.ms_v_charge_kwh->SetValue(0); // Reset charge kWh
         }
       StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-      // TODO
-      // car_chargestate = 1;
-      // car_chargesubstate = 3; // Charging by request
+      StandardMetrics.ms_v_charge_state->SetValue("charging");
+      StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
 
       // TODO only use battery current for Quick Charging, for regular charging
       // we should return AC line current and voltage, not battery
@@ -151,9 +148,8 @@ void vehicle_nissanleaf_charger_status(ChargerStatus status)
       // coded, don't zero it out when we're plugged in but not charging
       StandardMetrics.ms_v_charge_voltage->SetValue(0);
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-      // TODO
-      // car_chargestate = 4; // Charge DONE
-      // car_chargesubstate = 3; // Charging by request
+      StandardMetrics.ms_v_charge_state->SetValue("done");
+      StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
       break;
     }
   if (status != CHARGER_STATUS_CHARGING && status != CHARGER_STATUS_QUICK_CHARGING)
@@ -162,6 +158,83 @@ void vehicle_nissanleaf_charger_status(ChargerStatus status)
     // TODO the charger probably knows the line voltage, when we find where it's
     // coded, don't zero it out when we're plugged in but not charging
     StandardMetrics.ms_v_charge_voltage->SetValue(0);
+    }
+  }
+
+////////////////////////////////////////////////////////////////////////
+// PollStart()
+// Send the initial message to poll for data. Further data is requested
+// in vehicle_nissanleaf_poll_continue() after the recept of each page.
+//
+
+void OvmsVehicleNissanLeaf::PollStart(void)
+  {
+  // Request Group 1
+  uint8_t data[] = {0x02, 0x21, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00};
+  nl_poll_state = ZERO;
+  m_can1->WriteStandard(0x79b, 8, data);
+  }
+
+////////////////////////////////////////////////////////////////////////
+// vehicle_nissanleaf_poll_continue()
+// Process a 0x7bb polling response and request the next page
+//
+
+void OvmsVehicleNissanLeaf::PollContinue(CAN_frame_t* p_frame)
+  {
+  uint8_t *d = p_frame->data.u8;
+  uint16_t hx;
+  uint32_t ah;
+  if (nl_poll_state == IDLE)
+    {
+    // we're not expecting anything, maybe something else is polling?
+    return;
+    }
+  if ((d[0] & 0x0f) != nl_poll_state)
+    {
+    // not the page we were expecting, abort
+    nl_poll_state = IDLE;
+    return;
+    }
+
+  switch (nl_poll_state)
+    {
+    case IDLE:
+      // this isn't possible due to the idle check above
+      abort();
+    case ZERO:
+    case ONE:
+    case TWO:
+    case THREE:
+      // TODO this might not be idomatic C++ but I want to keep the delta to
+      // the v2 code small until the porting is finished
+      nl_poll_state = static_cast<PollState>(static_cast<int>(nl_poll_state) + 1);
+      break;
+    case FOUR:
+      hx = d[2];
+      hx = hx << 8;
+      hx = hx | d[3];
+      // LeafSpy calculates SOH by dividing Ah by the nominal capacity.
+      // Since SOH is derived from Ah, we don't bother storing it separately.
+      // Instead we store Ah in CAC (below) and store Hx in SOH.
+      StandardMetrics.ms_v_bat_soh->SetValue(hx / 100.0);
+      nl_poll_state = static_cast<PollState>(static_cast<int>(nl_poll_state) + 1);
+      break;
+    case FIVE:
+      ah = d[2];
+      ah = ah << 8;
+      ah = ah | d[3];
+      ah = ah << 8;
+      ah = ah | d[4];
+      StandardMetrics.ms_v_bat_cac->SetValue(ah / 10000.0);
+      nl_poll_state = IDLE;
+      break;
+    }
+  if (nl_poll_state != IDLE)
+    {
+    // request the next page of data
+    uint8_t next[] = {0x30, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    this->m_can1->WriteStandard(0x79b, 8, next);
     }
   }
 
@@ -243,7 +316,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
         // can_databuffer[6] is the J1772 pilot current, 0.5A per bit
         // TODO enum?
-        StandardMetrics.ms_v_charge_type->SetValue("J1772");
+        StandardMetrics.ms_v_charge_type->SetValue("type1");
         uint8_t current_limit = (d[6] + 1) / 2;
         StandardMetrics.ms_v_charge_climit->SetValue(current_limit);
         StandardMetrics.ms_v_charge_pilot->SetValue(current_limit != 0);
@@ -309,7 +382,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
         // Quick Charging
         // TODO enum?
-        StandardMetrics.ms_v_charge_type->SetValue("CHAdeMO");
+        StandardMetrics.ms_v_charge_type->SetValue("chademo");
         StandardMetrics.ms_v_charge_climit->SetValue(120);
         StandardMetrics.ms_v_charge_pilot->SetValue(true);
         StandardMetrics.ms_v_door_chargeport->SetValue(true);
@@ -319,7 +392,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         // Maybe J1772 is connected
         // can_databuffer[2] is the J1772 maximum available current, 0 if we're not plugged in
         // TODO enum?
-        StandardMetrics.ms_v_charge_type->SetValue("J1772");
+        StandardMetrics.ms_v_charge_type->SetValue("type1");
         uint8_t current_limit = d[2] / 5;
         StandardMetrics.ms_v_charge_climit->SetValue(current_limit);
         StandardMetrics.ms_v_charge_pilot->SetValue(current_limit != 0);
@@ -351,6 +424,9 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_bat_temp->SetValue(d[2] / 2 - 40);
         }
       break;
+    case 0x7bb:
+      PollContinue(p_frame);
+      break;
     }
   }
 
@@ -358,7 +434,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
   {
   }
 
-void OvmsVehicleNissanLeaf::Ticker1(std::string event, void* data)
+void OvmsVehicleNissanLeaf::Ticker1(uint32_t ticker)
   {
   // FIXME
   // detecting that on is stale and therefor should turn off probably shouldn't
@@ -370,6 +446,16 @@ void OvmsVehicleNissanLeaf::Ticker1(std::string event, void* data)
   if (StandardMetrics.ms_v_env_on->IsStale())
     {
     vehicle_nissanleaf_car_on(false);
+    }
+  }
+
+void OvmsVehicleNissanLeaf::Ticker60(uint32_t ticker)
+  {
+  if (StandardMetrics.ms_v_env_on->AsBool())
+    {
+    // we only poll while the car is on -- polling at other times causes a
+    // relay to click
+    PollStart();
     }
   }
 
