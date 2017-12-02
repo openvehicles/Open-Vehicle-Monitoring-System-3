@@ -361,7 +361,7 @@ esp_err_t canbus::Write(const CAN_frame_t* p_frame)
   return ESP_OK; // Not implemented by base implementation
   }
 
-esp_err_t canbus::Write(uint16_t id, uint8_t length, uint8_t *data)
+esp_err_t canbus::WriteStandard(uint16_t id, uint8_t length, uint8_t *data)
   {
   if (length > 8)
     {

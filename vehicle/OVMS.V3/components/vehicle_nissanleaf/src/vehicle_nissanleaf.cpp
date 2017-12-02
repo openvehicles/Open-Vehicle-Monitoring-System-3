@@ -174,7 +174,7 @@ void OvmsVehicleNissanLeaf::PollStart(void)
   // Request Group 1
   uint8_t data[] = {0x02, 0x21, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00};
   nl_poll_state = ZERO;
-  m_can1->Write(0x79b, 8, data);
+  m_can1->WriteStandard(0x79b, 8, data);
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -236,7 +236,7 @@ void OvmsVehicleNissanLeaf::PollContinue(CAN_frame_t* p_frame)
     {
     // request the next page of data
     uint8_t next[] = {0x30, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    this->m_can1->Write(0x79b, 8, next);
+    this->m_can1->WriteStandard(0x79b, 8, next);
     }
   }
 
