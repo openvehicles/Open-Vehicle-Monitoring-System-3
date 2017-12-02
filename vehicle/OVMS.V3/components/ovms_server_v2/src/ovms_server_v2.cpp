@@ -1149,7 +1149,7 @@ void OvmsServerV2::TransmitNotifyInfo()
     std::ostringstream buffer;
     buffer
       << "MP-0 PA"
-      << e->GetValue(COMMAND_RESULT_NORMAL);
+      << e->GetValue();
     Transmit(buffer.str().c_str());
 
     info->MarkRead(MyOvmsServerV2Reader, e);
@@ -1173,7 +1173,7 @@ void OvmsServerV2::TransmitNotifyAlert()
     std::ostringstream buffer;
     buffer
       << "MP-0 PE"
-      << e->GetValue(COMMAND_RESULT_NORMAL);
+      << e->GetValue();
     Transmit(buffer.str().c_str());
 
     alert->MarkRead(MyOvmsServerV2Reader, e);
@@ -1201,7 +1201,7 @@ void OvmsServerV2::TransmitNotifyData()
       << ","
       << monotonictime - e->m_created
       << ","
-      << e->GetValue(COMMAND_RESULT_NORMAL);
+      << e->GetValue();
     Transmit(buffer.str().c_str());
     m_pending_notify_data_last = e->m_id;
     }
@@ -1250,7 +1250,7 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     std::ostringstream buffer;
     buffer
       << "MP-0 PA"
-      << entry->GetValue(COMMAND_RESULT_NORMAL);
+      << entry->GetValue();
     Transmit(buffer.str().c_str());
     return true; // Mark it as read, as we've managed to send it
     }
@@ -1265,7 +1265,7 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     std::ostringstream buffer;
     buffer
       << "MP-0 PE"
-      << entry->GetValue(COMMAND_RESULT_NORMAL);
+      << entry->GetValue();
     Transmit(buffer.str().c_str());
     return true; // Mark it as read, as we've managed to send it
     }
@@ -1325,7 +1325,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
 
   if (MyOvmsServerV2Reader == 0)
     {
-    MyOvmsServerV2Reader = MyNotify.RegisterReader(TAG, std::bind(OvmsServerV2ReaderCallback, _1, _2));
+    MyOvmsServerV2Reader = MyNotify.RegisterReader(TAG, COMMAND_RESULT_NORMAL, std::bind(OvmsServerV2ReaderCallback, _1, _2));
     }
   }
 

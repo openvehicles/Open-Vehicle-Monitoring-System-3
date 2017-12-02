@@ -74,8 +74,8 @@ void notify_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
       for (NotifyEntryMap_t::iterator ite=mt->m_entries.begin(); ite!=mt->m_entries.end(); ++ite)
         {
         OvmsNotifyEntry* e = ite->second;
-        writer->printf("    %d: %s\n",
-          ite->first, e->GetValue(COMMAND_RESULT_VERBOSE).c_str());
+        writer->printf("    %d: [%d pending] %s\n",
+          ite->first, e->m_readers.count(), e->GetValue().c_str());
         }
       }
     }
@@ -103,13 +103,8 @@ void notify_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 OvmsNotifyEntry::OvmsNotifyEntry()
   {
   m_readers.reset();
-  for (size_t k = 0; k < MyNotify.CountReaders(); k++)
-    {
-    m_readers.set(k+1);
-    }
   m_id = 0;
   m_created = monotonictime;
-  ESP_LOGD(TAG,"Created entry has %d readers pending",m_readers.count());
   }
 
 OvmsNotifyEntry::~OvmsNotifyEntry()
@@ -126,7 +121,7 @@ bool OvmsNotifyEntry::IsAllRead()
   return (m_readers.count() == 0);
   }
 
-const std::string OvmsNotifyEntry::GetValue(int verbosity)
+const std::string OvmsNotifyEntry::GetValue()
   {
   return std::string("");
   }
@@ -144,7 +139,7 @@ OvmsNotifyEntryString::~OvmsNotifyEntryString()
   {
   }
 
-const std::string OvmsNotifyEntryString::GetValue(int verbosity)
+const std::string OvmsNotifyEntryString::GetValue()
   {
   return m_value;
   }
@@ -153,10 +148,18 @@ const std::string OvmsNotifyEntryString::GetValue(int verbosity)
 // OvmsNotifyEntryCommand is the notification entry for a command
 // callback type.
 
-OvmsNotifyEntryCommand::OvmsNotifyEntryCommand(const char* cmd)
+OvmsNotifyEntryCommand::OvmsNotifyEntryCommand(int verbosity, const char* cmd)
   {
   m_cmd = new char[strlen(cmd)+1];
   strcpy(m_cmd,cmd);
+  
+  BufferedShell* bs = new BufferedShell(false, verbosity);
+  bs->ProcessChars(m_cmd, strlen(m_cmd));
+  bs->ProcessChar('\n');
+  char* ret = bs->Dump();
+  m_value = std::string(ret);
+  free(ret);
+  delete bs;
   }
 
 OvmsNotifyEntryCommand::~OvmsNotifyEntryCommand()
@@ -168,18 +171,8 @@ OvmsNotifyEntryCommand::~OvmsNotifyEntryCommand()
     }
   }
 
-const std::string OvmsNotifyEntryCommand::GetValue(int verbosity)
+const std::string OvmsNotifyEntryCommand::GetValue()
   {
-  if (m_value.empty())
-    {
-    BufferedShell* bs = new BufferedShell(false, verbosity);
-    bs->ProcessChars(m_cmd, strlen(m_cmd));
-    bs->ProcessChar('\n');
-    char* ret = bs->Dump();
-    m_value = std::string(ret);
-    free(ret);
-    delete bs;
-    }
   return m_value;
   }
 
@@ -282,10 +275,11 @@ void OvmsNotifyType::Cleanup(OvmsNotifyEntry* entry)
 // OvmsNotifyCallbackEntry contains the callback function for a
 // particular reader
 
-OvmsNotifyCallbackEntry::OvmsNotifyCallbackEntry(const char* caller, size_t reader, OvmsNotifyCallback_t callback)
+OvmsNotifyCallbackEntry::OvmsNotifyCallbackEntry(const char* caller, size_t reader, int verbosity, OvmsNotifyCallback_t callback)
   {
   m_caller = caller;
   m_reader = reader;
+  m_verbosity = verbosity;
   m_callback = callback;
   }
 
@@ -328,11 +322,11 @@ OvmsNotify::~OvmsNotify()
   {
   }
 
-size_t OvmsNotify::RegisterReader(const char* caller, OvmsNotifyCallback_t callback)
+size_t OvmsNotify::RegisterReader(const char* caller, int verbosity, OvmsNotifyCallback_t callback)
   {
   size_t reader = m_nextreader++;
 
-  m_readers[caller] = new OvmsNotifyCallbackEntry(caller,reader,callback);
+  m_readers[caller] = new OvmsNotifyCallbackEntry(caller, reader, verbosity, callback);
 
   return reader;
   }
@@ -395,8 +389,27 @@ uint32_t OvmsNotify::NotifyString(const char* type, const char* value)
     }
 
   if (m_trace) ESP_LOGI(TAG, "Raise text %s: %s", type, value);
+  
+  if (m_readers.size() == 0)
+    {
+    ESP_LOGD(TAG, "Abort: no readers");
+    return 0;
+    }
+  
+  // create message:
+  OvmsNotifyEntry* msg = (OvmsNotifyEntry*) new OvmsNotifyEntryString(value);
 
-  return mt->QueueEntry((OvmsNotifyEntry*)new OvmsNotifyEntryString(value));
+  // add all currently active readers accepting the message length:
+  for (OvmsNotifyCallbackMap_t::iterator itc=m_readers.begin(); itc!=m_readers.end(); ++itc)
+    {
+    OvmsNotifyCallbackEntry* mc = itc->second;
+    if (strlen(value) <= mc->m_verbosity)
+      msg->m_readers.set(mc->m_reader);
+    }
+  
+  ESP_LOGD(TAG, "Created entry with length %d has %d readers pending", strlen(value), msg->m_readers.count());
+  
+  return mt->QueueEntry(msg);
   }
 
 uint32_t OvmsNotify::NotifyCommand(const char* type, const char* cmd)
@@ -409,6 +422,40 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* cmd)
     }
 
   if (m_trace) ESP_LOGI(TAG, "Raise command %s: %s", type, cmd);
-
-  return mt->QueueEntry((OvmsNotifyEntry*)new OvmsNotifyEntryCommand(cmd));
+  
+  if (m_readers.size() == 0)
+    {
+    ESP_LOGD(TAG, "Abort: no readers");
+    return 0;
+    }
+  
+  std::map<int, OvmsNotifyEntryCommand*> verbosity_msgs;
+  
+  // fetch all verbosity levels needed by readers:
+  for (OvmsNotifyCallbackMap_t::iterator itc=m_readers.begin(); itc!=m_readers.end(); ++itc)
+    {
+    OvmsNotifyCallbackEntry* mc = itc->second;
+    
+    OvmsNotifyEntryCommand *msg = verbosity_msgs[mc->m_verbosity];
+    if (!msg)
+      {
+      // create verbosity level message:
+      msg = new OvmsNotifyEntryCommand(mc->m_verbosity, cmd);
+      verbosity_msgs[mc->m_verbosity] = msg;
+      }
+    
+    // add this reader to the verbosity level message:
+    msg->m_readers.set(mc->m_reader);
+    }
+  
+  // queue all verbosity level messages:
+  uint32_t queue_id = 0;
+  for (std::map<int, OvmsNotifyEntryCommand*>::iterator itm=verbosity_msgs.begin(); itm!=verbosity_msgs.end(); itm++)
+    {
+    OvmsNotifyEntryCommand *msg = itm->second;
+    ESP_LOGD(TAG, "Created entry for verbosity %d has %d readers pending", itm->first, msg->m_readers.count());
+    queue_id = mt->QueueEntry(msg);
+    }
+  
+  return queue_id;
   }

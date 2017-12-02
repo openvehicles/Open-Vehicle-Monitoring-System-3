@@ -52,7 +52,7 @@ class OvmsNotifyEntry
     virtual ~OvmsNotifyEntry();
 
   public:
-    virtual const std::string GetValue(int verbosity);
+    virtual const std::string GetValue();
     virtual bool IsRead(size_t reader);
     virtual bool IsAllRead();
 
@@ -69,7 +69,7 @@ class OvmsNotifyEntryString : public OvmsNotifyEntry
     virtual ~OvmsNotifyEntryString();
 
   public:
-    virtual const std::string GetValue(int verbosity);
+    virtual const std::string GetValue();
 
   public:
      std::string m_value;
@@ -78,11 +78,11 @@ class OvmsNotifyEntryString : public OvmsNotifyEntry
 class OvmsNotifyEntryCommand : public OvmsNotifyEntry
   {
   public:
-    OvmsNotifyEntryCommand(const char* cmd);
+    OvmsNotifyEntryCommand(int verbosity, const char* cmd);
     virtual ~OvmsNotifyEntryCommand();
 
   public:
-    virtual const std::string GetValue(int verbosity);
+    virtual const std::string GetValue();
 
   public:
      char* m_cmd;
@@ -119,12 +119,13 @@ typedef std::function<bool(OvmsNotifyType*,OvmsNotifyEntry*)> OvmsNotifyCallback
 class OvmsNotifyCallbackEntry
   {
   public:
-    OvmsNotifyCallbackEntry(const char* caller, size_t reader, OvmsNotifyCallback_t callback);
+    OvmsNotifyCallbackEntry(const char* caller, size_t reader, int verbosity, OvmsNotifyCallback_t callback);
     virtual ~OvmsNotifyCallbackEntry();
 
   public:
     const char *m_caller;
     size_t m_reader;
+    int m_verbosity;
     OvmsNotifyCallback_t m_callback;
   };
 
@@ -138,7 +139,7 @@ class OvmsNotify
     virtual ~OvmsNotify();
 
   public:
-    size_t RegisterReader(const char* caller, OvmsNotifyCallback_t callback);
+    size_t RegisterReader(const char* caller, int verbosity, OvmsNotifyCallback_t callback);
     void ClearReader(const char* caller);
     size_t CountReaders();
     OvmsNotifyType* GetType(const char* type);
