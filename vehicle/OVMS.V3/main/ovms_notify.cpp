@@ -156,9 +156,7 @@ OvmsNotifyEntryCommand::OvmsNotifyEntryCommand(int verbosity, const char* cmd)
   BufferedShell* bs = new BufferedShell(false, verbosity);
   bs->ProcessChars(m_cmd, strlen(m_cmd));
   bs->ProcessChar('\n');
-  char* ret = bs->Dump();
-  m_value = std::string(ret);
-  free(ret);
+  bs->Dump(m_value);
   delete bs;
   }
 
@@ -429,30 +427,65 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* cmd)
     return 0;
     }
   
-  std::map<int, OvmsNotifyEntryCommand*> verbosity_msgs;
+  // Strategy:
+  //  to minimize RAM usage and command calls we try to reuse higher verbosity messages
+  //  if their result length fits for lower verbosity readers as well.
   
-  // fetch all verbosity levels needed by readers:
-  for (OvmsNotifyCallbackMap_t::iterator itc=m_readers.begin(); itc!=m_readers.end(); ++itc)
+  std::map<int, OvmsNotifyEntryCommand*> verbosity_msgs;
+  std::map<int, OvmsNotifyEntryCommand*>::iterator itm;
+  OvmsNotifyCallbackMap_t::iterator itc;
+  OvmsNotifyEntryCommand *msg;
+  size_t msglen;
+  
+  // get verbosity levels needed by readers:
+  for (itc=m_readers.begin(); itc!=m_readers.end(); itc++)
     {
     OvmsNotifyCallbackEntry* mc = itc->second;
+    verbosity_msgs[mc->m_verbosity] = NULL;
+    }
+  
+  // fetch verbosity levels beginning at highest verbosity:
+  msg = NULL;
+  msglen = 0;
+  for (itm=verbosity_msgs.end(); itm!=verbosity_msgs.begin(); itm--)
+    {
+    int verbosity = itm->first;
     
-    OvmsNotifyEntryCommand *msg = verbosity_msgs[mc->m_verbosity];
-    if (!msg)
+    if (msg && msglen <= verbosity)
       {
-      // create verbosity level message:
-      msg = new OvmsNotifyEntryCommand(mc->m_verbosity, cmd);
-      verbosity_msgs[mc->m_verbosity] = msg;
+      // reuse last verbosity level message:
+      verbosity_msgs[verbosity] = msg;
       }
-    
-    // add this reader to the verbosity level message:
+    else
+      {
+      msg = verbosity_msgs[verbosity];
+      if (!msg)
+        {
+        // create verbosity level message:
+        msg = new OvmsNotifyEntryCommand(verbosity, cmd);
+        msglen = msg->GetValue().length();
+        verbosity_msgs[verbosity] = msg;
+        }
+      }
+    }
+  
+  // add readers:
+  for (itc=m_readers.begin(); itc!=m_readers.end(); itc++)
+    {
+    OvmsNotifyCallbackEntry* mc = itc->second;
+    msg = verbosity_msgs[mc->m_verbosity];
     msg->m_readers.set(mc->m_reader);
     }
   
-  // queue all verbosity level messages:
+  // queue all verbosity level messages beginning at lowest verbosity (fastest delivery):
+  msg = NULL;
   uint32_t queue_id = 0;
-  for (std::map<int, OvmsNotifyEntryCommand*>::iterator itm=verbosity_msgs.begin(); itm!=verbosity_msgs.end(); itm++)
+  for (itm=verbosity_msgs.begin(); itm!=verbosity_msgs.end(); itm++)
     {
-    OvmsNotifyEntryCommand *msg = itm->second;
+    if (itm->second == msg)
+      continue; // already queued
+    
+    msg = itm->second;
     ESP_LOGD(TAG, "Created entry for verbosity %d has %d readers pending", itm->first, msg->m_readers.count());
     queue_id = mt->QueueEntry(msg);
     }
