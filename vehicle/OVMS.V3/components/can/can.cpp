@@ -361,6 +361,45 @@ esp_err_t canbus::Write(const CAN_frame_t* p_frame)
   return ESP_OK; // Not implemented by base implementation
   }
 
+esp_err_t canbus::WriteExtended(uint32_t id, uint8_t length, uint8_t *data)
+  {
+  if (length > 8)
+    {
+    abort();
+    }
+
+  CAN_frame_t frame;
+  memset(&frame, 0, sizeof(frame));
+
+  frame.origin = this;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = length;
+  frame.FIR.B.FF = CAN_frame_ext;
+  frame.MsgID = id;
+  memcpy(frame.data.u8, data, length);
+  return this->Write(&frame);
+  }
+
+esp_err_t canbus::WriteStandard(uint16_t id, uint8_t length, uint8_t *data)
+  {
+  if (length > 8)
+    {
+    abort();
+    }
+
+  CAN_frame_t frame;
+  memset(&frame, 0, sizeof(frame));
+
+  frame.origin = this;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = length;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = id;
+  memcpy(frame.data.u8, data, length);
+  return this->Write(&frame);
+  }
+
+
 bool canbus::RxCallback(CAN_frame_t* frame)
   {
   return false;
