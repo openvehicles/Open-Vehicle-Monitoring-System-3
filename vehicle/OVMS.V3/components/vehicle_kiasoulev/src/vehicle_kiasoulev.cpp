@@ -3,7 +3,11 @@
 ;    Date:          22th October 2017
 ;
 ;    Changes:
-;    1.0  Initial stub
+;    0.1.0  Initial stub
+;			- Most basic functionality is ported from V2.
+;
+;		 0.1.1  03-Dec-2017 - Geir Øyvind Vælidalo
+;			- Added xks cells-command which prints out battery voltages
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
@@ -40,7 +44,7 @@ static const char *TAG = "v-kiasoulev";
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 
-#define VERSION "0.1.0"
+#define VERSION "0.1.1"
 
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
@@ -123,6 +127,7 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   cmd_xks = MyCommandApp.RegisterCommand("xks","Kia Soul EV",NULL,"",0,0,true);
   cmd_xks->RegisterCommand("trip","Show trip info", xks_trip, 0,0, false);
   cmd_xks->RegisterCommand("tpms","Tire pressure monitor", xks_tpms, 0,0, false);
+  cmd_xks->RegisterCommand("cells","Cell voltages", xks_cells, 0,0, false);
 
   PollSetPidList(m_can1,vehicle_kiasoulev_polls);
   PollSetState(0);
@@ -884,6 +889,56 @@ OvmsVehicle::vehicle_command_t OvmsVehicleKiaSoulEv::CommandUnlock(const char* p
   {
   SetDoorLock(true, pin);
   return Success;
+  }
+
+/**
+ * Print out the cell voltages.
+ */
+void xks_cells(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
+
+  metric_unit_t rangeUnit = Native; // TODO: use user config if set
+
+	writer->printf("CELLS\n");
+
+	// Minimum voltage
+	const char* minimum = soul->m_b_cell_volt_min->AsUnitString("-", rangeUnit, 2).c_str();
+  if (*minimum != '-')
+    writer->printf("Minimum %s #%d\n", minimum, soul->ks_battery_min_cell_voltage_no);
+
+	// Maximum voltage
+	const char* maximum = soul->m_b_cell_volt_max->AsUnitString("-", rangeUnit, 2).c_str();
+  if (*maximum != '-')
+    writer->printf("Maximum %s #%d\n", maximum, soul->ks_battery_max_cell_voltage_no);
+
+	// Total voltage
+	const char* total = StdMetrics.ms_v_bat_voltage->AsUnitString("-", rangeUnit, 2).c_str();
+  if (*total != '-')
+    writer->printf("Total %s\n", total);
+
+	// Min Detoriation
+	const char* minDet = soul->m_b_cell_det_min->AsUnitString("-", rangeUnit, 2).c_str();
+  if (*minDet != '-')
+    writer->printf("Min Det %s #%d\n", minDet, soul->ks_battery_min_detoriation_cell_no);
+
+  // Max Detoriation
+	const char* maxDet = soul->m_b_cell_det_max->AsUnitString("-", rangeUnit, 2).c_str();
+  if (*maxDet != '-')
+    writer->printf("Max Det %s #%d\n", maxDet, soul->ks_battery_max_detoriation_cell_no);
+
+  for (uint8_t i=0; i < sizeof (soul->ks_battery_cell_voltage); i++)
+  		{
+		if( i % 10 == 0)
+			writer->printf("\n%02d:",i+1);
+		writer->printf("%.*fV ", 2, (float)soul->ks_battery_cell_voltage[i]/50.0);
+		}
+	writer->printf("\n");
   }
 
 /**
