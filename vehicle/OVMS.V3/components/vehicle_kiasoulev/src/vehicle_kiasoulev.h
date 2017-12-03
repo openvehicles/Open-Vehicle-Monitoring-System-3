@@ -48,6 +48,7 @@ typedef union {
 } KsShiftBits;
 
 void xks_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xks_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
 class OvmsVehicleKiaSoulEv : public OvmsVehicle
   {
@@ -66,6 +67,7 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     virtual OvmsVehicle::vehicle_command_t CommandLock(const char* pin);
     virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
 
+    uint32_t ks_tpms_id[4];
 
   protected:
     void RequestNotify(unsigned int which);
@@ -108,7 +110,6 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 
     unsigned int ks_notifications = 0;
 
-    uint32_t ks_tpms_id[4];
     float ks_obc_volt;
     KsShiftBits ks_shift_bits;
 

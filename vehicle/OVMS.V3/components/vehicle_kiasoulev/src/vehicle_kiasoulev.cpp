@@ -122,6 +122,7 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   // init commands:
   cmd_xks = MyCommandApp.RegisterCommand("xks","Kia Soul EV",NULL,"",0,0,true);
   cmd_xks->RegisterCommand("trip","Show trip info", xks_trip, 0,0, false);
+  cmd_xks->RegisterCommand("tpms","Tire pressure monitor", xks_tpms, 0,0, false);
 
   PollSetPidList(m_can1,vehicle_kiasoulev_polls);
   PollSetState(0);
@@ -886,7 +887,49 @@ OvmsVehicle::vehicle_command_t OvmsVehicleKiaSoulEv::CommandUnlock(const char* p
   }
 
 /**
- * Print out information of current trip.
+ * Print out information of the tpms.
+ */
+void xks_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+
+  metric_unit_t rangeUnit = Native; // TODO: use user config if set
+
+  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
+
+	writer->printf("TPMS\n");
+
+	// Front left
+	const char* fl_pressure = StdMetrics.ms_v_tpms_fl_p->AsUnitString("-", rangeUnit, 1).c_str();
+	const char* fl_temp = StdMetrics.ms_v_tpms_fl_t->AsUnitString("-", rangeUnit, 1).c_str();
+  if (*fl_pressure != '-')
+    writer->printf("FL ID:%lu %s %s\n", soul->ks_tpms_id[0], fl_pressure, fl_temp);
+
+	// Front right
+	const char* fr_pressure = StdMetrics.ms_v_tpms_fr_p->AsUnitString("-", rangeUnit, 1).c_str();
+	const char* fr_temp = StdMetrics.ms_v_tpms_fr_t->AsUnitString("-", rangeUnit, 1).c_str();
+  if (*fr_pressure != '-')
+    writer->printf("FR ID:%lu %s %s\n",soul->ks_tpms_id[1], fr_pressure, fr_temp);
+
+	// Rear left
+	const char* rl_pressure = StdMetrics.ms_v_tpms_rl_p->AsUnitString("-", rangeUnit, 1).c_str();
+	const char* rl_temp = StdMetrics.ms_v_tpms_rl_t->AsUnitString("-", rangeUnit, 1).c_str();
+  if (*rl_pressure != '-')
+    writer->printf("RL ID:%lu %s %s\n",soul->ks_tpms_id[2], rl_pressure, rl_temp);
+
+	// Rear right
+	const char* rr_pressure = StdMetrics.ms_v_tpms_rr_p->AsUnitString("-", rangeUnit, 1).c_str();
+	const char* rr_temp = StdMetrics.ms_v_tpms_rr_t->AsUnitString("-", rangeUnit, 1).c_str();
+  if (*rr_pressure != '-')
+    writer->printf("RR ID:%lu %s %s\n",soul->ks_tpms_id[3], rr_pressure, rr_temp);
+  }
+
+/**
+ * Print out information of the current trip.
  */
 void xks_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -906,11 +949,11 @@ void xks_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     writer->printf("Dist %s\n", distance);
 
   // Consumption
- float consumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers);
- writer->printf("Con %.*fkWh/100km\n", 2, consumption);
+  float consumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers);
+  writer->printf("Con %.*fkWh/100km\n", 2, consumption);
 
- float consumption2 = StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh);
- writer->printf("Con %.*fkm/kWh\n", 2, consumption2);
+  float consumption2 = StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh);
+  writer->printf("Con %.*fkm/kWh\n", 2, consumption2);
 
   // Discharge
   const char* discharge = StdMetrics.ms_v_bat_energy_used->AsUnitString("-", rangeUnit, 1).c_str();
@@ -931,7 +974,6 @@ void xks_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   if (*ODO != '-')
     writer->printf("ODO %s\n", ODO);
   }
-
 
 /**
  * RequestNotify: send notifications / alerts / data updates
