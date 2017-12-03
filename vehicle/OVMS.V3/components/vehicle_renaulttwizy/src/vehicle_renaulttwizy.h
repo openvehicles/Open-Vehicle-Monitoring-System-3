@@ -59,18 +59,30 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     int ChargeTime(int dstsoc);
     
   
-    // --------------------------------------------------------------------------
-    // Twizy metrics
-    // 
+  // --------------------------------------------------------------------------
+  // Twizy main commands
+  // 
     
+  protected:
+    OvmsCommand *cmd_xrt;
+    
+  public:
+    vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
+    vehicle_command_t CommandHandler(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+
+  
+  // --------------------------------------------------------------------------
+  // Twizy main metrics
+  // 
+  
   protected:
     OvmsMetricString *m_version;
     
-    
-    // --------------------------------------------------------------------------
-    // Twizy state variables
-    // 
-    
+  
+  // --------------------------------------------------------------------------
+  // Twizy state variables
+  // 
+  
   protected:
   
     char twizy_vin[8] = "";                     // last 7 digits of full VIN
@@ -210,20 +222,21 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     #define TWIZY_FAN_OVERSHOOT   5     // hold time in minutes after switch-off
     
     
-    // MSG notification queue (like net_notify for vehicle specific notifies)
-    UINT8 twizy_notify_msg = 0; // bit set of...
-    UINT8 twizy_notify_sms = 0; // bit set of...
+    // Notifications:
+    #define SEND_BatteryAlert           (1<< 0)  // text alert: battery problem
+    #define SEND_PowerNotify            (1<< 1)  // text alert: power usage summary
+    #define SEND_DataUpdate             (1<< 2)  // regular data update (per minute)
+    #define SEND_StreamUpdate           (1<< 3)  // stream data update (per second)
+    #define SEND_BatteryStats           (1<< 4)  // separate battery stats (large)
+    #define SEND_CodeAlert              (1<< 5)  // text alert: fault code (SEVCON/inputs/...)
+    #define SEND_PowerLog               (1<< 6)  // RT-PWR-Log history entry
+    #define SEND_ResetResult            (1<< 7)  // text alert: RESET OK/FAIL
+    #define SEND_ChargeState            (1<< 8)  // text alert: STAT command
     
-    #define SEND_BatteryAlert           0x01  // text alert: battery problem
-    #define SEND_PowerNotify            0x02  // text alert: power usage summary
-    #define SEND_DataUpdate             0x04  // regular data update (per minute)
-    #define SEND_StreamUpdate           0x08  // stream data update (per second)
-    #define SEND_BatteryStats           0x10  // separate battery stats (large)
-    #define SEND_CodeAlert              0x20  // text alert: fault code (SEVCON/inputs/...)
-    #define SEND_PowerLog               0x40  // RT-PWR-Log history entry
-    #define SEND_ResetResult            0x80  // text alert: RESET OK/FAIL
-    
-    #define twizy_notify(n) vehicle_twizy_req_notification(n)
+  protected:
+    unsigned int twizy_notifications = 0;
+    void RequestNotify(unsigned int which);
+    void DoNotify();
     
     
     // --------------------------------------------------------------------------
@@ -294,6 +307,9 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     UINT8 batt_pack_count = 1;
     UINT8 batt_cmod_count = 7;
     UINT8 batt_cell_count = 14;
+    
+    OvmsMetricFloat *m_batt_soc_min;
+    OvmsMetricFloat *m_batt_soc_max;
     
     OvmsMetricInt *m_batt_pack_count;
     OvmsMetricInt *m_batt_cmod_count;
