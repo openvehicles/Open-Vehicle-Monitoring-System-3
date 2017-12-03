@@ -52,7 +52,5 @@ Mkfile.old
 dkms.conf
 .metadata/
 
-RemoteSystemsTempFiles/.project
-
 .DS_Store
 .projets
