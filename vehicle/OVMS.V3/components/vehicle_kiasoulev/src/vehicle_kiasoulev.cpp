@@ -9,6 +9,9 @@
 ;		 0.1.1  03-Dec-2017 - Geir Øyvind Vælidalo
 ;			- Added xks cells-command which prints out battery voltages
 ;
+;		 0.1.2  03-Dec-2017 - Geir Øyvind Vælidalo
+;			- Moved more ks-variables to metrics.
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -44,7 +47,7 @@ static const char *TAG = "v-kiasoulev";
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 
-#define VERSION "0.1.1"
+#define VERSION "0.1.2"
 
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
@@ -72,10 +75,6 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
 
   ks_obc_volt = 230;
   ks_battery_current = 0;
-  ks_battery_max_cell_voltage_no = 0;
-  ks_battery_min_cell_voltage_no = 0;
-  ks_battery_max_detoriation_cell_no = 0;
-  ks_battery_min_detoriation_cell_no = 0;
 
   ks_battery_cum_charge_current = 0;
   ks_battery_cum_discharge_current = 0;
@@ -86,12 +85,6 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   ks_charge_bits.ChargingChademo = false;
   ks_charge_bits.ChargingJ1772 = false;
   ks_charge_bits.FanStatus = 0;
-
-  ks_battery_min_temperature = 0;
-  ks_battery_inlet_temperature = 0;
-  ks_battery_max_temperature = 0;
-  ks_battery_heat_1_temperature = 0;
-  ks_battery_heat_2_temperature = 0;
 
   ks_heatsink_temperature = 0;
   ks_battery_fan_feedback = 0;
@@ -111,12 +104,21 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   ConfigChanged(NULL);
 
   // init metrics:
-  m_version = MyMetrics.InitString("x.ks.m.version", 0, VERSION " " __DATE__ " " __TIME__);
-  m_b_cell_volt_max = MyMetrics.InitFloat("x.ks.m.b.cell.volt.max", 10, 0, Volts);
-  m_b_cell_volt_min = MyMetrics.InitFloat("x.ks.m.b.cell.volt.min", 10, 0, Volts);
-  m_b_cell_det_max = MyMetrics.InitFloat("x.ks.m.b.cell.det.max", 0, 0, Percentage);
-  m_b_cell_det_min = MyMetrics.InitFloat("x.ks.m.b.cell.det.min", 0, 0, Percentage);
-  m_c_power = MyMetrics.InitFloat("x.ks.m.c.power", 10, 0, kW);
+  m_version = MyMetrics.InitString("x.ks.version", 0, VERSION " " __DATE__ " " __TIME__);
+  m_b_cell_volt_max = MyMetrics.InitFloat("x.ks.b.cell.volt.max", 10, 0, Volts);
+  m_b_cell_volt_min = MyMetrics.InitFloat("x.ks.b.cell.volt.min", 10, 0, Volts);
+  m_b_cell_volt_max_no = MyMetrics.InitInt("x.ks.b.cell.volt.max.no", 10, 0);
+  m_b_cell_volt_min_no = MyMetrics.InitInt("x.ks.b.cell.volt.min.no", 10, 0);
+  m_b_cell_det_max = MyMetrics.InitFloat("x.ks.b.cell.det.max", 0, 0, Percentage);
+  m_b_cell_det_min = MyMetrics.InitFloat("x.ks.b.cell.det.min", 0, 0, Percentage);
+  m_b_cell_det_max_no = MyMetrics.InitInt("x.ks.b.cell.det.max.no", 10, 0);
+  m_b_cell_det_min_no = MyMetrics.InitInt("x.ks.b.cell.det.min.no", 10, 0);
+  m_c_power = MyMetrics.InitFloat("x.ks.c.power", 10, 0, kW);
+  m_b_min_temperature = MyMetrics.InitInt("x.ks.b.min.temp", 10, 0, Celcius);
+  m_b_max_temperature = MyMetrics.InitInt("x.ks.b.max.temp", 10, 0, Celcius);
+  m_b_inlet_temperature = MyMetrics.InitInt("x.ks.b.inlet.temp", 10, 0, Celcius);
+  m_b_heat_1_temperature = MyMetrics.InitInt("x.ks.b.heat1.temp", 10, 0, Celcius);
+  m_b_heat_2_temperature = MyMetrics.InitInt("x.ks.b.heat2.temp", 10, 0, Celcius);
 
   m_b_cell_det_max->SetValue(0);
   m_b_cell_det_min->SetValue(0);
@@ -491,12 +493,12 @@ void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
 							//TODO What about the 30kWh-version?
 
 							m_b_cell_volt_max->SetValue((float)CAN_BYTE(5)/50.0, Volts);
-							ks_battery_max_cell_voltage_no = CAN_BYTE(6);
+							m_b_cell_volt_max_no->SetValue(CAN_BYTE(6));
 
 						} else if (m_poll_ml_frame == 4) // 02 21 01 - 24
 						{
 							m_b_cell_volt_min->SetValue((float)CAN_BYTE(0)/50.0, Volts);
-							ks_battery_min_cell_voltage_no = CAN_BYTE(1);
+							m_b_cell_volt_min_no->SetValue(CAN_BYTE(1));
 							ks_battery_fan_feedback = CAN_BYTE(2);
 							ks_charge_bits.FanStatus = CAN_BYTE(3) & 0xF;
 							StdMetrics.ms_v_bat_12v_voltage->SetValue ((float)CAN_BYTE(4)/10.0 , Volts);
@@ -529,19 +531,19 @@ void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
 
 				case 0x05:
 					if (m_poll_ml_frame == 1) {
-						ks_battery_inlet_temperature = CAN_BYTE(5);
-						ks_battery_min_temperature = CAN_BYTE(6);
+						m_b_inlet_temperature->SetValue( CAN_BYTE(5) );
+						m_b_min_temperature->SetValue( CAN_BYTE(6) );
 					} else if (m_poll_ml_frame == 2) {
-						ks_battery_max_temperature = CAN_BYTE(0);
+						m_b_min_temperature->SetValue( CAN_BYTE(0) );
 					} else if (m_poll_ml_frame == 3) {
 						//ks_air_bag_hwire_duty = can_databuffer[5 + CAN_ADJ];
-						ks_battery_heat_1_temperature = CAN_BYTE(5);
-						ks_battery_heat_2_temperature = CAN_BYTE(6);
+						m_b_heat_1_temperature->SetValue( CAN_BYTE(5) );
+						m_b_heat_2_temperature->SetValue( CAN_BYTE(6) );
 					} else if (m_poll_ml_frame == 4) {
 						m_b_cell_det_max->SetValue( (float)CAN_UINT(0)/10.0 );
-						ks_battery_max_detoriation_cell_no = CAN_BYTE(2);
+						m_b_cell_det_max_no->SetValue( CAN_BYTE(2) );
 						m_b_cell_det_min->SetValue( (float)CAN_UINT(3)/10.0 );
-						ks_battery_min_detoriation_cell_no = CAN_BYTE(5);
+						m_b_cell_det_min_no->SetValue( CAN_BYTE(5) );
 					}
 					break;
 			}
@@ -910,12 +912,12 @@ void xks_cells(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
 	// Minimum voltage
 	const char* minimum = soul->m_b_cell_volt_min->AsUnitString("-", rangeUnit, 2).c_str();
   if (*minimum != '-')
-    writer->printf("Minimum %s #%d\n", minimum, soul->ks_battery_min_cell_voltage_no);
+    writer->printf("Minimum %s #%d\n", minimum, soul->m_b_cell_volt_min_no->AsInt(0));
 
 	// Maximum voltage
 	const char* maximum = soul->m_b_cell_volt_max->AsUnitString("-", rangeUnit, 2).c_str();
   if (*maximum != '-')
-    writer->printf("Maximum %s #%d\n", maximum, soul->ks_battery_max_cell_voltage_no);
+    writer->printf("Maximum %s #%d\n", maximum, soul->m_b_cell_volt_max_no->AsInt(0));
 
 	// Total voltage
 	const char* total = StdMetrics.ms_v_bat_voltage->AsUnitString("-", rangeUnit, 2).c_str();
@@ -925,12 +927,12 @@ void xks_cells(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
 	// Min Detoriation
 	const char* minDet = soul->m_b_cell_det_min->AsUnitString("-", rangeUnit, 2).c_str();
   if (*minDet != '-')
-    writer->printf("Min Det %s #%d\n", minDet, soul->ks_battery_min_detoriation_cell_no);
+    writer->printf("Min Det %s #%d\n", minDet, soul->m_b_cell_det_min_no->AsInt(0));
 
   // Max Detoriation
 	const char* maxDet = soul->m_b_cell_det_max->AsUnitString("-", rangeUnit, 2).c_str();
   if (*maxDet != '-')
-    writer->printf("Max Det %s #%d\n", maxDet, soul->ks_battery_max_detoriation_cell_no);
+    writer->printf("Max Det %s #%d\n", maxDet, soul->m_b_cell_det_max_no->AsInt(0));
 
   for (uint8_t i=0; i < sizeof (soul->ks_battery_cell_voltage); i++)
   		{

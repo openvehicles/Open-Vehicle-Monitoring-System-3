@@ -70,14 +70,20 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 
     uint32_t ks_tpms_id[4];
     uint8_t ks_battery_cell_voltage[100];
-    uint8_t ks_battery_max_cell_voltage_no; 	//Max cell voltage no           02 21 01 -> 23 7
-    uint8_t ks_battery_min_cell_voltage_no; 	//Min cell voltage no           02 21 01 -> 24 2
-    uint8_t ks_battery_max_detoriation_cell_no; 	//02 21 05 -> 24 3
-    uint8_t ks_battery_min_detoriation_cell_no; 	//02 21 05 -> 24 6
-    OvmsMetricFloat*  m_b_cell_volt_max;           // Battery cell maximum voltage
-    OvmsMetricFloat*  m_b_cell_volt_min;           // Battery cell minimum voltage
-    OvmsMetricFloat*  m_b_cell_det_max;           	// Battery cell maximum detoriation
-    OvmsMetricFloat*  m_b_cell_det_min;           	// Battery cell minimum detoriation
+    OvmsMetricInt* 		m_b_cell_volt_max_no;		//Max cell voltage no           02 21 01 -> 23 7
+    OvmsMetricInt* 		m_b_cell_volt_min_no; 	//Min cell voltage no           02 21 01 -> 24 2
+    OvmsMetricFloat*	m_b_cell_volt_max;     // Battery cell maximum voltage
+    OvmsMetricFloat*	m_b_cell_volt_min;     // Battery cell minimum voltage
+    OvmsMetricInt* 		m_b_cell_det_max_no; 		//02 21 05 -> 24 3
+    OvmsMetricInt*		m_b_cell_det_min_no; 		//02 21 05 -> 24 6
+    OvmsMetricFloat*	m_b_cell_det_max;      // Battery cell maximum detoriation
+    OvmsMetricFloat*	m_b_cell_det_min;      // Battery cell minimum detoriation
+    OvmsMetricInt* 		m_b_min_temperature; 			//02 21 05 -> 21 7
+    OvmsMetricInt*		m_b_inlet_temperature; 		//02 21 05 -> 21 6
+    OvmsMetricInt*		m_b_max_temperature; 			//02 21 05 -> 22 1
+    OvmsMetricInt*		m_b_heat_1_temperature; 	//02 21 05 -> 23 6
+    OvmsMetricInt*		m_b_heat_2_temperature; 	//02 21 05 -> 23 7
+
 
   protected:
     void RequestNotify(unsigned int which);
@@ -102,9 +108,6 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     // Kia Soul EV specific metrics
     OvmsMetricString* m_version;
     OvmsMetricFloat*  m_c_power;            				// Available charge power
-    //float ks_battery_max_detoriation; 				//02 21 05 -> 24 1+2
-    //float ks_battery_min_detoriation; 				//02 21 05 -> 24 4+5
-
 
 		#define CFG_DEFAULT_MAXRANGE 160
     int ks_maxrange = CFG_DEFAULT_MAXRANGE;        // Configured max range at 20 °C
@@ -127,7 +130,6 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     float ks_start_cc;  					// Used to calculate trip recuperation (Cumulated charge)
     float ks_cum_charge_start; 	// Used to calculate charged power.
 
-    int8_t ks_battery_module_temp[8];
 
     INT ks_battery_current; 								//Battery current               02 21 01 -> 21 7+22 1
 
@@ -137,12 +139,7 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     uint32_t ks_battery_cum_discharge; 				//Cumulated discharge power   02 21 01 -> 26 4-7
     uint32_t ks_battery_cum_op_time; 					//Cumulated operating time    02 21 01 -> 27 1-4
 
-    uint8_t ks_battery_min_temperature; 			//02 21 05 -> 21 7
-    uint8_t ks_battery_inlet_temperature; 		//02 21 05 -> 21 6
-    uint8_t ks_battery_max_temperature; 			//02 21 05 -> 22 1
-    uint8_t ks_battery_heat_1_temperature; 	//02 21 05 -> 23 6
-    uint8_t ks_battery_heat_2_temperature; 	//02 21 05 -> 23 7
-
+    int8_t ks_battery_module_temp[8];
 
     uint8_t ks_heatsink_temperature; //TODO Remove?
     uint8_t ks_battery_fan_feedback;
