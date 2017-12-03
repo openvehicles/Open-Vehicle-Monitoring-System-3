@@ -50,6 +50,7 @@ class BufferedShell : public OvmsShell
     char ** GetCompletion(OvmsCommandMap& children, const char* token);
     void Log(LogBuffers* message);
     void Output(OvmsWriter*);
+    void Dump(std::string&);
     char* Dump();
 
   protected:

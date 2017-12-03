@@ -56,7 +56,7 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
     void IncomingFrameCan2(CAN_frame_t* p_frame);
-    void Ticker1(std::string event, void* data);
+    void Ticker1(uint32_t ticker);
     void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void ConfigChanged(OvmsConfigParam* param);
 
@@ -69,8 +69,11 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     void UpdateMaxRangeAndSOH(void);
     uint16_t calcMinutesRemaining(float target);
     bool SendCanMessage_sync(uint16_t id, uint8_t count,
-    		uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
-    		uint8_t b5, uint8_t b6);
+    					uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
+						uint8_t b5, uint8_t b6);
+    bool SendCommandInSessionMode(uint16_t id, uint8_t count,
+    					uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
+						uint8_t b5, uint8_t b6 );
     bool SetTemporarySessionMode(uint16_t id, uint8_t mode);
     bool SetDoorLock(bool open, const char* password);
     bool OpenTrunk(const char* password);
@@ -81,8 +84,8 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     OvmsMetricString* m_version;
     OvmsMetricFloat*  m_b_cell_volt_max;           // Battery cell maximum voltage
     OvmsMetricFloat*  m_b_cell_volt_min;           // Battery cell minimum voltage
-    OvmsMetricFloat*  m_b_cell_det_max;           // Battery cell maximum detoriation
-    OvmsMetricFloat*  m_b_cell_det_min;           // Battery cell minimum detoriation
+    OvmsMetricFloat*  m_b_cell_det_max;           	// Battery cell maximum detoriation
+    OvmsMetricFloat*  m_b_cell_det_min;           	// Battery cell minimum detoriation
     OvmsMetricFloat*  m_c_power;            				// Available charge power
     //float ks_battery_max_detoriation; 				//02 21 05 -> 24 1+2
     //float ks_battery_min_detoriation; 				//02 21 05 -> 24 4+5
@@ -113,6 +116,8 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     INT ks_battery_current; 								//Battery current               02 21 01 -> 21 7+22 1
     uint8_t ks_battery_max_cell_voltage_no; 	//Max cell voltage no           02 21 01 -> 23 7
     uint8_t ks_battery_min_cell_voltage_no; 	//Min cell voltage no           02 21 01 -> 24 2
+    uint8_t ks_battery_max_detoriation_cell_no; 	//02 21 05 -> 24 3
+    uint8_t ks_battery_min_detoriation_cell_no; 	//02 21 05 -> 24 6
 
     uint32_t ks_battery_cum_charge_current; 		//Cumulated charge current    02 21 01 -> 24 6+7 & 25 1+2
     uint32_t ks_battery_cum_discharge_current;	//Cumulated discharge current 02 21 01 -> 25 3-6
@@ -128,8 +133,6 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     uint8_t ks_battery_heat_1_temperature; 	//02 21 05 -> 23 6
     uint8_t ks_battery_heat_2_temperature; 	//02 21 05 -> 23 7
 
-    uint8_t ks_battery_max_detoriation_cell_no; 	//02 21 05 -> 24 3
-    uint8_t ks_battery_min_detoriation_cell_no; 	//02 21 05 -> 24 6
 
     uint8_t ks_heatsink_temperature; //TODO Remove?
     uint8_t ks_battery_fan_feedback;
@@ -180,7 +183,7 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 #define POS_ODO			StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers)
 #define CHARGE_CURRENT	StdMetrics.ms_v_charge_current->AsFloat(0, Amps)
 #define CHARGE_VOLTAGE	StdMetrics.ms_v_charge_voltage->AsFloat(0, Volts)
-#define SET_CHARGE_STATE(n)		//StdMetrics.ms_v_charge_state->SetValue(n)
+#define SET_CHARGE_STATE(n)		StdMetrics.ms_v_charge_state->SetValue(n)
 
 #define VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID 0x2F // InputOutputControlByIdentifier
 

@@ -40,11 +40,42 @@ static const char *TAG = "events";
 
 OvmsEvents MyEvents __attribute__ ((init_priority (1200)));
 
+void event_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (strcmp(cmd->GetName(),"on")==0)
+    MyEvents.m_trace = true;
+  else
+    MyEvents.m_trace = false;
+
+  writer->printf("Event tracing is now %s\n",cmd->GetName());
+  }
+
+void event_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string event(argv[0]);
+
+  writer->printf("Raising event: %s\n",argv[0]);
+  MyEvents.SignalEvent(event, NULL);
+  }
+
 OvmsEvents::OvmsEvents()
   {
   ESP_LOGI(TAG, "Initialising EVENTS (1200)");
 
+#ifdef CONFIG_OVMS_DEV_DEBUGEVENTS
+  m_trace = true;
+#else
+  m_trace = false;
+#endif // #ifdef CONFIG_OVMS_DEV_DEBUGEVENTS
+
   ESP_ERROR_CHECK(esp_event_loop_init(ReceiveSystemEvent, (void*)this));
+
+  // Register our commands
+  OvmsCommand* cmd_event = MyCommandApp.RegisterCommand("event","EVENT framework",NULL, "", 1);
+  cmd_event->RegisterCommand("raise","Raise a textual event",event_raise,"<event>", 1, 1, true);
+  OvmsCommand* cmd_eventtrace = cmd_event->RegisterCommand("trace","EVENT trace framework", NULL, "", 0, 0, false);
+  cmd_eventtrace->RegisterCommand("on","Turn event tracing ON",event_trace,"", 0, 0, false);
+  cmd_eventtrace->RegisterCommand("off","Turn event tracing OFF",event_trace,"", 0, 0, false);
   }
 
 OvmsEvents::~OvmsEvents()
@@ -92,13 +123,14 @@ void OvmsEvents::DeregisterEvent(std::string caller)
 
 void OvmsEvents::SignalEvent(std::string event, void* data)
   {
-#ifdef CONFIG_OVMS_DEV_DEBUGEVENTS
-  if (event.compare(0,7,"ticker.") != 0)
+  if (m_trace)
     {
-    // Log everything but the excessively verbose ticker signals
-    ESP_LOGI(TAG, "Signal(%s)",event.c_str());
+    if (event.compare(0,7,"ticker.") != 0)
+      {
+      // Log everything but the excessively verbose ticker signals
+      ESP_LOGI(TAG, "Signal(%s)",event.c_str());
+      }
     }
-#endif // #ifdef CONFIG_OVMS_DEV_DEBUGEVENTS
 
   auto k = m_map.find(event);
   if (k != m_map.end())
@@ -214,4 +246,3 @@ EventCallbackEntry::EventCallbackEntry(std::string caller, EventCallback callbac
 EventCallbackEntry::~EventCallbackEntry()
   {
   }
-

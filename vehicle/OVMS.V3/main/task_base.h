@@ -64,7 +64,7 @@ class Parent
 class TaskBase
   {
   public:
-    TaskBase(Parent* parent = NULL);
+    TaskBase(const char* name, int stack = DEFAULT_STACK, Parent* parent = NULL);
     Parent* parent() { return m_parent; }
 
   protected:
@@ -72,7 +72,7 @@ class TaskBase
 
   protected:
     friend class Parent;
-    virtual bool Instantiate() = 0;
+    virtual bool Instantiate();
     BaseType_t CreateTask(const char* name, int stack = DEFAULT_STACK,
       UBaseType_t priority = DEFAULT_PRIORITY);
     BaseType_t CreateTaskPinned(const BaseType_t core, const char* name, int stack = DEFAULT_STACK,
@@ -88,6 +88,8 @@ class TaskBase
 
   private:
     TaskHandle_t m_taskid;
+    const char* m_name;
+    int m_stack;
     Parent* m_parent;
   };
 
