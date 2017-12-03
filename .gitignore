@@ -51,5 +51,7 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
+# Local system / IDE configuration files
+*~
 .DS_Store
-.projets
+.project
