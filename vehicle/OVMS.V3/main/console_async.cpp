@@ -115,6 +115,12 @@ int ConsoleAsync::ConsoleLogger(const char* fmt, va_list args)
     return ::vprintf(fmt, args);
   char *buffer;
   int ret = vasprintf(&buffer, fmt, args);
+  // replace CR/LF except last by "|":
+  for (char* s=buffer; *s; s++)
+    {
+    if ((*s=='\r' || *s=='\n') && *(s+1))
+      *s = '|';
+    }
   m_instance->Log(buffer);
   return ret;
   }

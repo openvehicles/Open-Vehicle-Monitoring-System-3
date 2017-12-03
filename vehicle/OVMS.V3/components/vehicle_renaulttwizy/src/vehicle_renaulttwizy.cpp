@@ -34,9 +34,13 @@ static const char *TAG = "v-renaulttwizy";
 #include "ovms_metrics.h"
 #include "ovms_events.h"
 #include "ovms_config.h"
+#include "ovms_command.h"
 #include "metrics_standard.h"
+#include "ovms_notify.h"
 
 #include "vehicle_renaulttwizy.h"
+
+using namespace std;
 
 
 /**
@@ -58,6 +62,9 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   
   // init metrics:
   m_version = MyMetrics.InitString("x.rt.m.version", 0, VERSION " " __DATE__ " " __TIME__);
+  
+  // init commands:
+  cmd_xrt = MyCommandApp.RegisterCommand("xrt","Renault Twizy",NULL,"",0,0,true);
   
   // init subsystems:
   BatteryInit();
@@ -142,6 +149,113 @@ OvmsVehicleRenaultTwizyInit::OvmsVehicleRenaultTwizyInit()
 /**
  * Framework callbacks
  */
+
+
+/**
+ * General command handler:
+ */
+
+void vehicle_twizy_command(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+{
+  OvmsVehicleRenaultTwizy* twizy = (OvmsVehicleRenaultTwizy*) MyVehicleFactory.ActiveVehicle();
+  string type = StdMetrics.ms_v_type->AsString();
+  
+  if (!twizy || type != "RT")
+  {
+    writer->puts("Error: Twizy vehicle module not selected");
+    return;
+  }
+
+  twizy->CommandHandler(verbosity, writer, cmd, argc, argv);
+}
+
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandHandler(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+{
+  return NotImplemented;
+}
+
+
+
+/**
+ * CommandStat: Twizy implementation of vehicle status output
+ */
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandStat(int verbosity, OvmsWriter* writer)
+{
+  metric_unit_t rangeUnit = Native; // TODO: use user config if set
+  
+  bool chargeport_open = StdMetrics.ms_v_door_chargeport->AsBool();
+  if (chargeport_open)
+  {
+    std::string charge_state = StdMetrics.ms_v_charge_state->AsString();
+    
+    // Translate state codes:
+    if (charge_state == "charging")
+      charge_state = "Charging";
+    else if (charge_state == "topoff")
+      charge_state = "Topping off";
+    else if (charge_state == "done")
+      charge_state = "Charge Done";
+    else if (charge_state == "stopped")
+      charge_state = "Charge Stopped";
+    
+    writer->puts(charge_state.c_str());
+    
+    // Power sums: battery input:
+    float pwr_batt = StdMetrics.ms_v_bat_energy_recd->AsFloat() * 1000;
+    // Grid drain estimation:
+    //  charge efficiency is ~88.1% w/o 12V charge and ~86.4% with
+    //  (depending on when to cut the grid connection)
+    //  so we're using 87.2% as an average efficiency:
+    float pwr_grid = pwr_batt / 0.872;
+    writer->printf("CHG: %d (~%d) Wh\n", (int) pwr_batt, (int) pwr_grid);
+  }
+  else
+  {
+    // Charge port door is closed, not charging
+    writer->puts("Not charging");
+  }
+  
+  // Estimated charge time for 100%:
+  if (twizy_soc < 10000)
+  {
+    int duration_full = StdMetrics.ms_v_charge_duration_full->AsInt();
+    if (duration_full)
+      writer->printf("Full: %d min.\n", duration_full);
+  }
+  
+  // Estimated + Ideal Range:
+  const char* range_est = StdMetrics.ms_v_bat_range_est->AsString("?", rangeUnit, 0).c_str();
+  const char* range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("?", rangeUnit, 0).c_str();
+  writer->printf("Range: %s - %s\n", range_est, range_ideal);
+  
+  // SOC + min/max:
+  writer->printf("SOC: %s (%s..%s)\n",
+    (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str(),
+    (char*) m_batt_soc_min->AsString("-", Native, 1).c_str(),
+    (char*) m_batt_soc_max->AsUnitString("-", Native, 1).c_str());
+  
+  // ODOMETER:
+  const char* odometer = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
+  if (*odometer != '-')
+    writer->printf("ODO: %s\n", odometer);
+  
+  // BATTERY CAPACITY:
+  if (cfg_bat_cap_actual_prc > 0)
+  {
+    writer->printf("CAP: %.1f%% %s\n",
+      cfg_bat_cap_actual_prc,
+      StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str());
+  }
+  
+  // BATTERY SOH:
+  if (twizy_soh > 0)
+  {
+    writer->printf("SOH: %s\n",
+      StdMetrics.ms_v_bat_soh->AsUnitString("-", Native, 0).c_str());
+  }
+  
+  return Success;
+}
 
 
 /**
@@ -365,6 +479,22 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
         twizy_batt[0].volt_act = (v1 + v2 + 1) >> 1;
       }
       break;
+    
+    
+#ifdef OVMS_TWIZY_CFG
+    case 0x581:
+      // --------------------------------------------------------------------------
+      // CAN ID 0x581: CANopen SDO reply from SEVCON (Node #1)
+      //
+      
+      // copy message into twizy_sdo object:
+      for (u = 0; u < can_datalength; u++)
+        twizy_sdo.byte[u] = CAN_BYTE(u);
+      for (; u < 8; u++)
+        twizy_sdo.byte[u] = 0;
+      
+      break;
+#endif // OVMS_TWIZY_CFG
     
     
     case 0x597:
@@ -642,8 +772,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     twizy_accel_min = 0;
     twizy_accel_max = 0;
     
-    // TODO net_req_notification(NET_NOTIFY_ENV);
-    
     // reset battery subsystem:
     BatteryReset();
     
@@ -661,8 +789,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     
     // set trip references:
     twizy_soc_tripend = twizy_soc;
-    
-    // TODO net_req_notification(NET_NOTIFY_ENV);
     
     // send power statistics if 25+ Wh used:
     if ((twizy_speedpwr[CAN_SPEED_CONST].use
@@ -691,7 +817,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   // Charge notification + alerts:
   // 
   //  - twizy_chargestate: 1=charging, 2=top off, 4=done, 21=stopped charging
-  //  - twizy_chg_stop_request: 1=stop request
+  //  - twizy_chg_stop_request: 1=stop
   // 
 
   if (twizy_flags.Charging)
@@ -724,7 +850,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     if (twizy_chargestate == 21)
     {
       // ...send charge alert:
-      // TODO net_req_notification(NET_NOTIFY_CHARGE);
+      RequestNotify(SEND_ChargeState);
     }
 
 
@@ -749,12 +875,9 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
       // charge power request level we're starting with (7=full power):
       twizy_chargestate = (twizy_chg_power_request == 7) ? 1 : 2;
         
-      // Send charge stat:
-      // TODO net_req_notification(NET_NOTIFY_ENV);
-
       // Send charge start notification?
       // TODO if (sys_features[FEATURE_CARBITS] & FEATURE_CB_SCHGPHASE)
-        //net_req_notification(NET_NOTIFY_CHARGE);
+        RequestNotify(SEND_ChargeState);
     }
 
     else
@@ -779,8 +902,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
               )
       {
         // ...send sufficient charge alert:
-        // TODO net_req_notification(NET_NOTIFY_CHARGE);
-        // TODO net_req_notification(NET_NOTIFY_STAT);
+        RequestNotify(SEND_ChargeState);
       }
       
       // Battery capacity estimation: detect end of CC phase
@@ -799,11 +921,10 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
       {
         // entering CV phase, set state 2=topping off:
         twizy_chargestate = 2;
-        // TODO net_req_notification(NET_NOTIFY_STAT);
         
         // Send charge phase notification?
         // TODO if (sys_features[FEATURE_CARBITS] & FEATURE_CB_SCHGPHASE)
-          // net_req_notification(NET_NOTIFY_CHARGE);
+          RequestNotify(SEND_ChargeState);
       }
 
     }
@@ -894,8 +1015,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
       }
 
       // Send charge alert:
-      // TODO net_req_notification(NET_NOTIFY_CHARGE);
-      // TODO net_req_notification(NET_NOTIFY_ENV);
+      RequestNotify(SEND_ChargeState);
     }
 
     else if (twizy_flags.CarAwake && twizy_flags.ChargePort)
@@ -1045,6 +1165,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   *StdMetrics.ms_v_bat_range_ideal = (float) twizy_range_ideal;
   *StdMetrics.ms_v_bat_range_est = (float) twizy_range_est;
   
+  //*StdMetrics.ms_v_env_drivemode = (int) twizy_cfg.drivemode;
   *StdMetrics.ms_v_env_awake = (bool) twizy_flags.CarAwake;
   *StdMetrics.ms_v_env_on = (bool) twizy_flags.CarON;
   *StdMetrics.ms_v_env_locked = (bool) twizy_flags.CarLocked;
@@ -1057,6 +1178,12 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   
   *StdMetrics.ms_v_env_ctrl_login = (bool) twizy_flags.CtrlLoggedIn;
   *StdMetrics.ms_v_env_ctrl_config = (bool) twizy_flags.CtrlCfgMode;
+  
+  
+  // --------------------------------------------------------------------------
+  // Send notifications:
+  
+  DoNotify();
   
 }
 
@@ -1137,10 +1264,7 @@ void OvmsVehicleRenaultTwizy::UpdateChargeTimes()
   
   *StdMetrics.ms_v_charge_duration_full = (int) ChargeTime(10000);
   
-  
-  // signal framework to send update:
-  // net_req_notification(NET_NOTIFY_STAT);
-  
+
 }
 
 
@@ -1197,6 +1321,28 @@ int OvmsVehicleRenaultTwizy::ChargeTime(int dstsoc)
   }
   
   return minutes;
+}
+
+
+/**
+ * RequestNotify: send notifications / alerts / data updates
+ */
+
+void OvmsVehicleRenaultTwizy::RequestNotify(unsigned int which)
+{
+  twizy_notifications |= which;
+}
+
+void OvmsVehicleRenaultTwizy::DoNotify()
+{
+  unsigned int which = twizy_notifications;
+  
+  if (which & SEND_ChargeState)
+  {
+    MyNotify.NotifyCommand("info", "stat");
+    twizy_notifications &= ~SEND_ChargeState;
+  }
+  
 }
 
 

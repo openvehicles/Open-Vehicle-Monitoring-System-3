@@ -30,3 +30,9 @@ can can1 rx standard 55F 00 8E 73 00 00 23 E2 3E
 metrics list v.b.
 
 
+# Start charge:
+can can1 rx standard 597 20 A4 07 B1 29 00 01 41
+
+# Stop charge:
+can can1 rx standard 597 00 E0 00 D1 29 00 01 45
+

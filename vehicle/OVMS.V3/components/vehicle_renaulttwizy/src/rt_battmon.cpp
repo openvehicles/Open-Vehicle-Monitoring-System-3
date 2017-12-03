@@ -57,6 +57,9 @@ void OvmsVehicleRenaultTwizy::BatteryInit()
   
   // init metrics
   
+  m_batt_soc_min = MyMetrics.InitFloat("x.rt.b.soc.min", SM_STALE_HIGH, (float) twizy_soc_min / 100, Percentage);
+  m_batt_soc_max = MyMetrics.InitFloat("x.rt.b.soc.max", SM_STALE_HIGH, (float) twizy_soc_max / 100, Percentage);
+  
   m_batt_pack_count = MyMetrics.InitInt("x.rt.b.pack.cnt", SM_STALE_HIGH, batt_pack_count);
   for (i = 0; i < BATT_PACKS; i++)
   {
@@ -114,6 +117,8 @@ void OvmsVehicleRenaultTwizy::BatteryUpdate()
   // publish internal state to metrics:
   
   *StdMetrics.ms_v_bat_soc = (float) twizy_soc / 100;
+  *m_batt_soc_min = (float) twizy_soc_min / 100;
+  *m_batt_soc_max = (float) twizy_soc_max / 100;
   
   *StdMetrics.ms_v_bat_soh = (float) twizy_soh;
   *StdMetrics.ms_v_bat_cac = (float) cfg_bat_cap_actual_prc / 100 * cfg_bat_cap_nominal_ah;
