@@ -5,7 +5,10 @@
 ;    Changes:
 ;    1.0  Initial stub
 ;
-;    (C) 2017        Geir Øyvind Vælidalo <geir@validalo.net>
+;    (C) 2011       Michael Stegen / Stegen Electronics
+;    (C) 2011-2017  Mark Webb-Johnson
+;    (C) 2011       Sonny Chen @ EPRO/DX
+;    (C) 2017       Geir Øyvind Vælidalo <geir@validalo.net>
 ;;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +29,7 @@
 ; THE SOFTWARE.
 */
 
-#include "esp_log.h"
+#include "ovms_log.h"
 static const char *TAG = "v-kiasoulev";
 
 #include <stdio.h>
@@ -40,16 +43,16 @@ static const char *TAG = "v-kiasoulev";
 
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
-    { 0x7e2, 0, 	   VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, { 0, 120, 120 } }, 	// VIN
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, { 30, 10, 10 } }, 	// BMC Diag page 01
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, { 0, 30, 10 } }, 		// BMC Diag page 02
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x03, { 0, 30, 10 } }, 		// BMC Diag page 03
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x04, { 0, 30, 10 } }, 		// BMC Diag page 04
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x05, { 120, 10, 10 } },	// BMC Diag page 05
-    { 0x794, 0x79c, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, { 0, 0, 10 } }, 		// OBC - On board charger
-    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x00, { 30, 10, 10 } }, 	// VMCU Shift-stick
-    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, { 30, 10, 0 } }, 		// VMCU Motor temp++
-    { 0x7df, 0x7de, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x06, { 30, 10, 0 } }, 		// TMPS
+    { 0x7e2, 0, 	   VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, {   0, 120, 120 } }, 	// VIN
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, {  30,  10,  10 } }, 	// BMC Diag page 01
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, {   0,  30,  10 } }, 	// BMC Diag page 02
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x03, {   0,  30,  10 } }, 	// BMC Diag page 03
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x04, {   0,  30,  10 } }, 	// BMC Diag page 04
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x05, { 120,  10,  10 } },	// BMC Diag page 05
+    { 0x794, 0x79c, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, {   0,   0,  10 } }, 	// OBC - On board charger
+    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x00, {  30,  10,  10 } }, 	// VMCU Shift-stick
+    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, {  30,  10,   0 } }, 	// VMCU Motor temp++
+    { 0x7df, 0x7de, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x06, {  30,  10,   0 } }, 	// TMPS
     { 0, 0, 0, 0, { 0, 0, 0 } }
   };
 
@@ -61,9 +64,36 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   memset( ks_battery_cell_voltage ,0, sizeof(ks_battery_cell_voltage));
   memset( ks_battery_module_temp, 0, sizeof(ks_battery_module_temp));
   memset( ks_tpms_id, 0, sizeof(ks_tpms_id));
-  ks_battery_cum_op_time = 0;
+
   ks_obc_volt = 230;
   ks_battery_current = 0;
+  ks_battery_max_cell_voltage_no = 0;
+  ks_battery_min_cell_voltage_no = 0;
+  ks_battery_max_detoriation_cell_no = 0;
+  ks_battery_min_detoriation_cell_no = 0;
+
+  ks_battery_cum_charge_current = 0;
+  ks_battery_cum_discharge_current = 0;
+  ks_battery_cum_charge = 0;
+  ks_battery_cum_discharge = 0;
+  ks_battery_cum_op_time = 0;
+
+  ks_charge_bits.ChargingChademo = false;
+  ks_charge_bits.ChargingJ1772 = false;
+  ks_charge_bits.FanStatus = 0;
+
+  ks_battery_min_temperature = 0;
+  ks_battery_inlet_temperature = 0;
+  ks_battery_max_temperature = 0;
+  ks_battery_heat_1_temperature = 0;
+  ks_battery_heat_2_temperature = 0;
+
+  ks_heatsink_temperature = 0;
+  ks_battery_fan_feedback = 0;
+
+  ks_send_can.id = 0;
+  ks_send_can.status = 0;
+  memset( ks_send_can.byte, 0, sizeof(ks_send_can.byte));
 
   ks_maxrange = CFG_DEFAULT_MAXRANGE;
 
@@ -86,9 +116,8 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   m_b_cell_det_max->SetValue(0);
   m_b_cell_det_min->SetValue(0);
 
-  using std::placeholders::_1;
-  using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicleKiaSoulEv::Ticker1, this, _1, _2));
+  StdMetrics.ms_v_bat_12v_voltage->SetValue(12.5, Volts);
+
   PollSetPidList(m_can1,vehicle_kiasoulev_polls);
   PollSetState(0);
   }
@@ -103,7 +132,7 @@ OvmsVehicleKiaSoulEv::~OvmsVehicleKiaSoulEv()
  */
 
 void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
-{
+	{
   ESP_LOGD(TAG, "Kia Soul EV reload configuration");
 
   // Instances:
@@ -128,7 +157,7 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
 
   *StdMetrics.ms_v_charge_limit_soc = (float) MyConfig.GetParamValueInt("x.ks", "suffsoc");
   *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("x.ks", "suffrange");
-}
+	}
 
 ////////////////////////////////////////////////////////////////////////
 // vehicle_kiasoulev_car_on()
@@ -515,13 +544,14 @@ void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
 /**
  * Ticker1: Called every second
  */
-void OvmsVehicleKiaSoulEv::Ticker1(std::string event, void* data)
+void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 	{
 
 	UpdateMaxRangeAndSOH();
 
 	//Set VIN
-	StandardMetrics.ms_v_vin->SetValue(m_vin);
+	*StdMetrics.ms_v_vin = (string) m_vin;
+	//TODO StandardMetrics.ms_v_vin->SetValue(m_vin);
 
 	*StdMetrics.ms_m_timeutc = (int) time(NULL); // → framework? roadster fetches from CAN…
 
@@ -691,7 +721,7 @@ void OvmsVehicleKiaSoulEv::SetChargeMetrics(float voltage, float current, float 
 	{
 	StdMetrics.ms_v_charge_voltage->SetValue( voltage, Volts );
 	StdMetrics.ms_v_charge_current->SetValue( current, Amps );
-//TODO Not Working at the moment	StdMetrics.ms_v_charge_mode->SetValue( chademo ? "performance" : "standard");
+	StdMetrics.ms_v_charge_mode->SetValue( chademo ? "performance" : "standard");
 	StdMetrics.ms_v_charge_climit->SetValue( climit, Amps);
 	StdMetrics.ms_v_charge_type->SetValue( chademo ? "chademo" : "type1");
 	}
@@ -742,27 +772,11 @@ bool OvmsVehicleKiaSoulEv::SendCanMessage_sync(uint16_t id, uint8_t count,
 
 	ks_send_can.id=serviceId;
 
-	CAN_frame_t frame;
-	memset(&frame,0,sizeof(frame));
-
-	frame.origin = m_can1;
-	frame.FIR.U = 0;
-	frame.FIR.B.DLC = 8;
-	frame.FIR.B.FF = CAN_frame_std;
-	frame.MsgID = id;
-	frame.data.u8[0] = count;
-	frame.data.u8[1] = serviceId;
-	frame.data.u8[2] = b1;
-	frame.data.u8[3] = b2;
-	frame.data.u8[4] = b3;
-	frame.data.u8[5] = b4;
-	frame.data.u8[6] = b5;
-	frame.data.u8[7] = b6;
-
-	//Send can message
-	m_can1->Write(&frame);
+	uint8_t data[] = {count, serviceId, b1, b2, b3, b4, b5, b6};
+	m_can1->WriteStandard(id, count, data);
 
 	//Now wait for the response
+	// TODO Use callback instead of using delay?
 	timeout = 300; // ~1500 ms
 	do
 		{
@@ -798,19 +812,30 @@ bool OvmsVehicleKiaSoulEv::SetTemporarySessionMode(uint16_t id, uint8_t mode)
 	}
 
 /**
+ * Put the car in proper session mode and then send the command
+ */
+bool OvmsVehicleKiaSoulEv::SendCommandInSessionMode(uint16_t id, uint8_t count, uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint8_t b5, uint8_t b6 )
+	{
+	if( SetTemporarySessionMode(id, 3))
+		{
+		return SendCanMessage_sync(id, count, serviceId, b1, b2, b3, b4, b5, b6 );
+		}
+	return false;
+	}
+
+/**
  * Open or lock the doors
  */
 bool OvmsVehicleKiaSoulEv::SetDoorLock(bool open, const char* password)
 	{
   if( ks_shift_bits.Park )
   		{
-    //TODO if( IsPasswordOk(password) ){
-  		if( SetTemporarySessionMode(SMART_JUNCTION_BOX, 3))
-  			{ //0x771 0x02 0x10 0x03
-  				// 0x771 0x04 0x2F 0xBC 0x1[0,1] 0x03
-  			return SendCanMessage_sync(SMART_JUNCTION_BOX, 4,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, 0xbc, open?0x10:0x11, 0x03, 0,0,0 );
-  			}
-    //}
+    if( IsPasswordOk(password) )
+    		{
+    		SendCommandInSessionMode(SMART_JUNCTION_BOX, 4,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, 0xbc, open?0x10:0x11, 0x03, 0,0,0 );
+  			//0x771 0x02 0x10 0x03
+  			//0x771 0x04 0x2F 0xBC 0x1[0,1] 0x03
+    		}
   		}
 		return false;
 	}
@@ -820,13 +845,12 @@ bool OvmsVehicleKiaSoulEv::OpenTrunk(const char* password)
 	{
   if( ks_shift_bits.Park )
   		{
-		//TODO if( IsPasswordOk(password) ){
-  		if( SetTemporarySessionMode(SMART_JUNCTION_BOX, 3))
-  			{ //0x771 0x02 0x10 0x03
-  				// 0x771 0x04 0x2F 0xBC 0x09 0x03
-  			return SendCanMessage_sync(SMART_JUNCTION_BOX, 4,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, 0xbc, 0x09, 0x03, 0,0,0 );
+		if( IsPasswordOk(password) )
+			{
+			SendCommandInSessionMode(SMART_JUNCTION_BOX, 4,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, 0xbc, 0x09, 0x03, 0,0,0 );
+  			//0x771 0x02 0x10 0x03
+  			//0x771 0x04 0x2F 0xBC 0x09 0x03
   			}
-    //}
   		}
 		return false;
 	}
@@ -836,8 +860,10 @@ bool OvmsVehicleKiaSoulEv::OpenTrunk(const char* password)
  */
 bool OvmsVehicleKiaSoulEv::IsPasswordOk(const char *password)
   {
-  std::string p = MyConfig.GetParamValue("password","module");
-  return ((p.empty())||(p.compare(password)==0));
+	return true;
+	//TODO
+  //std::string p = MyConfig.GetParamValue("password","module");
+  //return ((p.empty())||(p.compare(password)==0));
   }
 
 
