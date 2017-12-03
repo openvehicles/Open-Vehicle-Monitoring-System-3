@@ -36,8 +36,9 @@ static const char *TAG = "v-kiasoulev";
 #include <string.h>
 #include "pcp.h"
 #include "vehicle_kiasoulev.h"
-#include "ovms_metrics.h"
 #include "metrics_standard.h"
+#include "ovms_metrics.h"
+#include "ovms_notify.h"
 
 #define VERSION "0.1.0"
 
@@ -118,6 +119,10 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
 
   StdMetrics.ms_v_bat_12v_voltage->SetValue(12.5, Volts);
 
+  // init commands:
+  cmd_xks = MyCommandApp.RegisterCommand("xks","Kia Soul EV",NULL,"",0,0,true);
+  cmd_xks->RegisterCommand("trip","Show trip info", xks_trip, 0,0, false);
+
   PollSetPidList(m_can1,vehicle_kiasoulev_polls);
   PollSetState(0);
   }
@@ -174,12 +179,11 @@ void OvmsVehicleKiaSoulEv::vehicle_kiasoulev_car_on(bool isOn)
 		StdMetrics.ms_v_env_awake->SetValue(isOn);
 
 		// Start trip, save current state
-		ks_trip_start_odo = POS_ODO;								// ODO at Start of trip
-		ks_start_cdc = (float)ks_battery_cum_discharge/10.0; 		// Register Cumulated discharge
-		ks_start_cc = (float)ks_battery_cum_charge/10.0; 				// Register Cumulated charge
+		ks_trip_start_odo = POS_ODO;	// ODO at Start of trip
+		ks_start_cdc = CUM_DISCHARGE; // Register Cumulated discharge
+		ks_start_cc = CUM_CHARGE; 		// Register Cumulated charge
 		StdMetrics.ms_v_env_charging12v->SetValue( false );
     PollSetState(1);
-		//TODO net_req_notification(NET_NOTIFY_ENV);
     }
   else if(!isOn && StdMetrics.ms_v_env_on->AsBool())
     {
@@ -189,7 +193,6 @@ void OvmsVehicleKiaSoulEv::vehicle_kiasoulev_car_on(bool isOn)
   		StdMetrics.ms_v_pos_speed->SetValue( 0 );
   	  StdMetrics.ms_v_pos_trip->SetValue( POS_ODO- ks_trip_start_odo );
   		StdMetrics.ms_v_env_charging12v->SetValue( false );
-  		//TODO net_req_notification(NET_NOTIFY_ENV);
     }
   }
 
@@ -550,8 +553,8 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 	UpdateMaxRangeAndSOH();
 
 	//Set VIN
-	*StdMetrics.ms_v_vin = (string) m_vin;
-	//TODO StandardMetrics.ms_v_vin->SetValue(m_vin);
+	//TODO *StdMetrics.ms_v_vin = (string) m_vin;
+	StandardMetrics.ms_v_vin->SetValue(m_vin);
 
 	*StdMetrics.ms_m_timeutc = (int) time(NULL); // → framework? roadster fetches from CAN…
 
@@ -570,8 +573,8 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 	if (StdMetrics.ms_v_env_on->AsBool())
 		{
 		StdMetrics.ms_v_pos_trip->SetValue( POS_ODO - ks_trip_start_odo , Kilometers);
-		StdMetrics.ms_v_bat_energy_used->SetValue( ((float)ks_battery_cum_discharge/10.0) - ks_start_cdc - (((float)ks_battery_cum_charge/10.0) - ks_start_cc), kWh );
-		StdMetrics.ms_v_bat_energy_recd->SetValue( ((float)ks_battery_cum_charge/10.0) - ks_start_cc, kWh );
+		StdMetrics.ms_v_bat_energy_used->SetValue( (CUM_DISCHARGE - ks_start_cdc) - (CUM_CHARGE - ks_start_cc), kWh );
+		StdMetrics.ms_v_bat_energy_recd->SetValue( CUM_CHARGE - ks_start_cc, kWh );
 	  }
 
 	//Keep charging metrics up to date
@@ -600,13 +603,13 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 	    StdMetrics.ms_v_charge_duration_full->SetValue( 1440, Minutes ); // Lets assume 24H to full.
   			SET_CHARGE_STATE("charging");
 			StdMetrics.ms_v_charge_kwh->SetValue( 0, kWh );  // kWh charged
-			ks_cum_charge_start = (float)ks_battery_cum_charge/10.0; // Battery charge base point
+			ks_cum_charge_start = CUM_CHARGE; // Battery charge base point
 			StdMetrics.ms_v_charge_inprogress->SetValue( true );
 			StdMetrics.ms_v_env_charging12v->SetValue( true);
 
+      // Send charge alert:
+      RequestNotify(SEND_ChargeState);
 			//TODO ks_sms_bits.NotifyCharge = 1; // Send SMS when charging is fully initiated
-			//TODO net_req_notification(NET_NOTIFY_CHARGE);
-			//TODO net_req_notification(NET_NOTIFY_STAT);
 	    }
 	  else
 	  		{
@@ -621,14 +624,13 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 	  			SET_CHARGE_STATE("topoff");
 
 	      // ...send charge alert:
-	      //TODO net_req_notification(NET_NOTIFY_CHARGE);
-		    //TODO net_req_notification(NET_NOTIFY_STAT);
+        RequestNotify(SEND_ChargeState);
 	      }
 	    else if (BAT_SOC >= 95) // ...else set "topping off" from 94% SOC:
 	    		{
   				SET_CHARGE_STATE("topoff");
-	      //TODO net_req_notification(NET_NOTIFY_ENV);
-	      }
+  	      // Send charge alert:
+  	      RequestNotify(SEND_ChargeState);	      }
 	    }
 
 	  // Check if we have what is needed to calculate remaining minutes
@@ -661,17 +663,18 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 			StdMetrics.ms_v_charge_duration_soc->SetValue( calcMinutesRemaining(chargeTarget_soc), Minutes);
 			StdMetrics.ms_v_charge_duration_range->SetValue( calcMinutesRemaining(chargeTarget_range), Minutes);
 
-			//TODO if (ks_sms_bits.NotifyCharge == 1) { //Send Charge SMS after we have initialized the voltage and current settings
+			//TODO if (ks_sms_bits.NotifyCharge == 1) //Send Charge SMS after we have initialized the voltage and current settings
 			//  ks_sms_bits.NotifyCharge = 0;
-			//TODO net_req_notification(NET_NOTIFY_CHARGE);
-			//TODO net_req_notification(NET_NOTIFY_STAT);
-			//}
+      // Send charge alert:
+      RequestNotify(SEND_ChargeState);
 	    }
 	  else
 	  		{
   			SET_CHARGE_STATE("heating");
+      // Send charge alert:
+      RequestNotify(SEND_ChargeState);
 	  		}
-	  StdMetrics.ms_v_charge_kwh->SetValue((float)(ks_battery_cum_charge/10.0) - ks_cum_charge_start, kWh); // kWh charged
+	  StdMetrics.ms_v_charge_kwh->SetValue(CUM_CHARGE - ks_cum_charge_start, kWh); // kWh charged
 	  ks_last_soc = BAT_SOC;
 	  ks_last_ideal_range = IDEAL_RANGE;
 
@@ -691,14 +694,14 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 	  		{
 			SET_CHARGE_STATE("stopped");
 			}
-	  StdMetrics.ms_v_charge_kwh->SetValue( (float)(ks_battery_cum_charge/10.0) - ks_cum_charge_start, kWh );  // kWh charged
+	  StdMetrics.ms_v_charge_kwh->SetValue( CUM_CHARGE - ks_cum_charge_start, kWh );  // kWh charged
 
 	  ks_cum_charge_start = 0;
 	  StdMetrics.ms_v_charge_inprogress->SetValue( false );
 		StdMetrics.ms_v_env_charging12v->SetValue( false );
 
-	  //TODO net_req_notification(NET_NOTIFY_CHARGE);
-	  //TODO net_req_notification(NET_NOTIFY_STAT);
+    // Send charge alert:
+    RequestNotify(SEND_ChargeState);
 		}
 
 	if(!isCharging && !StdMetrics.ms_v_env_on->AsBool())
@@ -710,8 +713,11 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 	if( StdMetrics.ms_v_bat_12v_voltage->AsFloat()<12.2 )
 		{
 	  //TODO Send SMS-varsel.
-	  ESP_LOGI(TAG, "Aux Battery voltage low");
+	  //ESP_LOGI(TAG, "Aux Battery voltage low");
+		//RequestNotify(SEND_AuxBattery_Low);
 	  }
+
+	DoNotify();
 	}
 
 /**
@@ -878,6 +884,73 @@ OvmsVehicle::vehicle_command_t OvmsVehicleKiaSoulEv::CommandUnlock(const char* p
   SetDoorLock(true, pin);
   return Success;
   }
+
+/**
+ * Print out information of current trip.
+ */
+void xks_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+
+  metric_unit_t rangeUnit = Native; // TODO: use user config if set
+
+	writer->printf("TRIP\n");
+
+	// Trip distance
+	const char* distance = StdMetrics.ms_v_pos_trip->AsUnitString("-", rangeUnit, 1).c_str();
+  if (*distance != '-')
+    writer->printf("Dist %s\n", distance);
+
+  // Consumption
+ float consumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers);
+ writer->printf("Con %.*fkWh/100km\n", 2, consumption);
+
+ float consumption2 = StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh);
+ writer->printf("Con %.*fkm/kWh\n", 2, consumption2);
+
+  // Discharge
+  const char* discharge = StdMetrics.ms_v_bat_energy_used->AsUnitString("-", rangeUnit, 1).c_str();
+  if (*discharge != '-')
+    writer->printf("Dis %s\n", discharge);
+
+  // Recuperation
+  const char* recuparation = StdMetrics.ms_v_bat_energy_recd->AsUnitString("-", rangeUnit, 1).c_str();
+  if (*recuparation != '-')
+    writer->printf("Rec %s\n", recuparation);
+
+  // Total consumption
+  float totalConsumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) + StdMetrics.ms_v_bat_energy_recd->AsFloat(kWh);
+  writer->printf("Total %.*fkWh\n", 2, totalConsumption);
+
+  // ODO
+  const char* ODO = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
+  if (*ODO != '-')
+    writer->printf("ODO %s\n", ODO);
+  }
+
+
+/**
+ * RequestNotify: send notifications / alerts / data updates
+ */
+void OvmsVehicleKiaSoulEv::RequestNotify(unsigned int which)
+	{
+  ks_notifications |= which;
+	}
+
+void OvmsVehicleKiaSoulEv::DoNotify()
+	{
+  unsigned int which = ks_notifications;
+
+  if (which & SEND_ChargeState)
+  		{
+    MyNotify.NotifyCommand("info", "stat");
+    ks_notifications &= ~SEND_ChargeState;
+  		}
+	}
 
 
 class OvmsVehicleKiaSoulEvInit

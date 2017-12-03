@@ -47,6 +47,8 @@ typedef union {
   unsigned char value;
 } KsShiftBits;
 
+void xks_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+
 class OvmsVehicleKiaSoulEv : public OvmsVehicle
   {
   public:
@@ -59,12 +61,15 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     void Ticker1(uint32_t ticker);
     void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void ConfigChanged(OvmsConfigParam* param);
+    vehicle_command_t CommandHandler(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
     virtual OvmsVehicle::vehicle_command_t CommandLock(const char* pin);
     virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
 
 
   protected:
+    void RequestNotify(unsigned int which);
+    void DoNotify();
     void vehicle_kiasoulev_car_on(bool isOn);
     void UpdateMaxRangeAndSOH(void);
     uint16_t calcMinutesRemaining(float target);
@@ -79,6 +84,8 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     bool OpenTrunk(const char* password);
     bool IsPasswordOk(const char *password);
     void SetChargeMetrics(float voltage, float current, float climit, bool chademo);
+
+    OvmsCommand *cmd_xks;
 
     // Kia Soul EV specific metrics
     OvmsMetricString* m_version;
@@ -98,6 +105,8 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     float ks_battery_capacity = CGF_DEFAULT_BATTERY_CAPACITY; //TODO Detect battery capacity from VIN or number of batterycells
 
     char m_vin[18];
+
+    unsigned int ks_notifications = 0;
 
     uint32_t ks_tpms_id[4];
     float ks_obc_volt;
@@ -184,10 +193,23 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 #define CHARGE_CURRENT	StdMetrics.ms_v_charge_current->AsFloat(0, Amps)
 #define CHARGE_VOLTAGE	StdMetrics.ms_v_charge_voltage->AsFloat(0, Volts)
 #define SET_CHARGE_STATE(n)		StdMetrics.ms_v_charge_state->SetValue(n)
+#define CUM_CHARGE		((float)ks_battery_cum_charge/10.0)
+#define CUM_DISCHARGE	((float)ks_battery_cum_discharge/10.0)
 
 #define VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID 0x2F // InputOutputControlByIdentifier
 
 #define SMART_JUNCTION_BOX 0x771
 #define BODY_CONTROL_MODULE  0x7A0
+
+// Notifications:
+//#define SEND_BatteryAlert           (1<< 0)  // text alert: battery problem
+//#define SEND_PowerNotify            (1<< 1)  // text alert: power usage summary
+//#define SEND_DataUpdate             (1<< 2)  // regular data update (per minute)
+//#define SEND_StreamUpdate           (1<< 3)  // stream data update (per second)
+//#define SEND_BatteryStats           (1<< 4)  // separate battery stats (large)
+//#define SEND_CodeAlert              (1<< 5)  // text alert: fault code (SEVCON/inputs/...)
+//#define SEND_PowerLog               (1<< 6)  // RT-PWR-Log history entry
+//#define SEND_ResetResult            (1<< 7)  // text alert: RESET OK/FAIL
+#define SEND_ChargeState            (1<< 8)  // text alert: STAT command
 
 #endif //#ifndef __VEHICLE_KIASOULEV_H__
