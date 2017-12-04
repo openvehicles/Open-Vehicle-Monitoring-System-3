@@ -346,7 +346,7 @@ void OvmsMetrics::NotifyModified(OvmsMetric* metric)
     }
 
   auto k = m_listeners.find("*");
-  for (int x=0;x<1;x++)
+  for (int x=0;x<2;x++)
     {
     if (k != m_listeners.end())
       {
@@ -384,7 +384,7 @@ OvmsMetric::OvmsMetric(const char* name, uint16_t autostale, metric_unit_t units
 OvmsMetric::~OvmsMetric()
   {
   MyMetrics.DeregisterMetric(this);
-  
+
   // Warning: pointers to a deleted OvmsMetric can still be held locally in
   //  other modules. If you delete metrics, take care to inform all readers
   //  (i.e. by broadcasting a module shutdown event).
@@ -874,4 +874,3 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
     }
   return value;
   }
-
