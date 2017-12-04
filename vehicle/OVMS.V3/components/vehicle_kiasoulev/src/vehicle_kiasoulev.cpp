@@ -12,6 +12,9 @@
 ;		 0.1.2  03-Dec-2017 - Geir Øyvind Vælidalo
 ;			- Moved more ks-variables to metrics.
 ;
+;		 0.1.3  04-Dec-2017 - Geir Øyvind Vælidalo
+;			- Added Low voltage DC-DC converter metrics
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -47,7 +50,7 @@ static const char *TAG = "v-kiasoulev";
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 
-#define VERSION "0.1.2"
+#define VERSION "0.1.3"
 
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
@@ -61,6 +64,7 @@ static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
     { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x00, {  30,  10,  10 } }, 	// VMCU Shift-stick
     { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, {  30,  10,   0 } }, 	// VMCU Motor temp++
     { 0x7df, 0x7de, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x06, {  30,  10,   0 } }, 	// TMPS
+    { 0x7c5, 0x7cd, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, {  30,  10,   0 } }, 	// LDC - Low voltage DC-DC
     { 0, 0, 0, 0, { 0, 0, 0 } }
   };
 
@@ -119,6 +123,11 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   m_b_inlet_temperature = MyMetrics.InitInt("x.ks.b.inlet.temp", 10, 0, Celcius);
   m_b_heat_1_temperature = MyMetrics.InitInt("x.ks.b.heat1.temp", 10, 0, Celcius);
   m_b_heat_2_temperature = MyMetrics.InitInt("x.ks.b.heat2.temp", 10, 0, Celcius);
+
+  m_ldc_out_voltage = MyMetrics.InitFloat("x.ks.ldc.out.volt", 10, 12, Volts);
+  m_ldc_in_voltage = MyMetrics.InitFloat("x.ks.ldc.in.volt", 10, 12, Volts);
+  m_ldc_out_current = MyMetrics.InitFloat("x.ks.ldc.out.amps", 10, 0, Amps);
+  m_ldc_temperature = MyMetrics.InitFloat("x.ks.ldc.temp", 10, 0, Celcius);
 
   m_b_cell_det_max->SetValue(0);
   m_b_cell_det_min->SetValue(0);
@@ -253,7 +262,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
       case 0x433:
         {
         // Parking brake status
-        StdMetrics.ms_v_env_handbrake->SetValue((d[2] & 0x10) > 0);
+        StdMetrics.ms_v_env_handbrake->SetValue((d[2] & 0x08) > 0); //Why did I have 0x10 here??
         }
         break;
 
@@ -261,7 +270,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
         // Motor RPM based on wheel rotation
         int rpm = (d[0]+(d[1]<<8)) * 8.206;
-		StdMetrics.ms_v_mot_rpm->SetValue( rpm );
+        StdMetrics.ms_v_mot_rpm->SetValue( rpm );
         }
         break;
 
@@ -547,6 +556,21 @@ void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
 					}
 					break;
 			}
+			break;
+
+		// ***** LDC ****
+		case 0x7cd:
+			switch (pid)
+				{
+				case 0x01:
+					// 12V system
+					ks_ldc_enabled = (CAN_BYTE(0) & 6) != 0;
+					m_ldc_out_voltage->SetValue( CAN_BYTE(1) / 10.0 );
+					m_ldc_in_voltage->SetValue( CAN_BYTE(3) * 2 );
+					m_ldc_out_voltage->SetValue( CAN_BYTE(2) );
+					m_ldc_temperature->SetValue( CAN_BYTE(4) - 100 );
+					break;
+				}
 			break;
 
 	  }

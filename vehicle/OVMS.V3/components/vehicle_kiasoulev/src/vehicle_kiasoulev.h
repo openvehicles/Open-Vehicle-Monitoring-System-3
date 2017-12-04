@@ -84,6 +84,10 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     OvmsMetricInt*		m_b_heat_1_temperature; 	//02 21 05 -> 23 6
     OvmsMetricInt*		m_b_heat_2_temperature; 	//02 21 05 -> 23 7
 
+    OvmsMetricFloat* m_ldc_out_voltage;
+    OvmsMetricFloat* m_ldc_out_current;
+    OvmsMetricFloat* m_ldc_in_voltage;
+    OvmsMetricFloat* m_ldc_temperature;
 
   protected:
     void RequestNotify(unsigned int which);
@@ -130,7 +134,6 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     float ks_start_cc;  					// Used to calculate trip recuperation (Cumulated charge)
     float ks_cum_charge_start; 	// Used to calculate charged power.
 
-
     INT ks_battery_current; 								//Battery current               02 21 01 -> 21 7+22 1
 
     uint32_t ks_battery_cum_charge_current; 		//Cumulated charge current    02 21 01 -> 24 6+7 & 25 1+2
@@ -143,6 +146,8 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 
     uint8_t ks_heatsink_temperature; //TODO Remove?
     uint8_t ks_battery_fan_feedback;
+
+    bool ks_ldc_enabled;
 
     struct {
       unsigned char ChargingChademo : 1;
