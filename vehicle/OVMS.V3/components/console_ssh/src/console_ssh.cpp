@@ -122,6 +122,7 @@ OvmsSSH::OvmsSSH()
   {
   ESP_LOGI(tag, "Initialising SSH (8300)");
   m_keyed = false;
+  m_ctx = NULL;
 
   using std::placeholders::_1;
   using std::placeholders::_2;
@@ -134,6 +135,9 @@ OvmsSSH::OvmsSSH()
 
 void OvmsSSH::NetManInit(std::string event, void* data)
   {
+  // Only initialise server for WIFI connections
+  if (!MyNetManager.m_connected_wifi) return;
+
   ESP_LOGI(tag, "Launching SSH Server");
   int ret = wolfSSH_Init();
   if (ret != WS_SUCCESS)
@@ -179,11 +183,15 @@ void OvmsSSH::NetManInit(std::string event, void* data)
 
 void OvmsSSH::NetManStop(std::string event, void* data)
   {
-  ESP_LOGI(tag, "Stopping SSH Server");
-  wolfSSH_CTX_free(m_ctx);
-  if (wolfSSH_Cleanup() != WS_SUCCESS)
+  if (m_ctx)
     {
-    ESP_LOGE(tag, "Couldn't clean up wolfSSH.");
+    ESP_LOGI(tag, "Stopping SSH Server");
+    wolfSSH_CTX_free(m_ctx);
+    if (wolfSSH_Cleanup() != WS_SUCCESS)
+      {
+      ESP_LOGE(tag, "Couldn't clean up wolfSSH.");
+      }
+    m_ctx = NULL;
     }
   }
 
@@ -415,8 +423,8 @@ ssize_t ConsoleSSH::write(const void *buf, size_t nbyte)
       ret = wolfSSH_stream_send(m_ssh, start, eol - start);
       break;
       }
-  }  
-  
+  }
+
   if (ret <= 0)
     {
     if (ret != WS_REKEYING)
