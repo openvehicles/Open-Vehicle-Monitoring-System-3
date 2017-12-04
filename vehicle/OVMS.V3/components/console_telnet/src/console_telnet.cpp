@@ -106,6 +106,8 @@ OvmsTelnet::OvmsTelnet()
   {
   ESP_LOGI(tag, "Initialising Telnet (8300)");
 
+  m_running = false;
+
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(tag,"network.mgr.init", std::bind(&OvmsTelnet::NetManInit, this, _1, _2));
@@ -114,6 +116,11 @@ OvmsTelnet::OvmsTelnet()
 
 void OvmsTelnet::NetManInit(std::string event, void* data)
   {
+  // Only initialise server for WIFI connections
+  if (!MyNetManager.m_connected_wifi) return;
+
+  m_running = true;
+
   ESP_LOGI(tag, "Launching Telnet Server");
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
   mg_connection* nc = mg_bind(mgr, ":23", MongooseHandler);
@@ -125,7 +132,11 @@ void OvmsTelnet::NetManInit(std::string event, void* data)
 
 void OvmsTelnet::NetManStop(std::string event, void* data)
   {
-  ESP_LOGI(tag, "Stopping Telnet Server");
+  if (m_running)
+    {
+    ESP_LOGI(tag, "Stopping Telnet Server");
+    m_running = false;
+    }
   }
 
 //-----------------------------------------------------------------------------
