@@ -18,6 +18,9 @@
 ;		 0.1.4  04-Dec-2017 - Geir Øyvind Vælidalo
 ;			- Added pilot duty cycle and proper charger temp from OBC.
 ;
+;		 0.1.5  04-Dec-2017 - Geir Øyvind Vælidalo
+;			- Fetch proper RPM from VMCU.
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -53,7 +56,7 @@ static const char *TAG = "v-kiasoulev";
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 
-#define VERSION "0.1.4"
+#define VERSION "0.1.5"
 
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
@@ -274,8 +277,8 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
       case 0x4b0:
         {
         // Motor RPM based on wheel rotation
-        int rpm = (d[0]+(d[1]<<8)) * 8.206;
-        StdMetrics.ms_v_mot_rpm->SetValue( rpm );
+        //int rpm = (d[0]+(d[1]<<8)) * 8.206;
+        //StdMetrics.ms_v_mot_rpm->SetValue( rpm );
         }
         break;
 
@@ -459,18 +462,25 @@ void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
 				case 0x02:
 					// VIN (multi-line response):
 					// VIN length is 20 on Kia => skip first frame (3 bytes):
-					if (m_poll_ml_frame > 0 && type == VEHICLE_POLL_TYPE_OBDIIVEHICLE) {
-							base = m_poll_ml_offset - length - 3;
-							for (bVal = 0; (bVal < length) && ((base + bVal)<(sizeof (m_vin) - 1)); bVal++)
-								m_vin[base + bVal] = CAN_BYTE(bVal);
-							if (m_poll_ml_remain == 0) m_vin[base + bVal] = 0;
-					}
-					if (type == VEHICLE_POLL_TYPE_OBDIIGROUP) {
-						if (m_poll_ml_frame == 3) {
-								StdMetrics.ms_v_mot_temp->SetValue( TO_CELCIUS(CAN_BYTE(4)), Celcius);
-								StdMetrics.ms_v_inv_temp->SetValue( TO_CELCIUS(CAN_BYTE(5)), Celcius );
+					if (m_poll_ml_frame > 0 && type == VEHICLE_POLL_TYPE_OBDIIVEHICLE)
+						{
+						base = m_poll_ml_offset - length - 3;
+						for (bVal = 0; (bVal < length) && ((base + bVal)<(sizeof (m_vin) - 1)); bVal++)
+							m_vin[base + bVal] = CAN_BYTE(bVal);
+						if (m_poll_ml_remain == 0) m_vin[base + bVal] = 0;
 						}
-					}
+					if (type == VEHICLE_POLL_TYPE_OBDIIGROUP)
+						{
+						if (m_poll_ml_frame == 1)
+							{
+							StdMetrics.ms_v_mot_rpm->SetValue( (CAN_BYTE(5)<<8) | CAN_BYTE(6) );
+							}
+						else if (m_poll_ml_frame == 3)
+							{
+							StdMetrics.ms_v_mot_temp->SetValue( TO_CELCIUS(CAN_BYTE(4)), Celcius);
+							StdMetrics.ms_v_inv_temp->SetValue( TO_CELCIUS(CAN_BYTE(5)), Celcius );
+							}
+						}
 					break;
 			}
 			break;
