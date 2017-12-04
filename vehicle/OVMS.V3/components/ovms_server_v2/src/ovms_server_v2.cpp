@@ -36,6 +36,7 @@ static const char *TAG = "ovms-server-v2";
 #include <iostream>
 #include <iomanip>
 #include "ovms.h"
+#include "buffered_shell.h"
 #include "ovms_command.h"
 #include "ovms_config.h"
 #include "metrics_standard.h"
@@ -148,6 +149,38 @@ static struct
 OvmsServerV2 *MyOvmsServerV2 = NULL;
 size_t MyOvmsServerV2Modifier = 0;
 size_t MyOvmsServerV2Reader = 0;
+
+/**
+ * mp_encode: encode string for MP transport;
+ *  - replace '\r\n' by '\r'
+ *  - replace '\n' by '\r'
+ *  - replace ',' by ';'
+ */
+std::string mp_encode(const std::string text)
+  {
+  std::string res;
+  char lc = 0;
+  res.reserve(text.length());
+  for (int i=0; i<text.length(); i++)
+    {
+    if (text[i] == '\n')
+      {
+      if (lc != '\r')
+        res += '\r';
+      }
+    else if (text[i] == ',')
+      {
+      res += ';';
+      }
+    else
+      {
+      res += text[i];
+      }
+
+    lc = text[i];
+    }
+  return res;
+  }
 
 bool OvmsServerV2ReaderCallback(OvmsNotifyType* type, OvmsNotifyEntry* entry)
   {
@@ -367,6 +400,22 @@ void OvmsServerV2::ProcessCommand(std::string* payload)
       esp_restart();
       break;
       }
+    case 6: // Charge alert
+      MyNotify.NotifyCommand("info","stat");
+      break;
+    case 7: // Execute command
+      {
+      BufferedShell* bs = new BufferedShell(false, COMMAND_RESULT_NORMAL);
+      const char* cmd = payload->substr(sep+1).c_str();
+      bs->ProcessChars(cmd, strlen(cmd));
+      bs->ProcessChar('\n');
+      std::string val; bs->Dump(val);
+      buffer << "MP-0 c7,0,";
+      buffer << mp_encode(val);
+      Transmit(buffer.str());
+      delete bs;
+      break;
+      }
     case 10: // Set Charge Mode
       {
       int result = 1;
@@ -523,8 +572,6 @@ void OvmsServerV2::ProcessCommand(std::string* payload)
       Transmit(buffer.str());
       break;
       }
-    case 6: // Charge alert
-    case 7: // Execute command
     case 40: // Send SMS
     case 41: // Send MMI/USSD codes
     case 49: // Send raw AT command
@@ -1130,38 +1177,6 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
     ;
 
   Transmit(buffer.str().c_str());
-  }
-
-/**
- * mp_encode: encode string for MP transport;
- *  - replace '\r\n' by '\r'
- *  - replace '\n' by '\r'
- *  - replace ',' by ';'
- */
-std::string mp_encode(const std::string text)
-  {
-  std::string res;
-  char lc = 0;
-  res.reserve(text.length());
-  for (int i=0; i<text.length(); i++)
-    {
-    if (text[i] == '\n')
-      {
-      if (lc != '\r')
-        res += '\r';
-      }
-    else if (text[i] == ',')
-      {
-      res += ';';
-      }
-    else
-      {
-      res += text[i];
-      }
-    
-    lc = text[i];
-    }
-  return res;
   }
 
 void OvmsServerV2::TransmitNotifyInfo()
