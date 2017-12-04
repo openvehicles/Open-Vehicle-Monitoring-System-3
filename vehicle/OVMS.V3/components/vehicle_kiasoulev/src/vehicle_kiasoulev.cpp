@@ -15,6 +15,9 @@
 ;		 0.1.3  04-Dec-2017 - Geir Øyvind Vælidalo
 ;			- Added Low voltage DC-DC converter metrics
 ;
+;		 0.1.4  04-Dec-2017 - Geir Øyvind Vælidalo
+;			- Added pilot duty cycle and proper charger temp from OBC.
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -50,7 +53,7 @@ static const char *TAG = "v-kiasoulev";
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 
-#define VERSION "0.1.3"
+#define VERSION "0.1.4"
 
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
@@ -128,6 +131,8 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   m_ldc_in_voltage = MyMetrics.InitFloat("x.ks.ldc.in.volt", 10, 12, Volts);
   m_ldc_out_current = MyMetrics.InitFloat("x.ks.ldc.out.amps", 10, 0, Amps);
   m_ldc_temperature = MyMetrics.InitFloat("x.ks.ldc.temp", 10, 0, Celcius);
+
+  m_obc_pilot_duty = MyMetrics.InitFloat("x.ks.obc.pilot.duty", 10, 0, Percentage);
 
   m_b_cell_det_max->SetValue(0);
   m_b_cell_det_min->SetValue(0);
@@ -376,8 +381,7 @@ void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
 					if (m_poll_ml_frame == 0)
 						{
 						lVal = CAN_UINT32(4);
-						if (lVal > 0) ks_tpms_id[0] = lVal;
-
+						SET_TPMS_ID(0, lVal);
 						}
 					else if (m_poll_ml_frame == 1)
 						{
@@ -385,33 +389,32 @@ void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
 						if (bVal > 0) StdMetrics.ms_v_tpms_fl_p->SetValue( TO_PSI(bVal), PSI);
 						StdMetrics.ms_v_tpms_fl_t->SetValue( TO_CELCIUS(CAN_BYTE(1)), Celcius);
 						lVal = (ks_tpms_id[1] & 0x000000ff) | (CAN_UINT32(4) & 0xffffff00);
-						if (lVal > 0) ks_tpms_id[1] = lVal;
-
+						SET_TPMS_ID(1, lVal);
 						}
 					else if (m_poll_ml_frame == 2)
 						{
 						lVal = (uint32_t) CAN_BYTE(0) | (ks_tpms_id[1] & 0xffffff00);
-						if (lVal > 0) ks_tpms_id[1] = lVal;
+						SET_TPMS_ID(1, lVal);
 						bVal = CAN_BYTE(1);
 						if (bVal > 0) StdMetrics.ms_v_tpms_fr_p->SetValue( TO_PSI(bVal), PSI);
 						StdMetrics.ms_v_tpms_fr_t->SetValue( TO_CELCIUS(CAN_BYTE(2)), Celcius);
 						lVal = (ks_tpms_id[2] & 0x0000ffff) | (CAN_UINT32(5) & 0xffff0000);
-						if (lVal > 0) ks_tpms_id[2] = lVal;
+						SET_TPMS_ID(2, lVal);
 
 						}
 					else if (m_poll_ml_frame == 3)
 						{
 						lVal = ((uint32_t) CAN_UINT(0)) | (ks_tpms_id[2] & 0xffff0000);
-						if (lVal > 0) ks_tpms_id[2] = lVal;
+						SET_TPMS_ID(2, lVal);
 						bVal = CAN_BYTE(2);
 						if (bVal > 0) StdMetrics.ms_v_tpms_rl_p->SetValue( TO_PSI(bVal), PSI);
 						StdMetrics.ms_v_tpms_rl_t->SetValue( TO_CELCIUS(CAN_BYTE(3)), Celcius);
 						lVal = (ks_tpms_id[3] & 0x00ffffff) | ((uint32_t) CAN_BYTE(6) << 24);
-						if (lVal > 0) ks_tpms_id[3] = lVal;
+						SET_TPMS_ID(3, lVal);
 
 					} else if (m_poll_ml_frame == 4) {
 						lVal = (CAN_UINT24(0)) | (ks_tpms_id[3] & 0xff000000);
-						if (lVal > 0) ks_tpms_id[3] = lVal;
+						SET_TPMS_ID(3, lVal);
 						bVal = CAN_BYTE(3);
 						if (bVal > 0) StdMetrics.ms_v_tpms_rr_p->SetValue( TO_PSI(bVal), PSI);
 						StdMetrics.ms_v_tpms_rr_t->SetValue( TO_CELCIUS(CAN_BYTE(4)), Celcius);
@@ -422,16 +425,26 @@ void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
 
 		// ****** OBC ******
 		case 0x79c:
-			switch (pid) {
+			switch (pid)
+				{
 				case 0x02:
-					if (m_poll_ml_frame == 1) {
+					if (m_poll_ml_frame == 1)
+						{
 						ks_obc_volt = (float) CAN_UINT(2) / 10.0;
 						//} else if (vehicle_poll_ml_frame == 2) {
 						//ks_obc_ampere = ((UINT) can_databuffer[4 + CAN_ADJ] << 8)
 						//        | (UINT) can_databuffer[5 + CAN_ADJ];
-					}
+						}
+					else if (m_poll_ml_frame == 2)
+						{
+						m_obc_pilot_duty->SetValue( (float) CAN_BYTE(6) / 3.0 );
+						}
+					else if (m_poll_ml_frame == 3)
+						{
+						StdMetrics.ms_v_charge_temp->SetValue( (float) (CAN_BYTE(0)+CAN_BYTE(1)+CAN_BYTE(2))/3, Celcius );
+						}
 					break;
-			}
+				}
 			break;
 
 		// ******* VMCU ******
@@ -456,7 +469,6 @@ void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
 						if (m_poll_ml_frame == 3) {
 								StdMetrics.ms_v_mot_temp->SetValue( TO_CELCIUS(CAN_BYTE(4)), Celcius);
 								StdMetrics.ms_v_inv_temp->SetValue( TO_CELCIUS(CAN_BYTE(5)), Celcius );
-								StdMetrics.ms_v_charge_temp->SetValue( TO_CELCIUS(CAN_BYTE(6)), Celcius );
 						}
 					}
 					break;
@@ -539,21 +551,33 @@ void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
 					break;
 
 				case 0x05:
-					if (m_poll_ml_frame == 1) {
+					if (m_poll_ml_frame == 1)
+						{
+						//TODO Untested.
+						base = ((pid-2)<<5) + m_poll_ml_offset - (length - 3);
+						for (bVal = 0; bVal < length && ((base + bVal)<sizeof (ks_battery_cell_voltage)); bVal++)
+							ks_battery_cell_voltage[base + bVal] = CAN_BYTE(bVal);
+
 						m_b_inlet_temperature->SetValue( CAN_BYTE(5) );
 						m_b_min_temperature->SetValue( CAN_BYTE(6) );
-					} else if (m_poll_ml_frame == 2) {
+						}
+					else if (m_poll_ml_frame == 2)
+						{
 						m_b_min_temperature->SetValue( CAN_BYTE(0) );
-					} else if (m_poll_ml_frame == 3) {
+						}
+					else if (m_poll_ml_frame == 3)
+						{
 						//ks_air_bag_hwire_duty = can_databuffer[5 + CAN_ADJ];
 						m_b_heat_1_temperature->SetValue( CAN_BYTE(5) );
 						m_b_heat_2_temperature->SetValue( CAN_BYTE(6) );
-					} else if (m_poll_ml_frame == 4) {
+						}
+					else if (m_poll_ml_frame == 4)
+						{
 						m_b_cell_det_max->SetValue( (float)CAN_UINT(0)/10.0 );
 						m_b_cell_det_max_no->SetValue( CAN_BYTE(2) );
 						m_b_cell_det_min->SetValue( (float)CAN_UINT(3)/10.0 );
 						m_b_cell_det_min_no->SetValue( CAN_BYTE(5) );
-					}
+						}
 					break;
 			}
 			break;

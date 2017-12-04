@@ -69,7 +69,7 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
 
     uint32_t ks_tpms_id[4];
-    uint8_t ks_battery_cell_voltage[100];
+    uint8_t ks_battery_cell_voltage[101];
     OvmsMetricInt* 		m_b_cell_volt_max_no;		//Max cell voltage no           02 21 01 -> 23 7
     OvmsMetricInt* 		m_b_cell_volt_min_no; 	//Min cell voltage no           02 21 01 -> 24 2
     OvmsMetricFloat*	m_b_cell_volt_max;     // Battery cell maximum voltage
@@ -83,6 +83,8 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     OvmsMetricInt*		m_b_max_temperature; 			//02 21 05 -> 22 1
     OvmsMetricInt*		m_b_heat_1_temperature; 	//02 21 05 -> 23 6
     OvmsMetricInt*		m_b_heat_2_temperature; 	//02 21 05 -> 23 7
+
+    OvmsMetricFloat* m_obc_pilot_duty;
 
     OvmsMetricFloat* m_ldc_out_voltage;
     OvmsMetricFloat* m_ldc_out_current;
@@ -132,9 +134,9 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     uint8_t ks_bms_soc;
     float ks_start_cdc; 					// Used to calculate trip power use (Cumulated discharge)
     float ks_start_cc;  					// Used to calculate trip recuperation (Cumulated charge)
-    float ks_cum_charge_start; 	// Used to calculate charged power.
+    float ks_cum_charge_start; 		// Used to calculate charged power.
 
-    INT ks_battery_current; 								//Battery current               02 21 01 -> 21 7+22 1
+    INT ks_battery_current; 			// Temporary storage for Battery current: 0x7ec 02 21 01 -> 21 7+22 1
 
     uint32_t ks_battery_cum_charge_current; 		//Cumulated charge current    02 21 01 -> 24 6+7 & 25 1+2
     uint32_t ks_battery_cum_discharge_current;	//Cumulated discharge current 02 21 01 -> 25 3-6
@@ -198,6 +200,7 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 #define SET_CHARGE_STATE(n)		StdMetrics.ms_v_charge_state->SetValue(n)
 #define CUM_CHARGE		((float)ks_battery_cum_charge/10.0)
 #define CUM_DISCHARGE	((float)ks_battery_cum_discharge/10.0)
+#define SET_TPMS_ID(n, v)	if (v > 0) ks_tpms_id[n] = v;
 
 #define VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID 0x2F // InputOutputControlByIdentifier
 
