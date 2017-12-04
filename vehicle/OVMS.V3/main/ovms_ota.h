@@ -31,11 +31,16 @@
 #ifndef __OTA_H__
 #define __OTA_H__
 
+#include "ovms_events.h"
+
 class OvmsOTA
   {
   public:
     OvmsOTA();
     ~OvmsOTA();
+
+  protected:
+    void AutoFlashSD(std::string event, void* data);
   };
 
 extern OvmsOTA MyOTA;

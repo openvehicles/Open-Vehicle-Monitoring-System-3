@@ -42,6 +42,7 @@ static const char *TAG = "ota";
 #include "ovms_command.h"
 #include "ovms_config.h"
 #include "ovms_metrics.h"
+#include "ovms_peripherals.h"
 #include "metrics_standard.h"
 #include "ovms_http.h"
 #include "ovms_buffer.h"
@@ -132,7 +133,7 @@ void ota_flash_vfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     err = esp_ota_write(otah, buf, n);
     if (err != ESP_OK)
       {
-      writer->printf("Error: ESP32 error #%d when writing to flash - state is inconsistent\n",err); 
+      writer->printf("Error: ESP32 error #%d when writing to flash - state is inconsistent\n",err);
       esp_ota_end(otah);
       fclose(f);
       return;
@@ -344,9 +345,107 @@ void ota_boot(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     }
   }
 
+void OvmsOTA::AutoFlashSD(std::string event, void* data)
+  {
+  FILE* f = fopen("/sd/ovmsv3.bin", "r");
+  if (f == NULL) return;
+
+  const esp_partition_t *running = esp_ota_get_running_partition();
+  const esp_partition_t *target = esp_ota_get_next_update_partition(running);
+
+  if (running==NULL)
+    {
+    ESP_LOGE(TAG, "AutoFlashSD Error: Current running image cannot be determined - aborting");
+    return;
+    }
+  ESP_LOGI(TAG, "AutoFlashSD Current running partition is: %s",running->label);
+
+  if (target==NULL)
+    {
+    ESP_LOGE(TAG, "AutoFlashSD Error: Target partition cannot be determined - aborting");
+    return;
+    }
+  ESP_LOGI(TAG, "AutoFlashSD Target partition is: %s",target->label);
+
+  if (running == target)
+    {
+    ESP_LOGE(TAG, "AutoFlashSD Error: Cannot flash to running image partition");
+    return;
+    }
+
+  struct stat ds;
+  if (stat("/sd/ovmsv3.bin", &ds) != 0)
+    {
+    ESP_LOGE(TAG, "AutoFlashSD Error: Cannot stat file");
+    return;
+    }
+  ESP_LOGI(TAG, "AutoFlashSD Source image is %d bytes in size",(int)ds.st_size);
+
+  ESP_LOGI(TAG, "AutoFlashSD Preparing flash partition...");
+  esp_ota_handle_t otah;
+  esp_err_t err = esp_ota_begin(target, ds.st_size, &otah);
+  if (err != ESP_OK)
+    {
+    ESP_LOGE(TAG, "AutoFlashSD Error: ESP32 error #%d when starting OTA operation",err);
+    return;
+    }
+
+  ESP_LOGI(TAG, "AutoFlashSD Flashing image partition...");
+  char buf[512];
+  while(size_t n = fread(buf, sizeof(char), sizeof(buf), f))
+    {
+    err = esp_ota_write(otah, buf, n);
+    if (err != ESP_OK)
+      {
+      ESP_LOGE(TAG, "AutoFlashSD Error: ESP32 error #%d when writing to flash - state is inconsistent",err);
+      esp_ota_end(otah);
+      fclose(f);
+      return;
+      }
+    }
+  fclose(f);
+
+  err = esp_ota_end(otah);
+  if (err != ESP_OK)
+    {
+    ESP_LOGE(TAG, "AutoFlashSD Error: ESP32 error #%d finalising OTA operation - state is inconsistent",err);
+    return;
+    }
+
+  fclose(f);
+
+  ESP_LOGI(TAG, "AutoFlashSD Setting boot partition...");
+  err = esp_ota_set_boot_partition(target);
+  if (err != ESP_OK)
+    {
+    ESP_LOGE(TAG, "AutoFlashSD Error: ESP32 error #%d setting boot partition - check before rebooting",err);
+    return;
+    }
+
+  if (rename("/sd/ovmsv3.bin","/sd/ovmsv3.done") != 0)
+    {
+    ESP_LOGE(TAG, "AutoFlashSD Error: ovmsv3.bin could not be renamed to ovmsv3.done - check before rebooting");
+    return;
+    }
+
+  ESP_LOGI(TAG, "AutoFlashSD unmounting SD CARD");
+  MyPeripherals->m_sdcard->unmount();
+
+  ESP_LOGI(TAG, "AutoFlashSD OTA flash successful: Flashed %d bytes, and booting from '%s'",
+                 (int)ds.st_size,target->label);
+
+  ESP_LOGI(TAG, "AutoFlashSD restarting...");
+  esp_restart();
+  }
+
 OvmsOTA::OvmsOTA()
   {
   ESP_LOGI(TAG, "Initialising OTA (4400)");
+
+  #undef bind  // Kludgy, but works
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG,"sd.mounted", std::bind(&OvmsOTA::AutoFlashSD, this, _1, _2));
 
   OvmsCommand* cmd_ota = MyCommandApp.RegisterCommand("ota","OTA framework",NULL,"",0,0,true);
 
