@@ -23,6 +23,9 @@
  * THE SOFTWARE.
  */
 
+#include "ovms_log.h"
+static const char *TAG = "v-renaulttwizy";
+
 #include <math.h>
 
 #include "rt_battmon.h"
@@ -52,6 +55,8 @@
  */
 void OvmsVehicleRenaultTwizy::BatteryInit()
 {
+  ESP_LOGI(TAG, "battmon subsystem init");
+  
   int i;
   char prefix[50];
   
@@ -144,6 +149,8 @@ void OvmsVehicleRenaultTwizy::BatteryUpdate()
  */
 void OvmsVehicleRenaultTwizy::BatteryReset()
 {
+  ESP_LOGD(TAG, "battmon reset");
+  
   for (battery_cell &cell : twizy_cell)
   {
     cell.volt_max = cell.volt_act;

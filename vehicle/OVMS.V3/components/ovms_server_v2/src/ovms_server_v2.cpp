@@ -1241,6 +1241,14 @@ void OvmsServerV2::TransmitNotifyData()
     OvmsNotifyEntry* e = data->FirstUnreadEntry(MyOvmsServerV2Reader, m_pending_notify_data_last);
     if (e == NULL) return;
 
+    std::string msg = e->GetValue();
+    ESP_LOGD(TAG, "TransmitNotifyData: msg=%s", msg.c_str());
+
+    // terminate payload at first LF:
+    size_t eol = msg.find('\n');
+    if (eol != std::string::npos)
+      msg.resize(eol);
+    
     std::ostringstream buffer;
     buffer
       << "MP-0 h"
@@ -1248,7 +1256,7 @@ void OvmsServerV2::TransmitNotifyData()
       << ","
       << monotonictime - e->m_created
       << ","
-      << e->GetValue();
+      << msg;
     Transmit(buffer.str().c_str());
     m_pending_notify_data_last = e->m_id;
     }
