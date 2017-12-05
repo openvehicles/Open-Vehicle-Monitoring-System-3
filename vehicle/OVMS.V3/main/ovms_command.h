@@ -40,6 +40,7 @@
 #include "microrl_config.h"
 
 #define COMMAND_RESULT_MINIMAL    140
+#define COMMAND_RESULT_SMS        160
 #define COMMAND_RESULT_NORMAL     1024
 #define COMMAND_RESULT_VERBOSE    65535
 
