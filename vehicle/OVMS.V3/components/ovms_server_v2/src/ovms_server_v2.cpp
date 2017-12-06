@@ -31,10 +31,6 @@
 #include "ovms_log.h"
 static const char *TAG = "ovms-server-v2";
 
-#include <string.h>
-#include <sstream>
-#include <iostream>
-#include <iomanip>
 #include "ovms.h"
 #include "buffered_shell.h"
 #include "ovms_command.h"
@@ -307,7 +303,7 @@ void OvmsServerV2::ProcessServerMsg()
     }
 
   char code = line[5];
-  std::string payload = std::string(line,6,line.length()-6);
+  const char* payload = line.c_str()+6;
 
   switch(code)
     {
@@ -319,7 +315,7 @@ void OvmsServerV2::ProcessServerMsg()
     case 'Z': // Peer connections
       {
       int oldpeers = StandardMetrics.ms_s_v2_peers->AsInt();
-      int nc = atoi(payload.c_str());
+      int nc = atoi(payload);
       StandardMetrics.ms_s_v2_peers->SetValue(nc);
       if ((nc == 0)&&(oldpeers != 0))
         MyEvents.SignalEvent("app.disconnected",NULL);
@@ -329,7 +325,7 @@ void OvmsServerV2::ProcessServerMsg()
       }
     case 'h': // Historical data acknowledgement
       {
-      HandleNotifyDataAck(atoi(payload.c_str()));
+      HandleNotifyDataAck(atoi(payload));
       break;
       }
     case 'C': // Command
@@ -342,11 +338,11 @@ void OvmsServerV2::ProcessServerMsg()
     }
   }
 
-void OvmsServerV2::ProcessCommand(std::string& payload)
+void OvmsServerV2::ProcessCommand(const char* payload)
   {
-  int command = atoi(payload.c_str());
-  size_t sep = payload.find(',');
-  // std::string token = std::string(line,7,sep-7);
+  int command = atoi(payload);
+  char *sep = index(payload,',');
+  int k;
 
   OvmsVehicle* vehicle = MyVehicleFactory.ActiveVehicle();
 
@@ -355,9 +351,12 @@ void OvmsServerV2::ProcessCommand(std::string& payload)
     {
     case 1: // Request feature list
       {
-      for (int k=0;k<16;k++)
+      for (k=0;k<16;k++)
         {
         *buffer << "MP-0 c1,0," << k << ",16,0";
+        Transmit(*buffer);
+        buffer->str("");
+        buffer->clear();
         }
       break;
       }
@@ -368,25 +367,28 @@ void OvmsServerV2::ProcessCommand(std::string& payload)
       }
     case 3: // Request parameter list
       {
-      for (int k=0;k<32;k++)
+      for (k=0;k<32;k++)
         {
         *buffer << "MP-0 c3,0," << k << ",32,";
         if ((k<PMAX_MAX)&&(pmap[k].param[0] != 0))
           {
           *buffer << MyConfig.GetParamValue(pmap[k].param, pmap[k].instance);
           }
+        Transmit(*buffer);
+        buffer->str("");
+        buffer->clear();
         }
       break;
       }
     case 4: // Set parameter
       {
-      if (sep != std::string::npos)
+      if (sep)
         {
-        int k = atoi(payload.substr(sep+1).c_str());
+        k = atoi(sep);
         if ((k<PMAX_MAX)&&(pmap[k].param[0] != 0))
           {
-          sep = payload.find(',',sep+1);
-          MyConfig.SetParamValue(pmap[k].param, pmap[k].instance, payload.substr(sep+1));
+          sep = index(sep+1,',');
+          MyConfig.SetParamValue(pmap[k].param, pmap[k].instance, sep+1);
           }
         }
       *buffer << "MP-0 c4,0";
@@ -404,8 +406,7 @@ void OvmsServerV2::ProcessCommand(std::string& payload)
     case 7: // Execute command
       {
       BufferedShell* bs = new BufferedShell(false, COMMAND_RESULT_NORMAL);
-      const char* cmd = payload.substr(sep+1).c_str();
-      bs->ProcessChars(cmd, strlen(cmd));
+      bs->ProcessChars(sep+1, strlen(sep)-1);
       bs->ProcessChar('\n');
       std::string val; bs->Dump(val);
       delete bs;
@@ -415,145 +416,145 @@ void OvmsServerV2::ProcessCommand(std::string& payload)
       }
     case 10: // Set Charge Mode
       {
-      int result = 1;
-      if ((vehicle)&&(sep != std::string::npos))
+      k = 1;
+      if (vehicle && sep)
         {
-        if (vehicle->CommandSetChargeMode((OvmsVehicle::vehicle_mode_t)atoi(payload.substr(sep+1).c_str())) == OvmsVehicle::Success) result = 0;
+        if (vehicle->CommandSetChargeMode((OvmsVehicle::vehicle_mode_t)atoi(sep+1)) == OvmsVehicle::Success) k = 0;
         }
-      *buffer << "MP-0 c10," << result;
+      *buffer << "MP-0 c10," << k;
       break;
       }
     case 11: // Start Charge
       {
-      int result = 1;
+      k = 1;
       if (vehicle)
         {
-        if (vehicle->CommandStartCharge() == OvmsVehicle::Success) result = 0;
+        if (vehicle->CommandStartCharge() == OvmsVehicle::Success) k = 0;
         }
-      *buffer << "MP-0 c11," << result;
+      *buffer << "MP-0 c11," << k;
       break;
       }
     case 12: // Stop Charge
       {
-      int result = 1;
+      k = 1;
       if (vehicle)
         {
-        if (vehicle->CommandStopCharge() == OvmsVehicle::Success) result = 0;
+        if (vehicle->CommandStopCharge() == OvmsVehicle::Success) k = 0;
         }
-      *buffer << "MP-0 c12," << result;
+      *buffer << "MP-0 c12," << k;
       break;
       }
     case 15: // Set Charge Current
       {
-      int result = 1;
-      if ((vehicle)&&(sep != std::string::npos))
+      k = 1;
+      if (vehicle && sep)
         {
-        if (vehicle->CommandSetChargeCurrent(atoi(payload.substr(sep+1).c_str())) == OvmsVehicle::Success) result = 0;
+        if (vehicle->CommandSetChargeCurrent(atoi(sep+1)) == OvmsVehicle::Success) k = 0;
         }
-      *buffer << "MP-0 c15," << result;
+      *buffer << "MP-0 c15," << k;
       break;
       }
     case 16: // Set Charge Mode and Current
       {
-      int result = 1;
-      if ((vehicle)&&(sep != std::string::npos))
+      k = 1;
+      if (vehicle && sep)
         {
-        OvmsVehicle::vehicle_mode_t mode = (OvmsVehicle::vehicle_mode_t)atoi(payload.substr(sep+1).c_str());
-        sep = payload.find(',',sep+1);
-        if (sep != std::string::npos)
+        OvmsVehicle::vehicle_mode_t mode = (OvmsVehicle::vehicle_mode_t)atoi(sep+1);
+        sep = index(sep+1,',');
+        if (sep)
           {
-          if (vehicle->CommandSetChargeMode(mode) == OvmsVehicle::Success) result = 0;
-          if ((result == 0)&&(vehicle->CommandSetChargeCurrent(atoi(payload.substr(sep+1).c_str())) != OvmsVehicle::Success))
-            result = 1;
+          if (vehicle->CommandSetChargeMode(mode) == OvmsVehicle::Success) k = 0;
+          if ((k == 0)&&(vehicle->CommandSetChargeCurrent(atoi(sep+1)) != OvmsVehicle::Success))
+            k = 1;
           }
         }
-      *buffer << "MP-0 c16," << result;
+      *buffer << "MP-0 c16," << k;
       break;
       }
     case 17: // Set Charge Timer Mode and Start Time
       {
-      int result = 1;
-      if ((vehicle)&&(sep != std::string::npos))
+      k = 1;
+      if (vehicle && sep)
         {
-        bool timermode = atoi(payload.substr(sep+1).c_str());
-        sep = payload.find(',',sep+1);
-        if (sep != std::string::npos)
+        bool timermode = atoi(sep+1);
+        sep = index(sep+1,',');
+        if (sep)
           {
-          if (vehicle->CommandSetChargeTimer(timermode,atoi(payload.substr(sep+1).c_str())) == OvmsVehicle::Success) result = 0;
+          if (vehicle->CommandSetChargeTimer(timermode,atoi(sep+1)) == OvmsVehicle::Success) k = 0;
           }
         }
-      *buffer << "MP-0 c17," << result;
+      *buffer << "MP-0 c17," << k;
       break;
       }
     case 18: // Wakeup Car
     case 19: // Wakeup Temperature Subsystem
       {
-      int result = 1;
+      k = 1;
       if (vehicle)
         {
-        if (vehicle->CommandWakeup() == OvmsVehicle::Success) result = 0;
+        if (vehicle->CommandWakeup() == OvmsVehicle::Success) k = 0;
         }
-      *buffer << "MP-0 c" << command << "," << result;
+      *buffer << "MP-0 c" << command << "," << k;
       break;
       }
     case 20: // Lock Car
       {
-      int result = 1;
-      if ((vehicle)&&(sep != std::string::npos))
+      k = 1;
+      if (vehicle && sep)
         {
-        if (vehicle->CommandLock(payload.substr(sep+1).c_str()) == OvmsVehicle::Success) result = 0;
+        if (vehicle->CommandLock(sep+1) == OvmsVehicle::Success) k = 0;
         }
-      *buffer << "MP-0 c20," << result;
+      *buffer << "MP-0 c20," << k;
       break;
       }
     case 21: // Activate Valet Mode
       {
-      int result = 1;
-      if ((vehicle)&&(sep != std::string::npos))
+      k = 1;
+      if (vehicle && sep)
         {
-        if (vehicle->CommandActivateValet(payload.substr(sep+1).c_str()) == OvmsVehicle::Success) result = 0;
+        if (vehicle->CommandActivateValet(sep+1) == OvmsVehicle::Success) k = 0;
         }
-      *buffer << "MP-0 c21," << result;
+      *buffer << "MP-0 c21," << k;
       break;
       }
     case 22: // Unlock Car
       {
-      int result = 1;
-      if ((vehicle)&&(sep != std::string::npos))
+      k = 1;
+      if (vehicle && sep)
         {
-        if (vehicle->CommandUnlock(payload.substr(sep+1).c_str()) == OvmsVehicle::Success) result = 0;
+        if (vehicle->CommandUnlock(sep+1) == OvmsVehicle::Success) k = 0;
         }
-      *buffer << "MP-0 c22," << result;
+      *buffer << "MP-0 c22," << k;
       break;
       }
     case 23: // Deactivate Valet Mode
       {
-      int result = 1;
-      if ((vehicle)&&(sep != std::string::npos))
+      k = 1;
+      if (vehicle && sep)
         {
-        if (vehicle->CommandDeactivateValet(payload.substr(sep+1).c_str()) == OvmsVehicle::Success) result = 0;
+        if (vehicle->CommandDeactivateValet(sep+1) == OvmsVehicle::Success) k = 0;
         }
-      *buffer << "MP-0 c23," << result;
+      *buffer << "MP-0 c23," << k;
       break;
       }
     case 24: // Homelink
       {
-      int result = 1;
-      if ((vehicle)&&(sep != std::string::npos))
+      k = 1;
+      if (vehicle && sep)
         {
-        if (vehicle->CommandHomelink(atoi(payload.substr(sep+1).c_str())) == OvmsVehicle::Success) result = 0;
+        if (vehicle->CommandHomelink(atoi(sep+1)) == OvmsVehicle::Success) k = 0;
         }
-      *buffer << "MP-0 c24," << result;
+      *buffer << "MP-0 c24," << k;
       break;
       }
     case 25: // Cooldown
       {
-      int result = 1;
+      k = 1;
       if (vehicle)
         {
-        if (vehicle->CommandCooldown(true) == OvmsVehicle::Success) result = 0;
+        if (vehicle->CommandCooldown(true) == OvmsVehicle::Success) k = 0;
         }
-      *buffer << "MP-0 c25," << result;
+      *buffer << "MP-0 c25," << k;
       break;
       }
     case 40: // Send SMS
@@ -564,9 +565,29 @@ void OvmsServerV2::ProcessCommand(std::string& payload)
       break;
     }
 
-  const char* bp = buffer->str().c_str();
-  if (*bp != 0) Transmit(bp);
+  Transmit(*buffer);
   delete buffer;
+  }
+
+void OvmsServerV2::Transmit(const std::ostringstream& message)
+  {
+  const char* bp = message.str().c_str();
+  int len = strlen(bp);
+  if (len==0) return;
+
+  char* s = new char[len+1];
+  strncpy(s,bp,len);
+  ESP_LOGI(TAG, "Send %s",s);
+
+  RC4_crypt(&m_crypto_tx1, &m_crypto_tx2, (uint8_t*)s, len);
+
+  char* buf = new char[(len*2)+4];
+  base64encode((uint8_t*)s, len, (uint8_t*)buf);
+  strcat(buf,"\r\n");
+  m_conn.Write(buf,strlen(buf));
+
+  delete [] buf;
+  delete [] s;
   }
 
 void OvmsServerV2::Transmit(const std::string& message)
