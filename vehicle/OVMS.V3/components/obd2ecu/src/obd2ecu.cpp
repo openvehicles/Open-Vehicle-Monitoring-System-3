@@ -831,7 +831,7 @@ void obd2ecu::Addpid(uint8_t pid)
   }
          
   if(pid <= 0x40)        // PIDs 21-40
-  { m_supported_21_40 |= 1 << (32-pid-0x40);
+  { m_supported_21_40 |= 1 << (32-pid-0x20);
     return;
   } 
   
