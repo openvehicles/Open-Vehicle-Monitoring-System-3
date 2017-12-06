@@ -59,6 +59,10 @@ static void OvmsWebServerMongooseHandler(struct mg_connection *nc, int ev, void 
 
 void OvmsWebServer::NetManInit(std::string event, void* data)
   {
+  // Only initialise server for WIFI connections
+  if (!MyNetManager.m_connected_wifi) return;
+
+  m_running = true;
   ESP_LOGI(TAG,"Launching Web Server");
 
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
@@ -69,13 +73,19 @@ void OvmsWebServer::NetManInit(std::string event, void* data)
 
 void OvmsWebServer::NetManStop(std::string event, void* data)
   {
-  ESP_LOGI(TAG,"Stopping Web Server");
+  if (m_running)
+    {
+    ESP_LOGI(TAG,"Stopping Web Server");
+    m_running = false;
+    }
   }
 
 OvmsWebServer::OvmsWebServer()
   {
   ESP_LOGI(TAG, "Initialising WEBSERVER (8200)");
   ESP_LOGI(TAG, "Using MONGOOSE engine");
+
+  m_running = false;
 
   #undef bind  // Kludgy, but works
   using std::placeholders::_1;

@@ -46,6 +46,9 @@ class OvmsTelnet : public Parent
     void NetManInit(std::string event, void* data);
     void NetManStop(std::string event, void* data);
     void EventHandler(struct mg_connection *nc, int ev, void *p);
+
+  public:
+    bool m_running;
   };
 
 class ConsoleTelnet : public OvmsConsole

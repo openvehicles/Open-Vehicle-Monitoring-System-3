@@ -32,6 +32,9 @@
 #define __OVMS_SERVER_V2_H__
 
 #include <string>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
 #include <sys/time.h>
 #include "ovms_server.h"
 #include "ovms_net.h"
@@ -59,8 +62,9 @@ class OvmsServerV2 : public OvmsServer
     void Disconnect();
     bool Login();
     void ProcessServerMsg();
-    void ProcessCommand(std::string* payload);
-    void Transmit(std::string message);
+    void ProcessCommand(const char* payload);
+    void Transmit(const std::ostringstream& message);
+    void Transmit(const std::string& message);
     void Transmit(const char* message);
 
   protected:

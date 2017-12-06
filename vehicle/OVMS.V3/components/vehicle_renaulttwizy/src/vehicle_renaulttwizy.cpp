@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-renaulttwizy";
 
-#define VERSION "0.1.0"
+#define VERSION "0.2.0"
 
 #include <stdio.h>
 #include <string>
@@ -64,7 +64,7 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   m_version = MyMetrics.InitString("x.rt.m.version", 0, VERSION " " __DATE__ " " __TIME__);
   
   // init commands:
-  cmd_xrt = MyCommandApp.RegisterCommand("xrt","Renault Twizy",NULL,"",0,0,true);
+  cmd_xrt = MyCommandApp.RegisterCommand("xrt", "Renault Twizy", NULL, "", 0, 0, true);
   
   // init subsystems:
   BatteryInit();
@@ -144,36 +144,6 @@ OvmsVehicleRenaultTwizyInit::OvmsVehicleRenaultTwizyInit()
   ESP_LOGI(TAG, "Registering Vehicle: Renault Twizy (9000)");
   MyVehicleFactory.RegisterVehicle<OvmsVehicleRenaultTwizy>("RT","Renault Twizy");
 }
-
-
-/**
- * Framework callbacks
- */
-
-
-/**
- * General command handler:
- */
-
-void vehicle_twizy_command(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-{
-  OvmsVehicleRenaultTwizy* twizy = (OvmsVehicleRenaultTwizy*) MyVehicleFactory.ActiveVehicle();
-  string type = StdMetrics.ms_v_type->AsString();
-  
-  if (!twizy || type != "RT")
-  {
-    writer->puts("Error: Twizy vehicle module not selected");
-    return;
-  }
-
-  twizy->CommandHandler(verbosity, writer, cmd, argc, argv);
-}
-
-OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandHandler(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-{
-  return NotImplemented;
-}
-
 
 
 /**
@@ -763,6 +733,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     && !twizy_flags.CarAwake)
   {
     // CAR has just been turned ON & CAN bus is online
+    ESP_LOGI(TAG, "turned on");
     twizy_flags.CarAwake = 1;
     
     // set trip references:
@@ -784,6 +755,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   else if (!(twizy_status & CAN_STATUS_KEYON) && twizy_flags.CarAwake)
   {
     // CAR has just been turned OFF
+    ESP_LOGI(TAG, "turned off");
     twizy_flags.CarAwake = 0;
     twizy_flags.CtrlLoggedIn = 0;
     
@@ -795,7 +767,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
       +twizy_speedpwr[CAN_SPEED_ACCEL].use
       +twizy_speedpwr[CAN_SPEED_DECEL].use) > (WH_DIV * 25))
     {
-      // TODO twizy_notify(SEND_PowerNotify | SEND_PowerLog);
+      RequestNotify(SEND_PowerNotify | SEND_PowerLog);
     }
     
     // reset button cnt:
@@ -857,6 +829,8 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     // If we've not been charging before...
     if (twizy_chargestate > 2)
     {
+      ESP_LOGI(TAG, "charge start");
+      
       // reset SOC max:
       twizy_soc_max = twizy_soc;
 
@@ -970,6 +944,8 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     // Check if we've been charging before:
     if (twizy_chargestate <= 2)
     {
+      ESP_LOGI(TAG, "charge stop");
+      
       // yes, check if charging has been finished by the BMS
       // by checking if we've reached charge power level 0
       // (this is more reliable than checking for SOC 100% as some Twizy will
@@ -1063,7 +1039,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   // between our and framework per minute update:
   else if (i == 42)
   {
-    // TODO twizy_notify(SEND_BatteryStats);
+    RequestNotify(SEND_BatteryStats);
   }
 
   
@@ -1071,7 +1047,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   // after modem GPS request:
   if (i == 21)
   {
-    // TODO twizy_notify(SEND_DataUpdate);
+    RequestNotify(SEND_DataUpdate);
   }
   // Send stream updates (GPS log) while car is moving
   // every odd second, after modem GPS request:
@@ -1337,10 +1313,35 @@ void OvmsVehicleRenaultTwizy::DoNotify()
 {
   unsigned int which = twizy_notifications;
   
+  // Send charge state?
   if (which & SEND_ChargeState)
   {
     MyNotify.NotifyCommand("info", "stat");
     twizy_notifications &= ~SEND_ChargeState;
+  }
+  
+  // Send power usage statistics?
+  if (which & SEND_PowerNotify)
+  {
+    MyNotify.NotifyCommand("info", "xrt power report");
+    twizy_notifications &= ~SEND_PowerNotify;
+  }
+  
+  // Send power usage log?
+  if (which & SEND_PowerLog)
+  {
+    // TODO MyNotify.NotifyCommand("data", "xrt …");
+    twizy_notifications &= ~SEND_PowerLog;
+  }
+  
+  // Send regular data update:
+  if (which & SEND_DataUpdate)
+  {
+    MyNotify.NotifyCommand("data", "xrt power stats");
+    // TODO if (sys_features[FEATURE_STREAM] == 3)
+    //       stat = net_msgp_gps(stat);
+    //     stat = vehicle_twizy_gpslog_msgp(stat);
+    twizy_notifications &= ~SEND_DataUpdate;
   }
   
 }

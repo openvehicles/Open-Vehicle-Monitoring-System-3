@@ -43,6 +43,9 @@ class OvmsWebServer
   public:
     void NetManInit(std::string event, void* data);
     void NetManStop(std::string event, void* data);
+
+  public:
+    bool m_running;
   };
 
 extern OvmsWebServer MyWebServer;

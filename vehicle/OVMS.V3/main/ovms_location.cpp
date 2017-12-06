@@ -50,7 +50,7 @@ double OvmsLocationDistance(double th1, double ph1, double th2, double ph2)
 
   ph1 -= ph2;
   ph1 *= LOCATION_TO_RAD, th1 *= LOCATION_TO_RAD, th2 *= LOCATION_TO_RAD;
- 
+
   dz = sin(th1) - sin(th2);
   dx = cos(ph1) * cos(th1) - cos(th2);
   dy = sin(ph1) * cos(th1);
@@ -74,6 +74,8 @@ bool OvmsLocation::IsInLocation(float latitude, float longitude)
   {
   // This should check if we are in the location
   double dist = OvmsLocationDistance((double)latitude,(double)longitude,(double)m_latitude,(double)m_longitude);
+  std::string event;
+
   // ESP_LOGI(TAG, "Location %s is %0.1fm distant",m_name.c_str(),dist);
 
   if (abs(dist) <= m_radius)
@@ -82,7 +84,9 @@ bool OvmsLocation::IsInLocation(float latitude, float longitude)
     if (!m_inlocation)
       {
       m_inlocation = true;
-      MyEvents.SignalEvent("location.enter", (void*)m_name.c_str());
+      event = std::string("location.enter.");
+      event.append(m_name);
+      MyEvents.SignalEvent(event.c_str(), (void*)m_name.c_str());
       }
     }
   else
@@ -91,7 +95,9 @@ bool OvmsLocation::IsInLocation(float latitude, float longitude)
     if (m_inlocation)
       {
       m_inlocation = false;
-      MyEvents.SignalEvent("location.leave", (void*)m_name.c_str());
+      event = std::string("location.leave.");
+      event.append(m_name);
+      MyEvents.SignalEvent(event.c_str(), (void*)m_name.c_str());
       }
     }
 
@@ -335,4 +341,3 @@ void OvmsLocations::UpdatedConfig(std::string event, void* data)
 
   ReloadMap();
   }
-
