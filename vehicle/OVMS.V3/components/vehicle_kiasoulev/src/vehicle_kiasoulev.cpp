@@ -21,6 +21,9 @@
 ;		 0.1.5  04-Dec-2017 - Geir Øyvind Vælidalo
 ;			- Fetch proper RPM from VMCU.
 ;
+;		 0.1.6  06-Dec-2017 - Geir Øyvind Vælidalo
+;			- Added some verbosity-handling in CELLS and TRIP. Plus other minor changes.
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -56,17 +59,17 @@ static const char *TAG = "v-kiasoulev";
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 
-#define VERSION "0.1.5"
+#define VERSION "0.1.6"
 
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
-    { 0x7e2, 0, 	   VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, {   0, 120, 120 } }, 	// VIN
+    { 0x7e2, 0, 	   VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, { 999, 999, 999 } }, 	// VIN
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, {  30,  10,  10 } }, 	// BMC Diag page 01
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, {   0,  30,  10 } }, 	// BMC Diag page 02
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x03, {   0,  30,  10 } }, 	// BMC Diag page 03
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x04, {   0,  30,  10 } }, 	// BMC Diag page 04
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, {  30,  30,  10 } }, 	// BMC Diag page 02
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x03, {  30,  30,  10 } }, 	// BMC Diag page 03
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x04, {  30,  30,  10 } }, 	// BMC Diag page 04
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x05, { 120,  10,  10 } },	// BMC Diag page 05
-    { 0x794, 0x79c, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, {   0,   0,  10 } }, 	// OBC - On board charger
+    { 0x794, 0x79c, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, {  30,  30,  10 } }, 	// OBC - On board charger
     { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x00, {  30,  10,  10 } }, 	// VMCU Shift-stick
     { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, {  30,  10,   0 } }, 	// VMCU Motor temp++
     { 0x7df, 0x7de, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x06, {  30,  10,   0 } }, 	// TMPS
@@ -673,6 +676,8 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 			StdMetrics.ms_v_charge_inprogress->SetValue( true );
 			StdMetrics.ms_v_env_charging12v->SetValue( true);
 
+			PollSetState(2);
+
       // Send charge alert:
       RequestNotify(SEND_ChargeState);
 			//TODO ks_sms_bits.NotifyCharge = 1; // Send SMS when charging is fully initiated
@@ -760,6 +765,7 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 	  		{
 			SET_CHARGE_STATE("stopped");
 			}
+		StdMetrics.ms_v_charge_substate->SetValue("onrequest");
 	  StdMetrics.ms_v_charge_kwh->SetValue( CUM_CHARGE - ks_cum_charge_start, kWh );  // kWh charged
 
 	  ks_cum_charge_start = 0;
@@ -796,6 +802,7 @@ void OvmsVehicleKiaSoulEv::SetChargeMetrics(float voltage, float current, float 
 	StdMetrics.ms_v_charge_mode->SetValue( chademo ? "performance" : "standard");
 	StdMetrics.ms_v_charge_climit->SetValue( climit, Amps);
 	StdMetrics.ms_v_charge_type->SetValue( chademo ? "chademo" : "type1");
+	StdMetrics.ms_v_charge_substate->SetValue("onrequest");
 	}
 
 /**
@@ -965,41 +972,48 @@ void xks_cells(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
 
   metric_unit_t rangeUnit = Native; // TODO: use user config if set
 
-	writer->printf("CELLS\n");
-
-	// Minimum voltage
 	const char* minimum = soul->m_b_cell_volt_min->AsUnitString("-", rangeUnit, 2).c_str();
-  if (*minimum != '-')
-    writer->printf("Minimum %s #%d\n", minimum, soul->m_b_cell_volt_min_no->AsInt(0));
-
-	// Maximum voltage
 	const char* maximum = soul->m_b_cell_volt_max->AsUnitString("-", rangeUnit, 2).c_str();
-  if (*maximum != '-')
-    writer->printf("Maximum %s #%d\n", maximum, soul->m_b_cell_volt_max_no->AsInt(0));
-
-	// Total voltage
 	const char* total = StdMetrics.ms_v_bat_voltage->AsUnitString("-", rangeUnit, 2).c_str();
-  if (*total != '-')
-    writer->printf("Total %s\n", total);
-
-	// Min Detoriation
 	const char* minDet = soul->m_b_cell_det_min->AsUnitString("-", rangeUnit, 2).c_str();
-  if (*minDet != '-')
-    writer->printf("Min Det %s #%d\n", minDet, soul->m_b_cell_det_min_no->AsInt(0));
-
-  // Max Detoriation
 	const char* maxDet = soul->m_b_cell_det_max->AsUnitString("-", rangeUnit, 2).c_str();
-  if (*maxDet != '-')
-    writer->printf("Max Det %s #%d\n", maxDet, soul->m_b_cell_det_max_no->AsInt(0));
 
-  for (uint8_t i=0; i < sizeof (soul->ks_battery_cell_voltage); i++)
-  		{
-		if( i % 10 == 0)
-			writer->printf("\n%02d:",i+1);
-		writer->printf("%.*fV ", 2, (float)soul->ks_battery_cell_voltage[i]/50.0);
+	writer->printf("CELLS\n");
+	if (*minimum != '-') writer->printf("Min %s #%d\n", minimum, soul->m_b_cell_volt_min_no->AsInt(0));
+	if (*maximum != '-') writer->printf("Max %s #%d\n", maximum, soul->m_b_cell_volt_max_no->AsInt(0));
+	if (*total != '-') writer->printf("Total %s\n", total);
+	if (*minDet != '-') writer->printf("Min Det %s #%d\n", minDet, soul->m_b_cell_det_min_no->AsInt(0));
+	if (*maxDet != '-') writer->printf("Max Det %s #%d\n", maxDet, soul->m_b_cell_det_max_no->AsInt(0));
+
+	if(verbosity>788)
+		{
+		for (uint8_t i=0; i < sizeof (soul->ks_battery_cell_voltage); i++)
+			{
+			if( i % 10 == 0) writer->printf("\n%02d:",i+1);
+			writer->printf("%.*fV ", 2, (float)soul->ks_battery_cell_voltage[i]/50.0);
+			}
+		writer->printf("\n");
 		}
-	writer->printf("\n");
-  }
+	else
+		{
+		uint8_t i, lines=(verbosity-80)/11;
+		// Count each voltage and print out number of cells with that voltage.
+		// Handles up to as many lines as verbosity allows. Hopefully it will be enough
+		for( i=0;i<225; i++)
+			{
+			uint8_t cnt=0;
+			for (uint8_t a=0; a < sizeof (soul->ks_battery_cell_voltage) && lines>0; a++)
+				{
+				if( soul->ks_battery_cell_voltage[a]==i) cnt++;
+				}
+			if(cnt>0)
+				{
+				writer->printf("%02d x %.*fV\n", cnt, 2, (float)i/50.0);
+				lines--;
+				}
+			}
+		}
+	}
 
 /**
  * Print out information of the tpms.
@@ -1017,30 +1031,30 @@ void xks_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
 
 	writer->printf("TPMS\n");
-
 	// Front left
 	const char* fl_pressure = StdMetrics.ms_v_tpms_fl_p->AsUnitString("-", rangeUnit, 1).c_str();
 	const char* fl_temp = StdMetrics.ms_v_tpms_fl_t->AsUnitString("-", rangeUnit, 1).c_str();
-  if (*fl_pressure != '-')
-    writer->printf("FL ID:%lu %s %s\n", soul->ks_tpms_id[0], fl_pressure, fl_temp);
-
 	// Front right
 	const char* fr_pressure = StdMetrics.ms_v_tpms_fr_p->AsUnitString("-", rangeUnit, 1).c_str();
 	const char* fr_temp = StdMetrics.ms_v_tpms_fr_t->AsUnitString("-", rangeUnit, 1).c_str();
-  if (*fr_pressure != '-')
-    writer->printf("FR ID:%lu %s %s\n",soul->ks_tpms_id[1], fr_pressure, fr_temp);
-
 	// Rear left
 	const char* rl_pressure = StdMetrics.ms_v_tpms_rl_p->AsUnitString("-", rangeUnit, 1).c_str();
 	const char* rl_temp = StdMetrics.ms_v_tpms_rl_t->AsUnitString("-", rangeUnit, 1).c_str();
-  if (*rl_pressure != '-')
-    writer->printf("RL ID:%lu %s %s\n",soul->ks_tpms_id[2], rl_pressure, rl_temp);
-
 	// Rear right
 	const char* rr_pressure = StdMetrics.ms_v_tpms_rr_p->AsUnitString("-", rangeUnit, 1).c_str();
 	const char* rr_temp = StdMetrics.ms_v_tpms_rr_t->AsUnitString("-", rangeUnit, 1).c_str();
+
+	if (*fl_pressure != '-')
+    writer->printf("1 ID:%lu %s %s\n", soul->ks_tpms_id[0], fl_pressure, fl_temp);
+
+  if (*fr_pressure != '-')
+    writer->printf("2 ID:%lu %s %s\n",soul->ks_tpms_id[1], fr_pressure, fr_temp);
+
+  if (*rl_pressure != '-')
+    writer->printf("3 ID:%lu %s %s\n",soul->ks_tpms_id[2], rl_pressure, rl_temp);
+
   if (*rr_pressure != '-')
-    writer->printf("RR ID:%lu %s %s\n",soul->ks_tpms_id[3], rr_pressure, rr_temp);
+    writer->printf("4 ID:%lu %s %s\n",soul->ks_tpms_id[3], rr_pressure, rr_temp);
   }
 
 /**
@@ -1056,36 +1070,36 @@ void xks_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 
   metric_unit_t rangeUnit = Native; // TODO: use user config if set
 
-	writer->printf("TRIP\n");
+  writer->printf("TRIP\n");
 
 	// Trip distance
 	const char* distance = StdMetrics.ms_v_pos_trip->AsUnitString("-", rangeUnit, 1).c_str();
+  // Consumption
+  float consumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers);
+  float consumption2 = StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh);
+    // Discharge
+  const char* discharge = StdMetrics.ms_v_bat_energy_used->AsUnitString("-", rangeUnit, 1).c_str();
+  // Recuperation
+  const char* recuparation = StdMetrics.ms_v_bat_energy_recd->AsUnitString("-", rangeUnit, 1).c_str();
+  // Total consumption
+  float totalConsumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) + StdMetrics.ms_v_bat_energy_recd->AsFloat(kWh);
+  // ODO
+  const char* ODO = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
+
   if (*distance != '-')
     writer->printf("Dist %s\n", distance);
 
-  // Consumption
-  float consumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers);
   writer->printf("Con %.*fkWh/100km\n", 2, consumption);
-
-  float consumption2 = StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh);
   writer->printf("Con %.*fkm/kWh\n", 2, consumption2);
 
-  // Discharge
-  const char* discharge = StdMetrics.ms_v_bat_energy_used->AsUnitString("-", rangeUnit, 1).c_str();
   if (*discharge != '-')
     writer->printf("Dis %s\n", discharge);
 
-  // Recuperation
-  const char* recuparation = StdMetrics.ms_v_bat_energy_recd->AsUnitString("-", rangeUnit, 1).c_str();
   if (*recuparation != '-')
     writer->printf("Rec %s\n", recuparation);
 
-  // Total consumption
-  float totalConsumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) + StdMetrics.ms_v_bat_energy_recd->AsFloat(kWh);
   writer->printf("Total %.*fkWh\n", 2, totalConsumption);
 
-  // ODO
-  const char* ODO = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
   if (*ODO != '-')
     writer->printf("ODO %s\n", ODO);
   }
