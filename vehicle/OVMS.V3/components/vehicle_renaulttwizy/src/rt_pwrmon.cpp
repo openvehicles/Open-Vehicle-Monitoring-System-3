@@ -112,6 +112,26 @@ void OvmsVehicleRenaultTwizy::PowerUpdate()
 
 
 /**
+ * PowerIsModified: get & clear metrics modification flags
+ */
+bool OvmsVehicleRenaultTwizy::PowerIsModified()
+{
+  bool modified =
+    StdMetrics.ms_v_bat_power->IsModifiedAndClear(m_modifier) ||
+    StdMetrics.ms_v_bat_energy_used->IsModifiedAndClear(m_modifier) ||
+    StdMetrics.ms_v_bat_energy_recd->IsModifiedAndClear(m_modifier);
+  
+  for (speedpwr &stats : twizy_speedpwr)
+    modified |= stats.IsModified(m_modifier);
+  
+  for (levelpwr &stats : twizy_levelpwr)
+    modified |= stats.IsModified(m_modifier);
+  
+  return modified;
+}
+
+
+/**
  * PowerCollectData:
  */
 void OvmsVehicleRenaultTwizy::PowerCollectData()
@@ -254,6 +274,16 @@ void speedpwr::UpdateMetrics()
     *m_spdavg = (float) 0;
 }
 
+bool speedpwr::IsModified(size_t m_modifier)
+{
+  bool modified =
+    m_dist->IsModifiedAndClear(m_modifier) ||
+    m_used->IsModifiedAndClear(m_modifier) ||
+    m_recd->IsModifiedAndClear(m_modifier) ||
+    m_spdavg->IsModifiedAndClear(m_modifier);
+  return modified;
+}
+
 
 void levelpwr::InitMetrics(const string prefix)
 {
@@ -269,6 +299,16 @@ void levelpwr::UpdateMetrics()
   *m_hsum = (float) hsum;
   *m_used = (float) use / WH_DIV / 1000;
   *m_recd = (float) rec / WH_DIV / 1000;
+}
+
+bool levelpwr::IsModified(size_t m_modifier)
+{
+  bool modified =
+    m_dist->IsModifiedAndClear(m_modifier) ||
+    m_used->IsModifiedAndClear(m_modifier) ||
+    m_recd->IsModifiedAndClear(m_modifier) ||
+    m_hsum->IsModifiedAndClear(m_modifier);
+  return modified;
 }
 
 

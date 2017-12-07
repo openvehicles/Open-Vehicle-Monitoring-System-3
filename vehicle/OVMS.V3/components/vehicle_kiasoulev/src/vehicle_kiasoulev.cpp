@@ -24,6 +24,9 @@
 ;		 0.1.6  06-Dec-2017 - Geir Øyvind Vælidalo
 ;			- Added some verbosity-handling in CELLS and TRIP. Plus other minor changes.
 ;
+;		 0.1.7  07-Dec-2017 - Geir Øyvind Vælidalo
+;			- All doors added (except trunk).
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -59,7 +62,7 @@ static const char *TAG = "v-kiasoulev";
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 
-#define VERSION "0.1.6"
+#define VERSION "0.1.7"
 
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
@@ -139,6 +142,9 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   m_ldc_temperature = MyMetrics.InitFloat("x.ks.ldc.temp", 10, 0, Celcius);
 
   m_obc_pilot_duty = MyMetrics.InitFloat("x.ks.obc.pilot.duty", 10, 0, Percentage);
+
+  m_v_env_lowbeam = MyMetrics.InitBool("x.ks.e.lowbeam", 10, 0);
+  m_v_env_highbeam = MyMetrics.InitBool("x.ks.e.highbeam", 10, 0);
 
   m_b_cell_det_max->SetValue(0);
   m_b_cell_det_min->SetValue(0);
@@ -236,17 +242,29 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
     {
   	  case 0x018:
   	   {
-       // Doors status Byte 0:
-  	   StdMetrics.ms_v_door_chargeport->SetValue((d[0] & 0x01) > 0);
-  	   StdMetrics.ms_v_door_fl->SetValue((d[0] & 0x10) > 0);
-  	   StdMetrics.ms_v_door_fr->SetValue((d[0] & 0x80) > 0);
-  	   StdMetrics.ms_v_door_rl->SetValue(false); //TODO
-  	   StdMetrics.ms_v_door_rr->SetValue(false); //TODO
-  	   // Light status Byte 3 & 5
+       // Doors status Byte 0, 4 & 5:
+  	   StdMetrics.ms_v_door_chargeport->SetValue((d[0] & 0x01) > 0); 	//Byte 0 - Bit 0
+  	   StdMetrics.ms_v_door_fl->SetValue((d[0] & 0x10) > 0);					//Byte 0 - Bit 4
+  	   StdMetrics.ms_v_door_fr->SetValue((d[0] & 0x80) > 0);					//Byte 0 - Bit 7
+  	   StdMetrics.ms_v_door_rl->SetValue((d[4] & 0x08) > 0);					//Byte 4 - Bit 3
+  	   StdMetrics.ms_v_door_rr->SetValue((d[4] & 0x02) > 0); 					//Byte 4 - Bit 1
+
+  	   StdMetrics.ms_v_door_trunk->SetValue((d[5] & 0x80) > 0); 			//Byte 5 - Bit 7
+
+  	   // Light status Byte 2 & 4
+  	   m_v_env_lowbeam->SetValue( (d[2] & 0x01)>0 );		//Byte 2 - Bit 0 - Low beam
+  	   m_v_env_highbeam->SetValue( (d[2] & 0x02)>0 );		//Byte 2 - Bit 1 - High beam
+  	   StdMetrics.ms_v_env_headlights->SetValue( (d[4] & 0x01)>0 );		//Byte 4 - Bit 0 - Day lights
   	   // Seat belt status Byte 7
   	   }
-       break;
+     break;
 
+  	  /*case 0x110:
+  	   {
+  	   StdMetrics.ms_v_env_headlights->SetValue( (d[3] & 0x80)>0 );
+  	   }
+     break;
+*/
   	  case 0x120: //Locks - TODO Not working correctly
   	    {
   	    	  if( d[2]==0x20 ){
@@ -256,7 +274,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
   	          //TODO ks_doors2.CarLocked = 0x00;
   	        }
   	       }
-         }
+       }
   	     break;
 
       case 0x200:
