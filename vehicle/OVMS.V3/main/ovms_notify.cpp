@@ -62,6 +62,11 @@ void notify_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   {
   writer->printf("Notification system has %d readers registered\n",
     MyNotify.CountReaders());
+  for (OvmsNotifyCallbackMap_t::iterator itc=MyNotify.m_readers.begin(); itc!=MyNotify.m_readers.end(); itc++)
+    {
+    OvmsNotifyCallbackEntry* mc = itc->second;
+    writer->printf("  %s: verbosity=%d\n", mc->m_caller, mc->m_verbosity);
+    }
 
   if (MyNotify.m_types.size() > 0)
     {
@@ -433,6 +438,7 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* cmd)
   
   std::map<int, OvmsNotifyEntryCommand*> verbosity_msgs;
   std::map<int, OvmsNotifyEntryCommand*>::iterator itm;
+  std::map<int, OvmsNotifyEntryCommand*>::reverse_iterator ritm;
   OvmsNotifyCallbackMap_t::iterator itc;
   OvmsNotifyEntryCommand *msg;
   size_t msglen;
@@ -447,9 +453,9 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* cmd)
   // fetch verbosity levels beginning at highest verbosity:
   msg = NULL;
   msglen = 0;
-  for (itm=verbosity_msgs.end(); itm!=verbosity_msgs.begin(); itm--)
+  for (ritm=verbosity_msgs.rbegin(); ritm!=verbosity_msgs.rend(); ritm++)
     {
-    int verbosity = itm->first;
+    int verbosity = ritm->first;
     
     if (msg && msglen <= verbosity)
       {

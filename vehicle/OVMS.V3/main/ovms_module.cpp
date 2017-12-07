@@ -125,7 +125,7 @@ class Name
       for (int i = 0; i < NAMELEN/4 - 1; ++i)
         if (a.words[i] != words[i]) return false;
       if (a.words[NAMELEN/4-1] != (words[NAMELEN/4-1] & 0x7FFFFFFF)) return false;
-      return true;                                      
+      return true;
       }
   public:
     union
@@ -316,7 +316,7 @@ class HeapTotals
         ++count;
         }
       }
-    
+
   private:
     HeapTask tasks[NUMTASKS];
     int count;
@@ -634,6 +634,11 @@ static void module_check(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
   }
 #endif // NOGO
 
+static void module_fault(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  ESP_LOGI(TAG,"Abort faulting module (on command)");
+  abort();
+  }
 
 static void module_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -655,6 +660,7 @@ class OvmsModuleInit
     cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"[<task names or ids>]",0,TASKLIST,true);
     cmd_module->RegisterCommand("tasks","Show module task usage",module_tasks,"",0,0,true);
     cmd_module->RegisterCommand("abort","Set trap to abort on malloc",module_abort,"<task> <count> [<size>]",2,3,true);
+    cmd_module->RegisterCommand("fault","Abort fault the module",module_fault,"",0,0,true);
     cmd_module->RegisterCommand("reset","Reset module",module_reset,"",0,0,true);
     cmd_module->RegisterCommand("check","Check heap validity",module_check,"",0,0,true);
     }

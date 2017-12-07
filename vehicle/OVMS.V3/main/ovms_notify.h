@@ -150,7 +150,7 @@ class OvmsNotify
     uint32_t NotifyString(const char* type, const char* value);
     uint32_t NotifyCommand(const char* type, const char* cmd);
 
-  protected:
+  public:
     OvmsNotifyCallbackMap_t m_readers;
 
   protected:

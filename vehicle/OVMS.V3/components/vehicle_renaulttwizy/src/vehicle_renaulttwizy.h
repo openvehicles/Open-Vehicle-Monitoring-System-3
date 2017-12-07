@@ -29,15 +29,16 @@
 #include "can.h"
 #include "vehicle.h"
 
+#include "ovms_log.h"
 #include "ovms_config.h"
 #include "ovms_metrics.h"
+#include "ovms_command.h"
 
 #include "rt_types.h"
 #include "rt_battmon.h"
 #include "rt_pwrmon.h"
 
 using namespace std;
-
 
 class OvmsVehicleRenaultTwizy : public OvmsVehicle
 {
@@ -65,10 +66,13 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     
   protected:
     OvmsCommand *cmd_xrt;
+    OvmsCommand *cmd_power;
+    OvmsCommand *cmd_batt;
+    OvmsCommand *cmd_gps;
     
   public:
     vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
-    vehicle_command_t CommandHandler(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    vehicle_command_t CommandPower(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   
   // --------------------------------------------------------------------------
@@ -76,6 +80,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   // 
   
   protected:
+    static size_t m_modifier;
     OvmsMetricString *m_version;
     
   
@@ -195,6 +200,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     // cAh = [1/400 As] / 400 / 3600 * 100
     #define CAH_DIV (14400L)
     #define CAH_RND (7200L)
+    #define AH_DIV (CAH_DIV * 100L)
     
     int cfg_chargemode = 0;
     #define TWIZY_CHARGEMODE_DEFAULT    0   // notify on limits (FW: "standard")
@@ -248,6 +254,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     void PowerInit();
     void PowerUpdate();
     void PowerReset();
+    bool PowerIsModified();
     
   private:
     void PowerCollectData();
