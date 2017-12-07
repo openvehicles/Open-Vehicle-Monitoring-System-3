@@ -47,6 +47,8 @@ using namespace std;
  * Constructor & destructor
  */
 
+size_t OvmsVehicleRenaultTwizy::m_modifier = 0;
+
 OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
 {
   ESP_LOGI(TAG, "Renault Twizy vehicle module");
@@ -61,6 +63,10 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   ConfigChanged(NULL);
   
   // init metrics:
+  if (m_modifier == 0) {
+    m_modifier = MyMetrics.RegisterModifier();
+    ESP_LOGD(TAG, "registered metric modifier is #%d", m_modifier);
+  }
   m_version = MyMetrics.InitString("x.rt.m.version", 0, VERSION " " __DATE__ " " __TIME__);
   
   // init commands:
@@ -1337,7 +1343,9 @@ void OvmsVehicleRenaultTwizy::DoNotify()
   // Send regular data update:
   if (which & SEND_DataUpdate)
   {
-    MyNotify.NotifyCommand("data", "xrt power stats");
+    if (PowerIsModified())
+      MyNotify.NotifyCommand("data", "xrt power stats");
+    
     // TODO if (sys_features[FEATURE_STREAM] == 3)
     //       stat = net_msgp_gps(stat);
     //     stat = vehicle_twizy_gpslog_msgp(stat);
