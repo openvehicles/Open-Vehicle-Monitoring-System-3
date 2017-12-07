@@ -84,6 +84,9 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     OvmsMetricInt*		m_b_heat_1_temperature; 	//02 21 05 -> 23 6
     OvmsMetricInt*		m_b_heat_2_temperature; 	//02 21 05 -> 23 7
 
+    OvmsMetricBool*		m_v_env_lowbeam;
+    OvmsMetricBool*		m_v_env_highbeam;
+
     OvmsMetricFloat* m_obc_pilot_duty;
 
     OvmsMetricFloat* m_ldc_out_voltage;
