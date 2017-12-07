@@ -80,6 +80,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   // 
   
   protected:
+    static size_t m_modifier;
     OvmsMetricString *m_version;
     
   
@@ -253,6 +254,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     void PowerInit();
     void PowerUpdate();
     void PowerReset();
+    bool PowerIsModified();
     
   private:
     void PowerCollectData();
