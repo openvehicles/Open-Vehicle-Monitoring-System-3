@@ -117,6 +117,7 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     // Kia Soul EV specific metrics
     OvmsMetricString* m_version;
     OvmsMetricFloat*  m_c_power;            				// Available charge power
+    OvmsMetricFloat*  m_c_speed;									// km/h
 
 		#define CFG_DEFAULT_MAXRANGE 160
     int ks_maxrange = CFG_DEFAULT_MAXRANGE;        // Configured max range at 20 °C

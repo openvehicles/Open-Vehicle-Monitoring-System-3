@@ -26,6 +26,10 @@
 ;
 ;		 0.1.7  07-Dec-2017 - Geir Øyvind Vælidalo
 ;			- All doors added (except trunk).
+;			- Daylight led driving lights, low beam and highbeam added.
+;
+;		 0.1.8  08-Dec-2017 - Geir Øyvind Vælidalo
+;			- Added charge speed in km/h, adjusted for temperature.
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
@@ -62,7 +66,7 @@ static const char *TAG = "v-kiasoulev";
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 
-#define VERSION "0.1.7"
+#define VERSION "0.1.8"
 
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
@@ -130,6 +134,7 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   m_b_cell_det_max_no = MyMetrics.InitInt("x.ks.b.cell.det.max.no", 10, 0);
   m_b_cell_det_min_no = MyMetrics.InitInt("x.ks.b.cell.det.min.no", 10, 0);
   m_c_power = MyMetrics.InitFloat("x.ks.c.power", 10, 0, kW);
+  m_c_speed = MyMetrics.InitFloat("x.ks.c.speed", 10, 0, Kph);
   m_b_min_temperature = MyMetrics.InitInt("x.ks.b.min.temp", 10, 0, Celcius);
   m_b_max_temperature = MyMetrics.InitInt("x.ks.b.max.temp", 10, 0, Celcius);
   m_b_inlet_temperature = MyMetrics.InitInt("x.ks.b.inlet.temp", 10, 0, Celcius);
@@ -789,6 +794,7 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 	  ks_cum_charge_start = 0;
 	  StdMetrics.ms_v_charge_inprogress->SetValue( false );
 		StdMetrics.ms_v_env_charging12v->SetValue( false );
+		m_c_speed->SetValue(0);
 
     // Send charge alert:
     RequestNotify(SEND_ChargeState);
@@ -821,6 +827,11 @@ void OvmsVehicleKiaSoulEv::SetChargeMetrics(float voltage, float current, float 
 	StdMetrics.ms_v_charge_climit->SetValue( climit, Amps);
 	StdMetrics.ms_v_charge_type->SetValue( chademo ? "chademo" : "type1");
 	StdMetrics.ms_v_charge_substate->SetValue("onrequest");
+
+	//"Typical" consumption based on battery temperature and ambient temperature.
+	float temp = (StdMetrics.ms_v_bat_temp->AsFloat(Celcius) + StdMetrics.ms_v_env_temp->AsFloat(Celcius))/2;
+	float consumption = 15+(20-temp)*3.0/8.0; //kWh/100km
+	m_c_speed->SetValue( (voltage * current * 100) / consumption, Kph);
 	}
 
 /**
