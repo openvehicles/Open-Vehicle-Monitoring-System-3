@@ -1,6 +1,10 @@
 CAN test frames
 ===============
 
+level verbose
+vehicle module RT
+server v2 start
+
 # 0x155: CHGLIM=25A, CURR=58.25A, SOC=69.98%
 can can1 rx standard 155 05 96 E7 54 6D 58 00 6F
 metrics list climit
@@ -22,13 +26,33 @@ metrics list vin
 
 
 # Battery status:
+
+can can1 rx standard 424 11 40 04 26 41 64 00 42
 can can1 rx standard 554 46 45 45 44 45 45 46 00
 can can1 rx standard 556 33 63 34 33 53 34 33 5A
 can can1 rx standard 557 33 43 35 33 53 35 33 50
 can can1 rx standard 55E 33 43 34 33 43 36 00 D5
 can can1 rx standard 55F 00 8E 73 00 00 23 E2 3E
-metrics list v.b.
 
+can can1 rx standard 556 33 63 35 33 53 34 33 5A
+
+metrics list .b.
+
+xrt batt data-pack
+xrt batt data-cell 1
+xrt batt data-cell 2
+xrt batt data-cell 3
+xrt batt data-cell 4
+xrt batt data-cell 5
+xrt batt data-cell 6
+xrt batt data-cell 7
+xrt batt data-cell 8
+xrt batt data-cell 9
+xrt batt data-cell 10
+xrt batt data-cell 11
+xrt batt data-cell 12
+xrt batt data-cell 13
+xrt batt data-cell 14
 
 # Start charge:
 can can1 rx standard 597 20 A4 07 B1 29 00 01 41

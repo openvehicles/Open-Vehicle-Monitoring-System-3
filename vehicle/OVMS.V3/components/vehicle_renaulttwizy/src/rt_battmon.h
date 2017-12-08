@@ -40,6 +40,10 @@ struct battery_pack
   UINT volt_min = 1000; // charge cycle min voltage
   UINT volt_max = 0; // charge cycle max voltage
   
+  float temp_act = 0; // current temperature in °C + 40
+  float temp_min = 240; // charge cycle min temperature
+  float temp_max = 0; // charge cycle max temperature
+  
   std::bitset<32> volt_watches = 0; // bitfield: cell dev > stddev
   std::bitset<32> volt_alerts = 0; // bitfield: cell dev > BATT_DEV_VOLT_ALERT
   std::bitset<32> last_volt_alerts = 0; // recognize alert state changes
@@ -58,11 +62,15 @@ struct battery_pack
   
   // Metrics
   
-  void InitMetrics(const string prefix);
+  void InitMetrics(int i);
   void UpdateMetrics();
+  bool IsModified(size_t modifier);
   
   OvmsMetricFloat *m_volt_min;
   OvmsMetricFloat *m_volt_max;
+  
+  OvmsMetricFloat *m_temp_min;
+  OvmsMetricFloat *m_temp_max;
   
   OvmsMetricBitset<32> *m_volt_watches;
   OvmsMetricBitset<32> *m_volt_alerts;
@@ -89,8 +97,9 @@ struct battery_cmod // cell module
   
   // Metrics
   
-  void InitMetrics(const string prefix);
+  void InitMetrics(int i);
   void UpdateMetrics();
+  bool IsModified(size_t modifier);
   
   OvmsMetricFloat *m_temp_act;
   OvmsMetricFloat *m_temp_min;
@@ -110,8 +119,9 @@ struct battery_cell
   
   // Metrics
   
-  void InitMetrics(const string prefix);
+  void InitMetrics(int i);
   void UpdateMetrics();
+  bool IsModified(size_t modifier);
   
   OvmsMetricFloat *m_volt_act;
   OvmsMetricFloat *m_volt_min;
@@ -121,10 +131,10 @@ struct battery_cell
 };
 
 // Conversion utils:
-#define CONV_PackVolt(m) ((UINT)(m) * (100 / 10))
-#define CONV_CellVolt(m) ((UINT)(m) * (1000 / 200))
-#define CONV_CellVoltS(m) ((INT)(m) * (1000 / 200))
-#define CONV_Temp(m) ((INT)(m) - 40)
+#define CONV_PackVolt(m) ((int)((m) * (100 / 10)))
+#define CONV_CellVolt(m) ((int)((m) * (1000 / 200)))
+#define CONV_CellVoltS(m) ((int)((m) * (1000 / 200)))
+#define CONV_Temp(m) ((int)(m+0.5) - 40)
 
 
 #endif // __rt_battmon_h__

@@ -73,6 +73,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   public:
     vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
     vehicle_command_t CommandPower(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    vehicle_command_t CommandBatt(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   
   // --------------------------------------------------------------------------
@@ -302,6 +303,9 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     void BatteryInit();
     void BatteryUpdate();
     void BatteryReset();
+    void FormatPackData(int verbosity, OvmsWriter* writer, int pack);
+    void FormatCellData(int verbosity, OvmsWriter* writer, int cell);
+    void BatterySendDataUpdate();
   
   private:
     void BatteryCheckDeviations();
