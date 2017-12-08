@@ -498,3 +498,37 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* cmd)
   
   return queue_id;
   }
+
+
+/**
+ * NotifyStringf: printf style API
+ */
+uint32_t OvmsNotify::NotifyStringf(const char* type, const char* fmt, ...)
+  {
+  char *buffer;
+  va_list args;
+  va_start(args, fmt);
+  vasprintf(&buffer, fmt, args);
+  va_end(args);
+  uint32_t res = NotifyString(type, buffer);
+  free(buffer);
+  return res;
+  }
+
+
+/**
+ * NotifyCommandf: printf style API
+ */
+uint32_t OvmsNotify::NotifyCommandf(const char* type, const char* fmt, ...)
+  {
+  char *buffer;
+  va_list args;
+  va_start(args, fmt);
+  vasprintf(&buffer, fmt, args);
+  va_end(args);
+  uint32_t res = NotifyCommand(type, buffer);
+  free(buffer);
+  return res;
+  }
+
+

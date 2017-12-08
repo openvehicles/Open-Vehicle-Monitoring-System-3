@@ -148,7 +148,9 @@ class OvmsNotify
   public:
     void RegisterType(const char* type);
     uint32_t NotifyString(const char* type, const char* value);
+    uint32_t NotifyStringf(const char* type, const char* fmt, ...);
     uint32_t NotifyCommand(const char* type, const char* cmd);
+    uint32_t NotifyCommandf(const char* type, const char* fmt, ...);
 
   public:
     OvmsNotifyCallbackMap_t m_readers;
