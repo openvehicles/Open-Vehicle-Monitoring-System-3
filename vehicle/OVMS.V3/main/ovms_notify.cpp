@@ -317,6 +317,7 @@ OvmsNotify::OvmsNotify()
   cmd_notifytrace->RegisterCommand("off","Turn notification tracing OFF",notify_trace,"", 0, 0, false);
 
   RegisterType("info");
+  RegisterType("error");
   RegisterType("alert");
   RegisterType("data");
   }
