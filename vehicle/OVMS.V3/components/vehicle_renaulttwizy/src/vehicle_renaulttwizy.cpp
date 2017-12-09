@@ -1340,6 +1340,13 @@ void OvmsVehicleRenaultTwizy::DoNotify()
     twizy_notifications &= ~SEND_PowerLog;
   }
   
+  // Send battery status update?
+  if (which & SEND_BatteryStats)
+  {
+    BatterySendDataUpdate();
+    twizy_notifications &= ~SEND_BatteryStats;
+  }
+  
   // Send regular data update:
   if (which & SEND_DataUpdate)
   {
