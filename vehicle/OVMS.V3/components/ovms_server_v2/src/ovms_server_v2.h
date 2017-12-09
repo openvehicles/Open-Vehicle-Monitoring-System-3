@@ -81,6 +81,7 @@ class OvmsServerV2 : public OvmsServer
 
   protected:
     void TransmitNotifyInfo();
+    void TransmitNotifyError();
     void TransmitNotifyAlert();
     void TransmitNotifyData();
     void HandleNotifyDataAck(uint32_t ack);
@@ -116,6 +117,7 @@ class OvmsServerV2 : public OvmsServer
     bool m_now_group;
 
     bool m_pending_notify_info;
+    bool m_pending_notify_error;
     bool m_pending_notify_alert;
     bool m_pending_notify_data;
     uint32_t m_pending_notify_data_last;

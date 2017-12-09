@@ -220,6 +220,7 @@ void OvmsServerV2::ServerTask()
 
     m_status = "Connected and logged in";
     m_pending_notify_info = true;
+    m_pending_notify_error = true;
     m_pending_notify_alert = true;
     m_pending_notify_data = true;
     m_pending_notify_data_last = 0;
@@ -269,6 +270,7 @@ void OvmsServerV2::ServerTask()
       if (m_now_capabilities) TransmitMsgCapabilities();
 
       if (m_pending_notify_info) TransmitNotifyInfo();
+      if (m_pending_notify_error) TransmitNotifyError();
       if (m_pending_notify_alert) TransmitNotifyAlert();
       if (m_pending_notify_data) TransmitNotifyData();
 
@@ -1210,11 +1212,35 @@ void OvmsServerV2::TransmitNotifyInfo()
 
     std::ostringstream buffer;
     buffer
-      << "MP-0 PA"
+      << "MP-0 PI"
       << mp_encode(e->GetValue());
     Transmit(buffer.str().c_str());
 
     info->MarkRead(MyOvmsServerV2Reader, e);
+    }
+  }
+
+void OvmsServerV2::TransmitNotifyError()
+  {
+  m_pending_notify_error = false;
+
+  // Find the type object
+  OvmsNotifyType* alert = MyNotify.GetType("error");
+  if (alert == NULL) return;
+
+  while(1)
+    {
+    // Find the first entry
+    OvmsNotifyEntry* e = alert->FirstUnreadEntry(MyOvmsServerV2Reader, 0);
+    if (e == NULL) return;
+
+    std::ostringstream buffer;
+    buffer
+      << "MP-0 PE"
+      << e->GetValue(); // no mp_encode; payload structure "<vehicletype>,<errorcode>,<errordata>"
+    Transmit(buffer.str().c_str());
+
+    alert->MarkRead(MyOvmsServerV2Reader, e);
     }
   }
 
@@ -1234,7 +1260,7 @@ void OvmsServerV2::TransmitNotifyAlert()
 
     std::ostringstream buffer;
     buffer
-      << "MP-0 PE"
+      << "MP-0 PA"
       << mp_encode(e->GetValue());
     Transmit(buffer.str().c_str());
 
@@ -1319,14 +1345,29 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
       }
     std::ostringstream buffer;
     buffer
-      << "MP-0 PA"
+      << "MP-0 PI"
       << mp_encode(entry->GetValue());
+    Transmit(buffer.str().c_str());
+    return true; // Mark it as read, as we've managed to send it
+    }
+  else if (strcmp(type->m_name,"error")==0)
+    {
+    // Error notification
+    if (!StandardMetrics.ms_s_v2_connected->AsBool())
+      {
+      m_pending_notify_error = true;
+      return false; // No connection, so leave it queued for when we do
+      }
+    std::ostringstream buffer;
+    buffer
+      << "MP-0 PE"
+      << entry->GetValue(); // no mp_encode; payload structure "<vehicletype>,<errorcode>,<errordata>"
     Transmit(buffer.str().c_str());
     return true; // Mark it as read, as we've managed to send it
     }
   else if (strcmp(type->m_name,"alert")==0)
     {
-    // Info notifications
+    // Alert notifications
     if (!StandardMetrics.ms_s_v2_connected->AsBool())
       {
       m_pending_notify_alert = true;
@@ -1334,7 +1375,7 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
       }
     std::ostringstream buffer;
     buffer
-      << "MP-0 PE"
+      << "MP-0 PA"
       << mp_encode(entry->GetValue());
     Transmit(buffer.str().c_str());
     return true; // Mark it as read, as we've managed to send it
@@ -1384,6 +1425,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
   m_now_group = false;
 
   m_pending_notify_info = false;
+  m_pending_notify_error = false;
   m_pending_notify_alert = false;
   m_pending_notify_data = false;
   m_pending_notify_data_last = 0;
