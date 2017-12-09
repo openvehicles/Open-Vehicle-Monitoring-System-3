@@ -931,9 +931,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     // NOT CHARGING
     // 
 
-    // clear charge stop request:
-    twizy_chg_stop_request = 0;
-
     // Switch off additional charger:
     // TODO PORTBbits.RB4 = 0;
 
@@ -963,6 +960,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
         
         // yes, means "done"
         twizy_chargestate = 4;
+        RequestNotify(SEND_ChargeState);
         
         // calculate battery capacity if charge started below 40% SOC:
         if (twizy_soc_min < 4000)
@@ -994,10 +992,11 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
       {
         // no, means "stopped"
         twizy_chargestate = 21;
+        
+        // send charge state or alert depending on stop by user request:
+        RequestNotify(twizy_chg_stop_request ? SEND_ChargeState : SEND_ChargeAlert);
       }
 
-      // Send charge alert:
-      RequestNotify(SEND_ChargeState);
     }
 
     else if (twizy_flags.CarAwake && twizy_flags.ChargePort)
@@ -1017,6 +1016,9 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
       twizy_soc_min_range = twizy_range_est;
     }
     
+    // clear charge stop request:
+    twizy_chg_stop_request = 0;
+
     // END OF STATE: NOT CHARGING
   }
   
@@ -1319,30 +1321,44 @@ void OvmsVehicleRenaultTwizy::DoNotify()
 {
   unsigned int which = twizy_notifications;
   
+  // Send battery alert?
+  if (which & SEND_BatteryAlert) {
+    MyNotify.NotifyCommand("alert", "xrt batt status");
+    twizy_notifications &= ~SEND_BatteryAlert;
+  }
+  
+  // Send charge alert?
+  if (which & SEND_ChargeAlert) {
+    MyNotify.NotifyCommand("alert", "stat");
+    twizy_notifications &= ~SEND_ChargeState;
+  }
+  
   // Send charge state?
-  if (which & SEND_ChargeState)
-  {
+  if (which & SEND_ChargeState) {
     MyNotify.NotifyCommand("info", "stat");
     twizy_notifications &= ~SEND_ChargeState;
   }
   
   // Send power usage statistics?
-  if (which & SEND_PowerNotify)
-  {
+  if (which & SEND_PowerNotify) {
     MyNotify.NotifyCommand("info", "xrt power report");
     twizy_notifications &= ~SEND_PowerNotify;
   }
   
   // Send power usage log?
-  if (which & SEND_PowerLog)
-  {
+  if (which & SEND_PowerLog) {
     // TODO MyNotify.NotifyCommand("data", "xrt …");
     twizy_notifications &= ~SEND_PowerLog;
   }
   
+  // Send battery status update?
+  if (which & SEND_BatteryStats) {
+    BatterySendDataUpdate();
+    twizy_notifications &= ~SEND_BatteryStats;
+  }
+  
   // Send regular data update:
-  if (which & SEND_DataUpdate)
-  {
+  if (which & SEND_DataUpdate) {
     if (PowerIsModified())
       MyNotify.NotifyCommand("data", "xrt power stats");
     

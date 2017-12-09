@@ -73,6 +73,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   public:
     vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
     vehicle_command_t CommandPower(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    vehicle_command_t CommandBatt(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   
   // --------------------------------------------------------------------------
@@ -229,15 +230,16 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     
     
     // Notifications:
-    #define SEND_BatteryAlert           (1<< 0)  // text alert: battery problem
-    #define SEND_PowerNotify            (1<< 1)  // text alert: power usage summary
-    #define SEND_DataUpdate             (1<< 2)  // regular data update (per minute)
-    #define SEND_StreamUpdate           (1<< 3)  // stream data update (per second)
-    #define SEND_BatteryStats           (1<< 4)  // separate battery stats (large)
-    #define SEND_CodeAlert              (1<< 5)  // text alert: fault code (SEVCON/inputs/...)
-    #define SEND_PowerLog               (1<< 6)  // RT-PWR-Log history entry
-    #define SEND_ResetResult            (1<< 7)  // text alert: RESET OK/FAIL
-    #define SEND_ChargeState            (1<< 8)  // text alert: STAT command
+    #define SEND_BatteryAlert           (1<< 0)  // alert: battery problem
+    #define SEND_PowerNotify            (1<< 1)  // info: power usage summary
+    #define SEND_DataUpdate             (1<< 2)  // data: regular data update (per minute)
+    #define SEND_StreamUpdate           (1<< 3)  // data: stream data update (per second)
+    #define SEND_BatteryStats           (1<< 4)  // data: separate battery stats (large)
+    #define SEND_CodeAlert              (1<< 5)  // alert: fault code (SEVCON/inputs/...)
+    #define SEND_PowerLog               (1<< 6)  // data: RT-PWR-Log history entry
+    #define SEND_ResetResult            (1<< 7)  // info/alert: RESET OK/FAIL
+    #define SEND_ChargeState            (1<< 8)  // info: STAT command
+    #define SEND_ChargeAlert            (1<< 9)  // alert: STAT command (charge interrupt)
     
   protected:
     unsigned int twizy_notifications = 0;
@@ -302,6 +304,12 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     void BatteryInit();
     void BatteryUpdate();
     void BatteryReset();
+    void FormatPackData(int verbosity, OvmsWriter* writer, int pack);
+    void FormatCellData(int verbosity, OvmsWriter* writer, int cell);
+    void BatterySendDataUpdate();
+    void FormatBatteryStatus(int verbosity, OvmsWriter* writer, int pack);
+    void FormatBatteryVolts(int verbosity, OvmsWriter* writer, bool show_deviations);
+    void FormatBatteryTemps(int verbosity, OvmsWriter* writer, bool show_deviations);
   
   private:
     void BatteryCheckDeviations();
