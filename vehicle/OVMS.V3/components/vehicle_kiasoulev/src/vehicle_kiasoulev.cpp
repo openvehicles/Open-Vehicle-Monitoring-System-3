@@ -31,6 +31,9 @@
 ;		 0.1.8  08-Dec-2017 - Geir Øyvind Vælidalo
 ;			- Added charge speed in km/h, adjusted for temperature.
 ;
+;		 0.1.9  09-Dec-2017 - Geir Øyvind Vælidalo
+;			- Added reading of door lock.
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -66,7 +69,7 @@ static const char *TAG = "v-kiasoulev";
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 
-#define VERSION "0.1.8"
+#define VERSION "0.1.9"
 
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
@@ -256,10 +259,14 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 
   	   StdMetrics.ms_v_door_trunk->SetValue((d[5] & 0x80) > 0); 			//Byte 5 - Bit 7
 
-  	   // Light status Byte 2 & 4
+  	   // Light status Byte 2,4 & 5
   	   m_v_env_lowbeam->SetValue( (d[2] & 0x01)>0 );		//Byte 2 - Bit 0 - Low beam
   	   m_v_env_highbeam->SetValue( (d[2] & 0x02)>0 );		//Byte 2 - Bit 1 - High beam
   	   StdMetrics.ms_v_env_headlights->SetValue( (d[4] & 0x01)>0 );		//Byte 4 - Bit 0 - Day lights
+
+  	   //byte 5 - Bit 6 - Left indicator light
+  	   //byte 5 - Bit 5 - Right indicator light
+
   	   // Seat belt status Byte 7
   	   }
      break;
@@ -270,17 +277,18 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
   	   }
      break;
 */
-  	  case 0x120: //Locks - TODO Not working correctly
+  	  case 0x120: //Locks
   	    {
-  	    	  if( d[2]==0x20 ){
-  	        if( d[3]==0x20){
-  	          //TODO ks_doors2.CarLocked = 0x01;
-  	        }else if( d[3]==0x10){
-  	          //TODO ks_doors2.CarLocked = 0x00;
-  	        }
-  	       }
-       }
-  	     break;
+			if( d[3] & 0x20)
+				{
+				StdMetrics.ms_v_env_locked->SetValue(true);
+				}
+			else if( d[3] & 0x10 )
+				{
+				StdMetrics.ms_v_env_locked->SetValue(false);
+				}
+  	    }
+  	    break;
 
       case 0x200:
         {
