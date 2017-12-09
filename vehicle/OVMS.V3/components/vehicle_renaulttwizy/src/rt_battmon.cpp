@@ -122,12 +122,12 @@ void OvmsVehicleRenaultTwizy::BatteryInit()
   cmd_batt = cmd_xrt->RegisterCommand("batt", "Battery monitor", NULL, "", 0, 0, true);
   {
     cmd_batt->RegisterCommand("reset", "Reset alerts & watches", vehicle_twizy_batt, "", 0, 0, true);
-    cmd_batt->RegisterCommand("status", "Status report", vehicle_twizy_batt, "", 0, 0, true);
+    cmd_batt->RegisterCommand("status", "Status report", vehicle_twizy_batt, "[<pack>]", 0, 1, true);
     cmd_batt->RegisterCommand("volt", "Show voltages", vehicle_twizy_batt, "", 0, 0, true);
     cmd_batt->RegisterCommand("vdev", "Show voltage deviations", vehicle_twizy_batt, "", 0, 0, true);
     cmd_batt->RegisterCommand("temp", "Show temperatures", vehicle_twizy_batt, "", 0, 0, true);
     cmd_batt->RegisterCommand("tdev", "Show temperature deviations", vehicle_twizy_batt, "", 0, 0, true);
-    cmd_batt->RegisterCommand("data-pack", "Output pack record", vehicle_twizy_batt, "<pack>", 0, 1, true);
+    cmd_batt->RegisterCommand("data-pack", "Output pack record", vehicle_twizy_batt, "[<pack>]", 0, 1, true);
     cmd_batt->RegisterCommand("data-cell", "Output cell record", vehicle_twizy_batt, "<cell>", 1, 1, true);
   }
   
@@ -238,7 +238,9 @@ void OvmsVehicleRenaultTwizy::BatteryReset()
 void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
 {
   UINT i;
-  float stddev, absdev, dev, m;
+  UINT stddev, absdev;
+  int dev;
+  float m;
   UINT32 sum, sqrsum;
   
   
@@ -282,7 +284,9 @@ void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
     if ((twizy_batt[0].temp_max == 0) || (twizy_batt[0].temp_act > twizy_batt[0].temp_max))
       twizy_batt[0].temp_max = twizy_batt[0].temp_act;
     
-    stddev = sqrtf( ((float)sqrsum/batt_cmod_count) - SQR((float)sum/batt_cmod_count) );
+    stddev = sqrtf( ((float)sqrsum/batt_cmod_count) - SQR((float)sum/batt_cmod_count) ) + 0.5;
+    if (stddev == 0)
+      stddev = 1; // not enough precision to allow stddev 0
     
     // check max stddev:
     if (stddev > twizy_batt[0].cmod_temp_stddev_max)
@@ -307,7 +311,8 @@ void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
     for (i = 0; i < batt_cmod_count; i++)
     {
       // deviation:
-      dev = twizy_cmod[i].temp_act - m;
+      dev = (twizy_cmod[i].temp_act - m)
+              + ((twizy_cmod[i].temp_act >= m) ? 0.5 : -0.5);
       absdev = ABS(dev);
       
       // Set watch/alert flags:
@@ -367,7 +372,9 @@ void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
     
     m = (float) sum / batt_cell_count;
     
-    stddev = sqrtf( ((float)sqrsum/batt_cell_count) - SQR((float)sum/batt_cell_count) );
+    stddev = sqrtf( ((float)sqrsum/batt_cell_count) - SQR((float)sum/batt_cell_count) ) + 0.5;
+    if (stddev == 0)
+      stddev = 1; // not enough precision to allow stddev 0
     
     // check max stddev:
     if (stddev > twizy_batt[0].cell_volt_stddev_max)
@@ -392,7 +399,8 @@ void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
     for (i = 0; i < batt_cell_count; i++)
     {
       // deviation:
-      dev = twizy_cell[i].volt_act - m;
+      dev = (twizy_cell[i].volt_act - m)
+              + ((twizy_cell[i].volt_act >= m) ? 0.5 : -0.5);
       absdev = ABS(dev);
       
       // Set watch/alert flags:
@@ -418,7 +426,7 @@ void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
   if ((twizy_batt[0].volt_alerts != twizy_batt[0].last_volt_alerts)
     || (twizy_batt[0].temp_alerts != twizy_batt[0].last_temp_alerts))
   {
-    // TODO twizy_notify(SEND_BatteryAlert | SEND_BatteryStats);
+    RequestNotify(SEND_BatteryAlert | SEND_BatteryStats);
   }
   
   
@@ -545,6 +553,28 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandBatt(
     writer->puts("Battery monitor reset.");
   }
   
+  else if (strcmp(subcmd, "status") == 0)
+  {
+    int pack = (argc > 0) ? atoi(argv[0]) : 1;
+    if (pack < 1 || pack > batt_pack_count) {
+      writer->printf("Error: pack number out of range [1-%d]\n", batt_pack_count);
+      return Fail;
+    }
+    FormatBatteryStatus(verbosity, writer, pack-1);
+  }
+  
+  else if (subcmd[0] == 'v')
+  {
+    // "volt"=absolute values, "vdev"=deviations
+    FormatBatteryVolts(verbosity, writer, (subcmd[1]=='d') ? true : false);
+  }
+  
+  else if (subcmd[0] == 't')
+  {
+    // "temp"=absolute values, "tdev"=deviations
+    FormatBatteryTemps(verbosity, writer, (subcmd[1]=='d') ? true : false);
+  }
+  
   else if (strcmp(subcmd, "data-pack") == 0)
   {
     int pack = (argc > 0) ? atoi(argv[0]) : 1;
@@ -564,8 +594,230 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandBatt(
     }
     FormatCellData(verbosity, writer, cell-1);
   }
+  
 
   return Success;
+}
+
+
+/**
+ * FormatBatteryStatus: output status report (alerts & watches)
+ */
+void OvmsVehicleRenaultTwizy::FormatBatteryStatus(int verbosity, OvmsWriter* writer, int pack)
+{
+  int capacity = verbosity;
+  const char *em;
+  int c, val;
+
+  // Voltage deviations:
+  capacity -= writer->printf("Volts: ");
+
+  // standard deviation:
+  val = CONV_CellVolt(twizy_batt[pack].cell_volt_stddev_max);
+  if (twizy_batt[pack].volt_alerts.test(BATT_STDDEV_VOLT_FLAG))
+    em = "!";
+  else if (twizy_batt[pack].volt_watches.test(BATT_STDDEV_VOLT_FLAG))
+    em = "?";
+  else
+    em = "";
+  capacity -= writer->printf("%sSD:%dmV ", em, val);
+
+  if ((twizy_batt[pack].volt_alerts.none()) && (twizy_batt[pack].volt_watches.none()))
+  {
+    capacity -= writer->printf("OK ");
+  }
+  else
+  {
+    for (c = 0; c < batt_cell_count; c++)
+    {
+      // check length:
+      if (capacity < 12)
+      {
+        writer->puts("...");
+        return;
+      }
+
+      // Alert / Watch?
+      if (twizy_batt[pack].volt_alerts.test(c))
+        em = "!";
+      else if (twizy_batt[pack].volt_watches.test(c))
+        em = "?";
+      else
+        continue;
+
+      val = CONV_CellVoltS(twizy_cell[c].volt_maxdev);
+
+      capacity -= writer->printf("%sC%d:%+dmV ", em, c+1, val);
+    }
+  }
+
+  // check length:
+  if (capacity < 20)
+  {
+    writer->puts("...");
+    return;
+  }
+
+  // Temperature deviations:
+  capacity -= writer->printf("Temps: ");
+
+  // standard deviation:
+  val = twizy_batt[pack].cmod_temp_stddev_max;
+  if (twizy_batt[pack].temp_alerts.test(BATT_STDDEV_TEMP_FLAG))
+    em = "!";
+  else if (twizy_batt[pack].temp_watches.test(BATT_STDDEV_TEMP_FLAG))
+    em = "?";
+  else
+    em = "";
+  capacity -= writer->printf("%sSD:%dC ", em, val);
+  
+  if ((twizy_batt[pack].temp_alerts.none()) && (twizy_batt[pack].temp_watches.none()))
+  {
+    capacity -= writer->printf("OK ");
+  }
+  else
+  {
+    for (c = 0; c < batt_cmod_count; c++)
+    {
+      // check length:
+      if (capacity < 8)
+      {
+        writer->puts("...");
+        return;
+      }
+
+      // Alert / Watch?
+      if (twizy_batt[pack].temp_alerts.test(c))
+        em = "!";
+      else if (twizy_batt[pack].temp_watches.test(c))
+        em = "?";
+      else
+        continue;
+
+      val = twizy_cmod[c].temp_maxdev;
+
+      capacity -= writer->printf("%sM%d:%+dC ", em, c+1, val);
+    }
+  }
+  
+  writer->puts("");
+}
+
+
+/**
+ * FormatBatteryVolts: output voltage report (absolute / deviations)
+ */
+void OvmsVehicleRenaultTwizy::FormatBatteryVolts(int verbosity, OvmsWriter* writer, bool show_deviations)
+{
+  int capacity = verbosity;
+  const char *em;
+  
+  // Output pack status:
+  for (int p = 0; p < batt_pack_count; p++)
+  {
+    // output capacity reached?
+    if (capacity < 13)
+      break;
+    
+    if (show_deviations)
+    {
+      if (twizy_batt[p].volt_alerts.test(BATT_STDDEV_VOLT_FLAG))
+        em = "!";
+      else if (twizy_batt[p].volt_watches.test(BATT_STDDEV_VOLT_FLAG))
+        em = "?";
+      else
+        em = "";
+      capacity -= writer->printf("%sSD:%dmV ", em, CONV_CellVolt(twizy_batt[p].cell_volt_stddev_max));
+    }
+    else
+    {
+      capacity -= writer->printf("P:%.2fV ", (float) CONV_PackVolt(twizy_batt[p].volt_act) / 100);
+    }
+  }
+
+  // Output cell status:
+  for (int c = 0; c < batt_cell_count; c++)
+  {
+    int p = 0; // fixed for now…
+    
+    // output capacity reached?
+    if (capacity < 13)
+      break;
+
+    // Alert?
+    if (twizy_batt[p].volt_alerts.test(c))
+      em = "!";
+    else if (twizy_batt[p].volt_watches.test(c))
+      em = "?";
+    else
+      em = "";
+
+    if (show_deviations)
+      capacity -= writer->printf("%s%d:%+dmV ", em, c+1, CONV_CellVoltS(twizy_cell[c].volt_maxdev));
+    else
+      capacity -= writer->printf("%s%d:%.3fV ", em, c+1, (float) CONV_CellVolt(twizy_cell[c].volt_act) / 1000);
+  }
+  
+  writer->puts("");
+}
+
+
+/**
+ * FormatBatteryTemps: output temperature report (absolute / deviations)
+ */
+void OvmsVehicleRenaultTwizy::FormatBatteryTemps(int verbosity, OvmsWriter* writer, bool show_deviations)
+{
+  int capacity = verbosity;
+  const char *em;
+  
+  // Output pack status:
+  for (int p = 0; p < batt_pack_count; p++)
+  {
+    if (capacity < 17)
+      break;
+    
+    if (show_deviations)
+    {
+      if (twizy_batt[p].temp_alerts.test(BATT_STDDEV_TEMP_FLAG))
+        em = "!";
+      else if (twizy_batt[p].temp_watches.test(BATT_STDDEV_TEMP_FLAG))
+        em = "?";
+      else
+        em = "";
+      capacity -= writer->printf("%sSD:%dC ", em, twizy_batt[0].cmod_temp_stddev_max);
+    }
+    else
+    {
+      capacity -= writer->printf("P:%dC (%dC..%dC) ",
+        CONV_Temp(twizy_batt[p].temp_act),
+        CONV_Temp(twizy_batt[p].temp_min),
+        CONV_Temp(twizy_batt[p].temp_max));
+    }
+  }
+
+  // Output cmod status:
+  for (int c = 0; c < batt_cmod_count; c++)
+  {
+    int p = 0; // fixed for now…
+    
+    if (capacity < 8)
+      break;
+    
+    // Alert?
+    if (twizy_batt[p].temp_alerts.test(c))
+      em = "!";
+    else if (twizy_batt[p].temp_watches.test(c))
+      em = "?";
+    else
+      em = "";
+
+    if (show_deviations)
+      capacity -= writer->printf("%s%d:%+dC ", em, c+1, twizy_cmod[c].temp_maxdev);
+    else
+      capacity -= writer->printf("%s%d:%dC ", em, c+1, CONV_Temp(twizy_cmod[c].temp_act));
+  }
+
+  writer->puts("");
 }
 
 
@@ -632,6 +884,9 @@ void OvmsVehicleRenaultTwizy::FormatPackData(int verbosity, OvmsWriter* writer, 
  */
 void OvmsVehicleRenaultTwizy::FormatCellData(int verbosity, OvmsWriter* writer, int cell)
 {
+  if (verbosity < 200)
+    return;
+  
   int pack = 0; // currently fixed, TODO for addon packs: determine pack index for cell
   int volt_alert, temp_alert;
 

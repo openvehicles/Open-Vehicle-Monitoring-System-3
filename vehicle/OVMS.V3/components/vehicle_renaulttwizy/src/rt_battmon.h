@@ -52,9 +52,9 @@ struct battery_pack
   std::bitset<32> temp_alerts = 0; // bitfield: dev > BATT_DEV_TEMP_ALERT
   std::bitset<32> last_temp_alerts = 0; // recognize alert state changes
   
-  float cell_volt_stddev_max = 0; // max cell voltage std deviation
+  UINT cell_volt_stddev_max = 0; // max cell voltage std deviation
                               // => watch/alert bit #15 (1<<15)
-  float cmod_temp_stddev_max = 0; // max cmod temperature std deviation
+  UINT cmod_temp_stddev_max = 0; // max cmod temperature std deviation
                               // => watch/alert bit #7 (1<<7)
   
   UINT8 max_drive_pwr = 0; // in 500 W
