@@ -166,15 +166,6 @@ void GsmNMEA::IncomingLine(const std::string line)
     
     bool gpslock = (mode[0] != 'N' || mode[1] != 'N');
     
-    if (gpslock != StdMetrics.ms_v_pos_gpslock->AsBool())
-      {
-      if (gpslock)
-        MyEvents.SignalEvent("system.modem.gotgps", NULL);
-      else
-        MyEvents.SignalEvent("system.modem.lostgps", NULL);
-      }
-    
-    *StdMetrics.ms_v_pos_gpslock = (bool) gpslock;
     *StdMetrics.ms_v_pos_gpsmode = (std::string) mode;
     *StdMetrics.ms_v_pos_satcount = (int) satcnt;
     *StdMetrics.ms_v_pos_gpshdop = (float) hdop;
@@ -184,6 +175,16 @@ void GsmNMEA::IncomingLine(const std::string line)
       *StdMetrics.ms_v_pos_latitude = (float) lat;
       *StdMetrics.ms_v_pos_longitude = (float) lon;
       *StdMetrics.ms_v_pos_altitude = (float) alt;
+      }
+    
+    // upodate gpslock last, so listeners will see updated lat/lon values:
+    if (gpslock != StdMetrics.ms_v_pos_gpslock->AsBool())
+      {
+      *StdMetrics.ms_v_pos_gpslock = (bool) gpslock;
+      if (gpslock)
+        MyEvents.SignalEvent("system.modem.gotgps", NULL);
+      else
+        MyEvents.SignalEvent("system.modem.lostgps", NULL);
       }
     
     // END "GNS" handler
