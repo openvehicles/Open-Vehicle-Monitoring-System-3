@@ -65,23 +65,52 @@ class ConsoleSSH : public OvmsConsole
   private:
     void Service();
     void HandleDeviceEvent(void* pEvent);
+    int GetResponse();
 
   public:
     void Receive();
+    void Send();
+    void Sent();
     void Exit();
     int puts(const char* s);
     int printf(const char* fmt, ...);
     ssize_t write(const void *buf, size_t nbyte);
     int RecvCallback(char* buf, uint32_t size);
 
-  protected:
+  private:
+    typedef struct {DIR* dir; size_t size;} Level;
+    enum States
+      {
+      ACCEPT,
+      SHELL,
+      EXEC,
+      SOURCE,
+      SOURCE_LOOP,
+      SOURCE_DIR,
+      SOURCE_SEND,
+      SOURCE_RESPONSE,
+      SINK,
+      SINK_LOOP,
+      SINK_RECEIVE,
+      SINK_RESPONSE,
+      CLOSING
+      } m_state;
     OvmsSSH* m_server;
     mg_connection* m_connection;
     WOLFSSH* m_ssh;
     char m_buffer[BUFFER_SIZE];
-    bool m_accepted;
-    bool m_pending;
+    int m_index;                // Index into m_buffer of data remaining to send
+    int m_size;                 // Size of data remaining to send
+    bool m_sent;
     bool m_rekey;
+    bool m_needDir;
+    bool m_isDir;
+    bool m_verbose;
+    bool m_recursive;
+    std::string m_path;
+    std::string m_filename;
+    FILE* m_file;
+    std::forward_list<Level> m_dirs;
   };
 
 class RSAKeyGenerator : public TaskBase
