@@ -92,9 +92,7 @@ void OvmsSSH::EventHandler(struct mg_connection *nc, int ev, void *p)
           int ret = wolfSSH_CTX_UsePrivateKey_buffer(m_ctx, (const uint8_t*)skey.data(),
             skey.size(),  WOLFSSH_FORMAT_ASN1);
           if (ret < 0)
-            {
             ESP_LOGE(tag, "Couldn't use configured server key, error = %d", ret);
-            }
           else
             {
             std::string fp = MyConfig.GetParamValue("ssh.info", "fingerprint", "[not available]");
@@ -185,9 +183,7 @@ void OvmsSSH::NetManInit(std::string event, void* data)
     ret = wolfSSH_CTX_UsePrivateKey_buffer(m_ctx, (const uint8_t*)skey.data(),
       skey.size(),  WOLFSSH_FORMAT_ASN1);
     if (ret < 0)
-      {
       ESP_LOGE(tag, "Couldn't use configured server key, error = %d", ret);
-      }
     }
 
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
@@ -195,9 +191,7 @@ void OvmsSSH::NetManInit(std::string event, void* data)
   if (nc)
     nc->user_data = NULL;
   else
-    {
     ESP_LOGE(tag, "Launching SSH Server failed");
-    }
   }
 
 void OvmsSSH::NetManStop(std::string event, void* data)
@@ -207,9 +201,7 @@ void OvmsSSH::NetManStop(std::string event, void* data)
     ESP_LOGI(tag, "Stopping SSH Server");
     wolfSSH_CTX_free(m_ctx);
     if (wolfSSH_Cleanup() != WS_SUCCESS)
-      {
       ESP_LOGE(tag, "Couldn't clean up wolfSSH.");
-      }
     m_ctx = NULL;
     }
   }
@@ -1062,13 +1054,9 @@ void RSAKeyGenerator::Service()
   MyConfig.SetParamValue("ssh.info", "fingerprint", std::string((char*)fp, fplen));
 
   if (wc_FreeRsaKey(&key) != 0)
-    {
     ESP_LOGE(tag, "RSA key free failed");
-    }
   if (wc_FreeRng(&rng) != 0)
-    {
     ESP_LOGE(tag, "Couldn't free RNG");
-    }
   }
 
 static void wolf_logger(enum wolfSSH_LogLevel level, const char* const msg)
