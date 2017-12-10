@@ -553,8 +553,6 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 	*StdMetrics.ms_v_vin = (string) m_vin;
 	//TODO StandardMetrics.ms_v_vin->SetValue(m_vin);
 
-	*StdMetrics.ms_m_timeutc = (int) time(NULL); // → framework? roadster fetches from CAN…
-
 	if (FULL_RANGE > 0) //  If we have the battery full range, we can calculate the ideal range too
 		{
 	  	StdMetrics.ms_v_bat_range_ideal->SetValue( FULL_RANGE * BAT_SOC / 100.0, Kilometers);

@@ -119,12 +119,16 @@
 #define MS_V_ENV_TEMP               "v.e.temp"
 
 #define MS_V_POS_GPSLOCK            "v.p.gpslock"
+#define MS_V_POS_GPSSTALE           "v.p.gpsstale"
+#define MS_V_POS_GPSMODE            "v.p.gpsmode"
+#define MS_V_POS_GPSHDOP            "v.p.gpshdop"
 #define MS_V_POS_SATCOUNT           "v.p.satcount"
 #define MS_V_POS_LATITUDE           "v.p.latitude"
 #define MS_V_POS_LONGITUDE          "v.p.longitude"
 #define MS_V_POS_DIRECTION          "v.p.direction"
 #define MS_V_POS_ALTITUDE           "v.p.altitude"
 #define MS_V_POS_SPEED              "v.p.speed"
+#define MS_V_POS_GPSSPEED           "v.p.gpsspeed"
 #define MS_V_POS_ODOMETER           "v.p.odometer"
 #define MS_V_POS_TRIP               "v.p.trip"
 
@@ -230,12 +234,15 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_env_temp;          // Ambient temperature [°C]
 
     OvmsMetricBool*   ms_v_pos_gpslock;
+    OvmsMetricString* ms_v_pos_gpsmode;       // <GPS><GLONASS>; N/A/D/E (None/Autonomous/Differential/Estimated)
+    OvmsMetricFloat*  ms_v_pos_gpshdop;       // Horizontal dilution of precision (smaller=better)
     OvmsMetricInt*    ms_v_pos_satcount;
     OvmsMetricFloat*  ms_v_pos_latitude;
     OvmsMetricFloat*  ms_v_pos_longitude;
-    OvmsMetricInt*    ms_v_pos_direction;
-    OvmsMetricInt*    ms_v_pos_altitude;
-    OvmsMetricFloat*  ms_v_pos_speed;
+    OvmsMetricFloat*  ms_v_pos_direction;
+    OvmsMetricFloat*  ms_v_pos_altitude;
+    OvmsMetricFloat*  ms_v_pos_speed;         // Vehicle speed [kph]
+    OvmsMetricFloat*  ms_v_pos_gpsspeed;      // GPS speed over ground [kph]
     OvmsMetricFloat*  ms_v_pos_odometer;
     OvmsMetricFloat*  ms_v_pos_trip;
     

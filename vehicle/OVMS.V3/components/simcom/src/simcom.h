@@ -32,6 +32,7 @@
 #define __SIMCOM_H__
 
 #include "gsmpppos.h"
+#include "gsmnmea.h"
 #include "pcp.h"
 #include "ovms_events.h"
 #include "gsmmux.h"
@@ -123,6 +124,7 @@ class simcom : public pcp
     network_registration_t m_netreg;
     GsmMux       m_mux;
     GsmPPPOS     m_ppp;
+    GsmNMEA      m_nmea;
 
   public:
     const char* State1Name(SimcomState1 state);

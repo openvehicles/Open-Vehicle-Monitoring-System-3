@@ -692,8 +692,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   // Update standard metrics:
   // 
   
-  *StdMetrics.ms_m_timeutc = (int) time(NULL); // → framework? roadster fetches from CAN…
-  
   *StdMetrics.ms_v_pos_odometer = (float) twizy_odometer / 100;
   
   if (twizy_odometer >= twizy_odometer_tripstart)
