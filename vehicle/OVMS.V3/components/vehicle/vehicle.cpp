@@ -815,13 +815,6 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
     else
       MyEvents.SignalEvent("vehicle.alarm.off",NULL);
     }
-  else if (metric == StandardMetrics.ms_v_pos_gpslock)
-    {
-    if (StandardMetrics.ms_v_pos_gpslock->AsBool())
-      MyEvents.SignalEvent("gps.lock.on",NULL);
-    else
-      MyEvents.SignalEvent("gps.lock.los",NULL);
-    }
   else if (metric == StandardMetrics.ms_v_charge_mode)
     {
     MyEvents.SignalEvent("vehicle.charge.mode",(void*)metric->AsString().c_str());
