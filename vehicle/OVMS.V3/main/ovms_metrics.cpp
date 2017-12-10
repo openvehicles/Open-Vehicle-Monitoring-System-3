@@ -54,7 +54,7 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     if ((argc==0)||(strstr(k,argv[0])))
       {
       if (v.empty())
-        writer->printf("%-40.40s\n",k);
+        writer->printf("%s\n",k);
       else
         writer->printf("%-40.40s %s%s\n",k,v.c_str(),OvmsMetricUnitLabel(m->GetUnits()));
       found = true;
@@ -411,6 +411,11 @@ void OvmsMetric::operator=(std::string value)
 uint32_t OvmsMetric::LastModified()
   {
   return m_lastmodified;
+  }
+
+uint32_t OvmsMetric::Age()
+  {
+  return monotonictime - m_lastmodified;
   }
 
 void OvmsMetric::SetModified(bool changed)
