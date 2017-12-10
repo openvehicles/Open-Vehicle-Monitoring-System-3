@@ -60,12 +60,14 @@ OvmsConsole::~OvmsConsole()
 
 void OvmsConsole::Initialize(const char* console)
   {
-  printf("\n\033[32mWelcome to the Open Vehicle Monitoring System (OVMS) - %s Console\033[0m", console);
-  OvmsShell::Initialize(true);
+  OvmsShell::Initialize(console != NULL);
   microrl_set_complete_callback(&m_rl, Complete);
-  ProcessChar('\n');
-
-  MyCommandApp.RegisterConsole(this);
+  if (console)
+    {
+    printf("\n\033[32mWelcome to the Open Vehicle Monitoring System (OVMS) - %s Console\033[0m", console);
+    ProcessChar('\n');
+    MyCommandApp.RegisterConsole(this);
+    }
   m_ready = true;
   }
 
