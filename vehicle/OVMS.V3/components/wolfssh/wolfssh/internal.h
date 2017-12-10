@@ -85,11 +85,6 @@ enum {
     /* Channel Type IDs */
     ID_CHANTYPE_SESSION,
 
-    /* Channel Program IDs */
-    ID_CHANPROG_SHELL,
-    ID_CHANPROG_EXEC,
-    ID_CHANPROG_SUBSYSTEM,
-
     ID_UNKNOWN
 };
 
@@ -277,7 +272,7 @@ struct WOLFSSH {
 
 struct WOLFSSH_CHANNEL {
     uint8_t  channelType;
-    uint8_t  channelProgram;
+    uint8_t  sessionType;
     uint8_t  closeSent;
     uint8_t  receivedEof;
     uint32_t channel;
