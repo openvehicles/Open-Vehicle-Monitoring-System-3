@@ -89,6 +89,7 @@ class OvmsServerV2 : public OvmsServer
   public:
     void MetricModified(OvmsMetric* metric);
     bool IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry);
+    void EventListener(std::string event, void* data);
 
   public:
     std::string m_status;
