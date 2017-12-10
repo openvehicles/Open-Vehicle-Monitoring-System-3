@@ -245,7 +245,15 @@ void OvmsLocations::UpdatedGpsLock(OvmsMetric* metric)
   {
   OvmsMetricBool* m = (OvmsMetricBool*)metric;
   m_gpslock = m->AsBool();
-  if (m_gpslock) UpdateLocations();
+  if (m_gpslock)
+    {
+    MyEvents.SignalEvent("gps.lock.aquired", NULL);
+    UpdateLocations();
+    }
+  else
+    {
+    MyEvents.SignalEvent("gps.lock.lost", NULL);
+    }
   }
 
 void OvmsLocations::UpdatedLatitude(OvmsMetric* metric)
