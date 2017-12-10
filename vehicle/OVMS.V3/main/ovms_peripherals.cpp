@@ -43,6 +43,9 @@ Peripherals::Peripherals()
   {
   ESP_LOGI(TAG, "Initialising OVMS Peripherals...");
 
+  ESP_LOGI(TAG, "  TCP/IP Adaptor");
+  tcpip_adapter_init();
+
   gpio_install_isr_service(0);
 
   gpio_set_direction((gpio_num_t)VSPI_PIN_MISO, GPIO_MODE_INPUT);

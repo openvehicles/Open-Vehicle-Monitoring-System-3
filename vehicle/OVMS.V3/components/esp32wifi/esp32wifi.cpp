@@ -173,7 +173,6 @@ esp32wifi::esp32wifi(const char* name)
   m_stareconnect = false;
   MyConfig.RegisterParam("wifi.ssid", "WIFI SSID", true, false);
   MyConfig.RegisterParam("wifi.ap", "WIFI Access Point", true, false);
-  tcpip_adapter_init();
 
   using std::placeholders::_1;
   using std::placeholders::_2;

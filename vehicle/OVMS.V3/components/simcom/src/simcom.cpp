@@ -103,7 +103,7 @@ void simcom::Task()
   }
 
 simcom::simcom(const char* name, uart_port_t uartnum, int baud, int rxpin, int txpin, int pwregpio, int dtregpio)
-  : pcp(name), m_buffer(SIMCOM_BUF_SIZE), m_mux(this), m_ppp(&m_mux,GSM_MUX_CHAN_DATA)
+  : pcp(name), m_buffer(SIMCOM_BUF_SIZE), m_mux(this), m_ppp(&m_mux,GSM_MUX_CHAN_DATA), m_nmea(&m_mux, GSM_MUX_CHAN_NMEA)
   {
   m_task = 0;
   m_uartnum = uartnum;
@@ -249,7 +249,8 @@ void simcom::IncomingMuxData(GsmMuxChannel* channel)
       channel->m_buffer.EmptyAll();
       break;
     case GSM_MUX_CHAN_NMEA:
-      channel->m_buffer.EmptyAll();
+      if (channel->m_buffer.HasLine() >= 0)
+        m_nmea.IncomingLine(channel->m_buffer.ReadLine());
       break;
     case GSM_MUX_CHAN_DATA:
       if (m_state1 == NetMode)
@@ -348,6 +349,7 @@ void simcom::State1Enter(SimcomState1 newstate)
       break;
     case NetStart:
       ESP_LOGI(TAG,"State: Enter NetStart state");
+      m_nmea.Startup();
       break;
     case NetHold:
       ESP_LOGI(TAG,"State: Enter NetHold state");
@@ -355,18 +357,22 @@ void simcom::State1Enter(SimcomState1 newstate)
     case NetSleep:
       ESP_LOGI(TAG,"State: Enter NetSleep state");
       m_ppp.Shutdown();
+      m_nmea.Shutdown();
       break;
     case NetMode:
       ESP_LOGI(TAG,"State: Enter NetMode state");
-      m_ppp.Startup();
+      m_ppp.Initialise();
+      m_ppp.Connect();
       break;
     case NetDeepSleep:
       ESP_LOGI(TAG,"State: Enter NetDeepSleep state");
       m_ppp.Shutdown();
+      m_nmea.Shutdown();
       break;
     case PoweringOff:
       ESP_LOGI(TAG,"State: Enter PoweringOff state");
       m_ppp.Shutdown();
+      m_nmea.Shutdown();
       MyEvents.SignalEvent("system.modem.stop",NULL);
       PowerCycle();
       m_state1_timeout_ticks = 10;
@@ -496,10 +502,9 @@ simcom::SimcomState1 simcom::State1Ticker1()
       if (m_state1_ticker == 1)
         {
         // Check for exit out of this state...
-        std::string p = MyConfig.GetParamValue("modem", "enable.net");
-        if ((p.empty())||(p.compare("yes")==0))
+        if (MyConfig.GetParamValueBool("modem", "enable.net", true))
           {
-          p = MyConfig.GetParamValue("modem", "apn");
+          std::string p = MyConfig.GetParamValue("modem", "apn");
           if (!p.empty())
             {
             // Ready to start a PPP
@@ -514,10 +519,17 @@ simcom::SimcomState1 simcom::State1Ticker1()
         if (m_state1_userdata == 0)
           {
           m_state1_userdata = 1;
+          m_state1_ticker = 5;
           std::string apncmd("AT+CGDCONT=1,\"IP\",\"");
           apncmd.append(MyConfig.GetParamValue("modem", "apn"));
           apncmd.append("\";+CGDATA=\"PPP\",1\r\n");
           m_mux.tx(GSM_MUX_CHAN_DATA,apncmd.c_str());
+          }
+        else if ((m_state1_userdata == 1)&&(m_state1_ticker > 30))
+          {
+          ESP_LOGI(TAG,"No valid response to AT+CGDCONT, try again...");
+          m_state1_userdata = 0;
+          m_state1_ticker = 0;
           }
         else if (m_state1_userdata == 2)
           return NetMode;
@@ -550,14 +562,16 @@ simcom::SimcomState1 simcom::State1Ticker1()
         {
         // We've lost the network connection
         ESP_LOGI(TAG, "Lost network connection (NetworkRegistration in NetMode)");
-        m_ppp.Shutdown();
+        m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CGATT=0\r\n");
+        m_ppp.Shutdown(true);
         return NetStart;
         }
       if (m_state1_userdata == 99)
         {
         // We've lost the network connection
         ESP_LOGI(TAG, "Lost network connection (+PPP disconnect in NetMode)");
-        m_ppp.Shutdown();
+        m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CGATT=0\r\n");
+        m_ppp.Shutdown(true);
         return NetStart;
         }
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
@@ -808,6 +822,20 @@ void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 
   writer->printf("  PPP Last Error: %s\n",
     MyPeripherals->m_simcom->m_ppp.ErrCodeName(MyPeripherals->m_simcom->m_ppp.m_lasterrcode));
+  
+  if (MyPeripherals->m_simcom->m_nmea.m_connected)
+    {
+    writer->printf("  NMEA (GPS/GLONASS) Connected on channel: #%d\n",
+      MyPeripherals->m_simcom->m_nmea.m_channel);
+    }
+  else
+    {
+    writer->puts("  NMEA (GPS/GLONASS) Not Connected");
+    }
+  
+  writer->printf("  GPS time: %s\n",
+    MyPeripherals->m_simcom->m_nmea.m_gpstime_enabled ? "enabled" : "disabled");
+  
   }
 
 class SimcomInit
@@ -832,4 +860,6 @@ SimcomInit::SimcomInit()
   //   'apn.password': GMS password
   //   'enable.sms': Is SMS enabled? yes/no (default: yes)
   //   'enable.net': Is NET enabled? yes/no (default: yes)
+  //   'enable.gps': Is GPS enabled? yes/no (default: yes)
+  //   'enable.gpstime': use GPS time as system time? yes/no (default: yes)
   }
