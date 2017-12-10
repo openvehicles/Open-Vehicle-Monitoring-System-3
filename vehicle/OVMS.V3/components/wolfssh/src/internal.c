@@ -2621,6 +2621,7 @@ static int DoChannelRequest(WOLFSSH* ssh,
         WLOG(WS_LOG_DEBUG, "  channelId = %u", channelId);
         WLOG(WS_LOG_DEBUG, "  type = %s", type);
         WLOG(WS_LOG_DEBUG, "  wantReply = %u", wantReply);
+
         if (WSTRNCMP(type, "pty-req", typeSz) == 0) {
             char     term[32];
             uint32_t termSz;
