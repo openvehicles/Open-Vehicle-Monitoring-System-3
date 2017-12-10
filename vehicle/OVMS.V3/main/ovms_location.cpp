@@ -247,7 +247,7 @@ void OvmsLocations::UpdatedGpsLock(OvmsMetric* metric)
   m_gpslock = m->AsBool();
   if (m_gpslock)
     {
-    MyEvents.SignalEvent("gps.lock.aquired", NULL);
+    MyEvents.SignalEvent("gps.lock.acquired", NULL);
     UpdateLocations();
     }
   else
