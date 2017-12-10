@@ -144,8 +144,6 @@ static void GsmPPPOS_StatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
   /* ppp_close() was previously called, don't reconnect */
   if (err_code == PPPERR_USER)
     {
-    pppapi_free(me->m_ppp);
-    me->m_ppp = NULL;
     return;
     }
 
@@ -155,6 +153,8 @@ static void GsmPPPOS_StatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
    */
   //ppp_connect(pcb, 30);
   /* OR ppp_listen(pcb); */
+  ESP_LOGI(TAG, "Attempting PPP reconnecting in 30 seconds...");
+  pppapi_connect(pcb, 30);
   }
 
 GsmPPPOS::GsmPPPOS(GsmMux* mux, int channel)
@@ -168,6 +168,11 @@ GsmPPPOS::GsmPPPOS(GsmMux* mux, int channel)
 
 GsmPPPOS::~GsmPPPOS()
   {
+  if (m_ppp)
+    {
+    pppapi_free(m_ppp);
+    m_ppp = NULL;
+    }
   }
 
 void GsmPPPOS::IncomingData(uint8_t *data, size_t len)
@@ -176,11 +181,10 @@ void GsmPPPOS::IncomingData(uint8_t *data, size_t len)
   pppos_input_tcpip(m_ppp, (u8_t*)data, (int)len);
   }
 
-void GsmPPPOS::Startup()
+void GsmPPPOS::Initialise()
   {
-  ESP_LOGI(TAG, "Startup");
+  ESP_LOGI(TAG, "Initialising...");
 
-  tcpip_adapter_init();
   m_ppp = pppapi_pppos_create(&m_ppp_netif,
             GsmPPPOS_OutputCallback, GsmPPPOS_StatusCallback, this);
   if (m_ppp == NULL)
@@ -189,6 +193,10 @@ void GsmPPPOS::Startup()
     return;
     }
   pppapi_set_default(m_ppp);
+  }
+
+void GsmPPPOS::Connect()
+  {
   pppapi_set_auth(m_ppp, PPPAUTHTYPE_PAP,
     MyConfig.GetParamValue("modem", "apn.user").c_str(),
     MyConfig.GetParamValue("modem", "apn.password").c_str());
@@ -237,4 +245,3 @@ const char* GsmPPPOS::ErrCodeName(int errcode)
     default:                 return "Undefined";
     };
   }
-

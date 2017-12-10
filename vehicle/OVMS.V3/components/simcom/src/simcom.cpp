@@ -358,7 +358,8 @@ void simcom::State1Enter(SimcomState1 newstate)
       break;
     case NetMode:
       ESP_LOGI(TAG,"State: Enter NetMode state");
-      m_ppp.Startup();
+      m_ppp.Initialise();
+      m_ppp.Connect();
       break;
     case NetDeepSleep:
       ESP_LOGI(TAG,"State: Enter NetDeepSleep state");
@@ -514,10 +515,17 @@ simcom::SimcomState1 simcom::State1Ticker1()
         if (m_state1_userdata == 0)
           {
           m_state1_userdata = 1;
+          m_state1_ticker = 5;
           std::string apncmd("AT+CGDCONT=1,\"IP\",\"");
           apncmd.append(MyConfig.GetParamValue("modem", "apn"));
           apncmd.append("\";+CGDATA=\"PPP\",1\r\n");
           m_mux.tx(GSM_MUX_CHAN_DATA,apncmd.c_str());
+          }
+        else if ((m_state1_userdata == 1)&&(m_state1_ticker > 30))
+          {
+          ESP_LOGI(TAG,"No valid response to AT+CGDCONT, try again...");
+          m_state1_userdata = 0;
+          m_state1_ticker = 0;
           }
         else if (m_state1_userdata == 2)
           return NetMode;
@@ -550,14 +558,16 @@ simcom::SimcomState1 simcom::State1Ticker1()
         {
         // We've lost the network connection
         ESP_LOGI(TAG, "Lost network connection (NetworkRegistration in NetMode)");
-        m_ppp.Shutdown();
+        m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CGATT=0\r\n");
+        m_ppp.Shutdown(true);
         return NetStart;
         }
       if (m_state1_userdata == 99)
         {
         // We've lost the network connection
         ESP_LOGI(TAG, "Lost network connection (+PPP disconnect in NetMode)");
-        m_ppp.Shutdown();
+        m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CGATT=0\r\n");
+        m_ppp.Shutdown(true);
         return NetStart;
         }
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
