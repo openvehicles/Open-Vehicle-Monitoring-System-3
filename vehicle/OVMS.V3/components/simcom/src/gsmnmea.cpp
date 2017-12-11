@@ -83,15 +83,15 @@ static unsigned long JdFromYMD(int year, int month, int day)
 static unsigned long utc_to_timestamp(const char* date, const char* time)
   {
   int day, month, year, hour, minute, second;
-  
+
   day = (date[0]-'0')*10 + (date[1]-'0');
   month = (date[2]-'0')*10 + (date[3]-'0');
   year = (date[4]-'0')*10 + (date[5]-'0');
-  
+
   hour = (time[0]-'0')*10 + (time[1]-'0');
   minute = (time[2]-'0')*10 + (time[3]-'0');
   second = (time[4]-'0')*10 + (time[5]-'0');
-  
+
   return
     (JdFromYMD(2000+year, month, day) - JDEpoch) * (24L * 3600)
       + ((hour * 60L + minute) * 60) + second;
@@ -101,15 +101,15 @@ static unsigned long utc_to_timestamp(const char* date, const char* time)
 void GsmNMEA::IncomingLine(const std::string line)
   {
   ESP_LOGD(TAG, "IncomingLine: %s", line.c_str());
-  
+
   std::istringstream sentence(line);
   std::string token;
-  
+
   if (!std::getline(sentence, token, ','))
     return;
   if (token[0] != '$')
     return;
-  
+
   if (token.substr(3) == "GNS")
     {
     // NMEA sentence type "GNS": GNSS Position Fix Data (GPS/GLONASS/… combined position data)
@@ -129,7 +129,7 @@ void GsmNMEA::IncomingLine(const std::string line)
     int satcnt=0;
 
     // Parse sentence:
-    
+
     if (std::getline(sentence, token, ','))
       {;} // Time ignored here, see RMC handler
     if (std::getline(sentence, token, ','))
@@ -151,32 +151,32 @@ void GsmNMEA::IncomingLine(const std::string line)
       hdop = atof(token.c_str());
     if (std::getline(sentence, token, ','))
       alt = atof(token.c_str());
-    
+
     // Check:
-    
+
     if (!ns || !ew || !mode[0])
       return; // malformed/empty sentence
 
     // Data set complete, store:
-    
+
     if (ns == 'S')
       lat = -lat;
     if (ew == 'W')
       lon = -lon;
-    
+
     bool gpslock = (mode[0] != 'N' || mode[1] != 'N');
-    
+
     *StdMetrics.ms_v_pos_gpsmode = (std::string) mode;
     *StdMetrics.ms_v_pos_satcount = (int) satcnt;
     *StdMetrics.ms_v_pos_gpshdop = (float) hdop;
-    
+
     if (gpslock)
       {
       *StdMetrics.ms_v_pos_latitude = (float) lat;
       *StdMetrics.ms_v_pos_longitude = (float) lon;
       *StdMetrics.ms_v_pos_altitude = (float) alt;
       }
-    
+
     // upodate gpslock last, so listeners will see updated lat/lon values:
     if (gpslock != StdMetrics.ms_v_pos_gpslock->AsBool())
       {
@@ -186,22 +186,22 @@ void GsmNMEA::IncomingLine(const std::string line)
       else
         MyEvents.SignalEvent("system.modem.lostgps", NULL);
       }
-    
+
     // END "GNS" handler
     }
-  
+
   else if (token.substr(3) == "RMC")
     {
     // NMEA sentence type "RMC": Recommended Minimum Specific GNSS Data
     //  $..RMC,<Time>,<Status>,<Latitude>,<NS>,<Longitude>,<EW>,<SpeedKnots>,<Direction>,<Date>,<MagVar>,<MagVarEW>,<Mode>,<Chksum>
     // Example:
     //  $GPRMC,085320.0,A,5118.138139,N,00723.398844,E,0.0,265.5,101217,,,A*62
-    
+
     char date[6] = {0}, time[6] = {0};
     float direction=0, speed=0;
-    
+
     // Parse sentence:
-    
+
     if (std::getline(sentence, token, ','))
       strncpy(time, token.c_str(), 6);
     if (std::getline(sentence, token, ','))
@@ -220,43 +220,43 @@ void GsmNMEA::IncomingLine(const std::string line)
       direction = atof(token.c_str());
     if (std::getline(sentence, token, ','))
       strncpy(date, token.c_str(), 6);
-    
+
     // Check:
-    
+
     if (!date[0] || !time[0])
       return; // malformed/empty sentence
 
     // Data complete, store:
-    
+
     if (m_gpstime_enabled)
       *StdMetrics.ms_m_timeutc = (int) utc_to_timestamp(date, time);
-    
+
     *StdMetrics.ms_v_pos_direction = (float) direction;
     *StdMetrics.ms_v_pos_gpsspeed = (float) speed;
-    
+
     // END "RMC" handler
     }
-  
+
   }
 
 
 void GsmNMEA::Startup()
   {
-  if (!MyConfig.GetParamValueBool("modem", "enable.gps", true))
+  if (!MyConfig.GetParamValueBool("modem", "enable.gps", false))
     {
     ESP_LOGD(TAG, "GPS disabled");
     return;
     }
-  
+
   ESP_LOGI(TAG, "Startup");
-  
-  m_gpstime_enabled = MyConfig.GetParamValueBool("modem", "enable.gpstime", true);
-  
+
+  m_gpstime_enabled = MyConfig.GetParamValueBool("modem", "enable.gpstime", false);
+
   // Switch on GPS, subscribe to NMEA sentences…
   //   2 = $..RMC -- UTC time & date
   //  64 = $..GNS -- Position & fix data
   m_mux->tx(GSM_MUX_CHAN_CMD, "AT+CGPSNMEA=66;+CGPS=1,1\r\n");
-  
+
   m_connected = true;
   }
 
@@ -264,16 +264,16 @@ void GsmNMEA::Startup()
 void GsmNMEA::Shutdown(bool hard)
   {
   ESP_LOGI(TAG, "Shutdown (direct)");
-  
+
   // Switch off GPS:
   m_mux->tx(GSM_MUX_CHAN_CMD, "AT+CGPS=0\r\n");
-  
+
   if (StdMetrics.ms_v_pos_gpslock->AsBool())
     {
     *StdMetrics.ms_v_pos_gpslock = (bool) false;
     MyEvents.SignalEvent("system.modem.lostgps", NULL);
     }
-  
+
   m_connected = false;
   }
 
@@ -289,5 +289,3 @@ GsmNMEA::GsmNMEA(GsmMux* mux, int channel)
 GsmNMEA::~GsmNMEA()
   {
   }
-
-
