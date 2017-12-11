@@ -1390,6 +1390,16 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     return true; // Mark it read, as no interest to us
   }
 
+/**
+ * EventListener:
+ *  - update location ASAP
+ */
+void OvmsServerV2::EventListener(std::string event, void* data)
+{
+  if (event == "gps.lock.acquired")
+    m_now_gps = true;
+}
+
 void OvmsServerV2::TransmitMsgCapabilities(bool always)
   {
   m_now_capabilities = false;
@@ -1439,6 +1449,9 @@ OvmsServerV2::OvmsServerV2(const char* name)
     {
     MyOvmsServerV2Reader = MyNotify.RegisterReader(TAG, COMMAND_RESULT_NORMAL, std::bind(OvmsServerV2ReaderCallback, _1, _2));
     }
+
+  // init event listener:
+  MyEvents.RegisterEvent(TAG, "gps.lock.acquired", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
   }
 
 OvmsServerV2::~OvmsServerV2()

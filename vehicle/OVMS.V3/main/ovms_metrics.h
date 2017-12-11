@@ -109,6 +109,7 @@ class OvmsMetric
     virtual void SetValue(std::string value);
     virtual void operator=(std::string value);
     virtual uint32_t LastModified();
+    virtual uint32_t Age();
     virtual bool IsStale();
     virtual void SetStale(bool stale);
     virtual void SetAutoStale(uint16_t seconds);

@@ -40,7 +40,6 @@
 #include <wolfssl/wolfcrypt/rsa.h>
 #include <wolfssl/wolfcrypt/sha.h>
 #include <wolfssh/ssh.h>
-#include <wolfssh/internal.h>
 #include <wolfssh/log.h>
 #include "console_ssh.h"
 #include "ovms_netmanager.h"
@@ -416,21 +415,19 @@ void ConsoleSSH::HandleDeviceEvent(void* pEvent)
         rc = wolfSSH_accept(m_ssh);
         if (rc != WS_SUCCESS && (rc = wolfSSH_get_error(m_ssh)) != WS_SUCCESS)
           break;
-        if (m_ssh->channelListSz != 1)  // We don't support multiple channels
-          rc = WS_UNIMPLEMENTED_E;
-        else if (m_ssh->channelList->channelProgram == ID_CHANPROG_SHELL)
+        if (wolfSSH_GetSessionType(m_ssh) == WOLFSSH_SESSION_SHELL)
           {
           Initialize("SSH");
           m_state = SHELL;
           }
-        else if (m_ssh->channelList->channelProgram == ID_CHANPROG_EXEC)
+        else if (wolfSSH_GetSessionType(m_ssh) == WOLFSSH_SESSION_EXEC)
           {
-          if (!m_ssh->channelList->command)
+          const char* cmdline = wolfSSH_GetSessionCommand(m_ssh);
+          if (!cmdline)
             {
             rc = WS_BAD_USAGE;        // no command provided
             break;
             }
-          char* cmdline = m_ssh->channelList->command;
           ESP_LOGD(tag, "SSH command request: %s", cmdline);
           if (strncmp(cmdline, "scp -", 5) == 0)
             {
@@ -483,7 +480,8 @@ void ConsoleSSH::HandleDeviceEvent(void* pEvent)
       case EXEC:
         {
         Initialize(NULL);
-        ProcessChars(m_ssh->channelList->command, strlen(m_ssh->channelList->command));
+        const char* cmdline = wolfSSH_GetSessionCommand(m_ssh);
+        ProcessChars(cmdline, strlen(cmdline));
         ProcessChar('\n');
         wolfSSH_stream_exit(m_ssh, 0); // XXX Need commands to return status
         m_state = CLOSING;

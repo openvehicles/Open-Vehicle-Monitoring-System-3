@@ -38,6 +38,41 @@ static const char *TAG = "simcom";
 #include "ovms_config.h"
 #include "ovms_events.h"
 
+const char* SimcomState1Name(simcom::SimcomState1 state)
+  {
+  switch (state)
+    {
+    case simcom::None:           return "None";
+    case simcom::CheckPowerOff:  return "CheckPowerOff";
+    case simcom::PoweringOn:     return "PoweringOn";
+    case simcom::PoweredOn:      return "PoweredOff";
+    case simcom::MuxStart:       return "MuxStart";
+    case simcom::NetWait:        return "NetWait";
+    case simcom::NetStart:       return "NetStart";
+    case simcom::NetLoss:        return "NetLoss";
+    case simcom::NetHold:        return "NetHold";
+    case simcom::NetSleep:       return "NetSleep";
+    case simcom::NetMode:        return "NetMode";
+    case simcom::NetDeepSleep:   return "NetDeepSleep";
+    case simcom::PoweringOff:    return "PoweringOff";
+    case simcom::PoweredOff:     return "PoweredOff";
+    default:                     return "Undefined";
+    };
+  }
+
+const char* SimcomNetRegName(simcom::network_registration_t netreg)
+  {
+  switch (netreg)
+    {
+    case simcom::NotRegistered:      return "NotRegistered";
+    case simcom::Searching:          return "Searching";
+    case simcom::DeniedRegistration: return "DeniedRegistration";
+    case simcom::RegisteredHome:     return "RegisteredHome";
+    case simcom::RegisteredRoaming:  return "RegisteredRoaming";
+    default:                         return "Undefined";
+    };
+  }
+
 static void SIMCOM_task(void *pvParameters)
   {
   simcom *me = (simcom*)pvParameters;
@@ -93,6 +128,7 @@ void simcom::Task()
         switch (event.simcom.type)
           {
           case SETSTATE:
+            SetState1(event.simcom.data.newstate);
             break;
           default:
             break;
@@ -131,39 +167,6 @@ simcom::~simcom()
   StopTask();
   }
 
-const char* simcom::State1Name(SimcomState1 state)
-  {
-  switch (state)
-    {
-    case None:           return "None";
-    case CheckPowerOff:  return "CheckPowerOff";
-    case PoweringOn:     return "PoweringOn";
-    case PoweredOn:      return "PoweredOff";
-    case MuxMode:        return "MuxMode";
-    case NetStart:       return "NetStart";
-    case NetHold:        return "NetHold";
-    case NetSleep:       return "NetSleep";
-    case NetMode:        return "NetMode";
-    case NetDeepSleep:   return "NetDeepSleep";
-    case PoweringOff:    return "PoweringOff";
-    case PoweredOff:     return "PoweredOff";
-    default:             return "Undefined";
-    };
-  }
-
-const char* simcom::NetRegName(network_registration_t netreg)
-  {
-  switch (netreg)
-    {
-    case NotRegistered:      return "NotRegistered";
-    case Searching:          return "Searching";
-    case DeniedRegistration: return "DeniedRegistration";
-    case RegisteredHome:     return "RegisteredHome";
-    case RegisteredRoaming:  return "RegisteredRoaming";
-    default:                 return "Undefined";
-    };
-  }
-
 void simcom::StartTask()
   {
   if (!m_task)
@@ -198,6 +201,19 @@ void simcom::StopTask()
     vTaskDelete(m_task);
     m_task = 0;
     }
+  }
+
+void simcom::SendSetState1(SimcomState1 newstate)
+  {
+  SimcomOrUartEvent ev;
+  ev.simcom.type = SETSTATE;
+  ev.simcom.data.newstate = newstate;
+  xQueueSend(m_queue,&ev,0);
+  }
+
+bool simcom::IsStarted()
+  {
+  return (m_task != NULL);
   }
 
 void simcom::SetPowerMode(PowerMode powermode)
@@ -294,9 +310,13 @@ void simcom::State1Leave(SimcomState1 oldstate)
       break;
     case PoweredOn:
       break;
-    case MuxMode:
+    case MuxStart:
+      break;
+    case NetWait:
       break;
     case NetStart:
+      break;
+    case NetLoss:
       break;
     case NetHold:
       break;
@@ -343,13 +363,25 @@ void simcom::State1Enter(SimcomState1 newstate)
       m_state1_timeout_ticks = 30;
       m_state1_timeout_goto = PoweringOn;
       break;
-    case MuxMode:
-      ESP_LOGI(TAG,"State: Enter MuxMode state");
+    case MuxStart:
+      ESP_LOGI(TAG,"State: Enter MuxStart state");
       m_mux.Start();
+      break;
+    case NetWait:
+      ESP_LOGI(TAG,"State: Enter NetWait state");
+      m_nmea.Startup();
       break;
     case NetStart:
       ESP_LOGI(TAG,"State: Enter NetStart state");
-      m_nmea.Startup();
+      m_state1_timeout_ticks = 30;
+      m_state1_timeout_goto = NetLoss;
+      break;
+    case NetLoss:
+      ESP_LOGI(TAG,"State: Enter NetLoss state");
+      m_state1_timeout_ticks = 10;
+      m_state1_timeout_goto = NetWait;
+      m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CGATT=0\r\n");
+      m_ppp.Shutdown(true);
       break;
     case NetHold:
       ESP_LOGI(TAG,"State: Enter NetHold state");
@@ -405,27 +437,19 @@ simcom::SimcomState1 simcom::State1Activity()
     case PoweredOn:
       if (StandardIncomingHandler(&m_buffer))
         {
-        if (m_state1_ticker >= 20) return MuxMode;
+        if (m_state1_ticker >= 20) return MuxStart;
         }
       break;
-    case MuxMode:
-      m_mux.Process(&m_buffer);
-      break;
+    case MuxStart:
+    case NetWait:
     case NetStart:
-      m_mux.Process(&m_buffer);
-      break;
     case NetHold:
-      m_mux.Process(&m_buffer);
-      break;
     case NetSleep:
-      m_mux.Process(&m_buffer);
-      break;
     case NetMode:
       m_mux.Process(&m_buffer);
       break;
+    case NetLoss:
     case NetDeepSleep:
-      m_buffer.EmptyAll(); // Drain it
-      break;
     case PoweringOff:
       m_buffer.EmptyAll(); // Drain it
       break;
@@ -488,11 +512,28 @@ simcom::SimcomState1 simcom::State1Ticker1()
           break;
         }
       break;
-    case MuxMode:
+    case MuxStart:
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
         m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
       if (m_mux.m_openchannels == GSM_MUX_CHANNELS)
-        return NetStart;
+        return NetWait;
+      break;
+    case NetWait:
+      if (m_powermode == Sleep)
+        {
+        return NetSleep; // Just hold, without starting the network
+        }
+      if (m_state1_ticker == 1)
+        {
+        // Check for exit out of this state...
+        std::string p = MyConfig.GetParamValue("modem", "apn");
+        if ((!MyConfig.GetParamValueBool("modem", "enable.net", true))||(p.empty()))
+          return NetHold; // Just hold, without starting PPP
+        }
+      else if ((m_state1_ticker > 3)&&((m_netreg==RegisteredHome)||(m_netreg==RegisteredRoaming)))
+        return NetStart; // We have GSM, so start the network
+      if ((m_state1_ticker>3)&&((m_state1_ticker % 10) == 0))
+        m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
       break;
     case NetStart:
       if (m_powermode == Sleep)
@@ -501,53 +542,25 @@ simcom::SimcomState1 simcom::State1Ticker1()
         }
       if (m_state1_ticker == 1)
         {
-        // Check for exit out of this state...
-        if (MyConfig.GetParamValueBool("modem", "enable.net", true))
-          {
-          std::string p = MyConfig.GetParamValue("modem", "apn");
-          if (!p.empty())
-            {
-            // Ready to start a PPP
-            return None; // Stay in this state...
-            }
-          }
-        return NetHold; // Just hold, without starting the network
+        m_state1_userdata = 1;
+        std::string apncmd("AT+CGDCONT=1,\"IP\",\"");
+        apncmd.append(MyConfig.GetParamValue("modem", "apn"));
+        apncmd.append("\";+CGDATA=\"PPP\",1\r\n");
+        m_mux.tx(GSM_MUX_CHAN_DATA,apncmd.c_str());
         }
-      else if ((m_state1_ticker > 5)&&((m_netreg==RegisteredHome)||(m_netreg==RegisteredRoaming)))
-        {
-        // OK. We have a network registration, and are ready to start
-        if (m_state1_userdata == 0)
-          {
-          m_state1_userdata = 1;
-          m_state1_ticker = 5;
-          std::string apncmd("AT+CGDCONT=1,\"IP\",\"");
-          apncmd.append(MyConfig.GetParamValue("modem", "apn"));
-          apncmd.append("\";+CGDATA=\"PPP\",1\r\n");
-          m_mux.tx(GSM_MUX_CHAN_DATA,apncmd.c_str());
-          }
-        else if ((m_state1_userdata == 1)&&(m_state1_ticker > 30))
-          {
-          ESP_LOGI(TAG,"No valid response to AT+CGDCONT, try again...");
-          m_state1_userdata = 0;
-          m_state1_ticker = 0;
-          }
-        else if (m_state1_userdata == 2)
-          return NetMode;
-        else if (m_state1_userdata == 99)
-          {
-          m_state1_ticker = 0;
-          m_state1_userdata = 0;
-          }
-        }
-      if ((m_state1_ticker>10)&&((m_state1_ticker % 30) == 0))
-        m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
+      if (m_state1_userdata == 2)
+        return NetMode; // PPP Connection is ready to be started
+      else if (m_state1_userdata == 99)
+        return NetLoss;
+      break;
+    case NetLoss:
       break;
     case NetHold:
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
         m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
       break;
     case NetSleep:
-      if (m_powermode == On) return NetStart;
+      if (m_powermode == On) return NetWait;
       if (m_powermode != Sleep) return PoweringOn;
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
         m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
@@ -562,17 +575,13 @@ simcom::SimcomState1 simcom::State1Ticker1()
         {
         // We've lost the network connection
         ESP_LOGI(TAG, "Lost network connection (NetworkRegistration in NetMode)");
-        m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CGATT=0\r\n");
-        m_ppp.Shutdown(true);
-        return NetStart;
+        return NetLoss;
         }
       if (m_state1_userdata == 99)
         {
         // We've lost the network connection
         ESP_LOGI(TAG, "Lost network connection (+PPP disconnect in NetMode)");
-        m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CGATT=0\r\n");
-        m_ppp.Shutdown(true);
-        return NetStart;
+        return NetLoss;
         }
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
         m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
@@ -688,7 +697,7 @@ void simcom::StandardLineHandler(OvmsBuffer* buf, std::string line)
       default:
         break;
       }
-    ESP_LOGI(TAG, "CREG Network Registration: %s",NetRegName(m_netreg));
+    ESP_LOGI(TAG, "CREG Network Registration: %s",SimcomNetRegName(m_netreg));
     }
   else if (line.compare(0, 7, "+COPS: ") == 0)
     {
@@ -795,15 +804,15 @@ void simcom_muxtx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   writer->printf("SIMCOM\n  Network Registration: %s\n  State: %s\n  Ticker: %d\n  User Data: %d\n",
-    MyPeripherals->m_simcom->NetRegName(MyPeripherals->m_simcom->m_netreg),
-    MyPeripherals->m_simcom->State1Name(MyPeripherals->m_simcom->m_state1),
+    SimcomNetRegName(MyPeripherals->m_simcom->m_netreg),
+    SimcomState1Name(MyPeripherals->m_simcom->m_state1),
     MyPeripherals->m_simcom->m_state1_ticker,
     MyPeripherals->m_simcom->m_state1_userdata);
 
   if (MyPeripherals->m_simcom->m_state1_timeout_goto != simcom::None)
     {
     writer->printf("  State Timeout Goto: %s (in %d seconds)\n",
-      MyPeripherals->m_simcom->State1Name(MyPeripherals->m_simcom->m_state1_timeout_goto),
+      SimcomState1Name(MyPeripherals->m_simcom->m_state1_timeout_goto),
       MyPeripherals->m_simcom->m_state1_timeout_ticks);
     }
 
@@ -822,7 +831,7 @@ void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 
   writer->printf("  PPP Last Error: %s\n",
     MyPeripherals->m_simcom->m_ppp.ErrCodeName(MyPeripherals->m_simcom->m_ppp.m_lasterrcode));
-  
+
   if (MyPeripherals->m_simcom->m_nmea.m_connected)
     {
     writer->printf("  NMEA (GPS/GLONASS) Connected on channel: #%d\n",
@@ -832,10 +841,57 @@ void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     {
     writer->puts("  NMEA (GPS/GLONASS) Not Connected");
     }
-  
+
   writer->printf("  GPS time: %s\n",
     MyPeripherals->m_simcom->m_nmea.m_gpstime_enabled ? "enabled" : "disabled");
-  
+
+  }
+
+void simcom_setstate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* statename = cmd->GetName();
+
+  if (!MyPeripherals->m_simcom->IsStarted())
+    {
+    writer->puts("Error: SIMCOM task is not running");
+    return;
+    }
+
+  simcom::SimcomState1 newstate = simcom::None;
+  if (strcmp(statename,"CheckPowerOff")==0)
+    newstate = simcom::CheckPowerOff;
+  else if (strcmp(statename,"PoweringOn")==0)
+    newstate = simcom::PoweringOn;
+  else if (strcmp(statename,"PoweredOff")==0)
+    newstate = simcom::PoweredOff;
+  else if (strcmp(statename,"MuxStart")==0)
+    newstate = simcom::MuxStart;
+  else if (strcmp(statename,"NetWait")==0)
+    newstate = simcom::NetWait;
+  else if (strcmp(statename,"NetStart")==0)
+    newstate = simcom::NetStart;
+  else if (strcmp(statename,"NetLoss")==0)
+    newstate = simcom::NetLoss;
+  else if (strcmp(statename,"NetHold")==0)
+    newstate = simcom::NetHold;
+  else if (strcmp(statename,"NetSleep")==0)
+    newstate = simcom::NetSleep;
+  else if (strcmp(statename,"NetMode")==0)
+    newstate = simcom::NetMode;
+  else if (strcmp(statename,"NetDeepSleep")==0)
+    newstate = simcom::NetDeepSleep;
+  else if (strcmp(statename,"PoweringOff")==0)
+    newstate = simcom::PoweringOff;
+  else if (strcmp(statename,"PoweredOff")==0)
+    newstate = simcom::PoweredOff;
+
+  if (newstate == simcom::None)
+    {
+    writer->printf("Error: Unrecognised state %s\n",statename);
+    return;
+    }
+
+  MyPeripherals->m_simcom->SendSetState1(newstate);
   }
 
 class SimcomInit
@@ -852,6 +908,12 @@ SimcomInit::SimcomInit()
   cmd_simcom->RegisterCommand("muxtx","Transmit data on SIMCOM MUX",simcom_muxtx, "<chan> <data>", 2);
   cmd_simcom->RegisterCommand("status","Show SIMCOM status",simcom_status, "", 0);
 
+  OvmsCommand* cmd_setstate = cmd_simcom->RegisterCommand("setstate","SIMCOM state change framework",NULL, "", 1);
+  for (int x = simcom::CheckPowerOff; x<simcom::PoweredOff; x++)
+    {
+    cmd_setstate->RegisterCommand(SimcomState1Name((simcom::SimcomState1)x),"Force SIMCOM state change",simcom_setstate, "", 0);
+    }
+
   MyConfig.RegisterParam("modem", "Modem Configuration", true, true);
   // Our instances:
   //   'gsmlock': GSM network to lock to (at COPS stage)
@@ -860,6 +922,6 @@ SimcomInit::SimcomInit()
   //   'apn.password': GMS password
   //   'enable.sms': Is SMS enabled? yes/no (default: yes)
   //   'enable.net': Is NET enabled? yes/no (default: yes)
-  //   'enable.gps': Is GPS enabled? yes/no (default: yes)
-  //   'enable.gpstime': use GPS time as system time? yes/no (default: yes)
+  //   'enable.gps': Is GPS enabled? yes/no (default: no)
+  //   'enable.gpstime': use GPS time as system time? yes/no (default: no)
   }
