@@ -75,18 +75,18 @@ class simcom : public pcp
   public:
     enum SimcomState1
       {
-      None,
-      CheckPowerOff,
-      PoweringOn,
-      PoweredOn,
-      MuxMode,
-      NetStart,
-      NetHold,
-      NetSleep,
-      NetMode,
-      NetDeepSleep,
-      PoweringOff,
-      PoweredOff
+      None,               // Initialised, and idle
+      CheckPowerOff,      // Check modem is powered off, then => PoweredOff
+      PoweringOn,         // Power on modem, then => PoweredOn
+      PoweredOn,          // Check modem activity, then => MuxStart
+      MuxStart,           // Start mux, then => NetStart
+      NetStart,           // Start network, either =>NetHold, or =>...
+      NetHold,            // MUX established, but no PPP
+      NetSleep,           // PowerMode=Sleep: MUX established, but no PPP
+      NetMode,            // MUX and PPP established
+      NetDeepSleep,       // PowerMode=DeepSleep: power save
+      PoweringOff,        // Power off modem, then => CheckPowerOff
+      PoweredOff          // Maintain a powered off state
       };
     typedef enum
       {

@@ -139,7 +139,7 @@ const char* simcom::State1Name(SimcomState1 state)
     case CheckPowerOff:  return "CheckPowerOff";
     case PoweringOn:     return "PoweringOn";
     case PoweredOn:      return "PoweredOff";
-    case MuxMode:        return "MuxMode";
+    case MuxStart:       return "MuxStart";
     case NetStart:       return "NetStart";
     case NetHold:        return "NetHold";
     case NetSleep:       return "NetSleep";
@@ -294,7 +294,7 @@ void simcom::State1Leave(SimcomState1 oldstate)
       break;
     case PoweredOn:
       break;
-    case MuxMode:
+    case MuxStart:
       break;
     case NetStart:
       break;
@@ -343,8 +343,8 @@ void simcom::State1Enter(SimcomState1 newstate)
       m_state1_timeout_ticks = 30;
       m_state1_timeout_goto = PoweringOn;
       break;
-    case MuxMode:
-      ESP_LOGI(TAG,"State: Enter MuxMode state");
+    case MuxStart:
+      ESP_LOGI(TAG,"State: Enter MuxStart state");
       m_mux.Start();
       break;
     case NetStart:
@@ -405,10 +405,10 @@ simcom::SimcomState1 simcom::State1Activity()
     case PoweredOn:
       if (StandardIncomingHandler(&m_buffer))
         {
-        if (m_state1_ticker >= 20) return MuxMode;
+        if (m_state1_ticker >= 20) return MuxStart;
         }
       break;
-    case MuxMode:
+    case MuxStart:
       m_mux.Process(&m_buffer);
       break;
     case NetStart:
@@ -488,7 +488,7 @@ simcom::SimcomState1 simcom::State1Ticker1()
           break;
         }
       break;
-    case MuxMode:
+    case MuxStart:
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
         m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
       if (m_mux.m_openchannels == GSM_MUX_CHANNELS)
@@ -822,7 +822,7 @@ void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 
   writer->printf("  PPP Last Error: %s\n",
     MyPeripherals->m_simcom->m_ppp.ErrCodeName(MyPeripherals->m_simcom->m_ppp.m_lasterrcode));
-  
+
   if (MyPeripherals->m_simcom->m_nmea.m_connected)
     {
     writer->printf("  NMEA (GPS/GLONASS) Connected on channel: #%d\n",
@@ -832,10 +832,10 @@ void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     {
     writer->puts("  NMEA (GPS/GLONASS) Not Connected");
     }
-  
+
   writer->printf("  GPS time: %s\n",
     MyPeripherals->m_simcom->m_nmea.m_gpstime_enabled ? "enabled" : "disabled");
-  
+
   }
 
 class SimcomInit
