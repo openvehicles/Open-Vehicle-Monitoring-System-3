@@ -55,13 +55,6 @@ class simcom : public pcp
     void muxtx(int channel, uint8_t* data, size_t size);
     void muxtx(int channel, const char* data, ssize_t size = -1);
 
-  public:
-    void StartTask();
-    void StopTask();
-    void Task();
-    void Ticker(std::string event, void* data);
-    void IncomingMuxData(GsmMuxChannel* channel);
-
   protected:
     TaskHandle_t m_task;
     QueueHandle_t m_queue;
@@ -127,10 +120,6 @@ class simcom : public pcp
     GsmPPPOS     m_ppp;
     GsmNMEA      m_nmea;
 
-  public:
-    const char* State1Name(SimcomState1 state);
-    const char* NetRegName(network_registration_t netreg);
-
   protected:
     void SetState1(SimcomState1 newstate);
     void State1Leave(SimcomState1 oldstate);
@@ -142,6 +131,15 @@ class simcom : public pcp
     void StandardLineHandler(OvmsBuffer* buf, std::string line);
     void PowerCycle();
     void PowerSleep(bool onoff);
+
+  public:
+    void StartTask();
+    void StopTask();
+    void Task();
+    void Ticker(std::string event, void* data);
+    void IncomingMuxData(GsmMuxChannel* channel);
+    void SendSetState1(SimcomState1 newstate);
+    bool IsStarted();
   };
 
 #endif //#ifndef __SIMCOM_H__

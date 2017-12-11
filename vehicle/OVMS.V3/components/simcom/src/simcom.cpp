@@ -38,6 +38,40 @@ static const char *TAG = "simcom";
 #include "ovms_config.h"
 #include "ovms_events.h"
 
+const char* SimcomState1Name(simcom::SimcomState1 state)
+  {
+  switch (state)
+    {
+    case simcom::None:           return "None";
+    case simcom::CheckPowerOff:  return "CheckPowerOff";
+    case simcom::PoweringOn:     return "PoweringOn";
+    case simcom::PoweredOn:      return "PoweredOff";
+    case simcom::MuxStart:       return "MuxStart";
+    case simcom::NetWait:        return "NetWait";
+    case simcom::NetStart:       return "NetStart";
+    case simcom::NetHold:        return "NetHold";
+    case simcom::NetSleep:       return "NetSleep";
+    case simcom::NetMode:        return "NetMode";
+    case simcom::NetDeepSleep:   return "NetDeepSleep";
+    case simcom::PoweringOff:    return "PoweringOff";
+    case simcom::PoweredOff:     return "PoweredOff";
+    default:                     return "Undefined";
+    };
+  }
+
+const char* SimcomNetRegName(simcom::network_registration_t netreg)
+  {
+  switch (netreg)
+    {
+    case simcom::NotRegistered:      return "NotRegistered";
+    case simcom::Searching:          return "Searching";
+    case simcom::DeniedRegistration: return "DeniedRegistration";
+    case simcom::RegisteredHome:     return "RegisteredHome";
+    case simcom::RegisteredRoaming:  return "RegisteredRoaming";
+    default:                         return "Undefined";
+    };
+  }
+
 static void SIMCOM_task(void *pvParameters)
   {
   simcom *me = (simcom*)pvParameters;
@@ -93,6 +127,7 @@ void simcom::Task()
         switch (event.simcom.type)
           {
           case SETSTATE:
+            SetState1(event.simcom.data.newstate);
             break;
           default:
             break;
@@ -131,40 +166,6 @@ simcom::~simcom()
   StopTask();
   }
 
-const char* simcom::State1Name(SimcomState1 state)
-  {
-  switch (state)
-    {
-    case None:           return "None";
-    case CheckPowerOff:  return "CheckPowerOff";
-    case PoweringOn:     return "PoweringOn";
-    case PoweredOn:      return "PoweredOff";
-    case MuxStart:       return "MuxStart";
-    case NetWait:        return "NetWait";
-    case NetStart:       return "NetStart";
-    case NetHold:        return "NetHold";
-    case NetSleep:       return "NetSleep";
-    case NetMode:        return "NetMode";
-    case NetDeepSleep:   return "NetDeepSleep";
-    case PoweringOff:    return "PoweringOff";
-    case PoweredOff:     return "PoweredOff";
-    default:             return "Undefined";
-    };
-  }
-
-const char* simcom::NetRegName(network_registration_t netreg)
-  {
-  switch (netreg)
-    {
-    case NotRegistered:      return "NotRegistered";
-    case Searching:          return "Searching";
-    case DeniedRegistration: return "DeniedRegistration";
-    case RegisteredHome:     return "RegisteredHome";
-    case RegisteredRoaming:  return "RegisteredRoaming";
-    default:                 return "Undefined";
-    };
-  }
-
 void simcom::StartTask()
   {
   if (!m_task)
@@ -199,6 +200,19 @@ void simcom::StopTask()
     vTaskDelete(m_task);
     m_task = 0;
     }
+  }
+
+void simcom::SendSetState1(SimcomState1 newstate)
+  {
+  SimcomOrUartEvent ev;
+  ev.simcom.type = SETSTATE;
+  ev.simcom.data.newstate = newstate;
+  xQueueSend(m_queue,&ev,0);
+  }
+
+bool simcom::IsStarted()
+  {
+  return (m_task != NULL);
   }
 
 void simcom::SetPowerMode(PowerMode powermode)
@@ -673,7 +687,7 @@ void simcom::StandardLineHandler(OvmsBuffer* buf, std::string line)
       default:
         break;
       }
-    ESP_LOGI(TAG, "CREG Network Registration: %s",NetRegName(m_netreg));
+    ESP_LOGI(TAG, "CREG Network Registration: %s",SimcomNetRegName(m_netreg));
     }
   else if (line.compare(0, 7, "+COPS: ") == 0)
     {
@@ -780,15 +794,15 @@ void simcom_muxtx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   writer->printf("SIMCOM\n  Network Registration: %s\n  State: %s\n  Ticker: %d\n  User Data: %d\n",
-    MyPeripherals->m_simcom->NetRegName(MyPeripherals->m_simcom->m_netreg),
-    MyPeripherals->m_simcom->State1Name(MyPeripherals->m_simcom->m_state1),
+    SimcomNetRegName(MyPeripherals->m_simcom->m_netreg),
+    SimcomState1Name(MyPeripherals->m_simcom->m_state1),
     MyPeripherals->m_simcom->m_state1_ticker,
     MyPeripherals->m_simcom->m_state1_userdata);
 
   if (MyPeripherals->m_simcom->m_state1_timeout_goto != simcom::None)
     {
     writer->printf("  State Timeout Goto: %s (in %d seconds)\n",
-      MyPeripherals->m_simcom->State1Name(MyPeripherals->m_simcom->m_state1_timeout_goto),
+      SimcomState1Name(MyPeripherals->m_simcom->m_state1_timeout_goto),
       MyPeripherals->m_simcom->m_state1_timeout_ticks);
     }
 
@@ -823,6 +837,51 @@ void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 
   }
 
+void simcom_setstate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* statename = cmd->GetName();
+
+  if (!MyPeripherals->m_simcom->IsStarted())
+    {
+    writer->puts("Error: SIMCOM task is not running");
+    return;
+    }
+
+  simcom::SimcomState1 newstate = simcom::None;
+  if (strcmp(statename,"CheckPowerOff")==0)
+    newstate = simcom::CheckPowerOff;
+  else if (strcmp(statename,"PoweringOn")==0)
+    newstate = simcom::PoweringOn;
+  else if (strcmp(statename,"PoweredOff")==0)
+    newstate = simcom::PoweredOff;
+  else if (strcmp(statename,"MuxStart")==0)
+    newstate = simcom::MuxStart;
+  else if (strcmp(statename,"NetWait")==0)
+    newstate = simcom::NetWait;
+  else if (strcmp(statename,"NetStart")==0)
+    newstate = simcom::NetStart;
+  else if (strcmp(statename,"NetHold")==0)
+    newstate = simcom::NetHold;
+  else if (strcmp(statename,"NetSleep")==0)
+    newstate = simcom::NetSleep;
+  else if (strcmp(statename,"NetMode")==0)
+    newstate = simcom::NetMode;
+  else if (strcmp(statename,"NetDeepSleep")==0)
+    newstate = simcom::NetDeepSleep;
+  else if (strcmp(statename,"PoweringOff")==0)
+    newstate = simcom::PoweringOff;
+  else if (strcmp(statename,"PoweredOff")==0)
+    newstate = simcom::PoweredOff;
+
+  if (newstate == simcom::None)
+    {
+    writer->printf("Error: Unrecognised state %s\n",statename);
+    return;
+    }
+
+  MyPeripherals->m_simcom->SendSetState1(newstate);
+  }
+
 class SimcomInit
   {
   public: SimcomInit();
@@ -836,6 +895,12 @@ SimcomInit::SimcomInit()
   cmd_simcom->RegisterCommand("tx","Transmit data on SIMCOM",simcom_tx, "", 1);
   cmd_simcom->RegisterCommand("muxtx","Transmit data on SIMCOM MUX",simcom_muxtx, "<chan> <data>", 2);
   cmd_simcom->RegisterCommand("status","Show SIMCOM status",simcom_status, "", 0);
+
+  OvmsCommand* cmd_setstate = cmd_simcom->RegisterCommand("setstate","SIMCOM state change framework",NULL, "", 1);
+  for (int x = simcom::CheckPowerOff; x<simcom::PoweredOff; x++)
+    {
+    cmd_setstate->RegisterCommand(SimcomState1Name((simcom::SimcomState1)x),"Force SIMCOM state change",simcom_setstate, "", 0);
+    }
 
   MyConfig.RegisterParam("modem", "Modem Configuration", true, true);
   // Our instances:
