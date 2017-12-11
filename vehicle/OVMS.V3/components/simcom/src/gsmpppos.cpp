@@ -185,8 +185,11 @@ void GsmPPPOS::Initialise()
   {
   ESP_LOGI(TAG, "Initialising...");
 
-  m_ppp = pppapi_pppos_create(&m_ppp_netif,
-            GsmPPPOS_OutputCallback, GsmPPPOS_StatusCallback, this);
+  if (m_ppp == NULL)
+    {
+    m_ppp = pppapi_pppos_create(&m_ppp_netif,
+              GsmPPPOS_OutputCallback, GsmPPPOS_StatusCallback, this);
+    }
   if (m_ppp == NULL)
     {
     ESP_LOGE(TAG, "Error init pppos");
@@ -197,6 +200,8 @@ void GsmPPPOS::Initialise()
 
 void GsmPPPOS::Connect()
   {
+  if (m_ppp == NULL) return;
+
   pppapi_set_auth(m_ppp, PPPAUTHTYPE_PAP,
     MyConfig.GetParamValue("modem", "apn.user").c_str(),
     MyConfig.GetParamValue("modem", "apn.password").c_str());
