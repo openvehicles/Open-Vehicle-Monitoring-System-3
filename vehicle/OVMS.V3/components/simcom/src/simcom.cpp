@@ -49,6 +49,7 @@ const char* SimcomState1Name(simcom::SimcomState1 state)
     case simcom::MuxStart:       return "MuxStart";
     case simcom::NetWait:        return "NetWait";
     case simcom::NetStart:       return "NetStart";
+    case simcom::NetLoss:        return "NetLoss";
     case simcom::NetHold:        return "NetHold";
     case simcom::NetSleep:       return "NetSleep";
     case simcom::NetMode:        return "NetMode";
@@ -315,6 +316,8 @@ void simcom::State1Leave(SimcomState1 oldstate)
       break;
     case NetStart:
       break;
+    case NetLoss:
+      break;
     case NetHold:
       break;
     case NetSleep:
@@ -366,13 +369,19 @@ void simcom::State1Enter(SimcomState1 newstate)
       break;
     case NetWait:
       ESP_LOGI(TAG,"State: Enter NetWait state");
-      m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CGATT=0\r\n");
       m_nmea.Startup();
       break;
     case NetStart:
       ESP_LOGI(TAG,"State: Enter NetStart state");
       m_state1_timeout_ticks = 30;
+      m_state1_timeout_goto = NetLoss;
+      break;
+    case NetLoss:
+      ESP_LOGI(TAG,"State: Enter NetLoss state");
+      m_state1_timeout_ticks = 10;
       m_state1_timeout_goto = NetWait;
+      m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CGATT=0\r\n");
+      m_ppp.Shutdown(true);
       break;
     case NetHold:
       ESP_LOGI(TAG,"State: Enter NetHold state");
@@ -439,6 +448,7 @@ simcom::SimcomState1 simcom::State1Activity()
     case NetMode:
       m_mux.Process(&m_buffer);
       break;
+    case NetLoss:
     case NetDeepSleep:
     case PoweringOff:
       m_buffer.EmptyAll(); // Drain it
@@ -541,7 +551,9 @@ simcom::SimcomState1 simcom::State1Ticker1()
       if (m_state1_userdata == 2)
         return NetMode; // PPP Connection is ready to be started
       else if (m_state1_userdata == 99)
-        return NetWait;
+        return NetLoss;
+      break;
+    case NetLoss:
       break;
     case NetHold:
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
@@ -563,15 +575,13 @@ simcom::SimcomState1 simcom::State1Ticker1()
         {
         // We've lost the network connection
         ESP_LOGI(TAG, "Lost network connection (NetworkRegistration in NetMode)");
-        m_ppp.Shutdown(true);
-        return NetWait;
+        return NetLoss;
         }
       if (m_state1_userdata == 99)
         {
         // We've lost the network connection
         ESP_LOGI(TAG, "Lost network connection (+PPP disconnect in NetMode)");
-        m_ppp.Shutdown(true);
-        return NetWait;
+        return NetLoss;
         }
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
         m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
@@ -860,6 +870,8 @@ void simcom_setstate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     newstate = simcom::NetWait;
   else if (strcmp(statename,"NetStart")==0)
     newstate = simcom::NetStart;
+  else if (strcmp(statename,"NetLoss")==0)
+    newstate = simcom::NetLoss;
   else if (strcmp(statename,"NetHold")==0)
     newstate = simcom::NetHold;
   else if (strcmp(statename,"NetSleep")==0)

@@ -75,6 +75,7 @@ class simcom : public pcp
       MuxStart,           // Start mux, then => NetWait
       NetWait,            // Wait for cellular service, then => NetStart
       NetStart,           // Start network, either =>NetHold, or =>...
+      NetLoss,            // Handle loss of network connectivity
       NetHold,            // MUX established, but no data
       NetSleep,           // PowerMode=Sleep: MUX established, but no data
       NetMode,            // MUX and data established, start PPP
