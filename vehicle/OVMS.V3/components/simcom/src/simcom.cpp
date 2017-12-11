@@ -140,6 +140,7 @@ const char* simcom::State1Name(SimcomState1 state)
     case PoweringOn:     return "PoweringOn";
     case PoweredOn:      return "PoweredOff";
     case MuxStart:       return "MuxStart";
+    case NetWait:        return "NetWait";
     case NetStart:       return "NetStart";
     case NetHold:        return "NetHold";
     case NetSleep:       return "NetSleep";
@@ -296,6 +297,8 @@ void simcom::State1Leave(SimcomState1 oldstate)
       break;
     case MuxStart:
       break;
+    case NetWait:
+      break;
     case NetStart:
       break;
     case NetHold:
@@ -347,9 +350,15 @@ void simcom::State1Enter(SimcomState1 newstate)
       ESP_LOGI(TAG,"State: Enter MuxStart state");
       m_mux.Start();
       break;
+    case NetWait:
+      ESP_LOGI(TAG,"State: Enter NetWait state");
+      m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CGATT=0\r\n");
+      m_nmea.Startup();
+      break;
     case NetStart:
       ESP_LOGI(TAG,"State: Enter NetStart state");
-      m_nmea.Startup();
+      m_state1_timeout_ticks = 30;
+      m_state1_timeout_goto = NetWait;
       break;
     case NetHold:
       ESP_LOGI(TAG,"State: Enter NetHold state");
@@ -409,23 +418,14 @@ simcom::SimcomState1 simcom::State1Activity()
         }
       break;
     case MuxStart:
-      m_mux.Process(&m_buffer);
-      break;
+    case NetWait:
     case NetStart:
-      m_mux.Process(&m_buffer);
-      break;
     case NetHold:
-      m_mux.Process(&m_buffer);
-      break;
     case NetSleep:
-      m_mux.Process(&m_buffer);
-      break;
     case NetMode:
       m_mux.Process(&m_buffer);
       break;
     case NetDeepSleep:
-      m_buffer.EmptyAll(); // Drain it
-      break;
     case PoweringOff:
       m_buffer.EmptyAll(); // Drain it
       break;
@@ -492,7 +492,24 @@ simcom::SimcomState1 simcom::State1Ticker1()
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
         m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
       if (m_mux.m_openchannels == GSM_MUX_CHANNELS)
-        return NetStart;
+        return NetWait;
+      break;
+    case NetWait:
+      if (m_powermode == Sleep)
+        {
+        return NetSleep; // Just hold, without starting the network
+        }
+      if (m_state1_ticker == 1)
+        {
+        // Check for exit out of this state...
+        std::string p = MyConfig.GetParamValue("modem", "apn");
+        if ((!MyConfig.GetParamValueBool("modem", "enable.net", true))||(p.empty()))
+          return NetHold; // Just hold, without starting PPP
+        }
+      else if ((m_state1_ticker > 3)&&((m_netreg==RegisteredHome)||(m_netreg==RegisteredRoaming)))
+        return NetStart; // We have GSM, so start the network
+      if ((m_state1_ticker>3)&&((m_state1_ticker % 10) == 0))
+        m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
       break;
     case NetStart:
       if (m_powermode == Sleep)
@@ -501,53 +518,23 @@ simcom::SimcomState1 simcom::State1Ticker1()
         }
       if (m_state1_ticker == 1)
         {
-        // Check for exit out of this state...
-        if (MyConfig.GetParamValueBool("modem", "enable.net", true))
-          {
-          std::string p = MyConfig.GetParamValue("modem", "apn");
-          if (!p.empty())
-            {
-            // Ready to start a PPP
-            return None; // Stay in this state...
-            }
-          }
-        return NetHold; // Just hold, without starting the network
+        m_state1_userdata = 1;
+        std::string apncmd("AT+CGDCONT=1,\"IP\",\"");
+        apncmd.append(MyConfig.GetParamValue("modem", "apn"));
+        apncmd.append("\";+CGDATA=\"PPP\",1\r\n");
+        m_mux.tx(GSM_MUX_CHAN_DATA,apncmd.c_str());
         }
-      else if ((m_state1_ticker > 5)&&((m_netreg==RegisteredHome)||(m_netreg==RegisteredRoaming)))
-        {
-        // OK. We have a network registration, and are ready to start
-        if (m_state1_userdata == 0)
-          {
-          m_state1_userdata = 1;
-          m_state1_ticker = 5;
-          std::string apncmd("AT+CGDCONT=1,\"IP\",\"");
-          apncmd.append(MyConfig.GetParamValue("modem", "apn"));
-          apncmd.append("\";+CGDATA=\"PPP\",1\r\n");
-          m_mux.tx(GSM_MUX_CHAN_DATA,apncmd.c_str());
-          }
-        else if ((m_state1_userdata == 1)&&(m_state1_ticker > 30))
-          {
-          ESP_LOGI(TAG,"No valid response to AT+CGDCONT, try again...");
-          m_state1_userdata = 0;
-          m_state1_ticker = 0;
-          }
-        else if (m_state1_userdata == 2)
-          return NetMode;
-        else if (m_state1_userdata == 99)
-          {
-          m_state1_ticker = 0;
-          m_state1_userdata = 0;
-          }
-        }
-      if ((m_state1_ticker>10)&&((m_state1_ticker % 30) == 0))
-        m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
+      if (m_state1_userdata == 2)
+        return NetMode; // PPP Connection is ready to be started
+      else if (m_state1_userdata == 99)
+        return NetWait;
       break;
     case NetHold:
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
         m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
       break;
     case NetSleep:
-      if (m_powermode == On) return NetStart;
+      if (m_powermode == On) return NetWait;
       if (m_powermode != Sleep) return PoweringOn;
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
         m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
@@ -562,17 +549,15 @@ simcom::SimcomState1 simcom::State1Ticker1()
         {
         // We've lost the network connection
         ESP_LOGI(TAG, "Lost network connection (NetworkRegistration in NetMode)");
-        m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CGATT=0\r\n");
         m_ppp.Shutdown(true);
-        return NetStart;
+        return NetWait;
         }
       if (m_state1_userdata == 99)
         {
         // We've lost the network connection
         ESP_LOGI(TAG, "Lost network connection (+PPP disconnect in NetMode)");
-        m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CGATT=0\r\n");
         m_ppp.Shutdown(true);
-        return NetStart;
+        return NetWait;
         }
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
         m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
@@ -860,6 +845,6 @@ SimcomInit::SimcomInit()
   //   'apn.password': GMS password
   //   'enable.sms': Is SMS enabled? yes/no (default: yes)
   //   'enable.net': Is NET enabled? yes/no (default: yes)
-  //   'enable.gps': Is GPS enabled? yes/no (default: yes)
-  //   'enable.gpstime': use GPS time as system time? yes/no (default: yes)
+  //   'enable.gps': Is GPS enabled? yes/no (default: no)
+  //   'enable.gpstime': use GPS time as system time? yes/no (default: no)
   }

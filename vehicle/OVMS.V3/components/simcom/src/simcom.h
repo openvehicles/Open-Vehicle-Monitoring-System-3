@@ -79,11 +79,12 @@ class simcom : public pcp
       CheckPowerOff,      // Check modem is powered off, then => PoweredOff
       PoweringOn,         // Power on modem, then => PoweredOn
       PoweredOn,          // Check modem activity, then => MuxStart
-      MuxStart,           // Start mux, then => NetStart
+      MuxStart,           // Start mux, then => NetWait
+      NetWait,            // Wait for cellular service, then => NetStart
       NetStart,           // Start network, either =>NetHold, or =>...
-      NetHold,            // MUX established, but no PPP
-      NetSleep,           // PowerMode=Sleep: MUX established, but no PPP
-      NetMode,            // MUX and PPP established
+      NetHold,            // MUX established, but no data
+      NetSleep,           // PowerMode=Sleep: MUX established, but no data
+      NetMode,            // MUX and data established, start PPP
       NetDeepSleep,       // PowerMode=DeepSleep: power save
       PoweringOff,        // Power off modem, then => CheckPowerOff
       PoweredOff          // Maintain a powered off state
