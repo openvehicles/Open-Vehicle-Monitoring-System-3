@@ -713,6 +713,7 @@ void simcom::StandardLineHandler(OvmsBuffer* buf, std::string line)
     {
     size_t qp = line.find(',');
     int creg;
+    network_registration_t nreg = Unknown;
     if (qp != string::npos)
       creg = atoi(line.substr(qp+1,1).c_str());
     else
@@ -721,24 +722,28 @@ void simcom::StandardLineHandler(OvmsBuffer* buf, std::string line)
       {
       case 0:
       case 4:
-        m_netreg = NotRegistered;
+        nreg = NotRegistered;
         break;
       case 1:
-        m_netreg = RegisteredHome;
+        nreg = RegisteredHome;
         break;
       case 2:
-        m_netreg = Searching;
+        nreg = Searching;
         break;
       case 3:
-        m_netreg = DeniedRegistration;
+        nreg = DeniedRegistration;
         break;
       case 5:
-        m_netreg = RegisteredRoaming;
+        nreg = RegisteredRoaming;
         break;
       default:
         break;
       }
-    ESP_LOGI(TAG, "CREG Network Registration: %s",SimcomNetRegName(m_netreg));
+    if (m_netreg != nreg)
+      {
+      m_netreg = nreg;
+      ESP_LOGI(TAG, "CREG Network Registration: %s",SimcomNetRegName(m_netreg));
+      }
     }
   else if (line.compare(0, 7, "+COPS: ") == 0)
     {

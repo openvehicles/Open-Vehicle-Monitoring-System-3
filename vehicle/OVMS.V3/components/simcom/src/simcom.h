@@ -93,7 +93,8 @@ class simcom : public pcp
       Searching = 2,
       DeniedRegistration = 3,
       RegisteredHome = 1,
-      RegisteredRoaming = 5
+      RegisteredRoaming = 5,
+      Unknown = 99
       } network_registration_t;
     typedef struct
       {

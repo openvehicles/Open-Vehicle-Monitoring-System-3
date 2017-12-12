@@ -43,8 +43,9 @@ class OvmsShell : public OvmsWriter
 
   public:
     void Initialize(bool print);
-    void ProcessChar(const char c);
+    void ProcessChar(char c);
     void ProcessChars(const char* buf, int len);
+    void PrintConditional(const char* buf);
 
   protected:
     microrl_t m_rl;
