@@ -37,6 +37,9 @@
 ;		 0.2.0  12-Dec-2017 - Geir Øyvind Vælidalo
 ;			- x.ks.BatteryCapacity-parameter renamed to x.ks.acp_cap_kwh to mimic Renault Twizy naming.
 ;
+;		 0.2.1  12-Dec-2017 - Geir Øyvind Vælidalo
+;			- Kia Soul EV requires OVMS GPS, since we don't know how to access the cars own GPS at the moment.
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -72,7 +75,7 @@ static const char *TAG = "v-kiasoulev";
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 
-#define VERSION "0.2.0"
+#define VERSION "0.2.1"
 
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
@@ -170,11 +173,19 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
 
   PollSetPidList(m_can1,vehicle_kiasoulev_polls);
   PollSetState(0);
+
+  // require GPS:
+  MyEvents.SignalEvent("vehicle.require.gps", NULL);
+  MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
   }
 
 OvmsVehicleKiaSoulEv::~OvmsVehicleKiaSoulEv()
   {
   ESP_LOGI(TAG, "Shutdown Kia Soul EV vehicle module");
+
+  // release GPS:
+  MyEvents.SignalEvent("vehicle.release.gps", NULL);
+  MyEvents.SignalEvent("vehicle.release.gpstime", NULL);
   }
 
 /**
