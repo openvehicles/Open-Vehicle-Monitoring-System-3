@@ -53,6 +53,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   public:
     void Ticker1(uint32_t ticker);
     void ConfigChanged(OvmsConfigParam* param);
+    void EventListener(string event, void* data);
   
   private:
     void UpdateMaxRange();
@@ -228,23 +229,30 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     #define TWIZY_FAN_THRESHOLD   45    // temperature in °C
     #define TWIZY_FAN_OVERSHOOT   5     // hold time in minutes after switch-off
     
+    int cfg_gpslog_interval = 5;        // GPS-Log interval while driving [seconds]
+    uint32_t twizy_last_gpslog = 0;     // Time of last GPS-Log update
     
     // Notifications:
     #define SEND_BatteryAlert           (1<< 0)  // alert: battery problem
     #define SEND_PowerNotify            (1<< 1)  // info: power usage summary
-    #define SEND_DataUpdate             (1<< 2)  // data: regular data update (per minute)
-    #define SEND_StreamUpdate           (1<< 3)  // data: stream data update (per second)
+    #define SEND_PowerStats             (1<< 2)  // data: RT-PWR-Stats history entry
+    #define SEND_GPSLog                 (1<< 3)  // data: RT-GPS-Log history entry
     #define SEND_BatteryStats           (1<< 4)  // data: separate battery stats (large)
     #define SEND_CodeAlert              (1<< 5)  // alert: fault code (SEVCON/inputs/...)
-    #define SEND_PowerLog               (1<< 6)  // data: RT-PWR-Log history entry
+    #define SEND_TripLog                (1<< 6)  // data: RT-PWR-Log history entry
     #define SEND_ResetResult            (1<< 7)  // info/alert: RESET OK/FAIL
     #define SEND_ChargeState            (1<< 8)  // info: STAT command
     #define SEND_ChargeAlert            (1<< 9)  // alert: STAT command (charge interrupt)
+    #define SEND_SDOLog                 (1<<10)  // data: RT-ENG-SDO history entry
     
   protected:
     unsigned int twizy_notifications = 0;
     void RequestNotify(unsigned int which);
     void DoNotify();
+    
+    void SendGPSLog();
+    //void SendPWRLog();
+    //void SendSDOLog();
     
     
     // --------------------------------------------------------------------------

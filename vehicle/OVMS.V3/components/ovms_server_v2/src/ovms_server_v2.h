@@ -66,6 +66,7 @@ class OvmsServerV2 : public OvmsServer
     void Transmit(const std::ostringstream& message);
     void Transmit(const std::string& message);
     void Transmit(const char* message);
+    void SetStatus(const char* status, bool fault=false);
 
   protected:
     std::string ReadLine();
@@ -89,6 +90,7 @@ class OvmsServerV2 : public OvmsServer
   public:
     void MetricModified(OvmsMetric* metric);
     bool IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry);
+    void EventListener(std::string event, void* data);
 
   public:
     std::string m_status;

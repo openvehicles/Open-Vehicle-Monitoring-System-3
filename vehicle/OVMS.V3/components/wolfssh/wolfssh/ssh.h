@@ -145,6 +145,17 @@ WOLFSSH_API int wolfSSH_KDF(uint8_t, uint8_t, uint8_t*, uint32_t,
                 const uint8_t*, uint32_t);
 
 
+typedef enum {
+    WOLFSSH_SESSION_UNKNOWN = 0,
+    WOLFSSH_SESSION_SHELL,
+    WOLFSSH_SESSION_EXEC,
+    WOLFSSH_SESSION_SUBSYSTEM,
+} WS_SessionType;
+
+WOLFSSH_API WS_SessionType wolfSSH_GetSessionType(const WOLFSSH*);
+WOLFSSH_API const char* wolfSSH_GetSessionCommand(const WOLFSSH*);
+
+
 enum WS_HighwaterSide {
     WOLFSSH_HWSIDE_TRANSMIT,
     WOLFSSH_HWSIDE_RECEIVE

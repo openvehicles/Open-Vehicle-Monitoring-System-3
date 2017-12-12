@@ -55,13 +55,6 @@ class simcom : public pcp
     void muxtx(int channel, uint8_t* data, size_t size);
     void muxtx(int channel, const char* data, ssize_t size = -1);
 
-  public:
-    void StartTask();
-    void StopTask();
-    void Task();
-    void Ticker(std::string event, void* data);
-    void IncomingMuxData(GsmMuxChannel* channel);
-
   protected:
     TaskHandle_t m_task;
     QueueHandle_t m_queue;
@@ -75,18 +68,20 @@ class simcom : public pcp
   public:
     enum SimcomState1
       {
-      None,
-      CheckPowerOff,
-      PoweringOn,
-      PoweredOn,
-      MuxMode,
-      NetStart,
-      NetHold,
-      NetSleep,
-      NetMode,
-      NetDeepSleep,
-      PoweringOff,
-      PoweredOff
+      None,               // Initialised, and idle
+      CheckPowerOff,      // Check modem is powered off, then => PoweredOff
+      PoweringOn,         // Power on modem, then => PoweredOn
+      PoweredOn,          // Check modem activity, then => MuxStart
+      MuxStart,           // Start mux, then => NetWait
+      NetWait,            // Wait for cellular service, then => NetStart
+      NetStart,           // Start network, either =>NetHold, or =>...
+      NetLoss,            // Handle loss of network connectivity
+      NetHold,            // MUX established, but no data
+      NetSleep,           // PowerMode=Sleep: MUX established, but no data
+      NetMode,            // MUX and data established, start PPP
+      NetDeepSleep,       // PowerMode=DeepSleep: power save
+      PoweringOff,        // Power off modem, then => CheckPowerOff
+      PoweredOff          // Maintain a powered off state
       };
     typedef enum
       {
@@ -98,7 +93,8 @@ class simcom : public pcp
       Searching = 2,
       DeniedRegistration = 3,
       RegisteredHome = 1,
-      RegisteredRoaming = 5
+      RegisteredRoaming = 5,
+      Unknown = 99
       } network_registration_t;
     typedef struct
       {
@@ -126,10 +122,6 @@ class simcom : public pcp
     GsmPPPOS     m_ppp;
     GsmNMEA      m_nmea;
 
-  public:
-    const char* State1Name(SimcomState1 state);
-    const char* NetRegName(network_registration_t netreg);
-
   protected:
     void SetState1(SimcomState1 newstate);
     void State1Leave(SimcomState1 oldstate);
@@ -141,6 +133,15 @@ class simcom : public pcp
     void StandardLineHandler(OvmsBuffer* buf, std::string line);
     void PowerCycle();
     void PowerSleep(bool onoff);
+
+  public:
+    void StartTask();
+    void StopTask();
+    void Task();
+    void Ticker(std::string event, void* data);
+    void IncomingMuxData(GsmMuxChannel* channel);
+    void SendSetState1(SimcomState1 newstate);
+    bool IsStarted();
   };
 
 #endif //#ifndef __SIMCOM_H__

@@ -634,3 +634,24 @@ int wolfSSH_KDF(uint8_t hashId, uint8_t keyId,
                        sessionId, sessionIdSz);
 }
 
+
+WS_SessionType wolfSSH_GetSessionType(const WOLFSSH* ssh)
+{
+    WLOG(WS_LOG_DEBUG, "Entering wolfSSH_GetSessionCommand()");
+
+    if (ssh && ssh->channelList)
+        return ssh->channelList->sessionType;
+
+    return WOLFSSH_SESSION_UNKNOWN;
+}
+
+
+const char* wolfSSH_GetSessionCommand(const WOLFSSH* ssh)
+{
+    WLOG(WS_LOG_DEBUG, "Entering wolfSSH_GetSessionCommand()");
+
+    if (ssh && ssh->channelList)
+        return ssh->channelList->command;
+
+    return NULL;
+}

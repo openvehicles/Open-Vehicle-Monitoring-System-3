@@ -2621,6 +2621,7 @@ static int DoChannelRequest(WOLFSSH* ssh,
         WLOG(WS_LOG_DEBUG, "  channelId = %u", channelId);
         WLOG(WS_LOG_DEBUG, "  type = %s", type);
         WLOG(WS_LOG_DEBUG, "  wantReply = %u", wantReply);
+
         if (WSTRNCMP(type, "pty-req", typeSz) == 0) {
             char     term[32];
             uint32_t termSz;
@@ -2664,19 +2665,19 @@ static int DoChannelRequest(WOLFSSH* ssh,
             WLOG(WS_LOG_DEBUG, "  %s = %s", name, value);
         }
         else if (WSTRNCMP(type, "shell", typeSz) == 0) {
-            channel->channelProgram = ID_CHANPROG_SHELL;
+            channel->sessionType = WOLFSSH_SESSION_SHELL;
             ssh->clientState = CLIENT_DONE;
         }
         else if (WSTRNCMP(type, "exec", typeSz) == 0) {
             ret = GetStringAlloc(ssh, &channel->command, buf, len, &begin);
-            channel->channelProgram = ID_CHANPROG_EXEC;
+            channel->sessionType = WOLFSSH_SESSION_EXEC;
             ssh->clientState = CLIENT_DONE;
 
             WLOG(WS_LOG_DEBUG, "  command = %s", channel->command);
         }
         else if (WSTRNCMP(type, "subsystem", typeSz) == 0) {
             ret = GetStringAlloc(ssh, &channel->command, buf, len, &begin);
-            channel->channelProgram = ID_CHANPROG_SUBSYSTEM;
+            channel->sessionType = WOLFSSH_SESSION_SUBSYSTEM;
             ssh->clientState = CLIENT_DONE;
 
             WLOG(WS_LOG_DEBUG, "  subsystem = %s", channel->command);

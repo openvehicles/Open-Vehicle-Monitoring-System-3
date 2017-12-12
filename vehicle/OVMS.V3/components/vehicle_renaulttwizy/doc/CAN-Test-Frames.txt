@@ -60,3 +60,6 @@ can can1 rx standard 597 20 A4 07 B1 29 00 01 41
 # Stop charge:
 can can1 rx standard 597 00 E0 00 D1 29 00 01 45
 
+# Speed=0:
+can can1 rx standard 599 00 00 04 B8 FF 49 00 00
+
