@@ -198,11 +198,14 @@ void OvmsServerV2::ServerTask()
   int lasttx = 0;
   MAINLOOP: while(1)
     {
-    while (!MyNetManager.m_connected_any)
+    if (!MyNetManager.m_connected_any)
       {
-      m_status = "Waiting for network availability";
-      vTaskDelay(5000 / portTICK_PERIOD_MS);
-      continue;
+      SetStatus("Waiting for network connectivity");
+      while (!MyNetManager.m_connected_any)
+        {
+        vTaskDelay(5000 / portTICK_PERIOD_MS);
+        }
+      SetStatus("Network connectivity established");
       }
 
     if (!Connect())
@@ -218,7 +221,7 @@ void OvmsServerV2::ServerTask()
       continue;
       }
 
-    m_status = "Connected and logged in";
+    SetStatus("Connected and logged in");
     m_pending_notify_info = true;
     m_pending_notify_error = true;
     m_pending_notify_alert = true;
@@ -628,6 +631,15 @@ void OvmsServerV2::Transmit(const char* message)
   delete [] s;
   }
 
+void OvmsServerV2::SetStatus(const char* status, bool fault)
+  {
+  if (fault)
+    ESP_LOGE(TAG, "Status: %s", status);
+  else
+    ESP_LOGI(TAG, "Status: %s", status);
+  m_status = status;
+  }
+
 bool OvmsServerV2::Connect()
   {
   m_vehicleid = MyConfig.GetParamValue("vehicle", "id");
@@ -642,33 +654,29 @@ bool OvmsServerV2::Connect()
 
   if (m_vehicleid.empty())
     {
-    m_status = "Error: Parameter vehicle/id must be defined";
-    ESP_LOGW(TAG, "Parameter vehicle/id must be defined");
+    SetStatus("Error: Parameter vehicle/id must be defined",true);
     return false;
     }
   if (m_server.empty())
     {
-    m_status = "Error: Parameter server.v2/server must be defined";
-    ESP_LOGW(TAG, "Parameter server.v2/server must be defined");
+    SetStatus("Error: Parameter server.v2/server must be defined",true);
     return false;
     }
   if (m_password.empty())
     {
-    m_status = "Error: Parameter server.v2/password must be defined";
-    ESP_LOGW(TAG, "Parameter server.v2/password must be defined");
+    SetStatus("Error: Parameter server.v2/password must be defined",true);
     return false;
     }
 
   m_conn.Connect(m_server.c_str(), m_port.c_str());
   if (!m_conn.IsOpen())
     {
-    m_status = "Error: Cannot connect to server";
-    ESP_LOGE(TAG, "Socket connect failed errno=%d", errno);
+    SetStatus("Error: Cannot establish tcp/ip connection to server",true);
     return false;
     }
 
-  m_status = "Connected to server";
   ESP_LOGI(TAG, "Connected to OVMS Server V2 at %s",m_server.c_str());
+  SetStatus("Connected to server");
   return true;
   }
 
@@ -677,15 +685,14 @@ void OvmsServerV2::Disconnect()
   if (m_conn.IsOpen())
     {
     m_conn.Disconnect();
-    m_status = "Disconnected";
-    ESP_LOGI(TAG, "Disconnected from OVMS Server V2");
+    SetStatus("Error: Disconnected from OVMS Server V2",true);
     }
   StandardMetrics.ms_s_v2_connected->SetValue(false);
   }
 
 bool OvmsServerV2::Login()
   {
-  m_status = "Logging in...";
+  SetStatus("Logging in...");
 
   char token[OVMS_PROTOCOL_V2_TOKENSIZE+1];
 
@@ -719,7 +726,7 @@ bool OvmsServerV2::Login()
       {
       ESP_LOGI(TAG, "Server response is incomplete (%d bytes)",m_buffer->UsedSpace());
       m_conn.Disconnect();
-      m_status = "Error: Server response is incomplete";
+      SetStatus("Error: Server response is incomplete",true);
       return false;
       }
     }
@@ -732,8 +739,7 @@ bool OvmsServerV2::Login()
     size_t sep = line.find(' ',7);
     if (sep == std::string::npos)
       {
-      m_status = "Error: Server response is invalid";
-      ESP_LOGI(TAG, "Server response invalid (no token/digest separator)");
+      SetStatus("Error: Server response invalid (no token/digest separator)",true);
       return false;
       }
     std::string token = std::string(line,7,sep-7);
@@ -741,8 +747,7 @@ bool OvmsServerV2::Login()
     ESP_LOGI(TAG, "Server token is %s and digest is %s",token.c_str(),digest.c_str());
     if (m_token == token)
       {
-      m_status = "Error: Detected token replay attack/collision";
-      ESP_LOGI(TAG, "Detected token replay attack/collision");
+      SetStatus("Error: Detected token replay attack/collision",true);
       return false;
       }
     uint8_t sdigest[OVMS_MD5_SIZE];
@@ -751,12 +756,10 @@ bool OvmsServerV2::Login()
     base64encode(sdigest, OVMS_MD5_SIZE, sdb);
     if (digest.compare((char*)sdb) != 0)
       {
-      m_status = "Error: Server digest does not authenticate";
-      ESP_LOGI(TAG, "Server digest does not authenticate");
+      SetStatus("Error: Server digest does not authenticate",true);
       return false;
       }
-    m_status = "Login priming crypto...";
-    ESP_LOGI(TAG, "Server authentication is successful. Prime the crypto...");
+    SetStatus("Server auth ok. Now priming crypto.");
     std::string key(token);
     key.append(m_token);
     ESP_LOGI(TAG, "Shared secret key is %s (%d bytes)",key.c_str(),key.length());
@@ -773,14 +776,12 @@ bool OvmsServerV2::Login()
       uint8_t v = 0;
       RC4_crypt(&m_crypto_tx1, &m_crypto_tx2, &v, 1);
       }
-    m_status = "Login successful...";
-    ESP_LOGI(TAG, "OVMS V2 login successful, and crypto channel established");
+    SetStatus("OVMS V2 login successful, and crypto channel established");
     return true;
     }
   else
     {
-    m_status = "Error: Server response was not a welcome MP-S";
-    ESP_LOGI(TAG, "Server response was not a welcome MP-S");
+    SetStatus("Error: Server response was not a welcome MP-S",true);
     return false;
     }
   }
@@ -1425,7 +1426,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
     }
 
   m_buffer = new OvmsBuffer(1024);
-  m_status = "Starting";
+  SetStatus("Starting");
   m_now_stat = false;
   m_now_gps = false;
   m_now_tpms = false;
