@@ -34,7 +34,7 @@
 
 void Print(microrl_t* rl, const char * str)
   {
-  ((OvmsWriter*)rl->userdata)->write(str,strlen(str));
+  ((OvmsShell*)rl->userdata)->PrintConditional(str);
   }
 
 void NoPrint(microrl_t* rl, const char * str)
@@ -57,8 +57,15 @@ void OvmsShell::Initialize(bool print)
   microrl_set_execute_callback(&m_rl, Execute);
   }
 
-void OvmsShell::ProcessChar(const char c)
+void OvmsShell::ProcessChar(char c)
   {
+  if (m_insert)
+    {
+    if (m_insert(this, m_userData, c))
+      return;
+    m_insert = NULL;
+    c = '\n';
+    }
   microrl_insert_char(&m_rl, c);
   }
 
@@ -66,6 +73,12 @@ void OvmsShell::ProcessChars(const char* buf, int len)
   {
   for (int i = 0; i < len; ++i)
     {
-    microrl_insert_char(&m_rl, *buf++);
+    ProcessChar(*buf++);
     }
+  }
+
+void OvmsShell::PrintConditional(const char* str)
+  {
+  if (!m_insert)  // Avoid prompt when entering cmd doing input
+    write(str, strlen(str));
   }
