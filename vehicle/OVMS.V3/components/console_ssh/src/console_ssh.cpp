@@ -27,6 +27,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
+#include <sys/stat.h>
 #define LWIP_POSIX_SOCKETS_IO_NAMES 0
 #include <lwip/def.h>
 #include <lwip/sockets.h>
@@ -39,10 +40,12 @@
 #include <wolfssl/wolfcrypt/rsa.h>
 #include <wolfssl/wolfcrypt/sha.h>
 #include <wolfssh/ssh.h>
+#include <wolfssh/log.h>
 #include "console_ssh.h"
 #include "ovms_netmanager.h"
 #include "ovms_config.h"
 
+static void wolf_logger(enum wolfSSH_LogLevel level, const char* const msg);
 static const char *tag = "ssh";
 static uint8_t CRLF[2] = { '\r', '\n' };
 static const char newline = '\n';
@@ -60,11 +63,11 @@ static void MongooseHandler(struct mg_connection *nc, int ev, void *p)
 
 void OvmsSSH::EventHandler(struct mg_connection *nc, int ev, void *p)
   {
-  //ESP_LOGI(tag, "Event %d conn %p, data %p", ev, nc, p);
   switch (ev)
     {
     case MG_EV_ACCEPT:
       {
+      ESP_LOGV(tag, "Event MG_EV_ACCEPT conn %p, data %p", nc, p);
       ConsoleSSH* child = new ConsoleSSH(this, nc);
       nc->user_data = child;
       break;
@@ -72,9 +75,13 @@ void OvmsSSH::EventHandler(struct mg_connection *nc, int ev, void *p)
 
     case MG_EV_POLL:
       {
+      //ESP_LOGV(tag, "Event MG_EV_ACCEPT conn %p, data %p", nc, p);
       ConsoleSSH* child = (ConsoleSSH*)nc->user_data;
       if (child)
+        {
+        child->Send();
         child->Poll(0);
+        }
       if (!m_keyed)
         {
         std::string skey = MyConfig.GetParamValueBinary("ssh.server", "key", std::string());
@@ -84,9 +91,7 @@ void OvmsSSH::EventHandler(struct mg_connection *nc, int ev, void *p)
           int ret = wolfSSH_CTX_UsePrivateKey_buffer(m_ctx, (const uint8_t*)skey.data(),
             skey.size(),  WOLFSSH_FORMAT_ASN1);
           if (ret < 0)
-            {
             ESP_LOGE(tag, "Couldn't use configured server key, error = %d", ret);
-            }
           else
             {
             std::string fp = MyConfig.GetParamValue("ssh.info", "fingerprint", "[not available]");
@@ -99,14 +104,24 @@ void OvmsSSH::EventHandler(struct mg_connection *nc, int ev, void *p)
 
     case MG_EV_RECV:
       {
+      ESP_LOGV(tag, "Event MG_EV_RECV conn %p, data received %d", nc, *(int*)p);
       ConsoleSSH* child = (ConsoleSSH*)nc->user_data;
       child->Receive();
       child->Poll(0);
       }
       break;
 
+    case MG_EV_SEND:
+      {
+      ESP_LOGV(tag, "Event MG_EV_SEND conn %p, data %p", nc, p);
+      ConsoleSSH* child = (ConsoleSSH*)nc->user_data;
+      child->Sent();
+      break;
+      }
+
     case MG_EV_CLOSE:
       {
+      ESP_LOGV(tag, "Event MG_EV_CLOSE conn %p, data %p", nc, p);
       ConsoleSSH* child = (ConsoleSSH*)nc->user_data;
       if (child)
         delete child;
@@ -152,7 +167,8 @@ void OvmsSSH::NetManInit(std::string event, void* data)
     ::printf("\nInsufficient memory to allocate SSH context\n");
     return;
     }
-  wolfSSH_CTX_SetBanner(m_ctx, "OVMS SSH Server\n");
+  wolfSSH_SetLoggingCb(&wolf_logger);
+  wolfSSH_CTX_SetBanner(m_ctx, NULL);
   wolfSSH_SetUserAuth(m_ctx, Authenticate);
   std::string skey = MyConfig.GetParamValueBinary("ssh.server", "key", std::string());
   if (skey.empty())
@@ -166,9 +182,7 @@ void OvmsSSH::NetManInit(std::string event, void* data)
     ret = wolfSSH_CTX_UsePrivateKey_buffer(m_ctx, (const uint8_t*)skey.data(),
       skey.size(),  WOLFSSH_FORMAT_ASN1);
     if (ret < 0)
-      {
       ESP_LOGE(tag, "Couldn't use configured server key, error = %d", ret);
-      }
     }
 
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
@@ -176,9 +190,7 @@ void OvmsSSH::NetManInit(std::string event, void* data)
   if (nc)
     nc->user_data = NULL;
   else
-    {
     ESP_LOGE(tag, "Launching SSH Server failed");
-    }
   }
 
 void OvmsSSH::NetManStop(std::string event, void* data)
@@ -188,9 +200,7 @@ void OvmsSSH::NetManStop(std::string event, void* data)
     ESP_LOGI(tag, "Stopping SSH Server");
     wolfSSH_CTX_free(m_ctx);
     if (wolfSSH_Cleanup() != WS_SUCCESS)
-      {
       ESP_LOGE(tag, "Couldn't clean up wolfSSH.");
-      }
     m_ctx = NULL;
     }
   }
@@ -247,9 +257,14 @@ ConsoleSSH::ConsoleSSH(OvmsSSH* server, struct mg_connection* nc)
   m_connection = nc;
   m_queue = xQueueCreate(100, sizeof(Event));
   m_ssh = NULL;
-  m_accepted = false;
-  m_pending = false;
+  m_state = ACCEPT;
+  m_sent = true;
   m_rekey = false;
+  m_needDir = false;
+  m_isDir = false;
+  m_verbose = false;
+  m_recursive = false;
+  m_file = NULL;
   m_ssh = wolfSSH_new(m_server->ctx());
   if (m_ssh == NULL)
     {
@@ -257,28 +272,14 @@ ConsoleSSH::ConsoleSSH(OvmsSSH* server, struct mg_connection* nc)
     return;
     }
   wolfSSH_SetIORecv(m_server->ctx(), ::RecvCallback);
-  wolfSSH_SetIOSend(m_server->ctx(), SendCallback);
+  wolfSSH_SetIOSend(m_server->ctx(), ::SendCallback);
   wolfSSH_SetIOReadCtx(m_ssh, this);
   wolfSSH_SetIOWriteCtx(m_ssh, m_connection);
   wolfSSH_SetUserAuthCtx(m_ssh, this);
   /* Use the session object for its own highwater callback ctx */
   wolfSSH_SetHighwaterCtx(m_ssh, (void*)m_ssh);
   wolfSSH_SetHighwater(m_ssh, DEFAULT_HIGHWATER_MARK);
-  //wolfSSH_Debugging_ON();
-
-  // Start the accept process, but it will likely not complete immediately
-  int rc = wolfSSH_accept(m_ssh);
-  if (rc == WS_SUCCESS)
-    {
-    m_accepted = true;
-    Initialize("SSH");
-    }
-  else if ((rc = wolfSSH_get_error(m_ssh)) != WS_WANT_READ)
-    {
-    ESP_LOGE(tag, "SSH server failed to accept connection, error = %d", rc);
-    m_connection->flags |= MG_F_CLOSE_IMMEDIATELY;
-    return;
-    }
+  wolfSSH_Debugging_ON();
   }
 
 ConsoleSSH::~ConsoleSSH()
@@ -287,6 +288,7 @@ ConsoleSSH::~ConsoleSSH()
   m_ssh = NULL;
   wolfSSH_free(ssh);
   vQueueDelete(m_queue);
+  m_dirs.clear();
   }
 
 // Handle MG_EV_RECV event.
@@ -308,63 +310,558 @@ void ConsoleSSH::Receive()
     }
   }
 
+// Handle MG_EV_POLL event.
+void ConsoleSSH::Send()
+  {
+  if (m_state != SOURCE_SEND)
+    return;
+  int ret = 0;
+  while (true)
+    {
+    if (m_size == 0)
+      m_size = fread(m_buffer, sizeof(char), BUFFER_SIZE, m_file);
+    if (m_size <= 0)
+      break;
+    m_sent = false;
+    ret = wolfSSH_stream_send(m_ssh, (uint8_t*)m_buffer + m_index, m_size);
+    if (ret < 0)
+      break;
+    m_size -= ret;
+    if (m_size == 0)
+      m_index = 0;
+    else
+      {
+      m_index += ret;
+      return;
+      }
+    if (!m_sent)
+      return;
+    }
+  if (ret < 0)
+    {
+    // Would need to check ret != WS_WANT_WRITE here if mg_send is changed to
+    // return EWOUDBLOCK
+    ESP_LOGE(tag, "Error in wolfSSH_stream_send: %d", ret);
+    m_connection->flags |= MG_F_SEND_AND_CLOSE;
+    m_state = CLOSING;
+    }
+  else if (m_size < 0)
+    {
+    ESP_LOGE(tag, "Error reading file in source scp: %d", m_size);
+    m_connection->flags |= MG_F_SEND_AND_CLOSE;
+    m_state = CLOSING;
+    }
+  else  // EOF on fread()
+    {
+    ESP_LOGD(tag, "Sending %s completed", m_path.c_str());
+    m_state = SOURCE_RESPONSE;
+    wolfSSH_stream_send(m_ssh, (uint8_t*)"", 1);
+    }
+  fclose(m_file);
+  m_file = NULL;
+  }
+
+// Handle MG_EV_SEND event.
+void ConsoleSSH::Sent()
+  {
+  m_sent = true;
+  }
+
+int ConsoleSSH::GetResponse()
+  {
+  // Read the single binary 0 byte ACK or the firat byte of an error message or
+  // protocol line.
+  int rc = wolfSSH_stream_read(m_ssh, (uint8_t*)m_buffer, 1);
+  if (rc < 1)
+    return rc;
+  if (m_state != SINK_LOOP || *m_buffer < ' ')
+    ESP_LOGD(tag, "response() received protocol ack byte %d", *m_buffer);
+  if (*m_buffer != 0)
+    {
+    // Read the rest of the protocol line or error message, stopping on the
+    // newline and leaving anything else queued.  We assume that it will all be
+    // sent in one IP packet so we don't have to worry about WS_WANT_READ.
+    char* p = m_buffer + 1;
+    do
+      rc = wolfSSH_stream_read(m_ssh, (uint8_t*)p, 1);
+    while (rc == 1 && *p++ != '\n' && p < &m_buffer[BUFFER_SIZE-1]);
+    *p-- = '\0';
+    if (*p == '\n')
+      *p = '\0';
+    }
+  return 1;
+  }
+
 // Handle RECV event from queue.
 void ConsoleSSH::HandleDeviceEvent(void* pEvent)
   {
+  struct stat sbuf;
+  std::string msg;
+  size_t filename = 0;
+  Level level;
+  int rc = 0;
   Event event = *(Event*)pEvent;
-  switch (event.type)
+  if (event.type != RECV)
     {
-    case RECV:
-      m_pending = true;         // We have data waiting to be taken
-      if (!m_accepted)
+    ESP_LOGE(tag, "Unknown event type %d in ConsoleSSH", event.type);
+    return;
+    }
+  do
+    {
+    switch (m_state)
+      {
+      case ACCEPT:
         {
-        int rc = wolfSSH_accept(m_ssh);
-        if (rc == WS_SUCCESS)
-          {
-          m_accepted = true;
-          Initialize("SSH");
-          }
-        else if ((rc = wolfSSH_get_error(m_ssh)) != WS_WANT_READ)
-          {
-          ESP_LOGE(tag, "SSH server failed to accept connection, error = %d", rc);
-          m_connection->flags |= MG_F_CLOSE_IMMEDIATELY;
+        rc = wolfSSH_accept(m_ssh);
+        if (rc != WS_SUCCESS && (rc = wolfSSH_get_error(m_ssh)) != WS_SUCCESS)
           break;
+        if (wolfSSH_GetSessionType(m_ssh) == WOLFSSH_SESSION_SHELL)
+          {
+          Initialize("SSH");
+          m_state = SHELL;
           }
+        else if (wolfSSH_GetSessionType(m_ssh) == WOLFSSH_SESSION_EXEC)
+          {
+          const char* cmdline = wolfSSH_GetSessionCommand(m_ssh);
+          if (!cmdline)
+            {
+            rc = WS_BAD_USAGE;        // no command provided
+            break;
+            }
+          ESP_LOGD(tag, "SSH command request: %s", cmdline);
+          if (strncmp(cmdline, "scp -", 5) == 0)
+            {
+            bool from = false, to = false;
+            int i;
+            for (i = 5; ; ++i)
+              {
+              if (cmdline[i] == 'f') from = true;
+              if (cmdline[i] == 't') to = true;
+              if (cmdline[i] == 'd') m_needDir = true;
+              if (cmdline[i] == 'v') m_verbose = true;
+              if (cmdline[i] == 'r') m_recursive = true;
+              if (cmdline[i] == ' ' && cmdline[++i] != '-') break;
+              if (cmdline[i] == '\0') break;
+              }
+            m_path = &cmdline[i];
+            if (from == to)
+              rc = WS_BAD_USAGE;
+            else if (from)
+              m_state = SOURCE;
+            else  // -t (to) case
+              m_state = SINK;
+            }
+          else
+            m_state = EXEC;
+          }
+        else  // Session did not request a 'shell' or 'exec' program
+          rc = WS_UNIMPLEMENTED_E;
+        break;
         }
-      else while (true)
+
+      // Normal interactive shell session
+      case SHELL:
         {
-        int size = wolfSSH_stream_read(m_ssh, (uint8_t*)m_buffer, BUFFER_SIZE);
-        if (size > 0)
+        rc = wolfSSH_stream_read(m_ssh, (uint8_t*)m_buffer, BUFFER_SIZE);
+        if (rc > 0)
           {
           // Translate CR (Enter) from ssh client into \n for microrl
-          for (int i = 0; i < size; ++i)
+          for (int i = 0; i < rc; ++i)
             {
             if (m_buffer[i] == '\r')
               m_buffer[i] = '\n';
             }
-          ProcessChars(m_buffer, size);
+          ProcessChars(m_buffer, rc);
           }
+        break;
+        }
+
+      // 'exec' session with command to be executed and results returned
+      case EXEC:
+        {
+        Initialize(NULL);
+        const char* cmdline = wolfSSH_GetSessionCommand(m_ssh);
+        ProcessChars(cmdline, strlen(cmdline));
+        ProcessChar('\n');
+        wolfSSH_stream_exit(m_ssh, 0); // XXX Need commands to return status
+        m_state = CLOSING;
+        break;
+        }
+
+      // SCP session pulling data from OVMS
+      case SOURCE:
+        {
+        // Only expecting to read a single binary 0 byte
+        rc = wolfSSH_stream_read(m_ssh, (uint8_t*)m_buffer, 1);
+        if (rc < 1)
+          break;
+        ESP_LOGD(tag, "SOURCE received protocol ack byte %d", *m_buffer);
+        if (*m_buffer == 0)
+          m_state = SOURCE_LOOP;
+        else
+          rc = WS_BAD_USAGE;  // client always sends 0 so this shouldn't happen
+        break;
+        }
+
+      case SOURCE_LOOP:
+        {
+        ESP_LOGD(tag, "SCP 'from' file %s", m_path.c_str());
+        msg.assign("\2scp: ").append(m_path).append(": ");
+        if (MyConfig.ProtectedPath(m_path.c_str()))
+          msg.append("protected path\n");
         else
           {
-          if (size != WS_WANT_READ)
-            // Some error occurred, presume it is connection closing.
-            m_connection->flags |= MG_F_SEND_AND_CLOSE;
+          while (m_path.size() > 0 && m_path.at(m_path.size()-1) == '/')
+            m_path.resize(m_path.size()-1);          // Trim off a trailing '/'
+          filename = m_path.find_last_of('/');
+          if (filename == std::string::npos)
+            filename = 0;
+          else
+            ++filename;
+          int ret = 0;
+          // Need to fake these because stat says "Invalid argument"
+          if (m_path.compare("/store") == 0 || m_path.compare("/sd") == 0)
+            sbuf.st_mode = S_IFDIR;  // Don't care about permissions
+          else
+            ret = stat(m_path.c_str(), &sbuf);
+          if (ret < 0)
+            msg.append(strerror(errno)).append("\n");
+          else if (S_ISDIR(sbuf.st_mode))
+            {
+            if (!m_recursive)
+              msg.append("received directory without -r\n");
+            else if ((level.dir = opendir(m_path.c_str())) == NULL)
+              msg.append(strerror(errno)).append("\n");
+            else
+              {
+              level.size = m_path.size();
+              m_dirs.push_front(level);
+              msg.assign("D0755 0 ").append(m_path.substr(filename));
+              ESP_LOGD(tag, "Source: %s", msg.c_str());
+              msg.append("\n");
+              wolfSSH_stream_send(m_ssh, (uint8_t*)msg.c_str(), msg.size());
+              m_state = SOURCE_RESPONSE;
+              break;
+              }
+            }
+          else if (S_ISREG(sbuf.st_mode))
+            {
+            if ((m_file = fopen(m_path.c_str(), "r")) == NULL)
+              msg.append(strerror(errno)).append("\n");
+            else
+              {
+              char num[12];
+              snprintf(num, sizeof(num), "%ld ", sbuf.st_size);
+              msg.assign("C0644 ").append(num).append(m_path.substr(filename));
+              ESP_LOGD(tag, "Source: %s", msg.c_str());
+              msg.append("\n");
+              wolfSSH_stream_send(m_ssh, (uint8_t*)msg.c_str(), msg.size());
+              m_state = SOURCE_RESPONSE;
+              break;
+              }
+            }
+          else
+            msg.append("not a regular file\n");
+          }
+        // Send the composed error message
+        wolfSSH_stream_send(m_ssh, (uint8_t*)msg.c_str(), msg.size());
+        m_state = SOURCE_RESPONSE;
+        ESP_LOGI(tag, "%.*s", msg.size()-2, msg.substr(1,msg.size()-1).c_str());
+        break;
+        }
+
+      case SOURCE_DIR:
+        {
+        level = m_dirs.front();
+        m_path.resize(level.size);
+        struct dirent* dp = readdir(level.dir);
+        if (dp == NULL)
+          {
+          closedir(level.dir);
+          m_dirs.pop_front();
+          ESP_LOGD(tag, "Source: E");
+          wolfSSH_stream_send(m_ssh, (uint8_t*)"E\n", 2);
+          m_state = SOURCE_RESPONSE;
           break;
           }
+        m_path.append("/").append(dp->d_name);
+        m_state = SOURCE_LOOP;
+        break;
         }
-      break;
 
-    default:
-      ESP_LOGE(tag, "Unknown event type in ConsoleSSH");
-      break;
+      case SOURCE_SEND:
+        ESP_LOGW(tag, "RECV not expected in SOURCE_SEND state");
+      case SOURCE_RESPONSE:
+        {
+        rc = GetResponse();
+        if (rc < 1)
+          break;
+        if (m_buffer[0] == '\1')
+          {
+          ESP_LOGW(tag, "Source: %s", &m_buffer[1]);
+          if (m_file) // Abort the file we were going to send, if any
+            {
+            fclose(m_file);
+            m_file = NULL;
+            }
+          }
+        else if (m_buffer[0] == '\2')
+          {
+          ESP_LOGE(tag, "Source: %s", &m_buffer[1]);
+          wolfSSH_stream_exit(m_ssh, 1);
+          m_state = CLOSING;
+          break;
+          }
+        if (m_file)
+          {
+          m_state = SOURCE_SEND;
+          m_index = m_size = 0;
+          Send();       // Send the first buffer, more when sent
+          return;
+          }
+        if (!m_dirs.empty())
+          {
+          m_state = SOURCE_DIR;   // working on a directory
+          break;
+          }
+        wolfSSH_stream_exit(m_ssh, 0);
+        m_state = CLOSING;
+        break;
+        }
+
+      // SCP session pushing data to OVMS
+      case SINK:
+        {
+        msg.assign("\2scp: ").append(m_path).append(": ");
+        while (m_path.size() > 1 && m_path.at(m_path.size()-1) == '/')
+          {
+          m_path.resize(m_path.size()-1);          // Trim off a trailing '/'
+          m_needDir = true;
+          }
+        level.size = m_path.size();
+        m_dirs.push_front(level);
+        filename = std::string::npos;
+        int ret = 0;
+        // Need to fake these because stat says "Invalid argument"
+        if (m_path.compare("/store") == 0 || m_path.compare("/sd") == 0)
+          sbuf.st_mode = S_IFDIR;  // Don't care about permissions
+        else
+          ret = stat(m_path.c_str(), &sbuf);
+        if (ret < 0 && errno == ENOENT && !m_needDir &&
+          (filename = m_path.find_last_of('/')) != std::string::npos)
+          {
+          // Check path dirname for case where we're creating a new file
+          int retd = stat(m_path.substr(0, filename).c_str(), &sbuf);
+          if (retd == 0)
+            ret = retd;
+          }
+        if (ret < 0)
+          msg.append(strerror(errno)).append("\n");
+        else if (S_ISDIR(sbuf.st_mode) || S_ISREG(sbuf.st_mode))
+          {
+          m_isDir = S_ISDIR(sbuf.st_mode) && filename == std::string::npos;
+          if (m_isDir || !m_needDir)
+            {
+            m_state = SINK_LOOP;
+            wolfSSH_stream_send(m_ssh, (uint8_t*)"", 1);
+            break;
+            }
+          msg.append(strerror(ENOTDIR)).append("\n");
+          }
+        else
+          msg.append("not a regular file\n");  // Probably can't hit this
+        wolfSSH_stream_send(m_ssh, (uint8_t*)msg.c_str(), msg.size());
+        ESP_LOGI(tag, "%.*s", msg.size()-2, msg.substr(1,msg.size()-1).c_str());
+        wolfSSH_stream_exit(m_ssh, 0);
+        m_state = CLOSING;
+        break;
+        }
+
+      case SINK_LOOP:
+        {
+        // Read the protocol line or error message.
+        rc = GetResponse();
+        if (rc < 1)
+          break;
+        if (*m_buffer == '\1')
+          {
+          ESP_LOGW(tag, "Sink: %s", &m_buffer[1]);
+          break;  // Continue with more protocol lines
+          }
+        else if (*m_buffer == '\2')
+          {
+          ESP_LOGE(tag, "Sink: %s", &m_buffer[1]);
+          wolfSSH_stream_exit(m_ssh, 1);
+          m_state = CLOSING;
+          break;
+          }
+        ESP_LOGD(tag, "Sink: %s", m_buffer);
+        msg.assign("\2scp: ");
+        if (*m_buffer == 'T')                         // Times are ignored
+          {
+          wolfSSH_stream_send(m_ssh, (uint8_t*)"", 1);
+          break;
+          }
+        else if (*m_buffer == 'E')
+          {
+          level = m_dirs.front();
+          m_path.resize(level.size);
+          m_dirs.pop_front();
+          if (!m_dirs.empty())
+            {
+            wolfSSH_stream_send(m_ssh, (uint8_t*)"", 1);
+            break;
+            }
+          msg.append("protocol error: unbalanced D-E pair\n");
+          }
+        else if (*m_buffer == 'D' || *m_buffer == 'C')
+          {
+          char* end = m_buffer;
+          if (m_buffer[1] != '0' || m_buffer[2] < '0' || m_buffer[2] > '7' ||
+            m_buffer[3] < '0' || m_buffer[3] > '7' || m_buffer[4] < '0' || m_buffer[4] > '7' ||
+            m_buffer[5] != ' ')
+            msg.append("bad mode ").append(&m_buffer[1], 4).append("\n");
+          else if ((m_size = strtoul(&m_buffer[6], &end, 10)) < 0 || m_size > 1048576 || *end++ != ' ')
+            msg.append("size unacceptable: ").append(&m_buffer[6], end-&m_buffer[6]).append("\n");
+          else if ((strchr(end, '/') != NULL) || (strcmp(end, "..") == 0))
+            msg.append("unexpected filename: ").append(end).append("\n");
+          else
+            {
+            level = m_dirs.front();
+            m_path.resize(level.size);
+            if (m_isDir)
+              {
+              if (m_path.compare("/") != 0)  // Probably impossible to target "/" on OVMS
+                m_path.append("/");
+              m_path.append(end);
+              }
+            bool exists = (stat(m_path.c_str(), &sbuf) == 0);
+            msg.append(m_path).append(": ");
+            if (MyConfig.ProtectedPath(m_path.c_str()))
+              msg.append("protected path\n");
+            else if (*m_buffer == 'D')
+              {
+              if (!m_recursive)
+                msg.append("received directory without -r\n");
+              else
+                {
+                level.size = m_path.size();
+                m_dirs.push_front(level);
+                if (exists)
+                  {
+                  if (!S_ISDIR(sbuf.st_mode))
+                    msg.append(strerror(ENOTDIR)).append("\n");
+                  else
+                    {
+                    wolfSSH_stream_send(m_ssh, (uint8_t*)"", 1);
+                    break;
+                    }
+                  }
+                else
+                  {
+                  ESP_LOGD(tag, "mkdir(\"%s\", 0777)", m_path.c_str());
+                  if (mkdir(m_path.c_str(), 0777) < 0)
+                    msg.append("mkdir: ").append(strerror(errno)).append("\n");
+                  else
+                    {
+                    wolfSSH_stream_send(m_ssh, (uint8_t*)"", 1);
+                    break;
+                    }
+                  }
+                }
+              }
+            else // 'C'
+              {
+              if (exists && !S_ISREG(sbuf.st_mode))
+                msg.append("not a regular file\n");
+              else
+                {
+                ESP_LOGD(tag, "fopen(\"%s\", \"w\")", m_path.c_str());
+		if ((m_file = fopen(m_path.c_str(), "w")) == NULL)
+                  msg.append("fopen: ").append(strerror(errno)).append("\n");
+                else
+                  {
+                  m_state = SINK_RECEIVE;
+                  wolfSSH_stream_send(m_ssh, (uint8_t*)"", 1);
+                  break;
+                  }
+                }
+              }
+            }
+          }
+        else
+          msg.append("protocol error: ").append(m_buffer).append("\n");
+        wolfSSH_stream_send(m_ssh, (uint8_t*)msg.c_str(), msg.size());
+        ESP_LOGI(tag, "%.*s", msg.size()-2, msg.substr(1,msg.size()-1).c_str());
+        wolfSSH_stream_exit(m_ssh, 1);
+        break;
+        }
+
+      case SINK_RECEIVE:
+        {
+        int size = BUFFER_SIZE;
+        if (m_size < size)
+          size = m_size;
+        rc = wolfSSH_stream_read(m_ssh, (uint8_t*)m_buffer, size);
+        if (rc < 0)
+          break;       // Probably WS_WANT_READ, loop end checks it
+        size = fwrite(m_buffer, sizeof(uint8_t), rc, m_file);
+        if (size < rc)
+          ESP_LOGE(tag, "Write error on %s: %s", m_path.c_str(), strerror(errno));
+        m_size -= rc;
+        if (m_size == 0)
+          {
+          fclose(m_file);
+          m_file = NULL;
+          m_state = SINK_RESPONSE;
+          wolfSSH_stream_send(m_ssh, (uint8_t*)"", 1);
+          }
+        break;
+        }
+
+      case SINK_RESPONSE:
+        {
+        rc = GetResponse();
+        if (rc < 1)
+          break;
+        if (*m_buffer == '\1')       // Warning, so we continue
+          ESP_LOGW(tag, "Sink: %s", &m_buffer[1]);
+        else if (*m_buffer == '\2')  // Error, so we exit
+          {
+          ESP_LOGE(tag, "Sink: %s", &m_buffer[1]);
+          wolfSSH_stream_exit(m_ssh, 1);
+          m_state = CLOSING;
+          break;
+          }
+        m_state = SINK_LOOP;
+        break;
+        }
+
+      case CLOSING:
+        ESP_LOGD(tag, "Reached CLOSING");
+        // Try to read to let SSH process packets, but ignore anything delivered
+        rc = wolfSSH_stream_read(m_ssh, (uint8_t*)m_buffer, BUFFER_SIZE);
+        break;
+      }
+    } while (rc >= 0);
+
+  if (rc == WS_WANT_READ || rc == WS_BAD_ARGUMENT)  // Latter => channel closed
+    return;
+  if (rc == WS_EOF)
+    {
+    wolfSSH_stream_exit(m_ssh, 0);
+    m_state = CLOSING;
+    return;
     }
+  ESP_LOGE(tag, "Error in reception: %d", rc);
+  m_connection->flags |= MG_F_SEND_AND_CLOSE;
   }
 
 // This is called to shut down the SSH connection when the "exit" command is input.
 void ConsoleSSH::Exit()
   {
   printf("logout\n");
-  m_connection->flags |= MG_F_SEND_AND_CLOSE;
+  wolfSSH_stream_exit(m_ssh, 0);
   }
 
 int ConsoleSSH::puts(const char* s)
@@ -455,14 +952,12 @@ int RecvCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx)
 
 int ConsoleSSH::RecvCallback(char* buf, uint32_t size)
   {
-  if (!m_pending)
-    return WS_CBIO_ERR_WANT_READ;       // No more data available
   mbuf *io = &m_connection->recv_mbuf;
   size_t len = io->len;
   if (size < len)
     len = size;
-  else
-    m_pending = false;
+  else if (len == 0)
+    return WS_CBIO_ERR_WANT_READ;       // No more data available
   memcpy(buf, io->buf, len);
   mbuf_remove(io, len);
   return len;
@@ -557,11 +1052,31 @@ void RSAKeyGenerator::Service()
   MyConfig.SetParamValue("ssh.info", "fingerprint", std::string((char*)fp, fplen));
 
   if (wc_FreeRsaKey(&key) != 0)
-    {
     ESP_LOGE(tag, "RSA key free failed");
-    }
   if (wc_FreeRng(&rng) != 0)
-    {
     ESP_LOGE(tag, "Couldn't free RNG");
+  }
+
+static void wolf_logger(enum wolfSSH_LogLevel level, const char* const msg)
+  {
+  const char* const tag = "wolfssh";
+  switch (level)
+    {
+    case WS_LOG_USER:
+    case WS_LOG_ERROR:
+      ESP_LOGE(tag, "%s", msg);
+      break;
+
+    case WS_LOG_WARN:
+      ESP_LOGW(tag, "%s", msg);
+      break;
+
+    case WS_LOG_INFO:
+      ESP_LOGI(tag, "%s", msg);
+      break;
+
+    case WS_LOG_DEBUG:
+      ESP_LOGD(tag, "%s", msg);
+      break;
     }
   }

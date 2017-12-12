@@ -131,6 +131,7 @@ WOLFSSH_API int wolfSSH_CTX_UsePrivateKey_buffer(WOLFSSH_CTX*,
 WOLFSSH_API int wolfSSH_accept(WOLFSSH*);
 WOLFSSH_API int wolfSSH_stream_read(WOLFSSH*, uint8_t*, uint32_t);
 WOLFSSH_API int wolfSSH_stream_send(WOLFSSH*, uint8_t*, uint32_t);
+WOLFSSH_API int wolfSSH_stream_exit(WOLFSSH*, int);
 WOLFSSH_API int wolfSSH_channel_read(WOLFSSH_CHANNEL*, uint8_t*, uint32_t);
 WOLFSSH_API int wolfSSH_channel_send(WOLFSSH_CHANNEL*, uint8_t*, uint32_t);
 WOLFSSH_API int wolfSSH_worker(WOLFSSH*);
@@ -142,6 +143,17 @@ WOLFSSH_API void wolfSSH_GetStats(WOLFSSH*,
 WOLFSSH_API int wolfSSH_KDF(uint8_t, uint8_t, uint8_t*, uint32_t,
                 const uint8_t*, uint32_t, const uint8_t*, uint32_t,
                 const uint8_t*, uint32_t);
+
+
+typedef enum {
+    WOLFSSH_SESSION_UNKNOWN = 0,
+    WOLFSSH_SESSION_SHELL,
+    WOLFSSH_SESSION_EXEC,
+    WOLFSSH_SESSION_SUBSYSTEM,
+} WS_SessionType;
+
+WOLFSSH_API WS_SessionType wolfSSH_GetSessionType(const WOLFSSH*);
+WOLFSSH_API const char* wolfSSH_GetSessionCommand(const WOLFSSH*);
 
 
 enum WS_HighwaterSide {

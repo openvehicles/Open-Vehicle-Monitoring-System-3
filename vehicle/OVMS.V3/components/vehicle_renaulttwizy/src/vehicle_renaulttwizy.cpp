@@ -26,10 +26,11 @@
 #include "ovms_log.h"
 static const char *TAG = "v-renaulttwizy";
 
-#define VERSION "0.2.0"
+#define VERSION "0.4.0"
 
 #include <stdio.h>
 #include <string>
+#include <iomanip>
 #include "pcp.h"
 #include "ovms_metrics.h"
 #include "ovms_events.h"
@@ -76,6 +77,11 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   BatteryInit();
   PowerInit();
   
+  // init event listener:
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG, "gps.lock.acquired", std::bind(&OvmsVehicleRenaultTwizy::EventListener, this, _1, _2));
+  
 }
 
 OvmsVehicleRenaultTwizy::~OvmsVehicleRenaultTwizy()
@@ -110,6 +116,8 @@ void OvmsVehicleRenaultTwizy::ConfigChanged(OvmsConfigParam* param)
   //  autopower         Bool: SEVCON automatic power level adjustment (Default: yes)
   //  console           Bool: SimpleConsole inputs enabled (Default: no)
   //  
+  //  gpslogint         Seconds between RT-GPS-Log entries while driving (Default: 0 = disabled)
+  //  
   
   cfg_maxrange = MyConfig.GetParamValueInt("x.rt", "maxrange", CFG_DEFAULT_MAXRANGE);
   if (cfg_maxrange <= 0)
@@ -133,6 +141,21 @@ void OvmsVehicleRenaultTwizy::ConfigChanged(OvmsConfigParam* param)
   twizy_flags.DisableAutoPower = !MyConfig.GetParamValueBool("x.rt", "autopower", true);
   twizy_flags.EnableInputs = MyConfig.GetParamValueBool("x.rt", "console", false);
   
+  cfg_gpslog_interval = MyConfig.GetParamValueInt("x.rt", "gpslogint", 0);
+}
+
+
+/**
+ * EventListener:
+ *  - update GPS log ASAP
+ */
+void OvmsVehicleRenaultTwizy::EventListener(string event, void* data)
+{
+  if (event == "gps.lock.acquired")
+  {
+    // immediately update our track log:
+    SendGPSLog();
+  }
 }
 
 
@@ -692,8 +715,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   // Update standard metrics:
   // 
   
-  *StdMetrics.ms_m_timeutc = (int) time(NULL); // → framework? roadster fetches from CAN…
-  
   *StdMetrics.ms_v_pos_odometer = (float) twizy_odometer / 100;
   
   if (twizy_odometer >= twizy_odometer_tripstart)
@@ -773,7 +794,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
       +twizy_speedpwr[CAN_SPEED_ACCEL].use
       +twizy_speedpwr[CAN_SPEED_DECEL].use) > (WH_DIV * 25))
     {
-      RequestNotify(SEND_PowerNotify | SEND_PowerLog);
+      RequestNotify(SEND_PowerNotify | SEND_TripLog);
     }
     
     // reset button cnt:
@@ -931,9 +952,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     // NOT CHARGING
     // 
 
-    // clear charge stop request:
-    twizy_chg_stop_request = 0;
-
     // Switch off additional charger:
     // TODO PORTBbits.RB4 = 0;
 
@@ -963,6 +981,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
         
         // yes, means "done"
         twizy_chargestate = 4;
+        RequestNotify(SEND_ChargeState);
         
         // calculate battery capacity if charge started below 40% SOC:
         if (twizy_soc_min < 4000)
@@ -994,10 +1013,11 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
       {
         // no, means "stopped"
         twizy_chargestate = 21;
+        
+        // send charge state or alert depending on stop by user request:
+        RequestNotify(twizy_chg_stop_request ? SEND_ChargeState : SEND_ChargeAlert);
       }
 
-      // Send charge alert:
-      RequestNotify(SEND_ChargeState);
     }
 
     else if (twizy_flags.CarAwake && twizy_flags.ChargePort)
@@ -1017,6 +1037,9 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
       twizy_soc_min_range = twizy_range_est;
     }
     
+    // clear charge stop request:
+    twizy_chg_stop_request = 0;
+
     // END OF STATE: NOT CHARGING
   }
   
@@ -1035,32 +1058,32 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
 
   int i = ticker % 60;
   
-  // Send charge ETR update with per minute update:
-  if (i == 0)
-  {
+  // Update charge ETR once per minute:
+  if (i == 0) {
     UpdateChargeTimes();
   }
 
-  // Send battery update once per minute on even second
-  // between our and framework per minute update:
-  else if (i == 42)
-  {
+  // Send RT-PWR-Stats update once per minute:
+  if (i == 21) {
+    RequestNotify(SEND_PowerStats);
+  }
+  
+  // Send RT-BAT-* update once per minute:
+  if (i == 42) {
     RequestNotify(SEND_BatteryStats);
   }
 
-  
-  // Send standard data update (incl. stream update) once per minute
-  // after modem GPS request:
-  if (i == 21)
-  {
-    RequestNotify(SEND_DataUpdate);
+  // Send GPS-Log updates:
+  if (twizy_speed > 0 && cfg_gpslog_interval > 0) {
+    // … streaming mode:
+    if (ticker - twizy_last_gpslog >= cfg_gpslog_interval) {
+      RequestNotify(SEND_GPSLog);
+      twizy_last_gpslog = ticker;
+    }
   }
-  // Send stream updates (GPS log) while car is moving
-  // every odd second, after modem GPS request:
-  //else if ((twizy_speed > 0) && (sys_features[FEATURE_STREAM] > 1)
-    //      && ((ticker % 3) == 1))
-  {
-    // TODO twizy_notify(SEND_StreamUpdate);
+  else if (i == 21) {
+    // … parking mode:
+    RequestNotify(SEND_GPSLog);
   }
   
 
@@ -1246,7 +1269,6 @@ void OvmsVehicleRenaultTwizy::UpdateChargeTimes()
   
   *StdMetrics.ms_v_charge_duration_full = (int) ChargeTime(10000);
   
-
 }
 
 
@@ -1306,6 +1328,105 @@ int OvmsVehicleRenaultTwizy::ChargeTime(int dstsoc)
 }
 
 
+
+/**
+ * SendGPSLog: send "RT-GPS-Log" history record
+ *  (GPS track log with extended power usage data)
+ */
+void OvmsVehicleRenaultTwizy::SendGPSLog()
+{
+  bool modified =
+    StdMetrics.ms_v_pos_odometer->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_pos_latitude->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_pos_longitude->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_pos_altitude->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_pos_direction->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_pos_gpsspeed->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_pos_speed->IsModifiedAndClear(m_modifier);
+  
+  if (!modified)
+    return;
+  
+  unsigned long pwr_dist, pwr_use, pwr_rec;
+  signed int pwr_min, pwr_max, curr_min, curr_max;
+
+  // Read power stats:
+  
+  pwr_dist = twizy_speedpwr[CAN_SPEED_CONST].dist
+          + twizy_speedpwr[CAN_SPEED_ACCEL].dist
+          + twizy_speedpwr[CAN_SPEED_DECEL].dist;
+
+  pwr_use = twizy_speedpwr[CAN_SPEED_CONST].use
+          + twizy_speedpwr[CAN_SPEED_ACCEL].use
+          + twizy_speedpwr[CAN_SPEED_DECEL].use;
+
+  pwr_rec = twizy_speedpwr[CAN_SPEED_CONST].rec
+          + twizy_speedpwr[CAN_SPEED_ACCEL].rec
+          + twizy_speedpwr[CAN_SPEED_DECEL].rec;
+
+  // read & reset GPS section power & current min/max:
+  pwr_min = twizy_power_min;
+  pwr_max = twizy_power_max;
+  curr_min = twizy_current_min;
+  curr_max = twizy_current_max;
+  twizy_power_min = twizy_current_min = 32767;
+  twizy_power_max = twizy_current_max = -32768;
+  
+  // H type "RT-GPS-Log", recno = odometer, keep for 1 day
+  ostringstream buf;
+  buf
+    << "RT-GPS-Log,"
+    << (long) (StdMetrics.ms_v_pos_odometer->AsFloat(0, Miles) * 10) // in 1/10 mi
+    << ",86400"
+    << setprecision(8)
+    << fixed
+    << "," << StdMetrics.ms_v_pos_latitude->AsFloat()
+    << "," << StdMetrics.ms_v_pos_longitude->AsFloat()
+    << setprecision(0)
+    << "," << StdMetrics.ms_v_pos_altitude->AsFloat()
+    << "," << StdMetrics.ms_v_pos_direction->AsFloat()
+    << "," << StdMetrics.ms_v_pos_speed->AsFloat()
+    << "," << (int) StdMetrics.ms_v_pos_gpslock->AsBool()
+    << "," << 120 - StdMetrics.ms_v_pos_latitude->Age()
+    << "," << StdMetrics.ms_m_net_sq->AsInt()
+    << "," << twizy_power * 64 / 10
+    << "," << pwr_use / WH_DIV
+    << "," << pwr_rec / WH_DIV
+    << "," << pwr_dist / 10;
+  
+  if (pwr_min == 32767) {
+    buf
+      << ",0,0";
+  } else {
+    buf
+      << "," << (pwr_min * 64 + 5) / 10
+      << "," << (pwr_max * 64 + 5) / 10;
+  }
+  
+  buf
+    << setbase(16)
+    << "," << (unsigned int) twizy_status
+    << setbase(10)
+    << "," << twizy_batt[0].max_drive_pwr * 500
+    << "," << twizy_batt[0].max_recup_pwr * -500
+    << setprecision(3)
+    << "," << (float) twizy_autodrive_level / 1000
+    << "," << (float) twizy_autorecup_level / 1000;
+
+  if (curr_min == 32767) {
+    buf
+      << ",0,0";
+  } else {
+    buf
+      << setprecision(2)
+      << "," << (float) curr_min / 4
+      << "," << (float) curr_max / 4;
+  }
+  
+  MyNotify.NotifyString("data", buf.str().c_str());
+}
+
+
 /**
  * RequestNotify: send notifications / alerts / data updates
  */
@@ -1319,37 +1440,61 @@ void OvmsVehicleRenaultTwizy::DoNotify()
 {
   unsigned int which = twizy_notifications;
   
+  // Send battery alert?
+  if (which & SEND_BatteryAlert) {
+    MyNotify.NotifyCommand("alert", "xrt batt status");
+    twizy_notifications &= ~SEND_BatteryAlert;
+  }
+  
+  // Send charge alert?
+  if (which & SEND_ChargeAlert) {
+    MyNotify.NotifyCommand("alert", "stat");
+    twizy_notifications &= ~SEND_ChargeState;
+  }
+  
   // Send charge state?
-  if (which & SEND_ChargeState)
-  {
+  if (which & SEND_ChargeState) {
     MyNotify.NotifyCommand("info", "stat");
     twizy_notifications &= ~SEND_ChargeState;
   }
   
   // Send power usage statistics?
-  if (which & SEND_PowerNotify)
-  {
+  if (which & SEND_PowerNotify) {
     MyNotify.NotifyCommand("info", "xrt power report");
     twizy_notifications &= ~SEND_PowerNotify;
   }
   
-  // Send power usage log?
-  if (which & SEND_PowerLog)
-  {
-    // TODO MyNotify.NotifyCommand("data", "xrt …");
-    twizy_notifications &= ~SEND_PowerLog;
+  // Send drive log?
+  if (which & SEND_TripLog) {
+    // TODO
+    twizy_notifications &= ~SEND_TripLog;
   }
   
-  // Send regular data update:
-  if (which & SEND_DataUpdate)
-  {
+  // Send GPS log update?
+  if (which & SEND_GPSLog) {
+    SendGPSLog();
+    twizy_notifications &= ~SEND_GPSLog;
+  }
+  
+  // Send battery status update?
+  if (which & SEND_BatteryStats) {
+    BatterySendDataUpdate();
+    twizy_notifications &= ~SEND_BatteryStats;
+  }
+  
+  // Send power usage update?
+  if (which & SEND_PowerStats) {
     if (PowerIsModified())
       MyNotify.NotifyCommand("data", "xrt power stats");
-    
-    // TODO if (sys_features[FEATURE_STREAM] == 3)
-    //       stat = net_msgp_gps(stat);
-    //     stat = vehicle_twizy_gpslog_msgp(stat);
-    twizy_notifications &= ~SEND_DataUpdate;
+    twizy_notifications &= ~SEND_PowerStats;
+  }
+  
+  // Send SEVCON SDO log update?
+  if (which & SEND_SDOLog) {
+    // TODO
+    // stat = vehicle_twizy_sdolog_msgp(stat, 0x4600);
+    // stat = vehicle_twizy_sdolog_msgp(stat, 0x4602);
+    twizy_notifications &= ~SEND_SDOLog;
   }
   
 }

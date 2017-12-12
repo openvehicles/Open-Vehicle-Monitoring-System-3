@@ -56,7 +56,6 @@ static void GsmPPPOS_StatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
     {
     case PPPERR_NONE:
       {
-      me->m_connected = true;
       ESP_LOGI(TAG, "status_cb: Connected");
 #if PPP_IPV4_SUPPORT
       ESP_LOGI(TAG, "   our_ipaddr  = %s", ipaddr_ntoa(&pppif->ip_addr));
@@ -66,73 +65,75 @@ static void GsmPPPOS_StatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
 #if PPP_IPV6_SUPPORT
       ESP_LOGI(TAG, "   our6_ipaddr = %s", ip6addr_ntoa(netif_ip6_addr(pppif, 0)));
 #endif /* PPP_IPV6_SUPPORT */
+      me->m_connected = true;
       MyEvents.SignalEvent("system.modem.gotip",NULL);
       return;
-      break;
       }
     case PPPERR_PARAM:
       {
-      ESP_LOGE(TAG, "status_cb: Invalid parameter\n");
+      ESP_LOGE(TAG, "status_cb: Invalid parameter");
       break;
       }
     case PPPERR_OPEN:
       {
-      ESP_LOGE(TAG, "status_cb: Unable to open PPP session\n");
+      ESP_LOGE(TAG, "status_cb: Unable to open PPP session");
       break;
       }
     case PPPERR_DEVICE:
       {
-      ESP_LOGE(TAG, "status_cb: Invalid I/O device for PPP\n");
+      ESP_LOGE(TAG, "status_cb: Invalid I/O device for PPP");
       break;
       }
     case PPPERR_ALLOC:
       {
-      ESP_LOGE(TAG, "status_cb: Unable to allocate resources\n");
+      ESP_LOGE(TAG, "status_cb: Unable to allocate resources");
       break;
       }
     case PPPERR_USER:
       {
-      ESP_LOGE(TAG, "status_cb: User interrupt\n");
-      break;
+      ESP_LOGI(TAG, "PPP connection has been closed");
+      me->m_connected = false;
+      MyEvents.SignalEvent("system.modem.down",NULL);
+      return;
       }
     case PPPERR_CONNECT:
       {
-      ESP_LOGE(TAG, "status_cb: Connection lost\n");
+      ESP_LOGE(TAG, "status_cb: Connection lost");
       break;
       }
     case PPPERR_AUTHFAIL:
       {
-      ESP_LOGE(TAG, "status_cb: Failed authentication challenge\n");
+      ESP_LOGE(TAG, "status_cb: Failed authentication challenge");
       break;
       }
     case PPPERR_PROTOCOL:
       {
-      ESP_LOGE(TAG, "status_cb: Failed to meet protocol\n");
+      ESP_LOGE(TAG, "status_cb: Failed to meet protocol");
       break;
       }
     case PPPERR_PEERDEAD:
       {
-      ESP_LOGE(TAG, "status_cb: Connection timeout\n");
+      ESP_LOGE(TAG, "status_cb: Connection timeout");
       break;
       }
     case PPPERR_IDLETIMEOUT:
       {
-      ESP_LOGE(TAG, "status_cb: Idle Timeout\n");
+      ESP_LOGE(TAG, "status_cb: Idle Timeout");
       break;
       }
     case PPPERR_CONNECTTIME:
       {
-      ESP_LOGE(TAG, "status_cb: Max connect time reached\n");
+      ESP_LOGE(TAG, "status_cb: Max connect time reached");
       break;
       }
     case PPPERR_LOOPBACK:
       {
-      ESP_LOGE(TAG, "status_cb: Loopback detected\n");
+      ESP_LOGE(TAG, "status_cb: Loopback detected");
       break;
       }
     default:
       {
-      ESP_LOGE(TAG, "status_cb: Unknown error code %d\n", err_code);
+      ESP_LOGE(TAG, "status_cb: Unknown error code %d", err_code);
       break;
       }
     }
@@ -141,20 +142,10 @@ static void GsmPPPOS_StatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
   me->m_connected = false;
   MyEvents.SignalEvent("system.modem.down",NULL);
 
-  /* ppp_close() was previously called, don't reconnect */
-  if (err_code == PPPERR_USER)
-    {
-    pppapi_free(me->m_ppp);
-    me->m_ppp = NULL;
-    return;
-    }
-
-  /*
-   * Try to reconnect in 30 seconds, if you need a modem chatscript you have
-   * to do a much better signaling here ;-)
-   */
-  //ppp_connect(pcb, 30);
-  /* OR ppp_listen(pcb); */
+  // Try to reconnect in 30 seconds. This is assuming the SIMCOM modem level
+  // data channel is still open.
+  ESP_LOGI(TAG, "Attempting PPP reconnecting in 30 seconds...");
+  pppapi_connect(pcb, 30);
   }
 
 GsmPPPOS::GsmPPPOS(GsmMux* mux, int channel)
@@ -168,6 +159,11 @@ GsmPPPOS::GsmPPPOS(GsmMux* mux, int channel)
 
 GsmPPPOS::~GsmPPPOS()
   {
+  if (m_ppp)
+    {
+    pppapi_free(m_ppp);
+    m_ppp = NULL;
+    }
   }
 
 void GsmPPPOS::IncomingData(uint8_t *data, size_t len)
@@ -176,19 +172,27 @@ void GsmPPPOS::IncomingData(uint8_t *data, size_t len)
   pppos_input_tcpip(m_ppp, (u8_t*)data, (int)len);
   }
 
-void GsmPPPOS::Startup()
+void GsmPPPOS::Initialise()
   {
-  ESP_LOGI(TAG, "Startup");
+  ESP_LOGI(TAG, "Initialising...");
 
-  tcpip_adapter_init();
-  m_ppp = pppapi_pppos_create(&m_ppp_netif,
-            GsmPPPOS_OutputCallback, GsmPPPOS_StatusCallback, this);
+  if (m_ppp == NULL)
+    {
+    m_ppp = pppapi_pppos_create(&m_ppp_netif,
+              GsmPPPOS_OutputCallback, GsmPPPOS_StatusCallback, this);
+    }
   if (m_ppp == NULL)
     {
     ESP_LOGE(TAG, "Error init pppos");
     return;
     }
   pppapi_set_default(m_ppp);
+  }
+
+void GsmPPPOS::Connect()
+  {
+  if (m_ppp == NULL) return;
+
   pppapi_set_auth(m_ppp, PPPAUTHTYPE_PAP,
     MyConfig.GetParamValue("modem", "apn.user").c_str(),
     MyConfig.GetParamValue("modem", "apn.password").c_str());
@@ -237,4 +241,3 @@ const char* GsmPPPOS::ErrCodeName(int errcode)
     default:                 return "Undefined";
     };
   }
-

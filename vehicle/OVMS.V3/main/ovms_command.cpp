@@ -55,6 +55,8 @@ OvmsWriter::OvmsWriter()
     m_issecure = true;
   else
     m_issecure = false;
+  m_insert = NULL;
+  m_userData = NULL;
   }
 
 OvmsWriter::~OvmsWriter()
@@ -64,6 +66,12 @@ OvmsWriter::~OvmsWriter()
 void OvmsWriter::Exit()
   {
   puts("This console cannot exit.");
+  }
+
+void OvmsWriter::RegisterInsertCallback(InsertCallback cb, void* ctx)
+  {
+  m_insert = cb;
+  m_userData = ctx;
   }
 
 bool OvmsWriter::IsSecure()
@@ -319,6 +327,20 @@ void help(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const c
   writer->puts("This isn't really much help, is it?");
   }
 
+bool echoInsert(OvmsWriter* writer, void* ctx, char ch)
+  {
+  if (ch == '\n')
+    return false;
+  writer->write(&ch, 1);
+  return true;
+  }
+
+void echo(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->puts("Type characters to be echoed, end with newline.");
+  writer->RegisterInsertCallback(echoInsert, NULL);
+  }
+
 void Exit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   writer->Exit();
@@ -335,6 +357,46 @@ void level(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const 
   writer->printf("Logging level for %s set to %s\n",tag,cmd->GetName());
   }
 
+typedef struct
+  {
+  std::string password;
+  int tries;
+  } PasswordContext;
+
+bool enableInsert(OvmsWriter* writer, void* v, char ch)
+  {
+  PasswordContext* pc = (PasswordContext*)v;
+  if (ch == '\n')
+    {
+    std::string p = MyConfig.GetParamValue("password","module");
+    if (p.compare(pc->password) == 0)
+      {
+      writer->SetSecure(true);
+      writer->printf("\nSecure mode");
+      delete pc;
+      return false;
+      }
+    if (++pc->tries == 3)
+      {
+      writer->printf("\nError: %d incorrect password attempts", pc->tries);
+      vTaskDelay(5000 / portTICK_PERIOD_MS);
+      delete pc;
+      return false;
+      }
+    writer->printf("\nSorry, try again.\nPassword:");
+    pc->password.erase();
+    return true;
+    }
+  if (ch == 'C'-0100)
+    {
+    delete pc;
+    return false;
+    }
+  if (ch != '\r')
+    pc->password.append(1, ch);
+  return true;
+  }
+
 void enable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   std::string p = MyConfig.GetParamValue("password","module");
@@ -343,10 +405,17 @@ void enable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
     writer->SetSecure(true);
     writer->puts("Secure mode");
     }
-  else
+  else if (argc == 1)
     {
     vTaskDelay(5000 / portTICK_PERIOD_MS);
-    writer->puts("Error: Invalid or missing password");
+    writer->puts("Error: Invalid password");
+    }
+  else
+    {
+    PasswordContext* pc = new PasswordContext;
+    pc->tries = 0;
+    writer->printf("Password:");
+    writer->RegisterInsertCallback(enableInsert, pc);
     }
   }
 
@@ -368,8 +437,9 @@ OvmsCommandApp::OvmsCommandApp()
   level_cmd->RegisterCommand("warn", "Log at the WARN level (2)", level , "[<tag>]", 0, 1);
   level_cmd->RegisterCommand("error", "Log at the ERROR level (1)", level , "[<tag>]", 0, 1);
   level_cmd->RegisterCommand("none", "No logging (0)", level , "[<tag>]", 0, 1);
-  m_root.RegisterCommand("enable","Enter secure mode", enable, "", 0, 1);
+  m_root.RegisterCommand("enable","Enter secure mode", enable, "[<password>]", 0, 1);
   m_root.RegisterCommand("disable","Leave secure mode", disable, "", 0, 0, true);
+  m_root.RegisterCommand("echo", "Test getchar", echo, "", 0, 0);
   }
 
 OvmsCommandApp::~OvmsCommandApp()

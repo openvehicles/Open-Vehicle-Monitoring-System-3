@@ -203,7 +203,6 @@ void GsmMux::Stop()
 
 void GsmMux::StartChannel(int channel)
   {
-  ESP_LOGI(TAG, "StartChannel(%d)",channel);
   int cn = (channel<<2)+GSM_EA+GSM_CR;
   uint8_t sabm[] =
     {

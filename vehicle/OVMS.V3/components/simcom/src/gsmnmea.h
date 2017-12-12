@@ -1,6 +1,6 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          14th March 2017
+;    Date:          9th December 2017
 ;
 ;    Changes:
 ;    1.0  Initial release
@@ -8,6 +8,7 @@
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011        Sonny Chen @ EPRO/DX
+;    (C) 2012-2017  Michael Balzer
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -27,31 +28,32 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
-#ifndef __OVMS_SHELL_H__
-#define __OVMS_SHELL_H__
 
-#include "ovms_command.h"
-#include "microrl.h"
+#ifndef __GSM_NMEA_H__
+#define __GSM_NMEA_H__
 
-#define TOKEN_MAX_LENGTH 32
-#define COMPLETION_MAX_TOKENS 20
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
+#include "driver/uart.h"
+#include "gsmmux.h"
 
-class OvmsShell : public OvmsWriter
+class GsmNMEA
   {
   public:
-    OvmsShell(int verbosity = COMMAND_RESULT_MINIMAL);
+    GsmNMEA(GsmMux* mux, int channel);
+    ~GsmNMEA();
 
   public:
-    void Initialize(bool print);
-    void ProcessChar(char c);
-    void ProcessChars(const char* buf, int len);
-    void PrintConditional(const char* buf);
-
-  protected:
-    microrl_t m_rl;
+    void IncomingLine(const std::string line);
+    void Startup();
+    void Shutdown(bool hard=false);
 
   public:
-    int m_verbosity;
+    GsmMux*       m_mux;
+    int           m_channel;
+    bool          m_connected;
+    bool          m_gpstime_enabled;
   };
 
-#endif //#ifndef __OVMS_SHELL_H__
+#endif //#ifndef __GSM_NMEA__

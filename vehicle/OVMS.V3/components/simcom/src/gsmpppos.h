@@ -52,7 +52,8 @@ class GsmPPPOS
 
   public:
     void IncomingData(uint8_t *data, size_t len);
-    void Startup();
+    void Initialise();
+    void Connect();
     void Shutdown(bool hard=false);
     const char* ErrCodeName(int errcode);
 

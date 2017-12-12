@@ -198,11 +198,14 @@ void OvmsServerV2::ServerTask()
   int lasttx = 0;
   MAINLOOP: while(1)
     {
-    while (!MyNetManager.m_connected_any)
+    if (!MyNetManager.m_connected_any)
       {
-      m_status = "Waiting for network availability";
-      vTaskDelay(5000 / portTICK_PERIOD_MS);
-      continue;
+      SetStatus("Waiting for network connectivity");
+      while (!MyNetManager.m_connected_any)
+        {
+        vTaskDelay(5000 / portTICK_PERIOD_MS);
+        }
+      SetStatus("Network connectivity established");
       }
 
     if (!Connect())
@@ -218,8 +221,9 @@ void OvmsServerV2::ServerTask()
       continue;
       }
 
-    m_status = "Connected and logged in";
+    SetStatus("Connected and logged in");
     m_pending_notify_info = true;
+    m_pending_notify_error = true;
     m_pending_notify_alert = true;
     m_pending_notify_data = true;
     m_pending_notify_data_last = 0;
@@ -269,6 +273,7 @@ void OvmsServerV2::ServerTask()
       if (m_now_capabilities) TransmitMsgCapabilities();
 
       if (m_pending_notify_info) TransmitNotifyInfo();
+      if (m_pending_notify_error) TransmitNotifyError();
       if (m_pending_notify_alert) TransmitNotifyAlert();
       if (m_pending_notify_data) TransmitNotifyData();
 
@@ -626,6 +631,15 @@ void OvmsServerV2::Transmit(const char* message)
   delete [] s;
   }
 
+void OvmsServerV2::SetStatus(const char* status, bool fault)
+  {
+  if (fault)
+    ESP_LOGE(TAG, "Status: %s", status);
+  else
+    ESP_LOGI(TAG, "Status: %s", status);
+  m_status = status;
+  }
+
 bool OvmsServerV2::Connect()
   {
   m_vehicleid = MyConfig.GetParamValue("vehicle", "id");
@@ -640,33 +654,29 @@ bool OvmsServerV2::Connect()
 
   if (m_vehicleid.empty())
     {
-    m_status = "Error: Parameter vehicle/id must be defined";
-    ESP_LOGW(TAG, "Parameter vehicle/id must be defined");
+    SetStatus("Error: Parameter vehicle/id must be defined",true);
     return false;
     }
   if (m_server.empty())
     {
-    m_status = "Error: Parameter server.v2/server must be defined";
-    ESP_LOGW(TAG, "Parameter server.v2/server must be defined");
+    SetStatus("Error: Parameter server.v2/server must be defined",true);
     return false;
     }
   if (m_password.empty())
     {
-    m_status = "Error: Parameter server.v2/password must be defined";
-    ESP_LOGW(TAG, "Parameter server.v2/password must be defined");
+    SetStatus("Error: Parameter server.v2/password must be defined",true);
     return false;
     }
 
   m_conn.Connect(m_server.c_str(), m_port.c_str());
   if (!m_conn.IsOpen())
     {
-    m_status = "Error: Cannot connect to server";
-    ESP_LOGE(TAG, "Socket connect failed errno=%d", errno);
+    SetStatus("Error: Cannot establish tcp/ip connection to server",true);
     return false;
     }
 
-  m_status = "Connected to server";
   ESP_LOGI(TAG, "Connected to OVMS Server V2 at %s",m_server.c_str());
+  SetStatus("Connected to server");
   return true;
   }
 
@@ -675,15 +685,14 @@ void OvmsServerV2::Disconnect()
   if (m_conn.IsOpen())
     {
     m_conn.Disconnect();
-    m_status = "Disconnected";
-    ESP_LOGI(TAG, "Disconnected from OVMS Server V2");
+    SetStatus("Error: Disconnected from OVMS Server V2",true);
     }
   StandardMetrics.ms_s_v2_connected->SetValue(false);
   }
 
 bool OvmsServerV2::Login()
   {
-  m_status = "Logging in...";
+  SetStatus("Logging in...");
 
   char token[OVMS_PROTOCOL_V2_TOKENSIZE+1];
 
@@ -717,7 +726,7 @@ bool OvmsServerV2::Login()
       {
       ESP_LOGI(TAG, "Server response is incomplete (%d bytes)",m_buffer->UsedSpace());
       m_conn.Disconnect();
-      m_status = "Error: Server response is incomplete";
+      SetStatus("Error: Server response is incomplete",true);
       return false;
       }
     }
@@ -730,8 +739,7 @@ bool OvmsServerV2::Login()
     size_t sep = line.find(' ',7);
     if (sep == std::string::npos)
       {
-      m_status = "Error: Server response is invalid";
-      ESP_LOGI(TAG, "Server response invalid (no token/digest separator)");
+      SetStatus("Error: Server response invalid (no token/digest separator)",true);
       return false;
       }
     std::string token = std::string(line,7,sep-7);
@@ -739,8 +747,7 @@ bool OvmsServerV2::Login()
     ESP_LOGI(TAG, "Server token is %s and digest is %s",token.c_str(),digest.c_str());
     if (m_token == token)
       {
-      m_status = "Error: Detected token replay attack/collision";
-      ESP_LOGI(TAG, "Detected token replay attack/collision");
+      SetStatus("Error: Detected token replay attack/collision",true);
       return false;
       }
     uint8_t sdigest[OVMS_MD5_SIZE];
@@ -749,12 +756,10 @@ bool OvmsServerV2::Login()
     base64encode(sdigest, OVMS_MD5_SIZE, sdb);
     if (digest.compare((char*)sdb) != 0)
       {
-      m_status = "Error: Server digest does not authenticate";
-      ESP_LOGI(TAG, "Server digest does not authenticate");
+      SetStatus("Error: Server digest does not authenticate",true);
       return false;
       }
-    m_status = "Login priming crypto...";
-    ESP_LOGI(TAG, "Server authentication is successful. Prime the crypto...");
+    SetStatus("Server auth ok. Now priming crypto.");
     std::string key(token);
     key.append(m_token);
     ESP_LOGI(TAG, "Shared secret key is %s (%d bytes)",key.c_str(),key.length());
@@ -771,14 +776,12 @@ bool OvmsServerV2::Login()
       uint8_t v = 0;
       RC4_crypt(&m_crypto_tx1, &m_crypto_tx2, &v, 1);
       }
-    m_status = "Login successful...";
-    ESP_LOGI(TAG, "OVMS V2 login successful, and crypto channel established");
+    SetStatus("OVMS V2 login successful, and crypto channel established");
     return true;
     }
   else
     {
-    m_status = "Error: Server response was not a welcome MP-S";
-    ESP_LOGI(TAG, "Server response was not a welcome MP-S");
+    SetStatus("Error: Server response was not a welcome MP-S",true);
     return false;
     }
   }
@@ -788,30 +791,30 @@ void OvmsServerV2::TransmitMsgStat(bool always)
   m_now_stat = false;
 
   bool modified =
-    StandardMetrics.ms_v_bat_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_charge_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_charge_current->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_charge_state->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_charge_substate->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_charge_mode->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_bat_range_ideal->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_bat_range_est->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_charge_climit->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_charge_time->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_charge_kwh->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_charge_timermode->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_charge_timerstart->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_bat_cac->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_charge_duration_full->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_charge_duration_range->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_charge_duration_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_charge_inprogress->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_charge_limit_range->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_charge_limit_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_env_cooling->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_bat_range_full->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_bat_power->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_bat_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_bat_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_current->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_state->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_substate->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_mode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_bat_range_ideal->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_bat_range_est->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_climit->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_time->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_kwh->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_timermode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_timerstart->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_bat_cac->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_duration_full->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_duration_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_duration_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_inprogress->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_limit_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_limit_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_cooling->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_bat_range_full->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_bat_power->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_bat_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_soh->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
@@ -903,15 +906,15 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
   m_now_gps = false;
 
   bool modified =
-    StandardMetrics.ms_v_pos_latitude->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_pos_longitude->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_pos_direction->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_pos_altitude->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_pos_gpslock->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_pos_speed->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_env_drivemode->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_bat_power->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_bat_energy_used->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_pos_latitude->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_pos_longitude->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_pos_direction->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_pos_altitude->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_pos_gpslock->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_pos_speed->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_drivemode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_bat_power->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_bat_energy_used->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_energy_recd->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
@@ -958,13 +961,13 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
   m_now_tpms = false;
 
   bool modified =
-    StandardMetrics.ms_v_tpms_fl_t->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_tpms_fr_t->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_tpms_rl_t->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_tpms_rr_t->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_tpms_fl_p->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_tpms_fr_p->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_tpms_rl_p->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_tpms_fl_t->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_tpms_fr_t->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_tpms_rl_t->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_tpms_rr_t->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_tpms_fl_p->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_tpms_fr_p->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_tpms_rl_p->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_tpms_rr_p->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
@@ -1009,10 +1012,10 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
   m_now_firmware = false;
 
   bool modified =
-    StandardMetrics.ms_m_version->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_vin->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_m_net_sq->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_type->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_m_version->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_vin->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_m_net_sq->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_type->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_m_net_provider->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
@@ -1098,41 +1101,41 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
 
   bool modified =
     // doors 1
-    StandardMetrics.ms_v_door_fl->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_door_fr->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_door_chargeport->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_charge_pilot->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_charge_inprogress->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_env_handbrake->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_env_on->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_door_fl->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_door_fr->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_door_chargeport->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_pilot->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_inprogress->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_handbrake->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_on->IsModifiedAndClear(MyOvmsServerV2Modifier) |
 
     // doors 2
-    StandardMetrics.ms_v_env_locked->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_env_valet->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_env_headlights->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_door_hood->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_door_trunk->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_env_locked->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_valet->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_headlights->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_door_hood->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_door_trunk->IsModifiedAndClear(MyOvmsServerV2Modifier) |
 
     // doors 3
-    StandardMetrics.ms_v_env_awake->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_env_cooling->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_env_ctrl_login->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_env_ctrl_config->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_env_awake->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_cooling->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_ctrl_login->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_ctrl_config->IsModifiedAndClear(MyOvmsServerV2Modifier) |
 
     // doors 4
-    StandardMetrics.ms_v_env_alarm->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_env_alarm->IsModifiedAndClear(MyOvmsServerV2Modifier) |
 
-    StandardMetrics.ms_v_inv_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_mot_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_bat_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_env_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_bat_12v_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_inv_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_mot_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_bat_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_bat_12v_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) |
 
     // doors 5
-    StandardMetrics.ms_v_door_rl->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_door_rr->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_env_charging12v->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
-    StandardMetrics.ms_v_env_hvac->IsModifiedAndClear(MyOvmsServerV2Modifier) ||
+    StandardMetrics.ms_v_door_rl->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_door_rr->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_charging12v->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_hvac->IsModifiedAndClear(MyOvmsServerV2Modifier) |
 
     StandardMetrics.ms_v_charge_temp->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
@@ -1210,11 +1213,35 @@ void OvmsServerV2::TransmitNotifyInfo()
 
     std::ostringstream buffer;
     buffer
-      << "MP-0 PA"
+      << "MP-0 PI"
       << mp_encode(e->GetValue());
     Transmit(buffer.str().c_str());
 
     info->MarkRead(MyOvmsServerV2Reader, e);
+    }
+  }
+
+void OvmsServerV2::TransmitNotifyError()
+  {
+  m_pending_notify_error = false;
+
+  // Find the type object
+  OvmsNotifyType* alert = MyNotify.GetType("error");
+  if (alert == NULL) return;
+
+  while(1)
+    {
+    // Find the first entry
+    OvmsNotifyEntry* e = alert->FirstUnreadEntry(MyOvmsServerV2Reader, 0);
+    if (e == NULL) return;
+
+    std::ostringstream buffer;
+    buffer
+      << "MP-0 PE"
+      << e->GetValue(); // no mp_encode; payload structure "<vehicletype>,<errorcode>,<errordata>"
+    Transmit(buffer.str().c_str());
+
+    alert->MarkRead(MyOvmsServerV2Reader, e);
     }
   }
 
@@ -1234,7 +1261,7 @@ void OvmsServerV2::TransmitNotifyAlert()
 
     std::ostringstream buffer;
     buffer
-      << "MP-0 PE"
+      << "MP-0 PA"
       << mp_encode(e->GetValue());
     Transmit(buffer.str().c_str());
 
@@ -1319,14 +1346,29 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
       }
     std::ostringstream buffer;
     buffer
-      << "MP-0 PA"
+      << "MP-0 PI"
       << mp_encode(entry->GetValue());
+    Transmit(buffer.str().c_str());
+    return true; // Mark it as read, as we've managed to send it
+    }
+  else if (strcmp(type->m_name,"error")==0)
+    {
+    // Error notification
+    if (!StandardMetrics.ms_s_v2_connected->AsBool())
+      {
+      m_pending_notify_error = true;
+      return false; // No connection, so leave it queued for when we do
+      }
+    std::ostringstream buffer;
+    buffer
+      << "MP-0 PE"
+      << entry->GetValue(); // no mp_encode; payload structure "<vehicletype>,<errorcode>,<errordata>"
     Transmit(buffer.str().c_str());
     return true; // Mark it as read, as we've managed to send it
     }
   else if (strcmp(type->m_name,"alert")==0)
     {
-    // Info notifications
+    // Alert notifications
     if (!StandardMetrics.ms_s_v2_connected->AsBool())
       {
       m_pending_notify_alert = true;
@@ -1334,7 +1376,7 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
       }
     std::ostringstream buffer;
     buffer
-      << "MP-0 PE"
+      << "MP-0 PA"
       << mp_encode(entry->GetValue());
     Transmit(buffer.str().c_str());
     return true; // Mark it as read, as we've managed to send it
@@ -1348,6 +1390,16 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
   else
     return true; // Mark it read, as no interest to us
   }
+
+/**
+ * EventListener:
+ *  - update location ASAP
+ */
+void OvmsServerV2::EventListener(std::string event, void* data)
+{
+  if (event == "gps.lock.acquired")
+    m_now_gps = true;
+}
 
 void OvmsServerV2::TransmitMsgCapabilities(bool always)
   {
@@ -1374,7 +1426,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
     }
 
   m_buffer = new OvmsBuffer(1024);
-  m_status = "Starting";
+  SetStatus("Starting");
   m_now_stat = false;
   m_now_gps = false;
   m_now_tpms = false;
@@ -1384,6 +1436,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
   m_now_group = false;
 
   m_pending_notify_info = false;
+  m_pending_notify_error = false;
   m_pending_notify_alert = false;
   m_pending_notify_data = false;
   m_pending_notify_data_last = 0;
@@ -1397,6 +1450,9 @@ OvmsServerV2::OvmsServerV2(const char* name)
     {
     MyOvmsServerV2Reader = MyNotify.RegisterReader(TAG, COMMAND_RESULT_NORMAL, std::bind(OvmsServerV2ReaderCallback, _1, _2));
     }
+
+  // init event listener:
+  MyEvents.RegisterEvent(TAG, "gps.lock.acquired", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
   }
 
 OvmsServerV2::~OvmsServerV2()

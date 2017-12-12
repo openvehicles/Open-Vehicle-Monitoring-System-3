@@ -44,10 +44,12 @@
 #define COMMAND_RESULT_NORMAL     1024
 #define COMMAND_RESULT_VERBOSE    65535
 
+class OvmsWriter;
 class OvmsCommand;
 class OvmsCommandMap;
 class LogBuffers;
 typedef std::map<TaskHandle_t, LogBuffers*> PartialLogs;
+typedef bool (*InsertCallback)(OvmsWriter* writer, void* userData, char);
 
 class OvmsWriter
   {
@@ -62,6 +64,7 @@ class OvmsWriter
     virtual char ** GetCompletion(OvmsCommandMap& children, const char* token) = 0;
     virtual void Log(LogBuffers* message) = 0;
     virtual void Exit();
+    void RegisterInsertCallback(InsertCallback cb, void* ctx);
 
   public:
     bool IsSecure();
@@ -69,6 +72,10 @@ class OvmsWriter
 
   public:
     bool m_issecure;
+
+  protected:
+    InsertCallback m_insert;
+    void* m_userData;
   };
 
 struct CompareCharPtr

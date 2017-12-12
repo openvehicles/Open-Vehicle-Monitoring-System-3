@@ -66,6 +66,7 @@ class OvmsServerV2 : public OvmsServer
     void Transmit(const std::ostringstream& message);
     void Transmit(const std::string& message);
     void Transmit(const char* message);
+    void SetStatus(const char* status, bool fault=false);
 
   protected:
     std::string ReadLine();
@@ -81,6 +82,7 @@ class OvmsServerV2 : public OvmsServer
 
   protected:
     void TransmitNotifyInfo();
+    void TransmitNotifyError();
     void TransmitNotifyAlert();
     void TransmitNotifyData();
     void HandleNotifyDataAck(uint32_t ack);
@@ -88,6 +90,7 @@ class OvmsServerV2 : public OvmsServer
   public:
     void MetricModified(OvmsMetric* metric);
     bool IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry);
+    void EventListener(std::string event, void* data);
 
   public:
     std::string m_status;
@@ -116,6 +119,7 @@ class OvmsServerV2 : public OvmsServer
     bool m_now_group;
 
     bool m_pending_notify_info;
+    bool m_pending_notify_error;
     bool m_pending_notify_alert;
     bool m_pending_notify_data;
     uint32_t m_pending_notify_data_last;

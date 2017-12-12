@@ -226,6 +226,7 @@ struct WOLFSSH {
 
     uint8_t        connReset;
     uint8_t        isClosed;
+    uint8_t        clientOpenSSH;
 
     uint8_t        blockSz;
     uint8_t        encryptId;
@@ -271,6 +272,9 @@ struct WOLFSSH {
 
 struct WOLFSSH_CHANNEL {
     uint8_t  channelType;
+    uint8_t  sessionType;
+    uint8_t  closeSent;
+    uint8_t  receivedEof;
     uint32_t channel;
     uint32_t windowSz;
     uint32_t maxPacketSz;
@@ -278,6 +282,7 @@ struct WOLFSSH_CHANNEL {
     uint32_t peerWindowSz;
     uint32_t peerMaxPacketSz;
     Buffer   inputBuffer;
+    char*    command;
     struct WOLFSSH* ssh;
     struct WOLFSSH_CHANNEL* next;
 };
@@ -325,6 +330,8 @@ WOLFSSH_LOCAL int SendUserAuthPkOk(WOLFSSH*, const uint8_t*, uint32_t,
 WOLFSSH_LOCAL int SendRequestSuccess(WOLFSSH*, int);
 WOLFSSH_LOCAL int SendChannelOpenConf(WOLFSSH*);
 WOLFSSH_LOCAL int SendChannelEof(WOLFSSH*, uint32_t);
+WOLFSSH_LOCAL int SendChannelEow(WOLFSSH*, uint32_t);
+WOLFSSH_LOCAL int SendChannelExit(WOLFSSH*, uint32_t, int);
 WOLFSSH_LOCAL int SendChannelClose(WOLFSSH*, uint32_t);
 WOLFSSH_LOCAL int SendChannelData(WOLFSSH*, uint32_t, uint8_t*, uint32_t);
 WOLFSSH_LOCAL int SendChannelWindowAdjust(WOLFSSH*, uint32_t, uint32_t);
@@ -361,7 +368,8 @@ enum AcceptStates {
     ACCEPT_CLIENT_USERAUTH_DONE,
     ACCEPT_SERVER_USERAUTH_SENT,
     ACCEPT_CLIENT_CHANNEL_REQUEST_DONE,
-    ACCEPT_SERVER_CHANNEL_ACCEPT_SENT
+    ACCEPT_SERVER_CHANNEL_ACCEPT_SENT,
+    ACCEPT_CLIENT_SESSION_ESTABLISHED
 };
 
 
@@ -373,6 +381,7 @@ enum ClientStates {
     CLIENT_USING_KEYS,
     CLIENT_USERAUTH_REQUEST_DONE,
     CLIENT_USERAUTH_DONE,
+    CLIENT_CHANNEL_OPEN_DONE,
     CLIENT_DONE
 };
 
