@@ -415,14 +415,25 @@ void OvmsConfigParam::LoadConfig()
     while (fgets(buf, OVMS_MAXVALSIZE, f))
       {
       buf[strlen(buf)-1] = 0; // Remove trailing newline
-      char *p = index(buf,char(9));
-      if (p == NULL) p = index(buf,' ');
-      if (p)
+      if (buf[0] == '#')
         {
-        *p = 0; // Null terminate the key
-        p++;    // and point to the value
-        m_map[std::string(buf)] = std::string(p);
-        // ESP_LOGI(TAG, "Loaded %s/%s=%s", m_name.c_str(), buf, p);
+        if (strncmp(buf, "#access=", 8) == 0)
+          {
+          m_readable = (strchr(buf+8, 'r') != NULL);
+          m_writable = (strchr(buf+8, 'w') != NULL);
+          }
+        }
+      else
+        {
+        char *p = index(buf,char(9));
+        if (p == NULL) p = index(buf,' ');
+        if (p)
+          {
+          *p = 0; // Null terminate the key
+          p++;    // and point to the value
+          m_map[std::string(buf)] = std::string(p);
+          // ESP_LOGI(TAG, "Loaded %s/%s=%s", m_name.c_str(), buf, p);
+          }
         }
       }
     delete[] buf;
@@ -510,6 +521,7 @@ void OvmsConfigParam::RewriteConfig()
   FILE* f = fopen(path.c_str(), "w");
   if (f)
     {
+    fprintf(f, "#access=%s%s\n", m_readable ? "r" : "", m_writable ? "w" : "");
     for (ConfigParamMap::iterator it=m_map.begin(); it!=m_map.end(); ++it)
       {
       fprintf(f,"%s\t%s\n",it->first.c_str(),it->second.c_str());
