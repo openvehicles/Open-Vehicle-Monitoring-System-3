@@ -225,6 +225,10 @@ void OvmsConfig::RegisterParam(std::string name, std::string title, bool writabl
     OvmsConfigParam* p = new OvmsConfigParam(name, title, writable, readable);
     m_map[name] = p;
     }
+  else
+    {
+    k->second->SetAccess(writable, readable);
+    }
   }
 
 void OvmsConfig::DeregisterParam(std::string name)
@@ -485,6 +489,12 @@ bool OvmsConfigParam::Writable()
 bool OvmsConfigParam::Readable()
   {
   return m_readable;
+  }
+
+void OvmsConfigParam::SetAccess(bool writable, bool readable)
+  {
+  m_writable = writable;
+  m_readable = readable;
   }
 
 std::string OvmsConfigParam::GetName()
