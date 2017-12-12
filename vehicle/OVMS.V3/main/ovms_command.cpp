@@ -55,6 +55,8 @@ OvmsWriter::OvmsWriter()
     m_issecure = true;
   else
     m_issecure = false;
+  m_insert = NULL;
+  m_userData = NULL;
   }
 
 OvmsWriter::~OvmsWriter()
@@ -64,6 +66,12 @@ OvmsWriter::~OvmsWriter()
 void OvmsWriter::Exit()
   {
   puts("This console cannot exit.");
+  }
+
+void OvmsWriter::RegisterInsertCallback(InsertCallback cb, void* ctx)
+  {
+  m_insert = cb;
+  m_userData = ctx;
   }
 
 bool OvmsWriter::IsSecure()
@@ -319,6 +327,20 @@ void help(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const c
   writer->puts("This isn't really much help, is it?");
   }
 
+bool echoInsert(OvmsWriter* writer, void* ctx, char ch)
+  {
+  if (ch == '\n')
+    return false;
+  writer->write(&ch, 1);
+  return true;
+  }
+
+void echo(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->puts("Type characters to be echoed, end with newline.");
+  writer->RegisterInsertCallback(echoInsert, NULL);
+  }
+
 void Exit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   writer->Exit();
@@ -370,6 +392,7 @@ OvmsCommandApp::OvmsCommandApp()
   level_cmd->RegisterCommand("none", "No logging (0)", level , "[<tag>]", 0, 1);
   m_root.RegisterCommand("enable","Enter secure mode", enable, "", 0, 1);
   m_root.RegisterCommand("disable","Leave secure mode", disable, "", 0, 0, true);
+  m_root.RegisterCommand("echo", "Test getchar", echo, "", 0, 0);
   }
 
 OvmsCommandApp::~OvmsCommandApp()
