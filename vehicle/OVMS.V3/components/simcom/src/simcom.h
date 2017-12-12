@@ -120,6 +120,7 @@ class simcom : public pcp
     GsmMux       m_mux;
     GsmPPPOS     m_ppp;
     GsmNMEA      m_nmea;
+    bool         m_gps_required;
 
   protected:
     void SetState1(SimcomState1 newstate);
@@ -138,6 +139,7 @@ class simcom : public pcp
     void StopTask();
     void Task();
     void Ticker(std::string event, void* data);
+    void EventListener(std::string event, void* data);
     void IncomingMuxData(GsmMuxChannel* channel);
     void SendSetState1(SimcomState1 newstate);
     bool IsStarted();
