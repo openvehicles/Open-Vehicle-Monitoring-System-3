@@ -43,6 +43,10 @@ static const char *TAG = "vfs";
 #include "ovms_config.h"
 #include "ovms_command.h"
 
+#ifdef CONFIG_OVMS_COMP_EDITOR
+#include "vfsedit.h"
+#endif // #ifdef CONFIG_OVMS_COMP_EDITOR
+
 void vfs_ls(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   DIR *dir;
@@ -237,4 +241,8 @@ VfsInit::VfsInit()
   cmd_vfs->RegisterCommand("mv","VFS Rename a file",vfs_mv, "<source> <target>", 2, 2, true);
   cmd_vfs->RegisterCommand("cp","VFS Copy a file",vfs_cp, "<source> <target>", 2, 2, true);
   cmd_vfs->RegisterCommand("append","VFS Append a line to a file",vfs_append, "<quoted line> <file>", 2, 2, true);
+  #ifdef CONFIG_OVMS_COMP_EDITOR
+  cmd_vfs->RegisterCommand("edit","VFS edit a file",vfs_edit, "<path>", 1, 1, true);
+  #endif // #ifdef CONFIG_OVMS_COMP_EDITOR
+
   }

@@ -195,6 +195,13 @@ config OVMS_COMP_RE_TOOLS
     help
         Enable to include support for Reverse Engineering tools
 
+config OVMS_COMP_EDITOR
+    bool "Include support for Simple file editor"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for a simple file editor (vfs edit)
+
 endmenu # Component Options
 
 menu "Developer Options"
