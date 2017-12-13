@@ -42,6 +42,8 @@ static const char *TAG = "config";
 
 #define OVMS_CONFIGPATH "/store/ovms_config"
 #define OVMS_MAXVALSIZE 2500
+//#define OVMS_PERSIST_METADATA
+
 
 OvmsConfig MyConfig __attribute__ ((init_priority (1400)));
 
@@ -75,7 +77,9 @@ void config_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     OvmsConfigParam *p = MyConfig.CachedParam(argv[0]);
     if (p)
       {
-      writer->puts(argv[0]);
+      writer->printf("%s (%s %s)\n",argv[0],
+        (p->Readable()?"readable":"protected"),
+        (p->Writable()?"writeable":"read-only"));
       for (ConfigParamMap::iterator it=p->m_map.begin(); it!=p->m_map.end(); ++it)
         {
         if (p->Readable())
@@ -185,7 +189,8 @@ esp_err_t OvmsConfig::mount()
   while ((dp = readdir(dir)) != NULL)
     {
     // Register the param in case this was not already done
-    RegisterParam(dp->d_name, "", true, false);
+    if (CachedParam(dp->d_name) == NULL)
+      RegisterParam(dp->d_name, "", true, false);
     }
   closedir(dir);
 
@@ -415,25 +420,32 @@ void OvmsConfigParam::LoadConfig()
     while (fgets(buf, OVMS_MAXVALSIZE, f))
       {
       buf[strlen(buf)-1] = 0; // Remove trailing newline
+#ifdef OVMS_PERSIST_METADATA
+      // check for meta data:
       if (buf[0] == '#')
         {
         if (strncmp(buf, "#access=", 8) == 0)
           {
           m_readable = (strchr(buf+8, 'r') != NULL);
           m_writable = (strchr(buf+8, 'w') != NULL);
+          continue;
+          }
+        else if (strncmp(buf, "#title=", 7) == 0)
+          {
+          m_title = buf+7;
+          continue;
           }
         }
-      else
+#endif // OVMS_PERSIST_METADATA
+      // read instance:
+      char *p = index(buf,char(9));
+      if (p == NULL) p = index(buf,' ');
+      if (p)
         {
-        char *p = index(buf,char(9));
-        if (p == NULL) p = index(buf,' ');
-        if (p)
-          {
-          *p = 0; // Null terminate the key
-          p++;    // and point to the value
-          m_map[std::string(buf)] = std::string(p);
-          // ESP_LOGI(TAG, "Loaded %s/%s=%s", m_name.c_str(), buf, p);
-          }
+        *p = 0; // Null terminate the key
+        p++;    // and point to the value
+        m_map[std::string(buf)] = std::string(p);
+        // ESP_LOGI(TAG, "Loaded %s/%s=%s", m_name.c_str(), buf, p);
         }
       }
     delete[] buf;
@@ -521,7 +533,12 @@ void OvmsConfigParam::RewriteConfig()
   FILE* f = fopen(path.c_str(), "w");
   if (f)
     {
+#ifdef OVMS_PERSIST_METADATA
+    // write meta data:
     fprintf(f, "#access=%s%s\n", m_readable ? "r" : "", m_writable ? "w" : "");
+    fprintf(f, "#title=%s\n", m_title.c_str());
+#endif
+    // write instances:
     for (ConfigParamMap::iterator it=m_map.begin(); it!=m_map.end(); ++it)
       {
       fprintf(f,"%s\t%s\n",it->first.c_str(),it->second.c_str());
