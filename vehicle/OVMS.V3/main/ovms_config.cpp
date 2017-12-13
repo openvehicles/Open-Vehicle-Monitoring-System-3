@@ -75,7 +75,9 @@ void config_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     OvmsConfigParam *p = MyConfig.CachedParam(argv[0]);
     if (p)
       {
-      writer->puts(argv[0]);
+      writer->printf("%s (%s %s)\n",argv[0],
+        (p->Readable()?"readable":"protected"),
+        (p->Writable()?"writeable":"read-only"));
       for (ConfigParamMap::iterator it=p->m_map.begin(); it!=p->m_map.end(); ++it)
         {
         if (p->Readable())
