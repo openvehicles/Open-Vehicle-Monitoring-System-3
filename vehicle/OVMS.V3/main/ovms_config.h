@@ -53,6 +53,7 @@ class OvmsConfigParam
     bool IsDefined(std::string instance);
     bool Writable();
     bool Readable();
+    void SetAccess(bool writable, bool readable);
     std::string GetName();
     const char* GetTitle() { return m_title.c_str(); }
     void Load();

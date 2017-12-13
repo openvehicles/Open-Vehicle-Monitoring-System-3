@@ -228,7 +228,7 @@ void GsmNMEA::IncomingLine(const std::string line)
 
     // Data complete, store:
 
-    if (m_gpstime_enabled)
+    if (m_gpstime_enabled || m_gpstime_required)
       *StdMetrics.ms_m_timeutc = (int) utc_to_timestamp(date, time);
 
     *StdMetrics.ms_v_pos_direction = (float) direction;
@@ -240,9 +240,9 @@ void GsmNMEA::IncomingLine(const std::string line)
   }
 
 
-void GsmNMEA::Startup()
+void GsmNMEA::Startup(bool force)
   {
-  if (!MyConfig.GetParamValueBool("modem", "enable.gps", false))
+  if (!force && !MyConfig.GetParamValueBool("modem", "enable.gps", false))
     {
     ESP_LOGD(TAG, "GPS disabled");
     return;
@@ -284,6 +284,7 @@ GsmNMEA::GsmNMEA(GsmMux* mux, int channel)
   m_channel = channel;
   m_connected = false;
   m_gpstime_enabled = false;
+  m_gpstime_required = false;
   }
 
 GsmNMEA::~GsmNMEA()

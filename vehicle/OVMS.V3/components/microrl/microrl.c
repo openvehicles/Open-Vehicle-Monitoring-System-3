@@ -529,6 +529,16 @@ static void microrl_backspace (microrl_t * pThis)
 	}
 }
 
+//*****************************************************************************
+// remove one char forward at cursor
+static void microrl_delete (microrl_t * pThis)
+{
+	memmove (pThis->cmdline + pThis->cursor,
+					 pThis->cmdline + pThis->cursor+1,
+					 pThis->cmdlen-pThis->cursor+1);
+		pThis->cmdline [pThis->cmdlen] = '\0';
+		pThis->cmdlen--;
+}
 
 #ifdef _USE_COMPLETE
 
@@ -738,6 +748,11 @@ void microrl_insert_char (microrl_t * pThis, int ch)
 			case KEY_DEL: // Backspace
 			case KEY_BS: // ^U
 				microrl_backspace (pThis);
+				terminal_print_line (pThis, pThis->cursor, pThis->cursor);
+			break;
+			//-----------------------------------------------------
+			case KEY_EOT: // ^D
+				microrl_delete (pThis);
 				terminal_print_line (pThis, pThis->cursor, pThis->cursor);
 			break;
 			//-----------------------------------------------------
