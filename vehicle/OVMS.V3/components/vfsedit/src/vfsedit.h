@@ -1,6 +1,6 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          9th December 2017
+;    Date:          14th March 2017
 ;
 ;    Changes:
 ;    1.0  Initial release
@@ -8,7 +8,6 @@
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011        Sonny Chen @ EPRO/DX
-;    (C) 2012-2017  Michael Balzer
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -29,32 +28,20 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __GSM_NMEA_H__
-#define __GSM_NMEA_H__
+#ifndef __VFS_EDIT_H__
+#define __VFS_EDIT_H__
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-#include "driver/uart.h"
-#include "gsmmux.h"
+#include <string>
+#include <string.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <unistd.h>
+#include <libgen.h>
+#include "ovms_config.h"
+#include "ovms_command.h"
 
-class GsmNMEA
-  {
-  public:
-    GsmNMEA(GsmMux* mux, int channel);
-    ~GsmNMEA();
+extern void vfs_edit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
-  public:
-    void IncomingLine(const std::string line);
-    void Startup(bool force=false);
-    void Shutdown(bool hard=false);
-
-  public:
-    GsmMux*       m_mux;
-    int           m_channel;
-    bool          m_connected;
-    bool          m_gpstime_enabled;
-    bool          m_gpstime_required;
-  };
-
-#endif //#ifndef __GSM_NMEA__
+#endif //#ifndef __VFS_EDIT_H__

@@ -1,6 +1,6 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          9th December 2017
+;    Date:          14th March 2017
 ;
 ;    Changes:
 ;    1.0  Initial release
@@ -8,7 +8,6 @@
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011        Sonny Chen @ EPRO/DX
-;    (C) 2012-2017  Michael Balzer
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -29,32 +28,44 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __GSM_NMEA_H__
-#define __GSM_NMEA_H__
+#include "vfsedit.h"
+#include "openemacs.h"
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-#include "driver/uart.h"
-#include "gsmmux.h"
-
-class GsmNMEA
+size_t vfs_edit_write(struct editor_state* E, const char *buf, size_t nbyte)
   {
-  public:
-    GsmNMEA(GsmMux* mux, int channel);
-    ~GsmNMEA();
+  OvmsWriter* writer = (OvmsWriter*)E->editor_userdata;
 
-  public:
-    void IncomingLine(const std::string line);
-    void Startup(bool force=false);
-    void Shutdown(bool hard=false);
+  return writer->write(buf,nbyte);
+  }
 
-  public:
-    GsmMux*       m_mux;
-    int           m_channel;
-    bool          m_connected;
-    bool          m_gpstime_enabled;
-    bool          m_gpstime_required;
-  };
+bool vfs_edit_insert(OvmsWriter* writer, void* ctx, char ch)
+  {
+  struct editor_state* ed = (struct editor_state*)ctx;
 
-#endif //#ifndef __GSM_NMEA__
+  editor_process_keypress(ed, ch);
+  if (ed->editor_completed)
+    {
+    editor_free(ed);
+    free(ed);
+    return false;
+    }
+  else
+    {
+    return true;
+    }
+  }
+
+void vfs_edit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyConfig.ProtectedPath(argv[0]))
+    {
+    writer->puts("Error: protected path");
+    return;
+    }
+
+  struct editor_state* ed = (struct editor_state*)malloc(sizeof(struct editor_state));
+  editor_init(ed,vfs_edit_write,(void*)writer);
+  editor_open(ed,argv[0]);
+
+  writer->RegisterInsertCallback(vfs_edit_insert, ed);
+  }
