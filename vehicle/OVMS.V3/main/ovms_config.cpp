@@ -187,7 +187,8 @@ esp_err_t OvmsConfig::mount()
   while ((dp = readdir(dir)) != NULL)
     {
     // Register the param in case this was not already done
-    RegisterParam(dp->d_name, "", true, false);
+    if (CachedParam(dp->d_name) == NULL)
+      RegisterParam(dp->d_name, "", true, false);
     }
   closedir(dir);
 
