@@ -251,7 +251,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     void DoNotify();
     
     void SendGPSLog();
-    //void SendPWRLog();
+    void SendTripLog();
     //void SendSDOLog();
     
     
