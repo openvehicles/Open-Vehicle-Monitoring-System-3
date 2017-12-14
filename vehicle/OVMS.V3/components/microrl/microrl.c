@@ -384,20 +384,6 @@ static void terminal_print_line (microrl_t * pThis, int pos, int cursor)
 void microrl_init (microrl_t * pThis, void (*print) (microrl_t*, const char *))
 {
 	memset(pThis, 0, sizeof(microrl_t));
-	memset(pThis->cmdline, 0, _COMMAND_LINE_LEN);
-#ifdef _USE_HISTORY
-	memset(pThis->ring_hist.ring_buf, 0, _RING_HISTORY_LEN);
-	pThis->ring_hist.begin = 0;
-	pThis->ring_hist.end = 0;
-	pThis->ring_hist.cur = 0;
-#endif
-	pThis->cmdlen =0;
-	pThis->cursor = 0;
-	pThis->execute = NULL;
-	pThis->get_completion = NULL;
-#ifdef _USE_CTLR_C
-	pThis->sigint = NULL;
-#endif
 	pThis->prompt_str = prompt_default;
 	pThis->print = print;
 #ifdef _ENABLE_INIT_PROMPT
@@ -429,6 +415,7 @@ static void hist_search (microrl_t * pThis, int dir)
 {
 	int len = hist_restore_line (&pThis->ring_hist, pThis->cmdline, dir);
 	if (len >= 0) {
+		pThis->cmdline[len] = '\0';
 		pThis->cursor = pThis->cmdlen = len;
 		terminal_reset_cursor (pThis);
 		terminal_print_line (pThis, 0, pThis->cursor);
