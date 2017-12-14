@@ -429,6 +429,7 @@ static void hist_search (microrl_t * pThis, int dir)
 {
 	int len = hist_restore_line (&pThis->ring_hist, pThis->cmdline, dir);
 	if (len >= 0) {
+		pThis->cmdline[len] = '\0';
 		pThis->cursor = pThis->cmdlen = len;
 		terminal_reset_cursor (pThis);
 		terminal_print_line (pThis, 0, pThis->cursor);
