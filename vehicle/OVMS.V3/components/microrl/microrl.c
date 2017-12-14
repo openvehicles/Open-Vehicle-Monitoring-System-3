@@ -733,7 +733,7 @@ void microrl_insert_char (microrl_t * pThis, int ch)
 			break;
 			//-----------------------------------------------------
 			case KEY_DEL: // Backspace
-			case KEY_BS: // ^U
+			case KEY_BS: // ^H
 				microrl_backspace (pThis);
 				terminal_print_line (pThis, pThis->cursor, pThis->cursor);
 			break;
