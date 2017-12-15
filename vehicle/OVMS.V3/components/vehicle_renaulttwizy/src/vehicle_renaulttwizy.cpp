@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-renaulttwizy";
 
-#define VERSION "0.4.0"
+#define VERSION "0.5.0"
 
 #include <stdio.h>
 #include <string>
@@ -94,6 +94,9 @@ OvmsVehicleRenaultTwizy::~OvmsVehicleRenaultTwizy()
   // release GPS:
   MyEvents.SignalEvent("vehicle.release.gps", NULL);
   MyEvents.SignalEvent("vehicle.release.gpstime", NULL);
+  
+  // unregister event listeners:
+  MyEvents.DeregisterEvent(TAG);
 }
 
 
@@ -1435,6 +1438,98 @@ void OvmsVehicleRenaultTwizy::SendGPSLog()
 
 
 /**
+ * SendTripLog: send "RT-PWR-Log" history record
+ */
+void OvmsVehicleRenaultTwizy::SendTripLog()
+{
+  unsigned long pwr_dist, pwr_use, pwr_rec;
+
+  // Read power stats:
+  
+  pwr_dist = twizy_speedpwr[CAN_SPEED_CONST].dist
+          + twizy_speedpwr[CAN_SPEED_ACCEL].dist
+          + twizy_speedpwr[CAN_SPEED_DECEL].dist;
+
+  pwr_use = twizy_speedpwr[CAN_SPEED_CONST].use
+          + twizy_speedpwr[CAN_SPEED_ACCEL].use
+          + twizy_speedpwr[CAN_SPEED_DECEL].use;
+
+  pwr_rec = twizy_speedpwr[CAN_SPEED_CONST].rec
+          + twizy_speedpwr[CAN_SPEED_ACCEL].rec
+          + twizy_speedpwr[CAN_SPEED_DECEL].rec;
+
+  // H type "RT-PWR-Log"
+	//   ,odometer_km,latitude,longitude,altitude
+	//   ,chargestate,parktime_min
+	//   ,soc,soc_min,soc_max
+	//   ,power_used_wh,power_recd_wh,power_distance
+	//   ,range_estim_km,range_ideal_km
+	//   ,batt_volt,batt_volt_min,batt_volt_max
+	//   ,batt_temp,batt_temp_min,batt_temp_max
+	//   ,motor_temp,pem_temp
+	//   ,trip_length_km,trip_soc_usage
+	//   ,trip_avg_speed_kph,trip_avg_accel_kps,trip_avg_decel_kps
+	//   ,charge_used_ah,charge_recd_ah,batt_capacity_prc
+	//   ,chg_temp
+  
+  ostringstream buf;
+  buf
+    << "RT-PWR-Log,0,31536000" // recno = 0, keep for 365 days
+    << fixed
+    << setprecision(2)
+    << "," << StdMetrics.ms_v_pos_odometer->AsFloat()
+    << setprecision(8)
+    << "," << StdMetrics.ms_v_pos_latitude->AsFloat()
+    << "," << StdMetrics.ms_v_pos_longitude->AsFloat()
+    << setprecision(0)
+    << "," << StdMetrics.ms_v_pos_altitude->AsFloat()
+    << "," << (twizy_flags.ChargePort ? twizy_chargestate : 0)
+    << "," << StandardMetrics.ms_v_env_parktime->AsInt(0, Minutes)
+    << setprecision(2)
+    << "," << (float) twizy_soc / 100
+    << "," << (float) twizy_soc_min / 100
+    << "," << (float) twizy_soc_max / 100
+    << setprecision(0)
+    << "," << pwr_use / WH_DIV
+    << "," << pwr_rec / WH_DIV
+    << "," << pwr_dist / 10
+    << "," << twizy_range_est
+    << "," << twizy_range_ideal
+    << setprecision(1)
+    << "," << (float) twizy_batt[0].volt_act / 10
+    << "," << (float) twizy_batt[0].volt_min / 10
+    << "," << (float) twizy_batt[0].volt_max / 10
+    << setprecision(0)
+    << "," << CONV_Temp(twizy_batt[0].temp_act)
+    << "," << CONV_Temp(twizy_batt[0].temp_min)
+    << "," << CONV_Temp(twizy_batt[0].temp_max)
+    << "," << StdMetrics.ms_v_mot_temp->AsInt()
+    << "," << StdMetrics.ms_v_inv_temp->AsInt()
+    << setprecision(2)
+    << "," << (float) (twizy_odometer - twizy_odometer_tripstart) / 100
+    << "," << (float) ABS((long)twizy_soc_tripstart - (long)twizy_soc_tripend) / 100
+    
+    << "," << (float) ((twizy_speedpwr[CAN_SPEED_CONST].spdcnt > 0)
+          ? twizy_speedpwr[CAN_SPEED_CONST].spdsum / twizy_speedpwr[CAN_SPEED_CONST].spdcnt
+          : 0) / 100 // avg speed kph
+    << "," << (float) ((twizy_speedpwr[CAN_SPEED_ACCEL].spdcnt > 0)
+          ? (twizy_speedpwr[CAN_SPEED_ACCEL].spdsum * 10) / twizy_speedpwr[CAN_SPEED_ACCEL].spdcnt
+          : 0) / 100 // avg accel kph/s
+    << "," << (float) ((twizy_speedpwr[CAN_SPEED_DECEL].spdcnt > 0)
+          ? (twizy_speedpwr[CAN_SPEED_DECEL].spdsum * 10) / twizy_speedpwr[CAN_SPEED_DECEL].spdcnt
+          : 0) / 100 // avg decel kph/s
+    
+    << "," << (float) twizy_charge_use / AH_DIV
+    << "," << (float) twizy_charge_rec / AH_DIV
+    << "," << (float) cfg_bat_cap_actual_prc
+    << "," << StdMetrics.ms_v_charge_temp->AsInt()
+    ;
+  
+  MyNotify.NotifyString("data", buf.str().c_str());
+}
+
+
+/**
  * RequestNotify: send notifications / alerts / data updates
  */
 
@@ -1473,7 +1568,7 @@ void OvmsVehicleRenaultTwizy::DoNotify()
   
   // Send drive log?
   if (which & SEND_TripLog) {
-    // TODO
+    SendTripLog();
     twizy_notifications &= ~SEND_TripLog;
   }
   
