@@ -40,6 +40,9 @@
 ;		 0.2.1  12-Dec-2017 - Geir Øyvind Vælidalo
 ;			- Kia Soul EV requires OVMS GPS, since we don't know how to access the cars own GPS at the moment.
 ;
+;		 0.2.2  15-Dec-2017 - Geir Øyvind Vælidalo
+;			- Minor bugfixes after quick in-car test.
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -75,11 +78,11 @@ static const char *TAG = "v-kiasoulev";
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 
-#define VERSION "0.2.1"
+#define VERSION "0.2.2"
 
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
-    { 0x7e2, 0, 	   VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, { 999, 999, 999 } }, 	// VIN
+    { 0x7e2, 0, 	   VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, {  30,   0,   0 } }, 	// VIN
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, {  30,  10,  10 } }, 	// BMC Diag page 01
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, {  30,  30,  10 } }, 	// BMC Diag page 02
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x03, {  30,  30,  10 } }, 	// BMC Diag page 03
@@ -164,6 +167,8 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   m_b_cell_det_min->SetValue(0);
 
   StdMetrics.ms_v_bat_12v_voltage->SetValue(12.5, Volts);
+  StdMetrics.ms_v_charge_inprogress->SetValue(false);
+  StdMetrics.ms_v_env_on->SetValue(false);
 
   // init commands:
   cmd_xks = MyCommandApp.RegisterCommand("xks","Kia Soul EV",NULL,"",0,0,true);
@@ -335,18 +340,21 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
         break;
 
       case 0x4f2:
-        {
-          // Speed:
-        	  StdMetrics.ms_v_pos_speed->SetValue( d[1] >> 1, Kph ); // kph
+      		{
+      		// Speed:
+      		StdMetrics.ms_v_pos_speed->SetValue( d[1] >> 1, Kph ); // kph
 
-          // 4f2 is one of the few can-messages that are sent while car is both on and off.
-          // Byte 2 and 7 are some sort of counters which runs while the car is on.
-          if (d[2] > 0 || d[7] > 0){
-        	    vehicle_kiasoulev_car_on(true);
-          } else if (d[2] == 0 && d[7] == 0 && StdMetrics.ms_v_pos_speed->AsFloat(Kph) == 0 && StdMetrics.ms_v_env_handbrake->AsBool()) {
-            // Boths 2 and 7 and speed is 0, so we assumes the car is off.
-      	    vehicle_kiasoulev_car_on(false);
-          }
+      		// 4f2 is one of the few can-messages that are sent while car is both on and off.
+      		// Byte 2 and 7 are some sort of counters which runs while the car is on.
+      		if (d[2] > 0 || d[7] > 0)
+      			{
+      			vehicle_kiasoulev_car_on(true);
+      			}
+      		else if (d[2] == 0 && d[7] == 0 && StdMetrics.ms_v_pos_speed->AsFloat(Kph) == 0 && StdMetrics.ms_v_env_handbrake->AsBool())
+      			{
+           // Boths 2 and 7 and speed is 0, so we assumes the car is off.
+      	     vehicle_kiasoulev_car_on(false);
+      			}
         }
         break;
 
@@ -360,8 +368,8 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       case 0x581:
         {
-          // Car is CHARGING:
-        	  StdMetrics.ms_v_bat_power->SetValue((float)(((uint16_t) d[7] << 8) | d[6])/256.0, kW);
+        // Car is CHARGING:
+        StdMetrics.ms_v_bat_power->SetValue((float)(((uint16_t) d[7] << 8) | d[6])/256.0, kW);
         }
         break;
 
@@ -614,7 +622,7 @@ void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
 						}
 					else if (m_poll_ml_frame == 2)
 						{
-						m_b_min_temperature->SetValue( CAN_BYTE(0) );
+						m_b_max_temperature->SetValue( CAN_BYTE(0) );
 						}
 					else if (m_poll_ml_frame == 3)
 						{
@@ -844,7 +852,7 @@ void OvmsVehicleKiaSoulEv::SetChargeMetrics(float voltage, float current, float 
 	//"Typical" consumption based on battery temperature and ambient temperature.
 	float temp = (StdMetrics.ms_v_bat_temp->AsFloat(Celcius) + StdMetrics.ms_v_env_temp->AsFloat(Celcius))/2;
 	float consumption = 15+(20-temp)*3.0/8.0; //kWh/100km
-	m_c_speed->SetValue( (voltage * current * 100) / consumption, Kph);
+	m_c_speed->SetValue( (voltage * current) / (consumption*10), Kph);
 	}
 
 /**
