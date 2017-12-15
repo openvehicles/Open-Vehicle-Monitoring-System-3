@@ -55,7 +55,7 @@ OvmsNetManager::OvmsNetManager()
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.gotip", std::bind(&OvmsNetManager::WifiUp, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"system.wifi.ap.gotip", std::bind(&OvmsNetManager::WifiUp, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.wifi.ap.start", std::bind(&OvmsNetManager::WifiUp, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.stop", std::bind(&OvmsNetManager::WifiDown, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.stop", std::bind(&OvmsNetManager::WifiDown, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.disconnected", std::bind(&OvmsNetManager::WifiDown, this, _1, _2));

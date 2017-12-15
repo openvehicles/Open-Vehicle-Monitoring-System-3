@@ -68,11 +68,15 @@ class esp32wifi : public pcp
   public:
     void EventWifiGotIp(std::string event, void* data);
     void EventWifiStaDisconnected(std::string event, void* data);
+    void EventWifiApState(std::string event, void* data);
+    void EventWifiApUpdate(std::string event, void* data);
     void EventTimer10(std::string event, void* data);
     void EventWifiScanDone(std::string event, void* data);
+    void OutputStatus(int verbosity, OvmsWriter* writer);
 
   protected:
     esp32wifi_mode_t m_mode;
+    uint8_t m_mac[6];
     tcpip_adapter_ip_info_t m_ip_info;
     wifi_init_config_t m_wifi_init_cfg;
     wifi_config_t m_wifi_apsta_cfg;

@@ -49,9 +49,9 @@
 #include "simcom.h"
 #endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
 
-#ifdef CONFIG_OVMS_COMP_SDCARD
+#ifdef CONFIG_OVMS_COMP_OBD2ECU
 #include "obd2ecu.h"
-#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
+#endif // #ifdef CONFIG_OVMS_COMP_OBD2ECU
 
 #include "ext12v.h"
 
@@ -117,9 +117,9 @@ class Peripherals
 #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
     simcom* m_simcom;
 #endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
-#ifdef CONFIG_OVMS_COMP_SDCARD
+#ifdef CONFIG_OVMS_COMP_OBD2ECU
     obd2ecu* m_obd2ecu;
-#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
+#endif // #ifdef CONFIG_OVMS_COMP_OBD2ECU
     ext12v* m_ext12v;
   };
 
