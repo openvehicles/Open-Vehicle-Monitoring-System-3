@@ -581,7 +581,7 @@ void OvmsServerV2::Transmit(const std::ostringstream& message)
   if (len==0) return;
 
   char* s = new char[len+1];
-  strncpy(s,bp,len);
+  strncpy(s,bp,len+1);
   ESP_LOGI(TAG, "Send %s",s);
 
   RC4_crypt(&m_crypto_tx1, &m_crypto_tx2, (uint8_t*)s, len);
