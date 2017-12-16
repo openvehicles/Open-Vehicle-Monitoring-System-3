@@ -932,9 +932,9 @@ void OvmsVehicleRenaultTwizy::FormatCellData(int verbosity, OvmsWriter* writer, 
 /**
  * BatterySendDataUpdate: send data notifications for modified packs & cells
  */
-void OvmsVehicleRenaultTwizy::BatterySendDataUpdate()
+void OvmsVehicleRenaultTwizy::BatterySendDataUpdate(bool force)
 {
-  bool overall_modified =
+  bool overall_modified = force |
     m_batt_cell_count->IsModifiedAndClear(m_modifier) |
     m_batt_cmod_count->IsModifiedAndClear(m_modifier);
   

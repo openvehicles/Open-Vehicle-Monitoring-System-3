@@ -347,18 +347,34 @@ void OvmsServerV2::ProcessCommand(const char* payload)
   {
   int command = atoi(payload);
   char *sep = index(payload,',');
-  int k;
+  int k = 0;
 
   OvmsVehicle* vehicle = MyVehicleFactory.ActiveVehicle();
 
   std::ostringstream* buffer = new std::ostringstream();
-  switch (command)
+
+  if (vehicle)
+    {
+    // Ask vehicle to process command first:
+    std::string rt;
+    OvmsVehicle::vehicle_command_t vc = vehicle->ProcessMsgCommand(rt, command, sep ? sep+1 : NULL);
+    if (vc != OvmsVehicle::NotImplemented)
+      {
+      *buffer << "MP-0 c" << command << "," << (1-vc) << "," << rt;
+      k = 1;
+      }
+    }
+
+  if (!k) switch (command)
     {
     case 1: // Request feature list
+      // Notes:
+      // - V2 only supported integer values, V3 values may be text
+      // - V2 only supported 16 features, V3 supports 32
       {
-      for (k=0;k<16;k++)
+      for (k=0;k<32;k++)
         {
-        *buffer << "MP-0 c1,0," << k << ",16,0";
+        *buffer << "MP-0 c1,0," << k << ",32," << (vehicle ? vehicle->GetFeature(k) : "0");
         Transmit(*buffer);
         buffer->str("");
         buffer->clear();
@@ -367,7 +383,22 @@ void OvmsServerV2::ProcessCommand(const char* payload)
       }
     case 2: // Set feature
       {
-      *buffer << "MP-0 c2,1";
+      int rc = 1;
+      const char* rt = "";
+      if (!vehicle)
+        rt = "No active vehicle";
+      else if (!sep)
+        rt = "Missing feature key";
+      else
+        {
+        k = atoi(sep+1);
+        sep = index(sep+1,',');
+        if (vehicle->SetFeature(k, sep ? sep+1 : ""))
+          rc = 0;
+        else
+          rt = "Feature not supported by vehicle";
+        }
+      *buffer << "MP-0 c2," << rc << "," << rt;
       break;
       }
     case 3: // Request parameter list
@@ -387,16 +418,23 @@ void OvmsServerV2::ProcessCommand(const char* payload)
       }
     case 4: // Set parameter
       {
-      if (sep)
+      int rc = 1;
+      const char* rt = "";
+      if (!sep)
+        rt = "Missing parameter key";
+      else
         {
-        k = atoi(sep);
+        k = atoi(sep+1);
         if ((k<PMAX_MAX)&&(pmap[k].param[0] != 0))
           {
           sep = index(sep+1,',');
-          MyConfig.SetParamValue(pmap[k].param, pmap[k].instance, sep+1);
+          MyConfig.SetParamValue(pmap[k].param, pmap[k].instance, sep ? sep+1 : "");
+          rc = 0;
           }
+        else
+          rt = "Parameter key not supported";
         }
-      *buffer << "MP-0 c4,0";
+      *buffer << "MP-0 c4," << rc << "," << rt;
       break;
       }
     case 5: // Reboot
@@ -581,7 +619,7 @@ void OvmsServerV2::Transmit(const std::ostringstream& message)
   if (len==0) return;
 
   char* s = new char[len+1];
-  strncpy(s,bp,len);
+  strncpy(s,bp,len+1);
   ESP_LOGI(TAG, "Send %s",s);
 
   RC4_crypt(&m_crypto_tx1, &m_crypto_tx2, (uint8_t*)s, len);

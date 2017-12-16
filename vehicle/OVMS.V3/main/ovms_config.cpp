@@ -302,7 +302,7 @@ void OvmsConfig::DeleteInstance(std::string param, std::string instance)
 std::string OvmsConfig::GetParamValue(std::string param, std::string instance, std::string defvalue)
   {
   OvmsConfigParam *p = CachedParam(param);
-  if (p)
+  if (p && p->IsDefined(instance))
     {
     return p->GetValue(instance);
     }
@@ -456,9 +456,12 @@ void OvmsConfigParam::LoadConfig()
 
 void OvmsConfigParam::SetValue(std::string instance, std::string value)
   {
-  m_map[instance] = value;
-  RewriteConfig();
-  MyEvents.SignalEvent("config.changed", this);
+  if (m_map.find(instance) == m_map.end() || m_map[instance] != value)
+    {
+    m_map[instance] = value;
+    RewriteConfig();
+    MyEvents.SignalEvent("config.changed", this);
+    }
   }
 
 void OvmsConfigParam::DeleteParam()
