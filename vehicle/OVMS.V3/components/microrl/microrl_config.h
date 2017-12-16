@@ -67,17 +67,29 @@ small and embedded devices. Overhead is 2 char on each saved line*/
 #define _RING_HISTORY_LEN 64
 
 /*
+Size of the buffer used for piecemeal printing of part or all of the command
+line.  Allocated on the stack.  Must be at least 16. */
+#define _PRINT_BUFFER_LEN 40
+
+/*
 Enable Handling terminal ESC sequence. If disabling, then cursor arrow, HOME, END will not work,
 use Ctrl+A(B,F,P,N,A,E,H,K,U,C) see README, but decrease code memory.*/
 #define _USE_ESC_SEQ
 
 /*
-Use snprintf from you standard complier library, but it gives some overhead.
-If not defined, use my own u16int_to_str variant, it's save about 800 byte of code size
-on AVR (avr-gcc build).
+Use sprintf from you standard complier library, but it gives some overhead.
+If not defined, use my own number conversion code, it's save about 800 byte of
+code size on AVR (avr-gcc build).
 Try to build with and without, and compare total code size for tune library.
 */
 #define _USE_LIBC_STDIO
+
+/*
+Use a single carriage return character to move the cursor to the left margin
+rather than moving left by a large number.  This reduces the number of
+characters sent to the terminal, but should be left undefined if the terminal
+will also simulate a linefeed when it receives the carriage return. */
+#define _USE_CARRIAGE_RETURN
 
 /*
 Enable 'interrupt signal' callback, if user press Ctrl+C */

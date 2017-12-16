@@ -293,91 +293,88 @@ inline static void terminal_newline (microrl_t * pThis)
 	pThis->print (pThis, ENDL);
 }
 
-#ifndef _USE_LIBC_STDIO
 //*****************************************************************************
-// convert 16 bit value to string
-// 0 value not supported!!! just make empty string
-// Returns pointer to a buffer tail
-static char *u16bit_to_str (unsigned int nmb, char * buf)
+// set cursor at current position + offset (positive or negative).
+// the provided buffer must be at least 7 bytes long.
+static char* generate_move_cursor (char* str, int offset)
 {
-	char tmp_str [6] = {0,};
-	int i = 0, j;
-	if (nmb <= 0xFFFF) {
-		while (nmb > 0) {
-			tmp_str[i++] = (nmb % 10) + '0';
-			nmb /=10;
-		}
-		for (j = 0; j < i; ++j)
-			*(buf++) = tmp_str [i-j-1];
+	char c = 'C';
+	if (offset > 999)
+		offset = 999;
+	if (offset < -999)
+		offset = -999;
+	if (offset < 0) {
+		offset = -offset;
+		c = 'D';
+	} else if (offset == 0) {
+		*str = '\0';
+		return str;
 	}
-	*buf = '\0';
-	return buf;
-}
-#endif
 
+#ifdef _USE_LIBC_STDIO
+	str += sprintf (str, "\033[%d%c", offset, c);
+#else
+	*str++ = '\033';
+	*str++ = '[';
+	char tmp_str [4] = {0,};
+	int i = 0, j;
+	while (offset > 0) {
+		tmp_str[i++] = (offset % 10) + '0';
+		offset /=10;
+	}
+	for (j = 0; j < i; ++j)
+		*str++ = tmp_str [i-j-1];
+	}
+	*str++ = c;
+	*str = '\0';
+#endif
+	return str;
+}
 
 //*****************************************************************************
-// set cursor at position from begin cmdline (after prompt) + offset
+// set cursor at current position + offset (positive or negative)
 static void terminal_move_cursor (microrl_t * pThis, int offset)
 {
 	char str[16] = {0,};
-#ifdef _USE_LIBC_STDIO
-	if (offset > 0) {
-		snprintf (str, 16, "\033[%dC", offset);
-	} else if (offset < 0) {
-		snprintf (str, 16, "\033[%dD", -(offset));
+	if (offset != 0) {
+		generate_move_cursor (str, offset);
+		pThis->print (pThis, str);
 	}
-#else
-	char *endstr;
-	strcpy (str, "\033[");
-	if (offset > 0) {
-		endstr = u16bit_to_str (offset, str+2);
-		strcpy (endstr, "C");
-	} else if (offset < 0) {
-		endstr = u16bit_to_str (-(offset), str+2);
-		strcpy (endstr, "D");
-	} else
-		return;
-#endif
-	pThis->print (pThis, str);
 }
 
 //*****************************************************************************
-static void terminal_reset_cursor (microrl_t * pThis)
+// print cmdline to screen, replace '\0' to whitespace
+static void terminal_print_line (microrl_t * pThis, int pos, int reset)
 {
-	char str[16];
-#ifdef _USE_LIBC_STDIO
-	snprintf (str, 16, "\033[%dD\033[%dC", \
-						_COMMAND_LINE_LEN + _PROMPT_LEN + 2, _PROMPT_LEN);
-
+	char str[_PRINT_BUFFER_LEN];
+	char *j = str;
+	if (reset) {
+#ifdef _USE_CARRIAGE_RETURN
+		*j++ = '\r';
+		j = generate_move_cursor(j, _PROMPT_LEN + pos);
 #else
-	char *endstr;
-	strcpy (str, "\033[");
-	endstr = u16bit_to_str ( _COMMAND_LINE_LEN + _PROMPT_LEN + 2,str+2);
-	strcpy (endstr, "D\033["); endstr += 3;
-	endstr = u16bit_to_str (_PROMPT_LEN, endstr);
-	strcpy (endstr, "C");
+		j = generate_move_cursor(j, -(_COMMAND_LINE_LEN + _PROMPT_LEN + 2));
+		j = generate_move_cursor(j, _PROMPT_LEN + pos);
 #endif
-	pThis->print (pThis, str);
-}
-
-//*****************************************************************************
-// print cmdline to screen, replace '\0' to wihitespace
-static void terminal_print_line (microrl_t * pThis, int pos, int cursor)
-{
-	pThis->print (pThis, "\033[K");    // delete all from cursor to end
-
-	char nch [] = {0,0};
-	int i;
-	for (i = pos; i < pThis->cmdlen; i++) {
-		nch [0] = pThis->cmdline [i];
-		if (nch[0] == '\0')
-			nch[0] = ' ';
-		pThis->print (pThis, nch);
 	}
-
-	terminal_reset_cursor (pThis);
-	terminal_move_cursor (pThis, cursor);
+	for (int i = pos; i < pThis->cmdlen; i++) {
+		*j++ = (pThis->cmdline [i] == '\0') ? ' ' : pThis->cmdline [i];
+		if (j-str == sizeof(str)-1) {
+			*j = '\0';
+			pThis->print (pThis, str);
+			j = str;
+		}
+	}
+	if (j - str + 3+6+1 > _PRINT_BUFFER_LEN) {
+			*j = '\0';
+			pThis->print (pThis, str);
+			j = str;
+	}		
+	*j++ = '\033';   // delete all past end of text
+	*j++ = '[';
+	*j++ = 'K';
+	generate_move_cursor (j, pThis->cursor - pThis->cmdlen);
+	pThis->print (pThis, str);
 }
 
 //*****************************************************************************
@@ -417,8 +414,7 @@ static void hist_search (microrl_t * pThis, int dir)
 	if (len >= 0) {
 		pThis->cmdline[len] = '\0';
 		pThis->cursor = pThis->cmdlen = len;
-		terminal_reset_cursor (pThis);
-		terminal_print_line (pThis, 0, pThis->cursor);
+		terminal_print_line (pThis, 0, 1);
 	}
 }
 #endif
@@ -463,7 +459,7 @@ static int escape_process (microrl_t * pThis, char ch)
 		}
 	} else if (ch == '~') {
 		if (pThis->escape_seq == _ESC_HOME) {
-			terminal_reset_cursor (pThis);
+			terminal_move_cursor (pThis, -pThis->cursor);
 			pThis->cursor = 0;
 			return 1;
 		} else if (pThis->escape_seq == _ESC_END) {
@@ -502,17 +498,16 @@ static int microrl_insert_text (microrl_t * pThis, char * text, int len)
 }
 
 //*****************************************************************************
-// remove one char at cursor
-static void microrl_backspace (microrl_t * pThis)
+// remove len chars backwards at cursor
+static void microrl_backspace (microrl_t * pThis, int len)
 {
-	if (pThis->cursor > 0) {
-		terminal_backspace (pThis);
-		memmove (pThis->cmdline + pThis->cursor-1,
+	if (pThis->cursor >= len) {
+		memmove (pThis->cmdline + pThis->cursor-len,
 						 pThis->cmdline + pThis->cursor,
-						 pThis->cmdlen-pThis->cursor+1);
-		pThis->cursor--;
+						 pThis->cmdlen-pThis->cursor+len);
+		pThis->cursor -= len;
 		pThis->cmdline [pThis->cmdlen] = '\0';
-		pThis->cmdlen--;
+		pThis->cmdlen -= len;
 	}
 }
 
@@ -520,11 +515,13 @@ static void microrl_backspace (microrl_t * pThis)
 // remove one char forward at cursor
 static void microrl_delete (microrl_t * pThis)
 {
-	memmove (pThis->cmdline + pThis->cursor,
-					 pThis->cmdline + pThis->cursor+1,
-					 pThis->cmdlen-pThis->cursor+1);
+	if (pThis->cmdlen > 0) {
+		memmove (pThis->cmdline + pThis->cursor,
+						 pThis->cmdline + pThis->cursor+1,
+						 pThis->cmdlen-pThis->cursor+1);
 		pThis->cmdline [pThis->cmdlen] = '\0';
 		pThis->cmdlen--;
+	}
 }
 
 #ifdef _USE_COMPLETE
@@ -572,6 +569,7 @@ static void microrl_get_complite (microrl_t * pThis)
 	if (compl_token[0] != NULL) {
 		int i = 0;
 		int len;
+		int pos = pThis->cursor;
 
 		if (compl_token[1] == NULL) {
 			len = strlen (compl_token[0]);
@@ -585,6 +583,7 @@ static void microrl_get_complite (microrl_t * pThis)
 			}
 			terminal_newline (pThis);
 			print_prompt (pThis);
+			pos = 0;
 		}
 
 		if (len) {
@@ -593,8 +592,7 @@ static void microrl_get_complite (microrl_t * pThis)
 			if (compl_token[1] == NULL)
 				microrl_insert_text (pThis, " ", 1);
 		}
-		terminal_reset_cursor (pThis);
-		terminal_print_line (pThis, 0, pThis->cursor);
+		terminal_print_line (pThis, pos, 0);
 	}
 }
 #endif
@@ -685,10 +683,9 @@ void microrl_insert_char (microrl_t * pThis, int ch)
 			break;
 			//-----------------------------------------------------
 			case KEY_NAK: // ^U
-					while (pThis->cursor > 0) {
-					microrl_backspace (pThis);
-				}
-				terminal_print_line (pThis, 0, pThis->cursor);
+				if (pThis->cursor > 0)
+					microrl_backspace (pThis, pThis->cursor);
+				terminal_print_line (pThis, 0, 1);
 			break;
 			//-----------------------------------------------------
 			case KEY_VT:  // ^K
@@ -702,7 +699,7 @@ void microrl_insert_char (microrl_t * pThis, int ch)
 			break;
 			//-----------------------------------------------------
 			case KEY_SOH: // ^A
-				terminal_reset_cursor (pThis);
+				terminal_move_cursor (pThis, -pThis->cursor);
 				pThis->cursor = 0;
 			break;
 			//-----------------------------------------------------
@@ -734,20 +731,24 @@ void microrl_insert_char (microrl_t * pThis, int ch)
 			//-----------------------------------------------------
 			case KEY_DEL: // Backspace
 			case KEY_BS: // ^H
-				microrl_backspace (pThis);
-				terminal_print_line (pThis, pThis->cursor, pThis->cursor);
+				if (pThis->cursor > 0) {
+					microrl_backspace (pThis, 1);
+					if (pThis->cursor == pThis->cmdlen)
+						terminal_backspace (pThis);
+					else
+						terminal_print_line (pThis, pThis->cursor, 1);
+				}
 			break;
 			//-----------------------------------------------------
 			case KEY_EOT: // ^D
 				microrl_delete (pThis);
-				terminal_print_line (pThis, pThis->cursor, pThis->cursor);
+				terminal_print_line (pThis, pThis->cursor, 0);
 			break;
 			//-----------------------------------------------------
 			case KEY_DC2: // ^R
 				terminal_newline (pThis);
 				print_prompt (pThis);
-				terminal_reset_cursor (pThis);
-				terminal_print_line (pThis, 0, pThis->cursor);
+				terminal_print_line (pThis, 0, 0);
 			break;
 			//-----------------------------------------------------
 #ifdef _USE_CTLR_C
@@ -760,9 +761,15 @@ void microrl_insert_char (microrl_t * pThis, int ch)
 			default:
 			if (((ch == ' ') && (pThis->cmdlen == 0)) || IS_CONTROL_CHAR(ch))
 				break;
-			if (microrl_insert_text (pThis, (char*)&ch, 1))
-				terminal_print_line (pThis, pThis->cursor-1, pThis->cursor);
-
+			if (microrl_insert_text (pThis, (char*)&ch, 1)) {
+				if (pThis->cursor == pThis->cmdlen) {
+					char nch [] = {0,0};
+					nch[0] = ch;
+					pThis->print (pThis, nch);
+				} else {
+					terminal_print_line (pThis, pThis->cursor-1, 0);
+				}
+			}
 			break;
 		}
 #ifdef _USE_ESC_SEQ
