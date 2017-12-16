@@ -347,19 +347,31 @@ void OvmsServerV2::ProcessCommand(const char* payload)
   {
   int command = atoi(payload);
   char *sep = index(payload,',');
-  int k;
+  int k = 0;
 
   OvmsVehicle* vehicle = MyVehicleFactory.ActiveVehicle();
 
   std::ostringstream* buffer = new std::ostringstream();
-  switch (command)
+
+  if (vehicle)
+    {
+    // Ask vehicle to process command first:
+    std::string rt;
+    OvmsVehicle::vehicle_command_t vc = vehicle->ProcessMsgCommand(rt, command, sep ? sep+1 : NULL);
+    if (vc != OvmsVehicle::NotImplemented)
+      {
+      *buffer << "MP-0 c" << command << "," << (1-vc) << "," << rt;
+      k = 1;
+      }
+    }
+
+  if (!k) switch (command)
     {
     case 1: // Request feature list
       // Notes:
       // - V2 only supported integer values, V3 values may be text
       // - V2 only supported 16 features, V3 supports 32
       {
-      OvmsVehicle* vehicle = MyVehicleFactory.ActiveVehicle();
       for (k=0;k<32;k++)
         {
         *buffer << "MP-0 c1,0," << k << ",32," << (vehicle ? vehicle->GetFeature(k) : "0");
@@ -373,7 +385,6 @@ void OvmsServerV2::ProcessCommand(const char* payload)
       {
       int rc = 1;
       const char* rt = "";
-      OvmsVehicle* vehicle = MyVehicleFactory.ActiveVehicle();
       if (!vehicle)
         rt = "No active vehicle";
       else if (!sep)

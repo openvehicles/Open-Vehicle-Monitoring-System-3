@@ -131,6 +131,7 @@ class OvmsVehicle
 
   public:
     virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t ProcessMsgCommand(std::string &result, int command, const char* args);
 
   public:
     virtual bool SetFeature(int key, const char* value);

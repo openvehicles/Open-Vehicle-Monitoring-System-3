@@ -1056,3 +1056,12 @@ const std::string OvmsVehicle::GetFeature(int key)
     }
   }
 
+/**
+ * ProcessMsgCommand: V2 compatibility protocol message command processing
+ *  result: optional payload or message to return to the caller with the command response
+ */
+OvmsVehicle::vehicle_command_t OvmsVehicle::ProcessMsgCommand(std::string &result, int command, const char* args)
+  {
+  return NotImplemented;
+  }
+
