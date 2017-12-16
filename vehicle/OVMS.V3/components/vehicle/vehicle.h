@@ -133,6 +133,10 @@ class OvmsVehicle
     virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
 
   public:
+    virtual bool SetFeature(int key, const char* value);
+    virtual const std::string GetFeature(int key);
+
+  public:
     typedef struct
       {
       uint32_t txmoduleid;

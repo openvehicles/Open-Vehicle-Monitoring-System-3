@@ -355,10 +355,14 @@ void OvmsServerV2::ProcessCommand(const char* payload)
   switch (command)
     {
     case 1: // Request feature list
+      // Notes:
+      // - V2 only supported integer values, V3 values may be text
+      // - V2 only supported 16 features, V3 supports 32
       {
-      for (k=0;k<16;k++)
+      OvmsVehicle* vehicle = MyVehicleFactory.ActiveVehicle();
+      for (k=0;k<32;k++)
         {
-        *buffer << "MP-0 c1,0," << k << ",16,0";
+        *buffer << "MP-0 c1,0," << k << ",32," << (vehicle ? vehicle->GetFeature(k) : "0");
         Transmit(*buffer);
         buffer->str("");
         buffer->clear();
@@ -367,7 +371,23 @@ void OvmsServerV2::ProcessCommand(const char* payload)
       }
     case 2: // Set feature
       {
-      *buffer << "MP-0 c2,1";
+      int rc = 1;
+      const char* rt = "";
+      OvmsVehicle* vehicle = MyVehicleFactory.ActiveVehicle();
+      if (!vehicle)
+        rt = "No active vehicle";
+      else if (!sep)
+        rt = "Missing feature key";
+      else
+        {
+        k = atoi(sep+1);
+        sep = index(sep+1,',');
+        if (vehicle->SetFeature(k, sep ? sep+1 : ""))
+          rc = 0;
+        else
+          rt = "Feature not supported by vehicle";
+        }
+      *buffer << "MP-0 c2," << rc << "," << rt;
       break;
       }
     case 3: // Request parameter list
@@ -387,16 +407,23 @@ void OvmsServerV2::ProcessCommand(const char* payload)
       }
     case 4: // Set parameter
       {
-      if (sep)
+      int rc = 1;
+      const char* rt = "";
+      if (!sep)
+        rt = "Missing parameter key";
+      else
         {
-        k = atoi(sep);
+        k = atoi(sep+1);
         if ((k<PMAX_MAX)&&(pmap[k].param[0] != 0))
           {
           sep = index(sep+1,',');
-          MyConfig.SetParamValue(pmap[k].param, pmap[k].instance, sep+1);
+          MyConfig.SetParamValue(pmap[k].param, pmap[k].instance, sep ? sep+1 : "");
+          rc = 0;
           }
+        else
+          rt = "Parameter key not supported";
         }
-      *buffer << "MP-0 c4,0";
+      *buffer << "MP-0 c4," << rc << "," << rt;
       break;
       }
     case 5: // Reboot

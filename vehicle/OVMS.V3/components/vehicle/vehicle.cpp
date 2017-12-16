@@ -1009,3 +1009,50 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
       break;
     }
   }
+
+/**
+ * SetFeature: V2 compatibility config wrapper
+ *  Note: V2 only supported integer values, V3 values may be text
+ */
+bool OvmsVehicle::SetFeature(int key, const char *value)
+  {
+  switch (key)
+    {
+    case 8:
+      MyConfig.SetParamValue("vehicle", "stream", value);
+      return true;
+    case 9:
+      MyConfig.SetParamValue("vehicle", "minsoc", value);
+      return true;
+    case 14:
+      MyConfig.SetParamValue("vehicle", "carbits", value);
+      return true;
+    case 15:
+      MyConfig.SetParamValue("vehicle", "canwrite", value);
+      return true;
+    default:
+      return false;
+    }
+  }
+
+/**
+ * GetFeature: V2 compatibility config wrapper
+ *  Note: V2 only supported integer values, V3 values may be text
+ */
+const std::string OvmsVehicle::GetFeature(int key)
+  {
+  switch (key)
+    {
+    case 8:
+      return MyConfig.GetParamValue("vehicle", "stream", "0");
+    case 9:
+      return MyConfig.GetParamValue("vehicle", "minsoc", "0");
+    case 14:
+      return MyConfig.GetParamValue("vehicle", "carbits", "0");
+    case 15:
+      return MyConfig.GetParamValue("vehicle", "canwrite", "0");
+    default:
+      return "0";
+    }
+  }
+
