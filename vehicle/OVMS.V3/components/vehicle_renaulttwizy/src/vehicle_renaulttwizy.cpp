@@ -1775,3 +1775,41 @@ void OvmsVehicleRenaultTwizy::DoNotify()
 }
 
 
+/**
+ * ProcessMsgCommand: V2 compatibility protocol message command processing
+ *  result: optional payload or message to return to the caller with the command response
+ */
+
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::ProcessMsgCommand(std::string &result, int command, const char* args)
+{
+  switch (command)
+  {
+    case CMD_BatteryAlert:
+      MyNotify.NotifyCommand("alert", "xrt batt status");
+      return Success;
+    
+    case CMD_BatteryStatus:
+      // send complete set of battery status records:
+      BatterySendDataUpdate(true);
+      return Success;
+    
+    case CMD_PowerUsageNotify:
+      // send power usage text report:
+      // args: <mode>: 't' = totals, fallback 'e' = efficiency
+      if (args && (args[0] | 0x20) == 't')
+        MyNotify.NotifyCommand("info", "xrt power totals");
+      else
+        MyNotify.NotifyCommand("info", "xrt power report");
+      return Success;
+    
+    case CMD_PowerUsageStats:
+      // send power usage data record:
+      MyNotify.NotifyCommand("data", "xrt power stats");
+      return Success;
+    
+    default:
+      return NotImplemented;
+  }
+}
+
+

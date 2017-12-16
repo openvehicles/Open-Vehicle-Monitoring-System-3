@@ -40,6 +40,21 @@
 
 using namespace std;
 
+
+// Twizy specific MSG protocol commands:
+#define CMD_Debug                   200 // ()
+#define CMD_QueryRange              201 // ()
+#define CMD_SetRange                202 // (maxrange)
+#define CMD_QueryChargeAlerts       203 // ()
+#define CMD_SetChargeAlerts         204 // (range, soc)
+#define CMD_BatteryAlert            205 // ()
+#define CMD_BatteryStatus           206 // ()
+#define CMD_PowerUsageNotify        207 // (mode)
+#define CMD_PowerUsageStats         208 // ()
+#define CMD_ResetLogs               209 // (which, start)
+#define CMD_QueryLogs               210 // (which, start)
+
+
 class OvmsVehicleRenaultTwizy : public OvmsVehicle
 {
   
@@ -78,6 +93,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
     vehicle_command_t CommandPower(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     vehicle_command_t CommandBatt(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    vehicle_command_t ProcessMsgCommand(std::string &result, int command, const char* args);
 
   
   // --------------------------------------------------------------------------
@@ -317,7 +333,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     void BatteryReset();
     void FormatPackData(int verbosity, OvmsWriter* writer, int pack);
     void FormatCellData(int verbosity, OvmsWriter* writer, int cell);
-    void BatterySendDataUpdate();
+    void BatterySendDataUpdate(bool force = false);
     void FormatBatteryStatus(int verbosity, OvmsWriter* writer, int pack);
     void FormatBatteryVolts(int verbosity, OvmsWriter* writer, bool show_deviations);
     void FormatBatteryTemps(int verbosity, OvmsWriter* writer, bool show_deviations);
