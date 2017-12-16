@@ -52,7 +52,10 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
 
   public:
     void Ticker1(uint32_t ticker);
+    void Ticker10(uint32_t ticker);
     void ConfigChanged(OvmsConfigParam* param);
+    bool SetFeature(int key, const char* value);
+    const std::string GetFeature(int key);
     void EventListener(string event, void* data);
   
   private:
@@ -350,7 +353,10 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     
     signed char twizy_button_cnt = 0;           // will count key presses (errors) in STOP mode (msg 081)
     
-    
+    #define CFG_DEFAULT_KD_THRESHOLD    35
+    #define CFG_DEFAULT_KD_COMPZERO     120
+    int cfg_kd_threshold = CFG_DEFAULT_KD_THRESHOLD;
+    int cfg_kd_compzero = CFG_DEFAULT_KD_COMPZERO;
     
 };
 

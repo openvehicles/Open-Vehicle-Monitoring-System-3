@@ -26,6 +26,12 @@
 #ifndef __rt_types_h__
 #define __rt_types_h__
 
+// Macro utils:
+
+#define XSTR(x)   STR(x)
+#define STR(x)    #x
+
+
 // Legacy type compatibility:
 
 typedef uint8_t UINT8;
