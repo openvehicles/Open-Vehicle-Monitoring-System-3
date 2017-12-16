@@ -302,7 +302,7 @@ void OvmsConfig::DeleteInstance(std::string param, std::string instance)
 std::string OvmsConfig::GetParamValue(std::string param, std::string instance, std::string defvalue)
   {
   OvmsConfigParam *p = CachedParam(param);
-  if (p)
+  if (p && p->IsDefined(instance))
     {
     return p->GetValue(instance);
     }
