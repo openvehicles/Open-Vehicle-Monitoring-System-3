@@ -1356,20 +1356,45 @@ void OvmsServerV2::HandleNotifyDataAck(uint32_t ack)
 
 void OvmsServerV2::MetricModified(OvmsMetric* metric)
   {
-  // A metric has been changed...
+  // A metric has been changed: if peers are connected,
+  //  check for important changes that should be transmitted ASAP:
+
+  if (StandardMetrics.ms_s_v2_peers->AsInt() == 0)
+    return;
 
   if ((metric == StandardMetrics.ms_v_charge_climit)||
       (metric == StandardMetrics.ms_v_charge_state)||
       (metric == StandardMetrics.ms_v_charge_substate)||
       (metric == StandardMetrics.ms_v_charge_mode)||
-      (metric == StandardMetrics.ms_v_bat_cac))
+      (metric == StandardMetrics.ms_v_charge_inprogress)||
+      (metric == StandardMetrics.ms_v_env_cooling)||
+      (metric == StandardMetrics.ms_v_bat_cac)||
+      (metric == StandardMetrics.ms_v_bat_soh))
     {
-    m_now_environment = true;
     m_now_stat = true;
     }
 
-  if (StandardMetrics.ms_s_v2_peers->AsInt() > 0)
-    m_now_environment = true; // Transmit environment message if necessary
+  if ((metric == StandardMetrics.ms_v_door_fl)||
+      (metric == StandardMetrics.ms_v_door_fr)||
+      (metric == StandardMetrics.ms_v_door_chargeport)||
+      (metric == StandardMetrics.ms_v_charge_pilot)||
+      (metric == StandardMetrics.ms_v_charge_inprogress)||
+      (metric == StandardMetrics.ms_v_env_handbrake)||
+      (metric == StandardMetrics.ms_v_env_on)||
+      (metric == StandardMetrics.ms_v_env_locked)||
+      (metric == StandardMetrics.ms_v_env_valet)||
+      (metric == StandardMetrics.ms_v_door_hood)||
+      (metric == StandardMetrics.ms_v_door_trunk)||
+      (metric == StandardMetrics.ms_v_env_awake)||
+      (metric == StandardMetrics.ms_v_env_cooling)||
+      (metric == StandardMetrics.ms_v_env_alarm)||
+      (metric == StandardMetrics.ms_v_door_rl)||
+      (metric == StandardMetrics.ms_v_door_rr)||
+      (metric == StandardMetrics.ms_v_env_charging12v)||
+      (metric == StandardMetrics.ms_v_env_hvac))
+    {
+    m_now_environment = true;
+    }
   }
 
 bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry)
