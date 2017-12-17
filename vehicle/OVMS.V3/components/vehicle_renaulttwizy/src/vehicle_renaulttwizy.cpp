@@ -128,6 +128,9 @@ void OvmsVehicleRenaultTwizy::ConfigChanged(OvmsConfigParam* param)
   //  
   //  gpslogint         Seconds between RT-GPS-Log entries while driving (Default: 0 = disabled)
   //  
+  //  kd_threshold      Kickdown threshold (Default: 35)
+  //  kd_compzero       Kickdown pedal compensation (Default: 120)
+  //  
   
   cfg_maxrange = MyConfig.GetParamValueInt("x.rt", "maxrange", CFG_DEFAULT_MAXRANGE);
   if (cfg_maxrange <= 0)
@@ -152,6 +155,108 @@ void OvmsVehicleRenaultTwizy::ConfigChanged(OvmsConfigParam* param)
   twizy_flags.EnableInputs = MyConfig.GetParamValueBool("x.rt", "console", false);
   
   cfg_gpslog_interval = MyConfig.GetParamValueInt("x.rt", "gpslogint", 0);
+
+  cfg_kd_threshold = MyConfig.GetParamValueInt("x.rt", "kd_threshold", CFG_DEFAULT_KD_THRESHOLD);
+  cfg_kd_compzero = MyConfig.GetParamValueInt("x.rt", "kd_compzero", CFG_DEFAULT_KD_COMPZERO);
+}
+
+
+/**
+ * SetFeature: V2 compatibility config wrapper
+ *  Note: V2 only supported integer values, V3 values may be text
+ */
+bool OvmsVehicleRenaultTwizy::SetFeature(int key, const char *value)
+{
+  switch (key)
+  {
+    case 0:
+      MyConfig.SetParamValue("x.rt", "gpslogint", value);
+      return true;
+    case 1:
+      MyConfig.SetParamValue("x.rt", "kd_threshold", value);
+      return true;
+    case 2:
+      MyConfig.SetParamValue("x.rt", "kd_compzero", value);
+      return true;
+    case 6:
+      MyConfig.SetParamValue("x.rt", "chargemode", value);
+      return true;
+    case 7:
+      MyConfig.SetParamValue("x.rt", "chargelevel", value);
+      return true;
+    case 10:
+      MyConfig.SetParamValue("x.rt", "suffsoc", value);
+      return true;
+    case 11:
+      MyConfig.SetParamValue("x.rt", "suffrange", value);
+      return true;
+    case 12:
+      MyConfig.SetParamValue("x.rt", "maxrange", value);
+      return true;
+    case 13:
+      MyConfig.SetParamValue("x.rt", "cap_act_prc", value);
+      return true;
+    case 15:
+    {
+      int bits = atoi(value);
+      MyConfig.SetParamValueBool("x.rt", "canwrite",  (bits& 1)!=0);
+      MyConfig.SetParamValueBool("x.rt", "autoreset", (bits& 2)==0);
+      MyConfig.SetParamValueBool("x.rt", "kickdown",  (bits& 4)==0);
+      MyConfig.SetParamValueBool("x.rt", "autopower", (bits& 8)==0);
+      MyConfig.SetParamValueBool("x.rt", "console",   (bits&16)!=0);
+      return true;
+    }
+    case 16:
+      MyConfig.SetParamValue("x.rt", "cap_nom_ah", value);
+      return true;
+    default:
+      return OvmsVehicle::SetFeature(key, value);
+  }
+}
+
+/**
+ * GetFeature: V2 compatibility config wrapper
+ *  Note: V2 only supported integer values, V3 values may be text
+ */
+const std::string OvmsVehicleRenaultTwizy::GetFeature(int key)
+{
+  switch (key)
+  {
+    case 0:
+      return MyConfig.GetParamValue("x.rt", "gpslogint", XSTR(0));
+    case 1:
+      return MyConfig.GetParamValue("x.rt", "kd_threshold", XSTR(CFG_DEFAULT_KD_THRESHOLD));
+    case 2:
+      return MyConfig.GetParamValue("x.rt", "kd_compzero", XSTR(CFG_DEFAULT_KD_COMPZERO));
+    case 6:
+      return MyConfig.GetParamValue("x.rt", "chargemode", XSTR(0));
+    case 7:
+      return MyConfig.GetParamValue("x.rt", "chargelevel", XSTR(0));
+    case 10:
+      return MyConfig.GetParamValue("x.rt", "suffsoc", XSTR(0));
+    case 11:
+      return MyConfig.GetParamValue("x.rt", "suffrange", XSTR(0));
+    case 12:
+      return MyConfig.GetParamValue("x.rt", "maxrange", XSTR(CFG_DEFAULT_MAXRANGE));
+    case 13:
+      return MyConfig.GetParamValue("x.rt", "cap_act_prc", XSTR(100));
+    case 15:
+    {
+      int bits =
+        ( MyConfig.GetParamValueBool("x.rt", "canwrite",  false) ?  1 : 0) |
+        (!MyConfig.GetParamValueBool("x.rt", "autoreset", true)  ?  2 : 0) |
+        (!MyConfig.GetParamValueBool("x.rt", "kickdown",  true)  ?  4 : 0) |
+        (!MyConfig.GetParamValueBool("x.rt", "autopower", true)  ?  8 : 0) |
+        ( MyConfig.GetParamValueBool("x.rt", "console",   false) ? 16 : 0);
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }
+    case 16:
+      return MyConfig.GetParamValue("x.rt", "cap_nom_ah", XSTR(CFG_DEFAULT_CAPACITY));
+    default:
+      return OvmsVehicle::GetFeature(key);
+  }
 }
 
 
@@ -164,7 +269,7 @@ void OvmsVehicleRenaultTwizy::EventListener(string event, void* data)
   if (event == "gps.lock.acquired")
   {
     // immediately update our track log:
-    SendGPSLog();
+    RequestNotify(SEND_GPSLog);
   }
 }
 
@@ -1204,6 +1309,74 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
 
 
 /**
+ * Ticker10: per 10 second ticker
+ */
+
+void OvmsVehicleRenaultTwizy::Ticker10(uint32_t ticker)
+{
+  // Check if CAN-Bus has turned offline:
+  if (twizy_status & CAN_STATUS_ONLINE)
+  {
+    // Clear online flag to test for CAN activity:
+    twizy_status &= ~CAN_STATUS_ONLINE;
+
+#ifdef OVMS_TWIZY_CFG
+    // TODO
+    // Check for new SEVCON fault:
+    if (readsdo(0x5320,0x00) == 0) {
+      if (twizy_sdo.data && (twizy_sdo.data != twizy_alert_code)) {
+        twizy_alert_code = twizy_sdo.data;
+        twizy_notify(SEND_CodeAlert);
+      }
+    }
+#endif // #ifdef #ifdef OVMS_TWIZY_CFG
+  }
+  else
+  {
+    // CAN offline: implies...
+    twizy_status = CAN_STATUS_OFFLINE;
+    *StdMetrics.ms_v_charge_voltage = (float) 0;
+    twizy_speed = 0;
+    twizy_power = 0;
+    twizy_power_min = twizy_current_min = 32767;
+    twizy_power_max = twizy_current_max = -32768;
+  }
+  
+  
+  // Control additional charger fan by RB1:
+  // Elips 2000W specified operation range is -20..+50 °C
+  // => switch on additional fan above 45 °C, off below 45 °C
+  // As we don't get temperature updates after switching the
+  // Twizy off, we need the timer to keep the fan ON for a while.
+
+  if (twizy_flags.CarAwake || twizy_flags.Charging) {
+    if (StdMetrics.ms_v_charge_temp->AsFloat() > TWIZY_FAN_THRESHOLD) {
+      // TODO PORTBbits.RB1 = 1;
+      if (twizy_fan_timer == 0)
+        ESP_LOGW(TAG, "charger temperature %.1f celcius; extra fan switched ON",
+          StdMetrics.ms_v_charge_temp->AsFloat());
+      twizy_fan_timer = TWIZY_FAN_OVERSHOOT * 6;
+    }
+    else if (StdMetrics.ms_v_charge_temp->AsFloat() < TWIZY_FAN_THRESHOLD) {
+      // TODO PORTBbits.RB1 = 0;
+      if (twizy_fan_timer != 0)
+        ESP_LOGI(TAG, "charger temperature %.1f celcius; extra fan switched OFF",
+          StdMetrics.ms_v_charge_temp->AsFloat());
+      twizy_fan_timer = 0;
+    }
+  }
+  else {
+    if (twizy_fan_timer > 0 && --twizy_fan_timer == 0) {
+      // TODO PORTBbits.RB1 = 0;
+      if (twizy_fan_timer != 0)
+        ESP_LOGI(TAG, "charger extra fan overshoot end; switched OFF");
+    }
+  }
+  
+}
+
+
+/**
  * UpdateMaxRange: get MAXRANGE with temperature compensation
  *  (Reminder: this could be a listener on ms_v_bat_temp…)
  */
@@ -1599,6 +1772,44 @@ void OvmsVehicleRenaultTwizy::DoNotify()
     twizy_notifications &= ~SEND_SDOLog;
   }
   
+}
+
+
+/**
+ * ProcessMsgCommand: V2 compatibility protocol message command processing
+ *  result: optional payload or message to return to the caller with the command response
+ */
+
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::ProcessMsgCommand(std::string &result, int command, const char* args)
+{
+  switch (command)
+  {
+    case CMD_BatteryAlert:
+      MyNotify.NotifyCommand("alert", "xrt batt status");
+      return Success;
+    
+    case CMD_BatteryStatus:
+      // send complete set of battery status records:
+      BatterySendDataUpdate(true);
+      return Success;
+    
+    case CMD_PowerUsageNotify:
+      // send power usage text report:
+      // args: <mode>: 't' = totals, fallback 'e' = efficiency
+      if (args && (args[0] | 0x20) == 't')
+        MyNotify.NotifyCommand("info", "xrt power totals");
+      else
+        MyNotify.NotifyCommand("info", "xrt power report");
+      return Success;
+    
+    case CMD_PowerUsageStats:
+      // send power usage data record:
+      MyNotify.NotifyCommand("data", "xrt power stats");
+      return Success;
+    
+    default:
+      return NotImplemented;
+  }
 }
 
 
