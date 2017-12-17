@@ -141,9 +141,20 @@ void location_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 void location_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   const char *name = argv[0];
-  float latitude = atof(argv[1]);
-  float longitude = atof(argv[2]);
+  float latitude, longitude;
   int radius = LOCATION_DEFRADIUS;
+
+  if (argc >= 3)
+    {
+    latitude = atof(argv[1]);
+    longitude = atof(argv[2]);
+    }
+  else
+    {
+    latitude = MyLocations.m_latitude;
+    longitude = MyLocations.m_longitude;
+    }
+
   if (argc > 3) radius = atoi(argv[3]);
 
   char val[32];
@@ -212,7 +223,7 @@ OvmsLocations::OvmsLocations()
   // Register our commands
   OvmsCommand* cmd_location = MyCommandApp.RegisterCommand("location","LOCATION framework",NULL, "", 0, 0, true);
   cmd_location->RegisterCommand("list","Show all locations",location_list, "", 0, 0, true);
-  cmd_location->RegisterCommand("set","Set the position of a location",location_set, "<name> <latitude> <longitude> [<radius>]", 3, 4, true);
+  cmd_location->RegisterCommand("set","Set the position of a location",location_set, "<name> [<latitude> <longitude> [<radius>]]", 1, 4, true);
   cmd_location->RegisterCommand("rm","Remove a defined location",location_rm, "<name>", 1, 1, true);
   cmd_location->RegisterCommand("status","Show location status",location_status, "", 0, 0, true);
 
