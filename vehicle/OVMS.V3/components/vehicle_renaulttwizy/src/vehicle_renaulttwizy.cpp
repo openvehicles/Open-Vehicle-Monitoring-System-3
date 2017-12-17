@@ -269,7 +269,7 @@ void OvmsVehicleRenaultTwizy::EventListener(string event, void* data)
   if (event == "gps.lock.acquired")
   {
     // immediately update our track log:
-    SendGPSLog();
+    RequestNotify(SEND_GPSLog);
   }
 }
 
