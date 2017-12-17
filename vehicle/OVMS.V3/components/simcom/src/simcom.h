@@ -54,6 +54,7 @@ class simcom : public pcp
     void tx(const char* data, ssize_t size = -1);
     void muxtx(int channel, uint8_t* data, size_t size);
     void muxtx(int channel, const char* data, ssize_t size = -1);
+    bool txcmd(const char* data, ssize_t size = -1);
 
   protected:
     TaskHandle_t m_task;
@@ -122,6 +123,8 @@ class simcom : public pcp
     GsmPPPOS     m_ppp;
     GsmNMEA      m_nmea;
     bool         m_gps_required;
+    int          m_line_unfinished;
+    std::string  m_line_buffer;
 
   protected:
     void SetState1(SimcomState1 newstate);
@@ -129,9 +132,9 @@ class simcom : public pcp
     void State1Enter(SimcomState1 newstate);
     SimcomState1 State1Activity();
     SimcomState1 State1Ticker1();
-    bool StandardIncomingHandler(OvmsBuffer* buf);
-    void StandardDataHandler(OvmsBuffer* buf);
-    void StandardLineHandler(OvmsBuffer* buf, std::string line);
+    bool StandardIncomingHandler(int channel, OvmsBuffer* buf);
+    void StandardDataHandler(int channel, OvmsBuffer* buf);
+    void StandardLineHandler(int channel, OvmsBuffer* buf, std::string line);
     void PowerCycle();
     void PowerSleep(bool onoff);
 

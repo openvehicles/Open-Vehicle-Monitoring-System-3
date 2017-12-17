@@ -85,6 +85,7 @@ class GsmMux
     void ProcessFrame();
     size_t tx(int channel, uint8_t* data, ssize_t size);
     size_t tx(int channel, const char* data, ssize_t size = -1);
+    bool IsChannelOpen(int channel);
 
   protected:
     void txfcs(uint8_t* data, size_t size, size_t ipos = 4);

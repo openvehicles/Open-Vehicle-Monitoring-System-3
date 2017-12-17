@@ -33,6 +33,7 @@ static const char *TAG = "ovms-server-v2";
 
 #include "ovms.h"
 #include "buffered_shell.h"
+#include "ovms_peripherals.h"
 #include "ovms_command.h"
 #include "ovms_config.h"
 #include "metrics_standard.h"
@@ -601,8 +602,25 @@ void OvmsServerV2::ProcessCommand(const char* payload)
       break;
       }
     case 40: // Send SMS
+      *buffer << "MP-0 c" << command << ",2";
+      break;
     case 41: // Send MMI/USSD codes
+      if (!sep)
+        *buffer << "MP-0 c" << command << ",1,No command";
+      else
+        {
+        *buffer << "AT+CUSD=1,\"" << sep+1 << "\",15\r\n";
+        std::string msg = buffer->str();
+        buffer->str("");
+        if (MyPeripherals->m_simcom->txcmd(msg.c_str(), msg.length()))
+          *buffer << "MP-0 c" << command << ",0";
+        else
+          *buffer << "MP-0 c" << command << ",1,Cannot send command";
+        }
+      break;
     case 49: // Send raw AT command
+      *buffer << "MP-0 c" << command << ",2";
+      break;
     default:
       *buffer << "MP-0 c" << command << ",2";
       break;
@@ -1456,13 +1474,22 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
 
 /**
  * EventListener:
- *  - update location ASAP
  */
 void OvmsServerV2::EventListener(std::string event, void* data)
-{
+  {
   if (event == "gps.lock.acquired")
+    {
+    // update location ASAP:
     m_now_gps = true;
-}
+    }
+  else if (event == "system.modem.received.ussd")
+    {
+    // forward USSD response to server:
+    std::string buf = "MP-0 c41,0,";
+    buf.append(mp_encode((char*) data));
+    Transmit(buf);
+    }
+  }
 
 void OvmsServerV2::TransmitMsgCapabilities(bool always)
   {
@@ -1516,6 +1543,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
 
   // init event listener:
   MyEvents.RegisterEvent(TAG, "gps.lock.acquired", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "system.modem.received.ussd", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
   }
 
 OvmsServerV2::~OvmsServerV2()
