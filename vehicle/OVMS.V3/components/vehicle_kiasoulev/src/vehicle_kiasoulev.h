@@ -53,6 +53,7 @@ void xks_cells(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
 void xks_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xks_trunk(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xks_chargeport(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xks_sjb(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
 class OvmsVehicleKiaSoulEv : public OvmsVehicle
   {
@@ -67,6 +68,8 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void ConfigChanged(OvmsConfigParam* param);
     vehicle_command_t CommandHandler(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    bool Send_SJB_Command( uint8_t b1, uint8_t b2);
+    bool Send_BCM_Command( uint8_t b1, uint8_t b2);
 
     virtual OvmsVehicle::vehicle_command_t CommandLock(const char* pin);
     virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
@@ -123,6 +126,9 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     void SendTesterPresent(uint16_t id, uint8_t length);
     bool SetSessionMode(uint16_t id, uint8_t mode);
     bool SetDoorLock(bool open, const char* password);
+    bool LeftIndicator(bool);
+    bool RightIndicator(bool);
+    bool RearDefogger(bool);
     bool IsPasswordOk(const char *password);
     void SetChargeMetrics(float voltage, float current, float climit, bool chademo);
 
