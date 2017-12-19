@@ -65,6 +65,7 @@ void OvmsShell::ProcessChar(char c)
       return;
     m_insert = NULL;
     c = '\n';
+    finalise();
     }
   microrl_insert_char(&m_rl, c);
   }
