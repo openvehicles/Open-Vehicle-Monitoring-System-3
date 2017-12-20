@@ -35,6 +35,7 @@
 #include "ovms_console.h"
 #include "log_buffers.h"
 
+const int DEFERRED_ALERTS = 10;
 //static const char *TAG = "Console";
 static char CRbuf[1] = { '\r' };
 static char NLbuf[1] = { '\n' };
@@ -49,6 +50,8 @@ OvmsConsole::OvmsConsole()
   : OvmsShell(COMMAND_RESULT_VERBOSE)
   {
   m_ready = false;
+  m_deferred = NULL;
+  m_discarded = 0;
   m_state = AT_PROMPT;
   }
 
@@ -127,14 +130,16 @@ void OvmsConsole::Service()
     }
   }
 
-void OvmsConsole::Poll(portTickType ticks)
+void OvmsConsole::Poll(portTickType ticks, QueueHandle_t queue)
   {
   Event event;
 
+  if (!queue)
+    queue = m_queue;
   for (;;)
     {
     // Waiting for UART RX event or async log message event
-    if (xQueueReceive(m_queue, (void*)&event, ticks))
+    if (xQueueReceive(queue, (void*)&event, ticks))
       {
       if (event.type <= RECV)
         {
@@ -142,6 +147,26 @@ void OvmsConsole::Poll(portTickType ticks)
           ProcessChars(ctrlRbuf, 1);    // Restore the prompt plus any type-in on a new line
         m_state = AT_PROMPT;
         HandleDeviceEvent(&event);
+        continue;
+        }
+      // While a command that takes input is executing, put alert events into a
+      // separate "deferred" queue.  If that queue fills, keep only the last N
+      // events and count those discarded.
+      if (m_insert)
+        {
+        if (!m_deferred)
+          m_deferred = xQueueCreate(DEFERRED_ALERTS, sizeof(Event));
+        if (xQueueSendToBack(m_deferred, (void *)&event, 0) != pdPASS)
+          {
+          Event discard;
+          xQueueReceive(m_deferred, (void*)&discard, 0);
+          xQueueSendToBack(m_deferred, (void *)&event, 0);
+          if (discard.type == ALERT_MULTI)
+            discard.multi->release();
+          else
+            free(discard.buffer);
+          ++m_discarded;
+          }
         continue;
         }
       // We remove the newline from the end of a log message so that we can later
@@ -205,5 +230,21 @@ void OvmsConsole::Poll(portTickType ticks)
       m_state = AT_PROMPT;
       return;
       }
+    }
+  }
+
+void OvmsConsole::finalise()
+  {
+  if (m_deferred)
+    {
+    if (m_discarded)
+      {
+      printf("\033[33m[%d log messages discarded]\033[0m", m_discarded);
+      m_state = AWAITING_NL;
+      m_discarded = 0;
+      }
+    Poll(0, m_deferred);
+    vQueueDelete(m_deferred);
+    m_deferred = NULL;
     }
   }

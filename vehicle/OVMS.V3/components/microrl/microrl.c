@@ -324,7 +324,6 @@ static char* generate_move_cursor (char* str, int offset)
 	}
 	for (j = 0; j < i; ++j)
 		*str++ = tmp_str [i-j-1];
-	}
 	*str++ = c;
 	*str = '\0';
 #endif

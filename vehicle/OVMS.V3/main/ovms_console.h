@@ -82,10 +82,11 @@ class OvmsConsole : public OvmsShell
     void Initialize(const char* console);
     char ** GetCompletion(OvmsCommandMap& children, const char* token);
     void Log(LogBuffers* message);
-    void Poll(portTickType ticks);
+    void Poll(portTickType ticks, QueueHandle_t queue = NULL);
 
   protected:
     void Service();
+    void finalise();
 
   protected:
     virtual void HandleDeviceEvent(void* event) = 0;
@@ -95,6 +96,8 @@ class OvmsConsole : public OvmsShell
     char *m_completions[COMPLETION_MAX_TOKENS+2];
     char m_space[COMPLETION_MAX_TOKENS+2][TOKEN_MAX_LENGTH];
     QueueHandle_t m_queue;
+    QueueHandle_t m_deferred;
+    int m_discarded;
     DisplayState m_state;
   };
 
