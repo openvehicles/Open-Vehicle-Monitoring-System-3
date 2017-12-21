@@ -39,8 +39,10 @@ class OvmsOTA
     OvmsOTA();
     ~OvmsOTA();
 
+#ifdef CONFIG_OVMS_COMP_SDCARD
   protected:
     void AutoFlashSD(std::string event, void* data);
+#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
   };
 
 extern OvmsOTA MyOTA;
