@@ -345,6 +345,7 @@ void ota_boot(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     }
   }
 
+#ifdef CONFIG_OVMS_COMP_SDCARD
 void OvmsOTA::AutoFlashSD(std::string event, void* data)
   {
   FILE* f = fopen("/sd/ovmsv3.bin", "r");
@@ -437,15 +438,18 @@ void OvmsOTA::AutoFlashSD(std::string event, void* data)
   ESP_LOGI(TAG, "AutoFlashSD restarting...");
   esp_restart();
   }
+#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
 OvmsOTA::OvmsOTA()
   {
   ESP_LOGI(TAG, "Initialising OTA (4400)");
 
+#ifdef CONFIG_OVMS_COMP_SDCARD
   #undef bind  // Kludgy, but works
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"sd.mounted", std::bind(&OvmsOTA::AutoFlashSD, this, _1, _2));
+#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
   OvmsCommand* cmd_ota = MyCommandApp.RegisterCommand("ota","OTA framework",NULL,"",0,0,true);
 
