@@ -197,6 +197,8 @@ void OvmsServerV2::ServerTask()
     m_units_distance = Kilometers;
 
   int lasttx = 0;
+  int lasttx_stream = 0;
+  int peers = 0;
   MAINLOOP: while(1)
     {
     if (!MyNetManager.m_connected_any)
@@ -241,9 +243,9 @@ void OvmsServerV2::ServerTask()
       // Handle incoming requests
       while ((m_buffer->HasLine() >= 0)&&(m_conn.IsOpen()))
         {
-        int peers = StandardMetrics.ms_s_v2_peers->AsInt();
+        peers = StandardMetrics.ms_s_v2_peers->AsInt();
         ProcessServerMsg();
-        if ((StandardMetrics.ms_s_v2_peers->AsInt() != peers)&&(peers==0))
+        if (StandardMetrics.ms_s_v2_peers->AsInt() > peers)
           {
           ESP_LOGI(TAG, "One or more peers have connected");
           lasttx = 0; // A peer has connected, so force a transmission of status messages
@@ -251,8 +253,10 @@ void OvmsServerV2::ServerTask()
         }
 
       // Periodic transmission of metrics
+      peers = StandardMetrics.ms_s_v2_peers->AsInt();
+      bool caron = StandardMetrics.ms_v_env_on->AsBool();
       int now = StandardMetrics.ms_m_monotonic->AsInt();
-      int next = (StandardMetrics.ms_s_v2_peers->AsInt()==0)?600:60;
+      int next = (peers==0) ? 600 : 60;
       if ((lasttx==0)||(now>(lasttx+next)))
         {
         TransmitMsgStat(true);          // Send always, periodically
@@ -262,7 +266,12 @@ void OvmsServerV2::ServerTask()
         TransmitMsgTPMS(lasttx==0);
         TransmitMsgFirmware(lasttx==0);
         TransmitMsgCapabilities(lasttx==0);
-        lasttx = now;
+        lasttx = lasttx_stream = now;
+        }
+      else if (m_streaming && caron && peers && now > lasttx_stream+m_streaming)
+        {
+        TransmitMsgGPS();
+        lasttx_stream = now;
         }
 
       if (m_now_stat) TransmitMsgStat();
@@ -1413,6 +1422,12 @@ void OvmsServerV2::MetricModified(OvmsMetric* metric)
     {
     m_now_environment = true;
     }
+
+  if ((metric == StandardMetrics.ms_v_env_drivemode)||
+      (metric == StandardMetrics.ms_v_pos_gpslock))
+    {
+    m_now_gps = true;
+    }
   }
 
 bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry)
@@ -1477,18 +1492,26 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
  */
 void OvmsServerV2::EventListener(std::string event, void* data)
   {
-  if (event == "gps.lock.acquired")
-    {
-    // update location ASAP:
-    m_now_gps = true;
-    }
-  else if (event == "system.modem.received.ussd")
+  if (event == "system.modem.received.ussd")
     {
     // forward USSD response to server:
     std::string buf = "MP-0 c41,0,";
     buf.append(mp_encode((char*) data));
     Transmit(buf);
     }
+  else if (event == "config.changed" || event == "config.mounted")
+    {
+    ConfigChanged((OvmsConfigParam*) data);
+    }
+  }
+
+/**
+ * ConfigChanged: read new configuration
+ *  - param: NULL = read all configurations
+ */
+void OvmsServerV2::ConfigChanged(OvmsConfigParam* param)
+  {
+  m_streaming = MyConfig.GetParamValueInt("vehicle", "stream", 0);
   }
 
 void OvmsServerV2::TransmitMsgCapabilities(bool always)
@@ -1524,6 +1547,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
   m_now_environment = false;
   m_now_capabilities = false;
   m_now_group = false;
+  m_streaming = 0;
 
   m_pending_notify_info = false;
   m_pending_notify_error = false;
@@ -1542,8 +1566,12 @@ OvmsServerV2::OvmsServerV2(const char* name)
     }
 
   // init event listener:
-  MyEvents.RegisterEvent(TAG, "gps.lock.acquired", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "system.modem.received.ussd", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
+  
+  // read config:
+  ConfigChanged(NULL);
   }
 
 OvmsServerV2::~OvmsServerV2()

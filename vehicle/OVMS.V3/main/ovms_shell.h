@@ -48,6 +48,9 @@ class OvmsShell : public OvmsWriter
     void PrintConditional(const char* buf);
 
   protected:
+    virtual void finalise() {}
+
+  protected:
     microrl_t m_rl;
 
   public:

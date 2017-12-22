@@ -101,9 +101,52 @@ typedef struct
   union
     {
     uint8_t   u8[8];                    // Payload byte access
-    uint32_t  u32[2];                   // Payload u32 access
+    uint32_t  u32[2];                   // Payload u32 access (Att: little endian!)
     } data;
   } CAN_frame_t;
+
+
+/**
+ * canbitset<StoreType>: CAN data packed bit extraction utility
+ *  Usage examples:
+ *    canbitset<uint64_t> canbits(p_frame->data.u8, 8) -- load whole CAN frame
+ *    canbitset<uint32_t> canbits(data+1, 3) -- load 3 bytes beginning at second
+ *    val = canbits.get(12,23) -- extract bits 12-23 of bytes loaded
+ *  Note: no sanity checks.
+ *  Hint: for best performance on ESP32, avoid StoreType uint64_t
+ */
+template <typename StoreType>
+class canbitset
+  {
+  private:
+    StoreType m_store;
+
+  public:
+    canbitset(uint8_t* src, int len)
+      {
+      load(src, len);
+      }
+    
+    // load message bytes:
+    void load(uint8_t* src, int len)
+      {
+      m_store = 0;
+      for (int i=0; i<len; i++)
+        {
+        m_store <<= 8;
+        m_store |= src[i];
+        }
+      m_store <<= ((sizeof(StoreType)-len) << 3);
+      }
+    
+    // extract message part:
+    //  - start,end: bit positions 0…63, 0=MSB of first msg byte
+    StoreType get(int start, int end)
+      {
+      return (StoreType) ((m_store << start) >> (start + (sizeof(StoreType)<<3) - end - 1));
+      }
+  };
+
 
 // CAN message type
 typedef enum

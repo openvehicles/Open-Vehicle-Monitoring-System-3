@@ -28,24 +28,24 @@
 
 #define NO_DES3
 #define NO_DSA
-//#define NO_ERROR_STRINGS
+#define NO_ERROR_STRINGS
 #define NO_HC128
 #define NO_MD4
 #define NO_PSK
 #define NO_PWDBASED
 #define NO_RABBIT
 #define NO_RC4
-//#define NO_SESSION_CACHE
+#define SMALL_SESSION_CACHE
 #define ECC_SHAMIR
 #define ECC_TIMING_RESISTANT
 #define HAVE_AESGCM
-#define HAVE_CHACHA
+//#define HAVE_CHACHA
 #define HAVE_DH
 #define HAVE_ECC
 #define HAVE_EXTENDED_MASTER
 #define HAVE_HASHDRBG
 #define HAVE_ONE_TIME_AUTH
-#define HAVE_POLY1305
+//#define HAVE_POLY1305
 #define HAVE_SUPPORTED_CURVES
 #define HAVE_THREAD_LS
 #define HAVE_TLS_EXTENSIONS
@@ -55,6 +55,6 @@
 #define WC_RSA_BLINDING
 #define WOLFSSL_BASE64_ENCODE
 #define WOLFSSL_SHA224
-#define WOLFSSL_SHA3
+//#define WOLFSSL_SHA3
 #define WOLFSSL_SHA384
 #define WOLFSSL_SHA512
