@@ -51,9 +51,10 @@ void xks_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 void xks_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xks_cells(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xks_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xks_trunk(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xks_chargeport(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void CommandOpenTrunk(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void CommandOpenChargePort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xks_sjb(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xks_bcm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
 class OvmsVehicleKiaSoulEv : public OvmsVehicle
   {
@@ -68,8 +69,9 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void ConfigChanged(OvmsConfigParam* param);
     vehicle_command_t CommandHandler(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-    bool Send_SJB_Command( uint8_t b1, uint8_t b2);
-    bool Send_BCM_Command( uint8_t b1, uint8_t b2);
+    bool Send_SJB_Command( uint8_t b1, uint8_t b2, uint8_t b3);
+    bool Send_BCM_Command( uint8_t b1, uint8_t b2, uint8_t b3);
+    bool Send_SMK_Command( uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint8_t b5, uint8_t b6, uint8_t b7);
 
     virtual OvmsVehicle::vehicle_command_t CommandLock(const char* pin);
     virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
@@ -129,6 +131,10 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     bool LeftIndicator(bool);
     bool RightIndicator(bool);
     bool RearDefogger(bool);
+    bool ACCRelay(bool);
+    bool IGN1Relay(bool);
+    bool IGN2Relay(bool);
+    bool StartRelay(bool);
     bool IsPasswordOk(const char *password);
     void SetChargeMetrics(float voltage, float current, float climit, bool chademo);
 
@@ -161,6 +167,8 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     float ks_cum_charge_start; 		// Used to calculate charged power.
 
     INT ks_battery_current; 			// Temporary storage for Battery current: 0x7ec 02 21 01 -> 21 7+22 1
+
+    bool ks_openChargePort;
 
     uint32_t ks_battery_cum_charge_current; 		//Cumulated charge current    02 21 01 -> 24 6+7 & 25 1+2
     uint32_t ks_battery_cum_discharge_current;	//Cumulated discharge current 02 21 01 -> 25 3-6
@@ -236,9 +244,10 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 #define EXTENDED_DIAGNOSTIC_SESSION 0x03
 #define SAFETY_SYSTEM_DIAGNOSTIC_SESSION 0x04
 
-
+// ECUs
 #define SMART_JUNCTION_BOX 0x771
 #define BODY_CONTROL_MODULE  0x7A0
+#define SMART_KEY_UNIT 0x7a5
 
 // Notifications:
 #define SEND_AuxBattery_Low           (1<< 0)  // text alert: AUX battery problem

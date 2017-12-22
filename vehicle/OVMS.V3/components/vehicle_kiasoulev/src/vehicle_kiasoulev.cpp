@@ -49,6 +49,11 @@
 ;		 0.2.4  18-Dec-2017 - Geir Øyvind Vælidalo
 ;			- Added xks sjb - command + RearDefogger, Leftindicator, right indicator.
 ;
+;		 0.2.5  22-Dec-2017 - Geir Øyvind Vælidalo
+;			- "Trunk"-button of keyfob opens up the chargeport
+;			- Added temporary, developer-commands: sjb and bcm
+;			- Added methods for controlling ACC-relay, IGN1-relay, IGN2-relay and start-relay.
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -86,7 +91,7 @@ static const char *TAG = "v-kiasoulev";
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 
-#define VERSION "0.2.4"
+#define VERSION "0.2.5"
 
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
@@ -132,6 +137,9 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
 
   ks_send_can.id = 0;
   ks_send_can.status = 0;
+
+  ks_openChargePort = false;
+
   memset( ks_send_can.byte, 0, sizeof(ks_send_can.byte));
 
   ks_maxrange = CFG_DEFAULT_MAXRANGE;
@@ -185,9 +193,12 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   cmd_xks->RegisterCommand("tpms","Tire pressure monitor", xks_tpms, 0,0, false);
   cmd_xks->RegisterCommand("cells","Cell voltages", xks_cells, 0,0, false);
   cmd_xks->RegisterCommand("aux","Aux battery", xks_aux, 0,0, false);
-  cmd_xks->RegisterCommand("trunk","Unlock trunk", xks_trunk, 0,0, false);
-  cmd_xks->RegisterCommand("chargeport","Open chargeport", xks_chargeport, 0,0, false);
-  cmd_xks->RegisterCommand("sjb","Send command to SJB ECU", xks_sjb, "<b1><b2>", 2,2, false);
+  cmd_xks->RegisterCommand("trunk","Open trunk", CommandOpenTrunk, "<password>",1,1, false);
+  cmd_xks->RegisterCommand("chargeport","Open chargeport", CommandOpenChargePort, "<password>",1,1, false);
+
+  // For test purposes
+  MyCommandApp.RegisterCommand("sjb","Send command to SJB ECU", xks_sjb, "<b1><b2><b3>", 3,3, false);
+  MyCommandApp.RegisterCommand("bcm","Send command to BCM ECU", xks_bcm, "<b1><b2><b3>", 3,3, false);
 
   PollSetPidList(m_can1,vehicle_kiasoulev_polls);
   PollSetState(0);
@@ -310,6 +321,10 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 			else if( d[3] & 0x10 )
 				{
 				StdMetrics.ms_v_env_locked->SetValue(true); //Todo This only keeps track of the lock signal from keyfob
+				}
+			if( d[3] & 0x40 )
+				{ //TODO Should be possible to disable this function
+				ks_openChargePort = true;
 				}
   	    }
   	    break;
@@ -739,6 +754,13 @@ void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
  */
 void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 	{
+	// Open charge port if user demands it
+	if( ks_openChargePort )
+		{
+		OpenChargePort(""); //TODO
+		ks_openChargePort = false;
+		}
+
 
 	UpdateMaxRangeAndSOH();
 
@@ -983,8 +1005,7 @@ bool OvmsVehicleKiaSoulEv::SendCanMessage_sync(uint16_t id, uint8_t count,
 	ESP_LOGD(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", id, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
 
 	//Now wait for the response
-	// TODO Use callback instead of using delay?
-	timeout = 100; // 100*50 = ~500 ms
+	timeout = 50; // 50*50 = 2500 ms
 	do
 		{
 		/* Block for 50ms. */
@@ -1056,20 +1077,29 @@ bool OvmsVehicleKiaSoulEv::SendCommandInSessionMode(uint16_t id, uint8_t count, 
 
 /**
  * Send command to Smart Junction Box
- * 771 04 2F BC b1 b2
+ * 771 04 2F [b1] [b2] [b3]
  */
-bool OvmsVehicleKiaSoulEv::Send_SJB_Command( uint8_t b1, uint8_t b2)
+bool OvmsVehicleKiaSoulEv::Send_SJB_Command( uint8_t b1, uint8_t b2, uint8_t b3)
 	{
-	return SendCommandInSessionMode(SMART_JUNCTION_BOX, 4,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, 0xbc, b1, b2, 0,0,0 );
+	return SendCommandInSessionMode(SMART_JUNCTION_BOX, 4,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, b1, b2, b3, 0,0,0 );
 	}
 
 /**
  * Send command to Body Control Module
- * 7a0 04 2F B0 b1 b2
+ * 7a0 04 2F [b1] [b2] [b3]
  */
-bool OvmsVehicleKiaSoulEv::Send_BCM_Command( uint8_t b1, uint8_t b2)
+bool OvmsVehicleKiaSoulEv::Send_BCM_Command( uint8_t b1, uint8_t b2, uint8_t b3)
 	{
-	return SendCommandInSessionMode(BODY_CONTROL_MODULE, 4,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, 0xb0, b1, b2, 0,0,0 );
+	return SendCommandInSessionMode(BODY_CONTROL_MODULE, 4,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, b1, b2, b3, 0,0,0 );
+	}
+
+/**
+ * Send command to Smart Key Unit
+ * 7a5 [b1] 2F [b2] [b3] [b4] [b5] [b6] [b7]
+ */
+bool OvmsVehicleKiaSoulEv::Send_SMK_Command( uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint8_t b5, uint8_t b6, uint8_t b7)
+	{
+	return SendCommandInSessionMode(SMART_KEY_UNIT, b1,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, b2, b3, b4, b5, b6, b7);
 	}
 
 /**
@@ -1082,8 +1112,7 @@ bool OvmsVehicleKiaSoulEv::SetDoorLock(bool open, const char* password)
   		{
     if( IsPasswordOk(password) )
     		{
-    		return Send_SJB_Command(open?0x11:0x10, 0x03);
-    		//return SendCommandInSessionMode(SMART_JUNCTION_BOX, 4,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, 0xbc, open?0x11:0x10, 0x03, 0,0,0 );
+    		return Send_SJB_Command(0xbc, open?0x11:0x10, 0x03);
     		}
   		}
 		return false;
@@ -1099,8 +1128,7 @@ bool OvmsVehicleKiaSoulEv::OpenTrunk(const char* password)
   		{
 		if( IsPasswordOk(password) )
 			{
-  			return Send_SJB_Command(0x09, 0x03);
-			//return SendCommandInSessionMode(SMART_JUNCTION_BOX, 4,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, 0xbc, 0x09, 0x03, 0,0,0 );
+  			return Send_SJB_Command(0xbc, 0x09, 0x03);
   			}
   		}
 		return false;
@@ -1116,8 +1144,7 @@ bool OvmsVehicleKiaSoulEv::OpenChargePort(const char* password)
   		{
 		if( IsPasswordOk(password) )
 			{
-			return Send_BCM_Command(0x61, 0x03);
-			//return SendCommandInSessionMode(BODY_CONTROL_MODULE, 4,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, 0xb0, 0x61, 0x03, 0,0,0 );
+			return Send_BCM_Command(0xb0, 0x61, 0x03);
   			}
   		}
 		return false;
@@ -1131,8 +1158,7 @@ bool OvmsVehicleKiaSoulEv::LeftIndicator(bool on)
 	{
   if( ks_shift_bits.Park )
   		{
-		return Send_SJB_Command(0x15, on?0x03:0x00);
-		//return SendCommandInSessionMode(SMART_JUNCTION_BOX, 4,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, 0xbc, 0x15, on?0x03:0x00, 0,0,0 );
+		return Send_SJB_Command(0xbc, 0x15, on?0x03:0x00);
   		}
 		return false;
 	}
@@ -1145,24 +1171,75 @@ bool OvmsVehicleKiaSoulEv::RightIndicator(bool on)
 	{
   if( ks_shift_bits.Park )
   		{
-		return Send_SJB_Command(0x16, on?0x03:0x00);
-		//return SendCommandInSessionMode(SMART_JUNCTION_BOX, 4,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, 0xbc, 0x16, on?0x03:0x00, 0,0,0 );
+		return Send_SJB_Command(0xbc, 0x16, on?0x03:0x00);
   		}
 		return false;
 	}
 
 /**
  * Turn on and off rear defogger
+ * Needs to send tester present or something... Turns of immediately.
  * 771 04 2f bc 0c 0[3:0]
  */
 bool OvmsVehicleKiaSoulEv::RearDefogger(bool on)
 	{
   if( ks_shift_bits.Park )
   		{
-		return Send_SJB_Command(0x0c, on?0x03:0x00);
-		//return SendCommandInSessionMode(SMART_JUNCTION_BOX, 4,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, 0xbc, 0x0c, on?0x03:0x00, 0,0,0 );
+		return Send_SJB_Command(0xbc, 0x0c, on?0x03:0x00);
   		}
 		return false;
+	}
+
+/**
+ * ACC - relay
+ */
+bool OvmsVehicleKiaSoulEv::ACCRelay(bool on)
+	{
+  if( ks_shift_bits.Park )
+  		{
+  		if( on ) return Send_SMK_Command(7, 0xb1, 0x08, 0x03, 0x0a, 0x0a, 0x05);
+  		else return Send_SMK_Command(4, 0xb1, 0x08, 0, 0, 0, 0);
+  		}
+	return false;
+	}
+
+/**
+ * IGN1 - relay
+ */
+bool OvmsVehicleKiaSoulEv::IGN1Relay(bool on)
+	{
+  if( ks_shift_bits.Park )
+  		{
+  		if( on ) return Send_SMK_Command(7, 0xb1, 0x09, 0x03, 0x0a, 0x0a, 0x05);
+  		else return Send_SMK_Command(4, 0xb1, 0x09, 0, 0, 0, 0);
+  		}
+	return false;
+	}
+
+/**
+ * IGN2 - relay
+ */
+bool OvmsVehicleKiaSoulEv::IGN2Relay(bool on)
+	{
+  if( ks_shift_bits.Park )
+  		{
+  		if( on ) return Send_SMK_Command(7, 0xb1, 0x0a, 0x03, 0x0a, 0x0a, 0x05);
+  		else return Send_SMK_Command(4, 0xb1, 0x0a, 0, 0, 0, 0);
+  		}
+	return false;
+	}
+
+/**
+ * Start - relay
+ */
+bool OvmsVehicleKiaSoulEv::StartRelay(bool on)
+	{
+  if( ks_shift_bits.Park )
+  		{
+  		if( on ) return Send_SMK_Command(7, 0xb1, 0x0b, 0x03, 0x0a, 0x0a, 0x05);
+  		else return Send_SMK_Command(4, 0xb1, 0x0b, 0, 0, 0, 0);
+  		}
+	return false;
 	}
 
 /**
@@ -1187,22 +1264,34 @@ OvmsVehicle::vehicle_command_t OvmsVehicleKiaSoulEv::CommandUnlock(const char* p
   return SetDoorLock(true,pin) ? Success:Fail;
   }
 
-void xks_trunk(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+/**
+ * Command to open trunk
+ */
+void CommandOpenTrunk(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
   OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
-	soul->OpenTrunk("");//todo
+	soul->OpenTrunk(argv[0]);
 	}
 
-void xks_chargeport(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+/**
+ * Command to open the charge port
+ */
+void CommandOpenChargePort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
   OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
-	soul->OpenChargePort("");//todo
+	soul->OpenChargePort(argv[0]);
 	}
 
 void xks_sjb(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
   OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
-	soul->Send_SJB_Command(strtol(argv[0],NULL,16), strtol(argv[1],NULL,16));
+	soul->Send_SJB_Command(strtol(argv[0],NULL,16), strtol(argv[1],NULL,16), strtol(argv[2],NULL,16));
+	}
+
+void xks_bcm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+	{
+  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
+	soul->Send_BCM_Command(strtol(argv[0],NULL,16), strtol(argv[1],NULL,16), strtol(argv[2],NULL,16));
 	}
 
 /**
