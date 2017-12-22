@@ -53,6 +53,7 @@ void xks_cells(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
 void xks_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void CommandOpenTrunk(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void CommandOpenChargePort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void CommandParkBreakService(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xks_sjb(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xks_bcm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
@@ -72,6 +73,7 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     bool Send_SJB_Command( uint8_t b1, uint8_t b2, uint8_t b3);
     bool Send_BCM_Command( uint8_t b1, uint8_t b2, uint8_t b3);
     bool Send_SMK_Command( uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint8_t b5, uint8_t b6, uint8_t b7);
+    bool Send_EBP_Command( uint8_t b1, uint8_t b2);
 
     virtual OvmsVehicle::vehicle_command_t CommandLock(const char* pin);
     virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
@@ -236,7 +238,8 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 #define CUM_DISCHARGE	((float)ks_battery_cum_discharge/10.0)
 #define SET_TPMS_ID(n, v)	if (v > 0) ks_tpms_id[n] = v;
 
-#define VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID 0x2F	// InputOutputControlByIdentifier
+#define VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID 0x2F	// InputOutputControlByCommonID
+#define VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_LOC_ID	0x30 	// InputOutputControlByLocalID
 #define VEHICLE_POLL_TYPE_OBDII_TESTER_PRESENT	0x3E 	// TesterPresent
 
 #define DEFAULT_SESSION 0x01
@@ -247,7 +250,8 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 // ECUs
 #define SMART_JUNCTION_BOX 0x771
 #define BODY_CONTROL_MODULE  0x7A0
-#define SMART_KEY_UNIT 0x7a5
+#define SMART_KEY_UNIT 0x7A5
+#define ABS_EBP_UNIT 0x7A5
 
 // Notifications:
 #define SEND_AuxBattery_Low           (1<< 0)  // text alert: AUX battery problem

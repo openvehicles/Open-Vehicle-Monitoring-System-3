@@ -54,6 +54,9 @@
 ;			- Added temporary, developer-commands: sjb and bcm
 ;			- Added methods for controlling ACC-relay, IGN1-relay, IGN2-relay and start-relay.
 ;
+;		 0.2.6  22-Dec-2017 - Geir Øyvind Vælidalo
+;			- Electric park break service-command
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -91,7 +94,7 @@ static const char *TAG = "v-kiasoulev";
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 
-#define VERSION "0.2.5"
+#define VERSION "0.2.6"
 
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
@@ -193,8 +196,9 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   cmd_xks->RegisterCommand("tpms","Tire pressure monitor", xks_tpms, 0,0, false);
   cmd_xks->RegisterCommand("cells","Cell voltages", xks_cells, 0,0, false);
   cmd_xks->RegisterCommand("aux","Aux battery", xks_aux, 0,0, false);
-  cmd_xks->RegisterCommand("trunk","Open trunk", CommandOpenTrunk, "<password>",1,1, false);
-  cmd_xks->RegisterCommand("chargeport","Open chargeport", CommandOpenChargePort, "<password>",1,1, false);
+  MyCommandApp.RegisterCommand("trunk","Open trunk", CommandOpenTrunk, "<password>",1,1, false);
+  MyCommandApp.RegisterCommand("chargeport","Open chargeport", CommandOpenChargePort, "<password>",1,1, false);
+  MyCommandApp.RegisterCommand("parkbreakservice","Enable break pad service", CommandParkBreakService, "<on/off/off2>",1,1, false);
 
   // For test purposes
   MyCommandApp.RegisterCommand("sjb","Send command to SJB ECU", xks_sjb, "<b1><b2><b3>", 3,3, false);
@@ -1103,6 +1107,15 @@ bool OvmsVehicleKiaSoulEv::Send_SMK_Command( uint8_t b1, uint8_t b2, uint8_t b3,
 	}
 
 /**
+ * Send command to ABS & EBP Module
+ * 7d5 03 30 [b1] [b2]
+ */
+bool OvmsVehicleKiaSoulEv::Send_EBP_Command( uint8_t b1, uint8_t b2)
+	{
+	return SendCommandInSessionMode(ABS_EBP_UNIT, 3,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_LOC_ID, b1, b2, 0,0,0,0 );
+	}
+
+/**
  * Open or lock the doors
  * 771 04 2F BC 1[0:1] 03
  */
@@ -1280,6 +1293,26 @@ void CommandOpenChargePort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 	{
   OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
 	soul->OpenChargePort(argv[0]);
+	}
+
+/**
+ * Command to enable service mode on park breaks
+ */
+void CommandParkBreakService(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+	{
+  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
+	if( strcmp(argv[0],"on")==0 )
+		{
+	  soul->Send_EBP_Command(0x02, 0x01);
+		}
+	else if( strcmp(argv[0],"off")==0 )
+		{
+	  soul->Send_EBP_Command(0x02, 0x03);
+		}
+	else if( strcmp(argv[0],"off2")==0 )
+		{
+	  soul->Send_EBP_Command(0x01, 0x01);
+		}
 	}
 
 void xks_sjb(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
