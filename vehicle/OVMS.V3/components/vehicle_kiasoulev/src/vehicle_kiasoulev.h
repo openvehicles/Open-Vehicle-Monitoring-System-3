@@ -170,7 +170,8 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 
     INT ks_battery_current; 			// Temporary storage for Battery current: 0x7ec 02 21 01 -> 21 7+22 1
 
-    bool ks_openChargePort;
+    bool ks_openChargePort;				// Tells the Ticker1 to open charge port
+    bool ks_key_fob_open_charge_port;	// Enable/disable open charge port using trunk-button on key fob
 
     uint32_t ks_battery_cum_charge_current; 		//Cumulated charge current    02 21 01 -> 24 6+7 & 25 1+2
     uint32_t ks_battery_cum_discharge_current;	//Cumulated discharge current 02 21 01 -> 25 3-6

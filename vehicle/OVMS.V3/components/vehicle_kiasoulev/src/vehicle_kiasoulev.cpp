@@ -57,6 +57,10 @@
 ;		 0.2.6  22-Dec-2017 - Geir Øyvind Vælidalo
 ;			- Electric park break service-command
 ;
+;		 0.2.7  22-Dec-2017 - Geir Øyvind Vælidalo
+;			- New config: xks.remote_charge_port - enables the possibility to open charge port from keyfob
+;			- Renamed config-root from x.ks to xks
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -94,7 +98,7 @@ static const char *TAG = "v-kiasoulev";
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 
-#define VERSION "0.2.6"
+#define VERSION "0.2.7"
 
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
@@ -196,6 +200,7 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   cmd_xks->RegisterCommand("tpms","Tire pressure monitor", xks_tpms, 0,0, false);
   cmd_xks->RegisterCommand("cells","Cell voltages", xks_cells, 0,0, false);
   cmd_xks->RegisterCommand("aux","Aux battery", xks_aux, 0,0, false);
+
   MyCommandApp.RegisterCommand("trunk","Open trunk", CommandOpenTrunk, "<password>",1,1, false);
   MyCommandApp.RegisterCommand("chargeport","Open chargeport", CommandOpenChargePort, "<password>",1,1, false);
   MyCommandApp.RegisterCommand("parkbreakservice","Enable break pad service", CommandParkBreakService, "<on/off/off2>",1,1, false);
@@ -230,20 +235,21 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
   ESP_LOGD(TAG, "Kia Soul EV reload configuration");
 
   // Instances:
-  // x.ks
+  // xks
   //	  cap_act_kwh			Battery capacity in wH (Default: 270000)
   //  suffsoc          	Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange        	Sufficient range [km] (Default: 0=disabled)
   //  maxrange         	Maximum ideal range at 20 °C [km] (Default: 160)
-  //
-  ks_battery_capacity = (float)MyConfig.GetParamValueInt("x.ks", "cap_act_kwh", CGF_DEFAULT_BATTERY_CAPACITY);
+  //  remote_charge_port					Use "trunk" button on keyfob to open charge port (Default: 1=enabled)
+  ks_battery_capacity = (float)MyConfig.GetParamValueInt("xks", "cap_act_kwh", CGF_DEFAULT_BATTERY_CAPACITY);
+  ks_key_fob_open_charge_port = (bool)MyConfig.GetParamValueBool("xks", "remote_charge_port", true);
 
-  ks_maxrange = MyConfig.GetParamValueInt("x.ks", "maxrange", CFG_DEFAULT_MAXRANGE);
+  ks_maxrange = MyConfig.GetParamValueInt("xks", "maxrange", CFG_DEFAULT_MAXRANGE);
   if (ks_maxrange <= 0)
     ks_maxrange = CFG_DEFAULT_MAXRANGE;
 
-  *StdMetrics.ms_v_charge_limit_soc = (float) MyConfig.GetParamValueInt("x.ks", "suffsoc");
-  *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("x.ks", "suffrange");
+  *StdMetrics.ms_v_charge_limit_soc = (float) MyConfig.GetParamValueInt("xks", "suffsoc");
+  *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("xks", "suffrange");
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -326,8 +332,8 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 				{
 				StdMetrics.ms_v_env_locked->SetValue(true); //Todo This only keeps track of the lock signal from keyfob
 				}
-			if( d[3] & 0x40 )
-				{ //TODO Should be possible to disable this function
+			if( d[3] & 0x40 && ks_key_fob_open_charge_port )
+				{
 				ks_openChargePort = true;
 				}
   	    }
