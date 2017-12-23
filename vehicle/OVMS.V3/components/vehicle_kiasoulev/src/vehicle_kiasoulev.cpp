@@ -54,6 +54,16 @@
 ;			- Added temporary, developer-commands: sjb and bcm
 ;			- Added methods for controlling ACC-relay, IGN1-relay, IGN2-relay and start-relay.
 ;
+;		 0.2.6  22-Dec-2017 - Geir Øyvind Vælidalo
+;			- Electric park break service-command
+;
+;		 0.2.7  22-Dec-2017 - Geir Øyvind Vælidalo
+;			- New config: xks.remote_charge_port - enables the possibility to open charge port from keyfob
+;			- Renamed config-root from x.ks to xks
+;
+;		 0.2.8  22-Dec-2017 - Geir Øyvind Vælidalo
+;			- Renamed xks to ks - Config, metric list and command.
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -78,7 +88,12 @@
 ; THE SOFTWARE.
 */
 
-//TODO ProcessCommand and Set and GetFeature - See twizy-code.
+//TODO
+//		- ProcessCommand and Set and GetFeature - See twizy-code.
+//		- parkbreakservice is not working
+//		- IGN1-, IGN2-, ACC-, Start-relay is working but turns on just for a second or so.
+//		- Rear defogger works, but only as long as TesterPresent is sent.
+//
 
 #include "ovms_log.h"
 static const char *TAG = "v-kiasoulev";
@@ -91,7 +106,7 @@ static const char *TAG = "v-kiasoulev";
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 
-#define VERSION "0.2.5"
+#define VERSION "0.2.8"
 
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
@@ -100,7 +115,7 @@ static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, {  30,  30,  10 } }, 	// BMC Diag page 02
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x03, {  30,  30,  10 } }, 	// BMC Diag page 03
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x04, {  30,  30,  10 } }, 	// BMC Diag page 04
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x05, { 120,  10,  10 } },	// BMC Diag page 05
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x05, {  30,  30,  10 } },	// BMC Diag page 05
     { 0x794, 0x79c, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, {  30,  30,  10 } }, 	// OBC - On board charger
     { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x00, {  30,  10,  10 } }, 	// VMCU Shift-stick
     { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, {  30,  10,   0 } }, 	// VMCU Motor temp++
@@ -149,36 +164,36 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   // M-Bus
   RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
 
-  MyConfig.RegisterParam("x.ks", "Kia Soul EV", true, true);
+  MyConfig.RegisterParam("ks", "Kia Soul EV", true, true);
   ConfigChanged(NULL);
 
   // init metrics:
-  m_version = MyMetrics.InitString("x.ks.version", 0, VERSION " " __DATE__ " " __TIME__);
-  m_b_cell_volt_max = MyMetrics.InitFloat("x.ks.b.cell.volt.max", 10, 0, Volts);
-  m_b_cell_volt_min = MyMetrics.InitFloat("x.ks.b.cell.volt.min", 10, 0, Volts);
-  m_b_cell_volt_max_no = MyMetrics.InitInt("x.ks.b.cell.volt.max.no", 10, 0);
-  m_b_cell_volt_min_no = MyMetrics.InitInt("x.ks.b.cell.volt.min.no", 10, 0);
-  m_b_cell_det_max = MyMetrics.InitFloat("x.ks.b.cell.det.max", 0, 0, Percentage);
-  m_b_cell_det_min = MyMetrics.InitFloat("x.ks.b.cell.det.min", 0, 0, Percentage);
-  m_b_cell_det_max_no = MyMetrics.InitInt("x.ks.b.cell.det.max.no", 10, 0);
-  m_b_cell_det_min_no = MyMetrics.InitInt("x.ks.b.cell.det.min.no", 10, 0);
-  m_c_power = MyMetrics.InitFloat("x.ks.c.power", 10, 0, kW);
-  m_c_speed = MyMetrics.InitFloat("x.ks.c.speed", 10, 0, Kph);
-  m_b_min_temperature = MyMetrics.InitInt("x.ks.b.min.temp", 10, 0, Celcius);
-  m_b_max_temperature = MyMetrics.InitInt("x.ks.b.max.temp", 10, 0, Celcius);
-  m_b_inlet_temperature = MyMetrics.InitInt("x.ks.b.inlet.temp", 10, 0, Celcius);
-  m_b_heat_1_temperature = MyMetrics.InitInt("x.ks.b.heat1.temp", 10, 0, Celcius);
-  m_b_heat_2_temperature = MyMetrics.InitInt("x.ks.b.heat2.temp", 10, 0, Celcius);
+  m_version = MyMetrics.InitString("ks.version", 0, VERSION " " __DATE__ " " __TIME__);
+  m_b_cell_volt_max = MyMetrics.InitFloat("ks.b.cell.volt.max", 10, 0, Volts);
+  m_b_cell_volt_min = MyMetrics.InitFloat("ks.b.cell.volt.min", 10, 0, Volts);
+  m_b_cell_volt_max_no = MyMetrics.InitInt("ks.b.cell.volt.max.no", 10, 0);
+  m_b_cell_volt_min_no = MyMetrics.InitInt("ks.b.cell.volt.min.no", 10, 0);
+  m_b_cell_det_max = MyMetrics.InitFloat("ks.b.cell.det.max", 0, 0, Percentage);
+  m_b_cell_det_min = MyMetrics.InitFloat("ks.b.cell.det.min", 0, 0, Percentage);
+  m_b_cell_det_max_no = MyMetrics.InitInt("ks.b.cell.det.max.no", 10, 0);
+  m_b_cell_det_min_no = MyMetrics.InitInt("ks.b.cell.det.min.no", 10, 0);
+  m_c_power = MyMetrics.InitFloat("ks.c.power", 10, 0, kW);
+  m_c_speed = MyMetrics.InitFloat("ks.c.speed", 10, 0, Kph);
+  m_b_min_temperature = MyMetrics.InitInt("ks.b.min.temp", 10, 0, Celcius);
+  m_b_max_temperature = MyMetrics.InitInt("ks.b.max.temp", 10, 0, Celcius);
+  m_b_inlet_temperature = MyMetrics.InitInt("ks.b.inlet.temp", 10, 0, Celcius);
+  m_b_heat_1_temperature = MyMetrics.InitInt("ks.b.heat1.temp", 10, 0, Celcius);
+  m_b_heat_2_temperature = MyMetrics.InitInt("ks.b.heat2.temp", 10, 0, Celcius);
 
-  m_ldc_out_voltage = MyMetrics.InitFloat("x.ks.ldc.out.volt", 10, 12, Volts);
-  m_ldc_in_voltage = MyMetrics.InitFloat("x.ks.ldc.in.volt", 10, 12, Volts);
-  m_ldc_out_current = MyMetrics.InitFloat("x.ks.ldc.out.amps", 10, 0, Amps);
-  m_ldc_temperature = MyMetrics.InitFloat("x.ks.ldc.temp", 10, 0, Celcius);
+  m_ldc_out_voltage = MyMetrics.InitFloat("ks.ldc.out.volt", 10, 12, Volts);
+  m_ldc_in_voltage = MyMetrics.InitFloat("ks.ldc.in.volt", 10, 12, Volts);
+  m_ldc_out_current = MyMetrics.InitFloat("ks.ldc.out.amps", 10, 0, Amps);
+  m_ldc_temperature = MyMetrics.InitFloat("ks.ldc.temp", 10, 0, Celcius);
 
-  m_obc_pilot_duty = MyMetrics.InitFloat("x.ks.obc.pilot.duty", 10, 0, Percentage);
+  m_obc_pilot_duty = MyMetrics.InitFloat("ks.obc.pilot.duty", 10, 0, Percentage);
 
-  m_v_env_lowbeam = MyMetrics.InitBool("x.ks.e.lowbeam", 10, 0);
-  m_v_env_highbeam = MyMetrics.InitBool("x.ks.e.highbeam", 10, 0);
+  m_v_env_lowbeam = MyMetrics.InitBool("ks.e.lowbeam", 10, 0);
+  m_v_env_highbeam = MyMetrics.InitBool("ks.e.highbeam", 10, 0);
 
   m_b_cell_det_max->SetValue(0);
   m_b_cell_det_min->SetValue(0);
@@ -188,13 +203,19 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   StdMetrics.ms_v_env_on->SetValue(false);
 
   // init commands:
-  cmd_xks = MyCommandApp.RegisterCommand("xks","Kia Soul EV",NULL,"",0,0,true);
+  cmd_xks = MyCommandApp.RegisterCommand("ks","Kia Soul EV",NULL,"",0,0,true);
   cmd_xks->RegisterCommand("trip","Show trip info", xks_trip, 0,0, false);
   cmd_xks->RegisterCommand("tpms","Tire pressure monitor", xks_tpms, 0,0, false);
   cmd_xks->RegisterCommand("cells","Cell voltages", xks_cells, 0,0, false);
   cmd_xks->RegisterCommand("aux","Aux battery", xks_aux, 0,0, false);
-  cmd_xks->RegisterCommand("trunk","Open trunk", CommandOpenTrunk, "<password>",1,1, false);
-  cmd_xks->RegisterCommand("chargeport","Open chargeport", CommandOpenChargePort, "<password>",1,1, false);
+  cmd_xks->RegisterCommand("IGN1","IGN1 relay", xks_ign1, "<on/off><password>",1,1, false);
+  cmd_xks->RegisterCommand("IGN2","IGN2 relay", xks_ign2, "<on/off><password>",1,1, false);
+  cmd_xks->RegisterCommand("ACC","ACC relay", xks_acc_relay, "<on/off><password>",1,1, false);
+  cmd_xks->RegisterCommand("START","Start relay", xks_start_relay, "<on/off><password>",1,1, false);
+
+  MyCommandApp.RegisterCommand("trunk","Open trunk", CommandOpenTrunk, "<password>",1,1, false);
+  MyCommandApp.RegisterCommand("chargeport","Open chargeport", CommandOpenChargePort, "<password>",1,1, false);
+  MyCommandApp.RegisterCommand("parkbreakservice","Enable break pad service", CommandParkBreakService, "<on/off/off2>",1,1, false);
 
   // For test purposes
   MyCommandApp.RegisterCommand("sjb","Send command to SJB ECU", xks_sjb, "<b1><b2><b3>", 3,3, false);
@@ -226,20 +247,21 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
   ESP_LOGD(TAG, "Kia Soul EV reload configuration");
 
   // Instances:
-  // x.ks
+  // ks
   //	  cap_act_kwh			Battery capacity in wH (Default: 270000)
   //  suffsoc          	Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange        	Sufficient range [km] (Default: 0=disabled)
   //  maxrange         	Maximum ideal range at 20 °C [km] (Default: 160)
-  //
-  ks_battery_capacity = (float)MyConfig.GetParamValueInt("x.ks", "cap_act_kwh", CGF_DEFAULT_BATTERY_CAPACITY);
+  //  remote_charge_port					Use "trunk" button on keyfob to open charge port (Default: 1=enabled)
+  ks_battery_capacity = (float)MyConfig.GetParamValueInt("ks", "cap_act_kwh", CGF_DEFAULT_BATTERY_CAPACITY);
+  ks_key_fob_open_charge_port = (bool)MyConfig.GetParamValueBool("ks", "remote_charge_port", true);
 
-  ks_maxrange = MyConfig.GetParamValueInt("x.ks", "maxrange", CFG_DEFAULT_MAXRANGE);
+  ks_maxrange = MyConfig.GetParamValueInt("ks", "maxrange", CFG_DEFAULT_MAXRANGE);
   if (ks_maxrange <= 0)
     ks_maxrange = CFG_DEFAULT_MAXRANGE;
 
-  *StdMetrics.ms_v_charge_limit_soc = (float) MyConfig.GetParamValueInt("x.ks", "suffsoc");
-  *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("x.ks", "suffrange");
+  *StdMetrics.ms_v_charge_limit_soc = (float) MyConfig.GetParamValueInt("ks", "suffsoc");
+  *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("ks", "suffrange");
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -322,8 +344,8 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 				{
 				StdMetrics.ms_v_env_locked->SetValue(true); //Todo This only keeps track of the lock signal from keyfob
 				}
-			if( d[3] & 0x40 )
-				{ //TODO Should be possible to disable this function
+			if( d[3] & 0x40 && ks_key_fob_open_charge_port )
+				{
 				ks_openChargePort = true;
 				}
   	    }
@@ -1103,6 +1125,15 @@ bool OvmsVehicleKiaSoulEv::Send_SMK_Command( uint8_t b1, uint8_t b2, uint8_t b3,
 	}
 
 /**
+ * Send command to ABS & EBP Module
+ * 7d5 03 30 [b1] [b2]
+ */
+bool OvmsVehicleKiaSoulEv::Send_EBP_Command( uint8_t b1, uint8_t b2)
+	{
+	return SendCommandInSessionMode(ABS_EBP_UNIT, 3,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_LOC_ID, b1, b2, 0,0,0,0 );
+	}
+
+/**
  * Open or lock the doors
  * 771 04 2F BC 1[0:1] 03
  */
@@ -1193,52 +1224,64 @@ bool OvmsVehicleKiaSoulEv::RearDefogger(bool on)
 /**
  * ACC - relay
  */
-bool OvmsVehicleKiaSoulEv::ACCRelay(bool on)
+bool OvmsVehicleKiaSoulEv::ACCRelay(bool on, const char* password)
 	{
-  if( ks_shift_bits.Park )
-  		{
-  		if( on ) return Send_SMK_Command(7, 0xb1, 0x08, 0x03, 0x0a, 0x0a, 0x05);
-  		else return Send_SMK_Command(4, 0xb1, 0x08, 0, 0, 0, 0);
-  		}
+	if(IsPasswordOk(password))
+		{
+		if( ks_shift_bits.Park )
+				{
+				if( on ) return Send_SMK_Command(7, 0xb1, 0x08, 0x03, 0x0a, 0x0a, 0x05);
+				else return Send_SMK_Command(4, 0xb1, 0x08, 0, 0, 0, 0);
+				}
+		}
 	return false;
 	}
 
 /**
  * IGN1 - relay
  */
-bool OvmsVehicleKiaSoulEv::IGN1Relay(bool on)
+bool OvmsVehicleKiaSoulEv::IGN1Relay(bool on, const char* password)
 	{
-  if( ks_shift_bits.Park )
-  		{
-  		if( on ) return Send_SMK_Command(7, 0xb1, 0x09, 0x03, 0x0a, 0x0a, 0x05);
-  		else return Send_SMK_Command(4, 0xb1, 0x09, 0, 0, 0, 0);
-  		}
+	if(IsPasswordOk(password))
+		{
+		if( ks_shift_bits.Park )
+				{
+				if( on ) return Send_SMK_Command(7, 0xb1, 0x09, 0x03, 0x0a, 0x0a, 0x05);
+				else return Send_SMK_Command(4, 0xb1, 0x09, 0, 0, 0, 0);
+				}
+		}
 	return false;
 	}
 
 /**
  * IGN2 - relay
  */
-bool OvmsVehicleKiaSoulEv::IGN2Relay(bool on)
+bool OvmsVehicleKiaSoulEv::IGN2Relay(bool on, const char* password)
 	{
-  if( ks_shift_bits.Park )
-  		{
-  		if( on ) return Send_SMK_Command(7, 0xb1, 0x0a, 0x03, 0x0a, 0x0a, 0x05);
-  		else return Send_SMK_Command(4, 0xb1, 0x0a, 0, 0, 0, 0);
-  		}
+	if(IsPasswordOk(password))
+		{
+		if( ks_shift_bits.Park )
+				{
+				if( on ) return Send_SMK_Command(7, 0xb1, 0x0a, 0x03, 0x0a, 0x0a, 0x05);
+				else return Send_SMK_Command(4, 0xb1, 0x0a, 0, 0, 0, 0);
+				}
+		}
 	return false;
 	}
 
 /**
  * Start - relay
  */
-bool OvmsVehicleKiaSoulEv::StartRelay(bool on)
+bool OvmsVehicleKiaSoulEv::StartRelay(bool on, const char* password)
 	{
-  if( ks_shift_bits.Park )
-  		{
-  		if( on ) return Send_SMK_Command(7, 0xb1, 0x0b, 0x03, 0x0a, 0x0a, 0x05);
-  		else return Send_SMK_Command(4, 0xb1, 0x0b, 0, 0, 0, 0);
-  		}
+	if(IsPasswordOk(password))
+		{
+		if( ks_shift_bits.Park )
+				{
+				if( on ) return Send_SMK_Command(7, 0xb1, 0x0b, 0x03, 0x02, 0x02, 0x01);
+				else return Send_SMK_Command(4, 0xb1, 0x0b, 0, 0, 0, 0);
+				}
+		}
 	return false;
 	}
 
@@ -1280,6 +1323,63 @@ void CommandOpenChargePort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 	{
   OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
 	soul->OpenChargePort(argv[0]);
+	}
+
+/**
+ * Command to enable service mode on park breaks
+ */
+void CommandParkBreakService(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+	{
+  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
+	if( strcmp(argv[0],"on")==0 )
+		{
+	  soul->Send_EBP_Command(0x02, 0x01);
+		}
+	else if( strcmp(argv[0],"off")==0 )
+		{
+	  soul->Send_EBP_Command(0x02, 0x03);
+		}
+	else if( strcmp(argv[0],"off2")==0 )
+		{
+	  soul->Send_EBP_Command(0x01, 0x01);
+		}
+	}
+
+/**
+ * Command to enable IGN1
+ */
+void xks_ign1(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+	{
+  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
+	soul->IGN1Relay( strcmp(argv[0],"on")==0, argv[1] );
+	}
+
+/**
+ * Command to enable IGN2
+ */
+void xks_ign2(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+	{
+  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
+	soul->IGN2Relay( strcmp(argv[0],"on")==0, argv[1] );
+	}
+
+
+/**
+ * Command to enable ACC relay
+ */
+void xks_acc_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+	{
+  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
+	soul->ACCRelay( strcmp(argv[0],"on")==0, argv[1] );
+	}
+
+/**
+ * Command to enable start relay
+ */
+void xks_start_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+	{
+  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
+	soul->StartRelay( strcmp(argv[0],"on")==0, argv[1] );
 	}
 
 void xks_sjb(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
