@@ -56,6 +56,10 @@ void CommandOpenChargePort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 void CommandParkBreakService(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xks_sjb(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xks_bcm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xks_ign1(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xks_ign2(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xks_acc_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xks_start_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
 class OvmsVehicleKiaSoulEv : public OvmsVehicle
   {
@@ -80,6 +84,10 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 
     bool OpenTrunk(const char* password);
     bool OpenChargePort(const char* password);
+    bool ACCRelay(bool,const char *password);
+    bool IGN1Relay(bool,const char *password);
+    bool IGN2Relay(bool,const char *password);
+    bool StartRelay(bool,const char *password);
 
     uint32_t ks_tpms_id[4];
     uint8_t ks_battery_cell_voltage[101];
@@ -133,10 +141,6 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     bool LeftIndicator(bool);
     bool RightIndicator(bool);
     bool RearDefogger(bool);
-    bool ACCRelay(bool);
-    bool IGN1Relay(bool);
-    bool IGN2Relay(bool);
-    bool StartRelay(bool);
     bool IsPasswordOk(const char *password);
     void SetChargeMetrics(float voltage, float current, float climit, bool chademo);
 
