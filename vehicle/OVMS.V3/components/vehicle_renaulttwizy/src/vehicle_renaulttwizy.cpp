@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-renaulttwizy";
 
-#define VERSION "0.5.0"
+#define VERSION "0.6.0"
 
 #include <stdio.h>
 #include <string>
@@ -92,6 +92,7 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   // init subsystems:
   BatteryInit();
   PowerInit();
+  ChargeInit();
   
   // init event listener:
   using std::placeholders::_1;
@@ -320,6 +321,10 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::ProcessMsgCo
       // send power usage data record:
       MyNotify.NotifyCommand("data", "xrt power stats");
       return Success;
+    
+    case CMD_QueryChargeAlerts:
+    case CMD_SetChargeAlerts:
+      return MsgCommandCA(result, command, args);
     
     default:
       return NotImplemented;
