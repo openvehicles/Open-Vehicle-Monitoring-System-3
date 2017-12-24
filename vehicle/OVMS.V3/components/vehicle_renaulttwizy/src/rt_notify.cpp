@@ -1,7 +1,7 @@
 /**
  * Project:      Open Vehicle Monitor System
  * Module:       Renault Twizy: general notifications, alerts & data updates
- * 					see rt_battmon & rt_pwrmon for specific notifications
+ *                              (see rt_battmon & rt_pwrmon for specific notifications)
  * 
  * (c) 2017  Michael Balzer <dexter@dexters-web.de>
  * 
@@ -318,18 +318,18 @@ void OvmsVehicleRenaultTwizy::SendTripLog()
           + twizy_speedpwr[CAN_SPEED_DECEL].rec;
 
   // H type "RT-PWR-Log"
-	//   ,odometer_km,latitude,longitude,altitude
-	//   ,chargestate,parktime_min
-	//   ,soc,soc_min,soc_max
-	//   ,power_used_wh,power_recd_wh,power_distance
-	//   ,range_estim_km,range_ideal_km
-	//   ,batt_volt,batt_volt_min,batt_volt_max
-	//   ,batt_temp,batt_temp_min,batt_temp_max
-	//   ,motor_temp,pem_temp
-	//   ,trip_length_km,trip_soc_usage
-	//   ,trip_avg_speed_kph,trip_avg_accel_kps,trip_avg_decel_kps
-	//   ,charge_used_ah,charge_recd_ah,batt_capacity_prc
-	//   ,chg_temp
+  //   ,odometer_km,latitude,longitude,altitude
+  //   ,chargestate,parktime_min
+  //   ,soc,soc_min,soc_max
+  //   ,power_used_wh,power_recd_wh,power_distance
+  //   ,range_estim_km,range_ideal_km
+  //   ,batt_volt,batt_volt_min,batt_volt_max
+  //   ,batt_temp,batt_temp_min,batt_temp_max
+  //   ,motor_temp,pem_temp
+  //   ,trip_length_km,trip_soc_usage
+  //   ,trip_avg_speed_kph,trip_avg_accel_kps,trip_avg_decel_kps
+  //   ,charge_used_ah,charge_recd_ah,batt_capacity_prc
+  //   ,chg_temp
   
   ostringstream buf;
   buf
