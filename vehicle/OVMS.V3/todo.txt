@@ -4,38 +4,38 @@ Who     Status     Topic
 ======= ========== =================================================
 
                    Peripherals
-MWJ     Prototype    1. CAN base
+MWJ     Done         1. CAN base
 MWJ     Done         2. ESP32ADC
-MWJ     90%          3. ESP32CAN
-MWJ     Prototype    4. MAX7317
-        Stub         5. MCP2515
-        Stub         6. PCP
+MWJ     Done         3. ESP32CAN
+MWJ     Done         4. MAX7317
+MWJ     90%          5. MCP2515
+MWJ     Done         6. PCP
 MWJ     Done         7. SDCARD
 MWJ     Done         8. SPINODMA
 
                    Metrics
 MWJ     Done         Base metric system
-MWJ                  Metric formatting
+MWJ     Done         Metric formatting
 
                    Vehicle
-        20%          Base vehicle support
-                     OBDII Poll support
-MWJ                  Tesla roadster port
-                     Kia Soul port
+MWJ     Done         Base vehicle support
+MWJ     Done         OBDII Poll support
+MWJ     95%          Tesla roadster port
+GØV     90%          Kia Soul port
                      Kyburz port
                      Mitsubishi iMiev port
                      Nissan Leaf port
-                     OBDII port
+MWJ     90%          OBDII port
                      TRACK vehicle port
                      Tazzari port
                      Think City port
-MB      10%          Renault Twizy port
+MB      95%          Renault Twizy port
                      Volt Ampera port
                      Renault Zoe port
 
                    OBDII console
-                     OBDII console framework
-                     OBDII PID mapping
+GD      Done         OBDII console framework
+GD      Done         OBDII PID mapping
 
                    Console/Command
 SC      Done         Microrl tab expansion
@@ -47,25 +47,26 @@ SC      Done         Alert/progress messages
                      Wifi gateway
 
                    Config system
-MWJ                  SPIFS wear-leveled filesystem in flash
-MWJ                  Config system
+MWJ    Done          FAT/SPIFS wear-leveled filesystem in flash
+MWJ    Done          Config system
 MWJ                  Component launch based on config
 
                    Event system
-                     Event system
-                     Event hooks in key components
+MWJ    Done          Event system
+MWJ    Done          Event hooks in key components
 
                    Comms system
-                     SIMCOM modem support
-                     SIMCOM GPS support
-                     WIFI support
+MWJ    95%           SIMCOM modem support
+MB     Done          SIMCOM GPS support
+MWJ    Done          WIFI support
                      BLUETOOTH support
 
                    Server Comms
-                     OVMS v2 protocol
+MWJ    Done          OVMS v2 protocol
                      MQTT protocol
 
                    OTA
-                     OTA update system
-                     CFCARD update system
-                     WIFI update system
+MWJ    90%           OTA update system
+MWJ    Done          CFCARD update system
+MWJ    Done          Network/WIFI update system
+
