@@ -76,7 +76,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   private:
     void UpdateMaxRange();
     void UpdateChargeTimes();
-    int ChargeTime(int dstsoc);
+    int CalcChargeTime(int dstsoc);
     
   
   // --------------------------------------------------------------------------
