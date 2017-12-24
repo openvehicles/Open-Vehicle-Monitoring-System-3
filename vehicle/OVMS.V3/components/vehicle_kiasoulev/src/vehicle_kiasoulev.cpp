@@ -64,6 +64,9 @@
 ;		 0.2.8  22-Dec-2017 - Geir Øyvind Vælidalo
 ;			- Renamed xks to ks - Config, metric list and command.
 ;
+;		 0.2.9  24-Dec-2017 - Geir Øyvind Vælidalo
+;			- Renamed ks back to xks - Config, metric list and command.
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -106,7 +109,7 @@ static const char *TAG = "v-kiasoulev";
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 
-#define VERSION "0.2.8"
+#define VERSION "0.2.9"
 
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
@@ -167,36 +170,36 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   // M-Bus
   RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
 
-  MyConfig.RegisterParam("ks", "Kia Soul EV", true, true);
+  MyConfig.RegisterParam("xks", "Kia Soul EV", true, true);
   ConfigChanged(NULL);
 
   // init metrics:
-  m_version = MyMetrics.InitString("ks.version", 0, VERSION " " __DATE__ " " __TIME__);
-  m_b_cell_volt_max = MyMetrics.InitFloat("ks.b.cell.volt.max", 10, 0, Volts);
-  m_b_cell_volt_min = MyMetrics.InitFloat("ks.b.cell.volt.min", 10, 0, Volts);
-  m_b_cell_volt_max_no = MyMetrics.InitInt("ks.b.cell.volt.max.no", 10, 0);
-  m_b_cell_volt_min_no = MyMetrics.InitInt("ks.b.cell.volt.min.no", 10, 0);
-  m_b_cell_det_max = MyMetrics.InitFloat("ks.b.cell.det.max", 0, 0, Percentage);
-  m_b_cell_det_min = MyMetrics.InitFloat("ks.b.cell.det.min", 0, 0, Percentage);
-  m_b_cell_det_max_no = MyMetrics.InitInt("ks.b.cell.det.max.no", 10, 0);
-  m_b_cell_det_min_no = MyMetrics.InitInt("ks.b.cell.det.min.no", 10, 0);
-  m_c_power = MyMetrics.InitFloat("ks.c.power", 10, 0, kW);
-  m_c_speed = MyMetrics.InitFloat("ks.c.speed", 10, 0, Kph);
-  m_b_min_temperature = MyMetrics.InitInt("ks.b.min.temp", 10, 0, Celcius);
-  m_b_max_temperature = MyMetrics.InitInt("ks.b.max.temp", 10, 0, Celcius);
-  m_b_inlet_temperature = MyMetrics.InitInt("ks.b.inlet.temp", 10, 0, Celcius);
-  m_b_heat_1_temperature = MyMetrics.InitInt("ks.b.heat1.temp", 10, 0, Celcius);
-  m_b_heat_2_temperature = MyMetrics.InitInt("ks.b.heat2.temp", 10, 0, Celcius);
+  m_version = MyMetrics.InitString("xks.version", 0, VERSION " " __DATE__ " " __TIME__);
+  m_b_cell_volt_max = MyMetrics.InitFloat("xks.b.cell.volt.max", 10, 0, Volts);
+  m_b_cell_volt_min = MyMetrics.InitFloat("xks.b.cell.volt.min", 10, 0, Volts);
+  m_b_cell_volt_max_no = MyMetrics.InitInt("xks.b.cell.volt.max.no", 10, 0);
+  m_b_cell_volt_min_no = MyMetrics.InitInt("xks.b.cell.volt.min.no", 10, 0);
+  m_b_cell_det_max = MyMetrics.InitFloat("xks.b.cell.det.max", 0, 0, Percentage);
+  m_b_cell_det_min = MyMetrics.InitFloat("xks.b.cell.det.min", 0, 0, Percentage);
+  m_b_cell_det_max_no = MyMetrics.InitInt("xks.b.cell.det.max.no", 10, 0);
+  m_b_cell_det_min_no = MyMetrics.InitInt("xks.b.cell.det.min.no", 10, 0);
+  m_c_power = MyMetrics.InitFloat("xks.c.power", 10, 0, kW);
+  m_c_speed = MyMetrics.InitFloat("xks.c.speed", 10, 0, Kph);
+  m_b_min_temperature = MyMetrics.InitInt("xks.b.min.temp", 10, 0, Celcius);
+  m_b_max_temperature = MyMetrics.InitInt("xks.b.max.temp", 10, 0, Celcius);
+  m_b_inlet_temperature = MyMetrics.InitInt("xks.b.inlet.temp", 10, 0, Celcius);
+  m_b_heat_1_temperature = MyMetrics.InitInt("xks.b.heat1.temp", 10, 0, Celcius);
+  m_b_heat_2_temperature = MyMetrics.InitInt("xks.b.heat2.temp", 10, 0, Celcius);
 
-  m_ldc_out_voltage = MyMetrics.InitFloat("ks.ldc.out.volt", 10, 12, Volts);
-  m_ldc_in_voltage = MyMetrics.InitFloat("ks.ldc.in.volt", 10, 12, Volts);
-  m_ldc_out_current = MyMetrics.InitFloat("ks.ldc.out.amps", 10, 0, Amps);
-  m_ldc_temperature = MyMetrics.InitFloat("ks.ldc.temp", 10, 0, Celcius);
+  m_ldc_out_voltage = MyMetrics.InitFloat("xks.ldc.out.volt", 10, 12, Volts);
+  m_ldc_in_voltage = MyMetrics.InitFloat("xks.ldc.in.volt", 10, 12, Volts);
+  m_ldc_out_current = MyMetrics.InitFloat("xks.ldc.out.amps", 10, 0, Amps);
+  m_ldc_temperature = MyMetrics.InitFloat("xks.ldc.temp", 10, 0, Celcius);
 
-  m_obc_pilot_duty = MyMetrics.InitFloat("ks.obc.pilot.duty", 10, 0, Percentage);
+  m_obc_pilot_duty = MyMetrics.InitFloat("xks.obc.pilot.duty", 10, 0, Percentage);
 
-  m_v_env_lowbeam = MyMetrics.InitBool("ks.e.lowbeam", 10, 0);
-  m_v_env_highbeam = MyMetrics.InitBool("ks.e.highbeam", 10, 0);
+  m_v_env_lowbeam = MyMetrics.InitBool("xks.e.lowbeam", 10, 0);
+  m_v_env_highbeam = MyMetrics.InitBool("xks.e.highbeam", 10, 0);
 
   m_b_cell_det_max->SetValue(0);
   m_b_cell_det_min->SetValue(0);
@@ -206,7 +209,7 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   StdMetrics.ms_v_env_on->SetValue(false);
 
   // init commands:
-  cmd_xks = MyCommandApp.RegisterCommand("ks","Kia Soul EV",NULL,"",0,0,true);
+  cmd_xks = MyCommandApp.RegisterCommand("xks","Kia Soul EV",NULL,"",0,0,true);
   cmd_xks->RegisterCommand("trip","Show trip info", xks_trip, 0,0, false);
   cmd_xks->RegisterCommand("tpms","Tire pressure monitor", xks_tpms, 0,0, false);
   cmd_xks->RegisterCommand("cells","Cell voltages", xks_cells, 0,0, false);
@@ -252,21 +255,21 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
   ESP_LOGD(TAG, "Kia Soul EV reload configuration");
 
   // Instances:
-  // ks
+  // xks
   //	  cap_act_kwh			Battery capacity in wH (Default: 270000)
   //  suffsoc          	Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange        	Sufficient range [km] (Default: 0=disabled)
   //  maxrange         	Maximum ideal range at 20 °C [km] (Default: 160)
   //  remote_charge_port					Use "trunk" button on keyfob to open charge port (Default: 1=enabled)
-  ks_battery_capacity = (float)MyConfig.GetParamValueInt("ks", "cap_act_kwh", CGF_DEFAULT_BATTERY_CAPACITY);
-  ks_key_fob_open_charge_port = (bool)MyConfig.GetParamValueBool("ks", "remote_charge_port", true);
+  ks_battery_capacity = (float)MyConfig.GetParamValueInt("xks", "cap_act_kwh", CGF_DEFAULT_BATTERY_CAPACITY);
+  ks_key_fob_open_charge_port = (bool)MyConfig.GetParamValueBool("xks", "remote_charge_port", true);
 
-  ks_maxrange = MyConfig.GetParamValueInt("ks", "maxrange", CFG_DEFAULT_MAXRANGE);
+  ks_maxrange = MyConfig.GetParamValueInt("xks", "maxrange", CFG_DEFAULT_MAXRANGE);
   if (ks_maxrange <= 0)
     ks_maxrange = CFG_DEFAULT_MAXRANGE;
 
-  *StdMetrics.ms_v_charge_limit_soc = (float) MyConfig.GetParamValueInt("ks", "suffsoc");
-  *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("ks", "suffrange");
+  *StdMetrics.ms_v_charge_limit_soc = (float) MyConfig.GetParamValueInt("xks", "suffsoc");
+  *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("xks", "suffrange");
 	}
 
 /**
