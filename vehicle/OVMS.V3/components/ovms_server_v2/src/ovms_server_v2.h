@@ -57,9 +57,11 @@ class OvmsServerV2 : public OvmsServer
   public:
     void ServerTask();
 
+  public:
+    void Disconnect();
+
   protected:
     bool Connect();
-    void Disconnect();
     bool Login();
     void ProcessServerMsg();
     void ProcessCommand(const char* payload);
