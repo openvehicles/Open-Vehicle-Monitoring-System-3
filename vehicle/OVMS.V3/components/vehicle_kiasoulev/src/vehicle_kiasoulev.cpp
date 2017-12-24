@@ -124,6 +124,9 @@ static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
     { 0, 0, 0, 0, { 0, 0, 0 } }
   };
 
+/**
+ * Constructor for Kia Soul EV
+ */
 OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   {
   ESP_LOGI(TAG, "Kia Soul EV v3.0 vehicle module");
@@ -229,6 +232,9 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
   }
 
+/**
+ * Destructor
+ */
 OvmsVehicleKiaSoulEv::~OvmsVehicleKiaSoulEv()
   {
   ESP_LOGI(TAG, "Shutdown Kia Soul EV vehicle module");
@@ -241,7 +247,6 @@ OvmsVehicleKiaSoulEv::~OvmsVehicleKiaSoulEv()
 /**
  * ConfigChanged: reload single/all configuration variables
  */
-
 void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
 	{
   ESP_LOGD(TAG, "Kia Soul EV reload configuration");
@@ -264,11 +269,11 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
   *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("ks", "suffrange");
 	}
 
-////////////////////////////////////////////////////////////////////////
-// vehicle_kiasoulev_car_on()
-// Takes care of setting all the state appropriate when the car is on
-// or off. Centralized so we can more easily make on and off mirror
-// images.
+/**
+ * Takes care of setting all the state appropriate when the car is on
+ * or off. Centralized so we can more easily make on and off mirror
+ * images.
+ */
 void OvmsVehicleKiaSoulEv::vehicle_kiasoulev_car_on(bool isOn)
   {
 
@@ -715,6 +720,9 @@ void OvmsVehicleKiaSoulEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
 		}
 	}
 
+/**
+ * Handle incoming messages from LDC-poll
+ */
 /**
  * Hanlde incoming messages from LDC-poll
  */
