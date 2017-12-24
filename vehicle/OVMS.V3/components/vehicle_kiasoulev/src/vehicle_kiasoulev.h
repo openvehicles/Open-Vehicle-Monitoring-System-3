@@ -50,6 +50,16 @@ typedef union {
 void xks_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xks_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xks_cells(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xks_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void CommandOpenTrunk(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void CommandOpenChargePort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void CommandParkBreakService(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xks_sjb(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xks_bcm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xks_ign1(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xks_ign2(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xks_acc_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xks_start_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
 class OvmsVehicleKiaSoulEv : public OvmsVehicle
   {
@@ -64,9 +74,20 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void ConfigChanged(OvmsConfigParam* param);
     vehicle_command_t CommandHandler(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    bool Send_SJB_Command( uint8_t b1, uint8_t b2, uint8_t b3);
+    bool Send_BCM_Command( uint8_t b1, uint8_t b2, uint8_t b3);
+    bool Send_SMK_Command( uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint8_t b5, uint8_t b6, uint8_t b7);
+    bool Send_EBP_Command( uint8_t b1, uint8_t b2);
 
     virtual OvmsVehicle::vehicle_command_t CommandLock(const char* pin);
     virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
+
+    bool OpenTrunk(const char* password);
+    bool OpenChargePort(const char* password);
+    bool ACCRelay(bool,const char *password);
+    bool IGN1Relay(bool,const char *password);
+    bool IGN2Relay(bool,const char *password);
+    bool StartRelay(bool,const char *password);
 
     uint32_t ks_tpms_id[4];
     uint8_t ks_battery_cell_voltage[101];
@@ -95,20 +116,31 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     OvmsMetricFloat* m_ldc_temperature;
 
   protected:
+    void IncomingTPMS(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingOBC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingBMC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingLDC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void RequestNotify(unsigned int which);
     void DoNotify();
     void vehicle_kiasoulev_car_on(bool isOn);
     void UpdateMaxRangeAndSOH(void);
     uint16_t calcMinutesRemaining(float target);
+    void SendCanMessage(uint16_t id, uint8_t count,
+						uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
+						uint8_t b5, uint8_t b6);
     bool SendCanMessage_sync(uint16_t id, uint8_t count,
     					uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
 						uint8_t b5, uint8_t b6);
     bool SendCommandInSessionMode(uint16_t id, uint8_t count,
     					uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
 						uint8_t b5, uint8_t b6 );
-    bool SetTemporarySessionMode(uint16_t id, uint8_t mode);
+    void SendTesterPresent(uint16_t id, uint8_t length);
+    bool SetSessionMode(uint16_t id, uint8_t mode);
     bool SetDoorLock(bool open, const char* password);
-    bool OpenTrunk(const char* password);
+    bool LeftIndicator(bool);
+    bool RightIndicator(bool);
+    bool RearDefogger(bool);
     bool IsPasswordOk(const char *password);
     void SetChargeMetrics(float voltage, float current, float climit, bool chademo);
 
@@ -142,6 +174,9 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 
     INT ks_battery_current; 			// Temporary storage for Battery current: 0x7ec 02 21 01 -> 21 7+22 1
 
+    bool ks_openChargePort;				// Tells the Ticker1 to open charge port
+    bool ks_key_fob_open_charge_port;	// Enable/disable open charge port using trunk-button on key fob
+
     uint32_t ks_battery_cum_charge_current; 		//Cumulated charge current    02 21 01 -> 24 6+7 & 25 1+2
     uint32_t ks_battery_cum_discharge_current;	//Cumulated discharge current 02 21 01 -> 25 3-6
     uint32_t ks_battery_cum_charge; 						//Cumulated charge power      02 21 01 -> 25 7 + 26 1-3
@@ -155,6 +190,8 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 
     bool ks_ldc_enabled;
 
+    bool ks_aux_bat_ok;
+
     struct {
       unsigned char ChargingChademo : 1;
       unsigned char ChargingJ1772 : 1;
@@ -167,9 +204,9 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
       uint8_t byte[8];
       uint8_t status;
       uint16_t id;
-    }  ks_send_can;
+    } ks_send_can;
 
-	const TickType_t xDelay = 50 / portTICK_PERIOD_MS;
+    const TickType_t xDelay = 50 / portTICK_PERIOD_MS;
   };
 
 #define SQR(n) ((n)*(n))
@@ -206,13 +243,23 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 #define CUM_DISCHARGE	((float)ks_battery_cum_discharge/10.0)
 #define SET_TPMS_ID(n, v)	if (v > 0) ks_tpms_id[n] = v;
 
-#define VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID 0x2F // InputOutputControlByIdentifier
+#define VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID 0x2F	// InputOutputControlByCommonID
+#define VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_LOC_ID	0x30 	// InputOutputControlByLocalID
+#define VEHICLE_POLL_TYPE_OBDII_TESTER_PRESENT	0x3E 	// TesterPresent
 
+#define DEFAULT_SESSION 0x01
+#define PROGRAMMING_SESSION 0x02
+#define EXTENDED_DIAGNOSTIC_SESSION 0x03
+#define SAFETY_SYSTEM_DIAGNOSTIC_SESSION 0x04
+
+// ECUs
 #define SMART_JUNCTION_BOX 0x771
 #define BODY_CONTROL_MODULE  0x7A0
+#define SMART_KEY_UNIT 0x7A5
+#define ABS_EBP_UNIT 0x7A5
 
 // Notifications:
-//#define SEND_BatteryAlert           (1<< 0)  // text alert: battery problem
+#define SEND_AuxBattery_Low           (1<< 0)  // text alert: AUX battery problem
 //#define SEND_PowerNotify            (1<< 1)  // text alert: power usage summary
 //#define SEND_DataUpdate             (1<< 2)  // regular data update (per minute)
 //#define SEND_StreamUpdate           (1<< 3)  // stream data update (per second)
