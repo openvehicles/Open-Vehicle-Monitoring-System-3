@@ -1569,7 +1569,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
   MyEvents.RegisterEvent(TAG, "system.modem.received.ussd", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
-  
+
   // read config:
   ConfigChanged(NULL);
   }
@@ -1637,12 +1637,30 @@ void ovmsv2_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 
 class OvmsServerV2Init
     {
-    public: OvmsServerV2Init();
+    public:
+      OvmsServerV2Init();
+
+    public:
+      void NetDown(std::string event, void* data);
   } OvmsServerV2Init  __attribute__ ((init_priority (6100)));
+
+void OvmsServerV2Init::NetDown(std::string event, void* data)
+  {
+  if (MyOvmsServerV2)
+    {
+    ESP_LOGI(TAG, "Network is down, so disconnect network connection");
+    MyOvmsServerV2->Disconnect();
+    }
+  }
 
 OvmsServerV2Init::OvmsServerV2Init()
   {
   ESP_LOGI(TAG, "Initialising OVMS V2 Server (6100)");
+
+  #undef bind  // Kludgy, but works
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG,"network.reconfigured", std::bind(&OvmsServerV2Init::NetDown, this, _1, _2));
 
   OvmsCommand* cmd_server = MyCommandApp.FindCommand("server");
   OvmsCommand* cmd_v2 = cmd_server->RegisterCommand("v2","OVMS Server V2 Protocol", NULL, "", 0, 0);

@@ -212,6 +212,8 @@ void GsmPPPOS::Shutdown(bool hard)
       {
       ESP_LOGI(TAG, "Shutting down (soft)...");
       }
+    m_connected = false;
+    MyEvents.SignalEvent("system.modem.down",NULL);
     pppapi_close(m_ppp, nocarrier);
     }
   else
