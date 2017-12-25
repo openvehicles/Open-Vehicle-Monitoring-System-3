@@ -64,6 +64,15 @@
 ;		 0.2.8  22-Dec-2017 - Geir Øyvind Vælidalo
 ;			- Renamed xks to ks - Config, metric list and command.
 ;
+;		 0.2.9  24-Dec-2017 - Geir Øyvind Vælidalo
+;			- Renamed ks back to xks - Config, metric list and command.
+;
+;		 0.3.0  25-Dec-2017 - Geir Øyvind Vælidalo
+;			- VIN is tested and is working.
+;			- Added xks vin command which displays decoded VIN data.
+;			- V2 Feature-handling
+;			- Unlock doors and trunk now works even when car is off.
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -89,7 +98,6 @@
 */
 
 //TODO
-//		- ProcessCommand and Set and GetFeature - See twizy-code.
 //		- parkbreakservice is not working
 //		- IGN1-, IGN2-, ACC-, Start-relay is working but turns on just for a second or so.
 //		- Rear defogger works, but only as long as TesterPresent is sent.
@@ -106,11 +114,11 @@ static const char *TAG = "v-kiasoulev";
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 
-#define VERSION "0.2.8"
+#define VERSION "0.3.0"
 
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
-    { 0x7e2, 0, 	   VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, {  30,  30,  30 } }, 	// VIN
+    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, {  30,  30,  30 } }, 	// VIN
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, {  30,  10,  10 } }, 	// BMC Diag page 01
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, {  30,  30,  10 } }, 	// BMC Diag page 02
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x03, {  30,  30,  10 } }, 	// BMC Diag page 03
@@ -132,6 +140,7 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   ESP_LOGI(TAG, "Kia Soul EV v3.0 vehicle module");
 
   memset( m_vin, 0, sizeof(m_vin));
+
   memset( ks_battery_cell_voltage ,0, sizeof(ks_battery_cell_voltage));
   memset( ks_battery_module_temp, 0, sizeof(ks_battery_module_temp));
   memset( ks_tpms_id, 0, sizeof(ks_tpms_id));
@@ -167,36 +176,36 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   // M-Bus
   RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
 
-  MyConfig.RegisterParam("ks", "Kia Soul EV", true, true);
+  MyConfig.RegisterParam("xks", "Kia Soul EV", true, true);
   ConfigChanged(NULL);
 
   // init metrics:
-  m_version = MyMetrics.InitString("ks.version", 0, VERSION " " __DATE__ " " __TIME__);
-  m_b_cell_volt_max = MyMetrics.InitFloat("ks.b.cell.volt.max", 10, 0, Volts);
-  m_b_cell_volt_min = MyMetrics.InitFloat("ks.b.cell.volt.min", 10, 0, Volts);
-  m_b_cell_volt_max_no = MyMetrics.InitInt("ks.b.cell.volt.max.no", 10, 0);
-  m_b_cell_volt_min_no = MyMetrics.InitInt("ks.b.cell.volt.min.no", 10, 0);
-  m_b_cell_det_max = MyMetrics.InitFloat("ks.b.cell.det.max", 0, 0, Percentage);
-  m_b_cell_det_min = MyMetrics.InitFloat("ks.b.cell.det.min", 0, 0, Percentage);
-  m_b_cell_det_max_no = MyMetrics.InitInt("ks.b.cell.det.max.no", 10, 0);
-  m_b_cell_det_min_no = MyMetrics.InitInt("ks.b.cell.det.min.no", 10, 0);
-  m_c_power = MyMetrics.InitFloat("ks.c.power", 10, 0, kW);
-  m_c_speed = MyMetrics.InitFloat("ks.c.speed", 10, 0, Kph);
-  m_b_min_temperature = MyMetrics.InitInt("ks.b.min.temp", 10, 0, Celcius);
-  m_b_max_temperature = MyMetrics.InitInt("ks.b.max.temp", 10, 0, Celcius);
-  m_b_inlet_temperature = MyMetrics.InitInt("ks.b.inlet.temp", 10, 0, Celcius);
-  m_b_heat_1_temperature = MyMetrics.InitInt("ks.b.heat1.temp", 10, 0, Celcius);
-  m_b_heat_2_temperature = MyMetrics.InitInt("ks.b.heat2.temp", 10, 0, Celcius);
+  m_version = MyMetrics.InitString("xks.version", 0, VERSION " " __DATE__ " " __TIME__);
+  m_b_cell_volt_max = MyMetrics.InitFloat("xks.b.cell.volt.max", 10, 0, Volts);
+  m_b_cell_volt_min = MyMetrics.InitFloat("xks.b.cell.volt.min", 10, 0, Volts);
+  m_b_cell_volt_max_no = MyMetrics.InitInt("xks.b.cell.volt.max.no", 10, 0);
+  m_b_cell_volt_min_no = MyMetrics.InitInt("xks.b.cell.volt.min.no", 10, 0);
+  m_b_cell_det_max = MyMetrics.InitFloat("xks.b.cell.det.max", 0, 0, Percentage);
+  m_b_cell_det_min = MyMetrics.InitFloat("xks.b.cell.det.min", 0, 0, Percentage);
+  m_b_cell_det_max_no = MyMetrics.InitInt("xks.b.cell.det.max.no", 10, 0);
+  m_b_cell_det_min_no = MyMetrics.InitInt("xks.b.cell.det.min.no", 10, 0);
+  m_c_power = MyMetrics.InitFloat("xks.c.power", 10, 0, kW);
+  m_c_speed = MyMetrics.InitFloat("xks.c.speed", 10, 0, Kph);
+  m_b_min_temperature = MyMetrics.InitInt("xks.b.min.temp", 10, 0, Celcius);
+  m_b_max_temperature = MyMetrics.InitInt("xks.b.max.temp", 10, 0, Celcius);
+  m_b_inlet_temperature = MyMetrics.InitInt("xks.b.inlet.temp", 10, 0, Celcius);
+  m_b_heat_1_temperature = MyMetrics.InitInt("xks.b.heat1.temp", 10, 0, Celcius);
+  m_b_heat_2_temperature = MyMetrics.InitInt("xks.b.heat2.temp", 10, 0, Celcius);
 
-  m_ldc_out_voltage = MyMetrics.InitFloat("ks.ldc.out.volt", 10, 12, Volts);
-  m_ldc_in_voltage = MyMetrics.InitFloat("ks.ldc.in.volt", 10, 12, Volts);
-  m_ldc_out_current = MyMetrics.InitFloat("ks.ldc.out.amps", 10, 0, Amps);
-  m_ldc_temperature = MyMetrics.InitFloat("ks.ldc.temp", 10, 0, Celcius);
+  m_ldc_out_voltage = MyMetrics.InitFloat("xks.ldc.out.volt", 10, 12, Volts);
+  m_ldc_in_voltage = MyMetrics.InitFloat("xks.ldc.in.volt", 10, 12, Volts);
+  m_ldc_out_current = MyMetrics.InitFloat("xks.ldc.out.amps", 10, 0, Amps);
+  m_ldc_temperature = MyMetrics.InitFloat("xks.ldc.temp", 10, 0, Celcius);
 
-  m_obc_pilot_duty = MyMetrics.InitFloat("ks.obc.pilot.duty", 10, 0, Percentage);
+  m_obc_pilot_duty = MyMetrics.InitFloat("xks.obc.pilot.duty", 10, 0, Percentage);
 
-  m_v_env_lowbeam = MyMetrics.InitBool("ks.e.lowbeam", 10, 0);
-  m_v_env_highbeam = MyMetrics.InitBool("ks.e.highbeam", 10, 0);
+  m_v_env_lowbeam = MyMetrics.InitBool("xks.e.lowbeam", 10, 0);
+  m_v_env_highbeam = MyMetrics.InitBool("xks.e.highbeam", 10, 0);
 
   m_b_cell_det_max->SetValue(0);
   m_b_cell_det_min->SetValue(0);
@@ -206,11 +215,12 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   StdMetrics.ms_v_env_on->SetValue(false);
 
   // init commands:
-  cmd_xks = MyCommandApp.RegisterCommand("ks","Kia Soul EV",NULL,"",0,0,true);
+  cmd_xks = MyCommandApp.RegisterCommand("xks","Kia Soul EV",NULL,"",0,0,true);
   cmd_xks->RegisterCommand("trip","Show trip info", xks_trip, 0,0, false);
   cmd_xks->RegisterCommand("tpms","Tire pressure monitor", xks_tpms, 0,0, false);
   cmd_xks->RegisterCommand("cells","Cell voltages", xks_cells, 0,0, false);
   cmd_xks->RegisterCommand("aux","Aux battery", xks_aux, 0,0, false);
+  cmd_xks->RegisterCommand("vin","VIN information", xks_vin, 0,0, false);
   cmd_xks->RegisterCommand("IGN1","IGN1 relay", xks_ign1, "<on/off><password>",1,1, false);
   cmd_xks->RegisterCommand("IGN2","IGN2 relay", xks_ign2, "<on/off><password>",1,1, false);
   cmd_xks->RegisterCommand("ACC","ACC relay", xks_acc_relay, "<on/off><password>",1,1, false);
@@ -252,21 +262,21 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
   ESP_LOGD(TAG, "Kia Soul EV reload configuration");
 
   // Instances:
-  // ks
+  // xks
   //	  cap_act_kwh			Battery capacity in wH (Default: 270000)
   //  suffsoc          	Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange        	Sufficient range [km] (Default: 0=disabled)
   //  maxrange         	Maximum ideal range at 20 °C [km] (Default: 160)
   //  remote_charge_port					Use "trunk" button on keyfob to open charge port (Default: 1=enabled)
-  ks_battery_capacity = (float)MyConfig.GetParamValueInt("ks", "cap_act_kwh", CGF_DEFAULT_BATTERY_CAPACITY);
-  ks_key_fob_open_charge_port = (bool)MyConfig.GetParamValueBool("ks", "remote_charge_port", true);
+  ks_battery_capacity = (float)MyConfig.GetParamValueInt("xks", "cap_act_kwh", CGF_DEFAULT_BATTERY_CAPACITY);
+  ks_key_fob_open_charge_port = (bool)MyConfig.GetParamValueBool("xks", "remote_charge_port", true);
 
-  ks_maxrange = MyConfig.GetParamValueInt("ks", "maxrange", CFG_DEFAULT_MAXRANGE);
+  ks_maxrange = MyConfig.GetParamValueInt("xks", "maxrange", CFG_DEFAULT_MAXRANGE);
   if (ks_maxrange <= 0)
     ks_maxrange = CFG_DEFAULT_MAXRANGE;
 
-  *StdMetrics.ms_v_charge_limit_soc = (float) MyConfig.GetParamValueInt("ks", "suffsoc");
-  *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("ks", "suffrange");
+  *StdMetrics.ms_v_charge_limit_soc = (float) MyConfig.GetParamValueInt("xks", "suffsoc");
+  *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("xks", "suffrange");
 	}
 
 /**
@@ -577,10 +587,9 @@ void OvmsVehicleKiaSoulEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 
 		case 0x02:
 			// VIN (multi-line response):
-			// VIN length is 20 on Kia => skip first frame (3 bytes):
-			if (m_poll_ml_frame > 0 && type == VEHICLE_POLL_TYPE_OBDIIVEHICLE)
+			if (type == VEHICLE_POLL_TYPE_OBDIIVEHICLE)
 				{
-				base = m_poll_ml_offset - length - 3;
+				base = m_poll_ml_offset - length;
 				for (bVal = 0; (bVal < length) && ((base + bVal)<(sizeof (m_vin) - 1)); bVal++)
 					m_vin[base + bVal] = CAN_BYTE(bVal);
 				if (m_poll_ml_remain == 0) m_vin[base + bVal] = 0;
@@ -760,6 +769,8 @@ void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
 
 		// ******* VMCU ******
 		case 0x7ea:
+			//ESP_LOGD(TAG, "%03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", m_poll_moduleid_low, type, pid, length, data[0], data[1], data[2], data[3],
+			//		data[4], data[5], data[6], data[7]);
 			IncomingVMCU(bus, type, pid, data, length, mlremain);
 			break;
 
@@ -1147,14 +1158,26 @@ bool OvmsVehicleKiaSoulEv::Send_EBP_Command( uint8_t b1, uint8_t b2)
  */
 bool OvmsVehicleKiaSoulEv::SetDoorLock(bool open, const char* password)
 	{
-  if( ks_shift_bits.Park )
+	bool result=false;
+	if( ks_shift_bits.Park )
   		{
     if( IsPasswordOk(password) )
     		{
-    		return Send_SJB_Command(0xbc, open?0x11:0x10, 0x03);
+    		//StartRelay(true,password	);
+    		ACCRelay(true,password	);
+    		//IGN2Relay(true,password	);
+    		LeftIndicator(true);
+    		result = Send_SJB_Command(0xbc, open?0x11:0x10, 0x03);
+    		//StartRelay(false,password	);
+    		ACCRelay(false,password	);
+    		//IGN2Relay(false,password	);
+    		if(result)
+    			{
+    			StdMetrics.ms_v_env_locked->SetValue(!open);
+    			}
     		}
   		}
-		return false;
+		return result;
 	}
 
 /**
@@ -1167,7 +1190,10 @@ bool OvmsVehicleKiaSoulEv::OpenTrunk(const char* password)
   		{
 		if( IsPasswordOk(password) )
 			{
+    		StartRelay(true,password	);
+    		LeftIndicator(true);
   			return Send_SJB_Command(0xbc, 0x09, 0x03);
+    		StartRelay(false,password	);
   			}
   		}
 		return false;
@@ -1347,7 +1373,7 @@ void CommandParkBreakService(int verbosity, OvmsWriter* writer, OvmsCommand* cmd
 		{
 	  soul->Send_EBP_Command(0x02, 0x03);
 		}
-	else if( strcmp(argv[0],"off2")==0 )
+	else if( strcmp(argv[0],"off2")==0 ) //Disengange 7d5h	8	03 30 01 01 00 00 00 00
 		{
 	  soul->Send_EBP_Command(0x01, 0x01);
 		}
@@ -1419,6 +1445,108 @@ void xks_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 
 	writer->printf("AUX BATTERY\n");
 	if (*auxBatt != '-') writer->printf("Aux battery voltage %s\n", auxBatt);
+	}
+
+/**
+ * Print out the VIN information.
+ */
+void xks_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+
+  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
+
+	writer->printf("VIN\n");
+	writer->printf("Vin: %s \n", soul->m_vin);
+	if(soul->m_vin[2]=='A' || soul->m_vin[2]=='D')
+		{
+		writer->printf("MPV/SUV/RV (Outside USA, Canada, Mexico)\n");
+		}
+	else if(soul->m_vin[2]=='C')
+		{
+		writer->printf("Commercial Vehicle\n");
+		}
+	else if(soul->m_vin[2]=='D')
+		{
+		writer->printf("MPV/SUV/RV (USA, Canada, Mexico)\n");
+		}
+	else if(soul->m_vin[2]=='H')
+		{
+		writer->printf("Van\n");
+		}
+
+	writer->printf("Vehicle Line: ");
+	if(soul->m_vin[3]=='J')
+		{
+		writer->printf("Soul\n");
+		}
+	else
+		{
+		writer->printf("Unknown %c\n", soul->m_vin[3]);
+		}
+
+	writer->printf("Model: ");
+	if(soul->m_vin[4]=='M')
+		{
+		writer->printf("Low grade\n");
+		}
+	else if(soul->m_vin[4]=='N')
+		{
+		writer->printf("Middle-low grade\n");
+		}
+	else if(soul->m_vin[4]=='P')
+		{
+		writer->printf("Middle grade\n");
+		}
+	else if(soul->m_vin[4]=='R')
+		{
+		writer->printf("Middle-high grade\n");
+		}
+	else
+		{
+		writer->printf("Unknown %c\n", soul->m_vin[4]);
+		}
+
+	writer->printf("Model year: %04d\n", 2014 + soul->m_vin[9]-'E');
+
+	writer->printf("Motor type: ");
+	if(soul->m_vin[7]=='E')
+		{
+		writer->printf("Battery [LiPB 350 V, 75 Ah] + Motor [3-phase AC 80 KW]\n");
+		}
+	else
+		{
+		writer->printf("Unknown %c\n", soul->m_vin[7]);
+		}
+
+	writer->printf("Production plant: ");
+	if(soul->m_vin[10]=='5')
+		{
+		writer->printf("Hwaseong (Korea)\n");
+		}
+	else if(soul->m_vin[10]=='6')
+		{
+		writer->printf("Soha-ri (Korea)\n");
+		}
+	else if(soul->m_vin[10]=='7')
+		{
+		writer->printf("Gwangju (Korea)\n");
+		}
+	else if(soul->m_vin[10]=='T')
+		{
+		writer->printf("Seosan (Korea)\n");
+		}
+	else
+		{
+		writer->printf("Unknown %c\n", soul->m_vin[10]);
+		}
+
+	writer->printf("Sequence number: %c%c%c%c%c%c\n", soul->m_vin[11],soul->m_vin[12],soul->m_vin[13],soul->m_vin[14],soul->m_vin[15],soul->m_vin[16]);
+
 	}
 
 /**
@@ -1591,6 +1719,64 @@ void OvmsVehicleKiaSoulEv::DoNotify()
     ks_notifications &= ~SEND_AuxBattery_Low;
   		}
 	}
+
+
+/**
+ * SetFeature: V2 compatibility config wrapper
+ *  Note: V2 only supported integer values, V3 values may be text
+ */
+bool OvmsVehicleKiaSoulEv::SetFeature(int key, const char *value)
+{
+  switch (key)
+  {
+    case 10:
+      MyConfig.SetParamValue("xks", "suffsoc", value);
+      return true;
+    case 11:
+      MyConfig.SetParamValue("xks", "suffrange", value);
+      return true;
+    case 12:
+      MyConfig.SetParamValue("xks", "maxrange", value);
+      return true;
+    case 15:
+    {
+      int bits = atoi(value);
+      MyConfig.SetParamValueBool("xks", "canwrite",  (bits& 1)!=0);
+      return true;
+    }
+    default:
+      return OvmsVehicle::SetFeature(key, value);
+  }
+}
+
+
+/**
+ * GetFeature: V2 compatibility config wrapper
+ *  Note: V2 only supported integer values, V3 values may be text
+ */
+const std::string OvmsVehicleKiaSoulEv::GetFeature(int key)
+{
+  switch (key)
+  {
+    case 0:
+    case 10:
+      return MyConfig.GetParamValue("xks", "suffsoc", XSTR(0));
+    case 11:
+      return MyConfig.GetParamValue("xks", "suffrange", XSTR(0));
+    case 12:
+      return MyConfig.GetParamValue("xks", "maxrange", XSTR(CFG_DEFAULT_MAXRANGE));
+    case 15:
+    {
+      int bits =
+        ( MyConfig.GetParamValueBool("xks", "canwrite",  false) ?  1 : 0);
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }
+    default:
+      return OvmsVehicle::GetFeature(key);
+  }
+}
 
 
 class OvmsVehicleKiaSoulEvInit

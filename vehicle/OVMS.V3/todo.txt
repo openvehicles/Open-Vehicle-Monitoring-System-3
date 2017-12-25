@@ -29,7 +29,7 @@ MWJ     90%          OBDII port
                      TRACK vehicle port
                      Tazzari port
                      Think City port
-MB      95%          Renault Twizy port
+MB      60%          Renault Twizy port
                      Volt Ampera port
                      Renault Zoe port
 

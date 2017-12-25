@@ -93,7 +93,7 @@ typedef union
   } CAN_FIR_t;
 
 // CAN Frame
-typedef struct
+struct CAN_frame_t
   {
   canbus*     origin;                   // Origin of the frame
   CAN_FIR_t   FIR;                      // Frame information record
@@ -103,7 +103,9 @@ typedef struct
     uint8_t   u8[8];                    // Payload byte access
     uint32_t  u32[2];                   // Payload u32 access (Att: little endian!)
     } data;
-  } CAN_frame_t;
+  
+  esp_err_t Write(canbus* bus = NULL);  // default = use origin
+  };
 
 
 /**

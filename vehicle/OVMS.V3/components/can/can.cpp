@@ -409,3 +409,10 @@ void canbus::TxCallback()
   {
   }
 
+esp_err_t CAN_frame_t::Write(canbus* bus /* = NULL */)
+  {
+  if (!bus)
+    bus = origin;
+  return bus ? bus->Write(this) : ESP_FAIL;
+  }
+
