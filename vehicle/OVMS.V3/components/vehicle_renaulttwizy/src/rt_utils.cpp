@@ -49,11 +49,13 @@ using namespace std;
 void OvmsVehicleRenaultTwizy::UpdateMaxRange()
 {
   float bat_temp = StdMetrics.ms_v_bat_temp->AsFloat();
+  if (bat_temp <= -40)
+    bat_temp = 20; // not yet measured
   
   // Temperature compensation:
   //   - assumes standard cfg_maxrange specified at 20°C
   //   - temperature influence approximation: 0.6 km / °C
-  twizy_maxrange = cfg_maxrange - ((20 - bat_temp) * 6) / 10;
+  twizy_maxrange = cfg_maxrange - ((20 - bat_temp) * 0.6);
   if (twizy_maxrange < 0)
     twizy_maxrange = 0;
   

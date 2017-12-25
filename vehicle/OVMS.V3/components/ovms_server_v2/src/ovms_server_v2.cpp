@@ -1390,6 +1390,8 @@ void OvmsServerV2::MetricModified(OvmsMetric* metric)
     return;
 
   if ((metric == StandardMetrics.ms_v_charge_climit)||
+      (metric == StandardMetrics.ms_v_charge_limit_range)||
+      (metric == StandardMetrics.ms_v_charge_limit_soc)||
       (metric == StandardMetrics.ms_v_charge_state)||
       (metric == StandardMetrics.ms_v_charge_substate)||
       (metric == StandardMetrics.ms_v_charge_mode)||

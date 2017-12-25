@@ -57,60 +57,44 @@ using namespace std;
 
 class OvmsVehicleRenaultTwizy : public OvmsVehicle
 {
-  
   public:
     OvmsVehicleRenaultTwizy();
     ~OvmsVehicleRenaultTwizy();
-
+  
+  
+  // --------------------------------------------------------------------------
+  // Framework integration
+  // 
+  
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
-
-  public:
     void Ticker1(uint32_t ticker);
     void Ticker10(uint32_t ticker);
     void ConfigChanged(OvmsConfigParam* param);
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);
     void EventListener(string event, void* data);
-  
-  private:
-    void UpdateMaxRange();
-    void UpdateChargeTimes();
-    int CalcChargeTime(int dstsoc);
-    
-  
-  // --------------------------------------------------------------------------
-  // Twizy main commands
-  // 
-    
-  protected:
-    OvmsCommand *cmd_xrt;
-    OvmsCommand *cmd_power;
-    OvmsCommand *cmd_batt;
-    OvmsCommand *cmd_gps;
-    
-  public:
-    vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
-    vehicle_command_t CommandPower(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-    vehicle_command_t CommandBatt(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     vehicle_command_t ProcessMsgCommand(std::string &result, int command, const char* args);
-
-  
-  // --------------------------------------------------------------------------
-  // Twizy main metrics
-  // 
   
   protected:
     static size_t m_modifier;
     OvmsMetricString *m_version;
-    
+    OvmsCommand *cmd_xrt;
+  
   
   // --------------------------------------------------------------------------
-  // Twizy state variables
+  // General status
   // 
   
-  protected:
+  public:
+    vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
   
+  protected:
+    void UpdateMaxRange();
+    void UpdateChargeTimes();
+    int CalcChargeTime(int dstsoc);
+  
+  protected:
     char twizy_vin[8] = "";                     // last 7 digits of full VIN
     
     // Car + charge status from CAN:
@@ -223,14 +207,8 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     #define CAH_RND (7200L)
     #define AH_DIV (CAH_DIV * 100L)
     
-    int cfg_chargemode = 0;
-    #define TWIZY_CHARGEMODE_DEFAULT    0   // notify on limits (FW: "standard")
-    #define TWIZY_CHARGEMODE_AUTOSTOP   1   // stop on limits (FW: "storage")
-    
-    int cfg_chargelevel = 0;
-    
     int twizy_chargestate = 4;              // 1=charging, 2=top off, 4=done, 21=stopped charging
-    bool twizy_chg_stop_request = false;
+    
     UINT8 twizy_chg_power_request = 0;      // BMS to CHG power level request (0..7)
     
     // battery capacity helpers:
@@ -272,23 +250,24 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     void SendGPSLog();
     void SendTripLog();
     //void SendSDOLog();
-    
-    
-    // --------------------------------------------------------------------------
-    // Twizy power statistics subsystem
-    //  - implementation: rt_pwrmon.(h,cpp)
-    // 
-    
+  
+  
+  // --------------------------------------------------------------------------
+  // Power statistics subsystem
+  //  - implementation: rt_pwrmon.(h,cpp)
+  // 
+  
   public:
     void PowerInit();
     void PowerUpdate();
     void PowerReset();
     bool PowerIsModified();
-    
-  private:
-    void PowerCollectData();
+    vehicle_command_t CommandPower(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     
   protected:
+    OvmsCommand *cmd_power;
+    void PowerCollectData();
+    
     speedpwr twizy_speedpwr[3];                 // speed power usage statistics
     UINT8 twizy_speed_state = 0;                    // speed state, one of:
     #define CAN_SPEED_CONST         0           // constant speed
@@ -320,13 +299,13 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     unsigned long twizy_level_rec = 0;              // level section rec collector
     #define CAN_LEVEL_MINSECTLEN    100         // min section length (in m)
     #define CAN_LEVEL_THRESHOLD     1           // level change threshold (grade percent)
-    
-    
-    // --------------------------------------------------------------------------
-    // Twizy battery monitoring subsystem
-    //  - implementation: rt_battmon.(h,cpp)
-    // 
-    
+  
+  
+  // --------------------------------------------------------------------------
+  // Twizy battery monitoring subsystem
+  //  - implementation: rt_battmon.(h,cpp)
+  // 
+  
   public:
     void BatteryInit();
     void BatteryUpdate();
@@ -337,11 +316,12 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     void FormatBatteryStatus(int verbosity, OvmsWriter* writer, int pack);
     void FormatBatteryVolts(int verbosity, OvmsWriter* writer, bool show_deviations);
     void FormatBatteryTemps(int verbosity, OvmsWriter* writer, bool show_deviations);
-  
-  private:
-    void BatteryCheckDeviations();
+    vehicle_command_t CommandBatt(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
   
   protected:
+    OvmsCommand *cmd_batt;
+    void BatteryCheckDeviations();
+  
     #define BATT_PACKS      1
     #define BATT_CELLS      16                  // 14 on LiPo pack, 16 on LiFe pack
     #define BATT_CMODS      8                   // 7 on LiPo pack, 8 on LiFe pack
@@ -360,20 +340,46 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     battery_pack twizy_batt[BATT_PACKS];
     battery_cmod twizy_cmod[BATT_CMODS];
     battery_cell twizy_cell[BATT_CELLS];
+  
+  
+  // --------------------------------------------------------------------------
+  // Charge control subsystem
+  //  - implementation: rt_charge.(h,cpp)
+  // 
+  
+  public:
+    void ChargeInit();
+    vehicle_command_t CommandCA(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    vehicle_command_t MsgCommandCA(std::string &result, int command, const char* args);
+    vehicle_command_t CommandSetChargeMode(vehicle_mode_t mode);
+    vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
+    vehicle_command_t CommandStopCharge();
     
+  protected:
+    OvmsCommand *cmd_ca;
     
-    // --------------------------------------------------------------------------
-    // Twizy SEVCON subsystem
-    //  - implementation: rt_sevcon.(h,cpp)
-    // 
+    int cfg_chargemode = 0;
+    #define TWIZY_CHARGEMODE_DEFAULT    0   // notify on limits (FW: "standard")
+    #define TWIZY_CHARGEMODE_AUTOSTOP   1   // stop on limits (FW: "storage")
     
+    bool twizy_chg_stop_request = false;    // true = stop charge ASAP
+    
+    int cfg_chargelevel = 0;                // user configured max CHG power level (0..7)
+  
+  
+  // --------------------------------------------------------------------------
+  // SEVCON subsystem
+  //  - implementation: rt_sevcon.(h,cpp)
+  // 
+  
+  protected:
     signed char twizy_button_cnt = 0;           // will count key presses (errors) in STOP mode (msg 081)
     
     #define CFG_DEFAULT_KD_THRESHOLD    35
     #define CFG_DEFAULT_KD_COMPZERO     120
     int cfg_kd_threshold = CFG_DEFAULT_KD_THRESHOLD;
     int cfg_kd_compzero = CFG_DEFAULT_KD_COMPZERO;
-    
+  
 };
 
 #endif // __VEHICLE_RENAULTTWIZY_H__

@@ -80,7 +80,20 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
     case 0x155:
       // --------------------------------------------------------------------------
       // *** BMS: POWER STATUS ***
-      // basic validation:
+      
+      // Overwrite BMS>>CHG protocol to limit charge power:
+      // cfg_chargelevel = maximum power, 1..7 = 300..2100 W
+      if ((twizy_status & CAN_STATUS_CHARGING) &&
+          (twizy_flags.EnableWrite) &&
+          (cfg_chargelevel > 0) &&
+          (((INT8)CAN_BYTE(0)) > cfg_chargelevel))
+      {
+        CAN_frame_t txframe = *p_frame;
+        txframe.data.u8[0] = cfg_chargelevel;
+        txframe.Write();
+      }
+      
+      // Basic validation:
       // Byte 4:  0x94 = init/exit phase (CAN data invalid)
       //          0x54 = Twizy online (CAN data valid)
       if (can_databuffer[3] == 0x54)
@@ -181,6 +194,17 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
     case 0x424:
       // --------------------------------------------------------------------------
       // CAN ID 0x424: sent every 100 ms (10 per second)
+      
+      // Overwrite BMS>>CHG protocol to stop charge:
+      // requested by setting twizy_chg_stop_request to true
+      if ((twizy_status & CAN_STATUS_CHARGING) &&
+          (twizy_flags.EnableWrite) &&
+          (twizy_chg_stop_request))
+      {
+        CAN_frame_t txframe = *p_frame;
+        txframe.data.u8[0] = 0x12; // charge stop request
+        txframe.Write();
+      }
       
       // max drive (discharge) + recup (charge) power:
       if (CAN_BYTE(2) != 0xff)

@@ -228,6 +228,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
               ((cfg_suffrange > 0) && (twizy_range_ideal >= cfg_suffrange))))
       {
         // set charge stop request:
+        ESP_LOGI(TAG, "requesting charge stop (sufficient charge)");
         twizy_chg_stop_request = 1;
       }
 
@@ -500,6 +501,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   
   *StdMetrics.ms_v_charge_mode = (string)
     ((cfg_chargemode == TWIZY_CHARGEMODE_AUTOSTOP) ? "storage" : "standard");
+  *StdMetrics.ms_v_charge_climit = (float) cfg_chargelevel * 5;
   
   *StdMetrics.ms_v_charge_state = (string) chargestate_code(twizy_chargestate);
   *StdMetrics.ms_v_charge_substate = (string) chargesubstate_code(twizy_chg_stop_request);
