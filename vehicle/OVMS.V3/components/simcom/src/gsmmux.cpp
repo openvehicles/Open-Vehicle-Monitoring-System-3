@@ -222,6 +222,12 @@ void GsmMux::StopChannel(int channel)
   ESP_LOGI(TAG, "StopChannel(%d)",channel);
   }
 
+bool GsmMux::IsChannelOpen(int channel)
+  {
+  GsmMuxChannel* chan = m_channels[channel];
+  return (chan && chan->m_state == GsmMuxChannel::ChanOpen);
+  }
+
 void GsmMux::Process(OvmsBuffer* buf)
   {
   while (buf->UsedSpace()>0)

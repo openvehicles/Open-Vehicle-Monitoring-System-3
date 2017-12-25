@@ -36,7 +36,7 @@ for f in $PACK_METRICS ; do
   sep=""
   for ((i = 0; i < $PACK_CNT; i++)) ; do
     ih=$((i + 1))
-    printf '%s"x.rt.b.pack.%d.%s"' "$sep" "$ih" "$f"
+    printf '%s"xrt.b.pack.%d.%s"' "$sep" "$ih" "$f"
     sep=", "
   done
   echo ' };'
@@ -48,7 +48,7 @@ for f in $CMOD_METRICS ; do
   sep=""
   for ((i = 0; i < $CMOD_CNT; i++)) ; do
     ih=$((i + 1))
-    printf '%s"x.rt.b.cmod.%02d.%s"' "$sep" "$ih" "$f"
+    printf '%s"xrt.b.cmod.%02d.%s"' "$sep" "$ih" "$f"
     sep=", "
   done
   echo ' };'
@@ -60,7 +60,7 @@ for f in $CELL_METRICS ; do
   sep=""
   for ((i = 0; i < $CELL_CNT; i++)) ; do
     ih=$((i + 1))
-    printf '%s"x.rt.b.cell.%02d.%s"' "$sep" "$ih" "$f"
+    printf '%s"xrt.b.cell.%02d.%s"' "$sep" "$ih" "$f"
     sep=", "
   done
   echo ' };'
@@ -82,7 +82,7 @@ for f in $SPEED_METRICS ; do
   sep=""
   for ((i = 0; i < $SPEED_CNT; i++)) ; do
     ih=$((i + 1))
-    printf '%s"x.rt.p.stats.%s.%s"' "$sep" "${SPEED_NAMES[$i]}" "$f"
+    printf '%s"xrt.p.stats.%s.%s"' "$sep" "${SPEED_NAMES[$i]}" "$f"
     sep=", "
   done
   echo ' };'
@@ -94,7 +94,7 @@ for f in $LEVEL_METRICS ; do
   sep=""
   for ((i = 0; i < $LEVEL_CNT; i++)) ; do
     ih=$((i + 1))
-    printf '%s"x.rt.p.stats.%s.%s"' "$sep" "${LEVEL_NAMES[$i]}" "$f"
+    printf '%s"xrt.p.stats.%s.%s"' "$sep" "${LEVEL_NAMES[$i]}" "$f"
     sep=", "
   done
   echo ' };'

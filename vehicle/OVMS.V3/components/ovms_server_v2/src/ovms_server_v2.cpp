@@ -33,6 +33,7 @@ static const char *TAG = "ovms-server-v2";
 
 #include "ovms.h"
 #include "buffered_shell.h"
+#include "ovms_peripherals.h"
 #include "ovms_command.h"
 #include "ovms_config.h"
 #include "metrics_standard.h"
@@ -196,6 +197,8 @@ void OvmsServerV2::ServerTask()
     m_units_distance = Kilometers;
 
   int lasttx = 0;
+  int lasttx_stream = 0;
+  int peers = 0;
   MAINLOOP: while(1)
     {
     if (!MyNetManager.m_connected_any)
@@ -240,9 +243,9 @@ void OvmsServerV2::ServerTask()
       // Handle incoming requests
       while ((m_buffer->HasLine() >= 0)&&(m_conn.IsOpen()))
         {
-        int peers = StandardMetrics.ms_s_v2_peers->AsInt();
+        peers = StandardMetrics.ms_s_v2_peers->AsInt();
         ProcessServerMsg();
-        if ((StandardMetrics.ms_s_v2_peers->AsInt() != peers)&&(peers==0))
+        if (StandardMetrics.ms_s_v2_peers->AsInt() > peers)
           {
           ESP_LOGI(TAG, "One or more peers have connected");
           lasttx = 0; // A peer has connected, so force a transmission of status messages
@@ -250,8 +253,10 @@ void OvmsServerV2::ServerTask()
         }
 
       // Periodic transmission of metrics
+      peers = StandardMetrics.ms_s_v2_peers->AsInt();
+      bool caron = StandardMetrics.ms_v_env_on->AsBool();
       int now = StandardMetrics.ms_m_monotonic->AsInt();
-      int next = (StandardMetrics.ms_s_v2_peers->AsInt()==0)?600:60;
+      int next = (peers==0) ? 600 : 60;
       if ((lasttx==0)||(now>(lasttx+next)))
         {
         TransmitMsgStat(true);          // Send always, periodically
@@ -261,7 +266,12 @@ void OvmsServerV2::ServerTask()
         TransmitMsgTPMS(lasttx==0);
         TransmitMsgFirmware(lasttx==0);
         TransmitMsgCapabilities(lasttx==0);
-        lasttx = now;
+        lasttx = lasttx_stream = now;
+        }
+      else if (m_streaming && caron && peers && now > lasttx_stream+m_streaming)
+        {
+        TransmitMsgGPS();
+        lasttx_stream = now;
         }
 
       if (m_now_stat) TransmitMsgStat();
@@ -601,8 +611,25 @@ void OvmsServerV2::ProcessCommand(const char* payload)
       break;
       }
     case 40: // Send SMS
+      *buffer << "MP-0 c" << command << ",2";
+      break;
     case 41: // Send MMI/USSD codes
+      if (!sep)
+        *buffer << "MP-0 c" << command << ",1,No command";
+      else
+        {
+        *buffer << "AT+CUSD=1,\"" << sep+1 << "\",15\r\n";
+        std::string msg = buffer->str();
+        buffer->str("");
+        if (MyPeripherals->m_simcom->txcmd(msg.c_str(), msg.length()))
+          *buffer << "MP-0 c" << command << ",0";
+        else
+          *buffer << "MP-0 c" << command << ",1,Cannot send command";
+        }
+      break;
     case 49: // Send raw AT command
+      *buffer << "MP-0 c" << command << ",2";
+      break;
     default:
       *buffer << "MP-0 c" << command << ",2";
       break;
@@ -1356,20 +1383,53 @@ void OvmsServerV2::HandleNotifyDataAck(uint32_t ack)
 
 void OvmsServerV2::MetricModified(OvmsMetric* metric)
   {
-  // A metric has been changed...
+  // A metric has been changed: if peers are connected,
+  //  check for important changes that should be transmitted ASAP:
+
+  if (StandardMetrics.ms_s_v2_peers->AsInt() == 0)
+    return;
 
   if ((metric == StandardMetrics.ms_v_charge_climit)||
+      (metric == StandardMetrics.ms_v_charge_limit_range)||
+      (metric == StandardMetrics.ms_v_charge_limit_soc)||
       (metric == StandardMetrics.ms_v_charge_state)||
       (metric == StandardMetrics.ms_v_charge_substate)||
       (metric == StandardMetrics.ms_v_charge_mode)||
-      (metric == StandardMetrics.ms_v_bat_cac))
+      (metric == StandardMetrics.ms_v_charge_inprogress)||
+      (metric == StandardMetrics.ms_v_env_cooling)||
+      (metric == StandardMetrics.ms_v_bat_cac)||
+      (metric == StandardMetrics.ms_v_bat_soh))
     {
-    m_now_environment = true;
     m_now_stat = true;
     }
 
-  if (StandardMetrics.ms_s_v2_peers->AsInt() > 0)
-    m_now_environment = true; // Transmit environment message if necessary
+  if ((metric == StandardMetrics.ms_v_door_fl)||
+      (metric == StandardMetrics.ms_v_door_fr)||
+      (metric == StandardMetrics.ms_v_door_chargeport)||
+      (metric == StandardMetrics.ms_v_charge_pilot)||
+      (metric == StandardMetrics.ms_v_charge_inprogress)||
+      (metric == StandardMetrics.ms_v_env_handbrake)||
+      (metric == StandardMetrics.ms_v_env_on)||
+      (metric == StandardMetrics.ms_v_env_locked)||
+      (metric == StandardMetrics.ms_v_env_valet)||
+      (metric == StandardMetrics.ms_v_door_hood)||
+      (metric == StandardMetrics.ms_v_door_trunk)||
+      (metric == StandardMetrics.ms_v_env_awake)||
+      (metric == StandardMetrics.ms_v_env_cooling)||
+      (metric == StandardMetrics.ms_v_env_alarm)||
+      (metric == StandardMetrics.ms_v_door_rl)||
+      (metric == StandardMetrics.ms_v_door_rr)||
+      (metric == StandardMetrics.ms_v_env_charging12v)||
+      (metric == StandardMetrics.ms_v_env_hvac))
+    {
+    m_now_environment = true;
+    }
+
+  if ((metric == StandardMetrics.ms_v_env_drivemode)||
+      (metric == StandardMetrics.ms_v_pos_gpslock))
+    {
+    m_now_gps = true;
+    }
   }
 
 bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry)
@@ -1431,13 +1491,30 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
 
 /**
  * EventListener:
- *  - update location ASAP
  */
 void OvmsServerV2::EventListener(std::string event, void* data)
-{
-  if (event == "gps.lock.acquired")
-    m_now_gps = true;
-}
+  {
+  if (event == "system.modem.received.ussd")
+    {
+    // forward USSD response to server:
+    std::string buf = "MP-0 c41,0,";
+    buf.append(mp_encode((char*) data));
+    Transmit(buf);
+    }
+  else if (event == "config.changed" || event == "config.mounted")
+    {
+    ConfigChanged((OvmsConfigParam*) data);
+    }
+  }
+
+/**
+ * ConfigChanged: read new configuration
+ *  - param: NULL = read all configurations
+ */
+void OvmsServerV2::ConfigChanged(OvmsConfigParam* param)
+  {
+  m_streaming = MyConfig.GetParamValueInt("vehicle", "stream", 0);
+  }
 
 void OvmsServerV2::TransmitMsgCapabilities(bool always)
   {
@@ -1472,6 +1549,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
   m_now_environment = false;
   m_now_capabilities = false;
   m_now_group = false;
+  m_streaming = 0;
 
   m_pending_notify_info = false;
   m_pending_notify_error = false;
@@ -1490,7 +1568,12 @@ OvmsServerV2::OvmsServerV2(const char* name)
     }
 
   // init event listener:
-  MyEvents.RegisterEvent(TAG, "gps.lock.acquired", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "system.modem.received.ussd", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
+
+  // read config:
+  ConfigChanged(NULL);
   }
 
 OvmsServerV2::~OvmsServerV2()
@@ -1556,12 +1639,30 @@ void ovmsv2_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 
 class OvmsServerV2Init
     {
-    public: OvmsServerV2Init();
+    public:
+      OvmsServerV2Init();
+
+    public:
+      void NetDown(std::string event, void* data);
   } OvmsServerV2Init  __attribute__ ((init_priority (6100)));
+
+void OvmsServerV2Init::NetDown(std::string event, void* data)
+  {
+  if (MyOvmsServerV2)
+    {
+    ESP_LOGI(TAG, "Network is down, so disconnect network connection");
+    MyOvmsServerV2->Disconnect();
+    }
+  }
 
 OvmsServerV2Init::OvmsServerV2Init()
   {
   ESP_LOGI(TAG, "Initialising OVMS V2 Server (6100)");
+
+  #undef bind  // Kludgy, but works
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG,"network.reconfigured", std::bind(&OvmsServerV2Init::NetDown, this, _1, _2));
 
   OvmsCommand* cmd_server = MyCommandApp.FindCommand("server");
   OvmsCommand* cmd_v2 = cmd_server->RegisterCommand("v2","OVMS Server V2 Protocol", NULL, "", 0, 0);

@@ -57,9 +57,11 @@ class OvmsServerV2 : public OvmsServer
   public:
     void ServerTask();
 
+  public:
+    void Disconnect();
+
   protected:
     bool Connect();
-    void Disconnect();
     bool Login();
     void ProcessServerMsg();
     void ProcessCommand(const char* payload);
@@ -91,6 +93,7 @@ class OvmsServerV2 : public OvmsServer
     void MetricModified(OvmsMetric* metric);
     bool IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry);
     void EventListener(std::string event, void* data);
+    void ConfigChanged(OvmsConfigParam* param);
 
   public:
     std::string m_status;
@@ -117,6 +120,7 @@ class OvmsServerV2 : public OvmsServer
     bool m_now_environment;
     bool m_now_capabilities;
     bool m_now_group;
+    int m_streaming;
 
     bool m_pending_notify_info;
     bool m_pending_notify_error;

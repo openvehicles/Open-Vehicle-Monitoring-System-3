@@ -64,7 +64,7 @@ For saving memory, each entered cmdline store to history in ring buffer,
 so we can not say, how many line we can store, it depends from cmdline len,
 but memory using more effective. We not prefer dinamic memory allocation for
 small and embedded devices. Overhead is 2 char on each saved line*/
-#define _RING_HISTORY_LEN 64
+#define _RING_HISTORY_LEN 256
 
 /*
 Size of the buffer used for piecemeal printing of part or all of the command
