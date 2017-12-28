@@ -49,12 +49,23 @@ typedef enum
   CHARGER_STATUS_FINISHED
   } ChargerStatus;
 
+void remoteCommandTimer(TimerHandle_t timer)
+  {
+  OvmsVehicleNissanLeaf* nl = (OvmsVehicleNissanLeaf*) pvTimerGetTimerID(timer);
+  nl->RemoteCommandTimer();
+  }
+
 OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   {
   ESP_LOGI(TAG, "Nissan Leaf v3.0 vehicle module");
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
+
+  MyConfig.RegisterParam("xnl", "Nissan Leaf", true, true);
+  ConfigChanged(NULL);
+
+  m_remoteCommandTimer = xTimerCreate("Nissan Leaf Remote Command", 50 / portTICK_PERIOD_MS, pdTRUE, this, remoteCommandTimer);
 
   using std::placeholders::_1;
   using std::placeholders::_2;
@@ -234,7 +245,7 @@ void OvmsVehicleNissanLeaf::PollContinue(CAN_frame_t* p_frame)
     {
     // request the next page of data
     uint8_t next[] = {0x30, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    this->m_can1->WriteStandard(0x79b, 8, next);
+    m_can1->WriteStandard(0x79b, 8, next);
     }
   }
 
@@ -434,8 +445,97 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
   {
   }
 
+////////////////////////////////////////////////////////////////////////
+// Send a RemoteCommand on the CAN bus.
+// Handles pre and post 2016 model year cars based on xnl.modelyear config
+//
+// Does nothing if @command is out of range
+
+void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
+  {
+  unsigned char data[4];
+  uint8_t length;
+  canbus *tcuBus;
+
+  if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) >= 2016)
+    {
+    ESP_LOGI(TAG, "New TCU on CAR Bus");
+    length = 4;
+    tcuBus = m_can2;
+    }
+  else
+    {
+    ESP_LOGI(TAG, "OLD TCU on EV Bus");
+    length = 1;
+    tcuBus = m_can1;
+    }
+
+  switch (command)
+    {
+    case ENABLE_CLIMATE_CONTROL:
+      ESP_LOGI(TAG, "Enable Climate Control");
+      data[0] = 0x4e;
+      data[1] = 0x08;
+      data[2] = 0x12;
+      data[3] = 0x00;
+      break;
+    case DISABLE_CLIMATE_CONTROL:
+      ESP_LOGI(TAG, "Disable Climate Control");
+      data[0] = 0x56;
+      data[1] = 0x00;
+      data[2] = 0x01;
+      data[3] = 0x00;
+      break;
+    case START_CHARGING:
+      ESP_LOGI(TAG, "Start Charging");
+      data[0] = 0x66;
+      data[1] = 0x08;
+      data[2] = 0x12;
+      data[3] = 0x00;
+      break;
+    default:
+      // shouldn't be possible, but lets not send random data on the bus
+      return;
+    }
+    tcuBus->WriteStandard(0x56e, length, data);
+  }
+
+////////////////////////////////////////////////////////////////////////
+// implements the repeated sending of remote commands and releases
+// EV SYSTEM ACTIVATION REQUEST after an appropriate amount of time
+
+void OvmsVehicleNissanLeaf::RemoteCommandTimer()
+  {
+  ESP_LOGI(TAG, "RemoteCommandTimer %d", nl_remote_command_ticker);
+  if (nl_remote_command_ticker > 0)
+    {
+    nl_remote_command_ticker--;
+    if (nl_remote_command_ticker % 2 == 1)
+      {
+      SendCommand(nl_remote_command);
+      }
+
+    // nl_remote_command_ticker is set to REMOTE_COMMAND_REPEAT_COUNT in
+    // RemoteCommandHandler() and we decrement it every 10th of a
+    // second, hence the following if statement evaluates to true
+    // ACTIVATION_REQUEST_TIME tenths after we start
+    // TODO re-implement to support Gen 1 leaf
+    //if (nl_remote_command_ticker == REMOTE_COMMAND_REPEAT_COUNT - ACTIVATION_REQUEST_TIME)
+    //  {
+    //  // release EV SYSTEM ACTIVATION REQUEST
+    //  output_gpo3(FALSE);
+    //  }
+    }
+    else
+    {
+      xTimerStop(m_remoteCommandTimer, 0);
+    }
+  }
+
 void OvmsVehicleNissanLeaf::Ticker1(uint32_t ticker)
   {
+  if (nl_cc_off_ticker > 0) nl_cc_off_ticker--;
+
   // FIXME
   // detecting that on is stale and therefor should turn off probably shouldn't
   // be done like this
@@ -447,6 +547,23 @@ void OvmsVehicleNissanLeaf::Ticker1(uint32_t ticker)
     {
     vehicle_nissanleaf_car_on(false);
     }
+
+  if (nl_cc_off_ticker < (REMOTE_CC_TIME_GRID - REMOTE_CC_TIME_BATTERY)
+    && nl_cc_off_ticker > 1
+    && !StandardMetrics.ms_v_charge_inprogress->AsBool())
+    {
+    // we're not on grid power so switch off early
+    nl_cc_off_ticker = 1;
+    }
+  if (nl_cc_off_ticker > 1 && StandardMetrics.ms_v_env_on->AsBool())
+    {
+    // car has turned on during climate control, switch climate control off
+    nl_cc_off_ticker = 1;
+    }
+  if (nl_cc_off_ticker == 1)
+    {
+    SendCommand(DISABLE_CLIMATE_CONTROL);
+    }
   }
 
 void OvmsVehicleNissanLeaf::Ticker60(uint32_t ticker)
@@ -457,6 +574,81 @@ void OvmsVehicleNissanLeaf::Ticker60(uint32_t ticker)
     // relay to click
     PollStart();
     }
+  }
+
+////////////////////////////////////////////////////////////////////////
+// Wake up the car & send Climate Control or Remote Charge message to VCU,
+// replaces Nissan's CARWINGS and TCU module, see
+// http://www.mynissanleaf.com/viewtopic.php?f=44&t=4131&hilit=open+CAN+discussion&start=416
+//
+// On Generation 1 Cars, TCU pin 11's "EV system activation request signal" is
+// driven to 12V to wake up the VCU. This function drives RC3 high to
+// activate the "EV system activation request signal". Without a circuit
+// connecting RC3 to the activation signal wire, remote climate control will
+// only work during charging and for obvious reasons remote charging won't
+// work at all.
+//
+// On Generation 2 Cars, a CAN bus message is sent to wake up the VCU. This
+// function sends that message even to Generation 1 cars which doesn't seem to
+// cause any problems.
+//
+
+OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::RemoteCommandHandler(RemoteCommand command)
+  {
+  ESP_LOGI(TAG, "RemoteCommandHandler");
+
+  // Use GPIO to wake up GEN 1 Leaf with EV SYSTEM ACTIVATION REQUEST
+  // TODO re-implement to support Gen 1 leaf
+  //output_gpo3(TRUE);
+
+  // The Gen 2 Wakeup frame works on some Gen1, and doesn't cause a problem
+  // so we send it on all models. We have to take care to send it on the
+  // correct can bus in newer cars.
+  ESP_LOGI(TAG, "Sending Gen 2 Wakeup Frame");
+  int modelyear = MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR);
+  canbus* tcuBus = modelyear >= 2016 ? m_can2 : m_can1;
+  unsigned char data = 0;
+  tcuBus->WriteStandard(0x68c, 1, &data);
+
+  // The GEN 2 Nissan TCU module sends the command repeatedly, so we start
+  // m_remoteCommandTimer (which calls RemoteCommandTimer()) to do this
+  // EV SYSTEM ACTIVATION REQUEST is released in the timer too
+  nl_remote_command = command;
+  nl_remote_command_ticker = REMOTE_COMMAND_REPEAT_COUNT;
+  xTimerStart(m_remoteCommandTimer, 0);
+
+  if (command == ENABLE_CLIMATE_CONTROL)
+    {
+    nl_cc_off_ticker = REMOTE_CC_TIME_GRID;
+    }
+
+  return Success;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandHomelink(uint8_t button)
+  {
+  ESP_LOGI(TAG, "CommandHomelink");
+  if (button == 0)
+    {
+    return RemoteCommandHandler(ENABLE_CLIMATE_CONTROL);
+    }
+  if (button == 1)
+    {
+    return RemoteCommandHandler(DISABLE_CLIMATE_CONTROL);
+    }
+  return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandClimateControl(bool climatecontrolon)
+  {
+  ESP_LOGI(TAG, "CommandClimateControl");
+  return RemoteCommandHandler(climatecontrolon ? ENABLE_CLIMATE_CONTROL : DISABLE_CLIMATE_CONTROL);
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandStartCharge()
+  {
+  ESP_LOGI(TAG, "CommandStartCharge");
+  return RemoteCommandHandler(START_CHARGING);
   }
 
 class OvmsVehicleNissanLeafInit

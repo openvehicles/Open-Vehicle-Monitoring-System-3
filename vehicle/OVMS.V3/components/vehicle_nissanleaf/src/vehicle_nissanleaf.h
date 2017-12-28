@@ -32,11 +32,17 @@
 #ifndef __VEHICLE_NISSANLEAF_H__
 #define __VEHICLE_NISSANLEAF_H__
 
+#include "freertos/timers.h"
 #include "vehicle.h"
 
+#define DEFAULT_MODEL_YEAR 2012
 #define GEN_1_NEW_CAR_GIDS 281l
 #define GEN_1_NEW_CAR_GIDS_S "281"
 #define GEN_1_NEW_CAR_RANGE_MILES 84
+#define REMOTE_COMMAND_REPEAT_COUNT 24 // number of times to send the remote command after the first time
+#define ACTIVATION_REQUEST_TIME 10 // tenths of a second to hold activation request signal
+#define REMOTE_CC_TIME_GRID 1800 // seconds to run remote climate control on grid power
+#define REMOTE_CC_TIME_BATTERY 900 // seconds to run remote climate control on battery power
 
 using namespace std;
 
@@ -51,6 +57,20 @@ typedef enum
   IDLE = 6
   } PollState;
 
+typedef enum
+  {
+  ENABLE_CLIMATE_CONTROL,
+  DISABLE_CLIMATE_CONTROL,
+  START_CHARGING
+  } RemoteCommand;
+
+typedef enum
+  {
+  CAN_READ_ONLY,
+  INVALID_SYNTAX,
+  COMMAND_RESULT_OK
+  } CommandResult;
+
 class OvmsVehicleNissanLeaf : public OvmsVehicle
   {
   public:
@@ -60,6 +80,9 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
     void IncomingFrameCan2(CAN_frame_t* p_frame);
+    vehicle_command_t CommandHomelink(uint8_t button);
+    vehicle_command_t CommandClimateControl(bool enable);
+    void RemoteCommandTimer();
 
   private:
     void PollStart(void);
@@ -67,8 +90,15 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void SendCanMessage(uint16_t id, uint8_t length, uint8_t *data);
     void Ticker1(uint32_t ticker);
     void Ticker60(uint32_t ticker);
+    void SendCommand(RemoteCommand);
+    OvmsVehicle::vehicle_command_t RemoteCommandHandler(RemoteCommand command);
+    OvmsVehicle::vehicle_command_t CommandStartCharge();
 
     PollState nl_poll_state = IDLE;
+    RemoteCommand nl_remote_command; // command to send, see ticker10th()
+    uint8_t nl_remote_command_ticker; // number of tenths remaining to send remote command frames
+    uint16_t nl_cc_off_ticker; // seconds before we send the climate control off command
+    TimerHandle_t m_remoteCommandTimer;
   };
 
 #endif //#ifndef __VEHICLE_NISSANLEAF_H__
