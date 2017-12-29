@@ -33,6 +33,8 @@
 
 using namespace std;
 
+static const char *TAG = "v-kiasoulev";
+
 typedef union {
   struct { //TODO Is this the correct order, or should it be swapped?
     unsigned char Park : 1;
@@ -93,6 +95,8 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     bool StartRelay(bool,const char *password);
 
     char m_vin[18];
+    char m_street[128]; //Current street
+    int m_street_pos;
 
     uint32_t ks_tpms_id[4];
     uint8_t ks_battery_cell_voltage[101];
@@ -112,6 +116,19 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 
     OvmsMetricBool*		m_v_env_lowbeam;
     OvmsMetricBool*		m_v_env_highbeam;
+    OvmsMetricFloat* m_v_env_inside_temp;
+    OvmsMetricFloat* m_v_env_climate_temp;
+    OvmsMetricBool*  m_v_env_climate_driver_only;
+    OvmsMetricBool*  m_v_env_climate_resirc;
+    OvmsMetricBool*  m_v_env_climate_auto;
+    OvmsMetricBool*  m_v_env_climate_ac;
+    OvmsMetricInt*	  m_v_env_climate_fan_speed;
+    OvmsMetricInt*	  m_v_env_climate_mode;
+
+    OvmsMetricInt*	  m_v_pos_dist_to_dest;
+    OvmsMetricInt*	  m_v_pos_arrival_hour;
+    OvmsMetricInt*	  m_v_pos_arrival_minute;
+    OvmsMetricString*	  m_v_pos_street;
 
     OvmsMetricFloat* m_obc_pilot_duty;
 
@@ -119,6 +136,8 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     OvmsMetricFloat* m_ldc_out_current;
     OvmsMetricFloat* m_ldc_in_voltage;
     OvmsMetricFloat* m_ldc_temperature;
+
+    OvmsMetricInt*	  m_counter;
 
   protected:
     void IncomingTPMS(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
