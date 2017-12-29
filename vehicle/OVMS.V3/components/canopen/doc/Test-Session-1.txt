@@ -1,0 +1,172 @@
+================================================================================
+CANopen test/example session on Renault Twizy (SEVCON Gen4)
+================================================================================
+
+##
+## Init
+##
+
+OVMS > level verbose
+Logging level for * set to verbose
+
+OVMS > can can1 start active 500000
+Can bus can1 started in mode active at speed 500000Kbps
+
+OVMS > co can1 start
+CANopen worker started, 1 worker(s) running.
+I (129494) events: Signal(power.can1.on)
+I (129494) canopen: Worker started on can1
+I (129494) events: Signal(canopen.worker.start)
+
+OVMS > co status
+CANopen status:
+  Active workers: 1
+  can1:
+    Active clients: 0
+    Jobs waiting  : 0
+    Jobs processed: 0
+    - timeouts    : 0
+    - other errors: 0
+
+
+##
+## Switch on (SEVCON Gen4 booting)
+## 
+
+I (162904) canopen: can1 node 1 new state: Booting
+I (162904) events: Signal(canopen.node.state)
+I (163474) canopen: can1 node 1 new state: Operational
+I (163474) events: Signal(canopen.node.state)
+
+OVMS > metrics list co.
+co.can1.nd1.emcy.code
+co.can1.nd1.emcy.type
+co.can1.nd1.state                        Operational
+
+
+##
+## Get node info
+## 
+
+OVMS > co can1 info 1
+Node #1:
+ Device type: 0x00000000
+ Error state: 0x00
+ Vendor ID: 0x0000001e
+ Product: 0x0712302d
+ Revision: 0x00010019
+ S/N: 0x47c5…………
+ Device name: Gen4 (Renault Twizy)11 November 2011 12
+ HW version: 0x00000003
+ SW version: 0712.0001
+
+
+##
+## Scan nodes
+## 
+
+OVMS > co can1 scan
+Scan #1-127...
+Node #1:
+ Device type: 0x00000000
+ Error state: 0x00
+ Vendor ID: 0x0000001e
+ Product: 0x0712302d
+ Revision: 0x00010019
+ S/N: 0x47c53c06
+ Device name: Gen4 (Renault Twizy)11 November 2011 12
+ HW version: 0x00000003
+ SW version: 0712.0001
+Node #23: SDO access failed
+Node #25: SDO access failed
+Node #27: SDO access failed
+Node #30: SDO access failed
+Node #87: SDO access failed
+Done.
+D (242624) canopen: ReadSDO #23 0x1000.00: InitUpload failed, CANopen error code 0x00000000
+D (242824) canopen: ReadSDO #25 0x1000.00: InitUpload failed, CANopen error code 0x00000000
+D (243074) canopen: ReadSDO #27 0x1000.00: InitUpload failed, CANopen error code 0x00000000
+D (243474) canopen: ReadSDO #30 0x1000.00: InitUpload failed, CANopen error code 0x00000000
+D (253014) canopen: ReadSDO #87 0x1000.00: InitUpload failed, CANopen error code 0x00000000
+
+
+##
+## SEVCON login
+## 
+
+OVMS > co can1 readsdo 1 5000 1
+ReadSDO #1 0x5000.01: contsize=1 xfersize=1 dec=0 hex=0x00 str=''
+
+# 0 = not logged in
+
+OVMS > co can1 writesdo 1 5000 3 0
+WriteSDO #1 0x5000.03: dec=0 => OK
+OVMS > co can1 writesdo 1 5000 2 0x4bdf
+WriteSDO #1 0x5000.02: hex=0x00004bdf => OK
+OVMS > co can1 readsdo 1 5000 1
+ReadSDO #1 0x5000.01: contsize=1 xfersize=1 dec=4 hex=0x04 str='(binary)'
+
+# 4 = logged in level 4 → success
+
+
+##
+## Statistics
+## 
+
+OVMS > co status 
+CANopen status:
+  Active workers: 1
+  can1:
+    Active clients: 0
+    Jobs waiting  : 0
+    Jobs processed: 148
+    - timeouts    : 121
+    - other errors: 5
+
+
+##
+## NMT
+## 
+
+OVMS > co can1 nmt preop
+NMT command result: OK
+I (371354) canopen: can1 node 1 emergency: code=0x8200 type=0x10 data: 01 4f 02 01 01
+I (371354) events: Signal(canopen.node.emcy)
+I (371464) canopen: can1 node 1 new state: PreOperational
+I (371464) events: Signal(canopen.node.state)
+I (372894) canopen: can1 node 1 emergency: code=0x1000 type=0x11 data: 81 46 00 00 00
+I (372894) events: Signal(canopen.node.emcy)
+
+OVMS > metrics list co.
+co.can1.nd1.emcy.code                    4096
+co.can1.nd1.emcy.type                    17
+co.can1.nd1.state                        PreOperational
+
+OVMS > co can1 nmt start 
+NMT command result: OK
+I (389454) canopen: can1 node 1 new state: Operational
+I (389454) events: Signal(canopen.node.state)
+I (392884) canopen: can1 node 1 emergency: code=0x0000 type=0x10 data: 81 46 01 4f 27
+I (392884) events: Signal(canopen.node.emcy)
+
+OVMS > co can1 nmt start metrics list co.
+co.can1.nd1.emcy.code                    0
+co.can1.nd1.emcy.type                    16
+co.can1.nd1.state                        Operational
+
+
+##
+## Emergency monitoring (pushing buttons in parked mode)
+## 
+
+I (421894) canopen: can1 node 1 emergency: code=0x1000 type=0x11 data: 8e 48 00 00 00
+I (421894) events: Signal(canopen.node.emcy)
+I (422184) canopen: can1 node 1 emergency: code=0x0000 type=0x10 data: 8e 48 01 4f ff
+I (422184) events: Signal(canopen.node.emcy)
+
+I (424864) canopen: can1 node 1 emergency: code=0x1000 type=0x11 data: 8e 48 00 00 00
+I (424864) events: Signal(canopen.node.emcy)
+I (425124) canopen: can1 node 1 emergency: code=0x0000 type=0x10 data: 8e 48 01 4f 08
+I (425124) events: Signal(canopen.node.emcy)
+
+
