@@ -69,9 +69,12 @@ class OvmsWriter
   public:
     bool IsSecure();
     void SetSecure(bool secure=true);
+    bool IsBusy() { return m_busy; }
+    void SetBusy(bool busy) { m_busy = busy; }
 
   public:
     bool m_issecure;
+    bool m_busy;              // true = executing OvmsCommand
 
   protected:
     InsertCallback m_insert;
@@ -139,7 +142,7 @@ class OvmsCommandApp
     void DeregisterConsole(OvmsWriter* writer);
     int Log(const char* fmt, ...);
     int LogPartial(const char* fmt, ...);
-    int HexDump(const char* prefix, const char* data, size_t length);
+    int HexDump(const char* tag, const char* prefix, const char* data, size_t length, size_t colsize=16);
 
   public:
     char ** Complete(OvmsWriter* writer, int argc, const char * const * argv);

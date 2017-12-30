@@ -40,7 +40,7 @@ static u32_t GsmPPPOS_OutputCallback(ppp_pcb *pcb, u8_t *data, u32_t len, void *
   {
   GsmPPPOS* me = (GsmPPPOS*)ctx;
 
-  MyCommandApp.HexDump("SIMCOM ppp tx",(const char*)data, len);
+  MyCommandApp.HexDump(TAG, "tx", (const char*)data, len);
   return me->m_mux->tx(me->m_channel, data, len);
   }
 
@@ -168,7 +168,7 @@ GsmPPPOS::~GsmPPPOS()
 
 void GsmPPPOS::IncomingData(uint8_t *data, size_t len)
   {
-  MyCommandApp.HexDump("SIMCOM ppp rx",(const char*)data,len);
+  MyCommandApp.HexDump(TAG, "rx", (const char*)data, len);
   pppos_input_tcpip(m_ppp, (u8_t*)data, (int)len);
   }
 
