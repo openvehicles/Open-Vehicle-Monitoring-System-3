@@ -252,9 +252,6 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
     // read RX buffer:
     uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 13, 1, CMD_READ_RXBUF + ((intflag==1) ? 0 : 4));
     
-    // MCP2515 BITMODIFY: Clear RX buffer interrupt flag
-    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intflag, 0x00);
-    
     if (p[1] & 0x08) //check for extended mode=1, or std mode=0
       {
       frame->FIR.B.FF = CAN_frame_ext;           // Extended mode
@@ -273,6 +270,9 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
 
     memcpy(&frame->data,p+5,8);
 
+    // MCP2515 BITMODIFY: Clear RX buffer interrupt flag
+    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intflag, 0x00);
+    
     // call again if there are still interrupts to handle:
     return ((intstat & ~intflag) != 0);
     }
