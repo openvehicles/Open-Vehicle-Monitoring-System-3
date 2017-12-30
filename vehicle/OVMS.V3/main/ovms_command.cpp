@@ -55,6 +55,7 @@ OvmsWriter::OvmsWriter()
     m_issecure = true;
   else
     m_issecure = false;
+  m_busy = false;
   m_insert = NULL;
   m_userData = NULL;
   }
@@ -262,7 +263,11 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
       return;
       }
     if ((!m_secure)||(m_secure && writer->m_issecure))
+      {
+      writer->SetBusy(true);
       m_execute(verbosity,writer,this,argc,argv);
+      writer->SetBusy(false);
+      }
     else
       writer->puts("Error: Secure command requires 'enable' mode");
     return;
