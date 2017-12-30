@@ -44,6 +44,7 @@
 #define CMD_BITMODIFY     0b00000101
 #define CMD_READ_RXBUF    0b10010000
 #define CMD_LOAD_TXBUF    0b01000000
+#define CMD_READ_STATUS   0b10100000
 
 
 class mcp2515 : public canbus
