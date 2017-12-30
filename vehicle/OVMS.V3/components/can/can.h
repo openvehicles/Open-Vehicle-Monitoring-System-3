@@ -196,6 +196,8 @@ class canbus : public pcp
     uint32_t m_errors_rx;
     uint32_t m_packets_tx;
     uint32_t m_errors_tx;
+    uint32_t m_error_flags;
+  
   };
 
 class can

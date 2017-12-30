@@ -198,6 +198,7 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->printf("Rx err:    %20d\n",sbus->m_errors_rx);
   writer->printf("Tx pkt:    %20d\n",sbus->m_packets_tx);
   writer->printf("Tx err:    %20d\n",sbus->m_errors_tx);
+  writer->printf("Err flags: %#x\n",sbus->m_error_flags);
   }
 
 static void CAN_rxtask(void *pvParameters)
@@ -304,6 +305,7 @@ canbus::canbus(const char* name)
   m_errors_rx = 0;
   m_packets_tx = 0;
   m_errors_tx = 0;
+  m_error_flags = 0;
   }
 
 canbus::~canbus()
