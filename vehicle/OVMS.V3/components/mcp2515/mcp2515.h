@@ -36,6 +36,16 @@
 #include "can.h"
 #include "spi.h"
 
+// MCP2515 SPI commands:
+#define CMD_RESET         0b11000000
+#define CMD_READ          0b00000011
+#define CMD_WRITE         0b00000010
+#define CMD_RTS           0b10000000
+#define CMD_BITMODIFY     0b00000101
+#define CMD_READ_RXBUF    0b10010000
+#define CMD_LOAD_TXBUF    0b01000000
+
+
 class mcp2515 : public canbus
   {
   public:
