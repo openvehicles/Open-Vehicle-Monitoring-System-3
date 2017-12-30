@@ -100,7 +100,7 @@ static unsigned long utc_to_timestamp(const char* date, const char* time)
 
 void GsmNMEA::IncomingLine(const std::string line)
   {
-  ESP_LOGD(TAG, "IncomingLine: %s", line.c_str());
+  ESP_LOGV(TAG, "IncomingLine: %s", line.c_str());
 
   std::istringstream sentence(line);
   std::string token;

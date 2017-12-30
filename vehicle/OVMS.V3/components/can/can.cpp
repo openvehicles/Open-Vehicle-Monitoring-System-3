@@ -269,24 +269,11 @@ void can::IncomingFrame(CAN_frame_t* p_frame)
 
   if (p_frame->origin->m_trace)
     {
-    MyCommandApp.Log("CAN rx origin %s id %03x (len:%d)",
-      p_frame->origin->GetName(),p_frame->MsgID,p_frame->FIR.B.DLC);
-    for (int k=0;k<8;k++)
-      {
-      if (k<p_frame->FIR.B.DLC)
-        MyCommandApp.Log(" %02x",p_frame->data.u8[k]);
-      else
-        MyCommandApp.Log("   ");
-      }
-    for (int k=0;k<p_frame->FIR.B.DLC;k++)
-      {
-      if (isprint(p_frame->data.u8[k]))
-        MyCommandApp.Log("%c",p_frame->data.u8[k]);
-      else
-        MyCommandApp.Log(".");
-      }
-    MyCommandApp.Log("\n");
+    char prefix[30];
+    snprintf(prefix, sizeof(prefix), "rx %s id %03x len %d", p_frame->origin->GetName(), p_frame->MsgID, p_frame->FIR.B.DLC);
+    MyCommandApp.HexDump(TAG, prefix, (const char*)p_frame->data.u8, p_frame->FIR.B.DLC, 8);
     }
+  
   for (auto n : m_listeners)
     {
     xQueueSend(n,p_frame,0);
@@ -337,23 +324,9 @@ esp_err_t canbus::Write(const CAN_frame_t* p_frame)
   {
   if (m_trace)
     {
-    MyCommandApp.Log("CAN tx origin %s id %03x (len:%d)",
-      GetName(),p_frame->MsgID,p_frame->FIR.B.DLC);
-    for (int k=0;k<8;k++)
-      {
-      if (k<p_frame->FIR.B.DLC)
-        MyCommandApp.Log(" %02x",p_frame->data.u8[k]);
-      else
-        MyCommandApp.Log("   ");
-      }
-    for (int k=0;k<p_frame->FIR.B.DLC;k++)
-      {
-      if (isprint(p_frame->data.u8[k]))
-        MyCommandApp.Log("%c",p_frame->data.u8[k]);
-      else
-        MyCommandApp.Log(".");
-      }
-    MyCommandApp.Log("\n");
+    char prefix[30];
+    snprintf(prefix, sizeof(prefix), "tx %s id %03x len %d", GetName(), p_frame->MsgID, p_frame->FIR.B.DLC);
+    MyCommandApp.HexDump(TAG, prefix, (const char*)p_frame->data.u8, p_frame->FIR.B.DLC, 8);
     }
 
   m_packets_tx++;

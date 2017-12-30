@@ -101,7 +101,7 @@ void simcom::Task()
               if (buffered_size>16) buffered_size = 16;
               int len = uart_read_bytes(m_uartnum, (uint8_t*)data, buffered_size, 100 / portTICK_RATE_MS);
               m_buffer.Push(data,len);
-              MyCommandApp.HexDump("SIMCOM rx",(const char*)data,len);
+              MyCommandApp.HexDump(TAG, "rx", (const char*)data, len);
               uart_get_buffered_data_len(m_uartnum, &buffered_size);
               SimcomState1 newstate = State1Activity();
               if ((newstate != m_state1)&&(newstate != None)) SetState1(newstate);
@@ -677,7 +677,7 @@ void simcom::StandardDataHandler(int channel, OvmsBuffer* buf)
   char* result = new char[needed+1];
   buf->Pop(needed, (uint8_t*)result);
   result[needed] = 0;
-  MyCommandApp.HexDump("SIMCOM data",result,needed);
+  MyCommandApp.HexDump(TAG, "data", result, needed);
 
   delete [] result;
   buf->m_userdata = 0;
@@ -835,7 +835,7 @@ void simcom::PowerSleep(bool onoff)
 void simcom::tx(uint8_t* data, size_t size)
   {
   if (!m_task) return; // Quick exit if not task (we are stopped)
-  MyCommandApp.HexDump("SIMCOM tx",(const char*)data,size);
+  MyCommandApp.HexDump(TAG, "tx", (const char*)data, size);
   uart_write_bytes(m_uartnum, (const char*)data, size);
   }
 
@@ -843,7 +843,7 @@ void simcom::tx(const char* data, ssize_t size)
   {
   if (!m_task) return; // Quick exit if not task (we are stopped)
   if (size == -1) size = strlen(data);
-  MyCommandApp.HexDump("SIMCOM tx",data,size);
+  MyCommandApp.HexDump(TAG, "tx", data, size);
   if (size > 0)
     ESP_LOGD(TAG, "tx scmd ch=0 len=%-4d: %s", size, data);
   uart_write_bytes(m_uartnum, data, size);
@@ -852,7 +852,7 @@ void simcom::tx(const char* data, ssize_t size)
 void simcom::muxtx(int channel, uint8_t* data, size_t size)
   {
   if (!m_task) return; // Quick exit if not task (we are stopped)
-  MyCommandApp.HexDump("SIMCOM mux tx",(const char*)data,size);
+  MyCommandApp.HexDump(TAG, "mux tx", (const char*)data, size);
   m_mux.tx(channel, data, size);
   }
 
@@ -860,7 +860,7 @@ void simcom::muxtx(int channel, const char* data, ssize_t size)
   {
   if (!m_task) return; // Quick exit if not task (we are stopped)
   if (size == -1) size = strlen(data);
-  MyCommandApp.HexDump("SIMCOM mux tx",data,size);
+  MyCommandApp.HexDump(TAG, "mux tx", data, size);
   if (size > 0 && (channel == GSM_MUX_CHAN_POLL || channel == GSM_MUX_CHAN_CMD))
     ESP_LOGD(TAG, "tx mcmd ch=%d len=%-4d: %s", channel, size, data);
   m_mux.tx(channel, (uint8_t*)data, size);
