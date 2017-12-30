@@ -167,9 +167,19 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
   uint8_t buf[16];
   uint8_t id[4];
 
-//  uint8_t* p = m_spibus->spi_cmd(m_spi, buf, 1, 2, CMD_READ, 0x30);
-//  printf("MCP2515 TXB0CTRL(0x30) is %02x\n",p[0]);
-
+  // poll for free TX buffer:
+  uint8_t txbuf;
+  while(true)
+    {
+    uint8_t* p = m_spibus->spi_cmd(m_spi, buf, 1, 1, CMD_READ_STATUS);
+    if ((p[0] & 0b00000100) == 0)
+      { txbuf = 0b000; break; } // use TXB0
+    else if ((p[0] & 0b00010000) == 0)
+      { txbuf = 0b010; break; } // use TXB1
+    else if ((p[0] & 0b01000000) == 0)
+      { txbuf = 0b100; break; } // use TXB2
+    }
+  
   if (p_frame->FIR.B.FF == CAN_frame_std)
     {
     // Transmit a standard frame
@@ -189,8 +199,8 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
     id[3] = (p_frame->MsgID & 0xff);          // LOW 8 bits of extended ID
     }
 
-  // MCP2515 Transmit Buffer
-  m_spibus->spi_cmd(m_spi, buf, 0, 14, CMD_LOAD_TXBUF + 0,
+  // MCP2515 load transmit buffer:
+  m_spibus->spi_cmd(m_spi, buf, 0, 14, CMD_LOAD_TXBUF | txbuf,
     id[0], id[1], id[2], id[3], p_frame->FIR.B.DLC,
     p_frame->data.u8[0],
     p_frame->data.u8[1],
@@ -201,12 +211,8 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
     p_frame->data.u8[6],
     p_frame->data.u8[7]);
 
-  // MCP2515 RTS
-  m_spibus->spi_cmd(m_spi, buf, 0, 1, CMD_RTS + 0x01);
-
-  // Nasty hack to delay task to allow time to write
-  // TOD: A better way would be to wait for the previous Write to complete before starting this one
-  vTaskDelay(10 / portTICK_PERIOD_MS);
+  // MCP2515 request to send:
+  m_spibus->spi_cmd(m_spi, buf, 0, 1, CMD_RTS | (txbuf ? txbuf : 0b001));
 
   return ESP_OK;
   }
