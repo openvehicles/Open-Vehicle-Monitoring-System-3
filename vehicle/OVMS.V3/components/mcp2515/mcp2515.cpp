@@ -281,8 +281,10 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
     // handle other interrupts:
     if (intflag & 0b10100000)
       {
-      // Error interrupt (ERRIF or MERRIF):
-      m_error_flags = errflag;
+      // Error interrupts:
+      //  MERRF 0x80 = message tx/rx error
+      //  ERRIF 0x20 = overflow / error state change
+      m_error_flags = (intflag & 0b10100000) << 8 | errflag;
       
       // read error counters:
       uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, 0x1c);
