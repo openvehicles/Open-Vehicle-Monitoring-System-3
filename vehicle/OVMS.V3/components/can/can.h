@@ -190,12 +190,16 @@ class canbus : public pcp
     CAN_speed_t m_speed;
     CAN_mode_t m_mode;
     bool m_trace;
+    uint32_t m_trace_id_from;
+    uint32_t m_trace_id_to;
 
   public:
     uint32_t m_packets_rx;
     uint32_t m_errors_rx;
     uint32_t m_packets_tx;
     uint32_t m_errors_tx;
+    uint32_t m_errors_rxbuf_overflow;
+    uint32_t m_errors_txbuf_overflow;
     uint32_t m_error_flags;
   
   };
