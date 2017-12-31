@@ -625,6 +625,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandCooldown(bool cooldownon)
   return NotImplemented;
   }
 
+OvmsVehicle::vehicle_command_t OvmsVehicle::CommandClimateControl(bool climatecontrolon)
+  {
+  return NotImplemented;
+  }
+
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandWakeup()
   {
   return NotImplemented;

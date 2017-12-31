@@ -65,7 +65,7 @@ void OvmsVehicleRenaultTwizy::DoNotify()
   // Send charge alert?
   if (which & SEND_ChargeAlert) {
     MyNotify.NotifyCommand("alert", "stat");
-    twizy_notifications &= ~SEND_ChargeState;
+    twizy_notifications &= ~SEND_ChargeAlert;
   }
   
   // Send charge state?

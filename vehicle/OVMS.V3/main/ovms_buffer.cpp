@@ -213,7 +213,7 @@ int OvmsBuffer::PollSocket(int sock, long timeoutms)
   uint8_t *buf = new uint8_t[avail];
   size_t n = read(sock, buf, avail);
   // ESP_LOGI(TAG,"Polling Socket read %d bytes",n);
-  // MyCommandApp.HexDump(TAG,(const char*)buf,n);
+  // MyCommandApp.HexDump(TAG, "PollSocket", (const char*)buf, n);
   if (n == 0)
     {
     n = -1;

@@ -55,6 +55,7 @@ OvmsWriter::OvmsWriter()
     m_issecure = true;
   else
     m_issecure = false;
+  m_busy = false;
   m_insert = NULL;
   m_userData = NULL;
   }
@@ -262,7 +263,11 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
       return;
       }
     if ((!m_secure)||(m_secure && writer->m_issecure))
+      {
+      writer->SetBusy(true);
       m_execute(verbosity,writer,this,argc,argv);
+      writer->SetBusy(false);
+      }
     else
       writer->puts("Error: Secure command requires 'enable' mode");
     return;
@@ -512,9 +517,9 @@ int OvmsCommandApp::LogPartial(const char* fmt, ...)
   return ret;
   }
 
-int OvmsCommandApp::HexDump(const char* prefix, const char* data, size_t length)
+int OvmsCommandApp::HexDump(const char* tag, const char* prefix, const char* data, size_t length, size_t colsize /*=16*/)
   {
-  char buffer[128]; // Plenty of space for 16x3 + 2 + 16 + 1(\0)
+  char buffer[colsize*4 + 4]; // space for 16x3 + 2 + 16 + 1(\0)
   const char *s = data;
   int rlength = (int)length;
 
@@ -522,7 +527,7 @@ int OvmsCommandApp::HexDump(const char* prefix, const char* data, size_t length)
     {
     char *p = buffer;
     const char *os = s;
-    for (int k=0;k<16;k++)
+    for (int k=0;k<colsize;k++)
       {
       if (k<rlength)
         {
@@ -535,9 +540,10 @@ int OvmsCommandApp::HexDump(const char* prefix, const char* data, size_t length)
         }
       p+=3;
       }
-    sprintf(p,"  ");
+    sprintf(p,"| ");
+    p += 2;
     s = os;
-    for (int k=0;k<16;k++)
+    for (int k=0;k<colsize;k++)
       {
       if (k<rlength)
         {
@@ -554,8 +560,8 @@ int OvmsCommandApp::HexDump(const char* prefix, const char* data, size_t length)
       p++;
     }
     *p = 0;
-    ESP_LOGD(prefix,"%s",buffer);
-    rlength -= 16;
+    ESP_LOGV(tag, "%s: %s", prefix, buffer);
+    rlength -= colsize;
     }
 
   return length;

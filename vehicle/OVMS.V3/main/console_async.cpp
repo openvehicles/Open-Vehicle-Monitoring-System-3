@@ -135,7 +135,8 @@ void ConsoleAsync::Log(char* message)
   Event event;
   event.type = ALERT;
   event.buffer = message;
-  BaseType_t ret = xQueueSendToBack(m_queue, (void * )&event, (portTickType)(1000 / portTICK_PERIOD_MS));
+  BaseType_t ret = xQueueSendToBack(m_queue, (void * )&event,
+    (portTickType) (m_busy ? 0 : (1000 / portTICK_PERIOD_MS)));
   if (ret != pdPASS)
     {
     free(message);

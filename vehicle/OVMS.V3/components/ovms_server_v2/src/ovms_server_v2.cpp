@@ -610,6 +610,16 @@ void OvmsServerV2::ProcessCommand(const char* payload)
       *buffer << "MP-0 c25," << k;
       break;
       }
+    case 26: // Remote Climate Control
+      {
+      k = 1;
+      if (vehicle && sep)
+        {
+        if (vehicle->CommandClimateControl(atoi(sep+1)) == OvmsVehicle::Success) k = 0;
+        }
+      *buffer << "MP-0 c26," << k;
+      break;
+      }
     case 40: // Send SMS
       *buffer << "MP-0 c" << command << ",2";
       break;

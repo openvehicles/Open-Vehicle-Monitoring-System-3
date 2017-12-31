@@ -92,21 +92,21 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   m_speed = speed;
 
   // RESET commmand
-  m_spibus->spi_cmd(m_spi, buf, 0, 1, 0b11000000);
+  m_spibus->spi_cmd(m_spi, buf, 0, 1, CMD_RESET);
   vTaskDelay(50 / portTICK_PERIOD_MS);
 
   // Set CONFIG mode (abort transmisions, one-shot mode, clkout disabled)
-  m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x0f, 0b10011000);
+  m_spibus->spi_cmd(m_spi, buf, 0, 3, CMD_WRITE, 0x0f, 0b10011000);
   vTaskDelay(50 / portTICK_PERIOD_MS);
 
   // Rx Buffer 0 control (receive all and enable buffer 1 rollover)
-  m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x60, 0b01100100);
+  m_spibus->spi_cmd(m_spi, buf, 0, 3, CMD_WRITE, 0x60, 0b01100100);
 
   // CANINTE (interrupt enable), all interrupts
-  m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x2b, 0b11111111);
+  m_spibus->spi_cmd(m_spi, buf, 0, 3, CMD_WRITE, 0x2b, 0b11111111);
 
   // BFPCTRL RXnBF PIN CONTROL AND STATUS
-  m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x0c,  0b00001100);
+  m_spibus->spi_cmd(m_spi, buf, 0, 3, CMD_WRITE, 0x0c,  0b00001100);
 
   // Bus speed
   uint8_t cnf1 = 0;
@@ -130,10 +130,10 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
       cnf1=0x00; cnf2=0xd0; cnf3=0x82;
       break;
     }
-  m_spibus->spi_cmd(m_spi, buf, 0, 5, 0x02, 0x28, cnf3, cnf2, cnf1);
+  m_spibus->spi_cmd(m_spi, buf, 0, 5, CMD_WRITE, 0x28, cnf3, cnf2, cnf1);
 
   // Set NORMAL mode
-  m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x0f, 0x00);
+  m_spibus->spi_cmd(m_spi, buf, 0, 3, CMD_WRITE, 0x0f, 0x00);
 
   // And record that we are powered on
   pcp::SetPowerMode(On);
@@ -146,14 +146,14 @@ esp_err_t mcp2515::Stop()
   uint8_t buf[16];
 
   // RESET command
-  m_spibus->spi_cmd(m_spi, buf, 0, 1, 0b11000000);
+  m_spibus->spi_cmd(m_spi, buf, 0, 1, CMD_RESET);
   vTaskDelay(5 / portTICK_PERIOD_MS);
 
   // BFPCTRL RXnBF PIN CONTROL AND STATUS
-  m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x0c, 0b00111100);
+  m_spibus->spi_cmd(m_spi, buf, 0, 3, CMD_WRITE, 0x0c, 0b00111100);
 
   // Set SLEEP mode
-  m_spibus->spi_cmd(m_spi, buf, 0, 3, 0x02, 0x0f, 0x30);
+  m_spibus->spi_cmd(m_spi, buf, 0, 3, CMD_WRITE, 0x0f, 0x30);
 
   // And record that we are powered down
   pcp::SetPowerMode(Off);
@@ -167,9 +167,19 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
   uint8_t buf[16];
   uint8_t id[4];
 
-//  uint8_t* p = m_spibus->spi_cmd(m_spi, buf, 1, 2, 0b00000011, 0x30);
-//  printf("MCP2515 TXB0CTRL(0x30) is %02x\n",p[0]);
-
+  // poll for free TX buffer:
+  uint8_t txbuf;
+  while(true)
+    {
+    uint8_t* p = m_spibus->spi_cmd(m_spi, buf, 1, 1, CMD_READ_STATUS);
+    if ((p[0] & 0b00000100) == 0)
+      { txbuf = 0b000; break; } // use TXB0
+    else if ((p[0] & 0b00010000) == 0)
+      { txbuf = 0b010; break; } // use TXB1
+    else if ((p[0] & 0b01000000) == 0)
+      { txbuf = 0b100; break; } // use TXB2
+    }
+  
   if (p_frame->FIR.B.FF == CAN_frame_std)
     {
     // Transmit a standard frame
@@ -189,9 +199,9 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
     id[3] = (p_frame->MsgID & 0xff);          // LOW 8 bits of extended ID
     }
 
-  // MCP2515 Transmit Buffer
-  m_spibus->spi_cmd(m_spi, buf, 0, 14,
-    0x40, id[0], id[1], id[2], id[3], p_frame->FIR.B.DLC,
+  // MCP2515 load transmit buffer:
+  m_spibus->spi_cmd(m_spi, buf, 0, 14, CMD_LOAD_TXBUF | txbuf,
+    id[0], id[1], id[2], id[3], p_frame->FIR.B.DLC,
     p_frame->data.u8[0],
     p_frame->data.u8[1],
     p_frame->data.u8[2],
@@ -201,12 +211,8 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
     p_frame->data.u8[6],
     p_frame->data.u8[7]);
 
-  // MCP2515 RTS
-  m_spibus->spi_cmd(m_spi, buf, 0, 1, 0x81);
-
-  // Nasty hack to delay task to allow time to write
-  // TOD: A better way would be to wait for the previous Write to complete before starting this one
-  vTaskDelay(10 / portTICK_PERIOD_MS);
+  // MCP2515 request to send:
+  m_spibus->spi_cmd(m_spi, buf, 0, 1, CMD_RTS | (txbuf ? txbuf : 0b001));
 
   return ESP_OK;
   }
@@ -215,56 +221,91 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
   {
   uint8_t buf[16];
 
-  while(1)
+  // read interrupts (CANINTF 0x2c) and errors (EFLG 0x2d):
+  uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, 0x2c);
+  uint8_t intstat = p[0];
+  uint8_t errflag = p[1];
+  
+  // handle RX buffers and other interrupts sequentially:
+  int intflag;
+  if (intstat & 0x01)
     {
-    uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 2, 2, 0b00000011, 0x2c);
-    uint8_t intstat = p[0];
-    //uint8_t errflag = p[1];
-
-    // MCP2515 BITMODIFY CANINTE (Interrupt Enable) Clear flags
-    m_spibus->spi_cmd(m_spi, buf, 0, 4, 0b00000101, 0x2c, *p, 0x00);
-
-    int rxbuf = -1;
-    if (intstat & 0x01)
+    // RX buffer 0 is full, handle it
+    intflag = 0x01;
+    }
+  else if (intstat & 0x02)
+    {
+    // RX buffer 1 is full, handle it
+    intflag = 0x02;
+    }
+  else
+    {
+    // other interrupts:
+    intflag = intstat & 0b11111100;
+    }
+    
+  if (intflag == 0)
+    {
+    // all interrupts handled
+    return false;
+    }
+  else if (intflag <= 2)
+    {
+    // The indicated RX buffer has a message to be read
+    memset(frame,0,sizeof(*frame));
+    frame->origin = this;
+    
+    // read RX buffer:
+    uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 13, 1, CMD_READ_RXBUF + ((intflag==1) ? 0 : 4));
+    
+    if (p[1] & 0x08) //check for extended mode=1, or std mode=0
       {
-      // RX buffer 0 is full, handle it
-      rxbuf = 0;
+      frame->FIR.B.FF = CAN_frame_ext;           // Extended mode
+      frame->MsgID = ((uint32_t)p[0]<<21)
+                    + (((uint32_t)p[1]&0xe0)<<13)
+                    + (((uint32_t)p[1]&0x03)<<16)
+                    + ((uint32_t)p[2]<<8)
+                    + ((uint32_t)p[3]);
       }
-    else if (intstat & 0x02)
-      {
-      // RX buffer 1 is full, handle it
-      rxbuf = 4;
-      }
-
-    if (rxbuf < 0)
-      return false; // No more
     else
       {
-      // The indicated RX buffer has a message to be reada
-      memset(frame,0,sizeof(*frame));
-      frame->origin = this;
-
-      uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 13, 1, 0x90+rxbuf);
-      if (p[1] & 0x08) //check for extended mode=1, or std mode=0
-        {
-        frame->FIR.B.FF = CAN_frame_ext;           // Extended mode
-        frame->MsgID = ((uint32_t)p[0]<<21)
-                     + (((uint32_t)p[1]&0xe0)<<13)
-                     + (((uint32_t)p[1]&0x03)<<16)
-                     + ((uint32_t)p[2]<<8)
-                     + ((uint32_t)p[3]);
-        }
-      else
-        {
-        frame->FIR.B.FF = CAN_frame_std;
-        frame->MsgID = ((uint32_t)p[0] << 3) + (p[1] >> 5);  // Standard mode
-        }
-      frame->FIR.B.DLC = p[4] & 0x0f;
-
-      memcpy(&frame->data,p+5,8);
-
-      return true;
+      frame->FIR.B.FF = CAN_frame_std;
+      frame->MsgID = ((uint32_t)p[0] << 3) + (p[1] >> 5);  // Standard mode
       }
+    frame->FIR.B.DLC = p[4] & 0x0f;
+
+    memcpy(&frame->data,p+5,8);
+
+    // MCP2515 BITMODIFY: Clear RX buffer interrupt flag
+    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intflag, 0x00);
+    
+    // call again if there are still interrupts to handle:
+    return ((intstat & ~intflag) != 0);
+    }
+  else
+    {
+    // handle other interrupts:
+    if (intflag & 0b10100000)
+      {
+      // Error interrupts:
+      //  MERRF 0x80 = message tx/rx error
+      //  ERRIF 0x20 = overflow / error state change
+      m_error_flags = (intflag & 0b10100000) << 8 | errflag;
+      
+      // read error counters:
+      uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, 0x1c);
+      m_errors_tx = p[0];
+      m_errors_rx = p[1];
+      
+      // clear RX buffer overflow flags:
+      m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2d, 0b11000000, 0x00);
+      }
+    
+    // clear interrupts:
+    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intflag, 0x00);
+    
+    // all interrupts handled
+    return false;
     }
   }
 

@@ -123,6 +123,7 @@ class OvmsVehicle
     virtual vehicle_command_t CommandSetChargeTimer(bool timeron, uint16_t timerstart);
     virtual vehicle_command_t CommandCooldown(bool cooldownon);
     virtual vehicle_command_t CommandWakeup();
+    virtual vehicle_command_t CommandClimateControl(bool enable);
     virtual vehicle_command_t CommandLock(const char* pin);
     virtual vehicle_command_t CommandUnlock(const char* pin);
     virtual vehicle_command_t CommandActivateValet(const char* pin);
