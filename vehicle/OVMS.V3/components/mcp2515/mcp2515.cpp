@@ -279,8 +279,8 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
     // MCP2515 BITMODIFY: Clear RX buffer interrupt flag
     m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intflag, 0x00);
     
-    // call again if there are still interrupts to handle:
-    return ((intstat & ~intflag) != 0);
+    // tell framework we've got a frame:
+    return true;
     }
   else
     {
