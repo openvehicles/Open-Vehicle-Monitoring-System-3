@@ -28,8 +28,8 @@
 ; THE SOFTWARE.
 */
 
-// #include "ovms_log.h"
-// static const char *TAG = "mcp2515";
+#include "ovms_log.h"
+static const char *TAG = "mcp2515";
 
 #include <string.h>
 #include "mcp2515.h"
@@ -169,6 +169,7 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
 
   // poll for free TX buffer:
   uint8_t txbuf;
+  uint8_t pollcnt = 0;
   while(true)
     {
     uint8_t* p = m_spibus->spi_cmd(m_spi, buf, 1, 1, CMD_READ_STATUS);
@@ -178,6 +179,12 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
       { txbuf = 0b010; break; } // use TXB1
     else if ((p[0] & 0b01000000) == 0)
       { txbuf = 0b100; break; } // use TXB2
+    if (++pollcnt == 5)
+      {
+      ESP_LOGW(TAG, "TX failed: no free buffer");
+      return ESP_FAIL;
+      }
+    vTaskDelay(1 / portTICK_PERIOD_MS);
     }
   
   if (p_frame->FIR.B.FF == CAN_frame_std)
@@ -255,7 +262,7 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
     memset(frame,0,sizeof(*frame));
     frame->origin = this;
     
-    // read RX buffer:
+    // read RX buffer and clear interrupt flag:
     uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 13, 1, CMD_READ_RXBUF + ((intflag==1) ? 0 : 4));
     
     if (p[1] & 0x08) //check for extended mode=1, or std mode=0
@@ -276,11 +283,8 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
 
     memcpy(&frame->data,p+5,8);
 
-    // MCP2515 BITMODIFY: Clear RX buffer interrupt flag
-    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intflag, 0x00);
-    
-    // call again if there are still interrupts to handle:
-    return ((intstat & ~intflag) != 0);
+    // tell framework we've got a frame:
+    return true;
     }
   else
     {
