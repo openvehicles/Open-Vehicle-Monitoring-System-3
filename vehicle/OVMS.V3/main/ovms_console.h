@@ -99,6 +99,8 @@ class OvmsConsole : public OvmsShell
     QueueHandle_t m_deferred;
     int m_discarded;
     DisplayState m_state;
+    unsigned int m_lost;        // Log messages lost due to full queue
+    unsigned int m_acked;       // Log messages acknowledged as lost
   };
 
 #endif //#ifndef __CONSOLE_H__
