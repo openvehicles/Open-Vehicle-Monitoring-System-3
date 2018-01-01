@@ -253,13 +253,11 @@ void xks_cells(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     }
   OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
 
-  metric_unit_t rangeUnit = Native; // TODO: use user config if set
-
-	const char* minimum = soul->m_b_cell_volt_min->AsUnitString("-", rangeUnit, 2).c_str();
-	const char* maximum = soul->m_b_cell_volt_max->AsUnitString("-", rangeUnit, 2).c_str();
-	const char* total = StdMetrics.ms_v_bat_voltage->AsUnitString("-", rangeUnit, 2).c_str();
-	const char* minDet = soul->m_b_cell_det_min->AsUnitString("-", rangeUnit, 2).c_str();
-	const char* maxDet = soul->m_b_cell_det_max->AsUnitString("-", rangeUnit, 2).c_str();
+	const char* minimum = soul->m_b_cell_volt_min->AsUnitString("-", Volts, 2).c_str();
+	const char* maximum = soul->m_b_cell_volt_max->AsUnitString("-", Volts, 2).c_str();
+	const char* total = StdMetrics.ms_v_bat_voltage->AsUnitString("-", Volts, 2).c_str();
+	const char* minDet = soul->m_b_cell_det_min->AsUnitString("-", Percentage, 2).c_str();
+	const char* maxDet = soul->m_b_cell_det_max->AsUnitString("-", Percentage, 2).c_str();
 
 	writer->printf("CELLS\n");
 	if (*minimum != '-') writer->printf("Min %s #%d\n", minimum, soul->m_b_cell_volt_min_no->AsInt(0));
@@ -310,23 +308,21 @@ void xks_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     return;
     }
 
-  metric_unit_t rangeUnit = Native; // TODO: use user config if set
-
   OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
 
 	writer->printf("TPMS\n");
 	// Front left
-	const char* fl_pressure = StdMetrics.ms_v_tpms_fl_p->AsUnitString("-", rangeUnit, 1).c_str();
-	const char* fl_temp = StdMetrics.ms_v_tpms_fl_t->AsUnitString("-", rangeUnit, 1).c_str();
+	const char* fl_pressure = StdMetrics.ms_v_tpms_fl_p->AsUnitString("-", kPa, 1).c_str();
+	const char* fl_temp = StdMetrics.ms_v_tpms_fl_t->AsUnitString("-", Celcius, 1).c_str();
 	// Front right
-	const char* fr_pressure = StdMetrics.ms_v_tpms_fr_p->AsUnitString("-", rangeUnit, 1).c_str();
-	const char* fr_temp = StdMetrics.ms_v_tpms_fr_t->AsUnitString("-", rangeUnit, 1).c_str();
+	const char* fr_pressure = StdMetrics.ms_v_tpms_fr_p->AsUnitString("-", kPa, 1).c_str();
+	const char* fr_temp = StdMetrics.ms_v_tpms_fr_t->AsUnitString("-", Celcius, 1).c_str();
 	// Rear left
-	const char* rl_pressure = StdMetrics.ms_v_tpms_rl_p->AsUnitString("-", rangeUnit, 1).c_str();
-	const char* rl_temp = StdMetrics.ms_v_tpms_rl_t->AsUnitString("-", rangeUnit, 1).c_str();
+	const char* rl_pressure = StdMetrics.ms_v_tpms_rl_p->AsUnitString("-", kPa, 1).c_str();
+	const char* rl_temp = StdMetrics.ms_v_tpms_rl_t->AsUnitString("-", Celcius, 1).c_str();
 	// Rear right
-	const char* rr_pressure = StdMetrics.ms_v_tpms_rr_p->AsUnitString("-", rangeUnit, 1).c_str();
-	const char* rr_temp = StdMetrics.ms_v_tpms_rr_t->AsUnitString("-", rangeUnit, 1).c_str();
+	const char* rr_pressure = StdMetrics.ms_v_tpms_rr_p->AsUnitString("-", kPa, 1).c_str();
+	const char* rr_temp = StdMetrics.ms_v_tpms_rr_t->AsUnitString("-", Celcius, 1).c_str();
 
 	if (*fl_pressure != '-')
     writer->printf("1 ID:%lu %s %s\n", soul->ks_tpms_id[0], fl_pressure, fl_temp);
@@ -363,9 +359,9 @@ void xks_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   float consumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers);
   float consumption2 = StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh);
     // Discharge
-  const char* discharge = StdMetrics.ms_v_bat_energy_used->AsUnitString("-", rangeUnit, 1).c_str();
+  const char* discharge = StdMetrics.ms_v_bat_energy_used->AsUnitString("-", kWh, 1).c_str();
   // Recuperation
-  const char* recuparation = StdMetrics.ms_v_bat_energy_recd->AsUnitString("-", rangeUnit, 1).c_str();
+  const char* recuparation = StdMetrics.ms_v_bat_energy_recd->AsUnitString("-", kWh, 1).c_str();
   // Total consumption
   float totalConsumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) + StdMetrics.ms_v_bat_energy_recd->AsFloat(kWh);
   // ODO
@@ -388,3 +384,4 @@ void xks_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   if (*ODO != '-')
     writer->printf("ODO %s\n", ODO);
   }
+

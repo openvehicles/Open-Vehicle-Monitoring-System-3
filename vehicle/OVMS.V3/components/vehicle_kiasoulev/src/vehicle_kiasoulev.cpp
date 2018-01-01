@@ -78,6 +78,10 @@
 ;			- First data from M-bus.
 ;			- Splitted source into five new files.
 ;
+;		 0.3.2  01-Jan-2018 - Geir Øyvind Vælidalo
+;			- Minor clean ups.
+;			- Fixed some incorrect unit types in commands.
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -118,7 +122,9 @@
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 
-#define VERSION "0.3.1"
+#define VERSION "0.3.2"
+
+static const char *TAG = "v-kiasoulev";
 
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
@@ -216,8 +222,6 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   m_v_pos_arrival_hour = MyMetrics.InitInt("xks.e.pos.arrival.hour", 10, 0);
   m_v_pos_arrival_minute = MyMetrics.InitInt("xks.e.pos.arrival.minute", 10, 0);
   m_v_pos_street = MyMetrics.InitString("xks.e.pos.street", 10, "");
-
-  m_counter = MyMetrics.InitInt("xks.counter", 10, 0);
 
   m_b_cell_det_max->SetValue(0);
   m_b_cell_det_min->SetValue(0);

@@ -33,8 +33,6 @@
 
 using namespace std;
 
-static const char *TAG = "v-kiasoulev";
-
 typedef union {
   struct { //TODO Is this the correct order, or should it be swapped?
     unsigned char Park : 1;
@@ -136,8 +134,6 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     OvmsMetricFloat* m_ldc_out_current;
     OvmsMetricFloat* m_ldc_in_voltage;
     OvmsMetricFloat* m_ldc_temperature;
-
-    OvmsMetricInt*	  m_counter;
 
   protected:
     void IncomingTPMS(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
