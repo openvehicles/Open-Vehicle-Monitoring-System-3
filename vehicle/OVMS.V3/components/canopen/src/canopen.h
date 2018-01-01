@@ -59,11 +59,10 @@ typedef enum __attribute__ ((__packed__))
   COR_ERR_SDO_SegMismatch,
   
   // General purpose application level:
-  COR_ERR_DeviceOffline,
+  COR_ERR_DeviceOffline = 0x80,
   COR_ERR_UnknownDevice,
   COR_ERR_LoginFailed,
-  COR_ERR_PreOpFailed
-  
+  COR_ERR_StateChangeFailed
   } CANopenResult_t;
 
 typedef enum __attribute__ ((__packed__))
@@ -108,8 +107,7 @@ struct CANopenNodeMetrics
 
 typedef std::map<uint8_t, CANopenNodeMetrics*> CANopenNodeMetricsMap;
 
-class CANopenClient;
-typedef std::forward_list<CANopenClient*> CANopenClientList;
+class CANopenAsyncClient;
 
 
 /**
@@ -130,7 +128,7 @@ typedef enum __attribute__ ((__packed__))
 
 struct __attribute__ ((__packed__)) CANopenJob
   {
-  CANopenClient*        client;
+  CANopenAsyncClient*   client;
   CANopenJob_t          type;
   CANopenResult_t       result;         // current job state or result
   
@@ -196,6 +194,9 @@ typedef union __attribute__ ((__packed__))
  * A CANopenWorker also monitors the bus for emergency and heartbeat
  * messages, and translates these into events and metrics updates.
  */
+
+typedef std::forward_list<CANopenAsyncClient*> CANopenClientList;
+
 class CANopenWorker
   {
   public:
@@ -205,9 +206,9 @@ class CANopenWorker
   public:
     void JobTask();
     void IncomingFrame(CAN_frame_t* frame);
-    void Open(CANopenClient* client);
-    void Close(CANopenClient* client);
-    bool IsClient(CANopenClient* client);
+    void Open(CANopenAsyncClient* client);
+    void Close(CANopenAsyncClient* client);
+    bool IsClient(CANopenAsyncClient* client);
     void StatusReport(int verbosity, OvmsWriter* writer);
     CANopenNodeMetrics *GetNodeMetrics(uint8_t nodeid);
   
@@ -233,6 +234,8 @@ class CANopenWorker
     TaskHandle_t          m_jobtask;        // worker task
     QueueHandle_t         m_jobqueue;       // job rx queue
     
+    uint32_t              m_nmt_rxcnt;
+    uint32_t              m_emcy_rxcnt;
     uint32_t              m_jobcnt;
     uint32_t              m_jobcnt_timeout;
     uint32_t              m_jobcnt_error;
@@ -241,74 +244,100 @@ class CANopenWorker
     
     CANopenNodeMetricsMap m_nodemetrics;    // map: nodeid → node metrics
 
-
   private:
     CANopenFrame_t        m_request;
     CANopenFrame_t        m_response;
-  
   };
 
 
 /**
- * CANopenClient provides the user API to the CANopen framework.
+ * CANopenAsyncClient provides the asynchronous API to the CANopen framework.
  * 
- * See CANopen shell commands for usage examples.
+ * Jobs done will be sent to the m_done_queue and need to be fetched
+ *   by looping ReceiveDone() until it returns COR_ERR_QueueEmpty.
  * 
  * On creation the client automatically connects to the worker or starts a
  *   new worker if necessary.
  * 
- * The client provides a queue for asynchronous CANopenJob processing
- *   and methods for synchronous CANopenJob execution.
- * 
- * CANopenClient uses the CiA DS301 default IDs for node addressing, i.e.
+ * CANopenAsyncClient uses the CiA DS301 default IDs for node addressing, i.e.
  *   NMT request     → 0x000
  *   NMT response    → 0x700 + nodeid
  *   SDO request     → 0x600 + nodeid
  *   SDO response    → 0x580 + nodeid
  * 
- * If you need another address scheme, create a sub class of CANopenClient
- *   and override the Init…() methods as necessary.
- * 
- * Hint: sub classes can also be used to add device specific methods, see
- *   Twizy implementation for a SEVCON Gen4 client example.
+ * If you need another address scheme, create a sub class of CANopenAsyncClient
+ *   or CANopenClient and override the Init…() methods as necessary.
  */
-class CANopenClient
+class CANopenAsyncClient
   {
   public:
-    CANopenClient(canbus* canbus);
-    CANopenClient(CANopenWorker* worker);
-    ~CANopenClient();
-  
+    CANopenAsyncClient(canbus* canbus, int queuesize=20);
+    CANopenAsyncClient(CANopenWorker* worker, int queuesize=20);
+    virtual ~CANopenAsyncClient();
+
   public:
-    // Advanced usage API:
-    CANopenResult_t SubmitJob(CANopenJob& job, TickType_t maxqueuewait=0);
-    CANopenResult_t SubmitDone(CANopenJob& job, TickType_t maxqueuewait=0);
-    CANopenResult_t ReceiveDone(CANopenJob& job, TickType_t maxqueuewait=0);
-    CANopenResult_t ExecuteJob(CANopenJob& job, TickType_t maxqueuewait=0);
-  
+    // CANopenWorker callback:
+    virtual CANopenResult_t SubmitDoneCallback(CANopenJob& job, TickType_t maxqueuewait=0);
+
   public:
-    // Main usage API:
-    CANopenResult_t SendNMT(uint8_t nodeid, CANopenNMTCommand_t command,
-      bool wait_for_state=false, int resp_timeout_ms=1000, int max_tries=3);
-    CANopenResult_t ReadSDO(uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
-      int resp_timeout_ms=50, int max_tries=3);
-    CANopenResult_t WriteSDO(uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
-      int resp_timeout_ms=50, int max_tries=3);
+    // Queue API:
+    virtual CANopenResult_t SubmitJob(CANopenJob& job, TickType_t maxqueuewait=0);
+    virtual CANopenResult_t ReceiveDone(CANopenJob& job, TickType_t maxqueuewait=0);
   
   public:
     // Customisation:
-    void InitSendNMT(CANopenJob& job, uint8_t nodeid, CANopenNMTCommand_t command,
+    virtual void InitSendNMT(CANopenJob& job, uint8_t nodeid, CANopenNMTCommand_t command,
       bool wait_for_state=false, int resp_timeout_ms=1000, int max_tries=3);
-    void InitReadSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
+    virtual void InitReadSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
       int resp_timeout_ms=50, int max_tries=3);
-    void InitWriteSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
+    virtual void InitWriteSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
+      int resp_timeout_ms=50, int max_tries=3);
+  
+  public:
+    // Main API:
+    virtual CANopenResult_t SendNMT(uint8_t nodeid, CANopenNMTCommand_t command,
+      bool wait_for_state=false, int resp_timeout_ms=1000, int max_tries=3);
+    virtual CANopenResult_t ReadSDO(uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
+      int resp_timeout_ms=50, int max_tries=3);
+    virtual CANopenResult_t WriteSDO(uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
       int resp_timeout_ms=50, int max_tries=3);
   
   public:
     CANopenWorker*        m_worker;
     QueueHandle_t         m_done_queue;
-    CANopenJob            m_jobdone;        // last job done, may be used to access result details
+  };
+
+
+/**
+ * CANopenClient provides the synchronous API to the CANopen framework.
+ * 
+ * The API methods will block until the job is done, job detail results
+ *   are returned in the caller provided job.
+ * 
+ * See CANopen shell commands for usage examples.
+ */
+class CANopenClient : public CANopenAsyncClient
+  {
+  public:
+    CANopenClient(canbus* canbus);
+    CANopenClient(CANopenWorker* worker);
+    virtual ~CANopenClient();
+
+  public:
+    // Queue API:
+    virtual CANopenResult_t ExecuteJob(CANopenJob& job, TickType_t maxqueuewait=0);
   
+  public:
+    // Main API:
+    virtual CANopenResult_t SendNMT(CANopenJob& job, uint8_t nodeid, CANopenNMTCommand_t command,
+      bool wait_for_state=false, int resp_timeout_ms=1000, int max_tries=3);
+    virtual CANopenResult_t ReadSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
+      int resp_timeout_ms=50, int max_tries=3);
+    virtual CANopenResult_t WriteSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
+      int resp_timeout_ms=50, int max_tries=3);
+  
+  public:
+    SemaphoreHandle_t m_mutex;              // thread mutex
   };
 
 
@@ -332,7 +361,12 @@ class CANopen
     void StatusReport(int verbosity, OvmsWriter* writer);
 
   public:
-    const std::string GetResultString(const CANopenResult_t result);
+    static const std::string GetCommandName(const CANopenNMTCommand_t command);
+    static const std::string GetStateName(const CANopenNMTState_t state);
+    static const std::string GetAbortCodeName(const uint32_t abortcode);
+    static const std::string GetResultString(const CANopenResult_t result);
+    static const std::string GetResultString(const CANopenResult_t result, const uint32_t abortcode);
+    static const std::string GetResultString(const CANopenJob& job);
 
   public:
     QueueHandle_t         m_rxqueue;    // CAN rx queue
@@ -340,7 +374,6 @@ class CANopen
 
     CANopenWorker*        m_worker[CAN_INTERFACE_CNT];
     int                   m_workercnt;
-
   };
 
 extern CANopen MyCANopen;

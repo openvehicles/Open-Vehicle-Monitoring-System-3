@@ -125,9 +125,10 @@ void canopen_nmt(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     response_timeout = atoi(argv[1]);
   
   CANopenClient client(bus);
-  CANopenResult_t res = client.SendNMT(nodeid, command, (response_timeout!=0), response_timeout);
+  CANopenJob job;
+  client.SendNMT(job, nodeid, command, (response_timeout!=0), response_timeout);
   
-  writer->printf("NMT command result: %s\n", MyCANopen.GetResultString(res).c_str());
+  writer->printf("NMT command result: %s\n", CANopen::GetResultString(job).c_str());
   }
 
 
@@ -166,20 +167,21 @@ void canopen_readsdo(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     } buffer;
   
   CANopenClient client(bus);
-  CANopenResult_t res = client.ReadSDO(nodeid, index, subindex, (uint8_t*)&buffer, sizeof(buffer)-1, timeout);
+  CANopenJob job;
+  CANopenResult_t res = client.ReadSDO(job, nodeid, index, subindex, (uint8_t*)&buffer, sizeof(buffer)-1, timeout);
   
   // output result:
   if (res != COR_OK)
     {
-    writer->printf("ReadSDO #%d 0x%04x.%02x failed, error code 0x%08x, %s\n",
-      nodeid, index, subindex, client.m_jobdone.sdo.error, MyCANopen.GetResultString(res).c_str());
+    writer->printf("ReadSDO #%d 0x%04x.%02x failed: %s\n",
+      nodeid, index, subindex, CANopen::GetResultString(job).c_str());
     }
   else
     {
     // test for printable text:
     bool show_txt = true;
     int i;
-    for (i=0; i < client.m_jobdone.sdo.xfersize && buffer.txt[i]; i++)
+    for (i=0; i < job.sdo.xfersize && buffer.txt[i]; i++)
       {
       if (!isprint(buffer.txt[i]))
         {
@@ -188,12 +190,12 @@ void canopen_readsdo(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
         }
       }
     // terminate string:
-    if (i == client.m_jobdone.sdo.xfersize && buffer.txt[i])
+    if (i == job.sdo.xfersize && buffer.txt[i])
       buffer.txt[i] = 0;
     
     writer->printf("ReadSDO #%d 0x%04x.%02x: contsize=%d xfersize=%d dec=%d hex=0x%0*x str='%s'\n",
-      nodeid, index, subindex, client.m_jobdone.sdo.contsize, client.m_jobdone.sdo.xfersize,
-      buffer.num, MIN(client.m_jobdone.sdo.xfersize,4)*2, buffer.num, show_txt ? buffer.txt : "(binary)");
+      nodeid, index, subindex, job.sdo.contsize, job.sdo.xfersize,
+      buffer.num, MIN(job.sdo.xfersize,4)*2, buffer.num, show_txt ? buffer.txt : "(binary)");
     }
   }
 
@@ -272,7 +274,8 @@ void canopen_writesdo(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
   // execute:
   
   CANopenClient client(bus);
-  CANopenResult_t res = client.WriteSDO(nodeid, index, subindex, (uint8_t*)&buffer, bufsize, timeout);
+  CANopenJob job;
+  CANopenResult_t res = client.WriteSDO(job, nodeid, index, subindex, (uint8_t*)&buffer, bufsize, timeout);
   
   // output result:
   switch (buftype)
@@ -289,8 +292,8 @@ void canopen_writesdo(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
     }
   if (res != COR_OK)
     {
-    writer->printf("%s, CANopen error code 0x%08x, %d bytes sent\n",
-      MyCANopen.GetResultString(res).c_str(), client.m_jobdone.sdo.error, client.m_jobdone.sdo.xfersize);
+    writer->printf("%s (%d bytes sent)\n",
+      CANopen::GetResultString(job).c_str(), job.sdo.xfersize);
     }
   else
     {
@@ -303,11 +306,12 @@ void canopen_writesdo(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
 //    read and display CANopen node core attributes
 int canopen_print_nodeinfo(int capacity, OvmsWriter* writer, canbus* bus, int nodeid, int timeout_ms=50, bool brief=false, bool quiet=false)
   {
-  #define _readnum(idx, sub, var) (res = client.ReadSDO(nodeid, idx, sub, (uint8_t*)&var, sizeof(var), timeout_ms))
-  #define _readstr(idx, sub, var) (res = client.ReadSDO(nodeid, idx, sub, (uint8_t*)&var, sizeof(var)-1, timeout_ms), \
-    var[client.m_jobdone.sdo.xfersize]=0, res)
+  #define _readnum(idx, sub, var) (res = client.ReadSDO(job, nodeid, idx, sub, (uint8_t*)&var, sizeof(var), timeout_ms))
+  #define _readstr(idx, sub, var) (res = client.ReadSDO(job, nodeid, idx, sub, (uint8_t*)&var, sizeof(var)-1, timeout_ms), \
+    var[job.sdo.xfersize]=0, res)
   
   CANopenClient client(bus);
+  CANopenJob job;
   CANopenResult_t res;
   int written = 0;
   
@@ -327,8 +331,8 @@ int canopen_print_nodeinfo(int capacity, OvmsWriter* writer, canbus* bus, int no
     if (!quiet || res != COR_ERR_Timeout)
       {
       if (written < capacity) written += writer->printf(
-        brief ? "#%d: %-.20s\n" : "Node #%d: %s (%08x)\n"
-        , nodeid, MyCANopen.GetResultString(res).c_str(), client.m_jobdone.sdo.error);
+        brief ? "#%d: %-.20s\n" : "Node #%d: %s\n"
+        , nodeid, CANopen::GetResultString(job).c_str());
       }
     return written;
     }
@@ -662,6 +666,104 @@ void CANopen::StatusReport(int verbosity, OvmsWriter* writer)
 
 
 /**
+ * GetCommandName: translate CANopenNMTCommand_t to std::string
+ */
+const std::string CANopen::GetCommandName(const CANopenNMTCommand_t command)
+  {
+  std::string name;
+  switch (command)
+    {
+    case CONC_Start:                    name = "Start"; break;
+    case CONC_Stop:                     name = "Stop"; break;
+    case CONC_PreOp:                    name = "PreOp"; break;
+    case CONC_Reset:                    name = "Reset"; break;
+    case CONC_CommReset:                name = "CommReset"; break;
+    default:
+      char val[10];
+      sprintf(val, "%d", (int) command);
+      name = val;
+    }
+  return name;
+  }
+
+/**
+ * GetStateName: translate CANopenNMTState_t to std::string
+ */
+const std::string CANopen::GetStateName(const CANopenNMTState_t state)
+  {
+  std::string name;
+  switch (state)
+    {
+    case CONS_Booting:                  name = "Booting"; break;
+    case CONS_Stopped:                  name = "Stopped"; break;
+    case CONS_Operational:              name = "Operational"; break;
+    case CONS_PreOperational:           name = "PreOperational"; break;
+    default:
+      char val[10];
+      sprintf(val, "%d", (int) state);
+      name = val;
+    }
+  return name;
+  }
+
+
+/**
+ * GetAbortCodeName: translate CANopen abort error code to std::string
+ */
+const std::string CANopen::GetAbortCodeName(uint32_t abortcode)
+  {
+  std::string name;
+  switch (abortcode)
+    {
+    case 0x05030000:    name = "Toggle bit not alternated"; break;
+    
+    case 0x05040000:    name = "SDO protocol timed out"; break;
+    case 0x05040001:    name = "Client/server command specifier invalid"; break;
+    case 0x05040002:    name = "Invalid block size"; break;
+    case 0x05040003:    name = "Invalid sequence number"; break;
+    case 0x05040004:    name = "CRC error"; break;
+    case 0x05040005:    name = "Out of memory"; break;
+    
+    case 0x06010000:    name = "Unsupported access to an object"; break;
+    case 0x06010001:    name = "Attempt to read a write only object"; break;
+    case 0x06010002:    name = "Attempt to write a read only object"; break;
+    
+    case 0x06020000:    name = "Object does not exist in the dictionary"; break;
+    
+    case 0x06040041:    name = "Object cannot be mapped to the PDO"; break;
+    case 0x06040042:    name = "Objects to be mapped would exceed PDO length"; break;
+    case 0x06040043:    name = "General parameter incompatibility"; break;
+    case 0x06040047:    name = "General internal incompatibility in device"; break;
+    
+    case 0x06060000:    name = "Access failed due to an hardware error"; break;
+    
+    case 0x06070010:    name = "Data type mismatch, length does not match"; break;
+    case 0x06070012:    name = "Data type mismatch, length too high"; break;
+    case 0x06070013:    name = "Data type mismatch, length too low"; break;
+    
+    case 0x06090011:    name = "Sub-index does not exist"; break;
+    case 0x06090030:    name = "Value range of parameter exceeded"; break;
+    case 0x06090031:    name = "Value of parameter written too high"; break;
+    case 0x06090032:    name = "Value of parameter written too low"; break;
+    case 0x06090036:    name = "Maximum value is less than minimum value"; break;
+    
+    case 0x08000000:    name = "General error"; break;
+    case 0x08000020:    name = "Can't xfer data to application"; break;
+    case 0x08000021:    name = "Can't xfer data to application (local control)"; break;
+    case 0x08000022:    name = "Can't xfer data to application (device state)"; break;
+    case 0x08000023:    name = "Object dictionary not generated or present"; break;
+    
+    case 0xffffffff:    name = "Master collision / non-CANopen frame"; break;
+    
+    default:
+      char val[12];
+      sprintf(val, "0x%08x", (int) abortcode);
+      name = val;
+    }
+  return name;
+  }
+
+/**
  * GetResultString: translate CANopenResult_t to std::string
  */
 const std::string CANopen::GetResultString(const CANopenResult_t result)
@@ -686,7 +788,7 @@ const std::string CANopen::GetResultString(const CANopenResult_t result)
     case COR_ERR_DeviceOffline:         name = "Device offline"; break;
     case COR_ERR_UnknownDevice:         name = "Unknown device"; break;
     case COR_ERR_LoginFailed:           name = "Login failed"; break;
-    case COR_ERR_PreOpFailed:           name = "PreOp mode failed"; break;
+    case COR_ERR_StateChangeFailed:     name = "State change failed"; break;
     
     default:
       char val[10];
@@ -694,5 +796,21 @@ const std::string CANopen::GetResultString(const CANopenResult_t result)
       name = val;
     }
   return name;
+  }
+
+const std::string CANopen::GetResultString(const CANopenResult_t result, uint32_t abortcode)
+  {
+  std::string name = GetResultString(result);
+  if (abortcode)
+    {
+    name.append("; ");
+    name.append(GetAbortCodeName(abortcode));
+    }
+  return name;
+  }
+
+const std::string CANopen::GetResultString(const CANopenJob& job)
+  {
+  return GetResultString(job.result, job.sdo.error);
   }
 

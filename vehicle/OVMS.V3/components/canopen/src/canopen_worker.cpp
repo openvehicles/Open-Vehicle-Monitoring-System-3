@@ -87,6 +87,9 @@ CANopenWorker::CANopenWorker(canbus* bus)
   
   m_clientcnt = 0;
   
+  m_nmt_rxcnt = 0;
+  m_emcy_rxcnt = 0;
+  
   m_jobcnt = 0;
   m_jobcnt_timeout = 0;
   m_jobcnt_error = 0;
@@ -109,19 +112,19 @@ CANopenWorker::~CANopenWorker()
   }
 
 
-void CANopenWorker::Open(CANopenClient* client)
+void CANopenWorker::Open(CANopenAsyncClient* client)
   {
   m_clients.push_front(client);
   ++m_clientcnt;
   }
 
-void CANopenWorker::Close(CANopenClient* client)
+void CANopenWorker::Close(CANopenAsyncClient* client)
   {
   m_clients.remove(client);
   m_clientcnt ? --m_clientcnt : 0;
   }
 
-bool CANopenWorker::IsClient(CANopenClient* client)
+bool CANopenWorker::IsClient(CANopenAsyncClient* client)
   {
   for (auto c : m_clients)
     {
@@ -141,12 +144,16 @@ void CANopenWorker::StatusReport(int verbosity, OvmsWriter* writer)
     "    Jobs processed: %d\n"
     "    - timeouts    : %d\n"
     "    - other errors: %d\n"
+    "    NMT received  : %d\n"
+    "    EMCY received : %d\n"
     , m_bus->GetName()
     , m_clientcnt
     , (int)uxQueueMessagesWaiting(m_jobqueue)
     , m_jobcnt
     , m_jobcnt_timeout
-    , m_jobcnt_error);
+    , m_jobcnt_error
+    , m_nmt_rxcnt
+    , m_emcy_rxcnt);
   }
 
 
@@ -246,7 +253,7 @@ void CANopenWorker::JobTask()
           }
         else
           {
-          if (m_job.client->SubmitDone(m_job, 0) != COR_OK)
+          if (m_job.client->SubmitDoneCallback(m_job, 0) != COR_OK)
             ESP_LOGW(TAG, "Job result lost: Client queue is full");
           }
         
@@ -286,6 +293,8 @@ void CANopenWorker::IncomingFrame(CAN_frame_t* p_frame)
   // EMCY (Emergency) message?
   if (p_frame->MsgID > 0x080 && p_frame->MsgID < 0x100 && p_frame->FIR.B.DLC == 8)
     {
+    m_emcy_rxcnt++;
+    
     CANopenEMCYEvent ev;
     ev.origin = p_frame->origin;
     ev.nodeid = p_frame->MsgID - 0x080;
@@ -313,6 +322,8 @@ void CANopenWorker::IncomingFrame(CAN_frame_t* p_frame)
   // NMT (Heartbeat/State) message?
   else if (p_frame->MsgID > 0x700 && p_frame->MsgID < 0x780 && p_frame->FIR.B.DLC == 1)
     {
+    m_nmt_rxcnt++;
+    
     CANopenNMTEvent ev;
     ev.origin = p_frame->origin;
     ev.nodeid = p_frame->MsgID - 0x700;
@@ -320,19 +331,7 @@ void CANopenWorker::IncomingFrame(CAN_frame_t* p_frame)
     
     CANopenNodeMetrics *nm = GetNodeMetrics(ev.nodeid);
     
-    std::string newstate;
-    switch (ev.state)
-      {
-      case 0: newstate = "Booting"; break;
-      case 4: newstate = "Stopped"; break;
-      case 5: newstate = "Operational"; break;
-      case 127: newstate = "PreOperational"; break;
-      default:
-        char val[10];
-        sprintf(val, "%d", ev.state);
-        newstate = val;
-      }
-    
+    std::string newstate = CANopen::GetStateName(ev.state);
     if (nm->m_state->AsString() != newstate)
       {
       ESP_LOGI(TAG, "%s node %d new state: %s", m_bus->GetName(), ev.nodeid, newstate.c_str());
