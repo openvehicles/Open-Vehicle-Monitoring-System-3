@@ -53,6 +53,7 @@ OvmsConsole::OvmsConsole()
   m_deferred = NULL;
   m_discarded = 0;
   m_state = AT_PROMPT;
+  m_lost = m_acked = 0;
   }
 
 OvmsConsole::~OvmsConsole()
@@ -112,11 +113,11 @@ void OvmsConsole::Log(LogBuffers* message)
   Event event;
   event.type = ALERT_MULTI;
   event.multi = message;
-  BaseType_t ret = xQueueSendToBack(m_queue, (void * )&event, (portTickType)(1000 / portTICK_PERIOD_MS));
+  BaseType_t ret = xQueueSendToBack(m_queue, (void * )&event, 0);
   if (ret != pdPASS)
     {
     message->release();
-//    ESP_LOGI(TAG, "Timeout queueing message in Console::Log\n");
+    ++m_lost;
     }
   }
 
@@ -225,6 +226,18 @@ void OvmsConsole::Poll(portTickType ticks, QueueHandle_t queue)
     else
       {
       // Timeout indicates the queue is empty
+      unsigned int lost = m_lost - m_acked;     // Modulo 2^32 arithmetic
+      if (lost > 0)
+        {
+        if (m_state == AWAITING_NL)
+          write(NLbuf, 1);
+        else if (m_state == AT_PROMPT)
+          write(CRbuf, 1);
+        printf("\033[33m[%d log messages lost]\033[0m", lost);
+        m_state = AWAITING_NL;
+        m_acked += lost;
+        continue;
+        }
       if (m_state != AT_PROMPT)
         ProcessChars(ctrlRbuf, 1);    // Restore the prompt plus any type-in on a new line
       m_state = AT_PROMPT;

@@ -24,6 +24,8 @@
 */
 #include "vehicle_kiasoulev.h"
 
+static const char *TAG = "v-kiasoulev";
+
 /**
  * Incoming poll reply messages
  */

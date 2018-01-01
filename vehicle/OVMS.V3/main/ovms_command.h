@@ -139,7 +139,7 @@ class OvmsCommandApp
     void DeregisterConsole(OvmsWriter* writer);
     int Log(const char* fmt, ...);
     int LogPartial(const char* fmt, ...);
-    int HexDump(const char* prefix, const char* data, size_t length);
+    int HexDump(const char* tag, const char* prefix, const char* data, size_t length, size_t colsize=16);
 
   public:
     char ** Complete(OvmsWriter* writer, int argc, const char * const * argv);

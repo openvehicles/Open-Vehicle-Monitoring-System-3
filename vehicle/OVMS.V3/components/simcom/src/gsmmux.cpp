@@ -137,7 +137,7 @@ void GsmMuxChannel::ProcessFrame(uint8_t* frame, size_t length, size_t iframepos
   {
   // Note the <length> provided excludes the start byte, stop byte, and checksum
   // The <frame> pointer itself points to the byte after the start byte
-  ESP_LOGD(TAG, "ChanProcessFrame(CHAN=%d, ADDR=%02x, CTRL=%02x, LEN=%d, IFP=%d)", m_channel, frame[0], frame[1], length, iframepos);
+  ESP_LOGV(TAG, "ChanProcessFrame(CHAN=%d, ADDR=%02x, CTRL=%02x, LEN=%d, IFP=%d)", m_channel, frame[0], frame[1], length, iframepos);
   switch (m_state)
     {
     case ChanClosed:
@@ -282,7 +282,7 @@ void GsmMux::ProcessFrame()
   {
   int channel = m_frame[1] >>2;
 
-  ESP_LOGD(TAG, "ProcessFrame(CHAN=%d, ADDR=%02x, CTRL=%02x, FCS=%02x, LEN=%d)",
+  ESP_LOGV(TAG, "ProcessFrame(CHAN=%d, ADDR=%02x, CTRL=%02x, FCS=%02x, LEN=%d)",
     channel, m_frame[1], m_frame[2], m_frame[m_framelen-2], m_framelen);
 
   uint8_t fcs = 0xFF - gsm_fcs_add_block(FCS_INIT, m_frame+1, m_frameipos-1);

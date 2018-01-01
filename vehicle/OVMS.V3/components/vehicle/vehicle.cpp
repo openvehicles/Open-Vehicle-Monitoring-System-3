@@ -444,7 +444,7 @@ OvmsVehicle::OvmsVehicle()
   m_poll_ml_frame = 0;
 
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
-  xTaskCreatePinnedToCore(OvmsVehicleRxTask, "Vrx Task", 4096, (void*)this, 5, &m_rxtask, 1);
+  xTaskCreatePinnedToCore(OvmsVehicleRxTask, "Vrx Task", 4096, (void*)this, 10, &m_rxtask, 1);
 
   using std::placeholders::_1;
   using std::placeholders::_2;
@@ -621,6 +621,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandSetChargeTimer(bool timeron, 
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandCooldown(bool cooldownon)
+  {
+  return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicle::CommandClimateControl(bool climatecontrolon)
   {
   return NotImplemented;
   }

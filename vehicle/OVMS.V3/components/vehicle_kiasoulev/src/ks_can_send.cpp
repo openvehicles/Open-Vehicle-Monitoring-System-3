@@ -24,6 +24,8 @@
 */
 #include "vehicle_kiasoulev.h"
 
+static const char *TAG = "v-kiasoulev";
+
 /**
  * Send a can message and wait for the response before continuing.
  * Time out after approx 0.5 second.
@@ -39,7 +41,7 @@ bool OvmsVehicleKiaSoulEv::SendCanMessage_sync(uint16_t id, uint8_t count,
 
 	uint8_t data[] = {count, serviceId, b1, b2, b3, b4, b5, b6};
 	m_can1->WriteStandard(id, 8, data);
-	ESP_LOGD(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", id, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+	ESP_LOGV(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", id, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
 
 	//Now wait for the response
 	timeout = 50; // 50*50 = 2500 ms
@@ -74,7 +76,7 @@ void OvmsVehicleKiaSoulEv::SendCanMessage(uint16_t id, uint8_t count,
 	{
 	uint8_t data[] = {count, serviceId, b1, b2, b3, b4, b5, b6};
 	m_can1->WriteStandard(id, 8, data);
-	ESP_LOGD(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", id, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+	ESP_LOGV(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", id, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
  }
 
 /**

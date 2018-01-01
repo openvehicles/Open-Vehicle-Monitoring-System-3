@@ -37,6 +37,9 @@
 
 #define CAN_INTERFACE_CNT         3
 
+#define CANopen_GeneralError      0x08000000  // check for device specific error details
+#define CANopen_BusCollision      0xffffffff  // another master is active / non-CANopen frame received
+
 typedef enum __attribute__ ((__packed__))
   {
   COR_OK = 0,

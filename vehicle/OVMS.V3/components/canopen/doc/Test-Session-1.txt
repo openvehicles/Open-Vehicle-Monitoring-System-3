@@ -73,7 +73,7 @@ Node #1:
  Vendor ID: 0x0000001e
  Product: 0x0712302d
  Revision: 0x00010019
- S/N: 0x47c53c06
+ S/N: 0x47c5…………
  Device name: Gen4 (Renault Twizy)11 November 2011 12
  HW version: 0x00000003
  SW version: 0712.0001

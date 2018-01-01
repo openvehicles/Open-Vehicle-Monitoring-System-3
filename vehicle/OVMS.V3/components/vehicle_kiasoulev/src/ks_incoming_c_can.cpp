@@ -24,12 +24,16 @@
 */
 #include "vehicle_kiasoulev.h"
 
+static const char *TAG = "v-kiasoulev";
+
 /**
  * Handles incoming CAN-frames on bus 1, the C-bus
  */
 void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
+
+  ESP_LOGV(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
 
   switch (p_frame->MsgID)
     {
@@ -174,7 +178,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       case 0x779:
       	 {
-   		 //ESP_LOGD(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+   		 ESP_LOGD(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       	 }
       	 break;
     }

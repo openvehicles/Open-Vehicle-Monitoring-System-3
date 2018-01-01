@@ -22,7 +22,11 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
+#include "ovms_log.h"
+
 #include "vehicle_kiasoulev.h"
+
+static const char *TAG = "v-kiasoulev";
 
 /**
  * Handle incoming CAN-frames on bus 2, the M-bus
@@ -30,11 +34,10 @@
 void OvmsVehicleKiaSoulEv::IncomingFrameCan2(CAN_frame_t* p_frame)
 	{
 	uint8_t *d = p_frame->data.u8;
-	m_counter->SetValue( m_counter->AsInt()+1 );
-	//ESP_LOGD(TAG, "M-CAN2 %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
-	//		p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
-/*
-	switch (p_frame->MsgID)
+
+	ESP_LOGV(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+
+  switch (p_frame->MsgID)
 		{
 		case 0x131:
 			{
@@ -70,14 +73,17 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan2(CAN_frame_t* p_frame)
 			{
 			// Read current street name
 			int pid = d[0];
-			int i = 1 + (pid & 1);
-			if (pid == 0x10)
+			if( pid==0x10 || (pid>0x20 && pid<0x30))
 				{
-				m_street_pos = 0;
-				i = 3;
+				int i = 1 + (pid & 1);
+				if (pid == 0x10)
+					{
+					m_street_pos = 0;
+					i = 3;
+					}
+				for (; i < 8 && m_street_pos<128; i += 2)
+					m_street[m_street_pos++] = d[i] == 0xaa ? 0 : d[i];
 				}
-			for (; i < 8; i += 2)
-				m_street[m_street_pos++] = d[i] == 0xaa ? 0 : d[i];
 			}
 			break;
 
@@ -94,8 +100,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan2(CAN_frame_t* p_frame)
 			break;
 
 		default:
-			//ESP_LOGD(TAG, "M-CAN2 %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+			ESP_LOGD(TAG, "M-CAN2 %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
 			break;
 		}
-		*/
 	}
