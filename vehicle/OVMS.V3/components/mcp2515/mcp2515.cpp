@@ -86,6 +86,7 @@ mcp2515::~mcp2515()
 
 esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   {
+  canbus::Start(mode, speed);
   uint8_t buf[16];
 
   m_mode = mode;
@@ -147,7 +148,7 @@ esp_err_t mcp2515::Stop()
 
   // RESET command
   m_spibus->spi_cmd(m_spi, buf, 0, 1, CMD_RESET);
-  vTaskDelay(5 / portTICK_PERIOD_MS);
+  vTaskDelay(10 / portTICK_PERIOD_MS);
 
   // BFPCTRL RXnBF PIN CONTROL AND STATUS
   m_spibus->spi_cmd(m_spi, buf, 0, 3, CMD_WRITE, 0x0c, 0b00111100);
@@ -167,17 +168,19 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
   uint8_t buf[16];
   uint8_t id[4];
 
-  // poll for free TX buffer:
+  // check for free TX buffer:
   uint8_t txbuf;
-  while(true)
+  uint8_t* p = m_spibus->spi_cmd(m_spi, buf, 1, 1, CMD_READ_STATUS);
+  if ((p[0] & 0b00000100) == 0)
+    txbuf = 0b000; // use TXB0
+  else if ((p[0] & 0b00010000) == 0)
+    txbuf = 0b010; // use TXB1
+  else if ((p[0] & 0b01000000) == 0)
+    txbuf = 0b100; // use TXB2
+  else
     {
-    uint8_t* p = m_spibus->spi_cmd(m_spi, buf, 1, 1, CMD_READ_STATUS);
-    if ((p[0] & 0b00000100) == 0)
-      { txbuf = 0b000; break; } // use TXB0
-    else if ((p[0] & 0b00010000) == 0)
-      { txbuf = 0b010; break; } // use TXB1
-    else if ((p[0] & 0b01000000) == 0)
-      { txbuf = 0b100; break; } // use TXB2
+    m_errors_txbuf_overflow++;
+    return ESP_FAIL;
     }
   
   if (p_frame->FIR.B.FF == CAN_frame_std)
@@ -255,7 +258,7 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
     memset(frame,0,sizeof(*frame));
     frame->origin = this;
     
-    // read RX buffer:
+    // read RX buffer and clear interrupt flag:
     uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 13, 1, CMD_READ_RXBUF + ((intflag==1) ? 0 : 4));
     
     if (p[1] & 0x08) //check for extended mode=1, or std mode=0
@@ -276,9 +279,6 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
 
     memcpy(&frame->data,p+5,8);
 
-    // MCP2515 BITMODIFY: Clear RX buffer interrupt flag
-    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intflag, 0x00);
-    
     // tell framework we've got a frame:
     return true;
     }
@@ -291,6 +291,11 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
       //  MERRF 0x80 = message tx/rx error
       //  ERRIF 0x20 = overflow / error state change
       m_error_flags = (intflag & 0b10100000) << 8 | errflag;
+      
+      if (errflag & 0b10000000) // RXB1 overflow
+        m_errors_rxbuf_overflow++;
+      if (errflag & 0b01000000) // RXB0 overflow
+        m_errors_rxbuf_overflow++;
       
       // read error counters:
       uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, 0x1c);

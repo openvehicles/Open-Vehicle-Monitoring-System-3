@@ -74,7 +74,7 @@ void canopen_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   if (MyCANopen.Stop(bus))
     writer->printf("CANopen worker stopped, %d worker(s) running.\n", MyCANopen.m_workercnt);
   else
-    writer->printf("Error: CANopen worker still in use by %d clients!", MyCANopen.GetWorker(bus)->m_clientcnt);
+    writer->printf("Error: CANopen worker still in use by %d clients!\n", MyCANopen.GetWorker(bus)->m_clientcnt);
   }
 
 
@@ -327,8 +327,8 @@ int canopen_print_nodeinfo(int capacity, OvmsWriter* writer, canbus* bus, int no
     if (!quiet || res != COR_ERR_Timeout)
       {
       if (written < capacity) written += writer->printf(
-        brief ? "#%d: %-.20s\n" : "Node #%d: %s\n"
-        , nodeid, MyCANopen.GetResultString(res).c_str());
+        brief ? "#%d: %-.20s\n" : "Node #%d: %s (%08x)\n"
+        , nodeid, MyCANopen.GetResultString(res).c_str(), client.m_jobdone.sdo.error);
       }
     return written;
     }

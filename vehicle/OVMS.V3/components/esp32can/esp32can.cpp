@@ -33,6 +33,9 @@
 ; https://github.com/ThomasBarth/ESP32-CAN-Driver
 */
 
+// #include "ovms_log.h"
+// static const char *TAG = "esp32can";
+
 #include <string.h>
 #include "esp32can.h"
 #include "esp32can_regdef.h"
@@ -87,7 +90,7 @@ static void ESP32CAN_isr(void *pvParameters)
   // Handle TX complete interrupt
   if ((interrupt & __CAN_IRQ_TX) != 0)
     {
-  	/*handler*/
+  	// nothing to do
     }
 
   // Handle RX frame available interrupt
@@ -95,13 +98,26 @@ static void ESP32CAN_isr(void *pvParameters)
     ESP32CAN_rxframe(me);
 
   // Handle error interrupts.
-  if ((interrupt & (__CAN_IRQ_ERR						//0x4
-                  | __CAN_IRQ_DATA_OVERRUN	//0x8
-                  | __CAN_IRQ_WAKEUP				//0x10
-                  | __CAN_IRQ_ERR_PASSIVE		//0x20
-                  | __CAN_IRQ_ARB_LOST			//0x40
-                  | __CAN_IRQ_BUS_ERR				//0x80
-                  )) != 0)
+  if (uint32_t flags = (interrupt &
+      (__CAN_IRQ_ERR						//0x4
+      |__CAN_IRQ_DATA_OVERRUN	  //0x8
+      |__CAN_IRQ_ERR_PASSIVE		//0x20
+      |__CAN_IRQ_ARB_LOST			  //0x40
+      |__CAN_IRQ_BUS_ERR				//0x80
+      )) != 0)
+    {
+    me->m_error_flags = flags << 16 | (MODULE_ESP32CAN->SR.U&0xff) << 8 | MODULE_ESP32CAN->ECC.B.ECC;
+    me->m_errors_rx = MODULE_ESP32CAN->RXERR.U;
+    me->m_errors_tx = MODULE_ESP32CAN->TXERR.U;
+    if (flags & __CAN_IRQ_DATA_OVERRUN)
+      {
+      me->m_errors_rxbuf_overflow++;
+      MODULE_ESP32CAN->CMR.B.CDO = 1;
+      }
+    }
+  
+  // Handle wakeup interrupt:
+  if ((interrupt & (__CAN_IRQ_WAKEUP)) != 0)
     {
     /*handler*/
     }
@@ -132,6 +148,7 @@ esp32can::~esp32can()
 
 esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
   {
+  canbus::Start(mode, speed);
   double __tq; // Time quantum
 
   m_mode = mode;
@@ -234,6 +251,13 @@ esp_err_t esp32can::Write(const CAN_frame_t* p_frame)
   {
   canbus::Write(p_frame);
   uint8_t __byte_i; // Byte iterator
+  
+  // check if TX buffer is available:
+  if(MODULE_ESP32CAN->SR.B.TBS == 0)
+    {
+    m_errors_txbuf_overflow++;
+    return ESP_FAIL;
+    }
 
   // copy frame information record
   MODULE_ESP32CAN->MBX_CTRL.FCTRL.FIR.U=p_frame->FIR.U;

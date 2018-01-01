@@ -61,13 +61,12 @@ static const char *TAG = "canopen";
 #define SDO_SegmentUnusedMask       0b00001110
 #define SDO_SegmentEnd              0b00000001
 
-// SDO error codes:
+// SDO abort reasons:
 
 #define SDO_Abort_SegMismatch       0x05030000
 #define SDO_Abort_Timeout           0x05040000
 #define SDO_Abort_OutOfMemory       0x05040005
 
-#define CANopen_GeneralError        0x08000000
 
 static void CANopenWorkerJobTask(void *pvParameters);
 
@@ -531,10 +530,12 @@ CANopenResult_t CANopenWorker::ProcessReadSDOJob()
     || m_response.exp.index != m_request.exp.index
     || m_response.exp.subindex != m_request.exp.subindex)
     {
-    // abort:
+    if ((m_response.exp.control & SDO_CommandMask) == SDO_Abort)
+      m_job.sdo.error = m_response.ctl.data;
+    else
+      m_job.sdo.error = CANopen_BusCollision;
     ESP_LOGD(TAG, "ReadSDO #%d 0x%04x.%02x: InitUpload failed, CANopen error code 0x%08x",
       m_job.sdo.nodeid, m_job.sdo.index, m_job.sdo.subindex, m_job.sdo.error);
-    m_job.sdo.error = m_response.ctl.data;
     return COR_ERR_SDO_Access;
     }
 
@@ -678,10 +679,12 @@ CANopenResult_t CANopenWorker::ProcessWriteSDOJob()
     || m_response.exp.index != m_request.exp.index
     || m_response.exp.subindex != m_request.exp.subindex)
     {
-    // abort:
+    if ((m_response.exp.control & SDO_CommandMask) == SDO_Abort)
+      m_job.sdo.error = m_response.ctl.data;
+    else
+      m_job.sdo.error = CANopen_BusCollision;
     ESP_LOGD(TAG, "WriteSDO #%d 0x%04x.%02x: InitDownload failed, CANopen error code 0x%08x",
       m_job.sdo.nodeid, m_job.sdo.index, m_job.sdo.subindex, m_job.sdo.error);
-    m_job.sdo.error = m_response.ctl.data;
     return COR_ERR_SDO_Access;
     }
   

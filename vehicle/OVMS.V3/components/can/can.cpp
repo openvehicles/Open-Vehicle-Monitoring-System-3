@@ -173,11 +173,30 @@ void can_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     }
 
   if (strcmp(cmd->GetName(),"on")==0)
+    {
+    if (argc >= 1)
+      {
+      sbus->m_trace_id_from = strtol(argv[0], NULL, 16);
+      if (argc >= 2)
+        sbus->m_trace_id_to = strtol(argv[1], NULL, 16);
+      else
+        sbus->m_trace_id_to = sbus->m_trace_id_from;
+      writer->printf("Tracing for CAN bus %s is now ON for ID range %#x - %#x\n", bus, sbus->m_trace_id_from, sbus->m_trace_id_to);
+      }
+    else
+      {
+      sbus->m_trace_id_from = 0;
+      sbus->m_trace_id_to = 0xffffffff;
+      writer->printf("Tracing for CAN bus %s is now ON\n", bus);
+      }
+    writer->puts("Use 'level verbose can' to turn on log output / 'level info can' to turn off");
     sbus->m_trace = true;
+    }
   else
+    {
+    writer->printf("Tracing for CAN bus %s is now OFF\n", bus);
     sbus->m_trace = false;
-
-  writer->printf("Tracing for CAN bus %s is now %s\n",bus,cmd->GetName());
+    }
   }
 
 void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -196,8 +215,10 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->printf("Speed:     %d\n",(sbus->m_speed)*1000);
   writer->printf("Rx pkt:    %20d\n",sbus->m_packets_rx);
   writer->printf("Rx err:    %20d\n",sbus->m_errors_rx);
+  writer->printf("Rx ovrflw: %20d\n",sbus->m_errors_rxbuf_overflow);
   writer->printf("Tx pkt:    %20d\n",sbus->m_packets_tx);
   writer->printf("Tx err:    %20d\n",sbus->m_errors_tx);
+  writer->printf("Tx ovrflw: %20d\n",sbus->m_errors_txbuf_overflow);
   writer->printf("Err flags: %#x\n",sbus->m_error_flags);
   }
 
@@ -241,7 +262,7 @@ can::can()
     static const char* name[4] = {"can1", "can2", "can3"};
     OvmsCommand* cmd_canx = cmd_can->RegisterCommand(name[k-1],"CANx framework",NULL, "", 0, 0, true);
     OvmsCommand* cmd_cantrace = cmd_canx->RegisterCommand("trace","CAN trace framework", NULL, "", 0, 0, true);
-    cmd_cantrace->RegisterCommand("on","Turn CAN bus tracing ON",can_trace,"", 0, 0, true);
+    cmd_cantrace->RegisterCommand("on","Turn CAN bus tracing ON",can_trace,"[fromid] [toid]", 0, 2, true);
     cmd_cantrace->RegisterCommand("off","Turn CAN bus tracing OFF",can_trace,"", 0, 0, true);
     OvmsCommand* cmd_canstart = cmd_canx->RegisterCommand("start","CAN start framework", NULL, "", 0, 0, true);
     cmd_canstart->RegisterCommand("listen","Start CAN bus in listen mode",can_start,"<baud>", 1, 1, true);
@@ -257,7 +278,7 @@ can::can()
     }
 
   m_rxqueue = xQueueCreate(20,sizeof(CAN_msg_t));
-  xTaskCreatePinnedToCore(CAN_rxtask, "CanRxTask", 2048, (void*)this, 5, &m_rxtask, 1);
+  xTaskCreatePinnedToCore(CAN_rxtask, "CanRxTask", 2048, (void*)this, 10, &m_rxtask, 0);
   }
 
 can::~can()
@@ -268,7 +289,9 @@ void can::IncomingFrame(CAN_frame_t* p_frame)
   {
   p_frame->origin->m_packets_rx++;
 
-  if (p_frame->origin->m_trace)
+  if (p_frame->origin->m_trace
+      && p_frame->origin->m_trace_id_from <= p_frame->MsgID
+      && p_frame->origin->m_trace_id_to   >= p_frame->MsgID)
     {
     char prefix[30];
     snprintf(prefix, sizeof(prefix), "rx %s id %03x len %d", p_frame->origin->GetName(), p_frame->MsgID, p_frame->FIR.B.DLC);
@@ -301,10 +324,14 @@ canbus::canbus(const char* name)
   m_mode = CAN_MODE_OFF;
   m_speed = CAN_SPEED_1000KBPS;
   m_trace = false;
+  m_trace_id_from = 0;
+  m_trace_id_to = 0xffffffff;
   m_packets_rx = 0;
   m_errors_rx = 0;
   m_packets_tx = 0;
   m_errors_tx = 0;
+  m_errors_rxbuf_overflow = 0;
+  m_errors_txbuf_overflow = 0;
   m_error_flags = 0;
   }
 
@@ -314,6 +341,14 @@ canbus::~canbus()
 
 esp_err_t canbus::Start(CAN_mode_t mode, CAN_speed_t speed)
   {
+  // clear statistics:
+  m_packets_rx = 0;
+  m_errors_rx = 0;
+  m_packets_tx = 0;
+  m_errors_tx = 0;
+  m_errors_rxbuf_overflow = 0;
+  m_errors_txbuf_overflow = 0;
+  m_error_flags = 0;
   return ESP_FAIL; // Not implemented by base implementation
   }
 
@@ -324,7 +359,9 @@ esp_err_t canbus::Stop()
 
 esp_err_t canbus::Write(const CAN_frame_t* p_frame)
   {
-  if (m_trace)
+  if (m_trace
+      && m_trace_id_from <= p_frame->MsgID
+      && m_trace_id_to   >= p_frame->MsgID)
     {
     char prefix[30];
     snprintf(prefix, sizeof(prefix), "tx %s id %03x len %d", GetName(), p_frame->MsgID, p_frame->FIR.B.DLC);
