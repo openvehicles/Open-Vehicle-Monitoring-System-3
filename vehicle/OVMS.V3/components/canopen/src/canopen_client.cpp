@@ -141,6 +141,26 @@ void CANopenAsyncClient::InitSendNMT(CANopenJob& job,
   }
 
 /**
+ * InitReceiveHB: prepare receive heartbeat command
+ * Hint: override for customisation
+ */
+void CANopenAsyncClient::InitReceiveHB(CANopenJob& job,
+    uint8_t nodeid, CANopenNMTState_t* statebuf /*=NULL*/,
+    int recv_timeout_ms /*=1000*/, int max_tries /*=1*/)
+  {
+  memset(&job, 0, sizeof(job));
+  
+  job.type = COJT_ReceiveHB;
+  job.hb.nodeid = nodeid;
+  job.hb.statebuf = statebuf;
+  
+  job.txid = 0;
+  job.rxid = 0x700 + nodeid;
+  job.timeout_ms = recv_timeout_ms;
+  job.maxtries = max_tries;
+  }
+
+/**
  * InitReadSDO: prepare ReadSDO command
  * Hint: override for customisation
  */
@@ -204,6 +224,24 @@ CANopenResult_t CANopenAsyncClient::SendNMT(
   {
   CANopenJob job;
   InitSendNMT(job, nodeid, command, wait_for_state, resp_timeout_ms, max_tries);
+  return SubmitJob(job);
+  }
+
+
+/**
+ * [Main API]
+ * ReceiveHB: wait for next heartbeat message of a node,
+ *  return state received.
+ * 
+ * Use this to read the current state or synchronize to the heartbeat.
+ * Note: heartbeats are optional in CANopen.
+ */
+CANopenResult_t CANopenAsyncClient::ReceiveHB(
+    uint8_t nodeid, CANopenNMTState_t* statebuf /*=NULL*/,
+    int recv_timeout_ms /*=1000*/, int max_tries /*=1*/)
+  {
+  CANopenJob job;
+  InitReceiveHB(job, nodeid, statebuf, recv_timeout_ms, max_tries);
   return SubmitJob(job);
   }
 
@@ -322,6 +360,23 @@ CANopenResult_t CANopenClient::SendNMT(CANopenJob& job,
     bool wait_for_state /*=false*/, int resp_timeout_ms /*=1000*/, int max_tries /*=3*/)
   {
   InitSendNMT(job, nodeid, command, wait_for_state, resp_timeout_ms, max_tries);
+  return ExecuteJob(job);
+  }
+
+
+/**
+ * [Main API]
+ * ReceiveHB: wait for next heartbeat message of a node,
+ *  return state received.
+ * 
+ * Use this to read the current state or synchronize to the heartbeat.
+ * Note: heartbeats are optional in CANopen.
+ */
+CANopenResult_t CANopenClient::ReceiveHB(CANopenJob& job,
+    uint8_t nodeid, CANopenNMTState_t* statebuf /*=NULL*/,
+    int recv_timeout_ms /*=1000*/, int max_tries /*=1*/)
+  {
+  InitReceiveHB(job, nodeid, statebuf, recv_timeout_ms, max_tries);
   return ExecuteJob(job);
   }
 

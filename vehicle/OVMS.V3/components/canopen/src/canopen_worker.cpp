@@ -394,15 +394,54 @@ CANopenResult_t CANopenWorker::ProcessSendNMTJob()
     if (ulTaskNotifyTake(pdTRUE, maxwait))
       {
       // expected response for command?
-      if ( (m_job.nmt.command == CONC_Start      && m_response.byte[0] >= 5)
-        || (m_job.nmt.command == CONC_Stop       && m_response.byte[0] == 4)
-        || (m_job.nmt.command == CONC_PreOp      && m_response.byte[0] == 127)
-        || (m_job.nmt.command == CONC_Reset      && m_response.byte[0] != 4)
-        || (m_job.nmt.command == CONC_CommReset  && m_response.byte[0] != 4) )
+      if ( (m_job.nmt.command == CONC_Start      && m_response.hb.state >= 5)
+        || (m_job.nmt.command == CONC_Stop       && m_response.hb.state == 4)
+        || (m_job.nmt.command == CONC_PreOp      && m_response.hb.state == 127)
+        || (m_job.nmt.command == CONC_Reset      && m_response.hb.state != 4)
+        || (m_job.nmt.command == CONC_CommReset  && m_response.hb.state != 4) )
         return COR_OK;
       }
 
     // timeout / wrong state → retry:
+    if (m_job.trycnt < m_job.maxtries)
+      vTaskDelay(pdMS_TO_TICKS(10));
+
+    } while (m_job.trycnt < m_job.maxtries);
+
+  return COR_ERR_Timeout;
+  }
+
+
+/**
+ * ProcessReceiveHBJob: wait for next heartbeat message of a node,
+ *  return state received.
+ * 
+ * Use this to read the current state or synchronize to the heartbeat.
+ * Note: heartbeats are optional in CANopen.
+ */
+CANopenResult_t CANopenWorker::ProcessReceiveHBJob()
+  {
+  // check parameters:
+  if (m_job.hb.nodeid < 1 || m_job.hb.nodeid > 127)
+    return COR_ERR_ParamRange;
+  
+  TickType_t maxwait = pdMS_TO_TICKS(m_job.timeout_ms);
+  
+  do
+    {
+    m_job.trycnt++;
+    
+    // wait for receive signal from IncomingFrame():
+    if (ulTaskNotifyTake(pdTRUE, maxwait))
+      {
+      // return state received:
+      m_job.hb.state = (CANopenNMTState_t) m_response.hb.state;
+      if (m_job.hb.statebuf)
+        *m_job.hb.statebuf = m_job.hb.state;
+      return COR_OK;
+      }
+
+    // timeout → retry:
     if (m_job.trycnt < m_job.maxtries)
       vTaskDelay(pdMS_TO_TICKS(10));
 

@@ -122,6 +122,7 @@ typedef enum __attribute__ ((__packed__))
   {
   COJT_None = 0,
   COJT_SendNMT,
+  COJT_ReceiveHB,
   COJT_ReadSDO,
   COJT_WriteSDO
   } CANopenJob_t;
@@ -148,6 +149,12 @@ struct __attribute__ ((__packed__)) CANopenJob
       } nmt;
     struct __attribute__ ((__packed__))
       {
+      uint8_t               nodeid;
+      CANopenNMTState_t     state;          // state received
+      CANopenNMTState_t*    statebuf;       // state received
+      } hb;
+    struct __attribute__ ((__packed__))
+      {
       uint8_t               nodeid;         // no broadcast allowed
       uint16_t              index;          // SDO register address
       uint8_t               subindex;       // SDO subregister address
@@ -158,11 +165,27 @@ struct __attribute__ ((__packed__)) CANopenJob
       uint32_t              error;          // CANopen general error code
       } sdo;
     };
+  
+  void Init()
+    {
+    memset(this, 0, sizeof(*this));
+    }
+  
+  CANopenResult_t SetResult(CANopenResult_t p_result, uint32_t p_error=0)
+    {
+    sdo.error = p_error;
+    return result = p_result;
+    }
   };
 
 typedef union __attribute__ ((__packed__))
   {
   uint8_t       byte[8];        // raw access
+  struct __attribute__ ((__packed__))
+    {
+    uint8_t     state;          // heartbeat state
+    uint8_t     unused[7];
+    } hb;
   struct __attribute__ ((__packed__))
     {
     uint8_t     control;        // protocol request / response
@@ -217,6 +240,7 @@ class CANopenWorker
   
   protected:
     CANopenResult_t ProcessSendNMTJob();
+    CANopenResult_t ProcessReceiveHBJob();
     CANopenResult_t ProcessReadSDOJob();
     CANopenResult_t ProcessWriteSDOJob();
   
@@ -288,6 +312,8 @@ class CANopenAsyncClient
     // Customisation:
     virtual void InitSendNMT(CANopenJob& job, uint8_t nodeid, CANopenNMTCommand_t command,
       bool wait_for_state=false, int resp_timeout_ms=1000, int max_tries=3);
+    virtual void InitReceiveHB(CANopenJob& job, uint8_t nodeid, CANopenNMTState_t* statebuf=NULL,
+      int recv_timeout_ms=1000, int max_tries=1);
     virtual void InitReadSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
       int resp_timeout_ms=50, int max_tries=3);
     virtual void InitWriteSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
@@ -297,6 +323,8 @@ class CANopenAsyncClient
     // Main API:
     virtual CANopenResult_t SendNMT(uint8_t nodeid, CANopenNMTCommand_t command,
       bool wait_for_state=false, int resp_timeout_ms=1000, int max_tries=3);
+    virtual CANopenResult_t ReceiveHB(uint8_t nodeid, CANopenNMTState_t* statebuf=NULL,
+      int recv_timeout_ms=1000, int max_tries=1);
     virtual CANopenResult_t ReadSDO(uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
       int resp_timeout_ms=50, int max_tries=3);
     virtual CANopenResult_t WriteSDO(uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
@@ -331,6 +359,8 @@ class CANopenClient : public CANopenAsyncClient
     // Main API:
     virtual CANopenResult_t SendNMT(CANopenJob& job, uint8_t nodeid, CANopenNMTCommand_t command,
       bool wait_for_state=false, int resp_timeout_ms=1000, int max_tries=3);
+    virtual CANopenResult_t ReceiveHB(CANopenJob& job, uint8_t nodeid, CANopenNMTState_t* statebuf=NULL,
+      int recv_timeout_ms=1000, int max_tries=1);
     virtual CANopenResult_t ReadSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
       int resp_timeout_ms=50, int max_tries=3);
     virtual CANopenResult_t WriteSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,

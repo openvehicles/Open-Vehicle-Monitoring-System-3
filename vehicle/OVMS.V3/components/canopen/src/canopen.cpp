@@ -183,14 +183,14 @@ void canopen_readsdo(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     int i;
     for (i=0; i < job.sdo.xfersize && buffer.txt[i]; i++)
       {
-      if (!isprint(buffer.txt[i]))
+      if (!(isprint(buffer.txt[i]) || isspace(buffer.txt[i])))
         {
         show_txt = false;
         break;
         }
       }
     // terminate string:
-    if (i == job.sdo.xfersize && buffer.txt[i])
+    if (i == job.sdo.xfersize)
       buffer.txt[i] = 0;
     
     writer->printf("ReadSDO #%d 0x%04x.%02x: contsize=%d xfersize=%d dec=%d hex=0x%0*x str='%s'\n",
@@ -811,6 +811,9 @@ const std::string CANopen::GetResultString(const CANopenResult_t result, uint32_
 
 const std::string CANopen::GetResultString(const CANopenJob& job)
   {
-  return GetResultString(job.result, job.sdo.error);
+  if (job.type == COJT_ReadSDO || job.type == COJT_WriteSDO)
+    return GetResultString(job.result, job.sdo.error);
+  else
+    return GetResultString(job.result, 0);
   }
 
