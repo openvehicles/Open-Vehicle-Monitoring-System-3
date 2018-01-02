@@ -425,8 +425,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   }
   
 
-#ifdef OVMS_TWIZY_CFG
-
   if ((twizy_flags.CarAwake) && (twizy_flags.EnableWrite))
   {
     // --------------------------------------------------------------------------
@@ -434,13 +432,10 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     // 
     
     if (!twizy_flags.CtrlLoggedIn)
-    {
-      if (login(1) == 0)
-        twizy_flags.CtrlLoggedIn = 1;
-      // else retry on next ticker1 call
-    }
+      m_sevcon->Login(true);
   
-  
+#ifdef TODO
+
     if (twizy_flags.CtrlLoggedIn)
     {
       // --------------------------------------------------------------------------
@@ -489,11 +484,12 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
 
     } // if (twizy_flags.CtrlLoggedIn)
 
+#endif
+  
+
   }
 
 
-#endif // OVMS_TWIZY_CFG
-  
   
   
   // --------------------------------------------------------------------------

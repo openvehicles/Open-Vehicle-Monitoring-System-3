@@ -289,22 +289,6 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     
     
-#ifdef OVMS_TWIZY_CFG
-    case 0x581:
-      // --------------------------------------------------------------------------
-      // CAN ID 0x581: CANopen SDO reply from SEVCON (Node #1)
-      //
-      
-      // copy message into twizy_sdo object:
-      for (u = 0; u < can_datalength; u++)
-        twizy_sdo.byte[u] = CAN_BYTE(u);
-      for (; u < 8; u++)
-        twizy_sdo.byte[u] = 0;
-      
-      break;
-#endif // OVMS_TWIZY_CFG
-    
-    
     case 0x597:
       // --------------------------------------------------------------------------
       // CAN ID 0x597: sent every 100 ms (10 per second)

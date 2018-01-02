@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-twizy";
 
-#define VERSION "0.6.0"
+#define VERSION "0.7.0"
 
 #include <stdio.h>
 #include <string>
@@ -60,6 +60,19 @@ OvmsVehicleRenaultTwizyInit::OvmsVehicleRenaultTwizyInit()
 }
 
 
+OvmsVehicleRenaultTwizy* OvmsVehicleRenaultTwizy::GetInstance(OvmsWriter* writer)
+{
+  OvmsVehicleRenaultTwizy* twizy = (OvmsVehicleRenaultTwizy*) MyVehicleFactory.ActiveVehicle();
+  string type = StdMetrics.ms_v_type->AsString();
+  if (!twizy || type != "RT") {
+    if (writer)
+      writer->puts("Error: Twizy vehicle module not selected");
+    return NULL;
+  }
+  return twizy;
+}
+
+
 /**
  * Constructor & destructor
  */
@@ -72,12 +85,12 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   
   memset(&twizy_flags, 0, sizeof twizy_flags);
   
-  // init can bus:
-  RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-  
   // init configs:
   MyConfig.RegisterParam("xrt", "Renault Twizy", true, true);
   ConfigChanged(NULL);
+  
+  // init can bus:
+  RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   
   // init metrics:
   if (m_modifier == 0) {
@@ -93,6 +106,7 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   BatteryInit();
   PowerInit();
   ChargeInit();
+  m_sevcon = new SevconClient(this);
   
   // init event listener:
   using std::placeholders::_1;
@@ -114,6 +128,9 @@ OvmsVehicleRenaultTwizy::~OvmsVehicleRenaultTwizy()
   
   // unregister event listeners:
   MyEvents.DeregisterEvent(TAG);
+  
+  if (m_sevcon)
+    delete m_sevcon;
 }
 
 

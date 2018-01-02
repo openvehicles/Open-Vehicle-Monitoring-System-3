@@ -37,6 +37,7 @@
 #include "rt_types.h"
 #include "rt_battmon.h"
 #include "rt_pwrmon.h"
+#include "rt_sevcon.h"
 
 using namespace std;
 
@@ -57,9 +58,11 @@ using namespace std;
 
 class OvmsVehicleRenaultTwizy : public OvmsVehicle
 {
+  friend class SevconClient;
   public:
     OvmsVehicleRenaultTwizy();
     ~OvmsVehicleRenaultTwizy();
+    static OvmsVehicleRenaultTwizy* GetInstance(OvmsWriter* writer);
   
   
   // --------------------------------------------------------------------------
@@ -372,7 +375,11 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   //  - implementation: rt_sevcon.(h,cpp)
   // 
   
+  public:
+    SevconClient* GetSevconClient() { return m_sevcon; }
+  
   protected:
+    SevconClient *m_sevcon = NULL;
     signed char twizy_button_cnt = 0;           // will count key presses (errors) in STOP mode (msg 081)
     
     #define CFG_DEFAULT_KD_THRESHOLD    35
