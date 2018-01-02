@@ -24,7 +24,7 @@
  */
 
 #include "ovms_log.h"
-static const char *TAG = "v-renaulttwizy";
+static const char *TAG = "v-twizy";
 
 #define VERSION "0.6.0"
 

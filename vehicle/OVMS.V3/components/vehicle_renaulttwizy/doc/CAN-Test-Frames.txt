@@ -1,9 +1,15 @@
 CAN test frames
 ===============
 
-level verbose
+level verbose v-twizy
 vehicle module RT
+
 server v2 start
+
+level verbose can
+level verbose canopen
+can can1 trace on
+
 
 # 0x155: CHGLIM=25A, CURR=58.25A, SOC=69.98%
 can can1 rx standard 155 05 96 E7 54 6D 58 00 6F
@@ -54,6 +60,12 @@ xrt batt data-cell 12
 xrt batt data-cell 13
 xrt batt data-cell 14
 
+# Car awake:
+can can1 rx standard 597 00 95 04 41 29 00 01 4E
+
+# Car on (GO):
+can can1 rx standard 59B 80 0C 65 5E 44 72 00 90
+
 # Start charge:
 can can1 rx standard 597 20 A4 07 B1 29 00 01 41
 
@@ -62,4 +74,19 @@ can can1 rx standard 597 00 E0 00 D1 29 00 01 45
 
 # Speed=0:
 can can1 rx standard 599 00 00 04 B8 FF 49 00 00
+
+
+## Charge current limit
+
+charge current 15
+can can1 rx standard 597 20 A4 07 B1 29 00 01 41
+can can1 rx standard 155 05 96 E7 54 6D 58 00 6F
+
+
+## Charge stop
+
+can can1 rx standard 597 20 A4 07 B1 29 00 01 41
+charge stop
+can can1 rx standard 424 11 40 04 26 41 64 00 42
+
 
