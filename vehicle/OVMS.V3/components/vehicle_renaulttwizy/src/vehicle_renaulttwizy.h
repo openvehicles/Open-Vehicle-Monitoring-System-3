@@ -127,9 +127,6 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
       unsigned Charging:1;          // Main charge in progress
       unsigned Charging12V:1;       // DC-DC converter active
       
-      unsigned CtrlLoggedIn:1;      // Logged into SEVCON
-      unsigned CtrlCfgMode:1;       // SEVCON in configuration mode
-      
       // Configuration flags:
       
       unsigned EnableWrite:1;       // CAN write enabled

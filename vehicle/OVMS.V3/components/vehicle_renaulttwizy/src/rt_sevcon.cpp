@@ -224,7 +224,12 @@ SevconClient::SevconClient(OvmsVehicleRenaultTwizy* twizy)
   ESP_LOGI(TAG, "sevcon subsystem init");
   
   m_twizy = twizy;
+  m_sevcon_type = 0;
+  memset(&m_drivemode, 0, sizeof(m_drivemode));
+  memset(&m_profile, 0, sizeof(m_profile));
   
+  m_cfgmode_request = false;
+
   // register shell commands:
   
   OvmsCommand *cmd_cfg = m_twizy->cmd_xrt->RegisterCommand("cfg", "SEVCON tuning", NULL, "", 0, 0, true);
@@ -247,11 +252,26 @@ SevconClient::SevconClient(OvmsVehicleRenaultTwizy* twizy)
   
   // NICE2HAVE: xrt cfg …
   //  getdcf
+  
+  
+  // fault listener:
+  
+  m_faultqueue = xQueueCreate(10, sizeof(uint16_t));
+  m_lastfault = 0;
+  m_buttoncnt = 0;
+  
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG, "canopen.node.emcy", std::bind(&SevconClient::EmcyListener, this, _1, _2));
+  
 }
 
 SevconClient::~SevconClient()
 {
+  if (m_faultqueue)
+    vQueueDelete(m_faultqueue);
 }
+
 
 SevconJob::SevconJob(SevconClient* client)
 {
@@ -350,79 +370,92 @@ CANopenResult_t SevconClient::SendWrite(uint16_t index, uint8_t subindex, uint32
   return m_async.WriteSDO(m_nodeid, index, subindex, (uint8_t*)&value, 0);
 }
 
+CANopenResult_t SevconClient::SendRequestState(CANopenNMTCommand_t command)
+{
+  CANopenResult_t res = CheckBus();
+  if (res != COR_OK)
+    return res;
+  return m_async.SendNMT(m_nodeid, command);
+}
+
 
 void SevconClient::ProcessAsyncResults()
 {
-  // discard all results:
   CANopenJob job;
-  while (m_async.ReceiveDone(job, 0) != COR_ERR_QueueEmpty);
-}
-
-
-const std::string SevconClient::GetDeviceErrorName(uint32_t device_error)
-{
-  std::string name;
-  if (device_error < 0xde000000)
-    name = CANopen::GetAbortCodeName(device_error);
-  else switch (device_error & 0x00ffffff)
-  {
-    case  0:    name="No error"; break;
-    case  1:    name="General error"; break;
-    case  2:    name="Nothing to transmit"; break;
-    case  3:    name="Invalid service"; break;
-    case  4:    name="Not in pre-operational"; break;
-    case  5:    name="Not in operational"; break;
-    case  6:    name="Can't go to pre-operational"; break;
-    case  7:    name="Can't go to operational"; break;
-    case  8:    name="Access level too low"; break;
-    case  9:    name="Login failed"; break;
-    case 10:    name="Range underflow"; break;
-    case 11:    name="Range overflow"; break;
-    case 12:    name="Invalid value"; break;
-    case 13:    name="EEPROM write failed"; break;
-    case 14:    name="Unable to reset service time"; break;
-    case 15:    name="Cannot reset log"; break;
-    case 16:    name="Cannot read log"; break;
-    case 17:    name="Invalid store command"; break;
-    case 18:    name="Bootloader failure"; break;
-    case 19:    name="DSP update failed"; break;
-    case 20:    name="GIO module error failed"; break;
-    case 21:    name="Backdoor write failed"; break;
-    case 23:    name="Cannot write to DSP"; break;
-    case 24:    name="Cannot read from DSP"; break;
-    case 25:    name="Peek time out"; break;
-    case 32:    name="Checksum calculation failed"; break;
-    case 33:    name="PDO not copied"; break;
-    default:
-      char val[12];
-      sprintf(val, "%d", (int) device_error & 0x00ffffff);
-      name = val;
+  while (m_async.ReceiveDone(job, 0) != COR_ERR_QueueEmpty) {
+    ESP_LOGD(TAG, "Sevcon async result for %s: %s",
+      CANopen::GetJobName(job).c_str(), GetResultString(job).c_str());
   }
-  return name;
 }
 
-const std::string SevconClient::GetResultString(CANopenResult_t result, uint32_t detail)
+
+void SevconClient::SetStatus(bool car_awake)
 {
-  std::string name = CANopen::GetResultString(result);
-  if (detail)
-    {
-    name.append("; ");
-    name.append(GetDeviceErrorName(detail));
-    }
-  return name;
+  *StdMetrics.ms_v_env_ctrl_login = (bool) false;
+  *StdMetrics.ms_v_env_ctrl_config = (bool) false;
+  m_buttoncnt = 0;
 }
 
-const std::string SevconClient::GetResultString(CANopenJob& job)
+
+void SevconClient::Ticker1(uint32_t ticker)
 {
-  if (job.type == COJT_ReadSDO || job.type == COJT_WriteSDO)
-    return GetResultString(job.result, job.sdo.error);
-  else
-    return GetResultString(job.result, 0);
+  // cleanup CANopen job result queue:
+  ProcessAsyncResults();
+  
+  // Send fault alerts:
+  uint16_t faultcode;
+  while (xQueueReceive(m_faultqueue, &faultcode, 0) == pdTRUE) {
+    SendFaultAlert(faultcode);
+  }
+
+  if (!m_twizy->twizy_flags.CarAwake || !m_twizy->twizy_flags.EnableWrite)
+    return;
+  
+  // Login to SEVCON:
+  if (!StdMetrics.ms_v_env_ctrl_login->AsBool()) {
+    if (Login(true) != COR_OK)
+      return;
+  }
+
+  // Check for 3 successive button presses in STOP mode => CFG RESET:
+  if ((m_buttoncnt >= 5) && (!m_twizy->twizy_flags.DisableReset)) {
+    // reset SEVCON profile:
+    ESP_LOGW(TAG, "Sevcon: detected D/R button cfg reset request [TODO]");
+    
+//     memset(&twizy_cfg_profile, 0, sizeof(twizy_cfg_profile));
+//     twizy_cfg.unsaved = (twizy_cfg.profile_user > 0);
+//     vehicle_twizy_cfg_applyprofile(twizy_cfg.profile_user);
+//     twizy_notify(SEND_ResetResult);
+
+    // reset button cnt:
+    m_buttoncnt = 0;
+  }
+  else if (m_buttoncnt > 0) {
+    m_buttoncnt--;
+  }
+  
+
+#ifdef TODO
+
+  // Valet mode: lock speed if valet max odometer reached:
+  if ((m_twizy->twizy_flags.ValetMode)
+          && (!m_twizy->twizy_flags.CarLocked) && (twizy_odometer > twizy_valet_odo))
+  {
+    vehicle_twizy_cfg_restrict_cmd(FALSE, CMD_Lock, NULL);
+  }
+
+  // Auto drive & recuperation adjustment (if enabled):
+  vehicle_twizy_cfg_autopower();
+
+#endif
+
 }
+
 
 
 CANopenResult_t SevconClient::Login(bool on)
 {
+  ESP_LOGD(TAG, "Sevcon login request: %d", on);
   SevconJob sc(this);
 
   // get SEVCON type (Twizy 80/45):
@@ -464,7 +497,7 @@ CANopenResult_t SevconClient::Login(bool on)
   }
 
   ESP_LOGD(TAG, "Sevcon login status: %d", on);
-  m_twizy->twizy_flags.CtrlLoggedIn = on;
+  *StdMetrics.ms_v_env_ctrl_login = (bool) on;
   return COR_OK;
 }
 
@@ -474,7 +507,9 @@ CANopenResult_t SevconClient::CfgMode(CANopenJob& job, bool on)
   // Note: as waiting for the next heartbeat would take ~ 500 ms, so
   //  we read the state change result from 0x5110.00
   
+  ESP_LOGD(TAG, "Sevcon cfgmode request: %d", on);
   uint32_t state = 0;
+  m_cfgmode_request = on;
   
   if (!on)
   {
@@ -519,7 +554,8 @@ CANopenResult_t SevconClient::CfgMode(CANopenJob& job, bool on)
   }
   
   ESP_LOGD(TAG, "Sevcon cfgmode status: %d", on);
-  m_twizy->twizy_flags.CtrlCfgMode = on;
+  *StdMetrics.ms_v_env_ctrl_config = (bool) on;
   return COR_OK;
 }
+
 

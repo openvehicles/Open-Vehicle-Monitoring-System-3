@@ -113,7 +113,9 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     // reset power subsystem:
     PowerReset();
     
-    // reset button cnt:
+    // update sevcon subsystem:
+    m_sevcon->SetStatus(twizy_flags.CarAwake);
+    
     twizy_button_cnt = 0;
   }
   else if (!(twizy_status & CAN_STATUS_KEYON) && twizy_flags.CarAwake)
@@ -121,7 +123,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     // CAR has just been turned OFF
     ESP_LOGI(TAG, "turned off");
     twizy_flags.CarAwake = 0;
-    twizy_flags.CtrlLoggedIn = 0;
     
     // set trip references:
     twizy_soc_tripend = twizy_soc;
@@ -134,19 +135,17 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
       RequestNotify(SEND_PowerNotify | SEND_TripLog);
     }
     
-    // reset button cnt:
-    twizy_button_cnt = 0;
+    // update sevcon subsystem:
+    m_sevcon->SetStatus(twizy_flags.CarAwake);
   }
   
   
   // --------------------------------------------------------------------------
   // Subsystem updates:
   
-  // update battery subsystem:
   BatteryUpdate();
-  
-  // update power subsystem:
   PowerUpdate();
+  m_sevcon->Ticker1(ticker);
   
   
   // --------------------------------------------------------------------------
@@ -425,72 +424,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   }
   
 
-  if ((twizy_flags.CarAwake) && (twizy_flags.EnableWrite))
-  {
-    // --------------------------------------------------------------------------
-    // Login to SEVCON:
-    // 
-    
-    if (!twizy_flags.CtrlLoggedIn)
-      m_sevcon->Login(true);
-  
-#ifdef TODO
-
-    if (twizy_flags.CtrlLoggedIn)
-    {
-      // --------------------------------------------------------------------------
-      // Check for button presses in STOP mode => CFG RESET:
-      // 
-
-      if ((twizy_button_cnt >= 3) && (!twizy_flags.DisableReset))
-      {
-        // reset SEVCON profile:
-        memset(&twizy_cfg_profile, 0, sizeof(twizy_cfg_profile));
-        twizy_cfg.unsaved = (twizy_cfg.profile_user > 0);
-        vehicle_twizy_cfg_applyprofile(twizy_cfg.profile_user);
-        twizy_notify(SEND_ResetResult);
-
-        // reset button cnt:
-        twizy_button_cnt = 0;
-      }
-
-      else if (twizy_button_cnt >= 1)
-      {
-        // pre-op also sends a CAN error, so for button_cnt >= 1
-        // check if we're stuck in pre-op state:
-        if ((readsdo(0x5110,0x00) == 0) && (twizy_sdo.data == 0x7f)) {
-          // we're in pre-op, try to solve:
-          if (configmode(0) == 0)
-            twizy_button_cnt = 0; // solved
-        }
-      }
-
-
-      // --------------------------------------------------------------------------
-      // Valet mode: lock speed if valet max odometer reached:
-      // 
-
-      if ((twizy_flags.ValetMode)
-              && (!twizy_flags.CarLocked) && (twizy_odometer > twizy_valet_odo))
-      {
-        vehicle_twizy_cfg_restrict_cmd(FALSE, CMD_Lock, NULL);
-      }
-
-      // --------------------------------------------------------------------------
-      // Auto drive & recuperation adjustment (if enabled):
-      // 
-
-      vehicle_twizy_cfg_autopower();
-
-    } // if (twizy_flags.CtrlLoggedIn)
-
-#endif
-  
-
-  }
-
-
-  
   
   // --------------------------------------------------------------------------
   // Publish metrics:
@@ -515,9 +448,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   *StdMetrics.ms_v_door_chargeport = (bool) twizy_flags.ChargePort;
   *StdMetrics.ms_v_charge_inprogress = (bool) twizy_flags.Charging;
   *StdMetrics.ms_v_env_charging12v = (bool) twizy_flags.Charging12V;
-  
-  *StdMetrics.ms_v_env_ctrl_login = (bool) twizy_flags.CtrlLoggedIn;
-  *StdMetrics.ms_v_env_ctrl_config = (bool) twizy_flags.CtrlCfgMode;
   
   
   // --------------------------------------------------------------------------

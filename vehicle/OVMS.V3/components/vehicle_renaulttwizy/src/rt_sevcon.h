@@ -96,10 +96,17 @@ class SevconClient
   public:
     // Utils:
     uint32_t GetDeviceError();
-    static const std::string GetDeviceErrorName(uint32_t device_error);
-    static const std::string GetResultString(CANopenResult_t res, uint32_t detail);
-    static const std::string GetResultString(CANopenJob& job);
+    static const string GetDeviceErrorName(uint32_t device_error);
+    static const string GetResultString(CANopenResult_t res, uint32_t detail);
+    static const string GetResultString(CANopenJob& job);
     CANopenResult_t CheckBus();
+    void SendFaultAlert(uint16_t faultcode);
+  
+  public:
+    // Framework interface:
+    void EmcyListener(string event, void* data);
+    void SetStatus(bool car_awake);
+    void Ticker1(uint32_t ticker);
   
   public:
     // Synchronous access:
@@ -117,13 +124,13 @@ class SevconClient
   public:
     // Asynchronous access:
     CANopenResult_t SendWrite(uint16_t index, uint8_t subindex, uint32_t value);
+    CANopenResult_t SendRequestState(CANopenNMTCommand_t command);
     void ProcessAsyncResults();
   
   public:
     // State management:
     CANopenResult_t Login(bool on);
     CANopenResult_t CfgMode(CANopenJob& job, bool on);
-  
   
   private:
     OvmsVehicleRenaultTwizy*  m_twizy;
@@ -134,6 +141,11 @@ class SevconClient
     uint32_t                  m_sevcon_type;
     cfg_drivemode             m_drivemode;
     cfg_profile               m_profile;
+    bool                      m_cfgmode_request;
+    
+    QueueHandle_t             m_faultqueue;
+    uint16_t                  m_lastfault;
+    uint8_t                   m_buttoncnt;
   
 };
 
@@ -146,7 +158,7 @@ class SevconJob
   
   public:
     // Utils:
-    const std::string GetResultString() {
+    const string GetResultString() {
       return SevconClient::GetResultString(m_job);
     }
 

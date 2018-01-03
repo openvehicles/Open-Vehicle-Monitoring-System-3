@@ -90,3 +90,33 @@ charge stop
 can can1 rx standard 424 11 40 04 26 41 64 00 42
 
 
+# SEVCON
+
+level verbose can
+level verbose canopen
+level verbose v-twizy
+can can1 trace on
+vehicle module RT
+
+
+# EMCY
+
+## button-reset:
+can can1 rx standard 597 00 95 04 41 29 00 01 4E
+can can1 rx standard 081 00 10 01 8e 48 00 00 00
+can can1 rx standard 081 00 10 01 8e 48 00 00 00
+can can1 rx standard 081 00 10 01 8e 48 00 00 00
+
+## preop:
+can can1 rx standard 597 00 95 04 41 29 00 01 4E
+can can1 rx standard 081 00 10 01 81 46 00 00 00
+
+## known:
+can can1 rx standard 081 00 10 01 c3 52 00 00 00
+
+## unknown:
+can can1 rx standard 081 00 10 01 34 12 00 00 00
+
+## reset:
+can can1 rx standard 081 00 00 00 00 00 00 00 00
+

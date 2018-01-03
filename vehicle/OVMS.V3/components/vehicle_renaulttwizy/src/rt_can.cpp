@@ -66,17 +66,6 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
   
   switch (p_frame->MsgID)
   {
-    case 0x081:
-      // --------------------------------------------------------------------------
-      // CAN ID 0x081: CANopen error message from SEVCON (Node #1)
-      
-      // count errors to detect manual CFG RESET request:
-      if ((CAN_BYTE(1)==0x10) && (CAN_BYTE(2)==0x01))
-        twizy_button_cnt++;
-      
-      break;
-    
-    
     case 0x155:
       // --------------------------------------------------------------------------
       // *** BMS: POWER STATUS ***
