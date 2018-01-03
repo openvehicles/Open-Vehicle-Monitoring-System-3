@@ -82,28 +82,28 @@ typedef enum __attribute__ ((__packed__))
   CONS_PreOperational = 127
   } CANopenNMTState_t;
 
-struct CANopenNMTEvent                  // event "canopen.node.state"
+typedef struct CANopenNMTEvent          // event "canopen.node.state"
   {
   canbus*             origin;
   uint8_t             nodeid;
   CANopenNMTState_t   state;
-  };
+  } CANopenNMTEvent_t;
 
-struct CANopenEMCYEvent                 // event "canopen.node.emcy"
+typedef struct CANopenEMCYEvent         // event "canopen.node.emcy"
   {
   canbus*             origin;
   uint8_t             nodeid;
   uint16_t            code;             // see CiA DS301, Table 21: Emergency Error Codes
   uint8_t             type;             // see CiA DS301, Table 48: Structure of the Error Register
   uint8_t             data[5];          // device specific
-  };
+  } CANopenEMCYEvent_t;
 
-struct CANopenNodeMetrics
+typedef struct CANopenNodeMetrics
   {
   OvmsMetricString*     m_state;        // metric "co.<bus>.nd<nodeid>.state"
   OvmsMetricInt*        m_emcy_code;    // metric "co.<bus>.nd<nodeid>.emcy.code"
   OvmsMetricInt*        m_emcy_type;    // metric "co.<bus>.nd<nodeid>.emcy.type"
-  };
+  } CANopenNodeMetrics_t;
 
 typedef std::map<uint8_t, CANopenNodeMetrics*> CANopenNodeMetricsMap;
 
@@ -391,6 +391,8 @@ class CANopen
     void StatusReport(int verbosity, OvmsWriter* writer);
 
   public:
+    static const std::string GetJobName(const CANopenJob_t jobtype);
+    static const std::string GetJobName(const CANopenJob& job);
     static const std::string GetCommandName(const CANopenNMTCommand_t command);
     static const std::string GetStateName(const CANopenNMTState_t state);
     static const std::string GetAbortCodeName(const uint32_t abortcode);

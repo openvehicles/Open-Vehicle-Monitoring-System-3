@@ -666,6 +666,32 @@ void CANopen::StatusReport(int verbosity, OvmsWriter* writer)
 
 
 /**
+ * GetJobName: translate CANopenJob_t to std::string
+ */
+const std::string CANopen::GetJobName(const CANopenJob_t jobtype)
+  {
+  std::string name;
+  switch (jobtype)
+    {
+    case COJT_None:                     name = "NoOp"; break;
+    case COJT_SendNMT:                  name = "SendNMT"; break;
+    case COJT_ReceiveHB:                name = "ReceiveHB"; break;
+    case COJT_ReadSDO:                  name = "ReadSDO"; break;
+    case COJT_WriteSDO:                 name = "WriteSDO"; break;
+    default:
+      char val[10];
+      sprintf(val, "%d", (int) jobtype);
+      name = val;
+    }
+  return name;
+  }
+
+const std::string CANopen::GetJobName(const CANopenJob& job)
+  {
+  return GetJobName(job.type);
+  }
+
+/**
  * GetCommandName: translate CANopenNMTCommand_t to std::string
  */
 const std::string CANopen::GetCommandName(const CANopenNMTCommand_t command)

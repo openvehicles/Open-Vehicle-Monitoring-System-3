@@ -233,13 +233,24 @@ void CANopenWorker::JobTask()
             m_job.result = COR_OK;
             break;
           case COJT_SendNMT:
+            ESP_LOGV(TAG, "SendNMT: %s node=%d, command=%d", m_bus->GetName(), m_job.nmt.nodeid, m_job.nmt.command);
             m_job.result = ProcessSendNMTJob();
+            ESP_LOGV(TAG, "SendNMT result: %s", CANopen::GetResultString(m_job).c_str());
+            break;
+          case COJT_ReceiveHB:
+            ESP_LOGV(TAG, "ReceiveHB: %s node=%d", m_bus->GetName(), m_job.hb.nodeid);
+            m_job.result = ProcessReceiveHBJob();
+            ESP_LOGV(TAG, "ReceiveHB result: %s", CANopen::GetResultString(m_job).c_str());
             break;
           case COJT_ReadSDO:
+            ESP_LOGV(TAG, "ReadSDO: %s node=%d adr=%04x.%02x", m_bus->GetName(), m_job.sdo.nodeid, m_job.sdo.index, m_job.sdo.subindex);
             m_job.result = ProcessReadSDOJob();
+            ESP_LOGV(TAG, "ReadSDO result: %s", CANopen::GetResultString(m_job).c_str());
             break;
           case COJT_WriteSDO:
+            ESP_LOGV(TAG, "WriteSDO: %s node=%d adr=%04x.%02x", m_bus->GetName(), m_job.sdo.nodeid, m_job.sdo.index, m_job.sdo.subindex);
             m_job.result = ProcessWriteSDOJob();
+            ESP_LOGV(TAG, "WriteSDO result: %s", CANopen::GetResultString(m_job).c_str());
             break;
           default:
             ESP_LOGW(TAG, "Unknown job type: %d", (int)m_job.type);
@@ -304,19 +315,11 @@ void CANopenWorker::IncomingFrame(CAN_frame_t* p_frame)
     
     CANopenNodeMetrics *nm = GetNodeMetrics(ev.nodeid);
     
-    if (nm->m_emcy_code->AsInt() != ev.code || nm->m_emcy_type->AsInt() != ev.type)
-      {
-      ESP_LOGI(TAG, "%s node %d emergency: code=0x%04x type=0x%02x data: %02x %02x %02x %02x %02x",
-        m_bus->GetName(), ev.nodeid, ev.code, ev.type, ev.data[0], ev.data[1], ev.data[2], ev.data[3], ev.data[4]);
-      MyEvents.SignalEvent("canopen.node.emcy", &ev);
-      nm->m_emcy_code->SetValue(ev.code);
-      nm->m_emcy_type->SetValue(ev.type);
-      }
-    else
-      {
-      nm->m_emcy_code->SetStale(false);
-      nm->m_emcy_type->SetStale(false);
-      }
+    ESP_LOGI(TAG, "%s node %d emergency: code=0x%04x type=0x%02x data: %02x %02x %02x %02x %02x",
+      m_bus->GetName(), ev.nodeid, ev.code, ev.type, ev.data[0], ev.data[1], ev.data[2], ev.data[3], ev.data[4]);
+    MyEvents.SignalEvent("canopen.node.emcy", &ev);
+    nm->m_emcy_code->SetValue(ev.code);
+    nm->m_emcy_type->SetValue(ev.type);
     }
   
   // NMT (Heartbeat/State) message?
