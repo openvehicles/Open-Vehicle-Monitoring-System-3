@@ -43,21 +43,16 @@ typedef int32_t INT;      // 32 bit for consistency with UINT
 typedef int32_t INT32;
 
 
-// Metrics stale times:
-
-#define SM_STALE_NONE  0
-#define SM_STALE_MIN   10
-#define SM_STALE_MID   120
-#define SM_STALE_HIGH  3600
-#define SM_STALE_MAX   86400
-
-
 // Math utils:
 
 #define SQR(n) ((n)*(n))
 #define ABS(n) (((n) < 0) ? -(n) : (n))
+
+#ifndef MIN
 #define MIN(n,m) ((n) < (m) ? (n) : (m))
 #define MAX(n,m) ((n) > (m) ? (n) : (m))
+#endif
+
 #define LIMIT_MIN(n,lim) ((n) < (lim) ? (lim) : (n))
 #define LIMIT_MAX(n,lim) ((n) > (lim) ? (lim) : (n))
 

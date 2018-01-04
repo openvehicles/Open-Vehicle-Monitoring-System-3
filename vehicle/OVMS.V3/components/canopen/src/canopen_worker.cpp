@@ -27,15 +27,9 @@
 static const char *TAG = "canopen";
 
 #include "ovms_metrics.h"
+#include "metrics_standard.h"
 #include "ovms_events.h"
 #include "canopen.h"
-
-// Todo: move to ovms_metrics.h
-#define SM_STALE_NONE  0
-#define SM_STALE_MIN   10
-#define SM_STALE_MID   120
-#define SM_STALE_HIGH  3600
-#define SM_STALE_MAX   65535
 
 
 // SDO commands:
