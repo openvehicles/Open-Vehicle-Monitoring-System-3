@@ -211,7 +211,13 @@ void OvmsVehicleRenaultTwizy::SendGPSLog()
     StdMetrics.ms_v_pos_altitude->IsModifiedAndClear(m_modifier) |
     StdMetrics.ms_v_pos_direction->IsModifiedAndClear(m_modifier) |
     StdMetrics.ms_v_pos_gpsspeed->IsModifiedAndClear(m_modifier) |
-    StdMetrics.ms_v_pos_speed->IsModifiedAndClear(m_modifier);
+    StdMetrics.ms_v_pos_speed->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_bat_power->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_bat_energy_used->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_bat_energy_recd->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_bat_current->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_bat_coulomb_used->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_bat_coulomb_recd->IsModifiedAndClear(m_modifier);
   
   if (!modified)
     return;
