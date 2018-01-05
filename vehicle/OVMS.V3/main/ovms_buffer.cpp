@@ -33,6 +33,7 @@ static const char *TAG = "buffer";
 
 #include "ovms_buffer.h"
 #include "ovms_command.h"
+#include <string.h>		// Needed for memset by LWIP's sys/socket.h
 #include <sys/socket.h>
 
 OvmsBuffer::OvmsBuffer(size_t size, void* userdata)
