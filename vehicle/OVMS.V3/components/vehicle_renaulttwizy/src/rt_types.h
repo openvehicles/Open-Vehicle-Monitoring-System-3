@@ -26,6 +26,9 @@
 #ifndef __rt_types_h__
 #define __rt_types_h__
 
+#include <sys/param.h>
+
+
 // Macro utils:
 
 #define XSTR(x)   STR(x)
@@ -47,11 +50,6 @@ typedef int32_t INT32;
 
 #define SQR(n) ((n)*(n))
 #define ABS(n) (((n) < 0) ? -(n) : (n))
-
-#ifndef MIN
-#define MIN(n,m) ((n) < (m) ? (n) : (m))
-#define MAX(n,m) ((n) > (m) ? (n) : (m))
-#endif
 
 #define LIMIT_MIN(n,lim) ((n) < (lim) ? (lim) : (n))
 #define LIMIT_MAX(n,lim) ((n) > (lim) ? (lim) : (n))

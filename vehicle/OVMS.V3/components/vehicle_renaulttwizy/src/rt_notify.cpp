@@ -262,7 +262,7 @@ void OvmsVehicleRenaultTwizy::SendGPSLog()
     << "," << StdMetrics.ms_v_pos_direction->AsFloat()
     << "," << StdMetrics.ms_v_pos_speed->AsFloat()
     << "," << (int) StdMetrics.ms_v_pos_gpslock->AsBool()
-    << "," << 120 - StdMetrics.ms_v_pos_latitude->Age()
+    << "," << 120 - MAX(120, StdMetrics.ms_v_pos_latitude->Age())
     << "," << StdMetrics.ms_m_net_sq->AsInt()
     << "," << twizy_power * 64 / 10
     << "," << pwr_use / WH_DIV
