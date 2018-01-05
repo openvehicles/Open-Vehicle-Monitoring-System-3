@@ -399,6 +399,18 @@ class CANopen
     static const std::string GetResultString(const CANopenResult_t result);
     static const std::string GetResultString(const CANopenResult_t result, const uint32_t abortcode);
     static const std::string GetResultString(const CANopenJob& job);
+    static int PrintNodeInfo(int capacity, OvmsWriter* writer, canbus* bus, int nodeid,
+      int timeout_ms=50, bool brief=false, bool quiet=false);
+
+  public:
+    static void shell_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void shell_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void shell_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void shell_nmt(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void shell_readsdo(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void shell_writesdo(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void shell_info(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void shell_scan(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   public:
     QueueHandle_t         m_rxqueue;    // CAN rx queue
