@@ -121,6 +121,7 @@
 #include "metrics_standard.h"
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
+#include <sys/param.h>
 
 #define VERSION "0.3.2"
 
