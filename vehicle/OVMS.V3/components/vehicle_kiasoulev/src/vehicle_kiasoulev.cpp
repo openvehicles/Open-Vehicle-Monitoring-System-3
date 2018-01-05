@@ -67,6 +67,21 @@
 ;		 0.2.9  24-Dec-2017 - Geir Øyvind Vælidalo
 ;			- Renamed ks back to xks - Config, metric list and command.
 ;
+;		 0.3.0  25-Dec-2017 - Geir Øyvind Vælidalo
+;			- VIN is tested and is working.
+;			- Added xks vin command which displays decoded VIN data.
+;			- V2 Feature-handling
+;			- Unlock doors and trunk now works even when car is off.
+;
+;		 0.3.1  29-Dec-2017 - Geir Øyvind Vælidalo
+;			- Added inside temperature. C-can: 654h byte 7.
+;			- First data from M-bus.
+;			- Splitted source into five new files.
+;
+;		 0.3.2  01-Jan-2018 - Geir Øyvind Vælidalo
+;			- Minor clean ups.
+;			- Fixed some incorrect unit types in commands.
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -92,14 +107,12 @@
 */
 
 //TODO
-//		- ProcessCommand and Set and GetFeature - See twizy-code.
 //		- parkbreakservice is not working
 //		- IGN1-, IGN2-, ACC-, Start-relay is working but turns on just for a second or so.
 //		- Rear defogger works, but only as long as TesterPresent is sent.
 //
 
 #include "ovms_log.h"
-static const char *TAG = "v-kiasoulev";
 
 #include <stdio.h>
 #include <string.h>
@@ -108,12 +121,15 @@ static const char *TAG = "v-kiasoulev";
 #include "metrics_standard.h"
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
+#include <sys/param.h>
 
-#define VERSION "0.2.9"
+#define VERSION "0.3.2"
+
+static const char *TAG = "v-kiasoulev";
 
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
-    { 0x7e2, 0, 	   VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, {  30,  30,  30 } }, 	// VIN
+    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, {  30,  30,  30 } }, 	// VIN
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, {  30,  10,  10 } }, 	// BMC Diag page 01
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, {  30,  30,  10 } }, 	// BMC Diag page 02
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x03, {  30,  30,  10 } }, 	// BMC Diag page 03
@@ -135,6 +151,8 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   ESP_LOGI(TAG, "Kia Soul EV v3.0 vehicle module");
 
   memset( m_vin, 0, sizeof(m_vin));
+  memset( m_street, 0, sizeof(m_street));
+
   memset( ks_battery_cell_voltage ,0, sizeof(ks_battery_cell_voltage));
   memset( ks_battery_module_temp, 0, sizeof(ks_battery_module_temp));
   memset( ks_tpms_id, 0, sizeof(ks_tpms_id));
@@ -165,14 +183,6 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
 
   ks_maxrange = CFG_DEFAULT_MAXRANGE;
 
-  // C-Bus
-  RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-  // M-Bus
-  RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
-
-  MyConfig.RegisterParam("xks", "Kia Soul EV", true, true);
-  ConfigChanged(NULL);
-
   // init metrics:
   m_version = MyMetrics.InitString("xks.version", 0, VERSION " " __DATE__ " " __TIME__);
   m_b_cell_volt_max = MyMetrics.InitFloat("xks.b.cell.volt.max", 10, 0, Volts);
@@ -200,6 +210,19 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
 
   m_v_env_lowbeam = MyMetrics.InitBool("xks.e.lowbeam", 10, 0);
   m_v_env_highbeam = MyMetrics.InitBool("xks.e.highbeam", 10, 0);
+  m_v_env_inside_temp = MyMetrics.InitFloat("xks.e.inside.temp", 10, 0, Celcius);
+  m_v_env_climate_temp = MyMetrics.InitFloat("xks.e.climate.temp", 10, 0, Celcius);
+  m_v_env_climate_driver_only = MyMetrics.InitBool("xks.e.climate.driver.only", 10, 0);
+  m_v_env_climate_resirc = MyMetrics.InitBool("xks.e.climate.resirc", 10, 0);
+  m_v_env_climate_auto = MyMetrics.InitBool("xks.e.climate.auto", 10, 0);
+  m_v_env_climate_ac = MyMetrics.InitBool("xks.e.climate.ac", 10, 0);
+  m_v_env_climate_fan_speed = MyMetrics.InitInt("xks.e.climate.fan.speed", 10, 0);
+  m_v_env_climate_mode = MyMetrics.InitInt("xks.e.climate.mode", 10, 0);
+
+  m_v_pos_dist_to_dest = MyMetrics.InitInt("xks.e.pos.dist.to.dest", 10, 0, Kilometers);
+  m_v_pos_arrival_hour = MyMetrics.InitInt("xks.e.pos.arrival.hour", 10, 0);
+  m_v_pos_arrival_minute = MyMetrics.InitInt("xks.e.pos.arrival.minute", 10, 0);
+  m_v_pos_street = MyMetrics.InitString("xks.e.pos.street", 10, "");
 
   m_b_cell_det_max->SetValue(0);
   m_b_cell_det_min->SetValue(0);
@@ -214,6 +237,7 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   cmd_xks->RegisterCommand("tpms","Tire pressure monitor", xks_tpms, 0,0, false);
   cmd_xks->RegisterCommand("cells","Cell voltages", xks_cells, 0,0, false);
   cmd_xks->RegisterCommand("aux","Aux battery", xks_aux, 0,0, false);
+  cmd_xks->RegisterCommand("vin","VIN information", xks_vin, 0,0, false);
   cmd_xks->RegisterCommand("IGN1","IGN1 relay", xks_ign1, "<on/off><password>",1,1, false);
   cmd_xks->RegisterCommand("IGN2","IGN2 relay", xks_ign2, "<on/off><password>",1,1, false);
   cmd_xks->RegisterCommand("ACC","ACC relay", xks_acc_relay, "<on/off><password>",1,1, false);
@@ -227,12 +251,25 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   MyCommandApp.RegisterCommand("sjb","Send command to SJB ECU", xks_sjb, "<b1><b2><b3>", 3,3, false);
   MyCommandApp.RegisterCommand("bcm","Send command to BCM ECU", xks_bcm, "<b1><b2><b3>", 3,3, false);
 
-  PollSetPidList(m_can1,vehicle_kiasoulev_polls);
-  PollSetState(0);
+  MyConfig.SetParamValueBool("modem","enable.gps", true);
+  MyConfig.SetParamValueBool("modem","enable.gpstime", true);
+  MyConfig.SetParamValueBool("modem","enable.net", true);
+  MyConfig.SetParamValueBool("modem","enable.sms", true);
 
-  // require GPS:
+  // Require GPS.
   MyEvents.SignalEvent("vehicle.require.gps", NULL);
   MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
+
+  MyConfig.RegisterParam("xks", "Kia Soul EV", true, true);
+  ConfigChanged(NULL);
+
+  // C-Bus
+  RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+  // M-Bus
+  RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
+
+  PollSetPidList(m_can1,vehicle_kiasoulev_polls);
+  PollSetState(0);
   }
 
 /**
@@ -305,484 +342,6 @@ void OvmsVehicleKiaSoulEv::vehicle_kiasoulev_car_on(bool isOn)
   }
 
 /**
- * Handles incoming CAN-frames on bus 1, the C-bus
- */
-void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
-  {
-  uint8_t *d = p_frame->data.u8;
-
-  switch (p_frame->MsgID)
-    {
-  	  case 0x018:
-  	   {
-       // Doors status Byte 0, 4 & 5:
-  	   StdMetrics.ms_v_door_chargeport->SetValue((d[0] & 0x01) > 0); 	//Byte 0 - Bit 0
-  	   StdMetrics.ms_v_door_fl->SetValue((d[0] & 0x10) > 0);					//Byte 0 - Bit 4
-  	   StdMetrics.ms_v_door_fr->SetValue((d[0] & 0x80) > 0);					//Byte 0 - Bit 7
-  	   StdMetrics.ms_v_door_rl->SetValue((d[4] & 0x08) > 0);					//Byte 4 - Bit 3
-  	   StdMetrics.ms_v_door_rr->SetValue((d[4] & 0x02) > 0); 					//Byte 4 - Bit 1
-
-  	   StdMetrics.ms_v_door_trunk->SetValue((d[5] & 0x80) > 0); 			//Byte 5 - Bit 7
-
-  	   // Light status Byte 2,4 & 5
-  	   m_v_env_lowbeam->SetValue( (d[2] & 0x01)>0 );		//Byte 2 - Bit 0 - Low beam
-  	   m_v_env_highbeam->SetValue( (d[2] & 0x02)>0 );		//Byte 2 - Bit 1 - High beam
-  	   StdMetrics.ms_v_env_headlights->SetValue( (d[4] & 0x01)>0 );		//Byte 4 - Bit 0 - Day lights
-
-  	   //byte 5 - Bit 6 - Left indicator light
-  	   //byte 5 - Bit 5 - Right indicator light
-
-  	   // Seat belt status Byte 7
-  	   }
-     break;
-
-  	  /*case 0x110:
-  	   {
-  	   StdMetrics.ms_v_env_headlights->SetValue( (d[3] & 0x80)>0 );
-  	   }
-     break;
-*/
-  	  case 0x120: //Locks
-  	    {
-			if( d[3] & 0x20)
-				{
-				StdMetrics.ms_v_env_locked->SetValue(false); //Todo This only keeps track of the lock signal from keyfob
-				}
-			else if( d[3] & 0x10 )
-				{
-				StdMetrics.ms_v_env_locked->SetValue(true); //Todo This only keeps track of the lock signal from keyfob
-				}
-			if( d[3] & 0x40 && ks_key_fob_open_charge_port )
-				{
-				ks_openChargePort = true;
-				}
-  	    }
-  	    break;
-
-      case 0x200:
-        {
-          // Estimated range:
-          //TODO   float ekstraRange = d[0]/10.0;  //Ekstra range when heating is off.
-          uint16_t estRange = d[2] + ((d[1] & 1)<<9);
-          if (estRange > 0){
-        	    StdMetrics.ms_v_bat_range_est->SetValue((float)(estRange<<1), Kilometers );
-          }
-        }
-        break;
-
-      case 0x433:
-        {
-        // Parking brake status
-        StdMetrics.ms_v_env_handbrake->SetValue((d[2] & 0x08) > 0); //Why did I have 0x10 here??
-        }
-        break;
-
-      //case 0x4b0:
-      //  {
-        // Motor RPM based on wheel rotation
-        //int rpm = (d[0]+(d[1]<<8)) * 8.206;
-        //StdMetrics.ms_v_mot_rpm->SetValue( rpm );
-      //  }
-      //  break;
-
-      case 0x4f0:
-        {
-          // Odometer:
-          if (/*length = 8 &&*/ (d[7] || d[6] || d[5])) { //TODO can_datalength was needed in V2
-            StdMetrics.ms_v_pos_odometer->SetValue(
-            		(float)((d[7]<<16) + (d[6]<<8) + d[5])/10.0,
-								Kilometers);
-          }
-        }
-        break;
-
-      case 0x4f2:
-      		{
-      		// Speed:
-      		StdMetrics.ms_v_pos_speed->SetValue( d[1] >> 1, Kph ); // kph
-
-      		// 4f2 is one of the few can-messages that are sent while car is both on and off.
-      		// Byte 2 and 7 are some sort of counters which runs while the car is on.
-      		if (d[2] > 0 || d[7] > 0)
-      			{
-      			vehicle_kiasoulev_car_on(true);
-      			}
-      		else if (d[2] == 0 && d[7] == 0 && StdMetrics.ms_v_pos_speed->AsFloat(Kph) == 0 && StdMetrics.ms_v_env_handbrake->AsBool())
-      			{
-           // Boths 2 and 7 and speed is 0, so we assumes the car is off.
-      	     vehicle_kiasoulev_car_on(false);
-      			}
-        }
-        break;
-
-      case 0x542:
-        {
-        // SOC:
-        if (d[0] > 0)
-        	  StdMetrics.ms_v_bat_soc->SetValue( d[0] >> 1 ); //In V2 car_SOC
-        }
-        break;
-
-      case 0x581:
-        {
-        // Car is CHARGING:
-        StdMetrics.ms_v_bat_power->SetValue((float)(((uint16_t) d[7] << 8) | d[6])/256.0, kW);
-        }
-        break;
-
-      case 0x594:
-        {
-          // BMS SOC:
-          uint16_t val = (uint16_t) d[5] * 5 + d[6];
-          if (val > 0){
-            ks_bms_soc = (uint8_t) (val / 10);
-          }
-        }
-        break;
-
-      case 0x653:
-        {
-        // AMBIENT TEMPERATURE:
-        StdMetrics.ms_v_env_temp->SetValue( TO_CELCIUS(d[5]/2.0), Celcius);
-        }
-        break;
-
-      case 0x779:
-      	 {
-   		 ESP_LOGD(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
-      	 }
-      	 break;
-    }
-
-  	// Check if response is from synchronous can message
-	if(p_frame->MsgID==(ks_send_can.id+0x08) && ks_send_can.status==0xff)
-		{
-		//Store message bytes so that the async method can continue
-		ks_send_can.status=3;
-
-		ks_send_can.byte[0]=d[0];
-		ks_send_can.byte[1]=d[1];
-		ks_send_can.byte[2]=d[2];
-		ks_send_can.byte[3]=d[3];
-		ks_send_can.byte[4]=d[4];
-		ks_send_can.byte[5]=d[5];
-		ks_send_can.byte[6]=d[6];
-		ks_send_can.byte[7]=d[7];
-		}
-  }
-
-/**
- * Handle incoming CAN-frames on bus 2, the M-bus
- */
-void OvmsVehicleKiaSoulEv::IncomingFrameCan2(CAN_frame_t* p_frame)
-  {
-  }
-
-/**
- * Handle incoming messages from TPMS poll.
- */
-void OvmsVehicleKiaSoulEv::IncomingTPMS(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
-	{
-	uint8_t bVal;
-	uint32_t lVal;
-
-	switch (pid)
-		{
-		case 0x06:
-			if (m_poll_ml_frame == 0)
-				{
-				lVal = CAN_UINT32(4);
-				SET_TPMS_ID(0, lVal);
-				}
-			else if (m_poll_ml_frame == 1)
-				{
-				bVal = CAN_BYTE(0);
-				if (bVal > 0) StdMetrics.ms_v_tpms_fl_p->SetValue( TO_PSI(bVal), PSI);
-				StdMetrics.ms_v_tpms_fl_t->SetValue( TO_CELCIUS(CAN_BYTE(1)), Celcius);
-				lVal = (ks_tpms_id[1] & 0x000000ff) | (CAN_UINT32(4) & 0xffffff00);
-				SET_TPMS_ID(1, lVal);
-				}
-			else if (m_poll_ml_frame == 2)
-				{
-				lVal = (uint32_t) CAN_BYTE(0) | (ks_tpms_id[1] & 0xffffff00);
-				SET_TPMS_ID(1, lVal);
-				bVal = CAN_BYTE(1);
-				if (bVal > 0) StdMetrics.ms_v_tpms_fr_p->SetValue( TO_PSI(bVal), PSI);
-				StdMetrics.ms_v_tpms_fr_t->SetValue( TO_CELCIUS(CAN_BYTE(2)), Celcius);
-				lVal = (ks_tpms_id[2] & 0x0000ffff) | (CAN_UINT32(5) & 0xffff0000);
-				SET_TPMS_ID(2, lVal);
-
-				}
-			else if (m_poll_ml_frame == 3)
-				{
-				lVal = ((uint32_t) CAN_UINT(0)) | (ks_tpms_id[2] & 0xffff0000);
-				SET_TPMS_ID(2, lVal);
-				bVal = CAN_BYTE(2);
-				if (bVal > 0) StdMetrics.ms_v_tpms_rl_p->SetValue( TO_PSI(bVal), PSI);
-				StdMetrics.ms_v_tpms_rl_t->SetValue( TO_CELCIUS(CAN_BYTE(3)), Celcius);
-				lVal = (ks_tpms_id[3] & 0x00ffffff) | ((uint32_t) CAN_BYTE(6) << 24);
-				SET_TPMS_ID(3, lVal);
-
-			} else if (m_poll_ml_frame == 4) {
-				lVal = (CAN_UINT24(0)) | (ks_tpms_id[3] & 0xff000000);
-				SET_TPMS_ID(3, lVal);
-				bVal = CAN_BYTE(3);
-				if (bVal > 0) StdMetrics.ms_v_tpms_rr_p->SetValue( TO_PSI(bVal), PSI);
-				StdMetrics.ms_v_tpms_rr_t->SetValue( TO_CELCIUS(CAN_BYTE(4)), Celcius);
-			}
-			break;
-	}
-	}
-
-/**
- * Handle incoming messages from On Board Charger-poll
- */
-void OvmsVehicleKiaSoulEv::IncomingOBC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
-	{
-	switch (pid)
-		{
-		case 0x02:
-			if (m_poll_ml_frame == 1)
-				{
-				ks_obc_volt = (float) CAN_UINT(2) / 10.0;
-				//} else if (vehicle_poll_ml_frame == 2) {
-				//ks_obc_ampere = ((UINT) can_databuffer[4 + CAN_ADJ] << 8)
-				//        | (UINT) can_databuffer[5 + CAN_ADJ];
-				}
-			else if (m_poll_ml_frame == 2)
-				{
-				m_obc_pilot_duty->SetValue( (float) CAN_BYTE(6) / 3.0 );
-				}
-			else if (m_poll_ml_frame == 3)
-				{
-				StdMetrics.ms_v_charge_temp->SetValue( (float) (CAN_BYTE(0)+CAN_BYTE(1)+CAN_BYTE(2))/3, Celcius );
-				}
-			break;
-		}
-	}
-
-/**
- * Handle incoming messages from VMCU-poll
- */
-void OvmsVehicleKiaSoulEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
-	{
-	UINT base;
-	uint8_t bVal;
-
-	switch (pid)
-		{
-		case 0x00:
-			if (m_poll_ml_frame == 1)
-				{
-				ks_shift_bits.value = CAN_BYTE(3);
-				}
-			break;
-
-		case 0x02:
-			// VIN (multi-line response):
-			// VIN length is 20 on Kia => skip first frame (3 bytes):
-			if (m_poll_ml_frame > 0 && type == VEHICLE_POLL_TYPE_OBDIIVEHICLE)
-				{
-				base = m_poll_ml_offset - length - 3;
-				for (bVal = 0; (bVal < length) && ((base + bVal)<(sizeof (m_vin) - 1)); bVal++)
-					m_vin[base + bVal] = CAN_BYTE(bVal);
-				if (m_poll_ml_remain == 0) m_vin[base + bVal] = 0;
-				}
-			if (type == VEHICLE_POLL_TYPE_OBDIIGROUP)
-				{
-				if (m_poll_ml_frame == 1)
-					{
-					StdMetrics.ms_v_mot_rpm->SetValue( (CAN_BYTE(5)<<8) | CAN_BYTE(6) );
-					}
-				else if (m_poll_ml_frame == 3)
-					{
-					StdMetrics.ms_v_mot_temp->SetValue( TO_CELCIUS(CAN_BYTE(4)), Celcius);
-					StdMetrics.ms_v_inv_temp->SetValue( TO_CELCIUS(CAN_BYTE(5)), Celcius );
-					}
-				}
-			break;
-		}
-	}
-
-/**
- * Handle incoming messages from BMC-poll
- */
-void OvmsVehicleKiaSoulEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
-	{
-	UINT base;
-	uint8_t bVal;
-
-	switch (pid)
-		{
-		case 0x01:
-			// diag page 01: skip first frame (no data)
-			if (m_poll_ml_frame > 0) {
-				if (m_poll_ml_frame == 1) // 02 21 01 - 21
-					{
-					m_c_power->SetValue( (float)CAN_UINT(1)/100.0, kW);
-					//ks_battery_avail_discharge = (UINT8)(((UINT) can_databuffer[5 + CAN_ADJ]
-					//        | ((UINT) can_databuffer[4 + CAN_ADJ] << 8))>>2);
-					bVal = CAN_BYTE(5);
-					StdMetrics.ms_v_charge_pilot->SetValue((bVal & 0x80) > 0);
-					ks_charge_bits.ChargingChademo = ((bVal & 0x40) > 0);
-					ks_charge_bits.ChargingJ1772 = ((bVal & 0x20) > 0);
-					ks_battery_current = (ks_battery_current & 0x00FF)
-									| ((UINT) CAN_BYTE(6) << 8);
-					}
-				else if (m_poll_ml_frame == 2) // 02 21 01 - 22
-					{
-					ks_battery_current = (ks_battery_current & 0xFF00) | (UINT) CAN_BYTE(0);
-					StdMetrics.ms_v_bat_current->SetValue((float)ks_battery_current/10.0, Amps);
-					StdMetrics.ms_v_bat_voltage->SetValue((float)CAN_UINT(1)/10.0, Volts);
-					//StdMetrics.ms_v_bat_power->SetValue(
-					//		StdMetrics.ms_v_bat_voltage->AsFloat(Volts) * StdMetrics.ms_v_bat_current->AsFloat(Amps) / 1000.0 , kW);
-					ks_battery_module_temp[0] = CAN_BYTE(3);
-					ks_battery_module_temp[1] = CAN_BYTE(4);
-					ks_battery_module_temp[2] = CAN_BYTE(5);
-					ks_battery_module_temp[3] = CAN_BYTE(6);
-
-					}
-				else if (m_poll_ml_frame == 3) // 02 21 01 - 23
-					{
-					ks_battery_module_temp[4] = CAN_BYTE(0);
-					ks_battery_module_temp[5] = CAN_BYTE(1);
-					ks_battery_module_temp[6] = CAN_BYTE(2);
-					ks_battery_module_temp[7] = CAN_BYTE(3);
-					//TODO What about the 30kWh-version?
-
-					m_b_cell_volt_max->SetValue((float)CAN_BYTE(5)/50.0, Volts);
-					m_b_cell_volt_max_no->SetValue(CAN_BYTE(6));
-
-					}
-				else if (m_poll_ml_frame == 4) // 02 21 01 - 24
-					{
-					m_b_cell_volt_min->SetValue((float)CAN_BYTE(0)/50.0, Volts);
-					m_b_cell_volt_min_no->SetValue(CAN_BYTE(1));
-					ks_battery_fan_feedback = CAN_BYTE(2);
-					ks_charge_bits.FanStatus = CAN_BYTE(3) & 0xF;
-					StdMetrics.ms_v_bat_12v_voltage->SetValue ((float)CAN_BYTE(4)/10.0 , Volts);
-					ks_battery_cum_charge_current = (ks_battery_cum_charge_current & 0x0000FFFF) | ((uint32_t) CAN_UINT(5) << 16);
-
-					}
-				else if (m_poll_ml_frame == 5) // 02 21 01 - 25
-					{
-					ks_battery_cum_charge_current = (ks_battery_cum_charge_current & 0xFFFF0000) | ((uint32_t) CAN_UINT(0));
-					ks_battery_cum_discharge_current = CAN_UINT32(2);
-					ks_battery_cum_charge = (ks_battery_cum_charge & 0x00FFFFFF) | ((uint32_t) CAN_BYTE(6)) << 24;
-					}
-				else if (m_poll_ml_frame == 6) // 02 21 01 - 26
-					{
-					ks_battery_cum_charge = (ks_battery_cum_charge & 0xFF000000) | ((uint32_t) CAN_UINT24(0));
-					ks_battery_cum_discharge = CAN_UINT32(3);
-					}
-				else if (m_poll_ml_frame == 7) // 02 21 01 - 27
-					{
-					ks_battery_cum_op_time = CAN_UINT32(0) / 3600;
-					}
-				}
-			break;
-
-		case 0x02: //Cell voltages
-		case 0x03:
-		case 0x04:
-			// diag page 02-04: skip first frame (no data)
-			base = ((pid-2)<<5) + m_poll_ml_offset - (length - 3);
-			for (bVal = 0; bVal < length && ((base + bVal)<sizeof (ks_battery_cell_voltage)); bVal++)
-				ks_battery_cell_voltage[base + bVal] = CAN_BYTE(bVal);
-			break;
-
-		case 0x05:
-			if (m_poll_ml_frame == 1)
-				{
-				//TODO Untested.
-				base = ((pid-2)<<5) + m_poll_ml_offset - (length - 3);
-				for (bVal = 0; bVal < length && ((base + bVal)<sizeof (ks_battery_cell_voltage)); bVal++)
-					ks_battery_cell_voltage[base + bVal] = CAN_BYTE(bVal);
-
-				m_b_inlet_temperature->SetValue( CAN_BYTE(5) );
-				m_b_min_temperature->SetValue( CAN_BYTE(6) );
-				}
-			else if (m_poll_ml_frame == 2)
-				{
-				m_b_max_temperature->SetValue( CAN_BYTE(0) );
-				}
-			else if (m_poll_ml_frame == 3)
-				{
-				//ks_air_bag_hwire_duty = can_databuffer[5 + CAN_ADJ];
-				m_b_heat_1_temperature->SetValue( CAN_BYTE(5) );
-				m_b_heat_2_temperature->SetValue( CAN_BYTE(6) );
-				}
-			else if (m_poll_ml_frame == 4)
-				{
-				m_b_cell_det_max->SetValue( (float)CAN_UINT(0)/10.0 );
-				m_b_cell_det_max_no->SetValue( CAN_BYTE(2) );
-				m_b_cell_det_min->SetValue( (float)CAN_UINT(3)/10.0 );
-				m_b_cell_det_min_no->SetValue( CAN_BYTE(5) );
-				}
-			break;
-		}
-	}
-
-/**
- * Handle incoming messages from LDC-poll
- */
-/**
- * Hanlde incoming messages from LDC-poll
- */
-void OvmsVehicleKiaSoulEv::IncomingLDC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
-	{
-	switch (pid)
-		{
-		case 0x01:
-			// 12V system
-			ks_ldc_enabled = (CAN_BYTE(0) & 6) != 0;
-			m_ldc_out_voltage->SetValue( CAN_BYTE(1) / 10.0 );
-			m_ldc_in_voltage->SetValue( CAN_BYTE(3) * 2 );
-			m_ldc_out_voltage->SetValue( CAN_BYTE(2) );
-			m_ldc_temperature->SetValue( CAN_BYTE(4) - 100 );
-			break;
-		}
-	}
-
-/**
- * Incoming poll reply messages
- */
-void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
-  {
-	switch (m_poll_moduleid_low)
-		{
-		// ****** TPMS ******
-		case 0x7de:
-			IncomingTPMS(bus, type, pid, data, length, mlremain);
-			break;
-
-		// ****** OBC ******
-		case 0x79c:
-			IncomingOBC(bus, type, pid, data, length, mlremain);
-			break;
-
-		// ******* VMCU ******
-		case 0x7ea:
-			IncomingVMCU(bus, type, pid, data, length, mlremain);
-			break;
-
-		// ***** BMC ****
-		case 0x7ec:
-			IncomingBMC(bus, type, pid, data, length, mlremain);
-			break;
-
-		// ***** LDC ****
-		case 0x7cd:
-			IncomingLDC(bus, type, pid, data, length, mlremain);
-			break;
-
-		default:
-			ESP_LOGD(TAG, "Unknown module: %03x", m_poll_moduleid_low);
-			break;
-	  }
-  }
-
-/**
  * Ticker1: Called every second
  */
 void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
@@ -794,12 +353,12 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 		ks_openChargePort = false;
 		}
 
-
 	UpdateMaxRangeAndSOH();
 
 	//Set VIN
-	//TODO *StdMetrics.ms_v_vin = (string) m_vin;
 	StandardMetrics.ms_v_vin->SetValue(m_vin);
+
+	m_v_pos_street->SetValue(m_street);
 
 	if (FULL_RANGE > 0) //  If we have the battery full range, we can calculate the ideal range too
 		{
@@ -858,7 +417,6 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 	    }
 	  else
 	  		{
-		  ESP_LOGI(TAG, "Charging...");
 	    // ******* Charging continues: *******
 	    if (((BAT_SOC > 0) && (LIMIT_SOC > 0) && (BAT_SOC >= LIMIT_SOC) && (ks_last_soc < LIMIT_SOC))
 	    			|| ((EST_RANGE > 0) && (LIMIT_RANGE > 0)
@@ -1020,129 +578,6 @@ void OvmsVehicleKiaSoulEv::UpdateMaxRangeAndSOH(void)
 	StdMetrics.ms_v_bat_range_full->SetValue(maxRange, Kilometers);
 	}
 
-/**
- * Send a can message and wait for the response before continuing.
- * Time out after approx 0.5 second.
- */
-bool OvmsVehicleKiaSoulEv::SendCanMessage_sync(uint16_t id, uint8_t count,
-		uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
-		uint8_t b5, uint8_t b6)
-	{
-	uint16_t timeout;
-
-	ks_send_can.id = id;
-	ks_send_can.status = 0xff;
-
-	uint8_t data[] = {count, serviceId, b1, b2, b3, b4, b5, b6};
-	m_can1->WriteStandard(id, 8, data);
-	ESP_LOGD(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", id, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
-
-	//Now wait for the response
-	timeout = 50; // 50*50 = 2500 ms
-	do
-		{
-		/* Block for 50ms. */
-		vTaskDelay( xDelay );
-		} while (ks_send_can.status == 0xff && --timeout>0);
-
-	//Did we get the response?
-	if(timeout != 0 )
-		{
-		if( ks_send_can.byte[1]==serviceId+0x40 )
-			{
-			return true;
-			}
-		else
-			{
-			ks_send_can.status = 0x2;
-			}
-		}
-	else
-		{
-		ks_send_can.status = 0x1; //Timeout
-		}
-	return false;
- }
-
-void OvmsVehicleKiaSoulEv::SendCanMessage(uint16_t id, uint8_t count,
-		uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
-		uint8_t b5, uint8_t b6)
-	{
-	uint8_t data[] = {count, serviceId, b1, b2, b3, b4, b5, b6};
-	m_can1->WriteStandard(id, 8, data);
-	ESP_LOGD(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", id, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
- }
-
-/**
- * Send a can message to ECU to notify that tester is present
- */
-void OvmsVehicleKiaSoulEv::SendTesterPresent(uint16_t id, uint8_t length)
-	{
-  return SendCanMessage(id, length,VEHICLE_POLL_TYPE_OBDII_TESTER_PRESENT, 0,0,0,0,0,0);
-	}
-
-/**
- * Send a can message to set ECU in a specific session mode
- */
-bool OvmsVehicleKiaSoulEv::SetSessionMode(uint16_t id, uint8_t mode)
-	{
-  return SendCanMessage_sync(id, 2,VEHICLE_POLL_TYPE_OBDIISESSION, mode,0,0,0,0,0);
-	}
-
-/**
- * Put the car in proper session mode and then send the command
- */
-bool OvmsVehicleKiaSoulEv::SendCommandInSessionMode(uint16_t id, uint8_t count, uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint8_t b5, uint8_t b6 )
-	{
-	bool result = false;
-	SendTesterPresent(id,2);
-	vTaskDelay( xDelay );
-	if( SetSessionMode(id, EXTENDED_DIAGNOSTIC_SESSION))
-		{
-		vTaskDelay( xDelay );
-		SendTesterPresent(id,2);
-		vTaskDelay( xDelay );
-		result = SendCanMessage_sync(id, count, serviceId, b1, b2, b3, b4, b5, b6 );
-		}
-	SetSessionMode(id, DEFAULT_SESSION);
-	return result;
-	}
-
-/**
- * Send command to Smart Junction Box
- * 771 04 2F [b1] [b2] [b3]
- */
-bool OvmsVehicleKiaSoulEv::Send_SJB_Command( uint8_t b1, uint8_t b2, uint8_t b3)
-	{
-	return SendCommandInSessionMode(SMART_JUNCTION_BOX, 4,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, b1, b2, b3, 0,0,0 );
-	}
-
-/**
- * Send command to Body Control Module
- * 7a0 04 2F [b1] [b2] [b3]
- */
-bool OvmsVehicleKiaSoulEv::Send_BCM_Command( uint8_t b1, uint8_t b2, uint8_t b3)
-	{
-	return SendCommandInSessionMode(BODY_CONTROL_MODULE, 4,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, b1, b2, b3, 0,0,0 );
-	}
-
-/**
- * Send command to Smart Key Unit
- * 7a5 [b1] 2F [b2] [b3] [b4] [b5] [b6] [b7]
- */
-bool OvmsVehicleKiaSoulEv::Send_SMK_Command( uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint8_t b5, uint8_t b6, uint8_t b7)
-	{
-	return SendCommandInSessionMode(SMART_KEY_UNIT, b1,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID, b2, b3, b4, b5, b6, b7);
-	}
-
-/**
- * Send command to ABS & EBP Module
- * 7d5 03 30 [b1] [b2]
- */
-bool OvmsVehicleKiaSoulEv::Send_EBP_Command( uint8_t b1, uint8_t b2)
-	{
-	return SendCommandInSessionMode(ABS_EBP_UNIT, 3,VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_LOC_ID, b1, b2, 0,0,0,0 );
-	}
 
 /**
  * Open or lock the doors
@@ -1150,14 +585,26 @@ bool OvmsVehicleKiaSoulEv::Send_EBP_Command( uint8_t b1, uint8_t b2)
  */
 bool OvmsVehicleKiaSoulEv::SetDoorLock(bool open, const char* password)
 	{
-  if( ks_shift_bits.Park )
+	bool result=false;
+	if( ks_shift_bits.Park )
   		{
     if( IsPasswordOk(password) )
     		{
-    		return Send_SJB_Command(0xbc, open?0x11:0x10, 0x03);
+    		//StartRelay(true,password	);
+    		ACCRelay(true,password	);
+    		//IGN2Relay(true,password	);
+    		LeftIndicator(true);
+    		result = Send_SJB_Command(0xbc, open?0x11:0x10, 0x03);
+    		//StartRelay(false,password	);
+    		ACCRelay(false,password	);
+    		//IGN2Relay(false,password	);
+    		if(result)
+    			{
+    			StdMetrics.ms_v_env_locked->SetValue(!open);
+    			}
     		}
   		}
-		return false;
+		return result;
 	}
 
 /**
@@ -1170,7 +617,10 @@ bool OvmsVehicleKiaSoulEv::OpenTrunk(const char* password)
   		{
 		if( IsPasswordOk(password) )
 			{
+    		StartRelay(true,password	);
+    		LeftIndicator(true);
   			return Send_SJB_Command(0xbc, 0x09, 0x03);
+    		StartRelay(false,password	);
   			}
   		}
 		return false;
@@ -1191,6 +641,7 @@ bool OvmsVehicleKiaSoulEv::OpenChargePort(const char* password)
   		}
 		return false;
 	}
+
 
 /**
  * Turn on and off left indicator light
@@ -1308,267 +759,7 @@ bool OvmsVehicleKiaSoulEv::IsPasswordOk(const char *password)
   }
 
 
-OvmsVehicle::vehicle_command_t OvmsVehicleKiaSoulEv::CommandLock(const char* pin)
-  {
-  return SetDoorLock(false,pin) ? Success:Fail;
-  }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleKiaSoulEv::CommandUnlock(const char* pin)
-  {
-  return SetDoorLock(true,pin) ? Success:Fail;
-  }
-
-/**
- * Command to open trunk
- */
-void CommandOpenTrunk(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-	{
-  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
-	soul->OpenTrunk(argv[0]);
-	}
-
-/**
- * Command to open the charge port
- */
-void CommandOpenChargePort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-	{
-  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
-	soul->OpenChargePort(argv[0]);
-	}
-
-/**
- * Command to enable service mode on park breaks
- */
-void CommandParkBreakService(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-	{
-  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
-	if( strcmp(argv[0],"on")==0 )
-		{
-	  soul->Send_EBP_Command(0x02, 0x01);
-		}
-	else if( strcmp(argv[0],"off")==0 )
-		{
-	  soul->Send_EBP_Command(0x02, 0x03);
-		}
-	else if( strcmp(argv[0],"off2")==0 )
-		{
-	  soul->Send_EBP_Command(0x01, 0x01);
-		}
-	}
-
-/**
- * Command to enable IGN1
- */
-void xks_ign1(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-	{
-  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
-	soul->IGN1Relay( strcmp(argv[0],"on")==0, argv[1] );
-	}
-
-/**
- * Command to enable IGN2
- */
-void xks_ign2(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-	{
-  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
-	soul->IGN2Relay( strcmp(argv[0],"on")==0, argv[1] );
-	}
-
-
-/**
- * Command to enable ACC relay
- */
-void xks_acc_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-	{
-  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
-	soul->ACCRelay( strcmp(argv[0],"on")==0, argv[1] );
-	}
-
-/**
- * Command to enable start relay
- */
-void xks_start_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-	{
-  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
-	soul->StartRelay( strcmp(argv[0],"on")==0, argv[1] );
-	}
-
-void xks_sjb(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-	{
-  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
-	soul->Send_SJB_Command(strtol(argv[0],NULL,16), strtol(argv[1],NULL,16), strtol(argv[2],NULL,16));
-	}
-
-void xks_bcm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-	{
-  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
-	soul->Send_BCM_Command(strtol(argv[0],NULL,16), strtol(argv[1],NULL,16), strtol(argv[2],NULL,16));
-	}
-
-/**
- * Print out the aux battery voltage.
- */
-void xks_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  if (MyVehicleFactory.m_currentvehicle==NULL)
-    {
-    writer->puts("Error: No vehicle module selected");
-    return;
-    }
-
-  metric_unit_t rangeUnit = Native; // TODO: use user config if set
-
-	const char* auxBatt = StdMetrics.ms_v_bat_12v_voltage->AsUnitString("-", rangeUnit, 2).c_str();
-
-	writer->printf("AUX BATTERY\n");
-	if (*auxBatt != '-') writer->printf("Aux battery voltage %s\n", auxBatt);
-	}
-
-/**
- * Print out the cell voltages.
- */
-void xks_cells(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  if (MyVehicleFactory.m_currentvehicle==NULL)
-    {
-    writer->puts("Error: No vehicle module selected");
-    return;
-    }
-  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
-
-  metric_unit_t rangeUnit = Native; // TODO: use user config if set
-
-	const char* minimum = soul->m_b_cell_volt_min->AsUnitString("-", rangeUnit, 2).c_str();
-	const char* maximum = soul->m_b_cell_volt_max->AsUnitString("-", rangeUnit, 2).c_str();
-	const char* total = StdMetrics.ms_v_bat_voltage->AsUnitString("-", rangeUnit, 2).c_str();
-	const char* minDet = soul->m_b_cell_det_min->AsUnitString("-", rangeUnit, 2).c_str();
-	const char* maxDet = soul->m_b_cell_det_max->AsUnitString("-", rangeUnit, 2).c_str();
-
-	writer->printf("CELLS\n");
-	if (*minimum != '-') writer->printf("Min %s #%d\n", minimum, soul->m_b_cell_volt_min_no->AsInt(0));
-	if (*maximum != '-') writer->printf("Max %s #%d\n", maximum, soul->m_b_cell_volt_max_no->AsInt(0));
-	if (*total != '-') writer->printf("Total %s\n", total);
-	if (*minDet != '-') writer->printf("Min Det %s #%d\n", minDet, soul->m_b_cell_det_min_no->AsInt(0));
-	if (*maxDet != '-') writer->printf("Max Det %s #%d\n", maxDet, soul->m_b_cell_det_max_no->AsInt(0));
-
-	if(verbosity>788)
-		{
-		for (uint8_t i=0; i < sizeof (soul->ks_battery_cell_voltage); i++)
-			{
-			if( i % 10 == 0) writer->printf("\n%02d:",i+1);
-			writer->printf("%.*fV ", 2, (float)soul->ks_battery_cell_voltage[i]/50.0);
-			}
-		writer->printf("\n");
-		}
-	else
-		{
-		uint8_t i, lines=(verbosity-80)/11;
-		// Count each voltage and print out number of cells with that voltage.
-		// Handles up to as many lines as verbosity allows. Hopefully it will be enough
-		for( i=0;i<225; i++)
-			{
-			uint8_t cnt=0;
-			for (uint8_t a=0; a < sizeof (soul->ks_battery_cell_voltage) && lines>0; a++)
-				{
-				if( soul->ks_battery_cell_voltage[a]==i) cnt++;
-				}
-			if(cnt>0)
-				{
-				writer->printf("%02d x %.*fV\n", cnt, 2, (float)i/50.0);
-				lines--;
-				}
-			}
-		}
-	}
-
-/**
- * Print out information of the tpms.
- */
-void xks_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  if (MyVehicleFactory.m_currentvehicle==NULL)
-    {
-    writer->puts("Error: No vehicle module selected");
-    return;
-    }
-
-  metric_unit_t rangeUnit = Native; // TODO: use user config if set
-
-  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
-
-	writer->printf("TPMS\n");
-	// Front left
-	const char* fl_pressure = StdMetrics.ms_v_tpms_fl_p->AsUnitString("-", rangeUnit, 1).c_str();
-	const char* fl_temp = StdMetrics.ms_v_tpms_fl_t->AsUnitString("-", rangeUnit, 1).c_str();
-	// Front right
-	const char* fr_pressure = StdMetrics.ms_v_tpms_fr_p->AsUnitString("-", rangeUnit, 1).c_str();
-	const char* fr_temp = StdMetrics.ms_v_tpms_fr_t->AsUnitString("-", rangeUnit, 1).c_str();
-	// Rear left
-	const char* rl_pressure = StdMetrics.ms_v_tpms_rl_p->AsUnitString("-", rangeUnit, 1).c_str();
-	const char* rl_temp = StdMetrics.ms_v_tpms_rl_t->AsUnitString("-", rangeUnit, 1).c_str();
-	// Rear right
-	const char* rr_pressure = StdMetrics.ms_v_tpms_rr_p->AsUnitString("-", rangeUnit, 1).c_str();
-	const char* rr_temp = StdMetrics.ms_v_tpms_rr_t->AsUnitString("-", rangeUnit, 1).c_str();
-
-	if (*fl_pressure != '-')
-    writer->printf("1 ID:%lu %s %s\n", soul->ks_tpms_id[0], fl_pressure, fl_temp);
-
-  if (*fr_pressure != '-')
-    writer->printf("2 ID:%lu %s %s\n",soul->ks_tpms_id[1], fr_pressure, fr_temp);
-
-  if (*rl_pressure != '-')
-    writer->printf("3 ID:%lu %s %s\n",soul->ks_tpms_id[2], rl_pressure, rl_temp);
-
-  if (*rr_pressure != '-')
-    writer->printf("4 ID:%lu %s %s\n",soul->ks_tpms_id[3], rr_pressure, rr_temp);
-  }
-
-/**
- * Print out information of the current trip.
- */
-void xks_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  if (MyVehicleFactory.m_currentvehicle==NULL)
-    {
-    writer->puts("Error: No vehicle module selected");
-    return;
-    }
-
-  metric_unit_t rangeUnit = Native; // TODO: use user config if set
-
-  writer->printf("TRIP\n");
-
-	// Trip distance
-	const char* distance = StdMetrics.ms_v_pos_trip->AsUnitString("-", rangeUnit, 1).c_str();
-  // Consumption
-  float consumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers);
-  float consumption2 = StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh);
-    // Discharge
-  const char* discharge = StdMetrics.ms_v_bat_energy_used->AsUnitString("-", rangeUnit, 1).c_str();
-  // Recuperation
-  const char* recuparation = StdMetrics.ms_v_bat_energy_recd->AsUnitString("-", rangeUnit, 1).c_str();
-  // Total consumption
-  float totalConsumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) + StdMetrics.ms_v_bat_energy_recd->AsFloat(kWh);
-  // ODO
-  const char* ODO = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
-
-  if (*distance != '-')
-    writer->printf("Dist %s\n", distance);
-
-  writer->printf("Con %.*fkWh/100km\n", 2, consumption);
-  writer->printf("Con %.*fkm/kWh\n", 2, consumption2);
-
-  if (*discharge != '-')
-    writer->printf("Dis %s\n", discharge);
-
-  if (*recuparation != '-')
-    writer->printf("Rec %s\n", recuparation);
-
-  writer->printf("Total %.*fkWh\n", 2, totalConsumption);
-
-  if (*ODO != '-')
-    writer->printf("ODO %s\n", ODO);
-  }
 
 /**
  * RequestNotify: send notifications / alerts / data updates
@@ -1594,6 +785,64 @@ void OvmsVehicleKiaSoulEv::DoNotify()
     ks_notifications &= ~SEND_AuxBattery_Low;
   		}
 	}
+
+
+/**
+ * SetFeature: V2 compatibility config wrapper
+ *  Note: V2 only supported integer values, V3 values may be text
+ */
+bool OvmsVehicleKiaSoulEv::SetFeature(int key, const char *value)
+{
+  switch (key)
+  {
+    case 10:
+      MyConfig.SetParamValue("xks", "suffsoc", value);
+      return true;
+    case 11:
+      MyConfig.SetParamValue("xks", "suffrange", value);
+      return true;
+    case 12:
+      MyConfig.SetParamValue("xks", "maxrange", value);
+      return true;
+    case 15:
+    {
+      int bits = atoi(value);
+      MyConfig.SetParamValueBool("xks", "canwrite",  (bits& 1)!=0);
+      return true;
+    }
+    default:
+      return OvmsVehicle::SetFeature(key, value);
+  }
+}
+
+
+/**
+ * GetFeature: V2 compatibility config wrapper
+ *  Note: V2 only supported integer values, V3 values may be text
+ */
+const std::string OvmsVehicleKiaSoulEv::GetFeature(int key)
+{
+  switch (key)
+  {
+    case 0:
+    case 10:
+      return MyConfig.GetParamValue("xks", "suffsoc", XSTR(0));
+    case 11:
+      return MyConfig.GetParamValue("xks", "suffrange", XSTR(0));
+    case 12:
+      return MyConfig.GetParamValue("xks", "maxrange", XSTR(CFG_DEFAULT_MAXRANGE));
+    case 15:
+    {
+      int bits =
+        ( MyConfig.GetParamValueBool("xks", "canwrite",  false) ?  1 : 0);
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }
+    default:
+      return OvmsVehicle::GetFeature(key);
+  }
+}
 
 
 class OvmsVehicleKiaSoulEvInit
