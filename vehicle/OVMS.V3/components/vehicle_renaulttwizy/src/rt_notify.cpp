@@ -25,7 +25,7 @@
  */
 
 #include "ovms_log.h"
-// static const char *TAG = "v-renaulttwizy";
+// static const char *TAG = "v-twizy";
 
 #include <stdio.h>
 #include <string>
@@ -211,7 +211,13 @@ void OvmsVehicleRenaultTwizy::SendGPSLog()
     StdMetrics.ms_v_pos_altitude->IsModifiedAndClear(m_modifier) |
     StdMetrics.ms_v_pos_direction->IsModifiedAndClear(m_modifier) |
     StdMetrics.ms_v_pos_gpsspeed->IsModifiedAndClear(m_modifier) |
-    StdMetrics.ms_v_pos_speed->IsModifiedAndClear(m_modifier);
+    StdMetrics.ms_v_pos_speed->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_bat_power->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_bat_energy_used->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_bat_energy_recd->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_bat_current->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_bat_coulomb_used->IsModifiedAndClear(m_modifier) |
+    StdMetrics.ms_v_bat_coulomb_recd->IsModifiedAndClear(m_modifier);
   
   if (!modified)
     return;
@@ -256,7 +262,7 @@ void OvmsVehicleRenaultTwizy::SendGPSLog()
     << "," << StdMetrics.ms_v_pos_direction->AsFloat()
     << "," << StdMetrics.ms_v_pos_speed->AsFloat()
     << "," << (int) StdMetrics.ms_v_pos_gpslock->AsBool()
-    << "," << 120 - StdMetrics.ms_v_pos_latitude->Age()
+    << "," << 120 - MAX(120, StdMetrics.ms_v_pos_latitude->Age())
     << "," << StdMetrics.ms_m_net_sq->AsInt()
     << "," << twizy_power * 64 / 10
     << "," << pwr_use / WH_DIV

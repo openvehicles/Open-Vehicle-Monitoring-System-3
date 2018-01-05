@@ -53,23 +53,21 @@ static const char *TAG = "canopen";
  *   Twizy implementation for a SEVCON Gen4 client example.
  */
 
-CANopenClient::CANopenClient(CANopenWorker* worker)
+CANopenAsyncClient::CANopenAsyncClient(CANopenWorker* worker, int queuesize /*=20*/)
   {
   m_worker = worker;
   m_worker->Open(this);
-  m_done_queue = xQueueCreate(20, sizeof(CANopenJob));
-  memset(&m_jobdone, 0, sizeof(m_jobdone));
+  m_done_queue = xQueueCreate(queuesize, sizeof(CANopenJob));
   }
 
-CANopenClient::CANopenClient(canbus *bus)
+CANopenAsyncClient::CANopenAsyncClient(canbus *bus, int queuesize /*=20*/)
   {
   m_worker = MyCANopen.Start(bus);
   m_worker->Open(this);
-  m_done_queue = xQueueCreate(20, sizeof(CANopenJob));
-  memset(&m_jobdone, 0, sizeof(m_jobdone));
+  m_done_queue = xQueueCreate(queuesize, sizeof(CANopenJob));
   }
 
-CANopenClient::~CANopenClient()
+CANopenAsyncClient::~CANopenAsyncClient()
   {
   m_worker->Close(this);
   vQueueDelete(m_done_queue);
@@ -77,30 +75,53 @@ CANopenClient::~CANopenClient()
 
 
 /**
- * [Main user API]
- * SendNMT: send NMT request and optionally wait for NMT state change
- *  a.k.a. heartbeat message.
- * 
- * Note: NMT responses are not a part of the CANopen NMT protocol, and
- *  sending "heartbeat" NMT state updates is optional for CANopen nodes.
- *  If the node sends no state info, waiting for it will result in timeout
- *  even though the state has in fact changed -- there's no way to know
- *  if the node doesn't tell.
+ * SubmitDoneCallback: called by the worker to send us a job result
+ *    - this should normally not be called by the application
  */
-CANopenResult_t CANopenClient::SendNMT(
-    uint8_t nodeid, CANopenNMTCommand_t command,
-    bool wait_for_state /*=false*/, int resp_timeout_ms /*=1000*/, int max_tries /*=3*/)
+CANopenResult_t CANopenAsyncClient::SubmitDoneCallback(CANopenJob& job, TickType_t maxqueuewait /*=0*/)
   {
-  CANopenJob job;
-  InitSendNMT(job, nodeid, command, wait_for_state, resp_timeout_ms, max_tries);
-  return ExecuteJob(job);
+  if (xQueueSend(m_done_queue, &job, maxqueuewait) != pdTRUE)
+    return COR_ERR_QueueFull;
+  return COR_OK;
+  }
+
+
+/**
+ * [Queue API]
+ * SubmitJob: send a job to the worker
+ *    - use this to submit jobs for asynchronous execution
+ *    - use ReceiveDone() to check for results
+ * 
+ * See CANopenClient::ExecuteJob() for synchronous operation.
+ */
+CANopenResult_t CANopenAsyncClient::SubmitJob(CANopenJob& job, TickType_t maxqueuewait /*=0*/)
+  {
+  job.client = this;
+  CANopenResult_t res = m_worker->SubmitJob(job, maxqueuewait);
+  if (res == COR_ERR_QueueFull)
+    ESP_LOGW(TAG, "Job submission failed: Worker queue is full");
+  return res;
   }
 
 /**
- * InitSendNMT: prepare NMT command
- * Hint: overload for customisation
+ * [Queue API]
+ * ReceiveDone: check for / retrieve next job result
+ *    - returns COR_ERR_QueueEmpty if no job results are pending
+ *    - call with maxqueuewait=0 (default) to return immediately if queue is empty
  */
-void CANopenClient::InitSendNMT(CANopenJob& job,
+CANopenResult_t CANopenAsyncClient::ReceiveDone(CANopenJob& job, TickType_t maxqueuewait /*=0*/)
+  {
+  if (xQueueReceive(m_done_queue, &job, maxqueuewait) != pdTRUE)
+    return COR_ERR_QueueEmpty;
+  return job.result;
+  }
+
+
+/**
+ * InitSendNMT: prepare NMT command
+ * Hint: override for customisation
+ */
+void CANopenAsyncClient::InitSendNMT(CANopenJob& job,
     uint8_t nodeid, CANopenNMTCommand_t command,
     bool wait_for_state /*=false*/, int resp_timeout_ms /*=1000*/, int max_tries /*=3*/)
   {
@@ -119,35 +140,31 @@ void CANopenClient::InitSendNMT(CANopenJob& job,
     }
   }
 
-
 /**
- * [Main user API]
- * ReadSDO: read bytes from SDO server into buffer
- *   - reads data into buf (up to bufsize bytes)
- *   - returns data length read in m_jobdone.sdo.xfersize
- *   - … and data length available in m_jobdone.sdo.contsize (if known)
- *   - remaining buffer space will be zeroed
- *   - on result COR_ERR_BufferTooSmall, the buffer has been filled up to bufsize
- *   - on abort, the CANopen error code can be retrieved from m_jobdone.sdo.error
- * 
- * Note: result interpretation is up to caller (check device object dictionary for data types & sizes).
- *   As CANopen is little endian as ESP32, we don't need to check lengths on numerical results,
- *   i.e. anything from int8_t to uint32_t can simply be read into a uint32_t buffer.
+ * InitReceiveHB: prepare receive heartbeat command
+ * Hint: override for customisation
  */
-CANopenResult_t CANopenClient::ReadSDO(
-    uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
-    int resp_timeout_ms /*=50*/, int max_tries /*=3*/)
+void CANopenAsyncClient::InitReceiveHB(CANopenJob& job,
+    uint8_t nodeid, CANopenNMTState_t* statebuf /*=NULL*/,
+    int recv_timeout_ms /*=1000*/, int max_tries /*=1*/)
   {
-  CANopenJob job;
-  InitReadSDO(job, nodeid, index, subindex, buf, bufsize, resp_timeout_ms, max_tries);
-  return ExecuteJob(job);
+  memset(&job, 0, sizeof(job));
+  
+  job.type = COJT_ReceiveHB;
+  job.hb.nodeid = nodeid;
+  job.hb.statebuf = statebuf;
+  
+  job.txid = 0;
+  job.rxid = 0x700 + nodeid;
+  job.timeout_ms = recv_timeout_ms;
+  job.maxtries = max_tries;
   }
 
 /**
  * InitReadSDO: prepare ReadSDO command
- * Hint: overload for customisation
+ * Hint: override for customisation
  */
-void CANopenClient::InitReadSDO(CANopenJob& job,
+void CANopenAsyncClient::InitReadSDO(CANopenJob& job,
     uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
     int resp_timeout_ms /*=50*/, int max_tries /*=3*/)
   {
@@ -166,33 +183,11 @@ void CANopenClient::InitReadSDO(CANopenJob& job,
   job.maxtries = max_tries;
   }
 
-
-/**
- * [Main user API]
- * WriteSDO: write bytes from buffer into SDO server
- *   - sends bufsize bytes from buf
- *   - … or 4 bytes from buf if bufsize is 0 (use for integer SDOs of unknown type)
- *   - returns data length sent in m_jobdone.sdo.xfersize
- *   - on abort, the CANopen error code can be retrieved from m_jobdone.sdo.error
- * 
- * Note: the caller needs to know data type & size of the SDO register (check device object dictionary).
- *   As CANopen servers normally are intelligent, anything from int8_t to uint32_t can simply be
- *   sent as a uint32_t with bufsize=0, the server will know how to convert it.
- */
-CANopenResult_t CANopenClient::WriteSDO(
-    uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
-    int resp_timeout_ms /*=50*/, int max_tries /*=3*/)
-  {
-  CANopenJob job;
-  InitWriteSDO(job, nodeid, index, subindex, buf, bufsize, resp_timeout_ms, max_tries);
-  return ExecuteJob(job);
-  }
-
 /**
  * InitWriteSDO: prepare WriteSDO command
- * Hint: overload for customisation
+ * Hint: override for customisation
  */
-void CANopenClient::InitWriteSDO(CANopenJob& job,
+void CANopenAsyncClient::InitWriteSDO(CANopenJob& job,
     uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
     int resp_timeout_ms /*=50*/, int max_tries /*=3*/)
   {
@@ -213,59 +208,219 @@ void CANopenClient::InitWriteSDO(CANopenJob& job,
 
 
 /**
- * [Advanced usage API]
- * SubmitJob: send a job to the worker
- *    - use this to submit jobs for asynchronous execution
- *    - use ReceiveDone() to check for results
+ * [Main API]
+ * SendNMT: send NMT request and optionally wait for NMT state change
+ *  a.k.a. heartbeat message.
  * 
- * See ExecuteJob() for synchronous operation.
+ * Note: NMT responses are not a part of the CANopen NMT protocol, and
+ *  sending "heartbeat" NMT state updates is optional for CANopen nodes.
+ *  If the node sends no state info, waiting for it will result in timeout
+ *  even though the state has in fact changed -- there's no way to know
+ *  if the node doesn't tell.
  */
-CANopenResult_t CANopenClient::SubmitJob(CANopenJob& job, TickType_t maxqueuewait /*=0*/)
+CANopenResult_t CANopenAsyncClient::SendNMT(
+    uint8_t nodeid, CANopenNMTCommand_t command,
+    bool wait_for_state /*=false*/, int resp_timeout_ms /*=1000*/, int max_tries /*=3*/)
   {
-  job.client = this;
-  CANopenResult_t res = m_worker->SubmitJob(job, maxqueuewait);
-  if (res == COR_ERR_QueueFull)
-    ESP_LOGW(TAG, "Job submission failed: Worker queue is full");
-  return res;
+  CANopenJob job;
+  InitSendNMT(job, nodeid, command, wait_for_state, resp_timeout_ms, max_tries);
+  return SubmitJob(job);
   }
 
-/**
- * SubmitDone: called by the worker to send us a job result
- *    - this should normally not be called by the application
- */
-CANopenResult_t CANopenClient::SubmitDone(CANopenJob& job, TickType_t maxqueuewait /*=0*/)
-  {
-  if (xQueueSend(m_done_queue, &job, maxqueuewait) != pdTRUE)
-    return COR_ERR_QueueFull;
-  return COR_OK;
-  }
 
 /**
- * [Advanced usage API]
- * ReceiveDone: check for / retrieve next job result
- *    - returns COR_ERR_QueueEmpty if no job results are pending
- *    - call with maxqueuewait=0 (default) to return immediately if queue is empty
- *    - the job is copied into m_jobdone for easy access to the last job result
+ * [Main API]
+ * ReceiveHB: wait for next heartbeat message of a node,
+ *  return state received.
+ * 
+ * Use this to read the current state or synchronize to the heartbeat.
+ * Note: heartbeats are optional in CANopen.
  */
-CANopenResult_t CANopenClient::ReceiveDone(CANopenJob& job, TickType_t maxqueuewait /*=0*/)
+CANopenResult_t CANopenAsyncClient::ReceiveHB(
+    uint8_t nodeid, CANopenNMTState_t* statebuf /*=NULL*/,
+    int recv_timeout_ms /*=1000*/, int max_tries /*=1*/)
   {
-  if (xQueueReceive(m_done_queue, &job, maxqueuewait) != pdTRUE)
-    return COR_ERR_QueueEmpty;
-  m_jobdone = job;
-  return job.result;
+  CANopenJob job;
+  InitReceiveHB(job, nodeid, statebuf, recv_timeout_ms, max_tries);
+  return SubmitJob(job);
   }
 
+
 /**
- * [Advanced usage API]
+ * [Main API]
+ * ReadSDO: read bytes from SDO server into buffer
+ *   - reads data into buf (up to bufsize bytes)
+ *   - returns data length read in job.sdo.xfersize
+ *   - … and data length available in job.sdo.contsize (if known)
+ *   - remaining buffer space will be zeroed
+ *   - on result COR_ERR_BufferTooSmall, the buffer has been filled up to bufsize
+ *   - on abort, the CANopen error code can be retrieved from job.sdo.error
+ * 
+ * Note: result interpretation is up to caller (check device object dictionary for data types & sizes).
+ *   As CANopen is little endian as ESP32, we don't need to check lengths on numerical results,
+ *   i.e. anything from int8_t to uint32_t can simply be read into a uint32_t buffer.
+ */
+CANopenResult_t CANopenAsyncClient::ReadSDO(
+    uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
+    int resp_timeout_ms /*=50*/, int max_tries /*=3*/)
+  {
+  CANopenJob job;
+  InitReadSDO(job, nodeid, index, subindex, buf, bufsize, resp_timeout_ms, max_tries);
+  return SubmitJob(job);
+  }
+
+
+/**
+ * [Main API]
+ * WriteSDO: write bytes from buffer into SDO server
+ *   - sends bufsize bytes from buf
+ *   - … or 4 bytes from buf if bufsize is 0 (use for integer SDOs of unknown type)
+ *   - returns data length sent in job.sdo.xfersize
+ *   - on abort, the CANopen error code can be retrieved from job.sdo.error
+ * 
+ * Note: the caller needs to know data type & size of the SDO register (check device object dictionary).
+ *   As CANopen servers normally are intelligent, anything from int8_t to uint32_t can simply be
+ *   sent as a uint32_t with bufsize=0, the server will know how to convert it.
+ */
+CANopenResult_t CANopenAsyncClient::WriteSDO(
+    uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
+    int resp_timeout_ms /*=50*/, int max_tries /*=3*/)
+  {
+  CANopenJob job;
+  InitWriteSDO(job, nodeid, index, subindex, buf, bufsize, resp_timeout_ms, max_tries);
+  return SubmitJob(job);
+  }
+
+
+
+
+
+/**
+ * CANopenClient provides the synchronous API to the CANopen framework.
+ * 
+ * The API methods will block until the job is done, job detail results
+ *   are returned in the caller provided job.
+ * 
+ * See CANopen shell commands for usage examples.
+ */
+
+CANopenClient::CANopenClient(CANopenWorker* worker)
+  : CANopenAsyncClient(worker, 1)
+  {
+  m_mutex = xSemaphoreCreateMutex();
+  }
+
+CANopenClient::CANopenClient(canbus *bus)
+  : CANopenAsyncClient(bus, 1)
+  {
+  m_mutex = xSemaphoreCreateMutex();
+  }
+
+CANopenClient::~CANopenClient()
+  {
+  vSemaphoreDelete(m_mutex);
+  }
+
+
+/**
+ * [Queue API]
  * ExecuteJob: send a job to the worker, wait for the result
- *    - use this for synchronous execution
- *    - see SubmitJob() for asynchronous operation
+ *    - use this for synchronous execution of jobs
+ *    - see CANopenAsyncClient::SubmitJob() for asynchronous operation
  */
 CANopenResult_t CANopenClient::ExecuteJob(CANopenJob& job, TickType_t maxqueuewait /*=0*/)
   {
-  if (SubmitJob(job, maxqueuewait) != COR_WAIT)
+  if (xSemaphoreTake(m_mutex, maxqueuewait) != pdTRUE)
     return COR_ERR_QueueFull;
-  return ReceiveDone(job, portMAX_DELAY);
+  
+  CANopenResult_t res;
+  if (SubmitJob(job, maxqueuewait) != COR_WAIT)
+    res = COR_ERR_QueueFull;
+  else
+    res = ReceiveDone(job, portMAX_DELAY);
+  
+  xSemaphoreGive(m_mutex);
+  return res;
   }
 
+
+/**
+ * [Main API]
+ * SendNMT: send NMT request and optionally wait for NMT state change
+ *  a.k.a. heartbeat message.
+ * 
+ * Note: NMT responses are not a part of the CANopen NMT protocol, and
+ *  sending "heartbeat" NMT state updates is optional for CANopen nodes.
+ *  If the node sends no state info, waiting for it will result in timeout
+ *  even though the state has in fact changed -- there's no way to know
+ *  if the node doesn't tell.
+ */
+CANopenResult_t CANopenClient::SendNMT(CANopenJob& job,
+    uint8_t nodeid, CANopenNMTCommand_t command,
+    bool wait_for_state /*=false*/, int resp_timeout_ms /*=1000*/, int max_tries /*=3*/)
+  {
+  InitSendNMT(job, nodeid, command, wait_for_state, resp_timeout_ms, max_tries);
+  return ExecuteJob(job);
+  }
+
+
+/**
+ * [Main API]
+ * ReceiveHB: wait for next heartbeat message of a node,
+ *  return state received.
+ * 
+ * Use this to read the current state or synchronize to the heartbeat.
+ * Note: heartbeats are optional in CANopen.
+ */
+CANopenResult_t CANopenClient::ReceiveHB(CANopenJob& job,
+    uint8_t nodeid, CANopenNMTState_t* statebuf /*=NULL*/,
+    int recv_timeout_ms /*=1000*/, int max_tries /*=1*/)
+  {
+  InitReceiveHB(job, nodeid, statebuf, recv_timeout_ms, max_tries);
+  return ExecuteJob(job);
+  }
+
+
+/**
+ * [Main API]
+ * ReadSDO: read bytes from SDO server into buffer
+ *   - reads data into buf (up to bufsize bytes)
+ *   - returns data length read in job.sdo.xfersize
+ *   - … and data length available in job.sdo.contsize (if known)
+ *   - remaining buffer space will be zeroed
+ *   - on result COR_ERR_BufferTooSmall, the buffer has been filled up to bufsize
+ *   - on abort, the CANopen error code can be retrieved from job.sdo.error
+ * 
+ * Note: result interpretation is up to caller (check device object dictionary for data types & sizes).
+ *   As CANopen is little endian as ESP32, we don't need to check lengths on numerical results,
+ *   i.e. anything from int8_t to uint32_t can simply be read into a uint32_t buffer.
+ */
+CANopenResult_t CANopenClient::ReadSDO(CANopenJob& job,
+    uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
+    int resp_timeout_ms /*=50*/, int max_tries /*=3*/)
+  {
+  InitReadSDO(job, nodeid, index, subindex, buf, bufsize, resp_timeout_ms, max_tries);
+  return ExecuteJob(job);
+  }
+
+
+/**
+ * [Main API]
+ * WriteSDO: write bytes from buffer into SDO server
+ *   - sends bufsize bytes from buf
+ *   - … or 4 bytes from buf if bufsize is 0 (use for integer SDOs of unknown type)
+ *   - returns data length sent in job.sdo.xfersize
+ *   - on abort, the CANopen error code can be retrieved from job.sdo.error
+ * 
+ * Note: the caller needs to know data type & size of the SDO register (check device object dictionary).
+ *   As CANopen servers normally are intelligent, anything from int8_t to uint32_t can simply be
+ *   sent as a uint32_t with bufsize=0, the server will know how to convert it.
+ */
+CANopenResult_t CANopenClient::WriteSDO(CANopenJob& job,
+    uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
+    int resp_timeout_ms /*=50*/, int max_tries /*=3*/)
+  {
+  InitWriteSDO(job, nodeid, index, subindex, buf, bufsize, resp_timeout_ms, max_tries);
+  return ExecuteJob(job);
+  }
 

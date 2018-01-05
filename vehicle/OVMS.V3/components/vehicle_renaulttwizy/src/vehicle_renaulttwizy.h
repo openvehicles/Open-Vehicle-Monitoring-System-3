@@ -37,6 +37,7 @@
 #include "rt_types.h"
 #include "rt_battmon.h"
 #include "rt_pwrmon.h"
+#include "rt_sevcon.h"
 
 using namespace std;
 
@@ -57,9 +58,11 @@ using namespace std;
 
 class OvmsVehicleRenaultTwizy : public OvmsVehicle
 {
+  friend class SevconClient;
   public:
     OvmsVehicleRenaultTwizy();
     ~OvmsVehicleRenaultTwizy();
+    static OvmsVehicleRenaultTwizy* GetInstance(OvmsWriter* writer);
   
   
   // --------------------------------------------------------------------------
@@ -123,9 +126,6 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
       unsigned ChargePort:1;        // Charge cycle detection
       unsigned Charging:1;          // Main charge in progress
       unsigned Charging12V:1;       // DC-DC converter active
-      
-      unsigned CtrlLoggedIn:1;      // Logged into SEVCON
-      unsigned CtrlCfgMode:1;       // SEVCON in configuration mode
       
       // Configuration flags:
       
@@ -372,7 +372,11 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   //  - implementation: rt_sevcon.(h,cpp)
   // 
   
+  public:
+    SevconClient* GetSevconClient() { return m_sevcon; }
+  
   protected:
+    SevconClient *m_sevcon = NULL;
     signed char twizy_button_cnt = 0;           // will count key presses (errors) in STOP mode (msg 081)
     
     #define CFG_DEFAULT_KD_THRESHOLD    35

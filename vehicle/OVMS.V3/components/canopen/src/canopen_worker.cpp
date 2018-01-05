@@ -27,15 +27,9 @@
 static const char *TAG = "canopen";
 
 #include "ovms_metrics.h"
+#include "metrics_standard.h"
 #include "ovms_events.h"
 #include "canopen.h"
-
-// Todo: move to ovms_metrics.h
-#define SM_STALE_NONE  0
-#define SM_STALE_MIN   10
-#define SM_STALE_MID   120
-#define SM_STALE_HIGH  3600
-#define SM_STALE_MAX   65535
 
 
 // SDO commands:
@@ -87,6 +81,9 @@ CANopenWorker::CANopenWorker(canbus* bus)
   
   m_clientcnt = 0;
   
+  m_nmt_rxcnt = 0;
+  m_emcy_rxcnt = 0;
+  
   m_jobcnt = 0;
   m_jobcnt_timeout = 0;
   m_jobcnt_error = 0;
@@ -109,19 +106,19 @@ CANopenWorker::~CANopenWorker()
   }
 
 
-void CANopenWorker::Open(CANopenClient* client)
+void CANopenWorker::Open(CANopenAsyncClient* client)
   {
   m_clients.push_front(client);
   ++m_clientcnt;
   }
 
-void CANopenWorker::Close(CANopenClient* client)
+void CANopenWorker::Close(CANopenAsyncClient* client)
   {
   m_clients.remove(client);
   m_clientcnt ? --m_clientcnt : 0;
   }
 
-bool CANopenWorker::IsClient(CANopenClient* client)
+bool CANopenWorker::IsClient(CANopenAsyncClient* client)
   {
   for (auto c : m_clients)
     {
@@ -141,12 +138,16 @@ void CANopenWorker::StatusReport(int verbosity, OvmsWriter* writer)
     "    Jobs processed: %d\n"
     "    - timeouts    : %d\n"
     "    - other errors: %d\n"
+    "    NMT received  : %d\n"
+    "    EMCY received : %d\n"
     , m_bus->GetName()
     , m_clientcnt
     , (int)uxQueueMessagesWaiting(m_jobqueue)
     , m_jobcnt
     , m_jobcnt_timeout
-    , m_jobcnt_error);
+    , m_jobcnt_error
+    , m_nmt_rxcnt
+    , m_emcy_rxcnt);
   }
 
 
@@ -226,13 +227,24 @@ void CANopenWorker::JobTask()
             m_job.result = COR_OK;
             break;
           case COJT_SendNMT:
+            ESP_LOGV(TAG, "SendNMT: %s node=%d, command=%d", m_bus->GetName(), m_job.nmt.nodeid, m_job.nmt.command);
             m_job.result = ProcessSendNMTJob();
+            ESP_LOGV(TAG, "SendNMT result: %s", CANopen::GetResultString(m_job).c_str());
+            break;
+          case COJT_ReceiveHB:
+            ESP_LOGV(TAG, "ReceiveHB: %s node=%d", m_bus->GetName(), m_job.hb.nodeid);
+            m_job.result = ProcessReceiveHBJob();
+            ESP_LOGV(TAG, "ReceiveHB result: %s", CANopen::GetResultString(m_job).c_str());
             break;
           case COJT_ReadSDO:
+            ESP_LOGV(TAG, "ReadSDO: %s node=%d adr=%04x.%02x", m_bus->GetName(), m_job.sdo.nodeid, m_job.sdo.index, m_job.sdo.subindex);
             m_job.result = ProcessReadSDOJob();
+            ESP_LOGV(TAG, "ReadSDO result: %s", CANopen::GetResultString(m_job).c_str());
             break;
           case COJT_WriteSDO:
+            ESP_LOGV(TAG, "WriteSDO: %s node=%d adr=%04x.%02x", m_bus->GetName(), m_job.sdo.nodeid, m_job.sdo.index, m_job.sdo.subindex);
             m_job.result = ProcessWriteSDOJob();
+            ESP_LOGV(TAG, "WriteSDO result: %s", CANopen::GetResultString(m_job).c_str());
             break;
           default:
             ESP_LOGW(TAG, "Unknown job type: %d", (int)m_job.type);
@@ -246,7 +258,7 @@ void CANopenWorker::JobTask()
           }
         else
           {
-          if (m_job.client->SubmitDone(m_job, 0) != COR_OK)
+          if (m_job.client->SubmitDoneCallback(m_job, 0) != COR_OK)
             ESP_LOGW(TAG, "Job result lost: Client queue is full");
           }
         
@@ -286,6 +298,8 @@ void CANopenWorker::IncomingFrame(CAN_frame_t* p_frame)
   // EMCY (Emergency) message?
   if (p_frame->MsgID > 0x080 && p_frame->MsgID < 0x100 && p_frame->FIR.B.DLC == 8)
     {
+    m_emcy_rxcnt++;
+    
     CANopenEMCYEvent ev;
     ev.origin = p_frame->origin;
     ev.nodeid = p_frame->MsgID - 0x080;
@@ -295,24 +309,18 @@ void CANopenWorker::IncomingFrame(CAN_frame_t* p_frame)
     
     CANopenNodeMetrics *nm = GetNodeMetrics(ev.nodeid);
     
-    if (nm->m_emcy_code->AsInt() != ev.code || nm->m_emcy_type->AsInt() != ev.type)
-      {
-      ESP_LOGI(TAG, "%s node %d emergency: code=0x%04x type=0x%02x data: %02x %02x %02x %02x %02x",
-        m_bus->GetName(), ev.nodeid, ev.code, ev.type, ev.data[0], ev.data[1], ev.data[2], ev.data[3], ev.data[4]);
-      MyEvents.SignalEvent("canopen.node.emcy", &ev);
-      nm->m_emcy_code->SetValue(ev.code);
-      nm->m_emcy_type->SetValue(ev.type);
-      }
-    else
-      {
-      nm->m_emcy_code->SetStale(false);
-      nm->m_emcy_type->SetStale(false);
-      }
+    ESP_LOGI(TAG, "%s node %d emergency: code=0x%04x type=0x%02x data: %02x %02x %02x %02x %02x",
+      m_bus->GetName(), ev.nodeid, ev.code, ev.type, ev.data[0], ev.data[1], ev.data[2], ev.data[3], ev.data[4]);
+    MyEvents.SignalEvent("canopen.node.emcy", &ev);
+    nm->m_emcy_code->SetValue(ev.code);
+    nm->m_emcy_type->SetValue(ev.type);
     }
   
   // NMT (Heartbeat/State) message?
   else if (p_frame->MsgID > 0x700 && p_frame->MsgID < 0x780 && p_frame->FIR.B.DLC == 1)
     {
+    m_nmt_rxcnt++;
+    
     CANopenNMTEvent ev;
     ev.origin = p_frame->origin;
     ev.nodeid = p_frame->MsgID - 0x700;
@@ -320,19 +328,7 @@ void CANopenWorker::IncomingFrame(CAN_frame_t* p_frame)
     
     CANopenNodeMetrics *nm = GetNodeMetrics(ev.nodeid);
     
-    std::string newstate;
-    switch (ev.state)
-      {
-      case 0: newstate = "Booting"; break;
-      case 4: newstate = "Stopped"; break;
-      case 5: newstate = "Operational"; break;
-      case 127: newstate = "PreOperational"; break;
-      default:
-        char val[10];
-        sprintf(val, "%d", ev.state);
-        newstate = val;
-      }
-    
+    std::string newstate = CANopen::GetStateName(ev.state);
     if (nm->m_state->AsString() != newstate)
       {
       ESP_LOGI(TAG, "%s node %d new state: %s", m_bus->GetName(), ev.nodeid, newstate.c_str());
@@ -395,15 +391,54 @@ CANopenResult_t CANopenWorker::ProcessSendNMTJob()
     if (ulTaskNotifyTake(pdTRUE, maxwait))
       {
       // expected response for command?
-      if ( (m_job.nmt.command == CONC_Start      && m_response.byte[0] >= 5)
-        || (m_job.nmt.command == CONC_Stop       && m_response.byte[0] == 4)
-        || (m_job.nmt.command == CONC_PreOp      && m_response.byte[0] == 127)
-        || (m_job.nmt.command == CONC_Reset      && m_response.byte[0] != 4)
-        || (m_job.nmt.command == CONC_CommReset  && m_response.byte[0] != 4) )
+      if ( (m_job.nmt.command == CONC_Start      && m_response.hb.state >= 5)
+        || (m_job.nmt.command == CONC_Stop       && m_response.hb.state == 4)
+        || (m_job.nmt.command == CONC_PreOp      && m_response.hb.state == 127)
+        || (m_job.nmt.command == CONC_Reset      && m_response.hb.state != 4)
+        || (m_job.nmt.command == CONC_CommReset  && m_response.hb.state != 4) )
         return COR_OK;
       }
 
     // timeout / wrong state → retry:
+    if (m_job.trycnt < m_job.maxtries)
+      vTaskDelay(pdMS_TO_TICKS(10));
+
+    } while (m_job.trycnt < m_job.maxtries);
+
+  return COR_ERR_Timeout;
+  }
+
+
+/**
+ * ProcessReceiveHBJob: wait for next heartbeat message of a node,
+ *  return state received.
+ * 
+ * Use this to read the current state or synchronize to the heartbeat.
+ * Note: heartbeats are optional in CANopen.
+ */
+CANopenResult_t CANopenWorker::ProcessReceiveHBJob()
+  {
+  // check parameters:
+  if (m_job.hb.nodeid < 1 || m_job.hb.nodeid > 127)
+    return COR_ERR_ParamRange;
+  
+  TickType_t maxwait = pdMS_TO_TICKS(m_job.timeout_ms);
+  
+  do
+    {
+    m_job.trycnt++;
+    
+    // wait for receive signal from IncomingFrame():
+    if (ulTaskNotifyTake(pdTRUE, maxwait))
+      {
+      // return state received:
+      m_job.hb.state = (CANopenNMTState_t) m_response.hb.state;
+      if (m_job.hb.statebuf)
+        *m_job.hb.statebuf = m_job.hb.state;
+      return COR_OK;
+      }
+
+    // timeout → retry:
     if (m_job.trycnt < m_job.maxtries)
       vTaskDelay(pdMS_TO_TICKS(10));
 

@@ -155,6 +155,24 @@ void ConsoleAsync::HandleDeviceEvent(void* pEvent)
       if (buffered_size > 0)
         {
         int len = uart_read_bytes(EX_UART_NUM, data, BUF_SIZE, 100 / portTICK_RATE_MS);
+	// Translate CR (Enter) from montitor into \n for microrl
+	bool found = false;
+	for (int i = 0; i < len; ++i)
+	  {
+          if (found && data[i] == '\n')
+            {
+            for (int j = i+1; j < len; ++j)
+              data[j-1] = data[j];
+            --len;
+            continue;
+            }
+          found = false;
+	  if (data[i] == '\r')
+            {
+	    data[i] = '\n';
+            found = true;
+            }
+	  }
         ProcessChars((char*)data, len);
         }
       break;
@@ -171,7 +189,7 @@ void ConsoleAsync::HandleDeviceEvent(void* pEvent)
       uart_flush(EX_UART_NUM);
       break;
     default:
-      ESP_LOGI(TAG, "uart event type: %d\n", event.type);
+      ESP_LOGE(TAG, "uart event type: %d", event.type);
       break;
     }
   }
