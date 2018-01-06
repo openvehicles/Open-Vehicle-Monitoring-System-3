@@ -42,6 +42,8 @@ VERSION HISTORY:
 
 #include <string.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <string>
 #include "crypt_base64.h"
 
 // Translation Table as described in RFC1113
@@ -83,6 +85,34 @@ char *base64encode(const uint8_t *inputData, int inputLen, uint8_t *outputData)
     }
   *outputData = 0;
   return (char*)outputData;
+  }
+
+std::string base64encode(const std::string inputData)
+  {
+  uint8_t in[4];
+  uint8_t out[4];
+  int len = 0;
+  int k;
+  std::string outputData;
+  outputData.reserve(howmany(inputData.size(), 3) * 4);
+  for (k=0;k<inputData.size();k++)
+    {
+    in[len++] = inputData[k];
+    if (len==3)
+      {
+      // Block is full
+      encodeblock(in, out, 3);
+      outputData.append((char*) out, 4);
+      len = 0;
+      }
+    }
+  if (len>0)
+    {
+    for (k=len;k<3;k++) in[k]=0;
+    encodeblock(in, out, len);
+    outputData.append((char*) out, 4);
+    }
+  return outputData;
   }
 
 void decodeblock(uint8_t *in, uint8_t *out )
@@ -140,5 +170,55 @@ int base64decode(const char *inputData, uint8_t *outputData)
     }
   *outputData = 0;
   return written;
+  }
+
+std::string base64decode(const std::string inputData)
+  {
+  uint8_t in[4];
+  uint8_t out[4];
+  uint8_t c = 1;
+  uint8_t v;
+  int i, len;
+  int written = 0;
+  
+  std::string outputData;
+  outputData.reserve(howmany(inputData.size(), 4) * 3);
+  int ipos = 0;
+
+  while( c != 0 )
+    {
+    for( len = 0, i = 0; (i < 4) && (c != 0); i++ )
+      {
+      v = 0;
+      while( (c != 0) && (v == 0) )
+        {
+        c = (ipos < inputData.size()) ? inputData[ipos++] : 0;
+        v = (uint8_t) ((c < 43 || c > 122) ? 0 : cd64[ c - 43 ]);
+        if( v )
+          {
+          v = (uint8_t) ((v == '$') ? 0 : v - 61);
+          }
+        }
+      if( c != 0 )
+        {
+        len++;
+        if( v )
+          {
+          in[ i ] = (uint8_t) (v - 1);
+          }
+        }
+      else
+        {
+        in[i] = 0;
+        }
+      }
+    if( len )
+      {
+      decodeblock( in, out );
+      outputData.append((char*) out, len-1);
+      written += len-1;
+      }
+    }
+  return outputData;
   }
 
