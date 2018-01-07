@@ -55,6 +55,38 @@ using namespace std;
 
 #define VEHICLE_POLL_NSTATES            4
 
+
+// Standard MSG protocol commands:
+
+#define CMD_QueryFeatures               1   // ()
+#define CMD_SetFeature                  2   // (feature number, value)
+#define CMD_QueryParams                 3   // ()
+#define CMD_SetParam                    4   // (param number, value)
+#define CMD_Reboot                      5   // ()
+#define CMD_Alert                       6   // ()
+#define CMD_Execute                     7   // (text command with arguments)
+#define CMD_SetChargeMode               10  // (mode)
+#define CMD_StartCharge                 11  // ()
+#define CMD_StopCharge                  12  // ()
+#define CMD_SetChargeCurrent            15  // (amps)
+#define CMD_SetChargeModeAndCurrent     16  // (mode, amps)
+#define CMD_SetChargeTimer              17  // (mode, start time)
+#define CMD_WakeupCar                   18  // ()
+#define CMD_WakeupTempSystem            19  // ()
+#define CMD_Lock                        20  // (pin)
+#define CMD_ValetOn                     21  // (pin)
+#define CMD_UnLock                      22  // (pin)
+#define CMD_ValetOff                    23  // (pin)
+#define CMD_Homelink                    24  // (button_nr)
+#define CMD_CoolDown                    25  // ()
+#define CMD_ClimateControl              26  // (mode)
+// 30-39 reserved for server commands
+#define CMD_SendSMS                     40  // (phone number, SMS message)
+#define CMD_SendUSSD                    41  // (USSD_CODE)
+#define CMD_SendRawAT                   49  // (raw AT command)
+// 200+ reserved for custom commands
+
+
 class OvmsVehicle
   {
   public:
