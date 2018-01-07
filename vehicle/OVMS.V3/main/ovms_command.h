@@ -69,12 +69,9 @@ class OvmsWriter
   public:
     bool IsSecure();
     void SetSecure(bool secure=true);
-    bool IsBusy() { return m_busy; }
-    void SetBusy(bool busy) { m_busy = busy; }
 
   public:
     bool m_issecure;
-    bool m_busy;              // true = executing OvmsCommand
 
   protected:
     InsertCallback m_insert;

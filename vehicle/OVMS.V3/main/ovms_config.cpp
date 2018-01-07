@@ -33,9 +33,11 @@ static const char *TAG = "config";
 
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <string.h>
 #include <sstream>
 #include <dirent.h>
+#include "crypt_base64.h"
 #include "ovms_config.h"
 #include "ovms_command.h"
 #include "ovms_events.h"
@@ -256,19 +258,26 @@ void OvmsConfig::SetParamValue(std::string param, std::string instance, std::str
     }
   }
 
-void OvmsConfig::SetParamValueBinary(std::string param, std::string instance, std::string value)
+void OvmsConfig::SetParamValueBinary(std::string param, std::string instance, std::string value, BinaryEncoding_t encoding /*=Encoding_HEX*/)
   {
   size_t len = value.length();
-  std::string hex;
-  hex.reserve(len * 2);
-  char buf[4];
-  for (size_t i = 0; i < len; ++i)
+  std::string encval;
+  if (encoding == Encoding_BASE64)
     {
-    unsigned char c = value.at(i);
-    snprintf(buf, sizeof(buf), "%02X", c);
-    hex += buf;
+    encval = base64encode(value);
     }
-  SetParamValue(param, instance, hex);
+  else // Encoding_HEX
+    {
+    encval.reserve(len * 2);
+    char buf[4];
+    for (size_t i = 0; i < len; ++i)
+      {
+      unsigned char c = value.at(i);
+      snprintf(buf, sizeof(buf), "%02X", c);
+      encval += buf;
+      }
+    }
+  SetParamValue(param, instance, encval);
   }
 
 void OvmsConfig::SetParamValueInt(std::string param, std::string instance, int value)
@@ -312,28 +321,35 @@ std::string OvmsConfig::GetParamValue(std::string param, std::string instance, s
     }
   }
 
-std::string OvmsConfig::GetParamValueBinary(std::string param, std::string instance, std::string defvalue)
+std::string OvmsConfig::GetParamValueBinary(std::string param, std::string instance, std::string defvalue, BinaryEncoding_t encoding /*=Encoding_HEX*/)
   {
-  std::string hex = GetParamValue(param,instance);
-  size_t len = hex.length();
+  std::string encval = GetParamValue(param,instance);
+  size_t len = encval.length();
   if (len == 0) return defvalue;
-  if (hex.find_first_not_of("0123456789ABCDEF", 0) != std::string::npos || (len & 1))
+  if (encoding == Encoding_BASE64)
     {
-    ESP_LOGE(TAG, "Invalid non-hex value for config param %s instance %s",
-      param.c_str(), instance.c_str());
-    return defvalue;
+    return base64decode(encval);
     }
-  std::string value;
-  value.reserve(len / 2);
-  char buf[4] = {0};
-  for (size_t i = 0; i < len; i += 2)
+  else // Encoding_HEX
     {
-    buf[0] = hex.at(i);
-    buf[1] = hex.at(i + 1);
-    unsigned char c = strtoul(buf, NULL, 16);
-    value += c;
+    if (encval.find_first_not_of("0123456789ABCDEF", 0) != std::string::npos || (len & 1))
+      {
+      ESP_LOGE(TAG, "Invalid non-hex value for config param %s instance %s",
+        param.c_str(), instance.c_str());
+      return defvalue;
+      }
+    std::string value;
+    value.reserve(len / 2);
+    char buf[4] = {0};
+    for (size_t i = 0; i < len; i += 2)
+      {
+      buf[0] = encval.at(i);
+      buf[1] = encval.at(i + 1);
+      unsigned char c = strtoul(buf, NULL, 16);
+      value += c;
+      }
+    return value;
     }
-  return value;
   }
 
 int OvmsConfig::GetParamValueInt(std::string param, std::string instance, int defvalue)

@@ -24,7 +24,7 @@
  */
 
 #include "ovms_log.h"
-// static const char *TAG = "v-renaulttwizy";
+// static const char *TAG = "v-twizy";
 
 #include <stdio.h>
 #include <string>
@@ -66,17 +66,6 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
   
   switch (p_frame->MsgID)
   {
-    case 0x081:
-      // --------------------------------------------------------------------------
-      // CAN ID 0x081: CANopen error message from SEVCON (Node #1)
-      
-      // count errors to detect manual CFG RESET request:
-      if ((CAN_BYTE(1)==0x10) && (CAN_BYTE(2)==0x01))
-        twizy_button_cnt++;
-      
-      break;
-    
-    
     case 0x155:
       // --------------------------------------------------------------------------
       // *** BMS: POWER STATUS ***
@@ -287,22 +276,6 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
         twizy_batt[0].volt_act = (v1 + v2 + 1) >> 1;
       }
       break;
-    
-    
-#ifdef OVMS_TWIZY_CFG
-    case 0x581:
-      // --------------------------------------------------------------------------
-      // CAN ID 0x581: CANopen SDO reply from SEVCON (Node #1)
-      //
-      
-      // copy message into twizy_sdo object:
-      for (u = 0; u < can_datalength; u++)
-        twizy_sdo.byte[u] = CAN_BYTE(u);
-      for (; u < 8; u++)
-        twizy_sdo.byte[u] = 0;
-      
-      break;
-#endif // OVMS_TWIZY_CFG
     
     
     case 0x597:

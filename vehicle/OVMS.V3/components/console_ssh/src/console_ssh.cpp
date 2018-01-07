@@ -35,6 +35,8 @@
 #include "freertos/queue.h"
 #include "ovms_log.h"
 #include "ovms_events.h"
+#include "ovms_netmanager.h"
+#include "ovms_config.h"
 #include <wolfssl/wolfcrypt/sha256.h>
 #include <wolfssl/wolfcrypt/coding.h>
 #include <wolfssl/wolfcrypt/rsa.h>
@@ -42,8 +44,6 @@
 #include <wolfssh/ssh.h>
 #include <wolfssh/log.h>
 #include "console_ssh.h"
-#include "ovms_netmanager.h"
-#include "ovms_config.h"
 
 static void wolf_logger(enum wolfSSH_LogLevel level, const char* const msg);
 static const char *tag = "ssh";

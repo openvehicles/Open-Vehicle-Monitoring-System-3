@@ -9,7 +9,9 @@ CANopen test frames
 level verbose
 can can1 start active 500000
 co can1 start
+
 co status
+can can1 status
 
 # …optional, buggy on longer running commands & multiple shells:
 can can1 trace on

@@ -24,7 +24,7 @@
  */
 
 #include "ovms_log.h"
-static const char *TAG = "v-renaulttwizy";
+static const char *TAG = "v-twizy";
 
 #include <math.h>
 
@@ -110,12 +110,14 @@ void OvmsVehicleRenaultTwizy::PowerUpdate()
       + twizy_speedpwr[CAN_SPEED_DECEL].use;
   
   *StdMetrics.ms_v_bat_energy_used = (float) pwr / WH_DIV / 1000;
+  *StdMetrics.ms_v_bat_coulomb_used = (float) twizy_charge_use / AH_DIV;
   
   pwr = twizy_speedpwr[CAN_SPEED_CONST].rec
       + twizy_speedpwr[CAN_SPEED_ACCEL].rec
       + twizy_speedpwr[CAN_SPEED_DECEL].rec;
   
   *StdMetrics.ms_v_bat_energy_recd = (float) pwr / WH_DIV / 1000;
+  *StdMetrics.ms_v_bat_coulomb_recd = (float) twizy_charge_rec / AH_DIV;
   
   for (speedpwr &stats : twizy_speedpwr)
     stats.UpdateMetrics();
@@ -131,10 +133,7 @@ void OvmsVehicleRenaultTwizy::PowerUpdate()
  */
 bool OvmsVehicleRenaultTwizy::PowerIsModified()
 {
-  bool modified =
-    StdMetrics.ms_v_bat_power->IsModifiedAndClear(m_modifier) |
-    StdMetrics.ms_v_bat_energy_used->IsModifiedAndClear(m_modifier) |
-    StdMetrics.ms_v_bat_energy_recd->IsModifiedAndClear(m_modifier);
+  bool modified = false;
   
   for (speedpwr &stats : twizy_speedpwr)
     modified |= stats.IsModified(m_modifier);

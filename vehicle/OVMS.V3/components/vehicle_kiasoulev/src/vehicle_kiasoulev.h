@@ -51,6 +51,7 @@ void xks_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 void xks_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xks_cells(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xks_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xks_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void CommandOpenTrunk(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void CommandOpenChargePort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void CommandParkBreakService(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
@@ -73,6 +74,8 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     void Ticker1(uint32_t ticker);
     void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void ConfigChanged(OvmsConfigParam* param);
+    bool SetFeature(int key, const char* value);
+    const std::string GetFeature(int key);
     vehicle_command_t CommandHandler(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     bool Send_SJB_Command( uint8_t b1, uint8_t b2, uint8_t b3);
     bool Send_BCM_Command( uint8_t b1, uint8_t b2, uint8_t b3);
@@ -88,6 +91,10 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     bool IGN1Relay(bool,const char *password);
     bool IGN2Relay(bool,const char *password);
     bool StartRelay(bool,const char *password);
+
+    char m_vin[18];
+    char m_street[128]; //Current street
+    int m_street_pos;
 
     uint32_t ks_tpms_id[4];
     uint8_t ks_battery_cell_voltage[101];
@@ -107,6 +114,19 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 
     OvmsMetricBool*		m_v_env_lowbeam;
     OvmsMetricBool*		m_v_env_highbeam;
+    OvmsMetricFloat* m_v_env_inside_temp;
+    OvmsMetricFloat* m_v_env_climate_temp;
+    OvmsMetricBool*  m_v_env_climate_driver_only;
+    OvmsMetricBool*  m_v_env_climate_resirc;
+    OvmsMetricBool*  m_v_env_climate_auto;
+    OvmsMetricBool*  m_v_env_climate_ac;
+    OvmsMetricInt*	  m_v_env_climate_fan_speed;
+    OvmsMetricInt*	  m_v_env_climate_mode;
+
+    OvmsMetricInt*	  m_v_pos_dist_to_dest;
+    OvmsMetricInt*	  m_v_pos_arrival_hour;
+    OvmsMetricInt*	  m_v_pos_arrival_minute;
+    OvmsMetricString*	  m_v_pos_street;
 
     OvmsMetricFloat* m_obc_pilot_duty;
 
@@ -156,8 +176,6 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 
 		#define CGF_DEFAULT_BATTERY_CAPACITY 27000
     float ks_battery_capacity = CGF_DEFAULT_BATTERY_CAPACITY; //TODO Detect battery capacity from VIN or number of batterycells
-
-    char m_vin[18];
 
     unsigned int ks_notifications = 0;
 
@@ -211,10 +229,11 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 
 #define SQR(n) ((n)*(n))
 #define ABS(n) (((n) < 0) ? -(n) : (n))
-#define MIN(n,m) ((n) < (m) ? (n) : (m))
-#define MAX(n,m) ((n) > (m) ? (n) : (m))
 #define LIMIT_MIN(n,lim) ((n) < (lim) ? (lim) : (n))
 #define LIMIT_MAX(n,lim) ((n) > (lim) ? (lim) : (n))
+
+#define XSTR(x)   STR(x)
+#define STR(x)    #x
 
 // CAN buffer access macros: b=byte# 0..7 / n=nibble# 0..15
 #define CAN_BYTE(b)     data[b]
