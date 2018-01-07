@@ -237,7 +237,7 @@ void SevconClient::EmcyListener(string event, void* data)
     return;
   }
   
-  // preop mode not requested by us?
+  // preop mode not requested by this session?
   if (fault == FC_PreOp && m_cfgmode_request == false) {
     ESP_LOGD(TAG, "Sevcon: detected preop state not requested by us; resolving");
     SendRequestState(CONC_Start);
@@ -324,7 +324,7 @@ const std::string SevconClient::GetDeviceErrorName(uint32_t device_error)
   return name;
 }
 
-const std::string SevconClient::GetResultString(CANopenResult_t result, uint32_t detail)
+const std::string SevconClient::GetResultString(CANopenResult_t result, uint32_t detail /*=0*/)
 {
   std::string name = CANopen::GetResultString(result);
   if (detail)

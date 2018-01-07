@@ -40,180 +40,6 @@ static const char *TAG = "v-twizy";
 using namespace std;
 
 
-struct sdo_buffer
-{
-  union
-  {
-    uint32_t num;
-    char txt[128];
-  };
-  size_t size;
-  char type;
-  
-  void parse(const char* arg)
-  {
-    size = 0;
-    type = '?';
-    char* endptr = NULL;
-    
-    if (arg[0]=='0' && arg[1]=='x') {
-      // try hexadecimal:
-      num = strtol(arg+2, &endptr, 16);
-      if (*endptr == 0) {
-        size = 0; // let SDO server figure out type&size
-        type = 'H';
-      }
-    }
-    if (type == '?') {
-      // try decimal:
-      num = strtol(arg, &endptr, 10);
-      if (*endptr == 0) {
-        size = 0; // let SDO server figure out type&size
-        type = 'D';
-      }
-    }
-    if (type == '?') {
-      // string:
-      strncpy(txt, arg, sizeof(txt)-1);
-      txt[sizeof(txt)-1] = 0;
-      size = strlen(txt);
-      type = 'S';
-    }
-  }
-  
-  void print(OvmsWriter* writer)
-  {
-    // test for printable text:
-    bool show_txt = true;
-    int i;
-    for (i=0; i < size && txt[i]; i++) {
-      if (!(isprint(txt[i]) || isspace(txt[i]))) {
-        show_txt = false;
-        break;
-      }
-    }
-    // terminate string:
-    if (i == size)
-      txt[i] = 0;
-    
-    if (show_txt)
-      writer->printf("dec=%d hex=0x%0*x str='%s'", num, MIN(size,4)*2, num, txt);
-    else
-      writer->printf("dec=%d hex=0x%0*x", num, MIN(size,4)*2, num);
-  }
-};
-
-
-
-// Shell command:
-//    xrt cfg <pre|op>
-void xrt_cfg_mode(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-{
-  OvmsVehicleRenaultTwizy* twizy = OvmsVehicleRenaultTwizy::GetInstance(writer);
-  if (!twizy)
-    return;
-  
-  SevconJob sc(twizy);
-  bool on = (strcmp(cmd->GetName(), "pre") == 0);
-  CANopenResult_t res = sc.CfgMode(on);
-  
-  if (res != COR_OK)
-    writer->printf("CFG mode %s failed: %s\n", cmd->GetName(), sc.GetResultString().c_str());
-  else
-    writer->printf("CFG mode %s established\n", cmd->GetName());
-}
-
-
-// Shell command:
-//    xrt cfg read <index_hex> <subindex_hex>
-void xrt_cfg_read(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  OvmsVehicleRenaultTwizy* twizy = OvmsVehicleRenaultTwizy::GetInstance(writer);
-  if (!twizy)
-    return;
-  
-  // parse args:
-  uint16_t index = strtol(argv[0], NULL, 16);
-  uint8_t subindex = strtol(argv[1], NULL, 16);
-  
-  // execute:
-  SevconJob sc(twizy);
-  sdo_buffer readval;
-  CANopenResult_t res = sc.Read(index, subindex, (uint8_t*)&readval, sizeof(readval)-1);
-  readval.size = sc.m_job.sdo.xfersize;
-  
-  // output result:
-  if (res != COR_OK)
-  {
-    writer->printf("Read 0x%04x.%02x failed: %s\n", index, subindex, sc.GetResultString().c_str());
-  }
-  else
-  {
-    writer->printf("Read 0x%04x.%02x: ", index, subindex);
-    readval.print(writer);
-    writer->puts("");
-  }
-}
-
-
-// Shell command:
-//    xrt cfg write[only] <index_hex> <subindex_hex> <value>
-// <value>:
-// - interpreted as hexadecimal if begins with "0x"
-// - interpreted as decimal if only contains digits
-// - else interpreted as string
-void xrt_cfg_write(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-{
-  OvmsVehicleRenaultTwizy* twizy = OvmsVehicleRenaultTwizy::GetInstance(writer);
-  if (!twizy)
-    return;
-  
-  sdo_buffer readval, writeval;
-  CANopenResult_t readres, writeres;
-  
-  // parse args:
-  bool writeonly = (strcmp(cmd->GetName(), "writeonly") == 0);
-  uint16_t index = strtol(argv[0], NULL, 16);
-  uint8_t subindex = strtol(argv[1], NULL, 16);
-  
-  writeval.parse(argv[2]);
-  switch (writeval.type)
-  {
-    case 'H':
-      writer->printf("Write 0x%04x.%02x: hex=0x%08x => ", index, subindex, writeval.num);
-      break;
-    case 'D':
-      writer->printf("Write 0x%04x.%02x: dec=%d => ", index, subindex, writeval.num);
-      break;
-    default:
-      writer->printf("Write 0x%04x.%02x: str='%s' => ", index, subindex, writeval.txt);
-      break;
-  }
-  
-  // execute:
-  SevconJob sc(twizy);
-  if (!writeonly) {
-    readres = sc.Read(index, subindex, (uint8_t*)&readval, sizeof(readval)-1);
-    readval.size = sc.m_job.sdo.xfersize;
-  }
-  writeres = sc.Write(index, subindex, (uint8_t*)&writeval, writeval.size);
-  
-  // output result:
-  if (writeres != COR_OK)
-    writer->printf("ERROR: %s\n", sc.GetResultString().c_str());
-  else if (writeonly)
-    writer->puts("OK");
-  else if (readres != COR_OK)
-    writer->puts("OK\nOld value: unknown, read failed");
-  else {
-    writer->printf("OK\nOld value: ");
-    readval.print(writer);
-    writer->puts("");
-  }
-}
-
-
-
 /**
  * SevconClient:
  */
@@ -225,45 +51,64 @@ SevconClient::SevconClient(OvmsVehicleRenaultTwizy* twizy)
   
   m_twizy = twizy;
   m_sevcon_type = 0;
-  memset(&m_drivemode, 0, sizeof(m_drivemode));
-  memset(&m_profile, 0, sizeof(m_profile));
+  
+  m_drivemode.u32 = 0;
+  m_drivemode.v3tag = 1;
+  m_drivemode.profile_user = MyConfig.GetParamValueInt("xrt", "profile_user", 0);
+  GetParamProfile(m_drivemode.profile_user, m_profile);
   
   m_cfgmode_request = false;
-
+  
   // register shell commands:
   
   OvmsCommand *cmd_cfg = m_twizy->cmd_xrt->RegisterCommand("cfg", "SEVCON tuning", NULL, "", 0, 0, true);
   
-  cmd_cfg->RegisterCommand("pre", "Enter configuration mode (pre-operational)", xrt_cfg_mode, "", 0, 0, true);
-  cmd_cfg->RegisterCommand("op", "Leave configuration mode (go operational)", xrt_cfg_mode, "", 0, 0, true);
+  cmd_cfg->RegisterCommand("pre", "Enter configuration mode (pre-operational)", shell_cfg_mode, "", 0, 0, true);
+  cmd_cfg->RegisterCommand("op", "Leave configuration mode (go operational)", shell_cfg_mode, "", 0, 0, true);
   
-  cmd_cfg->RegisterCommand("read", "Read register", xrt_cfg_read, "<index_hex> <subindex_hex>", 2, 2, true);
-  cmd_cfg->RegisterCommand("write", "Read & write register", xrt_cfg_write, "<index_hex> <subindex_hex> <value>", 3, 3, true);
-  cmd_cfg->RegisterCommand("writeonly", "Write register", xrt_cfg_write, "<index_hex> <subindex_hex> <value>", 3, 3, true);
+  cmd_cfg->RegisterCommand("read", "Read register", shell_cfg_read, "<index_hex> <subindex_hex>", 2, 2, true);
+  cmd_cfg->RegisterCommand("write", "Read & write register", shell_cfg_write, "<index_hex> <subindex_hex> <value>", 3, 3, true);
+  cmd_cfg->RegisterCommand("writeonly", "Write register", shell_cfg_write, "<index_hex> <subindex_hex> <value>", 3, 3, true);
+  
+  cmd_cfg->RegisterCommand("set", "Set tuning profile from base64 string", shell_cfg_set, "<key> <base64data>", 2, 2, true);
+  cmd_cfg->RegisterCommand("reset", "Reset tuning profile", shell_cfg_set, "[key]", 0, 1, true);
+  cmd_cfg->RegisterCommand("get", "Get tuning profile as base64 string", shell_cfg_get, "[key]", 0, 1, true);
+  cmd_cfg->RegisterCommand("info", "Show tuning profile", shell_cfg_info, "[key]", 0, 1, true);
+  cmd_cfg->RegisterCommand("save", "Save current tuning profile", shell_cfg_save, "[key]", 0, 1, true);
+  cmd_cfg->RegisterCommand("load", "Load stored tuning profile", shell_cfg_load, "[key]", 0, 1, true);
+  
+  cmd_cfg->RegisterCommand("drive", "Tune drive power level", shell_cfg_drive,
+                            "[max_prc] [autopower_ref] [autopower_minprc] [kickdown_threshold] [kickdown_compzero]", 0, 5, true);
+  cmd_cfg->RegisterCommand("recup", "Tune recuperation power levels", shell_cfg_recup,
+                            "[neutral_prc] [brake_prc] [autopower_ref] [autopower_minprc]", 0, 4, true);
+  cmd_cfg->RegisterCommand("ramps", "Tune pedal reaction", shell_cfg_ramps,
+                            "[start_prc] [accel_prc] [decel_prc] [neutral_prc] [brake_prc]", 0, 5, true);
+  cmd_cfg->RegisterCommand("ramplimits", "Tune max pedal reaction", shell_cfg_ramplimits,
+                            "[accel_prc] [decel_prc]", 0, 2, true);
+  cmd_cfg->RegisterCommand("smooth", "Tune pedal smoothing", shell_cfg_smooth,
+                            "[prc]", 0, 1, true);
+  cmd_cfg->RegisterCommand("speed", "Tune max & warn speed", shell_cfg_speed,
+                            "[max_kph] [warn_kph]", 0, 2, true);
+  cmd_cfg->RegisterCommand("power", "Tune torque, power & current levels", shell_cfg_power,
+                            "[trq_prc] [pwr_lo_prc] [pwr_hi_prc] [curr_prc]", 0, 4, true);
+  cmd_cfg->RegisterCommand("tsmap", "Tune torque/speed maps", shell_cfg_tsmap,
+                            "[maps] [t1_prc[@t1_spd]] [t2_prc[@t2_spd]] [t3_prc[@t3_spd]] [t4_prc[@t4_spd]]", 0, 5, true);
+  cmd_cfg->RegisterCommand("brakelight", "Tune brakelight trigger levels", shell_cfg_brakelight,
+                            "[on_lev] [off_lev]", 0, 2, true);
   
   // TODO:
-  
-  // xrt cfg …
-  //  power, speed, drive, recup, ramps, ramplimits, smooth, tsmap, brakelight
-  //  info, load, save, get, set, reset
   //  clearlog, showlog [data]
-  
-  // lock, unlock, valet, unvalet, homelink
-  
-  // NICE2HAVE: xrt cfg …
+  //  lock, unlock, valet, unvalet
+  // LATER:
   //  getdcf
   
-  
   // fault listener:
-  
   m_faultqueue = xQueueCreate(10, sizeof(uint16_t));
   m_lastfault = 0;
   m_buttoncnt = 0;
-  
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "canopen.node.emcy", std::bind(&SevconClient::EmcyListener, this, _1, _2));
-  
 }
 
 SevconClient::~SevconClient()
@@ -389,75 +234,15 @@ void SevconClient::ProcessAsyncResults()
 }
 
 
-void SevconClient::SetStatus(bool car_awake)
-{
-  *StdMetrics.ms_v_env_ctrl_login = (bool) false;
-  *StdMetrics.ms_v_env_ctrl_config = (bool) false;
-  m_buttoncnt = 0;
-}
-
-
-void SevconClient::Ticker1(uint32_t ticker)
-{
-  // cleanup CANopen job result queue:
-  ProcessAsyncResults();
-  
-  // Send fault alerts:
-  uint16_t faultcode;
-  while (xQueueReceive(m_faultqueue, &faultcode, 0) == pdTRUE) {
-    SendFaultAlert(faultcode);
-  }
-
-  if (!m_twizy->twizy_flags.CarAwake || !m_twizy->twizy_flags.EnableWrite)
-    return;
-  
-  // Login to SEVCON:
-  if (!StdMetrics.ms_v_env_ctrl_login->AsBool()) {
-    if (Login(true) != COR_OK)
-      return;
-  }
-
-  // Check for 3 successive button presses in STOP mode => CFG RESET:
-  if ((m_buttoncnt >= 5) && (!m_twizy->twizy_flags.DisableReset)) {
-    // reset SEVCON profile:
-    ESP_LOGW(TAG, "Sevcon: detected D/R button cfg reset request [TODO]");
-    
-//     memset(&twizy_cfg_profile, 0, sizeof(twizy_cfg_profile));
-//     twizy_cfg.unsaved = (twizy_cfg.profile_user > 0);
-//     vehicle_twizy_cfg_applyprofile(twizy_cfg.profile_user);
-//     twizy_notify(SEND_ResetResult);
-
-    // reset button cnt:
-    m_buttoncnt = 0;
-  }
-  else if (m_buttoncnt > 0) {
-    m_buttoncnt--;
-  }
-  
-
-#ifdef TODO
-
-  // Valet mode: lock speed if valet max odometer reached:
-  if ((m_twizy->twizy_flags.ValetMode)
-          && (!m_twizy->twizy_flags.CarLocked) && (twizy_odometer > twizy_valet_odo))
-  {
-    vehicle_twizy_cfg_restrict_cmd(FALSE, CMD_Lock, NULL);
-  }
-
-  // Auto drive & recuperation adjustment (if enabled):
-  vehicle_twizy_cfg_autopower();
-
-#endif
-
-}
-
-
-
 CANopenResult_t SevconClient::Login(bool on)
 {
   ESP_LOGD(TAG, "Sevcon login request: %d", on);
   SevconJob sc(this);
 
+  CANopenResult_t res = CheckBus();
+  if (res != COR_OK)
+    return res;
+  
   // get SEVCON type (Twizy 80/45):
   if (sc.Read(0x1018, 0x02, m_sevcon_type) != COR_OK)
     return COR_ERR_UnknownDevice;
@@ -497,7 +282,7 @@ CANopenResult_t SevconClient::Login(bool on)
   }
 
   ESP_LOGD(TAG, "Sevcon login status: %d", on);
-  *StdMetrics.ms_v_env_ctrl_login = (bool) on;
+  SetCtrlLoggedIn(on);
   return COR_OK;
 }
 
@@ -510,6 +295,10 @@ CANopenResult_t SevconClient::CfgMode(CANopenJob& job, bool on)
   ESP_LOGD(TAG, "Sevcon cfgmode request: %d", on);
   uint32_t state = 0;
   m_cfgmode_request = on;
+  
+  CANopenResult_t res = CheckBus();
+  if (res != COR_OK)
+    return res;
   
   if (!on)
   {
@@ -554,8 +343,75 @@ CANopenResult_t SevconClient::CfgMode(CANopenJob& job, bool on)
   }
   
   ESP_LOGD(TAG, "Sevcon cfgmode status: %d", on);
-  *StdMetrics.ms_v_env_ctrl_config = (bool) on;
+  SetCtrlCfgMode(on);
   return COR_OK;
+}
+
+
+void SevconClient::SetStatus(bool car_awake)
+{
+  SetCtrlLoggedIn(false);
+  SetCtrlCfgMode(false);
+  m_buttoncnt = 0;
+}
+
+
+void SevconClient::Ticker1(uint32_t ticker)
+{
+  // update metrics:
+  StdMetrics.ms_v_env_drivemode->SetValue((long) m_drivemode.u32);
+
+  // cleanup CANopen job result queue:
+  ProcessAsyncResults();
+  
+  // Send fault alerts:
+  uint16_t faultcode;
+  while (xQueueReceive(m_faultqueue, &faultcode, 0) == pdTRUE) {
+    SendFaultAlert(faultcode);
+  }
+
+  if (!m_twizy->twizy_flags.CarAwake || !m_twizy->twizy_flags.EnableWrite)
+    return;
+  
+  // Login to SEVCON:
+  if (!CtrlLoggedIn()) {
+    if (Login(true) != COR_OK)
+      return;
+  }
+
+  // Check for 3 successive button presses in STOP mode => CFG RESET:
+  if ((m_buttoncnt >= 5) && (!m_twizy->twizy_flags.DisableReset)) {
+    ESP_LOGW(TAG, "Sevcon: detected D/R button cfg reset request");
+    
+    // reset current profile:
+    GetParamProfile(0, m_profile);
+    CANopenResult_t res = CfgApplyProfile(m_drivemode.profile_user);
+    m_drivemode.unsaved = (m_drivemode.profile_user > 0);
+    
+    // send result:
+    MyNotify.NotifyStringf("info", "Tuning RESET: %s\n", FmtSwitchProfileResult(res).c_str());
+
+    // reset button cnt:
+    m_buttoncnt = 0;
+  }
+  else if (m_buttoncnt > 0) {
+    m_buttoncnt--;
+  }
+  
+
+#ifdef TODO
+
+  // Valet mode: lock speed if valet max odometer reached:
+  if (ValetMode() && !CarLocked() && twizy_odometer > twizy_valet_odo)
+  {
+    vehicle_twizy_cfg_restrict_cmd(FALSE, CMD_Lock, NULL);
+  }
+
+  // Auto drive & recuperation adjustment (if enabled):
+  vehicle_twizy_cfg_autopower();
+
+#endif
+
 }
 
 

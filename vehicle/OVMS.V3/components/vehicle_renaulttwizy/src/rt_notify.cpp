@@ -285,8 +285,8 @@ void OvmsVehicleRenaultTwizy::SendGPSLog()
     << "," << twizy_batt[0].max_drive_pwr * 500
     << "," << twizy_batt[0].max_recup_pwr * -500
     << setprecision(3)
-    << "," << (float) twizy_autodrive_level / 1000
-    << "," << (float) twizy_autorecup_level / 1000;
+    << "," << (float) m_sevcon->twizy_autodrive_level / 1000
+    << "," << (float) m_sevcon->twizy_autorecup_level / 1000;
 
   if (curr_min == 32767) {
     buf

@@ -441,8 +441,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   //*StdMetrics.ms_v_env_drivemode = (int) twizy_cfg.drivemode;
   *StdMetrics.ms_v_env_awake = (bool) twizy_flags.CarAwake;
   *StdMetrics.ms_v_env_on = (bool) twizy_flags.CarON;
-  *StdMetrics.ms_v_env_locked = (bool) twizy_flags.CarLocked;
-  *StdMetrics.ms_v_env_valet = (bool) twizy_flags.ValetMode;
   
   *StdMetrics.ms_v_charge_pilot = (bool) twizy_flags.PilotSignal;
   *StdMetrics.ms_v_door_chargeport = (bool) twizy_flags.ChargePort;
