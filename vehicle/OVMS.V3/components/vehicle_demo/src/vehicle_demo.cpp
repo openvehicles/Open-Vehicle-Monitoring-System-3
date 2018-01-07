@@ -287,7 +287,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleDemo::CommandDeactivateValet(const cha
   return Success;
   }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleDemo::CommandHomelink(uint8_t button)
+OvmsVehicle::vehicle_command_t OvmsVehicleDemo::CommandHomelink(int button)
   {
   return NotImplemented;
   }

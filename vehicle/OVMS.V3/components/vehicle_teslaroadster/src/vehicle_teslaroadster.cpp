@@ -547,7 +547,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandDeactivateValet(
   return Success;
   }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandHomelink(uint8_t button)
+OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandHomelink(int button)
   {
   CAN_frame_t frame;
   memset(&frame,0,sizeof(frame));

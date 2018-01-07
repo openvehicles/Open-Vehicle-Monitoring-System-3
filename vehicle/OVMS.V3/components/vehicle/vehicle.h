@@ -128,7 +128,7 @@ class OvmsVehicle
     virtual vehicle_command_t CommandUnlock(const char* pin);
     virtual vehicle_command_t CommandActivateValet(const char* pin);
     virtual vehicle_command_t CommandDeactivateValet(const char* pin);
-    virtual vehicle_command_t CommandHomelink(uint8_t button);
+    virtual vehicle_command_t CommandHomelink(int button);
 
   public:
     virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);

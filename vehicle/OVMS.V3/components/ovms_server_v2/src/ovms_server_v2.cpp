@@ -597,6 +597,10 @@ void OvmsServerV2::ProcessCommand(const char* payload)
         {
         if (vehicle->CommandHomelink(atoi(sep+1)) == OvmsVehicle::Success) k = 0;
         }
+      else if (vehicle)
+        {
+        if (vehicle->CommandHomelink(-1) == OvmsVehicle::Success) k = 0;
+        }
       *buffer << "MP-0 c24," << k;
       break;
       }
