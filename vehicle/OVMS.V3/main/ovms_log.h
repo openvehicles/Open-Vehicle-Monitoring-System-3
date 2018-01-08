@@ -32,6 +32,7 @@
 #define __OVMS_LOG_H__
 
 #include "esp_log.h"
+#include <stdio.h>
 
 #undef ESP_LOGE
 #undef ESP_LOGW
@@ -44,5 +45,7 @@
 #define ESP_LOGI( tag, format, ... ) esp_log_write(ESP_LOG_INFO,    tag, LOG_FORMAT(I, format), esp_log_timestamp(), tag, ##__VA_ARGS__)
 #define ESP_LOGD( tag, format, ... ) esp_log_write(ESP_LOG_DEBUG,   tag, LOG_FORMAT(D, format), esp_log_timestamp(), tag, ##__VA_ARGS__)
 #define ESP_LOGV( tag, format, ... ) esp_log_write(ESP_LOG_VERBOSE, tag, LOG_FORMAT(V, format), esp_log_timestamp(), tag, ##__VA_ARGS__)
+
+extern FILE *ovms_log_file;
 
 #endif //#ifndef __OVMS_LOG_H__

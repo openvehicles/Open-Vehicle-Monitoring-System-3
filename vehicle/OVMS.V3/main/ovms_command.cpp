@@ -357,6 +357,40 @@ void log_level(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
   writer->printf("Logging level for %s set to %s\n",tag,cmd->GetName());
   }
 
+void log_file(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (argc == 0)
+    {
+    if (ovms_log_file)
+      {
+      fclose(ovms_log_file);
+      ovms_log_file = NULL;
+      }
+    writer->puts("Closed log file");
+    return;
+    }
+
+  if (MyConfig.ProtectedPath(argv[0]))
+    {
+    writer->puts("Error: protected path");
+    return;
+    }
+
+  if (ovms_log_file)
+    {
+    writer->puts("Closing old log file");
+    fclose(ovms_log_file);
+    ovms_log_file = NULL;
+    }
+
+  ovms_log_file = fopen(argv[0], "a+");
+  if (ovms_log_file == NULL)
+    {
+    writer->puts("Error: VFS file cannot be opened for append");
+    return;
+    }
+  }
+
 typedef struct
   {
   std::string password;
@@ -431,6 +465,7 @@ OvmsCommandApp::OvmsCommandApp()
   m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0);
   m_root.RegisterCommand("exit", "End console session", Exit , "", 0, 0);
   OvmsCommand* cmd_log = MyCommandApp.RegisterCommand("log","LOG framework",NULL, "", 0, 0, true);
+  cmd_log->RegisterCommand("file", "Start logging to specified file", log_file , "<vfspath>", 0, 1, true);
   OvmsCommand* level_cmd = cmd_log->RegisterCommand("level", "Set logging level", NULL, "$C [<tag>]");
   level_cmd->RegisterCommand("verbose", "Log at the VERBOSE level (5)", log_level , "[<tag>]", 0, 1, true);
   level_cmd->RegisterCommand("debug", "Log at the DEBUG level (4)", log_level , "[<tag>]", 0, 1, true);
