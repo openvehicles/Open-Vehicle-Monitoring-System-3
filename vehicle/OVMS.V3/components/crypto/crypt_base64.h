@@ -25,6 +25,11 @@
 #define __CRYPT_BASE64_H
 
 #include <stdint.h>
+#include <sys/types.h>
+
+#ifndef howmany
+#define howmany(x,y) (((x)+((y)-1))/(y))
+#endif
 
 extern const uint8_t cb64[];
 

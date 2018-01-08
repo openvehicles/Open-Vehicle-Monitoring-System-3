@@ -119,8 +119,6 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
       
       unsigned CarAwake:1;          // Twizy switched on
       unsigned CarON:1;             // Twizy in GO mode
-      unsigned CarLocked:1;         // Speed limit mode active
-      unsigned ValetMode:1;         // Conditional speed limit mode active
       
       unsigned PilotSignal:1;       // Power cable connected
       unsigned ChargePort:1;        // Charge cycle detection
@@ -166,9 +164,6 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     unsigned long twizy_odometer_tripstart = 0;     // odometer at last power on
     unsigned int twizy_dist = 0;                    // cyclic distance counter in 1/10 m = 10 cm
     
-    unsigned char twizy_lock_speed = 0;             // if Lock mode: fix speed to this (kph)
-    unsigned long twizy_valet_odo = 0;              // if Valet mode: reduce speed if odometer > this
-    
     
     // NOTE: the power values are derived by...
     //    twizy_power = ( twizy_current * twizy_batt[0].volt_act + 128 ) / 256
@@ -186,13 +181,6 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     //  Wh = power_sum / 56250
     #define WH_DIV (56250L)
     #define WH_RND (28125L)
-    
-    
-    UINT8 twizy_autorecup_checkpoint = 0;   // change detection for autorecup function
-    UINT twizy_autorecup_level = 1000;      // autorecup: current recup level (per mille)
-    
-    UINT8 twizy_autodrive_checkpoint = 0;   // change detection for autopower function
-    UINT twizy_autodrive_level = 1000;      // autopower: current drive level (per mille)
     
     
     signed int twizy_current = 0;           // momentary battery current in 1/4 A, negative=charging
@@ -226,6 +214,29 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     #define TWIZY_FAN_THRESHOLD   45    // temperature in °C
     #define TWIZY_FAN_OVERSHOOT   5     // hold time in minutes after switch-off
     
+    
+    // Accelerator pedal & kickdown detection:
+    
+    volatile UINT8 twizy_accel_pedal;           // accelerator pedal (running avg for 2 samples = 200 ms)
+    volatile UINT8 twizy_kickdown_level;        // kickdown detection & pedal max level
+    UINT8 twizy_kickdown_hold;                  // kickdown hold countdown (1/10 seconds)
+    #define CAN_KICKDOWN_HOLDTIME   50          // kickdown hold time (1/10 seconds)
+    
+    #define CFG_DEFAULT_KD_THRESHOLD    35
+    #define CFG_DEFAULT_KD_COMPZERO     120
+    int cfg_kd_threshold = CFG_DEFAULT_KD_THRESHOLD;
+    int cfg_kd_compzero = CFG_DEFAULT_KD_COMPZERO;
+    
+    // pedal nonlinearity compensation:
+    //    constant threshold up to pedal=compzero,
+    //    then linear reduction by factor 1/8
+    #define KICKDOWN_THRESHOLD(pedal) \
+      (cfg_kd_threshold - \
+        (((int)(pedal) <= cfg_kd_compzero) \
+          ? 0 : (((int)(pedal) - cfg_kd_compzero) >> 3)))
+    
+    
+    // GPS log:
     int cfg_gpslog_interval = 5;        // GPS-Log interval while driving [seconds]
     uint32_t twizy_last_gpslog = 0;     // Time of last GPS-Log update
     
@@ -375,15 +386,14 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   public:
     SevconClient* GetSevconClient() { return m_sevcon; }
   
+  public:
+    vehicle_command_t MsgCommandHomelink(string& result, int command, const char* args);
+    vehicle_command_t MsgCommandRestrict(string& result, int command, const char* args);
+    
   protected:
     SevconClient *m_sevcon = NULL;
     signed char twizy_button_cnt = 0;           // will count key presses (errors) in STOP mode (msg 081)
     
-    #define CFG_DEFAULT_KD_THRESHOLD    35
-    #define CFG_DEFAULT_KD_COMPZERO     120
-    int cfg_kd_threshold = CFG_DEFAULT_KD_THRESHOLD;
-    int cfg_kd_compzero = CFG_DEFAULT_KD_COMPZERO;
-  
 };
 
 #endif // __VEHICLE_RENAULTTWIZY_H__

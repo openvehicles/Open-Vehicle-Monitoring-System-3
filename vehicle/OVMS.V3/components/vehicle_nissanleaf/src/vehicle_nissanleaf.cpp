@@ -625,7 +625,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::RemoteCommandHandler(Remot
   return Success;
   }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandHomelink(uint8_t button)
+OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandHomelink(int button)
   {
   ESP_LOGI(TAG, "CommandHomelink");
   if (button == 0)

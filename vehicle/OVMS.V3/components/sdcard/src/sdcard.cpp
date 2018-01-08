@@ -84,8 +84,6 @@ sdcard::sdcard(const char* name, bool mode1bit, bool autoformat, int cdpin)
   gpio_pullup_en((gpio_num_t)cdpin);
   gpio_set_intr_type((gpio_num_t)cdpin, GPIO_INTR_ANYEDGE);
   gpio_isr_handler_add((gpio_num_t)cdpin, sdcard_isr_handler, (void*) this);
-
-  CheckCardState();
   }
 
 sdcard::~sdcard()

@@ -97,7 +97,7 @@ void vehicle_homelink(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
     return;
     }
 
-  switch(MyVehicleFactory.m_currentvehicle->CommandHomelink((uint8_t) homelink))
+  switch(MyVehicleFactory.m_currentvehicle->CommandHomelink(homelink-1))
     {
     case OvmsVehicle::Success:
       writer->printf("Homelink #%d activated\n",homelink);
@@ -655,7 +655,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandDeactivateValet(const char* p
   return NotImplemented;
   }
 
-OvmsVehicle::vehicle_command_t OvmsVehicle::CommandHomelink(uint8_t button)
+OvmsVehicle::vehicle_command_t OvmsVehicle::CommandHomelink(int button)
   {
   return NotImplemented;
   }

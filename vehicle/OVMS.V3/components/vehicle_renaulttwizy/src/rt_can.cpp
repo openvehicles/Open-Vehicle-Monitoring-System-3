@@ -49,6 +49,7 @@ using namespace std;
 void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
 {
   unsigned int u;
+  int s;
   
   uint8_t *can_databuffer = p_frame->data.u8;
   
@@ -396,26 +397,23 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       else if (CAN_BYTE(0) == 0x08)
         twizy_status |= CAN_STATUS_MODE_R;
       
-      #ifdef OVMS_TWIZY_CFG
+      // accelerator pedal:
+      u = CAN_BYTE(3);
       
-        // accelerator pedal:
-        u = CAN_BYTE(3);
-        
-        // running average over 2 samples:
-        u = (twizy_accel_pedal + u + 1) >> 1;
-        
-        // kickdown detection:
-        s = KICKDOWN_THRESHOLD(twizy_accel_pedal);
-        if ( ((s > 0) && (u > ((unsigned int)twizy_accel_pedal + s)))
-          || ((twizy_kickdown_level > 0) && (u > twizy_kickdown_level)) )
-        {
-          twizy_kickdown_level = u;
-        }
-        
-        twizy_accel_pedal = u;
+      // running average over 2 samples:
+      u = (twizy_accel_pedal + u + 1) >> 1;
       
-      #endif // OVMS_TWIZY_CFG
+      // kickdown detection:
+      s = KICKDOWN_THRESHOLD(twizy_accel_pedal);
+      if ( ((s > 0) && (u > ((unsigned int)twizy_accel_pedal + s)))
+        || ((twizy_kickdown_level > 0) && (u > twizy_kickdown_level)) )
+      {
+        twizy_kickdown_level = u;
+        // TODO: Kickdown();
+      }
       
+      twizy_accel_pedal = u;
+    
       break;
       
       
