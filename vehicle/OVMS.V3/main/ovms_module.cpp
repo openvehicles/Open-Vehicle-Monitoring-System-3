@@ -36,9 +36,11 @@ static const char *TAG = "ovms-module";
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/FreeRTOSConfig.h"
+#ifdef CONFIG_OVMS_DEV_DEBUGRAM
 #include "freertos/heap_regions_debug.h"
-#include <esp_system.h>
 #include "esp_heap_alloc_caps.h"
+#endif // #ifdef CONFIG_OVMS_DEV_DEBUGRAM
+#include <esp_system.h>
 #include "ovms_module.h"
 #include "ovms_command.h"
 
