@@ -42,6 +42,7 @@ static const char *TAG = "vfs";
 #include "ovms_vfs.h"
 #include "ovms_config.h"
 #include "ovms_command.h"
+#include "crypt_md5.h"
 
 #ifdef CONFIG_OVMS_COMP_EDITOR
 #include "vfsedit.h"
@@ -101,6 +102,45 @@ void vfs_cat(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
     {
     writer->write(buf, n);
     }
+  fclose(f);
+  }
+
+void vfs_stat(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyConfig.ProtectedPath(argv[0]))
+    {
+    writer->puts("Error: protected path");
+    return;
+    }
+
+  FILE* f = fopen(argv[0], "r");
+  if (f == NULL)
+    {
+    writer->puts("Error: VFS file cannot be opened");
+    return;
+    }
+
+  OVMS_MD5_CTX* md5 = new OVMS_MD5_CTX;
+  OVMS_MD5_Init(md5);
+  int filesize = 0;
+  uint8_t *buf = new uint8_t[512];
+  while(size_t n = fread(buf, sizeof(char), 512, f))
+    {
+    filesize += n;
+    OVMS_MD5_Update(md5, buf, n);
+    }
+  uint8_t* rmd5 = new uint8_t[16];
+  OVMS_MD5_Final(rmd5, md5);
+
+  char dchecksum[33];
+  sprintf(dchecksum,"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+    rmd5[0],rmd5[1],rmd5[2],rmd5[3],rmd5[4],rmd5[5],rmd5[6],rmd5[7],
+    rmd5[8],rmd5[9],rmd5[10],rmd5[11],rmd5[12],rmd5[13],rmd5[14],rmd5[15]);
+  writer->printf("File %s size is %d and digest %s\n",
+    argv[0],filesize,dchecksum);
+
+  delete [] rmd5;
+  delete [] buf;
   fclose(f);
   }
 
@@ -235,6 +275,7 @@ VfsInit::VfsInit()
   OvmsCommand* cmd_vfs = MyCommandApp.RegisterCommand("vfs","VFS framework",NULL,"$C <file(s)>",0,0,true);
   cmd_vfs->RegisterCommand("ls","VFS Directory Listing",vfs_ls, "[<file>]", 0, 1, true);
   cmd_vfs->RegisterCommand("cat","VFS Display a file",vfs_cat, "<file>", 1, 1, true);
+  cmd_vfs->RegisterCommand("stat","VFS Status of a file",vfs_stat, "<file>", 1, 1, true);
   cmd_vfs->RegisterCommand("mkdir","VFS Create a directory",vfs_mkdir, "<path>", 1, 1, true);
   cmd_vfs->RegisterCommand("rmdir","VFS Delete a directory",vfs_rmdir, "<path>", 1, 1, true);
   cmd_vfs->RegisterCommand("rm","VFS Delete a file",vfs_rm, "<file>", 1, 1, true);
