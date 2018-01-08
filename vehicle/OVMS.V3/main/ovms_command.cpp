@@ -346,7 +346,7 @@ void Exit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const c
   writer->Exit();
   }
 
-void level(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void log_level(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   const char* tag = "*";
   if (argc > 0)
@@ -355,6 +355,40 @@ void level(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const 
   esp_log_level_t level_num = (esp_log_level_t)(*(title+strlen(title)-2) - '0');
   esp_log_level_set(tag, level_num);
   writer->printf("Logging level for %s set to %s\n",tag,cmd->GetName());
+  }
+
+void log_file(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (argc == 0)
+    {
+    if (ovms_log_file)
+      {
+      fclose(ovms_log_file);
+      ovms_log_file = NULL;
+      }
+    writer->puts("Closed log file");
+    return;
+    }
+
+  if (MyConfig.ProtectedPath(argv[0]))
+    {
+    writer->puts("Error: protected path");
+    return;
+    }
+
+  if (ovms_log_file)
+    {
+    writer->puts("Closing old log file");
+    fclose(ovms_log_file);
+    ovms_log_file = NULL;
+    }
+
+  ovms_log_file = fopen(argv[0], "a+");
+  if (ovms_log_file == NULL)
+    {
+    writer->puts("Error: VFS file cannot be opened for append");
+    return;
+    }
   }
 
 typedef struct
@@ -430,13 +464,15 @@ OvmsCommandApp::OvmsCommandApp()
 
   m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0);
   m_root.RegisterCommand("exit", "End console session", Exit , "", 0, 0);
-  OvmsCommand* level_cmd = m_root.RegisterCommand("level", "Set logging level", NULL, "$C [<tag>]");
-  level_cmd->RegisterCommand("verbose", "Log at the VERBOSE level (5)", level , "[<tag>]", 0, 1, true);
-  level_cmd->RegisterCommand("debug", "Log at the DEBUG level (4)", level , "[<tag>]", 0, 1, true);
-  level_cmd->RegisterCommand("info", "Log at the INFO level (3)", level , "[<tag>]", 0, 1, true);
-  level_cmd->RegisterCommand("warn", "Log at the WARN level (2)", level , "[<tag>]", 0, 1);
-  level_cmd->RegisterCommand("error", "Log at the ERROR level (1)", level , "[<tag>]", 0, 1);
-  level_cmd->RegisterCommand("none", "No logging (0)", level , "[<tag>]", 0, 1);
+  OvmsCommand* cmd_log = MyCommandApp.RegisterCommand("log","LOG framework",NULL, "", 0, 0, true);
+  cmd_log->RegisterCommand("file", "Start logging to specified file", log_file , "<vfspath>", 0, 1, true);
+  OvmsCommand* level_cmd = cmd_log->RegisterCommand("level", "Set logging level", NULL, "$C [<tag>]");
+  level_cmd->RegisterCommand("verbose", "Log at the VERBOSE level (5)", log_level , "[<tag>]", 0, 1, true);
+  level_cmd->RegisterCommand("debug", "Log at the DEBUG level (4)", log_level , "[<tag>]", 0, 1, true);
+  level_cmd->RegisterCommand("info", "Log at the INFO level (3)", log_level , "[<tag>]", 0, 1, true);
+  level_cmd->RegisterCommand("warn", "Log at the WARN level (2)", log_level , "[<tag>]", 0, 1);
+  level_cmd->RegisterCommand("error", "Log at the ERROR level (1)", log_level , "[<tag>]", 0, 1);
+  level_cmd->RegisterCommand("none", "No logging (0)", log_level , "[<tag>]", 0, 1);
   m_root.RegisterCommand("enable","Enter secure mode", enable, "[<password>]", 0, 1);
   m_root.RegisterCommand("disable","Leave secure mode", disable, "", 0, 0, true);
   m_root.RegisterCommand("echo", "Test getchar", echo, "", 0, 0);

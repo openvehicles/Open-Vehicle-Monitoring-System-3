@@ -80,7 +80,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
     void IncomingFrameCan2(CAN_frame_t* p_frame);
-    vehicle_command_t CommandHomelink(uint8_t button);
+    vehicle_command_t CommandHomelink(int button);
     vehicle_command_t CommandClimateControl(bool enable);
     void RemoteCommandTimer();
 

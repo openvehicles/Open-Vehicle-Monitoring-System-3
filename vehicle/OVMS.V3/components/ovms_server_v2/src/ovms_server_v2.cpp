@@ -370,7 +370,7 @@ void OvmsServerV2::ProcessCommand(const char* payload)
     OvmsVehicle::vehicle_command_t vc = vehicle->ProcessMsgCommand(rt, command, sep ? sep+1 : NULL);
     if (vc != OvmsVehicle::NotImplemented)
       {
-      *buffer << "MP-0 c" << command << "," << (1-vc) << "," << rt;
+      *buffer << "MP-0 c" << command << "," << ((vc == OvmsVehicle::Success) ? 0 : 1) << "," << rt;
       k = 1;
       }
     }
@@ -596,6 +596,10 @@ void OvmsServerV2::ProcessCommand(const char* payload)
       if (vehicle && sep)
         {
         if (vehicle->CommandHomelink(atoi(sep+1)) == OvmsVehicle::Success) k = 0;
+        }
+      else if (vehicle)
+        {
+        if (vehicle->CommandHomelink(-1) == OvmsVehicle::Success) k = 0;
         }
       *buffer << "MP-0 c24," << k;
       break;

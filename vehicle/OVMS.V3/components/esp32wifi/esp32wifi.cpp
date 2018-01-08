@@ -457,10 +457,27 @@ void esp32wifi::EventTimer10(std::string event, void* data)
 void esp32wifi::EventWifiScanDone(std::string event, void* data)
   {
   uint16_t apCount = 0;
-  esp_wifi_scan_get_ap_num(&apCount);
-  wifi_ap_record_t *list = (wifi_ap_record_t *)malloc(sizeof(wifi_ap_record_t) * apCount);
-  ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&apCount, list));
-
+  esp_err_t res;
+  wifi_ap_record_t* list = NULL;
+  
+  res = esp_wifi_scan_get_ap_num(&apCount);
+  if (res != ESP_OK)
+    {
+    ESP_LOGE(TAG, "EventWifiScanDone: can't get AP count, error=0x%x", res);
+    return;
+    }
+  
+  if (apCount > 0)
+    {
+    list = (wifi_ap_record_t *)malloc(sizeof(wifi_ap_record_t) * apCount);
+    res = esp_wifi_scan_get_ap_records(&apCount, list);
+    if (res != ESP_OK)
+      {
+      ESP_LOGE(TAG, "EventWifiScanDone: can't get AP records, error=0x%x", res);
+      return;
+      }
+    }
+  
   if (m_mode == ESP32WIFI_MODE_SCAN)
     {
     ESP_LOGI(TAG, "SSID scan results...");
@@ -519,7 +536,8 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
       }
     }
 
-  free(list);
+  if (list)
+    free(list);
   }
 
 void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)

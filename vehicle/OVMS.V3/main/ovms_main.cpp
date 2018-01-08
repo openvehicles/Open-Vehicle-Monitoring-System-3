@@ -21,6 +21,8 @@ extern "C"
   void app_main(void);
   }
 
+FILE *ovms_log_file = NULL;
+
 static class LogLevelSetter
   {
   public:

@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-twizy";
 
-#define VERSION "0.7.0"
+#define VERSION "0.8.0"
 
 #include <stdio.h>
 #include <string>
@@ -312,7 +312,7 @@ void OvmsVehicleRenaultTwizy::EventListener(string event, void* data)
  * ProcessMsgCommand: V2 compatibility protocol message command processing
  *  result: optional payload or message to return to the caller with the command response
  */
-OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::ProcessMsgCommand(std::string &result, int command, const char* args)
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::ProcessMsgCommand(string& result, int command, const char* args)
 {
   switch (command)
   {
@@ -343,9 +343,57 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::ProcessMsgCo
     case CMD_SetChargeAlerts:
       return MsgCommandCA(result, command, args);
     
+    case CMD_Homelink:
+      return MsgCommandHomelink(result, command, args);
+    
+    case CMD_Lock:
+    case CMD_UnLock:
+    case CMD_ValetOn:
+    case CMD_ValetOff:
+      return MsgCommandRestrict(result, command, args);
+    
     default:
       return NotImplemented;
   }
+}
+
+
+/**
+ * MsgCommandHomelink: switch tuning profile
+ *      App labels "1"/"2"/"3", sent as 0/1/2 (standard homelink function)
+ *      App label "Default" sent without key, mapped to -1
+ */
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandHomelink(string& result, int command, const char* args)
+{
+  // parse args:
+  int key = -1;
+  if (args && *args)
+    key = atoi(args);
+  
+  // switch profile:
+  CANopenResult_t res = m_sevcon->CfgSwitchProfile(key+1);
+  
+  // send result:
+  ostringstream buf;
+  buf << "Profile #" << key+1 << ": " << m_sevcon->FmtSwitchProfileResult(res);
+  result = buf.str();
+  
+  MyNotify.NotifyStringf("info", result.c_str());
+  
+  if (res == COR_OK || res == COR_ERR_StateChangeFailed)
+    return Success;
+  else
+    return Fail;
+}
+
+
+/**
+ * MsgCommandRestrict: lock/unlock, valet/unvalet
+ */
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandRestrict(string& result, int command, const char* args)
+{
+  // TODO
+  return NotImplemented;
 }
 
 
