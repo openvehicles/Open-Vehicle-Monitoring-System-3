@@ -42,7 +42,6 @@ VERSION HISTORY:
 
 #include <string.h>
 #include <stdlib.h>
-#include <sys/types.h>
 #include <string>
 #include "crypt_base64.h"
 
