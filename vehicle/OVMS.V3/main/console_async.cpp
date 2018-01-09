@@ -116,6 +116,15 @@ int ConsoleAsync::ConsoleLogger(const char* fmt, va_list args)
     return ::vprintf(fmt, args);
   char *buffer;
   int ret = vasprintf(&buffer, fmt, args);
+
+  if (ovms_log_file)
+    {
+    // Log to the log file as well...
+    fwrite(buffer,1,strlen(buffer),ovms_log_file);
+    fflush(ovms_log_file);
+    fsync(fileno(ovms_log_file));
+    }
+
   // replace CR/LF except last by "|":
   for (char* s=buffer; *s; s++)
     {
@@ -123,12 +132,6 @@ int ConsoleAsync::ConsoleLogger(const char* fmt, va_list args)
       *s = '|';
     }
   m_instance->Log(buffer);
-  if (ovms_log_file)
-    {
-    // Log to the log file as well...
-    fwrite(buffer,1,strlen(buffer),ovms_log_file);
-    fflush(ovms_log_file);
-    }
   return ret;
   }
 
