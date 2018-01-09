@@ -632,6 +632,7 @@ void OvmsServerV2::ProcessCommand(const char* payload)
         *buffer << "MP-0 c" << command << ",1,No command";
       else
         {
+#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
         *buffer << "AT+CUSD=1,\"" << sep+1 << "\",15\r\n";
         std::string msg = buffer->str();
         buffer->str("");
@@ -639,6 +640,9 @@ void OvmsServerV2::ProcessCommand(const char* payload)
           *buffer << "MP-0 c" << command << ",0";
         else
           *buffer << "MP-0 c" << command << ",1,Cannot send command";
+#else // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+        *buffer << "MP-0 c" << command << ",1,No modem";
+#endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
         }
       break;
     case 49: // Send raw AT command
