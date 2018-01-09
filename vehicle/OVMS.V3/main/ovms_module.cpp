@@ -45,7 +45,6 @@ static const char *TAG = "ovms-module";
 #define MAX_TASKS 30
 #define DUMPSIZE 1000
 #define NUMTASKS 32
-#define NUMTAGS 3
 #define NAMELEN 16
 #define TASKLIST 10
 #define NOT_FOUND (TaskHandle_t)0xFFFFFFFF
@@ -290,7 +289,7 @@ class HeapTask
   public:
     HeapTask()
       {
-      for (int i = 0; i < NUMTAGS; ++i)
+      for (int i = 0; i < NUM_USED_TYPES; ++i)
         totals.before[i] = totals.after[i] = 0;
       }
     heap_dump_totals_t totals;
@@ -309,13 +308,13 @@ class HeapTotals
     void clear()
       {
       for (int i = 0; i < count; ++i)
-        for (int j = 0; j < NUMTAGS; ++j)
+        for (int j = 0; j < NUM_USED_TYPES; ++j)
           tasks[i].totals.after[j] = 0;
       }
     void transfer()
       {
       for (int i = 0; i < count; ++i)
-        for (int j = 0; j < NUMTAGS; ++j)
+        for (int j = 0; j < NUM_USED_TYPES; ++j)
           tasks[i].totals.before[j] = tasks[i].totals.after[j];
       }
     int find(TaskHandle_t task)
@@ -525,9 +524,9 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
     numafter < DUMPSIZE ? "" : " (limited)");
   for (int i = changes->begin(); i < changes->end(); ++i)
     {
-    int change[NUMTAGS];
+    int change[NUM_USED_TYPES];
     bool any = false;
-    for (int j = 0; j < NUMTAGS; ++j)
+    for (int j = 0; j < NUM_USED_TYPES; ++j)
       {
       change[j] = (*changes)[i].totals.after[j] - (*changes)[i].totals.before[j];
       if (change[j])
@@ -538,9 +537,9 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
       Name name("NoTaskMap");
       if (tm)
         tm->find((*changes)[i].totals.task, name);
-      writer->printf("task=%-15s total=%7d%7d%7d change=%+7d%+7d%+7d\n", name.bytes,
+      writer->printf("task=%-15s total=%7d%7d%7d%7d change=%+7d%+7d%+7d%+7d\n", name.bytes,
         (*changes)[i].totals.after[0], (*changes)[i].totals.after[1], (*changes)[i].totals.after[2],
-        change[0], change[1], change[2]);
+        (*changes)[i].totals.after[3], change[0], change[1], change[2], change[3]);
       }
     }
 
@@ -556,7 +555,7 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
     for (int i = changes->begin(); i < changes->end(); ++i)
       {
       bool any = false;
-      for (int j = 0; j < NUMTAGS; ++j)
+      for (int j = 0; j < NUM_USED_TYPES; ++j)
         {
         if ((*changes)[i].totals.after[j] - (*changes)[i].totals.before[j] != 0)
           any = true;
@@ -602,7 +601,7 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
         int k = changes->find(taskstatus[i].xHandle);
         int heaptotal = 0;
         if (k >= 0)
-          heaptotal = (*changes)[k].totals.after[0] + (*changes)[k].totals.after[1];
+          heaptotal = (*changes)[k].totals.after[0] + (*changes)[k].totals.after[1] + (*changes)[k].totals.after[3];
         uint32_t total = (uint32_t)taskstatus[i].pxStackBase >> 16;
         writer->printf("Task %08X %2u %-15s %5u %5u %5u  %6u\n", taskstatus[i].xHandle, taskstatus[i].xTaskNumber,
           taskstatus[i].pcTaskName, total - ((uint32_t)taskstatus[i].pxStackBase & 0xFFFF),
