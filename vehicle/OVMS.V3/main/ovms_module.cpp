@@ -36,10 +36,8 @@ static const char *TAG = "ovms-module";
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/FreeRTOSConfig.h"
-#ifdef CONFIG_OVMS_DEV_DEBUGRAM
-#include "freertos/heap_regions_debug.h"
-#include "esp_heap_alloc_caps.h"
-#endif // #ifdef CONFIG_OVMS_DEV_DEBUGRAM
+#include "esp_heap_caps.h"
+#include "esp_heap_debug.h"
 #include <esp_system.h>
 #include "ovms_module.h"
 #include "ovms_command.h"
@@ -52,7 +50,7 @@ static const char *TAG = "ovms-module";
 #define TASKLIST 10
 #define NOT_FOUND (TaskHandle_t)0xFFFFFFFF
 
-#ifndef configENABLE_MEMORY_DEBUG_DUMP
+#ifndef CONFIG_HEAP_TASK_TRACKING
 #define NOGO 1
 #endif
 #if configUSE_TRACE_FACILITY==0
@@ -61,15 +59,12 @@ static const char *TAG = "ovms-module";
 #ifdef CONFIG_FREERTOS_ASSERT_ON_UNTESTED_FUNCTION
 #define NOGO 1
 #endif
-#ifndef configENABLE_MEMORY_DEBUG_ABORT
-#define NOGO 1
-#endif
 
 #ifdef NOGO
 static void must(OvmsWriter* writer)
   {
-  writer->printf("To use these debugging tools, must set CONFIG_OVMS_DEV_DEBUGRAM=y\n");
-  writer->printf("and CONFIG_OVMS_DEV_DEBUGTASKS=y and have updated IDF\n");
+  writer->printf("To use these debugging tools, must set CONFIG_HEAP_TASK_TRACKING=y\n");
+  writer->printf("and have updated openvehicles/esp-idf\n");
   }
 
 static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -100,8 +95,8 @@ class HeapTotals;
 
 static TaskHandle_t* tasklist = NULL;
 static TaskStatus_t* taskstatus = NULL;
-static mem_dump_block_t* before = NULL;
-static mem_dump_block_t* after = NULL;
+static heap_dump_block_t* before = NULL;
+static heap_dump_block_t* after = NULL;
 static size_t numbefore = 0, numafter = 0;
 static HeapTotals* changes = NULL;
 
@@ -153,7 +148,7 @@ class TaskMap
       {
       if (!taskmap)
         {
-        void* p = pvPortMallocCaps(sizeof(TaskMap), MALLOC_CAP_32BIT);
+        void* p = heap_caps_malloc(sizeof(TaskMap), MALLOC_CAP_32BIT);
         if (!p)
           return NULL;
         taskmap = new(p) TaskMap;
@@ -258,16 +253,36 @@ class FreeHeap
   public:
     inline FreeHeap()
       {
-      m_free_8bit = xPortGetFreeHeapSizeCaps(MALLOC_CAP_8BIT);
-      m_free_32bit = xPortGetFreeHeapSizeCaps(MALLOC_CAP_32BIT) - m_free_8bit;
+      m_free_8bit = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+      m_free_32bit = heap_caps_get_free_size(MALLOC_CAP_32BIT) - m_free_8bit;
+      if (!m_total_8bit)
+        {
+        m_total_8bit = TotalSize(MALLOC_CAP_8BIT);
+        m_total_32bit = TotalSize(MALLOC_CAP_32BIT) - FreeHeap::m_total_8bit;
+        }
       }
     size_t Free8bit() { return m_free_8bit; }
     size_t Free32bit() { return m_free_32bit; }
+    size_t Total8bit() { return m_total_8bit; }
+    size_t Total32bit() { return m_total_32bit; }
+
+  private:
+    size_t TotalSize(uint32_t caps)
+    {
+    multi_heap_info_t info;
+    heap_caps_get_info(&info, caps);
+    return info.total_free_bytes + info.total_allocated_bytes +
+      info.allocated_blocks*20 + info.free_blocks*4 + 44;
+    }
 
   private:
     size_t m_free_8bit;
     size_t m_free_32bit;
-  } initial  __attribute__ ((init_priority (0150)));
+    static size_t m_total_8bit;
+    static size_t m_total_32bit;
+  };
+size_t FreeHeap::m_total_8bit = 0;
+size_t FreeHeap::m_total_32bit = 0;
 
 
 class HeapTask
@@ -278,7 +293,7 @@ class HeapTask
       for (int i = 0; i < NUMTAGS; ++i)
         totals.before[i] = totals.after[i] = 0;
       }
-    mem_dump_totals_t totals;
+    heap_dump_totals_t totals;
   };
 
 
@@ -288,7 +303,7 @@ class HeapTotals
     HeapTotals() : count(0) {}
     int begin() { return 0; }
     int end() { return count; }
-    mem_dump_totals_t* array() { return &tasks[0].totals; }
+    heap_dump_totals_t* array() { return &tasks[0].totals; }
     size_t* size() { return (size_t*)&count; }
     HeapTask& operator[](size_t index) { return tasks[index]; };
     void clear()
@@ -412,11 +427,11 @@ static bool allocate()
   {
   if (!before)
     {
-    before = (mem_dump_block_t*)pvPortMallocCaps(sizeof(mem_dump_block_t)*DUMPSIZE, MALLOC_CAP_32BIT);
-    after = (mem_dump_block_t*)pvPortMallocCaps(sizeof(mem_dump_block_t)*DUMPSIZE, MALLOC_CAP_32BIT);
-    taskstatus = (TaskStatus_t*)pvPortMallocCaps(sizeof(TaskStatus_t)*MAX_TASKS, MALLOC_CAP_32BIT);
-    tasklist = (TaskHandle_t*)pvPortMallocCaps(sizeof(TaskHandle_t)*(TASKLIST), MALLOC_CAP_32BIT);
-    void* p = pvPortMallocCaps(sizeof(HeapTotals), MALLOC_CAP_32BIT);
+    before = (heap_dump_block_t*)heap_caps_malloc(sizeof(heap_dump_block_t)*DUMPSIZE, MALLOC_CAP_32BIT);
+    after = (heap_dump_block_t*)heap_caps_malloc(sizeof(heap_dump_block_t)*DUMPSIZE, MALLOC_CAP_32BIT);
+    taskstatus = (TaskStatus_t*)heap_caps_malloc(sizeof(TaskStatus_t)*MAX_TASKS, MALLOC_CAP_32BIT);
+    tasklist = (TaskHandle_t*)heap_caps_malloc(sizeof(TaskHandle_t)*(TASKLIST), MALLOC_CAP_32BIT);
+    void* p = heap_caps_malloc(sizeof(HeapTotals), MALLOC_CAP_32BIT);
     changes = new(p) HeapTotals();
     if (!before || !after || !taskstatus || !tasklist || !changes)
       {
@@ -450,7 +465,7 @@ static UBaseType_t get_tasks()
 static void get_memory(TaskHandle_t* tasks, size_t taskslen)
   {
   changes->clear();
-  numafter = mem_debug_malloc_dump_totals(changes->array(), changes->size(), NUMTASKS,
+  numafter = esp_heap_debug_dump_totals(changes->array(), changes->size(), NUMTASKS,
     tasks, taskslen, after, DUMPSIZE);
   }
 
@@ -506,7 +521,7 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
   writer->printf("============================\n");
   FreeHeap now;
   writer->printf("Free 8-bit %zu/%zu, 32-bit %zu/%zu, blocks dumped = %d%s\n",
-    now.Free8bit(), initial.Free8bit(), now.Free32bit(), initial.Free32bit(), numafter,
+    now.Free8bit(), now.Total8bit(), now.Free32bit(), now.Total32bit(), numafter,
     numafter < DUMPSIZE ? "" : " (limited)");
   for (int i = changes->begin(); i < changes->end(); ++i)
     {
@@ -600,39 +615,9 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
     }
   }
 
-
-static void module_abort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  TaskHandle_t task = 0;
-  if (*argv[0] != '*')
-    {
-    if (!allocate())
-      {
-      writer->printf("Can't allocate storage for memory diagnostics\n");
-      return;
-      }
-    Name name(argv[0]);
-    get_tasks();
-    get_memory(tasklist, 0);
-    task = TaskMap::instance()->find(name);
-    if (task == NOT_FOUND)
-      {
-      writer->printf("Task %s does not exist\n", name.bytes);
-      return;
-      }
-    }
-  int count = atoi(argv[1]);
-  int size = 0;
-  if (argc == 3)
-    {
-    size = atoi(argv[2]);
-    }
-  mem_malloc_set_abort(task, size, count);
-  }
-
 static void module_check(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  mem_check_all(NULL);
+  heap_caps_check_integrity_all(true);
   }
 #endif // NOGO
 
@@ -661,10 +646,9 @@ class OvmsModuleInit
     OvmsCommand* cmd_module = MyCommandApp.RegisterCommand("module","Module framework",NULL);
     cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"[<task names or ids>]",0,TASKLIST,true);
     cmd_module->RegisterCommand("tasks","Show module task usage",module_tasks,"",0,0,true);
-    cmd_module->RegisterCommand("abort","Set trap to abort on malloc",module_abort,"<task> <count> [<size>]",2,3,true);
     cmd_module->RegisterCommand("fault","Abort fault the module",module_fault,"",0,0,true);
     cmd_module->RegisterCommand("reset","Reset module",module_reset,"",0,0,true);
-    cmd_module->RegisterCommand("check","Check heap validity",module_check,"",0,0,true);
+    cmd_module->RegisterCommand("check","Check heap integrity",module_check,"",0,0,true);
     }
   } MyOvmsModuleInit  __attribute__ ((init_priority (5100)));
 

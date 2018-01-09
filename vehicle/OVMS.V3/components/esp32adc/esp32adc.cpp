@@ -47,5 +47,5 @@ esp32adc::~esp32adc()
 
 int esp32adc::read()
   {
-  return adc1_get_voltage(m_channel);
+  return adc1_get_raw(m_channel);
   }

@@ -186,6 +186,7 @@ void simcom::StartTask()
       .stop_bits = UART_STOP_BITS_1,
       .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
       .rx_flow_ctrl_thresh = 122,
+      .use_ref_tick = 0,
       };
     // Set UART parameters
     uart_param_config(m_uartnum, &uart_config);

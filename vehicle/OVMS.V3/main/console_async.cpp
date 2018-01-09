@@ -57,6 +57,7 @@ ConsoleAsync::ConsoleAsync() : TaskBase("AsyncConsole", 5*1024)
     .stop_bits = UART_STOP_BITS_1,
     .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     .rx_flow_ctrl_thresh = 122,
+    .use_ref_tick = 0,
     };
   // Set UART parameters
   uart_param_config(EX_UART_NUM, &uart_config);

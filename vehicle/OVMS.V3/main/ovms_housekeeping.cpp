@@ -35,6 +35,7 @@ static const char *TAG = "housekeeping";
 #include <string.h>
 #include <esp_system.h>
 #include <esp_ota_ops.h>
+#include <esp_heap_caps.h>
 #include "ovms.h"
 #include "ovms_housekeeping.h"
 #include "ovms_peripherals.h"
@@ -45,11 +46,6 @@ static const char *TAG = "housekeeping";
 #include "ovms_config.h"
 #include "console_async.h"
 #include "ovms_module.h"
-
-#include "esp_heap_alloc_caps.h"
-//extern "C" {
-//#include "esp_heap_caps.h"
-//}
 
 void HousekeepingTicker1( TimerHandle_t timer )
   {
@@ -168,8 +164,7 @@ void Housekeeping::metrics()
   if (m3 == NULL)
     return;
   uint32_t caps = MALLOC_CAP_8BIT;
-  size_t free = xPortGetFreeHeapSizeCaps(caps);
-//  size_t free = heap_caps_get_free_size(caps);
+  size_t free = heap_caps_get_free_size(caps);
   m3->SetValue(free);
   }
 
