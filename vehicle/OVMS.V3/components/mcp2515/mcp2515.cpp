@@ -28,8 +28,8 @@
 ; THE SOFTWARE.
 */
 
-// #include "ovms_log.h"
-// static const char *TAG = "mcp2515";
+#include "ovms_log.h"
+static const char *TAG = "mcp2515";
 
 #include <string.h>
 #include "mcp2515.h"
@@ -293,8 +293,10 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
       m_error_flags = (intflag & 0b10100000) << 8 | errflag;
     
       if (errflag & 0b10000000) // RXB1 overflow
-        m_errors_rxbuf_overflow++;
-      if (errflag & 0b01000000) // RXB0 overflow
+      { m_errors_rxbuf_overflow++;
+        ESP_LOGI(TAG, "CAN Bus 2/3 receive overflow; Frame lost.\n");
+      }
+      if (errflag & 0b01000000) // RXB0 overflow.  No data lost in this case
         m_errors_rxbuf_overflow++;
       
       // read error counters:
