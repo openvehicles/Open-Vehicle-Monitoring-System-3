@@ -16,12 +16,18 @@ choice OVMS_HW_MODEL
         default OVMS_HW_BASE_3_0
         depends on OVMS
         help
-                OVMS_HW_BASE_3_0                OVMS base hardware v3.0
+                OVMS_HW_BASE_3_0                OVMS base (early developer) hardware v3.0
+                OVMS_HW_BASE_3_1                OVMS base production hardware v3.1
 
 config OVMS_HW_BASE_3_0
     bool "OVMS base hardware v3.0"
     help
-        Select this: OVMS base hardware v3.0
+        Select this: OVMS base (early developer) hardware v3.0
+
+config OVMS_HW_BASE_3_1
+    bool "OVMS base hardware v3.1"
+    help
+        Select this: OVMS base production hardware v3.1
 
 endchoice # OVMS_HW_MODEL
 

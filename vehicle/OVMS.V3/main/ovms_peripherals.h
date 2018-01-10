@@ -88,10 +88,17 @@
 #define MAX7317_EGPIO_7           8
 #define MAX7317_EGPIO_8           9
 
+#ifdef CONFIG_OVMS_HW_BASE_3_0
 #define MODEM_GPIO_RX             16
 #define MODEM_GPIO_TX             17
 #define MODEM_PIN_RX              27
 #define MODEM_PIN_TX              28
+#else // #ifdef CONFIG_OVMS_HW_BASE_3_0
+#define MODEM_GPIO_RX             4
+#define MODEM_GPIO_TX             13
+#define MODEM_PIN_RX              26
+#define MODEM_PIN_TX              16
+#endif // #ifdef CONFIG_OVMS_HW_BASE_3_0
 #define MODEM_EGPIO_PWR           0
 #define MODEM_EGPIO_DTR           3
 
