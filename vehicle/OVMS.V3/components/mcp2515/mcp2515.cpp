@@ -291,7 +291,7 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
       //  MERRF 0x80 = message tx/rx error
       //  ERRIF 0x20 = overflow / error state change
       m_error_flags = (intflag & 0b10100000) << 8 | errflag;
-      
+    
       if (errflag & 0b10000000) // RXB1 overflow
         m_errors_rxbuf_overflow++;
       if (errflag & 0b01000000) // RXB0 overflow
@@ -309,8 +309,8 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
     // clear interrupts:
     m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intflag, 0x00);
     
-    // all interrupts handled
-    return false;
+    // all interrupts handled.  Keep running!
+    return true;
     }
   }
 
