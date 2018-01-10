@@ -36,6 +36,8 @@ static const char *TAG = "vfs";
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/param.h>
+#include <fcntl.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <libgen.h>
@@ -263,6 +265,65 @@ void vfs_append(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   fclose(w);
   }
 
+
+class VfsTailCommand : public OvmsCommandTask
+  {
+  using OvmsCommandTask::OvmsCommandTask;
+  public:
+    int fd = -1;
+    char buf[128];
+    off_t fpos = -1;
+    ssize_t len;
+    
+    void Service()
+      {
+      while (true)
+        {
+        // Note: the esp-idf libs do currently not provide read/seek into
+        // data appended by other tasks, we need to reopen for each check
+        fd = open(argv[0], O_RDONLY|O_NONBLOCK);
+        if (fd == -1)
+          {
+          writer->puts("Error: VFS file cannot be opened");
+          return;
+          }
+        
+        if (fpos == -1)
+          {
+          fpos = lseek(fd, 0, SEEK_END);
+          if (fpos > 0)
+            fpos = lseek(fd, -MIN(500, fpos), SEEK_END);
+          }
+        else
+          {
+          lseek(fd, fpos, SEEK_SET);
+          }
+        
+        while ((len = read(fd, buf, sizeof buf)) > 0)
+          writer->write(buf, len);
+        fpos = lseek(fd, 0, SEEK_CUR);
+        close(fd);
+        
+        if (IsTerminated())
+          return;
+        
+        vTaskDelay(pdMS_TO_TICKS(250));
+        }
+      }
+    
+    static void Execute(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+      {
+      if (MyConfig.ProtectedPath(argv[0]))
+        {
+        writer->puts("Error: protected path");
+        return;
+        }
+      
+      new VfsTailCommand(verbosity, writer, cmd, argc, argv);
+      }
+  };
+
+
 class VfsInit
   {
   public: VfsInit();
@@ -282,6 +343,7 @@ VfsInit::VfsInit()
   cmd_vfs->RegisterCommand("mv","VFS Rename a file",vfs_mv, "<source> <target>", 2, 2, true);
   cmd_vfs->RegisterCommand("cp","VFS Copy a file",vfs_cp, "<source> <target>", 2, 2, true);
   cmd_vfs->RegisterCommand("append","VFS Append a line to a file",vfs_append, "<quoted line> <file>", 2, 2, true);
+  cmd_vfs->RegisterCommand("tail","VFS output tail of a file",VfsTailCommand::Execute, "<file>", 1, 1, true);
   #ifdef CONFIG_OVMS_COMP_EDITOR
   cmd_vfs->RegisterCommand("edit","VFS edit a file",vfs_edit, "<path>", 1, 1, true);
   #endif // #ifdef CONFIG_OVMS_COMP_EDITOR

@@ -35,6 +35,7 @@
 #include <map>
 #include <set>
 #include <limits.h>
+#include "task_base.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "microrl_config.h"
@@ -65,6 +66,9 @@ class OvmsWriter
     virtual void Log(LogBuffers* message) = 0;
     virtual void Exit();
     void RegisterInsertCallback(InsertCallback cb, void* ctx);
+    void DeregisterInsertCallback(InsertCallback cb);
+    virtual void finalise() {}
+    virtual void ProcessChar(char c) {}
 
   public:
     bool IsSecure();
@@ -123,6 +127,23 @@ class OvmsCommand
     bool m_secure;
     OvmsCommandMap m_children;
     OvmsCommand* m_parent;
+  };
+
+class OvmsCommandTask : public TaskBase
+  {
+  public:
+    OvmsCommandTask(int _verbosity, OvmsWriter* _writer, OvmsCommand* _cmd, int _argc, const char* const* _argv);
+    virtual ~OvmsCommandTask();
+    static bool Terminator(OvmsWriter* writer, void* userdata, char ch);
+    bool IsTerminated() { return terminated; }
+  
+  protected:
+    int verbosity;
+    OvmsWriter* writer;
+    OvmsCommand* cmd;
+    int argc;
+    char** argv;
+    bool terminated;
   };
 
 class OvmsCommandApp
