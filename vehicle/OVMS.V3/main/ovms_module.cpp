@@ -284,8 +284,9 @@ class HeapTask
   public:
     HeapTask()
       {
+      totals.task = 0;
       for (int i = 0; i < NUM_USED_TYPES; ++i)
-        totals.before[i] = totals.after[i] = 0;
+        totals.size[i] = 0;
       }
     heap_dump_totals_t totals;
   };
@@ -297,25 +298,30 @@ class HeapTotals
     HeapTotals() : count(0) {}
     int begin() { return 0; }
     int end() { return count; }
-    heap_dump_totals_t* array() { return &tasks[0].totals; }
+    heap_dump_totals_t* array() { return &after[0].totals; }
     size_t* size() { return (size_t*)&count; }
-    HeapTask& operator[](size_t index) { return tasks[index]; };
+    TaskHandle_t Task(int task) { return after[task].totals.task; }
+    int Before(int task, int type) { return before[task].totals.size[type]; }
+    int After(int task, int type) { return after[task].totals.size[type]; }
     void clear()
       {
       for (int i = 0; i < count; ++i)
         for (int j = 0; j < NUM_USED_TYPES; ++j)
-          tasks[i].totals.after[j] = 0;
+          before[i].totals.size[j] = after[i].totals.size[j] = 0;
       }
     void transfer()
       {
       for (int i = 0; i < count; ++i)
         for (int j = 0; j < NUM_USED_TYPES; ++j)
-          tasks[i].totals.before[j] = tasks[i].totals.after[j];
+          {
+          before[i].totals.task = after[i].totals.task;
+          before[i].totals.size[j] = after[i].totals.size[j];
+          }
       }
     int find(TaskHandle_t task)
       {
       for (int i = 0; i < count; ++i)
-        if (task == tasks[i].totals.task)
+        if (task == after[i].totals.task)
           return i;
       return -1;
       }
@@ -323,13 +329,14 @@ class HeapTotals
       {
       if (count < NUMTASKS)
         {
-        tasks[count] = t;
+        after[count] = t;
         ++count;
         }
       }
 
   private:
-    HeapTask tasks[NUMTASKS];
+    HeapTask before[NUMTASKS];
+    HeapTask after[NUMTASKS];
     int count;
   };
 
@@ -523,7 +530,7 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
     bool any = false;
     for (int j = 0; j < NUM_USED_TYPES; ++j)
       {
-      change[j] = (*changes)[i].totals.after[j] - (*changes)[i].totals.before[j];
+      change[j] = (*changes).After(i, j) - (*changes).Before(i, j);
       if (change[j])
         any = true;
       }
@@ -531,10 +538,10 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
       {
       Name name("NoTaskMap");
       if (tm)
-        tm->find((*changes)[i].totals.task, name);
+        tm->find((*changes).Task(i), name);
       writer->printf("task=%-15s total=%7d%7d%7d%7d change=%+7d%+7d%+7d%+7d\n", name.bytes,
-        (*changes)[i].totals.after[0], (*changes)[i].totals.after[1], (*changes)[i].totals.after[2],
-        (*changes)[i].totals.after[3], change[0], change[1], change[2], change[3]);
+        (*changes).After(i, 0), (*changes).After(i, 1), (*changes).After(i, 2),
+        (*changes).After(i, 3), change[0], change[1], change[2], change[3]);
       }
     }
 
@@ -552,18 +559,19 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
       bool any = false;
       for (int j = 0; j < NUM_USED_TYPES; ++j)
         {
-        if ((*changes)[i].totals.after[j] - (*changes)[i].totals.before[j] != 0)
+        if ((*changes).After(i, j) - (*changes).Before(i, j) != 0)
           any = true;
         }
       if (any)
-        print_blocks(writer, (*changes)[i].totals.task);
+        print_blocks(writer, (*changes).Task(i));
       }
     }
 
   for (int i = changes->begin(); i < changes->end(); ++i)
     {
-    if (tm && (*changes)[i].totals.after[0] == 0 && (*changes)[i].totals.after[1] == 0 && (*changes)[i].totals.after[2] == 0)
-      tm->zero((*changes)[i].totals.task);
+    if (tm && (*changes).After(i, 0) == 0 && (*changes).After(i, 1) == 0 &&
+      (*changes).After(i, 2) == 0 && (*changes).After(i, 3) == 0)
+      tm->zero((*changes).Task(i));
     }
   changes->transfer();
   for (int i = 0; i < numafter; ++i)
@@ -596,7 +604,7 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
         int k = changes->find(taskstatus[i].xHandle);
         int heaptotal = 0;
         if (k >= 0)
-          heaptotal = (*changes)[k].totals.after[0] + (*changes)[k].totals.after[1] + (*changes)[k].totals.after[3];
+          heaptotal = (*changes).After(k, 0) + (*changes).After(k, 1) + (*changes).After(k, 3);
         uint32_t total = (uint32_t)taskstatus[i].pxStackBase >> 16;
         writer->printf("Task %08X %2u %-15s %5u %5u %5u  %6u\n", taskstatus[i].xHandle, taskstatus[i].xTaskNumber,
           taskstatus[i].pcTaskName, total - ((uint32_t)taskstatus[i].pxStackBase & 0xFFFF),
