@@ -84,8 +84,8 @@ Peripherals::Peripherals()
   m_mcp2515_1 = new mcp2515("can2", m_spibus, VSPI_NODMA_HOST, 1000000, VSPI_PIN_MCP2515_1_CS, VSPI_PIN_MCP2515_1_INT);
   ESP_LOGI(TAG, "  MCP2515 CAN 2/2");
   m_mcp2515_2 = new mcp2515("can3", m_spibus, VSPI_NODMA_HOST, 1000000, VSPI_PIN_MCP2515_2_CS, VSPI_PIN_MCP2515_2_INT);
-  ESP_LOGI(TAG, "  SD CARD");
 #ifdef CONFIG_OVMS_COMP_SDCARD
+  ESP_LOGI(TAG, "  SD CARD");
   m_sdcard = new sdcard("sdcard", false,true,SDCARD_PIN_CD);
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
