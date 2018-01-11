@@ -147,6 +147,7 @@ void Housekeeping::version()
 
 void Housekeeping::metrics()
   {
+#ifdef CONFIG_OVMS_COMP_ADC
   OvmsMetricFloat* m1 = StandardMetrics.ms_v_bat_12v_voltage;
   if (m1 == NULL)
     return;
@@ -156,6 +157,7 @@ void Housekeeping::metrics()
   if (f == 0) f = 182;
   float v = (float)MyPeripherals->m_esp32adc->read() / f;
   m1->SetValue(v);
+#endif // #ifdef CONFIG_OVMS_COMP_ADC
 
   OvmsMetricInt* m2 = StandardMetrics.ms_m_tasks;
   if (m2 == NULL)

@@ -166,6 +166,13 @@ config OVMS_COMP_MCP2515
     help
         Enable to include support for MCP2515 CAN controllers (can2, can3).
 
+config OVMS_COMP_ADC
+    bool "Include support for ADC (reading 12V line voltage)"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for ADC (reading 12V line voltage).
+
 config OVMS_COMP_SERVER_V2
     bool "Include support for V2 server connections"
     default y

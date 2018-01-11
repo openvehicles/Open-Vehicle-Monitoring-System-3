@@ -92,8 +92,10 @@ Peripherals::Peripherals()
   m_esp32bluetooth = new esp32bluetooth("bluetooth");
 #endif // #ifdef CONFIG_OVMS_COMP_BLUETOOTH
 
+#ifdef CONFIG_OVMS_COMP_ADC
   ESP_LOGI(TAG, "  ESP32 ADC");
   m_esp32adc = new esp32adc("adc", ADC1_CHANNEL_0, ADC_WIDTH_12Bit, ADC_ATTEN_11db);
+#endif // #ifdef CONFIG_OVMS_COMP_ADC
 
 #ifdef OVMS_COMP_MCP2515
   ESP_LOGI(TAG, "  MCP2515 CAN 1/2");
