@@ -37,9 +37,12 @@
 #include "max7317.h"
 #include "esp32can.h"
 #include "esp32wifi.h"
-#include "esp32bluetooth.h"
 #include "esp32adc.h"
 #include "mcp2515.h"
+
+#ifdef CONFIG_OVMS_COMP_BLUETOOTH
+#include "esp32bluetooth.h"
+#endif // #ifdef CONFIG_OVMS_COMP_BLUETOOTH
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
 #include "sdcard.h"
@@ -114,7 +117,9 @@ class Peripherals
     max7317* m_max7317;
     esp32can* m_esp32can;
     esp32wifi* m_esp32wifi;
+#ifdef CONFIG_OVMS_COMP_BLUETOOTH
     esp32bluetooth* m_esp32bluetooth;
+#endif // #ifdef CONFIG_OVMS_COMP_BLUETOOTH
     esp32adc* m_esp32adc;
     mcp2515* m_mcp2515_1;
     mcp2515* m_mcp2515_2;

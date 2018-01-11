@@ -131,6 +131,13 @@ endmenu # Vehicle Support
 menu "Component Options"
     depends on OVMS
 
+config OVMS_COMP_BLUETOOTH
+    bool "Include support for bluetooth"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for bluetooth communications.
+
 config OVMS_COMP_SERVER_V2
     bool "Include support for V2 server connections"
     default y
