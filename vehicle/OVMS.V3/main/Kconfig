@@ -194,6 +194,13 @@ config OVMS_COMP_SERVER_V3
     help
         Enable to include support for V3 server connections.
 
+config OVMS_COMP_OTA
+    bool "Include support for Over-The-Air firmware updates"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Over-The-Air firmware updates.
+
 config OVMS_COMP_WEBSERVER
     bool "Include support for Network Web Server"
     default y
