@@ -35,7 +35,10 @@
 #include "spi.h"
 #include "esp32system.h"
 #include "esp32adc.h"
+
+#ifdef OVMS_COMP_MCP2515
 #include "mcp2515.h"
+#endif // #ifdef OVMS_COMP_MCP2515
 
 #ifdef OVMS_COMP_ESP32CAN
 #include "esp32can.h"
@@ -136,8 +139,10 @@ class Peripherals
     esp32bluetooth* m_esp32bluetooth;
 #endif // #ifdef CONFIG_OVMS_COMP_BLUETOOTH
     esp32adc* m_esp32adc;
+#ifdef OVMS_COMP_MCP2515
     mcp2515* m_mcp2515_1;
     mcp2515* m_mcp2515_2;
+#endif // #ifdef OVMS_COMP_MCP2515
 #ifdef CONFIG_OVMS_COMP_SDCARD
     sdcard* m_sdcard;
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
