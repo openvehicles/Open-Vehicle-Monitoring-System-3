@@ -221,8 +221,10 @@ esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
   // Clear interrupt flags
   (void)MODULE_ESP32CAN->IR.U;
 
+#ifdef CONFIG_OVMS_COMP_MAX7317
   // Power up the matching SN65 transciever
   MyPeripherals->m_max7317->Output(MAX7317_CAN1_EN, 0);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
 
   // Showtime. Release Reset Mode.
   MODULE_ESP32CAN->MOD.B.RM = 0;
@@ -235,8 +237,10 @@ esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
 
 esp_err_t esp32can::Stop()
   {
+#ifdef CONFIG_OVMS_COMP_MAX7317
   // Power down the matching SN65 transciever
   MyPeripherals->m_max7317->Output(MAX7317_CAN1_EN, 1);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
 
   // Enter reset mode
   MODULE_ESP32CAN->MOD.B.RM = 1;

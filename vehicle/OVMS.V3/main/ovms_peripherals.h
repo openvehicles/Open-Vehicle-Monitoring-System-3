@@ -34,10 +34,13 @@
 #include "pcp.h"
 #include "spi.h"
 #include "esp32system.h"
-#include "max7317.h"
 #include "esp32can.h"
 #include "esp32adc.h"
 #include "mcp2515.h"
+
+#ifdef OVMS_COMP_MAX7317
+#include "max7317.h"
+#endif // #ifdef OVMS_COMP_MAX7317
 
 #ifdef CONFIG_OVMS_COMP_BLUETOOTH
 #include "esp32bluetooth.h"
@@ -117,7 +120,9 @@ class Peripherals
   public:
     esp32system* m_esp32;
     spi* m_spibus;
+#ifdef OVMS_COMP_MAX7317
     max7317* m_max7317;
+#endif // #ifdef OVMS_COMP_MAX7317
     esp32can* m_esp32can;
 #ifdef CONFIG_OVMS_COMP_WIFI
     esp32wifi* m_esp32wifi;

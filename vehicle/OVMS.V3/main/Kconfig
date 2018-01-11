@@ -145,6 +145,13 @@ config OVMS_COMP_WIFI
     help
         Enable to include support for wifi communications.
 
+config OVMS_COMP_MAX7317
+    bool "Include support for MAX7317 GPIO expander"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for MAX7317 GPIO expander.
+
 config OVMS_COMP_SERVER_V2
     bool "Include support for V2 server connections"
     default y
