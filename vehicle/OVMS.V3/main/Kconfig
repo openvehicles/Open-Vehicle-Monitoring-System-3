@@ -201,6 +201,13 @@ config OVMS_COMP_OTA
     help
         Enable to include support for Over-The-Air firmware updates.
 
+config OVMS_COMP_LOCATION
+    bool "Include support for LOCATION and geofencing"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for LOCATION and geofencing.
+
 config OVMS_COMP_WEBSERVER
     bool "Include support for Network Web Server"
     default y
