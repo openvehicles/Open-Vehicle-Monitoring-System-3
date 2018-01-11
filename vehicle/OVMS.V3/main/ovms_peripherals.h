@@ -126,32 +126,42 @@ class Peripherals
   public:
     esp32system* m_esp32;
     spi* m_spibus;
+
 #ifdef OVMS_COMP_MAX7317
     max7317* m_max7317;
 #endif // #ifdef OVMS_COMP_MAX7317
+
 #ifdef OVMS_COMP_ESP32CAN
     esp32can* m_esp32can;
 #endif // #ifdef OVMS_COMP_ESP32CAN
+
 #ifdef CONFIG_OVMS_COMP_WIFI
     esp32wifi* m_esp32wifi;
 #endif // #ifdef CONFIG_OVMS_COMP_WIFI
+
 #ifdef CONFIG_OVMS_COMP_BLUETOOTH
     esp32bluetooth* m_esp32bluetooth;
 #endif // #ifdef CONFIG_OVMS_COMP_BLUETOOTH
+
     esp32adc* m_esp32adc;
+
 #ifdef OVMS_COMP_MCP2515
     mcp2515* m_mcp2515_1;
     mcp2515* m_mcp2515_2;
 #endif // #ifdef OVMS_COMP_MCP2515
+
 #ifdef CONFIG_OVMS_COMP_SDCARD
     sdcard* m_sdcard;
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
+
 #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
     simcom* m_simcom;
 #endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+
 #ifdef CONFIG_OVMS_COMP_OBD2ECU
     obd2ecu* m_obd2ecu;
 #endif // #ifdef CONFIG_OVMS_COMP_OBD2ECU
+
     ext12v* m_ext12v;
   };
 

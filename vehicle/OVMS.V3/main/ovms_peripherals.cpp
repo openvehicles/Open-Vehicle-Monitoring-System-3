@@ -68,43 +68,54 @@ Peripherals::Peripherals()
 
   ESP_LOGI(TAG, "  ESP32 system");
   m_esp32 = new esp32system("esp32");
+
   ESP_LOGI(TAG, "  SPI bus");
   m_spibus = new spi("spi", VSPI_PIN_MISO, VSPI_PIN_MOSI, VSPI_PIN_CLK);
+
 #ifdef CONFIG_OVMS_COMP_MAX7317
   ESP_LOGI(TAG, "  MAX7317 I/O Expander");
   m_max7317 = new max7317("egpio", m_spibus, VSPI_NODMA_HOST, 1000000, VSPI_PIN_MAX7317_CS);
 #endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+
 #ifdef OVMS_COMP_ESP32CAN
   ESP_LOGI(TAG, "  ESP32 CAN");
   m_esp32can = new esp32can("can1", ESP32CAN_PIN_TX, ESP32CAN_PIN_RX);
 #endif // #ifdef OVMS_COMP_ESP32CAN
+
 #ifdef CONFIG_OVMS_COMP_WIFI
   ESP_LOGI(TAG, "  ESP32 WIFI");
   m_esp32wifi = new esp32wifi("wifi");
 #endif // #ifdef CONFIG_OVMS_COMP_WIFI
+
 #ifdef CONFIG_OVMS_COMP_BLUETOOTH
   ESP_LOGI(TAG, "  ESP32 BLUETOOTH");
   m_esp32bluetooth = new esp32bluetooth("bluetooth");
 #endif // #ifdef CONFIG_OVMS_COMP_BLUETOOTH
+
   ESP_LOGI(TAG, "  ESP32 ADC");
   m_esp32adc = new esp32adc("adc", ADC1_CHANNEL_0, ADC_WIDTH_12Bit, ADC_ATTEN_11db);
+
 #ifdef OVMS_COMP_MCP2515
   ESP_LOGI(TAG, "  MCP2515 CAN 1/2");
   m_mcp2515_1 = new mcp2515("can2", m_spibus, VSPI_NODMA_HOST, 1000000, VSPI_PIN_MCP2515_1_CS, VSPI_PIN_MCP2515_1_INT);
   ESP_LOGI(TAG, "  MCP2515 CAN 2/2");
   m_mcp2515_2 = new mcp2515("can3", m_spibus, VSPI_NODMA_HOST, 1000000, VSPI_PIN_MCP2515_2_CS, VSPI_PIN_MCP2515_2_INT);
 #endif // #ifdef OVMS_COMP_MCP2515
+
 #ifdef CONFIG_OVMS_COMP_SDCARD
   ESP_LOGI(TAG, "  SD CARD");
   m_sdcard = new sdcard("sdcard", false,true,SDCARD_PIN_CD);
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
+
 #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
   ESP_LOGI(TAG, "  SIMCOM MODEM");
   m_simcom = new simcom("simcom", UART_NUM_1, 115200, MODEM_GPIO_RX, MODEM_GPIO_TX, MODEM_EGPIO_PWR, MODEM_EGPIO_DTR);
 #endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+
 #ifdef CONFIG_OVMS_COMP_OBD2ECU
   m_obd2ecu = NULL;
 #endif // #ifdef CONFIG_OVMS_COMP_OBD2ECU
+
   m_ext12v = new ext12v("ext12v");
   }
 
