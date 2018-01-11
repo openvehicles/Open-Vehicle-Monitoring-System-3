@@ -49,6 +49,7 @@ ConsoleAsync* ConsoleAsync::Instance()
 
 ConsoleAsync::ConsoleAsync() : TaskBase("AsyncConsole", 5*1024)
   {
+  m_monitoring = true;
   uart_config_t uart_config =
     {
     .baud_rate = 115200,
@@ -114,25 +115,7 @@ int ConsoleAsync::ConsoleLogger(const char* fmt, va_list args)
   {
   if (!m_instance)
     return ::vprintf(fmt, args);
-  char *buffer;
-  int ret = vasprintf(&buffer, fmt, args);
-
-  if (ovms_log_file)
-    {
-    // Log to the log file as well...
-    fwrite(buffer,1,strlen(buffer),ovms_log_file);
-    fflush(ovms_log_file);
-    fsync(fileno(ovms_log_file));
-    }
-
-  // replace CR/LF except last by "|":
-  for (char* s=buffer; *s; s++)
-    {
-    if ((*s=='\r' || *s=='\n') && *(s+1))
-      *s = '|';
-    }
-  m_instance->Log(buffer);
-  return ret;
+  return MyCommandApp.Log(fmt, args);
   }
 
 void ConsoleAsync::Log(char* message)

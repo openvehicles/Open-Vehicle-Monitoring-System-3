@@ -175,7 +175,8 @@ void OvmsConsole::Poll(portTickType ticks, QueueHandle_t queue)
       // without leaving a blank line above it.  So before we display a new log
       // message we need to output a newline if the last action was displaying a
       // log message, or output a carriage return to back over the prompt.
-      if (event.type != ALERT_MULTI || event.multi->begin() != event.multi->end())
+      if (m_monitoring &&
+        (event.type != ALERT_MULTI || event.multi->begin() != event.multi->end()))
         {
         if (m_state == AWAITING_NL)
           write(NLbuf, 1);
@@ -205,9 +206,9 @@ void OvmsConsole::Poll(portTickType ticks, QueueHandle_t queue)
           }
         if (buffer[len-1] == '\n')
           {
-          buffer[--len] = '\0';
-          if (buffer[len-1] == '\r')  // Remove CR, too, in case of \r\n
-            buffer[--len] = '\0';
+          --len;
+          if (buffer[len-1] == '\r')  // Omit CR, too, in case of \r\n
+            --len;
           m_state = AWAITING_NL;
           write(buffer, len);
           }
