@@ -34,9 +34,12 @@
 #include "pcp.h"
 #include "spi.h"
 #include "esp32system.h"
-#include "esp32can.h"
 #include "esp32adc.h"
 #include "mcp2515.h"
+
+#ifdef OVMS_COMP_ESP32CAN
+#include "esp32can.h"
+#endif // #ifdef OVMS_COMP_ESP32CAN
 
 #ifdef OVMS_COMP_MAX7317
 #include "max7317.h"
@@ -123,7 +126,9 @@ class Peripherals
 #ifdef OVMS_COMP_MAX7317
     max7317* m_max7317;
 #endif // #ifdef OVMS_COMP_MAX7317
+#ifdef OVMS_COMP_ESP32CAN
     esp32can* m_esp32can;
+#endif // #ifdef OVMS_COMP_ESP32CAN
 #ifdef CONFIG_OVMS_COMP_WIFI
     esp32wifi* m_esp32wifi;
 #endif // #ifdef CONFIG_OVMS_COMP_WIFI

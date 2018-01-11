@@ -74,8 +74,10 @@ Peripherals::Peripherals()
   ESP_LOGI(TAG, "  MAX7317 I/O Expander");
   m_max7317 = new max7317("egpio", m_spibus, VSPI_NODMA_HOST, 1000000, VSPI_PIN_MAX7317_CS);
 #endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+#ifdef OVMS_COMP_ESP32CAN
   ESP_LOGI(TAG, "  ESP32 CAN");
   m_esp32can = new esp32can("can1", ESP32CAN_PIN_TX, ESP32CAN_PIN_RX);
+#endif // #ifdef OVMS_COMP_ESP32CAN
 #ifdef CONFIG_OVMS_COMP_WIFI
   ESP_LOGI(TAG, "  ESP32 WIFI");
   m_esp32wifi = new esp32wifi("wifi");

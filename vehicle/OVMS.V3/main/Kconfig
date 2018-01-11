@@ -152,6 +152,13 @@ config OVMS_COMP_MAX7317
     help
         Enable to include support for MAX7317 GPIO expander.
 
+config OVMS_COMP_ESP32CAN
+    bool "Include support for ESP32 on-board CAN controller (can1)"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for ESP32 on-board CAN controller (can1).
+
 config OVMS_COMP_SERVER_V2
     bool "Include support for V2 server connections"
     default y
