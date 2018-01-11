@@ -53,18 +53,28 @@ Peripherals::Peripherals()
   gpio_set_direction((gpio_num_t)VSPI_PIN_MISO, GPIO_MODE_INPUT);
   gpio_set_direction((gpio_num_t)VSPI_PIN_MOSI, GPIO_MODE_OUTPUT);
   gpio_set_direction((gpio_num_t)VSPI_PIN_CLK, GPIO_MODE_OUTPUT);
+
+#ifdef CONFIG_OVMS_COMP_MAX7317
   gpio_set_direction((gpio_num_t)VSPI_PIN_MAX7317_CS, GPIO_MODE_OUTPUT);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+
+#ifdef CONFIG_OVMS_COMP_MCP2515
   gpio_set_direction((gpio_num_t)VSPI_PIN_MCP2515_1_CS, GPIO_MODE_OUTPUT);
   gpio_set_direction((gpio_num_t)VSPI_PIN_MCP2515_2_CS, GPIO_MODE_OUTPUT);
   gpio_set_direction((gpio_num_t)VSPI_PIN_MCP2515_1_INT, GPIO_MODE_INPUT);
   gpio_set_direction((gpio_num_t)VSPI_PIN_MCP2515_2_INT, GPIO_MODE_INPUT);
+#endif // #ifdef CONFIG_OVMS_COMP_MCP2515
 
+#ifdef CONFIG_OVMS_COMP_SDCARD
   gpio_set_direction((gpio_num_t)SDCARD_PIN_CLK, GPIO_MODE_OUTPUT);
   gpio_set_direction((gpio_num_t)SDCARD_PIN_CMD, GPIO_MODE_OUTPUT);
   gpio_set_direction((gpio_num_t)SDCARD_PIN_CD, GPIO_MODE_INPUT);
+#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
+#ifdef CONFIG_OVMS_COMP_MODEM
   gpio_set_direction((gpio_num_t)MODEM_GPIO_TX, GPIO_MODE_OUTPUT);
   gpio_set_direction((gpio_num_t)MODEM_GPIO_RX, GPIO_MODE_INPUT);
+#endif // #ifdef CONFIG_OVMS_COMP_MODEM
 
   ESP_LOGI(TAG, "  ESP32 system");
   m_esp32 = new esp32system("esp32");
@@ -77,10 +87,10 @@ Peripherals::Peripherals()
   m_max7317 = new max7317("egpio", m_spibus, VSPI_NODMA_HOST, 1000000, VSPI_PIN_MAX7317_CS);
 #endif // #ifdef CONFIG_OVMS_COMP_MAX7317
 
-#ifdef OVMS_COMP_ESP32CAN
+#ifdef CONFIG_OVMS_COMP_ESP32CAN
   ESP_LOGI(TAG, "  ESP32 CAN");
   m_esp32can = new esp32can("can1", ESP32CAN_PIN_TX, ESP32CAN_PIN_RX);
-#endif // #ifdef OVMS_COMP_ESP32CAN
+#endif // #ifdef CONFIG_OVMS_COMP_ESP32CAN
 
 #ifdef CONFIG_OVMS_COMP_WIFI
   ESP_LOGI(TAG, "  ESP32 WIFI");
@@ -97,12 +107,12 @@ Peripherals::Peripherals()
   m_esp32adc = new esp32adc("adc", ADC1_CHANNEL_0, ADC_WIDTH_12Bit, ADC_ATTEN_11db);
 #endif // #ifdef CONFIG_OVMS_COMP_ADC
 
-#ifdef OVMS_COMP_MCP2515
+#ifdef CONFIG_OVMS_COMP_MCP2515
   ESP_LOGI(TAG, "  MCP2515 CAN 1/2");
   m_mcp2515_1 = new mcp2515("can2", m_spibus, VSPI_NODMA_HOST, 1000000, VSPI_PIN_MCP2515_1_CS, VSPI_PIN_MCP2515_1_INT);
   ESP_LOGI(TAG, "  MCP2515 CAN 2/2");
   m_mcp2515_2 = new mcp2515("can3", m_spibus, VSPI_NODMA_HOST, 1000000, VSPI_PIN_MCP2515_2_CS, VSPI_PIN_MCP2515_2_INT);
-#endif // #ifdef OVMS_COMP_MCP2515
+#endif // #ifdef CONFIG_OVMS_COMP_MCP2515
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
   ESP_LOGI(TAG, "  SD CARD");
@@ -118,7 +128,9 @@ Peripherals::Peripherals()
   m_obd2ecu = NULL;
 #endif // #ifdef CONFIG_OVMS_COMP_OBD2ECU
 
+#ifdef CONFIG_OVMS_COMP_EXT12V
   m_ext12v = new ext12v("ext12v");
+#endif // #ifdef CONFIG_OVMS_COMP_EXT12V
   }
 
 Peripherals::~Peripherals()

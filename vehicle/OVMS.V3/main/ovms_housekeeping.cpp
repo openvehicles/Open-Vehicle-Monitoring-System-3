@@ -95,11 +95,14 @@ void Housekeeping::init()
   ESP_LOGI(TAG, "Starting PERIPHERALS...");
   MyPeripherals = new Peripherals();
 
-#ifdef OVMS_COMP_ESP32CAN
+#ifdef CONFIG_OVMS_COMP_ESP32CAN
   MyPeripherals->m_esp32can->SetPowerMode(Off);
-#endif // #ifdef OVMS_COMP_ESP32CAN
+#endif // #ifdef CONFIG_OVMS_COMP_ESP32CAN
 
+#ifdef CONFIG_OVMS_COMP_EXT12V
   MyPeripherals->m_ext12v->SetPowerMode(Off);
+#endif // #ifdef CONFIG_OVMS_COMP_EXT12V
+
   ESP_LOGI(TAG, "Starting USB console...");
   ConsoleAsync::Instance();
 
