@@ -392,7 +392,9 @@ void simcom::State1Enter(SimcomState1 newstate)
       // We need to power off the modem (or leave it powered off if it already is)
       // Need to init the modem control lines...
       PowerSleep(false);
+#ifdef CONFIG_OVMS_COMP_MAX7317
       MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
       m_state1_timeout_ticks = 15;
       m_state1_timeout_goto = PoweredOff;
       break;
@@ -819,18 +821,22 @@ void simcom::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
 void simcom::PowerCycle()
   {
   ESP_LOGI(TAG, "Power Cycle");
+#ifdef CONFIG_OVMS_COMP_MAX7317
   MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
   MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 1); // Modem EN/PWR line high
   vTaskDelay(1000 / portTICK_PERIOD_MS);
   MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
   }
 
 void simcom::PowerSleep(bool onoff)
   {
+#ifdef CONFIG_OVMS_COMP_MAX7317
   if (onoff)
     MyPeripherals->m_max7317->Output(MODEM_EGPIO_DTR, 1);
   else
     MyPeripherals->m_max7317->Output(MODEM_EGPIO_DTR, 0);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
   }
 
 void simcom::tx(uint8_t* data, size_t size)

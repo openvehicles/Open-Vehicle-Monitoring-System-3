@@ -49,14 +49,18 @@ void ext12v::SetPowerMode(PowerMode powermode)
   switch (powermode)
     {
     case On:
+#ifdef CONFIG_OVMS_COMP_MAX7317
       ESP_LOGI(TAG, "Powering on external 12V devices");
       MyPeripherals->m_max7317->Output(MAX7317_SW_CTL, 1);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
       break;
     case Sleep:
     case DeepSleep:
     case Off:
+#ifdef CONFIG_OVMS_COMP_MAX7317
       ESP_LOGI(TAG, "Powering off external 12V devices");
       MyPeripherals->m_max7317->Output(MAX7317_SW_CTL, 0);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
       break;
     default:
       break;

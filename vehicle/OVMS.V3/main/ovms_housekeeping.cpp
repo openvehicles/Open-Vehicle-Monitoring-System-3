@@ -95,8 +95,14 @@ void Housekeeping::init()
   ESP_LOGI(TAG, "Starting PERIPHERALS...");
   MyPeripherals = new Peripherals();
 
+#ifdef CONFIG_OVMS_COMP_ESP32CAN
   MyPeripherals->m_esp32can->SetPowerMode(Off);
+#endif // #ifdef CONFIG_OVMS_COMP_ESP32CAN
+
+#ifdef CONFIG_OVMS_COMP_EXT12V
   MyPeripherals->m_ext12v->SetPowerMode(Off);
+#endif // #ifdef CONFIG_OVMS_COMP_EXT12V
+
   ESP_LOGI(TAG, "Starting USB console...");
   ConsoleAsync::Instance();
 
@@ -144,6 +150,7 @@ void Housekeeping::version()
 
 void Housekeeping::metrics()
   {
+#ifdef CONFIG_OVMS_COMP_ADC
   OvmsMetricFloat* m1 = StandardMetrics.ms_v_bat_12v_voltage;
   if (m1 == NULL)
     return;
@@ -153,6 +160,7 @@ void Housekeeping::metrics()
   if (f == 0) f = 182;
   float v = (float)MyPeripherals->m_esp32adc->read() / f;
   m1->SetValue(v);
+#endif // #ifdef CONFIG_OVMS_COMP_ADC
 
   OvmsMetricInt* m2 = StandardMetrics.ms_m_tasks;
   if (m2 == NULL)
