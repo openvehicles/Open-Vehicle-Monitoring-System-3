@@ -43,8 +43,10 @@ Peripherals::Peripherals()
   {
   ESP_LOGI(TAG, "Initialising OVMS Peripherals...");
 
+#ifdef CONFIG_OVMS_COMP_WIFI
   ESP_LOGI(TAG, "  TCP/IP Adaptor");
   tcpip_adapter_init();
+#endif // #ifdef CONFIG_OVMS_COMP_WIFI
 
   gpio_install_isr_service(0);
 
@@ -72,8 +74,10 @@ Peripherals::Peripherals()
   m_max7317 = new max7317("egpio", m_spibus, VSPI_NODMA_HOST, 1000000, VSPI_PIN_MAX7317_CS);
   ESP_LOGI(TAG, "  ESP32 CAN");
   m_esp32can = new esp32can("can1", ESP32CAN_PIN_TX, ESP32CAN_PIN_RX);
+#ifdef CONFIG_OVMS_COMP_WIFI
   ESP_LOGI(TAG, "  ESP32 WIFI");
   m_esp32wifi = new esp32wifi("wifi");
+#endif // #ifdef CONFIG_OVMS_COMP_WIFI
 #ifdef CONFIG_OVMS_COMP_BLUETOOTH
   ESP_LOGI(TAG, "  ESP32 BLUETOOTH");
   m_esp32bluetooth = new esp32bluetooth("bluetooth");
