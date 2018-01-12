@@ -64,4 +64,13 @@ std::string chargemode_code(const int key);
 int chargemode_key(const std::string code);
 
 
+/**
+ * mp_encode: encode string for MP transport;
+ *  - replace '\r\n' by '\r'
+ *  - replace '\n' by '\r'
+ *  - replace ',' by ';'
+ */
+std::string mp_encode(const std::string text);
+
+
 #endif //#ifndef __UTILS_H__

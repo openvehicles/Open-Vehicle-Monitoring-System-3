@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-twizy";
 
-#define VERSION "0.8.0"
+#define VERSION "0.9.0"
 
 #include <stdio.h>
 #include <string>
@@ -352,6 +352,11 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::ProcessMsgCo
     case CMD_ValetOff:
       return MsgCommandRestrict(result, command, args);
     
+    case CMD_QueryLogs:
+      return MsgCommandQueryLogs(result, command, args);
+    case CMD_ResetLogs:
+      return MsgCommandResetLogs(result, command, args);
+    
     default:
       return NotImplemented;
   }
@@ -394,6 +399,74 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandRe
 {
   // TODO
   return NotImplemented;
+}
+
+
+/**
+ * MsgCommandQueryLogs:
+ */
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandQueryLogs(string& result, int command, const char* args)
+{
+  int which = 1;
+  int start = 0;
+  
+  // parse args:
+  if (args && *args) {
+    char *arg;
+    if ((arg = strsep((char**) &args, ",")) != NULL)
+      which = atoi(arg);
+    if ((arg = strsep((char**) &args, ",")) != NULL)
+      start = atoi(arg);
+  }
+  
+  // execute:
+  int totalcnt = 0, sendcnt = 0;
+  CANopenResult_t res = m_sevcon->QueryLogs(0, NULL, which, start, &totalcnt, &sendcnt);
+  if (res != COR_OK) {
+    result = "Failed: ";
+    result += mp_encode(m_sevcon->GetResultString(res));
+    return Fail;
+  }
+  else {
+    ostringstream buf;
+    if (sendcnt == 0)
+      buf << "No log entries retrieved";
+    else
+      buf << "Log entries #" << start << "-" << start+sendcnt-1 << " of " << totalcnt << " retrieved";
+    result = buf.str();
+    return Success;
+  }
+}
+
+
+/**
+ * MsgCommandResetLogs:
+ */
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandResetLogs(string& result, int command, const char* args)
+{
+  int which = 99;
+  
+  // parse args:
+  if (args && *args) {
+    char *arg;
+    if ((arg = strsep((char**) &args, ",")) != NULL)
+      which = atoi(arg);
+  }
+  
+  // execute:
+  int cnt = 0;
+  CANopenResult_t res = m_sevcon->ResetLogs(which, &cnt);
+  if (res != COR_OK) {
+    result = "Failed: ";
+    result += mp_encode(m_sevcon->GetResultString(res));
+    return Fail;
+  }
+  else {
+    ostringstream buf;
+    buf << cnt << " log entries cleared";
+    result = buf.str();
+    return Success;
+  }
 }
 
 

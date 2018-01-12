@@ -156,7 +156,7 @@ class SevconClient
     CANopenResult_t CfgRampLimits(int accel_prc, int decel_prc);
     CANopenResult_t CfgSmoothing(int prc);
     CANopenResult_t CfgBrakelight(int on_lev, int off_lev);
-    
+
     uint8_t CalcProfileChecksum(cfg_profile& profile);
     bool GetParamProfile(uint8_t key, cfg_profile& profile);
     bool SetParamProfile(uint8_t key, cfg_profile& profile);
@@ -165,6 +165,12 @@ class SevconClient
     string FmtSwitchProfileResult(CANopenResult_t res);
     
     static int PrintProfile(int capacity, OvmsWriter* writer, cfg_profile& profile);
+
+  public:
+    // diagnostics / statistics:
+    void AddFaultInfo(ostringstream& buf, uint16_t faultcode);
+    CANopenResult_t QueryLogs(int verbosity, OvmsWriter* writer, int which, int start, int* totalcnt, int* sendcnt);
+    CANopenResult_t ResetLogs(int which, int* retcnt);
 
   
   public:
@@ -189,6 +195,9 @@ class SevconClient
     static void shell_cfg_speed(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void shell_cfg_tsmap(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void shell_cfg_brakelight(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    
+    static void shell_cfg_querylogs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void shell_cfg_clearlogs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
   
   private:
     OvmsVehicleRenaultTwizy*  m_twizy;
