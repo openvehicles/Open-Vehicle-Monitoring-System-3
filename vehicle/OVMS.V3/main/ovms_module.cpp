@@ -247,36 +247,44 @@ class FreeHeap
   public:
     inline FreeHeap()
       {
-      m_free_8bit = heap_caps_get_free_size(MALLOC_CAP_8BIT);
-      m_free_32bit = heap_caps_get_free_size(MALLOC_CAP_32BIT) - m_free_8bit;
+      m_free_8bit = heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
+      m_free_32bit = heap_caps_get_free_size(MALLOC_CAP_32BIT|MALLOC_CAP_INTERNAL) - m_free_8bit;
+      m_free_spi = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
       if (!m_total_8bit)
         {
-        m_total_8bit = TotalSize(MALLOC_CAP_8BIT);
-        m_total_32bit = TotalSize(MALLOC_CAP_32BIT) - FreeHeap::m_total_8bit;
+        m_total_8bit = TotalSize(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
+        m_total_32bit = TotalSize(MALLOC_CAP_32BIT|MALLOC_CAP_INTERNAL) - FreeHeap::m_total_8bit;
+        m_total_spi = TotalSize(MALLOC_CAP_SPIRAM);
         }
       }
     size_t Free8bit() { return m_free_8bit; }
     size_t Free32bit() { return m_free_32bit; }
+    size_t FreeSPI() { return m_free_spi; }
     size_t Total8bit() { return m_total_8bit; }
     size_t Total32bit() { return m_total_32bit; }
+    size_t TotalSPI() { return m_total_spi; }
 
   private:
     size_t TotalSize(uint32_t caps)
     {
     multi_heap_info_t info;
     heap_caps_get_info(&info, caps);
-    return info.total_free_bytes + info.total_allocated_bytes +
-      info.allocated_blocks*20 + info.free_blocks*4 + 44;
+    size_t total = info.total_free_bytes + info.total_allocated_bytes +
+      info.allocated_blocks*20 + info.free_blocks*4;
+    return total;
     }
 
   private:
     size_t m_free_8bit;
     size_t m_free_32bit;
+    size_t m_free_spi;
     static size_t m_total_8bit;
     static size_t m_total_32bit;
+    static size_t m_total_spi;
   };
 size_t FreeHeap::m_total_8bit = 0;
 size_t FreeHeap::m_total_32bit = 0;
+size_t FreeHeap::m_total_spi = 0;
 
 
 class HeapTask
@@ -307,7 +315,7 @@ class HeapTotals
       {
       for (int i = 0; i < count; ++i)
         for (int j = 0; j < NUM_USED_TYPES; ++j)
-          before[i].totals.size[j] = after[i].totals.size[j] = 0;
+          after[i].totals.size[j] = 0;
       }
     void transfer()
       {
@@ -519,11 +527,11 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
     }
   get_memory(tl, tln);
 
-  writer->printf("============================\n");
   FreeHeap now;
-  writer->printf("Free 8-bit %zu/%zu, 32-bit %zu/%zu, blocks dumped = %d%s\n",
-    now.Free8bit(), now.Total8bit(), now.Free32bit(), now.Total32bit(), numafter,
-    numafter < DUMPSIZE ? "" : " (limited)");
+  writer->printf("Free 8-bit %zu/%zu, 32-bit %zu/%zu, SPIRAM %zu/%zu\n",
+    now.Free8bit(), now.Total8bit(), now.Free32bit(), now.Total32bit(),
+    now.FreeSPI(), now.TotalSPI());
+  bool first = true;
   for (int i = changes->begin(); i < changes->end(); ++i)
     {
     int change[NUM_USED_TYPES];
@@ -536,18 +544,25 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
       }
     if (any || all)
       {
+      if (first)
+        {
+        writer->printf("--Task--     Total DRAM D/IRAM   IRAM SPIRAM"
+          "   +/- DRAM D/IRAM   IRAM SPIRAM\n");
+        first = false;
+        }
       Name name("NoTaskMap");
       if (tm)
         tm->find((*changes).Task(i), name);
-      writer->printf("task=%-15s total=%7d%7d%7d%7d change=%+7d%+7d%+7d%+7d\n", name.bytes,
+      writer->printf("%-15s %7d%7d%7d%7d    %+7d%+7d%+7d%+7d\n", name.bytes,
         (*changes).After(i, 0), (*changes).After(i, 1), (*changes).After(i, 2),
         (*changes).After(i, 3), change[0], change[1], change[2], change[3]);
       }
     }
 
-  writer->printf("============================\n");
   if (tln)
     {
+    writer->printf("============================ blocks dumped = %d%s\n",
+      numafter, numafter < DUMPSIZE ? "" : " (limited)");
     tl = tasklist;
     for (int i = 0; i < tln; ++i, ++tl)
       print_blocks(writer, *tl);
@@ -563,7 +578,11 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
           any = true;
         }
       if (any)
+        {
+        writer->printf("============================ blocks dumped = %d%s\n",
+          numafter, numafter < DUMPSIZE ? "" : " (limited)");
         print_blocks(writer, (*changes).Task(i));
+        }
       }
     }
 
@@ -585,7 +604,7 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
 static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   UBaseType_t num = uxTaskGetNumberOfTasks();
-  writer->printf("Number of Tasks =%3u%s   Stack:  Now   Max Total    Heap\n", num,
+  writer->printf("Number of Tasks =%3u%s   Stack:  Now   Max Total    Heap 32-bit SPIRAM\n", num,
     num > MAX_TASKS ? ">max" : "    ");
   if (!allocate())
     {
@@ -602,13 +621,17 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
       if (taskstatus[i].xTaskNumber == num)
         {
         int k = changes->find(taskstatus[i].xHandle);
-        int heaptotal = 0;
+        int heaptotal = 0, heap32bit = 0, heapspi = 0;
         if (k >= 0)
-          heaptotal = (*changes).After(k, 0) + (*changes).After(k, 1) + (*changes).After(k, 3);
+          {
+          heaptotal = (*changes).After(k, 0) + (*changes).After(k, 1);
+          heap32bit = (*changes).After(k, 2);
+          heapspi = (*changes).After(k, 3);
+          }
         uint32_t total = (uint32_t)taskstatus[i].pxStackBase >> 16;
-        writer->printf("Task %08X %2u %-15s %5u %5u %5u  %6u\n", taskstatus[i].xHandle, taskstatus[i].xTaskNumber,
+        writer->printf("Task %08X %2u %-15s %5u %5u %5u %7u%7u%7u\n", taskstatus[i].xHandle, taskstatus[i].xTaskNumber,
           taskstatus[i].pcTaskName, total - ((uint32_t)taskstatus[i].pxStackBase & 0xFFFF),
-          total - taskstatus[i].usStackHighWaterMark, total, heaptotal);
+          total - taskstatus[i].usStackHighWaterMark, total, heaptotal, heap32bit, heapspi);
         ++j;
         break;
         }
