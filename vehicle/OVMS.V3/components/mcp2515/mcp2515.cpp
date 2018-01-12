@@ -28,8 +28,8 @@
 ; THE SOFTWARE.
 */
 
-// #include "ovms_log.h"
-// static const char *TAG = "mcp2515";
+#include "ovms_log.h"
+static const char *TAG = "mcp2515";
 
 #include <string.h>
 #include "mcp2515.h"
@@ -252,7 +252,8 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
     // all interrupts handled
     return false;
     }
-  else if (intflag <= 2)
+    
+  if (intflag <= 2)
     {
     // The indicated RX buffer has a message to be read
     memset(frame,0,sizeof(*frame));
@@ -275,43 +276,45 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
       frame->FIR.B.FF = CAN_frame_std;
       frame->MsgID = ((uint32_t)p[0] << 3) + (p[1] >> 5);  // Standard mode
       }
+   
     frame->FIR.B.DLC = p[4] & 0x0f;
 
     memcpy(&frame->data,p+5,8);
+    }
 
-    // tell framework we've got a frame:
-    return true;
-    }
-  else
+  // handle other interrupts that came in at the same time:
+  if (intstat & 0b10100000)
     {
-    // handle other interrupts:
-    if (intflag & 0b10100000)
-      {
-      // Error interrupts:
-      //  MERRF 0x80 = message tx/rx error
-      //  ERRIF 0x20 = overflow / error state change
-      m_error_flags = (intflag & 0b10100000) << 8 | errflag;
-      
-      if (errflag & 0b10000000) // RXB1 overflow
-        m_errors_rxbuf_overflow++;
-      if (errflag & 0b01000000) // RXB0 overflow
-        m_errors_rxbuf_overflow++;
-      
-      // read error counters:
-      uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, 0x1c);
-      m_errors_tx = p[0];
-      m_errors_rx = p[1];
-      
-      // clear RX buffer overflow flags:
-      m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2d, 0b11000000, 0x00);
+    // Error interrupts:
+    //  MERRF 0x80 = message tx/rx error
+    //  ERRIF 0x20 = overflow / error state change
+    m_error_flags = (intstat & 0b10100000) << 8 | errflag;
+  
+    if (errflag & 0b10000000) // RXB1 overflow
+      { 
+      m_errors_rxbuf_overflow++;
+      ESP_LOGW(TAG, "CAN Bus 2/3 receive overflow; Frame lost.");
       }
+    if (errflag & 0b01000000) // RXB0 overflow.  No data lost in this case (it went into RXB1)
+      m_errors_rxbuf_overflow++;
     
-    // clear interrupts:
-    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intflag, 0x00);
+    // read error counters:
+    uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, 0x1c);
+    m_errors_tx = p[0];
+    m_errors_rx = p[1];
     
-    // all interrupts handled
-    return false;
+    // clear RX buffer overflow flags:
+    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2d, 0b11000000, 0x00);
     }
+   
+  // clear remaining interrupts if any.  Note: Rx ints were cleared when buffers were read; don't clear again here
+  if(intstat & 0b11111100) m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intstat & 0b11111100, 0x00); 
+
+  if(intflag & 0b00000011)   //  did we receive anything?
+    return true;
+  else 
+    return false;
+  
   }
 
 void mcp2515::TxCallback()
