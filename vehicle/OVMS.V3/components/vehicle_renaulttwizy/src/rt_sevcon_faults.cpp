@@ -31,6 +31,7 @@ static const char *TAG = "v-twizy";
 #include <iomanip>
 
 #include "ovms_notify.h"
+#include "ovms_utils.h"
 
 #include "vehicle_renaulttwizy.h"
 #include "rt_sevcon.h"
@@ -341,6 +342,285 @@ const std::string SevconClient::GetResultString(CANopenJob& job)
     return GetResultString(job.result, job.sdo.error);
   else
     return GetResultString(job.result, 0);
+}
+
+
+void SevconClient::AddFaultInfo(ostringstream& buf, uint16_t faultcode)
+{
+  char xbuf[200];
+  
+  // add fault code:
+  sprintf(xbuf, "%04x", faultcode);
+  buf << xbuf << ",";
+  
+  if (faultcode == 0) {
+    buf << "<No fault>";
+    return;
+  }
+  
+  // check for known fault code:
+  int i;
+  for (i = 0; SC_FaultCode[i].code; i++) {
+    if (SC_FaultCode[i].code == faultcode) {
+      // found, add description from table:
+      buf
+        << "|" << SC_FaultTypeName[SC_FaultCode[i].type]
+        << "|" << mp_encode(SC_FaultCode[i].message)
+        << "|" << mp_encode(SC_FaultCode[i].description)
+        << "|" << mp_encode(SC_FaultCode[i].action);
+      return;
+    }
+  }
+  
+  // not found, fetch description from controller:
+  CANopenJob job;
+  strcpy(xbuf, "?");
+  if (Write(job, 0x5610, 0x01, faultcode) == COR_OK) {
+    if (Read(job, 0x5610, 0x02, (uint8_t*)xbuf, sizeof(xbuf)-1) == COR_OK) {
+      xbuf[job.sdo.xfersize] = 0;
+    }
+  }
+  buf << mp_encode(xbuf);
+}
+
+
+/**
+ * QueryLogs:
+ *  which: log category: 1=Alerts, 2=Faults FIFO, 3=System FIFO, 4=Event counter, 5=Min/max monitor
+ *  start: first entry to fetch, default=0 (returns max 10 entries per call)
+ *  *retcnt: number of total entries in the log category
+ */
+CANopenResult_t SevconClient::QueryLogs(int verbosity, OvmsWriter* writer, int which, int start, int* totalcnt, int* sendcnt)
+{
+  CANopenResult_t err = COR_OK;
+  SevconJob sc(this);
+  uint32_t sdoval=0;
+  #define _readsdo(idx, sub)          ((err = sc.Read(idx, sub, sdoval)) == COR_OK)
+  #define _writesdo(idx, sub, val)    ((err = sc.Write(idx, sub, val)) == COR_OK)
+  #define _output(buf) \
+    if (writer) { \
+      if (verbosity > buf.tellp()) \
+        verbosity -= writer->puts(buf.str().c_str()); \
+    } else { \
+      MyNotify.NotifyString("data", buf.str().c_str()); \
+    }
+
+  int n, cnt=0, outcnt=0;
+  ostringstream buf;
+
+
+  /* Key time:
+      RT-ENG-LogKeyTime
+              ,0,86400
+              ,<KeyHour>,<KeyMinSec>
+   */
+  if (!_readsdo(0x5200, 0x01))
+    return err;
+  buf << "RT-ENG-LogKeyTime,0,86400," << sdoval;
+  if (!_readsdo(0x5200, 0x02))
+    return err;
+  buf << "," << sdoval;
+  _output(buf);
+
+
+  /* Alerts (active faults):
+      RT-ENG-LogAlerts
+              ,<n>,86400
+              ,<Code>,<Description>
+   */
+  if (which == 1) {
+    cnt = _readsdo(0x5300, 0x01) ? sdoval : 0;
+    for (n=start; n<cnt && n<(start+10); n++) {
+      if (!_writesdo(0x5300, 0x02, n)) break;
+      if (!_readsdo(0x5300, 0x03)) break;
+      buf.str(""); buf.clear();
+      buf << "RT-ENG-LogAlerts," << n << ",86400,";
+      AddFaultInfo(buf, sdoval);
+      _output(buf);
+      outcnt++;
+    }
+  }
+
+
+  /* Faults FIFO:
+      RT-ENG-LogFaults
+              ,<n>,86400
+              ,<Code>,<Description>
+              ,<TimeHour>,<TimeMinSec>
+              ,<Data1>,<Data2>,<Data3>
+   */
+  else if (which == 2) {
+    cnt = _readsdo(0x4110, 0x02) ? sdoval : 0;
+    for (n=start; n<cnt && n<(start+10); n++) {
+      if (!_writesdo(0x4111, 0x00, n)) break;
+      if (!_readsdo(0x4112, 0x01)) break;
+      buf.str(""); buf.clear();
+      buf << "RT-ENG-LogFaults," << n << ",86400,";
+      AddFaultInfo(buf, sdoval);
+      _readsdo(0x4112, 0x02); buf << "," << sdoval;
+      _readsdo(0x4112, 0x03); buf << "," << sdoval;
+      _readsdo(0x4112, 0x04); buf << "," << sdoval;
+      _readsdo(0x4112, 0x05); buf << "," << sdoval;
+      _readsdo(0x4112, 0x06); buf << "," << sdoval;
+      _output(buf);
+      outcnt++;
+    }
+  }
+
+
+  /* System FIFO:
+      RT-ENG-LogSystem
+              ,<n>,86400
+              ,<Code>,<Description>
+              ,<TimeHour>,<TimeMinSec>
+              ,<Data1>,<Data2>,<Data3>
+   */
+  else if (which == 3) {
+    cnt = _readsdo(0x4100, 0x02) ? sdoval : 0;
+    for (n=start; n<cnt && n<(start+10); n++) {
+      if (!_writesdo(0x4101, 0x00, n)) break;
+      if (!_readsdo(0x4102, 0x01)) break;
+      buf.str(""); buf.clear();
+      buf << "RT-ENG-LogSystem," << n << ",86400,";
+      AddFaultInfo(buf, sdoval);
+      _readsdo(0x4102, 0x02); buf << "," << sdoval;
+      _readsdo(0x4102, 0x03); buf << "," << sdoval;
+      _readsdo(0x4102, 0x04); buf << "," << sdoval;
+      _readsdo(0x4102, 0x05); buf << "," << sdoval;
+      _readsdo(0x4102, 0x06); buf << "," << sdoval;
+      _output(buf);
+      outcnt++;
+    }
+  }
+
+
+  /* Event counter:
+      RT-ENG-LogCounts
+              ,<n>,86400
+              ,<Code>,<Description>
+              ,<LastTimeHour>,<LastTimeMinSec>
+              ,<FirstTimeHour>,<FirstTimeMinSec>
+              ,<Count>
+   */
+  else if (which == 4) {
+    if (start > 10)
+      start = 10;
+    cnt = 10;
+    for (n=start; n<10; n++) {
+      if (!_readsdo(0x4201+n, 0x01)) break;
+      buf.str(""); buf.clear();
+      buf << "RT-ENG-LogCounts," << n << ",86400,";
+      AddFaultInfo(buf, sdoval);
+      _readsdo(0x4201+n, 0x04); buf << "," << sdoval;
+      _readsdo(0x4201+n, 0x05); buf << "," << sdoval;
+      _readsdo(0x4201+n, 0x02); buf << "," << sdoval;
+      _readsdo(0x4201+n, 0x03); buf << "," << sdoval;
+      _readsdo(0x4201+n, 0x06); buf << "," << sdoval;
+      _output(buf);
+      outcnt++;
+    }
+  }
+
+
+  /* Min / max monitor:
+      MP-0 HRT-ENG-LogMinMax
+	,<n>,86400
+	,<BatteryVoltageMin>,<BatteryVoltageMax>
+	,<CapacitorVoltageMin>,<CapacitorVoltageMax>
+	,<MotorCurrentMin>,<MotorCurrentMax>
+	,<MotorSpeedMin>,<MotorSpeedMax>
+	,<DeviceTempMin>,<DeviceTempMax>
+   */
+  else if (which == 5) {
+    if (start > 2)
+      start = 2;
+    cnt = 2;
+    for (n=start; n<2; n++) {
+      if (!_readsdo(0x4300+n, 0x02)) break;
+      buf.str(""); buf.clear();
+      buf << "RT-ENG-LogMinMax," << n << ",86400," << sdoval;
+      _readsdo(0x4300+n, 0x03); buf << "," << (int16_t) sdoval;
+      _readsdo(0x4300+n, 0x04); buf << "," << (int16_t) sdoval;
+      _readsdo(0x4300+n, 0x05); buf << "," << (int16_t) sdoval;
+      _readsdo(0x4300+n, 0x06); buf << "," << (int16_t) sdoval;
+      _readsdo(0x4300+n, 0x07); buf << "," << (int16_t) sdoval;
+      _readsdo(0x4300+n, 0x0a); buf << "," << (int16_t) sdoval;
+      _readsdo(0x4300+n, 0x0b); buf << "," << (int16_t) sdoval;
+      _readsdo(0x4300+n, 0x0c); buf << "," << (int16_t) sdoval;
+      _readsdo(0x4300+n, 0x0d); buf << "," << (int16_t) sdoval;
+      _output(buf);
+      outcnt++;
+    }
+  }
+
+  
+  if (totalcnt)
+    *totalcnt = cnt;
+  if (sendcnt)
+    *sendcnt = outcnt;
+  
+  return err;
+
+  #undef _readsdo
+  #undef _writesdo
+  #undef _output
+}
+
+
+/**
+ * ResetLogs:
+ *  which: 99=ALL, 2=Faults FIFO, 3=System FIFO, 4=Event counter, 5=Min/max monitor
+ *  *retcnt: number of entries cleared
+ * 
+ * Note: Alerts can only be reset by power cycle
+ */
+CANopenResult_t SevconClient::ResetLogs(int which, int* retcnt)
+{
+  CANopenResult_t err = COR_OK;
+  uint32_t cnt=0, total=0;
+  SevconJob sc(this);
+
+  // Clear faults FIFO:
+  if (which == 2 || which == 99) {
+    cnt = 0;
+    if (err == COR_OK)
+      err = sc.Read(0x4110, 0x02, cnt);
+    if (err == COR_OK)
+      err = sc.Write(0x4110, 0x01, 1);
+    if (err == COR_OK)
+      total += cnt;
+  }
+
+  // Clear system FIFO:
+  if (which == 3 || which == 99) {
+    cnt = 0;
+    if (err == COR_OK)
+      err = sc.Read(0x4100, 0x02, cnt);
+    if (err == COR_OK)
+      err = sc.Write(0x4100, 0x01, 1);
+    if (err == COR_OK)
+      total += cnt;
+  }
+
+  // Clear event counter:
+  if (which == 4 || which == 99) {
+    if (err == COR_OK)
+      err = sc.Write(0x4200, 0x01, 1);
+    if (err == COR_OK)
+      total += 10;
+  }
+
+  // Clear min/max monitor:
+  if (which == 5 || which == 99) {
+    if (err == COR_OK)
+      err = sc.Write(0x4300, 0x01, 1);
+    if (err == COR_OK)
+      total += 2;
+  }
+
+  if (retcnt)
+    *retcnt = total;
+  return err;
 }
 
 
