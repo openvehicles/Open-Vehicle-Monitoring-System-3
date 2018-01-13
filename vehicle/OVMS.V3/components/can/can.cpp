@@ -394,6 +394,7 @@ bool canbus::StatusChanged()
 esp_err_t canbus::Write(CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
   {
   m_packets_tx++;
+  p_frame->origin = this;
   MyCan.LogFrame(CAN_Log_TX, p_frame);
   return ESP_OK;
   }
@@ -402,8 +403,9 @@ esp_err_t canbus::Write(CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
  * canbus::QueueWrite -- add a frame to the TX queue for later delivery
  *    - internal method, called by driver if no TX buffer is available
  */
-esp_err_t canbus::QueueWrite(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
+esp_err_t canbus::QueueWrite(CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
   {
+  p_frame->origin = this;
   if (xQueueSend(m_txqueue, p_frame, maxqueuewait) == pdTRUE)
     {
     m_txbuf_delay++;

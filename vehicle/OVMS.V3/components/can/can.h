@@ -188,6 +188,24 @@ typedef enum
   CAN_Log_Event
   } CAN_LogEntry_t;
 
+
+class canlog
+  {
+  public:
+    canlog(const char* logfilepath);
+    virtual ~canlog();
+  
+  public:
+    void LogFrame(CAN_LogEntry_t type, const CAN_frame_t* p_frame);
+    void LogStatus(CAN_LogEntry_t type, canbus* bus);
+  
+  protected:
+    char* m_logfilepath;
+    FILE* m_logfile;
+  };
+
+
+
 class canbus : public pcp
   {
   public:
@@ -206,7 +224,7 @@ class canbus : public pcp
     virtual void TxCallback();
   
   protected:
-    virtual esp_err_t QueueWrite(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
+    virtual esp_err_t QueueWrite(CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
     QueueHandle_t m_txqueue;
   
   public:

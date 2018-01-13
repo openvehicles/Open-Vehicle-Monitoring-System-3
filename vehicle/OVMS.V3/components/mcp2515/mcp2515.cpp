@@ -181,9 +181,7 @@ esp_err_t mcp2515::Write(CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
     txbuf = 0b100; // use TXB2
   else
     return QueueWrite(p_frame, maxqueuewait);
-  
-  p_frame->origin = this;
-  
+
   if (p_frame->FIR.B.FF == CAN_frame_std)
     {
     // Transmit a standard frame
