@@ -165,11 +165,11 @@ esp_err_t mcp2515::Stop()
   return ESP_OK;
   }
 
-esp_err_t mcp2515::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
+esp_err_t mcp2515::Write(CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
   {
   uint8_t buf[16];
   uint8_t id[4];
-
+  
   // check for free TX buffer:
   uint8_t txbuf;
   uint8_t* p = m_spibus->spi_cmd(m_spi, buf, 1, 1, CMD_READ_STATUS);
@@ -181,6 +181,8 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=
     txbuf = 0b100; // use TXB2
   else
     return QueueWrite(p_frame, maxqueuewait);
+  
+  p_frame->origin = this;
   
   if (p_frame->FIR.B.FF == CAN_frame_std)
     {

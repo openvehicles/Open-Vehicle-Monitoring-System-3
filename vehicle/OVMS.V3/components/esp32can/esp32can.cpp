@@ -257,7 +257,7 @@ esp_err_t esp32can::Stop()
   return ESP_OK;
   }
 
-esp_err_t esp32can::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
+esp_err_t esp32can::Write(CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
   {
   uint8_t __byte_i; // Byte iterator
   
@@ -265,6 +265,8 @@ esp_err_t esp32can::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*
   if(MODULE_ESP32CAN->SR.B.TBS == 0)
     return QueueWrite(p_frame, maxqueuewait);
 
+  p_frame->origin = this;
+  
   // copy frame information record
   MODULE_ESP32CAN->MBX_CTRL.FCTRL.FIR.U=p_frame->FIR.U;
 

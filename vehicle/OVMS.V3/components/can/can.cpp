@@ -391,7 +391,7 @@ bool canbus::StatusChanged()
  *    - actual TX implementation in driver override
  *    - here: counting & logging of frames sent (called by driver after a successful TX)
  */
-esp_err_t canbus::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
+esp_err_t canbus::Write(CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
   {
   m_packets_tx++;
   MyCan.LogFrame(CAN_Log_TX, p_frame);

@@ -199,7 +199,7 @@ class canbus : public pcp
     virtual esp_err_t Stop();
 
   public:
-    virtual esp_err_t Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
+    virtual esp_err_t Write(CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
     virtual esp_err_t WriteExtended(uint32_t id, uint8_t length, uint8_t *data, TickType_t maxqueuewait=0);
     virtual esp_err_t WriteStandard(uint16_t id, uint8_t length, uint8_t *data, TickType_t maxqueuewait=0);
     virtual bool RxCallback(CAN_frame_t* frame);
