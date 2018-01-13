@@ -41,7 +41,10 @@ static const char *TAG = "mcp2515";
 static void MCP2515_isr(void *pvParameters)
   {
   mcp2515 *me = (mcp2515*)pvParameters;
-
+  
+  // we don't know the IRQ source and querying by SPI is too slow for an ISR,
+  // so we let RxCallback() figure out what to do
+  
   CAN_msg_t msg;
   msg.type = CAN_rxcallback;
   msg.body.bus = me;
@@ -162,9 +165,8 @@ esp_err_t mcp2515::Stop()
   return ESP_OK;
   }
 
-esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
+esp_err_t mcp2515::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
   {
-  canbus::Write(p_frame);
   uint8_t buf[16];
   uint8_t id[4];
 
@@ -178,10 +180,7 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
   else if ((p[0] & 0b01000000) == 0)
     txbuf = 0b100; // use TXB2
   else
-    {
-    m_errors_txbuf_overflow++;
-    return ESP_FAIL;
-    }
+    return QueueWrite(p_frame, maxqueuewait);
   
   if (p_frame->FIR.B.FF == CAN_frame_std)
     {
@@ -217,6 +216,9 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame)
   // MCP2515 request to send:
   m_spibus->spi_cmd(m_spi, buf, 0, 1, CMD_RTS | (txbuf ? txbuf : 0b001));
 
+  // stats & logging:
+  canbus::Write(p_frame, maxqueuewait);
+
   return ESP_OK;
   }
 
@@ -246,13 +248,13 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
     // other interrupts:
     intflag = intstat & 0b11111100;
     }
-    
+  
   if (intflag == 0)
     {
     // all interrupts handled
     return false;
     }
-    
+  
   if (intflag <= 2)
     {
     // The indicated RX buffer has a message to be read
@@ -283,6 +285,18 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
     }
 
   // handle other interrupts that came in at the same time:
+  
+  if (intstat & 0b00011100)
+    {
+    // some TX buffers have become available; clear IRQs and fill up:
+    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intstat & 0b00011100, 0x00); 
+    while (xQueueReceive(m_txqueue, (void*)frame, 0) == pdTRUE)
+      {
+      if (Write(frame, 0) != ESP_OK)
+        break;
+      }
+    }
+  
   if (intstat & 0b10100000)
     {
     // Error interrupts:
@@ -291,7 +305,7 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
     m_error_flags = (intstat & 0b10100000) << 8 | errflag;
   
     if (errflag & 0b10000000) // RXB1 overflow
-      { 
+      {
       m_errors_rxbuf_overflow++;
       ESP_LOGW(TAG, "CAN Bus 2/3 receive overflow; Frame lost.");
       }
@@ -303,22 +317,22 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
     m_errors_tx = p[0];
     m_errors_rx = p[1];
     
-    // clear RX buffer overflow flags:
-    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2d, 0b11000000, 0x00);
+    // log:
+    MyCan.LogStatus(CAN_Log_Error, this);
     }
-   
-  // clear remaining interrupts if any.  Note: Rx ints were cleared when buffers were read; don't clear again here
-  if(intstat & 0b11111100) m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intstat & 0b11111100, 0x00); 
-
+  
+  // clear RX buffer overflow flags:
+  if (errflag & 0b11000000)
+    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2d, errflag & 0b11000000, 0x00);
+  
+  // clear error & wakeup interrupts:
+  if (intstat & 0b11100000)
+    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intstat & 0b11100000, 0x00); 
+  
   if(intflag & 0b00000011)   //  did we receive anything?
     return true;
   else 
     return false;
-  
-  }
-
-void mcp2515::TxCallback()
-  {
   }
 
 void mcp2515::SetPowerMode(PowerMode powermode)
