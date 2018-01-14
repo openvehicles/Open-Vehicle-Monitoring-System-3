@@ -34,12 +34,30 @@
 #include "pcp.h"
 #include "spi.h"
 #include "esp32system.h"
-#include "max7317.h"
-#include "esp32can.h"
-#include "esp32wifi.h"
-#include "esp32bluetooth.h"
+
+#ifdef CONFIG_OVMS_COMP_ADC
 #include "esp32adc.h"
+#endif // #ifdef CONFIG_OVMS_COMP_ADC
+
+#ifdef CONFIG_OVMS_COMP_MCP2515
 #include "mcp2515.h"
+#endif // #ifdef CONFIG_OVMS_COMP_MCP2515
+
+#ifdef CONFIG_OVMS_COMP_ESP32CAN
+#include "esp32can.h"
+#endif // #ifdef CONFIG_OVMS_COMP_ESP32CAN
+
+#ifdef CONFIG_OVMS_COMP_MAX7317
+#include "max7317.h"
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+
+#ifdef CONFIG_OVMS_COMP_BLUETOOTH
+#include "esp32bluetooth.h"
+#endif // #ifdef CONFIG_OVMS_COMP_BLUETOOTH
+
+#ifdef CONFIG_OVMS_COMP_WIFI
+#include "esp32wifi.h"
+#endif // #ifdef CONFIG_OVMS_COMP_WIFI
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
 #include "sdcard.h"
@@ -53,7 +71,9 @@
 #include "obd2ecu.h"
 #endif // #ifdef CONFIG_OVMS_COMP_OBD2ECU
 
+#ifdef CONFIG_OVMS_COMP_EXT12V
 #include "ext12v.h"
+#endif // #ifdef CONFIG_OVMS_COMP_EXT12V
 
 #define VSPI_PIN_MISO             19
 #define VSPI_PIN_MOSI             23
@@ -88,10 +108,17 @@
 #define MAX7317_EGPIO_7           8
 #define MAX7317_EGPIO_8           9
 
+#ifdef CONFIG_OVMS_HW_BASE_3_0
 #define MODEM_GPIO_RX             16
 #define MODEM_GPIO_TX             17
 #define MODEM_PIN_RX              27
 #define MODEM_PIN_TX              28
+#else // #ifdef CONFIG_OVMS_HW_BASE_3_0
+#define MODEM_GPIO_RX             4
+#define MODEM_GPIO_TX             13
+#define MODEM_PIN_RX              26
+#define MODEM_PIN_TX              16
+#endif // #ifdef CONFIG_OVMS_HW_BASE_3_0
 #define MODEM_EGPIO_PWR           0
 #define MODEM_EGPIO_DTR           3
 
@@ -104,23 +131,47 @@ class Peripherals
   public:
     esp32system* m_esp32;
     spi* m_spibus;
+
+#ifdef CONFIG_OVMS_COMP_MAX7317
     max7317* m_max7317;
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+
+#ifdef CONFIG_OVMS_COMP_ESP32CAN
     esp32can* m_esp32can;
+#endif // #ifdef CONFIG_OVMS_COMP_ESP32CAN
+
+#ifdef CONFIG_OVMS_COMP_WIFI
     esp32wifi* m_esp32wifi;
+#endif // #ifdef CONFIG_OVMS_COMP_WIFI
+
+#ifdef CONFIG_OVMS_COMP_BLUETOOTH
     esp32bluetooth* m_esp32bluetooth;
+#endif // #ifdef CONFIG_OVMS_COMP_BLUETOOTH
+
+#ifdef CONFIG_OVMS_COMP_ADC
     esp32adc* m_esp32adc;
+#endif // #ifdef CONFIG_OVMS_COMP_ADC
+
+#ifdef CONFIG_OVMS_COMP_MCP2515
     mcp2515* m_mcp2515_1;
     mcp2515* m_mcp2515_2;
+#endif // #ifdef CONFIG_OVMS_COMP_MCP2515
+
 #ifdef CONFIG_OVMS_COMP_SDCARD
     sdcard* m_sdcard;
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
+
 #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
     simcom* m_simcom;
 #endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+
 #ifdef CONFIG_OVMS_COMP_OBD2ECU
     obd2ecu* m_obd2ecu;
 #endif // #ifdef CONFIG_OVMS_COMP_OBD2ECU
+
+#ifdef CONFIG_OVMS_COMP_EXT12V
     ext12v* m_ext12v;
+#endif // #ifdef CONFIG_OVMS_COMP_EXT12V
   };
 
 extern Peripherals* MyPeripherals;

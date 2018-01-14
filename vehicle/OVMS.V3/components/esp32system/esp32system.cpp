@@ -32,7 +32,7 @@
 #include "esp_system.h"
 #include "esp_event.h"
 #include "esp_event_loop.h"
-#include "esp_deep_sleep.h"
+#include "esp_sleep.h"
 #include "esp32system.h"
 
 esp32system::esp32system(const char* name)
