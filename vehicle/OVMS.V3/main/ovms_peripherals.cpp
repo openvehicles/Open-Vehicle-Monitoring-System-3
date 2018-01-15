@@ -69,6 +69,12 @@ Peripherals::Peripherals()
   gpio_set_direction((gpio_num_t)SDCARD_PIN_CLK, GPIO_MODE_OUTPUT);
   gpio_set_direction((gpio_num_t)SDCARD_PIN_CMD, GPIO_MODE_OUTPUT);
   gpio_set_direction((gpio_num_t)SDCARD_PIN_CD, GPIO_MODE_INPUT);
+
+  // GPIOs CMD, D0 should have external 10k pull-ups.
+  // Internal pull-ups are not sufficient. However, enabling internal pull-ups
+  // does make a difference some boards, so we do that here.
+  gpio_set_pull_mode((gpio_num_t)SDCARD_PIN_CMD, GPIO_PULLUP_ONLY);   // CMD, needed in 4- and 1- line modes
+  gpio_set_pull_mode((gpio_num_t)SDCARD_PIN_D0, GPIO_PULLUP_ONLY);    // D0, needed in 4- and 1-line modes
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
 #ifdef CONFIG_OVMS_COMP_MODEM
@@ -116,7 +122,7 @@ Peripherals::Peripherals()
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
   ESP_LOGI(TAG, "  SD CARD");
-  m_sdcard = new sdcard("sdcard", false,true,SDCARD_PIN_CD);
+  m_sdcard = new sdcard("sdcard", true, true, SDCARD_PIN_CD);
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
 #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
