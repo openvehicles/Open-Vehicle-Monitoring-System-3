@@ -189,7 +189,7 @@ void can_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
       sbus->m_trace_id_to = 0xffffffff;
       writer->printf("Tracing for CAN bus %s is now ON\n", bus);
       }
-    writer->puts("Use 'level verbose can' to turn on log output / 'level info can' to turn off");
+    writer->puts("Use 'log level verbose can' to enable frame output");
     sbus->m_trace = true;
     }
   else
@@ -217,6 +217,7 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->printf("Rx err:    %20d\n",sbus->m_errors_rx);
   writer->printf("Rx ovrflw: %20d\n",sbus->m_errors_rxbuf_overflow);
   writer->printf("Tx pkt:    %20d\n",sbus->m_packets_tx);
+  writer->printf("Tx delays: %20d\n",sbus->m_txbuf_delay);
   writer->printf("Tx err:    %20d\n",sbus->m_errors_tx);
   writer->printf("Tx ovrflw: %20d\n",sbus->m_errors_txbuf_overflow);
   writer->printf("Err flags: %#x\n",sbus->m_error_flags);
@@ -244,6 +245,9 @@ static void CAN_rxtask(void *pvParameters)
           break;
         case CAN_txcallback:
           msg.body.bus->TxCallback();
+          break;
+        case CAN_logerror:
+          me->LogStatus(CAN_Log_Error, msg.body.bus);
           break;
         default:
           break;
@@ -288,15 +292,8 @@ can::~can()
 void can::IncomingFrame(CAN_frame_t* p_frame)
   {
   p_frame->origin->m_packets_rx++;
-
-  if (p_frame->origin->m_trace
-      && p_frame->origin->m_trace_id_from <= p_frame->MsgID
-      && p_frame->origin->m_trace_id_to   >= p_frame->MsgID)
-    {
-    char prefix[30];
-    snprintf(prefix, sizeof(prefix), "rx %s id %03x len %d", p_frame->origin->GetName(), p_frame->MsgID, p_frame->FIR.B.DLC);
-    MyCommandApp.HexDump(TAG, prefix, (const char*)p_frame->data.u8, p_frame->FIR.B.DLC, 8);
-    }
+  
+  LogFrame(CAN_Log_RX, p_frame);
   
   for (auto n : m_listeners)
     {
@@ -321,6 +318,7 @@ void can::DeregisterListener(QueueHandle_t queue)
 canbus::canbus(const char* name)
   : pcp(name)
   {
+  m_txqueue = xQueueCreate(20, sizeof(CAN_frame_t));
   m_mode = CAN_MODE_OFF;
   m_speed = CAN_SPEED_1000KBPS;
   m_trace = false;
@@ -332,11 +330,14 @@ canbus::canbus(const char* name)
   m_errors_tx = 0;
   m_errors_rxbuf_overflow = 0;
   m_errors_txbuf_overflow = 0;
+  m_txbuf_delay = 0;
   m_error_flags = 0;
+  m_status_chksum = 0;
   }
 
 canbus::~canbus()
   {
+  vQueueDelete(m_txqueue);
   }
 
 esp_err_t canbus::Start(CAN_mode_t mode, CAN_speed_t speed)
@@ -348,32 +349,81 @@ esp_err_t canbus::Start(CAN_mode_t mode, CAN_speed_t speed)
   m_errors_tx = 0;
   m_errors_rxbuf_overflow = 0;
   m_errors_txbuf_overflow = 0;
+  m_txbuf_delay = 0;
   m_error_flags = 0;
-  return ESP_FAIL; // Not implemented by base implementation
+  m_status_chksum = 0;
+  return ESP_FAIL;
   }
 
 esp_err_t canbus::Stop()
   {
-  return ESP_FAIL; // Not implemented by base implementation
+  return ESP_FAIL;
   }
 
-esp_err_t canbus::Write(const CAN_frame_t* p_frame)
+bool canbus::RxCallback(CAN_frame_t* frame)
   {
-  if (m_trace
-      && m_trace_id_from <= p_frame->MsgID
-      && m_trace_id_to   >= p_frame->MsgID)
-    {
-    char prefix[30];
-    snprintf(prefix, sizeof(prefix), "tx %s id %03x len %d", GetName(), p_frame->MsgID, p_frame->FIR.B.DLC);
-    MyCommandApp.HexDump(TAG, prefix, (const char*)p_frame->data.u8, p_frame->FIR.B.DLC, 8);
-    }
-
-  m_packets_tx++;
-
-  return ESP_OK; // Not implemented by base implementation
+  return false;
   }
 
-esp_err_t canbus::WriteExtended(uint32_t id, uint8_t length, uint8_t *data)
+void canbus::TxCallback()
+  {
+  }
+
+bool canbus::StatusChanged()
+  {
+  // simple checksum to prevent log flooding:
+  uint32_t chksum = m_packets_rx + m_errors_rx + m_packets_tx + m_errors_tx
+    + m_errors_rxbuf_overflow + m_errors_txbuf_overflow + m_error_flags
+    + m_txbuf_delay;
+  if (chksum != m_status_chksum)
+    {
+    m_status_chksum = chksum;
+    return true;
+    }
+  return false;
+  }
+
+/**
+ * canbus::Write -- main TX API
+ *    - returns ESP_OK, ESP_QUEUED or ESP_FAIL
+ *      … ESP_OK = frame delivered to CAN transceiver (not necessarily sent!)
+ *      … ESP_FAIL = TX queue is full (TX overflow)
+ *    - actual TX implementation in driver override
+ *    - here: counting & logging of frames sent (called by driver after a successful TX)
+ */
+esp_err_t canbus::Write(CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
+  {
+  m_packets_tx++;
+  p_frame->origin = this;
+  MyCan.LogFrame(CAN_Log_TX, p_frame);
+  return ESP_OK;
+  }
+
+/**
+ * canbus::QueueWrite -- add a frame to the TX queue for later delivery
+ *    - internal method, called by driver if no TX buffer is available
+ */
+esp_err_t canbus::QueueWrite(CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
+  {
+  p_frame->origin = this;
+  if (xQueueSend(m_txqueue, p_frame, maxqueuewait) == pdTRUE)
+    {
+    m_txbuf_delay++;
+    MyCan.LogFrame(CAN_Log_TX_Queue, p_frame);
+    return ESP_QUEUED;
+    }
+  else
+    {
+    m_errors_txbuf_overflow++;
+    MyCan.LogFrame(CAN_Log_TX_Fail, p_frame);
+    return ESP_FAIL;
+    }
+  }
+
+/**
+ * canbus::WriteExtended -- application TX utility
+ */
+esp_err_t canbus::WriteExtended(uint32_t id, uint8_t length, uint8_t *data, TickType_t maxqueuewait /*=0*/)
   {
   if (length > 8)
     {
@@ -389,10 +439,13 @@ esp_err_t canbus::WriteExtended(uint32_t id, uint8_t length, uint8_t *data)
   frame.FIR.B.FF = CAN_frame_ext;
   frame.MsgID = id;
   memcpy(frame.data.u8, data, length);
-  return this->Write(&frame);
+  return this->Write(&frame, maxqueuewait);
   }
 
-esp_err_t canbus::WriteStandard(uint16_t id, uint8_t length, uint8_t *data)
+/**
+ * canbus::WriteStandard -- application TX utility
+ */
+esp_err_t canbus::WriteStandard(uint16_t id, uint8_t length, uint8_t *data, TickType_t maxqueuewait /*=0*/)
   {
   if (length > 8)
     {
@@ -408,23 +461,77 @@ esp_err_t canbus::WriteStandard(uint16_t id, uint8_t length, uint8_t *data)
   frame.FIR.B.FF = CAN_frame_std;
   frame.MsgID = id;
   memcpy(frame.data.u8, data, length);
-  return this->Write(&frame);
+  return this->Write(&frame, maxqueuewait);
   }
 
-
-bool canbus::RxCallback(CAN_frame_t* frame)
-  {
-  return false;
-  }
-
-void canbus::TxCallback()
-  {
-  }
-
-esp_err_t CAN_frame_t::Write(canbus* bus /* = NULL */)
+/**
+ * CAN_frame_t::Write -- main TX API
+ *    - returns ESP_OK, ESP_QUEUED or ESP_FAIL
+ *      … ESP_OK = frame delivered to CAN transceiver (not necessarily sent!)
+ *      … ESP_FAIL = TX queue is full (TX overflow)
+ */
+esp_err_t CAN_frame_t::Write(canbus* bus /*=NULL*/, TickType_t maxqueuewait /*=0*/)
   {
   if (!bus)
     bus = origin;
-  return bus ? bus->Write(this) : ESP_FAIL;
+  return bus ? bus->Write(this, maxqueuewait) : ESP_FAIL;
   }
 
+
+/*********************************************************************
+ * Logging
+ *********************************************************************/
+
+const char* const CAN_LogEntryTypeName[] = {
+  "RX",
+  "TX",
+  "TX_Queue",
+  "TX_Fail",
+  "Error",
+  "Status",
+  "Comment",
+  "Event"
+};
+
+const char* can::GetLogEntryTypeName(CAN_LogEntry_t type)
+  {
+  return CAN_LogEntryTypeName[type];
+  }
+
+void can::LogFrame(CAN_LogEntry_t type, const CAN_frame_t* p_frame)
+  {
+  canbus *bus = p_frame->origin;
+  if (bus->m_trace
+      && bus->m_trace_id_from <= p_frame->MsgID
+      && bus->m_trace_id_to   >= p_frame->MsgID)
+    {
+    char prefix[60];
+    snprintf(prefix, sizeof(prefix), "%s %s id %03x len %d",
+      CAN_LogEntryTypeName[type], bus->GetName(), p_frame->MsgID, p_frame->FIR.B.DLC);
+    MyCommandApp.HexDump(TAG, prefix, (const char*)p_frame->data.u8, p_frame->FIR.B.DLC, 8);
+    }
+  }
+
+void can::LogStatus(CAN_LogEntry_t type, canbus* bus)
+  {
+  if (bus->m_trace && bus->StatusChanged())
+    {
+    switch (type)
+      {
+      case CAN_Log_Error:
+        ESP_LOGE(TAG, "%s %s rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d",
+          CAN_LogEntryTypeName[type], bus->GetName(), bus->m_packets_rx, bus->m_packets_tx, bus->m_error_flags,
+          bus->m_errors_rx, bus->m_errors_tx, bus->m_errors_rxbuf_overflow, bus->m_errors_txbuf_overflow,
+          bus->m_txbuf_delay);
+        break;
+      case CAN_Log_Status:
+        ESP_LOGD(TAG, "%s %s rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d",
+          CAN_LogEntryTypeName[type], bus->GetName(), bus->m_packets_rx, bus->m_packets_tx, bus->m_error_flags,
+          bus->m_errors_rx, bus->m_errors_tx, bus->m_errors_rxbuf_overflow, bus->m_errors_txbuf_overflow,
+          bus->m_txbuf_delay);
+        break;
+      default:
+        break;
+      }
+    }
+  }

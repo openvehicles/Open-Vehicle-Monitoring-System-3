@@ -28,24 +28,41 @@
 ; THE SOFTWARE.
 */
 
-#include "esp32adc.h"
+#include "ovms_log.h"
+static const char *TAG = "ext12v";
 
-esp32adc::esp32adc(const char* name, adc1_channel_t channel, adc_bits_width_t width, adc_atten_t attn)
+#include "ext12v.h"
+#include "ovms_peripherals.h"
+
+ext12v::ext12v(const char* name)
   : pcp(name)
   {
-  m_channel = channel;
-  m_width = width;
-  m_attn = attn;
-
-  adc1_config_width(width);
-  adc1_config_channel_atten(channel,attn);
   }
 
-esp32adc::~esp32adc()
+ext12v::~ext12v()
   {
   }
 
-int esp32adc::read()
+void ext12v::SetPowerMode(PowerMode powermode)
   {
-  return adc1_get_voltage(m_channel);
+  m_powermode = powermode;
+  switch (powermode)
+    {
+    case On:
+#ifdef CONFIG_OVMS_COMP_MAX7317
+      ESP_LOGI(TAG, "Powering on external 12V devices");
+      MyPeripherals->m_max7317->Output(MAX7317_SW_CTL, 1);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+      break;
+    case Sleep:
+    case DeepSleep:
+    case Off:
+#ifdef CONFIG_OVMS_COMP_MAX7317
+      ESP_LOGI(TAG, "Powering off external 12V devices");
+      MyPeripherals->m_max7317->Output(MAX7317_SW_CTL, 0);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+      break;
+    default:
+      break;
+    }
   }

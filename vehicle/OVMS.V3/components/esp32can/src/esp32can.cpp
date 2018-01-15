@@ -90,7 +90,11 @@ static void ESP32CAN_isr(void *pvParameters)
   // Handle TX complete interrupt
   if ((interrupt & __CAN_IRQ_TX) != 0)
     {
-  	// nothing to do
+  	// Request TxCallback:
+    CAN_msg_t msg;
+    msg.type = CAN_txcallback;
+    msg.body.bus = me;
+    xQueueSendFromISR(MyCan.m_rxqueue, &msg, 0);
     }
 
   // Handle RX frame available interrupt
@@ -98,22 +102,28 @@ static void ESP32CAN_isr(void *pvParameters)
     ESP32CAN_rxframe(me);
 
   // Handle error interrupts.
-  if (uint32_t flags = (interrupt &
+  uint8_t error_irqs = interrupt &
       (__CAN_IRQ_ERR						//0x4
       |__CAN_IRQ_DATA_OVERRUN	  //0x8
       |__CAN_IRQ_ERR_PASSIVE		//0x20
       |__CAN_IRQ_ARB_LOST			  //0x40
       |__CAN_IRQ_BUS_ERR				//0x80
-      )) != 0)
+      );
+  if (error_irqs)
     {
-    me->m_error_flags = flags << 16 | (MODULE_ESP32CAN->SR.U&0xff) << 8 | MODULE_ESP32CAN->ECC.B.ECC;
+    me->m_error_flags = error_irqs << 16 | (MODULE_ESP32CAN->SR.U & 0b11001111) << 8 | MODULE_ESP32CAN->ECC.B.ECC;
     me->m_errors_rx = MODULE_ESP32CAN->RXERR.U;
     me->m_errors_tx = MODULE_ESP32CAN->TXERR.U;
-    if (flags & __CAN_IRQ_DATA_OVERRUN)
+    if (error_irqs & __CAN_IRQ_DATA_OVERRUN)
       {
       me->m_errors_rxbuf_overflow++;
       MODULE_ESP32CAN->CMR.B.CDO = 1;
       }
+    // Request error log:
+    CAN_msg_t msg;
+    msg.type = CAN_logerror;
+    msg.body.bus = me;
+    xQueueSendFromISR(MyCan.m_rxqueue, &msg, 0);
     }
   
   // Handle wakeup interrupt:
@@ -221,8 +231,10 @@ esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
   // Clear interrupt flags
   (void)MODULE_ESP32CAN->IR.U;
 
+#ifdef CONFIG_OVMS_COMP_MAX7317
   // Power up the matching SN65 transciever
   MyPeripherals->m_max7317->Output(MAX7317_CAN1_EN, 0);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
 
   // Showtime. Release Reset Mode.
   MODULE_ESP32CAN->MOD.B.RM = 0;
@@ -235,8 +247,10 @@ esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
 
 esp_err_t esp32can::Stop()
   {
+#ifdef CONFIG_OVMS_COMP_MAX7317
   // Power down the matching SN65 transciever
   MyPeripherals->m_max7317->Output(MAX7317_CAN1_EN, 1);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
 
   // Enter reset mode
   MODULE_ESP32CAN->MOD.B.RM = 1;
@@ -247,17 +261,13 @@ esp_err_t esp32can::Stop()
   return ESP_OK;
   }
 
-esp_err_t esp32can::Write(const CAN_frame_t* p_frame)
+esp_err_t esp32can::Write(CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
   {
-  canbus::Write(p_frame);
   uint8_t __byte_i; // Byte iterator
   
   // check if TX buffer is available:
   if(MODULE_ESP32CAN->SR.B.TBS == 0)
-    {
-    m_errors_txbuf_overflow++;
-    return ESP_FAIL;
-    }
+    return QueueWrite(p_frame, maxqueuewait);
 
   // copy frame information record
   MODULE_ESP32CAN->MBX_CTRL.FCTRL.FIR.U=p_frame->FIR.U;
@@ -282,7 +292,18 @@ esp_err_t esp32can::Write(const CAN_frame_t* p_frame)
   // Transmit frame
   MODULE_ESP32CAN->CMR.B.TR=1;
 
+  // stats & logging:
+  canbus::Write(p_frame, maxqueuewait);
+  
   return ESP_OK;
+  }
+
+void esp32can::TxCallback()
+  {
+  // TX buffer has become available; send next queued frame (if any):
+  CAN_frame_t frame;
+  if (xQueueReceive(m_txqueue, (void*)&frame, 0) == pdTRUE)
+    Write(&frame, 0);
   }
 
 void esp32can::SetPowerMode(PowerMode powermode)
