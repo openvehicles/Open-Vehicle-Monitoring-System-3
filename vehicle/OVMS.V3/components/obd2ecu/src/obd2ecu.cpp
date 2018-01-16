@@ -657,7 +657,6 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           memcpy(&r_d[1],vin_string+3,7);  /* grab the next 7 bytes of VIN */
           
           m_can->Write(&r_frame);
-          vTaskDelay(10 / portTICK_PERIOD_MS);  /* Temporary delay for Tx buffer overflow */
 
           r_d[0] = 0x22;
           memcpy(&r_d[1],vin_string+10,7);  /* grab the last 7 bytes of VIN */
@@ -695,7 +694,6 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[6] = 'r';
           r_d[7] = ' ';
           m_can->Write(&r_frame);
-          vTaskDelay(10 / portTICK_PERIOD_MS);  /* Temporary delay for Tx buffer overflow */
           
           r_d[0] = 0x22;
           r_d[1] = 't';
@@ -706,7 +704,6 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[6] = 'h';
           r_d[7] = 'e';
           m_can->Write(&r_frame);
-          vTaskDelay(10 / portTICK_PERIOD_MS);  /* Temporary delay for Tx buffer overflow */
 
           r_d[0] = 0x23;
           r_d[1] = 'r';
