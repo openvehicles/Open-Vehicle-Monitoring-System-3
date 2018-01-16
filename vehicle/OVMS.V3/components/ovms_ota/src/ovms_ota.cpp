@@ -348,7 +348,7 @@ void ota_boot(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 #ifdef CONFIG_OVMS_COMP_SDCARD
 void OvmsOTA::AutoFlashSD(std::string event, void* data)
   {
-  FILE* f = fopen("/sd/ovmsv3.bin", "r");
+  FILE* f = fopen("/sd/ovms3.bin", "r");
   if (f == NULL) return;
 
   const esp_partition_t *running = esp_ota_get_running_partition();
@@ -359,14 +359,14 @@ void OvmsOTA::AutoFlashSD(std::string event, void* data)
     ESP_LOGE(TAG, "AutoFlashSD Error: Current running image cannot be determined - aborting");
     return;
     }
-  ESP_LOGI(TAG, "AutoFlashSD Current running partition is: %s",running->label);
+  ESP_LOGW(TAG, "AutoFlashSD Current running partition is: %s",running->label);
 
   if (target==NULL)
     {
     ESP_LOGE(TAG, "AutoFlashSD Error: Target partition cannot be determined - aborting");
     return;
     }
-  ESP_LOGI(TAG, "AutoFlashSD Target partition is: %s",target->label);
+  ESP_LOGW(TAG, "AutoFlashSD Target partition is: %s",target->label);
 
   if (running == target)
     {
@@ -375,14 +375,14 @@ void OvmsOTA::AutoFlashSD(std::string event, void* data)
     }
 
   struct stat ds;
-  if (stat("/sd/ovmsv3.bin", &ds) != 0)
+  if (stat("/sd/ovms3.bin", &ds) != 0)
     {
     ESP_LOGE(TAG, "AutoFlashSD Error: Cannot stat file");
     return;
     }
-  ESP_LOGI(TAG, "AutoFlashSD Source image is %d bytes in size",(int)ds.st_size);
+  ESP_LOGW(TAG, "AutoFlashSD Source image is %d bytes in size",(int)ds.st_size);
 
-  ESP_LOGI(TAG, "AutoFlashSD Preparing flash partition...");
+  ESP_LOGW(TAG, "AutoFlashSD Preparing flash partition...");
   esp_ota_handle_t otah;
   esp_err_t err = esp_ota_begin(target, ds.st_size, &otah);
   if (err != ESP_OK)
@@ -391,7 +391,7 @@ void OvmsOTA::AutoFlashSD(std::string event, void* data)
     return;
     }
 
-  ESP_LOGI(TAG, "AutoFlashSD Flashing image partition...");
+  ESP_LOGW(TAG, "AutoFlashSD Flashing image partition...");
   char buf[512];
   while(size_t n = fread(buf, sizeof(char), sizeof(buf), f))
     {
@@ -415,7 +415,7 @@ void OvmsOTA::AutoFlashSD(std::string event, void* data)
 
   fclose(f);
 
-  ESP_LOGI(TAG, "AutoFlashSD Setting boot partition...");
+  ESP_LOGW(TAG, "AutoFlashSD Setting boot partition...");
   err = esp_ota_set_boot_partition(target);
   if (err != ESP_OK)
     {
@@ -423,19 +423,20 @@ void OvmsOTA::AutoFlashSD(std::string event, void* data)
     return;
     }
 
-  if (rename("/sd/ovmsv3.bin","/sd/ovmsv3.done") != 0)
+  if (rename("/sd/ovms3.bin","/sd/ovms3.done") != 0)
     {
-    ESP_LOGE(TAG, "AutoFlashSD Error: ovmsv3.bin could not be renamed to ovmsv3.done - check before rebooting");
+    ESP_LOGE(TAG, "AutoFlashSD Error: ovms3.bin could not be renamed to ovms3.done - check before rebooting");
     return;
     }
 
-  ESP_LOGI(TAG, "AutoFlashSD unmounting SD CARD");
+  ESP_LOGW(TAG, "AutoFlashSD unmounting SD CARD");
   MyPeripherals->m_sdcard->unmount();
 
-  ESP_LOGI(TAG, "AutoFlashSD OTA flash successful: Flashed %d bytes, and booting from '%s'",
+  ESP_LOGW(TAG, "AutoFlashSD OTA flash successful: Flashed %d bytes, and booting from '%s'",
                  (int)ds.st_size,target->label);
 
-  ESP_LOGI(TAG, "AutoFlashSD restarting...");
+  vTaskDelay(2000 / portTICK_PERIOD_MS); // Delay for log display and settle
+  ESP_LOGW(TAG, "AutoFlashSD restarting...");
   esp_restart();
   }
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
