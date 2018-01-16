@@ -286,12 +286,10 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
   if (intstat & 0b00011100)
     { 
     // some TX buffers have become available; clear IRQs and fill up:
-    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intstat & 0b00011100, 0x00); 
-    while (xQueueReceive(m_txqueue, (void*)frame, 0) == pdTRUE)
-      { 
-      if (Write(frame, 0) != ESP_OK)
-        break;
-      }
+    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intstat & 0b00011100, 0x00);
+  
+    if(xQueueReceive(m_txqueue, (void*)frame, 0) == pdTRUE)  // if any queued for later?
+      Write(frame, 0);  // if so, send one
     }
   
   if (intstat & 0b10100000)
