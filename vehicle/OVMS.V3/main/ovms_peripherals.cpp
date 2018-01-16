@@ -43,10 +43,10 @@ Peripherals::Peripherals()
   {
   ESP_LOGI(TAG, "Initialising OVMS Peripherals...");
 
-#ifdef CONFIG_OVMS_COMP_WIFI
+#if defined(CONFIG_OVMS_COMP_WIFI)||defined(CONFIG_OVMS_COMP_MODEM_SIMCOM)
   ESP_LOGI(TAG, "  TCP/IP Adaptor");
   tcpip_adapter_init();
-#endif // #ifdef CONFIG_OVMS_COMP_WIFI
+#endif // #if defined(CONFIG_OVMS_COMP_WIFI)||defined(CONFIG_OVMS_COMP_MODEM_SIMCOM)
 
   gpio_install_isr_service(0);
 
