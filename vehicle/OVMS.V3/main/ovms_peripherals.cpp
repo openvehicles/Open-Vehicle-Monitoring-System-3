@@ -90,7 +90,7 @@ Peripherals::Peripherals()
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
   ESP_LOGI(TAG, "  MAX7317 I/O Expander");
-  m_max7317 = new max7317("egpio", m_spibus, VSPI_NODMA_HOST, 1000000, VSPI_PIN_MAX7317_CS);
+  m_max7317 = new max7317("egpio", m_spibus, VSPI_NODMA_HOST, 10000000, VSPI_PIN_MAX7317_CS);
 #endif // #ifdef CONFIG_OVMS_COMP_MAX7317
 
 #ifdef CONFIG_OVMS_COMP_ESP32CAN
