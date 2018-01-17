@@ -180,17 +180,24 @@ config OVMS_COMP_EXT12V
     help
         Enable to include support for External 12V power control.
 
+config OVMS_COMP_SERVER
+    bool "Include support for OVMS server connections"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for OVMSserver connections.
+
 config OVMS_COMP_SERVER_V2
     bool "Include support for V2 server connections"
     default y
-    depends on OVMS
+    depends on OVMS_COMP_SERVER
     help
         Enable to include support for V2 server connections.
 
 config OVMS_COMP_SERVER_V3
     bool "Include support for V3 server connections"
     default y
-    depends on OVMS
+    depends on OVMS_COMP_SERVER
     help
         Enable to include support for V3 server connections.
 
