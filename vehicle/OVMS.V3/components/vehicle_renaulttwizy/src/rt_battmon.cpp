@@ -24,7 +24,7 @@
  */
 
 #include "ovms_log.h"
-static const char *TAG = "v-renaulttwizy";
+static const char *TAG = "v-twizy";
 
 #include <math.h>
 

@@ -33,6 +33,13 @@
 
 #include "ovms_metrics.h"
 
+#define SM_STALE_NONE   0
+#define SM_STALE_MIN    10
+#define SM_STALE_MID    120
+#define SM_STALE_HIGH   3600
+#define SM_STALE_MAX    65535
+
+
 #define MS_M_VERSION                "m.version"
 #define MS_M_HARDWARE               "m.hardware"
 #define MS_M_SERIAL                 "m.serial"
@@ -58,6 +65,8 @@
 #define MS_V_BAT_CAC                "v.b.cac"
 #define MS_V_BAT_VOLTAGE            "v.b.voltage"
 #define MS_V_BAT_CURRENT            "v.b.current"
+#define MS_V_BAT_COULOMB_USED       "v.b.coulomb.used"
+#define MS_V_BAT_COULOMB_RECD       "v.b.coulomb.recd"
 #define MS_V_BAT_POWER              "v.b.power"
 #define MS_V_BAT_ENERGY_USED        "v.b.energy.used"
 #define MS_V_BAT_ENERGY_RECD        "v.b.energy.recd"
@@ -173,6 +182,8 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_bat_cac;           // Calculated capacity [Ah]
     OvmsMetricFloat*  ms_v_bat_voltage;       // Main battery momentary voltage [V]
     OvmsMetricFloat*  ms_v_bat_current;       // Main battery momentary current [A]
+    OvmsMetricFloat*  ms_v_bat_coulomb_used;  // Main battery coulomb used on trip [Ah]
+    OvmsMetricFloat*  ms_v_bat_coulomb_recd;  // Main battery coulomb recovered on trip [Ah]
     OvmsMetricFloat*  ms_v_bat_power;         // Main battery momentary power [kW]
     OvmsMetricFloat*  ms_v_bat_energy_used;   // Main battery energy used on trip [kWh]
     OvmsMetricFloat*  ms_v_bat_energy_recd;   // Main battery energy recovered on trip [kWh]

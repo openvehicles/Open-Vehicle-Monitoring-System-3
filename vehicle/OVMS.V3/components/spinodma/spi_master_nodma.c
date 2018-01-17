@@ -80,8 +80,7 @@ Main driver's function is 'spi_nodma_transfer_data()'
 #include "driver/uart.h"
 #include "driver/gpio.h"
 #include "driver/periph_ctrl.h"
-#include "esp_heap_alloc_caps.h"
-//#include "esp_heap_caps.h"
+#include "esp_heap_caps.h"
 #include "spi_master_nodma.h"
 
 
@@ -218,8 +217,7 @@ static esp_err_t spi_nodma_bus_initialize(spi_nodma_host_device_t host, spi_nodm
 
     if (init > 0) {
 		//spihost[host]=malloc(sizeof(spi_nodma_host_t));
-                spihost[host]=pvPortMallocCaps(sizeof(spi_nodma_host_t), MALLOC_CAP_DMA);
-//		spihost[host]=heap_caps_malloc(sizeof(spi_nodma_host_t), MALLOC_CAP_DMA);
+		spihost[host]=heap_caps_malloc(sizeof(spi_nodma_host_t), MALLOC_CAP_DMA);
 		if (spihost[host]==NULL) return ESP_ERR_NO_MEM;
 		memset(spihost[host], 0, sizeof(spi_nodma_host_t));
 		// Create semaphore

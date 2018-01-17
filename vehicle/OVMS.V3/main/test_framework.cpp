@@ -36,7 +36,7 @@ static const char *TAG = "test";
 #include "esp_system.h"
 #include "esp_event.h"
 #include "esp_event_loop.h"
-#include "esp_deep_sleep.h"
+#include "esp_sleep.h"
 #include "test_framework.h"
 #include "ovms_command.h"
 #include "ovms_peripherals.h"

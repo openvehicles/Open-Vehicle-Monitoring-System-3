@@ -33,6 +33,7 @@ static const char *TAG = "buffer";
 
 #include "ovms_buffer.h"
 #include "ovms_command.h"
+#include <string.h>		// Needed for memset by LWIP's sys/socket.h
 #include <sys/socket.h>
 
 OvmsBuffer::OvmsBuffer(size_t size, void* userdata)
@@ -197,12 +198,12 @@ int OvmsBuffer::PollSocket(int sock, long timeoutms)
   // ESP_LOGI(TAG, "Polling Socket %d", sock);
   FD_ZERO(&fds);
   FD_SET(sock,&fds);
+  // MyCommandApp.HexDump(TAG, "FD SET", (const char*)&fds,sizeof(fds));
 
   struct timeval timeout;
   timeout.tv_sec = timeoutms/1000;
   timeout.tv_usec = (timeoutms%1000)*1000;
-
-  int result = select(FD_SETSIZE, &fds, 0, 0, &timeout);
+  int result = select((int) sock + 1, &fds, 0, 0, &timeout);
   // ESP_LOGI(TAG, "Polling Socket select result %d",result);
   if (result <= 0) return 0;
 

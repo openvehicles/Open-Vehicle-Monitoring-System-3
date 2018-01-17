@@ -44,6 +44,11 @@
 #include "pcp.h"
 #include <esp_err.h>
 
+#ifndef ESP_QUEUED
+#define ESP_QUEUED           1    // frame has been queued for later processing
+#endif
+
+
 class canbus; // Forward definition
 
 // CAN mode
@@ -104,7 +109,7 @@ struct CAN_frame_t
     uint32_t  u32[2];                   // Payload u32 access (Att: little endian!)
     } data;
   
-  esp_err_t Write(canbus* bus = NULL);  // default = use origin
+  esp_err_t Write(canbus* bus=NULL, TickType_t maxqueuewait=0);  // bus: NULL=origin
   };
 
 
@@ -155,7 +160,8 @@ typedef enum
   {
   CAN_frame = 0,
   CAN_rxcallback,
-  CAN_txcallback
+  CAN_txcallback,
+  CAN_logerror
   } CAN_MSGID_t;
 
 // CAN message
@@ -165,9 +171,40 @@ typedef struct
   union
     {
     CAN_frame_t frame;  // CAN_frame
-    canbus* bus;        // CAN_rxcallback, CAN_txcallback
+    canbus* bus;        // CAN_rxcallback, CAN_txcallback, CAN_logerror
     } body;
   } CAN_msg_t;
+
+// Log entry types:
+typedef enum
+  {
+  CAN_Log_RX = 0,
+  CAN_Log_TX,
+  CAN_Log_TX_Queue,
+  CAN_Log_TX_Fail,
+  CAN_Log_Error,
+  CAN_Log_Status,
+  CAN_Log_Comment,
+  CAN_Log_Event
+  } CAN_LogEntry_t;
+
+
+class canlog
+  {
+  public:
+    canlog(const char* logfilepath);
+    virtual ~canlog();
+  
+  public:
+    void LogFrame(CAN_LogEntry_t type, const CAN_frame_t* p_frame);
+    void LogStatus(CAN_LogEntry_t type, canbus* bus);
+  
+  protected:
+    char* m_logfilepath;
+    FILE* m_logfile;
+  };
+
+
 
 class canbus : public pcp
   {
@@ -180,12 +217,16 @@ class canbus : public pcp
     virtual esp_err_t Stop();
 
   public:
-    virtual esp_err_t Write(const CAN_frame_t* p_frame);
-    virtual esp_err_t WriteExtended(uint32_t id, uint8_t length, uint8_t *data);
-    virtual esp_err_t WriteStandard(uint16_t id, uint8_t length, uint8_t *data);
+    virtual esp_err_t Write(CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
+    virtual esp_err_t WriteExtended(uint32_t id, uint8_t length, uint8_t *data, TickType_t maxqueuewait=0);
+    virtual esp_err_t WriteStandard(uint16_t id, uint8_t length, uint8_t *data, TickType_t maxqueuewait=0);
     virtual bool RxCallback(CAN_frame_t* frame);
     virtual void TxCallback();
-
+  
+  protected:
+    virtual esp_err_t QueueWrite(CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
+    QueueHandle_t m_txqueue;
+  
   public:
     CAN_speed_t m_speed;
     CAN_mode_t m_mode;
@@ -194,13 +235,18 @@ class canbus : public pcp
     uint32_t m_trace_id_to;
 
   public:
-    uint32_t m_packets_rx;
-    uint32_t m_errors_rx;
-    uint32_t m_packets_tx;
-    uint32_t m_errors_tx;
-    uint32_t m_errors_rxbuf_overflow;
-    uint32_t m_errors_txbuf_overflow;
-    uint32_t m_error_flags;
+    uint32_t m_packets_rx;              // frames reveiced
+    uint32_t m_errors_rx;               // RX error counter
+    uint32_t m_packets_tx;              // frames loaded into TX buffers (not necessarily sent)
+    uint32_t m_txbuf_delay;             // frames routed through TX queue
+    uint32_t m_errors_tx;               // TX error counter
+    uint32_t m_errors_rxbuf_overflow;   // frames lost due to RX buffers full
+    uint32_t m_errors_txbuf_overflow;   // TX queue overflows
+    uint32_t m_error_flags;             // driver specific
+  
+  public:
+    bool StatusChanged();
+    uint32_t m_status_chksum;
   
   };
 
@@ -212,6 +258,11 @@ class can
 
   public:
     void IncomingFrame(CAN_frame_t* p_frame);
+  
+  public:
+    const char* GetLogEntryTypeName(CAN_LogEntry_t type);
+    void LogFrame(CAN_LogEntry_t type, const CAN_frame_t* p_frame);
+    void LogStatus(CAN_LogEntry_t type, canbus* bus);
 
   public:
     QueueHandle_t m_rxqueue;

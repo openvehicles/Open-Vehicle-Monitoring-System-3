@@ -41,6 +41,7 @@ static const char *TAG = "command";
 #include "ovms_config.h"
 #include "log_buffers.h"
 
+static FILE *ovms_log_file;
 OvmsCommandApp MyCommandApp __attribute__ ((init_priority (1000)));
 
 bool CompareCharPtr::operator()(const char* a, const char* b)
@@ -57,6 +58,7 @@ OvmsWriter::OvmsWriter()
     m_issecure = false;
   m_insert = NULL;
   m_userData = NULL;
+  m_monitoring = false;
   }
 
 OvmsWriter::~OvmsWriter()
@@ -253,7 +255,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
 //    printf("Execute(%s/%d) verbosity=%d (no args)\n",m_title, m_children.size(), verbosity);
 //    }
 
-  if (m_execute)
+  if (m_execute && (m_children.empty() || argc == 0))
     {
     //puts("Executing directly...");
     if (argc < m_min || argc > m_max || (argc > 0 && strcmp(argv[argc-1],"?")==0))
@@ -346,7 +348,7 @@ void Exit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const c
   writer->Exit();
   }
 
-void level(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void log_level(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   const char* tag = "*";
   if (argc > 0)
@@ -355,6 +357,54 @@ void level(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const 
   esp_log_level_t level_num = (esp_log_level_t)(*(title+strlen(title)-2) - '0');
   esp_log_level_set(tag, level_num);
   writer->printf("Logging level for %s set to %s\n",tag,cmd->GetName());
+  }
+
+void log_file(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (argc == 0)
+    {
+    if (ovms_log_file)
+      {
+      fclose(ovms_log_file);
+      ovms_log_file = NULL;
+      }
+    writer->puts("Closed log file");
+    return;
+    }
+
+  if (MyConfig.ProtectedPath(argv[0]))
+    {
+    writer->puts("Error: protected path");
+    return;
+    }
+
+  if (ovms_log_file)
+    {
+    writer->puts("Closing old log file");
+    fclose(ovms_log_file);
+    ovms_log_file = NULL;
+    }
+
+  ovms_log_file = fopen(argv[0], "a+");
+  if (ovms_log_file == NULL)
+    {
+    writer->puts("Error: VFS file cannot be opened for append");
+    return;
+    }
+  }
+
+static OvmsCommand* monitor;
+static OvmsCommand* monitor_yes;
+
+void log_monitor(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  bool state;
+  if (cmd == monitor)
+    state = !writer->IsMonitoring();
+  else
+    state = (cmd == monitor_yes);
+  writer->printf("Monitoring log messages %s\n", state ? "enabled" : "disabled");
+  writer->SetMonitoring(state);
   }
 
 typedef struct
@@ -428,15 +478,21 @@ OvmsCommandApp::OvmsCommandApp()
   {
   ESP_LOGI(TAG, "Initialising COMMAND (1000)");
 
+  ovms_log_file = NULL;
   m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0);
   m_root.RegisterCommand("exit", "End console session", Exit , "", 0, 0);
-  OvmsCommand* level_cmd = m_root.RegisterCommand("level", "Set logging level", NULL, "$C [<tag>]");
-  level_cmd->RegisterCommand("verbose", "Log at the VERBOSE level (5)", level , "[<tag>]", 0, 1, true);
-  level_cmd->RegisterCommand("debug", "Log at the DEBUG level (4)", level , "[<tag>]", 0, 1, true);
-  level_cmd->RegisterCommand("info", "Log at the INFO level (3)", level , "[<tag>]", 0, 1, true);
-  level_cmd->RegisterCommand("warn", "Log at the WARN level (2)", level , "[<tag>]", 0, 1);
-  level_cmd->RegisterCommand("error", "Log at the ERROR level (1)", level , "[<tag>]", 0, 1);
-  level_cmd->RegisterCommand("none", "No logging (0)", level , "[<tag>]", 0, 1);
+  OvmsCommand* cmd_log = MyCommandApp.RegisterCommand("log","LOG framework",NULL, "", 0, 0, true);
+  cmd_log->RegisterCommand("file", "Start logging to specified file", log_file , "<vfspath>", 0, 1, true);
+  OvmsCommand* level_cmd = cmd_log->RegisterCommand("level", "Set logging level", NULL, "$C [<tag>]");
+  level_cmd->RegisterCommand("verbose", "Log at the VERBOSE level (5)", log_level , "[<tag>]", 0, 1, true);
+  level_cmd->RegisterCommand("debug", "Log at the DEBUG level (4)", log_level , "[<tag>]", 0, 1, true);
+  level_cmd->RegisterCommand("info", "Log at the INFO level (3)", log_level , "[<tag>]", 0, 1, true);
+  level_cmd->RegisterCommand("warn", "Log at the WARN level (2)", log_level , "[<tag>]", 0, 1);
+  level_cmd->RegisterCommand("error", "Log at the ERROR level (1)", log_level , "[<tag>]", 0, 1);
+  level_cmd->RegisterCommand("none", "No logging (0)", log_level , "[<tag>]", 0, 1);
+  monitor = cmd_log->RegisterCommand("monitor", "Monitor log on this console", log_monitor , "[$C]", 0, 1, true);
+  monitor_yes = monitor->RegisterCommand("yes", "Monitor log", log_monitor , "", 0, 0, true);
+  monitor->RegisterCommand("no", "Don't monitor log", log_monitor , "", 0, 0, true);
   m_root.RegisterCommand("enable","Enter secure mode", enable, "[<password>]", 0, 1);
   m_root.RegisterCommand("disable","Leave secure mode", disable, "", 0, 0, true);
   m_root.RegisterCommand("echo", "Test getchar", echo, "", 0, 0);
@@ -469,6 +525,15 @@ void OvmsCommandApp::DeregisterConsole(OvmsWriter* writer)
 
 int OvmsCommandApp::Log(const char* fmt, ...)
   {
+  va_list args;
+  va_start(args, fmt);
+  size_t ret = Log(fmt, args);
+  va_end(args);
+  return ret;
+  }
+
+int OvmsCommandApp::Log(const char* fmt, va_list args)
+  {
   LogBuffers* lb;
   TaskHandle_t task = xTaskGetCurrentTaskHandle();
   PartialLogs::iterator it = m_partials.find(task);
@@ -479,10 +544,7 @@ int OvmsCommandApp::Log(const char* fmt, ...)
     lb = it->second;
     m_partials.erase(task);
     }
-  va_list args;
-  va_start(args, fmt);
-  size_t ret = lb->append(fmt, args);
-  va_end(args);
+  int ret = LogBuffer(lb, fmt, args);
   lb->set(m_consoles.size());
   for (ConsoleSet::iterator it = m_consoles.begin(); it != m_consoles.end(); ++it)
     {
@@ -507,8 +569,41 @@ int OvmsCommandApp::LogPartial(const char* fmt, ...)
     }
   va_list args;
   va_start(args, fmt);
-  size_t ret = lb->append(fmt, args);
+  int ret = LogBuffer(lb, fmt, args);
   va_end(args);
+  return ret;
+  }
+
+int OvmsCommandApp::LogBuffer(LogBuffers* lb, const char* fmt, va_list args)
+  {
+  char *buffer;
+  int ret = vasprintf(&buffer, fmt, args);
+
+  // replace CR/LF except last by "|", but don't leave '|' at the end
+  char* s;
+  for (s=buffer; *s; s++)
+    {
+    if ((*s=='\r' || *s=='\n') && *(s+1))
+      *s = '|';
+    }
+  for (--s; s > buffer; --s)
+    {
+    if (*s=='\r' || *s=='\n')
+      continue;
+    if (*s != '|')
+      break;
+    *s++ = '\n';
+    *s-- = '\0';
+    }
+
+  if (ovms_log_file)
+    {
+    // Log to the log file as well...
+    fwrite(buffer,1,strlen(buffer),ovms_log_file);
+    fflush(ovms_log_file);
+    fsync(fileno(ovms_log_file));
+    }
+  lb->append(buffer);
   return ret;
   }
 

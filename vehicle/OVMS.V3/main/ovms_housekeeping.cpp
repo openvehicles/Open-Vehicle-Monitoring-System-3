@@ -35,6 +35,7 @@ static const char *TAG = "housekeeping";
 #include <string.h>
 #include <esp_system.h>
 #include <esp_ota_ops.h>
+#include <esp_heap_caps.h>
 #include "ovms.h"
 #include "ovms_housekeeping.h"
 #include "ovms_peripherals.h"
@@ -45,11 +46,6 @@ static const char *TAG = "housekeeping";
 #include "ovms_config.h"
 #include "console_async.h"
 #include "ovms_module.h"
-
-#include "esp_heap_alloc_caps.h"
-//extern "C" {
-//#include "esp_heap_caps.h"
-//}
 
 void HousekeepingTicker1( TimerHandle_t timer )
   {
@@ -99,8 +95,14 @@ void Housekeeping::init()
   ESP_LOGI(TAG, "Starting PERIPHERALS...");
   MyPeripherals = new Peripherals();
 
+#ifdef CONFIG_OVMS_COMP_ESP32CAN
   MyPeripherals->m_esp32can->SetPowerMode(Off);
+#endif // #ifdef CONFIG_OVMS_COMP_ESP32CAN
+
+#ifdef CONFIG_OVMS_COMP_EXT12V
   MyPeripherals->m_ext12v->SetPowerMode(Off);
+#endif // #ifdef CONFIG_OVMS_COMP_EXT12V
+
   ESP_LOGI(TAG, "Starting USB console...");
   ConsoleAsync::Instance();
 
@@ -148,6 +150,7 @@ void Housekeeping::version()
 
 void Housekeeping::metrics()
   {
+#ifdef CONFIG_OVMS_COMP_ADC
   OvmsMetricFloat* m1 = StandardMetrics.ms_v_bat_12v_voltage;
   if (m1 == NULL)
     return;
@@ -157,6 +160,7 @@ void Housekeeping::metrics()
   if (f == 0) f = 182;
   float v = (float)MyPeripherals->m_esp32adc->read() / f;
   m1->SetValue(v);
+#endif // #ifdef CONFIG_OVMS_COMP_ADC
 
   OvmsMetricInt* m2 = StandardMetrics.ms_m_tasks;
   if (m2 == NULL)
@@ -168,8 +172,7 @@ void Housekeeping::metrics()
   if (m3 == NULL)
     return;
   uint32_t caps = MALLOC_CAP_8BIT;
-  size_t free = xPortGetFreeHeapSizeCaps(caps);
-//  size_t free = heap_caps_get_free_size(caps);
+  size_t free = heap_caps_get_free_size(caps);
   m3->SetValue(free);
   }
 

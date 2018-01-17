@@ -24,9 +24,9 @@
  */
 
 #include "ovms_log.h"
-static const char *TAG = "v-renaulttwizy";
+static const char *TAG = "v-twizy";
 
-#define VERSION "0.6.0"
+#define VERSION "0.9.0"
 
 #include <stdio.h>
 #include <string>
@@ -60,6 +60,19 @@ OvmsVehicleRenaultTwizyInit::OvmsVehicleRenaultTwizyInit()
 }
 
 
+OvmsVehicleRenaultTwizy* OvmsVehicleRenaultTwizy::GetInstance(OvmsWriter* writer)
+{
+  OvmsVehicleRenaultTwizy* twizy = (OvmsVehicleRenaultTwizy*) MyVehicleFactory.ActiveVehicle();
+  string type = StdMetrics.ms_v_type->AsString();
+  if (!twizy || type != "RT") {
+    if (writer)
+      writer->puts("Error: Twizy vehicle module not selected");
+    return NULL;
+  }
+  return twizy;
+}
+
+
 /**
  * Constructor & destructor
  */
@@ -72,12 +85,12 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   
   memset(&twizy_flags, 0, sizeof twizy_flags);
   
-  // init can bus:
-  RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-  
   // init configs:
   MyConfig.RegisterParam("xrt", "Renault Twizy", true, true);
   ConfigChanged(NULL);
+  
+  // init can bus:
+  RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   
   // init metrics:
   if (m_modifier == 0) {
@@ -93,6 +106,7 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   BatteryInit();
   PowerInit();
   ChargeInit();
+  m_sevcon = new SevconClient(this);
   
   // init event listener:
   using std::placeholders::_1;
@@ -114,6 +128,9 @@ OvmsVehicleRenaultTwizy::~OvmsVehicleRenaultTwizy()
   
   // unregister event listeners:
   MyEvents.DeregisterEvent(TAG);
+  
+  if (m_sevcon)
+    delete m_sevcon;
 }
 
 
@@ -295,7 +312,7 @@ void OvmsVehicleRenaultTwizy::EventListener(string event, void* data)
  * ProcessMsgCommand: V2 compatibility protocol message command processing
  *  result: optional payload or message to return to the caller with the command response
  */
-OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::ProcessMsgCommand(std::string &result, int command, const char* args)
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::ProcessMsgCommand(string& result, int command, const char* args)
 {
   switch (command)
   {
@@ -326,8 +343,129 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::ProcessMsgCo
     case CMD_SetChargeAlerts:
       return MsgCommandCA(result, command, args);
     
+    case CMD_Homelink:
+      return MsgCommandHomelink(result, command, args);
+    
+    case CMD_Lock:
+    case CMD_UnLock:
+    case CMD_ValetOn:
+    case CMD_ValetOff:
+      return MsgCommandRestrict(result, command, args);
+    
+    case CMD_QueryLogs:
+      return MsgCommandQueryLogs(result, command, args);
+    case CMD_ResetLogs:
+      return MsgCommandResetLogs(result, command, args);
+    
     default:
       return NotImplemented;
+  }
+}
+
+
+/**
+ * MsgCommandHomelink: switch tuning profile
+ *      App labels "1"/"2"/"3", sent as 0/1/2 (standard homelink function)
+ *      App label "Default" sent without key, mapped to -1
+ */
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandHomelink(string& result, int command, const char* args)
+{
+  // parse args:
+  int key = -1;
+  if (args && *args)
+    key = atoi(args);
+  
+  // switch profile:
+  CANopenResult_t res = m_sevcon->CfgSwitchProfile(key+1);
+  
+  // send result:
+  ostringstream buf;
+  buf << "Profile #" << key+1 << ": " << m_sevcon->FmtSwitchProfileResult(res);
+  result = buf.str();
+  
+  MyNotify.NotifyStringf("info", result.c_str());
+  
+  if (res == COR_OK || res == COR_ERR_StateChangeFailed)
+    return Success;
+  else
+    return Fail;
+}
+
+
+/**
+ * MsgCommandRestrict: lock/unlock, valet/unvalet
+ */
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandRestrict(string& result, int command, const char* args)
+{
+  // TODO
+  return NotImplemented;
+}
+
+
+/**
+ * MsgCommandQueryLogs:
+ */
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandQueryLogs(string& result, int command, const char* args)
+{
+  int which = 1;
+  int start = 0;
+  
+  // parse args:
+  if (args && *args) {
+    char *arg;
+    if ((arg = strsep((char**) &args, ",")) != NULL)
+      which = atoi(arg);
+    if ((arg = strsep((char**) &args, ",")) != NULL)
+      start = atoi(arg);
+  }
+  
+  // execute:
+  int totalcnt = 0, sendcnt = 0;
+  CANopenResult_t res = m_sevcon->QueryLogs(0, NULL, which, start, &totalcnt, &sendcnt);
+  if (res != COR_OK) {
+    result = "Failed: ";
+    result += mp_encode(m_sevcon->GetResultString(res));
+    return Fail;
+  }
+  else {
+    ostringstream buf;
+    if (sendcnt == 0)
+      buf << "No log entries retrieved";
+    else
+      buf << "Log entries #" << start << "-" << start+sendcnt-1 << " of " << totalcnt << " retrieved";
+    result = buf.str();
+    return Success;
+  }
+}
+
+
+/**
+ * MsgCommandResetLogs:
+ */
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandResetLogs(string& result, int command, const char* args)
+{
+  int which = 99;
+  
+  // parse args:
+  if (args && *args) {
+    char *arg;
+    if ((arg = strsep((char**) &args, ",")) != NULL)
+      which = atoi(arg);
+  }
+  
+  // execute:
+  int cnt = 0;
+  CANopenResult_t res = m_sevcon->ResetLogs(which, &cnt);
+  if (res != COR_OK) {
+    result = "Failed: ";
+    result += mp_encode(m_sevcon->GetResultString(res));
+    return Fail;
+  }
+  else {
+    ostringstream buf;
+    buf << cnt << " log entries cleared";
+    result = buf.str();
+    return Success;
   }
 }
 

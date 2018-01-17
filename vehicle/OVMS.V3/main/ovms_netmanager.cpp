@@ -74,7 +74,9 @@ void OvmsNetManager::WifiUp(std::string event, void* data)
   m_connected_wifi = true;
   m_connected_any = m_connected_wifi || m_connected_modem;
   StandardMetrics.ms_m_net_type->SetValue("wifi");
+#ifdef CONFIG_OVMS_COMP_WIFI
   StandardMetrics.ms_m_net_provider->SetValue(MyPeripherals->m_esp32wifi->GetSSID());
+#endif // #ifdef CONFIG_OVMS_COMP_WIFI
   MyEvents.SignalEvent("network.wifi.up",NULL);
   MyEvents.SignalEvent("network.up",NULL);
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE

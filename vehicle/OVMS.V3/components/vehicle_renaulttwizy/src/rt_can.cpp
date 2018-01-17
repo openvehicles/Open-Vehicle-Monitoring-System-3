@@ -24,7 +24,7 @@
  */
 
 #include "ovms_log.h"
-// static const char *TAG = "v-renaulttwizy";
+// static const char *TAG = "v-twizy";
 
 #include <stdio.h>
 #include <string>
@@ -49,6 +49,7 @@ using namespace std;
 void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
 {
   unsigned int u;
+  int s;
   
   uint8_t *can_databuffer = p_frame->data.u8;
   
@@ -66,17 +67,6 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
   
   switch (p_frame->MsgID)
   {
-    case 0x081:
-      // --------------------------------------------------------------------------
-      // CAN ID 0x081: CANopen error message from SEVCON (Node #1)
-      
-      // count errors to detect manual CFG RESET request:
-      if ((CAN_BYTE(1)==0x10) && (CAN_BYTE(2)==0x01))
-        twizy_button_cnt++;
-      
-      break;
-    
-    
     case 0x155:
       // --------------------------------------------------------------------------
       // *** BMS: POWER STATUS ***
@@ -289,22 +279,6 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     
     
-#ifdef OVMS_TWIZY_CFG
-    case 0x581:
-      // --------------------------------------------------------------------------
-      // CAN ID 0x581: CANopen SDO reply from SEVCON (Node #1)
-      //
-      
-      // copy message into twizy_sdo object:
-      for (u = 0; u < can_datalength; u++)
-        twizy_sdo.byte[u] = CAN_BYTE(u);
-      for (; u < 8; u++)
-        twizy_sdo.byte[u] = 0;
-      
-      break;
-#endif // OVMS_TWIZY_CFG
-    
-    
     case 0x597:
       // --------------------------------------------------------------------------
       // CAN ID 0x597: sent every 100 ms (10 per second)
@@ -423,26 +397,23 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       else if (CAN_BYTE(0) == 0x08)
         twizy_status |= CAN_STATUS_MODE_R;
       
-      #ifdef OVMS_TWIZY_CFG
+      // accelerator pedal:
+      u = CAN_BYTE(3);
       
-        // accelerator pedal:
-        u = CAN_BYTE(3);
-        
-        // running average over 2 samples:
-        u = (twizy_accel_pedal + u + 1) >> 1;
-        
-        // kickdown detection:
-        s = KICKDOWN_THRESHOLD(twizy_accel_pedal);
-        if ( ((s > 0) && (u > ((unsigned int)twizy_accel_pedal + s)))
-          || ((twizy_kickdown_level > 0) && (u > twizy_kickdown_level)) )
-        {
-          twizy_kickdown_level = u;
-        }
-        
-        twizy_accel_pedal = u;
+      // running average over 2 samples:
+      u = (twizy_accel_pedal + u + 1) >> 1;
       
-      #endif // OVMS_TWIZY_CFG
+      // kickdown detection:
+      s = KICKDOWN_THRESHOLD(twizy_accel_pedal);
+      if ( ((s > 0) && (u > ((unsigned int)twizy_accel_pedal + s)))
+        || ((twizy_kickdown_level > 0) && (u > twizy_kickdown_level)) )
+      {
+        twizy_kickdown_level = u;
+        // TODO: Kickdown();
+      }
       
+      twizy_accel_pedal = u;
+    
       break;
       
       

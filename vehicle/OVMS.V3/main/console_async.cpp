@@ -49,6 +49,7 @@ ConsoleAsync* ConsoleAsync::Instance()
 
 ConsoleAsync::ConsoleAsync() : TaskBase("AsyncConsole", 5*1024)
   {
+  m_monitoring = true;
   uart_config_t uart_config =
     {
     .baud_rate = 115200,
@@ -57,6 +58,7 @@ ConsoleAsync::ConsoleAsync() : TaskBase("AsyncConsole", 5*1024)
     .stop_bits = UART_STOP_BITS_1,
     .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     .rx_flow_ctrl_thresh = 122,
+    .use_ref_tick = 0,
     };
   // Set UART parameters
   uart_param_config(EX_UART_NUM, &uart_config);
@@ -113,16 +115,7 @@ int ConsoleAsync::ConsoleLogger(const char* fmt, va_list args)
   {
   if (!m_instance)
     return ::vprintf(fmt, args);
-  char *buffer;
-  int ret = vasprintf(&buffer, fmt, args);
-  // replace CR/LF except last by "|":
-  for (char* s=buffer; *s; s++)
-    {
-    if ((*s=='\r' || *s=='\n') && *(s+1))
-      *s = '|';
-    }
-  m_instance->Log(buffer);
-  return ret;
+  return MyCommandApp.Log(fmt, args);
   }
 
 void ConsoleAsync::Log(char* message)
@@ -155,6 +148,24 @@ void ConsoleAsync::HandleDeviceEvent(void* pEvent)
       if (buffered_size > 0)
         {
         int len = uart_read_bytes(EX_UART_NUM, data, BUF_SIZE, 100 / portTICK_RATE_MS);
+	// Translate CR (Enter) from montitor into \n for microrl
+	bool found = false;
+	for (int i = 0; i < len; ++i)
+	  {
+          if (found && data[i] == '\n')
+            {
+            for (int j = i+1; j < len; ++j)
+              data[j-1] = data[j];
+            --len;
+            continue;
+            }
+          found = false;
+	  if (data[i] == '\r')
+            {
+	    data[i] = '\n';
+            found = true;
+            }
+	  }
         ProcessChars((char*)data, len);
         }
       break;
@@ -171,8 +182,7 @@ void ConsoleAsync::HandleDeviceEvent(void* pEvent)
       uart_flush(EX_UART_NUM);
       break;
     default:
-      ESP_LOGI(TAG, "uart event type: %d\n", event.type);
+      ESP_LOGE(TAG, "uart event type: %d", event.type);
       break;
     }
   }
-

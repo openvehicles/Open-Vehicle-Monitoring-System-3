@@ -45,6 +45,8 @@ static const char *TAG = "ovms-server-v2";
 #include "ovms_netmanager.h"
 #include "vehicle.h"
 #include "esp_system.h"
+#include "ovms_utils.h"
+
 
 // should this go in the .h or in the .cpp?
 typedef union {
@@ -146,38 +148,6 @@ static struct
 OvmsServerV2 *MyOvmsServerV2 = NULL;
 size_t MyOvmsServerV2Modifier = 0;
 size_t MyOvmsServerV2Reader = 0;
-
-/**
- * mp_encode: encode string for MP transport;
- *  - replace '\r\n' by '\r'
- *  - replace '\n' by '\r'
- *  - replace ',' by ';'
- */
-std::string mp_encode(const std::string text)
-  {
-  std::string res;
-  char lc = 0;
-  res.reserve(text.length());
-  for (int i=0; i<text.length(); i++)
-    {
-    if (text[i] == '\n')
-      {
-      if (lc != '\r')
-        res += '\r';
-      }
-    else if (text[i] == ',')
-      {
-      res += ';';
-      }
-    else
-      {
-      res += text[i];
-      }
-
-    lc = text[i];
-    }
-  return res;
-  }
 
 bool OvmsServerV2ReaderCallback(OvmsNotifyType* type, OvmsNotifyEntry* entry)
   {
@@ -370,7 +340,7 @@ void OvmsServerV2::ProcessCommand(const char* payload)
     OvmsVehicle::vehicle_command_t vc = vehicle->ProcessMsgCommand(rt, command, sep ? sep+1 : NULL);
     if (vc != OvmsVehicle::NotImplemented)
       {
-      *buffer << "MP-0 c" << command << "," << (1-vc) << "," << rt;
+      *buffer << "MP-0 c" << command << "," << ((vc == OvmsVehicle::Success) ? 0 : 1) << "," << rt;
       k = 1;
       }
     }
@@ -597,6 +567,10 @@ void OvmsServerV2::ProcessCommand(const char* payload)
         {
         if (vehicle->CommandHomelink(atoi(sep+1)) == OvmsVehicle::Success) k = 0;
         }
+      else if (vehicle)
+        {
+        if (vehicle->CommandHomelink(-1) == OvmsVehicle::Success) k = 0;
+        }
       *buffer << "MP-0 c24," << k;
       break;
       }
@@ -628,6 +602,7 @@ void OvmsServerV2::ProcessCommand(const char* payload)
         *buffer << "MP-0 c" << command << ",1,No command";
       else
         {
+#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
         *buffer << "AT+CUSD=1,\"" << sep+1 << "\",15\r\n";
         std::string msg = buffer->str();
         buffer->str("");
@@ -635,6 +610,9 @@ void OvmsServerV2::ProcessCommand(const char* payload)
           *buffer << "MP-0 c" << command << ",0";
         else
           *buffer << "MP-0 c" << command << ",1,Cannot send command";
+#else // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+        *buffer << "MP-0 c" << command << ",1,No modem";
+#endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
         }
       break;
     case 49: // Send raw AT command

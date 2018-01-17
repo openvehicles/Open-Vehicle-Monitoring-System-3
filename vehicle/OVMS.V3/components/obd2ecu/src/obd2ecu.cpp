@@ -714,6 +714,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[6] = 0x55;
           r_d[7] = 0x55;
           m_can->Write(&r_frame);
+          
           break;
 
         default:
@@ -831,7 +832,7 @@ void obd2ecu::Addpid(uint8_t pid)
   }
          
   if(pid <= 0x40)        // PIDs 21-40
-  { m_supported_21_40 |= 1 << (32-pid-0x40);
+  { m_supported_21_40 |= 1 << (32-(pid-0x20));
     return;
   } 
   

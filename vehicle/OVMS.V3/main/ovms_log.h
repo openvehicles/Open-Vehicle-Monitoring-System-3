@@ -32,6 +32,7 @@
 #define __OVMS_LOG_H__
 
 #include "esp_log.h"
+#include <stdio.h>
 
 #undef ESP_LOGE
 #undef ESP_LOGW

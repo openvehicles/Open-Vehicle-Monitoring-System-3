@@ -25,11 +25,19 @@
 #define __CRYPT_BASE64_H
 
 #include <stdint.h>
+#include <sys/types.h>
+
+#ifndef howmany
+#define howmany(x,y) (((x)+((y)-1))/(y))
+#endif
 
 extern const uint8_t cb64[];
 
 char *base64encode(const uint8_t *inputData, int inputLen, uint8_t *outputData);
 int base64decode(const char *inputData, uint8_t *outputData);
+
+std::string base64encode(const std::string inputData);
+std::string base64decode(const std::string inputData);
 
 #endif //#ifndef __CRYPT_BASE64_H
 

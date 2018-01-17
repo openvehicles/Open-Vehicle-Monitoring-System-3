@@ -43,57 +43,100 @@ Peripherals::Peripherals()
   {
   ESP_LOGI(TAG, "Initialising OVMS Peripherals...");
 
+#if defined(CONFIG_OVMS_COMP_WIFI)||defined(CONFIG_OVMS_COMP_MODEM_SIMCOM)
   ESP_LOGI(TAG, "  TCP/IP Adaptor");
   tcpip_adapter_init();
+#endif // #if defined(CONFIG_OVMS_COMP_WIFI)||defined(CONFIG_OVMS_COMP_MODEM_SIMCOM)
 
   gpio_install_isr_service(0);
 
   gpio_set_direction((gpio_num_t)VSPI_PIN_MISO, GPIO_MODE_INPUT);
   gpio_set_direction((gpio_num_t)VSPI_PIN_MOSI, GPIO_MODE_OUTPUT);
   gpio_set_direction((gpio_num_t)VSPI_PIN_CLK, GPIO_MODE_OUTPUT);
+
+#ifdef CONFIG_OVMS_COMP_MAX7317
   gpio_set_direction((gpio_num_t)VSPI_PIN_MAX7317_CS, GPIO_MODE_OUTPUT);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+
+#ifdef CONFIG_OVMS_COMP_MCP2515
   gpio_set_direction((gpio_num_t)VSPI_PIN_MCP2515_1_CS, GPIO_MODE_OUTPUT);
   gpio_set_direction((gpio_num_t)VSPI_PIN_MCP2515_2_CS, GPIO_MODE_OUTPUT);
   gpio_set_direction((gpio_num_t)VSPI_PIN_MCP2515_1_INT, GPIO_MODE_INPUT);
   gpio_set_direction((gpio_num_t)VSPI_PIN_MCP2515_2_INT, GPIO_MODE_INPUT);
+#endif // #ifdef CONFIG_OVMS_COMP_MCP2515
 
+#ifdef CONFIG_OVMS_COMP_SDCARD
   gpio_set_direction((gpio_num_t)SDCARD_PIN_CLK, GPIO_MODE_OUTPUT);
   gpio_set_direction((gpio_num_t)SDCARD_PIN_CMD, GPIO_MODE_OUTPUT);
   gpio_set_direction((gpio_num_t)SDCARD_PIN_CD, GPIO_MODE_INPUT);
 
+  // GPIOs CMD, D0 should have external 10k pull-ups.
+  // Internal pull-ups are not sufficient. However, enabling internal pull-ups
+  // does make a difference some boards, so we do that here.
+  gpio_set_pull_mode((gpio_num_t)SDCARD_PIN_CMD, GPIO_PULLUP_ONLY);   // CMD, needed in 4- and 1- line modes
+  gpio_set_pull_mode((gpio_num_t)SDCARD_PIN_D0, GPIO_PULLUP_ONLY);    // D0, needed in 4- and 1-line modes
+#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
+
+#ifdef CONFIG_OVMS_COMP_MODEM
   gpio_set_direction((gpio_num_t)MODEM_GPIO_TX, GPIO_MODE_OUTPUT);
   gpio_set_direction((gpio_num_t)MODEM_GPIO_RX, GPIO_MODE_INPUT);
+#endif // #ifdef CONFIG_OVMS_COMP_MODEM
 
   ESP_LOGI(TAG, "  ESP32 system");
   m_esp32 = new esp32system("esp32");
+
   ESP_LOGI(TAG, "  SPI bus");
   m_spibus = new spi("spi", VSPI_PIN_MISO, VSPI_PIN_MOSI, VSPI_PIN_CLK);
+
+#ifdef CONFIG_OVMS_COMP_MAX7317
   ESP_LOGI(TAG, "  MAX7317 I/O Expander");
   m_max7317 = new max7317("egpio", m_spibus, VSPI_NODMA_HOST, 1000000, VSPI_PIN_MAX7317_CS);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+
+#ifdef CONFIG_OVMS_COMP_ESP32CAN
   ESP_LOGI(TAG, "  ESP32 CAN");
   m_esp32can = new esp32can("can1", ESP32CAN_PIN_TX, ESP32CAN_PIN_RX);
+#endif // #ifdef CONFIG_OVMS_COMP_ESP32CAN
+
+#ifdef CONFIG_OVMS_COMP_WIFI
   ESP_LOGI(TAG, "  ESP32 WIFI");
   m_esp32wifi = new esp32wifi("wifi");
+#endif // #ifdef CONFIG_OVMS_COMP_WIFI
+
+#ifdef CONFIG_OVMS_COMP_BLUETOOTH
   ESP_LOGI(TAG, "  ESP32 BLUETOOTH");
   m_esp32bluetooth = new esp32bluetooth("bluetooth");
+#endif // #ifdef CONFIG_OVMS_COMP_BLUETOOTH
+
+#ifdef CONFIG_OVMS_COMP_ADC
   ESP_LOGI(TAG, "  ESP32 ADC");
   m_esp32adc = new esp32adc("adc", ADC1_CHANNEL_0, ADC_WIDTH_12Bit, ADC_ATTEN_11db);
+#endif // #ifdef CONFIG_OVMS_COMP_ADC
+
+#ifdef CONFIG_OVMS_COMP_MCP2515
   ESP_LOGI(TAG, "  MCP2515 CAN 1/2");
   m_mcp2515_1 = new mcp2515("can2", m_spibus, VSPI_NODMA_HOST, 1000000, VSPI_PIN_MCP2515_1_CS, VSPI_PIN_MCP2515_1_INT);
   ESP_LOGI(TAG, "  MCP2515 CAN 2/2");
   m_mcp2515_2 = new mcp2515("can3", m_spibus, VSPI_NODMA_HOST, 1000000, VSPI_PIN_MCP2515_2_CS, VSPI_PIN_MCP2515_2_INT);
-  ESP_LOGI(TAG, "  SD CARD");
+#endif // #ifdef CONFIG_OVMS_COMP_MCP2515
+
 #ifdef CONFIG_OVMS_COMP_SDCARD
-  m_sdcard = new sdcard("sdcard", false,true,SDCARD_PIN_CD);
+  ESP_LOGI(TAG, "  SD CARD");
+  m_sdcard = new sdcard("sdcard", true, true, SDCARD_PIN_CD);
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
+
 #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
   ESP_LOGI(TAG, "  SIMCOM MODEM");
   m_simcom = new simcom("simcom", UART_NUM_1, 115200, MODEM_GPIO_RX, MODEM_GPIO_TX, MODEM_EGPIO_PWR, MODEM_EGPIO_DTR);
 #endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+
 #ifdef CONFIG_OVMS_COMP_OBD2ECU
   m_obd2ecu = NULL;
 #endif // #ifdef CONFIG_OVMS_COMP_OBD2ECU
+
+#ifdef CONFIG_OVMS_COMP_EXT12V
   m_ext12v = new ext12v("ext12v");
+#endif // #ifdef CONFIG_OVMS_COMP_EXT12V
   }
 
 Peripherals::~Peripherals()
