@@ -82,6 +82,14 @@
 ;			- Minor clean ups.
 ;			- Fixed some incorrect unit types in commands.
 ;
+;		 0.3.3  17-Jan-2018 - Geir Øyvind Vælidalo
+;		  - Added
+;					- seat belt status
+;		  			- traction control status
+;					- steering mode
+;					- Preheat timer status and charge timer status
+;					- Cruise control
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -123,7 +131,7 @@
 #include "ovms_notify.h"
 #include <sys/param.h>
 
-#define VERSION "0.3.2"
+#define VERSION "0.3.3"
 
 static const char *TAG = "v-kiasoulev";
 
@@ -208,6 +216,9 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
 
   m_obc_pilot_duty = MyMetrics.InitFloat("xks.obc.pilot.duty", 10, 0, Percentage);
 
+  m_obc_timer_enabled = MyMetrics.InitBool("xks.obc.timer.enabled", 10, 0);
+  m_obc_timer_off = MyMetrics.InitBool("xks.obc.timer.off", 10, 0);
+
   m_v_env_lowbeam = MyMetrics.InitBool("xks.e.lowbeam", 10, 0);
   m_v_env_highbeam = MyMetrics.InitBool("xks.e.highbeam", 10, 0);
   m_v_env_inside_temp = MyMetrics.InitFloat("xks.e.inside.temp", 10, 0, Celcius);
@@ -219,10 +230,25 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   m_v_env_climate_fan_speed = MyMetrics.InitInt("xks.e.climate.fan.speed", 10, 0);
   m_v_env_climate_mode = MyMetrics.InitInt("xks.e.climate.mode", 10, 0);
 
+  m_v_preheat_timer1_enabled = MyMetrics.InitBool("xks.e.preheat.timer1.enabled", 10, 0);
+  m_v_preheat_timer2_enabled = MyMetrics.InitBool("xks.e.preheat.timer2.enabled", 10, 0);
+  m_v_preheating = MyMetrics.InitBool("xks.e.preheating", 10, 0);
+
   m_v_pos_dist_to_dest = MyMetrics.InitInt("xks.e.pos.dist.to.dest", 10, 0, Kilometers);
   m_v_pos_arrival_hour = MyMetrics.InitInt("xks.e.pos.arrival.hour", 10, 0);
   m_v_pos_arrival_minute = MyMetrics.InitInt("xks.e.pos.arrival.minute", 10, 0);
   m_v_pos_street = MyMetrics.InitString("xks.e.pos.street", 10, "");
+
+  m_v_seat_belt_driver = MyMetrics.InitBool("xks.v.seat.belt.driver", 10, 0);
+  m_v_seat_belt_passenger = MyMetrics.InitBool("xks.v.seat.belt.passenger", 10, 0);
+  m_v_seat_belt_back_right = MyMetrics.InitBool("xks.v.seat.belt.back.right", 10, 0);
+  m_v_seat_belt_back_middle = MyMetrics.InitBool("xks.v.seat.belt.back.middle", 10, 0);
+  m_v_seat_belt_back_left = MyMetrics.InitBool("xks.v.seat.belt.back.left", 10, 0);
+
+  m_v_traction_control = MyMetrics.InitBool("xks.v.traction.control", 10, 0);
+  m_v_cruise_control = MyMetrics.InitBool("xks.v.cruise.control.enabled", 10, 0);
+
+  m_v_steering_mode = MyMetrics.InitString("xks.v.steering.mode", 0, "");
 
   m_b_cell_det_max->SetValue(0);
   m_b_cell_det_min->SetValue(0);

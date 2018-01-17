@@ -58,6 +58,11 @@ void CommandOpenChargePort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 void CommandParkBreakService(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
   OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
+	for(int i=0; i<100; i++)
+		{
+		soul->	SendTesterPresent(ABS_EBP_UNIT,2);
+		vTaskDelay( 10 / portTICK_PERIOD_MS );
+		}
 	if( strcmp(argv[0],"on")==0 )
 		{
 	  soul->Send_EBP_Command(0x02, 0x01);
@@ -69,6 +74,11 @@ void CommandParkBreakService(int verbosity, OvmsWriter* writer, OvmsCommand* cmd
 	else if( strcmp(argv[0],"off2")==0 ) //Disengange 7d5h	8	03 30 01 01 00 00 00 00
 		{
 	  soul->Send_EBP_Command(0x01, 0x01);
+		}
+	for(int i=0; i<100; i++)
+		{
+		soul->	SendTesterPresent(ABS_EBP_UNIT,2);
+		vTaskDelay( 10 / portTICK_PERIOD_MS );
 		}
 	}
 

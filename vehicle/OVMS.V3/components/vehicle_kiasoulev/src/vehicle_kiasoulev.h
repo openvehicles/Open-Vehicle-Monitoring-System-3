@@ -81,6 +81,7 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     bool Send_BCM_Command( uint8_t b1, uint8_t b2, uint8_t b3);
     bool Send_SMK_Command( uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint8_t b5, uint8_t b6, uint8_t b7);
     bool Send_EBP_Command( uint8_t b1, uint8_t b2);
+    void SendTesterPresent(uint16_t id, uint8_t length);
 
     virtual OvmsVehicle::vehicle_command_t CommandLock(const char* pin);
     virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
@@ -129,11 +130,30 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     OvmsMetricString*	  m_v_pos_street;
 
     OvmsMetricFloat* m_obc_pilot_duty;
+    OvmsMetricBool*  m_obc_timer_enabled;
+    OvmsMetricBool*  m_obc_timer_off;
 
     OvmsMetricFloat* m_ldc_out_voltage;
     OvmsMetricFloat* m_ldc_out_current;
     OvmsMetricFloat* m_ldc_in_voltage;
     OvmsMetricFloat* m_ldc_temperature;
+
+    OvmsMetricBool*  m_v_seat_belt_driver;
+    OvmsMetricBool*  m_v_seat_belt_passenger;
+    OvmsMetricBool*  m_v_seat_belt_back_right;
+    OvmsMetricBool*  m_v_seat_belt_back_middle;
+    OvmsMetricBool*  m_v_seat_belt_back_left;
+
+    OvmsMetricBool*  m_v_traction_control;
+    OvmsMetricBool*  m_v_cruise_control;
+
+    OvmsMetricString*	  m_v_steering_mode;
+
+    OvmsMetricBool*  m_v_preheat_timer1_enabled;
+    OvmsMetricBool*  m_v_preheat_timer2_enabled;
+    OvmsMetricBool*  m_v_preheating;
+
+    const TickType_t xDelay10 = 10 / portTICK_PERIOD_MS;
 
   protected:
     void IncomingTPMS(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
@@ -155,7 +175,6 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     bool SendCommandInSessionMode(uint16_t id, uint8_t count,
     					uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
 						uint8_t b5, uint8_t b6 );
-    void SendTesterPresent(uint16_t id, uint8_t length);
     bool SetSessionMode(uint16_t id, uint8_t mode);
     bool SetDoorLock(bool open, const char* password);
     bool LeftIndicator(bool);
