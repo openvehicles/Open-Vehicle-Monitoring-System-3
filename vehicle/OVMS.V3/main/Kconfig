@@ -183,7 +183,7 @@ config OVMS_COMP_EXT12V
 config OVMS_COMP_SERVER
     bool "Include support for OVMS server connections"
     default y
-    depends on OVMS
+    depends on OVMS_SC_GPL_MONGOOSE
     help
         Enable to include support for OVMSserver connections.
 
@@ -218,7 +218,7 @@ config OVMS_COMP_LOCATION
 config OVMS_COMP_WEBSERVER
     bool "Include support for Network Web Server"
     default y
-    depends on OVMS
+    depends on OVMS_SC_GPL_MONGOOSE
     help
         Enable to include support for Web Server.
 
@@ -232,14 +232,14 @@ config OVMS_COMP_MDNS
 config OVMS_COMP_TELNET
     bool "Include support for Telnet server"
     default y
-    depends on OVMS
+    depends on OVMS_SC_GPL_MONGOOSE
     help
         Enable to include support for Telnet server.
 
 config OVMS_COMP_SSH
     bool "Include support for SSH server"
     default y
-    depends on OVMS
+    depends on OVMS_SC_GPL_MONGOOSE
     help
         Enable to include support for SSH server.
 
