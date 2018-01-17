@@ -173,14 +173,11 @@ esp_err_t mcp2515::Write(CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
   // check for free TX buffer:
   uint8_t txbuf;
   uint8_t* p = m_spibus->spi_cmd(m_spi, buf, 1, 1, CMD_READ_STATUS);
-  if ((p[0] & 0b00000100) == 0)
-    txbuf = 0b000; // use TXB0
-  else if ((p[0] & 0b00010000) == 0)
-    txbuf = 0b010; // use TXB1
-  else if ((p[0] & 0b01000000) == 0)
-    txbuf = 0b100; // use TXB2
+
+  if((p[0] & 0b01010100) == 0)  // any buffers busy?
+    txbuf = 0b000;  // all clear - use TxB0
   else
-    return QueueWrite(p_frame, maxqueuewait);
+    return QueueWrite(p_frame, maxqueuewait);  // otherwise, queue the frame and wait.  Single frame at a time!
 
   if (p_frame->FIR.B.FF == CAN_frame_std)
     {
@@ -218,7 +215,7 @@ esp_err_t mcp2515::Write(CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
 
   // stats & logging:
   canbus::Write(p_frame, maxqueuewait);
-
+  
   return ESP_OK;
   }
 
@@ -287,14 +284,12 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
   // handle other interrupts that came in at the same time:
   
   if (intstat & 0b00011100)
-    {
+    { 
     // some TX buffers have become available; clear IRQs and fill up:
-    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intstat & 0b00011100, 0x00); 
-    while (xQueueReceive(m_txqueue, (void*)frame, 0) == pdTRUE)
-      {
-      if (Write(frame, 0) != ESP_OK)
-        break;
-      }
+    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intstat & 0b00011100, 0x00);
+  
+    if(xQueueReceive(m_txqueue, (void*)frame, 0) == pdTRUE)  // if any queued for later?
+      Write(frame, 0);  // if so, send one
     }
   
   if (intstat & 0b10100000)
