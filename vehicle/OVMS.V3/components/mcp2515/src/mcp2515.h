@@ -58,7 +58,7 @@ class mcp2515 : public canbus
     esp_err_t Stop();
 
   public:
-    esp_err_t Write(CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
+    esp_err_t Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
     virtual bool RxCallback(CAN_frame_t* frame);
 
   public:

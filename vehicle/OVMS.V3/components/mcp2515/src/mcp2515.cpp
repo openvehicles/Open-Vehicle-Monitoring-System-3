@@ -165,7 +165,7 @@ esp_err_t mcp2515::Stop()
   return ESP_OK;
   }
 
-esp_err_t mcp2515::Write(CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
+esp_err_t mcp2515::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
   {
   uint8_t buf[16];
   uint8_t id[4];
@@ -297,23 +297,23 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
     // Error interrupts:
     //  MERRF 0x80 = message tx/rx error
     //  ERRIF 0x20 = overflow / error state change
-    m_error_flags = (intstat & 0b10100000) << 8 | errflag;
+    m_status.error_flags = (intstat & 0b10100000) << 8 | errflag;
   
     if (errflag & 0b10000000) // RXB1 overflow
       {
-      m_errors_rxbuf_overflow++;
+      m_status.rxbuf_overflow++;
       ESP_LOGW(TAG, "CAN Bus 2/3 receive overflow; Frame lost.");
       }
     if (errflag & 0b01000000) // RXB0 overflow.  No data lost in this case (it went into RXB1)
-      m_errors_rxbuf_overflow++;
+      m_status.rxbuf_overflow++;
     
     // read error counters:
     uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, 0x1c);
-    m_errors_tx = p[0];
-    m_errors_rx = p[1];
+    m_status.errors_tx = p[0];
+    m_status.errors_rx = p[1];
     
     // log:
-    MyCan.LogStatus(CAN_Log_Error, this);
+    LogStatus(CAN_LogStatus_Error);
     }
   
   // clear RX buffer overflow flags:

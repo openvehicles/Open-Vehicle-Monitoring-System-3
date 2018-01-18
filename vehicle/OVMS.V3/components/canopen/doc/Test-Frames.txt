@@ -14,7 +14,12 @@ co status
 can can1 status
 
 # …optional:
-can can1 trace on
+can log trace
+
+can log crtd /store/crtd1
+
+vfs cat /store/crtd1
+vfs tail /store/crtd1
 
 
 ## Heartbeat/state

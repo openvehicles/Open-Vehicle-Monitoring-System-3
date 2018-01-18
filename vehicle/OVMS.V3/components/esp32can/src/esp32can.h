@@ -58,7 +58,7 @@ class esp32can : public canbus
     esp_err_t Stop();
 
   public:
-    esp_err_t Write(CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
+    esp_err_t Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
     void TxCallback();
 
   public:
