@@ -115,8 +115,9 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandCA(in
       // _H_alt: stop a running charge immediately
       if (twizy_flags.Charging && !twizy_chg_stop_request)
       {
-        twizy_chg_stop_request = true;
         ESP_LOGI(TAG, "requesting charge stop (user command)");
+        MyEvents.SignalEvent("vehicle.charge.substate.scheduledstop", NULL);
+        twizy_chg_stop_request = true;
         if (capacity > 0)
           capacity -= writer->printf("Stopping charge.\n");
       }
@@ -279,6 +280,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandStopC
   if (twizy_flags.Charging && !twizy_chg_stop_request)
   {
     ESP_LOGI(TAG, "requesting charge stop (user command)");
+    MyEvents.SignalEvent("vehicle.charge.substate.scheduledstop", NULL);
     twizy_chg_stop_request = true;
   }
   return Success;
