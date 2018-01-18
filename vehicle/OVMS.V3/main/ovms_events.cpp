@@ -146,6 +146,20 @@ void OvmsEvents::SignalEvent(std::string event, void* data)
       }
     }
 
+  k = m_map.find("*");
+  if (k != m_map.end())
+    {
+    EventCallbackList* el = k->second;
+    if (el)
+      {
+      for (EventCallbackList::iterator itc=el->begin(); itc!=el->end(); ++itc)
+        {
+        EventCallbackEntry* ec = *itc;
+        ec->m_callback(event, data);
+        }
+      }
+    }
+
   MyScripts.EventScript(event, data);
   }
 
