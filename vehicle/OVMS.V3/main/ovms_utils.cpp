@@ -28,6 +28,8 @@
 ; THE SOFTWARE.
 */
 
+#include <stdlib.h>
+#include <stdio.h>
 #include "ovms_utils.h"
 
 /**
@@ -165,4 +167,67 @@ std::string mp_encode(const std::string text)
     lc = text[i];
     }
   return res;
+  }
+
+/**
+ * startsWith: std::string prefix check
+ */
+bool startsWith(const std::string& haystack, const std::string& needle)
+  {
+  return needle.length() <= haystack.length()
+    && std::equal(needle.begin(), needle.end(), haystack.begin());
+  }
+
+/**
+ * FormatHexDump: create/fill hexdump buffer including printable representation
+ * Note: allocates buffer as necessary in *bufferp, caller must free.
+ */
+int FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsize /*=16*/)
+  {
+  const char *s = data;
+
+  if (rlength>0)
+    {
+    if (!*bufferp)
+      *bufferp = (char*) malloc(colsize*4 + 4); // space for 16x3 + 2 + 16 + 1(\0)
+    
+    char *p = *bufferp;
+    const char *os = s;
+    for (int k=0;k<colsize;k++)
+      {
+      if (k<rlength)
+        {
+        sprintf(p,"%2.2x ",*s);
+        s++;
+        }
+      else
+        {
+        sprintf(p,"   ");
+        }
+      p+=3;
+      }
+    sprintf(p,"| ");
+    p += 2;
+    s = os;
+    for (int k=0;k<colsize;k++)
+      {
+      if (k<rlength)
+        {
+        if (isprint((int)*s))
+          { *p = *s; }
+        else
+          { *p = '.'; }
+        s++;
+        }
+      else
+        {
+        *p = ' ';
+        }
+      p++;
+      }
+    *p = 0;
+    rlength -= colsize;
+    }
+
+  return rlength;
   }
