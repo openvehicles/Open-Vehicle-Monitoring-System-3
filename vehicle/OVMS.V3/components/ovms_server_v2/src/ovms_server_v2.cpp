@@ -1687,16 +1687,8 @@ void ovmsv2_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   }
 
 class OvmsServerV2Init
-    {
-    public:
-      OvmsServerV2Init();
-
-    public:
-      void NetUp(std::string event, void* data);
-      void NetDown(std::string event, void* data);
-      void NetReconfigured(std::string event, void* data);
-      void NetmanInit(std::string event, void* data);
-      void NetmanStop(std::string event, void* data);
+  {
+  public: OvmsServerV2Init();
   } OvmsServerV2Init  __attribute__ ((init_priority (6100)));
 
 OvmsServerV2Init::OvmsServerV2Init()
