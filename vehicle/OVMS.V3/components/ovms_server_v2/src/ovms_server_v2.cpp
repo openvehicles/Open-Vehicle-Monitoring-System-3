@@ -636,7 +636,6 @@ void OvmsServerV2::Transmit(const std::ostringstream& message)
 
   char* buf = new char[(len*2)+4];
   base64encode((uint8_t*)s, len, (uint8_t*)buf);
-  ESP_LOGI(TAG, "  Encoded %s",buf);
   strcat(buf,"\r\n");
   mg_send(m_mgconn, buf, strlen(buf));
 
