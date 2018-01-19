@@ -37,7 +37,7 @@
 #include <iomanip>
 #include <sys/time.h>
 #include "ovms_server.h"
-#include "ovms_net.h"
+#include "ovms_netmanager.h"
 #include "ovms_buffer.h"
 #include "crypt_rc4.h"
 #include "ovms_metrics.h"
@@ -53,25 +53,18 @@ class OvmsServerV2 : public OvmsServer
 
   public:
     virtual void SetPowerMode(PowerMode powermode);
-
-  public:
-    void ServerTask();
-
-  public:
+    void Connect();
+    void SendLogin();
     void Disconnect();
+    size_t IncomingData(uint8_t* data, size_t len);
 
   protected:
-    bool Connect();
-    bool Login();
     void ProcessServerMsg();
     void ProcessCommand(const char* payload);
     void Transmit(const std::ostringstream& message);
     void Transmit(const std::string& message);
     void Transmit(const char* message);
     void SetStatus(const char* status, bool fault=false);
-
-  protected:
-    std::string ReadLine();
 
   protected:
     void TransmitMsgStat(bool always = false);
@@ -94,13 +87,21 @@ class OvmsServerV2 : public OvmsServer
     bool IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry);
     void EventListener(std::string event, void* data);
     void ConfigChanged(OvmsConfigParam* param);
+    void NetUp(std::string event, void* data);
+    void NetDown(std::string event, void* data);
+    void NetReconfigured(std::string event, void* data);
+    void NetmanInit(std::string event, void* data);
+    void NetmanStop(std::string event, void* data);
+    void Ticker1(std::string event, void* data);
 
   public:
     std::string m_status;
+    struct mg_connection *m_mgconn;
+    int m_connretry;
+    bool m_loggedin;
 
   protected:
     metric_unit_t m_units_distance;
-    OvmsNetTcpConnection m_conn;
     OvmsBuffer* m_buffer;
     std::string m_vehicleid;
     std::string m_server;
@@ -121,6 +122,10 @@ class OvmsServerV2 : public OvmsServer
     bool m_now_capabilities;
     bool m_now_group;
     int m_streaming;
+
+    int m_lasttx = 0;
+    int m_lasttx_stream = 0;
+    int m_peers = 0;
 
     bool m_pending_notify_info;
     bool m_pending_notify_error;

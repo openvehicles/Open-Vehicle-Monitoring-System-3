@@ -41,9 +41,6 @@ class OvmsServerV3 : public OvmsServer
 
   public:
     virtual void SetPowerMode(PowerMode powermode);
-
-  public:
-    void ServerTask();
   };
 
 #endif //#ifndef __OVMS_SERVER_V3_H__

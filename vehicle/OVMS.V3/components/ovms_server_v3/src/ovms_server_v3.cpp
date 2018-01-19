@@ -40,14 +40,6 @@ static const char *TAG = "ovms-server-v3";
 OvmsServerV3 *MyOvmsServerV3 = NULL;
 size_t MyOvmsServerV3Modifier = 0;
 
-void OvmsServerV3::ServerTask()
-  {
-  while(1)
-    {
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
-  }
-
 OvmsServerV3::OvmsServerV3(const char* name)
   : OvmsServer(name)
   {
