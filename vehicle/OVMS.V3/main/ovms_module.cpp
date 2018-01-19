@@ -37,10 +37,12 @@ static const char *TAG = "ovms-module";
 #include "freertos/task.h"
 #include "freertos/FreeRTOSConfig.h"
 #include "esp_heap_caps.h"
-#include "esp_heap_debug.h"
 #include <esp_system.h>
 #include "ovms_module.h"
 #include "ovms_command.h"
+#ifdef CONFIG_HEAP_TASK_TRACKING
+#include "esp_heap_debug.h"
+#endif
 
 #define MAX_TASKS 30
 #define DUMPSIZE 1000
