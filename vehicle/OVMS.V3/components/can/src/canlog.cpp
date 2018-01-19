@@ -74,6 +74,8 @@ canlog::canlog(int queuesize /*=30*/)
   m_filtercnt = 0;
   m_queue = xQueueCreate(queuesize, sizeof(CAN_LogMsg_t));
   xTaskCreatePinnedToCore(RxTask, "CanLogTask", 4096, (void*)this, 5, &m_task, 1);
+  m_msgcount = 0;
+  m_dropcount = 0;
   }
 
 canlog::~canlog()
@@ -142,6 +144,8 @@ bool canlog::Open(std::string path)
   
   m_path = path;
   m_file = file;
+  m_msgcount = 0;
+  m_dropcount = 0;
   
   LogInfo(NULL, CAN_LogInfo_Config, GetInfo().c_str());
   ESP_LOGI(TAG, "canlog[%s].Open: writing to '%s'", GetType(), path.c_str());
@@ -150,11 +154,13 @@ bool canlog::Open(std::string path)
 
 void canlog::Close()
   {
-  if (FILE* file = m_file)
+  if (m_file)
     {
+    FILE* file = m_file;
     m_file = NULL;
     fclose(file);
-    ESP_LOGI(TAG, "canlog[%s].Close: '%s' closed", GetType(), m_path.c_str());
+    ESP_LOGI(TAG, "canlog[%s].Close: '%s' closed. Statistics: %s",
+      GetType(), m_path.c_str(), GetStats().c_str());
     m_path = "";
     }
   }
@@ -206,6 +212,19 @@ std::string canlog::GetInfo()
   return buf.str();
   }
 
+std::string canlog::GetStats()
+  {
+  std::ostringstream buf;
+  float droprate = (m_msgcount > 0) ? ((float) m_dropcount/m_msgcount*100) : 0;
+  uint32_t waiting = uxQueueMessagesWaiting(m_queue);
+  buf << "total messages: " << m_msgcount 
+    << ", dropped: " << m_dropcount
+    << " = " << std::fixed << std::setprecision(1) << droprate << "%";
+  if (waiting > 0)
+    buf << ", waiting: " << waiting;
+  return buf.str();
+  }
+
 void canlog::SetFilter(int filtercnt, canlog_filter_t filter[])
   {
   m_filtercnt = MIN(filtercnt, CANLOG_MAX_FILTERS);
@@ -241,7 +260,9 @@ void canlog::LogFrame(canbus* bus, CAN_LogEntry_t type, const CAN_frame_t* frame
     msg.bus = bus;
     msg.type = type;
     msg.frame = *frame;
-    xQueueSend(m_queue, &msg, 0);
+    m_msgcount++;
+    if (xQueueSend(m_queue, &msg, 0) != pdTRUE)
+      m_dropcount++;
     }
   }
 
@@ -256,7 +277,9 @@ void canlog::LogStatus(canbus* bus, CAN_LogEntry_t type, const CAN_status_t* sta
     msg.bus = bus;
     msg.type = type;
     msg.status = *status;
-    xQueueSend(m_queue, &msg, 0);
+    m_msgcount++;
+    if (xQueueSend(m_queue, &msg, 0) != pdTRUE)
+      m_dropcount++;
     }
   }
 
@@ -271,7 +294,9 @@ void canlog::LogInfo(canbus* bus, CAN_LogEntry_t type, const char* text)
     msg.bus = bus;
     msg.type = type;
     msg.text = strdup(text);
-    xQueueSend(m_queue, &msg, 0);
+    m_msgcount++;
+    if (xQueueSend(m_queue, &msg, 0) != pdTRUE)
+      m_dropcount++;
     }
   }
 

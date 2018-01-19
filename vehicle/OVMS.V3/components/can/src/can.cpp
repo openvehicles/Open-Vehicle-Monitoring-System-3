@@ -186,7 +186,7 @@ void can_log(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
   if (strcmp(type, "status") == 0)
     {
     if (cl)
-      writer->printf("CAN logging active: %s\n", cl->GetInfo().c_str());
+      writer->printf("CAN logging active: %s\nStatistics: %s\n", cl->GetInfo().c_str(), cl->GetStats().c_str());
     else
       writer->puts("CAN logging inactive.");
     return;
@@ -203,6 +203,7 @@ void can_log(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
     MyCan.UnsetLogger();
     vTaskDelay(pdMS_TO_TICKS(100)); // give logger task time to finish
     cl->Close();
+    writer->printf("Statistics: %s\n", cl->GetStats().c_str());
     delete cl;
     writer->puts("CAN logging stopped.");
     return;
@@ -281,6 +282,7 @@ void can_log(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
     writer->printf("Closing path '%s'\n", cl->GetPath().c_str());
     MyCan.UnsetLogger();
     vTaskDelay(pdMS_TO_TICKS(100)); // give logger task time to finish
+    writer->printf("Statistics: %s\n", cl->GetStats().c_str());
     cl->Close();
     }
   
