@@ -121,7 +121,10 @@ class OvmsServerV2 : public OvmsServer
     bool m_now_environment;
     bool m_now_capabilities;
     bool m_now_group;
+
     int m_streaming;
+    int m_updatetime_idle;
+    int m_updatetime_connected;
 
     int m_lasttx = 0;
     int m_lasttx_stream = 0;
