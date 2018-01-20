@@ -57,6 +57,9 @@
 #define MS_S_V2_CONNECTED           "s.v2.connected"
 #define MS_S_V2_PEERS               "s.v2.peers"
 
+#define MS_S_V3_CONNECTED           "s.v3.connected"
+#define MS_S_V3_PEERS               "s.v3.peers"
+
 #define MS_V_TYPE                   "v.type"
 #define MS_V_VIN                    "v.vin"
 
@@ -164,19 +167,22 @@ class MetricsStandard
     OvmsMetricInt*    ms_m_freeram;
     OvmsMetricInt*    ms_m_monotonic;
     OvmsMetricInt*    ms_m_timeutc;
-    
+
     OvmsMetricString* ms_m_net_type;          // none, wifi, gsm
     OvmsMetricInt*    ms_m_net_sq;            // Network signal quality [%?]
     OvmsMetricString* ms_m_net_provider;      // Network provider name
     OvmsMetricString* ms_m_net_mdm_iccid;
     OvmsMetricString* ms_m_net_mdm_model;
-    
+
     OvmsMetricBool*   ms_s_v2_connected;      // True = V2 server connected [1]
     OvmsMetricInt*    ms_s_v2_peers;          // V2 clients connected [1]
-    
+
+    OvmsMetricBool*   ms_s_v3_connected;      // True = V3 server connected [1]
+    OvmsMetricInt*    ms_s_v3_peers;          // V3 clients connected [1]
+
     OvmsMetricString* ms_v_type;              // Vehicle type code
     OvmsMetricString* ms_v_vin;               // Vehicle identification number
-    
+
     OvmsMetricFloat*  ms_v_bat_soc;           // State of charge [%]
     OvmsMetricFloat*  ms_v_bat_soh;           // State of health [%]
     OvmsMetricFloat*  ms_v_bat_cac;           // Calculated capacity [Ah]
@@ -226,7 +232,7 @@ class MetricsStandard
     OvmsMetricBool*   ms_v_door_chargeport;
     OvmsMetricBool*   ms_v_door_hood;
     OvmsMetricBool*   ms_v_door_trunk;
-    
+
     OvmsMetricInt*    ms_v_env_drivemode;     // Active drive profile number [1]
     OvmsMetricBool*   ms_v_env_handbrake;
     OvmsMetricBool*   ms_v_env_awake;
@@ -256,7 +262,7 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_pos_gpsspeed;      // GPS speed over ground [kph]
     OvmsMetricFloat*  ms_v_pos_odometer;
     OvmsMetricFloat*  ms_v_pos_trip;
-    
+
     OvmsMetricFloat*  ms_v_tpms_fl_t;
     OvmsMetricFloat*  ms_v_tpms_fr_t;
     OvmsMetricFloat*  ms_v_tpms_rr_t;

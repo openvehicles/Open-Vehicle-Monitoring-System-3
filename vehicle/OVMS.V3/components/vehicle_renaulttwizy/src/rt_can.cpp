@@ -73,7 +73,7 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       
       // Overwrite BMS>>CHG protocol to limit charge power:
       // cfg_chargelevel = maximum power, 1..7 = 300..2100 W
-      if ((twizy_status & CAN_STATUS_CHARGING) &&
+      if ((twizy_status & (CAN_STATUS_CHARGING|CAN_STATUS_OFFLINE)) == CAN_STATUS_CHARGING &&
           (twizy_flags.EnableWrite) &&
           (cfg_chargelevel > 0) &&
           (((INT8)CAN_BYTE(0)) > cfg_chargelevel))
@@ -187,7 +187,7 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       
       // Overwrite BMS>>CHG protocol to stop charge:
       // requested by setting twizy_chg_stop_request to true
-      if ((twizy_status & CAN_STATUS_CHARGING) &&
+      if ((twizy_status & (CAN_STATUS_CHARGING|CAN_STATUS_OFFLINE)) == CAN_STATUS_CHARGING &&
           (twizy_flags.EnableWrite) &&
           (twizy_chg_stop_request))
       {

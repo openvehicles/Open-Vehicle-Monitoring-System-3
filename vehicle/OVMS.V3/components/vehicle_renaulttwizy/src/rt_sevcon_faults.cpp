@@ -229,8 +229,9 @@ void SevconClient::EmcyListener(string event, void* data)
   if (emcy.origin != m_twizy->m_can1 || emcy.nodeid != 1 || emcy.code == 0)
     return;
   
-  uint16_t fault = emcy.data[1] << 8 | emcy.data[0];
+  uint32_t fault = emcy.data[1] << 8 | emcy.data[0];
   ESP_LOGW(TAG, "Sevcon: received fault code 0x%04x", fault);
+  MyEvents.SignalEvent("vehicle.fault.code", &fault);
   
   // button push?
   if (fault == FC_MomDir) {

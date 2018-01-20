@@ -111,12 +111,12 @@ static void ESP32CAN_isr(void *pvParameters)
       );
   if (error_irqs)
     {
-    me->m_error_flags = error_irqs << 16 | (MODULE_ESP32CAN->SR.U & 0b11001111) << 8 | MODULE_ESP32CAN->ECC.B.ECC;
-    me->m_errors_rx = MODULE_ESP32CAN->RXERR.U;
-    me->m_errors_tx = MODULE_ESP32CAN->TXERR.U;
+    me->m_status.error_flags = error_irqs << 16 | (MODULE_ESP32CAN->SR.U & 0b11001111) << 8 | MODULE_ESP32CAN->ECC.B.ECC;
+    me->m_status.errors_rx = MODULE_ESP32CAN->RXERR.U;
+    me->m_status.errors_tx = MODULE_ESP32CAN->TXERR.U;
     if (error_irqs & __CAN_IRQ_DATA_OVERRUN)
       {
-      me->m_errors_rxbuf_overflow++;
+      me->m_status.rxbuf_overflow++;
       MODULE_ESP32CAN->CMR.B.CDO = 1;
       }
     // Request error log:
@@ -261,7 +261,7 @@ esp_err_t esp32can::Stop()
   return ESP_OK;
   }
 
-esp_err_t esp32can::Write(CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
+esp_err_t esp32can::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
   {
   uint8_t __byte_i; // Byte iterator
   

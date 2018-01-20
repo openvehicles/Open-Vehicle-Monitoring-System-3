@@ -1,13 +1,13 @@
 CAN test frames
 ===============
 
-level verbose v-twizy
+log level verbose v-twizy
 vehicle module RT
 
 server v2 start
 
-level verbose can
-level verbose canopen
+log level verbose canlog
+log level verbose canopen
 can can1 trace on
 
 

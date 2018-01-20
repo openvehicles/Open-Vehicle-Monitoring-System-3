@@ -39,6 +39,7 @@ static const char *TAG = "command";
 #include "freertos/FreeRTOS.h"
 #include "ovms_command.h"
 #include "ovms_config.h"
+#include "ovms_utils.h"
 #include "log_buffers.h"
 
 static FILE *ovms_log_file;
@@ -609,51 +610,18 @@ int OvmsCommandApp::LogBuffer(LogBuffers* lb, const char* fmt, va_list args)
 
 int OvmsCommandApp::HexDump(const char* tag, const char* prefix, const char* data, size_t length, size_t colsize /*=16*/)
   {
-  char buffer[colsize*4 + 4]; // space for 16x3 + 2 + 16 + 1(\0)
-  const char *s = data;
+  char* buffer = NULL;
   int rlength = (int)length;
 
   while (rlength>0)
     {
-    char *p = buffer;
-    const char *os = s;
-    for (int k=0;k<colsize;k++)
-      {
-      if (k<rlength)
-        {
-        sprintf(p,"%2.2x ",*s);
-        s++;
-        }
-      else
-        {
-        sprintf(p,"   ");
-        }
-      p+=3;
-      }
-    sprintf(p,"| ");
-    p += 2;
-    s = os;
-    for (int k=0;k<colsize;k++)
-      {
-      if (k<rlength)
-        {
-        if (isprint((int)*s))
-          { *p = *s; }
-        else
-          { *p = '.'; }
-        s++;
-        }
-      else
-        {
-        *p = ' ';
-        }
-      p++;
-    }
-    *p = 0;
+    rlength = FormatHexDump(&buffer, data, rlength, colsize);
+    data += colsize;
     ESP_LOGV(tag, "%s: %s", prefix, buffer);
-    rlength -= colsize;
     }
-
+  
+  if (buffer)
+    free(buffer);
   return length;
   }
 

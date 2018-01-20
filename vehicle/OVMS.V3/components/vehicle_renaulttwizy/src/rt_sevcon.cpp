@@ -286,6 +286,8 @@ CANopenResult_t SevconClient::Login(bool on)
 
   ESP_LOGD(TAG, "Sevcon login status: %d", on);
   SetCtrlLoggedIn(on);
+  if (on)
+    MyEvents.SignalEvent("vehicle.ctrl.loggedin", NULL);
   return COR_OK;
 }
 
@@ -347,6 +349,10 @@ CANopenResult_t SevconClient::CfgMode(CANopenJob& job, bool on)
   
   ESP_LOGD(TAG, "Sevcon cfgmode status: %d", on);
   SetCtrlCfgMode(on);
+  if (on)
+    MyEvents.SignalEvent("vehicle.ctrl.cfgmode", NULL);
+  else
+    MyEvents.SignalEvent("vehicle.ctrl.runmode", NULL);
   return COR_OK;
 }
 

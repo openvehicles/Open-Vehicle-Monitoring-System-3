@@ -37,6 +37,7 @@
 static const char *TAG = "can";
 
 #include "can.h"
+#include "canlog.h"
 #include <algorithm>
 #include <ctype.h>
 #include <string.h>
@@ -162,42 +163,144 @@ void can_rx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
   MyCan.IncomingFrame(&frame);
   }
 
-void can_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+
+// Shell command:
+//    can log <type> [path] [filter1] [filter2] [filter3]
+//    can log off
+//    can log status
+// 
+// Filter: [bus:][id][-id]
+// Examples:
+//    can log trace                     → enable syslog tracing for all buses, all ids
+//    can log trace 1 3:780-7ff         → enable syslog for bus 1 and id range 780-7ff on bus 3
+//    can log crtd /sd/cap1 2:100-1ff   → capture id range 100-1ff of bus 2 in crtd file /sd/cap1
+// 
+// Path and filters can be changed on the fly.
+// 
+void can_log(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  const char* bus = cmd->GetParent()->GetParent()->GetName();
-  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
-  if (sbus == NULL)
+  const char* type = cmd->GetName();
+  bool is_trace = (strcmp(type, "trace") == 0);
+  canlog* cl = MyCan.GetLogger();
+  
+  if (strcmp(type, "status") == 0)
     {
-    writer->puts("Error: Cannot find named CAN bus");
+    if (cl)
+      writer->printf("CAN logging active: %s\nStatistics: %s\n", cl->GetInfo().c_str(), cl->GetStats().c_str());
+    else
+      writer->puts("CAN logging inactive.");
     return;
     }
-
-  if (strcmp(cmd->GetName(),"on")==0)
+  
+  if (strcmp(type, "off") == 0)
     {
-    if (argc >= 1)
+    if (!cl)
       {
-      sbus->m_trace_id_from = strtol(argv[0], NULL, 16);
-      if (argc >= 2)
-        sbus->m_trace_id_to = strtol(argv[1], NULL, 16);
+      writer->puts("CAN logging inactive.");
+      return;
+      }
+    writer->printf("Closing log: %s\n", cl->GetInfo().c_str());
+    MyCan.UnsetLogger();
+    vTaskDelay(pdMS_TO_TICKS(100)); // give logger task time to finish
+    cl->Close();
+    writer->printf("Statistics: %s\n", cl->GetStats().c_str());
+    delete cl;
+    writer->puts("CAN logging stopped.");
+    return;
+    }
+  
+  if (cl && strcmp(type, cl->GetType()) != 0)
+    {
+    writer->printf("Error: logger of type '%s' still running, please stop first\n", cl->GetType());
+    return;
+    }
+  
+  // parse args:
+  
+  const char* path = (cl && !is_trace) ? cl->GetPath().c_str() : "";
+  canlog_filter_t filter[CANLOG_MAX_FILTERS] = {};
+  int fcnt = 0;
+  
+  for (int i=0; i<argc; i++)
+    {
+    if (argv[i][0] == '/' && !is_trace)
+      {
+      path = argv[i];
+      }
+    else if (fcnt < CANLOG_MAX_FILTERS)
+      {
+      char* s = (char*) argv[i];
+      if (s[1] == 0)
+        {
+        filter[fcnt].bus = s[0];
+        filter[fcnt].id_from = 0;
+        filter[fcnt].id_to = UINT32_MAX;
+        }
       else
-        sbus->m_trace_id_to = sbus->m_trace_id_from;
-      writer->printf("Tracing for CAN bus %s is now ON for ID range %#x - %#x\n", bus, sbus->m_trace_id_from, sbus->m_trace_id_to);
+        {
+        if (s[1] == ':')
+          {
+          filter[fcnt].bus = s[0];
+          s += 2;
+          }
+        filter[fcnt].id_from = strtol(s, &s, 16);
+        if (*s)
+          filter[fcnt].id_to = strtol(s+1, NULL, 16); // id range
+        else
+          filter[fcnt].id_to = filter[fcnt].id_from; // single id
+        if (filter[fcnt].id_to < filter[fcnt].id_from)
+          {
+          uint32_t tmp = filter[fcnt].id_to;
+          filter[fcnt].id_to = filter[fcnt].id_from;
+          filter[fcnt].id_from = tmp;
+          }
+        }
+      fcnt++;
       }
-    else
-      {
-      sbus->m_trace_id_from = 0;
-      sbus->m_trace_id_to = 0xffffffff;
-      writer->printf("Tracing for CAN bus %s is now ON\n", bus);
-      }
-    writer->puts("Use 'log level verbose can' to enable frame output");
-    sbus->m_trace = true;
     }
-  else
+  
+  if (!is_trace && !path[0])
     {
-    writer->printf("Tracing for CAN bus %s is now OFF\n", bus);
-    sbus->m_trace = false;
+    writer->puts("Error: no path specified");
+    return;
     }
+  
+  // start / reconfigure logger:
+  
+  if (!cl)
+    {
+    cl = canlog::Instantiate(type);
+    if (!cl)
+      {
+      writer->printf("Error: cannot create logger of type '%s'\n", type);
+      return;
+      }
+    }
+  
+  if (!is_trace && cl->IsOpen() && cl->GetPath() != path)
+    {
+    writer->printf("Closing path '%s'\n", cl->GetPath().c_str());
+    MyCan.UnsetLogger();
+    vTaskDelay(pdMS_TO_TICKS(100)); // give logger task time to finish
+    writer->printf("Statistics: %s\n", cl->GetStats().c_str());
+    cl->Close();
+    }
+  
+  cl->SetFilter(fcnt, filter);
+  
+  if (!is_trace && !cl->IsOpen() && !cl->Open(path))
+    {
+    writer->printf("Error: cannot open log path '%s'\n", path);
+    delete cl;
+    return;
+    }
+  
+  MyCan.SetLogger(cl);
+  writer->printf("CAN logging active: %s\n", cl->GetInfo().c_str());
+  if (is_trace)
+    writer->puts("Note: info logging is done at log level debug, frame logging at verbose");
   }
+
 
 void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -208,19 +311,21 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     writer->puts("Error: Cannot find named CAN bus");
     return;
     }
-
+  
+  sbus->LogStatus(CAN_LogStatus_Statistics);
+  
   writer->printf("CAN:       %s\n",sbus->GetName());
   writer->printf("Mode:      %s\n",(sbus->m_mode==CAN_MODE_OFF)?"Off":
                                    ((sbus->m_mode==CAN_MODE_LISTEN)?"Listen":"Active"));
   writer->printf("Speed:     %d\n",(sbus->m_speed)*1000);
-  writer->printf("Rx pkt:    %20d\n",sbus->m_packets_rx);
-  writer->printf("Rx err:    %20d\n",sbus->m_errors_rx);
-  writer->printf("Rx ovrflw: %20d\n",sbus->m_errors_rxbuf_overflow);
-  writer->printf("Tx pkt:    %20d\n",sbus->m_packets_tx);
-  writer->printf("Tx delays: %20d\n",sbus->m_txbuf_delay);
-  writer->printf("Tx err:    %20d\n",sbus->m_errors_tx);
-  writer->printf("Tx ovrflw: %20d\n",sbus->m_errors_txbuf_overflow);
-  writer->printf("Err flags: %#x\n",sbus->m_error_flags);
+  writer->printf("Rx pkt:    %20d\n",sbus->m_status.packets_rx);
+  writer->printf("Rx err:    %20d\n",sbus->m_status.errors_rx);
+  writer->printf("Rx ovrflw: %20d\n",sbus->m_status.rxbuf_overflow);
+  writer->printf("Tx pkt:    %20d\n",sbus->m_status.packets_tx);
+  writer->printf("Tx delays: %20d\n",sbus->m_status.txbuf_delay);
+  writer->printf("Tx err:    %20d\n",sbus->m_status.errors_tx);
+  writer->printf("Tx ovrflw: %20d\n",sbus->m_status.txbuf_overflow);
+  writer->printf("Err flags: %#x\n",sbus->m_status.error_flags);
   }
 
 static void CAN_rxtask(void *pvParameters)
@@ -247,7 +352,7 @@ static void CAN_rxtask(void *pvParameters)
           msg.body.bus->TxCallback();
           break;
         case CAN_logerror:
-          me->LogStatus(CAN_Log_Error, msg.body.bus);
+          msg.body.bus->LogStatus(CAN_LogStatus_Error);
           break;
         default:
           break;
@@ -261,13 +366,11 @@ can::can()
   ESP_LOGI(TAG, "Initialising CAN (4500)");
 
   OvmsCommand* cmd_can = MyCommandApp.RegisterCommand("can","CAN framework",NULL, "", 0, 0, true);
+  
   for (int k=1;k<4;k++)
     {
     static const char* name[4] = {"can1", "can2", "can3"};
     OvmsCommand* cmd_canx = cmd_can->RegisterCommand(name[k-1],"CANx framework",NULL, "", 0, 0, true);
-    OvmsCommand* cmd_cantrace = cmd_canx->RegisterCommand("trace","CAN trace framework", NULL, "", 0, 0, true);
-    cmd_cantrace->RegisterCommand("on","Turn CAN bus tracing ON",can_trace,"[fromid] [toid]", 0, 2, true);
-    cmd_cantrace->RegisterCommand("off","Turn CAN bus tracing OFF",can_trace,"", 0, 0, true);
     OvmsCommand* cmd_canstart = cmd_canx->RegisterCommand("start","CAN start framework", NULL, "", 0, 0, true);
     cmd_canstart->RegisterCommand("listen","Start CAN bus in listen mode",can_start,"<baud>", 1, 1, true);
     cmd_canstart->RegisterCommand("active","Start CAN bus in active mode",can_start,"<baud>", 1, 1, true);
@@ -281,8 +384,29 @@ can::can()
     cmd_canx->RegisterCommand("status","Show CAN status",can_status,"", 0, 0, true);
     }
 
+  OvmsCommand* cmd_canlog = cmd_can->RegisterCommand("log", "CAN logging framework", NULL, "", 0, 0, true);
+  cmd_canlog->RegisterCommand("trace", "Logging to syslog", can_log,
+    "[filter1] [filter2] [filter3]\n"
+    "Filter: <bus> / <id>[-<id>] / <bus>:<id>[-<id>]\n"
+    "Example: 2:2a0-37f", 0, 3, true);
+  const char* const* logtype = canlog::GetTypeList();
+  while (*logtype)
+    {
+    if (strcmp(*logtype, "trace") != 0)
+      {
+      cmd_canlog->RegisterCommand(*logtype, "...format logging", can_log,
+        "<path> [filter1] [filter2] [filter3]\n"
+        "Filter: <bus> / <id>[-<id>] / <bus>:<id>[-<id>]\n"
+        "Example: 2:2a0-37f", 1, 4, true);
+      }
+    logtype++;
+    }
+  cmd_canlog->RegisterCommand("off", "Stop logging", can_log, "", 0, 0, true);
+  cmd_canlog->RegisterCommand("status", "Logging status", can_log, "", 0, 0, true);
+  
   m_rxqueue = xQueueCreate(20,sizeof(CAN_msg_t));
-  xTaskCreatePinnedToCore(CAN_rxtask, "CanRxTask", 2048, (void*)this, 10, &m_rxtask, 0);
+  xTaskCreatePinnedToCore(CAN_rxtask, "CanRxTask", 4096, (void*)this, 10, &m_rxtask, 0);
+  m_logger = NULL;
   }
 
 can::~can()
@@ -291,14 +415,14 @@ can::~can()
 
 void can::IncomingFrame(CAN_frame_t* p_frame)
   {
-  p_frame->origin->m_packets_rx++;
-  
-  LogFrame(CAN_Log_RX, p_frame);
+  p_frame->origin->m_status.packets_rx++;
   
   for (auto n : m_listeners)
     {
     xQueueSend(n,p_frame,0);
     }
+  
+  p_frame->origin->LogFrame(CAN_LogFrame_RX, p_frame);
   }
 
 void can::RegisterListener(QueueHandle_t queue)
@@ -315,23 +439,15 @@ void can::DeregisterListener(QueueHandle_t queue)
     }
   }
 
+
+
 canbus::canbus(const char* name)
   : pcp(name)
   {
   m_txqueue = xQueueCreate(20, sizeof(CAN_frame_t));
   m_mode = CAN_MODE_OFF;
   m_speed = CAN_SPEED_1000KBPS;
-  m_trace = false;
-  m_trace_id_from = 0;
-  m_trace_id_to = 0xffffffff;
-  m_packets_rx = 0;
-  m_errors_rx = 0;
-  m_packets_tx = 0;
-  m_errors_tx = 0;
-  m_errors_rxbuf_overflow = 0;
-  m_errors_txbuf_overflow = 0;
-  m_txbuf_delay = 0;
-  m_error_flags = 0;
+  memset(&m_status, 0, sizeof(m_status));
   m_status_chksum = 0;
   }
 
@@ -343,14 +459,7 @@ canbus::~canbus()
 esp_err_t canbus::Start(CAN_mode_t mode, CAN_speed_t speed)
   {
   // clear statistics:
-  m_packets_rx = 0;
-  m_errors_rx = 0;
-  m_packets_tx = 0;
-  m_errors_tx = 0;
-  m_errors_rxbuf_overflow = 0;
-  m_errors_txbuf_overflow = 0;
-  m_txbuf_delay = 0;
-  m_error_flags = 0;
+  memset(&m_status, 0, sizeof(m_status));
   m_status_chksum = 0;
   return ESP_FAIL;
   }
@@ -369,20 +478,6 @@ void canbus::TxCallback()
   {
   }
 
-bool canbus::StatusChanged()
-  {
-  // simple checksum to prevent log flooding:
-  uint32_t chksum = m_packets_rx + m_errors_rx + m_packets_tx + m_errors_tx
-    + m_errors_rxbuf_overflow + m_errors_txbuf_overflow + m_error_flags
-    + m_txbuf_delay;
-  if (chksum != m_status_chksum)
-    {
-    m_status_chksum = chksum;
-    return true;
-    }
-  return false;
-  }
-
 /**
  * canbus::Write -- main TX API
  *    - returns ESP_OK, ESP_QUEUED or ESP_FAIL
@@ -391,11 +486,10 @@ bool canbus::StatusChanged()
  *    - actual TX implementation in driver override
  *    - here: counting & logging of frames sent (called by driver after a successful TX)
  */
-esp_err_t canbus::Write(CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
+esp_err_t canbus::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
   {
-  m_packets_tx++;
-  p_frame->origin = this;
-  MyCan.LogFrame(CAN_Log_TX, p_frame);
+  m_status.packets_tx++;
+  LogFrame(CAN_LogFrame_TX, p_frame);
   return ESP_OK;
   }
 
@@ -403,19 +497,18 @@ esp_err_t canbus::Write(CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
  * canbus::QueueWrite -- add a frame to the TX queue for later delivery
  *    - internal method, called by driver if no TX buffer is available
  */
-esp_err_t canbus::QueueWrite(CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
+esp_err_t canbus::QueueWrite(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
   {
-  p_frame->origin = this;
   if (xQueueSend(m_txqueue, p_frame, maxqueuewait) == pdTRUE)
     {
-    m_txbuf_delay++;
-    MyCan.LogFrame(CAN_Log_TX_Queue, p_frame);
+    m_status.txbuf_delay++;
+    LogFrame(CAN_LogFrame_TX_Queue, p_frame);
     return ESP_QUEUED;
     }
   else
     {
-    m_errors_txbuf_overflow++;
-    MyCan.LogFrame(CAN_Log_TX_Fail, p_frame);
+    m_status.txbuf_overflow++;
+    LogFrame(CAN_LogFrame_TX_Fail, p_frame);
     return ESP_FAIL;
     }
   }
@@ -478,60 +571,56 @@ esp_err_t CAN_frame_t::Write(canbus* bus /*=NULL*/, TickType_t maxqueuewait /*=0
   }
 
 
-/*********************************************************************
- * Logging
- *********************************************************************/
+/**
+ * Tracing/logging
+ */
 
-const char* const CAN_LogEntryTypeName[] = {
-  "RX",
-  "TX",
-  "TX_Queue",
-  "TX_Fail",
-  "Error",
-  "Status",
-  "Comment",
-  "Event"
-};
-
-const char* can::GetLogEntryTypeName(CAN_LogEntry_t type)
+void can::LogFrame(canbus* bus, CAN_LogEntry_t type, const CAN_frame_t* frame)
   {
-  return CAN_LogEntryTypeName[type];
+  if (m_logger)
+    m_logger->LogFrame(bus, type, frame);
   }
 
-void can::LogFrame(CAN_LogEntry_t type, const CAN_frame_t* p_frame)
+void can::LogStatus(canbus* bus, CAN_LogEntry_t type, const CAN_status_t* status)
   {
-  canbus *bus = p_frame->origin;
-  if (bus->m_trace
-      && bus->m_trace_id_from <= p_frame->MsgID
-      && bus->m_trace_id_to   >= p_frame->MsgID)
-    {
-    char prefix[60];
-    snprintf(prefix, sizeof(prefix), "%s %s id %03x len %d",
-      CAN_LogEntryTypeName[type], bus->GetName(), p_frame->MsgID, p_frame->FIR.B.DLC);
-    MyCommandApp.HexDump(TAG, prefix, (const char*)p_frame->data.u8, p_frame->FIR.B.DLC, 8);
-    }
+  if (m_logger)
+    m_logger->LogStatus(bus, type, status);
   }
 
-void can::LogStatus(CAN_LogEntry_t type, canbus* bus)
+void can::LogInfo(canbus* bus, CAN_LogEntry_t type, const char* text)
   {
-  if (bus->m_trace && bus->StatusChanged())
+  if (m_logger)
+    m_logger->LogInfo(bus, type, text);
+  }
+
+
+void canbus::LogFrame(CAN_LogEntry_t type, const CAN_frame_t* frame)
+  {
+  MyCan.LogFrame(this, type, frame);
+  }
+
+void canbus::LogStatus(CAN_LogEntry_t type)
+  {
+  if (!MyCan.GetLogger() || (type==CAN_LogStatus_Error && !StatusChanged()))
+    return;
+  MyCan.LogStatus(this, type, &m_status);
+  }
+
+void canbus::LogInfo(CAN_LogEntry_t type, const char* text)
+  {
+  MyCan.LogInfo(this, type, text);
+  }
+
+
+bool canbus::StatusChanged()
+  {
+  // simple checksum to prevent log flooding:
+  uint32_t chksum = m_status.packets_rx + m_status.packets_tx + m_status.errors_rx + m_status.errors_tx
+    + m_status.rxbuf_overflow + m_status.txbuf_overflow + m_status.error_flags + m_status.txbuf_delay;
+  if (chksum != m_status_chksum)
     {
-    switch (type)
-      {
-      case CAN_Log_Error:
-        ESP_LOGE(TAG, "%s %s rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d",
-          CAN_LogEntryTypeName[type], bus->GetName(), bus->m_packets_rx, bus->m_packets_tx, bus->m_error_flags,
-          bus->m_errors_rx, bus->m_errors_tx, bus->m_errors_rxbuf_overflow, bus->m_errors_txbuf_overflow,
-          bus->m_txbuf_delay);
-        break;
-      case CAN_Log_Status:
-        ESP_LOGD(TAG, "%s %s rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d",
-          CAN_LogEntryTypeName[type], bus->GetName(), bus->m_packets_rx, bus->m_packets_tx, bus->m_error_flags,
-          bus->m_errors_rx, bus->m_errors_tx, bus->m_errors_rxbuf_overflow, bus->m_errors_txbuf_overflow,
-          bus->m_txbuf_delay);
-        break;
-      default:
-        break;
-      }
+    m_status_chksum = chksum;
+    return true;
     }
+  return false;
   }
