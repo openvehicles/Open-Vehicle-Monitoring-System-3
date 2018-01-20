@@ -35,7 +35,6 @@ static const char *TAG = "ovms-server-v3";
 #include <stdint.h>
 #include "ovms_server_v3.h"
 #include "ovms_command.h"
-#include "ovms_config.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
 
@@ -139,6 +138,12 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_connretry = 0;
   m_mgconn = NULL;
   m_sendall = false;
+  m_lasttx = 0;
+  m_lasttx_stream = 0;
+  m_peers = 0;
+  m_streaming = 0;
+  m_updatetime_idle = 600;
+  m_updatetime_connected = 60;
 
   ESP_LOGI(TAG, "OVMS Server v3 running");
 
@@ -162,6 +167,9 @@ OvmsServerV3::OvmsServerV3(const char* name)
   MyEvents.RegisterEvent(TAG,"system.modem.received.ussd", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.mounted", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+
+  // read config:
+  ConfigChanged(NULL);
 
   if (MyNetManager.m_connected_any)
     {
@@ -187,8 +195,28 @@ void OvmsServerV3::TransmitAllMetrics()
     topic.append("/m/");
     topic.append(metric->m_name);
     std::string val = metric->AsString();
+    metric->ClearModified(MyOvmsServerV3Modifier);
     ESP_LOGI(TAG,"Tx(all) metric %s=%s",topic.c_str(),val.c_str());
     mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++, MG_MQTT_QOS(0), val.c_str(), val.length());
+    metric = metric->m_next;
+    }
+  }
+
+void OvmsServerV3::TransmitModifiedMetrics()
+  {
+  OvmsMetric* metric = MyMetrics.m_first;
+  while (metric != NULL)
+    {
+    if (metric->IsModifiedAndClear(MyOvmsServerV3Modifier))
+      {
+      std::string topic("ovms/");
+      topic.append(m_vehicleid);
+      topic.append("/m/");
+      topic.append(metric->m_name);
+      std::string val = metric->AsString();
+      ESP_LOGI(TAG,"Tx(mod) metric %s=%s",topic.c_str(),val.c_str());
+      mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++, MG_MQTT_QOS(0), val.c_str(), val.length());
+      }
     metric = metric->m_next;
     }
   }
@@ -218,7 +246,7 @@ void OvmsServerV3::Connect()
     }
   if (m_server.empty())
     {
-    SetStatus("Error: Parameter server.v2/server must be defined",true);
+    SetStatus("Error: Parameter server.v3/server must be defined",true);
     m_connretry = 20; // Try again in 20 seconds...
     return;
     }
@@ -263,13 +291,17 @@ void OvmsServerV3::MetricModified(OvmsMetric* metric)
   {
   if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
 
-  std::string topic("ovms/");
-  topic.append(m_vehicleid);
-  topic.append("/m/");
-  topic.append(metric->m_name);
-  std::string val = metric->AsString();
-  ESP_LOGI(TAG,"Tx(mod) metric %s=%s",topic.c_str(),val.c_str());
-  mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++, MG_MQTT_QOS(0), val.c_str(), val.length());
+  if (m_streaming)
+    {
+    std::string topic("ovms/");
+    topic.append(m_vehicleid);
+    topic.append("/m/");
+    topic.append(metric->m_name);
+    std::string val = metric->AsString();
+    metric->ClearModified(MyOvmsServerV3Modifier);
+    ESP_LOGI(TAG,"Tx(mod) metric %s=%s",topic.c_str(),val.c_str());
+    mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++, MG_MQTT_QOS(0), val.c_str(), val.length());
+    }
   }
 
 bool OvmsServerV3::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry)
@@ -280,6 +312,21 @@ bool OvmsServerV3::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
 
 void OvmsServerV3::EventListener(std::string event, void* data)
   {
+  if (event == "config.changed" || event == "config.mounted")
+    {
+    ConfigChanged((OvmsConfigParam*) data);
+    }
+  }
+
+/**
+ * ConfigChanged: read new configuration
+ *  - param: NULL = read all configurations
+ */
+void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
+  {
+  m_streaming = MyConfig.GetParamValueInt("vehicle", "stream", 0);
+  m_updatetime_connected = MyConfig.GetParamValueInt("server.v3", "updatetime.connected", 60);
+  m_updatetime_idle = MyConfig.GetParamValueInt("server.v3", "updatetime.idle", 600);
   }
 
 void OvmsServerV3::NetUp(std::string event, void* data)
@@ -326,15 +373,33 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
         {
         if (m_mgconn) Disconnect(); // Disconnect first (timeout)
         Connect(); // Kick off the connection
+        return;
         }
       }
     }
 
-  if (m_sendall)
+  if (StandardMetrics.ms_s_v3_connected->AsBool())
     {
-    ESP_LOGI(TAG, "Transmit all metrics");
-    TransmitAllMetrics();
-    m_sendall = false;
+    if (m_sendall)
+      {
+      ESP_LOGI(TAG, "Transmit all metrics");
+      TransmitAllMetrics();
+      m_sendall = false;
+      }
+
+    bool caron = StandardMetrics.ms_v_env_on->AsBool();
+    int now = StandardMetrics.ms_m_monotonic->AsInt();
+    int next = (m_peers==0) ? m_updatetime_idle : m_updatetime_connected;
+    if ((m_lasttx==0)||(now>(m_lasttx+next)))
+      {
+      TransmitModifiedMetrics();
+      m_lasttx = m_lasttx_stream = now;
+      }
+    else if (m_streaming && caron && m_peers && now > m_lasttx_stream+m_streaming)
+      {
+      // TODO: transmit streaming metrics
+      m_lasttx_stream = now;
+      }
     }
   }
 

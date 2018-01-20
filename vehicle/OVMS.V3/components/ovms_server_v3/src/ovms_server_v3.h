@@ -35,6 +35,7 @@
 #include "ovms_netmanager.h"
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
+#include "ovms_config.h"
 
 class OvmsServerV3 : public OvmsServer
   {
@@ -46,6 +47,7 @@ class OvmsServerV3 : public OvmsServer
     void MetricModified(OvmsMetric* metric);
     bool IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry);
     void EventListener(std::string event, void* data);
+    void ConfigChanged(OvmsConfigParam* param);
     void NetUp(std::string event, void* data);
     void NetDown(std::string event, void* data);
     void NetReconfigured(std::string event, void* data);
@@ -64,6 +66,12 @@ class OvmsServerV3 : public OvmsServer
     int m_connretry;
     bool m_sendall;
     int m_msgid;
+    int m_lasttx;
+    int m_lasttx_stream;
+    int m_peers;
+    int m_streaming;
+    int m_updatetime_idle;
+    int m_updatetime_connected;
 
   public:
     virtual void SetPowerMode(PowerMode powermode);
@@ -71,6 +79,7 @@ class OvmsServerV3 : public OvmsServer
     void Connect();
     void Disconnect();
     void TransmitAllMetrics();
+    void TransmitModifiedMetrics();
   };
 
 #endif //#ifndef __OVMS_SERVER_V3_H__
