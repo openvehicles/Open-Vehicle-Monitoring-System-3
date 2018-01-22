@@ -472,7 +472,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
   int jitter;
   uint8_t mapped_pid;
   float metric;
-  char vin_string[18];
+  char rtn_string[21];
 
   uint8_t *p_d = p_frame->data.u8;  /* Incoming frame data from HUD / Dongle */
   uint8_t *r_d = r_frame.data.u8;  /* Response frame data being sent back to HUD / Dongle */
@@ -634,8 +634,8 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
             break;
           }
 
-          memcpy(vin_string,StandardMetrics.ms_v_vin->AsString().c_str(),17);
-          vin_string[17] = '\0';  /* force null termination, just because */
+          memcpy(rtn_string,StandardMetrics.ms_v_vin->AsString().c_str(),17);
+          rtn_string[17] = '\0';  /* force null termination, just because */
             
           r_frame.origin = NULL;
           r_frame.FIR.U = 0;
@@ -647,19 +647,19 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[2] = 0x49;  /* Mode 9 reply */
           r_d[3] = 0x02;  /* PID */
           r_d[4] = 0x01;  /* not sure what this is for */
-          memcpy(&r_d[5],vin_string,3);  /* grab the first 3 bytes of VIN */
+          memcpy(&r_d[5],rtn_string,3);  /* grab the first 3 bytes of VIN */
 
           m_can->Write(&r_frame);
 
           vTaskDelay(10 / portTICK_PERIOD_MS);  /* let the flow control frame pass */
           
           r_d[0] = 0x21;
-          memcpy(&r_d[1],vin_string+3,7);  /* grab the next 7 bytes of VIN */
+          memcpy(&r_d[1],rtn_string+3,7);  /* grab the next 7 bytes of VIN */
           
           m_can->Write(&r_frame);
 
           r_d[0] = 0x22;
-          memcpy(&r_d[1],vin_string+10,7);  /* grab the last 7 bytes of VIN */
+          memcpy(&r_d[1],rtn_string+10,7);  /* grab the last 7 bytes of VIN */
 
           m_can->Write(&r_frame);
           
@@ -668,6 +668,12 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
         case 0x0a: /* ECU Name */
           ESP_LOGD(TAG, "ECU Name requested");
           /* Perhaps a good place for arbitrary text, e.g. fleet asset #?  20 char avail. */
+
+          memcpy(rtn_string,MyConfig.GetParamValue("vehicle","id","").c_str(),20);
+          rtn_string[20] = '\0';
+
+          for(int i=strlen(rtn_string);i<20;i++) rtn_string[i] = '\0';  // zero pad string, per spec
+          
           r_frame.origin = NULL;
           r_frame.FIR.U = 0;
           r_frame.FIR.B.DLC = 8;
@@ -678,41 +684,30 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[2] = 0x49;  /* Mode 9 reply */
           r_d[3] = 0x0a;  /* PID */
           r_d[4] = 0x01;  /* not sure what this is for */
-          r_d[5] = 'S';
-          r_d[6] = 'p';
-          r_d[7] = 'a';
+          memcpy(&r_d[5],rtn_string,3);  /* grab the first 3 bytes of Vehicle ID */
+
           m_can->Write(&r_frame);
 
           vTaskDelay(10 / portTICK_PERIOD_MS);  /* let the flow control frame pass */
           
           r_d[0] = 0x21;
-          r_d[1] = 'c';
-          r_d[2] = 'e';
-          r_d[3] = ' ';
-          r_d[4] = 'f';
-          r_d[5] = 'o';
-          r_d[6] = 'r';
-          r_d[7] = ' ';
+          memcpy(&r_d[1],rtn_string+3,7);  /* grab the next 7 bytes of Vehicle ID */
+
           m_can->Write(&r_frame);
           
           r_d[0] = 0x22;
-          r_d[1] = 't';
-          r_d[2] = 'e';
-          r_d[3] = 'x';
-          r_d[4] = 't';
-          r_d[5] = ' ';
-          r_d[6] = 'h';
-          r_d[7] = 'e';
+          memcpy(&r_d[1],rtn_string+10,7);  /* grab next 7 bytes of Vehicle ID */
+
           m_can->Write(&r_frame);
 
           r_d[0] = 0x23;
-          r_d[1] = 'r';
-          r_d[2] = 'e';
-          r_d[3] = 0x00;  /* end of text marker */
-          r_d[4] = 0x55;  /* Pad... */
-          r_d[5] = 0x55;
-          r_d[6] = 0x55;
-          r_d[7] = 0x55;
+          memcpy(&r_d[1],rtn_string+17,3);  /* grab last 3 bytes of Vehicle ID */
+
+          r_d[4] = 0x00;  /* Spec says 0 Pad... */
+          r_d[5] = 0x00;
+          r_d[6] = 0x00;
+          r_d[7] = 0x00;
+          
           m_can->Write(&r_frame);
           
           break;
