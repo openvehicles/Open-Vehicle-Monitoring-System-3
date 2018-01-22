@@ -81,6 +81,7 @@ class canlog
     // Utils:
     virtual const char* GetLogEntryTypeName(CAN_LogEntry_t type);
     virtual std::string GetInfo();
+    virtual std::string GetStats();
 
   public:
 	// Filter:
@@ -100,6 +101,8 @@ class canlog
   public:
     TaskHandle_t        m_task;
     QueueHandle_t       m_queue;
+    uint32_t            m_msgcount;
+    uint32_t            m_dropcount;
     std::string         m_path;
     FILE*               m_file;
     int                 m_filtercnt;

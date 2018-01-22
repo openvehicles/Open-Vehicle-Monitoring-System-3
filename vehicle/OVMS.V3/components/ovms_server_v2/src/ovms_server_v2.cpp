@@ -1468,6 +1468,8 @@ void OvmsServerV2::EventListener(std::string event, void* data)
 void OvmsServerV2::ConfigChanged(OvmsConfigParam* param)
   {
   m_streaming = MyConfig.GetParamValueInt("vehicle", "stream", 0);
+  m_updatetime_connected = MyConfig.GetParamValueInt("server.v2", "updatetime.connected", 60);
+  m_updatetime_idle = MyConfig.GetParamValueInt("server.v2", "updatetime.idle", 600);
   }
 
 void OvmsServerV2::NetUp(std::string event, void* data)
@@ -1523,7 +1525,7 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
     // Periodic transmission of metrics
     bool caron = StandardMetrics.ms_v_env_on->AsBool();
     int now = StandardMetrics.ms_m_monotonic->AsInt();
-    int next = (m_peers==0) ? 600 : 60;
+    int next = (m_peers==0) ? m_updatetime_idle : m_updatetime_connected;
     if ((m_lasttx==0)||(now>(m_lasttx+next)))
       {
       TransmitMsgStat(true);          // Send always, periodically
@@ -1575,6 +1577,8 @@ OvmsServerV2::OvmsServerV2(const char* name)
   m_now_capabilities = false;
   m_now_group = false;
   m_streaming = 0;
+  m_updatetime_idle = 600;
+  m_updatetime_connected = 60;
   m_lasttx = 0;
   m_lasttx_stream = 0;
   m_peers = 0;
@@ -1687,16 +1691,8 @@ void ovmsv2_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   }
 
 class OvmsServerV2Init
-    {
-    public:
-      OvmsServerV2Init();
-
-    public:
-      void NetUp(std::string event, void* data);
-      void NetDown(std::string event, void* data);
-      void NetReconfigured(std::string event, void* data);
-      void NetmanInit(std::string event, void* data);
-      void NetmanStop(std::string event, void* data);
+  {
+  public: OvmsServerV2Init();
   } OvmsServerV2Init  __attribute__ ((init_priority (6100)));
 
 OvmsServerV2Init::OvmsServerV2Init()
@@ -1714,6 +1710,8 @@ OvmsServerV2Init::OvmsServerV2Init()
   //   'server': The server name/ip
   //   'password': The server password
   //   'port': The port to connect to (default: 6867)
+  //   'updatetime.connected': Time between updates when one or more apps connected (default: 60)
+  //   'updatetime.idle': Time between updates when no apps connected (default: 600)
   // Also note:
   //  Parameter "vehicle", instance "id", is the vehicle ID
   }
