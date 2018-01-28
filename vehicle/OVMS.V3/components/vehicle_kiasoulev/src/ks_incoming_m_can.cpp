@@ -35,7 +35,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan2(CAN_frame_t* p_frame)
 	{
 	uint8_t *d = p_frame->data.u8;
 
-	ESP_LOGV(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+	//ESP_LOGV(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
 
   switch (p_frame->MsgID)
 		{
@@ -61,11 +61,15 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan2(CAN_frame_t* p_frame)
 			// A/C bit 0
 			m_v_env_climate_ac->SetValue(d[2] & 0x01);
 
+			// Hvac On/Off
+			StdMetrics.ms_v_env_hvac->SetValue( (d[3] & 0x30 )== 0x10);
+
 			// Heat bit 0
 			StdMetrics.ms_v_env_heating->SetValue(d[4] & 0x04);
 
 			// Fan speed bit 0-3
 			m_v_env_climate_fan_speed->SetValue(d[7] & 0x07);
+
 			}
 			break;
 
@@ -100,7 +104,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan2(CAN_frame_t* p_frame)
 			break;
 
 		default:
-			ESP_LOGD(TAG, "M-CAN2 %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+			//ESP_LOGD(TAG, "M-CAN2 %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
 			break;
 		}
 	}
