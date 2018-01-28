@@ -28,53 +28,20 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __OVMS_NETMANAGER_H__
-#define __OVMS_NETMANAGER_H__
+#ifndef __mg_locals_h__
+#define __mg_locals_h__
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "ovms_events.h"
+#include "sdkconfig.h"
 
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-#define MG_LOCALS 1
-#include "mongoose.h"
-#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+#define ESP_PLATFORM 1
+#define MG_ENABLE_HTTP 1
 
-class OvmsNetManager
-  {
-  public:
-    OvmsNetManager();
-    ~OvmsNetManager();
+#ifdef CONFIG_MG_ENABLE_FILESYSTEM
+#define MG_ENABLE_FILESYSTEM 1
+#endif
 
-  public:
-    void WifiUp(std::string event, void* data);
-    void WifiDown(std::string event, void* data);
-    void ModemUp(std::string event, void* data);
-    void ModemDown(std::string event, void* data);
+#ifdef CONFIG_MG_ENABLE_DIRECTORY_LISTING
+#define MG_ENABLE_DIRECTORY_LISTING 1
+#endif
 
-  public:
-    bool m_connected_wifi;
-    bool m_connected_modem;
-    bool m_connected_any;
-
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-  protected:
-    void StartMongooseTask();
-    void StopMongooseTask();
-
-  protected:
-    TaskHandle_t m_mongoose_task;
-    struct mg_mgr m_mongoose_mgr;
-    bool m_mongoose_running;
-
-  public:
-    void MongooseTask();
-    struct mg_mgr* GetMongooseMgr();
-    bool MongooseRunning();
-    
-#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-  };
-
-extern OvmsNetManager MyNetManager;
-
-#endif //#ifndef __OVMS_NETMANAGER_H__
+#endif // __mg_locals_h__
