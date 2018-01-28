@@ -52,12 +52,26 @@ config OVMS_SC_JAVASCRIPT_DUKTAPE
 
 endchoice # OVMS_SC_JAVASCRIPT
 
-config OVMS_SC_GPL_MONGOOSE
+menuconfig OVMS_SC_GPL_MONGOOSE
     bool "Include the GPL licensed MONGOOSE networking library (web server, etc)"
     default y
     depends on OVMS
     help
         Enable to include the GPL licensed MONGOOSE networking library
+
+config MG_ENABLE_FILESYSTEM
+    bool "Enable MONGOOSE filesystem support"
+    default y
+    depends on OVMS_SC_GPL_MONGOOSE
+    help
+        Enable MONGOOSE filesystem support
+
+config MG_ENABLE_DIRECTORY_LISTING
+    bool "Enable MONGOOSE directory listing support"
+    default y
+    depends on OVMS_SC_GPL_MONGOOSE
+    help
+        Enable MONGOOSE directory listing support
 
 config OVMS_SC_GPL_WOLF
     bool "Include the GPL licensed WOLFSSH and WOLFSSL libraries (ssh server)"
@@ -116,6 +130,7 @@ config OVMS_VEHICLE_RENAULTTWIZY
     bool "Include support for Renault Twizy vehicles"
     default y
     depends on OVMS
+    depends on OVMS_COMP_CANOPEN
     help
         Enable to include support for Renault Twizy vehicles.
 
