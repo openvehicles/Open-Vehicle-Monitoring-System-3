@@ -141,7 +141,7 @@ static struct
   { "",          "" },                     // 11 PARAM_S_GROUP1
   { "",          "" },                     // 12 PARAM_S_GROUP2
   { "",          "" },                     // 13 PARAM_GSMLOCK
-  { "",          "" },                     // 14 PARAM_VEHICLETYPE
+  { "vehicle",   "type" },                 // 14 PARAM_VEHICLETYPE
   { "",          "" }                      // 15 PARAM_COOLDOWN
   };
 
