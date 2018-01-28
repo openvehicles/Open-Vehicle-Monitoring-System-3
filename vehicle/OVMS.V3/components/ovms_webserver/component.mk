@@ -25,8 +25,8 @@ $(COMPONENT_PATH)/assets/style.css.gz : $(COMPONENT_PATH)/assets/bootstrap.min.c
 
 src/web_framework.o: $(COMPONENT_PATH)/assets/script.js.gz $(COMPONENT_PATH)/assets/style.css.gz
 
-CPPFLAGS += -DMTIME_ASSETS_SCRIPT_JS=$(shell stat -c %Y $(COMPONENT_PATH)/assets/script.js.gz 2>/dev/null)
-CPPFLAGS += -DMTIME_ASSETS_STYLE_CSS=$(shell stat -c %Y $(COMPONENT_PATH)/assets/style.css.gz 2>/dev/null)
+CPPFLAGS += -DMTIME_ASSETS_SCRIPT_JS=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/script.js.gz")[9]')
+CPPFLAGS += -DMTIME_ASSETS_STYLE_CSS=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/style.css.gz")[9]')
 
 endif
 endif
