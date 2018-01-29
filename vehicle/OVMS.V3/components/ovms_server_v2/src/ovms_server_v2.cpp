@@ -350,7 +350,7 @@ void OvmsServerV2::ProcessCommand(const char* payload)
       for (k=0;k<32;k++)
         {
         *buffer << "MP-0 c1,0," << k << ",32," << (vehicle ? vehicle->GetFeature(k) : "0");
-        Transmit(*buffer);
+        Transmit(buffer->str().c_str());
         buffer->str("");
         buffer->clear();
         }
@@ -385,7 +385,7 @@ void OvmsServerV2::ProcessCommand(const char* payload)
           {
           *buffer << MyConfig.GetParamValue(pmap[k].param, pmap[k].instance);
           }
-        Transmit(*buffer);
+        Transmit(buffer->str().c_str());
         buffer->str("");
         buffer->clear();
         }
@@ -618,7 +618,7 @@ void OvmsServerV2::ProcessCommand(const char* payload)
       break;
     }
 
-  Transmit(*buffer);
+  Transmit(buffer->str().c_str());
   delete buffer;
   }
 
