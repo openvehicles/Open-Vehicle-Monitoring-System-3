@@ -354,6 +354,8 @@ void OvmsServerV2::ProcessCommand(const char* payload)
         buffer->str("");
         buffer->clear();
         }
+      delete buffer;
+      return;
       break;
       }
     case 2: // Set feature
@@ -389,6 +391,8 @@ void OvmsServerV2::ProcessCommand(const char* payload)
         buffer->str("");
         buffer->clear();
         }
+      delete buffer;
+      return;
       break;
       }
     case 4: // Set parameter
@@ -620,27 +624,6 @@ void OvmsServerV2::ProcessCommand(const char* payload)
 
   Transmit(buffer->str().c_str());
   delete buffer;
-  }
-
-void OvmsServerV2::Transmit(const std::ostringstream& message)
-  {
-  const char* bp = message.str().c_str();
-  int len = strlen(bp);
-  if (len==0) return;
-
-  char* s = new char[len+1];
-  strncpy(s,bp,len+1);
-  ESP_LOGI(TAG, "Send %s",s);
-
-  RC4_crypt(&m_crypto_tx1, &m_crypto_tx2, (uint8_t*)s, len);
-
-  char* buf = new char[(len*2)+4];
-  base64encode((uint8_t*)s, len, (uint8_t*)buf);
-  strcat(buf,"\r\n");
-  mg_send(m_mgconn, buf, strlen(buf));
-
-  delete [] buf;
-  delete [] s;
   }
 
 void OvmsServerV2::Transmit(const std::string& message)

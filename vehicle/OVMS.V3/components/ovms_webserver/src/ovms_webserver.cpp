@@ -57,6 +57,7 @@ OvmsWebServer::OvmsWebServer()
 #endif //MG_ENABLE_FILESYSTEM
 
   // read config:
+  MyConfig.RegisterParam("http.server", "Webserver", true, true);
   ConfigChanged("init", NULL);
 
   #undef bind  // Kludgy, but works
