@@ -291,6 +291,8 @@ PageEntry* OvmsWebServer::FindPage(const char* uri)
 void OvmsWebServer::EventHandler(struct mg_connection *nc, int ev, void *p)
 {
   PageContext_t c;
+  if (ev != MG_EV_POLL)
+    ESP_LOGD(TAG, "EventHandler: conn=%p ev=%d p=%p", nc, ev, p);
   
   switch (ev)
   {
@@ -338,7 +340,7 @@ void OvmsWebServer::EventHandler(struct mg_connection *nc, int ev, void *p)
             size_t len = MIN(xfer->size - xfer->sent, XFER_CHUNK_SIZE);
             mg_send_http_chunk(nc, (const char*) xfer->data + xfer->sent, len);
             xfer->sent += len;
-            ESP_LOGV(TAG, "chunked_xfer %p sent %d/%d", xfer->data, xfer->sent, xfer->size);
+            //ESP_LOGV(TAG, "chunked_xfer %p sent %d/%d", xfer->data, xfer->sent, xfer->size);
           }
           else {
             // done:
