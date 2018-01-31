@@ -1,0 +1,3 @@
+[submodule "vehicle/OVMS.V3/components/mongoose/mongoose"]
+	path = vehicle/OVMS.V3/components/mongoose/mongoose
+	url = https://github.com/openvehicles/mongoose.git
