@@ -32,9 +32,15 @@
 #define __mg_locals_h__
 
 #include "sdkconfig.h"
+#include "ovms_log.h"
 
 #define ESP_PLATFORM 1
 #define MG_ENABLE_HTTP 1
+
+#ifdef CONFIG_MG_ENABLE_DEBUG
+#define MG_ENABLE_DEBUG 1
+#define CS_LOG_ENABLE_TS_DIFF 1
+#endif
 
 #ifdef CONFIG_MG_ENABLE_FILESYSTEM
 #define MG_ENABLE_FILESYSTEM 1
