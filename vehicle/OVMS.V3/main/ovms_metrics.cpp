@@ -327,6 +327,7 @@ void OvmsMetrics::DeregisterListener(const char* caller)
       if (ec->m_caller == caller)
         {
         ml->erase(itc);
+        delete ec;
         }
       }
     if (ml->empty())

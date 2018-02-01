@@ -111,6 +111,7 @@ void OvmsEvents::DeregisterEvent(std::string caller)
       if (ec->m_caller == caller)
         {
         el->erase(itc);
+        delete ec;
         }
       }
     if (el->empty())

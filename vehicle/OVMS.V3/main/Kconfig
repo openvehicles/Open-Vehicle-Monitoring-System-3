@@ -73,6 +73,14 @@ config MG_ENABLE_DIRECTORY_LISTING
     help
         Enable MONGOOSE directory listing support
 
+config MG_ENABLE_DEBUG
+    bool "Enable MONGOOSE debug logging"
+    default n
+    depends on OVMS_SC_GPL_MONGOOSE
+    help
+        Enable MONGOOSE verbose debug log output
+        (on ESP_LOG verbose channel, including timing details)
+
 config OVMS_SC_GPL_WOLF
     bool "Include the GPL licensed WOLFSSH and WOLFSSL libraries (ssh server)"
     default y
