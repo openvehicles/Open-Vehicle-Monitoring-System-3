@@ -85,6 +85,11 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/shell", "Shell", HandleShell, PageMenu_Main, PageAuth_Cookie);
   RegisterPage("/cfg/password", "Password", HandleCfgPassword, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/vehicle", "Vehicle", HandleCfgVehicle, PageMenu_Config, PageAuth_Cookie);
+  RegisterPage("/cfg/wifi", "Wifi", HandleCfgWifi, PageMenu_Config, PageAuth_Cookie);
+  RegisterPage("/cfg/modem", "Modem", HandleCfgModem, PageMenu_Config, PageAuth_Cookie);
+  RegisterPage("/cfg/server/v2", "Server V2 (MP)", HandleCfgServerV2, PageMenu_Config, PageAuth_Cookie);
+  RegisterPage("/cfg/server/v3", "Server V3 (MQTT)", HandleCfgServerV3, PageMenu_Config, PageAuth_Cookie);
+  RegisterPage("/cfg/webserver", "Webserver", HandleCfgWebServer, PageMenu_Config, PageAuth_Cookie);
 }
 
 OvmsWebServer::~OvmsWebServer()
@@ -569,7 +574,7 @@ void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
         "Set-Cookie: %s=%" INT64_X_FMT "; path=/"
         , SESSION_COOKIE_NAME, s->id);
       c.head(200, shead);
-      mg_printf_http_chunk(c.nc,
+      c.printf(
         "<script>$(\"#menu\").load(\"/menu\"); loaduri(\"#main\", \"get\", \"%s\", {})</script>"
         , c.uri.c_str());
       c.done();
@@ -584,9 +589,12 @@ void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
     c.alert("danger", error.c_str());
   }
   else {
-    c.head(403);
-    if (c.uri != "/login")
+    if (c.uri != "/login") {
+      c.head(403);
       c.alert("danger", "<p class=\"lead\">Login required</p>");
+    } else {
+      c.head(200);
+    }
   }
 
   // generate form:
@@ -620,7 +628,7 @@ void OvmsWebServer::HandleLogout(PageEntry_t& p, PageContext_t& c)
     "Set-Cookie: %s="
     , SESSION_COOKIE_NAME);
   c.head(200, shead);
-  mg_printf_http_chunk(c.nc,
+  c.printf(
     "<script>$(\"#menu\").load(\"/menu\"); loaduri(\"#main\", \"get\", \"/home\", {})</script>");
   c.done();
 }

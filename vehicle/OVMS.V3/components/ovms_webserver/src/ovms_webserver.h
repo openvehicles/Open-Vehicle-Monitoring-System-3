@@ -82,17 +82,25 @@ struct PageContext
   // output:
   void head(int code, const char* headers=NULL);
   void print(const std::string text);
+  void printf(const char *fmt, ...);
   void done();
   void panel_start(const char* type, const char* title);
   void panel_end(const char* footer="");
   void form_start(const char* action);
   void form_end();
-  void input(const char* type, const char* label, const char* name, const char* value);
-  void input_text(const char* label, const char* name, const char* value);
-  void input_password(const char* label, const char* name, const char* value);
+  void fieldset_start(const char* title);
+  void fieldset_end();
+  void hr();
+  void input(const char* type, const char* label, const char* name, const char* value,
+    const char* placeholder=NULL, const char* helptext=NULL);
+  void input_text(const char* label, const char* name, const char* value,
+    const char* placeholder=NULL, const char* helptext=NULL);
+  void input_password(const char* label, const char* name, const char* value,
+    const char* placeholder=NULL, const char* helptext=NULL);
   void input_select_start(const char* label, const char* name);
   void input_select_option(const char* label, const char* value, bool selected);
   void input_select_end();
+  void input_checkbox(const char* label, const char* name, bool value, const char* helptext=NULL);
   void input_button(const char* type, const char* label);
   void alert(const char* type, const char* text);
 };
@@ -174,6 +182,7 @@ class OvmsWebServer
   
   public:
     static std::string CreateMenu(PageContext_t& c);
+    static void OutputHome(PageEntry_t& p, PageContext_t& c);
     static void HandleRoot(PageEntry_t& p, PageContext_t& c);
     static void HandleAsset(PageEntry_t& p, PageContext_t& c);
     static void HandleMenu(PageEntry_t& p, PageContext_t& c);
@@ -187,6 +196,13 @@ class OvmsWebServer
     static void HandleShell(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgPassword(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgVehicle(PageEntry_t& p, PageContext_t& c);
+    static void HandleCfgModem(PageEntry_t& p, PageContext_t& c);
+    static void HandleCfgServerV2(PageEntry_t& p, PageContext_t& c);
+    static void HandleCfgServerV3(PageEntry_t& p, PageContext_t& c);
+    static void HandleCfgWebServer(PageEntry_t& p, PageContext_t& c);
+    static void HandleCfgWifi(PageEntry_t& p, PageContext_t& c);
+    static void OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname);
+    static void UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname, std::string& warn);
   
   public:
     bool m_running;
