@@ -570,3 +570,8 @@ void OvmsConfigParam::Load()
   {
   if (!m_loaded) LoadConfig();
   }
+
+void OvmsConfigParam::Save()
+  {
+  if (m_name != "") RewriteConfig();
+  }

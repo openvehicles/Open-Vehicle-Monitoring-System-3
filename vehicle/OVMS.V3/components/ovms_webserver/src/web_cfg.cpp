@@ -825,4 +825,5 @@ void OvmsWebServer::UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std:
   
   param->m_map.clear();
   param->m_map = std::move(newmap);
+  param->Save();
 }
