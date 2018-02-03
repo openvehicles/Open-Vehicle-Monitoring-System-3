@@ -114,7 +114,8 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     PowerReset();
     
     // update sevcon subsystem:
-    m_sevcon->SetStatus(twizy_flags.CarAwake);
+    if (m_sevcon)
+      m_sevcon->SetStatus(twizy_flags.CarAwake);
     
     twizy_button_cnt = 0;
   }
@@ -136,7 +137,8 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     }
     
     // update sevcon subsystem:
-    m_sevcon->SetStatus(twizy_flags.CarAwake);
+    if (m_sevcon)
+      m_sevcon->SetStatus(twizy_flags.CarAwake);
   }
   
   
@@ -145,7 +147,8 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   
   BatteryUpdate();
   PowerUpdate();
-  m_sevcon->Ticker1(ticker);
+  if (m_sevcon)
+    m_sevcon->Ticker1(ticker);
   
   
   // --------------------------------------------------------------------------
@@ -228,6 +231,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
       {
         // set charge stop request:
         ESP_LOGI(TAG, "requesting charge stop (sufficient charge)");
+        MyEvents.SignalEvent("vehicle.charge.substate.scheduledstop", NULL);
         twizy_chg_stop_request = 1;
       }
 

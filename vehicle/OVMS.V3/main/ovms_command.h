@@ -31,6 +31,7 @@
 #define __COMMAND_H__
 
 #include <unistd.h>
+#include <stdarg.h>
 #include <string>
 #include <map>
 #include <set>
@@ -73,6 +74,8 @@ class OvmsWriter
   public:
     bool IsSecure();
     void SetSecure(bool secure=true);
+    bool IsMonitoring() { return m_monitoring; }
+    void SetMonitoring(bool mon=true) { m_monitoring = mon; }
 
   public:
     bool m_issecure;
@@ -80,6 +83,7 @@ class OvmsWriter
   protected:
     InsertCallback m_insert;
     void* m_userData;
+    bool m_monitoring;
   };
 
 struct CompareCharPtr
@@ -159,12 +163,16 @@ class OvmsCommandApp
     void RegisterConsole(OvmsWriter* writer);
     void DeregisterConsole(OvmsWriter* writer);
     int Log(const char* fmt, ...);
+    int Log(const char* fmt, va_list args);
     int LogPartial(const char* fmt, ...);
     int HexDump(const char* tag, const char* prefix, const char* data, size_t length, size_t colsize=16);
 
   public:
     char ** Complete(OvmsWriter* writer, int argc, const char * const * argv);
     void Execute(int verbosity, OvmsWriter* writer, int argc, const char * const * argv);
+
+  private:
+    int LogBuffer(LogBuffers* lb, const char* fmt, va_list args);
 
   private:
     OvmsCommand m_root;

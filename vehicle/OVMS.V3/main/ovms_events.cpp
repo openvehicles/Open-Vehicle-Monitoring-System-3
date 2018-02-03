@@ -111,6 +111,7 @@ void OvmsEvents::DeregisterEvent(std::string caller)
       if (ec->m_caller == caller)
         {
         el->erase(itc);
+        delete ec;
         }
       }
     if (el->empty())
@@ -133,6 +134,20 @@ void OvmsEvents::SignalEvent(std::string event, void* data)
     }
 
   auto k = m_map.find(event);
+  if (k != m_map.end())
+    {
+    EventCallbackList* el = k->second;
+    if (el)
+      {
+      for (EventCallbackList::iterator itc=el->begin(); itc!=el->end(); ++itc)
+        {
+        EventCallbackEntry* ec = *itc;
+        ec->m_callback(event, data);
+        }
+      }
+    }
+
+  k = m_map.find("*");
   if (k != m_map.end())
     {
     EventCallbackList* el = k->second;

@@ -345,6 +345,9 @@ void OvmsNotify::ClearReader(const char* caller)
       OvmsNotifyType* t = itt->second;
       t->ClearReader(k->second->m_reader);
       }
+    OvmsNotifyCallbackEntry* ec = k->second;
+    m_readers.erase(k);
+    delete ec;
     }
   }
 

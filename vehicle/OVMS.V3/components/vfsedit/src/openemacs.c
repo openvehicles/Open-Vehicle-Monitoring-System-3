@@ -71,7 +71,7 @@ struct append_buffer
 enum KEY_ACTION
   {
   CTRL_A = 1, CTRL_B = 2, CTRL_C = 3, CTRL_D = 4, CTRL_E = 5, CTRL_F = 6, BACKSPACE = 8, TAB = 9,
-  CTRL_K = 11, CTRL_L = 12, ENTER = 13, CTRL_N = 14, CTRL_P = 16, CTRL_Q = 17, CTRL_R = 18,
+  NL = 10, CTRL_K = 11, CTRL_L = 12, ENTER = 13, CTRL_N = 14, CTRL_P = 16, CTRL_Q = 17, CTRL_R = 18,
   CTRL_S = 19, CTRL_U = 21, CTRL_V = 22, CTRL_X = 24, CTRL_Y = 25, CTRL_Z = 26, ESC = 27,
   FORWARD_DELETE =  127,
   // The following are just soft codes, not really reported by the
@@ -1297,7 +1297,7 @@ bool editor_process_keypress(struct editor_state* E, int k)
     // Quoted insert - insert character as-is
     editor_insert_char(E,key);
     }
-  else if (key == ENTER)
+  else if (key == ENTER || key == NL)
     {
     editor_insert_newline(E);
     }

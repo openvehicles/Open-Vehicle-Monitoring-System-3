@@ -29,36 +29,47 @@
 */
 
 #include "ovms_log.h"
-static const char *TAG = "ext12v";
+static const char *TAG = "ovms-server";
 
-#include "ext12v.h"
-#include "ovms_peripherals.h"
+#include <string.h>
+#include "ovms_server.h"
+#include "ovms_command.h"
 
-ext12v::ext12v(const char* name)
+OvmsServer::OvmsServer(const char* name)
   : pcp(name)
   {
   }
 
-ext12v::~ext12v()
+OvmsServer::~OvmsServer()
   {
   }
 
-void ext12v::SetPowerMode(PowerMode powermode)
+void OvmsServer::SetPowerMode(PowerMode powermode)
   {
   m_powermode = powermode;
   switch (powermode)
     {
     case On:
-      ESP_LOGI(TAG, "Powering on external 12V devices");
-      MyPeripherals->m_max7317->Output(MAX7317_SW_CTL, 1);
       break;
     case Sleep:
+      break;
     case DeepSleep:
+      break;
     case Off:
-      ESP_LOGI(TAG, "Powering off external 12V devices");
-      MyPeripherals->m_max7317->Output(MAX7317_SW_CTL, 0);
       break;
     default:
       break;
     }
+  }
+
+class OvmsServerInit
+    {
+    public: OvmsServerInit();
+  } OvmsServerInit  __attribute__ ((init_priority (6000)));
+
+OvmsServerInit::OvmsServerInit()
+  {
+  ESP_LOGI(TAG, "Initialising OVMS Server (6000)");
+
+  MyCommandApp.RegisterCommand("server","OVMS Server Connection framework",NULL, "", 1);
   }

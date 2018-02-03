@@ -235,6 +235,7 @@ class OvmsVehicleFactory
     void ClearVehicle();
     void SetVehicle(const char* type);
     OvmsVehicle* ActiveVehicle();
+    const char* ActiveVehicleName();
   };
 
 extern OvmsVehicleFactory MyVehicleFactory;

@@ -389,6 +389,8 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   public:
     vehicle_command_t MsgCommandHomelink(string& result, int command, const char* args);
     vehicle_command_t MsgCommandRestrict(string& result, int command, const char* args);
+    vehicle_command_t MsgCommandQueryLogs(string& result, int command, const char* args);
+    vehicle_command_t MsgCommandResetLogs(string& result, int command, const char* args);
     
   protected:
     SevconClient *m_sevcon = NULL;

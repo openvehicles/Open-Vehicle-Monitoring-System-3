@@ -28,27 +28,24 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __OVMS_SERVER_H__
-#define __OVMS_SERVER_H__
+#include "esp32adc.h"
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "pcp.h"
-
-class OvmsServer : public pcp
+esp32adc::esp32adc(const char* name, adc1_channel_t channel, adc_bits_width_t width, adc_atten_t attn)
+  : pcp(name)
   {
-  public:
-    OvmsServer(const char* name);
-    ~OvmsServer();
+  m_channel = channel;
+  m_width = width;
+  m_attn = attn;
 
-  public:
-    virtual void SetPowerMode(PowerMode powermode);
+  adc1_config_width(width);
+  adc1_config_channel_atten(channel,attn);
+  }
 
-  public:
-    virtual void ServerTask() = 0;
+esp32adc::~esp32adc()
+  {
+  }
 
-  protected:
-    TaskHandle_t m_task;
-  };
-
-#endif //#ifndef __OVMS_SERVER_H__
+int esp32adc::read()
+  {
+  return adc1_get_raw(m_channel);
+  }

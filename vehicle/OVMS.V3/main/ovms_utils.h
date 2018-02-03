@@ -64,4 +64,23 @@ std::string chargemode_code(const int key);
 int chargemode_key(const std::string code);
 
 
+/**
+ * mp_encode: encode string for MP transport;
+ *  - replace '\r\n' by '\r'
+ *  - replace '\n' by '\r'
+ *  - replace ',' by ';'
+ */
+std::string mp_encode(const std::string text);
+
+/**
+ * startsWith: std::string prefix check
+ */
+bool startsWith(const std::string& haystack, const std::string& needle);
+
+/**
+ * FormatHexDump: create/fill hexdump buffer including printable representation
+ * Note: allocates buffer as necessary in *bufferp, caller must free.
+ */
+int FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsize=16);
+
 #endif //#ifndef __UTILS_H__

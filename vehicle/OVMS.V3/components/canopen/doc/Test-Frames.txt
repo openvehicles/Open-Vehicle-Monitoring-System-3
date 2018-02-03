@@ -6,15 +6,20 @@ CANopen test frames
 
 - open two shells, i.e. async & telnet
 
-level verbose
+log level verbose
 can can1 start active 500000
 co can1 start
 
 co status
 can can1 status
 
-# …optional, buggy on longer running commands & multiple shells:
-can can1 trace on
+# …optional:
+can log trace
+
+can log crtd /store/crtd1
+
+vfs cat /store/crtd1
+vfs tail /store/crtd1
 
 
 ## Heartbeat/state

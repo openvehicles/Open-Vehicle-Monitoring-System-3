@@ -1237,9 +1237,10 @@ CANopenResult_t SevconClient::CfgApplyProfile(uint8_t key)
     
   }
   
-  // set success flag:
+  // success:
   m_drivemode.applied = 1;
-  
+  MyEvents.SignalEvent("vehicle.drivemode.changed", NULL);
+
   // reset error cnt:
   m_buttoncnt = 0;
 

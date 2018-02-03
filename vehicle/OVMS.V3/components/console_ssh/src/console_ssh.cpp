@@ -313,7 +313,7 @@ void ConsoleSSH::Receive()
 // Handle MG_EV_POLL event.
 void ConsoleSSH::Send()
   {
-  if (m_state != SOURCE_SEND)
+  if (m_state != SOURCE_SEND || !m_sent)
     return;
   int ret = 0;
   while (true)
@@ -590,12 +590,13 @@ void ConsoleSSH::HandleDeviceEvent(void* pEvent)
         }
 
       case SOURCE_SEND:
-        ESP_LOGW(tag, "RECV not expected in SOURCE_SEND state");
       case SOURCE_RESPONSE:
         {
         rc = GetResponse();
         if (rc < 1)
           break;
+	if (m_state == SOURCE_SEND) 
+	    ESP_LOGW(tag, "RECV not expected in SOURCE_SEND state");
         if (m_buffer[0] == '\1')
           {
           ESP_LOGW(tag, "Source: %s", &m_buffer[1]);

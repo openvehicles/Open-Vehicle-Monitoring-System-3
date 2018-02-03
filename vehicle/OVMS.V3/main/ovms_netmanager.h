@@ -36,8 +36,7 @@
 #include "ovms_events.h"
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-#define ESP_PLATFORM 1
-#define MG_ENABLE_HTTP 1
+#define MG_LOCALS 1
 #include "mongoose.h"
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 

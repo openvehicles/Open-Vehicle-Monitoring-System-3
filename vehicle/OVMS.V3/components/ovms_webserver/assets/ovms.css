@@ -1,0 +1,38 @@
+/* ovms.css | (c) Michael Balzer | https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3 */
+
+code, kbd, pre, samp, .font-monospace {
+  font-family: "Monaco", "Menlo", "Consolas", "QuickType Mono", "Lucida Console", "Roboto Mono", "Ubuntu Mono", "DejaVu Sans Mono", "Droid Sans Mono", monospace;
+}
+samp {
+  display: block;
+  margin-bottom: 10px;
+  white-space: pre-line;
+  color: #020;
+  font-size: 13px;
+}
+.monitor {
+  min-height: 30px;
+}
+pre {
+  color: #020;
+}
+.loading {
+  opacity: 0.9;
+  cursor: progress;
+}
+.loading * {
+  cursor: progress;
+}
+.list-inline>li {
+  padding-left: 0;
+  padding-bottom: 5px;
+}
+#input-command {
+  color: #300;
+}
+@media (max-width: 767px) {
+  pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+}

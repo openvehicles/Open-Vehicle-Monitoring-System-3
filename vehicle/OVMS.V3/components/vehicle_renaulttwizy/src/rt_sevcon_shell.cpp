@@ -1030,3 +1030,71 @@ void SevconClient::shell_cfg_brakelight(int verbosity, OvmsWriter* writer, OvmsC
 }
 
 
+// Shell command: xrt cfg …
+//    querylogs [which=1] [start=0]
+void SevconClient::shell_cfg_querylogs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+{
+  OvmsVehicleRenaultTwizy* twizy = OvmsVehicleRenaultTwizy::GetInstance(writer);
+  if (!twizy)
+    return;
+  SevconClient* me = twizy->m_sevcon;
+  
+  verbosity -= writer->printf("CFG %s: ", cmd->GetName());
+  
+  // parse args:
+  
+  int which = 1;
+  int start = 0;
+  
+  if (argc > 0)
+    which = strtol(argv[0], NULL, 10);
+  if (argc > 1)
+    start = strtol(argv[1], NULL, 10);
+  
+  // execute:
+  
+  int totalcnt = 0, sendcnt = 0;
+  CANopenResult_t res;
+  
+  if (strcmp(cmd->GetName(), "showlogs") == 0)
+    res = me->QueryLogs(verbosity, writer, which, start, &totalcnt, &sendcnt);
+  else
+    res = me->QueryLogs(0, NULL, which, start, &totalcnt, &sendcnt);
+  
+  if (res != COR_OK)
+    writer->printf("Failed: %s\n", me->GetResultString(res).c_str());
+  else if (sendcnt == 0)
+    writer->printf("No log entries retrieved.\n");
+  else
+    writer->printf("Log entries #%d-%d of %d retrieved.\n", start, start+sendcnt-1, totalcnt);
+}
+
+
+// Shell command: xrt cfg …
+//    clearlogs [which=99]
+void SevconClient::shell_cfg_clearlogs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+{
+  OvmsVehicleRenaultTwizy* twizy = OvmsVehicleRenaultTwizy::GetInstance(writer);
+  if (!twizy)
+    return;
+  SevconClient* me = twizy->m_sevcon;
+  
+  verbosity -= writer->printf("CFG %s: ", cmd->GetName());
+  
+  // parse args:
+  
+  int which = 99;
+  if (argc > 0)
+    which = strtol(argv[0], NULL, 10);
+  
+  // execute:
+  
+  int cnt = 0;
+  CANopenResult_t res = me->ResetLogs(which, &cnt);
+  if (res != COR_OK)
+    writer->printf("Failed: %s\n", me->GetResultString(res).c_str());
+  else
+    writer->printf("%d log entries cleared.\n", cnt);
+}
+
+

@@ -415,6 +415,14 @@ OvmsVehicle* OvmsVehicleFactory::ActiveVehicle()
   return m_currentvehicle;
   }
 
+const char* OvmsVehicleFactory::ActiveVehicleName()
+  {
+  map_vehicle_t::iterator it = m_vmap.find(StandardMetrics.ms_v_type->AsString().c_str());
+  if (it != m_vmap.end())
+    return it->second.name;
+  return NULL;
+  }
+
 static void OvmsVehicleRxTask(void *pvParameters)
   {
   OvmsVehicle *me = (OvmsVehicle*)pvParameters;

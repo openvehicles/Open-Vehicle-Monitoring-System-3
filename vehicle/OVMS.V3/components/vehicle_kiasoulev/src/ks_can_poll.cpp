@@ -31,11 +31,13 @@ static const char *TAG = "v-kiasoulev";
  */
 void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
   {
+	//ESP_LOGW(TAG, "%03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", m_poll_moduleid_low, type, pid, length, data[0], data[1], data[2], data[3],
+	//		data[4], data[5], data[6], data[7]);
 	switch (m_poll_moduleid_low)
 		{
-		// ****** TPMS ******
-		case 0x7de:
-			IncomingTPMS(bus, type, pid, data, length, mlremain);
+		// ****** SJB *****
+		case 0x779:
+			IncomingSJB(bus, type, pid, data, length, mlremain);
 			break;
 
 		// ****** OBC ******
@@ -43,10 +45,13 @@ void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
 			IncomingOBC(bus, type, pid, data, length, mlremain);
 			break;
 
+		// ****** TPMS ******
+		case 0x7de:
+			IncomingTPMS(bus, type, pid, data, length, mlremain);
+			break;
+
 		// ******* VMCU ******
 		case 0x7ea:
-			//ESP_LOGD(TAG, "%03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", m_poll_moduleid_low, type, pid, length, data[0], data[1], data[2], data[3],
-			//		data[4], data[5], data[6], data[7]);
 			IncomingVMCU(bus, type, pid, data, length, mlremain);
 			break;
 
@@ -324,6 +329,23 @@ void OvmsVehicleKiaSoulEv::IncomingLDC(canbus* bus, uint16_t type, uint16_t pid,
 			m_ldc_in_voltage->SetValue( CAN_BYTE(3) * 2 );
 			m_ldc_out_voltage->SetValue( CAN_BYTE(2) );
 			m_ldc_temperature->SetValue( CAN_BYTE(4) - 100 );
+			break;
+		}
+	}
+
+/**
+ * Handle incoming messages from SJB-poll
+ */
+void OvmsVehicleKiaSoulEv::IncomingSJB(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+	{
+	ESP_LOGW(TAG, "779X %02x %02x %02x %02x %02x %02x %02x %02x %02x", pid, m_poll_ml_frame, CAN_BYTE(0), CAN_BYTE(1), CAN_BYTE(2), CAN_BYTE(3), CAN_BYTE(4), CAN_BYTE(5), CAN_BYTE(6));
+	switch (pid)
+		{
+		case 0x04:
+			if (m_poll_ml_frame == 1)
+				{
+				ESP_LOGW(TAG, "779 8 21 %02x %02x %02x %02x %02x %02x %02x", CAN_BYTE(0), CAN_BYTE(1), CAN_BYTE(2), CAN_BYTE(3), CAN_BYTE(4), CAN_BYTE(5), CAN_BYTE(6));
+				}
 			break;
 		}
 	}

@@ -28,58 +28,19 @@
 ; THE SOFTWARE.
 */
 
-#include "ovms_log.h"
-static const char *TAG = "ovms-server";
+#ifndef __OVMS_SERVER_H__
+#define __OVMS_SERVER_H__
 
-#include <string.h>
-#include "ovms_server.h"
-#include "ovms_command.h"
+#include "pcp.h"
 
-static void OvmsServer_task(void *pvParameters)
+class OvmsServer : public pcp
   {
-  OvmsServer *me = (OvmsServer*)pvParameters;
+  public:
+    OvmsServer(const char* name);
+    ~OvmsServer();
 
-  ESP_LOGI(TAG, "Launching OVMS Server V2 connection task (%s)",me->GetName());
-  me->ServerTask();
-  }
+  public:
+    virtual void SetPowerMode(PowerMode powermode);
+  };
 
-OvmsServer::OvmsServer(const char* name)
-  : pcp(name)
-  {
-  xTaskCreatePinnedToCore(OvmsServer_task, "OVMS Server", 6144, (void*)this, 5, &m_task, 1);
-  }
-
-OvmsServer::~OvmsServer()
-  {
-  vTaskDelete(m_task);
-  }
-
-void OvmsServer::SetPowerMode(PowerMode powermode)
-  {
-  m_powermode = powermode;
-  switch (powermode)
-    {
-    case On:
-      break;
-    case Sleep:
-      break;
-    case DeepSleep:
-      break;
-    case Off:
-      break;
-    default:
-      break;
-    }
-  }
-
-class OvmsServerInit
-    {
-    public: OvmsServerInit();
-  } OvmsServerInit  __attribute__ ((init_priority (6000)));
-
-OvmsServerInit::OvmsServerInit()
-  {
-  ESP_LOGI(TAG, "Initialising OVMS Server (6000)");
-
-  MyCommandApp.RegisterCommand("server","OVMS Server Connection framework",NULL, "", 1);
-  }
+#endif //#ifndef __OVMS_SERVER_H__

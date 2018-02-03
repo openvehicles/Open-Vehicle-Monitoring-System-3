@@ -96,11 +96,14 @@ SevconClient::SevconClient(OvmsVehicleRenaultTwizy* twizy)
   cmd_cfg->RegisterCommand("brakelight", "Tune brakelight trigger levels", shell_cfg_brakelight,
                             "[on_lev] [off_lev]", 0, 2, true);
   
+  cmd_cfg->RegisterCommand("showlogs", "Display SEVCON diag logs", shell_cfg_querylogs, "[which=1] [start=0]", 0, 2, true);
+  cmd_cfg->RegisterCommand("querylogs", "Send SEVCON diag logs to server", shell_cfg_querylogs, "[which=1] [start=0]", 0, 2, true);
+  cmd_cfg->RegisterCommand("clearlogs", "Clear SEVCON diag logs", shell_cfg_clearlogs, "[which=99]", 0, 1, true);
+  
   // TODO:
-  //  clearlog, showlog [data]
   //  lock, unlock, valet, unvalet
   // LATER:
-  //  getdcf
+  //  getdcf?
   
   // fault listener:
   m_faultqueue = xQueueCreate(10, sizeof(uint16_t));
@@ -283,6 +286,8 @@ CANopenResult_t SevconClient::Login(bool on)
 
   ESP_LOGD(TAG, "Sevcon login status: %d", on);
   SetCtrlLoggedIn(on);
+  if (on)
+    MyEvents.SignalEvent("vehicle.ctrl.loggedin", NULL);
   return COR_OK;
 }
 
@@ -344,6 +349,10 @@ CANopenResult_t SevconClient::CfgMode(CANopenJob& job, bool on)
   
   ESP_LOGD(TAG, "Sevcon cfgmode status: %d", on);
   SetCtrlCfgMode(on);
+  if (on)
+    MyEvents.SignalEvent("vehicle.ctrl.cfgmode", NULL);
+  else
+    MyEvents.SignalEvent("vehicle.ctrl.runmode", NULL);
   return COR_OK;
 }
 
