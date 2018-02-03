@@ -66,6 +66,7 @@ class OvmsWriter
     virtual char ** GetCompletion(OvmsCommandMap& children, const char* token) = 0;
     virtual void Log(LogBuffers* message) = 0;
     virtual void Exit();
+    virtual bool IsInteractive() { return true; }
     void RegisterInsertCallback(InsertCallback cb, void* ctx);
     void DeregisterInsertCallback(InsertCallback cb);
     virtual void finalise() {}
@@ -133,13 +134,26 @@ class OvmsCommand
     OvmsCommand* m_parent;
   };
 
+
+typedef enum
+  {
+  OCS_Init,
+  OCS_Error,
+  OCS_RunOnce,
+  OCS_RunLoop,
+  OCS_StopRequested,
+  } OvmsCommandState_t;
+
 class OvmsCommandTask : public TaskBase
   {
   public:
     OvmsCommandTask(int _verbosity, OvmsWriter* _writer, OvmsCommand* _cmd, int _argc, const char* const* _argv);
     virtual ~OvmsCommandTask();
+    virtual OvmsCommandState_t Prepare();
+    bool Run();
     static bool Terminator(OvmsWriter* writer, void* userdata, char ch);
-    bool IsTerminated() { return terminated; }
+    bool IsRunning() { return m_state == OCS_RunLoop; }
+    bool IsTerminated() { return m_state == OCS_StopRequested; }
   
   protected:
     int verbosity;
@@ -147,7 +161,7 @@ class OvmsCommandTask : public TaskBase
     OvmsCommand* cmd;
     int argc;
     char** argv;
-    bool terminated;
+    OvmsCommandState_t m_state;
   };
 
 class OvmsCommandApp

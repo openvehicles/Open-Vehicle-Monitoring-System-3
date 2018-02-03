@@ -270,10 +270,63 @@ class VfsTailCommand : public OvmsCommandTask
   {
   using OvmsCommandTask::OvmsCommandTask;
   public:
+    char* filename = NULL;
+    int nrlines = 0;
     int fd = -1;
     char buf[128];
-    off_t fpos = -1;
+    off_t fpos;
     ssize_t len;
+    
+    OvmsCommandState_t Prepare()
+      {
+      // parse args:
+      for (int i=0; i<argc; i++)
+        {
+        if (argv[i][0] == '-')
+          nrlines = atoi(argv[i]+1);
+        else
+          filename = argv[i];
+        }
+      
+      // check file:
+      if (!filename || !*filename || MyConfig.ProtectedPath(filename))
+        {
+        writer->puts("Error: invalid/protected path");
+        return OCS_Error;
+        }
+      fd = open(filename, O_RDONLY|O_NONBLOCK);
+      if (fd == -1)
+        {
+        writer->puts("Error: VFS file cannot be opened");
+        return OCS_Error;
+        }
+      
+      // seek nrlines back from end of file:
+      fpos = lseek(fd, 0, SEEK_END);
+      int lcnt = ((nrlines > 0) ? nrlines : 10) + 1;
+      while (fpos > 0 && lcnt > 0)
+        {
+        ssize_t rlen = MIN(fpos, sizeof(buf));
+        fpos = lseek(fd, fpos-rlen, SEEK_SET);
+        len = read(fd, buf, rlen);
+        for (int i=len-1; i>=0; i--)
+          {
+          if (buf[i] == '\n' && (--lcnt == 0))
+            {
+            fpos += i + 1;
+            break;
+            }
+          }
+        }
+      
+      // determine run mode:
+      if (nrlines <= 0 && writer->IsInteractive())
+        {
+        writer->puts("[tail: in follow mode, press Ctrl-C to abort]");
+        return OCS_RunLoop;
+        }
+      return OCS_RunOnce;
+      }
     
     void Service()
       {
@@ -281,31 +334,23 @@ class VfsTailCommand : public OvmsCommandTask
         {
         // Note: the esp-idf libs do currently not provide read/seek into
         // data appended by other tasks, we need to reopen for each check
-        fd = open(argv[0], O_RDONLY|O_NONBLOCK);
+        if (fd == -1)
+          fd = open(filename, O_RDONLY|O_NONBLOCK);
         if (fd == -1)
           {
-          writer->puts("Error: VFS file cannot be opened");
-          return;
+          writer->puts("[tail: file lost, abort]");
+          break;
           }
-        
-        if (fpos == -1)
-          {
-          fpos = lseek(fd, 0, SEEK_END);
-          if (fpos > 0)
-            fpos = lseek(fd, -MIN(500, fpos), SEEK_END);
-          }
-        else
-          {
-          lseek(fd, fpos, SEEK_SET);
-          }
-        
+        lseek(fd, fpos, SEEK_SET);
         while ((len = read(fd, buf, sizeof buf)) > 0)
           writer->write(buf, len);
         fpos = lseek(fd, 0, SEEK_CUR);
         close(fd);
+        fd = -1;
         
-        if (IsTerminated())
-          return;
+        // done/abort?
+        if (m_state != OCS_RunLoop)
+          break;
         
         vTaskDelay(pdMS_TO_TICKS(250));
         }
@@ -313,13 +358,8 @@ class VfsTailCommand : public OvmsCommandTask
     
     static void Execute(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
       {
-      if (MyConfig.ProtectedPath(argv[0]))
-        {
-        writer->puts("Error: protected path");
-        return;
-        }
-      
-      new VfsTailCommand(verbosity, writer, cmd, argc, argv);
+      VfsTailCommand* me = new VfsTailCommand(verbosity, writer, cmd, argc, argv);
+      if (me) me->Run();
       }
   };
 
@@ -343,7 +383,7 @@ VfsInit::VfsInit()
   cmd_vfs->RegisterCommand("mv","VFS Rename a file",vfs_mv, "<source> <target>", 2, 2, true);
   cmd_vfs->RegisterCommand("cp","VFS Copy a file",vfs_cp, "<source> <target>", 2, 2, true);
   cmd_vfs->RegisterCommand("append","VFS Append a line to a file",vfs_append, "<quoted line> <file>", 2, 2, true);
-  cmd_vfs->RegisterCommand("tail","VFS output tail of a file",VfsTailCommand::Execute, "<file>", 1, 1, true);
+  cmd_vfs->RegisterCommand("tail","VFS output tail of a file",VfsTailCommand::Execute, "[-nrlines] <file>", 1, 2, true);
   #ifdef CONFIG_OVMS_COMP_EDITOR
   cmd_vfs->RegisterCommand("edit","VFS edit a file",vfs_edit, "<path>", 1, 1, true);
   #endif // #ifdef CONFIG_OVMS_COMP_EDITOR

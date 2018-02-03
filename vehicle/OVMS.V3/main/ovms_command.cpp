@@ -657,6 +657,8 @@ void OvmsCommandApp::Execute(int verbosity, OvmsWriter* writer, int argc, const 
 OvmsCommandTask::OvmsCommandTask(int _verbosity, OvmsWriter* _writer, OvmsCommand* _cmd, int _argc, const char* const* _argv)
   : TaskBase(_cmd->GetName())
   {
+  m_state = OCS_Init;
+  
   // clone command arguments:
   verbosity = _verbosity;
   writer = _writer;
@@ -670,16 +672,47 @@ OvmsCommandTask::OvmsCommandTask(int _verbosity, OvmsWriter* _writer, OvmsComman
     for (int i=0; i < argc; i++)
       argv[i] = strdup(_argv[i]);
     }
-  // hook in for key presses:
-  terminated = false;
-  writer->RegisterInsertCallback(Terminator, (void*) this);
-  // start task:
-  Instantiate();
+  }
+
+OvmsCommandState_t OvmsCommandTask::Prepare()
+  {
+  return (writer->IsInteractive()) ? OCS_RunLoop : OCS_RunOnce;
+  }
+
+bool OvmsCommandTask::Run()
+  {
+  m_state = Prepare();
+  switch (m_state)
+    {
+    case OCS_RunLoop:
+      // start task:
+      writer->RegisterInsertCallback(Terminator, (void*) this);
+      if (!Instantiate())
+        {
+        delete this;
+        return false;
+        }
+      return true;
+      break;
+    
+    case OCS_RunOnce:
+      Service();
+      Cleanup();
+      delete this;
+      return true;
+      break;
+    
+    default:
+      // preparation failed:
+      delete this;
+      return false;
+      break;
+    }
   }
 
 OvmsCommandTask::~OvmsCommandTask()
   {
-  if (terminated)
+  if (m_state == OCS_StopRequested)
     writer->puts("^C");
   writer->DeregisterInsertCallback(Terminator);
   if (argv)
@@ -693,6 +726,6 @@ OvmsCommandTask::~OvmsCommandTask()
 bool OvmsCommandTask::Terminator(OvmsWriter* writer, void* userdata, char ch)
   {
   if (ch == 3) // Ctrl-C
-    ((OvmsCommandTask*) userdata)->terminated = true;
+    ((OvmsCommandTask*) userdata)->m_state = OCS_StopRequested;
   return true;
   }
