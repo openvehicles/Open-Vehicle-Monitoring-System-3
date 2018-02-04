@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-twizy";
 
-#define VERSION "0.9.0"
+#define VERSION "0.10.0"
 
 #include <stdio.h>
 #include <string>
@@ -60,7 +60,7 @@ OvmsVehicleRenaultTwizyInit::OvmsVehicleRenaultTwizyInit()
 }
 
 
-OvmsVehicleRenaultTwizy* OvmsVehicleRenaultTwizy::GetInstance(OvmsWriter* writer)
+OvmsVehicleRenaultTwizy* OvmsVehicleRenaultTwizy::GetInstance(OvmsWriter* writer /*=NULL*/)
 {
   OvmsVehicleRenaultTwizy* twizy = (OvmsVehicleRenaultTwizy*) MyVehicleFactory.ActiveVehicle();
   string type = StdMetrics.ms_v_type->AsString();
@@ -107,6 +107,7 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   PowerInit();
   ChargeInit();
   m_sevcon = new SevconClient(this);
+  WebInit();
   
   // init event listener:
   using std::placeholders::_1;
