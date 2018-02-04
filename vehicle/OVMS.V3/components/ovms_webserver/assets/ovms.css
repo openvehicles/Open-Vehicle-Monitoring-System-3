@@ -27,6 +27,9 @@ pre {
   padding-left: 0;
   padding-bottom: 5px;
 }
+#main {
+  margin-top: 60px;
+}
 #input-command {
   color: #300;
 }

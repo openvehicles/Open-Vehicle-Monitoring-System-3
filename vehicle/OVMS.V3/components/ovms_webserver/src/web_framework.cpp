@@ -272,13 +272,7 @@ std::string OvmsWebServer::CreateMenu(PageContext_t& c)
   // assemble menu:
   std::string menu =
     "<ul class=\"nav navbar-nav\">"
-      + main +
-      "<li class=\"dropdown\" id=\"menu-cfg\">"
-        "<a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-haspopup=\"true\" aria-expanded=\"false\">Config <span class=\"caret\"></span></a>"
-        "<ul class=\"dropdown-menu\">"
-          + config +
-        "</ul>"
-      "</li>";
+      + main;
   if (vehicle != "") {
     std::string vehiclename = MyVehicleFactory.ActiveVehicleName();
     menu +=
@@ -292,6 +286,12 @@ std::string OvmsWebServer::CreateMenu(PageContext_t& c)
       "</li>";
   }
   menu +=
+      "<li class=\"dropdown\" id=\"menu-cfg\">"
+        "<a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-haspopup=\"true\" aria-expanded=\"false\">Config <span class=\"caret\"></span></a>"
+        "<ul class=\"dropdown-menu\">"
+          + config +
+        "</ul>"
+      "</li>"
     "</ul>"
     "<ul class=\"nav navbar-nav navbar-right\">"
       "<li class=\"hidden-xs\"><a href=\"#\" class=\"toggle-night\">◐</a></li>"
@@ -324,14 +324,11 @@ void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
   
   c.panel_start("primary", "Home");
   
-  mg_printf_http_chunk(c.nc,
+  c.printf(
     "<fieldset><legend>Main menu</legend>"
     "<ul class=\"list-inline\">%s</ul>"
     "</fieldset>"
-    "<fieldset><legend>Configuration</legend>"
-    "<ul class=\"list-inline\">%s</ul>"
-    "</fieldset>"
-    , main.c_str(), config.c_str());
+    , main.c_str());
 
   if (vehicle != "") {
     const char* vehiclename = MyVehicleFactory.ActiveVehicleName();
@@ -342,6 +339,12 @@ void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
       , vehiclename, vehicle.c_str());
   }
   
+  c.printf(
+    "<fieldset><legend>Configuration</legend>"
+    "<ul class=\"list-inline\">%s</ul>"
+    "</fieldset>"
+    , config.c_str());
+
   c.panel_end();
   
   // check admin password, show warning if unset:
@@ -391,12 +394,12 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
               "<button type=\"button\" class=\"navbar-toggle collapsed toggle-night\">◐</button>"
               "<a class=\"navbar-brand\" href=\"/home\" target=\"#main\" title=\"Home\">OVMS</a>"
             "</div>"
-            "<div id=\"menu\" class=\"navbar-collapse collapse\">"
+            "<div role=\"menu\" id=\"menu\" class=\"navbar-collapse collapse\">"
               "%s"
             "</div>"
           "</div>"
         "</nav>"
-        "<div id=\"main\" class=\"container-fluid\" role=\"main\" style=\"margin-top:60px\">"
+        "<div role=\"main\" id=\"main\" class=\"container-fluid\">"
         "</div>"
         "<script src=\"/assets/script.js\"></script>"
       "</body>"
