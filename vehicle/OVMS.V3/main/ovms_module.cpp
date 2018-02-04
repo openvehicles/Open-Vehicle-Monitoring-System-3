@@ -41,7 +41,7 @@ static const char *TAG = "ovms-module";
 #include "ovms_module.h"
 #include "ovms_command.h"
 #ifdef CONFIG_HEAP_TASK_TRACKING
-#include "esp_heap_debug.h"
+#include "heap_task_info.h"
 #endif
 
 #define MAX_TASKS 30
@@ -476,7 +476,7 @@ static UBaseType_t get_tasks()
 static void get_memory(TaskHandle_t* tasks, size_t taskslen)
   {
   changes->clear();
-  numafter = esp_heap_debug_dump_totals(changes->array(), changes->size(), NUMTASKS,
+  numafter = heap_caps_get_per_task_info(changes->array(), changes->size(), NUMTASKS,
     tasks, taskslen, after, DUMPSIZE);
   }
 
