@@ -77,6 +77,17 @@ void OvmsWriter::RegisterInsertCallback(InsertCallback cb, void* ctx)
   m_userData = ctx;
   }
 
+void OvmsWriter::DeregisterInsertCallback(InsertCallback cb)
+  {
+  if (m_insert == cb)
+    {
+    m_insert = NULL;
+    m_userData = NULL;
+    finalise();
+    ProcessChar('\n');
+    }
+  }
+
 bool OvmsWriter::IsSecure()
   {
   return m_issecure;
@@ -640,4 +651,81 @@ void OvmsCommandApp::Execute(int verbosity, OvmsWriter* writer, int argc, const 
     {
     m_root.Execute(verbosity, writer, argc, argv);
     }
+  }
+
+
+OvmsCommandTask::OvmsCommandTask(int _verbosity, OvmsWriter* _writer, OvmsCommand* _cmd, int _argc, const char* const* _argv)
+  : TaskBase(_cmd->GetName())
+  {
+  m_state = OCS_Init;
+  
+  // clone command arguments:
+  verbosity = _verbosity;
+  writer = _writer;
+  cmd = _cmd;
+  argc = _argc;
+  if (argc == 0)
+    argv = NULL;
+  else
+    {
+    argv = (char**) malloc(argc * sizeof(char*));
+    for (int i=0; i < argc; i++)
+      argv[i] = strdup(_argv[i]);
+    }
+  }
+
+OvmsCommandState_t OvmsCommandTask::Prepare()
+  {
+  return (writer->IsInteractive()) ? OCS_RunLoop : OCS_RunOnce;
+  }
+
+bool OvmsCommandTask::Run()
+  {
+  m_state = Prepare();
+  switch (m_state)
+    {
+    case OCS_RunLoop:
+      // start task:
+      writer->RegisterInsertCallback(Terminator, (void*) this);
+      if (!Instantiate())
+        {
+        delete this;
+        return false;
+        }
+      return true;
+      break;
+    
+    case OCS_RunOnce:
+      Service();
+      Cleanup();
+      delete this;
+      return true;
+      break;
+    
+    default:
+      // preparation failed:
+      delete this;
+      return false;
+      break;
+    }
+  }
+
+OvmsCommandTask::~OvmsCommandTask()
+  {
+  if (m_state == OCS_StopRequested)
+    writer->puts("^C");
+  writer->DeregisterInsertCallback(Terminator);
+  if (argv)
+    {
+    for (int i=0; i < argc; i++)
+      free(argv[i]);
+    free(argv);
+    }
+  }
+
+bool OvmsCommandTask::Terminator(OvmsWriter* writer, void* userdata, char ch)
+  {
+  if (ch == 3) // Ctrl-C
+    ((OvmsCommandTask*) userdata)->m_state = OCS_StopRequested;
+  return true;
   }

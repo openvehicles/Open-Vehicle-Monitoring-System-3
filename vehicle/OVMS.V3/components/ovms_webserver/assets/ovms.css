@@ -4,9 +4,14 @@ code, kbd, pre, samp, .font-monospace {
   font-family: "Monaco", "Menlo", "Consolas", "QuickType Mono", "Lucida Console", "Roboto Mono", "Ubuntu Mono", "DejaVu Sans Mono", "Droid Sans Mono", monospace;
 }
 samp {
+  display: block;
+  margin-bottom: 10px;
   white-space: pre-line;
   color: #020;
   font-size: 13px;
+}
+.monitor {
+  min-height: 30px;
 }
 pre {
   color: #020;
@@ -17,6 +22,10 @@ pre {
 }
 .loading * {
   cursor: progress;
+}
+.list-inline>li {
+  padding-left: 0;
+  padding-bottom: 5px;
 }
 #input-command {
   color: #300;

@@ -49,6 +49,7 @@ class BufferedShell : public OvmsShell
     ssize_t write(const void *buf, size_t nbyte);
     char ** GetCompletion(OvmsCommandMap& children, const char* token);
     void Log(LogBuffers* message);
+    virtual bool IsInteractive() { return false; }
     void Output(OvmsWriter*);
     void Dump(std::string&);
     char* Dump();

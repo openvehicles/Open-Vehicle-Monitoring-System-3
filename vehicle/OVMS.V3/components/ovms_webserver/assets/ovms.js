@@ -47,27 +47,51 @@ function loaduri(target, method, uri, data){
   return true;
 }
 
-$('body').on('click', 'a[target^="#"], form[target^="#"] .btn', function(event){
-  
-  var method = "get";
-  var uri = $(this).attr("href");
-  var target = $(this).attr("target");
-  var data = {};
-  
-  if (!uri) {
-    var frm = $(this.form);
-    method = frm.attr("method") || "get";
-    uri = frm.attr("action");
-    target = frm.attr("target");
-    data = frm.serialize();
+function loadcmd(command, target){
+  var data = "command=" + encodeURIComponent(command);
+  var output, outmode = "";
+  if (typeof target == "object") {
+    output = target;
   }
-  
-  if (!loaduri(target, method, uri, data))
-    return true;
-  
-  event.stopPropagation();
-  return false;
-});
+  else if (target.startsWith("+")) {
+    outmode = "+";
+    output = $(target.substr(1));
+  } else {
+    output = $(target);
+  }
+  return $.ajax({ "type": "post", "url": "/api/execute", "data": data,
+    "timeout": 5000,
+    "beforeSend": function(){
+      output.addClass("loading");
+    },
+    "complete": function(){
+      output.removeClass("loading");
+    },
+    "success": function(response){
+      output.css("min-height", output.height());
+      if (outmode == "+")
+        output.html(output.html() + $("<div/>").text(response).html());
+      else
+        output.html($("<div/>").text(response).html());
+    },
+    "error": function(response, status, httperror){
+      var resptext = response.responseText || httperror || status;
+      output.css("min-height", output.height());
+      if (outmode == "+")
+        output.html(output.html() + $("<div/>").text(resptext).html());
+      else
+        output.html($("<div/>").text(resptext).html());
+    },
+  });
+}
+
+function after(seconds, fn){
+  window.setTimeout(fn, seconds*1000);
+}
+
+function now() {
+  return Math.floor((new Date()).getTime() / 1000);
+}
 
 function getpage() {
   uri = (location.hash || "#/home").substr(1);
@@ -76,7 +100,80 @@ function getpage() {
   }
 }
 
+function monitorUpdate(){
+  $(".monitor").each(function(){
+    var cnt = $(this).data("updcnt");
+    var int = $(this).data("updint");
+    var last = $(this).data("updlast");
+    var cmd = $(this).data("updcmd");
+    if (!cnt || !cmd || (now()-last) < int)
+      return;
+    loadcmd(cmd, $(this));
+    $(this).data("updcnt", cnt-1);
+    $(this).data("updlast", now());
+  });
+}
+
+var monitorTimer;
+
 $(function(){
+  
+  $('body').on('click', 'a[target^="#"], form[target^="#"] .btn[type="submit"]', function(event){
+    
+    var method = $(this).data("method") || "get";
+    var uri = $(this).attr("href");
+    var target = $(this).attr("target");
+    var data = {};
+    if (method.toLowerCase() == "post") {
+      var p = uri.split("?");
+      if (p.length == 2) {
+        uri = p[0];
+        data = p[1];
+      }
+    }
+    
+    if (!uri) {
+      var frm = $(this.form);
+      method = frm.attr("method") || "get";
+      uri = frm.attr("action");
+      target = frm.attr("target");
+      data = frm.serialize();
+    }
+    
+    if (!loaduri(target, method, uri, data))
+      return true;
+    
+    event.stopPropagation();
+    return false;
+  });
+
+  $('body').on('click', '.btn[data-cmd]', function(){
+    var btn = $(this);
+    var cmd = btn.data("cmd");
+    var tgt = btn.data("target");
+    var updcnt = btn.data("watchcnt") || 3;
+    var updint = btn.data("watchint") || 2;
+    btn.prop("disabled", true);
+    $(tgt).data("updcnt", 0);
+    loadcmd(cmd, tgt).then(function(){
+      btn.prop("disabled", false);
+      $(tgt).data("updcnt", updcnt);
+      $(tgt).data("updint", updint);
+      $(tgt).data("updlast", now());
+    }, function(){
+      btn.prop("disabled", false);
+    });
+    event.stopPropagation();
+    return false;
+  });
+
+  if (!monitorTimer)
+    monitorTimer = window.setInterval(monitorUpdate, 1000);
+  
+  $(window).on("resize", function(){
+    $(".get-window-resize").trigger("window-resize");
+  });
+  
   window.onpopstate = getpage;
   getpage();
 });
