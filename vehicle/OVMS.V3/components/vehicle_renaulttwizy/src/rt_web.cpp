@@ -65,9 +65,9 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
     return;
   }
   
-  std::string output, arg;
-  
   if (c.method == "POST") {
+    std::string output, arg;
+    
     if ((arg = c.getvar("load")) != "") {
       // execute profile switch:
       output = MyWebServer.ExecuteCommand("xrt cfg load " + arg);
@@ -98,21 +98,33 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
   }
   
   // output status page:
-  output = MyWebServer.ExecuteCommand("xrt cfg info");
+  
+  ostringstream buf;
+  
+  buf << "Active profile: ";
+  if (sc->m_drivemode.profile_user == sc->m_drivemode.profile_cfgmode) {
+    buf << "#" << sc->m_drivemode.profile_user;
+  }
+  else {
+    buf << "base #" << sc->m_drivemode.profile_cfgmode;
+    buf << ", live #" << sc->m_drivemode.profile_user;
+  }
+  
+  buf << "\n\n" << MyWebServer.ExecuteCommand("xrt cfg info");
   
   // profile labels (todo: make configurable):
   const char* proflabel[4] = { "STD", "PWR", "ECO", "ICE" };
   
   c.head(200);
-  c.panel_start("primary", "Drivemode");
   c.printf(
     "<style>"
-    ".base { background-color: #fffca8 !important; }"
-    ".base:hover, .base:focus { background-color: #fffa62 !important; }"
+    ".btn-default.base { background-color: #fffca8; }"
+    ".btn-default.base:hover, .btn-default.base:focus { background-color: #fffa62; }"
     ".unsaved > *:after { content: \"*\"; }"
     "</style>");
+  c.panel_start("primary", "Drivemode");
   c.printf(
-    "<samp id=\"loadres\">%s</samp>", _html(output));
+    "<samp id=\"loadres\">%s</samp>", _html(buf.str()));
   c.printf(
     "<div id=\"loadmenu\" class=\"center-block\"><ul class=\"list-inline\">");
   for (int prof=0; prof<=3; prof++) {
@@ -121,7 +133,7 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
       , prof
       , (sc->m_drivemode.profile_user == prof) ? "warning" : "default"
       , (sc->m_drivemode.profile_cfgmode == prof) ? "base" : ""
-      , (sc->m_drivemode.unsaved) ? "unsaved" : ""
+      , (sc->m_drivemode.profile_user == prof && sc->m_drivemode.unsaved) ? "unsaved" : ""
       , prof
       , proflabel[prof]
       );
