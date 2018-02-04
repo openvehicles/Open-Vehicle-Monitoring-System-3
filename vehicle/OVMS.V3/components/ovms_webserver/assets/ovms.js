@@ -119,7 +119,6 @@ var monitorTimer;
 $(function(){
   
   $('body').on('click', 'a[target^="#"], form[target^="#"] .btn[type="submit"]', function(event){
-    
     var method = $(this).data("method") || "get";
     var uri = $(this).attr("href");
     var target = $(this).attr("target");
@@ -130,8 +129,9 @@ $(function(){
         uri = p[0];
         data = p[1];
       }
+      if (uri == "" || uri == "#")
+        uri = $("#main").data("uri");
     }
-    
     if (!uri) {
       var frm = $(this.form);
       method = frm.attr("method") || "get";
@@ -139,10 +139,8 @@ $(function(){
       target = frm.attr("target");
       data = frm.serialize();
     }
-    
     if (!loaduri(target, method, uri, data))
       return true;
-    
     event.stopPropagation();
     return false;
   });
@@ -163,6 +161,12 @@ $(function(){
     }, function(){
       btn.prop("disabled", false);
     });
+    event.stopPropagation();
+    return false;
+  });
+
+  $('.toggle-night').on('click', function(){
+    $('body').toggleClass("night");
     event.stopPropagation();
     return false;
   });

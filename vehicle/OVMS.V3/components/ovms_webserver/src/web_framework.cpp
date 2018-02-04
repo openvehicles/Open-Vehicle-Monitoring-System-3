@@ -93,6 +93,10 @@ std::string PageContext::getvar(const char* name, size_t maxlen /*=200*/) {
  * HTML generation utils (Bootstrap widgets)
  */
 
+void PageContext::error(int code, const char* text) {
+  mg_http_send_error(nc, code, text);
+}
+
 void PageContext::head(int code, const char* headers /*=NULL*/) {
   if (!headers) {
     headers =
@@ -290,7 +294,8 @@ std::string OvmsWebServer::CreateMenu(PageContext_t& c)
   menu +=
     "</ul>"
     "<ul class=\"nav navbar-nav navbar-right\">"
-    + std::string(c.session
+      "<li class=\"hidden-xs\"><a href=\"#\" class=\"toggle-night\">◐</a></li>"
+      + std::string(c.session
       ? "<li><a href=\"/logout\" target=\"#main\">Logout</a></li>"
       : "<li><a href=\"/login\" target=\"#main\">Login</a></li>") +
     "</ul>";
@@ -383,6 +388,7 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
                 "<span class=\"icon-bar\"></span>"
                 "<span class=\"icon-bar\"></span>"
               "</button>"
+              "<button type=\"button\" class=\"navbar-toggle collapsed toggle-night\">◐</button>"
               "<a class=\"navbar-brand\" href=\"/home\" target=\"#main\" title=\"Home\">OVMS</a>"
             "</div>"
             "<div id=\"menu\" class=\"navbar-collapse collapse\">"
