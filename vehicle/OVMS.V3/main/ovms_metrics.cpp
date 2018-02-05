@@ -318,22 +318,32 @@ void OvmsMetrics::RegisterListener(const char* caller, const char* name, MetricC
 
 void OvmsMetrics::DeregisterListener(const char* caller)
   {
-  for (MetricCallbackMap::iterator itm=m_listeners.begin(); itm!=m_listeners.end(); ++itm)
+  MetricCallbackMap::iterator itm=m_listeners.begin();
+  while (itm!=m_listeners.end())
     {
     MetricCallbackList* ml = itm->second;
-    for (MetricCallbackList::iterator itc=ml->begin(); itc!=ml->end(); ++itc)
+    MetricCallbackList::iterator itc=ml->begin();
+    while (itc!=ml->end())
       {
       MetricCallbackEntry* ec = *itc;
       if (ec->m_caller == caller)
         {
-        ml->erase(itc);
+        itc = ml->erase(itc);
         delete ec;
+        }
+      else
+        {
+        ++itc;
         }
       }
     if (ml->empty())
       {
+      itm = m_listeners.erase(itm);
       delete ml;
-      m_listeners.erase(itm);
+      }
+    else
+      {
+      ++itm;
       }
     }
   }

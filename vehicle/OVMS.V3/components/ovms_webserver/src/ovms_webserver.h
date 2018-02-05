@@ -80,6 +80,7 @@ struct PageContext
   std::string encode_html(const std::string text);
   
   // output:
+  void error(int code, const char* text);
   void head(int code, const char* headers=NULL);
   void print(const std::string text);
   void printf(const char *fmt, ...);

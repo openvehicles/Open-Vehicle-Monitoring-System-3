@@ -26,8 +26,8 @@
 ; THE SOFTWARE.
 */
 
-// #include "ovms_log.h"
-// static const char *TAG = "webserver";
+#include "ovms_log.h"
+static const char *TAG = "webserver";
 
 #include <string.h>
 #include <stdio.h>
@@ -125,6 +125,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 void OvmsWebServer::HandleCommand(PageEntry_t& p, PageContext_t& c)
 {
   std::string command = c.getvar("command");
+  ESP_LOGI(TAG, "HandleCommand: executing: %s", command.c_str());
   std::string output = ExecuteCommand(command);
   if (c.getvar("encode") == "html") {
     c.head(200,

@@ -27,6 +27,9 @@ pre {
   padding-left: 0;
   padding-bottom: 5px;
 }
+#main {
+  margin-top: 60px;
+}
 #input-command {
   color: #300;
 }
@@ -35,4 +38,85 @@ pre {
     white-space: pre-wrap;
     word-break: break-word;
   }
+}
+
+.btn-default, .btn-info, .btn-primary, .btn-warning, .btn-danger, .btn-success {
+  background-image: -webkit-linear-gradient(top,#00000000 0,#0000001c 100%);
+  background-image: -o-linear-gradient(top,#00000000 0,#0000001c 100%);
+  background-image: -webkit-gradient(linear,left top,left bottom,from(#00000000),to(#0000001c));
+  background-image: linear-gradient(to bottom,#00000000 0,#0000001c 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#00000000', endColorstr='#1c000000', GradientType=0);
+  filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);
+}
+.btn-default:focus, .btn-default:hover,
+.btn-info:focus, .btn-info:hover,
+.btn-primary:focus, .btn-primary:hover,
+.btn-warning:focus, .btn-warning:hover,
+.btn-danger:focus, .btn-danger:hover,
+.btn-success:focus, .btn-success:hover {
+  background-position: 0 0;
+}
+
+/* Night mode */
+a.toggle-night {
+  font-size: 20px;
+}
+button.toggle-night {
+  color: #9d9d9d;
+  line-height: 14px;
+  font-size: 22px;
+  font-weight: bold;
+}
+body.night {
+  background-color: #000;
+  color: #bbb;
+}
+.night .panel {
+  background-color: #000;
+}
+.night .panel-footer {
+  background-color: #111;
+}
+.night samp {
+  color: #0a0;
+}
+.night pre {
+  color: #0a0;
+  background-color: #000;
+}
+.night code {
+	color: #ca0d3e;
+  background-color: #000000;
+}
+.night legend {
+  color: #888;
+}
+.night .help-block {
+  color: #999
+}
+.night .form-control {
+  background-color: #333;
+  color: #eee;
+}
+.night .input-group-addon {
+  background-color: #111;
+  color: #888;
+}
+.night #input-command {
+	color: #0ee;
+}
+.night .btn-default {
+  background-color: #aaa;
+  color: #000;
+  text-shadow: 0px 0px 1px #fff;
+}
+.night .btn-default:focus, .night .btn-default:hover {
+    background-color: #e0e0e0;
+}
+.night .panel-primary>.panel-heading {
+  background-image: -webkit-linear-gradient(top,#183752 0,#235a8a 100%);
+  background-image: -o-linear-gradient(top,#183752 0,#235a8a 100%);
+  background-image: -webkit-gradient(linear,left top,left bottom,from(#183752),to(#235a8a));
+  background-image: linear-gradient(to bottom,#183752 0,#235a8a 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff183752', endColorstr='#ff235a8a', GradientType=0);
 }
