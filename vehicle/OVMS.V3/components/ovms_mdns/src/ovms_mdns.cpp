@@ -43,11 +43,11 @@ void OvmsMDNS::WifiUp(std::string event, void* data)
   esp_err_t err;
   if (MyPeripherals->m_esp32wifi->GetMode() == ESP32WIFI_MODE_CLIENT)
     {
-    err = mdns_init(TCPIP_ADAPTER_IF_STA, &m_mdns);
+    err = mdns_init();
     }
   else if (MyPeripherals->m_esp32wifi->GetMode() == ESP32WIFI_MODE_AP)
     {
-    err = mdns_init(TCPIP_ADAPTER_IF_AP, &m_mdns);
+    err = mdns_init();
     }
   else
     {
@@ -59,19 +59,21 @@ void OvmsMDNS::WifiUp(std::string event, void* data)
     return;
     }
 
+  m_mdns = true;
+
   // Set hostname
   std::string vehicleid = MyConfig.GetParamValue("vehicle", "id");
   if (vehicleid.empty()) vehicleid = "ovms";
-  mdns_set_hostname(m_mdns, vehicleid.c_str());
+  mdns_hostname_set(vehicleid.c_str());
 
   // Set default instance
   std::string instance("Open Vehicle Monitoring System - ");
   instance.append(vehicleid);
-  mdns_set_instance(m_mdns, instance.c_str());
+  mdns_instance_name_set(instance.c_str());
 
   // Register services
-  mdns_service_add(m_mdns, "_http", "_tcp", 80);
-  mdns_service_add(m_mdns, "_telnet", "_tcp", 23);
+  mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
+  mdns_service_add(NULL, "_telnet", "_tcp", 23, NULL, 0);
   }
 
 void OvmsMDNS::WifiDown(std::string event, void* data)
@@ -79,14 +81,16 @@ void OvmsMDNS::WifiDown(std::string event, void* data)
   if (m_mdns)
     {
     ESP_LOGI(TAG, "Stopping MDNS service");
-    mdns_free(m_mdns);
-    m_mdns = NULL;
+    mdns_free();
+    m_mdns = false;
     }
   }
 
 OvmsMDNS::OvmsMDNS()
   {
   ESP_LOGI(TAG, "Initialising MDNS (8100)");
+
+  m_mdns = false;
 
   using std::placeholders::_1;
   using std::placeholders::_2;
