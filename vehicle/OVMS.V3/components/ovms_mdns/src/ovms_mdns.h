@@ -45,7 +45,7 @@ class OvmsMDNS
     void WifiDown(std::string event, void* data);
 
   protected:
-    mdns_server_t *m_mdns;
+    bool m_mdns;
   };
 
 #endif //#ifndef __OVMS_MDNS_H__
