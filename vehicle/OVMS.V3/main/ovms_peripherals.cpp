@@ -80,6 +80,8 @@ Peripherals::Peripherals()
 #ifdef CONFIG_OVMS_COMP_MODEM
   gpio_set_direction((gpio_num_t)MODEM_GPIO_TX, GPIO_MODE_OUTPUT);
   gpio_set_direction((gpio_num_t)MODEM_GPIO_RX, GPIO_MODE_INPUT);
+  gpio_set_pull_mode((gpio_num_t)MODEM_GPIO_TX, GPIO_PULLUP_ONLY);
+  gpio_set_pull_mode((gpio_num_t)MODEM_GPIO_RX, GPIO_PULLUP_ONLY);
 #endif // #ifdef CONFIG_OVMS_COMP_MODEM
 
   ESP_LOGI(TAG, "  ESP32 system");
