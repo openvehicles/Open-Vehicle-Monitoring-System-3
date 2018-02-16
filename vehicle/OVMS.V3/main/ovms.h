@@ -45,4 +45,6 @@ class ExternalRamAllocated
     static void* operator new[](std::size_t sz);
   };
 
+void* ExternalRamMalloc(std::size_t sz);
+
 #endif //#ifndef __OVMS_H__

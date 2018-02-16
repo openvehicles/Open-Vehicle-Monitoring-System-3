@@ -33,20 +33,21 @@
 
 uint32_t monotonictime = 0;
 
-static void* ExternalRamAllocated::operator new(std::size_t sz)
+void* ExternalRamMalloc(std::size_t sz)
   {
   void* ret = heap_caps_malloc(sz, MALLOC_CAP_SPIRAM);
   if (ret)
     return ret;
   else
-    return ::operator new(sz);
+    return malloc(sz);
+  }
+
+static void* ExternalRamAllocated::operator new(std::size_t sz)
+  {
+  return ExternalRamMalloc(sz);
   }
 
 static void* ExternalRamAllocated::operator new[](std::size_t sz)
   {
-  void* ret = heap_caps_malloc(sz, MALLOC_CAP_SPIRAM);
-  if (ret)
-    return ret;
-  else
-    return ::operator new(sz);
+  return ExternalRamMalloc(sz);
   }
