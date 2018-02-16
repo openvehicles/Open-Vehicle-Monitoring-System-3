@@ -28,21 +28,25 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __OVMS_H__
-#define __OVMS_H__
+#include "ovms.h"
+#include "esp_heap_caps.h"
 
-#include <stdint.h>
-#include <cstddef>
+uint32_t monotonictime = 0;
 
-#define OVMS_VERSION "3.0.0"
-
-extern uint32_t monotonictime;
-
-class ExternalRamAllocated
+static void* ExternalRamAllocated::operator new(std::size_t sz)
   {
-  protected:
-    static void* operator new(std::size_t sz);
-    static void* operator new[](std::size_t sz);
-  };
+  void* ret = heap_caps_malloc(sz, MALLOC_CAP_SPIRAM);
+  if (ret)
+    return ret;
+  else
+    return ::operator new(sz);
+  }
 
-#endif //#ifndef __OVMS_H__
+static void* ExternalRamAllocated::operator new[](std::size_t sz)
+  {
+  void* ret = heap_caps_malloc(sz, MALLOC_CAP_SPIRAM);
+  if (ret)
+    return ret;
+  else
+    return ::operator new(sz);
+  }
