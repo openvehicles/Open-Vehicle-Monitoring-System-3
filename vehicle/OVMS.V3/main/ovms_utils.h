@@ -83,4 +83,10 @@ bool startsWith(const std::string& haystack, const std::string& needle);
  */
 int FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsize=16);
 
+
+/**
+ * json_encode: encode string for JSON transport (see http://www.json.org/)
+ */
+std::string json_encode(const std::string text);
+
 #endif //#ifndef __UTILS_H__

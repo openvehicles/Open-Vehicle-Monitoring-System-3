@@ -231,3 +231,24 @@ int FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsi
 
   return rlength;
   }
+
+/**
+ * json_encode: encode string for JSON transport (see http://www.json.org/)
+ */
+std::string json_encode(const std::string text)
+{
+  std::string buf;
+  for (int i=0; i<text.size(); i++) {
+    switch(text[i]) {
+      case '\n':        buf += "\\n"; break;
+      case '\r':        buf += "\\r"; break;
+      case '\t':        buf += "\\t"; break;
+      case '\b':        buf += "\\b"; break;
+      case '\f':        buf += "\\f"; break;
+      case '\"':        buf += "\\\""; break;
+      case '\\':        buf += "\\\\"; break;
+      default:          buf += text[i]; break;
+    }
+	}
+	return buf;
+}

@@ -512,6 +512,14 @@ std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units, i
     }
   }
 
+std::string OvmsMetricInt::AsJSON(const char* defvalue, metric_unit_t units, int precision)
+  {
+  if (m_defined)
+    return AsString(defvalue, units, precision);
+  else
+    return std::string((defvalue && *defvalue) ? defvalue : "0");
+  }
+
 float OvmsMetricInt::AsFloat(const float defvalue, metric_unit_t units)
   {
   return (float)AsInt((int)defvalue, units);
@@ -578,6 +586,24 @@ std::string OvmsMetricBool::AsString(const char* defvalue, metric_unit_t units, 
   else
     {
     return std::string(defvalue);
+    }
+  }
+
+std::string OvmsMetricBool::AsJSON(const char* defvalue, metric_unit_t units, int precision)
+  {
+  if (m_defined)
+    {
+    if (m_value)
+      return std::string("true");
+    else
+      return std::string("false");
+    }
+  else
+    {
+    if ((strcasecmp(defvalue, "yes")==0)||(strcasecmp(defvalue, "1")==0)||(strcasecmp(defvalue, "true")==0))
+      return std::string("true");
+    else
+      return std::string("false");
     }
   }
 
@@ -652,6 +678,14 @@ std::string OvmsMetricFloat::AsString(const char* defvalue, metric_unit_t units,
     {
     return std::string(defvalue);
     }
+  }
+
+std::string OvmsMetricFloat::AsJSON(const char* defvalue, metric_unit_t units, int precision)
+  {
+  if (m_defined)
+    return AsString(defvalue, units, precision);
+  else
+    return std::string((defvalue && *defvalue) ? defvalue : "0");
   }
 
 float OvmsMetricFloat::AsFloat(const float defvalue, metric_unit_t units)
