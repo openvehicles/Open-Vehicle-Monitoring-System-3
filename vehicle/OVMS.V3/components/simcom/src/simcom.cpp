@@ -1015,12 +1015,12 @@ void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 
   if (MyPeripherals->m_simcom->m_nmea.m_connected)
     {
-    writer->printf("\n  NMEA\n    GPS/GLONASS Connected on channel: #%d\n",
+    writer->printf("    NMEA: GPS/GLONASS Connected on channel: #%d\n",
       MyPeripherals->m_simcom->m_nmea.m_channel);
     }
   else
     {
-    writer->puts("\n  NMEA\n    (GPS/GLONASS Not Connected");
+    writer->puts("    NMEA: GPS/GLONASS Not Connected");
     }
 
   }
