@@ -963,38 +963,53 @@ void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
       MyPeripherals->m_simcom->m_state1_timeout_ticks);
     }
 
-  writer->printf("  Mux Open Channels: %d\n",
+  writer->printf("\n  Mux\n    Status: %s\n",
+    MyPeripherals->m_simcom->m_mux.IsMuxUp()?"up":"down");
+
+  writer->printf("    Open Channels: %d\n",
     MyPeripherals->m_simcom->m_mux.m_openchannels);
+
+  writer->printf("    Framing Errors: %d\n",
+    MyPeripherals->m_simcom->m_mux.m_framingerrors);
+
+  writer->printf("    Last RX frame: %d sec(s) ago\n",
+    (MyPeripherals->m_simcom->m_mux.m_lastgoodrxframe==0)?0:(monotonictime-MyPeripherals->m_simcom->m_mux.m_lastgoodrxframe));
+
+  writer->printf("    RX frames: %d\n",
+    MyPeripherals->m_simcom->m_mux.m_rxframecount);
+
+  writer->printf("    TX frames: %d\n",
+    MyPeripherals->m_simcom->m_mux.m_txframecount);
 
   if (MyPeripherals->m_simcom->m_ppp.m_connected)
     {
-    writer->printf("  PPP Connected on channel: #%d\n",
+    writer->printf("\n  PPP\n    Connected on channel: #%d\n",
       MyPeripherals->m_simcom->m_ppp.m_channel);
     }
   else
     {
-    writer->puts("  PPP Not Connected");
+    writer->puts("\n  PPP\n    Not Connected");
     }
 
-  writer->printf("  PPP Last Error: %s\n",
+  writer->printf("    Last Error: %s\n",
     MyPeripherals->m_simcom->m_ppp.ErrCodeName(MyPeripherals->m_simcom->m_ppp.m_lasterrcode));
 
-  writer->printf("  GPS: %s%s\n",
+  writer->printf("\n  GPS\n    Status: %s%s\n",
     MyConfig.GetParamValueBool("modem", "enable.gps", false) ? "enabled" : "disabled",
     MyPeripherals->m_simcom->m_gps_required ? ", required" : "");
 
-  writer->printf("  GPS time: %s%s\n",
+  writer->printf("    Time: %s%s\n",
     MyConfig.GetParamValueBool("modem", "enable.gpstime", false) ? "enabled" : "disabled",
     MyPeripherals->m_simcom->m_nmea.m_gpstime_required ? ", required" : "");
 
   if (MyPeripherals->m_simcom->m_nmea.m_connected)
     {
-    writer->printf("  NMEA (GPS/GLONASS) Connected on channel: #%d\n",
+    writer->printf("\n  NMEA\n    GPS/GLONASS Connected on channel: #%d\n",
       MyPeripherals->m_simcom->m_nmea.m_channel);
     }
   else
     {
-    writer->puts("  NMEA (GPS/GLONASS) Not Connected");
+    writer->puts("\n  NMEA\n    (GPS/GLONASS Not Connected");
     }
 
   }
