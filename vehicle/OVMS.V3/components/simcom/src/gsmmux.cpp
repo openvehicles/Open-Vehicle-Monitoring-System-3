@@ -178,7 +178,7 @@ GsmMux::GsmMux(simcom* modem, size_t maxframesize)
   m_framemorelen = false;
   m_openchannels = 0;
   m_framingerrors = 0;
-  m_lastgoodrxframe = monotonictime;
+  m_lastgoodrxframe = 0;
   m_rxframecount = 0;
   m_txframecount = 0;
   }
@@ -192,7 +192,7 @@ void GsmMux::Start()
   {
   ESP_LOGI(TAG, "Start MUX");
   m_framingerrors = 0;
-  m_lastgoodrxframe = monotonictime;
+  m_lastgoodrxframe = 0;
   m_rxframecount = 0;
   m_txframecount = 0;
   m_channels.insert(m_channels.end(),new GsmMuxChannel(this,0,8));
@@ -207,6 +207,22 @@ void GsmMux::Start()
 void GsmMux::Stop()
   {
   ESP_LOGI(TAG, "Stop MUX");
+  for (int k=1; k<=GSM_MUX_CHANNELS; k++)
+    {
+    GsmMuxChannel* chan = m_channels[k];
+    if (chan) delete chan;
+    }
+  m_channels.clear();
+  m_state = DlciClosed;
+  m_framepos = 0;
+  m_frameipos = 0;
+  m_framelen = 0;
+  m_framemorelen = false;
+  m_openchannels = 0;
+  m_framingerrors = 0;
+  m_lastgoodrxframe = 0;
+  m_rxframecount = 0;
+  m_txframecount = 0;
   }
 
 void GsmMux::StartChannel(int channel)
