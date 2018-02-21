@@ -177,6 +177,10 @@ GsmMux::GsmMux(simcom* modem, size_t maxframesize)
   m_framelen = 0;
   m_framemorelen = false;
   m_openchannels = 0;
+  m_framingerrors = 0;
+  m_lastgoodrxframe = monotonictime;
+  m_rxframecount = 0;
+  m_txframecount = 0;
   }
 
 GsmMux::~GsmMux()
@@ -187,6 +191,10 @@ GsmMux::~GsmMux()
 void GsmMux::Start()
   {
   ESP_LOGI(TAG, "Start MUX");
+  m_framingerrors = 0;
+  m_lastgoodrxframe = monotonictime;
+  m_rxframecount = 0;
+  m_txframecount = 0;
   m_channels.insert(m_channels.end(),new GsmMuxChannel(this,0,8));
   for (int k=1; k<=GSM_MUX_CHANNELS; k++)
     {
@@ -228,6 +236,11 @@ bool GsmMux::IsChannelOpen(int channel)
   return (chan && chan->m_state == GsmMuxChannel::ChanOpen);
   }
 
+bool GsmMux::IsMuxUp()
+  {
+  return (m_openchannels == GSM_MUX_CHANNELS);
+  }
+
 void GsmMux::Process(OvmsBuffer* buf)
   {
   while (buf->UsedSpace()>0)
@@ -239,10 +252,15 @@ void GsmMux::Process(OvmsBuffer* buf)
       m_framepos = 0;
       m_framelen = 0;
       m_framemorelen = false;
+      m_framingerrors++;
       continue;
       }
     uint8_t b = buf->Pop();
-    if ((m_framepos == 0)&&(b != GSM0_SOF)) continue; // Skip to start of frame
+    if ((m_framepos == 0)&&(b != GSM0_SOF))
+      {
+      m_framingerrors++;
+      continue; // Skip to start of frame
+      }
     if ((m_framepos == 1)&&(b == GSM0_SOF)) continue; // We found end of previous frame, so just skip it
     // ESP_LOGI(TAG, "Got %02x at %d (length sofar = %d)",b,m_framepos,m_framelen);
     m_frame[m_framepos++] = b;
@@ -292,6 +310,7 @@ void GsmMux::ProcessFrame()
     m_framepos = 0;
     m_frameipos = 0;
     m_framelen = 0;
+    m_framingerrors++;
     m_framemorelen = false;
     return;
     }
@@ -299,6 +318,9 @@ void GsmMux::ProcessFrame()
   GsmMuxChannel* chan = m_channels[channel];
   if (chan)
     {
+    m_framingerrors = 0;
+    m_lastgoodrxframe = monotonictime;
+    m_rxframecount++;
     chan->ProcessFrame(m_frame+1,m_framelen-3,m_frameipos-1);
     }
   else
@@ -316,6 +338,7 @@ void GsmMux::txfcs(uint8_t* data, size_t size, size_t ipos)
   {
   data[size-2] = 0xFF - gsm_fcs_add_block(FCS_INIT, data+1, ipos-1);
   m_modem->tx(data,size);
+  m_txframecount++;
   }
 
 size_t GsmMux::tx(int channel, uint8_t* data, ssize_t size)
