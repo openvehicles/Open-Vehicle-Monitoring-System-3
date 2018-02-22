@@ -40,7 +40,7 @@ extern uint32_t monotonictime;
 
 class ExternalRamAllocated
   {
-  protected:
+  public:
     static void* operator new(std::size_t sz);
     static void* operator new[](std::size_t sz);
   };
