@@ -34,8 +34,6 @@
 #include <stdint.h>
 #include <cstddef>
 
-#define OVMS_VERSION "3.0.990"
-
 extern uint32_t monotonictime;
 
 class ExternalRamAllocated
