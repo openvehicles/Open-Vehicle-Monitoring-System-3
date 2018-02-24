@@ -33,6 +33,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "ovms_console.h"
+#include "task_base.h"
 
 #define BUFFER_SIZE 512
 
