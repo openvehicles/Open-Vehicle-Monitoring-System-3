@@ -58,9 +58,63 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
     c.alert("info", output.c_str());
   }
   
-  c.printf("<div class=\"row\"><div class=\"col-md-6\">");
+  c.printf(
+    "<div id=\"livestatus\" class=\"receiver\">"
+    "<div class=\"row\">"
+    "<div class=\"col-md-6\">");
   
-  c.panel_start("primary", "Vehicle Status");
+  c.panel_start("primary", "Live");
+  c.printf(
+    "<div class=\"table-responsive\">"
+      "<table class=\"table table-bordered table-condensed\">"
+        "<tbody>"
+          "<tr>"
+            "<th>Module</th>"
+            "<td>"
+              "<div class=\"metric\"><span class=\"value\" data-metric=\"m.freeram\">?</span><span class=\"unit\">bytes free</span></div>"
+              "<div class=\"metric\"><span class=\"value\" data-metric=\"m.tasks\">?</span><span class=\"unit\">tasks running</span></div>"
+            "</td>"
+          "</tr>"
+          "<tr>"
+            "<th>Network</th>"
+            "<td>"
+              "<div class=\"metric\"><span class=\"value\" data-metric=\"m.net.provider\">?</span><span class=\"unit\" data-metric=\"m.net.type\">?</span></div>"
+              "<div class=\"metric\"><span class=\"value\" data-metric=\"m.net.sq\">?</span><span class=\"unit\">dBm</span></div>"
+            "</td>"
+          "</tr>"
+          "<tr>"
+            "<th>Main battery</th>"
+            "<td>"
+              "<div class=\"metric\"><span class=\"value\" data-metric=\"v.b.soc\">?</span><span class=\"unit\">%%</span></div>"
+              "<div class=\"metric\"><span class=\"value\" data-metric=\"v.b.voltage\">?</span><span class=\"unit\">V</span></div>"
+              "<div class=\"metric\"><span class=\"value\" data-metric=\"v.b.current\">?</span><span class=\"unit\">A</span></div>"
+            "</td>"
+          "</tr>"
+          "<tr>"
+            "<th>12V battery</th>"
+            "<td>"
+              "<div class=\"metric\"><span class=\"value\" data-metric=\"v.b.12v.voltage\">?</span><span class=\"unit\">V</span></div>"
+              "<div class=\"metric\"><span class=\"value\" data-metric=\"v.b.12v.current\">?</span><span class=\"unit\">A</span></div>"
+            "</td>"
+          "</tr>"
+          "<tr>"
+            "<th>Events</th>"
+            "<td>"
+              "<ul id=\"eventlog\" class=\"list-unstyled\">"
+              "</ul>"
+            "</td>"
+          "</tr>"
+        "</tbody>"
+      "</table>"
+    "</div>"
+    );
+  c.panel_end();
+  
+  c.printf(
+    "</div>"
+    "<div class=\"col-md-6\">");
+  
+  c.panel_start("primary", "Vehicle");
   output = ExecuteCommand("stat");
   c.printf("<samp class=\"monitor\" id=\"vehicle-status\" data-updcmd=\"stat\">%s</samp>", _html(output));
   output = ExecuteCommand("location status");
@@ -71,9 +125,13 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
       "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#vehicle-status\" data-cmd=\"charge stop\">Stop charge</button></li>"
     "</ul>");
   
-  c.printf("</div><div class=\"col-md-6\">");
+  c.printf(
+    "</div>"
+    "</div>"
+    "<div class=\"row\">"
+    "<div class=\"col-md-6\">");
 
-  c.panel_start("primary", "Server Status");
+  c.panel_start("primary", "Server");
   output = ExecuteCommand("server v2 status");
   if (!startsWith(output, "Unrecognised"))
     c.printf("<samp class=\"monitor\" id=\"server-v2\" data-updcmd=\"server v2 status\">%s</samp>", _html(output));
@@ -88,30 +146,56 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
       "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#server-v3\" data-cmd=\"server v3 stop\">Stop V3</button></li>"
     "</ul>");
   
-  c.printf("</div></div>");
-  c.printf("<div class=\"row\"><div class=\"col-md-6\">");
+  c.printf(
+    "</div>"
+    "<div class=\"col-md-6\">");
   
-  c.panel_start("primary", "Wifi Status");
+  c.panel_start("primary", "Wifi");
   output = ExecuteCommand("wifi status");
   c.printf("<samp>%s</samp>", _html(output));
   c.panel_end();
   
-  c.printf("</div><div class=\"col-md-6\">");
+  c.printf(
+    "</div>"
+    "</div>"
+    "<div class=\"row\">"
+    "<div class=\"col-md-6\">");
   
-  c.panel_start("primary", "Modem Status");
+  c.panel_start("primary", "Modem");
   output = ExecuteCommand("simcom status");
   c.printf("<samp>%s</samp>", _html(output));
   c.panel_end();
   
-  c.printf("</div></div>");
-  c.printf("<div class=\"row\"><div class=\"col-md-12\">");
+  c.printf(
+    "</div>"
+    "<div class=\"col-md-6\">");
   
-  c.panel_start("primary", "Firmware Status");
+  c.panel_start("primary", "Firmware");
   output = ExecuteCommand("ota status");
   c.printf("<samp>%s</samp>", _html(output));
   c.panel_end();
   
-  c.printf("</div></div");
+  c.printf(
+    "</div>"
+    "</div>"
+    "</div>"
+    "<script>"
+    "$(\"#livestatus\").on(\"msg:metrics\", function(e, update){"
+      "$(this).find(\"[data-metric]\").each(function(){"
+        "$(this).text(metrics[$(this).data(\"metric\")]);"
+      "});"
+    "}).trigger(\"msg:metrics\");"
+    "$(\"#livestatus\").on(\"msg:event\", function(e, event){"
+      "if (event.startsWith(\"ticker\"))"
+        "return;"
+      "var list = $(\"#eventlog\");"
+      "if (list.children().size() >= 5)"
+        "list.children().get(0).remove();"
+      "var now = (new Date().toLocaleTimeString());"
+      "list.append($('<li class=\"event\"><code class=\"time\">[' + now + ']</code><span class=\"type\">' + event + '</span></li>'));"
+    "});"
+    "</script>"
+    );
   
   c.done();
 }

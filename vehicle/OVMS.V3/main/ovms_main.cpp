@@ -36,7 +36,6 @@ static class LogLevelSetter
       }
   } lss  __attribute__ ((init_priority (0150)));
 
-uint32_t monotonictime = 0;
 Housekeeping* MyHousekeeping = NULL;
 Peripherals* MyPeripherals = NULL;
 

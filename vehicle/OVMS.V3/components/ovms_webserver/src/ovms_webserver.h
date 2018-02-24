@@ -35,6 +35,9 @@
 #include <forward_list>
 #include <iterator>
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/timers.h"
+
 #include "ovms_events.h"
 #include "ovms_command.h"
 #include "ovms_netmanager.h"
@@ -167,6 +170,10 @@ class OvmsWebServer
     void UpdateGlobalAuthFile();
     static const std::string MakeDigestAuth(const char* realm, const char* username, const char* password);
     static const std::string ExecuteCommand(const std::string command, int verbosity=COMMAND_RESULT_NORMAL);
+    static void WebsocketBroadcast(const std::string msg);
+    void EventListener(std::string event, void* data);
+    void BroadcastMetrics(bool update_all);
+    static void UpdateTicker(TimerHandle_t timer);
 
   public:
     void RegisterPage(const char* uri, const char* label, PageHandler_t handler,
@@ -213,6 +220,10 @@ class OvmsWebServer
 #endif //MG_ENABLE_FILESYSTEM
     PageMap_t m_pagemap;
     user_session m_sessions[NUM_SESSIONS];
+    size_t m_client_cnt;
+    size_t m_modifier;
+    TimerHandle_t m_update_ticker;
+    bool m_update_all;
 };
 
 extern OvmsWebServer MyWebServer;

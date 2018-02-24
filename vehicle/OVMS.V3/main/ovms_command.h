@@ -36,6 +36,7 @@
 #include <map>
 #include <set>
 #include <limits.h>
+#include "ovms.h"
 #include "task_base.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -98,7 +99,7 @@ class OvmsCommandMap : public std::map<const char*, OvmsCommand*, CompareCharPtr
     OvmsCommand* FindUniquePrefix(const char* key);
   };
 
-class OvmsCommand
+class OvmsCommand : public ExternalRamAllocated
   {
   public:
     OvmsCommand();

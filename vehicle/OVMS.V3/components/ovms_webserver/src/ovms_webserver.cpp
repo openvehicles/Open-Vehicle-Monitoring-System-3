@@ -56,6 +56,12 @@ OvmsWebServer::OvmsWebServer()
   memset(&m_file_opts, 0, sizeof(m_file_opts));
 #endif //MG_ENABLE_FILESYSTEM
 
+  m_client_cnt = 0;
+  m_modifier = MyMetrics.RegisterModifier();
+  ESP_LOGD(TAG, "WebServer registered metric modifier is #%d", m_modifier);
+  m_update_ticker = xTimerCreate("Web client update ticker", 250 / portTICK_PERIOD_MS, pdTRUE, NULL, UpdateTicker);
+  m_update_all = false;
+  
   // read config:
   MyConfig.RegisterParam("http.server", "Webserver", true, true);
   ConfigChanged("init", NULL);
@@ -67,6 +73,7 @@ OvmsWebServer::OvmsWebServer()
   MyEvents.RegisterEvent(TAG,"network.mgr.stop", std::bind(&OvmsWebServer::NetManStop, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsWebServer::ConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsWebServer::ConfigChanged, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "*", std::bind(&OvmsWebServer::EventListener, this, _1, _2));
   
   // register standard framework URIs:
   RegisterPage("/", "OVMS", HandleRoot);
@@ -291,7 +298,7 @@ PageEntry* OvmsWebServer::FindPage(const char* uri)
 
 
 /**
- * EventHandler: this is the mongoos main event handler.
+ * EventHandler: this is the mongoose main event handler.
  */
 void OvmsWebServer::EventHandler(struct mg_connection *nc, int ev, void *p)
 {
@@ -301,6 +308,28 @@ void OvmsWebServer::EventHandler(struct mg_connection *nc, int ev, void *p)
   
   switch (ev)
   {
+    case MG_EV_WEBSOCKET_HANDSHAKE_DONE:
+      {
+        // new websocket connection:
+        MyWebServer.m_client_cnt++;
+        MyWebServer.m_update_all = true;
+        if (MyWebServer.m_client_cnt > 0)
+          xTimerStart(MyWebServer.m_update_ticker, 0);
+        ESP_LOGD(TAG, "EventHandler: new websocket connection; %d clients active", MyWebServer.m_client_cnt);
+      }
+      break;
+    
+    case MG_EV_WEBSOCKET_FRAME:
+      {
+        // websocket message received:
+        websocket_message* wm = (websocket_message*) p;
+        std::string msg;
+        msg.assign((char*) wm->data, wm->size);
+        ESP_LOGD(TAG, "EventHandler: websocket msg '%s'", msg.c_str());
+        // Note: client commands not yet implemented
+        break;
+      }
+    
     case MG_EV_HTTP_REQUEST:
       {
         c.nc = nc;
@@ -372,6 +401,15 @@ void OvmsWebServer::EventHandler(struct mg_connection *nc, int ev, void *p)
           ESP_LOGV(TAG, "chunked_xfer %p abort, %d bytes sent", xfer->data, xfer->sent);
           delete xfer;
         }
+        
+        // unregister websocket connection:
+        if (nc->flags & MG_F_IS_WEBSOCKET)
+        {
+          MyWebServer.m_client_cnt--;
+          if (MyWebServer.m_client_cnt == 0)
+            xTimerStop(MyWebServer.m_update_ticker, 0);
+          ESP_LOGD(TAG, "EventHandler: websocket connection closed; %d clients active", MyWebServer.m_client_cnt);
+        }
       }
       break;
     
@@ -426,6 +464,74 @@ void PageEntry::Serve(PageContext_t& c)
   
   // call page handler:
   handler(*this, c);
+}
+
+
+/**
+ * WebsocketBroadcast: send message to all websocket clients
+ */
+void OvmsWebServer::WebsocketBroadcast(const std::string msg)
+{
+  if (MyWebServer.m_client_cnt == 0)
+    return;
+  mg_mgr* mgr = MyNetManager.GetMongooseMgr();
+  for (mg_connection* c = mg_next(mgr, NULL); c != NULL; c = mg_next(mgr, c)) {
+    if (c->flags & MG_F_IS_WEBSOCKET)
+      mg_send_websocket_frame(c, WEBSOCKET_OP_TEXT, msg.data(), msg.size());
+  }
+}
+
+
+/**
+ * EventListener: forward events to all websocket clients
+ */
+void OvmsWebServer::EventListener(std::string event, void* data)
+{
+  std::string msg;
+  msg = "{\"event\":\"" + event + "\"}";
+  WebsocketBroadcast(msg);
+}
+
+
+/**
+ * BroadcastMetrics: send metrics update to all websocket clients
+ */
+void OvmsWebServer::BroadcastMetrics(bool update_all)
+{
+  if (m_client_cnt == 0)
+    return;
+  
+  // Note: a full Twizy metrics dump covering ~230 metrics needs ~6 KB
+  //  so we should not need to chunk the metrics updates.
+  
+  std::string msg;
+  msg = "{\"metrics\":{";
+  int cnt = 0;
+  for (OvmsMetric* m=MyMetrics.m_first; m != NULL; m=m->m_next) {
+    if (m->IsModifiedAndClear(m_modifier) || update_all) {
+      if (cnt)
+        msg += ',';
+      msg += '\"';
+      msg += m->m_name;
+      msg += "\":";
+      msg += m->AsJSON();
+      cnt++;
+    }
+  }
+  if (cnt) {
+    msg += "}}";
+    WebsocketBroadcast(msg);
+  }
+}
+
+
+/**
+ * UpdateTicker: periodical metrics update
+ */
+void OvmsWebServer::UpdateTicker(TimerHandle_t timer)
+{
+  MyWebServer.BroadcastMetrics(MyWebServer.m_update_all);
+  MyWebServer.m_update_all = false;
 }
 
 

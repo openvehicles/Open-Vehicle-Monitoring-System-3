@@ -57,6 +57,22 @@ pre {
   background-position: 0 0;
 }
 
+.metric {
+  display: inline-block;
+  margin-right: 10px;
+}
+.metric .value {
+  font-weight: bold;
+  padding-right: 3px;
+}
+.metric .unit {
+  font-size: 85%;
+  color: #676767;
+}
+li.event {
+    font-size: 85%;
+}
+
 /* Night mode */
 a.toggle-night {
   font-size: 20px;
@@ -119,4 +135,7 @@ body.night {
   background-image: -webkit-gradient(linear,left top,left bottom,from(#183752),to(#235a8a));
   background-image: linear-gradient(to bottom,#183752 0,#235a8a 100%);
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff183752', endColorstr='#ff235a8a', GradientType=0);
+}
+.night .metric .unit {
+  color: #909090;
 }

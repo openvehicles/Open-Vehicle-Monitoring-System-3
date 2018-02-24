@@ -100,7 +100,31 @@ function getpage() {
   }
 }
 
+var monitorTimer;
+var ws;
+var metrics = {};
+
+function initSocketConnection(){
+  ws = new WebSocket('ws://' + location.host + '/msg');
+  ws.onopen = function(ev)  { console.log(ev); };
+  ws.onerror = function(ev) { console.log(ev); };
+  ws.onclose = function(ev) { console.log(ev); };
+  ws.onmessage = function(ev) {
+    msg = JSON.parse(ev.data);
+    if (msg && msg.event) {
+      $(".receiver").trigger("msg:event", msg.event);
+    }
+    else if (msg && msg.metrics) {
+      $.extend(metrics, msg.metrics);
+      $(".receiver").trigger("msg:metrics", msg.metrics);
+    }
+  };
+}
+
 function monitorUpdate(){
+  if (!ws || ws.readyState == ws.CLOSED){
+    initSocketConnection();
+  }
   $(".monitor").each(function(){
     var cnt = $(this).data("updcnt");
     var int = $(this).data("updint");
@@ -113,8 +137,6 @@ function monitorUpdate(){
     $(this).data("updlast", now());
   });
 }
-
-var monitorTimer;
 
 $(function(){
   

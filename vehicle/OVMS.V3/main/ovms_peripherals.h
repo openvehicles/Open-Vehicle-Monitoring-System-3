@@ -87,9 +87,6 @@
 #define SDCARD_PIN_CLK            14
 #define SDCARD_PIN_CMD            15
 #define SDCARD_PIN_D0             2
-#define SDCARD_PIN_D1             4
-#define SDCARD_PIN_D2             12
-#define SDCARD_PIN_D3             13
 #define SDCARD_PIN_CD             39
 
 #define ESP32CAN_PIN_TX           25
@@ -111,14 +108,13 @@
 #ifdef CONFIG_OVMS_HW_BASE_3_0
 #define MODEM_GPIO_RX             16
 #define MODEM_GPIO_TX             17
-#define MODEM_PIN_RX              27
-#define MODEM_PIN_TX              28
-#else // #ifdef CONFIG_OVMS_HW_BASE_3_0
-#define MODEM_GPIO_RX             4
-#define MODEM_GPIO_TX             13
-#define MODEM_PIN_RX              26
-#define MODEM_PIN_TX              16
 #endif // #ifdef CONFIG_OVMS_HW_BASE_3_0
+
+#ifdef CONFIG_OVMS_HW_BASE_3_1
+#define MODEM_GPIO_RX             13
+#define MODEM_GPIO_TX             4
+#endif // #ifdef CONFIG_OVMS_HW_BASE_3_1
+
 #define MODEM_EGPIO_PWR           0
 #define MODEM_EGPIO_DTR           3
 

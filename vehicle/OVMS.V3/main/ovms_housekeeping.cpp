@@ -61,8 +61,6 @@ void HousekeepingTask(void *pvParameters)
 
   me->init();
 
-  me->version();
-
   while (1)
     {
     me->metrics();
@@ -107,45 +105,6 @@ void Housekeeping::init()
   ConsoleAsync::Instance();
 
   MyEvents.SignalEvent("system.start",NULL);
-  }
-
-void Housekeeping::version()
-  {
-  std::string version(OVMS_VERSION);
-
-  const esp_partition_t *p = esp_ota_get_running_partition();
-  if (p != NULL)
-    {
-    version.append("/");
-    version.append(p->label);
-    }
-  version.append("/");
-  version.append(CONFIG_OVMS_VERSION_TAG);
-
-  version.append(" build (idf ");
-  version.append(esp_get_idf_version());
-  version.append(") ");
-  version.append(__DATE__);
-  version.append(" ");
-  version.append(__TIME__);
-  StandardMetrics.ms_m_version->SetValue(version.c_str());
-
-  std::string hardware("OVMS ");
-  esp_chip_info_t chip;
-  esp_chip_info(&chip);
-  if (chip.features & CHIP_FEATURE_EMB_FLASH) hardware.append("EMBFLASH ");
-  if (chip.features & CHIP_FEATURE_WIFI_BGN) hardware.append("WIFI ");
-  if (chip.features & CHIP_FEATURE_BLE) hardware.append("BLE ");
-  if (chip.features & CHIP_FEATURE_BT) hardware.append("BT ");
-  char buf[32]; sprintf(buf,"cores=%d ",chip.cores); hardware.append(buf);
-  sprintf(buf,"rev=ESP32/%d",chip.revision); hardware.append(buf);
-  StandardMetrics.ms_m_hardware->SetValue(hardware.c_str());
-
-  uint8_t mac[6];
-  esp_efuse_mac_get_default(mac);
-  sprintf(buf,"%02x:%02x:%02x:%02x:%02x:%02x",
-          mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
-  StandardMetrics.ms_m_serial->SetValue(buf);
   }
 
 void Housekeeping::metrics()

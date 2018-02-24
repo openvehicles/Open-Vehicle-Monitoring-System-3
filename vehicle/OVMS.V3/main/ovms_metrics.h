@@ -105,6 +105,13 @@ class OvmsMetric
         return std::string(defvalue);
       return AsString(defvalue, units, precision) + OvmsMetricUnitLabel(GetUnits());
       }
+    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
+      {
+      std::string buf = "\"";
+      buf.append(json_encode(AsString(defvalue, units, precision)));
+      buf.append("\"");
+      return buf;
+      }
     virtual float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     virtual void SetValue(std::string value);
     virtual void operator=(std::string value);
@@ -138,6 +145,7 @@ class OvmsMetricBool : public OvmsMetric
 
   public:
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
+    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
     float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     int AsBool(const bool defvalue = false);
     void SetValue(bool value);
@@ -157,6 +165,7 @@ class OvmsMetricInt : public OvmsMetric
 
   public:
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
+    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
     float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     int AsInt(const int defvalue = 0, metric_unit_t units = Other);
     void SetValue(int value, metric_unit_t units = Other);
@@ -176,6 +185,7 @@ class OvmsMetricFloat : public OvmsMetric
 
   public:
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
+    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
     float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     int AsInt(const int defvalue = 0, metric_unit_t units = Other);
     void SetValue(float value, metric_unit_t units = Other);

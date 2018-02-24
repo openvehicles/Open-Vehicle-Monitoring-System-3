@@ -28,21 +28,51 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __OVMS_H__
-#define __OVMS_H__
+#ifndef __OVMS_TIME_H__
+#define __OVMS_TIME_H__
 
-#include <stdint.h>
-#include <cstddef>
+#include <time.h>
+#include <sys/time.h>
+#include <functional>
+#include <map>
+#include "ovms_utils.h"
 
-extern uint32_t monotonictime;
+using namespace std;
 
-class ExternalRamAllocated
+class OvmsTimeProvider
   {
   public:
-    static void* operator new(std::size_t sz);
-    static void* operator new[](std::size_t sz);
+    OvmsTimeProvider(const char* provider, int stratum=0, time_t tim=0);
+    ~OvmsTimeProvider();
+
+  public:
+    const char* m_provider;
+    time_t m_time;
+    uint32_t m_lastreport;
+    int m_stratum;
+
+  public:
+    void Set(int stratum, time_t tim);
   };
 
-void* ExternalRamMalloc(std::size_t sz);
+typedef std::map<const char*, OvmsTimeProvider*, CmpStrOp> OvmsTimeProviderMap_t;
 
-#endif //#ifndef __OVMS_H__
+class OvmsTime
+  {
+  public:
+    OvmsTime();
+    ~OvmsTime();
+
+  public:
+    OvmsTimeProviderMap_t m_providers;
+    OvmsTimeProvider* m_current;
+    struct timezone m_tz;
+
+  public:
+    void Set(const char* provider, int stratum, bool trusted, time_t tim, suseconds_t timu=0);
+    void Elect();
+  };
+
+extern OvmsTime MyTime;
+
+#endif //#ifndef __OVMS_TIME_H__
