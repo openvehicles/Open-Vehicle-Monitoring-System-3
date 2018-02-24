@@ -1,6 +1,6 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? MWJ  3.0.991  OTA release
-                         - Add changes here
+                         - Update ovms_module to use new API for per-task heap info.
 
 2018-02-21 MWJ  3.0.990  Handle case of SIMCOM modem MUX down during data states
