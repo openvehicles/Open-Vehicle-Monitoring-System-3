@@ -92,7 +92,7 @@ OvmsTime::OvmsTime()
   m_tz.tz_dsttime = 0;
 
   // Register our commands
-  OvmsCommand* cmd_time = MyCommandApp.RegisterCommand("time","TIME framework",NULL, "", 1);
+  OvmsCommand* cmd_time = MyCommandApp.RegisterCommand("time","TIME framework",time_status, "", 0, 1);
   cmd_time->RegisterCommand("status","Show time status",time_status,"", 0, 0, false);
   cmd_time->RegisterCommand("set","Set current UTC time",time_set,"<time>", 1, 1, false);
   }
