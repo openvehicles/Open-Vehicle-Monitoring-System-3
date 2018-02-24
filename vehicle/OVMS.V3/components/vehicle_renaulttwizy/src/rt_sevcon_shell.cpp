@@ -517,8 +517,8 @@ void SevconClient::shell_cfg_load(int verbosity, OvmsWriter* writer, OvmsCommand
   if (argc >= 1) {
     key = strtol(argv[0], NULL, 10);
   }
-  if (key < 1 || key > 99) {
-    writer->printf("ERROR: Key %d invalid (1..99)\n", key);
+  if (key < 0 || key > 99) {
+    writer->printf("ERROR: Key %d invalid (0..99)\n", key);
     return;
   }
   

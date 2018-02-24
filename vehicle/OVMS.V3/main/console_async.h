@@ -31,6 +31,7 @@
 #define __CONSOLE_ASYNC_H__
 
 #include <stdarg.h>
+#include "task_base.h"
 #include "ovms_console.h"
 #include "driver/uart.h"
 

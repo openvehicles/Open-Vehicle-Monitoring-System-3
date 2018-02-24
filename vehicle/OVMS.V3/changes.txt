@@ -1,5 +1,6 @@
-Open Vehicle Monitor System - v3 - Change logon
+Open Vehicle Monitor System v3 - Change log
 
-2017-07-02 MWJ          First GITHUB release.
-2017-06-25 MWJ          Rough implementation of 'test sleep' command.
-2017-06-24 MWJ          Initial test firmware created.
+????-??-?? MWJ  3.0.991  OTA release
+                         - Add changes here
+
+2018-02-21 MWJ  3.0.990  Handle case of SIMCOM modem MUX down during data states

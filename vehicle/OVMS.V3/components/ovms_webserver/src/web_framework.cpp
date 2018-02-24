@@ -93,6 +93,10 @@ std::string PageContext::getvar(const char* name, size_t maxlen /*=200*/) {
  * HTML generation utils (Bootstrap widgets)
  */
 
+void PageContext::error(int code, const char* text) {
+  mg_http_send_error(nc, code, text);
+}
+
 void PageContext::head(int code, const char* headers /*=NULL*/) {
   if (!headers) {
     headers =
@@ -104,6 +108,19 @@ void PageContext::head(int code, const char* headers /*=NULL*/) {
 
 void PageContext::print(const std::string text) {
   mg_send_http_chunk(nc, text.data(), text.size());
+}
+
+void PageContext::printf(const char *fmt, ...) {
+  char* buf = NULL;
+  int len;
+  va_list ap;
+  va_start(ap, fmt);
+  len = vasprintf(&buf, fmt, ap);
+  va_end(ap);
+  if (len >= 0)
+    mg_send_http_chunk(nc, buf, len);
+  if (buf)
+    free(buf);
 }
 
 void PageContext::done() {
@@ -135,23 +152,34 @@ void PageContext::form_end() {
   mg_printf_http_chunk(nc, "</form>");
 }
 
-void PageContext::input(const char* type, const char* label, const char* name, const char* value) {
+void PageContext::input(const char* type, const char* label, const char* name, const char* value,
+    const char* placeholder /*=NULL*/, const char* helptext /*=NULL*/) {
   mg_printf_http_chunk(nc,
     "<div class=\"form-group\">"
       "<label class=\"control-label col-sm-3\" for=\"input-%s\">%s:</label>"
       "<div class=\"col-sm-9\">"
-        "<input type=\"%s\" class=\"form-control\" placeholder=\"Enter %s\" name=\"%s\" id=\"input-%s\" value=\"%s\">"
+        "<input type=\"%s\" class=\"form-control\" placeholder=\"%s%s\" name=\"%s\" id=\"input-%s\" value=\"%s\">"
+        "%s%s%s"
       "</div>"
     "</div>"
-    , _attr(name), label, _attr(type), _attr(label), _attr(name), _attr(name), _attr(value));
+    , _attr(name), label, _attr(type)
+    , placeholder ? "" : "Enter "
+    , placeholder ? _attr(placeholder) : _attr(label)
+    , _attr(name), _attr(name), _attr(value)
+    , helptext ? "<span class=\"help-block\">" : ""
+    , helptext ? helptext : ""
+    , helptext ? "</span>" : ""
+    );
 }
 
-void PageContext::input_text(const char* label, const char* name, const char* value) {
-  input("text", label, name, value);
+void PageContext::input_text(const char* label, const char* name, const char* value,
+    const char* placeholder /*=NULL*/, const char* helptext /*=NULL*/) {
+  input("text", label, name, value, placeholder, helptext);
 }
 
-void PageContext::input_password(const char* label, const char* name, const char* value) {
-  input("password", label, name, value);
+void PageContext::input_password(const char* label, const char* name, const char* value,
+    const char* placeholder /*=NULL*/, const char* helptext /*=NULL*/) {
+  input("password", label, name, value, placeholder, helptext);
 }
 
 void PageContext::input_select_start(const char* label, const char* name) {
@@ -175,6 +203,24 @@ void PageContext::input_select_end() {
   mg_printf_http_chunk(nc, "</select></div></div>");
 }
 
+void PageContext::input_checkbox(const char* label, const char* name, bool value,
+    const char* helptext /*=NULL*/) {
+  mg_printf_http_chunk(nc,
+    "<div class=\"form-group\">"
+      "<div class=\"col-sm-9 col-sm-offset-3\">"
+        "<div class=\"checkbox\">"
+          "<label><input type=\"checkbox\" name=\"%s\" value=\"yes\" %s> %s</label>"
+        "</div>"
+        "%s%s%s"
+      "</div>"
+    "</div>"
+    , _attr(name), value ? "checked" : "", label
+    , helptext ? "<span class=\"help-block\">" : ""
+    , helptext ? helptext : ""
+    , helptext ? "</span>" : ""
+    );
+}
+
 void PageContext::input_button(const char* type, const char* label) {
   mg_printf_http_chunk(nc,
     "<div class=\"form-group\">"
@@ -189,6 +235,20 @@ void PageContext::alert(const char* type, const char* text) {
   mg_printf_http_chunk(nc,
     "<div class=\"alert alert-%s\">%s</div>"
     , _attr(type), text);
+}
+
+void PageContext::fieldset_start(const char* title) {
+  mg_printf_http_chunk(nc,
+    "<fieldset><legend>%s</legend>"
+    , title);
+}
+
+void PageContext::fieldset_end() {
+  mg_printf_http_chunk(nc, "</fieldset>");
+}
+
+void PageContext::hr() {
+  mg_printf_http_chunk(nc, "<hr>");
 }
 
 
@@ -212,13 +272,7 @@ std::string OvmsWebServer::CreateMenu(PageContext_t& c)
   // assemble menu:
   std::string menu =
     "<ul class=\"nav navbar-nav\">"
-      + main +
-      "<li class=\"dropdown\" id=\"menu-cfg\">"
-        "<a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-haspopup=\"true\" aria-expanded=\"false\">Config <span class=\"caret\"></span></a>"
-        "<ul class=\"dropdown-menu\">"
-          + config +
-        "</ul>"
-      "</li>";
+      + main;
   if (vehicle != "") {
     std::string vehiclename = MyVehicleFactory.ActiveVehicleName();
     menu +=
@@ -232,9 +286,16 @@ std::string OvmsWebServer::CreateMenu(PageContext_t& c)
       "</li>";
   }
   menu +=
+      "<li class=\"dropdown\" id=\"menu-cfg\">"
+        "<a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-haspopup=\"true\" aria-expanded=\"false\">Config <span class=\"caret\"></span></a>"
+        "<ul class=\"dropdown-menu\">"
+          + config +
+        "</ul>"
+      "</li>"
     "</ul>"
     "<ul class=\"nav navbar-nav navbar-right\">"
-    + std::string(c.session
+      "<li class=\"hidden-xs\"><a href=\"#\" class=\"toggle-night\">◐</a></li>"
+      + std::string(c.session
       ? "<li><a href=\"/logout\" target=\"#main\">Logout</a></li>"
       : "<li><a href=\"/login\" target=\"#main\">Login</a></li>") +
     "</ul>";
@@ -246,7 +307,8 @@ std::string OvmsWebServer::CreateMenu(PageContext_t& c)
 /**
  * HandleHome: show home / intro menu
  */
-void OvmsWebServer::HandleHome(PageEntry_t& p, PageContext_t& c)
+
+void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
 {
   std::string main, config, vehicle;
   
@@ -260,26 +322,42 @@ void OvmsWebServer::HandleHome(PageEntry_t& p, PageContext_t& c)
       vehicle += "<li><a class=\"btn btn-default\" href=\"" + std::string(e->uri) + "\" target=\"#main\">" + std::string(e->label) + "</a></li>";
   }
   
-  c.head(200);
   c.panel_start("primary", "Home");
   
-  mg_printf_http_chunk(c.nc,
-    "<p class=\"lead\">Welcome to the OVMS web console.</p>"
-    "<p><u>Main menu</u></p>"
+  c.printf(
+    "<fieldset><legend>Main menu</legend>"
     "<ul class=\"list-inline\">%s</ul>"
-    "<p><u>Configuration</u></p>"
-    "<ul class=\"list-inline\">%s</ul>"
-    , main.c_str(), config.c_str());
+    "</fieldset>"
+    , main.c_str());
 
   if (vehicle != "") {
     const char* vehiclename = MyVehicleFactory.ActiveVehicleName();
     mg_printf_http_chunk(c.nc,
-      "<p><u>%s</u></p>"
+      "<fieldset><legend>%s</legend>"
       "<ul class=\"list-inline\">%s</ul>"
+      "</fieldset>"
       , vehiclename, vehicle.c_str());
   }
   
+  c.printf(
+    "<fieldset><legend>Configuration</legend>"
+    "<ul class=\"list-inline\">%s</ul>"
+    "</fieldset>"
+    , config.c_str());
+
   c.panel_end();
+  
+  // check admin password, show warning if unset:
+  if (MyConfig.GetParamValue("password", "module").empty()) {
+    c.alert("warning", "<p><strong>Warning:</strong> no admin password set. Web access is open to the public.</p>");
+  }
+}
+
+void OvmsWebServer::HandleHome(PageEntry_t& p, PageContext_t& c)
+{
+  c.head(200);
+  c.alert("info", "<p class=\"lead\">Welcome to the OVMS web console.</p>");
+  OutputHome(p, c);
   c.done();
 }
 
@@ -313,14 +391,15 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
                 "<span class=\"icon-bar\"></span>"
                 "<span class=\"icon-bar\"></span>"
               "</button>"
+              "<button type=\"button\" class=\"navbar-toggle collapsed toggle-night\">◐</button>"
               "<a class=\"navbar-brand\" href=\"/home\" target=\"#main\" title=\"Home\">OVMS</a>"
             "</div>"
-            "<div id=\"menu\" class=\"navbar-collapse collapse\">"
+            "<div role=\"menu\" id=\"menu\" class=\"navbar-collapse collapse\">"
               "%s"
             "</div>"
           "</div>"
         "</nav>"
-        "<div id=\"main\" class=\"container-fluid\" role=\"main\" style=\"margin-top:60px\">"
+        "<div role=\"main\" id=\"main\" class=\"container-fluid\">"
         "</div>"
         "<script src=\"/assets/script.js\"></script>"
       "</body>"

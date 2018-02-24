@@ -36,6 +36,8 @@
 #include <map>
 #include <set>
 #include <limits.h>
+#include "ovms.h"
+#include "task_base.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "microrl_config.h"
@@ -65,7 +67,11 @@ class OvmsWriter
     virtual char ** GetCompletion(OvmsCommandMap& children, const char* token) = 0;
     virtual void Log(LogBuffers* message) = 0;
     virtual void Exit();
+    virtual bool IsInteractive() { return true; }
     void RegisterInsertCallback(InsertCallback cb, void* ctx);
+    void DeregisterInsertCallback(InsertCallback cb);
+    virtual void finalise() {}
+    virtual void ProcessChar(char c) {}
 
   public:
     bool IsSecure();
@@ -93,7 +99,7 @@ class OvmsCommandMap : public std::map<const char*, OvmsCommand*, CompareCharPtr
     OvmsCommand* FindUniquePrefix(const char* key);
   };
 
-class OvmsCommand
+class OvmsCommand : public ExternalRamAllocated
   {
   public:
     OvmsCommand();
@@ -127,6 +133,36 @@ class OvmsCommand
     bool m_secure;
     OvmsCommandMap m_children;
     OvmsCommand* m_parent;
+  };
+
+
+typedef enum
+  {
+  OCS_Init,
+  OCS_Error,
+  OCS_RunOnce,
+  OCS_RunLoop,
+  OCS_StopRequested,
+  } OvmsCommandState_t;
+
+class OvmsCommandTask : public TaskBase
+  {
+  public:
+    OvmsCommandTask(int _verbosity, OvmsWriter* _writer, OvmsCommand* _cmd, int _argc, const char* const* _argv);
+    virtual ~OvmsCommandTask();
+    virtual OvmsCommandState_t Prepare();
+    bool Run();
+    static bool Terminator(OvmsWriter* writer, void* userdata, char ch);
+    bool IsRunning() { return m_state == OCS_RunLoop; }
+    bool IsTerminated() { return m_state == OCS_StopRequested; }
+  
+  protected:
+    int verbosity;
+    OvmsWriter* writer;
+    OvmsCommand* cmd;
+    int argc;
+    char** argv;
+    OvmsCommandState_t m_state;
   };
 
 class OvmsCommandApp

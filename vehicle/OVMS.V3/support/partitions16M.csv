@@ -1,0 +1,9 @@
+# OVMS 16MB flash ESP32 Partition Table
+# Name,   Type, SubType, Offset,   Size
+nvs,      data, nvs,     0x9000,  0x4000
+otadata,  data, ota,     0xd000,  0x2000
+phy_init, data, phy,     0xf000,  0x1000
+factory,  app,  factory, 0x10000,  4M
+ota_0,    app,  ota_0,   ,         4M
+ota_1,    app,  ota_1,   ,         4M
+store,    data, fat,     ,         1M

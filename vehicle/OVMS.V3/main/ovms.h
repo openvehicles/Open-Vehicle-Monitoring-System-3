@@ -32,9 +32,17 @@
 #define __OVMS_H__
 
 #include <stdint.h>
-
-#define OVMS_VERSION "3.0.0"
+#include <cstddef>
 
 extern uint32_t monotonictime;
+
+class ExternalRamAllocated
+  {
+  public:
+    static void* operator new(std::size_t sz);
+    static void* operator new[](std::size_t sz);
+  };
+
+void* ExternalRamMalloc(std::size_t sz);
 
 #endif //#ifndef __OVMS_H__

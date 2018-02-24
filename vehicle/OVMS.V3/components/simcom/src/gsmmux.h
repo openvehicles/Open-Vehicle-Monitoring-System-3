@@ -86,6 +86,7 @@ class GsmMux
     size_t tx(int channel, uint8_t* data, ssize_t size);
     size_t tx(int channel, const char* data, ssize_t size = -1);
     bool IsChannelOpen(int channel);
+    bool IsMuxUp();
 
   protected:
     void txfcs(uint8_t* data, size_t size, size_t ipos = 4);
@@ -102,6 +103,10 @@ class GsmMux
   public:
     GsmMuxState m_state;
     int m_openchannels;
+    uint32_t m_framingerrors;
+    uint32_t m_lastgoodrxframe;
+    uint32_t m_rxframecount;
+    uint32_t m_txframecount;
 
   public:
     simcom* m_modem;

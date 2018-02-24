@@ -37,7 +37,7 @@
 
 struct mg_connection;
 
-class OvmsTelnet : public Parent
+class OvmsTelnet
   {
   public:
     OvmsTelnet();

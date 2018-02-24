@@ -57,6 +57,7 @@ class OvmsConfigParam
     std::string GetName();
     const char* GetTitle() { return m_title.c_str(); }
     void Load();
+    void Save();
 
   protected:
     void RewriteConfig();

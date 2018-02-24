@@ -28,20 +28,26 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __mg_locals_h__
-#define __mg_locals_h__
+#include "ovms.h"
+#include "esp_heap_caps.h"
 
-#include "sdkconfig.h"
+uint32_t monotonictime = 0;
 
-#define ESP_PLATFORM 1
-#define MG_ENABLE_HTTP 1
+void* ExternalRamMalloc(std::size_t sz)
+  {
+  void* ret = heap_caps_malloc(sz, MALLOC_CAP_SPIRAM);
+  if (ret)
+    return ret;
+  else
+    return malloc(sz);
+  }
 
-#ifdef CONFIG_MG_ENABLE_FILESYSTEM
-#define MG_ENABLE_FILESYSTEM 1
-#endif
+static void* ExternalRamAllocated::operator new(std::size_t sz)
+  {
+  return ExternalRamMalloc(sz);
+  }
 
-#ifdef CONFIG_MG_ENABLE_DIRECTORY_LISTING
-#define MG_ENABLE_DIRECTORY_LISTING 1
-#endif
-
-#endif // __mg_locals_h__
+static void* ExternalRamAllocated::operator new[](std::size_t sz)
+  {
+  return ExternalRamMalloc(sz);
+  }

@@ -600,6 +600,17 @@ simcom::SimcomState1 simcom::State1Ticker1()
         return NetLoss;
       break;
     case NetLoss:
+      if ((m_mux.m_lastgoodrxframe > 0)&&((monotonictime-m_mux.m_lastgoodrxframe)>180))
+        {
+        // We haven't had a good MUX frame in 3 minutes. Let's assume the MUX has failed
+        ESP_LOGW(TAG, "3 minutes since last MUX rx frame - assume MUX has failed");
+        m_ppp.Shutdown();
+        m_nmea.Shutdown();
+        m_mux.Stop();
+        MyEvents.SignalEvent("system.modem.stop",NULL);
+        PowerCycle();
+        return PoweringOn;
+        }
       break;
     case NetHold:
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
@@ -963,38 +974,53 @@ void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
       MyPeripherals->m_simcom->m_state1_timeout_ticks);
     }
 
-  writer->printf("  Mux Open Channels: %d\n",
+  writer->printf("\n  Mux\n    Status: %s\n",
+    MyPeripherals->m_simcom->m_mux.IsMuxUp()?"up":"down");
+
+  writer->printf("    Open Channels: %d\n",
     MyPeripherals->m_simcom->m_mux.m_openchannels);
+
+  writer->printf("    Framing Errors: %d\n",
+    MyPeripherals->m_simcom->m_mux.m_framingerrors);
+
+  writer->printf("    Last RX frame: %d sec(s) ago\n",
+    (MyPeripherals->m_simcom->m_mux.m_lastgoodrxframe==0)?0:(monotonictime-MyPeripherals->m_simcom->m_mux.m_lastgoodrxframe));
+
+  writer->printf("    RX frames: %d\n",
+    MyPeripherals->m_simcom->m_mux.m_rxframecount);
+
+  writer->printf("    TX frames: %d\n",
+    MyPeripherals->m_simcom->m_mux.m_txframecount);
 
   if (MyPeripherals->m_simcom->m_ppp.m_connected)
     {
-    writer->printf("  PPP Connected on channel: #%d\n",
+    writer->printf("\n  PPP\n    Connected on channel: #%d\n",
       MyPeripherals->m_simcom->m_ppp.m_channel);
     }
   else
     {
-    writer->puts("  PPP Not Connected");
+    writer->puts("\n  PPP\n    Not Connected");
     }
 
-  writer->printf("  PPP Last Error: %s\n",
+  writer->printf("    Last Error: %s\n",
     MyPeripherals->m_simcom->m_ppp.ErrCodeName(MyPeripherals->m_simcom->m_ppp.m_lasterrcode));
 
-  writer->printf("  GPS: %s%s\n",
+  writer->printf("\n  GPS\n    Status: %s%s\n",
     MyConfig.GetParamValueBool("modem", "enable.gps", false) ? "enabled" : "disabled",
     MyPeripherals->m_simcom->m_gps_required ? ", required" : "");
 
-  writer->printf("  GPS time: %s%s\n",
+  writer->printf("    Time: %s%s\n",
     MyConfig.GetParamValueBool("modem", "enable.gpstime", false) ? "enabled" : "disabled",
     MyPeripherals->m_simcom->m_nmea.m_gpstime_required ? ", required" : "");
 
   if (MyPeripherals->m_simcom->m_nmea.m_connected)
     {
-    writer->printf("  NMEA (GPS/GLONASS) Connected on channel: #%d\n",
+    writer->printf("    NMEA: GPS/GLONASS Connected on channel: #%d\n",
       MyPeripherals->m_simcom->m_nmea.m_channel);
     }
   else
     {
-    writer->puts("  NMEA (GPS/GLONASS) Not Connected");
+    writer->puts("    NMEA: GPS/GLONASS Not Connected");
     }
 
   }

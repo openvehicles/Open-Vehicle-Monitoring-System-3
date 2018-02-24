@@ -28,24 +28,26 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __OVMS_MDNS_H__
-#define __OVMS_MDNS_H__
+#ifndef __mg_locals_h__
+#define __mg_locals_h__
 
-#include "mdns.h"
-#include "ovms_events.h"
+#include "sdkconfig.h"
+#include "ovms_log.h"
 
-class OvmsMDNS
-  {
-  public:
-    OvmsMDNS();
-    virtual ~OvmsMDNS();
+#define ESP_PLATFORM 1
+#define MG_ENABLE_HTTP 1
 
-  public:
-    void WifiUp(std::string event, void* data);
-    void WifiDown(std::string event, void* data);
+#ifdef CONFIG_MG_ENABLE_DEBUG
+#define MG_ENABLE_DEBUG 1
+#define CS_LOG_ENABLE_TS_DIFF 1
+#endif
 
-  protected:
-    bool m_mdns;
-  };
+#ifdef CONFIG_MG_ENABLE_FILESYSTEM
+#define MG_ENABLE_FILESYSTEM 1
+#endif
 
-#endif //#ifndef __OVMS_MDNS_H__
+#ifdef CONFIG_MG_ENABLE_DIRECTORY_LISTING
+#define MG_ENABLE_DIRECTORY_LISTING 1
+#endif
+
+#endif // __mg_locals_h__

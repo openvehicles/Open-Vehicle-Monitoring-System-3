@@ -33,6 +33,7 @@
 #include "ovms_config.h"
 #include "ovms_metrics.h"
 #include "ovms_command.h"
+#include "ovms_webserver.h"
 
 #include "rt_types.h"
 #include "rt_battmon.h"
@@ -62,7 +63,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   public:
     OvmsVehicleRenaultTwizy();
     ~OvmsVehicleRenaultTwizy();
-    static OvmsVehicleRenaultTwizy* GetInstance(OvmsWriter* writer);
+    static OvmsVehicleRenaultTwizy* GetInstance(OvmsWriter* writer=NULL);
   
   
   // --------------------------------------------------------------------------
@@ -395,7 +396,17 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   protected:
     SevconClient *m_sevcon = NULL;
     signed char twizy_button_cnt = 0;           // will count key presses (errors) in STOP mode (msg 081)
-    
+  
+
+  // --------------------------------------------------------------------------
+  // Webserver subsystem
+  //  - implementation: rt_web.(h,cpp)
+  // 
+  
+  public:
+    void WebInit();
+    static void WebConsole(PageEntry_t& p, PageContext_t& c);
+  
 };
 
 #endif // __VEHICLE_RENAULTTWIZY_H__

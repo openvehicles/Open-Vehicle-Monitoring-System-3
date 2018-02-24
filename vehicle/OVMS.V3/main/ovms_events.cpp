@@ -102,21 +102,32 @@ void OvmsEvents::RegisterEvent(std::string caller, std::string event, EventCallb
 
 void OvmsEvents::DeregisterEvent(std::string caller)
   {
-  for (EventMap::iterator itm=m_map.begin(); itm!=m_map.end(); ++itm)
+  EventMap::iterator itm=m_map.begin();
+  while (itm!=m_map.end())
     {
     EventCallbackList* el = itm->second;
-    for (EventCallbackList::iterator itc=el->begin(); itc!=el->end(); ++itc)
+    EventCallbackList::iterator itc=el->begin();
+    while (itc!=el->end())
       {
       EventCallbackEntry* ec = *itc;
       if (ec->m_caller == caller)
         {
-        el->erase(itc);
+        itc = el->erase(itc);
+        delete ec;
+        }
+      else
+        {
+        ++itc;
         }
       }
     if (el->empty())
       {
+      itm = m_map.erase(itm);
       delete el;
-      m_map.erase(itm);
+      }
+    else
+      {
+      ++itm;
       }
     }
   }
