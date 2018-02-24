@@ -41,7 +41,7 @@ static const char *TAG = "ovms-module";
 #include "ovms_module.h"
 #include "ovms_command.h"
 #ifdef CONFIG_HEAP_TASK_TRACKING
-#include "heap_task_info.h"
+#include "esp_heap_task_info.h"
 #endif
 
 #define MAX_TASKS 30
@@ -87,12 +87,20 @@ void AddTaskToMap(TaskHandle_t task) {}
 
 #else
 
+enum region_types {
+    DRAM = 0,
+    D_IRAM = 1,
+    IRAM = 2,
+    SPIRAM = 3
+};
+
 class HeapTotals;
 
+static heap_task_info_params_t* params = NULL;
 static TaskHandle_t* tasklist = NULL;
 static TaskStatus_t* taskstatus = NULL;
-static heap_dump_block_t* before = NULL;
-static heap_dump_block_t* after = NULL;
+static heap_task_block_t* before = NULL;
+static heap_task_block_t* after = NULL;
 static size_t numbefore = 0, numafter = 0;
 static HeapTotals* changes = NULL;
 
@@ -295,10 +303,10 @@ class HeapTask
     HeapTask()
       {
       totals.task = 0;
-      for (int i = 0; i < NUM_USED_TYPES; ++i)
+      for (int i = 0; i < NUM_HEAP_TASK_CAPS; ++i)
         totals.size[i] = 0;
       }
-    heap_dump_totals_t totals;
+    heap_task_totals_t totals;
   };
 
 
@@ -308,21 +316,15 @@ class HeapTotals
     HeapTotals() : count(0) {}
     int begin() { return 0; }
     int end() { return count; }
-    heap_dump_totals_t* array() { return &after[0].totals; }
+    heap_task_totals_t* array() { return &after[0].totals; }
     size_t* size() { return (size_t*)&count; }
     TaskHandle_t Task(int task) { return after[task].totals.task; }
     int Before(int task, int type) { return before[task].totals.size[type]; }
     int After(int task, int type) { return after[task].totals.size[type]; }
-    void clear()
-      {
-      for (int i = 0; i < count; ++i)
-        for (int j = 0; j < NUM_USED_TYPES; ++j)
-          after[i].totals.size[j] = 0;
-      }
     void transfer()
       {
       for (int i = 0; i < count; ++i)
-        for (int j = 0; j < NUM_USED_TYPES; ++j)
+        for (int j = 0; j < NUM_HEAP_TASK_CAPS; ++j)
           {
           before[i].totals.task = after[i].totals.task;
           before[i].totals.size[j] = after[i].totals.size[j];
@@ -438,13 +440,14 @@ static bool allocate()
   {
   if (!before)
     {
-    before = (heap_dump_block_t*)heap_caps_malloc(sizeof(heap_dump_block_t)*DUMPSIZE, MALLOC_CAP_32BIT);
-    after = (heap_dump_block_t*)heap_caps_malloc(sizeof(heap_dump_block_t)*DUMPSIZE, MALLOC_CAP_32BIT);
+    before = (heap_task_block_t*)heap_caps_malloc(sizeof(heap_task_block_t)*DUMPSIZE, MALLOC_CAP_32BIT);
+    after = (heap_task_block_t*)heap_caps_malloc(sizeof(heap_task_block_t)*DUMPSIZE, MALLOC_CAP_32BIT);
     taskstatus = (TaskStatus_t*)heap_caps_malloc(sizeof(TaskStatus_t)*MAX_TASKS, MALLOC_CAP_32BIT);
-    tasklist = (TaskHandle_t*)heap_caps_malloc(sizeof(TaskHandle_t)*(TASKLIST), MALLOC_CAP_32BIT);
+    tasklist = (TaskHandle_t*)heap_caps_malloc(sizeof(TaskHandle_t)*TASKLIST, MALLOC_CAP_32BIT);
+    params = (heap_task_info_params_t*)heap_caps_malloc(sizeof(heap_task_info_params_t), MALLOC_CAP_32BIT);
     void* p = heap_caps_malloc(sizeof(HeapTotals), MALLOC_CAP_32BIT);
     changes = new(p) HeapTotals();
-    if (!before || !after || !taskstatus || !tasklist || !changes)
+    if (!before || !after || !taskstatus || !tasklist || !params || !changes)
       {
       if (before)
         free(before);
@@ -454,6 +457,8 @@ static bool allocate()
         free(taskstatus);
       if (tasklist)
         free(tasklist);
+      if (params)
+        free(params);
       if (changes)
         delete(changes);
       return false;
@@ -475,9 +480,22 @@ static UBaseType_t get_tasks()
 
 static void get_memory(TaskHandle_t* tasks, size_t taskslen)
   {
-  changes->clear();
-  numafter = heap_caps_get_per_task_info(changes->array(), changes->size(), NUMTASKS,
-    tasks, taskslen, after, DUMPSIZE);
+  params->mask[DRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC;
+  params->caps[DRAM] = MALLOC_CAP_8BIT;
+  params->mask[D_IRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC;
+  params->caps[D_IRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC;
+  params->mask[IRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC;
+  params->caps[IRAM] = MALLOC_CAP_EXEC;
+  params->mask[SPIRAM] = MALLOC_CAP_SPIRAM;
+  params->caps[SPIRAM] = MALLOC_CAP_SPIRAM;
+  params->tasks = tasks;
+  params->num_tasks = taskslen;
+  params->totals = changes->array();
+  params->num_totals = changes->size();
+  params->max_totals = NUMTASKS;
+  params->blocks = after;
+  params->max_blocks = DUMPSIZE;
+  numafter = heap_caps_get_per_task_info(params);
   }
 
 
@@ -536,9 +554,9 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
   bool first = true;
   for (int i = changes->begin(); i < changes->end(); ++i)
     {
-    int change[NUM_USED_TYPES];
+    int change[NUM_HEAP_TASK_CAPS];
     bool any = false;
-    for (int j = 0; j < NUM_USED_TYPES; ++j)
+    for (int j = 0; j < NUM_HEAP_TASK_CAPS; ++j)
       {
       change[j] = (*changes).After(i, j) - (*changes).Before(i, j);
       if (change[j])
@@ -574,7 +592,7 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
     for (int i = changes->begin(); i < changes->end(); ++i)
       {
       bool any = false;
-      for (int j = 0; j < NUM_USED_TYPES; ++j)
+      for (int j = 0; j < NUM_HEAP_TASK_CAPS; ++j)
         {
         if ((*changes).After(i, j) - (*changes).Before(i, j) != 0)
           any = true;
@@ -667,7 +685,7 @@ class OvmsModuleInit
     {
     ESP_LOGI(TAG, "Initialising MODULE (5100)");
 #ifndef NOGO
-	TaskMap::instance()->insert(0x00000000, "no task");
+    TaskMap::instance()->insert(0x00000000, "no task");
 #endif
 
     OvmsCommand* cmd_module = MyCommandApp.RegisterCommand("module","Module framework",NULL);
