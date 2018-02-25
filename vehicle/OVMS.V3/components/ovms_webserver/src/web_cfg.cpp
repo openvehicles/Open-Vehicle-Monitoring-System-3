@@ -36,6 +36,7 @@ static const char *TAG = "webserver";
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
 #include "vehicle.h"
+#include "ovms_housekeeping.h"
 
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
@@ -380,7 +381,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     if (error == "") {
       // success:
       MyConfig.SetParamValue("vehicle", "id", vehicleid);
-      MyConfig.SetParamValue("vehicle", "type", vehicletype);
+      MyConfig.SetParamValue("auto", "vehicle.type", vehicletype);
       MyConfig.SetParamValue("vehicle", "name", vehiclename);
       
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
@@ -400,7 +401,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
   else {
     // read configuration:
     vehicleid = MyConfig.GetParamValue("vehicle", "id");
-    vehicletype = MyConfig.GetParamValue("vehicle", "type");
+    vehicletype = MyConfig.GetParamValue("auto", "vehicle.type");
     vehiclename = MyConfig.GetParamValue("vehicle", "name");
     c.head(200);
   }
@@ -409,6 +410,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
   c.panel_start("primary", "Vehicle configuration");
   c.form_start(p.uri);
   c.input_select_start("Vehicle type", "vehicletype");
+  c.input_select_option("&mdash;", "", vehicletype.empty());
   for (OvmsVehicleFactory::map_vehicle_t::iterator k=MyVehicleFactory.m_vmap.begin(); k!=MyVehicleFactory.m_vmap.end(); ++k)
     c.input_select_option(k->second.name, k->first, (vehicletype == k->first));
   c.input_select_end();
@@ -911,4 +913,102 @@ void OvmsWebServer::UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std:
   param->m_map.clear();
   param->m_map = std::move(newmap);
   param->Save();
+}
+
+
+/**
+ * HandleCfgAutoInit: configure auto init (URL /cfg/autostart)
+ */
+void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
+{
+  std::string error, warn;
+  bool init, modem, server_v2, server_v3;
+  std::string vehicle_type, wifi_mode, wifi_ssid_client, wifi_ssid_ap;
+
+  if (c.method == "POST") {
+    // process form submission:
+    init = (c.getvar("init") == "yes");
+    modem = (c.getvar("modem") == "yes");
+    server_v2 = (c.getvar("server_v2") == "yes");
+    server_v3 = (c.getvar("server_v3") == "yes");
+    vehicle_type = c.getvar("vehicle_type");
+    wifi_mode = c.getvar("wifi_mode");
+    wifi_ssid_ap = c.getvar("wifi_ssid_ap");
+    wifi_ssid_client = c.getvar("wifi_ssid_client");
+    
+    // store:
+    MyConfig.SetParamValueBool("auto", "init", init);
+    MyConfig.SetParamValueBool("auto", "modem", modem);
+    MyConfig.SetParamValueBool("auto", "server.v2", server_v2);
+    MyConfig.SetParamValueBool("auto", "server.v3", server_v3);
+    MyConfig.SetParamValue("auto", "vehicle.type", vehicle_type);
+    MyConfig.SetParamValue("auto", "wifi.mode", wifi_mode);
+    MyConfig.SetParamValue("auto", "wifi.ssid.ap", wifi_ssid_ap);
+    MyConfig.SetParamValue("auto", "wifi.ssid.client", wifi_ssid_client);
+    
+    c.head(200);
+    c.alert("success", "<p class=\"lead\">Auto start configuration saved.</p>");
+    OutputHome(p, c);
+    c.done();
+    return;
+  }
+
+  // read configuration:
+  init = MyConfig.GetParamValueBool("auto", "init", true);
+  modem = MyConfig.GetParamValueBool("auto", "modem", false);
+  server_v2 = MyConfig.GetParamValueBool("auto", "server.v2", false);
+  server_v3 = MyConfig.GetParamValueBool("auto", "server.v3", false);
+  vehicle_type = MyConfig.GetParamValue("auto", "vehicle.type");
+  wifi_mode = MyConfig.GetParamValue("auto", "wifi.mode", "ap");
+  wifi_ssid_ap = MyConfig.GetParamValue("auto", "wifi.ssid.ap");
+  if (wifi_ssid_ap.empty())
+    wifi_ssid_ap = "OVMS";
+  wifi_ssid_client = MyConfig.GetParamValue("auto", "wifi.ssid.client");
+  
+  // generate form:
+  c.head(200);
+
+  c.panel_start("primary", "Auto start configuration");
+  c.form_start(p.uri);
+  
+  c.input_checkbox("Enable auto start", "init", init || (MyHousekeeping && MyHousekeeping->m_autoinit),
+    "<p>Note: if a crash or reboot occurs within 10 seconds after powering the module, "
+    "this option will automatically be disabled and need to be re-enabled manually.</p>");
+  
+  c.input_select_start("Wifi mode", "wifi_mode");
+  c.input_select_option("Access point", "ap", (wifi_mode == "ap"));
+  c.input_select_option("Client mode", "client", (wifi_mode == "client"));
+  c.input_select_option("Off", "off", (wifi_mode.empty() || wifi_mode == "off"));
+  c.input_select_end();
+
+  c.input_select_start("… access point SSID", "wifi_ssid_ap");
+  OvmsConfigParam* param = MyConfig.CachedParam("wifi.ap");
+  if (param->m_map.find(wifi_ssid_ap) == param->m_map.end())
+    c.input_select_option(wifi_ssid_ap.c_str(), wifi_ssid_ap.c_str(), true);
+  for (auto const& kv : param->m_map)
+    c.input_select_option(kv.first.c_str(), kv.first.c_str(), (kv.first == wifi_ssid_ap));
+  c.input_select_end();
+  
+  c.input_select_start("… client mode SSID", "wifi_ssid_client");
+  param = MyConfig.CachedParam("wifi.ssid");
+  c.input_select_option("Any known SSID (scan mode)", "", wifi_ssid_client.empty());
+  for (auto const& kv : param->m_map)
+    c.input_select_option(kv.first.c_str(), kv.first.c_str(), (kv.first == wifi_ssid_client));
+  c.input_select_end();
+  
+  c.input_checkbox("Start modem", "modem", modem);
+  
+  c.input_select_start("Vehicle type", "vehicle_type");
+  c.input_select_option("&mdash;", "", vehicle_type.empty());
+  for (OvmsVehicleFactory::map_vehicle_t::iterator k=MyVehicleFactory.m_vmap.begin(); k!=MyVehicleFactory.m_vmap.end(); ++k)
+    c.input_select_option(k->second.name, k->first, (vehicle_type == k->first));
+  c.input_select_end();
+  
+  c.input_checkbox("Start server V2", "server_v2", server_v2);
+  c.input_checkbox("Start server V3", "server_v3", server_v3);
+  
+  c.input_button("default", "Save");
+  c.form_end();
+  c.panel_end();
+  c.done();
 }

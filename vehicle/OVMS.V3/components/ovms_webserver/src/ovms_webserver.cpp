@@ -97,6 +97,7 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/cfg/server/v2", "Server V2 (MP)", HandleCfgServerV2, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/server/v3", "Server V3 (MQTT)", HandleCfgServerV3, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/webserver", "Webserver", HandleCfgWebServer, PageMenu_Config, PageAuth_Cookie);
+  RegisterPage("/cfg/autostart", "Autostart", HandleCfgAutoInit, PageMenu_Config, PageAuth_Cookie);
 }
 
 OvmsWebServer::~OvmsWebServer()

@@ -215,6 +215,50 @@ esp32wifi::~esp32wifi()
   {
   }
 
+void esp32wifi::AutoInit()
+  {
+  std::string mode = MyConfig.GetParamValue("auto", "wifi.mode", "ap");
+  if (mode.empty() || mode == "off")
+    return;
+  
+  std::string ssid, password;
+  
+  if (mode == "ap")
+    {
+    ssid = MyConfig.GetParamValue("auto", "wifi.ssid.ap");
+    // fallback to initial SSID:
+    if (ssid.empty())
+      ssid = "OVMS";
+    password = MyConfig.GetParamValue("wifi.ap", ssid);
+    if (password.empty())
+      {
+      // fallback to module password:
+      ESP_LOGW(TAG, "AutoInit: using module password as AP password");
+      password = MyConfig.GetParamValue("password", "module");
+      }
+    if (password.empty())
+      ESP_LOGE(TAG, "AutoInit: no AP password set, AP mode inhibited");
+    else
+      StartAccessPointMode(ssid, password);
+    }
+  else if (mode == "client")
+    {
+    ssid = MyConfig.GetParamValue("auto", "wifi.ssid.client");
+    if (ssid.empty())
+      {
+      StartScanningClientMode();
+      }
+    else
+      {
+      password = MyConfig.GetParamValue("wifi.ssid", ssid);
+      if (password.empty())
+        ESP_LOGE(TAG, "AutoInit: no password set for SSID %s, mode inhibited", ssid.c_str());
+      else
+        StartClientMode(ssid, password);
+      }
+    }
+  }
+
 void esp32wifi::SetPowerMode(PowerMode powermode)
   {
   m_powermode = powermode;

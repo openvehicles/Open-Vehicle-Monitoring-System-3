@@ -48,6 +48,7 @@ class simcom : public pcp
 
   public:
     virtual void SetPowerMode(PowerMode powermode);
+    void AutoInit();
 
   public:
     void tx(uint8_t* data, size_t size);

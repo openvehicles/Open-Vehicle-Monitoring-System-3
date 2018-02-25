@@ -82,4 +82,13 @@ class OvmsServerV3 : public OvmsServer
     void TransmitModifiedMetrics();
   };
 
+class OvmsServerV3Init
+  {
+  public:
+    OvmsServerV3Init();
+    void AutoInit();
+  };
+
+extern OvmsServerV3Init MyOvmsServerV3Init;
+
 #endif //#ifndef __OVMS_SERVER_V3_H__

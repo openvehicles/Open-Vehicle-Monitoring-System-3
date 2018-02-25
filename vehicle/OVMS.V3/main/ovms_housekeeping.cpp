@@ -46,6 +46,14 @@ static const char *TAG = "housekeeping";
 #include "ovms_config.h"
 #include "console_async.h"
 #include "ovms_module.h"
+#include "vehicle.h"
+#include "ovms_server_v2.h"
+#include "ovms_server_v3.h"
+#include "rom/rtc.h"
+
+#define AUTO_INIT_STABLE_TIME 10      // seconds after which an auto init boot is considered stable
+                                      // (Note: resolution = 10 seconds)
+
 
 void HousekeepingTicker1( TimerHandle_t timer )
   {
@@ -73,6 +81,7 @@ Housekeeping::Housekeeping()
   ESP_LOGI(TAG, "Initialising HOUSEKEEPING Framework...");
 
   MyConfig.RegisterParam("system.adc", "ADC configuration", true, true);
+  MyConfig.RegisterParam("auto", "Auto init configuration", true, true);
 
   xTaskCreatePinnedToCore(HousekeepingTask, "Housekeeping", 4096, (void*)this, 5, &m_taskid, 1);
   AddTaskToMap(m_taskid);
@@ -85,6 +94,7 @@ Housekeeping::~Housekeeping()
 void Housekeeping::init()
   {
   ESP_LOGI(TAG, "Executing on CPU core %d",xPortGetCoreID());
+  ESP_LOGI(TAG, "reset_reason: cpu0=%d, cpu1=%d", rtc_get_reset_reason(0), rtc_get_reset_reason(1));
 
   m_tick = 0;
   m_timer1 = xTimerCreate("Housekeep ticker",1000 / portTICK_PERIOD_MS,pdTRUE,this,HousekeepingTicker1);
@@ -101,9 +111,48 @@ void Housekeeping::init()
   MyPeripherals->m_ext12v->SetPowerMode(Off);
 #endif // #ifdef CONFIG_OVMS_COMP_EXT12V
 
+  // component auto init:
+  m_autoinit = MyConfig.GetParamValueBool("auto", "init", true);
+  if (!m_autoinit)
+    {
+    ESP_LOGW(TAG, "Auto init inhibited (enable: config set auto init yes)");
+    }
+  else
+    {
+    // disable auto init to prevent crash loop:
+    MyConfig.SetParamValueBool("auto", "init", false);
+    
+#ifdef CONFIG_OVMS_COMP_WIFI
+    ESP_LOGI(TAG, "Auto init wifi (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    MyPeripherals->m_esp32wifi->AutoInit();
+#endif // CONFIG_OVMS_COMP_WIFI
+    
+#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+    ESP_LOGI(TAG, "Auto init modem (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    MyPeripherals->m_simcom->AutoInit();
+#endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+    
+    ESP_LOGI(TAG, "Auto init vehicle (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    MyVehicleFactory.AutoInit();
+    
+#ifdef CONFIG_OVMS_COMP_SERVER
+#ifdef CONFIG_OVMS_COMP_SERVER_V2
+    ESP_LOGI(TAG, "Auto init server v2 (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    MyOvmsServerV2Init.AutoInit();
+#endif // CONFIG_OVMS_COMP_SERVER_V2
+#ifdef CONFIG_OVMS_COMP_SERVER_V3
+    ESP_LOGI(TAG, "Auto init server v3 (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    MyOvmsServerV3Init.AutoInit();
+#endif // CONFIG_OVMS_COMP_SERVER_V3
+#endif // CONFIG_OVMS_COMP_SERVER
+    
+    ESP_LOGI(TAG, "Auto init done (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    // Note: auto init re-enable done by ::metrics(), see below
+    }
+
   ESP_LOGI(TAG, "Starting USB console...");
   ConsoleAsync::Instance();
-
+  
   MyEvents.SignalEvent("system.start",NULL);
   }
 
@@ -133,6 +182,14 @@ void Housekeeping::metrics()
   uint32_t caps = MALLOC_CAP_8BIT;
   size_t free = heap_caps_get_free_size(caps);
   m3->SetValue(free);
+  
+  // re-enable auto init after some seconds uptime:
+  if (m_autoinit && monotonictime >= AUTO_INIT_STABLE_TIME)
+    {
+    ESP_LOGI(TAG, "System considered stable, auto init re-enabled");
+    MyConfig.SetParamValueBool("auto", "init", true);
+    m_autoinit = false;
+    }
   }
 
 void Housekeeping::Ticker1()

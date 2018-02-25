@@ -211,6 +211,7 @@ class OvmsWebServer
     static void HandleCfgWifi(PageEntry_t& p, PageContext_t& c);
     static void OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname);
     static void UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname, std::string& warn);
+    static void HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c);
   
   public:
     bool m_running;
