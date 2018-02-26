@@ -6,5 +6,6 @@ Open Vehicle Monitor System v3 - Change log
                          - Time zone support in config vehicle/timezone
                            See GNU LIBC documentation for details on format
                            https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html
+                         - Auto start/init for wifi, modem, vehicle type, server v2 & v3
 
 2018-02-21 MWJ  3.0.990  Handle case of SIMCOM modem MUX down during data states
