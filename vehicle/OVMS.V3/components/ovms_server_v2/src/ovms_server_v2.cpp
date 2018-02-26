@@ -119,7 +119,7 @@ typedef union {
   uint8_t flags;
 } car_doors5_t;
 
-#define PMAX_MAX 15
+#define PMAX_MAX 24
 static struct
   {
   const char* param;
@@ -142,7 +142,15 @@ static struct
   { "",          "" },                     // 12 PARAM_S_GROUP2
   { "",          "" },                     // 13 PARAM_GSMLOCK
   { "auto",      "vehicle.type" },         // 14 PARAM_VEHICLETYPE
-  { "",          "" }                      // 15 PARAM_COOLDOWN
+  { "",          "" },                     // 15 PARAM_COOLDOWN
+  { "",          "" },                     // 16 PARAM_ACC_1
+  { "",          "" },                     // 17 PARAM_ACC_2
+  { "",          "" },                     // 18 PARAM_ACC_3
+  { "",          "" },                     // 19 PARAM_ACC_4
+  { "",          "" },                     // 20
+  { "",          "" },                     // 21
+  { "",          "" },                     // 22 PARAM_GPRSDNS
+  { "vehicle",   "timezone" }              // 23 PARAM_TIMEZONE
   };
 
 OvmsServerV2 *MyOvmsServerV2 = NULL;

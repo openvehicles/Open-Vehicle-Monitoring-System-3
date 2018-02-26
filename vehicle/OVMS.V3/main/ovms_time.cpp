@@ -33,19 +33,23 @@ static const char *TAG = "time";
 
 #include "ovms.h"
 #include "ovms_time.h"
+#include "ovms_config.h"
 #include "ovms_command.h"
+#include "ovms_events.h"
 
-OvmsTime MyTime __attribute__ ((init_priority (1100)));
+OvmsTime MyTime __attribute__ ((init_priority (1500)));
 
 void time_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   time_t rawtime;
   time ( &rawtime );
-  struct tm* tmu = gmtime(&rawtime);
-  struct tm* tml = localtime(&rawtime);
 
+  struct tm* tmu = gmtime(&rawtime);
   writer->printf("UTC Time:   %s", asctime(tmu));
-  writer->printf("Local Time: %s", asctime(tml));
+
+  tmu = localtime(&rawtime);
+  writer->printf("Local Time: %s", asctime(tmu));
+
   writer->printf("Provider:   %s\n\n",(MyTime.m_current)?MyTime.m_current->m_provider:"None");
 
   writer->printf("PROVIDER             STRATUM  UPDATE TIME\n");
@@ -87,6 +91,8 @@ void OvmsTimeProvider::Set(int stratum, time_t tim)
 
 OvmsTime::OvmsTime()
   {
+  ESP_LOGI(TAG, "Initialising TIME (1500)");
+
   m_current = NULL;
   m_tz.tz_minuteswest = 0;
   m_tz.tz_dsttime = 0;
@@ -95,10 +101,35 @@ OvmsTime::OvmsTime()
   OvmsCommand* cmd_time = MyCommandApp.RegisterCommand("time","TIME framework",time_status, "", 0, 1);
   cmd_time->RegisterCommand("status","Show time status",time_status,"", 0, 0, false);
   cmd_time->RegisterCommand("set","Set current UTC time",time_set,"<time>", 1, 1, false);
+
+  #undef bind  // Kludgy, but works
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG,"system.start", std::bind(&OvmsTime::EventSystemStart, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsTime::EventConfigChanged, this, _1, _2));
   }
 
 OvmsTime::~OvmsTime()
   {
+  }
+
+void OvmsTime::EventConfigChanged(std::string event, void* data)
+  {
+  OvmsConfigParam* p = (OvmsConfigParam*)data;
+
+  if (p->GetName().compare("vehicle")==0)
+    {
+    std::string tz = MyConfig.GetParamValue("vehicle","timezone");
+    setenv("TZ", tz.c_str(), 1);
+    tzset();
+    }
+  }
+
+void OvmsTime::EventSystemStart(std::string event, void* data)
+  {
+  std::string tz = MyConfig.GetParamValue("vehicle","timezone");
+  setenv("TZ", tz.c_str(), 1);
+  tzset();
   }
 
 void OvmsTime::Elect()

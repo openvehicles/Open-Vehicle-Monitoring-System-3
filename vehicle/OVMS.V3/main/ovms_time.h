@@ -35,6 +35,7 @@
 #include <sys/time.h>
 #include <functional>
 #include <map>
+#include <string>
 #include "ovms_utils.h"
 
 using namespace std;
@@ -71,6 +72,10 @@ class OvmsTime
   public:
     void Set(const char* provider, int stratum, bool trusted, time_t tim, suseconds_t timu=0);
     void Elect();
+
+  public:
+    void EventConfigChanged(std::string event, void* data);
+    void EventSystemStart(std::string event, void* data);
   };
 
 extern OvmsTime MyTime;
