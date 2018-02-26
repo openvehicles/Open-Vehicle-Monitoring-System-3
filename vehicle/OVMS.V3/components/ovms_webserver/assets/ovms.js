@@ -167,7 +167,7 @@ $(function(){
     return false;
   });
 
-  $('body').on('click', '.btn[data-cmd]', function(){
+  $('body').on('click', '.btn[data-cmd]', function(event){
     var btn = $(this);
     var cmd = btn.data("cmd");
     var tgt = btn.data("target");
@@ -187,7 +187,7 @@ $(function(){
     return false;
   });
 
-  $('.toggle-night').on('click', function(){
+  $('.toggle-night').on('click', function(event){
     $('body').toggleClass("night");
     event.stopPropagation();
     return false;
@@ -196,7 +196,7 @@ $(function(){
   if (!monitorTimer)
     monitorTimer = window.setInterval(monitorUpdate, 1000);
   
-  $(window).on("resize", function(){
+  $(window).on("resize", function(event){
     $(".get-window-resize").trigger("window-resize");
   });
   

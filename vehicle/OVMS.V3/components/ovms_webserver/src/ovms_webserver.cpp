@@ -304,7 +304,7 @@ PageEntry* OvmsWebServer::FindPage(const char* uri)
 void OvmsWebServer::EventHandler(struct mg_connection *nc, int ev, void *p)
 {
   PageContext_t c;
-  if (ev != MG_EV_POLL)
+  if (ev != MG_EV_POLL && ev != MG_EV_SEND)
     ESP_LOGD(TAG, "EventHandler: conn=%p ev=%d p=%p", nc, ev, p);
   
   switch (ev)
