@@ -11,5 +11,6 @@ Open Vehicle Monitor System v3 - Change log
                            in 1-line mode (in particular so SD_DATA1/GPIO4 and SD_DATA3/GPIO13
                            can be used for UART to simcom modem for OVMS v3.1 hardware).
                            https://www.esp32.com/viewtopic.php?f=13&t=4838
+                         - Record statistics for CAN bus interrupts (per controller) and show in status.
 
 2018-02-21 MWJ  3.0.990  Handle case of SIMCOM modem MUX down during data states
