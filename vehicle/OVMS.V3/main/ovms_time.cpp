@@ -31,6 +31,9 @@
 #include "ovms_log.h"
 static const char *TAG = "time";
 
+#include <lwip/def.h>
+#include <lwip/sockets.h>
+#include "apps/sntp/sntp.h"
 #include "ovms.h"
 #include "ovms_time.h"
 #include "ovms_config.h"
@@ -70,6 +73,15 @@ void time_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   writer->puts("Time set (at stratum 15)");
   }
 
+extern "C"
+  {
+  void sntp_setsystemtime(uint32_t s, uint32_t us)
+    {
+    ESP_LOGI(TAG,"SNTP has set time");
+    MyTime.Set("ntp", 1, true,s, us);
+    }
+  }
+
 OvmsTimeProvider::OvmsTimeProvider(const char* provider, int stratum, time_t tim)
   {
   m_provider = provider;
@@ -107,6 +119,9 @@ OvmsTime::OvmsTime()
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"system.start", std::bind(&OvmsTime::EventSystemStart, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsTime::EventConfigChanged, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"network.up", std::bind(&OvmsTime::EventNetUp, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"network.down", std::bind(&OvmsTime::EventNetDown, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"network.reconfigured", std::bind(&OvmsTime::EventNetReconfigured, this, _1, _2));
   }
 
 OvmsTime::~OvmsTime()
@@ -130,6 +145,29 @@ void OvmsTime::EventSystemStart(std::string event, void* data)
   std::string tz = MyConfig.GetParamValue("vehicle","timezone");
   setenv("TZ", tz.c_str(), 1);
   tzset();
+  }
+
+void OvmsTime::EventNetUp(std::string event, void* data)
+  {
+  ESP_LOGI(TAG, "Starting SNTP client");
+  sntp_setoperatingmode(SNTP_OPMODE_POLL);
+  sntp_setservername(0, (char*)"pool.ntp.org");
+  sntp_init();
+  }
+
+void OvmsTime::EventNetDown(std::string event, void* data)
+  {
+  ESP_LOGI(TAG, "Stopping SNTP client");
+  sntp_stop();
+  }
+
+void OvmsTime::EventNetReconfigured(std::string event, void* data)
+  {
+  ESP_LOGI(TAG, "Restarting SNTP client");
+  sntp_stop();
+  sntp_setoperatingmode(SNTP_OPMODE_POLL);
+  sntp_setservername(0, (char*)"pool.ntp.org");
+  sntp_init();
   }
 
 void OvmsTime::Elect()
@@ -180,4 +218,3 @@ void OvmsTime::Set(const char* provider, int stratum, bool trusted, time_t tim, 
       }
     }
   }
-
