@@ -82,7 +82,7 @@ void can_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
       writer->puts("Error: Unrecognised speed (100000, 125000, 250000, 500000, 1000000 are accepted)");
       return;
     }
-  writer->printf("Can bus %s started in mode %s at speed %dKbps\n",
+  writer->printf("Can bus %s started in mode %s at speed %dbps\n",
                  bus, mode, baud);
   }
 
