@@ -53,17 +53,20 @@ void time_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   tmu = localtime(&rawtime);
   writer->printf("Local Time: %s", asctime(tmu));
 
-  writer->printf("Provider:   %s\n\n",(MyTime.m_current)?MyTime.m_current->m_provider:"None");
+  writer->printf("Provider:   %s\n",(MyTime.m_current)?MyTime.m_current->m_provider:"None");
 
-  writer->printf("PROVIDER             STRATUM  UPDATE TIME\n");
-  for (OvmsTimeProviderMap_t::iterator itc=MyTime.m_providers.begin(); itc!=MyTime.m_providers.end(); itc++)
+  if (! MyTime.m_providers.empty())
     {
-    OvmsTimeProvider* tp = itc->second;
-    time_t tim = tp->m_time + (monotonictime-tp->m_lastreport);
-    struct tm* tml = gmtime(&tim);
-    writer->printf("%s%-20.20s%7d%8d %s",
-      (tp==MyTime.m_current)?"*":" ",
-      tp->m_provider, tp->m_stratum, monotonictime-tp->m_lastreport, asctime(tml));
+    writer->printf("\nPROVIDER             STRATUM  UPDATE TIME\n");
+    for (OvmsTimeProviderMap_t::iterator itc=MyTime.m_providers.begin(); itc!=MyTime.m_providers.end(); itc++)
+      {
+      OvmsTimeProvider* tp = itc->second;
+      time_t tim = tp->m_time + (monotonictime-tp->m_lastreport);
+      struct tm* tml = gmtime(&tim);
+      writer->printf("%s%-20.20s%7d%8d %s",
+        (tp==MyTime.m_current)?"*":" ",
+        tp->m_provider, tp->m_stratum, monotonictime-tp->m_lastreport, asctime(tml));
+      }
     }
   }
 
@@ -190,7 +193,8 @@ void OvmsTime::Set(const char* provider, int stratum, bool trusted, time_t tim, 
   {
   if (!trusted) stratum=16;
 
-  ESP_LOGD(TAG, "%s (stratum %d trusted %d) provides time %lu", provider, stratum, trusted, tim);
+  struct tm* tmu = gmtime(&tim);
+  ESP_LOGD(TAG, "%s (stratum %d trusted %d) provides time %-24.24s (%06luus) UTC", provider, stratum, trusted, asctime(tmu),timu);
 
   auto k = m_providers.find(provider);
   if (k == m_providers.end())
