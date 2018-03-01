@@ -75,10 +75,9 @@ void time_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 
 extern "C"
   {
-  void sntp_setsystemtime(uint32_t s, uint32_t us)
+  void sntp_setsystemtime_us(uint32_t s, uint32_t us)
     {
-    ESP_LOGI(TAG,"SNTP has set time");
-    MyTime.Set("ntp", 1, true,s, us);
+    MyTime.Set("ntp", 1, true, s, us);
     }
   }
 
