@@ -96,11 +96,11 @@ struct PageContext
   void fieldset_end();
   void hr();
   void input(const char* type, const char* label, const char* name, const char* value,
-    const char* placeholder=NULL, const char* helptext=NULL);
+    const char* placeholder=NULL, const char* helptext=NULL, const char* moreattrs=NULL);
   void input_text(const char* label, const char* name, const char* value,
-    const char* placeholder=NULL, const char* helptext=NULL);
+    const char* placeholder=NULL, const char* helptext=NULL, const char* moreattrs=NULL);
   void input_password(const char* label, const char* name, const char* value,
-    const char* placeholder=NULL, const char* helptext=NULL);
+    const char* placeholder=NULL, const char* helptext=NULL, const char* moreattrs=NULL);
   void input_select_start(const char* label, const char* name);
   void input_select_option(const char* label, const char* value, bool selected);
   void input_select_end();

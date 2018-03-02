@@ -341,9 +341,9 @@ void OvmsWebServer::HandleCfgPassword(PageEntry_t& p, PageContext_t& c)
   // generate form:
   c.panel_start("primary", "Change module &amp; admin password");
   c.form_start(p.uri);
-  c.input_password("Old password", "oldpass", "");
-  c.input_password("New password", "newpass1", "");
-  c.input_password("…repeat", "newpass2", "");
+  c.input_password("Old password", "oldpass", "", NULL, NULL, "autocomplete=\"section-login current-password\"");
+  c.input_password("New password", "newpass1", "", NULL, NULL, "autocomplete=\"section-login new-password\"");
+  c.input_password("…repeat", "newpass2", "", "Repeat new password", NULL, "autocomplete=\"section-login new-password\"");
   c.input_button("default", "Submit");
   c.form_end();
   c.panel_end();
@@ -573,7 +573,8 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
     "</ul>");
   c.input_text("Port", "port", port.c_str(), "optional, default: 6867");
   c.input_password("Vehicle password", "password", "", "empty = no change",
-    "<p>Note: enter the password for the <strong>vehicle ID account</strong>, <em>not</em> your user account password</p>");
+    "<p>Note: enter the password for the <strong>vehicle ID account</strong>, <em>not</em> your user account password</p>",
+    "autocomplete=\"section-serverv2 new-password\"");
 
   c.fieldset_start("Update intervals");
   c.input_text("…connected", "updatetime_connected", updatetime_connected.c_str(),
@@ -671,8 +672,9 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
       "<li><a href=\"https://github.com/mqtt/mqtt.github.io/wiki/public_brokers\" target=\"_blank\">More public MQTT brokers</a></li>"
     "</ul>");
   c.input_text("Port", "port", port.c_str(), "optional, default: 1883");
-  c.input_text("Username", "port", port.c_str(), "Enter user login name");
-  c.input_password("Password", "password", "", "Enter user password, empty = no change");
+  c.input_text("Username", "user", user.c_str(), "Enter user login name");
+  c.input_password("Password", "password", "", "Enter user password, empty = no change",
+    NULL, "autocomplete=\"section-serverv3 new-password\"");
 
   c.fieldset_start("Update intervals");
   c.input_text("…connected", "updatetime_connected", updatetime_connected.c_str(),
@@ -996,7 +998,8 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
     c.input_select_option(kv.first.c_str(), kv.first.c_str(), (kv.first == wifi_ssid_client));
   c.input_select_end();
   
-  c.input_checkbox("Start modem", "modem", modem);
+  c.input_checkbox("Start modem", "modem", modem,
+    "<p>Note: a vehicle module may start the modem as necessary, independantly of this option.</p>");
   
   c.input_select_start("Vehicle type", "vehicle_type");
   c.input_select_option("&mdash;", "", vehicle_type.empty());

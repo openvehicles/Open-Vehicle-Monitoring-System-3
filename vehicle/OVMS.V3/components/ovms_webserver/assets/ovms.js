@@ -140,6 +140,12 @@ function monitorUpdate(){
 
 $(function(){
   
+  $('body').on('click', '.toggle-night', function(event){
+    $('body').toggleClass("night");
+    event.stopPropagation();
+    return false;
+  });
+
   $('body').on('click', 'a[target^="#"], form[target^="#"] .btn[type="submit"]', function(event){
     var method = $(this).data("method") || "get";
     var uri = $(this).attr("href");
@@ -183,12 +189,6 @@ $(function(){
     }, function(){
       btn.prop("disabled", false);
     });
-    event.stopPropagation();
-    return false;
-  });
-
-  $('.toggle-night').on('click', function(event){
-    $('body').toggleClass("night");
     event.stopPropagation();
     return false;
   });

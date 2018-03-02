@@ -45,6 +45,8 @@ extern const uint8_t script_js_gz_start[]     asm("_binary_script_js_gz_start");
 extern const uint8_t script_js_gz_end[]       asm("_binary_script_js_gz_end");
 extern const uint8_t style_css_gz_start[]     asm("_binary_style_css_gz_start");
 extern const uint8_t style_css_gz_end[]       asm("_binary_style_css_gz_end");
+extern const uint8_t favicon_png_start[]      asm("_binary_favicon_png_start");
+extern const uint8_t favicon_png_end[]        asm("_binary_favicon_png_end");
 
 
 /**
@@ -153,12 +155,12 @@ void PageContext::form_end() {
 }
 
 void PageContext::input(const char* type, const char* label, const char* name, const char* value,
-    const char* placeholder /*=NULL*/, const char* helptext /*=NULL*/) {
+    const char* placeholder /*=NULL*/, const char* helptext /*=NULL*/, const char* moreattrs /*=NULL*/) {
   mg_printf_http_chunk(nc,
     "<div class=\"form-group\">"
       "<label class=\"control-label col-sm-3\" for=\"input-%s\">%s:</label>"
       "<div class=\"col-sm-9\">"
-        "<input type=\"%s\" class=\"form-control\" placeholder=\"%s%s\" name=\"%s\" id=\"input-%s\" value=\"%s\">"
+        "<input type=\"%s\" class=\"form-control\" placeholder=\"%s%s\" name=\"%s\" id=\"input-%s\" value=\"%s\" %s>"
         "%s%s%s"
       "</div>"
     "</div>"
@@ -166,6 +168,7 @@ void PageContext::input(const char* type, const char* label, const char* name, c
     , placeholder ? "" : "Enter "
     , placeholder ? _attr(placeholder) : _attr(label)
     , _attr(name), _attr(name), _attr(value)
+    , moreattrs ? moreattrs : ""
     , helptext ? "<span class=\"help-block\">" : ""
     , helptext ? helptext : ""
     , helptext ? "</span>" : ""
@@ -173,13 +176,13 @@ void PageContext::input(const char* type, const char* label, const char* name, c
 }
 
 void PageContext::input_text(const char* label, const char* name, const char* value,
-    const char* placeholder /*=NULL*/, const char* helptext /*=NULL*/) {
-  input("text", label, name, value, placeholder, helptext);
+    const char* placeholder /*=NULL*/, const char* helptext /*=NULL*/, const char* moreattrs /*=NULL*/) {
+  input("text", label, name, value, placeholder, helptext, moreattrs);
 }
 
 void PageContext::input_password(const char* label, const char* name, const char* value,
-    const char* placeholder /*=NULL*/, const char* helptext /*=NULL*/) {
-  input("password", label, name, value, placeholder, helptext);
+    const char* placeholder /*=NULL*/, const char* helptext /*=NULL*/, const char* moreattrs /*=NULL*/) {
+  input("password", label, name, value, placeholder, helptext, moreattrs);
 }
 
 void PageContext::input_select_start(const char* label, const char* name) {
@@ -431,6 +434,7 @@ void OvmsWebServer::HandleAsset(PageEntry_t& p, PageContext_t& c)
   size_t size;
   time_t mtime;
   const char* type;
+  bool gzip_encoded = true;
   
   if (c.uri == "/assets/style.css") {
     data = style_css_gz_start;
@@ -443,6 +447,13 @@ void OvmsWebServer::HandleAsset(PageEntry_t& p, PageContext_t& c)
     size = script_js_gz_end - script_js_gz_start;
     mtime = MTIME_ASSETS_SCRIPT_JS;
     type = "application/javascript";
+  }
+  else if (c.uri == "/favicon.ico") {
+    data = favicon_png_start;
+    size = favicon_png_end - favicon_png_start;
+    mtime = MTIME_ASSETS_FAVICON_PNG;
+    type = "image/png";
+    gzip_encoded = false;
   }
   else {
     mg_http_send_error(c.nc, 404, "Not found");
@@ -460,15 +471,18 @@ void OvmsWebServer::HandleAsset(PageEntry_t& p, PageContext_t& c)
     "Date: %s\r\n"
     "Last-Modified: %s\r\n"
     "Content-Type: %s\r\n"
-    "Content-Encoding: gzip\r\n"
+    "%s"
     "Transfer-Encoding: chunked\r\n"
     "Etag: %s\r\n"
     "\r\n"
-    , current_time, last_modified, type, etag);
+    , current_time
+    , last_modified
+    , type
+    , gzip_encoded ? "Content-Encoding: gzip\r\n" : ""
+    , etag);
   
   // start chunked transfer:
   c.nc->user_data = new chunked_xfer(data, size);
   c.nc->flags |= MG_F_USER_CHUNKED_XFER;
   ESP_LOGV(TAG, "chunked_xfer %p init (%d bytes)", data, size);
 }
-
