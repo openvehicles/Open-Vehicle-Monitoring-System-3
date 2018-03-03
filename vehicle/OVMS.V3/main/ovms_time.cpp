@@ -31,14 +31,19 @@
 #include "ovms_log.h"
 static const char *TAG = "time";
 
+#define STALETIMEOUT 120
+static const char *ntp = "ntp";
+
 #include <lwip/def.h>
 #include <lwip/sockets.h>
+#include <time.h>
 #include "apps/sntp/sntp.h"
 #include "ovms.h"
 #include "ovms_time.h"
 #include "ovms_config.h"
 #include "ovms_command.h"
 #include "ovms_events.h"
+#include "ovms_netmanager.h"
 
 OvmsTime MyTime __attribute__ ((init_priority (1500)));
 
@@ -72,15 +77,20 @@ void time_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
 void time_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  MyTime.Set(TAG, 15, true, atol(argv[0]));
-  writer->puts("Time set (at stratum 15)");
+  struct tm tmu;
+  if (strptime(argv[0], "%Y-%m-%d %H:%M:%S", &tmu) != NULL)
+    {
+    time_t tim = mktime(&tmu);
+    MyTime.Set(TAG, 15, true, tim);
+    writer->puts("Time set (at stratum 15)");
+    }
   }
 
 extern "C"
   {
   void sntp_setsystemtime_us(uint32_t s, uint32_t us)
     {
-    MyTime.Set("ntp", 1, true, s, us);
+    MyTime.Set(ntp, 1, true, s, us);
     }
   }
 
@@ -125,6 +135,7 @@ OvmsTime::OvmsTime()
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"system.start", std::bind(&OvmsTime::EventSystemStart, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsTime::EventConfigChanged, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"ticker.60", std::bind(&OvmsTime::EventTicker60, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"network.up", std::bind(&OvmsTime::EventNetUp, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"network.down", std::bind(&OvmsTime::EventNetDown, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"network.reconfigured", std::bind(&OvmsTime::EventNetReconfigured, this, _1, _2));
@@ -153,6 +164,24 @@ void OvmsTime::EventSystemStart(std::string event, void* data)
   tzset();
   }
 
+void OvmsTime::EventTicker60(std::string event, void* data)
+  {
+  // Refresh SNTP, if possible
+  if (sntp_enabled() && MyNetManager.m_connected_any)
+    {
+    auto k = m_providers.find(ntp);
+    if (k != m_providers.end())
+      {
+      // Refresh it
+      time_t rawtime;
+      time ( &rawtime );
+      k->second->m_time = rawtime;
+      k->second->m_lastreport = monotonictime;
+      }
+    }
+    Elect();
+  }
+
 void OvmsTime::EventNetUp(std::string event, void* data)
   {
   ESP_LOGI(TAG, "Starting SNTP client");
@@ -179,7 +208,7 @@ void OvmsTime::Elect()
 
   for (OvmsTimeProviderMap_t::iterator itc=MyTime.m_providers.begin(); itc!=MyTime.m_providers.end(); itc++)
     {
-    if (itc->second->m_stratum < best)
+    if ((itc->second->m_stratum < best)&&(itc->second->m_lastreport+STALETIMEOUT > monotonictime))
       {
       best = itc->second->m_stratum;
       c = itc->second;
@@ -207,6 +236,14 @@ void OvmsTime::Set(const char* provider, int stratum, bool trusted, time_t tim, 
   if (k != m_providers.end())
     {
     k->second->Set(stratum,tim);
+
+    // Check for stale master
+    if ((m_current)&&(m_current->m_lastreport+STALETIMEOUT > monotonictime))
+      {
+      // Master is stale
+      Elect();
+      }
+
     if (k->second == m_current)
       {
       time_t rawtime;

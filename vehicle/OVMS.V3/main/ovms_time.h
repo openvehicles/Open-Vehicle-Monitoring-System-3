@@ -76,6 +76,7 @@ class OvmsTime
   public:
     void EventConfigChanged(std::string event, void* data);
     void EventSystemStart(std::string event, void* data);
+    void EventTicker60(std::string event, void* data);
     void EventNetUp(std::string event, void* data);
     void EventNetDown(std::string event, void* data);
     void EventNetReconfigured(std::string event, void* data);
