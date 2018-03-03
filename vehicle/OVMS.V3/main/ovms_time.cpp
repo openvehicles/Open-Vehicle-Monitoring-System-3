@@ -111,6 +111,10 @@ OvmsTime::OvmsTime()
   m_tz.tz_minuteswest = 0;
   m_tz.tz_dsttime = 0;
 
+  // SNTP defaults
+  sntp_setoperatingmode(SNTP_OPMODE_POLL);
+  sntp_setservername(0, (char*)"pool.ntp.org");
+
   // Register our commands
   OvmsCommand* cmd_time = MyCommandApp.RegisterCommand("time","TIME framework",time_status, "", 0, 1);
   cmd_time->RegisterCommand("status","Show time status",time_status,"", 0, 0, false);
@@ -152,8 +156,6 @@ void OvmsTime::EventSystemStart(std::string event, void* data)
 void OvmsTime::EventNetUp(std::string event, void* data)
   {
   ESP_LOGI(TAG, "Starting SNTP client");
-  sntp_setoperatingmode(SNTP_OPMODE_POLL);
-  sntp_setservername(0, (char*)"pool.ntp.org");
   sntp_init();
   }
 
@@ -167,8 +169,6 @@ void OvmsTime::EventNetReconfigured(std::string event, void* data)
   {
   ESP_LOGI(TAG, "Restarting SNTP client");
   sntp_stop();
-  sntp_setoperatingmode(SNTP_OPMODE_POLL);
-  sntp_setservername(0, (char*)"pool.ntp.org");
   sntp_init();
   }
 
