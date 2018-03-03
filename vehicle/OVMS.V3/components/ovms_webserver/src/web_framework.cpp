@@ -34,6 +34,7 @@ static const char *TAG = "webserver";
 #include "ovms_webserver.h"
 #include "ovms_config.h"
 #include "ovms_metrics.h"
+#include "ovms_housekeeping.h"
 #include "buffered_shell.h"
 #include "metrics_standard.h"
 #include "vehicle.h"
@@ -202,8 +203,11 @@ void PageContext::input_select_option(const char* label, const char* value, bool
     , _attr(value), selected ? " selected" : "", label);
 }
 
-void PageContext::input_select_end() {
-  mg_printf_http_chunk(nc, "</select></div></div>");
+void PageContext::input_select_end(const char* helptext /*=NULL*/) {
+  mg_printf_http_chunk(nc, "</select>%s%s%s</div></div>"
+    , helptext ? "<span class=\"help-block\">" : ""
+    , helptext ? helptext : ""
+    , helptext ? "</span>" : "");
 }
 
 void PageContext::input_checkbox(const char* label, const char* name, bool value,
@@ -353,6 +357,11 @@ void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
   // check admin password, show warning if unset:
   if (MyConfig.GetParamValue("password", "module").empty()) {
     c.alert("warning", "<p><strong>Warning:</strong> no admin password set. Web access is open to the public.</p>");
+  }
+  
+  // check auto init, show warning if disabled:
+  if (!MyConfig.GetParamValueBool("auto", "init") && MyHousekeeping && !MyHousekeeping->m_autoinit) {
+    c.alert("warning", "<p><strong>Warning:</strong> auto start disabled. Check auto start configuration.</p>");
   }
 }
 

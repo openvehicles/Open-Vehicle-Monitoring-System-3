@@ -835,10 +835,7 @@ void obd2ecu::Addpid(uint8_t pid)
   return;
 }
 
-class obd2ecuInit
-    {
-    public: obd2ecuInit();
-  } obd2ecuInit  __attribute__ ((init_priority (7000)));
+class obd2ecuInit obd2ecuInit __attribute__ ((init_priority (7000)));
 
 obd2ecuInit::obd2ecuInit()
   {
@@ -856,4 +853,17 @@ obd2ecuInit::obd2ecuInit()
 
   MyConfig.RegisterParam("obd2ecu", "OBD2ECU configuration", true, true);
   MyConfig.RegisterParam("obd2ecu.map", "OBD2ECU metric map", true, true);
+  }
+
+void obd2ecuInit::AutoInit()
+  {
+  std::string busname = MyConfig.GetParamValue("auto", "obd2ecu", "");
+  if (!busname.empty())
+    {
+    canbus* bus = (canbus*) MyPcpApp.FindDeviceByName(busname.c_str());
+    if (bus)
+      MyPeripherals->m_obd2ecu = new obd2ecu("OBD2ECU", bus);
+    else
+      ESP_LOGE(TAG, "AutoInit: unknown CAN bus name '%s'", busname.c_str());
+    }
   }

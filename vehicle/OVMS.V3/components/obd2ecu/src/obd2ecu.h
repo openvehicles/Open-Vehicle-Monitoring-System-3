@@ -103,7 +103,16 @@ class obd2ecu : public pcp
     void FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint8_t format);
   };
   
-      
+class obd2ecuInit
+  {
+  public:
+    obd2ecuInit();
+    void AutoInit();
+  };
+
+extern class obd2ecuInit obd2ecuInit;
+
+
 #define REQUEST_PID  0x7df
 #define RESPONSE_PID 0x7e8
 #define FLOWCONTROL_PID 0x7e0

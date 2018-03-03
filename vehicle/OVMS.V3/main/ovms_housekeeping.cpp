@@ -47,9 +47,16 @@ static const char *TAG = "housekeeping";
 #include "console_async.h"
 #include "ovms_module.h"
 #include "vehicle.h"
+#ifdef CONFIG_OVMS_COMP_SERVER_V2
 #include "ovms_server_v2.h"
+#endif
+#ifdef CONFIG_OVMS_COMP_SERVER_V3
 #include "ovms_server_v3.h"
+#endif
 #include "rom/rtc.h"
+#ifdef CONFIG_OVMS_COMP_OBD2ECU
+#include "obd2ecu.h"
+#endif
 
 #define AUTO_INIT_STABLE_TIME 10      // seconds after which an auto init boot is considered stable
                                       // (Note: resolution = 10 seconds)
@@ -122,6 +129,11 @@ void Housekeeping::init()
     // disable auto init to prevent crash loop:
     MyConfig.SetParamValueBool("auto", "init", false);
     
+#ifdef CONFIG_OVMS_COMP_EXT12V
+    ESP_LOGI(TAG, "Auto init ext12v (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    MyPeripherals->m_ext12v->AutoInit();
+#endif // CONFIG_OVMS_COMP_EXT12V
+
 #ifdef CONFIG_OVMS_COMP_WIFI
     ESP_LOGI(TAG, "Auto init wifi (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
     MyPeripherals->m_esp32wifi->AutoInit();
@@ -135,6 +147,11 @@ void Housekeeping::init()
     ESP_LOGI(TAG, "Auto init vehicle (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
     MyVehicleFactory.AutoInit();
     
+#ifdef CONFIG_OVMS_COMP_OBD2ECU
+    ESP_LOGI(TAG, "Auto init obd2ecu (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    obd2ecuInit.AutoInit();
+#endif // CONFIG_OVMS_COMP_OBD2ECU
+
 #ifdef CONFIG_OVMS_COMP_SERVER
 #ifdef CONFIG_OVMS_COMP_SERVER_V2
     ESP_LOGI(TAG, "Auto init server v2 (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));

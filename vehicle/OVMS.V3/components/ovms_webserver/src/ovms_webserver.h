@@ -103,7 +103,7 @@ struct PageContext
     const char* placeholder=NULL, const char* helptext=NULL, const char* moreattrs=NULL);
   void input_select_start(const char* label, const char* name);
   void input_select_option(const char* label, const char* value, bool selected);
-  void input_select_end();
+  void input_select_end(const char* helptext=NULL);
   void input_checkbox(const char* label, const char* name, bool value, const char* helptext=NULL);
   void input_button(const char* type, const char* label);
   void alert(const char* type, const char* text);

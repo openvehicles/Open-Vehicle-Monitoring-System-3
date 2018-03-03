@@ -924,26 +924,30 @@ void OvmsWebServer::UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std:
 void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, warn;
-  bool init, modem, server_v2, server_v3;
-  std::string vehicle_type, wifi_mode, wifi_ssid_client, wifi_ssid_ap;
+  bool init, ext12v, modem, server_v2, server_v3;
+  std::string vehicle_type, obd2ecu, wifi_mode, wifi_ssid_client, wifi_ssid_ap;
 
   if (c.method == "POST") {
     // process form submission:
     init = (c.getvar("init") == "yes");
+    ext12v = (c.getvar("ext12v") == "yes");
     modem = (c.getvar("modem") == "yes");
     server_v2 = (c.getvar("server_v2") == "yes");
     server_v3 = (c.getvar("server_v3") == "yes");
     vehicle_type = c.getvar("vehicle_type");
+    obd2ecu = c.getvar("obd2ecu");
     wifi_mode = c.getvar("wifi_mode");
     wifi_ssid_ap = c.getvar("wifi_ssid_ap");
     wifi_ssid_client = c.getvar("wifi_ssid_client");
     
     // store:
     MyConfig.SetParamValueBool("auto", "init", init);
+    MyConfig.SetParamValueBool("auto", "ext12v", ext12v);
     MyConfig.SetParamValueBool("auto", "modem", modem);
     MyConfig.SetParamValueBool("auto", "server.v2", server_v2);
     MyConfig.SetParamValueBool("auto", "server.v3", server_v3);
     MyConfig.SetParamValue("auto", "vehicle.type", vehicle_type);
+    MyConfig.SetParamValue("auto", "obd2ecu", obd2ecu);
     MyConfig.SetParamValue("auto", "wifi.mode", wifi_mode);
     MyConfig.SetParamValue("auto", "wifi.ssid.ap", wifi_ssid_ap);
     MyConfig.SetParamValue("auto", "wifi.ssid.client", wifi_ssid_client);
@@ -957,10 +961,12 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
 
   // read configuration:
   init = MyConfig.GetParamValueBool("auto", "init", true);
+  ext12v = MyConfig.GetParamValueBool("auto", "ext12v", false);
   modem = MyConfig.GetParamValueBool("auto", "modem", false);
   server_v2 = MyConfig.GetParamValueBool("auto", "server.v2", false);
   server_v3 = MyConfig.GetParamValueBool("auto", "server.v3", false);
   vehicle_type = MyConfig.GetParamValue("auto", "vehicle.type");
+  obd2ecu = MyConfig.GetParamValue("auto", "obd2ecu");
   wifi_mode = MyConfig.GetParamValue("auto", "wifi.mode", "ap");
   wifi_ssid_ap = MyConfig.GetParamValue("auto", "wifi.ssid.ap");
   if (wifi_ssid_ap.empty())
@@ -976,6 +982,9 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Enable auto start", "init", init || (MyHousekeeping && MyHousekeeping->m_autoinit),
     "<p>Note: if a crash or reboot occurs within 10 seconds after powering the module, "
     "this option will automatically be disabled and need to be re-enabled manually.</p>");
+  
+  c.input_checkbox("Power on external 12V", "ext12v", ext12v,
+    "<p>Enable to provide 12V to external devices connected to the module (i.e. ECU displays).</p>");
   
   c.input_select_start("Wifi mode", "wifi_mode");
   c.input_select_option("Access point", "ap", (wifi_mode == "ap"));
@@ -1006,6 +1015,14 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
   for (OvmsVehicleFactory::map_vehicle_t::iterator k=MyVehicleFactory.m_vmap.begin(); k!=MyVehicleFactory.m_vmap.end(); ++k)
     c.input_select_option(k->second.name, k->first, (vehicle_type == k->first));
   c.input_select_end();
+  
+  c.input_select_start("Start OBD2ECU", "obd2ecu");
+  c.input_select_option("&mdash;", "", obd2ecu.empty());
+  c.input_select_option("can1", "can1", obd2ecu == "can1");
+  c.input_select_option("can2", "can2", obd2ecu == "can2");
+  c.input_select_option("can3", "can3", obd2ecu == "can3");
+  c.input_select_end(
+    "<p>OBD2ECU translates OVMS to OBD2 metrics, i.e. to drive standard ECU displays</p>");
   
   c.input_checkbox("Start server V2", "server_v2", server_v2);
   c.input_checkbox("Start server V3", "server_v3", server_v3);

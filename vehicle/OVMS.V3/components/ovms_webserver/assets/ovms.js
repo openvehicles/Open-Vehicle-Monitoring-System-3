@@ -23,7 +23,7 @@ function loaduri(target, method, uri, data){
   location.hash = "#" + uri;
   
   $.ajax({ "type": method, "url": uri, "data": data,
-    "timeout": 5000,
+    "timeout": 10000,
     "beforeSend": function(){
       $("html").addClass("loading");
     },
@@ -60,7 +60,7 @@ function loadcmd(command, target){
     output = $(target);
   }
   return $.ajax({ "type": "post", "url": "/api/execute", "data": data,
-    "timeout": 5000,
+    "timeout": 10000,
     "beforeSend": function(){
       output.addClass("loading");
     },

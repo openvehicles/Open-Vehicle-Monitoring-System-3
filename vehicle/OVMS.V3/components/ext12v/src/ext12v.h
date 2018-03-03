@@ -41,6 +41,7 @@ class ext12v : public pcp
 
   public:
     virtual void SetPowerMode(PowerMode powermode);
+    void AutoInit();
 
   };
 
