@@ -1,0 +1,30 @@
+These are the production and quality control notes for OVMS v3.1 modules
+
+********************************************************************************
+** TOOLS
+********************************************************************************
+
+1] DB9 CAN Bus QC tool
+
+   DB9 Female with:
+    * Pins 2, 4, and 6 connected (all CAN-L signals)
+    * Pins 5, 7, and 8 connected (all CAN-H signals)
+    * R120 between pins 2 and 5
+    * External 12V power connector
+      * GND on pin 3
+      * +12V on pin 9
+
+********************************************************************************
+** PRODUCTION STEPS
+********************************************************************************
+
+1] Default wifi AP and module passwords
+
+   OVMS> config set wifi.ap OVMS <serialnumber>
+   OVMS> config set password module <serialnumber>
+
+   Where <serialnumber> is the serial number from the label on the enclosure.
+
+********************************************************************************
+** QC STEPS
+********************************************************************************
