@@ -159,6 +159,9 @@ OvmsNotifyEntryCommand::OvmsNotifyEntryCommand(int verbosity, const char* cmd)
   strcpy(m_cmd,cmd);
   
   BufferedShell* bs = new BufferedShell(false, verbosity);
+  // command notifications can only be raised by the system or "notify raise" in enabled mode,
+  // so we can assume this is a secure shell:
+  bs->SetSecure(true);
   bs->ProcessChars(m_cmd, strlen(m_cmd));
   bs->ProcessChar('\n');
   bs->Dump(m_value);
