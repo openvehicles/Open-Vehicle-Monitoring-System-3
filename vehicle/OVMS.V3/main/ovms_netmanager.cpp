@@ -91,8 +91,9 @@ void OvmsNetManager::WifiDown(std::string event, void* data)
     m_connected_wifi = false;
     m_connected_any = m_connected_wifi || m_connected_modem;
     MyEvents.SignalEvent("network.wifi.down",NULL);
-    MyEvents.SignalEvent("network.reconfigured",NULL);
-    if (!m_connected_any)
+    if (m_connected_any)
+      MyEvents.SignalEvent("network.reconfigured",NULL);
+    else
       {
       StandardMetrics.ms_m_net_type->SetValue("none");
       StandardMetrics.ms_m_net_provider->SetValue("");
@@ -123,8 +124,9 @@ void OvmsNetManager::ModemDown(std::string event, void* data)
     m_connected_modem = false;
     m_connected_any = m_connected_wifi || m_connected_modem;
     MyEvents.SignalEvent("network.modem.down",NULL);
-    MyEvents.SignalEvent("network.reconfigured",NULL);
-    if (!m_connected_any)
+    if (m_connected_any)
+      MyEvents.SignalEvent("network.reconfigured",NULL);
+    else
       {
       StandardMetrics.ms_m_net_type->SetValue("none");
       StandardMetrics.ms_m_net_provider->SetValue("");
