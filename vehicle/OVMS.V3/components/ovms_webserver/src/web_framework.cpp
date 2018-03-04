@@ -156,20 +156,28 @@ void PageContext::form_end() {
 }
 
 void PageContext::input(const char* type, const char* label, const char* name, const char* value,
-    const char* placeholder /*=NULL*/, const char* helptext /*=NULL*/, const char* moreattrs /*=NULL*/) {
+    const char* placeholder /*=NULL*/, const char* helptext /*=NULL*/, const char* moreattrs /*=NULL*/,
+    const char* unit /*=NULL*/) {
   mg_printf_http_chunk(nc,
     "<div class=\"form-group\">"
       "<label class=\"control-label col-sm-3\" for=\"input-%s\">%s:</label>"
       "<div class=\"col-sm-9\">"
+        "%s" // unit (input-group)
         "<input type=\"%s\" class=\"form-control\" placeholder=\"%s%s\" name=\"%s\" id=\"input-%s\" value=\"%s\" %s>"
-        "%s%s%s"
+        "%s%s%s" // unit
+        "%s%s%s" // helptext
       "</div>"
     "</div>"
-    , _attr(name), label, _attr(type)
+    , _attr(name), label
+    , unit ? "<div class=\"input-group\">" : ""
+    , _attr(type)
     , placeholder ? "" : "Enter "
     , placeholder ? _attr(placeholder) : _attr(label)
     , _attr(name), _attr(name), _attr(value)
     , moreattrs ? moreattrs : ""
+    , unit ? "<div class=\"input-group-addon input-unit\">" : ""
+    , unit ? unit : ""
+    , unit ? "</div></div>" : ""
     , helptext ? "<span class=\"help-block\">" : ""
     , helptext ? helptext : ""
     , helptext ? "</span>" : ""
@@ -192,8 +200,6 @@ void PageContext::input_select_start(const char* label, const char* name) {
       "<label class=\"control-label col-sm-3\" for=\"input-%s\">%s:</label>"
       "<div class=\"col-sm-9\">"
         "<select class=\"form-control\" size=\"1\" name=\"%s\" id=\"input-%s\">"
-      "</div>"
-    "</div>"
     , _attr(name), label, _attr(name), _attr(name));
 }
 
@@ -205,6 +211,33 @@ void PageContext::input_select_option(const char* label, const char* value, bool
 
 void PageContext::input_select_end(const char* helptext /*=NULL*/) {
   mg_printf_http_chunk(nc, "</select>%s%s%s</div></div>"
+    , helptext ? "<span class=\"help-block\">" : ""
+    , helptext ? helptext : ""
+    , helptext ? "</span>" : "");
+}
+
+void PageContext::input_radio_start(const char* label, const char* name) {
+  mg_printf_http_chunk(nc,
+    "<div class=\"form-group\">"
+      "<label class=\"control-label col-sm-3\" for=\"input-%s\">%s:</label>"
+      "<div class=\"col-sm-9\">"
+        "<div id=\"input-%s\" class=\"btn-group\" data-toggle=\"buttons\">"
+    , _attr(name), label, _attr(name));
+}
+
+void PageContext::input_radio_option(const char* name, const char* label, const char* value, bool selected) {
+  mg_printf_http_chunk(nc,
+    "<label class=\"btn btn-default %s\">"
+      "<input type=\"radio\" name=\"%s\" value=\"%s\" %s autocomplete=\"off\"> %s"
+    "</label>"
+    , selected ? "active" : ""
+    , _attr(name), _attr(value)
+    , selected ? "checked" : ""
+    , label);
+}
+
+void PageContext::input_radio_end(const char* helptext /*=NULL*/) {
+  mg_printf_http_chunk(nc, "</div>%s%s%s</div></div>"
     , helptext ? "<span class=\"help-block\">" : ""
     , helptext ? helptext : ""
     , helptext ? "</span>" : "");
@@ -222,6 +255,49 @@ void PageContext::input_checkbox(const char* label, const char* name, bool value
       "</div>"
     "</div>"
     , _attr(name), value ? "checked" : "", label
+    , helptext ? "<span class=\"help-block\">" : ""
+    , helptext ? helptext : ""
+    , helptext ? "</span>" : ""
+    );
+}
+
+void PageContext::input_slider(const char* label, const char* name, int size, const char* unit,
+    int enabled, double value, double defval, double min, double max, double step /*=1*/,
+    const char* helptext /*=NULL*/) {
+  int width = 50 + size * 10;
+  mg_printf_http_chunk(nc,
+    "<div class=\"form-group\">"
+      "<label class=\"control-label col-sm-3\" for=\"input-%s\">%s:</label>"
+      "<div class=\"col-sm-9\">"
+        "<div class=\"form-control slider\">"
+          "<div class=\"slider-control form-inline\">"
+            "<input id=\"input-%s\" class=\"slider-enable\" type=\"%s\" %s> "
+            "<input class=\"form-control slider-value\" %s type=\"number\" name=\"%s\" style=\"width:%dpx;\" value=\"%g\" min=\"%g\" max=\"%g\" step=\"%g\"> "
+            "%s%s%s"
+            "<input class=\"btn btn-default slider-down\" %s type=\"button\" value=\"➖\"> "
+            "<input class=\"btn btn-default slider-up\" %s type=\"button\" value=\"➕\">"
+          "</div>"
+          "<input class=\"slider-input\" %s type=\"range\" value=\"%g\" min=\"%g\" max=\"%g\" step=\"%g\" data-default=\"%g\">"
+        "</div>"
+        "%s%s%s"
+      "</div>"
+    "</div>"
+    , _attr(name)
+    , label
+    , _attr(name)
+    , (enabled < 0) ? "hidden" : "checkbox" // -1 => no checkbox
+    , (enabled > 0) ? "checked" : ""
+    , (enabled == 0) ? "disabled" : ""
+    , _attr(name)
+    , width
+    , value, min, max, step
+    , unit ? "<span class=\"slider-unit\">" : ""
+    , unit ? unit : ""
+    , unit ? "</span> " : ""
+    , (enabled == 0) ? "disabled" : ""
+    , (enabled == 0) ? "disabled" : ""
+    , (enabled == 0) ? "disabled" : ""
+    , value, min, max, step, defval
     , helptext ? "<span class=\"help-block\">" : ""
     , helptext ? helptext : ""
     , helptext ? "</span>" : ""

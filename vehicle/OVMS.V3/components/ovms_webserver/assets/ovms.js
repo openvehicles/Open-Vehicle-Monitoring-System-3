@@ -146,6 +146,8 @@ $(function(){
     return false;
   });
 
+	// AJAX links/buttons:
+	
   $('body').on('click', 'a[target^="#"], form[target^="#"] .btn[type="submit"]', function(event){
     var method = $(this).data("method") || "get";
     var uri = $(this).attr("href");
@@ -193,6 +195,31 @@ $(function(){
     return false;
   });
 
+	// Slider widget:
+	
+	$("body").on("change", ".slider-enable", function(evt) {
+		var slider = $(this).closest(".slider");
+		slider.find("input[type=number]").prop("disabled", !this.checked).trigger("input");
+		slider.find("input[type=range]").prop("disabled", !this.checked).trigger("input");
+		slider.find("input[type=button]").prop("disabled", !this.checked);
+	});
+	$("body").on("input", ".slider-value", function(evt) {
+		$(this).closest(".slider").find(".slider-input").val(this.value);
+	});
+	$("body").on("input", ".slider-input", function(evt) {
+		if (this.disabled)
+			this.value = $(this).data("default");
+		$(this).closest(".slider").find(".slider-value").val(this.value);
+	});
+	$("body").on("click", ".slider-up", function(evt) {
+		$(this).closest(".slider").find(".slider-input")
+			.val(function(){return 1*this.value + 1;}).trigger("input");
+	});
+	$("body").on("click", ".slider-down", function(evt) {
+		$(this).closest(".slider").find(".slider-input")
+			.val(function(){return 1*this.value - 1;}).trigger("input");
+	});
+	
   if (!monitorTimer)
     monitorTimer = window.setInterval(monitorUpdate, 1000);
   
