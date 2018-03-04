@@ -709,7 +709,7 @@ void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
   // generate form:
   c.panel_start("primary", "Login");
   c.form_start(c.uri.c_str());
-  c.input_text("Username", "username", "", "Main user: 'admin'");
+  c.input_text("Username", "username", "", "Main user: 'admin'", NULL, "autocomplete=\"section-login username\"");
   c.input_password("Password", "password", "", NULL, NULL, "autocomplete=\"section-login current-password\"");
   c.input_button("default", "Login");
   c.form_end();

@@ -248,7 +248,7 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
     "<form id=\"shellform\" method=\"post\" action=\"#\">"
       "<div class=\"input-group\">"
         "<label class=\"input-group-addon hidden-xs\" for=\"input-command\">OVMS&nbsp;&gt;&nbsp;</label>"
-        "<input type=\"text\" class=\"form-control font-monospace\" placeholder=\"Enter command\" name=\"command\" id=\"input-command\" value=\"%s\">"
+        "<input type=\"text\" class=\"form-control font-monospace\" placeholder=\"Enter command\" name=\"command\" id=\"input-command\" value=\"%s\" autocomplete=\"section-shell\">"
         "<div class=\"input-group-btn\">"
           "<button type=\"submit\" class=\"btn btn-default\">Execute</button>"
         "</div>"
@@ -357,13 +357,15 @@ void OvmsWebServer::HandleCfgPassword(PageEntry_t& p, PageContext_t& c)
 void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
-  std::string vehicleid, vehicletype, vehiclename;
+  std::string vehicleid, vehicletype, vehiclename, timezone, units_distance;
   
   if (c.method == "POST") {
     // process form submission:
     vehicleid = c.getvar("vehicleid");
     vehicletype = c.getvar("vehicletype");
     vehiclename = c.getvar("vehiclename");
+    timezone = c.getvar("timezone");
+    units_distance = c.getvar("units_distance");
     
     if (vehicleid.length() == 0)
       error += "<li data-input=\"vehicleid\">Vehicle ID must not be empty</li>";
@@ -383,6 +385,8 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("vehicle", "id", vehicleid);
       MyConfig.SetParamValue("auto", "vehicle.type", vehicletype);
       MyConfig.SetParamValue("vehicle", "name", vehiclename);
+      MyConfig.SetParamValue("vehicle", "timezone", timezone);
+      MyConfig.SetParamValue("vehicle", "units.distance", units_distance);
       
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       info += "<script>$(\"#menu\").load(\"/menu\")</script>";
@@ -403,6 +407,8 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     vehicleid = MyConfig.GetParamValue("vehicle", "id");
     vehicletype = MyConfig.GetParamValue("auto", "vehicle.type");
     vehiclename = MyConfig.GetParamValue("vehicle", "name");
+    timezone = MyConfig.GetParamValue("vehicle", "timezone");
+    units_distance = MyConfig.GetParamValue("vehicle", "units.distance");
     c.head(200);
   }
   
@@ -417,6 +423,11 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
   c.input_text("Vehicle ID", "vehicleid", vehicleid.c_str(), "Use upper case letters and/or digits",
     "<p>Note: this is also the <strong>vehicle account ID</strong> for server connections.</p>");
   c.input_text("Vehicle name", "vehiclename", vehiclename.c_str(), "optional, the name of your car");
+  c.input_text("Time zone", "timezone", timezone.c_str(), "optional, default UTC");
+  c.input_select_start("Distance units", "units_distance");
+  c.input_select_option("Kilometers", "K", units_distance == "K");
+  c.input_select_option("Miles", "M", units_distance == "M");
+  c.input_select_end();
   c.input_button("default", "Save");
   c.form_end();
   c.panel_end();
@@ -500,12 +511,13 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
 {
   std::string error;
-  std::string server, password, port;
+  std::string server, vehicleid, password, port;
   std::string updatetime_connected, updatetime_idle;
   
   if (c.method == "POST") {
     // process form submission:
     server = c.getvar("server");
+    vehicleid = c.getvar("vehicleid");
     password = c.getvar("password");
     port = c.getvar("port");
     updatetime_connected = c.getvar("updatetime_connected");
@@ -518,6 +530,10 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
         error += "<li data-input=\"port\">Port must be an integer value in the range 0…65535</li>";
       }
     }
+    if (vehicleid.length() == 0)
+      error += "<li data-input=\"vehicleid\">Vehicle ID must not be empty</li>";
+    if (vehicleid.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") != std::string::npos)
+      error += "<li data-input=\"vehicleid\">Vehicle ID may only contain upper case letters and digits</li>";
     if (updatetime_connected != "") {
       if (atoi(updatetime_connected.c_str()) < 1) {
         error += "<li data-input=\"updatetime_connected\">Update interval (connected) must be at least 1 second</li>";
@@ -532,9 +548,10 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
     if (error == "") {
       // success:
       MyConfig.SetParamValue("server.v2", "server", server);
+      MyConfig.SetParamValue("server.v2", "port", port);
+      MyConfig.SetParamValue("vehicle", "id", vehicleid);
       if (password != "")
         MyConfig.SetParamValue("server.v2", "password", password);
-      MyConfig.SetParamValue("server.v2", "port", port);
       MyConfig.SetParamValue("server.v2", "updatetime.connected", updatetime_connected);
       MyConfig.SetParamValue("server.v2", "updatetime.idle", updatetime_idle);
       
@@ -553,6 +570,7 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
   else {
     // read configuration:
     server = MyConfig.GetParamValue("server.v2", "server");
+    vehicleid = MyConfig.GetParamValue("vehicle", "id");
     password = MyConfig.GetParamValue("server.v2", "password");
     port = MyConfig.GetParamValue("server.v2", "port");
     updatetime_connected = MyConfig.GetParamValue("server.v2", "updatetime.connected");
@@ -572,9 +590,11 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
       "<li><code>ovms.dexters-web.de</code> <a href=\"https://dexters-web.de/?action=NewAccount\" target=\"_blank\">Registration</a></li>"
     "</ul>");
   c.input_text("Port", "port", port.c_str(), "optional, default: 6867");
+  c.input_text("Vehicle ID", "vehicleid", vehicleid.c_str(), "Use upper case letters and/or digits",
+    NULL, "autocomplete=\"section-serverv2 username\"");
   c.input_password("Vehicle password", "password", "", "empty = no change",
     "<p>Note: enter the password for the <strong>vehicle ID account</strong>, <em>not</em> your user account password</p>",
-    "autocomplete=\"section-serverv2 new-password\"");
+    "autocomplete=\"section-serverv2 current-password\"");
 
   c.fieldset_start("Update intervals");
   c.input_text("…connected", "updatetime_connected", updatetime_connected.c_str(),
@@ -672,9 +692,10 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
       "<li><a href=\"https://github.com/mqtt/mqtt.github.io/wiki/public_brokers\" target=\"_blank\">More public MQTT brokers</a></li>"
     "</ul>");
   c.input_text("Port", "port", port.c_str(), "optional, default: 1883");
-  c.input_text("Username", "user", user.c_str(), "Enter user login name");
+  c.input_text("Username", "user", user.c_str(), "Enter user login name",
+    NULL, "autocomplete=\"section-serverv3 username\"");
   c.input_password("Password", "password", "", "Enter user password, empty = no change",
-    NULL, "autocomplete=\"section-serverv3 new-password\"");
+    NULL, "autocomplete=\"section-serverv3 current-password\"");
 
   c.fieldset_start("Update intervals");
   c.input_text("…connected", "updatetime_connected", updatetime_connected.c_str(),
@@ -831,12 +852,15 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
       "var counter = $(el).parents('table').first().prev();"
       "var pfx = counter.attr(\"name\");"
       "var nr = Number(counter.val()) + 1;"
-      "var row = $('\\"
-          "<tr>\\"
-            "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\"><strong>✖</strong></button></td>\\"
-            "<td><input type=\"text\" class=\"form-control\" name=\"' + pfx + '_ssid_' + nr + '\" placeholder=\"SSID\"></td>\\"
-            "<td><input type=\"password\" class=\"form-control\" name=\"' + pfx + '_pass_' + nr + '\" placeholder=\"Passphrase\"></td>\\"
-          "</tr>');"
+      "var row = $('"
+          "<tr>"
+            "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\"><strong>✖</strong></button></td>"
+            "<td><input type=\"text\" class=\"form-control\" name=\"' + pfx + '_ssid_' + nr + '\" placeholder=\"SSID\""
+              " autocomplete=\"section-wifi-' + pfx + ' username\"></td>"
+            "<td><input type=\"password\" class=\"form-control\" name=\"' + pfx + '_pass_' + nr + '\" placeholder=\"Passphrase\""
+              " autocomplete=\"section-wifi-' + pfx + ' current-password\"></td>"
+          "</tr>"
+        "');"
       "$(el).parent().parent().before(row).prev().find(\"input\").first().focus();"
       "counter.val(nr);"
     "}"
