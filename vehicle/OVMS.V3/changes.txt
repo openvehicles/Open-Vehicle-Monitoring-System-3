@@ -15,5 +15,6 @@ Open Vehicle Monitor System v3 - Change log
                          - Don't issue network.reconfigured event when network is down.
                          - Auto start for ext12v & obd2ecu
                          - Web config for timezone & distance units
+                         - Twizy web UI for features, battery properties & charge control
 
 2018-02-21 MWJ  3.0.990  Handle case of SIMCOM modem MUX down during data states
