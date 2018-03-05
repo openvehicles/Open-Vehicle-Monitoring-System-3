@@ -265,6 +265,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
       }
     }
   http.Disconnect();
+  writer->printf("Download complete (at %d bytes)\n",filesize);
 
   if (filesize != expected)
     {
