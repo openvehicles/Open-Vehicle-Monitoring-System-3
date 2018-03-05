@@ -194,10 +194,17 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     // Automatically build the URL based on firmware
     url = "api.openvehicles.com/firmware/ota/";
 #ifdef CONFIG_OVMS_HW_BASE_3_0
-    url.append("v3/");
+    url.append("v3.0/");
 #endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
+#ifdef CONFIG_OVMS_HW_BASE_3_1
+    url.append("v3.1/");
+#endif //#ifdef CONFIG_OVMS_HW_BASE_3_1
     url.append(CONFIG_OVMS_VERSION_TAG);
     url.append("/ovms3.bin");
+    }
+  else
+    {
+    url = argv[0];
     }
   writer->printf("Download firmware from %s to %s\n",url.c_str(),target->label);
 
@@ -209,15 +216,14 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     return;
     }
 
-  if (http.BodyHasLine()<0)
+  size_t expected = http.BodySize();
+  if (expected < 32)
     {
-    writer->puts("Error: Invalid server response");
-    http.Disconnect();
+    writer->printf("Error: Expected download file size (%d) is invalid\n",expected);
     return;
     }
-  std::string checksum = http.BodyReadLine();
-  size_t expected = http.BodySize();
-  writer->printf("Checksum is %s and expected file size is %d\n",checksum.c_str(),expected);
+
+  writer->printf("Expected file size is %d\n",expected);
 
   writer->puts("Preparing flash partition...");
   esp_ota_handle_t otah;
@@ -230,15 +236,11 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
 
   // Now, process the body
-  OVMS_MD5_CTX* md5 = new OVMS_MD5_CTX;
-  uint8_t* rbuf = new uint8_t[1024];
-  uint8_t* rmd5 = new uint8_t[16];
-  OVMS_MD5_Init(md5);
-  int filesize = 0;
+  uint8_t rbuf[512];
+  size_t filesize = 0;
   int sofar = 0;
-  while (int k = http.BodyRead(rbuf,1024))
+  while (int k = http.BodyRead(rbuf,512))
     {
-    OVMS_MD5_Update(md5, rbuf, k);
     filesize += k;
     sofar += k;
     if (sofar > 100000)
@@ -262,21 +264,12 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
       return;
       }
     }
-  OVMS_MD5_Final(rmd5, md5);
-  char dchecksum[33];
-  sprintf(dchecksum,"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
-    rmd5[0],rmd5[1],rmd5[2],rmd5[3],rmd5[4],rmd5[5],rmd5[6],rmd5[7],
-    rmd5[8],rmd5[9],rmd5[10],rmd5[11],rmd5[12],rmd5[13],rmd5[14],rmd5[15]);
-  writer->printf("Download file length is %d and digest %s\n",
-    filesize,dchecksum);
-  delete [] rmd5;
-  delete [] rbuf;
-  delete md5;
+  http.Disconnect();
 
-  if (checksum.compare(dchecksum) != 0)
+  if (filesize != expected)
     {
-    writer->printf("Error: Checksum mismatch - state is inconsistent\n");
-    http.Disconnect();
+    writer->printf("Error: Download file size (%d) does not match expected (%d)\n",filesize,expected);
+    esp_ota_end(otah);
     return;
     }
 
@@ -288,7 +281,6 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
 
   // OK. Now ready to start the work...
-  http.Disconnect();
 
   // All done
   writer->puts("Setting boot partition...");
