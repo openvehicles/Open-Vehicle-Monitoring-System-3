@@ -15,6 +15,21 @@ These are the production and quality control notes for OVMS v3.1 modules
       * +12V on pin 9
 
 ********************************************************************************
+** SERIAL NUMBERS
+********************************************************************************
+
+Serial numbers are of the form:
+
+YYYYBBNNNNNRRRR
+
+* YYYY is four digit year. For example; 2018.
+* BB is two digit batch. For example; 00, 01, 02, etc.
+* NNNN is four digit sequence. For example; 0001, 0002, etc.
+* RRRR is four random characters. For example; ADEA, JKAE, etc.
+
+First production batch is 2018010001 - 2018010120.
+
+********************************************************************************
 ** PRODUCTION STEPS
 ********************************************************************************
 
