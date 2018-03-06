@@ -55,6 +55,35 @@ OvmsVehicleTeslaModelS::~OvmsVehicleTeslaModelS()
 void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
+
+  switch (p_frame->MsgID)
+    {
+    case 0x2c8: // SOC
+      {
+      StandardMetrics.ms_v_bat_soc->SetValue(d[1]);
+      break;
+      }
+    case 0x508: // VIN
+      {
+      switch(d[0])
+        {
+        case 0:
+          memcpy(m_vin,d+1,7);
+          break;
+        case 1:
+          memcpy(m_vin+7,d+1,7);
+          break;
+        case 2:
+          memcpy(m_vin+14,d+1,3);
+          m_vin[17] = 0;
+          StandardMetrics.ms_v_vin->SetValue(m_vin);
+          break;
+        }
+      break;
+      }
+    default:
+      break;
+    }
   }
 
 class OvmsVehicleTeslaModelSInit
