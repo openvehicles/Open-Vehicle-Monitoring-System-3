@@ -44,7 +44,7 @@ OvmsVehicleTeslaModelS::OvmsVehicleTeslaModelS()
 
   memset(m_vin,0,sizeof(m_vin));
 
-  RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_1000KBPS);
+  RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   }
 
 OvmsVehicleTeslaModelS::~OvmsVehicleTeslaModelS()
