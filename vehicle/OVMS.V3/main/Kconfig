@@ -89,6 +89,13 @@ config OVMS_SC_GPL_WOLF
         Enable to include the GPL licensed WOLFSSH and WOLFSSL libraries
         (required for SSH server functionality)
 
+config OVMS_HW_SPIMEM_AGGRESSIVE
+    bool "Aggressively use SPI RAM (rather than internal RAM)"
+    default y
+    depends on OVMS && OVMS_HW_BASE_3_1
+    help
+        Enable to aggressively allocate from SPI RAM (rather than internal RAM).
+
 menu "Vehicle Support"
     depends on OVMS
 
