@@ -43,6 +43,7 @@ OvmsVehicleTeslaModelS::OvmsVehicleTeslaModelS()
   ESP_LOGI(TAG, "Tesla Model S vehicle module");
 
   memset(m_vin,0,sizeof(m_vin));
+  memset(m_type,0,sizeof(m_type));
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   }
@@ -58,9 +59,23 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
 
   switch (p_frame->MsgID)
     {
-    case 0x2c8: // SOC
+    case 0x256: // Speed
       {
-      StandardMetrics.ms_v_bat_soc->SetValue(d[1]);
+      StandardMetrics.ms_v_pos_speed->SetValue( (((d[3]&0x0f)<<8) + d[2])/10, Mph );
+      break;
+      }
+    case 0x302: // SOC
+      {
+      StandardMetrics.ms_v_bat_soc->SetValue( ((d[0]>>2) + ((d[2] & 0x0f)<<6))/10 );
+      break;
+      }
+    case 0x398: // Country
+      {
+      m_type[0] = 'T';
+      m_type[1] = 'S';
+      m_type[2] = d[0];
+      m_type[3] = d[1];
+      StandardMetrics.ms_v_type->SetValue(m_type);
       break;
       }
     case 0x508: // VIN
