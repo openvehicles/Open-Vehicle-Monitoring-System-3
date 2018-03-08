@@ -86,7 +86,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
           "<tr>"
             "<th>Main battery</th>"
             "<td>"
-              "<div class=\"metric\"><span class=\"value\" data-metric=\"v.b.soc\">?</span><span class=\"unit\">%%</span></div>"
+              "<div class=\"metric\"><span class=\"value\" data-metric=\"v.b.soc\">?</span><span class=\"unit\">%</span></div>"
               "<div class=\"metric\"><span class=\"value\" data-metric=\"v.b.voltage\">?</span><span class=\"unit\">V</span></div>"
               "<div class=\"metric\"><span class=\"value\" data-metric=\"v.b.current\">?</span><span class=\"unit\">A</span></div>"
             "</td>"

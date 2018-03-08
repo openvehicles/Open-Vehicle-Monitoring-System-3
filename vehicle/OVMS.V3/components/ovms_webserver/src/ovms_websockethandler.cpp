@@ -61,6 +61,7 @@ WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t modifier)
   m_jobqueue = xQueueCreate(30, sizeof(WebSocketTxJob));
   m_mutex = xSemaphoreCreateMutex();
   m_job.type = WSTX_None;
+  m_sent = m_ack = 0;
 }
 
 WebSocketHandler::~WebSocketHandler()
@@ -97,7 +98,7 @@ bool WebSocketHandler::GetNextTxJob()
 {
   if (xQueueReceive(m_jobqueue, &m_job, 0) == pdTRUE) {
     // init new job state:
-    m_sent = 0;
+    m_sent = m_ack = 0;
     return true;
   } else {
     return false;
@@ -107,28 +108,34 @@ bool WebSocketHandler::GetNextTxJob()
 
 void WebSocketHandler::InitTx()
 {
+  if (m_job.type != WSTX_None)
+    return;
+  
   if (!Lock(0))
     return;
   
   // begin next job if idle:
-  if (m_job.type == WSTX_None && GetNextTxJob())
+  while (m_job.type == WSTX_None) {
+    if (!GetNextTxJob())
+      break;
     ProcessTxJob();
+  }
   
   Unlock();
 }
 
 void WebSocketHandler::PollTx()
 {
+  m_ack = m_sent;
+  
   if (!Lock(0))
     return;
   
-  // get next job if idle:
-  if (m_job.type == WSTX_None)
-    GetNextTxJob();
-  
-  // process current job:
-  if (m_job.type != WSTX_None)
+  do {
+    // process current job:
     ProcessTxJob();
+    // check next if done:
+  } while (m_job.type == WSTX_None && GetNextTxJob());
   
   Unlock();
 }
@@ -136,20 +143,26 @@ void WebSocketHandler::PollTx()
 
 void WebSocketHandler::ProcessTxJob()
 {
-  //ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d, sent=%d", this, m_job.type, m_sent);
+  //ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d, sent=%d ack=%d", this, m_job.type, m_sent, m_ack);
   
   // process job, send next chunk:
   switch (m_job.type)
   {
     case WSTX_Event:
     {
-      std::string msg = "{\"event\":\"";
-      msg += m_job.event;
-      msg += "\"}";
-      mg_send_websocket_frame(m_nc, WEBSOCKET_OP_TEXT, msg.data(), msg.size());
-      free(m_job.event);
-      ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done", this, m_job.type);
-      m_job.type = WSTX_None;
+      if (m_sent && m_ack) {
+        ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done", this, m_job.type);
+        m_job.type = WSTX_None;
+      } else {
+        std::string msg;
+        msg.reserve(128);
+        msg = "{\"event\":\"";
+        msg += m_job.event;
+        msg += "\"}";
+        free(m_job.event);
+        mg_send_websocket_frame(m_nc, WEBSOCKET_OP_TEXT, msg.data(), msg.size());
+        m_sent = 1;
+      }
       break;
     }
     
@@ -167,7 +180,9 @@ void WebSocketHandler::ProcessTxJob()
       for (i=0, m=MyMetrics.m_first; i < m_sent && m != NULL; m=m->m_next, i++);
       
       // build msg:
-      std::string msg = "{\"metrics\":{";
+      std::string msg;
+      msg.reserve(XFER_CHUNK_SIZE+128);
+      msg = "{\"metrics\":{";
       for (i=0; m && msg.size() < XFER_CHUNK_SIZE; m=m->m_next) {
         if (m->IsModifiedAndClear(m_modifier) || m_job.type == WSTX_MetricsAll) {
           if (i) msg += ',';
@@ -187,7 +202,7 @@ void WebSocketHandler::ProcessTxJob()
       }
       
       // done?
-      if (!m) {
+      if (!m && m_ack == m_sent) {
         if (m_sent)
           ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done, sent=%d metrics", this, m_job.type, m_sent);
         m_job.type = WSTX_None;
@@ -198,11 +213,15 @@ void WebSocketHandler::ProcessTxJob()
     
     case WSTX_Config:
     {
-      // todo
+      // todo: implement
+      m_job.type = WSTX_None;
+      m_sent = 0;
       break;
     }
     
     default:
+      m_job.type = WSTX_None;
+      m_sent = 0;
       break;
   }
 }

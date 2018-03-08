@@ -284,6 +284,7 @@ class WebSocketHandler : public MgHandler
     SemaphoreHandle_t         m_mutex;
     WebSocketTxJob            m_job;
     int                       m_sent;
+    int                       m_ack;
 };
 
 struct WebSocketSlot
