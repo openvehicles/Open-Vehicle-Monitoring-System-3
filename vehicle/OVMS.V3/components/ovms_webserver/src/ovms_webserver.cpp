@@ -79,6 +79,7 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/assets/script.js", "script.js", HandleAsset);
   RegisterPage("/assets/bootstrap.min.css.map", "-", HandleAsset);
   RegisterPage("/favicon.ico", "favicon.ico", HandleAsset);
+  RegisterPage("/apple-touch-icon.png", "apple-touch-icon.png", HandleAsset);
   RegisterPage("/menu", "Menu", HandleMenu);
   RegisterPage("/home", "Home", HandleHome);
   RegisterPage("/login", "Login", HandleLogin);

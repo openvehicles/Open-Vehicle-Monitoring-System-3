@@ -470,8 +470,11 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
         "<meta charset=\"utf-8\">"
         "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">"
         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+        "<meta name=\"mobile-web-app-capable\" content=\"yes\">"
         "<title>OVMS Console</title>"
-        "<link href=\"/assets/style.css\" rel=\"stylesheet\">"
+        "<link rel=\"stylesheet\" href=\"/assets/style.css\">"
+        "<link rel=\"shortcut icon\" sizes=\"192x192\" href=\"/apple-touch-icon.png\">"
+        "<link rel=\"apple-touch-icon\" href=\"/apple-touch-icon.png\">"
       "</head>"
       "<body>"
         "<nav id=\"nav\" class=\"navbar navbar-inverse navbar-fixed-top\">"
@@ -484,7 +487,7 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
                 "<span class=\"icon-bar\"></span>"
               "</button>"
               "<button type=\"button\" class=\"navbar-toggle collapsed toggle-night\">◐</button>"
-              "<a class=\"navbar-brand\" href=\"/home\" target=\"#main\" title=\"Home\">OVMS</a>"
+              "<a class=\"navbar-brand\" href=\"/home\" target=\"#main\" title=\"Home\"><img alt=\"OVMS\" src=\"/apple-touch-icon.png\"></a>"
             "</div>"
             "<div role=\"menu\" id=\"menu\" class=\"navbar-collapse collapse\">");
   c.print(menu);
@@ -537,7 +540,7 @@ void OvmsWebServer::HandleAsset(PageEntry_t& p, PageContext_t& c)
     mtime = MTIME_ASSETS_SCRIPT_JS;
     type = "application/javascript";
   }
-  else if (c.uri == "/favicon.ico") {
+  else if (c.uri == "/favicon.ico" || c.uri == "/apple-touch-icon.png") {
     data = favicon_png_start;
     size = favicon_png_end - favicon_png_start;
     mtime = MTIME_ASSETS_FAVICON_PNG;
