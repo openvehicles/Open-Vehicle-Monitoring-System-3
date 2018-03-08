@@ -43,6 +43,7 @@ static const char *TAG = "ovms-module";
 #ifdef CONFIG_HEAP_TASK_TRACKING
 #include "esp_heap_task_info.h"
 #endif
+#include "ovms_boot.h"
 
 #define MAX_TASKS 30
 #define DUMPSIZE 1000
@@ -675,6 +676,7 @@ static void module_fault(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
 static void module_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   writer->puts("Resetting system...");
+  MyBoot.SetSoftReset();
   esp_restart();
   }
 

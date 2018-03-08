@@ -5,6 +5,7 @@ Open Vehicle Monitor System v3 - Change log
                          - Provide an option for aggressive allocation of SPI RAM (OVMS HW 3.1)
                          - Low-level boot framework for storing data across CPU resets/sleeps
                          - Webserver: support add to home screen / web-app mode
+                         - Boot/Autostart: crash detection & counting, temporary autostart inhibit
 
 2018-03-05 MWJ  3.0.991  OTA release support OTA updates over HTTP
                          - Update ovms_module to use new API for per-task heap info.

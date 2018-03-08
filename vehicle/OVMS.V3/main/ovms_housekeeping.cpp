@@ -46,6 +46,7 @@ static const char *TAG = "housekeeping";
 #include "ovms_config.h"
 #include "console_async.h"
 #include "ovms_module.h"
+#include "ovms_boot.h"
 #include "vehicle.h"
 #ifdef CONFIG_OVMS_COMP_SERVER_V2
 #include "ovms_server_v2.h"
@@ -58,9 +59,9 @@ static const char *TAG = "housekeeping";
 #include "obd2ecu.h"
 #endif
 
-#define AUTO_INIT_STABLE_TIME 10      // seconds after which an auto init boot is considered stable
-                                      // (Note: resolution = 10 seconds)
-
+#define AUTO_INIT_STABLE_TIME           10      // seconds after which an auto init boot is considered stable
+                                                // (Note: resolution = 10 seconds)
+#define AUTO_INIT_INHIBIT_CRASHCOUNT    5
 
 void HousekeepingTicker1( TimerHandle_t timer )
   {
@@ -119,16 +120,16 @@ void Housekeeping::init()
 #endif // #ifdef CONFIG_OVMS_COMP_EXT12V
 
   // component auto init:
-  m_autoinit = MyConfig.GetParamValueBool("auto", "init", true);
-  if (!m_autoinit)
+  if (!MyConfig.GetParamValueBool("auto", "init", true))
     {
-    ESP_LOGW(TAG, "Auto init inhibited (enable: config set auto init yes)");
+    ESP_LOGW(TAG, "Auto init disabled (enable: config set auto init yes)");
+    }
+  else if (MyBoot.GetEarlyCrashCount() >= AUTO_INIT_INHIBIT_CRASHCOUNT)
+    {
+    ESP_LOGE(TAG, "Auto init inhibited: too many early crashes (%d)", MyBoot.GetEarlyCrashCount());
     }
   else
     {
-    // disable auto init to prevent crash loop:
-    MyConfig.SetParamValueBool("auto", "init", false);
-    
 #ifdef CONFIG_OVMS_COMP_EXT12V
     ESP_LOGI(TAG, "Auto init ext12v (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
     MyPeripherals->m_ext12v->AutoInit();
@@ -164,7 +165,6 @@ void Housekeeping::init()
 #endif // CONFIG_OVMS_COMP_SERVER
     
     ESP_LOGI(TAG, "Auto init done (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
-    // Note: auto init re-enable done by ::metrics(), see below
     }
 
   ESP_LOGI(TAG, "Starting USB console...");
@@ -200,12 +200,11 @@ void Housekeeping::metrics()
   size_t free = heap_caps_get_free_size(caps);
   m3->SetValue(free);
   
-  // re-enable auto init after some seconds uptime:
-  if (m_autoinit && monotonictime >= AUTO_INIT_STABLE_TIME)
+  // set boot stable flag after some seconds uptime:
+  if (!MyBoot.GetStable() && monotonictime >= AUTO_INIT_STABLE_TIME)
     {
-    ESP_LOGI(TAG, "System considered stable, auto init re-enabled");
-    MyConfig.SetParamValueBool("auto", "init", true);
-    m_autoinit = false;
+    ESP_LOGI(TAG, "System considered stable (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    MyBoot.SetStable();
     }
   }
 

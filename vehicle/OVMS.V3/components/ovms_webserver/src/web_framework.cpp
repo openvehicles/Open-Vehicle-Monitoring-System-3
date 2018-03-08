@@ -440,7 +440,7 @@ void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
   }
   
   // check auto init, show warning if disabled:
-  if (!MyConfig.GetParamValueBool("auto", "init") && MyHousekeeping && !MyHousekeeping->m_autoinit) {
+  if (!MyConfig.GetParamValueBool("auto", "init")) {
     c.alert("warning", "<p><strong>Warning:</strong> auto start disabled. Check auto start configuration.</p>");
   }
 }

@@ -1006,7 +1006,7 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
   c.panel_start("primary", "Auto start configuration");
   c.form_start(p.uri);
   
-  c.input_checkbox("Enable auto start", "init", init || (MyHousekeeping && MyHousekeeping->m_autoinit),
+  c.input_checkbox("Enable auto start", "init", init,
     "<p>Note: if a crash or reboot occurs within 10 seconds after powering the module, "
     "this option will automatically be disabled and need to be re-enabled manually.</p>");
   
