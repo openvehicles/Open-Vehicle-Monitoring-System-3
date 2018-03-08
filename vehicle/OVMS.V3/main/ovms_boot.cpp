@@ -28,33 +28,52 @@
 ; THE SOFTWARE.
 */
 
+#include "ovms_log.h"
+static const char *TAG = "boot";
+
 #include "ovms.h"
-#include "esp_heap_caps.h"
+#include "ovms_boot.h"
+#include "ovms_command.h"
+#include <string.h>
 
-uint32_t monotonictime = 0;
+boot_data_t __attribute__((section(".rtc.noload"))) boot_data;
 
-#ifdef CONFIG_OVMS_HW_SPIMEM_AGGRESSIVE
-void* operator new(std::size_t sz)
+Boot MyBoot __attribute__ ((init_priority (1100)));
+
+void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  return ExternalRamMalloc(sz);
+  writer->printf("Last boot was %d second(s) ago\n",monotonictime);
+  writer->printf("  This is reset #%d since last power cycle\n",boot_data.boot_count);
+  writer->printf("  CPU#0 boot reason was %d\n",boot_data.bootreason_cpu0);
+  writer->printf("  CPU#1 boot reason was %d\n",boot_data.bootreason_cpu1);
   }
-#endif // #ifdef CONFIG_OVMS_HW_SPIMEM_AGGRESSIVE
 
-void* ExternalRamMalloc(std::size_t sz)
+Boot::Boot()
   {
-  void* ret = heap_caps_malloc(sz, MALLOC_CAP_SPIRAM);
-  if (ret)
-    return ret;
+  ESP_LOGI(TAG, "Initialising BOOT (1100)");
+
+  RESET_REASON cpu0 = rtc_get_reset_reason(0);
+  RESET_REASON cpu1 = rtc_get_reset_reason(1);
+
+  if (cpu0 == POWERON_RESET)
+    {
+    memset(&boot_data,0,sizeof(boot_data_t));
+    ESP_LOGI(TAG, "Power cycle reset detected");
+    }
   else
-    return malloc(sz);
+    {
+    boot_data.boot_count++;
+    ESP_LOGI(TAG, "Boot #%d reasons for CPU0=%d and CPU1=%d",boot_data.boot_count,cpu0,cpu1);
+    }
+
+  boot_data.bootreason_cpu0 = cpu0;
+  boot_data.bootreason_cpu1 = cpu1;
+
+  // Register our commands
+  OvmsCommand* cmd_boot = MyCommandApp.RegisterCommand("boot","BOOT framework",NULL, "", 1);
+  cmd_boot->RegisterCommand("status","Show boot system status",boot_status,"", 0, 0, false);
   }
 
-static void* ExternalRamAllocated::operator new(std::size_t sz)
+Boot::~Boot()
   {
-  return ExternalRamMalloc(sz);
-  }
-
-static void* ExternalRamAllocated::operator new[](std::size_t sz)
-  {
-  return ExternalRamMalloc(sz);
   }

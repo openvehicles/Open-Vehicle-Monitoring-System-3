@@ -70,6 +70,7 @@ sdcard::sdcard(const char* name, bool mode1bit, bool autoformat, int cdpin)
     {
     m_slot.gpio_cd = (gpio_num_t)cdpin;
     }
+  m_slot.width = 1;
 
   memset(&m_mount,0,sizeof(esp_vfs_fat_sdmmc_mount_config_t));
   m_mount.format_if_mount_failed = autoformat;

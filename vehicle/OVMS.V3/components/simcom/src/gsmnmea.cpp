@@ -41,6 +41,7 @@ static const char *TAG = "gsm-nmea";
 #include "ovms_events.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
+#include "ovms_time.h"
 
 #define JDEpoch 2440588 // Julian date of the Unix epoch
 #define DIM(a) (sizeof(a)/sizeof(*(a)))
@@ -229,7 +230,11 @@ void GsmNMEA::IncomingLine(const std::string line)
     // Data complete, store:
 
     if (m_gpstime_enabled || m_gpstime_required)
-      *StdMetrics.ms_m_timeutc = (int) utc_to_timestamp(date, time);
+      {
+      int tm = utc_to_timestamp(date, time);
+      *StdMetrics.ms_m_timeutc = (int) tm;
+      MyTime.Set(TAG, 2, true, tm);
+      }
 
     *StdMetrics.ms_v_pos_direction = (float) direction;
     *StdMetrics.ms_v_pos_gpsspeed = (float) speed;

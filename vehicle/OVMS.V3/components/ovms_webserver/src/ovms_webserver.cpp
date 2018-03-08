@@ -79,6 +79,8 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/", "OVMS", HandleRoot);
   RegisterPage("/assets/style.css", "style.css", HandleAsset);
   RegisterPage("/assets/script.js", "script.js", HandleAsset);
+  RegisterPage("/assets/bootstrap.min.css.map", "-", HandleAsset);
+  RegisterPage("/favicon.ico", "favicon.ico", HandleAsset);
   RegisterPage("/menu", "Menu", HandleMenu);
   RegisterPage("/home", "Home", HandleHome);
   RegisterPage("/login", "Login", HandleLogin);
@@ -97,6 +99,7 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/cfg/server/v2", "Server V2 (MP)", HandleCfgServerV2, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/server/v3", "Server V3 (MQTT)", HandleCfgServerV3, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/webserver", "Webserver", HandleCfgWebServer, PageMenu_Config, PageAuth_Cookie);
+  RegisterPage("/cfg/autostart", "Autostart", HandleCfgAutoInit, PageMenu_Config, PageAuth_Cookie);
 }
 
 OvmsWebServer::~OvmsWebServer()
@@ -303,7 +306,7 @@ PageEntry* OvmsWebServer::FindPage(const char* uri)
 void OvmsWebServer::EventHandler(struct mg_connection *nc, int ev, void *p)
 {
   PageContext_t c;
-  if (ev != MG_EV_POLL)
+  if (ev != MG_EV_POLL && ev != MG_EV_SEND)
     ESP_LOGD(TAG, "EventHandler: conn=%p ev=%d p=%p", nc, ev, p);
   
   switch (ev)
@@ -706,8 +709,8 @@ void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
   // generate form:
   c.panel_start("primary", "Login");
   c.form_start(c.uri.c_str());
-  c.input_text("Username", "username", "");
-  c.input_password("Password", "password", "");
+  c.input_text("Username", "username", "", "Main user: 'admin'", NULL, "autocomplete=\"section-login username\"");
+  c.input_password("Password", "password", "", NULL, NULL, "autocomplete=\"section-login current-password\"");
   c.input_button("default", "Login");
   c.form_end();
   c.panel_end();

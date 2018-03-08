@@ -171,7 +171,7 @@ void OvmsHttpClient::Disconnect()
 size_t OvmsHttpClient::BodyRead(void *buf, size_t nbyte)
   {
   // char *x = (char*)buf;
-  if (m_buf == NULL)
+  if ((m_buf == NULL)||(m_buf->UsedSpace() == 0))
     {
     size_t n = Read(buf,nbyte);
     // ESP_EARLY_LOGI(TAG, "BodyRead got %d bytes direct (%02x %02x %02x %02x)",n,x[0],x[1],x[2],x[3]);
@@ -226,4 +226,3 @@ int OvmsHttpClient::ResponseCode()
   {
   return m_responsecode;
   }
-

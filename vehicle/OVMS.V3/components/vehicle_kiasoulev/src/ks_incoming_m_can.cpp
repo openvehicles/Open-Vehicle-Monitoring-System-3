@@ -26,7 +26,7 @@
 
 #include "vehicle_kiasoulev.h"
 
-static const char *TAG = "v-kiasoulev";
+//static const char *TAG = "v-kiasoulev";
 
 /**
  * Handle incoming CAN-frames on bus 2, the M-bus

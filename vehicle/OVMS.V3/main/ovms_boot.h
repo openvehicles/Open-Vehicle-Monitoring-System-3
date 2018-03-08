@@ -28,21 +28,30 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __OVMS_EXT12V_H__
-#define __OVMS_EXT12V_H__
+#ifndef __OVMS_BOOT_H__
+#define __OVMS_BOOT_H__
 
-#include "pcp.h"
+#include "rom/rtc.h"
 
-class ext12v : public pcp
+typedef struct
+  {
+  unsigned int boot_count;          // Number of times system has rebooted (not power on)
+  RESET_REASON bootreason_cpu0;     // Reason for last boot on CPU#0
+  RESET_REASON bootreason_cpu1;     // Reason for last boot on CPU#1
+  } boot_data_t;
+
+extern boot_data_t boot_data;
+
+class Boot
   {
   public:
-    ext12v(const char* name);
-    ~ext12v();
-
-  public:
-    virtual void SetPowerMode(PowerMode powermode);
-    void AutoInit();
-
+    Boot();
+    virtual ~Boot();
   };
 
-#endif //#ifndef __OVMS_EXT12V_H__
+extern Boot MyBoot;
+
+void OnBoot();
+
+#endif //#ifndef __OVMS_BOOT_H__
+

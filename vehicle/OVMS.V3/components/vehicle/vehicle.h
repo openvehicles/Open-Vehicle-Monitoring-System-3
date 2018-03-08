@@ -234,6 +234,7 @@ class OvmsVehicleFactory
     OvmsVehicle* NewVehicle(const char* VehicleType);
     void ClearVehicle();
     void SetVehicle(const char* type);
+    void AutoInit();
     OvmsVehicle* ActiveVehicle();
     const char* ActiveVehicleName();
   };

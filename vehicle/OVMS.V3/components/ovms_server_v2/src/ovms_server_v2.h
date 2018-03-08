@@ -136,4 +136,13 @@ class OvmsServerV2 : public OvmsServer
     uint32_t m_pending_notify_data_last;
   };
 
+class OvmsServerV2Init
+  {
+  public:
+    OvmsServerV2Init();
+    void AutoInit();
+  };
+
+extern OvmsServerV2Init MyOvmsServerV2Init;
+
 #endif //#ifndef __OVMS_SERVER_V2_H__

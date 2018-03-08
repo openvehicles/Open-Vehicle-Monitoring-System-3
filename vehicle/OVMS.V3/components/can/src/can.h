@@ -108,7 +108,7 @@ struct CAN_frame_t
     uint8_t   u8[8];                    // Payload byte access
     uint32_t  u32[2];                   // Payload u32 access (Att: little endian!)
     } data;
-  
+
   esp_err_t Write(canbus* bus=NULL, TickType_t maxqueuewait=0);  // bus: NULL=origin
   };
 
@@ -133,7 +133,7 @@ class canbitset
       {
       load(src, len);
       }
-    
+
     // load message bytes:
     void load(uint8_t* src, int len)
       {
@@ -145,7 +145,7 @@ class canbitset
         }
       m_store <<= ((sizeof(StoreType)-len) << 3);
       }
-    
+
     // extract message part:
     //  - start,end: bit positions 0…63, 0=MSB of first msg byte
     StoreType get(int start, int end)
@@ -178,6 +178,7 @@ typedef struct
 // CAN status
 typedef struct
   {
+  uint32_t interrupts;              // interrupts
   uint32_t packets_rx;              // frames reveiced
   uint32_t packets_tx;              // frames loaded into TX buffers (not necessarily sent)
   uint32_t txbuf_delay;             // frames routed through TX queue
@@ -234,16 +235,16 @@ class canbus : public pcp
     virtual esp_err_t WriteStandard(uint16_t id, uint8_t length, uint8_t *data, TickType_t maxqueuewait=0);
     virtual bool RxCallback(CAN_frame_t* frame);
     virtual void TxCallback();
-  
+
   protected:
     virtual esp_err_t QueueWrite(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
-  
+
   public:
     void LogFrame(CAN_LogEntry_t type, const CAN_frame_t* p_frame);
     void LogStatus(CAN_LogEntry_t type);
     void LogInfo(CAN_LogEntry_t type, const char* text);
     bool StatusChanged();
-  
+
   public:
     CAN_speed_t m_speed;
     CAN_mode_t m_mode;
@@ -260,7 +261,7 @@ class can
 
   public:
     void IncomingFrame(CAN_frame_t* p_frame);
-  
+
   public:
     QueueHandle_t m_rxqueue;
 
@@ -275,7 +276,7 @@ class can
     void LogFrame(canbus* bus, CAN_LogEntry_t type, const CAN_frame_t* frame);
     void LogStatus(canbus* bus, CAN_LogEntry_t type, const CAN_status_t* status);
     void LogInfo(canbus* bus, CAN_LogEntry_t type, const char* text);
-  
+
   private:
     std::list<QueueHandle_t> m_listeners;
     TaskHandle_t m_rxtask;            // Task to handle reception

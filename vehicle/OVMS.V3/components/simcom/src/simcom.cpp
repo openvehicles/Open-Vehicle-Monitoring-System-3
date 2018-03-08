@@ -174,6 +174,12 @@ simcom::~simcom()
   StopTask();
   }
 
+void simcom::AutoInit()
+  {
+  if (MyConfig.GetParamValueBool("auto", "modem", false))
+    SetPowerMode(On);
+  }
+
 void simcom::StartTask()
   {
   if (!m_task)

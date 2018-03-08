@@ -82,7 +82,7 @@ void can_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
       writer->puts("Error: Unrecognised speed (100000, 125000, 250000, 500000, 1000000 are accepted)");
       return;
     }
-  writer->printf("Can bus %s started in mode %s at speed %dKbps\n",
+  writer->printf("Can bus %s started in mode %s at speed %dbps\n",
                  bus, mode, baud);
   }
 
@@ -168,21 +168,21 @@ void can_rx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
 //    can log <type> [path] [filter1] [filter2] [filter3]
 //    can log off
 //    can log status
-// 
+//
 // Filter: [bus:][id][-id]
 // Examples:
 //    can log trace                     → enable syslog tracing for all buses, all ids
 //    can log trace 1 3:780-7ff         → enable syslog for bus 1 and id range 780-7ff on bus 3
 //    can log crtd /sd/cap1 2:100-1ff   → capture id range 100-1ff of bus 2 in crtd file /sd/cap1
-// 
+//
 // Path and filters can be changed on the fly.
-// 
+//
 void can_log(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   const char* type = cmd->GetName();
   bool is_trace = (strcmp(type, "trace") == 0);
   canlog* cl = MyCan.GetLogger();
-  
+
   if (strcmp(type, "status") == 0)
     {
     if (cl)
@@ -191,7 +191,7 @@ void can_log(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
       writer->puts("CAN logging inactive.");
     return;
     }
-  
+
   if (strcmp(type, "off") == 0)
     {
     if (!cl)
@@ -208,19 +208,19 @@ void can_log(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
     writer->puts("CAN logging stopped.");
     return;
     }
-  
+
   if (cl && strcmp(type, cl->GetType()) != 0)
     {
     writer->printf("Error: logger of type '%s' still running, please stop first\n", cl->GetType());
     return;
     }
-  
+
   // parse args:
-  
+
   const char* path = (cl && !is_trace) ? cl->GetPath().c_str() : "";
   canlog_filter_t filter[CANLOG_MAX_FILTERS] = {};
   int fcnt = 0;
-  
+
   for (int i=0; i<argc; i++)
     {
     if (argv[i][0] == '/' && !is_trace)
@@ -258,15 +258,15 @@ void can_log(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
       fcnt++;
       }
     }
-  
+
   if (!is_trace && !path[0])
     {
     writer->puts("Error: no path specified");
     return;
     }
-  
+
   // start / reconfigure logger:
-  
+
   if (!cl)
     {
     cl = canlog::Instantiate(type);
@@ -276,7 +276,7 @@ void can_log(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
       return;
       }
     }
-  
+
   if (!is_trace && cl->IsOpen() && cl->GetPath() != path)
     {
     writer->printf("Closing path '%s'\n", cl->GetPath().c_str());
@@ -285,16 +285,16 @@ void can_log(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
     writer->printf("Statistics: %s\n", cl->GetStats().c_str());
     cl->Close();
     }
-  
+
   cl->SetFilter(fcnt, filter);
-  
+
   if (!is_trace && !cl->IsOpen() && !cl->Open(path))
     {
     writer->printf("Error: cannot open log path '%s'\n", path);
     delete cl;
     return;
     }
-  
+
   MyCan.SetLogger(cl);
   writer->printf("CAN logging active: %s\n", cl->GetInfo().c_str());
   if (is_trace)
@@ -311,13 +311,14 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     writer->puts("Error: Cannot find named CAN bus");
     return;
     }
-  
+
   sbus->LogStatus(CAN_LogStatus_Statistics);
-  
+
   writer->printf("CAN:       %s\n",sbus->GetName());
   writer->printf("Mode:      %s\n",(sbus->m_mode==CAN_MODE_OFF)?"Off":
                                    ((sbus->m_mode==CAN_MODE_LISTEN)?"Listen":"Active"));
   writer->printf("Speed:     %d\n",(sbus->m_speed)*1000);
+  writer->printf("Interrupts:%20d\n",sbus->m_status.interrupts);
   writer->printf("Rx pkt:    %20d\n",sbus->m_status.packets_rx);
   writer->printf("Rx err:    %20d\n",sbus->m_status.errors_rx);
   writer->printf("Rx ovrflw: %20d\n",sbus->m_status.rxbuf_overflow);
@@ -366,7 +367,7 @@ can::can()
   ESP_LOGI(TAG, "Initialising CAN (4500)");
 
   OvmsCommand* cmd_can = MyCommandApp.RegisterCommand("can","CAN framework",NULL, "", 0, 0, true);
-  
+
   for (int k=1;k<4;k++)
     {
     static const char* name[4] = {"can1", "can2", "can3"};
@@ -403,7 +404,7 @@ can::can()
     }
   cmd_canlog->RegisterCommand("off", "Stop logging", can_log, "", 0, 0, true);
   cmd_canlog->RegisterCommand("status", "Logging status", can_log, "", 0, 0, true);
-  
+
   m_rxqueue = xQueueCreate(20,sizeof(CAN_msg_t));
   xTaskCreatePinnedToCore(CAN_rxtask, "CanRxTask", 4096, (void*)this, 10, &m_rxtask, 0);
   m_logger = NULL;
@@ -416,12 +417,12 @@ can::~can()
 void can::IncomingFrame(CAN_frame_t* p_frame)
   {
   p_frame->origin->m_status.packets_rx++;
-  
+
   for (auto n : m_listeners)
     {
     xQueueSend(n,p_frame,0);
     }
-  
+
   p_frame->origin->LogFrame(CAN_LogFrame_RX, p_frame);
   }
 

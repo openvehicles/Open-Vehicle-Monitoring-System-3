@@ -96,15 +96,22 @@ struct PageContext
   void fieldset_end();
   void hr();
   void input(const char* type, const char* label, const char* name, const char* value,
-    const char* placeholder=NULL, const char* helptext=NULL);
+    const char* placeholder=NULL, const char* helptext=NULL, const char* moreattrs=NULL,
+    const char* unit=NULL);
   void input_text(const char* label, const char* name, const char* value,
-    const char* placeholder=NULL, const char* helptext=NULL);
+    const char* placeholder=NULL, const char* helptext=NULL, const char* moreattrs=NULL);
   void input_password(const char* label, const char* name, const char* value,
-    const char* placeholder=NULL, const char* helptext=NULL);
+    const char* placeholder=NULL, const char* helptext=NULL, const char* moreattrs=NULL);
   void input_select_start(const char* label, const char* name);
   void input_select_option(const char* label, const char* value, bool selected);
-  void input_select_end();
+  void input_select_end(const char* helptext=NULL);
+  void input_radio_start(const char* label, const char* name);
+  void input_radio_option(const char* name, const char* label, const char* value, bool selected);
+  void input_radio_end(const char* helptext=NULL);
   void input_checkbox(const char* label, const char* name, bool value, const char* helptext=NULL);
+  void input_slider(const char* label, const char* name, int size, const char* unit,
+    int enabled, double value, double defval, double min, double max, double step=1,
+    const char* helptext=NULL);
   void input_button(const char* type, const char* label);
   void alert(const char* type, const char* text);
 };
@@ -211,6 +218,7 @@ class OvmsWebServer
     static void HandleCfgWifi(PageEntry_t& p, PageContext_t& c);
     static void OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname);
     static void UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname, std::string& warn);
+    static void HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c);
   
   public:
     bool m_running;

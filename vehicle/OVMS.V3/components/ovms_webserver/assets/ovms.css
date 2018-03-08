@@ -56,6 +56,9 @@ pre {
 .btn-success:focus, .btn-success:hover {
   background-position: 0 0;
 }
+.btn-default.active, .btn-default:active {
+  font-weight: bold;
+}
 
 .metric {
   display: inline-block;
@@ -70,10 +73,184 @@ pre {
   color: #676767;
 }
 li.event {
-    font-size: 85%;
+  font-size: 85%;
+}
+
+.input-unit {
+  min-width: 4em;
+}
+
+/* Range input */
+
+input[type=range] {
+  -webkit-appearance: none;
+  margin: 0px 0;
+  width: 100%;
+  height: 34px;
+  background: transparent;
+}
+input[type=range]:focus {
+  outline: none;
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 8.4px;
+  cursor: pointer;
+  animate: 0.2s;
+  box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+  background: #3071a9;
+  border-radius: 1.3px;
+  border: 0.2px solid #010101;
+}
+input[type=range]::-webkit-slider-thumb {
+  box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+  border: 1px solid #000000;
+  height: 30px;
+  width: 30px;
+  border-radius: 15px;
+  background: #ffffff;
+  cursor: pointer;
+  -webkit-appearance: none;
+  margin-top: -12px;
+}
+input[type=range]:focus::-webkit-slider-runnable-track {
+  background: #367ebd;
+}
+input[type=range]:disabled::-webkit-slider-thumb {
+  border: 1px solid #888888;
+  background: #dddddd;
+  cursor: not-allowed;
+}
+input[type=range]:disabled::-webkit-slider-runnable-track {
+  background: #cccccc;
+  cursor: not-allowed;
+}
+
+input[type=range]::-moz-range-track {
+  width: 100%;
+  height: 8.4px;
+  cursor: pointer;
+  animate: 0.2s;
+  box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+  background: #3071a9;
+  border-radius: 1.3px;
+  border: 0.2px solid #010101;
+}
+input[type=range]::-moz-range-thumb {
+  box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+  border: 1px solid #000000;
+  height: 30px;
+  width: 30px;
+  border-radius: 15px;
+  background: #ffffff;
+  cursor: pointer;
+}
+input[type=range]:disabled::-moz-range-thumb {
+  border: 1px solid #888888;
+  background: #dddddd;
+  cursor: not-allowed;
+}
+input[type=range]:disabled::-moz-range-track {
+  background: #cccccc;
+  cursor: not-allowed;
+}
+
+input[type=range]::-ms-track {
+  width: 100%;
+  height: 8.4px;
+  cursor: pointer;
+  animate: 0.2s;
+  background: transparent;
+  border-color: transparent;
+  border-width: 16px 0;
+  color: transparent;
+}
+input[type=range]::-ms-fill-lower {
+  background: #2a6495;
+  border: 0.2px solid #010101;
+  border-radius: 2.6px;
+  box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+}
+input[type=range]::-ms-fill-upper {
+  background: #3071a9;
+  border: 0.2px solid #010101;
+  border-radius: 2.6px;
+  box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+}
+input[type=range]::-ms-thumb {
+  box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+  border: 1px solid #000000;
+  height: 30px;
+  width: 30px;
+  border-radius: 15px;
+  background: #ffffff;
+  cursor: pointer;
+}
+input[type=range]:focus::-ms-fill-lower {
+  background: #3071a9;
+}
+input[type=range]:focus::-ms-fill-upper {
+  background: #367ebd;
+}
+input[type=range]:disabled::-ms-fill-lower {
+  background: #dddddd;
+  cursor: not-allowed;
+}
+input[type=range]:disabled::-ms-fill-upper {
+  background: #dddddd;
+  cursor: not-allowed;
+}
+input[type=range]:disabled::-ms-thumb {
+  border: 1px solid #888888;
+  background: #cccccc;
+  cursor: not-allowed;
+}
+
+/* Slider widget */
+
+.form-control.slider {
+  height: auto;
+  display: flex;
+}
+.slider * {
+  vertical-align: middle;
+}
+.slider-control {
+  margin-right: 10px;
+}
+.slider-input {
+  flex: 1;
+}
+.slider-enable {
+	width: 30px;
+	height: 30px;
+	margin: 2px 4px 0 0 !important;
+}
+.slider-unit {
+  min-width: 2.4em;
+  display: inline-block;
+}
+.slider input.btn {
+  padding: 6px;
+  width: 34px;
+}
+@media (max-width: 767px) {
+  .form-control.slider {
+    display: block;
+  }
+  .form-inline .form-control.slider-value {
+    display: inline-block;
+    width: auto;
+    vertical-align: middle;
+  }
+  .slider-control {
+    margin-bottom: 5px;
+  }
 }
 
 /* Night mode */
+
 a.toggle-night {
   font-size: 20px;
 }
@@ -127,7 +304,10 @@ body.night {
   text-shadow: 0px 0px 1px #fff;
 }
 .night .btn-default:focus, .night .btn-default:hover {
-    background-color: #e0e0e0;
+  background-color: #e0e0e0;
+}
+.night .btn-default.active, .night .btn-default:active {
+  background-color: #e0e0e0;
 }
 .night .panel-primary>.panel-heading {
   background-image: -webkit-linear-gradient(top,#183752 0,#235a8a 100%);

@@ -407,7 +407,14 @@ void OvmsVehicleFactory::SetVehicle(const char* type)
     m_currentvehicle = NULL;
     }
   m_currentvehicle = NewVehicle(type);
-  StandardMetrics.ms_v_type->SetValue(type);
+  StandardMetrics.ms_v_type->SetValue(m_currentvehicle ? type : "");
+  }
+
+void OvmsVehicleFactory::AutoInit()
+  {
+  std::string type = MyConfig.GetParamValue("auto", "vehicle.type");
+  if (!type.empty())
+    SetVehicle(type.c_str());
   }
 
 OvmsVehicle* OvmsVehicleFactory::ActiveVehicle()

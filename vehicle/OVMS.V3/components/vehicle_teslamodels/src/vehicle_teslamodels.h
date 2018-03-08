@@ -28,21 +28,25 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __OVMS_EXT12V_H__
-#define __OVMS_EXT12V_H__
+#ifndef __VEHICLE_TESLAMODELS_H__
+#define __VEHICLE_TESLAMODELS_H__
 
-#include "pcp.h"
+#include "vehicle.h"
 
-class ext12v : public pcp
+using namespace std;
+
+class OvmsVehicleTeslaModelS: public OvmsVehicle
   {
   public:
-    ext12v(const char* name);
-    ~ext12v();
+    OvmsVehicleTeslaModelS();
+    ~OvmsVehicleTeslaModelS();
 
   public:
-    virtual void SetPowerMode(PowerMode powermode);
-    void AutoInit();
+    void IncomingFrameCan1(CAN_frame_t* p_frame);
 
+  protected:
+    char m_vin[18];
+    char m_type[5];
   };
 
-#endif //#ifndef __OVMS_EXT12V_H__
+#endif //#ifndef __VEHICLE_TESLAMODELS_H__

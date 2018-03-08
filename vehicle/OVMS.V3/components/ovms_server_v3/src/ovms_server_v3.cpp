@@ -450,10 +450,7 @@ void ovmsv3_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     }
   }
 
-class OvmsServerV3Init
-  {
-  public: OvmsServerV3Init();
-  } OvmsServerV3Init  __attribute__ ((init_priority (6200)));
+OvmsServerV3Init MyOvmsServerV3Init  __attribute__ ((init_priority (6200)));
 
 OvmsServerV3Init::OvmsServerV3Init()
   {
@@ -473,4 +470,10 @@ OvmsServerV3Init::OvmsServerV3Init()
   //   'port': The port to connect to (default: 1883)
   // Also note:
   //  Parameter "vehicle", instance "id", is the vehicle ID
+  }
+
+void OvmsServerV3Init::AutoInit()
+  {
+  if (MyConfig.GetParamValueBool("auto", "server.v3", false))
+    MyOvmsServerV3 = new OvmsServerV3("oscv3");
   }

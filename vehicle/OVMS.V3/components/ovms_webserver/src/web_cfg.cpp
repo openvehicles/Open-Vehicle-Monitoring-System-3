@@ -36,6 +36,7 @@ static const char *TAG = "webserver";
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
 #include "vehicle.h"
+#include "ovms_housekeeping.h"
 
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
@@ -247,18 +248,18 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
     "<form id=\"shellform\" method=\"post\" action=\"#\">"
       "<div class=\"input-group\">"
         "<label class=\"input-group-addon hidden-xs\" for=\"input-command\">OVMS&nbsp;&gt;&nbsp;</label>"
-        "<input type=\"text\" class=\"form-control font-monospace\" placeholder=\"Enter command\" name=\"command\" id=\"input-command\" value=\"%s\">"
+        "<input type=\"text\" class=\"form-control font-monospace\" placeholder=\"Enter command\" name=\"command\" id=\"input-command\" value=\"%s\" autocomplete=\"section-shell\">"
         "<div class=\"input-group-btn\">"
           "<button type=\"submit\" class=\"btn btn-default\">Execute</button>"
         "</div>"
       "</div>"
     "</form>"
     "<script>"
-    "$(\"#output\").on(\"window-resize\", function(){"
+    "$(\"#output\").on(\"window-resize\", function(event){"
       "$(\"#output\").height($(window).height()-220);"
       "$(\"#output\").scrollTop($(\"#output\").get(0).scrollHeight);"
     "}).trigger(\"window-resize\");"
-    "$(\"#shellform\").on(\"submit\", function(){"
+    "$(\"#shellform\").on(\"submit\", function(event){"
       "var data = $(this).serialize();"
       "var command = $(\"#input-command\").val();"
       "var output = $(\"#output\");"
@@ -340,9 +341,9 @@ void OvmsWebServer::HandleCfgPassword(PageEntry_t& p, PageContext_t& c)
   // generate form:
   c.panel_start("primary", "Change module &amp; admin password");
   c.form_start(p.uri);
-  c.input_password("Old password", "oldpass", "");
-  c.input_password("New password", "newpass1", "");
-  c.input_password("…repeat", "newpass2", "");
+  c.input_password("Old password", "oldpass", "", NULL, NULL, "autocomplete=\"section-login current-password\"");
+  c.input_password("New password", "newpass1", "", NULL, NULL, "autocomplete=\"section-login new-password\"");
+  c.input_password("…repeat", "newpass2", "", "Repeat new password", NULL, "autocomplete=\"section-login new-password\"");
   c.input_button("default", "Submit");
   c.form_end();
   c.panel_end();
@@ -356,13 +357,15 @@ void OvmsWebServer::HandleCfgPassword(PageEntry_t& p, PageContext_t& c)
 void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
-  std::string vehicleid, vehicletype, vehiclename;
+  std::string vehicleid, vehicletype, vehiclename, timezone, units_distance;
   
   if (c.method == "POST") {
     // process form submission:
     vehicleid = c.getvar("vehicleid");
     vehicletype = c.getvar("vehicletype");
     vehiclename = c.getvar("vehiclename");
+    timezone = c.getvar("timezone");
+    units_distance = c.getvar("units_distance");
     
     if (vehicleid.length() == 0)
       error += "<li data-input=\"vehicleid\">Vehicle ID must not be empty</li>";
@@ -380,8 +383,10 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     if (error == "") {
       // success:
       MyConfig.SetParamValue("vehicle", "id", vehicleid);
-      MyConfig.SetParamValue("vehicle", "type", vehicletype);
+      MyConfig.SetParamValue("auto", "vehicle.type", vehicletype);
       MyConfig.SetParamValue("vehicle", "name", vehiclename);
+      MyConfig.SetParamValue("vehicle", "timezone", timezone);
+      MyConfig.SetParamValue("vehicle", "units.distance", units_distance);
       
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       info += "<script>$(\"#menu\").load(\"/menu\")</script>";
@@ -400,8 +405,10 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
   else {
     // read configuration:
     vehicleid = MyConfig.GetParamValue("vehicle", "id");
-    vehicletype = MyConfig.GetParamValue("vehicle", "type");
+    vehicletype = MyConfig.GetParamValue("auto", "vehicle.type");
     vehiclename = MyConfig.GetParamValue("vehicle", "name");
+    timezone = MyConfig.GetParamValue("vehicle", "timezone");
+    units_distance = MyConfig.GetParamValue("vehicle", "units.distance");
     c.head(200);
   }
   
@@ -409,12 +416,18 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
   c.panel_start("primary", "Vehicle configuration");
   c.form_start(p.uri);
   c.input_select_start("Vehicle type", "vehicletype");
+  c.input_select_option("&mdash;", "", vehicletype.empty());
   for (OvmsVehicleFactory::map_vehicle_t::iterator k=MyVehicleFactory.m_vmap.begin(); k!=MyVehicleFactory.m_vmap.end(); ++k)
     c.input_select_option(k->second.name, k->first, (vehicletype == k->first));
   c.input_select_end();
   c.input_text("Vehicle ID", "vehicleid", vehicleid.c_str(), "Use upper case letters and/or digits",
     "<p>Note: this is also the <strong>vehicle account ID</strong> for server connections.</p>");
   c.input_text("Vehicle name", "vehiclename", vehiclename.c_str(), "optional, the name of your car");
+  c.input_text("Time zone", "timezone", timezone.c_str(), "optional, default UTC");
+  c.input_select_start("Distance units", "units_distance");
+  c.input_select_option("Kilometers", "K", units_distance == "K");
+  c.input_select_option("Miles", "M", units_distance == "M");
+  c.input_select_end();
   c.input_button("default", "Save");
   c.form_end();
   c.panel_end();
@@ -498,12 +511,13 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
 {
   std::string error;
-  std::string server, password, port;
+  std::string server, vehicleid, password, port;
   std::string updatetime_connected, updatetime_idle;
   
   if (c.method == "POST") {
     // process form submission:
     server = c.getvar("server");
+    vehicleid = c.getvar("vehicleid");
     password = c.getvar("password");
     port = c.getvar("port");
     updatetime_connected = c.getvar("updatetime_connected");
@@ -516,6 +530,10 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
         error += "<li data-input=\"port\">Port must be an integer value in the range 0…65535</li>";
       }
     }
+    if (vehicleid.length() == 0)
+      error += "<li data-input=\"vehicleid\">Vehicle ID must not be empty</li>";
+    if (vehicleid.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") != std::string::npos)
+      error += "<li data-input=\"vehicleid\">Vehicle ID may only contain upper case letters and digits</li>";
     if (updatetime_connected != "") {
       if (atoi(updatetime_connected.c_str()) < 1) {
         error += "<li data-input=\"updatetime_connected\">Update interval (connected) must be at least 1 second</li>";
@@ -530,9 +548,10 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
     if (error == "") {
       // success:
       MyConfig.SetParamValue("server.v2", "server", server);
+      MyConfig.SetParamValue("server.v2", "port", port);
+      MyConfig.SetParamValue("vehicle", "id", vehicleid);
       if (password != "")
         MyConfig.SetParamValue("server.v2", "password", password);
-      MyConfig.SetParamValue("server.v2", "port", port);
       MyConfig.SetParamValue("server.v2", "updatetime.connected", updatetime_connected);
       MyConfig.SetParamValue("server.v2", "updatetime.idle", updatetime_idle);
       
@@ -551,6 +570,7 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
   else {
     // read configuration:
     server = MyConfig.GetParamValue("server.v2", "server");
+    vehicleid = MyConfig.GetParamValue("vehicle", "id");
     password = MyConfig.GetParamValue("server.v2", "password");
     port = MyConfig.GetParamValue("server.v2", "port");
     updatetime_connected = MyConfig.GetParamValue("server.v2", "updatetime.connected");
@@ -570,8 +590,11 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
       "<li><code>ovms.dexters-web.de</code> <a href=\"https://dexters-web.de/?action=NewAccount\" target=\"_blank\">Registration</a></li>"
     "</ul>");
   c.input_text("Port", "port", port.c_str(), "optional, default: 6867");
+  c.input_text("Vehicle ID", "vehicleid", vehicleid.c_str(), "Use upper case letters and/or digits",
+    NULL, "autocomplete=\"section-serverv2 username\"");
   c.input_password("Vehicle password", "password", "", "empty = no change",
-    "<p>Note: enter the password for the <strong>vehicle ID account</strong>, <em>not</em> your user account password</p>");
+    "<p>Note: enter the password for the <strong>vehicle ID account</strong>, <em>not</em> your user account password</p>",
+    "autocomplete=\"section-serverv2 current-password\"");
 
   c.fieldset_start("Update intervals");
   c.input_text("…connected", "updatetime_connected", updatetime_connected.c_str(),
@@ -669,8 +692,10 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
       "<li><a href=\"https://github.com/mqtt/mqtt.github.io/wiki/public_brokers\" target=\"_blank\">More public MQTT brokers</a></li>"
     "</ul>");
   c.input_text("Port", "port", port.c_str(), "optional, default: 1883");
-  c.input_text("Username", "port", port.c_str(), "Enter user login name");
-  c.input_password("Password", "password", "", "Enter user password, empty = no change");
+  c.input_text("Username", "user", user.c_str(), "Enter user login name",
+    NULL, "autocomplete=\"section-serverv3 username\"");
+  c.input_password("Password", "password", "", "Enter user password, empty = no change",
+    NULL, "autocomplete=\"section-serverv3 current-password\"");
 
   c.fieldset_start("Update intervals");
   c.input_text("…connected", "updatetime_connected", updatetime_connected.c_str(),
@@ -827,12 +852,15 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
       "var counter = $(el).parents('table').first().prev();"
       "var pfx = counter.attr(\"name\");"
       "var nr = Number(counter.val()) + 1;"
-      "var row = $('\\"
-          "<tr>\\"
-            "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\"><strong>✖</strong></button></td>\\"
-            "<td><input type=\"text\" class=\"form-control\" name=\"' + pfx + '_ssid_' + nr + '\" placeholder=\"SSID\"></td>\\"
-            "<td><input type=\"password\" class=\"form-control\" name=\"' + pfx + '_pass_' + nr + '\" placeholder=\"Passphrase\"></td>\\"
-          "</tr>');"
+      "var row = $('"
+          "<tr>"
+            "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\"><strong>✖</strong></button></td>"
+            "<td><input type=\"text\" class=\"form-control\" name=\"' + pfx + '_ssid_' + nr + '\" placeholder=\"SSID\""
+              " autocomplete=\"section-wifi-' + pfx + ' username\"></td>"
+            "<td><input type=\"password\" class=\"form-control\" name=\"' + pfx + '_pass_' + nr + '\" placeholder=\"Passphrase\""
+              " autocomplete=\"section-wifi-' + pfx + ' current-password\"></td>"
+          "</tr>"
+        "');"
       "$(el).parent().parent().before(row).prev().find(\"input\").first().focus();"
       "counter.val(nr);"
     "}"
@@ -911,4 +939,120 @@ void OvmsWebServer::UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std:
   param->m_map.clear();
   param->m_map = std::move(newmap);
   param->Save();
+}
+
+
+/**
+ * HandleCfgAutoInit: configure auto init (URL /cfg/autostart)
+ */
+void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
+{
+  std::string error, warn;
+  bool init, ext12v, modem, server_v2, server_v3;
+  std::string vehicle_type, obd2ecu, wifi_mode, wifi_ssid_client, wifi_ssid_ap;
+
+  if (c.method == "POST") {
+    // process form submission:
+    init = (c.getvar("init") == "yes");
+    ext12v = (c.getvar("ext12v") == "yes");
+    modem = (c.getvar("modem") == "yes");
+    server_v2 = (c.getvar("server_v2") == "yes");
+    server_v3 = (c.getvar("server_v3") == "yes");
+    vehicle_type = c.getvar("vehicle_type");
+    obd2ecu = c.getvar("obd2ecu");
+    wifi_mode = c.getvar("wifi_mode");
+    wifi_ssid_ap = c.getvar("wifi_ssid_ap");
+    wifi_ssid_client = c.getvar("wifi_ssid_client");
+    
+    // store:
+    MyConfig.SetParamValueBool("auto", "init", init);
+    MyConfig.SetParamValueBool("auto", "ext12v", ext12v);
+    MyConfig.SetParamValueBool("auto", "modem", modem);
+    MyConfig.SetParamValueBool("auto", "server.v2", server_v2);
+    MyConfig.SetParamValueBool("auto", "server.v3", server_v3);
+    MyConfig.SetParamValue("auto", "vehicle.type", vehicle_type);
+    MyConfig.SetParamValue("auto", "obd2ecu", obd2ecu);
+    MyConfig.SetParamValue("auto", "wifi.mode", wifi_mode);
+    MyConfig.SetParamValue("auto", "wifi.ssid.ap", wifi_ssid_ap);
+    MyConfig.SetParamValue("auto", "wifi.ssid.client", wifi_ssid_client);
+    
+    c.head(200);
+    c.alert("success", "<p class=\"lead\">Auto start configuration saved.</p>");
+    OutputHome(p, c);
+    c.done();
+    return;
+  }
+
+  // read configuration:
+  init = MyConfig.GetParamValueBool("auto", "init", true);
+  ext12v = MyConfig.GetParamValueBool("auto", "ext12v", false);
+  modem = MyConfig.GetParamValueBool("auto", "modem", false);
+  server_v2 = MyConfig.GetParamValueBool("auto", "server.v2", false);
+  server_v3 = MyConfig.GetParamValueBool("auto", "server.v3", false);
+  vehicle_type = MyConfig.GetParamValue("auto", "vehicle.type");
+  obd2ecu = MyConfig.GetParamValue("auto", "obd2ecu");
+  wifi_mode = MyConfig.GetParamValue("auto", "wifi.mode", "ap");
+  wifi_ssid_ap = MyConfig.GetParamValue("auto", "wifi.ssid.ap");
+  if (wifi_ssid_ap.empty())
+    wifi_ssid_ap = "OVMS";
+  wifi_ssid_client = MyConfig.GetParamValue("auto", "wifi.ssid.client");
+  
+  // generate form:
+  c.head(200);
+
+  c.panel_start("primary", "Auto start configuration");
+  c.form_start(p.uri);
+  
+  c.input_checkbox("Enable auto start", "init", init || (MyHousekeeping && MyHousekeeping->m_autoinit),
+    "<p>Note: if a crash or reboot occurs within 10 seconds after powering the module, "
+    "this option will automatically be disabled and need to be re-enabled manually.</p>");
+  
+  c.input_checkbox("Power on external 12V", "ext12v", ext12v,
+    "<p>Enable to provide 12V to external devices connected to the module (i.e. ECU displays).</p>");
+  
+  c.input_select_start("Wifi mode", "wifi_mode");
+  c.input_select_option("Access point", "ap", (wifi_mode == "ap"));
+  c.input_select_option("Client mode", "client", (wifi_mode == "client"));
+  c.input_select_option("Off", "off", (wifi_mode.empty() || wifi_mode == "off"));
+  c.input_select_end();
+
+  c.input_select_start("… access point SSID", "wifi_ssid_ap");
+  OvmsConfigParam* param = MyConfig.CachedParam("wifi.ap");
+  if (param->m_map.find(wifi_ssid_ap) == param->m_map.end())
+    c.input_select_option(wifi_ssid_ap.c_str(), wifi_ssid_ap.c_str(), true);
+  for (auto const& kv : param->m_map)
+    c.input_select_option(kv.first.c_str(), kv.first.c_str(), (kv.first == wifi_ssid_ap));
+  c.input_select_end();
+  
+  c.input_select_start("… client mode SSID", "wifi_ssid_client");
+  param = MyConfig.CachedParam("wifi.ssid");
+  c.input_select_option("Any known SSID (scan mode)", "", wifi_ssid_client.empty());
+  for (auto const& kv : param->m_map)
+    c.input_select_option(kv.first.c_str(), kv.first.c_str(), (kv.first == wifi_ssid_client));
+  c.input_select_end();
+  
+  c.input_checkbox("Start modem", "modem", modem,
+    "<p>Note: a vehicle module may start the modem as necessary, independantly of this option.</p>");
+  
+  c.input_select_start("Vehicle type", "vehicle_type");
+  c.input_select_option("&mdash;", "", vehicle_type.empty());
+  for (OvmsVehicleFactory::map_vehicle_t::iterator k=MyVehicleFactory.m_vmap.begin(); k!=MyVehicleFactory.m_vmap.end(); ++k)
+    c.input_select_option(k->second.name, k->first, (vehicle_type == k->first));
+  c.input_select_end();
+  
+  c.input_select_start("Start OBD2ECU", "obd2ecu");
+  c.input_select_option("&mdash;", "", obd2ecu.empty());
+  c.input_select_option("can1", "can1", obd2ecu == "can1");
+  c.input_select_option("can2", "can2", obd2ecu == "can2");
+  c.input_select_option("can3", "can3", obd2ecu == "can3");
+  c.input_select_end(
+    "<p>OBD2ECU translates OVMS to OBD2 metrics, i.e. to drive standard ECU displays</p>");
+  
+  c.input_checkbox("Start server V2", "server_v2", server_v2);
+  c.input_checkbox("Start server V3", "server_v3", server_v3);
+  
+  c.input_button("default", "Save");
+  c.form_end();
+  c.panel_end();
+  c.done();
 }

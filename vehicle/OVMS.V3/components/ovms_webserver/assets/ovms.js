@@ -23,7 +23,7 @@ function loaduri(target, method, uri, data){
   location.hash = "#" + uri;
   
   $.ajax({ "type": method, "url": uri, "data": data,
-    "timeout": 5000,
+    "timeout": 10000,
     "beforeSend": function(){
       $("html").addClass("loading");
     },
@@ -60,7 +60,7 @@ function loadcmd(command, target){
     output = $(target);
   }
   return $.ajax({ "type": "post", "url": "/api/execute", "data": data,
-    "timeout": 5000,
+    "timeout": 10000,
     "beforeSend": function(){
       output.addClass("loading");
     },
@@ -140,6 +140,14 @@ function monitorUpdate(){
 
 $(function(){
   
+  $('body').on('click', '.toggle-night', function(event){
+    $('body').toggleClass("night");
+    event.stopPropagation();
+    return false;
+  });
+
+	// AJAX links/buttons:
+	
   $('body').on('click', 'a[target^="#"], form[target^="#"] .btn[type="submit"]', function(event){
     var method = $(this).data("method") || "get";
     var uri = $(this).attr("href");
@@ -167,7 +175,7 @@ $(function(){
     return false;
   });
 
-  $('body').on('click', '.btn[data-cmd]', function(){
+  $('body').on('click', '.btn[data-cmd]', function(event){
     var btn = $(this);
     var cmd = btn.data("cmd");
     var tgt = btn.data("target");
@@ -187,16 +195,35 @@ $(function(){
     return false;
   });
 
-  $('.toggle-night').on('click', function(){
-    $('body').toggleClass("night");
-    event.stopPropagation();
-    return false;
-  });
-
+	// Slider widget:
+	
+	$("body").on("change", ".slider-enable", function(evt) {
+		var slider = $(this).closest(".slider");
+		slider.find("input[type=number]").prop("disabled", !this.checked).trigger("input");
+		slider.find("input[type=range]").prop("disabled", !this.checked).trigger("input");
+		slider.find("input[type=button]").prop("disabled", !this.checked);
+	});
+	$("body").on("input", ".slider-value", function(evt) {
+		$(this).closest(".slider").find(".slider-input").val(this.value);
+	});
+	$("body").on("input", ".slider-input", function(evt) {
+		if (this.disabled)
+			this.value = $(this).data("default");
+		$(this).closest(".slider").find(".slider-value").val(this.value);
+	});
+	$("body").on("click", ".slider-up", function(evt) {
+		$(this).closest(".slider").find(".slider-input")
+			.val(function(){return 1*this.value + 1;}).trigger("input");
+	});
+	$("body").on("click", ".slider-down", function(evt) {
+		$(this).closest(".slider").find(".slider-input")
+			.val(function(){return 1*this.value - 1;}).trigger("input");
+	});
+	
   if (!monitorTimer)
     monitorTimer = window.setInterval(monitorUpdate, 1000);
   
-  $(window).on("resize", function(){
+  $(window).on("resize", function(event){
     $(".get-window-resize").trigger("window-resize");
   });
   

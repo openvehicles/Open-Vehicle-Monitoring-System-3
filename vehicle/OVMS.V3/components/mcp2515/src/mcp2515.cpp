@@ -41,10 +41,12 @@ static const char *TAG = "mcp2515";
 static void MCP2515_isr(void *pvParameters)
   {
   mcp2515 *me = (mcp2515*)pvParameters;
-  
+
+  me->m_status.interrupts++;
+
   // we don't know the IRQ source and querying by SPI is too slow for an ISR,
   // so we let RxCallback() figure out what to do
-  
+
   CAN_msg_t msg;
   msg.type = CAN_rxcallback;
   msg.body.bus = me;
@@ -169,7 +171,7 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=
   {
   uint8_t buf[16];
   uint8_t id[4];
-  
+
   // check for free TX buffer:
   uint8_t txbuf;
   uint8_t* p = m_spibus->spi_cmd(m_spi, buf, 1, 1, CMD_READ_STATUS);
@@ -215,7 +217,7 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=
 
   // stats & logging:
   canbus::Write(p_frame, maxqueuewait);
-  
+
   return ESP_OK;
   }
 
@@ -227,7 +229,7 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
   uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, 0x2c);
   uint8_t intstat = p[0];
   uint8_t errflag = p[1];
-  
+
   // handle RX buffers and other interrupts sequentially:
   int intflag;
   if (intstat & 0x01)
@@ -245,22 +247,22 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
     // other interrupts:
     intflag = intstat & 0b11111100;
     }
-  
+
   if (intflag == 0)
     {
     // all interrupts handled
     return false;
     }
-  
+
   if (intflag <= 2)
     {
     // The indicated RX buffer has a message to be read
     memset(frame,0,sizeof(*frame));
     frame->origin = this;
-    
+
     // read RX buffer and clear interrupt flag:
     uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 13, 1, CMD_READ_RXBUF + ((intflag==1) ? 0 : 4));
-    
+
     if (p[1] & 0x08) //check for extended mode=1, or std mode=0
       {
       frame->FIR.B.FF = CAN_frame_ext;           // Extended mode
@@ -275,30 +277,30 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
       frame->FIR.B.FF = CAN_frame_std;
       frame->MsgID = ((uint32_t)p[0] << 3) + (p[1] >> 5);  // Standard mode
       }
-   
+
     frame->FIR.B.DLC = p[4] & 0x0f;
 
     memcpy(&frame->data,p+5,8);
     }
 
   // handle other interrupts that came in at the same time:
-  
+
   if (intstat & 0b00011100)
-    { 
+    {
     // some TX buffers have become available; clear IRQs and fill up:
     m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intstat & 0b00011100, 0x00);
-  
+
     if(xQueueReceive(m_txqueue, (void*)frame, 0) == pdTRUE)  // if any queued for later?
       Write(frame, 0);  // if so, send one
     }
-  
+
   if (intstat & 0b10100000)
     {
     // Error interrupts:
     //  MERRF 0x80 = message tx/rx error
     //  ERRIF 0x20 = overflow / error state change
     m_status.error_flags = (intstat & 0b10100000) << 8 | errflag;
-  
+
     if (errflag & 0b10000000) // RXB1 overflow
       {
       m_status.rxbuf_overflow++;
@@ -306,27 +308,27 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
       }
     if (errflag & 0b01000000) // RXB0 overflow.  No data lost in this case (it went into RXB1)
       m_status.rxbuf_overflow++;
-    
+
     // read error counters:
     uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, 0x1c);
     m_status.errors_tx = p[0];
     m_status.errors_rx = p[1];
-    
+
     // log:
     LogStatus(CAN_LogStatus_Error);
     }
-  
+
   // clear RX buffer overflow flags:
   if (errflag & 0b11000000)
     m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2d, errflag & 0b11000000, 0x00);
-  
+
   // clear error & wakeup interrupts:
   if (intstat & 0b11100000)
-    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intstat & 0b11100000, 0x00); 
-  
+    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intstat & 0b11100000, 0x00);
+
   if(intflag & 0b00000011)   //  did we receive anything?
     return true;
-  else 
+  else
     return false;
   }
 

@@ -57,7 +57,7 @@ canlog* canlog::Instantiate(const char* type)
     return new canlog_trace();
   if (strcasecmp(type, "crtd") == 0)
     return new canlog_crtd();
-  
+
   ESP_LOGE(TAG, "canlog::Instantiate: Unknown type '%s'", type);
   return NULL;
   }
@@ -82,7 +82,7 @@ canlog::~canlog()
   {
   if (m_task)
     vTaskDelete(m_task);
-  
+
   if (m_queue)
     {
     CAN_LogMsg_t msg;
@@ -134,19 +134,19 @@ bool canlog::Open(std::string path)
     ESP_LOGE(TAG, "canlog[%s].Open: protected path '%s'", GetType(), path.c_str());
     return false;
     }
-  
+
   FILE* file = fopen(path.c_str(), "w");
   if (!file)
     {
     ESP_LOGE(TAG, "canlog[%s].Open: can't write to '%s'", GetType(), path.c_str());
     return false;
     }
-  
+
   m_path = path;
   m_file = file;
   m_msgcount = 0;
   m_dropcount = 0;
-  
+
   LogInfo(NULL, CAN_LogInfo_Config, GetInfo().c_str());
   ESP_LOGI(TAG, "canlog[%s].Open: writing to '%s'", GetType(), path.c_str());
   return true;
@@ -185,12 +185,12 @@ const char* canlog::GetLogEntryTypeName(CAN_LogEntry_t type)
 std::string canlog::GetInfo()
   {
   std::ostringstream buf;
-  
+
   buf << "Type:" << GetType();
-  
+
   if (IsOpen())
     buf << "; Path:'" << GetPath() << "'";
-  
+
   if (m_filtercnt)
     {
     buf << "; Filter:" << std::hex;
@@ -206,9 +206,9 @@ std::string canlog::GetInfo()
     {
     buf << "; Filter:off";
     }
-  
+
   buf << "; Vehicle:" << StdMetrics.ms_v_type->AsString() << ";";
-  
+
   return buf.str();
   }
 
@@ -217,7 +217,7 @@ std::string canlog::GetStats()
   std::ostringstream buf;
   float droprate = (m_msgcount > 0) ? ((float) m_dropcount/m_msgcount*100) : 0;
   uint32_t waiting = uxQueueMessagesWaiting(m_queue);
-  buf << "total messages: " << m_msgcount 
+  buf << "total messages: " << m_msgcount
     << ", dropped: " << m_dropcount
     << " = " << std::fixed << std::setprecision(1) << droprate << "%";
   if (waiting > 0)
@@ -323,12 +323,13 @@ void canlog_trace::OutputMsg(CAN_LogMsg_t& msg)
       esp_log_write(ESP_LOG_VERBOSE, TAG, LOG_FORMAT(V, "%s"), msg.timestamp, TAG, buffer);
       }
       break;
-    
+
     case CAN_LogStatus_Error:
       esp_log_write(ESP_LOG_ERROR, TAG,
-        LOG_FORMAT(E, "%s %s rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d"),
+        LOG_FORMAT(E, "%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d"),
         msg.timestamp, TAG,
         GetLogEntryTypeName(msg.type), msg.bus->GetName(),
+        msg.status.interrupts,
         msg.status.packets_rx, msg.status.packets_tx,
         msg.status.error_flags, msg.status.errors_rx, msg.status.errors_tx,
         msg.status.rxbuf_overflow, msg.status.txbuf_overflow,
@@ -336,15 +337,16 @@ void canlog_trace::OutputMsg(CAN_LogMsg_t& msg)
       break;
     case CAN_LogStatus_Statistics:
       esp_log_write(ESP_LOG_DEBUG, TAG,
-        LOG_FORMAT(D, "%s %s rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d"),
+        LOG_FORMAT(D, "%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d"),
         msg.timestamp, TAG,
         GetLogEntryTypeName(msg.type), msg.bus->GetName(),
+        msg.status.interrupts,
         msg.status.packets_rx, msg.status.packets_tx,
         msg.status.error_flags, msg.status.errors_rx, msg.status.errors_tx,
         msg.status.rxbuf_overflow, msg.status.txbuf_overflow,
         msg.status.txbuf_delay);
       break;
-    
+
     case CAN_LogInfo_Comment:
     case CAN_LogInfo_Config:
     case CAN_LogInfo_Event:
@@ -353,7 +355,7 @@ void canlog_trace::OutputMsg(CAN_LogMsg_t& msg)
         msg.timestamp, TAG,
         GetLogEntryTypeName(msg.type), msg.bus ? msg.bus->GetName() : "*", msg.text);
       break;
-    
+
     default:
       break;
     }
@@ -397,7 +399,7 @@ void canlog_crtd::OutputMsg(CAN_LogMsg_t& msg)
         fprintf(m_file, " %02X", msg.frame.data.u8[i]);
       fputc('\n', m_file);
       break;
-    
+
     case CAN_LogFrame_TX_Queue:
     case CAN_LogFrame_TX_Fail:
       fprintf(m_file, "%d.%03d %sCEV %s %c%s %0*X",
@@ -409,18 +411,19 @@ void canlog_crtd::OutputMsg(CAN_LogMsg_t& msg)
         fprintf(m_file, " %02X", msg.frame.data.u8[i]);
       fputc('\n', m_file);
       break;
-    
+
     case CAN_LogStatus_Error:
     case CAN_LogStatus_Statistics:
-      fprintf(m_file, "%d.%03d %s%s %s rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d\n",
+      fprintf(m_file, "%d.%03d %s%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d\n",
         msg.timestamp / 1000, msg.timestamp % 1000, msg.bus->GetName()+3,
         (msg.type == CAN_LogStatus_Error) ? "CEV" : "CXX",
         GetLogEntryTypeName(msg.type), msg.status.packets_rx, msg.status.packets_tx, msg.status.error_flags,
+        msg.status.interrupts,
         msg.status.errors_rx, msg.status.errors_tx, msg.status.rxbuf_overflow, msg.status.txbuf_overflow,
         msg.status.txbuf_delay);
       break;
       break;
-    
+
     case CAN_LogInfo_Comment:
     case CAN_LogInfo_Config:
     case CAN_LogInfo_Event:
@@ -429,7 +432,7 @@ void canlog_crtd::OutputMsg(CAN_LogMsg_t& msg)
         (msg.type == CAN_LogInfo_Event) ? "CEV" : "CXX",
         GetLogEntryTypeName(msg.type), msg.text);
       break;
-    
+
     default:
       break;
     }

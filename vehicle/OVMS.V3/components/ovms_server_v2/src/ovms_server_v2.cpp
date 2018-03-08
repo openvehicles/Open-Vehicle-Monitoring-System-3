@@ -119,7 +119,7 @@ typedef union {
   uint8_t flags;
 } car_doors5_t;
 
-#define PMAX_MAX 15
+#define PMAX_MAX 24
 static struct
   {
   const char* param;
@@ -141,8 +141,16 @@ static struct
   { "",          "" },                     // 11 PARAM_S_GROUP1
   { "",          "" },                     // 12 PARAM_S_GROUP2
   { "",          "" },                     // 13 PARAM_GSMLOCK
-  { "vehicle",   "type" },                 // 14 PARAM_VEHICLETYPE
-  { "",          "" }                      // 15 PARAM_COOLDOWN
+  { "auto",      "vehicle.type" },         // 14 PARAM_VEHICLETYPE
+  { "",          "" },                     // 15 PARAM_COOLDOWN
+  { "",          "" },                     // 16 PARAM_ACC_1
+  { "",          "" },                     // 17 PARAM_ACC_2
+  { "",          "" },                     // 18 PARAM_ACC_3
+  { "",          "" },                     // 19 PARAM_ACC_4
+  { "",          "" },                     // 20
+  { "",          "" },                     // 21
+  { "",          "" },                     // 22 PARAM_GPRSDNS
+  { "vehicle",   "timezone" }              // 23 PARAM_TIMEZONE
   };
 
 OvmsServerV2 *MyOvmsServerV2 = NULL;
@@ -1673,10 +1681,7 @@ void ovmsv2_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     }
   }
 
-class OvmsServerV2Init
-  {
-  public: OvmsServerV2Init();
-  } OvmsServerV2Init  __attribute__ ((init_priority (6100)));
+OvmsServerV2Init MyOvmsServerV2Init  __attribute__ ((init_priority (6100)));
 
 OvmsServerV2Init::OvmsServerV2Init()
   {
@@ -1697,4 +1702,10 @@ OvmsServerV2Init::OvmsServerV2Init()
   //   'updatetime.idle': Time between updates when no apps connected (default: 600)
   // Also note:
   //  Parameter "vehicle", instance "id", is the vehicle ID
+  }
+
+void OvmsServerV2Init::AutoInit()
+  {
+  if (MyConfig.GetParamValueBool("auto", "server.v2", false))
+    MyOvmsServerV2 = new OvmsServerV2("oscv2");
   }

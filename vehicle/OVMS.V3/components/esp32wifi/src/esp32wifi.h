@@ -54,6 +54,7 @@ class esp32wifi : public pcp
     ~esp32wifi();
 
   public:
+    void AutoInit();
     void SetPowerMode(PowerMode powermode);
 
   public:

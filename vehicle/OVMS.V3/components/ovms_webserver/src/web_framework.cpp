@@ -34,6 +34,7 @@ static const char *TAG = "webserver";
 #include "ovms_webserver.h"
 #include "ovms_config.h"
 #include "ovms_metrics.h"
+#include "ovms_housekeeping.h"
 #include "buffered_shell.h"
 #include "metrics_standard.h"
 #include "vehicle.h"
@@ -45,6 +46,8 @@ extern const uint8_t script_js_gz_start[]     asm("_binary_script_js_gz_start");
 extern const uint8_t script_js_gz_end[]       asm("_binary_script_js_gz_end");
 extern const uint8_t style_css_gz_start[]     asm("_binary_style_css_gz_start");
 extern const uint8_t style_css_gz_end[]       asm("_binary_style_css_gz_end");
+extern const uint8_t favicon_png_start[]      asm("_binary_favicon_png_start");
+extern const uint8_t favicon_png_end[]        asm("_binary_favicon_png_end");
 
 
 /**
@@ -153,19 +156,28 @@ void PageContext::form_end() {
 }
 
 void PageContext::input(const char* type, const char* label, const char* name, const char* value,
-    const char* placeholder /*=NULL*/, const char* helptext /*=NULL*/) {
+    const char* placeholder /*=NULL*/, const char* helptext /*=NULL*/, const char* moreattrs /*=NULL*/,
+    const char* unit /*=NULL*/) {
   mg_printf_http_chunk(nc,
     "<div class=\"form-group\">"
       "<label class=\"control-label col-sm-3\" for=\"input-%s\">%s:</label>"
       "<div class=\"col-sm-9\">"
-        "<input type=\"%s\" class=\"form-control\" placeholder=\"%s%s\" name=\"%s\" id=\"input-%s\" value=\"%s\">"
-        "%s%s%s"
+        "%s" // unit (input-group)
+        "<input type=\"%s\" class=\"form-control\" placeholder=\"%s%s\" name=\"%s\" id=\"input-%s\" value=\"%s\" %s>"
+        "%s%s%s" // unit
+        "%s%s%s" // helptext
       "</div>"
     "</div>"
-    , _attr(name), label, _attr(type)
+    , _attr(name), label
+    , unit ? "<div class=\"input-group\">" : ""
+    , _attr(type)
     , placeholder ? "" : "Enter "
     , placeholder ? _attr(placeholder) : _attr(label)
     , _attr(name), _attr(name), _attr(value)
+    , moreattrs ? moreattrs : ""
+    , unit ? "<div class=\"input-group-addon input-unit\">" : ""
+    , unit ? unit : ""
+    , unit ? "</div></div>" : ""
     , helptext ? "<span class=\"help-block\">" : ""
     , helptext ? helptext : ""
     , helptext ? "</span>" : ""
@@ -173,13 +185,13 @@ void PageContext::input(const char* type, const char* label, const char* name, c
 }
 
 void PageContext::input_text(const char* label, const char* name, const char* value,
-    const char* placeholder /*=NULL*/, const char* helptext /*=NULL*/) {
-  input("text", label, name, value, placeholder, helptext);
+    const char* placeholder /*=NULL*/, const char* helptext /*=NULL*/, const char* moreattrs /*=NULL*/) {
+  input("text", label, name, value, placeholder, helptext, moreattrs);
 }
 
 void PageContext::input_password(const char* label, const char* name, const char* value,
-    const char* placeholder /*=NULL*/, const char* helptext /*=NULL*/) {
-  input("password", label, name, value, placeholder, helptext);
+    const char* placeholder /*=NULL*/, const char* helptext /*=NULL*/, const char* moreattrs /*=NULL*/) {
+  input("password", label, name, value, placeholder, helptext, moreattrs);
 }
 
 void PageContext::input_select_start(const char* label, const char* name) {
@@ -188,8 +200,6 @@ void PageContext::input_select_start(const char* label, const char* name) {
       "<label class=\"control-label col-sm-3\" for=\"input-%s\">%s:</label>"
       "<div class=\"col-sm-9\">"
         "<select class=\"form-control\" size=\"1\" name=\"%s\" id=\"input-%s\">"
-      "</div>"
-    "</div>"
     , _attr(name), label, _attr(name), _attr(name));
 }
 
@@ -199,8 +209,38 @@ void PageContext::input_select_option(const char* label, const char* value, bool
     , _attr(value), selected ? " selected" : "", label);
 }
 
-void PageContext::input_select_end() {
-  mg_printf_http_chunk(nc, "</select></div></div>");
+void PageContext::input_select_end(const char* helptext /*=NULL*/) {
+  mg_printf_http_chunk(nc, "</select>%s%s%s</div></div>"
+    , helptext ? "<span class=\"help-block\">" : ""
+    , helptext ? helptext : ""
+    , helptext ? "</span>" : "");
+}
+
+void PageContext::input_radio_start(const char* label, const char* name) {
+  mg_printf_http_chunk(nc,
+    "<div class=\"form-group\">"
+      "<label class=\"control-label col-sm-3\" for=\"input-%s\">%s:</label>"
+      "<div class=\"col-sm-9\">"
+        "<div id=\"input-%s\" class=\"btn-group\" data-toggle=\"buttons\">"
+    , _attr(name), label, _attr(name));
+}
+
+void PageContext::input_radio_option(const char* name, const char* label, const char* value, bool selected) {
+  mg_printf_http_chunk(nc,
+    "<label class=\"btn btn-default %s\">"
+      "<input type=\"radio\" name=\"%s\" value=\"%s\" %s autocomplete=\"off\"> %s"
+    "</label>"
+    , selected ? "active" : ""
+    , _attr(name), _attr(value)
+    , selected ? "checked" : ""
+    , label);
+}
+
+void PageContext::input_radio_end(const char* helptext /*=NULL*/) {
+  mg_printf_http_chunk(nc, "</div>%s%s%s</div></div>"
+    , helptext ? "<span class=\"help-block\">" : ""
+    , helptext ? helptext : ""
+    , helptext ? "</span>" : "");
 }
 
 void PageContext::input_checkbox(const char* label, const char* name, bool value,
@@ -215,6 +255,49 @@ void PageContext::input_checkbox(const char* label, const char* name, bool value
       "</div>"
     "</div>"
     , _attr(name), value ? "checked" : "", label
+    , helptext ? "<span class=\"help-block\">" : ""
+    , helptext ? helptext : ""
+    , helptext ? "</span>" : ""
+    );
+}
+
+void PageContext::input_slider(const char* label, const char* name, int size, const char* unit,
+    int enabled, double value, double defval, double min, double max, double step /*=1*/,
+    const char* helptext /*=NULL*/) {
+  int width = 50 + size * 10;
+  mg_printf_http_chunk(nc,
+    "<div class=\"form-group\">"
+      "<label class=\"control-label col-sm-3\" for=\"input-%s\">%s:</label>"
+      "<div class=\"col-sm-9\">"
+        "<div class=\"form-control slider\">"
+          "<div class=\"slider-control form-inline\">"
+            "<input id=\"input-%s\" class=\"slider-enable\" type=\"%s\" %s> "
+            "<input class=\"form-control slider-value\" %s type=\"number\" name=\"%s\" style=\"width:%dpx;\" value=\"%g\" min=\"%g\" max=\"%g\" step=\"%g\"> "
+            "%s%s%s"
+            "<input class=\"btn btn-default slider-down\" %s type=\"button\" value=\"➖\"> "
+            "<input class=\"btn btn-default slider-up\" %s type=\"button\" value=\"➕\">"
+          "</div>"
+          "<input class=\"slider-input\" %s type=\"range\" value=\"%g\" min=\"%g\" max=\"%g\" step=\"%g\" data-default=\"%g\">"
+        "</div>"
+        "%s%s%s"
+      "</div>"
+    "</div>"
+    , _attr(name)
+    , label
+    , _attr(name)
+    , (enabled < 0) ? "hidden" : "checkbox" // -1 => no checkbox
+    , (enabled > 0) ? "checked" : ""
+    , (enabled == 0) ? "disabled" : ""
+    , _attr(name)
+    , width
+    , value, min, max, step
+    , unit ? "<span class=\"slider-unit\">" : ""
+    , unit ? unit : ""
+    , unit ? "</span> " : ""
+    , (enabled == 0) ? "disabled" : ""
+    , (enabled == 0) ? "disabled" : ""
+    , (enabled == 0) ? "disabled" : ""
+    , value, min, max, step, defval
     , helptext ? "<span class=\"help-block\">" : ""
     , helptext ? helptext : ""
     , helptext ? "</span>" : ""
@@ -351,6 +434,11 @@ void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
   if (MyConfig.GetParamValue("password", "module").empty()) {
     c.alert("warning", "<p><strong>Warning:</strong> no admin password set. Web access is open to the public.</p>");
   }
+  
+  // check auto init, show warning if disabled:
+  if (!MyConfig.GetParamValueBool("auto", "init") && MyHousekeeping && !MyHousekeeping->m_autoinit) {
+    c.alert("warning", "<p><strong>Warning:</strong> auto start disabled. Check auto start configuration.</p>");
+  }
 }
 
 void OvmsWebServer::HandleHome(PageEntry_t& p, PageContext_t& c)
@@ -431,6 +519,7 @@ void OvmsWebServer::HandleAsset(PageEntry_t& p, PageContext_t& c)
   size_t size;
   time_t mtime;
   const char* type;
+  bool gzip_encoded = true;
   
   if (c.uri == "/assets/style.css") {
     data = style_css_gz_start;
@@ -443,6 +532,13 @@ void OvmsWebServer::HandleAsset(PageEntry_t& p, PageContext_t& c)
     size = script_js_gz_end - script_js_gz_start;
     mtime = MTIME_ASSETS_SCRIPT_JS;
     type = "application/javascript";
+  }
+  else if (c.uri == "/favicon.ico") {
+    data = favicon_png_start;
+    size = favicon_png_end - favicon_png_start;
+    mtime = MTIME_ASSETS_FAVICON_PNG;
+    type = "image/png";
+    gzip_encoded = false;
   }
   else {
     mg_http_send_error(c.nc, 404, "Not found");
@@ -460,15 +556,18 @@ void OvmsWebServer::HandleAsset(PageEntry_t& p, PageContext_t& c)
     "Date: %s\r\n"
     "Last-Modified: %s\r\n"
     "Content-Type: %s\r\n"
-    "Content-Encoding: gzip\r\n"
+    "%s"
     "Transfer-Encoding: chunked\r\n"
     "Etag: %s\r\n"
     "\r\n"
-    , current_time, last_modified, type, etag);
+    , current_time
+    , last_modified
+    , type
+    , gzip_encoded ? "Content-Encoding: gzip\r\n" : ""
+    , etag);
   
   // start chunked transfer:
   c.nc->user_data = new chunked_xfer(data, size);
   c.nc->flags |= MG_F_USER_CHUNKED_XFER;
   ESP_LOGV(TAG, "chunked_xfer %p init (%d bytes)", data, size);
 }
-
