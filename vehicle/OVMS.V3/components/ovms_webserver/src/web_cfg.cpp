@@ -59,13 +59,13 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
     c.alert("info", output.c_str());
   }
   
-  c.printf(
+  c.print(
     "<div id=\"livestatus\" class=\"receiver\">"
     "<div class=\"row\">"
     "<div class=\"col-md-6\">");
   
   c.panel_start("primary", "Live");
-  c.printf(
+  c.print(
     "<div class=\"table-responsive\">"
       "<table class=\"table table-bordered table-condensed\">"
         "<tbody>"
@@ -111,7 +111,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
     );
   c.panel_end();
   
-  c.printf(
+  c.print(
     "</div>"
     "<div class=\"col-md-6\">");
   
@@ -126,7 +126,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
       "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#vehicle-status\" data-cmd=\"charge stop\">Stop charge</button></li>"
     "</ul>");
   
-  c.printf(
+  c.print(
     "</div>"
     "</div>"
     "<div class=\"row\">"
@@ -147,7 +147,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
       "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#server-v3\" data-cmd=\"server v3 stop\">Stop V3</button></li>"
     "</ul>");
   
-  c.printf(
+  c.print(
     "</div>"
     "<div class=\"col-md-6\">");
   
@@ -156,7 +156,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
   c.printf("<samp>%s</samp>", _html(output));
   c.panel_end();
   
-  c.printf(
+  c.print(
     "</div>"
     "</div>"
     "<div class=\"row\">"
@@ -167,7 +167,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
   c.printf("<samp>%s</samp>", _html(output));
   c.panel_end();
   
-  c.printf(
+  c.print(
     "</div>"
     "<div class=\"col-md-6\">");
   
@@ -176,7 +176,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
   c.printf("<samp>%s</samp>", _html(output));
   c.panel_end();
   
-  c.printf(
+  c.print(
     "</div>"
     "</div>"
     "</div>"
@@ -210,21 +210,22 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 void OvmsWebServer::HandleCommand(PageEntry_t& p, PageContext_t& c)
 {
   std::string command = c.getvar("command");
-  ESP_LOGI(TAG, "HandleCommand: executing: %s", command.c_str());
-  std::string output = ExecuteCommand(command);
-  if (c.getvar("encode") == "html") {
-    c.head(200,
-      "Content-Type: text/html; charset=utf-8\r\n"
-      "Cache-Control: no-cache");
-    c.print(c.encode_html(output));
-  }
-  else {
-    c.head(200,
-      "Content-Type: text/plain; charset=utf-8\r\n"
-      "Cache-Control: no-cache");
-    c.print(output);
-  }
-  c.done();
+  ESP_LOGI(TAG, "HandleCommand: %d bytes free, executing: %s",
+    heap_caps_get_free_size(MALLOC_CAP_8BIT), command.c_str());
+  
+  std::string* output;
+  if (c.getvar("encode") == "html")
+    output = new std::string(c.encode_html(ExecuteCommand(command)));
+  else
+    output = new std::string(ExecuteCommand(command));
+  
+  ESP_LOGD(TAG, "HandleCommand: %d bytes free, output size: %d bytes",
+    heap_caps_get_free_size(MALLOC_CAP_8BIT), output->size());
+  
+  c.head(200,
+    "Content-Type: text/html; charset=utf-8\r\n"
+    "Cache-Control: no-cache");
+  new HttpStringSender(c.nc, output);
 }
 
 
@@ -254,6 +255,9 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
         "</div>"
       "</div>"
     "</form>"
+    , _html(output.c_str()), _attr(command.c_str()));
+  
+  c.print(
     "<script>"
     "$(\"#output\").on(\"window-resize\", function(event){"
       "$(\"#output\").height($(window).height()-220);"
@@ -288,8 +292,7 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
       "return false;"
     "});"
     "$(\"#input-command\").focus();"
-    "</script>"
-    , _html(output.c_str()), _attr(command.c_str()));
+    "</script>");
   
   c.panel_end();
   c.done();
@@ -840,7 +843,7 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
   OutputWifiTable(p, c, "cl", "wifi.ssid");
   c.fieldset_end();
   
-  c.printf(
+  c.print(
     "<hr>"
     "<button type=\"submit\" class=\"btn btn-default center-block\">Save</button>"
     "</form>"

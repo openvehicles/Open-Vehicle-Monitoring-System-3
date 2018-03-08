@@ -27,7 +27,7 @@
 */
 
 #include "ovms_log.h"
-static const char *TAG = "webserver";
+//static const char *TAG = "webserver";
 
 #include <string.h>
 #include <stdio.h>
@@ -111,6 +111,10 @@ void PageContext::head(int code, const char* headers /*=NULL*/) {
 
 void PageContext::print(const std::string text) {
   mg_send_http_chunk(nc, text.data(), text.size());
+}
+
+void PageContext::print(const char* text) {
+  mg_send_http_chunk(nc, text, strlen(text));
 }
 
 void PageContext::printf(const char *fmt, ...) {
@@ -459,7 +463,7 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
   
   // output page framework:
   c.head(200);
-  mg_printf_http_chunk(c.nc,
+  c.print(
     "<!DOCTYPE html>"
     "<html lang=\"en\">"
       "<head>"
@@ -482,8 +486,9 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
               "<button type=\"button\" class=\"navbar-toggle collapsed toggle-night\">◐</button>"
               "<a class=\"navbar-brand\" href=\"/home\" target=\"#main\" title=\"Home\">OVMS</a>"
             "</div>"
-            "<div role=\"menu\" id=\"menu\" class=\"navbar-collapse collapse\">"
-              "%s"
+            "<div role=\"menu\" id=\"menu\" class=\"navbar-collapse collapse\">");
+  c.print(menu);
+  c.print(
             "</div>"
           "</div>"
         "</nav>"
@@ -491,8 +496,7 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
         "</div>"
         "<script src=\"/assets/script.js\"></script>"
       "</body>"
-    "</html>"
-    , menu.c_str());
+    "</html>");
   c.done();
 }
 
@@ -567,7 +571,5 @@ void OvmsWebServer::HandleAsset(PageEntry_t& p, PageContext_t& c)
     , etag);
   
   // start chunked transfer:
-  c.nc->user_data = new chunked_xfer(data, size);
-  c.nc->flags |= MG_F_USER_CHUNKED_XFER;
-  ESP_LOGV(TAG, "chunked_xfer %p init (%d bytes)", data, size);
+  new HttpDataSender(c.nc, data, size);
 }
