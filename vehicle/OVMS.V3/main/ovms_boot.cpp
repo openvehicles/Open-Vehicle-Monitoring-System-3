@@ -44,6 +44,8 @@ void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   {
   writer->printf("Last boot was %d second(s) ago\n",monotonictime);
   writer->printf("  This is reset #%d since last power cycle\n",boot_data.boot_count);
+  writer->printf("  Detected boot reason: %s\n",MyBoot.GetBootReasonName());
+  writer->printf("  Crash counters: %d total, %d early\n",MyBoot.GetCrashCount(),MyBoot.GetEarlyCrashCount());
   writer->printf("  CPU#0 boot reason was %d\n",boot_data.bootreason_cpu0);
   writer->printf("  CPU#1 boot reason was %d\n",boot_data.bootreason_cpu1);
   }
@@ -58,16 +60,44 @@ Boot::Boot()
   if (cpu0 == POWERON_RESET)
     {
     memset(&boot_data,0,sizeof(boot_data_t));
+    m_bootreason = BR_PowerOn;
     ESP_LOGI(TAG, "Power cycle reset detected");
     }
   else
     {
     boot_data.boot_count++;
     ESP_LOGI(TAG, "Boot #%d reasons for CPU0=%d and CPU1=%d",boot_data.boot_count,cpu0,cpu1);
+    
+    if (boot_data.soft_reset)
+      {
+      boot_data.crash_count_total = 0;
+      boot_data.crash_count_early = 0;
+      m_bootreason = BR_SoftReset;
+      ESP_LOGI(TAG, "Soft reset by user");
+      }
+    else if (!boot_data.stable_reached)
+      {
+      boot_data.crash_count_total++;
+      boot_data.crash_count_early++;
+      m_bootreason = BR_EarlyCrash;
+      ESP_LOGE(TAG, "Early crash #%d detected", boot_data.crash_count_early);
+      }
+    else
+      {
+      boot_data.crash_count_total++;
+      m_bootreason = BR_Crash;
+      ESP_LOGE(TAG, "Crash #%d detected", boot_data.crash_count_total);
+      }
     }
 
+  m_crash_count_early = boot_data.crash_count_early;
+  
   boot_data.bootreason_cpu0 = cpu0;
   boot_data.bootreason_cpu1 = cpu1;
+
+  // reset flags:
+  boot_data.soft_reset = false;
+  boot_data.stable_reached = false;
 
   // Register our commands
   OvmsCommand* cmd_boot = MyCommandApp.RegisterCommand("boot","BOOT framework",NULL, "", 1);
@@ -76,4 +106,23 @@ Boot::Boot()
 
 Boot::~Boot()
   {
+  }
+
+void Boot::SetStable()
+  {
+  boot_data.stable_reached = true;
+  boot_data.crash_count_early = 0;
+  }
+
+static const char* const bootreason_name[] =
+  {
+  "PowerOn",
+  "SoftReset",
+  "EarlyCrash",
+  "Crash",
+  };
+
+const char* Boot::GetBootReasonName()
+  {
+  return bootreason_name[m_bootreason];
   }

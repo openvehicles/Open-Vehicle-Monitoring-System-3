@@ -57,10 +57,8 @@ OvmsWebServer::OvmsWebServer()
 #endif //MG_ENABLE_FILESYSTEM
 
   m_client_cnt = 0;
-  m_modifier = MyMetrics.RegisterModifier();
-  ESP_LOGD(TAG, "WebServer registered metric modifier is #%d", m_modifier);
+  m_client_mutex = xSemaphoreCreateMutex();
   m_update_ticker = xTimerCreate("Web client update ticker", 250 / portTICK_PERIOD_MS, pdTRUE, NULL, UpdateTicker);
-  m_update_all = false;
   
   // read config:
   MyConfig.RegisterParam("http.server", "Webserver", true, true);
@@ -81,6 +79,7 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/assets/script.js", "script.js", HandleAsset);
   RegisterPage("/assets/bootstrap.min.css.map", "-", HandleAsset);
   RegisterPage("/favicon.ico", "favicon.ico", HandleAsset);
+  RegisterPage("/apple-touch-icon.png", "apple-touch-icon.png", HandleAsset);
   RegisterPage("/menu", "Menu", HandleMenu);
   RegisterPage("/home", "Home", HandleHome);
   RegisterPage("/login", "Login", HandleLogin);
@@ -104,6 +103,7 @@ OvmsWebServer::OvmsWebServer()
 
 OvmsWebServer::~OvmsWebServer()
 {
+  // never destroyed
 }
 
 
@@ -303,37 +303,28 @@ PageEntry* OvmsWebServer::FindPage(const char* uri)
 /**
  * EventHandler: this is the mongoose main event handler.
  */
-void OvmsWebServer::EventHandler(struct mg_connection *nc, int ev, void *p)
+void OvmsWebServer::EventHandler(mg_connection *nc, int ev, void *p)
 {
   PageContext_t c;
-  if (ev != MG_EV_POLL && ev != MG_EV_SEND)
-    ESP_LOGD(TAG, "EventHandler: conn=%p ev=%d p=%p", nc, ev, p);
+  MgHandler* handler = (MgHandler*) nc->user_data;
   
+  if (ev != MG_EV_POLL && ev != MG_EV_SEND)
+    ESP_LOGV(TAG, "EventHandler: conn=%p ev=%d p=%p rxbufsz=%d, txbufsz=%d", nc, ev, p, nc->recv_mbuf.size, nc->send_mbuf.size);
+  
+  // call attached handler:
+  if (handler)
+    handler->HandleEvent(ev, p);
+  
+  // framework handling:
   switch (ev)
   {
-    case MG_EV_WEBSOCKET_HANDSHAKE_DONE:
+    case MG_EV_WEBSOCKET_HANDSHAKE_DONE:    // new websocket connection
       {
-        // new websocket connection:
-        MyWebServer.m_client_cnt++;
-        MyWebServer.m_update_all = true;
-        if (MyWebServer.m_client_cnt > 0)
-          xTimerStart(MyWebServer.m_update_ticker, 0);
-        ESP_LOGD(TAG, "EventHandler: new websocket connection; %d clients active", MyWebServer.m_client_cnt);
+        MyWebServer.CreateWebSocketHandler(nc);
       }
       break;
     
-    case MG_EV_WEBSOCKET_FRAME:
-      {
-        // websocket message received:
-        websocket_message* wm = (websocket_message*) p;
-        std::string msg;
-        msg.assign((char*) wm->data, wm->size);
-        ESP_LOGD(TAG, "EventHandler: websocket msg '%s'", msg.c_str());
-        // Note: client commands not yet implemented
-        break;
-      }
-    
-    case MG_EV_HTTP_REQUEST:
+    case MG_EV_HTTP_REQUEST:                // standard HTTP request
       {
         c.nc = nc;
         c.hm = (struct http_message *) p;
@@ -366,52 +357,13 @@ void OvmsWebServer::EventHandler(struct mg_connection *nc, int ev, void *p)
       }
       break;
     
-    case MG_EV_SEND:
+    case MG_EV_CLOSE:                       // connection has been closed
       {
-        // check for running chunked transfer:
-        if (nc->flags & MG_F_USER_CHUNKED_XFER)
-        {
-          chunked_xfer* xfer = (chunked_xfer*) nc->user_data;
-          if (xfer->sent < xfer->size) {
-            // send next chunk:
-            size_t len = MIN(xfer->size - xfer->sent, XFER_CHUNK_SIZE);
-            mg_send_http_chunk(nc, (const char*) xfer->data + xfer->sent, len);
-            xfer->sent += len;
-            //ESP_LOGV(TAG, "chunked_xfer %p sent %d/%d", xfer->data, xfer->sent, xfer->size);
-          }
-          else {
-            // done:
-            nc->flags &= ~MG_F_USER_CHUNKED_XFER;
-            nc->user_data = NULL;
-            if (!xfer->keepalive)
-              nc->flags |= MG_F_SEND_AND_CLOSE;
-            mg_send_http_chunk(nc, "", 0);
-            ESP_LOGV(TAG, "chunked_xfer %p done, %d bytes sent", xfer->data, xfer->sent);
-            delete xfer;
-          }
-        }
-      }
-      break;
-    
-    case MG_EV_CLOSE:
-      {
-        // connection closed, abort running chunked transfer:
-        if (nc->flags & MG_F_USER_CHUNKED_XFER)
-        {
-          chunked_xfer* xfer = (chunked_xfer*) nc->user_data;
-          nc->flags &= ~MG_F_USER_CHUNKED_XFER;
-          nc->user_data = NULL;
-          ESP_LOGV(TAG, "chunked_xfer %p abort, %d bytes sent", xfer->data, xfer->sent);
-          delete xfer;
-        }
-        
-        // unregister websocket connection:
-        if (nc->flags & MG_F_IS_WEBSOCKET)
-        {
-          MyWebServer.m_client_cnt--;
-          if (MyWebServer.m_client_cnt == 0)
-            xTimerStop(MyWebServer.m_update_ticker, 0);
-          ESP_LOGD(TAG, "EventHandler: websocket connection closed; %d clients active", MyWebServer.m_client_cnt);
+        if (handler) {
+          if (nc->flags & MG_F_IS_WEBSOCKET)
+            MyWebServer.DestroyWebSocketHandler((WebSocketHandler*)handler);
+          else
+            delete handler;
         }
       }
       break;
@@ -466,75 +418,108 @@ void PageEntry::Serve(PageContext_t& c)
 #endif //MG_ENABLE_FILESYSTEM
   
   // call page handler:
+  size_t checkpoint1 = heap_caps_get_free_size(MALLOC_CAP_8BIT);
   handler(*this, c);
+  size_t checkpoint2 = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+  ESP_LOGD(TAG, "Serve %s: %d bytes used, %d free", uri, checkpoint1-checkpoint2, checkpoint2);
 }
 
 
 /**
- * WebsocketBroadcast: send message to all websocket clients
+ * HttpDataSender: chunked transfer of a memory region (needs to be const during xfer)
  */
-void OvmsWebServer::WebsocketBroadcast(const std::string msg)
+HttpDataSender::HttpDataSender(mg_connection* nc, const uint8_t* data, size_t size, bool keepalive /*=true*/)
+: MgHandler(nc)
 {
-  if (MyWebServer.m_client_cnt == 0)
-    return;
-  mg_mgr* mgr = MyNetManager.GetMongooseMgr();
-  for (mg_connection* c = mg_next(mgr, NULL); c != NULL; c = mg_next(mgr, c)) {
-    if (c->flags & MG_F_IS_WEBSOCKET)
-      mg_send_websocket_frame(c, WEBSOCKET_OP_TEXT, msg.data(), msg.size());
-  }
+  m_data = data;
+  m_size = size;
+  m_sent = 0;
+  m_keepalive = keepalive;
+  ESP_LOGV(TAG, "HttpDataSender %p init (%d bytes)", m_data, m_size);
 }
 
-
-/**
- * EventListener: forward events to all websocket clients
- */
-void OvmsWebServer::EventListener(std::string event, void* data)
+HttpDataSender::~HttpDataSender()
 {
-  std::string msg;
-  msg = "{\"event\":\"" + event + "\"}";
-  WebsocketBroadcast(msg);
+  if (m_sent < m_size)
+    ESP_LOGV(TAG, "HttpDataSender %p abort, %d bytes sent", m_data, m_sent);
 }
 
-
-/**
- * BroadcastMetrics: send metrics update to all websocket clients
- */
-void OvmsWebServer::BroadcastMetrics(bool update_all)
+void HttpDataSender::HandleEvent(int ev, void* p)
 {
-  if (m_client_cnt == 0)
-    return;
-  
-  // Note: a full Twizy metrics dump covering ~230 metrics needs ~6 KB
-  //  so we should not need to chunk the metrics updates.
-  
-  std::string msg;
-  msg = "{\"metrics\":{";
-  int cnt = 0;
-  for (OvmsMetric* m=MyMetrics.m_first; m != NULL; m=m->m_next) {
-    if (m->IsModifiedAndClear(m_modifier) || update_all) {
-      if (cnt)
-        msg += ',';
-      msg += '\"';
-      msg += m->m_name;
-      msg += "\":";
-      msg += m->AsJSON();
-      cnt++;
+  switch (ev)
+  {
+    case MG_EV_SEND:          // last transmission has finished
+    {
+      if (m_sent < m_size) {
+        // send next chunk:
+        size_t len = MIN(m_size - m_sent, XFER_CHUNK_SIZE);
+        mg_send_http_chunk(m_nc, (const char*) m_data + m_sent, len);
+        m_sent += len;
+        //ESP_LOGV(TAG, "HttpDataSender %p sent %d/%d", m_data, m_sent, m_size);
+      }
+      else {
+        // done:
+        if (!m_keepalive)
+          m_nc->flags |= MG_F_SEND_AND_CLOSE;
+        mg_send_http_chunk(m_nc, "", 0);
+        ESP_LOGV(TAG, "HttpDataSender %p done, %d bytes sent", m_data, m_sent);
+        delete this;
+      }
     }
-  }
-  if (cnt) {
-    msg += "}}";
-    WebsocketBroadcast(msg);
+    break;
+    
+    default:
+      break;
   }
 }
 
 
 /**
- * UpdateTicker: periodical metrics update
+ * HttpStringSender: chunked transfer of a memory region (needs to be const during xfer)
  */
-void OvmsWebServer::UpdateTicker(TimerHandle_t timer)
+HttpStringSender::HttpStringSender(mg_connection* nc, std::string* msg, bool keepalive /*=true*/)
+  : MgHandler(nc)
 {
-  MyWebServer.BroadcastMetrics(MyWebServer.m_update_all);
-  MyWebServer.m_update_all = false;
+  m_msg = msg;
+  m_sent = 0;
+  m_keepalive = keepalive;
+  ESP_LOGV(TAG, "HttpStringSender %p init (%d bytes)", this, m_msg->size());
+}
+
+HttpStringSender::~HttpStringSender()
+{
+  if (m_sent < m_msg->size())
+    ESP_LOGV(TAG, "HttpStringSender %p abort, %d bytes sent", this, m_sent);
+  delete m_msg;
+}
+
+void HttpStringSender::HandleEvent(int ev, void* p)
+{
+  switch (ev)
+  {
+    case MG_EV_SEND:          // last transmission has finished
+    {
+      if (m_sent < m_msg->size()) {
+        // send next chunk:
+        size_t len = MIN(m_msg->size() - m_sent, XFER_CHUNK_SIZE);
+        mg_send_http_chunk(m_nc, (const char*) m_msg->data() + m_sent, len);
+        m_sent += len;
+        //ESP_LOGV(TAG, "HttpStringSender %p sent %d/%d", this, m_sent, m_msg->size());
+      }
+      else {
+        // done:
+        if (!m_keepalive)
+          m_nc->flags |= MG_F_SEND_AND_CLOSE;
+        mg_send_http_chunk(m_nc, "", 0);
+        ESP_LOGV(TAG, "HttpStringSender %p done, %d bytes sent", this, m_sent);
+        delete this;
+      }
+    }
+    break;
+    
+    default:
+      break;
+  }
 }
 
 
@@ -737,7 +722,7 @@ void OvmsWebServer::HandleLogout(PageEntry_t& p, PageContext_t& c)
     "Set-Cookie: %s="
     , SESSION_COOKIE_NAME);
   c.head(200, shead);
-  c.printf(
+  c.print(
     "<script>$(\"#menu\").load(\"/menu\"); loaduri(\"#main\", \"get\", \"/home\", {})</script>");
   c.done();
 }

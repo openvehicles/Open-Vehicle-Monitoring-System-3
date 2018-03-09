@@ -324,7 +324,7 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
       
       // output result:
       c.head(200);
-      c.printf("%s", _html(output));
+      c.print(c.encode_html(output));
       c.printf(
         "<script>"
           "$('#loadmenu btn').removeClass('base unsaved btn-warning').addClass('btn-default');"
@@ -335,7 +335,7 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
         c.printf(
           "$('#prof-%d').addClass('base');", sc->m_drivemode.profile_cfgmode);
       }
-      c.printf(
+      c.print(
         "</script>");
       c.done();
       return;
@@ -365,7 +365,7 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
   const char* proflabel[4] = { "STD", "PWR", "ECO", "ICE" };
   
   c.head(200);
-  c.printf(
+  c.print(
     "<style>"
     ".btn-default.base { background-color: #fffca8; }"
     ".btn-default.base:hover, .btn-default.base:focus { background-color: #fffa62; }"
@@ -374,7 +374,7 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
   c.panel_start("primary", "Drivemode");
   c.printf(
     "<samp id=\"loadres\">%s</samp>", _html(buf.str()));
-  c.printf(
+  c.print(
     "<div id=\"loadmenu\" class=\"center-block\"><ul class=\"list-inline\">");
   for (int prof=0; prof<=3; prof++) {
     c.printf(
@@ -387,7 +387,7 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
       , proflabel[prof]
       );
   }
-  c.printf(
+  c.print(
     "</ul></div>");
   c.panel_end();
   c.done();

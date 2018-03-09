@@ -27,6 +27,12 @@ pre {
   padding-left: 0;
   padding-bottom: 5px;
 }
+.navbar-brand>img {
+  height: 34px;
+  margin-top: -7px;
+  border-radius: 4px;
+  border: 1px solid #333333;
+}
 #main {
   margin-top: 60px;
 }

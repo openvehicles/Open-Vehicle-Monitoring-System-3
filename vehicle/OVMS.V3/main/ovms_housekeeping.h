@@ -51,9 +51,6 @@ class Housekeeping
     TaskHandle_t m_taskid;
     TimerHandle_t m_timer1;
     int m_tick;
-  
-  public:
-    bool m_autoinit;
   };
 
 extern Housekeeping* MyHousekeeping;

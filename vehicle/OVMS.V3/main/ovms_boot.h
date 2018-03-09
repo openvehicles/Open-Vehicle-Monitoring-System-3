@@ -33,11 +33,23 @@
 
 #include "rom/rtc.h"
 
+typedef enum
+  {
+    BR_PowerOn = 0,                 // standard power on / hard reset
+    BR_SoftReset,                   // user requested reset ("module reset")
+    BR_EarlyCrash,                  // crash during boot/init phase
+    BR_Crash,                       // crash after reaching stable state
+  } bootreason_t;
+
 typedef struct
   {
   unsigned int boot_count;          // Number of times system has rebooted (not power on)
   RESET_REASON bootreason_cpu0;     // Reason for last boot on CPU#0
   RESET_REASON bootreason_cpu1;     // Reason for last boot on CPU#1
+  bool soft_reset;                  // true = user requested reset ("module reset")
+  bool stable_reached;              // true = system has reached stable state (see housekeeping)
+  unsigned int crash_count_early;   // Number of times system has crashed before reaching stable state
+  unsigned int crash_count_total;   // Total number of times system has crashed since power on
   } boot_data_t;
 
 extern boot_data_t boot_data;
@@ -47,6 +59,19 @@ class Boot
   public:
     Boot();
     virtual ~Boot();
+
+  public:
+    bootreason_t GetBootReason() { return m_bootreason; }
+    const char* GetBootReasonName();
+    unsigned int GetCrashCount() { return boot_data.crash_count_total; }
+    unsigned int GetEarlyCrashCount() { return m_crash_count_early; }
+    void SetSoftReset() { boot_data.soft_reset = true; }
+    bool GetStable() { return boot_data.stable_reached; }
+    void SetStable();
+
+  protected:
+    bootreason_t m_bootreason;
+    unsigned int m_crash_count_early;
   };
 
 extern Boot MyBoot;

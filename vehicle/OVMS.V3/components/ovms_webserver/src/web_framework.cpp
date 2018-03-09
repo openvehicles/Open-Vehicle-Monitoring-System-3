@@ -27,7 +27,7 @@
 */
 
 #include "ovms_log.h"
-static const char *TAG = "webserver";
+//static const char *TAG = "webserver";
 
 #include <string.h>
 #include <stdio.h>
@@ -111,6 +111,10 @@ void PageContext::head(int code, const char* headers /*=NULL*/) {
 
 void PageContext::print(const std::string text) {
   mg_send_http_chunk(nc, text.data(), text.size());
+}
+
+void PageContext::print(const char* text) {
+  mg_send_http_chunk(nc, text, strlen(text));
 }
 
 void PageContext::printf(const char *fmt, ...) {
@@ -436,7 +440,7 @@ void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
   }
   
   // check auto init, show warning if disabled:
-  if (!MyConfig.GetParamValueBool("auto", "init") && MyHousekeeping && !MyHousekeeping->m_autoinit) {
+  if (!MyConfig.GetParamValueBool("auto", "init")) {
     c.alert("warning", "<p><strong>Warning:</strong> auto start disabled. Check auto start configuration.</p>");
   }
 }
@@ -459,15 +463,18 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
   
   // output page framework:
   c.head(200);
-  mg_printf_http_chunk(c.nc,
+  c.print(
     "<!DOCTYPE html>"
     "<html lang=\"en\">"
       "<head>"
         "<meta charset=\"utf-8\">"
         "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">"
         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+        "<meta name=\"mobile-web-app-capable\" content=\"yes\">"
         "<title>OVMS Console</title>"
-        "<link href=\"/assets/style.css\" rel=\"stylesheet\">"
+        "<link rel=\"stylesheet\" href=\"/assets/style.css\">"
+        "<link rel=\"shortcut icon\" sizes=\"192x192\" href=\"/apple-touch-icon.png\">"
+        "<link rel=\"apple-touch-icon\" href=\"/apple-touch-icon.png\">"
       "</head>"
       "<body>"
         "<nav id=\"nav\" class=\"navbar navbar-inverse navbar-fixed-top\">"
@@ -480,10 +487,11 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
                 "<span class=\"icon-bar\"></span>"
               "</button>"
               "<button type=\"button\" class=\"navbar-toggle collapsed toggle-night\">◐</button>"
-              "<a class=\"navbar-brand\" href=\"/home\" target=\"#main\" title=\"Home\">OVMS</a>"
+              "<a class=\"navbar-brand\" href=\"/home\" target=\"#main\" title=\"Home\"><img alt=\"OVMS\" src=\"/apple-touch-icon.png\"></a>"
             "</div>"
-            "<div role=\"menu\" id=\"menu\" class=\"navbar-collapse collapse\">"
-              "%s"
+            "<div role=\"menu\" id=\"menu\" class=\"navbar-collapse collapse\">");
+  c.print(menu);
+  c.print(
             "</div>"
           "</div>"
         "</nav>"
@@ -491,8 +499,7 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
         "</div>"
         "<script src=\"/assets/script.js\"></script>"
       "</body>"
-    "</html>"
-    , menu.c_str());
+    "</html>");
   c.done();
 }
 
@@ -533,7 +540,7 @@ void OvmsWebServer::HandleAsset(PageEntry_t& p, PageContext_t& c)
     mtime = MTIME_ASSETS_SCRIPT_JS;
     type = "application/javascript";
   }
-  else if (c.uri == "/favicon.ico") {
+  else if (c.uri == "/favicon.ico" || c.uri == "/apple-touch-icon.png") {
     data = favicon_png_start;
     size = favicon_png_end - favicon_png_start;
     mtime = MTIME_ASSETS_FAVICON_PNG;
@@ -567,7 +574,5 @@ void OvmsWebServer::HandleAsset(PageEntry_t& p, PageContext_t& c)
     , etag);
   
   // start chunked transfer:
-  c.nc->user_data = new chunked_xfer(data, size);
-  c.nc->flags |= MG_F_USER_CHUNKED_XFER;
-  ESP_LOGV(TAG, "chunked_xfer %p init (%d bytes)", data, size);
+  new HttpDataSender(c.nc, data, size);
 }

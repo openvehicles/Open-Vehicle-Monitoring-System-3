@@ -34,11 +34,14 @@
 
 #include <forward_list>
 #include <iterator>
+#include <vector>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
 
 #include "ovms_events.h"
+#include "ovms_metrics.h"
+#include "ovms_config.h"
 #include "ovms_command.h"
 #include "ovms_netmanager.h"
 
@@ -49,6 +52,9 @@
 #define SESSION_CHECK_INTERVAL    60
 #define NUM_SESSIONS              5
 
+#define XFER_CHUNK_SIZE           1024
+
+
 struct user_session {
   uint64_t id;
   time_t last_used;
@@ -56,18 +62,10 @@ struct user_session {
 };
 
 
-typedef enum {
-  PageMenu_None,
-  PageMenu_Main,              // → main menu
-  PageMenu_Config,            // → config menu
-  PageMenu_Vehicle,           // → vehicle menu
-} PageMenu_t;
-
-typedef enum {
-  PageAuth_None,              // public
-  PageAuth_Cookie,            // use auth cookie
-  PageAuth_File,              // use htaccess file(s) (digest auth)
-} PageAuth_t;
+/**
+ * PageContext: execution context of a URI/page handler call providing
+ *  access to the HTTP context and utilities to generate HTML output.
+ */
 
 struct PageContext
 {
@@ -86,6 +84,7 @@ struct PageContext
   void error(int code, const char* text);
   void head(int code, const char* headers=NULL);
   void print(const std::string text);
+  void print(const char* text);
   void printf(const char *fmt, ...);
   void done();
   void panel_start(const char* type, const char* title);
@@ -118,6 +117,28 @@ struct PageContext
 
 typedef struct PageContext PageContext_t;
 
+
+/**
+ * PageEntry: HTTP URI page handler entry for OvmsWebServer.
+ * 
+ * Created by OvmsWebServer::RegisterPage(). The registered handler will be called
+ *  with both PageEntry and PageContext, so one handler can serve multiple
+ *  URIs or patterns.
+ */
+
+typedef enum {
+  PageMenu_None,
+  PageMenu_Main,              // → main menu
+  PageMenu_Config,            // → config menu
+  PageMenu_Vehicle,           // → vehicle menu
+} PageMenu_t;
+
+typedef enum {
+  PageAuth_None,              // public
+  PageAuth_Cookie,            // use auth cookie
+  PageAuth_File,              // use htaccess file(s) (digest auth)
+} PageAuth_t;
+
 struct PageEntry;
 typedef struct PageEntry PageEntry_t;
 typedef void (*PageHandler_t)(PageEntry_t& p, PageContext_t& c);
@@ -145,23 +166,141 @@ struct PageEntry
 typedef std::forward_list<PageEntry*> PageMap_t;
 
 
-struct chunked_xfer {
-  const uint8_t* data;
-  size_t size;
-  size_t sent;
-  bool keepalive;
+/**
+ * MgHandler is the base mongoose connection handler interface class
+ *  to implement stateful connections.
+ * 
+ * An MgHandler instance automatically attaches itself to (and detaches from)
+ *  the mg_connection via the user_data field.
+ * The HandleEvent() method will be called prior to the framework handler.
+ */
+class MgHandler
+{
+  public:
+    MgHandler(mg_connection* nc)
+    {
+      m_nc = nc;
+      m_nc->user_data = this;
+    }
+    virtual ~MgHandler()
+    {
+      m_nc->user_data = NULL;
+    }
   
-  chunked_xfer(const uint8_t* _data, size_t _size, bool _keepalive=true) {
-    data = _data;
-    size = _size;
-    sent = 0;
-    keepalive = _keepalive;
-  }
+  public:
+    virtual void HandleEvent(int ev, void* p) = 0;
+  
+  public:
+    mg_connection*            m_nc;
 };
 
-#define MG_F_USER_CHUNKED_XFER      MG_F_USER_1
-#define XFER_CHUNK_SIZE             1024
 
+/**
+ * HttpDataSender transmits a memory area (ROM/RAM) in HTTP chunks of XFER_CHUNK_SIZE size.
+ */
+class HttpDataSender : public MgHandler
+{
+  public:
+    HttpDataSender(mg_connection* nc, const uint8_t* data, size_t size, bool keepalive=true);
+    ~HttpDataSender();
+  
+  public:
+    void HandleEvent(int ev, void* p);
+  
+  public:
+    const uint8_t*            m_data;             // pointer to data
+    size_t                    m_size;             // size of data to send
+    size_t                    m_sent;             // size sent up to now
+    bool                      m_keepalive;        // false = close connection when done
+};
+
+
+/**
+ * HttpStringSender transmits a std::string in HTTP chunks of XFER_CHUNK_SIZE size.
+ * Note: the string is deleted after transmission.
+ */
+class HttpStringSender : public MgHandler
+{
+  public:
+    HttpStringSender(mg_connection* nc, std::string* msg, bool keepalive=true);
+    ~HttpStringSender();
+  
+  public:
+    void HandleEvent(int ev, void* p);
+  
+  public:
+    std::string*              m_msg;              // pointer to data
+    size_t                    m_sent;             // size sent up to now
+    bool                      m_keepalive;        // false = close connection when done
+};
+
+
+/**
+ * WebSocketHandler transmits JSON data in chunks to the WebSocket client
+ *  and coordinates transmits initiated from other contexts (i.e. events).
+ * 
+ * On creation it will do a full update of all metrics.
+ * Later on, it receives TX jobs through the queue.
+ */
+
+enum WebSocketTxJobType
+{
+  WSTX_None,
+  WSTX_Event,                 // payload: event
+  WSTX_MetricsAll,            // payload: -
+  WSTX_MetricsUpdate,         // payload: -
+  WSTX_Config,                // payload: config (todo)
+};
+
+struct WebSocketTxJob
+{
+  WebSocketTxJobType          type;
+  union
+  {
+    char*                     event;
+    OvmsConfigParam*          config;
+  };
+};
+
+class WebSocketHandler : public MgHandler
+{
+  public:
+    WebSocketHandler(mg_connection* nc, size_t modifier);
+    ~WebSocketHandler();
+  
+  public:
+    bool Lock(TickType_t xTicksToWait);
+    void Unlock();
+    void AddTxJob(WebSocketTxJob job);
+    bool GetNextTxJob();
+    void InitTx();
+    void PollTx();
+    void ProcessTxJob();
+    void HandleEvent(int ev, void* p);
+  
+  public:
+    size_t                    m_modifier;         // "our" metrics modifier
+    QueueHandle_t             m_jobqueue;
+    SemaphoreHandle_t         m_mutex;
+    WebSocketTxJob            m_job;
+    int                       m_sent;
+    int                       m_ack;
+};
+
+struct WebSocketSlot
+{
+  WebSocketHandler*   handler;
+  size_t              modifier;
+};
+
+typedef std::vector<WebSocketSlot> WebSocketSlots;
+
+
+/**
+ * OvmsWebServer: main web framework (static instance: MyWebServer)
+ * 
+ * Register custom page handlers through the RegisterPage() API.
+ */
 
 class OvmsWebServer
 {
@@ -170,7 +309,7 @@ class OvmsWebServer
     ~OvmsWebServer();
 
   public:
-    static void EventHandler(struct mg_connection *nc, int ev, void *p);
+    static void EventHandler(mg_connection *nc, int ev, void *p);
     void NetManInit(std::string event, void* data);
     void NetManStop(std::string event, void* data);
     void ConfigChanged(std::string event, void* data);
@@ -194,6 +333,10 @@ class OvmsWebServer
     user_session* GetSession(http_message *hm);
     void CheckSessions(void);
     static bool CheckLogin(std::string username, std::string password);
+  
+  public:
+    WebSocketHandler* CreateWebSocketHandler(mg_connection* nc);
+    void DestroyWebSocketHandler(WebSocketHandler* handler);
   
   public:
     static std::string CreateMenu(PageContext_t& c);
@@ -221,17 +364,21 @@ class OvmsWebServer
     static void HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c);
   
   public:
-    bool m_running;
+    bool                      m_running;
+
 #if MG_ENABLE_FILESYSTEM
-    bool m_file_enable;
-    mg_serve_http_opts m_file_opts;
+    bool                      m_file_enable;
+    mg_serve_http_opts        m_file_opts;
 #endif //MG_ENABLE_FILESYSTEM
-    PageMap_t m_pagemap;
-    user_session m_sessions[NUM_SESSIONS];
-    size_t m_client_cnt;
-    size_t m_modifier;
-    TimerHandle_t m_update_ticker;
-    bool m_update_all;
+
+    PageMap_t                 m_pagemap;
+
+    user_session              m_sessions[NUM_SESSIONS];
+    
+    size_t                    m_client_cnt;                 // number of active WebSocket clients
+    SemaphoreHandle_t         m_client_mutex;
+    WebSocketSlots            m_client_slots;
+    TimerHandle_t             m_update_ticker;
 };
 
 extern OvmsWebServer MyWebServer;
