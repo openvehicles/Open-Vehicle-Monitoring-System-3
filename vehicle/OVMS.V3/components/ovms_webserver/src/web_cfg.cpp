@@ -372,8 +372,8 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     
     if (vehicleid.length() == 0)
       error += "<li data-input=\"vehicleid\">Vehicle ID must not be empty</li>";
-    if (vehicleid.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") != std::string::npos)
-      error += "<li data-input=\"vehicleid\">Vehicle ID may only contain upper case letters and digits</li>";
+    if (vehicleid.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-") != std::string::npos)
+      error += "<li data-input=\"vehicleid\">Vehicle ID may only contain ASCII letters, digits and '-'</li>";
     
     if (error == "" && StdMetrics.ms_v_type->AsString() != vehicletype) {
       MyVehicleFactory.SetVehicle(vehicletype.c_str());
@@ -423,7 +423,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
   for (OvmsVehicleFactory::map_vehicle_t::iterator k=MyVehicleFactory.m_vmap.begin(); k!=MyVehicleFactory.m_vmap.end(); ++k)
     c.input_select_option(k->second.name, k->first, (vehicletype == k->first));
   c.input_select_end();
-  c.input_text("Vehicle ID", "vehicleid", vehicleid.c_str(), "Use upper case letters and/or digits",
+  c.input_text("Vehicle ID", "vehicleid", vehicleid.c_str(), "Use ASCII letters, digits and '-'",
     "<p>Note: this is also the <strong>vehicle account ID</strong> for server connections.</p>");
   c.input_text("Vehicle name", "vehiclename", vehiclename.c_str(), "optional, the name of your car");
   c.input_text("Time zone", "timezone", timezone.c_str(), "optional, default UTC");
@@ -535,8 +535,8 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
     }
     if (vehicleid.length() == 0)
       error += "<li data-input=\"vehicleid\">Vehicle ID must not be empty</li>";
-    if (vehicleid.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") != std::string::npos)
-      error += "<li data-input=\"vehicleid\">Vehicle ID may only contain upper case letters and digits</li>";
+    if (vehicleid.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-") != std::string::npos)
+      error += "<li data-input=\"vehicleid\">Vehicle ID may only contain ASCII letters, digits and '-'</li>";
     if (updatetime_connected != "") {
       if (atoi(updatetime_connected.c_str()) < 1) {
         error += "<li data-input=\"updatetime_connected\">Update interval (connected) must be at least 1 second</li>";
@@ -593,7 +593,7 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
       "<li><code>ovms.dexters-web.de</code> <a href=\"https://dexters-web.de/?action=NewAccount\" target=\"_blank\">Registration</a></li>"
     "</ul>");
   c.input_text("Port", "port", port.c_str(), "optional, default: 6867");
-  c.input_text("Vehicle ID", "vehicleid", vehicleid.c_str(), "Use upper case letters and/or digits",
+  c.input_text("Vehicle ID", "vehicleid", vehicleid.c_str(), "Use ASCII letters, digits and '-'",
     NULL, "autocomplete=\"section-serverv2 username\"");
   c.input_password("Vehicle password", "password", "", "empty = no change",
     "<p>Note: enter the password for the <strong>vehicle ID account</strong>, <em>not</em> your user account password</p>",
