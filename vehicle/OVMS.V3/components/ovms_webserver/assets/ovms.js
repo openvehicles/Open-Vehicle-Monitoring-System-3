@@ -34,7 +34,7 @@ function loaduri(target, method, uri, data){
       setcontent(tgt, uri, response);
     },
     "error": function(response, status, httperror){
-      var text = response.responseText || httperror || status;
+      var text = response.responseText || httperror+"\n" || status+"\n";
       if (text.search("alert") == -1) {
         text = '<div id="alert" class="alert alert-danger alert-dismissable">'
           + '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
@@ -75,7 +75,7 @@ function loadcmd(command, target){
         output.html($("<div/>").text(response).html());
     },
     "error": function(response, status, httperror){
-      var resptext = response.responseText || httperror || status;
+      var resptext = response.responseText || httperror+"\n" || status+"\n";
       output.css("min-height", output.height());
       if (outmode == "+")
         output.html(output.html() + $("<div/>").text(resptext).html());
@@ -103,6 +103,7 @@ function getpage() {
 var monitorTimer;
 var ws;
 var metrics = {};
+var shellhist = [""], shellhpos = 0;
 
 function initSocketConnection(){
   ws = new WebSocket('ws://' + location.host + '/msg');
