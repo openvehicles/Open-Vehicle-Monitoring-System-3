@@ -46,6 +46,7 @@ static const char *TAG = "ovms-server-v2";
 #include "vehicle.h"
 #include "esp_system.h"
 #include "ovms_utils.h"
+#include "ovms_boot.h"
 
 
 // should this go in the .h or in the .cpp?
@@ -426,7 +427,7 @@ void OvmsServerV2::ProcessCommand(const char* payload)
       }
     case 5: // Reboot
       {
-      esp_restart();
+      MyBoot.Restart();
       break;
       }
     case 6: // Charge alert

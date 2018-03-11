@@ -46,6 +46,7 @@ static const char *TAG = "ota";
 #include "metrics_standard.h"
 #include "ovms_http.h"
 #include "ovms_buffer.h"
+#include "ovms_boot.h"
 #include "crypt_md5.h"
 
 OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
@@ -430,7 +431,7 @@ void OvmsOTA::AutoFlashSD(std::string event, void* data)
 
   vTaskDelay(2000 / portTICK_PERIOD_MS); // Delay for log display and settle
   ESP_LOGW(TAG, "AutoFlashSD restarting...");
-  esp_restart();
+  MyBoot.Restart();
   }
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
