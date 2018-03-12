@@ -33,11 +33,45 @@ static const char *TAG = "netmanager";
 
 #include <string.h>
 #include <stdio.h>
+#include <lwip/netif.h>
 #include "metrics_standard.h"
 #include "ovms_peripherals.h"
 #include "ovms_netmanager.h"
+#include "ovms_command.h"
 
 OvmsNetManager MyNetManager __attribute__ ((init_priority (8999)));
+
+void network_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  struct netif *ni = netif_list;
+  while (ni)
+    {
+    writer->printf("Interface#%d: %c%c\n",ni->num,ni->name[0],ni->name[1]);
+    writer->printf("  IPv4: " IPSTR "/" IPSTR " gateway " IPSTR "\n",
+      IP2STR(&ni->ip_addr.u_addr.ip4), IP2STR(&ni->netmask.u_addr.ip4), IP2STR(&ni->gw.u_addr.ip4));
+    ni = ni->next;
+    writer->puts("");
+    }
+
+  writer->printf("DNS:");
+  int dnsservers = 0;
+  for (int k=0;k<DNS_MAX_SERVERS;k++)
+    {
+    ip_addr_t srv = dns_getserver(k);
+    if (! ip_addr_isany(&srv))
+      {
+      dnsservers++;
+      if (srv.type == IPADDR_TYPE_V4)
+        writer->printf(" " IPSTR, IP2STR(&srv.u_addr.ip4));
+      else if (srv.type == IPADDR_TYPE_V6)
+        writer->printf(" " IPSTR, IP2STR(&srv.u_addr.ip6));
+      }
+    }
+  if (dnsservers == 0)
+    writer->puts(" None");
+  else
+    writer->puts("");
+  }
 
 OvmsNetManager::OvmsNetManager()
   {
@@ -51,6 +85,11 @@ OvmsNetManager::OvmsNetManager()
   m_mongoose_running = false;
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
+  // Register our commands
+  OvmsCommand* cmd_network = MyCommandApp.RegisterCommand("network","NETWORK framework",network_status, "", 0, 1);
+  cmd_network->RegisterCommand("status","Show network status",network_status, "", 0, 0);
+
+  // Register our events
   #undef bind  // Kludgy, but works
   using std::placeholders::_1;
   using std::placeholders::_2;

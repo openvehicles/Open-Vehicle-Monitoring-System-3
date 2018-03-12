@@ -7,6 +7,7 @@ Open Vehicle Monitor System v3 - Change log
                          - Webserver: support add to home screen / web-app mode
                          - Boot/Autostart: crash detection & counting, temporary autostart inhibit
                          - Webserver: show boot status, shell command output streaming & history
+                         - Network: New 'network status' command to show IP networking status
 
 2018-03-05 MWJ  3.0.991  OTA release support OTA updates over HTTP
                          - Update ovms_module to use new API for per-task heap info.
