@@ -12,6 +12,7 @@ Open Vehicle Monitor System v3 - Change log
                          - Simcom: Add a MuxStart sanity check timeout (120 seconds)
                          - Simcom: Check MUX status in NetMode state
                          - Simcom: Refactor state timeouts for greater reliability
+                         - Simcom: Make 'simcom status' the default simcom command
 
 2018-03-05 MWJ  3.0.991  OTA release support OTA updates over HTTP
                          - Update ovms_module to use new API for per-task heap info.

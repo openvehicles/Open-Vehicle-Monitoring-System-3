@@ -1093,7 +1093,7 @@ SimcomInit::SimcomInit()
   {
   ESP_LOGI(TAG, "Initialising SIMCOM (4600)");
 
-  OvmsCommand* cmd_simcom = MyCommandApp.RegisterCommand("simcom","SIMCOM framework",NULL, "", 1);
+  OvmsCommand* cmd_simcom = MyCommandApp.RegisterCommand("simcom","SIMCOM framework",simcom_status, "", 0, 1);
   cmd_simcom->RegisterCommand("tx","Transmit data on SIMCOM",simcom_tx, "", 1);
   cmd_simcom->RegisterCommand("muxtx","Transmit data on SIMCOM MUX",simcom_muxtx, "<chan> <data>", 2);
   cmd_simcom->RegisterCommand("status","Show SIMCOM status",simcom_status, "", 0);
