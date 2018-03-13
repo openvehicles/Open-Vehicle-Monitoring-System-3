@@ -584,7 +584,7 @@ simcom::SimcomState1 simcom::State1Ticker1()
     case MuxStart:
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
         m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
-      if (m_mux.m_openchannels == GSM_MUX_CHANNELS)
+      if (m_mux.IsMuxUp())
         return NetWait;
       break;
     case NetWait:
