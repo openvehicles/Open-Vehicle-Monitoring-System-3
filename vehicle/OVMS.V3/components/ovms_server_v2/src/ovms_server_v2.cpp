@@ -150,7 +150,7 @@ static struct
   { "",          "" },                     // 19 PARAM_ACC_4
   { "",          "" },                     // 20
   { "",          "" },                     // 21
-  { "",          "" },                     // 22 PARAM_GPRSDNS
+  { "network",   "dns" },                  // 22 PARAM_GPRSDNS
   { "vehicle",   "timezone" }              // 23 PARAM_TIMEZONE
   };
 

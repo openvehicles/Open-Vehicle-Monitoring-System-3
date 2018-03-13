@@ -33,11 +33,14 @@ static const char *TAG = "netmanager";
 
 #include <string.h>
 #include <stdio.h>
+#include <lwip/ip_addr.h>
 #include <lwip/netif.h>
+#include <lwip/dns.h>
 #include "metrics_standard.h"
 #include "ovms_peripherals.h"
 #include "ovms_netmanager.h"
 #include "ovms_command.h"
+#include "ovms_config.h"
 
 OvmsNetManager MyNetManager __attribute__ ((init_priority (8999)));
 
@@ -102,6 +105,11 @@ OvmsNetManager::OvmsNetManager()
   MyEvents.RegisterEvent(TAG,"system.modem.gotip", std::bind(&OvmsNetManager::ModemUp, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.stop", std::bind(&OvmsNetManager::ModemDown, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.down", std::bind(&OvmsNetManager::ModemDown, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"network.interface.up", std::bind(&OvmsNetManager::InterfaceUp, this, _1, _2));
+
+  MyConfig.RegisterParam("network", "Network Configuration", true, true);
+  // Our instances:
+  //   'dns': Space-separated list of DNS servers
   }
 
 OvmsNetManager::~OvmsNetManager()
@@ -174,6 +182,43 @@ void OvmsNetManager::ModemDown(std::string event, void* data)
       StopMongooseTask();
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
       }
+    }
+  }
+
+void OvmsNetManager::InterfaceUp(std::string event, void* data)
+  {
+  // A network interface has come up. We need to set DNS, if necessary
+  std::string servers = MyConfig.GetParamValue("network", "dns");
+  if (servers.empty()) return;
+
+  int spos = 0;
+  size_t sep = 0;
+  while ((spos<DNS_MAX_SERVERS)&&(sep != string::npos))
+    {
+    // Set the specified DNS servers
+    size_t next = servers.find(' ',sep);
+    std::string cserver;
+    ip_addr_t serverip;
+    if (next == std::string::npos)
+      {
+      // The last one
+      cserver = std::string(servers,sep,string::npos);
+      sep = string::npos;
+      }
+    else
+      {
+      // One of many
+      cserver = std::string(servers,sep,next-sep);
+      sep = next+1;
+      }
+    ESP_LOGI(TAG, "Set DNS#%d %s",spos,cserver.c_str());
+    ip4_addr_set_u32(ip_2_ip4(&serverip), ipaddr_addr(cserver.c_str()));
+    serverip.type = IPADDR_TYPE_V4;
+    dns_setserver(spos++, &serverip);
+    }
+  for (;spos<DNS_MAX_SERVERS;spos++)
+    {
+    dns_setserver(spos, IP_ADDR_ANY);
     }
   }
 

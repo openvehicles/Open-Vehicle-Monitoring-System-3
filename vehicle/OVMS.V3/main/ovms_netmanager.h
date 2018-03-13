@@ -51,6 +51,7 @@ class OvmsNetManager
     void WifiDown(std::string event, void* data);
     void ModemUp(std::string event, void* data);
     void ModemDown(std::string event, void* data);
+    void InterfaceUp(std::string event, void* data);
 
   public:
     bool m_connected_wifi;
@@ -71,7 +72,7 @@ class OvmsNetManager
     void MongooseTask();
     struct mg_mgr* GetMongooseMgr();
     bool MongooseRunning();
-    
+
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   };
 
