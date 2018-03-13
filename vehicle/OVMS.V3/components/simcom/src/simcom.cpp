@@ -417,6 +417,8 @@ void simcom::State1Enter(SimcomState1 newstate)
       break;
     case MuxStart:
       ESP_LOGI(TAG,"State: Enter MuxStart state");
+      m_state1_timeout_ticks = 120;
+      m_state1_timeout_goto = PowerOn;
       m_mux.Start();
       break;
     case NetWait:
