@@ -586,6 +586,17 @@ simcom::SimcomState1 simcom::State1Ticker1()
         return NetStart; // We have GSM, so start the network
       if ((m_state1_ticker>3)&&((m_state1_ticker % 10) == 0))
         m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
+      if ((m_mux.m_lastgoodrxframe > 0)&&((monotonictime-m_mux.m_lastgoodrxframe)>180))
+        {
+        // We haven't had a good MUX frame in 3 minutes. Let's assume the MUX has failed
+        ESP_LOGW(TAG, "3 minutes since last MUX rx frame - assume MUX has failed");
+        m_ppp.Shutdown();
+        m_nmea.Shutdown();
+        m_mux.Stop();
+        MyEvents.SignalEvent("system.modem.stop",NULL);
+        PowerCycle();
+        return PoweringOn;
+        }
       break;
     case NetStart:
       if (m_powermode == Sleep)
@@ -721,9 +732,9 @@ void simcom::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
       }
     line = m_line_buffer;
     }
-  
+
   ESP_LOGD(TAG, "rx line ch=%d len=%-4d: %s", channel, line.length(), line.c_str());
-  
+
   if ((line.compare(0, 8, "CONNECT ") == 0)&&(m_state1 == NetStart)&&(m_state1_userdata == 1))
     {
     ESP_LOGI(TAG, "PPP Connection is ready to start");
