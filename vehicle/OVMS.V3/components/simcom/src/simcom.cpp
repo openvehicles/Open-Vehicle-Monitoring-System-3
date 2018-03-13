@@ -520,6 +520,21 @@ simcom::SimcomState1 simcom::State1Activity()
 
 simcom::SimcomState1 simcom::State1Ticker1()
   {
+  if (m_mux.IsMuxUp())
+    {
+    if ((m_mux.m_lastgoodrxframe > 0)&&((monotonictime-m_mux.m_lastgoodrxframe)>180))
+      {
+      // We haven't had a good MUX frame in 3 minutes. Let's assume the MUX has failed
+      ESP_LOGW(TAG, "3 minutes since last MUX rx frame - assume MUX has failed");
+      m_ppp.Shutdown();
+      m_nmea.Shutdown();
+      m_mux.Stop();
+      MyEvents.SignalEvent("system.modem.stop",NULL);
+      PowerCycle();
+      return PoweringOn;
+      }
+    }
+
   switch (m_state1)
     {
     case None:
@@ -588,17 +603,6 @@ simcom::SimcomState1 simcom::State1Ticker1()
         return NetStart; // We have GSM, so start the network
       if ((m_state1_ticker>3)&&((m_state1_ticker % 10) == 0))
         m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
-      if ((m_mux.m_lastgoodrxframe > 0)&&((monotonictime-m_mux.m_lastgoodrxframe)>180))
-        {
-        // We haven't had a good MUX frame in 3 minutes. Let's assume the MUX has failed
-        ESP_LOGW(TAG, "3 minutes since last MUX rx frame - assume MUX has failed");
-        m_ppp.Shutdown();
-        m_nmea.Shutdown();
-        m_mux.Stop();
-        MyEvents.SignalEvent("system.modem.stop",NULL);
-        PowerCycle();
-        return PoweringOn;
-        }
       break;
     case NetStart:
       if (m_powermode == Sleep)
@@ -619,17 +623,6 @@ simcom::SimcomState1 simcom::State1Ticker1()
         return NetLoss;
       break;
     case NetLoss:
-      if ((m_mux.m_lastgoodrxframe > 0)&&((monotonictime-m_mux.m_lastgoodrxframe)>180))
-        {
-        // We haven't had a good MUX frame in 3 minutes. Let's assume the MUX has failed
-        ESP_LOGW(TAG, "3 minutes since last MUX rx frame - assume MUX has failed");
-        m_ppp.Shutdown();
-        m_nmea.Shutdown();
-        m_mux.Stop();
-        MyEvents.SignalEvent("system.modem.stop",NULL);
-        PowerCycle();
-        return PoweringOn;
-        }
       break;
     case NetHold:
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
@@ -661,17 +654,6 @@ simcom::SimcomState1 simcom::State1Ticker1()
         }
       if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
         m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n");
-      if ((m_mux.m_lastgoodrxframe > 0)&&((monotonictime-m_mux.m_lastgoodrxframe)>180))
-        {
-        // We haven't had a good MUX frame in 3 minutes. Let's assume the MUX has failed
-        ESP_LOGW(TAG, "3 minutes since last MUX rx frame - assume MUX has failed");
-        m_ppp.Shutdown();
-        m_nmea.Shutdown();
-        m_mux.Stop();
-        MyEvents.SignalEvent("system.modem.stop",NULL);
-        PowerCycle();
-        return PoweringOn;
-        }
       break;
     case NetDeepSleep:
       if (m_powermode != DeepSleep) return PoweringOn;
