@@ -27,7 +27,7 @@
 */
 
 #include "ovms_log.h"
-static const char *TAG = "webserver";
+// static const char *TAG = "webserver";
 
 #include <string.h>
 #include <stdio.h>
@@ -206,29 +206,20 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
 
 /**
- * HandleCommand: execute command, send output
- *  Default: plain text
- *  HTML encoded with parameter encode=html
+ * HandleCommand: execute command, stream output
  */
 void OvmsWebServer::HandleCommand(PageEntry_t& p, PageContext_t& c)
 {
   std::string command = c.getvar("command");
-  ESP_LOGI(TAG, "HandleCommand: %d bytes free, executing: %s",
-    heap_caps_get_free_size(MALLOC_CAP_8BIT), command.c_str());
-  
-  std::string* output;
-  if (c.getvar("encode") == "html")
-    output = new std::string(c.encode_html(ExecuteCommand(command)));
-  else
-    output = new std::string(ExecuteCommand(command));
-  
-  ESP_LOGD(TAG, "HandleCommand: %d bytes free, output size: %d bytes",
-    heap_caps_get_free_size(MALLOC_CAP_8BIT), output->size());
   
   c.head(200,
-    "Content-Type: text/html; charset=utf-8\r\n"
+    "Content-Type: text/plain; charset=utf-8\r\n"
     "Cache-Control: no-cache");
-  new HttpStringSender(c.nc, output);
+  
+  if (command.empty())
+    c.done();
+  else
+    new HttpCommandStream(c.nc, command);
 }
 
 
@@ -271,7 +262,8 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
         "var data = $(this).serialize();"
         "var command = $(\"#input-command\").val();"
         "var output = $(\"#output\");"
-        "var lastlen = 0, xhr, timeout;"
+        "var lastlen = 0, xhr, timeouthd, timeout = 20;"
+        "if (/^(test |ota |co .* scan)/.test(command)) timeout = 60;"
         "var checkabort = function(){ if (xhr.readyState != 4) xhr.abort(\"timeout\"); };"
         "xhr = $.ajax({ \"type\": \"post\", \"url\": \"/api/execute\", \"data\": data,"
           "\"timeout\": 0,"
@@ -280,10 +272,10 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
             "output.html(output.html() + \"<strong>OVMS&nbsp;&gt;&nbsp;</strong><kbd>\""
               "+ $(\"<div/>\").text(command).html() + \"</kbd><br>\");"
             "output.scrollTop(output.get(0).scrollHeight);"
-            "timeout = window.setTimeout(checkabort, 10000);"
+            "timeouthd = window.setTimeout(checkabort, timeout*1000);"
           "},"
           "\"complete\": function(){"
-            "window.clearTimeout(timeout);"
+            "window.clearTimeout(timeouthd);"
             "$(\"html\").removeClass(\"loading\");"
           "},"
           "\"xhrFields\": {"
@@ -293,8 +285,8 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
               "lastlen = response.length;"
               "output.html(output.html() + $(\"<div/>\").text(addtext).html());"
               "output.scrollTop(output.get(0).scrollHeight);"
-              "window.clearTimeout(timeout);"
-              "timeout = window.setTimeout(checkabort, 10000);"
+              "window.clearTimeout(timeouthd);"
+              "timeouthd = window.setTimeout(checkabort, timeout*1000);"
             "},"
           "},"
           "\"error\": function(response, status, httperror){"
@@ -319,6 +311,16 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
       "else if (ev.key == \"ArrowDown\") {"
         "shellhpos = (shellhist.length + shellhpos + 1) % shellhist.length;"
         "$(this).val(shellhist[shellhpos]);"
+        "return false;"
+      "}"
+      "else if (ev.key == \"PageUp\") {"
+        "var o = $(\"#output\");"
+        "o.scrollTop(o.scrollTop() - o.height());"
+        "return false;"
+      "}"
+      "else if (ev.key == \"PageDown\") {"
+        "var o = $(\"#output\");"
+        "o.scrollTop(o.scrollTop() + o.height());"
         "return false;"
       "}"
     "});"

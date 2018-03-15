@@ -239,7 +239,7 @@ void OvmsNetManager::MongooseTask()
   // Main event loop
   while (m_mongoose_running)
     {
-    mg_mgr_poll(&m_mongoose_mgr, 1000);
+    mg_mgr_poll(&m_mongoose_mgr, 250);
     }
 
   // Shutdown cleanly

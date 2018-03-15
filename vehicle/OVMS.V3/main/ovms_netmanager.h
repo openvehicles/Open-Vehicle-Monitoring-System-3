@@ -70,6 +70,7 @@ class OvmsNetManager
 
   public:
     void MongooseTask();
+    TaskHandle_t GetMongooseTaskHandle() { return m_mongoose_task; }
     struct mg_mgr* GetMongooseMgr();
     bool MongooseRunning();
 

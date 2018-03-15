@@ -37,6 +37,11 @@
 #define ESP_PLATFORM 1
 #define MG_ENABLE_HTTP 1
 
+// Note: broadcast support not working reliably yet, do not enable for production!
+// #define MG_ENABLE_BROADCAST 1
+// #define MG_CTL_MSG_MESSAGE_SIZE 64    // Note: default is 8K, we only need this to trigger MG_EV_POLL
+
+// #define CONFIG_MG_ENABLE_DEBUG 1
 #ifdef CONFIG_MG_ENABLE_DEBUG
 #define MG_ENABLE_DEBUG 1
 #define CS_LOG_ENABLE_TS_DIFF 1

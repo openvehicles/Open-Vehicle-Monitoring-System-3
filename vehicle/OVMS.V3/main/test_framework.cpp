@@ -114,9 +114,14 @@ void test_sdcard(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 void test_chargen(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   int numlines = 1000;
-  if (argc==1)
+  int delay = 0;
+  if (argc>=1)
     {
     numlines = atoi(argv[0]);
+    }
+  if (argc>=2)
+    {
+    delay = atoi(argv[1]);
     }
   char buf[74];
   buf[72] = '\n';
@@ -132,6 +137,8 @@ void test_chargen(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
         ch = ' ';
       }
     writer->write(buf, 73);
+    if (delay)
+      vTaskDelay(delay/portTICK_PERIOD_MS);
     if (++start == 0x7F)
         start = ' ';
     }
@@ -152,5 +159,5 @@ TestFrameworkInit::TestFrameworkInit()
   cmd_test->RegisterCommand("sdcard","Test CD CARD",test_sdcard,"",0,0,true);
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
   cmd_test->RegisterCommand("javascript","Test Javascript",test_javascript,"",0,0,true);
-  cmd_test->RegisterCommand("chargen","Character generator [<#lines>]",test_chargen,"",0,1,false);
+  cmd_test->RegisterCommand("chargen","Character generator [<#lines>] [<delay_ms>]",test_chargen,"",0,2,false);
   }
