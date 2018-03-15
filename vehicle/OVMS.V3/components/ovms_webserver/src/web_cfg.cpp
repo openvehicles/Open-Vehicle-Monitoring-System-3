@@ -162,8 +162,8 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
     "<div class=\"row\">"
     "<div class=\"col-md-6\">");
 
-  c.panel_start("primary", "Modem");
-  output = ExecuteCommand("simcom status");
+  c.panel_start("primary", "Network");
+  output = ExecuteCommand("network status");
   c.printf("<samp>%s</samp>", _html(output));
   c.panel_end();
 
@@ -476,7 +476,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 {
-  std::string apn, apn_user, apn_pass;
+  std::string apn, apn_user, apn_pass, network_dns;
   bool enable_gps, enable_gpstime, enable_net, enable_sms;
 
   if (c.method == "POST") {
@@ -484,6 +484,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
     apn = c.getvar("apn");
     apn_user = c.getvar("apn_user");
     apn_pass = c.getvar("apn_pass");
+    network_dns = c.getvar("network_dns");
     enable_net = (c.getvar("enable_net") == "yes");
     enable_sms = (c.getvar("enable_sms") == "yes");
     enable_gps = (c.getvar("enable_gps") == "yes");
@@ -492,6 +493,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
     MyConfig.SetParamValue("modem", "apn", apn);
     MyConfig.SetParamValue("modem", "apn.user", apn_user);
     MyConfig.SetParamValue("modem", "apn.password", apn_pass);
+    MyConfig.SetParamValue("network", "dns", network_dns);
     MyConfig.SetParamValueBool("modem", "enable.net", enable_net);
     MyConfig.SetParamValueBool("modem", "enable.sms", enable_sms);
     MyConfig.SetParamValueBool("modem", "enable.gps", enable_gps);
@@ -508,6 +510,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   apn = MyConfig.GetParamValue("modem", "apn");
   apn_user = MyConfig.GetParamValue("modem", "apn.user");
   apn_pass = MyConfig.GetParamValue("modem", "apn.password");
+  network_dns = MyConfig.GetParamValue("network", "dns");
   enable_net = MyConfig.GetParamValueBool("modem", "enable.net", true);
   enable_sms = MyConfig.GetParamValueBool("modem", "enable.sms", true);
   enable_gps = MyConfig.GetParamValueBool("modem", "enable.gps", false);
@@ -524,6 +527,8 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
     "<p>For Hologram, use APN <code>hologram</code> with empty username &amp; password</p>");
   c.input_text("…username", "apn_user", apn_user.c_str());
   c.input_text("…password", "apn_pass", apn_pass.c_str());
+  c.input_text("DNS", "network_dns", network_dns.c_str(), "optional fixed DNS servers (space separated)",
+    "<p>Set this to i.e. <code>8.8.8.8 8.8.4.4</code> (Google public DNS) if you encounter problems with your network provider DNS</p>");
   c.fieldset_end();
 
   c.fieldset_start("Features");
