@@ -14,7 +14,9 @@ Open Vehicle Monitor System v3 - Change log
                          - Simcom: Refactor state timeouts for greater reliability
                          - Simcom: Make 'simcom status' the default simcom command
                          - Network: Support 'config network dns' space-separated list of DNS servers
+                         - Wifi: Support APCLIENT mode (for Access-Point + Client)
                          - Webserver: command streaming, auto reload, shell pageup/down
+                         - Ota: If wifi network is available, try to determine available firmware version on server
 
 2018-03-05 MWJ  3.0.991  OTA release support OTA updates over HTTP
                          - Update ovms_module to use new API for per-task heap info.

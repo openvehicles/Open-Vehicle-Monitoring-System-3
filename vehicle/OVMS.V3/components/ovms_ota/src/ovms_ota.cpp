@@ -47,6 +47,7 @@ static const char *TAG = "ota";
 #include "ovms_http.h"
 #include "ovms_buffer.h"
 #include "ovms_boot.h"
+#include "ovms_netmanager.h"
 #include "crypt_md5.h"
 
 OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
@@ -57,7 +58,30 @@ void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   if (m != NULL)
     {
     std::string v = m->AsString();
-    writer->printf("Firmware: %s\n",v.c_str());
+    writer->printf("Firmware:          %s\n",v.c_str());
+
+    if (MyNetManager.m_connected_wifi)
+      {
+      // We have a wifi connection, so let's try to find out the version the server has
+      std::string url;
+      url = "api.openvehicles.com/firmware/ota/";
+#ifdef CONFIG_OVMS_HW_BASE_3_0
+      url.append("v3.0/");
+#endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
+#ifdef CONFIG_OVMS_HW_BASE_3_1
+      url.append("v3.1/");
+#endif //#ifdef CONFIG_OVMS_HW_BASE_3_1
+      url.append(CONFIG_OVMS_VERSION_TAG);
+      url.append("/ovms3.ver");
+
+      OvmsHttpClient http(url);
+      if (http.IsOpen() && http.BodyHasLine())
+        {
+        std::string sv = http.BodyReadLine();
+        writer->printf("Server Available:  %s\n",sv.c_str());
+        }
+      http.Disconnect();
+      }
 
     const esp_partition_t *p = esp_ota_get_running_partition();
     if (p != NULL)
@@ -67,7 +91,7 @@ void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     p = esp_ota_get_boot_partition();
     if (p != NULL)
       {
-      writer->printf("Boot partition: %s\n",p->label);
+      writer->printf("Boot partition:    %s\n",p->label);
       }
     }
   }
