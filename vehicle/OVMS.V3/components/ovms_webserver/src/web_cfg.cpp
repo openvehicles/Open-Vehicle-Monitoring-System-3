@@ -31,6 +31,8 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <string>
+#include <sstream>
 #include "ovms_webserver.h"
 #include "ovms_config.h"
 #include "ovms_metrics.h"
@@ -335,6 +337,25 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
 /**
  * HandleCfgPassword: change admin password
  */
+
+std::string pwgen(int length)
+{
+  const char cs1[] = "abcdefghijklmnopqrstuvwxyz";
+  const char cs2[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const char cs3[] = "!@#$%^&*()_-=+;:,.?";
+  std::string res;
+  for (int i=0; i < length; i++) {
+    double r = drand48();
+    if (r > 0.4)
+      res.push_back((char)cs1[(int)(drand48()*(sizeof(cs1)-1))]);
+    else if (r > 0.2)
+      res.push_back((char)cs2[(int)(drand48()*(sizeof(cs2)-1))]);
+    else
+      res.push_back((char)cs3[(int)(drand48()*(sizeof(cs3)-1))]);
+  }
+  return res;
+}
+
 void OvmsWebServer::HandleCfgPassword(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
@@ -348,19 +369,29 @@ void OvmsWebServer::HandleCfgPassword(PageEntry_t& p, PageContext_t& c)
 
     if (oldpass != MyConfig.GetParamValue("password", "module"))
       error += "<li data-input=\"oldpass\">Old password is not correct</li>";
-    if (newpass1 == "")
-      error += "<li data-input=\"newpass1\">New password may not be empty</li>";
+    if (newpass1 == oldpass)
+      error += "<li data-input=\"newpass1\">New password identical to old password</li>";
+    if (newpass1.length() < 8)
+      error += "<li data-input=\"newpass1\">New password must have at least 8 characters</li>";
     if (newpass2 != newpass1)
       error += "<li data-input=\"newpass2\">Passwords do not match</li>";
 
     if (error == "") {
       // success:
+      if (MyConfig.GetParamValue("password", "module") == MyConfig.GetParamValue("wifi.ap", "OVMS")) {
+        MyConfig.SetParamValue("wifi.ap", "OVMS", newpass1);
+        info += "<li>New Wifi AP password for network <code>OVMS</code> has been set.</li>";
+      }
+      
       MyConfig.SetParamValue("password", "module", newpass1);
       info += "<li>New module &amp; admin password has been set.</li>";
-
+      
+      MyConfig.SetParamValueBool("password", "changed", true);
+      
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
       c.alert("success", info.c_str());
+      OutputHome(p, c);
       c.done();
       return;
     }
@@ -373,16 +404,47 @@ void OvmsWebServer::HandleCfgPassword(PageEntry_t& p, PageContext_t& c)
   else {
     c.head(200);
   }
-
+  
+  // show password warning:
+  if (MyConfig.GetParamValue("password", "module").empty()) {
+    c.alert("danger",
+      "<p><strong>Warning:</strong> no admin password set. <strong>Web access is open to the public.</strong></p>"
+      "<p>Please change your password now.</p>");
+  }
+  else if (MyConfig.GetParamValueBool("password", "changed") == false) {
+    c.alert("danger",
+      "<p><strong>Warning:</strong> default password has not been changed yet. <strong>Web access is open to the public.</strong></p>"
+      "<p>Please change your password now.</p>");
+  }
+  
+  // create some random passwords:
+  std::ostringstream pwsugg;
+  srand48(StdMetrics.ms_m_monotonic->AsInt() * StdMetrics.ms_m_freeram->AsInt());
+  pwsugg << "<p>Inspiration:";
+  for (int i=0; i<5; i++)
+    pwsugg << " <code>" << c.encode_html(pwgen(12)) << "</code>";
+  pwsugg << "</p>";
+  
   // generate form:
   c.panel_start("primary", "Change module &amp; admin password");
   c.form_start(p.uri);
-  c.input_password("Old password", "oldpass", "", NULL, NULL, "autocomplete=\"section-login current-password\"");
-  c.input_password("New password", "newpass1", "", NULL, NULL, "autocomplete=\"section-login new-password\"");
-  c.input_password("…repeat", "newpass2", "", "Repeat new password", NULL, "autocomplete=\"section-login new-password\"");
+  c.input_password("Old password", "oldpass", "",
+    NULL, NULL, "autocomplete=\"section-login current-password\"");
+  c.input_password("New password", "newpass1", "",
+    "Enter new password, min. 8 characters", pwsugg.str().c_str(), "autocomplete=\"section-login new-password\"");
+  c.input_password("…repeat", "newpass2", "",
+    "Repeat new password", NULL, "autocomplete=\"section-login new-password\"");
   c.input_button("default", "Submit");
   c.form_end();
-  c.panel_end();
+  c.panel_end(
+    (MyConfig.GetParamValue("password", "module") == MyConfig.GetParamValue("wifi.ap", "OVMS"))
+    ? "<p>Note: this changes both the module and the Wifi access point password for network <code>OVMS</code>, as they are identical right now.</p>"
+      "<p>You can set a separate Wifi password on the Wifi configuration page.</p>"
+    : NULL);
+  
+  c.alert("info",
+    "<p>Note: if you lose your password, you may need to erase your configuration to restore access to the module.</p>"
+    "<p>To set a new password via console, registered App or SMS, execute command <kbd>config set password module …</kbd>.</p>");
   c.done();
 }
 

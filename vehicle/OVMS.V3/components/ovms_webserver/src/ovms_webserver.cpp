@@ -696,8 +696,10 @@ void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
     }
     
     if (error == "") {
-      // ok: set cookie, reload menu & redirect to original uri or /home:
-      if (c.uri == "/login" || c.uri == "/logout" || c.uri == "/")
+      // ok: set cookie, reload menu & redirect to original uri, /cfg/password or /home:
+      if (MyConfig.GetParamValueBool("password", "changed") == false)
+        c.uri = "/cfg/password";
+      else if (c.uri == "/login" || c.uri == "/logout" || c.uri == "/")
         c.uri = "/home";
       
       char shead[200];

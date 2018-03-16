@@ -143,7 +143,7 @@ void PageContext::panel_start(const char* type, const char* title) {
 }
 
 void PageContext::panel_end(const char* footer) {
-  mg_printf_http_chunk(nc, footer[0]
+  mg_printf_http_chunk(nc, (footer && footer[0])
     ? "</div><div class=\"panel-footer\">%s</div></div>"
     : "</div></div>"
     , footer);
@@ -409,6 +409,18 @@ void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
       vehicle += "<li><a class=\"btn btn-default\" href=\"" + std::string(e->uri) + "\" target=\"#main\">" + std::string(e->label) + "</a></li>";
   }
   
+  // show password warning:
+  if (MyConfig.GetParamValue("password", "module").empty()) {
+    c.alert("danger",
+      "<p><strong>Warning:</strong> no admin password set. <strong>Web access is open to the public!</strong></p>"
+      "<p><a class=\"btn btn-success\" href=\"/cfg/password\" target=\"#main\">Change password now</a></p>");
+  }
+  else if (MyConfig.GetParamValueBool("password", "changed") == false) {
+    c.alert("danger",
+      "<p><strong>Warning:</strong> default password has not been changed yet. <strong>Web access is open to the public!</strong></p>"
+      "<p><a class=\"btn btn-success\" href=\"/cfg/password\" target=\"#main\">Change password now</a></p>");
+  }
+  
   c.panel_start("primary", "Home");
   
   c.printf(
@@ -433,11 +445,6 @@ void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
     , config.c_str());
 
   c.panel_end();
-  
-  // check admin password, show warning if unset:
-  if (MyConfig.GetParamValue("password", "module").empty()) {
-    c.alert("warning", "<p><strong>Warning:</strong> no admin password set. Web access is open to the public.</p>");
-  }
   
   // check auto init, show warning if disabled:
   if (!MyConfig.GetParamValueBool("auto", "init")) {
