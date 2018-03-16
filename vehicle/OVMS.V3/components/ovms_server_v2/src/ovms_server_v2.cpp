@@ -437,6 +437,7 @@ void OvmsServerV2::ProcessCommand(const char* payload)
     case 7: // Execute command
       {
       BufferedShell* bs = new BufferedShell(false, COMMAND_RESULT_NORMAL);
+      bs->SetSecure(true); // this is an authorized channel
       bs->ProcessChars(sep+1, strlen(sep)-1);
       bs->ProcessChar('\n');
       std::string val; bs->Dump(val);
