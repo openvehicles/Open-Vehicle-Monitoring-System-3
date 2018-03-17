@@ -388,6 +388,7 @@ class OvmsWebServer
     static void HandleHome(PageEntry_t& p, PageContext_t& c);
     static void HandleLogin(PageEntry_t& p, PageContext_t& c);
     static void HandleLogout(PageEntry_t& p, PageContext_t& c);
+    static void OutputReboot(PageEntry_t& p, PageContext_t& c);
   
   public:
     static void HandleStatus(PageEntry_t& p, PageContext_t& c);

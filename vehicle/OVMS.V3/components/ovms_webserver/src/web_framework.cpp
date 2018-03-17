@@ -540,6 +540,34 @@ void OvmsWebServer::HandleMenu(PageEntry_t& p, PageContext_t& c)
 
 
 /**
+ * OutputReboot: output reboot script
+ */
+void OvmsWebServer::OutputReboot(PageEntry_t& p, PageContext_t& c)
+{
+  c.alert("warning",
+    "<p class=\"lead\">Rebooting now.</p>"
+    "<p>Please wait a moment until the window reloads.</p>"
+    "<p id=\"dots\">•</p>"
+    "<script>"
+      "after(0.1, function(){"
+        "var data = { \"command\": \"module reset\" };"
+        "$.ajax({ \"type\": \"post\", \"url\": \"/api/execute\", \"data\": data,"
+          "\"timeout\": 15000,"
+          "\"beforeSend\": function(){"
+            "$(\"html\").addClass(\"loading\");"
+            "ws.close();"
+            "window.setInterval(function(){ $(\"#dots\").append(\"•\"); }, 1000);"
+          "},"
+          "\"complete\": function(){"
+            "location.reload();"
+          "},"
+        "});"
+      "});"
+    "</script>");
+}
+
+
+/**
  * HandleAsset: output gzip assets
  * Note: no check for Accept-Encoding, we can't unzip & a modern browser is required anyway
  */

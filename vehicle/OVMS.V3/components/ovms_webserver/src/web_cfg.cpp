@@ -1083,7 +1083,10 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
 
     c.head(200);
     c.alert("success", "<p class=\"lead\">Auto start configuration saved.</p>");
-    OutputHome(p, c);
+    if (c.getvar("action") == "save-reboot")
+      OutputReboot(p, c);
+    else
+      OutputHome(p, c);
     c.done();
     return;
   }
@@ -1157,7 +1160,13 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Start server V2", "server_v2", server_v2);
   c.input_checkbox("Start server V3", "server_v3", server_v3);
 
-  c.input_button("default", "Save");
+  c.print(
+    "<div class=\"form-group\">"
+      "<div class=\"col-sm-offset-3 col-sm-9\">"
+        "<button type=\"submit\" class=\"btn btn-default\" name=\"action\" value=\"save\">Save</button> "
+        "<button type=\"submit\" class=\"btn btn-default\" name=\"action\" value=\"save-reboot\">Save &amp; reboot</button> "
+      "</div>"
+    "</div>");
   c.form_end();
   c.panel_end();
   c.done();
@@ -1202,28 +1211,6 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
       output = "<p>Unknown action.</p>";
     }
     
-    if (reboot) {
-      output +=
-        "<p id=\"dots\"><strong>Rebooting now</strong>, please wait a moment until the window reloads…</p>"
-        "<script>"
-          "after(0.1, function(){"
-            "var data = { \"command\": \"module reset\" };"
-            "$.ajax({ \"type\": \"post\", \"url\": \"/api/execute\", \"data\": data,"
-              "\"timeout\": 15000,"
-              "\"beforeSend\": function(){"
-                "$(\"html\").addClass(\"loading\");"
-                "ws.close();"
-                "window.setInterval(function(){ $(\"#dots\").append(\"…\"); }, 1000);"
-              "},"
-              "\"complete\": function(){"
-                "location.reload();"
-              "},"
-            "});"
-          "});"
-        "</script>";
-      showform = false;
-    }
-    
     // output result:
     if (error) {
       output = "<p class=\"lead\">Error!</p>" + output;
@@ -1234,7 +1221,9 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
       c.head(200);
       output = "<p class=\"lead\">OK!</p>" + output;
       c.alert("success", output.c_str());
-      if (!showform) {
+      if (reboot)
+        OutputReboot(p, c);
+      if (reboot || !showform) {
         c.done();
         return;
       }

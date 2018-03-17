@@ -23,7 +23,7 @@ function loaduri(target, method, uri, data){
   location.hash = "#" + uri;
   
   $.ajax({ "type": method, "url": uri, "data": data,
-    "timeout": 10000,
+    "timeout": 15000,
     "beforeSend": function(){
       $("html").addClass("loading");
     },
@@ -60,7 +60,7 @@ function loadcmd(command, target){
     output = $(target);
   }
   var lastlen = 0, xhr, timeouthd, timeout = 20;
-  if (/^(test |ota |co .* scan)/.test(command)) timeout = 60;
+  if (/^(test |ota |co .* scan)/.test(command)) timeout = 300;
   var checkabort = function(){ if (xhr.readyState != 4) xhr.abort("timeout"); };
   xhr = $.ajax({ "type": "post", "url": "/api/execute", "data": data,
     "timeout": 0,
