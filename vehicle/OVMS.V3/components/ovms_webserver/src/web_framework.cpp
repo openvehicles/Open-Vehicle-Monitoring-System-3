@@ -308,14 +308,29 @@ void PageContext::input_slider(const char* label, const char* name, int size, co
     );
 }
 
-void PageContext::input_button(const char* type, const char* label) {
+void PageContext::input_button(const char* type, const char* label,
+    const char* name /*=NULL*/, const char* value /*=NULL*/) {
   mg_printf_http_chunk(nc,
     "<div class=\"form-group\">"
       "<div class=\"col-sm-offset-3 col-sm-9\">"
-        "<button type=\"submit\" class=\"btn btn-%s\">%s</button>"
+        "<button type=\"submit\" class=\"btn btn-%s\" %s%s%s %s%s%s>%s</button>"
       "</div>"
     "</div>"
-    , _attr(type), label);
+    , _attr(type)
+    , name ? "name=\"" : "", name ? _attr(name) : "", name ? "\"" : ""
+    , value ? "value=\"" : "", value ? _attr(value) : "", value ? "\"" : ""
+    , label);
+}
+
+void PageContext::input_info(const char* label, const char* text) {
+  mg_printf_http_chunk(nc,
+    "<div class=\"form-group\">"
+      "<label class=\"control-label col-sm-3\">%s:</label>"
+      "<div class=\"col-sm-9\">"
+        "<div class=\"form-control-static\">%s</div>"
+      "</div>"
+    "</div>"
+    , label, text);
 }
 
 void PageContext::alert(const char* type, const char* text) {
@@ -324,9 +339,10 @@ void PageContext::alert(const char* type, const char* text) {
     , _attr(type), text);
 }
 
-void PageContext::fieldset_start(const char* title) {
+void PageContext::fieldset_start(const char* title, const char* css_class /*=NULL*/) {
   mg_printf_http_chunk(nc,
-    "<fieldset><legend>%s</legend>"
+    "<fieldset class=\"%s\"><legend>%s</legend>"
+    , css_class ? css_class : ""
     , title);
 }
 

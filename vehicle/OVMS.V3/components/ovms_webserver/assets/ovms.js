@@ -190,6 +190,8 @@ $(function(){
       uri = frm.attr("action");
       target = frm.attr("target");
       data = frm.serialize();
+      if (this.name)
+        data += (data?"&":"") + encodeURI(this.name+"="+(this.value||"1"));
     }
     if (!loaduri(target, method, uri, data))
       return true;

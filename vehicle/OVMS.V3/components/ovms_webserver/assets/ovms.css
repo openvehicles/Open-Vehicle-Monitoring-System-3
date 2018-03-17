@@ -33,6 +33,11 @@ pre {
   border-radius: 4px;
   border: 1px solid #333333;
 }
+.tab-content>.tab-pane {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-top: none;
+}
 #main {
   margin-top: 60px;
 }

@@ -20,6 +20,7 @@ Open Vehicle Monitor System v3 - Change log
                          - Webserver: added DNS config, replaced modem with network status
                          - Module: Provide a 'module factory reset' command to erase config store
                          - Webserver: warn user about unchanged password, change coupled AP password
+                         - OTA: web UI
 
 2018-03-05 MWJ  3.0.991  OTA release support OTA updates over HTTP
                          - Update ovms_module to use new API for per-task heap info.

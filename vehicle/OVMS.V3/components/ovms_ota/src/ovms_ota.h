@@ -33,11 +33,22 @@
 
 #include "ovms_events.h"
 
+struct ota_info
+  {
+  std::string version_firmware;
+  std::string version_server;
+  std::string partition_running;
+  std::string partition_boot;
+  };
+
 class OvmsOTA
   {
   public:
     OvmsOTA();
     ~OvmsOTA();
+
+  public:
+    static void GetStatus(ota_info& info);
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
   protected:

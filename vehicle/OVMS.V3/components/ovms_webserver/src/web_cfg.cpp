@@ -39,6 +39,8 @@
 #include "metrics_standard.h"
 #include "vehicle.h"
 #include "ovms_housekeeping.h"
+#include "ovms_ota.h"
+#include "ovms_peripherals.h"
 
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
@@ -1158,5 +1160,235 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
   c.input_button("default", "Save");
   c.form_end();
   c.panel_end();
+  c.done();
+}
+
+
+/**
+ * HandleCfgFirmware: OTA firmware update & boot setup (URL /cfg/firmware)
+ */
+void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
+{
+  std::string cmdres;
+  std::string action;
+  ota_info info;
+
+  if (c.method == "POST") {
+    // process form submission:
+    bool error = false, showform = true, reboot = false;
+    std::string output = "";
+    action = c.getvar("action");
+    
+    if (action.substr(0,3) == "set") {
+      info.partition_boot = c.getvar("boot_old");
+      std::string partition_boot = c.getvar("boot");
+      if (partition_boot != info.partition_boot) {
+        cmdres = ExecuteCommand("ota boot " + partition_boot);
+        if (cmdres.find("Error:") != std::string::npos)
+          error = true;
+        output += "<p><samp>" + cmdres + "</samp></p>";
+      }
+      else {
+        output += "<p>Boot partition unchanged.</p>";
+      }
+      if (!error && action == "set-reboot")
+        reboot = true;
+    }
+    else if (action == "reboot") {
+      reboot = true;
+    }
+    else {
+      error = true;
+      output = "<p>Unknown action.</p>";
+    }
+    
+    if (reboot) {
+      output +=
+        "<p id=\"dots\"><strong>Rebooting now</strong>, please wait a moment until the window reloads…</p>"
+        "<script>"
+          "after(0.1, function(){"
+            "var data = { \"command\": \"module reset\" };"
+            "$.ajax({ \"type\": \"post\", \"url\": \"/api/execute\", \"data\": data,"
+              "\"timeout\": 15000,"
+              "\"beforeSend\": function(){"
+                "$(\"html\").addClass(\"loading\");"
+                "ws.close();"
+                "window.setInterval(function(){ $(\"#dots\").append(\"…\"); }, 1000);"
+              "},"
+              "\"complete\": function(){"
+                "location.reload();"
+              "},"
+            "});"
+          "});"
+        "</script>";
+      showform = false;
+    }
+    
+    // output result:
+    if (error) {
+      output = "<p class=\"lead\">Error!</p>" + output;
+      c.head(400);
+      c.alert("danger", output.c_str());
+    }
+    else {
+      c.head(200);
+      output = "<p class=\"lead\">OK!</p>" + output;
+      c.alert("success", output.c_str());
+      if (!showform) {
+        c.done();
+        return;
+      }
+    }
+  }
+  else {
+    // generate form:
+    c.head(200);
+  }
+
+  // read configuration:
+  MyOTA.GetStatus(info);
+  
+  c.panel_start("primary", "Firmware setup &amp; update");
+  c.form_start(p.uri);
+
+  c.input_info("Firmware version", info.version_firmware.c_str());
+  c.input_info("…available", info.version_server.c_str());
+  
+  c.print(
+    "<ul class=\"nav nav-tabs\">"
+      "<li class=\"active\"><a data-toggle=\"tab\" href=\"#tab-boot\">Boot <span class=\"hidden-xs\">config</span></a></li>"
+      "<li><a data-toggle=\"tab\" href=\"#tab-flash-http\">Flash <span class=\"hidden-xs\">from</span> web</a></li>"
+      "<li><a data-toggle=\"tab\" href=\"#tab-flash-vfs\">Flash <span class=\"hidden-xs\">from</span> file</a></li>"
+    "</ul>"
+    "<div class=\"tab-content\">"
+      "<div id=\"tab-boot\" class=\"tab-pane fade in active section-boot\">");
+
+  // Boot:
+  c.input_info("Running partition", info.partition_running.c_str());
+  c.printf("<input type=\"hidden\" name=\"boot_old\" value=\"%s\">", _attr(info.partition_boot));
+  c.input_select_start("Boot from", "boot");
+  c.input_select_option("Factory image", "factory", (info.partition_boot == "factory"));
+  c.input_select_option("OTA_0 image", "ota_0", (info.partition_boot == "ota_0"));
+  c.input_select_option("OTA_1 image", "ota_1", (info.partition_boot == "ota_1"));
+  c.input_select_end();
+  c.print(
+    "<div class=\"form-group\">"
+      "<div class=\"col-sm-offset-3 col-sm-9\">"
+        "<button type=\"submit\" class=\"btn btn-default\" name=\"action\" value=\"set\">Set</button> "
+        "<button type=\"submit\" class=\"btn btn-default\" name=\"action\" value=\"set-reboot\">Set &amp; reboot</button> "
+        "<button type=\"submit\" class=\"btn btn-default\" name=\"action\" value=\"reboot\">Reboot</button> "
+      "</div>"
+    "</div>");
+
+  c.print(
+      "</div>"
+      "<div id=\"tab-flash-http\" class=\"tab-pane fade section-flash\">");
+
+  // Flash HTTP:
+  c.input_text("HTTP URL", "flash_http", "",
+    "optional: URL of .bin file",
+    "<p>Leave empty to download latest update from <code>openvehicles.com</code>. "
+    "Note: currently only http is supported.</p>");
+#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+  if (MyPeripherals->m_simcom->GetPowerMode() == On) {
+    c.input_checkbox("Power down modem", "flash_http_modemoff", true,
+      "<p>This avoids downloading via cellular network, update files are ~1.5 MB</p>");
+  }
+#endif // CONFIG_OVMS_COMP_MODEM_SIMCOM
+  c.input_button("default", "Flash now", "action", "flash-http");
+
+  c.print(
+      "</div>"
+      "<div id=\"tab-flash-vfs\" class=\"tab-pane fade section-flash\">");
+
+  // Flash VFS:
+  c.input_info("Auto flash",
+    "<ol>"
+      "<li>Place the file <code>ovms3.bin</code> in the SD root directory.</li>"
+      "<li>Insert the SD card, wait until the module reboots.</li>"
+      "<li>Note: after processing the file will be renamed to <code>ovms3.done</code>.</li>"
+    "</ol>");
+  c.input_info("Upload",
+    "Not yet implemented. Please copy your update file to an SD card and enter the path below.");
+  c.input_text("File path", "flash_vfs", "",
+    "Path to .bin file", "<p>SD card root: <code>/sd/</code></p>");
+  c.input_button("default", "Flash now", "action", "flash-vfs");
+
+  c.print(
+      "</div>"
+    "</div>");
+
+  c.form_end();
+  c.panel_end(
+    "<p>The module can store up to three firmware images in a factory and two OTA partitions.</p>"
+    "<p>Flashing from web or file writes alternating to the OTA partitions, the factory partition remains unchanged.</p>"
+    "<p>You can flash the factory partition via USB, see developer manual for details.</p>");
+
+  c.print(
+    "<div class=\"modal fade\" id=\"flash-dialog\" role=\"dialog\" data-backdrop=\"static\" data-keyboard=\"false\">"
+      "<div class=\"modal-dialog modal-lg\">"
+        "<div class=\"modal-content\">"
+          "<div class=\"modal-header\">"
+            "<button type=\"button\" class=\"close\" data-dismiss=\"modal\">&times;</button>"
+            "<h4 class=\"modal-title\">Flashing…</h4>"
+          "</div>"
+          "<div class=\"modal-body\">"
+            "<pre id=\"output\"></pre>"
+          "</div>"
+          "<div class=\"modal-footer\">"
+            "<button type=\"button\" class=\"btn btn-default action-reboot\">Reboot now</button>"
+            "<button type=\"button\" class=\"btn btn-default action-close\">Close</button>"
+          "</div>"
+        "</div>"
+      "</div>"
+    "</div>"
+    "<script>"
+      "function setloading(sel, on){"
+        "$(sel+\" button\").prop(\"disabled\", on);"
+        "if (on) $(sel).addClass(\"loading\");"
+        "else $(sel).removeClass(\"loading\");"
+      "}"
+      "$(\".section-flash button\").on(\"click\", function(ev){"
+        "var action = $(this).attr(\"value\");"
+        "$(\"#output\").text(\"Processing…\\n\");"
+        "setloading(\"#flash-dialog\", true);"
+        "$(\"#flash-dialog\").modal(\"show\");"
+        "if (action == \"flash-http\") {"
+          "var flash_http = $(\"input[name=flash_http]\").val();"
+          "if ($(\"input[name=flash_http_modemoff]\").prop(\"checked\")) {"
+            "loadcmd(\"power simcom off\", \"+#output\").done(function(resp){"
+            "loadcmd(\"ota flash http \" + flash_http, \"+#output\").done(function(resp){"
+            "loadcmd(\"power simcom on\", \"+#output\").done(function(resp){"
+              "setloading(\"#flash-dialog\", false);"
+            "});});});"
+          "} else {"
+            "loadcmd(\"ota flash http \" + flash_http, \"+#output\").done(function(resp){"
+              "setloading(\"#flash-dialog\", false);"
+            "});"
+          "}"
+        "}"
+        "else if (action == \"flash-vfs\") {"
+          "var flash_vfs = $(\"input[name=flash_vfs]\").val();"
+          "loadcmd(\"ota flash vfs \" + flash_vfs, \"+#output\").done(function(resp){"
+            "setloading(\"#flash-dialog\", false);"
+          "});"
+        "}"
+        "else {"
+          "$(\"#output\").text(\"Unknown action.\");"
+          "setloading(\"#flash-dialog\", false);"
+        "}"
+        "ev.stopPropagation();"
+        "return false;"
+      "});"
+      "$(\".action-reboot\").on(\"click\", function(ev){"
+        "$(\"#flash-dialog\").removeClass(\"fade\").modal(\"hide\");"
+        "loaduri(\"#main\", \"post\", \"/cfg/firmware\", { \"action\": \"reboot\" });"
+      "});"
+      "$(\".action-close\").on(\"click\", function(ev){"
+        "$(\"#flash-dialog\").removeClass(\"fade\").modal(\"hide\");"
+        "loaduri(\"#main\", \"get\", \"/cfg/firmware\");"
+      "});"
+    "</script>");
+
   c.done();
 }

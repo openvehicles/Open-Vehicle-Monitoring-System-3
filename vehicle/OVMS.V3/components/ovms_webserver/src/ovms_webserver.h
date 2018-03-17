@@ -92,7 +92,7 @@ struct PageContext
   void panel_end(const char* footer="");
   void form_start(const char* action);
   void form_end();
-  void fieldset_start(const char* title);
+  void fieldset_start(const char* title, const char* css_class=NULL);
   void fieldset_end();
   void hr();
   void input(const char* type, const char* label, const char* name, const char* value,
@@ -112,7 +112,8 @@ struct PageContext
   void input_slider(const char* label, const char* name, int size, const char* unit,
     int enabled, double value, double defval, double min, double max, double step=1,
     const char* helptext=NULL);
-  void input_button(const char* type, const char* label);
+  void input_button(const char* type, const char* label, const char* name=NULL, const char* value=NULL);
+  void input_info(const char* label, const char* text);
   void alert(const char* type, const char* text);
 };
 
@@ -402,6 +403,7 @@ class OvmsWebServer
     static void OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname);
     static void UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname, std::string& warn);
     static void HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c);
+    static void HandleCfgFirmware(PageEntry_t& p, PageContext_t& c);
   
   public:
     bool                      m_running;
