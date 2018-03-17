@@ -551,7 +551,8 @@ void esp32wifi::EventWifiGotIp(std::string event, void* data)
 
 void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
   {
-  if (m_mode == ESP32WIFI_MODE_CLIENT)
+  if ((m_mode == ESP32WIFI_MODE_CLIENT) ||
+      (m_mode == ESP32WIFI_MODE_APCLIENT))
     {
     m_stareconnect = true;
     }
@@ -595,7 +596,7 @@ void esp32wifi::EventWifiApUpdate(std::string event, void* data)
 
 void esp32wifi::EventTimer10(std::string event, void* data)
   {
-  if ((m_mode == ESP32WIFI_MODE_CLIENT)&&(m_stareconnect))
+  if (((m_mode == ESP32WIFI_MODE_CLIENT)||(m_mode == ESP32WIFI_MODE_APCLIENT))&&(m_stareconnect))
     {
     esp_wifi_connect();
     }
