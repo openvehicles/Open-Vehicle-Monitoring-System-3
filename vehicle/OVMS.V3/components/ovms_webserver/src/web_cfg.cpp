@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <string>
 #include <sstream>
+#include <dirent.h>
 #include "ovms_webserver.h"
 #include "ovms_config.h"
 #include "ovms_metrics.h"
@@ -1275,7 +1276,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
 
   // Flash HTTP:
   c.input_text("HTTP URL", "flash_http", "",
-    "optional: URL of .bin file",
+    "optional: URL of firmware file",
     "<p>Leave empty to download latest update from <code>openvehicles.com</code>. "
     "Note: currently only http is supported.</p>");
 #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
@@ -1300,7 +1301,20 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   c.input_info("Upload",
     "Not yet implemented. Please copy your update file to an SD card and enter the path below.");
   c.input_text("File path", "flash_vfs", "",
-    "Path to .bin file", "<p>SD card root: <code>/sd/</code></p>");
+    "Path to firmware file", "<p>SD card root: <code>/sd/</code></p>", "list=\"files\"");
+  
+  c.print("<datalist id=\"files\">");
+  DIR *dir;
+  struct dirent *dp;
+  if ((dir = opendir("/sd")) != NULL) {
+    while ((dp = readdir(dir)) != NULL) {
+      if (strstr(dp->d_name, ".bin") || strstr(dp->d_name, ".done"))
+        c.printf("<option value=\"/sd/%s\">", c.encode_html(dp->d_name).c_str());
+    }
+    closedir(dir);
+  }
+  c.print("</datalist>");
+  
   c.input_button("default", "Flash now", "action", "flash-vfs");
 
   c.print(
