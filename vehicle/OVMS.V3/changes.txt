@@ -21,6 +21,7 @@ Open Vehicle Monitor System v3 - Change log
                          - Module: Provide a 'module factory reset' command to erase config store
                          - Webserver: warn user about unchanged password, change coupled AP password
                          - OTA: web UI
+                         - Network: Try to set default interface based on WifiSTA>Modem priority
 
 2018-03-05 MWJ  3.0.991  OTA release support OTA updates over HTTP
                          - Update ovms_module to use new API for per-task heap info.

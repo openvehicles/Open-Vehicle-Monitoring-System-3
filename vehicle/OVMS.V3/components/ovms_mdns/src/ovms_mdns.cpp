@@ -31,14 +31,17 @@
 #include "ovms_log.h"
 static const char *TAG = "ovms-mdns";
 
+#include "ovms_netmanager.h"
 #include "ovms_peripherals.h"
 #include "ovms_config.h"
 #include "ovms_mdns.h"
 
 OvmsMDNS MyMDNS __attribute__ ((init_priority (8100)));
 
-void OvmsMDNS::WifiUp(std::string event, void* data)
+void OvmsMDNS::NetworkUp(std::string event, void* data)
   {
+  if (!(MyNetManager.m_wifi_ap || MyNetManager.m_connected_wifi)) return; // Exit if no wifi
+
   ESP_LOGI(TAG, "Launching MDNS service");
   esp_err_t err;
   if (MyPeripherals->m_esp32wifi->GetMode() == ESP32WIFI_MODE_CLIENT)
@@ -76,7 +79,7 @@ void OvmsMDNS::WifiUp(std::string event, void* data)
   mdns_service_add(NULL, "_telnet", "_tcp", 23, NULL, 0);
   }
 
-void OvmsMDNS::WifiDown(std::string event, void* data)
+void OvmsMDNS::NetworkDown(std::string event, void* data)
   {
   if (m_mdns)
     {
@@ -94,12 +97,10 @@ OvmsMDNS::OvmsMDNS()
 
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG,"network.wifi.up", std::bind(&OvmsMDNS::WifiUp, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"network.wifi.down", std::bind(&OvmsMDNS::WifiDown, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"network.mgr.init", std::bind(&OvmsMDNS::NetworkUp, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"network.mgr.stop", std::bind(&OvmsMDNS::NetworkDown, this, _1, _2));
   }
 
 OvmsMDNS::~OvmsMDNS()
   {
   }
-
-
