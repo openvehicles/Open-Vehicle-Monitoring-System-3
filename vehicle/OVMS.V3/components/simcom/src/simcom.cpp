@@ -466,6 +466,7 @@ void simcom::State1Enter(SimcomState1 newstate)
       break;
     case PoweredOff:
       ESP_LOGI(TAG,"State: Enter PoweredOff state");
+      m_mux.Stop();
       break;
     default:
       break;
