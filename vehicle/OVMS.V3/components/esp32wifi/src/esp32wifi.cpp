@@ -230,8 +230,10 @@ esp32wifi::esp32wifi(const char* name)
   m_stareconnect = false;
   memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
-  memset(&m_mac,0,sizeof(m_mac));
-  memset(&m_ip_info,0,sizeof(m_ip_info));
+  memset(&m_mac_ap,0,sizeof(m_mac_ap));
+  memset(&m_mac_sta,0,sizeof(m_mac_sta));
+  memset(&m_ip_info_sta,0,sizeof(m_ip_info_sta));
+  memset(&m_ip_info_ap,0,sizeof(m_ip_info_ap));
   MyConfig.RegisterParam("wifi.ssid", "WIFI SSID", true, false);
   MyConfig.RegisterParam("wifi.ap", "WIFI Access Point", true, false);
 
@@ -543,10 +545,11 @@ void esp32wifi::EventWifiGotIp(std::string event, void* data)
   {
   m_stareconnect = false;
   system_event_info_t *info = (system_event_info_t*)data;
-  m_ip_info = info->got_ip.ip_info;
-  esp_wifi_get_mac(ESP_IF_WIFI_STA, m_mac);
+  m_ip_info_sta = info->got_ip.ip_info;
+  esp_wifi_get_mac(ESP_IF_WIFI_STA, m_mac_sta);
   ESP_LOGI(TAG, "WiFi UP with SSID: %s, MAC: " MACSTR ", IP: " IPSTR ", mask: " IPSTR ", gw: " IPSTR,
-    m_wifi_sta_cfg.sta.ssid, MAC2STR(m_mac), IP2STR(&m_ip_info.ip), IP2STR(&m_ip_info.netmask), IP2STR(&m_ip_info.gw));
+    m_wifi_sta_cfg.sta.ssid, MAC2STR(m_mac_sta),
+    IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw));
   }
 
 void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
@@ -560,7 +563,7 @@ void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
     {
     esp_wifi_disconnect();
     memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
-    memset(&m_ip_info,0,sizeof(m_ip_info));
+    memset(&m_ip_info_sta,0,sizeof(m_ip_info_sta));
     esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg);
     m_nextscan = monotonictime + 30;
     }
@@ -570,15 +573,15 @@ void esp32wifi::EventWifiApState(std::string event, void* data)
   {
   if (event == "system.wifi.ap.start")
     {
-    esp_wifi_get_mac(ESP_IF_WIFI_AP, m_mac);
-    tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &m_ip_info);
+    esp_wifi_get_mac(ESP_IF_WIFI_AP, m_mac_ap);
+    tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &m_ip_info_ap);
     ESP_LOGI(TAG, "AP started with SSID: %s, MAC: " MACSTR ", IP: " IPSTR,
-      m_wifi_ap_cfg.ap.ssid, MAC2STR(m_mac), IP2STR(&m_ip_info.ip));
+      m_wifi_ap_cfg.ap.ssid, MAC2STR(m_mac_ap), IP2STR(&m_ip_info_ap.ip));
     }
   else
     {
-    memset(&m_mac,0,sizeof(m_mac));
-    memset(&m_ip_info,0,sizeof(m_ip_info));
+    memset(&m_mac_ap,0,sizeof(m_mac_ap));
+    memset(&m_ip_info_ap,0,sizeof(m_ip_info_ap));
     ESP_LOGI(TAG, "AP stopped");
     }
   }
@@ -709,17 +712,17 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
     case ESP32WIFI_MODE_CLIENT:
     case ESP32WIFI_MODE_SCLIENT:
       writer->printf("\n  STA SSID: %s\n    MAC: " MACSTR "\n    IP: " IPSTR "/" IPSTR "\n    GW: " IPSTR "\n",
-        m_wifi_sta_cfg.sta.ssid, MAC2STR(m_mac), IP2STR(&m_ip_info.ip),
-        IP2STR(&m_ip_info.netmask), IP2STR(&m_ip_info.gw));
+        m_wifi_sta_cfg.sta.ssid, MAC2STR(m_mac_sta),
+        IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw));
       break;
     case ESP32WIFI_MODE_APCLIENT:
       writer->printf("\n  STA SSID: %s\n    MAC: " MACSTR "\n    IP: " IPSTR "/" IPSTR "\n    GW: " IPSTR "\n",
-        m_wifi_sta_cfg.sta.ssid, MAC2STR(m_mac), IP2STR(&m_ip_info.ip),
-        IP2STR(&m_ip_info.netmask), IP2STR(&m_ip_info.gw));
+        m_wifi_sta_cfg.sta.ssid, MAC2STR(m_mac_sta),
+        IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw));
       // Falling through (no break) to ESP32WIFI_MODE_AP on purpose
     case ESP32WIFI_MODE_AP:
       writer->printf("\n  AP SSID: %s\n    MAC: " MACSTR "\n    IP: " IPSTR "\n",
-        m_wifi_ap_cfg.ap.ssid, MAC2STR(m_mac), IP2STR(&m_ip_info.ip));
+        m_wifi_ap_cfg.ap.ssid, MAC2STR(m_mac_ap), IP2STR(&m_ip_info_ap.ip));
       wifi_sta_list_t sta_list;
       tcpip_adapter_sta_list_t ip_list;
       if (esp_wifi_ap_get_sta_list(&sta_list) == ESP_OK)

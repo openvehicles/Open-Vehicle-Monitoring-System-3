@@ -79,8 +79,10 @@ class esp32wifi : public pcp
 
   protected:
     esp32wifi_mode_t m_mode;
-    uint8_t m_mac[6];
-    tcpip_adapter_ip_info_t m_ip_info;
+    uint8_t m_mac_sta[6];
+    uint8_t m_mac_ap[6];
+    tcpip_adapter_ip_info_t m_ip_info_sta;
+    tcpip_adapter_ip_info_t m_ip_info_ap;
     wifi_init_config_t m_wifi_init_cfg;
     wifi_config_t m_wifi_ap_cfg;
     wifi_config_t m_wifi_sta_cfg;
