@@ -174,6 +174,7 @@ void OvmsNetManager::WifiDownSTA(std::string event, void* data)
 void OvmsNetManager::WifiUpAP(std::string event, void* data)
   {
   m_wifi_ap = true;
+  SetInterfacePriority();
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   StartMongooseTask();
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
@@ -182,6 +183,7 @@ void OvmsNetManager::WifiUpAP(std::string event, void* data)
 void OvmsNetManager::WifiDownAP(std::string event, void* data)
   {
   m_wifi_ap = false;
+  SetInterfacePriority();
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   StopMongooseTask();
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
