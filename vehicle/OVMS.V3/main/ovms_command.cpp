@@ -187,14 +187,16 @@ void OvmsCommand::ExpandUsage(std::string usage, OvmsWriter* writer)
     m_usage += usage.substr(0, pos);
     pos += 2;
     size_t z = m_usage.size();
-    for (OvmsCommandMap::iterator it = m_children.begin(); ; )
+    bool found = false;
+    for (OvmsCommandMap::iterator it = m_children.begin(); it != m_children.end(); ++it)
       {
       if (!it->second->m_secure || writer->m_issecure)
+        {
+        if (found)
+          m_usage += "|";
         m_usage += it->first;
-      if (++it == m_children.end())
-        break;
-      if (!it->second->m_secure || writer->m_issecure)
-        m_usage += "|";
+        found = true;
+        }
       }
     if (m_usage.size() == z)
       {
