@@ -1274,17 +1274,27 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
       "</div>"
       "<div id=\"tab-flash-http\" class=\"tab-pane fade section-flash\">");
 
+  // warn about modem / AP connection:
+  if (netif_default) {
+    if (netif_default->name[0] == 'a' && netif_default->name[1] == 'p') {
+      c.alert("warning",
+        "<p class=\"lead\"><strong>No internet access.</strong></p>"
+        "<p>The module is running in wifi AP mode without modem, so flashing from a public server is currently not possible.</p>"
+        "<p>You can still flash from an AP network local IP address (<code>192.168.4.x</code>).</p>");
+    }
+    else if (netif_default->name[0] == 'p' && netif_default->name[1] == 'p') {
+      c.alert("warning",
+        "<p class=\"lead\"><strong>Using modem connection.</strong></p>"
+        "<p>Downloads will currently be done via cellular network. Be aware update files are ~1.5 MB, "
+        "which may exceed your data plan and need some time depending on your link speed.</p>");
+    }
+  }
+  
   // Flash HTTP:
   c.input_text("HTTP URL", "flash_http", "",
     "optional: URL of firmware file",
     "<p>Leave empty to download latest update from <code>openvehicles.com</code>. "
     "Note: currently only http is supported.</p>");
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
-  if (MyPeripherals->m_simcom->GetPowerMode() == On) {
-    c.input_checkbox("Power down modem", "flash_http_modemoff", true,
-      "<p>This avoids downloading via cellular network, update files are ~1.5 MB</p>");
-  }
-#endif // CONFIG_OVMS_COMP_MODEM_SIMCOM
   c.input_button("default", "Flash now", "action", "flash-http");
 
   c.print(
@@ -1358,17 +1368,9 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
         "$(\"#flash-dialog\").modal(\"show\");"
         "if (action == \"flash-http\") {"
           "var flash_http = $(\"input[name=flash_http]\").val();"
-          "if ($(\"input[name=flash_http_modemoff]\").prop(\"checked\")) {"
-            "loadcmd(\"power simcom off\", \"+#output\").done(function(resp){"
-            "loadcmd(\"ota flash http \" + flash_http, \"+#output\").done(function(resp){"
-            "loadcmd(\"power simcom on\", \"+#output\").done(function(resp){"
-              "setloading(\"#flash-dialog\", false);"
-            "});});});"
-          "} else {"
-            "loadcmd(\"ota flash http \" + flash_http, \"+#output\").done(function(resp){"
-              "setloading(\"#flash-dialog\", false);"
-            "});"
-          "}"
+          "loadcmd(\"ota flash http \" + flash_http, \"+#output\").done(function(resp){"
+            "setloading(\"#flash-dialog\", false);"
+          "});"
         "}"
         "else if (action == \"flash-vfs\") {"
           "var flash_vfs = $(\"input[name=flash_vfs]\").val();"
