@@ -831,7 +831,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << std::fixed
     << std::setprecision(2)
     << "MP-0 S"
-    << StandardMetrics.ms_v_bat_soc->AsInt()
+    << StandardMetrics.ms_v_bat_soc->AsString("0", Other, 1)
     << ","
     << ((m_units_distance == Kilometers) ? "K" : "M")
     << ","
@@ -853,7 +853,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << ","
     << "0"  // car_charge_b4
     << ","
-    << StandardMetrics.ms_v_charge_kwh->AsInt()
+    << (int)(StandardMetrics.ms_v_charge_kwh->AsFloat() * 10)
     << ","
     << chargesubstate_key(StandardMetrics.ms_v_charge_substate->AsString(""))
     << ","
@@ -950,9 +950,9 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
     << ","
     << StandardMetrics.ms_v_bat_power->AsString("0",Other,1)
     << ","
-    << StandardMetrics.ms_v_bat_energy_used->AsString("0",Other,0)
+    << StandardMetrics.ms_v_bat_energy_used->AsString("0",Other,1)
     << ","
-    << StandardMetrics.ms_v_bat_energy_recd->AsString("0",Other,0)
+    << StandardMetrics.ms_v_bat_energy_recd->AsString("0",Other,1)
     ;
 
   Transmit(buffer.str().c_str());
