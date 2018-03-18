@@ -24,6 +24,7 @@ Open Vehicle Monitor System v3 - Change log
                          - Network: Try to set default interface based on WifiSTA>Modem priority
                          - Wifi: Fix to APCLIENT mode STA reconnect
                          - Wifi: Fix to display of IP and MAC addresses in APCLIENT mode
+                         - Twizy v0.12: auto power control
 
 2018-03-05 MWJ  3.0.991  OTA release support OTA updates over HTTP
                          - Update ovms_module to use new API for per-task heap info.

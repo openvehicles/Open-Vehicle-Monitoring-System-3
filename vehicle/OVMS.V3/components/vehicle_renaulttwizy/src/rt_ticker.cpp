@@ -471,17 +471,6 @@ void OvmsVehicleRenaultTwizy::Ticker10(uint32_t ticker)
   {
     // Clear online flag to test for CAN activity:
     twizy_status &= ~CAN_STATUS_ONLINE;
-
-#ifdef OVMS_TWIZY_CFG
-    // TODO
-    // Check for new SEVCON fault:
-    if (readsdo(0x5320,0x00) == 0) {
-      if (twizy_sdo.data && (twizy_sdo.data != twizy_alert_code)) {
-        twizy_alert_code = twizy_sdo.data;
-        twizy_notify(SEND_CodeAlert);
-      }
-    }
-#endif // #ifdef #ifdef OVMS_TWIZY_CFG
   }
   else
   {

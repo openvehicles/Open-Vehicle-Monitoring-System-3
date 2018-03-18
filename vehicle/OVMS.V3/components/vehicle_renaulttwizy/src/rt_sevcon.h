@@ -149,7 +149,7 @@ class SevconClient
     CANopenResult_t CfgTSMap(char map,
       int8_t t1_prc, int8_t t2_prc, int8_t t3_prc, int8_t t4_prc,
       int t1_spd, int t2_spd, int t3_spd, int t4_spd);
-    CANopenResult_t CfgDrive(int max_prc, int autodrive_ref, int autodrive_minprc);
+    CANopenResult_t CfgDrive(int max_prc, int autodrive_ref, int autodrive_minprc, bool async=false);
     CANopenResult_t CfgRecup(int neutral_prc, int brake_prc, int autorecup_ref, int autorecup_minprc);
     void CfgAutoPower();
     CANopenResult_t CfgRamps(int start_prm, int accel_prc, int decel_prc, int neutral_prc, int brake_prc);
@@ -165,6 +165,8 @@ class SevconClient
     string FmtSwitchProfileResult(CANopenResult_t res);
     
     static int PrintProfile(int capacity, OvmsWriter* writer, cfg_profile& profile);
+    
+    void Kickdown(bool on);
 
   public:
     // diagnostics / statistics:
@@ -219,10 +221,10 @@ class SevconClient
     uint32_t                  twizy_max_pwr_lo = 0;               // CFG: max power low speed (W: 0..17000)
     uint32_t                  twizy_max_pwr_hi = 0;               // CFG: max power high speed (W: 0..17000)
 
-    uint8_t                   twizy_autorecup_checkpoint = 0;     // change detection for autorecup function
+    int                       twizy_autorecup_checkpoint = 0;     // change detection for autorecup function
     uint16_t                  twizy_autorecup_level = 1000;       // autorecup: current recup level (per mille)
     
-    uint8_t                   twizy_autodrive_checkpoint = 0;     // change detection for autopower function
+    int                       twizy_autodrive_checkpoint = 0;     // change detection for autopower function
     uint16_t                  twizy_autodrive_level = 1000;       // autopower: current drive level (per mille)
     
     uint8_t                   twizy_lock_speed = 0;               // if Lock mode: fix speed to this (kph)

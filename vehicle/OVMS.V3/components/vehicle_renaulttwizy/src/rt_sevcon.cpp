@@ -407,20 +407,14 @@ void SevconClient::Ticker1(uint32_t ticker)
     m_buttoncnt--;
   }
   
+  // Auto drive & recuperation adjustment (if enabled):
+  CfgAutoPower();
 
-#ifdef TODO
-
+#if 0 // TODO
   // Valet mode: lock speed if valet max odometer reached:
   if (ValetMode() && !CarLocked() && twizy_odometer > twizy_valet_odo)
   {
     vehicle_twizy_cfg_restrict_cmd(FALSE, CMD_Lock, NULL);
   }
-
-  // Auto drive & recuperation adjustment (if enabled):
-  vehicle_twizy_cfg_autopower();
-
 #endif
-
 }
-
-
