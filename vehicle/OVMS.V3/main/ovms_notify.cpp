@@ -157,7 +157,7 @@ OvmsNotifyEntryCommand::OvmsNotifyEntryCommand(int verbosity, const char* cmd)
   {
   m_cmd = new char[strlen(cmd)+1];
   strcpy(m_cmd,cmd);
-  
+
   BufferedShell* bs = new BufferedShell(false, verbosity);
   // command notifications can only be raised by the system or "notify raise" in enabled mode,
   // so we can assume this is a secure shell:
@@ -310,8 +310,8 @@ OvmsNotify::OvmsNotify()
 #endif // #ifdef CONFIG_OVMS_DEV_DEBUGNOTIFICATIONS
 
   // Register our commands
-  OvmsCommand* cmd_notify = MyCommandApp.RegisterCommand("notify","NOTIFICATION framework",NULL, "", 1);
-  cmd_notify->RegisterCommand("status","Show notification status",notify_status,"", 0, 0, false);
+  OvmsCommand* cmd_notify = MyCommandApp.RegisterCommand("notify","NOTIFICATION framework",NULL, "", 1, 0, true);
+  cmd_notify->RegisterCommand("status","Show notification status",notify_status,"", 0, 0, true);
   OvmsCommand* cmd_notifyraise = cmd_notify->RegisterCommand("raise","NOTIFICATION raise framework", NULL, "", 0, 0, true);
   cmd_notifyraise->RegisterCommand("text","Raise a textual notification",notify_raise,"<type><message>", 2, 2, true);
   cmd_notifyraise->RegisterCommand("command","Raise a command callback notification",notify_raise,"<type><command>", 2, 2, true);
@@ -399,13 +399,13 @@ uint32_t OvmsNotify::NotifyString(const char* type, const char* value)
     }
 
   if (m_trace) ESP_LOGI(TAG, "Raise text %s: %s", type, value);
-  
+
   if (m_readers.size() == 0)
     {
     ESP_LOGD(TAG, "Abort: no readers");
     return 0;
     }
-  
+
   // create message:
   OvmsNotifyEntry* msg = (OvmsNotifyEntry*) new OvmsNotifyEntryString(value);
 
@@ -416,9 +416,9 @@ uint32_t OvmsNotify::NotifyString(const char* type, const char* value)
     if (strlen(value) <= mc->m_verbosity)
       msg->m_readers.set(mc->m_reader);
     }
-  
+
   ESP_LOGD(TAG, "Created entry with length %d has %d readers pending", strlen(value), msg->m_readers.count());
-  
+
   return mt->QueueEntry(msg);
   }
 
@@ -432,38 +432,38 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* cmd)
     }
 
   if (m_trace) ESP_LOGI(TAG, "Raise command %s: %s", type, cmd);
-  
+
   if (m_readers.size() == 0)
     {
     ESP_LOGD(TAG, "Abort: no readers");
     return 0;
     }
-  
+
   // Strategy:
   //  to minimize RAM usage and command calls we try to reuse higher verbosity messages
   //  if their result length fits for lower verbosity readers as well.
-  
+
   std::map<int, OvmsNotifyEntryCommand*> verbosity_msgs;
   std::map<int, OvmsNotifyEntryCommand*>::iterator itm;
   std::map<int, OvmsNotifyEntryCommand*>::reverse_iterator ritm;
   OvmsNotifyCallbackMap_t::iterator itc;
   OvmsNotifyEntryCommand *msg;
   size_t msglen;
-  
+
   // get verbosity levels needed by readers:
   for (itc=m_readers.begin(); itc!=m_readers.end(); itc++)
     {
     OvmsNotifyCallbackEntry* mc = itc->second;
     verbosity_msgs[mc->m_verbosity] = NULL;
     }
-  
+
   // fetch verbosity levels beginning at highest verbosity:
   msg = NULL;
   msglen = 0;
   for (ritm=verbosity_msgs.rbegin(); ritm!=verbosity_msgs.rend(); ritm++)
     {
     int verbosity = ritm->first;
-    
+
     if (msg && msglen <= verbosity)
       {
       // reuse last verbosity level message:
@@ -481,7 +481,7 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* cmd)
         }
       }
     }
-  
+
   // add readers:
   for (itc=m_readers.begin(); itc!=m_readers.end(); itc++)
     {
@@ -489,7 +489,7 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* cmd)
     msg = verbosity_msgs[mc->m_verbosity];
     msg->m_readers.set(mc->m_reader);
     }
-  
+
   // queue all verbosity level messages beginning at lowest verbosity (fastest delivery):
   msg = NULL;
   uint32_t queue_id = 0;
@@ -497,12 +497,12 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* cmd)
     {
     if (itm->second == msg)
       continue; // already queued
-    
+
     msg = itm->second;
     ESP_LOGD(TAG, "Created entry for verbosity %d has %d readers pending", itm->first, msg->m_readers.count());
     queue_id = mt->QueueEntry(msg);
     }
-  
+
   return queue_id;
   }
 
@@ -537,5 +537,3 @@ uint32_t OvmsNotify::NotifyCommandf(const char* type, const char* fmt, ...)
   free(buffer);
   return res;
   }
-
-
