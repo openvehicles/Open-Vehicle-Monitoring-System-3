@@ -1179,7 +1179,7 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
 {
-  std::string cmdres;
+  std::string cmdres, mru;
   std::string action;
   ota_info info;
 
@@ -1291,17 +1291,25 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   }
   
   // Flash HTTP:
-  c.input_text("HTTP URL", "flash_http", "",
+  mru = MyConfig.GetParamValue("ota", "http.mru");
+  c.input_text("HTTP URL", "flash_http", mru.c_str(),
     "optional: URL of firmware file",
     "<p>Leave empty to download latest update from <code>openvehicles.com</code>. "
-    "Note: currently only http is supported.</p>");
-  c.input_button("default", "Flash now", "action", "flash-http");
+    "Note: currently only http is supported.</p>", "list=\"urls\"");
 
+  c.print("<datalist id=\"urls\">");
+  if (mru != "")
+    c.printf("<option value=\"%s\">", c.encode_html(mru).c_str());
+  c.print("</datalist>");
+
+  c.input_button("default", "Flash now", "action", "flash-http");
+  
   c.print(
       "</div>"
       "<div id=\"tab-flash-vfs\" class=\"tab-pane fade section-flash\">");
 
   // Flash VFS:
+  mru = MyConfig.GetParamValue("ota", "vfs.mru");
   c.input_info("Auto flash",
     "<ol>"
       "<li>Place the file <code>ovms3.bin</code> in the SD root directory.</li>"
@@ -1310,10 +1318,12 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "</ol>");
   c.input_info("Upload",
     "Not yet implemented. Please copy your update file to an SD card and enter the path below.");
-  c.input_text("File path", "flash_vfs", "",
+  c.input_text("File path", "flash_vfs", mru.c_str(),
     "Path to firmware file", "<p>SD card root: <code>/sd/</code></p>", "list=\"files\"");
   
   c.print("<datalist id=\"files\">");
+  if (mru != "")
+    c.printf("<option value=\"%s\">", c.encode_html(mru).c_str());
   DIR *dir;
   struct dirent *dp;
   if ((dir = opendir("/sd")) != NULL) {
@@ -1363,7 +1373,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
       "}"
       "$(\".section-flash button\").on(\"click\", function(ev){"
         "var action = $(this).attr(\"value\");"
-        "$(\"#output\").text(\"Processing…\\n\");"
+        "$(\"#output\").text(\"Processing… (do not interrupt, may take some minutes)\\n\");"
         "setloading(\"#flash-dialog\", true);"
         "$(\"#flash-dialog\").modal(\"show\");"
         "if (action == \"flash-http\") {"

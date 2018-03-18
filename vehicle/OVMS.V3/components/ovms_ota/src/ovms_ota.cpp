@@ -158,6 +158,7 @@ void ota_flash_vfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 
   writer->printf("OTA flash was successful\n  Flashed %d bytes from %s\n  Next boot will be from '%s'\n",
                  ds.st_size,argv[0],target->label);
+  MyConfig.SetParamValue("ota", "vfs.mru", argv[0]);
   }
 
 void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -292,6 +293,8 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
 
   writer->printf("OTA flash was successful\n  Flashed %d bytes from %s\n  Next boot will be from '%s'\n",
                  filesize,url.c_str(),target->label);
+  if (argc > 0)
+    MyConfig.SetParamValue("ota", "http.mru", url);
   }
 
 void ota_boot(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -435,6 +438,8 @@ void OvmsOTA::AutoFlashSD(std::string event, void* data)
 OvmsOTA::OvmsOTA()
   {
   ESP_LOGI(TAG, "Initialising OTA (4400)");
+  
+  MyConfig.RegisterParam("ota", "OTA setup and status", true, true);
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
   #undef bind  // Kludgy, but works
