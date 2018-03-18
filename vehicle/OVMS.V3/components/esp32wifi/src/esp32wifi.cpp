@@ -516,17 +516,22 @@ void esp32wifi::Scan()
     {
     SetPowerMode(On);
     }
-  if ((m_mode != ESP32WIFI_MODE_CLIENT)&&(m_mode != ESP32WIFI_MODE_SCLIENT))
+
+  if (m_mode != ESP32WIFI_MODE_OFF)
     {
-    m_wifi_init_cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&m_wifi_init_cfg));
-    ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-    ESP_ERROR_CHECK(esp_wifi_start());
-    m_mode = ESP32WIFI_MODE_SCAN;
+    StopStation();
     }
 
+  m_wifi_init_cfg = WIFI_INIT_CONFIG_DEFAULT();
+  ESP_ERROR_CHECK(esp_wifi_init(&m_wifi_init_cfg));
+  ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+  ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
+  ESP_ERROR_CHECK(esp_wifi_start());
+  m_mode = ESP32WIFI_MODE_SCAN;
+
   wifi_scan_config_t scanConf;
+  memset(&scanConf,0,sizeof(scanConf));
   scanConf.ssid = NULL;
   scanConf.bssid = NULL;
   scanConf.channel = 0;
@@ -615,6 +620,7 @@ void esp32wifi::EventTimer10(std::string event, void* data)
     // Start a scan
     m_nextscan = 0;
     wifi_scan_config_t scanConf;
+    memset(&scanConf,0,sizeof(scanConf));
     scanConf.ssid = NULL;
     scanConf.bssid = NULL;
     scanConf.channel = 0;
