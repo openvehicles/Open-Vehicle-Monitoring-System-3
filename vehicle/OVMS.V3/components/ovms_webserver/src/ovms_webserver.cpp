@@ -111,7 +111,8 @@ OvmsWebServer::~OvmsWebServer()
 void OvmsWebServer::NetManInit(std::string event, void* data)
 {
   // Only initialise server for WIFI connections
-  if (!MyNetManager.m_connected_wifi) return;
+  if (!(MyNetManager.m_connected_wifi || MyNetManager.m_wifi_ap))
+    return;
 
   m_running = true;
   ESP_LOGI(TAG,"Launching Web Server");
