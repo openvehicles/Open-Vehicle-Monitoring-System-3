@@ -376,6 +376,8 @@ void esp32wifi::StartClientMode(std::string ssid, std::string password, uint8_t*
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
   strcpy((char*)m_wifi_sta_cfg.sta.ssid, ssid.c_str());
   strcpy((char*)m_wifi_sta_cfg.sta.password, password.c_str());
+  m_wifi_sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
+  m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
   if (bssid == NULL)
     {
     m_wifi_sta_cfg.sta.bssid_set = 0;
@@ -385,6 +387,8 @@ void esp32wifi::StartClientMode(std::string ssid, std::string password, uint8_t*
     m_wifi_sta_cfg.sta.bssid_set = 1;
     memcpy(&m_wifi_sta_cfg.sta.bssid,bssid,6);
     }
+  m_wifi_sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
+  m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
   ESP_ERROR_CHECK(esp_wifi_start());
   ESP_ERROR_CHECK(esp_wifi_connect());
@@ -410,6 +414,8 @@ void esp32wifi::StartScanningClientMode()
   ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
+  m_wifi_sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
+  m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
   ESP_ERROR_CHECK(esp_wifi_start());
 
   // if we are triggered by a startup script, monotonictime will be zero which
@@ -483,6 +489,8 @@ void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appas
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
   strcpy((char*)m_wifi_sta_cfg.sta.ssid, stassid.c_str());
   strcpy((char*)m_wifi_sta_cfg.sta.password, stapassword.c_str());
+  m_wifi_sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
+  m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
 
   ESP_ERROR_CHECK(esp_wifi_start());
@@ -526,6 +534,9 @@ void esp32wifi::Scan()
   ESP_ERROR_CHECK(esp_wifi_init(&m_wifi_init_cfg));
   ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+  memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
+  m_wifi_sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
+  m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
   ESP_ERROR_CHECK(esp_wifi_start());
   m_mode = ESP32WIFI_MODE_SCAN;
@@ -536,6 +547,7 @@ void esp32wifi::Scan()
   scanConf.bssid = NULL;
   scanConf.channel = 0;
   scanConf.show_hidden = true;
+  scanConf.scan_type = WIFI_SCAN_TYPE_ACTIVE;
   ESP_ERROR_CHECK(esp_wifi_scan_start(&scanConf, false));
   }
 
@@ -700,6 +712,8 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
         memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
         strcpy((char*)m_wifi_sta_cfg.sta.ssid, (const char*)list[k].ssid);
         strcpy((char*)m_wifi_sta_cfg.sta.password, password.c_str());
+        m_wifi_sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
+        m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
         ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
         ESP_ERROR_CHECK(esp_wifi_connect());
         }
