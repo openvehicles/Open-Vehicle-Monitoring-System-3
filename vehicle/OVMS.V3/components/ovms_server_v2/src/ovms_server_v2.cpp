@@ -1467,6 +1467,14 @@ void OvmsServerV2::ConfigChanged(OvmsConfigParam* param)
 
 void OvmsServerV2::NetUp(std::string event, void* data)
   {
+#if 1
+  // workaround for wifi AP mode startup (manager up before interface)
+  if (m_mgconn == NULL)
+    {
+    ESP_LOGI(TAG, "Network is up, scheduling connection retry");
+    m_connretry = 2;
+    }
+#endif
   }
 
 void OvmsServerV2::NetDown(std::string event, void* data)
