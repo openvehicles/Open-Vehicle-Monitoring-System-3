@@ -312,12 +312,12 @@ OvmsNotify::OvmsNotify()
   // Register our commands
   OvmsCommand* cmd_notify = MyCommandApp.RegisterCommand("notify","NOTIFICATION framework",NULL, "", 1);
   cmd_notify->RegisterCommand("status","Show notification status",notify_status,"", 0, 0, false);
-  OvmsCommand* cmd_notifyraise = cmd_notify->RegisterCommand("raise","NOTIFICATION raise framework", NULL, "", 0, 0, false);
+  OvmsCommand* cmd_notifyraise = cmd_notify->RegisterCommand("raise","NOTIFICATION raise framework", NULL, "", 0, 0, true);
   cmd_notifyraise->RegisterCommand("text","Raise a textual notification",notify_raise,"<type><message>", 2, 2, true);
   cmd_notifyraise->RegisterCommand("command","Raise a command callback notification",notify_raise,"<type><command>", 2, 2, true);
-  OvmsCommand* cmd_notifytrace = cmd_notify->RegisterCommand("trace","NOTIFICATION trace framework", NULL, "", 0, 0, false);
-  cmd_notifytrace->RegisterCommand("on","Turn notification tracing ON",notify_trace,"", 0, 0, false);
-  cmd_notifytrace->RegisterCommand("off","Turn notification tracing OFF",notify_trace,"", 0, 0, false);
+  OvmsCommand* cmd_notifytrace = cmd_notify->RegisterCommand("trace","NOTIFICATION trace framework", NULL, "", 0, 0, true);
+  cmd_notifytrace->RegisterCommand("on","Turn notification tracing ON",notify_trace,"", 0, 0, true);
+  cmd_notifytrace->RegisterCommand("off","Turn notification tracing OFF",notify_trace,"", 0, 0, true);
 
   RegisterType("info");
   RegisterType("error");

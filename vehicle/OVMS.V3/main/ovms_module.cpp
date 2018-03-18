@@ -728,13 +728,13 @@ class OvmsModuleInit
     TaskMap::instance()->insert(0x00000000, "no task");
 #endif
 
-    OvmsCommand* cmd_module = MyCommandApp.RegisterCommand("module","MODULE framework",NULL);
+    OvmsCommand* cmd_module = MyCommandApp.RegisterCommand("module","MODULE framework",NULL,"",0,0,true);
     cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"[<task names or ids>]",0,TASKLIST,true);
     cmd_module->RegisterCommand("tasks","Show module task usage",module_tasks,"",0,0,true);
     cmd_module->RegisterCommand("fault","Abort fault the module",module_fault,"",0,0,true);
     cmd_module->RegisterCommand("reset","Reset module",module_reset,"",0,0,true);
     cmd_module->RegisterCommand("check","Check heap integrity",module_check,"",0,0,true);
-    OvmsCommand* cmd_factory = cmd_module->RegisterCommand("factory","MODULE FACTORY framework",NULL);
+    OvmsCommand* cmd_factory = cmd_module->RegisterCommand("factory","MODULE FACTORY framework",NULL,"",0,0,true);
     cmd_factory->RegisterCommand("reset","Factory Reset module",module_factory_reset,"",0,0,true);
     }
   } MyOvmsModuleInit  __attribute__ ((init_priority (5100)));
