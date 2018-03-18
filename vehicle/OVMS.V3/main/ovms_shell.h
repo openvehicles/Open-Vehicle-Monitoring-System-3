@@ -46,6 +46,7 @@ class OvmsShell : public OvmsWriter
     void ProcessChar(char c);
     void ProcessChars(const char* buf, int len);
     void PrintConditional(const char* buf);
+    void SetPrompt(const char* str);
 
   protected:
     virtual void finalise() {}
