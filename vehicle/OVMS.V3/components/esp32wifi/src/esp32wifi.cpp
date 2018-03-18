@@ -492,6 +492,12 @@ void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appas
 void esp32wifi::StopStation()
   {
   m_stareconnect = false;
+  memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
+  memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
+  memset(&m_mac_ap,0,sizeof(m_mac_ap));
+  memset(&m_mac_sta,0,sizeof(m_mac_sta));
+  memset(&m_ip_info_sta,0,sizeof(m_ip_info_sta));
+  memset(&m_ip_info_ap,0,sizeof(m_ip_info_ap));
 
   if (m_mode != ESP32WIFI_MODE_OFF)
     {
