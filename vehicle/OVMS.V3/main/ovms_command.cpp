@@ -415,7 +415,7 @@ typedef struct
   int tries;
   } PasswordContext;
 
-static const char* secure_prompt = "\033[31mOVMS #\033[0m ";
+static const char* secure_prompt = "OVMS # ";
 bool enableInsert(OvmsWriter* writer, void* v, char ch)
   {
   PasswordContext* pc = (PasswordContext*)v;
