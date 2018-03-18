@@ -347,9 +347,9 @@ OvmsVehicleFactory::OvmsVehicleFactory()
 
   m_currentvehicle = NULL;
 
-  OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework",NULL,"",0,0);
-  cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1);
-  cmd_vehicle->RegisterCommand("list","Show list of available vehicle modules",vehicle_list,"",0,0);
+  OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework",NULL,"",0,0, true);
+  cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1, true);
+  cmd_vehicle->RegisterCommand("list","Show list of available vehicle modules",vehicle_list,"",0,0, true);
 
   MyCommandApp.RegisterCommand("wakeup","Wake up vehicle",vehicle_wakeup,"",0,0,true);
   MyCommandApp.RegisterCommand("homelink","Activate specified homelink button",vehicle_homelink,"<homelink>",1,1,true);
@@ -1084,4 +1084,3 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::ProcessMsgCommand(std::string &resul
   {
   return NotImplemented;
   }
-
