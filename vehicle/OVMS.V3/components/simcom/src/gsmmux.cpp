@@ -207,7 +207,7 @@ void GsmMux::Start()
 void GsmMux::Stop()
   {
   ESP_LOGI(TAG, "Stop MUX");
-  for (int k=1; k<=GSM_MUX_CHANNELS; k++)
+  for (int k=0; k<m_channels.size(); k++)
     {
     GsmMuxChannel* chan = m_channels[k];
     if (chan) delete chan;
