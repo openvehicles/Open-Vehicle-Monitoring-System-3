@@ -427,9 +427,9 @@ void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
     || (twizy_batt[0].temp_alerts != twizy_batt[0].last_temp_alerts))
   {
     RequestNotify(SEND_BatteryAlert | SEND_BatteryStats);
+    twizy_batt[0].last_volt_alerts = twizy_batt[0].volt_alerts;
+    twizy_batt[0].last_temp_alerts = twizy_batt[0].temp_alerts;
   }
-  
-  
 }
 
 

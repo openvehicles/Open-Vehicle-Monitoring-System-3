@@ -23,7 +23,7 @@ function loaduri(target, method, uri, data){
   location.hash = "#" + uri;
   
   $.ajax({ "type": method, "url": uri, "data": data,
-    "timeout": 10000,
+    "timeout": 15000,
     "beforeSend": function(){
       $("html").addClass("loading");
     },
@@ -34,7 +34,7 @@ function loaduri(target, method, uri, data){
       setcontent(tgt, uri, response);
     },
     "error": function(response, status, httperror){
-      var text = response.responseText || httperror || status;
+      var text = response.responseText || httperror+"\n" || status+"\n";
       if (text.search("alert") == -1) {
         text = '<div id="alert" class="alert alert-danger alert-dismissable">'
           + '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
@@ -59,30 +59,46 @@ function loadcmd(command, target){
   } else {
     output = $(target);
   }
-  return $.ajax({ "type": "post", "url": "/api/execute", "data": data,
-    "timeout": 10000,
+  var lastlen = 0, xhr, timeouthd, timeout = 20;
+  if (/^(test |ota |co .* scan)/.test(command)) timeout = 300;
+  var checkabort = function(){ if (xhr.readyState != 4) xhr.abort("timeout"); };
+  xhr = $.ajax({ "type": "post", "url": "/api/execute", "data": data,
+    "timeout": 0,
     "beforeSend": function(){
       output.addClass("loading");
+      var mh = parseInt(output.css("max-height")), h = output.outerHeight();
+      output.css("min-height", mh ? Math.min(h, mh) : h);
+      output.scrollTop(output.get(0).scrollHeight);
+      timeouthd = window.setTimeout(checkabort, timeout*1000);
     },
     "complete": function(){
+      window.clearTimeout(timeouthd);
       output.removeClass("loading");
+      var mh = parseInt(output.css("max-height")), h = output.outerHeight();
+      output.css("min-height", mh ? Math.min(h, mh) : h);
     },
-    "success": function(response){
-      output.css("min-height", output.height());
-      if (outmode == "+")
-        output.html(output.html() + $("<div/>").text(response).html());
-      else
-        output.html($("<div/>").text(response).html());
+    "xhrFields": {
+      onprogress: function(e){
+        var response = e.currentTarget.response;
+        var addtext = response.substring(lastlen);
+        lastlen = response.length;
+        if (outmode == "") { output.html(""); outmode = "+"; }
+        output.html(output.html() + $("<div/>").text(addtext).html());
+        output.scrollTop(output.get(0).scrollHeight);
+        window.clearTimeout(timeouthd);
+        timeouthd = window.setTimeout(checkabort, timeout*1000);
+      },
     },
     "error": function(response, status, httperror){
-      var resptext = response.responseText || httperror || status;
-      output.css("min-height", output.height());
-      if (outmode == "+")
-        output.html(output.html() + $("<div/>").text(resptext).html());
-      else
+      var resptext = response.responseText || httperror+"\n" || status+"\n";
+      if (outmode == "")
         output.html($("<div/>").text(resptext).html());
+      else
+        output.html(output.html() + $("<div/>").text(resptext).html());
+      output.scrollTop(output.get(0).scrollHeight);
     },
   });
+  return xhr;
 }
 
 function after(seconds, fn){
@@ -100,9 +116,10 @@ function getpage() {
   }
 }
 
-var monitorTimer;
+var monitorTimer, last_monotonic = 0;
 var ws;
 var metrics = {};
+var shellhist = [""], shellhpos = 0;
 
 function initSocketConnection(){
   ws = new WebSocket('ws://' + location.host + '/msg');
@@ -125,6 +142,11 @@ function monitorUpdate(){
   if (!ws || ws.readyState == ws.CLOSED){
     initSocketConnection();
   }
+  var new_monotonic = parseInt(metrics["m.monotonic"]) || 0;
+  if (new_monotonic < last_monotonic)
+    location.reload();
+  else
+    last_monotonic = new_monotonic;
   $(".monitor").each(function(){
     var cnt = $(this).data("updcnt");
     var int = $(this).data("updint");
@@ -168,6 +190,8 @@ $(function(){
       uri = frm.attr("action");
       target = frm.attr("target");
       data = frm.serialize();
+      if (this.name)
+        data += (data?"&":"") + encodeURI(this.name+"="+(this.value||"1"));
     }
     if (!loaduri(target, method, uri, data))
       return true;

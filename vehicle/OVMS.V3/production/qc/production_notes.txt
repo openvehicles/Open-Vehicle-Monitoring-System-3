@@ -40,6 +40,10 @@ First production batch is 2018010001 - 2018010120.
 
    Where <serialnumber> is the serial number from the label on the enclosure.
 
+2] Default modem APN
+
+   OVMS> config set modem apn hologram
+
 ********************************************************************************
 ** QC STEPS
 ********************************************************************************

@@ -41,8 +41,11 @@ class OvmsMDNS
     virtual ~OvmsMDNS();
 
   public:
-    void WifiUp(std::string event, void* data);
-    void WifiDown(std::string event, void* data);
+    void NetworkUp(std::string event, void* data);
+    void NetworkInterfaceChange(std::string event, void* data);
+    void NetworkDown(std::string event, void* data);
+    void StartMDNS();
+    void StopMDNS();
 
   protected:
     bool m_mdns;

@@ -207,6 +207,7 @@ void OvmsEvents::SignalSystemEvent(system_event_t *event)
       SignalEvent("system.wifi.sta.authmodechange",(void*)&event->event_info);
       break;
     case SYSTEM_EVENT_STA_GOT_IP:           // ESP32 station got IP from connected AP
+      SignalEvent("network.interface.up", NULL);
       SignalEvent("system.wifi.sta.gotip",(void*)&event->event_info);
       break;
 //    case SYSTEM_EVENT_STA_LOST_IP:         // ESP32 station lost IP and the IP is reset to 0

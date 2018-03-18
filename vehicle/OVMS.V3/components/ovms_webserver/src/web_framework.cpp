@@ -143,7 +143,7 @@ void PageContext::panel_start(const char* type, const char* title) {
 }
 
 void PageContext::panel_end(const char* footer) {
-  mg_printf_http_chunk(nc, footer[0]
+  mg_printf_http_chunk(nc, (footer && footer[0])
     ? "</div><div class=\"panel-footer\">%s</div></div>"
     : "</div></div>"
     , footer);
@@ -308,14 +308,29 @@ void PageContext::input_slider(const char* label, const char* name, int size, co
     );
 }
 
-void PageContext::input_button(const char* type, const char* label) {
+void PageContext::input_button(const char* type, const char* label,
+    const char* name /*=NULL*/, const char* value /*=NULL*/) {
   mg_printf_http_chunk(nc,
     "<div class=\"form-group\">"
       "<div class=\"col-sm-offset-3 col-sm-9\">"
-        "<button type=\"submit\" class=\"btn btn-%s\">%s</button>"
+        "<button type=\"submit\" class=\"btn btn-%s\" %s%s%s %s%s%s>%s</button>"
       "</div>"
     "</div>"
-    , _attr(type), label);
+    , _attr(type)
+    , name ? "name=\"" : "", name ? _attr(name) : "", name ? "\"" : ""
+    , value ? "value=\"" : "", value ? _attr(value) : "", value ? "\"" : ""
+    , label);
+}
+
+void PageContext::input_info(const char* label, const char* text) {
+  mg_printf_http_chunk(nc,
+    "<div class=\"form-group\">"
+      "<label class=\"control-label col-sm-3\">%s:</label>"
+      "<div class=\"col-sm-9\">"
+        "<div class=\"form-control-static\">%s</div>"
+      "</div>"
+    "</div>"
+    , label, text);
 }
 
 void PageContext::alert(const char* type, const char* text) {
@@ -324,9 +339,10 @@ void PageContext::alert(const char* type, const char* text) {
     , _attr(type), text);
 }
 
-void PageContext::fieldset_start(const char* title) {
+void PageContext::fieldset_start(const char* title, const char* css_class /*=NULL*/) {
   mg_printf_http_chunk(nc,
-    "<fieldset><legend>%s</legend>"
+    "<fieldset class=\"%s\"><legend>%s</legend>"
+    , css_class ? css_class : ""
     , title);
 }
 
@@ -409,6 +425,18 @@ void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
       vehicle += "<li><a class=\"btn btn-default\" href=\"" + std::string(e->uri) + "\" target=\"#main\">" + std::string(e->label) + "</a></li>";
   }
   
+  // show password warning:
+  if (MyConfig.GetParamValue("password", "module").empty()) {
+    c.alert("danger",
+      "<p><strong>Warning:</strong> no admin password set. <strong>Web access is open to the public!</strong></p>"
+      "<p><a class=\"btn btn-success\" href=\"/cfg/password\" target=\"#main\">Change password now</a></p>");
+  }
+  else if (MyConfig.GetParamValueBool("password", "changed") == false) {
+    c.alert("danger",
+      "<p><strong>Warning:</strong> default password has not been changed yet. <strong>Web access is open to the public!</strong></p>"
+      "<p><a class=\"btn btn-success\" href=\"/cfg/password\" target=\"#main\">Change password now</a></p>");
+  }
+  
   c.panel_start("primary", "Home");
   
   c.printf(
@@ -433,11 +461,6 @@ void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
     , config.c_str());
 
   c.panel_end();
-  
-  // check admin password, show warning if unset:
-  if (MyConfig.GetParamValue("password", "module").empty()) {
-    c.alert("warning", "<p><strong>Warning:</strong> no admin password set. Web access is open to the public.</p>");
-  }
   
   // check auto init, show warning if disabled:
   if (!MyConfig.GetParamValueBool("auto", "init")) {
@@ -513,6 +536,34 @@ void OvmsWebServer::HandleMenu(PageEntry_t& p, PageContext_t& c)
   c.head(200);
   mg_send_http_chunk(c.nc, menu.data(), menu.length());
   c.done();
+}
+
+
+/**
+ * OutputReboot: output reboot script
+ */
+void OvmsWebServer::OutputReboot(PageEntry_t& p, PageContext_t& c)
+{
+  c.alert("warning",
+    "<p class=\"lead\">Rebooting now.</p>"
+    "<p>Please wait a moment until the window reloads.</p>"
+    "<p id=\"dots\">•</p>"
+    "<script>"
+      "after(0.1, function(){"
+        "var data = { \"command\": \"module reset\" };"
+        "$.ajax({ \"type\": \"post\", \"url\": \"/api/execute\", \"data\": data,"
+          "\"timeout\": 15000,"
+          "\"beforeSend\": function(){"
+            "$(\"html\").addClass(\"loading\");"
+            "ws.close();"
+            "window.setInterval(function(){ $(\"#dots\").append(\"•\"); }, 1000);"
+          "},"
+          "\"complete\": function(){"
+            "location.reload();"
+          "},"
+        "});"
+      "});"
+    "</script>");
 }
 
 

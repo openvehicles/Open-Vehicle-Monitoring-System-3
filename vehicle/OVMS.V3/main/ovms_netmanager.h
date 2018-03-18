@@ -47,15 +47,22 @@ class OvmsNetManager
     ~OvmsNetManager();
 
   public:
-    void WifiUp(std::string event, void* data);
-    void WifiDown(std::string event, void* data);
+    void WifiUpSTA(std::string event, void* data);
+    void WifiDownSTA(std::string event, void* data);
+    void WifiUpAP(std::string event, void* data);
+    void WifiDownAP(std::string event, void* data);
     void ModemUp(std::string event, void* data);
     void ModemDown(std::string event, void* data);
+    void InterfaceUp(std::string event, void* data);
+
+  public:
+    void SetInterfacePriority();
 
   public:
     bool m_connected_wifi;
     bool m_connected_modem;
     bool m_connected_any;
+    bool m_wifi_ap;
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   protected:
@@ -69,9 +76,10 @@ class OvmsNetManager
 
   public:
     void MongooseTask();
+    TaskHandle_t GetMongooseTaskHandle() { return m_mongoose_task; }
     struct mg_mgr* GetMongooseMgr();
     bool MongooseRunning();
-    
+
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   };
 

@@ -43,6 +43,7 @@
 #include "ovms_metrics.h"
 #include "ovms_config.h"
 #include "ovms_command.h"
+#include "ovms_shell.h"
 #include "ovms_netmanager.h"
 
 #define OVMS_GLOBAL_AUTH_FILE     "/store/.htpasswd"
@@ -91,7 +92,7 @@ struct PageContext
   void panel_end(const char* footer="");
   void form_start(const char* action);
   void form_end();
-  void fieldset_start(const char* title);
+  void fieldset_start(const char* title, const char* css_class=NULL);
   void fieldset_end();
   void hr();
   void input(const char* type, const char* label, const char* name, const char* value,
@@ -111,7 +112,8 @@ struct PageContext
   void input_slider(const char* label, const char* name, int size, const char* unit,
     int enabled, double value, double defval, double min, double max, double step=1,
     const char* helptext=NULL);
-  void input_button(const char* type, const char* label);
+  void input_button(const char* type, const char* label, const char* name=NULL, const char* value=NULL);
+  void input_info(const char* label, const char* text);
   void alert(const char* type, const char* text);
 };
 
@@ -180,15 +182,19 @@ class MgHandler
     MgHandler(mg_connection* nc)
     {
       m_nc = nc;
-      m_nc->user_data = this;
+      if (m_nc)
+        m_nc->user_data = this;
     }
     virtual ~MgHandler()
     {
-      m_nc->user_data = NULL;
+      if (m_nc)
+        m_nc->user_data = NULL;
     }
   
   public:
-    virtual void HandleEvent(int ev, void* p) = 0;
+    virtual int HandleEvent(int ev, void* p) = 0;
+    void RequestPoll();
+    static void HandlePoll(mg_connection* nc, int ev, void* p);
   
   public:
     mg_connection*            m_nc;
@@ -205,7 +211,7 @@ class HttpDataSender : public MgHandler
     ~HttpDataSender();
   
   public:
-    void HandleEvent(int ev, void* p);
+    int HandleEvent(int ev, void* p);
   
   public:
     const uint8_t*            m_data;             // pointer to data
@@ -226,7 +232,7 @@ class HttpStringSender : public MgHandler
     ~HttpStringSender();
   
   public:
-    void HandleEvent(int ev, void* p);
+    int HandleEvent(int ev, void* p);
   
   public:
     std::string*              m_msg;              // pointer to data
@@ -271,12 +277,12 @@ class WebSocketHandler : public MgHandler
   public:
     bool Lock(TickType_t xTicksToWait);
     void Unlock();
-    void AddTxJob(WebSocketTxJob job);
+    void AddTxJob(WebSocketTxJob job, bool init_tx=true);
     bool GetNextTxJob();
     void InitTx();
-    void PollTx();
+    void ContinueTx();
     void ProcessTxJob();
-    void HandleEvent(int ev, void* p);
+    int HandleEvent(int ev, void* p);
   
   public:
     size_t                    m_modifier;         // "our" metrics modifier
@@ -294,6 +300,41 @@ struct WebSocketSlot
 };
 
 typedef std::vector<WebSocketSlot> WebSocketSlots;
+
+
+/**
+ * HttpCommandStream: execute command, stream output to HTTP connection
+ */
+
+class HttpCommandStream : public OvmsShell, MgHandler
+{
+  public:
+    HttpCommandStream(mg_connection* nc, std::string command, int verbosity=COMMAND_RESULT_NORMAL);
+    ~HttpCommandStream();
+  
+  public:
+    void ProcessQueue();
+    int HandleEvent(int ev, void* p);
+    static void CommandTask(void* object);
+  
+  public:
+    std::string               m_command;
+    TaskHandle_t              m_cmdtask;
+    QueueHandle_t             m_writequeue;
+    bool                      m_done;
+    size_t                    m_sent;
+    int                       m_ack;
+  
+  public:
+    void Initialize(bool print);
+    virtual bool IsInteractive() { return false; }
+    char** GetCompletion(OvmsCommandMap& children, const char* token) { return NULL; }
+    int puts(const char* s);
+    int printf(const char* fmt, ...);
+    ssize_t write(const void *buf, size_t nbyte);
+    void Log(LogBuffers* message);
+};
+
 
 
 /**
@@ -347,6 +388,7 @@ class OvmsWebServer
     static void HandleHome(PageEntry_t& p, PageContext_t& c);
     static void HandleLogin(PageEntry_t& p, PageContext_t& c);
     static void HandleLogout(PageEntry_t& p, PageContext_t& c);
+    static void OutputReboot(PageEntry_t& p, PageContext_t& c);
   
   public:
     static void HandleStatus(PageEntry_t& p, PageContext_t& c);
@@ -362,6 +404,7 @@ class OvmsWebServer
     static void OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname);
     static void UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname, std::string& warn);
     static void HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c);
+    static void HandleCfgFirmware(PageEntry_t& p, PageContext_t& c);
   
   public:
     bool                      m_running;

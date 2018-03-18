@@ -66,6 +66,7 @@ static void GsmPPPOS_StatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
       ESP_LOGI(TAG, "   our6_ipaddr = %s", ip6addr_ntoa(netif_ip6_addr(pppif, 0)));
 #endif /* PPP_IPV6_SUPPORT */
       me->m_connected = true;
+      MyEvents.SignalEvent("network.interface.up", NULL);
       MyEvents.SignalEvent("system.modem.gotip",NULL);
       return;
       }

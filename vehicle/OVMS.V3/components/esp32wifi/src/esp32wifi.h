@@ -43,6 +43,7 @@ typedef enum {
     ESP32WIFI_MODE_CLIENT,    // Client mode
     ESP32WIFI_MODE_SCLIENT,   // Scanning-Client mode
     ESP32WIFI_MODE_AP,        // Access point mode
+    ESP32WIFI_MODE_APCLIENT,  // Access point + Client mode
     ESP32WIFI_MODE_SCAN,      // SCAN mode
     ESP32WIFI_MODE_MAX
 } esp32wifi_mode_t;
@@ -61,6 +62,7 @@ class esp32wifi : public pcp
     void StartClientMode(std::string ssid, std::string password, uint8_t* bssid=NULL);
     void StartScanningClientMode();
     void StartAccessPointMode(std::string ssid, std::string password);
+    void StartAccessPointClientMode(std::string apssid, std::string appassword, std::string stassid, std::string stapassword);
     void StopStation();
     void Scan();
     esp32wifi_mode_t GetMode();
@@ -77,10 +79,13 @@ class esp32wifi : public pcp
 
   protected:
     esp32wifi_mode_t m_mode;
-    uint8_t m_mac[6];
-    tcpip_adapter_ip_info_t m_ip_info;
+    uint8_t m_mac_sta[6];
+    uint8_t m_mac_ap[6];
+    tcpip_adapter_ip_info_t m_ip_info_sta;
+    tcpip_adapter_ip_info_t m_ip_info_ap;
     wifi_init_config_t m_wifi_init_cfg;
-    wifi_config_t m_wifi_apsta_cfg;
+    wifi_config_t m_wifi_ap_cfg;
+    wifi_config_t m_wifi_sta_cfg;
     bool m_stareconnect;
     uint32_t m_nextscan;
   };

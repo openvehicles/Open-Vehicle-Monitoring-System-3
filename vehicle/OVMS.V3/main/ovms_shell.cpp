@@ -83,3 +83,10 @@ void OvmsShell::PrintConditional(const char* str)
   if (!m_insert)  // Avoid prompt when entering cmd doing input
     write(str, strlen(str));
   }
+
+void OvmsShell::SetPrompt(const char* str)
+  {
+  if (!str)
+    str = _PROMPT_DEFAULT;
+  m_rl.prompt_str = str;
+  }

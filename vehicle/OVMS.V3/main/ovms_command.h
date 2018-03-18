@@ -72,6 +72,7 @@ class OvmsWriter
     void DeregisterInsertCallback(InsertCallback cb);
     virtual void finalise() {}
     virtual void ProcessChar(char c) {}
+    virtual void SetPrompt(const char* str) {}
 
   public:
     bool IsSecure();

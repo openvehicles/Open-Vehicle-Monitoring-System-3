@@ -32,6 +32,7 @@
 #define __OVMS_BOOT_H__
 
 #include "rom/rtc.h"
+#include "esp_system.h"
 
 typedef enum
   {
@@ -66,6 +67,7 @@ class Boot
     unsigned int GetCrashCount() { return boot_data.crash_count_total; }
     unsigned int GetEarlyCrashCount() { return m_crash_count_early; }
     void SetSoftReset() { boot_data.soft_reset = true; }
+    void Restart() { SetSoftReset(); esp_restart(); }
     bool GetStable() { return boot_data.stable_reached; }
     void SetStable();
 

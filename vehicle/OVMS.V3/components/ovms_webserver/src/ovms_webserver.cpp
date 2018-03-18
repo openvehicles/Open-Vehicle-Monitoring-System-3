@@ -99,6 +99,7 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/cfg/server/v3", "Server V3 (MQTT)", HandleCfgServerV3, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/webserver", "Webserver", HandleCfgWebServer, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/autostart", "Autostart", HandleCfgAutoInit, PageMenu_Config, PageAuth_Cookie);
+  RegisterPage("/cfg/firmware", "Firmware", HandleCfgFirmware, PageMenu_Config, PageAuth_Cookie);
 }
 
 OvmsWebServer::~OvmsWebServer()
@@ -110,7 +111,8 @@ OvmsWebServer::~OvmsWebServer()
 void OvmsWebServer::NetManInit(std::string event, void* data)
 {
   // Only initialise server for WIFI connections
-  if (!MyNetManager.m_connected_wifi) return;
+  if (!(MyNetManager.m_connected_wifi || MyNetManager.m_wifi_ap))
+    return;
 
   m_running = true;
   ESP_LOGI(TAG,"Launching Web Server");
@@ -308,12 +310,13 @@ void OvmsWebServer::EventHandler(mg_connection *nc, int ev, void *p)
   PageContext_t c;
   MgHandler* handler = (MgHandler*) nc->user_data;
   
-  if (ev != MG_EV_POLL && ev != MG_EV_SEND)
-    ESP_LOGV(TAG, "EventHandler: conn=%p ev=%d p=%p rxbufsz=%d, txbufsz=%d", nc, ev, p, nc->recv_mbuf.size, nc->send_mbuf.size);
+  //if (ev != MG_EV_POLL && ev != MG_EV_SEND)
+  //if (nc->user_data)
+  //  ESP_LOGV(TAG, "EventHandler: conn=%p handler=%p ev=%d p=%p rxbufsz=%d, txbufsz=%d", nc, nc->user_data, ev, p, nc->recv_mbuf.size, nc->send_mbuf.size);
   
   // call attached handler:
   if (handler)
-    handler->HandleEvent(ev, p);
+    ev = handler->HandleEvent(ev, p);
   
   // framework handling:
   switch (ev)
@@ -425,6 +428,36 @@ void PageEntry::Serve(PageContext_t& c)
 }
 
 
+
+/**
+ * MgHandler.RequestPoll: init transmission from other context.
+ * 
+ * mg_broadcast() signals the mg_mgr_poll() task to send an MG_EV_POLL to all connections.
+ */
+void MgHandler::RequestPoll()
+{
+#if MG_ENABLE_BROADCAST
+  if (!m_nc)
+    return;
+  
+  if (xTaskGetCurrentTaskHandle() == MyNetManager.GetMongooseTaskHandle()) {
+    // we're in the NetManTask, can send directly:
+    HandleEvent(MG_EV_POLL, NULL);
+  } else {
+    MgHandler* origin = this;
+    mg_broadcast(MyNetManager.GetMongooseMgr(), HandlePoll, &origin, sizeof(origin));
+  }
+#endif // MG_ENABLE_BROADCAST
+}
+
+void MgHandler::HandlePoll(mg_connection* nc, int ev, void* p)
+{
+  MgHandler* origin = *((MgHandler**)p);
+  if (nc->user_data == origin)
+    origin->HandleEvent(MG_EV_POLL, NULL);
+}
+
+
 /**
  * HttpDataSender: chunked transfer of a memory region (needs to be const during xfer)
  */
@@ -444,7 +477,7 @@ HttpDataSender::~HttpDataSender()
     ESP_LOGV(TAG, "HttpDataSender %p abort, %d bytes sent", m_data, m_sent);
 }
 
-void HttpDataSender::HandleEvent(int ev, void* p)
+int HttpDataSender::HandleEvent(int ev, void* p)
 {
   switch (ev)
   {
@@ -471,6 +504,8 @@ void HttpDataSender::HandleEvent(int ev, void* p)
     default:
       break;
   }
+  
+  return ev;
 }
 
 
@@ -493,7 +528,7 @@ HttpStringSender::~HttpStringSender()
   delete m_msg;
 }
 
-void HttpStringSender::HandleEvent(int ev, void* p)
+int HttpStringSender::HandleEvent(int ev, void* p)
 {
   switch (ev)
   {
@@ -520,6 +555,8 @@ void HttpStringSender::HandleEvent(int ev, void* p)
     default:
       break;
   }
+  
+  return ev;
 }
 
 
@@ -542,20 +579,24 @@ bool OvmsWebServer::CheckLogin(std::string username, std::string password)
  */
 user_session* OvmsWebServer::GetSession(http_message *hm)
 {
+  user_session* session = NULL;
   struct mg_str *cookie_header = mg_get_http_header(hm, "cookie");
   if (cookie_header == NULL) return NULL;
-  char ssid[21];
-  if (!mg_http_parse_header(cookie_header, SESSION_COOKIE_NAME, ssid, sizeof(ssid))) {
-    return NULL;
-  }
+  char ssid_buf[21], *ssid = ssid_buf;
+  mg_http_parse_header2(cookie_header, SESSION_COOKIE_NAME, &ssid, sizeof(ssid_buf));
   uint64_t sid = strtoull(ssid, NULL, 16);
-  for (int i = 0; i < NUM_SESSIONS; i++) {
-    if (m_sessions[i].id == sid) {
-      m_sessions[i].last_used = mg_time();
-      return &m_sessions[i];
+  if (sid != 0) {
+    for (int i = 0; i < NUM_SESSIONS; i++) {
+      if (m_sessions[i].id == sid) {
+        m_sessions[i].last_used = mg_time();
+        session = &m_sessions[i];
+        break;
+      }
     }
   }
-  return NULL;
+  if (ssid != ssid_buf)
+    free(ssid);
+  return session;
 }
 
 
@@ -657,8 +698,10 @@ void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
     }
     
     if (error == "") {
-      // ok: set cookie, reload menu & redirect to original uri or /home:
-      if (c.uri == "/login" || c.uri == "/logout" || c.uri == "/")
+      // ok: set cookie, reload menu & redirect to original uri, /cfg/password or /home:
+      if (MyConfig.GetParamValueBool("password", "changed") == false)
+        c.uri = "/cfg/password";
+      else if (c.uri == "/login" || c.uri == "/logout" || c.uri == "/")
         c.uri = "/home";
       
       char shead[200];

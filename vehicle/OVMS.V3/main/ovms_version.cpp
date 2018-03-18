@@ -38,8 +38,12 @@ static const char *TAG = "version";
 #include "metrics_standard.h"
 #include "ovms_events.h"
 
+#define OVMS_VERSION_PREFIX "########OVMS_PRE########"
+#define OVMS_VERSION_POSTFIX "########OVMSPOST########"
+
 void Version(std::string event, void* data)
   {
+  std::string searchversion(OVMS_VERSION_PREFIX OVMS_VERSION OVMS_VERSION_POSTFIX);
   std::string version(OVMS_VERSION);
 
   ESP_LOGI(TAG, "Set version");

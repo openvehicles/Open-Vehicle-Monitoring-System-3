@@ -46,6 +46,7 @@ static const char *TAG = "ovms-server-v2";
 #include "vehicle.h"
 #include "esp_system.h"
 #include "ovms_utils.h"
+#include "ovms_boot.h"
 
 
 // should this go in the .h or in the .cpp?
@@ -149,7 +150,7 @@ static struct
   { "",          "" },                     // 19 PARAM_ACC_4
   { "",          "" },                     // 20
   { "",          "" },                     // 21
-  { "",          "" },                     // 22 PARAM_GPRSDNS
+  { "network",   "dns" },                  // 22 PARAM_GPRSDNS
   { "vehicle",   "timezone" }              // 23 PARAM_TIMEZONE
   };
 
@@ -426,7 +427,7 @@ void OvmsServerV2::ProcessCommand(const char* payload)
       }
     case 5: // Reboot
       {
-      esp_restart();
+      MyBoot.Restart();
       break;
       }
     case 6: // Charge alert
@@ -436,6 +437,7 @@ void OvmsServerV2::ProcessCommand(const char* payload)
     case 7: // Execute command
       {
       BufferedShell* bs = new BufferedShell(false, COMMAND_RESULT_NORMAL);
+      bs->SetSecure(true); // this is an authorized channel
       bs->ProcessChars(sep+1, strlen(sep)-1);
       bs->ProcessChar('\n');
       std::string val; bs->Dump(val);

@@ -39,6 +39,7 @@ static const char *TAG = "ovms-module";
 #include "esp_heap_caps.h"
 #include <esp_system.h>
 #include "ovms_module.h"
+#include "ovms_config.h"
 #include "ovms_command.h"
 #ifdef CONFIG_HEAP_TASK_TRACKING
 #include "esp_heap_task_info.h"
@@ -676,8 +677,45 @@ static void module_fault(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
 static void module_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   writer->puts("Resetting system...");
-  MyBoot.SetSoftReset();
-  esp_restart();
+  MyBoot.Restart();
+  }
+
+bool module_factory_reset_yesno(OvmsWriter* writer, void* ctx, char ch)
+  {
+  writer->printf("%c\n",ch);
+
+  if (ch != 'y')
+    {
+    writer->puts("Factory reset aborted");
+    return false;
+    }
+
+  const esp_partition_t* p = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_FAT, "store");
+  if (p == NULL)
+    {
+    writer->puts("DATA/FAT Partition 'store' could not be found - factory reset aborted");
+    return false;
+    }
+
+  writer->printf("Store partition is at %08x size %08x\n", p->address, p->size);
+
+  writer->puts("Unmounting configuration store...");
+  MyConfig.unmount();
+
+  writer->printf("Erasing %d bytes of flash...\n",p->size);
+  spi_flash_erase_range(p->address, p->size);
+
+  writer->puts("Factory reset of configuration store complete and reboot now...");
+  vTaskDelay(1000/portTICK_PERIOD_MS);
+  MyBoot.Restart();
+
+  return false;
+  }
+
+static void module_factory_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->printf("Reset configuration store to factory defaults, and lose all configuration data (y/n): ");
+  writer->RegisterInsertCallback(module_factory_reset_yesno, NULL);
   }
 
 class OvmsModuleInit
@@ -690,12 +728,14 @@ class OvmsModuleInit
     TaskMap::instance()->insert(0x00000000, "no task");
 #endif
 
-    OvmsCommand* cmd_module = MyCommandApp.RegisterCommand("module","Module framework",NULL);
+    OvmsCommand* cmd_module = MyCommandApp.RegisterCommand("module","MODULE framework",NULL);
     cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"[<task names or ids>]",0,TASKLIST,true);
     cmd_module->RegisterCommand("tasks","Show module task usage",module_tasks,"",0,0,true);
     cmd_module->RegisterCommand("fault","Abort fault the module",module_fault,"",0,0,true);
     cmd_module->RegisterCommand("reset","Reset module",module_reset,"",0,0,true);
     cmd_module->RegisterCommand("check","Check heap integrity",module_check,"",0,0,true);
+    OvmsCommand* cmd_factory = cmd_module->RegisterCommand("factory","MODULE FACTORY framework",NULL);
+    cmd_factory->RegisterCommand("reset","Factory Reset module",module_factory_reset,"",0,0,true);
     }
   } MyOvmsModuleInit  __attribute__ ((init_priority (5100)));
 

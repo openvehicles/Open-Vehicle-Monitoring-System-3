@@ -46,29 +46,27 @@ static const char *TAG = "ota";
 #include "metrics_standard.h"
 #include "ovms_http.h"
 #include "ovms_buffer.h"
+#include "ovms_boot.h"
+#include "ovms_netmanager.h"
 #include "crypt_md5.h"
 
 OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
 
 void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  OvmsMetricString* m = StandardMetrics.ms_m_version;
-  if (m != NULL)
-    {
-    std::string v = m->AsString();
-    writer->printf("Firmware: %s\n",v.c_str());
-
-    const esp_partition_t *p = esp_ota_get_running_partition();
-    if (p != NULL)
-      {
-      writer->printf("Running partition: %s\n",p->label);
-      }
-    p = esp_ota_get_boot_partition();
-    if (p != NULL)
-      {
-      writer->printf("Boot partition: %s\n",p->label);
-      }
-    }
+  ota_info info;
+  int len = 0;
+  MyOTA.GetStatus(info);
+  if (info.version_firmware != "")
+    len += writer->printf("Firmware:          %s\n", info.version_firmware.c_str());
+  if (info.version_server != "")
+    len += writer->printf("Server Available:  %s\n", info.version_server.c_str());
+  if (info.partition_running != "")
+    len += writer->printf("Running partition: %s\n", info.partition_running.c_str());
+  if (info.partition_boot != "")
+    len += writer->printf("Boot partition:    %s\n", info.partition_boot.c_str());
+  if (len == 0)
+    writer->puts("OTA status unknown");
   }
 
 void ota_flash_vfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -160,6 +158,7 @@ void ota_flash_vfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 
   writer->printf("OTA flash was successful\n  Flashed %d bytes from %s\n  Next boot will be from '%s'\n",
                  ds.st_size,argv[0],target->label);
+  MyConfig.SetParamValue("ota", "vfs.mru", argv[0]);
   }
 
 void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -294,6 +293,8 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
 
   writer->printf("OTA flash was successful\n  Flashed %d bytes from %s\n  Next boot will be from '%s'\n",
                  filesize,url.c_str(),target->label);
+  if (argc > 0)
+    MyConfig.SetParamValue("ota", "http.mru", url);
   }
 
 void ota_boot(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -430,13 +431,15 @@ void OvmsOTA::AutoFlashSD(std::string event, void* data)
 
   vTaskDelay(2000 / portTICK_PERIOD_MS); // Delay for log display and settle
   ESP_LOGW(TAG, "AutoFlashSD restarting...");
-  esp_restart();
+  MyBoot.Restart();
   }
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
 OvmsOTA::OvmsOTA()
   {
   ESP_LOGI(TAG, "Initialising OTA (4400)");
+  
+  MyConfig.RegisterParam("ota", "OTA setup and status", true, true);
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
   #undef bind  // Kludgy, but works
@@ -461,4 +464,51 @@ OvmsOTA::OvmsOTA()
 
 OvmsOTA::~OvmsOTA()
   {
+  }
+
+void OvmsOTA::GetStatus(ota_info& info)
+  {
+  info.version_firmware = "";
+  info.version_server = "";
+  info.partition_running = "";
+  info.partition_boot = "";
+  
+  OvmsMetricString* m = StandardMetrics.ms_m_version;
+  if (m != NULL)
+    {
+    info.version_firmware = m->AsString();
+
+    if (MyNetManager.m_connected_wifi)
+      {
+      // We have a wifi connection, so let's try to find out the version the server has
+      std::string url;
+      url = "api.openvehicles.com/firmware/ota/";
+#ifdef CONFIG_OVMS_HW_BASE_3_0
+      url.append("v3.0/");
+#endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
+#ifdef CONFIG_OVMS_HW_BASE_3_1
+      url.append("v3.1/");
+#endif //#ifdef CONFIG_OVMS_HW_BASE_3_1
+      url.append(CONFIG_OVMS_VERSION_TAG);
+      url.append("/ovms3.ver");
+
+      OvmsHttpClient http(url);
+      if (http.IsOpen() && http.BodyHasLine())
+        {
+        info.version_server = http.BodyReadLine();
+        }
+      http.Disconnect();
+      }
+
+    const esp_partition_t *p = esp_ota_get_running_partition();
+    if (p != NULL)
+      {
+      info.partition_running = p->label;
+      }
+    p = esp_ota_get_boot_partition();
+    if (p != NULL)
+      {
+      info.partition_boot = p->label;
+      }
+    }
   }
