@@ -147,6 +147,7 @@ void OvmsNetManager::WifiUpSTA(std::string event, void* data)
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   StartMongooseTask();
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+  MyEvents.SignalEvent("network.interface.change",NULL);
   }
 
 void OvmsNetManager::WifiDownSTA(std::string event, void* data)
@@ -168,6 +169,7 @@ void OvmsNetManager::WifiDownSTA(std::string event, void* data)
       StopMongooseTask();
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
       }
+    MyEvents.SignalEvent("network.interface.change",NULL);
     }
   }
 
@@ -178,6 +180,7 @@ void OvmsNetManager::WifiUpAP(std::string event, void* data)
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   StartMongooseTask();
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+  MyEvents.SignalEvent("network.interface.change",NULL);
   }
 
 void OvmsNetManager::WifiDownAP(std::string event, void* data)
@@ -187,6 +190,7 @@ void OvmsNetManager::WifiDownAP(std::string event, void* data)
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   StopMongooseTask();
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+  MyEvents.SignalEvent("network.interface.change",NULL);
   }
 
 void OvmsNetManager::ModemUp(std::string event, void* data)
@@ -200,6 +204,7 @@ void OvmsNetManager::ModemUp(std::string event, void* data)
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   StartMongooseTask();
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+  MyEvents.SignalEvent("network.interface.change",NULL);
   }
 
 void OvmsNetManager::ModemDown(std::string event, void* data)
@@ -221,6 +226,7 @@ void OvmsNetManager::ModemDown(std::string event, void* data)
       StopMongooseTask();
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
       }
+    MyEvents.SignalEvent("network.interface.change",NULL);
     }
   }
 

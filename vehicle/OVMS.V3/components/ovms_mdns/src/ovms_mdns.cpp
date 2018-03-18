@@ -42,20 +42,45 @@ void OvmsMDNS::NetworkUp(std::string event, void* data)
   {
   if (!(MyNetManager.m_wifi_ap || MyNetManager.m_connected_wifi)) return; // Exit if no wifi
 
-  ESP_LOGI(TAG, "Launching MDNS service");
+  ESP_LOGI(TAG, "Starting MDNS service");
+  StartMDNS();
+  }
+
+void OvmsMDNS::NetworkInterfaceChange(std::string event, void* data)
+  {
+  if (m_mdns)
+    {
+    ESP_LOGI(TAG, "Restarting MDNS service");
+    StopMDNS();
+    StartMDNS();
+    }
+  }
+
+void OvmsMDNS::NetworkDown(std::string event, void* data)
+  {
+  if (m_mdns)
+    {
+    ESP_LOGI(TAG, "Stopping MDNS service");
+    StopMDNS();
+    }
+  }
+
+void OvmsMDNS::StartMDNS()
+  {
   esp_err_t err;
-  if (MyPeripherals->m_esp32wifi->GetMode() == ESP32WIFI_MODE_CLIENT)
+  esp32wifi_mode_t wifimode = MyPeripherals->m_esp32wifi->GetMode();
+  switch (wifimode)
     {
-    err = mdns_init();
+    case ESP32WIFI_MODE_CLIENT:
+    case ESP32WIFI_MODE_SCLIENT:
+    case ESP32WIFI_MODE_AP:
+    case ESP32WIFI_MODE_APCLIENT:
+      err = mdns_init();
+      break;
+    default:
+      return;
     }
-  else if (MyPeripherals->m_esp32wifi->GetMode() == ESP32WIFI_MODE_AP)
-    {
-    err = mdns_init();
-    }
-  else
-    {
-    return; // wifi is not up in AP or STA mode
-    }
+
   if (err)
     {
     ESP_LOGE(TAG, "MDNS Init failed: %d", err);
@@ -79,11 +104,10 @@ void OvmsMDNS::NetworkUp(std::string event, void* data)
   mdns_service_add(NULL, "_telnet", "_tcp", 23, NULL, 0);
   }
 
-void OvmsMDNS::NetworkDown(std::string event, void* data)
+void OvmsMDNS::StopMDNS()
   {
   if (m_mdns)
     {
-    ESP_LOGI(TAG, "Stopping MDNS service");
     mdns_free();
     m_mdns = false;
     }
@@ -98,6 +122,7 @@ OvmsMDNS::OvmsMDNS()
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"network.mgr.init", std::bind(&OvmsMDNS::NetworkUp, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"network.interface.change", std::bind(&OvmsMDNS::NetworkInterfaceChange, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"network.mgr.stop", std::bind(&OvmsMDNS::NetworkDown, this, _1, _2));
   }
 
