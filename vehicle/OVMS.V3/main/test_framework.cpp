@@ -144,6 +144,20 @@ void test_chargen(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     }
   }
 
+bool test_echo_insert(OvmsWriter* writer, void* ctx, char ch)
+  {
+  if (ch == '\n')
+    return false;
+  writer->write(&ch, 1);
+  return true;
+  }
+
+void test_echo(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->puts("Type characters to be echoed, end with newline.");
+  writer->RegisterInsertCallback(test_echo_insert, NULL);
+  }
+
 class TestFrameworkInit
   {
   public: TestFrameworkInit();
@@ -159,5 +173,6 @@ TestFrameworkInit::TestFrameworkInit()
   cmd_test->RegisterCommand("sdcard","Test CD CARD",test_sdcard,"",0,0,true);
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
   cmd_test->RegisterCommand("javascript","Test Javascript",test_javascript,"",0,0,true);
-  cmd_test->RegisterCommand("chargen","Character generator [<#lines>] [<delay_ms>]",test_chargen,"",0,2,false);
+  cmd_test->RegisterCommand("chargen","Character generator [<#lines>] [<delay_ms>]",test_chargen,"",0,2,true);
+  cmd_test->RegisterCommand("echo", "Test getchar", test_echo, "", 0, 0,true);
   }

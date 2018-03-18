@@ -338,21 +338,11 @@ OvmsCommand* OvmsCommand::FindCommand(const char* name)
 
 void help(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  writer->puts("This isn't really much help, is it?");
-  }
-
-bool echoInsert(OvmsWriter* writer, void* ctx, char ch)
-  {
-  if (ch == '\n')
-    return false;
-  writer->write(&ch, 1);
-  return true;
-  }
-
-void echo(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  writer->puts("Type characters to be echoed, end with newline.");
-  writer->RegisterInsertCallback(echoInsert, NULL);
+  writer->puts("Enter a single \"?\" to get the root command list.");
+  writer->puts("Commands can have multiple levels of subcommands.");
+  writer->puts("Use \"command [...] ?\" to get the list of subcommands and parameters.");
+  writer->puts("Commands can be abbreviated, push <TAB> for auto completion at any level.");
+  writer->puts("Use \"enable\" to enter secure (admin) mode.");
   }
 
 void Exit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -511,7 +501,6 @@ OvmsCommandApp::OvmsCommandApp()
   monitor->RegisterCommand("no", "Don't monitor log", log_monitor , "", 0, 0, true);
   m_root.RegisterCommand("enable","Enter secure mode", enable, "[<password>]", 0, 1);
   m_root.RegisterCommand("disable","Leave secure mode", disable, "", 0, 0, true);
-  m_root.RegisterCommand("echo", "Test getchar", echo, "", 0, 0);
   }
 
 OvmsCommandApp::~OvmsCommandApp()
@@ -634,7 +623,7 @@ int OvmsCommandApp::HexDump(const char* tag, const char* prefix, const char* dat
     data += colsize;
     ESP_LOGV(tag, "%s: %s", prefix, buffer);
     }
-  
+
   if (buffer)
     free(buffer);
   return length;
@@ -662,7 +651,7 @@ OvmsCommandTask::OvmsCommandTask(int _verbosity, OvmsWriter* _writer, OvmsComman
   : TaskBase(_cmd->GetName())
   {
   m_state = OCS_Init;
-  
+
   // clone command arguments:
   verbosity = _verbosity;
   writer = _writer;
@@ -698,14 +687,14 @@ bool OvmsCommandTask::Run()
         }
       return true;
       break;
-    
+
     case OCS_RunOnce:
       Service();
       Cleanup();
       delete this;
       return true;
       break;
-    
+
     default:
       // preparation failed:
       delete this;
