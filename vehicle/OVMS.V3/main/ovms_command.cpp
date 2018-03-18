@@ -338,7 +338,11 @@ OvmsCommand* OvmsCommand::FindCommand(const char* name)
 
 void help(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  writer->puts("This isn't really much help, is it?");
+  writer->puts("Enter a single \"?\" to get the root command list.");
+  writer->puts("Commands can have multiple levels of subcommands.");
+  writer->puts("Use \"command [...] ?\" to get the list of subcommands and parameters.");
+  writer->puts("Commands can be abbreviated, push <TAB> for auto completion at any level.");
+  writer->puts("Use \"enable\" to enter secure (admin) mode.");
   }
 
 void Exit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
