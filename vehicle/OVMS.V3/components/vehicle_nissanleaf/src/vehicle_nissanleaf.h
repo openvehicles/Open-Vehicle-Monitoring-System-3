@@ -39,6 +39,7 @@
 #define GEN_1_NEW_CAR_GIDS 281l
 #define GEN_1_NEW_CAR_GIDS_S "281"
 #define GEN_1_NEW_CAR_RANGE_MILES 84
+#define GEN_1_NEW_CAR_RANGE_KM (GEN_1_NEW_CAR_RANGE_MILES * 1.60934)
 #define REMOTE_COMMAND_REPEAT_COUNT 24 // number of times to send the remote command after the first time
 #define ACTIVATION_REQUEST_TIME 10 // tenths of a second to hold activation request signal
 #define REMOTE_CC_TIME_GRID 1800 // seconds to run remote climate control on grid power
