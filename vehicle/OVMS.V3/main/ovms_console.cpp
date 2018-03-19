@@ -68,7 +68,7 @@ void OvmsConsole::Initialize(const char* console)
   microrl_set_complete_callback(&m_rl, Complete);
   if (console)
     {
-    printf("\n\033[32mWelcome to the Open Vehicle Monitoring System (OVMS) - %s Console\033[0m", console);
+    printf("\nWelcome to the Open Vehicle Monitoring System (OVMS) - %s Console", console);
     ProcessChar('\n');
     MyCommandApp.RegisterConsole(this);
     }

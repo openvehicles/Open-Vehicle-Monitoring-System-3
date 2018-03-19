@@ -26,7 +26,7 @@ Token is word separate by white space, for example 3 token line:
 /*
 Define you prompt string here. You can use colors escape code, for highlight you prompt,
 for example this prompt will green color (if you terminal supports color)*/
-#define _PROMPT_DEFAULT "OVMS > "
+#define _PROMPT_DEFAULT "OVMS> "
 //#define _PROMPT_DEFAULT "OVMS > "
 
 /*
