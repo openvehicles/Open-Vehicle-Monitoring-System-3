@@ -146,6 +146,49 @@ First production batch is 2018010001**** - 2018010120****.
 
    During the sleep time, the power consumption should be 1mA to 2mA maximum.
 
+6] Test modem
+
+   Power modem into sleep mode, from command line:
+
+     OVMS# power simcom sleep
+     Power mode of simcom is now sleep
+
+     I (50190) simcom: State: Enter PoweringOn state
+     I (50190) simcom: Power Cycle
+     V (50910) simcom: tx: 41 54 0d 0a                                     | AT..
+     D (50910) simcom: tx scmd ch=0 len=4   : AT||
+     V (51910) simcom: tx: 41 54 0d 0a                                     | AT..
+     D (51910) simcom: tx scmd ch=0 len=4   : AT||
+     V (52910) simcom: tx: 41 54 0d 0a                                     | AT..
+     D (52910) simcom: tx scmd ch=0 len=4   : AT||
+     V (53910) simcom: tx: 41 54 0d 0a                                     | AT..
+     D (53910) simcom: tx scmd ch=0 len=4   : AT||
+     V (54910) simcom: tx: 41 54 0d 0a                                     | AT..
+     D (54910) simcom: tx scmd ch=0 len=4   : AT||
+     V (55910) simcom: tx: 41 54 0d 0a                                     | AT..
+     D (55910) simcom: tx scmd ch=0 len=4   : AT||
+     V (56580) simcom: rx: 0d 0a 53 54 41 52 54 0d 0a                      | ..START..
+     I (56580) simcom: State: Enter PoweredOn state
+
+   Cycle may repeat a few times, in order to power on modem, but make sure you
+   get the ..START.. message. Then, look for the modem starting up:
+
+     I (75940) gsm-mux: Channel #3 is open
+     V (75940) simcom: tx: f9 13 3f 01 96 f9                               | ..?...
+     V (75950) simcom: rx: f9 13 73 01 5d f9                               | ..s.].
+     V (75950) gsm-mux: ProcessFrame(CHAN=4, ADDR=13, CTRL=73, FCS=5d, LEN=6)
+     V (75950) gsm-mux: ChanProcessFrame(CHAN=4, ADDR=13, CTRL=73, LEN=3, IFP=3)
+     I (75950) gsm-mux: Channel #4 is open
+     I (76910) simcom: State: Enter NetWait state
+     D (76910) gsm-nmea: GPS disabled
+     I (77910) simcom: State: Enter NetSleep state
+
+   Check the metric to ensure the ICCID and modem model has been read correctly:
+
+     OVMS# metrics list m.net.mdm
+     m.net.mdm.iccid                          8944500XXXXXXXXXXXX
+     m.net.mdm.model                          35316B11SIM5360E
+
 ********************************************************************************
 ** DOCUMENT ENDS
 ********************************************************************************
