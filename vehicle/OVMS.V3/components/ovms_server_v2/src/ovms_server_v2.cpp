@@ -1467,30 +1467,33 @@ void OvmsServerV2::ConfigChanged(OvmsConfigParam* param)
 
 void OvmsServerV2::NetUp(std::string event, void* data)
   {
-#if 1
   // workaround for wifi AP mode startup (manager up before interface)
-  if (m_mgconn == NULL)
+  if ( (m_mgconn == NULL) && MyNetManager.MongooseRunning() )
     {
-    ESP_LOGI(TAG, "Network is up, scheduling connection retry");
-    m_connretry = 2;
+    ESP_LOGI(TAG, "Network is up, so attempt network connection");
+    Connect(); // Kick off the connection
     }
-#endif
   }
 
 void OvmsServerV2::NetDown(std::string event, void* data)
   {
+  if (m_mgconn)
+    {
+    ESP_LOGI(TAG, "Network is down, so disconnect network connection");
+    Disconnect();
+    }
   }
 
 void OvmsServerV2::NetReconfigured(std::string event, void* data)
   {
-  ESP_LOGI(TAG, "Network is reconfigured, so disconnect network connection");
+  ESP_LOGI(TAG, "Network is reconfigured, so disconnect network connection (and reconnect in 10 seconds)");
   Disconnect();
   m_connretry = 10;
   }
 
 void OvmsServerV2::NetmanInit(std::string event, void* data)
   {
-  if (m_mgconn == NULL)
+  if ((m_mgconn == NULL)&&(MyNetManager.m_connected_any))
     {
     ESP_LOGI(TAG, "Network is up, so attempt network connection");
     Connect(); // Kick off the connection
