@@ -143,7 +143,10 @@ void OvmsNetManager::WifiUpSTA(std::string event, void* data)
   StandardMetrics.ms_m_net_provider->SetValue(MyPeripherals->m_esp32wifi->GetSSID());
 #endif // #ifdef CONFIG_OVMS_COMP_WIFI
   MyEvents.SignalEvent("network.wifi.up",NULL);
-  MyEvents.SignalEvent("network.up",NULL);
+  if (m_connected_modem)
+    MyEvents.SignalEvent("network.reconfigured",NULL);
+  else
+    MyEvents.SignalEvent("network.up",NULL);
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   StartMongooseTask();
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
@@ -200,7 +203,10 @@ void OvmsNetManager::ModemUp(std::string event, void* data)
   SetInterfacePriority();
   StandardMetrics.ms_m_net_type->SetValue("modem");
   MyEvents.SignalEvent("network.modem.up",NULL);
-  MyEvents.SignalEvent("network.up",NULL);
+  if (m_connected_wifi)
+    MyEvents.SignalEvent("network.reconfigured",NULL);
+  else
+    MyEvents.SignalEvent("network.up",NULL);
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   StartMongooseTask();
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
