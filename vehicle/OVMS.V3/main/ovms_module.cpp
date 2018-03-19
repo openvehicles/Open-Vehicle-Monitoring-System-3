@@ -729,7 +729,7 @@ class OvmsModuleInit
 #endif
 
     OvmsCommand* cmd_module = MyCommandApp.RegisterCommand("module","MODULE framework",NULL,"",0,0,true);
-    cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"[<task names or ids>]",0,TASKLIST,true);
+    cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"[<task names or ids>|*|=]",0,TASKLIST,true);
     cmd_module->RegisterCommand("tasks","Show module task usage",module_tasks,"",0,0,true);
     cmd_module->RegisterCommand("fault","Abort fault the module",module_fault,"",0,0,true);
     cmd_module->RegisterCommand("reset","Reset module",module_reset,"",0,0,true);
