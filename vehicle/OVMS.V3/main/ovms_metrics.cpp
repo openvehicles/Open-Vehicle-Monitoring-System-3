@@ -125,8 +125,6 @@ MetricCallbackEntry::~MetricCallbackEntry()
 OvmsMetrics::OvmsMetrics()
   {
   ESP_LOGI(TAG, "Initialising METRICS (1810)");
-  ESP_LOGI(TAG, "  OvmsMetric is %d bytes",sizeof(OvmsMetric));
-  ESP_LOGI(TAG, "  OvmsMetricBool is %d bytes",sizeof(OvmsMetricBool));
 
   m_nextmodifier = 1;
   m_first = NULL;
