@@ -39,16 +39,113 @@ First production batch is 2018010001**** - 2018010120****.
 
 3] Default wifi AP and module passwords
 
-   OVMS> enable
-   OVMS# config set wifi.ap OVMS <serialnumber>
-   OVMS# config set password module <serialnumber>
+     OVMS> enable
+     OVMS# config set wifi.ap OVMS <serialnumber>
+     OVMS# config set password module <serialnumber>
 
    Where <serialnumber> is the serial number from the label on the enclosure.
 
 4] Default modem APN
 
-   OVMS> config set modem apn hologram
+     OVMS> config set modem apn hologram
 
 ********************************************************************************
 ** QC STEPS
+********************************************************************************
+
+1] CAN buses
+
+   Plug in the 'DB9 CAN Bus QC tool' and power the OVMS module. Use 'enable' to
+   enter secure mode. Start all three CAN buses, and prepare to examine the
+   data:
+
+     OVMS# can can1 start active 1000000
+     OVMS# can can2 start active 1000000
+     OVMS# can can3 start active 1000000
+     OVMS# log level verbose
+     OVMS# can log trace
+
+   Try to transmit on each CAN bus in turn, and ensure that the other two
+   buses show reception of the packet:
+
+     OVMS# can can1 tx standard 100 01 02 03 04
+     V (222509) canlog: TX can1 id 100 len 4: 01 02 03 04             | ....
+     V (222509) canlog: RX can2 id 100 len 4: 01 02 03 04             | ....
+     V (222509) canlog: RX can3 id 100 len 4: 01 02 03 04             | ....
+
+     OVMS# can can2 tx standard 100 01 02 03 04
+     V (229559) canlog: TX can2 id 100 len 4: 01 02 03 04             | ....
+     V (229559) canlog: RX can1 id 100 len 4: 01 02 03 04             | ....
+     V (229559) canlog: RX can3 id 100 len 4: 01 02 03 04             | ....
+
+     OVMS# can can3 tx standard 100 01 02 03 04
+     V (235139) canlog: TX can3 id 100 len 4: 01 02 03 04             | ....
+     V (235139) canlog: RX can1 id 100 len 4: 01 02 03 04             | ....
+     V (235139) canlog: RX can2 id 100 len 4: 01 02 03 04             | ....
+
+2] 12V power
+
+   Power module from 12V source, wait a few seconds, and then check that the
+   adc is showing correctly:
+
+     OVMS# metrics list v.b.12v.voltage
+     v.b.12v.voltage                          12.102V
+
+   The expected value is within +/- 0.5V of the power supply voltage.
+
+3] Test SD card
+
+   With a micro SD card inserted, test it:
+
+     OVMS# test sdcard
+     SD CARD test starts...
+     SD CARD written 0/2048
+     SD CARD written 128/2048
+     SD CARD written 256/2048
+     SD CARD written 384/2048
+     SD CARD written 512/2048
+     SD CARD written 640/2048
+     SD CARD written 768/2048
+     SD CARD written 896/2048
+     SD CARD written 1024/2048
+     SD CARD written 1152/2048
+     SD CARD written 1280/2048
+     SD CARD written 1408/2048
+     SD CARD written 1536/2048
+     SD CARD written 1664/2048
+     SD CARD written 1792/2048
+     SD CARD written 1920/2048
+     Cleaning up
+     SD CARD test completes
+
+4] Test asynchronous console
+
+   When connected via USB console cable, test the asynchronous console:
+
+     OVMS# test chargen 10
+     !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefgh
+     "#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghi
+     #$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghij
+     $%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijk
+     %&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijkl
+     &'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklm
+     '()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmn
+     ()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmno
+     )*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnop
+     *+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopq
+
+   The expected output is as above.
+
+5] Test deep sleep current
+
+   Power module from 12V source, with a meter showing power consumption. Be
+   sure to power down all peripherals (power wifi off, power modem off, etc).
+
+     OVMS# test sleep
+     Entering deep sleep...
+
+   During the sleep time, the power consumption should be 1mA to 2mA maximum.
+
+********************************************************************************
+** DOCUMENT ENDS
 ********************************************************************************
