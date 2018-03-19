@@ -133,7 +133,7 @@ OvmsMetrics::OvmsMetrics()
   m_trace = false;
 
   // Register our commands
-  OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework",NULL, "", 1, 0, true);
+  OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework",NULL, "", 0, 0, true);
   cmd_metric->RegisterCommand("list","Show all metrics",metrics_list, "[<metric>]", 0, 1, true);
   cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set, "<metric> <value>", 2, 2, true);
   OvmsCommand* cmd_metrictrace = cmd_metric->RegisterCommand("trace","METRIC trace framework", NULL, "", 0, 0, true);
