@@ -40,27 +40,33 @@ OvmsMDNS MyMDNS __attribute__ ((init_priority (8100)));
 
 void OvmsMDNS::NetworkUp(std::string event, void* data)
   {
-  if (!(MyNetManager.m_wifi_ap || MyNetManager.m_connected_wifi)) return; // Exit if no wifi
-
-  ESP_LOGI(TAG, "Starting MDNS service");
-  StartMDNS();
+  ESP_LOGD(TAG,"NetworkUp() m_mdns=%d m_wifi_ap=%d m_connected_wifi=%d",
+               m_mdns,MyNetManager.m_wifi_ap,MyNetManager.m_connected_wifi);
+  if (MyNetManager.m_wifi_ap || MyNetManager.m_connected_wifi)
+    {
+    StartMDNS();
+    }
   }
 
 void OvmsMDNS::NetworkInterfaceChange(std::string event, void* data)
   {
+  ESP_LOGD(TAG,"NetworkInterfaceChange() m_mdns=%d m_wifi_ap=%d m_connected_wifi=%d",
+               m_mdns,MyNetManager.m_wifi_ap,MyNetManager.m_connected_wifi);
   if (m_mdns)
     {
-    ESP_LOGI(TAG, "Restarting MDNS service");
     StopMDNS();
+    }
+  if (MyNetManager.m_wifi_ap || MyNetManager.m_connected_wifi)
+    {
     StartMDNS();
     }
   }
 
 void OvmsMDNS::NetworkDown(std::string event, void* data)
   {
+  ESP_LOGD(TAG,"NetworkDown() m_mdns=%d",m_mdns);
   if (m_mdns)
     {
-    ESP_LOGI(TAG, "Stopping MDNS service");
     StopMDNS();
     }
   }
@@ -68,6 +74,10 @@ void OvmsMDNS::NetworkDown(std::string event, void* data)
 void OvmsMDNS::StartMDNS()
   {
   esp_err_t err;
+  OvmsMutexLock lock(&m_mutex);
+
+  if (m_mdns) return; // Quick exit if already started
+
   esp32wifi_mode_t wifimode = MyPeripherals->m_esp32wifi->GetMode();
   switch (wifimode)
     {
@@ -88,6 +98,7 @@ void OvmsMDNS::StartMDNS()
     }
 
   m_mdns = true;
+  ESP_LOGI(TAG, "Started MDNS service");
 
   // Set hostname
   std::string vehicleid = MyConfig.GetParamValue("vehicle", "id");
@@ -106,10 +117,14 @@ void OvmsMDNS::StartMDNS()
 
 void OvmsMDNS::StopMDNS()
   {
-  if (m_mdns)
+  if (!m_mdns)
+    return; // Quick exit it already stopped
+  else
     {
+    OvmsMutexLock lock(&m_mutex);
     mdns_free();
     m_mdns = false;
+    ESP_LOGI(TAG, "Stopped MDNS service");
     }
   }
 

@@ -33,6 +33,7 @@
 
 #include "mdns.h"
 #include "ovms_events.h"
+#include "ovms_mutex.h"
 
 class OvmsMDNS
   {
@@ -49,6 +50,7 @@ class OvmsMDNS
 
   protected:
     bool m_mdns;
+    OvmsMutex m_mutex;
   };
 
 #endif //#ifndef __OVMS_MDNS_H__
