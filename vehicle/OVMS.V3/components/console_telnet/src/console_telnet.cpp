@@ -117,7 +117,12 @@ OvmsTelnet::OvmsTelnet()
 void OvmsTelnet::NetManInit(std::string event, void* data)
   {
   // Only initialise server for WIFI connections
-  if (!MyNetManager.m_connected_wifi) return;
+  // TODO: Disabled as this introduces a network interface ordering issue. It
+  //       seems that the correct way to do this is to always start the mongoose
+  //       listener, but to filter incoming connections to check that the
+  //       destination address is a Wifi interface address.
+  // if (!(MyNetManager.m_connected_wifi || MyNetManager.m_wifi_ap))
+  //   return;
 
   m_running = true;
 

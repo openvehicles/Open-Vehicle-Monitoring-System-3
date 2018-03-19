@@ -151,7 +151,12 @@ OvmsSSH::OvmsSSH()
 void OvmsSSH::NetManInit(std::string event, void* data)
   {
   // Only initialise server for WIFI connections
-  if (!MyNetManager.m_connected_wifi) return;
+  // TODO: Disabled as this introduces a network interface ordering issue. It
+  //       seems that the correct way to do this is to always start the mongoose
+  //       listener, but to filter incoming connections to check that the
+  //       destination address is a Wifi interface address.
+  // if (!(MyNetManager.m_connected_wifi || MyNetManager.m_wifi_ap))
+  //   return;
 
   ESP_LOGI(tag, "Launching SSH Server");
   int ret = wolfSSH_Init();
@@ -595,7 +600,7 @@ void ConsoleSSH::HandleDeviceEvent(void* pEvent)
         rc = GetResponse();
         if (rc < 1)
           break;
-	if (m_state == SOURCE_SEND) 
+	if (m_state == SOURCE_SEND)
 	    ESP_LOGW(tag, "RECV not expected in SOURCE_SEND state");
         if (m_buffer[0] == '\1')
           {
