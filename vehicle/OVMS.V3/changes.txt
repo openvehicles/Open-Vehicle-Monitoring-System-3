@@ -28,6 +28,7 @@ Open Vehicle Monitor System v3 - Change log
 			 - Require secure mode for several additional commands
                          - MDNS: Disable MDNS support (as causing too many issues)
                          - Network: Change TELNET/SSH/WEBSERVER to always bind listener on mongoose init
+                         - MDNS: The MDNS system is back! New and shiny
 
 2018-03-05 MWJ  3.0.991  OTA release support OTA updates over HTTP
                          - Update ovms_module to use new API for per-task heap info.

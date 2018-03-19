@@ -1,41 +1,39 @@
 Open Vehicle Monitor System v3 - Known issues
 
-1. MDNS is not currently functional (disabled due to stability issues).
+* Wifi APCLIENT mode is to be considered experimental.
 
-2. Wifi APCLIENT mode is to be considered experimental.
+* SSH, TELNET, and WEBSERVER all register listeners for incoming calls. There
+  is a possible security issue here as those calls may come over cellular
+  networks (not just wifi). There is no firewalling of these calls. It seems
+  that the correct approach to this is to validate the destination IP to
+  make sure it is a wifi interface IP address; but this is not currently
+  done.
 
-3. SSH, TELNET, and WEBSERVER all register listeners for incoming calls. There
-   is a possible security issue here as those calls may come over cellular
-   networks (not just wifi). There is no firewalling of these calls. It seems
-   that the correct approach to this is to validate the destination IP to
-   make sure it is a wifi interface IP address; but this is not currently
-   done.
+* Bluetooth is not currently supported.
 
-4. Bluetooth is not currently supported.
+* Vehicle: Tesla Roadster limitations (vs 2.x):
+  * Cooldown not currently supported.
+  * Charge timer not currently supported.
+  * Charge time predictor not currently supported.
+  * VDS vehicle errors not currently supported.
+  * Digital speedometer feature not currently supported.
+  * CAC request not currently supported.
 
-5. Vehicle: Tesla Roadster limitations (vs 2.x):
-   5.1 Cooldown not currently supported.
-   5.2 Charge timer not currently supported.
-   5.3 Charge time predictor not currently supported.
-   5.4 VDS vehicle errors not currently supported.
-   5.5 Digital speedometer feature not currently supported.
-   5.6 CAC request not currently supported.
+* Vehicle: Kyburz not currently implemented in 3.x.
 
-6. Vehicle: Kyburz not currently implemented in 3.x.
+* Vehicle: Mitdubishi iMiev not currently implemented in 3.x.
 
-7. Vehicle: Mitdubishi iMiev not currently implemented in 3.x.
+* Vehicle: NissanLeaf:
+  * Remote telemetry wake-up for pre-2016 vehicles not currently supported
+    (as required hardware wakeup circuit).
 
-8. Vehicle: NissanLeaf:
-   8.1 Remote telemetry wake-up for pre-2016 vehicles not currently supported
-       (as required hardware wakeup circuit).
+* Vehicle: Tazzari not currently implemented in 3.x.
 
-9. Vehicle: Tazzari not currently implemented in 3.x.
+* Vehicle: Think City not currently implemented in 3.x.
 
-10. Vehicle: Think City not currently implemented in 3.x.
+* Vehicle: Volt/Ampera not currently implemented in 3.x.
 
-11. Vehicle: Volt/Ampera not currently implemented in 3.x.
+* Vehicle: Renault Zoe not currently implemented in 3.x.
 
-12. Vehicle: Renault Zoe not currently implemented in 3.x.
-
-13. Advanced Charge control not currently implemented in 3.x.
-    Note that scripting can go someway towards providing equivalent functionality.
+* Advanced Charge control not currently implemented in 3.x.
+  Note that scripting can go someway towards providing equivalent functionality.

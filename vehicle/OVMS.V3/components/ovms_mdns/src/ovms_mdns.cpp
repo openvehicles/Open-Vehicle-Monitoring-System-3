@@ -38,59 +38,23 @@ static const char *TAG = "ovms-mdns";
 
 OvmsMDNS MyMDNS __attribute__ ((init_priority (8100)));
 
-void OvmsMDNS::NetworkUp(std::string event, void* data)
+void OvmsMDNS::SystemEvent(std::string event, void* data)
   {
-  ESP_LOGD(TAG,"NetworkUp() m_mdns=%d m_wifi_ap=%d m_connected_wifi=%d",
-               m_mdns,MyNetManager.m_wifi_ap,MyNetManager.m_connected_wifi);
-  if (MyNetManager.m_wifi_ap || MyNetManager.m_connected_wifi)
-    {
-    StartMDNS();
-    }
+  system_event_t *ev = (system_event_t *)data;
+  if (m_mdns) mdns_handle_system_event(NULL, ev);
   }
 
-void OvmsMDNS::NetworkInterfaceChange(std::string event, void* data)
+void OvmsMDNS::SystemStart(std::string event, void* data)
   {
-  ESP_LOGD(TAG,"NetworkInterfaceChange() m_mdns=%d m_wifi_ap=%d m_connected_wifi=%d",
-               m_mdns,MyNetManager.m_wifi_ap,MyNetManager.m_connected_wifi);
-  if (m_mdns)
-    {
-    StopMDNS();
-    }
-  if (MyNetManager.m_wifi_ap || MyNetManager.m_connected_wifi)
-    {
-    StartMDNS();
-    }
-  }
-
-void OvmsMDNS::NetworkDown(std::string event, void* data)
-  {
-  ESP_LOGD(TAG,"NetworkDown() m_mdns=%d",m_mdns);
-  if (m_mdns)
-    {
-    StopMDNS();
-    }
+  ESP_LOGI(TAG, "Starting MDNS");
+  StartMDNS();
   }
 
 void OvmsMDNS::StartMDNS()
   {
-  esp_err_t err;
-  OvmsMutexLock lock(&m_mutex);
-
   if (m_mdns) return; // Quick exit if already started
 
-  esp32wifi_mode_t wifimode = MyPeripherals->m_esp32wifi->GetMode();
-  switch (wifimode)
-    {
-    case ESP32WIFI_MODE_CLIENT:
-    case ESP32WIFI_MODE_SCLIENT:
-    case ESP32WIFI_MODE_AP:
-    case ESP32WIFI_MODE_APCLIENT:
-      err = mdns_init();
-      break;
-    default:
-      return;
-    }
-
+  esp_err_t err = mdns_init();
   if (err)
     {
     ESP_LOGE(TAG, "MDNS Init failed: %d", err);
@@ -98,7 +62,6 @@ void OvmsMDNS::StartMDNS()
     }
 
   m_mdns = true;
-  ESP_LOGI(TAG, "Started MDNS service");
 
   // Set hostname
   std::string vehicleid = MyConfig.GetParamValue("vehicle", "id");
@@ -106,25 +69,22 @@ void OvmsMDNS::StartMDNS()
   mdns_hostname_set(vehicleid.c_str());
 
   // Set default instance
-  std::string instance("Open Vehicle Monitoring System - ");
+  std::string instance("OVMS - ");
   instance.append(vehicleid);
   mdns_instance_name_set(instance.c_str());
 
   // Register services
   mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
+  mdns_service_add(NULL, "_ssh", "_tcp", 22, NULL, 0);
   mdns_service_add(NULL, "_telnet", "_tcp", 23, NULL, 0);
   }
 
 void OvmsMDNS::StopMDNS()
   {
-  if (!m_mdns)
-    return; // Quick exit it already stopped
-  else
+  if (m_mdns)
     {
-    OvmsMutexLock lock(&m_mutex);
     mdns_free();
     m_mdns = false;
-    ESP_LOGI(TAG, "Stopped MDNS service");
     }
   }
 
@@ -134,13 +94,13 @@ OvmsMDNS::OvmsMDNS()
 
   m_mdns = false;
 
-//  using std::placeholders::_1;
-//  using std::placeholders::_2;
-//  MyEvents.RegisterEvent(TAG,"network.mgr.init", std::bind(&OvmsMDNS::NetworkUp, this, _1, _2));
-//  MyEvents.RegisterEvent(TAG,"network.interface.change", std::bind(&OvmsMDNS::NetworkInterfaceChange, this, _1, _2));
-//  MyEvents.RegisterEvent(TAG,"network.mgr.stop", std::bind(&OvmsMDNS::NetworkDown, this, _1, _2));
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG,"system.event", std::bind(&OvmsMDNS::SystemEvent, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.start", std::bind(&OvmsMDNS::SystemStart, this, _1, _2));
   }
 
 OvmsMDNS::~OvmsMDNS()
   {
+  StopMDNS();
   }

@@ -33,7 +33,6 @@
 
 #include "mdns.h"
 #include "ovms_events.h"
-#include "ovms_mutex.h"
 
 class OvmsMDNS
   {
@@ -42,15 +41,13 @@ class OvmsMDNS
     virtual ~OvmsMDNS();
 
   public:
-    void NetworkUp(std::string event, void* data);
-    void NetworkInterfaceChange(std::string event, void* data);
-    void NetworkDown(std::string event, void* data);
+    void SystemEvent(std::string event, void* data);
+    void SystemStart(std::string event, void* data);
     void StartMDNS();
     void StopMDNS();
 
   protected:
     bool m_mdns;
-    OvmsMutex m_mutex;
   };
 
 #endif //#ifndef __OVMS_MDNS_H__
