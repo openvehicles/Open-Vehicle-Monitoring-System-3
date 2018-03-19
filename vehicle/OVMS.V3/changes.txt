@@ -25,6 +25,7 @@ Open Vehicle Monitor System v3 - Change log
                          - Wifi: Fix to APCLIENT mode STA reconnect
                          - Wifi: Fix to display of IP and MAC addresses in APCLIENT mode
                          - Twizy v0.12: auto power control
+			 - Require secure mode for several additional commands
                          - MDNS: Disable MDNS support (as causing too many issues)
                          - Network: Change TELNET/SSH/WEBSERVER to always bind listener on mongoose init
 
