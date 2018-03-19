@@ -591,6 +591,7 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
     }
   else if (!tasks)
     {
+    bool headline = true;
     for (int i = changes->begin(); i < changes->end(); ++i)
       {
       bool any = false;
@@ -601,8 +602,12 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
         }
       if (any)
         {
-        writer->printf("============================ blocks dumped = %d%s\n",
-          numafter, numafter < DUMPSIZE ? "" : " (limited)");
+        if (headline)
+          {
+          writer->printf("============================ blocks dumped = %d%s\n",
+            numafter, numafter < DUMPSIZE ? "" : " (limited)");
+          headline = false;
+          }
         print_blocks(writer, (*changes).Task(i));
         }
       }
