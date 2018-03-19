@@ -253,9 +253,6 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
 
-  uint16_t nl_gids;
-  uint16_t nl_max_gids = GEN_1_NEW_CAR_GIDS;
-
   switch (p_frame->MsgID)
     {
     case 0x1db:
@@ -383,9 +380,13 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         // ignore invalid data seen during startup
         break;
         }
-      nl_gids = nl_gids_candidate;
-      StandardMetrics.ms_v_bat_soc->SetValue((nl_gids * 100 + (nl_max_gids / 2)) / nl_max_gids);
-      StandardMetrics.ms_v_bat_range_ideal->SetValue((nl_gids * GEN_1_NEW_CAR_RANGE_KM + (GEN_1_NEW_CAR_GIDS / 2)) / GEN_1_NEW_CAR_GIDS);
+      uint16_t nl_gids = nl_gids_candidate;
+      uint16_t max_gids = MyConfig.GetParamValueInt("xnl", "maxGids", GEN_1_NEW_CAR_GIDS);
+      float km_per_kwh = MyConfig.GetParamValueFloat("xnl", "kmPerKWh", GEN_1_KM_PER_KWH);
+      float wh_per_gid = MyConfig.GetParamValueFloat("xnl", "whPerGid", GEN_1_WH_PER_GID);
+
+      StandardMetrics.ms_v_bat_soc->SetValue((nl_gids * 100.0) / max_gids);
+      StandardMetrics.ms_v_bat_range_ideal->SetValue((nl_gids * wh_per_gid * km_per_kwh) / 1000);
     }
       break;
     case 0x5bf:
