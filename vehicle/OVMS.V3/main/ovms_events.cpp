@@ -71,7 +71,7 @@ OvmsEvents::OvmsEvents()
   ESP_ERROR_CHECK(esp_event_loop_init(ReceiveSystemEvent, (void*)this));
 
   // Register our commands
-  OvmsCommand* cmd_event = MyCommandApp.RegisterCommand("event","EVENT framework",NULL, "", 1, 0, true);
+  OvmsCommand* cmd_event = MyCommandApp.RegisterCommand("event","EVENT framework",NULL, "", 0, 0, true);
   cmd_event->RegisterCommand("raise","Raise a textual event",event_raise,"<event>", 1, 1, true);
   OvmsCommand* cmd_eventtrace = cmd_event->RegisterCommand("trace","EVENT trace framework", NULL, "", 0, 0, true);
   cmd_eventtrace->RegisterCommand("on","Turn event tracing ON",event_trace,"", 0, 0, true);
