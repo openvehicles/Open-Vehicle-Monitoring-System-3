@@ -27,20 +27,25 @@ YYYYBBNNNNNRRRR
 * NNNN is four digit sequence. For example; 0001, 0002, etc.
 * RRRR is four random characters. For example; ADEA, JKAE, etc.
 
-First production batch is 2018010001 - 2018010120.
+First production batch is 2018010001**** - 2018010120****.
 
 ********************************************************************************
 ** PRODUCTION STEPS
 ********************************************************************************
 
-1] Default wifi AP and module passwords
+1] Erase ENTIRE flash
 
-   OVMS> config set wifi.ap OVMS <serialnumber>
-   OVMS> config set password module <serialnumber>
+2] Flash bootloader, partition table, and firmware
+
+3] Default wifi AP and module passwords
+
+   OVMS> enable
+   OVMS# config set wifi.ap OVMS <serialnumber>
+   OVMS# config set password module <serialnumber>
 
    Where <serialnumber> is the serial number from the label on the enclosure.
 
-2] Default modem APN
+4] Default modem APN
 
    OVMS> config set modem apn hologram
 
