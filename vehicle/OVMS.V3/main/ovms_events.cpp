@@ -177,6 +177,7 @@ void OvmsEvents::SignalEvent(std::string event, void* data)
 esp_err_t OvmsEvents::ReceiveSystemEvent(void *ctx, system_event_t *event)
   {
   OvmsEvents* e = (OvmsEvents*)ctx;
+  e->SignalEvent("system.event",(void*)event);
   e->SignalSystemEvent(event);
   return ESP_OK;
   }
