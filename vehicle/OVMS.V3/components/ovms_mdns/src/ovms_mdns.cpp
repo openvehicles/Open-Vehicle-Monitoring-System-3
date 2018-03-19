@@ -134,11 +134,11 @@ OvmsMDNS::OvmsMDNS()
 
   m_mdns = false;
 
-  using std::placeholders::_1;
-  using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG,"network.mgr.init", std::bind(&OvmsMDNS::NetworkUp, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"network.interface.change", std::bind(&OvmsMDNS::NetworkInterfaceChange, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"network.mgr.stop", std::bind(&OvmsMDNS::NetworkDown, this, _1, _2));
+//  using std::placeholders::_1;
+//  using std::placeholders::_2;
+//  MyEvents.RegisterEvent(TAG,"network.mgr.init", std::bind(&OvmsMDNS::NetworkUp, this, _1, _2));
+//  MyEvents.RegisterEvent(TAG,"network.interface.change", std::bind(&OvmsMDNS::NetworkInterfaceChange, this, _1, _2));
+//  MyEvents.RegisterEvent(TAG,"network.mgr.stop", std::bind(&OvmsMDNS::NetworkDown, this, _1, _2));
   }
 
 OvmsMDNS::~OvmsMDNS()

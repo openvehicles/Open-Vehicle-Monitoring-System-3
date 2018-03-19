@@ -25,6 +25,7 @@ Open Vehicle Monitor System v3 - Change log
                          - Wifi: Fix to APCLIENT mode STA reconnect
                          - Wifi: Fix to display of IP and MAC addresses in APCLIENT mode
                          - Twizy v0.12: auto power control
+                         - MDNS: Disable MDNS support (as causing too many issues)
 
 2018-03-05 MWJ  3.0.991  OTA release support OTA updates over HTTP
                          - Update ovms_module to use new API for per-task heap info.
