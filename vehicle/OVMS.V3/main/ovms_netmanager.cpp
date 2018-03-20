@@ -203,9 +203,7 @@ void OvmsNetManager::ModemUp(std::string event, void* data)
   SetInterfacePriority();
   StandardMetrics.ms_m_net_type->SetValue("modem");
   MyEvents.SignalEvent("network.modem.up",NULL);
-  if (m_connected_wifi)
-    MyEvents.SignalEvent("network.reconfigured",NULL);
-  else
+  if (!m_connected_wifi)
     MyEvents.SignalEvent("network.up",NULL);
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   StartMongooseTask();

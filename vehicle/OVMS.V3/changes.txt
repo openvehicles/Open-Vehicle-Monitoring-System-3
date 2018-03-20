@@ -29,6 +29,9 @@ Open Vehicle Monitor System v3 - Change log
                          - MDNS: Disable MDNS support (as causing too many issues)
                          - Network: Change TELNET/SSH/WEBSERVER to always bind listener on mongoose init
                          - MDNS: The MDNS system is back! New and shiny
+                         - Network: Dont issue network.reconfigured if modem goes down while wifi client is still up
+                           (so behaviour is network.reconfigured is only issued if that would change the interface
+                           priority order and cause application level reconnections)
 
 2018-03-05 MWJ  3.0.991  OTA release support OTA updates over HTTP
                          - Update ovms_module to use new API for per-task heap info.
