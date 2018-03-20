@@ -99,6 +99,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     uint8_t nl_remote_command_ticker; // number of tenths remaining to send remote command frames
     uint16_t nl_cc_off_ticker; // seconds before we send the climate control off command
     TimerHandle_t m_remoteCommandTimer;
+    OvmsMetricInt *m_gids;
   };
 
 #endif //#ifndef __VEHICLE_NISSANLEAF_H__
