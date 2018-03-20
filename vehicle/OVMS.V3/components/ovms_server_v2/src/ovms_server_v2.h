@@ -56,6 +56,7 @@ class OvmsServerV2 : public OvmsServer
     void Connect();
     void SendLogin();
     void Disconnect();
+    void Reconnect(int connretry);
     size_t IncomingData(uint8_t* data, size_t len);
 
   protected:
@@ -63,7 +64,6 @@ class OvmsServerV2 : public OvmsServer
     void ProcessCommand(const char* payload);
     void Transmit(const std::string& message);
     void Transmit(const char* message);
-    void SetStatus(const char* status, bool fault=false);
 
   protected:
     void TransmitMsgStat(bool always = false);
@@ -94,7 +94,22 @@ class OvmsServerV2 : public OvmsServer
     void Ticker1(std::string event, void* data);
 
   public:
+    enum State
+      {
+      Undefined = 0,
+      WaitNetwork,
+      ConnectWait,
+      Connecting,
+      Authenticating,
+      Connected,
+      Disconnected,
+      WaitReconnect
+      };
+    State m_state;
     std::string m_status;
+    void SetStatus(const char* status, bool fault=false, State newstate=Undefined);
+
+  public:
     struct mg_connection *m_mgconn;
     int m_connretry;
     bool m_loggedin;
