@@ -224,7 +224,7 @@ void Housekeeping::Ticker1()
     time_t rawtime;
     time ( &rawtime );
     struct tm* tmu = localtime(&rawtime);
-    ESP_LOGI(TAG, "Local time: %s", asctime(tmu));
+    ESP_LOGI(TAG, "Local time: %.24s", asctime(tmu));
     MyEvents.SignalEvent("ticker.600", NULL);
     }
   if ((m_tick % 3600)==0)
