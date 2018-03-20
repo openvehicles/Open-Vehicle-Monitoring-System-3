@@ -191,6 +191,13 @@ void OvmsNetManager::WifiDownSTA(std::string event, void* data)
 
     MyEvents.SignalEvent("network.interface.change",NULL);
     }
+  else
+    {
+    // Re-prioritise, just in case, as Wifi stack seems to mess with this
+    // (in particular if an AP interface is up, and STA goes down, Wifi
+    // stack seems to switch default interface to AP)
+    PrioritiseAndIndicate();
+    }
   }
 
 void OvmsNetManager::WifiUpAP(std::string event, void* data)
@@ -272,6 +279,13 @@ void OvmsNetManager::ModemDown(std::string event, void* data)
       }
 
     MyEvents.SignalEvent("network.interface.change",NULL);
+    }
+  else
+    {
+    // Re-prioritise, just in case, as Wifi stack seems to mess with this
+    // (in particular if an AP interface is up, and STA goes down, Wifi
+    // stack seems to switch default interface to AP)
+    PrioritiseAndIndicate();
     }
   }
 
