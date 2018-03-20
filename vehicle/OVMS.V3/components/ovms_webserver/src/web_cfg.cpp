@@ -217,8 +217,10 @@ void OvmsWebServer::HandleCommand(PageEntry_t& p, PageContext_t& c)
 {
   std::string command = c.getvar("command");
 
+  // Note: application/octet-stream instead of text/plain is a workaround for an *old*
+  //  Chrome/Webkit bug: chunked text/plain is always buffered for the first 1024 bytes
   c.head(200,
-    "Content-Type: text/plain; charset=utf-8\r\n"
+    "Content-Type: application/octet-stream; charset=utf-8\r\n"
     "Cache-Control: no-cache");
   
   if (command.empty())

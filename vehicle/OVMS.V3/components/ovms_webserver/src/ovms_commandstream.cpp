@@ -60,12 +60,6 @@ HttpCommandStream::HttpCommandStream(mg_connection* nc, std::string command, int
   m_done = false;
   m_sent = m_ack = 0;
   
-  // set TCP_NODELAY:
-  // (Note: doesn't seem to work on the first 1024 bytes… LWIP issue?)
-  int opt = 1;
-  if (setsockopt(nc->sock, IPPROTO_TCP, TCP_NODELAY, (char *) &opt, sizeof(opt)) != 0)
-    ESP_LOGW(TAG, "HttpCommandStream[%p] init: TCP_NODELAY error: %s", this, strerror(errno));
-  
   // create write queue & command task:
   m_writequeue = xQueueCreate(30, sizeof(hcs_writebuf));
   char name[configMAX_TASK_NAME_LEN];
