@@ -99,6 +99,7 @@ OvmsNetManager::OvmsNetManager()
   m_connected_modem = false;
   m_connected_any = false;
   m_wifi_ap = false;
+  m_network_any = false;
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   m_mongoose_task = 0;
@@ -136,20 +137,29 @@ OvmsNetManager::~OvmsNetManager()
 void OvmsNetManager::WifiUpSTA(std::string event, void* data)
   {
   m_connected_wifi = true;
-  m_connected_any = m_connected_wifi || m_connected_modem;
-  SetInterfacePriority();
+  PrioritiseAndIndicate();
+
   StandardMetrics.ms_m_net_type->SetValue("wifi");
 #ifdef CONFIG_OVMS_COMP_WIFI
   StandardMetrics.ms_m_net_provider->SetValue(MyPeripherals->m_esp32wifi->GetSSID());
 #endif // #ifdef CONFIG_OVMS_COMP_WIFI
   MyEvents.SignalEvent("network.wifi.up",NULL);
+
   if (m_connected_modem)
+    {
+    ESP_LOGI(TAG, "WIFI client up (with MODEM up): reconfigured for WIFI client priority");
     MyEvents.SignalEvent("network.reconfigured",NULL);
+    }
   else
+    {
+    ESP_LOGI(TAG, "WIFI client up (with MODEM down): starting network with WIFI client");
     MyEvents.SignalEvent("network.up",NULL);
+    }
+
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   StartMongooseTask();
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
   MyEvents.SignalEvent("network.interface.change",NULL);
   }
 
@@ -158,20 +168,27 @@ void OvmsNetManager::WifiDownSTA(std::string event, void* data)
   if (m_connected_wifi)
     {
     m_connected_wifi = false;
-    m_connected_any = m_connected_wifi || m_connected_modem;
-    SetInterfacePriority();
+    PrioritiseAndIndicate();
+
     MyEvents.SignalEvent("network.wifi.down",NULL);
+
     if (m_connected_any)
+      {
+      ESP_LOGI(TAG, "WIFI client down (with MODEM up): reconfigured for MODEM priority");
       MyEvents.SignalEvent("network.reconfigured",NULL);
+      }
     else
       {
+      ESP_LOGI(TAG, "WIFI client down (with MODEM down): network connectivity has been lost");
       StandardMetrics.ms_m_net_type->SetValue("none");
       StandardMetrics.ms_m_net_provider->SetValue("");
       MyEvents.SignalEvent("network.down",NULL);
+
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
       StopMongooseTask();
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
       }
+
     MyEvents.SignalEvent("network.interface.change",NULL);
     }
   }
@@ -179,35 +196,53 @@ void OvmsNetManager::WifiDownSTA(std::string event, void* data)
 void OvmsNetManager::WifiUpAP(std::string event, void* data)
   {
   m_wifi_ap = true;
-  SetInterfacePriority();
+  PrioritiseAndIndicate();
+
+  ESP_LOGI(TAG, "WIFI access point is up");
+
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   StartMongooseTask();
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
   MyEvents.SignalEvent("network.interface.change",NULL);
   }
 
 void OvmsNetManager::WifiDownAP(std::string event, void* data)
   {
   m_wifi_ap = false;
-  SetInterfacePriority();
+  PrioritiseAndIndicate();
+
+  ESP_LOGI(TAG, "WIFI access point is down");
+
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   StopMongooseTask();
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
   MyEvents.SignalEvent("network.interface.change",NULL);
   }
 
 void OvmsNetManager::ModemUp(std::string event, void* data)
   {
   m_connected_modem = true;
-  m_connected_any = m_connected_wifi || m_connected_modem;
-  SetInterfacePriority();
+  PrioritiseAndIndicate();
+
   StandardMetrics.ms_m_net_type->SetValue("modem");
   MyEvents.SignalEvent("network.modem.up",NULL);
+
   if (!m_connected_wifi)
+    {
+    ESP_LOGI(TAG, "MODEM up (with WIFI client down): starting network with MODEM");
     MyEvents.SignalEvent("network.up",NULL);
+    }
+  else
+    {
+    ESP_LOGI(TAG, "MODEM up (with WIFI client up): staying with WIFI client priority");
+    }
+
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   StartMongooseTask();
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
   MyEvents.SignalEvent("network.interface.change",NULL);
   }
 
@@ -216,20 +251,26 @@ void OvmsNetManager::ModemDown(std::string event, void* data)
   if (m_connected_modem)
     {
     m_connected_modem = false;
-    m_connected_any = m_connected_wifi || m_connected_modem;
-    SetInterfacePriority();
+    PrioritiseAndIndicate();
+
     MyEvents.SignalEvent("network.modem.down",NULL);
+
     if (m_connected_any)
-      MyEvents.SignalEvent("network.reconfigured",NULL);
+      {
+      ESP_LOGI(TAG, "MODEM down (with WIFI client up): staying with WIFI client priority");
+      }
     else
       {
+      ESP_LOGI(TAG, "MODEM down (with WIFI client down): network connectivity has been lost");
       StandardMetrics.ms_m_net_type->SetValue("none");
       StandardMetrics.ms_m_net_provider->SetValue("");
       MyEvents.SignalEvent("network.down",NULL);
+
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
       StopMongooseTask();
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
       }
+
     MyEvents.SignalEvent("network.interface.change",NULL);
     }
   }
@@ -271,9 +312,13 @@ void OvmsNetManager::InterfaceUp(std::string event, void* data)
     }
   }
 
-void OvmsNetManager::SetInterfacePriority()
+void OvmsNetManager::PrioritiseAndIndicate()
   {
   const char *search = NULL;
+
+  // A convenient place to keep track of connectivity in general
+  m_connected_any = m_connected_wifi || m_connected_modem;
+  m_network_any = m_connected_wifi || m_connected_modem || m_wifi_ap;
 
   // Priority order...
   if (m_connected_wifi)
@@ -342,14 +387,18 @@ void OvmsNetManager::StartMongooseTask()
   {
   if (!m_mongoose_running)
     {
-    m_mongoose_running = true;
-    xTaskCreatePinnedToCore(MongooseRawTask, "NetManTask", 7*1024, (void*)this, 5, &m_mongoose_task, 1);
+    if (m_network_any)
+      {
+      m_mongoose_running = true;
+      xTaskCreatePinnedToCore(MongooseRawTask, "NetManTask", 7*1024, (void*)this, 5, &m_mongoose_task, 1);
+      }
     }
   }
 
 void OvmsNetManager::StopMongooseTask()
   {
-  m_mongoose_running = false;
+  if (!m_network_any)
+    m_mongoose_running = false;
   }
 
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE

@@ -55,14 +55,15 @@ class OvmsNetManager
     void ModemDown(std::string event, void* data);
     void InterfaceUp(std::string event, void* data);
 
-  public:
-    void SetInterfacePriority();
+  protected:
+    void PrioritiseAndIndicate();
 
   public:
     bool m_connected_wifi;
     bool m_connected_modem;
     bool m_connected_any;
     bool m_wifi_ap;
+    bool m_network_any;
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   protected:

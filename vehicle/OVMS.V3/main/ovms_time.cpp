@@ -196,7 +196,7 @@ void OvmsTime::EventNetDown(std::string event, void* data)
 
 void OvmsTime::EventNetReconfigured(std::string event, void* data)
   {
-  ESP_LOGI(TAG, "Restarting SNTP client");
+  ESP_LOGI(TAG, "Network was reconfigured: restarting SNTP client");
   sntp_stop();
   sntp_init();
   }

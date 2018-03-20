@@ -1481,7 +1481,7 @@ void OvmsServerV2::NetDown(std::string event, void* data)
 
 void OvmsServerV2::NetReconfigured(std::string event, void* data)
   {
-  ESP_LOGI(TAG, "Network is reconfigured, so disconnect network connection (and reconnect in 10 seconds)");
+  ESP_LOGI(TAG, "Network was reconfigured: disconnect, and reconnect in 10 seconds");
   Disconnect();
   m_connretry = 10;
   }
