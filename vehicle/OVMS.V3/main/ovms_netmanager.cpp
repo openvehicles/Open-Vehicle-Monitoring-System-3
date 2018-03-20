@@ -41,6 +41,7 @@ static const char *TAG = "netmanager";
 #include "ovms_netmanager.h"
 #include "ovms_command.h"
 #include "ovms_config.h"
+#include "ovms_module.h"
 
 OvmsNetManager MyNetManager __attribute__ ((init_priority (8999)));
 
@@ -405,6 +406,7 @@ void OvmsNetManager::StartMongooseTask()
       {
       m_mongoose_running = true;
       xTaskCreatePinnedToCore(MongooseRawTask, "NetManTask", 7*1024, (void*)this, 5, &m_mongoose_task, 1);
+      AddTaskToMap(m_mongoose_task);
       }
     }
   }
