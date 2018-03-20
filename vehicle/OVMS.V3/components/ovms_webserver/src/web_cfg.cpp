@@ -1113,8 +1113,8 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
   c.form_start(p.uri);
 
   c.input_checkbox("Enable auto start", "init", init,
-    "<p>Note: if a crash or reboot occurs within 10 seconds after powering the module, "
-    "this option will automatically be disabled and need to be re-enabled manually.</p>");
+    "<p>Note: if a crash occurs within 10 seconds after powering the module, autostart will be temporarily"
+    " disabled. You may need to use the USB shell to access the module and fix the config.</p>");
 
   c.input_checkbox("Power on external 12V", "ext12v", ext12v,
     "<p>Enable to provide 12V to external devices connected to the module (i.e. ECU displays).</p>");
