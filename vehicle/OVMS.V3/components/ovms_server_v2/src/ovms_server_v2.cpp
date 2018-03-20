@@ -1471,17 +1471,12 @@ void OvmsServerV2::NetUp(std::string event, void* data)
   if ( (m_mgconn == NULL) && MyNetManager.MongooseRunning() )
     {
     ESP_LOGI(TAG, "Network is up, so attempt network connection");
-    Connect(); // Kick off the connection
+    m_connretry = 2;
     }
   }
 
 void OvmsServerV2::NetDown(std::string event, void* data)
   {
-  if (m_mgconn)
-    {
-    ESP_LOGI(TAG, "Network is down, so disconnect network connection");
-    Disconnect();
-    }
   }
 
 void OvmsServerV2::NetReconfigured(std::string event, void* data)
@@ -1496,7 +1491,7 @@ void OvmsServerV2::NetmanInit(std::string event, void* data)
   if ((m_mgconn == NULL)&&(MyNetManager.m_connected_any))
     {
     ESP_LOGI(TAG, "Network is up, so attempt network connection");
-    Connect(); // Kick off the connection
+    m_connretry = 2;
     }
   }
 
