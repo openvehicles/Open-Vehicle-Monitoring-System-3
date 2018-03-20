@@ -139,15 +139,15 @@ void Housekeeping::init()
     ESP_LOGI(TAG, "Auto init wifi (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
     MyPeripherals->m_esp32wifi->AutoInit();
 #endif // CONFIG_OVMS_COMP_WIFI
-    
+
 #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
     ESP_LOGI(TAG, "Auto init modem (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
     MyPeripherals->m_simcom->AutoInit();
 #endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
-    
+
     ESP_LOGI(TAG, "Auto init vehicle (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
     MyVehicleFactory.AutoInit();
-    
+
 #ifdef CONFIG_OVMS_COMP_OBD2ECU
     ESP_LOGI(TAG, "Auto init obd2ecu (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
     obd2ecuInit.AutoInit();
@@ -163,13 +163,13 @@ void Housekeeping::init()
     MyOvmsServerV3Init.AutoInit();
 #endif // CONFIG_OVMS_COMP_SERVER_V3
 #endif // CONFIG_OVMS_COMP_SERVER
-    
+
     ESP_LOGI(TAG, "Auto init done (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
     }
 
   ESP_LOGI(TAG, "Starting USB console...");
   ConsoleAsync::Instance();
-  
+
   MyEvents.SignalEvent("system.start",NULL);
   }
 
@@ -199,7 +199,7 @@ void Housekeeping::metrics()
   uint32_t caps = MALLOC_CAP_8BIT;
   size_t free = heap_caps_get_free_size(caps);
   m3->SetValue(free);
-  
+
   // set boot stable flag after some seconds uptime:
   if (!MyBoot.GetStable() && monotonictime >= AUTO_INIT_STABLE_TIME)
     {
@@ -219,7 +219,14 @@ void Housekeeping::Ticker1()
   if ((m_tick % 10)==0) MyEvents.SignalEvent("ticker.10", NULL);
   if ((m_tick % 60)==0) MyEvents.SignalEvent("ticker.60", NULL);
   if ((m_tick % 300)==0) MyEvents.SignalEvent("ticker.300", NULL);
-  if ((m_tick % 600)==0) MyEvents.SignalEvent("ticker.600", NULL);
+  if ((m_tick % 600)==0)
+    {
+    time_t rawtime;
+    time ( &rawtime );
+    struct tm* tmu = localtime(&rawtime);
+    ESP_LOGI(TAG, "Local time: %s", asctime(tmu));
+    MyEvents.SignalEvent("ticker.600", NULL);
+    }
   if ((m_tick % 3600)==0)
     {
     m_tick = 0;
