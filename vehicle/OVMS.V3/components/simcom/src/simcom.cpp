@@ -407,7 +407,7 @@ void simcom::State1Enter(SimcomState1 newstate)
     case PoweringOn:
       ESP_LOGI(TAG,"State: Enter PoweringOn state");
       PowerCycle();
-      m_state1_timeout_ticks = 10;
+      m_state1_timeout_ticks = 20;
       m_state1_timeout_goto = PoweringOn;
       break;
     case PoweredOn:
