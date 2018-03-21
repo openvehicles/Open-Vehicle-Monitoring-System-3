@@ -109,6 +109,7 @@ static heap_task_block_t* before = NULL;
 static heap_task_block_t* after = NULL;
 static size_t numbefore = 0, numafter = 0;
 static HeapTotals* changes = NULL;
+static const char* states[] = {"Run", "Rdy", "Blk", "Sus", "Del"};
 
 
 class Name
@@ -680,7 +681,7 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
 static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   UBaseType_t num = uxTaskGetNumberOfTasks();
-  writer->printf("Number of Tasks =%3u%s   Stack:  Now   Max Total    Heap 32-bit SPIRAM\n", num,
+  writer->printf("Number of Tasks =%3u%s  Stack:  Now   Max Total    Heap 32-bit SPIRAM\n", num,
     num > MAX_TASKS ? ">max" : "    ");
   if (!allocate())
     {
@@ -705,8 +706,9 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
           heapspi = (*changes).After(k, SPIRAM);
           }
         uint32_t total = (uint32_t)taskstatus[i].pxStackBase >> 16;
-        writer->printf("Task %08X %2u %-15s %5u %5u %5u %7u%7u%7u\n", taskstatus[i].xHandle, taskstatus[i].xTaskNumber,
-          taskstatus[i].pcTaskName, total - ((uint32_t)taskstatus[i].pxStackBase & 0xFFFF),
+        writer->printf("%08X %2u %s %-15s %5u %5u %5u %7u%7u%7u\n", taskstatus[i].xHandle,
+          taskstatus[i].xTaskNumber, states[taskstatus[i].eCurrentState], taskstatus[i].pcTaskName,
+          total - ((uint32_t)taskstatus[i].pxStackBase & 0xFFFF),
           total - taskstatus[i].usStackHighWaterMark, total, heaptotal, heap32bit, heapspi);
         ++j;
         break;
