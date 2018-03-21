@@ -189,6 +189,50 @@ First production batch is 2018010001**** - 2018010120****.
      m.net.mdm.iccid                          8944500XXXXXXXXXXXX
      m.net.mdm.model                          35316B11SIM5360E
 
+7] Test GNS/GPS
+
+   With modem in sleep mode (as above), enable the GPS/GNS system:
+
+     OVMS# simcom muxtx 4 AT+CGPSNMEA=66;+CGPS=1,1
+
+     V (225328) simcom: mux tx: 41 54 2b 43 47 50 53 4e 4d 45 41 3d 36 36 3b 2b | AT+CGPSNMEA=66;+
+     V (225328) simcom: mux tx: 43 47 50 53 3d 31 2c 31 0d 0a                   | CGPS=1,1..
+     D (225328) simcom: tx mcmd ch=4 len=26  : AT+CGPSNMEA=66;+CGPS=1,1||
+     V (225328) simcom: tx: f9 11 ff 35 41 54 2b 43 47 50 53 4e 4d 45 41 3d | ...5AT+CGPSNMEA=
+     V (225328) simcom: tx: 36 36 3b 2b 43 47 50 53 3d 31 2c 31 0d 0a 28 f9 | 66;+CGPS=1,1..(.
+     V (225378) simcom: rx: f9 11 ff 0d 0d 0a 4f 4b 0d 0a 02 f9             | ......OK....
+     V (225378) gsm-mux: ProcessFrame(CHAN=4, ADDR=11, CTRL=ff, FCS=02, LEN=12)
+     V (225388) gsm-mux: ChanProcessFrame(CHAN=4, ADDR=11, CTRL=ff, LEN=9, IFP=3)
+     D (225388) simcom: rx line ch=4 len=2   : OK
+
+   You should then start to see GPS/GNS messages coming in on channel #1:
+
+     V (227668) simcom: rx: f9 05 ff 33 24 47 4e 47 4e 53 2c 2c 2c 2c 2c 2c | ...3$GNGNS,,,,,,
+     V (227668) simcom: rx: 4e 4e 2c 2c 2c 2c 2c 2c 2a 35 33 0d 0a 84 f9 f9 | NN,,,,,,*53.....
+     V (227678) gsm-mux: ProcessFrame(CHAN=1, ADDR=05, CTRL=ff, FCS=84, LEN=31)
+     V (227678) gsm-mux: ChanProcessFrame(CHAN=1, ADDR=05, CTRL=ff, LEN=28, IFP=3)
+     V (227678) gsm-nmea: IncomingLine: $GNGNS,,,,,,NN,,,,,,*53
+     V (227678) simcom: rx: 05 ff 33 24 47 50 52 4d 43 2c 2c 56 2c 2c 2c 2c | ..3$GPRMC,,V,,,,
+     V (227678) simcom: rx: 2c 2c 2c 2c 2c 2c 4e 2a 35 33 0d 0a 84 f9       | ,,,,,,N*53....
+     V (227678) gsm-mux: ProcessFrame(CHAN=1, ADDR=05, CTRL=ff, FCS=84, LEN=31)
+     V (227678) gsm-mux: ChanProcessFrame(CHAN=1, ADDR=05, CTRL=ff, LEN=28, IFP=3)
+     V (227678) gsm-nmea: IncomingLine: $GPRMC,,V,,,,,,,,,,N*53
+
+  After GPS lock has been obtained, you should see the v.p metrics updated with GPS information:
+
+     OVMS# metrics list v.p
+     v.p.altitude                             30m
+     v.p.direction                            10°
+     v.p.gpshdop
+     v.p.gpslock                              yes
+     v.p.gpsmode
+     v.p.gpsspeed
+     v.p.latitude                             22.2809
+     v.p.longitude                            114.161
+     v.p.satcount                             12
+
+8] Power down the module.
+
 ********************************************************************************
 ** DOCUMENT ENDS
 ********************************************************************************
