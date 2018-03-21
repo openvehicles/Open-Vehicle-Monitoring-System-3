@@ -134,6 +134,12 @@ class Name
       if (a.words[NAMELEN/4-1] != (words[NAMELEN/4-1] & 0x7FFFFFFF)) return false;
       return true;
       }
+    inline char operator[](int i) { return (words[i/4] >> ((i & 3) * 8)) & 0xFF; }
+    inline void set(int i, char c)
+      {
+      words[i/4] &= ~(0xFF << ((i & 3) * 8));
+      words[i/4] |= c << ((i & 3) * 8);
+      }
   public:
     union
       {
@@ -193,7 +199,7 @@ class TaskMap
           return true;
           }
         }
-      sprintf(name.bytes, "%08X", (unsigned int)taskid);
+      sprintf(name.bytes, "%08X*", (unsigned int)taskid);
       name.bytes[NAMELEN-1] = 0x80;
       return false;
       }
@@ -214,7 +220,15 @@ class TaskMap
       {
       for (int i = 0; i < count; ++i)
         {
-        map[i].name.words[3] |= 0x80000000;
+        int j = 0;
+        for ( ; j < NAMELEN-2; ++j)
+          {
+          if (map[i].name[j] == '*' || map[i].name[j] == '\0')
+            break;
+          }
+        map[i].name.set(j++, '*');
+        map[i].name.set(j, '\0');
+        map[i].name.words[NAMELEN/4-1] |= 0x80000000;
         }
       UBaseType_t n = uxTaskGetSystemState(taskstatus, MAX_TASKS, NULL);
       for (UBaseType_t i = 0; i < n; ++i)
@@ -229,7 +243,7 @@ class TaskMap
         {
         if (map[i].id == taskid)
           {
-          if (map[i].name.words[3] > 0)
+          if (map[i].name.words[NAMELEN/4-1] > 0)
             return false;
           for (++i ; i < count; ++i)
             {
@@ -246,8 +260,7 @@ class TaskMap
       for (int i = 0; i < count; ++i)
         {
         Name name = map[i].name;
-        ::printf("taskmap %d %p %.15s%s\n", i, map[i].id, name.bytes,
-          name.bytes[NAMELEN-1] == '\0' ? "" : "*");
+        ::printf("taskmap %d %p %.15s\n", i, map[i].id, name.bytes);
         }
       }
 
@@ -383,8 +396,7 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task)
     if (j == numafter)
       {
       tm->find(before[i].task, name);
-      writer->printf("- t=%.15s%s s=%4d a=%p\n", name.bytes,
-        name.bytes[NAMELEN-1] == '\0' ? "" : "*",
+      writer->printf("- t=%.15s s=%4d a=%p\n", name.bytes,
         before[i].size, before[i].address);
       ++count;
       }
@@ -410,9 +422,8 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task)
         separate = false;
         }
       tm->find(after[i].task, name);
-      writer->printf("  t=%.15s%s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X\n",
-        name.bytes, name.bytes[NAMELEN-1] == '\0' ? "" : "*",
-        after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
+      writer->printf("  t=%.15s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X\n",
+        name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
       ++count;
       }
     }
@@ -436,9 +447,8 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task)
         separate = false;
         }
       tm->find(after[i].task, name);
-      writer->printf("+ t=%.15s%s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X\n",
-        name.bytes, name.bytes[NAMELEN-1] == '\0' ? "" : "*",
-        after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
+      writer->printf("+ t=%.15s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X\n",
+        name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
       ++total;
       }
     }
@@ -609,8 +619,7 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
         Name name("NoTaskMap");
         if (tm)
           tm->find((*changes).Task(i), name);
-        writer->printf("%-15.15s%c%7d%7d%7d%7d    %+7d%+7d%+7d%+7d\n", name.bytes,
-          name.bytes[NAMELEN-1] == '\0' ? ' ' : '*',
+        writer->printf("%-15.15s %7d%7d%7d%7d    %+7d%+7d%+7d%+7d\n", name.bytes,
           (*changes).After(i, DRAM), (*changes).After(i, D_IRAM),
           (*changes).After(i, IRAM), (*changes).After(i, SPIRAM),
           change[DRAM], change[D_IRAM], change[IRAM], change[SPIRAM]);
