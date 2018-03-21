@@ -33,6 +33,7 @@
 #include <string.h>
 #include "ovms_log.h"
 #include "ovms_console.h"
+#include "ovms_version.h"
 #include "log_buffers.h"
 
 const int DEFERRED_ALERTS = 10;
@@ -68,7 +69,8 @@ void OvmsConsole::Initialize(const char* console)
   microrl_set_complete_callback(&m_rl, Complete);
   if (console)
     {
-    printf("\nWelcome to the Open Vehicle Monitoring System (OVMS) - %s Console", console);
+    printf("\nWelcome to the Open Vehicle Monitoring System (OVMS) - %s Console\n", console);
+    printf("Firmware: %s\nHardware: %s\n",GetOVMSVersion().c_str(),GetOVMSHardware().c_str());
     ProcessChar('\n');
     MyCommandApp.RegisterConsole(this);
     }
