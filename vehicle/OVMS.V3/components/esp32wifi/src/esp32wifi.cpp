@@ -601,7 +601,7 @@ void esp32wifi::Scan(OvmsWriter* writer)
         break;
       }
     writer->printf("%-32.32s %02x:%02x:%02x:%02x:%02x:%02x %4d %4d %s\n",
-      list[k].ssid,
+      (strlen((char*)list[k].ssid)==0)?"<HIDDEN>":(char*)list[k].ssid,
       list[k].bssid[0], list[k].bssid[1], list[k].bssid[2],
       list[k].bssid[3], list[k].bssid[4], list[k].bssid[5],
       list[k].primary, list[k].rssi, authmode.c_str());

@@ -4,6 +4,7 @@ Open Vehicle Monitor System v3 - Change log
                          - Wifi: Make 'wifi scan' command block, and show nice summary of
                            discovered access points
                          - Show firmware version and hardware info on console startup
+                         - Show hidden SSIDs as <HIDDEN> in wifi scan
 
 2018-03-21 MWJ  3.1.000  OTA release
                          - Tesla Model S basic vehicle support
