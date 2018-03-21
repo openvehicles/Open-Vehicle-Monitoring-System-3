@@ -1,6 +1,6 @@
 Open Vehicle Monitor System v3 - Change log
 
-????-??-?? ???  3.0.992  OTA release
+2018-03-21 MWJ  3.1.000  OTA release
                          - Tesla Model S basic vehicle support
                          - Provide an option for aggressive allocation of SPI RAM (OVMS HW 3.1)
                          - Low-level boot framework for storing data across CPU resets/sleeps
@@ -32,6 +32,7 @@ Open Vehicle Monitor System v3 - Change log
                          - Network: Dont issue network.reconfigured if modem goes down while wifi client is still up
                            (so behaviour is network.reconfigured is only issued if that would change the interface
                            priority order and cause application level reconnections)
+                         - First factory firmware
 
 2018-03-05 MWJ  3.0.991  OTA release support OTA updates over HTTP
                          - Update ovms_module to use new API for per-task heap info.
