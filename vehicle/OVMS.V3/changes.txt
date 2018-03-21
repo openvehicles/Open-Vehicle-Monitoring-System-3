@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+                         - Add task state to 'module tasks' output
+                         - Avoid SPIRAM being lumped in with DRAM in 'module memory' output
                          - Wifi: Make 'wifi scan' command block, and show nice summary of
                            discovered access points
                          - Show firmware version and hardware info on console startup
