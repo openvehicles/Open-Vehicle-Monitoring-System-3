@@ -187,8 +187,7 @@ void wifi_scan(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     return;
     }
 
-  writer->puts("Starting wifi scan...");
-  me->Scan();
+  me->Scan(writer);
   }
 
 void wifi_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -518,8 +517,12 @@ void esp32wifi::StopStation()
     }
   }
 
-void esp32wifi::Scan()
+void esp32wifi::Scan(OvmsWriter* writer)
   {
+  uint16_t apCount = 0;
+  esp_err_t res;
+  wifi_ap_record_t* list = NULL;
+
   if (m_powermode != On)
     {
     SetPowerMode(On);
@@ -541,6 +544,8 @@ void esp32wifi::Scan()
   ESP_ERROR_CHECK(esp_wifi_start());
   m_mode = ESP32WIFI_MODE_SCAN;
 
+  writer->puts("Scanning for WIFI Access Points...");
+
   wifi_scan_config_t scanConf;
   memset(&scanConf,0,sizeof(scanConf));
   scanConf.ssid = NULL;
@@ -548,7 +553,64 @@ void esp32wifi::Scan()
   scanConf.channel = 0;
   scanConf.show_hidden = true;
   scanConf.scan_type = WIFI_SCAN_TYPE_ACTIVE;
-  ESP_ERROR_CHECK(esp_wifi_scan_start(&scanConf, false));
+  ESP_ERROR_CHECK(esp_wifi_scan_start(&scanConf, true));
+
+  res = esp_wifi_scan_get_ap_num(&apCount);
+  if (res != ESP_OK)
+    {
+    ESP_LOGE(TAG, "EventWifiScanDone: can't get AP count, error=0x%x", res);
+    return;
+    }
+
+  if (apCount > 0)
+    {
+    list = (wifi_ap_record_t *)malloc(sizeof(wifi_ap_record_t) * apCount);
+    res = esp_wifi_scan_get_ap_records(&apCount, list);
+    if (res != ESP_OK)
+      {
+      ESP_LOGE(TAG, "EventWifiScanDone: can't get AP records, error=0x%x", res);
+      if (list) free(list);
+      return;
+      }
+    }
+
+  writer->printf("\n%-32.32s %-17.17s %4s %4s %-22.22s\n","AP SSID","MAC ADDRESS","CHAN","RSSI","AUTHENTICATION");
+  writer->printf("%-32.32s %-17.17s %4s %4s %-22.22s\n","================================","=================","====","====","======================");
+  for (int k=0; k<apCount; k++)
+    {
+    std::string authmode;
+    switch(list[k].authmode)
+      {
+      case WIFI_AUTH_OPEN:
+        authmode = "WIFI_AUTH_OPEN";
+        break;
+      case WIFI_AUTH_WEP:
+        authmode = "WIFI_AUTH_WEP";
+        break;
+      case WIFI_AUTH_WPA_PSK:
+        authmode = "WIFI_AUTH_WPA_PSK";
+        break;
+      case WIFI_AUTH_WPA2_PSK:
+        authmode = "WIFI_AUTH_WPA2_PSK";
+        break;
+      case WIFI_AUTH_WPA_WPA2_PSK:
+        authmode = "WIFI_AUTH_WPA_WPA2_PSK";
+        break;
+      default:
+        authmode = "Unknown";
+        break;
+      }
+    writer->printf("%-32.32s %02x:%02x:%02x:%02x:%02x:%02x %4d %4d %s\n",
+      list[k].ssid,
+      list[k].bssid[0], list[k].bssid[1], list[k].bssid[2],
+      list[k].bssid[3], list[k].bssid[4], list[k].bssid[5],
+      list[k].primary, list[k].rssi, authmode.c_str());
+    }
+  writer->puts("===================================================================================");
+  writer->printf("Scan complete: %d access point(s) found\n\n",apCount);
+
+  StopStation();
+  if (list) free(list);
   }
 
 esp32wifi_mode_t esp32wifi::GetMode()
@@ -647,6 +709,8 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
   esp_err_t res;
   wifi_ap_record_t* list = NULL;
 
+  if (m_mode == ESP32WIFI_MODE_SCAN) return; // Let scan routine handle it
+
   res = esp_wifi_scan_get_ap_num(&apCount);
   if (res != ESP_OK)
     {
@@ -665,43 +729,7 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
       }
     }
 
-  if (m_mode == ESP32WIFI_MODE_SCAN)
-    {
-    ESP_LOGI(TAG, "SSID scan results...");
-    for (int k=0; k<apCount; k++)
-      {
-      std::string authmode;
-      switch(list[k].authmode)
-        {
-        case WIFI_AUTH_OPEN:
-          authmode = "WIFI_AUTH_OPEN";
-          break;
-        case WIFI_AUTH_WEP:
-          authmode = "WIFI_AUTH_WEP";
-          break;
-        case WIFI_AUTH_WPA_PSK:
-          authmode = "WIFI_AUTH_WPA_PSK";
-          break;
-        case WIFI_AUTH_WPA2_PSK:
-          authmode = "WIFI_AUTH_WPA2_PSK";
-          break;
-        case WIFI_AUTH_WPA_WPA2_PSK:
-          authmode = "WIFI_AUTH_WPA_WPA2_PSK";
-          break;
-        default:
-          authmode = "Unknown";
-          break;
-        }
-      ESP_LOGI(TAG, "Found %s %02x:%02x:%02x:%02x:%02x:%02x (CHANNEL %d, RSSI %d, AUTH %s)",
-        list[k].ssid,
-        list[k].bssid[0], list[k].bssid[1], list[k].bssid[2],
-        list[k].bssid[3], list[k].bssid[4], list[k].bssid[5],
-        list[k].primary, list[k].rssi, authmode.c_str());
-      }
-    ESP_LOGI(TAG, "SSID scan completed");
-    StopStation();
-    }
-  else if (m_mode == ESP32WIFI_MODE_SCLIENT)
+  if (m_mode == ESP32WIFI_MODE_SCLIENT)
     {
     for (int k=0; (k<apCount)&&(m_wifi_sta_cfg.sta.ssid[0]==0); k++)
       {
