@@ -502,12 +502,12 @@ static UBaseType_t get_tasks()
 
 static void get_memory(TaskHandle_t* tasks, size_t taskslen)
   {
-  params->mask[DRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC;
-  params->caps[DRAM] = MALLOC_CAP_8BIT;
-  params->mask[D_IRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC;
-  params->caps[D_IRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC;
-  params->mask[IRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC;
-  params->caps[IRAM] = MALLOC_CAP_EXEC;
+  params->mask[DRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC | MALLOC_CAP_INTERNAL;
+  params->caps[DRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL;
+  params->mask[D_IRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC | MALLOC_CAP_INTERNAL;
+  params->caps[D_IRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC | MALLOC_CAP_INTERNAL;
+  params->mask[IRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC | MALLOC_CAP_INTERNAL;
+  params->caps[IRAM] = MALLOC_CAP_EXEC | MALLOC_CAP_INTERNAL;
   params->mask[SPIRAM] = MALLOC_CAP_SPIRAM;
   params->caps[SPIRAM] = MALLOC_CAP_SPIRAM;
   params->tasks = tasks;
