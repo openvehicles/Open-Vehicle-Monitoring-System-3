@@ -670,17 +670,23 @@ std::string esp32wifi::GetSSID()
 
 void esp32wifi::EventWifiGotIp(std::string event, void* data)
   {
-  m_stareconnect = false;
   system_event_info_t *info = (system_event_info_t*)data;
+  m_stareconnect = false;
+
   m_ip_info_sta = info->got_ip.ip_info;
   esp_wifi_get_mac(ESP_IF_WIFI_STA, m_mac_sta);
-  ESP_LOGI(TAG, "WiFi UP with SSID: %s, MAC: " MACSTR ", IP: " IPSTR ", mask: " IPSTR ", gw: " IPSTR,
+  ESP_LOGI(TAG, "STA got IP with SSID: %s, MAC: " MACSTR ", IP: " IPSTR ", mask: " IPSTR ", gw: " IPSTR,
     m_wifi_sta_cfg.sta.ssid, MAC2STR(m_mac_sta),
     IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw));
   }
 
 void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
   {
+  system_event_info_t *info = (system_event_info_t*)data;
+
+  ESP_LOGI(TAG, "STA disconnected with reason %d",
+           info->disconnected.reason);
+
   if ((m_mode == ESP32WIFI_MODE_CLIENT) ||
       (m_mode == ESP32WIFI_MODE_APCLIENT))
     {
@@ -701,14 +707,14 @@ void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
 void esp32wifi::EventWifiApState(std::string event, void* data)
   {
   if (event == "system.wifi.ap.start")
-    {
+    { // Start
     esp_wifi_get_mac(ESP_IF_WIFI_AP, m_mac_ap);
     tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &m_ip_info_ap);
     ESP_LOGI(TAG, "AP started with SSID: %s, MAC: " MACSTR ", IP: " IPSTR,
       m_wifi_ap_cfg.ap.ssid, MAC2STR(m_mac_ap), IP2STR(&m_ip_info_ap.ip));
     }
   else
-    {
+    { // Stop
     memset(&m_mac_ap,0,sizeof(m_mac_ap));
     memset(&m_ip_info_ap,0,sizeof(m_ip_info_ap));
     ESP_LOGI(TAG, "AP stopped");
