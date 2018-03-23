@@ -71,11 +71,11 @@ OvmsEvents::OvmsEvents()
   ESP_ERROR_CHECK(esp_event_loop_init(ReceiveSystemEvent, (void*)this));
 
   // Register our commands
-  OvmsCommand* cmd_event = MyCommandApp.RegisterCommand("event","EVENT framework",NULL, "", 1);
+  OvmsCommand* cmd_event = MyCommandApp.RegisterCommand("event","EVENT framework",NULL, "", 0, 0, true);
   cmd_event->RegisterCommand("raise","Raise a textual event",event_raise,"<event>", 1, 1, true);
-  OvmsCommand* cmd_eventtrace = cmd_event->RegisterCommand("trace","EVENT trace framework", NULL, "", 0, 0, false);
-  cmd_eventtrace->RegisterCommand("on","Turn event tracing ON",event_trace,"", 0, 0, false);
-  cmd_eventtrace->RegisterCommand("off","Turn event tracing OFF",event_trace,"", 0, 0, false);
+  OvmsCommand* cmd_eventtrace = cmd_event->RegisterCommand("trace","EVENT trace framework", NULL, "", 0, 0, true);
+  cmd_eventtrace->RegisterCommand("on","Turn event tracing ON",event_trace,"", 0, 0, true);
+  cmd_eventtrace->RegisterCommand("off","Turn event tracing OFF",event_trace,"", 0, 0, true);
   }
 
 OvmsEvents::~OvmsEvents()
@@ -177,6 +177,7 @@ void OvmsEvents::SignalEvent(std::string event, void* data)
 esp_err_t OvmsEvents::ReceiveSystemEvent(void *ctx, system_event_t *event)
   {
   OvmsEvents* e = (OvmsEvents*)ctx;
+  e->SignalEvent("system.event",(void*)event);
   e->SignalSystemEvent(event);
   return ESP_OK;
   }

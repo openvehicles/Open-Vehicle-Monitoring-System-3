@@ -28,26 +28,13 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __OVMS_MDNS_H__
-#define __OVMS_MDNS_H__
+#ifndef __OVMS_VERSION_H__
+#define __OVMS_VERSION_H__
 
-#include "mdns.h"
-#include "ovms_events.h"
+#include <string>
 
-class OvmsMDNS
-  {
-  public:
-    OvmsMDNS();
-    virtual ~OvmsMDNS();
+extern std::string GetOVMSVersion();
+extern std::string GetOVMSBuild();
+extern std::string GetOVMSHardware();
 
-  public:
-    void SystemEvent(std::string event, void* data);
-    void SystemStart(std::string event, void* data);
-    void StartMDNS();
-    void StopMDNS();
-
-  protected:
-    bool m_mdns;
-  };
-
-#endif //#ifndef __OVMS_MDNS_H__
+#endif //#ifndef __VFS_H__

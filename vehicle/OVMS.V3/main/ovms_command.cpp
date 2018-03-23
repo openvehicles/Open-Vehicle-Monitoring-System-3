@@ -187,14 +187,16 @@ void OvmsCommand::ExpandUsage(std::string usage, OvmsWriter* writer)
     m_usage += usage.substr(0, pos);
     pos += 2;
     size_t z = m_usage.size();
-    for (OvmsCommandMap::iterator it = m_children.begin(); ; )
+    bool found = false;
+    for (OvmsCommandMap::iterator it = m_children.begin(); it != m_children.end(); ++it)
       {
       if (!it->second->m_secure || writer->m_issecure)
+        {
+        if (found)
+          m_usage += "|";
         m_usage += it->first;
-      if (++it == m_children.end())
-        break;
-      if (!it->second->m_secure || writer->m_issecure)
-        m_usage += "|";
+        found = true;
+        }
       }
     if (m_usage.size() == z)
       {
@@ -341,7 +343,8 @@ void help(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const c
   writer->puts("Enter a single \"?\" to get the root command list.");
   writer->puts("Commands can have multiple levels of subcommands.");
   writer->puts("Use \"command [...] ?\" to get the list of subcommands and parameters.");
-  writer->puts("Commands can be abbreviated, push <TAB> for auto completion at any level.");
+  writer->puts("Commands can be abbreviated, push <TAB> for auto completion at any level");
+  writer->puts("including at the start of a subcommand to get a list of subcommands.");
   writer->puts("Use \"enable\" to enter secure (admin) mode.");
   }
 
@@ -415,7 +418,7 @@ typedef struct
   int tries;
   } PasswordContext;
 
-static const char* secure_prompt = "OVMS # ";
+static const char* secure_prompt = "OVMS# ";
 bool enableInsert(OvmsWriter* writer, void* v, char ch)
   {
   PasswordContext* pc = (PasswordContext*)v;

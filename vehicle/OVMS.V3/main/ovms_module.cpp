@@ -93,8 +93,12 @@ enum region_types {
     DRAM = 0,
     D_IRAM = 1,
     IRAM = 2,
-    SPIRAM = 3
+    SPIRAM = 3,
+    NUM_REGIONS = 4
 };
+#if NUM_HEAP_TASK_CAPS < NUM_REGIONS
+#error NUM_HEAP_TASK_CAPS must be >= NUM_REGIONS
+#endif
 
 class HeapTotals;
 
@@ -105,6 +109,7 @@ static heap_task_block_t* before = NULL;
 static heap_task_block_t* after = NULL;
 static size_t numbefore = 0, numafter = 0;
 static HeapTotals* changes = NULL;
+static const char* states[] = {"Run", "Rdy", "Blk", "Sus", "Del"};
 
 
 class Name
@@ -129,6 +134,12 @@ class Name
         if (a.words[i] != words[i]) return false;
       if (a.words[NAMELEN/4-1] != (words[NAMELEN/4-1] & 0x7FFFFFFF)) return false;
       return true;
+      }
+    inline char operator[](int i) { return (words[i/4] >> ((i & 3) * 8)) & 0xFF; }
+    inline void set(int i, char c)
+      {
+      words[i/4] &= ~(0xFF << ((i & 3) * 8));
+      words[i/4] |= c << ((i & 3) * 8);
       }
   public:
     union
@@ -186,11 +197,11 @@ class TaskMap
         if (map[i].id == taskid)
           {
           name = map[i].name;
-          name.bytes[NAMELEN-1] = '\0';
           return true;
           }
         }
-      sprintf(name.bytes, "%08X", (unsigned int)taskid);
+      sprintf(name.bytes, "%08X*", (unsigned int)taskid);
+      name.bytes[NAMELEN-1] = 0x80;
       return false;
       }
     TaskHandle_t find(Name& name)
@@ -210,7 +221,15 @@ class TaskMap
       {
       for (int i = 0; i < count; ++i)
         {
-        map[i].name.words[3] |= 0x80000000;
+        int j = 0;
+        for ( ; j < NAMELEN-2; ++j)
+          {
+          if (map[i].name[j] == '*' || map[i].name[j] == '\0')
+            break;
+          }
+        map[i].name.set(j++, '*');
+        map[i].name.set(j, '\0');
+        map[i].name.words[NAMELEN/4-1] |= 0x80000000;
         }
       UBaseType_t n = uxTaskGetSystemState(taskstatus, MAX_TASKS, NULL);
       for (UBaseType_t i = 0; i < n; ++i)
@@ -225,7 +244,7 @@ class TaskMap
         {
         if (map[i].id == taskid)
           {
-          if (map[i].name.words[3] > 0)
+          if (map[i].name.words[NAMELEN/4-1] > 0)
             return false;
           for (++i ; i < count; ++i)
             {
@@ -242,7 +261,7 @@ class TaskMap
       for (int i = 0; i < count; ++i)
         {
         Name name = map[i].name;
-        ::printf("taskmap %d %p %s\n", i, map[i].id, name.bytes);
+        ::printf("taskmap %d %p %.15s\n", i, map[i].id, name.bytes);
         }
       }
 
@@ -378,7 +397,8 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task)
     if (j == numafter)
       {
       tm->find(before[i].task, name);
-      writer->printf("- t=%s s=%4d a=%p\n", name.bytes, before[i].size, before[i].address);
+      writer->printf("- t=%.15s s=%4d a=%p\n", name.bytes,
+        before[i].size, before[i].address);
       ++count;
       }
     }
@@ -403,7 +423,7 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task)
         separate = false;
         }
       tm->find(after[i].task, name);
-      writer->printf("  t=%s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X\n",
+      writer->printf("  t=%.15s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X\n",
         name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
       ++count;
       }
@@ -428,7 +448,7 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task)
         separate = false;
         }
       tm->find(after[i].task, name);
-      writer->printf("+ t=%s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X\n",
+      writer->printf("+ t=%.15s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X\n",
         name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
       ++total;
       }
@@ -482,12 +502,12 @@ static UBaseType_t get_tasks()
 
 static void get_memory(TaskHandle_t* tasks, size_t taskslen)
   {
-  params->mask[DRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC;
-  params->caps[DRAM] = MALLOC_CAP_8BIT;
-  params->mask[D_IRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC;
-  params->caps[D_IRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC;
-  params->mask[IRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC;
-  params->caps[IRAM] = MALLOC_CAP_EXEC;
+  params->mask[DRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC | MALLOC_CAP_INTERNAL;
+  params->caps[DRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL;
+  params->mask[D_IRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC | MALLOC_CAP_INTERNAL;
+  params->caps[D_IRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC | MALLOC_CAP_INTERNAL;
+  params->mask[IRAM] = MALLOC_CAP_8BIT | MALLOC_CAP_EXEC | MALLOC_CAP_INTERNAL;
+  params->caps[IRAM] = MALLOC_CAP_EXEC | MALLOC_CAP_INTERNAL;
   params->mask[SPIRAM] = MALLOC_CAP_SPIRAM;
   params->caps[SPIRAM] = MALLOC_CAP_SPIRAM;
   params->tasks = tasks;
@@ -525,7 +545,7 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
     writer->printf("Can't allocate storage for memory diagnostics\n");
     return;
     }
-  get_tasks();
+  UBaseType_t n = get_tasks();
   TaskMap* tm = TaskMap::instance();
   TaskHandle_t* tl = NULL;
   size_t tln = 0;
@@ -554,30 +574,60 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
     now.Free8bit(), now.Total8bit(), now.Free32bit(), now.Total32bit(),
     now.FreeSPI(), now.TotalSPI());
   bool first = true;
-  for (int i = changes->begin(); i < changes->end(); ++i)
+  UBaseType_t num = 0;
+  for (int done = changes->begin(); done < changes->end(); ++num)
     {
-    int change[NUM_HEAP_TASK_CAPS];
-    bool any = false;
-    for (int j = 0; j < NUM_HEAP_TASK_CAPS; ++j)
+    TaskHandle_t taskid = 0;
+    if (num != 0)
       {
-      change[j] = (*changes).After(i, j) - (*changes).Before(i, j);
-      if (change[j])
-        any = true;
+      UBaseType_t t;
+      for (t = 0; t < n; ++t)
+        if (taskstatus[t].xTaskNumber == num)
+          break;
+      if (t == n)
+        continue;
+      taskid = taskstatus[t].xHandle;
       }
-    if (any || all)
+    for (int i = changes->begin(); i < changes->end(); ++i)
       {
-      if (first)
+      if (num == 0)
         {
-        writer->printf("--Task--     Total DRAM D/IRAM   IRAM SPIRAM"
-          "   +/- DRAM D/IRAM   IRAM SPIRAM\n");
-        first = false;
+        UBaseType_t t;
+        for (t = 0; t < n; ++t)
+          if (taskstatus[t].xHandle == (*changes).Task(i))
+            break;
+        if (t < n)
+          continue;
+        }      
+      else if ((*changes).Task(i) != taskid)
+        continue;
+      int change[NUM_HEAP_TASK_CAPS];
+      bool any = false;
+      for (int j = 0; j < NUM_HEAP_TASK_CAPS; ++j)
+        {
+        change[j] = (*changes).After(i, j) - (*changes).Before(i, j);
+        if (change[j])
+          any = true;
         }
-      Name name("NoTaskMap");
-      if (tm)
-        tm->find((*changes).Task(i), name);
-      writer->printf("%-15s %7d%7d%7d%7d    %+7d%+7d%+7d%+7d\n", name.bytes,
-        (*changes).After(i, 0), (*changes).After(i, 1), (*changes).After(i, 2),
-        (*changes).After(i, 3), change[0], change[1], change[2], change[3]);
+      if (any || all)
+        {
+        if (first)
+          {
+          writer->printf("--Task--     Total DRAM D/IRAM   IRAM SPIRAM"
+            "   +/- DRAM D/IRAM   IRAM SPIRAM\n");
+          first = false;
+          }
+        Name name("NoTaskMap");
+        if (tm)
+          tm->find((*changes).Task(i), name);
+        writer->printf("%-15.15s %7d%7d%7d%7d    %+7d%+7d%+7d%+7d\n", name.bytes,
+          (*changes).After(i, DRAM), (*changes).After(i, D_IRAM),
+          (*changes).After(i, IRAM), (*changes).After(i, SPIRAM),
+          change[DRAM], change[D_IRAM], change[IRAM], change[SPIRAM]);
+        }
+      ++done;
+      if (num > 0)
+        break;
       }
     }
 
@@ -591,6 +641,7 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
     }
   else if (!tasks)
     {
+    bool headline = true;
     for (int i = changes->begin(); i < changes->end(); ++i)
       {
       bool any = false;
@@ -601,8 +652,12 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
         }
       if (any)
         {
-        writer->printf("============================ blocks dumped = %d%s\n",
-          numafter, numafter < DUMPSIZE ? "" : " (limited)");
+        if (headline)
+          {
+          writer->printf("============================ blocks dumped = %d%s\n",
+            numafter, numafter < DUMPSIZE ? "" : " (limited)");
+          headline = false;
+          }
         print_blocks(writer, (*changes).Task(i));
         }
       }
@@ -610,8 +665,8 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
 
   for (int i = changes->begin(); i < changes->end(); ++i)
     {
-    if (tm && (*changes).After(i, 0) == 0 && (*changes).After(i, 1) == 0 &&
-      (*changes).After(i, 2) == 0 && (*changes).After(i, 3) == 0)
+    if (tm && (*changes).After(i, DRAM) == 0 && (*changes).After(i, D_IRAM) == 0 &&
+      (*changes).After(i, IRAM) == 0 && (*changes).After(i, SPIRAM) == 0)
       tm->zero((*changes).Task(i));
     }
   changes->transfer();
@@ -626,7 +681,7 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
 static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   UBaseType_t num = uxTaskGetNumberOfTasks();
-  writer->printf("Number of Tasks =%3u%s   Stack:  Now   Max Total    Heap 32-bit SPIRAM\n", num,
+  writer->printf("Number of Tasks =%3u%s  Stack:  Now   Max Total    Heap 32-bit SPIRAM\n", num,
     num > MAX_TASKS ? ">max" : "    ");
   if (!allocate())
     {
@@ -646,13 +701,14 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
         int heaptotal = 0, heap32bit = 0, heapspi = 0;
         if (k >= 0)
           {
-          heaptotal = (*changes).After(k, 0) + (*changes).After(k, 1);
-          heap32bit = (*changes).After(k, 2);
-          heapspi = (*changes).After(k, 3);
+          heaptotal = (*changes).After(k, DRAM) + (*changes).After(k, D_IRAM);
+          heap32bit = (*changes).After(k, IRAM);
+          heapspi = (*changes).After(k, SPIRAM);
           }
         uint32_t total = (uint32_t)taskstatus[i].pxStackBase >> 16;
-        writer->printf("Task %08X %2u %-15s %5u %5u %5u %7u%7u%7u\n", taskstatus[i].xHandle, taskstatus[i].xTaskNumber,
-          taskstatus[i].pcTaskName, total - ((uint32_t)taskstatus[i].pxStackBase & 0xFFFF),
+        writer->printf("%08X %2u %s %-15s %5u %5u %5u %7u%7u%7u\n", taskstatus[i].xHandle,
+          taskstatus[i].xTaskNumber, states[taskstatus[i].eCurrentState], taskstatus[i].pcTaskName,
+          total - ((uint32_t)taskstatus[i].pxStackBase & 0xFFFF),
           total - taskstatus[i].usStackHighWaterMark, total, heaptotal, heap32bit, heapspi);
         ++j;
         break;
@@ -728,13 +784,13 @@ class OvmsModuleInit
     TaskMap::instance()->insert(0x00000000, "no task");
 #endif
 
-    OvmsCommand* cmd_module = MyCommandApp.RegisterCommand("module","MODULE framework",NULL);
-    cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"[<task names or ids>]",0,TASKLIST,true);
+    OvmsCommand* cmd_module = MyCommandApp.RegisterCommand("module","MODULE framework",NULL,"",0,0,true);
+    cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"[<task names or ids>|*|=]",0,TASKLIST,true);
     cmd_module->RegisterCommand("tasks","Show module task usage",module_tasks,"",0,0,true);
     cmd_module->RegisterCommand("fault","Abort fault the module",module_fault,"",0,0,true);
     cmd_module->RegisterCommand("reset","Reset module",module_reset,"",0,0,true);
     cmd_module->RegisterCommand("check","Check heap integrity",module_check,"",0,0,true);
-    OvmsCommand* cmd_factory = cmd_module->RegisterCommand("factory","MODULE FACTORY framework",NULL);
+    OvmsCommand* cmd_factory = cmd_module->RegisterCommand("factory","MODULE FACTORY framework",NULL,"",0,0,true);
     cmd_factory->RegisterCommand("reset","Factory Reset module",module_factory_reset,"",0,0,true);
     }
   } MyOvmsModuleInit  __attribute__ ((init_priority (5100)));

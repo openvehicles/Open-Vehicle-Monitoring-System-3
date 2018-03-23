@@ -1,6 +1,18 @@
 Open Vehicle Monitor System v3 - Change log
 
-????-??-?? ???  3.0.992  OTA release
+????-??-?? ???  ???????  OTA release
+                         - Add task state to 'module tasks' output
+                         - Avoid SPIRAM being lumped in with DRAM in 'module memory' output
+                         - Wifi: Make 'wifi scan' command block, and show nice summary of
+                           discovered access points
+                         - Show firmware version and hardware info on console startup
+                         - Show hidden SSIDs as <HIDDEN> in wifi scan
+                         - Add logging, with reason, for some wifi events
+                         - WIFI refactor; use pcp to power on/off wifi driver, and then normal
+                           wifi state to control driver mode changes. Improvements to wifi
+                           stability and compatibility.
+
+2018-03-21 MWJ  3.1.000  OTA release
                          - Tesla Model S basic vehicle support
                          - Provide an option for aggressive allocation of SPI RAM (OVMS HW 3.1)
                          - Low-level boot framework for storing data across CPU resets/sleeps
@@ -24,6 +36,15 @@ Open Vehicle Monitor System v3 - Change log
                          - Network: Try to set default interface based on WifiSTA>Modem priority
                          - Wifi: Fix to APCLIENT mode STA reconnect
                          - Wifi: Fix to display of IP and MAC addresses in APCLIENT mode
+                         - Twizy v0.12: auto power control
+			 - Require secure mode for several additional commands
+                         - MDNS: Disable MDNS support (as causing too many issues)
+                         - Network: Change TELNET/SSH/WEBSERVER to always bind listener on mongoose init
+                         - MDNS: The MDNS system is back! New and shiny
+                         - Network: Dont issue network.reconfigured if modem goes down while wifi client is still up
+                           (so behaviour is network.reconfigured is only issued if that would change the interface
+                           priority order and cause application level reconnections)
+                         - First factory firmware
 
 2018-03-05 MWJ  3.0.991  OTA release support OTA updates over HTTP
                          - Update ovms_module to use new API for per-task heap info.

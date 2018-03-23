@@ -221,7 +221,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     volatile UINT8 twizy_accel_pedal;           // accelerator pedal (running avg for 2 samples = 200 ms)
     volatile UINT8 twizy_kickdown_level;        // kickdown detection & pedal max level
     UINT8 twizy_kickdown_hold;                  // kickdown hold countdown (1/10 seconds)
-    #define CAN_KICKDOWN_HOLDTIME   50          // kickdown hold time (1/10 seconds)
+    #define TWIZY_KICKDOWN_HOLDTIME 50          // kickdown hold time (1/10 seconds)
     
     #define CFG_DEFAULT_KD_THRESHOLD    35
     #define CFG_DEFAULT_KD_COMPZERO     120
@@ -231,10 +231,11 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     // pedal nonlinearity compensation:
     //    constant threshold up to pedal=compzero,
     //    then linear reduction by factor 1/8
-    #define KICKDOWN_THRESHOLD(pedal) \
-      (cfg_kd_threshold - \
+    int KickdownThreshold(int pedal) {
+      return (cfg_kd_threshold - \
         (((int)(pedal) <= cfg_kd_compzero) \
-          ? 0 : (((int)(pedal) - cfg_kd_compzero) >> 3)))
+          ? 0 : (((int)(pedal) - cfg_kd_compzero) >> 3)));
+    }
     
     
     // GPS log:

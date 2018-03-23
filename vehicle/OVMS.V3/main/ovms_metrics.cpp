@@ -125,20 +125,18 @@ MetricCallbackEntry::~MetricCallbackEntry()
 OvmsMetrics::OvmsMetrics()
   {
   ESP_LOGI(TAG, "Initialising METRICS (1810)");
-  ESP_LOGI(TAG, "  OvmsMetric is %d bytes",sizeof(OvmsMetric));
-  ESP_LOGI(TAG, "  OvmsMetricBool is %d bytes",sizeof(OvmsMetricBool));
 
   m_nextmodifier = 1;
   m_first = NULL;
   m_trace = false;
 
   // Register our commands
-  OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework",NULL, "", 1);
-  cmd_metric->RegisterCommand("list","Show all metrics",metrics_list, "[<metric>]", 0, 1);
+  OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework",NULL, "", 0, 0, true);
+  cmd_metric->RegisterCommand("list","Show all metrics",metrics_list, "[<metric>]", 0, 1, true);
   cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set, "<metric> <value>", 2, 2, true);
-  OvmsCommand* cmd_metrictrace = cmd_metric->RegisterCommand("trace","METRIC trace framework", NULL, "", 0, 0, false);
-  cmd_metrictrace->RegisterCommand("on","Turn metric tracing ON",metrics_trace,"", 0, 0, false);
-  cmd_metrictrace->RegisterCommand("off","Turn metrictracing OFF",metrics_trace,"", 0, 0, false);
+  OvmsCommand* cmd_metrictrace = cmd_metric->RegisterCommand("trace","METRIC trace framework", NULL, "", 0, 0, true);
+  cmd_metrictrace->RegisterCommand("on","Turn metric tracing ON",metrics_trace,"", 0, 0, true);
+  cmd_metrictrace->RegisterCommand("off","Turn metric tracing OFF",metrics_trace,"", 0, 0, true);
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");

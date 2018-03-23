@@ -404,12 +404,12 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       u = (twizy_accel_pedal + u + 1) >> 1;
       
       // kickdown detection:
-      s = KICKDOWN_THRESHOLD(twizy_accel_pedal);
+      s = KickdownThreshold(twizy_accel_pedal);
       if ( ((s > 0) && (u > ((unsigned int)twizy_accel_pedal + s)))
         || ((twizy_kickdown_level > 0) && (u > twizy_kickdown_level)) )
       {
         twizy_kickdown_level = u;
-        // TODO: Kickdown();
+        m_sevcon->Kickdown(true);
       }
       
       twizy_accel_pedal = u;

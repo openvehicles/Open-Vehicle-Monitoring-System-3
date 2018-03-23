@@ -327,7 +327,7 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
       c.print(c.encode_html(output));
       c.printf(
         "<script>"
-          "$('#loadmenu btn').removeClass('base unsaved btn-warning').addClass('btn-default');"
+          "$('#loadmenu .btn').removeClass('base unsaved btn-warning').addClass('btn-default');"
           "$('#prof-%d').removeClass('btn-default').addClass('btn-warning %s');"
           , sc->m_drivemode.profile_user
           , sc->m_drivemode.unsaved ? "unsaved" : "");

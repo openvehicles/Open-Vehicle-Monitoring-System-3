@@ -34,6 +34,7 @@ static const char *TAG = "version";
 #include <esp_system.h>
 #include <esp_ota_ops.h>
 #include "ovms.h"
+#include "ovms_version.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
 #include "ovms_events.h"
@@ -41,12 +42,10 @@ static const char *TAG = "version";
 #define OVMS_VERSION_PREFIX "########OVMS_PRE########"
 #define OVMS_VERSION_POSTFIX "########OVMSPOST########"
 
-void Version(std::string event, void* data)
+std::string GetOVMSVersion()
   {
   std::string searchversion(OVMS_VERSION_PREFIX OVMS_VERSION OVMS_VERSION_POSTFIX);
   std::string version(OVMS_VERSION);
-
-  ESP_LOGI(TAG, "Set version");
 
   const esp_partition_t *p = esp_ota_get_running_partition();
   if (p != NULL)
@@ -57,14 +56,23 @@ void Version(std::string event, void* data)
   version.append("/");
   version.append(CONFIG_OVMS_VERSION_TAG);
 
-  version.append(" build (idf ");
-  version.append(esp_get_idf_version());
-  version.append(") ");
-  version.append(__DATE__);
-  version.append(" ");
-  version.append(__TIME__);
-  StandardMetrics.ms_m_version->SetValue(version.c_str());
+  return version;
+  }
 
+std::string GetOVMSBuild()
+  {
+  std::string build("idf ");
+  build.append(esp_get_idf_version());
+  build.append(" ");
+  build.append(__DATE__);
+  build.append(" ");
+  build.append(__TIME__);
+
+  return build;
+  }
+
+std::string GetOVMSHardware()
+  {
   std::string hardware("OVMS ");
   esp_chip_info_t chip;
   esp_chip_info(&chip);
@@ -74,9 +82,24 @@ void Version(std::string event, void* data)
   if (chip.features & CHIP_FEATURE_BT) hardware.append("BT ");
   char buf[32]; sprintf(buf,"cores=%d ",chip.cores); hardware.append(buf);
   sprintf(buf,"rev=ESP32/%d",chip.revision); hardware.append(buf);
-  StandardMetrics.ms_m_hardware->SetValue(hardware.c_str());
 
+  return hardware;
+  }
+
+void Version(std::string event, void* data)
+  {
+  char buf[20];
   uint8_t mac[6];
+
+  std::string metric = GetOVMSVersion();
+  metric.append(" (build ");
+  metric.append(GetOVMSBuild());
+  metric.append(")");
+  StandardMetrics.ms_m_version->SetValue(metric.c_str());
+
+  metric = GetOVMSHardware();
+  StandardMetrics.ms_m_hardware->SetValue(metric.c_str());
+
   esp_efuse_mac_get_default(mac);
   sprintf(buf,"%02x:%02x:%02x:%02x:%02x:%02x",
           mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);

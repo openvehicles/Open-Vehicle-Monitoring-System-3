@@ -28,62 +28,40 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __OVMS_NETMANAGER_H__
-#define __OVMS_NETMANAGER_H__
+#ifndef __OVMS_MUTEX_H__
+#define __OVMS_MUTEX_H__
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "ovms_events.h"
+#include "freertos/queue.h"
+#include <freertos/semphr.h>
 
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-#define MG_LOCALS 1
-#include "mongoose.h"
-#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-
-class OvmsNetManager
+class OvmsMutex
   {
   public:
-    OvmsNetManager();
-    ~OvmsNetManager();
+    OvmsMutex();
+    ~OvmsMutex();
 
   public:
-    void WifiUpSTA(std::string event, void* data);
-    void WifiDownSTA(std::string event, void* data);
-    void WifiUpAP(std::string event, void* data);
-    void WifiDownAP(std::string event, void* data);
-    void ModemUp(std::string event, void* data);
-    void ModemDown(std::string event, void* data);
-    void InterfaceUp(std::string event, void* data);
+    bool Lock(TickType_t timeout = portMAX_DELAY);
+    void Unlock();
 
   protected:
-    void PrioritiseAndIndicate();
-
-  public:
-    bool m_connected_wifi;
-    bool m_connected_modem;
-    bool m_connected_any;
-    bool m_wifi_ap;
-    bool m_network_any;
-
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-  protected:
-    void StartMongooseTask();
-    void StopMongooseTask();
-
-  protected:
-    TaskHandle_t m_mongoose_task;
-    struct mg_mgr m_mongoose_mgr;
-    bool m_mongoose_running;
-
-  public:
-    void MongooseTask();
-    TaskHandle_t GetMongooseTaskHandle() { return m_mongoose_task; }
-    struct mg_mgr* GetMongooseMgr();
-    bool MongooseRunning();
-
-#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+    QueueHandle_t m_mutex;
   };
 
-extern OvmsNetManager MyNetManager;
+class OvmsMutexLock
+  {
+  public:
+    OvmsMutexLock(OvmsMutex* mutex, TickType_t timeout = portMAX_DELAY);
+    ~OvmsMutexLock();
 
-#endif //#ifndef __OVMS_NETMANAGER_H__
+  public:
+    bool IsLocked();
+
+  protected:
+    OvmsMutex* m_mutex;
+    bool m_locked;
+  };
+
+#endif //#ifndef __OVMS_MUTEX_H__

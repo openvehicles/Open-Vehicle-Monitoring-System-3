@@ -217,8 +217,10 @@ void OvmsWebServer::HandleCommand(PageEntry_t& p, PageContext_t& c)
 {
   std::string command = c.getvar("command");
 
+  // Note: application/octet-stream instead of text/plain is a workaround for an *old*
+  //  Chrome/Webkit bug: chunked text/plain is always buffered for the first 1024 bytes
   c.head(200,
-    "Content-Type: text/plain; charset=utf-8\r\n"
+    "Content-Type: application/octet-stream; charset=utf-8\r\n"
     "Cache-Control: no-cache");
   
   if (command.empty())
@@ -1113,8 +1115,8 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
   c.form_start(p.uri);
 
   c.input_checkbox("Enable auto start", "init", init,
-    "<p>Note: if a crash or reboot occurs within 10 seconds after powering the module, "
-    "this option will automatically be disabled and need to be re-enabled manually.</p>");
+    "<p>Note: if a crash occurs within 10 seconds after powering the module, autostart will be temporarily"
+    " disabled. You may need to use the USB shell to access the module and fix the config.</p>");
 
   c.input_checkbox("Power on external 12V", "ext12v", ext12v,
     "<p>Enable to provide 12V to external devices connected to the module (i.e. ECU displays).</p>");
@@ -1284,9 +1286,10 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     }
     else if (netif_default->name[0] == 'p' && netif_default->name[1] == 'p') {
       c.alert("warning",
-        "<p class=\"lead\"><strong>Using modem connection.</strong></p>"
-        "<p>Downloads will currently be done via cellular network. Be aware update files are ~1.5 MB, "
-        "which may exceed your data plan and need some time depending on your link speed.</p>");
+        "<p class=\"lead\"><strong>Using modem connection for internet.</strong></p>"
+        "<p>Downloads from public servers will currently be done via cellular network. Be aware update files are ~1.5 MB, "
+        "which may exceed your data plan and need some time depending on your link speed.</p>"
+        "<p>You can also flash locally from a wifi network IP address.</p>");
     }
   }
   

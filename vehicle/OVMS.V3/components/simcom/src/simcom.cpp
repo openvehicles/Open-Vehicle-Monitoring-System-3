@@ -407,7 +407,7 @@ void simcom::State1Enter(SimcomState1 newstate)
     case PoweringOn:
       ESP_LOGI(TAG,"State: Enter PoweringOn state");
       PowerCycle();
-      m_state1_timeout_ticks = 10;
+      m_state1_timeout_ticks = 20;
       m_state1_timeout_goto = PoweringOn;
       break;
     case PoweredOn:
@@ -1095,15 +1095,15 @@ SimcomInit::SimcomInit()
   ESP_LOGI(TAG, "Initialising SIMCOM (4600)");
 
   OvmsCommand* cmd_simcom = MyCommandApp.RegisterCommand("simcom","SIMCOM framework",simcom_status, "", 0, 1);
-  cmd_simcom->RegisterCommand("tx","Transmit data on SIMCOM",simcom_tx, "", 1);
-  cmd_simcom->RegisterCommand("muxtx","Transmit data on SIMCOM MUX",simcom_muxtx, "<chan> <data>", 2);
+  cmd_simcom->RegisterCommand("tx","Transmit data on SIMCOM",simcom_tx, "", 1, INT_MAX, true);
+  cmd_simcom->RegisterCommand("muxtx","Transmit data on SIMCOM MUX",simcom_muxtx, "<chan> <data>", 2, INT_MAX, true);
   cmd_simcom->RegisterCommand("status","Show SIMCOM status",simcom_status, "", 0);
-  cmd_simcom->RegisterCommand("cmd","Send SIMCOM AT command",simcom_cmd, "<command>", 1);
+  cmd_simcom->RegisterCommand("cmd","Send SIMCOM AT command",simcom_cmd, "<command>", 1, INT_MAX, true);
 
-  OvmsCommand* cmd_setstate = cmd_simcom->RegisterCommand("setstate","SIMCOM state change framework",NULL, "", 1);
+  OvmsCommand* cmd_setstate = cmd_simcom->RegisterCommand("setstate","SIMCOM state change framework",NULL, "", 0, 0, true);
   for (int x = simcom::CheckPowerOff; x<simcom::PoweredOff; x++)
     {
-    cmd_setstate->RegisterCommand(SimcomState1Name((simcom::SimcomState1)x),"Force SIMCOM state change",simcom_setstate, "", 0);
+	cmd_setstate->RegisterCommand(SimcomState1Name((simcom::SimcomState1)x),"Force SIMCOM state change",simcom_setstate, "", 0, 0, true);
     }
 
   MyConfig.RegisterParam("modem", "Modem Configuration", true, true);

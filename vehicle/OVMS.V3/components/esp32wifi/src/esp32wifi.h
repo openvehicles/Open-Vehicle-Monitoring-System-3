@@ -36,7 +36,9 @@
 #include "pcp.h"
 #include "esp_err.h"
 #include "esp_wifi.h"
+#include "ovms.h"
 #include "ovms_events.h"
+#include "ovms_mutex.h"
 
 typedef enum {
     ESP32WIFI_MODE_OFF = 0,   // Modem is off
@@ -57,6 +59,8 @@ class esp32wifi : public pcp
   public:
     void AutoInit();
     void SetPowerMode(PowerMode powermode);
+    void PowerUp();
+    void PowerDown();
 
   public:
     void StartClientMode(std::string ssid, std::string password, uint8_t* bssid=NULL);
@@ -64,7 +68,7 @@ class esp32wifi : public pcp
     void StartAccessPointMode(std::string ssid, std::string password);
     void StartAccessPointClientMode(std::string apssid, std::string appassword, std::string stassid, std::string stapassword);
     void StopStation();
-    void Scan();
+    void Scan(OvmsWriter* writer);
     esp32wifi_mode_t GetMode();
     std::string GetSSID();
 
@@ -73,11 +77,13 @@ class esp32wifi : public pcp
     void EventWifiStaDisconnected(std::string event, void* data);
     void EventWifiApState(std::string event, void* data);
     void EventWifiApUpdate(std::string event, void* data);
-    void EventTimer10(std::string event, void* data);
+    void EventTimer60(std::string event, void* data);
     void EventWifiScanDone(std::string event, void* data);
     void OutputStatus(int verbosity, OvmsWriter* writer);
 
   protected:
+    bool m_poweredup;
+    OvmsMutex m_mutex;
     esp32wifi_mode_t m_mode;
     uint8_t m_mac_sta[6];
     uint8_t m_mac_ap[6];

@@ -184,7 +184,11 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
         {
         // Connection failed
         ESP_LOGW(TAG, "Connection failed");
-        if (MyOvmsServerV2) MyOvmsServerV2->m_connretry = 20;
+        if (MyOvmsServerV2)
+          {
+          MyOvmsServerV2->SetStatus("Error: Connection failed", true, OvmsServerV2::WaitReconnect);
+          MyOvmsServerV2->m_connretry = 20;
+          }
         }
       }
       break;
@@ -192,8 +196,8 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
       ESP_LOGV(TAG, "OvmsServerV2MongooseCallback(MG_EV_CLOSE)");
       if (MyOvmsServerV2)
         {
-        MyOvmsServerV2->Disconnect();
-        MyOvmsServerV2->m_connretry = 20;
+        MyOvmsServerV2->SetStatus("Disconnected", false, OvmsServerV2::WaitReconnect);
+        MyOvmsServerV2->Reconnect(20);
         }
       break;
     case MG_EV_RECV:
@@ -216,9 +220,8 @@ void OvmsServerV2::ProcessServerMsg()
     size_t sep = line.find(' ',7);
     if (sep == std::string::npos)
       {
-      SetStatus("Error: Server response invalid (no token/digest separator)",true);
-      Disconnect();
-      m_connretry = 20; // Try again in 20 seconds...
+      SetStatus("Error: Server response invalid (no token/digest separator)", true, WaitReconnect);
+      Reconnect(20);
       return;
       }
     std::string token = std::string(line,7,sep-7);
@@ -226,8 +229,8 @@ void OvmsServerV2::ProcessServerMsg()
     ESP_LOGI(TAG, "Server token is %s and digest is %s",token.c_str(),digest.c_str());
     if (m_token == token)
       {
-      SetStatus("Error: Detected token replay attack/collision",true);
-      Disconnect();
+      SetStatus("Error: Detected token replay attack/collision", true, WaitReconnect);
+      Reconnect(20);
       m_connretry = 20; // Try again in 20 seconds...
       return;
       }
@@ -237,12 +240,11 @@ void OvmsServerV2::ProcessServerMsg()
     base64encode(sdigest, OVMS_MD5_SIZE, sdb);
     if (digest.compare((char*)sdb) != 0)
       {
-      SetStatus("Error: Server digest does not authenticate",true);
-      Disconnect();
-      m_connretry = 20; // Try again in 20 seconds...
+      SetStatus("Error: Server digest does not authenticate", true, WaitReconnect);
+      Reconnect(20);
       return;
       }
-    SetStatus("Server auth ok. Now priming crypto.");
+    SetStatus("Server authentication ok. Now priming crypto.");
     std::string key(token);
     key.append(m_token);
     ESP_LOGI(TAG, "Shared secret key is %s (%d bytes)",key.c_str(),key.length());
@@ -266,7 +268,7 @@ void OvmsServerV2::ProcessServerMsg()
     m_pending_notify_data_last = 0;
     m_connretry = 0;
     StandardMetrics.ms_s_v2_connected->SetValue(true);
-    SetStatus("OVMS V2 login successful, and crypto channel established");
+    SetStatus("OVMS V2 login successful, and crypto channel established", false, Connected);
     return;
     }
 
@@ -281,8 +283,8 @@ void OvmsServerV2::ProcessServerMsg()
 
   if (line.compare(0, 5, "MP-0 ") != 0)
     {
-    ESP_LOGI(TAG, "Invalid server message. Disconnecting.");
-    Disconnect();
+    SetStatus("Error: Invalid server message. Disconnecting.", true, WaitReconnect);
+    Reconnect(20);
     return;
     }
 
@@ -672,12 +674,13 @@ void OvmsServerV2::Transmit(const char* message)
   delete [] s;
   }
 
-void OvmsServerV2::SetStatus(const char* status, bool fault)
+void OvmsServerV2::SetStatus(const char* status, bool fault, State newstate)
   {
   if (fault)
     ESP_LOGE(TAG, "Status: %s", status);
   else
     ESP_LOGI(TAG, "Status: %s", status);
+  if (newstate != Undefined) m_state = newstate;
   m_status = status;
   }
 
@@ -692,30 +695,30 @@ void OvmsServerV2::Connect()
   address.append(":");
   address.append(m_port);
 
-  ESP_LOGI(TAG, "Connection is %s:%s %s/%s",
+  ESP_LOGI(TAG, "Connection is %s:%s %s",
     m_server.c_str(), m_port.c_str(),
-    m_vehicleid.c_str(), m_password.c_str());
+    m_vehicleid.c_str());
 
   if (m_vehicleid.empty())
     {
-    SetStatus("Error: Parameter vehicle/id must be defined",true);
+    SetStatus("Error: Parameter vehicle/id must be defined", true, WaitReconnect);
     m_connretry = 20; // Try again in 20 seconds...
     return;
     }
   if (m_server.empty())
     {
-    SetStatus("Error: Parameter server.v2/server must be defined",true);
+    SetStatus("Error: Parameter server.v2/server must be defined", true, WaitReconnect);
     m_connretry = 20; // Try again in 20 seconds...
     return;
     }
   if (m_password.empty())
     {
-    SetStatus("Error: Parameter server.v2/password must be defined",true);
+    SetStatus("Error: Parameter server.v2/password must be defined", true, WaitReconnect);
     m_connretry = 20; // Try again in 20 seconds...
     return;
     }
 
-  SetStatus("Connecting...");
+  SetStatus("Connecting...", false, Connecting);
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
   struct mg_connect_opts opts;
   const char* err;
@@ -724,6 +727,7 @@ void OvmsServerV2::Connect()
   if ((m_mgconn = mg_connect_opt(mgr, address.c_str(), OvmsServerV2MongooseCallback, opts)) == NULL)
     {
     ESP_LOGE(TAG, "mg_connect(%s) failed: %s\n", address.c_str(), err);
+    SetStatus("Error: Connection failed", true, WaitReconnect);
     m_connretry = 20; // Try again in 20 seconds...
     return;
     }
@@ -736,10 +740,21 @@ void OvmsServerV2::Disconnect()
     {
     m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
     m_mgconn = NULL;
-    SetStatus("Error: Disconnected from OVMS Server V2",true);
     }
   m_buffer->EmptyAll();
   m_connretry = 0;
+  StandardMetrics.ms_s_v2_connected->SetValue(false);
+  }
+
+void OvmsServerV2::Reconnect(int connretry)
+  {
+  if (m_mgconn)
+    {
+    m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
+    m_mgconn = NULL;
+    }
+  m_buffer->EmptyAll();
+  m_connretry = connretry;
   StandardMetrics.ms_s_v2_connected->SetValue(false);
   }
 
@@ -760,7 +775,7 @@ size_t OvmsServerV2::IncomingData(uint8_t* data, size_t len)
 
 void OvmsServerV2::SendLogin()
   {
-  SetStatus("Logging in...");
+  SetStatus("Logging in...", false, Authenticating);
 
   char token[OVMS_PROTOCOL_V2_TOKENSIZE+1];
 
@@ -831,7 +846,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << std::fixed
     << std::setprecision(2)
     << "MP-0 S"
-    << StandardMetrics.ms_v_bat_soc->AsInt()
+    << StandardMetrics.ms_v_bat_soc->AsString("0", Other, 1)
     << ","
     << ((m_units_distance == Kilometers) ? "K" : "M")
     << ","
@@ -853,7 +868,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << ","
     << "0"  // car_charge_b4
     << ","
-    << StandardMetrics.ms_v_charge_kwh->AsInt()
+    << (int)(StandardMetrics.ms_v_charge_kwh->AsFloat() * 10)
     << ","
     << chargesubstate_key(StandardMetrics.ms_v_charge_substate->AsString(""))
     << ","
@@ -950,9 +965,9 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
     << ","
     << StandardMetrics.ms_v_bat_power->AsString("0",Other,1)
     << ","
-    << StandardMetrics.ms_v_bat_energy_used->AsString("0",Other,0)
+    << StandardMetrics.ms_v_bat_energy_used->AsString("0",Other,1)
     << ","
-    << StandardMetrics.ms_v_bat_energy_recd->AsString("0",Other,0)
+    << StandardMetrics.ms_v_bat_energy_recd->AsString("0",Other,1)
     ;
 
   Transmit(buffer.str().c_str());
@@ -1467,6 +1482,12 @@ void OvmsServerV2::ConfigChanged(OvmsConfigParam* param)
 
 void OvmsServerV2::NetUp(std::string event, void* data)
   {
+  // workaround for wifi AP mode startup (manager up before interface)
+  if ( (m_mgconn == NULL) && MyNetManager.MongooseRunning() )
+    {
+    SetStatus("Network is up, so attempt network connection", false, ConnectWait);
+    m_connretry = 2;
+    }
   }
 
 void OvmsServerV2::NetDown(std::string event, void* data)
@@ -1475,17 +1496,17 @@ void OvmsServerV2::NetDown(std::string event, void* data)
 
 void OvmsServerV2::NetReconfigured(std::string event, void* data)
   {
-  ESP_LOGI(TAG, "Network is reconfigured, so disconnect network connection");
-  Disconnect();
-  m_connretry = 10;
+  ESP_LOGI(TAG, "Network was reconfigured: disconnect, and reconnect in 10 seconds");
+  SetStatus("Network was reconfigured: disconnect, and reconnect in 10 seconds", false, ConnectWait);
+  Reconnect(10);
   }
 
 void OvmsServerV2::NetmanInit(std::string event, void* data)
   {
-  if (m_mgconn == NULL)
+  if ((m_mgconn == NULL)&&(MyNetManager.m_connected_any))
     {
-    ESP_LOGI(TAG, "Network is up, so attempt network connection");
-    Connect(); // Kick off the connection
+    SetStatus("Network is up, so attempt network connection", false, ConnectWait);
+    m_connretry = 2;
     }
   }
 
@@ -1493,7 +1514,7 @@ void OvmsServerV2::NetmanStop(std::string event, void* data)
   {
   if (m_mgconn)
     {
-    ESP_LOGI(TAG, "Network is down, so disconnect network connection");
+    SetStatus("Network is down, so disconnect network connection", false, WaitNetwork);
     Disconnect();
     }
   }
@@ -1511,6 +1532,12 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
         Connect(); // Kick off the connection
         }
       }
+    }
+
+  if ((!MyNetManager.m_connected_any) && (m_state != WaitNetwork))
+    {
+    m_connretry = 0;
+    SetStatus("Server is ready to start", false, WaitNetwork);
     }
 
   if (StandardMetrics.ms_s_v2_connected->AsBool())
@@ -1561,7 +1588,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
     }
 
   m_buffer = new OvmsBuffer(1024);
-  SetStatus("Starting");
+  SetStatus("Server has been started", false, WaitNetwork);
   m_now_stat = false;
   m_now_gps = false;
   m_now_tpms = false;
@@ -1679,7 +1706,34 @@ void ovmsv2_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     }
   else
     {
-    writer->puts(MyOvmsServerV2->m_status.c_str());
+    switch (MyOvmsServerV2->m_state)
+      {
+      case OvmsServerV2::WaitNetwork:
+        writer->puts("State: Waiting for network connectivity");
+        break;
+      case OvmsServerV2::ConnectWait:
+        writer->printf("State: Waiting to connect (%d second(s) remaining)\n",MyOvmsServerV2->m_connretry);
+        break;
+      case OvmsServerV2::Connecting:
+        writer->puts("State: Connecting...");
+        break;
+      case OvmsServerV2::Authenticating:
+        writer->puts("State: Authenticating...");
+        break;
+      case OvmsServerV2::Connected:
+        writer->puts("State: Connected");
+        break;
+      case OvmsServerV2::Disconnected:
+        writer->puts("State: Disconnected");
+        break;
+      case OvmsServerV2::WaitReconnect:
+        writer->printf("State: Waiting to reconnect (%d second(s) remaining)\n",MyOvmsServerV2->m_connretry);
+        break;
+      default:
+        writer->puts("State: undetermined");
+        break;
+      }
+    writer->printf("       %s\n",MyOvmsServerV2->m_status.c_str());
     }
   }
 
@@ -1690,10 +1744,10 @@ OvmsServerV2Init::OvmsServerV2Init()
   ESP_LOGI(TAG, "Initialising OVMS V2 Server (6100)");
 
   OvmsCommand* cmd_server = MyCommandApp.FindCommand("server");
-  OvmsCommand* cmd_v2 = cmd_server->RegisterCommand("v2","OVMS Server V2 Protocol", NULL, "", 0, 0);
-  cmd_v2->RegisterCommand("start","Start an OVMS V2 Server Connection",ovmsv2_start, "", 0, 0);
-  cmd_v2->RegisterCommand("stop","Stop an OVMS V2 Server Connection",ovmsv2_stop, "", 0, 0);
-  cmd_v2->RegisterCommand("status","Show OVMS V2 Server connection status",ovmsv2_status, "", 0, 0);
+  OvmsCommand* cmd_v2 = cmd_server->RegisterCommand("v2","OVMS Server V2 Protocol", NULL, "", 0, 0, true);
+  cmd_v2->RegisterCommand("start","Start an OVMS V2 Server Connection",ovmsv2_start, "", 0, 0, true);
+  cmd_v2->RegisterCommand("stop","Stop an OVMS V2 Server Connection",ovmsv2_stop, "", 0, 0, true);
+  cmd_v2->RegisterCommand("status","Show OVMS V2 Server connection status",ovmsv2_status, "", 0, 0, false);
 
   MyConfig.RegisterParam("server.v2", "V2 Server Configuration", true, false);
   // Our instances:

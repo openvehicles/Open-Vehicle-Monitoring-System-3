@@ -234,9 +234,9 @@ void OvmsServerV3::Connect()
   address.append(":");
   address.append(m_port);
 
-  ESP_LOGI(TAG, "Connection is %s:%s %s/%s/%s",
+  ESP_LOGI(TAG, "Connection is %s:%s %s/%s",
     m_server.c_str(), m_port.c_str(),
-    m_vehicleid.c_str(), m_user.c_str(), m_password.c_str());
+    m_vehicleid.c_str(), m_user.c_str());
 
   if (m_vehicleid.empty())
     {
@@ -331,22 +331,33 @@ void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
 
 void OvmsServerV3::NetUp(std::string event, void* data)
   {
+  // workaround for wifi AP mode startup (manager up before interface)
+  if ( (m_mgconn == NULL) && MyNetManager.MongooseRunning() )
+    {
+    ESP_LOGI(TAG, "Network is up, so attempt network connection");
+    Connect(); // Kick off the connection
+    }
   }
 
 void OvmsServerV3::NetDown(std::string event, void* data)
   {
+  if (m_mgconn)
+    {
+    ESP_LOGI(TAG, "Network is down, so disconnect network connection");
+    Disconnect();
+    }
   }
 
 void OvmsServerV3::NetReconfigured(std::string event, void* data)
   {
-  ESP_LOGI(TAG, "Network is reconfigured, so disconnect network connection");
+  ESP_LOGI(TAG, "Network was reconfigured: disconnect, and reconnect in 10 seconds");
   Disconnect();
   m_connretry = 10;
   }
 
 void OvmsServerV3::NetmanInit(std::string event, void* data)
   {
-  if (m_mgconn == NULL)
+  if ((m_mgconn == NULL)&&(MyNetManager.m_connected_any))
     {
     ESP_LOGI(TAG, "Network is up, so attempt network connection");
     Connect(); // Kick off the connection
@@ -457,10 +468,10 @@ OvmsServerV3Init::OvmsServerV3Init()
   ESP_LOGI(TAG, "Initialising OVMS V3 Server (6200)");
 
   OvmsCommand* cmd_server = MyCommandApp.FindCommand("server");
-  OvmsCommand* cmd_v3 = cmd_server->RegisterCommand("v3","OVMS Server V3 Protocol", NULL, "", 0, 0);
-  cmd_v3->RegisterCommand("start","Start an OVMS V3 Server Connection",ovmsv3_start, "", 0, 0);
-  cmd_v3->RegisterCommand("stop","Stop an OVMS V3 Server Connection",ovmsv3_stop, "", 0, 0);
-  cmd_v3->RegisterCommand("status","Show OVMS V3 Server connection status",ovmsv3_status, "", 0, 0);
+  OvmsCommand* cmd_v3 = cmd_server->RegisterCommand("v3","OVMS Server V3 Protocol", NULL, "", 0, 0, true);
+  cmd_v3->RegisterCommand("start","Start an OVMS V3 Server Connection",ovmsv3_start, "", 0, 0, true);
+  cmd_v3->RegisterCommand("stop","Stop an OVMS V3 Server Connection",ovmsv3_stop, "", 0, 0, true);
+  cmd_v3->RegisterCommand("status","Show OVMS V3 Server connection status",ovmsv3_status, "", 0, 0, false);
 
   MyConfig.RegisterParam("server.v3", "V3 Server Configuration", true, false);
   // Our instances:

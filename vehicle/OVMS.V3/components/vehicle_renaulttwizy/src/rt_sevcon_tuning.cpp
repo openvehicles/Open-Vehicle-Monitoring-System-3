@@ -741,14 +741,14 @@ CANopenResult_t SevconClient::CfgTSMap(
 }
 
 
-CANopenResult_t SevconClient::CfgDrive(int max_prc, int autodrive_ref, int autodrive_minprc)
+CANopenResult_t SevconClient::CfgDrive(int max_prc, int autodrive_ref, int autodrive_minprc, bool async /*=false*/)
 // max_prc: 10..100, -1=reset to default (100)
 // autodrive_ref: 0..250, -1=default (off) (not a direct SEVCON control)
 //      sets power 100% ref point to <autodrive_ref> * 100 W
 // autodrive_minprc: 0..100, -1=default (off) (not a direct SEVCON control)
 //      sets lower limit on auto power adjustment
+// async: true = do asynchronous SDO write, don't wait for ACK
 {
-  SevconJob sc(this);
   CANopenResult_t err;
 
   // parameter validation:
@@ -757,8 +757,6 @@ CANopenResult_t SevconClient::CfgDrive(int max_prc, int autodrive_ref, int autod
     max_prc = 100;
   else if (max_prc < 10 || max_prc > 100)
     return COR_ERR_ParamRange;
-
-#ifdef OVMS_TWIZY_BATTMON
 
   if (autodrive_ref == -1)
     ;
@@ -785,17 +783,17 @@ CANopenResult_t SevconClient::CfgDrive(int max_prc, int autodrive_ref, int autod
     twizy_autodrive_level = 1000;
   }
 
-#else
-
-  twizy_autodrive_level = 1000;
-  
-#endif //OVMS_TWIZY_BATTMON
-
   // set:
-  if ((err = sc.Write(0x2920, 0x01, LIMIT_MAX(max_prc*10, twizy_autodrive_level))) != COR_OK)
-    return err;
+  if (async) {
+    err = SendWrite(0x2920, 0x01, LIMIT_MAX(max_prc*10, twizy_autodrive_level));
+    if (err == COR_WAIT)
+      err = COR_OK;
+  } else {
+    SevconJob sc(this);
+    err = sc.Write(0x2920, 0x01, LIMIT_MAX(max_prc*10, twizy_autodrive_level));
+  }
 
-  return COR_OK;
+  return err;
 }
 
 
@@ -824,8 +822,6 @@ CANopenResult_t SevconClient::CfgRecup(int neutral_prc, int brake_prc, int autor
   else if (brake_prc < 0 || brake_prc > 100)
     return COR_ERR_ParamRange;
 
-#ifdef OVMS_TWIZY_BATTMON
-
   if (autorecup_ref == -1)
     ;
   else if (autorecup_ref < 0 || autorecup_ref > 250)
@@ -851,12 +847,6 @@ CANopenResult_t SevconClient::CfgRecup(int neutral_prc, int brake_prc, int autor
     twizy_autorecup_level = 1000;
   }
 
-#else
-
-  twizy_autorecup_level = 1000;
-  
-#endif //OVMS_TWIZY_BATTMON
-
   // set neutral recup level:
   level = scale(CFG.DefaultRecup, CFG.DefaultRecupPrc, neutral_prc, 0, 1000);
   if (twizy_autorecup_level != 1000)
@@ -874,8 +864,6 @@ CANopenResult_t SevconClient::CfgRecup(int neutral_prc, int brake_prc, int autor
   return COR_OK;
 }
 
-
-#ifdef OVMS_TWIZY_BATTMON
 
 // Auto recup & drive power update function:
 // check for BMS max pwr change, update SEVCON settings accordingly
@@ -896,6 +884,8 @@ void SevconClient::CfgAutoPower(void)
     && ((m_twizy->twizy_batt[0].max_recup_pwr + ref + minprc) != twizy_autorecup_checkpoint))
   {
     CfgRecup(cfgparam(neutral), cfgparam(brake), ref, minprc);
+    ESP_LOGD(TAG, "CfgAutoPower: recup level adjusted; max_recup_pwr=%d level=%.1f",
+      m_twizy->twizy_batt[0].max_recup_pwr*500, (float)twizy_autorecup_level/10);
   }
   
   // adjust drive level?
@@ -903,13 +893,13 @@ void SevconClient::CfgAutoPower(void)
   minprc = cfgparam(autodrive_minprc);
   if ((ref > 0)
     && ((m_twizy->twizy_batt[0].max_drive_pwr + ref + minprc) != twizy_autodrive_checkpoint)
-    && (twizy_kickdown_hold == 0))
+    && (m_twizy->twizy_kickdown_hold == 0))
   {
     CfgDrive(cfgparam(drive), ref, minprc);
+    ESP_LOGD(TAG, "CfgAutoPower: drive level adjusted; max_drive_pwr=%d level=%.1f",
+      m_twizy->twizy_batt[0].max_drive_pwr*500, (float)twizy_autodrive_level/10);
   }
 }
-
-#endif //OVMS_TWIZY_BATTMON
 
 
 CANopenResult_t SevconClient::CfgRamps(int start_prm, int accel_prc, int decel_prc, int neutral_prc, int brake_prc)
@@ -1203,10 +1193,8 @@ CANopenResult_t SevconClient::CfgApplyProfile(uint8_t key)
               cfgparam(tsmap[2].prc1), cfgparam(tsmap[2].prc2), cfgparam(tsmap[2].prc3), cfgparam(tsmap[2].prc4),
               cfgparam(tsmap[2].spd1), cfgparam(tsmap[2].spd2), cfgparam(tsmap[2].spd3), cfgparam(tsmap[2].spd4));
 
-#ifdef OVMS_TWIZY_CFG_BRAKELIGHT
     if (err == COR_OK)
       err = CfgBrakelight(cfgparam(brakelight_on), cfgparam(brakelight_off));
-#endif // OVMS_TWIZY_CFG_BRAKELIGHT
 
     // update cfgmode profile status:
     if (err == COR_OK)
@@ -1301,3 +1289,62 @@ string SevconClient::FmtSwitchProfileResult(CANopenResult_t res)
 }
 
 
+void SevconClient::Kickdown(bool engage)
+{
+#ifdef TWIZY_ENABLE_KICKDOWN // TODO: implement release timer
+  //int kickdown_led = 0;
+  
+  if (engage) {
+    // engage kickdown:
+    if ((m_twizy->twizy_kickdown_hold == 0) && (m_twizy->twizy_kickdown_level > 0)
+            && (m_twizy->twizy_flags.EnableWrite)
+            && (!m_twizy->twizy_flags.DisableKickdown)
+            && (m_twizy->cfg_kd_threshold > 0)
+            && (((cfgparam(drive) != -1) && (cfgparam(drive) != 100))
+              || (twizy_autodrive_level < 1000))
+            ) {
+      // set drive level to boost (100%, no autopower limit):
+      if (CfgDrive(100, -1, -1, true) == COR_OK) {
+        m_twizy->twizy_kickdown_hold = TWIZY_KICKDOWN_HOLDTIME;
+        MyEvents.SignalEvent("vehicle.kickdown.engaged", NULL);
+        //kickdown_led = 1;
+      }
+    }
+  }
+  else {
+    // release kickdown:
+    if ((int)m_twizy->twizy_accel_pedal <= ((int)m_twizy->twizy_kickdown_level
+            - (m_twizy->KickdownThreshold(m_twizy->twizy_kickdown_level) / 2))) {
+      // releasing, count down:
+      if (--m_twizy->twizy_kickdown_hold == 0) {
+        // reset drive level to normal:
+        if (CfgDrive(cfgparam(drive), cfgparam(autodrive_ref), cfgparam(autodrive_minprc), true) != COR_OK) {
+          m_twizy->twizy_kickdown_hold = 2; // error: retry
+        }
+        else {
+          m_twizy->twizy_kickdown_level = 0; // ok, reset kickdown detection
+          MyEvents.SignalEvent("vehicle.kickdown.released", NULL);
+        }
+      }
+    }
+    else {
+      // not relasing, reset counter:
+      m_twizy->twizy_kickdown_hold = TWIZY_KICKDOWN_HOLDTIME;
+    }
+
+    // show kickdown state on SimpleConsole, flash last 2 hold seconds:
+    if (m_twizy->twizy_kickdown_hold > 20) {
+      //kickdown_led = 1;
+    }
+    else if (m_twizy->twizy_kickdown_hold == 20) {
+      //kickdown_led = 1;
+      MyEvents.SignalEvent("vehicle.kickdown.releasing", NULL);
+    }
+    else {
+      //kickdown_led = (m_twizy->twizy_kickdown_hold & 2) >> 1;
+    }
+  }
+  
+  // TODO: map kickdown_led to port, send CAN status frame
+#endif
+}

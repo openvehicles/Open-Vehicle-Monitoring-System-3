@@ -28,26 +28,40 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __OVMS_MDNS_H__
-#define __OVMS_MDNS_H__
+#include "ovms_mutex.h"
 
-#include "mdns.h"
-#include "ovms_events.h"
-
-class OvmsMDNS
+OvmsMutex::OvmsMutex()
   {
-  public:
-    OvmsMDNS();
-    virtual ~OvmsMDNS();
+  m_mutex = xSemaphoreCreateMutex();
+  }
 
-  public:
-    void SystemEvent(std::string event, void* data);
-    void SystemStart(std::string event, void* data);
-    void StartMDNS();
-    void StopMDNS();
+OvmsMutex::~OvmsMutex()
+  {
+  vSemaphoreDelete(m_mutex);
+  }
 
-  protected:
-    bool m_mdns;
-  };
+bool OvmsMutex::Lock(TickType_t timeout)
+  {
+  return (xSemaphoreTake(m_mutex, timeout) == pdTRUE);
+  }
 
-#endif //#ifndef __OVMS_MDNS_H__
+void OvmsMutex::Unlock()
+  {
+  xSemaphoreGive(m_mutex);
+  }
+
+OvmsMutexLock::OvmsMutexLock(OvmsMutex* mutex, TickType_t timeout)
+  {
+  m_mutex = mutex;
+  m_locked = m_mutex->Lock(timeout);
+  }
+
+OvmsMutexLock::~OvmsMutexLock()
+  {
+  if (m_locked) m_mutex->Unlock();
+  }
+
+bool OvmsMutexLock::IsLocked()
+  {
+  return m_locked;
+  }

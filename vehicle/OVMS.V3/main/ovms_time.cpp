@@ -128,7 +128,7 @@ OvmsTime::OvmsTime()
   // Register our commands
   OvmsCommand* cmd_time = MyCommandApp.RegisterCommand("time","TIME framework",time_status, "", 0, 1);
   cmd_time->RegisterCommand("status","Show time status",time_status,"", 0, 0, false);
-  cmd_time->RegisterCommand("set","Set current UTC time",time_set,"<time>", 1, 1, false);
+  cmd_time->RegisterCommand("set","Set current UTC time",time_set,"<time>", 1, 1, true);
 
   #undef bind  // Kludgy, but works
   using std::placeholders::_1;
@@ -196,7 +196,7 @@ void OvmsTime::EventNetDown(std::string event, void* data)
 
 void OvmsTime::EventNetReconfigured(std::string event, void* data)
   {
-  ESP_LOGI(TAG, "Restarting SNTP client");
+  ESP_LOGI(TAG, "Network was reconfigured: restarting SNTP client");
   sntp_stop();
   sntp_init();
   }
