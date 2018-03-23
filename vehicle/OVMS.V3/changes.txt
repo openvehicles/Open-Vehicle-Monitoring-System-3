@@ -7,6 +7,10 @@ Open Vehicle Monitor System v3 - Change log
                            discovered access points
                          - Show firmware version and hardware info on console startup
                          - Show hidden SSIDs as <HIDDEN> in wifi scan
+                         - Add logging, with reason, for some wifi events
+                         - WIFI refactor; use pcp to power on/off wifi driver, and then normal
+                           wifi state to control driver mode changes. Improvements to wifi
+                           stability and compatibility.
 
 2018-03-21 MWJ  3.1.000  OTA release
                          - Tesla Model S basic vehicle support
