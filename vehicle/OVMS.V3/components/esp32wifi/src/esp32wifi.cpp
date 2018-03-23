@@ -226,6 +226,8 @@ esp32wifi::esp32wifi(const char* name)
   : pcp(name)
   {
   m_mode = ESP32WIFI_MODE_OFF;
+  m_powermode = Off;
+  m_poweredup = false;
   m_stareconnect = false;
   memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
@@ -338,19 +340,49 @@ void esp32wifi::SetPowerMode(PowerMode powermode)
   switch (powermode)
     {
     case On:
+      if (!m_poweredup) PowerUp();
       break;
     case Sleep:
+      if (!m_poweredup) PowerUp();
       esp_wifi_set_ps(WIFI_PS_MODEM);
       break;
     case DeepSleep:
+      if (!m_poweredup) PowerUp();
+      break;
     case Off:
-      StopStation();
+      if (m_poweredup) PowerDown();
       break;
     default:
       break;
     };
 
   m_powermode = powermode;
+  }
+
+void esp32wifi::PowerUp()
+  {
+  ESP_LOGI(TAG, "Powering up WIFI driver");
+  if (!m_poweredup)
+    {
+    OvmsMutexLock exclusive(&m_mutex);
+    m_wifi_init_cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&m_wifi_init_cfg));
+    ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+    m_poweredup = true;
+    }
+  }
+
+void esp32wifi::PowerDown()
+  {
+  StopStation();
+
+  ESP_LOGI(TAG, "Powering down WIFI driver");
+  if (m_poweredup)
+    {
+    OvmsMutexLock exclusive(&m_mutex);
+    ESP_ERROR_CHECK(esp_wifi_deinit());
+    m_poweredup = false;
+    }
   }
 
 void esp32wifi::StartClientMode(std::string ssid, std::string password, uint8_t* bssid)
@@ -368,9 +400,9 @@ void esp32wifi::StartClientMode(std::string ssid, std::string password, uint8_t*
     SetPowerMode(On);
     }
 
-  m_wifi_init_cfg = WIFI_INIT_CONFIG_DEFAULT();
-  ESP_ERROR_CHECK(esp_wifi_init(&m_wifi_init_cfg));
-  ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+  {
+  OvmsMutexLock exclusive(&m_mutex);
+
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
   strcpy((char*)m_wifi_sta_cfg.sta.ssid, ssid.c_str());
@@ -390,6 +422,8 @@ void esp32wifi::StartClientMode(std::string ssid, std::string password, uint8_t*
   m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
   ESP_ERROR_CHECK(esp_wifi_start());
+  }
+
   ESP_ERROR_CHECK(esp_wifi_connect());
   }
 
@@ -408,14 +442,15 @@ void esp32wifi::StartScanningClientMode()
     SetPowerMode(On);
     }
 
-  m_wifi_init_cfg = WIFI_INIT_CONFIG_DEFAULT();
-  ESP_ERROR_CHECK(esp_wifi_init(&m_wifi_init_cfg));
-  ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+  {
+  OvmsMutexLock exclusive(&m_mutex);
+
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
   m_wifi_sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
   m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
   ESP_ERROR_CHECK(esp_wifi_start());
+  }
 
   // if we are triggered by a startup script, monotonictime will be zero which
   // won't pass the test in EventTimer...()
@@ -437,9 +472,9 @@ void esp32wifi::StartAccessPointMode(std::string ssid, std::string password)
     SetPowerMode(On);
     }
 
-  m_wifi_init_cfg = WIFI_INIT_CONFIG_DEFAULT();
-  ESP_ERROR_CHECK(esp_wifi_init(&m_wifi_init_cfg));
-  ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+  {
+  OvmsMutexLock exclusive(&m_mutex);
+
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
   memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
   m_wifi_ap_cfg.ap.ssid_len = 0;
@@ -452,6 +487,7 @@ void esp32wifi::StartAccessPointMode(std::string ssid, std::string password)
   strcpy((char*)m_wifi_ap_cfg.ap.password, password.c_str());
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &m_wifi_ap_cfg));
   ESP_ERROR_CHECK(esp_wifi_start());
+  }
   }
 
 void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appassword, std::string stassid, std::string stapassword)
@@ -469,9 +505,9 @@ void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appas
     SetPowerMode(On);
     }
 
-  m_wifi_init_cfg = WIFI_INIT_CONFIG_DEFAULT();
-  ESP_ERROR_CHECK(esp_wifi_init(&m_wifi_init_cfg));
-  ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+  {
+  OvmsMutexLock exclusive(&m_mutex);
+
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
 
   memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
@@ -493,11 +529,15 @@ void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appas
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
 
   ESP_ERROR_CHECK(esp_wifi_start());
+  }
+
   ESP_ERROR_CHECK(esp_wifi_connect());
   }
 
 void esp32wifi::StopStation()
   {
+  OvmsMutexLock exclusive(&m_mutex);
+
   m_stareconnect = false;
   memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
@@ -508,11 +548,12 @@ void esp32wifi::StopStation()
 
   if (m_mode != ESP32WIFI_MODE_OFF)
     {
+    ESP_LOGI(TAG, "Stopping WIFI station");
+
     MyEvents.SignalEvent("system.wifi.down",NULL);
     if ((m_mode == ESP32WIFI_MODE_CLIENT)||(m_mode == ESP32WIFI_MODE_SCLIENT)||(m_mode == ESP32WIFI_MODE_APCLIENT))
       { ESP_ERROR_CHECK(esp_wifi_disconnect()); }
     ESP_ERROR_CHECK(esp_wifi_stop());
-    ESP_ERROR_CHECK(esp_wifi_deinit());
     m_mode = ESP32WIFI_MODE_OFF;
     }
   }
@@ -533,9 +574,9 @@ void esp32wifi::Scan(OvmsWriter* writer)
     StopStation();
     }
 
-  m_wifi_init_cfg = WIFI_INIT_CONFIG_DEFAULT();
-  ESP_ERROR_CHECK(esp_wifi_init(&m_wifi_init_cfg));
-  ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+  {
+  OvmsMutexLock exclusive(&m_mutex);
+
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
   m_wifi_sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
@@ -543,6 +584,7 @@ void esp32wifi::Scan(OvmsWriter* writer)
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
   ESP_ERROR_CHECK(esp_wifi_start());
   m_mode = ESP32WIFI_MODE_SCAN;
+  }
 
   writer->puts("Scanning for WIFI Access Points...");
 
@@ -628,17 +670,23 @@ std::string esp32wifi::GetSSID()
 
 void esp32wifi::EventWifiGotIp(std::string event, void* data)
   {
-  m_stareconnect = false;
   system_event_info_t *info = (system_event_info_t*)data;
+  m_stareconnect = false;
+
   m_ip_info_sta = info->got_ip.ip_info;
   esp_wifi_get_mac(ESP_IF_WIFI_STA, m_mac_sta);
-  ESP_LOGI(TAG, "WiFi UP with SSID: %s, MAC: " MACSTR ", IP: " IPSTR ", mask: " IPSTR ", gw: " IPSTR,
+  ESP_LOGI(TAG, "STA got IP with SSID: %s, MAC: " MACSTR ", IP: " IPSTR ", mask: " IPSTR ", gw: " IPSTR,
     m_wifi_sta_cfg.sta.ssid, MAC2STR(m_mac_sta),
     IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw));
   }
 
 void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
   {
+  system_event_info_t *info = (system_event_info_t*)data;
+
+  ESP_LOGI(TAG, "STA disconnected with reason %d",
+           info->disconnected.reason);
+
   if ((m_mode == ESP32WIFI_MODE_CLIENT) ||
       (m_mode == ESP32WIFI_MODE_APCLIENT))
     {
@@ -646,6 +694,8 @@ void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
     }
   else if (m_mode == ESP32WIFI_MODE_SCLIENT)
     {
+    OvmsMutexLock exclusive(&m_mutex);
+
     esp_wifi_disconnect();
     memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
     memset(&m_ip_info_sta,0,sizeof(m_ip_info_sta));
@@ -657,14 +707,14 @@ void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
 void esp32wifi::EventWifiApState(std::string event, void* data)
   {
   if (event == "system.wifi.ap.start")
-    {
+    { // Start
     esp_wifi_get_mac(ESP_IF_WIFI_AP, m_mac_ap);
     tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &m_ip_info_ap);
     ESP_LOGI(TAG, "AP started with SSID: %s, MAC: " MACSTR ", IP: " IPSTR,
       m_wifi_ap_cfg.ap.ssid, MAC2STR(m_mac_ap), IP2STR(&m_ip_info_ap.ip));
     }
   else
-    {
+    { // Stop
     memset(&m_mac_ap,0,sizeof(m_mac_ap));
     memset(&m_ip_info_ap,0,sizeof(m_ip_info_ap));
     ESP_LOGI(TAG, "AP stopped");
