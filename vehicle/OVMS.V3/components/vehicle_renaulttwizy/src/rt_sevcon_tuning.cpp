@@ -1291,8 +1291,8 @@ string SevconClient::FmtSwitchProfileResult(CANopenResult_t res)
 
 void SevconClient::Kickdown(bool engage)
 {
-#ifdef TWIZY_ENABLE_KICKDOWN // TODO: implement release timer
   //int kickdown_led = 0;
+  CANopenResult_t res;
   
   if (engage) {
     // engage kickdown:
@@ -1304,10 +1304,14 @@ void SevconClient::Kickdown(bool engage)
               || (twizy_autodrive_level < 1000))
             ) {
       // set drive level to boost (100%, no autopower limit):
-      if (CfgDrive(100, -1, -1, true) == COR_OK) {
+      res = CfgDrive(100, -1, -1, true);
+      if (res == COR_OK) {
         m_twizy->twizy_kickdown_hold = TWIZY_KICKDOWN_HOLDTIME;
+        xTimerStart(m_kickdown_timer, 0);
         MyEvents.SignalEvent("vehicle.kickdown.engaged", NULL);
         //kickdown_led = 1;
+      } else {
+        ESP_LOGD(TAG, "Kickdown engage failed: %s", GetResultString(res).c_str());
       }
     }
   }
@@ -1318,17 +1322,20 @@ void SevconClient::Kickdown(bool engage)
       // releasing, count down:
       if (--m_twizy->twizy_kickdown_hold == 0) {
         // reset drive level to normal:
-        if (CfgDrive(cfgparam(drive), cfgparam(autodrive_ref), cfgparam(autodrive_minprc), true) != COR_OK) {
+        res = CfgDrive(cfgparam(drive), cfgparam(autodrive_ref), cfgparam(autodrive_minprc), true);
+        if (res != COR_OK) {
           m_twizy->twizy_kickdown_hold = 2; // error: retry
+          ESP_LOGD(TAG, "Kickdown release failed: %s", GetResultString(res).c_str());
         }
         else {
           m_twizy->twizy_kickdown_level = 0; // ok, reset kickdown detection
+          xTimerStop(m_kickdown_timer, 0);
           MyEvents.SignalEvent("vehicle.kickdown.released", NULL);
         }
       }
     }
     else {
-      // not relasing, reset counter:
+      // not releasing, reset counter:
       m_twizy->twizy_kickdown_hold = TWIZY_KICKDOWN_HOLDTIME;
     }
 
@@ -1346,5 +1353,13 @@ void SevconClient::Kickdown(bool engage)
   }
   
   // TODO: map kickdown_led to port, send CAN status frame
-#endif
+}
+
+void SevconClient::KickdownTimer(TimerHandle_t timer)
+{
+  SevconClient* me = SevconClient::GetInstance();
+  if (me)
+    me->Kickdown(false);
+  else
+    xTimerStop(timer, 0);
 }

@@ -11,6 +11,7 @@ Open Vehicle Monitor System v3 - Change log
                          - WIFI refactor; use pcp to power on/off wifi driver, and then normal
                            wifi state to control driver mode changes. Improvements to wifi
                            stability and compatibility.
+                         - Twizy v0.13: kickdown implementation, throttle display
 
 2018-03-21 MWJ  3.1.000  OTA release
                          - Tesla Model S basic vehicle support

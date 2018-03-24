@@ -139,6 +139,10 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     // update sevcon subsystem:
     if (m_sevcon)
       m_sevcon->SetStatus(twizy_flags.CarAwake);
+    
+    *StdMetrics.ms_v_env_gear = (int) 0;
+    *StdMetrics.ms_v_env_throttle = (float) 0;
+    *StdMetrics.ms_v_env_footbrake = (float) 0;
   }
   
   

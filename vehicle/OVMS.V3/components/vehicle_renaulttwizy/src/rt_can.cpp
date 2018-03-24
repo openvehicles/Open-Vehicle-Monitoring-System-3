@@ -392,10 +392,18 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       
       // twizy_status low nibble:
       twizy_status = (twizy_status & 0xF0) | (CAN_BYTE(1) & 0x09);
-      if (CAN_BYTE(0) == 0x80)
+      
+      if (CAN_BYTE(0) == 0x80) {
         twizy_status |= CAN_STATUS_MODE_D;
-      else if (CAN_BYTE(0) == 0x08)
+        *StdMetrics.ms_v_env_gear = (int) 1;
+      }
+      else if (CAN_BYTE(0) == 0x08) {
         twizy_status |= CAN_STATUS_MODE_R;
+        *StdMetrics.ms_v_env_gear = (int) -1;
+      }
+      else {
+        *StdMetrics.ms_v_env_gear = (int) 0;
+      }
       
       // accelerator pedal:
       u = CAN_BYTE(3);
@@ -413,7 +421,10 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       }
       
       twizy_accel_pedal = u;
-    
+      
+      *StdMetrics.ms_v_env_throttle = (float) twizy_accel_pedal / 253 * 100; // 253 = max pedal value
+      *StdMetrics.ms_v_env_footbrake = (float) ((twizy_status & CAN_STATUS_FOOTBRAKE) ? 100 : 0);
+      
       break;
       
       
