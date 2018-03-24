@@ -114,6 +114,9 @@
 #define MS_V_DOOR_TRUNK             "v.d.trunk"
 
 #define MS_V_ENV_DRIVEMODE          "v.e.drivemode"
+#define MS_V_ENV_GEAR               "v.e.gear"
+#define MS_V_ENV_THROTTLE           "v.e.throttle"
+#define MS_V_ENV_FOOTBRAKE          "v.e.footbrake"
 #define MS_V_ENV_HANDBRAKE          "v.e.handbrake"
 #define MS_V_ENV_AWAKE              "v.e.awake"
 #define MS_V_ENV_CHARGING12V        "v.e.charging12v"
@@ -234,6 +237,9 @@ class MetricsStandard
     OvmsMetricBool*   ms_v_door_trunk;
 
     OvmsMetricInt*    ms_v_env_drivemode;     // Active drive profile number [1]
+    OvmsMetricInt*    ms_v_env_gear;          // Gear/direction; negative=reverse, 0=neutral [1]
+    OvmsMetricFloat*  ms_v_env_throttle;      // Drive pedal state [%]
+    OvmsMetricFloat*  ms_v_env_footbrake;     // Brake pedal state [%]
     OvmsMetricBool*   ms_v_env_handbrake;
     OvmsMetricBool*   ms_v_env_awake;
     OvmsMetricBool*   ms_v_env_charging12v;
