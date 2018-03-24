@@ -519,7 +519,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandPower
       }
       
       writer->printf(" SOC%+.1f%%=%.1f%%",
-        (float) (twizy_soc - twizy_soc_tripstart) / 100,
+        (float) ((long)twizy_soc - (long)twizy_soc_tripstart) / 100,
         (float) twizy_soc / 100);
       
       // === 12% 123Wpk/12%
