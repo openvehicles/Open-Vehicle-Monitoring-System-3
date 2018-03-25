@@ -60,6 +60,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   ESP_LOGI(TAG, "Nissan Leaf v3.0 vehicle module");
 
   m_gids = MyMetrics.InitInt("xnl.v.bat.gids", SM_STALE_HIGH, 0);
+  m_hx = MyMetrics.InitFloat("xnl.v.bat.hx", SM_STALE_HIGH, 0);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -196,8 +197,6 @@ void OvmsVehicleNissanLeaf::PollStart(void)
 void OvmsVehicleNissanLeaf::PollContinue(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
-  uint16_t hx;
-  uint32_t ah;
   if (nl_poll_state == IDLE)
     {
     // we're not expecting anything, maybe something else is polling?
@@ -224,24 +223,35 @@ void OvmsVehicleNissanLeaf::PollContinue(CAN_frame_t* p_frame)
       nl_poll_state = static_cast<PollState>(static_cast<int>(nl_poll_state) + 1);
       break;
     case FOUR:
-      hx = d[2];
-      hx = hx << 8;
-      hx = hx | d[3];
-      // LeafSpy calculates SOH by dividing Ah by the nominal capacity.
-      // Since SOH is derived from Ah, we don't bother storing it separately.
-      // Instead we store Ah in CAC (below) and store Hx in SOH.
-      StandardMetrics.ms_v_bat_soh->SetValue(hx / 100.0);
-      nl_poll_state = static_cast<PollState>(static_cast<int>(nl_poll_state) + 1);
-      break;
+      {
+        uint16_t hx;
+        hx = d[2];
+        hx = hx << 8;
+        hx = hx | d[3];
+        m_hx->SetValue(hx / 100.0);
+
+        nl_poll_state = static_cast<PollState>(static_cast<int>(nl_poll_state) + 1);
+        break;
+      }
     case FIVE:
-      ah = d[2];
-      ah = ah << 8;
-      ah = ah | d[3];
-      ah = ah << 8;
-      ah = ah | d[4];
-      StandardMetrics.ms_v_bat_cac->SetValue(ah / 10000.0);
-      nl_poll_state = IDLE;
-      break;
+      {
+        uint32_t ah10000;
+        ah10000 = d[2];
+        ah10000 = ah10000 << 8;
+        ah10000 = ah10000 | d[3];
+        ah10000 = ah10000 << 8;
+        ah10000 = ah10000 | d[4];
+        float ah = ah10000 / 10000.0;
+        StandardMetrics.ms_v_bat_cac->SetValue(ah);
+
+        // there may be a way to get the SoH directly from the BMS, but for now
+        // divide by a configurable battery size
+        float newCarAh = MyConfig.GetParamValueFloat("xnl", "newCarAh", GEN_1_NEW_CAR_AH);
+        StandardMetrics.ms_v_bat_soh->SetValue(ah / newCarAh * 100);
+
+        nl_poll_state = IDLE;
+        break;
+      }
     }
   if (nl_poll_state != IDLE)
     {

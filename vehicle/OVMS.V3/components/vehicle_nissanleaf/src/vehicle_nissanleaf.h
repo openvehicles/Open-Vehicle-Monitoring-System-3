@@ -37,6 +37,7 @@
 
 #define DEFAULT_MODEL_YEAR 2012
 #define GEN_1_NEW_CAR_GIDS 281
+#define GEN_1_NEW_CAR_AH 66
 #define GEN_1_KM_PER_KWH 7.1
 #define GEN_1_WH_PER_GID 80
 #define REMOTE_COMMAND_REPEAT_COUNT 24 // number of times to send the remote command after the first time
@@ -100,6 +101,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     uint16_t nl_cc_off_ticker; // seconds before we send the climate control off command
     TimerHandle_t m_remoteCommandTimer;
     OvmsMetricInt *m_gids;
+    OvmsMetricFloat *m_hx;
   };
 
 #endif //#ifndef __VEHICLE_NISSANLEAF_H__
