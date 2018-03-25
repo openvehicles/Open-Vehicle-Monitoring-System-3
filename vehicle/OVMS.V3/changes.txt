@@ -13,6 +13,8 @@ Open Vehicle Monitor System v3 - Change log
                            stability and compatibility.
                          - Twizy v0.13: kickdown implementation, throttle display
                          - Provide a 'test watchdog' command to test watchdog timers
+                         - Initialise watchdog timer to start, and reboot if watchdog timeout
+                         - Enable watchdog timer for housekeeping task
 
 2018-03-21 MWJ  3.1.000  OTA release
                          - Tesla Model S basic vehicle support

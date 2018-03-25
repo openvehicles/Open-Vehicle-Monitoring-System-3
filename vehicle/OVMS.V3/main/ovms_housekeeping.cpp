@@ -36,6 +36,7 @@ static const char *TAG = "housekeeping";
 #include <esp_system.h>
 #include <esp_ota_ops.h>
 #include <esp_heap_caps.h>
+#include <esp_task_wdt.h>
 #include "ovms.h"
 #include "ovms_housekeeping.h"
 #include "ovms_peripherals.h"
@@ -77,10 +78,13 @@ void HousekeepingTask(void *pvParameters)
 
   me->init();
 
+  esp_task_wdt_add(NULL); // WATCHDOG is active for this task
   while (1)
     {
     me->metrics();
+    esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
     vTaskDelay(10000 / portTICK_PERIOD_MS);
+    esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
     }
   }
 
@@ -107,6 +111,9 @@ void Housekeeping::init()
   m_tick = 0;
   m_timer1 = xTimerCreate("Housekeep ticker",1000 / portTICK_PERIOD_MS,pdTRUE,this,HousekeepingTicker1);
   xTimerStart(m_timer1, 0);
+
+  ESP_LOGI(TAG, "Initialising WATCHDOG...");
+  esp_task_wdt_init(120, true);
 
   ESP_LOGI(TAG, "Starting PERIPHERALS...");
   MyPeripherals = new Peripherals();
