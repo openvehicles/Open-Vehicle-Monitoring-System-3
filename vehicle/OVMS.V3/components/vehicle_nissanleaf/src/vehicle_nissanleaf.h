@@ -37,8 +37,8 @@
 
 #define DEFAULT_MODEL_YEAR 2012
 #define GEN_1_NEW_CAR_GIDS 281
-#define GEN_1_KM_PER_KWH 6.183
-#define GEN_1_WH_PER_GID 77.8
+#define GEN_1_KM_PER_KWH 7.1
+#define GEN_1_WH_PER_GID 80
 #define REMOTE_COMMAND_REPEAT_COUNT 24 // number of times to send the remote command after the first time
 #define ACTIVATION_REQUEST_TIME 10 // tenths of a second to hold activation request signal
 #define REMOTE_CC_TIME_GRID 1800 // seconds to run remote climate control on grid power
