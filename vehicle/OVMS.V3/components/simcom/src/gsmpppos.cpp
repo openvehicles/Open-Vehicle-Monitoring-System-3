@@ -216,6 +216,7 @@ void GsmPPPOS::Shutdown(bool hard)
     m_connected = false;
     MyEvents.SignalEvent("system.modem.down",NULL);
     pppapi_close(m_ppp, nocarrier);
+    ESP_LOGI(TAG, "PPP is shutdown");
     }
   else
     {
