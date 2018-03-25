@@ -120,3 +120,15 @@ can can1 rx standard 081 00 10 01 34 12 00 00 00
 ## reset:
 can can1 rx standard 081 00 00 00 00 00 00 00 00
 
+
+# Pedal / Kickdown:
+
+event trace on
+xrt cfg drive 80
+log level debug v-twizy
+
+can can1 rx standard 59B 80 0C 65 5E 44 72 00 90
+
+can can1 rx standard 59B 80 0C 65 EE 44 72 00 90
+can can1 rx standard 59B 80 0C 65 00 44 72 00 90
+

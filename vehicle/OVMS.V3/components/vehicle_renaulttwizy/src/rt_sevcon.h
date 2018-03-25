@@ -100,6 +100,7 @@ class SevconClient
   public:
     SevconClient(OvmsVehicleRenaultTwizy* twizy);
     ~SevconClient();
+    static SevconClient* GetInstance(OvmsWriter* writer=NULL);
   
   public:
     // Utils:
@@ -167,6 +168,7 @@ class SevconClient
     static int PrintProfile(int capacity, OvmsWriter* writer, cfg_profile& profile);
     
     void Kickdown(bool on);
+    static void KickdownTimer(TimerHandle_t xTimer);
 
   public:
     // diagnostics / statistics:
@@ -230,6 +232,7 @@ class SevconClient
     uint8_t                   twizy_lock_speed = 0;               // if Lock mode: fix speed to this (kph)
     uint32_t                  twizy_valet_odo = 0;                // if Valet mode: reduce speed if odometer > this
     
+    TimerHandle_t             m_kickdown_timer;
   
 };
 

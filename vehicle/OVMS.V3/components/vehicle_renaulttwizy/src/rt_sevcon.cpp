@@ -112,12 +112,25 @@ SevconClient::SevconClient(OvmsVehicleRenaultTwizy* twizy)
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "canopen.node.emcy", std::bind(&SevconClient::EmcyListener, this, _1, _2));
+  
+  m_kickdown_timer = xTimerCreate("RT kickdown", pdMS_TO_TICKS(100), pdTRUE, NULL, KickdownTimer);
 }
 
 SevconClient::~SevconClient()
 {
+  if (m_kickdown_timer)
+    xTimerDelete(m_kickdown_timer, 0);
   if (m_faultqueue)
     vQueueDelete(m_faultqueue);
+}
+
+SevconClient* SevconClient::GetInstance(OvmsWriter* writer /*=NULL*/)
+{
+  OvmsVehicleRenaultTwizy* twizy = OvmsVehicleRenaultTwizy::GetInstance(writer);
+  if (twizy)
+    return twizy->GetSevconClient();
+  else
+    return NULL;
 }
 
 

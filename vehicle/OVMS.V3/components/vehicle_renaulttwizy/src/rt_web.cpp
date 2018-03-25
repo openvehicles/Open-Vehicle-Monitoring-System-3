@@ -371,9 +371,27 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
     ".btn-default.base:hover, .btn-default.base:focus { background-color: #fffa62; }"
     ".unsaved > *:after { content: \"*\"; }"
     "</style>");
+  
   c.panel_start("primary", "Drivemode");
+  
   c.printf(
     "<samp id=\"loadres\">%s</samp>", _html(buf.str()));
+  
+  c.print(
+    "<div id=\"livestatus\" class=\"receiver\">"
+      "<div class=\"row\">"
+        "<div class=\"col-sm-2 hidden-xs\"><label>Throttle:</label></div>"
+        "<div class=\"col-sm-10\">"
+          "<div class=\"progress\" data-metric=\"v.e.throttle\" data-prec=\"0\">"
+            "<div id=\"pb-throttle\" class=\"progress-bar progress-bar-success no-transition text-left\" role=\"progressbar\""
+              " aria-valuenow=\"0\" aria-valuemin=\"0\" aria-valuemax=\"100\" style=\"width:0%\">"
+              "<div><span class=\"label hidden visible-xs-inline\">Throttle:&nbsp;</span><span class=\"value\">0</span><span class=\"unit\">%</span></div>"
+            "</div>"
+          "</div>"
+        "</div>"
+      "</div>"
+    "</div>");
+  
   c.print(
     "<div id=\"loadmenu\" class=\"center-block\"><ul class=\"list-inline\">");
   for (int prof=0; prof<=3; prof++) {
@@ -389,6 +407,34 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
   }
   c.print(
     "</ul></div>");
+  
   c.panel_end();
+  
+  c.print(
+    "<script>"
+    "$(\".receiver\").on(\"msg:metrics\", function(e, update){"
+      "$(this).find(\"[data-metric]\").each(function(){"
+        "var el = $(this), metric = el.data(\"metric\"), prec = el.data(\"prec\");"
+        "if (el.hasClass(\"progress\")) {"
+          "var pb = $(this.firstElementChild), min = pb.attr(\"aria-valuemin\"), max = pb.attr(\"aria-valuemax\");"
+          "var vp = (metrics[metric]-min) / (max-min) * 100;"
+          "var vf = (prec != undefined) ? Number(metrics[metric]).toFixed(prec) : metrics[metric];"
+          "pb.css(\"width\", vp+\"%\").attr(\"aria-valuenow\", vp);"
+          "pb.find(\".value\").text(vf);"
+        "} else {"
+          "el.text(metrics[metric]);"
+        "}"
+      "});"
+    "}).trigger(\"msg:metrics\");"
+    "$(\"#livestatus\").on(\"msg:event\", function(e, event){"
+      "if (event == \"vehicle.kickdown.engaged\")"
+        "$(\"#pb-throttle\").removeClass(\"progress-bar-success progress-bar-warning\").addClass(\"progress-bar-danger\");"
+      "else if (event == \"vehicle.kickdown.releasing\")"
+        "$(\"#pb-throttle\").removeClass(\"progress-bar-success progress-bar-danger\").addClass(\"progress-bar-warning\");"
+      "else if (event == \"vehicle.kickdown.released\")"
+        "$(\"#pb-throttle\").removeClass(\"progress-bar-warning progress-bar-danger\").addClass(\"progress-bar-success\");"
+    "});"
+    "</script>");
+  
   c.done();
 }

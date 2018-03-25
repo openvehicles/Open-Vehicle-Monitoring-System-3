@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+
+2018-03-25 MWJ  3.1.001  OTA release
                          - Add task state to 'module tasks' output
                          - Avoid SPIRAM being lumped in with DRAM in 'module memory' output
                          - Wifi: Make 'wifi scan' command block, and show nice summary of
@@ -11,6 +13,10 @@ Open Vehicle Monitor System v3 - Change log
                          - WIFI refactor; use pcp to power on/off wifi driver, and then normal
                            wifi state to control driver mode changes. Improvements to wifi
                            stability and compatibility.
+                         - Twizy v0.13: kickdown implementation, throttle display
+                         - Provide a 'test watchdog' command to test watchdog timers
+                         - Initialise watchdog timer to start, and reboot if watchdog timeout
+                         - Enable watchdog timer for housekeeping task
 
 2018-03-21 MWJ  3.1.000  OTA release
                          - Tesla Model S basic vehicle support

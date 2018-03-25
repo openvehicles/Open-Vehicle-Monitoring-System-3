@@ -23,6 +23,20 @@ pre {
 .loading * {
   cursor: progress;
 }
+.no-transition {
+  -webkit-transition: none !important;
+  -moz-transition: none !important;
+  -ms-transition: none !important;
+  -o-transition: none !important;
+  transition: none !important;
+}​
+.progress-bar.text-left {
+  text-align: left;
+}
+.progress-bar.text-left > div {
+  padding: 0 5px;
+  text-align: left;
+}
 .list-inline>li {
   padding-left: 0;
   padding-bottom: 5px;

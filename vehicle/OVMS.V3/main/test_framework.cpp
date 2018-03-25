@@ -158,6 +158,13 @@ void test_echo(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
   writer->RegisterInsertCallback(test_echo_insert, NULL);
   }
 
+void test_watchdog(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->puts("Spinning now (watchdog should fire in a few minutes)");
+  for (;;) {}
+  writer->puts("Error: We should never get here");
+  }
+
 class TestFrameworkInit
   {
   public: TestFrameworkInit();
@@ -175,4 +182,5 @@ TestFrameworkInit::TestFrameworkInit()
   cmd_test->RegisterCommand("javascript","Test Javascript",test_javascript,"",0,0,true);
   cmd_test->RegisterCommand("chargen","Character generator [<#lines>] [<delay_ms>]",test_chargen,"",0,2,true);
   cmd_test->RegisterCommand("echo", "Test getchar", test_echo, "", 0, 0,true);
+  cmd_test->RegisterCommand("watchdog", "Test task spinning (and watchdog firing)", test_watchdog, "", 0, 0,true);
   }
