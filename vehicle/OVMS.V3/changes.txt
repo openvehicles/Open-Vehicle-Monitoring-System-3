@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+
+2018-03-25 MWJ  3.1.001  OTA release
                          - Add task state to 'module tasks' output
                          - Avoid SPIRAM being lumped in with DRAM in 'module memory' output
                          - Wifi: Make 'wifi scan' command block, and show nice summary of
