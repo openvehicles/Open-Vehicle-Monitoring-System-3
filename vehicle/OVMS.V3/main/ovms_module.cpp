@@ -688,6 +688,7 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
     writer->printf("Can't allocate storage for task diagnostics\n");
     return;
     }
+  bool showStack = (strcmp(cmd->GetName(),"stack") == 0);
   UBaseType_t n = get_tasks();
   get_memory(tasklist, 0);
   num = 0;
@@ -706,10 +707,24 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
           heapspi = (*changes).After(k, SPIRAM);
           }
         uint32_t total = (uint32_t)taskstatus[i].pxStackBase >> 16;
+        uint32_t used = total - ((uint32_t)taskstatus[i].pxStackBase & 0xFFFF);
         writer->printf("%08X %2u %s %-15s %5u %5u %5u %7u%7u%7u\n", taskstatus[i].xHandle,
           taskstatus[i].xTaskNumber, states[taskstatus[i].eCurrentState], taskstatus[i].pcTaskName,
-          total - ((uint32_t)taskstatus[i].pxStackBase & 0xFFFF),
-          total - taskstatus[i].usStackHighWaterMark, total, heaptotal, heap32bit, heapspi);
+          used, total - taskstatus[i].usStackHighWaterMark, total, heaptotal, heap32bit, heapspi);
+        if (showStack)
+          {
+          uint32_t* stack = (uint32_t*)(pxTaskGetStackStart(taskstatus[i].xHandle) + total);
+          uint32_t* topstack = (uint32_t*)((uint8_t*)stack - used);
+          while (topstack < stack)
+            {
+            uint32_t word = *topstack++;
+            if ((word & 0xFF000000) == 0x80000000)
+              {
+              writer->printf("  %p", word - 0x40000000);
+              }
+            }
+          writer->printf("\n");
+          }
         ++j;
         break;
         }
@@ -786,7 +801,8 @@ class OvmsModuleInit
 
     OvmsCommand* cmd_module = MyCommandApp.RegisterCommand("module","MODULE framework",NULL,"",0,0,true);
     cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"[<task names or ids>|*|=]",0,TASKLIST,true);
-    cmd_module->RegisterCommand("tasks","Show module task usage",module_tasks,"",0,0,true);
+    OvmsCommand* cmd_tasks = cmd_module->RegisterCommand("tasks","Show module task usage",module_tasks,"[stack]",0,1,true);
+    cmd_tasks->RegisterCommand("stack","Show module task usage with stack",module_tasks,"",0,0,true);
     cmd_module->RegisterCommand("fault","Abort fault the module",module_fault,"",0,0,true);
     cmd_module->RegisterCommand("reset","Reset module",module_reset,"",0,0,true);
     cmd_module->RegisterCommand("check","Check heap integrity",module_check,"",0,0,true);
