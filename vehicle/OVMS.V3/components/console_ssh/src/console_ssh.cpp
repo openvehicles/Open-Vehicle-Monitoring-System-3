@@ -727,7 +727,7 @@ void ConsoleSSH::HandleDeviceEvent(void* pEvent)
             m_buffer[3] < '0' || m_buffer[3] > '7' || m_buffer[4] < '0' || m_buffer[4] > '7' ||
             m_buffer[5] != ' ')
             msg.append("bad mode ").append(&m_buffer[1], 4).append("\n");
-          else if ((m_size = strtoul(&m_buffer[6], &end, 10)) < 0 || m_size > 1048576 || *end++ != ' ')
+          else if ((m_size = strtoul(&m_buffer[6], &end, 10)) < 0 || m_size > 10485760 || *end++ != ' ')
             msg.append("size unacceptable: ").append(&m_buffer[6], end-&m_buffer[6]).append("\n");
           else if ((strchr(end, '/') != NULL) || (strcmp(end, "..") == 0))
             msg.append("unexpected filename: ").append(end).append("\n");
