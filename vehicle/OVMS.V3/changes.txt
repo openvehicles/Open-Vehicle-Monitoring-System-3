@@ -1,6 +1,16 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+                         - Nissan Leaf: Various enhancements:
+                           Store hx in a metric, SoH in soh based on configurable new car Ah
+                           Adjust constants
+                           Store gids in a metric
+                           Make range calcuations configurable
+                           Calculate range in km
+                         - SSH: Increase scp size limit to 10MB
+                         - Console: Show usage line if non-empty with optional subcommands
+                         - Module: Add quick-and-dirty optional module task stack listing
+                         - SIMCOM: Add a message, after ppp shutdown, to confirm that we get a response from the ppp task.
 
 2018-03-25 MWJ  3.1.001  OTA release
                          - Add task state to 'module tasks' output
