@@ -59,6 +59,9 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   {
   ESP_LOGI(TAG, "Nissan Leaf v3.0 vehicle module");
 
+  m_gids = MyMetrics.InitInt("xnl.v.bat.gids", SM_STALE_HIGH, 0);
+  m_hx = MyMetrics.InitFloat("xnl.v.bat.hx", SM_STALE_HIGH, 0);
+
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
 
@@ -194,8 +197,6 @@ void OvmsVehicleNissanLeaf::PollStart(void)
 void OvmsVehicleNissanLeaf::PollContinue(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
-  uint16_t hx;
-  uint32_t ah;
   if (nl_poll_state == IDLE)
     {
     // we're not expecting anything, maybe something else is polling?
@@ -222,24 +223,35 @@ void OvmsVehicleNissanLeaf::PollContinue(CAN_frame_t* p_frame)
       nl_poll_state = static_cast<PollState>(static_cast<int>(nl_poll_state) + 1);
       break;
     case FOUR:
-      hx = d[2];
-      hx = hx << 8;
-      hx = hx | d[3];
-      // LeafSpy calculates SOH by dividing Ah by the nominal capacity.
-      // Since SOH is derived from Ah, we don't bother storing it separately.
-      // Instead we store Ah in CAC (below) and store Hx in SOH.
-      StandardMetrics.ms_v_bat_soh->SetValue(hx / 100.0);
-      nl_poll_state = static_cast<PollState>(static_cast<int>(nl_poll_state) + 1);
-      break;
+      {
+        uint16_t hx;
+        hx = d[2];
+        hx = hx << 8;
+        hx = hx | d[3];
+        m_hx->SetValue(hx / 100.0);
+
+        nl_poll_state = static_cast<PollState>(static_cast<int>(nl_poll_state) + 1);
+        break;
+      }
     case FIVE:
-      ah = d[2];
-      ah = ah << 8;
-      ah = ah | d[3];
-      ah = ah << 8;
-      ah = ah | d[4];
-      StandardMetrics.ms_v_bat_cac->SetValue(ah / 10000.0);
-      nl_poll_state = IDLE;
-      break;
+      {
+        uint32_t ah10000;
+        ah10000 = d[2];
+        ah10000 = ah10000 << 8;
+        ah10000 = ah10000 | d[3];
+        ah10000 = ah10000 << 8;
+        ah10000 = ah10000 | d[4];
+        float ah = ah10000 / 10000.0;
+        StandardMetrics.ms_v_bat_cac->SetValue(ah);
+
+        // there may be a way to get the SoH directly from the BMS, but for now
+        // divide by a configurable battery size
+        float newCarAh = MyConfig.GetParamValueFloat("xnl", "newCarAh", GEN_1_NEW_CAR_AH);
+        StandardMetrics.ms_v_bat_soh->SetValue(ah / newCarAh * 100);
+
+        nl_poll_state = IDLE;
+        break;
+      }
     }
   if (nl_poll_state != IDLE)
     {
@@ -252,9 +264,6 @@ void OvmsVehicleNissanLeaf::PollContinue(CAN_frame_t* p_frame)
 void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
-
-  uint16_t nl_gids;
-  uint16_t nl_max_gids = GEN_1_NEW_CAR_GIDS;
 
   switch (p_frame->MsgID)
     {
@@ -377,15 +386,19 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
     case 0x5bc:
     {
-      uint16_t nl_gids_candidate = ((uint16_t) d[0] << 2) | ((d[1] & 0xc0) >> 6);
-      if (nl_gids_candidate == 1023)
+      uint16_t nl_gids = ((uint16_t) d[0] << 2) | ((d[1] & 0xc0) >> 6);
+      if (nl_gids == 1023)
         {
         // ignore invalid data seen during startup
         break;
         }
-      nl_gids = nl_gids_candidate;
-      StandardMetrics.ms_v_bat_soc->SetValue((nl_gids * 100 + (nl_max_gids / 2)) / nl_max_gids);
-      StandardMetrics.ms_v_bat_range_ideal->SetValue((nl_gids * GEN_1_NEW_CAR_RANGE_MILES + (GEN_1_NEW_CAR_GIDS / 2)) / GEN_1_NEW_CAR_GIDS);
+      uint16_t max_gids = MyConfig.GetParamValueInt("xnl", "maxGids", GEN_1_NEW_CAR_GIDS);
+      float km_per_kwh = MyConfig.GetParamValueFloat("xnl", "kmPerKWh", GEN_1_KM_PER_KWH);
+      float wh_per_gid = MyConfig.GetParamValueFloat("xnl", "whPerGid", GEN_1_WH_PER_GID);
+
+      m_gids->SetValue(nl_gids);
+      StandardMetrics.ms_v_bat_soc->SetValue((nl_gids * 100.0) / max_gids);
+      StandardMetrics.ms_v_bat_range_ideal->SetValue((nl_gids * wh_per_gid * km_per_kwh) / 1000);
     }
       break;
     case 0x5bf:
