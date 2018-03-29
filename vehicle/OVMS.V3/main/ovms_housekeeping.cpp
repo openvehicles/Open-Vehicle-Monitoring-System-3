@@ -67,7 +67,10 @@ static const char *TAG = "housekeeping";
 void HousekeepingTicker1( TimerHandle_t timer )
   {
   Housekeeping* h = (Housekeeping*)pvTimerGetTimerID(timer);
-  h->Ticker1();
+  if ((h)&&(h->m_sync))
+    {
+    xEventGroupSetBits(h->m_sync, 1);
+    }
   }
 
 void HousekeepingTask(void *pvParameters)
@@ -76,20 +79,27 @@ void HousekeepingTask(void *pvParameters)
 
   vTaskDelay(50 / portTICK_PERIOD_MS);
 
+  me->m_sync = xEventGroupCreate();
   me->init();
+  me->metrics();
 
   esp_task_wdt_add(NULL); // WATCHDOG is active for this task
   while (1)
     {
-    me->metrics();
-    esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
-    vTaskDelay(10000 / portTICK_PERIOD_MS);
-    esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
+    if (xEventGroupSync(me->m_sync, 0, 1, portMAX_DELAY) != 0)
+      {
+      xEventGroupClearBits(me->m_sync, 1);
+      esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
+      me->Ticker1();
+      esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
+      }
     }
   }
 
 Housekeeping::Housekeeping()
   {
+  m_sync = NULL;
+
   ESP_LOGI(TAG, "Initialising HOUSEKEEPING Framework...");
 
   MyConfig.RegisterParam("system.adc", "ADC configuration", true, true);
@@ -223,7 +233,11 @@ void Housekeeping::Ticker1()
   MyEvents.SignalEvent("ticker.1", NULL);
 
   m_tick++;
-  if ((m_tick % 10)==0) MyEvents.SignalEvent("ticker.10", NULL);
+  if ((m_tick % 10)==0)
+    {
+    metrics();
+    MyEvents.SignalEvent("ticker.10", NULL);
+    }
   if ((m_tick % 60)==0) MyEvents.SignalEvent("ticker.60", NULL);
   if ((m_tick % 300)==0) MyEvents.SignalEvent("ticker.300", NULL);
   if ((m_tick % 600)==0)
