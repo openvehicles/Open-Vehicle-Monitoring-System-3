@@ -71,6 +71,29 @@ void BufferedShell::Initialize(bool print)
   ProcessChar('\n');
   }
 
+void BufferedShell::SetBuffer(LogBuffers* output /*=NULL*/)
+  {
+  if (output)
+    {
+    if (m_output)
+      m_output->release();
+    m_output = output;
+    }
+  else
+    {
+    if (m_output)
+      {
+      if (m_output->empty())
+        return;
+      m_output->release();
+      }
+    m_output = new LogBuffers;
+    m_output->set(1);
+    m_left = 0;
+    m_buffer = NULL;
+    }
+  }
+
 int BufferedShell::puts(const char* s)
   {
   write(s, strlen(s));

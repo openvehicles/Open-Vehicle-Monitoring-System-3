@@ -8,6 +8,7 @@
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011        Sonny Chen @ EPRO/DX
+;    (C) 2018       Michael Balzer
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -27,39 +28,43 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
-#ifndef __BUFFERED_SHELL_H__
-#define __BUFFERED_SHELL_H__
 
-#include "ovms_shell.h"
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+#include "string_writer.h"
 
-class LogBuffers;
-class OvmsCommandMap;
-
-class BufferedShell : public OvmsShell
+StringWriter::StringWriter(size_t capacity /*=0*/)
   {
-  public:
-    BufferedShell();
-    BufferedShell(bool print, int verbosity, LogBuffers* output = NULL);
-    ~BufferedShell();
+  if (capacity)
+    reserve(capacity);
+  }
 
-  public:
-    void Initialize(bool print);
-    void SetBuffer(LogBuffers* output = NULL);
-    int puts(const char* s);
-    int printf(const char* fmt, ...);
-    ssize_t write(const void *buf, size_t nbyte);
-    char ** GetCompletion(OvmsCommandMap& children, const char* token);
-    void Log(LogBuffers* message);
-    virtual bool IsInteractive() { return false; }
-    void Output(OvmsWriter*);
-    void Dump(std::string&);
-    char* Dump();
+StringWriter::~StringWriter()
+  {
+  }
 
-  protected:
-    bool m_print;
-    size_t m_left;
-    char* m_buffer;
-    LogBuffers* m_output;
-  };
+int StringWriter::puts(const char* s)
+  {
+  append(s);
+  push_back('\n');
+  return 0;
+  }
 
-#endif //#ifndef __BUFFERED_SHELL_H__
+int StringWriter::printf(const char* fmt, ...)
+  {
+  char *buffer;
+  va_list args;
+  va_start(args, fmt);
+  int ret = vasprintf(&buffer, fmt, args);
+  va_end(args);
+  append(buffer, ret);
+  free(buffer);
+  return ret;
+  }
+
+ssize_t StringWriter::write(const void *buf, size_t nbyte)
+  {
+  append((const char*)buf, nbyte);
+  return 0;
+  }

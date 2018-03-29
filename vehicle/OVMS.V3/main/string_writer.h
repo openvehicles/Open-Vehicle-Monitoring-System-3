@@ -8,6 +8,7 @@
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011        Sonny Chen @ EPRO/DX
+;    (C) 2018       Michael Balzer
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -27,39 +28,30 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
-#ifndef __BUFFERED_SHELL_H__
-#define __BUFFERED_SHELL_H__
+#ifndef __string_writer_h__
+#define __string_writer_h__
 
-#include "ovms_shell.h"
+#include <string>
+#include "ovms_command.h"
 
 class LogBuffers;
 class OvmsCommandMap;
 
-class BufferedShell : public OvmsShell
+class StringWriter : public std::string, public OvmsWriter
   {
   public:
-    BufferedShell();
-    BufferedShell(bool print, int verbosity, LogBuffers* output = NULL);
-    ~BufferedShell();
+    StringWriter(size_t capacity=0);
+    ~StringWriter();
 
   public:
-    void Initialize(bool print);
-    void SetBuffer(LogBuffers* output = NULL);
     int puts(const char* s);
     int printf(const char* fmt, ...);
     ssize_t write(const void *buf, size_t nbyte);
-    char ** GetCompletion(OvmsCommandMap& children, const char* token);
-    void Log(LogBuffers* message);
-    virtual bool IsInteractive() { return false; }
-    void Output(OvmsWriter*);
-    void Dump(std::string&);
-    char* Dump();
 
-  protected:
-    bool m_print;
-    size_t m_left;
-    char* m_buffer;
-    LogBuffers* m_output;
+  public:
+    char ** GetCompletion(OvmsCommandMap& children, const char* token) { return NULL; }
+    void Log(LogBuffers* message) {}
+    virtual bool IsInteractive() { return false; }
   };
 
-#endif //#ifndef __BUFFERED_SHELL_H__
+#endif // __string_writer_h__
