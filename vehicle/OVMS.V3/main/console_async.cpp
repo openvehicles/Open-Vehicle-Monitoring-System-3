@@ -47,7 +47,7 @@ ConsoleAsync* ConsoleAsync::Instance()
   return m_instance;
   }
 
-ConsoleAsync::ConsoleAsync() : TaskBase("AsyncConsole", 5*1024)
+ConsoleAsync::ConsoleAsync() : TaskBase("AsyncConsole", 6*1024)
   {
   m_monitoring = true;
   uart_config_t uart_config =
