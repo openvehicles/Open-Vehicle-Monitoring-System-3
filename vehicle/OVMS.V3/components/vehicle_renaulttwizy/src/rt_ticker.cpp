@@ -48,6 +48,9 @@ using namespace std;
 
 void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
 {
+  if (!m_ready)
+    return;
+
   // --------------------------------------------------------------------------
   // Update standard metrics:
   // 
@@ -108,7 +111,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     twizy_accel_max = 0;
     
     // reset battery subsystem:
-    BatteryReset();
+    m_batt_doreset = true;
     
     // reset power subsystem:
     PowerReset();
@@ -149,8 +152,8 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   // --------------------------------------------------------------------------
   // Subsystem updates:
   
-  BatteryUpdate();
   PowerUpdate();
+  
   if (m_sevcon)
     m_sevcon->Ticker1(ticker);
   
@@ -213,12 +216,12 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
       }
 
       // reset battery monitor:
-      BatteryReset();
+      m_batt_doreset = true;
 
       // ...enter state 1=charging or 2=topping-off depending on the
       // charge power request level we're starting with (7=full power):
       twizy_chargestate = (twizy_chg_power_request == 7) ? 1 : 2;
-        
+      
       // Send charge start notification?
       // TODO if (sys_features[FEATURE_CARBITS] & FEATURE_CB_SCHGPHASE)
         RequestNotify(SEND_ChargeState);
@@ -470,6 +473,9 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
 
 void OvmsVehicleRenaultTwizy::Ticker10(uint32_t ticker)
 {
+  if (!m_ready)
+    return;
+
   // Check if CAN-Bus has turned offline:
   if (twizy_status & CAN_STATUS_ONLINE)
   {

@@ -48,6 +48,9 @@ using namespace std;
 
 void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
 {
+  if (!m_ready)
+    return;
+
   unsigned int u;
   int s;
   
@@ -212,10 +215,30 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       // --------------------------------------------------------------------------
       // CAN ID 0x554: Battery cell module temperatures
       // (1000 ms = 1 per second)
-      if (CAN_BYTE(0) != 0x0ff)
+      if ((CAN_BYTE(0) != 0x0ff) && !(twizy_batt_sensors_state & BATT_SENSORS_GOT554))
       {
         for (int i = 0; i < BATT_CMODS; i++)
-          twizy_cmod[i].temp_act = CAN_BYTE(i);
+          twizy_cmod[i].temp_new = CAN_BYTE(i);
+
+        // update pack layout:
+        if (twizy_cmod[7].temp_new != 0 && twizy_cmod[7].temp_new != 0xff) {
+          if (batt_cmod_count != 8) {
+            batt_cmod_count = 8;
+            *m_batt_cmod_count = (int) batt_cmod_count;
+          }
+        }
+        else {
+          if (batt_cmod_count != 7) {
+            batt_cmod_count = 7;
+            *m_batt_cmod_count = (int) batt_cmod_count;
+          }
+        }
+        
+        // detect fetch completion:
+        twizy_batt_sensors_state |= BATT_SENSORS_GOT554;
+        if ((twizy_batt_sensors_state & BATT_SENSORS_READY) >= BATT_SENSORS_GOTALL) {
+          BatteryUpdate();
+        }
       }
       break;
     
@@ -223,13 +246,32 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       // --------------------------------------------------------------------------
       // CAN ID 0x556: Battery cell voltages 1-5
       // 100 ms = 10 per second
-      if (CAN_BYTE(0) != 0x0ff)
+      if ((CAN_BYTE(0) != 0x0ff) && (twizy_batt_sensors_state != BATT_SENSORS_READY))
       {
-        twizy_cell[0].volt_act = ((UINT) CAN_BYTE(0) << 4) | ((UINT) CAN_NIBH(1));
-        twizy_cell[1].volt_act = ((UINT) CAN_NIBL(1) << 8) | ((UINT) CAN_BYTE(2));
-        twizy_cell[2].volt_act = ((UINT) CAN_BYTE(3) << 4) | ((UINT) CAN_NIBH(4));
-        twizy_cell[3].volt_act = ((UINT) CAN_NIBL(4) << 8) | ((UINT) CAN_BYTE(5));
-        twizy_cell[4].volt_act = ((UINT) CAN_BYTE(6) << 4) | ((UINT) CAN_NIBH(7));
+        twizy_cell[0].volt_new = ((UINT) CAN_BYTE(0) << 4) | ((UINT) CAN_NIBH(1));
+        twizy_cell[1].volt_new = ((UINT) CAN_NIBL(1) << 8) | ((UINT) CAN_BYTE(2));
+        twizy_cell[2].volt_new = ((UINT) CAN_BYTE(3) << 4) | ((UINT) CAN_NIBH(4));
+        twizy_cell[3].volt_new = ((UINT) CAN_NIBL(4) << 8) | ((UINT) CAN_BYTE(5));
+        twizy_cell[4].volt_new = ((UINT) CAN_BYTE(6) << 4) | ((UINT) CAN_NIBH(7));
+
+        // detect fetch completion/failure:
+        if ((twizy_batt_sensors_state & ~BATT_SENSORS_GOT556) == (BATT_SENSORS_READY & ~BATT_SENSORS_GOT556)) 
+        {
+          // read all sensor data: group complete
+          BatteryUpdate();
+        }
+        else if ((twizy_batt_sensors_state & ~BATT_SENSORS_GOT556))
+        {
+          // read some sensor data: count 0x556 cycles
+          uint8_t i = (twizy_batt_sensors_state & BATT_SENSORS_GOT556) + 1;
+
+          if (i == 3)
+            // not complete in 2 0x556s cycles: drop window (wait for next group)
+            twizy_batt_sensors_state = BATT_SENSORS_START;
+          else
+            // store new fetch window state:
+            twizy_batt_sensors_state = (twizy_batt_sensors_state & ~BATT_SENSORS_GOT556) | i;
+        }
       }
       
       break;
@@ -238,13 +280,19 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       // --------------------------------------------------------------------------
       // CAN ID 0x557: Battery cell voltages 6-10
       // (1000 ms = 1 per second)
-      if (CAN_BYTE(0) != 0x0ff)
+      if ((CAN_BYTE(0) != 0x0ff) && !(twizy_batt_sensors_state & BATT_SENSORS_GOT557))
       {
-        twizy_cell[5].volt_act = ((UINT) CAN_BYTE(0) << 4) | ((UINT) CAN_NIBH(1));
-        twizy_cell[6].volt_act = ((UINT) CAN_NIBL(1) << 8) | ((UINT) CAN_BYTE(2));
-        twizy_cell[7].volt_act = ((UINT) CAN_BYTE(3) << 4) | ((UINT) CAN_NIBH(4));
-        twizy_cell[8].volt_act = ((UINT) CAN_NIBL(4) << 8) | ((UINT) CAN_BYTE(5));
-        twizy_cell[9].volt_act = ((UINT) CAN_BYTE(6) << 4) | ((UINT) CAN_NIBH(7));
+        twizy_cell[5].volt_new = ((UINT) CAN_BYTE(0) << 4) | ((UINT) CAN_NIBH(1));
+        twizy_cell[6].volt_new = ((UINT) CAN_NIBL(1) << 8) | ((UINT) CAN_BYTE(2));
+        twizy_cell[7].volt_new = ((UINT) CAN_BYTE(3) << 4) | ((UINT) CAN_NIBH(4));
+        twizy_cell[8].volt_new = ((UINT) CAN_NIBL(4) << 8) | ((UINT) CAN_BYTE(5));
+        twizy_cell[9].volt_new = ((UINT) CAN_BYTE(6) << 4) | ((UINT) CAN_NIBH(7));
+
+        // detect fetch completion:
+        twizy_batt_sensors_state |= BATT_SENSORS_GOT557;
+        if ((twizy_batt_sensors_state & BATT_SENSORS_READY) >= BATT_SENSORS_GOTALL) {
+          BatteryUpdate();
+        }
       }
       break;
     
@@ -252,12 +300,18 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       // --------------------------------------------------------------------------
       // CAN ID 0x55E: Battery cell voltages 11-14
       // (1000 ms = 1 per second)
-      if (CAN_BYTE(0) != 0x0ff)
+      if ((CAN_BYTE(0) != 0x0ff) && !(twizy_batt_sensors_state & BATT_SENSORS_GOT55E))
       {
-        twizy_cell[10].volt_act = ((UINT) CAN_BYTE(0) << 4) | ((UINT) CAN_NIBH(1));
-        twizy_cell[11].volt_act = ((UINT) CAN_NIBL(1) << 8) | ((UINT) CAN_BYTE(2));
-        twizy_cell[12].volt_act = ((UINT) CAN_BYTE(3) << 4) | ((UINT) CAN_NIBH(4));
-        twizy_cell[13].volt_act = ((UINT) CAN_NIBL(4) << 8) | ((UINT) CAN_BYTE(5));
+        twizy_cell[10].volt_new = ((UINT) CAN_BYTE(0) << 4) | ((UINT) CAN_NIBH(1));
+        twizy_cell[11].volt_new = ((UINT) CAN_NIBL(1) << 8) | ((UINT) CAN_BYTE(2));
+        twizy_cell[12].volt_new = ((UINT) CAN_BYTE(3) << 4) | ((UINT) CAN_NIBH(4));
+        twizy_cell[13].volt_new = ((UINT) CAN_NIBL(4) << 8) | ((UINT) CAN_BYTE(5));
+
+        // detect fetch completion:
+        twizy_batt_sensors_state |= BATT_SENSORS_GOT55E;
+        if ((twizy_batt_sensors_state & BATT_SENSORS_READY) >= BATT_SENSORS_GOTALL) {
+          BatteryUpdate();
+        }
       }
       break;
     
@@ -265,16 +319,20 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       // --------------------------------------------------------------------------
       // CAN ID 0x55F: Battery pack voltages
       // (1000 ms = 1 per second)
-      if (CAN_BYTE(5) != 0x0ff)
+      if ((CAN_BYTE(5) != 0x0ff) && !(twizy_batt_sensors_state & BATT_SENSORS_GOT55F))
       {
         // we still don't know why there are two pack voltages
         // best guess: take avg
         UINT v1, v2;
-        
         v1 = ((UINT) CAN_BYTE(5) << 4) | ((UINT) CAN_NIBH(6));
         v2 = ((UINT) CAN_NIBL(6) << 8) | ((UINT) CAN_BYTE(7));
-        
-        twizy_batt[0].volt_act = (v1 + v2 + 1) >> 1;
+        twizy_batt[0].volt_new = (v1 + v2 + 1) >> 1;
+
+        // detect fetch completion:
+        twizy_batt_sensors_state |= BATT_SENSORS_GOT55F;
+        if ((twizy_batt_sensors_state & BATT_SENSORS_READY) >= BATT_SENSORS_GOTALL) {
+          BatteryUpdate();
+        }
       }
       break;
     
@@ -483,11 +541,37 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       //   - Bytes 2-4: cell voltages #15 & #16 (encoded in 12 bits like #1-#14)
       //   - Bytes 5-6: balancing status (bits 15…0 = cells 16…1, 1 = balancing active)
       //   - Byte 7: BMS specific state #2 (auxiliary state or data)
-      if (CAN_BYTE(0) != 0x0ff)
+      if ((CAN_BYTE(0) != 0x0ff) && !(twizy_batt_sensors_state & BATT_SENSORS_GOT700))
       {
         // Battery cell voltages 15 + 16:
-        twizy_cell[14].volt_act = ((UINT) CAN_BYTE(2) << 4) | ((UINT) CAN_NIBH(3));
-        twizy_cell[15].volt_act = ((UINT) CAN_NIBL(3) << 8) | ((UINT) CAN_BYTE(4));
+        twizy_cell[14].volt_new = ((UINT) CAN_BYTE(2) << 4) | ((UINT) CAN_NIBH(3));
+        twizy_cell[15].volt_new = ((UINT) CAN_NIBL(3) << 8) | ((UINT) CAN_BYTE(4));
+        
+        // update pack layout:
+        if (twizy_cell[15].volt_new != 0 && twizy_cell[15].volt_new != 0x0fff) {
+          if (batt_cell_count != 16) {
+            batt_cell_count = 16;
+            *m_batt_cell_count = (int) batt_cell_count;
+          }
+        }
+        else if (twizy_cell[14].volt_new != 0 && twizy_cell[14].volt_new != 0x0fff) {
+          if (batt_cell_count != 15) {
+            batt_cell_count = 15;
+            *m_batt_cell_count = (int) batt_cell_count;
+          }
+        }
+        else {
+          if (batt_cell_count != 14) {
+            batt_cell_count = 14;
+            *m_batt_cell_count = (int) batt_cell_count;
+          }
+        }
+
+        // detect fetch completion:
+        twizy_batt_sensors_state |= BATT_SENSORS_GOT700;
+        if ((twizy_batt_sensors_state & BATT_SENSORS_READY) >= BATT_SENSORS_GOTALL) {
+          BatteryUpdate();
+        }
       }
       break;
       
