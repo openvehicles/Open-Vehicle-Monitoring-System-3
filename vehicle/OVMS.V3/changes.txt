@@ -12,6 +12,7 @@ Open Vehicle Monitor System v3 - Change log
                          - Module: Add quick-and-dirty optional module task stack listing
                          - SIMCOM: Add a message, after ppp shutdown, to confirm that we get a response from the ppp task.
                          - Housekeeping: Move ticker.* events to housekeeping task context
+                         - SIMCOM: Fix to ppp disconnect handler, to reconnect in LWIP tiT task context
 
 2018-03-25 MWJ  3.1.001  OTA release
                          - Add task state to 'module tasks' output
