@@ -456,6 +456,35 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
 
 void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
   {
+  uint8_t *d = p_frame->data.u8;
+
+  switch (p_frame->MsgID)
+    {
+    case 0x355:
+      if (d[6] == 0x60)
+        {
+          m_odometer_units = Miles;
+        }
+      else if (d[6] == 0x40)
+        {
+          m_odometer_units = Kilometers;
+        }
+      break;
+    case 0x5c5:
+      {
+      uint32_t odometer;
+      odometer = d[1];
+      odometer = odometer << 8;
+      odometer = odometer | d[2];
+      odometer = odometer << 8;
+      odometer = odometer | d[3];
+      if (m_odometer_units != Other)
+        {
+        StandardMetrics.ms_v_pos_odometer->SetValue(odometer, m_odometer_units);
+        }
+      }
+      break;
+    }
   }
 
 ////////////////////////////////////////////////////////////////////////
