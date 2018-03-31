@@ -7,10 +7,11 @@ Open Vehicle Monitor System v3 - Change log
                            Store gids in a metric
                            Make range calcuations configurable
                            Calculate range in km
+                           Decode odometer and odometer units
                          - SSH: Increase scp size limit to 10MB
                          - Console: Show usage line if non-empty with optional subcommands
                          - Module: Add quick-and-dirty optional module task stack listing
-                         - SIMCOM: Add a message, after ppp shutdown, to confirm that we get a response from the ppp task.
+                         - SIMCOM: Add ppp shutdown msg, on response from the ppp task
                          - Housekeeping: Move ticker.* events to housekeeping task context
                          - SIMCOM: Fix to ppp disconnect handler, to reconnect in LWIP tiT task context
 
