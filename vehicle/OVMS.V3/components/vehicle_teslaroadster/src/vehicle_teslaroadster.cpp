@@ -297,7 +297,22 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
       }
     case 0x400:
-      {
+      { 
+      switch(d[0])
+          { 
+          case 0x02:   // Data to dashboard
+          unsigned int amps = (unsigned int)d[2]
+                            + (((unsigned int)d[3]&0x7f)<<8);
+          StandardMetrics.ms_v_bat_current->SetValue((float)amps);
+          
+          float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
+          if(soc != 0)
+            {
+            float power = amps * (((400.0-370.0)*soc/100.0)+370) / 1000.0;     // estimate Voltage by SOC
+            StandardMetrics.ms_v_bat_power->SetValue((float)power);
+            }
+          break;
+          }
       break;
       }
     case 0x402:
