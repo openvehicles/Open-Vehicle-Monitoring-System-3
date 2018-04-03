@@ -62,8 +62,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   else
     *StdMetrics.ms_v_pos_trip = (float) 0;
   
-  *StdMetrics.ms_v_pos_speed = (float) twizy_speed / 100;
-  
   *StdMetrics.ms_v_mot_temp = (float) twizy_tmotor;
   
   

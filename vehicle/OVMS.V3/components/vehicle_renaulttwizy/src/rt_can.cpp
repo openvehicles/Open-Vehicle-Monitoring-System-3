@@ -164,6 +164,9 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
             twizy_charge_rec += -twizy_current;
           }
           
+          // publish metric:
+          *StdMetrics.ms_v_bat_power = (float) twizy_power * 64 / 10000;
+          
           // do we need to take base power consumption into account?
           // i.e. for lights etc. -- varies...
         }
@@ -181,6 +184,16 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       else
         twizy_tmotor = 0;
       
+      break;
+    
+    
+    case 0x19F:
+      // --------------------------------------------------------------------------
+      // CAN ID 0x19F: 10 ms period
+      
+      // MOTOR RPM:
+      u = (CAN_UINT(2) & 0xfff0) >> 4;
+      StdMetrics.ms_v_mot_rpm->SetValue((u - 2000) * 10);
       break;
     
     
@@ -438,7 +451,7 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
         
         twizy_speed = u;
-        // car value derived in ticker1()
+        *StdMetrics.ms_v_pos_speed = (float) twizy_speed / 100;
       }
       
       break; // case 0x599
