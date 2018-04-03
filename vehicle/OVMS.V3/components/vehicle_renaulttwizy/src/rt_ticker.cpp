@@ -144,6 +144,9 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     *StdMetrics.ms_v_env_gear = (int) 0;
     *StdMetrics.ms_v_env_throttle = (float) 0;
     *StdMetrics.ms_v_env_footbrake = (float) 0;
+    *StdMetrics.ms_v_pos_speed = (float) 0;
+    *StdMetrics.ms_v_mot_rpm = (int) 0;
+    *StdMetrics.ms_v_bat_power = (float) 0;
   }
   
   
