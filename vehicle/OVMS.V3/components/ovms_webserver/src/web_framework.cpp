@@ -40,16 +40,6 @@
 #include "vehicle.h"
 
 
-// Embedded asset files (see component.mk):
-
-extern const uint8_t script_js_gz_start[]     asm("_binary_script_js_gz_start");
-extern const uint8_t script_js_gz_end[]       asm("_binary_script_js_gz_end");
-extern const uint8_t style_css_gz_start[]     asm("_binary_style_css_gz_start");
-extern const uint8_t style_css_gz_end[]       asm("_binary_style_css_gz_end");
-extern const uint8_t favicon_png_start[]      asm("_binary_favicon_png_start");
-extern const uint8_t favicon_png_end[]        asm("_binary_favicon_png_end");
-
-
 /**
  * encode_html: HTML encode value
  *   "  →  &quot;
@@ -571,6 +561,16 @@ void OvmsWebServer::OutputReboot(PageEntry_t& p, PageContext_t& c)
  * HandleAsset: output gzip assets
  * Note: no check for Accept-Encoding, we can't unzip & a modern browser is required anyway
  */
+
+extern const uint8_t script_js_gz_start[]     asm("_binary_script_js_gz_start");
+extern const uint8_t script_js_gz_end[]       asm("_binary_script_js_gz_end");
+extern const uint8_t charts_js_gz_start[]     asm("_binary_charts_js_gz_start");
+extern const uint8_t charts_js_gz_end[]       asm("_binary_charts_js_gz_end");
+extern const uint8_t style_css_gz_start[]     asm("_binary_style_css_gz_start");
+extern const uint8_t style_css_gz_end[]       asm("_binary_style_css_gz_end");
+extern const uint8_t favicon_png_start[]      asm("_binary_favicon_png_start");
+extern const uint8_t favicon_png_end[]        asm("_binary_favicon_png_end");
+
 void OvmsWebServer::HandleAsset(PageEntry_t& p, PageContext_t& c)
 {
   const uint8_t* data = NULL;
@@ -589,6 +589,12 @@ void OvmsWebServer::HandleAsset(PageEntry_t& p, PageContext_t& c)
     data = script_js_gz_start;
     size = script_js_gz_end - script_js_gz_start;
     mtime = MTIME_ASSETS_SCRIPT_JS;
+    type = "application/javascript";
+  }
+  else if (c.uri == "/assets/charts.js") {
+    data = charts_js_gz_start;
+    size = charts_js_gz_end - charts_js_gz_start;
+    mtime = MTIME_ASSETS_CHARTS_JS;
     type = "application/javascript";
   }
   else if (c.uri == "/favicon.ico" || c.uri == "/apple-touch-icon.png") {
