@@ -433,6 +433,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
     static void WebConsole(PageEntry_t& p, PageContext_t& c);
+    static void WebBattMon(PageEntry_t& p, PageContext_t& c);
   
 };
 

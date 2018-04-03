@@ -42,6 +42,12 @@ can can1 rx standard 55F 00 8E 73 00 00 23 E2 3E
 
 can can1 rx standard 556 33 63 35 33 53 34 33 5A
 
+can can1 rx standard 554 45 44 46 44 46 47 46 00
+can can1 rx standard 556 33 43 35 33 53 35 33 50
+can can1 rx standard 557 33 43 34 33 43 36 00 D5
+can can1 rx standard 55E 33 63 34 33 53 34 33 5A
+can can1 rx standard 55F 00 8E 73 00 00 23 E2 3E
+
 
 # Alert:
 

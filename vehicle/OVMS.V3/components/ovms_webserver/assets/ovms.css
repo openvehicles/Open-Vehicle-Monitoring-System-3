@@ -10,6 +10,11 @@ samp {
   color: #020;
   font-size: 13px;
 }
+.samp-inline {
+  display: inline-block;
+  vertical-align: top;
+  margin: 8px;
+}
 .monitor {
   min-height: 30px;
 }
@@ -62,6 +67,17 @@ pre {
   pre {
     white-space: pre-wrap;
     word-break: break-word;
+  }
+  .panel-single {
+    margin: -9px -15px 0;
+    border-radius: 0;
+  }
+  .panel-single .panel-heading {
+    padding: 5px 8px;
+    border-radius: 0;
+  }
+  .panel-single .panel-footer {
+    padding: 10px;
   }
 }
 
@@ -343,4 +359,31 @@ body.night {
 }
 .night .metric .unit {
   color: #909090;
+}
+
+/* Highcharts */
+
+.highcharts-background {
+  fill: #ffffff00;
+}
+.night .highcharts-axis-labels {
+  fill: #b1b1b1;
+}
+.night .highcharts-title {
+  fill: #6f6f6f;
+}
+.night .highcharts-grid-line {
+  stroke: #584f4f;
+}
+.night .highcharts-minor-grid-line {
+  stroke: #2d2d2d;
+}
+.night .highcharts-axis-line {
+  stroke: #626771;
+}
+.night .highcharts-tick {
+  stroke: #626771;
+}
+.night .highcharts-button {
+  fill: #b1b1b1;
 }
