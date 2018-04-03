@@ -435,6 +435,9 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     static void WebConsole(PageEntry_t& p, PageContext_t& c);
     static void WebBattMon(PageEntry_t& p, PageContext_t& c);
   
+  public:
+    void GetDashboardConfig(DashboardConfig& cfg);
+
 };
 
 #endif // __VEHICLE_RENAULTTWIZY_H__

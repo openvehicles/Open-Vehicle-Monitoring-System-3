@@ -394,6 +394,7 @@ class OvmsWebServer
     static void HandleStatus(PageEntry_t& p, PageContext_t& c);
     static void HandleCommand(PageEntry_t& p, PageContext_t& c);
     static void HandleShell(PageEntry_t& p, PageContext_t& c);
+    static void HandleDashboard(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgPassword(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgVehicle(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgModem(PageEntry_t& p, PageContext_t& c);
@@ -425,5 +426,14 @@ class OvmsWebServer
 };
 
 extern OvmsWebServer MyWebServer;
+
+
+/**
+ * DashboardConfig:
+ */
+struct DashboardConfig
+{
+  std::string gaugeset1;
+};
 
 #endif //#ifndef __WEBSERVER_H__

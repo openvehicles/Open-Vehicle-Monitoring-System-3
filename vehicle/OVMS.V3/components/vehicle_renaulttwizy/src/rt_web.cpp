@@ -696,3 +696,74 @@ void OvmsVehicleRenaultTwizy::WebBattMon(PageEntry_t& p, PageContext_t& c)
     "</script>");
   c.done();
 }
+
+
+/**
+ * GetDashboardConfig: Twizy specific dashboard setup
+ */
+void OvmsVehicleRenaultTwizy::GetDashboardConfig(DashboardConfig& cfg)
+{
+  cfg.gaugeset1 = 
+    "yAxis: [{"
+      // Speed:
+      "min: 0, max: 120,"
+      "plotBands: ["
+        "{ from: 0, to: 70, className: 'green-band' },"
+        "{ from: 70, to: 100, className: 'yellow-band' },"
+        "{ from: 100, to: 120, className: 'red-band' }]"
+    "},{"
+      // Voltage:
+      "min: 45, max: 60,"
+      "plotBands: ["
+        "{ from: 45, to: 47.5, className: 'red-band' },"
+        "{ from: 47.5, to: 50, className: 'yellow-band' },"
+        "{ from: 50, to: 100, className: 'green-band' }]"
+    "},{"
+      // SOC:
+      "min: 0, max: 100,"
+      "plotBands: ["
+        "{ from: 0, to: 12.5, className: 'red-band' },"
+        "{ from: 12.5, to: 25, className: 'yellow-band' },"
+        "{ from: 25, to: 100, className: 'green-band' }]"
+    "},{"
+      // Efficiency:
+      "min: 0, max: 300,"
+      "plotBands: ["
+        "{ from: 0, to: 150, className: 'green-band' },"
+        "{ from: 150, to: 250, className: 'yellow-band' },"
+        "{ from: 250, to: 300, className: 'red-band' }]"
+    "},{"
+      // Power:
+      "min: -10, max: 30,"
+      "plotBands: ["
+        "{ from: -10, to: 0, className: 'violet-band' },"
+        "{ from: 0, to: 15, className: 'green-band' },"
+        "{ from: 15, to: 25, className: 'yellow-band' },"
+        "{ from: 25, to: 30, className: 'red-band' }]"
+    "},{"
+      // Charger temperature:
+      "min: 20, max: 80, tickInterval: 20,"
+      "plotBands: ["
+        "{ from: 20, to: 65, className: 'normal-band border' },"
+        "{ from: 65, to: 80, className: 'red-band border' }]"
+    "},{"
+      // Battery temperature:
+      "min: -15, max: 65, tickInterval: 25,"
+      "plotBands: ["
+        "{ from: -15, to: 0, className: 'red-band border' },"
+        "{ from: 0, to: 50, className: 'normal-band border' },"
+        "{ from: 50, to: 65, className: 'red-band border' }]"
+    "},{"
+      // Inverter temperature:
+      "min: 20, max: 80, tickInterval: 20,"
+      "plotBands: ["
+        "{ from: 20, to: 70, className: 'normal-band border' },"
+        "{ from: 70, to: 80, className: 'red-band border' }]"
+    "},{"
+      // Motor temperature:
+      "min: 50, max: 125, tickInterval: 25,"
+      "plotBands: ["
+        "{ from: 50, to: 110, className: 'normal-band border' },"
+        "{ from: 110, to: 125, className: 'red-band border' }]"
+    "}]";
+}
