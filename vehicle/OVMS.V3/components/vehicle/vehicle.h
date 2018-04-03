@@ -125,6 +125,7 @@ class OvmsVehicle
   protected:
     virtual void ConfigChanged(OvmsConfigParam* param);
     virtual void MetricModified(OvmsMetric* metric);
+    virtual void CalculateEfficiency();
 
   protected:
     void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed);

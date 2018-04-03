@@ -584,6 +584,8 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     StandardMetrics.ms_v_charge_time->SetValue(StandardMetrics.ms_v_charge_time->AsInt() + 1);
   else
     StandardMetrics.ms_v_charge_time->SetValue(0);
+
+  CalculateEfficiency();
   }
 
 void OvmsVehicle::Ticker1(uint32_t ticker)
@@ -608,6 +610,16 @@ void OvmsVehicle::Ticker600(uint32_t ticker)
 
 void OvmsVehicle::Ticker3600(uint32_t ticker)
   {
+  }
+
+// Default efficiency calculation by speed & power per second, average smoothed over 5 seconds.
+// Override if your vehicle provides more detail.
+void OvmsVehicle::CalculateEfficiency()
+  {
+  float consumption = 0;
+  if (StdMetrics.ms_v_pos_speed->AsFloat() > 0)
+    consumption = StdMetrics.ms_v_bat_power->AsFloat(0, Watts) / StdMetrics.ms_v_pos_speed->AsFloat();
+  StdMetrics.ms_v_bat_consumption->SetValue((StdMetrics.ms_v_bat_consumption->AsFloat() * 4 + consumption) / 5);
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandSetChargeMode(vehicle_mode_t mode)

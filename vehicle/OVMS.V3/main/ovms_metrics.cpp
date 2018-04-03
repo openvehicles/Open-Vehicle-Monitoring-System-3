@@ -775,6 +775,8 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
     case AmpHours:     return "Ah";
     case kW:           return "kW";
     case kWh:          return "kWh";
+    case Watts:        return "W";
+    case WattHours:    return "Wh";
     case Seconds:      return "Sec";
     case Minutes:      return "Min";
     case Hours:        return "Hour";
@@ -787,6 +789,8 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
     case dbm:          return "dBm";
     case sq:           return "sq";
     case Percentage:   return "%";
+    case WattHoursPK:  return "Wh/km";
+    case WattHoursPM:  return "Wh/mi";
     default:           return "";
     }
   }
@@ -810,6 +814,24 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
     case MphPS:
       if (to == KphPS) return (value*8)/5;
       else if (to == MetersPSS) return (value*8000)/5;
+      break;
+    case kW:
+      if (to == Watts) return (value*1000);
+      break;
+    case Watts:
+      if (to == kW) return (value/1000);
+      break;
+    case kWh:
+      if (to == WattHours) return (value*1000);
+      break;
+    case WattHours:
+      if (to == kWh) return (value/1000);
+      break;
+    case WattHoursPK:
+      if (to == WattHoursPM) return (value*8)/5;
+      break;
+    case WattHoursPM:
+      if (to == WattHoursPK) return (value*5)/8;
       break;
     case Celcius:
       if (to == Fahrenheit) return ((value*9)/5) + 32;
@@ -876,6 +898,24 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
     case MphPS:
       if (to == KphPS) return (value*8)/5;
       else if (to == MetersPSS) return (value*8000)/5;
+      break;
+    case kW:
+      if (to == Watts) return (value*1000);
+      break;
+    case Watts:
+      if (to == kW) return (value/1000);
+      break;
+    case kWh:
+      if (to == WattHours) return (value*1000);
+      break;
+    case WattHours:
+      if (to == kWh) return (value/1000);
+      break;
+    case WattHoursPK:
+      if (to == WattHoursPM) return (value*8)/5;
+      break;
+    case WattHoursPM:
+      if (to == WattHoursPK) return (value*5)/8;
       break;
     case Celcius:
       if (to == Fahrenheit) return ((value*9)/5) + 32;
