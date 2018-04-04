@@ -48,7 +48,7 @@ class OvmsOTA
     ~OvmsOTA();
 
   public:
-    static void GetStatus(ota_info& info);
+    static void GetStatus(ota_info& info, bool check_update=true);
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
   protected:

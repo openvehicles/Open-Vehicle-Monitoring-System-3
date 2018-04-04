@@ -180,7 +180,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
   output = ExecuteCommand("boot status");
   c.printf("<samp>%s</samp>", _html(output));
   c.print("<hr>");
-  output = ExecuteCommand("ota status");
+  output = ExecuteCommand("ota status nocheck");
   c.printf("<samp>%s</samp>", _html(output));
   c.panel_end();
 
