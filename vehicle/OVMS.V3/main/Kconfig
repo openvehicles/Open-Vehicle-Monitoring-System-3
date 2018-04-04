@@ -165,6 +165,16 @@ config OVMS_VEHICLE_KIASOULEV
 
 endmenu # Vehicle Support
 
+config OVMS_VEHICLE_RXTASK_STACK
+    int "Stack size for vehicle RX task"
+    default 3072
+    depends on OVMS
+    help
+        Stack size for the vehicle CAN RX task ("Vrx Task").
+        The RX task triggers events and metrics updates so needs to be
+        able to process the attached event/metrics listeners.
+        Standard stack usage of this task is currently around 1400 bytes.
+
 menu "Component Options"
     depends on OVMS
 
@@ -315,7 +325,7 @@ config OVMS_COMP_EDITOR
     help
         Enable to include support for a simple file editor (vfs edit)
 
-config OVMS_COMP_CANOPEN
+menuconfig OVMS_COMP_CANOPEN
     bool "Include CANopen framework"
     default y
     depends on OVMS
@@ -323,6 +333,27 @@ config OVMS_COMP_CANOPEN
         The CANopen framework provides shell commands and a simple client API
         for CANopen node management (NMT), state and emergency (EMCY) monitoring,
         and accessing node service dictionary objects (SDO).
+
+config OVMS_COMP_CANOPEN_RX_STACK
+    int "Stack size for CANopen RX task"
+    default 3072
+    depends on OVMS_COMP_CANOPEN
+    help
+        Stack size for the CANopen RX task ("COrx").
+        The shared RX task triggers EMCY and NMT events and metrics updates
+        so needs to be able to process the event/metrics listeners. If the
+        listeners are simple, stack size can be reduced.
+        Standard stack usage for the Twizy is currently around 2400 bytes.
+
+config OVMS_COMP_CANOPEN_WRK_STACK
+    int "Stack size for CANopen worker (TX) tasks"
+    default 1536
+    depends on OVMS_COMP_CANOPEN
+    help
+        Stack size for CANopen worker tasks ("COwrk").
+        Worker tasks only process TX jobs and don't trigger any event/metrics
+        updates so can run with a smaller stack than the RX task.
+        Standard stack usage for the Twizy is currently around 1000 bytes.
 
 endmenu # Component Options
 
