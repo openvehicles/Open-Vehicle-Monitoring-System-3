@@ -16,6 +16,7 @@ Open Vehicle Monitor System v3 - Change log
                          - SIMCOM: Fix to ppp disconnect handler, to reconnect in LWIP tiT task context
                          - Twizy v0.14: battery cell monitoring web UI
                          - Webserver: dashboard
+                         - Web UI: fullscreen mode
 
 2018-03-25 MWJ  3.1.001  OTA release
                          - Add task state to 'module tasks' output
