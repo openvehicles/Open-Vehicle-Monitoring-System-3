@@ -44,6 +44,7 @@ class BufferedShell : public OvmsShell
 
   public:
     void Initialize(bool print);
+    void SetBuffer(LogBuffers* output = NULL);
     int puts(const char* s);
     int printf(const char* fmt, ...);
     ssize_t write(const void *buf, size_t nbyte);

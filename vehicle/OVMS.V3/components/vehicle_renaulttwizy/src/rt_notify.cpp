@@ -25,7 +25,7 @@
  */
 
 #include "ovms_log.h"
-// static const char *TAG = "v-twizy";
+//static const char *TAG = "v-twizy";
 
 #include <stdio.h>
 #include <string>
@@ -37,6 +37,7 @@
 #include "ovms_command.h"
 #include "metrics_standard.h"
 #include "ovms_notify.h"
+#include "string_writer.h"
 
 #include "vehicle_renaulttwizy.h"
 
@@ -58,19 +59,28 @@ void OvmsVehicleRenaultTwizy::DoNotify()
   
   // Send battery alert?
   if (which & SEND_BatteryAlert) {
-    MyNotify.NotifyCommand("alert", "xrt batt status");
-    twizy_notifications &= ~SEND_BatteryAlert;
+    if (BatteryLock(0)) {
+      StringWriter buf(200);
+      FormatBatteryStatus(COMMAND_RESULT_NORMAL, &buf, 0);
+      MyNotify.NotifyString("alert", buf.c_str());
+      BatteryUnlock();
+      twizy_notifications &= ~SEND_BatteryAlert;
+    }
   }
   
   // Send charge alert?
   if (which & SEND_ChargeAlert) {
-    MyNotify.NotifyCommand("alert", "stat");
+    StringWriter buf(200);
+    CommandStat(COMMAND_RESULT_NORMAL, &buf);
+    MyNotify.NotifyString("alert", buf.c_str());
     twizy_notifications &= ~SEND_ChargeAlert;
   }
   
   // Send charge state?
   if (which & SEND_ChargeState) {
-    MyNotify.NotifyCommand("info", "stat");
+    StringWriter buf(200);
+    CommandStat(COMMAND_RESULT_NORMAL, &buf);
+    MyNotify.NotifyString("info", buf.c_str());
     twizy_notifications &= ~SEND_ChargeState;
   }
   
@@ -94,8 +104,13 @@ void OvmsVehicleRenaultTwizy::DoNotify()
   
   // Send battery status update?
   if (which & SEND_BatteryStats) {
-    BatterySendDataUpdate();
-    twizy_notifications &= ~SEND_BatteryStats;
+    if (BatteryLock(0)) {
+      //uint32_t ts = esp_log_timestamp();
+      BatterySendDataUpdate(false);
+      //ESP_LOGD(TAG, "time SEND_BatteryStats: %d ms", esp_log_timestamp()-ts);
+      BatteryUnlock();
+      twizy_notifications &= ~SEND_BatteryStats;
+    }
   }
   
   // Send power usage update?

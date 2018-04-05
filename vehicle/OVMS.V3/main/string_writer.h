@@ -8,6 +8,7 @@
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011        Sonny Chen @ EPRO/DX
+;    (C) 2018       Michael Balzer
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -27,35 +28,30 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
+#ifndef __string_writer_h__
+#define __string_writer_h__
 
-#ifndef __OTA_H__
-#define __OTA_H__
+#include <string>
+#include "ovms_command.h"
 
-#include "ovms_events.h"
+class LogBuffers;
+class OvmsCommandMap;
 
-struct ota_info
-  {
-  std::string version_firmware;
-  std::string version_server;
-  std::string partition_running;
-  std::string partition_boot;
-  };
-
-class OvmsOTA
+class StringWriter : public std::string, public OvmsWriter
   {
   public:
-    OvmsOTA();
-    ~OvmsOTA();
+    StringWriter(size_t capacity=0);
+    ~StringWriter();
 
   public:
-    static void GetStatus(ota_info& info, bool check_update=true);
+    int puts(const char* s);
+    int printf(const char* fmt, ...);
+    ssize_t write(const void *buf, size_t nbyte);
 
-#ifdef CONFIG_OVMS_COMP_SDCARD
-  protected:
-    void AutoFlashSD(std::string event, void* data);
-#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
+  public:
+    char ** GetCompletion(OvmsCommandMap& children, const char* token) { return NULL; }
+    void Log(LogBuffers* message) {}
+    virtual bool IsInteractive() { return false; }
   };
 
-extern OvmsOTA MyOTA;
-
-#endif //#ifndef __OTA_H__
+#endif // __string_writer_h__

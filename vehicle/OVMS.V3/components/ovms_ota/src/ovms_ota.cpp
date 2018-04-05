@@ -56,7 +56,8 @@ void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   {
   ota_info info;
   int len = 0;
-  MyOTA.GetStatus(info);
+  bool check_update = (strcmp(cmd->GetName(), "status")==0);
+  MyOTA.GetStatus(info, check_update);
   if (info.version_firmware != "")
     len += writer->printf("Firmware:          %s\n", info.version_firmware.c_str());
   if (info.version_server != "")
@@ -450,7 +451,8 @@ OvmsOTA::OvmsOTA()
 
   OvmsCommand* cmd_ota = MyCommandApp.RegisterCommand("ota","OTA framework",NULL,"",0,0,true);
 
-  cmd_ota->RegisterCommand("status","Show OTA status",ota_status,"",0,0,true);
+  OvmsCommand* cmd_otastatus = cmd_ota->RegisterCommand("status","Show OTA status",ota_status,"[nocheck]",0,1,true);
+  cmd_otastatus->RegisterCommand("nocheck","…skip check for available update",ota_status,"",0,0,true);
 
   OvmsCommand* cmd_otaflash = cmd_ota->RegisterCommand("flash","OTA flash",NULL,"",0,0,true);
   cmd_otaflash->RegisterCommand("vfs","OTA flash vfs",ota_flash_vfs,"<file>",1,1,true);
@@ -466,7 +468,7 @@ OvmsOTA::~OvmsOTA()
   {
   }
 
-void OvmsOTA::GetStatus(ota_info& info)
+void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
   {
   info.version_firmware = "";
   info.version_server = "";
@@ -478,7 +480,7 @@ void OvmsOTA::GetStatus(ota_info& info)
     {
     info.version_firmware = m->AsString();
 
-    if (MyNetManager.m_connected_wifi)
+    if (check_update && MyNetManager.m_connected_wifi)
       {
       // We have a wifi connection, so let's try to find out the version the server has
       std::string url;

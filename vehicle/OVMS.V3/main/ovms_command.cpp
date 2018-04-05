@@ -294,6 +294,8 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
       }
     if (strcmp(argv[0],"?")==0)
       {
+      if (m_usage_template && *m_usage_template && m_execute)
+        writer->puts(GetUsage(writer));
       // Show available commands
       int avail = 0;
       for (OvmsCommandMap::iterator it=m_children.begin(); it!=m_children.end(); ++it)

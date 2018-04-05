@@ -40,6 +40,7 @@
 #include "metrics_standard.h"
 
 using namespace std;
+struct DashboardConfig;
 
 // Polling types supported:
 //  (see https://en.wikipedia.org/wiki/OBD-II_PIDs
@@ -125,6 +126,10 @@ class OvmsVehicle
   protected:
     virtual void ConfigChanged(OvmsConfigParam* param);
     virtual void MetricModified(OvmsMetric* metric);
+    virtual void CalculateEfficiency();
+
+  public:
+    virtual void GetDashboardConfig(DashboardConfig& cfg);
 
   protected:
     void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed);

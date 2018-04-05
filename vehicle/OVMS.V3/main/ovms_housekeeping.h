@@ -34,6 +34,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/timers.h"
+#include "freertos/event_groups.h"
 
 class Housekeeping
   {
@@ -46,6 +47,9 @@ class Housekeeping
     void version();
     void metrics();
     void Ticker1();
+
+  public:
+    EventGroupHandle_t m_sync;
 
   protected:
     TaskHandle_t m_taskid;

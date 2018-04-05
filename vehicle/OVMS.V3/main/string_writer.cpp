@@ -8,6 +8,7 @@
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011        Sonny Chen @ EPRO/DX
+;    (C) 2018       Michael Balzer
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -28,34 +29,42 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __OTA_H__
-#define __OTA_H__
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+#include "string_writer.h"
 
-#include "ovms_events.h"
-
-struct ota_info
+StringWriter::StringWriter(size_t capacity /*=0*/)
   {
-  std::string version_firmware;
-  std::string version_server;
-  std::string partition_running;
-  std::string partition_boot;
-  };
+  if (capacity)
+    reserve(capacity);
+  }
 
-class OvmsOTA
+StringWriter::~StringWriter()
   {
-  public:
-    OvmsOTA();
-    ~OvmsOTA();
+  }
 
-  public:
-    static void GetStatus(ota_info& info, bool check_update=true);
+int StringWriter::puts(const char* s)
+  {
+  append(s);
+  push_back('\n');
+  return 0;
+  }
 
-#ifdef CONFIG_OVMS_COMP_SDCARD
-  protected:
-    void AutoFlashSD(std::string event, void* data);
-#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
-  };
+int StringWriter::printf(const char* fmt, ...)
+  {
+  char *buffer;
+  va_list args;
+  va_start(args, fmt);
+  int ret = vasprintf(&buffer, fmt, args);
+  va_end(args);
+  append(buffer, ret);
+  free(buffer);
+  return ret;
+  }
 
-extern OvmsOTA MyOTA;
-
-#endif //#ifndef __OTA_H__
+ssize_t StringWriter::write(const void *buf, size_t nbyte)
+  {
+  append((const char*)buf, nbyte);
+  return 0;
+  }

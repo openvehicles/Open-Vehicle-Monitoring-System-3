@@ -103,8 +103,6 @@ void OvmsVehicleRenaultTwizy::PowerUpdate()
   
   unsigned long pwr;
   
-  *StdMetrics.ms_v_bat_power = (float) twizy_power * 64 / 10000;
-  
   pwr = twizy_speedpwr[CAN_SPEED_CONST].use
       + twizy_speedpwr[CAN_SPEED_ACCEL].use
       + twizy_speedpwr[CAN_SPEED_DECEL].use;

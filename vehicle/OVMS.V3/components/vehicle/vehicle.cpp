@@ -35,6 +35,7 @@ static const char *TAG = "vehicle";
 #include <ovms_command.h>
 #include <ovms_metrics.h>
 #include <metrics_standard.h>
+#include <ovms_webserver.h>
 #include "vehicle.h"
 
 OvmsVehicleFactory MyVehicleFactory __attribute__ ((init_priority (2000)));
@@ -459,7 +460,8 @@ OvmsVehicle::OvmsVehicle()
   m_poll_ml_frame = 0;
 
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
-  xTaskCreatePinnedToCore(OvmsVehicleRxTask, "Vrx Task", 4096, (void*)this, 10, &m_rxtask, 1);
+  xTaskCreatePinnedToCore(OvmsVehicleRxTask, "Vrx Task",
+    CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_rxtask, 1);
 
   using std::placeholders::_1;
   using std::placeholders::_2;
@@ -584,6 +586,8 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     StandardMetrics.ms_v_charge_time->SetValue(StandardMetrics.ms_v_charge_time->AsInt() + 1);
   else
     StandardMetrics.ms_v_charge_time->SetValue(0);
+
+  CalculateEfficiency();
   }
 
 void OvmsVehicle::Ticker1(uint32_t ticker)
@@ -608,6 +612,16 @@ void OvmsVehicle::Ticker600(uint32_t ticker)
 
 void OvmsVehicle::Ticker3600(uint32_t ticker)
   {
+  }
+
+// Default efficiency calculation by speed & power per second, average smoothed over 5 seconds.
+// Override if your vehicle provides more detail.
+void OvmsVehicle::CalculateEfficiency()
+  {
+  float consumption = 0;
+  if (StdMetrics.ms_v_pos_speed->AsFloat() > 0)
+    consumption = StdMetrics.ms_v_bat_power->AsFloat(0, Watts) / StdMetrics.ms_v_pos_speed->AsFloat();
+  StdMetrics.ms_v_bat_consumption->SetValue((StdMetrics.ms_v_bat_consumption->AsFloat() * 4 + consumption) / 5);
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandSetChargeMode(vehicle_mode_t mode)
@@ -1083,4 +1097,76 @@ const std::string OvmsVehicle::GetFeature(int key)
 OvmsVehicle::vehicle_command_t OvmsVehicle::ProcessMsgCommand(std::string &result, int command, const char* args)
   {
   return NotImplemented;
+  }
+
+/**
+ * GetDashboardConfig: template / default configuration
+ *  (override with vehicle specific configuration)
+ *  see https://api.highcharts.com/highcharts/yAxis for details on options
+ */
+void OvmsVehicle::GetDashboardConfig(DashboardConfig& cfg)
+  {
+  cfg.gaugeset1 = 
+    "yAxis: [{"
+      // Speed:
+      "min: 0, max: 200,"
+      "plotBands: ["
+        "{ from: 0, to: 120, className: 'green-band' },"
+        "{ from: 120, to: 160, className: 'yellow-band' },"
+        "{ from: 160, to: 200, className: 'red-band' }]"
+    "},{"
+      // Voltage:
+      "min: 310, max: 410,"
+      "plotBands: ["
+        "{ from: 310, to: 325, className: 'red-band' },"
+        "{ from: 325, to: 340, className: 'yellow-band' },"
+        "{ from: 340, to: 410, className: 'green-band' }]"
+    "},{"
+      // SOC:
+      "min: 0, max: 100,"
+      "plotBands: ["
+        "{ from: 0, to: 12.5, className: 'red-band' },"
+        "{ from: 12.5, to: 25, className: 'yellow-band' },"
+        "{ from: 25, to: 100, className: 'green-band' }]"
+    "},{"
+      // Efficiency:
+      "min: 0, max: 400,"
+      "plotBands: ["
+        "{ from: 0, to: 200, className: 'green-band' },"
+        "{ from: 200, to: 300, className: 'yellow-band' },"
+        "{ from: 300, to: 400, className: 'red-band' }]"
+    "},{"
+      // Power:
+      "min: -50, max: 200,"
+      "plotBands: ["
+        "{ from: -50, to: 0, className: 'violet-band' },"
+        "{ from: 0, to: 100, className: 'green-band' },"
+        "{ from: 100, to: 150, className: 'yellow-band' },"
+        "{ from: 150, to: 200, className: 'red-band' }]"
+    "},{"
+      // Charger temperature:
+      "min: 20, max: 80, tickInterval: 20,"
+      "plotBands: ["
+        "{ from: 20, to: 65, className: 'normal-band border' },"
+        "{ from: 65, to: 80, className: 'red-band border' }]"
+    "},{"
+      // Battery temperature:
+      "min: -15, max: 65, tickInterval: 25,"
+      "plotBands: ["
+        "{ from: -15, to: 0, className: 'red-band border' },"
+        "{ from: 0, to: 50, className: 'normal-band border' },"
+        "{ from: 50, to: 65, className: 'red-band border' }]"
+    "},{"
+      // Inverter temperature:
+      "min: 20, max: 80, tickInterval: 20,"
+      "plotBands: ["
+        "{ from: 20, to: 70, className: 'normal-band border' },"
+        "{ from: 70, to: 80, className: 'red-band border' }]"
+    "},{"
+      // Motor temperature:
+      "min: 50, max: 125, tickInterval: 25,"
+      "plotBands: ["
+        "{ from: 50, to: 110, className: 'normal-band border' },"
+        "{ from: 110, to: 125, className: 'red-band border' }]"
+    "}]";
   }

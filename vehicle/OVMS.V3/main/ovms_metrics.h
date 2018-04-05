@@ -66,6 +66,8 @@ typedef enum
   AmpHours      = 42,
   kW            = 43,
   kWh           = 44,
+  Watts         = 45,
+  WattHours     = 46,
   
   Seconds       = 50,
   Minutes       = 51,
@@ -84,7 +86,11 @@ typedef enum
   dbm           = 80,   // Signal Quality (in dBm)
   sq            = 81,   // Signal Quality (in SQ units)
 
-  Percentage    = 90
+  Percentage    = 90,
+  
+  // Energy consumption:
+  WattHoursPK   = 100,  // Wh/km
+  WattHoursPM   = 101,  // Wh/mi
   } metric_unit_t;
 
 extern const char* OvmsMetricUnitLabel(metric_unit_t units);
