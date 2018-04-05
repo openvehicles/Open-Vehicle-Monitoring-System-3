@@ -619,7 +619,7 @@ void OvmsVehicle::Ticker3600(uint32_t ticker)
 void OvmsVehicle::CalculateEfficiency()
   {
   float consumption = 0;
-  if (StdMetrics.ms_v_pos_speed->AsFloat() > 0)
+  if (StdMetrics.ms_v_pos_speed->AsFloat() >= 5)
     consumption = StdMetrics.ms_v_bat_power->AsFloat(0, Watts) / StdMetrics.ms_v_pos_speed->AsFloat();
   StdMetrics.ms_v_bat_consumption->SetValue((StdMetrics.ms_v_bat_consumption->AsFloat() * 4 + consumption) / 5);
   }
