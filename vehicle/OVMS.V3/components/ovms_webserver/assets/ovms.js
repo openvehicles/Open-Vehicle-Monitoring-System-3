@@ -162,9 +162,35 @@ function monitorUpdate(){
 
 $(function(){
   
+  // Toggle night mode:
   $('body').on('click', '.toggle-night', function(event){
     $('body').toggleClass("night");
     event.stopPropagation();
+    return false;
+  });
+
+  // Toggle fullscreen mode:
+  document.fullScreenMode = document.fullScreen || document.mozFullScreen || document.webkitIsFullScreen;
+  $(document).on('mozfullscreenchange webkitfullscreenchange fullscreenchange', function() {
+    this.fullScreenMode = !this.fullScreenMode;
+    if (this.fullScreenMode) {
+      $('body').addClass("fullscreened");
+    } else {
+      $('body').removeClass("fullscreened");
+    }
+    $(window).trigger("resize");
+  });
+  $('body').on('click', '.toggle-fullscreen', function(evt) {
+    element = document.body;
+    if (element.requestFullscreen) {
+      element.requestFullscreen();
+    } else if (element.mozRequestFullScreen) {
+      element.mozRequestFullScreen();
+    } else if (element.webkitRequestFullscreen) {
+      element.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+    } else if (element.msRequestFullscreen) {
+      element.msRequestFullscreen();
+    }
     return false;
   });
 

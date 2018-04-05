@@ -376,7 +376,7 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
     ".unsaved > *:after { content: \"*\"; }"
     "</style>");
   
-  c.panel_start("primary", "Drivemode");
+  c.panel_start("primary panel-single", "Drivemode");
   
   c.printf(
     "<samp id=\"loadres\">%s</samp>", _html(buf.str()));
