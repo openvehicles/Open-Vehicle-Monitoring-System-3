@@ -242,7 +242,7 @@ esp32wifi::esp32wifi(const char* name)
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.gotip",std::bind(&esp32wifi::EventWifiGotIp, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.disconnected",std::bind(&esp32wifi::EventWifiStaDisconnected, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"ticker.60",std::bind(&esp32wifi::EventTimer60, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"ticker.10",std::bind(&esp32wifi::EventTimer10, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.scan.done",std::bind(&esp32wifi::EventWifiScanDone, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.start",std::bind(&esp32wifi::EventWifiApState, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.stop",std::bind(&esp32wifi::EventWifiApState, this, _1, _2));
@@ -732,7 +732,7 @@ void esp32wifi::EventWifiApUpdate(std::string event, void* data)
       info->sta_connected.aid, MAC2STR(info->sta_connected.mac));
   }
 
-void esp32wifi::EventTimer60(std::string event, void* data)
+void esp32wifi::EventTimer10(std::string event, void* data)
   {
   if (((m_mode == ESP32WIFI_MODE_CLIENT)||(m_mode == ESP32WIFI_MODE_APCLIENT))&&(m_stareconnect))
     {
