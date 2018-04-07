@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+
+2018-04-07 MWJ  3.1.002  OTA release
                          - Nissan Leaf: Various enhancements:
                            Store hx in a metric, SoH in soh based on configurable new car Ah
                            Adjust constants
