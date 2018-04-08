@@ -33,12 +33,28 @@ static const char *TAG = "events";
 
 #include <string.h>
 #include <stdio.h>
-#include "esp_event_loop.h"
+#include <esp_event_loop.h>
+#include <esp_task_wdt.h>
+#include "ovms_module.h"
 #include "ovms_events.h"
 #include "ovms_command.h"
 #include "ovms_script.h"
 
 OvmsEvents MyEvents __attribute__ ((init_priority (1200)));
+
+typedef void (*event_signal_done_fn)(const char* event, void* data);
+
+void EventStdFree(const char* event, void* data)
+  {
+  free(data);
+  }
+
+void EventLaunchTask(void *pvParameters)
+  {
+  OvmsEvents* me = (OvmsEvents*)pvParameters;
+
+  me->EventTask();
+  }
 
 void event_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -76,10 +92,89 @@ OvmsEvents::OvmsEvents()
   OvmsCommand* cmd_eventtrace = cmd_event->RegisterCommand("trace","EVENT trace framework", NULL, "", 0, 0, true);
   cmd_eventtrace->RegisterCommand("on","Turn event tracing ON",event_trace,"", 0, 0, true);
   cmd_eventtrace->RegisterCommand("off","Turn event tracing OFF",event_trace,"", 0, 0, true);
+
+  m_taskqueue = xQueueCreate(50,sizeof(event_queue_t));
+  xTaskCreatePinnedToCore(EventLaunchTask, "OVMS Events", 6144, (void*)this, 5, &m_taskid, 1);
+  AddTaskToMap(m_taskid);
   }
 
 OvmsEvents::~OvmsEvents()
   {
+  }
+
+void OvmsEvents::EventTask()
+  {
+  event_queue_t msg;
+
+  esp_task_wdt_add(NULL); // WATCHDOG is active for this task
+  while(1)
+    {
+    if (xQueueReceive(m_taskqueue, &msg, (portTickType)portMAX_DELAY)==pdTRUE)
+      {
+      esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
+      switch(msg.type)
+        {
+        case EVENT_none:
+          break;
+        case EVENT_signal:
+          HandleQueueSignalEvent(&msg);
+          break;
+        default:
+          break;
+        }
+      }
+    esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
+    }
+  }
+
+void OvmsEvents::HandleQueueSignalEvent(event_queue_t* msg)
+  {
+  std::string event(msg->body.signal.event);
+
+  if (m_trace)
+    {
+    if (event.compare(0,7,"ticker.") != 0)
+      {
+      // Log everything but the excessively verbose ticker signals
+      ESP_LOGI(TAG, "Signal(%s)",event.c_str());
+      }
+    }
+
+  auto k = m_map.find(event);
+  if (k != m_map.end())
+    {
+    EventCallbackList* el = k->second;
+    if (el)
+      {
+      for (EventCallbackList::iterator itc=el->begin(); itc!=el->end(); ++itc)
+        {
+        EventCallbackEntry* ec = *itc;
+        ec->m_callback(event, msg->body.signal.data);
+        }
+      }
+    }
+
+  k = m_map.find("*");
+  if (k != m_map.end())
+    {
+    EventCallbackList* el = k->second;
+    if (el)
+      {
+      for (EventCallbackList::iterator itc=el->begin(); itc!=el->end(); ++itc)
+        {
+        EventCallbackEntry* ec = *itc;
+        ec->m_callback(event, msg->body.signal.data);
+        }
+      }
+    }
+
+  MyScripts.EventScript(event, msg->body.signal.data);
+
+  if (msg->body.signal.donefn != NULL)
+    {
+    msg->body.signal.donefn(msg->body.signal.event, msg->body.signal.data);
+    }
+  free(msg->body.signal.event);
   }
 
 void OvmsEvents::RegisterEvent(std::string caller, std::string event, EventCallback callback)
@@ -132,46 +227,17 @@ void OvmsEvents::DeregisterEvent(std::string caller)
     }
   }
 
-void OvmsEvents::SignalEvent(std::string event, void* data)
+void OvmsEvents::SignalEvent(std::string event, void* data, event_signal_done_fn callback)
   {
-  if (m_trace)
-    {
-    if (event.compare(0,7,"ticker.") != 0)
-      {
-      // Log everything but the excessively verbose ticker signals
-      ESP_LOGI(TAG, "Signal(%s)",event.c_str());
-      }
-    }
+  event_queue_t msg;
+  memset(&msg, 0, sizeof(msg));
 
-  auto k = m_map.find(event);
-  if (k != m_map.end())
-    {
-    EventCallbackList* el = k->second;
-    if (el)
-      {
-      for (EventCallbackList::iterator itc=el->begin(); itc!=el->end(); ++itc)
-        {
-        EventCallbackEntry* ec = *itc;
-        ec->m_callback(event, data);
-        }
-      }
-    }
-
-  k = m_map.find("*");
-  if (k != m_map.end())
-    {
-    EventCallbackList* el = k->second;
-    if (el)
-      {
-      for (EventCallbackList::iterator itc=el->begin(); itc!=el->end(); ++itc)
-        {
-        EventCallbackEntry* ec = *itc;
-        ec->m_callback(event, data);
-        }
-      }
-    }
-
-  MyScripts.EventScript(event, data);
+  msg.type = EVENT_signal;
+  msg.body.signal.event = (char*)ExternalRamMalloc(event.size()+1);
+  strcpy(msg.body.signal.event, event.c_str());
+  msg.body.signal.data = data;
+  msg.body.signal.donefn = callback;
+  xQueueSend(m_taskqueue, &msg, 0);
   }
 
 esp_err_t OvmsEvents::ReceiveSystemEvent(void *ctx, system_event_t *event)
