@@ -37,6 +37,7 @@
 #include <set>
 #include <limits.h>
 #include "ovms.h"
+#include "ovms_mutex.h"
 #include "task_base.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -156,7 +157,7 @@ class OvmsCommandTask : public TaskBase
     static bool Terminator(OvmsWriter* writer, void* userdata, char ch);
     bool IsRunning() { return m_state == OCS_RunLoop; }
     bool IsTerminated() { return m_state == OCS_StopRequested; }
-  
+
   protected:
     int verbosity;
     OvmsWriter* writer;
@@ -189,7 +190,8 @@ class OvmsCommandApp
 
   private:
     int LogBuffer(LogBuffers* lb, const char* fmt, va_list args);
-
+    OvmsMutex m_fsync_mutex;
+    
   private:
     OvmsCommand m_root;
     typedef std::set<OvmsWriter*> ConsoleSet;

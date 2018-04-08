@@ -609,6 +609,9 @@ int OvmsCommandApp::LogBuffer(LogBuffers* lb, const char* fmt, va_list args)
   if (ovms_log_file)
     {
     // Log to the log file as well...
+    // We need to protect this with a mutex lock, as fsync appears to NOT be thread safe
+    // https://github.com/espressif/esp-idf/issues/1837
+    OvmsMutexLock fsynclock(&m_fsync_mutex);
     fwrite(buffer,1,strlen(buffer),ovms_log_file);
     fflush(ovms_log_file);
     fsync(fileno(ovms_log_file));

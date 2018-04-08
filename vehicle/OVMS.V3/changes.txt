@@ -8,6 +8,8 @@ Open Vehicle Monitor System v3 - Change log
                            dispatch and housekeeping
                          - Run SD CARD automount in Events task context, not Timer
                          - Boot: store & send crash debug info (*-OVM-DebugCrash records)
+                         - Mutex protect fsync function call, on logging, to workaround ESP IDF bug
+                           https://github.com/espressif/esp-idf/issues/1837
 
 2018-04-07 MWJ  3.1.003  OTA release
                          - Production build configurations
