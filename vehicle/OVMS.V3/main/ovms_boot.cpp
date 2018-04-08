@@ -31,14 +31,47 @@
 #include "ovms_log.h"
 static const char *TAG = "boot";
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/xtensa_api.h"
+#include "esp_panic.h"
+
 #include "ovms.h"
 #include "ovms_boot.h"
 #include "ovms_command.h"
+#include "ovms_metrics.h"
+#include "ovms_notify.h"
+#include "metrics_standard.h"
+#include "string_writer.h"
 #include <string.h>
 
 boot_data_t __attribute__((section(".rtc.noload"))) boot_data;
 
 Boot MyBoot __attribute__ ((init_priority (1100)));
+
+extern void xt_unhandled_exception(XtExcFrame *frame);
+
+// Exception descriptions copied from esp32/panic.c:
+static const char *edesc[] = {
+    "IllegalInstruction", "Syscall", "InstructionFetchError", "LoadStoreError",
+    "Level1Interrupt", "Alloca", "IntegerDivideByZero", "PCValue",
+    "Privileged", "LoadStoreAlignment", "res", "res",
+    "InstrPDAddrError", "LoadStorePIFDataError", "InstrPIFAddrError", "LoadStorePIFAddrError",
+    "InstTLBMiss", "InstTLBMultiHit", "InstFetchPrivilege", "res",
+    "InstrFetchProhibited", "res", "res", "res",
+    "LoadStoreTLBMiss", "LoadStoreTLBMultihit", "LoadStorePrivilege", "res",
+    "LoadProhibited", "StoreProhibited", "res", "res",
+    "Cp0Dis", "Cp1Dis", "Cp2Dis", "Cp3Dis",
+    "Cp4Dis", "Cp5Dis", "Cp6Dis", "Cp7Dis"
+};
+#define NUM_EDESCS (sizeof(edesc) / sizeof(char *))
+
+// Register names copied from esp32/panic.c:
+static const char *sdesc[] = {
+    "PC      ", "PS      ", "A0      ", "A1      ", "A2      ", "A3      ", "A4      ", "A5      ",
+    "A6      ", "A7      ", "A8      ", "A9      ", "A10     ", "A11     ", "A12     ", "A13     ",
+    "A14     ", "A15     ", "SAR     ", "EXCCAUSE", "EXCVADDR", "LBEG    ", "LEND    ", "LCOUNT  "
+};
+
 
 void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -48,6 +81,29 @@ void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   writer->printf("  Crash counters: %d total, %d early\n",MyBoot.GetCrashCount(),MyBoot.GetEarlyCrashCount());
   writer->printf("  CPU#0 boot reason was %d\n",boot_data.bootreason_cpu0);
   writer->printf("  CPU#1 boot reason was %d\n",boot_data.bootreason_cpu1);
+  
+  if (MyBoot.GetCrashCount() > 0)
+    {
+    // output data of last crash:
+    writer->printf("\nLast crash: ");
+    if (boot_data.crash_data.is_abort)
+      {
+      writer->printf("abort() was called on core %d\n", boot_data.crash_data.core_id);
+      }
+    else
+      {
+      int exccause = boot_data.crash_data.reg[19];
+      writer->printf("%s exception on core %d\n",
+        (exccause < NUM_EDESCS) ? edesc[exccause] : "Unknown", boot_data.crash_data.core_id);
+      writer->printf("  Registers:\n");
+      for (int i=0; i<24; i++)
+        writer->printf("  %s: 0x%08lx%s", sdesc[i], boot_data.crash_data.reg[i], ((i+1)%4) ? "" : "\n");
+      }
+    writer->printf("  Backtrace:\n ");
+    for (int i=0; i<OVMS_BT_LEVELS && boot_data.crash_data.bt[i].pc; i++)
+      writer->printf(" 0x%08lx", boot_data.crash_data.bt[i].pc);
+    writer->puts("");
+    }
   }
 
 Boot::Boot()
@@ -98,6 +154,9 @@ Boot::Boot()
   // reset flags:
   boot_data.soft_reset = false;
   boot_data.stable_reached = false;
+  
+  // install error handler:
+  xt_set_error_handler_callback(ErrorCallback);
 
   // Register our commands
   OvmsCommand* cmd_boot = MyCommandApp.RegisterCommand("boot","BOOT framework",NULL, "", 1);
@@ -125,4 +184,73 @@ static const char* const bootreason_name[] =
 const char* Boot::GetBootReasonName()
   {
   return bootreason_name[m_bootreason];
+  }
+
+void Boot::ErrorCallback(XtExcFrame *frame, int core_id, bool is_abort)
+  {
+  boot_data.crash_data.core_id = core_id;
+  boot_data.crash_data.is_abort = is_abort;
+  
+  // Save registers:
+  for (int i=0; i<24; i++)
+    boot_data.crash_data.reg[i] = ((uint32_t*)frame)[i+1];
+
+  // Save backtrace:
+  // (see panic.c::doBacktrace() for code template)
+  #define _adjusted_pc(pc) (((pc) & 0x80000000) ? (((pc) & 0x3fffffff) | 0x40000000) : (pc))
+  uint32_t i = 0, pc = frame->pc, sp = frame->a1;
+  boot_data.crash_data.bt[0].pc = _adjusted_pc(pc);
+  pc = frame->a0;
+  while (++i < OVMS_BT_LEVELS)
+    {
+    uint32_t psp = sp;
+    if (!esp_stack_ptr_is_sane(sp))
+        break;
+    sp = *((uint32_t *) (sp - 0x10 + 4));
+    boot_data.crash_data.bt[i].pc = _adjusted_pc(pc - 3);
+    pc = *((uint32_t *) (psp - 0x10));
+    if (pc < 0x40000000)
+        break;
+    }
+  }
+
+void Boot::NotifyDebugCrash()
+  {
+  if (GetCrashCount() > 0)
+    {
+    // Send crash data notification:
+    // H type "*-OVM-DebugCrash"
+    //  ,<firmware_version>
+    //  ,<bootcount>,<bootreason_name>,<bootreason_cpu0>,<bootreason_cpu1>
+    //  ,<crashcnt>,<earlycrashcnt>,<crashtype>,<crashcore>,<registers>,<backtrace>
+    
+    StringWriter buf;
+    buf.reserve(1024);
+    buf.append("*-OVM-DebugCrash,0,2592000,");
+    buf.append(StdMetrics.ms_m_version->AsString(""));
+    buf.printf(",%d,%s,%d,%d,%d,%d"
+      , boot_data.boot_count, GetBootReasonName(), boot_data.bootreason_cpu0, boot_data.bootreason_cpu1
+      , GetCrashCount(), GetEarlyCrashCount());
+    
+    // type, core, registers:
+    if (boot_data.crash_data.is_abort)
+      {
+      buf.printf(",abort(),%d,", boot_data.crash_data.core_id);
+      }
+    else
+      {
+      int exccause = boot_data.crash_data.reg[19];
+      buf.printf(",%s,%d,", 
+        (exccause < NUM_EDESCS) ? edesc[exccause] : "Unknown", boot_data.crash_data.core_id);
+      for (int i=0; i<24; i++)
+        buf.printf("0x%08lx ", boot_data.crash_data.reg[i]);
+      }
+    
+    // backtrace:
+    buf.append(",");
+    for (int i=0; i<OVMS_BT_LEVELS && boot_data.crash_data.bt[i].pc; i++)
+      buf.printf("0x%08lx ", boot_data.crash_data.bt[i].pc);
+    
+    MyNotify.NotifyString("data", buf.c_str());
+    }
   }

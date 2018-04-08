@@ -31,6 +31,8 @@
 #ifndef __OVMS_BOOT_H__
 #define __OVMS_BOOT_H__
 
+#include <string>
+
 #include "rom/rtc.h"
 #include "esp_system.h"
 
@@ -42,6 +44,19 @@ typedef enum
     BR_Crash,                       // crash after reaching stable state
   } bootreason_t;
 
+#define OVMS_BT_LEVELS 32
+typedef struct
+  {
+  int core_id;
+  bool is_abort;
+  uint32_t reg[24];
+  struct
+    {
+    uint32_t pc;
+    // possibly add stack info later on
+    } bt[OVMS_BT_LEVELS];
+  } crash_data_t;
+
 typedef struct
   {
   unsigned int boot_count;          // Number of times system has rebooted (not power on)
@@ -51,6 +66,7 @@ typedef struct
   bool stable_reached;              // true = system has reached stable state (see housekeeping)
   unsigned int crash_count_early;   // Number of times system has crashed before reaching stable state
   unsigned int crash_count_total;   // Total number of times system has crashed since power on
+  crash_data_t crash_data;          // Register dump & backtrace info
   } boot_data_t;
 
 extern boot_data_t boot_data;
@@ -60,7 +76,7 @@ class Boot
   public:
     Boot();
     virtual ~Boot();
-
+  
   public:
     bootreason_t GetBootReason() { return m_bootreason; }
     const char* GetBootReasonName();
@@ -70,6 +86,10 @@ class Boot
     void Restart() { SetSoftReset(); esp_restart(); }
     bool GetStable() { return boot_data.stable_reached; }
     void SetStable();
+
+  public:
+    static void ErrorCallback(XtExcFrame *frame, int core_id, bool is_abort);
+    void NotifyDebugCrash();
 
   protected:
     bootreason_t m_bootreason;

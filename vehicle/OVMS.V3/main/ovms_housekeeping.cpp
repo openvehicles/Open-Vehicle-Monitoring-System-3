@@ -219,6 +219,8 @@ void Housekeeping::Metrics(std::string event, void* data)
     {
     ESP_LOGI(TAG, "System considered stable (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
     MyBoot.SetStable();
+    // …and send debug crash data as necessary:
+    MyBoot.NotifyDebugCrash();
     }
   }
 
