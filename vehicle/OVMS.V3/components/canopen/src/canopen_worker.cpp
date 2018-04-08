@@ -312,7 +312,7 @@ void CANopenWorker::IncomingFrame(CAN_frame_t* p_frame)
     
     ESP_LOGI(TAG, "%s node %d emergency: code=0x%04x type=0x%02x data: %02x %02x %02x %02x %02x",
       m_bus->GetName(), ev.nodeid, ev.code, ev.type, ev.data[0], ev.data[1], ev.data[2], ev.data[3], ev.data[4]);
-    MyEvents.SignalEvent("canopen.node.emcy", &ev);
+    MyEvents.SignalEvent("canopen.node.emcy", &ev, sizeof(ev));
     nm->m_emcy_code->SetValue(ev.code);
     nm->m_emcy_type->SetValue(ev.type);
     }
@@ -333,7 +333,7 @@ void CANopenWorker::IncomingFrame(CAN_frame_t* p_frame)
     if (nm->m_state->AsString() != newstate)
       {
       ESP_LOGI(TAG, "%s node %d new state: %s", m_bus->GetName(), ev.nodeid, newstate.c_str());
-      MyEvents.SignalEvent("canopen.node.state", &ev);
+      MyEvents.SignalEvent("canopen.node.state", &ev, sizeof(ev));
       nm->m_state->SetValue(newstate);
       }
     else
