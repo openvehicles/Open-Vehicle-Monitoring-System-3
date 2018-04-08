@@ -3,6 +3,11 @@ Open Vehicle Monitor System v3 - Change log
 ????-??-?? ???  ???????  OTA release
                          - Wifi: Increase scan responsiveness (60 seconds -> 10, on first scan)
                          - Server v2: Delay 50ms on cmd #16 (between setting mode and current)
+                         - OVMS task naming cleanup
+                         - Refactor housekeeping/events tasks to use Events task for signal
+                           dispatch and housekeeping
+                         - Run SD CARD automount in Events task context, not Timer
+                         
 
 2018-04-07 MWJ  3.1.003  OTA release
                          - Production build configurations
