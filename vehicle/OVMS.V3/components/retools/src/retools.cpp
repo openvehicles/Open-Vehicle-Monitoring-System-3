@@ -81,7 +81,7 @@ std::string re::GetKey(CAN_frame_t* frame)
   {
   std::string key(frame->origin->GetName());
   key.append("/");
-  
+
   char id[9];
   if (frame->FIR.B.FF == CAN_frame_std)
     sprintf(id,"%03x",frame->MsgID);
@@ -141,7 +141,7 @@ std::string re::GetKey(CAN_frame_t* frame)
         }
       }
     }
-  
+
   return key;
   }
 
@@ -154,7 +154,7 @@ re::re(const char* name)
   m_obdii_ext_max = 0;
   m_started = monotonictime;
   m_finished = monotonictime;
-  xTaskCreatePinnedToCore(RE_task, "RE Task", 4096, (void*)this, 5, &m_task, 1);
+  xTaskCreatePinnedToCore(RE_task, "OVMS RE", 4096, (void*)this, 5, &m_task, 1);
   m_mutex = xSemaphoreCreateMutex();
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
   MyCan.RegisterListener(m_rxqueue);
@@ -264,7 +264,7 @@ void re_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
       writer->printf("%-20s %10d %6d %s\n",
         it->first.c_str(),it->second->rxcount,(tdiff/it->second->rxcount),vbuf);
       }
-    }  
+    }
   MyRE->Unlock();
   }
 

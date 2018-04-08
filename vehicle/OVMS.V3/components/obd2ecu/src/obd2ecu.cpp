@@ -144,7 +144,7 @@ float obd2pid::Execute()
     }
   }
 
-  
+
 static void OBD2ECU_task(void *pvParameters)
   {
   obd2ecu *me = (obd2ecu*)pvParameters;
@@ -162,10 +162,10 @@ static void OBD2ECU_task(void *pvParameters)
 
 obd2ecu::obd2ecu(const char* name, canbus* can)
   : pcp(name)
-  { 
+  {
   m_can = can;
-  xTaskCreatePinnedToCore(OBD2ECU_task, "OBDII ECU Task", 6144, (void*)this, 5, &m_task, 1);
- 
+  xTaskCreatePinnedToCore(OBD2ECU_task, "OVMS OBDII ECU", 6144, (void*)this, 5, &m_task, 1);
+
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
 
   m_can->Start(CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -226,7 +226,7 @@ void obd2ecu_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     writer->puts("OBDII ECU has been stopped");
     }
   }
-  
+
 
 void obd2ecu_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -247,7 +247,7 @@ void obd2ecu_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
         ms = it->second->GetMetric()->m_name;
       else
         ms = "";
-      
+
       writer->printf("%-3d (0x%02x) %14s %12f %s\n",
         it->first, it->first,
         it->second->GetTypeString(),
@@ -269,7 +269,7 @@ void obd2ecu_reload(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   writer->puts("OBDII ECU pid map reloaded");
   }
 
-  
+
   /* PID Format Table  (see: https://en.wikipedia.org/widi/OBD-II_PIDs )
 
 00 = no data (return zeros)
@@ -290,7 +290,7 @@ void obd2ecu_reload(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
 
 /* Index this table by PID */
 
-static uint8_t pid_format[] = 
+static uint8_t pid_format[] =
 {10,  // 00 PIDs supported
  10,  // 01 Monitor status since DTCs cleared (bit vector)
   0,  // 02 Freeze DTC
@@ -325,39 +325,39 @@ static uint8_t pid_format[] =
   5,  // 31 Run time since engine start
  10,  // 32 PIDs supported
   5,  // 33 Distance traveled with check engine light on
- 99,  // 34 
- 99,  // 35 
- 99,  // 36 
- 99,  // 37 
- 99,  // 38 
- 99,  // 39 
- 99,  // 40 
- 99,  // 41 
- 99,  // 42 
- 99,  // 43 
- 99,  // 44 
- 99,  // 45 
- 99,  // 46 
+ 99,  // 34
+ 99,  // 35
+ 99,  // 36
+ 99,  // 37
+ 99,  // 38
+ 99,  // 39
+ 99,  // 40
+ 99,  // 41
+ 99,  // 42
+ 99,  // 43
+ 99,  // 44
+ 99,  // 45
+ 99,  // 46
   2,  // 47 Fuel tank level
- 99,  // 48 
- 99,  // 49 
- 99,  // 50 
+ 99,  // 48
+ 99,  // 49
+ 99,  // 50
   1,  // 51 Barometric pressure
- 99,  // 52 
- 99,  // 53 
- 99,  // 54 
- 99,  // 55 
- 99,  // 56 
- 99,  // 57 
- 99,  // 58 
- 99,  // 59 
- 99,  // 60 
- 99,  // 61 
- 99,  // 62 
- 99,  // 63 
- 10   // 64 PIDs supported 
+ 99,  // 52
+ 99,  // 53
+ 99,  // 54
+ 99,  // 55
+ 99,  // 56
+ 99,  // 57
+ 99,  // 58
+ 99,  // 59
+ 99,  // 60
+ 99,  // 61
+ 99,  // 62
+ 99,  // 63
+ 10   // 64 PIDs supported
 };
-  
+
 //
 // Fill Mode 1 frames with data based on format specified
 //
@@ -368,24 +368,24 @@ void obd2ecu::FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint
 
   /* Formats are defined as "Formula" on Wikipedia "OBD-II_PIDs" page. */
   /* Note that we need to apply the inverse, to derive the A and B values from the intended metric */
-  
+
   a=b=c=d=0;
-  
-  switch(format)  
+
+  switch(format)
     {
     case 0:  /* no data (send zeros) */
       break;
-			
+
     case 1:  /* A only (one byte) */
       a = (int)data;
       break;
-		
+
     case 2:  /* Percent: 100*A/255 */
       a = (int)((data*255)/100);
       break;
-			
+
     case 3:  /* 16 bit integer divided by 4: (256*A+B)/4  */
-      if (data > 16383.75) 
+      if (data > 16383.75)
         {
         ESP_LOGD(TAG, "Data out of range %f",data);
         a = b = 0xff;  /* use max value */
@@ -395,18 +395,18 @@ void obd2ecu::FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint
       a = (i&0xff00)>>8;
       b = i&0xff;
       break;
-			
+
     case 4:  /* A offset by 40:  A-40  */
       a = (int)data+40;
       break;
-			
+
     case 5:  /* 16 bit unsigned data:  256*A+B */
       a = ((int)data&0xff00)>>8;
       b = (int)data&0xff;
       break;
-			
+
     case 6:  /* 0 to 655.35:  (256*A+B)/100 */
-      if (data > 655.35) 
+      if (data > 655.35)
         {
         ESP_LOGD(TAG, "Data out of range %f",data);
         a = b = 0xff;  /* use max value */
@@ -416,57 +416,57 @@ void obd2ecu::FillFrame(CAN_frame_t *frame,int reply,uint8_t pid,float data,uint
       a = (i&0xff00)>>8;
       b = i&0xff;
       break;
-      
+
     case 7:  /* 3A:  A*3  */
-      a = data/3.0;  
+      a = data/3.0;
       break;
-      
+
     case 8:  /* A/2 - 64:  (A/2)-64 */
       a = (data+64)*2.0;
       break;
-      
+
     case 9:  /* (100*A)/128 - 100 */
       a = (data+100.0)*1.28;
       break;
-      
+
     case 10:  /* A, B, C, D Bit vector */
-      
+
       a = (((int)data) >> 24) & 0xff;
       b = (((int)data) >> 16) & 0xff;
 			c = (((int)data) >> 8) & 0xff;
       d = ((int)data) & 0xff;
       break;
-      
-    case 99:  /* Unimplemented but not an error. return zeros */ 
+
+    case 99:  /* Unimplemented but not an error. return zeros */
       break;
-      
+
     default:
       ESP_LOGD(TAG, "Unsupported PID format %d",format);
       /* default to empty data */
       break;
     }
-    
+
   frame->origin = NULL;
   frame->FIR.U = 0;
   frame->FIR.B.DLC = 8;
   frame->FIR.B.FF = CAN_frame_format_t (reply != RESPONSE_PID);
   frame->MsgID = reply;
-    
+
   frame->data.u8[0] = 6;		/* # additional bytes (ok to have extra) */
   frame->data.u8[1] = 0x41;   /* Mode 1 + 0x40 indicating a reply */
   frame->data.u8[2] = pid;
   frame->data.u8[3] = a;
   frame->data.u8[4] = b;
   frame->data.u8[5] = c;
-  frame->data.u8[6] = d;			
+  frame->data.u8[6] = d;
   frame->data.u8[7] = 0x55;   /* pad 0x55 */
-  
+
   return;
   }
-  
+
 
 void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
-  { 
+  {
   CAN_frame_t r_frame;  /* build the response frame here */
   uint32_t reply;
   int jitter;
@@ -495,7 +495,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
          ESP_LOGD(TAG, "unknown MsgID %x",p_frame->MsgID);
          return;
        }
-  
+
   jitter = time(NULL)&0xf;  /* 0-15 range for simulation purposes */
 
   switch(p_d[1])  /* switch on the incoming frame mode */
@@ -512,11 +512,11 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           // note: don't 'Addpid' the PID to the supported vectors.  Only done when support set by config.
         metric = 0.0;
       }
-      
+
       switch (mapped_pid)  /* switch on the what the requested PID was (before mapping!) */
         {
         case 0:  /* request capabilities PIDs 01-0x20 */
-          
+
           r_frame.origin = NULL;
           r_frame.FIR.U = 0;
           r_frame.FIR.B.DLC = 8;
@@ -532,7 +532,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[7] = 0x55;  /* pad 0x55 */
           m_can->Write(&r_frame);
           break;
-          
+
         case 1: /* request status since DTC Cleared */
           /* Note: Even setting [7]=0xff and DTC count=0, the dongle still requests DTC stuff. */
           r_frame.origin = NULL;
@@ -544,23 +544,23 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[1] = 0x41;  /* Mode 1 + 0x40 indicating a reply */
           r_d[2] = 0x01;
           r_d[3] = 0x00;  /* report all clear, no tests */
-          r_d[4] = 0x00; 
-          r_d[5] = 0x00; 
-          r_d[6] = 0x00;  
+          r_d[4] = 0x00;
+          r_d[5] = 0x00;
+          r_d[6] = 0x00;
           r_d[7] = 0xff;  /* nothing ready yet (or ever) */
           m_can->Write(&r_frame);
           break;
-          
+
         case 0x0c:	/* Engine RPM */
           /* This item (only) needs to vary to prevent SyncUp Drive dongle from going to sleep */
           /* Also a Minimum "idle" RPM, but only if not moving, for HUD device */
-          
+
           // Test if metric is from a script; if so, don't do the dongle workarounds (script will do this if needed)
           if(m_pidmap[mapped_pid]->GetType() != obd2pid::Script)
           { metric = metric+jitter;
             if(StandardMetrics.ms_v_pos_speed->AsFloat() < 1.0) metric = 500+jitter;
           }
-          
+
           FillFrame(&r_frame,reply,mapped_pid,metric,pid_format[mapped_pid]);
           m_can->Write(&r_frame);
           break;
@@ -570,12 +570,12 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           /* HUD devices seem to have a display range of 0-19.9 */
           /* Scaling provides a 1:1 metric pass-through, so be aware of limmits of the display device */
           /* Use with display set to L/hr (not L/km).  Note: scripting this metric is not pre-scaled. */
-          
+
           if(m_pidmap[mapped_pid]->GetType() != obd2pid::Script) metric = metric*3.0;
           FillFrame(&r_frame,reply,mapped_pid,metric,pid_format[mapped_pid]);
           m_can->Write(&r_frame);
           break;
-			
+
         case 0x20:  /* request more capabilities, PIDs 0x21 - 0x40 */
           r_frame.origin = NULL;
           r_frame.FIR.U = 0;
@@ -592,8 +592,8 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[7] = 0x55;  /* pad 0x55 */
           m_can->Write(&r_frame);
           break;
-          
-        case 0x40:  /* request more capabilities: none 
+
+        case 0x40:  /* request more capabilities: none
             (would need to expand the pid_format table to do so) */
           r_frame.origin = NULL;
           r_frame.FIR.U = 0;
@@ -606,29 +606,29 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[3] = 0x00;
           r_d[4] = 0x00;
           r_d[5] = 0x00;
-          r_d[6] = 0x00;	
+          r_d[6] = 0x00;
           r_d[7] = 0x55;  /* pad 0x55 */
           m_can->Write(&r_frame);
           break;
-          
+
         default:  /* most PIDs get processed here */
           if(mapped_pid > sizeof(pid_format))
           { ESP_LOGI(TAG, "unknown capability requested %x",r_frame.data.u8[2]);
             break;
           }
-          
+
           FillFrame(&r_frame,reply,mapped_pid,metric,pid_format[mapped_pid]);
           m_can->Write(&r_frame);
-          
+
 	}
       break;
 
-    case 9: 
+    case 9:
       switch (p_frame->data.u8[2])
         {
         case 2:
           ESP_LOGD(TAG, "Requested VIN");
-          
+
           if(MyConfig.GetParamValueBool("obd2ecu","private"))   /* ignore request for privacy's sake. Doesn't seem to matter to Dongle. */
           { ESP_LOGD(TAG, "VIN request ignored");
             break;
@@ -636,7 +636,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
 
           memcpy(rtn_string,StandardMetrics.ms_v_vin->AsString().c_str(),17);
           rtn_string[17] = '\0';  /* force null termination, just because */
-            
+
           r_frame.origin = NULL;
           r_frame.FIR.U = 0;
           r_frame.FIR.B.DLC = 8;
@@ -652,19 +652,19 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           m_can->Write(&r_frame);
 
           vTaskDelay(10 / portTICK_PERIOD_MS);  /* let the flow control frame pass */
-          
+
           r_d[0] = 0x21;
           memcpy(&r_d[1],rtn_string+3,7);  /* grab the next 7 bytes of VIN */
-          
+
           m_can->Write(&r_frame);
 
           r_d[0] = 0x22;
           memcpy(&r_d[1],rtn_string+10,7);  /* grab the last 7 bytes of VIN */
 
           m_can->Write(&r_frame);
-          
+
           break;
-                       
+
         case 0x0a: /* ECU Name */
           ESP_LOGD(TAG, "ECU Name requested");
           /* Perhaps a good place for arbitrary text, e.g. fleet asset #?  20 char avail. */
@@ -673,12 +673,12 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           rtn_string[20] = '\0';
 
           for(int i=strlen(rtn_string);i<20;i++) rtn_string[i] = '\0';  // zero pad string, per spec
-          
+
           r_frame.origin = NULL;
           r_frame.FIR.U = 0;
           r_frame.FIR.B.DLC = 8;
           r_frame.FIR.B.FF = CAN_frame_format_t (reply != RESPONSE_PID);
-          r_frame.MsgID = reply;					
+          r_frame.MsgID = reply;
           r_d[0] = 0x10;  /* not sure what this is for */
           r_d[1] = 0x17;  /* overall length, starting with next byte, not including pad */
           r_d[2] = 0x49;  /* Mode 9 reply */
@@ -689,12 +689,12 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           m_can->Write(&r_frame);
 
           vTaskDelay(10 / portTICK_PERIOD_MS);  /* let the flow control frame pass */
-          
+
           r_d[0] = 0x21;
           memcpy(&r_d[1],rtn_string+3,7);  /* grab the next 7 bytes of Vehicle ID */
 
           m_can->Write(&r_frame);
-          
+
           r_d[0] = 0x22;
           memcpy(&r_d[1],rtn_string+10,7);  /* grab next 7 bytes of Vehicle ID */
 
@@ -707,9 +707,9 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
           r_d[5] = 0x00;
           r_d[6] = 0x00;
           r_d[7] = 0x00;
-          
+
           m_can->Write(&r_frame);
-          
+
           break;
 
         default:
@@ -724,11 +724,11 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
     case 0x07: /* pending DTCs */
       ESP_LOGD(TAG, "Pending DTCs; ignored");
       break;
-				
+
     case 0x0a:  /* permanent / cleared DTCs */
       ESP_LOGD(TAG, "permanent / cleared DTCs; ignored");
       break;
-				
+
     default:
       ESP_LOGD(TAG, "Unknown Mode %x",p_d[1]);
     }
@@ -812,25 +812,25 @@ void obd2ecu::ClearMap()
   m_pidmap.clear();
   m_supported_01_20 = 0;
   m_supported_21_40 = 0;
-  
+
   }
 /* procedure to add a PID to the vectors of supported PIDS, used with PID 0 & 0x20 */
 
 void obd2ecu::Addpid(uint8_t pid)
 {
   if(pid == 0) return;  // pid 0 assumed
-         
+
   if(pid <= 0x20)       // PIDs 1-20
   { m_supported_01_20 |= 1 << (32-pid);
-    ESP_LOGD(TAG, "Added 0x%02x resulting 0x%08x",pid,m_supported_01_20); 
+    ESP_LOGD(TAG, "Added 0x%02x resulting 0x%08x",pid,m_supported_01_20);
     return;
   }
-         
+
   if(pid <= 0x40)        // PIDs 21-40
   { m_supported_21_40 |= 1 << (32-(pid-0x20));
     return;
-  } 
-  
+  }
+
   ESP_LOGI(TAG, "PID %d (0x%02x) unsupportable",pid,pid);
   return;
 }

@@ -460,7 +460,7 @@ OvmsVehicle::OvmsVehicle()
   m_poll_ml_frame = 0;
 
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
-  xTaskCreatePinnedToCore(OvmsVehicleRxTask, "Vrx Task",
+  xTaskCreatePinnedToCore(OvmsVehicleRxTask, "OVMS Vehicle",
     CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_rxtask, 1);
 
   using std::placeholders::_1;
@@ -1106,7 +1106,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::ProcessMsgCommand(std::string &resul
  */
 void OvmsVehicle::GetDashboardConfig(DashboardConfig& cfg)
   {
-  cfg.gaugeset1 = 
+  cfg.gaugeset1 =
     "yAxis: [{"
       // Speed:
       "min: 0, max: 200,"
