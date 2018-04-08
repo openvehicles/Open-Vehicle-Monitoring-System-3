@@ -90,6 +90,7 @@ class OvmsEvents
     void RegisterEvent(std::string caller, std::string event, EventCallback callback);
     void DeregisterEvent(std::string caller);
     void SignalEvent(std::string event, void* data, event_signal_done_fn callback = NULL);
+    void SignalEvent(std::string event, void* data, size_t length);
 
   public:
     void EventTask();

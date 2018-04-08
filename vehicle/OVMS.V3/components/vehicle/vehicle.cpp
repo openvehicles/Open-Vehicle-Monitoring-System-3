@@ -858,11 +858,13 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
     }
   else if (metric == StandardMetrics.ms_v_charge_mode)
     {
-    MyEvents.SignalEvent("vehicle.charge.mode",(void*)metric->AsString().c_str());
+    const char* m = metric->AsString().c_str();
+    MyEvents.SignalEvent("vehicle.charge.mode",(void*)m, strlen(m)+1);
     }
   else if (metric == StandardMetrics.ms_v_charge_state)
     {
-    MyEvents.SignalEvent("vehicle.charge.state",(void*)metric->AsString().c_str());
+    const char* m = metric->AsString().c_str();
+    MyEvents.SignalEvent("vehicle.charge.state",(void*)m, strlen(m)+1);
     }
   }
 
