@@ -387,6 +387,7 @@ std::string OvmsWebServer::CreateMenu(PageContext_t& c)
       "</li>"
     "</ul>"
     "<ul class=\"nav navbar-nav navbar-right\">"
+      "<li class=\"hidden-xs\"><a href=\"#\" class=\"toggle-fullscreen\">◱</a></li>"
       "<li class=\"hidden-xs\"><a href=\"#\" class=\"toggle-night\">◐</a></li>"
       + std::string(c.session
       ? "<li><a href=\"/logout\" target=\"#main\">Logout</a></li>"
@@ -500,6 +501,7 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
                 "<span class=\"icon-bar\"></span>"
               "</button>"
               "<button type=\"button\" class=\"navbar-toggle collapsed toggle-night\">◐</button>"
+              "<button type=\"button\" class=\"navbar-toggle collapsed toggle-fullscreen\">◱</button>"
               "<a class=\"navbar-brand\" href=\"/home\" target=\"#main\" title=\"Home\"><img alt=\"OVMS\" src=\"/apple-touch-icon.png\"></a>"
             "</div>"
             "<div role=\"menu\" id=\"menu\" class=\"navbar-collapse collapse\">");

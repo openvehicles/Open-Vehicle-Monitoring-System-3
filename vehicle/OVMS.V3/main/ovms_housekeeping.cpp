@@ -64,61 +64,56 @@ static const char *TAG = "housekeeping";
                                                 // (Note: resolution = 10 seconds)
 #define AUTO_INIT_INHIBIT_CRASHCOUNT    5
 
+static int tick = 0;
+
 void HousekeepingTicker1( TimerHandle_t timer )
   {
-  Housekeeping* h = (Housekeeping*)pvTimerGetTimerID(timer);
-  if ((h)&&(h->m_sync))
+  monotonictime++;
+  StandardMetrics.ms_m_monotonic->SetValue((int)monotonictime);
+
+  MyEvents.SignalEvent("ticker.1", NULL);
+
+  tick++;
+  if ((tick % 10)==0) MyEvents.SignalEvent("ticker.10", NULL);
+  if ((tick % 60)==0) MyEvents.SignalEvent("ticker.60", NULL);
+  if ((tick % 300)==0) MyEvents.SignalEvent("ticker.300", NULL);
+  if ((tick % 600)==0) MyEvents.SignalEvent("ticker.600", NULL);
+  if ((tick % 3600)==0)
     {
-    xEventGroupSetBits(h->m_sync, 1);
-    }
-  }
-
-void HousekeepingTask(void *pvParameters)
-  {
-  Housekeeping* me = (Housekeeping*)pvParameters;
-
-  vTaskDelay(50 / portTICK_PERIOD_MS);
-
-  me->m_sync = xEventGroupCreate();
-  me->init();
-  me->metrics();
-
-  esp_task_wdt_add(NULL); // WATCHDOG is active for this task
-  while (1)
-    {
-    if (xEventGroupSync(me->m_sync, 0, 1, portMAX_DELAY) != 0)
-      {
-      xEventGroupClearBits(me->m_sync, 1);
-      esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
-      me->Ticker1();
-      esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
-      }
+    tick = 0;
+    MyEvents.SignalEvent("ticker.3600", NULL);
     }
   }
 
 Housekeeping::Housekeeping()
   {
-  m_sync = NULL;
-
   ESP_LOGI(TAG, "Initialising HOUSEKEEPING Framework...");
 
   MyConfig.RegisterParam("system.adc", "ADC configuration", true, true);
   MyConfig.RegisterParam("auto", "Auto init configuration", true, true);
 
-  xTaskCreatePinnedToCore(HousekeepingTask, "Housekeeping", 6144, (void*)this, 5, &m_taskid, 1);
-  AddTaskToMap(m_taskid);
+  // Register our events
+  #undef bind  // Kludgy, but works
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG,"housekeeping.init", std::bind(&Housekeeping::Init, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"ticker.10", std::bind(&Housekeeping::Metrics, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"ticker.600", std::bind(&Housekeeping::TimeLogger, this, _1, _2));
+
+  // Fire off the event that causes us to be called back in Events tasks context
+  MyEvents.SignalEvent("housekeeping.init", NULL);
   }
 
 Housekeeping::~Housekeeping()
   {
   }
 
-void Housekeeping::init()
+void Housekeeping::Init(std::string event, void* data)
   {
   ESP_LOGI(TAG, "Executing on CPU core %d",xPortGetCoreID());
   ESP_LOGI(TAG, "reset_reason: cpu0=%d, cpu1=%d", rtc_get_reset_reason(0), rtc_get_reset_reason(1));
 
-  m_tick = 0;
+  tick = 0;
   m_timer1 = xTimerCreate("Housekeep ticker",1000 / portTICK_PERIOD_MS,pdTRUE,this,HousekeepingTicker1);
   xTimerStart(m_timer1, 0);
 
@@ -188,9 +183,11 @@ void Housekeeping::init()
   ConsoleAsync::Instance();
 
   MyEvents.SignalEvent("system.start",NULL);
+
+  Metrics(event,data); // Causes the metrics to be produced
   }
 
-void Housekeeping::metrics()
+void Housekeeping::Metrics(std::string event, void* data)
   {
 #ifdef CONFIG_OVMS_COMP_ADC
   OvmsMetricFloat* m1 = StandardMetrics.ms_v_bat_12v_voltage;
@@ -222,35 +219,15 @@ void Housekeeping::metrics()
     {
     ESP_LOGI(TAG, "System considered stable (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
     MyBoot.SetStable();
+    // …and send debug crash data as necessary:
+    MyBoot.NotifyDebugCrash();
     }
   }
 
-void Housekeeping::Ticker1()
+void Housekeeping::TimeLogger(std::string event, void* data)
   {
-  monotonictime++;
-  StandardMetrics.ms_m_monotonic->SetValue((int)monotonictime);
-
-  MyEvents.SignalEvent("ticker.1", NULL);
-
-  m_tick++;
-  if ((m_tick % 10)==0)
-    {
-    metrics();
-    MyEvents.SignalEvent("ticker.10", NULL);
-    }
-  if ((m_tick % 60)==0) MyEvents.SignalEvent("ticker.60", NULL);
-  if ((m_tick % 300)==0) MyEvents.SignalEvent("ticker.300", NULL);
-  if ((m_tick % 600)==0)
-    {
-    time_t rawtime;
-    time ( &rawtime );
-    struct tm* tmu = localtime(&rawtime);
-    ESP_LOGI(TAG, "Local time: %.24s", asctime(tmu));
-    MyEvents.SignalEvent("ticker.600", NULL);
-    }
-  if ((m_tick % 3600)==0)
-    {
-    m_tick = 0;
-    MyEvents.SignalEvent("ticker.3600", NULL);
-    }
+  time_t rawtime;
+  time ( &rawtime );
+  struct tm* tmu = localtime(&rawtime);
+  ESP_LOGI(TAG, "Local time: %.24s", asctime(tmu));
   }

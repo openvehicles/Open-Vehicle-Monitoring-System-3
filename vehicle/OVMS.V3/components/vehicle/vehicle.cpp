@@ -460,7 +460,7 @@ OvmsVehicle::OvmsVehicle()
   m_poll_ml_frame = 0;
 
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
-  xTaskCreatePinnedToCore(OvmsVehicleRxTask, "Vrx Task",
+  xTaskCreatePinnedToCore(OvmsVehicleRxTask, "OVMS Vehicle",
     CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_rxtask, 1);
 
   using std::placeholders::_1;
@@ -619,7 +619,7 @@ void OvmsVehicle::Ticker3600(uint32_t ticker)
 void OvmsVehicle::CalculateEfficiency()
   {
   float consumption = 0;
-  if (StdMetrics.ms_v_pos_speed->AsFloat() > 0)
+  if (StdMetrics.ms_v_pos_speed->AsFloat() >= 5)
     consumption = StdMetrics.ms_v_bat_power->AsFloat(0, Watts) / StdMetrics.ms_v_pos_speed->AsFloat();
   StdMetrics.ms_v_bat_consumption->SetValue((StdMetrics.ms_v_bat_consumption->AsFloat() * 4 + consumption) / 5);
   }
@@ -858,11 +858,13 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
     }
   else if (metric == StandardMetrics.ms_v_charge_mode)
     {
-    MyEvents.SignalEvent("vehicle.charge.mode",(void*)metric->AsString().c_str());
+    const char* m = metric->AsString().c_str();
+    MyEvents.SignalEvent("vehicle.charge.mode",(void*)m, strlen(m)+1);
     }
   else if (metric == StandardMetrics.ms_v_charge_state)
     {
-    MyEvents.SignalEvent("vehicle.charge.state",(void*)metric->AsString().c_str());
+    const char* m = metric->AsString().c_str();
+    MyEvents.SignalEvent("vehicle.charge.state",(void*)m, strlen(m)+1);
     }
   }
 
@@ -1106,7 +1108,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::ProcessMsgCommand(std::string &resul
  */
 void OvmsVehicle::GetDashboardConfig(DashboardConfig& cfg)
   {
-  cfg.gaugeset1 = 
+  cfg.gaugeset1 =
     "yAxis: [{"
       // Speed:
       "min: 0, max: 200,"

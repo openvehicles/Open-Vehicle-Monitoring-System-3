@@ -203,7 +203,7 @@ void simcom::StartTask()
     // Set UART pins
     uart_set_pin(m_uartnum, m_txpin, m_rxpin, 0, 0);
 
-    xTaskCreatePinnedToCore(SIMCOM_task, "SIMCOMTask", 4096, (void*)this, 5, &m_task, 1);
+    xTaskCreatePinnedToCore(SIMCOM_task, "OVMS SIMCOM", 4096, (void*)this, 5, &m_task, 1);
     }
   }
 
@@ -835,7 +835,7 @@ void simcom::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
       // complete, process:
       m_line_buffer = line.substr(q1+1, q2-q1-1);
       ESP_LOGI(TAG, "USSD received: %s", m_line_buffer.c_str());
-      MyEvents.SignalEvent("system.modem.received.ussd", (void*)m_line_buffer.c_str());
+      MyEvents.SignalEvent("system.modem.received.ussd", (void*)m_line_buffer.c_str(),m_line_buffer.size()+1);
       m_line_unfinished = -1;
       m_line_buffer.clear();
       }

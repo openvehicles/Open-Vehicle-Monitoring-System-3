@@ -71,10 +71,14 @@ pre {
   .panel-single {
     margin: -9px -15px 0;
     border-radius: 0;
+    border: 0 none;
   }
   .panel-single .panel-heading {
     padding: 5px 8px;
     border-radius: 0;
+  }
+  .panel-single .panel-body {
+    padding: 0;
   }
   .panel-single .panel-footer {
     padding: 10px;
@@ -290,17 +294,20 @@ input[type=range]:disabled::-ms-thumb {
   }
 }
 
-/* Night mode */
+/* Menu */
 
-a.toggle-night {
+a.toggle-night, a.toggle-fullscreen {
   font-size: 20px;
 }
-button.toggle-night {
+button.toggle-night, button.toggle-fullscreen {
   color: #9d9d9d;
   line-height: 14px;
   font-size: 22px;
   font-weight: bold;
 }
+
+/* Night mode */
+
 body.night {
   background-color: #000;
   color: #bbb;
@@ -359,6 +366,42 @@ body.night {
 }
 .night .metric .unit {
   color: #909090;
+}
+
+/* Fullscreen mode */
+
+.fullscreened {
+  margin: 0 !important;
+  overflow: auto;
+  width: 100%;
+}
+.fullscreened #main {
+  margin: 0;
+  background: #fff;
+}
+.fullscreened.night #main {
+  margin: 0;
+  background-color: #000;
+}
+.fullscreened #nav {
+  display: none;
+}
+.fullscreened .panel-single {
+  border: 0 none;
+  margin: 0 -15px;
+}
+.fullscreened .panel-single .panel-body {
+  padding: 0;
+  min-width: 100vw;
+  min-height: 100vh;
+}
+.fullscreened .panel-single .panel-heading {
+  display: none;
+}
+@media (max-width: 767px) {
+  .fullscreened .panel-single {
+    margin: 0 -15px;
+  }
 }
 
 /* Highcharts */

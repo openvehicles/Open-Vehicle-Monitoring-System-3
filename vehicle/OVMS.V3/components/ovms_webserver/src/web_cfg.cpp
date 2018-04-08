@@ -243,7 +243,7 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
 
   // generate form:
   c.head(200);
-  c.panel_start("primary", "Shell");
+  c.panel_start("primary panel-single", "Shell");
 
   c.printf(
     "<pre class=\"get-window-resize\" id=\"output\">%s</pre>"
@@ -259,11 +259,22 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
     , _html(output.c_str()), _attr(command.c_str()));
 
   c.print(
+    "<style>"
+    ".fullscreened #output {"
+      "border: 0 none;"
+    "}"
+    "@media (max-width: 767px) {"
+      "#output {"
+        "border: 0 none;"
+      "}"
+    "}"
+    "</style>"
     "<script>"
-    "$(\"#output\").on(\"window-resize\", function(event){"
-      "$(\"#output\").height($(window).height()-220);"
+    "$(window).on(\"resize\", function(){"
+      "var pad = Number.parseInt($(\"#output\").parent().css(\"padding-top\")) + Number.parseInt($(\"#output\").parent().css(\"padding-bottom\"));"
+      "$(\"#output\").height($(window).height() - $(\"#output\").offset().top - pad - 73);"
       "$(\"#output\").scrollTop($(\"#output\").get(0).scrollHeight);"
-    "}).trigger(\"window-resize\");"
+    "}).trigger(\"resize\");"
     "$(\"#shellform\").on(\"submit\", function(event){"
       "if (!$(\"html\").hasClass(\"loading\")) {"
         "var data = $(this).serialize();"
@@ -1434,7 +1445,7 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
     "<div class=\"panel panel-primary panel-single\">"
       "<div class=\"panel-heading\">Dashboard</div>"
       "<div class=\"panel-body\">"
-        "<div class=\"receiver\" id=\"livestatus\">"
+        "<div class=\"receiver get-window-resize\" id=\"livestatus\">"
           "<div class=\"dashboard\" style=\"position: relative; width: 100%; height: 300px; margin: 0 auto\">"
             "<div class=\"overlay\">"
               "<div class=\"range-value\"><span class=\"value\">▲0 ▼0</span><span class=\"unit\">km</span></div>"
@@ -1836,6 +1847,8 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
           "chart.update({ chart: { animation: { duration: 1000, easing: 'swing' } } });"
           "$('#livestatus').on(\"msg:metrics\", function(e, update){"
             "update_dashboard();"
+          "}).on(\"window-resize\", function(e){"
+            "chart.reflow();"
           "});"
         "}"
       ");"

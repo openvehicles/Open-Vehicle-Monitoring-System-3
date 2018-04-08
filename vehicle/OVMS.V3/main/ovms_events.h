@@ -36,6 +36,9 @@
 #include <map>
 #include <list>
 #include <esp_event.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
 
 typedef std::function<void(std::string,void*)> EventCallback;
 
@@ -53,6 +56,30 @@ class EventCallbackEntry
 typedef std::list<EventCallbackEntry*> EventCallbackList;
 typedef std::map<std::string, EventCallbackList*> EventMap;
 
+typedef void (*event_signal_done_fn)(const char* event, void* data);
+
+extern void EventStdFree(const char* event, void* data);
+
+typedef enum
+  {
+  EVENT_none = 0,             // Do nothing
+  EVENT_signal                // Raise a signal
+  } event_msg_t;
+
+typedef struct
+  {
+  union
+    {
+    struct
+      {
+      char* event;
+      void* data;
+      event_signal_done_fn donefn;
+      } signal;
+    } body;
+  event_msg_t type;
+  } event_queue_t;
+
 class OvmsEvents
   {
   public:
@@ -62,9 +89,12 @@ class OvmsEvents
   public:
     void RegisterEvent(std::string caller, std::string event, EventCallback callback);
     void DeregisterEvent(std::string caller);
-    void SignalEvent(std::string event, void* data);
+    void SignalEvent(std::string event, void* data, event_signal_done_fn callback = NULL);
+    void SignalEvent(std::string event, void* data, size_t length);
 
   public:
+    void EventTask();
+    void HandleQueueSignalEvent(event_queue_t* msg);
     static esp_err_t ReceiveSystemEvent(void *ctx, system_event_t *event);
     void SignalSystemEvent(system_event_t *event);
 
@@ -73,6 +103,8 @@ class OvmsEvents
 
   public:
     bool m_trace;
+    TaskHandle_t m_taskid;
+    QueueHandle_t m_taskqueue;
   };
 
 extern OvmsEvents MyEvents;

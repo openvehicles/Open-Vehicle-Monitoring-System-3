@@ -405,7 +405,7 @@ void OvmsNetManager::StartMongooseTask()
     if (m_network_any)
       {
       m_mongoose_running = true;
-      xTaskCreatePinnedToCore(MongooseRawTask, "NetManTask", 7*1024, (void*)this, 5, &m_mongoose_task, 1);
+      xTaskCreatePinnedToCore(MongooseRawTask, "OVMS NetMan", 7*1024, (void*)this, 5, &m_mongoose_task, 1);
       AddTaskToMap(m_mongoose_task);
       }
     }

@@ -38,6 +38,7 @@
 #include "driver/sdmmc_defs.h"
 #include <driver/adc.h>
 #include "sdmmc_cmd.h"
+#include "ovms_events.h"
 
 class sdcard : public pcp
   {
@@ -51,6 +52,9 @@ class sdcard : public pcp
     esp_err_t unmount();
     bool ismounted();
     bool isinserted();
+
+  public:
+    void Ticker1(std::string event, void* data);
 
   public:
     sdmmc_host_t m_host;

@@ -498,8 +498,12 @@ void OvmsServerV2::ProcessCommand(const char* payload)
         if (sep)
           {
           if (vehicle->CommandSetChargeMode(mode) == OvmsVehicle::Success) k = 0;
-          if ((k == 0)&&(vehicle->CommandSetChargeCurrent(atoi(sep+1)) != OvmsVehicle::Success))
-            k = 1;
+          if (k == 0)
+            {
+            vTaskDelay(50 / portTICK_PERIOD_MS);
+            if (vehicle->CommandSetChargeCurrent(atoi(sep+1)) != OvmsVehicle::Success)
+              k = 1;
+            }
           }
         }
       *buffer << "MP-0 c16," << k;
