@@ -35,7 +35,6 @@ static const char *TAG = "sdcard";
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "freertos/timers.h"
 #include "esp_intr_alloc.h"
 #include "driver/gpio.h"
 #include "sdcard.h"
@@ -43,17 +42,35 @@ static const char *TAG = "sdcard";
 #include "ovms_peripherals.h"
 #include "ovms_events.h"
 
-TimerHandle_t sdcard_timer;
+static int insertcount = 0;
+static int mountcount = 0;
 
-void sdcardTimer( TimerHandle_t timer )
+void sdcard::Ticker1(std::string event, void* data)
   {
-  sdcard* h = (sdcard*)pvTimerGetTimerID(timer);
-  h->CheckCardState();
+  if (insertcount > 0)
+    {
+    insertcount--;
+    if (insertcount == 0)
+      {
+      CheckCardState();
+      }
+    }
+  if (mountcount > 0)
+    {
+    mountcount--;
+    if (mountcount == 0)
+      {
+      if (m_mounted)
+        MyEvents.SignalEvent("sd.mounted", NULL);
+      else
+        MyEvents.SignalEvent("sd.unmounted", NULL);
+      }
+    }
   }
 
 static void IRAM_ATTR sdcard_isr_handler(void* arg)
   {
-  xTimerStart(sdcard_timer, 0);
+  insertcount = 2;
   }
 
 sdcard::sdcard(const char* name, bool mode1bit, bool autoformat, int cdpin)
@@ -78,9 +95,13 @@ sdcard::sdcard(const char* name, bool mode1bit, bool autoformat, int cdpin)
 
   m_mounted = false;
   m_cd = false;
+  insertcount = 5;
 
-  sdcard_timer = xTimerCreate("SDCARD timer",500 / portTICK_PERIOD_MS,pdFALSE,this,sdcardTimer);
-  xTimerStart(sdcard_timer, 0);
+  // Register our events
+  #undef bind  // Kludgy, but works
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG,"ticker.1", std::bind(&sdcard::Ticker1, this, _1, _2));
 
   gpio_pullup_en((gpio_num_t)cdpin);
   gpio_set_intr_type((gpio_num_t)cdpin, GPIO_INTR_ANYEDGE);
@@ -106,7 +127,7 @@ esp_err_t sdcard::mount()
   if (ret == ESP_OK)
     {
     m_mounted = true;
-    MyEvents.SignalEvent("sd.mounted", NULL);
+    mountcount = 3;
     }
 
   return ret;
@@ -118,7 +139,7 @@ esp_err_t sdcard::unmount()
   if (ret == ESP_OK)
     {
     m_mounted = false;
-    MyEvents.SignalEvent("sd.unmounted", NULL);
+    mountcount = 3;
     }
   return ret;
   }
@@ -156,7 +177,6 @@ void sdcard::CheckCardState()
       }
     }
   }
-
 
 void sdcard_mount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
