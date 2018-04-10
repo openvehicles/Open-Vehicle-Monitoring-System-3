@@ -66,7 +66,7 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
       }
     case 0x302: // SOC
       {
-      StandardMetrics.ms_v_bat_soc->SetValue( ((d[0]>>2) + ((d[2] & 0x0f)<<6))/10 );
+      StandardMetrics.ms_v_bat_soc->SetValue( ((d[1]>>2) + ((d[2] & 0xf0)<<6))/10 );
       break;
       }
     case 0x398: // Country
