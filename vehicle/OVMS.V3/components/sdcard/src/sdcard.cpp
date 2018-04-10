@@ -38,6 +38,7 @@ static const char *TAG = "sdcard";
 #include "esp_intr_alloc.h"
 #include "driver/gpio.h"
 #include "sdcard.h"
+#include "ovms_config.h"
 #include "ovms_command.h"
 #include "ovms_peripherals.h"
 #include "ovms_events.h"
@@ -83,10 +84,11 @@ sdcard::sdcard(const char* name, bool mode1bit, bool autoformat, int cdpin)
     }
 
   m_slot = SDMMC_SLOT_CONFIG_DEFAULT();
-  if (cdpin)
-    {
-    m_slot.gpio_cd = (gpio_num_t)cdpin;
-    }
+// Disable driver-level CD pin, as we do this ourselves
+//  if (cdpin)
+//    {
+//    m_slot.gpio_cd = (gpio_num_t)cdpin;
+//    }
   m_slot.width = 1;
 
   memset(&m_mount,0,sizeof(esp_vfs_fat_sdmmc_mount_config_t));
@@ -123,6 +125,7 @@ esp_err_t sdcard::mount()
     unmount();
     }
 
+  m_host.max_freq_khz = MyConfig.GetParamValueInt("sdcard", "maxfreq.khz", 16000);
   esp_err_t ret = esp_vfs_fat_sdmmc_mount("/sd", &m_host, &m_slot, &m_mount, &m_card);
   if (ret == ESP_OK)
     {
@@ -164,14 +167,17 @@ void sdcard::CheckCardState()
     if (m_cd)
       {
       // SD CARD has been inserted. Let's auto-mount
-      ESP_LOGI(TAG, "SD CARD has been inserted. Auto-mounting...");
+      ESP_LOGI(TAG, "SD CARD has been inserted");
       MyEvents.SignalEvent("sd.insert", NULL);
-      mount();
+      if (MyConfig.GetParamValueBool("sdcard", "automount", true))
+        {
+        mount();
+        }
       }
     else
       {
       // SD CARD has been removed. A bit late, but let's dismount
-      ESP_LOGI(TAG, "SD CARD has been removed.");
+      ESP_LOGI(TAG, "SD CARD has been removed");
       if (m_mounted) unmount();
       MyEvents.SignalEvent("sd.remove", NULL);
       }
@@ -188,7 +194,7 @@ void sdcard_mount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
       sdmmc_card_t* card = MyPeripherals->m_sdcard->m_card;
       writer->printf("Name: %s\n", card->cid.name);
       writer->printf("Type: %s\n", (card->ocr & SD_OCR_SDHC_CAP)?"SDHC/SDXC":"SDSC");
-      writer->printf("Speed: %s\n", (card->csd.tr_speed > 25000000)?"high speed":"default speed");
+      writer->printf("Speed: %d kHz\n", card->csd.tr_speed/1000);
       writer->printf("Size: %lluMB\n", ((uint64_t) card->csd.capacity) * card->csd.sector_size / (1024 * 1024));
       writer->printf("CSD: ver=%d, sector_size=%d, capacity=%d read_bl_len=%d\n",
                      card->csd.csd_ver,
@@ -226,7 +232,7 @@ void sdcard_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
       sdmmc_card_t* card = MyPeripherals->m_sdcard->m_card;
       writer->printf("Name: %s\n", card->cid.name);
       writer->printf("Type: %s\n", (card->ocr & SD_OCR_SDHC_CAP)?"SDHC/SDXC":"SDSC");
-      writer->printf("Speed: %s\n", (card->csd.tr_speed > 25000000)?"high speed":"default speed");
+      writer->printf("Speed: %d kHz\n", card->csd.tr_speed/1000);
       writer->printf("Size: %lluMB\n", ((uint64_t) card->csd.capacity) * card->csd.sector_size / (1024 * 1024));
       writer->printf("CSD: ver=%d, sector_size=%d, capacity=%d read_bl_len=%d\n",
                      card->csd.csd_ver,
@@ -244,6 +250,8 @@ class SDCardInit
 SDCardInit::SDCardInit()
   {
   ESP_LOGI(TAG, "Initialising SD CARD (4400)");
+
+  MyConfig.RegisterParam("sdcard", "SD CARD configuration", true, true);
 
   OvmsCommand* cmd_sd = MyCommandApp.RegisterCommand("sd","SD CARD framework",NULL,"",0,0,true);
   cmd_sd->RegisterCommand("mount","Mount SD CARD",sdcard_mount,"",0,0,true);
