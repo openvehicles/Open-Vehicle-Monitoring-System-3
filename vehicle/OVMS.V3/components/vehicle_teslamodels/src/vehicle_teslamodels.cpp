@@ -59,6 +59,35 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
 
   switch (p_frame->MsgID)
     {
+    case 0x116: // Gear selector
+      {
+      switch (d[3]>>4)
+        {
+        case 1: // Park
+          StandardMetrics.ms_v_env_gear->SetValue(0);
+          StandardMetrics.ms_v_env_on->SetValue(false);
+          StandardMetrics.ms_v_env_awake->SetValue(false);
+          break;
+        case 2: // Reverse
+          StandardMetrics.ms_v_env_gear->SetValue(-1);
+          StandardMetrics.ms_v_env_on->SetValue(true);
+          StandardMetrics.ms_v_env_awake->SetValue(true);
+          break;
+        case 3: // Neutral
+          StandardMetrics.ms_v_env_gear->SetValue(0);
+          StandardMetrics.ms_v_env_on->SetValue(true);
+          StandardMetrics.ms_v_env_awake->SetValue(true);
+          break;
+        case 4: // Drive
+          StandardMetrics.ms_v_env_gear->SetValue(1);
+          StandardMetrics.ms_v_env_on->SetValue(true);
+          StandardMetrics.ms_v_env_awake->SetValue(true);
+          break;
+        default:
+          break;
+        }
+      break;
+      }
     case 0x256: // Speed
       {
       StandardMetrics.ms_v_pos_speed->SetValue( (((d[3]&0xf0)<<8) + d[2])/10, Mph );
