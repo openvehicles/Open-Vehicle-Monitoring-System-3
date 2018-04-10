@@ -35,6 +35,7 @@ static const char *TAG = "re";
 #include "retools.h"
 #include "ovms_peripherals.h"
 #include "ovms.h"
+#include "ovms_utils.h"
 
 re *MyRE = NULL;
 
