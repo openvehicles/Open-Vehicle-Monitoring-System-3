@@ -420,7 +420,6 @@ typedef struct
   int tries;
   } PasswordContext;
 
-static const char* secure_prompt = "OVMS# ";
 bool enableInsert(OvmsWriter* writer, void* v, char ch)
   {
   PasswordContext* pc = (PasswordContext*)v;
@@ -431,7 +430,6 @@ bool enableInsert(OvmsWriter* writer, void* v, char ch)
       {
       writer->SetSecure(true);
       writer->printf("\nSecure mode");
-      writer->SetPrompt(secure_prompt);
       delete pc;
       return false;
       }
@@ -463,7 +461,6 @@ void enable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
     {
     writer->SetSecure(true);
     writer->puts("Secure mode");
-    writer->SetPrompt(secure_prompt);
     }
   else if (argc == 1)
     {
@@ -482,7 +479,6 @@ void enable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
 void disable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   writer->SetSecure(false);
-  writer->SetPrompt(NULL);
   }
 
 OvmsCommandApp::OvmsCommandApp()
