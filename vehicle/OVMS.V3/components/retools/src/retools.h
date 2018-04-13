@@ -38,6 +38,7 @@
 #include <map>
 #include "can.h"
 #include "pcp.h"
+#include "ovms_mutex.h"
 
 typedef struct
   {
@@ -59,8 +60,6 @@ class re : public pcp
 
   public:
     void Task();
-    void Lock();
-    void Unlock();
     void Clear();
     std::string GetKey(CAN_frame_t* frame);
 
@@ -69,7 +68,7 @@ class re : public pcp
     QueueHandle_t m_rxqueue;
 
   public:
-    QueueHandle_t m_mutex;
+    OvmsMutex m_mutex;
     re_id_map_t m_idmap;
     uint32_t m_obdii_std_min;
     uint32_t m_obdii_std_max;

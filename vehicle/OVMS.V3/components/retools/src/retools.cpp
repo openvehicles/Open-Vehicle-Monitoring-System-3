@@ -53,7 +53,7 @@ void re::Task()
     {
     if (xQueueReceive(m_rxqueue, &frame, (portTickType)portMAX_DELAY)==pdTRUE)
       {
-      xSemaphoreTake(m_mutex, portMAX_DELAY);
+      OvmsMutexLock lock(&m_mutex);
       std::string key = GetKey(&frame);
       auto k = m_rmap.find(key);
       re_record_t* r;
@@ -73,7 +73,6 @@ void re::Task()
       r->rxcount++;
       m_finished = monotonictime;
       // ESP_LOGI(TAG,"rx Key=%s Count=%d",key.c_str(),r->rxcount);
-      xSemaphoreGive(m_mutex);
       }
     }
   }
@@ -156,7 +155,6 @@ re::re(const char* name)
   m_started = monotonictime;
   m_finished = monotonictime;
   xTaskCreatePinnedToCore(RE_task, "OVMS RE", 4096, (void*)this, 5, &m_task, 1);
-  m_mutex = xSemaphoreCreateMutex();
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
   MyCan.RegisterListener(m_rxqueue);
   }
@@ -166,11 +164,8 @@ re::~re()
   MyCan.DeregisterListener(m_rxqueue);
 
   Clear();
-  xSemaphoreTake(m_mutex, portMAX_DELAY);
   vQueueDelete(m_rxqueue);
   vTaskDelete(m_task);
-  xSemaphoreGive(m_mutex);
-  vSemaphoreDelete(m_mutex);
   }
 
 void re::SetPowerMode(PowerMode powermode)
@@ -191,19 +186,9 @@ void re::SetPowerMode(PowerMode powermode)
     }
   }
 
-void re::Lock()
-  {
-  xSemaphoreTake(m_mutex, portMAX_DELAY);
-  }
-
-void re::Unlock()
-  {
-  xSemaphoreGive(m_mutex);
-  }
-
 void re::Clear()
   {
-  xSemaphoreTake(m_mutex, portMAX_DELAY);
+  OvmsMutexLock lock(&m_mutex);
   for (re_record_map_t::iterator it=m_rmap.begin(); it!=m_rmap.end(); ++it)
     {
     delete it->second;
@@ -211,7 +196,6 @@ void re::Clear()
   m_rmap.clear();
   m_started = monotonictime;
   m_finished = monotonictime;
-  xSemaphoreGive(m_mutex);
   }
 
 void re_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -252,8 +236,8 @@ void re_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
   uint32_t tdiff = (MyRE->m_finished - MyRE->m_started)*1000;
   if (tdiff == 0) tdiff = 1000;
 
+  OvmsMutexLock lock(&MyRE->m_mutex);
   writer->printf("%-20.20s %10s %6s %s\n","key","records","ms","last");
-  MyRE->Lock();
   for (re_record_map_t::iterator it=MyRE->m_rmap.begin(); it!=MyRE->m_rmap.end(); ++it)
     {
     char vbuf[48];
@@ -265,7 +249,6 @@ void re_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
         it->first.c_str(),it->second->rxcount,(tdiff/it->second->rxcount),vbuf);
       }
     }
-  MyRE->Unlock();
   }
 
 void re_keyclear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -277,14 +260,13 @@ void re_keyclear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     }
 
   uint32_t id = (uint32_t)strtol(argv[0],NULL,16);
-  MyRE->Lock();
+  OvmsMutexLock lock(&MyRE->m_mutex);
   auto k = MyRE->m_idmap.find(id);
   if (k != MyRE->m_idmap.end())
     {
     MyRE->m_idmap.erase(k);
     writer->puts("Cleared ID key");
     }
-  MyRE->Unlock();
   }
 
 void re_keyset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -305,10 +287,9 @@ void re_keyset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
       bytes |= (1<<(b-1));
       }
     }
-  MyRE->Lock();
+  OvmsMutexLock lock(&MyRE->m_mutex);
   MyRE->m_idmap[id] = bytes;
   writer->printf("Set ID %x to bytes 0x%02x\n",id);
-  MyRE->Unlock();
   }
 
 void re_obdii_std(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
