@@ -1,19 +1,15 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
-- Wifi: Increase scan responsiveness (60 seconds -> 10, on first scan)
-- Server v2: Introduce a 50ms delay between setting charge mode and current in same command
-- Core: Changes to housekeeping and events tasks to move event delivery and housekeeping actions
-  to the event task (removing housekeeping task)
-- Core: Enable watchdogs for production builds
-- SD CARD: Reliability improvements to SD CARD auto-mounting on insertion
+OTA release providing minor improvements and fixes.
+
+- Tesla Model S: Add support for v.bat.soc, v.pos.speed and park/drive status metrics
 - SD CARD: Provide configurable sdcard parameters:
     sdcard [maxfreq.khz] = 16000         Maximum frequency (in kHz) of SD CARD bus
     sdcard [automount] = yes             Automatically mount SD CARD on insertion
 - Boot: store & send crash debug info (*-OVM-DebugCrash records)
-- Core: Introduce protection for thread safety while logging, to workaround ESP IDF bug
-  https://github.com/espressif/esp-idf/issues/1837
-- Tesla Model S: Support v.bat.soc, v.pos.speed and park/drive status metrics
+- Wifi: Increase scan responsiveness (60 seconds -> 10, on first scan)
+- Miscellaneous bug fixes and enhancements
 
 2018-04-07 MWJ  3.1.003  OTA release
 - Production build configurations
