@@ -1192,7 +1192,7 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
     << ","
     << StandardMetrics.ms_v_pos_speed->AsString("0")
     << ","
-    << StandardMetrics.ms_m_monotonic->AsString("0")
+    << StandardMetrics.ms_v_env_parktime->AsString("0")
     << ","
     << StandardMetrics.ms_v_env_temp->AsString("0")
     << ","
