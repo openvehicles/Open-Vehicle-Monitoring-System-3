@@ -198,6 +198,7 @@ void Housekeeping::Metrics(std::string event, void* data)
   float f = MyConfig.GetParamValueFloat("system.adc","factor12v");
   if (f == 0) f = 182;
   float v = (float)MyPeripherals->m_esp32adc->read() / f;
+  if (v < 1.0) v=0;
   m1->SetValue(v);
 #endif // #ifdef CONFIG_OVMS_COMP_ADC
 
