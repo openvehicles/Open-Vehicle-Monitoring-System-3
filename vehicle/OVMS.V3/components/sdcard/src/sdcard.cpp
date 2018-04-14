@@ -97,6 +97,7 @@ sdcard::sdcard(const char* name, bool mode1bit, bool autoformat, int cdpin)
 
   m_mounted = false;
   m_cd = false;
+  m_cdpin = cdpin;
   insertcount = 5;
 
   // Register our events
@@ -159,7 +160,7 @@ bool sdcard::isinserted()
 
 void sdcard::CheckCardState()
   {
-  bool cd = (gpio_get_level((gpio_num_t)m_slot.gpio_cd)==0)?true:false;
+  bool cd = (gpio_get_level((gpio_num_t)m_cdpin)==0)?true:false;
 
   if (cd != m_cd)
     {
