@@ -971,7 +971,9 @@ int ConsoleSSH::RecvCallback(char* buf, uint32_t size)
 
 int SendCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx)
   {
-  mg_send((mg_connection*)ctx, (char*)data, size);
+  mg_connection* nc = (mg_connection*)ctx;
+  nc->flags |= MG_F_SEND_IMMEDIATELY;
+  mg_send(nc, (char*)data, size);
   return size;
   }
 
