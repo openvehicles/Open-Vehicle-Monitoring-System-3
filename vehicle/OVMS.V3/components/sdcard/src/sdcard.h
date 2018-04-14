@@ -63,6 +63,7 @@ class sdcard : public pcp
     sdmmc_card_t* m_card;
     bool m_mounted;
     bool m_cd;
+    int m_cdpin;
   };
 
 #endif //#ifndef __SDCARD_H__
