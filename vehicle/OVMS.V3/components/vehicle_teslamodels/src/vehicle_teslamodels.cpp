@@ -59,14 +59,47 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
 
   switch (p_frame->MsgID)
     {
+    case 0x116: // Gear selector
+      {
+      switch (d[3]>>4)
+        {
+        case 1: // Park
+          StandardMetrics.ms_v_env_gear->SetValue(0);
+          StandardMetrics.ms_v_env_on->SetValue(false);
+          StandardMetrics.ms_v_env_awake->SetValue(false);
+          StandardMetrics.ms_v_env_handbrake->SetValue(true);
+          break;
+        case 2: // Reverse
+          StandardMetrics.ms_v_env_gear->SetValue(-1);
+          StandardMetrics.ms_v_env_on->SetValue(true);
+          StandardMetrics.ms_v_env_awake->SetValue(true);
+          StandardMetrics.ms_v_env_handbrake->SetValue(false);
+          break;
+        case 3: // Neutral
+          StandardMetrics.ms_v_env_gear->SetValue(0);
+          StandardMetrics.ms_v_env_on->SetValue(true);
+          StandardMetrics.ms_v_env_awake->SetValue(true);
+          StandardMetrics.ms_v_env_handbrake->SetValue(false);
+          break;
+        case 4: // Drive
+          StandardMetrics.ms_v_env_gear->SetValue(1);
+          StandardMetrics.ms_v_env_on->SetValue(true);
+          StandardMetrics.ms_v_env_awake->SetValue(true);
+          StandardMetrics.ms_v_env_handbrake->SetValue(false);
+          break;
+        default:
+          break;
+        }
+      break;
+      }
     case 0x256: // Speed
       {
-      StandardMetrics.ms_v_pos_speed->SetValue( (((d[3]&0x0f)<<8) + d[2])/10, Mph );
+      StandardMetrics.ms_v_pos_speed->SetValue( ((((int)d[3]&0x0f)<<8) + (int)d[2])/10, (d[3]&0x80)?Kph:Mph );
       break;
       }
     case 0x302: // SOC
       {
-      StandardMetrics.ms_v_bat_soc->SetValue( ((d[0]>>2) + ((d[2] & 0x0f)<<6))/10 );
+      StandardMetrics.ms_v_bat_soc->SetValue( (((int)d[1]>>2) + (((int)d[2] & 0x0f)<<6))/10 );
       break;
       }
     case 0x398: // Country

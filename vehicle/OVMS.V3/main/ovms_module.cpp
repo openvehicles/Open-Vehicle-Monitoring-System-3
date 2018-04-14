@@ -344,12 +344,22 @@ class HeapTotals
     int After(int task, int type) { return after[task].totals.size[type]; }
     void transfer()
       {
+      TaskMap* tm = TaskMap::instance();
+      int k = 0;
       for (int i = 0; i < count; ++i)
-        for (int j = 0; j < NUM_HEAP_TASK_CAPS; ++j)
+        {
+        if (tm && After(i, DRAM) == 0 && After(i, D_IRAM) == 0 &&
+          After(i, IRAM) == 0 && After(i, SPIRAM) == 0)
           {
-          before[i].totals.task = after[i].totals.task;
-          before[i].totals.size[j] = after[i].totals.size[j];
+          tm->zero(Task(i));
+          continue;
           }
+        before[k].totals.task = after[i].totals.task;
+        for (int j = 0; j < NUM_HEAP_TASK_CAPS; ++j)
+          before[k].totals.size[j] = after[i].totals.size[j];
+        ++k;
+        }
+      count = k;
       }
     int find(TaskHandle_t task)
       {
@@ -663,12 +673,6 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
       }
     }
 
-  for (int i = changes->begin(); i < changes->end(); ++i)
-    {
-    if (tm && (*changes).After(i, DRAM) == 0 && (*changes).After(i, D_IRAM) == 0 &&
-      (*changes).After(i, IRAM) == 0 && (*changes).After(i, SPIRAM) == 0)
-      tm->zero((*changes).Task(i));
-    }
   changes->transfer();
   for (int i = 0; i < numafter; ++i)
     {

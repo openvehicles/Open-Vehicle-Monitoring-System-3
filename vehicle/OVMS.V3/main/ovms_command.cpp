@@ -420,7 +420,6 @@ typedef struct
   int tries;
   } PasswordContext;
 
-static const char* secure_prompt = "OVMS# ";
 bool enableInsert(OvmsWriter* writer, void* v, char ch)
   {
   PasswordContext* pc = (PasswordContext*)v;
@@ -431,7 +430,6 @@ bool enableInsert(OvmsWriter* writer, void* v, char ch)
       {
       writer->SetSecure(true);
       writer->printf("\nSecure mode");
-      writer->SetPrompt(secure_prompt);
       delete pc;
       return false;
       }
@@ -463,7 +461,6 @@ void enable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
     {
     writer->SetSecure(true);
     writer->puts("Secure mode");
-    writer->SetPrompt(secure_prompt);
     }
   else if (argc == 1)
     {
@@ -482,7 +479,6 @@ void enable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
 void disable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   writer->SetSecure(false);
-  writer->SetPrompt(NULL);
   }
 
 OvmsCommandApp::OvmsCommandApp()
@@ -609,6 +605,9 @@ int OvmsCommandApp::LogBuffer(LogBuffers* lb, const char* fmt, va_list args)
   if (ovms_log_file)
     {
     // Log to the log file as well...
+    // We need to protect this with a mutex lock, as fsync appears to NOT be thread safe
+    // https://github.com/espressif/esp-idf/issues/1837
+    OvmsMutexLock fsynclock(&m_fsync_mutex);
     fwrite(buffer,1,strlen(buffer),ovms_log_file);
     fflush(ovms_log_file);
     fsync(fileno(ovms_log_file));

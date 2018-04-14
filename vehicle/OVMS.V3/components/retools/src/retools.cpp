@@ -35,6 +35,7 @@ static const char *TAG = "re";
 #include "retools.h"
 #include "ovms_peripherals.h"
 #include "ovms.h"
+#include "ovms_utils.h"
 
 re *MyRE = NULL;
 
@@ -255,10 +256,9 @@ void re_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
   MyRE->Lock();
   for (re_record_map_t::iterator it=MyRE->m_rmap.begin(); it!=MyRE->m_rmap.end(); ++it)
     {
-    char vbuf[30];
+    char vbuf[48];
     char *s = vbuf;
-    for (int k=0; (k < it->second->last.FIR.B.DLC) && (k < 8); k++)
-      s += sprintf(s, "%02x ", it->second->last.data.u8[k]);
+    FormatHexDump(&s, (const char*)it->second->last.data.u8, it->second->last.FIR.B.DLC, 8);
     if ((argc==0)||(strstr(it->first.c_str(),argv[0])))
       {
       writer->printf("%-20s %10d %6d %s\n",
