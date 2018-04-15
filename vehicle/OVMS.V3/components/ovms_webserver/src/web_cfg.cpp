@@ -1082,46 +1082,92 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
     wifi_mode = c.getvar("wifi_mode");
     wifi_ssid_ap = c.getvar("wifi_ssid_ap");
     wifi_ssid_client = c.getvar("wifi_ssid_client");
+    
+    // check:
+    if (wifi_mode == "ap" || wifi_mode == "apclient") {
+      if (wifi_ssid_ap.empty())
+        wifi_ssid_ap = "OVMS";
+      if (MyConfig.GetParamValue("wifi.ap", wifi_ssid_ap).empty()) {
+        if (MyConfig.GetParamValue("password", "module").empty())
+          error += "<li data-input=\"wifi_ssid_ap\">Wifi AP mode invalid: no password set for SSID!</li>";
+        else
+          warn += "<li data-input=\"wifi_ssid_ap\">Wifi AP network has no password → uses module password.</li>";
+      }
+    }
+    if (wifi_mode == "client" || wifi_mode == "apclient") {
+      if (wifi_ssid_client.empty()) {
+        if (wifi_mode == "apclient") {
+          error += "<li data-input=\"wifi_ssid_client\">Wifi client scan mode not supported for AP+Client!</li>";
+        }
+        else {
+          // check for defined client SSIDs:
+          OvmsConfigParam* param = MyConfig.CachedParam("wifi.ssid");
+          int cnt = 0;
+          for (auto const& kv : param->m_map) {
+            if (kv.second != "")
+              cnt++;
+          }
+          if (cnt == 0) {
+            error += "<li data-input=\"wifi_ssid_client\">Wifi client scan mode invalid: no SSIDs defined!</li>";
+          }
+        }
+      }
+      else if (MyConfig.GetParamValue("wifi.ssid", wifi_ssid_client).empty()) {
+        error += "<li data-input=\"wifi_ssid_client\">Wifi client mode invalid: no password set for SSID!</li>";
+      }
+    }
 
-    // store:
-    MyConfig.SetParamValueBool("auto", "init", init);
-    MyConfig.SetParamValueBool("auto", "ext12v", ext12v);
-    MyConfig.SetParamValueBool("auto", "modem", modem);
-    MyConfig.SetParamValueBool("auto", "server.v2", server_v2);
-    MyConfig.SetParamValueBool("auto", "server.v3", server_v3);
-    MyConfig.SetParamValue("auto", "vehicle.type", vehicle_type);
-    MyConfig.SetParamValue("auto", "obd2ecu", obd2ecu);
-    MyConfig.SetParamValue("auto", "wifi.mode", wifi_mode);
-    MyConfig.SetParamValue("auto", "wifi.ssid.ap", wifi_ssid_ap);
-    MyConfig.SetParamValue("auto", "wifi.ssid.client", wifi_ssid_client);
+    if (error == "") {
+      // success:
+      MyConfig.SetParamValueBool("auto", "init", init);
+      MyConfig.SetParamValueBool("auto", "ext12v", ext12v);
+      MyConfig.SetParamValueBool("auto", "modem", modem);
+      MyConfig.SetParamValueBool("auto", "server.v2", server_v2);
+      MyConfig.SetParamValueBool("auto", "server.v3", server_v3);
+      MyConfig.SetParamValue("auto", "vehicle.type", vehicle_type);
+      MyConfig.SetParamValue("auto", "obd2ecu", obd2ecu);
+      MyConfig.SetParamValue("auto", "wifi.mode", wifi_mode);
+      MyConfig.SetParamValue("auto", "wifi.ssid.ap", wifi_ssid_ap);
+      MyConfig.SetParamValue("auto", "wifi.ssid.client", wifi_ssid_client);
+
+      c.head(200);
+      c.alert("success", "<p class=\"lead\">Auto start configuration saved.</p>");
+      if (warn != "") {
+        warn = "<p class=\"lead\">Warning:</p><ul class=\"warnlist\">" + warn + "</ul>";
+        c.alert("warning", warn.c_str());
+      }
+      if (c.getvar("action") == "save-reboot")
+        OutputReboot(p, c);
+      else
+        OutputHome(p, c);
+      c.done();
+      return;
+    }
+    
+    // output error, return to form:
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    c.head(400);
+    c.alert("danger", error.c_str());
+  }
+  else {
+    // read configuration:
+    init = MyConfig.GetParamValueBool("auto", "init", true);
+    ext12v = MyConfig.GetParamValueBool("auto", "ext12v", false);
+    modem = MyConfig.GetParamValueBool("auto", "modem", false);
+    server_v2 = MyConfig.GetParamValueBool("auto", "server.v2", false);
+    server_v3 = MyConfig.GetParamValueBool("auto", "server.v3", false);
+    vehicle_type = MyConfig.GetParamValue("auto", "vehicle.type");
+    obd2ecu = MyConfig.GetParamValue("auto", "obd2ecu");
+    wifi_mode = MyConfig.GetParamValue("auto", "wifi.mode", "ap");
+    wifi_ssid_ap = MyConfig.GetParamValue("auto", "wifi.ssid.ap");
+    if (wifi_ssid_ap.empty())
+      wifi_ssid_ap = "OVMS";
+    wifi_ssid_client = MyConfig.GetParamValue("auto", "wifi.ssid.client");
 
     c.head(200);
-    c.alert("success", "<p class=\"lead\">Auto start configuration saved.</p>");
-    if (c.getvar("action") == "save-reboot")
-      OutputReboot(p, c);
-    else
-      OutputHome(p, c);
-    c.done();
-    return;
   }
 
-  // read configuration:
-  init = MyConfig.GetParamValueBool("auto", "init", true);
-  ext12v = MyConfig.GetParamValueBool("auto", "ext12v", false);
-  modem = MyConfig.GetParamValueBool("auto", "modem", false);
-  server_v2 = MyConfig.GetParamValueBool("auto", "server.v2", false);
-  server_v3 = MyConfig.GetParamValueBool("auto", "server.v3", false);
-  vehicle_type = MyConfig.GetParamValue("auto", "vehicle.type");
-  obd2ecu = MyConfig.GetParamValue("auto", "obd2ecu");
-  wifi_mode = MyConfig.GetParamValue("auto", "wifi.mode", "ap");
-  wifi_ssid_ap = MyConfig.GetParamValue("auto", "wifi.ssid.ap");
-  if (wifi_ssid_ap.empty())
-    wifi_ssid_ap = "OVMS";
-  wifi_ssid_client = MyConfig.GetParamValue("auto", "wifi.ssid.client");
-
   // generate form:
-  c.head(200);
-
   c.panel_start("primary", "Auto start configuration");
   c.form_start(p.uri);
 
