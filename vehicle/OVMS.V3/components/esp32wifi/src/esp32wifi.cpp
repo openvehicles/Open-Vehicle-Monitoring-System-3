@@ -313,24 +313,30 @@ void esp32wifi::AutoInit()
     if (appassword.empty())
       {
       ESP_LOGE(TAG, "AutoInit: no AP password set, AP mode inhibited");
-      return;
       }
 
     stassid = MyConfig.GetParamValue("auto", "wifi.ssid.client");
     if (stassid.empty())
       {
       ESP_LOGE(TAG, "AutoInit: Wifi client SSID must be specified in wifi.ssid.client");
-      return;
       }
-
-    stapassword = MyConfig.GetParamValue("wifi.ssid", stassid);
-    if (stapassword.empty())
+    else
       {
-      ESP_LOGE(TAG, "AutoInit: WIFI client assword must specified for SSID %s", stassid.c_str());
-      return;
+      stapassword = MyConfig.GetParamValue("wifi.ssid", stassid);
+      if (stapassword.empty())
+        {
+        ESP_LOGE(TAG, "AutoInit: Wifi client password must be specified for SSID %s", stassid.c_str());
+        }
       }
 
-    StartAccessPointClientMode(apssid, appassword, stassid, stapassword);
+    if (!appassword.empty() && !stapassword.empty())
+      StartAccessPointClientMode(apssid, appassword, stassid, stapassword);
+    else if (!appassword.empty())
+      StartAccessPointMode(apssid, appassword);
+    else if (!stapassword.empty())
+      StartClientMode(stassid, stapassword);
+    else
+      ESP_LOGE(TAG, "AutoInit: no Wifi mode available, please fix configuration!");
     }
   }
 
