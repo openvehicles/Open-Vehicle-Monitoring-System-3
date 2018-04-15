@@ -75,6 +75,8 @@
 #include "ext12v.h"
 #endif // #ifdef CONFIG_OVMS_COMP_EXT12V
 
+#define MODULE_GPIO_SW2           0       // SW2: firmware download / factory reset
+
 #define VSPI_PIN_MISO             19
 #define VSPI_PIN_MOSI             23
 #define VSPI_PIN_CLK              18
