@@ -11,6 +11,7 @@ OTA release providing minor improvements and fixes.
 - Wifi: Increase scan responsiveness (60 seconds -> 10, on first scan)
 - Factory reset by SD file "factoryreset.txt" or pushing SW2 for 10 seconds
     Note: SW2 method needs removing any SD card inserted.
+- Wifi: fallback to AP mode net "OVMS" password "OVMSinit" after factory reset
 - Miscellaneous bug fixes and enhancements
 
 2018-04-07 MWJ  3.1.003  OTA release

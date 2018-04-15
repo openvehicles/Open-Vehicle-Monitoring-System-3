@@ -272,9 +272,18 @@ void esp32wifi::AutoInit()
     appassword = MyConfig.GetParamValue("wifi.ap", apssid);
     if (appassword.empty())
       {
-      // fallback to module password:
-      ESP_LOGW(TAG, "AutoInit: using module password as AP password");
-      appassword = MyConfig.GetParamValue("password", "module");
+      if (apssid == "OVMS" && !MyConfig.IsDefined("password", "module"))
+        {
+        // factory reset situation:
+        ESP_LOGW(TAG, "AutoInit: factory reset detected, starting public AP net 'OVMS' with password 'OVMSinit'");
+        appassword = "OVMSinit";
+        }
+      else
+        {
+        // fallback to module password:
+        ESP_LOGW(TAG, "AutoInit: using module password as AP password");
+        appassword = MyConfig.GetParamValue("password", "module");
+        }
       }
     if (appassword.empty())
       ESP_LOGE(TAG, "AutoInit: no AP password set, AP mode inhibited");
