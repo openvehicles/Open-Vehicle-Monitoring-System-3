@@ -89,7 +89,7 @@ CANopenWorker::CANopenWorker(canbus* bus)
   m_jobcnt_error = 0;
   
   m_jobqueue = xQueueCreate(20, sizeof(CANopenJob));
-  snprintf(m_taskname, sizeof(m_taskname), "COwrk %s", bus->GetName());
+  snprintf(m_taskname, sizeof(m_taskname), "OVMS COwrk %s", bus->GetName());
   xTaskCreatePinnedToCore(CANopenWorkerJobTask, m_taskname,
     CONFIG_OVMS_COMP_CANOPEN_WRK_STACK, (void*)this, 5, &m_jobtask, 1);
   
