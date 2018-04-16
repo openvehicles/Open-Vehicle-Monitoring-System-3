@@ -835,7 +835,7 @@ static void module_eventhandler(std::string event, void* data)
     // Is there a clean way to detect if SD transmissions are currently running?
     // The sdmmc semaphore and status variables are all static…
     // Workaround: only watch SW2 if no SD card is mounted:
-    if (MyPeripherals->m_sdcard->ismounted() || gpio_get_level((gpio_num_t)MODULE_GPIO_SW2) != 0)
+    if (MyPeripherals->m_sdcard->isinserted() || gpio_get_level((gpio_num_t)MODULE_GPIO_SW2) != 0)
       {
       module_sw2_pushcnt = 0;
       return;
