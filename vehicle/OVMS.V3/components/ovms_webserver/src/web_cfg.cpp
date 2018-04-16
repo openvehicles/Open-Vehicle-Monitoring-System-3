@@ -927,36 +927,45 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
 void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
 {
   if (c.method == "POST") {
-    std::string warn;
+    std::string warn, error;
 
     // process form submission:
-    UpdateWifiTable(p, c, "ap", "wifi.ap", warn);
-    UpdateWifiTable(p, c, "cl", "wifi.ssid", warn);
-
-    c.head(200);
-    c.alert("success", "<p class=\"lead\">Wifi configuration saved.</p>");
-    if (warn != "") {
-      warn = "<p class=\"lead\">Warning:</p><ul class=\"warnlist\">" + warn + "</ul>";
-      c.alert("warning", warn.c_str());
+    UpdateWifiTable(p, c, "ap", "wifi.ap", warn, error, 8);
+    UpdateWifiTable(p, c, "cl", "wifi.ssid", warn, error, 0);
+    
+    if (error == "") {
+      c.head(200);
+      c.alert("success", "<p class=\"lead\">Wifi configuration saved.</p>");
+      if (warn != "") {
+        warn = "<p class=\"lead\">Warning:</p><ul class=\"warnlist\">" + warn + "</ul>";
+        c.alert("warning", warn.c_str());
+      }
+      OutputHome(p, c);
+      c.done();
+      return;
     }
-    OutputHome(p, c);
-    c.done();
-    return;
+    
+    // output error, return to form:
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    c.head(400);
+    c.alert("danger", error.c_str());
+  }
+  else {
+    c.head(200);
   }
 
   // generate form:
-  c.head(200);
   c.panel_start("primary", "Wifi configuration");
   c.printf(
     "<form method=\"post\" action=\"%s\" target=\"#main\">"
     , _attr(p.uri));
 
   c.fieldset_start("Access point networks");
-  OutputWifiTable(p, c, "ap", "wifi.ap");
+  OutputWifiTable(p, c, "ap", "wifi.ap", MyConfig.GetParamValue("auto", "wifi.ssid.ap", "OVMS"));
   c.fieldset_end();
 
   c.fieldset_start("Wifi client networks");
-  OutputWifiTable(p, c, "cl", "wifi.ssid");
+  OutputWifiTable(p, c, "cl", "wifi.ssid", MyConfig.GetParamValue("auto", "wifi.ssid.client"));
   c.fieldset_end();
 
   c.print(
@@ -989,10 +998,22 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
   c.done();
 }
 
-void OvmsWebServer::OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname)
+void OvmsWebServer::OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname, const std::string autostart_ssid)
 {
   OvmsConfigParam* param = MyConfig.CachedParam(paramname);
+  int pos = 0, pos_autostart = 0, max;
+  char buf[50];
+  std::string ssid, pass;
 
+  if (c.method == "POST") {
+    max = atoi(c.getvar(prefix.c_str()).c_str());
+    sprintf(buf, "%s_autostart", prefix.c_str());
+    pos_autostart = atoi(c.getvar(buf).c_str());
+  }
+  else {
+    max = param->m_map.size();
+  }
+  
   c.printf(
     "<div class=\"table-responsive\">"
       "<input type=\"hidden\" name=\"%s\" value=\"%d\">"
@@ -1005,19 +1026,39 @@ void OvmsWebServer::OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std:
           "</tr>"
         "</thead>"
         "<tbody>"
-    , _attr(prefix), param->m_map.size());
+    , _attr(prefix), max);
 
-  int pos = 0;
-  for (auto const& kv : param->m_map) {
-    pos++;
-    c.printf(
+  if (c.method == "POST") {
+    for (pos = 1; pos <= max; pos++) {
+      sprintf(buf, "%s_ssid_%d", prefix.c_str(), pos);
+      ssid = c.getvar(buf);
+      c.printf(
           "<tr>"
-            "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\"><strong>✖</strong></button></td>"
+            "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\" %s><strong>✖</strong></button></td>"
             "<td><input type=\"text\" class=\"form-control\" name=\"%s_ssid_%d\" value=\"%s\"></td>"
             "<td><input type=\"password\" class=\"form-control\" name=\"%s_pass_%d\" placeholder=\"no change\"></td>"
           "</tr>"
-      , _attr(prefix), pos, _attr(kv.first)
+      , (pos == pos_autostart) ? "disabled title=\"Current autostart network\"" : ""
+      , _attr(prefix), pos, _attr(ssid)
       , _attr(prefix), pos);
+    }
+  }
+  else {
+    for (auto const& kv : param->m_map) {
+      pos++;
+      ssid = kv.first;
+      if (ssid == autostart_ssid)
+        pos_autostart = pos;
+      c.printf(
+          "<tr>"
+            "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\" %s><strong>✖</strong></button></td>"
+            "<td><input type=\"text\" class=\"form-control\" name=\"%s_ssid_%d\" value=\"%s\"></td>"
+            "<td><input type=\"password\" class=\"form-control\" name=\"%s_pass_%d\" placeholder=\"no change\"></td>"
+          "</tr>"
+      , (pos == pos_autostart) ? "disabled title=\"Current autostart network\"" : ""
+      , _attr(prefix), pos, _attr(ssid)
+      , _attr(prefix), pos);
+    }
   }
 
   c.print(
@@ -1027,37 +1068,63 @@ void OvmsWebServer::OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std:
             "<td></td>"
           "</tr>"
         "</tbody>"
-      "</table>"
-    "</div>");
+      "</table>");
+  c.printf(
+      "<input type=\"hidden\" name=\"%s_autostart\" value=\"%d\">"
+    "</div>"
+    , _attr(prefix), pos_autostart);
 }
 
-void OvmsWebServer::UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname, std::string& warn)
+void OvmsWebServer::UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname,
+  std::string& warn, std::string& error, int pass_minlen)
 {
   OvmsConfigParam* param = MyConfig.CachedParam(paramname);
-  int i, max;
-  std::string ssid, pass;
+  int i, max, pos_autostart;
+  std::string ssid, pass, ssid_autostart;
   char buf[50];
   ConfigParamMap newmap;
 
   max = atoi(c.getvar(prefix.c_str()).c_str());
+  sprintf(buf, "%s_autostart", prefix.c_str());
+  pos_autostart = atoi(c.getvar(buf).c_str());
 
   for (i = 1; i <= max; i++) {
     sprintf(buf, "%s_ssid_%d", prefix.c_str(), i);
     ssid = c.getvar(buf);
-    if (ssid == "")
+    if (ssid == "") {
+      if (i == pos_autostart)
+        error += "<li>Autostart SSID may not be empty</li>";
       continue;
+    }
     sprintf(buf, "%s_pass_%d", prefix.c_str(), i);
     pass = c.getvar(buf);
     if (pass == "")
       pass = param->GetValue(ssid);
-    if (pass == "")
-      warn += "<li>SSID <code>" + ssid + "</code> has no password</li>";
+    if (pass == "") {
+      if (i == pos_autostart)
+        error += "<li>Autostart SSID <code>" + ssid + "</code> has no password</li>";
+      else
+        warn += "<li>SSID <code>" + ssid + "</code> has no password</li>";
+    }
+    else if (pass.length() < pass_minlen) {
+      sprintf(buf, "%d", pass_minlen);
+      error += "<li>SSID <code>" + ssid + "</code>: password is too short (min " + buf + " chars)</li>";
+    }
     newmap[ssid] = pass;
+    if (i == pos_autostart)
+      ssid_autostart = ssid;
   }
 
-  param->m_map.clear();
-  param->m_map = std::move(newmap);
-  param->Save();
+  if (error == "") {
+    // save new map:
+    param->m_map.clear();
+    param->m_map = std::move(newmap);
+    param->Save();
+    
+    // set new autostart ssid:
+    if (ssid_autostart != "")
+      MyConfig.SetParamValue("auto", "wifi.ssid." + prefix, ssid_autostart);
+  }
 }
 
 

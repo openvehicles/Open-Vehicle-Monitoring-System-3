@@ -402,8 +402,10 @@ class OvmsWebServer
     static void HandleCfgServerV3(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgWebServer(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgWifi(PageEntry_t& p, PageContext_t& c);
-    static void OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname);
-    static void UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname, std::string& warn);
+    static void OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname,
+      const std::string autostart_ssid);
+    static void UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname,
+      std::string& warn, std::string& error, int pass_minlen);
     static void HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgFirmware(PageEntry_t& p, PageContext_t& c);
   
