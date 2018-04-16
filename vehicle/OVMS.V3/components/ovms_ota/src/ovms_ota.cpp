@@ -66,6 +66,11 @@ void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     len += writer->printf("Running partition: %s\n", info.partition_running.c_str());
   if (info.partition_boot != "")
     len += writer->printf("Boot partition:    %s\n", info.partition_boot.c_str());
+  if (!info.changelog_server.empty())
+    {
+    writer->puts("\nIn this version:");
+    writer->puts(info.changelog_server.c_str());
+    }
   if (len == 0)
     writer->puts("OTA status unknown");
   }
@@ -478,6 +483,7 @@ void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
   info.version_server = "";
   info.partition_running = "";
   info.partition_boot = "";
+  info.changelog_server = "";
 
   OvmsMetricString* m = StandardMetrics.ms_m_version;
   if (m != NULL)
@@ -505,8 +511,13 @@ void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
       if (http.IsOpen() && http.BodyHasLine())
         {
         info.version_server = http.BodyReadLine();
+        char rbuf[512];
+        while (size_t k = http.BodyRead(rbuf,512))
+          {
+          info.changelog_server.append(rbuf,k);
+          }
+        http.Disconnect();
         }
-      http.Disconnect();
       }
 
     const esp_partition_t *p = esp_ota_get_running_partition();
