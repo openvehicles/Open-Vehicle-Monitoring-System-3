@@ -192,14 +192,18 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   if (argc == 0)
     {
     // Automatically build the URL based on firmware
-    url = "api.openvehicles.com/firmware/ota/";
+    std::string tag = MyConfig.GetParamValue("ota","tag");
+    url = MyConfig.GetParamValue("ota","server","api.openvehicles.com/firmware/ota");
 #ifdef CONFIG_OVMS_HW_BASE_3_0
-    url.append("v3.0/");
+    url.append("/v3.0/");
 #endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
 #ifdef CONFIG_OVMS_HW_BASE_3_1
-    url.append("v3.1/");
+    url.append("/v3.1/");
 #endif //#ifdef CONFIG_OVMS_HW_BASE_3_1
-    url.append(CONFIG_OVMS_VERSION_TAG);
+    if (tag.empty())
+      url.append(CONFIG_OVMS_VERSION_TAG);
+    else
+      url.append(tag);
     url.append("/ovms3.bin");
     }
   else
@@ -439,7 +443,7 @@ void OvmsOTA::AutoFlashSD(std::string event, void* data)
 OvmsOTA::OvmsOTA()
   {
   ESP_LOGI(TAG, "Initialising OTA (4400)");
-  
+
   MyConfig.RegisterParam("ota", "OTA setup and status", true, true);
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
@@ -474,24 +478,27 @@ void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
   info.version_server = "";
   info.partition_running = "";
   info.partition_boot = "";
-  
+
   OvmsMetricString* m = StandardMetrics.ms_m_version;
   if (m != NULL)
     {
     info.version_firmware = m->AsString();
 
-    if (check_update && MyNetManager.m_connected_wifi)
+    if (check_update && MyNetManager.m_connected_any)
       {
       // We have a wifi connection, so let's try to find out the version the server has
-      std::string url;
-      url = "api.openvehicles.com/firmware/ota/";
+      std::string tag = MyConfig.GetParamValue("ota","tag");
+      std::string url = MyConfig.GetParamValue("ota","server","api.openvehicles.com/firmware/ota");
 #ifdef CONFIG_OVMS_HW_BASE_3_0
-      url.append("v3.0/");
+      url.append("/v3.0/");
 #endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
 #ifdef CONFIG_OVMS_HW_BASE_3_1
-      url.append("v3.1/");
+      url.append("/v3.1/");
 #endif //#ifdef CONFIG_OVMS_HW_BASE_3_1
-      url.append(CONFIG_OVMS_VERSION_TAG);
+      if (tag.empty())
+        url.append(CONFIG_OVMS_VERSION_TAG);
+      else
+        url.append(tag);
       url.append("/ovms3.ver");
 
       OvmsHttpClient http(url);
