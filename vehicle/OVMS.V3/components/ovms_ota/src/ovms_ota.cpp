@@ -58,18 +58,20 @@ void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   int len = 0;
   bool check_update = (strcmp(cmd->GetName(), "status")==0);
   MyOTA.GetStatus(info, check_update);
-  if (info.version_firmware != "")
-    len += writer->printf("Firmware:          %s\n", info.version_firmware.c_str());
-  if (info.version_server != "")
-    len += writer->printf("Server Available:  %s\n", info.version_server.c_str());
   if (info.partition_running != "")
     len += writer->printf("Running partition: %s\n", info.partition_running.c_str());
   if (info.partition_boot != "")
     len += writer->printf("Boot partition:    %s\n", info.partition_boot.c_str());
-  if (!info.changelog_server.empty())
+  if (info.version_firmware != "")
+    len += writer->printf("Firmware:          %s\n", info.version_firmware.c_str());
+  if (info.version_server != "")
     {
-    writer->puts("\nIn this version:");
-    writer->puts(info.changelog_server.c_str());
+    len += writer->printf("Server Available:  %s\n", info.version_server.c_str());
+    if (!info.changelog_server.empty())
+      {
+      writer->puts("");
+      writer->puts(info.changelog_server.c_str());
+      }
     }
   if (len == 0)
     writer->puts("OTA status unknown");
