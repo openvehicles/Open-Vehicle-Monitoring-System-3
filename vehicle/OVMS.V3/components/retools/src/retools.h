@@ -44,10 +44,28 @@ typedef struct
   {
   CAN_frame_t last;
   uint32_t rxcount;
+  struct __attribute__((__packed__))
+    {
+    struct {
+      uint8_t Ignore:1;     // 0x01
+      uint8_t Changed:1;    // 0x02
+      uint8_t Discovered:1; // 0x04
+      uint8_t :1;           // 0x08
+      uint8_t :1;           // 0x10
+      uint8_t :1;           // 0x20
+      uint8_t :1;           // 0x40
+      uint8_t :1;           // 0x80
+      } b;
+    uint8_t dc;             // Data bytes changed
+    uint8_t dd;             // Data bytes discovered
+    uint8_t spare;
+    } attr;
   } re_record_t;
 
 typedef std::map<uint32_t, uint8_t> re_id_map_t;
 typedef std::map<std::string, re_record_t*> re_record_map_t;
+
+enum REMode { Record, Discover };
 
 class re : public pcp
   {
@@ -77,6 +95,7 @@ class re : public pcp
     re_record_map_t m_rmap;
     uint32_t m_started;
     uint32_t m_finished;
+    REMode m_mode;
   };
 
 #endif //#ifndef __RETOOLS_H__
