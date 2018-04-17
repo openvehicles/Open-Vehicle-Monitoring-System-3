@@ -116,8 +116,8 @@ std::string chargemode_code(const int key)
     {
     case 0: code = "standard";      break;
     case 1: code = "storage";       break;
-    case 2: code = "range";         break;
-    case 3: code = "performance";   break;
+    case 3: code = "range";         break;
+    case 4: code = "performance";   break;
     default: code = "";
     }
   return code;
@@ -131,8 +131,8 @@ int chargemode_key(const std::string code)
   int key;
   if      (code == "standard")      key = 0;
   else if (code == "storage")       key = 1;
-  else if (code == "range")         key = 2;
-  else if (code == "performance")   key = 3;
+  else if (code == "range")         key = 3;
+  else if (code == "performance")   key = 4;
   else key = -1;
   return key;
   }
@@ -190,7 +190,7 @@ int FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsi
     {
     if (!*bufferp)
       *bufferp = (char*) malloc(colsize*4 + 4); // space for 16x3 + 2 + 16 + 1(\0)
-    
+
     char *p = *bufferp;
     const char *os = s;
     for (int k=0;k<colsize;k++)
