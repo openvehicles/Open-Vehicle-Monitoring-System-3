@@ -40,6 +40,15 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
   public:
     OvmsVehicleVoltAmpera();
     ~OvmsVehicleVoltAmpera();
+
+  protected:
+    void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    virtual void Ticker1(uint32_t ticker);
+
+  protected:
+    char m_vin[18];
+    char m_type[5];
   };
 
 #endif //#ifndef __VEHICLE_VOLTAMPERA_H__
