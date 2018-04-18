@@ -67,7 +67,7 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
       }
     case 0x116: // Gear selector
       {
-      switch (d[3]>>4)
+      switch ((d[1]&0x70)>>4)
         {
         case 1: // Park
           StandardMetrics.ms_v_env_gear->SetValue(0);
