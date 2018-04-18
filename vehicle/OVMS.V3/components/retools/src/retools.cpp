@@ -43,83 +43,79 @@ const char* re_green = "\x1b" "[32m";
 const char* re_red = "\x1b" "[31m";
 const char* re_off = "\x1b" "[39m";
 
-int HighlightDump(char* bufferp, const char* data, size_t rlength, uint8_t red, uint8_t green)
+void HighlightDump(char* bufferp, const char* data, size_t rlength, uint8_t red, uint8_t green)
   {
   const char *s = data;
+  const char *os = data;
   size_t colsize = 8;
 
-  if (rlength>0)
+  for (int k=0;k<colsize;k++)
     {
-    const char *os = s;
-    for (int k=0;k<colsize;k++)
+    uint8_t mask = (k==0)?1:(1<<k);
+    if (k<rlength)
       {
-      if (k<rlength)
+      if (green & mask)
         {
-        if (green & (1<<k))
-          {
-          strcat(bufferp,re_green);
-          bufferp += strlen(re_green);
-          }
-        else if (red & (1<<k))
-          {
-          strcat(bufferp,re_red);
-          bufferp += strlen(re_red);
-          }
-        sprintf(bufferp,"%2.2x ",*s);
-        bufferp += 3;
-        if ((green | red) & (1<<k))
-          {
-          strcat(bufferp,re_off);
-          bufferp += strlen(re_off);
-          }
-        s++;
+        strcpy(bufferp,re_green);
+        while (*bufferp != 0) bufferp++;
         }
-      else
+      else if (red & mask)
         {
-        sprintf(bufferp,"   ");
-        bufferp += 3;
+        strcpy(bufferp,re_red);
+        while (*bufferp != 0) bufferp++;
         }
+      sprintf(bufferp,"%2.2x ",*s);
+      bufferp += 3;
+      if ((green | red) & mask)
+        {
+        strcpy(bufferp,re_off);
+        while (*bufferp != 0) bufferp++;
+        }
+      s++;
       }
-    sprintf(bufferp,"| ");
-    bufferp += 2;
-    s = os;
-    for (int k=0;k<colsize;k++)
+    else
       {
-      if (k<rlength)
-        {
-        if (green & (1<<k))
-          {
-          strcat(bufferp,re_green);
-          bufferp += strlen(re_green);
-          }
-        else if (red & (1<<k))
-          {
-          strcat(bufferp,re_red);
-          bufferp += strlen(re_red);
-          }
-        if (isprint((int)*s))
-          { *bufferp = *s; }
-        else
-          { *bufferp = '.'; }
-        bufferp++;
-        if ((green | red) & (1<<k))
-          {
-          strcat(bufferp,re_off);
-          bufferp += strlen(re_off);
-          }
-        s++;
-        }
-      else
-        {
-        *bufferp = ' ';
-        bufferp++;
-        }
+      sprintf(bufferp,"   ");
+      bufferp += 3;
       }
-    *bufferp = 0;
-    rlength -= colsize;
     }
-
-  return rlength;
+  sprintf(bufferp,"| ");
+  bufferp += 2;
+  s = os;
+  for (int k=0;k<colsize;k++)
+    {
+    uint8_t mask = (k==0)?1:(1<<k);
+    if (k<rlength)
+      {
+      if (green & mask)
+        {
+        strcpy(bufferp,re_green);
+        while (*bufferp != 0) bufferp++;
+        }
+      else if (red & mask)
+        {
+        strcpy(bufferp,re_red);
+        while (*bufferp != 0) bufferp++;
+        }
+      if (isprint((int)*s))
+        { *bufferp = *s; }
+      else
+        { *bufferp = '.'; }
+      bufferp++;
+      if ((green | red) & mask)
+        {
+        strcpy(bufferp,re_off);
+        while (*bufferp != 0) bufferp++;
+        }
+      s++;
+      }
+    else
+      {
+      *bufferp = ' ';
+      bufferp++;
+      }
+    }
+  *bufferp = 0;
   }
 
 static void RE_task(void *pvParameters)
@@ -157,7 +153,8 @@ void re::Task()
             r->attr.b.Discovered = 1;
             r->attr.dd = 0xff;
             HighlightDump(vbuf, (const char*)frame.data.u8, frame.FIR.B.DLC, r->attr.dc, r->attr.dd);
-            ESP_LOGV(TAG, "Discovered new %s %s", key.c_str(), vbuf);
+            ESP_LOGV(TAG, "Discovered new %s%s%s %s",
+              re_green, key.c_str(), re_off, vbuf);
             break;
           }
         m_rmap[key] = r;
@@ -175,20 +172,26 @@ void re::Task()
               }
             break;
           case Discover:
+            {
+            bool found = false;
             for (int j=0;j<r->last.FIR.B.DLC;j++)
               {
-              if (((r->attr.dc & (1<<j))==0) && (r->last.data.u8[j] != frame.data.u8[j]))
+              uint8_t mask = (j==0)?1:(1<<j);
+              if (((r->attr.dc & mask)==0) &&
+                  (r->last.data.u8[j] != frame.data.u8[j]))
                 {
-                r->attr.dc |= (1<<j); // Mark the byte as changed
-                r->attr.dd |= (1<<j); // Mark the byte as discovered
+                r->attr.dc |= mask; // Mark the byte as changed
+                r->attr.dd |= mask; // Mark the byte as discovered
+                found = true;
                 }
               }
-            if (r->attr.dd != 0)
+            if (found)
               {
               HighlightDump(vbuf, (const char*)frame.data.u8, frame.FIR.B.DLC, r->attr.dc, r->attr.dd);
               ESP_LOGV(TAG, "Discovered change %s %s", k->first.c_str(), vbuf);
               }
             break;
+            }
           }
         }
       memcpy(&r->last,&frame,sizeof(frame));
@@ -528,7 +531,8 @@ void re_list_changed(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     {
     if ((it->second->attr.b.Changed)||(it->second->attr.dc))
       {
-      HighlightDump(vbuf, (const char*)it->second->last.data.u8, it->second->last.FIR.B.DLC, it->second->attr.dc, 0);
+      HighlightDump(vbuf, (const char*)it->second->last.data.u8,
+        it->second->last.FIR.B.DLC, it->second->attr.dc, it->second->attr.dd);
       if ((argc==0)||(strstr(it->first.c_str(),argv[0])))
         {
         writer->printf("%-20s %10d %6d %s\n",
@@ -556,7 +560,8 @@ void re_list_discovered(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int
     {
     if ((it->second->attr.b.Discovered)||(it->second->attr.dd))
       {
-      HighlightDump(vbuf, (const char*)it->second->last.data.u8, it->second->last.FIR.B.DLC, 0, it->second->attr.dd);
+      HighlightDump(vbuf, (const char*)it->second->last.data.u8,
+        it->second->last.FIR.B.DLC, it->second->attr.dc, it->second->attr.dd);
       if ((argc==0)||(strstr(it->first.c_str(),argv[0])))
         {
         writer->printf("%-20s %10d %6d %s\n",
