@@ -537,7 +537,9 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
   c.input_text("Vehicle ID", "vehicleid", vehicleid.c_str(), "Use ASCII letters, digits and '-'",
     "<p>Note: this is also the <strong>vehicle account ID</strong> for server connections.</p>");
   c.input_text("Vehicle name", "vehiclename", vehiclename.c_str(), "optional, the name of your car");
-  c.input_text("Time zone", "timezone", timezone.c_str(), "optional, default UTC");
+  c.input_text("Time zone", "timezone", timezone.c_str(), "optional, default UTC",
+    "<p>Web links: <a target=\"_blank\" href=\"https://remotemonitoringsystems.ca/time-zone-abbreviations.php\">Example Timezone Strings</a>, "
+    "<a target=\"_blank\" href=\"https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html\">Glibc manual</a></p>");
   c.input_select_start("Distance units", "units_distance");
   c.input_select_option("Kilometers", "K", units_distance == "K");
   c.input_select_option("Miles", "M", units_distance == "M");
