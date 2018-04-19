@@ -134,6 +134,10 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandCA(in
     }
   }
   
+  // Synchronize with config changes:
+  if (argc > 0)
+    ConfigChanged(NULL);
+  
   // Output current charge alerts and estimated charge time remaining:
   
   UpdateChargeTimes();
@@ -239,6 +243,9 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandCA
       MyConfig.SetParamValueInt("xrt", "chargelevel", atoi(token.c_str()));
     if (std::getline(sentence, token, ','))
       MyConfig.SetParamValueInt("xrt", "chargemode", atoi(token.c_str()));
+    
+    // Synchronize with config changes:
+    ConfigChanged(NULL);
   }
   
   UpdateChargeTimes();
