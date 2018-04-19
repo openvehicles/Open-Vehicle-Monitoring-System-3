@@ -65,7 +65,7 @@ typedef struct
 typedef std::map<uint32_t, uint8_t> re_id_map_t;
 typedef std::map<std::string, re_record_t*> re_record_map_t;
 
-enum REMode { Record, Discover };
+enum REMode { Serve, Analyse, Discover };
 
 class re : public pcp
   {
@@ -80,6 +80,10 @@ class re : public pcp
     void Task();
     void Clear();
     std::string GetKey(CAN_frame_t* frame);
+
+  protected:
+    void DoAnalyse(CAN_frame_t* frame);
+    void DoServe(CAN_frame_t* frame);
 
   protected:
     TaskHandle_t m_task;

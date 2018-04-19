@@ -127,79 +127,101 @@ static void RE_task(void *pvParameters)
 void re::Task()
   {
   CAN_frame_t frame;
-  char vbuf[256];
 
   while(1)
     {
     if (xQueueReceive(m_rxqueue, &frame, (portTickType)portMAX_DELAY)==pdTRUE)
       {
-      OvmsMutexLock lock(&m_mutex);
-      std::string key = GetKey(&frame);
-      auto k = m_rmap.find(key);
-      re_record_t* r;
-      if (m_rmap.size() == 0) m_started = monotonictime;
-      if (k == m_rmap.end())
+      switch (m_mode)
         {
-        r = k->second;
-        r = new re_record_t;
-        memset(r,0,sizeof(re_record_t));
-        r->attr.b.Changed = 1; // Mark the whole ID as changed
-        r->attr.dc = 0xff;
-        switch (MyRE->m_mode)
-          {
-          case Record:
-            break;
-          case Discover:
-            r->attr.b.Discovered = 1;
-            r->attr.dd = 0xff;
-            HighlightDump(vbuf, (const char*)frame.data.u8, frame.FIR.B.DLC, r->attr.dc, r->attr.dd);
-            ESP_LOGV(TAG, "Discovered new %s%s%s %s",
-              re_green, key.c_str(), re_off, vbuf);
-            break;
-          }
-        m_rmap[key] = r;
+        case Serve:
+          DoServe(&frame);
+          break;
+        case Analyse:
+        case Discover:
+          DoAnalyse(&frame);
+          break;
         }
-      else
-        {
-        r = k->second;
-        switch (MyRE->m_mode)
-          {
-          case Record:
-            for (int k=0;k<r->last.FIR.B.DLC;k++)
-              {
-              if (r->last.data.u8[k] != frame.data.u8[k])
-                r->attr.dc |= (1<<k); // Mark the byte as changed
-              }
-            break;
-          case Discover:
-            {
-            bool found = false;
-            for (int j=0;j<r->last.FIR.B.DLC;j++)
-              {
-              uint8_t mask = (j==0)?1:(1<<j);
-              if (((r->attr.dc & mask)==0) &&
-                  (r->last.data.u8[j] != frame.data.u8[j]))
-                {
-                r->attr.dc |= mask; // Mark the byte as changed
-                r->attr.dd |= mask; // Mark the byte as discovered
-                found = true;
-                }
-              }
-            if (found)
-              {
-              HighlightDump(vbuf, (const char*)frame.data.u8, frame.FIR.B.DLC, r->attr.dc, r->attr.dd);
-              ESP_LOGV(TAG, "Discovered change %s %s", k->first.c_str(), vbuf);
-              }
-            break;
-            }
-          }
-        }
-      memcpy(&r->last,&frame,sizeof(frame));
-      r->rxcount++;
       m_finished = monotonictime;
-      // ESP_LOGI(TAG,"rx Key=%s Count=%d",key.c_str(),r->rxcount);
       }
     }
+  }
+
+void re::DoAnalyse(CAN_frame_t* frame)
+  {
+  char vbuf[256];
+
+  OvmsMutexLock lock(&m_mutex);
+  std::string key = GetKey(frame);
+  auto k = m_rmap.find(key);
+  re_record_t* r;
+  if (m_rmap.size() == 0) m_started = monotonictime;
+  if (k == m_rmap.end())
+    {
+    r = k->second;
+    r = new re_record_t;
+    memset(r,0,sizeof(re_record_t));
+    r->attr.b.Changed = 1; // Mark the whole ID as changed
+    r->attr.dc = 0xff;
+    switch (MyRE->m_mode)
+      {
+      case Serve:
+        break;
+      case Analyse:
+        break;
+      case Discover:
+        r->attr.b.Discovered = 1;
+        r->attr.dd = 0xff;
+        HighlightDump(vbuf, (const char*)frame->data.u8, frame->FIR.B.DLC, r->attr.dc, r->attr.dd);
+        ESP_LOGV(TAG, "Discovered new %s%s%s %s",
+          re_green, key.c_str(), re_off, vbuf);
+        break;
+      }
+    m_rmap[key] = r;
+    }
+  else
+    {
+    r = k->second;
+    switch (MyRE->m_mode)
+      {
+      case Serve:
+        break;
+      case Analyse:
+        for (int k=0;k<r->last.FIR.B.DLC;k++)
+          {
+          if (r->last.data.u8[k] != frame->data.u8[k])
+            r->attr.dc |= (1<<k); // Mark the byte as changed
+          }
+        break;
+      case Discover:
+        {
+        bool found = false;
+        for (int j=0;j<r->last.FIR.B.DLC;j++)
+          {
+          uint8_t mask = (j==0)?1:(1<<j);
+          if (((r->attr.dc & mask)==0) &&
+              (r->last.data.u8[j] != frame->data.u8[j]))
+            {
+            r->attr.dc |= mask; // Mark the byte as changed
+            r->attr.dd |= mask; // Mark the byte as discovered
+            found = true;
+            }
+          }
+        if (found)
+          {
+          HighlightDump(vbuf, (const char*)frame->data.u8, frame->FIR.B.DLC, r->attr.dc, r->attr.dd);
+          ESP_LOGV(TAG, "Discovered change %s %s", k->first.c_str(), vbuf);
+          }
+        break;
+        }
+      }
+    }
+  memcpy(&r->last,frame,sizeof(CAN_frame_t));
+  r->rxcount++;
+  }
+
+void re::DoServe(CAN_frame_t* frame)
+  {
   }
 
 std::string re::GetKey(CAN_frame_t* frame)
@@ -279,7 +301,7 @@ re::re(const char* name)
   m_obdii_ext_max = 0;
   m_started = monotonictime;
   m_finished = monotonictime;
-  m_mode = Record;
+  m_mode = Serve;
   xTaskCreatePinnedToCore(RE_task, "OVMS RE", 4096, (void*)this, 5, &m_task, 1);
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
   MyCan.RegisterListener(m_rxqueue);
@@ -377,6 +399,70 @@ void re_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
     }
   }
 
+void re_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyRE)
+    {
+    writer->puts("RE: tools not running");
+    return;
+    }
+
+  switch (MyRE->m_mode)
+    {
+    case Serve:
+      writer->puts("Mode:    Serving");
+      break;
+    case Analyse:
+      writer->puts("Mode:    Analysing");
+      break;
+    case Discover:
+      writer->puts("Mode:    Discovering");
+      break;
+    }
+
+  OvmsMutexLock lock(&MyRE->m_mutex);
+
+  writer->printf("Key Map: %d entries\n",MyRE->m_rmap.size());
+  if (MyRE->m_rmap.size() > 0)
+    {
+    int nignored = 0;
+    int nchanged = 0;
+    int bchanged = 0;
+    int ndiscovered = 0;
+    int bdiscovered = 0;
+    for (re_record_map_t::iterator it=MyRE->m_rmap.begin(); it!=MyRE->m_rmap.end(); ++it)
+      {
+      re_record_t *r = it->second;
+      if (r->attr.b.Ignore) nignored++;
+      if (r->attr.b.Changed) nchanged++;
+      if (r->attr.b.Discovered) ndiscovered++;
+      for (int j=0;j<8;j++)
+        {
+        uint8_t mask = (1<<j);
+        if (r->attr.dc & mask) bchanged++;
+        if (r->attr.dd & mask) bdiscovered++;
+        }
+      }
+    writer->printf("         %d keys are ignored\n",nignored);
+    writer->printf("         %d keys are new and changed\n",nchanged);
+    writer->printf("         %d bytes are changed\n",bchanged);
+    writer->printf("         %d keys are new and discovered\n",ndiscovered);
+    writer->printf("         %d bytes are discovered\n",bdiscovered);
+    }
+
+  writer->printf("ID Map:  %d entries\n",MyRE->m_idmap.size());
+  if (MyRE->m_idmap.size() > 0)
+    {
+    writer->puts("  ID BYTES");
+    for (re_id_map_t::iterator it=MyRE->m_idmap.begin(); it!=MyRE->m_idmap.end(); ++it)
+      {
+      uint32_t id = it->first;
+      uint8_t bytes = it->second;
+      writer->printf("%4x 0x%2.2x\n",id,bytes);
+      }
+    }
+  }
+
 void re_keyclear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (!MyRE)
@@ -446,7 +532,7 @@ void re_obdii_ext(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   writer->printf("Set OBDII extended ID range %08x-%08x\n",MyRE->m_obdii_ext_min,MyRE->m_obdii_ext_max);
   }
 
-void re_mode_record(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void re_mode_serve(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (!MyRE)
     {
@@ -454,8 +540,20 @@ void re_mode_record(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     return;
     }
 
-  MyRE->m_mode = Record;
-  writer->puts("Now running in record mode");
+  MyRE->m_mode = Serve;
+  writer->puts("Now running in serve mode");
+  }
+
+void re_mode_analyse(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyRE)
+    {
+    writer->puts("Error: RE tools not running");
+    return;
+    }
+
+  MyRE->m_mode = Analyse;
+  writer->puts("Now running in analyse mode");
   }
 
 void re_mode_discover(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -585,6 +683,7 @@ REInit::REInit()
   cmd_re->RegisterCommand("stop","Stop RE tools",re_stop, "", 0, 0, true);
   cmd_re->RegisterCommand("clear","Clear RE records",re_clear, "", 0, 0, true);
   cmd_re->RegisterCommand("list","List RE records",re_list, "", 0, 1, true);
+  cmd_re->RegisterCommand("status","Show RE status",re_status, "", 0, 0, true);
   OvmsCommand* cmd_rekey = cmd_re->RegisterCommand("key","RE KEY framework",NULL, "", 0, 0, true);
   cmd_rekey->RegisterCommand("clear","Clear RE key",re_keyclear, "<id>", 1, 1, true);
   cmd_rekey->RegisterCommand("set","Set RE key",re_keyset, "<id> {<bytes>}", 2, 9, true);
@@ -592,7 +691,8 @@ REInit::REInit()
   cmd_reobdii->RegisterCommand("standard","Set OBDII standard ID range",re_obdii_std, "<min> <max>", 2, 2, true);
   cmd_reobdii->RegisterCommand("extended","Set OBDII extended ID range",re_obdii_ext, "<min> <max>", 2, 2, true);
   OvmsCommand* cmd_mode = cmd_re->RegisterCommand("mode","RE mode framework",NULL, "", 0, 0, true);
-  cmd_mode->RegisterCommand("record","Set mode to record",re_mode_record, "", 0, 0, true);
+  cmd_mode->RegisterCommand("serve","Set mode to serve",re_mode_serve, "", 0, 0, true);
+  cmd_mode->RegisterCommand("analyse","Set mode to analyse",re_mode_analyse, "", 0, 0, true);
   cmd_mode->RegisterCommand("discover","Set mode to discover",re_mode_discover, "", 0, 0, true);
   OvmsCommand* cmd_discover = cmd_re->RegisterCommand("discover","RE discover framework",NULL, "", 0, 0, true);
   OvmsCommand* cmd_discover_list = cmd_discover->RegisterCommand("list","RE discover list framework",NULL, "", 0, 0, true);
