@@ -185,7 +185,6 @@ void re::Task()
         {
         case Serve:
           DoServe(&frame);
-          break;
         case Analyse:
         case Discover:
           DoAnalyse(&frame);
