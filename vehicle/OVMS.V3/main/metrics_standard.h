@@ -242,20 +242,20 @@ class MetricsStandard
     OvmsMetricInt*    ms_v_env_gear;          // Gear/direction; negative=reverse, 0=neutral [1]
     OvmsMetricFloat*  ms_v_env_throttle;      // Drive pedal state [%]
     OvmsMetricFloat*  ms_v_env_footbrake;     // Brake pedal state [%]
-    OvmsMetricBool*   ms_v_env_handbrake;
-    OvmsMetricBool*   ms_v_env_awake;
-    OvmsMetricBool*   ms_v_env_charging12v;
+    OvmsMetricBool*   ms_v_env_handbrake;     // Handbrake state
+    OvmsMetricBool*   ms_v_env_awake;         // Vehicle/bus awake (switched on)
+    OvmsMetricBool*   ms_v_env_charging12v;   // 12V battery charging
     OvmsMetricBool*   ms_v_env_cooling;
     OvmsMetricBool*   ms_v_env_heating;
-    OvmsMetricBool*   ms_v_env_hvac;
-    OvmsMetricBool*   ms_v_env_on;
-    OvmsMetricBool*   ms_v_env_locked;
-    OvmsMetricBool*   ms_v_env_valet;
+    OvmsMetricBool*   ms_v_env_hvac;          // Climate control system state
+    OvmsMetricBool*   ms_v_env_on;            // "Ignition" state (drivable)
+    OvmsMetricBool*   ms_v_env_locked;        // Vehicle locked
+    OvmsMetricBool*   ms_v_env_valet;         // Vehicle in valet mode
     OvmsMetricBool*   ms_v_env_headlights;
     OvmsMetricBool*   ms_v_env_alarm;
     OvmsMetricInt*    ms_v_env_parktime;
-    OvmsMetricBool*   ms_v_env_ctrl_login;
-    OvmsMetricBool*   ms_v_env_ctrl_config;
+    OvmsMetricBool*   ms_v_env_ctrl_login;    // Module logged in at ECU/controller
+    OvmsMetricBool*   ms_v_env_ctrl_config;   // ECU/controller in configuration state
     OvmsMetricFloat*  ms_v_env_temp;          // Ambient temperature [°C]
 
     OvmsMetricBool*   ms_v_pos_gpslock;
