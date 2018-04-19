@@ -395,7 +395,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   
   // convert battery capacity percent to framework Ah:
   *StdMetrics.ms_v_bat_cac = (float) cfg_bat_cap_actual_prc / 100 * cfg_bat_cap_nominal_ah;
-  
 
 
   // --------------------------------------------------------------------------
@@ -439,6 +438,9 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   
   // --------------------------------------------------------------------------
   // Publish metrics:
+  
+  *m_batt_soc_min = (float) twizy_soc_min / 100;
+  *m_batt_soc_max = (float) twizy_soc_max / 100;
   
   *StdMetrics.ms_v_charge_mode = (string)
     ((cfg_chargemode == TWIZY_CHARGEMODE_AUTOSTOP) ? "storage" : "standard");

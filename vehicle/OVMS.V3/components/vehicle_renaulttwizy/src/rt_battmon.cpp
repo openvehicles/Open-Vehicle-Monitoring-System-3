@@ -190,17 +190,8 @@ void OvmsVehicleRenaultTwizy::BatteryUpdate()
   
   // publish internal state to metrics:
   
-  *StdMetrics.ms_v_bat_soc = (float) twizy_soc / 100;
-  *m_batt_soc_min = (float) twizy_soc_min / 100;
-  *m_batt_soc_max = (float) twizy_soc_max / 100;
-  
-  *StdMetrics.ms_v_bat_soh = (float) twizy_soh;
-  *StdMetrics.ms_v_bat_cac = (float) cfg_bat_cap_actual_prc / 100 * cfg_bat_cap_nominal_ah;
-  // … add metrics for net capacity and cap_prc?
-  
   *StdMetrics.ms_v_bat_temp = (float) twizy_batt[0].temp_act - 40;
   *StdMetrics.ms_v_bat_voltage = (float) twizy_batt[0].volt_act / 10;
-  *StdMetrics.ms_v_bat_current = (float) twizy_current / 4;
   
   for (battery_pack &pack : twizy_batt)
     pack.UpdateMetrics();

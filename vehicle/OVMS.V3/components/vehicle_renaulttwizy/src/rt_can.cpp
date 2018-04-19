@@ -103,7 +103,7 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
         if (t > 0 && t <= 40000)
         {
           twizy_soc = t >> 2;
-          // car value derived in ticker1()
+          *StdMetrics.ms_v_bat_soc = (float) twizy_soc / 100;
           
           // Remember maximum SOC for charging "done" distinction:
           if (twizy_soc > twizy_soc_max)
@@ -164,7 +164,8 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
             twizy_charge_rec += -twizy_current;
           }
           
-          // publish metric:
+          // publish metrics:
+          *StdMetrics.ms_v_bat_current = (float) twizy_current / 4;
           *StdMetrics.ms_v_bat_power = (float) twizy_power * 64 / 10000;
           
           // do we need to take base power consumption into account?
@@ -220,6 +221,7 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       
       // BMS SOH:
       twizy_soh = CAN_BYTE(5);
+      *StdMetrics.ms_v_bat_soh = (float) twizy_soh;
       
       break;
     
