@@ -36,23 +36,13 @@ class candump
   {
   public:
     candump();
-    candump(struct timeval time, uint8_t bus, CAN_frame_t* frame);
     virtual ~candump();
 
   public:
-    virtual void set(struct timeval time, uint8_t bus, CAN_frame_t* frame);
-    virtual bool set(std::string msg);
-    virtual void clear();
+    virtual const char* formatname();
 
   public:
-    virtual std::string get();
-    virtual bool write(FILE* out);
-    virtual bool read(FILE* in);
-
-  public:
-    struct timeval m_time;
-    uint8_t m_bus;
-    CAN_frame_t m_frame;
+    virtual std::string get(struct timeval *time, CAN_frame_t *frame);
   };
 
 #endif // __CANDUMP_H__

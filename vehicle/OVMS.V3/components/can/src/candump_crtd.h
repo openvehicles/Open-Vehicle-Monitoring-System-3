@@ -33,17 +33,13 @@ class candump_crtd : public candump
   {
   public:
     candump_crtd();
-    candump_crtd(struct timeval time, uint8_t bus, CAN_frame_t* frame);
     virtual ~candump_crtd();
 
   public:
-    virtual void set(struct timeval time, uint8_t bus, CAN_frame_t* frame);
-    virtual bool set(std::string msg);
-    virtual void clear();
+    virtual const char* formatname();
 
   public:
-    virtual std::string get();
-    virtual bool read(FILE* in);
+    virtual std::string get(struct timeval *time, CAN_frame_t *frame);
   };
 
 #endif // __CANDUMP_CRTD_H__

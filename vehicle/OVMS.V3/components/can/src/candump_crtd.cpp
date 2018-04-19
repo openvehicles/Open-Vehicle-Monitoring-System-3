@@ -33,38 +33,41 @@ candump_crtd::candump_crtd()
   {
   }
 
-candump_crtd::candump_crtd(struct timeval time, uint8_t bus, CAN_frame_t* frame)
-  : candump(time, bus, frame)
-  {
-  }
-
 candump_crtd::~candump_crtd()
   {
   }
 
-bool candump_crtd::set(std::string msg)
+const char* candump_crtd::formatname()
   {
-  return false;
+  return "crtd";
   }
 
-std::string candump_crtd::get()
+std::string candump_crtd::get(struct timeval *time, CAN_frame_t *frame)
   {
   char buffer[64];
+  char busnumber[2]; busnumber[0]=0; busnumber[1]=0;
 
-  sprintf(buffer,"%ld.%03ld %dR%s %0*X",
-    m_time.tv_sec, m_time.tv_usec/1000,
-    m_bus,
-    (m_frame.FIR.B.FF == CAN_frame_std) ? "11":"29",
-    (m_frame.FIR.B.FF == CAN_frame_std) ? 3 : 8,
-    m_frame.MsgID);
-  for (int i=0; i<m_frame.FIR.B.DLC; i++)
-    sprintf(buffer+strlen(buffer)," %02x", m_frame.data.u8[i]);
+  if (frame->origin)
+    {
+    const char* name = frame->origin->GetName();
+    if (*name != 0)
+      {
+      while (name[1] != 0) name++;
+      busnumber[0] = *name;
+      }
+    }
+
+  sprintf(buffer,"%ld.%06ld %sR%s %0*X",
+    time->tv_sec, time->tv_usec,
+    busnumber,
+    (frame->FIR.B.FF == CAN_frame_std) ? "11":"29",
+    (frame->FIR.B.FF == CAN_frame_std) ? 3 : 8,
+    frame->MsgID);
+
+  for (int k=0; k<frame->FIR.B.DLC; k++)
+    sprintf(buffer+strlen(buffer)," %02x", frame->data.u8[k]);
+
   strcat(buffer,"\n");
 
   return std::string(buffer);
-  }
-
-bool candump_crtd::read(FILE* in)
-  {
-  return false;
   }

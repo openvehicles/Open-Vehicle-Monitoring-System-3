@@ -31,53 +31,18 @@
 
 candump::candump()
   {
-  memset(&m_time,0,sizeof(m_time));
-  m_bus = 0;
-  memset(&m_frame,0,sizeof(m_frame));
-  }
-
-candump::candump(struct timeval time, uint8_t bus, CAN_frame_t* frame)
-  {
-  memcpy(&m_time, &time, sizeof(time));
-  m_bus = bus;
-  memcpy(&m_frame, frame, sizeof(m_frame));
   }
 
 candump::~candump()
   {
   }
 
-void candump::set(struct timeval time, uint8_t bus, CAN_frame_t* frame)
+const char* candump::formatname()
   {
-  memcpy(&m_time, &time, sizeof(time));
-  m_bus = bus;
-  memcpy(&m_frame, frame, sizeof(m_frame));
+  return "none";
   }
 
-bool candump::set(std::string msg)
-  {
-  return false; // Base implementation can't do this
-  }
-
-void candump::clear()
-  {
-  memset(&m_time,0,sizeof(m_time));
-  m_bus = 0;
-  memset(&m_frame,0,sizeof(m_frame));
-  }
-
-std::string candump::get()
+std::string candump::get(struct timeval *time, CAN_frame_t *frame)
   {
   return std::string("");
-  }
-
-bool candump::write(FILE* out)
-  {
-  std::string result = get();
-  return (fwrite(result.c_str(), result.length(), 1, out)>0);
-  }
-
-bool candump::read(FILE* in)
-  {
-  return false;
   }
