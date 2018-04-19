@@ -54,9 +54,11 @@ class OvmsNetManager
     void ModemUp(std::string event, void* data);
     void ModemDown(std::string event, void* data);
     void InterfaceUp(std::string event, void* data);
+    void ConfigChanged(std::string event, void* data);
 
   protected:
     void PrioritiseAndIndicate();
+    void SetDNSServer();
 
   public:
     bool m_connected_wifi;
