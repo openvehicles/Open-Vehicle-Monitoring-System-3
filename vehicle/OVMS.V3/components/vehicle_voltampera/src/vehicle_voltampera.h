@@ -49,6 +49,10 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
   protected:
     char m_vin[18];
     char m_type[5];
+    unsigned int m_charge_timer;
+    unsigned int m_charge_wm;
+    unsigned int m_candata_timer;
+    unsigned int m_drive_distance_bat_max;
   };
 
 #endif //#ifndef __VEHICLE_VOLTAMPERA_H__
