@@ -133,6 +133,7 @@
 #define MS_V_ENV_CTRL_LOGIN         "v.e.c.login"
 #define MS_V_ENV_CTRL_CONFIG        "v.e.c.config"
 #define MS_V_ENV_TEMP               "v.e.temp"
+#define MS_V_ENV_CABINTEMP          "v.e.cabintemp"
 
 #define MS_V_POS_GPSLOCK            "v.p.gpslock"
 #define MS_V_POS_GPSSTALE           "v.p.gpsstale"
@@ -257,6 +258,7 @@ class MetricsStandard
     OvmsMetricBool*   ms_v_env_ctrl_login;    // Module logged in at ECU/controller
     OvmsMetricBool*   ms_v_env_ctrl_config;   // ECU/controller in configuration state
     OvmsMetricFloat*  ms_v_env_temp;          // Ambient temperature [°C]
+    OvmsMetricFloat*  ms_v_env_cabintemp;     // Cabin temperature [°C]
 
     OvmsMetricBool*   ms_v_pos_gpslock;
     OvmsMetricString* ms_v_pos_gpsmode;       // <GPS><GLONASS>; N/A/D/E (None/Autonomous/Differential/Estimated)
