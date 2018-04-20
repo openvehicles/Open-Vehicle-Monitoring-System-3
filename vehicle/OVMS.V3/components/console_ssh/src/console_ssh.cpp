@@ -38,6 +38,7 @@
 #include "ovms_events.h"
 #include "ovms_netmanager.h"
 #include "ovms_config.h"
+#include <wolfssl/wolfcrypt/memory.h>
 #include <wolfssl/wolfcrypt/sha256.h>
 #include <wolfssl/wolfcrypt/coding.h>
 #include <wolfssl/wolfcrypt/rsa.h>
@@ -47,7 +48,15 @@
 #include "console_ssh.h"
 
 static void wolf_logger(enum wolfSSH_LogLevel level, const char* const msg);
-static const char *tag = "ssh";
+static void* wolfssh_malloc(size_t size);
+static void wolfssh_free(void* ptr);
+static void* wolfssh_realloc(void* ptr, size_t size);
+static void* wolfssl_malloc(size_t size);
+static void wolfssl_free(void* ptr);
+static void* wolfssl_realloc(void* ptr, size_t size);
+static const char* const tag = "ssh";
+static const char* const wolfssh_tag = "wolfssh";
+static const char* const wolfssl_tag = "wolfssl";
 static uint8_t CRLF[2] = { '\r', '\n' };
 static const char newline = '\n';
 
@@ -278,6 +287,8 @@ ConsoleSSH::ConsoleSSH(OvmsSSH* server, struct mg_connection* nc)
     ::printf("Couldn't allocate SSH session data.\n");
     return;
     }
+  wolfSSH_SetAllocators(wolfssh_malloc, wolfssh_free, wolfssh_realloc);
+  wolfSSL_SetAllocators(wolfssl_malloc, wolfssl_free, wolfssl_realloc);
   wolfSSH_SetIORecv(m_server->ctx(), ::RecvCallback);
   wolfSSH_SetIOSend(m_server->ctx(), ::SendCallback);
   wolfSSH_SetIOReadCtx(m_ssh, this);
@@ -1121,24 +1132,65 @@ void RSAKeyGenerator::Service()
 
 static void wolf_logger(enum wolfSSH_LogLevel level, const char* const msg)
   {
-  const char* const tag = "wolfssh";
   switch (level)
     {
     case WS_LOG_USER:
     case WS_LOG_ERROR:
-      ESP_LOGE(tag, "%s", msg);
+      ESP_LOGE(wolfssh_tag, "%s", msg);
       break;
 
     case WS_LOG_WARN:
-      ESP_LOGW(tag, "%s", msg);
+      ESP_LOGW(wolfssh_tag, "%s", msg);
       break;
 
     case WS_LOG_INFO:
-      ESP_LOGI(tag, "%s", msg);
+      ESP_LOGI(wolfssh_tag, "%s", msg);
       break;
 
     case WS_LOG_DEBUG:
-      ESP_LOGD(tag, "%s", msg);
+      ESP_LOGD(wolfssh_tag, "%s", msg);
       break;
     }
+  }
+
+static void* wolfssh_malloc(size_t size)
+  {
+  void* ptr = malloc(size);
+  if (!ptr)
+    ESP_LOGE(wolfssh_tag, "memory allocation failed for size %zu", size);
+  return ptr;
+  }
+
+static void wolfssh_free(void* ptr)
+  {
+  free(ptr);
+  }
+
+static void* wolfssh_realloc(void* ptr, size_t size)
+  {
+  void* nptr = realloc(ptr, size);
+  if (!nptr)
+    ESP_LOGE(wolfssh_tag, "memory reallocation failed for size %zu", size);
+  return nptr;
+  }
+
+static void* wolfssl_malloc(size_t size)
+  {
+  void* ptr = malloc(size);
+  if (!ptr)
+    ESP_LOGE(wolfssl_tag, "memory allocation failed for size %zu", size);
+  return ptr;
+  }
+
+static void wolfssl_free(void* ptr)
+  {
+  free(ptr);
+  }
+
+static void* wolfssl_realloc(void* ptr, size_t size)
+  {
+  void* nptr = realloc(ptr, size);
+  if (!nptr)
+    ESP_LOGE(wolfssl_tag, "memory reallocation failed for size %zu", size);
+  return nptr;
   }
