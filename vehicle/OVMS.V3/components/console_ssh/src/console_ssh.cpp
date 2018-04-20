@@ -33,6 +33,7 @@
 #include <lwip/sockets.h>
 #undef bind
 #include "freertos/queue.h"
+#include "esp_heap_caps.h"
 #include "ovms_log.h"
 #include "ovms_events.h"
 #include "ovms_netmanager.h"
@@ -263,6 +264,7 @@ ConsoleSSH::ConsoleSSH(OvmsSSH* server, struct mg_connection* nc)
   m_queue = xQueueCreate(100, sizeof(Event));
   m_ssh = NULL;
   m_state = ACCEPT;
+  m_drain = 0;
   m_sent = true;
   m_rekey = false;
   m_needDir = false;
@@ -319,7 +321,11 @@ void ConsoleSSH::Receive()
 void ConsoleSSH::Send()
   {
   if (m_state != SOURCE_SEND || !m_sent)
+    {
+    if (m_drain > 0 && m_connection->send_mbuf.len == 0)
+      write("", 0);       // Wake up output after draining
     return;
+    }
   int ret = 0;
   while (true)
     {
@@ -901,12 +907,46 @@ int ConsoleSSH::printf(const char* fmt, ...)
 
 ssize_t ConsoleSSH::write(const void *buf, size_t nbyte)
   {
-  if (!m_ssh || !nbyte || (m_connection->flags & MG_F_SEND_AND_CLOSE))
+  if (!m_ssh || (m_connection->flags & MG_F_SEND_AND_CLOSE))
     return 0;
+
+  int ret = 0;
+  if (m_drain > 0)
+    {
+    if (m_connection->send_mbuf.len > 0)
+      {
+      m_drain += nbyte;
+      return 0;
+      }
+    if (--m_drain)
+      {
+      ESP_LOGE(tag, "%zu output bytes lost due to low free memory", m_drain);
+      char *buffer = NULL;
+      ret = asprintf(&buffer,
+        "\r\n\033[33m[%zu bytes lost due to low free memory]\033[0m\r\n", m_drain);
+      if (ret < 0)
+        {
+        if (buffer)
+          free(buffer);
+        return ret;
+        }
+      ret = wolfSSH_stream_send(m_ssh, (uint8_t*)buffer, ret);
+      free(buffer);
+      if (ret < 0)
+        {
+        ++m_drain;
+        return 0;
+        }
+      m_drain = 0;
+      ProcessChar('R'-0100);
+      }
+    }
+  if (!nbyte)
+    return 0;
+
   uint8_t* start = (uint8_t*)buf;
   uint8_t* eol = start;
   uint8_t* end = start + nbyte;
-  int ret = 0;
   while (eol < end)
     {
     if (*eol == '\n')
@@ -930,16 +970,21 @@ ssize_t ConsoleSSH::write(const void *buf, size_t nbyte)
 
   if (ret <= 0)
     {
-    if (ret != WS_REKEYING)
-      {
-      ESP_LOGE(tag, "wolfSSH_stream_send returned %d", ret);
-      m_connection->flags |= MG_F_SEND_AND_CLOSE;
-      }
-    else
+    if (ret == WS_REKEYING)
       {
       if (!m_rekey)
         ESP_LOGW(tag, "wolfSSH rekeying, some output will be lost");
       m_rekey = true;
+      }
+    else if (ret == WS_WANT_WRITE)
+      {
+      m_drain = 1;
+      ret = 0;
+      }
+    else
+      {
+      ESP_LOGE(tag, "wolfSSH_stream_send returned %d", ret);
+      m_connection->flags |= MG_F_SEND_AND_CLOSE;
       }
     }
   else
@@ -973,7 +1018,16 @@ int SendCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx)
   {
   mg_connection* nc = (mg_connection*)ctx;
   nc->flags |= MG_F_SEND_IMMEDIATELY;
-  mg_send(nc, (char*)data, size);
+  size_t ret = mg_send(nc, (char*)data, size);
+  if (ret == 0)
+    {
+    if (!((ConsoleSSH*)nc->user_data)->IsDraining())
+      {
+      size_t free8 = heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
+      ESP_LOGW(tag, "send blocked on %zu-byte packet: low free memory %zu", size, free8);
+      }
+    size = WS_CBIO_ERR_WANT_WRITE;
+    }
   return size;
   }
 
