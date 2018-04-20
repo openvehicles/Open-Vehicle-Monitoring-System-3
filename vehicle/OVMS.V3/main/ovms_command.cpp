@@ -398,6 +398,7 @@ void log_file(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     writer->puts("Error: VFS file cannot be opened for append");
     return;
     }
+  writer->printf("Logging to file: %s\n", argv[0]);
   }
 
 static OvmsCommand* monitor;
@@ -486,6 +487,8 @@ OvmsCommandApp::OvmsCommandApp()
   ESP_LOGI(TAG, "Initialising COMMAND (1000)");
 
   ovms_log_file = NULL;
+  
+  
   m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0);
   m_root.RegisterCommand("exit", "End console session", Exit , "", 0, 0);
   OvmsCommand* cmd_log = MyCommandApp.RegisterCommand("log","LOG framework",NULL, "", 0, 0, true);
