@@ -121,6 +121,7 @@ size_t candump_crtd::put(CAN_frame_t *frame, uint8_t *buffer, size_t len)
   b += 4;
 
   char *p;
+  errno = 0;
   frame->MsgID = (uint32_t)strtol(b,&p,16);
   if ((frame->MsgID == 0)&&(errno != 0)) return k+1;
   b = p;
@@ -128,6 +129,7 @@ size_t candump_crtd::put(CAN_frame_t *frame, uint8_t *buffer, size_t len)
     {
     if (*b==0) break;
     b++;
+    errno = 0;
     long d = strtol(b,&p,16);
     if ((d==0)&&(errno != 0)) break;
     frame->data.u8[k] = (uint8_t)d;
