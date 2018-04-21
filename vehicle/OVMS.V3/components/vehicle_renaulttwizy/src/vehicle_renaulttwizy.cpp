@@ -144,6 +144,9 @@ OvmsVehicleRenaultTwizy::~OvmsVehicleRenaultTwizy()
  */
 void OvmsVehicleRenaultTwizy::ConfigChanged(OvmsConfigParam* param)
 {
+  if (param && param->GetName() != "xrt")
+    return;
+  
   ESP_LOGD(TAG, "Renault Twizy reload configuration");
   
   // Instances:
