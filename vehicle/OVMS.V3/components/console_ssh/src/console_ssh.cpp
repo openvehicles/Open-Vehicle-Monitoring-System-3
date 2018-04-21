@@ -117,7 +117,6 @@ void OvmsSSH::EventHandler(struct mg_connection *nc, int ev, void *p)
       ESP_LOGV(tag, "Event MG_EV_RECV conn %p, data received %d", nc, *(int*)p);
       ConsoleSSH* child = (ConsoleSSH*)nc->user_data;
       child->Receive();
-      child->Poll(0);
       }
       break;
 
