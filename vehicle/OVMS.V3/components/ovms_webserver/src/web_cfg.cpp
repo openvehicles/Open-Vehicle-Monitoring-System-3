@@ -249,7 +249,7 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
     "<pre class=\"get-window-resize\" id=\"output\">%s</pre>"
     "<form id=\"shellform\" method=\"post\" action=\"#\">"
       "<div class=\"input-group\">"
-        "<label class=\"input-group-addon hidden-xs\" for=\"input-command\">OVMS&nbsp;&gt;&nbsp;</label>"
+        "<label class=\"input-group-addon hidden-xs\" for=\"input-command\">OVMS#</label>"
         "<input type=\"text\" class=\"form-control font-monospace\" placeholder=\"Enter command\" name=\"command\" id=\"input-command\" value=\"%s\" autocapitalize=\"none\" autocorrect=\"off\" autocomplete=\"section-shell\" spellcheck=\"false\">"
         "<div class=\"input-group-btn\">"
           "<button type=\"submit\" class=\"btn btn-default\">Execute</button>"
@@ -287,7 +287,7 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
           "\"timeout\": 0,"
           "\"beforeSend\": function(){"
             "$(\"html\").addClass(\"loading\");"
-            "output.html(output.html() + \"<strong>OVMS&nbsp;&gt;&nbsp;</strong><kbd>\""
+            "output.html(output.html() + \"<strong>OVMS#</strong>&nbsp;<kbd>\""
               "+ $(\"<div/>\").text(command).html() + \"</kbd><br>\");"
             "output.scrollTop(output.get(0).scrollHeight);"
             "timeouthd = window.setTimeout(checkabort, timeout*1000);"
@@ -1619,7 +1619,7 @@ void OvmsWebServer::HandleCfgLogging(PageEntry_t& p, PageContext_t& c)
     if (p != std::string::npos) {
       std::string webdir = webpath.substr(0, p);
       if (webdir != docroot)
-        download += " <a class=\"btn btn-default\" target=\"_blank\" href=\"" + webdir + "\">Open directory</a>";
+        download += " <a class=\"btn btn-default\" target=\"_blank\" href=\"" + webdir + "/\">Open directory</a>";
     }
   } else {
     download = "You can access your logs with the browser if the path is in your webserver root (" + docroot + ").";
