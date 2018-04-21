@@ -59,6 +59,7 @@ WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t modifier)
   
   m_modifier = modifier;
   m_jobqueue = xQueueCreate(30, sizeof(WebSocketTxJob));
+  m_jobqueue_overflow = 0;
   m_mutex = xSemaphoreCreateMutex();
   m_job.type = WSTX_None;
   m_sent = m_ack = 0;
@@ -175,10 +176,19 @@ void WebSocketHandler::ProcessTxJob()
 
 void WebSocketHandler::AddTxJob(WebSocketTxJob job, bool init_tx)
 {
-  if (xQueueSend(m_jobqueue, &job, 0) != pdTRUE)
-    ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow", this);
-  else if (init_tx && uxQueueMessagesWaiting(m_jobqueue) == 1)
-    RequestPoll();
+  if (xQueueSend(m_jobqueue, &job, 0) != pdTRUE) {
+    ++m_jobqueue_overflow;
+    if (m_jobqueue_overflow == 1)
+      ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow detected", this);
+  }
+  else {
+    if (m_jobqueue_overflow) {
+      ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow resolved, %d drops", this, m_jobqueue_overflow);
+      m_jobqueue_overflow = 0;
+    }
+    if (init_tx && uxQueueMessagesWaiting(m_jobqueue) == 1)
+      RequestPoll();
+  }
 }
 
 bool WebSocketHandler::GetNextTxJob()
