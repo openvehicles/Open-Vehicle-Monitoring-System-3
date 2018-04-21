@@ -102,7 +102,7 @@ void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     writer->printf("  Backtrace:\n ");
     for (int i=0; i<OVMS_BT_LEVELS && boot_data.crash_data.bt[i].pc; i++)
       writer->printf(" 0x%08lx", boot_data.crash_data.bt[i].pc);
-    writer->puts("");
+    writer->printf("\n  Version: %s\n", StdMetrics.ms_m_version->AsString("").c_str());
     }
   }
 
