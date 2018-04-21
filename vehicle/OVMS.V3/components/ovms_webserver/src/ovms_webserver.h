@@ -287,6 +287,7 @@ class WebSocketHandler : public MgHandler
   public:
     size_t                    m_modifier;         // "our" metrics modifier
     QueueHandle_t             m_jobqueue;
+    int                       m_jobqueue_overflow;
     SemaphoreHandle_t         m_mutex;
     WebSocketTxJob            m_job;
     int                       m_sent;
