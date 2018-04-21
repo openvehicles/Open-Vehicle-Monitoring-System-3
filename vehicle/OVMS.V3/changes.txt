@@ -1,6 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Logging: persistent configuration, file cycling, web config UI:
+    log [file.enable] = no          Enable/disable file logging
+    log [file.maxsize] = 1024       Max log file size in kB, 0 = no cycling
+    log [file.path] = ""            Log path, if on /sd watches sd.mounted
+    log [level]                     Default level
+    log [level.<tag>]               Component levels
 
 2018-04-17 MWJ  3.1.004  OTA release
 OTA release providing minor improvements and fixes.

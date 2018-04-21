@@ -408,6 +408,7 @@ class OvmsWebServer
       std::string& warn, std::string& error, int pass_minlen);
     static void HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgFirmware(PageEntry_t& p, PageContext_t& c);
+    static void HandleCfgLogging(PageEntry_t& p, PageContext_t& c);
   
   public:
     bool                      m_running;

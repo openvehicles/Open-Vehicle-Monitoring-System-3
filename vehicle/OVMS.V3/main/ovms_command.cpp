@@ -719,8 +719,10 @@ void OvmsCommandApp::SetLoglevel(std::string tag, std::string level)
     level_num = 2;
   else if (level == "error")
     level_num = 1;
-  else
+  else if (level == "none")
     level_num = 0;
+  else
+    level_num = CONFIG_LOG_DEFAULT_LEVEL;
   
   if (tag.empty())
     esp_log_level_set("*", (esp_log_level_t)level_num);

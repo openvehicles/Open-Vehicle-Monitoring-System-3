@@ -582,5 +582,9 @@ void OvmsConfigParam::Load()
 
 void OvmsConfigParam::Save()
   {
-  if (m_name != "") RewriteConfig();
+  if (m_name != "")
+    {
+    RewriteConfig();
+    MyEvents.SignalEvent("config.changed", this);
+    }
   }
