@@ -164,7 +164,6 @@ void re::MongooseHandler(struct mg_connection *nc, int ev, void *p)
     case MG_EV_RECV:
       {
       // Receive data on the network connection
-      ESP_LOGI(TAG,"Received %d bytes",nc->recv_mbuf.len);
       size_t used = m_serveformat->put(&frame, (uint8_t*)nc->recv_mbuf.buf, nc->recv_mbuf.len);
       if (used > 0) mbuf_remove(&nc->recv_mbuf, used);
       if (frame.origin != NULL)
