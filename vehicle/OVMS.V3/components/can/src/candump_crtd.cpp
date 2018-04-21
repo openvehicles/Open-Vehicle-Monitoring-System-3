@@ -27,6 +27,8 @@
 #include "ovms_log.h"
 //static const char *TAG = "candump-crtd";
 
+#include <errno.h>
+#include "pcp.h"
 #include "candump_crtd.h"
 
 candump_crtd::candump_crtd()
@@ -70,4 +72,73 @@ std::string candump_crtd::get(struct timeval *time, CAN_frame_t *frame)
   strcat(buffer,"\n");
 
   return std::string(buffer);
+  }
+
+size_t candump_crtd::put(CAN_frame_t *frame, uint8_t *buffer, size_t len)
+  {
+  size_t k;
+  char *b = (char*)buffer;
+
+  for (k=0;k<len;k++)
+    {
+    if ((b[k]=='\r')||(b[k]=='\n')) break;
+    }
+
+  if (k>=len) return 0;
+
+  // OK. We have a buffer ready for decoding...
+  // buffer[Start .. k-1]
+  b[k] = 0;
+  memset(frame,0,sizeof(CAN_frame_t));
+
+  // We look for something like
+  // 1524311386.811100 1R11 100 01 02 03
+  if (!isdigit(b[0])) return k+1;
+  for (;((*b != 0)&&(*b != ' '));b++) {}
+  if (*b == 0) return k+1;
+  b++;
+  char bus = '1';
+  if (isdigit(*b))
+    {
+    bus = *b;
+    b++;
+    }
+
+  if ((b[0]=='R')&&(b[1]=='1')&&(b[2]=='1'))
+    {
+    // R11 incoming CAN frame
+    frame->FIR.B.FF = CAN_frame_std;
+    }
+  else if ((b[0]=='R')&&(b[1]=='2')&&(b[2]=='9'))
+    {
+    // R29 incoming CAN frame
+    frame->FIR.B.FF = CAN_frame_ext;
+    }
+  else
+    return k+1;
+
+  if (b[3] != ' ') return k+1;
+  b += 4;
+
+  char *p;
+  frame->MsgID = (uint32_t)strtol(b,&p,16);
+  if ((frame->MsgID == 0)&&(errno != 0)) return k+1;
+  b = p;
+  for (int k=0;k<8;k++)
+    {
+    if (*b==0) break;
+    b++;
+    long d = strtol(b,&p,16);
+    if ((d==0)&&(errno != 0)) break;
+    frame->data.u8[k] = (uint8_t)d;
+    frame->FIR.B.DLC++;
+    b = p;
+    }
+
+  char cbus[5] = "can";
+  cbus[3] = bus;
+  cbus[4] = 0;
+  frame->origin = (canbus*)MyPcpApp.FindDeviceByName(cbus);
+
+  return k+1;
   }
