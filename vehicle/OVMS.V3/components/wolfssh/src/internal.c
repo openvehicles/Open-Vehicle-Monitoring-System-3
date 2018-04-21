@@ -118,6 +118,9 @@ const char* GetErrorString(int err)
         case WS_BAD_FILE_E:
             return "bad file";
 
+        case WS_INVALID_ALGO_ID:
+            return "invalid algorithm id";
+
         case WS_DECRYPT_E:
             return "decrypt error";
 
