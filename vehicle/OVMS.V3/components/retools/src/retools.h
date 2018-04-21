@@ -69,6 +69,7 @@ typedef std::map<uint32_t, uint8_t> re_id_map_t;
 typedef std::map<std::string, re_record_t*> re_record_map_t;
 
 enum REMode { Serve, Analyse, Discover };
+enum REServeMode { Ignore, Simulate, Transmit };
 
 class re : public pcp
   {
@@ -105,6 +106,7 @@ class re : public pcp
   public:
     OvmsMutex m_mutex;
     REMode m_mode;
+    REServeMode m_servemode;
     re_id_map_t m_idmap;
     re_record_map_t m_rmap;
     candump* m_serveformat;

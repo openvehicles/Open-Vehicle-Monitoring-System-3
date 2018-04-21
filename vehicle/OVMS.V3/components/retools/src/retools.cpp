@@ -136,6 +136,7 @@ static void reMongooseHandler(struct mg_connection *nc, int ev, void *p)
 void re::MongooseHandler(struct mg_connection *nc, int ev, void *p)
   {
   char addr[32];
+  CAN_frame_t frame;
   switch (ev)
     {
     case MG_EV_ACCEPT:
@@ -157,6 +158,29 @@ void re::MongooseHandler(struct mg_connection *nc, int ev, void *p)
       auto k = m_smap.find(nc);
       if (k != m_smap.end())
         m_smap.erase(k);
+      break;
+      }
+
+    case MG_EV_RECV:
+      {
+      // Receive data on the network connection
+      ESP_LOGI(TAG,"Received %d bytes",nc->recv_mbuf.len);
+      size_t used = m_serveformat->put(&frame, (uint8_t*)nc->recv_mbuf.buf, nc->recv_mbuf.len);
+      if (used > 0) mbuf_remove(&nc->recv_mbuf, used);
+      if (frame.origin != NULL)
+        {
+        switch (m_servemode)
+          {
+          case Simulate:
+            MyCan.IncomingFrame(&frame);
+            break;
+          case Transmit:
+            frame.origin->Write(&frame);
+            break;
+          default:
+            break;
+          }
+        }
       break;
       }
 
@@ -371,6 +395,7 @@ re::re(const char* name)
   m_started = monotonictime;
   m_finished = monotonictime;
   m_mode = Serve;
+  m_servemode = Ignore;
   m_serveformat = new candump_crtd();
   xTaskCreatePinnedToCore(RE_task, "OVMS RE", 4096, (void*)this, 5, &m_task, 1);
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
@@ -503,6 +528,20 @@ void re_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     {
     case Serve:
       writer->printf("Mode:    Serving (%s)\n",MyRE->m_serveformat->formatname());
+      switch (MyRE->m_servemode)
+        {
+        case Ignore:
+          writer->puts("         ignoring incoming messages");
+          break;
+        case Simulate:
+          writer->puts("         simulating incoming messages");
+          break;
+        case Transmit:
+          writer->puts("         transmitting incoming messages");
+          break;
+        default:
+          break;
+        }
       break;
     case Analyse:
       writer->puts("Mode:    Analysing");
@@ -782,6 +821,24 @@ void re_serve_format(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
   writer->printf("RE serve format is %s\n",MyRE->m_serveformat->formatname());
   }
 
+void re_serve_mode(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyRE)
+    {
+    writer->puts("Error: RE tools not running");
+    return;
+    }
+
+  if (strcmp(cmd->GetName(), "ignore")==0)
+    MyRE->m_servemode = Ignore;
+  else if (strcmp(cmd->GetName(), "simulate")==0)
+    MyRE->m_servemode = Simulate;
+  else if (strcmp(cmd->GetName(), "transmit")==0)
+    MyRE->m_servemode = Transmit;
+
+  writer->printf("RE serve mode is %s\n",cmd->GetName());
+  }
+
 class REInit
   {
   public:
@@ -850,6 +907,10 @@ REInit::REInit()
   OvmsCommand* cmd_serve = cmd_re->RegisterCommand("serve","RE serve framework",NULL, "", 0, 0, true);
   OvmsCommand* cmd_serve_format = cmd_serve->RegisterCommand("format","RE serve format framework",NULL, "", 0, 0, true);
   cmd_serve_format->RegisterCommand("crtd","Set RE server to CRTD format",re_serve_format, "", 0, 0, true);
+  OvmsCommand* cmd_serve_mode = cmd_serve->RegisterCommand("mode","RE serve mode framework",NULL, "", 0, 0, true);
+  cmd_serve_mode->RegisterCommand("ignore","Set RE server to ignore incoming messages",re_serve_mode, "", 0, 0, true);
+  cmd_serve_mode->RegisterCommand("simulate","Set RE server to simulate incoming messages",re_serve_mode, "", 0, 0, true);
+  cmd_serve_mode->RegisterCommand("transmit","Set RE server to transmit incoming messages",re_serve_mode, "", 0, 0, true);
 
   using std::placeholders::_1;
   using std::placeholders::_2;
