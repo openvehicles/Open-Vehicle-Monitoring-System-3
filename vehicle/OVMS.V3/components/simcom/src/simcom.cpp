@@ -622,6 +622,16 @@ simcom::SimcomState1 simcom::State1Ticker1()
         return NetMode; // PPP Connection is ready to be started
       else if (m_state1_userdata == 99)
         return NetLoss;
+      else if (m_state1_userdata == 100)
+        {
+        ESP_LOGW(TAG, "NetStart: unresolvable error, performing modem power cycle");
+        m_ppp.Shutdown();
+        m_nmea.Shutdown();
+        m_mux.Stop();
+        MyEvents.SignalEvent("system.modem.stop",NULL);
+        PowerCycle();
+        return PoweringOn;
+        }
       break;
     case NetLoss:
       break;
@@ -735,6 +745,11 @@ void simcom::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
     {
     ESP_LOGI(TAG, "PPP Connection is ready to start");
     m_state1_userdata = 2;
+    }
+  else if ((line.compare(0, 5, "ERROR") == 0)&&(m_state1 == NetStart)&&(m_state1_userdata == 1))
+    {
+    ESP_LOGI(TAG, "PPP Connection init error");
+    m_state1_userdata = 100;
     }
   else if ((line.compare(0, 19, "+PPPD: DISCONNECTED") == 0)&&((m_state1 == NetStart)||(m_state1 == NetMode)))
     {
