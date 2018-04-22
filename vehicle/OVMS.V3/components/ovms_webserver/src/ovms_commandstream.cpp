@@ -214,7 +214,7 @@ ssize_t HttpCommandStream::write(const void *buf, size_t nbyte)
     return nbyte;
   
   hcs_writebuf wbuf;
-  wbuf.data = (char*) malloc(nbyte);
+  wbuf.data = (char*) ExternalRamMalloc(nbyte);
   wbuf.len = nbyte;
   memcpy(wbuf.data, buf, nbyte);
   

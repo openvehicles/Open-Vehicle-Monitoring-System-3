@@ -8,6 +8,7 @@
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011        Sonny Chen @ EPRO/DX
+;    (C) 2018        Michael Balzer
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -28,19 +29,17 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __OVMS_SERVER_H__
-#define __OVMS_SERVER_H__
+#ifndef __OVMS_EXTRAM_H__
+#define __OVMS_EXTRAM_H__
 
-#include "pcp.h"
+#include "ovms.h"
+#include <string>
+#include <sstream>
 
-class OvmsServer : public pcp, public ExternalRamAllocated
+namespace extram
   {
-  public:
-    OvmsServer(const char* name);
-    ~OvmsServer();
+  typedef std::basic_string<char, std::char_traits<char>, ExtRamAllocator<char>> string;
+  typedef std::basic_ostringstream<char, std::char_traits<char>, ExtRamAllocator<char>> ostringstream;
+  }
 
-  public:
-    virtual void SetPowerMode(PowerMode powermode);
-  };
-
-#endif //#ifndef __OVMS_SERVER_H__
+#endif //#ifndef __OVMS_EXTRAM_H__

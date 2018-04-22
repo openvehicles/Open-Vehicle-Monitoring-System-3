@@ -78,7 +78,7 @@ bool OvmsLocation::IsInLocation(float latitude, float longitude)
 
   // ESP_LOGI(TAG, "Location %s is %0.1fm distant",m_name.c_str(),dist);
 
-  if (abs(dist) <= m_radius)
+  if (fabs(dist) <= m_radius)
     {
     // We are in the location
     if (!m_inlocation)

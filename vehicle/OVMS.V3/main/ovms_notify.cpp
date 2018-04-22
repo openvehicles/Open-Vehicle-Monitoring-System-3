@@ -126,9 +126,9 @@ bool OvmsNotifyEntry::IsAllRead()
   return (m_readers.count() == 0);
   }
 
-const std::string OvmsNotifyEntry::GetValue()
+const extram::string OvmsNotifyEntry::GetValue()
   {
-  return std::string("");
+  return extram::string("");
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -137,14 +137,14 @@ const std::string OvmsNotifyEntry::GetValue()
 
 OvmsNotifyEntryString::OvmsNotifyEntryString(const char* value)
   {
-  m_value = std::string(value);
+  m_value = extram::string(value);
   }
 
 OvmsNotifyEntryString::~OvmsNotifyEntryString()
   {
   }
 
-const std::string OvmsNotifyEntryString::GetValue()
+const extram::string OvmsNotifyEntryString::GetValue()
   {
   return m_value;
   }
@@ -177,7 +177,7 @@ OvmsNotifyEntryCommand::~OvmsNotifyEntryCommand()
     }
   }
 
-const std::string OvmsNotifyEntryCommand::GetValue()
+const extram::string OvmsNotifyEntryCommand::GetValue()
   {
   return m_value;
   }

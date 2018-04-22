@@ -31,6 +31,7 @@
 #define __BUFFERED_SHELL_H__
 
 #include "ovms_shell.h"
+#include "ovms_extram.h"
 
 class LogBuffers;
 class OvmsCommandMap;
@@ -53,6 +54,7 @@ class BufferedShell : public OvmsShell
     virtual bool IsInteractive() { return false; }
     void Output(OvmsWriter*);
     void Dump(std::string&);
+    void Dump(extram::string&);
     char* Dump();
 
   protected:

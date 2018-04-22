@@ -170,6 +170,38 @@ std::string mp_encode(const std::string text)
   }
 
 /**
+ * mp_encode: encode string for MP transport;
+ *  - replace '\r\n' by '\r'
+ *  - replace '\n' by '\r'
+ *  - replace ',' by ';'
+ */
+extram::string mp_encode(const extram::string text)
+  {
+  extram::string res;
+  char lc = 0;
+  res.reserve(text.length());
+  for (int i=0; i<text.length(); i++)
+    {
+    if (text[i] == '\n')
+      {
+      if (lc != '\r')
+        res += '\r';
+      }
+    else if (text[i] == ',')
+      {
+      res += ';';
+      }
+    else
+      {
+      res += text[i];
+      }
+
+    lc = text[i];
+    }
+  return res;
+  }
+
+/**
  * startsWith: std::string prefix check
  */
 bool startsWith(const std::string& haystack, const std::string& needle)

@@ -33,6 +33,8 @@
 
 #include <cstring>
 #include <string>
+#include "ovms.h"
+#include "ovms_extram.h"
 
 struct CmpStrOp
   {
@@ -71,6 +73,7 @@ int chargemode_key(const std::string code);
  *  - replace ',' by ';'
  */
 std::string mp_encode(const std::string text);
+extram::string mp_encode(const extram::string text);
 
 /**
  * startsWith: std::string prefix check

@@ -32,6 +32,7 @@
 static const char *TAG = "ovms-server-v2";
 
 #include "ovms.h"
+#include "ovms_extram.h"
 #include "buffered_shell.h"
 #include "ovms_peripherals.h"
 #include "ovms_command.h"
@@ -337,7 +338,7 @@ void OvmsServerV2::ProcessCommand(const char* payload)
 
   OvmsVehicle* vehicle = MyVehicleFactory.ActiveVehicle();
 
-  std::ostringstream* buffer = new std::ostringstream();
+  extram::ostringstream* buffer = new extram::ostringstream();
 
   if (vehicle)
     {
@@ -442,7 +443,7 @@ void OvmsServerV2::ProcessCommand(const char* payload)
       bs->SetSecure(true); // this is an authorized channel
       bs->ProcessChars(sep+1, strlen(sep)-1);
       bs->ProcessChar('\n');
-      std::string val; bs->Dump(val);
+      extram::string val; bs->Dump(val);
       delete bs;
       *buffer << "MP-0 c7,0,";
       *buffer << mp_encode(val);
@@ -619,7 +620,7 @@ void OvmsServerV2::ProcessCommand(const char* payload)
         {
 #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
         *buffer << "AT+CUSD=1,\"" << sep+1 << "\",15\r\n";
-        std::string msg = buffer->str();
+        extram::string msg = buffer->str();
         buffer->str("");
         if (MyPeripherals->m_simcom->txcmd(msg.c_str(), msg.length()))
           *buffer << "MP-0 c" << command << ",0";
@@ -845,7 +846,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
   int mins_soc = StandardMetrics.ms_v_charge_duration_soc->AsInt();
   bool charging = StandardMetrics.ms_v_charge_inprogress->AsBool();
 
-  std::ostringstream buffer;
+  extram::ostringstream buffer;
   buffer
     << std::fixed
     << std::setprecision(2)
@@ -950,7 +951,7 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
   char drivemode[10];
   sprintf(drivemode, "%x", StandardMetrics.ms_v_env_drivemode->AsInt());
 
-  std::ostringstream buffer;
+  extram::ostringstream buffer;
   buffer
     << "MP-0 L"
     << StandardMetrics.ms_v_pos_latitude->AsString("0",Other,6)
@@ -1004,7 +1005,7 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
     StandardMetrics.ms_v_tpms_rl_p->IsStale() ||
     StandardMetrics.ms_v_tpms_rr_p->IsStale();
 
-  std::ostringstream buffer;
+  extram::ostringstream buffer;
   buffer
     << "MP-0 W"
     << StandardMetrics.ms_v_tpms_fr_p->AsString("0",PSI)
@@ -1042,7 +1043,7 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
 
-  std::ostringstream buffer;
+  extram::ostringstream buffer;
   buffer
     << "MP-0 F"
     << StandardMetrics.ms_m_version->AsString("")
@@ -1171,7 +1172,7 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
     StandardMetrics.ms_v_bat_temp->IsStale() &&
     StandardMetrics.ms_v_charge_temp->IsStale();
 
-  std::ostringstream buffer;
+  extram::ostringstream buffer;
   buffer
     << "MP-0 D"
     << (int)Doors1()
@@ -1242,7 +1243,7 @@ void OvmsServerV2::TransmitNotifyInfo()
     OvmsNotifyEntry* e = info->FirstUnreadEntry(MyOvmsServerV2Reader, 0);
     if (e == NULL) return;
 
-    std::ostringstream buffer;
+    extram::ostringstream buffer;
     buffer
       << "MP-0 PI"
       << mp_encode(e->GetValue());
@@ -1266,7 +1267,7 @@ void OvmsServerV2::TransmitNotifyError()
     OvmsNotifyEntry* e = alert->FirstUnreadEntry(MyOvmsServerV2Reader, 0);
     if (e == NULL) return;
 
-    std::ostringstream buffer;
+    extram::ostringstream buffer;
     buffer
       << "MP-0 PE"
       << e->GetValue(); // no mp_encode; payload structure "<vehicletype>,<errorcode>,<errordata>"
@@ -1290,7 +1291,7 @@ void OvmsServerV2::TransmitNotifyAlert()
     OvmsNotifyEntry* e = alert->FirstUnreadEntry(MyOvmsServerV2Reader, 0);
     if (e == NULL) return;
 
-    std::ostringstream buffer;
+    extram::ostringstream buffer;
     buffer
       << "MP-0 PA"
       << mp_encode(e->GetValue());
@@ -1314,7 +1315,7 @@ void OvmsServerV2::TransmitNotifyData()
     OvmsNotifyEntry* e = data->FirstUnreadEntry(MyOvmsServerV2Reader, m_pending_notify_data_last);
     if (e == NULL) return;
 
-    std::string msg = e->GetValue();
+    extram::string msg = e->GetValue();
     ESP_LOGD(TAG, "TransmitNotifyData: msg=%s", msg.c_str());
 
     // terminate payload at first LF:
@@ -1322,7 +1323,7 @@ void OvmsServerV2::TransmitNotifyData()
     if (eol != std::string::npos)
       msg.resize(eol);
 
-    std::ostringstream buffer;
+    extram::ostringstream buffer;
     buffer
       << "MP-0 h"
       << e->m_id
@@ -1408,7 +1409,7 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
       m_pending_notify_info = true;
       return false; // No connection, so leave it queued for when we do
       }
-    std::ostringstream buffer;
+    extram::ostringstream buffer;
     buffer
       << "MP-0 PI"
       << mp_encode(entry->GetValue());
@@ -1423,7 +1424,7 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
       m_pending_notify_error = true;
       return false; // No connection, so leave it queued for when we do
       }
-    std::ostringstream buffer;
+    extram::ostringstream buffer;
     buffer
       << "MP-0 PE"
       << entry->GetValue(); // no mp_encode; payload structure "<vehicletype>,<errorcode>,<errordata>"
@@ -1438,7 +1439,7 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
       m_pending_notify_alert = true;
       return false; // No connection, so leave it queued for when we do
       }
-    std::ostringstream buffer;
+    extram::ostringstream buffer;
     buffer
       << "MP-0 PA"
       << mp_encode(entry->GetValue());
@@ -1464,7 +1465,7 @@ void OvmsServerV2::EventListener(std::string event, void* data)
     {
     // forward USSD response to server:
     std::string buf = "MP-0 c41,0,";
-    buf.append(mp_encode((char*) data));
+    buf.append(mp_encode(std::string((char*) data)));
     Transmit(buf);
     }
   else if (event == "config.changed" || event == "config.mounted")

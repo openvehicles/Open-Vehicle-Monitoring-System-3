@@ -366,9 +366,9 @@ void SevconClient::AddFaultInfo(ostringstream& buf, uint16_t faultcode)
       // found, add description from table:
       buf
         << "|" << SC_FaultTypeName[SC_FaultCode[i].type]
-        << "|" << mp_encode(SC_FaultCode[i].message)
-        << "|" << mp_encode(SC_FaultCode[i].description)
-        << "|" << mp_encode(SC_FaultCode[i].action);
+        << "|" << mp_encode(std::string(SC_FaultCode[i].message))
+        << "|" << mp_encode(std::string(SC_FaultCode[i].description))
+        << "|" << mp_encode(std::string(SC_FaultCode[i].action));
       return;
     }
   }
@@ -381,7 +381,7 @@ void SevconClient::AddFaultInfo(ostringstream& buf, uint16_t faultcode)
       xbuf[job.sdo.xfersize] = 0;
     }
   }
-  buf << mp_encode(xbuf);
+  buf << mp_encode(std::string(xbuf));
 }
 
 
