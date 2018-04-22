@@ -105,13 +105,16 @@ int BufferedShell::printf(const char* fmt, ...)
   {
   if (!m_output)
     return 0;
-  char *buffer;
+  char *buffer = NULL;
   va_list args;
   va_start(args, fmt);
   int ret = vasprintf(&buffer, fmt, args);
   va_end(args);
-  write(buffer, ret);
-  free(buffer);
+  if (ret >= 0)
+    {
+    write(buffer, ret);
+    free(buffer);
+    }
   return ret;
   }
 

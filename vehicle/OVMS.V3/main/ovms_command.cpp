@@ -593,6 +593,7 @@ int OvmsCommandApp::LogBuffer(LogBuffers* lb, const char* fmt, va_list args)
   {
   char *buffer;
   int ret = vasprintf(&buffer, fmt, args);
+  if (ret < 0) return ret;
 
   // replace CR/LF except last by "|", but don't leave '|' at the end
   char* s;

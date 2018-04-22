@@ -512,13 +512,17 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* cmd)
  */
 uint32_t OvmsNotify::NotifyStringf(const char* type, const char* fmt, ...)
   {
-  char *buffer;
+  char *buffer = NULL;
+  uint32_t res = 0;
   va_list args;
   va_start(args, fmt);
-  vasprintf(&buffer, fmt, args);
+  int len = vasprintf(&buffer, fmt, args);
   va_end(args);
-  uint32_t res = NotifyString(type, buffer);
-  free(buffer);
+  if (len >= 0)
+    {
+    res = NotifyString(type, buffer);
+    free(buffer);
+    }
   return res;
   }
 
@@ -528,12 +532,16 @@ uint32_t OvmsNotify::NotifyStringf(const char* type, const char* fmt, ...)
  */
 uint32_t OvmsNotify::NotifyCommandf(const char* type, const char* fmt, ...)
   {
-  char *buffer;
+  char *buffer = NULL;
+  uint32_t res = 0;
   va_list args;
   va_start(args, fmt);
-  vasprintf(&buffer, fmt, args);
+  int len = vasprintf(&buffer, fmt, args);
   va_end(args);
-  uint32_t res = NotifyCommand(type, buffer);
-  free(buffer);
+  if (len >= 0)
+    {
+    res = NotifyCommand(type, buffer);
+    free(buffer);
+    }
   return res;
   }
