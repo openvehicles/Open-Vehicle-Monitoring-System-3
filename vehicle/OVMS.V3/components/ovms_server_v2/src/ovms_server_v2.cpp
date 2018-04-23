@@ -645,6 +645,10 @@ void OvmsServerV2::ProcessCommand(const char* payload)
 
 void OvmsServerV2::Transmit(const std::string& message)
   {
+  OvmsMutexLock mg(&m_mgconn_mutex);
+  if (!m_mgconn)
+    return;
+
   int len = message.length();
   char* s = new char[len];
   memcpy(s,message.c_str(),len);
@@ -663,6 +667,10 @@ void OvmsServerV2::Transmit(const std::string& message)
 
 void OvmsServerV2::Transmit(const char* message)
   {
+  OvmsMutexLock mg(&m_mgconn_mutex);
+  if (!m_mgconn)
+    return;
+
   int len = strlen(message);
   char* s = new char[len];
   memcpy(s,message,len);
@@ -724,6 +732,7 @@ void OvmsServerV2::Connect()
     }
 
   SetStatus("Connecting...", false, Connecting);
+  OvmsMutexLock mg(&m_mgconn_mutex);
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
   struct mg_connect_opts opts;
   const char* err;
@@ -741,6 +750,7 @@ void OvmsServerV2::Connect()
 
 void OvmsServerV2::Disconnect()
   {
+  OvmsMutexLock mg(&m_mgconn_mutex);
   if (m_mgconn)
     {
     m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
@@ -753,6 +763,7 @@ void OvmsServerV2::Disconnect()
 
 void OvmsServerV2::Reconnect(int connretry)
   {
+  OvmsMutexLock mg(&m_mgconn_mutex);
   if (m_mgconn)
     {
     m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;

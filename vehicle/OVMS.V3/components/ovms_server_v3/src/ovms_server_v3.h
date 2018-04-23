@@ -36,6 +36,7 @@
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 #include "ovms_config.h"
+#include "ovms_mutex.h"
 
 class OvmsServerV3 : public OvmsServer
   {
@@ -63,6 +64,7 @@ class OvmsServerV3 : public OvmsServer
     std::string m_port;
     std::string m_status;
     struct mg_connection *m_mgconn;
+    OvmsMutex m_mgconn_mutex;
     int m_connretry;
     bool m_sendall;
     int m_msgid;
