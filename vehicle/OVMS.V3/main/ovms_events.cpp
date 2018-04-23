@@ -170,6 +170,11 @@ void OvmsEvents::HandleQueueSignalEvent(event_queue_t* msg)
 
   MyScripts.EventScript(event, msg->body.signal.data);
 
+  FreeQueueSignalEvent(msg);
+  }
+
+void OvmsEvents::FreeQueueSignalEvent(event_queue_t* msg)
+  {
   if (msg->body.signal.donefn != NULL)
     {
     msg->body.signal.donefn(msg->body.signal.event, msg->body.signal.data);
@@ -237,7 +242,12 @@ void OvmsEvents::SignalEvent(std::string event, void* data, event_signal_done_fn
   strcpy(msg.body.signal.event, event.c_str());
   msg.body.signal.data = data;
   msg.body.signal.donefn = callback;
-  xQueueSend(m_taskqueue, &msg, 0);
+
+  if (xQueueSend(m_taskqueue, &msg, 0) != pdTRUE)
+    {
+    ESP_LOGE(TAG, "SignalEvent: queue overflow, event '%s' dropped", msg.body.signal.event);
+    FreeQueueSignalEvent(&msg);
+    }
   }
 
 void OvmsEvents::SignalEvent(std::string event, void* data, size_t length)
@@ -260,7 +270,11 @@ void OvmsEvents::SignalEvent(std::string event, void* data, size_t length)
     msg.body.signal.donefn = NULL;
     }
 
-  xQueueSend(m_taskqueue, &msg, 0);
+  if (xQueueSend(m_taskqueue, &msg, 0) != pdTRUE)
+    {
+    ESP_LOGE(TAG, "SignalEvent: queue overflow, event '%s' dropped", msg.body.signal.event);
+    FreeQueueSignalEvent(&msg);
+    }
   }
 
 esp_err_t OvmsEvents::ReceiveSystemEvent(void *ctx, system_event_t *event)

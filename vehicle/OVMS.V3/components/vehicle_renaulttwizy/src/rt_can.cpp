@@ -236,7 +236,7 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
           twizy_cmod[i].temp_new = CAN_BYTE(i);
 
         // update pack layout:
-        if (twizy_cmod[7].temp_new != 0 && twizy_cmod[7].temp_new != 0xff) {
+        if (twizy_cmod[7].temp_new > 0 && twizy_cmod[7].temp_new < 0xf0) {
           if (batt_cmod_count != 8) {
             batt_cmod_count = 8;
             *m_batt_cmod_count = (int) batt_cmod_count;

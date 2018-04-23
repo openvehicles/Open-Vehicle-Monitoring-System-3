@@ -53,13 +53,16 @@ int StringWriter::puts(const char* s)
 
 int StringWriter::printf(const char* fmt, ...)
   {
-  char *buffer;
+  char *buffer = NULL;
   va_list args;
   va_start(args, fmt);
   int ret = vasprintf(&buffer, fmt, args);
   va_end(args);
-  append(buffer, ret);
-  free(buffer);
+  if (ret >= 0)
+    {
+    append(buffer, ret);
+    free(buffer);
+    }
   return ret;
   }
 

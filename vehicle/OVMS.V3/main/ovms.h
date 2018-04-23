@@ -33,6 +33,8 @@
 
 #include <stdint.h>
 #include <cstddef>
+#include <cstdlib>
+#include <new>
 
 extern uint32_t monotonictime;
 
@@ -44,5 +46,26 @@ class ExternalRamAllocated
   };
 
 void* ExternalRamMalloc(std::size_t sz);
+
+
+// C++11 Allocator:
+template <class T>
+struct ExtRamAllocator
+  {
+  typedef T value_type;
+  ExtRamAllocator() = default;
+  template <class U> constexpr ExtRamAllocator(const ExtRamAllocator<U>&) noexcept {}
+  T* allocate(std::size_t n)
+    {
+    auto p = static_cast<T*>(ExternalRamMalloc(n*sizeof(T)));
+    return p;
+    }
+  void deallocate(T* p, std::size_t) noexcept { std::free(p); }
+  };
+template <class T, class U>
+bool operator==(const ExtRamAllocator<T>&, const ExtRamAllocator<U>&) { return true; }
+template <class T, class U>
+bool operator!=(const ExtRamAllocator<T>&, const ExtRamAllocator<U>&) { return false; }
+
 
 #endif //#ifndef __OVMS_H__

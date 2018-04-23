@@ -37,6 +37,8 @@
 #include <string>
 #include <bitset>
 #include <stdint.h>
+#include "ovms.h"
+#include "ovms_extram.h"
 #include "ovms_utils.h"
 
 #define NOTIFY_MAX_READERS 32
@@ -45,14 +47,14 @@ using namespace std;
 
 class OvmsNotifyType;
 
-class OvmsNotifyEntry
+class OvmsNotifyEntry : public ExternalRamAllocated
   {
   public:
     OvmsNotifyEntry();
     virtual ~OvmsNotifyEntry();
 
   public:
-    virtual const std::string GetValue();
+    virtual const extram::string GetValue();
     virtual bool IsRead(size_t reader);
     virtual bool IsAllRead();
 
@@ -69,10 +71,10 @@ class OvmsNotifyEntryString : public OvmsNotifyEntry
     virtual ~OvmsNotifyEntryString();
 
   public:
-    virtual const std::string GetValue();
+    virtual const extram::string GetValue();
 
   public:
-     std::string m_value;
+     extram::string m_value;
   };
 
 class OvmsNotifyEntryCommand : public OvmsNotifyEntry
@@ -82,14 +84,15 @@ class OvmsNotifyEntryCommand : public OvmsNotifyEntry
     virtual ~OvmsNotifyEntryCommand();
 
   public:
-    virtual const std::string GetValue();
+    virtual const extram::string GetValue();
 
   public:
      char* m_cmd;
-     std::string m_value;
+     extram::string m_value;
   };
 
-typedef std::map<uint32_t, OvmsNotifyEntry*> NotifyEntryMap_t;
+typedef std::map<uint32_t, OvmsNotifyEntry*, std::less<uint32_t>,
+  ExtRamAllocator<std::pair<const uint32_t, OvmsNotifyEntry*>>> NotifyEntryMap_t;
 
 class OvmsNotifyType
   {
@@ -129,10 +132,12 @@ class OvmsNotifyCallbackEntry
     OvmsNotifyCallback_t m_callback;
   };
 
-typedef std::map<const char*, OvmsNotifyCallbackEntry*, CmpStrOp> OvmsNotifyCallbackMap_t;
-typedef std::map<const char*, OvmsNotifyType*, CmpStrOp> OvmsNotifyTypeMap_t;
+typedef std::map<const char*, OvmsNotifyCallbackEntry*, CmpStrOp,
+  ExtRamAllocator<std::pair<const char*, OvmsNotifyCallbackEntry*>>> OvmsNotifyCallbackMap_t;
+typedef std::map<const char*, OvmsNotifyType*, CmpStrOp,
+  ExtRamAllocator<std::pair<const char*, OvmsNotifyCallbackEntry*>>> OvmsNotifyTypeMap_t;
 
-class OvmsNotify
+class OvmsNotify : public ExternalRamAllocated
   {
   public:
     OvmsNotify();

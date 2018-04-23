@@ -45,6 +45,7 @@
 #include <wolfssl/wolfcrypt/sha.h>
 #include <wolfssh/ssh.h>
 #include <wolfssh/log.h>
+#include <wolfssh/internal.h>
 #include "console_ssh.h"
 
 static void wolf_logger(enum wolfSSH_LogLevel level, const char* const msg);
@@ -101,7 +102,8 @@ void OvmsSSH::EventHandler(struct mg_connection *nc, int ev, void *p)
           int ret = wolfSSH_CTX_UsePrivateKey_buffer(m_ctx, (const uint8_t*)skey.data(),
             skey.size(),  WOLFSSH_FORMAT_ASN1);
           if (ret < 0)
-            ESP_LOGE(tag, "Couldn't use configured server key, error = %d", ret);
+            ESP_LOGE(tag, "Couldn't use configured server key, error %d: %s", ret,
+              GetErrorString(ret));
           else
             {
             std::string fp = MyConfig.GetParamValue("ssh.info", "fingerprint", "[not available]");
@@ -117,7 +119,6 @@ void OvmsSSH::EventHandler(struct mg_connection *nc, int ev, void *p)
       ESP_LOGV(tag, "Event MG_EV_RECV conn %p, data received %d", nc, *(int*)p);
       ConsoleSSH* child = (ConsoleSSH*)nc->user_data;
       child->Receive();
-      child->Poll(0);
       }
       break;
 
@@ -172,7 +173,8 @@ void OvmsSSH::NetManInit(std::string event, void* data)
   int ret = wolfSSH_Init();
   if (ret != WS_SUCCESS)
     {
-    ESP_LOGE(tag, "Couldn't initialize wolfSSH, error = %d", ret);
+    ESP_LOGE(tag, "Couldn't initialize wolfSSH, error %d: %s", ret,
+      GetErrorString(ret));
     return;
     }
 
@@ -197,7 +199,8 @@ void OvmsSSH::NetManInit(std::string event, void* data)
     ret = wolfSSH_CTX_UsePrivateKey_buffer(m_ctx, (const uint8_t*)skey.data(),
       skey.size(),  WOLFSSH_FORMAT_ASN1);
     if (ret < 0)
-      ESP_LOGE(tag, "Couldn't use configured server key, error = %d", ret);
+      ESP_LOGE(tag, "Couldn't use configured server key, error %d: %s", ret,
+        GetErrorString(ret));
     }
 
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
@@ -363,13 +366,14 @@ void ConsoleSSH::Send()
     {
     // Would need to check ret != WS_WANT_WRITE here if mg_send is changed to
     // return EWOUDBLOCK
-    ESP_LOGE(tag, "Error in wolfSSH_stream_send: %d", ret);
+    ESP_LOGE(tag, "Error %d in wolfSSH_stream_send: %s", ret, GetErrorString(ret));
+
     m_connection->flags |= MG_F_SEND_AND_CLOSE;
     m_state = CLOSING;
     }
   else if (m_size < 0)
     {
-    ESP_LOGE(tag, "Error reading file in source scp: %d", m_size);
+    ESP_LOGE(tag, "Error %d reading file in source scp: %s", m_size, strerror(m_size));
     m_connection->flags |= MG_F_SEND_AND_CLOSE;
     m_state = CLOSING;
     }
@@ -876,7 +880,7 @@ void ConsoleSSH::HandleDeviceEvent(void* pEvent)
     m_state = CLOSING;
     return;
     }
-  ESP_LOGE(tag, "Error in reception: %d", rc);
+  ESP_LOGE(tag, "Error %d in reception: %s", rc, GetErrorString(rc));
   m_connection->flags |= MG_F_SEND_AND_CLOSE;
   }
 
@@ -994,7 +998,7 @@ ssize_t ConsoleSSH::write(const void *buf, size_t nbyte)
       }
     else
       {
-      ESP_LOGE(tag, "wolfSSH_stream_send returned %d", ret);
+      ESP_LOGE(tag, "wolfSSH_stream_send returned %d: %s", ret, GetErrorString(ret));
       m_connection->flags |= MG_F_SEND_AND_CLOSE;
       }
     }

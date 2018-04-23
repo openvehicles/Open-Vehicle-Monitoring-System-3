@@ -105,13 +105,16 @@ int BufferedShell::printf(const char* fmt, ...)
   {
   if (!m_output)
     return 0;
-  char *buffer;
+  char *buffer = NULL;
   va_list args;
   va_start(args, fmt);
   int ret = vasprintf(&buffer, fmt, args);
   va_end(args);
-  write(buffer, ret);
-  free(buffer);
+  if (ret >= 0)
+    {
+    write(buffer, ret);
+    free(buffer);
+    }
   return ret;
   }
 
@@ -124,7 +127,7 @@ ssize_t BufferedShell::write(const void *buf, size_t nbyte)
     {
     if (m_left == 0)
       {
-      m_buffer = (char*)malloc(BUFFER_SIZE);
+      m_buffer = (char*)ExternalRamMalloc(BUFFER_SIZE);
       m_left = BUFFER_SIZE - 1;
       m_output->append(m_buffer);
       }
@@ -214,6 +217,26 @@ void BufferedShell::Dump(std::string& buf)
   m_output = NULL;
   }
 
+// Concatenate all of the buffered output into the provided string.
+// This releases the LogBuffers object so it is freed.
+void BufferedShell::Dump(extram::string& buf)
+  {
+  if (!m_output)
+    return;
+  size_t total = 0;
+  for (LogBuffers::iterator i = m_output->begin(); i != m_output->end(); ++i)
+    total += strlen(*i);
+  if (m_print)
+    ++total;
+  buf.reserve(total);
+  for (LogBuffers::iterator i = m_output->begin(); i != m_output->end(); ++i)
+    buf.append(*i);
+  if (m_print)
+    buf.append("\n");
+  m_output->release();
+  m_output = NULL;
+  }
+
 // Concatenate all of the buffered output into one contiguous buffer allocated
 // from the heap.  This releases the LogBuffers object so it is freed.
 char* BufferedShell::Dump()
@@ -225,7 +248,7 @@ char* BufferedShell::Dump()
     total += strlen(*i);
   if (m_print)
     ++total;
-  char* buf = (char*)malloc(total + 1);
+  char* buf = (char*)ExternalRamMalloc(total + 1);
   char* p = buf;
   for (LogBuffers::iterator i = m_output->begin(); i != m_output->end(); ++i)
     p = stpcpy(p, *i);

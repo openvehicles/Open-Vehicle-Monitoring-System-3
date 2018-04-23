@@ -56,6 +56,7 @@ const char* SimcomState1Name(simcom::SimcomState1 state)
     case simcom::NetDeepSleep:   return "NetDeepSleep";
     case simcom::PoweringOff:    return "PoweringOff";
     case simcom::PoweredOff:     return "PoweredOff";
+    case simcom::PowerOffOn:     return "PowerOffOn";
     default:                     return "Undefined";
     };
   }
@@ -428,7 +429,7 @@ void simcom::State1Enter(SimcomState1 newstate)
     case NetStart:
       ESP_LOGI(TAG,"State: Enter NetStart state");
       m_state1_timeout_ticks = 30;
-      m_state1_timeout_goto = NetLoss;
+      m_state1_timeout_goto = PowerOffOn;
       break;
     case NetLoss:
       ESP_LOGI(TAG,"State: Enter NetLoss state");
@@ -467,6 +468,15 @@ void simcom::State1Enter(SimcomState1 newstate)
     case PoweredOff:
       ESP_LOGI(TAG,"State: Enter PoweredOff state");
       m_mux.Stop();
+      break;
+    case PowerOffOn:
+      ESP_LOGI(TAG,"State: Enter PowerOffOn state");
+      m_ppp.Shutdown();
+      m_nmea.Shutdown();
+      m_mux.Stop();
+      MyEvents.SignalEvent("system.modem.stop",NULL);
+      m_state1_timeout_ticks = 3;
+      m_state1_timeout_goto = PoweringOn;
       break;
     default:
       break;
@@ -622,6 +632,11 @@ simcom::SimcomState1 simcom::State1Ticker1()
         return NetMode; // PPP Connection is ready to be started
       else if (m_state1_userdata == 99)
         return NetLoss;
+      else if (m_state1_userdata == 100)
+        {
+        ESP_LOGW(TAG, "NetStart: unresolvable error, performing modem power cycle");
+        return PowerOffOn;
+        }
       break;
     case NetLoss:
       break;
@@ -735,6 +750,11 @@ void simcom::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
     {
     ESP_LOGI(TAG, "PPP Connection is ready to start");
     m_state1_userdata = 2;
+    }
+  else if ((line.compare(0, 5, "ERROR") == 0)&&(m_state1 == NetStart)&&(m_state1_userdata == 1))
+    {
+    ESP_LOGI(TAG, "PPP Connection init error");
+    m_state1_userdata = 100;
     }
   else if ((line.compare(0, 19, "+PPPD: DISCONNECTED") == 0)&&((m_state1 == NetStart)||(m_state1 == NetMode)))
     {

@@ -8,6 +8,7 @@
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011        Sonny Chen @ EPRO/DX
+;    (C) 2018        Michael Balzer
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -28,69 +29,17 @@
 ; THE SOFTWARE.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ovms_log.h>
-#include "log_buffers.h"
+#ifndef __OVMS_EXTRAM_H__
+#define __OVMS_EXTRAM_H__
 
+#include "ovms.h"
+#include <string>
+#include <sstream>
 
-LogBuffers::LogBuffers() : m_refcount(0)
+namespace extram
   {
+  typedef std::basic_string<char, std::char_traits<char>, ExtRamAllocator<char>> string;
+  typedef std::basic_ostringstream<char, std::char_traits<char>, ExtRamAllocator<char>> ostringstream;
   }
 
-LogBuffers::~LogBuffers()
-  {
-  // Free all the buffers in the list.
-  for (iterator itr = begin(); itr != end(); ++itr)
-    {
-    free(*itr);
-    }
-  }
-
-int LogBuffers::append(const char* fmt, va_list args)
-  {
-  char *buffer;
-  int ret = vasprintf(&buffer, fmt, args);
-  if (ret >= 0)
-    append(buffer);
-  return ret;
-  }
-
-void LogBuffers::append(char* buffer)
-  {  
-  if (empty())
-    {
-    push_front(buffer);
-    }
-  else
-    {
-    iterator before = begin(), after;
-    while (true)
-      {
-      after = before;
-      ++after;
-      if (after == end())
-        break;
-      before = after;
-      }
-    insert_after(before, buffer);
-    }
-  }
-
-void LogBuffers::set(int count)
-  {
-  m_refcount = count;
-  }
-
-void LogBuffers::release()
-  {
-  int before = std::atomic_fetch_add(&m_refcount, -1);
-  if (before == 1)
-    delete this;
-  }
-
-bool LogBuffers::last()
-  {
-  return m_refcount == 1;
-  }
+#endif //#ifndef __OVMS_EXTRAM_H__

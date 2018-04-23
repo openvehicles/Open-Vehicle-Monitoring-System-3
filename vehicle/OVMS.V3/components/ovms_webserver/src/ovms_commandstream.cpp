@@ -196,13 +196,15 @@ int HttpCommandStream::printf(const char* fmt, ...)
 {
   if (!m_nc)
     return 0;
-  char *buffer;
+  char *buffer = NULL;
   va_list args;
   va_start(args, fmt);
   int ret = vasprintf(&buffer, fmt, args);
   va_end(args);
-  write(buffer, ret);
-  free(buffer);
+  if (ret >= 0) {
+    write(buffer, ret);
+    free(buffer);
+  }
   return ret;
 }
 
@@ -212,7 +214,7 @@ ssize_t HttpCommandStream::write(const void *buf, size_t nbyte)
     return nbyte;
   
   hcs_writebuf wbuf;
-  wbuf.data = (char*) malloc(nbyte);
+  wbuf.data = (char*) ExternalRamMalloc(nbyte);
   wbuf.len = nbyte;
   memcpy(wbuf.data, buf, nbyte);
   
