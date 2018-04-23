@@ -32,7 +32,6 @@
 static const char *TAG = "ovms-server-v2";
 
 #include "ovms.h"
-#include "ovms_extram.h"
 #include "buffered_shell.h"
 #include "ovms_peripherals.h"
 #include "ovms_command.h"

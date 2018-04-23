@@ -30,8 +30,8 @@
 #ifndef __BUFFERED_SHELL_H__
 #define __BUFFERED_SHELL_H__
 
+#include "ovms.h"
 #include "ovms_shell.h"
-#include "ovms_extram.h"
 
 class LogBuffers;
 class OvmsCommandMap;

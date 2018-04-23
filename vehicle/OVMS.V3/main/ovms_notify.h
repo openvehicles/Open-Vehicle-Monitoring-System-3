@@ -38,7 +38,6 @@
 #include <bitset>
 #include <stdint.h>
 #include "ovms.h"
-#include "ovms_extram.h"
 #include "ovms_utils.h"
 
 #define NOTIFY_MAX_READERS 32

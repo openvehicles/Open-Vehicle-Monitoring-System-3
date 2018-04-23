@@ -34,6 +34,8 @@
 #include <stdint.h>
 #include <cstddef>
 #include <cstdlib>
+#include <string>
+#include <sstream>
 #include <new>
 
 extern uint32_t monotonictime;
@@ -67,5 +69,10 @@ bool operator==(const ExtRamAllocator<T>&, const ExtRamAllocator<U>&) { return t
 template <class T, class U>
 bool operator!=(const ExtRamAllocator<T>&, const ExtRamAllocator<U>&) { return false; }
 
+namespace extram
+  {
+  typedef std::basic_string<char, std::char_traits<char>, ExtRamAllocator<char>> string;
+  typedef std::basic_ostringstream<char, std::char_traits<char>, ExtRamAllocator<char>> ostringstream;
+  }
 
 #endif //#ifndef __OVMS_H__
