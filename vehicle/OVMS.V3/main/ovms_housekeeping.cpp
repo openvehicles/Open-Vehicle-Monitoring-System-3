@@ -98,7 +98,7 @@ Housekeeping::Housekeeping()
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"housekeeping.init", std::bind(&Housekeeping::Init, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"ticker.10", std::bind(&Housekeeping::Metrics, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"ticker.600", std::bind(&Housekeeping::TimeLogger, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"ticker.300", std::bind(&Housekeeping::TimeLogger, this, _1, _2));
 
   // Fire off the event that causes us to be called back in Events tasks context
   MyEvents.SignalEvent("housekeeping.init", NULL);
@@ -143,40 +143,40 @@ void Housekeeping::Init(std::string event, void* data)
   else
     {
 #ifdef CONFIG_OVMS_COMP_EXT12V
-    ESP_LOGI(TAG, "Auto init ext12v (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    ESP_LOGI(TAG, "Auto init ext12v (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyPeripherals->m_ext12v->AutoInit();
 #endif // CONFIG_OVMS_COMP_EXT12V
 
 #ifdef CONFIG_OVMS_COMP_WIFI
-    ESP_LOGI(TAG, "Auto init wifi (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    ESP_LOGI(TAG, "Auto init wifi (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyPeripherals->m_esp32wifi->AutoInit();
 #endif // CONFIG_OVMS_COMP_WIFI
 
 #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
-    ESP_LOGI(TAG, "Auto init modem (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    ESP_LOGI(TAG, "Auto init modem (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyPeripherals->m_simcom->AutoInit();
 #endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
 
-    ESP_LOGI(TAG, "Auto init vehicle (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    ESP_LOGI(TAG, "Auto init vehicle (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyVehicleFactory.AutoInit();
 
 #ifdef CONFIG_OVMS_COMP_OBD2ECU
-    ESP_LOGI(TAG, "Auto init obd2ecu (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    ESP_LOGI(TAG, "Auto init obd2ecu (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     obd2ecuInit.AutoInit();
 #endif // CONFIG_OVMS_COMP_OBD2ECU
 
 #ifdef CONFIG_OVMS_COMP_SERVER
 #ifdef CONFIG_OVMS_COMP_SERVER_V2
-    ESP_LOGI(TAG, "Auto init server v2 (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    ESP_LOGI(TAG, "Auto init server v2 (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyOvmsServerV2Init.AutoInit();
 #endif // CONFIG_OVMS_COMP_SERVER_V2
 #ifdef CONFIG_OVMS_COMP_SERVER_V3
-    ESP_LOGI(TAG, "Auto init server v3 (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    ESP_LOGI(TAG, "Auto init server v3 (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyOvmsServerV3Init.AutoInit();
 #endif // CONFIG_OVMS_COMP_SERVER_V3
 #endif // CONFIG_OVMS_COMP_SERVER
 
-    ESP_LOGI(TAG, "Auto init done (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    ESP_LOGI(TAG, "Auto init done (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     }
 
   ESP_LOGI(TAG, "Starting USB console...");
@@ -218,7 +218,7 @@ void Housekeeping::Metrics(std::string event, void* data)
   // set boot stable flag after some seconds uptime:
   if (!MyBoot.GetStable() && monotonictime >= AUTO_INIT_STABLE_TIME)
     {
-    ESP_LOGI(TAG, "System considered stable (free: %d bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    ESP_LOGI(TAG, "System considered stable (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyBoot.SetStable();
     // …and send debug crash data as necessary:
     MyBoot.NotifyDebugCrash();
@@ -230,5 +230,9 @@ void Housekeeping::TimeLogger(std::string event, void* data)
   time_t rawtime;
   time ( &rawtime );
   struct tm* tmu = localtime(&rawtime);
-  ESP_LOGI(TAG, "Local time: %.24s", asctime(tmu));
+  size_t free_8bit = heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
+  size_t free_32bit = heap_caps_get_free_size(MALLOC_CAP_32BIT|MALLOC_CAP_INTERNAL);
+  size_t lgst_8bit = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
+  ESP_LOGI(TAG, "Local time: %.24s; internal RAM: 8bit=%zu largest=%zu 32bit=%zu",
+    asctime(tmu), free_8bit, lgst_8bit, free_32bit-free_8bit);
   }
