@@ -475,6 +475,7 @@ void simcom::State1Enter(SimcomState1 newstate)
       m_nmea.Shutdown();
       m_mux.Stop();
       MyEvents.SignalEvent("system.modem.stop",NULL);
+      PowerCycle();
       m_state1_timeout_ticks = 3;
       m_state1_timeout_goto = PoweringOn;
       break;
@@ -1095,6 +1096,8 @@ void simcom_setstate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     newstate = simcom::PoweringOff;
   else if (strcmp(statename,"PoweredOff")==0)
     newstate = simcom::PoweredOff;
+  else if (strcmp(statename,"PowerOffOn")==0)
+    newstate = simcom::PowerOffOn;
 
   if (newstate == simcom::None)
     {
@@ -1121,9 +1124,9 @@ SimcomInit::SimcomInit()
   cmd_simcom->RegisterCommand("cmd","Send SIMCOM AT command",simcom_cmd, "<command>", 1, INT_MAX, true);
 
   OvmsCommand* cmd_setstate = cmd_simcom->RegisterCommand("setstate","SIMCOM state change framework",NULL, "", 0, 0, true);
-  for (int x = simcom::CheckPowerOff; x<simcom::PoweredOff; x++)
+  for (int x = simcom::CheckPowerOff; x<=simcom::PowerOffOn; x++)
     {
-	cmd_setstate->RegisterCommand(SimcomState1Name((simcom::SimcomState1)x),"Force SIMCOM state change",simcom_setstate, "", 0, 0, true);
+    cmd_setstate->RegisterCommand(SimcomState1Name((simcom::SimcomState1)x),"Force SIMCOM state change",simcom_setstate, "", 0, 0, true);
     }
 
   MyConfig.RegisterParam("modem", "Modem Configuration", true, true);
