@@ -48,7 +48,8 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
 
   protected:
     char m_vin[18];
-    char m_type[5];
+    char m_type[6];
+    int m_modelyear;
     unsigned int m_charge_timer;
     unsigned int m_charge_wm;
     unsigned int m_candata_timer;

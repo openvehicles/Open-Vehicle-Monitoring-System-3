@@ -61,6 +61,9 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   m_type[1] = 'A';
   m_type[2] = 0;
   m_type[3] = 0;
+  m_type[4] = 0;
+  m_type[5] = 0;
+  m_modelyear = 0;
   m_charge_timer = 0;
   m_charge_wm = 0;
   m_candata_timer = 0;
@@ -112,10 +115,19 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
       {
       for (k=0;k<8;k++)
         m_vin[k+1] = d[k];
-      m_vin[0] = '1';
-      m_vin[17] = 0;
       if (m_vin[9] != 0)
         {
+        m_vin[0] = '1';
+        m_vin[17] = 0;
+        if (m_vin[2] == '1')
+          m_type[2] = 'V';
+        else if (m_vin[2] == '0')
+          m_type[2] = 'A';
+        else
+          m_type[2] = m_vin[2];
+        m_modelyear = (m_vin[9]-'A')+10;
+        m_type[3] = (m_modelyear / 10) + '0';
+        m_type[4] = (m_modelyear % 10) + '0';
         StandardMetrics.ms_v_vin->SetValue(m_vin);
         StandardMetrics.ms_v_type->SetValue(m_type);
         }
