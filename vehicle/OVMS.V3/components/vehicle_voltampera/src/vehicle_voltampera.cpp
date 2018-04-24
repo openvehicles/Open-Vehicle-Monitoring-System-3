@@ -32,6 +32,7 @@
 static const char *TAG = "v-voltampera";
 
 #include <stdio.h>
+#include "ovms_config.h"
 #include "vehicle_voltampera.h"
 
 // Use states:
@@ -67,11 +68,15 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   m_charge_timer = 0;
   m_charge_wm = 0;
   m_candata_timer = 0;
-  m_drive_distance_bat_max = (35*5)/8;
+  m_range_estimated_km = 0;
 
   // require GPS:
   MyEvents.SignalEvent("vehicle.require.gps", NULL);
   MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
+
+  // Config parameters
+  MyConfig.RegisterParam("xva", "Volt/Ampera", true, true);
+  m_range_rated_km = MyConfig.GetParamValueInt("xva", "range.km", 0);
 
   // Register CAN bus and polling requests
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -130,6 +135,24 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
         m_type[4] = (m_modelyear % 10) + '0';
         StandardMetrics.ms_v_vin->SetValue(m_vin);
         StandardMetrics.ms_v_type->SetValue(m_type);
+        if (m_range_rated_km == 0)
+          {
+          switch (m_modelyear)
+            {
+            case 11:
+            case 12:
+              m_range_rated_km = 56;
+              break;
+            case 13:
+            case 14:
+            case 15:
+              m_range_rated_km = 61;
+              break;
+            default:
+              m_range_rated_km = 85;
+              break;
+            }
+          }
         }
       break;
       }
@@ -185,17 +208,23 @@ void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16
       {
       int soc = ((int)value * 39)/99;
       StandardMetrics.ms_v_bat_soc->SetValue(soc);
-      StandardMetrics.ms_v_bat_range_est->SetValue((soc * m_drive_distance_bat_max)/100);
-      StandardMetrics.ms_v_bat_range_ideal->SetValue((soc * m_drive_distance_bat_max)/100);
+      if (m_range_rated_km != 0)
+        StandardMetrics.ms_v_bat_range_ideal->SetValue((soc * m_range_rated_km)/100, Kilometers);
+      if (m_range_estimated_km != 0)
+        StandardMetrics.ms_v_bat_range_est->SetValue((soc * m_range_estimated_km)/100, Kilometers);
       break;
       }
     case 0x000d:  // Vehicle speed
       StandardMetrics.ms_v_pos_speed->SetValue(value,Kilometers);
       break;
     case 0x2487:  //Distance Traveled on Battery Energy This Drive Cycle
-       //edrive_distance = MiFromKm((can_databuffer[5] + ((unsigned int)can_databuffer[4] << 8)) / 100); // German Volt Report im KM
-       //if ((edrive_distance > va_drive_distance_bat_max) && (car_chargestate == 4)) va_drive_distance_bat_max = edrive_distance;
-       break;
+      {
+      unsigned int edriven = (((int)data[4])<<8) + data[5];
+      if ((edriven > m_range_estimated_km)&&
+          (StandardMetrics.ms_v_charge_state->AsString().compare("done")))
+        m_range_estimated_km = edriven;
+      break;
+      }
     default:
       break;
     }

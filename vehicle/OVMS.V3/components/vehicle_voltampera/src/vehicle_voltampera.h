@@ -53,7 +53,8 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
     unsigned int m_charge_timer;
     unsigned int m_charge_wm;
     unsigned int m_candata_timer;
-    unsigned int m_drive_distance_bat_max;
+    unsigned int m_range_rated_km;
+    unsigned int m_range_estimated_km;
   };
 
 #endif //#ifndef __VEHICLE_VOLTAMPERA_H__
