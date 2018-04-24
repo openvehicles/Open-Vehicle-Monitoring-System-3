@@ -398,6 +398,7 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task)
   bool separate = false;
   Name name;
   TaskMap* tm = TaskMap::instance();
+  char pbuf[32];
   for (int i = 0; i < numbefore; ++i)
     {
     if (before[i].task != task)
@@ -435,8 +436,10 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task)
         separate = false;
         }
       tm->find(after[i].task, name);
-      writer->printf("  t=%.15s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X\n",
-        name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
+      for (int pi=0; pi<32; pi++)
+        pbuf[pi] = isprint(((char*)p)[pi]) ? ((char*)p)[pi] : '.';
+      writer->printf("  t=%.15s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X | %-32.32s\n",
+        name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], pbuf);
       ++count;
       }
     }
@@ -460,8 +463,10 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task)
         separate = false;
         }
       tm->find(after[i].task, name);
-      writer->printf("+ t=%.15s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X\n",
-        name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
+      for (int pi=0; pi<32; pi++)
+        pbuf[pi] = isprint(((char*)p)[pi]) ? ((char*)p)[pi] : '.';
+      writer->printf("+ t=%.15s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X | %-32.32s\n",
+        name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], pbuf);
       ++total;
       }
     }
