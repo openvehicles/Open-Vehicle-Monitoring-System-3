@@ -174,12 +174,13 @@ void WebSocketHandler::ProcessTxJob()
 }
 
 
-void WebSocketHandler::AddTxJob(WebSocketTxJob job, bool init_tx)
+bool WebSocketHandler::AddTxJob(WebSocketTxJob job, bool init_tx)
 {
   if (xQueueSend(m_jobqueue, &job, 0) != pdTRUE) {
     ++m_jobqueue_overflow;
     if (m_jobqueue_overflow == 1)
       ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow detected", this);
+    return false;
   }
   else {
     if (m_jobqueue_overflow) {
@@ -188,6 +189,7 @@ void WebSocketHandler::AddTxJob(WebSocketTxJob job, bool init_tx)
     }
     if (init_tx && uxQueueMessagesWaiting(m_jobqueue) == 1)
       RequestPoll();
+    return true;
   }
 }
 
@@ -344,10 +346,13 @@ void OvmsWebServer::EventListener(std::string event, void* data)
   }
   
   for (auto slot: m_client_slots) {
-    if (slot.handler)
-      slot.handler->AddTxJob({ WSTX_Event, strdup(event.c_str()) }, false);
+    if (slot.handler) {
+      WebSocketTxJob job = { WSTX_Event, strdup(event.c_str()) };
+      if (!slot.handler->AddTxJob(job, false))
+        free(job.event);
       // Note: init_tx false to prevent mg_broadcast() deadlock on network events
       //  and keep processing time low
+    }
   }
   
   xSemaphoreGive(m_client_mutex);
