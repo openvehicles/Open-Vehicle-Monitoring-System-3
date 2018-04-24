@@ -933,7 +933,7 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
 
     // process form submission:
     UpdateWifiTable(p, c, "ap", "wifi.ap", warn, error, 8);
-    UpdateWifiTable(p, c, "cl", "wifi.ssid", warn, error, 0);
+    UpdateWifiTable(p, c, "client", "wifi.ssid", warn, error, 0);
     
     if (error == "") {
       c.head(200);
@@ -967,7 +967,7 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
   c.fieldset_end();
 
   c.fieldset_start("Wifi client networks");
-  OutputWifiTable(p, c, "cl", "wifi.ssid", MyConfig.GetParamValue("auto", "wifi.ssid.client"));
+  OutputWifiTable(p, c, "client", "wifi.ssid", MyConfig.GetParamValue("auto", "wifi.ssid.client"));
   c.fieldset_end();
 
   c.print(
