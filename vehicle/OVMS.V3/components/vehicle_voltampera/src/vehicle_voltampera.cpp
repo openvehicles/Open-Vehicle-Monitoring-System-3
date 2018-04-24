@@ -89,6 +89,17 @@ OvmsVehicleVoltAmpera::~OvmsVehicleVoltAmpera()
   ESP_LOGI(TAG, "Shutdown Volt/Ampera vehicle module");
   }
 
+void OvmsVehicleVoltAmpera::Status(int verbosity, OvmsWriter* writer)
+  {
+  writer->printf("Vehicle:  Volt Ampera (%s %d)\n", m_type, m_modelyear+2000);
+  writer->printf("VIN:      %s\n",m_vin);
+  writer->puts("");
+  writer->printf("Ranges:   %dkm (rated) %dkm (estimated)\n",
+    m_range_rated_km, m_range_estimated_km);
+  writer->printf("Charge:   Timer %d (%d wm)\n", m_charge_timer, m_charge_wm);
+  writer->printf("Can Data: Timer %d (poll state %d)\n",m_candata_timer,m_poll_state);
+  }
+
 void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
