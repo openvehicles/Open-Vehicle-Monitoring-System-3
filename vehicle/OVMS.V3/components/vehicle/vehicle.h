@@ -37,6 +37,7 @@
 #include "ovms_events.h"
 #include "ovms_config.h"
 #include "ovms_metrics.h"
+#include "ovms_command.h"
 #include "metrics_standard.h"
 
 using namespace std;
@@ -130,6 +131,7 @@ class OvmsVehicle
 
   public:
     virtual void GetDashboardConfig(DashboardConfig& cfg);
+    virtual void Status(int verbosity, OvmsWriter* writer);
 
   protected:
     void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed);
