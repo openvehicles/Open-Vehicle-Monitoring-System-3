@@ -165,6 +165,9 @@ void OvmsVehicleRenaultTwizy::BatteryUnlock()
  */
 void OvmsVehicleRenaultTwizy::BatteryUpdate()
 {
+  // reset sensor fetch cycle:
+  twizy_batt_sensors_state = BATT_SENSORS_START;
+  
   // try to lock, else drop this update:
   if (!BatteryLock(0)) {
     ESP_LOGV(TAG, "BatteryUpdate: no lock, update dropped");
@@ -202,7 +205,6 @@ void OvmsVehicleRenaultTwizy::BatteryUpdate()
   
   // done, start next fetch cycle:
   BatteryUnlock();
-  twizy_batt_sensors_state = BATT_SENSORS_START;
 }
 
 

@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-twizy";
 
-#define VERSION "0.14.4"
+#define VERSION "0.14.5"
 
 #include <stdio.h>
 #include <string>

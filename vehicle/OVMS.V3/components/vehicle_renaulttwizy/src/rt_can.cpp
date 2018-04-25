@@ -260,8 +260,9 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
     case 0x556:
       // --------------------------------------------------------------------------
       // CAN ID 0x556: Battery cell voltages 1-5
-      // 100 ms = 10 per second
-      if ((CAN_BYTE(0) != 0x0ff) && (twizy_batt_sensors_state != BATT_SENSORS_READY))
+      // 100 ms = 10 per second, all other sensor frames come in once per second
+      //  => used to detect examination window
+      if (CAN_BYTE(0) != 0x0ff)
       {
         twizy_cell[0].volt_new = ((UINT) CAN_BYTE(0) << 4) | ((UINT) CAN_NIBH(1));
         twizy_cell[1].volt_new = ((UINT) CAN_NIBL(1) << 8) | ((UINT) CAN_BYTE(2));
@@ -295,7 +296,7 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       // --------------------------------------------------------------------------
       // CAN ID 0x557: Battery cell voltages 6-10
       // (1000 ms = 1 per second)
-      if ((CAN_BYTE(0) != 0x0ff) && !(twizy_batt_sensors_state & BATT_SENSORS_GOT557))
+      if (CAN_BYTE(0) != 0x0ff)
       {
         twizy_cell[5].volt_new = ((UINT) CAN_BYTE(0) << 4) | ((UINT) CAN_NIBH(1));
         twizy_cell[6].volt_new = ((UINT) CAN_NIBL(1) << 8) | ((UINT) CAN_BYTE(2));
@@ -315,7 +316,7 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       // --------------------------------------------------------------------------
       // CAN ID 0x55E: Battery cell voltages 11-14
       // (1000 ms = 1 per second)
-      if ((CAN_BYTE(0) != 0x0ff) && !(twizy_batt_sensors_state & BATT_SENSORS_GOT55E))
+      if (CAN_BYTE(0) != 0x0ff)
       {
         twizy_cell[10].volt_new = ((UINT) CAN_BYTE(0) << 4) | ((UINT) CAN_NIBH(1));
         twizy_cell[11].volt_new = ((UINT) CAN_NIBL(1) << 8) | ((UINT) CAN_BYTE(2));
@@ -334,7 +335,7 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       // --------------------------------------------------------------------------
       // CAN ID 0x55F: Battery pack voltages
       // (1000 ms = 1 per second)
-      if ((CAN_BYTE(5) != 0x0ff) && !(twizy_batt_sensors_state & BATT_SENSORS_GOT55F))
+      if (CAN_BYTE(5) != 0x0ff)
       {
         // we still don't know why there are two pack voltages
         // best guess: take avg
@@ -556,7 +557,7 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       //   - Bytes 2-4: cell voltages #15 & #16 (encoded in 12 bits like #1-#14)
       //   - Bytes 5-6: balancing status (bits 15…0 = cells 16…1, 1 = balancing active)
       //   - Byte 7: BMS specific state #2 (auxiliary state or data)
-      if ((CAN_BYTE(0) != 0x0ff) && !(twizy_batt_sensors_state & BATT_SENSORS_GOT700))
+      if (CAN_BYTE(0) != 0x0ff)
       {
         // Battery cell voltages 15 + 16:
         twizy_cell[14].volt_new = ((UINT) CAN_BYTE(2) << 4) | ((UINT) CAN_NIBH(3));
