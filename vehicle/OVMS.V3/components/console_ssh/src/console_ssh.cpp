@@ -33,20 +33,31 @@
 #include <lwip/sockets.h>
 #undef bind
 #include "freertos/queue.h"
+#include "esp_heap_caps.h"
 #include "ovms_log.h"
 #include "ovms_events.h"
 #include "ovms_netmanager.h"
 #include "ovms_config.h"
+#include <wolfssl/wolfcrypt/memory.h>
 #include <wolfssl/wolfcrypt/sha256.h>
 #include <wolfssl/wolfcrypt/coding.h>
 #include <wolfssl/wolfcrypt/rsa.h>
 #include <wolfssl/wolfcrypt/sha.h>
 #include <wolfssh/ssh.h>
 #include <wolfssh/log.h>
+#include <wolfssh/internal.h>
 #include "console_ssh.h"
 
 static void wolf_logger(enum wolfSSH_LogLevel level, const char* const msg);
-static const char *tag = "ssh";
+static void* wolfssh_malloc(size_t size);
+static void wolfssh_free(void* ptr);
+static void* wolfssh_realloc(void* ptr, size_t size);
+static void* wolfssl_malloc(size_t size);
+static void wolfssl_free(void* ptr);
+static void* wolfssl_realloc(void* ptr, size_t size);
+static const char* const tag = "ssh";
+static const char* const wolfssh_tag = "wolfssh";
+static const char* const wolfssl_tag = "wolfssl";
 static uint8_t CRLF[2] = { '\r', '\n' };
 static const char newline = '\n';
 
@@ -91,7 +102,8 @@ void OvmsSSH::EventHandler(struct mg_connection *nc, int ev, void *p)
           int ret = wolfSSH_CTX_UsePrivateKey_buffer(m_ctx, (const uint8_t*)skey.data(),
             skey.size(),  WOLFSSH_FORMAT_ASN1);
           if (ret < 0)
-            ESP_LOGE(tag, "Couldn't use configured server key, error = %d", ret);
+            ESP_LOGE(tag, "Couldn't use configured server key, error %d: %s", ret,
+              GetErrorString(ret));
           else
             {
             std::string fp = MyConfig.GetParamValue("ssh.info", "fingerprint", "[not available]");
@@ -107,7 +119,6 @@ void OvmsSSH::EventHandler(struct mg_connection *nc, int ev, void *p)
       ESP_LOGV(tag, "Event MG_EV_RECV conn %p, data received %d", nc, *(int*)p);
       ConsoleSSH* child = (ConsoleSSH*)nc->user_data;
       child->Receive();
-      child->Poll(0);
       }
       break;
 
@@ -162,7 +173,8 @@ void OvmsSSH::NetManInit(std::string event, void* data)
   int ret = wolfSSH_Init();
   if (ret != WS_SUCCESS)
     {
-    ESP_LOGE(tag, "Couldn't initialize wolfSSH, error = %d", ret);
+    ESP_LOGE(tag, "Couldn't initialize wolfSSH, error %d: %s", ret,
+      GetErrorString(ret));
     return;
     }
 
@@ -187,7 +199,8 @@ void OvmsSSH::NetManInit(std::string event, void* data)
     ret = wolfSSH_CTX_UsePrivateKey_buffer(m_ctx, (const uint8_t*)skey.data(),
       skey.size(),  WOLFSSH_FORMAT_ASN1);
     if (ret < 0)
-      ESP_LOGE(tag, "Couldn't use configured server key, error = %d", ret);
+      ESP_LOGE(tag, "Couldn't use configured server key, error %d: %s", ret,
+        GetErrorString(ret));
     }
 
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
@@ -263,6 +276,7 @@ ConsoleSSH::ConsoleSSH(OvmsSSH* server, struct mg_connection* nc)
   m_queue = xQueueCreate(100, sizeof(Event));
   m_ssh = NULL;
   m_state = ACCEPT;
+  m_drain = 0;
   m_sent = true;
   m_rekey = false;
   m_needDir = false;
@@ -276,6 +290,8 @@ ConsoleSSH::ConsoleSSH(OvmsSSH* server, struct mg_connection* nc)
     ::printf("Couldn't allocate SSH session data.\n");
     return;
     }
+  wolfSSH_SetAllocators(wolfssh_malloc, wolfssh_free, wolfssh_realloc);
+  wolfSSL_SetAllocators(wolfssl_malloc, wolfssl_free, wolfssl_realloc);
   wolfSSH_SetIORecv(m_server->ctx(), ::RecvCallback);
   wolfSSH_SetIOSend(m_server->ctx(), ::SendCallback);
   wolfSSH_SetIOReadCtx(m_ssh, this);
@@ -319,7 +335,11 @@ void ConsoleSSH::Receive()
 void ConsoleSSH::Send()
   {
   if (m_state != SOURCE_SEND || !m_sent)
+    {
+    if (m_drain > 0 && m_connection->send_mbuf.len == 0)
+      write("", 0);       // Wake up output after draining
     return;
+    }
   int ret = 0;
   while (true)
     {
@@ -346,13 +366,14 @@ void ConsoleSSH::Send()
     {
     // Would need to check ret != WS_WANT_WRITE here if mg_send is changed to
     // return EWOUDBLOCK
-    ESP_LOGE(tag, "Error in wolfSSH_stream_send: %d", ret);
+    ESP_LOGE(tag, "Error %d in wolfSSH_stream_send: %s", ret, GetErrorString(ret));
+
     m_connection->flags |= MG_F_SEND_AND_CLOSE;
     m_state = CLOSING;
     }
   else if (m_size < 0)
     {
-    ESP_LOGE(tag, "Error reading file in source scp: %d", m_size);
+    ESP_LOGE(tag, "Error %d reading file in source scp: %s", m_size, strerror(m_size));
     m_connection->flags |= MG_F_SEND_AND_CLOSE;
     m_state = CLOSING;
     }
@@ -859,7 +880,7 @@ void ConsoleSSH::HandleDeviceEvent(void* pEvent)
     m_state = CLOSING;
     return;
     }
-  ESP_LOGE(tag, "Error in reception: %d", rc);
+  ESP_LOGE(tag, "Error %d in reception: %s", rc, GetErrorString(rc));
   m_connection->flags |= MG_F_SEND_AND_CLOSE;
   }
 
@@ -901,12 +922,46 @@ int ConsoleSSH::printf(const char* fmt, ...)
 
 ssize_t ConsoleSSH::write(const void *buf, size_t nbyte)
   {
-  if (!m_ssh || !nbyte || (m_connection->flags & MG_F_SEND_AND_CLOSE))
+  if (!m_ssh || (m_connection->flags & MG_F_SEND_AND_CLOSE))
     return 0;
+
+  int ret = 0;
+  if (m_drain > 0)
+    {
+    if (m_connection->send_mbuf.len > 0)
+      {
+      m_drain += nbyte;
+      return 0;
+      }
+    if (--m_drain)
+      {
+      ESP_LOGE(tag, "%zu output bytes lost due to low free memory", m_drain);
+      char *buffer = NULL;
+      ret = asprintf(&buffer,
+        "\r\n\033[33m[%zu bytes lost due to low free memory]\033[0m\r\n", m_drain);
+      if (ret < 0)
+        {
+        if (buffer)
+          free(buffer);
+        return ret;
+        }
+      ret = wolfSSH_stream_send(m_ssh, (uint8_t*)buffer, ret);
+      free(buffer);
+      if (ret < 0)
+        {
+        ++m_drain;
+        return 0;
+        }
+      m_drain = 0;
+      ProcessChar('R'-0100);
+      }
+    }
+  if (!nbyte)
+    return 0;
+
   uint8_t* start = (uint8_t*)buf;
   uint8_t* eol = start;
   uint8_t* end = start + nbyte;
-  int ret = 0;
   while (eol < end)
     {
     if (*eol == '\n')
@@ -930,16 +985,21 @@ ssize_t ConsoleSSH::write(const void *buf, size_t nbyte)
 
   if (ret <= 0)
     {
-    if (ret != WS_REKEYING)
-      {
-      ESP_LOGE(tag, "wolfSSH_stream_send returned %d", ret);
-      m_connection->flags |= MG_F_SEND_AND_CLOSE;
-      }
-    else
+    if (ret == WS_REKEYING)
       {
       if (!m_rekey)
         ESP_LOGW(tag, "wolfSSH rekeying, some output will be lost");
       m_rekey = true;
+      }
+    else if (ret == WS_WANT_WRITE)
+      {
+      m_drain = 1;
+      ret = 0;
+      }
+    else
+      {
+      ESP_LOGE(tag, "wolfSSH_stream_send returned %d: %s", ret, GetErrorString(ret));
+      m_connection->flags |= MG_F_SEND_AND_CLOSE;
       }
     }
   else
@@ -973,7 +1033,16 @@ int SendCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx)
   {
   mg_connection* nc = (mg_connection*)ctx;
   nc->flags |= MG_F_SEND_IMMEDIATELY;
-  mg_send(nc, (char*)data, size);
+  size_t ret = mg_send(nc, (char*)data, size);
+  if (ret == 0)
+    {
+    if (!((ConsoleSSH*)nc->user_data)->IsDraining())
+      {
+      size_t free8 = heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
+      ESP_LOGW(tag, "send blocked on %zu-byte packet: low free memory %zu", size, free8);
+      }
+    size = WS_CBIO_ERR_WANT_WRITE;
+    }
   return size;
   }
 
@@ -1067,24 +1136,65 @@ void RSAKeyGenerator::Service()
 
 static void wolf_logger(enum wolfSSH_LogLevel level, const char* const msg)
   {
-  const char* const tag = "wolfssh";
   switch (level)
     {
     case WS_LOG_USER:
     case WS_LOG_ERROR:
-      ESP_LOGE(tag, "%s", msg);
+      ESP_LOGE(wolfssh_tag, "%s", msg);
       break;
 
     case WS_LOG_WARN:
-      ESP_LOGW(tag, "%s", msg);
+      ESP_LOGW(wolfssh_tag, "%s", msg);
       break;
 
     case WS_LOG_INFO:
-      ESP_LOGI(tag, "%s", msg);
+      ESP_LOGI(wolfssh_tag, "%s", msg);
       break;
 
     case WS_LOG_DEBUG:
-      ESP_LOGD(tag, "%s", msg);
+      ESP_LOGD(wolfssh_tag, "%s", msg);
       break;
     }
+  }
+
+static void* wolfssh_malloc(size_t size)
+  {
+  void* ptr = malloc(size);
+  if (!ptr)
+    ESP_LOGE(wolfssh_tag, "memory allocation failed for size %zu", size);
+  return ptr;
+  }
+
+static void wolfssh_free(void* ptr)
+  {
+  free(ptr);
+  }
+
+static void* wolfssh_realloc(void* ptr, size_t size)
+  {
+  void* nptr = realloc(ptr, size);
+  if (!nptr)
+    ESP_LOGE(wolfssh_tag, "memory reallocation failed for size %zu", size);
+  return nptr;
+  }
+
+static void* wolfssl_malloc(size_t size)
+  {
+  void* ptr = malloc(size);
+  if (!ptr)
+    ESP_LOGE(wolfssl_tag, "memory allocation failed for size %zu", size);
+  return ptr;
+  }
+
+static void wolfssl_free(void* ptr)
+  {
+  free(ptr);
+  }
+
+static void* wolfssl_realloc(void* ptr, size_t size)
+  {
+  void* nptr = realloc(ptr, size);
+  if (!nptr)
+    ESP_LOGE(wolfssl_tag, "memory reallocation failed for size %zu", size);
+  return nptr;
   }

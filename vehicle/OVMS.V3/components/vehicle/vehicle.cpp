@@ -61,6 +61,18 @@ void vehicle_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     }
   }
 
+void vehicle_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle != NULL)
+    {
+    MyVehicleFactory.m_currentvehicle->Status(verbosity, writer);
+    }
+  else
+    {
+    writer->puts("No vehicle module selected");
+    }
+  }
+
 void vehicle_wakeup(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (MyVehicleFactory.m_currentvehicle==NULL)
@@ -351,6 +363,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework",NULL,"",0,0, true);
   cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1, true);
   cmd_vehicle->RegisterCommand("list","Show list of available vehicle modules",vehicle_list,"",0,0, true);
+  cmd_vehicle->RegisterCommand("status","Show vehicle module status",vehicle_status,"",0,0, true);
 
   MyCommandApp.RegisterCommand("wakeup","Wake up vehicle",vehicle_wakeup,"",0,0,true);
   MyCommandApp.RegisterCommand("homelink","Activate specified homelink button",vehicle_homelink,"<homelink>",1,1,true);
@@ -529,6 +542,11 @@ void OvmsVehicle::IncomingFrameCan3(CAN_frame_t* p_frame)
 
 void OvmsVehicle::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
   {
+  }
+
+void OvmsVehicle::Status(int verbosity, OvmsWriter* writer)
+  {
+  writer->puts("Vehicle module loaded and running");
   }
 
 void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed)

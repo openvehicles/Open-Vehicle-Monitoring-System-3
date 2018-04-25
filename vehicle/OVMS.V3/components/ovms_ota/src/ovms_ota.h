@@ -39,6 +39,7 @@ struct ota_info
   std::string version_server;
   std::string partition_running;
   std::string partition_boot;
+  std::string changelog_server;
   };
 
 class OvmsOTA

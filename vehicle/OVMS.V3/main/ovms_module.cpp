@@ -39,6 +39,8 @@ static const char *TAG = "ovms-module";
 #include "esp_heap_caps.h"
 #include <esp_system.h>
 #include "ovms_module.h"
+#include "ovms_peripherals.h"
+#include "ovms_events.h"
 #include "ovms_config.h"
 #include "ovms_command.h"
 #ifdef CONFIG_HEAP_TASK_TRACKING
@@ -396,6 +398,7 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task)
   bool separate = false;
   Name name;
   TaskMap* tm = TaskMap::instance();
+  char pbuf[32];
   for (int i = 0; i < numbefore; ++i)
     {
     if (before[i].task != task)
@@ -433,8 +436,10 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task)
         separate = false;
         }
       tm->find(after[i].task, name);
-      writer->printf("  t=%.15s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X\n",
-        name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
+      for (int pi=0; pi<32; pi++)
+        pbuf[pi] = isprint(((char*)p)[pi]) ? ((char*)p)[pi] : '.';
+      writer->printf("  t=%.15s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X | %-32.32s\n",
+        name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], pbuf);
       ++count;
       }
     }
@@ -458,8 +463,10 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task)
         separate = false;
         }
       tm->find(after[i].task, name);
-      writer->printf("+ t=%.15s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X\n",
-        name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
+      for (int pi=0; pi<32; pi++)
+        pbuf[pi] = isprint(((char*)p)[pi]) ? ((char*)p)[pi] : '.';
+      writer->printf("+ t=%.15s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X | %-32.32s\n",
+        name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], pbuf);
       ++total;
       }
     }
@@ -755,6 +762,44 @@ static void module_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
   MyBoot.Restart();
   }
 
+static void module_perform_factoryreset(OvmsWriter* writer)
+  {
+  const esp_partition_t* p = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_FAT, "store");
+  if (p == NULL)
+    {
+    if (writer)
+      writer->puts("DATA/FAT Partition 'store' could not be found - factory reset aborted");
+    else
+      ESP_LOGE(TAG, "DATA/FAT Partition 'store' could not be found - factory reset aborted");
+    return;
+    }
+
+  if (writer)
+    {
+    writer->printf("Store partition is at %08x size %08x\n", p->address, p->size);
+    writer->puts("Unmounting configuration store...");
+    }
+  else
+    {
+    ESP_LOGI(TAG, "Store partition is at %08x size %08x", p->address, p->size);
+    ESP_LOGI(TAG, "Unmounting configuration store...");
+    }
+  MyConfig.unmount();
+
+  if (writer)
+    writer->printf("Erasing %d bytes of flash...\n",p->size);
+  else
+    ESP_LOGI(TAG, "Erasing %d bytes of flash...", p->size);
+  spi_flash_erase_range(p->address, p->size);
+
+  if (writer)
+    writer->puts("Factory reset of configuration store complete and reboot now...");
+  else
+    ESP_LOGW(TAG, "Factory reset of configuration store complete and reboot now...");
+  vTaskDelay(1000/portTICK_PERIOD_MS);
+  MyBoot.Restart();
+  }
+
 bool module_factory_reset_yesno(OvmsWriter* writer, void* ctx, char ch)
   {
   writer->printf("%c\n",ch);
@@ -765,25 +810,9 @@ bool module_factory_reset_yesno(OvmsWriter* writer, void* ctx, char ch)
     return false;
     }
 
-  const esp_partition_t* p = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_FAT, "store");
-  if (p == NULL)
-    {
-    writer->puts("DATA/FAT Partition 'store' could not be found - factory reset aborted");
-    return false;
-    }
-
-  writer->printf("Store partition is at %08x size %08x\n", p->address, p->size);
-
-  writer->puts("Unmounting configuration store...");
-  MyConfig.unmount();
-
-  writer->printf("Erasing %d bytes of flash...\n",p->size);
-  spi_flash_erase_range(p->address, p->size);
-
-  writer->puts("Factory reset of configuration store complete and reboot now...");
-  vTaskDelay(1000/portTICK_PERIOD_MS);
-  MyBoot.Restart();
-
+  module_perform_factoryreset(writer);
+  
+  // not reached, just for gcc:
   return false;
   }
 
@@ -791,6 +820,41 @@ static void module_factory_reset(int verbosity, OvmsWriter* writer, OvmsCommand*
   {
   writer->printf("Reset configuration store to factory defaults, and lose all configuration data (y/n): ");
   writer->RegisterInsertCallback(module_factory_reset_yesno, NULL);
+  }
+
+static void module_eventhandler(std::string event, void* data)
+  {
+#ifdef CONFIG_OVMS_COMP_SDCARD
+  if (event == "sd.mounted")
+    {
+    if (unlink("/sd/factoryreset.txt") == 0)
+      {
+      ESP_LOGW(TAG, "Found file '/sd/factoryreset.txt' => performing factory reset");
+      module_perform_factoryreset(NULL);
+      }
+    }
+  else if (event == "ticker.1")
+    {
+    static int module_sw2_pushcnt = 0;
+    // SW2 is connected to SD_DATA0 so can be 0 due to SD card activity.
+    // Is there a clean way to detect if SD transmissions are currently running?
+    // The sdmmc semaphore and status variables are all static…
+    // Workaround: only watch SW2 if no SD card is mounted:
+    if (MyPeripherals->m_sdcard->isinserted() || gpio_get_level((gpio_num_t)MODULE_GPIO_SW2) != 0)
+      {
+      module_sw2_pushcnt = 0;
+      return;
+      }
+    module_sw2_pushcnt++;
+    if (module_sw2_pushcnt < 10)
+      ESP_LOGW(TAG, "SW2 pushed, factory reset in %d seconds", 10-module_sw2_pushcnt);
+    else
+      {
+      ESP_LOGW(TAG, "SW2 held for 10 seconds => performing factory reset");
+      module_perform_factoryreset(NULL);
+      }
+    }
+#endif
   }
 
 class OvmsModuleInit
@@ -802,6 +866,11 @@ class OvmsModuleInit
 #ifndef NOGO
     TaskMap::instance()->insert(0x00000000, "no task");
 #endif
+
+#ifdef CONFIG_OVMS_COMP_SDCARD
+    MyEvents.RegisterEvent(TAG, "sd.mounted", module_eventhandler);
+    MyEvents.RegisterEvent(TAG, "ticker.1", module_eventhandler);
+#endif //CONFIG_OVMS_COMP_SDCARD
 
     OvmsCommand* cmd_module = MyCommandApp.RegisterCommand("module","MODULE framework",NULL,"",0,0,true);
     cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"[<task names or ids>|*|=]",0,TASKLIST,true);

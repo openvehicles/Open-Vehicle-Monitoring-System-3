@@ -65,7 +65,7 @@ class canlog
     static canlog* Instantiate(const char* type);
   
   public:
-    canlog(int queuesize=30);
+    canlog(int queuesize=100);
     virtual ~canlog();
     virtual const char* GetType() { return ""; }
     static void RxTask(void* context);

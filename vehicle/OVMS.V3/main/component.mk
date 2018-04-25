@@ -14,6 +14,7 @@ ifneq '$(shell cat ovms_version.cfg 2>/dev/null)' '$(OVMS_VERSION)'
 .PHONY: ovms_version.cfg
 ovms_version.cfg:
 	@(echo '$(OVMS_VERSION)' >ovms_version.cfg &)
+	@(echo 'Build version is $(OVMS_VERSION)')
 endif
 
 ovms_version.o: ovms_version.cfg

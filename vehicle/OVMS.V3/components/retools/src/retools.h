@@ -37,16 +37,39 @@
 #include <string>
 #include <map>
 #include "can.h"
+#include "candump.h"
+#include "candump_crtd.h"
 #include "pcp.h"
+#include "ovms_mutex.h"
+#include "ovms_netmanager.h"
 
 typedef struct
   {
   CAN_frame_t last;
   uint32_t rxcount;
+  struct __attribute__((__packed__))
+    {
+    struct {
+      uint8_t Ignore:1;     // 0x01
+      uint8_t Changed:1;    // 0x02
+      uint8_t Discovered:1; // 0x04
+      uint8_t :1;           // 0x08
+      uint8_t :1;           // 0x10
+      uint8_t :1;           // 0x20
+      uint8_t :1;           // 0x40
+      uint8_t :1;           // 0x80
+      } b;
+    uint8_t dc;             // Data bytes changed
+    uint8_t dd;             // Data bytes discovered
+    uint8_t spare;
+    } attr;
   } re_record_t;
 
 typedef std::map<uint32_t, uint8_t> re_id_map_t;
 typedef std::map<std::string, re_record_t*> re_record_map_t;
+
+enum REMode { Serve, Analyse, Discover };
+enum REServeMode { Ignore, Simulate, Transmit };
 
 class re : public pcp
   {
@@ -59,23 +82,38 @@ class re : public pcp
 
   public:
     void Task();
-    void Lock();
-    void Unlock();
     void Clear();
     std::string GetKey(CAN_frame_t* frame);
+
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+  public:
+    void MongooseHandler(struct mg_connection *nc, int ev, void *p);
+
+  public:
+    typedef std::map<mg_connection*, uint8_t> re_serve_map_t;
+    re_serve_map_t m_smap;
+    OvmsMutex m_smapmutex;
+#endif // #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
+  protected:
+    void DoAnalyse(CAN_frame_t* frame);
+    void DoServe(CAN_frame_t* frame);
 
   protected:
     TaskHandle_t m_task;
     QueueHandle_t m_rxqueue;
 
   public:
-    QueueHandle_t m_mutex;
+    OvmsMutex m_mutex;
+    REMode m_mode;
+    REServeMode m_servemode;
     re_id_map_t m_idmap;
+    re_record_map_t m_rmap;
+    candump* m_serveformat;
     uint32_t m_obdii_std_min;
     uint32_t m_obdii_std_max;
     uint32_t m_obdii_ext_min;
     uint32_t m_obdii_ext_max;
-    re_record_map_t m_rmap;
     uint32_t m_started;
     uint32_t m_finished;
   };

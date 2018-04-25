@@ -187,6 +187,10 @@ OvmsServerV3::~OvmsServerV3()
 
 void OvmsServerV3::TransmitAllMetrics()
   {
+  OvmsMutexLock mg(&m_mgconn_mutex);
+  if (!m_mgconn)
+    return;
+
   OvmsMetric* metric = MyMetrics.m_first;
   while (metric != NULL)
     {
@@ -204,6 +208,10 @@ void OvmsServerV3::TransmitAllMetrics()
 
 void OvmsServerV3::TransmitModifiedMetrics()
   {
+  OvmsMutexLock mg(&m_mgconn_mutex);
+  if (!m_mgconn)
+    return;
+
   OvmsMetric* metric = MyMetrics.m_first;
   while (metric != NULL)
     {
@@ -252,6 +260,7 @@ void OvmsServerV3::Connect()
     }
 
   SetStatus("Connecting...");
+  OvmsMutexLock mg(&m_mgconn_mutex);
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
   struct mg_connect_opts opts;
   const char* err;
@@ -268,6 +277,7 @@ void OvmsServerV3::Connect()
 
 void OvmsServerV3::Disconnect()
   {
+  OvmsMutexLock mg(&m_mgconn_mutex);
   if (m_mgconn)
     {
     m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
@@ -293,6 +303,9 @@ void OvmsServerV3::MetricModified(OvmsMetric* metric)
 
   if (m_streaming)
     {
+    OvmsMutexLock mg(&m_mgconn_mutex);
+    if (!m_mgconn)
+      return;
     std::string topic("ovms/");
     topic.append(m_vehicleid);
     topic.append("/m/");

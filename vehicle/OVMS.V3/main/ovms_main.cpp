@@ -48,6 +48,9 @@ void app_main(void)
 
   ESP_LOGI(TAG, "Mounting CONFIG...");
   MyConfig.mount();
+  
+  ESP_LOGI(TAG, "Configure logging...");
+  MyCommandApp.ConfigureLogging();
 
   ESP_LOGI(TAG, "Registering default configs...");
   MyConfig.RegisterParam("vehicle", "Vehicle", true, true);

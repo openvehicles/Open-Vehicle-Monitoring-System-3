@@ -277,7 +277,8 @@ class WebSocketHandler : public MgHandler
   public:
     bool Lock(TickType_t xTicksToWait);
     void Unlock();
-    void AddTxJob(WebSocketTxJob job, bool init_tx=true);
+    bool AddTxJob(WebSocketTxJob job, bool init_tx=true);
+    void FreeTxJob(WebSocketTxJob &job);
     bool GetNextTxJob();
     void InitTx();
     void ContinueTx();
@@ -287,6 +288,7 @@ class WebSocketHandler : public MgHandler
   public:
     size_t                    m_modifier;         // "our" metrics modifier
     QueueHandle_t             m_jobqueue;
+    int                       m_jobqueue_overflow;
     SemaphoreHandle_t         m_mutex;
     WebSocketTxJob            m_job;
     int                       m_sent;
@@ -402,10 +404,13 @@ class OvmsWebServer
     static void HandleCfgServerV3(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgWebServer(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgWifi(PageEntry_t& p, PageContext_t& c);
-    static void OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname);
-    static void UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname, std::string& warn);
+    static void OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname,
+      const std::string autostart_ssid);
+    static void UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname,
+      std::string& warn, std::string& error, int pass_minlen);
     static void HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgFirmware(PageEntry_t& p, PageContext_t& c);
+    static void HandleCfgLogging(PageEntry_t& p, PageContext_t& c);
   
   public:
     bool                      m_running;

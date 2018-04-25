@@ -59,9 +59,15 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
 
   switch (p_frame->MsgID)
     {
+    case 0x102: // BMS current and voltage
+      {
+      StandardMetrics.ms_v_bat_voltage->SetValue(((float)((int)d[1]<<8)+d[0])/100);
+      StandardMetrics.ms_v_bat_temp->SetValue((float)((((int)d[7]&0x07)<<8)+d[6])/10);
+      break;
+      }
     case 0x116: // Gear selector
       {
-      switch (d[3]>>4)
+      switch ((d[1]&0x70)>>4)
         {
         case 1: // Park
           StandardMetrics.ms_v_env_gear->SetValue(0);
@@ -127,6 +133,14 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
           StandardMetrics.ms_v_vin->SetValue(m_vin);
           break;
         }
+      break;
+      }
+    case 0x5d8: // Odometer (0x562 is battery, so this is motor or car?)
+      {
+      StandardMetrics.ms_v_pos_odometer->SetValue((float)(((uint32_t)d[3]<<24)
+                                                + ((uint32_t)d[2]<<16)
+                                                + ((uint32_t)d[1]<<8)
+                                                + d[0])/1000, Miles);
       break;
       }
     default:

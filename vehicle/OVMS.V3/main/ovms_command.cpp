@@ -35,14 +35,16 @@ static const char *TAG = "command";
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <functional>
 #include <esp_log.h>
 #include "freertos/FreeRTOS.h"
 #include "ovms_command.h"
 #include "ovms_config.h"
+#include "ovms_events.h"
+#include "ovms_peripherals.h"
 #include "ovms_utils.h"
 #include "log_buffers.h"
 
-static FILE *ovms_log_file;
 OvmsCommandApp MyCommandApp __attribute__ ((init_priority (1000)));
 
 bool CompareCharPtr::operator()(const char* a, const char* b)
@@ -370,11 +372,7 @@ void log_file(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   {
   if (argc == 0)
     {
-    if (ovms_log_file)
-      {
-      fclose(ovms_log_file);
-      ovms_log_file = NULL;
-      }
+    MyCommandApp.SetLogfile("");
     writer->puts("Closed log file");
     return;
     }
@@ -385,19 +383,12 @@ void log_file(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     return;
     }
 
-  if (ovms_log_file)
-    {
-    writer->puts("Closing old log file");
-    fclose(ovms_log_file);
-    ovms_log_file = NULL;
-    }
-
-  ovms_log_file = fopen(argv[0], "a+");
-  if (ovms_log_file == NULL)
+  if (!MyCommandApp.SetLogfile(argv[0]))
     {
     writer->puts("Error: VFS file cannot be opened for append");
     return;
     }
+  writer->printf("Logging to file: %s\n", argv[0]);
   }
 
 static OvmsCommand* monitor;
@@ -485,11 +476,16 @@ OvmsCommandApp::OvmsCommandApp()
   {
   ESP_LOGI(TAG, "Initialising COMMAND (1000)");
 
-  ovms_log_file = NULL;
+  m_logfile = NULL;
+  m_logfile_path = "";
+  m_logfile_size = 0;
+  m_logfile_maxsize = 0;
+  
   m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0);
   m_root.RegisterCommand("exit", "End console session", Exit , "", 0, 0);
   OvmsCommand* cmd_log = MyCommandApp.RegisterCommand("log","LOG framework",NULL, "", 0, 0, true);
   cmd_log->RegisterCommand("file", "Start logging to specified file", log_file , "<vfspath>", 0, 1, true);
+  cmd_log->RegisterCommand("close", "Stop logging to file", log_file , "", 0, 0, true);
   OvmsCommand* level_cmd = cmd_log->RegisterCommand("level", "Set logging level", NULL, "$C [<tag>]");
   level_cmd->RegisterCommand("verbose", "Log at the VERBOSE level (5)", log_level , "[<tag>]", 0, 1, true);
   level_cmd->RegisterCommand("debug", "Log at the DEBUG level (4)", log_level , "[<tag>]", 0, 1, true);
@@ -506,6 +502,19 @@ OvmsCommandApp::OvmsCommandApp()
 
 OvmsCommandApp::~OvmsCommandApp()
   {
+  }
+
+void OvmsCommandApp::ConfigureLogging()
+  {
+  MyConfig.RegisterParam("log", "Logging configuration", true, true);
+  
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsCommandApp::EventHandler, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "sd.mounted", std::bind(&OvmsCommandApp::EventHandler, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "sd.unmounted", std::bind(&OvmsCommandApp::EventHandler, this, _1, _2));
+  
+  ReadConfig();
   }
 
 OvmsCommand* OvmsCommandApp::RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
@@ -584,6 +593,7 @@ int OvmsCommandApp::LogBuffer(LogBuffers* lb, const char* fmt, va_list args)
   {
   char *buffer;
   int ret = vasprintf(&buffer, fmt, args);
+  if (ret < 0) return ret;
 
   // replace CR/LF except last by "|", but don't leave '|' at the end
   char* s;
@@ -602,15 +612,22 @@ int OvmsCommandApp::LogBuffer(LogBuffers* lb, const char* fmt, va_list args)
     *s-- = '\0';
     }
 
-  if (ovms_log_file)
+  if (m_logfile)
     {
     // Log to the log file as well...
     // We need to protect this with a mutex lock, as fsync appears to NOT be thread safe
     // https://github.com/espressif/esp-idf/issues/1837
     OvmsMutexLock fsynclock(&m_fsync_mutex);
-    fwrite(buffer,1,strlen(buffer),ovms_log_file);
-    fflush(ovms_log_file);
-    fsync(fileno(ovms_log_file));
+    m_logfile_size += fwrite(buffer,1,strlen(buffer),m_logfile);
+    if (m_logfile_maxsize && m_logfile_size > (m_logfile_maxsize*1024))
+      {
+      CycleLogfile();
+      }
+    else
+      {
+      fflush(m_logfile);
+      fsync(fileno(m_logfile));
+      }
     }
   lb->append(buffer);
   return ret;
@@ -648,6 +665,132 @@ void OvmsCommandApp::Execute(int verbosity, OvmsWriter* writer, int argc, const 
     {
     m_root.Execute(verbosity, writer, argc, argv);
     }
+  }
+
+bool OvmsCommandApp::SetLogfile(std::string path)
+  {
+  // close old file:
+  if (m_logfile)
+    {
+    fclose(m_logfile);
+    m_logfile = NULL;
+    ESP_LOGI(TAG, "SetLogfile: file logging stopped");
+    }
+  // open new file:
+  if (!path.empty())
+    {
+    if (MyConfig.ProtectedPath(path))
+      {
+      ESP_LOGE(TAG, "SetLogfile: '%s' is a protected path", path.c_str());
+      return false;
+      }
+    struct stat st;
+    if (stat(path.c_str(), &st) == 0)
+      m_logfile_size = st.st_size;
+    else
+      m_logfile_size = 0;
+    FILE* file = fopen(path.c_str(), "a+");
+    if (file == NULL)
+      {
+      if (startsWith(path, "/sd") && (!MyPeripherals || !MyPeripherals->m_sdcard || !MyPeripherals->m_sdcard->ismounted()))
+        ESP_LOGW(TAG, "SetLogfile: cannot open '%s', will retry on SD mount", path.c_str());
+      else
+        ESP_LOGE(TAG, "SetLogfile: cannot open '%s'", path.c_str());
+      return false;
+      }
+    else
+      {
+      ESP_LOGI(TAG, "SetLogfile: now logging to file '%s'", path.c_str());
+      }
+    m_logfile = file;
+    }
+  return true;
+  }
+
+void OvmsCommandApp::SetLoglevel(std::string tag, std::string level)
+  {
+  int level_num;
+  if (level == "verbose")
+    level_num = 5;
+  else if (level == "debug")
+    level_num = 4;
+  else if (level == "info")
+    level_num = 3;
+  else if (level == "warn")
+    level_num = 2;
+  else if (level == "error")
+    level_num = 1;
+  else if (level == "none")
+    level_num = 0;
+  else
+    level_num = CONFIG_LOG_DEFAULT_LEVEL;
+  
+  if (tag.empty())
+    esp_log_level_set("*", (esp_log_level_t)level_num);
+  else
+    esp_log_level_set(tag.c_str(), (esp_log_level_t)level_num);
+  }
+
+void OvmsCommandApp::CycleLogfile()
+  {
+  if (!m_logfile)
+    return;
+  fclose(m_logfile);
+  m_logfile = NULL;
+  char ts[20];
+  time_t tm = time(NULL);
+  strftime(ts, sizeof(ts), ".%Y%m%d-%H%M%S", localtime(&tm));
+  std::string archpath = m_logfile_path;
+  archpath.append(ts);
+  if (rename(m_logfile_path.c_str(), archpath.c_str()) == 0)
+    ESP_LOGI(TAG, "CycleLogfile: log file '%s' archived as '%s'", m_logfile_path.c_str(), archpath.c_str());
+  else
+    ESP_LOGE(TAG, "CycleLogfile: rename log file '%s' to '%s' failed", m_logfile_path.c_str(), archpath.c_str());
+  SetLogfile(m_logfile_path);
+  }
+
+void OvmsCommandApp::EventHandler(std::string event, void* data)
+  {
+  if (event == "config.changed")
+    {
+    OvmsConfigParam* param = (OvmsConfigParam*) data;
+    if (param && param->GetName() == "log")
+      ReadConfig();
+    }
+  else if (event == "sd.mounted")
+    {
+    if (startsWith(m_logfile_path, "/sd"))
+      SetLogfile(m_logfile_path);
+    }
+  else if (event == "sd.unmounted")
+    {
+    if (startsWith(m_logfile_path, "/sd"))
+      SetLogfile("");
+    }
+  }
+
+void OvmsCommandApp::ReadConfig()
+  {
+  OvmsConfigParam* param = MyConfig.CachedParam("log");
+  
+  // configure log levels:
+  std::string level = MyConfig.GetParamValue("log", "level");
+  if (!level.empty())
+    SetLoglevel("*", level);
+  for (auto const& kv : param->m_map)
+    {
+    if (startsWith(kv.first, "level.") && !kv.second.empty())
+      SetLoglevel(kv.first.substr(6), kv.second);
+    }
+  
+  // configure log file:
+  m_logfile_maxsize = MyConfig.GetParamValueInt("log", "file.maxsize", 1024);
+  if (MyConfig.GetParamValueBool("log", "file.enable", false) == false)
+    m_logfile_path = "";
+  else
+    m_logfile_path = MyConfig.GetParamValue("log", "file.path");
+  if (!m_logfile_path.empty())
+    SetLogfile(m_logfile_path);
   }
 
 

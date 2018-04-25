@@ -56,6 +56,7 @@ const char* SimcomState1Name(simcom::SimcomState1 state)
     case simcom::NetDeepSleep:   return "NetDeepSleep";
     case simcom::PoweringOff:    return "PoweringOff";
     case simcom::PoweredOff:     return "PoweredOff";
+    case simcom::PowerOffOn:     return "PowerOffOn";
     default:                     return "Undefined";
     };
   }
@@ -428,7 +429,7 @@ void simcom::State1Enter(SimcomState1 newstate)
     case NetStart:
       ESP_LOGI(TAG,"State: Enter NetStart state");
       m_state1_timeout_ticks = 30;
-      m_state1_timeout_goto = NetLoss;
+      m_state1_timeout_goto = PowerOffOn;
       break;
     case NetLoss:
       ESP_LOGI(TAG,"State: Enter NetLoss state");
@@ -467,6 +468,16 @@ void simcom::State1Enter(SimcomState1 newstate)
     case PoweredOff:
       ESP_LOGI(TAG,"State: Enter PoweredOff state");
       m_mux.Stop();
+      break;
+    case PowerOffOn:
+      ESP_LOGI(TAG,"State: Enter PowerOffOn state");
+      m_ppp.Shutdown();
+      m_nmea.Shutdown();
+      m_mux.Stop();
+      MyEvents.SignalEvent("system.modem.stop",NULL);
+      PowerCycle();
+      m_state1_timeout_ticks = 3;
+      m_state1_timeout_goto = PoweringOn;
       break;
     default:
       break;
@@ -622,6 +633,11 @@ simcom::SimcomState1 simcom::State1Ticker1()
         return NetMode; // PPP Connection is ready to be started
       else if (m_state1_userdata == 99)
         return NetLoss;
+      else if (m_state1_userdata == 100)
+        {
+        ESP_LOGW(TAG, "NetStart: unresolvable error, performing modem power cycle");
+        return PowerOffOn;
+        }
       break;
     case NetLoss:
       break;
@@ -735,6 +751,11 @@ void simcom::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
     {
     ESP_LOGI(TAG, "PPP Connection is ready to start");
     m_state1_userdata = 2;
+    }
+  else if ((line.compare(0, 5, "ERROR") == 0)&&(m_state1 == NetStart)&&(m_state1_userdata == 1))
+    {
+    ESP_LOGI(TAG, "PPP Connection init error");
+    m_state1_userdata = 100;
     }
   else if ((line.compare(0, 19, "+PPPD: DISCONNECTED") == 0)&&((m_state1 == NetStart)||(m_state1 == NetMode)))
     {
@@ -1075,6 +1096,8 @@ void simcom_setstate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     newstate = simcom::PoweringOff;
   else if (strcmp(statename,"PoweredOff")==0)
     newstate = simcom::PoweredOff;
+  else if (strcmp(statename,"PowerOffOn")==0)
+    newstate = simcom::PowerOffOn;
 
   if (newstate == simcom::None)
     {
@@ -1101,9 +1124,9 @@ SimcomInit::SimcomInit()
   cmd_simcom->RegisterCommand("cmd","Send SIMCOM AT command",simcom_cmd, "<command>", 1, INT_MAX, true);
 
   OvmsCommand* cmd_setstate = cmd_simcom->RegisterCommand("setstate","SIMCOM state change framework",NULL, "", 0, 0, true);
-  for (int x = simcom::CheckPowerOff; x<simcom::PoweredOff; x++)
+  for (int x = simcom::CheckPowerOff; x<=simcom::PowerOffOn; x++)
     {
-	cmd_setstate->RegisterCommand(SimcomState1Name((simcom::SimcomState1)x),"Force SIMCOM state change",simcom_setstate, "", 0, 0, true);
+    cmd_setstate->RegisterCommand(SimcomState1Name((simcom::SimcomState1)x),"Force SIMCOM state change",simcom_setstate, "", 0, 0, true);
     }
 
   MyConfig.RegisterParam("modem", "Modem Configuration", true, true);

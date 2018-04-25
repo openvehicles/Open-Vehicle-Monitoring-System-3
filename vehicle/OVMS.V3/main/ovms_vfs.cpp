@@ -54,6 +54,9 @@ void vfs_ls(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
   {
   DIR *dir;
   struct dirent *dp;
+  char size[64], mod[64], path[PATH_MAX];
+  struct stat st;
+  
   if (argc == 0)
     {
     if ((dir = opendir (".")) == NULL)
@@ -78,7 +81,29 @@ void vfs_ls(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
 
   while ((dp = readdir (dir)) != NULL)
     {
-    writer->puts(dp->d_name);
+    snprintf(path, sizeof(path), "%s/%s", (argc==0) ? "." : argv[0], dp->d_name);
+    stat(path, &st);
+
+    int64_t fsize = st.st_size;
+    int is_dir = S_ISDIR(st.st_mode);
+    const char *slash = is_dir ? "/" : "";
+    
+    if (is_dir) {
+      strcpy(size, "[DIR]   ");
+    } else {
+      if (fsize < 1024) {
+        snprintf(size, sizeof(size), "%d ", (int) fsize);
+      } else if (fsize < 0x100000) {
+        snprintf(size, sizeof(size), "%.1fk", (double) fsize / 1024.0);
+      } else if (fsize < 0x40000000) {
+        snprintf(size, sizeof(size), "%.1fM", (double) fsize / 1048576);
+      } else {
+        snprintf(size, sizeof(size), "%.1fG", (double) fsize / 1073741824);
+      }
+    }
+    strftime(mod, sizeof(mod), "%d-%b-%Y %H:%M", localtime(&st.st_mtime));
+    
+    writer->printf("%8.8s  %17.17s  %s%s\n", size, mod, dp->d_name, slash);
     }
 
   closedir(dir);

@@ -17,12 +17,17 @@
 #define NO_MAIN_DRIVER
 #define FREERTOS
 #define WOLFSSL_LWIP
-#define NO_WOLFSSL_MEMORY
 #define WOLFSSL_KEY_GEN
 #define SIZEOF_LONG 4
 #define SIZEOF_LONG_LONG 8
 #define HAVE_GETADDRINFO 1
 #define HAVE_GMTIME_R 1
+
+#define USE_WOLFSSL_MEMORY
+#define XMALLOC_USER
+#define XMALLOC(s, h, t)     wolfSSL_Malloc(s)
+#define XFREE(p, h, t)       wolfSSL_Free(p)
+#define XREALLOC(p, n, h, t) wolfSSL_Realloc(p, n)
 
 // Inclusion and exclusion of WolfSSL features, may be adjusted
 

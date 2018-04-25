@@ -42,6 +42,7 @@
 #include "crypt_rc4.h"
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
+#include "ovms_mutex.h"
 
 #define OVMS_PROTOCOL_V2_TOKENSIZE 22
 
@@ -111,6 +112,7 @@ class OvmsServerV2 : public OvmsServer
 
   public:
     struct mg_connection *m_mgconn;
+    OvmsMutex m_mgconn_mutex;
     int m_connretry;
     bool m_loggedin;
 

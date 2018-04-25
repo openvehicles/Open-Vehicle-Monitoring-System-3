@@ -125,6 +125,7 @@ OvmsNetManager::OvmsNetManager()
   MyEvents.RegisterEvent(TAG,"system.modem.stop", std::bind(&OvmsNetManager::ModemDown, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.down", std::bind(&OvmsNetManager::ModemDown, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"network.interface.up", std::bind(&OvmsNetManager::InterfaceUp, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsNetManager::ConfigChanged, this, _1, _2));
 
   MyConfig.RegisterParam("network", "Network Configuration", true, true);
   // Our instances:
@@ -293,6 +294,23 @@ void OvmsNetManager::ModemDown(std::string event, void* data)
 void OvmsNetManager::InterfaceUp(std::string event, void* data)
   {
   // A network interface has come up. We need to set DNS, if necessary
+  SetDNSServer();
+  }
+
+void OvmsNetManager::ConfigChanged(std::string event, void* data)
+  {
+  OvmsConfigParam* param = (OvmsConfigParam*)data;
+  if (param && param->GetName() == "network")
+    {
+    // Network config has been changed, apply:
+    if (m_network_any)
+      SetDNSServer();
+    }
+  }
+
+void OvmsNetManager::SetDNSServer()
+  {
+  // Read DNS configuration:
   std::string servers = MyConfig.GetParamValue("network", "dns");
   if (servers.empty()) return;
 

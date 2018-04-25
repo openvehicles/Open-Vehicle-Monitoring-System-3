@@ -163,6 +163,13 @@ config OVMS_VEHICLE_KIASOULEV
     help
         Enable to include support for Kia Soul EV vehicles.
 
+config OVMS_VEHICLE_VOLTAMPERA
+    bool "Include support for Volt/Ampera vehicles"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Volt/Ampera vehicles.
+
 endmenu # Vehicle Support
 
 config OVMS_VEHICLE_RXTASK_STACK
@@ -347,7 +354,7 @@ config OVMS_COMP_CANOPEN_RX_STACK
 
 config OVMS_COMP_CANOPEN_WRK_STACK
     int "Stack size for CANopen worker (TX) tasks"
-    default 1536
+    default 2048
     depends on OVMS_COMP_CANOPEN
     help
         Stack size for CANopen worker tasks ("COwrk").

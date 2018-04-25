@@ -28,69 +28,36 @@
 ; THE SOFTWARE.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ovms_log.h>
-#include "log_buffers.h"
+#ifndef __VEHICLE_VOLTAMPERA_H__
+#define __VEHICLE_VOLTAMPERA_H__
 
+#include "vehicle.h"
 
-LogBuffers::LogBuffers() : m_refcount(0)
+using namespace std;
+
+class OvmsVehicleVoltAmpera : public OvmsVehicle
   {
-  }
+  public:
+    OvmsVehicleVoltAmpera();
+    ~OvmsVehicleVoltAmpera();
 
-LogBuffers::~LogBuffers()
-  {
-  // Free all the buffers in the list.
-  for (iterator itr = begin(); itr != end(); ++itr)
-    {
-    free(*itr);
-    }
-  }
+  public:
+    void Status(int verbosity, OvmsWriter* writer);
 
-int LogBuffers::append(const char* fmt, va_list args)
-  {
-  char *buffer;
-  int ret = vasprintf(&buffer, fmt, args);
-  if (ret >= 0)
-    append(buffer);
-  return ret;
-  }
+  protected:
+    void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    virtual void Ticker1(uint32_t ticker);
 
-void LogBuffers::append(char* buffer)
-  {  
-  if (empty())
-    {
-    push_front(buffer);
-    }
-  else
-    {
-    iterator before = begin(), after;
-    while (true)
-      {
-      after = before;
-      ++after;
-      if (after == end())
-        break;
-      before = after;
-      }
-    insert_after(before, buffer);
-    }
-  }
+  protected:
+    char m_vin[18];
+    char m_type[6];
+    int m_modelyear;
+    unsigned int m_charge_timer;
+    unsigned int m_charge_wm;
+    unsigned int m_candata_timer;
+    unsigned int m_range_rated_km;
+    unsigned int m_range_estimated_km;
+  };
 
-void LogBuffers::set(int count)
-  {
-  m_refcount = count;
-  }
-
-void LogBuffers::release()
-  {
-  int before = std::atomic_fetch_add(&m_refcount, -1);
-  if (before == 1)
-    delete this;
-  }
-
-bool LogBuffers::last()
-  {
-  return m_refcount == 1;
-  }
+#endif //#ifndef __VEHICLE_VOLTAMPERA_H__

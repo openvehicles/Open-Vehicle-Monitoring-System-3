@@ -1,14 +1,29 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Logging: persistent configuration, file cycling, web config UI:
+    log [file.enable] = no          Enable/disable file logging
+    log [file.maxsize] = 1024       Max log file size in kB, 0 = no cycling
+    log [file.path] = ""            Log path, if on /sd watches sd.mounted
+    log [level]                     Default level
+    log [level.<tag>]               Component levels
+
+2018-04-17 MWJ  3.1.004  OTA release
 OTA release providing minor improvements and fixes.
 
 - Tesla Model S: Add support for v.bat.soc, v.pos.speed and park/drive status metrics
+- Tesla Roadster: Fixes for charge/drive mode on v1.x and v2.x cars
 - SD CARD: Provide configurable sdcard parameters:
     sdcard [maxfreq.khz] = 16000         Maximum frequency (in kHz) of SD CARD bus
     sdcard [automount] = yes             Automatically mount SD CARD on insertion
 - Boot: store & send crash debug info (*-OVM-DebugCrash records)
+- OTA: Support for configurable release tag and server URL
+    ota [tag] = main
+    ota [server] = api.openvehicles.com/firmware/ota
 - Wifi: Increase scan responsiveness (60 seconds -> 10, on first scan)
+- Factory reset by SD file "factoryreset.txt" or pushing SW2 for 10 seconds
+    Note: SW2 method needs removing any SD card inserted.
+- Wifi: fallback to AP mode net "OVMS" password "OVMSinit" after factory reset
 - Miscellaneous bug fixes and enhancements
 
 2018-04-07 MWJ  3.1.003  OTA release

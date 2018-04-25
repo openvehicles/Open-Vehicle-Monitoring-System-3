@@ -407,7 +407,7 @@ body.night {
 /* Highcharts */
 
 .highcharts-background {
-  fill: #ffffff00;
+  fill-opacity: 0;
 }
 .night .highcharts-axis-labels {
   fill: #b1b1b1;

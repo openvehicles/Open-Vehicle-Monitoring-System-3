@@ -33,7 +33,7 @@
 
 #include "pcp.h"
 
-class OvmsServer : public pcp
+class OvmsServer : public pcp, public ExternalRamAllocated
   {
   public:
     OvmsServer(const char* name);

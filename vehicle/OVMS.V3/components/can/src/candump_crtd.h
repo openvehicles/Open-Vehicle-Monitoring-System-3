@@ -1,14 +1,9 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          14th March 2017
+;    Module:        CAN dump CRTD format
+;    Date:          18th January 2018
 ;
-;    Changes:
-;    1.0  Initial release
-;
-;    (C) 2011       Michael Stegen / Stegen Electronics
-;    (C) 2011-2017  Mark Webb-Johnson
-;    (C) 2011        Sonny Chen @ EPRO/DX
-;    (C) 2018       Michael Balzer
+;    (C) 2018       Mark Webb-Johnson
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -29,45 +24,23 @@
 ; THE SOFTWARE.
 */
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
-#include "string_writer.h"
+#ifndef __CANDUMP_CRTD_H__
+#define __CANDUMP_CRTD_H__
 
-StringWriter::StringWriter(size_t capacity /*=0*/)
-  {
-  if (capacity)
-    reserve(capacity);
-  }
+#include "candump.h"
 
-StringWriter::~StringWriter()
+class candump_crtd : public candump
   {
-  }
+  public:
+    candump_crtd();
+    virtual ~candump_crtd();
 
-int StringWriter::puts(const char* s)
-  {
-  append(s);
-  push_back('\n');
-  return 0;
-  }
+  public:
+    virtual const char* formatname();
 
-int StringWriter::printf(const char* fmt, ...)
-  {
-  char *buffer = NULL;
-  va_list args;
-  va_start(args, fmt);
-  int ret = vasprintf(&buffer, fmt, args);
-  va_end(args);
-  if (ret >= 0)
-    {
-    append(buffer, ret);
-    free(buffer);
-    }
-  return ret;
-  }
+  public:
+    virtual std::string get(struct timeval *time, CAN_frame_t *frame);
+    virtual size_t put(CAN_frame_t *frame, uint8_t *buffer, size_t len);
+  };
 
-ssize_t StringWriter::write(const void *buf, size_t nbyte)
-  {
-  append((const char*)buf, nbyte);
-  return 0;
-  }
+#endif // __CANDUMP_CRTD_H__

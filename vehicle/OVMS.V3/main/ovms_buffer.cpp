@@ -205,7 +205,7 @@ int OvmsBuffer::PollSocket(int sock, long timeoutms)
   timeout.tv_usec = (timeoutms%1000)*1000;
   int result = select((int) sock + 1, &fds, 0, 0, &timeout);
   // ESP_LOGI(TAG, "Polling Socket select result %d",result);
-  if (result <= 0) return 0;
+  if (result <= 0) return -1;
 
   // We have some data ready to read
   size_t avail = FreeSpace();

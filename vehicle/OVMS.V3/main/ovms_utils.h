@@ -33,6 +33,7 @@
 
 #include <cstring>
 #include <string>
+#include "ovms.h"
 
 struct CmpStrOp
   {
@@ -48,14 +49,14 @@ struct CmpStrOp
  */
 std::string chargestate_code(const int key);
 int chargestate_key(const std::string code);
-  
+
 /**
  * chargesubstate_code: convert legacy charge substate key to code
  * chargesubstate_key: convert charge substate code to legacy key
  */
 std::string chargesubstate_code(const int key);
 int chargesubstate_key(const std::string code);
-  
+
 /**
  * chargemode_code: convert legacy chargemode key to code
  * chargemode_key: convert chargemode code to legacy key
@@ -71,6 +72,7 @@ int chargemode_key(const std::string code);
  *  - replace ',' by ';'
  */
 std::string mp_encode(const std::string text);
+extram::string mp_encode(const extram::string text);
 
 /**
  * startsWith: std::string prefix check

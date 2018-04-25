@@ -187,6 +187,16 @@ class OvmsCommandApp
     char ** Complete(OvmsWriter* writer, int argc, const char * const * argv);
     void Execute(int verbosity, OvmsWriter* writer, int argc, const char * const * argv);
 
+  public:
+    void ConfigureLogging();
+    bool SetLogfile(std::string path);
+    void SetLoglevel(std::string tag, std::string level);
+    void EventHandler(std::string event, void* data);
+
+  private:
+    void CycleLogfile();
+    void ReadConfig();
+
   private:
     int LogBuffer(LogBuffers* lb, const char* fmt, va_list args);
     OvmsMutex m_fsync_mutex;
@@ -196,6 +206,10 @@ class OvmsCommandApp
     typedef std::set<OvmsWriter*> ConsoleSet;
     ConsoleSet m_consoles;
     PartialLogs m_partials;
+    FILE* m_logfile;
+    std::string m_logfile_path;
+    size_t m_logfile_size;
+    size_t m_logfile_maxsize;
   };
 
 extern OvmsCommandApp MyCommandApp;

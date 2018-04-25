@@ -37,6 +37,7 @@ static const char *TAG = "v-teslaroadster";
 #include "vehicle_teslaroadster.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
+#include "ovms_utils.h"
 
 float TeslaRoadsterLatLon(int v)
   {
@@ -153,7 +154,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           }
         case 0x95: // Charging mode
           {
-          switch (d[1])
+          switch (d[1]) // Charge state
             {
             case 0x01: // Charging
               StandardMetrics.ms_v_charge_state->SetValue("charging"); break;
@@ -177,7 +178,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
             default:
               break;
             }
-          switch (d[2])
+          switch (d[2]) // Charge sub-state
             {
             case 0x02: // Scheduled start
               StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart"); break;
@@ -193,6 +194,14 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
               break;
             default:
               break;
+            }
+          if (m_type[2] == '1')
+            { // v1.x cars
+            StandardMetrics.ms_v_charge_mode->SetValue(chargemode_code(d[4] & 0x0f));
+            }
+          else if (m_type[2] == '2')
+            { // v2.x cars
+            StandardMetrics.ms_v_charge_mode->SetValue(chargemode_code((d[5]>>4) & 0x0f));
             }
           StandardMetrics.ms_v_charge_kwh->SetValue((float)d[7]*10);
           break;
@@ -297,14 +306,14 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
       }
     case 0x400:
-      { 
+      {
       switch(d[0])
-          { 
+          {
           case 0x02:   // Data to dashboard
           unsigned int amps = (unsigned int)d[2]
                             + (((unsigned int)d[3]&0x7f)<<8);
           StandardMetrics.ms_v_bat_current->SetValue((float)amps);
-          
+
           float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
           if(soc != 0)
             {
@@ -458,7 +467,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandWakeup()
   frame.data.u8[6] = 0x10;
   frame.data.u8[7] = 0x00;
   m_can1->Write(&frame);
-  
+
   return Success;
   }
 

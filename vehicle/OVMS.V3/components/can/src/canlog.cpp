@@ -73,7 +73,7 @@ canlog::canlog(int queuesize /*=30*/)
   m_path = "";
   m_filtercnt = 0;
   m_queue = xQueueCreate(queuesize, sizeof(CAN_LogMsg_t));
-  xTaskCreatePinnedToCore(RxTask, "OVMS CanLog", 4096, (void*)this, 5, &m_task, 1);
+  xTaskCreatePinnedToCore(RxTask, "OVMS CanLog", 4096, (void*)this, 10, &m_task, 1);
   m_msgcount = 0;
   m_dropcount = 0;
   }

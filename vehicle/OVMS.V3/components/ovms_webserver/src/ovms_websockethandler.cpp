@@ -59,6 +59,7 @@ WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t modifier)
   
   m_modifier = modifier;
   m_jobqueue = xQueueCreate(30, sizeof(WebSocketTxJob));
+  m_jobqueue_overflow = 0;
   m_mutex = xSemaphoreCreateMutex();
   m_job.type = WSTX_None;
   m_sent = m_ack = 0;
@@ -66,6 +67,8 @@ WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t modifier)
 
 WebSocketHandler::~WebSocketHandler()
 {
+  while (xQueueReceive(m_jobqueue, &m_job, 0) == pdTRUE)
+    FreeTxJob(m_job);
   vQueueDelete(m_jobqueue);
   vSemaphoreDelete(m_mutex);
 }
@@ -173,12 +176,36 @@ void WebSocketHandler::ProcessTxJob()
 }
 
 
-void WebSocketHandler::AddTxJob(WebSocketTxJob job, bool init_tx)
+void WebSocketHandler::FreeTxJob(WebSocketTxJob &job)
 {
-  if (xQueueSend(m_jobqueue, &job, 0) != pdTRUE)
-    ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow", this);
-  else if (init_tx && uxQueueMessagesWaiting(m_jobqueue) == 1)
-    RequestPoll();
+  switch (job.type) {
+    case WSTX_Event:
+      if (job.event)
+        free(job.event);
+      break;
+    default:
+      break;
+  }
+}
+
+
+bool WebSocketHandler::AddTxJob(WebSocketTxJob job, bool init_tx)
+{
+  if (xQueueSend(m_jobqueue, &job, 0) != pdTRUE) {
+    ++m_jobqueue_overflow;
+    if (m_jobqueue_overflow == 1)
+      ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow detected", this);
+    return false;
+  }
+  else {
+    if (m_jobqueue_overflow) {
+      ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow resolved, %d drops", this, m_jobqueue_overflow);
+      m_jobqueue_overflow = 0;
+    }
+    if (init_tx && uxQueueMessagesWaiting(m_jobqueue) == 1)
+      RequestPoll();
+    return true;
+  }
 }
 
 bool WebSocketHandler::GetNextTxJob()
@@ -334,10 +361,13 @@ void OvmsWebServer::EventListener(std::string event, void* data)
   }
   
   for (auto slot: m_client_slots) {
-    if (slot.handler)
-      slot.handler->AddTxJob({ WSTX_Event, strdup(event.c_str()) }, false);
+    if (slot.handler) {
+      WebSocketTxJob job = { WSTX_Event, strdup(event.c_str()) };
+      if (!slot.handler->AddTxJob(job, false))
+        free(job.event);
       // Note: init_tx false to prevent mg_broadcast() deadlock on network events
       //  and keep processing time low
+    }
   }
   
   xSemaphoreGive(m_client_mutex);

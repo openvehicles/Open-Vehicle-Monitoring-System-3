@@ -884,20 +884,20 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
   switch (from)
     {
     case Kilometers:
-      if (to == Miles) return (value*5)/8;
+      if (to == Miles) return (value/1.60934);
       else if (to == Meters) return value/1000;
       break;
     case Miles:
-      if (to == Kilometers) return (value*8)/5;
-      else if (to == Meters) return (value*8000)/5;
+      if (to == Kilometers) return (value*1.60934);
+      else if (to == Meters) return (value*1609.34);
       break;
     case KphPS:
-      if (to == MphPS) return (value*5)/8;
+      if (to == MphPS) return (value/1.60934);
       else if (to == MetersPSS) return value/1000;
       break;
     case MphPS:
       if (to == KphPS) return (value*8)/5;
-      else if (to == MetersPSS) return (value*8000)/5;
+      else if (to == MetersPSS) return (value*1.60934);
       break;
     case kW:
       if (to == Watts) return (value*1000);
@@ -912,10 +912,10 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
       if (to == kWh) return (value/1000);
       break;
     case WattHoursPK:
-      if (to == WattHoursPM) return (value*8)/5;
+      if (to == WattHoursPM) return (value*1.60934);
       break;
     case WattHoursPM:
-      if (to == WattHoursPK) return (value*5)/8;
+      if (to == WattHoursPK) return (value/1.60934);
       break;
     case Celcius:
       if (to == Fahrenheit) return ((value*9)/5) + 32;
@@ -946,10 +946,10 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
       else if (to == Minutes) return value*60;
       break;
     case Kph:
-      if (to == Mph) return (value*5)/8;
+      if (to == Mph) return (value/1.60934);
       break;
     case Mph:
-      if (to == Kph) return (value*8)/5;
+      if (to == Kph) return (value*1.60934);
       break;
     case dbm:
       if (to == sq) return int((value <= -51)?((value + 113)/2):0);

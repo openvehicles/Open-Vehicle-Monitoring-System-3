@@ -35,6 +35,7 @@ static const char *TAG = "version";
 #include <esp_ota_ops.h>
 #include "ovms.h"
 #include "ovms_version.h"
+#include "ovms_config.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
 #include "ovms_events.h"
@@ -46,6 +47,7 @@ std::string GetOVMSVersion()
   {
   std::string searchversion(OVMS_VERSION_PREFIX OVMS_VERSION OVMS_VERSION_POSTFIX);
   std::string version(OVMS_VERSION);
+  std::string tag = MyConfig.GetParamValue("ota","tag");
 
   const esp_partition_t *p = esp_ota_get_running_partition();
   if (p != NULL)
@@ -53,8 +55,12 @@ std::string GetOVMSVersion()
     version.append("/");
     version.append(p->label);
     }
+
   version.append("/");
-  version.append(CONFIG_OVMS_VERSION_TAG);
+  if (tag.empty())
+    version.append(CONFIG_OVMS_VERSION_TAG);
+  else
+    version.append(tag);
 
   return version;
   }

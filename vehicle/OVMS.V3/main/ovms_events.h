@@ -95,6 +95,7 @@ class OvmsEvents
   public:
     void EventTask();
     void HandleQueueSignalEvent(event_queue_t* msg);
+    void FreeQueueSignalEvent(event_queue_t* msg);
     static esp_err_t ReceiveSystemEvent(void *ctx, system_event_t *event);
     void SignalSystemEvent(system_event_t *event);
 

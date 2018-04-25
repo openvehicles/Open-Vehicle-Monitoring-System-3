@@ -249,7 +249,7 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
     "<pre class=\"get-window-resize\" id=\"output\">%s</pre>"
     "<form id=\"shellform\" method=\"post\" action=\"#\">"
       "<div class=\"input-group\">"
-        "<label class=\"input-group-addon hidden-xs\" for=\"input-command\">OVMS&nbsp;&gt;&nbsp;</label>"
+        "<label class=\"input-group-addon hidden-xs\" for=\"input-command\">OVMS#</label>"
         "<input type=\"text\" class=\"form-control font-monospace\" placeholder=\"Enter command\" name=\"command\" id=\"input-command\" value=\"%s\" autocapitalize=\"none\" autocorrect=\"off\" autocomplete=\"section-shell\" spellcheck=\"false\">"
         "<div class=\"input-group-btn\">"
           "<button type=\"submit\" class=\"btn btn-default\">Execute</button>"
@@ -287,7 +287,7 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
           "\"timeout\": 0,"
           "\"beforeSend\": function(){"
             "$(\"html\").addClass(\"loading\");"
-            "output.html(output.html() + \"<strong>OVMS&nbsp;&gt;&nbsp;</strong><kbd>\""
+            "output.html(output.html() + \"<strong>OVMS#</strong>&nbsp;<kbd>\""
               "+ $(\"<div/>\").text(command).html() + \"</kbd><br>\");"
             "output.scrollTop(output.get(0).scrollHeight);"
             "timeouthd = window.setTimeout(checkabort, timeout*1000);"
@@ -537,7 +537,9 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
   c.input_text("Vehicle ID", "vehicleid", vehicleid.c_str(), "Use ASCII letters, digits and '-'",
     "<p>Note: this is also the <strong>vehicle account ID</strong> for server connections.</p>");
   c.input_text("Vehicle name", "vehiclename", vehiclename.c_str(), "optional, the name of your car");
-  c.input_text("Time zone", "timezone", timezone.c_str(), "optional, default UTC");
+  c.input_text("Time zone", "timezone", timezone.c_str(), "optional, default UTC",
+    "<p>Web links: <a target=\"_blank\" href=\"https://remotemonitoringsystems.ca/time-zone-abbreviations.php\">Example Timezone Strings</a>, "
+    "<a target=\"_blank\" href=\"https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html\">Glibc manual</a></p>");
   c.input_select_start("Distance units", "units_distance");
   c.input_select_option("Kilometers", "K", units_distance == "K");
   c.input_select_option("Miles", "M", units_distance == "M");
@@ -927,36 +929,45 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
 void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
 {
   if (c.method == "POST") {
-    std::string warn;
+    std::string warn, error;
 
     // process form submission:
-    UpdateWifiTable(p, c, "ap", "wifi.ap", warn);
-    UpdateWifiTable(p, c, "cl", "wifi.ssid", warn);
-
-    c.head(200);
-    c.alert("success", "<p class=\"lead\">Wifi configuration saved.</p>");
-    if (warn != "") {
-      warn = "<p class=\"lead\">Warning:</p><ul class=\"warnlist\">" + warn + "</ul>";
-      c.alert("warning", warn.c_str());
+    UpdateWifiTable(p, c, "ap", "wifi.ap", warn, error, 8);
+    UpdateWifiTable(p, c, "client", "wifi.ssid", warn, error, 0);
+    
+    if (error == "") {
+      c.head(200);
+      c.alert("success", "<p class=\"lead\">Wifi configuration saved.</p>");
+      if (warn != "") {
+        warn = "<p class=\"lead\">Warning:</p><ul class=\"warnlist\">" + warn + "</ul>";
+        c.alert("warning", warn.c_str());
+      }
+      OutputHome(p, c);
+      c.done();
+      return;
     }
-    OutputHome(p, c);
-    c.done();
-    return;
+    
+    // output error, return to form:
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    c.head(400);
+    c.alert("danger", error.c_str());
+  }
+  else {
+    c.head(200);
   }
 
   // generate form:
-  c.head(200);
   c.panel_start("primary", "Wifi configuration");
   c.printf(
     "<form method=\"post\" action=\"%s\" target=\"#main\">"
     , _attr(p.uri));
 
   c.fieldset_start("Access point networks");
-  OutputWifiTable(p, c, "ap", "wifi.ap");
+  OutputWifiTable(p, c, "ap", "wifi.ap", MyConfig.GetParamValue("auto", "wifi.ssid.ap", "OVMS"));
   c.fieldset_end();
 
   c.fieldset_start("Wifi client networks");
-  OutputWifiTable(p, c, "cl", "wifi.ssid");
+  OutputWifiTable(p, c, "client", "wifi.ssid", MyConfig.GetParamValue("auto", "wifi.ssid.client"));
   c.fieldset_end();
 
   c.print(
@@ -989,10 +1000,22 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
   c.done();
 }
 
-void OvmsWebServer::OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname)
+void OvmsWebServer::OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname, const std::string autostart_ssid)
 {
   OvmsConfigParam* param = MyConfig.CachedParam(paramname);
+  int pos = 0, pos_autostart = 0, max;
+  char buf[50];
+  std::string ssid, pass;
 
+  if (c.method == "POST") {
+    max = atoi(c.getvar(prefix.c_str()).c_str());
+    sprintf(buf, "%s_autostart", prefix.c_str());
+    pos_autostart = atoi(c.getvar(buf).c_str());
+  }
+  else {
+    max = param->m_map.size();
+  }
+  
   c.printf(
     "<div class=\"table-responsive\">"
       "<input type=\"hidden\" name=\"%s\" value=\"%d\">"
@@ -1005,19 +1028,39 @@ void OvmsWebServer::OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std:
           "</tr>"
         "</thead>"
         "<tbody>"
-    , _attr(prefix), param->m_map.size());
+    , _attr(prefix), max);
 
-  int pos = 0;
-  for (auto const& kv : param->m_map) {
-    pos++;
-    c.printf(
+  if (c.method == "POST") {
+    for (pos = 1; pos <= max; pos++) {
+      sprintf(buf, "%s_ssid_%d", prefix.c_str(), pos);
+      ssid = c.getvar(buf);
+      c.printf(
           "<tr>"
-            "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\"><strong>✖</strong></button></td>"
+            "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\" %s><strong>✖</strong></button></td>"
             "<td><input type=\"text\" class=\"form-control\" name=\"%s_ssid_%d\" value=\"%s\"></td>"
             "<td><input type=\"password\" class=\"form-control\" name=\"%s_pass_%d\" placeholder=\"no change\"></td>"
           "</tr>"
-      , _attr(prefix), pos, _attr(kv.first)
+      , (pos == pos_autostart) ? "disabled title=\"Current autostart network\"" : ""
+      , _attr(prefix), pos, _attr(ssid)
       , _attr(prefix), pos);
+    }
+  }
+  else {
+    for (auto const& kv : param->m_map) {
+      pos++;
+      ssid = kv.first;
+      if (ssid == autostart_ssid)
+        pos_autostart = pos;
+      c.printf(
+          "<tr>"
+            "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\" %s><strong>✖</strong></button></td>"
+            "<td><input type=\"text\" class=\"form-control\" name=\"%s_ssid_%d\" value=\"%s\"></td>"
+            "<td><input type=\"password\" class=\"form-control\" name=\"%s_pass_%d\" placeholder=\"no change\"></td>"
+          "</tr>"
+      , (pos == pos_autostart) ? "disabled title=\"Current autostart network\"" : ""
+      , _attr(prefix), pos, _attr(ssid)
+      , _attr(prefix), pos);
+    }
   }
 
   c.print(
@@ -1027,37 +1070,63 @@ void OvmsWebServer::OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std:
             "<td></td>"
           "</tr>"
         "</tbody>"
-      "</table>"
-    "</div>");
+      "</table>");
+  c.printf(
+      "<input type=\"hidden\" name=\"%s_autostart\" value=\"%d\">"
+    "</div>"
+    , _attr(prefix), pos_autostart);
 }
 
-void OvmsWebServer::UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname, std::string& warn)
+void OvmsWebServer::UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname,
+  std::string& warn, std::string& error, int pass_minlen)
 {
   OvmsConfigParam* param = MyConfig.CachedParam(paramname);
-  int i, max;
-  std::string ssid, pass;
+  int i, max, pos_autostart;
+  std::string ssid, pass, ssid_autostart;
   char buf[50];
   ConfigParamMap newmap;
 
   max = atoi(c.getvar(prefix.c_str()).c_str());
+  sprintf(buf, "%s_autostart", prefix.c_str());
+  pos_autostart = atoi(c.getvar(buf).c_str());
 
   for (i = 1; i <= max; i++) {
     sprintf(buf, "%s_ssid_%d", prefix.c_str(), i);
     ssid = c.getvar(buf);
-    if (ssid == "")
+    if (ssid == "") {
+      if (i == pos_autostart)
+        error += "<li>Autostart SSID may not be empty</li>";
       continue;
+    }
     sprintf(buf, "%s_pass_%d", prefix.c_str(), i);
     pass = c.getvar(buf);
     if (pass == "")
       pass = param->GetValue(ssid);
-    if (pass == "")
-      warn += "<li>SSID <code>" + ssid + "</code> has no password</li>";
+    if (pass == "") {
+      if (i == pos_autostart)
+        error += "<li>Autostart SSID <code>" + ssid + "</code> has no password</li>";
+      else
+        warn += "<li>SSID <code>" + ssid + "</code> has no password</li>";
+    }
+    else if (pass.length() < pass_minlen) {
+      sprintf(buf, "%d", pass_minlen);
+      error += "<li>SSID <code>" + ssid + "</code>: password is too short (min " + buf + " chars)</li>";
+    }
     newmap[ssid] = pass;
+    if (i == pos_autostart)
+      ssid_autostart = ssid;
   }
 
-  param->m_map.clear();
-  param->m_map = std::move(newmap);
-  param->Save();
+  if (error == "") {
+    // save new map:
+    param->m_map.clear();
+    param->m_map = std::move(newmap);
+    param->Save();
+    
+    // set new autostart ssid:
+    if (ssid_autostart != "")
+      MyConfig.SetParamValue("auto", "wifi.ssid." + prefix, ssid_autostart);
+  }
 }
 
 
@@ -1082,46 +1151,92 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
     wifi_mode = c.getvar("wifi_mode");
     wifi_ssid_ap = c.getvar("wifi_ssid_ap");
     wifi_ssid_client = c.getvar("wifi_ssid_client");
+    
+    // check:
+    if (wifi_mode == "ap" || wifi_mode == "apclient") {
+      if (wifi_ssid_ap.empty())
+        wifi_ssid_ap = "OVMS";
+      if (MyConfig.GetParamValue("wifi.ap", wifi_ssid_ap).empty()) {
+        if (MyConfig.GetParamValue("password", "module").empty())
+          error += "<li data-input=\"wifi_ssid_ap\">Wifi AP mode invalid: no password set for SSID!</li>";
+        else
+          warn += "<li data-input=\"wifi_ssid_ap\">Wifi AP network has no password → uses module password.</li>";
+      }
+    }
+    if (wifi_mode == "client" || wifi_mode == "apclient") {
+      if (wifi_ssid_client.empty()) {
+        if (wifi_mode == "apclient") {
+          error += "<li data-input=\"wifi_ssid_client\">Wifi client scan mode not supported for AP+Client!</li>";
+        }
+        else {
+          // check for defined client SSIDs:
+          OvmsConfigParam* param = MyConfig.CachedParam("wifi.ssid");
+          int cnt = 0;
+          for (auto const& kv : param->m_map) {
+            if (kv.second != "")
+              cnt++;
+          }
+          if (cnt == 0) {
+            error += "<li data-input=\"wifi_ssid_client\">Wifi client scan mode invalid: no SSIDs defined!</li>";
+          }
+        }
+      }
+      else if (MyConfig.GetParamValue("wifi.ssid", wifi_ssid_client).empty()) {
+        error += "<li data-input=\"wifi_ssid_client\">Wifi client mode invalid: no password set for SSID!</li>";
+      }
+    }
 
-    // store:
-    MyConfig.SetParamValueBool("auto", "init", init);
-    MyConfig.SetParamValueBool("auto", "ext12v", ext12v);
-    MyConfig.SetParamValueBool("auto", "modem", modem);
-    MyConfig.SetParamValueBool("auto", "server.v2", server_v2);
-    MyConfig.SetParamValueBool("auto", "server.v3", server_v3);
-    MyConfig.SetParamValue("auto", "vehicle.type", vehicle_type);
-    MyConfig.SetParamValue("auto", "obd2ecu", obd2ecu);
-    MyConfig.SetParamValue("auto", "wifi.mode", wifi_mode);
-    MyConfig.SetParamValue("auto", "wifi.ssid.ap", wifi_ssid_ap);
-    MyConfig.SetParamValue("auto", "wifi.ssid.client", wifi_ssid_client);
+    if (error == "") {
+      // success:
+      MyConfig.SetParamValueBool("auto", "init", init);
+      MyConfig.SetParamValueBool("auto", "ext12v", ext12v);
+      MyConfig.SetParamValueBool("auto", "modem", modem);
+      MyConfig.SetParamValueBool("auto", "server.v2", server_v2);
+      MyConfig.SetParamValueBool("auto", "server.v3", server_v3);
+      MyConfig.SetParamValue("auto", "vehicle.type", vehicle_type);
+      MyConfig.SetParamValue("auto", "obd2ecu", obd2ecu);
+      MyConfig.SetParamValue("auto", "wifi.mode", wifi_mode);
+      MyConfig.SetParamValue("auto", "wifi.ssid.ap", wifi_ssid_ap);
+      MyConfig.SetParamValue("auto", "wifi.ssid.client", wifi_ssid_client);
+
+      c.head(200);
+      c.alert("success", "<p class=\"lead\">Auto start configuration saved.</p>");
+      if (warn != "") {
+        warn = "<p class=\"lead\">Warning:</p><ul class=\"warnlist\">" + warn + "</ul>";
+        c.alert("warning", warn.c_str());
+      }
+      if (c.getvar("action") == "save-reboot")
+        OutputReboot(p, c);
+      else
+        OutputHome(p, c);
+      c.done();
+      return;
+    }
+    
+    // output error, return to form:
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    c.head(400);
+    c.alert("danger", error.c_str());
+  }
+  else {
+    // read configuration:
+    init = MyConfig.GetParamValueBool("auto", "init", true);
+    ext12v = MyConfig.GetParamValueBool("auto", "ext12v", false);
+    modem = MyConfig.GetParamValueBool("auto", "modem", false);
+    server_v2 = MyConfig.GetParamValueBool("auto", "server.v2", false);
+    server_v3 = MyConfig.GetParamValueBool("auto", "server.v3", false);
+    vehicle_type = MyConfig.GetParamValue("auto", "vehicle.type");
+    obd2ecu = MyConfig.GetParamValue("auto", "obd2ecu");
+    wifi_mode = MyConfig.GetParamValue("auto", "wifi.mode", "ap");
+    wifi_ssid_ap = MyConfig.GetParamValue("auto", "wifi.ssid.ap");
+    if (wifi_ssid_ap.empty())
+      wifi_ssid_ap = "OVMS";
+    wifi_ssid_client = MyConfig.GetParamValue("auto", "wifi.ssid.client");
 
     c.head(200);
-    c.alert("success", "<p class=\"lead\">Auto start configuration saved.</p>");
-    if (c.getvar("action") == "save-reboot")
-      OutputReboot(p, c);
-    else
-      OutputHome(p, c);
-    c.done();
-    return;
   }
 
-  // read configuration:
-  init = MyConfig.GetParamValueBool("auto", "init", true);
-  ext12v = MyConfig.GetParamValueBool("auto", "ext12v", false);
-  modem = MyConfig.GetParamValueBool("auto", "modem", false);
-  server_v2 = MyConfig.GetParamValueBool("auto", "server.v2", false);
-  server_v3 = MyConfig.GetParamValueBool("auto", "server.v3", false);
-  vehicle_type = MyConfig.GetParamValue("auto", "vehicle.type");
-  obd2ecu = MyConfig.GetParamValue("auto", "obd2ecu");
-  wifi_mode = MyConfig.GetParamValue("auto", "wifi.mode", "ap");
-  wifi_ssid_ap = MyConfig.GetParamValue("auto", "wifi.ssid.ap");
-  if (wifi_ssid_ap.empty())
-    wifi_ssid_ap = "OVMS";
-  wifi_ssid_client = MyConfig.GetParamValue("auto", "wifi.ssid.client");
-
   // generate form:
-  c.head(200);
-
   c.panel_start("primary", "Auto start configuration");
   c.form_start(p.uri);
 
@@ -1298,7 +1413,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     else if (netif_default->name[0] == 'p' && netif_default->name[1] == 'p') {
       c.alert("warning",
         "<p class=\"lead\"><strong>Using modem connection for internet.</strong></p>"
-        "<p>Downloads from public servers will currently be done via cellular network. Be aware update files are ~1.5 MB, "
+        "<p>Downloads from public servers will currently be done via cellular network. Be aware update files are &gt;2 MB, "
         "which may exceed your data plan and need some time depending on your link speed.</p>"
         "<p>You can also flash locally from a wifi network IP address.</p>");
     }
@@ -1424,460 +1539,197 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
 
 
 /**
- * HandleDashboard:
+ * HandleCfgLogging: configure logging (URL /cfg/logging)
  */
-void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
+void OvmsWebServer::HandleCfgLogging(PageEntry_t& p, PageContext_t& c)
 {
-  OvmsVehicle *vehicle = MyVehicleFactory.ActiveVehicle();
-  if (!vehicle) {
+  std::string error;
+  OvmsConfigParam* param = MyConfig.CachedParam("log");
+  ConfigParamMap pmap;
+  int i, max;
+  char buf[100];
+  std::string file_path, tag, level;
+
+  if (c.method == "POST") {
+    // process form submission:
+    
+    pmap["file.enable"] = (c.getvar("file_enable") == "yes") ? "yes" : "no";
+    if (c.getvar("file_maxsize") != "")
+      pmap["file.maxsize"] = c.getvar("file_maxsize");
+    
+    file_path = c.getvar("file_path");
+    pmap["file.path"] = file_path;
+    if (!startsWith(file_path, "/sd/") && !startsWith(file_path, "/store/"))
+      error += "<li data-input=\"file_path\">File must be on '/sd' or '/store'</li>";
+    
+    pmap["level"] = c.getvar("level");
+    max = atoi(c.getvar("levelmax").c_str());
+    for (i = 1; i <= max; i++) {
+      sprintf(buf, "tag_%d", i);
+      tag = c.getvar(buf);
+      if (tag == "") continue;
+      sprintf(buf, "level_%d", i);
+      level = c.getvar(buf);
+      if (level == "") continue;
+      snprintf(buf, sizeof(buf), "level.%s", tag.c_str());
+      pmap[buf] = level;
+    }
+    
+    if (error == "") {
+      // save:
+      param->m_map.clear();
+      param->m_map = std::move(pmap);
+      param->Save();
+
+      c.head(200);
+      c.alert("success", "<p class=\"lead\">Logging configuration saved.</p>");
+      OutputHome(p, c);
+      c.done();
+      return;
+    }
+
+    // output error, return to form:
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
     c.head(400);
-    c.alert("danger", "<p class=\"lead\">Error: no active vehicle!</p>");
-    c.done();
-    return;
+    c.alert("danger", error.c_str());
+  }
+  else {
+    // read configuration:
+    pmap = param->m_map;
+
+    // generate form:
+    c.head(200);
+  }
+
+  c.panel_start("primary", "Logging configuration");
+  c.form_start(p.uri);
+
+  c.input_checkbox("Enable file logging", "file_enable", pmap["file.enable"] == "yes");
+  c.input_text("Log file path", "file_path", pmap["file.path"].c_str(), "Enter path on /sd or /store",
+    "<p>Logging to SD card will start automatically on mount. Do not remove the SD card while logging is active.</p>"
+    "<p><button type=\"button\" class=\"btn btn-default\" data-target=\"#log-close-result\" data-cmd=\"log close\">Close log file for SD removal</button>"
+      "<samp id=\"log-close-result\" class=\"samp-inline\"></samp></p>");
+
+  std::string docroot = MyConfig.GetParamValue("http.server", "docroot", "/sd");
+  std::string download;
+  if (startsWith(pmap["file.path"], docroot)) {
+    std::string webpath = pmap["file.path"].substr(docroot.length());
+    download = "<a class=\"btn btn-default\" target=\"_blank\" href=\"" + webpath + "\">Open log file</a>";
+    auto p = webpath.find_last_of('/');
+    if (p != std::string::npos) {
+      std::string webdir = webpath.substr(0, p);
+      if (webdir != docroot)
+        download += " <a class=\"btn btn-default\" target=\"_blank\" href=\"" + webdir + "/\">Open directory</a>";
+    }
+  } else {
+    download = "You can access your logs with the browser if the path is in your webserver root (" + docroot + ").";
+  }
+  c.input_info("Download", download.c_str());
+
+  c.input("number", "Max file size", "file_maxsize", pmap["file.maxsize"].c_str(), "Default: 1024",
+    "<p>When exceeding the size, the log will be archived suffixed with date &amp; time and a new file will be started. 0 = disable</p>",
+    "min=\"0\" step=\"1\"", "kB");
+
+  auto gen_options = [&c](std::string level) {
+    c.printf(
+        "<option value=\"none\" %s>No logging</option>"
+        "<option value=\"error\" %s>Errors</option>"
+        "<option value=\"warn\" %s>Warnings</option>"
+        "<option value=\"info\" %s>Info (default)</option>"
+        "<option value=\"debug\" %s>Debug</option>"
+        "<option value=\"verbose\" %s>Verbose</option>"
+      , (level=="none") ? "selected" : ""
+      , (level=="error") ? "selected" : ""
+      , (level=="warn") ? "selected" : ""
+      , (level=="info"||level=="") ? "selected" : ""
+      , (level=="debug") ? "selected" : ""
+      , (level=="verbose") ? "selected" : "");
+  };
+  
+  c.input_select_start("Default level", "level");
+  gen_options(pmap["level"]);
+  c.input_select_end();
+  
+  c.print(
+    "<div class=\"form-group\">"
+    "<label class=\"control-label col-sm-3\">Component levels:</label>"
+    "<div class=\"col-sm-9\">"
+      "<div class=\"table-responsive\">"
+        "<table class=\"table\">"
+          "<thead>"
+            "<tr>"
+              "<th width=\"10%\"></th>"
+              "<th width=\"45%\">Component</th>"
+              "<th width=\"45%\">Level</th>"
+            "</tr>"
+          "</thead>"
+          "<tbody>");
+
+  max = 0;
+  for (auto &kv: pmap) {
+    if (!startsWith(kv.first, "level."))
+      continue;
+    max++;
+    tag = kv.first.substr(6);
+    c.printf(
+          "<tr>"
+            "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\"><strong>✖</strong></button></td>"
+            "<td><input type=\"text\" class=\"form-control\" name=\"tag_%d\" value=\"%s\" placeholder=\"Enter component tag\""
+              " autocomplete=\"section-logging-tag\"></td>"
+            "<td><select class=\"form-control\" name=\"level_%d\" size=\"1\">"
+      , max, _attr(tag)
+      , max);
+    gen_options(kv.second);
+    c.print(
+            "</select></td>"
+          "</tr>");
   }
   
-  // get dashboard configuration:
-  DashboardConfig cfg;
-  vehicle->GetDashboardConfig(cfg);
-
-  // output dashboard:
-  const char* content =
-    "<div class=\"panel panel-primary panel-single\">"
-      "<div class=\"panel-heading\">Dashboard</div>"
-      "<div class=\"panel-body\">"
-        "<div class=\"receiver get-window-resize\" id=\"livestatus\">"
-          "<div class=\"dashboard\" style=\"position: relative; width: 100%; height: 300px; margin: 0 auto\">"
-            "<div class=\"overlay\">"
-              "<div class=\"range-value\"><span class=\"value\">▲0 ▼0</span><span class=\"unit\">km</span></div>"
-              "<div class=\"energy-value\"><span class=\"value\">▲0.0 ▼0.0</span><span class=\"unit\">kWh</span></div>"
-            "</div>"
-            "<div id=\"gaugeset1\" style=\"width: 100%; height: 100%;\"></div>"
-          "</div>"
-        "</div>"
-      "</div>"
-    "</div>"
-    ""
-    ""
-    "<style>"
-    ""
-    "@media (max-width: 767px) {"
-      ".panel-single .panel-body {"
-        "padding: 2px;"
-      "}"
-    "}"
-    ""
-    ".highcharts-plot-band, .highcharts-pane {"
-      "fill-opacity: 0;"
-    "}"
-    ""
-    ".speed-default-pane {"
-      "fill: #95a222;"
-    "}"
-    ".night .speed-default-pane {"
-      "fill: #151515;"
-      "fill-opacity: 0.5;"
-    "}"
-    ""
-    ".speed-outer-pane {"
-    "	fill: #EFEFEF;"
-    "}"
-    ".speed-middle-pane {"
-    "	stroke-width: 1px;"
-    "	stroke: #AAA;"
-    "}"
-    ".night .highcharts-pane.speed-middle-pane {"
-      "stroke-width: 2px;"
-    "}"
-    ".speed-inner-pane {"
-    "	fill: #DDDDDD;"
-    "}"
-    ""
-    ".highcharts-plot-band.border {"
-      "stroke: #666666;"
-      "stroke-width: 1px;"
-    "}"
-    ""
-    ".green-band {"
-    "	fill: #55BF3B;"
-    "	fill-opacity: 0.4;"
-    "}"
-    ".yellow-band {"
-    "	fill: #DDDF0D;"
-    "	fill-opacity: 0.5;"
-    "}"
-    ".red-band {"
-    "	fill: #DF5353;"
-    "	fill-opacity: 0.6;"
-    "}"
-    ".violet-band {"
-      "fill: #9622ff;"
-      "fill-opacity: 0.6;"
-    "}"
-    ".night .violet-band {"
-      "fill: #9622ff;"
-      "fill-opacity: 0.8;"
-    "}"
-    ""
-    ".highcharts-gauge-series .highcharts-pivot {"
-      "stroke-width: 1px;"
-      "stroke: #757575;"
-      "fill-opacity: 1;"
-      "fill: black;"
-    "}"
-    ""
-    ".highcharts-gauge-series.auxgauge .highcharts-pivot {"
-      "fill-opacity: 1;"
-      "fill: #fff;"
-      "stroke-width: 0;"
-    "}"
-    ".night .highcharts-gauge-series.auxgauge .highcharts-pivot {"
-      "fill: #000;"
-    "}"
-    ""
-    ".highcharts-gauge-series .highcharts-dial {"
-      "fill: #d80000;"
-      "stroke: #000;"
-      "stroke-width: 0.5px;"
-    "}"
-    ""
-    ".highcharts-yaxis-grid .highcharts-grid-line,"
-    ".highcharts-yaxis-grid .highcharts-minor-grid-line {"
-    "	display: none;"
-    "}"
-    ""
-    ".highcharts-yaxis .highcharts-tick {"
-    "	stroke-width: 2px;"
-    "	stroke: #666666;"
-    "}"
-    ".night .highcharts-yaxis .highcharts-tick {"
-      "stroke: #e0e0e0;"
-    "}"
-    ""
-    ".highcharts-yaxis .highcharts-minor-tick {"
-      "stroke-width: 1.8px;"
-      "stroke: #00000085;"
-      "stroke-dasharray: 6;"
-      "stroke-dashoffset: -4.8;"
-      "stroke-linecap: round;"
-    "}"
-    ".night .highcharts-yaxis .highcharts-minor-tick {"
-      "stroke: #ffffff85;"
-    "}"
-    ""
-    ".highcharts-axis-labels {"
-      "fill: #000;"
-      "font-weight: bold;"
-      "font-size: 0.9em;"
-    "}"
-    ".night .highcharts-axis-labels {"
-      "fill: #ddd;"
-    "}"
-    ""
-    ".highcharts-data-label text {"
-      "fill: #333333;"
-    "}"
-    ".night .highcharts-data-label text {"
-      "fill: #fff;"
-    "}"
-    ""
-    ".highcharts-axis-labels.speed {"
-      "font-size: 1.2em;"
-    "}"
-    ""
-    ".dashboard .highcharts-data-label text {"
-      "font-size: 2em;"
-    "}"
-    ""
-    ".dashboard .overlay {"
-      "position: absolute;"
-      "z-index: 10;"
-      "top: 62%;"
-      "text-align: center;"
-      "left: 0%;"
-      "right: 0%;"
-    "}"
-    ".dashboard .overlay .value {"
-      "color: #04282b;"
-      "background: #97b597;"
-      "padding: 2px 5px;"
-      "margin-right: 0.2em;"
-      "text-align: center;"
-      "border: 1px inset #c3c3c380;"
-      "font-family: \"Monaco\", \"Menlo\", \"Consolas\", \"QuickType Mono\", \"Lucida Console\", \"Roboto Mono\", \"Ubuntu Mono\", \"DejaVu Sans Mono\", \"Droid Sans Mono\", monospace;"
-      "display: inline-block;"
-    "}"
-    ".night .dashboard .overlay .value {"
-      "color: #fff;"
-      "background: #252525;"
-    "}"
-    ".dashboard .overlay .unit {"
-      "color: #666;"
-      "font-size: 12px;"
-    "}"
-    ""
-    ".dashboard .overlay .range-value .value {"
-      "margin-left: 10px;"
-      "width: 100px;"
-    "}"
-    ""
-    ".dashboard .overlay .energy-value {"
-      "margin-top: 4px;"
-    "}"
-    ".dashboard .overlay .energy-value .value {"
-      "margin-left: 18px;"
-      "width: 100px;"
-      "font-size: 12px;"
-    "}"
-    ""
-    "</style>"
-    ""
-    "<script type=\"text/javascript\">"
-    ""
-    "var gaugeset1;"
-    ""
-    "function get_dashboard_data() {"
-      "var rmin = metrics[\"v.b.range.est\"], rmax = metrics[\"v.b.range.ideal\"];"
-      "var euse = metrics[\"v.b.energy.used\"], erec = metrics[\"v.b.energy.recd\"];"
-      "if (rmin > rmax) { var x = rmin; rmin = rmax; rmax = x; }"
-      "var md = {"
-        "range: { value: \"▲\" + rmax.toFixed(0) + \" ▼\" + rmin.toFixed(0) },"
-        "energy: { value: \"▲\" + euse.toFixed(1) + \" ▼\" + erec.toFixed(1) },"
-        "series: ["
-          "{ data: [metrics[\"v.p.speed\"]] },"
-          "{ data: [metrics[\"v.b.voltage\"]] },"
-          "{ data: [metrics[\"v.b.soc\"]] },"
-          "{ data: [metrics[\"v.b.consumption\"]] },"
-          "{ data: [metrics[\"v.b.power\"]] },"
-          "{ data: [metrics[\"v.c.temp\"]] },"
-          "{ data: [metrics[\"v.b.temp\"]] },"
-          "{ data: [metrics[\"v.i.temp\"]] },"
-          "{ data: [metrics[\"v.m.temp\"]] }],"
-      "};"
-      "return md;"
-    "}"
-    ""
-    "function update_dashboard() {"
-      "var md = get_dashboard_data();"
-      "$('.range-value .value').text(md.range.value);"
-      "$('.energy-value .value').text(md.energy.value);"
-      "gaugeset1.update({ series: md.series });"
-    "}"
-    ""
-    "function init_gaugeset1() {"
-      "var chart_config = {"
-        "chart: {"
-          "type: 'gauge',"
-          "spacing: [0, 0, 0, 0],"
-          "margin: [0, 0, 0, 0],"
-          "animation: { duration: 0, easing: 'swing' },"
-        "},"
-        "title: { text: null },"
-        "credits: { enabled: false },"
-        "tooltip: { enabled: false },"
-        ""
-        "pane: ["
-          "{ startAngle: -125, endAngle: 125, center: ['50%', '45%'], size: '80%' }, /* Speed */"
-          "{ startAngle: 70, endAngle: 110, center: ['-20%', '20%'], size: '100%' }, /* Voltage */"
-          "{ startAngle: 70, endAngle: 110, center: ['-20%', '60%'], size: '100%' }, /* SOC */"
-          "{ startAngle: -110, endAngle: -70, center: ['120%', '20%'], size: '100%' }, /* Efficiency */"
-          "{ startAngle: -110, endAngle: -70, center: ['120%', '60%'], size: '100%' }, /* Power */"
-          "{ startAngle: -45, endAngle: 45, center: ['20%', '100%'], size: '30%' }, /* Charger temperature */"
-          "{ startAngle: -45, endAngle: 45, center: ['40%', '100%'], size: '30%' }, /* Battery temperature */"
-          "{ startAngle: -45, endAngle: 45, center: ['60%', '100%'], size: '30%' }, /* Inverter temperature */"
-          "{ startAngle: -45, endAngle: 45, center: ['80%', '100%'], size: '30%' }], /* Motor temperature */"
-        ""
-        "responsive: {"
-          "rules: [{"
-            "condition: { minWidth: 0, maxWidth: 400 },"
-            "chartOptions: {"
-              "pane: ["
-                "{ size: '60%' }, /* Speed */"
-                "{ center: ['-20%', '20%'] }, /* Voltage */"
-                "{ center: ['-20%', '60%'] }, /* SOC */"
-                "{ center: ['120%', '20%'] }, /* Efficiency */"
-                "{ center: ['120%', '60%'] }, /* Power */"
-                "{ center: ['15%', '100%']   , size: '25%' }, /* Charger temperature */"
-                "{ center: ['38.33%', '100%'], size: '25%' }, /* Battery temperature */"
-                "{ center: ['61.66%', '100%'], size: '25%' }, /* Inverter temperature */"
-                "{ center: ['85%', '100%']   , size: '25%' }], /* Motor temperature */"
-              "yAxis: [{ labels: { step: 1 } }], /* Speed */"
-            "},"
-          "},{"
-            "condition: { minWidth: 401, maxWidth: 450 },"
-            "chartOptions: {"
-              "pane: ["
-                "{ size: '70%' }, /* Speed */"
-                "{ center: ['-15%', '20%'] }, /* Voltage */"
-                "{ center: ['-15%', '60%'] }, /* SOC */"
-                "{ center: ['115%', '20%'] }, /* Efficiency */"
-                "{ center: ['115%', '60%'] }, /* Power */"
-                "{ center: ['15%', '100%']   , size: '27.5%' }, /* Charger temperature */"
-                "{ center: ['38.33%', '100%'], size: '27.5%' }, /* Battery temperature */"
-                "{ center: ['61.66%', '100%'], size: '27.5%' }, /* Inverter temperature */"
-                "{ center: ['85%', '100%']   , size: '27.5%' }], /* Motor temperature */"
-            "},"
-          "},{"
-            "condition: { minWidth: 451, maxWidth: 600 },"
-            "chartOptions: {"
-              "pane: ["
-                "{ size: '80%' }, /* Speed */"
-                "{ center: ['-10%', '20%'] }, /* Voltage */"
-                "{ center: ['-10%', '60%'] }, /* SOC */"
-                "{ center: ['110%', '20%'] }, /* Efficiency */"
-                "{ center: ['110%', '60%'] }], /* Power */"
-            "},"
-          "},{"
-            "condition: { minWidth: 601 },"
-            "chartOptions: {"
-              "pane: ["
-                "{ size: '85%' }, /* Speed */"
-                "{ center: ['0%', '20%'] }, /* Voltage */"
-                "{ center: ['0%', '60%'] }, /* SOC */"
-                "{ center: ['100%', '20%'] }, /* Efficiency */"
-                "{ center: ['100%', '60%'] }], /* Power */"
-            "},"
-          "}]"
-        "},"
-        ""
-        "yAxis: [{"
-          "/* Speed axis: */"
-          "pane: 0, className: 'speed', title: { text: 'km/h' },"
-          "reversed: false,"
-          "minorTickInterval: 'auto', minorTickLength: 5, minorTickPosition: 'inside',"
-          "tickPixelInterval: 30, tickPosition: 'inside', tickLength: 13,"
-          "labels: { step: 2, distance: -28, x: 0, y: 5, zIndex: 2 },"
-        "},{"
-          "/* Voltage axis: */"
-          "pane: 1, className: 'voltage', title: { text: 'Volt', align: 'low', x: 90, y: 35, },"
-          "reversed: true,"
-          "minorTickInterval: 'auto', minorTickLength: 5, minorTickPosition: 'inside',"
-          "tickPixelInterval: 30, tickPosition: 'inside', tickLength: 13,"
-          "labels: { step: 1, distance: -25, x: 0, y: 5, zIndex: 2 },"
-        "},{"
-          "/* SOC axis: */"
-          "pane: 2, className: 'soc', title: { text: 'SOC', align: 'low', x: 85, y: 35 },"
-          "reversed: true,"
-          "minorTickInterval: 'auto', minorTickLength: 5, minorTickPosition: 'inside',"
-          "tickPixelInterval: 30, tickPosition: 'inside', tickLength: 13,"
-          "labels: { step: 1, distance: -25, x: 0, y: 5, zIndex: 2 },"
-        "},{"
-          "/* Efficiency axis: */"
-          "pane: 3, className: 'efficiency', title: { text: 'Wh/km', align: 'low', x: -125, y: 35 },"
-          "reversed: false,"
-          "minorTickInterval: 'auto', minorTickLength: 5, minorTickPosition: 'inside',"
-          "tickPixelInterval: 30, tickPosition: 'inside', tickLength: 13,"
-          "labels: { step: 1, distance: -25, x: 0, y: 5, zIndex: 2 },"
-        "},{"
-          "/* Power axis: */"
-          "pane: 4, className: 'power', title: { text: 'kW', align: 'low', x: -115, y: 35 },"
-          "reversed: false,"
-          "minorTickInterval: 'auto', minorTickLength: 5, minorTickPosition: 'inside',"
-          "tickPixelInterval: 30, tickPosition: 'inside', tickLength: 13,"
-          "labels: { step: 1, distance: -25, x: 0, y: 5, zIndex: 2 },"
-        "},{"
-          "/* Charger temperature axis: */"
-          "pane: 5, className: 'temp-charger', title: { text: 'CHG °C', y: 10 },"
-          "tickPosition: 'inside', tickLength: 10, minorTickInterval: null,"
-          "labels: { step: 1, distance: 3, x: 0, y: 0, zIndex: 2 },"
-        "},{"
-          "/* Battery temperature axis: */"
-          "pane: 6, className: 'temp-battery', title: { text: 'BAT °C', y: 10 },"
-          "tickPosition: 'inside', tickLength: 10, minorTickInterval: null,"
-          "labels: { step: 1, distance: 3, x: 0, y: 0, zIndex: 2 },"
-        "},{"
-          "/* Inverter temperature axis: */"
-          "pane: 7, className: 'temp-inverter', title: { text: 'PEM °C', y: 10 },"
-          "tickPosition: 'inside', tickLength: 10, minorTickInterval: null,"
-          "labels: { step: 1, distance: 3, x: 0, y: 0, zIndex: 2 },"
-        "},{"
-          "/* Motor temperature axis: */"
-          "pane: 8, className: 'temp-motor', title: { text: 'MOT °C', y: 10 },"
-          "tickPosition: 'inside', tickLength: 10, minorTickInterval: null,"
-          "labels: { step: 1, distance: 3, x: 0, y: 0, zIndex: 2 },"
-        "}],"
-        ""
-        "plotOptions: {"
-          "gauge: {"
-            "dataLabels: { enabled: false },"
-            "overshoot: 1"
-          "}"
-        "},"
-        "series: [{"
-          "yAxis: 0, name: 'Speed', className: 'speed fullgauge', data: [0],"
-          "pivot: { radius: '10' },"
-          "dial: { radius: '88%', topWidth: 1, baseLength: '20%', baseWidth: 10, rearLength: '20%' },"
-        "},{"
-          "yAxis: 1, name: 'Voltage', className: 'voltage auxgauge', data: [0],"
-          "pivot: { radius: '85' },"
-          "dial: { radius: '95%', baseWidth: 5, baseLength: '90%' },"
-        "},{"
-          "yAxis: 2, name: 'SOC', className: 'soc auxgauge', data: [0],"
-          "pivot: { radius: '85' },"
-          "dial: { radius: '95%', baseWidth: 5, baseLength: '90%' },"
-        "},{"
-          "yAxis: 3, name: 'Efficiency', className: 'efficiency auxgauge', data: [0],"
-          "pivot: { radius: '85' },"
-          "dial: { radius: '95%', baseWidth: 5, baseLength: '90%' },"
-        "},{"
-          "yAxis: 4, name: 'Power', className: 'power auxgauge', data: [0],"
-          "pivot: { radius: '85' },"
-          "dial: { radius: '95%', baseWidth: 5, baseLength: '90%' },"
-        "},{"
-          "yAxis: 5, name: 'Charger temperature', className: 'temp-charger tempgauge', data: [0],"
-          "dial: { radius: '90%', baseWidth: 3, baseLength: '90%' },"
-        "},{"
-          "yAxis: 6, name: 'Battery temperature', className: 'temp-battery tempgauge', data: [0],"
-          "dial: { radius: '90%', baseWidth: 3, baseLength: '90%' },"
-        "},{"
-          "yAxis: 7, name: 'Inverter temperature', className: 'temp-inverter tempgauge', data: [0],"
-          "dial: { radius: '90%', baseWidth: 3, baseLength: '90%' },"
-        "},{"
-          "yAxis: 8, name: 'Motor temperature', className: 'temp-motor tempgauge', data: [0],"
-          "dial: { radius: '90%', baseWidth: 3, baseLength: '90%' },"
-        "}]"
-      "};"
-      ""
-      "/* Inject vehicle config: */"
-      "for (var i = 0; i < chart_config.yAxis.length; i++) {"
-        "$.extend(chart_config.yAxis[i], vehicle_config.yAxis[i]);"
-      "}"
-      ""
-      "gaugeset1 = Highcharts.chart('gaugeset1', chart_config,"
-        "function (chart) {"
-          "chart.update({ chart: { animation: { duration: 1000, easing: 'swing' } } });"
-          "$('#livestatus').on(\"msg:metrics\", function(e, update){"
-            "update_dashboard();"
-          "}).on(\"window-resize\", function(e){"
-            "chart.reflow();"
-          "});"
-        "}"
-      ");"
-    "}"
-    ""
-    "function init_charts() {"
-      "init_gaugeset1();"
-    "}"
-    ""
-    "if (window.Highcharts) {"
-      "init_charts();"
-    "} else {"
-      "$.ajax({"
-        "url: \"/assets/charts.js\","
-        "dataType: \"script\","
-        "cache: true,"
-        "success: function(){ init_charts(); }"
-      "});"
-    "}"
-    ""
-    "</script>";
-  
-  c.head(200);
   c.printf(
-    "<script type=\"text/javascript\">"
-    "var vehicle_config = {"
-      "%s"
-    "};"
-    "</script>"
-    , cfg.gaugeset1.c_str());
-  new HttpDataSender(c.nc, (const uint8_t*)content, strlen(content));
+          "<tr>"
+            "<td><button type=\"button\" class=\"btn btn-success\" onclick=\"addRow(this)\"><strong>✚</strong></button></td>"
+            "<td></td>"
+            "<td></td>"
+          "</tr>"
+        "</tbody>"
+      "</table>"
+      "<input type=\"hidden\" name=\"levelmax\" value=\"%d\">"
+    "</div>"
+    "</div>"
+    "</div>"
+    , max);
+
+  c.input_button("default", "Save");
+  c.form_end();
+
+  c.print(
+    "<script>"
+    "function delRow(el){"
+      "$(el).parent().parent().remove();"
+    "}"
+    "function addRow(el){"
+      "var counter = $('input[name=levelmax]');"
+      "var nr = Number(counter.val()) + 1;"
+      "var row = $('"
+          "<tr>"
+            "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\"><strong>✖</strong></button></td>"
+            "<td><input type=\"text\" class=\"form-control\" name=\"tag_' + nr + '\" placeholder=\"Enter component tag\""
+              " autocomplete=\"section-logging-tag\"></td>"
+            "<td><select class=\"form-control\" name=\"level_' + nr + '\" size=\"1\">"
+              "<option value=\"none\">No logging</option>"
+              "<option value=\"error\">Errors</option>"
+              "<option value=\"warn\">Warnings</option>"
+              "<option value=\"info\" selected>Info (default)</option>"
+              "<option value=\"debug\">Debug</option>"
+              "<option value=\"verbose\">Verbose</option>"
+            "</select></td>"
+          "</tr>"
+        "');"
+      "$(el).parent().parent().before(row).prev().find(\"input\").first().focus();"
+      "counter.val(nr);"
+    "}"
+    "</script>");
+
+  c.panel_end();
+  c.done();
 }
