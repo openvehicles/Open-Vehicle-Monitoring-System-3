@@ -67,6 +67,8 @@ WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t modifier)
 
 WebSocketHandler::~WebSocketHandler()
 {
+  while (xQueueReceive(m_jobqueue, &m_job, 0) == pdTRUE)
+    FreeTxJob(m_job);
   vQueueDelete(m_jobqueue);
   vSemaphoreDelete(m_mutex);
 }
@@ -169,6 +171,19 @@ void WebSocketHandler::ProcessTxJob()
     default:
       m_job.type = WSTX_None;
       m_sent = 0;
+      break;
+  }
+}
+
+
+void WebSocketHandler::FreeTxJob(WebSocketTxJob &job)
+{
+  switch (job.type) {
+    case WSTX_Event:
+      if (job.event)
+        free(job.event);
+      break;
+    default:
       break;
   }
 }

@@ -278,6 +278,7 @@ class WebSocketHandler : public MgHandler
     bool Lock(TickType_t xTicksToWait);
     void Unlock();
     bool AddTxJob(WebSocketTxJob job, bool init_tx=true);
+    void FreeTxJob(WebSocketTxJob &job);
     bool GetNextTxJob();
     void InitTx();
     void ContinueTx();
