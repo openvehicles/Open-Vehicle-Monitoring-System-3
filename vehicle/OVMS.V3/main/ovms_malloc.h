@@ -28,39 +28,21 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __mg_locals_h__
-#define __mg_locals_h__
+#ifndef __OVMS_MALLOC_H__
+#define __OVMS_MALLOC_H__
 
-#include "sdkconfig.h"
-#include "ovms_log.h"
-#include "ovms_malloc.h"
+#include <stddef.h>
 
-#define ESP_PLATFORM 1
-#define MG_ENABLE_HTTP 1
-
-// Note: broadcast support not working reliably yet, do not enable for production!
-// #define MG_ENABLE_BROADCAST 1
-// #define MG_CTL_MSG_MESSAGE_SIZE 64    // Note: default is 8K, we only need this to trigger MG_EV_POLL
-
-// #define CONFIG_MG_ENABLE_DEBUG 1
-#ifdef CONFIG_MG_ENABLE_DEBUG
-#define MG_ENABLE_DEBUG 1
-#define CS_LOG_ENABLE_TS_DIFF 1
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-#ifdef CONFIG_MG_ENABLE_FILESYSTEM
-#define MG_ENABLE_FILESYSTEM 1
+void* ExternalRamMalloc(size_t sz);
+void* ExternalRamCalloc(size_t count, size_t size);
+void* ExternalRamRealloc(void *ptr, size_t size);
+
+#ifdef __cplusplus
+}
 #endif
 
-#ifdef CONFIG_MG_ENABLE_DIRECTORY_LISTING
-#define MG_ENABLE_DIRECTORY_LISTING 1
-#endif
-
-// Override memory allocation macros in mongoose.c
-#define CS_COMMON_MG_MEM_H_
-#define MG_MALLOC ExternalRamMalloc
-#define MG_CALLOC ExternalRamCalloc
-#define MG_REALLOC ExternalRamRealloc
-#define MG_FREE free
-
-#endif // __mg_locals_h__
+#endif //#ifndef __OVMS_MALLOC_H__

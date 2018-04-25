@@ -29,7 +29,6 @@
 */
 
 #include "ovms.h"
-#include "esp_heap_caps.h"
 
 uint32_t monotonictime = 0;
 
@@ -39,15 +38,6 @@ void* operator new(std::size_t sz)
   return ExternalRamMalloc(sz);
   }
 #endif // #ifdef CONFIG_OVMS_HW_SPIMEM_AGGRESSIVE
-
-void* ExternalRamMalloc(std::size_t sz)
-  {
-  void* ret = heap_caps_malloc(sz, MALLOC_CAP_SPIRAM);
-  if (ret)
-    return ret;
-  else
-    return malloc(sz);
-  }
 
 static void* ExternalRamAllocated::operator new(std::size_t sz)
   {
