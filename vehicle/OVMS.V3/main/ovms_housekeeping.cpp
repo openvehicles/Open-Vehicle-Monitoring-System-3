@@ -218,7 +218,12 @@ void Housekeeping::Metrics(std::string event, void* data)
   // set boot stable flag after some seconds uptime:
   if (!MyBoot.GetStable() && monotonictime >= AUTO_INIT_STABLE_TIME)
     {
-    ESP_LOGI(TAG, "System considered stable (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
+    size_t free_8bit = heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
+    size_t free_32bit = heap_caps_get_free_size(MALLOC_CAP_32BIT|MALLOC_CAP_INTERNAL);
+    size_t lgst_8bit = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
+    ESP_LOGI(TAG, "System considered stable (RAM: 8b=%zu-%zu 32b=%zu)",
+      lgst_8bit, free_8bit, free_32bit-free_8bit);
+
     MyBoot.SetStable();
     // …and send debug crash data as necessary:
     MyBoot.NotifyDebugCrash();
@@ -230,9 +235,14 @@ void Housekeeping::TimeLogger(std::string event, void* data)
   time_t rawtime;
   time ( &rawtime );
   struct tm* tmu = localtime(&rawtime);
+
+  const char *tz = getenv("TZ");
+  if (tz == NULL) tz = "UTC";
+
   size_t free_8bit = heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
   size_t free_32bit = heap_caps_get_free_size(MALLOC_CAP_32BIT|MALLOC_CAP_INTERNAL);
   size_t lgst_8bit = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
-  ESP_LOGI(TAG, "Local time: %.24s; internal RAM: 8bit=%zu largest=%zu 32bit=%zu",
-    asctime(tmu), free_8bit, lgst_8bit, free_32bit-free_8bit);
+
+  ESP_LOGI(TAG, "%.24s %s (RAM: 8b=%zu-%zu 32b=%zu)",
+    asctime(tmu), tz, lgst_8bit, free_8bit, free_32bit-free_8bit);
   }
