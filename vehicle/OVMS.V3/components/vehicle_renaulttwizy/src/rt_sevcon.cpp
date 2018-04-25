@@ -263,12 +263,22 @@ CANopenResult_t SevconClient::Login(bool on)
   if (sc.Read(0x1018, 0x02, m_sevcon_type) != COR_OK)
     return COR_ERR_UnknownDevice;
 
-  if (m_sevcon_type == SC_Gen4_4845)
+  if (MyConfig.GetParamValue("xrt", "type") == "SC80GB45") {
+    ESP_LOGD(TAG, "Twizy type 2 = SC80GB45");
+    m_drivemode.type = 2; // SC80GB45
+  }
+  else if (m_sevcon_type == SC_Gen4_4845) {
+    ESP_LOGD(TAG, "Twizy type 0 = Twizy80");
     m_drivemode.type = 0; // Twizy80
-  else if (m_sevcon_type == SC_Gen4_4827)
+  }
+  else if (m_sevcon_type == SC_Gen4_4827) {
+    ESP_LOGD(TAG, "Twizy type 1 = Twizy45");
     m_drivemode.type = 1; // Twizy45
-  else
+  }
+  else {
+    ESP_LOGE(TAG, "Twizy type unknown: SEVCON type 0x%08x", m_sevcon_type);
     return COR_ERR_UnknownDevice;
+  }
   
   // check login level:
   uint32_t level;

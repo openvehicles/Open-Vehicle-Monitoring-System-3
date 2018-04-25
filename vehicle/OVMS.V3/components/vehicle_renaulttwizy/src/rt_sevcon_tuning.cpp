@@ -83,10 +83,9 @@ struct twizy_cfg_params {
   uint16_t    DefaultMapSpd[4];
 };
 
-const struct twizy_cfg_params twizy_cfg_params[2] =
+const struct twizy_cfg_params twizy_cfg_params[] =
 {
   {
-    //
     // CFG[0] = TWIZY80:
     //
     //    55 Nm (0x4611.0x01) = default max power map (PMAP) torque
@@ -142,9 +141,10 @@ const struct twizy_cfg_params twizy_cfg_params[2] =
 
             // DefaultMapSpd:
     { 3000, 3500, 4500, 6000 }
-  },
-  {
-    //
+  
+  } // CFG[0] = TWIZY80
+
+  ,{
     // CFG[1] = TWIZY45:
     //
     //    32.5 Nm (0x4611.0x01) = default max power map (PMAP) torque
@@ -200,8 +200,71 @@ const struct twizy_cfg_params twizy_cfg_params[2] =
 
             // DefaultMapSpd:
     { 4357, 5083, 6535, 8714 }
-  }
-};
+  
+  } // CFG[1] = TWIZY45
+
+  ,{
+    // CFG[2] = T80 SEVCON with T45 Gearbox:
+    //    - use if mounting a T80 SEVCON G4845 instead of the G4827 in a T45
+    //    - hybrid: power & torque values of T80, speed & rpm values of T45
+    //
+    //    55 Nm (0x4611.0x01) = default max power map (PMAP) torque
+    //    55 Nm (0x6076.0x00) = default peak torque
+    //    57 Nm (0x2916.0x01) = rated torque (??? should be equal to 0x6076...)
+    //    70.125 Nm (0x4610.0x11) = max motor torque according to flux map
+    //
+    //    5814 rpm (0x2920.0x05) = default max fwd speed = ~45 kph
+    //    7200 rpm = default overspeed warning trigger (STOP lamp ON) = ~56 kph
+    //    8500 rpm = default overspeed brakedown trigger = ~66 kph
+    //    10000 rpm = max neutral speed (0x3813.2d) = ~77 kph
+    //    11000 rpm = severe overspeed fault (0x4624.00) = ~85 kph
+
+    45,     // DefaultKphMax
+    5814,   // DefaultRpmMax
+    1307,   // DefaultRpmMaxRev
+    686,    // DeltaBrkStart
+    1386,   // DeltaBrkEnd
+    2686,   // DeltaBrkDown
+
+    56,     // DefaultKphWarn
+    7200,   // DefaultRpmWarn
+    900,    // DeltaWarnOff
+
+    55000,  // DefaultTrq
+    57000,  // DefaultTrqRated
+    70125,  // DefaultTrqLim
+    0,      // DeltaMapTrq
+    
+    450000, // DefaultCurrLim
+    450,    // DefaultCurrStatorMax
+    540,    // BoostCurr
+    { 964, 9728, 1122, 9984 }, // DefaultFMAP
+    { 1122, 10089, 2240, 11901 }, // ExtendedFMAP
+
+    12182,  // DefaultPwrLo
+    17000,  // DefaultPwrLoLim
+    13000,  // DefaultPwrHi
+    17000,  // DefaultPwrHiLim
+    4608,   // DefaultMaxMotorPwr [1/256 kW]
+
+    182,    // DefaultRecup
+    18,     // DefaultRecupPrc
+
+    400,    // DefaultRampStart
+    40,     // DefaultRampStartPrm
+    2500,   // DefaultRampAccel
+    25,     // DefaultRampAccelPrc
+
+            // DefaultPMAP:
+    { 880,0, 880,2050, 659,2500, 608,3000, 516,3500,
+      421,4000, 360,4500, 307,5000, 273,6000 },
+
+            // DefaultMapSpd:
+    { 4357, 5083, 6535, 8714 }
+  
+  } // CFG[2] = T80 SEVCON with T45 Gearbox
+
+}; // const struct twizy_cfg_params twizy_cfg_params[]
 
 // ROM parameter access macro:
 #define CFG twizy_cfg_params[m_drivemode.type]
