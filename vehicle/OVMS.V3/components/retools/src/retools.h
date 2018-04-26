@@ -40,6 +40,7 @@
 #include "candump.h"
 #include "candump_crtd.h"
 #include "pcp.h"
+#include "ovms.h"
 #include "ovms_mutex.h"
 #include "ovms_netmanager.h"
 
@@ -71,7 +72,7 @@ typedef std::map<std::string, re_record_t*> re_record_map_t;
 enum REMode { Serve, Analyse, Discover };
 enum REServeMode { Ignore, Simulate, Transmit };
 
-class re : public pcp
+class re : public pcp, public ExternalRamAllocated
   {
   public:
     re(const char* name);

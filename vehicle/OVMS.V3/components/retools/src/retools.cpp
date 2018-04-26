@@ -164,20 +164,40 @@ void re::MongooseHandler(struct mg_connection *nc, int ev, void *p)
     case MG_EV_RECV:
       {
       // Receive data on the network connection
-      size_t used = m_serveformat->put(&frame, (uint8_t*)nc->recv_mbuf.buf, nc->recv_mbuf.len);
-      if (used > 0) mbuf_remove(&nc->recv_mbuf, used);
-      if (frame.origin != NULL)
+      uint8_t *bp = (uint8_t*)nc->recv_mbuf.buf;
+      size_t bl = nc->recv_mbuf.len;
+      size_t consumed = 0;
+
+      if (m_servemode == Ignore)
         {
-        switch (m_servemode)
+        mbuf_remove(&nc->recv_mbuf, bl);
+        return;
+        }
+
+      while(1)
+        {
+        size_t used = m_serveformat->put(&frame, bp, bl);
+        if (used <= 0)
           {
-          case Simulate:
-            MyCan.IncomingFrame(&frame);
-            break;
-          case Transmit:
-            frame.origin->Write(&frame);
-            break;
-          default:
-            break;
+          if (consumed > 0) mbuf_remove(&nc->recv_mbuf, consumed);
+          return;
+          }
+        bp += used;
+        bl -= used;
+        consumed += used;
+        if (frame.origin != NULL)
+          {
+          switch (m_servemode)
+            {
+            case Simulate:
+              MyCan.IncomingFrame(&frame);
+              break;
+            case Transmit:
+              frame.origin->Write(&frame);
+              break;
+            default:
+              break;
+              }
           }
         }
       break;
