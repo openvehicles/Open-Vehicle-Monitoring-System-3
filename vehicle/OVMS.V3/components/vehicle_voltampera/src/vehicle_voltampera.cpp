@@ -35,6 +35,8 @@ static const char *TAG = "v-voltampera";
 #include "ovms_config.h"
 #include "vehicle_voltampera.h"
 
+#define VA_CANDATA_TIMEOUT 10
+
 // Use states:
 // 0 = bus is idle, car sleeping
 // 1 = car is on and ready to Drive
@@ -67,7 +69,7 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   m_modelyear = 0;
   m_charge_timer = 0;
   m_charge_wm = 0;
-  m_candata_timer = 0;
+  m_candata_timer = VA_CANDATA_TIMEOUT;
   m_range_estimated_km = 0;
 
   // require GPS:
@@ -114,9 +116,10 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
   if (m_poll_state != 1)
     {
     ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
+    StandardMetrics.ms_v_env_awake->SetValue(true);
     PollSetState(1);
     }
-  m_candata_timer = 60;
+  m_candata_timer = VA_CANDATA_TIMEOUT;
 
   // Process the incoming message
   switch (p_frame->MsgID)
@@ -174,7 +177,6 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
         // Car is in PARK
         StandardMetrics.ms_v_env_gear->SetValue(0);
         StandardMetrics.ms_v_env_on->SetValue(false);
-        StandardMetrics.ms_v_env_awake->SetValue(false);
         StandardMetrics.ms_v_env_handbrake->SetValue(true);
         }
       else
@@ -182,7 +184,6 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
         // Car is not in PARK
         StandardMetrics.ms_v_env_gear->SetValue(0);
         StandardMetrics.ms_v_env_on->SetValue(true);
-        StandardMetrics.ms_v_env_awake->SetValue(true);
         StandardMetrics.ms_v_env_handbrake->SetValue(false);
         }
       break;
@@ -255,13 +256,6 @@ void OvmsVehicleVoltAmpera::Ticker1(uint32_t ticker)
       StandardMetrics.ms_v_env_awake->SetValue(false);
       StandardMetrics.ms_v_env_handbrake->SetValue(true);
       PollSetState(0);
-      }
-    else
-      {
-      // Car is awake
-      StandardMetrics.ms_v_env_on->SetValue(true);
-      StandardMetrics.ms_v_env_awake->SetValue(true);
-      StandardMetrics.ms_v_env_handbrake->SetValue(false);
       }
     }
 
