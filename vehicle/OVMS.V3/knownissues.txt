@@ -37,3 +37,9 @@ Open Vehicle Monitor System v3 - Known issues
 
 * Advanced Charge control not currently implemented in 3.x.
   Note that scripting can go someway towards providing equivalent functionality.
+
+* SMS to command gateway is not currently implemented.
+
+* SMS notifications are not currently implemented.
+
+* Only some PUSH notifications are currently implemented, for some vehicle.

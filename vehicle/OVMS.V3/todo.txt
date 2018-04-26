@@ -30,7 +30,7 @@ MWJ     90%          OBDII port
                      Tazzari port
                      Think City port
 MB      70%          Renault Twizy port
-                     Volt Ampera port
+MWJ     80%          Volt Ampera port
                      Renault Zoe port
 
                    OBDII console
@@ -49,7 +49,7 @@ SC      Done         Alert/progress messages
                    Config system
 MWJ    Done          FAT/SPIFS wear-leveled filesystem in flash
 MWJ    Done          Config system
-MWJ                  Component launch based on config
+MB     Done          Component launch based on config
 
                    Event system
 MWJ    Done          Event system
@@ -66,7 +66,6 @@ MWJ    Done          OVMS v2 protocol
                      MQTT protocol
 
                    OTA
-MWJ    90%           OTA update system
+MWJ    95%           OTA update system
 MWJ    Done          CFCARD update system
 MWJ    Done          Network/WIFI update system
-
