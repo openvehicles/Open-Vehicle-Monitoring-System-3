@@ -243,6 +243,6 @@ void Housekeeping::TimeLogger(std::string event, void* data)
   size_t free_32bit = heap_caps_get_free_size(MALLOC_CAP_32BIT|MALLOC_CAP_INTERNAL);
   size_t lgst_8bit = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
 
-  ESP_LOGI(TAG, "%.24s %s (RAM: 8b=%zu-%zu 32b=%zu)",
+  ESP_LOGI(TAG, "%.24s %-3.3s (RAM: 8b=%zu-%zu 32b=%zu)",
     asctime(tmu), tz, lgst_8bit, free_8bit, free_32bit-free_8bit);
   }
