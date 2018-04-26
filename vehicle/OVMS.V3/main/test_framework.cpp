@@ -169,6 +169,8 @@ void test_watchdog(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 void test_realloc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   void* buf;
+  void *interfere = NULL;
+
   writer->puts("First check heap integrity...");
   heap_caps_check_integrity_all(true);
 
@@ -182,6 +184,15 @@ void test_realloc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   for (int k=1; k<1001; k++)
     {
     buf = ExternalRamRealloc(buf, 4096+k);
+    if (interfere == NULL)
+      {
+      interfere = ExternalRamMalloc(1024);
+      }
+    else
+      {
+      free(interfere);
+      interfere = NULL;
+      }
     }
 
   writer->puts("Check heap integrity...");
@@ -191,6 +202,15 @@ void test_realloc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   for (int k=1001; k>0; k--)
     {
     buf = ExternalRamRealloc(buf, 4096+k);
+    if (interfere == NULL)
+      {
+      interfere = ExternalRamMalloc(1024);
+      }
+    else
+      {
+      free(interfere);
+      interfere = NULL;
+      }
     }
 
   writer->puts("Check heap integrity...");
@@ -198,6 +218,7 @@ void test_realloc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 
   writer->puts("And free the buffer...");
   free(buf);
+  if (interfere != NULL) free(interfere);
 
   writer->puts("Final check of heap integrity...");
   heap_caps_check_integrity_all(true);
