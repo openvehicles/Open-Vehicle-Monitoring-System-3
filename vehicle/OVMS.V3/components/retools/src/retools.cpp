@@ -174,12 +174,21 @@ void re::MongooseHandler(struct mg_connection *nc, int ev, void *p)
         return;
         }
 
+      //ESP_EARLY_LOGI(TAG,"MG_EV_RECV %d bytes",bl);
       while(1)
         {
-        size_t used = m_serveformat->put(&frame, bp, bl);
+        if (bl == 0)
+          {
+          if (consumed > 0) mbuf_remove(&nc->recv_mbuf, consumed);
+          //ESP_LOGI(TAG,"CRTD complete consumed %d bytes",consumed);
+          return;
+          }
+        size_t used = m_serveformat_out->put(&frame, bp, bl);
+        //ESP_EARLY_LOGI(TAG,"CRTD used %d bytes",used);
         if (used <= 0)
           {
           if (consumed > 0) mbuf_remove(&nc->recv_mbuf, consumed);
+          //ESP_EARLY_LOGI(TAG,"CRTD complete consumed %d bytes",consumed);
           return;
           }
         bp += used;
@@ -320,7 +329,7 @@ void re::DoServe(CAN_frame_t* frame)
 
     struct timeval t;
     gettimeofday(&t,NULL);
-    std::string encoded = m_serveformat->get(&t, frame);
+    std::string encoded = m_serveformat_in->get(&t, frame);
     const char* s = encoded.c_str();
     size_t len = encoded.length();
 
@@ -415,7 +424,8 @@ re::re(const char* name)
   m_finished = monotonictime;
   m_mode = Serve;
   m_servemode = Ignore;
-  m_serveformat = new candump_crtd();
+  m_serveformat_in = new candump_crtd();
+  m_serveformat_out = new candump_crtd();
   xTaskCreatePinnedToCore(RE_task, "OVMS RE", 4096, (void*)this, 5, &m_task, 1);
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
   MyCan.RegisterListener(m_rxqueue);
@@ -546,7 +556,7 @@ void re_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
   switch (MyRE->m_mode)
     {
     case Serve:
-      writer->printf("Mode:    Serving (%s)\n",MyRE->m_serveformat->formatname());
+      writer->printf("Mode:    Serving (%s)\n",MyRE->m_serveformat_in->formatname());
       switch (MyRE->m_servemode)
         {
         case Ignore:
@@ -833,11 +843,13 @@ void re_serve_format(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
 
   if (strcmp(cmd->GetName(), "crtd")==0)
     {
-    delete MyRE->m_serveformat;
-    MyRE->m_serveformat = new candump_crtd();
+    delete MyRE->m_serveformat_in;
+    delete MyRE->m_serveformat_out;
+    MyRE->m_serveformat_in = new candump_crtd();
+    MyRE->m_serveformat_out = new candump_crtd();
     }
 
-  writer->printf("RE serve format is %s\n",MyRE->m_serveformat->formatname());
+  writer->printf("RE serve format is %s\n",MyRE->m_serveformat_in->formatname());
   }
 
 void re_serve_mode(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)

@@ -33,6 +33,7 @@
 
 candump_crtd::candump_crtd()
   {
+  m_bufpos = 0;
   }
 
 candump_crtd::~candump_crtd()
@@ -46,9 +47,9 @@ const char* candump_crtd::formatname()
 
 std::string candump_crtd::get(struct timeval *time, CAN_frame_t *frame)
   {
-  char buffer[64];
-  char busnumber[2]; busnumber[0]=0; busnumber[1]=0;
+  m_bufpos = 0;
 
+  char busnumber[2]; busnumber[0]=0; busnumber[1]=0;
   if (frame->origin)
     {
     const char* name = frame->origin->GetName();
@@ -59,7 +60,7 @@ std::string candump_crtd::get(struct timeval *time, CAN_frame_t *frame)
       }
     }
 
-  sprintf(buffer,"%ld.%06ld %sR%s %0*X",
+  sprintf(m_buf,"%ld.%06ld %sR%s %0*X",
     time->tv_sec, time->tv_usec,
     busnumber,
     (frame->FIR.B.FF == CAN_frame_std) ? "11":"29",
@@ -67,11 +68,11 @@ std::string candump_crtd::get(struct timeval *time, CAN_frame_t *frame)
     frame->MsgID);
 
   for (int k=0; k<frame->FIR.B.DLC; k++)
-    sprintf(buffer+strlen(buffer)," %02x", frame->data.u8[k]);
+    sprintf(m_buf+strlen(m_buf)," %02x", frame->data.u8[k]);
 
-  strcat(buffer,"\n");
+  strcat(m_buf,"\n");
 
-  return std::string(buffer);
+  return std::string(m_buf);
   }
 
 size_t candump_crtd::put(CAN_frame_t *frame, uint8_t *buffer, size_t len)
@@ -79,17 +80,30 @@ size_t candump_crtd::put(CAN_frame_t *frame, uint8_t *buffer, size_t len)
   size_t k;
   char *b = (char*)buffer;
 
+  memset(frame,0,sizeof(CAN_frame_t));
+
   for (k=0;k<len;k++)
     {
-    if ((b[k]=='\r')||(b[k]=='\n')) break;
+    if ((b[k]=='\r')||(b[k]=='\n'))
+      {
+      //ESP_EARLY_LOGI(TAG,"CRTD GOT CR/LF %02x",b[k]);
+      if (m_bufpos == 0)
+        continue;
+      else
+        break;
+      }
+    m_buf[m_bufpos] = b[k];
+    if (m_bufpos < CANDUMP_CRTD_MAXLEN) m_bufpos++;
     }
-
-  if (k>=len) return 0;
+  //ESP_EARLY_LOGI(TAG,"CRTD PUT bufpos=%d inlen=%d now=%d",m_bufpos,len,k);
+  if (k>=len) return len;
 
   // OK. We have a buffer ready for decoding...
   // buffer[Start .. k-1]
-  b[k] = 0;
-  memset(frame,0,sizeof(CAN_frame_t));
+  m_buf[m_bufpos] = 0;
+  //ESP_EARLY_LOGI(TAG,"CRTD message buffer is %d bytes",m_bufpos);
+  m_bufpos = 0; // Prepare for next message
+  b = m_buf;
 
   // We look for something like
   // 1524311386.811100 1R11 100 01 02 03
@@ -115,7 +129,7 @@ size_t candump_crtd::put(CAN_frame_t *frame, uint8_t *buffer, size_t len)
     frame->FIR.B.FF = CAN_frame_ext;
     }
   else
-    return k+1;
+    return k+2;
 
   if (b[3] != ' ') return k+1;
   b += 4;
@@ -142,5 +156,6 @@ size_t candump_crtd::put(CAN_frame_t *frame, uint8_t *buffer, size_t len)
   cbus[4] = 0;
   frame->origin = (canbus*)MyPcpApp.FindDeviceByName(cbus);
 
+  //ESP_EARLY_LOGI(TAG,"CRTD done return=%d",k+1);
   return k+1;
   }

@@ -49,5 +49,5 @@ std::string candump::get(struct timeval *time, CAN_frame_t *frame)
 
 size_t candump::put(CAN_frame_t *frame, uint8_t *buffer, size_t len)
   {
-  return 0;
+  return len;
   }

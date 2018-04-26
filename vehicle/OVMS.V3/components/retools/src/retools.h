@@ -110,7 +110,8 @@ class re : public pcp, public ExternalRamAllocated
     REServeMode m_servemode;
     re_id_map_t m_idmap;
     re_record_map_t m_rmap;
-    candump* m_serveformat;
+    candump* m_serveformat_in;
+    candump* m_serveformat_out;
     uint32_t m_obdii_std_min;
     uint32_t m_obdii_std_max;
     uint32_t m_obdii_ext_min;

@@ -29,6 +29,8 @@
 
 #include "candump.h"
 
+#define CANDUMP_CRTD_MAXLEN 63
+
 class candump_crtd : public candump
   {
   public:
@@ -37,6 +39,10 @@ class candump_crtd : public candump
 
   public:
     virtual const char* formatname();
+
+  protected:
+    char m_buf[CANDUMP_CRTD_MAXLEN+1];
+    size_t m_bufpos;
 
   public:
     virtual std::string get(struct timeval *time, CAN_frame_t *frame);
