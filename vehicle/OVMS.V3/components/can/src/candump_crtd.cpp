@@ -75,6 +75,16 @@ std::string candump_crtd::get(struct timeval *time, CAN_frame_t *frame)
   return std::string(m_buf);
   }
 
+std::string candump_crtd::getheader(struct timeval *time)
+  {
+  m_bufpos = 0;
+
+  sprintf(m_buf,"%ld.%06ld CXX OVMS\n",
+    time->tv_sec, time->tv_usec);
+
+  return std::string(m_buf);
+  }
+
 size_t candump_crtd::put(CAN_frame_t *frame, uint8_t *buffer, size_t len)
   {
   size_t k;

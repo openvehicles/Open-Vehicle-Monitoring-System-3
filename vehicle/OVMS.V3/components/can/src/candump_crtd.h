@@ -46,6 +46,7 @@ class candump_crtd : public candump
 
   public:
     virtual std::string get(struct timeval *time, CAN_frame_t *frame);
+    virtual std::string getheader(struct timeval *time);
     virtual size_t put(CAN_frame_t *frame, uint8_t *buffer, size_t len);
   };
 

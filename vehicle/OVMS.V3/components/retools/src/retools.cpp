@@ -146,6 +146,14 @@ void re::MongooseHandler(struct mg_connection *nc, int ev, void *p)
       ESP_LOGI(TAG, "Log service connection from %s",addr);
       OvmsMutexLock lock(&m_smapmutex);
       m_smap[nc] = 1;
+      if (m_serveformat_in)
+        {
+        struct timeval t;
+        gettimeofday(&t,NULL);
+        std::string encoded = m_serveformat_in->getheader(&t);
+        if (encoded.length() > 0)
+          mg_send(nc, (const char*)encoded.c_str(), encoded.length());
+        }
       break;
       }
 
