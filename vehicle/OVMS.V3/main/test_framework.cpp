@@ -166,6 +166,64 @@ void test_watchdog(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   writer->puts("Error: We should never get here");
   }
 
+void test_realloc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  void* buf;
+  void *interfere = NULL;
+
+  writer->puts("First check heap integrity...");
+  heap_caps_check_integrity_all(true);
+
+  writer->puts("Now allocate 4KB RAM...");
+  buf = ExternalRamMalloc(4096);
+
+  writer->puts("Check heap integrity...");
+  heap_caps_check_integrity_all(true);
+
+  writer->puts("Now re-allocate bigger, 1,000 times...");
+  for (int k=1; k<1001; k++)
+    {
+    buf = ExternalRamRealloc(buf, 4096+k);
+    if (interfere == NULL)
+      {
+      interfere = ExternalRamMalloc(1024);
+      }
+    else
+      {
+      free(interfere);
+      interfere = NULL;
+      }
+    }
+
+  writer->puts("Check heap integrity...");
+  heap_caps_check_integrity_all(true);
+
+  writer->puts("Now re-allocate smaller, 1,000 times...");
+  for (int k=1001; k>0; k--)
+    {
+    buf = ExternalRamRealloc(buf, 4096+k);
+    if (interfere == NULL)
+      {
+      interfere = ExternalRamMalloc(1024);
+      }
+    else
+      {
+      free(interfere);
+      interfere = NULL;
+      }
+    }
+
+  writer->puts("Check heap integrity...");
+  heap_caps_check_integrity_all(true);
+
+  writer->puts("And free the buffer...");
+  free(buf);
+  if (interfere != NULL) free(interfere);
+
+  writer->puts("Final check of heap integrity...");
+  heap_caps_check_integrity_all(true);
+  }
+
 class TestFrameworkInit
   {
   public: TestFrameworkInit();
@@ -184,4 +242,5 @@ TestFrameworkInit::TestFrameworkInit()
   cmd_test->RegisterCommand("chargen","Character generator [<#lines>] [<delay_ms>]",test_chargen,"",0,2,true);
   cmd_test->RegisterCommand("echo", "Test getchar", test_echo, "", 0, 0,true);
   cmd_test->RegisterCommand("watchdog", "Test task spinning (and watchdog firing)", test_watchdog, "", 0, 0,true);
+  cmd_test->RegisterCommand("realloc", "Test memory re-allocations", test_realloc, "", 0, 0,true);
   }

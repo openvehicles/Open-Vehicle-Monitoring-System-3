@@ -1,9 +1,13 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Module:        CAN dump CRTD format
-;    Date:          18th January 2018
+;    Date:          14th March 2017
 ;
-;    (C) 2018       Mark Webb-Johnson
+;    Changes:
+;    1.0  Initial release
+;
+;    (C) 2011       Michael Stegen / Stegen Electronics
+;    (C) 2011-2017  Mark Webb-Johnson
+;    (C) 2011        Sonny Chen @ EPRO/DX
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -24,30 +28,43 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __CANDUMP_CRTD_H__
-#define __CANDUMP_CRTD_H__
+#include <strings.h>
+#include "ovms_malloc.h"
+#include "esp_heap_caps.h"
 
-#include "candump.h"
-
-#define CANDUMP_CRTD_MAXLEN 63
-
-class candump_crtd : public candump
+void* ExternalRamMalloc(size_t sz)
   {
-  public:
-    candump_crtd();
-    virtual ~candump_crtd();
+  void* ret = heap_caps_malloc(sz, MALLOC_CAP_SPIRAM);
+  if (ret)
+    return ret;
+  else
+    return malloc(sz);
+  }
 
-  public:
-    virtual const char* formatname();
+void* ExternalRamCalloc(size_t count, size_t size)
+  {
+  void* ret = heap_caps_malloc(count*size, MALLOC_CAP_SPIRAM);
+  if (ret)
+    {
+    bzero(ret, count*size);
+    return ret;
+    }
+  else
+    return calloc(count, size);
+  }
 
-  protected:
-    char m_buf[CANDUMP_CRTD_MAXLEN+1];
-    size_t m_bufpos;
-
-  public:
-    virtual std::string get(struct timeval *time, CAN_frame_t *frame);
-    virtual std::string getheader(struct timeval *time);
-    virtual size_t put(CAN_frame_t *frame, uint8_t *buffer, size_t len);
-  };
-
-#endif // __CANDUMP_CRTD_H__
+void* ExternalRamRealloc(void *ptr, size_t size)
+  {
+  if (!ptr)
+    return ExternalRamMalloc(size);
+  if (size == 0)
+    {
+    heap_caps_free(ptr);
+    return NULL;
+    }
+  void* ret = heap_caps_realloc(ptr, size, MALLOC_CAP_SPIRAM);
+  if (ret)
+    return ret;
+  else
+    return realloc(ptr, size);
+  }

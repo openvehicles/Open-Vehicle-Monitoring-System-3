@@ -37,6 +37,7 @@
 #include <string>
 #include <sstream>
 #include <new>
+#include "ovms_malloc.h"
 
 extern uint32_t monotonictime;
 
@@ -46,9 +47,6 @@ class ExternalRamAllocated
     static void* operator new(std::size_t sz);
     static void* operator new[](std::size_t sz);
   };
-
-void* ExternalRamMalloc(std::size_t sz);
-
 
 // C++11 Allocator:
 template <class T>

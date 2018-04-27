@@ -151,6 +151,7 @@ class OvmsServerV2 : public OvmsServer
     bool m_pending_notify_alert;
     bool m_pending_notify_data;
     uint32_t m_pending_notify_data_last;
+    int m_pending_notify_data_retransmit;
   };
 
 class OvmsServerV2Init

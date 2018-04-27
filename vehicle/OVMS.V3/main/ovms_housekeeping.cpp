@@ -235,14 +235,15 @@ void Housekeeping::TimeLogger(std::string event, void* data)
   time_t rawtime;
   time ( &rawtime );
   struct tm* tmu = localtime(&rawtime);
+  char tb[64];
 
-  const char *tz = getenv("TZ");
-  if (tz == NULL) tz = "UTC";
+  if (strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S %Z", tmu) > 0)
+    {
+    size_t free_8bit = heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
+    size_t free_32bit = heap_caps_get_free_size(MALLOC_CAP_32BIT|MALLOC_CAP_INTERNAL);
+    size_t lgst_8bit = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
 
-  size_t free_8bit = heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
-  size_t free_32bit = heap_caps_get_free_size(MALLOC_CAP_32BIT|MALLOC_CAP_INTERNAL);
-  size_t lgst_8bit = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
-
-  ESP_LOGI(TAG, "%.24s %s (RAM: 8b=%zu-%zu 32b=%zu)",
-    asctime(tmu), tz, lgst_8bit, free_8bit, free_32bit-free_8bit);
+    ESP_LOGI(TAG, "%.24s (RAM: 8b=%zu-%zu 32b=%zu)",
+    tb, lgst_8bit, free_8bit, free_32bit-free_8bit);
+    }
   }

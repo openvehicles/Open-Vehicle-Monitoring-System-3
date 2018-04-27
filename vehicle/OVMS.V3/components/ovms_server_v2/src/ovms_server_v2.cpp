@@ -266,6 +266,7 @@ void OvmsServerV2::ProcessServerMsg()
     m_pending_notify_alert = true;
     m_pending_notify_data = true;
     m_pending_notify_data_last = 0;
+    m_pending_notify_data_retransmit = 0;
     m_connretry = 0;
     StandardMetrics.ms_s_v2_connected->SetValue(true);
     SetStatus("OVMS V2 login successful, and crypto channel established", false, Connected);
@@ -1313,17 +1314,24 @@ void OvmsServerV2::TransmitNotifyAlert()
 
 void OvmsServerV2::TransmitNotifyData()
   {
-  m_pending_notify_data = false;
-
   // Find the type object
   OvmsNotifyType* data = MyNotify.GetType("data");
   if (data == NULL) return;
+
+  uint32_t starttime = esp_log_timestamp();
 
   while(1)
     {
     // Find the first entry
     OvmsNotifyEntry* e = data->FirstUnreadEntry(MyOvmsServerV2Reader, m_pending_notify_data_last);
-    if (e == NULL) return;
+    if (e == NULL)
+      {
+      m_pending_notify_data = false;
+      // if we have sent something, check for retransmissions in 10 seconds:
+      if (m_pending_notify_data_last)
+        m_pending_notify_data_retransmit = 10;
+      return;
+      }
 
     extram::string msg = e->GetValue();
     ESP_LOGD(TAG, "TransmitNotifyData: msg=%s", msg.c_str());
@@ -1343,6 +1351,13 @@ void OvmsServerV2::TransmitNotifyData()
       << msg;
     Transmit(buffer.str().c_str());
     m_pending_notify_data_last = e->m_id;
+    
+    // use max 500 ms of the ticker.1 event time per run:
+    if (esp_log_timestamp() - starttime > 500)
+      {
+      ESP_LOGD(TAG, "TransmitNotifyData: used %d ms", esp_log_timestamp() - starttime);
+      return;
+      }
     }
   }
 
@@ -1586,10 +1601,21 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
     if (m_now_firmware) TransmitMsgFirmware();
     if (m_now_capabilities) TransmitMsgCapabilities();
 
-    if (m_pending_notify_info) TransmitNotifyInfo();
-    if (m_pending_notify_error) TransmitNotifyError();
     if (m_pending_notify_alert) TransmitNotifyAlert();
-    if (m_pending_notify_data) TransmitNotifyData();
+    if (m_pending_notify_error) TransmitNotifyError();
+    if (m_pending_notify_info) TransmitNotifyInfo();
+    
+    if (m_pending_notify_data)
+      {
+      TransmitNotifyData();
+      }
+    else if (m_pending_notify_data_retransmit > 0 && --m_pending_notify_data_retransmit == 0)
+      {
+      // check for retransmissions:
+      ESP_LOGD(TAG, "TransmitNotifyData: checking for retransmissions");
+      m_pending_notify_data_last = 0;
+      TransmitNotifyData();
+      }
     }
   }
 
@@ -1625,6 +1651,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
   m_pending_notify_alert = false;
   m_pending_notify_data = false;
   m_pending_notify_data_last = 0;
+  m_pending_notify_data_retransmit = 0;
 
   if (MyConfig.GetParamValue("vehicle", "units.distance").compare("M") == 0)
     m_units_distance = Miles;

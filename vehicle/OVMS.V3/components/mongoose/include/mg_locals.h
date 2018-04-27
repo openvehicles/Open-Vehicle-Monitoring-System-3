@@ -33,6 +33,7 @@
 
 #include "sdkconfig.h"
 #include "ovms_log.h"
+#include "ovms_malloc.h"
 
 #define ESP_PLATFORM 1
 #define MG_ENABLE_HTTP 1
@@ -54,5 +55,16 @@
 #ifdef CONFIG_MG_ENABLE_DIRECTORY_LISTING
 #define MG_ENABLE_DIRECTORY_LISTING 1
 #endif
+
+// Override memory allocation macros in mongoose.c
+#define CS_COMMON_MG_MEM_H_
+#define MG_MALLOC ExternalRamMalloc
+#define MG_CALLOC ExternalRamCalloc
+#define MG_REALLOC ExternalRamRealloc
+#define MG_FREE free
+
+// Let mongoose use LWIP getaddrinfo():
+#define MG_ENABLE_SYNC_RESOLVER 1
+#define MG_ENABLE_GETADDRINFO 1
 
 #endif // __mg_locals_h__

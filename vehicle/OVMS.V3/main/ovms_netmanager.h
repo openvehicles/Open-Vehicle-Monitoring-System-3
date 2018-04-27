@@ -58,7 +58,8 @@ class OvmsNetManager
 
   protected:
     void PrioritiseAndIndicate();
-    void SetDNSServer();
+    void SaveDNSServer(ip_addr_t* dnsstore);
+    void SetDNSServer(ip_addr_t* dnsstore);
 
   public:
     bool m_connected_wifi;
@@ -66,6 +67,8 @@ class OvmsNetManager
     bool m_connected_any;
     bool m_wifi_ap;
     bool m_network_any;
+    ip_addr_t m_dns_wifi[DNS_MAX_SERVERS];
+    ip_addr_t m_dns_modem[DNS_MAX_SERVERS];
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   protected:

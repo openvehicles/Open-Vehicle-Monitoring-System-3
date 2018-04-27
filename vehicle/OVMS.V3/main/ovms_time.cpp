@@ -51,12 +51,18 @@ void time_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   {
   time_t rawtime;
   time ( &rawtime );
+  char tb[64];
+  char* tz = getenv("TZ");
+
+  writer->printf("Time Zone:  %s\n", (tz!=NULL)?tz:"Not defined");
 
   struct tm* tmu = gmtime(&rawtime);
-  writer->printf("UTC Time:   %s", asctime(tmu));
+  if (strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S UTC", tmu) > 0)
+    writer->printf("UTC Time:   %s\n", tb);
 
   tmu = localtime(&rawtime);
-  writer->printf("Local Time: %s", asctime(tmu));
+  if (strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S %Z", tmu) > 0)
+    writer->printf("Local Time: %s\n", tb);
 
   writer->printf("Provider:   %s\n",(MyTime.m_current)?MyTime.m_current->m_provider:"None");
 

@@ -1,9 +1,13 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Module:        CAN dump CRTD format
-;    Date:          18th January 2018
+;    Date:          14th March 2017
 ;
-;    (C) 2018       Mark Webb-Johnson
+;    Changes:
+;    1.0  Initial release
+;
+;    (C) 2011       Michael Stegen / Stegen Electronics
+;    (C) 2011-2017  Mark Webb-Johnson
+;    (C) 2011        Sonny Chen @ EPRO/DX
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -24,30 +28,21 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __CANDUMP_CRTD_H__
-#define __CANDUMP_CRTD_H__
+#ifndef __OVMS_MALLOC_H__
+#define __OVMS_MALLOC_H__
 
-#include "candump.h"
+#include <stddef.h>
 
-#define CANDUMP_CRTD_MAXLEN 63
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-class candump_crtd : public candump
-  {
-  public:
-    candump_crtd();
-    virtual ~candump_crtd();
+void* ExternalRamMalloc(size_t sz);
+void* ExternalRamCalloc(size_t count, size_t size);
+void* ExternalRamRealloc(void *ptr, size_t size);
 
-  public:
-    virtual const char* formatname();
+#ifdef __cplusplus
+}
+#endif
 
-  protected:
-    char m_buf[CANDUMP_CRTD_MAXLEN+1];
-    size_t m_bufpos;
-
-  public:
-    virtual std::string get(struct timeval *time, CAN_frame_t *frame);
-    virtual std::string getheader(struct timeval *time);
-    virtual size_t put(CAN_frame_t *frame, uint8_t *buffer, size_t len);
-  };
-
-#endif // __CANDUMP_CRTD_H__
+#endif //#ifndef __OVMS_MALLOC_H__
