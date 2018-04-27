@@ -102,6 +102,12 @@ OvmsNetManager::OvmsNetManager()
   m_wifi_ap = false;
   m_network_any = false;
 
+  for (int i=0; i<DNS_MAX_SERVERS; i++)
+    {
+    m_dns_modem[i] = (ip_addr_t)ip_addr_any;
+    m_dns_wifi[i] = (ip_addr_t)ip_addr_any;
+    }
+
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   m_mongoose_task = 0;
   m_mongoose_running = false;
@@ -124,7 +130,6 @@ OvmsNetManager::OvmsNetManager()
   MyEvents.RegisterEvent(TAG,"system.modem.gotip", std::bind(&OvmsNetManager::ModemUp, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.stop", std::bind(&OvmsNetManager::ModemDown, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.down", std::bind(&OvmsNetManager::ModemDown, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"network.interface.up", std::bind(&OvmsNetManager::InterfaceUp, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsNetManager::ConfigChanged, this, _1, _2));
 
   MyConfig.RegisterParam("network", "Network Configuration", true, true);
@@ -139,6 +144,7 @@ OvmsNetManager::~OvmsNetManager()
 void OvmsNetManager::WifiUpSTA(std::string event, void* data)
   {
   m_connected_wifi = true;
+  SaveDNSServer(m_dns_wifi);
   PrioritiseAndIndicate();
 
   StandardMetrics.ms_m_net_type->SetValue("wifi");
@@ -233,6 +239,7 @@ void OvmsNetManager::WifiDownAP(std::string event, void* data)
 void OvmsNetManager::ModemUp(std::string event, void* data)
   {
   m_connected_modem = true;
+  SaveDNSServer(m_dns_modem);
   PrioritiseAndIndicate();
 
   StandardMetrics.ms_m_net_type->SetValue("modem");
@@ -291,12 +298,6 @@ void OvmsNetManager::ModemDown(std::string event, void* data)
     }
   }
 
-void OvmsNetManager::InterfaceUp(std::string event, void* data)
-  {
-  // A network interface has come up. We need to set DNS, if necessary
-  SetDNSServer();
-  }
-
 void OvmsNetManager::ConfigChanged(std::string event, void* data)
   {
   OvmsConfigParam* param = (OvmsConfigParam*)data;
@@ -304,50 +305,70 @@ void OvmsNetManager::ConfigChanged(std::string event, void* data)
     {
     // Network config has been changed, apply:
     if (m_network_any)
-      SetDNSServer();
+      PrioritiseAndIndicate();
     }
   }
 
-void OvmsNetManager::SetDNSServer()
+void OvmsNetManager::SaveDNSServer(ip_addr_t* dnsstore)
+  {
+  for (int i=0; i<DNS_MAX_SERVERS; i++)
+    {
+    dnsstore[i] = dns_getserver(i);
+    ESP_LOGD(TAG, "Saved DNS#%d %s", i, inet_ntoa(dnsstore[i]));
+    }
+  }
+
+void OvmsNetManager::SetDNSServer(ip_addr_t* dnsstore)
   {
   // Read DNS configuration:
   std::string servers = MyConfig.GetParamValue("network", "dns");
-  if (servers.empty()) return;
-
-  int spos = 0;
-  size_t sep = 0;
-  while ((spos<DNS_MAX_SERVERS)&&(sep != string::npos))
+  if (!servers.empty())
     {
-    // Set the specified DNS servers
-    size_t next = servers.find(' ',sep);
-    std::string cserver;
-    ip_addr_t serverip;
-    if (next == std::string::npos)
+    int spos = 0;
+    size_t sep = 0;
+    while ((spos<DNS_MAX_SERVERS)&&(sep != string::npos))
       {
-      // The last one
-      cserver = std::string(servers,sep,string::npos);
-      sep = string::npos;
+      // Set the specified DNS servers
+      size_t next = servers.find(' ',sep);
+      std::string cserver;
+      ip_addr_t serverip;
+      if (next == std::string::npos)
+        {
+        // The last one
+        cserver = std::string(servers,sep,string::npos);
+        sep = string::npos;
+        }
+      else
+        {
+        // One of many
+        cserver = std::string(servers,sep,next-sep);
+        sep = next+1;
+        }
+      ESP_LOGI(TAG, "Set DNS#%d %s",spos,cserver.c_str());
+      ip4_addr_set_u32(ip_2_ip4(&serverip), ipaddr_addr(cserver.c_str()));
+      serverip.type = IPADDR_TYPE_V4;
+      dns_setserver(spos++, &serverip);
       }
-    else
+    for (;spos<DNS_MAX_SERVERS;spos++)
       {
-      // One of many
-      cserver = std::string(servers,sep,next-sep);
-      sep = next+1;
+      dns_setserver(spos, IP_ADDR_ANY);
       }
-    ESP_LOGI(TAG, "Set DNS#%d %s",spos,cserver.c_str());
-    ip4_addr_set_u32(ip_2_ip4(&serverip), ipaddr_addr(cserver.c_str()));
-    serverip.type = IPADDR_TYPE_V4;
-    dns_setserver(spos++, &serverip);
     }
-  for (;spos<DNS_MAX_SERVERS;spos++)
+  else if (dnsstore)
     {
-    dns_setserver(spos, IP_ADDR_ANY);
+    // Set stored DNS servers:
+    for (int i=0; i<DNS_MAX_SERVERS; i++)
+      {
+      ESP_LOGI(TAG, "Set DNS#%d %s", i, inet_ntoa(dnsstore[i]));
+      dns_setserver(i, &dnsstore[i]);
+      }
     }
   }
 
 void OvmsNetManager::PrioritiseAndIndicate()
   {
   const char *search = NULL;
+  ip_addr_t* dns = NULL;
 
   // A convenient place to keep track of connectivity in general
   m_connected_any = m_connected_wifi || m_connected_modem;
@@ -358,11 +379,13 @@ void OvmsNetManager::PrioritiseAndIndicate()
     {
     // Wifi is up
     search = "st";
+    dns = m_dns_wifi;
     }
   else if (m_connected_modem)
     {
     // Modem is up
     search = "pp";
+    dns = m_dns_modem;
     }
 
   if (search == NULL) return;
@@ -375,6 +398,7 @@ void OvmsNetManager::PrioritiseAndIndicate()
         pri->name[0], pri->name[1], pri->num,
         IP2STR(&pri->ip_addr.u_addr.ip4), IP2STR(&pri->netmask.u_addr.ip4), IP2STR(&pri->gw.u_addr.ip4));
       netif_set_default(pri);
+      SetDNSServer(dns);
       return;
       }
     }

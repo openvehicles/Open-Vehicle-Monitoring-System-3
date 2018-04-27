@@ -63,4 +63,8 @@
 #define MG_REALLOC ExternalRamRealloc
 #define MG_FREE free
 
+// Let mongoose use LWIP getaddrinfo():
+#define MG_ENABLE_SYNC_RESOLVER 1
+#define MG_ENABLE_GETADDRINFO 1
+
 #endif // __mg_locals_h__
