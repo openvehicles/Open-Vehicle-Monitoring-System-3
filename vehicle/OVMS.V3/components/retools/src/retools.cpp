@@ -856,6 +856,13 @@ void re_serve_format(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     MyRE->m_serveformat_in = new candump_crtd();
     MyRE->m_serveformat_out = new candump_crtd();
     }
+  else if (strcmp(cmd->GetName(), "pcap")==0)
+    {
+    delete MyRE->m_serveformat_in;
+    delete MyRE->m_serveformat_out;
+    MyRE->m_serveformat_in = new candump_pcap();
+    MyRE->m_serveformat_out = new candump_pcap();
+    }
 
   writer->printf("RE serve format is %s\n",MyRE->m_serveformat_in->formatname());
   }
@@ -946,6 +953,7 @@ REInit::REInit()
   OvmsCommand* cmd_serve = cmd_re->RegisterCommand("serve","RE serve framework",NULL, "", 0, 0, true);
   OvmsCommand* cmd_serve_format = cmd_serve->RegisterCommand("format","RE serve format framework",NULL, "", 0, 0, true);
   cmd_serve_format->RegisterCommand("crtd","Set RE server to CRTD format",re_serve_format, "", 0, 0, true);
+  cmd_serve_format->RegisterCommand("pcap","Set RE server to PCAP format",re_serve_format, "", 0, 0, true);
   OvmsCommand* cmd_serve_mode = cmd_serve->RegisterCommand("mode","RE serve mode framework",NULL, "", 0, 0, true);
   cmd_serve_mode->RegisterCommand("ignore","Set RE server to ignore incoming messages",re_serve_mode, "", 0, 0, true);
   cmd_serve_mode->RegisterCommand("simulate","Set RE server to simulate incoming messages",re_serve_mode, "", 0, 0, true);

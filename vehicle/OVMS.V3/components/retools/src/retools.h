@@ -39,6 +39,7 @@
 #include "can.h"
 #include "candump.h"
 #include "candump_crtd.h"
+#include "candump_pcap.h"
 #include "pcp.h"
 #include "ovms.h"
 #include "ovms_mutex.h"
