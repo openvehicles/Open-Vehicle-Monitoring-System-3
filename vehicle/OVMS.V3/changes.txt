@@ -1,6 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- OTA: automatic daily firmware updates (wifi only)
+    auto [ota] = yes                Enable/disable
+    ota [auto.hour] = 2             Hour for daily check
 - Logging: persistent configuration, file cycling, web config UI:
     log [file.enable] = no          Enable/disable file logging
     log [file.maxsize] = 1024       Max log file size in kB, 0 = no cycling

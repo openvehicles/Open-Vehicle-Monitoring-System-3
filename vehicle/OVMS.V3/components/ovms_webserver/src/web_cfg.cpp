@@ -1310,34 +1310,55 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   std::string cmdres, mru;
   std::string action;
   ota_info info;
+  bool auto_enable;
+  std::string auto_hour, server, tag;
+  std::string output;
 
   if (c.method == "POST") {
     // process form submission:
     bool error = false, showform = true, reboot = false;
-    std::string output = "";
     action = c.getvar("action");
     
-    if (action.substr(0,3) == "set") {
-      info.partition_boot = c.getvar("boot_old");
-      std::string partition_boot = c.getvar("boot");
-      if (partition_boot != info.partition_boot) {
-        cmdres = ExecuteCommand("ota boot " + partition_boot);
-        if (cmdres.find("Error:") != std::string::npos)
-          error = true;
-        output += "<p><samp>" + cmdres + "</samp></p>";
+    auto_enable = (c.getvar("auto_enable") == "yes");
+    auto_hour = c.getvar("auto_hour");
+    server = c.getvar("server");
+    tag = c.getvar("tag");
+    
+    if (startsWith(server, "https:")) {
+      error = true;
+      output += "<p>Sorry, https not yet supported!</p>";
+    }
+    
+    if (!error) {
+      if (action.substr(0,3) == "set") {
+        info.partition_boot = c.getvar("boot_old");
+        std::string partition_boot = c.getvar("boot");
+        if (partition_boot != info.partition_boot) {
+          cmdres = ExecuteCommand("ota boot " + partition_boot);
+          if (cmdres.find("Error:") != std::string::npos)
+            error = true;
+          output += "<p><samp>" + cmdres + "</samp></p>";
+        }
+        else {
+          output += "<p>Boot partition unchanged.</p>";
+        }
+        if (!error && action == "set-reboot")
+          reboot = true;
+      }
+      else if (action == "reboot") {
+        reboot = true;
       }
       else {
-        output += "<p>Boot partition unchanged.</p>";
+        error = true;
+        output = "<p>Unknown action.</p>";
       }
-      if (!error && action == "set-reboot")
-        reboot = true;
     }
-    else if (action == "reboot") {
-      reboot = true;
-    }
-    else {
-      error = true;
-      output = "<p>Unknown action.</p>";
+    
+    if (!error) {
+      MyConfig.SetParamValueBool("auto", "ota", auto_enable);
+      MyConfig.SetParamValue("ota", "auto.hour", auto_hour);
+      MyConfig.SetParamValue("ota", "server", server);
+      MyConfig.SetParamValue("ota", "tag", tag);
     }
     
     // output result:
@@ -1359,29 +1380,37 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     }
   }
   else {
+    // read config:
+    auto_enable = MyConfig.GetParamValueBool("auto", "ota", true);
+    auto_hour = MyConfig.GetParamValue("ota", "auto.hour", "2");
+    server = MyConfig.GetParamValue("ota", "server");
+    tag = MyConfig.GetParamValue("ota", "tag");
+    
     // generate form:
     c.head(200);
   }
 
-  // read configuration:
+  // read status:
   MyOTA.GetStatus(info);
   
   c.panel_start("primary", "Firmware setup &amp; update");
   c.form_start(p.uri);
 
   c.input_info("Firmware version", info.version_firmware.c_str());
-  c.input_info("…available", info.version_server.c_str());
+  output = info.version_server;
+  output.append(" <button type=\"button\" class=\"btn btn-default\" data-toggle=\"modal\" data-target=\"#version-dialog\">Version info</button>");
+  c.input_info("…available", output.c_str());
   
   c.print(
     "<ul class=\"nav nav-tabs\">"
-      "<li class=\"active\"><a data-toggle=\"tab\" href=\"#tab-boot\">Boot <span class=\"hidden-xs\">config</span></a></li>"
+      "<li class=\"active\"><a data-toggle=\"tab\" href=\"#tab-setup\">Setup</a></li>"
       "<li><a data-toggle=\"tab\" href=\"#tab-flash-http\">Flash <span class=\"hidden-xs\">from</span> web</a></li>"
       "<li><a data-toggle=\"tab\" href=\"#tab-flash-vfs\">Flash <span class=\"hidden-xs\">from</span> file</a></li>"
     "</ul>"
     "<div class=\"tab-content\">"
-      "<div id=\"tab-boot\" class=\"tab-pane fade in active section-boot\">");
+      "<div id=\"tab-setup\" class=\"tab-pane fade in active section-setup\">");
 
-  // Boot:
+  // Boot partition:
   c.input_info("Running partition", info.partition_running.c_str());
   c.printf("<input type=\"hidden\" name=\"boot_old\" value=\"%s\">", _attr(info.partition_boot));
   c.input_select_start("Boot from", "boot");
@@ -1389,7 +1418,31 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   c.input_select_option("OTA_0 image", "ota_0", (info.partition_boot == "ota_0"));
   c.input_select_option("OTA_1 image", "ota_1", (info.partition_boot == "ota_1"));
   c.input_select_end();
+  
+  // Server & auto update:
+  c.print("<hr>");
+  c.input_checkbox("Enable auto update", "auto_enable", auto_enable,
+    "<p>Strongly recommended: if enabled, the module will perform automatic firmware updates within the hour specified, but only if a wifi network is available.</p>");
+  c.input("number", "Auto update hour", "auto_hour", auto_hour.c_str(), "Default: 2", NULL, "min=\"0\" max=\"23\" step=\"1\"");
   c.print(
+    "<datalist id=\"server-list\">"
+      "<option value=\"api.openvehicles.com/firmware/ota\">"
+      "<option value=\"ovms.dexters-web.de/firmware/ota\">"
+    "</datalist>"
+    "<datalist id=\"tag-list\">"
+      "<option value=\"main\">"
+      "<option value=\"edge\">"
+    "</datalist>"
+    );
+  c.input_text("Update server", "server", server.c_str(), "Specify or select from list (clear to see all options)",
+    "<p>Default is <code>api.openvehicles.com/firmware/ota</code>. Note: currently only http is supported.</p>",
+    "list=\"server-list\"");
+  c.input_text("Version tag", "tag", tag.c_str(), "Specify or select from list (clear to see all options)",
+    "<p>Default is <code>main</code> for standard releases. Use <code>edge</code> for bleeding edge developer builds.</p>",
+    "list=\"tag-list\"");
+  
+  c.print(
+    "<hr>"
     "<div class=\"form-group\">"
       "<div class=\"col-sm-offset-3 col-sm-9\">"
         "<button type=\"submit\" class=\"btn btn-default\" name=\"action\" value=\"set\">Set</button> "
@@ -1423,7 +1476,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   mru = MyConfig.GetParamValue("ota", "http.mru");
   c.input_text("HTTP URL", "flash_http", mru.c_str(),
     "optional: URL of firmware file",
-    "<p>Leave empty to download latest update from <code>openvehicles.com</code>. "
+    "<p>Leave empty to download the latest firmware from the update server. "
     "Note: currently only http is supported.</p>", "list=\"urls\"");
 
   c.print("<datalist id=\"urls\">");
@@ -1475,6 +1528,26 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "<p>The module can store up to three firmware images in a factory and two OTA partitions.</p>"
     "<p>Flashing from web or file writes alternating to the OTA partitions, the factory partition remains unchanged.</p>"
     "<p>You can flash the factory partition via USB, see developer manual for details.</p>");
+
+  c.printf(
+    "<div class=\"modal fade\" id=\"version-dialog\" role=\"dialog\" data-backdrop=\"static\" data-keyboard=\"false\">"
+      "<div class=\"modal-dialog modal-lg\">"
+        "<div class=\"modal-content\">"
+          "<div class=\"modal-header\">"
+            "<button type=\"button\" class=\"close\" data-dismiss=\"modal\">&times;</button>"
+            "<h4 class=\"modal-title\">Version info %s</h4>"
+          "</div>"
+          "<div class=\"modal-body\">"
+            "<pre>%s</pre>"
+          "</div>"
+          "<div class=\"modal-footer\">"
+            "<button type=\"button\" class=\"btn btn-default\" data-dismiss=\"modal\">Close</button>"
+          "</div>"
+        "</div>"
+      "</div>"
+    "</div>"
+    , _html(info.version_server)
+    , _html(info.changelog_server));
 
   c.print(
     "<div class=\"modal fade\" id=\"flash-dialog\" role=\"dialog\" data-backdrop=\"static\" data-keyboard=\"false\">"
