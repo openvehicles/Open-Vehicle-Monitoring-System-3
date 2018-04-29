@@ -41,6 +41,7 @@ static const char *TAG = "test";
 #include "ovms_command.h"
 #include "ovms_peripherals.h"
 #include "ovms_script.h"
+#include "strverscmp.h"
 
 void test_deepsleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -224,6 +225,16 @@ void test_realloc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   heap_caps_check_integrity_all(true);
   }
 
+void test_strverscmp(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  int c = strverscmp(argv[0],argv[1]);
+  writer->printf("%s %s %s\n",
+    argv[0],
+    (c<0)?"<":((c==0)?"=":">"),
+    argv[1]
+    );
+  }
+
 class TestFrameworkInit
   {
   public: TestFrameworkInit();
@@ -243,4 +254,5 @@ TestFrameworkInit::TestFrameworkInit()
   cmd_test->RegisterCommand("echo", "Test getchar", test_echo, "", 0, 0,true);
   cmd_test->RegisterCommand("watchdog", "Test task spinning (and watchdog firing)", test_watchdog, "", 0, 0,true);
   cmd_test->RegisterCommand("realloc", "Test memory re-allocations", test_realloc, "", 0, 0,true);
+  cmd_test->RegisterCommand("strverscmp", "Test strverscmp function", test_strverscmp, "", 2, 2, true);
   }
