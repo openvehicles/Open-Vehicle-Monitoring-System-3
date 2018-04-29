@@ -69,7 +69,11 @@ void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     len += writer->printf("Firmware:          %s\n", info.version_firmware.c_str());
   if (info.version_server != "")
     {
-    len += writer->printf("Server Available:  %s\n", info.version_server.c_str());
+    auto p = info.version_firmware.find_first_of('/');
+    if (p != std::string::npos)
+      info.version_firmware.resize(p);
+    len += writer->printf("Server Available:  %s%s\n", info.version_server.c_str(),
+      (strverscmp(info.version_server.c_str(),info.version_firmware.c_str()) > 0) ? " (is newer)" : "");
     if (!info.changelog_server.empty())
       {
       writer->puts("");
@@ -218,7 +222,9 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     {
     // Automatically build the URL based on firmware
     std::string tag = MyConfig.GetParamValue("ota","tag");
-    url = MyConfig.GetParamValue("ota","server","api.openvehicles.com/firmware/ota");
+    url = MyConfig.GetParamValue("ota","server");
+    if (url.empty())
+      url = "api.openvehicles.com/firmware/ota";
 #ifdef CONFIG_OVMS_HW_BASE_3_0
     url.append("/v3.0/");
 #endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
@@ -542,7 +548,9 @@ void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
       {
       // We have a wifi connection, so let's try to find out the version the server has
       std::string tag = MyConfig.GetParamValue("ota","tag");
-      std::string url = MyConfig.GetParamValue("ota","server","api.openvehicles.com/firmware/ota");
+      std::string url = MyConfig.GetParamValue("ota","server");
+      if (url.empty())
+        url = "api.openvehicles.com/firmware/ota";
 #ifdef CONFIG_OVMS_HW_BASE_3_0
       url.append("/v3.0/");
 #endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
@@ -678,6 +686,9 @@ bool OvmsOTA::AutoFlash(bool force)
       return false;
       }
 
+    auto p = info.version_firmware.find_first_of('/');
+    if (p != std::string::npos)
+      info.version_firmware.resize(p);
     if (strverscmp(info.version_server.c_str(),info.version_firmware.c_str()) <= 0)
       {
       ESP_LOGI(TAG,"AutoFlash: No new firmware available");
@@ -693,7 +704,9 @@ bool OvmsOTA::AutoFlash(bool force)
     }
 
   std::string tag = MyConfig.GetParamValue("ota","tag");
-  std::string url = MyConfig.GetParamValue("ota","server","api.openvehicles.com/firmware/ota");
+  std::string url = MyConfig.GetParamValue("ota","server");
+  if (url.empty())
+    url = "api.openvehicles.com/firmware/ota";
 #ifdef CONFIG_OVMS_HW_BASE_3_0
   url.append("/v3.0/");
 #endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
