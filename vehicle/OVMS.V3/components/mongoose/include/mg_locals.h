@@ -66,5 +66,8 @@
 // Let mongoose use LWIP getaddrinfo():
 #define MG_ENABLE_SYNC_RESOLVER 1
 #define MG_ENABLE_GETADDRINFO 1
+// Note: if we can't stick to this solution due to blocking issues,
+//  we can alternatively assign the first DNS stored by netmanager
+//  to mongoose by calling mg_set_nameserver().
 
 #endif // __mg_locals_h__

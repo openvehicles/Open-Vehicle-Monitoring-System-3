@@ -25,7 +25,7 @@
 */
 
 #include "ovms_log.h"
-//static const char *TAG = "candump-pcap";
+static const char *TAG = "candump-pcap";
 
 #include <errno.h>
 #include <endian.h>
@@ -119,10 +119,21 @@ size_t candump_pcap::put(CAN_frame_t *frame, uint8_t *buffer, size_t len)
 
   // At this point, we have our 24 bytes...
   pcap_hdr_t* h = (pcap_hdr_t*)&m_buf;
-  if (be32toh(h->magic_number) == 0xa1b2c3d4)
+  uint32_t magic = be32toh(h->magic_number);
+  if (magic == 0xa1b2c3d4)
     {
     // This is a PCAP header - just ignore it
     if (be32toh(h->network) != 0xe3) m_discarding = true;
+    m_bufpos = 0;
+    frame->origin = NULL;
+    return consumed;
+    }
+  else if ((magic == 0xd4c3b2a1)||
+           (magic == 0xa1b23c4d)||
+           (magic == 0x4d3cb2a1))
+    {
+    ESP_LOGW(TAG,"pcap format %08x not supported - ignoring data stream",magic);
+    m_discarding = true;
     m_bufpos = 0;
     frame->origin = NULL;
     return consumed;
