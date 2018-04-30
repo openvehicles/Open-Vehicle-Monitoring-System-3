@@ -34,6 +34,7 @@ static const char *TAG = "vehicle";
 #include <stdio.h>
 #include <ovms_command.h>
 #include <ovms_metrics.h>
+#include <ovms_notify.h>
 #include <metrics_standard.h>
 #include <ovms_webserver.h>
 #include "vehicle.h"
@@ -456,6 +457,7 @@ OvmsVehicle::OvmsVehicle()
   m_can2 = NULL;
   m_can3 = NULL;
   m_ticker = 0;
+  m_12v_ticker = 0;
   m_registeredlistener = false;
 
   m_poll_state = 0;
@@ -606,7 +608,44 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     StandardMetrics.ms_v_charge_time->SetValue(0);
 
   CalculateEfficiency();
-  }
+
+  // 12V battery monitor:
+  if (StandardMetrics.ms_v_env_charging12v->AsBool() == true)
+    {
+    // add two seconds calmdown per second charging, max 15 minutes:
+    if (m_12v_ticker < 15*60)
+      m_12v_ticker += 2;
+    }
+  else if (m_12v_ticker > 0)
+    {
+    --m_12v_ticker;
+    if (m_12v_ticker == 0)
+      {
+      // take 12V reference voltage:
+      StandardMetrics.ms_v_bat_12v_voltage_ref->SetValue(StandardMetrics.ms_v_bat_12v_voltage->AsFloat());
+      }
+    }
+  else if ((m_ticker % 60) == 0)
+    {
+    // check 12V voltage:
+    float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
+    float vref = StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat();
+    bool alert_on = StandardMetrics.ms_v_bat_12v_voltage_alert->AsBool();
+    float alert_threshold = MyConfig.GetParamValueFloat("vehicle", "12v.alert", 1.6);
+    if (vref - volt > alert_threshold && !alert_on)
+      {
+      StandardMetrics.ms_v_bat_12v_voltage_alert->SetValue(true);
+      MyEvents.SignalEvent("vehicle.alert.12v.on", NULL);
+      MyNotify.NotifyStringf("alert", "12V Battery critical: %.1fV (ref=%.1fV)", volt, vref);
+      }
+    else if (vref - volt < alert_threshold * 0.6 && alert_on)
+      {
+      StandardMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);
+      MyEvents.SignalEvent("vehicle.alert.12v.off", NULL);
+      MyNotify.NotifyStringf("alert", "12V Battery restored: %.1fV (ref=%.1fV)", volt, vref);
+      }
+    } // 12V battery monitor
+  } // VehicleTicker1()
 
 void OvmsVehicle::Ticker1(uint32_t ticker)
   {
@@ -845,6 +884,17 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       MyEvents.SignalEvent("vehicle.charge.pilot.on",NULL);
     else
       MyEvents.SignalEvent("vehicle.charge.pilot.off",NULL);
+    }
+  else if (metric == StandardMetrics.ms_v_env_charging12v)
+    {
+    if (StandardMetrics.ms_v_env_charging12v->AsBool())
+      {
+      if (m_12v_ticker < 30)
+        m_12v_ticker = 30; // min calmdown time
+      MyEvents.SignalEvent("vehicle.charge.12v.start",NULL);
+      }
+    else
+      MyEvents.SignalEvent("vehicle.charge.12v.stop",NULL);
     }
   else if (metric == StandardMetrics.ms_v_env_locked)
     {

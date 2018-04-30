@@ -117,6 +117,7 @@ class OvmsVehicle
 
   protected:
     uint32_t m_ticker;
+    int m_12v_ticker;
     virtual void Ticker1(uint32_t ticker);
     virtual void Ticker10(uint32_t ticker);
     virtual void Ticker60(uint32_t ticker);

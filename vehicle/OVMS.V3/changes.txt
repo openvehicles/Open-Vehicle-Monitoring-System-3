@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Vehicle: 12V battery monitoring
+    vehicle [12v.alert] = 1.6       Voltage drop alert threshold in V vs. reference
 - OTA: automatic daily firmware updates (wifi only)
     auto [ota] = yes                Enable/disable
     ota [auto.hour] = 2             Hour for daily check
