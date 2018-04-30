@@ -221,6 +221,7 @@ static const SC_FaultCode_t SC_FaultCode[] = {
 
 #define FC_MomDir         0x488e      // button D/R pushed before "GO"
 #define FC_PreOp          0x4681      // controller in pre-operational state
+#define FC_SlaveState     0x4f01      // unexpected slave state: no error/suppress in cfgmode
 
 void SevconClient::EmcyListener(string event, void* data)
 {
@@ -243,6 +244,11 @@ void SevconClient::EmcyListener(string event, void* data)
   if (fault == FC_PreOp && m_cfgmode_request == false) {
     ESP_LOGD(TAG, "Sevcon: detected preop state not requested by us; resolving");
     SendRequestState(CONC_Start);
+    return;
+  }
+  // unexpected slave state requested by us?
+  else if (fault == FC_SlaveState && m_cfgmode_request == true) {
+    ESP_LOGD(TAG, "Sevcon: ignoring unexpected slave state requested by us");
     return;
   }
   
