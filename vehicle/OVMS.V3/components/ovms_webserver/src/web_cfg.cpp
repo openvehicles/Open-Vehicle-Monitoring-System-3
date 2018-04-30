@@ -1324,41 +1324,41 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     server = c.getvar("server");
     tag = c.getvar("tag");
     
-    if (startsWith(server, "https:")) {
-      error = true;
-      output += "<p>Sorry, https not yet supported!</p>";
-    }
-    
-    if (!error) {
-      if (action.substr(0,3) == "set") {
-        info.partition_boot = c.getvar("boot_old");
-        std::string partition_boot = c.getvar("boot");
-        if (partition_boot != info.partition_boot) {
-          cmdres = ExecuteCommand("ota boot " + partition_boot);
-          if (cmdres.find("Error:") != std::string::npos)
-            error = true;
-          output += "<p><samp>" + cmdres + "</samp></p>";
-        }
-        else {
-          output += "<p>Boot partition unchanged.</p>";
-        }
-        if (!error && action == "set-reboot")
-          reboot = true;
+    if (action.substr(0,3) == "set") {
+      
+      if (startsWith(server, "https:")) {
+        error = true;
+        output += "<p>Sorry, https not yet supported!</p>";
       }
-      else if (action == "reboot") {
-        reboot = true;
+      
+      info.partition_boot = c.getvar("boot_old");
+      std::string partition_boot = c.getvar("boot");
+      if (partition_boot != info.partition_boot) {
+        cmdres = ExecuteCommand("ota boot " + partition_boot);
+        if (cmdres.find("Error:") != std::string::npos)
+          error = true;
+        output += "<p><samp>" + cmdres + "</samp></p>";
       }
       else {
-        error = true;
-        output = "<p>Unknown action.</p>";
+        output += "<p>Boot partition unchanged.</p>";
       }
+      
+      if (!error) {
+        MyConfig.SetParamValueBool("auto", "ota", auto_enable);
+        MyConfig.SetParamValue("ota", "auto.hour", auto_hour);
+        MyConfig.SetParamValue("ota", "server", server);
+        MyConfig.SetParamValue("ota", "tag", tag);
+      }
+      
+      if (!error && action == "set-reboot")
+        reboot = true;
     }
-    
-    if (!error) {
-      MyConfig.SetParamValueBool("auto", "ota", auto_enable);
-      MyConfig.SetParamValue("ota", "auto.hour", auto_hour);
-      MyConfig.SetParamValue("ota", "server", server);
-      MyConfig.SetParamValue("ota", "tag", tag);
+    else if (action == "reboot") {
+      reboot = true;
+    }
+    else {
+      error = true;
+      output = "<p>Unknown action.</p>";
     }
     
     // output result:
