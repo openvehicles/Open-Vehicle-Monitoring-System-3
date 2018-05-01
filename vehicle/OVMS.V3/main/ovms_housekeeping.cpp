@@ -196,7 +196,7 @@ void Housekeeping::Metrics(std::string event, void* data)
 
   // Allow the user to adjust the ADC conversion factor
   float f = MyConfig.GetParamValueFloat("system.adc","factor12v");
-  if (f == 0) f = 182;
+  if (f == 0) f = 195.7;
   float v = (float)MyPeripherals->m_esp32adc->read() / f;
   v = trunc(v*100) / 100;
   if (v < 1.0) v=0;
