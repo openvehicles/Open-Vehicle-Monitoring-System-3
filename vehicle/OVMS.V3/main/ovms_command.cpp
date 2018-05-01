@@ -512,7 +512,7 @@ void OvmsCommandApp::ConfigureLogging()
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsCommandApp::EventHandler, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "sd.mounted", std::bind(&OvmsCommandApp::EventHandler, this, _1, _2));
-  MyEvents.RegisterEvent(TAG, "sd.unmounted", std::bind(&OvmsCommandApp::EventHandler, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "sd.unmounting", std::bind(&OvmsCommandApp::EventHandler, this, _1, _2));
   
   ReadConfig();
   }
@@ -684,6 +684,11 @@ bool OvmsCommandApp::SetLogfile(std::string path)
       ESP_LOGE(TAG, "SetLogfile: '%s' is a protected path", path.c_str());
       return false;
       }
+    if (startsWith(path, "/sd") && (!MyPeripherals || !MyPeripherals->m_sdcard || !MyPeripherals->m_sdcard->isavailable()))
+      {
+      ESP_LOGW(TAG, "SetLogfile: cannot open '%s', will retry on SD mount", path.c_str());
+      return false;
+      }
     struct stat st;
     if (stat(path.c_str(), &st) == 0)
       m_logfile_size = st.st_size;
@@ -692,10 +697,7 @@ bool OvmsCommandApp::SetLogfile(std::string path)
     FILE* file = fopen(path.c_str(), "a+");
     if (file == NULL)
       {
-      if (startsWith(path, "/sd") && (!MyPeripherals || !MyPeripherals->m_sdcard || !MyPeripherals->m_sdcard->ismounted()))
-        ESP_LOGW(TAG, "SetLogfile: cannot open '%s', will retry on SD mount", path.c_str());
-      else
-        ESP_LOGE(TAG, "SetLogfile: cannot open '%s'", path.c_str());
+      ESP_LOGE(TAG, "SetLogfile: cannot open '%s'", path.c_str());
       return false;
       }
     else
@@ -762,7 +764,7 @@ void OvmsCommandApp::EventHandler(std::string event, void* data)
     if (startsWith(m_logfile_path, "/sd"))
       SetLogfile(m_logfile_path);
     }
-  else if (event == "sd.unmounted")
+  else if (event == "sd.unmounting")
     {
     if (startsWith(m_logfile_path, "/sd"))
       SetLogfile("");
