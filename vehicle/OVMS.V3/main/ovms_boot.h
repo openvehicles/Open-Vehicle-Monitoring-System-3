@@ -91,7 +91,7 @@ class Boot
 
   public:
     void SetSoftReset() { boot_data.soft_reset = true; }
-    void SetFirmwareUpdate() { boot_data.firmware_update = true; }
+    void SetFirmwareUpdate() { boot_data.soft_reset = false; boot_data.firmware_update = true; }
     void Restart(bool hard=false);
     void RestartPending(const char* tag);
     void RestartReady(const char* tag);
