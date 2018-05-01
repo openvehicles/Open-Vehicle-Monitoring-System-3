@@ -91,7 +91,7 @@ CANopenWorker::CANopenWorker(canbus* bus)
   m_jobqueue = xQueueCreate(20, sizeof(CANopenJob));
   snprintf(m_taskname, sizeof(m_taskname), "OVMS COwrk %s", bus->GetName());
   xTaskCreatePinnedToCore(CANopenWorkerJobTask, m_taskname,
-    CONFIG_OVMS_COMP_CANOPEN_WRK_STACK, (void*)this, 5, &m_jobtask, 1);
+    CONFIG_OVMS_COMP_CANOPEN_WRK_STACK, (void*)this, 7, &m_jobtask, 0);
   
   memset(&m_job, 0, sizeof(m_job));
   m_job.type = COJT_None;
@@ -310,7 +310,9 @@ void CANopenWorker::IncomingFrame(CAN_frame_t* p_frame)
     
     CANopenNodeMetrics *nm = GetNodeMetrics(ev.nodeid);
     
-    ESP_LOGI(TAG, "%s node %d emergency: code=0x%04x type=0x%02x data: %02x %02x %02x %02x %02x",
+    // Note: logging is very expensive if file logging to SD card is enabled (→ issue #107).
+    //  Workaround: level down to verbose (should be info):
+    ESP_LOGV(TAG, "%s node %d emergency: code=0x%04x type=0x%02x data: %02x %02x %02x %02x %02x",
       m_bus->GetName(), ev.nodeid, ev.code, ev.type, ev.data[0], ev.data[1], ev.data[2], ev.data[3], ev.data[4]);
     MyEvents.SignalEvent("canopen.node.emcy", &ev, sizeof(ev));
     nm->m_emcy_code->SetValue(ev.code);
@@ -332,7 +334,9 @@ void CANopenWorker::IncomingFrame(CAN_frame_t* p_frame)
     std::string newstate = CANopen::GetStateName(ev.state);
     if (nm->m_state->AsString() != newstate)
       {
-      ESP_LOGI(TAG, "%s node %d new state: %s", m_bus->GetName(), ev.nodeid, newstate.c_str());
+      // Note: logging is very expensive if file logging to SD card is enabled (→ issue #107).
+      //  Workaround: level down to verbose (should be info):
+      ESP_LOGV(TAG, "%s node %d new state: %s", m_bus->GetName(), ev.nodeid, newstate.c_str());
       MyEvents.SignalEvent("canopen.node.state", &ev, sizeof(ev));
       nm->m_state->SetValue(newstate);
       }
