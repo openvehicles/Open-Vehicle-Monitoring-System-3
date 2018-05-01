@@ -6,8 +6,8 @@
 ;    1.0  Initial release
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
-;    (C) 2011-2017  Mark Webb-Johnson
-;    (C) 2011        Sonny Chen @ EPRO/DX
+;    (C) 2011-2018  Mark Webb-Johnson
+;    (C) 2011       Sonny Chen @ EPRO/DX
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,15 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
+*/
+
+/*
+; CREDIT
+; Thanks to Scott451 for figuring out many of the Roadster CAN bus messages used by the OVMS,
+; and the pinout of the CAN bus socket in the Roadster.
+; http://www.teslamotorsclub.com/showthread.php/4388-iPhone-app?p=49456&viewfull=1#post49456"]iPhone app
+; Thanks to fuzzylogic for further analysis and messages such as door status, unlock/lock, speed, VIN, etc.
+; Thanks to markwj for further analysis and messages such as Trip, Odometer, TPMS, etc.
 */
 
 #include "ovms_log.h"
@@ -49,6 +58,7 @@ OvmsVehicleTeslaRoadster::OvmsVehicleTeslaRoadster()
   ESP_LOGI(TAG, "Tesla Roadster v1.x, v2.x and v3.0 vehicle module");
 
   memset(m_vin,0,sizeof(m_vin));
+  m_requesting_cac = false;
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_1000KBPS);
   }
@@ -228,6 +238,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
         case 0x9e: // CAC
           {
           StandardMetrics.ms_v_bat_cac->SetValue((float)d[3] + ((float)d[2]/256));
+          RequestStreamStopCAC();
           break;
           }
         case 0xA3: // PEM, MOTOR, BATTERY temperatures
@@ -335,6 +346,74 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_pos_trip->SetValue((float)trip/10, Miles);
       break;
       }
+    }
+  }
+
+void OvmsVehicleTeslaRoadster::NotifiedVehicleChargeStart()
+  {
+  RequestStreamStartCAC();
+  }
+
+void OvmsVehicleTeslaRoadster::NotifiedVehicleOn()
+  {
+  RequestStreamStartCAC();
+  }
+
+void OvmsVehicleTeslaRoadster::NotifiedVehicleOff()
+  {
+  RequestStreamStartCAC();
+  }
+
+void OvmsVehicleTeslaRoadster::RequestStreamStartCAC()
+  {
+  CAN_frame_t frame;
+  memset(&frame,0,sizeof(frame));
+
+  m_requesting_cac = true;
+
+  // Request CAC streaming...
+  // 102 06 D0 07 00 00 00 00 40
+  frame.origin = m_can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 8;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x102;
+  frame.data.u8[0] = 0x06;
+  frame.data.u8[1] = 0xd0;
+  frame.data.u8[2] = 0x07;
+  frame.data.u8[3] = 0x00;
+  frame.data.u8[4] = 0x00;
+  frame.data.u8[5] = 0x00;
+  frame.data.u8[6] = 0x00;
+  frame.data.u8[7] = 0x40;
+  m_can1->Write(&frame);
+  }
+
+void OvmsVehicleTeslaRoadster::RequestStreamStopCAC()
+  {
+  if (m_requesting_cac)
+    {
+    CAN_frame_t frame;
+    memset(&frame,0,sizeof(frame));
+
+    // Cancel CAC streaming...
+    // 102 06 00 00 00 00 00 00 40
+    frame.origin = m_can1;
+    frame.FIR.U = 0;
+    frame.FIR.B.DLC = 8;
+    frame.FIR.B.FF = CAN_frame_std;
+    frame.MsgID = 0x102;
+    frame.data.u8[0] = 0x06;
+    frame.data.u8[1] = 0x00;
+    frame.data.u8[2] = 0x00;
+    frame.data.u8[3] = 0x00;
+    frame.data.u8[4] = 0x00;
+    frame.data.u8[5] = 0x00;
+    frame.data.u8[6] = 0x00;
+    frame.data.u8[7] = 0x40;
+    m_can1->Write(&frame);
+
+    m_requesting_cac = false;
     }
   }
 

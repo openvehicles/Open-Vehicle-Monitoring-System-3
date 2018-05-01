@@ -59,8 +59,16 @@ class OvmsVehicleTeslaRoadster : public OvmsVehicle
     virtual vehicle_command_t CommandHomelink(int button);
 
   protected:
+    virtual void NotifiedVehicleChargeStart();
+    virtual void NotifiedVehicleOn();
+    virtual void NotifiedVehicleOff();
+    void RequestStreamStartCAC();
+    void RequestStreamStopCAC();
+
+  protected:
     char m_vin[18];
     char m_type[5];
+    bool m_requesting_cac;
   };
 
 #endif //#ifndef __VEHICLE_TESLAROADSTER_H__
