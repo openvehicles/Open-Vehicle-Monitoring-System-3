@@ -38,6 +38,7 @@
 #include "driver/sdmmc_defs.h"
 #include <driver/adc.h>
 #include "sdmmc_cmd.h"
+#include "ovms_events.h"
 
 class sdcard : public pcp
   {
@@ -48,9 +49,14 @@ class sdcard : public pcp
 
   public:
     esp_err_t mount();
-    esp_err_t unmount();
+    esp_err_t unmount(bool hard=false);
+    bool isavailable();
     bool ismounted();
     bool isinserted();
+
+  public:
+    void Ticker1(std::string event, void* data);
+    void EventSystemShutDown(std::string event, void* data);
 
   public:
     sdmmc_host_t m_host;
@@ -58,7 +64,9 @@ class sdcard : public pcp
     esp_vfs_fat_sdmmc_mount_config_t m_mount;
     sdmmc_card_t* m_card;
     bool m_mounted;
+    bool m_unmounting;
     bool m_cd;
+    int m_cdpin;
   };
 
 #endif //#ifndef __SDCARD_H__

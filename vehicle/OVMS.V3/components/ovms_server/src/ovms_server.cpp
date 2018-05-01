@@ -35,23 +35,13 @@ static const char *TAG = "ovms-server";
 #include "ovms_server.h"
 #include "ovms_command.h"
 
-static void OvmsServer_task(void *pvParameters)
-  {
-  OvmsServer *me = (OvmsServer*)pvParameters;
-
-  ESP_LOGI(TAG, "Launching OVMS Server V2 connection task (%s)",me->GetName());
-  me->ServerTask();
-  }
-
 OvmsServer::OvmsServer(const char* name)
   : pcp(name)
   {
-  xTaskCreatePinnedToCore(OvmsServer_task, "OVMS Server", 6144, (void*)this, 5, &m_task, 1);
   }
 
 OvmsServer::~OvmsServer()
   {
-  vTaskDelete(m_task);
   }
 
 void OvmsServer::SetPowerMode(PowerMode powermode)
@@ -81,5 +71,5 @@ OvmsServerInit::OvmsServerInit()
   {
   ESP_LOGI(TAG, "Initialising OVMS Server (6000)");
 
-  MyCommandApp.RegisterCommand("server","OVMS Server Connection framework",NULL, "", 1);
+  MyCommandApp.RegisterCommand("server","OVMS Server Connection framework",NULL, "", 0, 0, true);
   }

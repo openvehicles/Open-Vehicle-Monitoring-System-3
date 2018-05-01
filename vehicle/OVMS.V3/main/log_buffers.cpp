@@ -52,7 +52,8 @@ int LogBuffers::append(const char* fmt, va_list args)
   {
   char *buffer;
   int ret = vasprintf(&buffer, fmt, args);
-  append(buffer);
+  if (ret >= 0)
+    append(buffer);
   return ret;
   }
 

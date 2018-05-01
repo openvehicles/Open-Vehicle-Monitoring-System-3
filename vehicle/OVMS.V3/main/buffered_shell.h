@@ -30,6 +30,7 @@
 #ifndef __BUFFERED_SHELL_H__
 #define __BUFFERED_SHELL_H__
 
+#include "ovms.h"
 #include "ovms_shell.h"
 
 class LogBuffers;
@@ -44,13 +45,16 @@ class BufferedShell : public OvmsShell
 
   public:
     void Initialize(bool print);
+    void SetBuffer(LogBuffers* output = NULL);
     int puts(const char* s);
     int printf(const char* fmt, ...);
     ssize_t write(const void *buf, size_t nbyte);
     char ** GetCompletion(OvmsCommandMap& children, const char* token);
     void Log(LogBuffers* message);
+    virtual bool IsInteractive() { return false; }
     void Output(OvmsWriter*);
     void Dump(std::string&);
+    void Dump(extram::string&);
     char* Dump();
 
   protected:

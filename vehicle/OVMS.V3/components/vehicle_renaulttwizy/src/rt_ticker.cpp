@@ -48,6 +48,9 @@ using namespace std;
 
 void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
 {
+  if (!m_ready)
+    return;
+
   // --------------------------------------------------------------------------
   // Update standard metrics:
   // 
@@ -58,8 +61,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     *StdMetrics.ms_v_pos_trip = (float) (twizy_odometer - twizy_odometer_tripstart) / 100;
   else
     *StdMetrics.ms_v_pos_trip = (float) 0;
-  
-  *StdMetrics.ms_v_pos_speed = (float) twizy_speed / 100;
   
   *StdMetrics.ms_v_mot_temp = (float) twizy_tmotor;
   
@@ -77,7 +78,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   {
     twizy_flags.ChargePort = 1;
     twizy_flags.Charging = 1;
-    twizy_flags.Charging12V = 1;
   }
   else
   {
@@ -108,13 +108,14 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     twizy_accel_max = 0;
     
     // reset battery subsystem:
-    BatteryReset();
+    m_batt_doreset = true;
     
     // reset power subsystem:
     PowerReset();
     
     // update sevcon subsystem:
-    m_sevcon->SetStatus(twizy_flags.CarAwake);
+    if (m_sevcon)
+      m_sevcon->SetStatus(twizy_flags.CarAwake);
     
     twizy_button_cnt = 0;
   }
@@ -136,16 +137,25 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     }
     
     // update sevcon subsystem:
-    m_sevcon->SetStatus(twizy_flags.CarAwake);
+    if (m_sevcon)
+      m_sevcon->SetStatus(twizy_flags.CarAwake);
+    
+    *StdMetrics.ms_v_env_gear = (int) 0;
+    *StdMetrics.ms_v_env_throttle = (float) 0;
+    *StdMetrics.ms_v_env_footbrake = (float) 0;
+    *StdMetrics.ms_v_pos_speed = (float) 0;
+    *StdMetrics.ms_v_mot_rpm = (int) 0;
+    *StdMetrics.ms_v_bat_power = (float) 0;
   }
   
   
   // --------------------------------------------------------------------------
   // Subsystem updates:
   
-  BatteryUpdate();
   PowerUpdate();
-  m_sevcon->Ticker1(ticker);
+  
+  if (m_sevcon)
+    m_sevcon->Ticker1(ticker);
   
   
   // --------------------------------------------------------------------------
@@ -206,12 +216,12 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
       }
 
       // reset battery monitor:
-      BatteryReset();
+      m_batt_doreset = true;
 
       // ...enter state 1=charging or 2=topping-off depending on the
       // charge power request level we're starting with (7=full power):
       twizy_chargestate = (twizy_chg_power_request == 7) ? 1 : 2;
-        
+      
       // Send charge start notification?
       // TODO if (sys_features[FEATURE_CARBITS] & FEATURE_CB_SCHGPHASE)
         RequestNotify(SEND_ChargeState);
@@ -228,6 +238,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
       {
         // set charge stop request:
         ESP_LOGI(TAG, "requesting charge stop (sufficient charge)");
+        MyEvents.SignalEvent("vehicle.charge.substate.scheduledstop", NULL);
         twizy_chg_stop_request = 1;
       }
 
@@ -383,7 +394,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   
   // convert battery capacity percent to framework Ah:
   *StdMetrics.ms_v_bat_cac = (float) cfg_bat_cap_actual_prc / 100 * cfg_bat_cap_nominal_ah;
-  
 
 
   // --------------------------------------------------------------------------
@@ -428,6 +438,9 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   // --------------------------------------------------------------------------
   // Publish metrics:
   
+  *m_batt_soc_min = (float) twizy_soc_min / 100;
+  *m_batt_soc_max = (float) twizy_soc_max / 100;
+  
   *StdMetrics.ms_v_charge_mode = (string)
     ((cfg_chargemode == TWIZY_CHARGEMODE_AUTOSTOP) ? "storage" : "standard");
   *StdMetrics.ms_v_charge_climit = (float) cfg_chargelevel * 5;
@@ -462,22 +475,14 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
 
 void OvmsVehicleRenaultTwizy::Ticker10(uint32_t ticker)
 {
+  if (!m_ready)
+    return;
+
   // Check if CAN-Bus has turned offline:
   if (twizy_status & CAN_STATUS_ONLINE)
   {
     // Clear online flag to test for CAN activity:
     twizy_status &= ~CAN_STATUS_ONLINE;
-
-#ifdef OVMS_TWIZY_CFG
-    // TODO
-    // Check for new SEVCON fault:
-    if (readsdo(0x5320,0x00) == 0) {
-      if (twizy_sdo.data && (twizy_sdo.data != twizy_alert_code)) {
-        twizy_alert_code = twizy_sdo.data;
-        twizy_notify(SEND_CodeAlert);
-      }
-    }
-#endif // #ifdef #ifdef OVMS_TWIZY_CFG
   }
   else
   {

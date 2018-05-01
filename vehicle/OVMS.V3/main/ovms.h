@@ -32,9 +32,45 @@
 #define __OVMS_H__
 
 #include <stdint.h>
-
-#define OVMS_VERSION "3.0.0"
+#include <cstddef>
+#include <cstdlib>
+#include <string>
+#include <sstream>
+#include <new>
+#include "ovms_malloc.h"
 
 extern uint32_t monotonictime;
+
+class ExternalRamAllocated
+  {
+  public:
+    static void* operator new(std::size_t sz);
+    static void* operator new[](std::size_t sz);
+  };
+
+// C++11 Allocator:
+template <class T>
+struct ExtRamAllocator
+  {
+  typedef T value_type;
+  ExtRamAllocator() = default;
+  template <class U> constexpr ExtRamAllocator(const ExtRamAllocator<U>&) noexcept {}
+  T* allocate(std::size_t n)
+    {
+    auto p = static_cast<T*>(ExternalRamMalloc(n*sizeof(T)));
+    return p;
+    }
+  void deallocate(T* p, std::size_t) noexcept { std::free(p); }
+  };
+template <class T, class U>
+bool operator==(const ExtRamAllocator<T>&, const ExtRamAllocator<U>&) { return true; }
+template <class T, class U>
+bool operator!=(const ExtRamAllocator<T>&, const ExtRamAllocator<U>&) { return false; }
+
+namespace extram
+  {
+  typedef std::basic_string<char, std::char_traits<char>, ExtRamAllocator<char>> string;
+  typedef std::basic_ostringstream<char, std::char_traits<char>, ExtRamAllocator<char>> ostringstream;
+  }
 
 #endif //#ifndef __OVMS_H__

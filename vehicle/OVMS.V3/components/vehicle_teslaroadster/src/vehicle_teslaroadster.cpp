@@ -6,8 +6,8 @@
 ;    1.0  Initial release
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
-;    (C) 2011-2017  Mark Webb-Johnson
-;    (C) 2011        Sonny Chen @ EPRO/DX
+;    (C) 2011-2018  Mark Webb-Johnson
+;    (C) 2011       Sonny Chen @ EPRO/DX
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,15 @@
 ; THE SOFTWARE.
 */
 
+/*
+; CREDIT
+; Thanks to Scott451 for figuring out many of the Roadster CAN bus messages used by the OVMS,
+; and the pinout of the CAN bus socket in the Roadster.
+; http://www.teslamotorsclub.com/showthread.php/4388-iPhone-app?p=49456&viewfull=1#post49456"]iPhone app
+; Thanks to fuzzylogic for further analysis and messages such as door status, unlock/lock, speed, VIN, etc.
+; Thanks to markwj for further analysis and messages such as Trip, Odometer, TPMS, etc.
+*/
+
 #include "ovms_log.h"
 static const char *TAG = "v-teslaroadster";
 
@@ -37,6 +46,7 @@ static const char *TAG = "v-teslaroadster";
 #include "vehicle_teslaroadster.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
+#include "ovms_utils.h"
 
 float TeslaRoadsterLatLon(int v)
   {
@@ -48,6 +58,7 @@ OvmsVehicleTeslaRoadster::OvmsVehicleTeslaRoadster()
   ESP_LOGI(TAG, "Tesla Roadster v1.x, v2.x and v3.0 vehicle module");
 
   memset(m_vin,0,sizeof(m_vin));
+  m_requesting_cac = false;
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_1000KBPS);
   }
@@ -153,7 +164,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           }
         case 0x95: // Charging mode
           {
-          switch (d[1])
+          switch (d[1]) // Charge state
             {
             case 0x01: // Charging
               StandardMetrics.ms_v_charge_state->SetValue("charging"); break;
@@ -177,7 +188,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
             default:
               break;
             }
-          switch (d[2])
+          switch (d[2]) // Charge sub-state
             {
             case 0x02: // Scheduled start
               StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart"); break;
@@ -193,6 +204,14 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
               break;
             default:
               break;
+            }
+          if (m_type[2] == '1')
+            { // v1.x cars
+            StandardMetrics.ms_v_charge_mode->SetValue(chargemode_code(d[4] & 0x0f));
+            }
+          else if (m_type[2] == '2')
+            { // v2.x cars
+            StandardMetrics.ms_v_charge_mode->SetValue(chargemode_code((d[5]>>4) & 0x0f));
             }
           StandardMetrics.ms_v_charge_kwh->SetValue((float)d[7]*10);
           break;
@@ -219,6 +238,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
         case 0x9e: // CAC
           {
           StandardMetrics.ms_v_bat_cac->SetValue((float)d[3] + ((float)d[2]/256));
+          RequestStreamStopCAC();
           break;
           }
         case 0xA3: // PEM, MOTOR, BATTERY temperatures
@@ -287,17 +307,32 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
       if (d[5]>0) // Rear-left
         {
         StandardMetrics.ms_v_tpms_rl_p->SetValue((float)d[4] / 2.755, PSI);
-        StandardMetrics.ms_v_tpms_rl_p->SetValue((float)d[5] - 40);
+        StandardMetrics.ms_v_tpms_rl_t->SetValue((float)d[5] - 40);
         }
       if (d[7]>0) // Rear-right
         {
         StandardMetrics.ms_v_tpms_rr_p->SetValue((float)d[6] / 2.755, PSI);
-        StandardMetrics.ms_v_tpms_rr_p->SetValue((float)d[7] - 40);
+        StandardMetrics.ms_v_tpms_rr_t->SetValue((float)d[7] - 40);
         }
       break;
       }
     case 0x400:
       {
+      switch(d[0])
+          {
+          case 0x02:   // Data to dashboard
+          unsigned int amps = (unsigned int)d[2]
+                            + (((unsigned int)d[3]&0x7f)<<8);
+          StandardMetrics.ms_v_bat_current->SetValue((float)amps);
+
+          float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
+          if(soc != 0)
+            {
+            float power = amps * (((400.0-370.0)*soc/100.0)+370) / 1000.0;     // estimate Voltage by SOC
+            StandardMetrics.ms_v_bat_power->SetValue((float)power);
+            }
+          break;
+          }
       break;
       }
     case 0x402:
@@ -311,6 +346,74 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_pos_trip->SetValue((float)trip/10, Miles);
       break;
       }
+    }
+  }
+
+void OvmsVehicleTeslaRoadster::NotifiedVehicleChargeStart()
+  {
+  RequestStreamStartCAC();
+  }
+
+void OvmsVehicleTeslaRoadster::NotifiedVehicleOn()
+  {
+  RequestStreamStartCAC();
+  }
+
+void OvmsVehicleTeslaRoadster::NotifiedVehicleOff()
+  {
+  RequestStreamStartCAC();
+  }
+
+void OvmsVehicleTeslaRoadster::RequestStreamStartCAC()
+  {
+  CAN_frame_t frame;
+  memset(&frame,0,sizeof(frame));
+
+  m_requesting_cac = true;
+
+  // Request CAC streaming...
+  // 102 06 D0 07 00 00 00 00 40
+  frame.origin = m_can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 8;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x102;
+  frame.data.u8[0] = 0x06;
+  frame.data.u8[1] = 0xd0;
+  frame.data.u8[2] = 0x07;
+  frame.data.u8[3] = 0x00;
+  frame.data.u8[4] = 0x00;
+  frame.data.u8[5] = 0x00;
+  frame.data.u8[6] = 0x00;
+  frame.data.u8[7] = 0x40;
+  m_can1->Write(&frame);
+  }
+
+void OvmsVehicleTeslaRoadster::RequestStreamStopCAC()
+  {
+  if (m_requesting_cac)
+    {
+    CAN_frame_t frame;
+    memset(&frame,0,sizeof(frame));
+
+    // Cancel CAC streaming...
+    // 102 06 00 00 00 00 00 00 40
+    frame.origin = m_can1;
+    frame.FIR.U = 0;
+    frame.FIR.B.DLC = 8;
+    frame.FIR.B.FF = CAN_frame_std;
+    frame.MsgID = 0x102;
+    frame.data.u8[0] = 0x06;
+    frame.data.u8[1] = 0x00;
+    frame.data.u8[2] = 0x00;
+    frame.data.u8[3] = 0x00;
+    frame.data.u8[4] = 0x00;
+    frame.data.u8[5] = 0x00;
+    frame.data.u8[6] = 0x00;
+    frame.data.u8[7] = 0x40;
+    m_can1->Write(&frame);
+
+    m_requesting_cac = false;
     }
   }
 
@@ -443,7 +546,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandWakeup()
   frame.data.u8[6] = 0x10;
   frame.data.u8[7] = 0x00;
   m_can1->Write(&frame);
-  
+
   return Success;
   }
 

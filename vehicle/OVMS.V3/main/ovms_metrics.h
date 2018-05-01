@@ -66,6 +66,8 @@ typedef enum
   AmpHours      = 42,
   kW            = 43,
   kWh           = 44,
+  Watts         = 45,
+  WattHours     = 46,
   
   Seconds       = 50,
   Minutes       = 51,
@@ -84,7 +86,11 @@ typedef enum
   dbm           = 80,   // Signal Quality (in dBm)
   sq            = 81,   // Signal Quality (in SQ units)
 
-  Percentage    = 90
+  Percentage    = 90,
+  
+  // Energy consumption:
+  WattHoursPK   = 100,  // Wh/km
+  WattHoursPM   = 101,  // Wh/mi
   } metric_unit_t;
 
 extern const char* OvmsMetricUnitLabel(metric_unit_t units);
@@ -104,6 +110,13 @@ class OvmsMetric
       if (!m_defined)
         return std::string(defvalue);
       return AsString(defvalue, units, precision) + OvmsMetricUnitLabel(GetUnits());
+      }
+    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
+      {
+      std::string buf = "\"";
+      buf.append(json_encode(AsString(defvalue, units, precision)));
+      buf.append("\"");
+      return buf;
       }
     virtual float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     virtual void SetValue(std::string value);
@@ -138,6 +151,7 @@ class OvmsMetricBool : public OvmsMetric
 
   public:
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
+    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
     float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     int AsBool(const bool defvalue = false);
     void SetValue(bool value);
@@ -157,6 +171,7 @@ class OvmsMetricInt : public OvmsMetric
 
   public:
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
+    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
     float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     int AsInt(const int defvalue = 0, metric_unit_t units = Other);
     void SetValue(int value, metric_unit_t units = Other);
@@ -176,6 +191,7 @@ class OvmsMetricFloat : public OvmsMetric
 
   public:
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
+    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
     float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     int AsInt(const int defvalue = 0, metric_unit_t units = Other);
     void SetValue(float value, metric_unit_t units = Other);

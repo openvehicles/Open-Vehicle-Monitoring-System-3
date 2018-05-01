@@ -33,6 +33,7 @@
 #include "ovms_config.h"
 #include "ovms_metrics.h"
 #include "ovms_command.h"
+#include "ovms_webserver.h"
 
 #include "rt_types.h"
 #include "rt_battmon.h"
@@ -62,7 +63,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   public:
     OvmsVehicleRenaultTwizy();
     ~OvmsVehicleRenaultTwizy();
-    static OvmsVehicleRenaultTwizy* GetInstance(OvmsWriter* writer);
+    static OvmsVehicleRenaultTwizy* GetInstance(OvmsWriter* writer=NULL);
   
   
   // --------------------------------------------------------------------------
@@ -80,6 +81,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     vehicle_command_t ProcessMsgCommand(std::string &result, int command, const char* args);
   
   protected:
+    bool m_ready = false;
     static size_t m_modifier;
     OvmsMetricString *m_version;
     OvmsCommand *cmd_xrt;
@@ -220,7 +222,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     volatile UINT8 twizy_accel_pedal;           // accelerator pedal (running avg for 2 samples = 200 ms)
     volatile UINT8 twizy_kickdown_level;        // kickdown detection & pedal max level
     UINT8 twizy_kickdown_hold;                  // kickdown hold countdown (1/10 seconds)
-    #define CAN_KICKDOWN_HOLDTIME   50          // kickdown hold time (1/10 seconds)
+    #define TWIZY_KICKDOWN_HOLDTIME 50          // kickdown hold time (1/10 seconds)
     
     #define CFG_DEFAULT_KD_THRESHOLD    35
     #define CFG_DEFAULT_KD_COMPZERO     120
@@ -230,10 +232,11 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     // pedal nonlinearity compensation:
     //    constant threshold up to pedal=compzero,
     //    then linear reduction by factor 1/8
-    #define KICKDOWN_THRESHOLD(pedal) \
-      (cfg_kd_threshold - \
+    int KickdownThreshold(int pedal) {
+      return (cfg_kd_threshold - \
         (((int)(pedal) <= cfg_kd_compzero) \
-          ? 0 : (((int)(pedal) - cfg_kd_compzero) >> 3)))
+          ? 0 : (((int)(pedal) - cfg_kd_compzero) >> 3)));
+    }
     
     
     // GPS log:
@@ -319,18 +322,19 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   
   public:
     void BatteryInit();
+    bool BatteryLock(int maxwait_ms);
+    void BatteryUnlock();
     void BatteryUpdate();
     void BatteryReset();
-    void FormatPackData(int verbosity, OvmsWriter* writer, int pack);
-    void FormatCellData(int verbosity, OvmsWriter* writer, int cell);
     void BatterySendDataUpdate(bool force = false);
-    void FormatBatteryStatus(int verbosity, OvmsWriter* writer, int pack);
-    void FormatBatteryVolts(int verbosity, OvmsWriter* writer, bool show_deviations);
-    void FormatBatteryTemps(int verbosity, OvmsWriter* writer, bool show_deviations);
     vehicle_command_t CommandBatt(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
   
   protected:
-    OvmsCommand *cmd_batt;
+    void FormatPackData(int verbosity, OvmsWriter* writer, int pack);
+    void FormatCellData(int verbosity, OvmsWriter* writer, int cell);
+    void FormatBatteryStatus(int verbosity, OvmsWriter* writer, int pack);
+    void FormatBatteryVolts(int verbosity, OvmsWriter* writer, bool show_deviations);
+    void FormatBatteryTemps(int verbosity, OvmsWriter* writer, bool show_deviations);
     void BatteryCheckDeviations();
   
     #define BATT_PACKS      1
@@ -340,6 +344,8 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     UINT8 batt_pack_count = 1;
     UINT8 batt_cmod_count = 7;
     UINT8 batt_cell_count = 14;
+    
+    OvmsCommand *cmd_batt;
     
     OvmsMetricFloat *m_batt_soc_min;
     OvmsMetricFloat *m_batt_soc_max;
@@ -351,6 +357,26 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     battery_pack twizy_batt[BATT_PACKS];
     battery_cmod twizy_cmod[BATT_CMODS];
     battery_cell twizy_cell[BATT_CELLS];
+    
+    // twizy_batt_sensors_state:
+    //  A consistent state needs all 5 [6] battery sensor messages
+    //  of one series (i.e. 554-6-7-E-F [700]) to be read.
+    //  state=BATT_SENSORS_START begins a new fetch cycle.
+    //  IncomingFrameCan1() will advance/reset states accordingly to incoming msgs.
+    //  BatteryCheckDeviations() will not process the data until BATT_SENSORS_READY
+    //  has been reached, after processing it will reset state to _START.
+    volatile uint8_t twizy_batt_sensors_state;
+    #define BATT_SENSORS_START     0  // start group fetch
+    #define BATT_SENSORS_GOT556    3  // mask: lowest 2 bits (state)
+    #define BATT_SENSORS_GOT554    4  // bit
+    #define BATT_SENSORS_GOT557    8  // bit
+    #define BATT_SENSORS_GOT55E   16  // bit
+    #define BATT_SENSORS_GOT55F   32  // bit
+    #define BATT_SENSORS_GOT700   64  // bit (only used for 16 cell batteries)
+    #define BATT_SENSORS_GOTALL   ((batt_cell_count==14) ? 61 : 125)  // threshold: data complete
+    #define BATT_SENSORS_READY    ((batt_cell_count==14) ? 63 : 127)  // value: group complete
+    SemaphoreHandle_t m_batt_sensors = 0;
+    bool m_batt_doreset = false;
   
   
   // --------------------------------------------------------------------------
@@ -395,7 +421,23 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   protected:
     SevconClient *m_sevcon = NULL;
     signed char twizy_button_cnt = 0;           // will count key presses (errors) in STOP mode (msg 081)
-    
+  
+
+  // --------------------------------------------------------------------------
+  // Webserver subsystem
+  //  - implementation: rt_web.(h,cpp)
+  // 
+  
+  public:
+    void WebInit();
+    static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
+    static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
+    static void WebConsole(PageEntry_t& p, PageContext_t& c);
+    static void WebBattMon(PageEntry_t& p, PageContext_t& c);
+  
+  public:
+    void GetDashboardConfig(DashboardConfig& cfg);
+
 };
 
 #endif // __VEHICLE_RENAULTTWIZY_H__

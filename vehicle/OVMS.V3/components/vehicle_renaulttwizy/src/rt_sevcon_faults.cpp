@@ -221,6 +221,7 @@ static const SC_FaultCode_t SC_FaultCode[] = {
 
 #define FC_MomDir         0x488e      // button D/R pushed before "GO"
 #define FC_PreOp          0x4681      // controller in pre-operational state
+#define FC_SlaveState     0x4f01      // unexpected slave state: no error/suppress in cfgmode
 
 void SevconClient::EmcyListener(string event, void* data)
 {
@@ -229,8 +230,9 @@ void SevconClient::EmcyListener(string event, void* data)
   if (emcy.origin != m_twizy->m_can1 || emcy.nodeid != 1 || emcy.code == 0)
     return;
   
-  uint16_t fault = emcy.data[1] << 8 | emcy.data[0];
+  uint32_t fault = emcy.data[1] << 8 | emcy.data[0];
   ESP_LOGW(TAG, "Sevcon: received fault code 0x%04x", fault);
+  MyEvents.SignalEvent("vehicle.fault.code", (void*)fault);
   
   // button push?
   if (fault == FC_MomDir) {
@@ -242,6 +244,11 @@ void SevconClient::EmcyListener(string event, void* data)
   if (fault == FC_PreOp && m_cfgmode_request == false) {
     ESP_LOGD(TAG, "Sevcon: detected preop state not requested by us; resolving");
     SendRequestState(CONC_Start);
+    return;
+  }
+  // unexpected slave state requested by us?
+  else if (fault == FC_SlaveState && m_cfgmode_request == true) {
+    ESP_LOGD(TAG, "Sevcon: ignoring unexpected slave state requested by us");
     return;
   }
   
@@ -365,9 +372,9 @@ void SevconClient::AddFaultInfo(ostringstream& buf, uint16_t faultcode)
       // found, add description from table:
       buf
         << "|" << SC_FaultTypeName[SC_FaultCode[i].type]
-        << "|" << mp_encode(SC_FaultCode[i].message)
-        << "|" << mp_encode(SC_FaultCode[i].description)
-        << "|" << mp_encode(SC_FaultCode[i].action);
+        << "|" << mp_encode(std::string(SC_FaultCode[i].message))
+        << "|" << mp_encode(std::string(SC_FaultCode[i].description))
+        << "|" << mp_encode(std::string(SC_FaultCode[i].action));
       return;
     }
   }
@@ -380,7 +387,7 @@ void SevconClient::AddFaultInfo(ostringstream& buf, uint16_t faultcode)
       xbuf[job.sdo.xfersize] = 0;
     }
   }
-  buf << mp_encode(xbuf);
+  buf << mp_encode(std::string(xbuf));
 }
 
 

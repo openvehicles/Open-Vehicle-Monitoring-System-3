@@ -31,6 +31,7 @@
 #include <string.h>
 #include "ovms_shell.h"
 
+static const char* secure_prompt = "OVMS# ";
 
 void Print(microrl_t* rl, const char * str)
   {
@@ -53,6 +54,8 @@ OvmsShell::OvmsShell(int verbosity) : m_verbosity(verbosity) {}
 void OvmsShell::Initialize(bool print)
   {
   microrl_init (&m_rl, print ? Print : NoPrint);
+  if (IsSecure())
+      m_rl.prompt_str = secure_prompt;
   m_rl.userdata = (void*)this;
   microrl_set_execute_callback(&m_rl, Execute);
   }
@@ -82,4 +85,10 @@ void OvmsShell::PrintConditional(const char* str)
   {
   if (!m_insert)  // Avoid prompt when entering cmd doing input
     write(str, strlen(str));
+  }
+
+void OvmsShell::SetSecure(bool secure)
+  {
+  OvmsWriter::SetSecure(secure);
+  m_rl.prompt_str = secure ? secure_prompt : _PROMPT_DEFAULT;
   }

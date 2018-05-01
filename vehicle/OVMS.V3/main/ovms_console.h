@@ -30,7 +30,8 @@
 #ifndef __CONSOLE_H__
 #define __CONSOLE_H__
 
-#include "task_base.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 #include "ovms_shell.h"
 
 #define TOKEN_MAX_LENGTH 32

@@ -78,7 +78,7 @@ bool OvmsLocation::IsInLocation(float latitude, float longitude)
 
   // ESP_LOGI(TAG, "Location %s is %0.1fm distant",m_name.c_str(),dist);
 
-  if (abs(dist) <= m_radius)
+  if (fabs(dist) <= m_radius)
     {
     // We are in the location
     if (!m_inlocation)
@@ -86,7 +86,7 @@ bool OvmsLocation::IsInLocation(float latitude, float longitude)
       m_inlocation = true;
       event = std::string("location.enter.");
       event.append(m_name);
-      MyEvents.SignalEvent(event.c_str(), (void*)m_name.c_str());
+      MyEvents.SignalEvent(event.c_str(), (void*)m_name.c_str(), m_name.size()+1);
       }
     }
   else
@@ -97,7 +97,7 @@ bool OvmsLocation::IsInLocation(float latitude, float longitude)
       m_inlocation = false;
       event = std::string("location.leave.");
       event.append(m_name);
-      MyEvents.SignalEvent(event.c_str(), (void*)m_name.c_str());
+      MyEvents.SignalEvent(event.c_str(), (void*)m_name.c_str(), m_name.size()+1);
       }
     }
 

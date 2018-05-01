@@ -46,6 +46,7 @@ class OvmsShell : public OvmsWriter
     void ProcessChar(char c);
     void ProcessChars(const char* buf, int len);
     void PrintConditional(const char* buf);
+    virtual void SetSecure(bool secure=true);
 
   protected:
     virtual void finalise() {}

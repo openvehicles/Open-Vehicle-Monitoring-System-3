@@ -36,8 +36,7 @@
 #include "ovms_events.h"
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-#define ESP_PLATFORM 1
-#define MG_ENABLE_HTTP 1
+#define MG_LOCALS 1
 #include "mongoose.h"
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
@@ -48,15 +47,29 @@ class OvmsNetManager
     ~OvmsNetManager();
 
   public:
-    void WifiUp(std::string event, void* data);
-    void WifiDown(std::string event, void* data);
+    void WifiUpSTA(std::string event, void* data);
+    void WifiDownSTA(std::string event, void* data);
+    void WifiUpAP(std::string event, void* data);
+    void WifiDownAP(std::string event, void* data);
     void ModemUp(std::string event, void* data);
     void ModemDown(std::string event, void* data);
+    void InterfaceUp(std::string event, void* data);
+    void ConfigChanged(std::string event, void* data);
+    void EventSystemShuttingDown(std::string event, void* data);
+
+  protected:
+    void PrioritiseAndIndicate();
+    void SaveDNSServer(ip_addr_t* dnsstore);
+    void SetDNSServer(ip_addr_t* dnsstore);
 
   public:
     bool m_connected_wifi;
     bool m_connected_modem;
     bool m_connected_any;
+    bool m_wifi_ap;
+    bool m_network_any;
+    ip_addr_t m_dns_wifi[DNS_MAX_SERVERS];
+    ip_addr_t m_dns_modem[DNS_MAX_SERVERS];
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   protected:
@@ -70,9 +83,10 @@ class OvmsNetManager
 
   public:
     void MongooseTask();
+    TaskHandle_t GetMongooseTaskHandle() { return m_mongoose_task; }
     struct mg_mgr* GetMongooseMgr();
     bool MongooseRunning();
-    
+
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   };
 

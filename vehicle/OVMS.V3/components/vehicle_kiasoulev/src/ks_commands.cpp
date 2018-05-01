@@ -58,28 +58,32 @@ void CommandOpenChargePort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 void CommandParkBreakService(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
   OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
-	for(int i=0; i<100; i++)
-		{
-		soul->	SendTesterPresent(ABS_EBP_UNIT,2);
-		vTaskDelay( 10 / portTICK_PERIOD_MS );
-		}
+
+	soul->	SendTesterPresent(ABS_EBP_UNIT,1);
+
 	if( strcmp(argv[0],"on")==0 )
 		{
-	  soul->Send_EBP_Command(0x02, 0x01);
+	  //soul->Send_EBP_Command(0x02, 0x01, KS_90_DIAGNOSTIC_SESSION);
+		if( soul->SetSessionMode(ABS_EBP_UNIT, KS_90_DIAGNOSTIC_SESSION ))
+			{
+			soul->SendCanMessage(ABS_EBP_UNIT, 3, VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_LOC_ID, 0x02, 0x01, 0, 0, 0, 0 );
+			}
 		}
 	else if( strcmp(argv[0],"off")==0 )
 		{
-	  soul->Send_EBP_Command(0x02, 0x03);
+	  soul->Send_EBP_Command(0x02, 0x03, KS_90_DIAGNOSTIC_SESSION);
 		}
 	else if( strcmp(argv[0],"off2")==0 ) //Disengange 7d5h	8	03 30 01 01 00 00 00 00
 		{
-	  soul->Send_EBP_Command(0x01, 0x01);
+	  soul->Send_EBP_Command(0x01, 0x01, KS_90_DIAGNOSTIC_SESSION);
 		}
+
 	for(int i=0; i<100; i++)
 		{
 		soul->	SendTesterPresent(ABS_EBP_UNIT,2);
-		vTaskDelay( 10 / portTICK_PERIOD_MS );
+		vTaskDelay( 20 / portTICK_PERIOD_MS );
 		}
+	soul->SetSessionMode(ABS_EBP_UNIT, DEFAULT_SESSION);
 	}
 
 /**
@@ -129,6 +133,30 @@ void xks_bcm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 	{
   OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
 	soul->Send_BCM_Command(strtol(argv[0],NULL,16), strtol(argv[1],NULL,16), strtol(argv[2],NULL,16));
+	}
+
+void xks_set_head_light_delay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+	{
+  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
+	soul->SetHeadLightDelay(strcmp(argv[0],"on")==0);
+	}
+
+void xks_set_one_touch_turn_signal(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+	{
+  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
+	soul->SetOneThouchTurnSignal(strtol(argv[0],NULL,10));
+	}
+
+void xks_set_auto_door_unlock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+	{
+  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
+	soul->SetAutoDoorUnlock(strtol(argv[0],NULL,10));
+	}
+
+void xks_set_auto_door_lock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+	{
+  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
+	soul->SetAutoDoorLock(strtol(argv[0],NULL,10));
 	}
 
 /**
@@ -363,12 +391,12 @@ void xks_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 
   writer->printf("TRIP\n");
 
-    // Trip distance
-    const char* distance = StdMetrics.ms_v_pos_trip->AsUnitString("-", rangeUnit, 1).c_str();
+  // Trip distance
+  const char* distance = StdMetrics.ms_v_pos_trip->AsUnitString("-", rangeUnit, 1).c_str();
   // Consumption
   float consumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers);
   float consumption2 = StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh);
-    // Discharge
+  // Discharge
   const char* discharge = StdMetrics.ms_v_bat_energy_used->AsUnitString("-", kWh, 1).c_str();
   // Recuperation
   const char* recuparation = StdMetrics.ms_v_bat_energy_recd->AsUnitString("-", kWh, 1).c_str();

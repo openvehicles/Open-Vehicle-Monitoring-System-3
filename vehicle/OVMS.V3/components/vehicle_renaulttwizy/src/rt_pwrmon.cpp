@@ -103,8 +103,6 @@ void OvmsVehicleRenaultTwizy::PowerUpdate()
   
   unsigned long pwr;
   
-  *StdMetrics.ms_v_bat_power = (float) twizy_power * 64 / 10000;
-  
   pwr = twizy_speedpwr[CAN_SPEED_CONST].use
       + twizy_speedpwr[CAN_SPEED_ACCEL].use
       + twizy_speedpwr[CAN_SPEED_DECEL].use;
@@ -519,7 +517,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandPower
       }
       
       writer->printf(" SOC%+.1f%%=%.1f%%",
-        (float) (twizy_soc - twizy_soc_tripstart) / 100,
+        (float) ((long)twizy_soc - (long)twizy_soc_tripstart) / 100,
         (float) twizy_soc / 100);
       
       // === 12% 123Wpk/12%

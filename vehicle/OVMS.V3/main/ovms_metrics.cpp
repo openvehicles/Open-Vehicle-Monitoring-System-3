@@ -125,20 +125,18 @@ MetricCallbackEntry::~MetricCallbackEntry()
 OvmsMetrics::OvmsMetrics()
   {
   ESP_LOGI(TAG, "Initialising METRICS (1810)");
-  ESP_LOGI(TAG, "  OvmsMetric is %d bytes",sizeof(OvmsMetric));
-  ESP_LOGI(TAG, "  OvmsMetricBool is %d bytes",sizeof(OvmsMetricBool));
 
   m_nextmodifier = 1;
   m_first = NULL;
   m_trace = false;
 
   // Register our commands
-  OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework",NULL, "", 1);
-  cmd_metric->RegisterCommand("list","Show all metrics",metrics_list, "[<metric>]", 0, 1);
+  OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework",NULL, "", 0, 0, true);
+  cmd_metric->RegisterCommand("list","Show all metrics",metrics_list, "[<metric>]", 0, 1, true);
   cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set, "<metric> <value>", 2, 2, true);
-  OvmsCommand* cmd_metrictrace = cmd_metric->RegisterCommand("trace","METRIC trace framework", NULL, "", 0, 0, false);
-  cmd_metrictrace->RegisterCommand("on","Turn metric tracing ON",metrics_trace,"", 0, 0, false);
-  cmd_metrictrace->RegisterCommand("off","Turn metrictracing OFF",metrics_trace,"", 0, 0, false);
+  OvmsCommand* cmd_metrictrace = cmd_metric->RegisterCommand("trace","METRIC trace framework", NULL, "", 0, 0, true);
+  cmd_metrictrace->RegisterCommand("on","Turn metric tracing ON",metrics_trace,"", 0, 0, true);
+  cmd_metrictrace->RegisterCommand("off","Turn metric tracing OFF",metrics_trace,"", 0, 0, true);
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
@@ -318,21 +316,32 @@ void OvmsMetrics::RegisterListener(const char* caller, const char* name, MetricC
 
 void OvmsMetrics::DeregisterListener(const char* caller)
   {
-  for (MetricCallbackMap::iterator itm=m_listeners.begin(); itm!=m_listeners.end(); ++itm)
+  MetricCallbackMap::iterator itm=m_listeners.begin();
+  while (itm!=m_listeners.end())
     {
     MetricCallbackList* ml = itm->second;
-    for (MetricCallbackList::iterator itc=ml->begin(); itc!=ml->end(); ++itc)
+    MetricCallbackList::iterator itc=ml->begin();
+    while (itc!=ml->end())
       {
       MetricCallbackEntry* ec = *itc;
       if (ec->m_caller == caller)
         {
-        ml->erase(itc);
+        itc = ml->erase(itc);
+        delete ec;
+        }
+      else
+        {
+        ++itc;
         }
       }
     if (ml->empty())
       {
+      itm = m_listeners.erase(itm);
       delete ml;
-      m_listeners.erase(itm);
+      }
+    else
+      {
+      ++itm;
       }
     }
   }
@@ -501,6 +510,14 @@ std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units, i
     }
   }
 
+std::string OvmsMetricInt::AsJSON(const char* defvalue, metric_unit_t units, int precision)
+  {
+  if (m_defined)
+    return AsString(defvalue, units, precision);
+  else
+    return std::string((defvalue && *defvalue) ? defvalue : "0");
+  }
+
 float OvmsMetricInt::AsFloat(const float defvalue, metric_unit_t units)
   {
   return (float)AsInt((int)defvalue, units);
@@ -567,6 +584,24 @@ std::string OvmsMetricBool::AsString(const char* defvalue, metric_unit_t units, 
   else
     {
     return std::string(defvalue);
+    }
+  }
+
+std::string OvmsMetricBool::AsJSON(const char* defvalue, metric_unit_t units, int precision)
+  {
+  if (m_defined)
+    {
+    if (m_value)
+      return std::string("true");
+    else
+      return std::string("false");
+    }
+  else
+    {
+    if ((strcasecmp(defvalue, "yes")==0)||(strcasecmp(defvalue, "1")==0)||(strcasecmp(defvalue, "true")==0))
+      return std::string("true");
+    else
+      return std::string("false");
     }
   }
 
@@ -641,6 +676,14 @@ std::string OvmsMetricFloat::AsString(const char* defvalue, metric_unit_t units,
     {
     return std::string(defvalue);
     }
+  }
+
+std::string OvmsMetricFloat::AsJSON(const char* defvalue, metric_unit_t units, int precision)
+  {
+  if (m_defined)
+    return AsString(defvalue, units, precision);
+  else
+    return std::string((defvalue && *defvalue) ? defvalue : "0");
   }
 
 float OvmsMetricFloat::AsFloat(const float defvalue, metric_unit_t units)
@@ -732,6 +775,8 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
     case AmpHours:     return "Ah";
     case kW:           return "kW";
     case kWh:          return "kWh";
+    case Watts:        return "W";
+    case WattHours:    return "Wh";
     case Seconds:      return "Sec";
     case Minutes:      return "Min";
     case Hours:        return "Hour";
@@ -744,6 +789,8 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
     case dbm:          return "dBm";
     case sq:           return "sq";
     case Percentage:   return "%";
+    case WattHoursPK:  return "Wh/km";
+    case WattHoursPM:  return "Wh/mi";
     default:           return "";
     }
   }
@@ -767,6 +814,24 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
     case MphPS:
       if (to == KphPS) return (value*8)/5;
       else if (to == MetersPSS) return (value*8000)/5;
+      break;
+    case kW:
+      if (to == Watts) return (value*1000);
+      break;
+    case Watts:
+      if (to == kW) return (value/1000);
+      break;
+    case kWh:
+      if (to == WattHours) return (value*1000);
+      break;
+    case WattHours:
+      if (to == kWh) return (value/1000);
+      break;
+    case WattHoursPK:
+      if (to == WattHoursPM) return (value*8)/5;
+      break;
+    case WattHoursPM:
+      if (to == WattHoursPK) return (value*5)/8;
       break;
     case Celcius:
       if (to == Fahrenheit) return ((value*9)/5) + 32;
@@ -819,20 +884,38 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
   switch (from)
     {
     case Kilometers:
-      if (to == Miles) return (value*5)/8;
+      if (to == Miles) return (value/1.60934);
       else if (to == Meters) return value/1000;
       break;
     case Miles:
-      if (to == Kilometers) return (value*8)/5;
-      else if (to == Meters) return (value*8000)/5;
+      if (to == Kilometers) return (value*1.60934);
+      else if (to == Meters) return (value*1609.34);
       break;
     case KphPS:
-      if (to == MphPS) return (value*5)/8;
+      if (to == MphPS) return (value/1.60934);
       else if (to == MetersPSS) return value/1000;
       break;
     case MphPS:
       if (to == KphPS) return (value*8)/5;
-      else if (to == MetersPSS) return (value*8000)/5;
+      else if (to == MetersPSS) return (value*1.60934);
+      break;
+    case kW:
+      if (to == Watts) return (value*1000);
+      break;
+    case Watts:
+      if (to == kW) return (value/1000);
+      break;
+    case kWh:
+      if (to == WattHours) return (value*1000);
+      break;
+    case WattHours:
+      if (to == kWh) return (value/1000);
+      break;
+    case WattHoursPK:
+      if (to == WattHoursPM) return (value*1.60934);
+      break;
+    case WattHoursPM:
+      if (to == WattHoursPK) return (value/1.60934);
       break;
     case Celcius:
       if (to == Fahrenheit) return ((value*9)/5) + 32;
@@ -863,10 +946,10 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
       else if (to == Minutes) return value*60;
       break;
     case Kph:
-      if (to == Mph) return (value*5)/8;
+      if (to == Mph) return (value/1.60934);
       break;
     case Mph:
-      if (to == Kph) return (value*8)/5;
+      if (to == Kph) return (value*1.60934);
       break;
     case dbm:
       if (to == sq) return int((value <= -51)?((value + 113)/2):0);

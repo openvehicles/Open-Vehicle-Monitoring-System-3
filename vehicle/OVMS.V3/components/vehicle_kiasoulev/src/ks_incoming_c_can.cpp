@@ -56,10 +56,15 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 
 		//byte 5 - Bit 6 - Left indicator light
 		//byte 5 - Bit 5 - Right indicator light
+		uint8_t indLights = (d[5] & 0x60)>>5;
+		if( !m_v_emergency_lights->AsBool() && indLights==3)
+			m_v_emergency_lights->SetValue(true);
+		else if( m_v_emergency_lights->AsBool() && (indLights==1 || indLights==2))
+			m_v_emergency_lights->SetValue(false);
 
 		// Seat belt status Byte 7
-		m_v_seat_belt_driver->SetValue(d[7] & 0x10);
-		m_v_seat_belt_passenger->SetValue(d[7] & 0x40);
+		m_v_seat_belt_driver->SetValue(!(d[7] & 0x10));
+		m_v_seat_belt_passenger->SetValue(!(d[7] & 0x40));
 
 		}
 		break;
@@ -67,9 +72,9 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 	case 0x110:
 		{
 		// Seat belt status Byte 7
-		m_v_seat_belt_back_right->SetValue(d[7] & 0x80);
-		m_v_seat_belt_back_middle->SetValue(d[7] & 0x20);
-		m_v_seat_belt_back_left->SetValue(d[7] & 0x08);
+		m_v_seat_belt_back_right->SetValue(!(d[7] & 0x80));
+		m_v_seat_belt_back_middle->SetValue(!(d[7] & 0x20));
+		m_v_seat_belt_back_left->SetValue(!(d[7] & 0x08));
 		}
 		break;
 
@@ -77,11 +82,11 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 		{
 		if (d[3] & 0x20)
 			{
-			StdMetrics.ms_v_env_locked->SetValue(false); //Todo This only keeps track of the lock signal from keyfob
+			//StdMetrics.ms_v_env_locked->SetValue(false); // This only keeps track of the lock signal from keyfob
 			}
 		else if (d[3] & 0x10)
 			{
-			StdMetrics.ms_v_env_locked->SetValue(true); //Todo This only keeps track of the lock signal from keyfob
+			//StdMetrics.ms_v_env_locked->SetValue(true); // This only keeps track of the lock signal from keyfob
 			}
 		if (d[3] & 0x40 && ks_key_fob_open_charge_port)
 			{
@@ -92,19 +97,18 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 
 	case 0x1f1:
 		{
-		m_v_traction_control->SetValue(d[0] & 0x4);
+		m_v_traction_control->SetValue(!(d[0] & 0x4));
 		}
 		break;
 
 	case 0x200:
 		{
 		// Estimated range:
-		//TODO   float ekstraRange = d[0]/10.0;  //Ekstra range when heating is off.
+		float extraRange = StdMetrics.ms_v_env_hvac->AsBool() ? 0 : d[0]/10.0;  //Extra range when heating is off.
 		uint16_t estRange = d[2] + ((d[1] & 1) << 9);
 		if (estRange > 0)
 			{
-			StdMetrics.ms_v_bat_range_est->SetValue((float) (estRange << 1),
-					Kilometers);
+			StdMetrics.ms_v_bat_range_est->SetValue((float) (estRange << 1) + extraRange, Kilometers);
 			}
 		}
 		break;
@@ -112,7 +116,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 	case 0x433:
 		{
 		// Parking brake status
-		StdMetrics.ms_v_env_handbrake->SetValue((d[2] & 0x08) > 0); //Why did I have 0x10 here??
+		StdMetrics.ms_v_env_handbrake->SetValue((d[2] & 0x10) > 0); //Why did I have 0x10 here??
 		}
 		break;
 
@@ -127,17 +131,15 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 	case 0x4f0:
 		{
 		// Odometer:
-		//if (/*length = 8 &&*/ (d[7] || d[6] || d[5])) { //TODO can_datalength was needed in V2
 		StdMetrics.ms_v_pos_odometer->SetValue(
 				(float) ((d[7] << 16) + (d[6] << 8) + d[5]) / 10.0, Kilometers);
-		//}
 		}
 		break;
 
 	case 0x4f2:
 		{
 		// Speed:
-		StdMetrics.ms_v_pos_speed->SetValue(d[1] >> 1, Kph); // kph
+		StdMetrics.ms_v_pos_speed->SetValue((float)d[1] /2.0, Kph); // kph
 
 		// 4f2 is one of the few can-messages that are sent while car is both on and off.
 		// Byte 2 and 7 are some sort of counters which runs while the car is on.
@@ -149,7 +151,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 				&& StdMetrics.ms_v_pos_speed->AsFloat(Kph) == 0
 				&& StdMetrics.ms_v_env_handbrake->AsBool())
 			{
-			// Boths 2 and 7 and speed is 0, so we assumes the car is off.
+			// Both 2 and 7 and speed is 0, so we assumes the car is off.
 			vehicle_kiasoulev_car_on(false);
 			}
 		}
@@ -176,7 +178,15 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 		{
 		// SOC:
 		if (d[0] > 0)
-			StdMetrics.ms_v_bat_soc->SetValue(d[0] >> 1); //In V2 car_SOC
+			StdMetrics.ms_v_bat_soc->SetValue((float)d[0]/2.0);
+		}
+		break;
+
+	case 0x567:
+		{
+		// Clock:
+		if (d[1] > 0 || d[2] > 0 || d[3] > 0)
+			ks_clock=(((d[1]*60) + d[2])*60) + d[3];
 		}
 		break;
 
@@ -190,18 +200,24 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 	case 0x57A: //Charge timer
 		{
 		m_obc_timer_enabled->SetValue( d[3] & 0x1 );
+		//Set the charge start time as seconds since midnight UTC.
+		StdMetrics.ms_v_charge_timerstart->SetValue(
+			(((d[4] & 0x1F)*60 + ((d[4]>>5) & 0x7)*10) + ks_utc_diff) * 60
+			);
 		}
 		break;
 
 	case 0x57B: //Charge timer
 		{
-		m_obc_timer_off->SetValue( d[2] & 0x8 );
+		ks_charge_timer_off = d[2] & 0x8;
 		m_v_preheating->SetValue( d[4] & 0x1 ); //TODO Same bit for timer1 and timer2?
 		}
 		break;
 
 	case 0x581:
 		{
+		m_v_power_usage->SetValue(
+				(float) (((uint16_t) d[0] << 8) | d[1]) / 1000.0, kW);
 		// Car is CHARGING:
 		StdMetrics.ms_v_bat_power->SetValue(
 				(float) (((uint16_t) d[7] << 8) | d[6]) / 256.0, kW);
@@ -220,29 +236,36 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 		uint16_t val = (uint16_t) d[5] * 5 + d[6];
 		if (val > 0)
 			{
-			ks_bms_soc = (uint8_t)(val / 10);
+			m_b_bms_soc->SetValue( val / 10.0 , Percentage);
 			}
+		}
+		break;
+
+	case 0x597:
+		{
+		// Remaining charge time:
+		//uint16_t val = (uint16_t) ((d[2]<<8) + d[1]);
 		}
 		break;
 
 	case 0x653:
 		{
-		// AMBIENT TEMPERATURE:
+		// Ambient temperature
 		StdMetrics.ms_v_env_temp->SetValue(TO_CELCIUS(d[5]/2.0), Celcius);
 		}
 		break;
 
 	case 0x654:
 		{
-		// INSIDE TEMPERATURE:
+		// Inside temperature
 		m_v_env_inside_temp->SetValue(TO_CELCIUS(d[7]/2.0), Celcius);
 		}
 		break;
 
 	case 0x779:
 		{
-		ESP_LOGD(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
-				p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+		//ESP_LOGW(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
+		//		p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
 		}
 		break;
 		}

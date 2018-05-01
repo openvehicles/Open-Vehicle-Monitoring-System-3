@@ -48,6 +48,7 @@ class simcom : public pcp
 
   public:
     virtual void SetPowerMode(PowerMode powermode);
+    void AutoInit();
 
   public:
     void tx(uint8_t* data, size_t size);
@@ -82,7 +83,8 @@ class simcom : public pcp
       NetMode,            // MUX and data established, start PPP
       NetDeepSleep,       // PowerMode=DeepSleep: power save
       PoweringOff,        // Power off modem, then => CheckPowerOff
-      PoweredOff          // Maintain a powered off state
+      PoweredOff,         // Maintain a powered off state
+      PowerOffOn          // Power off modem, then => PoweringOn
       };
     typedef enum
       {

@@ -28,6 +28,8 @@
 ; THE SOFTWARE.
 */
 
+#include <stdlib.h>
+#include <stdio.h>
 #include "ovms_utils.h"
 
 /**
@@ -114,8 +116,8 @@ std::string chargemode_code(const int key)
     {
     case 0: code = "standard";      break;
     case 1: code = "storage";       break;
-    case 2: code = "range";         break;
-    case 3: code = "performance";   break;
+    case 3: code = "range";         break;
+    case 4: code = "performance";   break;
     default: code = "";
     }
   return code;
@@ -129,8 +131,8 @@ int chargemode_key(const std::string code)
   int key;
   if      (code == "standard")      key = 0;
   else if (code == "storage")       key = 1;
-  else if (code == "range")         key = 2;
-  else if (code == "performance")   key = 3;
+  else if (code == "range")         key = 3;
+  else if (code == "performance")   key = 4;
   else key = -1;
   return key;
   }
@@ -166,3 +168,119 @@ std::string mp_encode(const std::string text)
     }
   return res;
   }
+
+/**
+ * mp_encode: encode string for MP transport;
+ *  - replace '\r\n' by '\r'
+ *  - replace '\n' by '\r'
+ *  - replace ',' by ';'
+ */
+extram::string mp_encode(const extram::string text)
+  {
+  extram::string res;
+  char lc = 0;
+  res.reserve(text.length());
+  for (int i=0; i<text.length(); i++)
+    {
+    if (text[i] == '\n')
+      {
+      if (lc != '\r')
+        res += '\r';
+      }
+    else if (text[i] == ',')
+      {
+      res += ';';
+      }
+    else
+      {
+      res += text[i];
+      }
+
+    lc = text[i];
+    }
+  return res;
+  }
+
+/**
+ * startsWith: std::string prefix check
+ */
+bool startsWith(const std::string& haystack, const std::string& needle)
+  {
+  return needle.length() <= haystack.length()
+    && std::equal(needle.begin(), needle.end(), haystack.begin());
+  }
+
+/**
+ * FormatHexDump: create/fill hexdump buffer including printable representation
+ * Note: allocates buffer as necessary in *bufferp, caller must free.
+ */
+int FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsize /*=16*/)
+  {
+  const char *s = data;
+
+  if (rlength>0)
+    {
+    if (!*bufferp)
+      *bufferp = (char*) malloc(colsize*4 + 4); // space for 16x3 + 2 + 16 + 1(\0)
+
+    char *p = *bufferp;
+    const char *os = s;
+    for (int k=0;k<colsize;k++)
+      {
+      if (k<rlength)
+        {
+        sprintf(p,"%2.2x ",*s);
+        s++;
+        }
+      else
+        {
+        sprintf(p,"   ");
+        }
+      p+=3;
+      }
+    sprintf(p,"| ");
+    p += 2;
+    s = os;
+    for (int k=0;k<colsize;k++)
+      {
+      if (k<rlength)
+        {
+        if (isprint((int)*s))
+          { *p = *s; }
+        else
+          { *p = '.'; }
+        s++;
+        }
+      else
+        {
+        *p = ' ';
+        }
+      p++;
+      }
+    *p = 0;
+    rlength -= colsize;
+    }
+
+  return rlength;
+  }
+
+/**
+ * json_encode: encode string for JSON transport (see http://www.json.org/)
+ */
+std::string json_encode(const std::string text)
+{
+  std::string buf;
+  for (int i=0; i<text.size(); i++) {
+    switch(text[i]) {
+      case '\n':        buf += "\\n"; break;
+      case '\r':        buf += "\\r"; break;
+      case '\t':        buf += "\\t"; break;
+      case '\b':        buf += "\\b"; break;
+      case '\f':        buf += "\\f"; break;
+      case '\"':        buf += "\\\""; break;
+      case '\\':        buf += "\\\\"; break;
+      default:          buf += text[i]; break;
+    }
+	}
+	return buf;
+}

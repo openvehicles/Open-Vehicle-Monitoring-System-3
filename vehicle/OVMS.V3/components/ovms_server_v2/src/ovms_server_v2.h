@@ -37,11 +37,12 @@
 #include <iomanip>
 #include <sys/time.h>
 #include "ovms_server.h"
-#include "ovms_net.h"
+#include "ovms_netmanager.h"
 #include "ovms_buffer.h"
 #include "crypt_rc4.h"
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
+#include "ovms_mutex.h"
 
 #define OVMS_PROTOCOL_V2_TOKENSIZE 22
 
@@ -53,25 +54,17 @@ class OvmsServerV2 : public OvmsServer
 
   public:
     virtual void SetPowerMode(PowerMode powermode);
-
-  public:
-    void ServerTask();
-
-  public:
+    void Connect();
+    void SendLogin();
     void Disconnect();
+    void Reconnect(int connretry);
+    size_t IncomingData(uint8_t* data, size_t len);
 
   protected:
-    bool Connect();
-    bool Login();
     void ProcessServerMsg();
     void ProcessCommand(const char* payload);
-    void Transmit(const std::ostringstream& message);
     void Transmit(const std::string& message);
     void Transmit(const char* message);
-    void SetStatus(const char* status, bool fault=false);
-
-  protected:
-    std::string ReadLine();
 
   protected:
     void TransmitMsgStat(bool always = false);
@@ -94,13 +87,37 @@ class OvmsServerV2 : public OvmsServer
     bool IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry);
     void EventListener(std::string event, void* data);
     void ConfigChanged(OvmsConfigParam* param);
+    void NetUp(std::string event, void* data);
+    void NetDown(std::string event, void* data);
+    void NetReconfigured(std::string event, void* data);
+    void NetmanInit(std::string event, void* data);
+    void NetmanStop(std::string event, void* data);
+    void Ticker1(std::string event, void* data);
 
   public:
+    enum State
+      {
+      Undefined = 0,
+      WaitNetwork,
+      ConnectWait,
+      Connecting,
+      Authenticating,
+      Connected,
+      Disconnected,
+      WaitReconnect
+      };
+    State m_state;
     std::string m_status;
+    void SetStatus(const char* status, bool fault=false, State newstate=Undefined);
+
+  public:
+    struct mg_connection *m_mgconn;
+    OvmsMutex m_mgconn_mutex;
+    int m_connretry;
+    bool m_loggedin;
 
   protected:
     metric_unit_t m_units_distance;
-    OvmsNetTcpConnection m_conn;
     OvmsBuffer* m_buffer;
     std::string m_vehicleid;
     std::string m_server;
@@ -120,13 +137,30 @@ class OvmsServerV2 : public OvmsServer
     bool m_now_environment;
     bool m_now_capabilities;
     bool m_now_group;
+
     int m_streaming;
+    int m_updatetime_idle;
+    int m_updatetime_connected;
+
+    int m_lasttx = 0;
+    int m_lasttx_stream = 0;
+    int m_peers = 0;
 
     bool m_pending_notify_info;
     bool m_pending_notify_error;
     bool m_pending_notify_alert;
     bool m_pending_notify_data;
     uint32_t m_pending_notify_data_last;
+    int m_pending_notify_data_retransmit;
   };
+
+class OvmsServerV2Init
+  {
+  public:
+    OvmsServerV2Init();
+    void AutoInit();
+  };
+
+extern OvmsServerV2Init MyOvmsServerV2Init;
 
 #endif //#ifndef __OVMS_SERVER_V2_H__

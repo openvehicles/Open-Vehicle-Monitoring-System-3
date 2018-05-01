@@ -112,12 +112,25 @@ SevconClient::SevconClient(OvmsVehicleRenaultTwizy* twizy)
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "canopen.node.emcy", std::bind(&SevconClient::EmcyListener, this, _1, _2));
+  
+  m_kickdown_timer = xTimerCreate("RT kickdown", pdMS_TO_TICKS(100), pdTRUE, NULL, KickdownTimer);
 }
 
 SevconClient::~SevconClient()
 {
+  if (m_kickdown_timer)
+    xTimerDelete(m_kickdown_timer, 0);
   if (m_faultqueue)
     vQueueDelete(m_faultqueue);
+}
+
+SevconClient* SevconClient::GetInstance(OvmsWriter* writer /*=NULL*/)
+{
+  OvmsVehicleRenaultTwizy* twizy = OvmsVehicleRenaultTwizy::GetInstance(writer);
+  if (twizy)
+    return twizy->GetSevconClient();
+  else
+    return NULL;
 }
 
 
@@ -250,12 +263,22 @@ CANopenResult_t SevconClient::Login(bool on)
   if (sc.Read(0x1018, 0x02, m_sevcon_type) != COR_OK)
     return COR_ERR_UnknownDevice;
 
-  if (m_sevcon_type == SC_Gen4_4845)
+  if (MyConfig.GetParamValue("xrt", "type") == "SC80GB45") {
+    ESP_LOGD(TAG, "Twizy type 2 = SC80GB45");
+    m_drivemode.type = 2; // SC80GB45
+  }
+  else if (m_sevcon_type == SC_Gen4_4845) {
+    ESP_LOGD(TAG, "Twizy type 0 = Twizy80");
     m_drivemode.type = 0; // Twizy80
-  else if (m_sevcon_type == SC_Gen4_4827)
+  }
+  else if (m_sevcon_type == SC_Gen4_4827) {
+    ESP_LOGD(TAG, "Twizy type 1 = Twizy45");
     m_drivemode.type = 1; // Twizy45
-  else
+  }
+  else {
+    ESP_LOGE(TAG, "Twizy type unknown: SEVCON type 0x%08x", m_sevcon_type);
     return COR_ERR_UnknownDevice;
+  }
   
   // check login level:
   uint32_t level;
@@ -286,6 +309,8 @@ CANopenResult_t SevconClient::Login(bool on)
 
   ESP_LOGD(TAG, "Sevcon login status: %d", on);
   SetCtrlLoggedIn(on);
+  if (on)
+    MyEvents.SignalEvent("vehicle.ctrl.loggedin", NULL);
   return COR_OK;
 }
 
@@ -347,6 +372,10 @@ CANopenResult_t SevconClient::CfgMode(CANopenJob& job, bool on)
   
   ESP_LOGD(TAG, "Sevcon cfgmode status: %d", on);
   SetCtrlCfgMode(on);
+  if (on)
+    MyEvents.SignalEvent("vehicle.ctrl.cfgmode", NULL);
+  else
+    MyEvents.SignalEvent("vehicle.ctrl.runmode", NULL);
   return COR_OK;
 }
 
@@ -401,20 +430,14 @@ void SevconClient::Ticker1(uint32_t ticker)
     m_buttoncnt--;
   }
   
+  // Auto drive & recuperation adjustment (if enabled):
+  CfgAutoPower();
 
-#ifdef TODO
-
+#if 0 // TODO
   // Valet mode: lock speed if valet max odometer reached:
   if (ValetMode() && !CarLocked() && twizy_odometer > twizy_valet_odo)
   {
     vehicle_twizy_cfg_restrict_cmd(FALSE, CMD_Lock, NULL);
   }
-
-  // Auto drive & recuperation adjustment (if enabled):
-  vehicle_twizy_cfg_autopower();
-
 #endif
-
 }
-
-

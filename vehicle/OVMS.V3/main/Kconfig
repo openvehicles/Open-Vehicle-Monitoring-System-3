@@ -52,12 +52,34 @@ config OVMS_SC_JAVASCRIPT_DUKTAPE
 
 endchoice # OVMS_SC_JAVASCRIPT
 
-config OVMS_SC_GPL_MONGOOSE
+menuconfig OVMS_SC_GPL_MONGOOSE
     bool "Include the GPL licensed MONGOOSE networking library (web server, etc)"
     default y
     depends on OVMS
     help
         Enable to include the GPL licensed MONGOOSE networking library
+
+config MG_ENABLE_FILESYSTEM
+    bool "Enable MONGOOSE filesystem support"
+    default y
+    depends on OVMS_SC_GPL_MONGOOSE
+    help
+        Enable MONGOOSE filesystem support
+
+config MG_ENABLE_DIRECTORY_LISTING
+    bool "Enable MONGOOSE directory listing support"
+    default y
+    depends on OVMS_SC_GPL_MONGOOSE
+    help
+        Enable MONGOOSE directory listing support
+
+config MG_ENABLE_DEBUG
+    bool "Enable MONGOOSE debug logging"
+    default n
+    depends on OVMS_SC_GPL_MONGOOSE
+    help
+        Enable MONGOOSE verbose debug log output
+        (on ESP_LOG verbose channel, including timing details)
 
 config OVMS_SC_GPL_WOLF
     bool "Include the GPL licensed WOLFSSH and WOLFSSL libraries (ssh server)"
@@ -66,6 +88,13 @@ config OVMS_SC_GPL_WOLF
     help
         Enable to include the GPL licensed WOLFSSH and WOLFSSL libraries
         (required for SSH server functionality)
+
+config OVMS_HW_SPIMEM_AGGRESSIVE
+    bool "Aggressively use SPI RAM (rather than internal RAM)"
+    default y
+    depends on OVMS && OVMS_HW_BASE_3_1
+    help
+        Enable to aggressively allocate from SPI RAM (rather than internal RAM).
 
 menu "Vehicle Support"
     depends on OVMS
@@ -105,6 +134,13 @@ config OVMS_VEHICLE_TESLAROADSTER
     help
         Enable to include support for Tesla Roadster vehicles.
 
+config OVMS_VEHICLE_TESLAMODELS
+    bool "Include support for Tesla Model S vehicles"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Tesla Model S vehicles.
+
 config OVMS_VEHICLE_NISSANLEAF
     bool "Include support for Nissan Leaf vehicles"
     default y
@@ -116,6 +152,7 @@ config OVMS_VEHICLE_RENAULTTWIZY
     bool "Include support for Renault Twizy vehicles"
     default y
     depends on OVMS
+    depends on OVMS_COMP_CANOPEN
     help
         Enable to include support for Renault Twizy vehicles.
 
@@ -126,7 +163,24 @@ config OVMS_VEHICLE_KIASOULEV
     help
         Enable to include support for Kia Soul EV vehicles.
 
+config OVMS_VEHICLE_VOLTAMPERA
+    bool "Include support for Volt/Ampera vehicles"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Volt/Ampera vehicles.
+
 endmenu # Vehicle Support
+
+config OVMS_VEHICLE_RXTASK_STACK
+    int "Stack size for vehicle RX task"
+    default 3072
+    depends on OVMS
+    help
+        Stack size for the vehicle CAN RX task ("Vrx Task").
+        The RX task triggers events and metrics updates so needs to be
+        able to process the attached event/metrics listeners.
+        Standard stack usage of this task is currently around 1400 bytes.
 
 menu "Component Options"
     depends on OVMS
@@ -278,7 +332,7 @@ config OVMS_COMP_EDITOR
     help
         Enable to include support for a simple file editor (vfs edit)
 
-config OVMS_COMP_CANOPEN
+menuconfig OVMS_COMP_CANOPEN
     bool "Include CANopen framework"
     default y
     depends on OVMS
@@ -286,6 +340,27 @@ config OVMS_COMP_CANOPEN
         The CANopen framework provides shell commands and a simple client API
         for CANopen node management (NMT), state and emergency (EMCY) monitoring,
         and accessing node service dictionary objects (SDO).
+
+config OVMS_COMP_CANOPEN_RX_STACK
+    int "Stack size for CANopen RX task"
+    default 3072
+    depends on OVMS_COMP_CANOPEN
+    help
+        Stack size for the CANopen RX task ("COrx").
+        The shared RX task triggers EMCY and NMT events and metrics updates
+        so needs to be able to process the event/metrics listeners. If the
+        listeners are simple, stack size can be reduced.
+        Standard stack usage for the Twizy is currently around 2400 bytes.
+
+config OVMS_COMP_CANOPEN_WRK_STACK
+    int "Stack size for CANopen worker (TX) tasks"
+    default 2048
+    depends on OVMS_COMP_CANOPEN
+    help
+        Stack size for CANopen worker tasks ("COwrk").
+        Worker tasks only process TX jobs and don't trigger any event/metrics
+        updates so can run with a smaller stack than the RX task.
+        Standard stack usage for the Twizy is currently around 1000 bytes.
 
 endmenu # Component Options
 

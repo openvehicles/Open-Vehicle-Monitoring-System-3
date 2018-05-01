@@ -31,11 +31,9 @@
 #ifndef __OVMS_SERVER_H__
 #define __OVMS_SERVER_H__
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "pcp.h"
 
-class OvmsServer : public pcp
+class OvmsServer : public pcp, public ExternalRamAllocated
   {
   public:
     OvmsServer(const char* name);
@@ -43,12 +41,6 @@ class OvmsServer : public pcp
 
   public:
     virtual void SetPowerMode(PowerMode powermode);
-
-  public:
-    virtual void ServerTask() = 0;
-
-  protected:
-    TaskHandle_t m_task;
   };
 
 #endif //#ifndef __OVMS_SERVER_H__

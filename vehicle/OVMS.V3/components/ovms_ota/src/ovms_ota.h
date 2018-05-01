@@ -31,13 +31,37 @@
 #ifndef __OTA_H__
 #define __OTA_H__
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "ovms_events.h"
+#include "ovms_mutex.h"
+
+struct ota_info
+  {
+  std::string version_firmware;
+  std::string version_server;
+  std::string partition_running;
+  std::string partition_boot;
+  std::string changelog_server;
+  };
 
 class OvmsOTA
   {
   public:
     OvmsOTA();
     ~OvmsOTA();
+
+  public:
+    static void GetStatus(ota_info& info, bool check_update=true);
+
+  public:
+    void LaunchAutoFlash(bool force=false);
+    bool AutoFlash(bool force=false);
+    void Ticker600(std::string event, void* data);
+
+  public:
+    OvmsMutex m_flashing;
+    TaskHandle_t m_autotask;
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
   protected:

@@ -47,7 +47,7 @@ ConsoleAsync* ConsoleAsync::Instance()
   return m_instance;
   }
 
-ConsoleAsync::ConsoleAsync() : TaskBase("AsyncConsole", 5*1024)
+ConsoleAsync::ConsoleAsync() : TaskBase("OVMS Console", 6*1024)
   {
   m_monitoring = true;
   uart_config_t uart_config =
@@ -148,7 +148,7 @@ void ConsoleAsync::HandleDeviceEvent(void* pEvent)
       if (buffered_size > 0)
         {
         int len = uart_read_bytes(EX_UART_NUM, data, BUF_SIZE, 100 / portTICK_RATE_MS);
-	// Translate CR (Enter) from montitor into \n for microrl
+	// Translate CR (Enter) from monitor into \n for microrl
 	bool found = false;
 	for (int i = 0; i < len; ++i)
 	  {

@@ -26,13 +26,13 @@ Token is word separate by white space, for example 3 token line:
 /*
 Define you prompt string here. You can use colors escape code, for highlight you prompt,
 for example this prompt will green color (if you terminal supports color)*/
-#define _PROMPT_DEFAULT "\033[32mOVMS >\033[0m "	// green color
+#define _PROMPT_DEFAULT "OVMS> "
 //#define _PROMPT_DEFAULT "OVMS > "
 
 /*
 Define prompt text (without ESC sequence, only text) prompt length, it needs because if you use
 ESC sequence, it's not possible detect only text length*/
-#define _PROMPT_LEN       7
+#define _PROMPT_LEN       6
 
 /*Define it, if you wanna use completion functional, also set completion callback in you code,
 now if user press TAB calls 'copmlitetion' callback. If you no need it, you can just set

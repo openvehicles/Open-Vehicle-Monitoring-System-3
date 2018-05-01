@@ -36,7 +36,6 @@ static class LogLevelSetter
       }
   } lss  __attribute__ ((init_priority (0150)));
 
-uint32_t monotonictime = 0;
 Housekeeping* MyHousekeeping = NULL;
 Peripherals* MyPeripherals = NULL;
 
@@ -49,6 +48,9 @@ void app_main(void)
 
   ESP_LOGI(TAG, "Mounting CONFIG...");
   MyConfig.mount();
+  
+  ESP_LOGI(TAG, "Configure logging...");
+  MyCommandApp.ConfigureLogging();
 
   ESP_LOGI(TAG, "Registering default configs...");
   MyConfig.RegisterParam("vehicle", "Vehicle", true, true);

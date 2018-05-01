@@ -43,9 +43,10 @@ static const char *TAG = "script";
 
 OvmsScripts MyScripts __attribute__ ((init_priority (1600)));
 
-static void script_ovms(bool print, int verbosity, OvmsWriter* writer, FILE* sf)
+static void script_ovms(bool print, int verbosity, OvmsWriter* writer, FILE* sf, bool secure=false)
   {
   BufferedShell* bs = new BufferedShell(print, verbosity);
+  if (secure) bs->SetSecure(true);
   char* cmdline = new char[_COMMAND_LINE_LEN];
   while(fgets(cmdline, _COMMAND_LINE_LEN, sf) != NULL )
     {
@@ -106,7 +107,7 @@ void OvmsScripts::AllScripts(std::string path)
       if (sf)
         {
         ESP_LOGI(TAG, "Running script %s", fpath.c_str());
-        script_ovms(false, COMMAND_RESULT_MINIMAL, ConsoleAsync::Instance(), sf);
+        script_ovms(false, COMMAND_RESULT_MINIMAL, ConsoleAsync::Instance(), sf, true);
         }
       }
     closedir(dir);

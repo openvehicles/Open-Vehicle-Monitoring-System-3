@@ -41,6 +41,8 @@ static const char *TAG = "peripherals";
 
 Peripherals::Peripherals()
   {
+  gpio_config_t gpio_conf;
+
   ESP_LOGI(TAG, "Initialising OVMS Peripherals...");
 
 #if defined(CONFIG_OVMS_COMP_WIFI)||defined(CONFIG_OVMS_COMP_MODEM_SIMCOM)
@@ -77,11 +79,6 @@ Peripherals::Peripherals()
   gpio_set_pull_mode((gpio_num_t)SDCARD_PIN_D0, GPIO_PULLUP_ONLY);    // D0, needed in 4- and 1-line modes
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
-#ifdef CONFIG_OVMS_COMP_MODEM
-  gpio_set_direction((gpio_num_t)MODEM_GPIO_TX, GPIO_MODE_OUTPUT);
-  gpio_set_direction((gpio_num_t)MODEM_GPIO_RX, GPIO_MODE_INPUT);
-#endif // #ifdef CONFIG_OVMS_COMP_MODEM
-
   ESP_LOGI(TAG, "  ESP32 system");
   m_esp32 = new esp32system("esp32");
 
@@ -90,7 +87,7 @@ Peripherals::Peripherals()
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
   ESP_LOGI(TAG, "  MAX7317 I/O Expander");
-  m_max7317 = new max7317("egpio", m_spibus, VSPI_NODMA_HOST, 1000000, VSPI_PIN_MAX7317_CS);
+  m_max7317 = new max7317("egpio", m_spibus, VSPI_NODMA_HOST, 10000000, VSPI_PIN_MAX7317_CS);
 #endif // #ifdef CONFIG_OVMS_COMP_MAX7317
 
 #ifdef CONFIG_OVMS_COMP_ESP32CAN
@@ -115,9 +112,9 @@ Peripherals::Peripherals()
 
 #ifdef CONFIG_OVMS_COMP_MCP2515
   ESP_LOGI(TAG, "  MCP2515 CAN 1/2");
-  m_mcp2515_1 = new mcp2515("can2", m_spibus, VSPI_NODMA_HOST, 1000000, VSPI_PIN_MCP2515_1_CS, VSPI_PIN_MCP2515_1_INT);
+  m_mcp2515_1 = new mcp2515("can2", m_spibus, VSPI_NODMA_HOST, 10000000, VSPI_PIN_MCP2515_1_CS, VSPI_PIN_MCP2515_1_INT);
   ESP_LOGI(TAG, "  MCP2515 CAN 2/2");
-  m_mcp2515_2 = new mcp2515("can3", m_spibus, VSPI_NODMA_HOST, 1000000, VSPI_PIN_MCP2515_2_CS, VSPI_PIN_MCP2515_2_INT);
+  m_mcp2515_2 = new mcp2515("can3", m_spibus, VSPI_NODMA_HOST, 10000000, VSPI_PIN_MCP2515_2_CS, VSPI_PIN_MCP2515_2_INT);
 #endif // #ifdef CONFIG_OVMS_COMP_MCP2515
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
@@ -127,6 +124,24 @@ Peripherals::Peripherals()
 
 #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
   ESP_LOGI(TAG, "  SIMCOM MODEM");
+  gpio_conf =
+    {
+    .pin_bit_mask = BIT(MODEM_GPIO_RX),
+    .mode = GPIO_MODE_OUTPUT ,
+    .pull_up_en = GPIO_PULLUP_ENABLE,
+    .pull_down_en = GPIO_PULLDOWN_DISABLE,
+    .intr_type = GPIO_INTR_DISABLE
+    };
+  gpio_config( &gpio_conf );
+  gpio_conf =
+    {
+    .pin_bit_mask = BIT(MODEM_GPIO_TX),
+    .mode = GPIO_MODE_INPUT ,
+    .pull_up_en = GPIO_PULLUP_ENABLE,
+    .pull_down_en = GPIO_PULLDOWN_DISABLE,
+    .intr_type = GPIO_INTR_DISABLE
+    };
+  gpio_config( &gpio_conf );
   m_simcom = new simcom("simcom", UART_NUM_1, 115200, MODEM_GPIO_RX, MODEM_GPIO_TX, MODEM_EGPIO_PWR, MODEM_EGPIO_DTR);
 #endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
 

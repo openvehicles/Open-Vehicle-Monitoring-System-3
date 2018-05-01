@@ -31,9 +31,11 @@
 #ifndef __HOUSEKEEPING_H__
 #define __HOUSEKEEPING_H__
 
+#include "ovms_events.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/timers.h"
+#include "freertos/event_groups.h"
 
 class Housekeeping
   {
@@ -42,15 +44,14 @@ class Housekeeping
     virtual ~Housekeeping();
 
   public:
-    void init();
-    void version();
-    void metrics();
-    void Ticker1();
+    void Init(std::string event, void* data);
+    void Metrics(std::string event, void* data);
+    void TimeLogger(std::string event, void* data);
 
   protected:
-    TaskHandle_t m_taskid;
     TimerHandle_t m_timer1;
-    int m_tick;
   };
+
+extern Housekeeping* MyHousekeeping;
 
 #endif //#ifndef __HOUSEKEEPING_H__

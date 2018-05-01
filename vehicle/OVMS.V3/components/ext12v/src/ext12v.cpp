@@ -33,6 +33,7 @@ static const char *TAG = "ext12v";
 
 #include "ext12v.h"
 #include "ovms_peripherals.h"
+#include "ovms_config.h"
 
 ext12v::ext12v(const char* name)
   : pcp(name)
@@ -65,4 +66,10 @@ void ext12v::SetPowerMode(PowerMode powermode)
     default:
       break;
     }
+  }
+
+void ext12v::AutoInit()
+  {
+  if (MyConfig.GetParamValueBool("auto", "ext12v", false))
+    SetPowerMode(On);
   }

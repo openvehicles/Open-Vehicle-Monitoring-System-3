@@ -84,6 +84,8 @@ static void ESP32CAN_isr(void *pvParameters)
   {
   esp32can *me = (esp32can*)pvParameters;
 
+  me->m_status.interrupts++;
+
   // Read interrupt status and clear flags
   ESP32CAN_IRQ_t interrupt = (ESP32CAN_IRQ_t)MODULE_ESP32CAN->IR.U;
 
@@ -111,12 +113,12 @@ static void ESP32CAN_isr(void *pvParameters)
       );
   if (error_irqs)
     {
-    me->m_error_flags = error_irqs << 16 | (MODULE_ESP32CAN->SR.U & 0b11001111) << 8 | MODULE_ESP32CAN->ECC.B.ECC;
-    me->m_errors_rx = MODULE_ESP32CAN->RXERR.U;
-    me->m_errors_tx = MODULE_ESP32CAN->TXERR.U;
+    me->m_status.error_flags = error_irqs << 16 | (MODULE_ESP32CAN->SR.U & 0b11001111) << 8 | MODULE_ESP32CAN->ECC.B.ECC;
+    me->m_status.errors_rx = MODULE_ESP32CAN->RXERR.U;
+    me->m_status.errors_tx = MODULE_ESP32CAN->TXERR.U;
     if (error_irqs & __CAN_IRQ_DATA_OVERRUN)
       {
-      me->m_errors_rxbuf_overflow++;
+      me->m_status.rxbuf_overflow++;
       MODULE_ESP32CAN->CMR.B.CDO = 1;
       }
     // Request error log:
@@ -125,7 +127,7 @@ static void ESP32CAN_isr(void *pvParameters)
     msg.body.bus = me;
     xQueueSendFromISR(MyCan.m_rxqueue, &msg, 0);
     }
-  
+
   // Handle wakeup interrupt:
   if ((interrupt & (__CAN_IRQ_WAKEUP)) != 0)
     {
@@ -261,10 +263,10 @@ esp_err_t esp32can::Stop()
   return ESP_OK;
   }
 
-esp_err_t esp32can::Write(CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
+esp_err_t esp32can::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
   {
   uint8_t __byte_i; // Byte iterator
-  
+
   // check if TX buffer is available:
   if(MODULE_ESP32CAN->SR.B.TBS == 0)
     return QueueWrite(p_frame, maxqueuewait);
@@ -294,7 +296,7 @@ esp_err_t esp32can::Write(CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
 
   // stats & logging:
   canbus::Write(p_frame, maxqueuewait);
-  
+
   return ESP_OK;
   }
 

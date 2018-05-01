@@ -66,6 +66,7 @@ static void GsmPPPOS_StatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
       ESP_LOGI(TAG, "   our6_ipaddr = %s", ip6addr_ntoa(netif_ip6_addr(pppif, 0)));
 #endif /* PPP_IPV6_SUPPORT */
       me->m_connected = true;
+      MyEvents.SignalEvent("network.interface.up", NULL);
       MyEvents.SignalEvent("system.modem.gotip",NULL);
       return;
       }
@@ -145,7 +146,8 @@ static void GsmPPPOS_StatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
   // Try to reconnect in 30 seconds. This is assuming the SIMCOM modem level
   // data channel is still open.
   ESP_LOGI(TAG, "Attempting PPP reconnecting in 30 seconds...");
-  pppapi_connect(pcb, 30);
+  // Note: We are in tiT task context here so use ppp_connect not pppapi_connect.
+  ppp_connect(pcb, 30);
   }
 
 GsmPPPOS::GsmPPPOS(GsmMux* mux, int channel)
@@ -215,6 +217,7 @@ void GsmPPPOS::Shutdown(bool hard)
     m_connected = false;
     MyEvents.SignalEvent("system.modem.down",NULL);
     pppapi_close(m_ppp, nocarrier);
+    ESP_LOGI(TAG, "PPP is shutdown");
     }
   else
     {

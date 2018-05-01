@@ -34,7 +34,9 @@ static const char *TAG = "vehicle";
 #include <stdio.h>
 #include <ovms_command.h>
 #include <ovms_metrics.h>
+#include <ovms_notify.h>
 #include <metrics_standard.h>
+#include <ovms_webserver.h>
 #include "vehicle.h"
 
 OvmsVehicleFactory MyVehicleFactory __attribute__ ((init_priority (2000)));
@@ -57,6 +59,18 @@ void vehicle_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   for (OvmsVehicleFactory::map_vehicle_t::iterator k=MyVehicleFactory.m_vmap.begin(); k!=MyVehicleFactory.m_vmap.end(); ++k)
     {
     writer->printf("%-4.4s %s\n",k->first,k->second.name);
+    }
+  }
+
+void vehicle_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle != NULL)
+    {
+    MyVehicleFactory.m_currentvehicle->Status(verbosity, writer);
+    }
+  else
+    {
+    writer->puts("No vehicle module selected");
     }
   }
 
@@ -347,16 +361,17 @@ OvmsVehicleFactory::OvmsVehicleFactory()
 
   m_currentvehicle = NULL;
 
-  OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework",NULL,"",0,0);
-  cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1);
-  cmd_vehicle->RegisterCommand("list","Show list of available vehicle modules",vehicle_list,"",0,0);
+  OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework",NULL,"",0,0, true);
+  cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1, true);
+  cmd_vehicle->RegisterCommand("list","Show list of available vehicle modules",vehicle_list,"",0,0, true);
+  cmd_vehicle->RegisterCommand("status","Show vehicle module status",vehicle_status,"",0,0, true);
 
   MyCommandApp.RegisterCommand("wakeup","Wake up vehicle",vehicle_wakeup,"",0,0,true);
   MyCommandApp.RegisterCommand("homelink","Activate specified homelink button",vehicle_homelink,"<homelink>",1,1,true);
   MyCommandApp.RegisterCommand("lock","Lock vehicle",vehicle_lock,"<pin>",1,1,true);
   MyCommandApp.RegisterCommand("unlock","Unlock vehicle",vehicle_unlock,"<pin>",1,1,true);
   MyCommandApp.RegisterCommand("valet","Activate valet mode",vehicle_valet,"<pin>",1,1,true);
-  MyCommandApp.RegisterCommand("unvalet","Deactivate valuet mode",vehicle_unvalet,"<pin>",1,1,true);
+  MyCommandApp.RegisterCommand("unvalet","Deactivate valet mode",vehicle_unvalet,"<pin>",1,1,true);
   OvmsCommand* cmd_charge = MyCommandApp.RegisterCommand("charge","Charging framework",NULL,"",0,0,true);
   OvmsCommand* cmd_chargemode = cmd_charge->RegisterCommand("mode","Set vehicle charge mode",NULL,"",0,0,true);
   cmd_chargemode->RegisterCommand("standard","Set vehicle standard charge mode",vehicle_charge_mode,"",0,0,true);
@@ -407,12 +422,27 @@ void OvmsVehicleFactory::SetVehicle(const char* type)
     m_currentvehicle = NULL;
     }
   m_currentvehicle = NewVehicle(type);
-  StandardMetrics.ms_v_type->SetValue(type);
+  StandardMetrics.ms_v_type->SetValue(m_currentvehicle ? type : "");
+  }
+
+void OvmsVehicleFactory::AutoInit()
+  {
+  std::string type = MyConfig.GetParamValue("auto", "vehicle.type");
+  if (!type.empty())
+    SetVehicle(type.c_str());
   }
 
 OvmsVehicle* OvmsVehicleFactory::ActiveVehicle()
   {
   return m_currentvehicle;
+  }
+
+const char* OvmsVehicleFactory::ActiveVehicleName()
+  {
+  map_vehicle_t::iterator it = m_vmap.find(StandardMetrics.ms_v_type->AsString().c_str());
+  if (it != m_vmap.end())
+    return it->second.name;
+  return NULL;
   }
 
 static void OvmsVehicleRxTask(void *pvParameters)
@@ -427,6 +457,7 @@ OvmsVehicle::OvmsVehicle()
   m_can2 = NULL;
   m_can3 = NULL;
   m_ticker = 0;
+  m_12v_ticker = 0;
   m_registeredlistener = false;
 
   m_poll_state = 0;
@@ -444,7 +475,8 @@ OvmsVehicle::OvmsVehicle()
   m_poll_ml_frame = 0;
 
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
-  xTaskCreatePinnedToCore(OvmsVehicleRxTask, "Vrx Task", 4096, (void*)this, 10, &m_rxtask, 1);
+  xTaskCreatePinnedToCore(OvmsVehicleRxTask, "OVMS Vehicle",
+    CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_rxtask, 1);
 
   using std::placeholders::_1;
   using std::placeholders::_2;
@@ -514,6 +546,11 @@ void OvmsVehicle::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, ui
   {
   }
 
+void OvmsVehicle::Status(int verbosity, OvmsWriter* writer)
+  {
+  writer->puts("Vehicle module loaded and running");
+  }
+
 void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed)
   {
   switch (bus)
@@ -569,7 +606,46 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     StandardMetrics.ms_v_charge_time->SetValue(StandardMetrics.ms_v_charge_time->AsInt() + 1);
   else
     StandardMetrics.ms_v_charge_time->SetValue(0);
-  }
+
+  CalculateEfficiency();
+
+  // 12V battery monitor:
+  if (StandardMetrics.ms_v_env_charging12v->AsBool() == true)
+    {
+    // add two seconds calmdown per second charging, max 15 minutes:
+    if (m_12v_ticker < 15*60)
+      m_12v_ticker += 2;
+    }
+  else if (m_12v_ticker > 0)
+    {
+    --m_12v_ticker;
+    if (m_12v_ticker == 0)
+      {
+      // take 12V reference voltage:
+      StandardMetrics.ms_v_bat_12v_voltage_ref->SetValue(StandardMetrics.ms_v_bat_12v_voltage->AsFloat());
+      }
+    }
+  else if ((m_ticker % 60) == 0)
+    {
+    // check 12V voltage:
+    float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
+    float vref = StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat();
+    bool alert_on = StandardMetrics.ms_v_bat_12v_voltage_alert->AsBool();
+    float alert_threshold = MyConfig.GetParamValueFloat("vehicle", "12v.alert", 1.6);
+    if (vref - volt > alert_threshold && !alert_on)
+      {
+      StandardMetrics.ms_v_bat_12v_voltage_alert->SetValue(true);
+      MyEvents.SignalEvent("vehicle.alert.12v.on", NULL);
+      MyNotify.NotifyStringf("alert", "12V Battery critical: %.1fV (ref=%.1fV)", volt, vref);
+      }
+    else if (vref - volt < alert_threshold * 0.6 && alert_on)
+      {
+      StandardMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);
+      MyEvents.SignalEvent("vehicle.alert.12v.off", NULL);
+      MyNotify.NotifyStringf("alert", "12V Battery restored: %.1fV (ref=%.1fV)", volt, vref);
+      }
+    } // 12V battery monitor
+  } // VehicleTicker1()
 
 void OvmsVehicle::Ticker1(uint32_t ticker)
   {
@@ -593,6 +669,16 @@ void OvmsVehicle::Ticker600(uint32_t ticker)
 
 void OvmsVehicle::Ticker3600(uint32_t ticker)
   {
+  }
+
+// Default efficiency calculation by speed & power per second, average smoothed over 5 seconds.
+// Override if your vehicle provides more detail.
+void OvmsVehicle::CalculateEfficiency()
+  {
+  float consumption = 0;
+  if (StdMetrics.ms_v_pos_speed->AsFloat() >= 5)
+    consumption = StdMetrics.ms_v_bat_power->AsFloat(0, Watts) / StdMetrics.ms_v_pos_speed->AsFloat();
+  StdMetrics.ms_v_bat_consumption->SetValue((StdMetrics.ms_v_bat_consumption->AsFloat() * 4 + consumption) / 5);
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandSetChargeMode(vehicle_mode_t mode)
@@ -767,73 +853,146 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
   if (metric == StandardMetrics.ms_v_env_on)
     {
     if (StandardMetrics.ms_v_env_on->AsBool())
+      {
       MyEvents.SignalEvent("vehicle.on",NULL);
+      NotifiedVehicleOn();
+      }
     else
+      {
       MyEvents.SignalEvent("vehicle.off",NULL);
+      NotifiedVehicleOff();
+      }
     }
   else if (metric == StandardMetrics.ms_v_env_awake)
     {
     if (StandardMetrics.ms_v_env_awake->AsBool())
+      {
+      NotifiedVehicleAwake();
       MyEvents.SignalEvent("vehicle.awake",NULL);
+      }
     else
+      {
       MyEvents.SignalEvent("vehicle.asleep",NULL);
+      NotifiedVehicleAsleep();
+      }
     }
   else if (metric == StandardMetrics.ms_v_charge_inprogress)
     {
     if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+      {
       MyEvents.SignalEvent("vehicle.charge.start",NULL);
+      NotifiedVehicleChargeStart();
+      }
     else
+      {
       MyEvents.SignalEvent("vehicle.charge.stop",NULL);
+      NotifiedVehicleChargeStop();
+      }
     }
   else if (metric == StandardMetrics.ms_v_door_chargeport)
     {
     if (StandardMetrics.ms_v_door_chargeport->AsBool())
+      {
       MyEvents.SignalEvent("vehicle.charge.prepare",NULL);
+      NotifiedVehicleChargePrepare();
+      }
     else
+      {
       MyEvents.SignalEvent("vehicle.charge.finish",NULL);
+      NotifiedVehicleChargeFinish();
+      }
     }
   else if (metric == StandardMetrics.ms_v_charge_pilot)
     {
     if (StandardMetrics.ms_v_charge_pilot->AsBool())
+      {
       MyEvents.SignalEvent("vehicle.charge.pilot.on",NULL);
+      NotifiedVehicleChargePilotOn();
+      }
     else
+      {
       MyEvents.SignalEvent("vehicle.charge.pilot.off",NULL);
+      NotifiedVehicleChargePilotOff();
+      }
+    }
+  else if (metric == StandardMetrics.ms_v_env_charging12v)
+    {
+    if (StandardMetrics.ms_v_env_charging12v->AsBool())
+      {
+      if (m_12v_ticker < 30)
+        m_12v_ticker = 30; // min calmdown time
+      MyEvents.SignalEvent("vehicle.charge.12v.start",NULL);
+      NotifiedVehicleCharge12vStart();
+      }
+    else
+      {
+      MyEvents.SignalEvent("vehicle.charge.12v.stop",NULL);
+      NotifiedVehicleCharge12vStop();
+      }
     }
   else if (metric == StandardMetrics.ms_v_env_locked)
     {
     if (StandardMetrics.ms_v_env_locked->AsBool())
+      {
       MyEvents.SignalEvent("vehicle.locked",NULL);
+      NotifiedVehicleLocked();
+      }
     else
+      {
       MyEvents.SignalEvent("vehicle.unlocked",NULL);
+      NotifiedVehicleUnlocked();
+      }
     }
   else if (metric == StandardMetrics.ms_v_env_valet)
     {
     if (StandardMetrics.ms_v_env_valet->AsBool())
+      {
       MyEvents.SignalEvent("vehicle.valet.on",NULL);
+      NotifiedVehicleValetOn();
+      }
     else
+      {
       MyEvents.SignalEvent("vehicle.valet.off",NULL);
+      NotifiedVehicleValetOff();
+      }
     }
   else if (metric == StandardMetrics.ms_v_env_headlights)
     {
     if (StandardMetrics.ms_v_env_headlights->AsBool())
+      {
       MyEvents.SignalEvent("vehicle.headlights.on",NULL);
+      NotifiedVehicleHeadlightsOn();
+      }
     else
+      {
       MyEvents.SignalEvent("vehicle.headlights.off",NULL);
+      NotifiedVehicleHeadlightsOff();
+      }
     }
   else if (metric == StandardMetrics.ms_v_env_alarm)
     {
     if (StandardMetrics.ms_v_env_alarm->AsBool())
+      {
       MyEvents.SignalEvent("vehicle.alarm.on",NULL);
+      NotifiedVehicleAlarmOn();
+      }
     else
+      {
       MyEvents.SignalEvent("vehicle.alarm.off",NULL);
+      NotifiedVehicleAlarmOff();
+      }
     }
   else if (metric == StandardMetrics.ms_v_charge_mode)
     {
-    MyEvents.SignalEvent("vehicle.charge.mode",(void*)metric->AsString().c_str());
+    const char* m = metric->AsString().c_str();
+    MyEvents.SignalEvent("vehicle.charge.mode",(void*)m, strlen(m)+1);
+    NotifiedVehicleChargeMode(m);
     }
   else if (metric == StandardMetrics.ms_v_charge_state)
     {
-    MyEvents.SignalEvent("vehicle.charge.state",(void*)metric->AsString().c_str());
+    const char* m = metric->AsString().c_str();
+    MyEvents.SignalEvent("vehicle.charge.state",(void*)m, strlen(m)+1);
+    NotifiedVehicleChargeState(m);
     }
   }
 
@@ -1070,3 +1229,74 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::ProcessMsgCommand(std::string &resul
   return NotImplemented;
   }
 
+/**
+ * GetDashboardConfig: template / default configuration
+ *  (override with vehicle specific configuration)
+ *  see https://api.highcharts.com/highcharts/yAxis for details on options
+ */
+void OvmsVehicle::GetDashboardConfig(DashboardConfig& cfg)
+  {
+  cfg.gaugeset1 =
+    "yAxis: [{"
+      // Speed:
+      "min: 0, max: 200,"
+      "plotBands: ["
+        "{ from: 0, to: 120, className: 'green-band' },"
+        "{ from: 120, to: 160, className: 'yellow-band' },"
+        "{ from: 160, to: 200, className: 'red-band' }]"
+    "},{"
+      // Voltage:
+      "min: 310, max: 410,"
+      "plotBands: ["
+        "{ from: 310, to: 325, className: 'red-band' },"
+        "{ from: 325, to: 340, className: 'yellow-band' },"
+        "{ from: 340, to: 410, className: 'green-band' }]"
+    "},{"
+      // SOC:
+      "min: 0, max: 100,"
+      "plotBands: ["
+        "{ from: 0, to: 12.5, className: 'red-band' },"
+        "{ from: 12.5, to: 25, className: 'yellow-band' },"
+        "{ from: 25, to: 100, className: 'green-band' }]"
+    "},{"
+      // Efficiency:
+      "min: 0, max: 400,"
+      "plotBands: ["
+        "{ from: 0, to: 200, className: 'green-band' },"
+        "{ from: 200, to: 300, className: 'yellow-band' },"
+        "{ from: 300, to: 400, className: 'red-band' }]"
+    "},{"
+      // Power:
+      "min: -50, max: 200,"
+      "plotBands: ["
+        "{ from: -50, to: 0, className: 'violet-band' },"
+        "{ from: 0, to: 100, className: 'green-band' },"
+        "{ from: 100, to: 150, className: 'yellow-band' },"
+        "{ from: 150, to: 200, className: 'red-band' }]"
+    "},{"
+      // Charger temperature:
+      "min: 20, max: 80, tickInterval: 20,"
+      "plotBands: ["
+        "{ from: 20, to: 65, className: 'normal-band border' },"
+        "{ from: 65, to: 80, className: 'red-band border' }]"
+    "},{"
+      // Battery temperature:
+      "min: -15, max: 65, tickInterval: 25,"
+      "plotBands: ["
+        "{ from: -15, to: 0, className: 'red-band border' },"
+        "{ from: 0, to: 50, className: 'normal-band border' },"
+        "{ from: 50, to: 65, className: 'red-band border' }]"
+    "},{"
+      // Inverter temperature:
+      "min: 20, max: 80, tickInterval: 20,"
+      "plotBands: ["
+        "{ from: 20, to: 70, className: 'normal-band border' },"
+        "{ from: 70, to: 80, className: 'red-band border' }]"
+    "},{"
+      // Motor temperature:
+      "min: 50, max: 125, tickInterval: 25,"
+      "plotBands: ["
+        "{ from: 50, to: 110, className: 'normal-band border' },"
+        "{ from: 110, to: 125, className: 'red-band border' }]"
+    "}]";
+  }

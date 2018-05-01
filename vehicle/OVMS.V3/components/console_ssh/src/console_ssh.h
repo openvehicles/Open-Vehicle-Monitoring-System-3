@@ -33,6 +33,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "ovms_console.h"
+#include "task_base.h"
 
 #define BUFFER_SIZE 512
 
@@ -76,6 +77,7 @@ class ConsoleSSH : public OvmsConsole
     int printf(const char* fmt, ...);
     ssize_t write(const void *buf, size_t nbyte);
     int RecvCallback(char* buf, uint32_t size);
+    bool IsDraining() { return m_drain > 0; }
 
   private:
     typedef struct {DIR* dir; size_t size;} Level;
@@ -101,6 +103,7 @@ class ConsoleSSH : public OvmsConsole
     char m_buffer[BUFFER_SIZE];
     int m_index;                // Index into m_buffer of data remaining to send
     int m_size;                 // Size of data remaining to send
+    int m_drain;                // Bytes discarded waiting for socket to drain
     bool m_sent;
     bool m_rekey;
     bool m_needDir;

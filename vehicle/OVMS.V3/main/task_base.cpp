@@ -154,7 +154,7 @@ void TaskBase::Task(void *object)
   {
   TaskBase* me = (TaskBase*)object;
   me->Service();
-  ESP_LOGI(TAG, "Task %s finished with %u stack free", me->m_name, uxTaskGetStackHighWaterMark(me->m_taskid));
+  ESP_LOGD(TAG, "Task %s finished with %u stack free", me->m_name, uxTaskGetStackHighWaterMark(me->m_taskid));
   me->DeleteFromParent();
   while (true); // Illegal instruction abort occurs if this function returns
   }

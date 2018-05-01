@@ -1,0 +1,128 @@
+/**
+ * @license Highcharts JS v6.0.7 (2018-02-16)
+ *
+ * (c) 2009-2016 Torstein Honsi
+ *
+ * License: www.highcharts.com/license
+ */
+
+https://www.highcharts.com/products/highcharts/
+
+About
+
+Highcharts is a SVG-based, multi-platform charting library that has been
+actively developed since 2009. It makes it easy to add interactive,
+mobile-optimized charts to your web and mobile projects. It features robust
+documentation, advanced responsiveness and industry-leading accessibility
+support.
+Works for most use-cases out of the box, with extensive customization options
+when needed.
+
+Features
+
+Since its first release in 2009, our charting tools have been developed with
+the most critical enterprise needs in mind. Our world-class development team
+work tirelessly to ensure that we remain lock-step with our users current and
+future needs, as well as legacy (back to IE6) support.
+
+Backend-agnostic
+
+All our charting libraries works with any back-end database or server stack.
+Data can be given in any form, including CSV, JSON or loaded and updated live.
+
+Wrappers for most popular languages, such as .Net, PHP, Python, R, and Java, as
+well as iOS, are available from Highcharts or our community.
+
+Responsive across devices
+
+Default responsiveness goes beyond fitting the chart to the dimensions of its
+container, but automatically finds an optimal placement for non-graph elements
+such as legends and headings.
+
+Annotations
+
+With annotations, developers may describe charts or data points by drawing
+simple shapes and text anywhere on the canvas or tethered to specific data
+points. Placement and visibility of annotations intelligently respond to canvas
+/screen size. 
+
+Accessibility
+
+Highcharts sports the industry’s most sophisticated accessibility support for
+visually impaired users, and users with keyboard navigation only, meeting and
+exceeding both Section 508 requirements and WCAG 2 guidelines.
+
+Touch optimized
+
+Touch-optimized charts allow for a native experience on mobile and touch
+screens. Single touch-drag for data inspection, multi-touch for zooming, and
+more.
+
+Options are optional
+
+In most cases, charts look and behave exactly as you need without any
+modifications. For anything else, a simple options-structure allows for deep
+customization.
+
+Highcharts is also extendable and pluggable for experts seeking advanced
+animations and functionality. Check out some advanced customizations in our
+community section, and plugins in our our extensions directory.
+
+Flexible styling
+
+Our elegant charts render crisp and clear at any resolution and are easily
+styled via JavaScript or CSS.
+
+ 
+
+Free for Non-Commercial
+
+Do you want to use Highcharts for a personal website, a school site or a
+non-profit organization? Then you don’t need the author’s permission, just go
+on and use Highcharts. For commercial websites and projects, and special
+pricing for startups. See License and Pricing.
+
+Open Source
+
+One of the key features of Highcharts is that under any of the licenses, free
+or not, you are allowed to download the source code and make your own edits.
+This allows for personal modifications and a great flexibility.
+
+Full-blown editors for end users
+
+The free Highcharts Editor enables developers to embed a full-featured charts
+editor to their CMS or web app with just a few lines of code. The Highcharts
+Cloud service is a hosted app with an intuitive editor, chart storage and
+embedding for anybody who wants to create and publish charts.
+
+Dynamic
+
+Numerous events supply hooks for programming against the charts, making it easy
+to demonstrate complex relationships between data with live, dynamic updates of
+data and customizable animations.
+
+Data can be handled over to Highcharts in any form, even from a different site,
+and a callback function used to parse the data into an array.
+
+BigData Ready
+
+When your need to render thousands or millions of datapoints in the browser,
+our WebGL-powered Boost module delivers speed speed that leaves Plotly,
+dygraphs and other performance-focused charting libraries in the dust.
+
+Export & Print
+
+With the exporting module enabled, your users can export the chart to PNG, JPG,
+PDF or SVG format at the click of a button, or print the chart directly from
+the web page.
+
+Vibrant community
+
+The largest developer community of any premium charting tool on Github,
+StackOverflow and other forums, is eager to offer additional assistance,
+platform-specific implementation advice and inspiration when you need it.
+
+In addition, we have half-a-dozen dedicated support engineers monitoring our
+forums, StackOverflow, GitHub and support emails.
+
+© 2017 Highcharts. All rights reserved.

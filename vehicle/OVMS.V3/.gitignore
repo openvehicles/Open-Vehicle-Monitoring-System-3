@@ -63,3 +63,6 @@ sdkconfig.old
 .piolibdeps
 .clang_complete
 .gcc-flags.json
+
+# Tmp
+tmp/*

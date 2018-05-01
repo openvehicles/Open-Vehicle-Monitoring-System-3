@@ -108,7 +108,7 @@ struct CAN_frame_t
     uint8_t   u8[8];                    // Payload byte access
     uint32_t  u32[2];                   // Payload u32 access (Att: little endian!)
     } data;
-  
+
   esp_err_t Write(canbus* bus=NULL, TickType_t maxqueuewait=0);  // bus: NULL=origin
   };
 
@@ -133,7 +133,7 @@ class canbitset
       {
       load(src, len);
       }
-    
+
     // load message bytes:
     void load(uint8_t* src, int len)
       {
@@ -145,7 +145,7 @@ class canbitset
         }
       m_store <<= ((sizeof(StoreType)-len) << 3);
       }
-    
+
     // extract message part:
     //  - start,end: bit positions 0…63, 0=MSB of first msg byte
     StoreType get(int start, int end)
@@ -175,36 +175,49 @@ typedef struct
     } body;
   } CAN_msg_t;
 
+// CAN status
+typedef struct
+  {
+  uint32_t interrupts;              // interrupts
+  uint32_t packets_rx;              // frames reveiced
+  uint32_t packets_tx;              // frames loaded into TX buffers (not necessarily sent)
+  uint32_t txbuf_delay;             // frames routed through TX queue
+  uint16_t rxbuf_overflow;          // frames lost due to RX buffers full
+  uint16_t txbuf_overflow;          // TX queue overflows
+  uint32_t error_flags;             // driver specific bitset
+  uint16_t errors_rx;               // RX error counter
+  uint16_t errors_tx;               // TX error counter
+  } CAN_status_t;
+
 // Log entry types:
 typedef enum
   {
-  CAN_Log_RX = 0,
-  CAN_Log_TX,
-  CAN_Log_TX_Queue,
-  CAN_Log_TX_Fail,
-  CAN_Log_Error,
-  CAN_Log_Status,
-  CAN_Log_Comment,
-  CAN_Log_Event
+  CAN_LogFrame_RX = 0,        // frame received
+  CAN_LogFrame_TX,            // frame transmitted
+  CAN_LogFrame_TX_Queue,      // frame delayed
+  CAN_LogFrame_TX_Fail,       // frame transmission failure
+  CAN_LogStatus_Error,        // canbus error status
+  CAN_LogStatus_Statistics,   // canbus packet statistics
+  CAN_LogInfo_Comment,        // general comment
+  CAN_LogInfo_Config,         // logger setup info (type, file, filters, vehicle)
+  CAN_LogInfo_Event,          // system event (i.e. vehicle started)
   } CAN_LogEntry_t;
 
-
-class canlog
+// Log message:
+typedef struct
   {
-  public:
-    canlog(const char* logfilepath);
-    virtual ~canlog();
-  
-  public:
-    void LogFrame(CAN_LogEntry_t type, const CAN_frame_t* p_frame);
-    void LogStatus(CAN_LogEntry_t type, canbus* bus);
-  
-  protected:
-    char* m_logfilepath;
-    FILE* m_logfile;
-  };
+  uint32_t timestamp;
+  canbus* bus;
+  CAN_LogEntry_t type;
+  union
+    {
+    CAN_frame_t frame;
+    CAN_status_t status;
+    char* text;
+    };
+  } CAN_LogMsg_t;
 
-
+class canlog;
 
 class canbus : public pcp
   {
@@ -217,37 +230,27 @@ class canbus : public pcp
     virtual esp_err_t Stop();
 
   public:
-    virtual esp_err_t Write(CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
+    virtual esp_err_t Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
     virtual esp_err_t WriteExtended(uint32_t id, uint8_t length, uint8_t *data, TickType_t maxqueuewait=0);
     virtual esp_err_t WriteStandard(uint16_t id, uint8_t length, uint8_t *data, TickType_t maxqueuewait=0);
     virtual bool RxCallback(CAN_frame_t* frame);
     virtual void TxCallback();
-  
+
   protected:
-    virtual esp_err_t QueueWrite(CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
-    QueueHandle_t m_txqueue;
-  
+    virtual esp_err_t QueueWrite(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
+
+  public:
+    void LogFrame(CAN_LogEntry_t type, const CAN_frame_t* p_frame);
+    void LogStatus(CAN_LogEntry_t type);
+    void LogInfo(CAN_LogEntry_t type, const char* text);
+    bool StatusChanged();
+
   public:
     CAN_speed_t m_speed;
     CAN_mode_t m_mode;
-    bool m_trace;
-    uint32_t m_trace_id_from;
-    uint32_t m_trace_id_to;
-
-  public:
-    uint32_t m_packets_rx;              // frames reveiced
-    uint32_t m_errors_rx;               // RX error counter
-    uint32_t m_packets_tx;              // frames loaded into TX buffers (not necessarily sent)
-    uint32_t m_txbuf_delay;             // frames routed through TX queue
-    uint32_t m_errors_tx;               // TX error counter
-    uint32_t m_errors_rxbuf_overflow;   // frames lost due to RX buffers full
-    uint32_t m_errors_txbuf_overflow;   // TX queue overflows
-    uint32_t m_error_flags;             // driver specific
-  
-  public:
-    bool StatusChanged();
+    CAN_status_t m_status;
     uint32_t m_status_chksum;
-  
+    QueueHandle_t m_txqueue;
   };
 
 class can
@@ -258,11 +261,6 @@ class can
 
   public:
     void IncomingFrame(CAN_frame_t* p_frame);
-  
-  public:
-    const char* GetLogEntryTypeName(CAN_LogEntry_t type);
-    void LogFrame(CAN_LogEntry_t type, const CAN_frame_t* p_frame);
-    void LogStatus(CAN_LogEntry_t type, canbus* bus);
 
   public:
     QueueHandle_t m_rxqueue;
@@ -271,9 +269,18 @@ class can
     void RegisterListener(QueueHandle_t queue);
     void DeregisterListener(QueueHandle_t queue);
 
+  public:
+    void SetLogger(canlog* logger) { m_logger = logger; }
+    canlog* GetLogger() { return m_logger; }
+    void UnsetLogger() { m_logger = NULL; }
+    void LogFrame(canbus* bus, CAN_LogEntry_t type, const CAN_frame_t* frame);
+    void LogStatus(canbus* bus, CAN_LogEntry_t type, const CAN_status_t* status);
+    void LogInfo(canbus* bus, CAN_LogEntry_t type, const char* text);
+
   private:
     std::list<QueueHandle_t> m_listeners;
     TaskHandle_t m_rxtask;            // Task to handle reception
+    canlog* m_logger;
   };
 
 extern can MyCan;

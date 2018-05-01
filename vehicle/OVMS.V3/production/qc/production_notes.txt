@@ -1,0 +1,238 @@
+These are the production and quality control notes for OVMS v3.1 modules
+
+********************************************************************************
+** TOOLS
+********************************************************************************
+
+1] DB9 CAN Bus QC tool
+
+   DB9 Female with:
+    * Pins 2, 4, and 6 connected (all CAN-L signals)
+    * Pins 5, 7, and 8 connected (all CAN-H signals)
+    * R120 between pins 2 and 5
+    * External 12V power connector
+      * GND on pin 3
+      * +12V on pin 9
+
+********************************************************************************
+** SERIAL NUMBERS
+********************************************************************************
+
+Serial numbers are of the form:
+
+YYYYBBNNNNNRRRR
+
+* YYYY is four digit year. For example; 2018.
+* BB is two digit batch. For example; 00, 01, 02, etc.
+* NNNN is four digit sequence. For example; 0001, 0002, etc.
+* RRRR is four random characters. For example; ADEA, JKAE, etc.
+
+First production batch is 2018010001**** - 2018010120****.
+
+********************************************************************************
+** PRODUCTION STEPS
+********************************************************************************
+
+1] Erase ENTIRE flash
+
+2] Flash bootloader, partition table, and firmware
+
+3] Default wifi AP and module passwords
+
+     OVMS> enable
+     OVMS# config set wifi.ap OVMS <serialnumber>
+     OVMS# config set password module <serialnumber>
+
+   Where <serialnumber> is the serial number from the label on the enclosure.
+
+4] Default modem APN
+
+     OVMS> config set modem apn hologram
+
+********************************************************************************
+** QC STEPS
+********************************************************************************
+
+1] CAN buses
+
+   Plug in the 'DB9 CAN Bus QC tool' and power the OVMS module. Use 'enable' to
+   enter secure mode. Start all three CAN buses, and prepare to examine the
+   data:
+
+     OVMS# can can1 start active 1000000
+     OVMS# can can2 start active 1000000
+     OVMS# can can3 start active 1000000
+     OVMS# log level verbose
+     OVMS# can log trace
+
+   Try to transmit on each CAN bus in turn, and ensure that the other two
+   buses show reception of the packet:
+
+     OVMS# can can1 tx standard 100 01 02 03 04
+     V (222509) canlog: TX can1 id 100 len 4: 01 02 03 04             | ....
+     V (222509) canlog: RX can2 id 100 len 4: 01 02 03 04             | ....
+     V (222509) canlog: RX can3 id 100 len 4: 01 02 03 04             | ....
+
+     OVMS# can can2 tx standard 100 01 02 03 04
+     V (229559) canlog: TX can2 id 100 len 4: 01 02 03 04             | ....
+     V (229559) canlog: RX can1 id 100 len 4: 01 02 03 04             | ....
+     V (229559) canlog: RX can3 id 100 len 4: 01 02 03 04             | ....
+
+     OVMS# can can3 tx standard 100 01 02 03 04
+     V (235139) canlog: TX can3 id 100 len 4: 01 02 03 04             | ....
+     V (235139) canlog: RX can1 id 100 len 4: 01 02 03 04             | ....
+     V (235139) canlog: RX can2 id 100 len 4: 01 02 03 04             | ....
+
+2] 12V power
+
+   Power module from 12V source, wait a few seconds, and then check that the
+   adc is showing correctly:
+
+     OVMS# metrics list v.b.12v.voltage
+     v.b.12v.voltage                          12.102V
+
+   The expected value is within +/- 0.5V of the power supply voltage.
+
+3] Test SD card
+
+   With a micro SD card inserted, test it:
+
+     OVMS# test sdcard
+     SD CARD test starts...
+     SD CARD written 0/2048
+     SD CARD written 128/2048
+     SD CARD written 256/2048
+     SD CARD written 384/2048
+     SD CARD written 512/2048
+     SD CARD written 640/2048
+     SD CARD written 768/2048
+     SD CARD written 896/2048
+     SD CARD written 1024/2048
+     SD CARD written 1152/2048
+     SD CARD written 1280/2048
+     SD CARD written 1408/2048
+     SD CARD written 1536/2048
+     SD CARD written 1664/2048
+     SD CARD written 1792/2048
+     SD CARD written 1920/2048
+     Cleaning up
+     SD CARD test completes
+
+4] Test asynchronous console
+
+   When connected via USB console cable, test the asynchronous console:
+
+     OVMS# test chargen 10
+     !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefgh
+     "#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghi
+     #$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghij
+     $%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijk
+     %&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijkl
+     &'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklm
+     '()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmn
+     ()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmno
+     )*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnop
+     *+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopq
+
+   The expected output is as above.
+
+5] Test deep sleep current
+
+   Power module from 12V source, with a meter showing power consumption. Be
+   sure to power down all peripherals (power wifi off, power modem off, etc).
+
+     OVMS# test sleep
+     Entering deep sleep...
+
+   During the sleep time, the power consumption should be 1mA to 2mA maximum.
+
+6] Test modem
+
+   Power modem into sleep mode, from command line:
+
+     OVMS# power simcom sleep
+     Power mode of simcom is now sleep
+
+     I (50190) simcom: State: Enter PoweringOn state
+     I (50190) simcom: Power Cycle
+     V (50910) simcom: tx: 41 54 0d 0a                                     | AT..
+     D (50910) simcom: tx scmd ch=0 len=4   : AT||
+     V (51910) simcom: tx: 41 54 0d 0a                                     | AT..
+     D (51910) simcom: tx scmd ch=0 len=4   : AT||
+     V (52910) simcom: tx: 41 54 0d 0a                                     | AT..
+     D (52910) simcom: tx scmd ch=0 len=4   : AT||
+     V (53910) simcom: tx: 41 54 0d 0a                                     | AT..
+     D (53910) simcom: tx scmd ch=0 len=4   : AT||
+     V (54910) simcom: tx: 41 54 0d 0a                                     | AT..
+     D (54910) simcom: tx scmd ch=0 len=4   : AT||
+     V (55910) simcom: tx: 41 54 0d 0a                                     | AT..
+     D (55910) simcom: tx scmd ch=0 len=4   : AT||
+     V (56580) simcom: rx: 0d 0a 53 54 41 52 54 0d 0a                      | ..START..
+     I (56580) simcom: State: Enter PoweredOn state
+
+   Cycle may repeat a few times, in order to power on modem, but make sure you
+   get the ..START.. message. Then, look for the modem starting up:
+
+     I (75940) gsm-mux: Channel #3 is open
+     V (75940) simcom: tx: f9 13 3f 01 96 f9                               | ..?...
+     V (75950) simcom: rx: f9 13 73 01 5d f9                               | ..s.].
+     V (75950) gsm-mux: ProcessFrame(CHAN=4, ADDR=13, CTRL=73, FCS=5d, LEN=6)
+     V (75950) gsm-mux: ChanProcessFrame(CHAN=4, ADDR=13, CTRL=73, LEN=3, IFP=3)
+     I (75950) gsm-mux: Channel #4 is open
+     I (76910) simcom: State: Enter NetWait state
+     D (76910) gsm-nmea: GPS disabled
+     I (77910) simcom: State: Enter NetSleep state
+
+   Check the metric to ensure the ICCID and modem model has been read correctly:
+
+     OVMS# metrics list m.net.mdm
+     m.net.mdm.iccid                          8944500XXXXXXXXXXXX
+     m.net.mdm.model                          35316B11SIM5360E
+
+7] Test GNS/GPS
+
+   With modem in sleep mode (as above), enable the GPS/GNS system:
+
+     OVMS# simcom muxtx 4 AT+CGPSNMEA=66;+CGPS=1,1
+
+     V (225328) simcom: mux tx: 41 54 2b 43 47 50 53 4e 4d 45 41 3d 36 36 3b 2b | AT+CGPSNMEA=66;+
+     V (225328) simcom: mux tx: 43 47 50 53 3d 31 2c 31 0d 0a                   | CGPS=1,1..
+     D (225328) simcom: tx mcmd ch=4 len=26  : AT+CGPSNMEA=66;+CGPS=1,1||
+     V (225328) simcom: tx: f9 11 ff 35 41 54 2b 43 47 50 53 4e 4d 45 41 3d | ...5AT+CGPSNMEA=
+     V (225328) simcom: tx: 36 36 3b 2b 43 47 50 53 3d 31 2c 31 0d 0a 28 f9 | 66;+CGPS=1,1..(.
+     V (225378) simcom: rx: f9 11 ff 0d 0d 0a 4f 4b 0d 0a 02 f9             | ......OK....
+     V (225378) gsm-mux: ProcessFrame(CHAN=4, ADDR=11, CTRL=ff, FCS=02, LEN=12)
+     V (225388) gsm-mux: ChanProcessFrame(CHAN=4, ADDR=11, CTRL=ff, LEN=9, IFP=3)
+     D (225388) simcom: rx line ch=4 len=2   : OK
+
+   You should then start to see GPS/GNS messages coming in on channel #1:
+
+     V (227668) simcom: rx: f9 05 ff 33 24 47 4e 47 4e 53 2c 2c 2c 2c 2c 2c | ...3$GNGNS,,,,,,
+     V (227668) simcom: rx: 4e 4e 2c 2c 2c 2c 2c 2c 2a 35 33 0d 0a 84 f9 f9 | NN,,,,,,*53.....
+     V (227678) gsm-mux: ProcessFrame(CHAN=1, ADDR=05, CTRL=ff, FCS=84, LEN=31)
+     V (227678) gsm-mux: ChanProcessFrame(CHAN=1, ADDR=05, CTRL=ff, LEN=28, IFP=3)
+     V (227678) gsm-nmea: IncomingLine: $GNGNS,,,,,,NN,,,,,,*53
+     V (227678) simcom: rx: 05 ff 33 24 47 50 52 4d 43 2c 2c 56 2c 2c 2c 2c | ..3$GPRMC,,V,,,,
+     V (227678) simcom: rx: 2c 2c 2c 2c 2c 2c 4e 2a 35 33 0d 0a 84 f9       | ,,,,,,N*53....
+     V (227678) gsm-mux: ProcessFrame(CHAN=1, ADDR=05, CTRL=ff, FCS=84, LEN=31)
+     V (227678) gsm-mux: ChanProcessFrame(CHAN=1, ADDR=05, CTRL=ff, LEN=28, IFP=3)
+     V (227678) gsm-nmea: IncomingLine: $GPRMC,,V,,,,,,,,,,N*53
+
+  After GPS lock has been obtained, you should see the v.p metrics updated with GPS information:
+
+     OVMS# metrics list v.p
+     v.p.altitude                             30m
+     v.p.direction                            10°
+     v.p.gpshdop
+     v.p.gpslock                              yes
+     v.p.gpsmode
+     v.p.gpsspeed
+     v.p.latitude                             22.2809
+     v.p.longitude                            114.161
+     v.p.satcount                             12
+
+8] Power down the module.
+
+********************************************************************************
+** DOCUMENT ENDS
+********************************************************************************

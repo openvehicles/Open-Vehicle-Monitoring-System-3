@@ -115,8 +115,9 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandCA(in
       // _H_alt: stop a running charge immediately
       if (twizy_flags.Charging && !twizy_chg_stop_request)
       {
-        twizy_chg_stop_request = true;
         ESP_LOGI(TAG, "requesting charge stop (user command)");
+        MyEvents.SignalEvent("vehicle.charge.substate.scheduledstop", NULL);
+        twizy_chg_stop_request = true;
         if (capacity > 0)
           capacity -= writer->printf("Stopping charge.\n");
       }
@@ -132,6 +133,10 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandCA(in
       MyConfig.SetParamValueInt("xrt", "suffrange", atoi(argv[i]));
     }
   }
+  
+  // Synchronize with config changes:
+  if (argc > 0)
+    ConfigChanged(NULL);
   
   // Output current charge alerts and estimated charge time remaining:
   
@@ -238,6 +243,9 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandCA
       MyConfig.SetParamValueInt("xrt", "chargelevel", atoi(token.c_str()));
     if (std::getline(sentence, token, ','))
       MyConfig.SetParamValueInt("xrt", "chargemode", atoi(token.c_str()));
+    
+    // Synchronize with config changes:
+    ConfigChanged(NULL);
   }
   
   UpdateChargeTimes();
@@ -279,6 +287,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandStopC
   if (twizy_flags.Charging && !twizy_chg_stop_request)
   {
     ESP_LOGI(TAG, "requesting charge stop (user command)");
+    MyEvents.SignalEvent("vehicle.charge.substate.scheduledstop", NULL);
     twizy_chg_stop_request = true;
   }
   return Success;

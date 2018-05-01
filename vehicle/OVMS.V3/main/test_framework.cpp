@@ -41,6 +41,7 @@ static const char *TAG = "test";
 #include "ovms_command.h"
 #include "ovms_peripherals.h"
 #include "ovms_script.h"
+#include "strverscmp.h"
 
 void test_deepsleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -114,9 +115,14 @@ void test_sdcard(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 void test_chargen(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   int numlines = 1000;
-  if (argc==1)
+  int delay = 0;
+  if (argc>=1)
     {
     numlines = atoi(argv[0]);
+    }
+  if (argc>=2)
+    {
+    delay = atoi(argv[1]);
     }
   char buf[74];
   buf[72] = '\n';
@@ -131,10 +137,102 @@ void test_chargen(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
       if (++ch == 0x7F)
         ch = ' ';
       }
-    writer->write(buf, 73);
+    if (writer->write(buf, 73) <= 0)
+	break;
+    if (delay)
+      vTaskDelay(delay/portTICK_PERIOD_MS);
     if (++start == 0x7F)
         start = ' ';
     }
+  }
+
+bool test_echo_insert(OvmsWriter* writer, void* ctx, char ch)
+  {
+  if (ch == '\n')
+    return false;
+  writer->write(&ch, 1);
+  return true;
+  }
+
+void test_echo(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->puts("Type characters to be echoed, end with newline.");
+  writer->RegisterInsertCallback(test_echo_insert, NULL);
+  }
+
+void test_watchdog(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->puts("Spinning now (watchdog should fire in a few minutes)");
+  for (;;) {}
+  writer->puts("Error: We should never get here");
+  }
+
+void test_realloc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  void* buf;
+  void *interfere = NULL;
+
+  writer->puts("First check heap integrity...");
+  heap_caps_check_integrity_all(true);
+
+  writer->puts("Now allocate 4KB RAM...");
+  buf = ExternalRamMalloc(4096);
+
+  writer->puts("Check heap integrity...");
+  heap_caps_check_integrity_all(true);
+
+  writer->puts("Now re-allocate bigger, 1,000 times...");
+  for (int k=1; k<1001; k++)
+    {
+    buf = ExternalRamRealloc(buf, 4096+k);
+    if (interfere == NULL)
+      {
+      interfere = ExternalRamMalloc(1024);
+      }
+    else
+      {
+      free(interfere);
+      interfere = NULL;
+      }
+    }
+
+  writer->puts("Check heap integrity...");
+  heap_caps_check_integrity_all(true);
+
+  writer->puts("Now re-allocate smaller, 1,000 times...");
+  for (int k=1001; k>0; k--)
+    {
+    buf = ExternalRamRealloc(buf, 4096+k);
+    if (interfere == NULL)
+      {
+      interfere = ExternalRamMalloc(1024);
+      }
+    else
+      {
+      free(interfere);
+      interfere = NULL;
+      }
+    }
+
+  writer->puts("Check heap integrity...");
+  heap_caps_check_integrity_all(true);
+
+  writer->puts("And free the buffer...");
+  free(buf);
+  if (interfere != NULL) free(interfere);
+
+  writer->puts("Final check of heap integrity...");
+  heap_caps_check_integrity_all(true);
+  }
+
+void test_strverscmp(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  int c = strverscmp(argv[0],argv[1]);
+  writer->printf("%s %s %s\n",
+    argv[0],
+    (c<0)?"<":((c==0)?"=":">"),
+    argv[1]
+    );
   }
 
 class TestFrameworkInit
@@ -152,5 +250,9 @@ TestFrameworkInit::TestFrameworkInit()
   cmd_test->RegisterCommand("sdcard","Test CD CARD",test_sdcard,"",0,0,true);
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
   cmd_test->RegisterCommand("javascript","Test Javascript",test_javascript,"",0,0,true);
-  cmd_test->RegisterCommand("chargen","Character generator [<#lines>]",test_chargen,"",0,1,false);
+  cmd_test->RegisterCommand("chargen","Character generator [<#lines>] [<delay_ms>]",test_chargen,"",0,2,true);
+  cmd_test->RegisterCommand("echo", "Test getchar", test_echo, "", 0, 0,true);
+  cmd_test->RegisterCommand("watchdog", "Test task spinning (and watchdog firing)", test_watchdog, "", 0, 0,true);
+  cmd_test->RegisterCommand("realloc", "Test memory re-allocations", test_realloc, "", 0, 0,true);
+  cmd_test->RegisterCommand("strverscmp", "Test strverscmp function", test_strverscmp, "", 2, 2, true);
   }
