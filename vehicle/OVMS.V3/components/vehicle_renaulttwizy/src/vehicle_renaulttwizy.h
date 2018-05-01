@@ -64,6 +64,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     OvmsVehicleRenaultTwizy();
     ~OvmsVehicleRenaultTwizy();
     static OvmsVehicleRenaultTwizy* GetInstance(OvmsWriter* writer=NULL);
+    virtual const char* VehicleShortName();
   
   
   // --------------------------------------------------------------------------
