@@ -17,7 +17,6 @@ Open Vehicle Monitor System v3 - Known issues
   * Charge time predictor not currently supported.
   * VDS vehicle errors not currently supported.
   * Digital speedometer feature not currently supported.
-  * CAC request not currently supported.
 
 * Vehicle: Kyburz not currently implemented in 3.x.
 
@@ -42,4 +41,4 @@ Open Vehicle Monitor System v3 - Known issues
 
 * SMS notifications are not currently implemented.
 
-* Only some PUSH notifications are currently implemented, for some vehicle.
+* Only some PUSH notifications are currently implemented, for some vehicles.
