@@ -36,6 +36,8 @@ static const char *TAG = "v-twizy";
 #include "vehicle_renaulttwizy.h"
 #include "rt_sevcon.h"
 
+#define AUTOPOWER_CHECKPOINT(pwr,ref,min) (((pwr)<<16)+((ref)<<8)+((min)))
+
 
 /**
  * Default tuning configuration for Twizy80 [0] & Twizy45 [1]
@@ -839,7 +841,7 @@ CANopenResult_t SevconClient::CfgDrive(int max_prc, int autodrive_ref, int autod
     twizy_autodrive_level = LIMIT_MIN(twizy_autodrive_level, autodrive_minprc * 10);
 
     // set autopower checkpoint:
-    twizy_autodrive_checkpoint = (m_twizy->twizy_batt[0].max_drive_pwr + autodrive_ref + autodrive_minprc);
+    twizy_autodrive_checkpoint = AUTOPOWER_CHECKPOINT(m_twizy->twizy_batt[0].max_drive_pwr, autodrive_ref, autodrive_minprc);
   }
   else
   {
@@ -903,7 +905,7 @@ CANopenResult_t SevconClient::CfgRecup(int neutral_prc, int brake_prc, int autor
     twizy_autorecup_level = LIMIT_MIN(twizy_autorecup_level, autorecup_minprc * 10);
     
     // set autopower checkpoint:
-    twizy_autorecup_checkpoint = (m_twizy->twizy_batt[0].max_recup_pwr + autorecup_ref + autorecup_minprc);
+    twizy_autorecup_checkpoint = AUTOPOWER_CHECKPOINT(m_twizy->twizy_batt[0].max_recup_pwr, autorecup_ref, autorecup_minprc);
   }
   else
   {
@@ -934,33 +936,39 @@ CANopenResult_t SevconClient::CfgRecup(int neutral_prc, int brake_prc, int autor
 void SevconClient::CfgAutoPower(void)
 {
   int ref, minprc;
+  CANopenResult_t err;
 
   // check for SEVCON write access:
   if ((!m_twizy->twizy_flags.EnableWrite) || (m_twizy->twizy_flags.DisableAutoPower)
-          || ((m_twizy->twizy_status & CAN_STATUS_KEYON) == 0))
+          || ((m_twizy->twizy_status & CAN_STATUS_KEYON) == 0)
+          || !CtrlLoggedIn() || CtrlCfgMode())
     return;
 
   // adjust recup levels?
   ref = cfgparam(autorecup_ref);
   minprc = cfgparam(autorecup_minprc);
+  if (minprc == -1)
+    minprc = 0;
   if ((ref > 0)
-    && ((m_twizy->twizy_batt[0].max_recup_pwr + ref + minprc) != twizy_autorecup_checkpoint))
+    && (twizy_autorecup_checkpoint != AUTOPOWER_CHECKPOINT(m_twizy->twizy_batt[0].max_recup_pwr, ref, minprc)))
   {
-    CfgRecup(cfgparam(neutral), cfgparam(brake), ref, minprc);
-    ESP_LOGD(TAG, "CfgAutoPower: recup level adjusted; max_recup_pwr=%d level=%.1f",
-      m_twizy->twizy_batt[0].max_recup_pwr*500, (float)twizy_autorecup_level/10);
+    err = CfgRecup(cfgparam(neutral), cfgparam(brake), ref, minprc);
+    ESP_LOGD(TAG, "CfgAutoPower: recup level adjusted; max_recup_pwr=%d level=%.1f; result=%s",
+      m_twizy->twizy_batt[0].max_recup_pwr*500, (float)twizy_autorecup_level/10, GetResultString(err).c_str());
   }
   
   // adjust drive level?
   ref = cfgparam(autodrive_ref);
   minprc = cfgparam(autodrive_minprc);
+  if (minprc == -1)
+    minprc = 0;
   if ((ref > 0)
-    && ((m_twizy->twizy_batt[0].max_drive_pwr + ref + minprc) != twizy_autodrive_checkpoint)
+    && (twizy_autodrive_checkpoint != AUTOPOWER_CHECKPOINT(m_twizy->twizy_batt[0].max_drive_pwr, ref, minprc))
     && (m_twizy->twizy_kickdown_hold == 0))
   {
-    CfgDrive(cfgparam(drive), ref, minprc);
-    ESP_LOGD(TAG, "CfgAutoPower: drive level adjusted; max_drive_pwr=%d level=%.1f",
-      m_twizy->twizy_batt[0].max_drive_pwr*500, (float)twizy_autodrive_level/10);
+    err = CfgDrive(cfgparam(drive), ref, minprc);
+    ESP_LOGD(TAG, "CfgAutoPower: drive level adjusted; max_drive_pwr=%d level=%.1f; result=%s",
+      m_twizy->twizy_batt[0].max_drive_pwr*500, (float)twizy_autodrive_level/10, GetResultString(err).c_str());
   }
 }
 
@@ -1356,6 +1364,11 @@ void SevconClient::Kickdown(bool engage)
 {
   //int kickdown_led = 0;
   CANopenResult_t res;
+  
+  if (!CtrlLoggedIn() || CtrlCfgMode()) {
+    ESP_LOGD(TAG, "Kickdown %d: ignored, not logged in or in cfg mode", engage);
+    return;
+  }
   
   if (engage) {
     // engage kickdown:

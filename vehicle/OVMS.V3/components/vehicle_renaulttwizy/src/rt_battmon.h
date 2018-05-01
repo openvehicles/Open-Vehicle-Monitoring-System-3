@@ -58,8 +58,8 @@ struct battery_pack
   UINT cmod_temp_stddev_max = 0; // max cmod temperature std deviation
                               // => watch/alert bit #7 (1<<7)
   
-  UINT8 max_drive_pwr = 0; // in 500 W
-  UINT8 max_recup_pwr = 0; // in 500 W
+  int max_drive_pwr = 0; // in 500 W
+  int max_recup_pwr = 0; // in 500 W
   
   // Metrics
   
