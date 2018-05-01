@@ -81,7 +81,13 @@ void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   writer->printf("  Crash counters: %d total, %d early\n",MyBoot.GetCrashCount(),MyBoot.GetEarlyCrashCount());
   writer->printf("  CPU#0 boot reason was %d\n",boot_data.bootreason_cpu0);
   writer->printf("  CPU#1 boot reason was %d\n",boot_data.bootreason_cpu1);
-  
+
+  if (MyBoot.m_restart_timer>0)
+    {
+    writer->printf("\nRestart in progress (%d secs, waiting for %d tasks)\n",
+      MyBoot.m_restart_timer, MyBoot.m_restart_pending);
+    }
+
   if (MyBoot.GetCrashCount() > 0)
     {
     // output data of last crash:
@@ -113,6 +119,9 @@ Boot::Boot()
   RESET_REASON cpu0 = rtc_get_reset_reason(0);
   RESET_REASON cpu1 = rtc_get_reset_reason(1);
 
+  m_restart_timer = 0;
+  m_restart_pending = 0;
+
   if (cpu0 == POWERON_RESET)
     {
     memset(&boot_data,0,sizeof(boot_data_t));
@@ -123,13 +132,20 @@ Boot::Boot()
     {
     boot_data.boot_count++;
     ESP_LOGI(TAG, "Boot #%d reasons for CPU0=%d and CPU1=%d",boot_data.boot_count,cpu0,cpu1);
-    
+
     if (boot_data.soft_reset)
       {
       boot_data.crash_count_total = 0;
       boot_data.crash_count_early = 0;
       m_bootreason = BR_SoftReset;
       ESP_LOGI(TAG, "Soft reset by user");
+      }
+    else if (boot_data.firmware_update)
+      {
+      boot_data.crash_count_total = 0;
+      boot_data.crash_count_early = 0;
+      m_bootreason = BR_FirmwareUpdate;
+      ESP_LOGI(TAG, "Firmware update reset");
       }
     else if (!boot_data.stable_reached)
       {
@@ -147,14 +163,14 @@ Boot::Boot()
     }
 
   m_crash_count_early = boot_data.crash_count_early;
-  
+
   boot_data.bootreason_cpu0 = cpu0;
   boot_data.bootreason_cpu1 = cpu1;
 
   // reset flags:
   boot_data.soft_reset = false;
   boot_data.stable_reached = false;
-  
+
   // install error handler:
   xt_set_error_handler_callback(ErrorCallback);
 
@@ -177,6 +193,7 @@ static const char* const bootreason_name[] =
   {
   "PowerOn",
   "SoftReset",
+  "FirmwareUpdate",
   "EarlyCrash",
   "Crash",
   };
@@ -186,11 +203,83 @@ const char* Boot::GetBootReasonName()
   return bootreason_name[m_bootreason];
   }
 
+static void boot_shutdown_done(const char* event, void* data)
+  {
+  esp_restart();
+  }
+
+static void boot_shuttingdown_done(const char* event, void* data)
+  {
+  if (MyBoot.m_restart_pending == 0)
+    MyBoot.m_restart_timer = 2;
+  }
+
+void Boot::Restart(bool hard)
+  {
+  SetSoftReset();
+
+  if (hard)
+    {
+    esp_restart();
+    return;
+    }
+
+  ESP_LOGI(TAG,"Shutting down for restart...");
+  OvmsMutexLock lock(&m_restart_mutex);
+  m_restart_pending = 0;
+  m_restart_timer = 60; // Give them 60 seconds to shutdown
+  MyEvents.SignalEvent("system.shuttingdown", NULL, boot_shuttingdown_done);
+
+  #undef bind  // Kludgy, but works
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG,"ticker.1", std::bind(&Boot::Ticker1, this, _1, _2));
+  }
+
+void Boot::RestartPending(const char* tag)
+  {
+  OvmsMutexLock lock(&m_restart_mutex);
+  m_restart_pending++;
+  }
+
+void Boot::RestartReady(const char* tag)
+  {
+  OvmsMutexLock lock(&m_restart_mutex);
+  m_restart_pending--;
+  if (m_restart_pending == 0)
+    m_restart_timer = 2;
+  }
+
+void Boot::Ticker1(std::string event, void* data)
+  {
+  if (m_restart_timer > 0)
+    {
+    OvmsMutexLock lock(&m_restart_mutex);
+    m_restart_timer--;
+    if (m_restart_timer == 1)
+      {
+      ESP_LOGI(TAG,"Restart now");
+      }
+    else if (m_restart_timer == 0)
+      {
+      MyEvents.SignalEvent("system.shutdown", NULL, boot_shutdown_done);
+      return;
+      }
+    else if ((m_restart_timer % 5)==0)
+      ESP_LOGI(TAG,"Restart in %d seconds (%d pending)...",m_restart_timer,m_restart_pending);
+    }
+  }
+
+bool Boot::IsShuttingDown()
+  {
+  return (m_restart_timer > 0);
+  }
+
 void Boot::ErrorCallback(XtExcFrame *frame, int core_id, bool is_abort)
   {
   boot_data.crash_data.core_id = core_id;
   boot_data.crash_data.is_abort = is_abort;
-  
+
   // Save registers:
   for (int i=0; i<24; i++)
     boot_data.crash_data.reg[i] = ((uint32_t*)frame)[i+1];
@@ -223,7 +312,7 @@ void Boot::NotifyDebugCrash()
     //  ,<firmware_version>
     //  ,<bootcount>,<bootreason_name>,<bootreason_cpu0>,<bootreason_cpu1>
     //  ,<crashcnt>,<earlycrashcnt>,<crashtype>,<crashcore>,<registers>,<backtrace>
-    
+
     StringWriter buf;
     buf.reserve(1024);
     buf.append("*-OVM-DebugCrash,0,2592000,");
@@ -231,7 +320,7 @@ void Boot::NotifyDebugCrash()
     buf.printf(",%d,%s,%d,%d,%d,%d"
       , boot_data.boot_count, GetBootReasonName(), boot_data.bootreason_cpu0, boot_data.bootreason_cpu1
       , GetCrashCount(), GetEarlyCrashCount());
-    
+
     // type, core, registers:
     if (boot_data.crash_data.is_abort)
       {
@@ -240,17 +329,17 @@ void Boot::NotifyDebugCrash()
     else
       {
       int exccause = boot_data.crash_data.reg[19];
-      buf.printf(",%s,%d,", 
+      buf.printf(",%s,%d,",
         (exccause < NUM_EDESCS) ? edesc[exccause] : "Unknown", boot_data.crash_data.core_id);
       for (int i=0; i<24; i++)
         buf.printf("0x%08lx ", boot_data.crash_data.reg[i]);
       }
-    
+
     // backtrace:
     buf.append(",");
     for (int i=0; i<OVMS_BT_LEVELS && boot_data.crash_data.bt[i].pc; i++)
       buf.printf("0x%08lx ", boot_data.crash_data.bt[i].pc);
-    
+
     MyNotify.NotifyString("data", buf.c_str());
     }
   }

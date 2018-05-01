@@ -37,6 +37,7 @@ static const char *TAG = "simcom";
 #include "metrics_standard.h"
 #include "ovms_config.h"
 #include "ovms_events.h"
+#include "ovms_boot.h"
 
 const char* SimcomState1Name(simcom::SimcomState1 state)
   {
@@ -168,6 +169,7 @@ simcom::simcom(const char* name, uart_port_t uartnum, int baud, int rxpin, int t
   MyEvents.RegisterEvent(TAG, "vehicle.release.gps", std::bind(&simcom::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "vehicle.require.gpstime", std::bind(&simcom::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "vehicle.release.gpstime", std::bind(&simcom::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "system.shuttingdown", std::bind(&simcom::EventListener, this, _1, _2));
   }
 
 simcom::~simcom()
@@ -303,6 +305,14 @@ void simcom::EventListener(std::string event, void* data)
   else if (event == "vehicle.release.gpstime")
     {
     m_nmea.m_gpstime_required = false;
+    }
+  else if (event == "system.shuttingdown")
+    {
+    if (m_state1 != PoweredOff)
+      {
+      MyBoot.RestartPending(TAG);
+      SetState1(PoweringOff);
+      }
     }
   }
 
@@ -467,6 +477,7 @@ void simcom::State1Enter(SimcomState1 newstate)
       break;
     case PoweredOff:
       ESP_LOGI(TAG,"State: Enter PoweredOff state");
+      if (MyBoot.IsShuttingDown()) MyBoot.RestartReady(TAG);
       m_mux.Stop();
       break;
     case PowerOffOn:

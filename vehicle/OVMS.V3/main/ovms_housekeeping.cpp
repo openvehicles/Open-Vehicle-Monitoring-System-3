@@ -198,8 +198,11 @@ void Housekeeping::Metrics(std::string event, void* data)
   float f = MyConfig.GetParamValueFloat("system.adc","factor12v");
   if (f == 0) f = 182;
   float v = (float)MyPeripherals->m_esp32adc->read() / f;
+  v = trunc(v*100) / 100;
   if (v < 1.0) v=0;
   m1->SetValue(v);
+  if (StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat() == 0)
+    StandardMetrics.ms_v_bat_12v_voltage_ref->SetValue(v);
 #endif // #ifdef CONFIG_OVMS_COMP_ADC
 
   OvmsMetricInt* m2 = StandardMetrics.ms_m_tasks;

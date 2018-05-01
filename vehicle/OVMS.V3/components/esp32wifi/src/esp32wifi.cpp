@@ -248,6 +248,7 @@ esp32wifi::esp32wifi(const char* name)
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.stop",std::bind(&esp32wifi::EventWifiApState, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.sta.connected",std::bind(&esp32wifi::EventWifiApUpdate, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.sta.disconnected",std::bind(&esp32wifi::EventWifiApUpdate, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.shuttingdown",std::bind(&esp32wifi::EventSystemShuttingDown, this, _1, _2));
   }
 
 esp32wifi::~esp32wifi()
@@ -820,6 +821,11 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
 
   if (list)
     free(list);
+  }
+
+void esp32wifi::EventSystemShuttingDown(std::string event, void* data)
+  {
+  PowerDown();
   }
 
 void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)

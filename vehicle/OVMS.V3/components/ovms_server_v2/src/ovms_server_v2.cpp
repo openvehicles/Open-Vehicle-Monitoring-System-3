@@ -1218,7 +1218,7 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
     << ","
     << (int)Doors4()
     << ","
-    << "0"  // car_12vline_ref
+    << StandardMetrics.ms_v_bat_12v_voltage_ref->AsString("0")
     << ","
     << (int)Doors5()
     << ","

@@ -78,7 +78,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   {
     twizy_flags.ChargePort = 1;
     twizy_flags.Charging = 1;
-    twizy_flags.Charging12V = 1;
   }
   else
   {

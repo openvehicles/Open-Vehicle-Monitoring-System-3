@@ -50,6 +50,11 @@ void OvmsMDNS::SystemStart(std::string event, void* data)
   StartMDNS();
   }
 
+void OvmsMDNS::EventSystemShuttingDown(std::string event, void* data)
+  {
+  StopMDNS();
+  }
+
 void OvmsMDNS::StartMDNS()
   {
   if (m_mdns) return; // Quick exit if already started
@@ -98,6 +103,7 @@ OvmsMDNS::OvmsMDNS()
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"system.event", std::bind(&OvmsMDNS::SystemEvent, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.start", std::bind(&OvmsMDNS::SystemStart, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.shuttingdown",std::bind(&OvmsMDNS::EventSystemShuttingDown, this, _1, _2));
   }
 
 OvmsMDNS::~OvmsMDNS()

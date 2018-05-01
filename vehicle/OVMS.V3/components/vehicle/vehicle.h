@@ -117,12 +117,37 @@ class OvmsVehicle
 
   protected:
     uint32_t m_ticker;
+    int m_12v_ticker;
     virtual void Ticker1(uint32_t ticker);
     virtual void Ticker10(uint32_t ticker);
     virtual void Ticker60(uint32_t ticker);
     virtual void Ticker300(uint32_t ticker);
     virtual void Ticker600(uint32_t ticker);
     virtual void Ticker3600(uint32_t ticker);
+
+  protected:
+    virtual void NotifiedVehicleOn() {}
+    virtual void NotifiedVehicleOff() {}
+    virtual void NotifiedVehicleAwake() {}
+    virtual void NotifiedVehicleAsleep() {}
+    virtual void NotifiedVehicleChargeStart() {}
+    virtual void NotifiedVehicleChargeStop() {}
+    virtual void NotifiedVehicleChargePrepare() {}
+    virtual void NotifiedVehicleChargeFinish() {}
+    virtual void NotifiedVehicleChargePilotOn() {}
+    virtual void NotifiedVehicleChargePilotOff() {}
+    virtual void NotifiedVehicleCharge12vStart() {}
+    virtual void NotifiedVehicleCharge12vStop() {}
+    virtual void NotifiedVehicleLocked() {}
+    virtual void NotifiedVehicleUnlocked() {}
+    virtual void NotifiedVehicleValetOn() {}
+    virtual void NotifiedVehicleValetOff() {}
+    virtual void NotifiedVehicleHeadlightsOn() {}
+    virtual void NotifiedVehicleHeadlightsOff() {}
+    virtual void NotifiedVehicleAlarmOn() {}
+    virtual void NotifiedVehicleAlarmOff() {}
+    virtual void NotifiedVehicleChargeMode(const char* m) {}
+    virtual void NotifiedVehicleChargeState(const char* s) {}
 
   protected:
     virtual void ConfigChanged(OvmsConfigParam* param);

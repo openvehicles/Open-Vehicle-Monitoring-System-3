@@ -43,6 +43,7 @@ class OvmsMDNS
   public:
     void SystemEvent(std::string event, void* data);
     void SystemStart(std::string event, void* data);
+    void EventSystemShuttingDown(std::string event, void* data);
     void StartMDNS();
     void StopMDNS();
 
