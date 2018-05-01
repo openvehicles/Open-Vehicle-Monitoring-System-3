@@ -20,16 +20,16 @@ MWJ     Done         Metric formatting
                    Vehicle
 MWJ     Done         Base vehicle support
 MWJ     Done         OBDII Poll support
-MWJ     95%          Tesla roadster port
-GØV     90%          Kia Soul port
+MWJ     96%          Tesla roadster port
+GØV     Done         Kia Soul port
                      Kyburz port
                      Mitsubishi iMiev port
-                     Nissan Leaf port
+TP      Done         Nissan Leaf port
 MWJ     90%          OBDII port
                      TRACK vehicle port
                      Tazzari port
                      Think City port
-MB      70%          Renault Twizy port
+MB      Done         Renault Twizy port
 MWJ     80%          Volt Ampera port
                      Renault Zoe port
 
@@ -56,7 +56,7 @@ MWJ    Done          Event system
 MWJ    Done          Event hooks in key components
 
                    Comms system
-MWJ    95%           SIMCOM modem support
+MWJ    99%           SIMCOM modem support
 MB     Done          SIMCOM GPS support
 MWJ    Done          WIFI support
                      BLUETOOTH support
@@ -66,6 +66,6 @@ MWJ    Done          OVMS v2 protocol
                      MQTT protocol
 
                    OTA
-MWJ    95%           OTA update system
+MWJ    Done          OTA update system
 MWJ    Done          CFCARD update system
 MWJ    Done          Network/WIFI update system

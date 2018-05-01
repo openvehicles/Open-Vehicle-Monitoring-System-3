@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+
+2018-05-01 MWJ  3.1.005  OTA release
 - Vehicle: 12V battery monitoring
     vehicle [12v.alert] = 1.6       Voltage drop alert threshold in V vs. reference
 - OTA: automatic daily firmware updates (wifi only)
@@ -12,6 +14,9 @@ Open Vehicle Monitor System v3 - Change log
     log [file.path] = ""            Log path, if on /sd watches sd.mounted
     log [level]                     Default level
     log [level.<tag>]               Component levels
+- Reverse Engineering Tools enhancements
+- Tesla Roadster CAC support
+- Miscellaneous bug fixes and enhancements
 
 2018-04-17 MWJ  3.1.004  OTA release
 OTA release providing minor improvements and fixes.
