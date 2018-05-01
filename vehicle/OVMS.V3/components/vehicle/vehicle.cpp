@@ -445,6 +445,11 @@ const char* OvmsVehicleFactory::ActiveVehicleName()
   return NULL;
   }
 
+const char* OvmsVehicleFactory::ActiveVehicleShortName()
+  {
+  return m_currentvehicle ? m_currentvehicle->VehicleShortName() : NULL;
+  }
+
 static void OvmsVehicleRxTask(void *pvParameters)
   {
   OvmsVehicle *me = (OvmsVehicle*)pvParameters;
@@ -504,6 +509,11 @@ OvmsVehicle::~OvmsVehicle()
 
   MyEvents.DeregisterEvent(TAG);
   MyMetrics.DeregisterListener(TAG);
+  }
+
+const char* OvmsVehicle::VehicleShortName()
+  {
+  return MyVehicleFactory.ActiveVehicleName();
   }
 
 void OvmsVehicle::RxTask()

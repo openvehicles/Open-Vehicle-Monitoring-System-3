@@ -138,6 +138,11 @@ OvmsVehicleRenaultTwizy::~OvmsVehicleRenaultTwizy()
     delete m_sevcon;
 }
 
+const char* OvmsVehicleRenaultTwizy::VehicleShortName()
+{
+  return "Twizy";
+}
+
 
 /**
  * ConfigChanged: reload single/all configuration variables

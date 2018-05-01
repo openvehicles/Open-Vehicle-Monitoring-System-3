@@ -367,7 +367,7 @@ std::string OvmsWebServer::CreateMenu(PageContext_t& c)
     "<ul class=\"nav navbar-nav\">"
       + main;
   if (vehicle != "") {
-    std::string vehiclename = MyVehicleFactory.ActiveVehicleName();
+    std::string vehiclename = MyVehicleFactory.ActiveVehicleShortName();
     menu +=
       "<li class=\"dropdown\" id=\"menu-vehicle\">"
         "<a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-haspopup=\"true\" aria-expanded=\"false\">"

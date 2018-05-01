@@ -94,6 +94,7 @@ class OvmsVehicle
   public:
     OvmsVehicle();
     virtual ~OvmsVehicle();
+    virtual const char* VehicleShortName();
 
   protected:
     canbus* m_can1;
@@ -269,6 +270,7 @@ class OvmsVehicleFactory
     void AutoInit();
     OvmsVehicle* ActiveVehicle();
     const char* ActiveVehicleName();
+    const char* ActiveVehicleShortName();
   };
 
 extern OvmsVehicleFactory MyVehicleFactory;
