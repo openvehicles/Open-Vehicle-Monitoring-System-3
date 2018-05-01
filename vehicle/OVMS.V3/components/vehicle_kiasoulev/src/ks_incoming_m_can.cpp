@@ -54,7 +54,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan2(CAN_frame_t* p_frame)
 			m_v_env_climate_driver_only->SetValue(d[0] & 0x40);
 
 			// Recirculation bit 2
-			m_v_env_climate_resirc->SetValue(d[1] & 0x40);
+			m_v_env_climate_resirc->SetValue(d[1] & 0x02);
 			// Auto bit 0
 			m_v_env_climate_auto->SetValue(d[1] & 0x01);
 
@@ -64,8 +64,8 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan2(CAN_frame_t* p_frame)
 			// Hvac On/Off
 			StdMetrics.ms_v_env_hvac->SetValue( (d[3] & 0x30 )== 0x10);
 
-			// Heat bit 0
-			StdMetrics.ms_v_env_heating->SetValue(d[4] & 0x04);
+			// Heat bit 2
+			StdMetrics.ms_v_env_heating->SetValue(d[4] & 0x02);
 
 			// Fan speed bit 0-3
 			m_v_env_climate_fan_speed->SetValue(d[7] & 0x07);

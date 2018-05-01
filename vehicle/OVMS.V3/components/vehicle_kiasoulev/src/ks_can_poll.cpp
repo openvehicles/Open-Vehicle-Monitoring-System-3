@@ -184,7 +184,7 @@ void OvmsVehicleKiaSoulEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 				{
 				if (m_poll_ml_frame == 1)
 					{
-					StdMetrics.ms_v_mot_rpm->SetValue( (CAN_BYTE(5)<<8) | CAN_BYTE(6) );
+					StdMetrics.ms_v_mot_rpm->SetValue( ((uint16_t)CAN_BYTE(5)<<8) | (uint16_t)CAN_BYTE(6) );
 					}
 				else if (m_poll_ml_frame == 3)
 					{

@@ -58,14 +58,16 @@ void CommandOpenChargePort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 void CommandParkBreakService(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
   OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
-	for(int i=0; i<100; i++)
-		{
-		soul->	SendTesterPresent(ABS_EBP_UNIT,2);
-		vTaskDelay( 10 / portTICK_PERIOD_MS );
-		}
+
+	soul->	SendTesterPresent(ABS_EBP_UNIT,1);
+
 	if( strcmp(argv[0],"on")==0 )
 		{
-	  soul->Send_EBP_Command(0x02, 0x01, KS_90_DIAGNOSTIC_SESSION);
+	  //soul->Send_EBP_Command(0x02, 0x01, KS_90_DIAGNOSTIC_SESSION);
+		if( soul->SetSessionMode(ABS_EBP_UNIT, KS_90_DIAGNOSTIC_SESSION ))
+			{
+			soul->SendCanMessage(ABS_EBP_UNIT, 3, VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_LOC_ID, 0x02, 0x01, 0, 0, 0, 0 );
+			}
 		}
 	else if( strcmp(argv[0],"off")==0 )
 		{
@@ -75,11 +77,13 @@ void CommandParkBreakService(int verbosity, OvmsWriter* writer, OvmsCommand* cmd
 		{
 	  soul->Send_EBP_Command(0x01, 0x01, KS_90_DIAGNOSTIC_SESSION);
 		}
+
 	for(int i=0; i<100; i++)
 		{
 		soul->	SendTesterPresent(ABS_EBP_UNIT,2);
-		vTaskDelay( 10 / portTICK_PERIOD_MS );
+		vTaskDelay( 20 / portTICK_PERIOD_MS );
 		}
+	soul->SetSessionMode(ABS_EBP_UNIT, DEFAULT_SESSION);
 	}
 
 /**
