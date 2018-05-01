@@ -481,9 +481,6 @@ void OvmsOTA::AutoFlashSD(std::string event, void* data)
     return;
     }
 
-  ESP_LOGW(TAG, "AutoFlashSD unmounting SD CARD");
-  MyPeripherals->m_sdcard->unmount();
-
   ESP_LOGW(TAG, "AutoFlashSD OTA flash successful: Flashed %d bytes, and booting from '%s'",
                  (int)ds.st_size,target->label);
 

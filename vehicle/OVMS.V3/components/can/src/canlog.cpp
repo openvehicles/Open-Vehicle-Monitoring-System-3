@@ -37,6 +37,7 @@ static const char *TAG = "canlog";
 #include <iomanip>
 #include "ovms_config.h"
 #include "ovms_events.h"
+#include "ovms_peripherals.h"
 #include "metrics_standard.h"
 
 
@@ -76,6 +77,11 @@ canlog::canlog(int queuesize /*=30*/)
   xTaskCreatePinnedToCore(RxTask, "OVMS CanLog", 4096, (void*)this, 10, &m_task, 1);
   m_msgcount = 0;
   m_dropcount = 0;
+
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG, "sd.mounted", std::bind(&canlog::MountListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "sd.unmounting", std::bind(&canlog::MountListener, this, _1, _2));
   }
 
 canlog::~canlog()
@@ -134,6 +140,11 @@ bool canlog::Open(std::string path)
     ESP_LOGE(TAG, "canlog[%s].Open: protected path '%s'", GetType(), path.c_str());
     return false;
     }
+  if (startsWith(path, "/sd") && (!MyPeripherals || !MyPeripherals->m_sdcard || !MyPeripherals->m_sdcard->isavailable()))
+    {
+    ESP_LOGE(TAG, "canlog[%s].Open: cannot open '%s', SD filesystem not available", GetType(), path.c_str());
+    return false;
+    }
 
   FILE* file = fopen(path.c_str(), "w");
   if (!file)
@@ -161,8 +172,15 @@ void canlog::Close()
     fclose(file);
     ESP_LOGI(TAG, "canlog[%s].Close: '%s' closed. Statistics: %s",
       GetType(), m_path.c_str(), GetStats().c_str());
-    m_path = "";
     }
+  }
+
+void canlog::MountListener(std::string event, void* data)
+  {
+  if (event == "sd.unmounting" && startsWith(m_path, "/sd"))
+    Close();
+  else if (event == "sd.mounted" && startsWith(m_path, "/sd"))
+    Open(m_path);
   }
 
 static const char* const CAN_LogEntryTypeName[] = {

@@ -49,7 +49,8 @@ class sdcard : public pcp
 
   public:
     esp_err_t mount();
-    esp_err_t unmount();
+    esp_err_t unmount(bool hard=false);
+    bool isavailable();
     bool ismounted();
     bool isinserted();
 
@@ -63,6 +64,7 @@ class sdcard : public pcp
     esp_vfs_fat_sdmmc_mount_config_t m_mount;
     sdmmc_card_t* m_card;
     bool m_mounted;
+    bool m_unmounting;
     bool m_cd;
     int m_cdpin;
   };

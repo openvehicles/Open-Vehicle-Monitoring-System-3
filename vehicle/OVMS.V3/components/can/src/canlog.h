@@ -76,6 +76,7 @@ class canlog
     virtual void Close();
     virtual bool IsOpen() { return (m_file != NULL); }
     virtual std::string GetPath() { return m_path; }
+    virtual void MountListener(std::string event, void* data);
 
   public:
     // Utils:
