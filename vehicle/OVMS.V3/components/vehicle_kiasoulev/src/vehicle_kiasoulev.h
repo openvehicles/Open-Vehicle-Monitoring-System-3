@@ -88,6 +88,19 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     bool Send_SMK_Command( uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint8_t b5, uint8_t b6, uint8_t b7);
     bool Send_EBP_Command( uint8_t b1, uint8_t b2, uint8_t mode);
     void SendTesterPresent(uint16_t id, uint8_t length);
+    bool SetSessionMode(uint16_t id, uint8_t mode);
+    void SendCanMessage(uint16_t id, uint8_t count,
+						uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
+						uint8_t b5, uint8_t b6);
+    void SendCanMessageTriple(uint16_t id, uint8_t count,
+						uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
+						uint8_t b5, uint8_t b6);
+    bool SendCanMessage_sync(uint16_t id, uint8_t count,
+    					uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
+						uint8_t b5, uint8_t b6);
+    bool SendCommandInSessionMode(uint16_t id, uint8_t count,
+    					uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
+						uint8_t b5, uint8_t b6, uint8_t mode );
 
     virtual OvmsVehicle::vehicle_command_t CommandLock(const char* pin);
     virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
@@ -189,23 +202,11 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     void vehicle_kiasoulev_car_on(bool isOn);
     void UpdateMaxRangeAndSOH(void);
     uint16_t calcMinutesRemaining(float target);
-    void SendCanMessage(uint16_t id, uint8_t count,
-						uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
-						uint8_t b5, uint8_t b6);
-    void SendCanMessageTriple(uint16_t id, uint8_t count,
-						uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
-						uint8_t b5, uint8_t b6);
-    bool SendCanMessage_sync(uint16_t id, uint8_t count,
-    					uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
-						uint8_t b5, uint8_t b6);
-    bool SendCommandInSessionMode(uint16_t id, uint8_t count,
-    					uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
-						uint8_t b5, uint8_t b6, uint8_t mode );
-    bool SetSessionMode(uint16_t id, uint8_t mode);
     bool SetDoorLock(bool open, const char* password);
     bool LeftIndicator(bool);
     bool RightIndicator(bool);
     bool RearDefogger(bool);
+    bool BlueChargeLed(bool on, uint8_t mode);
     bool IsPasswordOk(const char *password);
     void SetChargeMetrics(float voltage, float current, float climit, bool chademo);
     void SendTesterPresentMessages();
@@ -334,6 +335,7 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 #define BODY_CONTROL_MODULE  0x7A0
 #define SMART_KEY_UNIT 0x7A5
 #define ABS_EBP_UNIT 0x7A5
+#define ON_BOARD_CHARGER_UNIT 0x794
 
 // Notifications:
 #define SEND_AuxBattery_Low           (1<< 0)  // text alert: AUX battery problem

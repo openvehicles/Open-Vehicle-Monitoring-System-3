@@ -116,7 +116,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 	case 0x433:
 		{
 		// Parking brake status
-		StdMetrics.ms_v_env_handbrake->SetValue((d[2] & 0x08) > 0); //Why did I have 0x10 here??
+		StdMetrics.ms_v_env_handbrake->SetValue((d[2] & 0x10) > 0); //Why did I have 0x10 here??
 		}
 		break;
 
@@ -139,7 +139,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 	case 0x4f2:
 		{
 		// Speed:
-		StdMetrics.ms_v_pos_speed->SetValue(d[1] >> 1, Kph); // kph
+		StdMetrics.ms_v_pos_speed->SetValue((float)d[1] /2.0, Kph); // kph
 
 		// 4f2 is one of the few can-messages that are sent while car is both on and off.
 		// Byte 2 and 7 are some sort of counters which runs while the car is on.
@@ -178,7 +178,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 		{
 		// SOC:
 		if (d[0] > 0)
-			StdMetrics.ms_v_bat_soc->SetValue(d[0] >> 1);
+			StdMetrics.ms_v_bat_soc->SetValue((float)d[0]/2.0);
 		}
 		break;
 
@@ -238,6 +238,13 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 			{
 			m_b_bms_soc->SetValue( val / 10.0 , Percentage);
 			}
+		}
+		break;
+
+	case 0x597:
+		{
+		// Remaining charge time:
+		//uint16_t val = (uint16_t) ((d[2]<<8) + d[1]);
 		}
 		break;
 
