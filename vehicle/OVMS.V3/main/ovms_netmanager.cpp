@@ -131,6 +131,7 @@ OvmsNetManager::OvmsNetManager()
   MyEvents.RegisterEvent(TAG,"system.modem.stop", std::bind(&OvmsNetManager::ModemDown, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.down", std::bind(&OvmsNetManager::ModemDown, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsNetManager::ConfigChanged, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.shuttingdown", std::bind(&OvmsNetManager::EventSystemShuttingDown, this, _1, _2));
 
   MyConfig.RegisterParam("network", "Network Configuration", true, true);
   // Our instances:
@@ -307,6 +308,13 @@ void OvmsNetManager::ConfigChanged(std::string event, void* data)
     if (m_network_any)
       PrioritiseAndIndicate();
     }
+  }
+
+void OvmsNetManager::EventSystemShuttingDown(std::string event, void* data)
+  {
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+  StopMongooseTask();
+#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   }
 
 void OvmsNetManager::SaveDNSServer(ip_addr_t* dnsstore)

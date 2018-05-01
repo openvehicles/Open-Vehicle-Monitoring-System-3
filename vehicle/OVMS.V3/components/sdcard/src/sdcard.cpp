@@ -69,6 +69,15 @@ void sdcard::Ticker1(std::string event, void* data)
     }
   }
 
+void sdcard::EventSystemShutDown(std::string event, void* data)
+  {
+  if (m_mounted)
+    {
+    ESP_LOGI(TAG,"Unmounting SDCARD for reset");
+    unmount();
+    }
+  }
+
 static void IRAM_ATTR sdcard_isr_handler(void* arg)
   {
   insertcount = 2;
@@ -105,6 +114,7 @@ sdcard::sdcard(const char* name, bool mode1bit, bool autoformat, int cdpin)
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"ticker.1", std::bind(&sdcard::Ticker1, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.shutdown", std::bind(&sdcard::EventSystemShutDown, this, _1, _2));
 
   gpio_pullup_en((gpio_num_t)cdpin);
   gpio_set_intr_type((gpio_num_t)cdpin, GPIO_INTR_ANYEDGE);

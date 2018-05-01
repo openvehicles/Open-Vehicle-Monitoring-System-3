@@ -55,6 +55,7 @@ class sdcard : public pcp
 
   public:
     void Ticker1(std::string event, void* data);
+    void EventSystemShutDown(std::string event, void* data);
 
   public:
     sdmmc_host_t m_host;

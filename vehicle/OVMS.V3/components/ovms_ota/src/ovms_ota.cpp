@@ -490,6 +490,7 @@ void OvmsOTA::AutoFlashSD(std::string event, void* data)
   vTaskDelay(2000 / portTICK_PERIOD_MS); // Delay for log display and settle
   ESP_LOGW(TAG, "AutoFlashSD restarting...");
   MyBoot.Restart();
+  MyBoot.SetFirmwareUpdate();
   }
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
@@ -614,21 +615,10 @@ static void OTAFlashTask(void *pvParameters)
     // Flash has completed. We now need to reboot
     vTaskDelay(pdMS_TO_TICKS(5000));
 
-    // Power down wifi and modem (which will cause everything to disconnect)
-    ESP_LOGI(TAG, "AutoFlash: Powering down WIFI and MODEM..");
-    vTaskDelay(pdMS_TO_TICKS(2000));
-    #ifdef CONFIG_OVMS_COMP_WIFI
-      MyPeripherals->m_esp32wifi->SetPowerMode(Off);
-    #endif // #ifdef CONFIG_OVMS_COMP_WIFI
-    #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
-      MyPeripherals->m_simcom->SetPowerMode(Off);
-    #endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
-    vTaskDelay(pdMS_TO_TICKS(20000));
-
     // All done. Let's restart...
-    ESP_LOGI(TAG, "AutoFlash: Complete. Reset in 3 seconds...");
-    vTaskDelay(pdMS_TO_TICKS(3000));
+    ESP_LOGI(TAG, "AutoFlash: Complete. Requesting restart...");
     MyBoot.Restart();
+    MyBoot.SetFirmwareUpdate();
     }
 
   MyOTA.m_autotask = NULL;

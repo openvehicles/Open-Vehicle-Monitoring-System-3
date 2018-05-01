@@ -79,6 +79,7 @@ class esp32wifi : public pcp
     void EventWifiApUpdate(std::string event, void* data);
     void EventTimer10(std::string event, void* data);
     void EventWifiScanDone(std::string event, void* data);
+    void EventSystemShuttingDown(std::string event, void* data);
     void OutputStatus(int verbosity, OvmsWriter* writer);
 
   protected:
