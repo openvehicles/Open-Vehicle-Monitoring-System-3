@@ -568,10 +568,14 @@ void OvmsVehicleKiaSoulEv::HandleCharging()
     // ******* Charging started: **********
     StdMetrics.ms_v_charge_duration_full->SetValue( 1440, Minutes ); // Lets assume 24H to full.
     if( StdMetrics.ms_v_charge_timermode->AsBool())
+    		{
     		SET_CHARGE_STATE("charging","scheduledstart");
-    else
-  			SET_CHARGE_STATE("charging","onrequest");
-    StdMetrics.ms_v_charge_kwh->SetValue( 0, kWh );  // kWh charged
+    		}
+    	else
+    		{
+    		SET_CHARGE_STATE("charging","onrequest");
+    		}
+    	StdMetrics.ms_v_charge_kwh->SetValue( 0, kWh );  // kWh charged
 		ks_cum_charge_start = CUM_CHARGE; // Battery charge base point
 		StdMetrics.ms_v_charge_inprogress->SetValue( true );
 		StdMetrics.ms_v_env_charging12v->SetValue( true);
@@ -638,9 +642,13 @@ void OvmsVehicleKiaSoulEv::HandleCharging()
   else
   		{
   		if( m_v_preheating->AsBool())
+  			{
   			SET_CHARGE_STATE("heating","scheduledstart");
+  			}
   		else
+  			{
   			SET_CHARGE_STATE("charging",NULL);
+  			}
   		// Send charge alert:
     RequestNotify(SEND_ChargeState);
   		}
