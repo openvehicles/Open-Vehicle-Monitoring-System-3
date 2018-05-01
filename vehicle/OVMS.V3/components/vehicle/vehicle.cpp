@@ -853,37 +853,67 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
   if (metric == StandardMetrics.ms_v_env_on)
     {
     if (StandardMetrics.ms_v_env_on->AsBool())
+      {
       MyEvents.SignalEvent("vehicle.on",NULL);
+      NotifiedVehicleOn();
+      }
     else
+      {
       MyEvents.SignalEvent("vehicle.off",NULL);
+      NotifiedVehicleOff();
+      }
     }
   else if (metric == StandardMetrics.ms_v_env_awake)
     {
     if (StandardMetrics.ms_v_env_awake->AsBool())
+      {
+      NotifiedVehicleAwake();
       MyEvents.SignalEvent("vehicle.awake",NULL);
+      }
     else
+      {
       MyEvents.SignalEvent("vehicle.asleep",NULL);
+      NotifiedVehicleAsleep();
+      }
     }
   else if (metric == StandardMetrics.ms_v_charge_inprogress)
     {
     if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+      {
       MyEvents.SignalEvent("vehicle.charge.start",NULL);
+      NotifiedVehicleChargeStart();
+      }
     else
+      {
       MyEvents.SignalEvent("vehicle.charge.stop",NULL);
+      NotifiedVehicleChargeStop();
+      }
     }
   else if (metric == StandardMetrics.ms_v_door_chargeport)
     {
     if (StandardMetrics.ms_v_door_chargeport->AsBool())
+      {
       MyEvents.SignalEvent("vehicle.charge.prepare",NULL);
+      NotifiedVehicleChargePrepare();
+      }
     else
+      {
       MyEvents.SignalEvent("vehicle.charge.finish",NULL);
+      NotifiedVehicleChargeFinish();
+      }
     }
   else if (metric == StandardMetrics.ms_v_charge_pilot)
     {
     if (StandardMetrics.ms_v_charge_pilot->AsBool())
+      {
       MyEvents.SignalEvent("vehicle.charge.pilot.on",NULL);
+      NotifiedVehicleChargePilotOn();
+      }
     else
+      {
       MyEvents.SignalEvent("vehicle.charge.pilot.off",NULL);
+      NotifiedVehicleChargePilotOff();
+      }
     }
   else if (metric == StandardMetrics.ms_v_env_charging12v)
     {
@@ -892,47 +922,77 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       if (m_12v_ticker < 30)
         m_12v_ticker = 30; // min calmdown time
       MyEvents.SignalEvent("vehicle.charge.12v.start",NULL);
+      NotifiedVehicleCharge12vStart();
       }
     else
+      {
       MyEvents.SignalEvent("vehicle.charge.12v.stop",NULL);
+      NotifiedVehicleCharge12vStop();
+      }
     }
   else if (metric == StandardMetrics.ms_v_env_locked)
     {
     if (StandardMetrics.ms_v_env_locked->AsBool())
+      {
       MyEvents.SignalEvent("vehicle.locked",NULL);
+      NotifiedVehicleLocked();
+      }
     else
+      {
       MyEvents.SignalEvent("vehicle.unlocked",NULL);
+      NotifiedVehicleUnlocked();
+      }
     }
   else if (metric == StandardMetrics.ms_v_env_valet)
     {
     if (StandardMetrics.ms_v_env_valet->AsBool())
+      {
       MyEvents.SignalEvent("vehicle.valet.on",NULL);
+      NotifiedVehicleValetOn();
+      }
     else
+      {
       MyEvents.SignalEvent("vehicle.valet.off",NULL);
+      NotifiedVehicleValetOff();
+      }
     }
   else if (metric == StandardMetrics.ms_v_env_headlights)
     {
     if (StandardMetrics.ms_v_env_headlights->AsBool())
+      {
       MyEvents.SignalEvent("vehicle.headlights.on",NULL);
+      NotifiedVehicleHeadlightsOn();
+      }
     else
+      {
       MyEvents.SignalEvent("vehicle.headlights.off",NULL);
+      NotifiedVehicleHeadlightsOff();
+      }
     }
   else if (metric == StandardMetrics.ms_v_env_alarm)
     {
     if (StandardMetrics.ms_v_env_alarm->AsBool())
+      {
       MyEvents.SignalEvent("vehicle.alarm.on",NULL);
+      NotifiedVehicleAlarmOn();
+      }
     else
+      {
       MyEvents.SignalEvent("vehicle.alarm.off",NULL);
+      NotifiedVehicleAlarmOff();
+      }
     }
   else if (metric == StandardMetrics.ms_v_charge_mode)
     {
     const char* m = metric->AsString().c_str();
     MyEvents.SignalEvent("vehicle.charge.mode",(void*)m, strlen(m)+1);
+    NotifiedVehicleChargeMode(m);
     }
   else if (metric == StandardMetrics.ms_v_charge_state)
     {
     const char* m = metric->AsString().c_str();
     MyEvents.SignalEvent("vehicle.charge.state",(void*)m, strlen(m)+1);
+    NotifiedVehicleChargeState(m);
     }
   }
 

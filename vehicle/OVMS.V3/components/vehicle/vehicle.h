@@ -126,6 +126,30 @@ class OvmsVehicle
     virtual void Ticker3600(uint32_t ticker);
 
   protected:
+    virtual void NotifiedVehicleOn() {}
+    virtual void NotifiedVehicleOff() {}
+    virtual void NotifiedVehicleAwake() {}
+    virtual void NotifiedVehicleAsleep() {}
+    virtual void NotifiedVehicleChargeStart() {}
+    virtual void NotifiedVehicleChargeStop() {}
+    virtual void NotifiedVehicleChargePrepare() {}
+    virtual void NotifiedVehicleChargeFinish() {}
+    virtual void NotifiedVehicleChargePilotOn() {}
+    virtual void NotifiedVehicleChargePilotOff() {}
+    virtual void NotifiedVehicleCharge12vStart() {}
+    virtual void NotifiedVehicleCharge12vStop() {}
+    virtual void NotifiedVehicleLocked() {}
+    virtual void NotifiedVehicleUnlocked() {}
+    virtual void NotifiedVehicleValetOn() {}
+    virtual void NotifiedVehicleValetOff() {}
+    virtual void NotifiedVehicleHeadlightsOn() {}
+    virtual void NotifiedVehicleHeadlightsOff() {}
+    virtual void NotifiedVehicleAlarmOn() {}
+    virtual void NotifiedVehicleAlarmOff() {}
+    virtual void NotifiedVehicleChargeMode(const char* m) {}
+    virtual void NotifiedVehicleChargeState(const char* s) {}
+
+  protected:
     virtual void ConfigChanged(OvmsConfigParam* param);
     virtual void MetricModified(OvmsMetric* metric);
     virtual void CalculateEfficiency();
