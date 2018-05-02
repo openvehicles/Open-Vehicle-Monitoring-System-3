@@ -347,6 +347,9 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
       float soc = soc10 / 10.0;
       m_soc_instrument->SetValue(soc);
+      if (MyConfig.GetParamValueBool("xnl", "soc.instrument", false)) {
+        StandardMetrics.ms_v_bat_soc->SetValue(soc);
+      }
       break;
     }
     case 0x54b:
@@ -406,7 +409,9 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       m_gids->SetValue(nl_gids);
       float soc_new_car = (nl_gids * 100.0) / max_gids;
       m_soc_new_car->SetValue(soc_new_car);
-      StandardMetrics.ms_v_bat_soc->SetValue(soc_new_car);
+      if (!MyConfig.GetParamValueBool("xnl", "soc.instrument", false)) {
+        StandardMetrics.ms_v_bat_soc->SetValue(soc_new_car);
+      }
       StandardMetrics.ms_v_bat_range_ideal->SetValue((nl_gids * wh_per_gid * km_per_kwh) / 1000);
     }
       break;
