@@ -80,29 +80,6 @@ OvmsVehicleNissanLeaf::~OvmsVehicleNissanLeaf()
   }
 
 ////////////////////////////////////////////////////////////////////////
-// vehicle_nissanleaf_car_on()
-// Takes care of setting all the state appropriate when the car is on
-// or off. Centralized so we can more easily make on and off mirror
-// images.
-//
-
-void vehicle_nissanleaf_car_on(bool isOn)
-  {
-  StandardMetrics.ms_v_env_on->SetValue(isOn);
-  StandardMetrics.ms_v_env_awake->SetValue(isOn);
-// TODO this is supposed to be a one-shot but car_parktime doesn't work in v3 yet
-// further it's not clear if we even need to do this
-//  if (isOn && car_parktime != 0)
-//    {
-//    StandardMetrics.ms_v_door_chargeport->SetValue(false);
-//    StandardMetrics.ms_v_charge_pilot->SetValue(false);
-//    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-//    StandardMetrics.ms_v_charge_state->SetValue("stopped");
-//    StandardMetrics.ms_v_charge_substate->SetValue("stopped");
-//    }
-  }
-
-////////////////////////////////////////////////////////////////////////
 // vehicle_nissanleaf_charger_status()
 // Takes care of setting all the charger state bit when the charger
 // switches on or off. Separate from vehicle_nissanleaf_poll1() to make
@@ -284,7 +261,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x284:
     {
-      vehicle_nissanleaf_car_on(true);
+      // certain CAN bus activity counts as state "awake"
+      StandardMetrics.ms_v_env_awake->SetValue(true);
 
       uint16_t car_speed16 = d[4];
       car_speed16 = car_speed16 << 8;
@@ -378,17 +356,15 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
       break;
     case 0x54c:
-    {
-      if (d[6] == 0xff)
+      /* Ambient temperature.  This one has half-degree C resolution,
+       * and seems to stay within a degree or two of the "eyebrow" temp display.
+       * App label: AMBIENT
+       */
+      if (d[6] != 0xff)
         {
-        break;
+        StandardMetrics.ms_v_env_temp->SetValue(d[6] / 2.0 - 40);
         }
-      // TODO this temperature isn't quite right
-      int8_t ambient_temp = d[6] - 56; // Fahrenheit
-      ambient_temp = (ambient_temp - 32) / 1.8f; // Celsius
-      StandardMetrics.ms_v_env_temp->SetValue(ambient_temp);
       break;
-    }
     case 0x54f:
       /* Climate control's measurement of temperature inside the car.
        * Subtracting 14 is a bit of a guess worked out by observing how
@@ -396,7 +372,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
        */
       if (d[0] != 20)
         {
-        StandardMetrics.ms_v_env_cabintemp->SetValue(d[0] / 2.0 - 14); // App label: CHARGER
+        StandardMetrics.ms_v_env_cabintemp->SetValue(d[0] / 2.0 - 14);
         }
       break;
     case 0x5bc:
@@ -458,7 +434,12 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
       break;
     case 0x5c0:
-      if (d[0] == 0x40)
+      /* Another "ambient" temperature, but this one reacts to outside changes
+       * quite slowly.  Seems likely it is battery pack temperature, as the rest
+       * of the packet is about charging.
+       * Effectively has only 7-bit precision, as the bottom bit is always 0.
+       */
+      if ( (d[0]>>6) == 1 )
         {
         StandardMetrics.ms_v_bat_temp->SetValue(d[2] / 2 - 40);
         }
@@ -485,16 +466,6 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
       if (d[6] != 0xff)
         {
         StandardMetrics.ms_v_env_footbrake->SetValue(d[6] / 1.39);
-        }
-      break;
-    case 0x355:
-      if (d[6] == 0x60)
-        {
-          m_odometer_units = Miles;
-        }
-      else if (d[6] == 0x40)
-        {
-          m_odometer_units = Kilometers;
         }
       break;
     case 0x385:
@@ -536,18 +507,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
     case 0x5c5:
       // This is the parking brake (which is foot-operated on some models).
       StandardMetrics.ms_v_env_handbrake->SetValue(d[0] & 4);
-      {
-      uint32_t odometer;
-      odometer = d[1];
-      odometer = odometer << 8;
-      odometer = odometer | d[2];
-      odometer = odometer << 8;
-      odometer = odometer | d[3];
-      if (m_odometer_units != Other)
-        {
-        StandardMetrics.ms_v_pos_odometer->SetValue(odometer, m_odometer_units);
-        }
-      }
+      StandardMetrics.ms_v_pos_odometer->SetValue(d[1] << 16 | d[2] << 8 | d[3]);
       break;
     case 0x60d:
       StandardMetrics.ms_v_door_trunk->SetValue(d[0] & 0x80);
@@ -557,6 +517,23 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_door_fl->SetValue(d[0] & 0x08);
       StandardMetrics.ms_v_env_headlights->SetValue((d[0] & 0x02) | // dip beam
                                                     (d[1] & 0x08)); // main beam
+      /* d[1] bits 1 and 2 indicate Start button states:
+       *   No brake:   off -> accessory -> on -> off
+       *   With brake: [off, accessory, on] -> ready to drive -> off
+       * Using "ready to drive" state to set ms_v_env_on seems sensible,
+       * though maybe "on, not ready to drive" should also count.
+       */
+      switch ((d[1]>>1) & 3)
+        {
+        case 0: // off
+        case 1: // accessory
+        case 2: // on (not ready to drive)
+          StandardMetrics.ms_v_env_on->SetValue(false);
+          break;
+        case 3: // ready to drive
+          StandardMetrics.ms_v_env_on->SetValue(true);
+          break;
+        }
       // The two lock bits are 0x10 driver door and 0x08 other doors.
       // We should only say "locked" if both are locked.
       StandardMetrics.ms_v_env_locked->SetValue( (d[2] & 0x18) == 0x18);
@@ -662,9 +639,9 @@ void OvmsVehicleNissanLeaf::Ticker1(uint32_t ticker)
   // the core framework?
   // perhaps interested code should be able to subscribe to "onChange" and
   // "onStale" events for each metric?
-  if (StandardMetrics.ms_v_env_on->IsStale())
+  if (StandardMetrics.ms_v_env_awake->IsStale())
     {
-    vehicle_nissanleaf_car_on(false);
+    StandardMetrics.ms_v_env_awake->SetValue(false);
     }
 
   if (nl_cc_off_ticker < (REMOTE_CC_TIME_GRID - REMOTE_CC_TIME_BATTERY)
