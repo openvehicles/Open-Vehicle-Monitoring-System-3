@@ -61,6 +61,8 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
 
   m_gids = MyMetrics.InitInt("xnl.v.bat.gids", SM_STALE_HIGH, 0);
   m_hx = MyMetrics.InitFloat("xnl.v.bat.hx", SM_STALE_HIGH, 0);
+  m_soc_new_car = MyMetrics.InitFloat("xnl.v.bat.soc.newcar", SM_STALE_HIGH, 0, Percentage);
+  m_soc_instrument = MyMetrics.InitFloat("xnl.v.bat.soc.instrument", SM_STALE_HIGH, 0, Percentage);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -334,6 +336,19 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           break;
         }
       break;
+    case 0x55b:
+    {
+      // Instrument Cluster SOC, 100% when battery is full
+      uint16_t soc10 = ((uint16_t) d[0] << 2) | ((d[1] & 0xc0) >> 6);
+      if (soc10 == 1023)
+        {
+        // ignore invalid data seen during startup
+        break;
+        }
+      float soc = soc10 / 10.0;
+      m_soc_instrument->SetValue(soc);
+      break;
+    }
     case 0x54b:
     {
       bool hvac_candidate;
@@ -377,6 +392,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x5bc:
     {
+      // gids + new car soc -- 100% when the battery is new and full
       uint16_t nl_gids = ((uint16_t) d[0] << 2) | ((d[1] & 0xc0) >> 6);
       if (nl_gids == 1023)
         {
@@ -388,7 +404,9 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       float wh_per_gid = MyConfig.GetParamValueFloat("xnl", "whPerGid", GEN_1_WH_PER_GID);
 
       m_gids->SetValue(nl_gids);
-      StandardMetrics.ms_v_bat_soc->SetValue((nl_gids * 100.0) / max_gids);
+      float soc_new_car = (nl_gids * 100.0) / max_gids;
+      m_soc_new_car->SetValue(soc_new_car);
+      StandardMetrics.ms_v_bat_soc->SetValue(soc_new_car);
       StandardMetrics.ms_v_bat_range_ideal->SetValue((nl_gids * wh_per_gid * km_per_kwh) / 1000);
     }
       break;
