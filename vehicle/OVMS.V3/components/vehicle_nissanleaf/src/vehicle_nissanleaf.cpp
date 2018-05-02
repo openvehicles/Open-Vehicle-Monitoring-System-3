@@ -434,9 +434,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
       break;
     case 0x5c0:
-      /* Another "ambient" temperature, but this one reacts to outside changes
-       * quite slowly.  Seems likely it is battery pack temperature, as the rest
-       * of the packet is about charging.
+      /* Battery Temperature as reported by the LBC.
        * Effectively has only 7-bit precision, as the bottom bit is always 0.
        */
       if ( (d[0]>>6) == 1 )
