@@ -54,6 +54,31 @@ static const char *TAG = "ota";
 
 OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
 
+int buildverscmp(std::string v1, std::string v2)
+  {
+  // compare canonical versions & check dirty state:
+  // - cut off "-dirty[…]" and/or "/<partition>/<tag>[…]"
+  // - if versions are equal and one of them is dirty, always return 1 (→update)
+  int dirtycnt = 0;
+  auto canonicalize = [&dirtycnt](std::string &v)
+    {
+    std::string::size_type p;
+    if ((p = v.find("-dirty")) != std::string::npos)
+      {
+      v.resize(p);
+      dirtycnt++;
+      }
+    else if ((p = v.find_first_of('/')) != std::string::npos)
+      v.resize(p);
+    };
+  canonicalize(v1);
+  canonicalize(v2);
+  int cmp = strverscmp(v1.c_str(), v2.c_str());
+  if (cmp == 0 && dirtycnt == 1)
+    return 1;
+  return cmp;
+  }
+
 void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   ota_info info;
@@ -69,11 +94,8 @@ void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     len += writer->printf("Firmware:          %s\n", info.version_firmware.c_str());
   if (info.version_server != "")
     {
-    auto p = info.version_firmware.find_first_of('/');
-    if (p != std::string::npos)
-      info.version_firmware.resize(p);
     len += writer->printf("Server Available:  %s%s\n", info.version_server.c_str(),
-      (strverscmp(info.version_server.c_str(),info.version_firmware.c_str()) > 0) ? " (is newer)" : "");
+      (buildverscmp(info.version_server,info.version_firmware) > 0) ? " (is newer)" : "");
     if (!info.changelog_server.empty())
       {
       writer->puts("");
@@ -673,10 +695,7 @@ bool OvmsOTA::AutoFlash(bool force)
       return false;
       }
 
-    auto p = info.version_firmware.find_first_of('/');
-    if (p != std::string::npos)
-      info.version_firmware.resize(p);
-    if (strverscmp(info.version_server.c_str(),info.version_firmware.c_str()) <= 0)
+    if (buildverscmp(info.version_server,info.version_firmware) <= 0)
       {
       ESP_LOGI(TAG,"AutoFlash: No new firmware available");
       return false;
