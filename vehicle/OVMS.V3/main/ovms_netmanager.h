@@ -33,6 +33,11 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "tcpip_adapter.h"
+extern "C"
+  {
+#include "lwip/netif.h"
+  };
 #include "ovms_events.h"
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
