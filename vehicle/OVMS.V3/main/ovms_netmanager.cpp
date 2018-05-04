@@ -423,6 +423,7 @@ static void MongooseRawTask(void *pvParameters)
 void OvmsNetManager::MongooseTask()
   {
   // Initialise the mongoose manager
+  ESP_LOGD(TAG, "MongooseTask starting");
   mg_mgr_init(&m_mongoose_mgr, NULL);
   MyEvents.SignalEvent("network.mgr.init",NULL);
 
@@ -433,8 +434,10 @@ void OvmsNetManager::MongooseTask()
     }
 
   // Shutdown cleanly
+  ESP_LOGD(TAG, "MongooseTask stopping");
   MyEvents.SignalEvent("network.mgr.stop",NULL);
   mg_mgr_free(&m_mongoose_mgr);
+  m_mongoose_task = NULL;
   vTaskDelete(NULL);
   }
 
@@ -454,6 +457,10 @@ void OvmsNetManager::StartMongooseTask()
     {
     if (m_network_any)
       {
+      // wait for previous task to finish shutting down:
+      while (m_mongoose_task)
+        vTaskDelay(pdMS_TO_TICKS(50));
+      // start new task:
       m_mongoose_running = true;
       xTaskCreatePinnedToCore(MongooseRawTask, "OVMS NetMan", 7*1024, (void*)this, 5, &m_mongoose_task, 1);
       AddTaskToMap(m_mongoose_task);
