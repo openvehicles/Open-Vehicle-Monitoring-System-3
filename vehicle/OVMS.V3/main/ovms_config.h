@@ -114,6 +114,9 @@ class OvmsConfig
     bool ismounted();
 
   protected:
+    void upgrade();
+
+  protected:
     bool m_mounted;
     esp_vfs_fat_mount_config_t m_store_fat;
     wl_handle_t m_store_wlh;
