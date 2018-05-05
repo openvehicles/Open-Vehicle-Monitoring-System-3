@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Webserver: setup wizard
 
 2018-05-01 MWJ  3.1.005  OTA release
 - Vehicle: 12V battery monitoring

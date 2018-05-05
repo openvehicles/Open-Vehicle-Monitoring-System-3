@@ -28,13 +28,26 @@ pre {
 .loading * {
   cursor: progress;
 }
+.checkmark {
+  color: #05b508;
+  font-size: 150%;
+  line-height: 100%;
+}
 .no-transition {
   -webkit-transition: none !important;
   -moz-transition: none !important;
   -ms-transition: none !important;
   -o-transition: none !important;
   transition: none !important;
-}​
+}
+.autoselect {
+  -webkit-touch-callout: all;
+  -webkit-user-select: all;
+  -khtml-user-select: all;
+  -moz-user-select: all;
+  -ms-user-select: all;
+  user-select: all;
+}
 .progress-bar.text-left {
   text-align: left;
 }

@@ -555,6 +555,7 @@ void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
   {
   info.version_firmware = "";
   info.version_server = "";
+  info.update_available = false;
   info.partition_running = "";
   info.partition_boot = "";
   info.changelog_server = "";
@@ -595,6 +596,9 @@ void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
         http.Disconnect();
         }
       }
+
+    if (buildverscmp(info.version_server, info.version_firmware) > 0)
+      info.update_available = true;
 
     const esp_partition_t *p = esp_ota_get_running_partition();
     if (p != NULL)

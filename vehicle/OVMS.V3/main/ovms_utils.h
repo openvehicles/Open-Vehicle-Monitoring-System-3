@@ -91,4 +91,11 @@ int FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsi
  */
 std::string json_encode(const std::string text);
 
+/**
+ * pwgen: simple password generator
+ * Note: take care to seed the pseudo random generator i.e. by
+ *  srand48(StdMetrics.ms_m_monotonic->AsInt() * StdMetrics.ms_m_freeram->AsInt());
+ */
+std::string pwgen(int length);
+
 #endif //#ifndef __UTILS_H__

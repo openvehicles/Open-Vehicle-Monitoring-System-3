@@ -394,6 +394,7 @@ class OvmsWebServer
     static void HandleLogin(PageEntry_t& p, PageContext_t& c);
     static void HandleLogout(PageEntry_t& p, PageContext_t& c);
     static void OutputReboot(PageEntry_t& p, PageContext_t& c);
+    static void OutputReconnect(PageEntry_t& p, PageContext_t& c, const char* info=NULL);
   
   public:
     static void HandleStatus(PageEntry_t& p, PageContext_t& c);
@@ -414,7 +415,18 @@ class OvmsWebServer
     static void HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgFirmware(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgLogging(PageEntry_t& p, PageContext_t& c);
-  
+
+  public:
+    static void HandleCfgInit(PageEntry_t& p, PageContext_t& c);
+    static std::string CfgInitSetStep(std::string step, int timeout=0);
+    void CfgInitTicker();
+    std::string CfgInit1(PageEntry_t& p, PageContext_t& c, std::string step);
+    std::string CfgInit2(PageEntry_t& p, PageContext_t& c, std::string step);
+    std::string CfgInit3(PageEntry_t& p, PageContext_t& c, std::string step);
+    std::string CfgInit4(PageEntry_t& p, PageContext_t& c, std::string step);
+    std::string CfgInit5(PageEntry_t& p, PageContext_t& c, std::string step);
+
+
   public:
     bool                      m_running;
 
@@ -431,6 +443,8 @@ class OvmsWebServer
     SemaphoreHandle_t         m_client_mutex;
     WebSocketSlots            m_client_slots;
     TimerHandle_t             m_update_ticker;
+    
+    int                       m_init_timeout;
 };
 
 extern OvmsWebServer MyWebServer;

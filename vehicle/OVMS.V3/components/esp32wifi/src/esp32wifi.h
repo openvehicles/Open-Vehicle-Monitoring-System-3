@@ -71,6 +71,7 @@ class esp32wifi : public pcp
     void Scan(OvmsWriter* writer);
     esp32wifi_mode_t GetMode();
     std::string GetSSID();
+    std::string GetAPSSID();
 
   public:
     void EventWifiGotIp(std::string event, void* data);
