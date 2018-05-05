@@ -684,11 +684,13 @@ bool OvmsCommandApp::SetLogfile(std::string path)
       ESP_LOGE(TAG, "SetLogfile: '%s' is a protected path", path.c_str());
       return false;
       }
+#ifdef CONFIG_OVMS_COMP_SDCARD
     if (startsWith(path, "/sd") && (!MyPeripherals || !MyPeripherals->m_sdcard || !MyPeripherals->m_sdcard->isavailable()))
       {
       ESP_LOGW(TAG, "SetLogfile: cannot open '%s', will retry on SD mount", path.c_str());
       return false;
       }
+#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
     struct stat st;
     if (stat(path.c_str(), &st) == 0)
       m_logfile_size = st.st_size;
