@@ -198,8 +198,8 @@ void OvmsVehicleRenaultTwizy::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
     }
     if (!cap_act_prc.empty()) {
       float n = atof(cap_act_prc.c_str());
-      if (n < 1 || n > 100)
-        error += "<li data-input=\"cap_act_prc\">Actual capacity percentage invalid (range 1…100)</li>";
+      if (n < 1 || n > 120)
+        error += "<li data-input=\"cap_act_prc\">Actual capacity percentage invalid (range 1…120)</li>";
     }
     if (!maxrange.empty()) {
       float n = atof(maxrange.c_str());
@@ -263,7 +263,7 @@ void OvmsVehicleRenaultTwizy::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
     "<p>This is the usable capacity of your battery when new.</p>",
     "min=\"1\" step=\"0.1\"", "Ah");
   c.input("number", "Actual capacity", "cap_act_prc", cap_act_prc.c_str(), "Default: 100",
-    NULL, "min=\"1\" max=\"100\" step=\"0.01\"", "%");
+    NULL, "min=\"1\" max=\"120\" step=\"0.01\"", "%");
   
   c.input("number", "Maximum drive range", "maxrange", maxrange.c_str(), "Default: " XSTR(CFG_DEFAULT_MAXRANGE),
     "<p>The range you normally get at 100% SOC and 20 °C.</p>",
