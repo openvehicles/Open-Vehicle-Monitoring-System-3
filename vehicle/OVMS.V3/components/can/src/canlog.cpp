@@ -140,11 +140,13 @@ bool canlog::Open(std::string path)
     ESP_LOGE(TAG, "canlog[%s].Open: protected path '%s'", GetType(), path.c_str());
     return false;
     }
+#ifdef CONFIG_OVMS_COMP_SDCARD
   if (startsWith(path, "/sd") && (!MyPeripherals || !MyPeripherals->m_sdcard || !MyPeripherals->m_sdcard->isavailable()))
     {
     ESP_LOGE(TAG, "canlog[%s].Open: cannot open '%s', SD filesystem not available", GetType(), path.c_str());
     return false;
     }
+#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
   FILE* file = fopen(path.c_str(), "w");
   if (!file)
