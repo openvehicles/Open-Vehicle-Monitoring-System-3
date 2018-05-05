@@ -540,10 +540,10 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
   c.input_text("Time zone", "timezone", timezone.c_str(), "optional, default UTC",
     "<p>Web links: <a target=\"_blank\" href=\"https://remotemonitoringsystems.ca/time-zone-abbreviations.php\">Example Timezone Strings</a>, "
     "<a target=\"_blank\" href=\"https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html\">Glibc manual</a></p>");
-  c.input_select_start("Distance units", "units_distance");
-  c.input_select_option("Kilometers", "K", units_distance == "K");
-  c.input_select_option("Miles", "M", units_distance == "M");
-  c.input_select_end();
+  c.input_radiobtn_start("Distance units", "units_distance");
+  c.input_radiobtn_option("units_distance", "Kilometers", "K", units_distance == "K");
+  c.input_radiobtn_option("units_distance", "Miles", "M", units_distance == "M");
+  c.input_radiobtn_end();
   c.input_button("default", "Save");
   c.form_end();
   c.panel_end();
