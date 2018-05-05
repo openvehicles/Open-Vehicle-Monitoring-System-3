@@ -108,6 +108,9 @@ struct PageContext
   void input_radio_start(const char* label, const char* name);
   void input_radio_option(const char* name, const char* label, const char* value, bool selected);
   void input_radio_end(const char* helptext=NULL);
+  void input_radiobtn_start(const char* label, const char* name);
+  void input_radiobtn_option(const char* name, const char* label, const char* value, bool selected);
+  void input_radiobtn_end(const char* helptext=NULL);
   void input_checkbox(const char* label, const char* name, bool value, const char* helptext=NULL);
   void input_slider(const char* label, const char* name, int size, const char* unit,
     int enabled, double value, double defval, double min, double max, double step=1,

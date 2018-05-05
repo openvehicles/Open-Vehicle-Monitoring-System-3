@@ -210,7 +210,7 @@ void PageContext::input_select_end(const char* helptext /*=NULL*/) {
     , helptext ? "</span>" : "");
 }
 
-void PageContext::input_radio_start(const char* label, const char* name) {
+void PageContext::input_radiobtn_start(const char* label, const char* name) {
   mg_printf_http_chunk(nc,
     "<div class=\"form-group\">"
       "<label class=\"control-label col-sm-3\" for=\"input-%s\">%s:</label>"
@@ -219,7 +219,7 @@ void PageContext::input_radio_start(const char* label, const char* name) {
     , _attr(name), label, _attr(name));
 }
 
-void PageContext::input_radio_option(const char* name, const char* label, const char* value, bool selected) {
+void PageContext::input_radiobtn_option(const char* name, const char* label, const char* value, bool selected) {
   mg_printf_http_chunk(nc,
     "<label class=\"btn btn-default %s\">"
       "<input type=\"radio\" name=\"%s\" value=\"%s\" %s autocomplete=\"off\"> %s"
@@ -230,8 +230,31 @@ void PageContext::input_radio_option(const char* name, const char* label, const 
     , label);
 }
 
-void PageContext::input_radio_end(const char* helptext /*=NULL*/) {
+void PageContext::input_radiobtn_end(const char* helptext /*=NULL*/) {
   mg_printf_http_chunk(nc, "</div>%s%s%s</div></div>"
+    , helptext ? "<span class=\"help-block\">" : ""
+    , helptext ? helptext : ""
+    , helptext ? "</span>" : "");
+}
+
+void PageContext::input_radio_start(const char* label, const char* name) {
+  mg_printf_http_chunk(nc,
+    "<div class=\"form-group\">"
+      "<label class=\"control-label col-sm-3\" for=\"input-%s\">%s:</label>"
+      "<div class=\"col-sm-9\">"
+    , _attr(name), label, _attr(name));
+}
+
+void PageContext::input_radio_option(const char* name, const char* label, const char* value, bool selected) {
+  mg_printf_http_chunk(nc,
+    "<div class=\"radio\"><label><input type=\"radio\" name=\"%s\"" " value=\"%s\" %s>%s</label></div>"
+    , _attr(name), _attr(value)
+    , selected ? "checked" : ""
+    , label);
+}
+
+void PageContext::input_radio_end(const char* helptext /*=NULL*/) {
+  mg_printf_http_chunk(nc, "%s%s%s</div></div>"
     , helptext ? "<span class=\"help-block\">" : ""
     , helptext ? helptext : ""
     , helptext ? "</span>" : "");

@@ -284,10 +284,10 @@ void OvmsVehicleRenaultTwizy::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   c.input_select_option("2300W", "7", chargelevel == "7");
   c.input_select_end();
 
-  c.input_radio_start("Charge limit mode", "chargemode");
-  c.input_radio_option("chargemode", "Notify", "0", chargemode == "0");
-  c.input_radio_option("chargemode", "Stop", "1", chargemode == "1");
-  c.input_radio_end();
+  c.input_radiobtn_start("Charge limit mode", "chargemode");
+  c.input_radiobtn_option("chargemode", "Notify", "0", chargemode == "0");
+  c.input_radiobtn_option("chargemode", "Stop", "1", chargemode == "1");
+  c.input_radiobtn_end();
   
   c.input_slider("Sufficient range", "suffrange", 3, "km",
     atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 0, 0, 200, 1,
