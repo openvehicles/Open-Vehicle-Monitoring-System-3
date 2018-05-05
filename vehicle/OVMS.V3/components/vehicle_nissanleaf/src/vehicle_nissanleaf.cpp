@@ -40,6 +40,14 @@ static const char *TAG = "v-nissanleaf";
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
 
+
+static const OvmsVehicle::poll_pid_t obdii_polls[] =
+  {
+    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, {  0,999,999 } }, // VIN [19]
+    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 61, 61 } }, // bat [39]
+    { 0, 0, 0x00, 0x00, { 0, 0, 0 } }
+  };
+
 typedef enum
   {
   CHARGER_STATUS_IDLE,
@@ -64,6 +72,8 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
+  PollSetPidList(m_can2,obdii_polls);
+  PollSetState(0);
 
   MyConfig.RegisterParam("xnl", "Nissan Leaf", true, true);
   ConfigChanged(NULL);
@@ -150,89 +160,104 @@ void vehicle_nissanleaf_charger_status(ChargerStatus status)
     }
   }
 
-////////////////////////////////////////////////////////////////////////
-// PollStart()
-// Send the initial message to poll for data. Further data is requested
-// in vehicle_nissanleaf_poll_continue() after the recept of each page.
-//
-
-void OvmsVehicleNissanLeaf::PollStart(void)
+static void PollReply_Battery(uint16_t reply_id, uint8_t reply_data[], uint16_t reply_len)
   {
-  // Request Group 1
-  uint8_t data[] = {0x02, 0x21, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00};
-  nl_poll_state = ZERO;
-  m_can1->WriteStandard(0x79b, 8, data);
+  if(reply_len != 39)
+    {
+    ESP_LOGI(TAG, "PollReply_Battery: len=%d != 39", reply_len);
+    return;
+    }
+  //  > 0x79b 21 01
+  //  < 0x7bb 61 01
+  // [ 0.. 5] 0000020d 0287
+  // [ 6..15] 00000363 ffffffff001c
+  // [16..23] 2af89a89 2e4b 03a4
+  // [24..31] 005c 269a 000ecf81
+  // [33..38] 0009d7b0 800001
+
+  uint16_t hx = (reply_data[26] << 8)
+              |  reply_data[27];
+  //m_hx->SetValue(hx / 100.0);
+  StandardMetrics.ms_v_bat_soh->SetValue(hx / 100.0);
+
+  uint32_t ah = (reply_data[33] << 16)
+              | (reply_data[34] << 8)
+              |  reply_data[35];
+  StandardMetrics.ms_v_bat_cac->SetValue(ah / 10000.0);
+  ESP_LOGI(TAG, "PollReply_Battery: len=%d hx=%d ah=%d", reply_len, hx, ah);
+
+  // there may be a way to get the SoH directly from the BMS, but for now
+  // divide by a configurable battery size
+  float newCarAh = MyConfig.GetParamValueFloat("xnl", "newCarAh", GEN_1_NEW_CAR_AH);
+  StandardMetrics.ms_v_bat_soh->SetValue(ah / newCarAh * 100);
   }
 
-////////////////////////////////////////////////////////////////////////
-// vehicle_nissanleaf_poll_continue()
-// Process a 0x7bb polling response and request the next page
-//
-
-void OvmsVehicleNissanLeaf::PollContinue(CAN_frame_t* p_frame)
+static void PollReply_VIN(uint16_t reply_id, uint8_t reply_data[], uint16_t reply_len)
   {
-  uint8_t *d = p_frame->data.u8;
-  if (nl_poll_state == IDLE)
+  if(reply_len != 19)
     {
-    // we're not expecting anything, maybe something else is polling?
+    ESP_LOGI(TAG, "PollReply_VIN: len=%d != 19", reply_len);
     return;
     }
-  if ((d[0] & 0x0f) != nl_poll_state)
+  //  > 0x797 21 81
+  //  < 0x79a 61 81
+  // [ 0..16] 53 4a 4e 46 41 41 5a 45 30 55 3X 3X 3X 3X 3X 3X 3X
+  // [17..18] 00 00
+
+  StandardMetrics.ms_v_vin->SetValue((char*)reply_data);
+  ESP_LOGI(TAG, "PollReply_VIN: len=%d vin='%s'", reply_len, (char*)reply_data);
+  }
+
+void OvmsVehicleNissanLeaf::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain)
+  {
+  static int last_pid = -1;
+  static int last_remain = -1;
+  static uint8_t buf[80];
+  static int bufpos = 0;
+
+  int i;
+
+  // all this is only for debug
+  char dd[8*3+1];
+  for(i=0; i<length && i<8; i++)
+    snprintf(dd+i*3, 4, "%02x ", data[i]);
+  ESP_LOGI(TAG, "IncomingPollReply: type=%d pid=%#x data=[%s] len=%d remain=%d", type, pid, dd, length, remain);
+
+  if(pid == last_pid && remain < last_remain)
     {
-    // not the page we were expecting, abort
-    nl_poll_state = IDLE;
-    return;
+    ESP_LOGI(TAG, "IncomingPollReply: continuing pid %#x, pos=%d", pid, bufpos);
     }
-
-  switch (nl_poll_state)
+  else
     {
-    case IDLE:
-      // this isn't possible due to the idle check above
-      abort();
-    case ZERO:
-    case ONE:
-    case TWO:
-    case THREE:
-      // TODO this might not be idomatic C++ but I want to keep the delta to
-      // the v2 code small until the porting is finished
-      nl_poll_state = static_cast<PollState>(static_cast<int>(nl_poll_state) + 1);
-      break;
-    case FOUR:
+    if (last_pid >=0 )
       {
-        uint16_t hx;
-        hx = d[2];
-        hx = hx << 8;
-        hx = hx | d[3];
-        m_hx->SetValue(hx / 100.0);
-
-        nl_poll_state = static_cast<PollState>(static_cast<int>(nl_poll_state) + 1);
+      ESP_LOGI(TAG, "IncomingPollReply: abandoned partial pid %#x (%d stored, %d remained)", last_pid, bufpos, last_remain);
+      }
+    ESP_LOGI(TAG, "IncomingPollReply: starting new pid %#x", pid);
+    last_pid=pid;
+    last_remain=remain;
+    bufpos=0;
+    }
+  for(i=0; i<length; i++)
+    {
+    if( bufpos < sizeof(buf) ) buf[bufpos++] = data[i];
+    }
+  if(remain==0)
+    {
+    switch (pid)
+      {
+      case 0x01: // battery
+        PollReply_Battery(pid, buf, bufpos);
+        break;
+      case 0x81: // VIN
+        PollReply_VIN(pid, buf, bufpos);
+        break;
+      default:
         break;
       }
-    case FIVE:
-      {
-        uint32_t ah10000;
-        ah10000 = d[2];
-        ah10000 = ah10000 << 8;
-        ah10000 = ah10000 | d[3];
-        ah10000 = ah10000 << 8;
-        ah10000 = ah10000 | d[4];
-        float ah = ah10000 / 10000.0;
-        StandardMetrics.ms_v_bat_cac->SetValue(ah);
-
-        // there may be a way to get the SoH directly from the BMS, but for now
-        // divide by a configurable battery size
-        float newCarAh = MyConfig.GetParamValueFloat("xnl", "newCarAh", GEN_1_NEW_CAR_AH);
-        StandardMetrics.ms_v_bat_soh->SetValue(ah / newCarAh * 100);
-
-        nl_poll_state = IDLE;
-        break;
-      }
-    }
-  if (nl_poll_state != IDLE)
-    {
-    // request the next page of data
-    uint8_t next[] = {0x30, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    m_can1->WriteStandard(0x79b, 8, next);
+    last_pid=-1;
+    last_remain=-1;
+    bufpos=0;
     }
   }
 
@@ -442,9 +467,6 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_bat_temp->SetValue(d[2] / 2 - 40);
         }
       break;
-    case 0x7bb:
-      PollContinue(p_frame);
-      break;
     }
   }
 
@@ -527,9 +549,11 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
         case 1: // accessory
         case 2: // on (not ready to drive)
           StandardMetrics.ms_v_env_on->SetValue(false);
+          PollSetState(0);
           break;
         case 3: // ready to drive
           StandardMetrics.ms_v_env_on->SetValue(true);
+          PollSetState(1);
           break;
         }
       // The two lock bits are 0x10 driver door and 0x08 other doors.
@@ -657,16 +681,6 @@ void OvmsVehicleNissanLeaf::Ticker1(uint32_t ticker)
   if (nl_cc_off_ticker == 1)
     {
     SendCommand(DISABLE_CLIMATE_CONTROL);
-    }
-  }
-
-void OvmsVehicleNissanLeaf::Ticker60(uint32_t ticker)
-  {
-  if (StandardMetrics.ms_v_env_on->AsBool())
-    {
-    // we only poll while the car is on -- polling at other times causes a
-    // relay to click
-    PollStart();
     }
   }
 
