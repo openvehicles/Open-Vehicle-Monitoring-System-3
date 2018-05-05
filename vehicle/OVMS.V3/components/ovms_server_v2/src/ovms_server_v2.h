@@ -55,7 +55,7 @@ class OvmsServerV2 : public OvmsServer
   public:
     virtual void SetPowerMode(PowerMode powermode);
     void Connect();
-    void SendLogin();
+    void SendLogin(struct mg_connection *nc);
     void Disconnect();
     void Reconnect(int connretry);
     size_t IncomingData(uint8_t* data, size_t len);
@@ -162,5 +162,6 @@ class OvmsServerV2Init
   };
 
 extern OvmsServerV2Init MyOvmsServerV2Init;
+extern OvmsServerV2 *MyOvmsServerV2;
 
 #endif //#ifndef __OVMS_SERVER_V2_H__

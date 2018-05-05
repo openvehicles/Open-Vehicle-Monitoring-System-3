@@ -178,7 +178,7 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
         {
         // Successful connection
         ESP_LOGI(TAG, "Connection successful");
-        if (MyOvmsServerV2) MyOvmsServerV2->SendLogin();
+        if (MyOvmsServerV2) MyOvmsServerV2->SendLogin(nc);
         }
       else
         {
@@ -196,8 +196,16 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
       ESP_LOGV(TAG, "OvmsServerV2MongooseCallback(MG_EV_CLOSE)");
       if (MyOvmsServerV2)
         {
-        MyOvmsServerV2->SetStatus("Disconnected", false, OvmsServerV2::WaitReconnect);
-        MyOvmsServerV2->Reconnect(20);
+        if (MyOvmsServerV2->m_state == OvmsServerV2::Authenticating)
+          {
+          MyOvmsServerV2->SetStatus("Authentication error (wrong ID/password)", false, OvmsServerV2::WaitReconnect);
+          MyOvmsServerV2->Reconnect(120);
+          }
+        else
+          {
+          MyOvmsServerV2->SetStatus("Disconnected", false, OvmsServerV2::WaitReconnect);
+          MyOvmsServerV2->Reconnect(20);
+          }
         }
       break;
     case MG_EV_RECV:
@@ -789,7 +797,7 @@ size_t OvmsServerV2::IncomingData(uint8_t* data, size_t len)
   return 0;
   }
 
-void OvmsServerV2::SendLogin()
+void OvmsServerV2::SendLogin(struct mg_connection *nc)
   {
   SetStatus("Logging in...", false, Authenticating);
 
@@ -815,7 +823,7 @@ void OvmsServerV2::SendLogin()
   ESP_LOGI(TAG, "Sending server login: %s",hello);
   strcat(hello,"\r\n");
 
-  mg_send(m_mgconn, hello, strlen(hello));
+  mg_send(nc, hello, strlen(hello));
   m_connretry = 30; // Give the server 30 seconds to respond
   }
 
