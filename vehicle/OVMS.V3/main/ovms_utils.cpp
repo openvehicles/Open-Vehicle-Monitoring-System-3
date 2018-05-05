@@ -268,10 +268,12 @@ int FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsi
  * json_encode: encode string for JSON transport (see http://www.json.org/)
  */
 std::string json_encode(const std::string text)
-{
+  {
   std::string buf;
-  for (int i=0; i<text.size(); i++) {
-    switch(text[i]) {
+  for (int i=0; i<text.size(); i++)
+    {
+    switch(text[i])
+      {
       case '\n':        buf += "\\n"; break;
       case '\r':        buf += "\\r"; break;
       case '\t':        buf += "\\t"; break;
@@ -280,7 +282,31 @@ std::string json_encode(const std::string text)
       case '\"':        buf += "\\\""; break;
       case '\\':        buf += "\\\\"; break;
       default:          buf += text[i]; break;
+      }
     }
-	}
 	return buf;
-}
+  }
+
+/**
+ * pwgen: simple password generator
+ * Note: take care to seed the pseudo random generator i.e. by
+ *  srand48(StdMetrics.ms_m_monotonic->AsInt() * StdMetrics.ms_m_freeram->AsInt());
+ */
+std::string pwgen(int length)
+  {
+  const char cs1[] = "abcdefghijklmnopqrstuvwxyz";
+  const char cs2[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const char cs3[] = "!@#$%^&*()_-=+;:,.?";
+  std::string res;
+  for (int i=0; i < length; i++)
+    {
+    double r = drand48();
+    if (r > 0.4)
+      res.push_back((char)cs1[(int)(drand48()*(sizeof(cs1)-1))]);
+    else if (r > 0.2)
+      res.push_back((char)cs2[(int)(drand48()*(sizeof(cs2)-1))]);
+    else
+      res.push_back((char)cs3[(int)(drand48()*(sizeof(cs3)-1))]);
+    }
+  return res;
+  }

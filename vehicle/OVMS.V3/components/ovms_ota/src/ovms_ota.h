@@ -40,6 +40,7 @@ struct ota_info
   {
   std::string version_firmware;
   std::string version_server;
+  bool update_available;
   std::string partition_running;
   std::string partition_boot;
   std::string changelog_server;

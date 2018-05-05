@@ -354,24 +354,6 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
  * HandleCfgPassword: change admin password
  */
 
-std::string pwgen(int length)
-{
-  const char cs1[] = "abcdefghijklmnopqrstuvwxyz";
-  const char cs2[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  const char cs3[] = "!@#$%^&*()_-=+;:,.?";
-  std::string res;
-  for (int i=0; i < length; i++) {
-    double r = drand48();
-    if (r > 0.4)
-      res.push_back((char)cs1[(int)(drand48()*(sizeof(cs1)-1))]);
-    else if (r > 0.2)
-      res.push_back((char)cs2[(int)(drand48()*(sizeof(cs2)-1))]);
-    else
-      res.push_back((char)cs3[(int)(drand48()*(sizeof(cs3)-1))]);
-  }
-  return res;
-}
-
 void OvmsWebServer::HandleCfgPassword(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
@@ -402,8 +384,6 @@ void OvmsWebServer::HandleCfgPassword(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("password", "module", newpass1);
       info += "<li>New module &amp; admin password has been set.</li>";
       
-      MyConfig.SetParamValueBool("password", "changed", true);
-      
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
       c.alert("success", info.c_str());
@@ -427,18 +407,13 @@ void OvmsWebServer::HandleCfgPassword(PageEntry_t& p, PageContext_t& c)
       "<p><strong>Warning:</strong> no admin password set. <strong>Web access is open to the public.</strong></p>"
       "<p>Please change your password now.</p>");
   }
-  else if (MyConfig.GetParamValueBool("password", "changed") == false) {
-    c.alert("danger",
-      "<p><strong>Warning:</strong> default password has not been changed yet. <strong>Web access is open to the public.</strong></p>"
-      "<p>Please change your password now.</p>");
-  }
   
   // create some random passwords:
   std::ostringstream pwsugg;
   srand48(StdMetrics.ms_m_monotonic->AsInt() * StdMetrics.ms_m_freeram->AsInt());
   pwsugg << "<p>Inspiration:";
   for (int i=0; i<5; i++)
-    pwsugg << " <code>" << c.encode_html(pwgen(12)) << "</code>";
+    pwsugg << " <code class=\"autoselect\">" << c.encode_html(pwgen(12)) << "</code>";
   pwsugg << "</p>";
   
   // generate form:
@@ -600,6 +575,30 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   c.head(200);
   c.panel_start("primary", "Modem configuration");
   c.form_start(p.uri);
+
+  std::string info;
+  std::string iccid = StdMetrics.ms_m_net_mdm_iccid->AsString();
+  if (!iccid.empty()) {
+    info = "<code class=\"autoselect\">" + iccid + "</code>";
+  } else {
+    info =
+      "<div class=\"receiver\">"
+        "<code class=\"autoselect\" data-metric=\"m.net.mdm.iccid\">(power modem on to read)</code>"
+        "&nbsp;"
+        "<button class=\"btn btn-default\" data-cmd=\"power simcom on\" data-target=\"#pso\" data-watchcnt=\"0\">Power modem on</button>"
+        "&nbsp;"
+        "<samp id=\"pso\" class=\"samp-inline\"></samp>"
+      "</div>"
+      "<script>"
+      "$(\".receiver\").on(\"msg:metrics\", function(e, update){"
+        "$(this).find(\"[data-metric]\").each(function(){"
+          "if (metrics[$(this).data(\"metric\")] != \"\" && $(this).text() != metrics[$(this).data(\"metric\")])"
+            "$(this).text(metrics[$(this).data(\"metric\")]);"
+        "});"
+      "}).trigger(\"msg:metrics\");"
+      "</script>";
+  }
+  c.input_info("SIM ICCID", info.c_str());
 
   c.fieldset_start("Internet");
   c.input_checkbox("Enable IP networking", "enable_net", enable_net);

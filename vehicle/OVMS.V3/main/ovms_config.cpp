@@ -160,6 +160,14 @@ OvmsConfig::OvmsConfig()
   cmd_config->RegisterCommand("rm","Remove parameter:instance",config_rm,"<param> {<instance> | *}",2,2,true);
 
   RegisterParam("password", "Password store", true, false);
+  RegisterParam("module", "Module configuration", true, true);
+  
+  // Migrate password/changed → module/init:
+  if (GetParamValueBool("password", "changed") == true)
+    {
+    SetParamValue("module", "init", "done");
+    DeleteInstance("password", "changed");
+    }
   }
 
 OvmsConfig::~OvmsConfig()

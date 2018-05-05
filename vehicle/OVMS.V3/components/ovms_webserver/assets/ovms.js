@@ -117,7 +117,7 @@ function getpage() {
 }
 
 var monitorTimer, last_monotonic = 0;
-var ws;
+var ws, ws_inhibit = 0;
 var metrics = {};
 var shellhist = [""], shellhpos = 0;
 
@@ -140,7 +140,10 @@ function initSocketConnection(){
 
 function monitorUpdate(){
   if (!ws || ws.readyState == ws.CLOSED){
-    initSocketConnection();
+    if (ws_inhibit != 0)
+      --ws_inhibit;
+    if (ws_inhibit == 0)
+      initSocketConnection();
   }
   var new_monotonic = parseInt(metrics["m.monotonic"]) || 0;
   if (new_monotonic < last_monotonic)

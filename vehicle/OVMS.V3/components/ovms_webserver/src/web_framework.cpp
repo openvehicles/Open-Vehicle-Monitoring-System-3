@@ -427,9 +427,8 @@ std::string OvmsWebServer::CreateMenu(PageContext_t& c)
 
 void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
 {
-  std::string main, config, vehicle;
-  
   // collect menu items:
+  std::string main, config, vehicle;
   for (PageEntry* e : MyWebServer.m_pagemap) {
     if (e->menu == PageMenu_Main)
       main += "<li><a class=\"btn btn-default\" href=\"" + std::string(e->uri) + "\" target=\"#main\">" + std::string(e->label) + "</a></li>";
@@ -439,15 +438,18 @@ void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
       vehicle += "<li><a class=\"btn btn-default\" href=\"" + std::string(e->uri) + "\" target=\"#main\">" + std::string(e->label) + "</a></li>";
   }
   
+  // show setup warning:
+  std::string init_step = MyConfig.GetParamValue("module", "init");
+  if (init_step.empty()) {
+    c.alert("danger",
+      "<p class=\"lead\">Initial module setup:</p>"
+      "<p>Your module is currently in <strong>insecure factory default</strong> configuration.</p>"
+      "<p><a class=\"btn btn-success\" href=\"/cfg/init\" target=\"#main\">Start setup now</a></p>");
+  }
   // show password warning:
-  if (MyConfig.GetParamValue("password", "module").empty()) {
+  else if (MyConfig.GetParamValue("password", "module").empty()) {
     c.alert("danger",
       "<p><strong>Warning:</strong> no admin password set. <strong>Web access is open to the public!</strong></p>"
-      "<p><a class=\"btn btn-success\" href=\"/cfg/password\" target=\"#main\">Change password now</a></p>");
-  }
-  else if (MyConfig.GetParamValueBool("password", "changed") == false) {
-    c.alert("danger",
-      "<p><strong>Warning:</strong> default password has not been changed yet. <strong>Web access is open to the public!</strong></p>"
       "<p><a class=\"btn btn-success\" href=\"/cfg/password\" target=\"#main\">Change password now</a></p>");
   }
   
@@ -477,13 +479,22 @@ void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
   c.panel_end();
   
   // check auto init, show warning if disabled:
-  if (!MyConfig.GetParamValueBool("auto", "init")) {
+  if (!MyConfig.GetParamValueBool("auto", "init", true)) {
     c.alert("warning", "<p><strong>Warning:</strong> auto start disabled. Check auto start configuration.</p>");
   }
 }
 
 void OvmsWebServer::HandleHome(PageEntry_t& p, PageContext_t& c)
 {
+  // redirect to setup wizard?
+  std::string init_step = MyConfig.GetParamValue("module", "init");
+  if (!init_step.empty() && init_step != "done") {
+    c.head(200);
+    c.print("<script>loaduri('#main', 'get', '/cfg/init');</script>");
+    c.done();
+    return;
+  }
+  
   c.head(200);
   c.alert("info", "<p class=\"lead\">Welcome to the OVMS web console.</p>");
   OutputHome(p, c);
@@ -567,9 +578,10 @@ void OvmsWebServer::OutputReboot(PageEntry_t& p, PageContext_t& c)
       "after(0.1, function(){"
         "var data = { \"command\": \"module reset\" };"
         "$.ajax({ \"type\": \"post\", \"url\": \"/api/execute\", \"data\": data,"
-          "\"timeout\": 15000,"
+          "\"timeout\": 60000,"
           "\"beforeSend\": function(){"
             "$(\"html\").addClass(\"loading\");"
+            "ws_inhibit = 10;"
             "ws.close();"
             "window.setInterval(function(){ $(\"#dots\").append(\"•\"); }, 1000);"
           "},"
@@ -579,6 +591,32 @@ void OvmsWebServer::OutputReboot(PageEntry_t& p, PageContext_t& c)
         "});"
       "});"
     "</script>");
+}
+
+
+/**
+ * OutputReconnect: output reconnect script
+ */
+void OvmsWebServer::OutputReconnect(PageEntry_t& p, PageContext_t& c, const char* info /*=NULL*/)
+{
+  c.printf(
+    "<div class=\"alert alert-warning\">"
+    "<p class=\"lead\">%s</p>"
+    "<p>The window will automatically reload when the browser reconnects to the module.</p>"
+    "<p id=\"dots\">•</p>"
+    "<script>"
+      "$(\"html\").addClass(\"loading\");"
+      "ws_inhibit = 10;"
+      "if (ws) ws.close();"
+      "window.setInterval(function(){"
+        "if (ws && ws.readyState == ws.OPEN){"
+          "location.reload();"
+        "} else {"
+          "$(\"#dots\").append(\"•\");"
+        "}"
+      "}, 1000);"
+    "</script>"
+    , info ? info : "Reconnecting…");
 }
 
 
