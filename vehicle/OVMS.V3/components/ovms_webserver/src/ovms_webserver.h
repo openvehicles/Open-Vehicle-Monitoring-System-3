@@ -417,6 +417,7 @@ class OvmsWebServer
     static void HandleCfgLogging(PageEntry_t& p, PageContext_t& c);
 
   public:
+    void CfgInitStartup();
     static void HandleCfgInit(PageEntry_t& p, PageContext_t& c);
     static std::string CfgInitSetStep(std::string step, int timeout=0);
     void CfgInitTicker();
