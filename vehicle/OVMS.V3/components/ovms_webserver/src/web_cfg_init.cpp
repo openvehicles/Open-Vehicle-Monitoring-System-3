@@ -657,7 +657,7 @@ std::string OvmsWebServer::CfgInit3(PageEntry_t& p, PageContext_t& c, std::strin
   c.panel_start("primary", "Step 3/5: Update Firmware");
   c.form_start(p.uri);
   c.input_radio_start("Update server", "server");
-  c.input_radio_option("server", "Hong Kong (openvehicles.com)",
+  c.input_radio_option("server", "Asia-Pacific (openvehicles.com)",
     "api.openvehicles.com/firmware/ota" , server == "api.openvehicles.com/firmware/ota");
   c.input_radio_option("server", "Europe (dexters-web.de)",
     "ovms.dexters-web.de/firmware/ota", server == "ovms.dexters-web.de/firmware/ota");
@@ -840,7 +840,7 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
   c.input_radio_start("OVMS data server", "server");
   c.input_radio_option("server", "No server connection", "" , server == "");
   c.input_radio_option("server",
-    "Hong Kong (openvehicles.com) <a href=\"https://www.openvehicles.com/user/register\" target=\"_blank\">Registration</a>",
+    "Asia-Pacific (openvehicles.com) <a href=\"https://www.openvehicles.com/user/register\" target=\"_blank\">Registration</a>",
     "api.openvehicles.com" , server == "api.openvehicles.com");
   c.input_radio_option("server",
     "Europe (dexters-web.de) <a href=\"https://dexters-web.de/?action=NewAccount\" target=\"_blank\">Registration</a>",
