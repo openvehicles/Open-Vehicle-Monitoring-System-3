@@ -417,32 +417,38 @@ void simcom::State1Enter(SimcomState1 newstate)
       break;
     case PoweringOn:
       ESP_LOGI(TAG,"State: Enter PoweringOn state");
+      MyEvents.SignalEvent("system.modem.poweringon", NULL);
       PowerCycle();
       m_state1_timeout_ticks = 20;
       m_state1_timeout_goto = PoweringOn;
       break;
     case PoweredOn:
       ESP_LOGI(TAG,"State: Enter PoweredOn state");
+      MyEvents.SignalEvent("system.modem.poweredon", NULL);
       m_state1_timeout_ticks = 30;
       m_state1_timeout_goto = PoweringOn;
       break;
     case MuxStart:
       ESP_LOGI(TAG,"State: Enter MuxStart state");
+      MyEvents.SignalEvent("system.modem.muxstart", NULL);
       m_state1_timeout_ticks = 120;
       m_state1_timeout_goto = PoweringOn;
       m_mux.Start();
       break;
     case NetWait:
       ESP_LOGI(TAG,"State: Enter NetWait state");
+      MyEvents.SignalEvent("system.modem.netwait", NULL);
       m_nmea.Startup(m_gps_required);
       break;
     case NetStart:
       ESP_LOGI(TAG,"State: Enter NetStart state");
+      MyEvents.SignalEvent("system.modem.netstart", NULL);
       m_state1_timeout_ticks = 30;
       m_state1_timeout_goto = PowerOffOn;
       break;
     case NetLoss:
       ESP_LOGI(TAG,"State: Enter NetLoss state");
+      MyEvents.SignalEvent("system.modem.netloss", NULL);
       m_state1_timeout_ticks = 10;
       m_state1_timeout_goto = NetWait;
       m_mux.tx(GSM_MUX_CHAN_POLL, "AT+CGATT=0\r\n");
@@ -450,19 +456,23 @@ void simcom::State1Enter(SimcomState1 newstate)
       break;
     case NetHold:
       ESP_LOGI(TAG,"State: Enter NetHold state");
+      MyEvents.SignalEvent("system.modem.nethold", NULL);
       break;
     case NetSleep:
       ESP_LOGI(TAG,"State: Enter NetSleep state");
+      MyEvents.SignalEvent("system.modem.netsleep", NULL);
       m_ppp.Shutdown();
       m_nmea.Shutdown();
       break;
     case NetMode:
       ESP_LOGI(TAG,"State: Enter NetMode state");
+      MyEvents.SignalEvent("system.modem.netmode", NULL);
       m_ppp.Initialise();
       m_ppp.Connect();
       break;
     case NetDeepSleep:
       ESP_LOGI(TAG,"State: Enter NetDeepSleep state");
+      MyEvents.SignalEvent("system.modem.netdeepsleep", NULL);
       m_ppp.Shutdown();
       m_nmea.Shutdown();
       break;
@@ -477,6 +487,7 @@ void simcom::State1Enter(SimcomState1 newstate)
       break;
     case PoweredOff:
       ESP_LOGI(TAG,"State: Enter PoweredOff state");
+      MyEvents.SignalEvent("system.modem.poweredoff", NULL);
       if (MyBoot.IsShuttingDown()) MyBoot.RestartReady(TAG);
       m_mux.Stop();
       break;
