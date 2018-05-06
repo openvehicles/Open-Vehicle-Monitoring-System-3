@@ -399,9 +399,9 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
 
         // new car soc -- 100% when the battery is new, less when it's degraded
         uint16_t max_gids = MyConfig.GetParamValueInt("xnl", "maxGids", GEN_1_NEW_CAR_GIDS);
-
         float soc_new_car = (nl_gids * 100.0) / max_gids;
         m_soc_new_car->SetValue(soc_new_car);
+
         // we use the instrument cluster soc from 0x1db unless the user has opted otherwise
         if (MyConfig.GetParamValueBool("xnl", "soc.newcar", false))
           {
