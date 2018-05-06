@@ -122,13 +122,14 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.panel_start("primary", "Vehicle");
   output = ExecuteCommand("stat");
-  c.printf("<samp class=\"monitor\" id=\"vehicle-status\" data-updcmd=\"stat\">%s</samp>", _html(output));
+  c.printf("<samp class=\"monitor\" id=\"vehicle-status\" data-updcmd=\"stat\" data-events=\"vehicle.charge\">%s</samp>", _html(output));
   output = ExecuteCommand("location status");
-  c.printf("<samp>%s</samp>", _html(output));
+  c.printf("<samp class=\"monitor\" data-updcmd=\"location status\" data-events=\"gps.lock|location\">%s</samp>", _html(output));
   c.panel_end(
     "<ul class=\"list-inline\">"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#vehicle-status\" data-cmd=\"charge start\">Start charge</button></li>"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#vehicle-status\" data-cmd=\"charge stop\">Stop charge</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#vehicle-cmdres\" data-cmd=\"charge start\">Start charge</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#vehicle-cmdres\" data-cmd=\"charge stop\">Stop charge</button></li>"
+      "<li><samp id=\"vehicle-cmdres\" class=\"samp-inline\"></samp></li>"
     "</ul>");
 
   c.print(
@@ -140,16 +141,17 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
   c.panel_start("primary", "Server");
   output = ExecuteCommand("server v2 status");
   if (!startsWith(output, "Unrecognised"))
-    c.printf("<samp class=\"monitor\" id=\"server-v2\" data-updcmd=\"server v2 status\">%s</samp>", _html(output));
+    c.printf("<samp class=\"monitor\" id=\"server-v2\" data-updcmd=\"server v2 status\" data-events=\"server.v2\">%s</samp>", _html(output));
   output = ExecuteCommand("server v3 status");
   if (!startsWith(output, "Unrecognised"))
-    c.printf("<samp class=\"monitor\" id=\"server-v3\" data-updcmd=\"server v3 status\">%s</samp>", _html(output));
+    c.printf("<samp class=\"monitor\" id=\"server-v3\" data-updcmd=\"server v3 status\" data-events=\"server.v3\">%s</samp>", _html(output));
   c.panel_end(
     "<ul class=\"list-inline\">"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#server-v2\" data-cmd=\"server v2 start\">Start V2</button></li>"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#server-v2\" data-cmd=\"server v2 stop\">Stop V2</button></li>"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#server-v3\" data-cmd=\"server v3 start\">Start V3</button></li>"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#server-v3\" data-cmd=\"server v3 stop\">Stop V3</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#server-cmdres\" data-cmd=\"server v2 start\">Start V2</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#server-cmdres\" data-cmd=\"server v2 stop\">Stop V2</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#server-cmdres\" data-cmd=\"server v3 start\">Start V3</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#server-cmdres\" data-cmd=\"server v3 stop\">Stop V3</button></li>"
+      "<li><samp id=\"server-cmdres\" class=\"samp-inline\"></samp></li>"
     "</ul>");
 
   c.print(
@@ -158,7 +160,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.panel_start("primary", "Wifi");
   output = ExecuteCommand("wifi status");
-  c.printf("<samp>%s</samp>", _html(output));
+  c.printf("<samp class=\"monitor\" data-updcmd=\"wifi status\" data-events=\"^system.wifi\">%s</samp>", _html(output));
   c.panel_end();
 
   c.print(
@@ -169,7 +171,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.panel_start("primary", "Network");
   output = ExecuteCommand("network status");
-  c.printf("<samp>%s</samp>", _html(output));
+  c.printf("<samp class=\"monitor\" data-updcmd=\"network status\" data-events=\"^network\">%s</samp>", _html(output));
   c.panel_end();
 
   c.print(
@@ -585,7 +587,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
       "<div class=\"receiver\">"
         "<code class=\"autoselect\" data-metric=\"m.net.mdm.iccid\">(power modem on to read)</code>"
         "&nbsp;"
-        "<button class=\"btn btn-default\" data-cmd=\"power simcom on\" data-target=\"#pso\" data-watchcnt=\"0\">Power modem on</button>"
+        "<button class=\"btn btn-default\" data-cmd=\"power simcom on\" data-target=\"#pso\">Power modem on</button>"
         "&nbsp;"
         "<samp id=\"pso\" class=\"samp-inline\"></samp>"
       "</div>"

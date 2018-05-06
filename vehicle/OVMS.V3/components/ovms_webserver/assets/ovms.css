@@ -15,6 +15,9 @@ samp {
   vertical-align: top;
   margin: 8px;
 }
+ul.list-inline samp {
+  margin: 2px 5px;
+}
 .monitor {
   min-height: 30px;
 }
@@ -58,6 +61,9 @@ pre {
 .list-inline>li {
   padding-left: 0;
   padding-bottom: 5px;
+}
+.panel-footer ul.list-inline {
+  margin-bottom: 0;
 }
 .navbar-brand>img {
   height: 34px;
