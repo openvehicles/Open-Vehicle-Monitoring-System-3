@@ -1118,6 +1118,11 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
           (frame->data.u8[2] == 0x40+m_poll_type)&&
           (frame->data.u8[3] == m_poll_pid))
         {
+        // First frame is 4 bytes header (2 ISO-TP, 2 OBDII), 4 bytes data:
+        // [first=1,lenH] [lenL] [type+40] [pid] [data0] [data1] [data2] [data3]
+        // Note that the value of 'len' includes the OBDII type and pid bytes,
+        // but we don't count these in the data we pass to IncomingPollReply.
+        //
         // First frame; send flow control frame:
         CAN_frame_t txframe;
         memset(&txframe,0,sizeof(txframe));
@@ -1142,12 +1147,13 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
         txframe.data.u8[2] = 0x19; // with 25ms send interval
         m_poll_bus->Write(&txframe);
 
-        // prepare frame processing, first frame contains first 3 bytes:
-        m_poll_ml_remain = (((uint16_t)(frame->data.u8[0]&0x0f))<<8) + frame->data.u8[1] - 3;
-        m_poll_ml_offset = 3;
+        // prepare frame processing, first frame contains first 4 bytes:
+        m_poll_ml_remain = (((uint16_t)(frame->data.u8[0]&0x0f))<<8) + frame->data.u8[1] - 2 - 4;
+        m_poll_ml_offset = 4;
         m_poll_ml_frame = 0;
+
         // ESP_LOGI(TAG, "Poll ML first frame (frame=%d, remain=%d)",m_poll_ml_frame,m_poll_ml_remain);
-        IncomingPollReply(m_poll_bus, m_poll_type, m_poll_pid, &frame->data.u8[5], 3, m_poll_ml_remain);
+        IncomingPollReply(m_poll_bus, m_poll_type, m_poll_pid, &frame->data.u8[4], 4, m_poll_ml_remain);
         return;
         }
       else if (((frame->data.u8[0]>>4)==0x2)&&(m_poll_ml_remain>0))
