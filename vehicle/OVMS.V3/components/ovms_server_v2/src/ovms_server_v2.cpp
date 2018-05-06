@@ -198,7 +198,7 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
         {
         if (MyOvmsServerV2->m_state == OvmsServerV2::Authenticating)
           {
-          MyOvmsServerV2->SetStatus("Authentication error (wrong ID/password)", false, OvmsServerV2::WaitReconnect);
+          MyOvmsServerV2->SetStatus("Authentication error (wrong ID/password)", true, OvmsServerV2::WaitReconnect);
           MyOvmsServerV2->Reconnect(120);
           }
         else
@@ -701,8 +701,37 @@ void OvmsServerV2::SetStatus(const char* status, bool fault, State newstate)
     ESP_LOGE(TAG, "Status: %s", status);
   else
     ESP_LOGI(TAG, "Status: %s", status);
-  if (newstate != Undefined) m_state = newstate;
   m_status = status;
+  if (newstate != Undefined)
+    {
+    m_state = newstate;
+    switch (m_state)
+      {
+      case OvmsServerV2::WaitNetwork:
+        MyEvents.SignalEvent("server.v2.waitnetwork", (void*)m_status.c_str(), m_status.length()+1);
+        break;
+      case OvmsServerV2::ConnectWait:
+        MyEvents.SignalEvent("server.v2.connectwait", (void*)m_status.c_str(), m_status.length()+1);
+        break;
+      case OvmsServerV2::Connecting:
+        MyEvents.SignalEvent("server.v2.connecting", (void*)m_status.c_str(), m_status.length()+1);
+        break;
+      case OvmsServerV2::Authenticating:
+        MyEvents.SignalEvent("server.v2.authenticating", (void*)m_status.c_str(), m_status.length()+1);
+        break;
+      case OvmsServerV2::Connected:
+        MyEvents.SignalEvent("server.v2.connected", (void*)m_status.c_str(), m_status.length()+1);
+        break;
+      case OvmsServerV2::Disconnected:
+        MyEvents.SignalEvent("server.v2.disconnected", (void*)m_status.c_str(), m_status.length()+1);
+        break;
+      case OvmsServerV2::WaitReconnect:
+        MyEvents.SignalEvent("server.v2.waitreconnect", (void*)m_status.c_str(), m_status.length()+1);
+        break;
+      default:
+        break;
+      }
+    }
   }
 
 void OvmsServerV2::Connect()
@@ -1709,6 +1738,7 @@ OvmsServerV2::~OvmsServerV2()
     delete m_buffer;
     m_buffer = NULL;
     }
+  MyEvents.SignalEvent("server.v2.stopped", NULL);
   }
 
 void OvmsServerV2::SetPowerMode(PowerMode powermode)
