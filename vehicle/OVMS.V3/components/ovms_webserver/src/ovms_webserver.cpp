@@ -51,9 +51,6 @@ OvmsWebServer::OvmsWebServer()
   m_running = false;
   memset(m_sessions, 0, sizeof(m_sessions));
   
-  // force init wizard timeout on reboot:
-  m_init_timeout = 5;
-
 #if MG_ENABLE_FILESYSTEM
   m_file_enable = true;
   memset(&m_file_opts, 0, sizeof(m_file_opts));
@@ -107,6 +104,8 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/cfg/autostart", "Autostart", HandleCfgAutoInit, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/firmware", "Firmware", HandleCfgFirmware, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/logging", "Logging", HandleCfgLogging, PageMenu_Config, PageAuth_Cookie);
+  
+  CfgInitStartup();
 }
 
 OvmsWebServer::~OvmsWebServer()

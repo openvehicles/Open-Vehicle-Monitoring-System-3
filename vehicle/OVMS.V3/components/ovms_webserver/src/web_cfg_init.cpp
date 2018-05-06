@@ -39,6 +39,7 @@ static const char *TAG = "webserver";
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
 #include "vehicle.h"
+#include "ovms_boot.h"
 #include "ovms_housekeeping.h"
 #include "ovms_ota.h"
 #include "ovms_peripherals.h"
@@ -130,6 +131,22 @@ void OvmsWebServer::HandleCfgInit(PageEntry_t& p, PageContext_t& c)
  * CfgInit state process
  */
 
+void OvmsWebServer::CfgInitStartup()
+{
+  std::string step = MyConfig.GetParamValue("module", "init");
+  if (!step.empty() && step != "done") {
+    if (MyBoot.GetEarlyCrashCount() > 0) {
+      // early crash: restore default access
+      ESP_LOGE(TAG, "CfgInit: early crash detected at step %s", step.c_str());
+      CfgInitSetStep("restore", 1);
+    }
+    else {
+      ESP_LOGI(TAG, "CfgInit: continue at step %s after reboot", step.c_str());
+      m_init_timeout = 5;
+    }
+  }
+}
+
 std::string OvmsWebServer::CfgInitSetStep(std::string step, int timeout /*=0*/)
 {
   ESP_LOGI(TAG, "CfgInitSetStep: step %s timeout %d", step.c_str(), timeout);
@@ -159,7 +176,7 @@ void OvmsWebServer::CfgInitTicker()
     std::string ap_pass = MyConfig.GetParamValue("wifi.ap", ap_ssid);
     if (ap_ssid.empty() || ap_pass.length() < 8) {
       ESP_LOGE(TAG, "CfgInitTicker: step 1: wifi AP config invalid");
-      CfgInitSetStep("1.test.connect", 1);
+      CfgInitSetStep("restore", 1);
     }
     else {
       ESP_LOGI(TAG, "CfgInitTicker: step 1: starting wifi AP '%s'", ap_ssid.c_str());
@@ -168,8 +185,13 @@ void OvmsWebServer::CfgInitTicker()
     }
   }
   else if (step == "1.test.connect") {
-    // config error / timeout waiting for user; revert to factory default AP & password:
-    ESP_LOGE(TAG, "CfgInitTicker: step 1: error/timeout; restoring default access");
+    // timeout waiting for user:
+    ESP_LOGE(TAG, "CfgInitTicker: step 1: timeout waiting for user at new AP");
+    CfgInitSetStep("restore", 1);
+  }
+  else if (step == "restore") {
+    // revert to factory default AP & password:
+    ESP_LOGE(TAG, "CfgInitTicker: restoring default access, AP 'OVMS'/'OVMSinit'");
     MyConfig.DeleteInstance("password", "module");
     MyConfig.DeleteInstance("auto", "wifi.mode");
     MyConfig.DeleteInstance("auto", "wifi.ssid.ap");
@@ -187,7 +209,7 @@ void OvmsWebServer::CfgInitTicker()
     std::string ap_pass = MyConfig.GetParamValue("wifi.ap", ap_ssid);
     if (ap_ssid.empty() || ap_pass.length() < 8) {
       ESP_LOGE(TAG, "CfgInitTicker: step 2: wifi AP config invalid, return to step 1");
-      CfgInitSetStep("1.test.connect", 1);
+      CfgInitSetStep("restore", 1);
       return;
     }
     std::string cl_ssid = MyConfig.GetParamValue("auto", "wifi.ssid.client");
@@ -356,9 +378,20 @@ std::string OvmsWebServer::CfgInit1(PageEntry_t& p, PageContext_t& c, std::strin
   
   if (step == "1.fail") {
     ESP_LOGI(TAG, "CfgInit1: AP test failed");
-    c.alert("warning",
-      "<p class=\"lead\">Something went wrong.</p>"
-      "<p>You did not connect to the new access point. Please check your ID and password and try again.</p>");
+    if (MyBoot.GetEarlyCrashCount() > 0) {
+      c.alert("warning",
+        "<p class=\"lead\">Crash reboot detected!</p>"
+        "<p><strong>Sorry, this really should not happen.</strong></p>"
+        "<p>Please check if the problem persists, if so note your configuration inputs"
+        " and ask for support on the OpenVehicles forum.</p>"
+        "<p>You can also try a different confiuration, as the problem is most probably"
+        " related to your specific setup.</p>");
+    }
+    else {
+      c.alert("warning",
+        "<p class=\"lead\">Something went wrong.</p>"
+        "<p>You did not connect to the new access point. Please check your ID and password and try again.</p>");
+    }
   }
 
   // Wizard status:
