@@ -133,8 +133,10 @@ function initSocketConnection(){
       $(".monitor[data-events]").each(function(){
         var cmd = $(this).data("updcmd");
         var evf = $(this).data("events");
-        if (cmd && evf && msg.event.match(evf))
+        if (cmd && evf && msg.event.match(evf)) {
+          $(this).data("updlast", now());
           loadcmd(cmd, $(this));
+        }
       });
     }
     else if (msg && msg.metrics) {
@@ -142,6 +144,17 @@ function initSocketConnection(){
       $(".receiver").trigger("msg:metrics", msg.metrics);
     }
   };
+}
+
+function monitorInit(force){
+  $(".monitor").each(function(){
+    var cmd = $(this).data("updcmd");
+    var txt = $(this).text();
+    if (cmd && (force || !txt)) {
+      $(this).data("updlast", now());
+      loadcmd(cmd, $(this));
+    }
+  });
 }
 
 function monitorUpdate(){
@@ -163,9 +176,9 @@ function monitorUpdate(){
     var cmd = $(this).data("updcmd");
     if (!cnt || !cmd || (now()-last) < int)
       return;
-    loadcmd(cmd, $(this));
     $(this).data("updcnt", cnt-1);
     $(this).data("updlast", now());
+    loadcmd(cmd, $(this));
   });
 }
 

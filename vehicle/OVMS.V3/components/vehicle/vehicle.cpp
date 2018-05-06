@@ -411,6 +411,7 @@ void OvmsVehicleFactory::ClearVehicle()
     delete m_currentvehicle;
     m_currentvehicle = NULL;
     StandardMetrics.ms_v_type->SetValue("");
+    MyEvents.SignalEvent("vehicle.type.cleared", NULL);
     }
   }
 
@@ -423,6 +424,7 @@ void OvmsVehicleFactory::SetVehicle(const char* type)
     }
   m_currentvehicle = NewVehicle(type);
   StandardMetrics.ms_v_type->SetValue(m_currentvehicle ? type : "");
+  MyEvents.SignalEvent("vehicle.type.set", (void*)type, strlen(type)+1);
   }
 
 void OvmsVehicleFactory::AutoInit()

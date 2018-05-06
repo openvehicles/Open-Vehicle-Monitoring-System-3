@@ -155,38 +155,62 @@ void OvmsWebServer::CfgInitTicker()
 
   if (step == "1.test.start") {
     // reconfigure wifi AP:
-    std::string moduleid = MyConfig.GetParamValue("vehicle", "id");
-    ESP_LOGI(TAG, "CfgInitTicker: step 1: starting wifi AP '%s'", moduleid.c_str());
-    MyPeripherals->m_esp32wifi->StartAccessPointMode(moduleid, MyConfig.GetParamValue("wifi.ap", moduleid));
-    CfgInitSetStep("1.test.connect", 300);
+    std::string ap_ssid = MyConfig.GetParamValue("vehicle", "id");
+    std::string ap_pass = MyConfig.GetParamValue("wifi.ap", ap_ssid);
+    if (ap_ssid.empty() || ap_pass.length() < 8) {
+      ESP_LOGE(TAG, "CfgInitTicker: step 1: wifi AP config invalid");
+      CfgInitSetStep("1.test.connect", 1);
+    }
+    else {
+      ESP_LOGI(TAG, "CfgInitTicker: step 1: starting wifi AP '%s'", ap_ssid.c_str());
+      MyPeripherals->m_esp32wifi->StartAccessPointMode(ap_ssid, ap_pass);
+      CfgInitSetStep("1.test.connect", 300);
+    }
   }
   else if (step == "1.test.connect") {
-    // timeout waiting for user; revert to factory default AP & password:
-    ESP_LOGE(TAG, "CfgInitTicker: step 1: timeout, reverting access configuration");
+    // config error / timeout waiting for user; revert to factory default AP & password:
+    ESP_LOGE(TAG, "CfgInitTicker: step 1: error/timeout; restoring default access");
+    MyConfig.DeleteInstance("password", "module");
     MyConfig.DeleteInstance("auto", "wifi.mode");
     MyConfig.DeleteInstance("auto", "wifi.ssid.ap");
-    std::string moduleid = MyConfig.GetParamValue("vehicle", "id");
-    MyConfig.DeleteInstance("wifi.ap", moduleid);
-    MyConfig.DeleteInstance("password", "module");
+    MyConfig.DeleteInstance("auto", "wifi.ssid.client");
+    MyConfig.DeleteInstance("wifi.ap", "OVMS");
+    std::string ssid = MyConfig.GetParamValue("vehicle", "id");
+    MyConfig.DeleteInstance("wifi.ap", ssid);
     MyPeripherals->m_esp32wifi->StartAccessPointMode("OVMS", "OVMSinit");
     CfgInitSetStep("1.fail");
   }
   
   else if (step == "2.test.start") {
     // reconfigure wifi to APCLIENT:
-    std::string moduleid = MyConfig.GetParamValue("vehicle", "id");
-    std::string ssid = MyConfig.GetParamValue("auto", "wifi.ssid.client");
-    ESP_LOGI(TAG, "CfgInitTicker: step 2: starting wifi APCLIENT '%s' / '%s'", moduleid.c_str(), ssid.c_str());
-    MyPeripherals->m_esp32wifi->StartAccessPointClientMode(
-      moduleid, MyConfig.GetParamValue("wifi.ap", moduleid),
-      ssid, MyConfig.GetParamValue("wifi.ssid", ssid));
-    CfgInitSetStep("2.test.connect", 20);
+    std::string ap_ssid = MyConfig.GetParamValue("vehicle", "id");
+    std::string ap_pass = MyConfig.GetParamValue("wifi.ap", ap_ssid);
+    if (ap_ssid.empty() || ap_pass.length() < 8) {
+      ESP_LOGE(TAG, "CfgInitTicker: step 2: wifi AP config invalid, return to step 1");
+      CfgInitSetStep("1.test.connect", 1);
+      return;
+    }
+    std::string cl_ssid = MyConfig.GetParamValue("auto", "wifi.ssid.client");
+    std::string cl_pass = MyConfig.GetParamValue("wifi.ssid", cl_ssid);
+    if (cl_ssid.empty() || cl_pass.empty()) {
+      ESP_LOGE(TAG, "CfgInitTicker: step 2: wifi client config invalid");
+      MyConfig.DeleteInstance("auto", "wifi.mode");
+      MyConfig.DeleteInstance("auto", "wifi.ssid.client");
+      CfgInitSetStep("2.fail.connect");
+    }
+    else {
+      ESP_LOGI(TAG, "CfgInitTicker: step 2: starting wifi APCLIENT '%s' / '%s'", ap_ssid.c_str(), cl_ssid.c_str());
+      MyPeripherals->m_esp32wifi->StartAccessPointClientMode(ap_ssid, ap_pass, cl_ssid, cl_pass);
+      CfgInitSetStep("2.test.connect", 20);
+    }
   }
   else if (step == "2.test.connect") {
     // test wifi client connection:
     std::string ssid = MyConfig.GetParamValue("auto", "wifi.ssid.client");
     if (MyPeripherals->m_esp32wifi->GetSSID() != ssid) {
-      ESP_LOGI(TAG, "CfgInitTicker: step 2: wifi connection to '%s' failed", ssid.c_str());
+      ESP_LOGI(TAG, "CfgInitTicker: step 2: wifi connection to '%s' failed, reverting to AP mode", ssid.c_str());
+      MyConfig.DeleteInstance("auto", "wifi.mode");
+      MyConfig.DeleteInstance("auto", "wifi.ssid.client");
       CfgInitSetStep("2.fail.connect");
     }
     else {
@@ -216,24 +240,20 @@ void OvmsWebServer::CfgInitTicker()
         CfgInitSetStep("4.fail.vehicle");
         return;
       }
-      if (!server.empty())
-        CfgInitSetStep("4.test.start", 3); // stage 2 after 3 seconds
-      else
-        CfgInitSetStep("5");
-      return;
+      CfgInitSetStep("4.test.start", 3); // stage 2 after 3 seconds
     }
-    else if (!server.empty()) {
-      // stage 2: start V2 server:
-      ESP_LOGI(TAG, "CfgInitTicker: step 4: starting server v2 for host '%s'", server.c_str());
+    else {
+      // stage 2: start/stop V2 server:
       if (MyOvmsServerV2) {
+        ESP_LOGI(TAG, "CfgInitTicker: step 4: stop server v2");
         delete MyOvmsServerV2;
         MyOvmsServerV2 = NULL;
       }
-      MyOvmsServerV2 = new OvmsServerV2("oscv2");
+      if (!server.empty()) {
+        ESP_LOGI(TAG, "CfgInitTicker: step 4: start server v2 for host '%s'", server.c_str());
+        MyOvmsServerV2 = new OvmsServerV2("oscv2");
+      }
       CfgInitSetStep("4.test.connect");
-    }
-    else {
-      CfgInitSetStep("5");
     }
   }
 
@@ -419,14 +439,17 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
     // check input:
     ssid = c.getvar("ssid");
     pass = c.getvar("pass");
+    if (pass.empty())
+      pass = MyConfig.GetParamValue("wifi.ssid", ssid);
 
     if (ssid.empty())
-      error += "<li data-input=\"moduleid\">The Wifi network ID must not be empty</li>";
+      error += "<li data-input=\"ssid\">The Wifi network ID must not be empty</li>";
+    if (pass.empty())
+      error += "<li data-input=\"pass\">The Wifi network password must not be empty</li>";
 
     if (error == "") {
       // OK, start test:
-      if (!pass.empty())
-        MyConfig.SetParamValue("wifi.ssid", ssid, pass);
+      MyConfig.SetParamValue("wifi.ssid", ssid, pass);
       MyConfig.SetParamValue("auto", "wifi.mode", "apclient");
       MyConfig.SetParamValue("auto", "wifi.ssid.client", ssid);
       c.alert("success", "<p class=\"lead\">OK.</p>");
@@ -726,9 +749,9 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
       MyConfig.SetParamValue("auto", "vehicle.type", vehicletype);
 
       // configure server:
+      MyConfig.SetParamValue("server.v2", "server", server);
       if (error == "" && !server.empty()) {
         MyConfig.SetParamValue("vehicle", "id", vehicleid);
-        MyConfig.SetParamValue("server.v2", "server", server);
         MyConfig.SetParamValue("server.v2", "password", password);
       }
 
@@ -779,8 +802,8 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
                 "<p>The module now configures the vehicle type, then tries to connect to the OVMS data server.</p>"
                 "<p>This may take a few seconds, the progress is shown below.</p>"
               "</div>"
-              "<pre class=\"monitor\" data-updcmd=\"vehicle status\" data-updcnt=\"3\" data-updint=\"2\"></pre>"
-              "<pre class=\"monitor\" data-updcmd=\"server v2 status\" data-updcnt=\"-1\" data-updint=\"2\"></pre>"
+              "<pre class=\"monitor\" data-updcmd=\"vehicle status\" data-events=\"vehicle.type\"></pre>"
+              "<pre class=\"monitor\" data-updcmd=\"server v2 status\" data-events=\"server.v2\"></pre>"
             "</div>"
             "<div class=\"modal-footer\">"
               "<button type=\"button\" class=\"btn btn-default\" name=\"action\" value=\"keep\">Keep &amp; proceed</button>"
@@ -791,6 +814,7 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
       "</div>"
       "<script>"
         "after(0.1, function(){"
+          "monitorInit();"
           "$(\"#test-dialog\").modal(\"show\");"
         "});"
         "$(\"#test-dialog button[name=action]\").on(\"click\", function(ev){"
@@ -951,7 +975,7 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
                 "<p>The modem is connected when <strong>State: NetMode</strong> and <strong>PPP connected</strong>"
                 " have been established.</p>"
               "</div>"
-              "<pre class=\"monitor\" data-updcmd=\"simcom status\" data-updcnt=\"-1\" data-updint=\"5\"></pre>"
+              "<pre class=\"monitor\" data-updcmd=\"simcom status\" data-events=\"system.modem\"></pre>"
             "</div>"
             "<div class=\"modal-footer\">"
               "<button type=\"button\" class=\"btn btn-default\" name=\"action\" value=\"keep\">Keep &amp; proceed</button>"
@@ -962,6 +986,7 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
       "</div>"
       "<script>"
         "after(0.1, function(){"
+          "monitorInit();"
           "$(\"#test-dialog\").modal(\"show\");"
         "});"
         "$(\"#test-dialog button[name=action]\").on(\"click\", function(ev){"
