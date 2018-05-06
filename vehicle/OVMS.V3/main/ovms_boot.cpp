@@ -169,6 +169,7 @@ Boot::Boot()
 
   // reset flags:
   boot_data.soft_reset = false;
+  boot_data.firmware_update = false;
   boot_data.stable_reached = false;
 
   // install error handler:
