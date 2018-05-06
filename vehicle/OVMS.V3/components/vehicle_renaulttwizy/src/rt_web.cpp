@@ -460,7 +460,7 @@ void OvmsVehicleRenaultTwizy::WebBattMon(PageEntry_t& p, PageContext_t& c)
       "</div>"
     "</div>"
     "<div class=\"panel-footer\">"
-      "<button class=\"btn btn-default\" data-cmd=\"xrt batt reset\" data-target=\"#output\" data-watchcnt=\"0\">Reset min/max</button>"
+      "<button class=\"btn btn-default\" data-cmd=\"xrt batt reset\" data-target=\"#output\">Reset min/max</button>"
       "<samp id=\"output\" class=\"samp-inline\"></samp>"
     "</div>"
     "</div>"

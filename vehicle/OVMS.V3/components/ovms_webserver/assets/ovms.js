@@ -130,6 +130,12 @@ function initSocketConnection(){
     msg = JSON.parse(ev.data);
     if (msg && msg.event) {
       $(".receiver").trigger("msg:event", msg.event);
+      $(".monitor[data-events]").each(function(){
+        var cmd = $(this).data("updcmd");
+        var evf = $(this).data("events");
+        if (cmd && evf && msg.event.match(evf))
+          loadcmd(cmd, $(this));
+      });
     }
     else if (msg && msg.metrics) {
       $.extend(metrics, msg.metrics);
@@ -232,7 +238,7 @@ $(function(){
     var btn = $(this);
     var cmd = btn.data("cmd");
     var tgt = btn.data("target");
-    var updcnt = btn.data("watchcnt") || 3;
+    var updcnt = btn.data("watchcnt") || 0;
     var updint = btn.data("watchint") || 2;
     btn.prop("disabled", true);
     $(tgt).data("updcnt", 0);

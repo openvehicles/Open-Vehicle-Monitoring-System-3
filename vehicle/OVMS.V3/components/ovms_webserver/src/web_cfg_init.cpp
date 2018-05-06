@@ -995,7 +995,7 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
       "<div class=\"receiver\">"
         "<code class=\"autoselect\" data-metric=\"m.net.mdm.iccid\">(power modem on to read)</code>"
         "&nbsp;"
-        "<button class=\"btn btn-default\" data-cmd=\"power simcom on\" data-target=\"#pso\" data-watchcnt=\"0\">Power modem on</button>"
+        "<button class=\"btn btn-default\" data-cmd=\"power simcom on\" data-target=\"#pso\">Power modem on</button>"
         "&nbsp;"
         "<samp id=\"pso\" class=\"samp-inline\"></samp>"
       "</div>"
