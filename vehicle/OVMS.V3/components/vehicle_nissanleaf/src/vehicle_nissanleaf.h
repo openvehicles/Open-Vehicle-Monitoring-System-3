@@ -49,17 +49,6 @@ using namespace std;
 
 typedef enum
   {
-  ZERO = 0,
-  ONE = 1,
-  TWO = 2,
-  THREE = 3,
-  FOUR = 4,
-  FIVE = 5,
-  IDLE = 6
-  } PollState;
-
-typedef enum
-  {
   ENABLE_CLIMATE_CONTROL,
   DISABLE_CLIMATE_CONTROL,
   START_CHARGING
@@ -93,10 +82,11 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsVehicle::vehicle_command_t RemoteCommandHandler(RemoteCommand command);
     OvmsVehicle::vehicle_command_t CommandStartCharge();
 
-    PollState nl_poll_state = IDLE;
     RemoteCommand nl_remote_command; // command to send, see ticker10th()
     uint8_t nl_remote_command_ticker; // number of tenths remaining to send remote command frames
     uint16_t nl_cc_off_ticker; // seconds before we send the climate control off command
+    void PollReply_Battery(uint16_t reply_id, uint8_t reply_data[], uint16_t reply_len);
+    void PollReply_VIN(uint16_t reply_id, uint8_t reply_data[], uint16_t reply_len);
     TimerHandle_t m_remoteCommandTimer;
     OvmsMetricInt *m_gids;
     OvmsMetricFloat *m_hx;

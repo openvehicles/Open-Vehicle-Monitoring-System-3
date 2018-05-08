@@ -162,7 +162,7 @@ void vehicle_nissanleaf_charger_status(ChargerStatus status)
     }
   }
 
-static void PollReply_Battery(uint16_t reply_id, uint8_t reply_data[], uint16_t reply_len)
+void OvmsVehicleNissanLeaf::PollReply_Battery(uint16_t reply_id, uint8_t reply_data[], uint16_t reply_len)
   {
   if(reply_len != 39)
     {
@@ -179,8 +179,7 @@ static void PollReply_Battery(uint16_t reply_id, uint8_t reply_data[], uint16_t 
 
   uint16_t hx = (reply_data[26] << 8)
               |  reply_data[27];
-  //m_hx->SetValue(hx / 100.0);
-  StandardMetrics.ms_v_bat_soh->SetValue(hx / 100.0);
+  m_hx->SetValue(hx / 100.0);
 
   uint32_t ah = (reply_data[33] << 16)
               | (reply_data[34] << 8)
@@ -194,7 +193,7 @@ static void PollReply_Battery(uint16_t reply_id, uint8_t reply_data[], uint16_t 
   StandardMetrics.ms_v_bat_soh->SetValue(ah / newCarAh * 100);
   }
 
-static void PollReply_VIN(uint16_t reply_id, uint8_t reply_data[], uint16_t reply_len)
+void OvmsVehicleNissanLeaf::PollReply_VIN(uint16_t reply_id, uint8_t reply_data[], uint16_t reply_len)
   {
   if(reply_len != 19)
     {
