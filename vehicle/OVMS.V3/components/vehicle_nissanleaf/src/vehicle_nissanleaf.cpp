@@ -164,7 +164,7 @@ void vehicle_nissanleaf_charger_status(ChargerStatus status)
 
 void OvmsVehicleNissanLeaf::PollReply_Battery(uint16_t reply_id, uint8_t reply_data[], uint16_t reply_len)
   {
-  if(reply_len != 39)
+  if (reply_len != 39)
     {
     ESP_LOGI(TAG, "PollReply_Battery: len=%d != 39", reply_len);
     return;
@@ -185,7 +185,6 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(uint16_t reply_id, uint8_t reply_d
               | (reply_data[34] << 8)
               |  reply_data[35];
   StandardMetrics.ms_v_bat_cac->SetValue(ah / 10000.0);
-  ESP_LOGI(TAG, "PollReply_Battery: len=%d hx=%d ah=%d", reply_len, hx, ah);
 
   // there may be a way to get the SoH directly from the BMS, but for now
   // divide by a configurable battery size
@@ -195,7 +194,7 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(uint16_t reply_id, uint8_t reply_d
 
 void OvmsVehicleNissanLeaf::PollReply_VIN(uint16_t reply_id, uint8_t reply_data[], uint16_t reply_len)
   {
-  if(reply_len != 19)
+  if (reply_len != 19)
     {
     ESP_LOGI(TAG, "PollReply_VIN: len=%d != 19", reply_len);
     return;
@@ -206,9 +205,9 @@ void OvmsVehicleNissanLeaf::PollReply_VIN(uint16_t reply_id, uint8_t reply_data[
   // [17..18] 00 00
 
   StandardMetrics.ms_v_vin->SetValue((char*)reply_data);
-  ESP_LOGI(TAG, "PollReply_VIN: len=%d vin='%s'", reply_len, (char*)reply_data);
   }
 
+// Reassemble all pieces of a multi-frame reply.
 void OvmsVehicleNissanLeaf::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain)
   {
   static int last_pid = -1;
@@ -217,33 +216,18 @@ void OvmsVehicleNissanLeaf::IncomingPollReply(canbus* bus, uint16_t type, uint16
   static int bufpos = 0;
 
   int i;
-
-  // all this is only for debug
-  char dd[8*3+1];
-  for(i=0; i<length && i<8; i++)
-    snprintf(dd+i*3, 4, "%02x ", data[i]);
-  ESP_LOGI(TAG, "IncomingPollReply: type=%d pid=%#x data=[%s] len=%d remain=%d", type, pid, dd, length, remain);
-
-  if(pid == last_pid && remain < last_remain)
+  if ( pid != last_pid || remain >= last_remain )
     {
-    ESP_LOGI(TAG, "IncomingPollReply: continuing pid %#x, pos=%d", pid, bufpos);
-    }
-  else
-    {
-    if (last_pid >=0 )
-      {
-      ESP_LOGI(TAG, "IncomingPollReply: abandoned partial pid %#x (%d stored, %d remained)", last_pid, bufpos, last_remain);
-      }
-    ESP_LOGI(TAG, "IncomingPollReply: starting new pid %#x", pid);
+    // must be a new reply, so reset to the beginning
     last_pid=pid;
     last_remain=remain;
     bufpos=0;
     }
-  for(i=0; i<length; i++)
+  for (i=0; i<length; i++)
     {
-    if( bufpos < sizeof(buf) ) buf[bufpos++] = data[i];
+    if ( bufpos < sizeof(buf) ) buf[bufpos++] = data[i];
     }
-  if(remain==0)
+  if (remain==0)
     {
     switch (pid)
       {
