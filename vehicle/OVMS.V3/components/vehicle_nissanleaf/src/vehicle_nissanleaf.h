@@ -102,6 +102,8 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     TimerHandle_t m_remoteCommandTimer;
     OvmsMetricInt *m_gids;
     OvmsMetricFloat *m_hx;
+    OvmsMetricFloat *m_soc_new_car;
+    OvmsMetricFloat *m_soc_instrument;
   };
 
 #endif //#ifndef __VEHICLE_NISSANLEAF_H__

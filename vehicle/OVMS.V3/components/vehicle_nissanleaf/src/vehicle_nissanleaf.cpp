@@ -59,8 +59,10 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   {
   ESP_LOGI(TAG, "Nissan Leaf v3.0 vehicle module");
 
-  m_gids = MyMetrics.InitInt("xnl.v.bat.gids", SM_STALE_HIGH, 0);
-  m_hx = MyMetrics.InitFloat("xnl.v.bat.hx", SM_STALE_HIGH, 0);
+  m_gids = MyMetrics.InitInt("xnl.v.b.gids", SM_STALE_HIGH, 0);
+  m_hx = MyMetrics.InitFloat("xnl.v.b.hx", SM_STALE_HIGH, 0);
+  m_soc_new_car = MyMetrics.InitFloat("xnl.v.b.soc.newcar", SM_STALE_HIGH, 0, Percentage);
+  m_soc_instrument = MyMetrics.InitFloat("xnl.v.b.soc.instrument", SM_STALE_HIGH, 0, Percentage);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -257,6 +259,18 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       // voltage is 10 bits unsigned big endian starting at bit 16
       int16_t nl_battery_voltage = ((uint16_t) d[2] << 2) | (d[3] & 0xc0) >> 6;
       StandardMetrics.ms_v_bat_voltage->SetValue(nl_battery_voltage / 2.0f);
+
+      // soc displayed on the instrument cluster
+      uint8_t soc = d[4] & 0x7f;
+      if (soc != 0x7f)
+        {
+        m_soc_instrument->SetValue(soc);
+        // we use this unless the user has opted otherwise
+        if (!MyConfig.GetParamValueBool("xnl", "soc.newcar", false))
+          {
+          StandardMetrics.ms_v_bat_soc->SetValue(soc);
+          }
+        }
     }
       break;
     case 0x284:
@@ -378,18 +392,27 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
     case 0x5bc:
     {
       uint16_t nl_gids = ((uint16_t) d[0] << 2) | ((d[1] & 0xc0) >> 6);
-      if (nl_gids == 1023)
+      // gids is invalid during startup
+      if (nl_gids != 1023)
         {
-        // ignore invalid data seen during startup
-        break;
-        }
-      uint16_t max_gids = MyConfig.GetParamValueInt("xnl", "maxGids", GEN_1_NEW_CAR_GIDS);
-      float km_per_kwh = MyConfig.GetParamValueFloat("xnl", "kmPerKWh", GEN_1_KM_PER_KWH);
-      float wh_per_gid = MyConfig.GetParamValueFloat("xnl", "whPerGid", GEN_1_WH_PER_GID);
+        m_gids->SetValue(nl_gids);
 
-      m_gids->SetValue(nl_gids);
-      StandardMetrics.ms_v_bat_soc->SetValue((nl_gids * 100.0) / max_gids);
-      StandardMetrics.ms_v_bat_range_ideal->SetValue((nl_gids * wh_per_gid * km_per_kwh) / 1000);
+        // new car soc -- 100% when the battery is new, less when it's degraded
+        uint16_t max_gids = MyConfig.GetParamValueInt("xnl", "maxGids", GEN_1_NEW_CAR_GIDS);
+        float soc_new_car = (nl_gids * 100.0) / max_gids;
+        m_soc_new_car->SetValue(soc_new_car);
+
+        // we use the instrument cluster soc from 0x1db unless the user has opted otherwise
+        if (MyConfig.GetParamValueBool("xnl", "soc.newcar", false))
+          {
+          StandardMetrics.ms_v_bat_soc->SetValue(soc_new_car);
+          }
+
+        // range caculation
+        float km_per_kwh = MyConfig.GetParamValueFloat("xnl", "kmPerKWh", GEN_1_KM_PER_KWH);
+        float wh_per_gid = MyConfig.GetParamValueFloat("xnl", "whPerGid", GEN_1_WH_PER_GID);
+        StandardMetrics.ms_v_bat_range_ideal->SetValue((nl_gids * wh_per_gid * km_per_kwh) / 1000);
+      }
     }
       break;
     case 0x5bf:
