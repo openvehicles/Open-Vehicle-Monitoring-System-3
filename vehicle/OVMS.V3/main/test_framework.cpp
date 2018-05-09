@@ -33,6 +33,7 @@ static const char *TAG = "test";
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "esp_system.h"
 #include "esp_event.h"
 #include "esp_event_loop.h"
@@ -235,6 +236,43 @@ void test_strverscmp(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     );
   }
 
+void test_can(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  bool tx = (strcmp(cmd->GetName(), "cantx")==0);
+
+  int frames = 1000;
+  if (argc>0) frames = atoi(argv[0]);
+
+  canbus *can1 = (canbus*)MyPcpApp.FindDeviceByName("can1");
+  if (can1 == NULL)
+    {
+    writer->puts("Error: Cannot find can1");
+    return;
+    }
+
+  writer->printf("Testing %d frames on can1\n",frames);
+
+  CAN_frame_t frame;
+  memset(&frame,0,sizeof(frame));
+  frame.origin = can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 8;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0;
+  MyCan.IncomingFrame(&frame);
+
+  for (int k=0;k<frames;k++)
+    {
+    frame.MsgID = (rand()%64)+256;
+    if (tx)
+      can1->Write(&frame, pdMS_TO_TICKS(10));
+    else
+      MyCan.IncomingFrame(&frame);
+    }
+
+  writer->puts("All done");
+  }
+
 class TestFrameworkInit
   {
   public: TestFrameworkInit();
@@ -255,4 +293,6 @@ TestFrameworkInit::TestFrameworkInit()
   cmd_test->RegisterCommand("watchdog", "Test task spinning (and watchdog firing)", test_watchdog, "", 0, 0,true);
   cmd_test->RegisterCommand("realloc", "Test memory re-allocations", test_realloc, "", 0, 0,true);
   cmd_test->RegisterCommand("strverscmp", "Test strverscmp function", test_strverscmp, "", 2, 2, true);
+  cmd_test->RegisterCommand("cantx", "Test CAN bus transmission", test_can, "", 0, 1, true);
+  cmd_test->RegisterCommand("canrx", "Test CAN bus reception", test_can, "", 0, 1, true);
   }
