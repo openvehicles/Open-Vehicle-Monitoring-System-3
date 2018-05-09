@@ -103,6 +103,7 @@ class OvmsVehicle
     QueueHandle_t m_rxqueue;
     TaskHandle_t m_rxtask;
     bool m_registeredlistener;
+    bool m_autonotifications;
 
   private:
     void VehicleTicker1(std::string event, void* data);
@@ -125,6 +126,20 @@ class OvmsVehicle
     virtual void Ticker300(uint32_t ticker);
     virtual void Ticker600(uint32_t ticker);
     virtual void Ticker3600(uint32_t ticker);
+
+  protected:
+    virtual void NotifyChargeStart();
+    virtual void NotifyHeatingStart();
+    virtual void NotifyChargeStopped();
+    virtual void NotifyChargeDone();
+    virtual void NotifyValetEnabled();
+    virtual void NotifyValetDisabled();
+    virtual void NotifyValetHood();
+    virtual void NotifyValetTrunk();
+    virtual void NotifyAlarmSounding();
+    virtual void NotifyAlarmStopped();
+    virtual void Notify12vCritical();
+    virtual void Notify12vRecovered();
 
   protected:
     virtual void NotifiedVehicleOn() {}

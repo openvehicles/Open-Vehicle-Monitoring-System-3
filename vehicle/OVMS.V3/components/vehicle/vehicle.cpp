@@ -466,6 +466,7 @@ OvmsVehicle::OvmsVehicle()
   m_ticker = 0;
   m_12v_ticker = 0;
   m_registeredlistener = false;
+  m_autonotifications = true;
 
   m_poll_state = 0;
   m_poll_bus = NULL;
@@ -648,13 +649,13 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
       {
       StandardMetrics.ms_v_bat_12v_voltage_alert->SetValue(true);
       MyEvents.SignalEvent("vehicle.alert.12v.on", NULL);
-      MyNotify.NotifyStringf("alert", "batt.12v", "12V Battery critical: %.1fV (ref=%.1fV)", volt, vref);
+      if (m_autonotifications) Notify12vCritical();
       }
     else if (vref - volt < alert_threshold * 0.6 && alert_on)
       {
       StandardMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);
       MyEvents.SignalEvent("vehicle.alert.12v.off", NULL);
-      MyNotify.NotifyStringf("alert", "batt.12v", "12V Battery restored: %.1fV (ref=%.1fV)", volt, vref);
+      if (m_autonotifications) Notify12vRecovered();
       }
     } // 12V battery monitor
   } // VehicleTicker1()
@@ -681,6 +682,72 @@ void OvmsVehicle::Ticker600(uint32_t ticker)
 
 void OvmsVehicle::Ticker3600(uint32_t ticker)
   {
+  }
+
+void OvmsVehicle::NotifyChargeStart()
+  {
+  MyNotify.NotifyCommand("info","charge.started","stat");
+  }
+
+void OvmsVehicle::NotifyHeatingStart()
+  {
+  MyNotify.NotifyCommand("info","heating.started","stat");
+  }
+
+void OvmsVehicle::NotifyChargeStopped()
+  {
+  MyNotify.NotifyCommand("alert","charge.stopped","stat");
+  }
+
+void OvmsVehicle::NotifyChargeDone()
+  {
+  MyNotify.NotifyCommand("info","charge.done","stat");
+  }
+
+void OvmsVehicle::NotifyValetEnabled()
+  {
+  MyNotify.NotifyString("info", "valet.enabled", "Valet mode enabled");
+  }
+
+void OvmsVehicle::NotifyValetDisabled()
+  {
+  MyNotify.NotifyString("info", "valet.disabled", "Valet mode disabled");
+  }
+
+void OvmsVehicle::NotifyValetHood()
+  {
+  MyNotify.NotifyString("alert", "valet.hood", "Vehicle hood opened while in valet mode");
+  }
+
+void OvmsVehicle::NotifyValetTrunk()
+  {
+  MyNotify.NotifyString("alert", "valet.trunk", "Vehicle trunk opened while in valet mode");
+  }
+
+void OvmsVehicle::NotifyAlarmSounding()
+  {
+  MyNotify.NotifyString("alert", "alarm.sounding", "Vehicle alarm is sounding");
+  }
+
+void OvmsVehicle::NotifyAlarmStopped()
+  {
+  MyNotify.NotifyString("alert", "alarm.stopped", "Vehicle alarm has stopped");
+  }
+
+void OvmsVehicle::Notify12vCritical()
+  {
+  float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
+  float vref = StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat();
+
+  MyNotify.NotifyStringf("alert", "batt.12v.alert", "12V Battery critical: %.1fV (ref=%.1fV)", volt, vref);
+  }
+
+void OvmsVehicle::Notify12vRecovered()
+  {
+  float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
+  float vref = StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat();
+
+  MyNotify.NotifyStringf("alert", "batt.12v.recovered", "12V Battery restored: %.1fV (ref=%.1fV)", volt, vref);
   }
 
 // Default efficiency calculation by speed & power per second, average smoothed over 5 seconds.
@@ -960,11 +1027,13 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
     if (StandardMetrics.ms_v_env_valet->AsBool())
       {
       MyEvents.SignalEvent("vehicle.valet.on",NULL);
+      if (m_autonotifications) NotifyValetEnabled();
       NotifiedVehicleValetOn();
       }
     else
       {
       MyEvents.SignalEvent("vehicle.valet.off",NULL);
+      if (m_autonotifications) NotifyValetDisabled();
       NotifiedVehicleValetOff();
       }
     }
@@ -981,16 +1050,34 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       NotifiedVehicleHeadlightsOff();
       }
     }
+  else if (metric == StandardMetrics.ms_v_door_hood)
+    {
+    if (StandardMetrics.ms_v_door_hood->AsBool() &&
+        StandardMetrics.ms_v_env_valet->AsBool())
+      {
+      if (m_autonotifications) NotifyValetHood();
+      }
+    }
+  else if (metric == StandardMetrics.ms_v_door_trunk)
+    {
+    if (StandardMetrics.ms_v_door_trunk->AsBool() &&
+        StandardMetrics.ms_v_env_valet->AsBool())
+      {
+      if (m_autonotifications) NotifyValetTrunk();
+      }
+    }
   else if (metric == StandardMetrics.ms_v_env_alarm)
     {
     if (StandardMetrics.ms_v_env_alarm->AsBool())
       {
       MyEvents.SignalEvent("vehicle.alarm.on",NULL);
+      if (m_autonotifications) NotifyAlarmSounding();
       NotifiedVehicleAlarmOn();
       }
     else
       {
       MyEvents.SignalEvent("vehicle.alarm.off",NULL);
+      if (m_autonotifications) NotifyAlarmStopped();
       NotifiedVehicleAlarmOff();
       }
     }
@@ -1004,6 +1091,19 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
     {
     const char* m = metric->AsString().c_str();
     MyEvents.SignalEvent("vehicle.charge.state",(void*)m, strlen(m)+1);
+    if (m_autonotifications)
+      {
+      if (strcmp(m,"charging")==0)
+        NotifyChargeStart();
+      else if (strcmp(m,"topoff")==0)
+        NotifyChargeStart();
+      else if (strcmp(m,"heating")==0)
+        NotifyHeatingStart();
+      else if (strcmp(m,"done")==0)
+        NotifyChargeDone();
+      else if (strcmp(m,"stopped")==0)
+        NotifyChargeStopped();
+      }
     NotifiedVehicleChargeState(m);
     }
   }
