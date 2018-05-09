@@ -648,13 +648,13 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
       {
       StandardMetrics.ms_v_bat_12v_voltage_alert->SetValue(true);
       MyEvents.SignalEvent("vehicle.alert.12v.on", NULL);
-      MyNotify.NotifyStringf("alert", "12V Battery critical: %.1fV (ref=%.1fV)", volt, vref);
+      MyNotify.NotifyStringf("alert", "batt.12v", "12V Battery critical: %.1fV (ref=%.1fV)", volt, vref);
       }
     else if (vref - volt < alert_threshold * 0.6 && alert_on)
       {
       StandardMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);
       MyEvents.SignalEvent("vehicle.alert.12v.off", NULL);
-      MyNotify.NotifyStringf("alert", "12V Battery restored: %.1fV (ref=%.1fV)", volt, vref);
+      MyNotify.NotifyStringf("alert", "batt.12v", "12V Battery restored: %.1fV (ref=%.1fV)", volt, vref);
       }
     } // 12V battery monitor
   } // VehicleTicker1()

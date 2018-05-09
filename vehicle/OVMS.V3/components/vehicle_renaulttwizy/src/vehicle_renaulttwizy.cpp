@@ -1,19 +1,19 @@
 /**
  * Project:      Open Vehicle Monitor System
  * Module:       Renault Twizy: framework integration (config, metrics, commands, events)
- * 
+ *
  * (c) 2017  Michael Balzer <dexter@dexters-web.de>
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -82,28 +82,28 @@ size_t OvmsVehicleRenaultTwizy::m_modifier = 0;
 OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
 {
   ESP_LOGI(TAG, "Renault Twizy vehicle module");
-  
+
   memset(&twizy_flags, 0, sizeof twizy_flags);
-  
+
   // init configs:
   MyConfig.RegisterParam("xrt", "Renault Twizy", true, true);
   ConfigChanged(NULL);
-  
+
   // init metrics:
   if (m_modifier == 0) {
     m_modifier = MyMetrics.RegisterModifier();
     ESP_LOGD(TAG, "registered metric modifier is #%d", m_modifier);
   }
   m_version = MyMetrics.InitString("xrt.m.version", 0, VERSION " " __DATE__ " " __TIME__);
-  
+
   // init commands:
   cmd_xrt = MyCommandApp.RegisterCommand("xrt", "Renault Twizy", NULL, "", 0, 0, true);
-  
+
   // init event listener:
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "gps.lock.acquired", std::bind(&OvmsVehicleRenaultTwizy::EventListener, this, _1, _2));
-  
+
   // require GPS:
   MyEvents.SignalEvent("vehicle.require.gps", NULL);
   MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
@@ -113,27 +113,27 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   PowerInit();
   ChargeInit();
   WebInit();
-  
+
   // init can bus:
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-  
+
   // init SEVCON connection:
   m_sevcon = new SevconClient(this);
-  
+
   m_ready = true;
 }
 
 OvmsVehicleRenaultTwizy::~OvmsVehicleRenaultTwizy()
 {
   ESP_LOGI(TAG, "Shutdown Renault Twizy vehicle module");
-  
+
   // release GPS:
   MyEvents.SignalEvent("vehicle.release.gps", NULL);
   MyEvents.SignalEvent("vehicle.release.gpstime", NULL);
-  
+
   // unregister event listeners:
   MyEvents.DeregisterEvent(TAG);
-  
+
   if (m_sevcon)
     delete m_sevcon;
 }
@@ -151,55 +151,55 @@ void OvmsVehicleRenaultTwizy::ConfigChanged(OvmsConfigParam* param)
 {
   if (param && param->GetName() != "xrt")
     return;
-  
+
   ESP_LOGD(TAG, "Renault Twizy reload configuration");
-  
+
   // Instances:
-  //  
+  //
   //  suffsoc           Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange         Sufficient range [km] (Default: 0=disabled)
   //  maxrange          Maximum ideal range at 20 °C [km] (Default: 80)
-  //  
+  //
   //  cap_act_prc       Battery actual capacity level [%] (Default: 100.0)
   //  cap_nom_ah        Battery nominal capacity [Ah] (Default: 108.0)
-  //  
+  //
   //  chargelevel       Charge power level [1-7] (Default: 0=unlimited)
   //  chargemode        Charge mode: 0=notify, 1=stop at sufficient SOC/range (Default: 0)
-  //  
+  //
   //  canwrite          Bool: CAN write enabled (Default: no)
   //  autoreset         Bool: SEVCON reset on error (Default: yes)
   //  kickdown          Bool: SEVCON automatic kickdown (Default: yes)
   //  autopower         Bool: SEVCON automatic power level adjustment (Default: yes)
   //  console           Bool: SimpleConsole inputs enabled (Default: no)
-  //  
+  //
   //  gpslogint         Seconds between RT-GPS-Log entries while driving (Default: 0 = disabled)
-  //  
+  //
   //  kd_threshold      Kickdown threshold (Default: 35)
   //  kd_compzero       Kickdown pedal compensation (Default: 120)
-  //  
-  
+  //
+
   cfg_maxrange = MyConfig.GetParamValueInt("xrt", "maxrange", CFG_DEFAULT_MAXRANGE);
   if (cfg_maxrange <= 0)
     cfg_maxrange = CFG_DEFAULT_MAXRANGE;
-  
+
   cfg_suffsoc = MyConfig.GetParamValueInt("xrt", "suffsoc");
   *StdMetrics.ms_v_charge_limit_soc = (float) cfg_suffsoc;
-  
+
   cfg_suffrange = MyConfig.GetParamValueInt("xrt", "suffrange");
   *StdMetrics.ms_v_charge_limit_range = (float) cfg_suffrange;
-  
+
   cfg_chargemode = MyConfig.GetParamValueInt("xrt", "chargemode");
   cfg_chargelevel = MyConfig.GetParamValueInt("xrt", "chargelevel");
-  
+
   cfg_bat_cap_actual_prc = MyConfig.GetParamValueFloat("xrt", "cap_act_prc", 100);
   cfg_bat_cap_nominal_ah = MyConfig.GetParamValueFloat("xrt", "cap_nom_ah", CFG_DEFAULT_CAPACITY);
-  
+
   twizy_flags.EnableWrite = MyConfig.GetParamValueBool("xrt", "canwrite", false);
   twizy_flags.DisableReset = !MyConfig.GetParamValueBool("xrt", "autoreset", true);
   twizy_flags.DisableKickdown = !MyConfig.GetParamValueBool("xrt", "kickdown", true);
   twizy_flags.DisableAutoPower = !MyConfig.GetParamValueBool("xrt", "autopower", true);
   twizy_flags.EnableInputs = MyConfig.GetParamValueBool("xrt", "console", false);
-  
+
   cfg_gpslog_interval = MyConfig.GetParamValueInt("xrt", "gpslogint", 0);
 
   cfg_kd_threshold = MyConfig.GetParamValueInt("xrt", "kd_threshold", CFG_DEFAULT_KD_THRESHOLD);
@@ -330,9 +330,9 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::ProcessMsgCo
   switch (command)
   {
     case CMD_BatteryAlert:
-      MyNotify.NotifyCommand("alert", "xrt batt status");
+      MyNotify.NotifyCommand("alert", "batt.alert", "xrt batt status");
       return Success;
-    
+
     case CMD_BatteryStatus:
       // send complete set of battery status records:
       if (!BatteryLock(100))
@@ -340,39 +340,39 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::ProcessMsgCo
       BatterySendDataUpdate(true);
       BatteryUnlock();
       return Success;
-    
+
     case CMD_PowerUsageNotify:
       // send power usage text report:
       // args: <mode>: 't' = totals, fallback 'e' = efficiency
       if (args && (args[0] | 0x20) == 't')
-        MyNotify.NotifyCommand("info", "xrt power totals");
+        MyNotify.NotifyCommand("info", "xrt.power", "xrt power totals");
       else
-        MyNotify.NotifyCommand("info", "xrt power report");
+        MyNotify.NotifyCommand("info", "xrt.power", "xrt power report");
       return Success;
-    
+
     case CMD_PowerUsageStats:
       // send power usage data record:
-      MyNotify.NotifyCommand("data", "xrt power stats");
+      MyNotify.NotifyCommand("data", "xrt.power", "xrt power stats");
       return Success;
-    
+
     case CMD_QueryChargeAlerts:
     case CMD_SetChargeAlerts:
       return MsgCommandCA(result, command, args);
-    
+
     case CMD_Homelink:
       return MsgCommandHomelink(result, command, args);
-    
+
     case CMD_Lock:
     case CMD_UnLock:
     case CMD_ValetOn:
     case CMD_ValetOff:
       return MsgCommandRestrict(result, command, args);
-    
+
     case CMD_QueryLogs:
       return MsgCommandQueryLogs(result, command, args);
     case CMD_ResetLogs:
       return MsgCommandResetLogs(result, command, args);
-    
+
     default:
       return NotImplemented;
   }
@@ -390,17 +390,17 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandHo
   int key = -1;
   if (args && *args)
     key = atoi(args);
-  
+
   // switch profile:
   CANopenResult_t res = m_sevcon->CfgSwitchProfile(key+1);
-  
+
   // send result:
   ostringstream buf;
   buf << "Profile #" << key+1 << ": " << m_sevcon->FmtSwitchProfileResult(res);
   result = buf.str();
-  
-  MyNotify.NotifyStringf("info", result.c_str());
-  
+
+  MyNotify.NotifyStringf("info", "homelink", result.c_str());
+
   if (res == COR_OK || res == COR_ERR_StateChangeFailed)
     return Success;
   else
@@ -425,7 +425,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandQu
 {
   int which = 1;
   int start = 0;
-  
+
   // parse args:
   if (args && *args) {
     char *arg;
@@ -434,7 +434,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandQu
     if ((arg = strsep((char**) &args, ",")) != NULL)
       start = atoi(arg);
   }
-  
+
   // execute:
   int totalcnt = 0, sendcnt = 0;
   CANopenResult_t res = m_sevcon->QueryLogs(0, NULL, which, start, &totalcnt, &sendcnt);
@@ -461,14 +461,14 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandQu
 OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandResetLogs(string& result, int command, const char* args)
 {
   int which = 99;
-  
+
   // parse args:
   if (args && *args) {
     char *arg;
     if ((arg = strsep((char**) &args, ",")) != NULL)
       which = atoi(arg);
   }
-  
+
   // execute:
   int cnt = 0;
   CANopenResult_t res = m_sevcon->ResetLogs(which, &cnt);
@@ -484,5 +484,3 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandRe
     return Success;
   }
 }
-
-

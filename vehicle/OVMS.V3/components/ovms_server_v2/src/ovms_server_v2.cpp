@@ -442,7 +442,7 @@ void OvmsServerV2::ProcessCommand(const char* payload)
       break;
       }
     case 6: // Charge alert
-      MyNotify.NotifyCommand("info","stat");
+      MyNotify.NotifyCommand("info","charge.stopped","stat");
       *buffer << "MP-0 c6,0";
       break;
     case 7: // Execute command
@@ -1388,7 +1388,7 @@ void OvmsServerV2::TransmitNotifyData()
       << msg;
     Transmit(buffer.str().c_str());
     m_pending_notify_data_last = e->m_id;
-    
+
     // use max 500 ms of the ticker.1 event time per run:
     if (esp_log_timestamp() - starttime > 500)
       {
@@ -1641,7 +1641,7 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
     if (m_pending_notify_alert) TransmitNotifyAlert();
     if (m_pending_notify_error) TransmitNotifyError();
     if (m_pending_notify_info) TransmitNotifyInfo();
-    
+
     if (m_pending_notify_data)
       {
       TransmitNotifyData();
@@ -1704,7 +1704,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
 
   if (MyOvmsServerV2Reader == 0)
     {
-    MyOvmsServerV2Reader = MyNotify.RegisterReader(TAG, COMMAND_RESULT_NORMAL, std::bind(OvmsServerV2ReaderCallback, _1, _2));
+    MyOvmsServerV2Reader = MyNotify.RegisterReader("ovmsv2", COMMAND_RESULT_NORMAL, std::bind(OvmsServerV2ReaderCallback, _1, _2), true);
     }
 
   // init event listener:

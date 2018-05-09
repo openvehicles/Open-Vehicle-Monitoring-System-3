@@ -1,19 +1,19 @@
 /**
  * Project:      Open Vehicle Monitor System
  * Module:       Renault Twizy battery monitor
- * 
+ *
  * (c) 2017  Michael Balzer <dexter@dexters-web.de>
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -81,7 +81,7 @@ void vehicle_twizy_batt(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int
 {
   OvmsVehicleRenaultTwizy* twizy = (OvmsVehicleRenaultTwizy*) MyVehicleFactory.ActiveVehicle();
   string type = StdMetrics.ms_v_type->AsString();
-  
+
   if (!twizy || type != "RT")
   {
     writer->puts("Error: Twizy vehicle module not selected");
@@ -98,36 +98,36 @@ void vehicle_twizy_batt(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int
 void OvmsVehicleRenaultTwizy::BatteryInit()
 {
   ESP_LOGI(TAG, "battmon subsystem init");
-  
+
   int i;
-  
+
   twizy_batt_sensors_state = BATT_SENSORS_START;
   m_batt_doreset = false;
-  
+
   // init sensor lock:
-  
+
   m_batt_sensors = xSemaphoreCreateBinary();
   xSemaphoreGive(m_batt_sensors);
-  
+
   // init metrics
-  
+
   m_batt_soc_min = MyMetrics.InitFloat("xrt.b.soc.min", SM_STALE_HIGH, (float) twizy_soc_min / 100, Percentage);
   m_batt_soc_max = MyMetrics.InitFloat("xrt.b.soc.max", SM_STALE_HIGH, (float) twizy_soc_max / 100, Percentage);
-  
+
   m_batt_pack_count = MyMetrics.InitInt("xrt.b.pack.cnt", SM_STALE_HIGH, batt_pack_count);
   for (i = 0; i < BATT_PACKS; i++)
     twizy_batt[i].InitMetrics(i);
-  
+
   m_batt_cmod_count = MyMetrics.InitInt("xrt.b.cmod.cnt", SM_STALE_HIGH, batt_cmod_count);
   for (i = 0; i < BATT_CMODS; i++)
     twizy_cmod[i].InitMetrics(i);
-  
+
   m_batt_cell_count = MyMetrics.InitInt("xrt.b.cell.cnt", SM_STALE_HIGH, batt_cell_count);
   for (i = 0; i < BATT_CELLS; i++)
     twizy_cell[i].InitMetrics(i);
-  
+
   // init commands
-  
+
   cmd_batt = cmd_xrt->RegisterCommand("batt", "Battery monitor", NULL, "", 0, 0, true);
   {
     cmd_batt->RegisterCommand("reset", "Reset alerts & watches", vehicle_twizy_batt, "", 0, 0, true);
@@ -167,13 +167,13 @@ void OvmsVehicleRenaultTwizy::BatteryUpdate()
 {
   // reset sensor fetch cycle:
   twizy_batt_sensors_state = BATT_SENSORS_START;
-  
+
   // try to lock, else drop this update:
   if (!BatteryLock(0)) {
     ESP_LOGV(TAG, "BatteryUpdate: no lock, update dropped");
     return;
   }
-  
+
   // copy RX buffers:
   for (battery_cell &cell : twizy_cell)
     cell.volt_act = cell.volt_new;
@@ -181,7 +181,7 @@ void OvmsVehicleRenaultTwizy::BatteryUpdate()
     cmod.temp_act = cmod.temp_new;
   for (battery_pack &pack : twizy_batt)
     pack.volt_act = pack.volt_new;
-  
+
   // reset min/max if due:
   if (m_batt_doreset) {
     BatteryReset();
@@ -190,19 +190,19 @@ void OvmsVehicleRenaultTwizy::BatteryUpdate()
 
   // calculate voltage & temperature deviations:
   BatteryCheckDeviations();
-  
+
   // publish internal state to metrics:
-  
+
   *StdMetrics.ms_v_bat_temp = (float) twizy_batt[0].temp_act - 40;
   *StdMetrics.ms_v_bat_voltage = (float) twizy_batt[0].volt_act / 10;
-  
+
   for (battery_pack &pack : twizy_batt)
     pack.UpdateMetrics();
   for (battery_cmod &cmod : twizy_cmod)
     cmod.UpdateMetrics();
   for (battery_cell &cell : twizy_cell)
     cell.UpdateMetrics();
-  
+
   // done, start next fetch cycle:
   BatteryUnlock();
 }
@@ -214,21 +214,21 @@ void OvmsVehicleRenaultTwizy::BatteryUpdate()
 void OvmsVehicleRenaultTwizy::BatteryReset()
 {
   ESP_LOGD(TAG, "battmon reset");
-  
+
   for (battery_cell &cell : twizy_cell)
   {
     cell.volt_max = cell.volt_act;
     cell.volt_min = cell.volt_act;
     cell.volt_maxdev = 0;
   }
-  
+
   for (battery_cmod &cmod : twizy_cmod)
   {
     cmod.temp_max = cmod.temp_act;
     cmod.temp_min = cmod.temp_act;
     cmod.temp_maxdev = 0;
   }
-  
+
   for (battery_pack &pack : twizy_batt)
   {
     pack.volt_min = pack.volt_act;
@@ -260,57 +260,57 @@ void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
   int dev;
   float m;
   UINT32 sum, sqrsum;
-  
-  
+
+
   // *********** Temperatures: ************
-  
+
   // build mean value & standard deviation:
   sum = 0;
   sqrsum = 0;
-  
+
   for (i = 0; i < batt_cmod_count; i++)
   {
     // Validate:
     if ((twizy_cmod[i].temp_act == 0) || (twizy_cmod[i].temp_act >= 0x0f0))
       break;
-    
+
     // Remember min:
     if ((twizy_cmod[i].temp_min == 0) || (twizy_cmod[i].temp_act < twizy_cmod[i].temp_min))
       twizy_cmod[i].temp_min = twizy_cmod[i].temp_act;
-    
+
     // Remember max:
     if ((twizy_cmod[i].temp_max == 0) || (twizy_cmod[i].temp_act > twizy_cmod[i].temp_max))
       twizy_cmod[i].temp_max = twizy_cmod[i].temp_act;
-    
+
     // build sums:
     sum += twizy_cmod[i].temp_act;
     sqrsum += SQR((UINT32) twizy_cmod[i].temp_act);
   }
-  
+
   if (i == batt_cmod_count)
   {
     // All values valid, process:
-    
+
     m = (float) sum / batt_cmod_count;
-    
+
     twizy_batt[0].temp_act = m;
-    
+
     // Battery pack usage cycle min/max:
-    
+
     if ((twizy_batt[0].temp_min == 0) || (twizy_batt[0].temp_act < twizy_batt[0].temp_min))
       twizy_batt[0].temp_min = twizy_batt[0].temp_act;
     if ((twizy_batt[0].temp_max == 0) || (twizy_batt[0].temp_act > twizy_batt[0].temp_max))
       twizy_batt[0].temp_max = twizy_batt[0].temp_act;
-    
+
     stddev = sqrtf( ((float)sqrsum/batt_cmod_count) - SQR((float)sum/batt_cmod_count) ) + 0.5;
     if (stddev == 0)
       stddev = 1; // not enough precision to allow stddev 0
-    
+
     // check max stddev:
     if (stddev > twizy_batt[0].cmod_temp_stddev_max)
     {
       twizy_batt[0].cmod_temp_stddev_max = stddev;
-      
+
       // switch to overall stddev alert mode?
       // (resetting cmod flags to build new alert set)
       if (stddev >= BATT_STDDEV_TEMP_ALERT)
@@ -324,7 +324,7 @@ void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
         twizy_batt[0].temp_watches.set(BATT_STDDEV_TEMP_FLAG);
       }
     }
-    
+
     // check cmod deviations:
     for (i = 0; i < batt_cmod_count; i++)
     {
@@ -332,7 +332,7 @@ void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
       dev = (twizy_cmod[i].temp_act - m)
               + ((twizy_cmod[i].temp_act >= m) ? 0.5 : -0.5);
       absdev = ABS(dev);
-      
+
       // Set watch/alert flags:
       // (applying overall thresholds only in stddev alert mode)
       if ((twizy_batt[0].temp_alerts[BATT_STDDEV_TEMP_FLAG]) && (absdev >= BATT_STDDEV_TEMP_ALERT))
@@ -343,62 +343,62 @@ void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
         twizy_batt[0].temp_watches.set(i);
       else if (absdev > stddev)
         twizy_batt[0].temp_watches.set(i);
-      
+
       // Remember max deviation:
       if (absdev > ABS(twizy_cmod[i].temp_maxdev))
         twizy_cmod[i].temp_maxdev = dev;
     }
-    
+
   } // if( i == batt_cmod_count )
-  
-  
+
+
   // ********** Voltages: ************
-  
+
   // Battery pack usage cycle min/max:
-  
+
   if ((twizy_batt[0].volt_min == 0) || (twizy_batt[0].volt_act < twizy_batt[0].volt_min))
     twizy_batt[0].volt_min = twizy_batt[0].volt_act;
   if ((twizy_batt[0].volt_max == 0) || (twizy_batt[0].volt_act > twizy_batt[0].volt_max))
     twizy_batt[0].volt_max = twizy_batt[0].volt_act;
-  
+
   // Cells: build mean value & standard deviation:
   sum = 0;
   sqrsum = 0;
-  
+
   for (i = 0; i < batt_cell_count; i++)
   {
     // Validate:
     if ((twizy_cell[i].volt_act == 0) || (twizy_cell[i].volt_act >= 0x0f00))
       break;
-    
+
     // Remember min:
     if ((twizy_cell[i].volt_min == 0) || (twizy_cell[i].volt_act < twizy_cell[i].volt_min))
       twizy_cell[i].volt_min = twizy_cell[i].volt_act;
-    
+
     // Remember max:
     if ((twizy_cell[i].volt_max == 0) || (twizy_cell[i].volt_act > twizy_cell[i].volt_max))
       twizy_cell[i].volt_max = twizy_cell[i].volt_act;
-    
+
     // build sums:
     sum += twizy_cell[i].volt_act;
     sqrsum += SQR((UINT32) twizy_cell[i].volt_act);
   }
-  
+
   if (i == batt_cell_count)
   {
     // All values valid, process:
-    
+
     m = (float) sum / batt_cell_count;
-    
+
     stddev = sqrtf( ((float)sqrsum/batt_cell_count) - SQR((float)sum/batt_cell_count) ) + 0.5;
     if (stddev == 0)
       stddev = 1; // not enough precision to allow stddev 0
-    
+
     // check max stddev:
     if (stddev > twizy_batt[0].cell_volt_stddev_max)
     {
       twizy_batt[0].cell_volt_stddev_max = stddev;
-      
+
       // switch to overall stddev alert mode?
       // (resetting cell flags to build new alert set)
       if (stddev >= BATT_STDDEV_VOLT_ALERT)
@@ -412,7 +412,7 @@ void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
         twizy_batt[0].volt_watches.set(BATT_STDDEV_VOLT_FLAG);
       }
     }
-    
+
     // check cell deviations:
     for (i = 0; i < batt_cell_count; i++)
     {
@@ -420,7 +420,7 @@ void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
       dev = (twizy_cell[i].volt_act - m)
               + ((twizy_cell[i].volt_act >= m) ? 0.5 : -0.5);
       absdev = ABS(dev);
-      
+
       // Set watch/alert flags:
       // (applying overall thresholds only in stddev alert mode)
       if ((twizy_batt[0].volt_alerts[BATT_STDDEV_VOLT_FLAG]) && (absdev >= BATT_STDDEV_VOLT_ALERT))
@@ -431,15 +431,15 @@ void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
         twizy_batt[0].volt_watches.set(i);
       else if (absdev > stddev)
         twizy_batt[0].volt_watches.set(i);
-      
+
       // Remember max deviation:
       if (absdev > ABS(twizy_cell[i].volt_maxdev))
         twizy_cell[i].volt_maxdev = dev;
     }
-    
+
   } // if( i == batt_cell_count )
-  
-  
+
+
   // Battery monitor update/alert:
   if ((twizy_batt[0].volt_alerts != twizy_batt[0].last_volt_alerts)
     || (twizy_batt[0].temp_alerts != twizy_batt[0].last_temp_alerts))
@@ -455,16 +455,16 @@ void battery_pack::InitMetrics(int i)
 {
   m_volt_min = MyMetrics.InitFloat(x_rt_b_pack_volt_min[i], SM_STALE_HIGH, 0, Volts);
   m_volt_max = MyMetrics.InitFloat(x_rt_b_pack_volt_max[i], SM_STALE_HIGH, 0, Volts);
-  
+
   m_temp_min = MyMetrics.InitFloat(x_rt_b_pack_temp_min[i], SM_STALE_HIGH, 0, Celcius);
   m_temp_max = MyMetrics.InitFloat(x_rt_b_pack_temp_max[i], SM_STALE_HIGH, 0, Celcius);
-  
+
   m_volt_watches = MyMetrics.InitBitset<32>(x_rt_b_pack_volt_watches[i], SM_STALE_HIGH);
   m_volt_alerts = MyMetrics.InitBitset<32>(x_rt_b_pack_volt_alerts[i], SM_STALE_HIGH);
-  
+
   m_temp_watches = MyMetrics.InitBitset<32>(x_rt_b_pack_temp_watches[i], SM_STALE_HIGH);
   m_temp_alerts = MyMetrics.InitBitset<32>(x_rt_b_pack_temp_alerts[i], SM_STALE_HIGH);
-  
+
   m_cell_volt_stddev_max = MyMetrics.InitFloat(x_rt_b_pack_volt_stddev_max[i], SM_STALE_HIGH, 0, Volts);
   m_cmod_temp_stddev_max = MyMetrics.InitFloat(x_rt_b_pack_temp_stddev_max[i], SM_STALE_HIGH, 0, Celcius);
 }
@@ -473,13 +473,13 @@ void battery_pack::UpdateMetrics()
 {
   *m_volt_min = (float) volt_min / 10;
   *m_volt_max = (float) volt_max / 10;
-  
+
   *m_temp_min = (float) temp_min - 40;
   *m_temp_max = (float) temp_max - 40;
-  
+
   *m_volt_watches = volt_watches;
   *m_volt_alerts = volt_alerts;
-  
+
   *m_temp_watches = temp_watches;
   *m_temp_alerts = temp_alerts;
 
@@ -562,23 +562,23 @@ bool battery_cell::IsModified(size_t m_modifier)
 OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandBatt(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 {
   const char *subcmd = cmd->GetName();
-  
+
   ESP_LOGV(TAG, "command batt %s, verbosity=%d", subcmd, verbosity);
-  
+
   if (!BatteryLock(100))
   {
     writer->puts("ERROR: can't lock battery state, please retry");
     return Fail;
   }
-  
+
   OvmsVehicleRenaultTwizy::vehicle_command_t res = Success;
-  
+
   if (strcmp(subcmd, "reset") == 0)
   {
     BatteryReset();
     writer->puts("Battery monitor reset.");
   }
-  
+
   else if (strcmp(subcmd, "status") == 0)
   {
     int pack = (argc > 0) ? atoi(argv[0]) : 1;
@@ -589,19 +589,19 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandBatt(
       FormatBatteryStatus(verbosity, writer, pack-1);
     }
   }
-  
+
   else if (subcmd[0] == 'v')
   {
     // "volt"=absolute values, "vdev"=deviations
     FormatBatteryVolts(verbosity, writer, (subcmd[1]=='d') ? true : false);
   }
-  
+
   else if (subcmd[0] == 't')
   {
     // "temp"=absolute values, "tdev"=deviations
     FormatBatteryTemps(verbosity, writer, (subcmd[1]=='d') ? true : false);
   }
-  
+
   else if (strcmp(subcmd, "data-pack") == 0)
   {
     int pack = (argc > 0) ? atoi(argv[0]) : 1;
@@ -700,7 +700,7 @@ void OvmsVehicleRenaultTwizy::FormatBatteryStatus(int verbosity, OvmsWriter* wri
   else
     em = "";
   capacity -= writer->printf("%sSD:%dC ", em, val);
-  
+
   if ((twizy_batt[pack].temp_alerts.none()) && (twizy_batt[pack].temp_watches.none()))
   {
     capacity -= writer->printf("OK ");
@@ -729,7 +729,7 @@ void OvmsVehicleRenaultTwizy::FormatBatteryStatus(int verbosity, OvmsWriter* wri
       capacity -= writer->printf("%sM%d:%+dC ", em, c+1, val);
     }
   }
-  
+
   writer->puts("");
 }
 
@@ -741,14 +741,14 @@ void OvmsVehicleRenaultTwizy::FormatBatteryVolts(int verbosity, OvmsWriter* writ
 {
   int capacity = verbosity;
   const char *em;
-  
+
   // Output pack status:
   for (int p = 0; p < batt_pack_count; p++)
   {
     // output capacity reached?
     if (capacity < 13)
       break;
-    
+
     if (show_deviations)
     {
       if (twizy_batt[p].volt_alerts.test(BATT_STDDEV_VOLT_FLAG))
@@ -769,7 +769,7 @@ void OvmsVehicleRenaultTwizy::FormatBatteryVolts(int verbosity, OvmsWriter* writ
   for (int c = 0; c < batt_cell_count; c++)
   {
     int p = 0; // fixed for now…
-    
+
     // output capacity reached?
     if (capacity < 13)
       break;
@@ -787,7 +787,7 @@ void OvmsVehicleRenaultTwizy::FormatBatteryVolts(int verbosity, OvmsWriter* writ
     else
       capacity -= writer->printf("%s%d:%.3fV ", em, c+1, (float) CONV_CellVolt(twizy_cell[c].volt_act) / 1000);
   }
-  
+
   writer->puts("");
 }
 
@@ -799,13 +799,13 @@ void OvmsVehicleRenaultTwizy::FormatBatteryTemps(int verbosity, OvmsWriter* writ
 {
   int capacity = verbosity;
   const char *em;
-  
+
   // Output pack status:
   for (int p = 0; p < batt_pack_count; p++)
   {
     if (capacity < 17)
       break;
-    
+
     if (show_deviations)
     {
       if (twizy_batt[p].temp_alerts.test(BATT_STDDEV_TEMP_FLAG))
@@ -829,10 +829,10 @@ void OvmsVehicleRenaultTwizy::FormatBatteryTemps(int verbosity, OvmsWriter* writ
   for (int c = 0; c < batt_cmod_count; c++)
   {
     int p = 0; // fixed for now…
-    
+
     if (capacity < 8)
       break;
-    
+
     // Alert?
     if (twizy_batt[p].temp_alerts.test(c))
       em = "!";
@@ -858,7 +858,7 @@ void OvmsVehicleRenaultTwizy::FormatPackData(int verbosity, OvmsWriter* writer, 
 {
   if (verbosity < 200)
     return;
-  
+
   int volt_alert, temp_alert;
 
   if (twizy_batt[pack].volt_alerts.any())
@@ -883,7 +883,7 @@ void OvmsVehicleRenaultTwizy::FormatPackData(int verbosity, OvmsWriter* writer, 
   //  ,<temp_act>,<temp_min>,<temp_max>
   //  ,<cell_volt_stddev_max>,<cmod_temp_stddev_max>
   //  ,<max_drive_pwr>,<max_recup_pwr>
-  
+
   writer->printf(
     "RT-BAT-P,%d,86400"
     ",%d,%d"
@@ -905,7 +905,7 @@ void OvmsVehicleRenaultTwizy::FormatPackData(int verbosity, OvmsWriter* writer, 
     (int) (twizy_batt[pack].cmod_temp_stddev_max + 0.5),
     (int) twizy_batt[pack].max_drive_pwr * 5,
     (int) twizy_batt[pack].max_recup_pwr * 5);
-    
+
 }
 
 
@@ -916,7 +916,7 @@ void OvmsVehicleRenaultTwizy::FormatCellData(int verbosity, OvmsWriter* writer, 
 {
   if (verbosity < 200)
     return;
-  
+
   int pack = 0; // currently fixed, TODO for addon packs: determine pack index for cell
   int volt_alert, temp_alert;
 
@@ -955,7 +955,7 @@ void OvmsVehicleRenaultTwizy::FormatCellData(int verbosity, OvmsWriter* writer, 
     CONV_Temp(twizy_cmod[cell >> 1].temp_min),
     CONV_Temp(twizy_cmod[cell >> 1].temp_max),
     (int) (twizy_cmod[cell >> 1].temp_maxdev + 0.5));
-    
+
 }
 
 
@@ -967,18 +967,18 @@ void OvmsVehicleRenaultTwizy::BatterySendDataUpdate(bool force)
   bool overall_modified = force |
     m_batt_cell_count->IsModifiedAndClear(m_modifier) |
     m_batt_cmod_count->IsModifiedAndClear(m_modifier);
-  
+
   StringWriter buf(100);
-  
+
   for (int pack=0; pack < batt_pack_count; pack++) {
-    
+
     // if any alert/watch is modified, update all cells:
     overall_modified |=
       twizy_batt[pack].m_volt_alerts->IsModifiedAndClear(m_modifier) |
       twizy_batt[pack].m_volt_watches->IsModifiedAndClear(m_modifier) |
       twizy_batt[pack].m_temp_alerts->IsModifiedAndClear(m_modifier) |
       twizy_batt[pack].m_temp_watches->IsModifiedAndClear(m_modifier);
-    
+
     bool pack_modified = overall_modified |
       StdMetrics.ms_v_bat_soc->IsModifiedAndClear(m_modifier) |
       m_batt_soc_min->IsModifiedAndClear(m_modifier) |
@@ -986,29 +986,27 @@ void OvmsVehicleRenaultTwizy::BatterySendDataUpdate(bool force)
       StdMetrics.ms_v_bat_temp->IsModifiedAndClear(m_modifier) |
       StdMetrics.ms_v_bat_voltage->IsModifiedAndClear(m_modifier) |
       twizy_batt[pack].IsModified(m_modifier);
-      
+
     if (pack_modified) {
       buf.clear();
       FormatPackData(COMMAND_RESULT_NORMAL, &buf, pack);
-      MyNotify.NotifyString("data", buf.c_str());
+      MyNotify.NotifyString("data", "xrt.battmon", buf.c_str());
     }
-    
+
   }
-  
+
   for (int cell=0; cell < batt_cell_count; cell++) {
-    
+
     bool cell_modified = overall_modified |
       twizy_cell[cell].IsModified(m_modifier) |
       twizy_cmod[cell>>1].IsModified(m_modifier);
-    
+
     if (cell_modified) {
       buf.clear();
       FormatCellData(COMMAND_RESULT_NORMAL, &buf, cell);
-      MyNotify.NotifyString("data", buf.c_str());
+      MyNotify.NotifyString("data", "xrt.battmon", buf.c_str());
     }
-    
+
   }
-  
+
 }
-
-

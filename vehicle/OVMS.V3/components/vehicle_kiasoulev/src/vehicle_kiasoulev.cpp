@@ -970,7 +970,7 @@ void OvmsVehicleKiaSoulEv::DoNotify()
 
   if (which & SEND_AuxBattery_Low)
   		{
-    MyNotify.NotifyCommand("alert", "xks aux");
+    MyNotify.NotifyCommand("alert", "xks.aux", "xks aux");
     ks_notifications &= ~SEND_AuxBattery_Low;
   		}
 
@@ -1052,4 +1052,3 @@ OvmsVehicleKiaSoulEvInit::OvmsVehicleKiaSoulEvInit()
 
   MyVehicleFactory.RegisterVehicle<OvmsVehicleKiaSoulEv>("KS","Kia Soul EV");
   }
-
