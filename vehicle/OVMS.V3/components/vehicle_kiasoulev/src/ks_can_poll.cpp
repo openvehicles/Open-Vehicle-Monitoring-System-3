@@ -179,6 +179,9 @@ void OvmsVehicleKiaSoulEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 				for (bVal = 0; (bVal < length) && ((base + bVal)<(sizeof (m_vin) - 1)); bVal++)
 					m_vin[base + bVal] = CAN_BYTE(bVal);
 				if (m_poll_ml_remain == 0) m_vin[base + bVal] = 0;
+
+				//Set VIN
+				StandardMetrics.ms_v_vin->SetValue(m_vin);
 				}
 			if (type == VEHICLE_POLL_TYPE_OBDIIGROUP)
 				{
