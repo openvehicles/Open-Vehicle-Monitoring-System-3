@@ -45,6 +45,7 @@ static const char *TAG = "ota";
 #include "ovms_config.h"
 #include "ovms_metrics.h"
 #include "ovms_peripherals.h"
+#include "ovms_notify.h"
 #include "metrics_standard.h"
 #include "ovms_http.h"
 #include "ovms_buffer.h"
@@ -733,6 +734,7 @@ bool OvmsOTA::AutoFlash(bool force)
     target->label,
     info.version_server.c_str(),
     url.c_str());
+  MyNotify.NotifyStringf("info", "ota.update", "New OTA firmware %s is available for download", info.version_server.c_str());
 
   // HTTP client request...
   OvmsHttpClient http(url);
@@ -808,6 +810,7 @@ bool OvmsOTA::AutoFlash(bool force)
     }
 
   ESP_LOGI(TAG, "AutoFlash: Success flash of %d bytes from %s", filesize, url.c_str());
+  MyNotify.NotifyStringf("info", "ota.update", "OTA firmware %s has been updated (OVMS will restart)", info.version_server.c_str());
   MyConfig.SetParamValue("ota", "http.mru", url);
 
   return true;
