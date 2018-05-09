@@ -159,7 +159,7 @@ OvmsServerV3::OvmsServerV3(const char* name)
 
   if (MyOvmsServerV3Reader == 0)
     {
-    MyOvmsServerV3Reader = MyNotify.RegisterReader(TAG, COMMAND_RESULT_NORMAL, std::bind(OvmsServerV3ReaderCallback, _1, _2));
+    MyOvmsServerV3Reader = MyNotify.RegisterReader("ovmsv3", COMMAND_RESULT_NORMAL, std::bind(OvmsServerV3ReaderCallback, _1, _2), true);
     }
 
   // init event listener:

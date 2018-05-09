@@ -37,6 +37,7 @@ static const char *TAG = "notify";
 #include "ovms.h"
 #include "ovms_notify.h"
 #include "ovms_command.h"
+#include "ovms_config.h"
 #include "ovms_events.h"
 #include "buffered_shell.h"
 #include "string.h"
@@ -88,13 +89,13 @@ void notify_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 
 void notify_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  writer->printf("Raise %s notification for %s as %s\n",
-    cmd->GetName(), argv[0], argv[1]);
+  writer->printf("Raise %s notification for %s/%s as %s\n",
+    cmd->GetName(), argv[0], argv[1], argv[2]);
 
   if (strcmp(cmd->GetName(),"text")==0)
-    MyNotify.NotifyString(argv[0],argv[1]);
+    MyNotify.NotifyString(argv[0],argv[1],argv[2]);
   else
-    MyNotify.NotifyCommand(argv[0],argv[1]);
+    MyNotify.NotifyCommand(argv[0],argv[1],argv[2]);
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -105,11 +106,12 @@ void notify_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 // see if all readers have processed the entry and housekeep cleanup
 // appropriately.
 
-OvmsNotifyEntry::OvmsNotifyEntry()
+OvmsNotifyEntry::OvmsNotifyEntry(const char* subtype)
   {
   m_readers.reset();
   m_id = 0;
   m_created = monotonictime;
+  m_subtype = subtype;
   }
 
 OvmsNotifyEntry::~OvmsNotifyEntry()
@@ -131,11 +133,17 @@ const extram::string OvmsNotifyEntry::GetValue()
   return extram::string("");
   }
 
+const char* OvmsNotifyEntry::GetSubType()
+  {
+  return m_subtype;
+  }
+
 ////////////////////////////////////////////////////////////////////////
 // OvmsNotifyEntryString is the notification entry for a constant
 // string type.
 
-OvmsNotifyEntryString::OvmsNotifyEntryString(const char* value)
+OvmsNotifyEntryString::OvmsNotifyEntryString(const char* subtype, const char* value)
+  : OvmsNotifyEntry(subtype)
   {
   m_value = extram::string(value);
   }
@@ -153,7 +161,8 @@ const extram::string OvmsNotifyEntryString::GetValue()
 // OvmsNotifyEntryCommand is the notification entry for a command
 // callback type.
 
-OvmsNotifyEntryCommand::OvmsNotifyEntryCommand(int verbosity, const char* cmd)
+OvmsNotifyEntryCommand::OvmsNotifyEntryCommand(const char* subtype, int verbosity, const char* cmd)
+  : OvmsNotifyEntry(subtype)
   {
   m_cmd = new char[strlen(cmd)+1];
   strcpy(m_cmd,cmd);
@@ -281,12 +290,13 @@ void OvmsNotifyType::Cleanup(OvmsNotifyEntry* entry)
 // OvmsNotifyCallbackEntry contains the callback function for a
 // particular reader
 
-OvmsNotifyCallbackEntry::OvmsNotifyCallbackEntry(const char* caller, size_t reader, int verbosity, OvmsNotifyCallback_t callback)
+OvmsNotifyCallbackEntry::OvmsNotifyCallbackEntry(const char* caller, size_t reader, int verbosity, OvmsNotifyCallback_t callback, bool filtered)
   {
   m_caller = caller;
   m_reader = reader;
   m_verbosity = verbosity;
   m_callback = callback;
+  m_filtered = filtered;
   }
 
 OvmsNotifyCallbackEntry::~OvmsNotifyCallbackEntry()
@@ -309,12 +319,14 @@ OvmsNotify::OvmsNotify()
   m_trace = false;
 #endif // #ifdef CONFIG_OVMS_DEV_DEBUGNOTIFICATIONS
 
+  MyConfig.RegisterParam("notify", "Notification filters", true, true);
+
   // Register our commands
   OvmsCommand* cmd_notify = MyCommandApp.RegisterCommand("notify","NOTIFICATION framework",NULL, "", 1, 0, true);
   cmd_notify->RegisterCommand("status","Show notification status",notify_status,"", 0, 0, true);
   OvmsCommand* cmd_notifyraise = cmd_notify->RegisterCommand("raise","NOTIFICATION raise framework", NULL, "", 0, 0, true);
-  cmd_notifyraise->RegisterCommand("text","Raise a textual notification",notify_raise,"<type><message>", 2, 2, true);
-  cmd_notifyraise->RegisterCommand("command","Raise a command callback notification",notify_raise,"<type><command>", 2, 2, true);
+  cmd_notifyraise->RegisterCommand("text","Raise a textual notification",notify_raise,"<type><subtype><message>", 3, 3, true);
+  cmd_notifyraise->RegisterCommand("command","Raise a command callback notification",notify_raise,"<type><subtype><command>", 3, 3, true);
   OvmsCommand* cmd_notifytrace = cmd_notify->RegisterCommand("trace","NOTIFICATION trace framework", NULL, "", 0, 0, true);
   cmd_notifytrace->RegisterCommand("on","Turn notification tracing ON",notify_trace,"", 0, 0, true);
   cmd_notifytrace->RegisterCommand("off","Turn notification tracing OFF",notify_trace,"", 0, 0, true);
@@ -329,11 +341,11 @@ OvmsNotify::~OvmsNotify()
   {
   }
 
-size_t OvmsNotify::RegisterReader(const char* caller, int verbosity, OvmsNotifyCallback_t callback)
+size_t OvmsNotify::RegisterReader(const char* caller, int verbosity, OvmsNotifyCallback_t callback, bool filtered)
   {
   size_t reader = m_nextreader++;
 
-  m_readers[caller] = new OvmsNotifyCallbackEntry(caller, reader, verbosity, callback);
+  m_readers[caller] = new OvmsNotifyCallbackEntry(caller, reader, verbosity, callback, filtered);
 
   return reader;
   }
@@ -373,6 +385,19 @@ void OvmsNotify::NotifyReaders(OvmsNotifyType* type, OvmsNotifyEntry* entry)
   for (OvmsNotifyCallbackMap_t::iterator itc=m_readers.begin(); itc!=m_readers.end(); ++itc)
     {
     OvmsNotifyCallbackEntry* mc = itc->second;
+    if (mc->m_filtered)
+      {
+      // Check if we need to filter this
+      std::string filter = MyConfig.GetParamValue("notify", entry->GetSubType());
+      if (!filter.empty())
+        {
+        if (filter.find(mc->m_caller) == string::npos)
+          {
+          entry->m_readers.reset(mc->m_reader);
+          continue; // This is filtered out
+          }
+        }
+      }
     bool result = mc->m_callback(type,entry);
     if (result) entry->m_readers.reset(mc->m_reader);
     }
@@ -389,7 +414,7 @@ void OvmsNotify::RegisterType(const char* type)
     }
   }
 
-uint32_t OvmsNotify::NotifyString(const char* type, const char* value)
+uint32_t OvmsNotify::NotifyString(const char* type, const char* subtype, const char* value)
   {
   OvmsNotifyType* mt = GetType(type);
   if (mt == NULL)
@@ -407,7 +432,7 @@ uint32_t OvmsNotify::NotifyString(const char* type, const char* value)
     }
 
   // create message:
-  OvmsNotifyEntry* msg = (OvmsNotifyEntry*) new OvmsNotifyEntryString(value);
+  OvmsNotifyEntry* msg = (OvmsNotifyEntry*) new OvmsNotifyEntryString(subtype, value);
 
   // add all currently active readers accepting the message length:
   for (OvmsNotifyCallbackMap_t::iterator itc=m_readers.begin(); itc!=m_readers.end(); ++itc)
@@ -422,7 +447,7 @@ uint32_t OvmsNotify::NotifyString(const char* type, const char* value)
   return mt->QueueEntry(msg);
   }
 
-uint32_t OvmsNotify::NotifyCommand(const char* type, const char* cmd)
+uint32_t OvmsNotify::NotifyCommand(const char* type, const char* subtype, const char* cmd)
   {
   OvmsNotifyType* mt = GetType(type);
   if (mt == NULL)
@@ -475,7 +500,7 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* cmd)
       if (!msg)
         {
         // create verbosity level message:
-        msg = new OvmsNotifyEntryCommand(verbosity, cmd);
+        msg = new OvmsNotifyEntryCommand(subtype, verbosity, cmd);
         msglen = msg->GetValue().length();
         verbosity_msgs[verbosity] = msg;
         }
@@ -510,7 +535,7 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* cmd)
 /**
  * NotifyStringf: printf style API
  */
-uint32_t OvmsNotify::NotifyStringf(const char* type, const char* fmt, ...)
+uint32_t OvmsNotify::NotifyStringf(const char* type, const char* subtype, const char* fmt, ...)
   {
   char *buffer = NULL;
   uint32_t res = 0;
@@ -520,7 +545,7 @@ uint32_t OvmsNotify::NotifyStringf(const char* type, const char* fmt, ...)
   va_end(args);
   if (len >= 0)
     {
-    res = NotifyString(type, buffer);
+    res = NotifyString(type, subtype, buffer);
     free(buffer);
     }
   return res;
@@ -530,7 +555,7 @@ uint32_t OvmsNotify::NotifyStringf(const char* type, const char* fmt, ...)
 /**
  * NotifyCommandf: printf style API
  */
-uint32_t OvmsNotify::NotifyCommandf(const char* type, const char* fmt, ...)
+uint32_t OvmsNotify::NotifyCommandf(const char* type, const char* subtype, const char* fmt, ...)
   {
   char *buffer = NULL;
   uint32_t res = 0;
@@ -540,7 +565,7 @@ uint32_t OvmsNotify::NotifyCommandf(const char* type, const char* fmt, ...)
   va_end(args);
   if (len >= 0)
     {
-    res = NotifyCommand(type, buffer);
+    res = NotifyCommand(type, subtype, buffer);
     free(buffer);
     }
   return res;
