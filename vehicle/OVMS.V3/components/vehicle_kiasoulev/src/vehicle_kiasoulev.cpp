@@ -103,6 +103,9 @@
 ;			- Front Door lock status
 ;			- Trip consumption: kWh/100km & km/kWh.
 ;
+;		0.3.5	3-May-2018 - Geir Øyvind Vælidalo
+;			- Added proper pincode to some commands.
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -145,7 +148,7 @@
 #include "ovms_notify.h"
 #include <sys/param.h>
 
-#define VERSION "0.3.4"
+#define VERSION "0.3.5"
 
 static const char *TAG = "v-kiasoulev";
 
@@ -163,7 +166,7 @@ static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
     { 0x794, 0x79c, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{  90,  30,  10 } }, 	// OBC - On board charger
     { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x00, 		{  90,  10,  10 } }, 	// VMCU Shift-stick
     { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{  90,  10,  30 } }, 	// VMCU Motor temp++
-    { 0x7df, 0x7de, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x06, 		{  0,   60,  60 } }, 	// TMPS
+    { 0x7df, 0x7de, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x06, 		{  0,   30,  60 } }, 	// TMPS
     { 0x7c5, 0x7cd, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, 		{  90,  10,  10 } }, 	// LDC - Low voltage DC-DC
     { 0, 0, 0, 0, { 0, 0, 0 } }
   };
@@ -211,6 +214,8 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   ks_utc_diff = 0;
   ks_openChargePort = false;
   ks_emergency_message_sent = false;
+
+  ks_pincode = 1234;
 
   memset( ks_send_can.byte, 0, sizeof(ks_send_can.byte));
 
@@ -297,17 +302,17 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   cmd_xks->RegisterCommand("cells","Cell voltages", xks_cells, 0,0, false);
   cmd_xks->RegisterCommand("aux","Aux battery", xks_aux, 0,0, false);
   cmd_xks->RegisterCommand("vin","VIN information", xks_vin, 0,0, false);
-  cmd_xks->RegisterCommand("IGN1","IGN1 relay", xks_ign1, "<on/off><password>",1,1, false);
-  cmd_xks->RegisterCommand("IGN2","IGN2 relay", xks_ign2, "<on/off><password>",1,1, false);
-  cmd_xks->RegisterCommand("ACC","ACC relay", xks_acc_relay, "<on/off><password>",1,1, false);
-  cmd_xks->RegisterCommand("START","Start relay", xks_start_relay, "<on/off><password>",1,1, false);
+  cmd_xks->RegisterCommand("IGN1","IGN1 relay", xks_ign1, "<on/off><pincode>",1,1, false);
+  cmd_xks->RegisterCommand("IGN2","IGN2 relay", xks_ign2, "<on/off><pincode>",1,1, false);
+  cmd_xks->RegisterCommand("ACC","ACC relay", xks_acc_relay, "<on/off><pincode>",1,1, false);
+  cmd_xks->RegisterCommand("START","Start relay", xks_start_relay, "<on/off><pincode>",1,1, false);
   cmd_xks->RegisterCommand("headlightdelay","Set Head Light Delay", xks_set_head_light_delay, "<on/off>",1,1, false);
   cmd_xks->RegisterCommand("onetouchturnsignal","Set one touch turn signal", xks_set_one_touch_turn_signal, "<0=Off, 1=3 blink, 2=5 blink, 3=7 blink>",1,1, false);
   cmd_xks->RegisterCommand("autodoorunlock","Set auto door unlock", xks_set_auto_door_unlock, "<1 = Off, 2 = Vehicle Off, 3 = On shift to P ,4 = Driver door unlock>",1,1, false);
   cmd_xks->RegisterCommand("autodoorlock","Set auto door lock", xks_set_auto_door_lock, "<0 =Off, 1=Enable on speed, 2=Enable on Shift>",1,1, false);
 
-  cmd_xks->RegisterCommand("trunk","Open trunk", CommandOpenTrunk, "<password>",1,1, false);
-  cmd_xks->RegisterCommand("chargeport","Open chargeport", CommandOpenChargePort, "<password>",1,1, false);
+  cmd_xks->RegisterCommand("trunk","Open trunk", CommandOpenTrunk, "<pincode>",1,1, false);
+  cmd_xks->RegisterCommand("chargeport","Open chargeport", CommandOpenChargePort, "<pincode>",1,1, false);
   cmd_xks->RegisterCommand("ParkBreakService","Enable break pad service", CommandParkBreakService, "<on/off/off2>",1,1, false);
 
   // For test purposes
@@ -323,7 +328,7 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   MyEvents.SignalEvent("vehicle.require.gps", NULL);
   MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
 
-  MyConfig.RegisterParam("xks", "Kia Soul EV", true, true);
+  MyConfig.RegisterParam("xks", "Kia Soul EV spesific settings.", true, true);
   ConfigChanged(NULL);
 
   // C-Bus
@@ -361,6 +366,7 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
   //  suffrange        	Sufficient range [km] (Default: 0=disabled)
   //  maxrange         	Maximum ideal range at 20 °C [km] (Default: 160)
   //  remote_charge_port					Use "trunk" button on keyfob to open charge port (Default: 1=enabled)
+  //  pincode					The pincode used when lock/unlock doors and more.
   ks_battery_capacity = (float)MyConfig.GetParamValueInt("xks", "cap_act_kwh", CGF_DEFAULT_BATTERY_CAPACITY);
   ks_key_fob_open_charge_port = (bool)MyConfig.GetParamValueBool("xks", "remote_charge_port", true);
 
@@ -370,6 +376,8 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
 
   *StdMetrics.ms_v_charge_limit_soc = (float) MyConfig.GetParamValueInt("xks", "suffsoc");
   *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("xks", "suffrange");
+
+  ks_pincode = MyConfig.GetParamValueInt("xks", "pincode", 1234);
 	}
 
 /**
@@ -426,7 +434,8 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 	// Open charge port if user demands it
 	if( ks_openChargePort )
 		{
-		OpenChargePort(""); //TODO
+		char buffer[6];
+		OpenChargePort(itoa(ks_pincode, buffer, 10));
 		ks_openChargePort = false;
 		}
 
@@ -437,9 +446,6 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 
 	UpdateMaxRangeAndSOH();
 
-	//Set VIN
-	StandardMetrics.ms_v_vin->SetValue(m_vin);
-
 	m_v_pos_street->SetValue(m_street);
 
 	if (FULL_RANGE > 0) //  If we have the battery full range, we can calculate the ideal range too
@@ -447,13 +453,13 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 	  	StdMetrics.ms_v_bat_range_ideal->SetValue( FULL_RANGE * BAT_SOC / 100.0, Kilometers);
 	  	}
 
-	// Get battery temperature
-	StdMetrics.ms_v_bat_temp->SetValue(((float) ks_battery_module_temp[0] + (float) ks_battery_module_temp[1] +
-	          (float) ks_battery_module_temp[2] + (float) ks_battery_module_temp[3] +
-	          (float) ks_battery_module_temp[4] + (float) ks_battery_module_temp[5] +
-	          (float) ks_battery_module_temp[6] + (float) ks_battery_module_temp[7]) / 8, Celcius);
+	// Register battery temperature
+	StdMetrics.ms_v_bat_temp->SetValue(((float)ks_battery_module_temp[0] + ks_battery_module_temp[1] +
+	          ks_battery_module_temp[2] + ks_battery_module_temp[3] +
+	          ks_battery_module_temp[4] + ks_battery_module_temp[5] +
+	          ks_battery_module_temp[6] + ks_battery_module_temp[7]) / 8, Celcius);
 
-	// Update trip
+	// Update trip data
 	if (StdMetrics.ms_v_env_on->AsBool() && ks_trip_start_odo!=0)
 		{
 		StdMetrics.ms_v_pos_trip->SetValue( POS_ODO - ks_trip_start_odo , Kilometers);
@@ -938,10 +944,7 @@ bool OvmsVehicleKiaSoulEv::BlueChargeLed(bool on, uint8_t mode)
  */
 bool OvmsVehicleKiaSoulEv::IsPasswordOk(const char *password)
   {
-	return true;
-	//TODO
-  //std::string p = MyConfig.GetParamValue("password","module");
-  //return ((p.empty())||(p.compare(password)==0));
+	return ks_pincode == atol(password);
   }
 
 
