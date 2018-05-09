@@ -104,7 +104,7 @@
 ;			- Trip consumption: kWh/100km & km/kWh.
 ;
 ;		0.3.5	3-May-2018 - Geir Øyvind Vælidalo
-;			-
+;			- Added proper pincode to some commands.
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
