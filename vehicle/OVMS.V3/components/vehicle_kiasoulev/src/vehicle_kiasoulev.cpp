@@ -146,7 +146,7 @@
 #include "ovms_notify.h"
 #include <sys/param.h>
 
-#define VERSION "0.3.5"
+#define VERSION "0.3.4"
 
 static const char *TAG = "v-kiasoulev";
 
