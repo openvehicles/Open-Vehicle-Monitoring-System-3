@@ -1,19 +1,19 @@
 /**
  * Project:      Open Vehicle Monitor System
  * Module:       Renault Twizy SEVCON Gen4 access
- * 
+ *
  * (c) 2017  Michael Balzer <dexter@dexters-web.de>
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -226,20 +226,20 @@ static const SC_FaultCode_t SC_FaultCode[] = {
 void SevconClient::EmcyListener(string event, void* data)
 {
   CANopenEMCYEvent_t& emcy = *((CANopenEMCYEvent_t*)data);
-  
+
   if (emcy.origin != m_twizy->m_can1 || emcy.nodeid != 1 || emcy.code == 0)
     return;
-  
+
   uint32_t fault = emcy.data[1] << 8 | emcy.data[0];
   ESP_LOGW(TAG, "Sevcon: received fault code 0x%04x", fault);
   MyEvents.SignalEvent("vehicle.fault.code", (void*)fault);
-  
+
   // button push?
   if (fault == FC_MomDir) {
     m_buttoncnt += 2;
     return;
   }
-  
+
   // preop mode not requested by this session?
   if (fault == FC_PreOp && m_cfgmode_request == false) {
     ESP_LOGD(TAG, "Sevcon: detected preop state not requested by us; resolving");
@@ -251,7 +251,7 @@ void SevconClient::EmcyListener(string event, void* data)
     ESP_LOGD(TAG, "Sevcon: ignoring unexpected slave state requested by us");
     return;
   }
-  
+
   // forward new faults to user:
   if (fault != m_lastfault) {
     if (xQueueSend(m_faultqueue, &fault, 0) == pdTRUE)
@@ -270,13 +270,13 @@ void SevconClient::SendFaultAlert(uint16_t faultcode)
       ESP_LOGW(TAG, "SEVCON Fault 0x%04x [%s]: %s\nInfo: %s\nAction: %s\n",
         faultcode, SC_FaultTypeName[SC_FaultCode[i].type],
         SC_FaultCode[i].message, SC_FaultCode[i].description, SC_FaultCode[i].action);
-      MyNotify.NotifyStringf("alert", "SEVCON Fault 0x%04x [%s]: %s\nInfo: %s\nAction: %s\n",
+      MyNotify.NotifyStringf("alert", "xrt.sevcon", "SEVCON Fault 0x%04x [%s]: %s\nInfo: %s\nAction: %s\n",
         faultcode, SC_FaultTypeName[SC_FaultCode[i].type],
         SC_FaultCode[i].message, SC_FaultCode[i].description, SC_FaultCode[i].action);
       return;
     }
   }
-  
+
   // not found: fetch description from controller:
   CANopenJob job;
   uint8_t buf[200] = { '?', 0 };
@@ -286,7 +286,7 @@ void SevconClient::SendFaultAlert(uint16_t faultcode)
     }
   }
   ESP_LOGW(TAG, "SEVCON Fault 0x%04x: %s\n", faultcode, buf);
-  MyNotify.NotifyStringf("alert", "SEVCON Fault 0x%04x: %s\n", faultcode, buf);
+  MyNotify.NotifyStringf("alert", "xrt.sevcon", "SEVCON Fault 0x%04x: %s\n", faultcode, buf);
 }
 
 
@@ -355,16 +355,16 @@ const std::string SevconClient::GetResultString(CANopenJob& job)
 void SevconClient::AddFaultInfo(ostringstream& buf, uint16_t faultcode)
 {
   char xbuf[200];
-  
+
   // add fault code:
   sprintf(xbuf, "%04x", faultcode);
   buf << xbuf << ",";
-  
+
   if (faultcode == 0) {
     buf << "<No fault>";
     return;
   }
-  
+
   // check for known fault code:
   int i;
   for (i = 0; SC_FaultCode[i].code; i++) {
@@ -378,7 +378,7 @@ void SevconClient::AddFaultInfo(ostringstream& buf, uint16_t faultcode)
       return;
     }
   }
-  
+
   // not found, fetch description from controller:
   CANopenJob job;
   strcpy(xbuf, "?");
@@ -409,7 +409,7 @@ CANopenResult_t SevconClient::QueryLogs(int verbosity, OvmsWriter* writer, int w
       if (verbosity > buf.tellp()) \
         verbosity -= writer->puts(buf.str().c_str()); \
     } else { \
-      MyNotify.NotifyString("data", buf.str().c_str()); \
+      MyNotify.NotifyString("data", "xrt.logs", buf.str().c_str()); \
     }
 
   int n, cnt=0, outcnt=0;
@@ -560,12 +560,12 @@ CANopenResult_t SevconClient::QueryLogs(int verbosity, OvmsWriter* writer, int w
     }
   }
 
-  
+
   if (totalcnt)
     *totalcnt = cnt;
   if (sendcnt)
     *sendcnt = outcnt;
-  
+
   return err;
 
   #undef _readsdo
@@ -578,7 +578,7 @@ CANopenResult_t SevconClient::QueryLogs(int verbosity, OvmsWriter* writer, int w
  * ResetLogs:
  *  which: 99=ALL, 2=Faults FIFO, 3=System FIFO, 4=Event counter, 5=Min/max monitor
  *  *retcnt: number of entries cleared
- * 
+ *
  * Note: Alerts can only be reset by power cycle
  */
 CANopenResult_t SevconClient::ResetLogs(int which, int* retcnt)
@@ -629,5 +629,3 @@ CANopenResult_t SevconClient::ResetLogs(int which, int* retcnt)
     *retcnt = total;
   return err;
 }
-
-

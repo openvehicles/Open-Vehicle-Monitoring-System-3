@@ -160,6 +160,7 @@ OvmsConfig::OvmsConfig()
   cmd_config->RegisterCommand("rm","Remove parameter:instance",config_rm,"<param> {<instance> | *}",2,2,true);
 
   RegisterParam("password", "Password store", true, false);
+  RegisterParam("module", "Module configuration", true, true);
   }
 
 OvmsConfig::~OvmsConfig()
@@ -205,10 +206,13 @@ esp_err_t OvmsConfig::mount()
     }
   closedir(dir);
 
+  // load & upgrade params:
   for (ConfigMap::iterator it=MyConfig.m_map.begin(); it!=MyConfig.m_map.end(); ++it)
     {
     it->second->Load();
     }
+  upgrade();
+
   MyEvents.SignalEvent("config.mounted", NULL);
   return ESP_OK;
   }
@@ -231,6 +235,16 @@ esp_err_t OvmsConfig::unmount()
 bool OvmsConfig::ismounted()
   {
   return m_mounted;
+  }
+
+void OvmsConfig::upgrade()
+  {
+  // Migrate password/changed → module/init:
+  if (GetParamValueBool("password", "changed") == true)
+    {
+    SetParamValue("module", "init", "done");
+    DeleteInstance("password", "changed");
+    }
   }
 
 void OvmsConfig::RegisterParam(std::string name, std::string title, bool writable, bool readable)

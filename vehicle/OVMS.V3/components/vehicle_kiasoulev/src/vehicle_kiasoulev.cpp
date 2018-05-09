@@ -103,11 +103,14 @@
 ;			- Front Door lock status
 ;			- Trip consumption: kWh/100km & km/kWh.
 ;
+;		0.3.5	3-May-2018 - Geir Øyvind Vælidalo
+;			- Added proper pincode to some commands.
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
 ;    (C) 2017       Geir Øyvind Vælidalo <geir@validalo.net>
-;;
+;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
 ; in the Software without restriction, including without limitation the rights
@@ -131,8 +134,6 @@
 //		- parkbreakservice is not working
 //		- Rear defogger works, but only as long as TesterPresent is sent.
 //			- Is it enough to send the testetpresent message every second?
-// Lade info ser ut til å være mangelfullt.
-// IDeal range og Estimated range er byttet om.
 
 #include "ovms_log.h"
 
@@ -967,7 +968,7 @@ void OvmsVehicleKiaSoulEv::DoNotify()
 
   if (which & SEND_AuxBattery_Low)
   		{
-    MyNotify.NotifyCommand("alert", "xks aux");
+    MyNotify.NotifyCommand("alert", "xks.aux", "xks aux");
     ks_notifications &= ~SEND_AuxBattery_Low;
   		}
 
@@ -1049,4 +1050,3 @@ OvmsVehicleKiaSoulEvInit::OvmsVehicleKiaSoulEvInit()
 
   MyVehicleFactory.RegisterVehicle<OvmsVehicleKiaSoulEv>("KS","Kia Soul EV");
   }
-

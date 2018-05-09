@@ -45,6 +45,7 @@ static const char *TAG = "ota";
 #include "ovms_config.h"
 #include "ovms_metrics.h"
 #include "ovms_peripherals.h"
+#include "ovms_notify.h"
 #include "metrics_standard.h"
 #include "ovms_http.h"
 #include "ovms_buffer.h"
@@ -53,6 +54,31 @@ static const char *TAG = "ota";
 #include "crypt_md5.h"
 
 OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
+
+int buildverscmp(std::string v1, std::string v2)
+  {
+  // compare canonical versions & check dirty state:
+  // - cut off "-dirty[…]" and/or "/<partition>/<tag>[…]"
+  // - if versions are equal and one of them is dirty, always return 1 (→update)
+  int dirtycnt = 0;
+  auto canonicalize = [&dirtycnt](std::string &v)
+    {
+    std::string::size_type p;
+    if ((p = v.find("-dirty")) != std::string::npos)
+      {
+      v.resize(p);
+      dirtycnt++;
+      }
+    else if ((p = v.find_first_of('/')) != std::string::npos)
+      v.resize(p);
+    };
+  canonicalize(v1);
+  canonicalize(v2);
+  int cmp = strverscmp(v1.c_str(), v2.c_str());
+  if (cmp == 0 && dirtycnt == 1)
+    return 1;
+  return cmp;
+  }
 
 void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -69,11 +95,8 @@ void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     len += writer->printf("Firmware:          %s\n", info.version_firmware.c_str());
   if (info.version_server != "")
     {
-    auto p = info.version_firmware.find_first_of('/');
-    if (p != std::string::npos)
-      info.version_firmware.resize(p);
     len += writer->printf("Server Available:  %s%s\n", info.version_server.c_str(),
-      (strverscmp(info.version_server.c_str(),info.version_firmware.c_str()) > 0) ? " (is newer)" : "");
+      (buildverscmp(info.version_server,info.version_firmware) > 0) ? " (is newer)" : "");
     if (!info.changelog_server.empty())
       {
       writer->puts("");
@@ -533,6 +556,7 @@ void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
   {
   info.version_firmware = "";
   info.version_server = "";
+  info.update_available = false;
   info.partition_running = "";
   info.partition_boot = "";
   info.changelog_server = "";
@@ -573,6 +597,9 @@ void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
         http.Disconnect();
         }
       }
+
+    if (buildverscmp(info.version_server, info.version_firmware) > 0)
+      info.update_available = true;
 
     const esp_partition_t *p = esp_ota_get_running_partition();
     if (p != NULL)
@@ -673,10 +700,7 @@ bool OvmsOTA::AutoFlash(bool force)
       return false;
       }
 
-    auto p = info.version_firmware.find_first_of('/');
-    if (p != std::string::npos)
-      info.version_firmware.resize(p);
-    if (strverscmp(info.version_server.c_str(),info.version_firmware.c_str()) <= 0)
+    if (buildverscmp(info.version_server,info.version_firmware) <= 0)
       {
       ESP_LOGI(TAG,"AutoFlash: No new firmware available");
       return false;
@@ -710,6 +734,7 @@ bool OvmsOTA::AutoFlash(bool force)
     target->label,
     info.version_server.c_str(),
     url.c_str());
+  MyNotify.NotifyStringf("info", "ota.update", "New OTA firmware %s is available for download", info.version_server.c_str());
 
   // HTTP client request...
   OvmsHttpClient http(url);
@@ -785,6 +810,7 @@ bool OvmsOTA::AutoFlash(bool force)
     }
 
   ESP_LOGI(TAG, "AutoFlash: Success flash of %d bytes from %s", filesize, url.c_str());
+  MyNotify.NotifyStringf("info", "ota.update", "OTA firmware %s has been updated (OVMS will restart)", info.version_server.c_str());
   MyConfig.SetParamValue("ota", "http.mru", url);
 
   return true;

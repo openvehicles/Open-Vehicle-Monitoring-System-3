@@ -315,9 +315,9 @@ class CANopenAsyncClient
     virtual void InitReceiveHB(CANopenJob& job, uint8_t nodeid, CANopenNMTState_t* statebuf=NULL,
       int recv_timeout_ms=1000, int max_tries=1);
     virtual void InitReadSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
-      int resp_timeout_ms=50, int max_tries=3);
+      int resp_timeout_ms=100, int max_tries=3);
     virtual void InitWriteSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
-      int resp_timeout_ms=50, int max_tries=3);
+      int resp_timeout_ms=100, int max_tries=3);
   
   public:
     // Main API:
@@ -326,9 +326,9 @@ class CANopenAsyncClient
     virtual CANopenResult_t ReceiveHB(uint8_t nodeid, CANopenNMTState_t* statebuf=NULL,
       int recv_timeout_ms=1000, int max_tries=1);
     virtual CANopenResult_t ReadSDO(uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
-      int resp_timeout_ms=50, int max_tries=3);
+      int resp_timeout_ms=100, int max_tries=3);
     virtual CANopenResult_t WriteSDO(uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
-      int resp_timeout_ms=50, int max_tries=3);
+      int resp_timeout_ms=100, int max_tries=3);
   
   public:
     CANopenWorker*        m_worker;
@@ -362,9 +362,9 @@ class CANopenClient : public CANopenAsyncClient
     virtual CANopenResult_t ReceiveHB(CANopenJob& job, uint8_t nodeid, CANopenNMTState_t* statebuf=NULL,
       int recv_timeout_ms=1000, int max_tries=1);
     virtual CANopenResult_t ReadSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
-      int resp_timeout_ms=50, int max_tries=3);
+      int resp_timeout_ms=100, int max_tries=3);
     virtual CANopenResult_t WriteSDO(CANopenJob& job, uint8_t nodeid, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize,
-      int resp_timeout_ms=50, int max_tries=3);
+      int resp_timeout_ms=100, int max_tries=3);
   
   public:
     SemaphoreHandle_t m_mutex;              // thread mutex
@@ -400,7 +400,7 @@ class CANopen
     static const std::string GetResultString(const CANopenResult_t result, const uint32_t abortcode);
     static const std::string GetResultString(const CANopenJob& job);
     static int PrintNodeInfo(int capacity, OvmsWriter* writer, canbus* bus, int nodeid,
-      int timeout_ms=50, bool brief=false, bool quiet=false);
+      int timeout_ms=100, bool brief=false, bool quiet=false);
 
   public:
     static void shell_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);

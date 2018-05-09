@@ -2,19 +2,19 @@
  * Project:      Open Vehicle Monitor System
  * Module:       Renault Twizy: general notifications, alerts & data updates
  *                              (see rt_battmon & rt_pwrmon for specific notifications)
- * 
+ *
  * (c) 2017  Michael Balzer <dexter@dexters-web.de>
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -56,52 +56,52 @@ void OvmsVehicleRenaultTwizy::RequestNotify(unsigned int which)
 void OvmsVehicleRenaultTwizy::DoNotify()
 {
   unsigned int which = twizy_notifications;
-  
+
   // Send battery alert?
   if (which & SEND_BatteryAlert) {
     if (BatteryLock(0)) {
       StringWriter buf(200);
       FormatBatteryStatus(COMMAND_RESULT_NORMAL, &buf, 0);
-      MyNotify.NotifyString("alert", buf.c_str());
+      MyNotify.NotifyString("alert", "batt.alert", buf.c_str());
       BatteryUnlock();
       twizy_notifications &= ~SEND_BatteryAlert;
     }
   }
-  
+
   // Send charge alert?
   if (which & SEND_ChargeAlert) {
     StringWriter buf(200);
     CommandStat(COMMAND_RESULT_NORMAL, &buf);
-    MyNotify.NotifyString("alert", buf.c_str());
+    MyNotify.NotifyString("alert", "charge.stopped", buf.c_str());
     twizy_notifications &= ~SEND_ChargeAlert;
   }
-  
+
   // Send charge state?
   if (which & SEND_ChargeState) {
     StringWriter buf(200);
     CommandStat(COMMAND_RESULT_NORMAL, &buf);
-    MyNotify.NotifyString("info", buf.c_str());
+    MyNotify.NotifyString("info", "charge.state", buf.c_str());
     twizy_notifications &= ~SEND_ChargeState;
   }
-  
+
   // Send power usage statistics?
   if (which & SEND_PowerNotify) {
-    MyNotify.NotifyCommand("info", "xrt power report");
+    MyNotify.NotifyCommand("info", "xrt.power", "xrt power report");
     twizy_notifications &= ~SEND_PowerNotify;
   }
-  
+
   // Send drive log?
   if (which & SEND_TripLog) {
     SendTripLog();
     twizy_notifications &= ~SEND_TripLog;
   }
-  
+
   // Send GPS log update?
   if (which & SEND_GPSLog) {
     SendGPSLog();
     twizy_notifications &= ~SEND_GPSLog;
   }
-  
+
   // Send battery status update?
   if (which & SEND_BatteryStats) {
     if (BatteryLock(0)) {
@@ -112,14 +112,14 @@ void OvmsVehicleRenaultTwizy::DoNotify()
       twizy_notifications &= ~SEND_BatteryStats;
     }
   }
-  
+
   // Send power usage update?
   if (which & SEND_PowerStats) {
     if (PowerIsModified())
-      MyNotify.NotifyCommand("data", "xrt power stats");
+      MyNotify.NotifyCommand("data", "xrt.power", "xrt power stats");
     twizy_notifications &= ~SEND_PowerStats;
   }
-  
+
   // Send SEVCON SDO log update?
   if (which & SEND_SDOLog) {
     // TODO
@@ -127,7 +127,7 @@ void OvmsVehicleRenaultTwizy::DoNotify()
     // stat = vehicle_twizy_sdolog_msgp(stat, 0x4602);
     twizy_notifications &= ~SEND_SDOLog;
   }
-  
+
 }
 
 
@@ -137,12 +137,12 @@ void OvmsVehicleRenaultTwizy::DoNotify()
 OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandStat(int verbosity, OvmsWriter* writer)
 {
   metric_unit_t rangeUnit = Native; // TODO: use user config if set
-  
+
   bool chargeport_open = StdMetrics.ms_v_door_chargeport->AsBool();
   if (chargeport_open)
   {
     std::string charge_state = StdMetrics.ms_v_charge_state->AsString();
-    
+
     // Translate state codes:
     if (charge_state == "charging")
       charge_state = "Charging";
@@ -152,9 +152,9 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandStat(
       charge_state = "Charge Done";
     else if (charge_state == "stopped")
       charge_state = "Charge Stopped";
-    
+
     writer->puts(charge_state.c_str());
-    
+
     // Power sums: battery input:
     float pwr_batt = StdMetrics.ms_v_bat_energy_recd->AsFloat() * 1000;
     // Grid drain estimation:
@@ -169,7 +169,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandStat(
     // Charge port door is closed, not charging
     writer->puts("Not charging");
   }
-  
+
   // Estimated charge time for 100%:
   if (twizy_soc < 10000)
   {
@@ -177,23 +177,23 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandStat(
     if (duration_full)
       writer->printf("Full: %d min.\n", duration_full);
   }
-  
+
   // Estimated + Ideal Range:
   const char* range_est = StdMetrics.ms_v_bat_range_est->AsString("?", rangeUnit, 0).c_str();
   const char* range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("?", rangeUnit, 0).c_str();
   writer->printf("Range: %s - %s\n", range_est, range_ideal);
-  
+
   // SOC + min/max:
   writer->printf("SOC: %s (%s..%s)\n",
     (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str(),
     (char*) m_batt_soc_min->AsString("-", Native, 1).c_str(),
     (char*) m_batt_soc_max->AsUnitString("-", Native, 1).c_str());
-  
+
   // ODOMETER:
   const char* odometer = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
   if (*odometer != '-')
     writer->printf("ODO: %s\n", odometer);
-  
+
   // BATTERY CAPACITY:
   if (cfg_bat_cap_actual_prc > 0)
   {
@@ -201,14 +201,14 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandStat(
       cfg_bat_cap_actual_prc,
       StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str());
   }
-  
+
   // BATTERY SOH:
   if (twizy_soh > 0)
   {
     writer->printf("SOH: %s\n",
       StdMetrics.ms_v_bat_soh->AsUnitString("-", Native, 0).c_str());
   }
-  
+
   return Success;
 }
 
@@ -233,15 +233,15 @@ void OvmsVehicleRenaultTwizy::SendGPSLog()
     StdMetrics.ms_v_bat_current->IsModifiedAndClear(m_modifier) |
     StdMetrics.ms_v_bat_coulomb_used->IsModifiedAndClear(m_modifier) |
     StdMetrics.ms_v_bat_coulomb_recd->IsModifiedAndClear(m_modifier);
-  
+
   if (!modified)
     return;
-  
+
   unsigned long pwr_dist, pwr_use, pwr_rec;
   signed int pwr_min, pwr_max, curr_min, curr_max;
 
   // Read power stats:
-  
+
   pwr_dist = twizy_speedpwr[CAN_SPEED_CONST].dist
           + twizy_speedpwr[CAN_SPEED_ACCEL].dist
           + twizy_speedpwr[CAN_SPEED_DECEL].dist;
@@ -261,7 +261,7 @@ void OvmsVehicleRenaultTwizy::SendGPSLog()
   curr_max = twizy_current_max;
   twizy_power_min = twizy_current_min = 32767;
   twizy_power_max = twizy_current_max = -32768;
-  
+
   // H type "RT-GPS-Log", recno = odometer, keep for 1 day
   ostringstream buf;
   buf
@@ -283,7 +283,7 @@ void OvmsVehicleRenaultTwizy::SendGPSLog()
     << "," << pwr_use / WH_DIV
     << "," << pwr_rec / WH_DIV
     << "," << pwr_dist / 10;
-  
+
   if (pwr_min == 32767) {
     buf
       << ",0,0";
@@ -292,7 +292,7 @@ void OvmsVehicleRenaultTwizy::SendGPSLog()
       << "," << (pwr_min * 64 + 5) / 10
       << "," << (pwr_max * 64 + 5) / 10;
   }
-  
+
   buf
     << setbase(16)
     << "," << (unsigned int) twizy_status
@@ -312,8 +312,8 @@ void OvmsVehicleRenaultTwizy::SendGPSLog()
       << "," << (float) curr_min / 4
       << "," << (float) curr_max / 4;
   }
-  
-  MyNotify.NotifyString("data", buf.str().c_str());
+
+  MyNotify.NotifyString("data", "xrt.gps", buf.str().c_str());
 }
 
 
@@ -325,7 +325,7 @@ void OvmsVehicleRenaultTwizy::SendTripLog()
   unsigned long pwr_dist, pwr_use, pwr_rec;
 
   // Read power stats:
-  
+
   pwr_dist = twizy_speedpwr[CAN_SPEED_CONST].dist
           + twizy_speedpwr[CAN_SPEED_ACCEL].dist
           + twizy_speedpwr[CAN_SPEED_DECEL].dist;
@@ -351,7 +351,7 @@ void OvmsVehicleRenaultTwizy::SendTripLog()
   //   ,trip_avg_speed_kph,trip_avg_accel_kps,trip_avg_decel_kps
   //   ,charge_used_ah,charge_recd_ah,batt_capacity_prc
   //   ,chg_temp
-  
+
   ostringstream buf;
   buf
     << "RT-PWR-Log,0,31536000" // recno = 0, keep for 365 days
@@ -388,7 +388,7 @@ void OvmsVehicleRenaultTwizy::SendTripLog()
     << setprecision(2)
     << "," << (float) (twizy_odometer - twizy_odometer_tripstart) / 100
     << "," << (float) ABS((long)twizy_soc_tripstart - (long)twizy_soc_tripend) / 100
-    
+
     << "," << (float) ((twizy_speedpwr[CAN_SPEED_CONST].spdcnt > 0)
           ? twizy_speedpwr[CAN_SPEED_CONST].spdsum / twizy_speedpwr[CAN_SPEED_CONST].spdcnt
           : 0) / 100 // avg speed kph
@@ -398,14 +398,12 @@ void OvmsVehicleRenaultTwizy::SendTripLog()
     << "," << (float) ((twizy_speedpwr[CAN_SPEED_DECEL].spdcnt > 0)
           ? (twizy_speedpwr[CAN_SPEED_DECEL].spdsum * 10) / twizy_speedpwr[CAN_SPEED_DECEL].spdcnt
           : 0) / 100 // avg decel kph/s
-    
+
     << "," << (float) twizy_charge_use / AH_DIV
     << "," << (float) twizy_charge_rec / AH_DIV
     << "," << (float) cfg_bat_cap_actual_prc
     << "," << StdMetrics.ms_v_charge_temp->AsInt()
     ;
-  
-  MyNotify.NotifyString("data", buf.str().c_str());
+
+  MyNotify.NotifyString("data", "xrt.trip", buf.str().c_str());
 }
-
-

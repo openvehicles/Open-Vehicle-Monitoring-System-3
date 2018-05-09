@@ -50,7 +50,7 @@ OvmsWebServer::OvmsWebServer()
 
   m_running = false;
   memset(m_sessions, 0, sizeof(m_sessions));
-
+  
 #if MG_ENABLE_FILESYSTEM
   m_file_enable = true;
   memset(&m_file_opts, 0, sizeof(m_file_opts));
@@ -85,7 +85,7 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/home", "Home", HandleHome);
   RegisterPage("/login", "Login", HandleLogin);
   RegisterPage("/logout", "Logout", HandleLogout);
-
+  
   // register standard API calls:
   RegisterPage("/api/execute", "Execute command", HandleCommand, PageMenu_None, PageAuth_Cookie);
 
@@ -93,6 +93,7 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/status", "Status", HandleStatus, PageMenu_Main, PageAuth_Cookie);
   RegisterPage("/shell", "Shell", HandleShell, PageMenu_Main, PageAuth_Cookie);
   RegisterPage("/dashboard", "Dashboard", HandleDashboard, PageMenu_Main, PageAuth_Cookie);
+  RegisterPage("/cfg/init", "Setup wizard", HandleCfgInit, PageMenu_None, PageAuth_Cookie);
   RegisterPage("/cfg/password", "Password", HandleCfgPassword, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/vehicle", "Vehicle", HandleCfgVehicle, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/wifi", "Wifi", HandleCfgWifi, PageMenu_Config, PageAuth_Cookie);
@@ -103,6 +104,8 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/cfg/autostart", "Autostart", HandleCfgAutoInit, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/firmware", "Firmware", HandleCfgFirmware, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/logging", "Logging", HandleCfgLogging, PageMenu_Config, PageAuth_Cookie);
+  
+  CfgInitStartup();
 }
 
 OvmsWebServer::~OvmsWebServer()
@@ -705,8 +708,11 @@ void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
     }
 
     if (error == "") {
-      // ok: set cookie, reload menu & redirect to original uri, /cfg/password or /home:
-      if (MyConfig.GetParamValueBool("password", "changed") == false)
+      // ok: set cookie, reload menu, redirect to /cfg/init, /cfg/password, original uri or /home:
+      std::string init_step = MyConfig.GetParamValue("module", "init");
+      if (!init_step.empty() && init_step != "done")
+        c.uri = "/cfg/init";
+      else if (MyConfig.GetParamValue("password", "module").empty())
         c.uri = "/cfg/password";
       else if (c.uri == "/login" || c.uri == "/logout" || c.uri == "/")
         c.uri = "/home";

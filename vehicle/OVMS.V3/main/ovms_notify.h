@@ -49,24 +49,26 @@ class OvmsNotifyType;
 class OvmsNotifyEntry : public ExternalRamAllocated
   {
   public:
-    OvmsNotifyEntry();
+    OvmsNotifyEntry(const char* subtype);
     virtual ~OvmsNotifyEntry();
 
   public:
     virtual const extram::string GetValue();
     virtual bool IsRead(size_t reader);
     virtual bool IsAllRead();
+    virtual const char* GetSubType();
 
   public:
     std::bitset<NOTIFY_MAX_READERS> m_readers;
     uint32_t m_id;
     uint32_t m_created;
+    const char* m_subtype;
   };
 
 class OvmsNotifyEntryString : public OvmsNotifyEntry
   {
   public:
-    OvmsNotifyEntryString(const char* value);
+    OvmsNotifyEntryString(const char* subtype, const char* value);
     virtual ~OvmsNotifyEntryString();
 
   public:
@@ -79,7 +81,7 @@ class OvmsNotifyEntryString : public OvmsNotifyEntry
 class OvmsNotifyEntryCommand : public OvmsNotifyEntry
   {
   public:
-    OvmsNotifyEntryCommand(int verbosity, const char* cmd);
+    OvmsNotifyEntryCommand(const char* subtype, int verbosity, const char* cmd);
     virtual ~OvmsNotifyEntryCommand();
 
   public:
@@ -121,11 +123,12 @@ typedef std::function<bool(OvmsNotifyType*,OvmsNotifyEntry*)> OvmsNotifyCallback
 class OvmsNotifyCallbackEntry
   {
   public:
-    OvmsNotifyCallbackEntry(const char* caller, size_t reader, int verbosity, OvmsNotifyCallback_t callback);
+    OvmsNotifyCallbackEntry(const char* caller, size_t reader, int verbosity, OvmsNotifyCallback_t callback, bool filtered);
     virtual ~OvmsNotifyCallbackEntry();
 
   public:
     const char *m_caller;
+    bool m_filtered;
     size_t m_reader;
     int m_verbosity;
     OvmsNotifyCallback_t m_callback;
@@ -143,7 +146,7 @@ class OvmsNotify : public ExternalRamAllocated
     virtual ~OvmsNotify();
 
   public:
-    size_t RegisterReader(const char* caller, int verbosity, OvmsNotifyCallback_t callback);
+    size_t RegisterReader(const char* caller, int verbosity, OvmsNotifyCallback_t callback, bool filtered=false);
     void ClearReader(const char* caller);
     size_t CountReaders();
     OvmsNotifyType* GetType(const char* type);
@@ -151,10 +154,10 @@ class OvmsNotify : public ExternalRamAllocated
 
   public:
     void RegisterType(const char* type);
-    uint32_t NotifyString(const char* type, const char* value);
-    uint32_t NotifyStringf(const char* type, const char* fmt, ...);
-    uint32_t NotifyCommand(const char* type, const char* cmd);
-    uint32_t NotifyCommandf(const char* type, const char* fmt, ...);
+    uint32_t NotifyString(const char* type, const char* subtype, const char* value);
+    uint32_t NotifyStringf(const char* type, const char* subtype, const char* fmt, ...);
+    uint32_t NotifyCommand(const char* type, const char* subtype, const char* cmd);
+    uint32_t NotifyCommandf(const char* type, const char* subtype, const char* fmt, ...);
 
   public:
     OvmsNotifyCallbackMap_t m_readers;

@@ -1,19 +1,19 @@
 /**
  * Project:      Open Vehicle Monitor System
  * Module:       Renault Twizy SEVCON Gen4 access
- * 
+ *
  * (c) 2017  Michael Balzer <dexter@dexters-web.de>
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -48,35 +48,35 @@ SevconClient::SevconClient(OvmsVehicleRenaultTwizy* twizy)
   : m_sync(twizy->m_can1), m_async(twizy->m_can1)
 {
   ESP_LOGI(TAG, "sevcon subsystem init");
-  
+
   m_twizy = twizy;
   m_sevcon_type = 0;
-  
+
   m_drivemode.u32 = 0;
   m_drivemode.v3tag = 1;
   m_drivemode.profile_user = MyConfig.GetParamValueInt("xrt", "profile_user", 0);
   GetParamProfile(m_drivemode.profile_user, m_profile);
-  
+
   m_cfgmode_request = false;
-  
+
   // register shell commands:
-  
+
   OvmsCommand *cmd_cfg = m_twizy->cmd_xrt->RegisterCommand("cfg", "SEVCON tuning", NULL, "", 0, 0, true);
-  
+
   cmd_cfg->RegisterCommand("pre", "Enter configuration mode (pre-operational)", shell_cfg_mode, "", 0, 0, true);
   cmd_cfg->RegisterCommand("op", "Leave configuration mode (go operational)", shell_cfg_mode, "", 0, 0, true);
-  
+
   cmd_cfg->RegisterCommand("read", "Read register", shell_cfg_read, "<index_hex> <subindex_hex>", 2, 2, true);
   cmd_cfg->RegisterCommand("write", "Read & write register", shell_cfg_write, "<index_hex> <subindex_hex> <value>", 3, 3, true);
   cmd_cfg->RegisterCommand("writeonly", "Write register", shell_cfg_write, "<index_hex> <subindex_hex> <value>", 3, 3, true);
-  
+
   cmd_cfg->RegisterCommand("set", "Set tuning profile from base64 string", shell_cfg_set, "<key> <base64data>", 2, 2, true);
   cmd_cfg->RegisterCommand("reset", "Reset tuning profile", shell_cfg_set, "[key]", 0, 1, true);
   cmd_cfg->RegisterCommand("get", "Get tuning profile as base64 string", shell_cfg_get, "[key]", 0, 1, true);
   cmd_cfg->RegisterCommand("info", "Show tuning profile", shell_cfg_info, "[key]", 0, 1, true);
   cmd_cfg->RegisterCommand("save", "Save current tuning profile", shell_cfg_save, "[key]", 0, 1, true);
   cmd_cfg->RegisterCommand("load", "Load stored tuning profile", shell_cfg_load, "[key]", 0, 1, true);
-  
+
   cmd_cfg->RegisterCommand("drive", "Tune drive power level", shell_cfg_drive,
                             "[max_prc] [autopower_ref] [autopower_minprc] [kickdown_threshold] [kickdown_compzero]", 0, 5, true);
   cmd_cfg->RegisterCommand("recup", "Tune recuperation power levels", shell_cfg_recup,
@@ -95,16 +95,16 @@ SevconClient::SevconClient(OvmsVehicleRenaultTwizy* twizy)
                             "[maps] [t1_prc[@t1_spd]] [t2_prc[@t2_spd]] [t3_prc[@t3_spd]] [t4_prc[@t4_spd]]", 0, 5, true);
   cmd_cfg->RegisterCommand("brakelight", "Tune brakelight trigger levels", shell_cfg_brakelight,
                             "[on_lev] [off_lev]", 0, 2, true);
-  
+
   cmd_cfg->RegisterCommand("showlogs", "Display SEVCON diag logs", shell_cfg_querylogs, "[which=1] [start=0]", 0, 2, true);
   cmd_cfg->RegisterCommand("querylogs", "Send SEVCON diag logs to server", shell_cfg_querylogs, "[which=1] [start=0]", 0, 2, true);
   cmd_cfg->RegisterCommand("clearlogs", "Clear SEVCON diag logs", shell_cfg_clearlogs, "[which=99]", 0, 1, true);
-  
+
   // TODO:
   //  lock, unlock, valet, unvalet
   // LATER:
   //  getdcf?
-  
+
   // fault listener:
   m_faultqueue = xQueueCreate(10, sizeof(uint16_t));
   m_lastfault = 0;
@@ -112,7 +112,7 @@ SevconClient::SevconClient(OvmsVehicleRenaultTwizy* twizy)
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "canopen.node.emcy", std::bind(&SevconClient::EmcyListener, this, _1, _2));
-  
+
   m_kickdown_timer = xTimerCreate("RT kickdown", pdMS_TO_TICKS(100), pdTRUE, NULL, KickdownTimer);
 }
 
@@ -165,11 +165,11 @@ CANopenResult_t SevconClient::CheckBus()
   // check for CAN write access:
   if (!m_twizy->twizy_flags.EnableWrite)
     return COR_ERR_NoCANWrite;
-  
+
   // check component status (currently only SEVCON):
   if ((m_twizy->twizy_status & CAN_STATUS_KEYON) == 0)
     return COR_ERR_DeviceOffline;
-  
+
   return COR_OK;
 }
 
@@ -258,7 +258,7 @@ CANopenResult_t SevconClient::Login(bool on)
   CANopenResult_t res = CheckBus();
   if (res != COR_OK)
     return res;
-  
+
   // get SEVCON type (Twizy 80/45):
   if (sc.Read(0x1018, 0x02, m_sevcon_type) != COR_OK)
     return COR_ERR_UnknownDevice;
@@ -279,7 +279,7 @@ CANopenResult_t SevconClient::Login(bool on)
     ESP_LOGE(TAG, "Twizy type unknown: SEVCON type 0x%08x", m_sevcon_type);
     return COR_ERR_UnknownDevice;
   }
-  
+
   // check login level:
   uint32_t level;
   if (sc.Read(0x5000, 0x01, level) != COR_OK)
@@ -319,24 +319,24 @@ CANopenResult_t SevconClient::CfgMode(CANopenJob& job, bool on)
 {
   // Note: as waiting for the next heartbeat would take ~ 500 ms, so
   //  we read the state change result from 0x5110.00
-  
+
   ESP_LOGD(TAG, "Sevcon cfgmode request: %d", on);
   uint32_t state = 0;
   m_cfgmode_request = on;
-  
+
   CANopenResult_t res = CheckBus();
   if (res != COR_OK)
     return res;
-  
+
   if (!on)
   {
     // request operational state:
     if (RequestState(job, CONC_Start, false) != COR_OK)
       return COR_ERR_StateChangeFailed;
-    
+
     // give controller some time…
     vTaskDelay(pdMS_TO_TICKS(10));
-    
+
     // check state:
     Read(job, 0x5110, 0x00, state);
     if (state != CONS_Operational)
@@ -355,10 +355,10 @@ CANopenResult_t SevconClient::CfgMode(CANopenJob& job, bool on)
     // request pre-operational state:
     if (RequestState(job, CONC_PreOp, false) != COR_OK)
       return COR_ERR_StateChangeFailed;
-    
+
     // give controller some time…
     vTaskDelay(pdMS_TO_TICKS(10));
-    
+
     // check state:
     Read(job, 0x5110, 0x00, state);
     if (state != CONS_PreOperational)
@@ -369,7 +369,7 @@ CANopenResult_t SevconClient::CfgMode(CANopenJob& job, bool on)
       return COR_ERR_StateChangeFailed;
     }
   }
-  
+
   ESP_LOGD(TAG, "Sevcon cfgmode status: %d", on);
   SetCtrlCfgMode(on);
   if (on)
@@ -395,7 +395,7 @@ void SevconClient::Ticker1(uint32_t ticker)
 
   // cleanup CANopen job result queue:
   ProcessAsyncResults();
-  
+
   // Send fault alerts:
   uint16_t faultcode;
   while (xQueueReceive(m_faultqueue, &faultcode, 0) == pdTRUE) {
@@ -404,7 +404,7 @@ void SevconClient::Ticker1(uint32_t ticker)
 
   if (!m_twizy->twizy_flags.CarAwake || !m_twizy->twizy_flags.EnableWrite)
     return;
-  
+
   // Login to SEVCON:
   if (!CtrlLoggedIn()) {
     if (Login(true) != COR_OK)
@@ -414,14 +414,14 @@ void SevconClient::Ticker1(uint32_t ticker)
   // Check for 3 successive button presses in STOP mode => CFG RESET:
   if ((m_buttoncnt >= 5) && (!m_twizy->twizy_flags.DisableReset)) {
     ESP_LOGW(TAG, "Sevcon: detected D/R button cfg reset request");
-    
+
     // reset current profile:
     GetParamProfile(0, m_profile);
     CANopenResult_t res = CfgApplyProfile(m_drivemode.profile_user);
     m_drivemode.unsaved = (m_drivemode.profile_user > 0);
-    
+
     // send result:
-    MyNotify.NotifyStringf("info", "Tuning RESET: %s\n", FmtSwitchProfileResult(res).c_str());
+    MyNotify.NotifyStringf("info", "xrt.reset", "Tuning RESET: %s\n", FmtSwitchProfileResult(res).c_str());
 
     // reset button cnt:
     m_buttoncnt = 0;
@@ -429,7 +429,7 @@ void SevconClient::Ticker1(uint32_t ticker)
   else if (m_buttoncnt > 0) {
     m_buttoncnt--;
   }
-  
+
   // Auto drive & recuperation adjustment (if enabled):
   CfgAutoPower();
 

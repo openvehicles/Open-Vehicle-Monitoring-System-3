@@ -108,6 +108,9 @@ struct PageContext
   void input_radio_start(const char* label, const char* name);
   void input_radio_option(const char* name, const char* label, const char* value, bool selected);
   void input_radio_end(const char* helptext=NULL);
+  void input_radiobtn_start(const char* label, const char* name);
+  void input_radiobtn_option(const char* name, const char* label, const char* value, bool selected);
+  void input_radiobtn_end(const char* helptext=NULL);
   void input_checkbox(const char* label, const char* name, bool value, const char* helptext=NULL);
   void input_slider(const char* label, const char* name, int size, const char* unit,
     int enabled, double value, double defval, double min, double max, double step=1,
@@ -391,6 +394,7 @@ class OvmsWebServer
     static void HandleLogin(PageEntry_t& p, PageContext_t& c);
     static void HandleLogout(PageEntry_t& p, PageContext_t& c);
     static void OutputReboot(PageEntry_t& p, PageContext_t& c);
+    static void OutputReconnect(PageEntry_t& p, PageContext_t& c, const char* info=NULL);
   
   public:
     static void HandleStatus(PageEntry_t& p, PageContext_t& c);
@@ -411,7 +415,19 @@ class OvmsWebServer
     static void HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgFirmware(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgLogging(PageEntry_t& p, PageContext_t& c);
-  
+
+  public:
+    void CfgInitStartup();
+    static void HandleCfgInit(PageEntry_t& p, PageContext_t& c);
+    static std::string CfgInitSetStep(std::string step, int timeout=0);
+    void CfgInitTicker();
+    std::string CfgInit1(PageEntry_t& p, PageContext_t& c, std::string step);
+    std::string CfgInit2(PageEntry_t& p, PageContext_t& c, std::string step);
+    std::string CfgInit3(PageEntry_t& p, PageContext_t& c, std::string step);
+    std::string CfgInit4(PageEntry_t& p, PageContext_t& c, std::string step);
+    std::string CfgInit5(PageEntry_t& p, PageContext_t& c, std::string step);
+
+
   public:
     bool                      m_running;
 
@@ -428,6 +444,8 @@ class OvmsWebServer
     SemaphoreHandle_t         m_client_mutex;
     WebSocketSlots            m_client_slots;
     TimerHandle_t             m_update_ticker;
+    
+    int                       m_init_timeout;
 };
 
 extern OvmsWebServer MyWebServer;

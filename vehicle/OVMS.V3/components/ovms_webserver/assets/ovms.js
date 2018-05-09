@@ -117,7 +117,7 @@ function getpage() {
 }
 
 var monitorTimer, last_monotonic = 0;
-var ws;
+var ws, ws_inhibit = 0;
 var metrics = {};
 var shellhist = [""], shellhpos = 0;
 
@@ -130,6 +130,14 @@ function initSocketConnection(){
     msg = JSON.parse(ev.data);
     if (msg && msg.event) {
       $(".receiver").trigger("msg:event", msg.event);
+      $(".monitor[data-events]").each(function(){
+        var cmd = $(this).data("updcmd");
+        var evf = $(this).data("events");
+        if (cmd && evf && msg.event.match(evf)) {
+          $(this).data("updlast", now());
+          loadcmd(cmd, $(this));
+        }
+      });
     }
     else if (msg && msg.metrics) {
       $.extend(metrics, msg.metrics);
@@ -138,9 +146,23 @@ function initSocketConnection(){
   };
 }
 
+function monitorInit(force){
+  $(".monitor").each(function(){
+    var cmd = $(this).data("updcmd");
+    var txt = $(this).text();
+    if (cmd && (force || !txt)) {
+      $(this).data("updlast", now());
+      loadcmd(cmd, $(this));
+    }
+  });
+}
+
 function monitorUpdate(){
   if (!ws || ws.readyState == ws.CLOSED){
-    initSocketConnection();
+    if (ws_inhibit != 0)
+      --ws_inhibit;
+    if (ws_inhibit == 0)
+      initSocketConnection();
   }
   var new_monotonic = parseInt(metrics["m.monotonic"]) || 0;
   if (new_monotonic < last_monotonic)
@@ -154,9 +176,9 @@ function monitorUpdate(){
     var cmd = $(this).data("updcmd");
     if (!cnt || !cmd || (now()-last) < int)
       return;
-    loadcmd(cmd, $(this));
     $(this).data("updcnt", cnt-1);
     $(this).data("updlast", now());
+    loadcmd(cmd, $(this));
   });
 }
 
@@ -229,7 +251,7 @@ $(function(){
     var btn = $(this);
     var cmd = btn.data("cmd");
     var tgt = btn.data("target");
-    var updcnt = btn.data("watchcnt") || 3;
+    var updcnt = btn.data("watchcnt") || 0;
     var updint = btn.data("watchint") || 2;
     btn.prop("disabled", true);
     $(tgt).data("updcnt", 0);

@@ -74,7 +74,12 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
         {
         // Connection failed
         ESP_LOGW(TAG, "Connection failed");
-        if (MyOvmsServerV3) MyOvmsServerV3->m_connretry = 20;
+        if (MyOvmsServerV3)
+          {
+          StandardMetrics.ms_s_v3_connected->SetValue(false);
+          MyOvmsServerV3->SetStatus("Error: Connection failed", true, OvmsServerV3::WaitReconnect);
+          MyOvmsServerV3->m_connretry = 20;
+          }
         }
       }
       break;
@@ -94,7 +99,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
         if (MyOvmsServerV3)
           {
           StandardMetrics.ms_s_v3_connected->SetValue(true);
-          MyOvmsServerV3->SetStatus("OVMS V3 MQTT login successful");
+          MyOvmsServerV3->SetStatus("OVMS V3 MQTT login successful", false, OvmsServerV3::Connected);
           MyOvmsServerV3->m_sendall = true;
           }
         }
@@ -134,7 +139,7 @@ OvmsServerV3::OvmsServerV3(const char* name)
     ESP_LOGI(TAG, "OVMS Server V3 registered metric modifier is #%d",MyOvmsServerV3Modifier);
     }
 
-  SetStatus("Starting");
+  SetStatus("Server has been started", false, WaitNetwork);
   m_connretry = 0;
   m_mgconn = NULL;
   m_sendall = false;
@@ -154,7 +159,7 @@ OvmsServerV3::OvmsServerV3(const char* name)
 
   if (MyOvmsServerV3Reader == 0)
     {
-    MyOvmsServerV3Reader = MyNotify.RegisterReader(TAG, COMMAND_RESULT_NORMAL, std::bind(OvmsServerV3ReaderCallback, _1, _2));
+    MyOvmsServerV3Reader = MyNotify.RegisterReader("ovmsv3", COMMAND_RESULT_NORMAL, std::bind(OvmsServerV3ReaderCallback, _1, _2), true);
     }
 
   // init event listener:
@@ -183,6 +188,7 @@ OvmsServerV3::~OvmsServerV3()
   MyEvents.DeregisterEvent(TAG);
   MyNotify.ClearReader(TAG);
   Disconnect();
+  MyEvents.SignalEvent("server.v3.stopped", NULL);
   }
 
 void OvmsServerV3::TransmitAllMetrics()
@@ -248,18 +254,18 @@ void OvmsServerV3::Connect()
 
   if (m_vehicleid.empty())
     {
-    SetStatus("Error: Parameter vehicle/id must be defined",true);
+    SetStatus("Error: Parameter vehicle/id must be defined", true, WaitReconnect);
     m_connretry = 20; // Try again in 20 seconds...
     return;
     }
   if (m_server.empty())
     {
-    SetStatus("Error: Parameter server.v3/server must be defined",true);
+    SetStatus("Error: Parameter server.v3/server must be defined", true, WaitReconnect);
     m_connretry = 20; // Try again in 20 seconds...
     return;
     }
 
-  SetStatus("Connecting...");
+  SetStatus("Connecting...", false, Connecting);
   OvmsMutexLock mg(&m_mgconn_mutex);
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
   struct mg_connect_opts opts;
@@ -282,19 +288,49 @@ void OvmsServerV3::Disconnect()
     {
     m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
     m_mgconn = NULL;
-    SetStatus("Error: Disconnected from OVMS Server V3",true);
+    SetStatus("Error: Disconnected from OVMS Server V3", true, Disconnected);
     }
   m_connretry = 0;
   StandardMetrics.ms_s_v3_connected->SetValue(false);
   }
 
-void OvmsServerV3::SetStatus(const char* status, bool fault)
+void OvmsServerV3::SetStatus(const char* status, bool fault /*=false*/, State newstate /*=Undefined*/)
   {
   if (fault)
     ESP_LOGE(TAG, "Status: %s", status);
   else
     ESP_LOGI(TAG, "Status: %s", status);
   m_status = status;
+  if (newstate != Undefined)
+    {
+    m_state = newstate;
+    switch (m_state)
+      {
+      case OvmsServerV3::WaitNetwork:
+        MyEvents.SignalEvent("server.v3.waitnetwork", (void*)m_status.c_str(), m_status.length()+1);
+        break;
+      case OvmsServerV3::ConnectWait:
+        MyEvents.SignalEvent("server.v3.connectwait", (void*)m_status.c_str(), m_status.length()+1);
+        break;
+      case OvmsServerV3::Connecting:
+        MyEvents.SignalEvent("server.v3.connecting", (void*)m_status.c_str(), m_status.length()+1);
+        break;
+      case OvmsServerV3::Authenticating:
+        MyEvents.SignalEvent("server.v3.authenticating", (void*)m_status.c_str(), m_status.length()+1);
+        break;
+      case OvmsServerV3::Connected:
+        MyEvents.SignalEvent("server.v3.connected", (void*)m_status.c_str(), m_status.length()+1);
+        break;
+      case OvmsServerV3::Disconnected:
+        MyEvents.SignalEvent("server.v3.disconnected", (void*)m_status.c_str(), m_status.length()+1);
+        break;
+      case OvmsServerV3::WaitReconnect:
+        MyEvents.SignalEvent("server.v3.waitreconnect", (void*)m_status.c_str(), m_status.length()+1);
+        break;
+      default:
+        break;
+      }
+    }
   }
 
 void OvmsServerV3::MetricModified(OvmsMetric* metric)
@@ -470,7 +506,34 @@ void ovmsv3_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     }
   else
     {
-    writer->puts(MyOvmsServerV3->m_status.c_str());
+    switch (MyOvmsServerV3->m_state)
+      {
+      case OvmsServerV3::WaitNetwork:
+        writer->puts("State: Waiting for network connectivity");
+        break;
+      case OvmsServerV3::ConnectWait:
+        writer->printf("State: Waiting to connect (%d second(s) remaining)\n",MyOvmsServerV3->m_connretry);
+        break;
+      case OvmsServerV3::Connecting:
+        writer->puts("State: Connecting...");
+        break;
+      case OvmsServerV3::Authenticating:
+        writer->puts("State: Authenticating...");
+        break;
+      case OvmsServerV3::Connected:
+        writer->puts("State: Connected");
+        break;
+      case OvmsServerV3::Disconnected:
+        writer->puts("State: Disconnected");
+        break;
+      case OvmsServerV3::WaitReconnect:
+        writer->printf("State: Waiting to reconnect (%d second(s) remaining)\n",MyOvmsServerV3->m_connretry);
+        break;
+      default:
+        writer->puts("State: undetermined");
+        break;
+      }
+    writer->printf("       %s\n",MyOvmsServerV3->m_status.c_str());
     }
   }
 

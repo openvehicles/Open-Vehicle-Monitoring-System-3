@@ -411,6 +411,7 @@ void OvmsVehicleFactory::ClearVehicle()
     delete m_currentvehicle;
     m_currentvehicle = NULL;
     StandardMetrics.ms_v_type->SetValue("");
+    MyEvents.SignalEvent("vehicle.type.cleared", NULL);
     }
   }
 
@@ -423,6 +424,7 @@ void OvmsVehicleFactory::SetVehicle(const char* type)
     }
   m_currentvehicle = NewVehicle(type);
   StandardMetrics.ms_v_type->SetValue(m_currentvehicle ? type : "");
+  MyEvents.SignalEvent("vehicle.type.set", (void*)type, strlen(type)+1);
   }
 
 void OvmsVehicleFactory::AutoInit()
@@ -445,6 +447,11 @@ const char* OvmsVehicleFactory::ActiveVehicleName()
   return NULL;
   }
 
+const char* OvmsVehicleFactory::ActiveVehicleShortName()
+  {
+  return m_currentvehicle ? m_currentvehicle->VehicleShortName() : NULL;
+  }
+
 static void OvmsVehicleRxTask(void *pvParameters)
   {
   OvmsVehicle *me = (OvmsVehicle*)pvParameters;
@@ -459,6 +466,7 @@ OvmsVehicle::OvmsVehicle()
   m_ticker = 0;
   m_12v_ticker = 0;
   m_registeredlistener = false;
+  m_autonotifications = true;
 
   m_poll_state = 0;
   m_poll_bus = NULL;
@@ -504,6 +512,11 @@ OvmsVehicle::~OvmsVehicle()
 
   MyEvents.DeregisterEvent(TAG);
   MyMetrics.DeregisterListener(TAG);
+  }
+
+const char* OvmsVehicle::VehicleShortName()
+  {
+  return MyVehicleFactory.ActiveVehicleName();
   }
 
 void OvmsVehicle::RxTask()
@@ -636,13 +649,13 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
       {
       StandardMetrics.ms_v_bat_12v_voltage_alert->SetValue(true);
       MyEvents.SignalEvent("vehicle.alert.12v.on", NULL);
-      MyNotify.NotifyStringf("alert", "12V Battery critical: %.1fV (ref=%.1fV)", volt, vref);
+      if (m_autonotifications) Notify12vCritical();
       }
     else if (vref - volt < alert_threshold * 0.6 && alert_on)
       {
       StandardMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);
       MyEvents.SignalEvent("vehicle.alert.12v.off", NULL);
-      MyNotify.NotifyStringf("alert", "12V Battery restored: %.1fV (ref=%.1fV)", volt, vref);
+      if (m_autonotifications) Notify12vRecovered();
       }
     } // 12V battery monitor
   } // VehicleTicker1()
@@ -669,6 +682,72 @@ void OvmsVehicle::Ticker600(uint32_t ticker)
 
 void OvmsVehicle::Ticker3600(uint32_t ticker)
   {
+  }
+
+void OvmsVehicle::NotifyChargeStart()
+  {
+  MyNotify.NotifyCommand("info","charge.started","stat");
+  }
+
+void OvmsVehicle::NotifyHeatingStart()
+  {
+  MyNotify.NotifyCommand("info","heating.started","stat");
+  }
+
+void OvmsVehicle::NotifyChargeStopped()
+  {
+  MyNotify.NotifyCommand("alert","charge.stopped","stat");
+  }
+
+void OvmsVehicle::NotifyChargeDone()
+  {
+  MyNotify.NotifyCommand("info","charge.done","stat");
+  }
+
+void OvmsVehicle::NotifyValetEnabled()
+  {
+  MyNotify.NotifyString("info", "valet.enabled", "Valet mode enabled");
+  }
+
+void OvmsVehicle::NotifyValetDisabled()
+  {
+  MyNotify.NotifyString("info", "valet.disabled", "Valet mode disabled");
+  }
+
+void OvmsVehicle::NotifyValetHood()
+  {
+  MyNotify.NotifyString("alert", "valet.hood", "Vehicle hood opened while in valet mode");
+  }
+
+void OvmsVehicle::NotifyValetTrunk()
+  {
+  MyNotify.NotifyString("alert", "valet.trunk", "Vehicle trunk opened while in valet mode");
+  }
+
+void OvmsVehicle::NotifyAlarmSounding()
+  {
+  MyNotify.NotifyString("alert", "alarm.sounding", "Vehicle alarm is sounding");
+  }
+
+void OvmsVehicle::NotifyAlarmStopped()
+  {
+  MyNotify.NotifyString("alert", "alarm.stopped", "Vehicle alarm has stopped");
+  }
+
+void OvmsVehicle::Notify12vCritical()
+  {
+  float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
+  float vref = StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat();
+
+  MyNotify.NotifyStringf("alert", "batt.12v.alert", "12V Battery critical: %.1fV (ref=%.1fV)", volt, vref);
+  }
+
+void OvmsVehicle::Notify12vRecovered()
+  {
+  float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
+  float vref = StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat();
+
+  MyNotify.NotifyStringf("alert", "batt.12v.recovered", "12V Battery restored: %.1fV (ref=%.1fV)", volt, vref);
   }
 
 // Default efficiency calculation by speed & power per second, average smoothed over 5 seconds.
@@ -948,11 +1027,13 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
     if (StandardMetrics.ms_v_env_valet->AsBool())
       {
       MyEvents.SignalEvent("vehicle.valet.on",NULL);
+      if (m_autonotifications) NotifyValetEnabled();
       NotifiedVehicleValetOn();
       }
     else
       {
       MyEvents.SignalEvent("vehicle.valet.off",NULL);
+      if (m_autonotifications) NotifyValetDisabled();
       NotifiedVehicleValetOff();
       }
     }
@@ -969,16 +1050,34 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       NotifiedVehicleHeadlightsOff();
       }
     }
+  else if (metric == StandardMetrics.ms_v_door_hood)
+    {
+    if (StandardMetrics.ms_v_door_hood->AsBool() &&
+        StandardMetrics.ms_v_env_valet->AsBool())
+      {
+      if (m_autonotifications) NotifyValetHood();
+      }
+    }
+  else if (metric == StandardMetrics.ms_v_door_trunk)
+    {
+    if (StandardMetrics.ms_v_door_trunk->AsBool() &&
+        StandardMetrics.ms_v_env_valet->AsBool())
+      {
+      if (m_autonotifications) NotifyValetTrunk();
+      }
+    }
   else if (metric == StandardMetrics.ms_v_env_alarm)
     {
     if (StandardMetrics.ms_v_env_alarm->AsBool())
       {
       MyEvents.SignalEvent("vehicle.alarm.on",NULL);
+      if (m_autonotifications) NotifyAlarmSounding();
       NotifiedVehicleAlarmOn();
       }
     else
       {
       MyEvents.SignalEvent("vehicle.alarm.off",NULL);
+      if (m_autonotifications) NotifyAlarmStopped();
       NotifiedVehicleAlarmOff();
       }
     }
@@ -992,6 +1091,19 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
     {
     const char* m = metric->AsString().c_str();
     MyEvents.SignalEvent("vehicle.charge.state",(void*)m, strlen(m)+1);
+    if (m_autonotifications)
+      {
+      if (strcmp(m,"charging")==0)
+        NotifyChargeStart();
+      else if (strcmp(m,"topoff")==0)
+        NotifyChargeStart();
+      else if (strcmp(m,"heating")==0)
+        NotifyHeatingStart();
+      else if (strcmp(m,"done")==0)
+        NotifyChargeDone();
+      else if (strcmp(m,"stopped")==0)
+        NotifyChargeStopped();
+      }
     NotifiedVehicleChargeState(m);
     }
   }
@@ -1108,6 +1220,11 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
           (frame->data.u8[2] == 0x40+m_poll_type)&&
           (frame->data.u8[3] == m_poll_pid))
         {
+        // First frame is 4 bytes header (2 ISO-TP, 2 OBDII), 4 bytes data:
+        // [first=1,lenH] [lenL] [type+40] [pid] [data0] [data1] [data2] [data3]
+        // Note that the value of 'len' includes the OBDII type and pid bytes,
+        // but we don't count these in the data we pass to IncomingPollReply.
+        //
         // First frame; send flow control frame:
         CAN_frame_t txframe;
         memset(&txframe,0,sizeof(txframe));
@@ -1132,12 +1249,13 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
         txframe.data.u8[2] = 0x19; // with 25ms send interval
         m_poll_bus->Write(&txframe);
 
-        // prepare frame processing, first frame contains first 3 bytes:
-        m_poll_ml_remain = (((uint16_t)(frame->data.u8[0]&0x0f))<<8) + frame->data.u8[1] - 3;
-        m_poll_ml_offset = 3;
+        // prepare frame processing, first frame contains first 4 bytes:
+        m_poll_ml_remain = (((uint16_t)(frame->data.u8[0]&0x0f))<<8) + frame->data.u8[1] - 2 - 4;
+        m_poll_ml_offset = 4;
         m_poll_ml_frame = 0;
+
         // ESP_LOGI(TAG, "Poll ML first frame (frame=%d, remain=%d)",m_poll_ml_frame,m_poll_ml_remain);
-        IncomingPollReply(m_poll_bus, m_poll_type, m_poll_pid, &frame->data.u8[5], 3, m_poll_ml_remain);
+        IncomingPollReply(m_poll_bus, m_poll_type, m_poll_pid, &frame->data.u8[4], 4, m_poll_ml_remain);
         return;
         }
       else if (((frame->data.u8[0]>>4)==0x2)&&(m_poll_ml_remain>0))

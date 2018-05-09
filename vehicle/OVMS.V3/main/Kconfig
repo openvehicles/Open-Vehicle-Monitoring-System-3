@@ -300,7 +300,7 @@ config OVMS_COMP_SSH
 config OVMS_COMP_MODEM_SIMCOM
     bool "Include support for SIMCOM modems"
     default y
-    depends on OVMS
+    depends on OVMS && OVMS_COMP_MAX7317
     help
         Enable to include support for SIMCOM modems
 

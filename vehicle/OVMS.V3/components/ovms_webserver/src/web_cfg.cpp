@@ -122,13 +122,14 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.panel_start("primary", "Vehicle");
   output = ExecuteCommand("stat");
-  c.printf("<samp class=\"monitor\" id=\"vehicle-status\" data-updcmd=\"stat\">%s</samp>", _html(output));
+  c.printf("<samp class=\"monitor\" id=\"vehicle-status\" data-updcmd=\"stat\" data-events=\"vehicle.charge\">%s</samp>", _html(output));
   output = ExecuteCommand("location status");
-  c.printf("<samp>%s</samp>", _html(output));
+  c.printf("<samp class=\"monitor\" data-updcmd=\"location status\" data-events=\"gps.lock|location\">%s</samp>", _html(output));
   c.panel_end(
     "<ul class=\"list-inline\">"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#vehicle-status\" data-cmd=\"charge start\">Start charge</button></li>"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#vehicle-status\" data-cmd=\"charge stop\">Stop charge</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#vehicle-cmdres\" data-cmd=\"charge start\">Start charge</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#vehicle-cmdres\" data-cmd=\"charge stop\">Stop charge</button></li>"
+      "<li><samp id=\"vehicle-cmdres\" class=\"samp-inline\"></samp></li>"
     "</ul>");
 
   c.print(
@@ -140,16 +141,17 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
   c.panel_start("primary", "Server");
   output = ExecuteCommand("server v2 status");
   if (!startsWith(output, "Unrecognised"))
-    c.printf("<samp class=\"monitor\" id=\"server-v2\" data-updcmd=\"server v2 status\">%s</samp>", _html(output));
+    c.printf("<samp class=\"monitor\" id=\"server-v2\" data-updcmd=\"server v2 status\" data-events=\"server.v2\">%s</samp>", _html(output));
   output = ExecuteCommand("server v3 status");
   if (!startsWith(output, "Unrecognised"))
-    c.printf("<samp class=\"monitor\" id=\"server-v3\" data-updcmd=\"server v3 status\">%s</samp>", _html(output));
+    c.printf("<samp class=\"monitor\" id=\"server-v3\" data-updcmd=\"server v3 status\" data-events=\"server.v3\">%s</samp>", _html(output));
   c.panel_end(
     "<ul class=\"list-inline\">"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#server-v2\" data-cmd=\"server v2 start\">Start V2</button></li>"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#server-v2\" data-cmd=\"server v2 stop\">Stop V2</button></li>"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#server-v3\" data-cmd=\"server v3 start\">Start V3</button></li>"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#server-v3\" data-cmd=\"server v3 stop\">Stop V3</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#server-cmdres\" data-cmd=\"server v2 start\">Start V2</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#server-cmdres\" data-cmd=\"server v2 stop\">Stop V2</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#server-cmdres\" data-cmd=\"server v3 start\">Start V3</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#server-cmdres\" data-cmd=\"server v3 stop\">Stop V3</button></li>"
+      "<li><samp id=\"server-cmdres\" class=\"samp-inline\"></samp></li>"
     "</ul>");
 
   c.print(
@@ -158,7 +160,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.panel_start("primary", "Wifi");
   output = ExecuteCommand("wifi status");
-  c.printf("<samp>%s</samp>", _html(output));
+  c.printf("<samp class=\"monitor\" data-updcmd=\"wifi status\" data-events=\"^system.wifi\">%s</samp>", _html(output));
   c.panel_end();
 
   c.print(
@@ -169,7 +171,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.panel_start("primary", "Network");
   output = ExecuteCommand("network status");
-  c.printf("<samp>%s</samp>", _html(output));
+  c.printf("<samp class=\"monitor\" data-updcmd=\"network status\" data-events=\"^network\">%s</samp>", _html(output));
   c.panel_end();
 
   c.print(
@@ -354,24 +356,6 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
  * HandleCfgPassword: change admin password
  */
 
-std::string pwgen(int length)
-{
-  const char cs1[] = "abcdefghijklmnopqrstuvwxyz";
-  const char cs2[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  const char cs3[] = "!@#$%^&*()_-=+;:,.?";
-  std::string res;
-  for (int i=0; i < length; i++) {
-    double r = drand48();
-    if (r > 0.4)
-      res.push_back((char)cs1[(int)(drand48()*(sizeof(cs1)-1))]);
-    else if (r > 0.2)
-      res.push_back((char)cs2[(int)(drand48()*(sizeof(cs2)-1))]);
-    else
-      res.push_back((char)cs3[(int)(drand48()*(sizeof(cs3)-1))]);
-  }
-  return res;
-}
-
 void OvmsWebServer::HandleCfgPassword(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
@@ -402,8 +386,6 @@ void OvmsWebServer::HandleCfgPassword(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("password", "module", newpass1);
       info += "<li>New module &amp; admin password has been set.</li>";
       
-      MyConfig.SetParamValueBool("password", "changed", true);
-      
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
       c.alert("success", info.c_str());
@@ -427,18 +409,13 @@ void OvmsWebServer::HandleCfgPassword(PageEntry_t& p, PageContext_t& c)
       "<p><strong>Warning:</strong> no admin password set. <strong>Web access is open to the public.</strong></p>"
       "<p>Please change your password now.</p>");
   }
-  else if (MyConfig.GetParamValueBool("password", "changed") == false) {
-    c.alert("danger",
-      "<p><strong>Warning:</strong> default password has not been changed yet. <strong>Web access is open to the public.</strong></p>"
-      "<p>Please change your password now.</p>");
-  }
   
   // create some random passwords:
   std::ostringstream pwsugg;
   srand48(StdMetrics.ms_m_monotonic->AsInt() * StdMetrics.ms_m_freeram->AsInt());
   pwsugg << "<p>Inspiration:";
   for (int i=0; i<5; i++)
-    pwsugg << " <code>" << c.encode_html(pwgen(12)) << "</code>";
+    pwsugg << " <code class=\"autoselect\">" << c.encode_html(pwgen(12)) << "</code>";
   pwsugg << "</p>";
   
   // generate form:
@@ -540,10 +517,10 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
   c.input_text("Time zone", "timezone", timezone.c_str(), "optional, default UTC",
     "<p>Web links: <a target=\"_blank\" href=\"https://remotemonitoringsystems.ca/time-zone-abbreviations.php\">Example Timezone Strings</a>, "
     "<a target=\"_blank\" href=\"https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html\">Glibc manual</a></p>");
-  c.input_select_start("Distance units", "units_distance");
-  c.input_select_option("Kilometers", "K", units_distance == "K");
-  c.input_select_option("Miles", "M", units_distance == "M");
-  c.input_select_end();
+  c.input_radiobtn_start("Distance units", "units_distance");
+  c.input_radiobtn_option("units_distance", "Kilometers", "K", units_distance == "K");
+  c.input_radiobtn_option("units_distance", "Miles", "M", units_distance == "M");
+  c.input_radiobtn_end();
   c.input_button("default", "Save");
   c.form_end();
   c.panel_end();
@@ -600,6 +577,30 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   c.head(200);
   c.panel_start("primary", "Modem configuration");
   c.form_start(p.uri);
+
+  std::string info;
+  std::string iccid = StdMetrics.ms_m_net_mdm_iccid->AsString();
+  if (!iccid.empty()) {
+    info = "<code class=\"autoselect\">" + iccid + "</code>";
+  } else {
+    info =
+      "<div class=\"receiver\">"
+        "<code class=\"autoselect\" data-metric=\"m.net.mdm.iccid\">(power modem on to read)</code>"
+        "&nbsp;"
+        "<button class=\"btn btn-default\" data-cmd=\"power simcom on\" data-target=\"#pso\">Power modem on</button>"
+        "&nbsp;"
+        "<samp id=\"pso\" class=\"samp-inline\"></samp>"
+      "</div>"
+      "<script>"
+      "$(\".receiver\").on(\"msg:metrics\", function(e, update){"
+        "$(this).find(\"[data-metric]\").each(function(){"
+          "if (metrics[$(this).data(\"metric\")] != \"\" && $(this).text() != metrics[$(this).data(\"metric\")])"
+            "$(this).text(metrics[$(this).data(\"metric\")]);"
+        "});"
+      "}).trigger(\"msg:metrics\");"
+      "</script>";
+  }
+  c.input_info("SIM ICCID", info.c_str());
 
   c.fieldset_start("Internet");
   c.input_checkbox("Enable IP networking", "enable_net", enable_net);

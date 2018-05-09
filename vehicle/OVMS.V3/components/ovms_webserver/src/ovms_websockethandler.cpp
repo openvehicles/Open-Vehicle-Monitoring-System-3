@@ -351,10 +351,16 @@ void OvmsWebServer::DestroyWebSocketHandler(WebSocketHandler* handler)
 
 
 /**
- * EventListener: forward events to all websocket clients
+ * EventListener:
  */
 void OvmsWebServer::EventListener(std::string event, void* data)
 {
+  // ticker:
+  if (event == "ticker.1") {
+    CfgInitTicker();
+  }
+  
+  // forward events to all websocket clients:
   if (xSemaphoreTake(m_client_mutex, 0) != pdTRUE) {
     ESP_LOGW(TAG, "EventListener: can't lock client list, event update dropped");
     return;

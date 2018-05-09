@@ -822,9 +822,9 @@ static void module_factory_reset(int verbosity, OvmsWriter* writer, OvmsCommand*
   writer->RegisterInsertCallback(module_factory_reset_yesno, NULL);
   }
 
+#ifdef CONFIG_OVMS_COMP_SDCARD
 static void module_eventhandler(std::string event, void* data)
   {
-#ifdef CONFIG_OVMS_COMP_SDCARD
   if (event == "sd.mounted")
     {
     if (unlink("/sd/factoryreset.txt") == 0)
@@ -854,8 +854,8 @@ static void module_eventhandler(std::string event, void* data)
       module_perform_factoryreset(NULL);
       }
     }
-#endif
   }
+#endif
 
 class OvmsModuleInit
   {

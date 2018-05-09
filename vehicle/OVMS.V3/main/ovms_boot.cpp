@@ -169,6 +169,7 @@ Boot::Boot()
 
   // reset flags:
   boot_data.soft_reset = false;
+  boot_data.firmware_update = false;
   boot_data.stable_reached = false;
 
   // install error handler:
@@ -340,6 +341,6 @@ void Boot::NotifyDebugCrash()
     for (int i=0; i<OVMS_BT_LEVELS && boot_data.crash_data.bt[i].pc; i++)
       buf.printf("0x%08lx ", boot_data.crash_data.bt[i].pc);
 
-    MyNotify.NotifyString("data", buf.c_str());
+    MyNotify.NotifyString("data", "debug.crash", buf.c_str());
     }
   }

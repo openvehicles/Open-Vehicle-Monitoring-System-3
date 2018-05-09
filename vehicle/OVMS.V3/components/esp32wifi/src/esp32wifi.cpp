@@ -684,6 +684,14 @@ std::string esp32wifi::GetSSID()
     return std::string((char*)m_wifi_ap_cfg.ap.ssid);
   }
 
+std::string esp32wifi::GetAPSSID()
+  {
+  if (m_mode == ESP32WIFI_MODE_AP || m_mode == ESP32WIFI_MODE_APCLIENT)
+    return std::string((char*)m_wifi_ap_cfg.ap.ssid);
+  else
+    return std::string("");
+  }
+
 void esp32wifi::EventWifiGotIp(std::string event, void* data)
   {
   system_event_info_t *info = (system_event_info_t*)data;
