@@ -134,8 +134,6 @@
 //		- parkbreakservice is not working
 //		- Rear defogger works, but only as long as TesterPresent is sent.
 //			- Is it enough to send the testetpresent message every second?
-// Lade info ser ut til å være mangelfullt.
-// IDeal range og Estimated range er byttet om.
 
 #include "ovms_log.h"
 
