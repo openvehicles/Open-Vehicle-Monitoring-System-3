@@ -51,6 +51,7 @@ class sdcard : public pcp
     esp_err_t mount();
     esp_err_t unmount(bool hard=false);
     bool isavailable();
+    bool isunmounting();
     bool ismounted();
     bool isinserted();
 

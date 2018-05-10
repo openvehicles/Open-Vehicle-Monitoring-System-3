@@ -216,6 +216,11 @@ bool sdcard::isavailable()
   return m_mounted && !m_unmounting;
   }
 
+bool sdcard::isunmounting()
+  {
+  return m_unmounting;
+  }
+
 bool sdcard::ismounted()
   {
   return m_mounted;
@@ -253,36 +258,78 @@ void sdcard::CheckCardState()
     }
   }
 
+void sdcard_printinfo(int verbosity, OvmsWriter* writer)
+  {
+  sdmmc_card_t* card = MyPeripherals->m_sdcard->m_card;
+  FATFS *fs;
+  DWORD fre_clust, fre_sect, tot_sect;
+
+  writer->printf("Name: %s\n", card->cid.name);
+
+  // Get volume information and free clusters
+  // Note: assuming drive "1:" = /sd ("0:" = /store)
+  if (f_getfree("1:", &fre_clust, &fs) == FR_OK)
+    {
+    tot_sect = (fs->n_fatent - 2) * fs->csize;
+    fre_sect = fre_clust * fs->csize;
+    writer->printf("Size: %6llu MB\nFree: %6llu MB\n",
+      ((uint64_t) tot_sect) * card->csd.sector_size / (1024 * 1024),
+      ((uint64_t) fre_sect) * card->csd.sector_size / (1024 * 1024));
+    }
+
+  if (verbosity > COMMAND_RESULT_MINIMAL)
+    {
+    writer->printf("\nCard type: %s\n", (card->ocr & SD_OCR_SDHC_CAP)?"SDHC/SDXC":"SDSC");
+    writer->printf("Max speed: %d kHz\n", card->csd.tr_speed/1000);
+    writer->printf("Capacity: %llu MB\n", ((uint64_t) card->csd.capacity) * card->csd.sector_size / (1024 * 1024));
+    writer->printf("CSD: ver=%d, sector_size=%d, capacity=%d read_bl_len=%d\n",
+                    card->csd.csd_ver,
+                    card->csd.sector_size, card->csd.capacity, card->csd.read_block_len);
+    writer->printf("SCR: sd_spec=%d, bus_width=%d\n", card->scr.sd_spec, card->scr.bus_width);
+    }
+  }
+
 void sdcard_mount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (!MyPeripherals->m_sdcard->ismounted())
-    MyPeripherals->m_sdcard->mount();
+  if (MyPeripherals->m_sdcard->isunmounting())
+    {
+    writer->puts("Error: SD CARD is unmounting");
+    return;
+    }
   if (MyPeripherals->m_sdcard->ismounted())
     {
-    if (verbosity > COMMAND_RESULT_MINIMAL)
-      {
-      sdmmc_card_t* card = MyPeripherals->m_sdcard->m_card;
-      writer->printf("Name: %s\n", card->cid.name);
-      writer->printf("Type: %s\n", (card->ocr & SD_OCR_SDHC_CAP)?"SDHC/SDXC":"SDSC");
-      writer->printf("Speed: %d kHz\n", card->csd.tr_speed/1000);
-      writer->printf("Size: %lluMB\n", ((uint64_t) card->csd.capacity) * card->csd.sector_size / (1024 * 1024));
-      writer->printf("CSD: ver=%d, sector_size=%d, capacity=%d read_bl_len=%d\n",
-                     card->csd.csd_ver,
-                     card->csd.sector_size, card->csd.capacity, card->csd.read_block_len);
-      writer->printf("SCR: sd_spec=%d, bus_width=%d\n", card->scr.sd_spec, card->scr.bus_width);
-      }
+    writer->puts("SD CARD is already mounted");
+    return;
+    }
+
+  esp_err_t res = MyPeripherals->m_sdcard->mount();
+  if (res == ESP_OK)
     writer->puts("Mounted SD CARD");
-    }
   else
-    {
-    writer->puts("Error: SD CARD could not be mounted");
-    }
+    writer->printf("Error: SD mount failed: %s\n", esp_err_to_name(res));
   }
 
 void sdcard_unmount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  esp_err_t res;
-  for (int i=5; i; i--)
+  if (!MyPeripherals->m_sdcard->ismounted())
+    {
+    writer->puts("SD CARD not mounted");
+    return;
+    }
+
+  esp_err_t res = ESP_OK;
+  int maxwait_seconds = 5;
+  if (argc >= 1)
+    maxwait_seconds = atoi(argv[0]);
+
+  if (maxwait_seconds == 0)
+    {
+    MyPeripherals->m_sdcard->unmount();
+    writer->puts("Unmounting SD CARD");
+    return;
+    }
+
+  for (int i=maxwait_seconds; i; i--)
     {
     res = MyPeripherals->m_sdcard->unmount();
     if (res == ESP_OK) break;
@@ -292,7 +339,7 @@ void sdcard_unmount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   if (res == ESP_OK)
     writer->puts("Unmounted SD CARD");
   else
-    writer->printf("Unmount SD CARD failed: %s\n", esp_err_to_name(res));
+    writer->printf("Error: SD unmount failed: %s\n", esp_err_to_name(res));
   }
 
 void sdcard_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -311,18 +358,7 @@ void sdcard_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
       writer->puts("Status: available");
     else
       writer->puts("Status: unmounting");
-    if (verbosity > COMMAND_RESULT_MINIMAL)
-      {
-      sdmmc_card_t* card = MyPeripherals->m_sdcard->m_card;
-      writer->printf("Name: %s\n", card->cid.name);
-      writer->printf("Type: %s\n", (card->ocr & SD_OCR_SDHC_CAP)?"SDHC/SDXC":"SDSC");
-      writer->printf("Speed: %d kHz\n", card->csd.tr_speed/1000);
-      writer->printf("Size: %lluMB\n", ((uint64_t) card->csd.capacity) * card->csd.sector_size / (1024 * 1024));
-      writer->printf("CSD: ver=%d, sector_size=%d, capacity=%d read_bl_len=%d\n",
-                     card->csd.csd_ver,
-                     card->csd.sector_size, card->csd.capacity, card->csd.read_block_len);
-      writer->printf("SCR: sd_spec=%d, bus_width=%d\n", card->scr.sd_spec, card->scr.bus_width);
-      }
+    sdcard_printinfo(verbosity, writer);
     }
   }
 
@@ -339,6 +375,6 @@ SDCardInit::SDCardInit()
 
   OvmsCommand* cmd_sd = MyCommandApp.RegisterCommand("sd","SD CARD framework",NULL,"",0,0,true);
   cmd_sd->RegisterCommand("mount","Mount SD CARD",sdcard_mount,"",0,0,true);
-  cmd_sd->RegisterCommand("unmount","Unmount SD CARD",sdcard_unmount,"",0,0,true);
+  cmd_sd->RegisterCommand("unmount","Unmount SD CARD",sdcard_unmount,"[<maxwait_seconds>]",0,1,true);
   cmd_sd->RegisterCommand("status","Show SD CARD status",sdcard_status,"",0,0,true);
   }
