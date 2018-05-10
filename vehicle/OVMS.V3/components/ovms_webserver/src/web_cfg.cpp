@@ -1407,7 +1407,6 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   MyOTA.GetStatus(info);
   
   c.panel_start("primary", "Firmware setup &amp; update");
-  c.form_start(p.uri);
 
   c.input_info("Firmware version", info.version_firmware.c_str());
   output = info.version_server;
@@ -1423,6 +1422,8 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "<div class=\"tab-content\">"
       "<div id=\"tab-setup\" class=\"tab-pane fade in active section-setup\">");
 
+  c.form_start(p.uri);
+  
   // Boot partition:
   c.input_info("Running partition", info.partition_running.c_str());
   c.printf("<input type=\"hidden\" name=\"boot_old\" value=\"%s\">", _attr(info.partition_boot));
@@ -1463,6 +1464,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
         "<button type=\"submit\" class=\"btn btn-default\" name=\"action\" value=\"reboot\">Reboot</button> "
       "</div>"
     "</div>");
+  c.form_end();
 
   c.print(
       "</div>"
@@ -1485,6 +1487,8 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     }
   }
   
+  c.form_start(p.uri);
+  
   // Flash HTTP:
   mru = MyConfig.GetParamValue("ota", "http.mru");
   c.input_text("HTTP URL", "flash_http", mru.c_str(),
@@ -1498,11 +1502,14 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   c.print("</datalist>");
 
   c.input_button("default", "Flash now", "action", "flash-http");
+  c.form_end();
   
   c.print(
       "</div>"
       "<div id=\"tab-flash-vfs\" class=\"tab-pane fade section-flash\">");
 
+  c.form_start(p.uri);
+  
   // Flash VFS:
   mru = MyConfig.GetParamValue("ota", "vfs.mru");
   c.input_info("Auto flash",
@@ -1531,12 +1538,12 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   c.print("</datalist>");
   
   c.input_button("default", "Flash now", "action", "flash-vfs");
+  c.form_end();
 
   c.print(
       "</div>"
     "</div>");
 
-  c.form_end();
   c.panel_end(
     "<p>The module can store up to three firmware images in a factory and two OTA partitions.</p>"
     "<p>Flashing from web or file writes alternating to the OTA partitions, the factory partition remains unchanged.</p>"
