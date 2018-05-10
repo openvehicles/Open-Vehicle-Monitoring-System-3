@@ -511,18 +511,6 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
   if( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh)>0 )
   		m_v_trip_consumption2->SetValue( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) );
 
-
-	//Check aux battery and send alert
-	if( StdMetrics.ms_v_bat_12v_voltage->AsFloat()<12.2 && ks_aux_bat_ok)
-		{
-		ks_aux_bat_ok = false;
-		RequestNotify(SEND_AuxBattery_Low);
-	  }
-	else if ( StdMetrics.ms_v_bat_12v_voltage->AsFloat()>12.4 )
-		{
-		ks_aux_bat_ok = true;
-		}
-
 	if( m_v_emergency_lights->AsBool() && !ks_emergency_message_sent)
 		{
 		ks_emergency_message_sent = true;
@@ -531,6 +519,7 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 	else if( !m_v_emergency_lights->AsBool() && ks_emergency_message_sent)
 		{
 		ks_emergency_message_sent=false;
+		RequestNotify(SEND_EmergencyAlertOff);
 		}
 
 	// Send tester present
@@ -586,8 +575,6 @@ void OvmsVehicleKiaSoulEv::HandleCharging()
 
 		POLLSTATE_CHARGING;
 
-    // Send charge alert:
-    RequestNotify(SEND_ChargeState);
     }
   else
   		{
@@ -603,8 +590,6 @@ void OvmsVehicleKiaSoulEv::HandleCharging()
     else if (BAT_SOC >= 95) // ...else set "topping off" from 94% SOC:
     		{
 			SET_CHARGE_STATE("topoff", NULL);
-	    // Send charge alert:
-	    RequestNotify(SEND_ChargeState);
     		}
   		}
 
@@ -637,11 +622,6 @@ void OvmsVehicleKiaSoulEv::HandleCharging()
 		StdMetrics.ms_v_charge_duration_full->SetValue( calcMinutesRemaining(chargeTarget_full), Minutes);
 		StdMetrics.ms_v_charge_duration_soc->SetValue( calcMinutesRemaining(chargeTarget_soc), Minutes);
 		StdMetrics.ms_v_charge_duration_range->SetValue( calcMinutesRemaining(chargeTarget_range), Minutes);
-
-		//TODO if (ks_sms_bits.NotifyCharge == 1) //Send Charge SMS after we have initialized the voltage and current settings
-		//  ks_sms_bits.NotifyCharge = 0;
-    // Send charge alert:
-    //TODO To often?RequestNotify(SEND_ChargeState);
     }
   else
   		{
@@ -653,8 +633,6 @@ void OvmsVehicleKiaSoulEv::HandleCharging()
   			{
   			SET_CHARGE_STATE("charging",NULL);
   			}
-  		// Send charge alert:
-    RequestNotify(SEND_ChargeState);
   		}
   StdMetrics.ms_v_charge_kwh->SetValue(CUM_CHARGE - ks_cum_charge_start, kWh); // kWh charged
   ks_last_soc = BAT_SOC;
@@ -690,9 +668,6 @@ void OvmsVehicleKiaSoulEv::HandleChargeStop()
   StdMetrics.ms_v_charge_inprogress->SetValue( false );
 	StdMetrics.ms_v_env_charging12v->SetValue( false );
 	m_c_speed->SetValue(0);
-
-  // Send charge alert:
-  RequestNotify(SEND_ChargeState);
 	}
 
 /**
@@ -960,22 +935,16 @@ void OvmsVehicleKiaSoulEv::DoNotify()
 	{
   unsigned int which = ks_notifications;
 
-  if (which & SEND_ChargeState)
-  		{
-    //MyNotify.NotifyCommand("info", "stat");
-    ks_notifications &= ~SEND_ChargeState;
-  		}
-
-  if (which & SEND_AuxBattery_Low)
-  		{
-    MyNotify.NotifyCommand("alert", "xks.aux", "xks aux");
-    ks_notifications &= ~SEND_AuxBattery_Low;
-  		}
-
   if (which & SEND_EmergencyAlert)
   		{
-    //TODO MyNotify.NotifyCommand("alert", "xks aux");
+    MyNotify.NotifyCommand("alert", "Emergency.Alert","Emergency alert signals are turned on");
     ks_notifications &= ~SEND_EmergencyAlert;
+  		}
+
+  if (which & SEND_EmergencyAlertOff)
+  		{
+    MyNotify.NotifyCommand("alert", "Emergency.Alert","Emergency alert signals are turned off");
+    ks_notifications &= ~SEND_EmergencyAlertOff;
   		}
 
 	}
