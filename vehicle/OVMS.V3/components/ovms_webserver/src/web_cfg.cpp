@@ -56,12 +56,13 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.head(200);
 
-  if ((cmd = c.getvar("cmd")) != "") {
-    output = ExecuteCommand(cmd);
-    output =
-      "<samp>" + c.encode_html(output) + "</samp>" +
-      "<p><a class=\"btn btn-default\" target=\"#main\" href=\"/status\">Reload status</a></p>";
-    c.alert("info", output.c_str());
+  if (c.method == "POST") {
+    cmd = c.getvar("action");
+    if (cmd == "reboot") {
+      OutputReboot(p, c);
+      c.done();
+      return;
+    }
   }
 
   c.print(
@@ -184,13 +185,19 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
   c.print("<hr>");
   output = ExecuteCommand("ota status nocheck");
   c.printf("<samp>%s</samp>", _html(output));
-  c.panel_end();
+  c.panel_end(
+    "<ul class=\"list-inline\">"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" name=\"action\" value=\"reboot\">Reboot</button></li>"
+    "</ul>");
 
   c.print(
     "</div>"
     "</div>"
     "</div>"
     "<script>"
+    "$(\"button[name=action]\").on(\"click\", function(ev){"
+      "loaduri(\"#main\", \"post\", \"/status\", { \"action\": $(this).val() });"
+    "});"
     "$(\"#livestatus\").on(\"msg:metrics\", function(e, update){"
       "$(this).find(\"[data-metric]\").each(function(){"
         "$(this).text(metrics[$(this).data(\"metric\")]);"
