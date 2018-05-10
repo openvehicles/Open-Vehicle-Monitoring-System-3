@@ -186,8 +186,6 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     OvmsMetricBool*  m_v_emergency_lights;
     bool  ks_emergency_message_sent;
 
-    uint16_t ks_pincode;
-
     const TickType_t xDelay10 = 10 / portTICK_PERIOD_MS;
 
   protected:
@@ -209,7 +207,6 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     bool RightIndicator(bool);
     bool RearDefogger(bool);
     bool BlueChargeLed(bool on, uint8_t mode);
-    bool IsPasswordOk(const char *password);
     void SetChargeMetrics(float voltage, float current, float climit, bool chademo);
     void SendTesterPresentMessages();
     void StopTesterPresentMessages();

@@ -106,6 +106,10 @@
 ;		0.3.5	3-May-2018 - Geir Øyvind Vælidalo
 ;			- Added proper pincode to some commands.
 ;
+;		0.3.6 10-May-2018 - Geir Øyvind Vælidalo
+;			- Moved pincode to password-store for more secure storage, and renamed it pin.
+;						Use: OVMS# config set password pin 1234
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -146,7 +150,7 @@
 #include "ovms_notify.h"
 #include <sys/param.h>
 
-#define VERSION "0.3.5"
+#define VERSION "0.3.6"
 
 static const char *TAG = "v-kiasoulev";
 
@@ -212,8 +216,6 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   ks_utc_diff = 0;
   ks_openChargePort = false;
   ks_emergency_message_sent = false;
-
-  ks_pincode = 1234;
 
   memset( ks_send_can.byte, 0, sizeof(ks_send_can.byte));
 
@@ -300,17 +302,17 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   cmd_xks->RegisterCommand("cells","Cell voltages", xks_cells, 0,0, false);
   cmd_xks->RegisterCommand("aux","Aux battery", xks_aux, 0,0, false);
   cmd_xks->RegisterCommand("vin","VIN information", xks_vin, 0,0, false);
-  cmd_xks->RegisterCommand("IGN1","IGN1 relay", xks_ign1, "<on/off><pincode>",1,1, false);
-  cmd_xks->RegisterCommand("IGN2","IGN2 relay", xks_ign2, "<on/off><pincode>",1,1, false);
-  cmd_xks->RegisterCommand("ACC","ACC relay", xks_acc_relay, "<on/off><pincode>",1,1, false);
-  cmd_xks->RegisterCommand("START","Start relay", xks_start_relay, "<on/off><pincode>",1,1, false);
+  cmd_xks->RegisterCommand("IGN1","IGN1 relay", xks_ign1, "<on/off><pin>",1,1, false);
+  cmd_xks->RegisterCommand("IGN2","IGN2 relay", xks_ign2, "<on/off><pin>",1,1, false);
+  cmd_xks->RegisterCommand("ACC","ACC relay", xks_acc_relay, "<on/off><pin>",1,1, false);
+  cmd_xks->RegisterCommand("START","Start relay", xks_start_relay, "<on/off><pin>",1,1, false);
   cmd_xks->RegisterCommand("headlightdelay","Set Head Light Delay", xks_set_head_light_delay, "<on/off>",1,1, false);
   cmd_xks->RegisterCommand("onetouchturnsignal","Set one touch turn signal", xks_set_one_touch_turn_signal, "<0=Off, 1=3 blink, 2=5 blink, 3=7 blink>",1,1, false);
   cmd_xks->RegisterCommand("autodoorunlock","Set auto door unlock", xks_set_auto_door_unlock, "<1 = Off, 2 = Vehicle Off, 3 = On shift to P ,4 = Driver door unlock>",1,1, false);
   cmd_xks->RegisterCommand("autodoorlock","Set auto door lock", xks_set_auto_door_lock, "<0 =Off, 1=Enable on speed, 2=Enable on Shift>",1,1, false);
 
-  cmd_xks->RegisterCommand("trunk","Open trunk", CommandOpenTrunk, "<pincode>",1,1, false);
-  cmd_xks->RegisterCommand("chargeport","Open chargeport", CommandOpenChargePort, "<pincode>",1,1, false);
+  cmd_xks->RegisterCommand("trunk","Open trunk", CommandOpenTrunk, "<pin>",1,1, false);
+  cmd_xks->RegisterCommand("chargeport","Open chargeport", CommandOpenChargePort, "<pin>",1,1, false);
   cmd_xks->RegisterCommand("ParkBreakService","Enable break pad service", CommandParkBreakService, "<on/off/off2>",1,1, false);
 
   // For test purposes
@@ -364,7 +366,6 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
   //  suffrange        	Sufficient range [km] (Default: 0=disabled)
   //  maxrange         	Maximum ideal range at 20 °C [km] (Default: 160)
   //  remote_charge_port					Use "trunk" button on keyfob to open charge port (Default: 1=enabled)
-  //  pincode					The pincode used when lock/unlock doors and more.
   ks_battery_capacity = (float)MyConfig.GetParamValueInt("xks", "cap_act_kwh", CGF_DEFAULT_BATTERY_CAPACITY);
   ks_key_fob_open_charge_port = (bool)MyConfig.GetParamValueBool("xks", "remote_charge_port", true);
 
@@ -375,7 +376,6 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
   *StdMetrics.ms_v_charge_limit_soc = (float) MyConfig.GetParamValueInt("xks", "suffsoc");
   *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("xks", "suffrange");
 
-  ks_pincode = MyConfig.GetParamValueInt("xks", "pincode", 1234);
 	}
 
 /**
@@ -433,7 +433,7 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 	if( ks_openChargePort )
 		{
 		char buffer[6];
-		OpenChargePort(itoa(ks_pincode, buffer, 10));
+		OpenChargePort(itoa(MyConfig.GetParamValueInt("password","pin"), buffer, 10));
 		ks_openChargePort = false;
 		}
 
@@ -734,7 +734,7 @@ bool OvmsVehicleKiaSoulEv::SetDoorLock(bool open, const char* password)
 	bool result=false;
 	if( ks_shift_bits.Park )
   		{
-    if( IsPasswordOk(password) )
+    if( PinCheck((char*)password) )
     		{
     		ACCRelay(true,password	);
     		LeftIndicator(true);
@@ -754,7 +754,7 @@ bool OvmsVehicleKiaSoulEv::OpenTrunk(const char* password)
 	{
   if( ks_shift_bits.Park )
   		{
-		if( IsPasswordOk(password) )
+		if( PinCheck((char*)password) )
 			{
     		StartRelay(true,password	);
     		LeftIndicator(true);
@@ -773,7 +773,7 @@ bool OvmsVehicleKiaSoulEv::OpenChargePort(const char* password)
 	{
   if( ks_shift_bits.Park )
   		{
-		if( IsPasswordOk(password) )
+		if( PinCheck((char*)password) )
 			{
 			return Send_BCM_Command(0xb0, 0x61, 0x03);
   			}
@@ -829,7 +829,7 @@ bool OvmsVehicleKiaSoulEv::RearDefogger(bool on)
  */
 bool OvmsVehicleKiaSoulEv::ACCRelay(bool on, const char* password)
 	{
-	if(IsPasswordOk(password))
+	if(PinCheck((char*)password))
 		{
 		if( ks_shift_bits.Park )
 				{
@@ -845,7 +845,7 @@ bool OvmsVehicleKiaSoulEv::ACCRelay(bool on, const char* password)
  */
 bool OvmsVehicleKiaSoulEv::IGN1Relay(bool on, const char* password)
 	{
-	if(IsPasswordOk(password))
+	if(PinCheck((char*)password))
 		{
 		if( ks_shift_bits.Park )
 				{
@@ -861,7 +861,7 @@ bool OvmsVehicleKiaSoulEv::IGN1Relay(bool on, const char* password)
  */
 bool OvmsVehicleKiaSoulEv::IGN2Relay(bool on, const char* password)
 	{
-	if(IsPasswordOk(password))
+	if(PinCheck((char*)password))
 		{
 		if( ks_shift_bits.Park )
 				{
@@ -877,7 +877,7 @@ bool OvmsVehicleKiaSoulEv::IGN2Relay(bool on, const char* password)
  */
 bool OvmsVehicleKiaSoulEv::StartRelay(bool on, const char* password)
 	{
-	if(IsPasswordOk(password))
+	if(PinCheck((char*)password))
 		{
 		if( ks_shift_bits.Park )
 				{
@@ -911,17 +911,6 @@ bool OvmsVehicleKiaSoulEv::BlueChargeLed(bool on, uint8_t mode)
 			}
 	return false;
 	}
-
-/**
- * Check if the password is ok
- */
-bool OvmsVehicleKiaSoulEv::IsPasswordOk(const char *password)
-  {
-	return ks_pincode == atol(password);
-  }
-
-
-
 
 /**
  * RequestNotify: send notifications / alerts / data updates

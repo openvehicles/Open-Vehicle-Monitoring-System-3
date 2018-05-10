@@ -152,7 +152,8 @@ int8_t OvmsVehicleKiaSoulEv::GetDoorLockStatus()
 	int8_t result = -1;
 	SendTesterPresent(SMART_JUNCTION_BOX,2);
 	vTaskDelay( xDelay );
-	ACCRelay(true, ""); //todo
+	char buffer[6];
+	ACCRelay(true, itoa(MyConfig.GetParamValueInt("password","pin"), buffer, 10));
 	if( SetSessionMode(SMART_JUNCTION_BOX, KS_90_DIAGNOSTIC_SESSION ))
 		{
 		 SendCanMessage_sync(SMART_JUNCTION_BOX, 0x03, 0x22, 0xbc, 0x04, 0, 0, 0, 0 );
