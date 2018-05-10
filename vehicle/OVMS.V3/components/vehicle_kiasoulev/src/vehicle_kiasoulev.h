@@ -207,7 +207,6 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     bool RightIndicator(bool);
     bool RearDefogger(bool);
     bool BlueChargeLed(bool on, uint8_t mode);
-    bool IsPasswordOk(const char *password);
     void SetChargeMetrics(float voltage, float current, float climit, bool chademo);
     void SendTesterPresentMessages();
     void StopTesterPresentMessages();
