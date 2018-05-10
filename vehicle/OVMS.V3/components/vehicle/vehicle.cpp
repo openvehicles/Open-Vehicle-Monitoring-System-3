@@ -37,6 +37,7 @@ static const char *TAG = "vehicle";
 #include <ovms_notify.h>
 #include <metrics_standard.h>
 #include <ovms_webserver.h>
+#include <string_writer.h>
 #include "vehicle.h"
 
 OvmsVehicleFactory MyVehicleFactory __attribute__ ((init_priority (2000)));
@@ -686,22 +687,33 @@ void OvmsVehicle::Ticker3600(uint32_t ticker)
 
 void OvmsVehicle::NotifyChargeStart()
   {
-  MyNotify.NotifyCommand("info","charge.started","stat");
+  StringWriter buf(200);
+  CommandStat(COMMAND_RESULT_NORMAL, &buf);
+  MyNotify.NotifyString("info","charge.started",buf.c_str());
   }
 
 void OvmsVehicle::NotifyHeatingStart()
   {
-  MyNotify.NotifyCommand("info","heating.started","stat");
+  StringWriter buf(200);
+  CommandStat(COMMAND_RESULT_NORMAL, &buf);
+  MyNotify.NotifyString("info","heating.started",buf.c_str());
   }
 
 void OvmsVehicle::NotifyChargeStopped()
   {
-  MyNotify.NotifyCommand("alert","charge.stopped","stat");
+  StringWriter buf(200);
+  CommandStat(COMMAND_RESULT_NORMAL, &buf);
+  if (StdMetrics.ms_v_charge_substate->AsString() == "scheduledstop")
+    MyNotify.NotifyString("info","charge.stopped",buf.c_str());
+  else
+    MyNotify.NotifyString("alert","charge.stopped",buf.c_str());
   }
 
 void OvmsVehicle::NotifyChargeDone()
   {
-  MyNotify.NotifyCommand("info","charge.done","stat");
+  StringWriter buf(200);
+  CommandStat(COMMAND_RESULT_NORMAL, &buf);
+  MyNotify.NotifyString("info","charge.done",buf.c_str());
   }
 
 void OvmsVehicle::NotifyValetEnabled()

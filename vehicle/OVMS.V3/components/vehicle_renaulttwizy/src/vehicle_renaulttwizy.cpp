@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-twizy";
 
-#define VERSION "0.15.3"
+#define VERSION "0.16.0"
 
 #include <stdio.h>
 #include <string>
@@ -345,14 +345,14 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::ProcessMsgCo
       // send power usage text report:
       // args: <mode>: 't' = totals, fallback 'e' = efficiency
       if (args && (args[0] | 0x20) == 't')
-        MyNotify.NotifyCommand("info", "xrt.power", "xrt power totals");
+        MyNotify.NotifyCommand("info", "xrt.pwr.totals", "xrt power totals");
       else
-        MyNotify.NotifyCommand("info", "xrt.power", "xrt power report");
+        MyNotify.NotifyCommand("info", "xrt.trip.report", "xrt power report");
       return Success;
 
     case CMD_PowerUsageStats:
       // send power usage data record:
-      MyNotify.NotifyCommand("data", "xrt.power", "xrt power stats");
+      MyNotify.NotifyCommand("data", "xrt.pwr.log", "xrt power stats");
       return Success;
 
     case CMD_QueryChargeAlerts:
@@ -399,7 +399,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandHo
   buf << "Profile #" << key+1 << ": " << m_sevcon->FmtSwitchProfileResult(res);
   result = buf.str();
 
-  MyNotify.NotifyStringf("info", "homelink", result.c_str());
+  MyNotify.NotifyStringf("info", "xrt.sevcon.profile", result.c_str());
 
   if (res == COR_OK || res == COR_ERR_StateChangeFailed)
     return Success;

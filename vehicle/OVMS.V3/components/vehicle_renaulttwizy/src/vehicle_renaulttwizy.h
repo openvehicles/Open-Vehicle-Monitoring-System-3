@@ -198,7 +198,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     #define CAH_RND (7200L)
     #define AH_DIV (CAH_DIV * 100L)
     
-    int twizy_chargestate = 4;              // 1=charging, 2=top off, 4=done, 21=stopped charging
+    int twizy_chargestate = 0;              // 0="" (none), 1=charging, 2=top off, 4=done, 21=stopped charging
     
     UINT8 twizy_chg_power_request = 0;      // BMS to CHG power level request (0..7)
     
@@ -253,9 +253,8 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     #define SEND_CodeAlert              (1<< 5)  // alert: fault code (SEVCON/inputs/...)
     #define SEND_TripLog                (1<< 6)  // data: RT-PWR-Log history entry
     #define SEND_ResetResult            (1<< 7)  // info/alert: RESET OK/FAIL
-    #define SEND_ChargeState            (1<< 8)  // info: STAT command
-    #define SEND_ChargeAlert            (1<< 9)  // alert: STAT command (charge interrupt)
-    #define SEND_SDOLog                 (1<<10)  // data: RT-ENG-SDO history entry
+    #define SEND_SuffCharge             (1<< 8)  // info: sufficient SOC/range reached
+    #define SEND_SDOLog                 (1<< 9)  // data: RT-ENG-SDO history entry
     
   protected:
     unsigned int twizy_notifications = 0;

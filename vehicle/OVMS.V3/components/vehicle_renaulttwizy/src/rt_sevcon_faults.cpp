@@ -270,7 +270,7 @@ void SevconClient::SendFaultAlert(uint16_t faultcode)
       ESP_LOGW(TAG, "SEVCON Fault 0x%04x [%s]: %s\nInfo: %s\nAction: %s\n",
         faultcode, SC_FaultTypeName[SC_FaultCode[i].type],
         SC_FaultCode[i].message, SC_FaultCode[i].description, SC_FaultCode[i].action);
-      MyNotify.NotifyStringf("alert", "xrt.sevcon", "SEVCON Fault 0x%04x [%s]: %s\nInfo: %s\nAction: %s\n",
+      MyNotify.NotifyStringf("alert", "xrt.sevcon.fault", "SEVCON Fault 0x%04x [%s]: %s\nInfo: %s\nAction: %s\n",
         faultcode, SC_FaultTypeName[SC_FaultCode[i].type],
         SC_FaultCode[i].message, SC_FaultCode[i].description, SC_FaultCode[i].action);
       return;
@@ -286,7 +286,7 @@ void SevconClient::SendFaultAlert(uint16_t faultcode)
     }
   }
   ESP_LOGW(TAG, "SEVCON Fault 0x%04x: %s\n", faultcode, buf);
-  MyNotify.NotifyStringf("alert", "xrt.sevcon", "SEVCON Fault 0x%04x: %s\n", faultcode, buf);
+  MyNotify.NotifyStringf("alert", "xrt.sevcon.fault", "SEVCON Fault 0x%04x: %s\n", faultcode, buf);
 }
 
 
@@ -409,7 +409,7 @@ CANopenResult_t SevconClient::QueryLogs(int verbosity, OvmsWriter* writer, int w
       if (verbosity > buf.tellp()) \
         verbosity -= writer->puts(buf.str().c_str()); \
     } else { \
-      MyNotify.NotifyString("data", "xrt.logs", buf.str().c_str()); \
+      MyNotify.NotifyString("data", "xrt.sevcon.log", buf.str().c_str()); \
     }
 
   int n, cnt=0, outcnt=0;

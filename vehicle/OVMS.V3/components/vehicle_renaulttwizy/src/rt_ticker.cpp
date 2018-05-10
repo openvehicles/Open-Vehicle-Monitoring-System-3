@@ -161,7 +161,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   // --------------------------------------------------------------------------
   // Charge notification + alerts:
   // 
-  //  - twizy_chargestate: 1=charging, 2=top off, 4=done, 21=stopped charging
+  //  - twizy_chargestate: 0="" (none), 1=charging, 2=top off, 4=done, 21=stopped charging
   //  - twizy_chg_stop_request: 1=stop
   // 
 
@@ -191,16 +191,8 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     }
 
 
-    // If charging has previously been interrupted...
-    if (twizy_chargestate == 21)
-    {
-      // ...send charge alert:
-      RequestNotify(SEND_ChargeState);
-    }
-
-
     // If we've not been charging before...
-    if (twizy_chargestate > 2)
+    if (twizy_chargestate != 1 && twizy_chargestate != 2)
     {
       ESP_LOGI(TAG, "charge start");
       
@@ -221,10 +213,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
       // ...enter state 1=charging or 2=topping-off depending on the
       // charge power request level we're starting with (7=full power):
       twizy_chargestate = (twizy_chg_power_request == 7) ? 1 : 2;
-      
-      // Send charge start notification?
-      // TODO if (sys_features[FEATURE_CARBITS] & FEATURE_CB_SCHGPHASE)
-        RequestNotify(SEND_ChargeState);
+      *StdMetrics.ms_v_charge_substate = (string) "";
     }
 
     else
@@ -239,19 +228,18 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
         // set charge stop request:
         ESP_LOGI(TAG, "requesting charge stop (sufficient charge)");
         MyEvents.SignalEvent("vehicle.charge.substate.scheduledstop", NULL);
-        twizy_chg_stop_request = 1;
+        *StdMetrics.ms_v_charge_substate = (string) "scheduledstop";
+        twizy_chg_stop_request = true;
       }
 
       else if (
-              ((twizy_soc > 0) && (cfg_suffsoc > 0)
-              && (twizy_soc >= cfg_suffsoc*100) && (twizy_last_soc < cfg_suffsoc*100))
+              ((cfg_suffsoc > 0) && (twizy_soc >= cfg_suffsoc*100) && (twizy_last_soc < cfg_suffsoc*100))
               ||
-              ((twizy_range_est > 0) && (cfg_suffrange > 0)
-              && (twizy_range_ideal >= cfg_suffrange) && (twizy_last_idealrange < cfg_suffrange))
+              ((cfg_suffrange > 0) && (twizy_range_ideal >= cfg_suffrange) && (twizy_last_idealrange < cfg_suffrange))
               )
       {
         // ...send sufficient charge alert:
-        RequestNotify(SEND_ChargeState);
+        RequestNotify(SEND_SuffCharge);
       }
       
       // Battery capacity estimation: detect end of CC phase
@@ -270,10 +258,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
       {
         // entering CV phase, set state 2=topping off:
         twizy_chargestate = 2;
-        
-        // Send charge phase notification?
-        // TODO if (sys_features[FEATURE_CARBITS] & FEATURE_CB_SCHGPHASE)
-          RequestNotify(SEND_ChargeState);
       }
 
     }
@@ -314,7 +298,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
 
 
     // Check if we've been charging before:
-    if (twizy_chargestate <= 2)
+    if (twizy_chargestate == 1 || twizy_chargestate == 2)
     {
       ESP_LOGI(TAG, "charge stop");
       
@@ -329,7 +313,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
         
         // yes, means "done"
         twizy_chargestate = 4;
-        RequestNotify(SEND_ChargeState);
         
         // calculate battery capacity if charge started below 40% SOC:
         if (twizy_soc_min < 4000)
@@ -361,9 +344,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
       {
         // no, means "stopped"
         twizy_chargestate = 21;
-        
-        // send charge state or alert depending on stop by user request:
-        RequestNotify(twizy_chg_stop_request ? SEND_ChargeState : SEND_ChargeAlert);
       }
 
     }
@@ -377,8 +357,9 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
       twizy_flags.ChargePort = 0;
       twizy_chargeduration = 0;
 
-      // Set charge state to "done":
-      twizy_chargestate = 4;
+      // Clear charge state:
+      twizy_chargestate = 0;
+      *StdMetrics.ms_v_charge_substate = (string) "";
 
       // reset SOC minimum:
       twizy_soc_min = twizy_soc;
@@ -386,7 +367,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     }
     
     // clear charge stop request:
-    twizy_chg_stop_request = 0;
+    twizy_chg_stop_request = false;
 
     // END OF STATE: NOT CHARGING
   }
@@ -445,13 +426,9 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     ((cfg_chargemode == TWIZY_CHARGEMODE_AUTOSTOP) ? "storage" : "standard");
   *StdMetrics.ms_v_charge_climit = (float) cfg_chargelevel * 5;
   
-  *StdMetrics.ms_v_charge_state = (string) chargestate_code(twizy_chargestate);
-  *StdMetrics.ms_v_charge_substate = (string) chargesubstate_code(twizy_chg_stop_request);
-  
   *StdMetrics.ms_v_bat_range_ideal = (float) twizy_range_ideal;
   *StdMetrics.ms_v_bat_range_est = (float) twizy_range_est;
   
-  //*StdMetrics.ms_v_env_drivemode = (int) twizy_cfg.drivemode;
   *StdMetrics.ms_v_env_awake = (bool) twizy_flags.CarAwake;
   *StdMetrics.ms_v_env_on = (bool) twizy_flags.CarON;
   
@@ -459,6 +436,9 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   *StdMetrics.ms_v_door_chargeport = (bool) twizy_flags.ChargePort;
   *StdMetrics.ms_v_charge_inprogress = (bool) twizy_flags.Charging;
   *StdMetrics.ms_v_env_charging12v = (bool) twizy_flags.Charging12V;
+  
+  // ms_v_charge_state triggers the notification, so needs to be last:
+  *StdMetrics.ms_v_charge_state = (string) chargestate_code(twizy_chargestate);
   
   
   // --------------------------------------------------------------------------
