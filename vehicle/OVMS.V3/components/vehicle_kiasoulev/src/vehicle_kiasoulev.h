@@ -186,8 +186,6 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     OvmsMetricBool*  m_v_emergency_lights;
     bool  ks_emergency_message_sent;
 
-    uint16_t ks_pincode;
-
     const TickType_t xDelay10 = 10 / portTICK_PERIOD_MS;
 
   protected:
