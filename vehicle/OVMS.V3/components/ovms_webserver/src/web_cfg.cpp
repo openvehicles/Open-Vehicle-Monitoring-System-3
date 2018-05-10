@@ -455,7 +455,7 @@ void OvmsWebServer::HandleCfgPassword(PageEntry_t& p, PageContext_t& c)
 void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
-  std::string vehicleid, vehicletype, vehiclename, timezone, units_distance;
+  std::string vehicleid, vehicletype, vehiclename, timezone, units_distance, pin;
 
   if (c.method == "POST") {
     // process form submission:
@@ -464,6 +464,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     vehiclename = c.getvar("vehiclename");
     timezone = c.getvar("timezone");
     units_distance = c.getvar("units_distance");
+    pin = c.getvar("pin");
 
     if (vehicleid.length() == 0)
       error += "<li data-input=\"vehicleid\">Vehicle ID must not be empty</li>";
@@ -485,6 +486,8 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("vehicle", "name", vehiclename);
       MyConfig.SetParamValue("vehicle", "timezone", timezone);
       MyConfig.SetParamValue("vehicle", "units.distance", units_distance);
+      if (!pin.empty())
+        MyConfig.SetParamValue("password", "pin", pin);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       info += "<script>$(\"#menu\").load(\"/menu\")</script>";
@@ -528,6 +531,8 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
   c.input_radiobtn_option("units_distance", "Kilometers", "K", units_distance == "K");
   c.input_radiobtn_option("units_distance", "Miles", "M", units_distance == "M");
   c.input_radiobtn_end();
+  c.input_password("PIN", "pin", "", "empty = no change",
+    "<p>Vehicle PIN code used for unlocking etc.</p>", "autocomplete=\"section-vehiclepin new-password\"");
   c.input_button("default", "Save");
   c.form_end();
   c.panel_end();
