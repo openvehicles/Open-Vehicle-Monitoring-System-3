@@ -740,7 +740,7 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
   c.panel_start("primary", "Server V2 (MP) configuration");
   c.form_start(p.uri);
 
-  c.input_text("Host", "server", server.c_str(), "Enter host name or IP address",
+  c.input_text("Server", "server", server.c_str(), "Enter host name or IP address",
     "<p>Public OVMS V2 servers:</p>"
     "<ul>"
       "<li><code>api.openvehicles.com</code> <a href=\"https://www.openvehicles.com/user/register\" target=\"_blank\">Registration</a></li>"
@@ -749,8 +749,8 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
   c.input_text("Port", "port", port.c_str(), "optional, default: 6867");
   c.input_text("Vehicle ID", "vehicleid", vehicleid.c_str(), "Use ASCII letters, digits and '-'",
     NULL, "autocomplete=\"section-serverv2 username\"");
-  c.input_password("Vehicle password", "password", "", "empty = no change",
-    "<p>Note: enter the password for the <strong>vehicle ID account</strong>, <em>not</em> your user account password</p>",
+  c.input_password("Server password", "password", "", "empty = no change",
+    "<p>Note: enter the password for the <strong>vehicle ID</strong>, <em>not</em> your user account password</p>",
     "autocomplete=\"section-serverv2 current-password\"");
 
   c.fieldset_start("Update intervals");
@@ -842,7 +842,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
   c.panel_start("primary", "Server V3 (MQTT) configuration");
   c.form_start(p.uri);
 
-  c.input_text("Host", "server", server.c_str(), "Enter host name or IP address",
+  c.input_text("Server", "server", server.c_str(), "Enter host name or IP address",
     "<p>Public OVMS V3 servers (MQTT brokers):</p>"
     "<ul>"
       "<li><code>io.adafruit.com</code> <a href=\"https://accounts.adafruit.com/users/sign_in\" target=\"_blank\">Registration</a></li>"
