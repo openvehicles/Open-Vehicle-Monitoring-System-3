@@ -106,6 +106,9 @@
 ;		0.3.5	3-May-2018 - Geir Øyvind Vælidalo
 ;			- Added proper pincode to some commands.
 ;
+;		0.3.6 10-May-2018 - Geir Øyvind Vælidalo
+;			- Moved pincode to password store for secure storage
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -212,8 +215,6 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   ks_utc_diff = 0;
   ks_openChargePort = false;
   ks_emergency_message_sent = false;
-
-  ks_pincode = 1234;
 
   memset( ks_send_can.byte, 0, sizeof(ks_send_can.byte));
 
@@ -375,7 +376,6 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
   *StdMetrics.ms_v_charge_limit_soc = (float) MyConfig.GetParamValueInt("xks", "suffsoc");
   *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("xks", "suffrange");
 
-  ks_pincode = MyConfig.GetParamValueInt("xks", "pincode", 1234);
 	}
 
 /**
@@ -433,7 +433,7 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 	if( ks_openChargePort )
 		{
 		char buffer[6];
-		OpenChargePort(itoa(ks_pincode, buffer, 10));
+		OpenChargePort(itoa(MyConfig.GetParamValueInt("password","pincode"), buffer, 10));
 		ks_openChargePort = false;
 		}
 
@@ -917,7 +917,7 @@ bool OvmsVehicleKiaSoulEv::BlueChargeLed(bool on, uint8_t mode)
  */
 bool OvmsVehicleKiaSoulEv::IsPasswordOk(const char *password)
   {
-	return ks_pincode == atol(password);
+	return MyConfig.GetParamValueInt("password","pincode") == atol(password);
   }
 
 
