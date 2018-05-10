@@ -186,6 +186,8 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     OvmsMetricBool*  m_v_emergency_lights;
     bool  ks_emergency_message_sent;
 
+    uint16_t ks_pincode;
+
     const TickType_t xDelay10 = 10 / portTICK_PERIOD_MS;
 
   protected:
@@ -338,15 +340,15 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 #define ON_BOARD_CHARGER_UNIT 0x794
 
 // Notifications:
-#define SEND_AuxBattery_Low           (1<< 0)  // text alert: AUX battery problem
+//#define SEND_AuxBattery_Low           (1<< 0)  // text alert: AUX battery problem
 //#define SEND_PowerNotify            (1<< 1)  // text alert: power usage summary
 //#define SEND_DataUpdate             (1<< 2)  // regular data update (per minute)
 //#define SEND_StreamUpdate           (1<< 3)  // stream data update (per second)
 //#define SEND_BatteryStats           (1<< 4)  // separate battery stats (large)
-#define SEND_EmergencyAlert           (1<< 5)  // text alert: fault code (SEVCON/inputs/...)
-//#define SEND_PowerLog               (1<< 6)  // RT-PWR-Log history entry
+#define SEND_EmergencyAlert           (1<< 5)  // Emergency lights are turned on
+#define SEND_EmergencyAlertOff        (1<< 6)  // Emergency lights are turned off
 //#define SEND_ResetResult            (1<< 7)  // text alert: RESET OK/FAIL
-#define SEND_ChargeState            (1<< 8)  // text alert: STAT command
+//#define SEND_ChargeState            (1<< 8)  // text alert: STAT command
 
 #define POLLSTATE_OFF					PollSetState(0);
 #define POLLSTATE_RUNNING			PollSetState(1);
