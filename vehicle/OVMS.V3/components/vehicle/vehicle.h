@@ -176,6 +176,7 @@ class OvmsVehicle
 
   protected:
     void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed);
+    bool PinCheck(char* pin);
 
   public:
     virtual void RxTask();

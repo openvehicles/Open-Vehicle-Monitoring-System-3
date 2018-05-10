@@ -222,7 +222,10 @@ void OvmsWebServer::UpdateGlobalAuthFile()
     }
     std::string auth = MakeDigestAuth(m_file_opts.auth_domain, "admin", p.c_str());
     fprintf(fp, "%s\n", auth.c_str());
-    ESP_LOGD(TAG, "UpdateGlobalAuthFile: %s", auth.c_str());
+    ESP_LOGD(TAG, "UpdateGlobalAuthFile: 'admin' => %s", auth.c_str());
+    auth = MakeDigestAuth(m_file_opts.auth_domain, "", p.c_str());
+    fprintf(fp, "%s\n", auth.c_str());
+    ESP_LOGD(TAG, "UpdateGlobalAuthFile: '' => %s", auth.c_str());
     fclose(fp);
   }
 #endif //MG_ENABLE_FILESYSTEM
@@ -696,6 +699,8 @@ void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
   if (c.method == "POST") {
     // validate login:
     std::string username = c.getvar("username");
+    if (username == "")
+      username = "admin";
     std::string password = c.getvar("password");
     user_session *s = NULL;
 
@@ -750,7 +755,7 @@ void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
   // generate form:
   c.panel_start("primary", "Login");
   c.form_start(c.uri.c_str());
-  c.input_text("Username", "username", "", "Main user: 'admin'", NULL, "autocomplete=\"section-login username\"");
+  c.input_text("Username", "username", "", "empty = 'admin'", NULL, "autocomplete=\"section-login username\"");
   c.input_password("Password", "password", "", NULL, NULL, "autocomplete=\"section-login current-password\"");
   c.input_button("default", "Login");
   c.form_end();

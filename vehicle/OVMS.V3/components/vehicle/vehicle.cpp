@@ -595,6 +595,14 @@ void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed)
     }
   }
 
+bool OvmsVehicle::PinCheck(char* pin)
+  {
+  if (!MyConfig.IsDefined("password","pin")) return false;
+
+  std::string vpin = MyConfig.GetParamValue("password","pin");
+  return (strcmp(vpin.c_str(),pin)==0);
+  }
+
 void OvmsVehicle::VehicleTicker1(std::string event, void* data)
   {
   m_ticker++;
