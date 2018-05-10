@@ -223,8 +223,10 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
         twizy_batt[0].max_drive_pwr = CAN_BYTE(3);
       
       // BMS SOH:
-      twizy_soh = CAN_BYTE(5);
-      *StdMetrics.ms_v_bat_soh = (float) twizy_soh;
+      if (CAN_BYTE(5) < 0x7f) {
+        twizy_soh = CAN_BYTE(5);
+        *StdMetrics.ms_v_bat_soh = (float) twizy_soh;
+      }
       
       break;
     

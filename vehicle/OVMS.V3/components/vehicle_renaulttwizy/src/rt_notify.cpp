@@ -68,25 +68,17 @@ void OvmsVehicleRenaultTwizy::DoNotify()
     }
   }
 
-  // Send charge alert?
-  if (which & SEND_ChargeAlert) {
+  // Send sufficient charge notifications?
+  if (which & SEND_SuffCharge) {
     StringWriter buf(200);
     CommandStat(COMMAND_RESULT_NORMAL, &buf);
-    MyNotify.NotifyString("alert", "charge.stopped", buf.c_str());
-    twizy_notifications &= ~SEND_ChargeAlert;
-  }
-
-  // Send charge state?
-  if (which & SEND_ChargeState) {
-    StringWriter buf(200);
-    CommandStat(COMMAND_RESULT_NORMAL, &buf);
-    MyNotify.NotifyString("info", "charge.state", buf.c_str());
-    twizy_notifications &= ~SEND_ChargeState;
+    MyNotify.NotifyString("info", "charge.sufficient", buf.c_str());
+    twizy_notifications &= ~SEND_SuffCharge;
   }
 
   // Send power usage statistics?
   if (which & SEND_PowerNotify) {
-    MyNotify.NotifyCommand("info", "xrt.power", "xrt power report");
+    MyNotify.NotifyCommand("info", "xrt.trip.report", "xrt power report");
     twizy_notifications &= ~SEND_PowerNotify;
   }
 
@@ -116,7 +108,7 @@ void OvmsVehicleRenaultTwizy::DoNotify()
   // Send power usage update?
   if (which & SEND_PowerStats) {
     if (PowerIsModified())
-      MyNotify.NotifyCommand("data", "xrt.power", "xrt power stats");
+      MyNotify.NotifyCommand("data", "xrt.pwr.log", "xrt power stats");
     twizy_notifications &= ~SEND_PowerStats;
   }
 
@@ -141,6 +133,13 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandStat(
   bool chargeport_open = StdMetrics.ms_v_door_chargeport->AsBool();
   if (chargeport_open)
   {
+    if (cfg_suffsoc > 0 && twizy_soc >= cfg_suffsoc*100 && cfg_suffrange > 0 && twizy_range_ideal >= cfg_suffrange)
+      writer->puts("Sufficient SOC and range reached.");
+    else if (cfg_suffsoc > 0 && twizy_soc >= cfg_suffsoc*100)
+      writer->puts("Sufficient SOC level reached.");
+    else if (cfg_suffrange > 0 && twizy_range_ideal >= cfg_suffrange)
+      writer->puts("Sufficient range reached.");
+    
     std::string charge_state = StdMetrics.ms_v_charge_state->AsString();
 
     // Translate state codes:
@@ -313,7 +312,7 @@ void OvmsVehicleRenaultTwizy::SendGPSLog()
       << "," << (float) curr_max / 4;
   }
 
-  MyNotify.NotifyString("data", "xrt.gps", buf.str().c_str());
+  MyNotify.NotifyString("data", "xrt.gps.log", buf.str().c_str());
 }
 
 
@@ -405,5 +404,5 @@ void OvmsVehicleRenaultTwizy::SendTripLog()
     << "," << StdMetrics.ms_v_charge_temp->AsInt()
     ;
 
-  MyNotify.NotifyString("data", "xrt.trip", buf.str().c_str());
+  MyNotify.NotifyString("data", "xrt.trip.log", buf.str().c_str());
 }

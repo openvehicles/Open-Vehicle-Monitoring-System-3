@@ -91,6 +91,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandCA(in
       MyConfig.SetParamValueInt("xrt", "suffsoc", 0);
       MyConfig.SetParamValueInt("xrt", "chargelevel", 0);
       MyConfig.SetParamValueInt("xrt", "chargemode", 0);
+      *StdMetrics.ms_v_charge_substate = (string) "";
       twizy_chg_stop_request = false; // this should not be necessary, but just in case...
       if (capacity > 0)
         capacity -= writer->printf("CA reset OK.\n");
@@ -117,6 +118,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandCA(in
       {
         ESP_LOGI(TAG, "requesting charge stop (user command)");
         MyEvents.SignalEvent("vehicle.charge.substate.scheduledstop", NULL);
+        *StdMetrics.ms_v_charge_substate = (string) "scheduledstop";
         twizy_chg_stop_request = true;
         if (capacity > 0)
           capacity -= writer->printf("Stopping charge.\n");
@@ -288,6 +290,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandStopC
   {
     ESP_LOGI(TAG, "requesting charge stop (user command)");
     MyEvents.SignalEvent("vehicle.charge.substate.scheduledstop", NULL);
+    *StdMetrics.ms_v_charge_substate = (string) "scheduledstop";
     twizy_chg_stop_request = true;
   }
   return Success;
