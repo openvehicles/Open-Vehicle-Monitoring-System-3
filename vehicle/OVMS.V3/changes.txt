@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Web status: panel auto updates, reboot button, SD card and modem status and control
+- Twizy: sufficient charge notifications separated from charge state
 - Webserver: setup wizard
 
 2018-05-01 MWJ  3.1.005  OTA release

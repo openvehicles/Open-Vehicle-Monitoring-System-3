@@ -47,16 +47,17 @@ OvmsNetManager MyNetManager __attribute__ ((init_priority (8999)));
 
 void network_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  struct netif *ni = netif_list;
-  while (ni)
+  struct netif *ni;
+  for (ni = netif_list; ni; ni = ni->next)
     {
+    if (ni->name[0]=='l' && ni->name[1]=='o')
+      continue;
     writer->printf("Interface#%d: %c%c%d (ifup=%d linkup=%d)\n",
       ni->num,ni->name[0],ni->name[1],ni->num,
       ((ni->flags & NETIF_FLAG_UP) != 0),
       ((ni->flags & NETIF_FLAG_LINK_UP) != 0));
     writer->printf("  IPv4: " IPSTR "/" IPSTR " gateway " IPSTR "\n",
       IP2STR(&ni->ip_addr.u_addr.ip4), IP2STR(&ni->netmask.u_addr.ip4), IP2STR(&ni->gw.u_addr.ip4));
-    ni = ni->next;
     writer->puts("");
     }
 

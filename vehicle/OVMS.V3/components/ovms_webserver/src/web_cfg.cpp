@@ -67,8 +67,8 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.print(
     "<div id=\"livestatus\" class=\"receiver\">"
-    "<div class=\"row\">"
-    "<div class=\"col-md-6\">");
+    "<div class=\"row flex\">"
+    "<div class=\"col-md-6 col-lg-4\">");
 
   c.panel_start("primary", "Live");
   c.print(
@@ -119,7 +119,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.print(
     "</div>"
-    "<div class=\"col-md-6\">");
+    "<div class=\"col-md-6 col-lg-4\">");
 
   c.panel_start("primary", "Vehicle");
   output = ExecuteCommand("stat");
@@ -135,9 +135,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.print(
     "</div>"
-    "</div>"
-    "<div class=\"row\">"
-    "<div class=\"col-md-6\">");
+    "<div class=\"col-md-6 col-lg-4\">");
 
   c.panel_start("primary", "Server");
   output = ExecuteCommand("server v2 status");
@@ -157,27 +155,21 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.print(
     "</div>"
-    "<div class=\"col-md-6\">");
+    "<div class=\"col-md-6 col-lg-4\">");
 
-  c.panel_start("primary", "Wifi");
-  output = ExecuteCommand("wifi status");
-  c.printf("<samp class=\"monitor\" data-updcmd=\"wifi status\" data-events=\"^system.wifi\">%s</samp>", _html(output));
-  c.panel_end();
-
-  c.print(
-    "</div>"
-    "</div>"
-    "<div class=\"row\">"
-    "<div class=\"col-md-6\">");
-
-  c.panel_start("primary", "Network");
-  output = ExecuteCommand("network status");
-  c.printf("<samp class=\"monitor\" data-updcmd=\"network status\" data-events=\"^network\">%s</samp>", _html(output));
-  c.panel_end();
+  c.panel_start("primary", "SD Card");
+  output = ExecuteCommand("sd status");
+  c.printf("<samp class=\"monitor\" data-updcmd=\"sd status\" data-events=\"^sd\\.\">%s</samp>", _html(output));
+  c.panel_end(
+    "<ul class=\"list-inline\">"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#sd-cmdres\" data-cmd=\"sd mount\">Mount</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#sd-cmdres\" data-cmd=\"sd unmount 0\">Unmount</button></li>"
+      "<li><samp id=\"sd-cmdres\" class=\"samp-inline\"></samp></li>"
+    "</ul>");
 
   c.print(
     "</div>"
-    "<div class=\"col-md-6\">");
+    "<div class=\"col-md-6 col-lg-4\">");
 
   c.panel_start("primary", "Module");
   output = ExecuteCommand("boot status");
@@ -192,6 +184,37 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.print(
     "</div>"
+    "<div class=\"col-md-6 col-lg-4\">");
+
+  c.panel_start("primary", "Network");
+  output = ExecuteCommand("network status");
+  c.printf("<samp class=\"monitor\" data-updcmd=\"network status\" data-events=\"^network\">%s</samp>", _html(output));
+  c.panel_end();
+
+  c.print(
+    "</div>"
+    "<div class=\"col-md-6 col-lg-4\">");
+
+  c.panel_start("primary", "Wifi");
+  output = ExecuteCommand("wifi status");
+  c.printf("<samp class=\"monitor\" data-updcmd=\"wifi status\" data-events=\"^system.wifi\">%s</samp>", _html(output));
+  c.panel_end();
+
+  c.print(
+    "</div>"
+    "<div class=\"col-md-6 col-lg-4\">");
+
+  c.panel_start("primary", "Modem");
+  output = ExecuteCommand("simcom status");
+  c.printf("<samp class=\"monitor\" data-updcmd=\"simcom status\" data-events=\"system.modem\">%s</samp>", _html(output));
+  c.panel_end(
+    "<ul class=\"list-inline\">"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power simcom on\">Start modem</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power simcom off\">Stop modem</button></li>"
+      "<li><samp id=\"modem-cmdres\" class=\"samp-inline\"></samp></li>"
+    "</ul>");
+
+  c.print(
     "</div>"
     "</div>"
     "<script>"

@@ -1017,36 +1017,43 @@ void simcom_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
 
 void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  writer->printf("SIMCOM\n  Network Registration: %s\n  State: %s\n  Ticker: %d\n  User Data: %d\n",
+  bool debug = (strcmp(cmd->GetName(), "debug") == 0);
+  
+  writer->printf("SIMCOM\n  Network Registration: %s\n  State: %s\n",
     SimcomNetRegName(MyPeripherals->m_simcom->m_netreg),
-    SimcomState1Name(MyPeripherals->m_simcom->m_state1),
-    MyPeripherals->m_simcom->m_state1_ticker,
-    MyPeripherals->m_simcom->m_state1_userdata);
+    SimcomState1Name(MyPeripherals->m_simcom->m_state1));
 
-  if (MyPeripherals->m_simcom->m_state1_timeout_goto != simcom::None)
+  if (debug)
     {
-    writer->printf("  State Timeout Goto: %s (in %d seconds)\n",
-      SimcomState1Name(MyPeripherals->m_simcom->m_state1_timeout_goto),
-      MyPeripherals->m_simcom->m_state1_timeout_ticks);
+    writer->printf("  Ticker: %d\n  User Data: %d\n",
+      MyPeripherals->m_simcom->m_state1_ticker,
+      MyPeripherals->m_simcom->m_state1_userdata);
+
+    if (MyPeripherals->m_simcom->m_state1_timeout_goto != simcom::None)
+      {
+      writer->printf("  State Timeout Goto: %s (in %d seconds)\n",
+        SimcomState1Name(MyPeripherals->m_simcom->m_state1_timeout_goto),
+        MyPeripherals->m_simcom->m_state1_timeout_ticks);
+      }
+
+    writer->printf("\n  Mux\n    Status: %s\n",
+      MyPeripherals->m_simcom->m_mux.IsMuxUp()?"up":"down");
+
+    writer->printf("    Open Channels: %d\n",
+      MyPeripherals->m_simcom->m_mux.m_openchannels);
+
+    writer->printf("    Framing Errors: %d\n",
+      MyPeripherals->m_simcom->m_mux.m_framingerrors);
+
+    writer->printf("    Last RX frame: %d sec(s) ago\n",
+      (MyPeripherals->m_simcom->m_mux.m_lastgoodrxframe==0)?0:(monotonictime-MyPeripherals->m_simcom->m_mux.m_lastgoodrxframe));
+
+    writer->printf("    RX frames: %d\n",
+      MyPeripherals->m_simcom->m_mux.m_rxframecount);
+
+    writer->printf("    TX frames: %d\n",
+      MyPeripherals->m_simcom->m_mux.m_txframecount);
     }
-
-  writer->printf("\n  Mux\n    Status: %s\n",
-    MyPeripherals->m_simcom->m_mux.IsMuxUp()?"up":"down");
-
-  writer->printf("    Open Channels: %d\n",
-    MyPeripherals->m_simcom->m_mux.m_openchannels);
-
-  writer->printf("    Framing Errors: %d\n",
-    MyPeripherals->m_simcom->m_mux.m_framingerrors);
-
-  writer->printf("    Last RX frame: %d sec(s) ago\n",
-    (MyPeripherals->m_simcom->m_mux.m_lastgoodrxframe==0)?0:(monotonictime-MyPeripherals->m_simcom->m_mux.m_lastgoodrxframe));
-
-  writer->printf("    RX frames: %d\n",
-    MyPeripherals->m_simcom->m_mux.m_rxframecount);
-
-  writer->printf("    TX frames: %d\n",
-    MyPeripherals->m_simcom->m_mux.m_txframecount);
 
   if (MyPeripherals->m_simcom->m_ppp.m_connected)
     {
@@ -1055,7 +1062,7 @@ void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     }
   else
     {
-    writer->puts("\n  PPP\n    Not Connected");
+    writer->puts("\n  PPP\n    Not connected");
     }
 
   writer->printf("    Last Error: %s\n",
@@ -1071,12 +1078,12 @@ void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 
   if (MyPeripherals->m_simcom->m_nmea.m_connected)
     {
-    writer->printf("    NMEA: GPS/GLONASS Connected on channel: #%d\n",
+    writer->printf("    NMEA: GPS/GLONASS connected on channel: #%d\n",
       MyPeripherals->m_simcom->m_nmea.m_channel);
     }
   else
     {
-    writer->puts("    NMEA: GPS/GLONASS Not Connected");
+    writer->puts("    NMEA: GPS/GLONASS not connected");
     }
 
   }
@@ -1142,7 +1149,8 @@ SimcomInit::SimcomInit()
   OvmsCommand* cmd_simcom = MyCommandApp.RegisterCommand("simcom","SIMCOM framework",simcom_status, "", 0, 1);
   cmd_simcom->RegisterCommand("tx","Transmit data on SIMCOM",simcom_tx, "", 1, INT_MAX, true);
   cmd_simcom->RegisterCommand("muxtx","Transmit data on SIMCOM MUX",simcom_muxtx, "<chan> <data>", 2, INT_MAX, true);
-  cmd_simcom->RegisterCommand("status","Show SIMCOM status",simcom_status, "", 0);
+  OvmsCommand* cmd_status = cmd_simcom->RegisterCommand("status","Show SIMCOM status",simcom_status, "", 0);
+  cmd_status->RegisterCommand("debug","Show extended SIMCOM status",simcom_status, "", 0);
   cmd_simcom->RegisterCommand("cmd","Send SIMCOM AT command",simcom_cmd, "<command>", 1, INT_MAX, true);
 
   OvmsCommand* cmd_setstate = cmd_simcom->RegisterCommand("setstate","SIMCOM state change framework",NULL, "", 0, 0, true);

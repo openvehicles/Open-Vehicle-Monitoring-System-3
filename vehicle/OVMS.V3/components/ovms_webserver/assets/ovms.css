@@ -76,12 +76,14 @@ pre {
   border: 1px solid #ddd;
   border-top: none;
 }
+
 #main {
   margin-top: 60px;
 }
 #input-command {
   color: #300;
 }
+
 @media (max-width: 767px) {
   pre {
     white-space: pre-wrap;
@@ -101,6 +103,13 @@ pre {
   }
   .panel-single .panel-footer {
     padding: 10px;
+  }
+}
+
+@media (min-width: 992px) {
+  .row.flex {
+    display: flex;
+    flex-wrap: wrap;
   }
 }
 
