@@ -212,9 +212,14 @@ uint32_t OvmsNotifyType::QueueEntry(OvmsNotifyEntry* entry)
   entry->m_id = id;
   m_entries[id] = entry;
 
-  std::string event("notify.");
-  event.append(m_name);
-  MyEvents.SignalEvent(event, (void*)entry);
+  if (strcmp(m_name, "data") != 0)
+    {
+    std::string event("notify.");
+    event.append(m_name);
+    event.append(".");
+    event.append(entry->m_subtype);
+    MyEvents.SignalEvent(event, (void*)id);
+    }
 
   // Dispatch the callbacks...
   MyNotify.NotifyReaders(this, entry);
