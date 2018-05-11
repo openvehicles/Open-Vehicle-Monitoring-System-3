@@ -74,24 +74,28 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
           StandardMetrics.ms_v_env_on->SetValue(false);
           StandardMetrics.ms_v_env_awake->SetValue(false);
           StandardMetrics.ms_v_env_handbrake->SetValue(true);
+          StandardMetrics.ms_v_env_charging12v->SetValue(false);
           break;
         case 2: // Reverse
           StandardMetrics.ms_v_env_gear->SetValue(-1);
           StandardMetrics.ms_v_env_on->SetValue(true);
           StandardMetrics.ms_v_env_awake->SetValue(true);
           StandardMetrics.ms_v_env_handbrake->SetValue(false);
+          StandardMetrics.ms_v_env_charging12v->SetValue(true);
           break;
         case 3: // Neutral
           StandardMetrics.ms_v_env_gear->SetValue(0);
           StandardMetrics.ms_v_env_on->SetValue(true);
           StandardMetrics.ms_v_env_awake->SetValue(true);
           StandardMetrics.ms_v_env_handbrake->SetValue(false);
+          StandardMetrics.ms_v_env_charging12v->SetValue(true);
           break;
         case 4: // Drive
           StandardMetrics.ms_v_env_gear->SetValue(1);
           StandardMetrics.ms_v_env_on->SetValue(true);
           StandardMetrics.ms_v_env_awake->SetValue(true);
           StandardMetrics.ms_v_env_handbrake->SetValue(false);
+          StandardMetrics.ms_v_env_charging12v->SetValue(true);
           break;
         default:
           break;
