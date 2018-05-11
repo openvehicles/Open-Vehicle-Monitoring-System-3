@@ -273,6 +273,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   
   public:
     void PowerInit();
+    void PowerUpdateMetrics();
     void PowerUpdate();
     void PowerReset();
     bool PowerIsModified();
@@ -324,6 +325,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     void BatteryInit();
     bool BatteryLock(int maxwait_ms);
     void BatteryUnlock();
+    void BatteryUpdateMetrics();
     void BatteryUpdate();
     void BatteryReset();
     void BatterySendDataUpdate(bool force = false);

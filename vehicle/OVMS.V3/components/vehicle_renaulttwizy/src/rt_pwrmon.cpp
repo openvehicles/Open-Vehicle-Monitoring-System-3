@@ -93,14 +93,10 @@ void OvmsVehicleRenaultTwizy::PowerInit()
 
 
 /**
- * PowerUpdate:
+ * PowerUpdateMetrics: publish metrics
  */
-void OvmsVehicleRenaultTwizy::PowerUpdate()
+void OvmsVehicleRenaultTwizy::PowerUpdateMetrics()
 {
-  PowerCollectData();
-  
-  // publish metrics:
-  
   unsigned long pwr;
   
   pwr = twizy_speedpwr[CAN_SPEED_CONST].use
@@ -123,6 +119,16 @@ void OvmsVehicleRenaultTwizy::PowerUpdate()
   for (levelpwr &stats : twizy_levelpwr)
     stats.UpdateMetrics();
   
+}
+
+
+/**
+ * PowerUpdate: collect new data & publish metrics
+ */
+void OvmsVehicleRenaultTwizy::PowerUpdate()
+{
+  PowerCollectData();
+  PowerUpdateMetrics();
 }
 
 
@@ -259,6 +265,8 @@ void OvmsVehicleRenaultTwizy::PowerReset()
   twizy_cc_charge = 0;
   twizy_cc_soc = 0;
   twizy_cc_power_level = 0;
+  
+  PowerUpdateMetrics();
 }
 
 

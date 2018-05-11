@@ -157,6 +157,23 @@ void OvmsVehicleRenaultTwizy::BatteryUnlock()
 
 
 /**
+ * BatteryUpdateMetrics: publish internal state to metrics
+ */
+void OvmsVehicleRenaultTwizy::BatteryUpdateMetrics()
+{
+  *StdMetrics.ms_v_bat_temp = (float) twizy_batt[0].temp_act - 40;
+  *StdMetrics.ms_v_bat_voltage = (float) twizy_batt[0].volt_act / 10;
+
+  for (battery_pack &pack : twizy_batt)
+    pack.UpdateMetrics();
+  for (battery_cmod &cmod : twizy_cmod)
+    cmod.UpdateMetrics();
+  for (battery_cell &cell : twizy_cell)
+    cell.UpdateMetrics();
+}
+
+
+/**
  * BatteryUpdate:
  *  - executed in CAN RX task when sensor data is complete
  *  - commit sensor RX buffers
@@ -192,16 +209,7 @@ void OvmsVehicleRenaultTwizy::BatteryUpdate()
   BatteryCheckDeviations();
 
   // publish internal state to metrics:
-
-  *StdMetrics.ms_v_bat_temp = (float) twizy_batt[0].temp_act - 40;
-  *StdMetrics.ms_v_bat_voltage = (float) twizy_batt[0].volt_act / 10;
-
-  for (battery_pack &pack : twizy_batt)
-    pack.UpdateMetrics();
-  for (battery_cmod &cmod : twizy_cmod)
-    cmod.UpdateMetrics();
-  for (battery_cell &cell : twizy_cell)
-    cell.UpdateMetrics();
+  BatteryUpdateMetrics();
 
   // done, start next fetch cycle:
   BatteryUnlock();
@@ -244,6 +252,8 @@ void OvmsVehicleRenaultTwizy::BatteryReset()
     pack.last_temp_alerts = 0;
     pack.last_volt_alerts = 0;
   }
+  
+  BatteryUpdateMetrics();
 }
 
 
