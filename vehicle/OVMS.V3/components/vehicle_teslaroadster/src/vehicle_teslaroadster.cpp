@@ -231,6 +231,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           StandardMetrics.ms_v_door_hood->SetValue(d[2] & 0x40);
           StandardMetrics.ms_v_door_trunk->SetValue(d[2] & 0x80);
           StandardMetrics.ms_v_env_awake->SetValue(d[3] & 0x01);
+          StandardMetrics.ms_v_env_charging12v->SetValue(d[3] & 0x01);
           StandardMetrics.ms_v_env_cooling->SetValue(d[3] & 0x02);
           StandardMetrics.ms_v_env_alarm->SetValue(d[4] & 0x02);
           break;
