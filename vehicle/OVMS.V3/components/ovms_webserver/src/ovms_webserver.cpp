@@ -104,8 +104,6 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/cfg/autostart", "Autostart", HandleCfgAutoInit, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/firmware", "Firmware", HandleCfgFirmware, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/logging", "Logging", HandleCfgLogging, PageMenu_Config, PageAuth_Cookie);
-  
-  CfgInitStartup();
 }
 
 OvmsWebServer::~OvmsWebServer()
@@ -153,10 +151,14 @@ void OvmsWebServer::NetManStop(std::string event, void* data)
  */
 void OvmsWebServer::ConfigChanged(std::string event, void* data)
 {
-#if MG_ENABLE_FILESYSTEM
   OvmsConfigParam* param = (OvmsConfigParam*) data;
   ESP_LOGD(TAG, "ConfigChanged: %s %s", event.c_str(), param ? param->GetName().c_str() : "");
 
+  if (event == "config.mounted") {
+    CfgInitStartup();
+  }
+  
+#if MG_ENABLE_FILESYSTEM
   if (!param || param->GetName() == "password") {
     UpdateGlobalAuthFile();
   }
