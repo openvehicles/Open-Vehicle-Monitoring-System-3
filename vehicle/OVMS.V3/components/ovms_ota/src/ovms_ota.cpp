@@ -586,7 +586,7 @@ void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
       url.append("/ovms3.ver");
 
       OvmsHttpClient http(url);
-      if (http.IsOpen() && http.BodyHasLine())
+      if (http.IsOpen() && http.ResponseCode() == 200 && http.BodyHasLine())
         {
         info.version_server = http.BodyReadLine();
         char rbuf[512];
