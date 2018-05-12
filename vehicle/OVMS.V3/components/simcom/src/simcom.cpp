@@ -1031,8 +1031,10 @@ void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   {
   bool debug = (strcmp(cmd->GetName(), "debug") == 0);
   
-  writer->printf("SIMCOM\n  Network Registration: %s\n  State: %s\n",
+  writer->printf("Network Registration: %s\nProvider: %s\nSignal: %d dBm\n\nState: %s\n",
     SimcomNetRegName(MyPeripherals->m_simcom->m_netreg),
+    MyPeripherals->m_simcom->m_provider.c_str(),
+    UnitConvert(sq, dbm, MyPeripherals->m_simcom->m_sq),
     SimcomState1Name(MyPeripherals->m_simcom->m_state1));
 
   if (debug)
@@ -1069,33 +1071,36 @@ void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 
   if (MyPeripherals->m_simcom->m_ppp.m_connected)
     {
-    writer->printf("\n  PPP\n    Connected on channel: #%d\n",
+    writer->printf("\nPPP: Connected on channel: #%d\n",
       MyPeripherals->m_simcom->m_ppp.m_channel);
     }
   else
     {
-    writer->puts("\n  PPP\n    Not connected");
+    writer->puts("\nPPP: Not connected");
     }
-
-  writer->printf("    Last Error: %s\n",
-    MyPeripherals->m_simcom->m_ppp.ErrCodeName(MyPeripherals->m_simcom->m_ppp.m_lasterrcode));
-
-  writer->printf("\n  GPS\n    Status: %s%s\n",
-    MyConfig.GetParamValueBool("modem", "enable.gps", false) ? "enabled" : "disabled",
-    MyPeripherals->m_simcom->m_gps_required ? ", required" : "");
-
-  writer->printf("    Time: %s%s\n",
-    MyConfig.GetParamValueBool("modem", "enable.gpstime", false) ? "enabled" : "disabled",
-    MyPeripherals->m_simcom->m_nmea.m_gpstime_required ? ", required" : "");
+  if (MyPeripherals->m_simcom->m_ppp.m_lasterrcode > 0)
+    {
+    writer->printf("     Last Error: %s\n",
+      MyPeripherals->m_simcom->m_ppp.ErrCodeName(MyPeripherals->m_simcom->m_ppp.m_lasterrcode));
+    }
 
   if (MyPeripherals->m_simcom->m_nmea.m_connected)
     {
-    writer->printf("    NMEA: GPS/GLONASS connected on channel: #%d\n",
+    writer->printf("\nGPS: Connected on channel: #%d\n",
       MyPeripherals->m_simcom->m_nmea.m_channel);
     }
   else
     {
-    writer->puts("    NMEA: GPS/GLONASS not connected");
+    writer->puts("\nGPS: Not connected");
+    }
+  if (debug)
+    {
+    writer->printf("     Status: %s%s\n",
+      MyConfig.GetParamValueBool("modem", "enable.gps", false) ? "enabled" : "disabled",
+      MyPeripherals->m_simcom->m_gps_required ? ", required" : "");
+    writer->printf("     Time: %s%s\n",
+      MyConfig.GetParamValueBool("modem", "enable.gpstime", false) ? "enabled" : "disabled",
+      MyPeripherals->m_simcom->m_nmea.m_gpstime_required ? ", required" : "");
     }
 
   }

@@ -855,43 +855,43 @@ void esp32wifi::EventSystemShuttingDown(std::string event, void* data)
 
 void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
   {
-  writer->printf("WiFi\n  Power: %s\n  Mode: %s\n",
+  writer->printf("Power: %s\nMode: %s\n",
     MyPcpApp.FindPowerModeByType(m_powermode), esp32wifi_mode_names[m_mode]);
   switch (m_mode)
     {
     case ESP32WIFI_MODE_CLIENT:
     case ESP32WIFI_MODE_SCLIENT:
-      writer->printf("\n  STA SSID: %s\n    MAC: " MACSTR "\n    IP: " IPSTR "/" IPSTR "\n    GW: " IPSTR "\n",
+      writer->printf("\nSTA SSID: %s\n  MAC: " MACSTR "\n  IP: " IPSTR "/" IPSTR "\n  GW: " IPSTR "\n",
         m_wifi_sta_cfg.sta.ssid, MAC2STR(m_mac_sta),
         IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw));
       break;
     case ESP32WIFI_MODE_APCLIENT:
-      writer->printf("\n  STA SSID: %s\n    MAC: " MACSTR "\n    IP: " IPSTR "/" IPSTR "\n    GW: " IPSTR "\n",
+      writer->printf("\nSTA SSID: %s\n  MAC: " MACSTR "\n  IP: " IPSTR "/" IPSTR "\n  GW: " IPSTR "\n",
         m_wifi_sta_cfg.sta.ssid, MAC2STR(m_mac_sta),
         IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw));
       // Falling through (no break) to ESP32WIFI_MODE_AP on purpose
     case ESP32WIFI_MODE_AP:
-      writer->printf("\n  AP SSID: %s\n    MAC: " MACSTR "\n    IP: " IPSTR "\n",
+      writer->printf("\nAP SSID: %s\n  MAC: " MACSTR "\n  IP: " IPSTR "\n",
         m_wifi_ap_cfg.ap.ssid, MAC2STR(m_mac_ap), IP2STR(&m_ip_info_ap.ip));
       wifi_sta_list_t sta_list;
       tcpip_adapter_sta_list_t ip_list;
       if (esp_wifi_ap_get_sta_list(&sta_list) == ESP_OK)
         {
-        writer->printf("    AP Stations: %d\n", sta_list.num);
+        writer->printf("  AP Stations: %d\n", sta_list.num);
         if (tcpip_adapter_get_sta_list(&sta_list, &ip_list) == ESP_OK)
           {
           for (int i=0; i<sta_list.num; i++)
-            writer->printf("      %d: MAC: " MACSTR ", IP: " IPSTR "\n", i+1, MAC2STR(ip_list.sta[i].mac), IP2STR(&ip_list.sta[i].ip));
+            writer->printf("    %d: MAC: " MACSTR ", IP: " IPSTR "\n", i+1, MAC2STR(ip_list.sta[i].mac), IP2STR(&ip_list.sta[i].ip));
           }
         else
           {
           for (int i=0; i<sta_list.num; i++)
-            writer->printf("      %d: MAC: " MACSTR "\n", i+1, MAC2STR(sta_list.sta[i].mac));
+            writer->printf("    %d: MAC: " MACSTR "\n", i+1, MAC2STR(sta_list.sta[i].mac));
           }
         }
       else
         {
-        writer->printf("    Stations: unknown\n");
+        writer->printf("  Stations: unknown\n");
         }
       break;
     default:
