@@ -170,17 +170,17 @@ config OVMS_VEHICLE_VOLTAMPERA
     help
         Enable to include support for Volt/Ampera vehicles.
 
-endmenu # Vehicle Support
-
 config OVMS_VEHICLE_RXTASK_STACK
     int "Stack size for vehicle RX task"
-    default 3072
+    default 6144
     depends on OVMS
     help
         Stack size for the vehicle CAN RX task ("Vrx Task").
         The RX task triggers events and metrics updates so needs to be
         able to process the attached event/metrics listeners.
         Standard stack usage of this task is currently around 1400 bytes.
+
+endmenu # Vehicle Support
 
 menu "Component Options"
     depends on OVMS
