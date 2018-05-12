@@ -45,6 +45,10 @@ class OvmsVehicleTeslaModelS: public OvmsVehicle
     void IncomingFrameCan1(CAN_frame_t* p_frame);
 
   protected:
+    virtual void Notify12vCritical();
+    virtual void Notify12vRecovered();
+
+  protected:
     char m_vin[18];
     char m_type[5];
   };

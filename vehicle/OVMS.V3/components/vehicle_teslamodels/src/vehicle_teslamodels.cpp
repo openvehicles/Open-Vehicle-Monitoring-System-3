@@ -152,6 +152,14 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
   }
 
+void OvmsVehicleTeslaModelS::Notify12vCritical()
+  { // Not supported on Model S
+  }
+
+void OvmsVehicleTeslaModelS::Notify12vRecovered()
+  { // Not supported on Model S
+  }
+
 class OvmsVehicleTeslaModelSInit
   {
   public: OvmsVehicleTeslaModelSInit();
