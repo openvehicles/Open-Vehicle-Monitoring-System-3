@@ -156,6 +156,8 @@ simcom::simcom(const char* name, uart_port_t uartnum, int baud, int rxpin, int t
   m_state1_timeout_ticks = -1;
   m_state1_userdata = 0;
   m_netreg = NotRegistered;
+  m_provider = "";
+  m_sq = 99; // = unknown
   m_powermode = Off;
   m_gps_required = false;
   m_line_unfinished = -1;
@@ -231,6 +233,15 @@ void simcom::SendSetState1(SimcomState1 newstate)
 bool simcom::IsStarted()
   {
   return (m_task != NULL);
+  }
+
+void simcom::UpdateNetMetrics()
+  {
+  if (StdMetrics.ms_m_net_type->AsString() == "modem")
+    {
+    StdMetrics.ms_m_net_provider->SetValue(m_provider);
+    StdMetrics.ms_m_net_sq->SetValue(m_sq, sq);
+    }
   }
 
 void simcom::SetPowerMode(PowerMode powermode)
@@ -794,8 +805,8 @@ void simcom::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
     }
   else if (line.compare(0, 6, "+CSQ: ") == 0)
     {
-    int val = atoi(line.substr(6).c_str());
-    StandardMetrics.ms_m_net_sq->SetValue(val,sq);
+    m_sq = atoi(line.substr(6).c_str());
+    UpdateNetMetrics();
     }
   else if (line.compare(0, 7, "+CREG: ") == 0)
     {
@@ -841,7 +852,8 @@ void simcom::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
       size_t qp2 = line.find('"',qp+1);
       if (qp2 != string::npos)
         {
-        StandardMetrics.ms_m_net_provider->SetValue(line.substr(qp+1,qp2-qp-1));
+        m_provider = line.substr(qp+1,qp2-qp-1);
+        UpdateNetMetrics();
         }
       }
     }

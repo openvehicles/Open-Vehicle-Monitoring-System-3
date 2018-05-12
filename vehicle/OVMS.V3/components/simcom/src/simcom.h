@@ -121,6 +121,8 @@ class simcom : public pcp
     int          m_state1_timeout_ticks;
     int          m_state1_userdata;
     network_registration_t m_netreg;
+    std::string  m_provider;
+    int          m_sq;
     GsmMux       m_mux;
     GsmPPPOS     m_ppp;
     GsmNMEA      m_nmea;
@@ -149,6 +151,7 @@ class simcom : public pcp
     void IncomingMuxData(GsmMuxChannel* channel);
     void SendSetState1(SimcomState1 newstate);
     bool IsStarted();
+    void UpdateNetMetrics();
   };
 
 #endif //#ifndef __SIMCOM_H__

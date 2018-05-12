@@ -64,6 +64,7 @@ class OvmsNetManager
 
   protected:
     void PrioritiseAndIndicate();
+    void SetNetType(std::string type);
     void SaveDNSServer(ip_addr_t* dnsstore);
     void SetDNSServer(ip_addr_t* dnsstore);
 

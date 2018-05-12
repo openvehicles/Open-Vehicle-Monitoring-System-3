@@ -39,6 +39,7 @@ static const char *TAG = "esp32wifi";
 #include "ovms_config.h"
 #include "ovms_peripherals.h"
 #include "ovms_events.h"
+#include "metrics_standard.h"
 
 const char* const esp32wifi_mode_names[] = {
   "Modem is off",
@@ -692,6 +693,19 @@ std::string esp32wifi::GetAPSSID()
     return std::string("");
   }
 
+void esp32wifi::UpdateNetMetrics()
+  {
+  if (StdMetrics.ms_m_net_type->AsString() == "wifi")
+    {
+    StdMetrics.ms_m_net_provider->SetValue(GetSSID());
+    StdMetrics.ms_m_net_sq->SetValue(0, dbm);
+    // TODO: set SQ from RSSI info when available
+    //  esp-idf currently has no API to retrieve the RSSI info in STA mode
+    //  without doing a scan.
+    //  As the wifi stack is closed source, we can't do anything about that.
+    }
+  }
+
 void esp32wifi::EventWifiGotIp(std::string event, void* data)
   {
   system_event_info_t *info = (system_event_info_t*)data;
@@ -699,6 +713,7 @@ void esp32wifi::EventWifiGotIp(std::string event, void* data)
 
   m_ip_info_sta = info->got_ip.ip_info;
   esp_wifi_get_mac(ESP_IF_WIFI_STA, m_mac_sta);
+  UpdateNetMetrics();
   ESP_LOGI(TAG, "STA got IP with SSID: %s, MAC: " MACSTR ", IP: " IPSTR ", mask: " IPSTR ", gw: " IPSTR,
     m_wifi_sta_cfg.sta.ssid, MAC2STR(m_mac_sta),
     IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw));
@@ -726,6 +741,8 @@ void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
     esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg);
     m_nextscan = monotonictime + 30;
     }
+
+  UpdateNetMetrics();
   }
 
 void esp32wifi::EventWifiApState(std::string event, void* data)

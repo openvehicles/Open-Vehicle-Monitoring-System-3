@@ -175,8 +175,8 @@ class MetricsStandard
     OvmsMetricInt*    ms_m_monotonic;
     OvmsMetricInt*    ms_m_timeutc;
 
-    OvmsMetricString* ms_m_net_type;                // none, wifi, gsm
-    OvmsMetricInt*    ms_m_net_sq;                  // Network signal quality [%?]
+    OvmsMetricString* ms_m_net_type;                // none, wifi, modem
+    OvmsMetricInt*    ms_m_net_sq;                  // Network signal quality [dbm]
     OvmsMetricString* ms_m_net_provider;            // Network provider name
     OvmsMetricString* ms_m_net_mdm_iccid;         
     OvmsMetricString* ms_m_net_mdm_model;         

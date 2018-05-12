@@ -72,6 +72,7 @@ class esp32wifi : public pcp
     esp32wifi_mode_t GetMode();
     std::string GetSSID();
     std::string GetAPSSID();
+    void UpdateNetMetrics();
 
   public:
     void EventWifiGotIp(std::string event, void* data);

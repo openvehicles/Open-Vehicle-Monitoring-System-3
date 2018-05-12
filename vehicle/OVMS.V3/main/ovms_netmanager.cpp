@@ -149,10 +149,6 @@ void OvmsNetManager::WifiUpSTA(std::string event, void* data)
   SaveDNSServer(m_dns_wifi);
   PrioritiseAndIndicate();
 
-  StandardMetrics.ms_m_net_type->SetValue("wifi");
-#ifdef CONFIG_OVMS_COMP_WIFI
-  StandardMetrics.ms_m_net_provider->SetValue(MyPeripherals->m_esp32wifi->GetSSID());
-#endif // #ifdef CONFIG_OVMS_COMP_WIFI
   MyEvents.SignalEvent("network.wifi.up",NULL);
 
   if (m_connected_modem)
@@ -190,8 +186,6 @@ void OvmsNetManager::WifiDownSTA(std::string event, void* data)
     else
       {
       ESP_LOGI(TAG, "WIFI client down (with MODEM down): network connectivity has been lost");
-      StandardMetrics.ms_m_net_type->SetValue("none");
-      StandardMetrics.ms_m_net_provider->SetValue("");
       MyEvents.SignalEvent("network.down",NULL);
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
@@ -244,7 +238,6 @@ void OvmsNetManager::ModemUp(std::string event, void* data)
   SaveDNSServer(m_dns_modem);
   PrioritiseAndIndicate();
 
-  StandardMetrics.ms_m_net_type->SetValue("modem");
   MyEvents.SignalEvent("network.modem.up",NULL);
 
   if (!m_connected_wifi)
@@ -280,8 +273,6 @@ void OvmsNetManager::ModemDown(std::string event, void* data)
     else
       {
       ESP_LOGI(TAG, "MODEM down (with WIFI client down): network connectivity has been lost");
-      StandardMetrics.ms_m_net_type->SetValue("none");
-      StandardMetrics.ms_m_net_provider->SetValue("");
       MyEvents.SignalEvent("network.down",NULL);
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
@@ -374,6 +365,32 @@ void OvmsNetManager::SetDNSServer(ip_addr_t* dnsstore)
     }
   }
 
+void OvmsNetManager::SetNetType(std::string type)
+  {
+  if (type == "wifi")
+    {
+    StdMetrics.ms_m_net_type->SetValue(type);
+#ifdef CONFIG_OVMS_COMP_WIFI
+    if (MyPeripherals && MyPeripherals->m_esp32wifi)
+      MyPeripherals->m_esp32wifi->UpdateNetMetrics();
+#endif // CONFIG_OVMS_COMP_WIFI
+    }
+  else if (type == "modem")
+    {
+    StdMetrics.ms_m_net_type->SetValue(type);
+#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+    if (MyPeripherals && MyPeripherals->m_simcom)
+      MyPeripherals->m_simcom->UpdateNetMetrics();
+#endif // CONFIG_OVMS_COMP_MODEM_SIMCOM
+    }
+  else
+    {
+      StdMetrics.ms_m_net_type->SetValue("none");
+      StdMetrics.ms_m_net_provider->SetValue("");
+      StdMetrics.ms_m_net_sq->SetValue(0, dbm);
+    }
+  }
+
 void OvmsNetManager::PrioritiseAndIndicate()
   {
   const char *search = NULL;
@@ -387,17 +404,24 @@ void OvmsNetManager::PrioritiseAndIndicate()
   if (m_connected_wifi)
     {
     // Wifi is up
+    SetNetType("wifi");
     search = "st";
     dns = m_dns_wifi;
     }
   else if (m_connected_modem)
     {
     // Modem is up
+    SetNetType("modem");
     search = "pp";
     dns = m_dns_modem;
     }
 
-  if (search == NULL) return;
+  if (search == NULL)
+    {
+    SetNetType("none");
+    return;
+    }
+
   for (struct netif *pri = netif_list; pri != NULL; pri=pri->next)
     {
     if ((pri->name[0]==search[0])&&
