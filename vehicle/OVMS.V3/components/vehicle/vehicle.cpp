@@ -620,9 +620,15 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
   if ((m_ticker % 3600) == 0) Ticker3600(m_ticker);
 
   if (StandardMetrics.ms_v_env_on->AsBool())
+    {
     StandardMetrics.ms_v_env_parktime->SetValue(0);
+    StandardMetrics.ms_v_env_drivetime->SetValue(StandardMetrics.ms_v_env_drivetime->AsInt() + 1);
+    }
   else
+    {
+    StandardMetrics.ms_v_env_drivetime->SetValue(0);
     StandardMetrics.ms_v_env_parktime->SetValue(StandardMetrics.ms_v_env_parktime->AsInt() + 1);
+    }
 
   if (StandardMetrics.ms_v_charge_inprogress->AsBool())
     StandardMetrics.ms_v_charge_time->SetValue(StandardMetrics.ms_v_charge_time->AsInt() + 1);

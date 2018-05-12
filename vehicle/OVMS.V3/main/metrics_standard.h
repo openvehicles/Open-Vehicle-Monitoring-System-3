@@ -132,6 +132,7 @@
 #define MS_V_ENV_HEADLIGHTS         "v.e.headlights"
 #define MS_V_ENV_ALARM              "v.e.alarm"
 #define MS_V_ENV_PARKTIME           "v.e.parktime"
+#define MS_V_ENV_DRIVETIME          "v.e.drivetime"
 #define MS_V_ENV_CTRL_LOGIN         "v.e.c.login"
 #define MS_V_ENV_CTRL_CONFIG        "v.e.c.config"
 #define MS_V_ENV_TEMP               "v.e.temp"
@@ -178,8 +179,8 @@ class MetricsStandard
     OvmsMetricString* ms_m_net_type;                // none, wifi, modem
     OvmsMetricInt*    ms_m_net_sq;                  // Network signal quality [dbm]
     OvmsMetricString* ms_m_net_provider;            // Network provider name
-    OvmsMetricString* ms_m_net_mdm_iccid;         
-    OvmsMetricString* ms_m_net_mdm_model;         
+    OvmsMetricString* ms_m_net_mdm_iccid;
+    OvmsMetricString* ms_m_net_mdm_model;
 
     OvmsMetricBool*   ms_s_v2_connected;            // True = V2 server connected [1]
     OvmsMetricInt*    ms_s_v2_peers;                // V2 clients connected [1]
@@ -259,6 +260,7 @@ class MetricsStandard
     OvmsMetricBool*   ms_v_env_headlights;
     OvmsMetricBool*   ms_v_env_alarm;
     OvmsMetricInt*    ms_v_env_parktime;
+    OvmsMetricInt*    ms_v_env_drivetime;
     OvmsMetricBool*   ms_v_env_ctrl_login;          // Module logged in at ECU/controller
     OvmsMetricBool*   ms_v_env_ctrl_config;         // ECU/controller in configuration state
     OvmsMetricFloat*  ms_v_env_temp;                // Ambient temperature [°C]

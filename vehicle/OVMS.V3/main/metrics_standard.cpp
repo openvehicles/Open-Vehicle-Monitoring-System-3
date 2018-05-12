@@ -127,6 +127,7 @@ MetricsStandard::MetricsStandard()
   ms_v_env_headlights = new OvmsMetricBool(MS_V_ENV_HEADLIGHTS, SM_STALE_MID);
   ms_v_env_alarm = new OvmsMetricBool(MS_V_ENV_ALARM, SM_STALE_MID);
   ms_v_env_parktime = new OvmsMetricInt(MS_V_ENV_PARKTIME, SM_STALE_MID, Seconds);
+  ms_v_env_drivetime = new OvmsMetricInt(MS_V_ENV_DRIVETIME, SM_STALE_MID, Seconds);
   ms_v_env_ctrl_login = new OvmsMetricBool(MS_V_ENV_CTRL_LOGIN, SM_STALE_MID);
   ms_v_env_ctrl_config = new OvmsMetricBool(MS_V_ENV_CTRL_CONFIG, SM_STALE_MID);
 
