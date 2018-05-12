@@ -1113,18 +1113,30 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
     MyEvents.SignalEvent("vehicle.charge.state",(void*)m, strlen(m)+1);
     if (m_autonotifications)
       {
-      if (strcmp(m,"charging")==0)
-        NotifyChargeStart();
-      else if (strcmp(m,"topoff")==0)
-        NotifyChargeStart();
-      else if (strcmp(m,"heating")==0)
-        NotifyHeatingStart();
-      else if (strcmp(m,"done")==0)
+      if (strcmp(m,"done")==0)
         NotifyChargeDone();
       else if (strcmp(m,"stopped")==0)
         NotifyChargeStopped();
       }
     NotifiedVehicleChargeState(m);
+    }
+  else if (metric == StandardMetrics.ms_v_charge_time)
+    {
+    if (StandardMetrics.ms_v_charge_time->AsInt() == 15)
+      {
+      // 15 seconds into the charge (once things have had time to stabilise)
+      // we can check and notify appropriately
+      const char* m = StandardMetrics.ms_v_charge_state->AsString().c_str();
+      if (m_autonotifications)
+        {
+        if (strcmp(m,"charging")==0)
+          NotifyChargeStart();
+        else if (strcmp(m,"topoff")==0)
+          NotifyChargeStart();
+        else if (strcmp(m,"heating")==0)
+          NotifyHeatingStart();
+        }
+      }
     }
   }
 
