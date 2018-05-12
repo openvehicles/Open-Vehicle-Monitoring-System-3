@@ -669,6 +669,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandHomelink(int but
   return Success;
   }
 
+void OvmsVehicleTeslaRoadster::Notify12vCritical()
+  { // Not supported on Tesla Roadster
+  }
+
+void OvmsVehicleTeslaRoadster::Notify12vRecovered()
+  { // Not supported on Tesla Roadster
+  }
+
 class OvmsVehicleTeslaRoadsterInit
   {
   public: OvmsVehicleTeslaRoadsterInit();

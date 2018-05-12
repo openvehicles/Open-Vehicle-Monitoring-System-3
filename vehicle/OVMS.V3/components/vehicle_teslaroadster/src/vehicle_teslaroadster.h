@@ -59,6 +59,10 @@ class OvmsVehicleTeslaRoadster : public OvmsVehicle
     virtual vehicle_command_t CommandHomelink(int button);
 
   protected:
+    virtual void Notify12vCritical();
+    virtual void Notify12vRecovered();
+
+  protected:
     virtual void NotifiedVehicleChargeStart();
     virtual void NotifiedVehicleOn();
     virtual void NotifiedVehicleOff();
