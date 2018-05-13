@@ -273,6 +273,7 @@ class OvmsVehicleFactory
     typedef map<const char*, vehicle_t, CmpStrOp> map_vehicle_t;
 
     OvmsVehicle *m_currentvehicle;
+    std::string m_currentvehicletype;
     map_vehicle_t m_vmap;
 
   public:
@@ -288,6 +289,7 @@ class OvmsVehicleFactory
     void SetVehicle(const char* type);
     void AutoInit();
     OvmsVehicle* ActiveVehicle();
+    const char* ActiveVehicleType();
     const char* ActiveVehicleName();
     const char* ActiveVehicleShortName();
   };

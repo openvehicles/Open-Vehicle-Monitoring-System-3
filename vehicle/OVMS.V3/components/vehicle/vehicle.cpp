@@ -361,6 +361,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   ESP_LOGI(TAG, "Initialising VEHICLE Factory (2000)");
 
   m_currentvehicle = NULL;
+  m_currentvehicletype.clear();
 
   OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework",NULL,"",0,0, true);
   cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1, true);
@@ -392,6 +393,7 @@ OvmsVehicleFactory::~OvmsVehicleFactory()
     {
     delete m_currentvehicle;
     m_currentvehicle = NULL;
+    m_currentvehicletype.clear();
     }
   }
 
@@ -411,6 +413,7 @@ void OvmsVehicleFactory::ClearVehicle()
     {
     delete m_currentvehicle;
     m_currentvehicle = NULL;
+    m_currentvehicletype.clear();
     StandardMetrics.ms_v_type->SetValue("");
     MyEvents.SignalEvent("vehicle.type.cleared", NULL);
     }
@@ -422,8 +425,10 @@ void OvmsVehicleFactory::SetVehicle(const char* type)
     {
     delete m_currentvehicle;
     m_currentvehicle = NULL;
+    m_currentvehicletype.clear();
     }
   m_currentvehicle = NewVehicle(type);
+  m_currentvehicletype = std::string(type);
   StandardMetrics.ms_v_type->SetValue(m_currentvehicle ? type : "");
   MyEvents.SignalEvent("vehicle.type.set", (void*)type, strlen(type)+1);
   }
@@ -438,6 +443,11 @@ void OvmsVehicleFactory::AutoInit()
 OvmsVehicle* OvmsVehicleFactory::ActiveVehicle()
   {
   return m_currentvehicle;
+  }
+
+const char* OvmsVehicleFactory::ActiveVehicleType()
+  {
+  return m_currentvehicletype.c_str();
   }
 
 const char* OvmsVehicleFactory::ActiveVehicleName()
