@@ -45,6 +45,7 @@ static const char *TAG = "v-teslaroadster";
 #include "pcp.h"
 #include "vehicle_teslaroadster.h"
 #include "ovms_metrics.h"
+#include "ovms_notify.h"
 #include "metrics_standard.h"
 #include "ovms_utils.h"
 
@@ -160,6 +161,31 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
         case 0x8f: // HVAC#1 message
           {
           StandardMetrics.ms_v_env_hvac->SetValue((((int)d[7]<<8)+d[6]) > 0);
+          break;
+          }
+        case 0x93: // VDS vehicle error
+          {
+          uint32_t k1 = ((uint32_t)d[3]<<8) + d[2];
+          uint32_t k2 = ((uint32_t)d[7]<<24) +
+                        ((uint32_t)d[6]<<16) +
+                        ((uint32_t)d[5]<<8) +
+                        d[4];
+          if (k1 != 0xffff)
+            {
+            if ((d[1]==0x14)&&(k1 == 25))
+              {
+              // Special case of 100% vehicle logs
+              MyNotify.NotifyErrorCode(k1, k2, true, true); // force code 25
+              }
+            else if (d[1] & 0x01)
+              {
+              MyNotify.NotifyErrorCode(k1, k2, true); // Raise error notification
+              }
+            else
+              {
+              MyNotify.NotifyErrorCode(k1, 0, false); // Clear error notification
+              }
+            }
           break;
           }
         case 0x95: // Charging mode
