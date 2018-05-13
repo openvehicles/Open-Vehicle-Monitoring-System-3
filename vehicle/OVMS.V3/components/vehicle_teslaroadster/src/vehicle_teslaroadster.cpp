@@ -164,6 +164,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           }
         case 0x95: // Charging mode
           {
+          StandardMetrics.ms_v_env_heating->SetValue(d[1]==0x0f);
           switch (d[1]) // Charge state
             {
             case 0x01: // Charging
