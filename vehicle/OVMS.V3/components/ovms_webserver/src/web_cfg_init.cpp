@@ -430,7 +430,7 @@ std::string OvmsWebServer::CfgInit1(PageEntry_t& p, PageContext_t& c, std::strin
   
   c.form_start(p.uri);
   c.input_text("Module ID", "moduleid", moduleid.c_str(), "Use ASCII letters, digits and '-'",
-    "<p>Enter a unique personal module/vehicle ID, i.e. your vehicle license plate number.</p>"
+    "<p>Enter a unique personal module/vehicle ID, e.g. your nickname or vehicle license plate number.</p>"
     "<p>If already registered at an OVMS server, use the vehicle ID as registered.</p>"
     "<p>The ID will be used for the Wifi access point, check if it is free to use within your Wifi range.</p>",
     "autocomplete=\"section-module username\"");
@@ -516,13 +516,14 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
       "<div class=\"alert alert-info\">"
         "<p class=\"lead\">What happens now?</p>"
         "<p>The OVMS now tries to connect to the Wifi network <code>%s</code>, if successful"
-        " then tries to retrieve the latest firmware version info from the OpenVehicles server.</p>"
+        " then tries to contact the OpenVehicles server to check the internet access.</p>"
         "<p>Please be patient, this can take up to 2 minutes.</p>"
-        "<p><strong>Note:</strong> the access point remains unchanged, but you may <strong>lose connection</strong>"
-        " to the module and <strong>need to reconnect manually</strong>.</p>"
+        "<p><strong>Note:</strong> the OVMS Wifi access point will continue serving network <code>%s</code>, but you"
+        " may <strong>lose connection</strong> to the module and <strong>need to reconnect manually</strong>.</p>"
         "<p>Have an eye on your Wifi association to see if/when you need to reconnect manually.</p>"
       "</div>"
-      , ssid.c_str());
+      , ssid.c_str()
+      , MyConfig.GetParamValue("auto", "wifi.ssid.ap").c_str());
     OutputReconnect(p, c, "Testing internet connection…");
     return "";
   }
@@ -569,7 +570,7 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
   c.form_start(p.uri);
 
   c.input_text("Wifi network SSID", "ssid", ssid.c_str(), "Enter Wifi SSID",
-    "<p>Please enter a Wifi network that provides unrestricted internet access.</p>",
+    "<p>Please enter a Wifi network that provides access to the internet.</p>",
     "autocomplete=\"section-wifi-client username\"");
   c.input_password("Wifi network password", "pass", "",
     (pass.empty()) ? "Enter Wifi password" : "Empty = no change (retry)",
@@ -594,15 +595,18 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
   
   c.panel_end();
   
-  c.alert("info",
-    "<p class=\"lead\">What will happen next?</p>"
-    "<p>The OVMS will <strong>try to connect</strong> to the Wifi network and retrieve the"
-    " latest version information from the OpenVehicles server.</p>"
-    "<p>The access point remains unchanged, but you may <strong>temporarily lose connection</strong>"
-    " to the module and need to reconnect manually.</p>"
-    "<p>If you can't reconnect, <strong>don't panic</strong>.</p>"
-    "<p>The module will revert to the old configuration if you don't reconnect within 5 minutes.</p>"
-    "<p>Alternatively, you may simply unplug the module and start again.</p>");
+  c.printf(
+    "<div class=\"alert alert-info\">"
+      "<p class=\"lead\">What will happen next?</p>"
+      "<p>The OVMS will <strong>try to connect</strong> to the Wifi network and then try to"
+      " contact the OpenVehicles server to check the internet access.</p>"
+      "<p>The OVMS access point will continue serving network <code>%s</code>, but you may"
+      " <strong>temporarily lose connection</strong> to the network and need to reconnect manually.</p>"
+      "<p>If you can't reconnect, <strong>don't panic</strong>.</p>"
+      "<p>The module will revert to the old configuration if you don't reconnect within 5 minutes.</p>"
+      "<p>Alternatively, you may simply unplug the module and start again.</p>"
+    "</div>"
+    , MyConfig.GetParamValue("auto", "wifi.ssid.ap").c_str());
   
   return "";
 }
@@ -685,6 +689,9 @@ std::string OvmsWebServer::CfgInit3(PageEntry_t& p, PageContext_t& c, std::strin
                 "<p>When finished (\"flash was successful\"), click \"Reboot now\" to restart the module"
                 " using the new firmware.</p>"
                 "<p>After reboot and relogin, the setup will automatically continue.</p>"
+                "<p><strong>Don't panic</strong> if something goes wrong and the module gets stuck in the update.</p>"
+                "<p>You can simply unplug and restart the module, it will show the update form again so you can choose to"
+                " retry, try another server or skip the update.</p>"
               "</div>"
               "<pre id=\"output\"></pre>"
             "</div>"
@@ -752,7 +759,9 @@ std::string OvmsWebServer::CfgInit3(PageEntry_t& p, PageContext_t& c, std::strin
     "<p class=\"lead\">What will happen next?</p>"
     "<p>The module will check the update server for a new firmware version, and automatically download"
     " and install it if an update is available.</p>"
-    "<p>Alternatively, you may simply unplug the module and start again.</p>");
+    "<p><strong>Don't panic</strong> if something goes wrong and the module gets stuck in the update.</p>"
+    "<p>You can simply unplug and restart the module, it will show this form again so you can choose to"
+    " retry or try another server.</p>");
   
   return "";
 }
