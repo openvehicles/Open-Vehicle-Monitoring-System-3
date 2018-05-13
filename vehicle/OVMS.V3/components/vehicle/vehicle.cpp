@@ -466,6 +466,7 @@ OvmsVehicle::OvmsVehicle()
   m_can3 = NULL;
   m_ticker = 0;
   m_12v_ticker = 0;
+  m_chargestate_ticker = 0;
   m_registeredlistener = false;
   m_autonotifications = true;
 
@@ -634,6 +635,9 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     StandardMetrics.ms_v_charge_time->SetValue(StandardMetrics.ms_v_charge_time->AsInt() + 1);
   else
     StandardMetrics.ms_v_charge_time->SetValue(0);
+
+  if (m_chargestate_ticker > 0 && --m_chargestate_ticker == 0)
+    NotifyChargeState();
 
   CalculateEfficiency();
 
@@ -1119,31 +1123,27 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
     MyEvents.SignalEvent("vehicle.charge.state",(void*)m, strlen(m)+1);
     if (m_autonotifications)
       {
-      if (strcmp(m,"done")==0)
-        NotifyChargeDone();
-      else if (strcmp(m,"stopped")==0)
-        NotifyChargeStopped();
+      m_chargestate_ticker = GetNotifyChargeStateDelay(m);
+      if (m_chargestate_ticker == 0)
+        NotifyChargeState();
       }
     NotifiedVehicleChargeState(m);
     }
-  else if (metric == StandardMetrics.ms_v_charge_time)
-    {
-    if (StandardMetrics.ms_v_charge_time->AsInt() == 15)
-      {
-      // 15 seconds into the charge (once things have had time to stabilise)
-      // we can check and notify appropriately
-      const char* m = StandardMetrics.ms_v_charge_state->AsString().c_str();
-      if (m_autonotifications)
-        {
-        if (strcmp(m,"charging")==0)
-          NotifyChargeStart();
-        else if (strcmp(m,"topoff")==0)
-          NotifyChargeStart();
-        else if (strcmp(m,"heating")==0)
-          NotifyHeatingStart();
-        }
-      }
-    }
+  }
+
+void OvmsVehicle::NotifyChargeState()
+  {
+  const char* m = StandardMetrics.ms_v_charge_state->AsString().c_str();
+  if (strcmp(m,"done")==0)
+    NotifyChargeDone();
+  else if (strcmp(m,"stopped")==0)
+    NotifyChargeStopped();
+  else if (strcmp(m,"charging")==0)
+    NotifyChargeStart();
+  else if (strcmp(m,"topoff")==0)
+    NotifyChargeStart();
+  else if (strcmp(m,"heating")==0)
+    NotifyHeatingStart();
   }
 
 void OvmsVehicle::PollSetPidList(canbus* bus, const poll_pid_t* plist)

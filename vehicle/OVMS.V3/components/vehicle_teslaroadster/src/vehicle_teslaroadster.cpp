@@ -350,6 +350,14 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
   }
 
+int OvmsVehicleTeslaRoadster::GetNotifyChargeStateDelay(const char* state)
+  {
+  if (strcmp(state,"charging")==0 || strcmp(state,"topoff")==0 || strcmp(state,"heating")==0)
+    return 15;
+  else
+    return 0;
+  }
+
 void OvmsVehicleTeslaRoadster::NotifiedVehicleChargeStart()
   {
   RequestStreamStartCAC();

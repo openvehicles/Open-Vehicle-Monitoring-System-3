@@ -120,6 +120,7 @@ class OvmsVehicle
   protected:
     uint32_t m_ticker;
     int m_12v_ticker;
+    int m_chargestate_ticker;
     virtual void Ticker1(uint32_t ticker);
     virtual void Ticker10(uint32_t ticker);
     virtual void Ticker60(uint32_t ticker);
@@ -128,6 +129,7 @@ class OvmsVehicle
     virtual void Ticker3600(uint32_t ticker);
 
   protected:
+    virtual void NotifyChargeState();
     virtual void NotifyChargeStart();
     virtual void NotifyHeatingStart();
     virtual void NotifyChargeStopped();
@@ -142,6 +144,7 @@ class OvmsVehicle
     virtual void Notify12vRecovered();
 
   protected:
+    virtual int GetNotifyChargeStateDelay(const char* state) { return 3; }
     virtual void NotifiedVehicleOn() {}
     virtual void NotifiedVehicleOff() {}
     virtual void NotifiedVehicleAwake() {}

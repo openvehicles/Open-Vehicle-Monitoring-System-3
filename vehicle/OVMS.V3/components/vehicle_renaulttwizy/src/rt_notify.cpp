@@ -124,6 +124,16 @@ void OvmsVehicleRenaultTwizy::DoNotify()
 
 
 /**
+ * GetNotifyChargeStateDelay: framework hook
+ */
+int OvmsVehicleRenaultTwizy::GetNotifyChargeStateDelay(const char* state)
+{
+  // no need for a delay on the Twizy:
+  return 0;
+}
+
+
+/**
  * CommandStat: Twizy implementation of vehicle status output
  */
 OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandStat(int verbosity, OvmsWriter* writer)

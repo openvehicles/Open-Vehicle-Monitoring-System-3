@@ -80,7 +80,10 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     const std::string GetFeature(int key);
     void EventListener(string event, void* data);
     vehicle_command_t ProcessMsgCommand(std::string &result, int command, const char* args);
-  
+
+  protected:
+    int GetNotifyChargeStateDelay(const char* state);
+
   protected:
     bool m_ready = false;
     static size_t m_modifier;

@@ -63,6 +63,7 @@ class OvmsVehicleTeslaRoadster : public OvmsVehicle
     virtual void Notify12vRecovered();
 
   protected:
+    virtual int GetNotifyChargeStateDelay(const char* state);
     virtual void NotifiedVehicleChargeStart();
     virtual void NotifiedVehicleOn();
     virtual void NotifiedVehicleOff();
