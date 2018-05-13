@@ -66,11 +66,34 @@ static const char *TAG = "housekeeping";
 
 static int tick = 0;
 
+void HousekeepingUpdate12V()
+  {
+#ifdef CONFIG_OVMS_COMP_ADC
+  OvmsMetricFloat* m1 = StandardMetrics.ms_v_bat_12v_voltage;
+  if (m1 == NULL)
+    return;
+
+  // Allow the user to adjust the ADC conversion factor
+  float f = MyConfig.GetParamValueFloat("system.adc","factor12v");
+  if (f == 0) f = 195.7;
+  float v = (float)MyPeripherals->m_esp32adc->read() / f;
+  // smooth out ADC errors & noise:
+  if (m1->AsFloat() != 0)
+    v = (m1->AsFloat() * 4 + v) / 5;
+  v = trunc(v*100) / 100;
+  if (v < 1.0) v=0;
+  m1->SetValue(v);
+  if (StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat() == 0)
+    StandardMetrics.ms_v_bat_12v_voltage_ref->SetValue(v);
+#endif // #ifdef CONFIG_OVMS_COMP_ADC
+  }
+
 void HousekeepingTicker1( TimerHandle_t timer )
   {
   monotonictime++;
   StandardMetrics.ms_m_monotonic->SetValue((int)monotonictime);
 
+  HousekeepingUpdate12V();
   MyEvents.SignalEvent("ticker.1", NULL);
 
   tick++;
@@ -189,22 +212,6 @@ void Housekeeping::Init(std::string event, void* data)
 
 void Housekeeping::Metrics(std::string event, void* data)
   {
-#ifdef CONFIG_OVMS_COMP_ADC
-  OvmsMetricFloat* m1 = StandardMetrics.ms_v_bat_12v_voltage;
-  if (m1 == NULL)
-    return;
-
-  // Allow the user to adjust the ADC conversion factor
-  float f = MyConfig.GetParamValueFloat("system.adc","factor12v");
-  if (f == 0) f = 195.7;
-  float v = (float)MyPeripherals->m_esp32adc->read() / f;
-  v = trunc(v*100) / 100;
-  if (v < 1.0) v=0;
-  m1->SetValue(v);
-  if (StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat() == 0)
-    StandardMetrics.ms_v_bat_12v_voltage_ref->SetValue(v);
-#endif // #ifdef CONFIG_OVMS_COMP_ADC
-
   OvmsMetricInt* m2 = StandardMetrics.ms_m_tasks;
   if (m2 == NULL)
     return;
