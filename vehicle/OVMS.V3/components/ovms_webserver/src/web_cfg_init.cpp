@@ -197,6 +197,7 @@ void OvmsWebServer::CfgInitTicker()
     MyConfig.DeleteInstance("auto", "wifi.ssid.ap");
     MyConfig.DeleteInstance("auto", "wifi.ssid.client");
     MyConfig.DeleteInstance("wifi.ap", "OVMS");
+    MyConfig.DeleteInstance("network", "dns");
     std::string ssid = MyConfig.GetParamValue("vehicle", "id");
     MyConfig.DeleteInstance("wifi.ap", ssid);
     MyPeripherals->m_esp32wifi->StartAccessPointMode("OVMS", "OVMSinit");
@@ -218,6 +219,7 @@ void OvmsWebServer::CfgInitTicker()
       ESP_LOGE(TAG, "CfgInitTicker: step 2: wifi client config invalid");
       MyConfig.DeleteInstance("auto", "wifi.mode");
       MyConfig.DeleteInstance("auto", "wifi.ssid.client");
+      MyConfig.DeleteInstance("network", "dns");
       CfgInitSetStep("2.fail.connect");
     }
     else {
@@ -229,10 +231,14 @@ void OvmsWebServer::CfgInitTicker()
   else if (step == "2.test.connect") {
     // test wifi client connection:
     std::string ssid = MyConfig.GetParamValue("auto", "wifi.ssid.client");
-    if (MyPeripherals->m_esp32wifi->GetSSID() != ssid) {
+    if (!MyNetManager.m_connected_wifi || MyPeripherals->m_esp32wifi->GetSSID() != ssid) {
       ESP_LOGI(TAG, "CfgInitTicker: step 2: wifi connection to '%s' failed, reverting to AP mode", ssid.c_str());
       MyConfig.DeleteInstance("auto", "wifi.mode");
       MyConfig.DeleteInstance("auto", "wifi.ssid.client");
+      MyConfig.DeleteInstance("network", "dns");
+      std::string ap_ssid = MyConfig.GetParamValue("vehicle", "id");
+      std::string ap_pass = MyConfig.GetParamValue("wifi.ap", ap_ssid);
+      MyPeripherals->m_esp32wifi->StartAccessPointMode(ap_ssid, ap_pass);
       CfgInitSetStep("2.fail.connect");
     }
     else {
@@ -465,7 +471,7 @@ std::string OvmsWebServer::CfgInit1(PageEntry_t& p, PageContext_t& c, std::strin
 std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::string step)
 {
   std::string error;
-  std::string ssid, pass;
+  std::string ssid, pass, dns;
 
   if (c.method == "POST") {
     
@@ -474,6 +480,7 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
     pass = c.getvar("pass");
     if (pass.empty())
       pass = MyConfig.GetParamValue("wifi.ssid", ssid);
+    dns = c.getvar("dns");
 
     if (ssid.empty())
       error += "<li data-input=\"ssid\">The Wifi network ID must not be empty</li>";
@@ -485,6 +492,7 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
       MyConfig.SetParamValue("wifi.ssid", ssid, pass);
       MyConfig.SetParamValue("auto", "wifi.mode", "apclient");
       MyConfig.SetParamValue("auto", "wifi.ssid.client", ssid);
+      MyConfig.SetParamValue("network", "dns", dns);
       c.alert("success", "<p class=\"lead\">OK.</p>");
       step = CfgInitSetStep("2.test.start", 5);
     }
@@ -498,6 +506,7 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
   else {
     ssid = MyConfig.GetParamValue("auto", "wifi.ssid.client");
     pass = MyConfig.GetParamValue("wifi.ssid", ssid);
+    dns = MyConfig.GetParamValue("network", "dns");
   }
 
   // display:
@@ -509,8 +518,9 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
         "<p>The OVMS now tries to connect to the Wifi network <code>%s</code>, if successful"
         " then tries to retrieve the latest firmware version info from the OpenVehicles server.</p>"
         "<p>Please be patient, this can take up to 2 minutes.</p>"
-        "<p>The access point remains unchanged, but you may <strong>temporarily lose connection</strong>"
-        " to the module and need to reconnect manually.</p>"
+        "<p><strong>Note:</strong> the access point remains unchanged, but you may <strong>lose connection</strong>"
+        " to the module and <strong>need to reconnect manually</strong>.</p>"
+        "<p>Have an eye on your Wifi association to see if/when you need to reconnect manually.</p>"
       "</div>"
       , ssid.c_str());
     OutputReconnect(p, c, "Testing internet connection…");
@@ -557,12 +567,21 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
     " version from the OpenVehicles server.</p>");
   
   c.form_start(p.uri);
+
   c.input_text("Wifi network SSID", "ssid", ssid.c_str(), "Enter Wifi SSID",
     "<p>Please enter a Wifi network that provides unrestricted internet access.</p>",
     "autocomplete=\"section-wifi-client username\"");
   c.input_password("Wifi network password", "pass", "",
     (pass.empty()) ? "Enter Wifi password" : "Empty = no change (retry)",
     NULL, "autocomplete=\"section-wifi-client current-password\"");
+
+  c.input_radio_start("DNS server", "dns");
+  c.input_radio_option("dns", "Use default DNS of the Wifi network", "" , dns == "");
+  c.input_radio_option("dns", "Use Google public DNS (<code>8.8.8.8 8.8.4.4</code>)", "8.8.8.8 8.8.4.4" , dns == "8.8.8.8 8.8.4.4");
+  c.input_radio_option("dns", "Use Cloudflare public DNS (<code>1.1.1.1</code>)", "1.1.1.1" , dns == "1.1.1.1");
+  c.input_radio_end(
+    "<p>If the server connection fails with your default DNS, try one of the other options.</p>");
+
   c.print(
     "<div class=\"form-group\">"
       "<div class=\"col-sm-offset-3 col-sm-9\">"
