@@ -41,6 +41,7 @@
 #include "ovms_utils.h"
 
 #define NOTIFY_MAX_READERS 32
+#define NOTIFY_ERROR_AUTOSUPPRESS 120 // Auto-suppress for 120 seconds
 
 using namespace std;
 
@@ -134,10 +135,19 @@ class OvmsNotifyCallbackEntry
     OvmsNotifyCallback_t m_callback;
   };
 
+typedef struct
+  {
+  uint32_t raised;
+  uint32_t updated;
+  uint32_t lastdata;
+  bool active;
+  } OvmsNotifyErrorCodeEntry_t;
+
 typedef std::map<const char*, OvmsNotifyCallbackEntry*, CmpStrOp,
   ExtRamAllocator<std::pair<const char*, OvmsNotifyCallbackEntry*>>> OvmsNotifyCallbackMap_t;
 typedef std::map<const char*, OvmsNotifyType*, CmpStrOp,
   ExtRamAllocator<std::pair<const char*, OvmsNotifyCallbackEntry*>>> OvmsNotifyTypeMap_t;
+typedef std::map<uint32_t, OvmsNotifyErrorCodeEntry_t*> OvmsNotifyErrorCodeMap_t;
 
 class OvmsNotify : public ExternalRamAllocated
   {
@@ -158,6 +168,7 @@ class OvmsNotify : public ExternalRamAllocated
     uint32_t NotifyStringf(const char* type, const char* subtype, const char* fmt, ...);
     uint32_t NotifyCommand(const char* type, const char* subtype, const char* cmd);
     uint32_t NotifyCommandf(const char* type, const char* subtype, const char* fmt, ...);
+    void NotifyErrorCode(uint32_t code, uint32_t data, bool raised, bool force=false);
 
   public:
     OvmsNotifyCallbackMap_t m_readers;
@@ -167,6 +178,7 @@ class OvmsNotify : public ExternalRamAllocated
 
   public:
     OvmsNotifyTypeMap_t m_types;
+    OvmsNotifyErrorCodeMap_t m_errorcodes;
     bool m_trace;
   };
 

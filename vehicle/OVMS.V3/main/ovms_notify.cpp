@@ -39,6 +39,7 @@ static const char *TAG = "notify";
 #include "ovms_command.h"
 #include "ovms_config.h"
 #include "ovms_events.h"
+#include "vehicle.h"
 #include "buffered_shell.h"
 #include "string.h"
 
@@ -94,8 +95,32 @@ void notify_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 
   if (strcmp(cmd->GetName(),"text")==0)
     MyNotify.NotifyString(argv[0],argv[1],argv[2]);
-  else
+  else if (strcmp(cmd->GetName(),"command")==0)
     MyNotify.NotifyCommand(argv[0],argv[1],argv[2]);
+  else
+    MyNotify.NotifyErrorCode(atol(argv[0]),atol(argv[1]),(strcmp(argv[2],"yes")==0));
+  }
+
+void notify_errorcode_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  for (OvmsNotifyErrorCodeMap_t::iterator it=MyNotify.m_errorcodes.begin(); it!=MyNotify.m_errorcodes.end(); ++it)
+    {
+    writer->printf("%u(0x%04.4x) %s raised %d, updated %d, sec(s) ago\n",
+      it->first,
+      it->second->lastdata,
+      (it->second->active)?"active":"cleared",
+      monotonictime-it->second->raised,
+      monotonictime-it->second->updated);
+    }
+  }
+
+void notify_errorcode_clear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  for (OvmsNotifyErrorCodeMap_t::iterator it=MyNotify.m_errorcodes.begin(); it!=MyNotify.m_errorcodes.end(); ++it)
+    {
+    delete it->second;
+    }
+  MyNotify.m_errorcodes.clear();
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -332,6 +357,10 @@ OvmsNotify::OvmsNotify()
   OvmsCommand* cmd_notifyraise = cmd_notify->RegisterCommand("raise","NOTIFICATION raise framework", NULL, "", 0, 0, true);
   cmd_notifyraise->RegisterCommand("text","Raise a textual notification",notify_raise,"<type><subtype><message>", 3, 3, true);
   cmd_notifyraise->RegisterCommand("command","Raise a command callback notification",notify_raise,"<type><subtype><command>", 3, 3, true);
+  cmd_notifyraise->RegisterCommand("errorcode","Raise an error code notification",notify_raise,"<code><data><raised>", 3, 3, true);
+  OvmsCommand* cmd_notifyerrorcode = cmd_notify->RegisterCommand("errorcode","NOTIFICATION error code framework", NULL, "", 0, 0, true);
+  cmd_notifyerrorcode->RegisterCommand("list","List error codes raised",notify_errorcode_list,"", 0, 0, true);
+  cmd_notifyerrorcode->RegisterCommand("clear","Clear error code list",notify_errorcode_clear,"", 0, 0, true);
   OvmsCommand* cmd_notifytrace = cmd_notify->RegisterCommand("trace","NOTIFICATION trace framework", NULL, "", 0, 0, true);
   cmd_notifytrace->RegisterCommand("on","Turn notification tracing ON",notify_trace,"", 0, 0, true);
   cmd_notifytrace->RegisterCommand("off","Turn notification tracing OFF",notify_trace,"", 0, 0, true);
@@ -574,4 +603,49 @@ uint32_t OvmsNotify::NotifyCommandf(const char* type, const char* subtype, const
     free(buffer);
     }
   return res;
+  }
+
+void OvmsNotify::NotifyErrorCode(uint32_t code, uint32_t data, bool raised, bool force)
+  {
+  // Raise a notification of an error code
+  //   <code> error code (key field)
+  //   <data> data associated with the error
+  //   <raised> true if error is being raised, else false
+  //   <force> true if notification should be forced, otherwise auto-suppress dupes
+
+  // Firstly, let's see if we have a notification record for it already
+  auto k = m_errorcodes.find(code);
+  OvmsNotifyErrorCodeEntry_t* entry;
+  if (k == m_errorcodes.end())
+    {
+    entry = new OvmsNotifyErrorCodeEntry_t;
+    entry->raised = monotonictime;
+    entry->updated = 0;
+    entry->lastdata = 0;
+    m_errorcodes[code] = entry;
+    }
+  else
+    {
+    entry = k->second;
+    }
+  entry->active = raised;
+  if (raised) entry->lastdata = data;
+
+  // Handle auto-suppression, if necessary
+  if (!force && (entry->updated>0) && (monotonictime-entry->updated < NOTIFY_ERROR_AUTOSUPPRESS))
+    {
+    // We need to auto-suppress
+    entry->updated = monotonictime;
+    return;
+    }
+
+  // OK to raise...
+  entry->updated = monotonictime;
+  if (raised)
+    {
+    NotifyStringf("error", "code", "%s,%u,%u",
+      MyVehicleFactory.ActiveVehicleType(),
+      code,
+      data);
+    }
   }
