@@ -209,7 +209,11 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
             case 0x0d: // preparing
               StandardMetrics.ms_v_charge_state->SetValue("prepare"); break;
             case 0x0e: // timer wait
-              StandardMetrics.ms_v_charge_state->SetValue("timerwait"); break;
+              // Apps don't currently support 'timerwait' charge state correctly
+              // (they don't allow a charge to be manually started in that mode)
+              // so for the moment just report it as 'stopped'.
+              //StandardMetrics.ms_v_charge_state->SetValue("timerwait"); break;
+              StandardMetrics.ms_v_charge_state->SetValue("stopped"); break;
             case 0x0f: // heating
               StandardMetrics.ms_v_charge_state->SetValue("heating"); break;
             default:
