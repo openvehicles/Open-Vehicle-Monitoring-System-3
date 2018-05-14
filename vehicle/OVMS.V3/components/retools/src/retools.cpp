@@ -355,7 +355,11 @@ void re::DoServe(CAN_frame_t* frame)
 
 std::string re::GetKey(CAN_frame_t* frame)
   {
-  std::string key(frame->origin->GetName());
+  std::string key;
+  if (frame->origin != NULL)
+    key = std::string(frame->origin->GetName());
+  else
+    key = std::string("can?");
   key.append("/");
 
   char id[9];
@@ -436,7 +440,7 @@ re::re(const char* name)
   m_serveformat_out = new candump_crtd();
   xTaskCreatePinnedToCore(RE_task, "OVMS RE", 4096, (void*)this, 5, &m_task, 1);
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
-  MyCan.RegisterListener(m_rxqueue);
+  MyCan.RegisterListener(m_rxqueue, true);
 
   #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   if ((!MyServing)&&(MyNetManager.m_network_any))

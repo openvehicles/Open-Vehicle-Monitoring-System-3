@@ -119,7 +119,7 @@ void can_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
     }
 
   CAN_frame_t frame;
-  frame.origin = NULL;
+  frame.origin = sbus;
   frame.FIR.U = 0;
   frame.FIR.B.DLC = argc-1;
   frame.FIR.B.FF = smode;
@@ -418,29 +418,31 @@ void can::IncomingFrame(CAN_frame_t* p_frame)
   {
   p_frame->origin->m_status.packets_rx++;
 
-  for (auto n : m_listeners)
-    {
-    xQueueSend(n,p_frame,0);
-    }
+  NotifyListeners(p_frame, false);
 
   p_frame->origin->LogFrame(CAN_LogFrame_RX, p_frame);
   }
 
-void can::RegisterListener(QueueHandle_t queue)
+void can::RegisterListener(QueueHandle_t queue, bool txfeedback)
   {
-  m_listeners.push_back(queue);
+  m_listeners[queue] = txfeedback;
   }
 
 void can::DeregisterListener(QueueHandle_t queue)
   {
-  auto it = std::find(m_listeners.begin(), m_listeners.end(), queue);
+  auto it = m_listeners.find(queue);
   if (it != m_listeners.end())
-    {
     m_listeners.erase(it);
-    }
   }
 
-
+void can::NotifyListeners(const CAN_frame_t* frame, bool tx)
+  {
+  for (CanListenerMap_t::iterator it = m_listeners.begin(); it != m_listeners.end(); ++it)
+    {
+    if (!tx || (tx && it->second))
+      xQueueSend(it->first,frame,0);
+    }
+  }
 
 canbus::canbus(const char* name)
   : pcp(name)
@@ -490,7 +492,11 @@ void canbus::TxCallback()
 esp_err_t canbus::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
   {
   m_status.packets_tx++;
+
+  MyCan.NotifyListeners(p_frame, true);
+
   LogFrame(CAN_LogFrame_TX, p_frame);
+
   return ESP_OK;
   }
 

@@ -253,6 +253,8 @@ class canbus : public pcp
     QueueHandle_t m_txqueue;
   };
 
+typedef std::map<QueueHandle_t, bool> CanListenerMap_t;
+
 class can
   {
   public:
@@ -266,8 +268,9 @@ class can
     QueueHandle_t m_rxqueue;
 
   public:
-    void RegisterListener(QueueHandle_t queue);
+    void RegisterListener(QueueHandle_t queue, bool txfeedback=false);
     void DeregisterListener(QueueHandle_t queue);
+    void NotifyListeners(const CAN_frame_t* frame, bool tx);
 
   public:
     void SetLogger(canlog* logger) { m_logger = logger; }
@@ -278,7 +281,7 @@ class can
     void LogInfo(canbus* bus, CAN_LogEntry_t type, const char* text);
 
   private:
-    std::list<QueueHandle_t> m_listeners;
+    CanListenerMap_t m_listeners;
     TaskHandle_t m_rxtask;            // Task to handle reception
     canlog* m_logger;
   };
