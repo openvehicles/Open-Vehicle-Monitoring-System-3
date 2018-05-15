@@ -1004,6 +1004,9 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       }
     else
       {
+      StandardMetrics.ms_v_charge_duration_full->SetValue(0);
+      StandardMetrics.ms_v_charge_duration_range->SetValue(0);
+      StandardMetrics.ms_v_charge_duration_soc->SetValue(0);
       MyEvents.SignalEvent("vehicle.charge.stop",NULL);
       NotifiedVehicleChargeStop();
       }
