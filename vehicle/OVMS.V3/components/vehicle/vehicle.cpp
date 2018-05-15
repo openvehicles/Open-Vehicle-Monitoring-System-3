@@ -1012,9 +1012,6 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       }
     else
       {
-      StandardMetrics.ms_v_charge_duration_full->SetValue(0);
-      StandardMetrics.ms_v_charge_duration_range->SetValue(0);
-      StandardMetrics.ms_v_charge_duration_soc->SetValue(0);
       MyEvents.SignalEvent("vehicle.charge.stop",NULL);
       NotifiedVehicleChargeStop();
       }
@@ -1142,6 +1139,12 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
     {
     const char* m = metric->AsString().c_str();
     MyEvents.SignalEvent("vehicle.charge.state",(void*)m, strlen(m)+1);
+    if (strcmp(m,"done")==0)
+      {
+      StandardMetrics.ms_v_charge_duration_full->SetValue(0);
+      StandardMetrics.ms_v_charge_duration_range->SetValue(0);
+      StandardMetrics.ms_v_charge_duration_soc->SetValue(0);
+      }
     if (m_autonotifications)
       {
       m_chargestate_ticker = GetNotifyChargeStateDelay(m);
