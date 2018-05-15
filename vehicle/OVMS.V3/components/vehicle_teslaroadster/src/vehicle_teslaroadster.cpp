@@ -44,6 +44,7 @@ static const char *TAG = "v-teslaroadster";
 #include <string.h>
 #include "pcp.h"
 #include "vehicle_teslaroadster.h"
+#include "vehicle_teslaroadster_ctp.h"
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 #include "metrics_standard.h"
