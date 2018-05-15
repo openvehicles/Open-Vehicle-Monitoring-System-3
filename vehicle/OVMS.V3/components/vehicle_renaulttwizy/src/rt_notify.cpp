@@ -138,7 +138,7 @@ int OvmsVehicleRenaultTwizy::GetNotifyChargeStateDelay(const char* state)
  */
 OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandStat(int verbosity, OvmsWriter* writer)
 {
-  metric_unit_t rangeUnit = Native; // TODO: use user config if set
+  metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
 
   bool chargeport_open = StdMetrics.ms_v_door_chargeport->AsBool();
   if (chargeport_open)

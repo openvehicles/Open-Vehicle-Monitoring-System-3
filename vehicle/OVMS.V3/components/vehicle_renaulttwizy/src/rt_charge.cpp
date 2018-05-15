@@ -74,7 +74,7 @@ void OvmsVehicleRenaultTwizy::ChargeInit()
 
 OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandCA(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 {
-  metric_unit_t rangeUnit = Native; // TODO: use user config if set
+  metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
   int capacity = verbosity;
   
   
