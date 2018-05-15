@@ -878,7 +878,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandHomelink(int button, int dura
  */
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWriter* writer)
   {
-  metric_unit_t rangeUnit = Native; // TODO: use user config if set
+  metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
 
   bool chargeport_open = StdMetrics.ms_v_door_chargeport->AsBool();
   if (chargeport_open)
