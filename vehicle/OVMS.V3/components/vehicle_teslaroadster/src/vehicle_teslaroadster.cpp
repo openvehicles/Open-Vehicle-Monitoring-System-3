@@ -701,7 +701,15 @@ OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandDeactivateValet(
   return Success;
   }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandHomelink(int button)
+void TeslaRoadsterHomelinkTimer(TimerHandle_t timer)
+  {
+  xTimerStop(timer, 0);
+  OvmsVehicleTeslaRoadster* tr = (OvmsVehicleTeslaRoadster*) pvTimerGetTimerID(timer);
+  tr->DoHomelinkStop();
+  xTimerDelete(timer, 0);
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandHomelink(int button, int durationms)
   {
   CAN_frame_t frame;
   memset(&frame,0,sizeof(frame));
@@ -712,11 +720,34 @@ OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandHomelink(int but
   frame.FIR.B.FF = CAN_frame_std;
   frame.MsgID = 0x102;
   frame.data.u8[0] = 0x09;
-  frame.data.u8[1] = 0x00;
+  frame.data.u8[1] = 0x02;  // Stop homelink transmission
   frame.data.u8[2] = button;
   m_can1->Write(&frame);
 
+  frame.data.u8[1] = 0x00;  // Start homelink transmission
+  m_can1->Write(&frame);
+
+  m_homelink_timerbutton = button;
+  m_homelink_timer = xTimerCreate("Tesla Roadster Homelink Timer", durationms / portTICK_PERIOD_MS, pdTRUE, this, TeslaRoadsterHomelinkTimer);
+  xTimerStart(m_homelink_timer, 0);
+
   return Success;
+  }
+
+void OvmsVehicleTeslaRoadster::DoHomelinkStop()
+  {
+  CAN_frame_t frame;
+  memset(&frame,0,sizeof(frame));
+
+  frame.origin = m_can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 3;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x102;
+  frame.data.u8[0] = 0x09;
+  frame.data.u8[1] = 0x02;  // Stop homelink transmission
+  frame.data.u8[2] = m_homelink_timerbutton;
+  m_can1->Write(&frame);
   }
 
 void OvmsVehicleTeslaRoadster::Notify12vCritical()

@@ -57,7 +57,7 @@ class OvmsVehicleDemo : public OvmsVehicle
     virtual vehicle_command_t CommandUnlock(const char* pin);
     virtual vehicle_command_t CommandActivateValet(const char* pin);
     virtual vehicle_command_t CommandDeactivateValet(const char* pin);
-    virtual vehicle_command_t CommandHomelink(int button);
+    virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
   };
 
 #endif //#ifndef __VEHICLE_DEMO_H__

@@ -361,7 +361,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
     {
       bool hvac_candidate;
       // this might be a bit field? So far these 6 values indicate HVAC on
-      hvac_candidate = 
+      hvac_candidate =
         d[1] == 0x0a || // Gen 1 Remote
         d[1] == 0x48 || // Manual Heating or Fan Only
         d[1] == 0x4b || // Gen 2 Remote Heating
@@ -740,7 +740,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::RemoteCommandHandler(Remot
   return Success;
   }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandHomelink(int button)
+OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandHomelink(int button, int durationms)
   {
   ESP_LOGI(TAG, "CommandHomelink");
   if (button == 0)

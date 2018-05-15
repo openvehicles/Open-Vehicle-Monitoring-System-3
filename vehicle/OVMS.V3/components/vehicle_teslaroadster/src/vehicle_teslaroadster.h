@@ -31,6 +31,7 @@
 #ifndef __VEHICLE_TESLAROADSTER_H__
 #define __VEHICLE_TESLAROADSTER_H__
 
+#include "freertos/timers.h"
 #include "vehicle.h"
 
 using namespace std;
@@ -56,7 +57,12 @@ class OvmsVehicleTeslaRoadster : public OvmsVehicle
     virtual vehicle_command_t CommandUnlock(const char* pin);
     virtual vehicle_command_t CommandActivateValet(const char* pin);
     virtual vehicle_command_t CommandDeactivateValet(const char* pin);
-    virtual vehicle_command_t CommandHomelink(int button);
+    virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
+
+  public:
+    TimerHandle_t m_homelink_timer;
+    int m_homelink_timerbutton;
+    void DoHomelinkStop();
 
   protected:
     virtual void Notify12vCritical();

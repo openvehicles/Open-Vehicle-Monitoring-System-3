@@ -106,13 +106,21 @@ void vehicle_homelink(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
     return;
     }
 
+  int durationms = 1000;
+  if (argc>1) durationms= atoi(argv[1]);
+  if (durationms < 100)
+    {
+    writer->puts("Error: Minimum homelink timer duration 100ms");
+    return;
+    }
+
   if (MyVehicleFactory.m_currentvehicle==NULL)
     {
     writer->puts("Error: No vehicle module selected");
     return;
     }
 
-  switch(MyVehicleFactory.m_currentvehicle->CommandHomelink(homelink-1))
+  switch(MyVehicleFactory.m_currentvehicle->CommandHomelink(homelink-1, durationms))
     {
     case OvmsVehicle::Success:
       writer->printf("Homelink #%d activated\n",homelink);
@@ -369,7 +377,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   cmd_vehicle->RegisterCommand("status","Show vehicle module status",vehicle_status,"",0,0, true);
 
   MyCommandApp.RegisterCommand("wakeup","Wake up vehicle",vehicle_wakeup,"",0,0,true);
-  MyCommandApp.RegisterCommand("homelink","Activate specified homelink button",vehicle_homelink,"<homelink>",1,1,true);
+  MyCommandApp.RegisterCommand("homelink","Activate specified homelink button",vehicle_homelink,"<homelink><durationms>",1,2,true);
   MyCommandApp.RegisterCommand("lock","Lock vehicle",vehicle_lock,"<pin>",1,1,true);
   MyCommandApp.RegisterCommand("unlock","Unlock vehicle",vehicle_unlock,"<pin>",1,1,true);
   MyCommandApp.RegisterCommand("valet","Activate valet mode",vehicle_valet,"<pin>",1,1,true);
@@ -860,7 +868,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandDeactivateValet(const char* p
   return NotImplemented;
   }
 
-OvmsVehicle::vehicle_command_t OvmsVehicle::CommandHomelink(int button)
+OvmsVehicle::vehicle_command_t OvmsVehicle::CommandHomelink(int button, int durationms)
   {
   return NotImplemented;
   }
