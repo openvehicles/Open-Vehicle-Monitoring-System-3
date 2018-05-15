@@ -67,8 +67,12 @@ class OvmsVehicleTeslaRoadster : public OvmsVehicle
     virtual void NotifiedVehicleChargeStart();
     virtual void NotifiedVehicleOn();
     virtual void NotifiedVehicleOff();
+    virtual void Ticker60(uint32_t ticker);
+
+  protected:
     void RequestStreamStartCAC();
     void RequestStreamStopCAC();
+    void ChargeTimePredictor();
 
   protected:
     char m_vin[18];

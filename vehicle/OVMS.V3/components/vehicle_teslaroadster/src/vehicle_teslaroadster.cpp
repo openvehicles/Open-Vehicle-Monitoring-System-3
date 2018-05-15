@@ -393,6 +393,7 @@ int OvmsVehicleTeslaRoadster::GetNotifyChargeStateDelay(const char* state)
 void OvmsVehicleTeslaRoadster::NotifiedVehicleChargeStart()
   {
   RequestStreamStartCAC();
+  ChargeTimePredictor();
   }
 
 void OvmsVehicleTeslaRoadster::NotifiedVehicleOn()
@@ -404,6 +405,15 @@ void OvmsVehicleTeslaRoadster::NotifiedVehicleOff()
   {
   RequestStreamStartCAC();
   }
+
+void OvmsVehicleTeslaRoadster::Ticker60(uint32_t ticker)
+  {
+  if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+    {
+    ChargeTimePredictor();
+    }
+  }
+
 
 void OvmsVehicleTeslaRoadster::RequestStreamStartCAC()
   {
@@ -715,6 +725,36 @@ void OvmsVehicleTeslaRoadster::Notify12vCritical()
 
 void OvmsVehicleTeslaRoadster::Notify12vRecovered()
   { // Not supported on Tesla Roadster
+  }
+
+void OvmsVehicleTeslaRoadster::ChargeTimePredictor()
+  { // Predict the charge time remaining
+  unsigned char chgmod = chargemode_key(StandardMetrics.ms_v_charge_mode->AsString());
+  int wAvailWall = (int)(StandardMetrics.ms_v_charge_voltage->AsFloat(0) *
+                         StandardMetrics.ms_v_charge_climit->AsFloat(0));
+  int imStart = StandardMetrics.ms_v_bat_range_ideal->AsInt(0,Miles);
+  float cac = StandardMetrics.ms_v_bat_cac->AsFloat(160);
+  signed char degAmbient = StandardMetrics.ms_v_env_temp->AsInt(0);
+
+  int mins = vehicle_teslaroadster_minutestocharge(
+    chgmod, wAvailWall, imStart, -1, 100, cac, degAmbient, NULL);
+  StandardMetrics.ms_v_charge_duration_full->SetValue(mins);
+
+  float limitrange = StandardMetrics.ms_v_charge_limit_range->AsFloat();
+  if (limitrange > 0)
+    {
+    mins = vehicle_teslaroadster_minutestocharge(
+      chgmod, wAvailWall, imStart, (int)limitrange, 100, cac, degAmbient, NULL);
+    StandardMetrics.ms_v_charge_duration_range->SetValue(mins);
+    }
+
+  float limitsoc = StandardMetrics.ms_v_charge_limit_soc->AsFloat();
+  if (limitsoc > 0)
+    {
+    mins = vehicle_teslaroadster_minutestocharge(
+      chgmod, wAvailWall, imStart, -1, (int)limitsoc, cac, degAmbient, NULL);
+    StandardMetrics.ms_v_charge_duration_soc->SetValue(mins);
+    }
   }
 
 class OvmsVehicleTeslaRoadsterInit
