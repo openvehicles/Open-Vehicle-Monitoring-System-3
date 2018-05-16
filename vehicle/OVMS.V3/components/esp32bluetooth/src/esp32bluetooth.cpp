@@ -30,10 +30,15 @@
 
 #include <string.h>
 #include "esp32bluetooth.h"
+#include "esp_bt.h"
+
+#include "ovms_log.h"
+static const char *TAG = "bluetooth";
 
 esp32bluetooth::esp32bluetooth(const char* name)
   : pcp(name)
   {
+  ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
   }
 
 esp32bluetooth::~esp32bluetooth()
