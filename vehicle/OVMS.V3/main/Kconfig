@@ -204,9 +204,10 @@ menu "Component Options"
     depends on OVMS
 
 config OVMS_COMP_BLUETOOTH
-    bool "Include support for bluetooth"
+    bool "Include support for Bluetooth"
     default y
     depends on OVMS
+    depends on BT_ENABLED
     help
         Enable to include support for bluetooth communications.
 
