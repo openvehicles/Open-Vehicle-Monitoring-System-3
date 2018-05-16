@@ -32,7 +32,28 @@
 #define __ESP32BLUETOOTH_H__
 
 #include <stdint.h>
+#include "esp_bt.h"
+#include "esp_gap_ble_api.h"
+#include "esp_gatts_api.h"
+#include "esp_bt_defs.h"
+#include "esp_bt_main.h"
 #include "pcp.h"
+
+struct gatts_profile_inst
+  {
+  esp_gatts_cb_t gatts_cb;
+  uint16_t gatts_if;
+  uint16_t app_id;
+  uint16_t conn_id;
+  uint16_t service_handle;
+  esp_gatt_srvc_id_t service_id;
+  uint16_t char_handle;
+  esp_bt_uuid_t char_uuid;
+  esp_gatt_perm_t perm;
+  esp_gatt_char_prop_t property;
+  uint16_t descr_handle;
+  esp_bt_uuid_t descr_uuid;
+  };
 
 class esp32bluetooth : public pcp
   {
@@ -41,7 +62,15 @@ class esp32bluetooth : public pcp
     ~esp32bluetooth();
 
   public:
+    void StartService();
+    void StopService();
+    bool IsServiceRunning();
+
+  public:
     void SetPowerMode(PowerMode powermode);
+
+  protected:
+    bool m_service_running;
   };
 
 #endif //#ifndef __ESP32BLUETOOTH_H__
