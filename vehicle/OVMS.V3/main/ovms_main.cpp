@@ -41,14 +41,18 @@ Peripherals* MyPeripherals = NULL;
 
 void app_main(void)
   {
-  nvs_flash_init();
+  if (nvs_flash_init() == ESP_ERR_NVS_NO_FREE_PAGES)
+    {
+    nvs_flash_erase();
+    nvs_flash_init();
+    }
 
   ESP_LOGI(TAG, "Executing on CPU core %d",xPortGetCoreID());
   AddTaskToMap(xTaskGetCurrentTaskHandle());
 
   ESP_LOGI(TAG, "Mounting CONFIG...");
   MyConfig.mount();
-  
+
   ESP_LOGI(TAG, "Configure logging...");
   MyCommandApp.ConfigureLogging();
 
