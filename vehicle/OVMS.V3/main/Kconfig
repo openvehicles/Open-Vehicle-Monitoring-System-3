@@ -11,6 +11,11 @@ config OVMS_VERSION_TAG
     help
         Custom builds should change this tag to describe themselves
 
+
+
+menu "Hardware Support"
+    depends on OVMS
+
 choice OVMS_HW_MODEL
     prompt "Select the OVMS hardware model being built for"
         default OVMS_HW_BASE_3_0
@@ -30,6 +35,20 @@ config OVMS_HW_BASE_3_1
         Select this: OVMS base production hardware v3.1
 
 endchoice # OVMS_HW_MODEL
+
+config OVMS_HW_SPIMEM_AGGRESSIVE
+    bool "Aggressively use SPI RAM (rather than internal RAM)"
+    default y
+    depends on OVMS && OVMS_HW_BASE_3_1
+    help
+        Enable to aggressively allocate from SPI RAM (rather than internal RAM).
+
+endmenu # Hardware Support
+
+
+
+menu "Library Support"
+    depends on OVMS
 
 choice OVMS_SC_JAVASCRIPT
     prompt "Select the OVMS javascript library to use"
@@ -89,12 +108,9 @@ config OVMS_SC_GPL_WOLF
         Enable to include the GPL licensed WOLFSSH and WOLFSSL libraries
         (required for SSH server functionality)
 
-config OVMS_HW_SPIMEM_AGGRESSIVE
-    bool "Aggressively use SPI RAM (rather than internal RAM)"
-    default y
-    depends on OVMS && OVMS_HW_BASE_3_1
-    help
-        Enable to aggressively allocate from SPI RAM (rather than internal RAM).
+endmenu # Library support
+
+
 
 menu "Vehicle Support"
     depends on OVMS
@@ -181,6 +197,8 @@ config OVMS_VEHICLE_RXTASK_STACK
         Standard stack usage of this task is currently around 1400 bytes.
 
 endmenu # Vehicle Support
+
+
 
 menu "Component Options"
     depends on OVMS
@@ -363,6 +381,8 @@ config OVMS_COMP_CANOPEN_WRK_STACK
         Standard stack usage for the Twizy is currently around 1000 bytes.
 
 endmenu # Component Options
+
+
 
 menu "Developer Options"
     depends on OVMS
