@@ -32,13 +32,6 @@
 
 uint32_t monotonictime = 0;
 
-#ifdef CONFIG_OVMS_HW_SPIMEM_AGGRESSIVE
-void* operator new(std::size_t sz)
-  {
-  return ExternalRamMalloc(sz);
-  }
-#endif // #ifdef CONFIG_OVMS_HW_SPIMEM_AGGRESSIVE
-
 static void* ExternalRamAllocated::operator new(std::size_t sz)
   {
   return ExternalRamMalloc(sz);
