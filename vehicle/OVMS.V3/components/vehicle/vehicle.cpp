@@ -36,7 +36,9 @@ static const char *TAG = "vehicle";
 #include <ovms_metrics.h>
 #include <ovms_notify.h>
 #include <metrics_standard.h>
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include <ovms_webserver.h>
+#endif // #ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include <string_writer.h>
 #include "vehicle.h"
 
@@ -1409,6 +1411,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::ProcessMsgCommand(std::string &resul
   return NotImplemented;
   }
 
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 /**
  * GetDashboardConfig: template / default configuration
  *  (override with vehicle specific configuration)
@@ -1480,3 +1483,4 @@ void OvmsVehicle::GetDashboardConfig(DashboardConfig& cfg)
         "{ from: 110, to: 125, className: 'red-band border' }]"
     "}]";
   }
+#endif // #ifdef CONFIG_OVMS_COMP_WEBSERVER

@@ -36,6 +36,7 @@ static const char *TAG = "netmanager";
 #include <lwip/ip_addr.h>
 #include <lwip/netif.h>
 #include <lwip/dns.h>
+#include <netinet/in.h>
 #include "metrics_standard.h"
 #include "ovms_peripherals.h"
 #include "ovms_netmanager.h"

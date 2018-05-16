@@ -174,7 +174,9 @@ class OvmsVehicle
     virtual void CalculateEfficiency();
 
   public:
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
     virtual void GetDashboardConfig(DashboardConfig& cfg);
+#endif // #ifdef CONFIG_OVMS_COMP_WEBSERVER
     virtual void Status(int verbosity, OvmsWriter* writer);
 
   protected:

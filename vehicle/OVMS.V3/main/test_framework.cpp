@@ -42,6 +42,7 @@ static const char *TAG = "test";
 #include "ovms_command.h"
 #include "ovms_peripherals.h"
 #include "ovms_script.h"
+#include "can.h"
 #include "strverscmp.h"
 
 void test_deepsleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
