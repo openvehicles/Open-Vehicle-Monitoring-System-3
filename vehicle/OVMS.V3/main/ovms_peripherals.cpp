@@ -41,8 +41,6 @@ static const char *TAG = "peripherals";
 
 Peripherals::Peripherals()
   {
-  gpio_config_t gpio_conf;
-
   ESP_LOGI(TAG, "Initialising OVMS Peripherals...");
 
 #if defined(CONFIG_OVMS_COMP_WIFI)||defined(CONFIG_OVMS_COMP_MODEM_SIMCOM)
@@ -124,7 +122,7 @@ Peripherals::Peripherals()
 
 #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
   ESP_LOGI(TAG, "  SIMCOM MODEM");
-  gpio_conf =
+  gpio_config_t gpio_conf =
     {
     .pin_bit_mask = BIT(MODEM_GPIO_RX),
     .mode = GPIO_MODE_OUTPUT ,
