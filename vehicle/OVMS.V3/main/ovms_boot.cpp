@@ -75,7 +75,19 @@ static const char *sdesc[] = {
 
 void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
+  
+  time_t rawtime;
+  struct tm* tml;
+  char tb[32];
+  
   writer->printf("Last boot was %d second(s) ago\n",monotonictime);
+  
+  time(&rawtime);
+  rawtime = rawtime-(time_t)monotonictime;
+  tml = localtime(&rawtime);
+  if ((strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S %Z", tml) > 0) && rawtime > 0)
+    writer->printf("Time at boot: %s\n", tb);
+
   writer->printf("  This is reset #%d since last power cycle\n",boot_data.boot_count);
   writer->printf("  Detected boot reason: %s\n",MyBoot.GetBootReasonName());
   writer->printf("  Crash counters: %d total, %d early\n",MyBoot.GetCrashCount(),MyBoot.GetEarlyCrashCount());
