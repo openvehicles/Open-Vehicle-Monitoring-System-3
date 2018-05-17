@@ -30,6 +30,7 @@
 #define __VEHICLE_KIASOULEV_H__
 
 #include "vehicle.h"
+#include "ovms_webserver.h"
 
 using namespace std;
 
@@ -279,6 +280,20 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     } ks_send_can;
 
     const TickType_t xDelay = 50 / portTICK_PERIOD_MS;
+
+    // --------------------------------------------------------------------------
+    // Webserver subsystem
+    //  - implementation: ks_web.(h,cpp)
+    //
+
+    public:
+      void WebInit();
+      static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
+      static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
+      static void WebBattMon(PageEntry_t& p, PageContext_t& c);
+
+    public:
+      void GetDashboardConfig(DashboardConfig& cfg);
   };
 
 #define SQR(n) ((n)*(n))

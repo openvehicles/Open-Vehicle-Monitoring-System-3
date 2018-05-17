@@ -327,11 +327,14 @@ void OvmsVehicleKiaSoulEv::IncomingLDC(canbus* bus, uint16_t type, uint16_t pid,
 		{
 		case 0x01:
 			// 12V system
-			ks_ldc_enabled = (CAN_BYTE(0) & 6) != 0;
-			m_ldc_out_voltage->SetValue( CAN_BYTE(1) / 10.0 );
-			m_ldc_in_voltage->SetValue( CAN_BYTE(3) * 2 );
-			m_ldc_out_voltage->SetValue( CAN_BYTE(2) );
-			m_ldc_temperature->SetValue( CAN_BYTE(4) - 100 );
+			ks_ldc_enabled = (CAN_BYTE(0) & 0x07) != 0;
+			if( CAN_BYTE(0)==0x07 )
+				{
+				m_ldc_out_voltage->SetValue( CAN_BYTE(1) / 10.0 );
+				m_ldc_out_current->SetValue( CAN_BYTE(2) );
+				m_ldc_in_voltage->SetValue( CAN_BYTE(3) * 2 );
+				m_ldc_temperature->SetValue( CAN_BYTE(4) - 100 );
+				}
 			break;
 		}
 	}
@@ -341,13 +344,13 @@ void OvmsVehicleKiaSoulEv::IncomingLDC(canbus* bus, uint16_t type, uint16_t pid,
  */
 void OvmsVehicleKiaSoulEv::IncomingSJB(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
-	ESP_LOGW(TAG, "779X %02x %02x %02x %02x %02x %02x %02x %02x %02x", pid, m_poll_ml_frame, CAN_BYTE(0), CAN_BYTE(1), CAN_BYTE(2), CAN_BYTE(3), CAN_BYTE(4), CAN_BYTE(5), CAN_BYTE(6));
+	//ESP_LOGW(TAG, "779X %02x %02x %02x %02x %02x %02x %02x %02x %02x", pid, m_poll_ml_frame, CAN_BYTE(0), CAN_BYTE(1), CAN_BYTE(2), CAN_BYTE(3), CAN_BYTE(4), CAN_BYTE(5), CAN_BYTE(6));
 	switch (pid)
 		{
 		case 0x04:
 			if (m_poll_ml_frame == 1)
 				{
-				ESP_LOGW(TAG, "779 8 21 %02x %02x %02x %02x %02x %02x %02x", CAN_BYTE(0), CAN_BYTE(1), CAN_BYTE(2), CAN_BYTE(3), CAN_BYTE(4), CAN_BYTE(5), CAN_BYTE(6));
+				//ESP_LOGW(TAG, "779 8 21 %02x %02x %02x %02x %02x %02x %02x", CAN_BYTE(0), CAN_BYTE(1), CAN_BYTE(2), CAN_BYTE(3), CAN_BYTE(4), CAN_BYTE(5), CAN_BYTE(6));
 				}
 			break;
 		}

@@ -33,8 +33,8 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 	{
 	uint8_t *d = p_frame->data.u8;
 
-	ESP_LOGV(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
-			p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+	//ESP_LOGV(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
+	//		p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
 
 	switch (p_frame->MsgID)
 		{
@@ -271,7 +271,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 		}
 
 	// Check if response is from synchronous can message
-	if (p_frame->MsgID == (ks_send_can.id + 0x08) && ks_send_can.status == 0xff)
+	if (ks_send_can.status == 0xff && p_frame->MsgID == (ks_send_can.id + 0x08))
 		{
 		//Store message bytes so that the async method can continue
 		ks_send_can.status = 3;
