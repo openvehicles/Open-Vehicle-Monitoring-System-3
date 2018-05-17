@@ -110,6 +110,12 @@
 ;			- Moved pincode to password-store for more secure storage, and renamed it pin.
 ;						Use: OVMS# config set password pin 1234
 ;
+;		0.3.7 15-May-2018 - Geir Øyvind Vælidalo
+;			- Added Kia Soul web configuration: Features, Battery
+;			- Trip returns distance in units based on users settings.
+;			- Corrected LDC-metrics.
+;			- Changed Ticker1 in order to do less processing when car is off and hopefully save the 12V battery.
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -139,6 +145,7 @@
 //		- Rear defogger works, but only as long as TesterPresent is sent.
 //			- Is it enough to send the testetpresent message every second?
 
+
 #include "ovms_log.h"
 
 #include <stdio.h>
@@ -150,7 +157,7 @@
 #include "ovms_notify.h"
 #include <sys/param.h>
 
-#define VERSION "0.3.6"
+#define VERSION "0.3.7"
 
 static const char *TAG = "v-kiasoulev";
 
@@ -159,17 +166,17 @@ static const char *TAG = "v-kiasoulev";
 // Pollstate 2 - car is charging
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
-    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, 		{  120, 120,  0 } }, 	// VIN
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, 		{  0,   10,  10 } }, 	// BMC Diag page 01
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{  0,   30,  10 } }, 	// BMC Diag page 02
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x03, 		{  0,   30,  10 } }, 	// BMC Diag page 03
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x04, 		{  0,   30,  10 } }, 	// BMC Diag page 04
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x05, 		{  0,   30,  10 } },	// BMC Diag page 05
-    { 0x794, 0x79c, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{  90,  30,  10 } }, 	// OBC - On board charger
-    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x00, 		{  90,  10,  10 } }, 	// VMCU Shift-stick
-    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{  90,  10,  30 } }, 	// VMCU Motor temp++
-    { 0x7df, 0x7de, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x06, 		{  0,   30,  60 } }, 	// TMPS
-    { 0x7c5, 0x7cd, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, 		{  90,  10,  10 } }, 	// LDC - Low voltage DC-DC
+    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, 		{  120, 120,   0 } }, 	// VIN
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, 		{  0,    10,  10 } }, 	// BMC Diag page 01
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{  0,    30,  10 } }, 	// BMC Diag page 02
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x03, 		{  0,    30,  10 } }, 	// BMC Diag page 03
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x04, 		{  0,    30,  10 } }, 	// BMC Diag page 04
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x05, 		{  0,    30,  10 } },		// BMC Diag page 05
+    { 0x794, 0x79c, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{  120,  30,  10 } }, 	// OBC - On board charger
+    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x00, 		{  120,  10,  10 } }, 	// VMCU Shift-stick
+    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{  120,  10,  30 } }, 	// VMCU Motor temp++
+    { 0x7df, 0x7de, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x06, 		{  0,    30,  60 } }, 	// TMPS
+    { 0x7c5, 0x7cd, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, 		{  120,  10,  10 } }, 	// LDC - Low voltage DC-DC
     { 0, 0, 0, 0, { 0, 0, 0 } }
   };
 
@@ -331,6 +338,8 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   MyConfig.RegisterParam("xks", "Kia Soul EV spesific settings.", true, true);
   ConfigChanged(NULL);
 
+  WebInit();
+
   // C-Bus
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   // M-Bus
@@ -376,6 +385,7 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
   *StdMetrics.ms_v_charge_limit_soc = (float) MyConfig.GetParamValueInt("xks", "suffsoc");
   *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("xks", "suffrange");
 
+  //TODO ks_enable_write = MyConfig.GetParamValueBool("xks", "canwrite", false);
 	}
 
 /**
@@ -437,36 +447,44 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 		ks_openChargePort = false;
 		}
 
-	if( ks_clock>0 && StdMetrics.ms_m_timeutc->AsInt()>0)
+	if(m_poll_state>0) // Only do these things if car is on or charging
 		{
-		ks_utc_diff = (ks_clock/60)-((StdMetrics.ms_m_timeutc->AsInt()/60) % 1440);
-		}
+		UpdateMaxRangeAndSOH();
 
-	UpdateMaxRangeAndSOH();
-
-	m_v_pos_street->SetValue(m_street);
-
-	if (FULL_RANGE > 0) //  If we have the battery full range, we can calculate the ideal range too
-		{
-	  	StdMetrics.ms_v_bat_range_ideal->SetValue( FULL_RANGE * BAT_SOC / 100.0, Kilometers);
-	  	}
-
-	// Register battery temperature
-	StdMetrics.ms_v_bat_temp->SetValue(((float)ks_battery_module_temp[0] + ks_battery_module_temp[1] +
-	          ks_battery_module_temp[2] + ks_battery_module_temp[3] +
-	          ks_battery_module_temp[4] + ks_battery_module_temp[5] +
-	          ks_battery_module_temp[6] + ks_battery_module_temp[7]) / 8, Celcius);
-
-	// Update trip data
-	if (StdMetrics.ms_v_env_on->AsBool() && ks_trip_start_odo!=0)
-		{
-		StdMetrics.ms_v_pos_trip->SetValue( POS_ODO - ks_trip_start_odo , Kilometers);
-		if( ks_start_cdc!=0 && ks_start_cc!=0)
+		if (FULL_RANGE > 0) //  If we have the battery full range, we can calculate the ideal range too
 			{
-			StdMetrics.ms_v_bat_energy_used->SetValue( (CUM_DISCHARGE - ks_start_cdc) - (CUM_CHARGE - ks_start_cc), kWh );
-			StdMetrics.ms_v_bat_energy_recd->SetValue( CUM_CHARGE - ks_start_cc, kWh );
-			}
-	  }
+		  	StdMetrics.ms_v_bat_range_ideal->SetValue( FULL_RANGE * BAT_SOC / 100.0, Kilometers);
+		  	}
+
+		// Register battery temperature
+		StdMetrics.ms_v_bat_temp->SetValue(((float)ks_battery_module_temp[0] + ks_battery_module_temp[1] +
+		          ks_battery_module_temp[2] + ks_battery_module_temp[3] +
+		          ks_battery_module_temp[4] + ks_battery_module_temp[5] +
+		          ks_battery_module_temp[6] + ks_battery_module_temp[7]) / 8, Celcius);
+
+		// Update trip data
+		if (StdMetrics.ms_v_env_on->AsBool() && ks_trip_start_odo!=0)
+			{
+			StdMetrics.ms_v_pos_trip->SetValue( POS_ODO - ks_trip_start_odo , Kilometers);
+			if( ks_start_cdc!=0 && ks_start_cc!=0)
+				{
+				StdMetrics.ms_v_bat_energy_used->SetValue( (CUM_DISCHARGE - ks_start_cdc) - (CUM_CHARGE - ks_start_cc), kWh );
+				StdMetrics.ms_v_bat_energy_recd->SetValue( CUM_CHARGE - ks_start_cc, kWh );
+				}
+		  }
+
+		// Charge timer on/off?
+		StdMetrics.ms_v_charge_timermode->SetValue( m_obc_timer_enabled->AsBool() && !ks_charge_timer_off );
+
+		// Cooling?
+		StdMetrics.ms_v_env_cooling->SetValue (  m_v_env_climate_ac->AsBool() && StdMetrics.ms_v_env_temp->AsFloat(10,Celcius) > m_v_env_climate_temp->AsFloat(16, Celcius) );
+
+	  if( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers)>0 )
+	  		m_v_trip_consumption1->SetValue( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) );
+	  if( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh)>0 )
+	  		m_v_trip_consumption2->SetValue( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) );
+
+		}
 
 	//Keep charging metrics up to date
 	if (ks_charge_bits.ChargingJ1772)  				// **** J1772 - Type 1  charging ****
@@ -478,14 +496,6 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 		SetChargeMetrics(StdMetrics.ms_v_bat_voltage->AsFloat(400,Volts), -ks_battery_current / 10.0, m_c_power->AsFloat(0,kW) * 10 / StdMetrics.ms_v_bat_voltage->AsFloat(400,Volts), true);
 	  }
 
-	// Charge timer on/off?
-	StdMetrics.ms_v_charge_timermode->SetValue( m_obc_timer_enabled->AsBool() && !ks_charge_timer_off );
-
-	// Cooling?
-	StdMetrics.ms_v_env_cooling->SetValue (  m_v_env_climate_ac->AsBool() && StdMetrics.ms_v_env_temp->AsFloat(10,Celcius) > m_v_env_climate_temp->AsFloat(16, Celcius) );
-
-	// Reset emergency light if it is stale.
-	if( m_v_emergency_lights->IsStale() ) m_v_emergency_lights->SetValue(false);
 
 	// Check for charging status changes:
 	bool isCharging = StdMetrics.ms_v_charge_pilot->AsBool()
@@ -506,11 +516,10 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 		POLLSTATE_OFF;
 		}
 
-  if( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers)>0 )
-  		m_v_trip_consumption1->SetValue( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) );
-  if( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh)>0 )
-  		m_v_trip_consumption2->SetValue( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) );
+	// Reset emergency light if it is stale.
+	if( m_v_emergency_lights->IsStale() ) m_v_emergency_lights->SetValue(false);
 
+	// Notify if emergency light are turned on or off.
 	if( m_v_emergency_lights->AsBool() && !ks_emergency_message_sent)
 		{
 		ks_emergency_message_sent = true;
@@ -539,6 +548,15 @@ void OvmsVehicleKiaSoulEv::Ticker10(uint32_t ticker)
 		//Read door lock status
 		//TODO GetDoorLockStatus();
 		}
+
+	// Calculate difference to UTC
+	if( ks_clock>0 && StdMetrics.ms_m_timeutc->AsInt()>0)
+		{
+		ks_utc_diff = (ks_clock/60)-((StdMetrics.ms_m_timeutc->AsInt()/60) % 1440);
+		}
+
+	m_v_pos_street->SetValue(m_street);
+
 	}
 
 /**

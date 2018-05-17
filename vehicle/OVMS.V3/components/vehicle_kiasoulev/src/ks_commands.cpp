@@ -170,9 +170,7 @@ void xks_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
     return;
     }
 
-  metric_unit_t rangeUnit = Native; // TODO: use user config if set
-
-	const char* auxBatt = StdMetrics.ms_v_bat_12v_voltage->AsUnitString("-", rangeUnit, 2).c_str();
+	const char* auxBatt = StdMetrics.ms_v_bat_12v_voltage->AsUnitString("-", Volts, 2).c_str();
 
 	writer->printf("AUX BATTERY\n");
 	if (*auxBatt != '-') writer->printf("Aux battery voltage %s\n", auxBatt);
@@ -387,15 +385,15 @@ void xks_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     return;
     }
 
-  metric_unit_t rangeUnit = Native; // TODO: use user config if set
+  metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
 
   writer->printf("TRIP\n");
 
   // Trip distance
   const char* distance = StdMetrics.ms_v_pos_trip->AsUnitString("-", rangeUnit, 1).c_str();
   // Consumption
-  float consumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers);
-  float consumption2 = StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh);
+  float consumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(rangeUnit);
+  float consumption2 = StdMetrics.ms_v_pos_trip->AsFloat(rangeUnit) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh);
   // Discharge
   const char* discharge = StdMetrics.ms_v_bat_energy_used->AsUnitString("-", kWh, 1).c_str();
   // Recuperation
@@ -408,8 +406,16 @@ void xks_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   if (*distance != '-')
     writer->printf("Dist %s\n", distance);
 
-  writer->printf("Con %.*fkWh/100km\n", 2, consumption);
-  writer->printf("Con %.*fkm/kWh\n", 2, consumption2);
+  if(MyConfig.GetParamValue("vehicle", "units.distance") == "M")
+  		{
+    writer->printf("Con %.*fkWh/100mi\n", 2, consumption);
+    writer->printf("Con %.*fmi/kWh\n", 2, consumption2);
+  		}
+  else
+  		{
+    writer->printf("Con %.*fkWh/100km\n", 2, consumption);
+    writer->printf("Con %.*fkm/kWh\n", 2, consumption2);
+  		}
 
   if (*discharge != '-')
     writer->printf("Dis %s\n", discharge);
