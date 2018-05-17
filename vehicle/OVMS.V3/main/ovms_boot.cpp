@@ -89,10 +89,8 @@ void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     writer->printf("Time at boot: %s\n", tb);
 
   writer->printf("  This is reset #%d since last power cycle\n",boot_data.boot_count);
-  writer->printf("  Detected boot reason: %s\n",MyBoot.GetBootReasonName());
+  writer->printf("  Detected boot reason: %s (%d/%d)\n",MyBoot.GetBootReasonName(),boot_data.bootreason_cpu0,boot_data.bootreason_cpu1);
   writer->printf("  Crash counters: %d total, %d early\n",MyBoot.GetCrashCount(),MyBoot.GetEarlyCrashCount());
-  writer->printf("  CPU#0 boot reason was %d\n",boot_data.bootreason_cpu0);
-  writer->printf("  CPU#1 boot reason was %d\n",boot_data.bootreason_cpu1);
 
   if (MyBoot.m_restart_timer>0)
     {
