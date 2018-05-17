@@ -38,11 +38,16 @@
 #include "ovms_log.h"
 static const char *TAG = "bluetooth";
 
-#define OVMS_BLE_APP_ID          0x55
-#define ADV_CONFIG_FLAG          (1 << 0)
-#define SCAN_RSP_CONFIG_FLAG     (1 << 1)
-#define OVMS_PROFILE_NUM         1
-#define OVMS_PROFILE_APP_IDX     0
+#define OVMS_BLE_APP_ID             0x42
+#define ADV_CONFIG_FLAG             (1 << 0)
+#define SCAN_RSP_CONFIG_FLAG        (1 << 1)
+#define OVMS_PROFILE_NUM            1
+#define OVMS_PROFILE_APP_IDX        0
+
+#define GATTS_SERVICE_UUID_OVMS_METRICS   0x00FF
+#define GATTS_CHAR_UUID_OVMS_METRICS      0xFF01
+#define GATTS_DESCR_UUID_OVMS_METRICS     0x4242
+#define GATTS_NUM_HANDLE_OVMS_METRICS     4
 
 static uint8_t adv_config_done = 0;
 static uint8_t ovms_manufacturer[4]={'O', 'V', 'M', 'S'};
@@ -55,6 +60,19 @@ static esp_ble_adv_data_t ovms_adv_config;
 static esp_ble_adv_data_t ovms_scan_rsp_config;
 static esp_ble_adv_params_t ovms_adv_params;
 static struct gatts_profile_inst ovms_profile_tab[OVMS_PROFILE_NUM];
+
+// Demo property (just for testing)
+uint8_t char1_str[] = {'O','V','M','S'};
+esp_gatt_char_prop_t a_property = 0;
+
+#define GATTS_DEMO_CHAR_VAL_LEN_MAX 0x40
+esp_attr_value_t gatts_demo_char1_val =
+{
+    .attr_max_len = GATTS_DEMO_CHAR_VAL_LEN_MAX,
+    .attr_len     = sizeof(char1_str),
+    .attr_value   = char1_str,
+};
+// End of demo property
 
 static const char *esp_key_type_to_str(esp_ble_key_type_t key_type)
   {
@@ -217,6 +235,8 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
 static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if,
                                 esp_ble_gatts_cb_param_t *param)
   {
+  ESP_LOGD(TAG, "GATTS_EVT, event %d\n", event);
+
   /* If event is register event, store the gatts_if for each profile */
   if (event == ESP_GATTS_REG_EVT)
     {
@@ -254,7 +274,8 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
 static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
                                         esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param)
   {
-  ESP_LOGD(TAG, "event = %x\n",event);
+  ESP_LOGD(TAG, "GATTS PROFILE event = %d\n",event);
+
   switch (event)
     {
     case ESP_GATTS_REG_EVT:
@@ -268,15 +289,33 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
         {
         devname.insert(0,"OVMS ");
         }
+      ovms_profile_tab[OVMS_PROFILE_APP_IDX].service_id.is_primary = true;
+      ovms_profile_tab[OVMS_PROFILE_APP_IDX].service_id.id.inst_id = 0x00;
+      ovms_profile_tab[OVMS_PROFILE_APP_IDX].service_id.id.uuid.len = ESP_UUID_LEN_16;
+      ovms_profile_tab[OVMS_PROFILE_APP_IDX].service_id.id.uuid.uuid.uuid16 = GATTS_SERVICE_UUID_OVMS_METRICS;
+      esp_ble_gatts_create_service(gatts_if, &ovms_profile_tab[OVMS_PROFILE_APP_IDX].service_id, GATTS_NUM_HANDLE_OVMS_METRICS);
       esp_ble_gap_set_device_name(devname.c_str());
-      //generate a resolvable random address
       esp_ble_gap_config_local_privacy(true);
-//      esp_ble_gatts_create_attr_tab(heart_rate_gatt_db, gatts_if,
-//                                    HRS_IDX_NB, HEART_RATE_SVC_INST_ID);
       }
       break;
     case ESP_GATTS_READ_EVT:
+      {
+      ESP_LOGI(TAG, "GATT_READ_EVT, conn_id %d, trans_id %d, handle %d\n",
+      param->read.conn_id, param->read.trans_id, param->read.handle);
+      esp_gatt_rsp_t rsp;
+      memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
+      rsp.attr_value.handle = param->read.handle;
+      rsp.attr_value.len = 4;
+      rsp.attr_value.value[0] = 0xde;
+      rsp.attr_value.value[1] = 0xed;
+      rsp.attr_value.value[2] = 0xbe;
+      rsp.attr_value.value[3] = 0xef;  
+      esp_ble_gatts_send_response(gatts_if,
+                                  param->read.conn_id,
+                                  param->read.trans_id,
+                                  ESP_GATT_OK, &rsp);
       break;
+      }
     case ESP_GATTS_WRITE_EVT:
       ESP_LOGI(TAG, "ESP_GATTS_WRITE_EVT, write value:");
       esp_log_buffer_hex(TAG, param->write.value, param->write.len);
@@ -296,10 +335,29 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
     case ESP_GATTS_STOP_EVT:
       break;
     case ESP_GATTS_CONNECT_EVT:
-      ESP_LOGI(TAG, "ESP_GATTS_CONNECT_EVT");
-      /* start security connect with peer device when receive the connect event sent by the master */
+      {
+      esp_ble_conn_update_params_t conn_params;
+      memset(&conn_params,0,sizeof(conn_params));
+      memcpy(conn_params.bda, param->connect.remote_bda, sizeof(esp_bd_addr_t));
+      /* For the IOS system, please reference the apple official documents about the ble connection parameters restrictions. */
+      conn_params.latency = 0;
+      conn_params.max_int = 0x30;    // max_int = 0x30*1.25ms = 40ms
+      conn_params.min_int = 0x10;    // min_int = 0x10*1.25ms = 20ms
+      conn_params.timeout = 400;     // timeout = 400*10ms = 4000ms
+      ESP_LOGI(TAG, "ESP_GATTS_CONNECT_EVT, conn_id %d, remote %02x:%02x:%02x:%02x:%02x:%02x",
+             param->connect.conn_id,
+             param->connect.remote_bda[0],
+             param->connect.remote_bda[1],
+             param->connect.remote_bda[2],
+             param->connect.remote_bda[3],
+             param->connect.remote_bda[4],
+             param->connect.remote_bda[5]);
+      ovms_profile_tab[OVMS_PROFILE_APP_IDX].conn_id = param->connect.conn_id;
+      //start sent the update connection parameters to the peer device.
+      esp_ble_gap_update_conn_params(&conn_params);
       esp_ble_set_encryption(param->connect.remote_bda, ESP_BLE_SEC_ENCRYPT_MITM);
       break;
+      }
     case ESP_GATTS_DISCONNECT_EVT:
       ESP_LOGI(TAG, "ESP_GATTS_DISCONNECT_EVT");
       /* start advertising again when missing the connect */
@@ -315,30 +373,64 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
       break;
     case ESP_GATTS_CONGEST_EVT:
       break;
-    case ESP_GATTS_CREAT_ATTR_TAB_EVT:
+    case ESP_GATTS_CREATE_EVT:
       {
-//      ESP_LOGI(TAG, "The number handle = %x",param->add_attr_tab.num_handle);
-//      if (param->create.status == ESP_GATT_OK)
-//        {
-//        if (param->add_attr_tab.num_handle == HRS_IDX_NB)
-//          {
-//          memcpy(heart_rate_handle_table, param->add_attr_tab.handles,
-//                 sizeof(heart_rate_handle_table));
-//          esp_ble_gatts_start_service(heart_rate_handle_table[HRS_IDX_SVC]);
-//          }
-//        else
-//          {
-//          ESP_LOGE(TAG, "Create attribute table abnormally, num_handle (%d) doesn't equal to HRS_IDX_NB(%d)",
-//                   param->add_attr_tab.num_handle, HRS_IDX_NB);
-//          }
-//        }
-//      else
-//        {
-//        ESP_LOGE(TAG, " Create attribute table failed, error code = %x", param->create.status);
-//        }
+      ESP_LOGI(TAG, "ESP_GATTS_CREATE_EVT, status %d, service_handle %d\n", param->create.status, param->create.service_handle);
+      ovms_profile_tab[OVMS_PROFILE_APP_IDX].service_handle = param->create.service_handle;
+      ovms_profile_tab[OVMS_PROFILE_APP_IDX].char_uuid.len = ESP_UUID_LEN_16;
+      ovms_profile_tab[OVMS_PROFILE_APP_IDX].char_uuid.uuid.uuid16 = GATTS_CHAR_UUID_OVMS_METRICS;
+      esp_ble_gatts_start_service(ovms_profile_tab[OVMS_PROFILE_APP_IDX].service_handle);
+
+      a_property = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
+      esp_err_t add_char_ret =
+      esp_ble_gatts_add_char(ovms_profile_tab[OVMS_PROFILE_APP_IDX].service_handle,
+                            &ovms_profile_tab[OVMS_PROFILE_APP_IDX].char_uuid,
+                            ESP_GATT_PERM_READ,
+                            a_property,
+                            &gatts_demo_char1_val,
+                            NULL);
+      if (add_char_ret)
+        {
+        ESP_LOGE(TAG, "add char failed, error code =%x",add_char_ret);
+        }
       break;
       }
+    case ESP_GATTS_ADD_CHAR_EVT:
+      {
+      uint16_t length = 0;
+      const uint8_t *prf_char;
 
+      ESP_LOGI(TAG, "ADD_CHAR_EVT, status %d,  attr_handle %d, service_handle %d\n",
+             param->add_char.status, param->add_char.attr_handle, param->add_char.service_handle);
+      ovms_profile_tab[OVMS_PROFILE_APP_IDX].char_handle = param->add_char.attr_handle;
+      ovms_profile_tab[OVMS_PROFILE_APP_IDX].descr_uuid.len = ESP_UUID_LEN_16;
+      ovms_profile_tab[OVMS_PROFILE_APP_IDX].descr_uuid.uuid.uuid16 = ESP_GATT_UUID_CHAR_CLIENT_CONFIG;
+      esp_err_t get_attr_ret = esp_ble_gatts_get_attr_value(param->add_char.attr_handle, &length, &prf_char);
+      if (get_attr_ret == ESP_FAIL)
+        {
+        ESP_LOGE(TAG, "ILLEGAL HANDLE");
+        }
+      ESP_LOGI(TAG, "the gatts demo char length = %x\n", length);
+      for (int i = 0; i < length; i++)
+        {
+        ESP_LOGI(TAG, "prf_char[%x] = %x\n",i,prf_char[i]);
+        }
+      esp_err_t add_descr_ret = esp_ble_gatts_add_char_descr(
+                             ovms_profile_tab[OVMS_PROFILE_APP_IDX].service_handle,
+                             &ovms_profile_tab[OVMS_PROFILE_APP_IDX].descr_uuid,
+                             ESP_GATT_PERM_READ,
+                             NULL,NULL);
+      if (add_descr_ret)
+        {
+        ESP_LOGE(TAG, "add char descr failed, error code = %x", add_descr_ret);
+        }
+      break;
+      }
+    case ESP_GATTS_ADD_CHAR_DESCR_EVT:
+      ESP_LOGI(TAG, "ADD_DESCR_EVT, status %d, attr_handle %d, service_handle %d\n",
+              param->add_char.status, param->add_char.attr_handle,
+              param->add_char.service_handle);
+      break;
     default:
       break;
     }
