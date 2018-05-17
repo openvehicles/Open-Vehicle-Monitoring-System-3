@@ -52,9 +52,9 @@ static const char *TAG = "bluetooth";
 static uint8_t adv_config_done = 0;
 static uint8_t ovms_manufacturer[4]={'O', 'V', 'M', 'S'};
 static uint8_t ovms_sec_service_uuid[16] = {
-    /* LSB <--------------------------------------------------------------------------------> MSB */
-    //first uuid, 16bit, [12],[13] is the value
-    0xE7, 0x2F, 0xCB, 0x38, 0x30, 0x08, 0x43, 0xBB, 0xB6, 0x0A, 0x70, 0xCC, 0x40, 0xF7, 0x5D, 0x76
+  /* LSB <--------------------------------------------------------------------------------> MSB */
+  //first uuid, 16bit, [12],[13] is the value
+  0x76, 0x5d, 0xf7, 0x40, 0xcc, 0x70, 0x0a, 0xb6, 0xbb, 0x43, 0x08, 0x30, 0x38, 0xcb, 0x2f, 0xe7
 };
 static esp_ble_adv_data_t ovms_adv_config;
 static esp_ble_adv_data_t ovms_scan_rsp_config;
@@ -145,6 +145,25 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
         {
         ESP_LOGI(TAG, "advertising start success");
         }
+      break;
+    case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
+      if (param->adv_stop_cmpl.status != ESP_BT_STATUS_SUCCESS)
+        {
+        ESP_LOGE(TAG, "Advertising stop failed\n");
+        }
+      else
+        {
+        ESP_LOGI(TAG, "Stop adv successfully\n");
+        }
+      break;
+    case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
+      ESP_LOGI(TAG, "update connection params status = %d, min_int = %d, max_int = %d,conn_int = %d,latency = %d, timeout = %d",
+              param->update_conn_params.status,
+              param->update_conn_params.min_int,
+              param->update_conn_params.max_int,
+              param->update_conn_params.conn_int,
+              param->update_conn_params.latency,
+              param->update_conn_params.timeout);
       break;
     case ESP_GAP_BLE_PASSKEY_REQ_EVT:                           /* passkey request event */
       ESP_LOGI(TAG, "ESP_GAP_BLE_PASSKEY_REQ_EVT");
@@ -289,13 +308,26 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
         {
         devname.insert(0,"OVMS ");
         }
+      esp_ble_gap_set_device_name(devname.c_str());
+      esp_ble_gap_config_local_privacy(true);
       ovms_profile_tab[OVMS_PROFILE_APP_IDX].service_id.is_primary = true;
       ovms_profile_tab[OVMS_PROFILE_APP_IDX].service_id.id.inst_id = 0x00;
       ovms_profile_tab[OVMS_PROFILE_APP_IDX].service_id.id.uuid.len = ESP_UUID_LEN_16;
       ovms_profile_tab[OVMS_PROFILE_APP_IDX].service_id.id.uuid.uuid.uuid16 = GATTS_SERVICE_UUID_OVMS_METRICS;
+      esp_err_t ret = esp_ble_gap_config_adv_data(&ovms_adv_config);
+      if (ret)
+        {
+        ESP_LOGE(TAG, "config adv data failed, error code = %x", ret);
+        }
+      adv_config_done |= ADV_CONFIG_FLAG;
+      //config scan response data
+      ret = esp_ble_gap_config_adv_data(&ovms_scan_rsp_config);
+      if (ret)
+        {
+        ESP_LOGE(TAG, "config scan response data failed, error code = %x", ret);
+        }
+      adv_config_done |= SCAN_RSP_CONFIG_FLAG;
       esp_ble_gatts_create_service(gatts_if, &ovms_profile_tab[OVMS_PROFILE_APP_IDX].service_id, GATTS_NUM_HANDLE_OVMS_METRICS);
-      esp_ble_gap_set_device_name(devname.c_str());
-      esp_ble_gap_config_local_privacy(true);
       }
       break;
     case ESP_GATTS_READ_EVT:
@@ -309,7 +341,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
       rsp.attr_value.value[0] = 0xde;
       rsp.attr_value.value[1] = 0xed;
       rsp.attr_value.value[2] = 0xbe;
-      rsp.attr_value.value[3] = 0xef;  
+      rsp.attr_value.value[3] = 0xef;
       esp_ble_gatts_send_response(gatts_if,
                                   param->read.conn_id,
                                   param->read.trans_id,
