@@ -28,35 +28,30 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __ESP32BLUETOOTH_H__
-#define __ESP32BLUETOOTH_H__
+#ifndef __ESP32BLUETOOTH_GATTS_H__
+#define __ESP32BLUETOOTH_GATTS_H__
 
-#include <stdint.h>
-#include "esp_bt.h"
-#include "esp_gap_ble_api.h"
-#include "esp_gatts_api.h"
-#include "esp_bt_defs.h"
-#include "esp_bt_main.h"
-#include "pcp.h"
+#include "esp32bluetooth.h"
 
-#define OVMS_BLE_APP_ID             0x42
-
-class esp32bluetooth : public pcp
+struct gatts_profile_inst
   {
-  public:
-    esp32bluetooth(const char* name);
-    ~esp32bluetooth();
-
-  public:
-    void StartService();
-    void StopService();
-    bool IsServiceRunning();
-
-  public:
-    void SetPowerMode(PowerMode powermode);
-
-  protected:
-    bool m_service_running;
+  esp_gatts_cb_t gatts_cb;
+  uint16_t gatts_if;
+  uint16_t app_id;
+  uint16_t conn_id;
+  uint16_t service_handle;
+  esp_gatt_srvc_id_t service_id;
+  uint16_t char_handle;
+  esp_bt_uuid_t char_uuid;
+  esp_gatt_perm_t perm;
+  esp_gatt_char_prop_t property;
+  uint16_t descr_handle;
+  esp_bt_uuid_t descr_uuid;
   };
 
-#endif //#ifndef __ESP32BLUETOOTH_H__
+void ovms_ble_gatts_init();
+void ovms_ble_gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if,
+                                  esp_ble_gatts_cb_param_t *param);
+uint16_t ovms_ble_gatts_if();
+
+#endif //#ifndef __ESP32BLUETOOTH_GAP_H__

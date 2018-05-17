@@ -28,35 +28,14 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __ESP32BLUETOOTH_H__
-#define __ESP32BLUETOOTH_H__
+#ifndef __ESP32BLUETOOTH_GAP_H__
+#define __ESP32BLUETOOTH_GAP_H__
 
-#include <stdint.h>
-#include "esp_bt.h"
-#include "esp_gap_ble_api.h"
-#include "esp_gatts_api.h"
-#include "esp_bt_defs.h"
-#include "esp_bt_main.h"
-#include "pcp.h"
+#include "esp32bluetooth.h"
 
-#define OVMS_BLE_APP_ID             0x42
+void ovms_ble_gap_init();
+void ovms_ble_gap_config_advertising();
+void ovms_ble_gap_start_advertising();
+void ovms_ble_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
 
-class esp32bluetooth : public pcp
-  {
-  public:
-    esp32bluetooth(const char* name);
-    ~esp32bluetooth();
-
-  public:
-    void StartService();
-    void StopService();
-    bool IsServiceRunning();
-
-  public:
-    void SetPowerMode(PowerMode powermode);
-
-  protected:
-    bool m_service_running;
-  };
-
-#endif //#ifndef __ESP32BLUETOOTH_H__
+#endif //#ifndef __ESP32BLUETOOTH_GAP_H__

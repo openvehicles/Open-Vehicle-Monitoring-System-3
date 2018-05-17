@@ -28,35 +28,19 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __ESP32BLUETOOTH_H__
-#define __ESP32BLUETOOTH_H__
+#ifndef __ESP32BLUETOOTH_SVC_DEVICE_H__
+#define __ESP32BLUETOOTH_SVC_DEVICE_H__
 
-#include <stdint.h>
-#include "esp_bt.h"
-#include "esp_gap_ble_api.h"
-#include "esp_gatts_api.h"
-#include "esp_bt_defs.h"
-#include "esp_bt_main.h"
-#include "pcp.h"
+#include "esp32bluetooth.h"
+#include "esp32bluetooth_gatts.h"
 
-#define OVMS_BLE_APP_ID             0x42
+#define GATTS_SERVICE_UUID_OVMS_DEVICE   0x4441
+#define GATTS_CHAR_UUID_OVMS_DEVICE      0x4442
+#define GATTS_DESCR_UUID_OVMS_DEVICE     0x4443
+#define GATTS_NUM_HANDLE_OVMS_DEVICE     4
 
-class esp32bluetooth : public pcp
-  {
-  public:
-    esp32bluetooth(const char* name);
-    ~esp32bluetooth();
+extern struct gatts_profile_inst ovms_gatts_profile_device;
 
-  public:
-    void StartService();
-    void StopService();
-    bool IsServiceRunning();
+void ovms_ble_gatts_profile_device_init();
 
-  public:
-    void SetPowerMode(PowerMode powermode);
-
-  protected:
-    bool m_service_running;
-  };
-
-#endif //#ifndef __ESP32BLUETOOTH_H__
+#endif //#ifndef __ESP32BLUETOOTH_SVC_DEVICE_H__
