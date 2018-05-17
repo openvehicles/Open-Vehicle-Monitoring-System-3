@@ -222,6 +222,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
     {
     if (param->reg.status == ESP_GATT_OK)
       {
+      ESP_LOGI(TAG,"Reg app succeeded with inteface ID %d", gatts_if);
       ovms_profile_tab[OVMS_PROFILE_APP_IDX].gatts_if = gatts_if;
       }
     else
@@ -348,6 +349,23 @@ esp32bluetooth::esp32bluetooth(const char* name)
   {
   m_service_running = false;
   m_powermode = Off;
+  }
+
+esp32bluetooth::~esp32bluetooth()
+  {
+  }
+
+void esp32bluetooth::StartService()
+  {
+  esp_err_t ret;
+
+  if (m_service_running)
+    {
+    ESP_LOGE(TAG,"Bluetooth service cannot start (already running)");
+    return;
+    }
+
+  ESP_LOGI(TAG,"Powering bluetooth on...");
 
   memset(&ovms_adv_config,0,sizeof(ovms_adv_config));
   ovms_adv_config.set_scan_rsp = false;
@@ -381,23 +399,6 @@ esp32bluetooth::esp32bluetooth(const char* name)
   /* Not get the gatt_if, so initial is ESP_GATT_IF_NONE */
   ovms_profile_tab[OVMS_PROFILE_APP_IDX].gatts_cb = gatts_profile_event_handler;
   ovms_profile_tab[OVMS_PROFILE_APP_IDX].gatts_if = ESP_GATT_IF_NONE;
-  }
-
-esp32bluetooth::~esp32bluetooth()
-  {
-  }
-
-void esp32bluetooth::StartService()
-  {
-  esp_err_t ret;
-
-  if (m_service_running)
-    {
-    ESP_LOGE(TAG,"Bluetooth service cannot start (already running)");
-    return;
-    }
-
-  ESP_LOGI(TAG,"Powering bluetooth on...");
 
   esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
   ret = esp_bt_controller_init(&bt_cfg);
@@ -449,8 +450,6 @@ void esp32bluetooth::StartService()
     return;
     }
 
-  m_service_running = true;
-
   /* set the security iocap & auth_req & key size & init key response key parameters to the stack*/
   esp_ble_auth_req_t auth_req = ESP_LE_AUTH_BOND;     //bonding with peer device after authentication
   esp_ble_io_cap_t iocap = ESP_IO_CAP_OUT;           //set the IO capability to output but no input
@@ -466,10 +465,14 @@ void esp32bluetooth::StartService()
   and the init key means which key you can distribut to the slave. */
   esp_ble_gap_set_security_param(ESP_BLE_SM_SET_INIT_KEY, &init_key, sizeof(uint8_t));
   esp_ble_gap_set_security_param(ESP_BLE_SM_SET_RSP_KEY, &rsp_key, sizeof(uint8_t));
+
+  m_service_running = true;
   }
 
 void esp32bluetooth::StopService()
   {
+  esp_err_t ret;
+
   if (!m_service_running)
     {
     ESP_LOGE(TAG,"Bluetooth service cannot stop (not running)");
@@ -477,6 +480,43 @@ void esp32bluetooth::StopService()
     }
 
   ESP_LOGI(TAG,"Powering bluetooth off...");
+
+  ret = esp_ble_gatts_app_unregister(ovms_profile_tab[OVMS_PROFILE_APP_IDX].gatts_if);
+  if (ret)
+    {
+    ESP_LOGE(TAG, "gatts app unregister error, error code = %x", ret);
+    return;
+    }
+
+  ret = esp_bluedroid_disable();
+  if (ret)
+    {
+    ESP_LOGE(TAG, "disable bluetooth failed: %s", esp_err_to_name(ret));
+    return;
+    }
+
+  ret = esp_bluedroid_deinit();
+  if (ret)
+    {
+    ESP_LOGE(TAG, "deinit bluetooth failed: %s", esp_err_to_name(ret));
+    return;
+    }
+
+  ret = esp_bt_controller_disable();
+  if (ret)
+    {
+    ESP_LOGE(TAG, "disable controller failed: %s", esp_err_to_name(ret));
+    return;
+    }
+
+  ret = esp_bt_controller_deinit();
+  if (ret)
+    {
+    ESP_LOGE(TAG, "deinit controller failed: %s", esp_err_to_name(ret));
+    return;
+    }
+
+  m_service_running = false;
   }
 
 bool esp32bluetooth::IsServiceRunning()
