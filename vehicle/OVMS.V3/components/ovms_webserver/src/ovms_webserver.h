@@ -68,7 +68,7 @@ struct user_session {
  *  access to the HTTP context and utilities to generate HTML output.
  */
 
-struct PageContext
+struct PageContext : public ExternalRamAllocated
 {
   mg_connection *nc;
   http_message *hm;
@@ -179,7 +179,7 @@ typedef std::forward_list<PageEntry*> PageMap_t;
  *  the mg_connection via the user_data field.
  * The HandleEvent() method will be called prior to the framework handler.
  */
-class MgHandler
+class MgHandler : public ExternalRamAllocated
 {
   public:
     MgHandler(mg_connection* nc)
@@ -311,7 +311,7 @@ typedef std::vector<WebSocketSlot> WebSocketSlots;
  * HttpCommandStream: execute command, stream output to HTTP connection
  */
 
-class HttpCommandStream : public OvmsShell, MgHandler
+class HttpCommandStream : public OvmsShell, public MgHandler
 {
   public:
     HttpCommandStream(mg_connection* nc, std::string command, int verbosity=COMMAND_RESULT_NORMAL);
@@ -348,7 +348,7 @@ class HttpCommandStream : public OvmsShell, MgHandler
  * Register custom page handlers through the RegisterPage() API.
  */
 
-class OvmsWebServer
+class OvmsWebServer : public ExternalRamAllocated
 {
   public:
     OvmsWebServer();
