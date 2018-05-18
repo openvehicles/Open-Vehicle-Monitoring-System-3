@@ -31,6 +31,7 @@
 #include <string.h>
 #include "esp_system.h"
 #include "esp32bluetooth_gap.h"
+#include "ovms_events.h"
 
 #include "ovms_log.h"
 static const char *TAG = "bt-gap";
@@ -225,11 +226,24 @@ void ovms_ble_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_par
       {
       esp_bd_addr_t bd_addr;
       memcpy(bd_addr, param->ble_security.auth_cmpl.bd_addr, sizeof(esp_bd_addr_t));
-      ESP_LOGI(TAG, "remote BD_ADDR: %08x%04x",\
-              (bd_addr[0] << 24) + (bd_addr[1] << 16) + (bd_addr[2] << 8) + bd_addr[3],
-              (bd_addr[4] << 8) + bd_addr[5]);
+      ESP_LOGI(TAG, "remote BD_ADDR: %02x:%02x:%02x:%02x:%02x:%02x",
+              bd_addr[0], bd_addr[1], bd_addr[2],
+              bd_addr[3], bd_addr[4], bd_addr[5]);
       ESP_LOGI(TAG, "address type = %d", param->ble_security.auth_cmpl.addr_type);
       ESP_LOGI(TAG, "pair status = %s",param->ble_security.auth_cmpl.success ? "success" : "fail");
+      if (param->ble_security.auth_cmpl.success)
+        {
+        char signal[32];
+        sprintf(signal,"bt.auth.%02x:%02x:%02x:%02x:%02x:%02x",
+          bd_addr[0],
+          bd_addr[1],
+          bd_addr[2],
+          bd_addr[3],
+          bd_addr[4],
+          bd_addr[5]);
+        MyEvents.SignalEvent(signal, NULL);
+        }
+
       //show_bonded_devices();
       break;
       }

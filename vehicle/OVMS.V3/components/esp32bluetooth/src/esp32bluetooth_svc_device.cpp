@@ -33,6 +33,7 @@
 #include "esp32bluetooth_svc_device.h"
 #include "esp32bluetooth_gap.h"
 #include "ovms_config.h"
+#include "ovms_events.h"
 
 #include "ovms_log.h"
 static const char *TAG = "bt-svc-device";
@@ -109,14 +110,6 @@ void ovms_ble_gatts_profile_device_event_handler(esp_gatts_cb_event_t event,
       break;
     case ESP_GATTS_CONNECT_EVT:
       {
-      esp_ble_conn_update_params_t conn_params;
-      memset(&conn_params,0,sizeof(conn_params));
-      memcpy(conn_params.bda, param->connect.remote_bda, sizeof(esp_bd_addr_t));
-      /* For the IOS system, please reference the apple official documents about the ble connection parameters restrictions. */
-      conn_params.latency = 0;
-      conn_params.max_int = 0x30;    // max_int = 0x30*1.25ms = 40ms
-      conn_params.min_int = 0x10;    // min_int = 0x10*1.25ms = 20ms
-      conn_params.timeout = 400;     // timeout = 400*10ms = 4000ms
       ESP_LOGI(TAG, "ESP_GATTS_CONNECT_EVT, conn_id %d, remote %02x:%02x:%02x:%02x:%02x:%02x",
              param->connect.conn_id,
              param->connect.remote_bda[0],
@@ -125,6 +118,25 @@ void ovms_ble_gatts_profile_device_event_handler(esp_gatts_cb_event_t event,
              param->connect.remote_bda[3],
              param->connect.remote_bda[4],
              param->connect.remote_bda[5]);
+
+      char signal[32];
+      sprintf(signal,"bt.connect.%02x:%02x:%02x:%02x:%02x:%02x",
+        param->connect.remote_bda[0],
+        param->connect.remote_bda[1],
+        param->connect.remote_bda[2],
+        param->connect.remote_bda[3],
+        param->connect.remote_bda[4],
+        param->connect.remote_bda[5]);
+      MyEvents.SignalEvent(signal, NULL);
+
+      esp_ble_conn_update_params_t conn_params;
+      memset(&conn_params,0,sizeof(conn_params));
+      memcpy(conn_params.bda, param->connect.remote_bda, sizeof(esp_bd_addr_t));
+      /* For the IOS system, please reference the apple official documents about the ble connection parameters restrictions. */
+      conn_params.latency = 0;
+      conn_params.max_int = 0x30;    // max_int = 0x30*1.25ms = 40ms
+      conn_params.min_int = 0x10;    // min_int = 0x10*1.25ms = 20ms
+      conn_params.timeout = 400;     // timeout = 400*10ms = 4000ms
       ovms_gatts_profile_device.conn_id = param->connect.conn_id;
       //start sent the update connection parameters to the peer device.
       esp_ble_gap_update_conn_params(&conn_params);
@@ -132,10 +144,30 @@ void ovms_ble_gatts_profile_device_event_handler(esp_gatts_cb_event_t event,
       break;
       }
     case ESP_GATTS_DISCONNECT_EVT:
-      ESP_LOGI(TAG, "ESP_GATTS_DISCONNECT_EVT");
+      {
+      ESP_LOGI(TAG, "ESP_GATTS_DISCONNECT_EVT, conn_id %d, remote %02x:%02x:%02x:%02x:%02x:%02x",
+             param->disconnect.conn_id,
+             param->disconnect.remote_bda[0],
+             param->disconnect.remote_bda[1],
+             param->disconnect.remote_bda[2],
+             param->disconnect.remote_bda[3],
+             param->disconnect.remote_bda[4],
+             param->disconnect.remote_bda[5]);
+
+      char signal[32];
+      sprintf(signal,"bt.disconnect.%02x:%02x:%02x:%02x:%02x:%02x",
+        param->disconnect.remote_bda[0],
+        param->disconnect.remote_bda[1],
+        param->disconnect.remote_bda[2],
+        param->disconnect.remote_bda[3],
+        param->disconnect.remote_bda[4],
+        param->disconnect.remote_bda[5]);
+      MyEvents.SignalEvent(signal, NULL);
+
       /* start advertising again when missing the connect */
       ovms_ble_gap_start_advertising();
       break;
+      }
     case ESP_GATTS_OPEN_EVT:
       break;
     case ESP_GATTS_CANCEL_OPEN_EVT:
