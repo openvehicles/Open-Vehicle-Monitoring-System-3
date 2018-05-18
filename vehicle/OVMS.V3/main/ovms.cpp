@@ -41,3 +41,54 @@ static void* ExternalRamAllocated::operator new[](std::size_t sz)
   {
   return ExternalRamMalloc(sz);
   }
+
+char* ExternalRamAllocated::strdup(const char* src)
+  {
+  if (!src)
+    return NULL;
+  size_t size = strlen(src) + 1;
+  char* dupe = (char*)ExternalRamMalloc(size);
+  if (dupe)
+    memcpy(dupe, src, size);
+  return dupe;
+  }
+
+int ExternalRamAllocated::asprintf(char** strp, const char* fmt, ...)
+  {
+  int size = 0;
+  va_list args;
+  va_start(args, fmt);
+  size = vasprintf(strp, fmt, args);
+  va_end(args);
+  return size;
+  }
+
+int ExternalRamAllocated::vasprintf(char** strp, const char* fmt, va_list ap)
+  {
+  int size = 0;
+  char *p = NULL;
+
+  // determine required size:
+  va_list apsz;
+  va_copy(apsz, ap);
+  size = vsnprintf(p, size, fmt, apsz);
+  va_end(apsz);
+
+  if (size < 0)
+    return -1;
+
+  size++; // for '\0'
+  p = (char*)ExternalRamMalloc(size);
+  if (p == NULL)
+    return -1;
+
+  size = vsnprintf(p, size, fmt, ap);
+  if (size < 0)
+    {
+    free(p);
+    return -1;
+    }
+
+  *strp = p;
+  return size;
+  }

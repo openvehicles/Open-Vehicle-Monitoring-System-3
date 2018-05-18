@@ -32,6 +32,9 @@
 #define __OVMS_H__
 
 #include <stdint.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
 #include <cstddef>
 #include <cstdlib>
 #include <string>
@@ -55,6 +58,9 @@ class ExternalRamAllocated
   public:
     static void* operator new(std::size_t sz);
     static void* operator new[](std::size_t sz);
+    static char* strdup(const char* src);
+    static int asprintf(char** strp, const char* fmt, ...);
+    static int vasprintf(char** strp, const char* fmt, va_list ap);
   };
 
 // C++11 Allocator:
