@@ -67,6 +67,8 @@ void OvmsVehicleRenaultTwizy::ChargeInit()
 {
   ESP_LOGI(TAG, "charge subsystem init");
   
+  twizy_chg_stop_request = false;
+  
   // init command
   cmd_ca = cmd_xrt->RegisterCommand("ca", "Charge attributes", vehicle_twizy_ca, "[R] | [<range>] [<soc>%] [L<0-7>] [S|N|H]", 0, 4, true);
 }
@@ -171,7 +173,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandCA(in
   
   // Power level:
   if (capacity > 0)
-    capacity -= writer->printf("\nLevel: %d", cfg_chargelevel);
+    capacity -= writer->printf("\nLevel: %d", (int) cfg_chargelevel);
   
   // Estimated charge time for 100%:
   if (capacity > 0)

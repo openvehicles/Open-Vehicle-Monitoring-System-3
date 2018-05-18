@@ -24,7 +24,7 @@
  */
 
 #include "ovms_log.h"
-// static const char *TAG = "v-twizy";
+static const char *TAG = "v-twizy";
 
 #include <stdio.h>
 #include <string>
@@ -48,6 +48,11 @@ using namespace std;
 
 void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
 {
+  // debug log helpers:
+  static bool is_stopping = false;
+  static int last_level = 0;
+  
+  // no processing until fully initialized:
   if (!m_ready)
     return;
 
@@ -77,15 +82,23 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       
       // Overwrite BMS>>CHG protocol to limit charge power:
       // cfg_chargelevel = maximum power, 1..7 = 300..2100 W
-      uint8_t level = cfg_chargelevel;
-      if ((twizy_status & (CAN_STATUS_CHARGING|CAN_STATUS_OFFLINE)) == CAN_STATUS_CHARGING &&
-          (twizy_flags.EnableWrite) &&
-          (level > 0) &&
-          (((INT8)CAN_BYTE(0)) > level))
+      int level = (int) cfg_chargelevel;
+      if (twizy_flags.EnableWrite
+        && (twizy_status & (CAN_STATUS_CHARGING|CAN_STATUS_OFFLINE)) == CAN_STATUS_CHARGING
+        && level > 0
+        && ((INT8) CAN_BYTE(0)) > level)
       {
         CAN_frame_t txframe = *p_frame;
         txframe.data.u8[0] = level;
         txframe.Write();
+        if (level != last_level) {
+          last_level = level;
+          ESP_LOGD(TAG, "IncomingFrameCan1: new charge level %d", level);
+        }
+      }
+      else
+      {
+        last_level = 0;
       }
       
       // Basic validation:
@@ -207,13 +220,21 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       
       // Overwrite BMS>>CHG protocol to stop charge:
       // requested by setting twizy_chg_stop_request to true
-      if ((twizy_status & (CAN_STATUS_CHARGING|CAN_STATUS_OFFLINE)) == CAN_STATUS_CHARGING &&
-          (twizy_flags.EnableWrite) &&
-          (twizy_chg_stop_request))
+      if (twizy_flags.EnableWrite
+        && (twizy_status & (CAN_STATUS_CHARGING|CAN_STATUS_OFFLINE)) == CAN_STATUS_CHARGING
+        && (bool) twizy_chg_stop_request)
       {
         CAN_frame_t txframe = *p_frame;
         txframe.data.u8[0] = 0x12; // charge stop request
         txframe.Write();
+        if (!is_stopping) {
+          is_stopping = true;
+          ESP_LOGD(TAG, "IncomingFrameCan1: stopping charge");
+        }
+      }
+      else
+      {
+        is_stopping = false;
       }
       
       // max drive (discharge) + recup (charge) power:

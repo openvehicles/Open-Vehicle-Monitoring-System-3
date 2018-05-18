@@ -26,6 +26,8 @@
 #ifndef __VEHICLE_RENAULTTWIZY_H__
 #define __VEHICLE_RENAULTTWIZY_H__
 
+#include <atomic>
+
 #include "can.h"
 #include "vehicle.h"
 
@@ -404,9 +406,10 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     #define TWIZY_CHARGEMODE_DEFAULT    0   // notify on limits (FW: "standard")
     #define TWIZY_CHARGEMODE_AUTOSTOP   1   // stop on limits (FW: "storage")
     
-    bool twizy_chg_stop_request = false;    // true = stop charge ASAP
-    
-    int cfg_chargelevel = 0;                // user configured max CHG power level (0..7)
+    bool twizy_chg_stop_request;     // true = stop charge ASAP
+    int cfg_chargelevel;             // user configured max CHG power level (0..7)
+    //std::atomic_bool twizy_chg_stop_request;     // true = stop charge ASAP
+    //std::atomic_int cfg_chargelevel;             // user configured max CHG power level (0..7)
   
   
   // --------------------------------------------------------------------------
