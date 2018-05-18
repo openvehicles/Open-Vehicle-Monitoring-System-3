@@ -109,12 +109,7 @@ void esp32bluetooth::StartService()
     return;
     }
 
-  ret = esp_ble_gatts_app_register(OVMS_BLE_APP_ID);
-  if (ret)
-    {
-    ESP_LOGE(TAG, "gatts app register error, error code = %x", ret);
-    return;
-    }
+  ovms_ble_gatts_register();
 
   /* set the security iocap & auth_req & key size & init key response key parameters to the stack*/
   esp_ble_auth_req_t auth_req = ESP_LE_AUTH_BOND;     //bonding with peer device after authentication

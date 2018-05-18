@@ -50,6 +50,7 @@ struct gatts_profile_inst
   };
 
 void ovms_ble_gatts_init();
+void ovms_ble_gatts_register();
 void ovms_ble_gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if,
                                   esp_ble_gatts_cb_param_t *param);
 uint16_t ovms_ble_gatts_if();

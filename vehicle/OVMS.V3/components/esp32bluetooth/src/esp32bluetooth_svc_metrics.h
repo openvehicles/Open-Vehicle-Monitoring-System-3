@@ -34,6 +34,7 @@
 #include "esp32bluetooth.h"
 #include "esp32bluetooth_gatts.h"
 
+#define GATTS_APP_UUID_OVMS_METRICS       0x55
 #define GATTS_SERVICE_UUID_OVMS_METRICS   0x5551
 #define GATTS_CHAR_UUID_OVMS_METRICS      0x5552
 #define GATTS_DESCR_UUID_OVMS_METRICS     0x5553

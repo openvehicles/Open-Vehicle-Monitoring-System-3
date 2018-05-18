@@ -39,8 +39,6 @@
 #include "esp_bt_main.h"
 #include "pcp.h"
 
-#define OVMS_BLE_APP_ID             0x42
-
 class esp32bluetooth : public pcp
   {
   public:

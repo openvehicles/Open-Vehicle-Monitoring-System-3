@@ -79,6 +79,7 @@ void ovms_ble_gatts_profile_device_event_handler(esp_gatts_cb_event_t event,
       ovms_gatts_profile_device.service_id.id.uuid.len = ESP_UUID_LEN_16;
       ovms_gatts_profile_device.service_id.id.uuid.uuid.uuid16 = GATTS_SERVICE_UUID_OVMS_DEVICE;
 
+      ESP_LOGI(TAG,"Creating service on interface %d",gatts_if);
       esp_ble_gatts_create_service(gatts_if, &ovms_gatts_profile_device.service_id, GATTS_NUM_HANDLE_OVMS_DEVICE);
       }
       break;

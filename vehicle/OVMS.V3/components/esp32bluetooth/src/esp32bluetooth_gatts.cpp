@@ -40,15 +40,26 @@ static const char *TAG = "bt-gatts";
 void ovms_ble_gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if,
                                   esp_ble_gatts_cb_param_t *param)
   {
-  ESP_LOGD(TAG, "GATTS_EVT, event %d\n", event);
+  ESP_LOGD(TAG, "GATTS_EVT, event %d (interface %d)\n",
+    event, gatts_if);
 
   /* If event is register event, store the gatts_if for each profile */
   if (event == ESP_GATTS_REG_EVT)
     {
     if (param->reg.status == ESP_GATT_OK)
       {
-      ESP_LOGI(TAG,"Reg app succeeded with inteface ID %d", gatts_if);
-      ovms_gatts_profile_device.gatts_if = gatts_if;
+      if (param->reg.app_id == GATTS_APP_UUID_OVMS_DEVICE)
+        {
+        ESP_LOGI(TAG,"Reg DEVICE app %04x succeeded with inteface ID %d",
+          param->reg.app_id, gatts_if);
+        ovms_gatts_profile_device.gatts_if = gatts_if;
+        }
+      else if (param->reg.app_id == GATTS_APP_UUID_OVMS_METRICS)
+        {
+        ESP_LOGI(TAG,"Reg METRICS app %04x succeeded with inteface ID %d",
+          param->reg.app_id, gatts_if);
+        ovms_gatts_profile_metrics.gatts_if = gatts_if;
+        }
       }
     else
       {
@@ -71,6 +82,25 @@ void ovms_ble_gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatt
 uint16_t ovms_ble_gatts_if()
   {
   return ovms_gatts_profile_device.gatts_if;
+  }
+
+void ovms_ble_gatts_register()
+  {
+  esp_err_t ret;
+
+  ret = esp_ble_gatts_app_register(GATTS_APP_UUID_OVMS_DEVICE);
+  if (ret)
+    {
+    ESP_LOGE(TAG, "gatts app register error, error code = %x", ret);
+    return;
+    }
+
+  ret = esp_ble_gatts_app_register(GATTS_APP_UUID_OVMS_METRICS);
+  if (ret)
+    {
+    ESP_LOGE(TAG, "gatts app register error, error code = %x", ret);
+    return;
+    }
   }
 
 void ovms_ble_gatts_init()
