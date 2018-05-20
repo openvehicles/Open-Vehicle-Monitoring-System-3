@@ -84,7 +84,7 @@ void HousekeepingUpdate12V()
   if (v < 1.0) v=0;
   m1->SetValue(v);
   if (StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat() == 0)
-    StandardMetrics.ms_v_bat_12v_voltage_ref->SetValue(v);
+    StandardMetrics.ms_v_bat_12v_voltage_ref->SetValue(MyConfig.GetParamValueFloat("vehicle","12v.ref", 12.6));
 #endif // #ifdef CONFIG_OVMS_COMP_ADC
   }
 
