@@ -1,9 +1,15 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+
+2018-05-20 MWJ  3.1.006  OTA release
 - Web status: panel auto updates, reboot button, SD card and modem status and control
 - Twizy: sufficient charge notifications separated from charge state
 - Webserver: setup wizard
+- Notifications for charge and other standard events
+- Notifications for vehicle error fault codes
+- Notifications when new firmware is available / installed (autoflash)
+- Charge Time Predictor for Tesla Roadster
 
 2018-05-01 MWJ  3.1.005  OTA release
 - Vehicle: 12V battery monitoring

@@ -15,7 +15,6 @@ Open Vehicle Monitor System v3 - Known issues
   * Cooldown not currently supported.
   * Charge timer not currently supported.
   * Charge time predictor not currently supported.
-  * VDS vehicle errors not currently supported.
   * Digital speedometer feature not currently supported.
 
 * Vehicle: Kyburz not currently implemented in 3.x.
