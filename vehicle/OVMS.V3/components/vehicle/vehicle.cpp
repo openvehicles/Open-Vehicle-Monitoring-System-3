@@ -684,7 +684,7 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     float vref = StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat();
     bool alert_on = StandardMetrics.ms_v_bat_12v_voltage_alert->AsBool();
     float alert_threshold = MyConfig.GetParamValueFloat("vehicle", "12v.alert", 1.6);
-    if (vref - volt > alert_threshold && !alert_on)
+    if (vref > 0 && volt > 0 && vref - volt > alert_threshold && !alert_on)
       {
       StandardMetrics.ms_v_bat_12v_voltage_alert->SetValue(true);
       MyEvents.SignalEvent("vehicle.alert.12v.on", NULL);
