@@ -55,7 +55,7 @@ static const char *TAG = "websocket";
 WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t modifier)
   : MgHandler(nc)
 {
-  ESP_LOGV(TAG, "WebSocketHandler[%p] init: nc=%p modifier=%d", this, nc, modifier);
+  ESP_LOGV(TAG, "WebSocketHandler[%p] init: handler=%p modifier=%d", nc, this, modifier);
   
   m_modifier = modifier;
   m_jobqueue = xQueueCreate(30, sizeof(WebSocketTxJob));
@@ -92,7 +92,7 @@ void WebSocketHandler::Unlock()
 
 void WebSocketHandler::ProcessTxJob()
 {
-  //ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d, sent=%d ack=%d", this, m_job.type, m_sent, m_ack);
+  //ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d, sent=%d ack=%d", m_nc, m_job.type, m_sent, m_ack);
   
   // process job, send next chunk:
   switch (m_job.type)
@@ -100,7 +100,7 @@ void WebSocketHandler::ProcessTxJob()
     case WSTX_Event:
     {
       if (m_sent && m_ack) {
-        ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done", this, m_job.type);
+        ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done", m_nc, m_job.type);
         m_job.type = WSTX_None;
       } else {
         std::string msg;
@@ -153,7 +153,7 @@ void WebSocketHandler::ProcessTxJob()
       // done?
       if (!m && m_ack == m_sent) {
         if (m_sent)
-          ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done, sent=%d metrics", this, m_job.type, m_sent);
+          ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done, sent=%d metrics", m_nc, m_job.type, m_sent);
         m_job.type = WSTX_None;
       }
       
@@ -194,12 +194,12 @@ bool WebSocketHandler::AddTxJob(WebSocketTxJob job, bool init_tx)
   if (xQueueSend(m_jobqueue, &job, 0) != pdTRUE) {
     ++m_jobqueue_overflow;
     if (m_jobqueue_overflow == 1)
-      ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow detected", this);
+      ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow detected", m_nc);
     return false;
   }
   else {
     if (m_jobqueue_overflow) {
-      ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow resolved, %d drops", this, m_jobqueue_overflow);
+      ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow resolved, %d drops", m_nc, m_jobqueue_overflow);
       m_jobqueue_overflow = 0;
     }
     if (init_tx && uxQueueMessagesWaiting(m_jobqueue) == 1)
@@ -255,20 +255,20 @@ int WebSocketHandler::HandleEvent(int ev, void* p)
       websocket_message* wm = (websocket_message*) p;
       std::string msg;
       msg.assign((char*) wm->data, wm->size);
-      ESP_LOGD(TAG, "WebSocketHandler[%p]: received msg '%s'", this, msg.c_str());
+      ESP_LOGD(TAG, "WebSocketHandler[%p]: received msg '%s'", m_nc, msg.c_str());
       // Note: client commands not yet implemented
       break;
     }
     
     case MG_EV_POLL:
       // check for new transmission
-      //ESP_LOGV(TAG, "WebSocketHandler[%p] EV_POLL qlen=%d jobtype=%d sent=%d ack=%d", this, uxQueueMessagesWaiting(m_jobqueue), m_job.type, m_sent, m_ack);
+      //ESP_LOGV(TAG, "WebSocketHandler[%p] EV_POLL qlen=%d jobtype=%d sent=%d ack=%d", m_nc, uxQueueMessagesWaiting(m_jobqueue), m_job.type, m_sent, m_ack);
       InitTx();
       break;
     
     case MG_EV_SEND:
       // last transmission has finished
-      //ESP_LOGV(TAG, "WebSocketHandler[%p] EV_SEND qlen=%d jobtype=%d sent=%d ack=%d", this, uxQueueMessagesWaiting(m_jobqueue), m_job.type, m_sent, m_ack);
+      //ESP_LOGV(TAG, "WebSocketHandler[%p] EV_SEND qlen=%d jobtype=%d sent=%d ack=%d", m_nc, uxQueueMessagesWaiting(m_jobqueue), m_job.type, m_sent, m_ack);
       ContinueTx();
       break;
     
@@ -312,7 +312,7 @@ WebSocketHandler* OvmsWebServer::CreateWebSocketHandler(mg_connection* nc)
   if (xTimerIsTimerActive(m_update_ticker) == pdFALSE)
     xTimerStart(m_update_ticker, 0);
   
-  ESP_LOGD(TAG, "WebSocket connection %p opened; %d clients active", handler, m_client_cnt);
+  ESP_LOGD(TAG, "WebSocket[%p] handler %p opened; %d clients active", nc, handler, m_client_cnt);
   
   xSemaphoreGive(m_client_mutex);
   
@@ -337,10 +337,11 @@ void OvmsWebServer::DestroyWebSocketHandler(WebSocketHandler* handler)
         xTimerStop(m_update_ticker, 0);
       
       // destroy handler:
+      mg_connection* nc = handler->m_nc;
       m_client_slots[i].handler = NULL;
       delete handler;
       
-      ESP_LOGD(TAG, "WebSocket connection %p closed; %d clients active", handler, m_client_cnt);
+      ESP_LOGD(TAG, "WebSocket[%p] handler %p closed; %d clients active", nc, handler, m_client_cnt);
       
       break;
     }

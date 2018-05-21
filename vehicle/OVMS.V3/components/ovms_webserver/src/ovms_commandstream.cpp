@@ -52,7 +52,7 @@ HttpCommandStream::HttpCommandStream(mg_connection* nc, std::string command, int
   //  and https://gcc.gnu.org/bugzilla/show_bug.cgi?id=83549
   //  for details.
 {
-  ESP_LOGD(TAG, "HttpCommandStream[%p] init: nc=%p command='%s' verbosity=%d", this, nc, command.c_str(), verbosity);
+  ESP_LOGD(TAG, "HttpCommandStream[%p] init: handler=%p command='%s' verbosity=%d", nc, this, command.c_str(), verbosity);
   
   Initialize(false);
   SetSecure(true); // Note: assuming user is admin
@@ -88,7 +88,7 @@ void HttpCommandStream::CommandTask(void* object)
   HttpCommandStream* me = (HttpCommandStream*) object;
   
   ESP_LOGI(TAG, "HttpCommandStream[%p]: %d bytes free, executing: %s",
-    me, heap_caps_get_free_size(MALLOC_CAP_8BIT), me->m_command.c_str());
+    me->m_nc, heap_caps_get_free_size(MALLOC_CAP_8BIT), me->m_command.c_str());
   
   // execute command:
   me->ProcessChars(me->m_command.data(), me->m_command.size());
@@ -96,13 +96,13 @@ void HttpCommandStream::CommandTask(void* object)
   
   me->m_done = true;
   
-#if MG_ENABLE_BROADCAST
+#if MG_ENABLE_BROADCAST && WEBSRV_USE_MG_BROADCAST
   if (uxQueueMessagesWaiting(me->m_writequeue) > 0) {
-    ESP_LOGV(TAG, "HttpCommandStream[%p] RequestPollLast, qlen=%d done=%d sent=%d ack=%d", me, uxQueueMessagesWaiting(me->m_writequeue), me->m_done, me->m_sent, me->m_ack);
+    ESP_LOGV(TAG, "HttpCommandStream[%p] RequestPollLast, qlen=%d done=%d sent=%d ack=%d", me->m_nc, uxQueueMessagesWaiting(me->m_writequeue), me->m_done, me->m_sent, me->m_ack);
     me->RequestPoll();
-    ESP_LOGV(TAG, "HttpCommandStream[%p] RequestPollDone, qlen=%d done=%d sent=%d ack=%d", me, uxQueueMessagesWaiting(me->m_writequeue), me->m_done, me->m_sent, me->m_ack);
+    ESP_LOGV(TAG, "HttpCommandStream[%p] RequestPollDone, qlen=%d done=%d sent=%d ack=%d", me->m_nc, uxQueueMessagesWaiting(me->m_writequeue), me->m_done, me->m_sent, me->m_ack);
   }
-#endif // MG_ENABLE_BROADCAST
+#endif // MG_ENABLE_BROADCAST && WEBSRV_USE_MG_BROADCAST
   
   while (me->m_nc)
     vTaskDelay(10/portTICK_PERIOD_MS);
@@ -127,12 +127,12 @@ void HttpCommandStream::ProcessQueue()
   if (txlen) {
     m_sent += txlen;
     ESP_LOGV(TAG, "HttpCommandStream[%p] ProcessQueue txlen=%d, qlen=%d done=%d sent=%d ack=%d",
-      this, txlen, uxQueueMessagesWaiting(m_writequeue), m_done, m_sent, m_ack);
+      m_nc, txlen, uxQueueMessagesWaiting(m_writequeue), m_done, m_sent, m_ack);
   }
 
   if (m_done && m_sent == m_ack) {
     ESP_LOGD(TAG, "HttpCommandStream[%p] DONE, %d bytes sent, %d bytes free",
-      this, m_sent, heap_caps_get_free_size(MALLOC_CAP_8BIT));
+      m_nc, m_sent, heap_caps_get_free_size(MALLOC_CAP_8BIT));
     if (m_nc) {
       m_nc->flags |= MG_F_SEND_AND_CLOSE; // necessary to prevent mg_broadcast lockups
       mg_send_http_chunk(m_nc, "", 0);
@@ -150,7 +150,7 @@ int HttpCommandStream::HandleEvent(int ev, void* p)
     case MG_EV_POLL:
       // check for new transmission:
       ESP_LOGV(TAG, "HttpCommandStream[%p] EV_POLL qlen=%d done=%d sent=%d ack=%d",
-        this, uxQueueMessagesWaiting(m_writequeue), m_done, m_sent, m_ack);
+        m_nc, uxQueueMessagesWaiting(m_writequeue), m_done, m_sent, m_ack);
       if (m_ack == m_sent)
         ProcessQueue();
       break;
@@ -158,14 +158,14 @@ int HttpCommandStream::HandleEvent(int ev, void* p)
     case MG_EV_SEND:
       // last transmission has finished:
       ESP_LOGV(TAG, "HttpCommandStream[%p] EV_SEND qlen=%d done=%d sent=%d ack=%d",
-        this, uxQueueMessagesWaiting(m_writequeue), m_done, m_sent, m_ack);
+        m_nc, uxQueueMessagesWaiting(m_writequeue), m_done, m_sent, m_ack);
       m_ack = m_sent;
       ProcessQueue();
       break;
     
     case MG_EV_CLOSE:
       ESP_LOGV(TAG, "HttpCommandStream[%p] EV_CLOSE qlen=%d done=%d sent=%d ack=%d",
-        this, uxQueueMessagesWaiting(m_writequeue), m_done, m_sent, m_ack);
+        m_nc, uxQueueMessagesWaiting(m_writequeue), m_done, m_sent, m_ack);
       // connection has been closed, possibly externally:
       // we need to let the command task finish normally to prevent problems
       // due to lost/locked ressources, so we just detach:
@@ -223,15 +223,15 @@ ssize_t HttpCommandStream::write(const void *buf, size_t nbyte)
     return nbyte;
   }
   
-#if MG_ENABLE_BROADCAST
+#if MG_ENABLE_BROADCAST && WEBSRV_USE_MG_BROADCAST
   if (uxQueueMessagesWaiting(m_writequeue) == 1) {
-    ESP_LOGV(TAG, "HttpCommandStream[%p] RequestPoll, qlen=1 done=%d sent=%d ack=%d", this, m_done, m_sent, m_ack);
+    ESP_LOGV(TAG, "HttpCommandStream[%p] RequestPoll, qlen=1 done=%d sent=%d ack=%d", m_nc, m_done, m_sent, m_ack);
     RequestPoll();
-    ESP_LOGV(TAG, "HttpCommandStream[%p] RequestPollDone, qlen=%d done=%d sent=%d ack=%d", this, uxQueueMessagesWaiting(m_writequeue), m_done, m_sent, m_ack);
+    ESP_LOGV(TAG, "HttpCommandStream[%p] RequestPollDone, qlen=%d done=%d sent=%d ack=%d", m_nc, uxQueueMessagesWaiting(m_writequeue), m_done, m_sent, m_ack);
   }
   else
-#endif
-    ESP_LOGV(TAG, "HttpCommandStream[%p] AddQueue, qlen=%d done=%d sent=%d ack=%d", this, uxQueueMessagesWaiting(m_writequeue), m_done, m_sent, m_ack);
+#endif // MG_ENABLE_BROADCAST && WEBSRV_USE_MG_BROADCAST
+    ESP_LOGV(TAG, "HttpCommandStream[%p] AddQueue, qlen=%d done=%d sent=%d ack=%d", m_nc, uxQueueMessagesWaiting(m_writequeue), m_done, m_sent, m_ack);
   
   return 0;
 }

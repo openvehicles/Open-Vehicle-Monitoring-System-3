@@ -55,6 +55,8 @@
 
 #define XFER_CHUNK_SIZE           1024
 
+#define WEBSRV_USE_MG_BROADCAST   0  // Note: mg_broadcast() not working reliably yet, do not enable for production!
+
 
 struct user_session {
   uint64_t id;

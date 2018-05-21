@@ -451,7 +451,7 @@ void PageEntry::Serve(PageContext_t& c)
  */
 void MgHandler::RequestPoll()
 {
-#if MG_ENABLE_BROADCAST
+#if MG_ENABLE_BROADCAST && WEBSRV_USE_MG_BROADCAST
   if (!m_nc)
     return;
 
@@ -462,7 +462,7 @@ void MgHandler::RequestPoll()
     MgHandler* origin = this;
     mg_broadcast(MyNetManager.GetMongooseMgr(), HandlePoll, &origin, sizeof(origin));
   }
-#endif // MG_ENABLE_BROADCAST
+#endif // MG_ENABLE_BROADCAST && WEBSRV_USE_MG_BROADCAST
 }
 
 void MgHandler::HandlePoll(mg_connection* nc, int ev, void* p)
@@ -483,13 +483,13 @@ HttpDataSender::HttpDataSender(mg_connection* nc, const uint8_t* data, size_t si
   m_size = size;
   m_sent = 0;
   m_keepalive = keepalive;
-  ESP_LOGV(TAG, "HttpDataSender %p init (%d bytes)", m_data, m_size);
+  ESP_LOGV(TAG, "HttpDataSender[%p]: init data=%p, %d bytes", nc, m_data, m_size);
 }
 
 HttpDataSender::~HttpDataSender()
 {
   if (m_sent < m_size)
-    ESP_LOGV(TAG, "HttpDataSender %p abort, %d bytes sent", m_data, m_sent);
+    ESP_LOGV(TAG, "HttpDataSender[%p]: abort data=%p, %d bytes sent", m_nc, m_data, m_sent);
 }
 
 int HttpDataSender::HandleEvent(int ev, void* p)
@@ -503,14 +503,14 @@ int HttpDataSender::HandleEvent(int ev, void* p)
         size_t len = MIN(m_size - m_sent, XFER_CHUNK_SIZE);
         mg_send_http_chunk(m_nc, (const char*) m_data + m_sent, len);
         m_sent += len;
-        //ESP_LOGV(TAG, "HttpDataSender %p sent %d/%d", m_data, m_sent, m_size);
+        //ESP_LOGV(TAG, "HttpDataSender[%p] data=%p sent %d/%d", m_nc, m_data, m_sent, m_size);
       }
       else {
         // done:
         if (!m_keepalive)
           m_nc->flags |= MG_F_SEND_AND_CLOSE;
         mg_send_http_chunk(m_nc, "", 0);
-        ESP_LOGV(TAG, "HttpDataSender %p done, %d bytes sent", m_data, m_sent);
+        ESP_LOGV(TAG, "HttpDataSender[%p]: done data=%p, %d bytes sent", m_nc, m_data, m_sent);
         delete this;
       }
     }
@@ -533,13 +533,13 @@ HttpStringSender::HttpStringSender(mg_connection* nc, std::string* msg, bool kee
   m_msg = msg;
   m_sent = 0;
   m_keepalive = keepalive;
-  ESP_LOGV(TAG, "HttpStringSender %p init (%d bytes)", this, m_msg->size());
+  ESP_LOGV(TAG, "HttpStringSender[%p]: init msg=%p, %d bytes", nc, m_msg, m_msg->size());
 }
 
 HttpStringSender::~HttpStringSender()
 {
   if (m_sent < m_msg->size())
-    ESP_LOGV(TAG, "HttpStringSender %p abort, %d bytes sent", this, m_sent);
+    ESP_LOGV(TAG, "HttpStringSender[%p]: abort msg=%p, %d bytes sent", m_nc, m_msg, m_sent);
   delete m_msg;
 }
 
@@ -554,14 +554,14 @@ int HttpStringSender::HandleEvent(int ev, void* p)
         size_t len = MIN(m_msg->size() - m_sent, XFER_CHUNK_SIZE);
         mg_send_http_chunk(m_nc, (const char*) m_msg->data() + m_sent, len);
         m_sent += len;
-        //ESP_LOGV(TAG, "HttpStringSender %p sent %d/%d", this, m_sent, m_msg->size());
+        //ESP_LOGV(TAG, "HttpStringSender[%p] msg=%p sent %d/%d", m_nc, m_msg, m_sent, m_msg->size());
       }
       else {
         // done:
         if (!m_keepalive)
           m_nc->flags |= MG_F_SEND_AND_CLOSE;
         mg_send_http_chunk(m_nc, "", 0);
-        ESP_LOGV(TAG, "HttpStringSender %p done, %d bytes sent", this, m_sent);
+        ESP_LOGV(TAG, "HttpStringSender[%p]: done msg=%p, %d bytes sent", m_nc, m_msg, m_sent);
         delete this;
       }
     }
