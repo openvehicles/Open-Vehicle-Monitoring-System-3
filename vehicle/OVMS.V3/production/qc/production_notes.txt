@@ -1,4 +1,5 @@
 These are the production and quality control notes for OVMS v3.1 modules
+(May 2018 onwards)
 
 ********************************************************************************
 ** TOOLS
@@ -28,6 +29,7 @@ YYYYBBNNNNNRRRR
 * RRRR is four random characters. For example; ADEA, JKAE, etc.
 
 First production batch is 2018010001**** - 2018010120****.
+Second production batch is 2018020001**** - 2018020220****.
 
 ********************************************************************************
 ** PRODUCTION STEPS
@@ -37,17 +39,10 @@ First production batch is 2018010001**** - 2018010120****.
 
 2] Flash bootloader, partition table, and firmware
 
-3] Default wifi AP and module passwords
+3] No need to set module password - leave it blank.
 
-     OVMS> enable
-     OVMS# config set wifi.ap OVMS <serialnumber>
-     OVMS# config set password module <serialnumber>
-
-   Where <serialnumber> is the serial number from the label on the enclosure.
-
-4] Default modem APN
-
-     OVMS> config set modem apn hologram
+4] Set SD CARD speed:
+   config set sdcard maxfreq.khz 20000
 
 ********************************************************************************
 ** QC STEPS
@@ -231,7 +226,10 @@ First production batch is 2018010001**** - 2018010120****.
      v.p.longitude                            114.161
      v.p.satcount                             12
 
-8] Power down the module.
+8] Randomly test modules to ensure that without any USB connection (powered only
+   by external 12V), SD CARD test operates correctly (using wifi).
+
+9] Power down the module.
 
 ********************************************************************************
 ** DOCUMENT ENDS
