@@ -95,6 +95,88 @@ void network_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
   }
 
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
+void network_connections(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyNetManager.MongooseRunning())
+    {
+    writer->puts("ERROR: Mongoose task not running");
+    return;
+    }
+
+  if (xTaskGetCurrentTaskHandle() == MyNetManager.GetMongooseTaskHandle())
+    {
+    // inline execution in mongoose context:
+    if (strcmp(cmd->GetName(), "close") == 0)
+      {
+      uint32_t id = strtol(argv[0], NULL, 16);
+      int cnt = MyNetManager.CloseConnection(id);
+      if (cnt == 0)
+        writer->printf("ERROR: connection ID %08x not found\n", id);
+      else
+        writer->printf("Close signal sent to %d connection(s)\n", cnt);
+      }
+    else if (strcmp(cmd->GetName(), "cleanup") == 0)
+      {
+      int cnt = MyNetManager.CleanupConnections();
+      if (cnt == 0)
+        writer->puts("All connections OK");
+      else
+        writer->printf("Close signal sent to %d connection(s)\n", cnt);
+      }
+    else
+      {
+      MyNetManager.ListConnections(verbosity, writer);
+      }
+    }
+  else
+    {
+    // remote execution from non-mongoose context:
+    static netman_job_t job;
+    memset(&job, 0, sizeof(job));
+    if (strcmp(cmd->GetName(), "close") == 0)
+      {
+      job.cmd = nmc_close;
+      job.close.id = strtol(argv[0], NULL, 16);
+      if (!MyNetManager.ExecuteJob(&job, pdMS_TO_TICKS(5000)))
+        writer->puts("ERROR: job failed");
+      else if (job.close.cnt == 0)
+        writer->printf("ERROR: connection ID %08x not found\n", job.close.id);
+      else
+        writer->printf("Close signal sent to %d connection(s)\n", job.close.cnt);
+      }
+    else if (strcmp(cmd->GetName(), "cleanup") == 0)
+      {
+      job.cmd = nmc_cleanup;
+      if (!MyNetManager.ExecuteJob(&job, pdMS_TO_TICKS(5000)))
+        writer->puts("ERROR: job failed");
+      else if (job.cleanup.cnt == 0)
+        writer->puts("All connections OK");
+      else
+        writer->printf("Close signal sent to %d connection(s)\n", job.cleanup.cnt);
+      }
+    else
+      {
+      // Note: a timeout occurring after the job has begun processing will result in a crash
+      //  here due to the StringWriter being deleted. This only applies to the list command.
+      //  If this becomes a problem, we need to upgrade the job processing from send/notify
+      //  to a full send/receive scheme.
+      job.cmd = nmc_list;
+      job.list.verbosity = verbosity;
+      job.list.buf = new StringWriter();
+      if (!MyNetManager.ExecuteJob(&job, pdMS_TO_TICKS(10000)))
+        writer->puts("ERROR: job failed");
+      else
+        writer->write(job.list.buf->data(), job.list.buf->size());
+      delete job.list.buf;
+      job.list.buf = NULL;
+      }
+    }
+  }
+
+#endif // CONFIG_OVMS_SC_GPL_MONGOOSE
+
 OvmsNetManager::OvmsNetManager()
   {
   ESP_LOGI(TAG, "Initialising NETMANAGER (8999)");
@@ -113,11 +195,17 @@ OvmsNetManager::OvmsNetManager()
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   m_mongoose_task = 0;
   m_mongoose_running = false;
+  m_jobqueue = xQueueCreate(10, sizeof(netman_job_t*));
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
   // Register our commands
   OvmsCommand* cmd_network = MyCommandApp.RegisterCommand("network","NETWORK framework",network_status, "", 0, 1);
-  cmd_network->RegisterCommand("status","Show network status",network_status, "", 0, 0);
+  cmd_network->RegisterCommand("status","Show network status",network_status, "", 0, 0, false);
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+  cmd_network->RegisterCommand("list", "List network connections", network_connections, "", 0, 0, true);
+  cmd_network->RegisterCommand("close", "Close network connection(s)", network_connections, "<id>\nUse ID from connection list / 0 to close all", 1, 1, true);
+  cmd_network->RegisterCommand("cleanup", "Close orphaned network connections", network_connections, "", 0, 0, true);
+#endif // CONFIG_OVMS_SC_GPL_MONGOOSE
 
   // Register our events
   #undef bind  // Kludgy, but works
@@ -128,6 +216,7 @@ OvmsNetManager::OvmsNetManager()
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.stop", std::bind(&OvmsNetManager::WifiDownSTA, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.stop", std::bind(&OvmsNetManager::WifiDownAP, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.disconnected", std::bind(&OvmsNetManager::WifiDownSTA, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.wifi.ap.sta.disconnected", std::bind(&OvmsNetManager::WifiApStaDisconnect, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.down", std::bind(&OvmsNetManager::WifiDownSTA, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.gotip", std::bind(&OvmsNetManager::ModemUp, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.stop", std::bind(&OvmsNetManager::ModemDown, this, _1, _2));
@@ -183,6 +272,7 @@ void OvmsNetManager::WifiDownSTA(std::string event, void* data)
       {
       ESP_LOGI(TAG, "WIFI client down (with MODEM up): reconfigured for MODEM priority");
       MyEvents.SignalEvent("network.reconfigured",NULL);
+      ScheduleCleanup();
       }
     else
       {
@@ -202,6 +292,7 @@ void OvmsNetManager::WifiDownSTA(std::string event, void* data)
     // (in particular if an AP interface is up, and STA goes down, Wifi
     // stack seems to switch default interface to AP)
     PrioritiseAndIndicate();
+    ScheduleCleanup();
     }
   }
 
@@ -231,6 +322,12 @@ void OvmsNetManager::WifiDownAP(std::string event, void* data)
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
   MyEvents.SignalEvent("network.interface.change",NULL);
+  }
+
+void OvmsNetManager::WifiApStaDisconnect(std::string event, void* data)
+  {
+  ESP_LOGI(TAG, "WIFI access point station disconnected");
+  ScheduleCleanup();
   }
 
 void OvmsNetManager::ModemUp(std::string event, void* data)
@@ -270,6 +367,7 @@ void OvmsNetManager::ModemDown(std::string event, void* data)
     if (m_connected_any)
       {
       ESP_LOGI(TAG, "MODEM down (with WIFI client up): staying with WIFI client priority");
+      ScheduleCleanup();
       }
     else
       {
@@ -289,6 +387,7 @@ void OvmsNetManager::ModemDown(std::string event, void* data)
     // (in particular if an AP interface is up, and STA goes down, Wifi
     // stack seems to switch default interface to AP)
     PrioritiseAndIndicate();
+    ScheduleCleanup();
     }
   }
 
@@ -457,6 +556,7 @@ void OvmsNetManager::MongooseTask()
   while (m_mongoose_running)
     {
     mg_mgr_poll(&m_mongoose_mgr, 250);
+    ProcessJobs();
     }
 
   // Shutdown cleanly
@@ -488,7 +588,7 @@ void OvmsNetManager::StartMongooseTask()
         vTaskDelay(pdMS_TO_TICKS(50));
       // start new task:
       m_mongoose_running = true;
-      xTaskCreatePinnedToCore(MongooseRawTask, "OVMS NetMan", 7*1024, (void*)this, 5, &m_mongoose_task, 1);
+      xTaskCreatePinnedToCore(MongooseRawTask, "OVMS NetMan", 8*1024, (void*)this, 5, &m_mongoose_task, 1);
       AddTaskToMap(m_mongoose_task);
       }
     }
@@ -498,6 +598,201 @@ void OvmsNetManager::StopMongooseTask()
   {
   if (!m_network_any)
     m_mongoose_running = false;
+  }
+
+void OvmsNetManager::ProcessJobs()
+  {
+  netman_job_t* job;
+  while (xQueueReceive(m_jobqueue, &job, 0) == pdTRUE)
+    {
+    ESP_LOGD(TAG, "MongooseTask: got cmd %d from %p", job->cmd, job->caller);
+    switch (job->cmd)
+      {
+      case nmc_none:
+        break;
+      case nmc_list:
+        job->list.cnt = ListConnections(job->list.verbosity, job->list.buf);
+        break;
+      case nmc_close:
+        job->close.cnt = CloseConnection(job->close.id);
+        break;
+      case nmc_cleanup:
+        job->cleanup.cnt = CleanupConnections();
+        break;
+      default:
+        ESP_LOGW(TAG, "MongooseTask: got unknown cmd %d from %p", job->cmd, job->caller);
+      }
+    if (job->caller)
+      xTaskNotifyGive(job->caller);
+    ESP_LOGD(TAG, "MongooseTask: done cmd %d from %p", job->cmd, job->caller);
+    }
+  }
+
+bool OvmsNetManager::ExecuteJob(netman_job_t* job, TickType_t timeout /*=portMAX_DELAY*/)
+  {
+  if (!m_mongoose_running)
+    return false;
+  if (timeout)
+    {
+    job->caller = xTaskGetCurrentTaskHandle();
+    xTaskNotifyWait(ULONG_MAX, ULONG_MAX, NULL, 0); // clear state
+    }
+  else
+    job->caller = 0;
+  ESP_LOGD(TAG, "send cmd %d from %p", job->cmd, job->caller);
+  if (xQueueSend(m_jobqueue, &job, timeout) != pdTRUE)
+    {
+    ESP_LOGW(TAG, "ExecuteJob: cmd %d: queue overflow", job->cmd);
+    return false;
+    }
+  if (timeout && ulTaskNotifyTake(pdTRUE, timeout) == 0)
+    {
+    // try to prevent delayed processing (cannot stop if already started):
+    netman_cmd_t cmd = job->cmd;
+    job->cmd = nmc_none;
+    job->caller = 0;
+    ESP_LOGW(TAG, "ExecuteJob: cmd %d: timeout", cmd);
+    return false;
+    }
+  ESP_LOGD(TAG, "done cmd %d from %p", job->cmd, job->caller);
+  return true;
+  }
+
+void OvmsNetManager::ScheduleCleanup()
+  {
+  static netman_job_t job;
+  memset(&job, 0, sizeof(job));
+  job.cmd = nmc_cleanup;
+  ExecuteJob(&job, 0);
+  }
+
+int OvmsNetManager::ListConnections(int verbosity, OvmsWriter* writer)
+  {
+  if (!m_mongoose_running)
+    return 0;
+  mg_connection *c;
+  int cnt = 0;
+  char local[48], remote[48];
+  writer->printf("ID        Flags     Handler   Local                  Remote\n");
+  for (c = mg_next(&m_mongoose_mgr, NULL); c; c = mg_next(&m_mongoose_mgr, c))
+    {
+    if (c->flags & MG_F_LISTENING)
+      continue;
+    mg_conn_addr_to_str(c, local, sizeof(local), MG_SOCK_STRINGIFY_IP|MG_SOCK_STRINGIFY_PORT);
+    mg_conn_addr_to_str(c, remote, sizeof(remote), MG_SOCK_STRINGIFY_IP|MG_SOCK_STRINGIFY_PORT|MG_SOCK_STRINGIFY_REMOTE);
+    writer->printf("%08x  %08x  %08x  %-21s  %s\n", (uint32_t)c, (uint32_t)c->flags, (uint32_t)c->user_data, local, remote);
+    cnt++;
+    }
+  return cnt;
+  }
+
+int OvmsNetManager::CloseConnection(uint32_t id)
+  {
+  if (!m_mongoose_running)
+    return 0;
+  mg_connection *c;
+  int cnt = 0;
+  for (c = mg_next(&m_mongoose_mgr, NULL); c; c = mg_next(&m_mongoose_mgr, c))
+    {
+    if (c->flags & MG_F_LISTENING)
+      continue;
+    if (id == 0 || c == (mg_connection*)id)
+      {
+      c->flags |= MG_F_CLOSE_IMMEDIATELY;
+      cnt++;
+      }
+    }
+  return cnt;
+  }
+
+int OvmsNetManager::CleanupConnections()
+  {
+  if (!m_mongoose_running)
+    return 0;
+
+  struct netif *ni;
+  mg_connection *c;
+  tcpip_adapter_sta_list_t ap_ip_list;
+  union socket_address sa;
+  socklen_t slen = sizeof(sa);
+  int cnt = 0;
+
+  // get IP addresses of stations connected to our wifi AP:
+  ap_ip_list.num = 0;
+  if (m_wifi_ap)
+    {
+    wifi_sta_list_t sta_list;
+    if (esp_wifi_ap_get_sta_list(&sta_list) != ESP_OK)
+      ESP_LOGW(TAG, "CleanupConnections: can't get AP station list");
+    else if (tcpip_adapter_get_sta_list(&sta_list, &ap_ip_list) != ESP_OK)
+      ESP_LOGW(TAG, "CleanupConnections: can't get AP station IP list");
+    }
+
+  for (c = mg_next(&m_mongoose_mgr, NULL); c; c = mg_next(&m_mongoose_mgr, c))
+    {
+    if (c->flags & MG_F_LISTENING)
+      continue;
+
+    // get local address:
+    memset(&sa, 0, sizeof(sa));
+    if (getsockname(c->sock, &sa.sa, &slen) != 0)
+      {
+      ESP_LOGW(TAG, "CleanupConnections: conn %08x: getsockname failed", (uint32_t)c);
+      continue;
+      }
+    
+    if (sa.sa.sa_family != AF_INET || sa.sin.sin_addr.s_addr == IPADDR_ANY || sa.sin.sin_addr.s_addr == IPADDR_NONE)
+      continue;
+    
+    // find interface:
+    for (ni = netif_list; ni; ni = ni->next)
+      {
+      if (sa.sin.sin_addr.s_addr == ip4_addr_get_u32(netif_ip4_addr(ni)))
+        break;
+      }
+    
+    if (ni)
+      ESP_LOGD(TAG, "CleanupConnections: conn %08x -> iface %c%c%d", (uint32_t)c, ni->name[0], ni->name[1], ni->num);
+    else
+      ESP_LOGD(TAG, "CleanupConnections: conn %08x -> no iface", (uint32_t)c);
+    
+    if (!ni || !(ni->flags & NETIF_FLAG_UP) || !(ni->flags & NETIF_FLAG_LINK_UP))
+      {
+      ESP_LOGI(TAG, "CleanupConnections: closing conn %08x: interface/link down", (uint32_t)c);
+      c->flags |= MG_F_CLOSE_IMMEDIATELY;
+      cnt++;
+      continue;
+      }
+    
+    // check remote address on wifi AP:
+    if (ni->name[0] == 'a' && ni->name[1] == 'p')
+      {
+      memset(&sa, 0, sizeof(sa));
+      if (getpeername(c->sock, &sa.sa, &slen) != 0)
+        {
+        ESP_LOGW(TAG, "CleanupConnections: conn %08x: getpeername failed", (uint32_t)c);
+        continue;
+        }
+      int i;
+      for (i = 0; i < ap_ip_list.num; i++)
+        {
+        if (sa.sin.sin_addr.s_addr == ap_ip_list.sta[i].ip.addr)
+          break;
+        }
+      
+      if (i < ap_ip_list.num)
+        {
+        ESP_LOGD(TAG, "CleanupConnections: conn %08x -> AP IP " IPSTR, (uint32_t)c, IP2STR(&ap_ip_list.sta[i].ip));
+        }
+      else
+        {
+        ESP_LOGI(TAG, "CleanupConnections: closing conn %08x: AP peer disconnected", (uint32_t)c);
+        c->flags |= MG_F_CLOSE_IMMEDIATELY;
+        cnt++;
+        }
+      } // AP remotes
+    } // connection loop
+  return cnt;
   }
 
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE

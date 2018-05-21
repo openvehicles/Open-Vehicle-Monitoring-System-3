@@ -39,10 +39,45 @@ extern "C"
 #include "lwip/netif.h"
   };
 #include "ovms_events.h"
+#include "ovms_command.h"
+#include "string_writer.h"
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 #define MG_LOCALS 1
 #include "mongoose.h"
+
+typedef enum
+  {
+  nmc_none = 0,
+  nmc_list,
+  nmc_close,
+  nmc_cleanup,
+  } netman_cmd_t;
+
+typedef struct
+  {
+  TaskHandle_t caller;
+  netman_cmd_t cmd;
+  union
+    {
+    struct
+      {
+      int verbosity;
+      StringWriter* buf;
+      int cnt;
+      } list;
+    struct
+      {
+      uint32_t id;
+      int cnt;
+      } close;
+    struct
+      {
+      int cnt;
+      } cleanup;
+    };
+  } netman_job_t;
+
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
 class OvmsNetManager
@@ -56,6 +91,7 @@ class OvmsNetManager
     void WifiDownSTA(std::string event, void* data);
     void WifiUpAP(std::string event, void* data);
     void WifiDownAP(std::string event, void* data);
+    void WifiApStaDisconnect(std::string event, void* data);
     void ModemUp(std::string event, void* data);
     void ModemDown(std::string event, void* data);
     void InterfaceUp(std::string event, void* data);
@@ -86,12 +122,19 @@ class OvmsNetManager
     TaskHandle_t m_mongoose_task;
     struct mg_mgr m_mongoose_mgr;
     bool m_mongoose_running;
+    QueueHandle_t m_jobqueue;
 
   public:
     void MongooseTask();
     TaskHandle_t GetMongooseTaskHandle() { return m_mongoose_task; }
     struct mg_mgr* GetMongooseMgr();
     bool MongooseRunning();
+    void ProcessJobs();
+    bool ExecuteJob(netman_job_t* job, TickType_t timeout=portMAX_DELAY);
+    void ScheduleCleanup();
+    int ListConnections(int verbosity, OvmsWriter* writer);
+    int CloseConnection(uint32_t id);
+    int CleanupConnections();
 
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   };
