@@ -828,6 +828,8 @@ size_t OvmsServerV2::IncomingData(uint8_t* data, size_t len)
 
 void OvmsServerV2::SendLogin(struct mg_connection *nc)
   {
+  OvmsMutexLock mg(&m_mgconn_mutex);
+
   SetStatus("Logging in...", false, Authenticating);
 
   char token[OVMS_PROTOCOL_V2_TOKENSIZE+1];
