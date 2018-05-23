@@ -495,6 +495,19 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_env_footbrake->SetValue(d[6] / 1.39);
         }
       break;
+   case 0x355:
+     // The odometer value on the bus is always in units appropriate
+     // for the car's intended market and is unaffected by the dash
+     // display preference (in d[4] bit 5).
+     if ((d[6]>>5) & 1)
+       {
+         m_odometer_units = Miles;
+       }
+     else
+       {
+         m_odometer_units = Kilometers;
+       }
+     break;
     case 0x385:
       // not sure if this order is correct
       if (d[2]) StandardMetrics.ms_v_tpms_fl_p->SetValue(d[2] / 4.0, PSI);
@@ -534,7 +547,10 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
     case 0x5c5:
       // This is the parking brake (which is foot-operated on some models).
       StandardMetrics.ms_v_env_handbrake->SetValue(d[0] & 4);
-      StandardMetrics.ms_v_pos_odometer->SetValue(d[1] << 16 | d[2] << 8 | d[3]);
+      if (m_odometer_units != Other)
+        {
+        StandardMetrics.ms_v_pos_odometer->SetValue(d[1] << 16 | d[2] << 8 | d[3], m_odometer_units);
+        }
       break;
     case 0x60d:
       StandardMetrics.ms_v_door_trunk->SetValue(d[0] & 0x80);

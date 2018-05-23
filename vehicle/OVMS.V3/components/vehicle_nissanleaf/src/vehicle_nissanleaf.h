@@ -88,6 +88,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void PollReply_Battery(uint16_t reply_id, uint8_t reply_data[], uint16_t reply_len);
     void PollReply_VIN(uint16_t reply_id, uint8_t reply_data[], uint16_t reply_len);
     TimerHandle_t m_remoteCommandTimer;
+    metric_unit_t m_odometer_units = Other;
     OvmsMetricInt *m_gids;
     OvmsMetricFloat *m_hx;
     OvmsMetricFloat *m_soc_new_car;
