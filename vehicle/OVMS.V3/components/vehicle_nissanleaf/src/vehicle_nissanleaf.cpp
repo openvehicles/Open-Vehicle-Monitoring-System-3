@@ -185,7 +185,7 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(uint16_t reply_id, uint8_t reply_d
                    | (reply_data[34] << 8)
                    |  reply_data[35];
   float ah = ah10000 / 10000.0;
-  StandardMetrics.ms_v_bat_cac->SetValue(ah / 10000.0);
+  StandardMetrics.ms_v_bat_cac->SetValue(ah);
 
   // there may be a way to get the SoH directly from the BMS, but for now
   // divide by a configurable battery size
