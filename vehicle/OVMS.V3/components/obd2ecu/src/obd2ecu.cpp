@@ -163,20 +163,16 @@ static void OBD2ECU_task(void *pvParameters)
 obd2ecu::obd2ecu(const char* name, canbus* can)
   : pcp(name)
   {
-    
   m_can = can;
-
-  m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
-  xTaskCreatePinnedToCore(OBD2ECU_task, "OVMS OBDII ECU", 6144, (void*)this, 5, &m_task, 1);
-
   m_can->Start(CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   m_can->SetPowerMode(On);
-  
-  xTaskCreatePinnedToCore(OBD2ECU_task, "OVMS OBDII ECU", 6144, (void*)this, 5, &m_task, 1);
+
+  m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
 
   m_starttime = time(NULL);
-
   LoadMap();
+
+  xTaskCreatePinnedToCore(OBD2ECU_task, "OVMS OBDII ECU", 6144, (void*)this, 5, &m_task, 1);
 
   MyCan.RegisterListener(m_rxqueue);
   }
