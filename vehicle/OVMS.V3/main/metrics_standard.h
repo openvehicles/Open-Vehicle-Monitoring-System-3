@@ -64,8 +64,11 @@
 #define MS_V_VIN                    "v.vin"
 
 #define MS_V_BAT_SOC                "v.b.soc"
+#define MS_V_BAT_SOC_MIN            "v.b.soc.min"
+#define MS_V_BAT_SOC_MAX            "v.b.soc.max"
 #define MS_V_BAT_SOH                "v.b.soh"
 #define MS_V_BAT_CAC                "v.b.cac"
+#define MS_V_BAT_HEALTH             "v.b.health"
 #define MS_V_BAT_VOLTAGE            "v.b.voltage"
 #define MS_V_BAT_CURRENT            "v.b.current"
 #define MS_V_BAT_COULOMB_USED       "v.b.coulomb.used"
@@ -192,8 +195,11 @@ class MetricsStandard
     OvmsMetricString* ms_v_vin;                     // Vehicle identification number
 
     OvmsMetricFloat*  ms_v_bat_soc;                 // State of charge [%]
+    OvmsMetricFloat*  ms_v_bat_soc_min;             // State of charge - weakest cells [%]
+    OvmsMetricFloat*  ms_v_bat_soc_max;             // State of charge - strongest cells [%]
     OvmsMetricFloat*  ms_v_bat_soh;                 // State of health [%]
     OvmsMetricFloat*  ms_v_bat_cac;                 // Calculated capacity [Ah]
+    OvmsMetricString* ms_v_bat_health;              // General textual description of battery health
     OvmsMetricFloat*  ms_v_bat_voltage;             // Main battery momentary voltage [V]
     OvmsMetricFloat*  ms_v_bat_current;             // Main battery momentary current [A]
     OvmsMetricFloat*  ms_v_bat_coulomb_used;        // Main battery coulomb used on trip [Ah]
