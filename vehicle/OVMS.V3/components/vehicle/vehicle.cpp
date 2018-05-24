@@ -922,17 +922,17 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWrite
         (char*) StdMetrics.ms_v_charge_current->AsUnitString("-", Native, 1).c_str());
 
       int duration_full = StdMetrics.ms_v_charge_duration_full->AsInt();
-      if (duration_full)
+      if (duration_full > 0)
         writer->printf("Full: %d mins\n", duration_full);
 
       int duration_soc = StdMetrics.ms_v_charge_duration_soc->AsInt();
-      if (duration_soc)
+      if (duration_soc > 0)
         writer->printf("%s: %d mins\n",
           (char*) StdMetrics.ms_v_charge_limit_soc->AsUnitString("SOC", Native, 0).c_str(),
           duration_soc);
 
       int duration_range = StdMetrics.ms_v_charge_duration_range->AsInt();
-      if (duration_full)
+      if (duration_range > 0)
         writer->printf("%s: %d mins\n",
           (char*) StdMetrics.ms_v_charge_limit_range->AsUnitString("Range", rangeUnit, 0).c_str(),
           duration_range);
