@@ -133,8 +133,10 @@ void OvmsWebServer::NetManInit(std::string event, void* data)
   struct mg_connection *nc = mg_bind_opt(mgr, ":80", EventHandler, bind_opts);
   if (!nc)
     ESP_LOGE(TAG, "Cannot bind to port 80: %s", error_string);
-  else
+  else {
     mg_set_protocol_http_websocket(nc);
+    mg_set_timer(nc, mg_time() + SESSION_CHECK_INTERVAL);
+  }
 }
 
 void OvmsWebServer::NetManStop(std::string event, void* data)
