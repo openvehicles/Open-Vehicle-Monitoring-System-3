@@ -37,6 +37,7 @@
 
 #define ESP_PLATFORM 1
 #define MG_ENABLE_HTTP 1
+#define MG_ENABLE_THREADSAFE_CONN_MBUFS 1
 
 // Note: broadcast support not working reliably yet, do not enable for production!
 // #define MG_ENABLE_BROADCAST 1
