@@ -270,7 +270,32 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           }
         case 0x9e: // CAC
           {
-          StandardMetrics.ms_v_bat_cac->SetValue((float)d[3] + ((float)d[2]/256));
+          int lim = d[1];
+          int min = d[6];
+          int max = d[7];
+          float cac = (float)d[3] + ((float)d[2]/256);
+          StandardMetrics.ms_v_bat_cac->SetValue(cac);
+          StandardMetrics.ms_v_bat_soc_min->SetValue((float)min);
+          StandardMetrics.ms_v_bat_soc_max->SetValue((float)max);
+          if (cac > 165)
+            { // Assume a R80 roadster
+            StandardMetrics.ms_v_bat_soh->SetValue(
+              (cac/215.0)*
+              ((100*min)/max));
+            }
+          else
+            { // Assume a standard 1.5/2.x roadster
+            StandardMetrics.ms_v_bat_soh->SetValue(
+              (cac/160.0)*
+              ((100*min)/max));
+            }
+          char *buf = new char[128];
+          sprintf(buf,"CAC %0.2fAh SOC %d%% LIM %d%% MIN %d%% MAX %d%%",
+            cac,
+            StandardMetrics.ms_v_bat_soc->AsInt(),
+            lim, min, max);
+          StandardMetrics.ms_v_bat_health->SetValue(buf);
+          delete [] buf;
           RequestStreamStopCAC();
           break;
           }
