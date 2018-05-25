@@ -352,8 +352,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
 
   writer->printf("OTA flash was successful\n  Flashed %d bytes from %s\n  Next boot will be from '%s'\n",
                  filesize,url.c_str(),target->label);
-  if (argc > 0)
-    MyConfig.SetParamValue("ota", "http.mru", url);
+  MyConfig.SetParamValue("ota", "http.mru", url);
   }
 
 void ota_flash_auto(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
