@@ -265,11 +265,11 @@ void OvmsVehicleRenaultTwizy::BatteryReset()
 
 void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
 {
-  UINT i;
-  UINT stddev, absdev;
+  int i;
+  int stddev, absdev;
   int dev;
-  float m;
-  UINT32 sum, sqrsum;
+  double m;
+  long sum, sqrsum;
 
 
   // *********** Temperatures: ************
@@ -294,14 +294,14 @@ void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
 
     // build sums:
     sum += twizy_cmod[i].temp_act;
-    sqrsum += SQR((UINT32) twizy_cmod[i].temp_act);
+    sqrsum += SQR(twizy_cmod[i].temp_act);
   }
 
   if (i == batt_cmod_count)
   {
     // All values valid, process:
 
-    m = (float) sum / batt_cmod_count;
+    m = (double) sum / batt_cmod_count;
 
     twizy_batt[0].temp_act = m;
 
@@ -312,7 +312,7 @@ void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
     if ((twizy_batt[0].temp_max == 0) || (twizy_batt[0].temp_act > twizy_batt[0].temp_max))
       twizy_batt[0].temp_max = twizy_batt[0].temp_act;
 
-    stddev = sqrtf( ((float)sqrsum/batt_cmod_count) - SQR((float)sum/batt_cmod_count) ) + 0.5;
+    stddev = sqrt( ((double)sqrsum/batt_cmod_count) - SQR((double)sum/batt_cmod_count) ) + 0.5;
     if (stddev == 0)
       stddev = 1; // not enough precision to allow stddev 0
 
@@ -320,19 +320,14 @@ void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
     if (stddev > twizy_batt[0].cmod_temp_stddev_max)
     {
       twizy_batt[0].cmod_temp_stddev_max = stddev;
+      twizy_batt[0].temp_alerts.reset();
+      twizy_batt[0].temp_watches.reset();
 
       // switch to overall stddev alert mode?
-      // (resetting cmod flags to build new alert set)
       if (stddev >= BATT_STDDEV_TEMP_ALERT)
-      {
-        twizy_batt[0].temp_alerts.reset();
         twizy_batt[0].temp_alerts.set(BATT_STDDEV_TEMP_FLAG);
-      }
       else if (stddev >= BATT_STDDEV_TEMP_WATCH)
-      {
-        twizy_batt[0].temp_watches.reset();
         twizy_batt[0].temp_watches.set(BATT_STDDEV_TEMP_FLAG);
-      }
     }
 
     // check cmod deviations:
@@ -391,36 +386,31 @@ void OvmsVehicleRenaultTwizy::BatteryCheckDeviations(void)
 
     // build sums:
     sum += twizy_cell[i].volt_act;
-    sqrsum += SQR((UINT32) twizy_cell[i].volt_act);
+    sqrsum += SQR(twizy_cell[i].volt_act);
   }
 
   if (i == batt_cell_count)
   {
     // All values valid, process:
 
-    m = (float) sum / batt_cell_count;
+    m = (double) sum / batt_cell_count;
 
-    stddev = sqrtf( ((float)sqrsum/batt_cell_count) - SQR((float)sum/batt_cell_count) ) + 0.5;
+    stddev = sqrt( ((double)sqrsum/batt_cell_count) - SQR((double)sum/batt_cell_count) ) + 0.5;
     if (stddev == 0)
       stddev = 1; // not enough precision to allow stddev 0
-
+    
     // check max stddev:
     if (stddev > twizy_batt[0].cell_volt_stddev_max)
     {
       twizy_batt[0].cell_volt_stddev_max = stddev;
+      twizy_batt[0].volt_alerts.reset();
+      twizy_batt[0].volt_watches.reset();
 
       // switch to overall stddev alert mode?
-      // (resetting cell flags to build new alert set)
       if (stddev >= BATT_STDDEV_VOLT_ALERT)
-      {
-        twizy_batt[0].volt_alerts.reset();
         twizy_batt[0].volt_alerts.set(BATT_STDDEV_VOLT_FLAG);
-      }
       else if (stddev >= BATT_STDDEV_VOLT_WATCH)
-      {
-        twizy_batt[0].volt_watches.reset();
         twizy_batt[0].volt_watches.set(BATT_STDDEV_VOLT_FLAG);
-      }
     }
 
     // check cell deviations:
