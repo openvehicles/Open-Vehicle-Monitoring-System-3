@@ -1459,8 +1459,8 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   // Server & auto update:
   c.print("<hr>");
   c.input_checkbox("Enable auto update", "auto_enable", auto_enable,
-    "<p>Strongly recommended: if enabled, the module will perform automatic firmware updates within the hour specified, but only if a wifi network is available.</p>");
-  c.input("number", "Auto update hour", "auto_hour", auto_hour.c_str(), "Default: 2", NULL, "min=\"0\" max=\"23\" step=\"1\"");
+    "<p>Strongly recommended: if enabled, the module will perform automatic firmware updates within the hour of day specified, but only if a wifi network is available.</p>");
+  c.input("number", "Auto update hour of day", "auto_hour", auto_hour.c_str(), "0-23, default: 2", NULL, "min=\"0\" max=\"23\" step=\"1\"");
   c.print(
     "<datalist id=\"server-list\">"
       "<option value=\"api.openvehicles.com/firmware/ota\">"
