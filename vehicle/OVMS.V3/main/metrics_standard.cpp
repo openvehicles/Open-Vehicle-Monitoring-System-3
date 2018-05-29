@@ -58,8 +58,6 @@ MetricsStandard::MetricsStandard()
   ms_v_vin = new OvmsMetricString(MS_V_VIN);
 
   ms_v_bat_soc = new OvmsMetricFloat(MS_V_BAT_SOC, SM_STALE_HIGH, Percentage);
-  ms_v_bat_soc_min = new OvmsMetricFloat(MS_V_BAT_SOC_MIN, SM_STALE_HIGH, Percentage);
-  ms_v_bat_soc_max = new OvmsMetricFloat(MS_V_BAT_SOC_MAX, SM_STALE_HIGH, Percentage);
   ms_v_bat_soh = new OvmsMetricFloat(MS_V_BAT_SOH, SM_STALE_HIGH, Percentage);
   ms_v_bat_cac = new OvmsMetricFloat(MS_V_BAT_CAC, SM_STALE_HIGH, AmpHours);
   ms_v_bat_health = new OvmsMetricString(MS_V_BAT_HEALTH, SM_STALE_HIGH);
@@ -78,6 +76,10 @@ MetricsStandard::MetricsStandard()
   ms_v_bat_12v_current = new OvmsMetricFloat(MS_V_BAT_12V_CURRENT, SM_STALE_HIGH, Amps);
   ms_v_bat_12v_voltage_ref = new OvmsMetricFloat(MS_V_BAT_12V_VOLTAGE_REF, SM_STALE_HIGH, Volts);
   ms_v_bat_12v_voltage_alert = new OvmsMetricBool(MS_V_BAT_12V_VOLTAGE_ALERT, SM_STALE_MID);
+  ms_v_bat_cell_level_min = new OvmsMetricFloat(MS_V_BAT_CELL_LEVEL_MIN, SM_STALE_HIGH, Percentage);
+  ms_v_bat_cell_level_max = new OvmsMetricFloat(MS_V_BAT_CELL_LEVEL_MAX, SM_STALE_HIGH, Percentage);
+  ms_v_bat_cell_level_avg = new OvmsMetricFloat(MS_V_BAT_CELL_LEVEL_AVG, SM_STALE_HIGH, Percentage);
+  ms_v_bat_cell_level_stddev = new OvmsMetricFloat(MS_V_BAT_CELL_LEVEL_STDDEV, SM_STALE_HIGH);
 
   ms_v_charge_voltage = new OvmsMetricFloat(MS_V_CHARGE_VOLTAGE, SM_STALE_MID, Volts);
   ms_v_charge_current = new OvmsMetricFloat(MS_V_CHARGE_CURRENT, SM_STALE_MID, Amps);

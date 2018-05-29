@@ -275,8 +275,8 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           int max = d[7];
           float cac = (float)d[3] + ((float)d[2]/256);
           StandardMetrics.ms_v_bat_cac->SetValue(cac);
-          StandardMetrics.ms_v_bat_soc_min->SetValue((float)min);
-          StandardMetrics.ms_v_bat_soc_max->SetValue((float)max);
+          StandardMetrics.ms_v_bat_cell_level_min->SetValue((float)min);
+          StandardMetrics.ms_v_bat_cell_level_max->SetValue((float)max);
           if (cac > 165)
             { // Assume a R80 roadster
             StandardMetrics.ms_v_bat_soh->SetValue(

@@ -64,8 +64,6 @@
 #define MS_V_VIN                    "v.vin"
 
 #define MS_V_BAT_SOC                "v.b.soc"
-#define MS_V_BAT_SOC_MIN            "v.b.soc.min"
-#define MS_V_BAT_SOC_MAX            "v.b.soc.max"
 #define MS_V_BAT_SOH                "v.b.soh"
 #define MS_V_BAT_CAC                "v.b.cac"
 #define MS_V_BAT_HEALTH             "v.b.health"
@@ -85,6 +83,10 @@
 #define MS_V_BAT_12V_VOLTAGE_REF    "v.b.12v.voltage.ref"
 #define MS_V_BAT_12V_VOLTAGE_ALERT  "v.b.12v.voltage.alert"
 #define MS_V_BAT_TEMP               "v.b.temp"
+#define MS_V_BAT_CELL_LEVEL_MIN     "v.b.c.level.min"
+#define MS_V_BAT_CELL_LEVEL_MAX     "v.b.c.level.max"
+#define MS_V_BAT_CELL_LEVEL_AVG     "v.b.c.level.avg"
+#define MS_V_BAT_CELL_LEVEL_STDDEV  "v.b.c.level.stddev"
 
 #define MS_V_CHARGE_VOLTAGE         "v.c.voltage"
 #define MS_V_CHARGE_CURRENT         "v.c.current"
@@ -195,8 +197,6 @@ class MetricsStandard
     OvmsMetricString* ms_v_vin;                     // Vehicle identification number
 
     OvmsMetricFloat*  ms_v_bat_soc;                 // State of charge [%]
-    OvmsMetricFloat*  ms_v_bat_soc_min;             // State of charge - weakest cells [%]
-    OvmsMetricFloat*  ms_v_bat_soc_max;             // State of charge - strongest cells [%]
     OvmsMetricFloat*  ms_v_bat_soh;                 // State of health [%]
     OvmsMetricFloat*  ms_v_bat_cac;                 // Calculated capacity [Ah]
     OvmsMetricString* ms_v_bat_health;              // General textual description of battery health
@@ -216,6 +216,10 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_bat_12v_voltage_ref;     // Auxiliary 12V battery reference voltage [V]
     OvmsMetricBool*   ms_v_bat_12v_voltage_alert;   // True = auxiliary battery under voltage alert
     OvmsMetricFloat*  ms_v_bat_temp;                // Battery temperature [°C]
+    OvmsMetricFloat*  ms_v_bat_cell_level_min;      // Cell level - weakest cells [%]
+    OvmsMetricFloat*  ms_v_bat_cell_level_max;      // Cell level - strongest cells [%]
+    OvmsMetricFloat*  ms_v_bat_cell_level_avg;      // Cell level - average [%]
+    OvmsMetricFloat*  ms_v_bat_cell_level_stddev;   // Cell level - std dev
 
     OvmsMetricFloat*  ms_v_charge_voltage;          // Momentary charger supply voltage [V]
     OvmsMetricFloat*  ms_v_charge_current;          // Momentary charger output current [A]
