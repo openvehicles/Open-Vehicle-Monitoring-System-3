@@ -33,8 +33,8 @@ function loaduri(target, method, uri, data){
     "success": function(response){
       setcontent(tgt, uri, response);
     },
-    "error": function(response, status, httperror){
-      var text = response.responseText || httperror+"\n" || status+"\n";
+    "error": function(response, xhrerror, httperror){
+      var text = response.responseText || httperror+"\n" || xhrerror+"\n";
       if (text.search("alert") == -1) {
         text = '<div id="alert" class="alert alert-danger alert-dismissable">'
           + '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
@@ -79,6 +79,8 @@ function loadcmd(command, target){
     },
     "xhrFields": {
       onprogress: function(e){
+        if (e.currentTarget.status != 200)
+          return;
         var response = e.currentTarget.response;
         var addtext = response.substring(lastlen);
         lastlen = response.length;
@@ -89,12 +91,19 @@ function loadcmd(command, target){
         timeouthd = window.setTimeout(checkabort, timeout*1000);
       },
     },
-    "error": function(response, status, httperror){
-      var resptext = response.responseText || httperror+"\n" || status+"\n";
-      if (outmode == "")
-        output.html($("<div/>").text(resptext).html());
+    "error": function(response, xhrerror, httperror){
+      console.log("loadcmd '" + command + "' ERROR: xhrerror=" + xhrerror + ", httperror=" + httperror);
+      var txt;
+      if (response.status == 401 || response.status == 403)
+        txt = "Session expired. <a class=\"btn btn-sm btn-default\" href=\"javascript:reloadpage()\">Login</a>";
+      else if (response.status >= 400)
+        txt = "Error " + response.status + " " + response.statusText;
       else
-        output.html(output.html() + $("<div/>").text(resptext).html());
+        txt = "Request " + (xhrerror||"failed") + ", please retry";
+      if (outmode == "")
+        output.html('<div class="bg-danger">'+txt+'</div>');
+      else
+        output.html(output.html() + '<div class="bg-danger">'+txt+'</div>');
       output.scrollTop(output.get(0).scrollHeight);
     },
   });
@@ -114,6 +123,10 @@ function getpage() {
   if ($("#main").data("uri") != uri) {
     loaduri("#main", "get", uri, {});
   }
+}
+function reloadpage() {
+  uri = (location.hash || "#/home").substr(1);
+  loaduri("#main", "get", uri, {});
 }
 
 var monitorTimer, last_monotonic = 0;
