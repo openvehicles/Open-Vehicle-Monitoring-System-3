@@ -54,5 +54,6 @@ typedef int32_t INT32;
 #define LIMIT_MIN(n,lim) ((n) < (lim) ? (lim) : (n))
 #define LIMIT_MAX(n,lim) ((n) > (lim) ? (lim) : (n))
 
+#define TRUNCPREC(fval,prec) (trunc((fval) * pow(10,(prec))) / pow(10,(prec)))
 
 #endif

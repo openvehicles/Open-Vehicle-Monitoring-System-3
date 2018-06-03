@@ -53,10 +53,17 @@ struct battery_pack
   std::bitset<32> temp_alerts = 0; // bitfield: dev > BATT_DEV_TEMP_ALERT
   std::bitset<32> last_temp_alerts = 0; // recognize alert state changes
   
-  UINT cell_volt_stddev_max = 0; // max cell voltage std deviation
-                              // => watch/alert bit #15 (1<<15)
-  UINT cmod_temp_stddev_max = 0; // max cmod temperature std deviation
-                              // => watch/alert bit #7 (1<<7)
+  UINT cell_volt_min = 2000;            // current cell min voltage [1/200 V]
+  UINT cell_volt_max = 0;               // current cell max voltage [1/200 V]
+  float cell_volt_avg = 0;              // current cell voltage average [1/200 V]
+  float cell_volt_stddev = 0;           // current cell voltage std deviation [1/200 V]
+  UINT cell_volt_stddev_max = 0;        // max cell voltage std deviation [1/200 V] => watch/alert bit #15 (1<<15)
+
+  UINT cmod_temp_min = 240;             // current cmod min temperature [°C]
+  UINT cmod_temp_max = 0;               // current cmod max temperature [°C]
+  float cmod_temp_avg = 0;              // current cmod temperature average [°C] (currently == temp_act)
+  float cmod_temp_stddev = 0;           // current cmod temperature std deviation [°C]
+  UINT cmod_temp_stddev_max = 0;        // max cmod temperature std deviation [°C] => watch/alert bit #7 (1<<7)
   
   int max_drive_pwr = 0; // in 500 W
   int max_recup_pwr = 0; // in 500 W
@@ -79,7 +86,16 @@ struct battery_pack
   OvmsMetricBitset<32> *m_temp_watches;
   OvmsMetricBitset<32> *m_temp_alerts;
   
+  OvmsMetricFloat *m_cell_volt_min;
+  OvmsMetricFloat *m_cell_volt_max;
+  OvmsMetricFloat *m_cell_volt_avg;
+  OvmsMetricFloat *m_cell_volt_stddev;
   OvmsMetricFloat *m_cell_volt_stddev_max;
+  
+  OvmsMetricFloat *m_cmod_temp_min;
+  OvmsMetricFloat *m_cmod_temp_max;
+  OvmsMetricFloat *m_cmod_temp_avg;
+  OvmsMetricFloat *m_cmod_temp_stddev;
   OvmsMetricFloat *m_cmod_temp_stddev_max;
   
   OvmsMetricInt *m_max_drive_pwr;

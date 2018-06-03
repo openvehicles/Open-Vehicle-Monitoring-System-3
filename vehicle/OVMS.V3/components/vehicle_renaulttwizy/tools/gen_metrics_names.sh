@@ -7,7 +7,9 @@
 PACK_CNT=1
 PACK_METRICS="\
   volt.min volt.max volt.watches volt.alerts volt.stddev.max \
-  temp.min temp.max temp.watches temp.alerts temp.stddev.max"
+  temp.min temp.max temp.watches temp.alerts temp.stddev.max \
+  c.volt.min c.volt.max c.volt.avg c.volt.stddev \
+  m.temp.min m.temp.max m.temp.avg m.temp.stddev"
 
 CMOD_CNT=8
 CMOD_METRICS="temp.act temp.min temp.max temp.maxdev"
@@ -36,7 +38,7 @@ for f in $PACK_METRICS ; do
   sep=""
   for ((i = 0; i < $PACK_CNT; i++)) ; do
     ih=$((i + 1))
-    printf '%s"xrt.b.pack.%d.%s"' "$sep" "$ih" "$f"
+    printf '%s"xrt.b.p.%d.%s"' "$sep" "$ih" "$f"
     sep=", "
   done
   echo ' };'
@@ -48,7 +50,7 @@ for f in $CMOD_METRICS ; do
   sep=""
   for ((i = 0; i < $CMOD_CNT; i++)) ; do
     ih=$((i + 1))
-    printf '%s"xrt.b.cmod.%02d.%s"' "$sep" "$ih" "$f"
+    printf '%s"xrt.b.m.%02d.%s"' "$sep" "$ih" "$f"
     sep=", "
   done
   echo ' };'
@@ -60,7 +62,7 @@ for f in $CELL_METRICS ; do
   sep=""
   for ((i = 0; i < $CELL_CNT; i++)) ; do
     ih=$((i + 1))
-    printf '%s"xrt.b.cell.%02d.%s"' "$sep" "$ih" "$f"
+    printf '%s"xrt.b.c.%02d.%s"' "$sep" "$ih" "$f"
     sep=", "
   done
   echo ' };'
