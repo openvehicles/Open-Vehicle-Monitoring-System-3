@@ -219,7 +219,7 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_bat_cell_level_min;      // Cell level - weakest cells [%]
     OvmsMetricFloat*  ms_v_bat_cell_level_max;      // Cell level - strongest cells [%]
     OvmsMetricFloat*  ms_v_bat_cell_level_avg;      // Cell level - average [%]
-    OvmsMetricFloat*  ms_v_bat_cell_level_stddev;   // Cell level - std dev
+    OvmsMetricFloat*  ms_v_bat_cell_level_stddev;   // Cell level - std dev [%]
 
     OvmsMetricFloat*  ms_v_charge_voltage;          // Momentary charger supply voltage [V]
     OvmsMetricFloat*  ms_v_charge_current;          // Momentary charger output current [A]

@@ -79,7 +79,7 @@ MetricsStandard::MetricsStandard()
   ms_v_bat_cell_level_min = new OvmsMetricFloat(MS_V_BAT_CELL_LEVEL_MIN, SM_STALE_HIGH, Percentage);
   ms_v_bat_cell_level_max = new OvmsMetricFloat(MS_V_BAT_CELL_LEVEL_MAX, SM_STALE_HIGH, Percentage);
   ms_v_bat_cell_level_avg = new OvmsMetricFloat(MS_V_BAT_CELL_LEVEL_AVG, SM_STALE_HIGH, Percentage);
-  ms_v_bat_cell_level_stddev = new OvmsMetricFloat(MS_V_BAT_CELL_LEVEL_STDDEV, SM_STALE_HIGH);
+  ms_v_bat_cell_level_stddev = new OvmsMetricFloat(MS_V_BAT_CELL_LEVEL_STDDEV, SM_STALE_HIGH, Percentage);
 
   ms_v_charge_voltage = new OvmsMetricFloat(MS_V_CHARGE_VOLTAGE, SM_STALE_MID, Volts);
   ms_v_charge_current = new OvmsMetricFloat(MS_V_CHARGE_CURRENT, SM_STALE_MID, Amps);
