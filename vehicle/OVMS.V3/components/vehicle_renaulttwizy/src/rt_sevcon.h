@@ -135,7 +135,7 @@ class SevconClient
   
   public:
     // Asynchronous access:
-    CANopenResult_t SendWrite(uint16_t index, uint8_t subindex, uint32_t value);
+    CANopenResult_t SendWrite(uint16_t index, uint8_t subindex, uint32_t* value);
     CANopenResult_t SendRequestState(CANopenNMTCommand_t command);
     void ProcessAsyncResults();
   
@@ -235,6 +235,7 @@ class SevconClient
     uint8_t                   twizy_lock_speed = 0;               // if Lock mode: fix speed to this (kph)
     uint32_t                  twizy_valet_odo = 0;                // if Valet mode: reduce speed if odometer > this
     
+    uint32_t                  m_drive_level = 1000;               // current drive level [per mille]
     TimerHandle_t             m_kickdown_timer;
   
 };

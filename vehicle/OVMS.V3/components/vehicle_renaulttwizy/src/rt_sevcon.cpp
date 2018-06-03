@@ -223,12 +223,12 @@ CANopenResult_t SevconClient::GetHeartbeat(CANopenJob& job, CANopenNMTState_t& v
   return res;
 }
 
-CANopenResult_t SevconClient::SendWrite(uint16_t index, uint8_t subindex, uint32_t value)
+CANopenResult_t SevconClient::SendWrite(uint16_t index, uint8_t subindex, uint32_t* value)
 {
   CANopenResult_t res = CheckBus();
   if (res != COR_OK)
     return res;
-  return m_async.WriteSDO(m_nodeid, index, subindex, (uint8_t*)&value, 0);
+  return m_async.WriteSDO(m_nodeid, index, subindex, (uint8_t*)value, 0);
 }
 
 CANopenResult_t SevconClient::SendRequestState(CANopenNMTCommand_t command)

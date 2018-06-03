@@ -849,13 +849,14 @@ CANopenResult_t SevconClient::CfgDrive(int max_prc, int autodrive_ref, int autod
   }
 
   // set:
+  m_drive_level = LIMIT_MAX(max_prc*10, twizy_autodrive_level);
   if (async) {
-    err = SendWrite(0x2920, 0x01, LIMIT_MAX(max_prc*10, twizy_autodrive_level));
+    err = SendWrite(0x2920, 0x01, &m_drive_level);
     if (err == COR_WAIT)
       err = COR_OK;
   } else {
     SevconJob sc(this);
-    err = sc.Write(0x2920, 0x01, LIMIT_MAX(max_prc*10, twizy_autodrive_level));
+    err = sc.Write(0x2920, 0x01, m_drive_level);
   }
 
   return err;
