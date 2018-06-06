@@ -1385,7 +1385,7 @@ void OvmsServerV2::TransmitNotifyData()
       << "MP-0 h"
       << e->m_id
       << ","
-      << monotonictime - e->m_created
+      << -(int)(monotonictime - e->m_created)
       << ","
       << msg;
     Transmit(buffer.str().c_str());
