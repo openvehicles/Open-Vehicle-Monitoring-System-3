@@ -131,13 +131,13 @@ void OvmsEvents::HandleQueueSignalEvent(event_queue_t* msg)
   {
   std::string event(msg->body.signal.event);
 
-  if (m_trace)
+  // Log everything but the excessively verbose ticker signals
+  if (event.compare(0,7,"ticker.") != 0)
     {
-    if (event.compare(0,7,"ticker.") != 0)
-      {
-      // Log everything but the excessively verbose ticker signals
+    if (m_trace)
       ESP_LOGI(TAG, "Signal(%s)",event.c_str());
-      }
+    else
+      ESP_LOGD(TAG, "Signal(%s)",event.c_str());
     }
 
   auto k = m_map.find(event);
