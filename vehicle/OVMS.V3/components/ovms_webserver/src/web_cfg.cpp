@@ -1680,6 +1680,8 @@ void OvmsWebServer::HandleCfgLogging(PageEntry_t& p, PageContext_t& c)
     pmap["file.enable"] = (c.getvar("file_enable") == "yes") ? "yes" : "no";
     if (c.getvar("file_maxsize") != "")
       pmap["file.maxsize"] = c.getvar("file_maxsize");
+    if (c.getvar("file_keepdays") != "")
+      pmap["file.keepdays"] = c.getvar("file_keepdays");
     
     file_path = c.getvar("file_path");
     pmap["file.path"] = file_path;
@@ -1753,6 +1755,9 @@ void OvmsWebServer::HandleCfgLogging(PageEntry_t& p, PageContext_t& c)
   c.input("number", "Max file size", "file_maxsize", pmap["file.maxsize"].c_str(), "Default: 1024",
     "<p>When exceeding the size, the log will be archived suffixed with date &amp; time and a new file will be started. 0 = disable</p>",
     "min=\"0\" step=\"1\"", "kB");
+  c.input("number", "Expire time", "file_keepdays", pmap["file.keepdays"].c_str(), "Default: 30",
+    "<p>Automatically delete archived log files. 0 = disable</p>",
+    "min=\"0\" step=\"1\"", "days");
 
   auto gen_options = [&c](std::string level) {
     c.printf(

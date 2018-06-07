@@ -37,6 +37,8 @@ static const char *TAG = "command";
 #include <ctype.h>
 #include <functional>
 #include <esp_log.h>
+#include <sys/types.h>
+#include <dirent.h>
 #include "freertos/FreeRTOS.h"
 #include "ovms_command.h"
 #include "ovms_config.h"
@@ -391,6 +393,21 @@ void log_file(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   writer->printf("Logging to file: %s\n", argv[0]);
   }
 
+void log_expire(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyCommandApp.m_expiretask)
+    {
+    writer->puts("Abort: expire task is currently running");
+    return;
+    }
+  int keepdays;
+  if (argc == 0)
+    keepdays = MyConfig.GetParamValueInt("log", "file.keepdays", 30);
+  else
+    keepdays = atoi(argv[0]);
+  MyCommandApp.ExpireLogFiles(verbosity, writer, keepdays);
+  }
+
 static OvmsCommand* monitor;
 static OvmsCommand* monitor_yes;
 
@@ -480,12 +497,14 @@ OvmsCommandApp::OvmsCommandApp()
   m_logfile_path = "";
   m_logfile_size = 0;
   m_logfile_maxsize = 0;
+  m_expiretask = 0;
   
   m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0);
   m_root.RegisterCommand("exit", "End console session", Exit , "", 0, 0);
   OvmsCommand* cmd_log = MyCommandApp.RegisterCommand("log","LOG framework",NULL, "", 0, 0, true);
   cmd_log->RegisterCommand("file", "Start logging to specified file", log_file , "<vfspath>", 0, 1, true);
   cmd_log->RegisterCommand("close", "Stop logging to file", log_file , "", 0, 0, true);
+  cmd_log->RegisterCommand("expire", "Expire old log files", log_expire, "[<keepdays>]", 0, 1, true);
   OvmsCommand* level_cmd = cmd_log->RegisterCommand("level", "Set logging level", NULL, "$C [<tag>]");
   level_cmd->RegisterCommand("verbose", "Log at the VERBOSE level (5)", log_level , "[<tag>]", 0, 1, true);
   level_cmd->RegisterCommand("debug", "Log at the DEBUG level (4)", log_level , "[<tag>]", 0, 1, true);
@@ -513,7 +532,8 @@ void OvmsCommandApp::ConfigureLogging()
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsCommandApp::EventHandler, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "sd.mounted", std::bind(&OvmsCommandApp::EventHandler, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "sd.unmounting", std::bind(&OvmsCommandApp::EventHandler, this, _1, _2));
-  
+  MyEvents.RegisterEvent(TAG, "ticker.3600", std::bind(&OvmsCommandApp::EventHandler, this, _1, _2));
+
   ReadConfig();
   }
 
@@ -753,6 +773,96 @@ void OvmsCommandApp::CycleLogfile()
   SetLogfile(m_logfile_path);
   }
 
+void OvmsCommandApp::ExpireLogFiles(int verbosity, OvmsWriter* writer, int keepdays)
+  {
+  if (keepdays <= 0)
+    {
+    if (writer)
+      writer->printf("Abort: expire disabled (keepdays=%d)\n", keepdays);
+    else
+      ESP_LOGD(TAG, "ExpireLogFiles: disabled (keepdays=%d)", keepdays);
+    return;
+    }
+
+  // get archive directory:
+  std::string archdir = m_logfile_path;
+  std::string::size_type p = archdir.find_last_of('/');
+  if (p == std::string::npos)
+    {
+    if (writer)
+      writer->puts("Error: log path not set");
+    else
+      ESP_LOGE(TAG, "ExpireLogFiles: log path not set");
+    return;
+    }
+  archdir.resize(p);
+  DIR *dir = opendir(archdir.c_str());
+  if (!dir)
+    {
+    if (writer)
+      writer->printf("Error: cannot open log directory '%s'\n", archdir.c_str());
+    else
+      ESP_LOGE(TAG, "ExpireLogFiles: cannot open log directory '%s'", archdir.c_str());
+    return;
+    }
+  else if (writer && verbosity >= COMMAND_RESULT_NORMAL)
+    {
+    writer->printf("Scanning directory '%s'...\n", archdir.c_str());
+    }
+
+  time_t tm = time(NULL) - keepdays * 86400;
+  struct dirent *dp;
+  char path[PATH_MAX];
+  struct stat st;
+  int delcnt = 0;
+  
+  while ((dp = readdir(dir)) != NULL)
+    {
+    snprintf(path, sizeof(path), "%s/%s", archdir.c_str(), dp->d_name);
+    if (strncmp(path, m_logfile_path.c_str(), m_logfile_path.size()) != 0)
+      continue;
+    if (stat(path, &st))
+      {
+      if (writer)
+        writer->printf("Error: cannot stat '%s'\n", path);
+      else
+        ESP_LOGE(TAG, "ExpireLogFiles: cannot stat '%s'", path);
+      continue;
+      }
+    if (st.st_mtime < tm)
+      {
+      if (writer && verbosity >= COMMAND_RESULT_NORMAL)
+        writer->printf("Deleting '%s'\n", path);
+      else
+        ESP_LOGD(TAG, "ExpireLogFiles: deleting '%s'", path);
+      if (unlink(path))
+        {
+        if (writer)
+          writer->printf("Error: cannot delete '%s'\n", path);
+        else
+          ESP_LOGE(TAG, "ExpireLogFiles: cannot delete '%s'", path);
+        }
+      else
+        delcnt++;
+      }
+    }
+  
+  closedir(dir);
+  
+  if (writer)
+    writer->printf("Done, %d file(s) deleted.\n", delcnt);
+  else
+    ESP_LOGI(TAG, "ExpireLogFiles: %d file(s) deleted", delcnt);
+  }
+
+void OvmsCommandApp::ExpireTask(void* data)
+  {
+  int keepdays = MyConfig.GetParamValueInt("log", "file.keepdays", 30);
+  MyCommandApp.ExpireLogFiles(0, NULL, keepdays);
+  MyCommandApp.m_expiretask = 0;
+  vTaskDelete(NULL);
+  }
+
 void OvmsCommandApp::EventHandler(std::string event, void* data)
   {
   if (event == "config.changed")
@@ -770,6 +880,14 @@ void OvmsCommandApp::EventHandler(std::string event, void* data)
     {
     if (startsWith(m_logfile_path, "/sd"))
       SetLogfile("");
+    }
+  else if (event == "ticker.3600")
+    {
+    int keepdays = MyConfig.GetParamValueInt("log", "file.keepdays", 30);
+    time_t utm = time(NULL);
+    struct tm* ltm = localtime(&utm);
+    if (keepdays && ltm->tm_hour == 0 && !m_expiretask)
+      xTaskCreatePinnedToCore(ExpireTask, "OVMS ExpireLogs", 4096, NULL, 0, &m_expiretask, 1);
     }
   }
 

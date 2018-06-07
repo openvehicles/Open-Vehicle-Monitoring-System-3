@@ -191,6 +191,8 @@ class OvmsCommandApp
     void ConfigureLogging();
     bool SetLogfile(std::string path);
     void SetLoglevel(std::string tag, std::string level);
+    void ExpireLogFiles(int verbosity, OvmsWriter* writer, int keepdays);
+    static void ExpireTask(void* data);
     void EventHandler(std::string event, void* data);
 
   private:
@@ -210,6 +212,9 @@ class OvmsCommandApp
     std::string m_logfile_path;
     size_t m_logfile_size;
     size_t m_logfile_maxsize;
+
+  public:
+    TaskHandle_t m_expiretask;
   };
 
 extern OvmsCommandApp MyCommandApp;

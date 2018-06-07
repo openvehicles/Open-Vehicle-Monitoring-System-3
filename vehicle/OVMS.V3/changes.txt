@@ -1,6 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Logging: auto expire log archive
+  New config:
+    log [file.keepdays] = 30        0 = disable
+  New command:
+    log expire [days]               Manual expire
+  Note: auto expire is done within hour 0 of day
 
 2018-05-20 MWJ  3.1.006  OTA release
 - Web status: panel auto updates, reboot button, SD card and modem status and control
