@@ -437,8 +437,8 @@ void canlog_crtd::OutputMsg(CAN_LogMsg_t& msg)
       fprintf(m_file, "%d.%03d %s%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d\n",
         msg.timestamp / 1000, msg.timestamp % 1000, msg.bus->GetName()+3,
         (msg.type == CAN_LogStatus_Error) ? "CEV" : "CXX",
-        GetLogEntryTypeName(msg.type), msg.status.packets_rx, msg.status.packets_tx, msg.status.error_flags,
-        msg.status.interrupts,
+        GetLogEntryTypeName(msg.type), msg.status.interrupts,
+        msg.status.packets_rx, msg.status.packets_tx, msg.status.error_flags,
         msg.status.errors_rx, msg.status.errors_tx, msg.status.rxbuf_overflow, msg.status.txbuf_overflow,
         msg.status.txbuf_delay);
       break;
