@@ -86,7 +86,11 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       if (twizy_flags.EnableWrite
         && (twizy_status & (CAN_STATUS_CHARGING|CAN_STATUS_OFFLINE)) == CAN_STATUS_CHARGING
         && level > 0
-        && ((INT8) CAN_BYTE(0)) > level)
+        && ((INT8) CAN_BYTE(0)) > level
+        // frame integrity check / esp32can bug workaround:
+        && ((INT8) CAN_BYTE(0)) < 8
+        && CAN_BYTE(1) >= 0x90 && CAN_BYTE(1) < 0xb0
+        && CAN_BYTE(3) == 0x54)
       {
         CAN_frame_t txframe = *p_frame;
         txframe.data.u8[0] = level;
