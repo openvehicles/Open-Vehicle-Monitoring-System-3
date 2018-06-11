@@ -221,7 +221,7 @@ int FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsi
   if (rlength>0)
     {
     if (!*bufferp)
-      *bufferp = (char*) malloc(colsize*4 + 4); // space for 16x3 + 2 + 16 + 1(\0)
+      *bufferp = (char*) ExternalRamMalloc(colsize*4 + 4); // space for 16x3 + 2 + 16 + 1(\0)
 
     char *p = *bufferp;
     const char *os = s;
