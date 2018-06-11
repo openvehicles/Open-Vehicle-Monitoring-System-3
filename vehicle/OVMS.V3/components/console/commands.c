@@ -20,6 +20,7 @@
 #include "esp_console.h"
 #include "linenoise/linenoise.h"
 #include "argtable3/argtable3.h"
+#include "ovms_malloc.h"
 #include "rom/queue.h"
 
 #define ANSI_COLOR_DEFAULT      39      /** Default foreground color */
@@ -63,7 +64,7 @@ esp_err_t esp_console_init(const esp_console_config_t* config)
     if (s_config.hint_color == 0) {
         s_config.hint_color = ANSI_COLOR_DEFAULT;
     }
-    s_tmp_line_buf = calloc(config->max_cmdline_length, 1);
+    s_tmp_line_buf = ExternalRamCalloc(config->max_cmdline_length, 1);
     if (s_tmp_line_buf == NULL) {
         return ESP_ERR_NO_MEM;
     }
@@ -86,7 +87,7 @@ esp_err_t esp_console_deinit()
 
 esp_err_t esp_console_cmd_register(const esp_console_cmd_t *cmd)
 {
-    cmd_item_t *item = (cmd_item_t *) calloc(1, sizeof(*item));
+    cmd_item_t *item = (cmd_item_t *) ExternalRamCalloc(1, sizeof(*item));
     if (item == NULL) {
         return ESP_ERR_NO_MEM;
     }
@@ -177,7 +178,7 @@ esp_err_t esp_console_run(const char* cmdline, int* cmd_ret)
     if (s_tmp_line_buf == NULL) {
         return ESP_ERR_INVALID_STATE;
     }
-    char** argv = (char**) calloc(s_config.max_cmdline_args, sizeof(char*));
+    char** argv = (char**) ExternalRamCalloc(s_config.max_cmdline_args, sizeof(char*));
     if (argv == NULL) {
         return ESP_ERR_NO_MEM;
     }
