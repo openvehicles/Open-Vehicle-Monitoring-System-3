@@ -171,6 +171,7 @@ esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
   DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_CAN_RST);
 
   // Configure TX pin
+  gpio_set_level(MyESP32can->m_txpin, 1);
   gpio_set_direction(MyESP32can->m_txpin,GPIO_MODE_OUTPUT);
   gpio_matrix_out(MyESP32can->m_txpin,CAN_TX_IDX,0,0);
   gpio_pad_select_gpio(MyESP32can->m_txpin);
