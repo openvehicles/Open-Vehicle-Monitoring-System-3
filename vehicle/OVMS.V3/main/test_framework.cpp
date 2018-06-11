@@ -42,6 +42,7 @@ static const char *TAG = "test";
 #include "ovms_command.h"
 #include "ovms_peripherals.h"
 #include "ovms_script.h"
+#include "metrics_standard.h"
 #include "can.h"
 #include "strverscmp.h"
 
@@ -227,6 +228,15 @@ void test_realloc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   heap_caps_check_integrity_all(true);
   }
 
+void test_spiram(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->printf("Metrics (%p) are in %s RAM\n",
+    StandardMetrics.ms_m_version,
+    (((unsigned int)StandardMetrics.ms_m_version >= 0x3f800000)&&
+     ((unsigned int)StandardMetrics.ms_m_version <= 0x3fbfffff))?
+     "SPI":"INTERNAL");
+  }
+
 void test_strverscmp(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   int c = strverscmp(argv[0],argv[1]);
@@ -293,6 +303,7 @@ TestFrameworkInit::TestFrameworkInit()
   cmd_test->RegisterCommand("echo", "Test getchar", test_echo, "", 0, 0,true);
   cmd_test->RegisterCommand("watchdog", "Test task spinning (and watchdog firing)", test_watchdog, "", 0, 0,true);
   cmd_test->RegisterCommand("realloc", "Test memory re-allocations", test_realloc, "", 0, 0,true);
+  cmd_test->RegisterCommand("spiram", "Test SPI RAM memory usage", test_spiram, "", 0, 0,true);
   cmd_test->RegisterCommand("strverscmp", "Test strverscmp function", test_strverscmp, "", 2, 2, true);
   cmd_test->RegisterCommand("cantx", "Test CAN bus transmission", test_can, "", 0, 1, true);
   cmd_test->RegisterCommand("canrx", "Test CAN bus reception", test_can, "", 0, 1, true);
