@@ -1159,7 +1159,7 @@ static void wolf_logger(enum wolfSSH_LogLevel level, const char* const msg)
 
 static void* wolfssh_malloc(size_t size)
   {
-  void* ptr = malloc(size);
+  void* ptr = ExternalRamMalloc(size);
   if (!ptr)
     ESP_LOGE(wolfssh_tag, "memory allocation failed for size %zu", size);
   return ptr;
@@ -1172,7 +1172,7 @@ static void wolfssh_free(void* ptr)
 
 static void* wolfssh_realloc(void* ptr, size_t size)
   {
-  void* nptr = realloc(ptr, size);
+  void* nptr = ExternalRamRealloc(ptr, size);
   if (!nptr)
     ESP_LOGE(wolfssh_tag, "memory reallocation failed for size %zu", size);
   return nptr;
@@ -1180,7 +1180,7 @@ static void* wolfssh_realloc(void* ptr, size_t size)
 
 static void* wolfssl_malloc(size_t size)
   {
-  void* ptr = malloc(size);
+  void* ptr = ExternalRamMalloc(size);
   if (!ptr)
     ESP_LOGE(wolfssl_tag, "memory allocation failed for size %zu", size);
   return ptr;
@@ -1193,7 +1193,7 @@ static void wolfssl_free(void* ptr)
 
 static void* wolfssl_realloc(void* ptr, size_t size)
   {
-  void* nptr = realloc(ptr, size);
+  void* nptr = ExternalRamRealloc(ptr, size);
   if (!nptr)
     ESP_LOGE(wolfssl_tag, "memory reallocation failed for size %zu", size);
   return nptr;
