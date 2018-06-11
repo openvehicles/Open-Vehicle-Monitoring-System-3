@@ -110,7 +110,7 @@ void obd2pid::LoadScript(std::string path)
     free(m_script);
     m_script = NULL;
     }
-  m_script = (char*)malloc(fsz+1);
+  m_script = (char*)ExternalRamMalloc(fsz+1);
   fread(m_script, 1, fsz, f);
   m_script[fsz] = 0;
 
