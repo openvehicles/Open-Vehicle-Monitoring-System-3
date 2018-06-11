@@ -63,7 +63,7 @@ void vfs_edit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     return;
     }
 
-  struct editor_state* ed = (struct editor_state*)malloc(sizeof(struct editor_state));
+  struct editor_state* ed = (struct editor_state*)ExternalRamMalloc(sizeof(struct editor_state));
   editor_init(ed,vfs_edit_write,(void*)writer);
   editor_open(ed,argv[0]);
 

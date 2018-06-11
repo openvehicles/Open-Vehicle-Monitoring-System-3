@@ -21,6 +21,7 @@
 #include <string.h>     // memcmp, memcpy, memmove, memset, strcasestr, strchr, strdup, strerror, strlen, strstr
 #include <time.h>       // time
 #include <unistd.h>     // close, getpid, ftruncate, isatty, read, STDIN_FILENO/STDOUT_FILENO, write
+#include "ovms_malloc.h" // Ovms memory allocation
 
 #include "openemacs.h"
 
@@ -577,7 +578,7 @@ void editor_update_row(struct editor_state* E, struct editor_row *row)
     {
     if (row->chars[i] == TAB) { tabs += 1; }
     }
-  row->rendered_chars = calloc(row->size + tabs * 8 + 1, sizeof(char));
+  row->rendered_chars = ExternalRamCalloc(row->size + tabs * 8 + 1, sizeof(char));
   int local_index = 0;
   for (int i = 0; i < row->size; i++)
     {
@@ -612,7 +613,7 @@ void editor_insert_row(struct editor_state* E, int at, char const *s, size_t len
     for (int i = at + 1; i <= E->number_of_rows; i++) { E->row[i].index_in_file += 1; }
     }
   E->row[at].size = len;
-  E->row[at].chars = calloc(len + 1, sizeof(char));
+  E->row[at].chars = ExternalRamCalloc(len + 1, sizeof(char));
   memcpy(E->row[at].chars, s, len + 1);
   E->row[at].rendered_chars_syntax_highlight_type = NULL;
   E->row[at].has_open_comment = false;
@@ -652,7 +653,7 @@ char *editor_rows_to_string(struct editor_state* E, int *buflen)
     }
   *buflen = total_length;
   total_length += 1; // Also make space for nulterm
-  p = buf = calloc(total_length, sizeof(char));
+  p = buf = ExternalRamCalloc(total_length, sizeof(char));
   for (int i = 0; i < E->number_of_rows; i++)
     {
     memcpy(p, E->row[i].chars, E->row[i].size);
@@ -1251,7 +1252,7 @@ void editor_search(struct editor_state* E)
           {
           saved_hl_line = current;
           free(saved_hl);
-          saved_hl = calloc(row->rendered_size, sizeof(char));
+          saved_hl = ExternalRamCalloc(row->rendered_size, sizeof(char));
           memcpy(saved_hl, row->rendered_chars_syntax_highlight_type, row->rendered_size);
           memset(row->rendered_chars_syntax_highlight_type + match_offset, SYNTAX_HIGHLIGHT_MODE_SEARCH_MATCH, query_length);
           }
