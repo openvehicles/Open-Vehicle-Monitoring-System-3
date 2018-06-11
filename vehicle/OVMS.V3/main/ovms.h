@@ -43,16 +43,6 @@
 
 extern uint32_t monotonictime;
 
-#ifdef CONFIG_OVMS_HW_SPIMEM_AGGRESSIVE
-#ifndef OVMS_OPERATOR_NEW
-#define OVMS_OPERATOR_NEW
-inline void* operator new(std::size_t sz)
-  {
-  return ExternalRamMalloc(sz);
-  }
-#endif // #ifndef OVMS_OPERATOR_NEW
-#endif // #ifdef CONFIG_OVMS_HW_SPIMEM_AGGRESSIVE
-
 class ExternalRamAllocated
   {
   public:

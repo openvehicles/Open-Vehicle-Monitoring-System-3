@@ -29,8 +29,22 @@
 */
 
 #include "ovms.h"
+#include <sdkconfig.h>
 
 uint32_t monotonictime = 0;
+
+#ifdef CONFIG_OVMS_HW_SPIMEM_AGGRESSIVE
+using namespace std;
+void * operator new(size_t size)
+  {
+  return ExternalRamMalloc(size);
+  }
+
+void * operator new[](size_t size)
+  {
+  return ExternalRamMalloc(size);
+  }
+#endif // #ifdef CONFIG_OVMS_HW_SPIMEM_AGGRESSIVE
 
 static void* ExternalRamAllocated::operator new(std::size_t sz)
   {
