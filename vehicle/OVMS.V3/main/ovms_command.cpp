@@ -498,7 +498,7 @@ OvmsCommandApp::OvmsCommandApp()
   m_logfile_size = 0;
   m_logfile_maxsize = 0;
   m_expiretask = 0;
-  
+
   m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0);
   m_root.RegisterCommand("exit", "End console session", Exit , "", 0, 0);
   OvmsCommand* cmd_log = MyCommandApp.RegisterCommand("log","LOG framework",NULL, "", 0, 0, true);
@@ -526,7 +526,7 @@ OvmsCommandApp::~OvmsCommandApp()
 void OvmsCommandApp::ConfigureLogging()
   {
   MyConfig.RegisterParam("log", "Logging configuration", true, true);
-  
+
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsCommandApp::EventHandler, this, _1, _2));
@@ -748,7 +748,7 @@ void OvmsCommandApp::SetLoglevel(std::string tag, std::string level)
     level_num = 0;
   else
     level_num = CONFIG_LOG_DEFAULT_LEVEL;
-  
+
   if (tag.empty())
     esp_log_level_set("*", (esp_log_level_t)level_num);
   else
@@ -815,7 +815,7 @@ void OvmsCommandApp::ExpireLogFiles(int verbosity, OvmsWriter* writer, int keepd
   char path[PATH_MAX];
   struct stat st;
   int delcnt = 0;
-  
+
   while ((dp = readdir(dir)) != NULL)
     {
     snprintf(path, sizeof(path), "%s/%s", archdir.c_str(), dp->d_name);
@@ -846,9 +846,9 @@ void OvmsCommandApp::ExpireLogFiles(int verbosity, OvmsWriter* writer, int keepd
         delcnt++;
       }
     }
-  
+
   closedir(dir);
-  
+
   if (writer)
     writer->printf("Done, %d file(s) deleted.\n", delcnt);
   else
@@ -894,7 +894,7 @@ void OvmsCommandApp::EventHandler(std::string event, void* data)
 void OvmsCommandApp::ReadConfig()
   {
   OvmsConfigParam* param = MyConfig.CachedParam("log");
-  
+
   // configure log levels:
   std::string level = MyConfig.GetParamValue("log", "level");
   if (!level.empty())
@@ -904,7 +904,7 @@ void OvmsCommandApp::ReadConfig()
     if (startsWith(kv.first, "level.") && !kv.second.empty())
       SetLoglevel(kv.first.substr(6), kv.second);
     }
-  
+
   // configure log file:
   m_logfile_maxsize = MyConfig.GetParamValueInt("log", "file.maxsize", 1024);
   if (MyConfig.GetParamValueBool("log", "file.enable", false) == false)
@@ -930,7 +930,7 @@ OvmsCommandTask::OvmsCommandTask(int _verbosity, OvmsWriter* _writer, OvmsComman
     argv = NULL;
   else
     {
-    argv = (char**) malloc(argc * sizeof(char*));
+    argv = (char**) ExternalRamMalloc(argc * sizeof(char*));
     for (int i=0; i < argc; i++)
       argv[i] = strdup(_argv[i]);
     }
