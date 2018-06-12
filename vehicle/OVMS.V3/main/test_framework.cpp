@@ -249,23 +249,29 @@ void test_strverscmp(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
 
 void test_can(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
+  int64_t started = esp_timer_get_time();
+  int64_t elapsed;
   bool tx = (strcmp(cmd->GetName(), "cantx")==0);
 
   int frames = 1000;
-  if (argc>0) frames = atoi(argv[0]);
+  if (argc>1) frames = atoi(argv[1]);
 
-  canbus *can1 = (canbus*)MyPcpApp.FindDeviceByName("can1");
-  if (can1 == NULL)
+  canbus *can;
+  if (argc>0)
+    can = (canbus*)MyPcpApp.FindDeviceByName(argv[0]);
+  else
+    can = (canbus*)MyPcpApp.FindDeviceByName("can1");
+  if (can == NULL)
     {
-    writer->puts("Error: Cannot find can1");
+    writer->puts("Error: Cannot find specified can bus");
     return;
     }
 
-  writer->printf("Testing %d frames on can1\n",frames);
+  writer->printf("Testing %d frames on %s\n",frames,can->GetName());
 
   CAN_frame_t frame;
   memset(&frame,0,sizeof(frame));
-  frame.origin = can1;
+  frame.origin = can;
   frame.FIR.U = 0;
   frame.FIR.B.DLC = 8;
   frame.FIR.B.FF = CAN_frame_std;
@@ -276,12 +282,15 @@ void test_can(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     {
     frame.MsgID = (rand()%64)+256;
     if (tx)
-      can1->Write(&frame, pdMS_TO_TICKS(10));
+      can->Write(&frame, pdMS_TO_TICKS(10));
     else
       MyCan.IncomingFrame(&frame);
     }
 
-  writer->puts("All done");
+  elapsed = esp_timer_get_time() - started;
+  int uspt = elapsed / frames;
+  writer->printf("Transmitted %d frames in %lld.%06llds = %dus/frame\n",
+    frames, elapsed / 1000000, elapsed % 1000000, uspt);
   }
 
 class TestFrameworkInit
@@ -305,6 +314,6 @@ TestFrameworkInit::TestFrameworkInit()
   cmd_test->RegisterCommand("realloc", "Test memory re-allocations", test_realloc, "", 0, 0,true);
   cmd_test->RegisterCommand("spiram", "Test SPI RAM memory usage", test_spiram, "", 0, 0,true);
   cmd_test->RegisterCommand("strverscmp", "Test strverscmp function", test_strverscmp, "", 2, 2, true);
-  cmd_test->RegisterCommand("cantx", "Test CAN bus transmission", test_can, "", 0, 1, true);
-  cmd_test->RegisterCommand("canrx", "Test CAN bus reception", test_can, "", 0, 1, true);
+  cmd_test->RegisterCommand("cantx", "Test CAN bus transmission", test_can, "[<port>] [<number>]", 0, 2, true);
+  cmd_test->RegisterCommand("canrx", "Test CAN bus reception", test_can, "[<port>] [<number>]", 0, 2, true);
   }
