@@ -275,8 +275,6 @@ void test_can(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   frame.FIR.U = 0;
   frame.FIR.B.DLC = 8;
   frame.FIR.B.FF = CAN_frame_std;
-  frame.MsgID = 0;
-  MyCan.IncomingFrame(&frame);
 
   for (int k=0;k<frames;k++)
     {
