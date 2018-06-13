@@ -7,6 +7,7 @@ Open Vehicle Monitor System v3 - Change log
   New command:
     log expire [days]               Manual expire
   Note: auto expire is done within hour 0 of day
+- Web UI: simplified time zone region selection (vehicle config)
 
 2018-05-20 MWJ  3.1.006  OTA release
 - Web status: panel auto updates, reboot button, SD card and modem status and control

@@ -633,6 +633,8 @@ extern const uint8_t style_css_gz_start[]     asm("_binary_style_css_gz_start");
 extern const uint8_t style_css_gz_end[]       asm("_binary_style_css_gz_end");
 extern const uint8_t favicon_png_start[]      asm("_binary_favicon_png_start");
 extern const uint8_t favicon_png_end[]        asm("_binary_favicon_png_end");
+extern const uint8_t zones_json_gz_start[]    asm("_binary_zones_json_gz_start");
+extern const uint8_t zones_json_gz_end[]      asm("_binary_zones_json_gz_end");
 
 void OvmsWebServer::HandleAsset(PageEntry_t& p, PageContext_t& c)
 {
@@ -659,6 +661,12 @@ void OvmsWebServer::HandleAsset(PageEntry_t& p, PageContext_t& c)
     size = charts_js_gz_end - charts_js_gz_start;
     mtime = MTIME_ASSETS_CHARTS_JS;
     type = "application/javascript";
+  }
+  else if (c.uri == "/assets/zones.json") {
+    data = zones_json_gz_start;
+    size = zones_json_gz_end - zones_json_gz_start;
+    mtime = MTIME_ASSETS_ZONES_JSON;
+    type = "application/json";
   }
   else if (c.uri == "/favicon.ico" || c.uri == "/apple-touch-icon.png") {
     data = favicon_png_start;

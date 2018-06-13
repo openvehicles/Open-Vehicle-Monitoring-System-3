@@ -486,7 +486,7 @@ void OvmsWebServer::HandleCfgPassword(PageEntry_t& p, PageContext_t& c)
 void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
-  std::string vehicleid, vehicletype, vehiclename, timezone, units_distance, pin;
+  std::string vehicleid, vehicletype, vehiclename, timezone, timezone_region, units_distance, pin;
 
   if (c.method == "POST") {
     // process form submission:
@@ -494,6 +494,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     vehicletype = c.getvar("vehicletype");
     vehiclename = c.getvar("vehiclename");
     timezone = c.getvar("timezone");
+    timezone_region = c.getvar("timezone_region");
     units_distance = c.getvar("units_distance");
     pin = c.getvar("pin");
 
@@ -516,6 +517,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("auto", "vehicle.type", vehicletype);
       MyConfig.SetParamValue("vehicle", "name", vehiclename);
       MyConfig.SetParamValue("vehicle", "timezone", timezone);
+      MyConfig.SetParamValue("vehicle", "timezone_region", timezone_region);
       MyConfig.SetParamValue("vehicle", "units.distance", units_distance);
       if (!pin.empty())
         MyConfig.SetParamValue("password", "pin", pin);
@@ -540,6 +542,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     vehicletype = MyConfig.GetParamValue("auto", "vehicle.type");
     vehiclename = MyConfig.GetParamValue("vehicle", "name");
     timezone = MyConfig.GetParamValue("vehicle", "timezone");
+    timezone_region = MyConfig.GetParamValue("vehicle", "timezone_region");
     units_distance = MyConfig.GetParamValue("vehicle", "units.distance");
     c.head(200);
   }
@@ -555,9 +558,26 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
   c.input_text("Vehicle ID", "vehicleid", vehicleid.c_str(), "Use ASCII letters, digits and '-'",
     "<p>Note: this is also the <strong>vehicle account ID</strong> for server connections.</p>");
   c.input_text("Vehicle name", "vehiclename", vehiclename.c_str(), "optional, the name of your car");
-  c.input_text("Time zone", "timezone", timezone.c_str(), "optional, default UTC",
-    "<p>Web links: <a target=\"_blank\" href=\"https://remotemonitoringsystems.ca/time-zone-abbreviations.php\">Example Timezone Strings</a>, "
-    "<a target=\"_blank\" href=\"https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html\">Glibc manual</a></p>");
+
+  c.printf(
+    "<div class=\"form-group\">"
+      "<label class=\"control-label col-sm-3\" for=\"input-timezone_select\">Time zone:</label>"
+      "<div class=\"col-sm-9\">"
+        "<input type=\"hidden\" name=\"timezone_region\" id=\"input-timezone_region\" value=\"%s\">"
+        "<select class=\"form-control\" id=\"input-timezone_select\">"
+          "<option>-Custom-</option>"
+        "</select>"
+      "</div>"
+    "</div>"
+    "<div class=\"form-group\">"
+      "<div class=\"col-sm-9 col-sm-offset-3\">"
+        "<input type=\"text\" class=\"form-control font-monospace\" placeholder=\"optional, default UTC\" name=\"timezone\" id=\"input-timezone\" value=\"%s\">"
+        "<span class=\"help-block\"><p>Web links: <a target=\"_blank\" href=\"https://remotemonitoringsystems.ca/time-zone-abbreviations.php\">Example Timezone Strings</a>, <a target=\"_blank\" href=\"https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html\">Glibc manual</a></p></span>"
+      "</div>"
+    "</div>"
+    , _attr(timezone_region)
+    , _attr(timezone));
+
   c.input_radiobtn_start("Distance units", "units_distance");
   c.input_radiobtn_option("units_distance", "Kilometers", "K", units_distance == "K");
   c.input_radiobtn_option("units_distance", "Miles", "M", units_distance == "M");
@@ -567,6 +587,30 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
   c.input_button("default", "Save");
   c.form_end();
   c.panel_end();
+
+  c.print(
+    "<script>"
+    "$.getJSON(\"/assets/zones.json\", function(data) {"
+      "var items = [];"
+      "var region = $('#input-timezone_region').val();"
+      "$.each(data, function(key, val) {"
+        "items.push('<option data-tz=\"' + val + '\"' + (key==region ? ' selected' : '') + '>' + key + '</option>');"
+      "});"
+      "$('#input-timezone_select').append(items.join(''));"
+      "$('#input-timezone_select').on('change', function(ev){"
+        "var opt = $(this).find('option:selected');"
+        "$('#input-timezone_region').val(opt.val());"
+        "var tz = opt.data(\"tz\");"
+        "if (tz) {"
+          "$('#input-timezone').val(tz);"
+          "$('#input-timezone').prop('readonly', true);"
+        "} else {"
+          "$('#input-timezone').prop('readonly', false);"
+        "}"
+      "}).trigger('change');"
+    "});"
+    "</script>");
+
   c.done();
 }
 
