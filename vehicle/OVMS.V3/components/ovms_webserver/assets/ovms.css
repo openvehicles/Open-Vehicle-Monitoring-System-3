@@ -152,6 +152,14 @@ li.event {
 .input-unit {
   min-width: 4em;
 }
+.form-table>thead>tr>th,
+.form-table>thead>tr>td,
+.form-table>tbody>tr>th,
+.form-table>tbody>tr>td,
+.form-table>tfoot>tr>th,
+.form-table>tfoot>tr>td {
+  padding: 15px;
+}
 
 /* Range input */
 

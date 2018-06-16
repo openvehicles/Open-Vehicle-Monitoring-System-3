@@ -105,6 +105,7 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/cfg/autostart", "Autostart", HandleCfgAutoInit, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/firmware", "Firmware", HandleCfgFirmware, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/logging", "Logging", HandleCfgLogging, PageMenu_Config, PageAuth_Cookie);
+  RegisterPage("/cfg/locations", "Locations", HandleCfgLocations, PageMenu_Config, PageAuth_Cookie);
 }
 
 OvmsWebServer::~OvmsWebServer()

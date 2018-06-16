@@ -1906,3 +1906,160 @@ void OvmsWebServer::HandleCfgLogging(PageEntry_t& p, PageContext_t& c)
   c.panel_end();
   c.done();
 }
+
+
+/**
+ * HandleCfgLocations: configure GPS locations (URL /cfg/locations)
+ */
+void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
+{
+  std::string error;
+  OvmsConfigParam* param = MyConfig.CachedParam("locations");
+  ConfigParamMap pmap;
+  int i, max;
+  char buf[100];
+  std::string latlon, name;
+  int radius;
+  double lat, lon;
+
+  if (c.method == "POST") {
+    // process form submission:
+    max = atoi(c.getvar("loc").c_str());
+    for (i = 1; i <= max; i++) {
+      sprintf(buf, "latlon_%d", i);
+      latlon = c.getvar(buf);
+      if (latlon == "") continue;
+      lat = lon = 0;
+      sscanf(latlon.c_str(), "%lf,%lf", &lat, &lon);
+      if (lat == 0 || lon == 0)
+        error += "<li data-input=\"" + std::string(buf) + "\">Invalid coordinates (enter latitude,longitude)</li>";
+      sprintf(buf, "radius_%d", i);
+      radius = atoi(c.getvar(buf).c_str());
+      if (radius == 0) radius = 100;
+      sprintf(buf, "name_%d", i);
+      name = c.getvar(buf);
+      if (name == "")
+        error += "<li data-input=\"" + std::string(buf) + "\">Name must not be empty</li>";
+      snprintf(buf, sizeof(buf), "%f,%f,%d", lat, lon, radius);
+      pmap[name] = buf;
+    }
+    
+    if (error == "") {
+      // save:
+      param->m_map.clear();
+      param->m_map = std::move(pmap);
+      param->Save();
+
+      c.head(200);
+      c.alert("success", "<p class=\"lead\">Locations saved.</p>");
+      OutputHome(p, c);
+      c.done();
+      return;
+    }
+
+    // output error, return to form:
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    c.head(400);
+    c.alert("danger", error.c_str());
+  }
+  else {
+    // read configuration:
+    pmap = param->m_map;
+
+    // generate form:
+    c.head(200);
+  }
+
+  c.panel_start("primary panel-single", "Locations");
+  c.form_start(p.uri);
+
+  c.print(
+    "<div class=\"table-responsive list-editor receiver\" id=\"loced\">"
+      "<table class=\"table form-table\">"
+        "<colgroup>"
+          "<col style=\"width:10%\">"
+          "<col style=\"width:90%\">"
+        "</colgroup>"
+        "<template>"
+          "<tr class=\"list-item\">"
+            "<td><button type=\"button\" class=\"btn btn-danger list-item-del\"><strong>✖</strong></button></td>"
+            "<td>"
+              "<div class=\"form-group\">"
+                "<label class=\"control-label col-sm-2\" for=\"input-latlon_ITEM_ID\">Center:</label>"
+                "<div class=\"col-sm-10\">"
+                  "<div class=\"input-group\">"
+                    "<input type=\"text\" class=\"form-control\" placeholder=\"Latitude,longitude (decimal)\" name=\"latlon_ITEM_ID\" id=\"input-latlon_ITEM_ID\" value=\"ITEM_latlon\">"
+                    "<div class=\"input-group-btn\">"
+                      "<button type=\"button\" class=\"btn btn-default open-gm\" title=\"Google Maps (new tab)\">GM</button>"
+                      "<button type=\"button\" class=\"btn btn-default open-osm\" title=\"OpenStreetMaps (new tab)\">OSM</button>"
+                    "</div>"
+                  "</div>"
+                "</div>"
+              "</div>"
+              "<div class=\"form-group\">"
+                "<label class=\"control-label col-sm-2\" for=\"input-radius_ITEM_ID\">Radius:</label>"
+                "<div class=\"col-sm-10\">"
+                  "<div class=\"input-group\">"
+                    "<input type=\"number\" class=\"form-control\" placeholder=\"Enter radius (m)\" name=\"radius_ITEM_ID\" id=\"input-radius_ITEM_ID\" value=\"ITEM_radius\" min=\"1\" step=\"1\">"
+                    "<div class=\"input-group-addon\">m</div>"
+                  "</div>"
+                "</div>"
+              "</div>"
+              "<div class=\"form-group\">"
+                "<label class=\"control-label col-sm-2\" for=\"input-name_ITEM_ID\">Name:</label>"
+                "<div class=\"col-sm-10\">"
+                  "<input type=\"text\" class=\"form-control\" placeholder=\"Enter name\" autocomplete=\"name\" name=\"name_ITEM_ID\" id=\"input-name_ITEM_ID\" value=\"ITEM_name\">"
+                "</div>"
+              "</div>"
+            "</td>"
+          "</tr>"
+        "</template>"
+        "<tbody class=\"list-items\">"
+        "</tbody>"
+        "<tfoot>"
+          "<tr>"
+            "<td><button type=\"button\" class=\"btn btn-success list-item-add\"><strong>✚</strong></button></td>"
+            "<td></td>"
+          "</tr>"
+        "</tfoot>"
+      "</table>"
+      "<input type=\"hidden\" class=\"list-item-id\" name=\"loc\" value=\"0\">"
+    "</div>"
+    "<hr>");
+
+  c.input_button("default", "Save");
+  c.form_end();
+
+  c.print(
+    "<script>"
+    "$('#loced').listEditor();"
+    "$('#loced').on('click', 'button.open-gm', function(evt) {"
+      "var latlon = $(this).parent().prev().val();"
+      "window.open('https://www.google.de/maps/search/?api=1&query='+latlon, 'window-gm');"
+    "});"
+    "$('#loced').on('click', 'button.open-osm', function(evt) {"
+      "var latlon = $(this).parent().prev().val();"
+      "window.open('https://www.openstreetmap.org/search?query='+latlon, 'window-osm');"
+    "});"
+    "$('#loced').on('msg:metrics', function(evt, update) {"
+      "if ('v.p.latitude' in update || 'v.p.longitude' in update) {"
+        "var preset = { latlon: metrics['v.p.latitude']+','+metrics['v.p.longitude'], radius: 100 };"
+        "$('#loced button.list-item-add').data('preset', JSON.stringify(preset));"
+      "}"
+    "}).trigger('msg:metrics', metrics);");
+
+  for (auto &kv: pmap) {
+    lat = lon = 0;
+    radius = 100;
+    name = kv.first;
+    sscanf(kv.second.c_str(), "%lf,%lf,%d", &lat, &lon, &radius);
+    c.printf(
+      "$('#loced').listEditor('addItem', { name: '%s', latlon: '%lf,%lf', radius: %d });"
+      , json_encode(name).c_str(), lat, lon, radius);
+  }
+  
+  c.print("</script>");
+
+  c.panel_end();
+  c.done();
+}

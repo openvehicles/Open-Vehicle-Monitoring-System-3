@@ -195,6 +195,46 @@ function monitorUpdate(){
   });
 }
 
+function encode_html(s){
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/'/g, '&apos;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+$.fn.listEditor = function(op, data){
+  this.each(function(){
+    if (op) {
+      $(this).trigger('list:'+op, data);
+    } else {
+      // init:
+      var el_itemid = $(this).find('.list-item-id');
+      var el_body = $(this).find('.list-items');
+      var el_template = $(this).find('template').html();
+      $(this).on('list:addItem', function(evt, data) {
+        var id = Number(el_itemid.val()) + 1;
+        el_itemid.val(id);
+        var txt = el_template.replace(/ITEM_ID/g, id);
+        if (data) {
+          for (key in data)
+            txt = txt.replace(new RegExp('ITEM_'+key,'g'), encode_html(data[key]));
+        }
+        txt = txt.replace(/ITEM_\w+/g, '');
+        $(txt).appendTo(el_body);
+      });
+      $(this).on('click', '.list-item-add', function(evt) {
+        var data = JSON.parse($(this).data('preset') || '{}');
+        $(this).trigger('list:addItem', data);
+      });
+      $(this).on('click', '.list-item-del', function(evt) {
+        $(this).closest('.list-item').remove();
+      });
+    }
+  });
+}
+
 $(function(){
   
   // Toggle night mode:
@@ -229,8 +269,8 @@ $(function(){
     return false;
   });
 
-	// AJAX links/buttons:
-	
+  // AJAX links/buttons:
+  
   $('body').on('click', 'a[target^="#"], form[target^="#"] .btn[type="submit"]', function(event){
     var method = $(this).data("method") || "get";
     var uri = $(this).attr("href");
@@ -280,31 +320,31 @@ $(function(){
     return false;
   });
 
-	// Slider widget:
-	
-	$("body").on("change", ".slider-enable", function(evt) {
-		var slider = $(this).closest(".slider");
-		slider.find("input[type=number]").prop("disabled", !this.checked).trigger("input");
-		slider.find("input[type=range]").prop("disabled", !this.checked).trigger("input");
-		slider.find("input[type=button]").prop("disabled", !this.checked);
-	});
-	$("body").on("input", ".slider-value", function(evt) {
-		$(this).closest(".slider").find(".slider-input").val(this.value);
-	});
-	$("body").on("input", ".slider-input", function(evt) {
-		if (this.disabled)
-			this.value = $(this).data("default");
-		$(this).closest(".slider").find(".slider-value").val(this.value);
-	});
-	$("body").on("click", ".slider-up", function(evt) {
-		$(this).closest(".slider").find(".slider-input")
-			.val(function(){return 1*this.value + 1;}).trigger("input");
-	});
-	$("body").on("click", ".slider-down", function(evt) {
-		$(this).closest(".slider").find(".slider-input")
-			.val(function(){return 1*this.value - 1;}).trigger("input");
-	});
-	
+  // Slider widget:
+  
+  $("body").on("change", ".slider-enable", function(evt) {
+    var slider = $(this).closest(".slider");
+    slider.find("input[type=number]").prop("disabled", !this.checked).trigger("input");
+    slider.find("input[type=range]").prop("disabled", !this.checked).trigger("input");
+    slider.find("input[type=button]").prop("disabled", !this.checked);
+  });
+  $("body").on("input", ".slider-value", function(evt) {
+    $(this).closest(".slider").find(".slider-input").val(this.value);
+  });
+  $("body").on("input", ".slider-input", function(evt) {
+    if (this.disabled)
+      this.value = $(this).data("default");
+    $(this).closest(".slider").find(".slider-value").val(this.value);
+  });
+  $("body").on("click", ".slider-up", function(evt) {
+    $(this).closest(".slider").find(".slider-input")
+      .val(function(){return 1*this.value + 1;}).trigger("input");
+  });
+  $("body").on("click", ".slider-down", function(evt) {
+    $(this).closest(".slider").find(".slider-input")
+      .val(function(){return 1*this.value - 1;}).trigger("input");
+  });
+  
   if (!monitorTimer)
     monitorTimer = window.setInterval(monitorUpdate, 1000);
   
