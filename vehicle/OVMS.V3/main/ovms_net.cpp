@@ -101,6 +101,7 @@ bool OvmsNetTcpConnection::Connect(const char* host, const char* service)
 
   // DNS lookup the host...
   struct addrinfo hints;
+  memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
   struct addrinfo *res;
