@@ -1238,6 +1238,7 @@ CANopenResult_t SevconClient::CfgApplyProfile(uint8_t key)
 
   // update user profile status:
   m_drivemode.profile_user = key;
+  MyConfig.SetParamValueInt("xrt", "profile_user", m_drivemode.profile_user);
 
   
   // update pre-op (admin) mode params if configmode possible at the moment:
@@ -1269,8 +1270,10 @@ CANopenResult_t SevconClient::CfgApplyProfile(uint8_t key)
       err = CfgBrakelight(cfgparam(brakelight_on), cfgparam(brakelight_off));
 
     // update cfgmode profile status:
-    if (err == COR_OK)
+    if (err == COR_OK) {
       m_drivemode.profile_cfgmode = key;
+      MyConfig.SetParamValueInt("xrt", "profile_cfgmode", m_drivemode.profile_cfgmode);
+    }
 
     // switch back to op-mode (5 tries):
     key = 5;
@@ -1323,9 +1326,6 @@ CANopenResult_t SevconClient::CfgSwitchProfile(uint8_t key)
   if (key > 99)
     return COR_ERR_ParamRange;
 
-  // set current profile key:
-  MyConfig.SetParamValueInt("xrt", "profile_user", key);
-  
   // load profile:
   GetParamProfile(key, m_profile);
   m_drivemode.unsaved = 0;

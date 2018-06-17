@@ -55,6 +55,7 @@ SevconClient::SevconClient(OvmsVehicleRenaultTwizy* twizy)
   m_drivemode.u32 = 0;
   m_drivemode.v3tag = 1;
   m_drivemode.profile_user = MyConfig.GetParamValueInt("xrt", "profile_user", 0);
+  m_drivemode.profile_cfgmode = MyConfig.GetParamValueInt("xrt", "profile_cfgmode", m_drivemode.profile_user);
   GetParamProfile(m_drivemode.profile_user, m_profile);
 
   m_cfgmode_request = false;
