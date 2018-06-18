@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+
+2018-06-18 MWJ  3.1.007  OTA release
 - Logging: auto expire log archive
   New config:
     log [file.keepdays] = 30        0 = disable
@@ -9,6 +11,7 @@ Open Vehicle Monitor System v3 - Change log
   Note: auto expire is done within hour 0 of day
 - Web UI: simplified time zone region selection (vehicle config)
 - Web UI: locations editor
+- Prefer SPI RAM (on 3.1 hardware) for improved on-chip memory availability
 
 2018-05-20 MWJ  3.1.006  OTA release
 - Web status: panel auto updates, reboot button, SD card and modem status and control
