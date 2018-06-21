@@ -84,7 +84,6 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
 
     RemoteCommand nl_remote_command; // command to send, see ticker10th()
     uint8_t nl_remote_command_ticker; // number of tenths remaining to send remote command frames
-    uint16_t nl_cc_off_ticker; // seconds before we send the climate control off command
     void PollReply_Battery(uint16_t reply_id, uint8_t reply_data[], uint16_t reply_len);
     void PollReply_VIN(uint16_t reply_id, uint8_t reply_data[], uint16_t reply_len);
     TimerHandle_t m_remoteCommandTimer;

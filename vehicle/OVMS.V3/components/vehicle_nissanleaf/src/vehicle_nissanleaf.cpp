@@ -634,6 +634,13 @@ void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
       data[2] = 0x12;
       data[3] = 0x00;
       break;
+    case AUTO_DISABLE_CLIMATE_CONTROL:
+      ESP_LOGI(TAG, "Auto Disable Climate Control");
+      data[0] = 0x46;
+      data[1] = 0x08;
+      data[2] = 0x32;
+      data[3] = 0x00;
+      break;
     default:
       // shouldn't be possible, but lets not send random data on the bus
       return;
@@ -655,6 +662,10 @@ void OvmsVehicleNissanLeaf::RemoteCommandTimer()
       {
       SendCommand(nl_remote_command);
       }
+    if (remote_command_ticker == 1 && nl_remote_command == ENABLE_CLIMATE_CONTROL) {
+      {
+      SendCommand(AUTO_DISABLE_CLIMATE_CONTROL);
+      }
 
     // nl_remote_command_ticker is set to REMOTE_COMMAND_REPEAT_COUNT in
     // RemoteCommandHandler() and we decrement it every 10th of a
@@ -675,8 +686,6 @@ void OvmsVehicleNissanLeaf::RemoteCommandTimer()
 
 void OvmsVehicleNissanLeaf::Ticker1(uint32_t ticker)
   {
-  if (nl_cc_off_ticker > 0) nl_cc_off_ticker--;
-
   // FIXME
   // detecting that on is stale and therefor should turn off probably shouldn't
   // be done like this
@@ -687,23 +696,6 @@ void OvmsVehicleNissanLeaf::Ticker1(uint32_t ticker)
   if (StandardMetrics.ms_v_env_awake->IsStale())
     {
     StandardMetrics.ms_v_env_awake->SetValue(false);
-    }
-
-  if (nl_cc_off_ticker < (REMOTE_CC_TIME_GRID - REMOTE_CC_TIME_BATTERY)
-    && nl_cc_off_ticker > 1
-    && !StandardMetrics.ms_v_charge_inprogress->AsBool())
-    {
-    // we're not on grid power so switch off early
-    nl_cc_off_ticker = 1;
-    }
-  if (nl_cc_off_ticker > 1 && StandardMetrics.ms_v_env_on->AsBool())
-    {
-    // car has turned on during climate control, switch climate control off
-    nl_cc_off_ticker = 1;
-    }
-  if (nl_cc_off_ticker == 1)
-    {
-    SendCommand(DISABLE_CLIMATE_CONTROL);
     }
   }
 
@@ -747,11 +739,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::RemoteCommandHandler(Remot
   nl_remote_command = command;
   nl_remote_command_ticker = REMOTE_COMMAND_REPEAT_COUNT;
   xTimerStart(m_remoteCommandTimer, 0);
-
-  if (command == ENABLE_CLIMATE_CONTROL)
-    {
-    nl_cc_off_ticker = REMOTE_CC_TIME_GRID;
-    }
 
   return Success;
   }
