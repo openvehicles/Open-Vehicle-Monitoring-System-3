@@ -42,8 +42,6 @@
 #define GEN_1_WH_PER_GID 80
 #define REMOTE_COMMAND_REPEAT_COUNT 24 // number of times to send the remote command after the first time
 #define ACTIVATION_REQUEST_TIME 10 // tenths of a second to hold activation request signal
-#define REMOTE_CC_TIME_GRID 1800 // seconds to run remote climate control on grid power
-#define REMOTE_CC_TIME_BATTERY 900 // seconds to run remote climate control on battery power
 
 using namespace std;
 
@@ -51,7 +49,8 @@ typedef enum
   {
   ENABLE_CLIMATE_CONTROL,
   DISABLE_CLIMATE_CONTROL,
-  START_CHARGING
+  START_CHARGING,
+  AUTO_DISABLE_CLIMATE_CONTROL,
   } RemoteCommand;
 
 typedef enum
@@ -74,6 +73,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     vehicle_command_t CommandHomelink(int button, int durationms=1000);
     vehicle_command_t CommandClimateControl(bool enable);
     void RemoteCommandTimer();
+    void CcDisableTimer();
 
   private:
     void SendCanMessage(uint16_t id, uint8_t length, uint8_t *data);
@@ -82,12 +82,12 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsVehicle::vehicle_command_t RemoteCommandHandler(RemoteCommand command);
     OvmsVehicle::vehicle_command_t CommandStartCharge();
 
-    RemoteCommand nl_remote_command; // command to send, see ticker10th()
-    uint8_t nl_remote_command_ticker; // number of tenths remaining to send remote command frames
-    uint16_t nl_cc_off_ticker; // seconds before we send the climate control off command
+    RemoteCommand nl_remote_command; // command to send, see RemoteCommandTimer()
+    uint8_t nl_remote_command_ticker; // number remaining remote command frames to send
     void PollReply_Battery(uint16_t reply_id, uint8_t reply_data[], uint16_t reply_len);
     void PollReply_VIN(uint16_t reply_id, uint8_t reply_data[], uint16_t reply_len);
     TimerHandle_t m_remoteCommandTimer;
+    TimerHandle_t m_ccDisableTimer;
     metric_unit_t m_odometer_units = Other;
     OvmsMetricInt *m_gids;
     OvmsMetricFloat *m_hx;
