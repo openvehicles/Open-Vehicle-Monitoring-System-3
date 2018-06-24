@@ -63,6 +63,12 @@ void remoteCommandTimer(TimerHandle_t timer)
   nl->RemoteCommandTimer();
   }
 
+void ccDisableTimer(TimerHandle_t timer)
+  {
+  OvmsVehicleNissanLeaf* nl = (OvmsVehicleNissanLeaf*) pvTimerGetTimerID(timer);
+  nl->CcDisableTimer();
+  }
+
 OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   {
   ESP_LOGI(TAG, "Nissan Leaf v3.0 vehicle module");
@@ -80,7 +86,8 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   MyConfig.RegisterParam("xnl", "Nissan Leaf", true, true);
   ConfigChanged(NULL);
 
-  m_remoteCommandTimer = xTimerCreate("Nissan Leaf Remote Command", 50 / portTICK_PERIOD_MS, pdTRUE, this, remoteCommandTimer);
+  m_remoteCommandTimer = xTimerCreate("Nissan Leaf Remote Command", 100 / portTICK_PERIOD_MS, pdTRUE, this, remoteCommandTimer);
+  m_ccDisableTimer = xTimerCreate("Nissan Leaf CC Disable", 1000 / portTICK_PERIOD_MS, pdFALSE, this, ccDisableTimer);
 
   using std::placeholders::_1;
   using std::placeholders::_2;
@@ -658,13 +665,13 @@ void OvmsVehicleNissanLeaf::RemoteCommandTimer()
   if (nl_remote_command_ticker > 0)
     {
     nl_remote_command_ticker--;
-    if (nl_remote_command_ticker % 2 == 1)
+    if (nl_remote_command != AUTO_DISABLE_CLIMATE_CONTROL)
       {
       SendCommand(nl_remote_command);
       }
-    if (remote_command_ticker == 1 && nl_remote_command == ENABLE_CLIMATE_CONTROL) {
+    if (nl_remote_command_ticker == 1 && nl_remote_command == ENABLE_CLIMATE_CONTROL)
       {
-      SendCommand(AUTO_DISABLE_CLIMATE_CONTROL);
+      xTimerStart(m_ccDisableTimer, 0);
       }
 
     // nl_remote_command_ticker is set to REMOTE_COMMAND_REPEAT_COUNT in
@@ -682,6 +689,12 @@ void OvmsVehicleNissanLeaf::RemoteCommandTimer()
     {
       xTimerStop(m_remoteCommandTimer, 0);
     }
+  }
+
+void OvmsVehicleNissanLeaf::CcDisableTimer()
+  {
+  ESP_LOGI(TAG, "CcDisableTimer");
+  SendCommand(AUTO_DISABLE_CLIMATE_CONTROL);
   }
 
 void OvmsVehicleNissanLeaf::Ticker1(uint32_t ticker)
