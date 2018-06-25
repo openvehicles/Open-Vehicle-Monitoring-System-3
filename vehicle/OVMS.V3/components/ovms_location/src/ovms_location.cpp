@@ -44,6 +44,7 @@ const char *LOCATIONS_PARAM = "locations";
 
 #define LOCATION_R 6371
 #define LOCATION_TO_RAD (3.1415926536 / 180)
+
 double OvmsLocationDistance(double th1, double ph1, double th2, double ph2)
   {
   double dx, dy, dz;
@@ -64,6 +65,9 @@ OvmsLocation::OvmsLocation(std::string name, float latitude, float longitude, in
   m_longitude = longitude;
   m_radius = radius;
   m_inlocation = false;
+
+  if (MyLocations.m_gpslock)
+    IsInLocation(MyLocations.m_latitude,MyLocations.m_longitude);
   }
 
 OvmsLocation::~OvmsLocation()
@@ -110,6 +114,9 @@ void OvmsLocation::Update(float latitude, float longitude, int radius)
   m_latitude = latitude;
   m_longitude = longitude;
   m_radius = radius;
+
+  if (MyLocations.m_gpslock)
+    IsInLocation(MyLocations.m_latitude,MyLocations.m_longitude);
   }
 
 void location_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -163,6 +170,26 @@ void location_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   writer->puts("Location defined");
   }
 
+void location_radius(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char *name = argv[0];
+  int radius = atoi(argv[1]);
+  OvmsLocation* loc = MyLocations.Find(name);
+
+  if (loc == NULL)
+    {
+    writer->printf("Error: No location %s defined\n",name);
+    return;
+    }
+
+  float latitude = loc->m_latitude;
+  float longitude = loc->m_longitude;
+  char val[32];
+  snprintf(val,sizeof(val),"%0.6f,%0.6f,%d",latitude,longitude,radius);
+  MyConfig.SetParamValue(LOCATIONS_PARAM,name,val);
+  writer->puts("Location radius set");
+  }
+
 void location_rm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   MyConfig.DeleteInstance(LOCATIONS_PARAM,argv[0]);
@@ -176,6 +203,8 @@ void location_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     writer->puts("(with good GPS lock)");
   else
     writer->puts("(without GPS lock)");
+
+  writer->printf("There are %d location(s) defined\n",MyLocations.m_locations.size());
 
   bool found = false;
   for (LocationMap::iterator it=MyLocations.m_locations.begin(); it!=MyLocations.m_locations.end(); ++it)
@@ -224,6 +253,7 @@ OvmsLocations::OvmsLocations()
   OvmsCommand* cmd_location = MyCommandApp.RegisterCommand("location","LOCATION framework",NULL, "", 0, 0, true);
   cmd_location->RegisterCommand("list","Show all locations",location_list, "", 0, 0, true);
   cmd_location->RegisterCommand("set","Set the position of a location",location_set, "<name> [<latitude> <longitude> [<radius>]]", 1, 4, true);
+  cmd_location->RegisterCommand("radius","Set the radius of a location",location_radius, "<name> <radius>", 2, 2, true);
   cmd_location->RegisterCommand("rm","Remove a defined location",location_rm, "<name>", 1, 1, true);
   cmd_location->RegisterCommand("status","Show location status",location_status, "", 0, 0, true);
 
