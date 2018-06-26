@@ -230,11 +230,12 @@ void test_realloc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 
 void test_spiram(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  writer->printf("Metrics (%p) are in %s RAM\n",
+  writer->printf("Metrics (%p) are in %s RAM (%d bytes for a base metric)\n",
     StandardMetrics.ms_m_version,
     (((unsigned int)StandardMetrics.ms_m_version >= 0x3f800000)&&
      ((unsigned int)StandardMetrics.ms_m_version <= 0x3fbfffff))?
-     "SPI":"INTERNAL");
+     "SPI":"INTERNAL",
+     sizeof(OvmsMetric));
   }
 
 void test_strverscmp(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
