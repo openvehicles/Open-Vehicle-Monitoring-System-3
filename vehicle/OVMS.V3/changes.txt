@@ -2,6 +2,12 @@ Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
 
+2018-06-26 MWJ  3.1.008  OTA release
+- Vehicle theft alert if vehicle moved more than 500m when parked
+- New 'location radius' command to set location radius
+- Only issue 'location.enter' and 'location.leave' events if vehicle is ON
+- Fix issue with OTA updates in 3.1.007
+
 2018-06-18 MWJ  3.1.007  OTA release
 - Logging: auto expire log archive
   New config:
