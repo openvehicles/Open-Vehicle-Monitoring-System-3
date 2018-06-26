@@ -68,7 +68,7 @@ typedef enum
   kWh           = 44,
   Watts         = 45,
   WattHours     = 46,
-  
+
   Seconds       = 50,
   Minutes       = 51,
   Hours         = 52,
@@ -77,7 +77,7 @@ typedef enum
 
   Kph           = 61,
   Mph           = 62,
- 
+
   // Acceleration:
   KphPS         = 71,   // Kph per second
   MphPS         = 72,   // Mph per second
@@ -87,7 +87,7 @@ typedef enum
   sq            = 81,   // Signal Quality (in SQ units)
 
   Percentage    = 90,
-  
+
   // Energy consumption:
   WattHoursPK   = 100,  // Wh/km
   WattHoursPM   = 101,  // Wh/mi
@@ -158,7 +158,7 @@ class OvmsMetricBool : public OvmsMetric
     void operator=(bool value) { SetValue(value); }
     void SetValue(std::string value);
     void operator=(std::string value) { SetValue(value); }
-    
+
   protected:
     bool m_value;
   };
@@ -178,7 +178,7 @@ class OvmsMetricInt : public OvmsMetric
     void operator=(int value) { SetValue(value); }
     void SetValue(std::string value);
     void operator=(std::string value) { SetValue(value); }
-    
+
   protected:
     int m_value;
   };
@@ -198,7 +198,7 @@ class OvmsMetricFloat : public OvmsMetric
     void operator=(float value) { SetValue(value); }
     void SetValue(std::string value);
     void operator=(std::string value) { SetValue(value); }
-    
+
   protected:
     float m_value;
   };
@@ -213,7 +213,7 @@ class OvmsMetricString : public OvmsMetric
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
     void SetValue(std::string value);
     void operator=(std::string value) { SetValue(value); }
-    
+
   protected:
     std::string m_value;
   };
@@ -252,7 +252,7 @@ class OvmsMetricBitset : public OvmsMetric
         }
       return ss.str();
       }
-    
+
     void SetValue(std::string value)
       {
       std::bitset<N> n_value;
@@ -269,12 +269,12 @@ class OvmsMetricBitset : public OvmsMetric
       SetValue(n_value);
       }
     void operator=(std::string value) { SetValue(value); }
-    
+
     std::bitset<N> AsBitset(const std::bitset<N> defvalue = std::bitset<N>(0), metric_unit_t units = Other)
       {
       return m_defined ? m_value : defvalue;
       }
-    
+
     void SetValue(std::bitset<N> value, metric_unit_t units = Other)
       {
       if (m_value != value)
@@ -286,7 +286,7 @@ class OvmsMetricBitset : public OvmsMetric
         SetModified(false);
       }
     void operator=(std::bitset<N> value) { SetValue(value); }
-    
+
   protected:
     std::bitset<N> m_value;
   };
@@ -323,7 +323,7 @@ class OvmsMetricSet : public OvmsMetric
         }
       return ss.str();
       }
-    
+
     void SetValue(std::string value)
       {
       std::set<ElemType> n_value;
@@ -339,12 +339,12 @@ class OvmsMetricSet : public OvmsMetric
       SetValue(n_value);
       }
     void operator=(std::string value) { SetValue(value); }
-    
+
     std::set<ElemType> AsSet(const std::set<ElemType> defvalue = std::set<ElemType>(), metric_unit_t units = Other)
       {
       return m_defined ? m_value : defvalue;
       }
-    
+
     void SetValue(std::set<ElemType> value, metric_unit_t units = Other)
       {
       if (m_value != value)
@@ -356,7 +356,7 @@ class OvmsMetricSet : public OvmsMetric
         SetModified(false);
       }
     void operator=(std::set<ElemType> value) { SetValue(value); }
-    
+
   protected:
     std::set<ElemType> m_value;
   };
@@ -394,7 +394,7 @@ class OvmsMetrics
     bool SetBool(const char* metric, bool value);
     bool SetFloat(const char* metric, float value);
     OvmsMetric* Find(const char* metric);
-    
+
     OvmsMetricString *InitString(const char* metric, uint16_t autostale=0, const char* value=NULL, metric_unit_t units = Other);
     OvmsMetricInt *InitInt(const char* metric, uint16_t autostale=0, int value=0, metric_unit_t units = Other);
     OvmsMetricBool *InitBool(const char* metric, uint16_t autostale=0, bool value=0, metric_unit_t units = Other);
@@ -417,7 +417,7 @@ class OvmsMetrics
         m->SetValue(value);
       return m;
       }
-    
+
   public:
     void RegisterListener(const char* caller, const char* name, MetricCallback callback);
     void DeregisterListener(const char* caller);
