@@ -64,17 +64,21 @@ class OvmsLocations
     bool m_gpslock;
     float m_latitude;
     float m_longitude;
+    float m_park_latitude;
+    float m_park_longitude;
     LocationMap m_locations;
 
   public:
     void ReloadMap();
     void UpdateLocations();
+    void CheckTheft();
     OvmsLocation* Find(std::string name);
 
   public:
     void UpdatedGpsLock(OvmsMetric* metric);
     void UpdatedLatitude(OvmsMetric* metric);
     void UpdatedLongitude(OvmsMetric* metric);
+    void UpdatedVehicleOn(OvmsMetric* metric);
     void UpdatedConfig(std::string event, void* data);
   };
 

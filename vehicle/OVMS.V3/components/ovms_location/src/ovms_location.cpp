@@ -35,6 +35,7 @@ static const char *TAG = "location";
 #include "ovms_config.h"
 #include "ovms_events.h"
 #include "ovms_script.h"
+#include "ovms_notify.h"
 #include "ovms_command.h"
 #include "metrics_standard.h"
 #include <math.h>
@@ -210,6 +211,11 @@ void location_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
   else
     writer->puts("(without GPS lock)");
 
+  if ((MyLocations.m_park_latitude != 0)&&(MyLocations.m_park_longitude != 0))
+    writer->printf("Vehicle is parked at %0.6f,%0.6f\n",
+      MyLocations.m_park_latitude,
+      MyLocations.m_park_longitude);
+
   writer->printf("There are %d location(s) defined\n",MyLocations.m_locations.size());
 
   bool found = false;
@@ -254,6 +260,8 @@ OvmsLocations::OvmsLocations()
   m_gpslock = false;
   m_latitude = 0;
   m_longitude = 0;
+  m_park_latitude = 0;
+  m_park_longitude = 0;
 
   // Register our commands
   OvmsCommand* cmd_location = MyCommandApp.RegisterCommand("location","LOCATION framework",NULL, "", 0, 0, true);
@@ -272,6 +280,7 @@ OvmsLocations::OvmsLocations()
   MyMetrics.RegisterListener(TAG, MS_V_POS_GPSLOCK, std::bind(&OvmsLocations::UpdatedGpsLock, this, _1));
   MyMetrics.RegisterListener(TAG, MS_V_POS_LATITUDE, std::bind(&OvmsLocations::UpdatedLatitude, this, _1));
   MyMetrics.RegisterListener(TAG, MS_V_POS_LONGITUDE, std::bind(&OvmsLocations::UpdatedLongitude, this, _1));
+  MyMetrics.RegisterListener(TAG, MS_V_ENV_ON, std::bind(&OvmsLocations::UpdatedVehicleOn, this, _1));
   MyEvents.RegisterEvent(TAG,"config.mounted", std::bind(&OvmsLocations::UpdatedConfig, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsLocations::UpdatedConfig, this, _1, _2));
 
@@ -307,14 +316,38 @@ void OvmsLocations::UpdatedLatitude(OvmsMetric* metric)
   {
   OvmsMetricFloat* m = (OvmsMetricFloat*)metric;
   m_latitude = m->AsFloat();
-  if (m_gpslock) UpdateLocations();
+  if (m_gpslock)
+    {
+    UpdateLocations();
+    CheckTheft();
+    }
   }
 
 void OvmsLocations::UpdatedLongitude(OvmsMetric* metric)
   {
   OvmsMetricFloat* m = (OvmsMetricFloat*)metric;
   m_longitude = m->AsFloat();
-  if (m_gpslock) UpdateLocations();
+  if (m_gpslock)
+    {
+    UpdateLocations();
+    CheckTheft();
+    }
+  }
+
+void OvmsLocations::UpdatedVehicleOn(OvmsMetric* metric)
+  {
+  OvmsMetricBool* m = (OvmsMetricBool*)metric;
+  bool caron = m->AsBool();
+  if (caron)
+    {
+    m_park_latitude = 0;
+    m_park_longitude = 0;
+    }
+  else
+    {
+    m_park_latitude = m_latitude;
+    m_park_longitude = m_longitude;
+    }
   }
 
 void OvmsLocations::ReloadMap()
@@ -373,6 +406,23 @@ void OvmsLocations::UpdateLocations()
   for (LocationMap::iterator it=m_locations.begin(); it!=m_locations.end(); ++it)
     {
     it->second->IsInLocation(m_latitude,m_longitude);
+    }
+  }
+
+void OvmsLocations::CheckTheft()
+  {
+  if (m_park_latitude == 0) return;
+  if (m_park_longitude == 0) return;
+  if (StandardMetrics.ms_v_env_on->AsBool()) return;
+  int alarm = MyConfig.GetParamValueInt("vehicle", "flatbed.alarmdistance", 500);
+  if (alarm == 0) return;
+
+  double dist = fabs(OvmsLocationDistance((double)m_latitude,(double)m_longitude,(double)m_park_latitude,(double)m_park_longitude));
+  if (dist > alarm)
+    {
+    m_park_latitude = 0;
+    m_park_longitude = 0;
+    MyNotify.NotifyString("alert", "flatbed.moved", "Vehicle is being transported while parked - possible theft/flatbed");
     }
   }
 
