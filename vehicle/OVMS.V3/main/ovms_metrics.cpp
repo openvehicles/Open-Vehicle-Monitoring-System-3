@@ -404,6 +404,21 @@ std::string OvmsMetric::AsString(const char* defvalue, metric_unit_t units, int 
   return std::string(defvalue);
   }
 
+std::string OvmsMetric::AsUnitString(const char* defvalue, metric_unit_t units, int precision)
+  {
+  if (!m_defined)
+    return std::string(defvalue);
+  return AsString(defvalue, units, precision) + OvmsMetricUnitLabel(GetUnits());
+  }
+
+std::string OvmsMetric::AsJSON(const char* defvalue, metric_unit_t units, int precision)
+  {
+  std::string buf = "\"";
+  buf.append(json_encode(AsString(defvalue, units, precision)));
+  buf.append("\"");
+  return buf;
+  }
+
 float OvmsMetric::AsFloat(const float defvalue, metric_unit_t units)
   {
   return defvalue;

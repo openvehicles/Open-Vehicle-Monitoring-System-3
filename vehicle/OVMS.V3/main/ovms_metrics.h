@@ -105,19 +105,8 @@ class OvmsMetric
 
   public:
     virtual std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
-    std::string AsUnitString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
-      {
-      if (!m_defined)
-        return std::string(defvalue);
-      return AsString(defvalue, units, precision) + OvmsMetricUnitLabel(GetUnits());
-      }
-    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
-      {
-      std::string buf = "\"";
-      buf.append(json_encode(AsString(defvalue, units, precision)));
-      buf.append("\"");
-      return buf;
-      }
+    std::string AsUnitString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
+    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
     virtual float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     virtual void SetValue(std::string value);
     virtual void operator=(std::string value);
