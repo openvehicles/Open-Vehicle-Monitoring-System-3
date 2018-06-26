@@ -380,7 +380,7 @@ size_t OvmsMetrics::RegisterModifier()
 
 OvmsMetric::OvmsMetric(const char* name, uint16_t autostale, metric_unit_t units)
   {
-  m_defined = false;
+  m_defined = NeverDefined;
   m_modified.reset();
   m_name = name;
   m_lastmodified = 0;
@@ -406,7 +406,7 @@ std::string OvmsMetric::AsString(const char* defvalue, metric_unit_t units, int 
 
 std::string OvmsMetric::AsUnitString(const char* defvalue, metric_unit_t units, int precision)
   {
-  if (!m_defined)
+  if (!IsDefined())
     return std::string(defvalue);
   return AsString(defvalue, units, precision) + OvmsMetricUnitLabel(GetUnits());
   }
@@ -444,7 +444,10 @@ uint32_t OvmsMetric::Age()
 
 void OvmsMetric::SetModified(bool changed)
   {
-  m_defined = true;
+  if (m_defined == NeverDefined)
+    m_defined = FirstDefined;
+  else
+    m_defined = Defined;
   m_stale = false;
   m_lastmodified = monotonictime;
   if (changed)
@@ -452,6 +455,16 @@ void OvmsMetric::SetModified(bool changed)
     m_modified.set();
     MyMetrics.NotifyModified(this);
     }
+  }
+
+bool OvmsMetric::IsDefined()
+  {
+  return (m_defined != NeverDefined);
+  }
+
+bool OvmsMetric::IsFirstDefined()
+  {
+  return (m_defined == FirstDefined);
   }
 
 bool OvmsMetric::IsStale()
@@ -510,7 +523,7 @@ OvmsMetricInt::~OvmsMetricInt()
 
 std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units, int precision)
   {
-  if (m_defined)
+  if (IsDefined())
     {
     char buffer[33];
     if ((units != Other)&&(units != m_units))
@@ -527,7 +540,7 @@ std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units, i
 
 std::string OvmsMetricInt::AsJSON(const char* defvalue, metric_unit_t units, int precision)
   {
-  if (m_defined)
+  if (IsDefined())
     return AsString(defvalue, units, precision);
   else
     return std::string((defvalue && *defvalue) ? defvalue : "0");
@@ -540,7 +553,7 @@ float OvmsMetricInt::AsFloat(const float defvalue, metric_unit_t units)
 
 int OvmsMetricInt::AsInt(const int defvalue, metric_unit_t units)
   {
-  if (m_defined)
+  if (IsDefined())
     {
     if ((units != Other)&&(units != m_units))
       return UnitConvert(m_units,units,m_value);
@@ -589,7 +602,7 @@ OvmsMetricBool::~OvmsMetricBool()
 
 std::string OvmsMetricBool::AsString(const char* defvalue, metric_unit_t units, int precision)
   {
-  if (m_defined)
+  if (IsDefined())
     {
     if (m_value)
       return std::string("yes");
@@ -604,7 +617,7 @@ std::string OvmsMetricBool::AsString(const char* defvalue, metric_unit_t units, 
 
 std::string OvmsMetricBool::AsJSON(const char* defvalue, metric_unit_t units, int precision)
   {
-  if (m_defined)
+  if (IsDefined())
     {
     if (m_value)
       return std::string("true");
@@ -627,7 +640,7 @@ float OvmsMetricBool::AsFloat(const float defvalue, metric_unit_t units)
 
 int OvmsMetricBool::AsBool(const bool defvalue)
   {
-  if (m_defined)
+  if (IsDefined())
     return m_value;
   else
     return defvalue;
@@ -672,7 +685,7 @@ OvmsMetricFloat::~OvmsMetricFloat()
 
 std::string OvmsMetricFloat::AsString(const char* defvalue, metric_unit_t units, int precision)
   {
-  if (m_defined)
+  if (IsDefined())
     {
     std::ostringstream ss;
     if (precision >= 0)
@@ -695,7 +708,7 @@ std::string OvmsMetricFloat::AsString(const char* defvalue, metric_unit_t units,
 
 std::string OvmsMetricFloat::AsJSON(const char* defvalue, metric_unit_t units, int precision)
   {
-  if (m_defined)
+  if (IsDefined())
     return AsString(defvalue, units, precision);
   else
     return std::string((defvalue && *defvalue) ? defvalue : "0");
@@ -703,7 +716,7 @@ std::string OvmsMetricFloat::AsJSON(const char* defvalue, metric_unit_t units, i
 
 float OvmsMetricFloat::AsFloat(const float defvalue, metric_unit_t units)
   {
-  if (m_defined)
+  if (IsDefined())
     {
     if ((units != Other)&&(units != m_units))
       return UnitConvert(m_units,units,m_value);
@@ -756,7 +769,7 @@ OvmsMetricString::~OvmsMetricString()
 
 std::string OvmsMetricString::AsString(const char* defvalue, metric_unit_t units, int precision)
   {
-  if (m_defined)
+  if (IsDefined())
     return m_value;
   else
     return std::string(defvalue);

@@ -45,7 +45,7 @@
 
 using namespace std;
 
-typedef enum
+typedef enum : uint8_t
   {
   Other         = 0,
   Native        = Other,
@@ -93,6 +93,13 @@ typedef enum
   WattHoursPM   = 101,  // Wh/mi
   } metric_unit_t;
 
+typedef enum : uint8_t
+  {
+  NeverDefined   = 0,
+  FirstDefined,
+  Defined
+} metric_defined_t;
+
 extern const char* OvmsMetricUnitLabel(metric_unit_t units);
 extern int UnitConvert(metric_unit_t from, metric_unit_t to, int value);
 extern float UnitConvert(metric_unit_t from, metric_unit_t to, float value);
@@ -112,6 +119,8 @@ class OvmsMetric
     virtual void operator=(std::string value);
     virtual uint32_t LastModified();
     virtual uint32_t Age();
+    virtual bool IsDefined();
+    virtual bool IsFirstDefined();
     virtual bool IsStale();
     virtual void SetStale(bool stale);
     virtual void SetAutoStale(uint16_t seconds);
@@ -124,11 +133,11 @@ class OvmsMetric
   public:
     OvmsMetric* m_next;
     const char* m_name;
-    metric_unit_t m_units;
     std::bitset<METRICS_MAX_MODIFIERS> m_modified;
     uint32_t m_lastmodified;
     uint16_t m_autostale;
-    bool m_defined;
+    metric_unit_t m_units;
+    metric_defined_t m_defined;
     bool m_stale;
   };
 
@@ -227,7 +236,7 @@ class OvmsMetricBitset : public OvmsMetric
   public:
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
       {
-      if (!m_defined)
+      if (!IsDefined())
         return std::string(defvalue);
       std::ostringstream ss;
       for (int i = 0; i < N; i++)
@@ -261,7 +270,7 @@ class OvmsMetricBitset : public OvmsMetric
 
     std::bitset<N> AsBitset(const std::bitset<N> defvalue = std::bitset<N>(0), metric_unit_t units = Other)
       {
-      return m_defined ? m_value : defvalue;
+      return IsDefined() ? m_value : defvalue;
       }
 
     void SetValue(std::bitset<N> value, metric_unit_t units = Other)
@@ -301,7 +310,7 @@ class OvmsMetricSet : public OvmsMetric
   public:
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
       {
-      if (!m_defined)
+      if (!IsDefined())
         return std::string(defvalue);
       std::ostringstream ss;
       for (auto i = m_value.begin(); i != m_value.end(); i++)
@@ -331,7 +340,7 @@ class OvmsMetricSet : public OvmsMetric
 
     std::set<ElemType> AsSet(const std::set<ElemType> defvalue = std::set<ElemType>(), metric_unit_t units = Other)
       {
-      return m_defined ? m_value : defvalue;
+      return IsDefined() ? m_value : defvalue;
       }
 
     void SetValue(std::set<ElemType> value, metric_unit_t units = Other)
