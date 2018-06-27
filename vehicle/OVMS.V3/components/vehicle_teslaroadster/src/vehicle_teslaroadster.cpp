@@ -50,6 +50,32 @@ static const char *TAG = "v-teslaroadster";
 #include "metrics_standard.h"
 #include "ovms_utils.h"
 
+OvmsVehicleTeslaRoadster* MyTeslaRoadster = NULL;
+
+void TeslaRoadsterSpeedoTimer( TimerHandle_t timer )
+  {
+  if (MyTeslaRoadster==NULL)
+    {
+    xTimerStop(timer,0);
+    xTimerDelete(timer,0);
+    return;
+    }
+
+  if (!MyTeslaRoadster->m_speedo_running) return;
+
+  if (MyTeslaRoadster->m_speedo_ticker_count++ >= 10)
+    {
+    MyTeslaRoadster->m_speedo_ticker_count = 0;
+    MyTeslaRoadster->m_speedo_ticker = MyTeslaRoadster->m_speedo_ticker_max;
+    }
+
+  if (MyTeslaRoadster->m_speedo_ticker > 0)
+    {
+    MyTeslaRoadster->m_speedo_ticker--;
+    MyTeslaRoadster->m_can1->Write(&MyTeslaRoadster->m_speedo_frame);
+    }
+  }
+
 float TeslaRoadsterLatLon(int v)
   {
   return (((float)v) / 2048 / 3600);
@@ -72,14 +98,39 @@ OvmsVehicleTeslaRoadster::OvmsVehicleTeslaRoadster()
   m_cooldown_cycles_done = 0;
   m_cooldown_recycle_ticker = -1;
 
+  m_speedo_running = false;
+  memset(&m_speedo_frame,0,sizeof(CAN_frame_t));
+  m_speedo_frame.origin = m_can1;
+  m_speedo_frame.FIR.U = 0;
+  m_speedo_frame.FIR.B.DLC = 8;
+  m_speedo_frame.FIR.B.FF = CAN_frame_std;
+  m_speedo_frame.MsgID = 0x400;
+  m_speedo_rawspeed = 0;
+  m_speedo_ticker = 0;
+  m_speedo_ticker_max = 0;
+  m_speedo_ticker_count = 0;
+  m_speedo_timer = NULL;
+
   MyConfig.RegisterParam("xtr", "Tesla Roadster", true, true);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_1000KBPS);
+
+  MyTeslaRoadster = this;
   }
 
 OvmsVehicleTeslaRoadster::~OvmsVehicleTeslaRoadster()
   {
   ESP_LOGI(TAG, "Shutdown Tesla Roadster vehicle module");
+
+  MyTeslaRoadster = NULL;
+
+  if (m_speedo_running)
+    {
+    xTimerStop(m_speedo_timer,0);
+    xTimerDelete(m_speedo_timer,0);
+    m_speedo_timer = NULL;
+    m_speedo_running = false;
+    }
   }
 
 void OvmsVehicleTeslaRoadster::Status(int verbosity, OvmsWriter* writer)
@@ -179,6 +230,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           }
         case 0x89:  // Charging Voltage / Iavailable
           {
+          m_speedo_rawspeed = (int)d[1];
           StandardMetrics.ms_v_pos_speed->SetValue((float)d[1],Mph);
           // https://en.wikipedia.org/wiki/Tesla_Roadster#Transmission
           // Motor RPM given as 14,000rpm for top speed 125mph (201kph) = 112rpm/mph
@@ -295,7 +347,6 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           StandardMetrics.ms_v_charge_pilot->SetValue(d[1] & 0x08);
           StandardMetrics.ms_v_charge_inprogress->SetValue(d[1] & 0x10);
           StandardMetrics.ms_v_env_handbrake->SetValue(d[1] & 0x40);
-          StandardMetrics.ms_v_env_on->SetValue(d[1] & 0x80);
           StandardMetrics.ms_v_env_locked->SetValue(d[2] & 0x08);
           StandardMetrics.ms_v_env_valet->SetValue(d[2] & 0x10);
           StandardMetrics.ms_v_env_headlights->SetValue(d[2] & 0x20);
@@ -305,6 +356,32 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           StandardMetrics.ms_v_env_charging12v->SetValue(d[3] & 0x01);
           StandardMetrics.ms_v_env_cooling->SetValue(d[3] & 0x02);
           StandardMetrics.ms_v_env_alarm->SetValue(d[4] & 0x02);
+          if (d[1] & 0x80)
+            {
+            StandardMetrics.ms_v_env_on->SetValue(true);
+            if (MyConfig.GetParamValueBool("xtr", "digital.speedo", false))
+              {
+              // Digital speedo is enabled
+              m_speedo_ticker = 0;
+              m_speedo_ticker_max = MyConfig.GetParamValueInt("xtr", "digital.speedo.reps", 3);
+              m_speedo_running = true;
+              m_speedo_timer = xTimerCreate("TR ticker",
+                1 / portTICK_PERIOD_MS,
+                pdTRUE,
+                this,
+                TeslaRoadsterSpeedoTimer);
+              xTimerStart(m_speedo_timer,0);
+              }
+            }
+          else
+            {
+            StandardMetrics.ms_v_env_on->SetValue(false);
+            m_speedo_running = false;
+            xTimerStop(m_speedo_timer,0);
+            xTimerDelete(m_speedo_timer,0);
+            m_speedo_timer = NULL;
+            }
+
           break;
           }
         case 0x9e: // CAC
@@ -418,6 +495,22 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
       switch(d[0])
         {
         case 0x02:   // Data to dashboard
+          {
+          if ((m_speedo_running)&&(d[2] != m_speedo_rawspeed))
+            {
+            // Digital speedo is running
+            m_speedo_frame.data.u8[0] = d[0];
+            m_speedo_frame.data.u8[1] = d[1];
+            m_speedo_frame.data.u8[2] = m_speedo_rawspeed;
+            m_speedo_frame.data.u8[3] = d[3] & 0x0f0;
+            m_speedo_frame.data.u8[4] = d[4];
+            m_speedo_frame.data.u8[5] = d[5];
+            m_speedo_frame.data.u8[6] = d[6];
+            m_speedo_frame.data.u8[7] = d[7];
+            m_can1->Write(&m_speedo_frame);
+            m_speedo_ticker = m_speedo_ticker_max;
+            }
+
           unsigned int amps = (unsigned int)d[2]
                             + (((unsigned int)d[3]&0x7f)<<8);
           StandardMetrics.ms_v_bat_current->SetValue((float)amps);
@@ -428,6 +521,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
             float power = amps * (((400.0-370.0)*soc/100.0)+370) / 1000.0;     // estimate Voltage by SOC
             StandardMetrics.ms_v_bat_power->SetValue((float)power);
             }
+          }
           break;
         }
       break;

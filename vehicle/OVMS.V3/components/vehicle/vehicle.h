@@ -97,13 +97,15 @@ class OvmsVehicle
     virtual const char* VehicleShortName();
 
   protected:
-    canbus* m_can1;
-    canbus* m_can2;
-    canbus* m_can3;
     QueueHandle_t m_rxqueue;
     TaskHandle_t m_rxtask;
     bool m_registeredlistener;
     bool m_autonotifications;
+
+  public:
+    canbus* m_can1;
+    canbus* m_can2;
+    canbus* m_can3;
 
   private:
     void VehicleTicker1(std::string event, void* data);

@@ -75,6 +75,15 @@ class OvmsVehicleTeslaRoadster : public OvmsVehicle
     int m_cooldown_recycle_ticker;             // Cooldown recycle ticker
 
   public:
+    bool m_speedo_running; // True if digital speedo feature is running
+    CAN_frame_t m_speedo_frame;                // Current digital speedo frame
+    int m_speedo_rawspeed;                     // Current raw speed
+    int m_speedo_ticker;                       // Digital speedo ticker
+    int m_speedo_ticker_max;                   // Max value for ticker
+    int m_speedo_ticker_count;                 // Count for speed ticker
+    TimerHandle_t m_speedo_timer;              // Timer for digital speedo
+
+  public:
     virtual void Status(int verbosity, OvmsWriter* writer);
 
   protected:
