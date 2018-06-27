@@ -143,15 +143,17 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandStat(
   bool chargeport_open = StdMetrics.ms_v_door_chargeport->AsBool();
   if (chargeport_open)
   {
-    if (cfg_suffsoc > 0 && twizy_soc >= cfg_suffsoc*100 && cfg_suffrange > 0 && twizy_range_ideal >= cfg_suffrange)
-      writer->puts("Sufficient SOC and range reached.");
-    else if (cfg_suffsoc > 0 && twizy_soc >= cfg_suffsoc*100)
-      writer->puts("Sufficient SOC level reached.");
-    else if (cfg_suffrange > 0 && twizy_range_ideal >= cfg_suffrange)
-      writer->puts("Sufficient range reached.");
-    
     std::string charge_state = StdMetrics.ms_v_charge_state->AsString();
 
+    if (charge_state != "done") {
+      if (cfg_suffsoc > 0 && twizy_soc >= cfg_suffsoc*100 && cfg_suffrange > 0 && twizy_range_ideal >= cfg_suffrange)
+        writer->puts("Sufficient SOC and range reached.");
+      else if (cfg_suffsoc > 0 && twizy_soc >= cfg_suffsoc*100)
+        writer->puts("Sufficient SOC level reached.");
+      else if (cfg_suffrange > 0 && twizy_range_ideal >= cfg_suffrange)
+        writer->puts("Sufficient range reached.");
+    }
+    
     // Translate state codes:
     if (charge_state == "charging")
       charge_state = "Charging";
