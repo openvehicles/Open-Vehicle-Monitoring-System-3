@@ -377,8 +377,8 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
     case 0x400:
       {
       switch(d[0])
-          {
-          case 0x02:   // Data to dashboard
+        {
+        case 0x02:   // Data to dashboard
           unsigned int amps = (unsigned int)d[2]
                             + (((unsigned int)d[3]&0x7f)<<8);
           StandardMetrics.ms_v_bat_current->SetValue((float)amps);
@@ -390,7 +390,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
             StandardMetrics.ms_v_bat_power->SetValue((float)power);
             }
           break;
-          }
+        }
       break;
       }
     case 0x402:
@@ -587,7 +587,38 @@ OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandStopCharge()
 
 OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandSetChargeTimer(bool timeron, uint16_t timerstart)
   {
-  return NotImplemented;
+  CAN_frame_t frame;
+  memset(&frame,0,sizeof(frame));
+
+  frame.origin = m_can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 8;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x102;
+  frame.data.u8[0] = 0x05;
+  frame.data.u8[1] = 0x1B;
+  frame.data.u8[2] = 0x00;
+  frame.data.u8[3] = 0x00;
+  frame.data.u8[4] = timeron;
+  frame.data.u8[5] = 0x00;
+  frame.data.u8[6] = 0x00;
+  frame.data.u8[7] = 0x00;
+  m_can1->Write(&frame);
+
+  if (timeron)
+    {
+    frame.data.u8[0] = 0x05;
+    frame.data.u8[1] = 0x1A;
+    frame.data.u8[2] = 0x00;
+    frame.data.u8[3] = 0x00;
+    frame.data.u8[4] = (timerstart>>8)&0xff;
+    frame.data.u8[5] = (timerstart & 0xff);
+    frame.data.u8[6] = 0x00;
+    frame.data.u8[7] = 0x00;
+    m_can1->Write(&frame);
+    }
+
+  return Success;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandCooldown(bool cooldownon)
