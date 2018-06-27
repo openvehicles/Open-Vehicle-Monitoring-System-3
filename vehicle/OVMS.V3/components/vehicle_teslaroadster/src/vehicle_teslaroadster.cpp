@@ -892,7 +892,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandCooldown(bool co
   m_cooldown_recycle_ticker = -1;
   m_cooldown_running = true;
 
-  return NotImplemented;
+  return Success;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandWakeup()
