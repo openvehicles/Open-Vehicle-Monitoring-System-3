@@ -1172,6 +1172,17 @@ void OvmsVehicle::NotifyChargeState()
     NotifyHeatingStart();
   }
 
+OvmsVehicle::vehicle_mode_t OvmsVehicle::VehicleModeKey(const std::string code)
+  {
+  vehicle_mode_t key;
+  if      (code == "standard")      key = Standard;
+  else if (code == "storage")       key = Storage;
+  else if (code == "range")         key = Range;
+  else if (code == "performance")   key = Performance;
+  else key = Standard;
+  return key;
+  }
+
 void OvmsVehicle::PollSetPidList(canbus* bus, const poll_pid_t* plist)
   {
   m_poll_bus = bus;

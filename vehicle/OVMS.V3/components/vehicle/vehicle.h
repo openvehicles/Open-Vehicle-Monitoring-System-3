@@ -202,6 +202,9 @@ class OvmsVehicle
       } vehicle_mode_t;
 
   public:
+    vehicle_mode_t VehicleModeKey(const std::string code);
+
+  public:
     virtual vehicle_command_t CommandSetChargeMode(vehicle_mode_t mode);
     virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
     virtual vehicle_command_t CommandStartCharge();
