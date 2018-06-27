@@ -1,6 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Tesla Roadster: COOLDOWN command implementation
+- Tesla Roadster: Charge Timer support
+- Tesla Roadster: Digital Speedo feature implementation
 
 2018-06-26 MWJ  3.1.008  OTA release
 - Vehicle theft alert if vehicle moved more than 500m when parked

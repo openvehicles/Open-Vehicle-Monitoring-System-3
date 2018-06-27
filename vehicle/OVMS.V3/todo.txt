@@ -8,7 +8,7 @@ MWJ     Done         1. CAN base
 MWJ     Done         2. ESP32ADC
 MWJ     Done         3. ESP32CAN
 MWJ     Done         4. MAX7317
-MWJ     90%          5. MCP2515
+MWJ     98%          5. MCP2515
 MWJ     Done         6. PCP
 MWJ     Done         7. SDCARD
 MWJ     Done         8. SPINODMA
@@ -20,7 +20,7 @@ MWJ     Done         Metric formatting
                    Vehicle
 MWJ     Done         Base vehicle support
 MWJ     Done         OBDII Poll support
-MWJ     97%          Tesla roadster port
+MWJ     Done         Tesla roadster port
 GØV     Done         Kia Soul port
                      Kyburz port
                      Mitsubishi iMiev port
@@ -44,7 +44,7 @@ SC      Done         Command argument specification
 SC      Done         Alert/progress messages
                      SMS <-> Command gateway
 MWJ     10%          Bluetooth gateway
-MWJ     100%         Wifi gateway
+MWJ     Done         Wifi gateway
 
                    Config system
 MWJ    Done          FAT/SPIFS wear-leveled filesystem in flash

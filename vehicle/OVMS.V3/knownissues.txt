@@ -11,12 +11,6 @@ Open Vehicle Monitor System v3 - Known issues
 
 * Bluetooth is not currently supported.
 
-* Vehicle: Tesla Roadster limitations (vs 2.x):
-  * Cooldown not currently supported.
-  * Charge timer not currently supported.
-  * Charge time predictor not currently supported.
-  * Digital speedometer feature not currently supported.
-
 * Vehicle: Kyburz not currently implemented in 3.x.
 
 * Vehicle: Mitdubishi iMiev not currently implemented in 3.x.
@@ -24,6 +18,7 @@ Open Vehicle Monitor System v3 - Known issues
 * Vehicle: NissanLeaf:
   * Remote telemetry wake-up for pre-2016 vehicles not currently supported
     (as required hardware wakeup circuit).
+  * 2018 Nissan leaf not currently supported.
 
 * Vehicle: Tazzari not currently implemented in 3.x.
 
@@ -39,5 +34,3 @@ Open Vehicle Monitor System v3 - Known issues
 * SMS to command gateway is not currently implemented.
 
 * SMS notifications are not currently implemented.
-
-* Only some PUSH notifications are currently implemented, for some vehicles.
