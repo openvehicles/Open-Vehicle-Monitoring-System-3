@@ -924,6 +924,22 @@ OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandLock(const char*
   {
   long lpin = atol(pin);
 
+  if (!StandardMetrics.ms_v_env_handbrake->AsBool())
+    {
+    // We should refuse to lock a car that has the handbrake off
+    ESP_LOGI(TAG, "Lock: Refuse to lock car with handbrake off");
+    return Fail;
+    }
+  if (MyConfig.GetParamValueBool("xtr", "protect.lock", true))
+    {
+    // We should not lock a car that is ON
+    if (StandardMetrics.ms_v_env_on->AsBool())
+      {
+      ESP_LOGI(TAG, "Lock: Refuse to lock car that is switched on");
+      return Fail;
+      }
+    }
+
   CAN_frame_t frame;
   memset(&frame,0,sizeof(frame));
 
