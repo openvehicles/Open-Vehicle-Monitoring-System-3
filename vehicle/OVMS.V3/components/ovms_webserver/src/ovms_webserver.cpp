@@ -660,9 +660,12 @@ user_session* OvmsWebServer::CreateSession(const http_message *hm)
   sys = StdMetrics.ms_v_bat_12v_voltage->AsString();
   cs_sha1_update(&ctx, (const unsigned char *) sys.data(), sys.size());
 
-  unsigned char digest[20];
-  cs_sha1_final(digest, &ctx);
-  s->id = *((uint64_t *) digest);
+  union {
+    uint64_t u64;
+    unsigned char digest[20];
+  } buf;
+  cs_sha1_final(buf.digest, &ctx);
+  s->id = buf.u64;
   return s;
 }
 
