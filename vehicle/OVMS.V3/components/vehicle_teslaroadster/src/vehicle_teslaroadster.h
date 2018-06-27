@@ -65,6 +65,16 @@ class OvmsVehicleTeslaRoadster : public OvmsVehicle
     void DoHomelinkStop();
 
   public:
+    bool m_cooldown_running; // True if cooldown procedure is currently running
+    vehicle_mode_t m_cooldown_prev_chargemode; // Charge Mode prior to cooldown
+    int m_cooldown_prev_chargelimit;           // Charge Limit prior to cooldown
+    bool m_cooldown_prev_charging;             // Charging prior to cooldown
+    int m_cooldown_limit_temp;                 // Cooldown battery temp limit
+    int m_cooldown_limit_minutes;              // Cooldown time limit
+    int m_cooldown_cycles_done;                // Cooldown cycles done
+    int m_cooldown_recycle_ticker;             // Cooldown recycle ticker
+
+  public:
     virtual void Status(int verbosity, OvmsWriter* writer);
 
   protected:
@@ -76,10 +86,12 @@ class OvmsVehicleTeslaRoadster : public OvmsVehicle
     virtual void NotifiedVehicleChargeStart();
     virtual void NotifiedVehicleOn();
     virtual void NotifiedVehicleOff();
+    virtual void Ticker1(uint32_t ticker);
     virtual void Ticker60(uint32_t ticker);
 
   protected:
     void RequestStreamStartCAC();
+    void RequestStreamStartHVAC();
     void RequestStreamStopCAC();
     void ChargeTimePredictor();
 

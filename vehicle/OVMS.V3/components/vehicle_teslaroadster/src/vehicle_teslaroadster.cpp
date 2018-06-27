@@ -63,6 +63,17 @@ OvmsVehicleTeslaRoadster::OvmsVehicleTeslaRoadster()
   memset(m_vin,0,sizeof(m_vin));
   m_requesting_cac = false;
 
+  m_cooldown_running = false;
+  m_cooldown_prev_chargemode = Standard;
+  m_cooldown_prev_chargelimit = 0;
+  m_cooldown_prev_charging = false;
+  m_cooldown_limit_temp = 0;
+  m_cooldown_limit_minutes = 0;
+  m_cooldown_cycles_done = 0;
+  m_cooldown_recycle_ticker = -1;
+
+  MyConfig.RegisterParam("xtr", "Tesla Roadster", true, true);
+
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_1000KBPS);
   }
 
@@ -74,6 +85,16 @@ OvmsVehicleTeslaRoadster::~OvmsVehicleTeslaRoadster()
 void OvmsVehicleTeslaRoadster::Status(int verbosity, OvmsWriter* writer)
   {
   writer->printf("Vehicle: Tesla Roadster %s (%s)\n",m_type,m_vin);
+  if (m_cooldown_running)
+    {
+    writer->printf("\nCooldown is running (with %d cycle(s) so far)\n",
+      m_cooldown_cycles_done);
+    writer->printf("  ESS temperature: %dC/%dC",
+      StandardMetrics.ms_v_bat_temp->AsInt(),
+      m_cooldown_limit_temp);
+    writer->printf("  Cooldown remaining: %d minutes\n",
+      m_cooldown_limit_minutes);
+    }
   }
 
 void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
@@ -167,7 +188,19 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           }
         case 0x8f: // HVAC#1 message
           {
-          StandardMetrics.ms_v_env_hvac->SetValue((((int)d[7]<<8)+d[6]) > 0);
+          uint32_t hvacrpm = ((int)d[7]<<8)+d[6];
+          if (hvacrpm > 0)
+            {
+            // HVAC is running, so stop the recycle attempts
+            m_cooldown_recycle_ticker = -1;
+            }
+          else if ((m_cooldown_running)&&(StandardMetrics.ms_v_env_hvac->AsBool()))
+            {
+            // Car is cooling down, and HVAC has just gone off - end of cycle
+            m_cooldown_cycles_done++;
+            m_cooldown_recycle_ticker = 60; // Try to recycle in 60 seconds
+            }
+          StandardMetrics.ms_v_env_hvac->SetValue(hvacrpm > 0);
           break;
           }
         case 0x93: // VDS vehicle error
@@ -437,14 +470,85 @@ void OvmsVehicleTeslaRoadster::NotifiedVehicleOff()
   RequestStreamStartCAC();
   }
 
-void OvmsVehicleTeslaRoadster::Ticker60(uint32_t ticker)
+void OvmsVehicleTeslaRoadster::Ticker1(uint32_t ticker)
   {
-  if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+  if ((m_cooldown_running)&&(StandardMetrics.ms_v_charge_inprogress->AsBool()))
     {
-    ChargeTimePredictor();
+    // Cooldown is running, and car is charging
+    if (m_cooldown_recycle_ticker > 0)
+      {
+      m_cooldown_recycle_ticker--;
+      if (m_cooldown_recycle_ticker == 10)
+        {
+        // Switch to PERFORMANCE mode for 10 seconds
+        ESP_LOGI(TAG, "Cooldown: Cycle %d PERFORMANCE mode",m_cooldown_cycles_done);
+        CommandSetChargeMode(Performance);
+        }
+      else if (m_cooldown_recycle_ticker == 0)
+        {
+        // Switch back to RANGE mode, and reset cycle
+        ESP_LOGI(TAG, "Cooldown: Cycle %d RANGE mode",m_cooldown_cycles_done);
+        CommandSetChargeMode(Range);
+        m_cooldown_recycle_ticker = 60;
+        }
+      if (StandardMetrics.ms_v_charge_climit->AsInt() != 10)
+        {
+        // 10A charge when cooling down
+        ESP_LOGI(TAG, "Cooldown: Cycle %d fix charge current to 10A",m_cooldown_cycles_done);
+        CommandSetChargeCurrent(10);
+        }
+      }
     }
   }
 
+void OvmsVehicleTeslaRoadster::Ticker60(uint32_t ticker)
+  {
+  if (m_cooldown_running)
+    {
+    ESP_LOGI(TAG,"Cooldown: %d cycles %dC/%dC (with %d minute(s) remaining)",
+      m_cooldown_cycles_done,
+      StandardMetrics.ms_v_bat_temp->AsInt(),
+      m_cooldown_limit_temp,
+      m_cooldown_limit_minutes);
+    }
+
+  if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+    {
+    // Vehicle is charging
+    ChargeTimePredictor();
+
+    if (m_cooldown_running)
+      {
+      m_cooldown_limit_minutes--;
+      if ((m_cooldown_limit_minutes == 0) ||
+          (StandardMetrics.ms_v_bat_temp->AsInt() <= m_cooldown_limit_temp))
+        {
+        // Stop the cooldown
+        ESP_LOGI(TAG, "Cooldown: Cycle %d cooldown completed",m_cooldown_cycles_done);
+        CommandSetChargeCurrent(m_cooldown_prev_chargelimit);
+        CommandSetChargeMode(m_cooldown_prev_chargemode);
+        if (m_cooldown_prev_charging)
+          {
+          CommandStartCharge();
+          }
+        m_cooldown_running = false;
+        m_cooldown_recycle_ticker = -1;
+        }
+      }
+    }
+  else
+    {
+    // Vehicle is not charging
+    if (m_cooldown_running)
+      {
+      ESP_LOGI(TAG,"Cooldown: Aborted as car stopped charging");
+      CommandSetChargeCurrent(m_cooldown_prev_chargelimit);
+      CommandSetChargeMode(m_cooldown_prev_chargemode);
+      m_cooldown_running = false;
+      m_cooldown_recycle_ticker = -1;
+      }
+    }
+  }
 
 void OvmsVehicleTeslaRoadster::RequestStreamStartCAC()
   {
@@ -468,6 +572,28 @@ void OvmsVehicleTeslaRoadster::RequestStreamStartCAC()
   frame.data.u8[5] = 0x00;
   frame.data.u8[6] = 0x00;
   frame.data.u8[7] = 0x40;
+  m_can1->Write(&frame);
+  }
+
+void OvmsVehicleTeslaRoadster::RequestStreamStartHVAC()
+  {
+  CAN_frame_t frame;
+  memset(&frame,0,sizeof(frame));
+
+  // Request HVAC streaming...
+  frame.origin = m_can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 8;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x102;
+  frame.data.u8[0] = 0x06;
+  frame.data.u8[1] = 0xd0;
+  frame.data.u8[2] = 0x07;
+  frame.data.u8[3] = 0x00;
+  frame.data.u8[4] = 0x00;
+  frame.data.u8[5] = 0x80;
+  frame.data.u8[6] = 0x00;
+  frame.data.u8[7] = 0x08;
   m_can1->Write(&frame);
   }
 
@@ -629,6 +755,43 @@ OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandSetChargeTimer(b
 
 OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandCooldown(bool cooldownon)
   {
+  if (m_cooldown_running)
+    {
+    // Cooldown is already in progress, so just ignore it
+    return Success;
+    }
+
+  m_cooldown_prev_charging = StandardMetrics.ms_v_charge_inprogress->AsBool();
+  m_cooldown_prev_chargemode = VehicleModeKey(StandardMetrics.ms_v_charge_mode->AsString());
+  m_cooldown_prev_chargelimit = StandardMetrics.ms_v_charge_climit->AsInt();
+  m_cooldown_limit_minutes = MyConfig.GetParamValueInt("xtr", "cooldown.timelimit", 60);
+  m_cooldown_limit_temp = MyConfig.GetParamValueInt("xtr", "cooldown.templimit", 31);
+
+  if ((StandardMetrics.ms_v_bat_temp->AsInt() <= m_cooldown_limit_temp) ||
+      (StandardMetrics.ms_v_env_on->AsBool()) ||
+      (!StandardMetrics.ms_v_door_chargeport->AsBool()))
+    {
+    // Either the battery is already cool enough, or the car is ON, or
+    // the chargport is shut. In these cases, we can't do a cooldown
+    return Fail;
+    }
+
+  CommandWakeup(); // Wake up the car
+  vTaskDelay(100 / portTICK_PERIOD_MS);
+  for (int k=0; k<2; k++)
+    {
+    CommandSetChargeCurrent(10); // Set a 10A charge
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+    CommandSetChargeMode(Range); // Switch to RANGE mode
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+    CommandStartCharge(); // Force START charge
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+    }
+  RequestStreamStartHVAC();
+
+  m_cooldown_recycle_ticker = -1;
+  m_cooldown_running = true;
+
   return NotImplemented;
   }
 
