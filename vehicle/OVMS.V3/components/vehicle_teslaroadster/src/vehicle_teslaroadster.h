@@ -64,6 +64,9 @@ class OvmsVehicleTeslaRoadster : public OvmsVehicle
     int m_homelink_timerbutton;
     void DoHomelinkStop();
 
+  public:
+    virtual void Status(int verbosity, OvmsWriter* writer);
+
   protected:
     virtual void Notify12vCritical();
     virtual void Notify12vRecovered();

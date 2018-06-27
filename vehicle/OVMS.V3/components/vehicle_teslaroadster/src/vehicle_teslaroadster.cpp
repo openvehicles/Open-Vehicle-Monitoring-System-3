@@ -59,6 +59,7 @@ OvmsVehicleTeslaRoadster::OvmsVehicleTeslaRoadster()
   {
   ESP_LOGI(TAG, "Tesla Roadster v1.x, v2.x and v3.0 vehicle module");
 
+  memset(m_type,0,sizeof(m_type));
   memset(m_vin,0,sizeof(m_vin));
   m_requesting_cac = false;
 
@@ -68,6 +69,11 @@ OvmsVehicleTeslaRoadster::OvmsVehicleTeslaRoadster()
 OvmsVehicleTeslaRoadster::~OvmsVehicleTeslaRoadster()
   {
   ESP_LOGI(TAG, "Shutdown Tesla Roadster vehicle module");
+  }
+
+void OvmsVehicleTeslaRoadster::Status(int verbosity, OvmsWriter* writer)
+  {
+  writer->printf("Vehicle: Tesla Roadster %s (%s)\n",m_type,m_vin);
   }
 
 void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
