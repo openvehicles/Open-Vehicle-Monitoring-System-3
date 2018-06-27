@@ -63,7 +63,7 @@ void TeslaRoadsterSpeedoTimer( TimerHandle_t timer )
 
   if (!MyTeslaRoadster->m_speedo_running) return;
 
-  if (MyTeslaRoadster->m_speedo_ticker_count++ >= 10)
+  if (MyTeslaRoadster->m_speedo_ticker_count++ >= 100)
     {
     MyTeslaRoadster->m_speedo_ticker_count = 0;
     MyTeslaRoadster->m_speedo_ticker = MyTeslaRoadster->m_speedo_ticker_max;
@@ -136,6 +136,7 @@ OvmsVehicleTeslaRoadster::~OvmsVehicleTeslaRoadster()
 void OvmsVehicleTeslaRoadster::Status(int verbosity, OvmsWriter* writer)
   {
   writer->printf("Vehicle: Tesla Roadster %s (%s)\n",m_type,m_vin);
+
   if (m_cooldown_running)
     {
     writer->printf("\nCooldown is running (with %d cycle(s) so far)\n",
@@ -145,6 +146,11 @@ void OvmsVehicleTeslaRoadster::Status(int verbosity, OvmsWriter* writer)
       m_cooldown_limit_temp);
     writer->printf("  Cooldown remaining: %d minutes\n",
       m_cooldown_limit_minutes);
+    }
+
+  if (m_speedo_running)
+    {
+    writer->puts("\nDigital speedo is running");
     }
   }
 
