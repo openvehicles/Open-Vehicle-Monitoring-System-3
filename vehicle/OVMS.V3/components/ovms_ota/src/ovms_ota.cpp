@@ -96,7 +96,7 @@ void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   if (info.version_server != "")
     {
     len += writer->printf("Server Available:  %s%s\n", info.version_server.c_str(),
-      (buildverscmp(info.version_server,info.version_firmware) > 0) ? " (is newer)" : "");
+      (buildverscmp(info.version_server,info.version_firmware) > 0) ? " (is newer)" : " (no update required)");
     if (!info.changelog_server.empty())
       {
       writer->puts("");
