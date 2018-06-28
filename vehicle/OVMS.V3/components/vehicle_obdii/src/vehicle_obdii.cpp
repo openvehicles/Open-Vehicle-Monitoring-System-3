@@ -43,7 +43,7 @@ static const OvmsVehicle::poll_pid_t obdii_polls[]
     { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0f, {  0, 30, 30 } }, // Engine air intake temp
     { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x2f, {  0, 30, 30 } }, // Fuel level
     { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x46, {  0, 30, 30 } }, // Ambiant temp
-//    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x5c, {  0, 30, 30 } }, // Engine oil temp
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x5c, {  0, 30, 30 } }, // Engine oil temp
     { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIIVEHICLE, 0x02, {999,999,999 } }, // VIN
     { 0, 0, 0x00, 0x00, { 0, 0, 0 } }
   };
