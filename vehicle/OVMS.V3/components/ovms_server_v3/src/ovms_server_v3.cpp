@@ -200,14 +200,8 @@ void OvmsServerV3::TransmitAllMetrics()
   OvmsMetric* metric = MyMetrics.m_first;
   while (metric != NULL)
     {
-    std::string topic("ovms/");
-    topic.append(m_vehicleid);
-    topic.append("/m/");
-    topic.append(metric->m_name);
-    std::string val = metric->AsString();
     metric->ClearModified(MyOvmsServerV3Modifier);
-    ESP_LOGI(TAG,"Tx(all) metric %s=%s",topic.c_str(),val.c_str());
-    mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++, MG_MQTT_QOS(0), val.c_str(), val.length());
+    TransmitMetric(metric);
     metric = metric->m_next;
     }
   }
@@ -223,16 +217,19 @@ void OvmsServerV3::TransmitModifiedMetrics()
     {
     if (metric->IsModifiedAndClear(MyOvmsServerV3Modifier))
       {
-      std::string topic("ovms/");
-      topic.append(m_vehicleid);
-      topic.append("/m/");
-      topic.append(metric->m_name);
-      std::string val = metric->AsString();
-      ESP_LOGI(TAG,"Tx(mod) metric %s=%s",topic.c_str(),val.c_str());
-      mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++, MG_MQTT_QOS(0), val.c_str(), val.length());
+      TransmitMetric(metric);
       }
     metric = metric->m_next;
     }
+  }
+
+void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
+  {
+  std::string topic(m_topic_prefix);
+  topic.append(metric->m_name);
+  std::string val = metric->AsString();
+  mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++, MG_MQTT_QOS(0), val.c_str(), val.length());
+  ESP_LOGI(TAG,"Tx metric %s=%s",topic.c_str(),val.c_str());
   }
 
 void OvmsServerV3::Connect()
@@ -342,14 +339,8 @@ void OvmsServerV3::MetricModified(OvmsMetric* metric)
     OvmsMutexLock mg(&m_mgconn_mutex);
     if (!m_mgconn)
       return;
-    std::string topic("ovms/");
-    topic.append(m_vehicleid);
-    topic.append("/m/");
-    topic.append(metric->m_name);
-    std::string val = metric->AsString();
     metric->ClearModified(MyOvmsServerV3Modifier);
-    ESP_LOGI(TAG,"Tx(mod) metric %s=%s",topic.c_str(),val.c_str());
-    mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++, MG_MQTT_QOS(0), val.c_str(), val.length());
+    TransmitMetric(metric);
     }
   }
 
@@ -376,6 +367,7 @@ void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
   m_streaming = MyConfig.GetParamValueInt("vehicle", "stream", 0);
   m_updatetime_connected = MyConfig.GetParamValueInt("server.v3", "updatetime.connected", 60);
   m_updatetime_idle = MyConfig.GetParamValueInt("server.v3", "updatetime.idle", 600);
+  m_topic_prefix = MyConfig.GetParamValue("server.v3", "prefix", "ovms/metric/");
   }
 
 void OvmsServerV3::NetUp(std::string event, void* data)

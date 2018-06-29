@@ -78,6 +78,7 @@ class OvmsServerV3 : public OvmsServer
     std::string m_user;
     std::string m_password;
     std::string m_port;
+    std::string m_topic_prefix;
     struct mg_connection *m_mgconn;
     OvmsMutex m_mgconn_mutex;
     int m_connretry;
@@ -96,6 +97,9 @@ class OvmsServerV3 : public OvmsServer
     void Disconnect();
     void TransmitAllMetrics();
     void TransmitModifiedMetrics();
+
+  private:
+    void TransmitMetric(OvmsMetric* metric);
   };
 
 class OvmsServerV3Init
