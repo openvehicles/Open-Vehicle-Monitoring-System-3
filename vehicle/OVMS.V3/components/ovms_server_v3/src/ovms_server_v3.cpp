@@ -227,7 +227,16 @@ void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
   {
   std::string topic(m_topic_prefix);
   topic.append(metric->m_name);
+
+  // Replace '.' inside the metric name by '/' for MQTT like namespacing.
+  for(size_t i = m_topic_prefix.length(); i < topic.length(); i++)
+    {
+      if(topic[i] == '.')
+        topic[i] = '/';
+    }
+
   std::string val = metric->AsString();
+
   mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++, MG_MQTT_QOS(0), val.c_str(), val.length());
   ESP_LOGI(TAG,"Tx metric %s=%s",topic.c_str(),val.c_str());
   }
