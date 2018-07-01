@@ -367,7 +367,7 @@ void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
   m_streaming = MyConfig.GetParamValueInt("vehicle", "stream", 0);
   m_updatetime_connected = MyConfig.GetParamValueInt("server.v3", "updatetime.connected", 60);
   m_updatetime_idle = MyConfig.GetParamValueInt("server.v3", "updatetime.idle", 600);
-  m_topic_prefix = MyConfig.GetParamValue("server.v3", "prefix", "ovms/metric/");
+  m_topic_prefix = MyConfig.GetParamValue("server.v3", "topic_prefix", "ovms/metric/");
   }
 
 void OvmsServerV3::NetUp(std::string event, void* data)
