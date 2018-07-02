@@ -552,12 +552,16 @@ void OvmsNetManager::MongooseTask()
   mg_mgr_init(&m_mongoose_mgr, NULL);
   MyEvents.SignalEvent("network.mgr.init",NULL);
 
+  m_mongoose_running = true;
+
   // Main event loop
   while (m_mongoose_running)
     {
     mg_mgr_poll(&m_mongoose_mgr, 250);
     ProcessJobs();
     }
+
+  m_mongoose_running = false;
 
   // Shutdown cleanly
   ESP_LOGD(TAG, "MongooseTask stopping");
@@ -587,7 +591,6 @@ void OvmsNetManager::StartMongooseTask()
       while (m_mongoose_task)
         vTaskDelay(pdMS_TO_TICKS(50));
       // start new task:
-      m_mongoose_running = true;
       xTaskCreatePinnedToCore(MongooseRawTask, "OVMS NetMan", 8*1024, (void*)this, 5, &m_mongoose_task, 1);
       AddTaskToMap(m_mongoose_task);
       }
