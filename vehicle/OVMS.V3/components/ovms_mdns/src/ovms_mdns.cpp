@@ -31,6 +31,7 @@
 #include "ovms_log.h"
 static const char *TAG = "ovms-mdns";
 
+#include <sdkconfig.h>
 #include "ovms_netmanager.h"
 #include "ovms_peripherals.h"
 #include "ovms_config.h"
@@ -79,9 +80,15 @@ void OvmsMDNS::StartMDNS()
   mdns_instance_name_set(instance.c_str());
 
   // Register services
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
+#endif // #ifdef CONFIG_OVMS_COMP_WEBSERVER
+#ifdef CONFIG_OVMS_COMP_SSH
   mdns_service_add(NULL, "_ssh", "_tcp", 22, NULL, 0);
+#endif // #ifdef CONFIG_OVMS_COMP_SSH
+#ifdef CONFIG_OVMS_COMP_TELNET
   mdns_service_add(NULL, "_telnet", "_tcp", 23, NULL, 0);
+#endif // #ifdef CONFIG_OVMS_COMP_TELNET
   }
 
 void OvmsMDNS::StopMDNS()
