@@ -78,6 +78,7 @@ class OvmsServerV3 : public OvmsServer
     std::string m_user;
     std::string m_password;
     std::string m_port;
+    std::string m_topic_prefix;
     std::string m_will_topic;
     std::string m_conn_topic;
     struct mg_connection *m_mgconn;
@@ -98,6 +99,9 @@ class OvmsServerV3 : public OvmsServer
     void Disconnect();
     void TransmitAllMetrics();
     void TransmitModifiedMetrics();
+
+  private:
+    void TransmitMetric(OvmsMetric* metric);
   };
 
 class OvmsServerV3Init

@@ -826,7 +826,7 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
 void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
 {
   std::string error;
-  std::string server, user, password, port;
+  std::string server, user, password, port, topic_prefix;
   std::string updatetime_connected, updatetime_idle;
 
   if (c.method == "POST") {
@@ -835,6 +835,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     user = c.getvar("user");
     password = c.getvar("password");
     port = c.getvar("port");
+    topic_prefix = c.getvar("topic_prefix");
     updatetime_connected = c.getvar("updatetime_connected");
     updatetime_idle = c.getvar("updatetime_idle");
 
@@ -863,6 +864,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
       if (password != "")
         MyConfig.SetParamValue("password", "server.v3", password);
       MyConfig.SetParamValue("server.v3", "port", port);
+      MyConfig.SetParamValue("server.v3", "topic_prefix", topic_prefix);
       MyConfig.SetParamValue("server.v3", "updatetime.connected", updatetime_connected);
       MyConfig.SetParamValue("server.v3", "updatetime.idle", updatetime_idle);
 
@@ -884,6 +886,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     user = MyConfig.GetParamValue("server.v3", "user");
     password = MyConfig.GetParamValue("password", "server.v3");
     port = MyConfig.GetParamValue("server.v3", "port");
+    topic_prefix = MyConfig.GetParamValue("server.v3", "topic_prefix");
     updatetime_connected = MyConfig.GetParamValue("server.v3", "updatetime.connected");
     updatetime_idle = MyConfig.GetParamValue("server.v3", "updatetime.idle");
 
@@ -905,6 +908,8 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     NULL, "autocomplete=\"section-serverv3 username\"");
   c.input_password("Password", "password", "", "Enter user password, empty = no change",
     NULL, "autocomplete=\"section-serverv3 current-password\"");
+  c.input_text("Topic Prefix", "topic_prefix", topic_prefix.c_str(),
+    "optional, default: ovms/<username>/<vehicle id>/");
 
   c.fieldset_start("Update intervals");
   c.input_text("…connected", "updatetime_connected", updatetime_connected.c_str(),

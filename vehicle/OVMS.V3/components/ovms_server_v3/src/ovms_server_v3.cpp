@@ -215,17 +215,8 @@ void OvmsServerV3::TransmitAllMetrics()
   OvmsMetric* metric = MyMetrics.m_first;
   while (metric != NULL)
     {
-    std::string topic("ovms/");
-    topic.append(m_user);
-    topic.append("/");
-    topic.append(m_vehicleid);
-    topic.append("/m/");
-    topic.append(metric->m_name);
-    std::string val = metric->AsString();
     metric->ClearModified(MyOvmsServerV3Modifier);
-    ESP_LOGI(TAG,"Tx(all) metric %s=%s",topic.c_str(),val.c_str());
-    mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
-      MG_MQTT_QOS(0) | MG_MQTT_RETAIN, val.c_str(), val.length());
+    TransmitMetric(metric);
     metric = metric->m_next;
     }
   }
@@ -241,19 +232,29 @@ void OvmsServerV3::TransmitModifiedMetrics()
     {
     if (metric->IsModifiedAndClear(MyOvmsServerV3Modifier))
       {
-      std::string topic("ovms/");
-      topic.append(m_user);
-      topic.append("/");
-      topic.append(m_vehicleid);
-      topic.append("/m/");
-      topic.append(metric->m_name);
-      std::string val = metric->AsString();
-      ESP_LOGI(TAG,"Tx(mod) metric %s=%s",topic.c_str(),val.c_str());
-      mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
-        MG_MQTT_QOS(0) | MG_MQTT_RETAIN, val.c_str(), val.length());
+      TransmitMetric(metric);
       }
     metric = metric->m_next;
     }
+  }
+
+void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
+  {
+  std::string topic(m_topic_prefix);
+  topic.append(metric->m_name);
+
+  // Replace '.' inside the metric name by '/' for MQTT like namespacing.
+  for(size_t i = m_topic_prefix.length(); i < topic.length(); i++)
+    {
+      if(topic[i] == '.')
+        topic[i] = '/';
+    }
+
+  std::string val = metric->AsString();
+
+  mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
+    MG_MQTT_QOS(0) | MG_MQTT_RETAIN, val.c_str(), val.length());
+  ESP_LOGI(TAG,"Tx metric %s=%s",topic.c_str(),val.c_str());
   }
 
 void OvmsServerV3::Connect()
@@ -265,18 +266,11 @@ void OvmsServerV3::Connect()
   m_password = MyConfig.GetParamValue("password", "server.v3");
   m_port = MyConfig.GetParamValue("server.v3", "port");
 
-  m_will_topic = std::string("ovms/");
-  m_will_topic.append(m_user);
-  m_will_topic.append("/");
-  m_will_topic.append(m_vehicleid);
-  m_will_topic.append("/m/");
-  m_will_topic.append("s.v3.connected");
+  m_will_topic = std::string(m_topic_prefix);
+  m_will_topic.append("s/v3/connected");
 
-  m_conn_topic = std::string("ovms/");
-  m_conn_topic.append(m_user);
-  m_conn_topic.append("/");
-  m_conn_topic.append(m_vehicleid);
-  m_conn_topic.append("/c/#");
+  m_conn_topic = std::string(m_topic_prefix);
+  m_conn_topic.append("c/#");
 
   if (m_port.empty()) m_port = "1883";
   std::string address(m_server);
@@ -287,12 +281,6 @@ void OvmsServerV3::Connect()
     m_server.c_str(), m_port.c_str(),
     m_vehicleid.c_str(), m_user.c_str());
 
-  if (m_vehicleid.empty())
-    {
-    SetStatus("Error: Parameter vehicle/id must be defined", true, WaitReconnect);
-    m_connretry = 20; // Try again in 20 seconds...
-    return;
-    }
   if (m_server.empty())
     {
     SetStatus("Error: Parameter server.v3/server must be defined", true, WaitReconnect);
@@ -377,17 +365,8 @@ void OvmsServerV3::MetricModified(OvmsMetric* metric)
     OvmsMutexLock mg(&m_mgconn_mutex);
     if (!m_mgconn)
       return;
-    std::string topic("ovms/");
-    topic.append(m_user);
-    topic.append("/");
-    topic.append(m_vehicleid);
-    topic.append("/m/");
-    topic.append(metric->m_name);
-    std::string val = metric->AsString();
     metric->ClearModified(MyOvmsServerV3Modifier);
-    ESP_LOGI(TAG,"Tx(mod) metric %s=%s",topic.c_str(),val.c_str());
-    mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
-      MG_MQTT_QOS(0) | MG_MQTT_RETAIN, val.c_str(), val.length());
+    TransmitMetric(metric);
     }
   }
 
@@ -414,6 +393,20 @@ void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
   m_streaming = MyConfig.GetParamValueInt("vehicle", "stream", 0);
   m_updatetime_connected = MyConfig.GetParamValueInt("server.v3", "updatetime.connected", 60);
   m_updatetime_idle = MyConfig.GetParamValueInt("server.v3", "updatetime.idle", 600);
+  
+  m_topic_prefix = MyConfig.GetParamValue("server.v3", "topic_prefix", "");
+  if(m_topic_prefix.empty())
+    {
+    m_topic_prefix = std::string("ovms/");
+    m_topic_prefix.append(m_user);
+    m_topic_prefix.append("/");
+
+    if(!m_vehicleid.empty())
+      {
+      m_topic_prefix.append(m_vehicleid);
+      m_topic_prefix.append("/");
+      }
+    }
   }
 
 void OvmsServerV3::NetUp(std::string event, void* data)
