@@ -78,6 +78,8 @@ class OvmsServerV3 : public OvmsServer
     std::string m_user;
     std::string m_password;
     std::string m_port;
+    std::string m_will_topic;
+    std::string m_conn_topic;
     struct mg_connection *m_mgconn;
     OvmsMutex m_mgconn_mutex;
     int m_connretry;

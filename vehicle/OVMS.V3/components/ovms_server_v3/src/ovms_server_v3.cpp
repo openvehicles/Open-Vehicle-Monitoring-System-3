@@ -67,6 +67,9 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
         memset(&opts, 0, sizeof(opts));
         opts.user_name = MyOvmsServerV3->m_user.c_str();
         opts.password = MyOvmsServerV3->m_password.c_str();
+        opts.will_topic = MyOvmsServerV3->m_will_topic.c_str();
+        opts.will_message = "no";
+        opts.flags |= MG_MQTT_WILL_RETAIN;
         mg_set_protocol_mqtt(nc);
         mg_send_mqtt_handshake_opt(nc, MyOvmsServerV3->m_vehicleid.c_str(), opts);
         }
@@ -116,6 +119,18 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
       ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_MQTT_PUBLISH)");
       ESP_LOGI(TAG, "Incoming message %.*s: %.*s", (int) msg->topic.len,
              msg->topic.p, (int) msg->payload.len, msg->payload.p);
+      if (msg->qos == 1)
+        {
+        mg_mqtt_puback(nc, msg->message_id);
+        }
+      else if (msg->qos == 2)
+        {
+        mg_mqtt_pubrec(nc, msg->message_id);
+        }
+      break;
+    case MG_EV_MQTT_PUBREL:
+      ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_MQTT_PUBREL)");
+      mg_mqtt_pubcomp(nc, msg->message_id);
       break;
     case MG_EV_CLOSE:
       ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_CLOSE)");
@@ -201,13 +216,16 @@ void OvmsServerV3::TransmitAllMetrics()
   while (metric != NULL)
     {
     std::string topic("ovms/");
+    topic.append(m_user);
+    topic.append("/");
     topic.append(m_vehicleid);
     topic.append("/m/");
     topic.append(metric->m_name);
     std::string val = metric->AsString();
     metric->ClearModified(MyOvmsServerV3Modifier);
     ESP_LOGI(TAG,"Tx(all) metric %s=%s",topic.c_str(),val.c_str());
-    mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++, MG_MQTT_QOS(0), val.c_str(), val.length());
+    mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
+      MG_MQTT_QOS(0) | MG_MQTT_RETAIN, val.c_str(), val.length());
     metric = metric->m_next;
     }
   }
@@ -224,12 +242,15 @@ void OvmsServerV3::TransmitModifiedMetrics()
     if (metric->IsModifiedAndClear(MyOvmsServerV3Modifier))
       {
       std::string topic("ovms/");
+      topic.append(m_user);
+      topic.append("/");
       topic.append(m_vehicleid);
       topic.append("/m/");
       topic.append(metric->m_name);
       std::string val = metric->AsString();
       ESP_LOGI(TAG,"Tx(mod) metric %s=%s",topic.c_str(),val.c_str());
-      mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++, MG_MQTT_QOS(0), val.c_str(), val.length());
+      mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
+        MG_MQTT_QOS(0) | MG_MQTT_RETAIN, val.c_str(), val.length());
       }
     metric = metric->m_next;
     }
@@ -241,8 +262,22 @@ void OvmsServerV3::Connect()
   m_vehicleid = MyConfig.GetParamValue("vehicle", "id");
   m_server = MyConfig.GetParamValue("server.v3", "server");
   m_user = MyConfig.GetParamValue("server.v3", "user");
-  m_password = MyConfig.GetParamValue("server.v3", "password");
+  m_password = MyConfig.GetParamValue("password", "server.v3");
   m_port = MyConfig.GetParamValue("server.v3", "port");
+
+  m_will_topic = std::string("ovms/");
+  m_will_topic.append(m_user);
+  m_will_topic.append("/");
+  m_will_topic.append(m_vehicleid);
+  m_will_topic.append("/m/");
+  m_will_topic.append("s.v3.connected");
+
+  m_conn_topic = std::string("ovms/");
+  m_conn_topic.append(m_user);
+  m_conn_topic.append("/");
+  m_conn_topic.append(m_vehicleid);
+  m_conn_topic.append("/c/#");
+
   if (m_port.empty()) m_port = "1883";
   std::string address(m_server);
   address.append(":");
@@ -343,13 +378,16 @@ void OvmsServerV3::MetricModified(OvmsMetric* metric)
     if (!m_mgconn)
       return;
     std::string topic("ovms/");
+    topic.append(m_user);
+    topic.append("/");
     topic.append(m_vehicleid);
     topic.append("/m/");
     topic.append(metric->m_name);
     std::string val = metric->AsString();
     metric->ClearModified(MyOvmsServerV3Modifier);
     ESP_LOGI(TAG,"Tx(mod) metric %s=%s",topic.c_str(),val.c_str());
-    mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++, MG_MQTT_QOS(0), val.c_str(), val.length());
+    mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
+      MG_MQTT_QOS(0) | MG_MQTT_RETAIN, val.c_str(), val.length());
     }
   }
 
@@ -442,6 +480,12 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
     {
     if (m_sendall)
       {
+      ESP_LOGI(TAG, "Subscribe to MQTT topics");
+      struct mg_mqtt_topic_expression topics;
+      topics.topic = m_conn_topic.c_str();
+      topics.qos = 1;
+      mg_mqtt_subscribe(m_mgconn, &topics, 1, m_msgid++);
+
       ESP_LOGI(TAG, "Transmit all metrics");
       TransmitAllMetrics();
       m_sendall = false;
@@ -549,14 +593,14 @@ OvmsServerV3Init::OvmsServerV3Init()
   cmd_v3->RegisterCommand("stop","Stop an OVMS V3 Server Connection",ovmsv3_stop, "", 0, 0, true);
   cmd_v3->RegisterCommand("status","Show OVMS V3 Server connection status",ovmsv3_status, "", 0, 0, false);
 
-  MyConfig.RegisterParam("server.v3", "V3 Server Configuration", true, false);
+  MyConfig.RegisterParam("server.v3", "V3 Server Configuration", true, true);
   // Our instances:
   //   'server': The server name/ip
   //   'user': The server username
-  //   'password': The server password
   //   'port': The port to connect to (default: 1883)
   // Also note:
   //  Parameter "vehicle", instance "id", is the vehicle ID
+  //  Parameter "password", instance "server.v3", is the server password
   }
 
 void OvmsServerV3Init::AutoInit()
