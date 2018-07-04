@@ -31,12 +31,16 @@
 #ifndef __OVMS_SERVER_V3_H__
 #define __OVMS_SERVER_V3_H__
 
+#include <string>
+#include <map>
 #include "ovms_server.h"
 #include "ovms_netmanager.h"
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 #include "ovms_config.h"
 #include "ovms_mutex.h"
+
+typedef std::map<std::string, uint32_t> OvmsServerV3ClientMap;
 
 class OvmsServerV3 : public OvmsServer
   {
@@ -55,6 +59,7 @@ class OvmsServerV3 : public OvmsServer
     void NetmanInit(std::string event, void* data);
     void NetmanStop(std::string event, void* data);
     void Ticker1(std::string event, void* data);
+    void Ticker60(std::string event, void* data);
 
   public:
     enum State
@@ -92,6 +97,7 @@ class OvmsServerV3 : public OvmsServer
     int m_streaming;
     int m_updatetime_idle;
     int m_updatetime_connected;
+    OvmsServerV3ClientMap m_clients;
 
   public:
     virtual void SetPowerMode(PowerMode powermode);
@@ -99,6 +105,10 @@ class OvmsServerV3 : public OvmsServer
     void Disconnect();
     void TransmitAllMetrics();
     void TransmitModifiedMetrics();
+    void IncomingMsg(std::string topic, std::string payload);
+    void AddClient(std::string id);
+    void RemoveClient(std::string id);
+    void CountClients();
 
   private:
     void TransmitMetric(OvmsMetric* metric);

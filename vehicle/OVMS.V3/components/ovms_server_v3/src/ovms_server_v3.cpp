@@ -119,6 +119,11 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
       ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_MQTT_PUBLISH)");
       ESP_LOGI(TAG, "Incoming message %.*s: %.*s", (int) msg->topic.len,
              msg->topic.p, (int) msg->payload.len, msg->payload.p);
+      if (MyOvmsServerV3)
+        {
+        MyOvmsServerV3->IncomingMsg(std::string(msg->topic.p,msg->topic.len),
+                                    std::string(msg->payload.p,msg->payload.len));
+        }
       if (msg->qos == 1)
         {
         mg_mqtt_puback(nc, msg->message_id);
@@ -184,6 +189,7 @@ OvmsServerV3::OvmsServerV3(const char* name)
   MyEvents.RegisterEvent(TAG,"network.mgr.init", std::bind(&OvmsServerV3::NetmanInit, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"network.mgr.stop", std::bind(&OvmsServerV3::NetmanStop, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"ticker.1", std::bind(&OvmsServerV3::Ticker1, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"ticker.60", std::bind(&OvmsServerV3::Ticker60, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.received.ussd", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.mounted", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
@@ -255,6 +261,77 @@ void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
   mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
     MG_MQTT_QOS(0) | MG_MQTT_RETAIN, val.c_str(), val.length());
   ESP_LOGI(TAG,"Tx metric %s=%s",topic.c_str(),val.c_str());
+  }
+
+void OvmsServerV3::IncomingMsg(std::string topic, std::string payload)
+  {
+  if (topic.compare(0,m_topic_prefix.length(),m_topic_prefix)==0)
+    {
+    topic = topic.substr(m_topic_prefix.length());
+    if (topic.compare(0,2,"c/")==0)
+      {
+      topic = topic.substr(2);
+      if ((payload.empty())||(payload == "0"))
+        RemoveClient(topic);
+      else
+        AddClient(topic);
+      }
+    }
+  }
+
+void OvmsServerV3::AddClient(std::string id)
+  {
+  auto k = m_clients.find(id);
+  if (k == m_clients.end())
+    {
+    // Create a new client
+    m_clients[id] = monotonictime + 120;
+    ESP_LOGI(TAG,"MQTT client %s has connected",id.c_str());
+    }
+  else
+    {
+    // Update existing client
+    k->second = monotonictime + 120;
+    }
+  CountClients();
+  }
+
+void OvmsServerV3::RemoveClient(std::string id)
+  {
+  auto k = m_clients.find(id);
+  if (k != m_clients.end())
+    {
+    // Remove the specified client
+    m_clients.erase(k);
+    ESP_LOGI(TAG,"MQTT client %s has disconnected",id.c_str());
+    CountClients();
+    }
+  }
+
+void OvmsServerV3::CountClients()
+  {
+  for (auto it = m_clients.begin(); it != m_clients.end(); ++it)
+    {
+    if (it->second < monotonictime)
+      {
+      // Expired, so delete it...
+      m_clients.erase(it);
+      ESP_LOGI(TAG,"MQTT client %s has timed out",it->first.c_str());
+      }
+    }
+
+  int nc = m_clients.size();
+  StandardMetrics.ms_s_v3_peers->SetValue(nc);
+  if (nc > m_peers)
+    {
+    ESP_LOGI(TAG, "One or more peers have connected");
+    m_lasttx = 0; // A peer has connected, so force a transmission of status messages
+    }
+  if ((nc == 0)&&(m_peers != 0))
+    MyEvents.SignalEvent("app.disconnected",NULL);
+  else if ((nc > 0)&&(nc != m_peers))
+    MyEvents.SignalEvent("app.connected",NULL);
+  m_peers = nc;
   }
 
 void OvmsServerV3::Connect()
@@ -498,6 +575,11 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
       m_lasttx_stream = now;
       }
     }
+  }
+
+void OvmsServerV3::Ticker60(std::string event, void* data)
+  {
+  CountClients();
   }
 
 void OvmsServerV3::SetPowerMode(PowerMode powermode)
