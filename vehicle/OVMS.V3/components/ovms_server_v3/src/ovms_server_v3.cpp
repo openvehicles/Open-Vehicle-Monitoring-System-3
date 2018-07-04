@@ -266,6 +266,20 @@ void OvmsServerV3::Connect()
   m_password = MyConfig.GetParamValue("password", "server.v3");
   m_port = MyConfig.GetParamValue("server.v3", "port");
 
+  m_topic_prefix = MyConfig.GetParamValue("server.v3", "topic_prefix", "");
+  if(m_topic_prefix.empty())
+    {
+    m_topic_prefix = std::string("ovms/");
+    m_topic_prefix.append(m_user);
+    m_topic_prefix.append("/");
+
+    if(!m_vehicleid.empty())
+      {
+      m_topic_prefix.append(m_vehicleid);
+      m_topic_prefix.append("/");
+      }
+    }
+
   m_will_topic = std::string(m_topic_prefix);
   m_will_topic.append("s/v3/connected");
 
@@ -393,20 +407,6 @@ void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
   m_streaming = MyConfig.GetParamValueInt("vehicle", "stream", 0);
   m_updatetime_connected = MyConfig.GetParamValueInt("server.v3", "updatetime.connected", 60);
   m_updatetime_idle = MyConfig.GetParamValueInt("server.v3", "updatetime.idle", 600);
-  
-  m_topic_prefix = MyConfig.GetParamValue("server.v3", "topic_prefix", "");
-  if(m_topic_prefix.empty())
-    {
-    m_topic_prefix = std::string("ovms/");
-    m_topic_prefix.append(m_user);
-    m_topic_prefix.append("/");
-
-    if(!m_vehicleid.empty())
-      {
-      m_topic_prefix.append(m_vehicleid);
-      m_topic_prefix.append("/");
-      }
-    }
   }
 
 void OvmsServerV3::NetUp(std::string event, void* data)
