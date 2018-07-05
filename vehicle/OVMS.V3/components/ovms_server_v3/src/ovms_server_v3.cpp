@@ -247,6 +247,7 @@ void OvmsServerV3::TransmitModifiedMetrics()
 void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
   {
   std::string topic(m_topic_prefix);
+  topic.append("m/");
   topic.append(metric->m_name);
 
   // Replace '.' inside the metric name by '/' for MQTT like namespacing.
