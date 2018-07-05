@@ -186,6 +186,13 @@ config OVMS_VEHICLE_VOLTAMPERA
     help
         Enable to include support for Volt/Ampera vehicles.
 
+config OVMS_VEHICLE_THINKCITY
+    bool "Include support for Think City vehicles"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Think City vehicles.
+
 config OVMS_VEHICLE_RXTASK_STACK
     int "Stack size for vehicle RX task"
     default 6144

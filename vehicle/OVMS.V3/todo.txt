@@ -28,7 +28,7 @@ TP      Done         Nissan Leaf port
 MWJ     90%          OBDII port
                      TRACK vehicle port
                      Tazzari port
-                     Think City port
+NS      5%           Think City port
 MB      Done         Renault Twizy port
 MWJ     80%          Volt Ampera port
                      Renault Zoe port
