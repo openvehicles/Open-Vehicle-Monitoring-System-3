@@ -343,7 +343,7 @@ void OvmsServerV3::Connect()
   m_password = MyConfig.GetParamValue("password", "server.v3");
   m_port = MyConfig.GetParamValue("server.v3", "port");
 
-  m_topic_prefix = MyConfig.GetParamValue("server.v3", "topic_prefix", "");
+  m_topic_prefix = MyConfig.GetParamValue("server.v3", "topic.prefix", "");
   if(m_topic_prefix.empty())
     {
     m_topic_prefix = std::string("ovms/");
