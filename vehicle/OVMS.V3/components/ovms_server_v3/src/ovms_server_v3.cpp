@@ -34,6 +34,7 @@ static const char *TAG = "ovms-server-v3";
 #include <string.h>
 #include <stdint.h>
 #include "ovms_server_v3.h"
+#include "buffered_shell.h"
 #include "ovms_command.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
@@ -284,9 +285,34 @@ void OvmsServerV3::IncomingMsg(std::string topic, std::string payload)
           else
             AddClient(clientid);
           }
+        else if (topic.compare(0,8,"command/") == 0)
+          {
+          topic = topic.substr(8);
+          RunCommand(clientid, topic, payload);
+          }
         }
       }
     }
+  }
+
+void OvmsServerV3::RunCommand(std::string client, std::string id, std::string command)
+  {
+  ESP_LOGI(TAG,"Run command: %s",command.c_str());
+
+  BufferedShell* bs = new BufferedShell(false, COMMAND_RESULT_NORMAL);
+  bs->SetSecure(true); // this is an authorized channel
+  bs->ProcessChars(command.c_str(), command.length());
+  bs->ProcessChar('\n');
+  std::string val; bs->Dump(val);
+  delete bs;
+
+  std::string topic(m_topic_prefix);
+  topic.append("client/");
+  topic.append(client);
+  topic.append("/response/");
+  topic.append(id);
+  mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
+    MG_MQTT_QOS(1), val.c_str(), val.length());
   }
 
 void OvmsServerV3::AddClient(std::string id)
@@ -368,10 +394,13 @@ void OvmsServerV3::Connect()
     }
 
   m_will_topic = std::string(m_topic_prefix);
-  m_will_topic.append("s/v3/connected");
+  m_will_topic.append("metric/s/v3/connected");
 
-  m_conn_topic = std::string(m_topic_prefix);
-  m_conn_topic.append("client/#");
+  m_conn_topic[0] = std::string(m_topic_prefix);
+  m_conn_topic[0].append("client/+/active");
+
+  m_conn_topic[1] = std::string(m_topic_prefix);
+  m_conn_topic[1].append("client/+/command/+");
 
   if (m_port.empty()) m_port = "1883";
   std::string address(m_server);
@@ -561,10 +590,13 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
     if (m_sendall)
       {
       ESP_LOGI(TAG, "Subscribe to MQTT topics");
-      struct mg_mqtt_topic_expression topics;
-      topics.topic = m_conn_topic.c_str();
-      topics.qos = 1;
-      mg_mqtt_subscribe(m_mgconn, &topics, 1, m_msgid++);
+      struct mg_mqtt_topic_expression topics[MQTT_CONN_NTOPICS];
+      for (int k=0;k<MQTT_CONN_NTOPICS;k++)
+        {
+        topics[k].topic = m_conn_topic[k].c_str();
+        topics[k].qos = 1;
+        }
+      mg_mqtt_subscribe(m_mgconn, topics, MQTT_CONN_NTOPICS, m_msgid++);
 
       ESP_LOGI(TAG, "Transmit all metrics");
       TransmitAllMetrics();

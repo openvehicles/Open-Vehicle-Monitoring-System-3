@@ -42,6 +42,8 @@
 
 typedef std::map<std::string, uint32_t> OvmsServerV3ClientMap;
 
+#define MQTT_CONN_NTOPICS 2
+
 class OvmsServerV3 : public OvmsServer
   {
   public:
@@ -85,7 +87,7 @@ class OvmsServerV3 : public OvmsServer
     std::string m_port;
     std::string m_topic_prefix;
     std::string m_will_topic;
-    std::string m_conn_topic;
+    std::string m_conn_topic[MQTT_CONN_NTOPICS];
     struct mg_connection *m_mgconn;
     OvmsMutex m_mgconn_mutex;
     int m_connretry;
@@ -106,6 +108,7 @@ class OvmsServerV3 : public OvmsServer
     void TransmitAllMetrics();
     void TransmitModifiedMetrics();
     void IncomingMsg(std::string topic, std::string payload);
+    void RunCommand(std::string client, std::string id, std::string command);
     void AddClient(std::string id);
     void RemoveClient(std::string id);
     void CountClients();
