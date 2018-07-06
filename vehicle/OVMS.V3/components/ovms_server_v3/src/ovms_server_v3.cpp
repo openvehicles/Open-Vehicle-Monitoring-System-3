@@ -295,6 +295,20 @@ void OvmsServerV3::IncomingMsg(std::string topic, std::string payload)
     }
   }
 
+void OvmsServerV3::IncomingEvent(std::string event, void* data)
+  {
+  // Publish the event, if we are connected...
+  if (m_mgconn == NULL) return;
+  if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
+
+  std::string topic(m_topic_prefix);
+  topic.append("event");
+
+  ESP_LOGI(TAG,"Tx event %s",event.c_str());
+  mg_mqtt_publish(m_mgconn, topic.c_str(), m_msgid++,
+    MG_MQTT_QOS(0), event.c_str(), event.length());
+  }
+
 void OvmsServerV3::RunCommand(std::string client, std::string id, std::string command)
   {
   ESP_LOGI(TAG,"Run command: %s",command.c_str());
@@ -441,7 +455,7 @@ void OvmsServerV3::Disconnect()
     {
     m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
     m_mgconn = NULL;
-    SetStatus("Error: Disconnected from OVMS Server V3", true, Disconnected);
+    SetStatus("Disconnected from OVMS Server V3", false, Disconnected);
     }
   m_connretry = 0;
   StandardMetrics.ms_s_v3_connected->SetValue(false);
@@ -710,6 +724,10 @@ OvmsServerV3Init::OvmsServerV3Init()
   cmd_v3->RegisterCommand("stop","Stop an OVMS V3 Server Connection",ovmsv3_stop, "", 0, 0, true);
   cmd_v3->RegisterCommand("status","Show OVMS V3 Server connection status",ovmsv3_status, "", 0, 0, false);
 
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG, "*", std::bind(&OvmsServerV3Init::EventListener, this, _1, _2));
+
   MyConfig.RegisterParam("server.v3", "V3 Server Configuration", true, true);
   // Our instances:
   //   'server': The server name/ip
@@ -724,4 +742,14 @@ void OvmsServerV3Init::AutoInit()
   {
   if (MyConfig.GetParamValueBool("auto", "server.v3", false))
     MyOvmsServerV3 = new OvmsServerV3("oscv3");
+  }
+
+void OvmsServerV3Init::EventListener(std::string event, void* data)
+  {
+  if (event.compare(0,7,"ticker.") == 0) return; // Skip ticker.* events
+
+  if (MyOvmsServerV3)
+    {
+    MyOvmsServerV3->IncomingEvent(event, data);
+    }
   }

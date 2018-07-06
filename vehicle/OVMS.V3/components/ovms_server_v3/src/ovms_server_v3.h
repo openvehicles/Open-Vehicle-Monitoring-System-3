@@ -108,6 +108,7 @@ class OvmsServerV3 : public OvmsServer
     void TransmitAllMetrics();
     void TransmitModifiedMetrics();
     void IncomingMsg(std::string topic, std::string payload);
+    void IncomingEvent(std::string event, void* data);
     void RunCommand(std::string client, std::string id, std::string command);
     void AddClient(std::string id);
     void RemoveClient(std::string id);
@@ -122,6 +123,9 @@ class OvmsServerV3Init
   public:
     OvmsServerV3Init();
     void AutoInit();
+
+  public:
+    void EventListener(std::string event, void* data);
   };
 
 extern OvmsServerV3Init MyOvmsServerV3Init;
