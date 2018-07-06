@@ -247,7 +247,7 @@ void OvmsServerV3::TransmitModifiedMetrics()
 void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
   {
   std::string topic(m_topic_prefix);
-  topic.append("m/");
+  topic.append("metric/");
   topic.append(metric->m_name);
 
   // Replace '.' inside the metric name by '/' for MQTT like namespacing.
@@ -269,13 +269,22 @@ void OvmsServerV3::IncomingMsg(std::string topic, std::string payload)
   if (topic.compare(0,m_topic_prefix.length(),m_topic_prefix)==0)
     {
     topic = topic.substr(m_topic_prefix.length());
-    if (topic.compare(0,2,"c/")==0)
+    if (topic.compare(0,7,"client/")==0)
       {
-      topic = topic.substr(2);
-      if ((payload.empty())||(payload == "0"))
-        RemoveClient(topic);
-      else
-        AddClient(topic);
+      topic = topic.substr(7);
+      size_t delim = topic.find('/');
+      if (delim != string::npos)
+        {
+        std::string clientid = topic.substr(0,delim);
+        topic = topic.substr(delim+1);
+        if (topic == "active")
+          {
+          if ((payload.empty())||(payload == "0"))
+            RemoveClient(clientid);
+          else
+            AddClient(clientid);
+          }
+        }
       }
     }
   }
@@ -362,7 +371,7 @@ void OvmsServerV3::Connect()
   m_will_topic.append("s/v3/connected");
 
   m_conn_topic = std::string(m_topic_prefix);
-  m_conn_topic.append("c/#");
+  m_conn_topic.append("client/#");
 
   if (m_port.empty()) m_port = "1883";
   std::string address(m_server);
