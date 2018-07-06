@@ -359,14 +359,14 @@ void OvmsServerV3::CountClients()
   int nc = m_clients.size();
   StandardMetrics.ms_s_v3_peers->SetValue(nc);
   if (nc > m_peers)
-    {
     ESP_LOGI(TAG, "One or more peers have connected");
-    m_lasttx = 0; // A peer has connected, so force a transmission of status messages
-    }
   if ((nc == 0)&&(m_peers != 0))
     MyEvents.SignalEvent("app.disconnected",NULL);
   else if ((nc > 0)&&(nc != m_peers))
     MyEvents.SignalEvent("app.connected",NULL);
+  if (nc != m_peers)
+    m_lasttx = 0; // Our peers have changed, so force a transmission of status messages
+
   m_peers = nc;
   }
 
