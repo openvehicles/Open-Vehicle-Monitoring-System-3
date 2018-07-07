@@ -254,6 +254,8 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
     return false;
     }
 
+  m_status.error_flags = (intstat << 24) | (errflag << 16) | intflag;
+
   if (intflag <= 2)
     {
     // The indicated RX buffer has a message to be read
@@ -289,26 +291,27 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
     {
     // some TX buffers have become available; clear IRQs and fill up:
     m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intstat & 0b00011100, 0x00);
+    m_status.error_flags |= 0x0100;
 
     if(xQueueReceive(m_txqueue, (void*)frame, 0) == pdTRUE)  // if any queued for later?
       Write(frame, 0);  // if so, send one
     }
 
-  if (intstat & 0b10100000)
+  if (intstat & 0b11100000)
     {
     // Error interrupts:
     //  MERRF 0x80 = message tx/rx error
     //  ERRIF 0x20 = overflow / error state change
-    m_status.error_flags = (intstat & 0b10100000) << 8 | errflag;
-
     if (errflag & 0b10000000) // RXB1 overflow
       {
       m_status.rxbuf_overflow++;
+      m_status.error_flags |= 0x0200;
       ESP_LOGW(TAG, "CAN Bus 2/3 receive overflow; Frame lost.");
       }
     if (errflag & 0b01000000) // RXB0 overflow.  No data lost in this case (it went into RXB1)
-      m_status.rxbuf_overflow++;
-
+      {
+      m_status.error_flags |= 0x0400;
+      }
     // read error counters:
     uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, 0x1c);
     m_status.errors_tx = p[0];
@@ -320,11 +323,17 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
 
   // clear RX buffer overflow flags:
   if (errflag & 0b11000000)
+    {
+    m_status.error_flags |= 0x0800;
     m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2d, errflag & 0b11000000, 0x00);
+    }
 
   // clear error & wakeup interrupts:
   if (intstat & 0b11100000)
+    {
+    m_status.error_flags |= 0x1000;
     m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intstat & 0b11100000, 0x00);
+    }
 
   if(intflag & 0b00000011)   //  did we receive anything?
     return true;
