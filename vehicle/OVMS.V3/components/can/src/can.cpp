@@ -326,7 +326,7 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->printf("Tx delays: %20d\n",sbus->m_status.txbuf_delay);
   writer->printf("Tx err:    %20d\n",sbus->m_status.errors_tx);
   writer->printf("Tx ovrflw: %20d\n",sbus->m_status.txbuf_overflow);
-  writer->printf("Err flags: %#x\n",sbus->m_status.error_flags);
+  writer->printf("Err flags: 0x%08x\n",sbus->m_status.error_flags);
   }
 
 static void CAN_rxtask(void *pvParameters)
