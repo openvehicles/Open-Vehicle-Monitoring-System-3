@@ -200,6 +200,13 @@ config OVMS_VEHICLE_MITSUBISHI
     help
         Enable to include support for Mitsubishi iMiev vehicle.
 
+config OVMS_VEHICLE_FIAT500
+    bool "Include support for Fiat 500 vehicle"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for FIAT 500 vehicle.
+
 config OVMS_VEHICLE_RXTASK_STACK
     int "Stack size for vehicle RX task"
     default 6144
