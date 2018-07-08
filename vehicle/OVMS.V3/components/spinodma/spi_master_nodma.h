@@ -25,6 +25,7 @@
 #include "esp_intr_alloc.h"
 #include "rom/lldesc.h"
 
+#define _SOC_SPI_PERIPH_H_ // don't include spi_periph.h (type conflict)
 #include "driver/spi_common.h"
 #include "driver/spi_master.h"
 
