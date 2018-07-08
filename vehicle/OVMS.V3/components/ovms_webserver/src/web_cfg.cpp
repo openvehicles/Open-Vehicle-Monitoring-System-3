@@ -1734,7 +1734,7 @@ void OvmsWebServer::HandleCfgLogging(PageEntry_t& p, PageContext_t& c)
 
     file_path = c.getvar("file_path");
     pmap["file.path"] = file_path;
-    if (!startsWith(file_path, "/sd/") && !startsWith(file_path, "/store/"))
+    if (pmap["file.enable"] == "yes" && !startsWith(file_path, "/sd/") && !startsWith(file_path, "/store/"))
       error += "<li data-input=\"file_path\">File must be on '/sd' or '/store'</li>";
 
     pmap["level"] = c.getvar("level");
