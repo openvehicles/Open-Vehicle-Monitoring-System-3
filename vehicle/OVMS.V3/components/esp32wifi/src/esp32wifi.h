@@ -61,6 +61,8 @@ class esp32wifi : public pcp
     void SetPowerMode(PowerMode powermode);
     void PowerUp();
     void PowerDown();
+    void InitCSI();
+    static void CSIRxCallback(void* ctx, wifi_csi_info_t* data);
 
   public:
     void StartClientMode(std::string ssid, std::string password, uint8_t* bssid=NULL);
@@ -79,6 +81,7 @@ class esp32wifi : public pcp
     void EventWifiStaDisconnected(std::string event, void* data);
     void EventWifiApState(std::string event, void* data);
     void EventWifiApUpdate(std::string event, void* data);
+    void EventTimer1(std::string event, void* data);
     void EventTimer10(std::string event, void* data);
     void EventWifiScanDone(std::string event, void* data);
     void EventSystemShuttingDown(std::string event, void* data);
@@ -97,6 +100,7 @@ class esp32wifi : public pcp
     wifi_config_t m_wifi_sta_cfg;
     bool m_stareconnect;
     uint32_t m_nextscan;
+    int m_sta_rssi;                               // smoothed RSSI [dBm/10]
   };
 
 #endif //#ifndef __ESP32WIFI_H__

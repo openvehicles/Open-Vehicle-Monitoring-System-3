@@ -230,6 +230,7 @@ esp32wifi::esp32wifi(const char* name)
   m_powermode = Off;
   m_poweredup = false;
   m_stareconnect = false;
+  m_sta_rssi = 0;
   memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
   memset(&m_mac_ap,0,sizeof(m_mac_ap));
@@ -243,6 +244,7 @@ esp32wifi::esp32wifi(const char* name)
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.gotip",std::bind(&esp32wifi::EventWifiGotIp, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.disconnected",std::bind(&esp32wifi::EventWifiStaDisconnected, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"ticker.1",std::bind(&esp32wifi::EventTimer1, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"ticker.10",std::bind(&esp32wifi::EventTimer10, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.scan.done",std::bind(&esp32wifi::EventWifiScanDone, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.start",std::bind(&esp32wifi::EventWifiApState, this, _1, _2));
@@ -402,6 +404,32 @@ void esp32wifi::PowerDown()
     }
   }
 
+void esp32wifi::InitCSI()
+  {
+  esp_err_t err;
+  m_sta_rssi = 0;
+  if ((err = esp_wifi_set_csi_rx_cb(CSIRxCallback, this)) != ESP_OK)
+    ESP_LOGW(TAG, "cannot set CSI callback: error %d %s", err, esp_err_to_name(err));
+  wifi_csi_config_t csi_config =
+    {
+    .lltf_en = true,           /**< enable to receive legacy long training field(lltf) data. Default enabled */
+    .htltf_en = true,          /**< enable to receive HT long training field(htltf) data. Default enabled */
+    .stbc_htltf2_en = true,    /**< enable to receive space time block code HT long training field(stbc-htltf2) data. Default enabled */
+    .manu_scale = false,       /**< manually scale the CSI data by left shifting or automatically scale the CSI data. If set true, please set the shift bits. false: automatically. true: manually. Default false */ 
+    .shift = 0                 /**< manually left shift bits of the scale of the CSI data. The range of the left shift bits is 0~15 */
+    };
+  if ((err = esp_wifi_set_csi_config(&csi_config)) != ESP_OK)
+    ESP_LOGW(TAG, "cannot configure CSI: error %d %s", err, esp_err_to_name(err));
+  if ((err = esp_wifi_set_csi(true)) != ESP_OK)
+    ESP_LOGW(TAG, "cannot enable CSI: error %d %s", err, esp_err_to_name(err));
+  }
+
+void esp32wifi::CSIRxCallback(void* ctx, wifi_csi_info_t* data)
+  {
+  esp32wifi *me = (esp32wifi*) ctx;
+  me->m_sta_rssi = (me->m_sta_rssi * 7 + data->rx_ctrl.rssi * 10) / 8;
+  }
+
 void esp32wifi::StartClientMode(std::string ssid, std::string password, uint8_t* bssid)
   {
   m_stareconnect = false;
@@ -439,6 +467,7 @@ void esp32wifi::StartClientMode(std::string ssid, std::string password, uint8_t*
   m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
   ESP_ERROR_CHECK(esp_wifi_start());
+  InitCSI();
   }
 
   ESP_ERROR_CHECK(esp_wifi_connect());
@@ -467,6 +496,7 @@ void esp32wifi::StartScanningClientMode()
   m_wifi_sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
   m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
   ESP_ERROR_CHECK(esp_wifi_start());
+  InitCSI();
   }
 
   // if we are triggered by a startup script, monotonictime will be zero which
@@ -546,6 +576,7 @@ void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appas
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
 
   ESP_ERROR_CHECK(esp_wifi_start());
+  InitCSI();
   }
 
   ESP_ERROR_CHECK(esp_wifi_connect());
@@ -698,11 +729,7 @@ void esp32wifi::UpdateNetMetrics()
   if (StdMetrics.ms_m_net_type->AsString() == "wifi")
     {
     StdMetrics.ms_m_net_provider->SetValue(GetSSID());
-    StdMetrics.ms_m_net_sq->SetValue(0, dbm);
-    // TODO: set SQ from RSSI info when available
-    //  esp-idf currently has no API to retrieve the RSSI info in STA mode
-    //  without doing a scan.
-    //  As the wifi stack is closed source, we can't do anything about that.
+    StdMetrics.ms_m_net_sq->SetValue((int)(m_sta_rssi+5)/10, dbm);
     }
   }
 
@@ -771,6 +798,11 @@ void esp32wifi::EventWifiApUpdate(std::string event, void* data)
   else
     ESP_LOGI(TAG, "AP station disconnected: id: %d, MAC: " MACSTR,
       info->sta_connected.aid, MAC2STR(info->sta_connected.mac));
+  }
+
+void esp32wifi::EventTimer1(std::string event, void* data)
+  {
+  UpdateNetMetrics();
   }
 
 void esp32wifi::EventTimer10(std::string event, void* data)
