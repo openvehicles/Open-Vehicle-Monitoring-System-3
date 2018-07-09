@@ -46,6 +46,10 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
 
   protected:
     virtual void Ticker1(uint32_t ticker);
+    virtual void Ticker10(uint32_t ticker);
+
+  protected:
+    char m_vin[18];
   };
 
 #endif //#ifndef __VEHICLE_MITSUBISHI_H__
