@@ -43,33 +43,75 @@ static const char *TAG = "script";
 
 OvmsScripts MyScripts __attribute__ ((init_priority (1600)));
 
-static void script_ovms(bool print, int verbosity, OvmsWriter* writer, FILE* sf, bool secure=false)
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+OvmsWriter* duktapewriter = NULL;
+
+static duk_ret_t DukOvmsPrint(duk_context *ctx)
   {
-  BufferedShell* bs = new BufferedShell(print, verbosity);
-  if (secure) bs->SetSecure(true);
-  char* cmdline = new char[_COMMAND_LINE_LEN];
-  while(fgets(cmdline, _COMMAND_LINE_LEN, sf) != NULL )
+  const char *output = duk_to_string(ctx,0);
+
+  if ((output != NULL)&&(duktapewriter != NULL))
     {
-    bs->ProcessChars(cmdline, strlen(cmdline));
+    duktapewriter->printf("%s",output);
     }
-  fclose(sf);
-  bs->Output(writer);
-  delete bs;
-  delete [] cmdline;
+  return 0;
+  }
+#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
+static void script_ovms(bool print, int verbosity, OvmsWriter* writer,
+  const char* spath, FILE* sf, bool secure=false)
+  {
+  char *ext = rindex(spath, '.');
+  if ((ext != NULL)&&(strcmp(ext,".js")==0))
+    {
+    // Javascript script
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+    fseek(sf,0,SEEK_END);
+    long slen = ftell(sf);
+    fseek(sf,0,SEEK_SET);
+    char *script = new char[slen+1];
+    memset(script,0,slen+1);
+    fread(script,1,slen,sf);
+    duk_context *ctx = MyScripts.Duktape();
+    duktapewriter = writer;
+    duk_eval_string_noresult(ctx, script);
+    duktapewriter = NULL;
+    delete [] script;
+#else // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+    writer->puts("Error: No javascript engine available");
+#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+    fclose(sf);
+    }
+  else
+    {
+    // Default: OVMS command script
+    BufferedShell* bs = new BufferedShell(print, verbosity);
+    if (secure) bs->SetSecure(true);
+    char* cmdline = new char[_COMMAND_LINE_LEN];
+    while(fgets(cmdline, _COMMAND_LINE_LEN, sf) != NULL )
+      {
+      bs->ProcessChars(cmdline, strlen(cmdline));
+      }
+    fclose(sf);
+    bs->Output(writer);
+    delete bs;
+    delete [] cmdline;
+    }
   }
 
 static void script_run(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   FILE *sf = NULL;
+  std::string path;
 
   if (argv[0][0] == '/')
     {
     // A direct path specification
+    path = std::string(argv[0]);
     sf = fopen(argv[0], "r");
     }
   else
     {
-    std::string path;
 #ifdef CONFIG_OMMS_DEV_SDCARDSCRIPTS
     path = std::string("/sd/scripts/");
     path.append(argv[0]);
@@ -87,7 +129,8 @@ static void script_run(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int 
     writer->puts("Error: Script not found");
     return;
     }
-  script_ovms(verbosity != COMMAND_RESULT_MINIMAL, verbosity, writer, sf);
+  script_ovms(verbosity != COMMAND_RESULT_MINIMAL, verbosity, writer,
+    path.c_str(), sf, writer->IsSecure());
   }
 
 void OvmsScripts::AllScripts(std::string path)
@@ -107,7 +150,8 @@ void OvmsScripts::AllScripts(std::string path)
       if (sf)
         {
         ESP_LOGI(TAG, "Running script %s", fpath.c_str());
-        script_ovms(false, COMMAND_RESULT_MINIMAL, ConsoleAsync::Instance(), sf, true);
+        script_ovms(false, COMMAND_RESULT_MINIMAL, ConsoleAsync::Instance(),
+          fpath.c_str(), sf, true);
         }
       }
     closedir(dir);
@@ -149,6 +193,8 @@ OvmsScripts::OvmsScripts()
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   ESP_LOGI(TAG, "Using DUKTAPE javascript engine");
   m_dukctx = duk_create_heap_default();
+  duk_push_c_function(m_dukctx, DukOvmsPrint, 1 /*nargs*/);
+  duk_put_global_string(m_dukctx, "OvmsPrint");
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
   MyCommandApp.RegisterCommand("script","Run a script",script_run,"<path>",1,1,true);
