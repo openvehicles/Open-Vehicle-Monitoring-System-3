@@ -156,7 +156,7 @@ void WLOG(enum wolfSSH_LogLevel level, const char *const fmt, ...)
     if (logFunction)
         logFunction(level, msgStr);
     else
-        fprintf(stdout, "%s: [%s] %s\n", timeStr, GetLogStr(level), msgStr);
+        printf("%s: [%s] %s\n", timeStr, GetLogStr(level), msgStr);
 }
 
 #endif /* DEBUG_WOLFSSH */
