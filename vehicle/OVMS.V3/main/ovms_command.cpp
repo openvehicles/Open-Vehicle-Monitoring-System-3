@@ -45,6 +45,8 @@ static const char *TAG = "command";
 #include "ovms_events.h"
 #include "ovms_peripherals.h"
 #include "ovms_utils.h"
+#include "ovms_script.h"
+#include "buffered_shell.h"
 #include "log_buffers.h"
 
 OvmsCommandApp MyCommandApp __attribute__ ((init_priority (1000)));
@@ -344,6 +346,31 @@ OvmsCommand* OvmsCommand::FindCommand(const char* name)
   return m_children.FindUniquePrefix(name);
   }
 
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
+static duk_ret_t DukOvmsCommand(duk_context *ctx)
+  {
+  const char *cmd = duk_to_string(ctx,0);
+
+  if (cmd != NULL)
+    {
+    BufferedShell* bs = new BufferedShell(false, COMMAND_RESULT_NORMAL);
+    bs->SetSecure(true); // this is an authorized channel
+    bs->ProcessChars(cmd, strlen(cmd));
+    bs->ProcessChar('\n');
+    std::string val; bs->Dump(val);
+    delete bs;
+    duk_push_string(ctx, val.c_str());
+    return 1;  /* one return value */
+    }
+  else
+    {
+    return 0;
+    }
+  }
+
+#endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
 void help(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   writer->puts("Enter a single \"?\" to get the root command list.");
@@ -535,6 +562,16 @@ void OvmsCommandApp::ConfigureLogging()
   MyEvents.RegisterEvent(TAG, "ticker.3600", std::bind(&OvmsCommandApp::EventHandler, this, _1, _2));
 
   ReadConfig();
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
+  duk_context* ctx = MyScripts.Duktape();
+  if (ctx)
+    {
+    duk_push_c_function(ctx, DukOvmsCommand, 1 /*nargs*/);
+    duk_put_global_string(ctx, "OvmsCommand");
+    }
+#endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
 OvmsCommand* OvmsCommandApp::RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
