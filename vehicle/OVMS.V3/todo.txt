@@ -23,7 +23,7 @@ MWJ     Done         OBDII Poll support
 MWJ     Done         Tesla roadster port
 GØV     Done         Kia Soul port
                      Kyburz port
-                     Mitsubishi iMiev port
+MWJ     95%          Mitsubishi iMiev port
 TP      Done         Nissan Leaf port
 MWJ     90%          OBDII port
                      TRACK vehicle port
