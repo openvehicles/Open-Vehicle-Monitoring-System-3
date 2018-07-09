@@ -290,7 +290,7 @@ inline static void terminal_backspace (microrl_t * pThis)
 //*****************************************************************************
 inline static void terminal_newline (microrl_t * pThis)
 {
-	pThis->print (pThis, ENDL);
+	pThis->print (pThis, "\r\n");
 }
 
 //*****************************************************************************
