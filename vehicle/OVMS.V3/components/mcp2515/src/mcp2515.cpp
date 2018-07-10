@@ -138,8 +138,11 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
     }
   m_spibus->spi_cmd(m_spi, buf, 0, 5, CMD_WRITE, 0x28, cnf3, cnf2, cnf1);
 
-  // Set NORMAL mode
-  m_spibus->spi_cmd(m_spi, buf, 0, 3, CMD_WRITE, 0x0f, 0x00);
+  // Active/Listen Mode
+  if (m_mode == CAN_MODE_LISTEN)
+    m_spibus->spi_cmd(m_spi, buf, 0, 3, CMD_WRITE, 0x0f, 0b01100000);
+  else
+    m_spibus->spi_cmd(m_spi, buf, 0, 3, CMD_WRITE, 0x0f, 0x00);
 
   // And record that we are powered on
   pcp::SetPowerMode(On);
@@ -171,6 +174,12 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=
   {
   uint8_t buf[16];
   uint8_t id[4];
+
+  if (m_mode != CAN_MODE_ACTIVE)
+    {
+    ESP_LOGW(TAG,"Cannot write %s when not in ACTIVE mode",m_name);
+    return ESP_OK;
+    }
 
   // check for free TX buffer:
   uint8_t txbuf;
