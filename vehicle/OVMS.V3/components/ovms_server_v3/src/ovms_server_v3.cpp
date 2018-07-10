@@ -747,6 +747,8 @@ void OvmsServerV3Init::AutoInit()
 void OvmsServerV3Init::EventListener(std::string event, void* data)
   {
   if (event.compare(0,7,"ticker.") == 0) return; // Skip ticker.* events
+  if (event.compare("system.event") == 0) return; // Skip event
+  if (event.compare("system.wifi.scan.done") == 0) return; // Skip event
 
   if (MyOvmsServerV3)
     {
