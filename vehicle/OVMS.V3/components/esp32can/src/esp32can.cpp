@@ -33,8 +33,8 @@
 ; https://github.com/ThomasBarth/ESP32-CAN-Driver
 */
 
-// #include "ovms_log.h"
-// static const char *TAG = "esp32can";
+#include "ovms_log.h"
+static const char *TAG = "esp32can";
 
 #include <string.h>
 #include "esp32can.h"
@@ -229,6 +229,12 @@ esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
   // Set to normal mode
   MODULE_ESP32CAN->OCR.B.OCMODE=__CAN_OC_NOM;
 
+  // Active/Listen Mode
+  if (m_mode == CAN_MODE_LISTEN)
+    MODULE_ESP32CAN->MOD.B.LOM = 1;
+  else
+    MODULE_ESP32CAN->MOD.B.LOM = 0;
+
   // Clear error counters
   MODULE_ESP32CAN->TXERR.U = 0;
   MODULE_ESP32CAN->RXERR.U = 0;
@@ -270,6 +276,12 @@ esp_err_t esp32can::Stop()
 esp_err_t esp32can::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
   {
   uint8_t __byte_i; // Byte iterator
+
+  if (m_mode != CAN_MODE_ACTIVE)
+    {
+    ESP_LOGW(TAG,"Cannot write %s when not in ACTIVE mode",m_name);
+    return ESP_OK;
+    }
 
   // check if TX buffer is available:
   if(MODULE_ESP32CAN->SR.B.TBS == 0)
