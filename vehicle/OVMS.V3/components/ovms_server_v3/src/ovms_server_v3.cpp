@@ -105,12 +105,15 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
           StandardMetrics.ms_s_v3_connected->SetValue(true);
           MyOvmsServerV3->SetStatus("OVMS V3 MQTT login successful", false, OvmsServerV3::Connected);
           MyOvmsServerV3->m_sendall = true;
+          MyOvmsServerV3->m_notify_info_pending = true;
+          MyOvmsServerV3->m_notify_error_pending = true;
+          MyOvmsServerV3->m_notify_alert_pending = true;
+          MyOvmsServerV3->m_notify_data_pending = true;
+          MyOvmsServerV3->m_notify_data_waitcomp = 0;
+          MyOvmsServerV3->m_notify_data_waittype = NULL;
+          MyOvmsServerV3->m_notify_data_waitentry = NULL;
           }
         }
-      break;
-    case MG_EV_MQTT_PUBACK:
-      ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_MQTT_PUBACK)");
-      ESP_LOGI(TAG, "Message publishing acknowledged (msg_id: %d)", msg->message_id);
       break;
     case MG_EV_MQTT_SUBACK:
       ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_MQTT_SUBACK)");
@@ -134,9 +137,23 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
         mg_mqtt_pubrec(nc, msg->message_id);
         }
       break;
+    case MG_EV_MQTT_PUBACK:
+      ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_MQTT_PUBACK)");
+      ESP_LOGI(TAG, "Message publishing acknowledged (msg_id: %d)", msg->message_id);
+      break;
     case MG_EV_MQTT_PUBREL:
       ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_MQTT_PUBREL)");
       mg_mqtt_pubcomp(nc, msg->message_id);
+      break;
+    case MG_EV_MQTT_PUBREC:
+      ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_MQTT_PUBCOMP)");
+      if (MyOvmsServerV3)
+        {
+        MyOvmsServerV3->IncomingPubRec(msg->message_id);
+        }
+      break;
+    case MG_EV_MQTT_PUBCOMP:
+      ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_MQTT_PUBCOMP)");
       break;
     case MG_EV_CLOSE:
       ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_CLOSE)");
@@ -170,6 +187,13 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_streaming = 0;
   m_updatetime_idle = 600;
   m_updatetime_connected = 60;
+  m_notify_info_pending = false;
+  m_notify_error_pending = false;
+  m_notify_alert_pending = false;
+  m_notify_data_pending = false;
+  m_notify_data_waitcomp = 0;
+  m_notify_data_waittype = NULL;
+  m_notify_data_waitentry = NULL;
 
   ESP_LOGI(TAG, "OVMS Server v3 running");
 
@@ -265,6 +289,169 @@ void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
   ESP_LOGI(TAG,"Tx metric %s=%s",topic.c_str(),val.c_str());
   }
 
+int OvmsServerV3::TransmitNotificationInfo(OvmsNotifyEntry* entry)
+  {
+  std::string topic(m_topic_prefix);
+  topic.append("notify/info/");
+  topic.append(entry->m_subtype);
+
+  const extram::string result = mp_encode(entry->GetValue());
+
+  int id = m_msgid++;
+  mg_mqtt_publish(m_mgconn, topic.c_str(), id,
+    MG_MQTT_QOS(1), result.c_str(), result.length());
+  ESP_LOGI(TAG,"Tx notify %s=%s",topic.c_str(),result.c_str());
+  return id;
+  }
+
+int OvmsServerV3::TransmitNotificationError(OvmsNotifyEntry* entry)
+  {
+  std::string topic(m_topic_prefix);
+  topic.append("notify/error/");
+  topic.append(entry->m_subtype);
+
+  const extram::string result = mp_encode(entry->GetValue());
+
+  int id = m_msgid++;
+  mg_mqtt_publish(m_mgconn, topic.c_str(), id,
+    MG_MQTT_QOS(1), result.c_str(), result.length());
+  ESP_LOGI(TAG,"Tx notify %s=%s",topic.c_str(),result.c_str());
+  return id;
+  }
+
+int OvmsServerV3::TransmitNotificationAlert(OvmsNotifyEntry* entry)
+  {
+  std::string topic(m_topic_prefix);
+  topic.append("notify/alert/");
+  topic.append(entry->m_subtype);
+
+  const extram::string result = mp_encode(entry->GetValue());
+
+  int id = m_msgid++;
+  mg_mqtt_publish(m_mgconn, topic.c_str(), id,
+    MG_MQTT_QOS(1), result.c_str(), result.length());
+  ESP_LOGI(TAG,"Tx notify %s=%s",topic.c_str(),result.c_str());
+  return id;
+  }
+
+int OvmsServerV3::TransmitNotificationData(OvmsNotifyEntry* entry)
+  {
+  char base[32];
+  std::string topic(m_topic_prefix);
+  topic.append("notify/data/");
+  topic.append(entry->m_subtype);
+  topic.append("/");
+  topic.append(itoa(entry->m_id,base,10));
+  topic.append("/");
+  topic.append(itoa(entry->m_created - monotonictime,base,10));
+
+  // terminate payload at first LF:
+  extram::string msg = entry->GetValue();
+  size_t eol = msg.find('\n');
+  if (eol != std::string::npos)
+    msg.resize(eol);
+
+  const char* result = msg.c_str();
+
+  int id = m_msgid++;
+  mg_mqtt_publish(m_mgconn, topic.c_str(), id,
+    MG_MQTT_QOS(2), result, strlen(result));
+  ESP_LOGI(TAG,"Tx notify %s=%s",topic.c_str(),result);
+  return id;
+  }
+
+void OvmsServerV3::TransmitPendingNotificationsInfo()
+  {
+  // Find the type object
+  OvmsNotifyType* info = MyNotify.GetType("info");
+  if (info == NULL)
+    {
+    m_notify_info_pending = false;
+    return;
+    }
+
+  // Find the first entry
+  OvmsNotifyEntry* e = info->FirstUnreadEntry(MyOvmsServerV3Reader, 0);
+  if (e == NULL)
+    {
+    m_notify_info_pending = false;
+    return;
+    }
+
+  TransmitNotificationInfo(e);
+  info->MarkRead(MyOvmsServerV3Reader, e);
+  }
+
+void OvmsServerV3::TransmitPendingNotificationsError()
+  {
+  // Find the type object
+  OvmsNotifyType* error = MyNotify.GetType("error");
+  if (error == NULL)
+    {
+    m_notify_error_pending = false;
+    return;
+    }
+
+  // Find the first entry
+  OvmsNotifyEntry* e = error->FirstUnreadEntry(MyOvmsServerV3Reader, 0);
+  if (e == NULL)
+    {
+    m_notify_error_pending = false;
+    return;
+    }
+
+  TransmitNotificationError(e);
+  error->MarkRead(MyOvmsServerV3Reader, e);
+  }
+
+void OvmsServerV3::TransmitPendingNotificationsAlert()
+  {
+  // Find the type object
+  OvmsNotifyType* alert = MyNotify.GetType("alert");
+  if (alert == NULL)
+    {
+    m_notify_alert_pending = false;
+    return;
+    }
+
+  // Find the first entry
+  OvmsNotifyEntry* e = alert->FirstUnreadEntry(MyOvmsServerV3Reader, 0);
+  if (e == NULL)
+    {
+    m_notify_alert_pending = false;
+    return;
+    }
+
+  TransmitNotificationAlert(e);
+  alert->MarkRead(MyOvmsServerV3Reader, e);
+  }
+
+void OvmsServerV3::TransmitPendingNotificationsData()
+  {
+  if (m_notify_data_waitcomp != 0) return;
+
+  // Find the type object
+  OvmsNotifyType* data = MyNotify.GetType("data");
+  if (data == NULL)
+    {
+    m_notify_data_pending = false;
+    return;
+    }
+
+  // Find the first entry
+  OvmsNotifyEntry* e = data->FirstUnreadEntry(MyOvmsServerV3Reader, 0);
+  if (e == NULL)
+    {
+    m_notify_data_pending = false;
+    return;
+    }
+
+  m_notify_data_waittype = data;
+  m_notify_data_waitentry = e;
+  m_notify_data_waitcomp = TransmitNotificationData(e);
+  m_notify_data_pending = false;
+  }
+
 void OvmsServerV3::IncomingMsg(std::string topic, std::string payload)
   {
   if (topic.compare(0,m_topic_prefix.length(),m_topic_prefix)==0)
@@ -292,6 +479,22 @@ void OvmsServerV3::IncomingMsg(std::string topic, std::string payload)
           }
         }
       }
+    }
+  }
+
+void OvmsServerV3::IncomingPubRec(int id)
+  {
+  mg_mqtt_pubrel(m_mgconn, id);
+  if ((id == m_notify_data_waitcomp)&&
+      (m_notify_data_waittype != NULL)&&
+      (m_notify_data_waitentry != NULL))
+    {
+    m_notify_data_waittype->MarkRead(MyOvmsServerV3Reader, m_notify_data_waitentry);
+    m_notify_data_waitcomp = 0;
+    m_notify_data_waittype = NULL;
+    m_notify_data_waitentry = NULL;
+    m_notify_data_pending = true;
+    TransmitPendingNotificationsData();
     }
   }
 
@@ -516,8 +719,36 @@ void OvmsServerV3::MetricModified(OvmsMetric* metric)
 
 bool OvmsServerV3::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry)
   {
-  // TODO
-  return true; // Mark it read, we have no interest in it
+  if (strcmp(type->m_name,"info")==0)
+    {
+    // Info notifications
+    if (!StandardMetrics.ms_s_v3_connected->AsBool()) return false;
+    TransmitNotificationInfo(entry);
+    return true; // Mark it as read, as we've managed to send it
+    }
+  else if (strcmp(type->m_name,"error")==0)
+    {
+    // Error notification
+    if (!StandardMetrics.ms_s_v3_connected->AsBool()) return false;
+    TransmitNotificationError(entry);
+    return true; // Mark it as read, as we've managed to send it
+    }
+  else if (strcmp(type->m_name,"alert")==0)
+    {
+    // Alert notifications
+    if (!StandardMetrics.ms_s_v3_connected->AsBool()) return false;
+    TransmitNotificationAlert(entry);
+    return true; // Mark it as read, as we've managed to send it
+    }
+  else if (strcmp(type->m_name,"data")==0)
+    {
+    // Data notifications
+    if (!StandardMetrics.ms_s_v3_connected->AsBool()) return false;
+    m_notify_data_pending = true;
+    return false; // We just flag it for later transmission
+    }
+  else
+    return true; // Mark it read, as no interest to us
   }
 
 void OvmsServerV3::EventListener(std::string event, void* data)
@@ -616,6 +847,12 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
       TransmitAllMetrics();
       m_sendall = false;
       }
+
+    if (m_notify_info_pending) TransmitPendingNotificationsInfo();
+    if (m_notify_error_pending) TransmitPendingNotificationsError();
+    if (m_notify_alert_pending) TransmitPendingNotificationsAlert();
+    if ((m_notify_data_pending)&&(m_notify_data_waitcomp==0))
+      TransmitPendingNotificationsData();
 
     bool caron = StandardMetrics.ms_v_env_on->AsBool();
     int now = StandardMetrics.ms_m_monotonic->AsInt();

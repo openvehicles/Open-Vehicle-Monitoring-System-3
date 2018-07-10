@@ -99,6 +99,13 @@ class OvmsServerV3 : public OvmsServer
     int m_streaming;
     int m_updatetime_idle;
     int m_updatetime_connected;
+    bool m_notify_info_pending;
+    bool m_notify_error_pending;
+    bool m_notify_alert_pending;
+    bool m_notify_data_pending;
+    int m_notify_data_waitcomp;
+    OvmsNotifyType* m_notify_data_waittype;
+    OvmsNotifyEntry* m_notify_data_waitentry;
     OvmsServerV3ClientMap m_clients;
 
   public:
@@ -107,7 +114,16 @@ class OvmsServerV3 : public OvmsServer
     void Disconnect();
     void TransmitAllMetrics();
     void TransmitModifiedMetrics();
+    int TransmitNotificationInfo(OvmsNotifyEntry* entry);
+    int TransmitNotificationError(OvmsNotifyEntry* entry);
+    int TransmitNotificationAlert(OvmsNotifyEntry* entry);
+    int TransmitNotificationData(OvmsNotifyEntry* entry);
+    void TransmitPendingNotificationsInfo();
+    void TransmitPendingNotificationsError();
+    void TransmitPendingNotificationsAlert();
+    void TransmitPendingNotificationsData();
     void IncomingMsg(std::string topic, std::string payload);
+    void IncomingPubRec(int id);
     void IncomingEvent(std::string event, void* data);
     void RunCommand(std::string client, std::string id, std::string command);
     void AddClient(std::string id);

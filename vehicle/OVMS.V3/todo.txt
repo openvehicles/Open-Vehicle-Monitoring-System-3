@@ -63,7 +63,7 @@ MWJ    15%           BLUETOOTH support
 
                    Server Comms
 MWJ    Done          OVMS v2 protocol
-                     MQTT protocol
+MWJ    99%           OVMS v3 (MQTT) protocol
 
                    OTA
 MWJ    Done          OTA update system
