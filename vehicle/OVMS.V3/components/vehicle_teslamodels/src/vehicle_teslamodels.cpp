@@ -61,7 +61,9 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
     {
     case 0x102: // BMS current and voltage
       {
-      StandardMetrics.ms_v_bat_voltage->SetValue(((float)((int)d[1]<<8)+d[0])/100);
+      // Don't update battery voltage too quickly (as it jumps around like crazy)
+      if (StandardMetrics.ms_v_bat_voltage->Age() > 10)
+        StandardMetrics.ms_v_bat_voltage->SetValue(((float)((int)d[1]<<8)+d[0])/100);
       StandardMetrics.ms_v_bat_temp->SetValue((float)((((int)d[7]&0x07)<<8)+d[6])/10);
       break;
       }
