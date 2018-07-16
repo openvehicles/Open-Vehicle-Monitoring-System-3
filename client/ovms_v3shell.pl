@@ -112,16 +112,53 @@ if (!defined $password)
 
 $prefix = "ovms/$username/$vehicleid" if (!defined $prefix);
 
+our $rl;
+my $commandsoutstanding = 0;
+
+sub newprompt()
+  {
+  $rl->set_prompt(
+    ($commandsoutstanding == 0)?"OVMS# ":"OVMS($commandsoutstanding)# ");
+  $rl->rl_redisplay();
+  }
+
 sub mqtt_response
   {
   my ($topic, $message) = @_;
+
+  $commandsoutstanding--;
+  &newprompt();
   AnyEvent::ReadLine::Gnu->print($message);
+  &newprompt();
+  }
+
+sub mqtt_event
+  {
+  my ($topic, $message) = @_;
+
+  AnyEvent::ReadLine::Gnu->print("EVENT  $message\n");
+  &newprompt();
+  }
+
+sub mqtt_metric
+  {
+  my ($topic, $message) = @_;
+
+  if ($message ne '')
+    {
+    $topic = substr($topic,length($prefix)+8);
+    $topic =~ s/\//\./g;
+    AnyEvent::ReadLine::Gnu->print("METRIC $topic=$message\n");
+    &newprompt();
+    }
   }
 
 sub mqtt_error
   {
   my ($fatal,$message) = @_;
-  AnyEvent::ReadLine::Gnu->print("MQTT error: $message\n");
+
+  AnyEvent::ReadLine::Gnu->print("MQTT ERROR: $message\n");
+  &newprompt();
   EV::break() if ($fatal);
   }
 
@@ -140,19 +177,26 @@ my $mqtt = AnyEvent::MQTT->new(
 
 my $response_cv = $mqtt->subscribe(topic => "$prefix/client/$clientid/response/#",
                           callback => \&mqtt_response);
+my $event_cv = $mqtt->subscribe(topic => "$prefix/event",
+                          callback => \&mqtt_event);
+my $metric_cv = $mqtt->subscribe(topic => "$prefix/metric/#",
+                          callback => \&mqtt_metric);
 
 $mqtt->publish(topic => "$prefix/client/$clientid/active", message => '1');
 
-my $rl = new AnyEvent::ReadLine::Gnu prompt => "OVMS# ", on_line => sub {
+$rl = new AnyEvent::ReadLine::Gnu prompt => "OVMS# ", on_line => sub {
    # called for each line entered by the user
   if (!defined $_[0])
     { EV::break(); }
-  else
+  elsif (length($_[0]) != 0)
     {
+    $commandsoutstanding++;
+    &newprompt();
     $mqtt->publish(topic => "$prefix/client/$clientid/command/1",
                    message => $_[0]);
     }
   };
+$rl->ornaments(1);
 
 my $interrupt = AnyEvent->signal(signal => "INT", cb => sub {
   AnyEvent::ReadLine::Gnu->print ("Exit!\n");
