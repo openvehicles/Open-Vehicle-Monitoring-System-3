@@ -48,80 +48,80 @@ OvmsVehicleZeva::OvmsVehicleZeva()
   StandardMetrics.ms_v_vin->SetValue("ZEVAZEVAZEVAZEVA");
 
   // Commented out default values, set as needed
-  //StandardMetrics.ms_v_bat_soc->SetValue(50);
-  //StandardMetrics.ms_v_bat_soh->SetValue(100);
-  //StandardMetrics.ms_v_bat_cac->SetValue(160);
-  //StandardMetrics.ms_v_bat_voltage->SetValue(400);
-  //StandardMetrics.ms_v_bat_current->SetValue(0);
-  //StandardMetrics.ms_v_bat_power->SetValue(0);
-  //StandardMetrics.ms_v_bat_energy_used->SetValue(0);
-  //StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
-  //StandardMetrics.ms_v_bat_range_full->SetValue(400);
-  //StandardMetrics.ms_v_bat_range_ideal->SetValue(200);
-  //StandardMetrics.ms_v_bat_range_est->SetValue(160);
-  //StandardMetrics.ms_v_bat_12v_voltage->SetValue(12);
-  //StandardMetrics.ms_v_bat_12v_current->SetValue(0);
-  //StandardMetrics.ms_v_bat_temp->SetValue(25);
-  //StandardMetrics.ms_v_charge_voltage->SetValue(0);
-  //StandardMetrics.ms_v_charge_current->SetValue(0);
-  //StandardMetrics.ms_v_charge_climit->SetValue(0);
-  //StandardMetrics.ms_v_charge_kwh->SetValue(0);
-  //StandardMetrics.ms_v_charge_mode->SetValue("standard");
-  //StandardMetrics.ms_v_charge_timermode->SetValue(false);
-  //StandardMetrics.ms_v_charge_timerstart->SetValue(0);
-  //StandardMetrics.ms_v_charge_state->SetValue("done");
-  //StandardMetrics.ms_v_charge_substate->SetValue("stopped");
-  //StandardMetrics.ms_v_charge_type->SetValue("type2");
-  //StandardMetrics.ms_v_charge_pilot->SetValue(false);
-  //StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-  //StandardMetrics.ms_v_charge_limit_range->SetValue(0);
-  //StandardMetrics.ms_v_charge_limit_soc->SetValue(0);
-  //StandardMetrics.ms_v_charge_duration_full->SetValue(0);
-  //StandardMetrics.ms_v_charge_duration_range->SetValue(0);
-  //StandardMetrics.ms_v_charge_duration_soc->SetValue(0);
-  //StandardMetrics.ms_v_charge_temp->SetValue(22);
-  //StandardMetrics.ms_v_inv_temp->SetValue(22);
-  //StandardMetrics.ms_v_mot_rpm->SetValue(0);
-  //StandardMetrics.ms_v_mot_temp->SetValue(30);
-  //StandardMetrics.ms_v_door_fl->SetValue(false);
-  //StandardMetrics.ms_v_door_fr->SetValue(false);
-  //StandardMetrics.ms_v_door_rl->SetValue(false);
-  //StandardMetrics.ms_v_door_rr->SetValue(false);
-  //StandardMetrics.ms_v_door_chargeport->SetValue(false);
-  //StandardMetrics.ms_v_door_hood->SetValue(false);
-  //StandardMetrics.ms_v_door_trunk->SetValue(false);
-  //StandardMetrics.ms_v_env_drivemode->SetValue(0);
-  //StandardMetrics.ms_v_env_handbrake->SetValue(false);
-  //StandardMetrics.ms_v_env_awake->SetValue(false);
-  //StandardMetrics.ms_v_env_charging12v->SetValue(false);
-  //StandardMetrics.ms_v_env_cooling->SetValue(false);
-  //StandardMetrics.ms_v_env_heating->SetValue(false);
-  //StandardMetrics.ms_v_env_hvac->SetValue(false);
-  //StandardMetrics.ms_v_env_on->SetValue(false);
-  //StandardMetrics.ms_v_env_locked->SetValue(false);
-  //StandardMetrics.ms_v_env_valet->SetValue(false);
-  //StandardMetrics.ms_v_env_headlights->SetValue(false);
-  //StandardMetrics.ms_v_env_alarm->SetValue(false);
-  //StandardMetrics.ms_v_env_ctrl_login->SetValue(false);
-  //StandardMetrics.ms_v_env_ctrl_config->SetValue(false);
-  //StandardMetrics.ms_v_env_temp->SetValue(22);
-  //StandardMetrics.ms_v_pos_gpslock->SetValue(true);
-  //StandardMetrics.ms_v_pos_satcount->SetValue(12);
+  StandardMetrics.ms_v_bat_soc->SetValue(0);
+  StandardMetrics.ms_v_bat_soh->SetValue(0);
+  StandardMetrics.ms_v_bat_cac->SetValue(0);
+  StandardMetrics.ms_v_bat_voltage->SetValue(0);
+  StandardMetrics.ms_v_bat_current->SetValue(0);
+  StandardMetrics.ms_v_bat_power->SetValue(0);
+  StandardMetrics.ms_v_bat_energy_used->SetValue(0);
+  StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
+  StandardMetrics.ms_v_bat_range_full->SetValue(0);
+  StandardMetrics.ms_v_bat_range_ideal->SetValue(0);
+  StandardMetrics.ms_v_bat_range_est->SetValue(0);
+  StandardMetrics.ms_v_bat_12v_voltage->SetValue(0);
+  StandardMetrics.ms_v_bat_12v_current->SetValue(0);
+  StandardMetrics.ms_v_bat_temp->SetValue(0);
+  StandardMetrics.ms_v_charge_voltage->SetValue(0);
+  StandardMetrics.ms_v_charge_current->SetValue(0);
+  StandardMetrics.ms_v_charge_climit->SetValue(0);
+  StandardMetrics.ms_v_charge_kwh->SetValue(0);
+  StandardMetrics.ms_v_charge_mode->SetValue("standard");
+  StandardMetrics.ms_v_charge_timermode->SetValue(false);
+  StandardMetrics.ms_v_charge_timerstart->SetValue(0);
+  StandardMetrics.ms_v_charge_state->SetValue("done");
+  StandardMetrics.ms_v_charge_substate->SetValue("stopped");
+  StandardMetrics.ms_v_charge_type->SetValue("type2");
+  StandardMetrics.ms_v_charge_pilot->SetValue(false);
+  StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+  StandardMetrics.ms_v_charge_limit_range->SetValue(0);
+  StandardMetrics.ms_v_charge_limit_soc->SetValue(0);
+  StandardMetrics.ms_v_charge_duration_full->SetValue(0);
+  StandardMetrics.ms_v_charge_duration_range->SetValue(0);
+  StandardMetrics.ms_v_charge_duration_soc->SetValue(0);
+  StandardMetrics.ms_v_charge_temp->SetValue(0);
+  StandardMetrics.ms_v_inv_temp->SetValue(0);
+  StandardMetrics.ms_v_mot_rpm->SetValue(0);
+  StandardMetrics.ms_v_mot_temp->SetValue(30);
+  StandardMetrics.ms_v_door_fl->SetValue(false);
+  StandardMetrics.ms_v_door_fr->SetValue(false);
+  StandardMetrics.ms_v_door_rl->SetValue(false);
+  StandardMetrics.ms_v_door_rr->SetValue(false);
+  StandardMetrics.ms_v_door_chargeport->SetValue(false);
+  StandardMetrics.ms_v_door_hood->SetValue(false);
+  StandardMetrics.ms_v_door_trunk->SetValue(false);
+  StandardMetrics.ms_v_env_drivemode->SetValue(0);
+  StandardMetrics.ms_v_env_handbrake->SetValue(false);
+  StandardMetrics.ms_v_env_awake->SetValue(false);
+  StandardMetrics.ms_v_env_charging12v->SetValue(false);
+  StandardMetrics.ms_v_env_cooling->SetValue(false);
+  StandardMetrics.ms_v_env_heating->SetValue(false);
+  StandardMetrics.ms_v_env_hvac->SetValue(false);
+  StandardMetrics.ms_v_env_on->SetValue(false);
+  StandardMetrics.ms_v_env_locked->SetValue(false);
+  StandardMetrics.ms_v_env_valet->SetValue(false);
+  StandardMetrics.ms_v_env_headlights->SetValue(false);
+  StandardMetrics.ms_v_env_alarm->SetValue(false);
+  StandardMetrics.ms_v_env_ctrl_login->SetValue(false);
+  StandardMetrics.ms_v_env_ctrl_config->SetValue(false);
+  StandardMetrics.ms_v_env_temp->SetValue(0);
+  StandardMetrics.ms_v_pos_gpslock->SetValue(false);
+  StandardMetrics.ms_v_pos_satcount->SetValue(0);
   //StandardMetrics.ms_v_pos_latitude->SetValue(22.280868);
   //StandardMetrics.ms_v_pos_longitude->SetValue(114.160598);
-  //StandardMetrics.ms_v_pos_direction->SetValue(10);
-  //StandardMetrics.ms_v_pos_altitude->SetValue(30);
-  //StandardMetrics.ms_v_pos_speed->SetValue(0);
-  //StandardMetrics.ms_v_pos_odometer->SetValue(100000);
-  //StandardMetrics.ms_v_pos_trip->SetValue(0);
-  //StandardMetrics.ms_v_tpms_fl_t->SetValue(33);
-  //StandardMetrics.ms_v_tpms_fr_t->SetValue(33);
-  //StandardMetrics.ms_v_tpms_rr_t->SetValue(34);
-  //StandardMetrics.ms_v_tpms_rl_t->SetValue(34);
-  //StandardMetrics.ms_v_tpms_fl_p->SetValue(206.843);
-  //StandardMetrics.ms_v_tpms_fr_p->SetValue(206.843);
-  //StandardMetrics.ms_v_tpms_rr_p->SetValue(275.79);
-  //StandardMetrics.ms_v_tpms_rl_p->SetValue(275.79);
+  StandardMetrics.ms_v_pos_direction->SetValue(0);
+  StandardMetrics.ms_v_pos_altitude->SetValue(0);
+  StandardMetrics.ms_v_pos_speed->SetValue(0);
+  StandardMetrics.ms_v_pos_odometer->SetValue(0);
+  StandardMetrics.ms_v_pos_trip->SetValue(0);
+  StandardMetrics.ms_v_tpms_fl_t->SetValue(33);
+  StandardMetrics.ms_v_tpms_fr_t->SetValue(33);
+  StandardMetrics.ms_v_tpms_rr_t->SetValue(34);
+  StandardMetrics.ms_v_tpms_rl_t->SetValue(34);
+  StandardMetrics.ms_v_tpms_fl_p->SetValue(206.843);
+  StandardMetrics.ms_v_tpms_fr_p->SetValue(206.843);
+  StandardMetrics.ms_v_tpms_rr_p->SetValue(275.79);
+  StandardMetrics.ms_v_tpms_rl_p->SetValue(275.79);
   }
 
 OvmsVehicleZeva::~OvmsVehicleZeva()
@@ -137,10 +137,58 @@ void OvmsVehicleZeva::IncomingFrameCan1(CAN_frame_t* p_frame)
     {
     case 0x0A: // broadcast at 4Hz by Zeva Core and Lite module
       {
-      // d[0] contains error and status bits
+
+      uint8_t zeva_status = (d[0] & 0x07); // contains status bits
+      //uint8_t zeva_error = d[0] >> 3; // contains error bits
       
-      StandardMetrics.ms_v_bat_current->SetValue( (((unsigned int) d[4] << 4) + (d[3] & 0x0F)) / 10 );
-      StandardMetrics.ms_v_bat_voltage->SetValue( (((unsigned int) d[3] << 4) + d[2]) / 10 );
+      switch (zeva_status)
+      {
+      case 0: // Idle
+        {
+         StandardMetrics.ms_v_env_on->SetValue(false);
+         StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+        break;
+        }
+      case 1: // Pre-charging
+        {
+         //StandardMetrics.ms_v_env_on->SetValue(false);
+         //StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+        break;
+        }
+      case 2:  // Running
+        {
+         StandardMetrics.ms_v_env_on->SetValue(true);
+         StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+         StandardMetrics.ms_v_charge_voltage->SetValue(0);
+         StandardMetrics.ms_v_charge_current->SetValue(0);
+
+        break;
+        }
+      case 3:  // Charging
+        {
+         StandardMetrics.ms_v_env_on->SetValue(false);   
+         StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+         StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsInt());
+         StandardMetrics.ms_v_charge_current->SetValue(StandardMetrics.ms_v_bat_current->AsInt());
+
+
+        break;
+
+        }
+      case 4:  // Setup
+        {
+         StandardMetrics.ms_v_env_on-> SetValue(false);
+         StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+      
+        break;
+        }
+      default:
+        break;
+     }
+
+      StandardMetrics.ms_v_bat_current->SetValue( (((unsigned int) d[4] << 4) + (d[3] & 0x0F)) - 2048 );
+      StandardMetrics.ms_v_bat_voltage->SetValue( (((unsigned int) (d[3] & 0xF0) << 4) + d[2]) );
+      StandardMetrics.ms_v_bat_power->SetValue(StandardMetrics.ms_v_bat_current->AsInt() * StandardMetrics.ms_v_bat_voltage->AsInt());
       
       //Set SOC when CANdata received
       float soc = d[1];
@@ -151,6 +199,8 @@ void OvmsVehicleZeva::IncomingFrameCan1(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_bat_temp->SetValue(d[7]);
   
       // d[5] contains 12V battery voltage as read by BMS
+      // StandardMetrics.ms_v_bat_12v_voltage->SetValue(d[5] / 10)
+      
       // d[6] contains insulation leakage if present: only for Core module
       break;
       }
@@ -238,10 +288,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleZeva::CommandSetChargeMode(vehicle_mod
 
 OvmsVehicle::vehicle_command_t OvmsVehicleZeva::CommandSetChargeCurrent(uint16_t limit)
   {
-  //StandardMetrics.ms_v_charge_climit->SetValue(limit);
-  //return Success;
-
-  return NotImplemented;
+  StandardMetrics.ms_v_charge_climit->SetValue(limit);
+  return Success;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleZeva::CommandStartCharge()
