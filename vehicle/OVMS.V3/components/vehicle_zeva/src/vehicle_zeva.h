@@ -3,13 +3,9 @@
 ;    Date:          17 July 2018
 ;
 ;    Changes:
-;    1.1  Modified for Zeva BMS
 ;    1.0  Initial release
 ;
 ;    (C) 2018	    Paul Rensel / Reho Engineering
-;    (C) 2011       Michael Stegen / Stegen Electronics
-;    (C) 2011-2017  Mark Webb-Johnson
-;    (C) 2011        Sonny Chen @ EPRO/DX
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal

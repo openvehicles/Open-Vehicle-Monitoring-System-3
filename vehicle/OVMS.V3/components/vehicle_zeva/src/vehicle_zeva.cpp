@@ -36,6 +36,7 @@ static const char *TAG = "v-zeva";
 OvmsVehicleZeva::OvmsVehicleZeva()
   {
   ESP_LOGI(TAG, "Zeva vehicle module");
+
   // Change CANbus speed to either 125 or 250KBPS 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_250KBPS);
 
@@ -46,6 +47,7 @@ OvmsVehicleZeva::OvmsVehicleZeva()
   StandardMetrics.ms_v_type->SetValue("ZEVA");
   StandardMetrics.ms_v_vin->SetValue("ZEVAZEVAZEVAZEVA");
 
+  // Commented out default values, set as needed
   //StandardMetrics.ms_v_bat_soc->SetValue(50);
   //StandardMetrics.ms_v_bat_soh->SetValue(100);
   //StandardMetrics.ms_v_bat_cac->SetValue(160);
@@ -133,15 +135,23 @@ void OvmsVehicleZeva::IncomingFrameCan1(CAN_frame_t* p_frame)
 
   switch (p_frame->MsgID)
     {
-    case 0x0A:
+    case 0x0A: // broadcast at 4Hz by Zeva Core and Lite module
       {
-      float soc = 100.0;
-      //StandardMetrics.ms_v_bat_current->SetValue( (((int) d[0] << 8) + d[1]) / 10 );
-      //StandardMetrics.ms_v_bat_voltage->SetValue( (((unsigned int) d[2] << 8) + d[3]) / 10 );
+      // d[0] contains error and status bits
+      
+      StandardMetrics.ms_v_bat_current->SetValue( (((unsigned int) d[4] << 4) + (d[3] & 0x0F)) / 10 );
+      StandardMetrics.ms_v_bat_voltage->SetValue( (((unsigned int) d[3] << 4) + d[2]) / 10 );
+      
+      //Set SOC when CANdata received
+      float soc = d[1];
       StandardMetrics.ms_v_bat_soc->SetValue(soc);
-      //StandardMetrics.ms_v_bat_temp->SetValue( (((signed int)d[6]<<8) + d[7])/10 );
-      //StandardMetrics.ms_v_bat_range_ideal->SetValue(111.958773 * soc / 100);
-      //StandardMetrics.ms_v_bat_range_est->SetValue(93.205678 * soc / 100);
+      StandardMetrics.ms_v_bat_range_ideal->SetValue(150 * soc / 100);
+      StandardMetrics.ms_v_bat_range_est->SetValue(125 * soc / 100);
+ 
+      StandardMetrics.ms_v_bat_temp->SetValue(d[7]);
+  
+      // d[5] contains 12V battery voltage as read by BMS
+      // d[6] contains insulation leakage if present: only for Core module
       break;
       }
     default:
@@ -229,8 +239,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleZeva::CommandSetChargeMode(vehicle_mod
 OvmsVehicle::vehicle_command_t OvmsVehicleZeva::CommandSetChargeCurrent(uint16_t limit)
   {
   //StandardMetrics.ms_v_charge_climit->SetValue(limit);
-
   //return Success;
+
   return NotImplemented;
   }
 
@@ -246,8 +256,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleZeva::CommandStartCharge()
   //StandardMetrics.ms_v_charge_pilot->SetValue(true);
   //StandardMetrics.ms_v_charge_voltage->SetValue(220);
   //StandardMetrics.ms_v_charge_current->SetValue(32);
-
   //return Success;
+
   return NotImplemented;
   }
 
@@ -260,8 +270,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleZeva::CommandStopCharge()
   //StandardMetrics.ms_v_charge_pilot->SetValue(false);
   //StandardMetrics.ms_v_charge_voltage->SetValue(0);
   //StandardMetrics.ms_v_charge_current->SetValue(0);
-
   //return Success;
+
   return NotImplemented;
   }
 
@@ -286,22 +296,23 @@ OvmsVehicle::vehicle_command_t OvmsVehicleZeva::CommandWakeup()
   //StandardMetrics.ms_v_charge_current->SetValue(0);
   //StandardMetrics.ms_v_env_on->SetValue(true);
   //return Success;
+
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleZeva::CommandLock(const char* pin)
   {
   //StandardMetrics.ms_v_env_locked->SetValue(true);
-
   //return Success;
+
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleZeva::CommandUnlock(const char* pin)
   {
   //StandardMetrics.ms_v_env_locked->SetValue(false);
-
   //return Success;
+
   return NotImplemented;
   }
 
@@ -315,8 +326,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleZeva::CommandActivateValet(const char*
 OvmsVehicle::vehicle_command_t OvmsVehicleZeva::CommandDeactivateValet(const char* pin)
   {
   //StandardMetrics.ms_v_env_valet->SetValue(false);
-
   //return Success;
+
   return NotImplemented;
   }
 
