@@ -51,6 +51,68 @@ class OvmsVehicleThinkCity : public OvmsVehicle
   protected:
     virtual void Ticker1(uint32_t ticker);
     virtual void Ticker10(uint32_t ticker);
+
+  private:
+    unsigned int  tc_pack_voltage;
+    signed int    tc_pack_current;
+    signed int    tc_pack_maxchgcurr;
+    unsigned int  tc_pack_maxchgvolt;
+    unsigned int  tc_pack_failedcells;
+    signed int    tc_pack_temp1;
+    signed int    tc_pack_temp2;
+    unsigned int  tc_pack_batteriesavail;
+    unsigned int  tc_pack_rednumbatteries;
+    unsigned int  tc_pack_mindchgvolt;
+    signed int    tc_pack_maxdchgamps;
+    signed int    tc_charger_temp = 0;
+    signed int    tc_slibatt_temp = 0;
+    unsigned int  tc_charger_pwm;
+    unsigned int  tc_sys_voltmaxgen;
+    unsigned char tc_srs_stat;
+    unsigned int  tc_srs_nr_err;
+    unsigned long tc_srs_tm;
+    signed int    tc_heater_count = 0;
+    unsigned int  tc_AC_volt; // ac line voltage
+    signed int    tc_AC_current; // ac current
+    signed int    tc_pack_soc;
+    
+    //Status flags:
+    unsigned int tc_bit_eoc;
+    unsigned int tc_bit_socgreater102;
+    unsigned int tc_bit_chrgen;
+    unsigned int tc_bit_ocvmeas;
+    unsigned int tc_bit_mainsacdet;
+    unsigned int tc_bit_syschgenbl;
+    unsigned int tc_bit_fastchgenbl;
+    unsigned int tc_bit_dischgenbl;
+    unsigned int tc_bit_isotestinprog;
+    unsigned int tc_bit_acheatrelaystat;
+    unsigned int tc_bit_acheatswitchstat;
+    unsigned int tc_bit_regenbrkenbl;
+    unsigned int tc_bit_dcdcenbl;
+    unsigned int tc_bit_fanactive;
+
+    //Errors:
+    unsigned int tc_bit_epoemerg;
+    unsigned int tc_bit_crash;
+    unsigned int tc_bit_generalerr;
+    unsigned int tc_bit_intisoerr;
+    unsigned int tc_bit_extisoerr;
+    unsigned int tc_bit_thermalisoerr;
+    unsigned int tc_bit_isoerr;
+    unsigned int tc_bit_manyfailedcells;
+
+    //Notifications:
+    unsigned int tc_bit_chgwaittemp;
+    unsigned int tc_bit_reacheocplease;
+    unsigned int tc_bit_waitoktmpdisch;
+    unsigned int tc_bit_chgwaitttemp2;
+
+    //Warnings:
+    unsigned int tc_bit_chgcurr;
+    unsigned int tc_bit_chgovervolt;
+    unsigned int tc_bit_chgovercurr;
+
   };
 
 #endif //#ifndef __VEHICLE_THINKCITY_H__
