@@ -96,7 +96,7 @@ void can_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     return;
     }
   sbus->Stop();
-  writer->printf("Can bus %s stapped\n",bus);
+  writer->printf("Can bus %s stopped\n",bus);
   }
 
 void can_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
