@@ -50,7 +50,7 @@ typedef enum {
     ESP32WIFI_MODE_MAX
 } esp32wifi_mode_t;
 
-class esp32wifi : public pcp
+class esp32wifi : public pcp, public InternalRamAllocated
   {
   public:
     esp32wifi(const char* name);

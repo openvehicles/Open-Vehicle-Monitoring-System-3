@@ -82,6 +82,7 @@ Main driver's function is 'spi_nodma_transfer_data()'
 #include "driver/periph_ctrl.h"
 #include "esp_heap_caps.h"
 #include "spi_master_nodma.h"
+#include "ovms_malloc.h"
 
 
 static spi_nodma_host_t *spihost[3] = {NULL};
@@ -373,7 +374,7 @@ esp_err_t spi_nodma_bus_add_device(spi_nodma_host_device_t host, spi_nodma_bus_c
             "No speeds >26MHz supported for full-duplex, GPIO-matrix SPI transfers", ESP_ERR_INVALID_ARG);
 
     //Allocate memory for device
-    spi_nodma_device_t *dev=malloc(sizeof(spi_nodma_device_t));
+    spi_nodma_device_t *dev=InternalRamMalloc(sizeof(spi_nodma_device_t));
     if (dev==NULL) return ESP_ERR_NO_MEM;
     memset(dev, 0, sizeof(spi_nodma_device_t));
     spihost[host]->device[freecs]=dev;

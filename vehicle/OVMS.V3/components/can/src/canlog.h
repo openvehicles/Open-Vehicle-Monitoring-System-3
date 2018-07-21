@@ -58,7 +58,7 @@ typedef struct
  *  allow multiple buses within a file, the logger needs to manage a set
  *  of files or may return false on Open() without a bus filter.
  */
-class canlog
+class canlog : public InternalRamAllocated
   {
   public:
     static const char* const* GetTypeList();

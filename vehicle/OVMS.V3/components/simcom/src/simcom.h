@@ -40,7 +40,7 @@
 
 #define SIMCOM_BUF_SIZE 1024
 
-class simcom : public pcp
+class simcom : public pcp, public InternalRamAllocated
   {
   public:
     simcom(const char* name, uart_port_t uartnum, int baud, int rxpin, int txpin, int pwregpio, int dtregpio);

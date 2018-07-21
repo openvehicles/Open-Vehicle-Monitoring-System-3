@@ -39,7 +39,7 @@
 #ifndef __SPI_H__
 #define __SPI_H__
 
-class spi : public pcp
+class spi : public pcp, public InternalRamAllocated
   {
   public:
     spi(const char* name, int misopin, int mosipin, int clkpin);

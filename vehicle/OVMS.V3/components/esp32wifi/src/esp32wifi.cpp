@@ -654,7 +654,7 @@ void esp32wifi::Scan(OvmsWriter* writer)
 
   if (apCount > 0)
     {
-    list = (wifi_ap_record_t *)malloc(sizeof(wifi_ap_record_t) * apCount);
+    list = (wifi_ap_record_t *)InternalRamMalloc(sizeof(wifi_ap_record_t) * apCount);
     res = esp_wifi_scan_get_ap_records(&apCount, list);
     if (res != ESP_OK)
       {
@@ -843,7 +843,7 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
 
   if (apCount > 0)
     {
-    list = (wifi_ap_record_t *)malloc(sizeof(wifi_ap_record_t) * apCount);
+    list = (wifi_ap_record_t *)InternalRamMalloc(sizeof(wifi_ap_record_t) * apCount);
     res = esp_wifi_scan_get_ap_records(&apCount, list);
     if (res != ESP_OK)
       {

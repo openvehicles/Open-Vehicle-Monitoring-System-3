@@ -35,7 +35,7 @@
 #include <driver/adc.h>
 #include "pcp.h"
 
-class esp32adc : public pcp
+class esp32adc : public pcp, public InternalRamAllocated
   {
   public:
     esp32adc(const char* name, adc1_channel_t channel, adc_bits_width_t width, adc_atten_t attn);

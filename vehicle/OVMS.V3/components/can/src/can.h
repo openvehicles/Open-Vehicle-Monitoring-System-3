@@ -219,7 +219,7 @@ typedef struct
 
 class canlog;
 
-class canbus : public pcp
+class canbus : public pcp, public InternalRamAllocated
   {
   public:
     canbus(const char* name);
@@ -256,7 +256,7 @@ class canbus : public pcp
 
 typedef std::map<QueueHandle_t, bool> CanListenerMap_t;
 
-class can
+class can : public InternalRamAllocated
   {
   public:
      can();
