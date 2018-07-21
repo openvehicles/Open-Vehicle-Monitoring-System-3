@@ -228,6 +228,7 @@ class canbus : public pcp
   public:
     virtual esp_err_t Start(CAN_mode_t mode, CAN_speed_t speed);
     virtual esp_err_t Stop();
+    virtual void ClearStatus();
 
   public:
     virtual esp_err_t Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);

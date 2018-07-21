@@ -329,6 +329,20 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->printf("Err flags: 0x%08x\n",sbus->m_status.error_flags);
   }
 
+void can_clearstatus(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* bus = cmd->GetParent()->GetName();
+  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->puts("Error: Cannot find named CAN bus");
+    return;
+    }
+
+  sbus->ClearStatus();
+  writer->puts("Status cleared");
+  }
+
 static void CAN_rxtask(void *pvParameters)
   {
   can *me = (can*)pvParameters;
@@ -383,6 +397,7 @@ can::can()
     cmd_canrx->RegisterCommand("standard","Simulate reception of standard CAN frame",can_rx,"<id> <data...>", 1, 9, true);
     cmd_canrx->RegisterCommand("extended","Simulate reception of extended CAN frame",can_rx,"<id> <data...>", 1, 9, true);
     cmd_canx->RegisterCommand("status","Show CAN status",can_status,"", 0, 0, true);
+    cmd_canx->RegisterCommand("clear","Clear CAN status",can_clearstatus,"", 0, 0, true);
     }
 
   OvmsCommand* cmd_canlog = cmd_can->RegisterCommand("log", "CAN logging framework", NULL, "", 0, 0, true);
@@ -450,8 +465,7 @@ canbus::canbus(const char* name)
   m_txqueue = xQueueCreate(20, sizeof(CAN_frame_t));
   m_mode = CAN_MODE_OFF;
   m_speed = CAN_SPEED_1000KBPS;
-  memset(&m_status, 0, sizeof(m_status));
-  m_status_chksum = 0;
+  ClearStatus();
   }
 
 canbus::~canbus()
@@ -461,15 +475,19 @@ canbus::~canbus()
 
 esp_err_t canbus::Start(CAN_mode_t mode, CAN_speed_t speed)
   {
-  // clear statistics:
-  memset(&m_status, 0, sizeof(m_status));
-  m_status_chksum = 0;
+  ClearStatus();
   return ESP_FAIL;
   }
 
 esp_err_t canbus::Stop()
   {
   return ESP_FAIL;
+  }
+
+void canbus::ClearStatus()
+  {
+  memset(&m_status, 0, sizeof(m_status));
+  m_status_chksum = 0;
   }
 
 bool canbus::RxCallback(CAN_frame_t* frame)
