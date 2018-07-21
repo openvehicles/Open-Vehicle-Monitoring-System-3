@@ -41,6 +41,10 @@ void* ExternalRamMalloc(size_t sz);
 void* ExternalRamCalloc(size_t count, size_t size);
 void* ExternalRamRealloc(void *ptr, size_t size);
 
+void* InternalRamMalloc(size_t sz);
+void* InternalRamCalloc(size_t count, size_t size);
+void* InternalRamRealloc(void *ptr, size_t size);
+
 #ifdef __cplusplus
 }
 #endif

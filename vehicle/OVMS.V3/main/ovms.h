@@ -53,6 +53,16 @@ class ExternalRamAllocated
     static int vasprintf(char** strp, const char* fmt, va_list ap);
   };
 
+class InternalRamAllocated
+  {
+  public:
+    static void* operator new(std::size_t sz);
+    static void* operator new[](std::size_t sz);
+    static char* strdup(const char* src);
+    static int asprintf(char** strp, const char* fmt, ...);
+    static int vasprintf(char** strp, const char* fmt, va_list ap);
+  };
+
 // C++11 Allocator:
 template <class T>
 struct ExtRamAllocator
