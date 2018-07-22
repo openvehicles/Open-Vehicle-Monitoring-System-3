@@ -388,6 +388,7 @@ void esp32wifi::PowerUp()
     m_wifi_init_cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&m_wifi_init_cfg));
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+    AdjustTaskPriority();
     m_poweredup = true;
     }
   }
@@ -816,10 +817,6 @@ void esp32wifi::EventWifiApUpdate(std::string event, void* data)
   else
     ESP_LOGI(TAG, "AP station disconnected: id: %d, MAC: " MACSTR,
       info->sta_connected.aid, MAC2STR(info->sta_connected.mac));
-  // lower wifi task priority:
-  TaskHandle_t wifitask = TaskGetHandle("wifi");
-  if (wifitask)
-    vTaskPrioritySet(wifitask, 22);
   }
 
 void esp32wifi::EventTimer1(std::string event, void* data)
