@@ -75,8 +75,10 @@ class esp32wifi : public pcp, public InternalRamAllocated
     std::string GetSSID();
     std::string GetAPSSID();
     void UpdateNetMetrics();
+    void AdjustTaskPriority();
 
   public:
+    void EventWifiStaState(std::string event, void* data);
     void EventWifiGotIp(std::string event, void* data);
     void EventWifiStaDisconnected(std::string event, void* data);
     void EventWifiApState(std::string event, void* data);

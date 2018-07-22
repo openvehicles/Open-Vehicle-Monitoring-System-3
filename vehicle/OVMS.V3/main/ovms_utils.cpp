@@ -310,3 +310,32 @@ std::string pwgen(int length)
     }
   return res;
   }
+
+
+/**
+ * TaskGetHandle: get task handle by name
+ * (FreeRTOS xTaskGetHandle() is not available)
+ */
+TaskHandle_t TaskGetHandle(const char *name)
+  {
+  TaskHandle_t res = 0;
+  TaskStatus_t* pxTaskStatusArray;
+  volatile UBaseType_t uxArraySize, x;
+
+  uxArraySize = uxTaskGetNumberOfTasks();
+  pxTaskStatusArray = (TaskStatus_t*)pvPortMalloc(uxArraySize * sizeof(TaskStatus_t));
+  if (pxTaskStatusArray != NULL)
+    {
+    uxArraySize = uxTaskGetSystemState(pxTaskStatusArray, uxArraySize, NULL);
+    for (x = 0; x < uxArraySize; x++)
+      {
+      if (strcmp(pxTaskStatusArray[x].pcTaskName, name) == 0)
+        {
+        res = pxTaskStatusArray[x].xHandle;
+        break;
+        }
+      }
+    vPortFree( pxTaskStatusArray );
+    }
+  return res;
+  }

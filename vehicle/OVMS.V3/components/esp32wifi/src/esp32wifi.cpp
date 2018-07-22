@@ -242,6 +242,7 @@ esp32wifi::esp32wifi(const char* name)
 
   using std::placeholders::_1;
   using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG,"system.wifi.sta.start",std::bind(&esp32wifi::EventWifiStaState, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.gotip",std::bind(&esp32wifi::EventWifiGotIp, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.disconnected",std::bind(&esp32wifi::EventWifiStaDisconnected, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"ticker.1",std::bind(&esp32wifi::EventTimer1, this, _1, _2));
@@ -772,10 +773,27 @@ void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
   UpdateNetMetrics();
   }
 
+void esp32wifi::AdjustTaskPriority()
+  {
+  // lower wifi task priority from 23 to 22 to prioritize CAN rx:
+  TaskHandle_t wifitask = TaskGetHandle("wifi");
+  if (wifitask)
+    vTaskPrioritySet(wifitask, 22);
+  }
+
+void esp32wifi::EventWifiStaState(std::string event, void* data)
+  {
+  if (event == "system.wifi.sta.start")
+    {
+    AdjustTaskPriority();
+    }
+  }
+
 void esp32wifi::EventWifiApState(std::string event, void* data)
   {
   if (event == "system.wifi.ap.start")
     { // Start
+    AdjustTaskPriority();
     esp_wifi_get_mac(ESP_IF_WIFI_AP, m_mac_ap);
     tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &m_ip_info_ap);
     ESP_LOGI(TAG, "AP started with SSID: %s, MAC: " MACSTR ", IP: " IPSTR,
@@ -798,6 +816,10 @@ void esp32wifi::EventWifiApUpdate(std::string event, void* data)
   else
     ESP_LOGI(TAG, "AP station disconnected: id: %d, MAC: " MACSTR,
       info->sta_connected.aid, MAC2STR(info->sta_connected.mac));
+  // lower wifi task priority:
+  TaskHandle_t wifitask = TaskGetHandle("wifi");
+  if (wifitask)
+    vTaskPrioritySet(wifitask, 22);
   }
 
 void esp32wifi::EventTimer1(std::string event, void* data)
