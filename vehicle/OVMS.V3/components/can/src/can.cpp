@@ -433,9 +433,10 @@ void can::IncomingFrame(CAN_frame_t* p_frame)
   {
   p_frame->origin->m_status.packets_rx++;
 
-  NotifyListeners(p_frame, false);
-
   p_frame->origin->LogFrame(CAN_LogFrame_RX, p_frame);
+
+  ExecuteCallbacks(p_frame, false);
+  NotifyListeners(p_frame, false);
   }
 
 void can::RegisterListener(QueueHandle_t queue, bool txfeedback)
@@ -456,6 +457,34 @@ void can::NotifyListeners(const CAN_frame_t* frame, bool tx)
     {
     if (!tx || (tx && it->second))
       xQueueSend(it->first,frame,0);
+    }
+  }
+
+void can::RegisterCallback(const char* caller, CanFrameCallback callback, bool txfeedback)
+  {
+  if (txfeedback)
+    m_txcallbacks.push_back(new CanFrameCallbackEntry(caller, callback));
+  else
+    m_rxcallbacks.push_back(new CanFrameCallbackEntry(caller, callback));
+  }
+
+void can::DeregisterCallback(const char* caller)
+  {
+  m_rxcallbacks.remove_if([caller](CanFrameCallbackEntry* entry){ return strcmp(entry->m_caller, caller)==0; });
+  m_txcallbacks.remove_if([caller](CanFrameCallbackEntry* entry){ return strcmp(entry->m_caller, caller)==0; });
+  }
+
+void can::ExecuteCallbacks(const CAN_frame_t* frame, bool tx)
+  {
+  if (tx)
+    {
+    for (auto entry : m_txcallbacks)
+      entry->m_callback(frame);
+    }
+  else
+    {
+    for (auto entry : m_rxcallbacks)
+      entry->m_callback(frame);
     }
   }
 
@@ -511,9 +540,10 @@ esp_err_t canbus::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0
   {
   m_status.packets_tx++;
 
-  MyCan.NotifyListeners(p_frame, true);
-
   LogFrame(CAN_LogFrame_TX, p_frame);
+
+  MyCan.ExecuteCallbacks(p_frame, true);
+  MyCan.NotifyListeners(p_frame, true);
 
   return ESP_OK;
   }

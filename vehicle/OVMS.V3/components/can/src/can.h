@@ -40,6 +40,7 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include <stdint.h>
+#include <functional>
 #include <list>
 #include "pcp.h"
 #include <esp_err.h>
@@ -256,6 +257,22 @@ class canbus : public pcp, public InternalRamAllocated
 
 typedef std::map<QueueHandle_t, bool> CanListenerMap_t;
 
+typedef std::function<void(const CAN_frame_t*)> CanFrameCallback;
+class CanFrameCallbackEntry
+  {
+  public:
+    CanFrameCallbackEntry(const char* caller, CanFrameCallback callback)
+      {
+      m_caller = caller;
+      m_callback = callback;
+      }
+    ~CanFrameCallbackEntry() {}
+  public:
+    const char *m_caller;
+    CanFrameCallback m_callback;
+  };
+typedef std::list<CanFrameCallbackEntry*> CanFrameCallbackList_t;
+
 class can : public InternalRamAllocated
   {
   public:
@@ -274,6 +291,11 @@ class can : public InternalRamAllocated
     void NotifyListeners(const CAN_frame_t* frame, bool tx);
 
   public:
+    void RegisterCallback(const char* caller, CanFrameCallback callback, bool txfeedback=false);
+    void DeregisterCallback(const char* caller);
+    void ExecuteCallbacks(const CAN_frame_t* frame, bool tx);
+
+  public:
     void SetLogger(canlog* logger) { m_logger = logger; }
     canlog* GetLogger() { return m_logger; }
     void UnsetLogger() { m_logger = NULL; }
@@ -283,6 +305,8 @@ class can : public InternalRamAllocated
 
   private:
     CanListenerMap_t m_listeners;
+    CanFrameCallbackList_t m_rxcallbacks;
+    CanFrameCallbackList_t m_txcallbacks;
     TaskHandle_t m_rxtask;            // Task to handle reception
     canlog* m_logger;
   };
