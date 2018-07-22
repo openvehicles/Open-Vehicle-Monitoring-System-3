@@ -89,7 +89,7 @@ struct DashboardConfig;
 // 200+ reserved for custom commands
 
 
-class OvmsVehicle
+class OvmsVehicle : public InternalRamAllocated
   {
   public:
     OvmsVehicle();

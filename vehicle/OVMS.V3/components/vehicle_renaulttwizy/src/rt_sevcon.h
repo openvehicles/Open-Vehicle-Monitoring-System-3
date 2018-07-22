@@ -97,7 +97,7 @@ struct __attribute__ ((__packed__)) cfg_profile
 class OvmsVehicleRenaultTwizy;
 class SevconJob;
 
-class SevconClient
+class SevconClient : public InternalRamAllocated
 {
   friend class OvmsVehicleRenaultTwizy;
   public:
@@ -251,7 +251,7 @@ class SevconClient
 #define SetValetMode(b)       (StdMetrics.ms_v_env_valet->SetValue(b))
 
 
-class SevconJob
+class SevconJob : public InternalRamAllocated
 {
   public:
     SevconJob(SevconClient* client);
