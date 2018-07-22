@@ -421,7 +421,7 @@ can::can()
   cmd_canlog->RegisterCommand("status", "Logging status", can_log, "", 0, 0, true);
 
   m_rxqueue = xQueueCreate(20,sizeof(CAN_msg_t));
-  xTaskCreatePinnedToCore(CAN_rxtask, "OVMS CanRx", 1024, (void*)this, 10, &m_rxtask, 0);
+  xTaskCreatePinnedToCore(CAN_rxtask, "OVMS CanRx", 2048, (void*)this, 23, &m_rxtask, 0);
   m_logger = NULL;
   }
 
