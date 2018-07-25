@@ -100,10 +100,14 @@ std::string json_encode(const std::string text);
  */
 std::string pwgen(int length);
 
+#ifdef CONFIG_FREERTOS_USE_TRACE_FACILITY
+#define HAVE_TaskGetHandle
 /**
  * TaskGetHandle: get task handle by name
  * (FreeRTOS xTaskGetHandle() is not available)
  */
 TaskHandle_t TaskGetHandle(const char *name);
+#endif // CONFIG_FREERTOS_USE_TRACE_FACILITY
+
 
 #endif //#ifndef __UTILS_H__

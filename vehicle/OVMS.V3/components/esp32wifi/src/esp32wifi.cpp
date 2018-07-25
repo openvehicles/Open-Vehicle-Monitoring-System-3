@@ -777,9 +777,13 @@ void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
 void esp32wifi::AdjustTaskPriority()
   {
   // lower wifi task priority from 23 to 22 to prioritize CAN rx:
+#ifdef HAVE_TaskGetHandle
   TaskHandle_t wifitask = TaskGetHandle("wifi");
   if (wifitask)
     vTaskPrioritySet(wifitask, 22);
+#else
+  ESP_LOGW(TAG, "can't adjust wifi task priority (TaskGetHandle not available)");
+#endif
   }
 
 void esp32wifi::EventWifiStaState(std::string event, void* data)

@@ -312,6 +312,7 @@ std::string pwgen(int length)
   }
 
 
+#ifdef CONFIG_FREERTOS_USE_TRACE_FACILITY
 /**
  * TaskGetHandle: get task handle by name
  * (FreeRTOS xTaskGetHandle() is not available)
@@ -339,3 +340,4 @@ TaskHandle_t TaskGetHandle(const char *name)
     }
   return res;
   }
+#endif // CONFIG_FREERTOS_USE_TRACE_FACILITY
