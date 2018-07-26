@@ -43,7 +43,7 @@ static const char *TAG = "can";
 #include <string.h>
 #include "ovms_command.h"
 
-can MyCan __attribute__ ((init_priority (4500)));;
+can MyCan __attribute__ ((init_priority (4500)));
 
 void can_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
