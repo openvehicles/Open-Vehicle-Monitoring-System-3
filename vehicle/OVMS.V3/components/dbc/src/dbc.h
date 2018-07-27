@@ -60,6 +60,11 @@ class dbcCommentTable
     ~dbcCommentTable();
 
   public:
+    void AddComment(std::string comment);
+    void RemoveComment(std::string comment);
+    bool HasComment(std::string comment);
+
+  public:
     void EmptyContent();
     void ReplaceContent(dbcCommentTable* source);
 
@@ -73,6 +78,11 @@ class dbcNewSymbolTable
   public:
     dbcNewSymbolTable();
     ~dbcNewSymbolTable();
+
+  public:
+    void AddSymbol(std::string symbol);
+    void RemoveSymbol(std::string symbol);
+    bool HasSymbol(std::string symbol);
 
   public:
     void EmptyContent();
@@ -90,8 +100,13 @@ class dbcNode
     ~dbcNode();
 
   public:
+    void AddComment(std::string comment);
+    void RemoveComment(std::string comment);
+    bool HasComment(std::string comment);
+
+  public:
     std::string m_name;
-    dbcCommentList_t m_comments;
+    dbcCommentTable m_comments;
   };
 
 typedef std::list<dbcNode*> dbcNodeList_t;
@@ -100,6 +115,11 @@ class dbcNodeTable
   public:
     dbcNodeTable();
     ~dbcNodeTable();
+
+  public:
+    void AddNode(dbcNode* node);
+    void RemoveNode(dbcNode* node, bool free=false);
+    dbcNode* FindNode(std::string name);
 
   public:
     void EmptyContent();
@@ -134,6 +154,12 @@ class dbcValueTable
     ~dbcValueTable();
 
   public:
+    void AddValue(uint32_t id, std::string value);
+    void RemoveValue(uint32_t id);
+    bool HasValue(uint32_t id);
+    std::string GetValue(uint32_t id);
+
+  public:
     void EmptyContent();
     void ReplaceContent(dbcValueTable* source);
 
@@ -150,22 +176,16 @@ class dbcValueTableTable
     ~dbcValueTableTable();
 
   public:
+    void AddValueTable(std::string name, dbcValueTable* vt);
+    void RemoveValueTable(std::string name, bool free=false);
+    dbcValueTable* FindValueTable(std::string name);
+
+  public:
     void EmptyContent();
     void ReplaceContent(dbcValueTableTable* source);
 
   public:
     dbcValueTableTableEntry_t m_entrymap;
-  };
-
-typedef std::map<double, std::string> dbcSignalValueEntry_t;
-class dbcSignalValue
-  {
-  public:
-    dbcSignalValue();
-    ~dbcSignalValue();
-
-  public:
-    dbcSignalValueEntry_t m_entrymap;
   };
 
 typedef std::list<std::string> dbcReceiverList_t;
@@ -174,6 +194,14 @@ class dbcSignal
   public:
     dbcSignal();
     ~dbcSignal();
+
+  public:
+    void AddReceiver(std::string receiver);
+    void RemoveReceiver(std::string receiver);
+    bool HasReceiver(std::string receiver);
+    void AddComment(std::string comment);
+    void RemoveComment(std::string comment);
+    bool HasComment(std::string comment);
 
   public:
     std::string m_name;
@@ -189,7 +217,6 @@ class dbcSignal
     double m_maximum;
     std::string m_unit;
     dbcReceiverList_t m_receivers;
-    dbcSignalValue* m_signal_values;
     dbcCommentList_t m_comments;
   };
 
@@ -200,6 +227,14 @@ class dbcMessage
     dbcMessage();
     dbcMessage(uint32_t id);
     ~dbcMessage();
+
+  public:
+    void AddComment(std::string comment);
+    void RemoveComment(std::string comment);
+    bool HasComment(std::string comment);
+    void AddSignal(dbcSignal* signal);
+    void RemoveSignal(dbcSignal* signal, bool free=false);
+    dbcSignal* FindSignal(std::string name);
 
   public:
     uint32_t m_id;
@@ -216,6 +251,11 @@ class dbcMessageTable
   public:
     dbcMessageTable();
     ~dbcMessageTable();
+
+  public:
+    void AddMessage(uint32_t id, dbcMessage* message);
+    void RemoveMessage(uint32_t id, bool free=false);
+    dbcMessage* FindMessage(uint32_t id);
 
   public:
     void EmptyContent();

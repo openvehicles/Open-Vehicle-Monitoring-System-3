@@ -31,6 +31,8 @@
 #include "ovms_log.h"
 static const char *TAG = "dbc";
 
+#include <algorithm>
+#include <list>
 #include <vector>
 #include "dbc.h"
 #include "ovms_config.h"
@@ -47,6 +49,22 @@ dbcCommentTable::dbcCommentTable()
 dbcCommentTable::~dbcCommentTable()
   {
   EmptyContent();
+  }
+
+void dbcCommentTable::AddComment(std::string comment)
+  {
+  m_entrymap.push_back(comment);
+  }
+
+void dbcCommentTable::RemoveComment(std::string comment)
+  {
+  m_entrymap.remove(comment);
+  }
+
+bool dbcCommentTable::HasComment(std::string comment)
+  {
+  auto it = std::find(m_entrymap.begin(), m_entrymap.end(), comment);
+  return (it != m_entrymap.end());
   }
 
 void dbcCommentTable::EmptyContent()
@@ -74,6 +92,22 @@ dbcNewSymbolTable::dbcNewSymbolTable()
 dbcNewSymbolTable::~dbcNewSymbolTable()
   {
   EmptyContent();
+  }
+
+void dbcNewSymbolTable::AddSymbol(std::string symbol)
+  {
+  m_entrymap.push_back(symbol);
+  }
+
+void dbcNewSymbolTable::RemoveSymbol(std::string symbol)
+  {
+  m_entrymap.remove(symbol);
+  }
+
+bool dbcNewSymbolTable::HasSymbol(std::string symbol)
+  {
+  auto it = std::find(m_entrymap.begin(), m_entrymap.end(), symbol);
+  return (it != m_entrymap.end());
   }
 
 void dbcNewSymbolTable::EmptyContent()
@@ -107,6 +141,21 @@ dbcNode::~dbcNode()
   {
   }
 
+void dbcNode::AddComment(std::string comment)
+  {
+  m_comments.AddComment(comment);
+  }
+
+void dbcNode::RemoveComment(std::string comment)
+  {
+  m_comments.RemoveComment(comment);
+  }
+
+bool dbcNode::HasComment(std::string comment)
+  {
+  return m_comments.HasComment(comment);
+  }
+
 dbcNodeTable::dbcNodeTable()
   {
   }
@@ -114,6 +163,26 @@ dbcNodeTable::dbcNodeTable()
 dbcNodeTable::~dbcNodeTable()
   {
   EmptyContent();
+  }
+
+void dbcNodeTable::AddNode(dbcNode* node)
+  {
+  m_entrymap.push_back(node);
+  }
+
+void dbcNodeTable::RemoveNode(dbcNode* node, bool free)
+  {
+  m_entrymap.remove(node);
+  if (free) delete node;
+  }
+
+dbcNode* dbcNodeTable::FindNode(std::string name)
+  {
+  for (dbcNode* node : m_entrymap)
+    {
+    if (node->m_name.compare(name)==0) return node;
+    }
+  return NULL;
   }
 
 void dbcNodeTable::EmptyContent()
@@ -173,6 +242,33 @@ dbcValueTable::dbcValueTable(std::string name)
   m_name = name;
   }
 
+void dbcValueTable::AddValue(uint32_t id, std::string value)
+  {
+  m_entrymap[id] = value;
+  }
+
+void dbcValueTable::RemoveValue(uint32_t id)
+  {
+  auto search = m_entrymap.find(id);
+  if (search != m_entrymap.end())
+    m_entrymap.erase(search);
+  }
+
+bool dbcValueTable::HasValue(uint32_t id)
+  {
+  auto search = m_entrymap.find(id);
+  return (search != m_entrymap.end());
+  }
+
+std::string dbcValueTable::GetValue(uint32_t id)
+  {
+  auto search = m_entrymap.find(id);
+  if (search != m_entrymap.end())
+    return search->second;
+  else
+    return std::string("");
+  }
+
 dbcValueTable::~dbcValueTable()
   {
   EmptyContent();
@@ -203,6 +299,30 @@ dbcValueTableTable::~dbcValueTableTable()
   EmptyContent();
   }
 
+void dbcValueTableTable::AddValueTable(std::string name, dbcValueTable* vt)
+  {
+  m_entrymap[name] = vt;
+  }
+
+void dbcValueTableTable::RemoveValueTable(std::string name, bool free)
+  {
+  auto search = m_entrymap.find(name);
+  if (search != m_entrymap.end())
+    {
+    if (free) delete search->second;
+    m_entrymap.erase(search);
+    }
+  }
+
+dbcValueTable* dbcValueTableTable::FindValueTable(std::string name)
+  {
+  auto search = m_entrymap.find(name);
+  if (search != m_entrymap.end())
+    return search->second;
+  else
+    return NULL;
+  }
+
 void dbcValueTableTable::EmptyContent()
   {
   dbcValueTableTableEntry_t::iterator it=m_entrymap.begin();
@@ -226,17 +346,6 @@ void dbcValueTableTable::ReplaceContent(dbcValueTableTable* source)
   }
 
 ////////////////////////////////////////////////////////////////////////
-// dbcSignalValue
-
-dbcSignalValue::dbcSignalValue()
-  {
-  }
-
-dbcSignalValue::~dbcSignalValue()
-  {
-  }
-
-////////////////////////////////////////////////////////////////////////
 // dbcSignal
 
 dbcSignal::dbcSignal()
@@ -245,6 +354,38 @@ dbcSignal::dbcSignal()
 
 dbcSignal::~dbcSignal()
   {
+  }
+
+void dbcSignal::AddReceiver(std::string receiver)
+  {
+  m_receivers.push_back(receiver);
+  }
+
+void dbcSignal::RemoveReceiver(std::string receiver)
+  {
+  m_receivers.remove(receiver);
+  }
+
+bool dbcSignal::HasReceiver(std::string receiver)
+  {
+  auto it = std::find(m_receivers.begin(), m_receivers.end(), receiver);
+  return (it != m_receivers.end());
+  }
+
+void dbcSignal::AddComment(std::string comment)
+  {
+  m_comments.push_back(comment);
+  }
+
+void dbcSignal::RemoveComment(std::string comment)
+  {
+  m_comments.remove(comment);
+  }
+
+bool dbcSignal::HasComment(std::string comment)
+  {
+  auto it = std::find(m_comments.begin(), m_comments.end(), comment);
+  return (it != m_comments.end());
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -263,6 +404,42 @@ dbcMessage::~dbcMessage()
   {
   }
 
+void dbcMessage::AddComment(std::string comment)
+  {
+  m_comments.push_back(comment);
+  }
+
+void dbcMessage::RemoveComment(std::string comment)
+  {
+  m_comments.remove(comment);
+  }
+
+bool dbcMessage::HasComment(std::string comment)
+  {
+  auto it = std::find(m_comments.begin(), m_comments.end(), comment);
+  return (it != m_comments.end());
+  }
+
+void dbcMessage::AddSignal(dbcSignal* signal)
+  {
+  m_signals.push_back(signal);
+  }
+
+void dbcMessage::RemoveSignal(dbcSignal* signal, bool free)
+  {
+  m_signals.remove(signal);
+  if (free) delete signal;
+  }
+
+dbcSignal* dbcMessage::FindSignal(std::string name)
+  {
+  for (dbcSignal* signal : m_signals)
+    {
+    if (signal->m_name.compare(name)==0) return signal;
+    }
+  return NULL;
+    }
+
 dbcMessageTable::dbcMessageTable()
   {
   }
@@ -270,6 +447,30 @@ dbcMessageTable::dbcMessageTable()
 dbcMessageTable::~dbcMessageTable()
   {
   EmptyContent();
+  }
+
+void dbcMessageTable::AddMessage(uint32_t id, dbcMessage* message)
+  {
+  m_entrymap[id] = message;
+  }
+
+void dbcMessageTable::RemoveMessage(uint32_t id, bool free)
+  {
+  auto search = m_entrymap.find(id);
+  if (search != m_entrymap.end())
+    {
+    if (free) delete search->second;
+    m_entrymap.erase(search);
+    }
+  }
+
+dbcMessage* dbcMessageTable::FindMessage(uint32_t id)
+  {
+  auto search = m_entrymap.find(id);
+  if (search != m_entrymap.end())
+    return search->second;
+  else
+    return NULL;
   }
 
 void dbcMessageTable::EmptyContent()
@@ -342,6 +543,13 @@ bool dbcfile::LoadParseOneLine(int linenumber, std::string line)
       while (k<len && line[k]!=' ')
         k++;
       arglen = k-start;
+      if ((arglen>1)&&(line[start+arglen-1]==':'))
+        {
+        // Split off trailing ':' as a separate token
+        tokens.push_back(line.substr(start, arglen-1));
+        start = k-1;
+        arglen = 1;
+        }
       }
     tokens.push_back(line.substr(start, arglen));
     }
