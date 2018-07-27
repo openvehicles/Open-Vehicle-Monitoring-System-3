@@ -738,6 +738,7 @@ bool dbcfile::LoadParseOneLine(int linenumber, std::string line)
         if (*p == 'M')
           {
           s->m_multiplexed = true;
+          m_lastmsg->m_multiplexor = tokens[1];
           }
         else if (*p == 'm')
           {
@@ -900,6 +901,7 @@ bool dbcfile::LoadFile(const char* path)
     return false;
     }
 
+  m_path = path;
   m_lastmsg = NULL;
   char* buf = new char[DBC_MAX_LINELENGTH];
   bool result = true;
@@ -1001,6 +1003,102 @@ void dbc_unload(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     }
   }
 
+void dbc_show(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  dbcfile* dbc = MyDBC.Find(argv[0]);
+  if (dbc == NULL)
+    {
+    writer->printf("Cannot find DBD file: %s",argv[0]);
+    return;
+    }
+
+  writer->printf("DBC: %s (version %s)\n",argv[0],dbc->m_version.c_str());
+  if (!dbc->m_path.empty()) writer->printf("Source: %s\n",dbc->m_path.c_str());
+  for (std::string c : dbc->m_comments.m_entrymap) writer->puts(c.c_str());
+  writer->puts("");
+
+  if (argc==1)
+    {
+    writer->printf("Nodes:");
+    for (dbcNode* n : dbc->m_nodes.m_entrymap)
+      {
+      writer->printf(" %s",n->m_name.c_str());
+      }
+    writer->puts("");
+    writer->printf("Messages:\n");
+    dbcMessageEntry_t::iterator it=dbc->m_messages.m_entrymap.begin();
+    while (it!=dbc->m_messages.m_entrymap.end())
+      {
+      writer->printf("  0x%x (%d): %s\n",
+        it->first, it->first, it->second->m_name.c_str());
+      ++it;
+      }
+    }
+  else if (argc==2)
+    {
+    dbcMessage* m = dbc->m_messages.FindMessage(atoi(argv[1]));
+    if (m==NULL)
+      {
+      writer->printf("Error: No message id #%s\n",argv[1]);
+      return;
+      }
+    writer->printf("Message: 0x%x (%d): %s (%d byte(s) from %s)\n",
+      m->m_id, m->m_id, m->m_name.c_str(),
+      m->m_size, m->m_transmitter_node.c_str());
+    for (std::string c : m->m_comments) writer->puts(c.c_str());
+    for (dbcSignal* s : m->m_signals)
+      {
+      writer->printf("  %s %d|%d@%d%c (%g,%g) [%g|%g]\n",
+        s->m_name.c_str(),
+        s->m_start_bit, s->m_signal_size, s->m_byte_order, s->m_value_type,
+        s->m_factor, s->m_offset, s->m_minimum, s->m_maximum);
+      }
+    }
+  else if (argc==3)
+    {
+    dbcMessage* m = dbc->m_messages.FindMessage(atoi(argv[1]));
+    if (m==NULL)
+      {
+      writer->printf("Error: No message id #%s\n",argv[1]);
+      return;
+      }
+    dbcSignal* s = m->FindSignal(argv[2]);
+    if (s==NULL)
+      {
+      writer->printf("Error: No signal %s on message id #%s\n",argv[2],argv[1]);
+      return;
+      }
+    writer->printf("Message: 0x%x (%d): %s (%d byte(s) from %s)\n",
+      m->m_id, m->m_id, m->m_name.c_str(),
+      m->m_size, m->m_transmitter_node.c_str());
+    for (std::string c : m->m_comments) writer->puts(c.c_str());
+    writer->printf("Signal: %s %d|%d@%d%c (%g,%g) [%g|%g]\n",
+      s->m_name.c_str(),
+      s->m_start_bit, s->m_signal_size, s->m_byte_order, s->m_value_type,
+      s->m_factor, s->m_offset, s->m_minimum, s->m_maximum);
+    for (std::string c : s->m_comments) writer->puts(c.c_str());
+    writer->printf("Receivers:");
+    for (std::string r : s->m_receivers)
+      {
+      writer->printf(" %s",r.c_str());
+      }
+    writer->puts("");
+    writer->printf("Values (%s):\n",s->m_values.m_name.c_str());
+    dbcValueTableEntry_t::iterator it=s->m_values.m_entrymap.begin();
+    while (it!=s->m_values.m_entrymap.end())
+      {
+      writer->printf("  %d: %s\n",
+        it->first, it->second.c_str());
+      ++it;
+      }
+    writer->puts("\n");
+    for (std::string c : s->m_comments)
+      {
+      writer->puts(c.c_str());
+      }
+    }
+  }
+
 dbc::dbc()
   {
   ESP_LOGI(TAG, "Initialising DBC (4510)");
@@ -1010,6 +1108,7 @@ dbc::dbc()
   cmd_dbc->RegisterCommand("list", "List DBC status", dbc_list, "", 0, 0, true);
   cmd_dbc->RegisterCommand("load", "Load DBC file", dbc_load, "<name> <path>", 2, 2, true);
   cmd_dbc->RegisterCommand("unload", "Unload DBC file", dbc_unload, "<name>", 1, 1, true);
+  cmd_dbc->RegisterCommand("show", "Show DBC file", dbc_show, "<name>", 1, 3, true);
   }
 
 dbc::~dbc()

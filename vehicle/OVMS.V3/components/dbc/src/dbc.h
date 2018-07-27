@@ -255,6 +255,7 @@ class dbcMessage
     std::string m_transmitter_node;
     dbcSignalList_t m_signals;
     dbcCommentList_t m_comments;
+    std::string m_multiplexor;
   };
 
 typedef std::map<uint32_t, dbcMessage*> dbcMessageEntry_t;
@@ -294,6 +295,7 @@ class dbcfile
     void ShowStatusLine(OvmsWriter* writer);
 
   public:
+    std::string m_path;
     std::string m_version;
     dbcNewSymbolTable m_newsymbols;
     dbcBitTiming m_bittiming;
