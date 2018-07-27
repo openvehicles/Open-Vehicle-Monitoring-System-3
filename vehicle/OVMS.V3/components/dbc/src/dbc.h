@@ -193,6 +193,7 @@ class dbcSignal
   {
   public:
     dbcSignal();
+    dbcSignal(std::string name);
     ~dbcSignal();
 
   public:
@@ -202,6 +203,16 @@ class dbcSignal
     void AddComment(std::string comment);
     void RemoveComment(std::string comment);
     bool HasComment(std::string comment);
+    void AddValue(uint32_t id, std::string value);
+    void RemoveValue(uint32_t id);
+    bool HasValue(uint32_t id);
+    std::string GetValue(uint32_t id);
+
+
+  public:
+    bool SetBitsDBC(std::string dbcval);
+    bool SetFactorOffsetDBC(std::string dbcval);
+    bool SetMinMaxDBC(std::string dbcval);
 
   public:
     std::string m_name;
@@ -218,6 +229,7 @@ class dbcSignal
     std::string m_unit;
     dbcReceiverList_t m_receivers;
     dbcCommentList_t m_comments;
+    dbcValueTable m_values;
   };
 
 typedef std::list<dbcSignal*> dbcSignalList_t;
