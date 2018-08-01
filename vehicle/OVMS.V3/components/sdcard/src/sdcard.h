@@ -40,7 +40,7 @@
 #include "sdmmc_cmd.h"
 #include "ovms_events.h"
 
-class sdcard : public pcp
+class sdcard : public pcp, public InternalRamAllocated
   {
   public:
     sdcard(const char* name, bool mode1bit=false, bool autoformat=false, int cdpin=0);

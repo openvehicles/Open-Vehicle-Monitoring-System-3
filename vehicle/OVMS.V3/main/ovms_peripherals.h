@@ -120,7 +120,7 @@
 #define MODEM_EGPIO_PWR           0
 #define MODEM_EGPIO_DTR           3
 
-class Peripherals
+class Peripherals : public InternalRamAllocated
   {
   public:
      Peripherals();

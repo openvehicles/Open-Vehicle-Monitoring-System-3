@@ -74,6 +74,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   // 
   
   public:
+    void CanResponder(const CAN_frame_t* p_frame);
     void IncomingFrameCan1(CAN_frame_t* p_frame);
     void Ticker1(uint32_t ticker);
     void Ticker10(uint32_t ticker);

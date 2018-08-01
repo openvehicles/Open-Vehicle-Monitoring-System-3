@@ -50,7 +50,7 @@ typedef enum {
     ESP32WIFI_MODE_MAX
 } esp32wifi_mode_t;
 
-class esp32wifi : public pcp
+class esp32wifi : public pcp, public InternalRamAllocated
   {
   public:
     esp32wifi(const char* name);
@@ -75,8 +75,10 @@ class esp32wifi : public pcp
     std::string GetSSID();
     std::string GetAPSSID();
     void UpdateNetMetrics();
+    void AdjustTaskPriority();
 
   public:
+    void EventWifiStaState(std::string event, void* data);
     void EventWifiGotIp(std::string event, void* data);
     void EventWifiStaDisconnected(std::string event, void* data);
     void EventWifiApState(std::string event, void* data);

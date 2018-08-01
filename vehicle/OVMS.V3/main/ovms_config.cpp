@@ -573,7 +573,9 @@ void OvmsConfigParam::RewriteConfig()
   path.append("/");
   path.append(m_name);
   FILE* f = fopen(path.c_str(), "w");
-  if (f)
+  if (!f)
+    ESP_LOGE(TAG, "RewriteConfig: can't open '%s': %s", path.c_str(), strerror(errno));
+  else
     {
 #ifdef OVMS_PERSIST_METADATA
     // write meta data:
@@ -585,7 +587,8 @@ void OvmsConfigParam::RewriteConfig()
       {
       fprintf(f,"%s\t%s\n",it->first.c_str(),it->second.c_str());
       }
-    fclose(f);
+    if (fclose(f))
+      ESP_LOGE(TAG, "RewriteConfig: error writing '%s': %s", path.c_str(), strerror(errno));
     }
   }
 

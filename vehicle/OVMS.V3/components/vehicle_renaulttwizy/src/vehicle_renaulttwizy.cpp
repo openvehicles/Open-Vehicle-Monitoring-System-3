@@ -116,6 +116,7 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
 
   // init can bus:
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+  MyCan.RegisterCallback(TAG, std::bind(&OvmsVehicleRenaultTwizy::CanResponder, this, _1));
 
   // init SEVCON connection:
   m_sevcon = new SevconClient(this);

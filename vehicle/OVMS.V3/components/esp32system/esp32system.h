@@ -34,7 +34,7 @@
 #include <stdint.h>
 #include "pcp.h"
 
-class esp32system : public pcp
+class esp32system : public pcp, public InternalRamAllocated
   {
   public:
     esp32system(const char* name);

@@ -43,7 +43,7 @@ static const char *TAG = "can";
 #include <string.h>
 #include "ovms_command.h"
 
-can MyCan __attribute__ ((init_priority (4500)));;
+can MyCan __attribute__ ((init_priority (4500)));
 
 void can_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -96,7 +96,7 @@ void can_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     return;
     }
   sbus->Stop();
-  writer->printf("Can bus %s stapped\n",bus);
+  writer->printf("Can bus %s stopped\n",bus);
   }
 
 void can_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -329,6 +329,20 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->printf("Err flags: 0x%08x\n",sbus->m_status.error_flags);
   }
 
+void can_clearstatus(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* bus = cmd->GetParent()->GetName();
+  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->puts("Error: Cannot find named CAN bus");
+    return;
+    }
+
+  sbus->ClearStatus();
+  writer->puts("Status cleared");
+  }
+
 static void CAN_rxtask(void *pvParameters)
   {
   can *me = (can*)pvParameters;
@@ -383,6 +397,7 @@ can::can()
     cmd_canrx->RegisterCommand("standard","Simulate reception of standard CAN frame",can_rx,"<id> <data...>", 1, 9, true);
     cmd_canrx->RegisterCommand("extended","Simulate reception of extended CAN frame",can_rx,"<id> <data...>", 1, 9, true);
     cmd_canx->RegisterCommand("status","Show CAN status",can_status,"", 0, 0, true);
+    cmd_canx->RegisterCommand("clear","Clear CAN status",can_clearstatus,"", 0, 0, true);
     }
 
   OvmsCommand* cmd_canlog = cmd_can->RegisterCommand("log", "CAN logging framework", NULL, "", 0, 0, true);
@@ -406,7 +421,7 @@ can::can()
   cmd_canlog->RegisterCommand("status", "Logging status", can_log, "", 0, 0, true);
 
   m_rxqueue = xQueueCreate(20,sizeof(CAN_msg_t));
-  xTaskCreatePinnedToCore(CAN_rxtask, "OVMS CanRx", 1024, (void*)this, 10, &m_rxtask, 0);
+  xTaskCreatePinnedToCore(CAN_rxtask, "OVMS CanRx", 2048, (void*)this, 23, &m_rxtask, 0);
   m_logger = NULL;
   }
 
@@ -418,9 +433,10 @@ void can::IncomingFrame(CAN_frame_t* p_frame)
   {
   p_frame->origin->m_status.packets_rx++;
 
-  NotifyListeners(p_frame, false);
-
   p_frame->origin->LogFrame(CAN_LogFrame_RX, p_frame);
+
+  ExecuteCallbacks(p_frame, false);
+  NotifyListeners(p_frame, false);
   }
 
 void can::RegisterListener(QueueHandle_t queue, bool txfeedback)
@@ -444,14 +460,41 @@ void can::NotifyListeners(const CAN_frame_t* frame, bool tx)
     }
   }
 
+void can::RegisterCallback(const char* caller, CanFrameCallback callback, bool txfeedback)
+  {
+  if (txfeedback)
+    m_txcallbacks.push_back(new CanFrameCallbackEntry(caller, callback));
+  else
+    m_rxcallbacks.push_back(new CanFrameCallbackEntry(caller, callback));
+  }
+
+void can::DeregisterCallback(const char* caller)
+  {
+  m_rxcallbacks.remove_if([caller](CanFrameCallbackEntry* entry){ return strcmp(entry->m_caller, caller)==0; });
+  m_txcallbacks.remove_if([caller](CanFrameCallbackEntry* entry){ return strcmp(entry->m_caller, caller)==0; });
+  }
+
+void can::ExecuteCallbacks(const CAN_frame_t* frame, bool tx)
+  {
+  if (tx)
+    {
+    for (auto entry : m_txcallbacks)
+      entry->m_callback(frame);
+    }
+  else
+    {
+    for (auto entry : m_rxcallbacks)
+      entry->m_callback(frame);
+    }
+  }
+
 canbus::canbus(const char* name)
   : pcp(name)
   {
   m_txqueue = xQueueCreate(20, sizeof(CAN_frame_t));
   m_mode = CAN_MODE_OFF;
   m_speed = CAN_SPEED_1000KBPS;
-  memset(&m_status, 0, sizeof(m_status));
-  m_status_chksum = 0;
+  ClearStatus();
   }
 
 canbus::~canbus()
@@ -461,15 +504,19 @@ canbus::~canbus()
 
 esp_err_t canbus::Start(CAN_mode_t mode, CAN_speed_t speed)
   {
-  // clear statistics:
-  memset(&m_status, 0, sizeof(m_status));
-  m_status_chksum = 0;
+  ClearStatus();
   return ESP_FAIL;
   }
 
 esp_err_t canbus::Stop()
   {
   return ESP_FAIL;
+  }
+
+void canbus::ClearStatus()
+  {
+  memset(&m_status, 0, sizeof(m_status));
+  m_status_chksum = 0;
   }
 
 bool canbus::RxCallback(CAN_frame_t* frame)
@@ -493,9 +540,10 @@ esp_err_t canbus::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0
   {
   m_status.packets_tx++;
 
-  MyCan.NotifyListeners(p_frame, true);
-
   LogFrame(CAN_LogFrame_TX, p_frame);
+
+  MyCan.ExecuteCallbacks(p_frame, true);
+  MyCan.NotifyListeners(p_frame, true);
 
   return ESP_OK;
   }

@@ -35,7 +35,7 @@
 #ifndef __MAX7317_H__
 #define __MAX7317_H__
 
-class max7317 : public pcp
+class max7317 : public pcp, public InternalRamAllocated
   {
   public:
     max7317(const char* name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin);

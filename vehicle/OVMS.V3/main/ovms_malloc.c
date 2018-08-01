@@ -68,3 +68,40 @@ void* ExternalRamRealloc(void *ptr, size_t size)
   else
     return realloc(ptr, size);
   }
+
+void* InternalRamMalloc(size_t sz)
+  {
+  void* ret = heap_caps_malloc(sz, MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT);
+  if (ret)
+    return ret;
+  else
+    return malloc(sz);
+  }
+
+void* InternalRamCalloc(size_t count, size_t size)
+  {
+  void* ret = heap_caps_malloc(count*size, MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT);
+  if (ret)
+    {
+    bzero(ret, count*size);
+    return ret;
+    }
+  else
+    return calloc(count, size);
+  }
+
+void* InternalRamRealloc(void *ptr, size_t size)
+  {
+  if (!ptr)
+    return InternalRamMalloc(size);
+  if (size == 0)
+    {
+    heap_caps_free(ptr);
+    return NULL;
+    }
+  void* ret = heap_caps_realloc(ptr, size, MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT);
+  if (ret)
+    return ret;
+  else
+    return realloc(ptr, size);
+  }

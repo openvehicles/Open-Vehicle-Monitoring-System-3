@@ -33,7 +33,7 @@
 
 #include "pcp.h"
 
-class ext12v : public pcp
+class ext12v : public pcp, public InternalRamAllocated
   {
   public:
     ext12v(const char* name);

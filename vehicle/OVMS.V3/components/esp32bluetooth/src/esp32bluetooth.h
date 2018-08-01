@@ -39,7 +39,7 @@
 #include "esp_bt_main.h"
 #include "pcp.h"
 
-class esp32bluetooth : public pcp
+class esp32bluetooth : public pcp, public InternalRamAllocated
   {
   public:
     esp32bluetooth(const char* name);

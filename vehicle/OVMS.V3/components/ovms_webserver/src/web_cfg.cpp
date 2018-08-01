@@ -1525,6 +1525,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "</datalist>"
     "<datalist id=\"tag-list\">"
       "<option value=\"main\">"
+      "<option value=\"eap\">"
       "<option value=\"edge\">"
     "</datalist>"
     );
@@ -1532,7 +1533,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "<p>Default is <code>api.openvehicles.com/firmware/ota</code>. Note: currently only http is supported.</p>",
     "list=\"server-list\"");
   c.input_text("Version tag", "tag", tag.c_str(), "Specify or select from list (clear to see all options)",
-    "<p>Default is <code>main</code> for standard releases. Use <code>edge</code> for bleeding edge developer builds.</p>",
+    "<p>Default is <code>main</code> for standard releases. Use <code>eap</code> (early access program) for stable or <code>edge</code> for bleeding edge developer builds.</p>",
     "list=\"tag-list\"");
 
   c.print(

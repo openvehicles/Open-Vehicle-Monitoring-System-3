@@ -43,7 +43,7 @@ static const char *TAG = "esp32can";
 
 esp32can* MyESP32can = NULL;
 
-static void ESP32CAN_rxframe(esp32can *me)
+static IRAM_ATTR void ESP32CAN_rxframe(esp32can *me)
   {
   CAN_msg_t msg;
 
@@ -83,7 +83,7 @@ static void ESP32CAN_rxframe(esp32can *me)
     }
   }
 
-static void ESP32CAN_isr(void *pvParameters)
+static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
   {
   esp32can *me = (esp32can*)pvParameters;
 
@@ -146,7 +146,7 @@ esp32can::esp32can(const char* name, int txpin, int rxpin)
   MyESP32can = this;
 
   // Install CAN ISR
-  esp_intr_alloc(ETS_CAN_INTR_SOURCE,0,ESP32CAN_isr,this,NULL);
+  esp_intr_alloc(ETS_CAN_INTR_SOURCE, ESP_INTR_FLAG_IRAM, ESP32CAN_isr, this, NULL);
 
   // Due to startup order, we can't talk to MAX7317 during
   // initialisation. So, we'll just enter reset mode for the
@@ -163,7 +163,6 @@ esp32can::~esp32can()
 
 esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
   {
-  canbus::Start(mode, speed);
   double __tq; // Time quantum
 
   m_mode = mode;
@@ -247,6 +246,9 @@ esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
   // Power up the matching SN65 transciever
   MyPeripherals->m_max7317->Output(MAX7317_CAN1_EN, 0);
 #endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+
+  // clear statistics:
+  ClearStatus();
 
   // Showtime. Release Reset Mode.
   MODULE_ESP32CAN->MOD.B.RM = 0;

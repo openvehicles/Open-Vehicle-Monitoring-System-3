@@ -40,6 +40,7 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include <stdint.h>
+#include <functional>
 #include <list>
 #include "pcp.h"
 #include <esp_err.h>
@@ -219,7 +220,7 @@ typedef struct
 
 class canlog;
 
-class canbus : public pcp
+class canbus : public pcp, public InternalRamAllocated
   {
   public:
     canbus(const char* name);
@@ -228,6 +229,7 @@ class canbus : public pcp
   public:
     virtual esp_err_t Start(CAN_mode_t mode, CAN_speed_t speed);
     virtual esp_err_t Stop();
+    virtual void ClearStatus();
 
   public:
     virtual esp_err_t Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
@@ -255,7 +257,23 @@ class canbus : public pcp
 
 typedef std::map<QueueHandle_t, bool> CanListenerMap_t;
 
-class can
+typedef std::function<void(const CAN_frame_t*)> CanFrameCallback;
+class CanFrameCallbackEntry
+  {
+  public:
+    CanFrameCallbackEntry(const char* caller, CanFrameCallback callback)
+      {
+      m_caller = caller;
+      m_callback = callback;
+      }
+    ~CanFrameCallbackEntry() {}
+  public:
+    const char *m_caller;
+    CanFrameCallback m_callback;
+  };
+typedef std::list<CanFrameCallbackEntry*> CanFrameCallbackList_t;
+
+class can : public InternalRamAllocated
   {
   public:
      can();
@@ -273,6 +291,11 @@ class can
     void NotifyListeners(const CAN_frame_t* frame, bool tx);
 
   public:
+    void RegisterCallback(const char* caller, CanFrameCallback callback, bool txfeedback=false);
+    void DeregisterCallback(const char* caller);
+    void ExecuteCallbacks(const CAN_frame_t* frame, bool tx);
+
+  public:
     void SetLogger(canlog* logger) { m_logger = logger; }
     canlog* GetLogger() { return m_logger; }
     void UnsetLogger() { m_logger = NULL; }
@@ -282,6 +305,8 @@ class can
 
   private:
     CanListenerMap_t m_listeners;
+    CanFrameCallbackList_t m_rxcallbacks;
+    CanFrameCallbackList_t m_txcallbacks;
     TaskHandle_t m_rxtask;            // Task to handle reception
     canlog* m_logger;
   };

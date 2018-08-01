@@ -75,7 +75,7 @@ class obd2pid
 
 typedef std::map<int, obd2pid*> PidMap;
 
-class obd2ecu : public pcp
+class obd2ecu : public pcp, public InternalRamAllocated
   {
   public:
     obd2ecu(const char* name, canbus* can);
