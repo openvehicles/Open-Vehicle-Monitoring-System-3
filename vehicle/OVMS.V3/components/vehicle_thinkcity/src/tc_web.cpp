@@ -1,7 +1,8 @@
 /**
  * Project:      Open Vehicle Monitor System
- * Module:       Kia Soul Webserver
+ * Module:       Think City EV Webserver
  *
+ * (c) 2018	Nikolay Shishkov <nshishkov@yahoo.com>
  * (c) 2018	Geir Øyvind Væidalo <geir@validalo.net>
  * (c) 2017  Michael Balzer <dexter@dexters-web.de>
  *
@@ -24,7 +25,6 @@
  * THE SOFTWARE.
  */
 
-//static const char *TAG = "v-kiasoulev";
 
 #include <stdio.h>
 #include <string>
@@ -166,7 +166,7 @@ void OvmsVehicleThinkCity::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("xtc", "suffsoc", suffsoc);
 
       c.head(200);
-      c.alert("success", "<p class=\"lead\">Kia Soul battery setup saved.</p>");
+      c.alert("success", "<p class=\"lead\">Think City battery setup saved.</p>");
       MyWebServer.OutputHome(p, c);
       c.done();
       return;
@@ -189,7 +189,7 @@ void OvmsVehicleThinkCity::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 
   // generate form:
 
-  c.panel_start("primary", "Kia Soul EV battery setup");
+  c.panel_start("primary", "Think City EV battery setup");
   c.form_start(p.uri);
 
   c.fieldset_start("Battery properties");
@@ -232,7 +232,7 @@ void OvmsVehicleThinkCity::WebBattMon(PageEntry_t& p, PageContext_t& c)
   /*c.head(200);
   c.print(
     "<div class=\"panel panel-primary panel-single\">"
-    "<div class=\"panel-heading\">Kia Soul Battery Monitor</div>"
+    "<div class=\"panel-heading\">Think City Battery Monitor</div>"
     "<div class=\"panel-body\">"
       "<div class=\"receiver\" id=\"livestatus\">"
         "<div id=\"cellvolts\" style=\"width: 100%; max-width: 800px; height: 45vh; min-height: 265px; margin: 0 auto\"></div>"
