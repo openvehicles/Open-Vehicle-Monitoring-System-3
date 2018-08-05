@@ -916,13 +916,13 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
     {
     case ESP32WIFI_MODE_CLIENT:
     case ESP32WIFI_MODE_SCLIENT:
-      writer->printf("\nSTA SSID: %s\n  MAC: " MACSTR "\n  IP: " IPSTR "/" IPSTR "\n  GW: " IPSTR "\n",
-        m_wifi_sta_cfg.sta.ssid, MAC2STR(m_mac_sta),
+      writer->printf("\nSTA SSID: %s (%d dBm)\n  MAC: " MACSTR "\n  IP: " IPSTR "/" IPSTR "\n  GW: " IPSTR "\n",
+        m_wifi_sta_cfg.sta.ssid, (int)(m_sta_rssi+5)/10, MAC2STR(m_mac_sta),
         IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw));
       break;
     case ESP32WIFI_MODE_APCLIENT:
-      writer->printf("\nSTA SSID: %s\n  MAC: " MACSTR "\n  IP: " IPSTR "/" IPSTR "\n  GW: " IPSTR "\n",
-        m_wifi_sta_cfg.sta.ssid, MAC2STR(m_mac_sta),
+      writer->printf("\nSTA SSID: %s (%d dBm)\n  MAC: " MACSTR "\n  IP: " IPSTR "/" IPSTR "\n  GW: " IPSTR "\n",
+        m_wifi_sta_cfg.sta.ssid, (int)(m_sta_rssi+5)/10, MAC2STR(m_mac_sta),
         IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw));
       // Falling through (no break) to ESP32WIFI_MODE_AP on purpose
     case ESP32WIFI_MODE_AP:
