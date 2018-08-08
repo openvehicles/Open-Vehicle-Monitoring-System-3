@@ -542,8 +542,8 @@ OvmsCommandApp::OvmsCommandApp()
   monitor = cmd_log->RegisterCommand("monitor", "Monitor log on this console", log_monitor , "[$C]", 0, 1, true);
   monitor_yes = monitor->RegisterCommand("yes", "Monitor log", log_monitor , "", 0, 0, true);
   monitor->RegisterCommand("no", "Don't monitor log", log_monitor , "", 0, 0, true);
-  m_root.RegisterCommand("enable","Enter secure mode", enable, "[<password>]", 0, 1);
-  m_root.RegisterCommand("disable","Leave secure mode", disable, "", 0, 0, true);
+  m_root.RegisterCommand("enable","Enter secure mode (enable access to all commands)", enable, "[<password>]", 0, 1);
+  m_root.RegisterCommand("disable","Leave secure mode (disable access to most commands)", disable, "", 0, 0, true);
   }
 
 OvmsCommandApp::~OvmsCommandApp()
