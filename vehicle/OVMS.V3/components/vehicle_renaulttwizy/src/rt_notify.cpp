@@ -134,6 +134,16 @@ int OvmsVehicleRenaultTwizy::GetNotifyChargeStateDelay(const char* state)
 
 
 /**
+ * NotifiedVehicleChargeState: framework hook
+ */
+void OvmsVehicleRenaultTwizy::NotifiedVehicleChargeState(const char* state)
+{
+  // add charge record to trip log:
+  RequestNotify(SEND_TripLog);
+}
+
+
+/**
  * CommandStat: Twizy implementation of vehicle status output
  */
 OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandStat(int verbosity, OvmsWriter* writer)

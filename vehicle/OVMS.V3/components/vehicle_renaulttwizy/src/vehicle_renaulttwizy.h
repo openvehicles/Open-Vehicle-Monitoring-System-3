@@ -86,6 +86,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
 
   protected:
     int GetNotifyChargeStateDelay(const char* state);
+    void NotifiedVehicleChargeState(const char* state);
 
   protected:
     bool m_ready = false;
