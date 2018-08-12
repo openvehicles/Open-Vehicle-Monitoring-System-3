@@ -46,6 +46,8 @@ OvmsVehicleTeslaModelS::OvmsVehicleTeslaModelS()
   memset(m_type,0,sizeof(m_type));
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
+  RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
+  RegisterCanBus(3,CAN_MODE_ACTIVE,CAN_SPEED_125KBPS);
   }
 
 OvmsVehicleTeslaModelS::~OvmsVehicleTeslaModelS()
@@ -152,6 +154,35 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
     default:
       break;
     }
+  }
+
+void OvmsVehicleTeslaModelS::IncomingFrameCan2(CAN_frame_t* p_frame)
+  {
+  uint8_t *d = p_frame->data.u8;
+
+  switch (p_frame->MsgID)
+    {
+    case 0x2f8: // MCU GPS speed/heading
+      StandardMetrics.ms_v_pos_gpshdop->SetValue((float)d[0] / 10);
+      StandardMetrics.ms_v_pos_direction->SetValue((float)(((uint32_t)d[2]<<8)+d[1])/128.0);
+      break;
+    case 0x3d8: // MCU GPS latitude / longitude
+      StandardMetrics.ms_v_pos_latitude->SetValue((double)(((uint32_t)(d[3]&0x0f) << 24) +
+                                                          ((uint32_t)d[2] << 16) +
+                                                          ((uint32_t)d[1] << 8) +
+                                                          (uint32_t)d[0]) / 1000000.0);
+      StandardMetrics.ms_v_pos_longitude->SetValue((double)(((uint32_t)d[6] << 20) +
+                                                           ((uint32_t)d[5] << 12) +
+                                                           ((uint32_t)d[4] << 4) +
+                                                           ((uint32_t)(d[3]&0xf0) >> 4)) / 1000000.0);
+      break;
+    default:
+      break;
+    }
+  }
+
+void OvmsVehicleTeslaModelS::IncomingFrameCan3(CAN_frame_t* p_frame)
+  {
   }
 
 void OvmsVehicleTeslaModelS::Notify12vCritical()

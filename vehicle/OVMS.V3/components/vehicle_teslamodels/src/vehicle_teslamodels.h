@@ -43,6 +43,8 @@ class OvmsVehicleTeslaModelS: public OvmsVehicle
 
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingFrameCan2(CAN_frame_t* p_frame);
+    void IncomingFrameCan3(CAN_frame_t* p_frame);
 
   protected:
     virtual void Notify12vCritical();
