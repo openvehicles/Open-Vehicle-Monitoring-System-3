@@ -408,7 +408,7 @@ std::string OvmsMetric::AsUnitString(const char* defvalue, metric_unit_t units, 
   {
   if (!IsDefined())
     return std::string(defvalue);
-  return AsString(defvalue, units, precision) + OvmsMetricUnitLabel(GetUnits());
+  return AsString(defvalue, units, precision) + OvmsMetricUnitLabel(units==Native ? GetUnits() : units);
   }
 
 std::string OvmsMetric::AsJSON(const char* defvalue, metric_unit_t units, int precision)
@@ -790,7 +790,7 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
   {
   switch (units)
     {
-    case Kilometers:   return "Km";
+    case Kilometers:   return "km";
     case Miles:        return "M";
     case Meters:       return "m";
     case Celcius:      return "°C";
@@ -809,9 +809,9 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
     case Minutes:      return "Min";
     case Hours:        return "Hour";
     case Degrees:      return "°";
-    case Kph:          return "Kph";
+    case Kph:          return "km/h";
     case Mph:          return "Mph";
-    case KphPS:        return "Kph/s";
+    case KphPS:        return "km/h/s";
     case MphPS:        return "Mph/s";
     case MetersPSS:    return "m/s²";
     case dbm:          return "dBm";
