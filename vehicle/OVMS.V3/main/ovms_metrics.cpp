@@ -408,7 +408,7 @@ std::string OvmsMetric::AsUnitString(const char* defvalue, metric_unit_t units, 
   {
   if (!IsDefined())
     return std::string(defvalue);
-  return AsString(defvalue, units, precision) + OvmsMetricUnitLabel(GetUnits());
+  return AsString(defvalue, units, precision) + OvmsMetricUnitLabel(units==Native ? GetUnits() : units);
   }
 
 std::string OvmsMetric::AsJSON(const char* defvalue, metric_unit_t units, int precision)
