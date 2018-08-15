@@ -1,9 +1,15 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+
+2018-08-15 MWJ  3.1.009  OTA release
 - Tesla Roadster: COOLDOWN command implementation
 - Tesla Roadster: Charge Timer support
 - Tesla Roadster: Digital Speedo feature implementation
+- Tesla Roadster: Refuse to lock a car that is ON
+- Server V3: MQTT implementation complete (still experimental beta)
+- Mitsubishi iMiev: Basic vehicle support
+- CAN: Support LISTEN mode for CAN buses
 
 2018-06-26 MWJ  3.1.008  OTA release
 - Vehicle theft alert if vehicle moved more than 500m when parked
