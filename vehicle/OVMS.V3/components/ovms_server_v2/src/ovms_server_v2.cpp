@@ -1209,18 +1209,21 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
     StandardMetrics.ms_v_env_charging12v->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_hvac->IsModifiedAndClear(MyOvmsServerV2Modifier) |
 
-    StandardMetrics.ms_v_charge_temp->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_v_charge_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_cabintemp->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
 
-  // v2 has one "stale" flag for 4 temperatures, we say they're stale only if
+  // v2 has one "stale" flag for all temperatures, we say they're stale only if
   // all are stale, IE one valid temperature makes them all valid
   bool stale_temps =
     StandardMetrics.ms_v_inv_temp->IsStale() &&
     StandardMetrics.ms_v_mot_temp->IsStale() &&
     StandardMetrics.ms_v_bat_temp->IsStale() &&
-    StandardMetrics.ms_v_charge_temp->IsStale();
+    StandardMetrics.ms_v_charge_temp->IsStale() &&
+    StandardMetrics.ms_v_env_temp->IsStale() &&
+    StandardMetrics.ms_v_env_cabintemp->IsStale();
 
   extram::ostringstream buffer;
   buffer
@@ -1264,6 +1267,8 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
     << StandardMetrics.ms_v_charge_temp->AsString("0")
     << ","
     << StandardMetrics.ms_v_bat_12v_current->AsString("0")
+    << ","
+    << StandardMetrics.ms_v_env_cabintemp->AsString("0")
     ;
 
   Transmit(buffer.str().c_str());
