@@ -32,3 +32,6 @@ Open Vehicle Monitor System v3 - Known issues
 * SMS to command gateway is not currently implemented.
 
 * SMS notifications are not currently implemented.
+
+* Config partition corruptions with current esp-idf master
+  (tested: commit 020ade652d9b6b0b87b0bebe176a150cc4407749)
