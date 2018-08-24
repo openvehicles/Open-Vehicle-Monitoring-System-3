@@ -504,7 +504,7 @@ OvmsVehicle::OvmsVehicle()
   m_poll_ml_offset = 0;
   m_poll_ml_frame = 0;
 
-  m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
+  m_rxqueue = xQueueCreate(CONFIG_OVMS_VEHICLE_CAN_RX_QUEUE_SIZE,sizeof(CAN_frame_t));
   xTaskCreatePinnedToCore(OvmsVehicleRxTask, "OVMS Vehicle",
     CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_rxtask, 1);
 

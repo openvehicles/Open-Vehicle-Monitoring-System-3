@@ -93,7 +93,7 @@ OvmsEvents::OvmsEvents()
   cmd_eventtrace->RegisterCommand("on","Turn event tracing ON",event_trace,"", 0, 0, true);
   cmd_eventtrace->RegisterCommand("off","Turn event tracing OFF",event_trace,"", 0, 0, true);
 
-  m_taskqueue = xQueueCreate(50,sizeof(event_queue_t));
+  m_taskqueue = xQueueCreate(CONFIG_OVMS_HW_EVENT_QUEUE_SIZE,sizeof(event_queue_t));
   xTaskCreatePinnedToCore(EventLaunchTask, "OVMS Events", 8192, (void*)this, 5, &m_taskid, 1);
   AddTaskToMap(m_taskid);
   }

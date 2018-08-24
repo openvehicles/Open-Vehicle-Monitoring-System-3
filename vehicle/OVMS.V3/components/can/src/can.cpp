@@ -420,7 +420,7 @@ can::can()
   cmd_canlog->RegisterCommand("off", "Stop logging", can_log, "", 0, 0, true);
   cmd_canlog->RegisterCommand("status", "Logging status", can_log, "", 0, 0, true);
 
-  m_rxqueue = xQueueCreate(20,sizeof(CAN_msg_t));
+  m_rxqueue = xQueueCreate(CONFIG_OVMS_HW_CAN_RX_QUEUE_SIZE,sizeof(CAN_msg_t));
   xTaskCreatePinnedToCore(CAN_rxtask, "OVMS CanRx", 2048, (void*)this, 23, &m_rxtask, 0);
   m_logger = NULL;
   }
@@ -491,7 +491,7 @@ void can::ExecuteCallbacks(const CAN_frame_t* frame, bool tx)
 canbus::canbus(const char* name)
   : pcp(name)
   {
-  m_txqueue = xQueueCreate(20, sizeof(CAN_frame_t));
+  m_txqueue = xQueueCreate(CONFIG_OVMS_HW_CAN_TX_QUEUE_SIZE, sizeof(CAN_frame_t));
   m_mode = CAN_MODE_OFF;
   m_speed = CAN_SPEED_1000KBPS;
   ClearStatus();

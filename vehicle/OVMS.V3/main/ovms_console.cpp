@@ -36,7 +36,6 @@
 #include "ovms_version.h"
 #include "log_buffers.h"
 
-const int DEFERRED_ALERTS = 10;
 //static const char *TAG = "Console";
 static char CRbuf[1] = { '\r' };
 static char NLbuf[1] = { '\n' };
@@ -158,7 +157,7 @@ void OvmsConsole::Poll(portTickType ticks, QueueHandle_t queue)
       if (m_insert)
         {
         if (!m_deferred)
-          m_deferred = xQueueCreate(DEFERRED_ALERTS, sizeof(Event));
+          m_deferred = xQueueCreate(CONFIG_OVMS_HW_CONSOLE_QUEUE_SIZE, sizeof(Event));
         if (xQueueSendToBack(m_deferred, (void *)&event, 0) != pdPASS)
           {
           Event discard;

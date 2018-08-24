@@ -43,6 +43,52 @@ config OVMS_HW_SPIMEM_AGGRESSIVE
     help
         Enable to aggressively allocate from SPI RAM (rather than internal RAM).
 
+config OVMS_HW_CONSOLE_QUEUE_SIZE
+    int "Console queue size"
+    default 100
+    depends on OVMS
+    help
+        The size of the console defer queue. If more than this number
+        of alert are raised in a very short period of time, excess
+        alerts may be dropped (with suitable warning).
+
+config OVMS_HW_ASYNC_QUEUE_SIZE
+    int "Async async terminal queue size"
+    default 100
+    depends on OVMS
+    help
+        The size of the async terminal queue. If more than this number
+        of alert are raised in a very short period of time, excess
+        alerts may be dropped (with suitable warning).
+
+config OVMS_HW_EVENT_QUEUE_SIZE
+    int "EVENT queue size"
+    default 20
+    depends on OVMS
+    help
+        The size of the EVENT queue.
+
+config OVMS_HW_NETMANAGER_QUEUE_SIZE
+    int "NETMANAGER queue size"
+    default 10
+    depends on OVMS
+    help
+        The size of the NETMANAGER queue.
+
+config OVMS_HW_CAN_RX_QUEUE_SIZE
+    int "CAN bus RX queue size"
+    default 30
+    depends on OVMS
+    help
+        The size of the CAN bus RX queue.
+
+config OVMS_HW_CAN_TX_QUEUE_SIZE
+    int "CAN bus TX queue size"
+    default 20
+    depends on OVMS
+    help
+        The size of the CAN bus TX queue.
+
 endmenu # Hardware Support
 
 
@@ -223,6 +269,13 @@ config OVMS_VEHICLE_RXTASK_STACK
         The RX task triggers events and metrics updates so needs to be
         able to process the attached event/metrics listeners.
         Standard stack usage of this task is currently around 1400 bytes.
+
+config OVMS_VEHICLE_CAN_RX_QUEUE_SIZE
+    int "Vehicle CAN queue size"
+    default 40
+    depends on OVMS
+    help
+        The size of the CAN bus RX queue (at the vehicle component).
 
 endmenu # Vehicle Support
 

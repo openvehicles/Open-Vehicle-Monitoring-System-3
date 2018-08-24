@@ -195,7 +195,7 @@ OvmsNetManager::OvmsNetManager()
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   m_mongoose_task = 0;
   m_mongoose_running = false;
-  m_jobqueue = xQueueCreate(10, sizeof(netman_job_t*));
+  m_jobqueue = xQueueCreate(CONFIG_OVMS_HW_NETMANAGER_QUEUE_SIZE, sizeof(netman_job_t*));
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
   // Register our commands
@@ -743,22 +743,22 @@ int OvmsNetManager::CleanupConnections()
       ESP_LOGW(TAG, "CleanupConnections: conn %08x: getsockname failed", (uint32_t)c);
       continue;
       }
-    
+
     if (sa.sa.sa_family != AF_INET || sa.sin.sin_addr.s_addr == IPADDR_ANY || sa.sin.sin_addr.s_addr == IPADDR_NONE)
       continue;
-    
+
     // find interface:
     for (ni = netif_list; ni; ni = ni->next)
       {
       if (sa.sin.sin_addr.s_addr == ip4_addr_get_u32(netif_ip4_addr(ni)))
         break;
       }
-    
+
     if (ni)
       ESP_LOGD(TAG, "CleanupConnections: conn %08x -> iface %c%c%d", (uint32_t)c, ni->name[0], ni->name[1], ni->num);
     else
       ESP_LOGD(TAG, "CleanupConnections: conn %08x -> no iface", (uint32_t)c);
-    
+
     if (!ni || !(ni->flags & NETIF_FLAG_UP) || !(ni->flags & NETIF_FLAG_LINK_UP))
       {
       ESP_LOGI(TAG, "CleanupConnections: closing conn %08x: interface/link down", (uint32_t)c);
@@ -766,7 +766,7 @@ int OvmsNetManager::CleanupConnections()
       cnt++;
       continue;
       }
-    
+
     // check remote address on wifi AP:
     if (ni->name[0] == 'a' && ni->name[1] == 'p')
       {
@@ -782,7 +782,7 @@ int OvmsNetManager::CleanupConnections()
         if (sa.sin.sin_addr.s_addr == ap_ip_list.sta[i].ip.addr)
           break;
         }
-      
+
       if (i < ap_ip_list.num)
         {
         ESP_LOGD(TAG, "CleanupConnections: conn %08x -> AP IP " IPSTR, (uint32_t)c, IP2STR(&ap_ip_list.sta[i].ip));
