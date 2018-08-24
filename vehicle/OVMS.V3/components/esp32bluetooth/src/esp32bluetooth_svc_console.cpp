@@ -60,11 +60,13 @@ void ovms_ble_gatts_profile_console_event_handler(esp_gatts_cb_event_t event,
     {
     case ESP_GATTS_REG_EVT:
       {
-      ESP_LOGI(TAG,"ESP_GATTS_REG_EVT Creating service on interface %d",gatts_if);
       ovms_gatts_profile_console.service_id.is_primary = true;
       ovms_gatts_profile_console.service_id.id.inst_id = 0x00;
       ovms_gatts_profile_console.service_id.id.uuid.len = ESP_UUID_LEN_16;
       ovms_gatts_profile_console.service_id.id.uuid.uuid.uuid16 = GATTS_SERVICE_UUID_OVMS_CONSOLE;
+      ESP_LOGI(TAG,"ESP_GATTS_REG_EVT Creating service %04x on interface %d",
+        ovms_gatts_profile_console.service_id.id.uuid.uuid.uuid16,
+        gatts_if);
       esp_ble_gatts_create_service(gatts_if, &ovms_gatts_profile_console.service_id, GATTS_NUM_HANDLE_OVMS_CONSOLE);
       }
       break;
@@ -84,17 +86,11 @@ void ovms_ble_gatts_profile_console_event_handler(esp_gatts_cb_event_t event,
                                   param->read.conn_id,
                                   param->read.trans_id,
                                   ESP_GATT_OK, &rsp);
+      break;
       }
     case ESP_GATTS_WRITE_EVT:
-      if (param->write.len < 64)
-        {
-        ESP_LOGI(TAG, "ESP_GATTS_WRITE_EVT, write %d bytes",param->write.len);
-        }
-      else
-        {
-        ESP_LOGI(TAG, "ESP_GATTS_WRITE_EVT, write value:");
-        esp_log_buffer_hex(TAG, param->write.value, param->write.len);
-        }
+      ESP_LOGI(TAG, "ESP_GATTS_WRITE_EVT, write %d bytes, value:",param->write.len);
+      esp_log_buffer_hex(TAG, param->write.value, param->write.len);
       break;
     case ESP_GATTS_EXEC_WRITE_EVT:
       ESP_LOGI(TAG,"ESP_GATTS_EXEC_WRITE_EVT");
