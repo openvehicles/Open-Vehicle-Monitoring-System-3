@@ -28,20 +28,20 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __ESP32BLUETOOTH_SVC_DEVICE_H__
-#define __ESP32BLUETOOTH_SVC_DEVICE_H__
+#ifndef __ESP32BLUETOOTH_SVC_CONSOLE_H__
+#define __ESP32BLUETOOTH_SVC_CONSOLE_H__
 
 #include "esp32bluetooth.h"
 #include "esp32bluetooth_gatts.h"
 
-#define GATTS_APP_UUID_OVMS_DEVICE       0x10
-#define GATTS_SERVICE_UUID_OVMS_DEVICE   0x1041
-#define GATTS_CHAR_UUID_OVMS_DEVICE      0x1042
-#define GATTS_DESCR_UUID_OVMS_DEVICE     0x1043
-#define GATTS_NUM_HANDLE_OVMS_DEVICE     4
+#define GATTS_APP_UUID_OVMS_CONSOLE     0x20
+#define GATTS_SERVICE_UUID_OVMS_CONSOLE 0xfff1
+#define GATTS_CHAR_UUID_OVMS_CONSOLE    0xfff2
+#define GATTS_DESCR_UUID_OVMS_CONSOLE   0xfff3
+#define GATTS_NUM_HANDLE_OVMS_CONSOLE   4
 
-extern struct gatts_profile_inst ovms_gatts_profile_device;
+extern struct gatts_profile_inst ovms_gatts_profile_console;
 
-void ovms_ble_gatts_profile_device_init();
+void ovms_ble_gatts_profile_console_init();
 
-#endif //#ifndef __ESP32BLUETOOTH_SVC_DEVICE_H__
+#endif //#ifndef __ESP32BLUETOOTH_SVC_CONSOLE_H__

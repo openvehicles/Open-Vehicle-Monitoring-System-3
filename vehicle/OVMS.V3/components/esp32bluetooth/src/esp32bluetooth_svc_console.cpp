@@ -30,13 +30,15 @@
 
 #include <string.h>
 #include "esp_system.h"
-#include "esp32bluetooth_svc_metrics.h"
+#include "esp32bluetooth_svc_console.h"
 #include "esp32bluetooth_gap.h"
+#include "ovms_config.h"
+#include "ovms_events.h"
 
 #include "ovms_log.h"
-static const char *TAG = "bt-svc-metrics";
+static const char *TAG = "bt-svc-console";
 
-struct gatts_profile_inst ovms_gatts_profile_metrics;
+struct gatts_profile_inst ovms_gatts_profile_console;
 
 // Demo property (just for testing)
 static uint8_t char1_str[] = {'O','V','M','S'};
@@ -51,7 +53,7 @@ static esp_attr_value_t gatts_demo_char1_val =
 };
 // End of demo property
 
-void ovms_ble_gatts_profile_metrics_event_handler(esp_gatts_cb_event_t event,
+void ovms_ble_gatts_profile_console_event_handler(esp_gatts_cb_event_t event,
                      esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param)
   {
   switch (event)
@@ -59,11 +61,11 @@ void ovms_ble_gatts_profile_metrics_event_handler(esp_gatts_cb_event_t event,
     case ESP_GATTS_REG_EVT:
       {
       ESP_LOGI(TAG,"ESP_GATTS_REG_EVT Creating service on interface %d",gatts_if);
-      ovms_gatts_profile_metrics.service_id.is_primary = true;
-      ovms_gatts_profile_metrics.service_id.id.inst_id = 0x00;
-      ovms_gatts_profile_metrics.service_id.id.uuid.len = ESP_UUID_LEN_16;
-      ovms_gatts_profile_metrics.service_id.id.uuid.uuid.uuid16 = GATTS_SERVICE_UUID_OVMS_METRICS;
-      esp_ble_gatts_create_service(gatts_if, &ovms_gatts_profile_metrics.service_id, GATTS_NUM_HANDLE_OVMS_METRICS);
+      ovms_gatts_profile_console.service_id.is_primary = true;
+      ovms_gatts_profile_console.service_id.id.inst_id = 0x00;
+      ovms_gatts_profile_console.service_id.id.uuid.len = ESP_UUID_LEN_16;
+      ovms_gatts_profile_console.service_id.id.uuid.uuid.uuid16 = GATTS_SERVICE_UUID_OVMS_CONSOLE;
+      esp_ble_gatts_create_service(gatts_if, &ovms_gatts_profile_console.service_id, GATTS_NUM_HANDLE_OVMS_CONSOLE);
       }
       break;
     case ESP_GATTS_READ_EVT:
@@ -82,7 +84,6 @@ void ovms_ble_gatts_profile_metrics_event_handler(esp_gatts_cb_event_t event,
                                   param->read.conn_id,
                                   param->read.trans_id,
                                   ESP_GATT_OK, &rsp);
-      break;
       }
     case ESP_GATTS_WRITE_EVT:
       if (param->write.len < 64)
@@ -126,14 +127,16 @@ void ovms_ble_gatts_profile_metrics_event_handler(esp_gatts_cb_event_t event,
              param->connect.remote_bda[3],
              param->connect.remote_bda[4],
              param->connect.remote_bda[5]);
-      ovms_gatts_profile_metrics.conn_id = param->connect.conn_id;
+      ovms_gatts_profile_console.conn_id = param->connect.conn_id;
       break;
       }
     case ESP_GATTS_DISCONNECT_EVT:
+      {
       ESP_LOGI(TAG, "ESP_GATTS_DISCONNECT_EVT");
       /* start advertising again when missing the connect */
       ovms_ble_gap_start_advertising();
       break;
+      }
     case ESP_GATTS_OPEN_EVT:
       ESP_LOGI(TAG,"ESP_GATTS_OPEN_EVT");
       break;
@@ -152,14 +155,14 @@ void ovms_ble_gatts_profile_metrics_event_handler(esp_gatts_cb_event_t event,
     case ESP_GATTS_CREATE_EVT:
       {
       ESP_LOGI(TAG, "ESP_GATTS_CREATE_EVT, status %d, service_handle %d\n", param->create.status, param->create.service_handle);
-      ovms_gatts_profile_metrics.service_handle = param->create.service_handle;
-      ovms_gatts_profile_metrics.char_uuid.len = ESP_UUID_LEN_16;
-      ovms_gatts_profile_metrics.char_uuid.uuid.uuid16 = GATTS_CHAR_UUID_OVMS_METRICS;
+      ovms_gatts_profile_console.service_handle = param->create.service_handle;
+      ovms_gatts_profile_console.char_uuid.len = ESP_UUID_LEN_16;
+      ovms_gatts_profile_console.char_uuid.uuid.uuid16 = GATTS_CHAR_UUID_OVMS_CONSOLE;
 
       a_property = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
       esp_err_t add_char_ret =
-      esp_ble_gatts_add_char(ovms_gatts_profile_metrics.service_handle,
-                            &ovms_gatts_profile_metrics.char_uuid,
+      esp_ble_gatts_add_char(ovms_gatts_profile_console.service_handle,
+                            &ovms_gatts_profile_console.char_uuid,
                             ESP_GATT_PERM_READ,
                             a_property,
                             &gatts_demo_char1_val,
@@ -169,7 +172,7 @@ void ovms_ble_gatts_profile_metrics_event_handler(esp_gatts_cb_event_t event,
         ESP_LOGE(TAG, "add char failed, error code =%x",add_char_ret);
         }
 
-      esp_ble_gatts_start_service(ovms_gatts_profile_metrics.service_handle);
+      esp_ble_gatts_start_service(ovms_gatts_profile_console.service_handle);
       break;
       }
     case ESP_GATTS_ADD_CHAR_EVT:
@@ -179,9 +182,9 @@ void ovms_ble_gatts_profile_metrics_event_handler(esp_gatts_cb_event_t event,
 
       ESP_LOGI(TAG, "ADD_CHAR_EVT, status %d,  attr_handle %d, service_handle %d\n",
              param->add_char.status, param->add_char.attr_handle, param->add_char.service_handle);
-      ovms_gatts_profile_metrics.char_handle = param->add_char.attr_handle;
-      ovms_gatts_profile_metrics.descr_uuid.len = ESP_UUID_LEN_16;
-      ovms_gatts_profile_metrics.descr_uuid.uuid.uuid16 = ESP_GATT_UUID_CHAR_CLIENT_CONFIG;
+      ovms_gatts_profile_console.char_handle = param->add_char.attr_handle;
+      ovms_gatts_profile_console.descr_uuid.len = ESP_UUID_LEN_16;
+      ovms_gatts_profile_console.descr_uuid.uuid.uuid16 = ESP_GATT_UUID_CHAR_CLIENT_CONFIG;
       esp_err_t get_attr_ret = esp_ble_gatts_get_attr_value(param->add_char.attr_handle, &length, &prf_char);
       if (get_attr_ret == ESP_FAIL)
         {
@@ -193,8 +196,8 @@ void ovms_ble_gatts_profile_metrics_event_handler(esp_gatts_cb_event_t event,
         ESP_LOGI(TAG, "prf_char[%x] = %x\n",i,prf_char[i]);
         }
       esp_err_t add_descr_ret = esp_ble_gatts_add_char_descr(
-                             ovms_gatts_profile_metrics.service_handle,
-                             &ovms_gatts_profile_metrics.descr_uuid,
+                             ovms_gatts_profile_console.service_handle,
+                             &ovms_gatts_profile_console.descr_uuid,
                              ESP_GATT_PERM_READ,
                              NULL,NULL);
       if (add_descr_ret)
@@ -214,9 +217,9 @@ void ovms_ble_gatts_profile_metrics_event_handler(esp_gatts_cb_event_t event,
     }
   }
 
-void ovms_ble_gatts_profile_metrics_init()
+void ovms_ble_gatts_profile_console_init()
   {
-  memset(&ovms_gatts_profile_metrics,0,sizeof(ovms_gatts_profile_metrics));
-  ovms_gatts_profile_metrics.gatts_cb = ovms_ble_gatts_profile_metrics_event_handler;
-  ovms_gatts_profile_metrics.gatts_if = ESP_GATT_IF_NONE;
+  memset(&ovms_gatts_profile_console,0,sizeof(ovms_gatts_profile_console));
+  ovms_gatts_profile_console.gatts_cb = ovms_ble_gatts_profile_console_event_handler;
+  ovms_gatts_profile_console.gatts_if = ESP_GATT_IF_NONE;
   }

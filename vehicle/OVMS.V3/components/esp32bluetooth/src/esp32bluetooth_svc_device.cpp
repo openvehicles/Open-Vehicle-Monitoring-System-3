@@ -56,12 +56,11 @@ static esp_attr_value_t gatts_demo_char1_val =
 void ovms_ble_gatts_profile_device_event_handler(esp_gatts_cb_event_t event,
                      esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param)
   {
-  ESP_LOGD(TAG, "GATTS PROFILE event = %d\n",event);
-
   switch (event)
     {
     case ESP_GATTS_REG_EVT:
       {
+      ESP_LOGI(TAG,"ESP_GATTS_REG_EVT Creating service on interface %d",gatts_if);
       std::string devname = MyConfig.GetParamValue("vehicle", "id");
       if (devname.empty())
         {
@@ -71,42 +70,64 @@ void ovms_ble_gatts_profile_device_event_handler(esp_gatts_cb_event_t event,
         {
         devname.insert(0,"OVMS ");
         }
-      esp_ble_gap_set_device_name(devname.c_str());
-      esp_ble_gap_config_local_privacy(true);
-      ovms_ble_gap_config_advertising();
-
       ovms_gatts_profile_device.service_id.is_primary = true;
       ovms_gatts_profile_device.service_id.id.inst_id = 0x00;
       ovms_gatts_profile_device.service_id.id.uuid.len = ESP_UUID_LEN_16;
       ovms_gatts_profile_device.service_id.id.uuid.uuid.uuid16 = GATTS_SERVICE_UUID_OVMS_DEVICE;
-
-      ESP_LOGI(TAG,"Creating service on interface %d",gatts_if);
+      esp_ble_gap_set_device_name(devname.c_str());
+      esp_ble_gap_config_local_privacy(true);
+      ovms_ble_gap_config_advertising();
       esp_ble_gatts_create_service(gatts_if, &ovms_gatts_profile_device.service_id, GATTS_NUM_HANDLE_OVMS_DEVICE);
       }
       break;
     case ESP_GATTS_READ_EVT:
       {
-      ESP_LOGI(TAG, "GATT_READ_EVT, conn_id %d, trans_id %d, handle %d\n",
+      ESP_LOGI(TAG, "ESP_GATTS_READ_EVT, conn_id %d, trans_id %d, handle %d\n",
       param->read.conn_id, param->read.trans_id, param->read.handle);
-      break;
+      esp_gatt_rsp_t rsp;
+      memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
+      rsp.attr_value.handle = param->read.handle;
+      rsp.attr_value.len = 4;
+      rsp.attr_value.value[0] = 0xde;
+      rsp.attr_value.value[1] = 0xed;
+      rsp.attr_value.value[2] = 0xbe;
+      rsp.attr_value.value[3] = 0xef;
+      esp_ble_gatts_send_response(gatts_if,
+                                  param->read.conn_id,
+                                  param->read.trans_id,
+                                  ESP_GATT_OK, &rsp);
       }
     case ESP_GATTS_WRITE_EVT:
-      ESP_LOGI(TAG, "ESP_GATTS_WRITE_EVT, write value:");
-      esp_log_buffer_hex(TAG, param->write.value, param->write.len);
+      if (param->write.len < 64)
+        {
+        ESP_LOGI(TAG, "ESP_GATTS_WRITE_EVT, write %d bytes",param->write.len);
+        }
+      else
+        {
+        ESP_LOGI(TAG, "ESP_GATTS_WRITE_EVT, write value:");
+        //esp_log_buffer_hex(TAG, param->write.value, param->write.len);
+        }
       break;
     case ESP_GATTS_EXEC_WRITE_EVT:
+      ESP_LOGI(TAG,"ESP_GATTS_EXEC_WRITE_EVT");
       break;
     case ESP_GATTS_MTU_EVT:
+      ESP_LOGI(TAG,"ESP_GATTS_MTU_EVT");
       break;
     case ESP_GATTS_CONF_EVT:
+      ESP_LOGI(TAG,"ESP_GATTS_CONF_EVT");
       break;
     case ESP_GATTS_UNREG_EVT:
+      ESP_LOGI(TAG,"ESP_GATTS_UNREG_EVT");
       break;
     case ESP_GATTS_DELETE_EVT:
+      ESP_LOGI(TAG,"ESP_GATTS_DELETE_EVT");
       break;
     case ESP_GATTS_START_EVT:
+      ESP_LOGI(TAG,"ESP_GATTS_START_EVT");
       break;
     case ESP_GATTS_STOP_EVT:
+      ESP_LOGI(TAG,"ESP_GATTS_STOP_EVT");
       break;
     case ESP_GATTS_CONNECT_EVT:
       {
@@ -169,14 +190,19 @@ void ovms_ble_gatts_profile_device_event_handler(esp_gatts_cb_event_t event,
       break;
       }
     case ESP_GATTS_OPEN_EVT:
+      ESP_LOGI(TAG,"ESP_GATTS_OPEN_EVT");
       break;
     case ESP_GATTS_CANCEL_OPEN_EVT:
+      ESP_LOGI(TAG,"ESP_GATTS_CANCEL_OPEN_EVT");
       break;
     case ESP_GATTS_CLOSE_EVT:
+      ESP_LOGI(TAG,"ESP_GATTS_CLOSE_EVT");
       break;
     case ESP_GATTS_LISTEN_EVT:
+      ESP_LOGI(TAG,"ESP_GATTS_LISTEN_EVT");
       break;
     case ESP_GATTS_CONGEST_EVT:
+      ESP_LOGI(TAG,"ESP_GATTS_CONGEST_EVT");
       break;
     case ESP_GATTS_CREATE_EVT:
       {
@@ -184,7 +210,6 @@ void ovms_ble_gatts_profile_device_event_handler(esp_gatts_cb_event_t event,
       ovms_gatts_profile_device.service_handle = param->create.service_handle;
       ovms_gatts_profile_device.char_uuid.len = ESP_UUID_LEN_16;
       ovms_gatts_profile_device.char_uuid.uuid.uuid16 = GATTS_CHAR_UUID_OVMS_DEVICE;
-      esp_ble_gatts_start_service(ovms_gatts_profile_device.service_handle);
 
       a_property = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
       esp_err_t add_char_ret =
@@ -198,6 +223,8 @@ void ovms_ble_gatts_profile_device_event_handler(esp_gatts_cb_event_t event,
         {
         ESP_LOGE(TAG, "add char failed, error code =%x",add_char_ret);
         }
+
+      esp_ble_gatts_start_service(ovms_gatts_profile_device.service_handle);
       break;
       }
     case ESP_GATTS_ADD_CHAR_EVT:
@@ -232,11 +259,12 @@ void ovms_ble_gatts_profile_device_event_handler(esp_gatts_cb_event_t event,
       break;
       }
     case ESP_GATTS_ADD_CHAR_DESCR_EVT:
-      ESP_LOGI(TAG, "ADD_DESCR_EVT, status %d, attr_handle %d, service_handle %d\n",
+      ESP_LOGI(TAG, "ESP_GATTS_ADD_CHAR_DESCR_EVT, status %d, attr_handle %d, service_handle %d\n",
               param->add_char.status, param->add_char.attr_handle,
               param->add_char.service_handle);
       break;
     default:
+      ESP_LOGD(TAG, "GATTS PROFILE event = %d\n",event);
       break;
     }
   }

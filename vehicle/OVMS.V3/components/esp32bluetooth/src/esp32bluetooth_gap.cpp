@@ -144,11 +144,10 @@ void ovms_ble_gap_start_advertising()
 
 void ovms_ble_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
   {
-  ESP_LOGD(TAG, "GAP_EVT, event %d\n", event);
-
   switch (event)
     {
     case ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT:
+      ESP_LOGI(TAG,"ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT");
       adv_config_done &= (~SCAN_RSP_CONFIG_FLAG);
       if (adv_config_done == 0)
         {
@@ -156,6 +155,7 @@ void ovms_ble_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_par
         }
       break;
     case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
+      ESP_LOGI(TAG,"ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT");
       adv_config_done &= (~ADV_CONFIG_FLAG);
       if (adv_config_done == 0)
         {
@@ -166,25 +166,25 @@ void ovms_ble_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_par
       //advertising start complete event to indicate advertising start successfully or failed
       if (param->adv_start_cmpl.status != ESP_BT_STATUS_SUCCESS)
         {
-        ESP_LOGE(TAG, "advertising start failed, error status = %x", param->adv_start_cmpl.status);
+        ESP_LOGE(TAG, "ESP_GAP_BLE_ADV_START_COMPLETE_EVT advertising start failed, error status = %x", param->adv_start_cmpl.status);
         }
       else
         {
-        ESP_LOGI(TAG, "advertising start success");
+        ESP_LOGI(TAG, "ESP_GAP_BLE_ADV_START_COMPLETE_EVT advertising start success");
         }
       break;
     case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
       if (param->adv_stop_cmpl.status != ESP_BT_STATUS_SUCCESS)
         {
-        ESP_LOGE(TAG, "Advertising stop failed\n");
+        ESP_LOGE(TAG, "ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT Advertising stop failed\n");
         }
       else
         {
-        ESP_LOGI(TAG, "Stop adv successfully\n");
+        ESP_LOGI(TAG, "ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT Stop adv successfully\n");
         }
       break;
     case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
-      ESP_LOGI(TAG, "update connection params status = %d, min_int = %d, max_int = %d,conn_int = %d,latency = %d, timeout = %d",
+      ESP_LOGI(TAG, "ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT status = %d, min_int = %d, max_int = %d,conn_int = %d,latency = %d, timeout = %d",
               param->update_conn_params.status,
               param->update_conn_params.min_int,
               param->update_conn_params.max_int,
@@ -212,21 +212,22 @@ void ovms_ble_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_par
     case ESP_GAP_BLE_SEC_REQ_EVT:
       /* send the positive(true) security response to the peer device to accept the security request.
       If not accept the security request, should sent the security response with negative(false) accept value*/
+      ESP_LOGI(TAG,"ESP_GAP_BLE_SEC_REQ_EVT");
       esp_ble_gap_security_rsp(param->ble_security.ble_req.bd_addr, true);
       break;
     case ESP_GAP_BLE_PASSKEY_NOTIF_EVT:  ///the app will receive this evt when the IO  has Output capability and the peer device IO has Input capability.
       ///show the passkey number to the user to input it in the peer deivce.
-      ESP_LOGI(TAG, "The passkey Notify number:%d", param->ble_security.key_notif.passkey);
+      ESP_LOGI(TAG, "ESP_GAP_BLE_PASSKEY_NOTIF_EVT passkey: %d", param->ble_security.key_notif.passkey);
       break;
     case ESP_GAP_BLE_KEY_EVT:
       //shows the ble key info share with peer device to the user.
-      ESP_LOGI(TAG, "key type = %s", esp_key_type_to_str(param->ble_security.ble_key.key_type));
+      ESP_LOGI(TAG, "ESP_GAP_BLE_KEY_EVT key type = %s", esp_key_type_to_str(param->ble_security.ble_key.key_type));
       break;
     case ESP_GAP_BLE_AUTH_CMPL_EVT:
       {
       esp_bd_addr_t bd_addr;
       memcpy(bd_addr, param->ble_security.auth_cmpl.bd_addr, sizeof(esp_bd_addr_t));
-      ESP_LOGI(TAG, "remote BD_ADDR: %02x:%02x:%02x:%02x:%02x:%02x",
+      ESP_LOGI(TAG, "ESP_GAP_BLE_AUTH_CMPL_EVT remote BD_ADDR: %02x:%02x:%02x:%02x:%02x:%02x",
               bd_addr[0], bd_addr[1], bd_addr[2],
               bd_addr[3], bd_addr[4], bd_addr[5]);
       ESP_LOGI(TAG, "address type = %d", param->ble_security.auth_cmpl.addr_type);
@@ -249,25 +250,22 @@ void ovms_ble_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_par
       }
     case ESP_GAP_BLE_REMOVE_BOND_DEV_COMPLETE_EVT:
       {
-      ESP_LOGD(TAG, "ESP_GAP_BLE_REMOVE_BOND_DEV_COMPLETE_EVT status = %d", param->remove_bond_dev_cmpl.status);
-      ESP_LOGI(TAG, "ESP_GAP_BLE_REMOVE_BOND_DEV");
-      ESP_LOGI(TAG, "-----ESP_GAP_BLE_REMOVE_BOND_DEV----");
+      ESP_LOGI(TAG, "ESP_GAP_BLE_REMOVE_BOND_DEV_COMPLETE_EVT status = %d", param->remove_bond_dev_cmpl.status);
       esp_log_buffer_hex(TAG, (void *)param->remove_bond_dev_cmpl.bd_addr, sizeof(esp_bd_addr_t));
-      ESP_LOGI(TAG, "------------------------------------");
       break;
       }
     case ESP_GAP_BLE_SET_LOCAL_PRIVACY_COMPLETE_EVT:
       {
       if (param->local_privacy_cmpl.status != ESP_BT_STATUS_SUCCESS)
         {
-        ESP_LOGE(TAG, "config local privacy failed, error status = %x", param->local_privacy_cmpl.status);
+        ESP_LOGE(TAG, "ESP_GAP_BLE_SET_LOCAL_PRIVACY_COMPLETE_EVT config local privacy failed, error status = %x", param->local_privacy_cmpl.status);
         break;
         }
 
       esp_err_t ret = esp_ble_gap_config_adv_data(&ovms_adv_config);
       if (ret)
         {
-        ESP_LOGE(TAG, "config adv data failed, error code = %x", ret);
+        ESP_LOGE(TAG, "ESP_GAP_BLE_SET_LOCAL_PRIVACY_COMPLETE_EVT config adv data failed, error code = %x", ret);
         }
       else
         {
@@ -277,15 +275,17 @@ void ovms_ble_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_par
       ret = esp_ble_gap_config_adv_data(&ovms_scan_rsp_config);
       if (ret)
         {
-        ESP_LOGE(TAG, "config adv data failed, error code = %x", ret);
+        ESP_LOGE(TAG, "ESP_GAP_BLE_SET_LOCAL_PRIVACY_COMPLETE_EVT config adv data failed, error code = %x", ret);
         }
       else
         {
+        ESP_LOGI(TAG, "ESP_GAP_BLE_SET_LOCAL_PRIVACY_COMPLETE_EVT config done");
         adv_config_done |= SCAN_RSP_CONFIG_FLAG;
         }
       break;
       }
     default:
+      ESP_LOGD(TAG, "GAP_EVT, event %d\n", event);
       break;
     }
   }

@@ -33,6 +33,7 @@
 #include "esp32bluetooth_gatts.h"
 #include "esp32bluetooth_svc_device.h"
 #include "esp32bluetooth_svc_metrics.h"
+#include "esp32bluetooth_svc_console.h"
 
 #include "ovms_log.h"
 static const char *TAG = "bt-gatts";
@@ -40,9 +41,6 @@ static const char *TAG = "bt-gatts";
 void ovms_ble_gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if,
                                   esp_ble_gatts_cb_param_t *param)
   {
-  ESP_LOGD(TAG, "GATTS_EVT, event %d (interface %d)\n",
-    event, gatts_if);
-
   /* If event is register event, store the gatts_if for each profile */
   if (event == ESP_GATTS_REG_EVT)
     {
@@ -50,20 +48,26 @@ void ovms_ble_gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatt
       {
       if (param->reg.app_id == GATTS_APP_UUID_OVMS_DEVICE)
         {
-        ESP_LOGI(TAG,"Reg DEVICE app %04x succeeded with inteface ID %d",
+        ESP_LOGI(TAG,"ESP_GATTS_REG_EVT DEVICE app %04x succeeded with interface ID %d",
           param->reg.app_id, gatts_if);
         ovms_gatts_profile_device.gatts_if = gatts_if;
         }
       else if (param->reg.app_id == GATTS_APP_UUID_OVMS_METRICS)
         {
-        ESP_LOGI(TAG,"Reg METRICS app %04x succeeded with inteface ID %d",
+        ESP_LOGI(TAG,"ESP_GATTS_REG_EVT METRICS app %04x succeeded with interface ID %d",
           param->reg.app_id, gatts_if);
         ovms_gatts_profile_metrics.gatts_if = gatts_if;
+        }
+      else if (param->reg.app_id == GATTS_APP_UUID_OVMS_CONSOLE)
+        {
+        ESP_LOGI(TAG,"ESP_GATTS_REG_EVT CONSOLE app %04x succeeded with interface ID %d",
+          param->reg.app_id, gatts_if);
+        ovms_gatts_profile_console.gatts_if = gatts_if;
         }
       }
     else
       {
-      ESP_LOGI(TAG, "Reg app failed, app_id %04x, status %d\n",
+      ESP_LOGI(TAG, "ESP_GATTS_REG_EVT Reg app failed, app_id %04x, status %d\n",
                param->reg.app_id,
                param->reg.status);
       return;
@@ -77,6 +81,10 @@ void ovms_ble_gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatt
   if ((gatts_if == ESP_GATT_IF_NONE) ||
       (gatts_if == ovms_gatts_profile_metrics.gatts_if))
     ovms_gatts_profile_metrics.gatts_cb(event, gatts_if, param);
+
+  if ((gatts_if == ESP_GATT_IF_NONE) ||
+      (gatts_if == ovms_gatts_profile_console.gatts_if))
+    ovms_gatts_profile_console.gatts_cb(event, gatts_if, param);
   }
 
 uint16_t ovms_ble_gatts_if()
@@ -91,14 +99,21 @@ void ovms_ble_gatts_register()
   ret = esp_ble_gatts_app_register(GATTS_APP_UUID_OVMS_DEVICE);
   if (ret)
     {
-    ESP_LOGE(TAG, "gatts app register error, error code = %x", ret);
+    ESP_LOGE(TAG, "gatts DEVICE app register error, error code = %x", ret);
     return;
     }
 
   ret = esp_ble_gatts_app_register(GATTS_APP_UUID_OVMS_METRICS);
   if (ret)
     {
-    ESP_LOGE(TAG, "gatts app register error, error code = %x", ret);
+    ESP_LOGE(TAG, "gatts METRICS app register error, error code = %x", ret);
+    return;
+    }
+
+  ret = esp_ble_gatts_app_register(GATTS_APP_UUID_OVMS_CONSOLE);
+  if (ret)
+    {
+    ESP_LOGE(TAG, "gatts CONSOLE app register error, error code = %x", ret);
     return;
     }
   }
@@ -106,5 +121,6 @@ void ovms_ble_gatts_register()
 void ovms_ble_gatts_init()
   {
   ovms_ble_gatts_profile_device_init();
+  ovms_ble_gatts_profile_console_init();
   ovms_ble_gatts_profile_metrics_init();
   }
