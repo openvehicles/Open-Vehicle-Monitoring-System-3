@@ -382,10 +382,13 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           else
             {
             StandardMetrics.ms_v_env_on->SetValue(false);
-            m_speedo_running = false;
-            xTimerStop(m_speedo_timer,0);
-            xTimerDelete(m_speedo_timer,0);
-            m_speedo_timer = NULL;
+            if (m_speedo_running)
+              {
+              m_speedo_running = false;
+              xTimerStop(m_speedo_timer,0);
+              xTimerDelete(m_speedo_timer,0);
+              m_speedo_timer = NULL;
+              }
             }
 
           break;
