@@ -2,6 +2,11 @@ Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
 
+2018-08-26 MWJ  3.1.010  OTA release
+- TeslaRoadster: Fix for digital speedo bug
+- Bluetooth: Improvements towards bluetooth BLE support
+- Server v2: Add cabin temperature to "D" message
+
 2018-08-15 MWJ  3.1.009  OTA release
 - Tesla Roadster: COOLDOWN command implementation
 - Tesla Roadster: Charge Timer support
