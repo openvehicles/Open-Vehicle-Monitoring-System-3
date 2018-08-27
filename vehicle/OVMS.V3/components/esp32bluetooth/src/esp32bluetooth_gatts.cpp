@@ -207,9 +207,24 @@ void esp32bluetoothGATTS::EventHandler(esp_gatts_cb_event_t event,
       switch (event)
         {
         case ESP_GATTS_REG_EVT:
+          {
           ESP_LOGI(TAG, "ESP_GATTS_REG_EVT/%s",app->m_name);
+
+          std::string devname = MyConfig.GetParamValue("vehicle", "id");
+          if (devname.empty())
+            {
+            devname = std::string("OVMS");
+            }
+          else
+            {
+            devname.insert(0,"OVMS ");
+            }
+          esp_ble_gap_set_device_name(devname.c_str());
+          esp_ble_gap_config_local_privacy(true);
+
           app->EventRegistered(&param->reg);
           break;
+          }
         case ESP_GATTS_READ_EVT:
           ESP_LOGI(TAG, "ESP_GATTS_READ_EVT/%s conn_id %d, trans_id %d, handle %d",
             app->m_name,

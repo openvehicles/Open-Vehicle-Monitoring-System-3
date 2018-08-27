@@ -98,7 +98,7 @@ void OvmsBluetoothAppMetrics::EventCreate(esp_ble_gatts_cb_param_t::gatts_add_at
   esp_err_t add_char_ret =
     esp_ble_gatts_add_char(m_service_handle,
                           &m_char_uuid,
-                          ESP_GATT_PERM_READ,
+                          ESP_GATT_PERM_READ_ENC_MITM,
                           a_property,
                           &gatts_demo_char1_val,
                           NULL);

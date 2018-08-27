@@ -31,7 +31,6 @@
 #include <string.h>
 #include "esp_system.h"
 #include "esp32bluetooth_app_device.h"
-#include "ovms_config.h"
 
 #include "ovms_log.h"
 static const char *TAG = "bt-app-device";
@@ -65,15 +64,6 @@ OvmsBluetoothAppDevice::~OvmsBluetoothAppDevice()
 
 void OvmsBluetoothAppDevice::EventRegistered(esp_ble_gatts_cb_param_t::gatts_reg_evt_param *reg)
   {
-  std::string devname = MyConfig.GetParamValue("vehicle", "id");
-  if (devname.empty())
-    {
-    devname = std::string("OVMS");
-    }
-  else
-    {
-    devname.insert(0,"OVMS ");
-    }
   m_service_id.is_primary = true;
   m_service_id.id.inst_id = 0x00;
   m_service_id.id.uuid.len = ESP_UUID_LEN_16;
@@ -81,8 +71,6 @@ void OvmsBluetoothAppDevice::EventRegistered(esp_ble_gatts_cb_param_t::gatts_reg
   ESP_LOGI(TAG,"ESP_GATTS_REG_EVT Creating service %04x on interface %d",
     m_service_id.id.uuid.uuid.uuid16,
     m_gatts_if);
-  esp_ble_gap_set_device_name(devname.c_str());
-  esp_ble_gap_config_local_privacy(true);
   esp_ble_gatts_create_service(m_gatts_if, &m_service_id, GATTS_NUM_HANDLE_OVMS_DEVICE);
   }
 
@@ -110,7 +98,7 @@ void OvmsBluetoothAppDevice::EventCreate(esp_ble_gatts_cb_param_t::gatts_add_att
   esp_err_t add_char_ret =
     esp_ble_gatts_add_char(m_service_handle,
                           &m_char_uuid,
-                          ESP_GATT_PERM_READ,
+                          ESP_GATT_PERM_READ_ENC_MITM,
                           a_property,
                           &gatts_demo_char1_val,
                           NULL);
