@@ -63,9 +63,6 @@ void esp32bluetooth::StartService()
 
   ESP_LOGI(TAG,"Powering bluetooth on...");
 
-  ovms_ble_gap_init();
-  ovms_ble_gatts_init();
-
   esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
   ret = esp_bt_controller_init(&bt_cfg);
   if (ret)
@@ -95,21 +92,9 @@ void esp32bluetooth::StartService()
     return;
     }
 
-  ret = esp_ble_gatts_register_callback(ovms_ble_gatts_event_handler);
-  if (ret)
-    {
-    ESP_LOGE(TAG, "gatts register error, error code = %x", ret);
-    return;
-    }
-
-  ret = esp_ble_gap_register_callback(ovms_ble_gap_event_handler);
-  if (ret)
-    {
-    ESP_LOGE(TAG, "gap register error, error code = %x", ret);
-    return;
-    }
-
-  ovms_ble_gatts_register();
+  MyBluetoothGATTS.RegisterForEvents();
+  MyBluetoothGAP.RegisterForEvents();
+  MyBluetoothGATTS.RegisterAllApps();
 
   /* set the security iocap & auth_req & key size & init key response key parameters to the stack*/
   esp_ble_auth_req_t auth_req = ESP_LE_AUTH_BOND;     //bonding with peer device after authentication
@@ -142,12 +127,7 @@ void esp32bluetooth::StopService()
 
   ESP_LOGI(TAG,"Powering bluetooth off...");
 
-  ret = esp_ble_gatts_app_unregister(ovms_ble_gatts_if());
-  if (ret)
-    {
-    ESP_LOGE(TAG, "gatts app unregister error, error code = %x", ret);
-    return;
-    }
+  MyBluetoothGATTS.UnregisterAllApps();
 
   ret = esp_bluedroid_disable();
   if (ret)

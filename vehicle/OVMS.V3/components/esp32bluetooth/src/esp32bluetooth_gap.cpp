@@ -36,17 +36,14 @@
 #include "ovms_log.h"
 static const char *TAG = "bt-gap";
 
+esp32bluetoothGAP MyBluetoothGAP __attribute__ ((init_priority (8011)));
+
 #define ADV_CONFIG_FLAG             (1 << 0)
 #define SCAN_RSP_CONFIG_FLAG        (1 << 1)
 
-static uint8_t adv_config_done = 0;
 static uint8_t ovms_manufacturer[4]={'O', 'V', 'M', 'S'};
 static uint8_t ovms_sec_service_uuid[16] = // LSB ... MSB
   { 0x76, 0x5d, 0xf7, 0x40, 0xcc, 0x70, 0x0a, 0xb6, 0xbb, 0x43, 0x08, 0x30, 0x38, 0xcb, 0x2f, 0xe7 };
-
-static esp_ble_adv_data_t ovms_adv_config;
-static esp_ble_adv_data_t ovms_scan_rsp_config;
-static esp_ble_adv_params_t ovms_adv_params;
 
 static const char *esp_key_type_to_str(esp_ble_key_type_t key_type)
   {
@@ -89,77 +86,86 @@ static const char *esp_key_type_to_str(esp_ble_key_type_t key_type)
   return key_str;
   }
 
-void ovms_ble_gap_init()
+void ble_gap_event_handler(esp_gap_ble_cb_event_t event,
+                           esp_ble_gap_cb_param_t *param)
   {
-  memset(&ovms_adv_config,0,sizeof(ovms_adv_config));
-  ovms_adv_config.set_scan_rsp = false;
-  ovms_adv_config.include_txpower = true;
-  ovms_adv_config.min_interval = 0x100;
-  ovms_adv_config.max_interval = 0x100;
-  ovms_adv_config.appearance = 0x00;
-  ovms_adv_config.manufacturer_len = 0;
-  ovms_adv_config.p_manufacturer_data =  NULL;
-  ovms_adv_config.service_data_len = 0;
-  ovms_adv_config.p_service_data = NULL;
-  ovms_adv_config.service_uuid_len = sizeof(ovms_sec_service_uuid);
-  ovms_adv_config.p_service_uuid = ovms_sec_service_uuid;
-  ovms_adv_config.flag = (ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_BREDR_NOT_SPT);
-
-  memset(&ovms_scan_rsp_config,0,sizeof(ovms_scan_rsp_config));
-  ovms_scan_rsp_config.set_scan_rsp = true;
-  ovms_scan_rsp_config.include_name = true;
-  ovms_scan_rsp_config.manufacturer_len = sizeof(ovms_manufacturer);
-  ovms_scan_rsp_config.p_manufacturer_data = ovms_manufacturer;
-
-  memset(&ovms_adv_params,0,sizeof(ovms_adv_params));
-  ovms_adv_params.adv_int_min        = 0x100;
-  ovms_adv_params.adv_int_max        = 0x100;
-  ovms_adv_params.adv_type           = ADV_TYPE_IND;
-  ovms_adv_params.own_addr_type      = BLE_ADDR_TYPE_RANDOM;
-  ovms_adv_params.channel_map        = ADV_CHNL_ALL;
-  ovms_adv_params.adv_filter_policy  = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY;
+  MyBluetoothGAP.EventHandler(event, param);
   }
 
-void ovms_ble_gap_config_advertising()
+esp32bluetoothGAP::esp32bluetoothGAP()
   {
-  esp_err_t ret = esp_ble_gap_config_adv_data(&ovms_adv_config);
+  ESP_LOGI(TAG, "Initialising Bluetooth GAP (8011)");
+
+  m_adv_config_done = 0;
+
+  memset(&m_adv_config,0,sizeof(m_adv_config));
+  m_adv_config.set_scan_rsp = false;
+  m_adv_config.include_txpower = true;
+  m_adv_config.min_interval = 0x100;
+  m_adv_config.max_interval = 0x100;
+  m_adv_config.appearance = 0x00;
+  m_adv_config.manufacturer_len = 0;
+  m_adv_config.p_manufacturer_data =  NULL;
+  m_adv_config.service_data_len = 0;
+  m_adv_config.p_service_data = NULL;
+  m_adv_config.service_uuid_len = sizeof(ovms_sec_service_uuid);
+  m_adv_config.p_service_uuid = ovms_sec_service_uuid;
+  m_adv_config.flag = (ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_BREDR_NOT_SPT);
+
+  memset(&m_scan_rsp_config,0,sizeof(m_scan_rsp_config));
+  m_scan_rsp_config.set_scan_rsp = true;
+  m_scan_rsp_config.include_name = true;
+  m_scan_rsp_config.manufacturer_len = sizeof(ovms_manufacturer);
+  m_scan_rsp_config.p_manufacturer_data = ovms_manufacturer;
+
+  memset(&m_adv_params,0,sizeof(m_adv_params));
+  m_adv_params.adv_int_min        = 0x100;
+  m_adv_params.adv_int_max        = 0x100;
+  m_adv_params.adv_type           = ADV_TYPE_IND;
+  m_adv_params.own_addr_type      = BLE_ADDR_TYPE_RANDOM;
+  m_adv_params.channel_map        = ADV_CHNL_ALL;
+  m_adv_params.adv_filter_policy  = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY;
+  }
+
+esp32bluetoothGAP::~esp32bluetoothGAP()
+  {
+  }
+
+void esp32bluetoothGAP::StartAdvertising()
+  {
+  ESP_LOGI(TAG,"Starting advertising");
+  esp_ble_gap_start_advertising(&m_adv_params);
+  }
+
+void esp32bluetoothGAP::RegisterForEvents()
+  {
+  esp_err_t ret = esp_ble_gap_register_callback(ble_gap_event_handler);
   if (ret)
     {
-    ESP_LOGE(TAG, "config adv data failed, error code = %x", ret);
+    ESP_LOGE(TAG, "gap register error, error code = %x", ret);
+    return;
     }
-  adv_config_done |= ADV_CONFIG_FLAG;
-
-  ret = esp_ble_gap_config_adv_data(&ovms_scan_rsp_config);
-  if (ret)
-    {
-    ESP_LOGE(TAG, "config scan response data failed, error code = %x", ret);
-    }
-  adv_config_done |= SCAN_RSP_CONFIG_FLAG;
   }
 
-void ovms_ble_gap_start_advertising()
-  {
-  esp_ble_gap_start_advertising(&ovms_adv_params);
-  }
-
-void ovms_ble_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
+void esp32bluetoothGAP::EventHandler(esp_gap_ble_cb_event_t event,
+                                     esp_ble_gap_cb_param_t *param)
   {
   switch (event)
     {
     case ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT:
       ESP_LOGI(TAG,"ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT");
-      adv_config_done &= (~SCAN_RSP_CONFIG_FLAG);
-      if (adv_config_done == 0)
+      m_adv_config_done &= (~SCAN_RSP_CONFIG_FLAG);
+      if (m_adv_config_done == 0)
         {
-        ovms_ble_gap_start_advertising();
+        StartAdvertising();
         }
       break;
     case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
       ESP_LOGI(TAG,"ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT");
-      adv_config_done &= (~ADV_CONFIG_FLAG);
-      if (adv_config_done == 0)
+      m_adv_config_done &= (~ADV_CONFIG_FLAG);
+      if (m_adv_config_done == 0)
         {
-        ovms_ble_gap_start_advertising();
+        StartAdvertising();
         }
       break;
     case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
@@ -207,7 +213,7 @@ void ovms_ble_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_par
     case ESP_GAP_BLE_NC_REQ_EVT:
       /* The app will receive this evt when the IO has DisplayYesNO capability and the peer device IO also has DisplayYesNo capability.
       show the passkey number to the user to confirm it with the number displayed by peer deivce. */
-      ESP_LOGI(TAG, "ESP_GAP_BLE_NC_REQ_EVT, the passkey Notify number:%d", param->ble_security.key_notif.passkey);
+      ESP_LOGI(TAG, "ESP_GAP_BLE_NC_REQ_EVT, the passkey Notify number: %d", param->ble_security.key_notif.passkey);
       break;
     case ESP_GAP_BLE_SEC_REQ_EVT:
       /* send the positive(true) security response to the peer device to accept the security request.
@@ -244,8 +250,6 @@ void ovms_ble_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_par
           bd_addr[5]);
         MyEvents.SignalEvent(signal, NULL);
         }
-
-      //show_bonded_devices();
       break;
       }
     case ESP_GAP_BLE_REMOVE_BOND_DEV_COMPLETE_EVT:
@@ -262,17 +266,17 @@ void ovms_ble_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_par
         break;
         }
 
-      esp_err_t ret = esp_ble_gap_config_adv_data(&ovms_adv_config);
+      esp_err_t ret = esp_ble_gap_config_adv_data(&m_adv_config);
       if (ret)
         {
         ESP_LOGE(TAG, "ESP_GAP_BLE_SET_LOCAL_PRIVACY_COMPLETE_EVT config adv data failed, error code = %x", ret);
         }
       else
         {
-        adv_config_done |= ADV_CONFIG_FLAG;
+        m_adv_config_done |= ADV_CONFIG_FLAG;
         }
 
-      ret = esp_ble_gap_config_adv_data(&ovms_scan_rsp_config);
+      ret = esp_ble_gap_config_adv_data(&m_scan_rsp_config);
       if (ret)
         {
         ESP_LOGE(TAG, "ESP_GAP_BLE_SET_LOCAL_PRIVACY_COMPLETE_EVT config adv data failed, error code = %x", ret);
@@ -280,9 +284,9 @@ void ovms_ble_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_par
       else
         {
         ESP_LOGI(TAG, "ESP_GAP_BLE_SET_LOCAL_PRIVACY_COMPLETE_EVT config done");
-        adv_config_done |= SCAN_RSP_CONFIG_FLAG;
+        m_adv_config_done |= SCAN_RSP_CONFIG_FLAG;
         }
-      break;
+        break;
       }
     default:
       ESP_LOGD(TAG, "GAP_EVT, event %d\n", event);

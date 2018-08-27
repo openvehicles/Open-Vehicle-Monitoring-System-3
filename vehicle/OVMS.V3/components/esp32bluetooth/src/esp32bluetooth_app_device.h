@@ -28,20 +28,29 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __ESP32BLUETOOTH_SVC_METRICS_H__
-#define __ESP32BLUETOOTH_SVC_METRICS_H__
+#ifndef __ESP32BLUETOOTH_SVC_DEVICE_H__
+#define __ESP32BLUETOOTH_SVC_DEVICE_H__
 
 #include "esp32bluetooth.h"
 #include "esp32bluetooth_gatts.h"
 
-#define GATTS_APP_UUID_OVMS_METRICS       0x30
-#define GATTS_SERVICE_UUID_OVMS_METRICS   0x3051
-#define GATTS_CHAR_UUID_OVMS_METRICS      0x3052
-#define GATTS_DESCR_UUID_OVMS_METRICS     0x3053
-#define GATTS_NUM_HANDLE_OVMS_METRICS     4
+#define GATTS_APP_UUID_OVMS_DEVICE       0x10
+#define GATTS_SERVICE_UUID_OVMS_DEVICE   0x1041
+#define GATTS_CHAR_UUID_OVMS_DEVICE      0x1042
+#define GATTS_DESCR_UUID_OVMS_DEVICE     0x1043
+#define GATTS_NUM_HANDLE_OVMS_DEVICE     4
 
-extern struct gatts_profile_inst ovms_gatts_profile_metrics;
+class OvmsBluetoothAppDevice : public esp32bluetoothApp
+  {
+  public:
+    OvmsBluetoothAppDevice();
+    ~OvmsBluetoothAppDevice();
 
-void ovms_ble_gatts_profile_metrics_init();
+  public:
+    void EventRegistered(esp_ble_gatts_cb_param_t::gatts_reg_evt_param *reg);
+    void EventRead(esp_ble_gatts_cb_param_t::gatts_read_evt_param *read);
+    void EventCreate(esp_ble_gatts_cb_param_t::gatts_add_attr_tab_evt_param *attrtab);
+    void EventAddChar(esp_ble_gatts_cb_param_t::gatts_add_char_evt_param *addchar);
+  };
 
-#endif //#ifndef __ESP32BLUETOOTH_SVC_METRICS_H__
+#endif //#ifndef __ESP32BLUETOOTH_SVC_DEVICE_H__
