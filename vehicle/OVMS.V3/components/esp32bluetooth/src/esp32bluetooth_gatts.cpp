@@ -51,12 +51,7 @@ esp32bluetoothApp::esp32bluetoothApp(const char* name)
   m_conn_id = 0;
   m_service_handle = 0;
   memset(&m_service_id, 0, sizeof(m_service_id));
-  m_char_handle = 0;
-  memset(&m_char_uuid, 0, sizeof(m_char_uuid));
-  m_perm = 0;
-  m_property = 0;
-  m_descr_handle = 0;
-  memset(&m_descr_uuid, 0, sizeof(m_descr_uuid));
+  m_mtu = 0;
   }
 
 esp32bluetoothApp::~esp32bluetoothApp()
@@ -232,17 +227,25 @@ void esp32bluetoothGATTS::EventHandler(esp_gatts_cb_event_t event,
           app->EventRead(&param->read);
           break;
         case ESP_GATTS_WRITE_EVT:
-          ESP_LOGI(TAG, "ESP_GATTS_WRITE_EVT/%s write %d bytes, value:",
-            app->m_name, param->write.len);
+          ESP_LOGI(TAG, "ESP_GATTS_WRITE_EVT/%s conn_id %d, trans_id %d, handle %d, write %d bytes, value:",
+            app->m_name,
+            param->write.conn_id, param->write.trans_id, param->write.handle,
+            param->write.len);
           esp_log_buffer_hex(TAG, param->write.value, param->write.len);
           app->EventWrite(&param->write);
           break;
         case ESP_GATTS_EXEC_WRITE_EVT:
-          ESP_LOGI(TAG, "ESP_GATTS_EXEC_WRITE_EVT/%s",app->m_name);
+          ESP_LOGI(TAG, "ESP_GATTS_EXEC_WRITE_EVT/%s conn_id %d, trans_id %d",
+            app->m_name,
+            param->exec_write.conn_id, param->exec_write.trans_id);
           app->EventExecWrite(&param->exec_write);
           break;
         case ESP_GATTS_MTU_EVT:
-          ESP_LOGI(TAG, "ESP_GATTS_MTU_EVT/%s",app->m_name);
+          ESP_LOGI(TAG, "ESP_GATTS_MTU_EVT/%s conn_id %d, mtu %d",
+            app->m_name,
+            param->mtu.conn_id,
+            param->mtu.mtu);
+          app->m_mtu = param->mtu.mtu;
           app->EventMTU(&param->mtu);
           break;
         case ESP_GATTS_CONF_EVT:
@@ -372,7 +375,6 @@ void esp32bluetoothGATTS::EventHandler(esp_gatts_cb_event_t event,
             param->add_char.status,
             param->add_char.attr_handle,
             param->add_char.service_handle);
-          app->m_char_handle = param->add_char.attr_handle;
           app->EventAddChar(&param->add_char);
           break;
         case ESP_GATTS_ADD_CHAR_DESCR_EVT:

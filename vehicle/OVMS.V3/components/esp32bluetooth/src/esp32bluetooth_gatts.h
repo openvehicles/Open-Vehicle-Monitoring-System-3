@@ -70,12 +70,7 @@ class esp32bluetoothApp
     uint16_t m_conn_id;
     uint16_t m_service_handle;
     esp_gatt_srvc_id_t m_service_id;
-    uint16_t m_char_handle;
-    esp_bt_uuid_t m_char_uuid;
-    esp_gatt_perm_t m_perm;
-    esp_gatt_char_prop_t m_property;
-    uint16_t m_descr_handle;
-    esp_bt_uuid_t m_descr_uuid;
+    uint16_t m_mtu;
   };
 
 class esp32bluetoothGATTS

@@ -54,8 +54,16 @@ OvmsBluetoothAppDevice::OvmsBluetoothAppDevice()
   : esp32bluetoothApp("device")
   {
   ESP_LOGI(TAG, "Initialising Bluetooth DEVICE App (8015)");
+
+  m_char_handle = 0;
+  memset(&m_char_uuid, 0, sizeof(m_char_uuid));
+  m_perm = 0;
+  m_property = 0;
+  m_descr_handle = 0;
+  memset(&m_descr_uuid, 0, sizeof(m_descr_uuid));
+
   m_app_id = GATTS_APP_UUID_OVMS_DEVICE;
-  MyBluetoothGATTS.RegisterApp(this);
+  //MyBluetoothGATTS.RegisterApp(this);
   }
 
 OvmsBluetoothAppDevice::~OvmsBluetoothAppDevice()
@@ -115,18 +123,13 @@ void OvmsBluetoothAppDevice::EventAddChar(esp_ble_gatts_cb_param_t::gatts_add_ch
   uint16_t length = 0;
   const uint8_t *prf_char;
 
+  m_char_handle = addchar->attr_handle;
   m_descr_uuid.len = ESP_UUID_LEN_16;
   m_descr_uuid.uuid.uuid16 = ESP_GATT_UUID_CHAR_CLIENT_CONFIG;
   esp_err_t get_attr_ret = esp_ble_gatts_get_attr_value(addchar->attr_handle, &length, &prf_char);
   if (get_attr_ret == ESP_FAIL)
     {
     ESP_LOGE(TAG, "ILLEGAL HANDLE");
-    }
-
-  ESP_LOGI(TAG, "the gatts demo char length = %x\n", length);
-  for (int i = 0; i < length; i++)
-    {
-    ESP_LOGI(TAG, "prf_char[%x] = %x\n",i,prf_char[i]);
     }
 
   esp_err_t add_descr_ret = esp_ble_gatts_add_char_descr(

@@ -35,9 +35,9 @@
 #include "esp32bluetooth_gatts.h"
 
 #define GATTS_APP_UUID_OVMS_CONSOLE     0x20
-#define GATTS_SERVICE_UUID_OVMS_CONSOLE 0xfff1
-#define GATTS_CHAR_UUID_OVMS_CONSOLE    0xfff2
-#define GATTS_DESCR_UUID_OVMS_CONSOLE   0xfff3
+#define GATTS_SERVICE_UUID_OVMS_CONSOLE 0xffe1
+#define GATTS_CHAR_UUID_OVMS_CONSOLE    0xffe1
+#define GATTS_DESCR_UUID_OVMS_CONSOLE   0xffe2
 #define GATTS_NUM_HANDLE_OVMS_CONSOLE   4
 
 class OvmsBluetoothAppConsole : public esp32bluetoothApp
@@ -47,10 +47,24 @@ class OvmsBluetoothAppConsole : public esp32bluetoothApp
     ~OvmsBluetoothAppConsole();
 
   public:
+    void DataFromConsole(uint8_t* data, size_t len);
     void EventRegistered(esp_ble_gatts_cb_param_t::gatts_reg_evt_param *reg);
-    void EventRead(esp_ble_gatts_cb_param_t::gatts_read_evt_param *read);
     void EventCreate(esp_ble_gatts_cb_param_t::gatts_add_attr_tab_evt_param *attrtab);
+    void EventDisconnect(esp_ble_gatts_cb_param_t::gatts_disconnect_evt_param *disconnect);
     void EventAddChar(esp_ble_gatts_cb_param_t::gatts_add_char_evt_param *addchar);
+    void EventAddCharDescr(esp_ble_gatts_cb_param_t::gatts_add_char_descr_evt_param *adddescr);
+    void EventRead(esp_ble_gatts_cb_param_t::gatts_read_evt_param *read);
+    void EventWrite(esp_ble_gatts_cb_param_t::gatts_write_evt_param *write);
+    void EventExecWrite(esp_ble_gatts_cb_param_t::gatts_exec_write_evt_param *execwrite);
+
+  private:
+    uint16_t m_char_handle;
+    esp_bt_uuid_t m_char_uuid;
+    esp_gatt_perm_t m_perm;
+    esp_gatt_char_prop_t m_property;
+    uint16_t m_descr_handle;
+    esp_bt_uuid_t m_descr_uuid;
+    bool m_notifying;
   };
 
 #endif //#ifndef __ESP32BLUETOOTH_SVC_CONSOLE_H__

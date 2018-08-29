@@ -51,6 +51,14 @@ class OvmsBluetoothAppDevice : public esp32bluetoothApp
     void EventRead(esp_ble_gatts_cb_param_t::gatts_read_evt_param *read);
     void EventCreate(esp_ble_gatts_cb_param_t::gatts_add_attr_tab_evt_param *attrtab);
     void EventAddChar(esp_ble_gatts_cb_param_t::gatts_add_char_evt_param *addchar);
+
+  private:
+    uint16_t m_char_handle;
+    esp_bt_uuid_t m_char_uuid;
+    esp_gatt_perm_t m_perm;
+    esp_gatt_char_prop_t m_property;
+    uint16_t m_descr_handle;
+    esp_bt_uuid_t m_descr_uuid;
   };
 
 #endif //#ifndef __ESP32BLUETOOTH_SVC_DEVICE_H__
