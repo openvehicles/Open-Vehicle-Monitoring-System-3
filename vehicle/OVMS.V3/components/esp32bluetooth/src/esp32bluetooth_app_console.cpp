@@ -62,6 +62,7 @@ OvmsBluetoothAppConsole::OvmsBluetoothAppConsole()
   m_descr_handle = 0;
   memset(&m_descr_uuid, 0, sizeof(m_descr_uuid));
   m_notifying = false;
+  m_console = NULL;
 
   m_app_id = GATTS_APP_UUID_OVMS_CONSOLE;
   MyBluetoothGATTS.RegisterApp(this);
@@ -69,6 +70,11 @@ OvmsBluetoothAppConsole::OvmsBluetoothAppConsole()
 
 OvmsBluetoothAppConsole::~OvmsBluetoothAppConsole()
   {
+  if (m_console)
+    {
+    delete m_console;
+    m_console = NULL;
+    }
   }
 
 void OvmsBluetoothAppConsole::DataFromConsole(uint8_t* data, size_t len)
@@ -118,15 +124,28 @@ void OvmsBluetoothAppConsole::EventCreate(esp_ble_gatts_cb_param_t::gatts_add_at
     }
 
   esp_ble_gatts_start_service(m_service_handle);
+  }
 
-  ESP_LOGI(TAG,"TODO: Launch console here");
+void OvmsBluetoothAppConsole::EventConnect(esp_ble_gatts_cb_param_t::gatts_connect_evt_param *connect)
+  {
+  m_notifying = false;
+
+  if (m_console)
+    {
+    delete m_console;
+    }
+  m_console = new OvmsBluetoothConsole();
   }
 
 void OvmsBluetoothAppConsole::EventDisconnect(esp_ble_gatts_cb_param_t::gatts_disconnect_evt_param *disconnect)
   {
   m_notifying = false;
 
-  ESP_LOGI(TAG,"TODO: Shutdown console here");
+  if (m_console)
+    {
+    delete m_console;
+    m_console = NULL;
+    }
   }
 
 void OvmsBluetoothAppConsole::EventAddChar(esp_ble_gatts_cb_param_t::gatts_add_char_evt_param *addchar)
@@ -206,8 +225,8 @@ void OvmsBluetoothAppConsole::EventWrite(esp_ble_gatts_cb_param_t::gatts_write_e
     else if (m_char_handle == write->handle)
       {
       // A write to the characteristic
-      // TODO: This needs to go to the console
-      ESP_LOGW(TAG,"TODO: These %d bytes needs to go to the console",write->len);
+      if (m_console)
+        m_console->DataToConsole(write->value, write->len);
       }
     }
   if (write->need_rsp)

@@ -33,6 +33,7 @@
 
 #include "esp32bluetooth.h"
 #include "esp32bluetooth_gatts.h"
+#include "esp32bluetooth_console.h"
 
 #define GATTS_APP_UUID_OVMS_CONSOLE     0x20
 #define GATTS_SERVICE_UUID_OVMS_CONSOLE 0xffe1
@@ -50,6 +51,7 @@ class OvmsBluetoothAppConsole : public esp32bluetoothApp
     void DataFromConsole(uint8_t* data, size_t len);
     void EventRegistered(esp_ble_gatts_cb_param_t::gatts_reg_evt_param *reg);
     void EventCreate(esp_ble_gatts_cb_param_t::gatts_add_attr_tab_evt_param *attrtab);
+    void EventConnect(esp_ble_gatts_cb_param_t::gatts_connect_evt_param *connect);
     void EventDisconnect(esp_ble_gatts_cb_param_t::gatts_disconnect_evt_param *disconnect);
     void EventAddChar(esp_ble_gatts_cb_param_t::gatts_add_char_evt_param *addchar);
     void EventAddCharDescr(esp_ble_gatts_cb_param_t::gatts_add_char_descr_evt_param *adddescr);
@@ -58,6 +60,7 @@ class OvmsBluetoothAppConsole : public esp32bluetoothApp
     void EventExecWrite(esp_ble_gatts_cb_param_t::gatts_exec_write_evt_param *execwrite);
 
   private:
+    OvmsBluetoothConsole* m_console;
     uint16_t m_char_handle;
     esp_bt_uuid_t m_char_uuid;
     esp_gatt_perm_t m_perm;
