@@ -36,9 +36,9 @@
 #include "esp32bluetooth_console.h"
 
 #define GATTS_APP_UUID_OVMS_CONSOLE     0x20
-#define GATTS_SERVICE_UUID_OVMS_CONSOLE 0xffe1
+#define GATTS_SERVICE_UUID_OVMS_CONSOLE 0xffe0
 #define GATTS_CHAR_UUID_OVMS_CONSOLE    0xffe1
-#define GATTS_DESCR_UUID_OVMS_CONSOLE   0xffe2
+#define GATTS_DESCR_UUID_OVMS_CONSOLE   0xffe1
 #define GATTS_NUM_HANDLE_OVMS_CONSOLE   4
 
 class OvmsBluetoothAppConsole : public esp32bluetoothApp
