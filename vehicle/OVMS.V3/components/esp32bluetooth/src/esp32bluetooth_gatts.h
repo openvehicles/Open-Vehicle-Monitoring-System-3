@@ -34,6 +34,31 @@
 #include <vector>
 #include "esp32bluetooth.h"
 
+class esp32bluetoothApp;
+
+class esp32bluetoothCharacteristic
+  {
+  public:
+    esp32bluetoothCharacteristic(esp32bluetoothApp* app,
+      esp_bt_uuid_t* charuuid,
+      esp_bt_uuid_t* descruuid);
+    ~esp32bluetoothCharacteristic();
+
+  public:
+    esp32bluetoothApp* m_app;
+
+    esp_bt_uuid_t m_char_uuid;
+    uint16_t m_char_handle;
+    esp_gatt_perm_t m_char_perm;
+    esp_gatt_char_prop_t m_char_property;
+
+    uint16_t m_descr_handle;
+    esp_bt_uuid_t m_descr_uuid;
+
+    bool m_notifying;
+    bool m_indicating;
+  };
+
 class esp32bluetoothApp
   {
   public:

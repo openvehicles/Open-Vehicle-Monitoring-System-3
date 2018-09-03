@@ -43,6 +43,7 @@ static const char newline = '\n';
 OvmsBluetoothConsole::OvmsBluetoothConsole(OvmsBluetoothAppConsole* app)
   {
   m_app = app;
+  m_issecure = true;
   m_queue = xQueueCreate(100, sizeof(Event));
   Initialize("Bluetooth");
   ESP_LOGI(tag, "Created OvmsBluetoothConsole");

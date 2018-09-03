@@ -80,9 +80,12 @@ OvmsBluetoothAppConsole::~OvmsBluetoothAppConsole()
 void OvmsBluetoothAppConsole::DataFromConsole(const char* data, size_t len)
   {
   // This is called by the console, to send data out
+  ESP_LOGV(TAG,"Transmitting %d bytes from console",len);
+  MyCommandApp.HexDump(TAG, "tx", data, len);
   while ((len > 0)&&(m_notifying))
     {
     size_t togo = (len <= m_mtu)?len:m_mtu;
+    ESP_LOGV(TAG,"Indicate %d bytes (mtu %d)",togo,m_mtu);
     esp_ble_gatts_send_indicate(m_gatts_if,
                                 m_conn_id,
                                 m_char_handle,
@@ -225,6 +228,8 @@ void OvmsBluetoothAppConsole::EventWrite(esp_ble_gatts_cb_param_t::gatts_write_e
     else if (m_char_handle == write->handle)
       {
       // A write to the characteristic
+      ESP_LOGV(TAG,"Received %d bytes for console",write->len);
+      MyCommandApp.HexDump(TAG, "rx", (const char*)write->value, write->len);
       if (m_console)
         m_console->DataToConsole(write->value, write->len);
       }

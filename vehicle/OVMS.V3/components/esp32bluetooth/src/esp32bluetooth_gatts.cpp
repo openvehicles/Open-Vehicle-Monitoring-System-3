@@ -41,6 +41,38 @@ static const char *TAG = "bt-gatts";
 esp32bluetoothGATTS MyBluetoothGATTS __attribute__ ((init_priority (8012)));
 
 ////////////////////////////////////////////////////////////////////////
+// esp32bluetoothCharacteristic
+
+esp32bluetoothCharacteristic::esp32bluetoothCharacteristic(
+  esp32bluetoothApp* app,
+  esp_bt_uuid_t* charuuid,
+  esp_bt_uuid_t* descruuid = NULL)
+  {
+  m_app = app;
+  m_notifying = false;
+  m_indicating = false;
+
+  memcpy(&m_char_uuid,charuuid,sizeof(esp_bt_uuid_t));
+  m_char_handle = 0;
+  m_char_perm = 0;
+  m_char_property = 0;
+
+  if (descruuid != NULL)
+    {
+    memcpy(&m_descr_uuid,&descruuid,sizeof(esp_bt_uuid_t));
+    }
+  else
+    {
+    memset(&m_descr_uuid,0,sizeof(esp_bt_uuid_t));
+    }
+  m_descr_handle = 0;
+  }
+
+esp32bluetoothCharacteristic::~esp32bluetoothCharacteristic()
+  {
+  }
+
+////////////////////////////////////////////////////////////////////////
 // esp32bluetoothApp
 
 esp32bluetoothApp::esp32bluetoothApp(const char* name)
