@@ -33,15 +33,31 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "ovms_console.h"
 
-class OvmsBluetoothConsole
+class OvmsBluetoothAppConsole;
+
+class OvmsBluetoothConsole: public OvmsConsole
   {
   public:
-    OvmsBluetoothConsole();
+    OvmsBluetoothConsole(OvmsBluetoothAppConsole* app);
     ~OvmsBluetoothConsole();
+
+  private:
+  //void Service();
+    void HandleDeviceEvent(void* pEvent);
 
   public:
     void DataToConsole(uint8_t* data, size_t len);
+    void Exit();
+    int puts(const char* s);
+    int printf(const char* fmt, ...);
+    ssize_t write(const void *buf, size_t nbyte);
+
+  private:
+    OvmsBluetoothAppConsole* m_app;
   };
 
 #endif //#ifndef __ESP32BLUETOOTH_CONSOLE_H__

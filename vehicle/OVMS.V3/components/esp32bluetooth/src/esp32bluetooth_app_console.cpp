@@ -77,7 +77,7 @@ OvmsBluetoothAppConsole::~OvmsBluetoothAppConsole()
     }
   }
 
-void OvmsBluetoothAppConsole::DataFromConsole(uint8_t* data, size_t len)
+void OvmsBluetoothAppConsole::DataFromConsole(const char* data, size_t len)
   {
   // This is called by the console, to send data out
   while ((len > 0)&&(m_notifying))
@@ -87,7 +87,7 @@ void OvmsBluetoothAppConsole::DataFromConsole(uint8_t* data, size_t len)
                                 m_conn_id,
                                 m_char_handle,
                                 togo,
-                                data,
+                                (uint8_t*)data,
                                 false);
     len -= togo;
     data += togo;
@@ -134,7 +134,7 @@ void OvmsBluetoothAppConsole::EventConnect(esp_ble_gatts_cb_param_t::gatts_conne
     {
     delete m_console;
     }
-  m_console = new OvmsBluetoothConsole();
+  m_console = new OvmsBluetoothConsole(this);
   }
 
 void OvmsBluetoothAppConsole::EventDisconnect(esp_ble_gatts_cb_param_t::gatts_disconnect_evt_param *disconnect)
