@@ -68,7 +68,7 @@ void OvmsTelnet::EventHandler(struct mg_connection *nc, int ev, void *p)
     {
     case MG_EV_ACCEPT:
       {
-      ConsoleTelnet* child = new ConsoleTelnet(this, nc);
+      ConsoleTelnet* child = new ConsoleTelnet(nc);
       nc->user_data = child;
       break;
       }
@@ -148,7 +148,7 @@ void OvmsTelnet::NetManStop(std::string event, void* data)
 //    Class ConsoleTelnet
 //-----------------------------------------------------------------------------
 
-ConsoleTelnet::ConsoleTelnet(OvmsTelnet* parent, struct mg_connection* nc)
+ConsoleTelnet::ConsoleTelnet(struct mg_connection* nc)
   {
   m_connection = nc;
   m_queue = xQueueCreate(100, sizeof(Event));
