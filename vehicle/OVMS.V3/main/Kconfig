@@ -246,6 +246,13 @@ config OVMS_VEHICLE_MITSUBISHI
     help
         Enable to include support for Mitsubishi iMiev vehicle.
 
+config OVMS_VEHICLE_PEUGEOT
+    bool "Include support for Peugeot iON vehicle"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Peugeot iOn vehicle.
+
 config OVMS_VEHICLE_ZEVA
     bool "Include support for vehicles using Zeva BMS"
     default y
