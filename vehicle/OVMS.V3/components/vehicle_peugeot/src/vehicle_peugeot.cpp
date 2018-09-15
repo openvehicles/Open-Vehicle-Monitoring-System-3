@@ -211,7 +211,7 @@ void OvmsVehiclePeugeot::IncomingFrameCan1(CAN_frame_t* p_frame)
         if(d[1]==0)
         {
           StandardMetrics.ms_v_charge_mode->SetValue("Chademo");
-          StandardMetrics.ms_v_bat_soc->SetValue(d[2]);
+          //StandardMetrics.ms_v_bat_soc->SetValue(d[2]);
           StandardMetrics.ms_v_charge_current->SetValue(d[3]);
         }
       break;
