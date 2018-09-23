@@ -94,8 +94,8 @@ std::string GetOVMSHardware()
 
 void Version(std::string event, void* data)
   {
-  char buf[20];
-  uint8_t mac[6];
+//  char buf[20];
+//  uint8_t mac[6];
 
   std::string metric = GetOVMSVersion();
   metric.append(" (build ");
@@ -106,10 +106,10 @@ void Version(std::string event, void* data)
   metric = GetOVMSHardware();
   StandardMetrics.ms_m_hardware->SetValue(metric.c_str());
 
-  esp_efuse_mac_get_default(mac);
-  sprintf(buf,"%02x:%02x:%02x:%02x:%02x:%02x",
-          mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
-  StandardMetrics.ms_m_serial->SetValue(buf);
+//  esp_efuse_mac_get_default(mac);
+//  sprintf(buf,"%02x:%02x:%02x:%02x:%02x:%02x",
+//          mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+//  StandardMetrics.ms_m_serial->SetValue(buf);
   }
 
 class VersionInit
