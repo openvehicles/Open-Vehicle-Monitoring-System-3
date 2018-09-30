@@ -28,20 +28,36 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __ESP32BLUETOOTH_SVC_DEVICE_H__
-#define __ESP32BLUETOOTH_SVC_DEVICE_H__
+#ifndef __ESP32BLUETOOTH_CONSOLE_H__
+#define __ESP32BLUETOOTH_CONSOLE_H__
 
-#include "esp32bluetooth.h"
-#include "esp32bluetooth_gatts.h"
+#include <stdint.h>
+#include <stddef.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "ovms_console.h"
 
-#define GATTS_APP_UUID_OVMS_DEVICE       0x10
-#define GATTS_SERVICE_UUID_OVMS_DEVICE   0x1041
-#define GATTS_CHAR_UUID_OVMS_DEVICE      0x1042
-#define GATTS_DESCR_UUID_OVMS_DEVICE     0x1043
-#define GATTS_NUM_HANDLE_OVMS_DEVICE     4
+class OvmsBluetoothAppConsole;
 
-extern struct gatts_profile_inst ovms_gatts_profile_device;
+class OvmsBluetoothConsole: public OvmsConsole
+  {
+  public:
+    OvmsBluetoothConsole(OvmsBluetoothAppConsole* app);
+    ~OvmsBluetoothConsole();
 
-void ovms_ble_gatts_profile_device_init();
+  private:
+  //void Service();
+    void HandleDeviceEvent(void* pEvent);
 
-#endif //#ifndef __ESP32BLUETOOTH_SVC_DEVICE_H__
+  public:
+    void DataToConsole(uint8_t* data, size_t len);
+    void Exit();
+    int puts(const char* s);
+    int printf(const char* fmt, ...);
+    ssize_t write(const void *buf, size_t nbyte);
+
+  private:
+    OvmsBluetoothAppConsole* m_app;
+  };
+
+#endif //#ifndef __ESP32BLUETOOTH_CONSOLE_H__

@@ -33,9 +33,25 @@
 
 #include "esp32bluetooth.h"
 
-void ovms_ble_gap_init();
-void ovms_ble_gap_config_advertising();
-void ovms_ble_gap_start_advertising();
-void ovms_ble_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
+class esp32bluetoothGAP
+  {
+  public:
+    esp32bluetoothGAP();
+    ~esp32bluetoothGAP();
+
+  public:
+    void StartAdvertising();
+    void RegisterForEvents();
+    void EventHandler(esp_gap_ble_cb_event_t event,
+                      esp_ble_gap_cb_param_t *param);
+
+  private:
+    esp_ble_adv_data_t m_adv_config;
+    esp_ble_adv_data_t m_scan_rsp_config;
+    esp_ble_adv_params_t m_adv_params;
+    uint8_t m_adv_config_done;
+  };
+
+extern esp32bluetoothGAP MyBluetoothGAP;
 
 #endif //#ifndef __ESP32BLUETOOTH_GAP_H__

@@ -30,8 +30,6 @@
 #ifndef __CONSOLE_TELNET_H__
 #define __CONSOLE_TELNET_H__
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "libtelnet.h"
 #include "ovms_console.h"
 
@@ -54,11 +52,10 @@ class OvmsTelnet
 class ConsoleTelnet : public OvmsConsole
   {
   public:
-    ConsoleTelnet(OvmsTelnet* parent, struct mg_connection* nc);
+    ConsoleTelnet(struct mg_connection* nc);
     virtual ~ConsoleTelnet();
 
   private:
-    void Service();
     void HandleDeviceEvent(void* pEvent);
     static void TelnetCallback(telnet_t *telnet, telnet_event_t *event, void *userData);
     void TelnetHandler(telnet_event_t *event);

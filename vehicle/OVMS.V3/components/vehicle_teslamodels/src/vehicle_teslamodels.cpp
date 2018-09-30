@@ -116,6 +116,12 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_bat_soc->SetValue( (((int)d[1]>>2) + (((int)d[2] & 0x0f)<<6))/10 );
       break;
       }
+    case 0x306: // Temperatures
+      {
+      StandardMetrics.ms_v_inv_temp->SetValue((int)d[1]-40);
+      StandardMetrics.ms_v_mot_temp->SetValue((int)d[2]-40);
+      break;
+      }
     case 0x398: // Country
       {
       m_type[0] = 'T';

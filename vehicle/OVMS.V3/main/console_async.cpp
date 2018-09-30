@@ -170,6 +170,10 @@ void ConsoleAsync::HandleDeviceEvent(void* pEvent)
         ProcessChars((char*)data, len);
         }
       break;
+    case UART_BREAK:
+      // Ignore it
+      uart_flush(EX_UART_NUM);
+      break;
     case UART_FIFO_OVF:
       ESP_LOGI(TAG, "hw fifo overflow\n");
       // If fifo overflow happened, you should consider adding flow control for your application.
