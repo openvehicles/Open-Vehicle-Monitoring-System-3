@@ -41,9 +41,15 @@ static const char *TAG = "webserver";
 #include "vehicle.h"
 #include "ovms_boot.h"
 #include "ovms_housekeeping.h"
-#include "ovms_ota.h"
 #include "ovms_peripherals.h"
+
+#ifdef CONFIG_OVMS_COMP_OTA
+#include "ovms_ota.h"
+#endif
+
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V2)
 #include "ovms_server_v2.h"
+#endif
 
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
@@ -241,6 +247,7 @@ void OvmsWebServer::CfgInitTicker()
       MyPeripherals->m_esp32wifi->StartAccessPointMode(ap_ssid, ap_pass);
       CfgInitSetStep("2.fail.connect");
     }
+#ifdef CONFIG_OVMS_COMP_OTA
     else {
       ota_info info;
       MyOTA.GetStatus(info, true);
@@ -253,6 +260,7 @@ void OvmsWebServer::CfgInitTicker()
         CfgInitSetStep("3");
       }
     }
+#endif
   }
 
   else if (step == "4.test.start") {
@@ -270,6 +278,7 @@ void OvmsWebServer::CfgInitTicker()
       }
       CfgInitSetStep("4.test.start", 3); // stage 2 after 3 seconds
     }
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V2)
     else {
       // stage 2: start/stop V2 server:
       if (MyOvmsServerV2) {
@@ -283,8 +292,10 @@ void OvmsWebServer::CfgInitTicker()
       }
       CfgInitSetStep("4.test.connect");
     }
+#endif
   }
 
+#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
   else if (step == "5.test.start") {
     if (!MyPeripherals || !MyPeripherals->m_simcom) {
       ESP_LOGE(TAG, "CfgInitTicker: step 5: modem not available");
@@ -300,6 +311,7 @@ void OvmsWebServer::CfgInitTicker()
       
     }
   }
+#endif
 }
 
 
@@ -617,6 +629,7 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
  */
 std::string OvmsWebServer::CfgInit3(PageEntry_t& p, PageContext_t& c, std::string step)
 {
+#ifdef CONFIG_OVMS_COMP_OTA
   std::string error;
   std::string action;
   std::string server;
@@ -764,6 +777,11 @@ std::string OvmsWebServer::CfgInit3(PageEntry_t& p, PageContext_t& c, std::strin
     " retry or try another server.</p>");
   
   return "";
+#else
+    ESP_LOGI(TAG, "CfgInit3: OTA disabled, proceeding to step 4");
+    c.alert("danger", "<p class=\"lead\">Firmware cannot be updated, OTA is disabled.</p>");
+    return CfgInitSetStep("4");
+#endif
 }
 
 

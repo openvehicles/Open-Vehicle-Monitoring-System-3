@@ -40,7 +40,6 @@
 #include "metrics_standard.h"
 #include "vehicle.h"
 #include "ovms_housekeeping.h"
-#include "ovms_ota.h"
 #include "ovms_peripherals.h"
 
 #define _attr(text) (c.encode_html(text).c_str())
