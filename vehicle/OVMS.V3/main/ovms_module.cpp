@@ -761,6 +761,7 @@ static void module_fault(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
 static void module_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   writer->puts("Resetting system...");
+  vTaskDelay(1000/portTICK_PERIOD_MS);
   MyBoot.Restart();
   }
 
