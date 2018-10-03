@@ -30,6 +30,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/stat.h>
+#include <dirent.h>
 #include "ovms_utils.h"
 
 /**
@@ -209,6 +211,23 @@ bool startsWith(const std::string& haystack, const std::string& needle)
   return needle.length() <= haystack.length()
     && std::equal(needle.begin(), needle.end(), haystack.begin());
   }
+bool startsWith(const std::string& haystack, const char needle)
+  {
+  return !haystack.empty() && haystack.front() == needle;
+  }
+
+/**
+ * endsWith: std::string suffix check
+ */
+bool endsWith(const std::string& haystack, const std::string& needle)
+  {
+  return needle.length() <= haystack.length()
+    && std::equal(needle.begin(), needle.end(), haystack.end() - needle.length());
+  }
+bool endsWith(const std::string& haystack, const char needle)
+  {
+  return !haystack.empty() && haystack.back() == needle;
+  }
 
 /**
  * FormatHexDump: create/fill hexdump buffer including printable representation
@@ -341,3 +360,67 @@ TaskHandle_t TaskGetHandle(const char *name)
   return res;
   }
 #endif // CONFIG_FREERTOS_USE_TRACE_FACILITY
+
+
+/**
+ * mkpath: mkdir -p
+ * 
+ * Original: https://stackoverflow.com/a/12904145
+ */
+int mkpath(std::string path, mode_t mode /*=0*/)
+  {
+  size_t pre = 0, pos;
+  std::string dir;
+  int mdret;
+
+  if (!endsWith(path, '/'))
+    {
+    // force trailing / so we can handle everything in loop
+    path.append("/");
+    }
+
+  while ((pos = path.find_first_of('/', pre)) != std::string::npos)
+    {
+    dir = path.substr(0, pos++);
+    pre = pos;
+    if (dir.size() == 0)
+      continue; // if leading / first time is 0 length
+    if ((mdret = mkdir(dir.c_str(), mode)) && errno != EEXIST)
+      return mdret;
+    }
+
+  return 0;
+  }
+
+/**
+ * rmtree: rmdir -r
+ */
+int rmtree(std::string path)
+  {
+  DIR *dir = opendir(path.c_str());
+  if (!dir)
+    return 0;
+  
+  struct dirent *dp;
+  struct stat st;
+  std::string sub;
+  bool ok = true;
+
+  while ((dp = readdir(dir)) != NULL) {
+    sub = path + "/" + dp->d_name;
+    if (stat(sub.c_str(), &st)) {
+      ok = false;
+      break;
+    }
+    if (S_ISDIR(st.st_mode))
+      ok = (rmtree(sub) == 0);
+    else
+      ok = (unlink(sub.c_str()) == 0);
+    if (!ok)
+      break;
+  }
+  
+  closedir(dir);
+  ok = (rmdir(path.c_str()) == 0);
+  return ok ? 0 : -1;
+  }

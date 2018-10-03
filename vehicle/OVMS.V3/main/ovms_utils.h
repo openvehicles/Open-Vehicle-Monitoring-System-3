@@ -80,6 +80,13 @@ extram::string mp_encode(const extram::string text);
  * startsWith: std::string prefix check
  */
 bool startsWith(const std::string& haystack, const std::string& needle);
+bool startsWith(const std::string& haystack, const char needle);
+
+/**
+ * endsWith: std::string suffix check
+ */
+bool endsWith(const std::string& haystack, const std::string& needle);
+bool endsWith(const std::string& haystack, const char needle);
 
 /**
  * FormatHexDump: create/fill hexdump buffer including printable representation
@@ -108,6 +115,17 @@ std::string pwgen(int length);
  */
 TaskHandle_t TaskGetHandle(const char *name);
 #endif // CONFIG_FREERTOS_USE_TRACE_FACILITY
+
+
+/**
+ * mkpath: mkdir -p
+ */
+int mkpath(std::string path, mode_t mode = 0);
+
+/**
+ * rmtree: rmdir -r
+ */
+int rmtree(std::string path);
 
 
 #endif //#ifndef __UTILS_H__
