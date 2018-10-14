@@ -60,6 +60,7 @@ class OvmsVehicleRenaultZoe : public OvmsVehicle
 
 	protected:
 		void IncomingEVC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
+		void car_on(bool isOn);
   };
 
 #endif //#ifndef __VEHICLE_RENAUTZOE_H__

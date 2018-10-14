@@ -15,6 +15,9 @@ final String SID_EVC_Odometer     								= "7ec.622006.24"; //  (EVC)
 final String SID_RangeEstimate 										= "654.42"; //  (EVC)
 (FieldHeaterSetpoint) SID_VirtualUsage 						= "699.8" (0 = NaN, 4 = -10º, 5 = 40º);
 
+
+val = ((value - offset) * resolution ) * 10^(-decimals)
+
 String fieldDef = // ID (hex), startBit, endBit, resolution, offset (aplied BEFORE resolution multiplication), decimals, unit, requestID (hex string), responseID (hex string),
                 // options (hex, see MainActivity for definitions), optional name, optional list
                 ""
@@ -316,6 +319,7 @@ String fieldDef = // ID (hex), startBit, endBit, resolution, offset (aplied BEFO
                         + "7ec,144,159,1,0,0,,2180,6180,ff\n" // Version
                         + "7ec,0,7,1,0,0,,14ffff,54,ff\n" // Reset DTC
                         + "7ec,0,23,1,0,0,,19023b,5902ff,ff\n" // Query DTC
+												+ "7ec,24,31,1,40,0,°C,222001,622001,ff,Battery Rack temperature\n" //
                         + "7ec,24,39,2,0,2,%,222002,622002,e2\n" // SOC
                         + "7ec,24,39,2.083333333,0,2,%,222002,622002,e5\n" // SOC
                         + "7ec,24,39,0.01,0,2,V,222005,622005,ff\n" // 12V battery voltage

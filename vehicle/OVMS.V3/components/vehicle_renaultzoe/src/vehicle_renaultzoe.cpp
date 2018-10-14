@@ -41,10 +41,14 @@ static const char *TAG = "v-zoe";
 // Pollstate 2 - car is charging
 static const OvmsVehicle::poll_pid_t vehicle_renaultzoe_polls[] =
   {
-		// SOC (also serves for "car awake" detection, so polled while off)
-	  { x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2002, { 10, 10, 10 } },
+		// Battery Rack Temperature
+	  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2001, { 300, 10, 10 } },
+		// SOC
+	  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2002, { 300, 10, 10 } },
   	// Odometer
-  	{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2006, { 60, 60,  0 } },
+  	{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2006, {   0, 60,  0 } },
+		// Key On/Off
+  	{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x200e, {  10, 10,  0 } },
 		// -END-
 		{ 0, 0, 0x00, 0x00, { 0, 0, 0 } }
 	};
@@ -75,18 +79,17 @@ OvmsVehicleRenaultZoe::~OvmsVehicleRenaultZoe()
  */
 void OvmsVehicleRenaultZoe::IncomingFrameCan1(CAN_frame_t* p_frame)
 	{
-	uint8_t *data = p_frame->data.u8;
+	//uint8_t *data = p_frame->data.u8;
 	//ESP_LOGI(TAG, "PID:%x DATA: %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, data[0], data[1], data[2], data[3],
 	//		data[4], data[5], data[6], data[7]);
-	}
-
+	} 
 /**
  * Handles incoming poll results
  */
 void OvmsVehicleRenaultZoe::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain)
   {
-	//ESP_LOGI(TAG, "%03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", m_poll_moduleid_low, type, pid, length, data[0], data[1], data[2], data[3],
-	//		data[4], data[5], data[6], data[7]);
+	ESP_LOGI(TAG, "%03x TYPE:%x PID:%02x Lenght:%x Data:%02x %02x %02x %02x %02x %02x %02x %02x", m_poll_moduleid_low, type, pid, length, data[0], data[1], data[2], data[3],
+			data[4], data[5], data[6], data[7]);
 	switch (m_poll_moduleid_low)
 		{
 		// ****** EVC *****
@@ -103,15 +106,54 @@ void OvmsVehicleRenaultZoe::IncomingEVC(canbus* bus, uint16_t type, uint16_t pid
 	{
 	switch (m_poll_pid)
 		{
-	//case 0x2002: 			//SOC
-	//	StandardMetrics.ms_v_bat_soc->SetValue((float) CAN_UINT24(data));
-	//	break;	
-	case 0x2006:			//Odometer (Total Vehicle Distance)
+	case 0x2001:			// Bat. rack Temperature
+		StandardMetrics.ms_v_bat_temp->SetValue((float) CAN_BYTE(0)-40, Celcius);
+		break;
+	case 0x2002: 			// SoC
+		StandardMetrics.ms_v_bat_soc->SetValue((float) CAN_UINT(0)*2/100, Percentage);
+		break;
+	case 0x2006:			// Odometer (Total Vehicle Distance)
 		StandardMetrics.ms_v_pos_odometer->SetValue((float) CAN_UINT24(0), Kilometers);
+		break;
+	case 0x200e:			// Key On/Off (0 off / 1 on)
+		if (CAN_BYTE(0) && 0x01 == 0x01)
+		{
+		car_on(true);
+		}
+		else
+		{
+		car_on(false);
+		}
+
 		break;
 		}
 	}
 
+
+/**
+ * Takes care of setting all the state appropriate when the car is on
+ * or off. Centralized so we can more easily make on and off mirror
+ * images.
+ */
+void OvmsVehicleRenaultZoe::car_on(bool isOn)
+  {
+
+  if (isOn && !StandardMetrics.ms_v_env_on->AsBool())
+    {
+		// Car is beeing turned ON
+		StandardMetrics.ms_v_env_on->SetValue(isOn);
+		StandardMetrics.ms_v_env_awake->SetValue(isOn);
+    POLLSTATE_RUNNING;
+    }
+  else if(!isOn && StandardMetrics.ms_v_env_on->AsBool())
+    {
+    // Car is being turned OFF
+    POLLSTATE_OFF;
+		StandardMetrics.ms_v_env_on->SetValue( isOn );
+		StandardMetrics.ms_v_env_awake->SetValue( isOn );
+		StandardMetrics.ms_v_pos_speed->SetValue( 0 );
+    }
+  }
 
 
 //-----------------------------------------------------------------------------
