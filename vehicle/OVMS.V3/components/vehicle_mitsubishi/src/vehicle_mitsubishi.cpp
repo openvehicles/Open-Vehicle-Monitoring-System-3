@@ -109,7 +109,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         Kilometers);
       break;
       }
-    case 0x284: // Handbrake
+    case 0x285: // Handbrake
       {
       if (d[6] == 0x0c)
         {
@@ -184,17 +184,18 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
 
   if (mi_candata_timer > 0)
     {
-    // Car has gone to sleep
-    StandardMetrics.ms_v_env_awake->SetValue(false);
-    StandardMetrics.ms_v_env_on->SetValue(false);
-    StandardMetrics.ms_v_env_charging12v->SetValue(false);
-    }
-  else
-    {
-    // Car is awake
-    StandardMetrics.ms_v_env_awake->SetValue(true);
-    StandardMetrics.ms_v_env_on->SetValue(true);
-    StandardMetrics.ms_v_env_charging12v->SetValue(true);
+    if (--mi_candata_timer == 0)
+      {
+      // Car has gone to sleep
+      StandardMetrics.ms_v_env_awake->SetValue(false);
+      StandardMetrics.ms_v_env_on->SetValue(false);
+      }
+    else
+      {
+      // Car is awake
+      StandardMetrics.ms_v_env_awake->SetValue(true);
+      StandardMetrics.ms_v_env_on->SetValue(true);
+      }
     }
 
   ////////////////////////////////////////////////////////////////////////
@@ -285,7 +286,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
        (StandardMetrics.ms_v_charge_voltage->AsInt() != 0)))
     {
     StandardMetrics.ms_v_env_charging12v->SetValue(true);
-    if (StandardMetrics.ms_v_charge_pilot->AsBool())
+    if (! StandardMetrics.ms_v_charge_pilot->AsBool())
       {
       // Charge has started
       StandardMetrics.ms_v_charge_inprogress->SetValue(true);
@@ -304,7 +305,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
       // Charge is ongoing...
       }
     }
-  else if ((mi_QC != 0) ||
+  else if ((mi_QC == 0) &&
         ((StandardMetrics.ms_v_charge_current->AsInt() == 0)&&
          (StandardMetrics.ms_v_charge_voltage->AsInt() < 100)))
     {
