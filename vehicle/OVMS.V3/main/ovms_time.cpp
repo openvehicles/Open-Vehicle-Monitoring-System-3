@@ -37,7 +37,7 @@ static const char *ntp = "ntp";
 #include <lwip/def.h>
 #include <lwip/sockets.h>
 #include <time.h>
-#include "apps/sntp/sntp.h"
+#include "lwip/apps/sntp.h"
 #include "ovms.h"
 #include "ovms_time.h"
 #include "ovms_config.h"
@@ -89,14 +89,6 @@ void time_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     time_t tim = mktime(&tmu);
     MyTime.Set(TAG, 15, true, tim);
     writer->puts("Time set (at stratum 15)");
-    }
-  }
-
-extern "C"
-  {
-  void sntp_setsystemtime_us(uint32_t s, uint32_t us)
-    {
-    MyTime.Set(ntp, 1, true, s, us);
     }
   }
 
