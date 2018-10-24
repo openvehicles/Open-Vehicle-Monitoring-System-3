@@ -8,7 +8,7 @@ MWJ     Done         1. CAN base
 MWJ     Done         2. ESP32ADC
 MWJ     Done         3. ESP32CAN
 MWJ     Done         4. MAX7317
-MWJ     98%          5. MCP2515
+MWJ     Done         5. MCP2515
 MWJ     Done         6. PCP
 MWJ     Done         7. SDCARD
 MWJ     Done         8. SPINODMA
@@ -23,7 +23,7 @@ MWJ     Done         OBDII Poll support
 MWJ     Done         Tesla roadster port
 GV      Done         Kia Soul port
                      Kyburz port
-MWJ     98%          Mitsubishi iMiev port
+MWJ     Done         Mitsubishi iMiev port
 TP      Done         Nissan Leaf port
 MWJ     90%          OBDII port
                      TRACK vehicle port
@@ -43,7 +43,7 @@ SC      Done         Microrl cursor history display bug       (not our bug, but 
 SC      Done         Command argument specification
 SC      Done         Alert/progress messages
                      SMS <-> Command gateway
-MWJ     10%          Bluetooth gateway
+MWJ     50%          Bluetooth gateway
 MWJ     Done         Wifi gateway
 
                    Config system
@@ -59,7 +59,7 @@ MWJ    Done          Event hooks in key components
 MWJ    99%           SIMCOM modem support
 MB     Done          SIMCOM GPS support
 MWJ    Done          WIFI support
-MWJ    15%           BLUETOOTH support
+MWJ    30%           BLUETOOTH support
 
                    Server Comms
 MWJ    Done          OVMS v2 protocol
