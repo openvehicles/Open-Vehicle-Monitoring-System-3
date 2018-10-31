@@ -51,17 +51,17 @@ using namespace std;
 void OvmsVehicleMitsubishi::WebInit()
 {
   // vehicle menu:
-  //MyWebServer.RegisterPage("/xpi/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
-  //MyWebServer.RegisterPage("/xpi/batterydiag", "Battery Diagnostics", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
-  //TODO MyWebServer.RegisterPage("/xpi/battmon", "Battery monitor", WebBattMon, PageMenu_Vehicle, PageAuth_Cookie);
+  //MyWebServer.RegisterPage("/xmi/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
+  //MyWebServer.RegisterPage("/xmi/batterydiag", "Battery Diagnostics", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xmi/battmon", "Battery monitor", WebBattMon, PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 
 /**
- * WebCfgFeatures: configure general parameters (URL /xtc/config)
+ * WebCfgFeatures: configure general parameters (URL /xmi/config)
  */
 void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
-{
+{/*
   std::string error;
   bool canwrite, remote_charge_port;
 
@@ -72,8 +72,8 @@ void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
     if (error == "") {
       // store:
-      MyConfig.SetParamValueBool("xpi", "canwrite", canwrite);
-      MyConfig.SetParamValueBool("xpi", "remote_charge_port", remote_charge_port);
+      MyConfig.SetParamValueBool("xmi", "canwrite", canwrite);
+      MyConfig.SetParamValueBool("xmi", "remote_charge_port", remote_charge_port);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Mitsubishi iMiEV, Citroen C-Zero, Peugeot iOn feature configuration saved.</p>");
@@ -94,7 +94,6 @@ void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
     c.head(200);
   }
-
   // generate form:
 
   c.panel_start("primary", "Mitsubishi iMiEV, Citroen C-Zero, Peugeot iOn feature configuration");
@@ -114,11 +113,12 @@ void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.form_end();
   c.panel_end();
   c.done();
+  */
 }
 
 
 /**
- * WebCfgBattery: configure battery parameters (URL /xtc/battery)
+ * WebCfgBattery: configure battery parameters (URL /xmi/battery)
  */
 void OvmsVehicleMitsubishi::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 {
@@ -161,10 +161,10 @@ void OvmsVehicleMitsubishi::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 
     if (error == "") {
       // store:
-      MyConfig.SetParamValue("xtc", "cap_act_kwh", cap_act_kwh);
-      MyConfig.SetParamValue("xtc", "maxrange", maxrange);
-      MyConfig.SetParamValue("xtc", "suffrange", suffrange);
-      MyConfig.SetParamValue("xtc", "suffsoc", suffsoc);
+      MyConfig.SetParamValue("xmi", "cap_act_kwh", cap_act_kwh);
+      MyConfig.SetParamValue("xmi", "maxrange", maxrange);
+      MyConfig.SetParamValue("xmi", "suffrange", suffrange);
+      MyConfig.SetParamValue("xmi", "suffsoc", suffsoc);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Think City battery setup saved.</p>");
@@ -180,10 +180,10 @@ void OvmsVehicleMitsubishi::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
-  		cap_act_kwh = MyConfig.GetParamValue("xtc", "cap_act_kwh", XSTR(CGF_DEFAULT_BATTERY_CAPACITY));
-    maxrange = MyConfig.GetParamValue("xtc", "maxrange", XSTR(CFG_DEFAULT_MAXRANGE));
-    suffrange = MyConfig.GetParamValue("xtc", "suffrange", "0");
-    suffsoc = MyConfig.GetParamValue("xtc", "suffsoc", "0");
+  		cap_act_kwh = MyConfig.GetParamValue("xmi", "cap_act_kwh", XSTR(CGF_DEFAULT_BATTERY_CAPACITY));
+    maxrange = MyConfig.GetParamValue("xmi", "maxrange", XSTR(CFG_DEFAULT_MAXRANGE));
+    suffrange = MyConfig.GetParamValue("xmi", "suffrange", "0");
+    suffsoc = MyConfig.GetParamValue("xmi", "suffsoc", "0");
 
     c.head(200);
   }
@@ -225,12 +225,12 @@ void OvmsVehicleMitsubishi::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 }
 
 /**
- * WebBattMon: (/xtc/battmon)
+ * WebBattMon: (/xmi/battmon)
  * TODO
  */
 void OvmsVehicleMitsubishi::WebBattMon(PageEntry_t& p, PageContext_t& c)
 {
-  /*c.head(200);
+  c.head(200);
   c.print(
     "<div class=\"panel panel-primary panel-single\">"
     "<div class=\"panel-heading\">Think City Battery Monitor</div>"
@@ -241,7 +241,7 @@ void OvmsVehicleMitsubishi::WebBattMon(PageEntry_t& p, PageContext_t& c)
       "</div>"
     "</div>"
     "<div class=\"panel-footer\">"
-      "<button class=\"btn btn-default\" data-cmd=\"xrt batt reset\" data-target=\"#output\">Reset min/max</button>"
+      "<button class=\"btn btn-default\" data-cmd=\"xmi batt reset\" data-target=\"#output\">Reset min/max</button>"
       "<samp id=\"output\" class=\"samp-inline\"></samp>"
     "</div>"
     "</div>"
@@ -315,8 +315,8 @@ void OvmsVehicleMitsubishi::WebBattMon(PageEntry_t& p, PageContext_t& c)
     "function get_cell_data() {"
       "var data = { cells: [], volts: [], vdevs: [], voltmean: 0 };"
       "var i, sum=0, act, min, max, base;"
-      "for (i=0; i<metrics[\"xtc.b.cell.cnt\"]; i++) {"
-        "base = \"xtc.b.cell.\" + ((i<9) ? \"0\"+(i+1) : (i+1)) + \".volt.\";"
+      "for (i=0; i<metrics[\"xmi.b.cell.cnt\"]; i++) {"
+        "base = \"xmi.b.cell.\" + ((i<88) ? \"0\"+(i+1) : (i+1)) + \".volt.\";"
         "act = metrics[base+\"act\"];"
         "min = metrics[base+\"min\"];"
         "max = metrics[base+\"max\"];"
@@ -325,7 +325,7 @@ void OvmsVehicleMitsubishi::WebBattMon(PageEntry_t& p, PageContext_t& c)
         "data.volts.push([min,min,act,max,max]);"
         "data.vdevs.push(metrics[base+\"maxdev\"]);"
       "}"
-      "data.voltmean = sum / metrics[\"xtc.b.cell.cnt\"];"
+      "data.voltmean = sum / metrics[\"xmi.b.cell.cnt\"];"
       "return data;"
     "}"
     ""
@@ -345,7 +345,7 @@ void OvmsVehicleMitsubishi::WebBattMon(PageEntry_t& p, PageContext_t& c)
           "events: {"
             "load: function () {"
               "$('#livestatus').on(\"msg:metrics\", function(e, update){"
-                "if (/xtc\\.b\\.cell/.test(Object.keys(update).join()))"
+                "if (/xmi\\.b\\.cell/.test(Object.keys(update).join()))"
                   "update_cell_chart();"
               "});"
             "}"
@@ -390,8 +390,8 @@ void OvmsVehicleMitsubishi::WebBattMon(PageEntry_t& p, PageContext_t& c)
     "function get_cmod_data() {"
       "var data = { cmods: [], temps: [], tdevs: [], tempmean: 0 };"
       "var i, sum=0, act, min, max, base;"
-      "for (i=0; i<metrics[\"xtc.b.cmod.cnt\"]; i++) {"
-        "base = \"xtc.b.cmod.\" + ((i<9) ? \"0\"+(i+1) : (i+1)) + \".temp.\";"
+      "for (i=0; i<metrics[\"xmi.b.cmod.cnt\"]; i++) {"
+        "base = \"xmi.b.cmod.\" + ((i<66) ? \"0\"+(i+1) : (i+1)) + \".temp.\";"
         "act = metrics[base+\"act\"];"
         "min = metrics[base+\"min\"];"
         "max = metrics[base+\"max\"];"
@@ -400,7 +400,7 @@ void OvmsVehicleMitsubishi::WebBattMon(PageEntry_t& p, PageContext_t& c)
         "data.temps.push([min,min,act,max,max]);"
         "data.tdevs.push(metrics[base+\"maxdev\"]);"
       "}"
-      "data.tempmean = sum / metrics[\"xtc.b.cmod.cnt\"];"
+      "data.tempmean = sum / metrics[\"xmi.b.cmod.cnt\"];"
       "return data;"
     "}"
     ""
@@ -420,7 +420,7 @@ void OvmsVehicleMitsubishi::WebBattMon(PageEntry_t& p, PageContext_t& c)
           "events: {"
             "load: function () {"
               "$('#livestatus').on(\"msg:metrics\", function(e, update){"
-                "if (/xtc\\.b\\.cmod/.test(Object.keys(update).join()))"
+                "if (/xmi\\.b\\.cmod/.test(Object.keys(update).join()))"
                   "update_cmod_chart();"
               "});"
             "}"
@@ -477,7 +477,7 @@ void OvmsVehicleMitsubishi::WebBattMon(PageEntry_t& p, PageContext_t& c)
     "}"
     ""
     "</script>");
-  c.done();*/
+  c.done();
 }
 
 

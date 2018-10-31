@@ -79,6 +79,7 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
 
   protected:
     char m_vin[18];
+    unsigned int m_charge_watt;
   };
 
 #endif //#ifndef __VEHICLE_MITSUBISHI_H__
