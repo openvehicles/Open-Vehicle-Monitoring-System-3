@@ -59,6 +59,9 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     virtual vehicle_command_t CommandActivateValet(const char* pin);
     virtual vehicle_command_t CommandDeactivateValet(const char* pin);
     virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
+    OvmsMetricVector<float>* cell_volt = new OvmsMetricVector<float>("test.volts", SM_STALE_MIN, Volts);
+    OvmsMetricVector<float>* cell_temp = new OvmsMetricVector<float>("test.temps", SM_STALE_MIN, Volts);
+
 
   public:
     void WebInit();

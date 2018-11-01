@@ -50,6 +50,7 @@ typedef enum
   CHARGER_STATUS_INTERRUPTED
   } ChargerStatus;
 
+
 static float mi_batttemps[66];  // all cell temperature
 static float mi_battvolts[88];  // all cell voltage
 static float m_charge_watt;
@@ -269,9 +270,9 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       case 0x373: // Main Battery volt and current
       {
-        StandardMetrics.ms_v_bat_current->SetValue((((((d[2]*256)+d[3]))-32768))/100.0);
-        StandardMetrics.ms_v_bat_voltage->SetValue((d[4]*256+d[5])/10.0);
-        //StandardMetrics.ms_v_bat_power->SetValue((StandardMetrics.ms_v_bat_voltage->AsInt()*StandardMetrics.ms_v_bat_current->AsInt())/1000);
+        StandardMetrics.ms_v_bat_current->SetValue((((((d[2]*256.0)+d[3]))-32768))/100.0);
+        StandardMetrics.ms_v_bat_voltage->SetValue((d[4]*256.0+d[5])/10.0);
+        StandardMetrics.ms_v_bat_power->SetValue((StandardMetrics.ms_v_bat_voltage->AsFloat()*StandardMetrics.ms_v_bat_current->AsFloat())/1000.0);
       break;
       }
 
@@ -297,6 +298,19 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       case 0x3A4: // Climate console
       {
+        /**
+         * http://myimiev.com/forum/viewtopic.php?p=31226 PID 3A4 byte 0, bits
+         * 0-3: heating level (7 is off, under 7 is cooling, over 7 is heating)
+         * byte 0, bit 7: AC on (ventilation dial pressed) byte 0, bit 5: MAX
+         * heating (heating dial pressed) byte 0, bit 6: air recirculation
+         * (ventilation direction dial pressed)
+         *
+         * byte 1, bits 0-3: ventilation level (if AUTO is chosen, the
+         * automatically calculated level is returned) byte 1, bits 4-7:
+         * ventilation direction (1-2 face, 3 legs+face, 4 -5legs, 6
+         * legs+windshield 7-9 windshield)
+         */
+
         //heating level
         if (((int)d[0]<<4) == 112)
         {
@@ -315,32 +329,29 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
        // AC on
       }
 
-
-      //ventilation direction
-      if ((((int)d[1]>>4) == 1) || (((int)d[1]>>4) == 2))
-      {
-        //   Face
+      string ventDirection = "-";
+      switch ((d[1] & 240 >> 4)) {
+        case 1:
+        case 2:
+        ventDirection = "Face";
+        break;
+        case 3:
+        case 4:
+        ventDirection = "Legs + Face";
+        break;
+        case 5:
+        case 6:
+        ventDirection = "Legs";
+        break;
+        case 7:
+        case 8:
+        ventDirection = "Legs + Windshield";
+        break;
+        case 9:
+        ventDirection = "Windshield";
+        break;
       }
 
-      if (((int)d[1]>>4) == 3)
-      {
-       //Leg + Face
-      }
-
-      if ((((int)d[1]>>4) == 4) || (((int)d[1]>>4) == 5))
-      {
-        //Leg
-      }
-
-      if (((int)d[1]>>4) == 6)
-      {
-          //Leg + Windshield
-      }
-
-      if ((((int)d[1]>>4) == 7) || (((int)d[1]>>4) == 8) || (((int)d[1]>>4) == 9))
-      {
-        // Windshield
-      }
 
 
       break;
@@ -477,13 +488,13 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
         }
 
-        if ((d[2]& 1)!=0) //Door
+        if ((d[2]& 1)!=0) //any Door + trunk
         { //OPEN
-            StandardMetrics.ms_v_door_fr->SetValue(true);
+            //StandardMetrics.ms_v_door_fr->SetValue(true);
         }
         else
         {
-              StandardMetrics.ms_v_door_fr->SetValue(false);
+              //StandardMetrics.ms_v_door_fr->SetValue(false);
         }
 
 
@@ -512,8 +523,8 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         int idx = ((int)d[0]<<1)-2;
         mi_batttemps[idx] = (signed char)d[2] - 50;
         mi_batttemps[idx+1] = (signed char)d[3] - 50;
-        mi_battvolts[idx] = ((d[4]*256+d[5])/100.0);
-        mi_battvolts[idx+1] = (((d[6]*256+d[7])/200.0)+2.1);
+        mi_battvolts[idx] = ((d[4]*256.0+d[5])/100.0);
+        mi_battvolts[idx+1] = (((d[6]*256.0+d[7])/200.0)+2.1);
         //ESP_LOGI(TAG, "battvolt e1 %i/%i",idx, idx+1);
         }
     break;
@@ -540,8 +551,8 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
             int idx = ((int)d[0]<<1)+22;
 
     //        ESP_LOGI(TAG, "battvolt e2 %i/%i",idx, idx+1);
-            mi_battvolts[idx] = (((d[4]*256+d[5])/200.0)+2.1);
-            mi_battvolts[idx+1] = (((d[6]*256+d[7])/200.0)+2.1);
+            mi_battvolts[idx] = (((d[4]*256.0+d[5])/200.0)+2.1);
+            mi_battvolts[idx+1] = (((d[6]*256.0+d[7])/200.0)+2.1);
           }
     break;
     }
@@ -569,15 +580,15 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
                 {
                   int idx = ((int)d[0]<<1)+46;
       //            ESP_LOGI(TAG, "battvolt e3 <6 %i/%i",idx, idx+1);
-                  mi_battvolts[idx] = (((d[4]*256+d[5])/200.0)+2.1);
-                  mi_battvolts[idx+1] = (((d[6]*256+d[7])/200.0)+2.1);
+                  mi_battvolts[idx] = (((d[4]*256.0+d[5])/200.0)+2.1);
+                  mi_battvolts[idx+1] = (((d[6]*256.0+d[7])/200.0)+2.1);
                 }
                 else if ((d[0]!=12) && (d[0]>6))
                   {
                     int idx = ((int)d[0]<<1)+44;
         //            ESP_LOGI(TAG, "battvolt e3 <12 >6 %i/%i",idx, idx+1);
-                    mi_battvolts[idx] = (((d[4]*256+d[5])/200.0)+2.1);
-                    mi_battvolts[idx+1] = (((d[6]*256+d[7])/200.0)+2.1);
+                    mi_battvolts[idx] = (((d[4]*256.0+d[5])/200.0)+2.1);
+                    mi_battvolts[idx+1] = (((d[6]*256.0+d[7])/200.0)+2.1);
                   }
                 }
     break;
@@ -591,21 +602,21 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
               {
                 int idx = ((int)d[0]<<1)+66;
           //      ESP_LOGI(TAG, "battvolt e4 <6 %i/%i",idx, idx+1);
-                mi_battvolts[idx] = (((d[4]*256+d[5])/200.0)+2.1);
-                mi_battvolts[idx+1] = (((d[6]*256+d[7])/200.0)+2.1);
+                mi_battvolts[idx] = (((d[4]*256.0+d[5])/200.0)+2.1);
+                mi_battvolts[idx+1] = (((d[6]*256.0+d[7])/200.0)+2.1);
               }
               else if ((d[0]!=12) && (d[0]>6))
                 {
                     int idx = ((int)d[0]<<1)+64;
             //        ESP_LOGI(TAG, "battvolt e4 <12 >6 %i/%i",idx, idx+1);
-                    mi_battvolts[idx] = (((d[4]*256+d[5])/200.0)+2.1);
-                    mi_battvolts[idx+1] = (((d[6]*256+d[7])/200.0)+2.1);
+                    mi_battvolts[idx] = (((d[4]*256.0+d[5])/200.0)+2.1);
+                    mi_battvolts[idx+1] = (((d[6]*256.0+d[7])/200.0)+2.1);
                 }
               }
     break;
     }
 
-    case 0x762: // Battery temperatures and voltages E4
+  /*  case 0x762:
     {
         if (d[0] == 36)
             {
@@ -613,7 +624,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
               StandardMetrics.ms_v_bat_soh->SetValue(StandardMetrics.ms_v_bat_cac->AsFloat()/48);
             }
     break;
-    }
+  }*/
 
     default:
     break;
@@ -671,6 +682,7 @@ void OvmsVehicleMitsubishi::Ticker10(uint32_t ticker)
     tbattery += mi_batttemps[k];
   }
   StandardMetrics.ms_v_bat_temp->SetValue(tbattery/66.0);
+  cell_temp->SetElemValues(0, 66, mi_batttemps);
 
 
   StandardMetrics.ms_v_env_cooling->SetValue(!StandardMetrics.ms_v_bat_temp->IsStale());
@@ -682,7 +694,7 @@ void OvmsVehicleMitsubishi::Ticker10(uint32_t ticker)
     vbattery += (double)mi_battvolts[l];
   }
   StandardMetrics.ms_v_bat_cell_level_avg->SetValue(vbattery/88.0);
-
+  cell_volt->SetElemValues(0, 88, mi_battvolts);
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandSetChargeMode(vehicle_mode_t mode)
