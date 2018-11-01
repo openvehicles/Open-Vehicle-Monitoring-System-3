@@ -39,6 +39,7 @@
 #include <stdint.h>
 #include <sstream>
 #include <set>
+#include <vector>
 #include "ovms_utils.h"
 
 #define METRICS_MAX_MODIFIERS 32
@@ -357,6 +358,140 @@ class OvmsMetricSet : public OvmsMetric
 
   protected:
     std::set<ElemType> m_value;
+  };
+
+
+/**
+ * OvmsMetricVector<type>: metric wrapper for std::vector<type>
+ *  - string representation as comma separated values
+ *  - TODO: escaping / string encoding for non-numeric types
+ *  - TODO: unit conversions
+ * 
+ * Usage example:
+ *  OvmsMetricVector<float>* vf = new OvmsMetricVector<float>("test.volts", SM_STALE_MIN, Volts);
+ *  vf->SetElemValue(3, 1.23);
+ *  vf->SetElemValue(17, 2.34);
+ *  float myvals[3] = { 5.5, 6.6, 7.7 };
+ *  vf->SetElemValues(10, 3, myvals);
+ * 
+ * Note: use ExtRamAllocator<type> for large vectors (= use SPIRAM)
+ */
+template
+  <
+  typename ElemType,
+  class Allocator = std::allocator<ElemType>
+  >
+class OvmsMetricVector : public OvmsMetric
+  {
+  public:
+    OvmsMetricVector(const char* name, uint16_t autostale=0, metric_unit_t units = Other)
+      : OvmsMetric(name, autostale, units)
+      {
+      }
+    virtual ~OvmsMetricVector()
+      {
+      }
+
+  public:
+    virtual std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
+      {
+      if (!IsDefined())
+        return std::string(defvalue);
+      std::ostringstream ss;
+      if (precision >= 0)
+        {
+        ss.precision(precision); // Set desired precision
+        ss << fixed;
+        }
+      for (auto i = m_value.begin(); i != m_value.end(); i++)
+        {
+        if (ss.tellp() > 0)
+          ss << ',';
+        ss << *i;
+        }
+      return ss.str();
+      }
+
+    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
+      {
+      std::string json = "[";
+      json += AsString(defvalue, units, precision);
+      json += "]";
+      return json;
+      }
+
+    virtual void SetValue(std::string value)
+      {
+      std::vector<ElemType, Allocator> n_value;
+      std::istringstream vs(value);
+      std::string token;
+      ElemType elem;
+      while(std::getline(vs, token, ','))
+        {
+        std::istringstream ts(token);
+        ts >> elem;
+        n_value.push_back(elem);
+        }
+      SetValue(n_value);
+      }
+    void operator=(std::string value) { SetValue(value); }
+
+    void SetValue(std::vector<ElemType, Allocator> value, metric_unit_t units = Other)
+      {
+      if (m_value != value)
+        {
+        m_value = value;
+        SetModified(true);
+        }
+      else
+        SetModified(false);
+      }
+    void operator=(std::vector<ElemType, Allocator> value) { SetValue(value); }
+
+    std::vector<ElemType, Allocator> AsVector(const std::vector<ElemType, Allocator> defvalue = std::vector<ElemType, Allocator>(), metric_unit_t units = Other)
+      {
+      return IsDefined() ? m_value : defvalue;
+      }
+
+    ElemType GetElemValue(size_t n)
+      {
+      ElemType val{};
+      if (m_value.size() > n)
+        val = m_value[n];
+      return val;
+      }
+
+    void SetElemValue(size_t n, ElemType value)
+      {
+      if (m_value.size() < n+1)
+        m_value.resize(n+1);
+      if (m_value[n] != value)
+        {
+        m_value[n] = value;
+        SetModified(true);
+        }
+      else
+        SetModified(false);
+      }
+
+    void SetElemValues(size_t start, size_t cnt, ElemType* values)
+      {
+      if (m_value.size() < start+cnt)
+        m_value.resize(start+cnt);
+      bool modified = false;
+      for (size_t i = 0; i < cnt; i++)
+        {
+        if (m_value[start+i] != values[i])
+          {
+          m_value[start+i] = values[i];
+          modified = true;
+          }
+        }
+      SetModified(modified);
+      }
+
+  protected:
+    std::vector<ElemType, Allocator> m_value;
   };
 
 
