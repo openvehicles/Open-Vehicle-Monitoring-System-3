@@ -10,6 +10,7 @@
 ;       - basic charge states
 ;       - AC charger voltage / current measure
 ;       - DC
+;       - Cell voltage and temp to metrics
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018  Mark Webb-Johnson
