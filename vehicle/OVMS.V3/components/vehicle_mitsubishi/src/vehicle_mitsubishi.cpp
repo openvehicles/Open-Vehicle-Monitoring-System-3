@@ -267,6 +267,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
       }
 
+
       case 0x389: // Charger voltage and current
       {
         StandardMetrics.ms_v_charge_voltage->SetValue(d[1]*1.0);
@@ -544,6 +545,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
     case 0x6e4: // Battery temperatures and voltages E4
     {
+
         if ((d[0]>=1)&&(d[0]<=12))
             {
               if((d[0]!=6) && (d[0]<6))
@@ -580,6 +582,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
         vehicle_charger_status(CHARGER_STATUS_CHARGING);
       }
       else if((StandardMetrics.ms_v_bat_soc->AsInt() > 95) && (StandardMetrics.ms_v_charge_voltage->AsInt() > 90) && (StandardMetrics.ms_v_charge_current->AsInt() < 1) )
+
       {
         vehicle_charger_status(CHARGER_STATUS_FINISHED);
       }
@@ -593,8 +596,8 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
       }
     }
 
-
     if (StandardMetrics.ms_v_bat_soc->AsInt() <= 10)
+
         {
           StandardMetrics.ms_v_bat_range_ideal->SetValue(0);
         }

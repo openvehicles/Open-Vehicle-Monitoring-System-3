@@ -71,6 +71,7 @@ class OvmsVehicleTeslaRoadster : public OvmsVehicle
     bool m_cooldown_prev_charging;             // Charging prior to cooldown
     int m_cooldown_limit_temp;                 // Cooldown battery temp limit
     int m_cooldown_limit_minutes;              // Cooldown time limit
+    int m_cooldown_current;                    // Cooldown current
     int m_cooldown_cycles_done;                // Cooldown cycles done
     int m_cooldown_recycle_ticker;             // Cooldown recycle ticker
 

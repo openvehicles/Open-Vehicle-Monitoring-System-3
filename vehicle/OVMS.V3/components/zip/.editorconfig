@@ -1,0 +1,15 @@
+# EditorConfig helps developers define and maintain consistent
+# coding styles between different editors and IDEs
+# http://editorconfig.org
+
+root = false
+
+[libzip/**]
+indent_style = tab
+indent_size = 4
+tab_width = 8
+
+[zlib/**]
+indent_style = space
+indent_size = 4
+

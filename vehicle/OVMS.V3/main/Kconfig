@@ -154,6 +154,15 @@ config OVMS_SC_GPL_WOLF
         Enable to include the GPL licensed WOLFSSH and WOLFSSL libraries
         (required for SSH server functionality)
 
+config OVMS_SC_ZIP
+    bool "Include ZIP archive support"
+    default y
+    depends on OVMS
+    help
+        Enable to include zip archive support for config backup & restore.
+        This is based on libzip by Dieter Baron and Thomas Klausner and
+        zlib by Jean-loup Gailly and Mark Adler.
+
 endmenu # Library support
 
 

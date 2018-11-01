@@ -36,7 +36,9 @@
 #include "esp_err.h"
 #include "esp_vfs_fat.h"
 #include "wear_levelling.h"
+#include "ovms_mutex.h"
 
+class OvmsWriter;
 typedef std::map<std::string, std::string> ConfigParamMap;
 
 class OvmsConfigParam
@@ -56,8 +58,11 @@ class OvmsConfigParam
     void SetAccess(bool writable, bool readable);
     std::string GetName();
     const char* GetTitle() { return m_title.c_str(); }
+    void SetTitle(std::string title) { m_title = title; }
     void Load();
     void Save();
+    const ConfigParamMap* GetMap() { return &m_map; }
+    void SetMap(ConfigParamMap& map);
 
   protected:
     void RewriteConfig();
@@ -107,6 +112,14 @@ class OvmsConfig
     bool IsDefined(std::string param, std::string instance);
     bool ProtectedPath(std::string path);
     OvmsConfigParam* CachedParam(std::string param);
+    const ConfigParamMap* GetParamMap(std::string param);
+    void SetParamMap(std::string param, ConfigParamMap& map);
+
+#ifdef CONFIG_OVMS_SC_ZIP
+  public:
+    bool Backup(std::string path, std::string password, OvmsWriter* writer=NULL, int verbosity=1024);
+    bool Restore(std::string path, std::string password, OvmsWriter* writer=NULL, int verbosity=1024);
+#endif // CONFIG_OVMS_SC_ZIP
 
   public:
     esp_err_t mount();
@@ -123,6 +136,7 @@ class OvmsConfig
 
   public:
     ConfigMap m_map;
+    OvmsMutex m_store_lock;
   };
 
 extern OvmsConfig MyConfig;

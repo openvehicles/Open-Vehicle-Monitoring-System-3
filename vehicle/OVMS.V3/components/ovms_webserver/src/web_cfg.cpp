@@ -40,8 +40,11 @@
 #include "metrics_standard.h"
 #include "vehicle.h"
 #include "ovms_housekeeping.h"
-#include "ovms_ota.h"
 #include "ovms_peripherals.h"
+
+#ifdef CONFIG_OVMS_COMP_OTA
+#include "ovms_ota.h"
+#endif
 
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
@@ -615,6 +618,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 }
 
 
+#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
 /**
  * HandleCfgModem: configure APN & modem features (URL /cfg/modem)
  */
@@ -712,8 +716,11 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   c.panel_end();
   c.done();
 }
+#endif
 
 
+#ifdef CONFIG_OVMS_COMP_SERVER
+#ifdef CONFIG_OVMS_COMP_SERVER_V2
 /**
  * HandleCfgServerV2: configure server v2 connection (URL /cfg/server/v2)
  */
@@ -818,8 +825,9 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
   c.panel_end();
   c.done();
 }
+#endif
 
-
+#ifdef CONFIG_OVMS_COMP_SERVER_V3
 /**
  * HandleCfgServerV3: configure server v3 connection (URL /cfg/server/v3)
  */
@@ -924,6 +932,8 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
   c.panel_end();
   c.done();
 }
+#endif
+#endif
 
 
 /**
@@ -1395,6 +1405,7 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
 }
 
 
+#ifdef CONFIG_OVMS_COMP_OTA
 /**
  * HandleCfgFirmware: OTA firmware update & boot setup (URL /cfg/firmware)
  */
@@ -1710,6 +1721,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
 
   c.done();
 }
+#endif
 
 
 /**
