@@ -10,7 +10,6 @@
 ;       - basic charge states
 ;       - AC charger voltage / current measure
 ;       - DC
-;       - Cell voltage and temp to metrics
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018  Mark Webb-Johnson
@@ -40,7 +39,7 @@
 #include <stdio.h>
 #include "vehicle_mitsubishi.h"
 
-#define VERSION "0.1.0"
+#define VERSION "0.1.2"
 
 static const char *TAG = "v-mitsubishi";
 typedef enum
@@ -51,8 +50,11 @@ typedef enum
   CHARGER_STATUS_INTERRUPTED
   } ChargerStatus;
 
+
 static float mi_batttemps[66];  // all cell temperature
 static float mi_battvolts[88];  // all cell voltage
+static float m_charge_watt;
+
 
 OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   {
@@ -91,6 +93,7 @@ void vehicle_charger_status(ChargerStatus status)
             StandardMetrics.ms_v_charge_state->SetValue("charging");
             StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
             StandardMetrics.ms_v_charge_mode->SetValue("Quickcharge");
+            StandardMetrics.ms_v_env_charging12v->SetValue(true);
             StandardMetrics.ms_v_env_on->SetValue(true);
             StandardMetrics.ms_v_env_awake->SetValue(true);
             StandardMetrics.ms_v_charge_climit->SetValue(125);
@@ -101,11 +104,11 @@ void vehicle_charger_status(ChargerStatus status)
             if (!StandardMetrics.ms_v_charge_inprogress->AsBool())
               {
                 StandardMetrics.ms_v_charge_kwh->SetValue(0); // Reset charge kWh
+                m_charge_watt = 0; // reset watt
               }
-
-            StandardMetrics.ms_v_charge_climit->SetValue(16);
             StandardMetrics.ms_v_pos_speed->SetValue(0);
             StandardMetrics.ms_v_mot_rpm->SetValue(0);
+            StandardMetrics.ms_v_door_chargeport->SetValue(true);
             StandardMetrics.ms_v_charge_pilot->SetValue(true);
             StandardMetrics.ms_v_charge_inprogress->SetValue(true);
             StandardMetrics.ms_v_charge_type->SetValue("Type1");
@@ -115,12 +118,17 @@ void vehicle_charger_status(ChargerStatus status)
             StandardMetrics.ms_v_env_charging12v->SetValue(true);
             StandardMetrics.ms_v_env_on->SetValue(true);
             StandardMetrics.ms_v_env_awake->SetValue(true);
+            StandardMetrics.ms_v_charge_climit->SetValue(16);
+            m_charge_watt += ( StandardMetrics.ms_v_charge_voltage->AsFloat() * StandardMetrics.ms_v_charge_current->AsFloat());
             break;
           case CHARGER_STATUS_FINISHED:
+            StandardMetrics.ms_v_charge_kwh->SetValue(m_charge_watt/1000.0/StandardMetrics.ms_v_charge_time->AsInt());
+            ESP_LOGI(TAG, "charge_watt %f",m_charge_watt);
+            m_charge_watt = 0;
             StandardMetrics.ms_v_charge_climit->SetValue(0);
             StandardMetrics.ms_v_charge_current->SetValue(0);
             StandardMetrics.ms_v_charge_voltage->SetValue(0);
-            StandardMetrics.ms_v_door_chargeport->SetValue(true);
+            StandardMetrics.ms_v_door_chargeport->SetValue(false);
             StandardMetrics.ms_v_charge_pilot->SetValue(false);
             StandardMetrics.ms_v_charge_inprogress->SetValue(false);
             StandardMetrics.ms_v_charge_type->SetValue("None");
@@ -135,9 +143,10 @@ void vehicle_charger_status(ChargerStatus status)
             StandardMetrics.ms_v_charge_climit->SetValue(0);
             StandardMetrics.ms_v_charge_current->SetValue(0);
             StandardMetrics.ms_v_charge_voltage->SetValue(0);
-            StandardMetrics.ms_v_door_chargeport->SetValue(true);
+            StandardMetrics.ms_v_door_chargeport->SetValue(false);
             StandardMetrics.ms_v_charge_pilot->SetValue(false);
             StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+            StandardMetrics.ms_v_charge_type->SetValue("None");
             StandardMetrics.ms_v_charge_state->SetValue("interrupted");
             StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
             StandardMetrics.ms_v_charge_mode->SetValue("Interrupted");
@@ -202,18 +211,18 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       case 0x286: // Charger/inverter temperature
       {
-        StandardMetrics.ms_v_charge_temp->SetValue((int)d[3]-40);
-        StandardMetrics.ms_v_inv_temp->SetValue((int)d[3]-40);
+        StandardMetrics.ms_v_charge_temp->SetValue((float)d[3]-40);
+        StandardMetrics.ms_v_inv_temp->SetValue((float)d[3]-40);
       break;
       }
 
       case 0x298: // Motor temperature and RPM
       {
         StandardMetrics.ms_v_mot_temp->SetValue((int)d[3]-40);
-        StandardMetrics.ms_v_mot_rpm->SetValue(((d[6]*256)+d[7])-10000);
+        StandardMetrics.ms_v_mot_rpm->SetValue(((d[6]*256.0)+d[7])-10000);
 
-        if(StandardMetrics.ms_v_mot_rpm->AsInt() < 16 && StandardMetrics.ms_v_mot_rpm->AsInt() > -16)
-        { // (-16 < Motor RPM > 16) Set to 0
+        if(StandardMetrics.ms_v_mot_rpm->AsInt() < 10 && StandardMetrics.ms_v_mot_rpm->AsInt() > -10)
+        { // (-10 < Motor RPM > 10) Set to 0
           StandardMetrics.ms_v_mot_rpm->SetValue(0);
         }
       break;
@@ -239,6 +248,12 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
       }
 
+      case 0x325:
+      {
+        /*d[0]==1?*/
+      break;
+      }
+
       case 0x346: // Estimated range , // Handbrake state
       {
         StandardMetrics.ms_v_bat_range_est->SetValue(d[7]);
@@ -255,18 +270,24 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       case 0x373: // Main Battery volt and current
       {
-        StandardMetrics.ms_v_bat_current->SetValue((((((d[2]*256)+d[3]))-32768))/100);
-        StandardMetrics.ms_v_bat_voltage->SetValue((d[4]*256+d[5])/10);
-        //StandardMetrics.ms_v_bat_power->SetValue((StandardMetrics.ms_v_bat_voltage->AsInt()*StandardMetrics.ms_v_bat_current->AsInt())/1000);
+        StandardMetrics.ms_v_bat_current->SetValue((((((d[2]*256.0)+d[3]))-32768))/100.0);
+        StandardMetrics.ms_v_bat_voltage->SetValue((d[4]*256.0+d[5])/10.0);
+        StandardMetrics.ms_v_bat_power->SetValue((StandardMetrics.ms_v_bat_voltage->AsFloat()*StandardMetrics.ms_v_bat_current->AsFloat())/1000.0);
       break;
       }
 
       case 0x374: // Main Battery Soc
       {
-        StandardMetrics.ms_v_bat_soc->SetValue(((int)d[1]-10)/2);
+        StandardMetrics.ms_v_bat_soc->SetValue(((int)d[1]-10)/2.0);
+        StandardMetrics.ms_v_bat_cac->SetValue(d[7]/2.0);
       break;
       }
 
+      case 0x384: //heating current?
+      {
+        //d[4]/10 //heating current;
+      break;
+      }
 
       case 0x389: // Charger voltage and current
       {
@@ -277,6 +298,19 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       case 0x3A4: // Climate console
       {
+        /**
+         * http://myimiev.com/forum/viewtopic.php?p=31226 PID 3A4 byte 0, bits
+         * 0-3: heating level (7 is off, under 7 is cooling, over 7 is heating)
+         * byte 0, bit 7: AC on (ventilation dial pressed) byte 0, bit 5: MAX
+         * heating (heating dial pressed) byte 0, bit 6: air recirculation
+         * (ventilation direction dial pressed)
+         *
+         * byte 1, bits 0-3: ventilation level (if AUTO is chosen, the
+         * automatically calculated level is returned) byte 1, bits 4-7:
+         * ventilation direction (1-2 face, 3 legs+face, 4 -5legs, 6
+         * legs+windshield 7-9 windshield)
+         */
+
         //heating level
         if (((int)d[0]<<4) == 112)
         {
@@ -295,40 +329,42 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
        // AC on
       }
 
-
-      //ventilation direction
-      if ((((int)d[1]>>4) == 1) || (((int)d[1]>>4) == 2))
-      {
-        //   Face
+      string ventDirection = "-";
+      switch ((d[1] & 240 >> 4)) {
+        case 1:
+        case 2:
+        ventDirection = "Face";
+        break;
+        case 3:
+        case 4:
+        ventDirection = "Legs + Face";
+        break;
+        case 5:
+        case 6:
+        ventDirection = "Legs";
+        break;
+        case 7:
+        case 8:
+        ventDirection = "Legs + Windshield";
+        break;
+        case 9:
+        ventDirection = "Windshield";
+        break;
       }
 
-      if (((int)d[1]>>4) == 3)
-      {
-       //Leg + Face
-      }
-
-      if ((((int)d[1]>>4) == 4) || (((int)d[1]>>4) == 5))
-      {
-        //Leg
-      }
-
-      if (((int)d[1]>>4) == 6)
-      {
-          //Leg + Windshield
-      }
-
-      if ((((int)d[1]>>4) == 7) || (((int)d[1]>>4) == 8) || (((int)d[1]>>4) == 9))
-      {
-        // Windshield
-      }
 
 
       break;
     }
+    case 0x408:
+    {
+      // all == 0
+    break;
+    }
     case 0x412: // Speed and odometer
     {
       if (d[1]>200)
-        StandardMetrics.ms_v_pos_speed->SetValue((int)d[1]-255,Kph);
+        StandardMetrics.ms_v_pos_speed->SetValue((int)d[1]-255.0,Kph);
       else
         StandardMetrics.ms_v_pos_speed->SetValue(d[1]);
 
@@ -452,6 +488,16 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
         }
 
+        if ((d[2]& 1)!=0) //any Door + trunk
+        { //OPEN
+            //StandardMetrics.ms_v_door_fr->SetValue(true);
+        }
+        else
+        {
+              //StandardMetrics.ms_v_door_fr->SetValue(false);
+        }
+
+
         if ((d[2]& 2)!=0) //LHD Driver Door
         { //OPEN
           StandardMetrics.ms_v_door_fl->SetValue(true);
@@ -477,8 +523,8 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         int idx = ((int)d[0]<<1)-2;
         mi_batttemps[idx] = (signed char)d[2] - 50;
         mi_batttemps[idx+1] = (signed char)d[3] - 50;
-        mi_battvolts[idx] = ((d[4]*256+d[5])/100.0);
-        mi_battvolts[idx+1] = ((d[6]*256+d[7])/100.0);
+        mi_battvolts[idx] = (((d[4]*256.0+d[5])/200.0)+2.1);
+        mi_battvolts[idx+1] = (((d[6]*256.0+d[7])/200.0)+2.1);
         }
     break;
     }
@@ -502,8 +548,9 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         if ((d[0]>=1)&&(d[0]<=12))
           {
             int idx = ((int)d[0]<<1)+22;
-            mi_battvolts[idx] = ((d[4]*256+d[5])/100.0);
-            mi_battvolts[idx+1] = ((d[6]*256+d[7])/100.0);
+
+            mi_battvolts[idx] = (((d[4]*256.0+d[5])/200.0)+2.1);
+            mi_battvolts[idx+1] = (((d[6]*256.0+d[7])/200.0)+2.1);
           }
     break;
     }
@@ -530,39 +577,50 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
                 if((d[0]!=6) && (d[0]<6))
                 {
                   int idx = ((int)d[0]<<1)+46;
-                  mi_battvolts[idx] = ((d[4]*256+d[5])/100.0);
-                  mi_battvolts[idx+1] = ((d[6]*256+d[7])/100.0);
+                  mi_battvolts[idx] = (((d[4]*256.0+d[5])/200.0)+2.1);
+                  mi_battvolts[idx+1] = (((d[6]*256.0+d[7])/200.0)+2.1);
                 }
                 else if ((d[0]!=12) && (d[0]>6))
                   {
                     int idx = ((int)d[0]<<1)+44;
-                    mi_battvolts[idx] = ((d[4]*256+d[5])/100.0);
-                    mi_battvolts[idx+1] = ((d[6]*256+d[7])/100.0);
+                    mi_battvolts[idx] = (((d[4]*256.0+d[5])/200.0)+2.1);
+                    mi_battvolts[idx+1] = (((d[6]*256.0+d[7])/200.0)+2.1);
                   }
                 }
     break;
     }
 
-    case 0x6e4: // Battery temperatures and voltages E4
+    case 0x6e4: // Battery voltages E4
     {
-
         if ((d[0]>=1)&&(d[0]<=12))
             {
               if((d[0]!=6) && (d[0]<6))
               {
                 int idx = ((int)d[0]<<1)+66;
-                mi_battvolts[idx] = ((d[4]*256+d[5])/100);
-                mi_battvolts[idx+1] = ((d[6]*256+d[7])/100);
+          //      ESP_LOGI(TAG, "battvolt e4 <6 %i/%i",idx, idx+1);
+                mi_battvolts[idx] = (((d[4]*256.0+d[5])/200.0)+2.1);
+                mi_battvolts[idx+1] = (((d[6]*256.0+d[7])/200.0)+2.1);
               }
               else if ((d[0]!=12) && (d[0]>6))
                 {
                     int idx = ((int)d[0]<<1)+64;
-                    mi_battvolts[idx] = ((d[4]*256+d[5])/100);
-                    mi_battvolts[idx+1] = ((d[6]*256+d[7])/100);
+            //        ESP_LOGI(TAG, "battvolt e4 <12 >6 %i/%i",idx, idx+1);
+                    mi_battvolts[idx] = (((d[4]*256.0+d[5])/200.0)+2.1);
+                    mi_battvolts[idx+1] = (((d[6]*256.0+d[7])/200.0)+2.1);
                 }
               }
     break;
     }
+
+  /*  case 0x762:
+    {
+        if (d[0] == 36)
+            {
+              StandardMetrics.ms_v_bat_cac->SetValue(((d[3]*256)+d[4])/10.0);
+              StandardMetrics.ms_v_bat_soh->SetValue(StandardMetrics.ms_v_bat_cac->AsFloat()/48);
+            }
+    break;
+  }*/
 
     default:
     break;
@@ -581,8 +639,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
       {
         vehicle_charger_status(CHARGER_STATUS_CHARGING);
       }
-      else if((StandardMetrics.ms_v_bat_soc->AsInt() > 95) && (StandardMetrics.ms_v_charge_voltage->AsInt() > 90) && (StandardMetrics.ms_v_charge_current->AsInt() < 1) )
-
+      else if((StandardMetrics.ms_v_bat_soc->AsInt() > 91) && (StandardMetrics.ms_v_charge_voltage->AsInt() > 90) && (StandardMetrics.ms_v_charge_current->AsInt() < 1) )
       {
         vehicle_charger_status(CHARGER_STATUS_FINISHED);
       }
@@ -590,26 +647,26 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
       {
         vehicle_charger_status(CHARGER_STATUS_INTERRUPTED);
       }
-      if (StandardMetrics.ms_v_bat_current->AsInt() > 0)
+      if ((StandardMetrics.ms_v_bat_current->AsInt() > 0) && (StandardMetrics.ms_v_charge_voltage->AsInt() > 260))
       {
         vehicle_charger_status(CHARGER_STATUS_QUICK_CHARGING);
       }
     }
 
-    if (StandardMetrics.ms_v_bat_soc->AsInt() <= 10)
 
+    if (StandardMetrics.ms_v_bat_soc->AsInt() <= 10)
         {
           StandardMetrics.ms_v_bat_range_ideal->SetValue(0);
         }
       else
         {
-        // Ideal range 93 miles (150km) with 100% capacity
-        int SOH = StandardMetrics.ms_v_bat_soh->AsInt();
+        // Ideal range 150km with 100% capacity
+        int SOH = StandardMetrics.ms_v_bat_soh->AsFloat();
         if (SOH == 0){
-          SOH = 1; //ideal range as 100% else with SOH
+          SOH = 100; //ideal range as 100% else with SOH
         }
           StandardMetrics.ms_v_bat_range_ideal->SetValue((
-          (StandardMetrics.ms_v_bat_soc->AsFloat()-10)*1.04)*SOH);
+          (StandardMetrics.ms_v_bat_soc->AsFloat()-10)*1.664)*SOH/100.0);
         }
 
   }
@@ -617,14 +674,23 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
 void OvmsVehicleMitsubishi::Ticker10(uint32_t ticker)
   {
   int tbattery = 0;
-  for (int k=0;k<66;k++) tbattery += mi_batttemps[k];
+  for (int k=0;k<66;k++){
+    tbattery += mi_batttemps[k];
+  }
   StandardMetrics.ms_v_bat_temp->SetValue(tbattery/66.0);
+  cell_temps->SetElemValues(0, 66, mi_batttemps);
+
+
   StandardMetrics.ms_v_env_cooling->SetValue(!StandardMetrics.ms_v_bat_temp->IsStale());
 
   double vbattery = 0;
-  for (int l=0;l<88;l++) vbattery += (double)mi_battvolts[l];
+  for (int l=0;l<88;l++)
+  {
+    //ESP_LOGI(TAG, "Battery cell %f volt: %f",l,mi_battvolts[l])
+    vbattery += (double)mi_battvolts[l];
+  }
   StandardMetrics.ms_v_bat_cell_level_avg->SetValue(vbattery/88.0);
-
+  cell_volts->SetElemValues(0, 88, mi_battvolts);
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandSetChargeMode(vehicle_mode_t mode)

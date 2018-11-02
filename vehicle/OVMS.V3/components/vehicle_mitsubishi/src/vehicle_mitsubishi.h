@@ -46,6 +46,18 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
 
+  protected:
+    virtual void Ticker1(uint32_t ticker);
+    virtual void Ticker10(uint32_t ticker);
+
+  protected:
+    virtual void Notify12vCritical();
+    virtual void Notify12vRecovered();
+
+  protected:
+    char m_vin[18];
+    unsigned int m_charge_watt;
+
   public:
     virtual vehicle_command_t CommandSetChargeMode(vehicle_mode_t mode);
     virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
@@ -59,26 +71,21 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     virtual vehicle_command_t CommandActivateValet(const char* pin);
     virtual vehicle_command_t CommandDeactivateValet(const char* pin);
     virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
+    OvmsMetricVector<float>* cell_volts = new OvmsMetricVector<float>("xmi.b.cell.volts", SM_STALE_MIN, Volts);
+    OvmsMetricVector<float>* cell_temps = new OvmsMetricVector<float>("xmi.b.cell.temps", SM_STALE_MIN, Degrees);
 
+    // --------------------------------------------------------------------------
+    // Webserver subsystem
+    //  - implementation: rt_web.(h,cpp)
+    //
   public:
     void WebInit();
-    static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
-    static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
     static void WebBattMon(PageEntry_t& p, PageContext_t& c);
 
   public:
     void GetDashboardConfig(DashboardConfig& cfg);
 
-  protected:
-    virtual void Ticker1(uint32_t ticker);
-    virtual void Ticker10(uint32_t ticker);
 
-  protected:
-    virtual void Notify12vCritical();
-    virtual void Notify12vRecovered();
-
-  protected:
-    char m_vin[18];
   };
 
 #endif //#ifndef __VEHICLE_MITSUBISHI_H__
