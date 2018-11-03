@@ -58,10 +58,6 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   memset(mi_batttemps,0,sizeof(mi_batttemps));
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
-
-  // require GPS:
-  MyEvents.SignalEvent("vehicle.require.gps", NULL);
-  MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
   }
 
 OvmsVehicleMitsubishi::~OvmsVehicleMitsubishi()

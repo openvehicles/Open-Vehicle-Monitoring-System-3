@@ -126,7 +126,6 @@ class simcom : public pcp, public InternalRamAllocated
     GsmMux       m_mux;
     GsmPPPOS     m_ppp;
     GsmNMEA      m_nmea;
-    bool         m_gps_required;
     int          m_line_unfinished;
     std::string  m_line_buffer;
 

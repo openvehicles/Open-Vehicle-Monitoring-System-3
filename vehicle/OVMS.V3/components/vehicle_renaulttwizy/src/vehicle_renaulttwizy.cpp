@@ -104,10 +104,6 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "gps.lock.acquired", std::bind(&OvmsVehicleRenaultTwizy::EventListener, this, _1, _2));
 
-  // require GPS:
-  MyEvents.SignalEvent("vehicle.require.gps", NULL);
-  MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
-
   // init subsystems:
   BatteryInit();
   PowerInit();
