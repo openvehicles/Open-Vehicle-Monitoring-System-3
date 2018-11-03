@@ -65,15 +65,15 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   memset(m_vin,0,sizeof(m_vin));
   memset(mi_batttemps,0,sizeof(mi_batttemps));
   memset(mi_battvolts,0,sizeof(mi_battvolts));
-
+  WebInit();
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
 
   }
-
 OvmsVehicleMitsubishi::~OvmsVehicleMitsubishi()
   {
   ESP_LOGI(TAG, "Stop Mitsubishi  vehicle module");
   }
+
 
 void vehicle_charger_status(ChargerStatus status)
         {
@@ -523,8 +523,46 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         int idx = ((int)d[0]<<1)-2;
         mi_batttemps[idx] = (signed char)d[2] - 50;
         mi_batttemps[idx+1] = (signed char)d[3] - 50;
+
+        cell_temps_act->SetElemValue(idx, d[2] - 50);
+        cell_temps_act->SetElemValue(idx+1, d[3] - 50);
+
+        //MIN temp
+        if (cell_temps_act->GetElemValue(idx)<cell_temps_min->GetElemValue(idx)) {
+          cell_temps_min->SetElemValue(idx,cell_temps_act->GetElemValue(idx));
+        }
+        if (cell_temps_act->GetElemValue(idx+1)<cell_temps_min->GetElemValue(idx+1)) {
+          cell_temps_min->SetElemValue(idx+1,cell_temps_act->GetElemValue(idx+1));
+        }
+        //MAX temp
+        if (cell_temps_act->GetElemValue(idx)>cell_temps_max->GetElemValue(idx)) {
+          cell_temps_max->SetElemValue(idx,cell_temps_act->GetElemValue(idx));
+        }
+        if (cell_temps_act->GetElemValue(idx+1)<cell_temps_max->GetElemValue(idx+1)) {
+          cell_temps_max->SetElemValue(idx+1,cell_temps_act->GetElemValue(idx+1));
+        }
+
         mi_battvolts[idx] = (((d[4]*256.0+d[5])/200.0)+2.1);
         mi_battvolts[idx+1] = (((d[6]*256.0+d[7])/200.0)+2.1);
+
+        cell_volts_act->SetElemValue(idx, (((d[4]*256.0+d[5])/200.0)+2.1));
+        cell_volts_act->SetElemValue(idx+1, (((d[6]*256.0+d[7])/200.0)+2.1));
+
+        //MIN volt
+        if (cell_volts_act->GetElemValue(idx)<cell_volts_min->GetElemValue(idx)) {
+          cell_volts_min->SetElemValue(idx,cell_volts_act->GetElemValue(idx));
+        }
+        if (cell_volts_act->GetElemValue(idx+1)<cell_volts_min->GetElemValue(idx+1)) {
+          cell_volts_min->SetElemValue(idx+1,cell_volts_act->GetElemValue(idx+1));
+        }
+        //MAX volt
+        if (cell_volts_act->GetElemValue(idx)>cell_volts_max->GetElemValue(idx)) {
+          cell_volts_max->SetElemValue(idx,cell_volts_act->GetElemValue(idx));
+        }
+        if (cell_volts_act->GetElemValue(idx+1)<cell_volts_max->GetElemValue(idx+1)) {
+          cell_volts_max->SetElemValue(idx+1,cell_volts_act->GetElemValue(idx+1));
+        }
+
         }
     break;
     }
@@ -536,13 +574,49 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
             int idx = ((int)d[0]<<1)+22;
             if (d[0]==12) {
               mi_batttemps[idx-1] = (signed char)d[1] - 50;
+              cell_temps_act->SetElemValue(idx-1, d[1] - 50);
+              //MIN temp
+              if (cell_temps_act->GetElemValue(idx-1)<cell_temps_min->GetElemValue(idx-1)) {
+                cell_temps_min->SetElemValue(idx-1,cell_temps_act->GetElemValue(idx-1));
+              }
+              //MAX temp
+              if (cell_temps_act->GetElemValue(idx-1)>cell_temps_max->GetElemValue(idx-1)) {
+                cell_temps_max->SetElemValue(idx-1,cell_temps_act->GetElemValue(idx-1));
+              }
             }else{
               mi_batttemps[idx] = (signed char)d[1] - 50;
+              cell_temps_act->SetElemValue(idx, d[1] - 50);
+              //MIN temp
+              if (cell_temps_act->GetElemValue(idx)<cell_temps_min->GetElemValue(idx)) {
+                cell_temps_min->SetElemValue(idx,cell_temps_act->GetElemValue(idx));
+              }
+              //MAX temp
+              if (cell_temps_act->GetElemValue(idx)>cell_temps_max->GetElemValue(idx)) {
+                cell_temps_max->SetElemValue(idx,cell_temps_act->GetElemValue(idx));
+              }
             }
             if((d[0]!=6) && (d[0]<6)){
               mi_batttemps[idx+1] = (signed char)d[2] - 50;
+              cell_temps_act->SetElemValue(idx+1, d[2] - 50);
+              //MIN temp
+              if (cell_temps_act->GetElemValue(idx+1)<cell_temps_min->GetElemValue(idx+1)) {
+                cell_temps_min->SetElemValue(idx+1,cell_temps_act->GetElemValue(idx+1));
+              }
+              //MAX temp
+              if (cell_temps_act->GetElemValue(idx+1)<cell_temps_max->GetElemValue(idx+1)) {
+                cell_temps_max->SetElemValue(idx+1,cell_temps_act->GetElemValue(idx+1));
+              }
             }else if ((d[0]!=6) && (d[0]>6) && (d[0]!=12)) {
               mi_batttemps[idx-1] = (signed char)d[2] - 50;
+              cell_temps_act->SetElemValue(idx-1, d[2] - 50);
+              //MIN temp
+                if (cell_temps_act->GetElemValue(idx-1)<cell_temps_min->GetElemValue(idx-1)) {
+                  cell_temps_min->SetElemValue(idx-1,cell_temps_act->GetElemValue(idx-1));
+                }
+                //MAX temp
+                if (cell_temps_act->GetElemValue(idx-1)>cell_temps_max->GetElemValue(idx-1)) {
+                  cell_temps_max->SetElemValue(idx-1,cell_temps_act->GetElemValue(idx-1));
+                }
             }
         }
         if ((d[0]>=1)&&(d[0]<=12))
@@ -551,6 +625,24 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
             mi_battvolts[idx] = (((d[4]*256.0+d[5])/200.0)+2.1);
             mi_battvolts[idx+1] = (((d[6]*256.0+d[7])/200.0)+2.1);
+
+            cell_volts_act->SetElemValue(idx, (((d[4]*256.0+d[5])/200.0)+2.1));
+            cell_volts_act->SetElemValue(idx+1, (((d[6]*256.0+d[7])/200.0)+2.1));
+
+            //MIN volt
+            if (cell_volts_act->GetElemValue(idx)<cell_volts_min->GetElemValue(idx)) {
+              cell_volts_min->SetElemValue(idx,cell_volts_act->GetElemValue(idx));
+            }
+            if (cell_volts_act->GetElemValue(idx+1)<cell_volts_min->GetElemValue(idx+1)) {
+              cell_volts_min->SetElemValue(idx+1,cell_volts_act->GetElemValue(idx+1));
+            }
+            //MAX volt
+            if (cell_volts_act->GetElemValue(idx)>cell_volts_max->GetElemValue(idx)) {
+              cell_volts_max->SetElemValue(idx,cell_volts_act->GetElemValue(idx));
+            }
+            if (cell_volts_act->GetElemValue(idx+1)<cell_volts_max->GetElemValue(idx+1)) {
+              cell_volts_max->SetElemValue(idx+1,cell_volts_act->GetElemValue(idx+1));
+            }
           }
     break;
     }
@@ -564,11 +656,47 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
               int idx = ((int)d[0]<<1)+44;
               mi_batttemps[idx] = (signed char)d[1] - 50;
               mi_batttemps[idx+1] = (signed char)d[2] - 50;
+              cell_temps_act->SetElemValue(idx, d[1] - 50);
+              cell_temps_act->SetElemValue(idx+1, d[2] - 50);
+
+              //MIN temp
+              if (cell_temps_act->GetElemValue(idx)<cell_temps_min->GetElemValue(idx)) {
+                cell_temps_min->SetElemValue(idx,cell_temps_act->GetElemValue(idx));
+              }
+              if (cell_temps_act->GetElemValue(idx+1)<cell_temps_min->GetElemValue(idx+1)) {
+                cell_temps_min->SetElemValue(idx+1,cell_temps_act->GetElemValue(idx+1));
+              }
+              //MAX temp
+              if (cell_temps_act->GetElemValue(idx)>cell_temps_max->GetElemValue(idx)) {
+                cell_temps_max->SetElemValue(idx,cell_temps_act->GetElemValue(idx));
+              }
+              if (cell_temps_act->GetElemValue(idx+1)<cell_temps_max->GetElemValue(idx+1)) {
+                cell_temps_max->SetElemValue(idx+1,cell_temps_act->GetElemValue(idx+1));
+              }
+
             }else if ((d[0]!=12) && (d[0]>6))
               {
                 int idx = ((int)d[0]<<1)+42;
                 mi_batttemps[idx] = (signed char)d[1] - 50;
                 mi_batttemps[idx+1] = (signed char)d[2] - 50;
+                cell_temps_act->SetElemValue(idx, d[1] - 50);
+                cell_temps_act->SetElemValue(idx+1, d[2] - 50);
+
+                //MIN temp
+                if (cell_temps_act->GetElemValue(idx)<cell_temps_min->GetElemValue(idx)) {
+                  cell_temps_min->SetElemValue(idx,cell_temps_act->GetElemValue(idx));
+                }
+                if (cell_temps_act->GetElemValue(idx+1)<cell_temps_min->GetElemValue(idx+1)) {
+                  cell_temps_min->SetElemValue(idx+1,cell_temps_act->GetElemValue(idx+1));
+                }
+                //MAX temp
+                if (cell_temps_act->GetElemValue(idx)>cell_temps_max->GetElemValue(idx)) {
+                  cell_temps_max->SetElemValue(idx,cell_temps_act->GetElemValue(idx));
+                }
+                if (cell_temps_act->GetElemValue(idx+1)<cell_temps_max->GetElemValue(idx+1)) {
+                  cell_temps_max->SetElemValue(idx+1,cell_temps_act->GetElemValue(idx+1));
+                }
+
               }
             }
 
@@ -579,12 +707,48 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
                   int idx = ((int)d[0]<<1)+46;
                   mi_battvolts[idx] = (((d[4]*256.0+d[5])/200.0)+2.1);
                   mi_battvolts[idx+1] = (((d[6]*256.0+d[7])/200.0)+2.1);
+
+                  cell_volts_act->SetElemValue(idx, (((d[4]*256.0+d[5])/200.0)+2.1));
+                  cell_volts_act->SetElemValue(idx+1, (((d[6]*256.0+d[7])/200.0)+2.1));
+
+                  //MIN volt
+                  if (cell_volts_act->GetElemValue(idx)<cell_volts_min->GetElemValue(idx)) {
+                    cell_volts_min->SetElemValue(idx,cell_volts_act->GetElemValue(idx));
+                  }
+                  if (cell_volts_act->GetElemValue(idx+1)<cell_volts_min->GetElemValue(idx+1)) {
+                    cell_volts_min->SetElemValue(idx+1,cell_volts_act->GetElemValue(idx+1));
+                  }
+                  //MAX volt
+                  if (cell_volts_act->GetElemValue(idx)>cell_volts_max->GetElemValue(idx)) {
+                    cell_volts_max->SetElemValue(idx,cell_volts_act->GetElemValue(idx));
+                  }
+                  if (cell_volts_act->GetElemValue(idx+1)<cell_volts_max->GetElemValue(idx+1)) {
+                    cell_volts_max->SetElemValue(idx+1,cell_volts_act->GetElemValue(idx+1));
+                  }
                 }
                 else if ((d[0]!=12) && (d[0]>6))
                   {
                     int idx = ((int)d[0]<<1)+44;
                     mi_battvolts[idx] = (((d[4]*256.0+d[5])/200.0)+2.1);
                     mi_battvolts[idx+1] = (((d[6]*256.0+d[7])/200.0)+2.1);
+
+                    cell_volts_act->SetElemValue(idx, (((d[4]*256.0+d[5])/200.0)+2.1));
+                    cell_volts_act->SetElemValue(idx+1, (((d[6]*256.0+d[7])/200.0)+2.1));
+
+                    //MIN volt
+                    if (cell_volts_act->GetElemValue(idx)<cell_volts_min->GetElemValue(idx)) {
+                      cell_volts_min->SetElemValue(idx,cell_volts_act->GetElemValue(idx));
+                    }
+                    if (cell_volts_act->GetElemValue(idx+1)<cell_volts_min->GetElemValue(idx+1)) {
+                      cell_volts_min->SetElemValue(idx+1,cell_volts_act->GetElemValue(idx+1));
+                    }
+                    //MAX volt
+                    if (cell_volts_act->GetElemValue(idx)>cell_volts_max->GetElemValue(idx)) {
+                      cell_volts_max->SetElemValue(idx,cell_volts_act->GetElemValue(idx));
+                    }
+                    if (cell_volts_act->GetElemValue(idx+1)<cell_volts_max->GetElemValue(idx+1)) {
+                      cell_volts_max->SetElemValue(idx+1,cell_volts_act->GetElemValue(idx+1));
+                    }
                   }
                 }
     break;
@@ -600,6 +764,24 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
           //      ESP_LOGI(TAG, "battvolt e4 <6 %i/%i",idx, idx+1);
                 mi_battvolts[idx] = (((d[4]*256.0+d[5])/200.0)+2.1);
                 mi_battvolts[idx+1] = (((d[6]*256.0+d[7])/200.0)+2.1);
+
+                cell_volts_act->SetElemValue(idx, (((d[4]*256.0+d[5])/200.0)+2.1));
+                cell_volts_act->SetElemValue(idx+1, (((d[6]*256.0+d[7])/200.0)+2.1));
+
+                //MIN volt
+                if (cell_volts_act->GetElemValue(idx)<cell_volts_min->GetElemValue(idx)) {
+                  cell_volts_min->SetElemValue(idx,cell_volts_act->GetElemValue(idx));
+                }
+                if (cell_volts_act->GetElemValue(idx+1)<cell_volts_min->GetElemValue(idx+1)) {
+                  cell_volts_min->SetElemValue(idx+1,cell_volts_act->GetElemValue(idx+1));
+                }
+                //MAX volt
+                if (cell_volts_act->GetElemValue(idx)>cell_volts_max->GetElemValue(idx)) {
+                  cell_volts_max->SetElemValue(idx,cell_volts_act->GetElemValue(idx));
+                }
+                if (cell_volts_act->GetElemValue(idx+1)<cell_volts_max->GetElemValue(idx+1)) {
+                  cell_volts_max->SetElemValue(idx+1,cell_volts_act->GetElemValue(idx+1));
+                }
               }
               else if ((d[0]!=12) && (d[0]>6))
                 {
@@ -607,6 +789,24 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
             //        ESP_LOGI(TAG, "battvolt e4 <12 >6 %i/%i",idx, idx+1);
                     mi_battvolts[idx] = (((d[4]*256.0+d[5])/200.0)+2.1);
                     mi_battvolts[idx+1] = (((d[6]*256.0+d[7])/200.0)+2.1);
+
+                    cell_volts_act->SetElemValue(idx, (((d[4]*256.0+d[5])/200.0)+2.1));
+                    cell_volts_act->SetElemValue(idx+1, (((d[6]*256.0+d[7])/200.0)+2.1));
+
+                    //MIN volt
+                    if (cell_volts_act->GetElemValue(idx)<cell_volts_min->GetElemValue(idx)) {
+                      cell_volts_min->SetElemValue(idx,cell_volts_act->GetElemValue(idx));
+                    }
+                    if (cell_volts_act->GetElemValue(idx+1)<cell_volts_min->GetElemValue(idx+1)) {
+                      cell_volts_min->SetElemValue(idx+1,cell_volts_act->GetElemValue(idx+1));
+                    }
+                    //MAX volt
+                    if (cell_volts_act->GetElemValue(idx)>cell_volts_max->GetElemValue(idx)) {
+                      cell_volts_max->SetElemValue(idx,cell_volts_act->GetElemValue(idx));
+                    }
+                    if (cell_volts_act->GetElemValue(idx+1)<cell_volts_max->GetElemValue(idx+1)) {
+                      cell_volts_max->SetElemValue(idx+1,cell_volts_act->GetElemValue(idx+1));
+                    }
                 }
               }
     break;
@@ -678,7 +878,7 @@ void OvmsVehicleMitsubishi::Ticker10(uint32_t ticker)
     tbattery += mi_batttemps[k];
   }
   StandardMetrics.ms_v_bat_temp->SetValue(tbattery/66.0);
-  cell_temps->SetElemValues(0, 66, mi_batttemps);
+  //cell_temps->SetElemValues(0, 66, mi_batttemps);
 
 
   StandardMetrics.ms_v_env_cooling->SetValue(!StandardMetrics.ms_v_bat_temp->IsStale());
@@ -690,7 +890,7 @@ void OvmsVehicleMitsubishi::Ticker10(uint32_t ticker)
     vbattery += (double)mi_battvolts[l];
   }
   StandardMetrics.ms_v_bat_cell_level_avg->SetValue(vbattery/88.0);
-  cell_volts->SetElemValues(0, 88, mi_battvolts);
+//  cell_volts->SetElemValues(0, 88, mi_battvolts);
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandSetChargeMode(vehicle_mode_t mode)

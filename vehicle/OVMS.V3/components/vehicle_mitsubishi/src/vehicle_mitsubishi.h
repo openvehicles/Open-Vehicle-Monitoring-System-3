@@ -59,6 +59,7 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     unsigned int m_charge_watt;
 
   public:
+    void BatteryReset();
     virtual vehicle_command_t CommandSetChargeMode(vehicle_mode_t mode);
     virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
     virtual vehicle_command_t CommandStartCharge();
@@ -71,15 +72,24 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     virtual vehicle_command_t CommandActivateValet(const char* pin);
     virtual vehicle_command_t CommandDeactivateValet(const char* pin);
     virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
-    OvmsMetricVector<float>* cell_volts = new OvmsMetricVector<float>("xmi.b.cell.volts", SM_STALE_MIN, Volts);
-    OvmsMetricVector<float>* cell_temps = new OvmsMetricVector<float>("xmi.b.cell.temps", SM_STALE_MIN, Degrees);
+    OvmsMetricVector<float>* cell_volts_act = new OvmsMetricVector<float>("xmi.b.cell.volts.act", SM_STALE_MIN, Volts);
+    OvmsMetricVector<float>* cell_volts_min = new OvmsMetricVector<float>("xmi.b.cell.volts.min", SM_STALE_MIN, Volts);
+    OvmsMetricVector<float>* cell_volts_max = new OvmsMetricVector<float>("xmi.b.cell.volts.max", SM_STALE_MIN, Volts);
+    OvmsMetricVector<float>* cell_volts_maxdev = new OvmsMetricVector<float>("xmi.b.cell.volts.maxdev", SM_STALE_MIN, Volts);
+
+    OvmsMetricVector<float>* cell_temps_act = new OvmsMetricVector<float>("xmi.b.cell.temps.act", SM_STALE_MIN, Degrees);
+    OvmsMetricVector<float>* cell_temps_min = new OvmsMetricVector<float>("xmi.b.cell.temps.min", SM_STALE_MIN, Degrees);
+    OvmsMetricVector<float>* cell_temps_max = new OvmsMetricVector<float>("xmi.b.cell.temps.max", SM_STALE_MIN, Degrees);
+    OvmsMetricVector<float>* cell_temps_maxdev = new OvmsMetricVector<float>("xmi.b.cell.temps.maxdev", SM_STALE_MIN, Degrees);
 
     // --------------------------------------------------------------------------
     // Webserver subsystem
-    //  - implementation: rt_web.(h,cpp)
+    //  - implementation: mi_web.(h,cpp)
     //
   public:
     void WebInit();
+    static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
+    static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
     static void WebBattMon(PageEntry_t& p, PageContext_t& c);
 
   public:
