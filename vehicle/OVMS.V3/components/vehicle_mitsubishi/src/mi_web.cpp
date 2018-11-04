@@ -61,7 +61,7 @@ void OvmsVehicleMitsubishi::WebInit()
  * WebCfgFeatures: configure general parameters (URL /xmi/config)
  */
 void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
-{
+{/*
   std::string error;
   bool canwrite, remote_charge_port;
 
@@ -113,7 +113,7 @@ void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_button("default", "Save");
   c.form_end();
   c.panel_end();
-  c.done();
+  c.done();*/
 }
 
 
@@ -241,7 +241,7 @@ void OvmsVehicleMitsubishi::WebBattMon(PageEntry_t& p, PageContext_t& c)
       "</div>"
     "</div>"
     "<div class=\"panel-footer\">"
-      "<button class=\"btn btn-default\" data-cmd=\"xmi batt reset\" data-target=\"#output\">Reset min/max</button>"
+      "<button class=\"btn btn-default\" data-cmd=\"xmi battreset\" data-target=\"#output\">Reset min/max</button>"
       "<samp id=\"output\" class=\"samp-inline\"></samp>"
     "</div>"
     "</div>"

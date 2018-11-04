@@ -37,6 +37,8 @@
 
 using namespace std;
 
+void CommandBatteryReset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+
 class OvmsVehicleMitsubishi : public OvmsVehicle
   {
   public:
@@ -57,9 +59,13 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
   protected:
     char m_vin[18];
     unsigned int m_charge_watt;
+    OvmsCommand *cmd_xmi;
 
   public:
     void BatteryReset();
+
+    vehicle_command_t CommandBatt(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+
     virtual vehicle_command_t CommandSetChargeMode(vehicle_mode_t mode);
     virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
     virtual vehicle_command_t CommandStartCharge();

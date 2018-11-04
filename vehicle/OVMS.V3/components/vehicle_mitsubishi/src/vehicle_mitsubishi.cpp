@@ -68,13 +68,29 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   WebInit();
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
 
+  // init commands:
+  cmd_xmi = MyCommandApp.RegisterCommand("xmi", "Mitsubishi iMiEV", NULL, "", 0, 0, true);
+  cmd_xmi->RegisterCommand("battreset", "Battery monitor", CommandBatteryReset, "", 0, 0, true);
+
   }
 OvmsVehicleMitsubishi::~OvmsVehicleMitsubishi()
   {
   ESP_LOGI(TAG, "Stop Mitsubishi  vehicle module");
   }
 
+  /**
+   * BatteryReset: reset battery min / max
+   */
+  void OvmsVehicleMitsubishi::BatteryReset()
+  {
+    ESP_LOGD(TAG, "battmon reset");
+    cell_volts_min->SetElemValues(0, 88, mi_battvolts);
+    cell_volts_max->SetElemValues(0, 88, mi_battvolts);
 
+    cell_temps_min->SetElemValues(0, 66, mi_batttemps);
+    cell_temps_max->SetElemValues(0, 66, mi_batttemps);
+
+  }
 void vehicle_charger_status(ChargerStatus status)
         {
         switch (status)
