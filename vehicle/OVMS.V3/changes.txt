@@ -1,5 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
+????-??-?? ???  ???????  OTA release
+- Add inactivity watchdog timers to CAN buses
+
 2018-10-24 MWJ  3.1.011  OTA release
 - Config backup & restore using encrypted ZIP archives
     (AES 256 bit encryption, supported by e.g. 7z)

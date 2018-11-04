@@ -42,6 +42,7 @@ static const char *TAG = "can";
 #include <ctype.h>
 #include <string.h>
 #include "ovms_command.h"
+#include "metrics_standard.h"
 
 can MyCan __attribute__ ((init_priority (4500)));
 
@@ -326,6 +327,11 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->printf("Tx delays: %20d\n",sbus->m_status.txbuf_delay);
   writer->printf("Tx err:    %20d\n",sbus->m_status.errors_tx);
   writer->printf("Tx ovrflw: %20d\n",sbus->m_status.txbuf_overflow);
+  writer->printf("Wdg Resets:%20d\n",sbus->m_status.watchdog_resets);
+  if (sbus->m_watchdog_timer>0)
+    {
+    writer->printf("Wdg Timer: %20d sec(s)\n",monotonictime-sbus->m_watchdog_timer);
+    }
   writer->printf("Err flags: 0x%08x\n",sbus->m_status.error_flags);
   }
 
@@ -432,7 +438,7 @@ can::~can()
 void can::IncomingFrame(CAN_frame_t* p_frame)
   {
   p_frame->origin->m_status.packets_rx++;
-
+  p_frame->origin->m_watchdog_timer = monotonictime;
   p_frame->origin->LogFrame(CAN_LogFrame_RX, p_frame);
 
   ExecuteCallbacks(p_frame, false);
@@ -495,6 +501,10 @@ canbus::canbus(const char* name)
   m_mode = CAN_MODE_OFF;
   m_speed = CAN_SPEED_1000KBPS;
   ClearStatus();
+
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG, "ticker.10", std::bind(&canbus::BusTicker10, this, _1, _2));
   }
 
 canbus::~canbus()
@@ -517,6 +527,34 @@ void canbus::ClearStatus()
   {
   memset(&m_status, 0, sizeof(m_status));
   m_status_chksum = 0;
+  m_watchdog_timer = monotonictime;
+  }
+
+void canbus::BusTicker10(std::string event, void* data)
+  {
+  if ((m_powermode==On)&&(StandardMetrics.ms_v_env_on->AsBool()))
+    {
+    // Bus is powered on, and vehicle is ON
+    if ((monotonictime-m_watchdog_timer) > 60)
+      {
+      // We have a watchdog timeout
+      // We need to reset the CAN bus...
+      m_status.watchdog_resets++;
+      CAN_mode_t m = m_mode;
+      CAN_speed_t s = m_speed;
+      CAN_status_t t; memcpy(&t,&m_status,sizeof(CAN_status_t));
+      ESP_LOGE(TAG, "%s watchdog inactivity timeout - resetting bus",m_name);
+      Stop();
+      Start(m, s);
+      memcpy(&m_status,&t,sizeof(CAN_status_t));
+      m_watchdog_timer = monotonictime;
+      }
+    }
+  else
+    {
+    // Vehicle is OFF, so just tickle the watchdog timer
+    m_watchdog_timer = monotonictime;
+    }
   }
 
 bool canbus::RxCallback(CAN_frame_t* frame)
@@ -671,7 +709,8 @@ bool canbus::StatusChanged()
   {
   // simple checksum to prevent log flooding:
   uint32_t chksum = m_status.packets_rx + m_status.packets_tx + m_status.errors_rx + m_status.errors_tx
-    + m_status.rxbuf_overflow + m_status.txbuf_overflow + m_status.error_flags + m_status.txbuf_delay;
+    + m_status.rxbuf_overflow + m_status.txbuf_overflow + m_status.error_flags + m_status.txbuf_delay
+    + m_status.watchdog_resets;
   if (chksum != m_status_chksum)
     {
     m_status_chksum = chksum;

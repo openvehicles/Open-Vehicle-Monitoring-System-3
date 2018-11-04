@@ -346,25 +346,25 @@ void canlog_trace::OutputMsg(CAN_LogMsg_t& msg)
 
     case CAN_LogStatus_Error:
       esp_log_write(ESP_LOG_ERROR, TAG,
-        LOG_FORMAT(E, "%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d"),
+        LOG_FORMAT(E, "%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d wdgreset=%d"),
         msg.timestamp, TAG,
         GetLogEntryTypeName(msg.type), msg.bus->GetName(),
         msg.status.interrupts,
         msg.status.packets_rx, msg.status.packets_tx,
         msg.status.error_flags, msg.status.errors_rx, msg.status.errors_tx,
         msg.status.rxbuf_overflow, msg.status.txbuf_overflow,
-        msg.status.txbuf_delay);
+        msg.status.txbuf_delay, msg.status.watchdog_resets);
       break;
     case CAN_LogStatus_Statistics:
       esp_log_write(ESP_LOG_DEBUG, TAG,
-        LOG_FORMAT(D, "%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d"),
+        LOG_FORMAT(D, "%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d wdgreset=%d"),
         msg.timestamp, TAG,
         GetLogEntryTypeName(msg.type), msg.bus->GetName(),
         msg.status.interrupts,
         msg.status.packets_rx, msg.status.packets_tx,
         msg.status.error_flags, msg.status.errors_rx, msg.status.errors_tx,
         msg.status.rxbuf_overflow, msg.status.txbuf_overflow,
-        msg.status.txbuf_delay);
+        msg.status.txbuf_delay, msg.status.watchdog_resets);
       break;
 
     case CAN_LogInfo_Comment:
@@ -434,13 +434,13 @@ void canlog_crtd::OutputMsg(CAN_LogMsg_t& msg)
 
     case CAN_LogStatus_Error:
     case CAN_LogStatus_Statistics:
-      fprintf(m_file, "%d.%03d %s%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d\n",
+      fprintf(m_file, "%d.%03d %s%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d wdgreset=%d\n",
         msg.timestamp / 1000, msg.timestamp % 1000, msg.bus->GetName()+3,
         (msg.type == CAN_LogStatus_Error) ? "CEV" : "CXX",
         GetLogEntryTypeName(msg.type), msg.status.interrupts,
         msg.status.packets_rx, msg.status.packets_tx, msg.status.error_flags,
         msg.status.errors_rx, msg.status.errors_tx, msg.status.rxbuf_overflow, msg.status.txbuf_overflow,
-        msg.status.txbuf_delay);
+        msg.status.txbuf_delay, msg.status.watchdog_resets);
       break;
       break;
 
