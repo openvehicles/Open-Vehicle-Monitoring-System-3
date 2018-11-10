@@ -589,6 +589,15 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
       
       
+    case 0x629:
+      // --------------------------------------------------------------------------
+      // *** SEVCON status ***
+      // sent every 100 ms (10 per second) while SEVCON is running
+      if (m_sevcon)
+        m_sevcon->QueryMonitoringData();
+      break;
+
+
     case 0x69F:
       // --------------------------------------------------------------------------
       // *** VIN ***

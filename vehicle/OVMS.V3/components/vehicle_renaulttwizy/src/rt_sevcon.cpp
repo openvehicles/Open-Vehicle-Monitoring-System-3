@@ -45,7 +45,7 @@ using namespace std;
  */
 
 SevconClient::SevconClient(OvmsVehicleRenaultTwizy* twizy)
-  : m_sync(twizy->m_can1), m_async(twizy->m_can1)
+  : m_sync(twizy->m_can1), m_async(twizy->m_can1, 50)
 {
   ESP_LOGI(TAG, "sevcon subsystem init");
 
@@ -59,6 +59,9 @@ SevconClient::SevconClient(OvmsVehicleRenaultTwizy* twizy)
   GetParamProfile(m_drivemode.profile_user, m_profile);
 
   m_cfgmode_request = false;
+
+  InitMonitoring();
+  xTaskCreatePinnedToCore(SevconAsyncTaskEntry, "OVMS SevconAsync", 4*1024, (void*)this, 10, &m_asynctask, 1);
 
   // register shell commands:
 
@@ -101,6 +104,13 @@ SevconClient::SevconClient(OvmsVehicleRenaultTwizy* twizy)
   cmd_cfg->RegisterCommand("querylogs", "Send SEVCON diag logs to server", shell_cfg_querylogs, "[which=1] [start=0]", 0, 2, true);
   cmd_cfg->RegisterCommand("clearlogs", "Clear SEVCON diag logs", shell_cfg_clearlogs, "[which=99]", 0, 1, true);
 
+  OvmsCommand *cmd_mon = m_twizy->cmd_xrt->RegisterCommand("mon", "SEVCON monitoring", NULL, "", 0, 0, true);
+
+  cmd_mon->RegisterCommand("start", "Start monitoring", shell_mon_start, "[<filename>]", 0, 1, true);
+  cmd_mon->RegisterCommand("stop", "Stop monitoring", shell_mon_stop, "", 0, 0, true);
+  cmd_mon->RegisterCommand("reset", "Reset monitoring", shell_mon_reset, "", 0, 0, true);
+
+
   // TODO:
   //  lock, unlock, valet, unvalet
   // LATER:
@@ -113,6 +123,7 @@ SevconClient::SevconClient(OvmsVehicleRenaultTwizy* twizy)
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "canopen.node.emcy", std::bind(&SevconClient::EmcyListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "sd.unmounting", std::bind(&SevconClient::UnmountListener, this, _1, _2));
 
   m_kickdown_timer = xTimerCreate("RT kickdown", pdMS_TO_TICKS(100), pdTRUE, NULL, KickdownTimer);
 }
@@ -123,6 +134,8 @@ SevconClient::~SevconClient()
     xTimerDelete(m_kickdown_timer, 0);
   if (m_faultqueue)
     vQueueDelete(m_faultqueue);
+  if (m_asynctask)
+    vTaskDelete(m_asynctask);
 }
 
 SevconClient* SevconClient::GetInstance(OvmsWriter* writer /*=NULL*/)
@@ -132,6 +145,17 @@ SevconClient* SevconClient::GetInstance(OvmsWriter* writer /*=NULL*/)
     return twizy->GetSevconClient();
   else
     return NULL;
+}
+
+
+void SevconClient::UnmountListener(string event, void* data)
+{
+  // close monitor recording file:
+  if (m_mon_file) {
+    OvmsMutexLock lock(&m_mon_mutex);
+    fclose((FILE*)m_mon_file);
+    m_mon_file = NULL;
+  }
 }
 
 
@@ -224,6 +248,38 @@ CANopenResult_t SevconClient::GetHeartbeat(CANopenJob& job, CANopenNMTState_t& v
   return res;
 }
 
+CANopenResult_t SevconClient::SendRead(uint16_t index, uint8_t subindex, uint32_t* value)
+{
+  CANopenResult_t res = CheckBus();
+  if (res != COR_OK)
+    return res;
+  return m_async.ReadSDO(m_nodeid, index, subindex, (uint8_t*)value, sizeof(uint32_t));
+}
+
+CANopenResult_t SevconClient::SendRead(uint16_t index, uint8_t subindex, int32_t* value)
+{
+  CANopenResult_t res = CheckBus();
+  if (res != COR_OK)
+    return res;
+  return m_async.ReadSDO(m_nodeid, index, subindex, (uint8_t*)value, sizeof(int32_t));
+}
+
+CANopenResult_t SevconClient::SendRead(uint16_t index, uint8_t subindex, uint16_t* value)
+{
+  CANopenResult_t res = CheckBus();
+  if (res != COR_OK)
+    return res;
+  return m_async.ReadSDO(m_nodeid, index, subindex, (uint8_t*)value, sizeof(uint16_t));
+}
+
+CANopenResult_t SevconClient::SendRead(uint16_t index, uint8_t subindex, int16_t* value)
+{
+  CANopenResult_t res = CheckBus();
+  if (res != COR_OK)
+    return res;
+  return m_async.ReadSDO(m_nodeid, index, subindex, (uint8_t*)value, sizeof(int16_t));
+}
+
 CANopenResult_t SevconClient::SendWrite(uint16_t index, uint8_t subindex, uint32_t* value)
 {
   CANopenResult_t res = CheckBus();
@@ -241,12 +297,20 @@ CANopenResult_t SevconClient::SendRequestState(CANopenNMTCommand_t command)
 }
 
 
-void SevconClient::ProcessAsyncResults()
+void SevconClient::SevconAsyncTaskEntry(void *pvParameters)
+{
+  SevconClient *me = (SevconClient*)pvParameters;
+  me->SevconAsyncTask();
+}
+
+void SevconClient::SevconAsyncTask()
 {
   CANopenJob job;
-  while (m_async.ReceiveDone(job, 0) != COR_ERR_QueueEmpty) {
-    ESP_LOGD(TAG, "Sevcon async result for %s: %s",
-      CANopen::GetJobName(job).c_str(), GetResultString(job).c_str());
+  while (true) {
+    if (m_async.ReceiveDone(job, portMAX_DELAY) != COR_ERR_QueueEmpty) {
+      // ESP_LOGD(TAG, "Sevcon async result for %s: %s", CANopen::GetJobName(job).c_str(), GetResultString(job).c_str());
+      ProcessMonitoringData(job);
+    }
   }
 }
 
@@ -393,9 +457,6 @@ void SevconClient::Ticker1(uint32_t ticker)
 {
   // update metrics:
   StdMetrics.ms_v_env_drivemode->SetValue((long) m_drivemode.u32);
-
-  // cleanup CANopen job result queue:
-  ProcessAsyncResults();
 
   // Send fault alerts:
   uint16_t faultcode;
