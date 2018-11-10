@@ -819,6 +819,7 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
     case Percentage:   return "%";
     case WattHoursPK:  return "Wh/km";
     case WattHoursPM:  return "Wh/mi";
+    case Nm:           return "Nm";
     default:           return "";
     }
   }
