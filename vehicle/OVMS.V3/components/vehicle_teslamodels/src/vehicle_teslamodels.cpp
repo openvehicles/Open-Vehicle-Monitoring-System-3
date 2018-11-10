@@ -78,6 +78,7 @@ OvmsVehicleTeslaModelS::OvmsVehicleTeslaModelS()
 OvmsVehicleTeslaModelS::~OvmsVehicleTeslaModelS()
   {
   ESP_LOGI(TAG, "Shutdown Tesla Model S vehicle module");
+  MyCommandApp.UnregisterCommand("xts");
   }
 
 void OvmsVehicleTeslaModelS::CommandBMS(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
