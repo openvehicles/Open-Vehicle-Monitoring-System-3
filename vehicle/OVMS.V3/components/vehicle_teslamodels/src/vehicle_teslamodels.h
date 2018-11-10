@@ -57,12 +57,10 @@ class OvmsVehicleTeslaModelS: public OvmsVehicle
     char m_vin[18];
     char m_type[5];
     float m_brick_v[96];
-    float m_module_t1[16];
-    float m_module_t2[16];
+    float m_module_t[32];
     uint32_t m_bmvt;
     OvmsMetricVector<float>* m_bms_v;
-    OvmsMetricVector<float>* m_bms_t1;
-    OvmsMetricVector<float>* m_bms_t2;
+    OvmsMetricVector<float>* m_bms_t;
   };
 
 #endif //#ifndef __VEHICLE_TESLAMODELS_H__
