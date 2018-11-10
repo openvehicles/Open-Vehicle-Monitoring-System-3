@@ -225,6 +225,7 @@ class SevconClient : public InternalRamAllocated
     uint32_t                  twizy_max_trq = 0;                  // CFG: max torque (mNm: 0..70125)
     uint32_t                  twizy_max_pwr_lo = 0;               // CFG: max power low speed (W: 0..17000)
     uint32_t                  twizy_max_pwr_hi = 0;               // CFG: max power high speed (W: 0..17000)
+    uint32_t                  twizy_max_curr = 0;                 // CFG: max current level (%: 10..123)
 
     int                       twizy_autorecup_checkpoint = 0;     // change detection for autorecup function
     uint16_t                  twizy_autorecup_level = 1000;       // autorecup: current recup level (per mille)
