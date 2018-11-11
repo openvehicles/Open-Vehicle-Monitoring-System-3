@@ -92,6 +92,9 @@ typedef enum : uint8_t
   // Energy consumption:
   WattHoursPK   = 100,  // Wh/km
   WattHoursPM   = 101,  // Wh/mi
+  
+  // Torque:
+  Nm            = 110,
   } metric_unit_t;
 
 typedef enum : uint8_t
@@ -447,6 +450,15 @@ class OvmsMetricVector : public OvmsMetric
         SetModified(false);
       }
     void operator=(std::vector<ElemType, Allocator> value) { SetValue(value); }
+
+    void ClearValue()
+      {
+      if (IsDefined())
+        {
+        m_value.clear();
+        SetModified(true);
+        }
+      }
 
     std::vector<ElemType, Allocator> AsVector(const std::vector<ElemType, Allocator> defvalue = std::vector<ElemType, Allocator>(), metric_unit_t units = Other)
       {

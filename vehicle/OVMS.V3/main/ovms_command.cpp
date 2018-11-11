@@ -149,6 +149,12 @@ OvmsCommand::OvmsCommand(const char* name, const char* title, void (*execute)(in
 
 OvmsCommand::~OvmsCommand()
   {
+  for (auto it = m_children.begin(); it != m_children.end(); ++it)
+    {
+    OvmsCommand* cmd = it->second;
+    delete cmd;
+    }
+  m_children.clear();
   }
 
 const char* OvmsCommand::GetName()
@@ -243,11 +249,38 @@ void OvmsCommand::ExpandUsage(std::string usage, OvmsWriter* writer)
 OvmsCommand* OvmsCommand::RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                                           const char *usage, int min, int max, bool secure)
   {
-  OvmsCommand* cmd = new OvmsCommand(name, title, execute, usage, min, max, secure);
-  m_children[name] = cmd;
-  cmd->m_parent = this;
-  //printf("Registered '%s' under '%s'\n",name,m_title);
+  // Protect against duplicate registrations
+  OvmsCommand* cmd = FindCommand(name);
+  if (cmd == NULL)
+    {
+    cmd = new OvmsCommand(name, title, execute, usage, min, max, secure);
+    m_children[name] = cmd;
+    cmd->m_parent = this;
+    }
   return cmd;
+  }
+
+bool OvmsCommand::UnregisterCommand(const char* name)
+  {
+  if (name == NULL)
+    {
+    // Unregister this command
+    return m_parent->UnregisterCommand(m_name);
+    }
+
+  // Unregister the specified child command
+  auto pos = m_children.find(name);
+  if (pos == m_children.end())
+    {
+    return false;
+    }
+  else
+    {
+    OvmsCommand* cmd = pos->second;
+    m_children.erase(pos);
+    delete cmd;
+    return true;
+    }
   }
 
 char ** OvmsCommand::Complete(OvmsWriter* writer, int argc, const char * const * argv)
@@ -578,6 +611,12 @@ OvmsCommand* OvmsCommandApp::RegisterCommand(const char* name, const char* title
                                              const char *usage, int min, int max, bool secure)
   {
   return m_root.RegisterCommand(name, title, execute, usage, min, max, secure);
+  }
+
+bool OvmsCommandApp::UnregisterCommand(const char* name)
+  {
+  // Unregister the specified child command
+  return m_root.UnregisterCommand(name);
   }
 
 OvmsCommand* OvmsCommandApp::FindCommand(const char* name)

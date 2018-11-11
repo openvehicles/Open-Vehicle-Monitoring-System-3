@@ -111,6 +111,7 @@ class OvmsCommand : public ExternalRamAllocated
   public:
     OvmsCommand* RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                                  const char *usage = "", int min = 0, int max = INT_MAX, bool secure = false);
+    bool UnregisterCommand(const char* name = NULL);
     const char* GetName();
     const char* GetTitle();
     const char* GetUsage(OvmsWriter* writer);
@@ -175,6 +176,7 @@ class OvmsCommandApp
   public:
     OvmsCommand* RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                                  const char *usage = "", int min = 0, int max = INT_MAX, bool secure = false);
+    bool UnregisterCommand(const char* name);
     OvmsCommand* FindCommand(const char* name);
     void RegisterConsole(OvmsWriter* writer);
     void DeregisterConsole(OvmsWriter* writer);
@@ -202,7 +204,7 @@ class OvmsCommandApp
   private:
     int LogBuffer(LogBuffers* lb, const char* fmt, va_list args);
     OvmsMutex m_fsync_mutex;
-    
+
   private:
     OvmsCommand m_root;
     typedef std::set<OvmsWriter*> ConsoleSet;

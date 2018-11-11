@@ -44,6 +44,7 @@
 #include <list>
 #include "pcp.h"
 #include <esp_err.h>
+#include "ovms_events.h"
 
 #ifndef ESP_QUEUED
 #define ESP_QUEUED           1    // frame has been queued for later processing
@@ -188,6 +189,7 @@ typedef struct
   uint32_t error_flags;             // driver specific bitset
   uint16_t errors_rx;               // RX error counter
   uint16_t errors_tx;               // TX error counter
+  uint16_t watchdog_resets;         // Watchdog reset counter
   } CAN_status_t;
 
 // Log entry types:
@@ -240,6 +242,7 @@ class canbus : public pcp, public InternalRamAllocated
 
   protected:
     virtual esp_err_t QueueWrite(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
+    void BusTicker10(std::string event, void* data);
 
   public:
     void LogFrame(CAN_LogEntry_t type, const CAN_frame_t* p_frame);
@@ -252,6 +255,7 @@ class canbus : public pcp, public InternalRamAllocated
     CAN_mode_t m_mode;
     CAN_status_t m_status;
     uint32_t m_status_chksum;
+    uint32_t m_watchdog_timer;
     QueueHandle_t m_txqueue;
   };
 

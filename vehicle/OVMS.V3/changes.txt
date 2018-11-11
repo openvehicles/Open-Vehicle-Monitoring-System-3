@@ -1,11 +1,28 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Twizy: SEVCON monitoring & recording
+  New commands:
+    xrt mon start [<filename>]
+    xrt mon stop
+    xrt mon reset
+  New metrics:
+    xrt.i.* = operational inverter data
+    xrt.s.* = power & torque by speed (virtual dyno)
+- Twizy: experimental powermap calculation including region 3 / breakdown torque
+  New config:
+    xrt [motor_trq_breakdown] = 0     Breakdown torque in Nm, e.g. 210.375
+    xrt [motor_rpm_rated] = 0         Rated speed in rpm, e.g. 2100
+  See docs/Renault-Twizy/Twizy-Powermap-Calculator-Tbrk.ods for details.
+- Add inactivity watchdog timers to CAN buses
+
+2018-10-24 MWJ  3.1.011  OTA release
 - Config backup & restore using encrypted ZIP archives
     (AES 256 bit encryption, supported by e.g. 7z)
   New commands:
     config backup <path> [password=module password]
     config restore <path> [password=module password]
+- Support custom MAC address (config network mac ...)
 
 2018-08-26 MWJ  3.1.010  OTA release
 - TeslaRoadster: Fix for digital speedo bug

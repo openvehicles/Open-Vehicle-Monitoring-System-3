@@ -27,6 +27,7 @@
 static const char *TAG = "v-twizy";
 
 #include <stdio.h>
+#include <math.h>
 #include <string>
 #include <iomanip>
 
@@ -301,6 +302,246 @@ uint32_t scale(uint32_t deflt, uint32_t from, uint32_t to, uint32_t min, uint32_
 //  - twizy_max_pwr_hi
 // See "Twizy Powermap Calculator" spreadsheet for details.
 
+#if 1 // new version
+
+//
+// The Twizy motor needs to define all three operating regions of
+// an AC induction motor with variable voltage & frequency control:
+//  - Region 1: constant torque
+//  - Region 2: constant power (we allow power to raise/decline linearly)
+//  - Region 3: max slip speed (called "high speed region" in SEVCON manual)
+// (see e.g. http://people.ucalgary.ca/~aknigh/vsd/ssim/sine/vvvf.html)
+// 
+// From monitoring register 0x4600 it seems the maximum motor voltage level the
+// controller and battery can provide is 52.8 Vrms (may correspond with 0x4641.0c).
+// On a 100 Nm configuration this level is reached at ~32 kph (with ~60 Nm).
+// Maximum slip frequency seems to be 272.3 rad/s and is reached at ~61 kph.
+// Raising current to 111% shifts this to ~64 kph. Assuming torque scaling
+// to be sqrt(curr%) fits the data (but not the motor equations, possibly
+// because current level change is not applied to the rated stator current).
+// 
+// So:
+// - Start of region 2 is defined by (max_trq, max_pwr_lo):
+//   rpm2 = max_pwr_lo * 9.549 / max_trq
+// - Start of region 3 is defined by (max_pwr_hi, breakdown torque, current level):
+//   rpm3 = trq_brk * rpm_rtd^2 / 9.549 / max_pwr_hi * sqrt(curr%)
+//
+// Note: region 3 may cut region 1 (= no region 2)
+//    or cut region 2 above max_rpm (= no region 3).
+//
+// Power in region 2 raises/declines linearly from max_pwr_lo@rpm1 to max_pwr_hi@rpm2.
+// Power in region 3 then declines inverse proportionally by rpm.
+//
+// See "Powermap Calculator" spreadsheet for (simplified) simulations.
+//
+
+#define DEFAULT_TRQ_BRK     0
+#define DEFAULT_RPM_RTD     0
+// #define DEFAULT_TRQ_BRK     (3 * 70.125)
+// #define DEFAULT_RPM_RTD     (2100)
+// …assumed based on breakdown torque measurements
+
+#define CURRENT_SCALING     ((double)twizy_max_curr / 100.0f)
+// #define CURRENT_SCALING     (sqrt((double)twizy_max_curr / 100.0f))
+
+#define MAP_SEGMENT_CNT 7
+
+CANopenResult_t SevconClient::CfgMakePowermap(void
+  /* twizy_max_rpm, twizy_max_trq, twizy_max_pwr_lo, twizy_max_pwr_hi */)
+{
+  const uint8_t pmap_fib[8] = { 0, 1, 2, 3, 5, 8, 13, 21 };
+  
+  SevconJob sc(this);
+  CANopenResult_t err;
+  uint8_t i, pt;
+  uint16_t rpm, rpm2, rpm3;   // rpm3 maximum is 59.360 rpm, as pwr_hi level is not less than 15%
+  uint16_t trq;
+  uint16_t pwr;
+  float rpm_d2, pwr_d2, rpm_d3;
+  float trq_brk, rpm_rtd;
+
+  if (twizy_max_rpm == CFG.DefaultRpmMax && twizy_max_trq == CFG.DefaultTrq
+    && twizy_max_pwr_lo == CFG.DefaultPwrLo && twizy_max_pwr_hi == CFG.DefaultPwrHi) {
+
+    // restore default torque map:
+    for (i=0; i<18; i++) {
+      if ((err = sc.Write(0x4611, 0x01+i, CFG.DefaultPMAP[i])) != COR_OK)
+        return err;
+    }
+    
+    // restore default flux map (only last 2 points):
+    for (i=0; i<4; i++) {
+      if ((err = sc.Write(0x4610, 0x0f+i, CFG.DefaultFMAP[i])) != COR_OK)
+        return err;
+    }
+  }
+
+  else {
+
+    // get breakdown torque config:
+    trq_brk = MyConfig.GetParamValueFloat("xrt", "motor_trq_breakdown", DEFAULT_TRQ_BRK);
+    rpm_rtd = MyConfig.GetParamValueFloat("xrt", "motor_rpm_rated", DEFAULT_RPM_RTD);
+    
+    // disable breakdown calculation?
+    if (trq_brk == 0 || rpm_rtd == 0) {
+      trq_brk = 1000;
+      rpm_rtd = 10000;
+    }
+
+    // Calculate region transition points:
+    //
+    // Start of region 2 is defined by (max_trq, max_pwr_lo):
+    //   rpm2 = max_pwr_lo * 9.549 / max_trq
+    
+    rpm2 = (((uint32_t)twizy_max_pwr_lo * 9549) / twizy_max_trq);
+    
+    if (rpm2 > twizy_max_rpm)
+        rpm2 = twizy_max_rpm;
+    
+    // Check if region 3 cuts region 1 (at max_trq):
+    
+    rpm3 = sqrt(trq_brk * 1000 / twizy_max_trq * CURRENT_SCALING) * rpm_rtd;
+    
+    if (rpm3 < rpm2) {
+      
+      // yes: this also means there is no region 2
+      rpm2 = rpm3;
+      pt = 0;
+      
+      // adjust twizy_max_pwr_*:
+      twizy_max_pwr_lo = twizy_max_trq * rpm2 / 9549;
+      twizy_max_pwr_hi = twizy_max_pwr_lo;
+      
+    }
+    else {
+      
+      // Check if region 3 cuts region 2 (at pwr_hi):
+      //
+      // Start of region 3 is defined by (max_pwr_hi, breakdown torque, current level):
+      //   rpm3 = trq_brk * rpm_rtd^2 / 9.549 / max_pwr_hi * sqrt(curr%)
+      //
+      // If rpm3 > max_rpm then no region 3 is needed.
+      
+      rpm3 = (trq_brk / 9.549f * rpm_rtd * rpm_rtd) * CURRENT_SCALING / twizy_max_pwr_hi;
+
+      if (rpm3 >= twizy_max_rpm) {
+        
+        // no need for region 3:
+        rpm3 = MAX(rpm2, twizy_max_rpm);
+        pt = 8;
+        
+      }
+      else {
+        
+        // in a config with very high pwr_hi, region 3 may calc as starting
+        // even in region 1. To maximize torque we stick to region 1 as
+        // calculated before, and skip region 2:
+        if (rpm3 < rpm2) {
+          rpm3 = rpm2;
+          twizy_max_pwr_hi = twizy_max_pwr_lo;
+        }
+        
+        // calculate map point index for start of region 3:
+        rpm_d2 = (twizy_max_rpm - rpm2) / MAP_SEGMENT_CNT;
+        pt = ((float) rpm3 - rpm2) / rpm_d2 + 0.6f;
+        
+        // Note: the +0.6 gives a tendency for 1 more point within
+        //    region 2 => better curve approximation
+    
+        // if region 3 would now start on the last map point available, shift
+        // down by one so we still can model the region 3 segment:
+        if (pt == MAP_SEGMENT_CNT)
+          pt = MAP_SEGMENT_CNT-1;
+      }
+      
+    }
+    
+    // Now rpm2 & rpm3 mark the start of regions 2 & 3,
+    // and pt is the map index for rpm3.
+    
+    ESP_LOGD(TAG, "CfgMakePowermap: pwr2=%d, rpm2=%d, pwr3=%d, rpm3=%d, pt=%d\n",
+      twizy_max_pwr_lo, rpm2, twizy_max_pwr_hi, rpm3, pt);
+    
+    // write map start point:
+    
+    trq = (twizy_max_trq * 16 + 500) / 1000;
+    
+    if ((err = sc.Write(0x4611, 0x01, trq)) != COR_OK)
+      return err;
+    if ((err = sc.Write(0x4611, 0x02, 0)) != COR_OK)
+      return err;
+
+    // adjust flux map (only last 2 points):
+    
+    if (trq > CFG.DefaultFMAP[2]) {
+      for (i=0; i<4; i++) {
+        if ((err = sc.Write(0x4610, 0x0f+i, CFG.ExtendedFMAP[i])) != COR_OK)
+          return err;
+      }
+    }
+    else {
+      for (i=0; i<4; i++) {
+        if ((err = sc.Write(0x4610, 0x0f+i, CFG.DefaultFMAP[i])) != COR_OK)
+          return err;
+      }
+    }
+    
+    // calculate rpm & power deltas:
+    
+    if (pt > 0) {
+      rpm_d2 = (rpm3 - rpm2) / pmap_fib[MIN(pt, MAP_SEGMENT_CNT)];
+      pwr_d2 = ((int)twizy_max_pwr_hi - (int)twizy_max_pwr_lo) / pmap_fib[MIN(pt, MAP_SEGMENT_CNT)];
+    } else {
+      // no region 2:
+      rpm_d2 = 0;
+      pwr_d2 = 0;
+    }
+    if (pt < MAP_SEGMENT_CNT) {
+      rpm_d3 = (twizy_max_rpm - rpm3) / pmap_fib[MAX(MAP_SEGMENT_CNT-pt, 1)];
+    } else {
+      // no region 3:
+      rpm_d3 = 0;
+    }
+
+    // write map points:
+    
+    for (i=0; i<=MAP_SEGMENT_CNT; i++) {
+
+      // calculate rpm & power at point i:
+      if (i < pt) {
+        // region 2:
+        rpm = rpm2 + (pmap_fib[i] * rpm_d2);
+        pwr = twizy_max_pwr_lo + (pmap_fib[i] * pwr_d2);
+      } else {
+        // region 3:
+        rpm = rpm3 + (pmap_fib[i-pt] * rpm_d3);
+        pwr = ((UINT32)twizy_max_pwr_hi * rpm3) / rpm;
+      }
+
+      // calculate torque at point i:
+      trq = ((((uint32_t)pwr * 9549 + (rpm>>1)) / rpm) * 16 + 500) / 1000;
+
+      ESP_LOGD(TAG, "CfgMakePowermap: #%d rpm=%d trq=%.2f pwr=%d", i, rpm, trq/16.0, pwr);
+
+      // write into map:
+      if ((err = sc.Write(0x4611, 0x03+(i<<1), trq)) != COR_OK)
+        return err;
+      if ((err = sc.Write(0x4611, 0x04+(i<<1), rpm)) != COR_OK)
+        return err;
+    }
+    
+  }
+
+  // commit map changes:
+  if ((err = sc.Write(0x4641, 0x01, 1)) != COR_OK)
+    return err;
+  vTaskDelay(pdMS_TO_TICKS(50));
+
+  return COR_OK;
+}
+
+#else // old version
+
 CANopenResult_t SevconClient::CfgMakePowermap(void
   /* twizy_max_rpm, twizy_max_trq, twizy_max_pwr_lo, twizy_max_pwr_hi */)
 {
@@ -401,15 +642,17 @@ CANopenResult_t SevconClient::CfgMakePowermap(void
   return COR_OK;
 }
 
+#endif
+
 
 // CfgReadMaxPower:
-// read twizy_max_pwr_lo & twizy_max_pwr_hi
+// read twizy_max_pwr_lo & twizy_max_pwr_hi & twizy_max_curr
 // from SEVCON registers (only if necessary / undefined)
 CANopenResult_t SevconClient::CfgReadMaxPower(void)
 {
   SevconJob sc(this);
   CANopenResult_t err;
-  uint32_t rpm, trq;
+  uint32_t rpm, trq, curr;
 
   // the controller does not store max power, derive it from rpm/trq:
 
@@ -435,6 +678,14 @@ CANopenResult_t SevconClient::CfgReadMaxPower(void)
       twizy_max_pwr_hi = (((trq*1000)>>4) * rpm + (9549>>1)) / 9549;
   }
 
+  // read max current level:
+  
+  if (twizy_max_curr == 0) {
+    if ((err = sc.Read(0x4641, 0x02, curr)) != COR_OK)
+      return err;
+    twizy_max_curr = curr / CFG.DefaultCurrStatorMax;
+  }
+  
   return COR_OK;
 }
 
@@ -574,6 +825,7 @@ CANopenResult_t SevconClient::CfgPower(int trq_prc, int pwr_lo_prc, int pwr_hi_p
   }
 
   // set current limits:
+  twizy_max_curr = curr_prc;
   if ((err = sc.Write(0x4641, 0x02, scale(
           CFG.DefaultCurrStatorMax, 100, curr_prc, 0, CFG.BoostCurr))) != COR_OK)
     return err;

@@ -104,6 +104,10 @@ pre {
   .panel-single .panel-footer {
     padding: 10px;
   }
+  .panel-single .form-horizontal .form-group {
+    margin-right: -10px;
+    margin-left: -10px;
+  }
 }
 
 @media (min-width: 992px) {
