@@ -517,12 +517,12 @@ void OvmsVehicleMitsubishi::GetDashboardConfig(DashboardConfig& cfg)
         "{ from: 250, to: 300, className: 'red-band' }]"
     "},{"
       // Power:
-      "min: -60, max: 150,"
+      "min: -30, max: 75,"
       "plotBands: ["
-        "{ from: -60, to: 0, className: 'violet-band' },"
-        "{ from: 0, to: 30, className: 'green-band' },"
-        "{ from: 30, to: 80, className: 'yellow-band' },"
-        "{ from: 80, to: 150, className: 'red-band' }]"
+        "{ from: -30, to: 0, className: 'violet-band' },"
+        "{ from: 0, to: 15, className: 'green-band' },"
+        "{ from: 15, to: 40, className: 'yellow-band' },"
+        "{ from: 40, to: 75, className: 'red-band' }]"
     "},{"
       // Charger temperature:
       "min: 20, max: 55, tickInterval: 20,"

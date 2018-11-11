@@ -10,6 +10,11 @@
 ;       - basic charge states
 ;       - AC charger voltage / current measure
 ;       - DC
+;    0.1.1 11-nov-2018 - KommyKT
+;       - BMS Command
+;       - trip Command
+;       - aux Command
+;       - web battery status with volts and temperatures
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018  Mark Webb-Johnson
@@ -54,6 +59,7 @@ typedef enum
 static float mi_batttemps[66];  // all cell temperature
 static float mi_battvolts[88];  // all cell voltage
 static float m_charge_watt;
+static bool m_charge = false;
 
 
 OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
@@ -135,6 +141,7 @@ void vehicle_charger_status(ChargerStatus status)
             StandardMetrics.ms_v_charge_current->SetValue(StandardMetrics.ms_v_bat_current->AsInt());
             break;
           case CHARGER_STATUS_CHARGING:
+            m_charge = true;
             if (!StandardMetrics.ms_v_charge_inprogress->AsBool())
               {
                 StandardMetrics.ms_v_charge_kwh->SetValue(0); // Reset charge kWh
@@ -153,12 +160,13 @@ void vehicle_charger_status(ChargerStatus status)
             StandardMetrics.ms_v_env_on->SetValue(true);
             StandardMetrics.ms_v_env_awake->SetValue(true);
             StandardMetrics.ms_v_charge_climit->SetValue(16);
-            m_charge_watt += ( StandardMetrics.ms_v_charge_voltage->AsFloat() * StandardMetrics.ms_v_charge_current->AsFloat());
+
             break;
           case CHARGER_STATUS_FINISHED:
+            m_charge = false;
             StandardMetrics.ms_v_charge_kwh->SetValue(m_charge_watt/1000.0/StandardMetrics.ms_v_charge_time->AsInt());
             ESP_LOGI(TAG, "charge_watt %f",m_charge_watt);
-            m_charge_watt = 0;
+            //m_charge_watt = 0;
             StandardMetrics.ms_v_charge_climit->SetValue(0);
             StandardMetrics.ms_v_charge_current->SetValue(0);
             StandardMetrics.ms_v_charge_voltage->SetValue(0);
@@ -174,6 +182,7 @@ void vehicle_charger_status(ChargerStatus status)
             StandardMetrics.ms_v_env_awake->SetValue(false);
             break;
           case CHARGER_STATUS_INTERRUPTED:
+            m_charge = false;
             StandardMetrics.ms_v_charge_climit->SetValue(0);
             StandardMetrics.ms_v_charge_current->SetValue(0);
             StandardMetrics.ms_v_charge_voltage->SetValue(0);
@@ -327,6 +336,12 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       {
         StandardMetrics.ms_v_charge_voltage->SetValue(d[1]*1.0);
         StandardMetrics.ms_v_charge_current->SetValue(d[6]/10.0);
+        if( m_charge ){
+          m_charge_watt += (StandardMetrics.ms_v_charge_voltage->AsFloat() * StandardMetrics.ms_v_charge_current->AsFloat()/1000);
+          //ESP_LOGI(TAG, "charge_watt %f",m_charge_watt);
+          StandardMetrics.ms_v_charge_kwh->SetValue(m_charge_watt);
+
+        }
       break;
       }
 
@@ -849,7 +864,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
               }
     break;
     }
-
+    
   /*  case 0x762:
     {
         if (d[0] == 36)
