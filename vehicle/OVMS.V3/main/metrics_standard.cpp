@@ -80,6 +80,12 @@ MetricsStandard::MetricsStandard()
   ms_v_bat_cell_level_max = new OvmsMetricFloat(MS_V_BAT_CELL_LEVEL_MAX, SM_STALE_HIGH, Percentage);
   ms_v_bat_cell_level_avg = new OvmsMetricFloat(MS_V_BAT_CELL_LEVEL_AVG, SM_STALE_HIGH, Percentage);
   ms_v_bat_cell_level_stddev = new OvmsMetricFloat(MS_V_BAT_CELL_LEVEL_STDDEV, SM_STALE_HIGH, Percentage);
+  ms_v_bat_cell_voltage = new OvmsMetricVector<float>(MS_V_BAT_CELL_VOLTAGE, SM_STALE_HIGH, Volts);
+  ms_v_bat_cell_vmin = new OvmsMetricVector<float>(MS_V_BAT_CELL_VMIN, SM_STALE_HIGH, Volts);
+  ms_v_bat_cell_vmax = new OvmsMetricVector<float>(MS_V_BAT_CELL_VMAX, SM_STALE_HIGH, Volts);
+  ms_v_bat_cell_temp = new OvmsMetricVector<float>(MS_V_BAT_CELL_TEMP, SM_STALE_HIGH, Celcius);
+  ms_v_bat_cell_tmin = new OvmsMetricVector<float>(MS_V_BAT_CELL_TMIN, SM_STALE_HIGH, Celcius);
+  ms_v_bat_cell_tmax = new OvmsMetricVector<float>(MS_V_BAT_CELL_TMAX, SM_STALE_HIGH, Celcius);
 
   ms_v_charge_voltage = new OvmsMetricFloat(MS_V_CHARGE_VOLTAGE, SM_STALE_MID, Volts);
   ms_v_charge_current = new OvmsMetricFloat(MS_V_CHARGE_CURRENT, SM_STALE_MID, Amps);
