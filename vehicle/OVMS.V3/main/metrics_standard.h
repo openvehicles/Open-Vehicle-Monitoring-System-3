@@ -87,6 +87,12 @@
 #define MS_V_BAT_CELL_LEVEL_MAX     "v.b.c.level.max"
 #define MS_V_BAT_CELL_LEVEL_AVG     "v.b.c.level.avg"
 #define MS_V_BAT_CELL_LEVEL_STDDEV  "v.b.c.level.stddev"
+#define MS_V_BAT_CELL_VOLTAGE       "v.b.c.voltage"
+#define MS_V_BAT_CELL_VMIN          "v.b.c.voltage.min"
+#define MS_V_BAT_CELL_VMAX          "v.b.c.voltage.max"
+#define MS_V_BAT_CELL_TEMP          "v.b.c.temp"
+#define MS_V_BAT_CELL_TMIN          "v.b.c.temp.min"
+#define MS_V_BAT_CELL_TMAX          "v.b.c.temp.max"
 
 #define MS_V_CHARGE_VOLTAGE         "v.c.voltage"
 #define MS_V_CHARGE_CURRENT         "v.c.current"
@@ -220,6 +226,12 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_bat_cell_level_max;      // Cell level - strongest cells [%]
     OvmsMetricFloat*  ms_v_bat_cell_level_avg;      // Cell level - average [%]
     OvmsMetricFloat*  ms_v_bat_cell_level_stddev;   // Cell level - std dev [%]
+    OvmsMetricVector<float>* ms_v_bat_cell_voltage; // Cell voltages
+    OvmsMetricVector<float>* ms_v_bat_cell_vmin;    // Cell minimum voltages
+    OvmsMetricVector<float>* ms_v_bat_cell_vmax;    // Cell maximum voltages
+    OvmsMetricVector<float>* ms_v_bat_cell_temp;    // Cell temperatures
+    OvmsMetricVector<float>* ms_v_bat_cell_tmin;    // Cell minimum temperatures
+    OvmsMetricVector<float>* ms_v_bat_cell_tmax;    // Cell maximum temperatures
 
     OvmsMetricFloat*  ms_v_charge_voltage;          // Momentary charger supply voltage [V]
     OvmsMetricFloat*  ms_v_charge_current;          // Momentary charger output current [A]

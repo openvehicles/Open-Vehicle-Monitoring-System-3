@@ -32,7 +32,6 @@
 #define __VEHICLE_TESLAMODELS_H__
 
 #include "vehicle.h"
-#include "ovms_command.h"
 #include "ovms_metrics.h"
 
 using namespace std;
@@ -44,7 +43,6 @@ class OvmsVehicleTeslaModelS: public OvmsVehicle
     ~OvmsVehicleTeslaModelS();
 
   public:
-    void CommandBMS(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     void IncomingFrameCan1(CAN_frame_t* p_frame);
     void IncomingFrameCan2(CAN_frame_t* p_frame);
     void IncomingFrameCan3(CAN_frame_t* p_frame);
@@ -56,11 +54,6 @@ class OvmsVehicleTeslaModelS: public OvmsVehicle
   protected:
     char m_vin[18];
     char m_type[5];
-    float m_brick_v[96];
-    float m_module_t[32];
-    uint32_t m_bmvt;
-    OvmsMetricVector<float>* m_bms_v;
-    OvmsMetricVector<float>* m_bms_t;
   };
 
 #endif //#ifndef __VEHICLE_TESLAMODELS_H__

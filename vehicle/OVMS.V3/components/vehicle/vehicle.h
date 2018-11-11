@@ -32,6 +32,7 @@
 #define __VEHICLE_H__
 
 #include <map>
+#include <vector>
 #include <string>
 #include "can.h"
 #include "ovms_events.h"
@@ -257,6 +258,35 @@ class OvmsVehicle : public InternalRamAllocated
   protected:
     void PollSetPidList(canbus* bus, const poll_pid_t* plist);
     void PollSetState(uint8_t state);
+
+  // BMS helpers
+  protected:
+    float* m_bms_voltages;
+    float* m_bms_vmins;
+    float* m_bms_vmaxs;
+    bool m_bms_has_voltages;
+    float* m_bms_temperatures;
+    float* m_bms_tmins;
+    float* m_bms_tmaxs;
+    bool m_bms_has_temperatures;
+    std::vector<bool> m_bms_bitset_v;
+    std::vector<bool> m_bms_bitset_t;
+    int m_bms_readings_v;
+    int m_bms_readingspermodule_v;
+    int m_bms_readings_t;
+    int m_bms_readingspermodule_t;
+
+  protected:
+    void BmsSetCellArrangementVoltage(int readings, int readingspermodule);
+    void BmsSetCellArrangementTemperature(int readings, int readingspermodule);
+    void BmsSetCellVoltage(int index, float value);
+    void BmsSetCellTemperature(int index, float value);
+    void BmsRestartCellVoltages();
+    void BmsRestartCellTemperatures();
+    void BmsResetCellStats();
+
+  public:
+    virtual void BmsStatus(int verbosity, OvmsWriter* writer);
   };
 
 template<typename Type> OvmsVehicle* CreateVehicle()
