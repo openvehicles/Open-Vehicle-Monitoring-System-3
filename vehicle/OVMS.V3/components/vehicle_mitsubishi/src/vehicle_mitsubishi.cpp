@@ -62,26 +62,41 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
 
   StandardMetrics.ms_v_env_parktime->SetValue(0);
   StandardMetrics.ms_v_charge_type->SetValue("None");
+
+  // Require GPS.
+  MyEvents.SignalEvent("vehicle.require.gps", NULL);
+  MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
+
   memset(m_vin,0,sizeof(m_vin));
   memset(mi_batttemps,0,sizeof(mi_batttemps));
   memset(mi_battvolts,0,sizeof(mi_battvolts));
+
+  mi_trip_start_odo = 0;
   WebInit();
+
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
 
   // init commands:
   cmd_xmi = MyCommandApp.RegisterCommand("xmi", "Mitsubishi iMiEV", NULL, "", 0, 0, true);
   cmd_xmi->RegisterCommand("battreset", "Battery monitor", CommandBatteryReset, "", 0, 0, true);
+  cmd_xmi->RegisterCommand("bms","Cell voltages", xmi_bms, 0,0, false);
+  cmd_xmi->RegisterCommand("aux", "Aux Battery", xmi_aux, 0, 0, false);
+  cmd_xmi->RegisterCommand("trip","Show trip info", xmi_trip, 0,0, false);
 
   }
 OvmsVehicleMitsubishi::~OvmsVehicleMitsubishi()
   {
   ESP_LOGI(TAG, "Stop Mitsubishi  vehicle module");
+
+  // Release GPS.
+  MyEvents.SignalEvent("vehicle.require.gps", NULL);
+  MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
   }
 
   /**
    * BatteryReset: reset battery min / max
    */
-  void OvmsVehicleMitsubishi::BatteryReset()
+void OvmsVehicleMitsubishi::BatteryReset()
   {
     ESP_LOGD(TAG, "battmon reset");
     cell_volts_min->SetElemValues(0, 88, mi_battvolts);
@@ -91,6 +106,9 @@ OvmsVehicleMitsubishi::~OvmsVehicleMitsubishi()
     cell_temps_max->SetElemValues(0, 66, mi_batttemps);
 
   }
+/**
+ * Charge Status
+ */
 void vehicle_charger_status(ChargerStatus status)
         {
         switch (status)
@@ -187,10 +205,10 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       {
         if(d[1] == 4)
         {
-          //ready
+          vehicle_mitsubishi_car_on(true);
         }else if(d[1] == 0)
         {
-          // not ready
+          vehicle_mitsubishi_car_on(true);
         }
 
       break;
@@ -288,7 +306,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       {
         StandardMetrics.ms_v_bat_current->SetValue((((((d[2]*256.0)+d[3]))-32768))/100.0);
         StandardMetrics.ms_v_bat_voltage->SetValue((d[4]*256.0+d[5])/10.0);
-        StandardMetrics.ms_v_bat_power->SetValue((StandardMetrics.ms_v_bat_voltage->AsFloat()*StandardMetrics.ms_v_bat_current->AsFloat())/1000.0);
+        StandardMetrics.ms_v_bat_power->SetValue((StandardMetrics.ms_v_bat_voltage->AsFloat()*StandardMetrics.ms_v_bat_current->AsFloat())/1000.0*-1.0);
       break;
       }
 
@@ -447,43 +465,47 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
         if ((d[0]& 16)!=0) //Fog lights rear
         {// ON
-
+          m_v_env_rearfog->SetValue(true);
         }
         else
         {
-
+          m_v_env_rearfog->SetValue(false);
         }
 
         if ((d[0]& 8)!=0) //Fog lights front
         { // ON
+          m_v_env_frontfog->SetValue(true);
         }
         else
         {
-
+          m_v_env_frontfog->SetValue(false);
         }
 
         if ((d[1]& 4)!=0)// Highbeam
         { // ON
+          m_v_env_highbeam->SetValue(true);
         }
         else
         {
-
+          m_v_env_highbeam->SetValue(false);
         }
 
         if ((d[1]& 1)!=0)// Flash lights right
         { // ON
+          m_v_env_blinker_right->SetValue(true);
         }
         else
         {
-
+          m_v_env_blinker_right->SetValue(false);
         }
 
         if ((d[1]& 2)!=0) //Flash lights left
         { // ON
+          m_v_env_blinker_left->SetValue(true);
         }
         else
         {
-
+          m_v_env_blinker_left->SetValue(false);
         }
 
         if ((d[1]& 32)!=0)  //Headlight
@@ -885,6 +907,13 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
           (StandardMetrics.ms_v_bat_soc->AsFloat()-10)*1.664)*SOH/100.0);
         }
 
+        // Update trip data
+        if (StdMetrics.ms_v_env_on->AsBool() && mi_trip_start_odo!=0)
+        {
+          StdMetrics.ms_v_pos_trip->SetValue( POS_ODO - mi_trip_start_odo , Kilometers);
+
+        }
+
   }
 
 void OvmsVehicleMitsubishi::Ticker10(uint32_t ticker)
@@ -908,6 +937,44 @@ void OvmsVehicleMitsubishi::Ticker10(uint32_t ticker)
   StandardMetrics.ms_v_bat_cell_level_avg->SetValue(vbattery/88.0);
 //  cell_volts->SetElemValues(0, 88, mi_battvolts);
   }
+
+  /**
+   * Takes care of setting all the state appropriate when the car is on
+   * or off. Centralized so we can more easily make on and off mirror
+   * images.
+   */
+void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
+    {
+
+    if (isOn && !StdMetrics.ms_v_env_on->AsBool())
+      {
+  		// Car is ON
+  		StdMetrics.ms_v_env_on->SetValue(isOn);
+  		StdMetrics.ms_v_env_awake->SetValue(isOn);
+
+  		//Reset trip variables so that they are updated as soon as they are available
+  		mi_trip_start_odo = 0;
+  		StdMetrics.ms_v_env_charging12v->SetValue( false );
+
+      }
+    else if(!isOn && StdMetrics.ms_v_env_on->AsBool())
+      {
+      // Car is OFF
+    		StdMetrics.ms_v_env_on->SetValue( isOn );
+    		StdMetrics.ms_v_env_awake->SetValue( isOn );
+    		StdMetrics.ms_v_pos_speed->SetValue( 0 );
+    	  StdMetrics.ms_v_pos_trip->SetValue( POS_ODO- mi_trip_start_odo );
+    		StdMetrics.ms_v_env_charging12v->SetValue( false );
+      }
+
+    //Make sure we update the different start values as soon as we have them available
+    if(isOn)
+    		{
+  		// Trip started. Let's save current state as soon as they are available
+    		if(mi_trip_start_odo==0 && POS_ODO!=0)
+    			mi_trip_start_odo = POS_ODO;	// ODO at Start of trip
+    		}
+    }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandSetChargeMode(vehicle_mode_t mode)
     {

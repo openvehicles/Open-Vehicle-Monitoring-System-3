@@ -38,6 +38,9 @@
 using namespace std;
 
 void CommandBatteryReset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xmi_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xmi_bms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xmi_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
 class OvmsVehicleMitsubishi : public OvmsVehicle
   {
@@ -88,6 +91,21 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     OvmsMetricVector<float>* cell_temps_max = new OvmsMetricVector<float>("xmi.b.cell.temps.max", SM_STALE_MIN, Degrees);
     OvmsMetricVector<float>* cell_temps_maxdev = new OvmsMetricVector<float>("xmi.b.cell.temps.maxdev", SM_STALE_MIN, Degrees);
 
+    OvmsMetricFloat* v_b_power_min  = new OvmsMetricFloat("xmi.b.power.min", SM_STALE_MID, kW);
+    OvmsMetricFloat* v_b_power_max  = new OvmsMetricFloat("xmi.b.power.max", SM_STALE_MID, kW);
+
+    OvmsMetricBool*		m_v_env_lowbeam = MyMetrics.InitBool("xmi.e.lowbeam", 10, 0);
+    OvmsMetricBool*		m_v_env_highbeam = MyMetrics.InitBool("xmi.e.highbeam", 10, 0);
+    OvmsMetricBool*		m_v_env_frontfog = MyMetrics.InitBool("xmi.e.frontfog", 10, 0);
+    OvmsMetricBool*		m_v_env_rearfog = MyMetrics.InitBool("xmi.e.rearfog", 10, 0);
+    OvmsMetricBool*		m_v_env_blinker_right = MyMetrics.InitBool("xmi.e.rightblinker", 10, 0);
+    OvmsMetricBool*		m_v_env_blinker_left = MyMetrics.InitBool("xmi.e.leftblinker", 10, 0);
+    OvmsMetricBool*		m_v_env_warninglight = MyMetrics.InitBool("xmi.e.warninglight", 10, 0);
+
+
+    void vehicle_mitsubishi_car_on(bool isOn);
+    float mi_trip_start_odo;
+
     // --------------------------------------------------------------------------
     // Webserver subsystem
     //  - implementation: mi_web.(h,cpp)
@@ -104,4 +122,5 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
 
   };
 
+#define POS_ODO			StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers)
 #endif //#ifndef __VEHICLE_MITSUBISHI_H__
