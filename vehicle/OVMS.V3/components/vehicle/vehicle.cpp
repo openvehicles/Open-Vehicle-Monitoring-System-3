@@ -32,6 +32,7 @@
 static const char *TAG = "vehicle";
 
 #include <stdio.h>
+#include <algorithm>
 #include <ovms_command.h>
 #include <ovms_metrics.h>
 #include <ovms_notify.h>
@@ -366,6 +367,17 @@ void vehicle_stat(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     }
   }
 
+void bms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle != NULL)
+    {
+    MyVehicleFactory.m_currentvehicle->BmsStatus(verbosity, writer);
+    }
+  else
+    {
+    writer->puts("No vehicle module selected");
+    }
+  }
 OvmsVehicleFactory::OvmsVehicleFactory()
   {
   ESP_LOGI(TAG, "Initialising VEHICLE Factory (2000)");
@@ -384,6 +396,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   MyCommandApp.RegisterCommand("unlock","Unlock vehicle",vehicle_unlock,"<pin>",1,1,true);
   MyCommandApp.RegisterCommand("valet","Activate valet mode",vehicle_valet,"<pin>",1,1,true);
   MyCommandApp.RegisterCommand("unvalet","Deactivate valet mode",vehicle_unvalet,"<pin>",1,1,true);
+
   OvmsCommand* cmd_charge = MyCommandApp.RegisterCommand("charge","Charging framework",NULL,"",0,0,true);
   OvmsCommand* cmd_chargemode = cmd_charge->RegisterCommand("mode","Set vehicle charge mode",NULL,"",0,0,true);
   cmd_chargemode->RegisterCommand("standard","Set vehicle standard charge mode",vehicle_charge_mode,"",0,0,true);
@@ -394,7 +407,11 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   cmd_charge->RegisterCommand("stop","Stop a vehicle charge",vehicle_charge_stop,"",0,0,true);
   cmd_charge->RegisterCommand("current","Limit charge current",vehicle_charge_current,"<amps>",1,1,true);
   cmd_charge->RegisterCommand("cooldown","Start a vehicle cooldown",vehicle_charge_cooldown,"",0,0,true);
+
   MyCommandApp.RegisterCommand("stat","Show vehicle status",vehicle_stat,"",0,0,true);
+
+  OvmsCommand* cmd_bms = MyCommandApp.RegisterCommand("bms","BMS framework",NULL,"",0,0, true);
+  cmd_bms->RegisterCommand("status","Show BMS status",bms_status,"",0,0, true);
   }
 
 OvmsVehicleFactory::~OvmsVehicleFactory()
@@ -504,6 +521,21 @@ OvmsVehicle::OvmsVehicle()
   m_poll_ml_offset = 0;
   m_poll_ml_frame = 0;
 
+  m_bms_voltages = NULL;
+  m_bms_vmins = NULL;
+  m_bms_vmaxs = NULL;
+  m_bms_has_voltages = false;
+  m_bms_temperatures = NULL;
+  m_bms_tmins = NULL;
+  m_bms_tmaxs = NULL;
+  m_bms_has_temperatures = false;
+  m_bms_bitset_v.clear();
+  m_bms_bitset_t.clear();
+  m_bms_readings_v = 0;
+  m_bms_readingspermodule_v = 0;
+  m_bms_readings_t = 0;
+  m_bms_readingspermodule_t = 0;
+
   m_rxqueue = xQueueCreate(CONFIG_OVMS_VEHICLE_CAN_RX_QUEUE_SIZE,sizeof(CAN_frame_t));
   xTaskCreatePinnedToCore(OvmsVehicleRxTask, "OVMS Vehicle",
     CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_rxtask, 1);
@@ -522,6 +554,37 @@ OvmsVehicle::~OvmsVehicle()
   if (m_can1) m_can1->SetPowerMode(Off);
   if (m_can2) m_can2->SetPowerMode(Off);
   if (m_can3) m_can3->SetPowerMode(Off);
+
+  if (m_bms_voltages != NULL)
+    {
+    delete [] m_bms_voltages;
+    m_bms_voltages = NULL;
+    };
+  if (m_bms_vmins != NULL)
+    {
+    delete [] m_bms_vmins;
+    m_bms_vmins = NULL;
+    };
+  if (m_bms_vmaxs != NULL)
+    {
+    delete [] m_bms_vmaxs;
+    m_bms_vmaxs = NULL;
+    };
+  if (m_bms_temperatures != NULL)
+    {
+    delete [] m_bms_temperatures;
+    m_bms_temperatures = NULL;
+    }
+  if (m_bms_tmins != NULL)
+    {
+    delete [] m_bms_tmins;
+    m_bms_tmins = NULL;
+    }
+  if (m_bms_tmaxs != NULL)
+    {
+    delete [] m_bms_tmaxs;
+    m_bms_tmaxs = NULL;
+    }
 
   if (m_registeredlistener)
     {
@@ -1420,6 +1483,181 @@ const std::string OvmsVehicle::GetFeature(int key)
 OvmsVehicle::vehicle_command_t OvmsVehicle::ProcessMsgCommand(std::string &result, int command, const char* args)
   {
   return NotImplemented;
+  }
+
+// BMS helpers
+
+void OvmsVehicle::BmsSetCellArrangementVoltage(int readings, int readingspermodule)
+  {
+  if (m_bms_voltages != NULL) delete m_bms_voltages;
+  m_bms_voltages = new float[readings];
+  if (m_bms_vmins != NULL) delete m_bms_vmins;
+  m_bms_vmins = new float[readings];
+  if (m_bms_vmaxs != NULL) delete m_bms_vmaxs;
+  m_bms_vmaxs = new float[readings];
+
+  m_bms_has_voltages = false;
+  m_bms_bitset_v.clear();
+  m_bms_bitset_v.reserve(readings);
+  m_bms_bitset_v.resize(readings);
+
+  m_bms_readings_v = readings;
+  m_bms_readingspermodule_v = readingspermodule;
+  }
+
+void OvmsVehicle::BmsSetCellArrangementTemperature(int readings, int readingspermodule)
+  {
+  if (m_bms_temperatures != NULL) delete m_bms_temperatures;
+  m_bms_temperatures = new float[readings];
+  if (m_bms_tmins != NULL) delete m_bms_tmins;
+  m_bms_tmins = new float[readings];
+  if (m_bms_tmaxs != NULL) delete m_bms_tmaxs;
+  m_bms_tmaxs = new float[readings];
+
+  m_bms_has_temperatures = false;
+  m_bms_bitset_t.clear();
+  m_bms_bitset_t.reserve(readings);
+  m_bms_bitset_t.resize(readings);
+
+  m_bms_readings_t = readings;
+  m_bms_readingspermodule_t = readingspermodule;
+  }
+
+void OvmsVehicle::BmsSetCellVoltage(int index, float value)
+  {
+  m_bms_voltages[index] = value;
+
+  if (! m_bms_has_voltages)
+    {
+    m_bms_vmins[index] = value;
+    m_bms_vmaxs[index] = value;
+    }
+  else if (m_bms_vmins[index] > value)
+    m_bms_vmins[index] = value;
+  else if (m_bms_vmaxs[index] < value)
+    m_bms_vmaxs[index] = value;
+
+  if (std::find(m_bms_bitset_v.cbegin(), m_bms_bitset_v.cend(), false) == m_bms_bitset_v.cend())
+    {
+    StandardMetrics.ms_v_bat_cell_voltage->SetElemValues(0, m_bms_readings_v, m_bms_voltages);
+    StandardMetrics.ms_v_bat_cell_vmin->SetElemValues(0, m_bms_readings_v, m_bms_vmins);
+    StandardMetrics.ms_v_bat_cell_vmax->SetElemValues(0, m_bms_readings_v, m_bms_vmaxs);
+    m_bms_has_voltages = true;
+    m_bms_bitset_v.clear();
+    m_bms_bitset_v.resize(m_bms_readings_v);
+    }
+  else
+    {
+    m_bms_bitset_v[index] = true;
+    }
+  }
+
+void OvmsVehicle::BmsSetCellTemperature(int index, float value)
+  {
+  m_bms_temperatures[index] = value;
+
+  if (! m_bms_has_temperatures)
+    {
+    m_bms_tmins[index] = value;
+    m_bms_tmaxs[index] = value;
+    }
+  else if (m_bms_tmins[index] > value)
+    m_bms_tmins[index] = value;
+  else if (m_bms_tmaxs[index] < value)
+    m_bms_tmaxs[index] = value;
+
+  if (std::find(m_bms_bitset_t.cbegin(), m_bms_bitset_t.cend(), false) == m_bms_bitset_t.cend())
+    {
+    StandardMetrics.ms_v_bat_cell_temp->SetElemValues(0, m_bms_readings_t, m_bms_temperatures);
+    StandardMetrics.ms_v_bat_cell_tmin->SetElemValues(0, m_bms_readings_t, m_bms_tmins);
+    StandardMetrics.ms_v_bat_cell_tmax->SetElemValues(0, m_bms_readings_t, m_bms_tmaxs);
+    m_bms_has_temperatures = true;
+    m_bms_bitset_t.clear();
+    m_bms_bitset_t.resize(m_bms_readings_t);
+    }
+  else
+    {
+    m_bms_bitset_t[index] = true;
+    }
+  }
+
+void OvmsVehicle::BmsRestartCellVoltages()
+  {
+  m_bms_bitset_v.clear();
+  m_bms_bitset_v.resize(m_bms_readings_v);
+  }
+
+void OvmsVehicle::BmsRestartCellTemperatures()
+  {
+  m_bms_bitset_t.clear();
+  m_bms_bitset_v.resize(m_bms_readings_t);
+  }
+
+void OvmsVehicle::BmsResetCellStats()
+  {
+  if (m_bms_readings_v > 0)
+    {
+    m_bms_bitset_v.clear();
+    m_bms_bitset_v.resize(m_bms_readings_v);
+    m_bms_has_voltages = false;
+    for (int k=0; k<m_bms_readings_v; k++)
+      {
+      m_bms_vmins[k] = 0;
+      m_bms_vmaxs[k] = 0;
+      }
+    }
+  if (m_bms_readings_t > 0)
+    {
+    m_bms_bitset_t.clear();
+    m_bms_bitset_v.resize(m_bms_readings_t);
+    m_bms_has_temperatures = false;
+    for (int k=0; k<m_bms_readings_t; k++)
+      {
+      m_bms_tmins[k] = 0;
+      m_bms_tmaxs[k] = 0;
+      }
+    }
+  }
+
+void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer)
+  {
+  int c;
+
+  if ((! m_bms_has_voltages)||(! m_bms_has_temperatures))
+    {
+    writer->puts("No BMS status data available");
+    return;
+    }
+
+  writer->puts("Vehicle BMS Status\n");
+
+  int kv = 0;
+  int kt = 0;
+  for (int module = 0; module < (m_bms_readings_v/m_bms_readingspermodule_v); module++)
+    {
+    writer->printf("    +");
+    for (c=0;c<m_bms_readingspermodule_v;c++) { writer->printf("-------"); }
+    writer->printf("-+");
+    for (c=0;c<m_bms_readingspermodule_t;c++) { writer->printf("-------"); }
+    writer->puts("-+");
+    writer->printf("%3d |",module+1);
+    for (c=0; c<m_bms_readingspermodule_v; c++)
+      {
+      writer->printf(" %5.3fV",m_bms_voltages[kv++]);
+      }
+    writer->printf(" |");
+    for (c=0; c<m_bms_readingspermodule_t; c++)
+      {
+      writer->printf(" %5.1fC",m_bms_temperatures[kt++]);
+      }
+    writer->puts(" |");
+    }
+
+  writer->printf("    +");
+  for (c=0;c<m_bms_readingspermodule_v;c++) { writer->printf("-------"); }
+  writer->printf("-+");
+  for (c=0;c<m_bms_readingspermodule_t;c++) { writer->printf("-------"); }
+  writer->puts("-+");
   }
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
