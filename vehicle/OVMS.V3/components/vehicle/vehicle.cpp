@@ -531,6 +531,8 @@ OvmsVehicle::OvmsVehicle()
   m_bms_has_temperatures = false;
   m_bms_bitset_v.clear();
   m_bms_bitset_t.clear();
+  m_bms_bitset_cv = 0;
+  m_bms_bitset_ct = 0;
   m_bms_readings_v = 0;
   m_bms_readingspermodule_v = 0;
   m_bms_readings_t = 0;
@@ -1500,6 +1502,7 @@ void OvmsVehicle::BmsSetCellArrangementVoltage(int readings, int readingspermodu
   m_bms_bitset_v.clear();
   m_bms_bitset_v.reserve(readings);
   m_bms_bitset_v.resize(readings);
+  m_bms_bitset_cv = 0;
 
   m_bms_readings_v = readings;
   m_bms_readingspermodule_v = readingspermodule;
@@ -1518,6 +1521,7 @@ void OvmsVehicle::BmsSetCellArrangementTemperature(int readings, int readingsper
   m_bms_bitset_t.clear();
   m_bms_bitset_t.reserve(readings);
   m_bms_bitset_t.resize(readings);
+  m_bms_bitset_ct = 0;
 
   m_bms_readings_t = readings;
   m_bms_readingspermodule_t = readingspermodule;
@@ -1525,6 +1529,8 @@ void OvmsVehicle::BmsSetCellArrangementTemperature(int readings, int readingsper
 
 void OvmsVehicle::BmsSetCellVoltage(int index, float value)
   {
+  ESP_LOGI(TAG,"BmsSetCellVoltage(%d,%f) c=%d", index, value, m_bms_bitset_cv);
+  if ((index<0)||(index>=m_bms_readings_v)) return;
   m_bms_voltages[index] = value;
 
   if (! m_bms_has_voltages)
@@ -1537,7 +1543,8 @@ void OvmsVehicle::BmsSetCellVoltage(int index, float value)
   else if (m_bms_vmaxs[index] < value)
     m_bms_vmaxs[index] = value;
 
-  if (std::find(m_bms_bitset_v.cbegin(), m_bms_bitset_v.cend(), false) == m_bms_bitset_v.cend())
+  if (m_bms_bitset_v[index] == false) m_bms_bitset_cv++;
+  if (m_bms_bitset_cv == m_bms_readings_v)
     {
     StandardMetrics.ms_v_bat_cell_voltage->SetElemValues(0, m_bms_readings_v, m_bms_voltages);
     StandardMetrics.ms_v_bat_cell_vmin->SetElemValues(0, m_bms_readings_v, m_bms_vmins);
@@ -1545,6 +1552,7 @@ void OvmsVehicle::BmsSetCellVoltage(int index, float value)
     m_bms_has_voltages = true;
     m_bms_bitset_v.clear();
     m_bms_bitset_v.resize(m_bms_readings_v);
+    m_bms_bitset_cv = 0;
     }
   else
     {
@@ -1554,6 +1562,8 @@ void OvmsVehicle::BmsSetCellVoltage(int index, float value)
 
 void OvmsVehicle::BmsSetCellTemperature(int index, float value)
   {
+  ESP_LOGI(TAG,"BmsSetCellTemperature(%d,%f) c=%d", index, value, m_bms_bitset_ct);
+  if ((index<0)||(index>=m_bms_readings_t)) return;
   m_bms_temperatures[index] = value;
 
   if (! m_bms_has_temperatures)
@@ -1566,7 +1576,8 @@ void OvmsVehicle::BmsSetCellTemperature(int index, float value)
   else if (m_bms_tmaxs[index] < value)
     m_bms_tmaxs[index] = value;
 
-  if (std::find(m_bms_bitset_t.cbegin(), m_bms_bitset_t.cend(), false) == m_bms_bitset_t.cend())
+  if (m_bms_bitset_t[index] == false) m_bms_bitset_ct++;
+  if (m_bms_bitset_ct == m_bms_readings_t)
     {
     StandardMetrics.ms_v_bat_cell_temp->SetElemValues(0, m_bms_readings_t, m_bms_temperatures);
     StandardMetrics.ms_v_bat_cell_tmin->SetElemValues(0, m_bms_readings_t, m_bms_tmins);
@@ -1574,6 +1585,7 @@ void OvmsVehicle::BmsSetCellTemperature(int index, float value)
     m_bms_has_temperatures = true;
     m_bms_bitset_t.clear();
     m_bms_bitset_t.resize(m_bms_readings_t);
+    m_bms_bitset_ct = 0;
     }
   else
     {
@@ -1585,12 +1597,14 @@ void OvmsVehicle::BmsRestartCellVoltages()
   {
   m_bms_bitset_v.clear();
   m_bms_bitset_v.resize(m_bms_readings_v);
+  m_bms_bitset_cv = 0;
   }
 
 void OvmsVehicle::BmsRestartCellTemperatures()
   {
   m_bms_bitset_t.clear();
   m_bms_bitset_v.resize(m_bms_readings_t);
+  m_bms_bitset_ct = 0;
   }
 
 void OvmsVehicle::BmsResetCellStats()
@@ -1599,6 +1613,7 @@ void OvmsVehicle::BmsResetCellStats()
     {
     m_bms_bitset_v.clear();
     m_bms_bitset_v.resize(m_bms_readings_v);
+    m_bms_bitset_cv = 0;
     m_bms_has_voltages = false;
     for (int k=0; k<m_bms_readings_v; k++)
       {
@@ -1610,6 +1625,7 @@ void OvmsVehicle::BmsResetCellStats()
     {
     m_bms_bitset_t.clear();
     m_bms_bitset_v.resize(m_bms_readings_t);
+    m_bms_bitset_ct = 0;
     m_bms_has_temperatures = false;
     for (int k=0; k<m_bms_readings_t; k++)
       {
