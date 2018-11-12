@@ -33,6 +33,9 @@
 
 #include <string>
 
+#define OVMS_VERSION_PREFIX "########OVMS_PRE########"
+#define OVMS_VERSION_POSTFIX "########OVMSPOST########"
+
 extern std::string GetOVMSVersion();
 extern std::string GetOVMSBuild();
 extern std::string GetOVMSHardware();

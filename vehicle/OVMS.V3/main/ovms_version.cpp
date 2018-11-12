@@ -40,9 +40,6 @@ static const char *TAG = "version";
 #include "metrics_standard.h"
 #include "ovms_events.h"
 
-#define OVMS_VERSION_PREFIX "########OVMS_PRE########"
-#define OVMS_VERSION_POSTFIX "########OVMSPOST########"
-
 std::string GetOVMSVersion()
   {
   std::string searchversion(OVMS_VERSION_PREFIX OVMS_VERSION OVMS_VERSION_POSTFIX);
