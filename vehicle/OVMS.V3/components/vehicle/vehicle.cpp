@@ -1529,7 +1529,7 @@ void OvmsVehicle::BmsSetCellArrangementTemperature(int readings, int readingsper
 
 void OvmsVehicle::BmsSetCellVoltage(int index, float value)
   {
-  ESP_LOGI(TAG,"BmsSetCellVoltage(%d,%f) c=%d", index, value, m_bms_bitset_cv);
+  // ESP_LOGI(TAG,"BmsSetCellVoltage(%d,%f) c=%d", index, value, m_bms_bitset_cv);
   if ((index<0)||(index>=m_bms_readings_v)) return;
   m_bms_voltages[index] = value;
 
@@ -1562,7 +1562,7 @@ void OvmsVehicle::BmsSetCellVoltage(int index, float value)
 
 void OvmsVehicle::BmsSetCellTemperature(int index, float value)
   {
-  ESP_LOGI(TAG,"BmsSetCellTemperature(%d,%f) c=%d", index, value, m_bms_bitset_ct);
+  // ESP_LOGI(TAG,"BmsSetCellTemperature(%d,%f) c=%d", index, value, m_bms_bitset_ct);
   if ((index<0)||(index>=m_bms_readings_t)) return;
   m_bms_temperatures[index] = value;
 
