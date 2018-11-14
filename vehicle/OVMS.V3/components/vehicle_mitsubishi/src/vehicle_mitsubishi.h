@@ -61,7 +61,6 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
 
   protected:
     char m_vin[18];
-    unsigned int m_charge_watt;
     OvmsCommand *cmd_xmi;
 
   public:
@@ -81,15 +80,6 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     virtual vehicle_command_t CommandActivateValet(const char* pin);
     virtual vehicle_command_t CommandDeactivateValet(const char* pin);
     virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
-    OvmsMetricVector<float>* cell_volts_act = new OvmsMetricVector<float>("xmi.b.cell.volts.act", SM_STALE_MIN, Volts);
-    OvmsMetricVector<float>* cell_volts_min = new OvmsMetricVector<float>("xmi.b.cell.volts.min", SM_STALE_MIN, Volts);
-    OvmsMetricVector<float>* cell_volts_max = new OvmsMetricVector<float>("xmi.b.cell.volts.max", SM_STALE_MIN, Volts);
-    OvmsMetricVector<float>* cell_volts_maxdev = new OvmsMetricVector<float>("xmi.b.cell.volts.maxdev", SM_STALE_MIN, Volts);
-
-    OvmsMetricVector<float>* cell_temps_act = new OvmsMetricVector<float>("xmi.b.cell.temps.act", SM_STALE_MIN, Degrees);
-    OvmsMetricVector<float>* cell_temps_min = new OvmsMetricVector<float>("xmi.b.cell.temps.min", SM_STALE_MIN, Degrees);
-    OvmsMetricVector<float>* cell_temps_max = new OvmsMetricVector<float>("xmi.b.cell.temps.max", SM_STALE_MIN, Degrees);
-    OvmsMetricVector<float>* cell_temps_maxdev = new OvmsMetricVector<float>("xmi.b.cell.temps.maxdev", SM_STALE_MIN, Degrees);
 
     OvmsMetricFloat* v_b_power_min  = new OvmsMetricFloat("xmi.b.power.min", SM_STALE_MID, kW);
     OvmsMetricFloat* v_b_power_max  = new OvmsMetricFloat("xmi.b.power.max", SM_STALE_MID, kW);

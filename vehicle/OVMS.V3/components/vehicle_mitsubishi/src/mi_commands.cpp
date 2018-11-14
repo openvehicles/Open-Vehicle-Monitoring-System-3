@@ -30,8 +30,8 @@
  */
 void CommandBatteryReset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
-  OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
-	trio->BatteryReset();
+  	OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
+		trio->BatteryReset();
 	}
 
 /**
@@ -56,7 +56,7 @@ void xmi_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 */
 void xmi_bms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 {
-	float tmin = 1000;
+/*	float tmin = 1000;
   float tmax = -1000;
   float vmin = 1000;
   float vmax = 0;
@@ -116,6 +116,7 @@ void xmi_bms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 
 		writer->printf("   Tmin: %3.1f  Tmax: %3.1f  Vmax: %4.3f  Vmin: %4.3f  Vmax-Vmin: %4.3f  Vtot: %5.2f\n",
     tmin, tmax, vmax, vmin, vmax-vmin, vtot);
+		*/
 }
 
 /**
