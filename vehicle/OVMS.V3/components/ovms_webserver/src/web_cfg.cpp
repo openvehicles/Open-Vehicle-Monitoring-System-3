@@ -41,8 +41,7 @@
 #include "vehicle.h"
 #include "ovms_housekeeping.h"
 #include "ovms_peripherals.h"
-#include "esp_image_format.h"			/* ESP_IMAGE_HEADER_MAGIC */
-#include "ovms_version.h"			/* OVMS_VERSION_PREFIX */
+#include "ovms_version.h"
 
 #ifdef CONFIG_OVMS_COMP_OTA
 #include "ovms_ota.h"
@@ -1406,87 +1405,6 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
   c.done();
 }
 
-#ifdef CONFIG_OVMS_COMP_OTA
-/* Add the version detail if possible */
-static void partition_detail(esp_partition_subtype_t t, const char *what, char *detail, size_t size)
-{
-  int i, len;
-  size_t offset;
-  size_t n, size2;
-  char *cp, *cp2, *buf2;
-  const esp_partition_t *p;
-  esp_image_header_t *pfhdr;
-  esp_image_segment_header_t *header;
-  char buf[512 + 1];
-  const char prefix[] = OVMS_VERSION_PREFIX;
-  const char postfix[] = OVMS_VERSION_POSTFIX;
-
-  /* Set the default detail so we can just return if we fail */
-  strlcpy(detail, what, size);
-
-  /* Find the partition detail */
-  p = esp_partition_find_first(ESP_PARTITION_TYPE_APP, t, NULL);
-  if (p == NULL)
-      return;
-
-  /* Read image header */
-  pfhdr = (esp_image_header_t *)buf;
-  offset = 0;
-  if (esp_partition_read(p, offset, pfhdr, sizeof(*pfhdr)) != ESP_OK)
-      return;
-  if (pfhdr->magic != ESP_IMAGE_HEADER_MAGIC)
-      return;
-  if (pfhdr->segment_count > ESP_IMAGE_MAX_SEGMENTS)
-      return;
-
-  /* Read the first segment header */
-  header = (esp_image_segment_header_t *)buf;
-  offset += sizeof(*pfhdr);
-  if (esp_partition_read(p, offset, header, sizeof(*header)) != ESP_OK)
-      return;
-
-  /* Search for the version string */
-  offset += sizeof(*header);
-  len = header->data_len;
-  size2 = sizeof(buf) - 1;
-  buf2 = buf;
-  while (len > 0) {
-    n = size2;
-    if (n > len)
-      n = len;
-    if (esp_partition_read(p, offset, buf2, n) != ESP_OK)
-      return;
-    offset += n;
-
-    /* Insure EOS */
-    buf2[n] = '\0';
-    len -= n;
-
-    n = sizeof(buf) - (sizeof(prefix) + sizeof(postfix) - 2);
-    for (i = 0, cp = buf; i < n; ++i, ++cp) {
-      if (*cp != prefix[0])
-        continue;
-      if (strncmp(cp, prefix, sizeof(prefix) - 1) != 0)
-	continue;
-      cp2 = strstr(cp, postfix);
-      if (cp2 == NULL)
-	continue;
-      *cp2 = '\0';
-      cp += sizeof(prefix) - 1;
-      snprintf(detail, size, "%s (%s)", what, cp);
-      *cp2 = '\0';
-      len = 0;
-      return;
-    }
-
-    /* Shift the buffer left to avoid splitting the string */
-    n = (sizeof(buf) - 1) / 2;
-    buf2 = buf + n;
-    memcpy(buf, buf + n, n);
-    size2 = n;
-  }
-}
-#endif
 
 #ifdef CONFIG_OVMS_COMP_OTA
 /**
@@ -1500,6 +1418,8 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   bool auto_enable;
   std::string auto_hour, server, tag;
   std::string output;
+  std::string version;
+  const char *what;
   char buf[132];
 
   if (c.method == "POST") {
@@ -1603,12 +1523,27 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   c.input_info("Running partition", info.partition_running.c_str());
   c.printf("<input type=\"hidden\" name=\"boot_old\" value=\"%s\">", _attr(info.partition_boot));
   c.input_select_start("Boot from", "boot");
-  partition_detail(ESP_PARTITION_SUBTYPE_APP_FACTORY, "Factory image", buf, sizeof(buf));
-  c.input_select_option(buf, "factory", (info.partition_boot == "factory"));
-  partition_detail(ESP_PARTITION_SUBTYPE_APP_OTA_0, "OTA_0 image", buf, sizeof(buf));
-  c.input_select_option(buf, "ota_0", (info.partition_boot == "ota_0"));
-  partition_detail(ESP_PARTITION_SUBTYPE_APP_OTA_1, "OTA_1 image", buf, sizeof(buf));
-  c.input_select_option(buf, "ota_1", (info.partition_boot == "ota_1"));
+  what = "Factory image";
+  version = GetOVMSPartitionVersion(ESP_PARTITION_SUBTYPE_APP_FACTORY);
+  if (version != "") {
+    snprintf(buf, sizeof(buf), "%s (%s)", what, version.c_str());
+    what = buf;
+  }
+  c.input_select_option(what, "factory", (info.partition_boot == "factory"));
+  what = "OTA_0 image";
+  version = GetOVMSPartitionVersion(ESP_PARTITION_SUBTYPE_APP_OTA_0);
+  if (version != "") {
+    snprintf(buf, sizeof(buf), "%s (%s)", what, version.c_str());
+    what = buf;
+  }
+  c.input_select_option(what, "ota_0", (info.partition_boot == "ota_0"));
+  what = "OTA_1 image";
+  version = GetOVMSPartitionVersion(ESP_PARTITION_SUBTYPE_APP_OTA_1);
+  if (version != "") {
+    snprintf(buf, sizeof(buf), "%s (%s)", what, version.c_str());
+    what = buf;
+  }
+  c.input_select_option(what, "ota_1", (info.partition_boot == "ota_1"));
   c.input_select_end();
 
   // Server & auto update:
