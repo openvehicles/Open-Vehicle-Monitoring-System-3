@@ -37,6 +37,7 @@ static const char *TAG = "v-teslamodels";
 #include "vehicle_teslamodels.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
+#include "ovms_webserver.h"
 
 OvmsVehicleTeslaModelS::OvmsVehicleTeslaModelS()
   {
@@ -51,12 +52,14 @@ OvmsVehicleTeslaModelS::OvmsVehicleTeslaModelS()
 
   BmsSetCellArrangementVoltage(96, 6);
   BmsSetCellArrangementTemperature(32, 2);
+  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
   }
 
 OvmsVehicleTeslaModelS::~OvmsVehicleTeslaModelS()
   {
   ESP_LOGI(TAG, "Shutdown Tesla Model S vehicle module");
   MyCommandApp.UnregisterCommand("xts");
+  MyWebServer.DeregisterPage("/bms/cellmon");
   }
 
 void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
