@@ -212,7 +212,7 @@ void SevconClient::InitMonitoring()
  */
 void SevconClient::QueryMonitoringData()
 {
-  if (m_cfgmode_request || CtrlCfgMode() || !CtrlLoggedIn() || StdMetrics.ms_v_env_gear->AsInt()==0)
+  if (!m_mon_enable || m_cfgmode_request || CtrlCfgMode() || !CtrlLoggedIn() || StdMetrics.ms_v_env_gear->AsInt()==0)
     return;
   
   // 4600.0c Actual AC Motor Current [A]
