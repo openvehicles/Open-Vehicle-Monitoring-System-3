@@ -403,6 +403,7 @@ class OvmsWebServer : public ExternalRamAllocated
     static void HandleCommand(PageEntry_t& p, PageContext_t& c);
     static void HandleShell(PageEntry_t& p, PageContext_t& c);
     static void HandleDashboard(PageEntry_t& p, PageContext_t& c);
+    static void HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgPassword(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgVehicle(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgModem(PageEntry_t& p, PageContext_t& c);

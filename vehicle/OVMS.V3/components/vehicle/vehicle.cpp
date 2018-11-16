@@ -378,6 +378,20 @@ void bms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     writer->puts("No vehicle module selected");
     }
   }
+
+void bms_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle != NULL)
+    {
+    MyVehicleFactory.m_currentvehicle->BmsResetCellStats();
+    writer->puts("BMS cell statistics have been reset.");
+    }
+  else
+    {
+    writer->puts("No vehicle module selected");
+    }
+  }
+
 OvmsVehicleFactory::OvmsVehicleFactory()
   {
   ESP_LOGI(TAG, "Initialising VEHICLE Factory (2000)");
@@ -412,6 +426,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
 
   OvmsCommand* cmd_bms = MyCommandApp.RegisterCommand("bms","BMS framework",NULL,"",0,0, true);
   cmd_bms->RegisterCommand("status","Show BMS status",bms_status,"",0,0, true);
+  cmd_bms->RegisterCommand("reset","Reset BMS statistics",bms_reset,"",0,0, true);
   }
 
 OvmsVehicleFactory::~OvmsVehicleFactory()
@@ -1620,6 +1635,8 @@ void OvmsVehicle::BmsResetCellStats()
       m_bms_vmins[k] = 0;
       m_bms_vmaxs[k] = 0;
       }
+    StandardMetrics.ms_v_bat_cell_vmin->ClearValue();
+    StandardMetrics.ms_v_bat_cell_vmax->ClearValue();
     }
   if (m_bms_readings_t > 0)
     {
@@ -1632,6 +1649,8 @@ void OvmsVehicle::BmsResetCellStats()
       m_bms_tmins[k] = 0;
       m_bms_tmaxs[k] = 0;
       }
+    StandardMetrics.ms_v_bat_cell_tmin->ClearValue();
+    StandardMetrics.ms_v_bat_cell_tmax->ClearValue();
     }
   }
 
