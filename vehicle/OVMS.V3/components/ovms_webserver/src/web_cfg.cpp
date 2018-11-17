@@ -251,7 +251,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsWebServer::HandleCommand(PageEntry_t& p, PageContext_t& c)
 {
-  std::string command = c.getvar("command");
+  std::string command = c.getvar("command", 2000);
 
   // Note: application/octet-stream instead of text/plain is a workaround for an *old*
   //  Chrome/Webkit bug: chunked text/plain is always buffered for the first 1024 bytes
@@ -271,7 +271,7 @@ void OvmsWebServer::HandleCommand(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
 {
-  std::string command = c.getvar("command");
+  std::string command = c.getvar("command", 2000);
   std::string output;
 
   if (command != "")
