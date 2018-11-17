@@ -494,15 +494,15 @@ const char* OvmsVehicleFactory::ActiveVehicleType()
 
 const char* OvmsVehicleFactory::ActiveVehicleName()
   {
-  map_vehicle_t::iterator it = m_vmap.find(StandardMetrics.ms_v_type->AsString().c_str());
+  map_vehicle_t::iterator it = m_vmap.find(m_currentvehicletype.c_str());
   if (it != m_vmap.end())
     return it->second.name;
-  return NULL;
+  return "";
   }
 
 const char* OvmsVehicleFactory::ActiveVehicleShortName()
   {
-  return m_currentvehicle ? m_currentvehicle->VehicleShortName() : NULL;
+  return m_currentvehicle ? m_currentvehicle->VehicleShortName() : "";
   }
 
 static void OvmsVehicleRxTask(void *pvParameters)
