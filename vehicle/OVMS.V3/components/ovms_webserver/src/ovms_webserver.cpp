@@ -50,7 +50,7 @@ OvmsWebServer::OvmsWebServer()
 
   m_running = false;
   memset(m_sessions, 0, sizeof(m_sessions));
-  
+
 #if MG_ENABLE_FILESYSTEM
   m_file_enable = true;
   memset(&m_file_opts, 0, sizeof(m_file_opts));
@@ -86,13 +86,13 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/home", "Home", HandleHome);
   RegisterPage("/login", "Login", HandleLogin);
   RegisterPage("/logout", "Logout", HandleLogout);
-  
+
   // register standard API calls:
   RegisterPage("/api/execute", "Execute command", HandleCommand, PageMenu_None, PageAuth_Cookie);
 
   // register standard administration pages:
   RegisterPage("/status", "Status", HandleStatus, PageMenu_Main, PageAuth_Cookie);
-  RegisterPage("/shell", "Shell", HandleShell, PageMenu_Main, PageAuth_Cookie);
+  RegisterPage("/shell", "Shell", HandleShell, PageMenu_Tools, PageAuth_Cookie);
   RegisterPage("/dashboard", "Dashboard", HandleDashboard, PageMenu_Main, PageAuth_Cookie);
   RegisterPage("/cfg/init", "Setup wizard", HandleCfgInit, PageMenu_None, PageAuth_Cookie);
   RegisterPage("/cfg/password", "Password", HandleCfgPassword, PageMenu_Config, PageAuth_Cookie);
@@ -171,7 +171,7 @@ void OvmsWebServer::ConfigChanged(std::string event, void* data)
   if (event == "config.mounted") {
     CfgInitStartup();
   }
-  
+
 #if MG_ENABLE_FILESYSTEM
   if (!param || param->GetName() == "password") {
     UpdateGlobalAuthFile();

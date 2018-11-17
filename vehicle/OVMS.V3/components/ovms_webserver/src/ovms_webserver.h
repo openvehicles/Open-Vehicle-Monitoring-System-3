@@ -77,12 +77,12 @@ struct PageContext : public ExternalRamAllocated
   user_session *session;
   std::string method;
   std::string uri;
-  
+
   // utils:
   std::string getvar(const char* name, size_t maxlen=200);
   std::string encode_html(const char* text);
   std::string encode_html(const std::string text);
-  
+
   // output:
   void error(int code, const char* text);
   void head(int code, const char* headers=NULL);
@@ -127,7 +127,7 @@ typedef struct PageContext PageContext_t;
 
 /**
  * PageEntry: HTTP URI page handler entry for OvmsWebServer.
- * 
+ *
  * Created by OvmsWebServer::RegisterPage(). The registered handler will be called
  *  with both PageEntry and PageContext, so one handler can serve multiple
  *  URIs or patterns.
@@ -136,6 +136,7 @@ typedef struct PageContext PageContext_t;
 typedef enum {
   PageMenu_None,
   PageMenu_Main,              // → main menu
+  PageMenu_Tools,             // → tools menu
   PageMenu_Config,            // → config menu
   PageMenu_Vehicle,           // → vehicle menu
 } PageMenu_t;
@@ -157,7 +158,7 @@ struct PageEntry
   PageHandler_t handler;
   PageMenu_t menu;
   PageAuth_t auth;
-  
+
   PageEntry(const char* _uri, const char* _label, PageHandler_t _handler, PageMenu_t _menu=PageMenu_None, PageAuth_t _auth=PageAuth_None)
   {
     uri = _uri;
@@ -166,7 +167,7 @@ struct PageEntry
     menu = _menu;
     auth = _auth;
   }
-  
+
   void Serve(PageContext_t& c);
 };
 
@@ -176,7 +177,7 @@ typedef std::forward_list<PageEntry*> PageMap_t;
 /**
  * MgHandler is the base mongoose connection handler interface class
  *  to implement stateful connections.
- * 
+ *
  * An MgHandler instance automatically attaches itself to (and detaches from)
  *  the mg_connection via the user_data field.
  * The HandleEvent() method will be called prior to the framework handler.
@@ -195,12 +196,12 @@ class MgHandler : public ExternalRamAllocated
       if (m_nc)
         m_nc->user_data = NULL;
     }
-  
+
   public:
     virtual int HandleEvent(int ev, void* p) = 0;
     void RequestPoll();
     static void HandlePoll(mg_connection* nc, int ev, void* p);
-  
+
   public:
     mg_connection*            m_nc;
 };
@@ -214,10 +215,10 @@ class HttpDataSender : public MgHandler
   public:
     HttpDataSender(mg_connection* nc, const uint8_t* data, size_t size, bool keepalive=true);
     ~HttpDataSender();
-  
+
   public:
     int HandleEvent(int ev, void* p);
-  
+
   public:
     const uint8_t*            m_data;             // pointer to data
     size_t                    m_size;             // size of data to send
@@ -235,10 +236,10 @@ class HttpStringSender : public MgHandler
   public:
     HttpStringSender(mg_connection* nc, std::string* msg, bool keepalive=true);
     ~HttpStringSender();
-  
+
   public:
     int HandleEvent(int ev, void* p);
-  
+
   public:
     std::string*              m_msg;              // pointer to data
     size_t                    m_sent;             // size sent up to now
@@ -249,7 +250,7 @@ class HttpStringSender : public MgHandler
 /**
  * WebSocketHandler transmits JSON data in chunks to the WebSocket client
  *  and coordinates transmits initiated from other contexts (i.e. events).
- * 
+ *
  * On creation it will do a full update of all metrics.
  * Later on, it receives TX jobs through the queue.
  */
@@ -278,7 +279,7 @@ class WebSocketHandler : public MgHandler
   public:
     WebSocketHandler(mg_connection* nc, size_t modifier);
     ~WebSocketHandler();
-  
+
   public:
     bool Lock(TickType_t xTicksToWait);
     void Unlock();
@@ -289,7 +290,7 @@ class WebSocketHandler : public MgHandler
     void ContinueTx();
     void ProcessTxJob();
     int HandleEvent(int ev, void* p);
-  
+
   public:
     size_t                    m_modifier;         // "our" metrics modifier
     QueueHandle_t             m_jobqueue;
@@ -318,12 +319,12 @@ class HttpCommandStream : public OvmsShell, public MgHandler
   public:
     HttpCommandStream(mg_connection* nc, std::string command, int verbosity=COMMAND_RESULT_NORMAL);
     ~HttpCommandStream();
-  
+
   public:
     void ProcessQueue();
     int HandleEvent(int ev, void* p);
     static void CommandTask(void* object);
-  
+
   public:
     std::string               m_command;
     TaskHandle_t              m_cmdtask;
@@ -331,7 +332,7 @@ class HttpCommandStream : public OvmsShell, public MgHandler
     bool                      m_done;
     size_t                    m_sent;
     int                       m_ack;
-  
+
   public:
     void Initialize(bool print);
     virtual bool IsInteractive() { return false; }
@@ -346,7 +347,7 @@ class HttpCommandStream : public OvmsShell, public MgHandler
 
 /**
  * OvmsWebServer: main web framework (static instance: MyWebServer)
- * 
+ *
  * Register custom page handlers through the RegisterPage() API.
  */
 
@@ -374,18 +375,18 @@ class OvmsWebServer : public ExternalRamAllocated
       PageMenu_t menu=PageMenu_None, PageAuth_t auth=PageAuth_None);
     void DeregisterPage(const char* uri);
     PageEntry* FindPage(const char* uri);
-  
+
   public:
     user_session* CreateSession(const http_message *hm);
     void DestroySession(user_session *s);
     user_session* GetSession(http_message *hm);
     void CheckSessions(void);
     static bool CheckLogin(std::string username, std::string password);
-  
+
   public:
     WebSocketHandler* CreateWebSocketHandler(mg_connection* nc);
     void DestroyWebSocketHandler(WebSocketHandler* handler);
-  
+
   public:
     static std::string CreateMenu(PageContext_t& c);
     static void OutputHome(PageEntry_t& p, PageContext_t& c);
@@ -397,7 +398,7 @@ class OvmsWebServer : public ExternalRamAllocated
     static void HandleLogout(PageEntry_t& p, PageContext_t& c);
     static void OutputReboot(PageEntry_t& p, PageContext_t& c);
     static void OutputReconnect(PageEntry_t& p, PageContext_t& c, const char* info=NULL);
-  
+
   public:
     static void HandleStatus(PageEntry_t& p, PageContext_t& c);
     static void HandleCommand(PageEntry_t& p, PageContext_t& c);
@@ -443,12 +444,12 @@ class OvmsWebServer : public ExternalRamAllocated
     PageMap_t                 m_pagemap;
 
     user_session              m_sessions[NUM_SESSIONS];
-    
+
     size_t                    m_client_cnt;                 // number of active WebSocket clients
     SemaphoreHandle_t         m_client_mutex;
     WebSocketSlots            m_client_slots;
     TimerHandle_t             m_update_ticker;
-    
+
     int                       m_init_timeout;
 };
 
