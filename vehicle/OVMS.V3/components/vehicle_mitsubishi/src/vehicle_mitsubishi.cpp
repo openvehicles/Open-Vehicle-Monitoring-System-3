@@ -17,6 +17,8 @@
 ;       - web battery status with volts and temperatures
 ;    0.1.2 14-nov-2018
 ;       - new standardised BMS usage
+;    0.1.3 17-nov-2018
+;       - new standardised BMS /web ui for BMS
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018  Mark Webb-Johnson
