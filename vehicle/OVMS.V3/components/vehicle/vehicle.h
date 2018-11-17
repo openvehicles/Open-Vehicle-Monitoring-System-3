@@ -283,10 +283,16 @@ class OvmsVehicle : public InternalRamAllocated
     int m_bms_readingspermodule_v;            // Number of BMS voltage readings per module
     int m_bms_readings_t;                     // Number of BMS temperature readings expected
     int m_bms_readingspermodule_t;            // Number of BMS temperature readings per module
+    float m_bms_limit_tmin;                   // Minimum temperature limit (for sanity checking)
+    float m_bms_limit_tmax;                   // Maximum temperature limit (for sanity checking)
+    float m_bms_limit_vmin;                   // Minimum voltage limit (for sanity checking)
+    float m_bms_limit_vmax;                   // Maximum voltage limit (for sanity checking)
 
   protected:
     void BmsSetCellArrangementVoltage(int readings, int readingspermodule);
     void BmsSetCellArrangementTemperature(int readings, int readingspermodule);
+    void BmsSetCellLimitsVoltage(float min, float max);
+    void BmsSetCellLimitsTemperature(float min, float max);
     void BmsSetCellVoltage(int index, float value);
     void BmsResetCellVoltages();
     void BmsSetCellTemperature(int index, float value);

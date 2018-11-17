@@ -584,6 +584,11 @@ OvmsVehicle::OvmsVehicle()
   m_bms_readings_t = 0;
   m_bms_readingspermodule_t = 0;
 
+  m_bms_limit_tmin = -1000;
+  m_bms_limit_tmax = 1000;
+  m_bms_limit_vmin = -1000;
+  m_bms_limit_vmax = 1000;
+
   m_rxqueue = xQueueCreate(CONFIG_OVMS_VEHICLE_CAN_RX_QUEUE_SIZE,sizeof(CAN_frame_t));
   xTaskCreatePinnedToCore(OvmsVehicleRxTask, "OVMS Vehicle",
     CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_rxtask, 1);
@@ -1616,10 +1621,23 @@ void OvmsVehicle::BmsSetCellArrangementTemperature(int readings, int readingsper
   BmsResetCellTemperatures();
   }
 
+void OvmsVehicle::BmsSetCellLimitsVoltage(float min, float max)
+  {
+  m_bms_limit_vmin = min;
+  m_bms_limit_vmax = max;
+  }
+
+void OvmsVehicle::BmsSetCellLimitsTemperature(float min, float max)
+  {
+  m_bms_limit_tmin = min;
+  m_bms_limit_tmax = max;
+  }
+
 void OvmsVehicle::BmsSetCellVoltage(int index, float value)
   {
   // ESP_LOGI(TAG,"BmsSetCellVoltage(%d,%f) c=%d", index, value, m_bms_bitset_cv);
   if ((index<0)||(index>=m_bms_readings_v)) return;
+  if ((value<m_bms_limit_vmin)||(value>m_bms_limit_vmax)) return;
   m_bms_voltages[index] = value;
 
   if (! m_bms_has_voltages)
@@ -1694,6 +1712,7 @@ void OvmsVehicle::BmsSetCellTemperature(int index, float value)
   {
   // ESP_LOGI(TAG,"BmsSetCellTemperature(%d,%f) c=%d", index, value, m_bms_bitset_ct);
   if ((index<0)||(index>=m_bms_readings_t)) return;
+  if ((value<m_bms_limit_tmin)||(value>m_bms_limit_tmax)) return;
   m_bms_temperatures[index] = value;
 
   if (! m_bms_has_temperatures)
