@@ -285,9 +285,9 @@ class OvmsVehicle : public InternalRamAllocated
     void BmsSetCellTemperature(int index, float value);
     void BmsRestartCellVoltages();
     void BmsRestartCellTemperatures();
-    void BmsResetCellStats();
 
   public:
+    void BmsResetCellStats();
     virtual void BmsStatus(int verbosity, OvmsWriter* writer);
   };
 
