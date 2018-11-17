@@ -71,14 +71,13 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   memset(m_vin,0,sizeof(m_vin));
 
   mi_trip_start_odo = 0;
-  WebInit();
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
 
   //BMS
   BmsSetCellArrangementVoltage(88, 8);
   BmsSetCellArrangementTemperature(66, 6);
-  //MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
 
   // init commands:
   cmd_xmi = MyCommandApp.RegisterCommand("xmi", "Mitsubishi iMiEV", NULL, "", 0, 0, true);
@@ -94,7 +93,7 @@ OvmsVehicleMitsubishi::~OvmsVehicleMitsubishi()
   // Release GPS.
   MyEvents.SignalEvent("vehicle.require.gps", NULL);
   MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
-  //MyWebServer.DeregisterPage("/bms/cellmon",);
+  MyWebServer.DeregisterPage("/bms/cellmon");
   }
 
   /**

@@ -100,11 +100,6 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     // Webserver subsystem
     //  - implementation: mi_web.(h,cpp)
     //
-  public:
-    void WebInit();
-    static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
-    static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
-    static void WebBattMon(PageEntry_t& p, PageContext_t& c);
 
   public:
     void GetDashboardConfig(DashboardConfig& cfg);
