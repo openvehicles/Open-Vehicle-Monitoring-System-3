@@ -45,6 +45,7 @@ OvmsVehicleTeslaModelS::OvmsVehicleTeslaModelS()
 
   memset(m_vin,0,sizeof(m_vin));
   memset(m_type,0,sizeof(m_type));
+  m_charge_w = 0;
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -113,9 +114,43 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
       break;
       }
+    case 0x222: // Charging related
+      {
+      m_charge_w = uint16_t(d[1]<<8)+d[0];
+      break;
+      }
     case 0x256: // Speed
       {
       StandardMetrics.ms_v_pos_speed->SetValue( ((((int)d[3]&0x0f)<<8) + (int)d[2])/10, (d[3]&0x80)?Kph:Mph );
+      break;
+      }
+    case 0x28C: // Charging related
+      {
+      float charge_v = (float)(uint16_t(d[1]<<8) + d[0])/256;
+      if ((charge_v != 0)&&(m_charge_w != 0))
+        { // Charging
+        StandardMetrics.ms_v_charge_current->SetValue((unsigned int)(m_charge_w/charge_v));
+        StandardMetrics.ms_v_charge_voltage->SetValue((unsigned int)charge_v);
+        StandardMetrics.ms_v_charge_pilot->SetValue(true);
+        StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+        StandardMetrics.ms_v_door_chargeport->SetValue(true);
+        StandardMetrics.ms_v_charge_mode->SetValue("standard");
+        StandardMetrics.ms_v_charge_state->SetValue("charging");
+        StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+        StandardMetrics.ms_v_charge_climit->SetValue((unsigned int)(m_charge_w/charge_v));
+        }
+      else
+        { // Not charging
+        StandardMetrics.ms_v_charge_current->SetValue(0);
+        StandardMetrics.ms_v_charge_voltage->SetValue(0);
+        StandardMetrics.ms_v_charge_pilot->SetValue(false);
+        StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+        StandardMetrics.ms_v_door_chargeport->SetValue(false);
+        StandardMetrics.ms_v_charge_mode->SetValue("standard");
+        StandardMetrics.ms_v_charge_state->SetValue("done");
+        StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+        StandardMetrics.ms_v_charge_climit->SetValue(0);
+        }
       break;
       }
     case 0x302: // SOC
