@@ -53,6 +53,9 @@ OvmsVehicleTeslaModelS::OvmsVehicleTeslaModelS()
 
   BmsSetCellArrangementVoltage(96, 6);
   BmsSetCellArrangementTemperature(32, 2);
+  BmsSetCellLimitsVoltage(1,4.9);
+  BmsSetCellLimitsTemperature(-90,90);
+
   MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
   }
 
@@ -205,7 +208,8 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
       int v2 = (((int)d[4]&0x0f)<<10) + (((int)d[3])<<2) + (d[2]>>6);
       int v3 = (((int)d[6]&0x03)<<12) + (((int)d[5])<<4) + (d[4]>>4);
       int v4 = (((int)d[7])<<6) + (((int)d[6]>>2));
-      if ((v1 != 0x3fff)&&(v2 != 0x3fff)&&(v3 != 0x3fff)&&(v4 != 0x3fff))
+      if ((v1 != 0x3fff)&&(v2 != 0x3fff)&&(v3 != 0x3fff)&&(v4 != 0x3fff)&&
+          (v1 != 0)&&(v2 != 0)&&(v3 != 0)&&(v4 != 0))
         {
         if (d[0]<24)
           {
