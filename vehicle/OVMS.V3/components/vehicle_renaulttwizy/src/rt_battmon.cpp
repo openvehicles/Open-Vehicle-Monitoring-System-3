@@ -538,10 +538,10 @@ void battery_pack::UpdateMetrics()
   
   float vmin = MyConfig.GetParamValueFloat("xrt", "cell_volt_min", 3.165);
   float vmax = MyConfig.GetParamValueFloat("xrt", "cell_volt_max", 4.140);
-  *StdMetrics.ms_v_bat_cell_level_min = (float) TRUNCPREC((((float)cell_volt_min/200)-vmin) / (vmax-vmin) * 100, 3);
-  *StdMetrics.ms_v_bat_cell_level_max = (float) TRUNCPREC((((float)cell_volt_max/200)-vmin) / (vmax-vmin) * 100, 3);
-  *StdMetrics.ms_v_bat_cell_level_avg = (float) TRUNCPREC(((cell_volt_avg/200)-vmin) / (vmax-vmin) * 100, 3);
-  *StdMetrics.ms_v_bat_cell_level_stddev = (float) TRUNCPREC((cell_volt_stddev/200) / (vmax-vmin) * 100, 3);
+  *StdMetrics.ms_v_bat_pack_level_min = (float) TRUNCPREC((((float)cell_volt_min/200)-vmin) / (vmax-vmin) * 100, 3);
+  *StdMetrics.ms_v_bat_pack_level_max = (float) TRUNCPREC((((float)cell_volt_max/200)-vmin) / (vmax-vmin) * 100, 3);
+  *StdMetrics.ms_v_bat_pack_level_avg = (float) TRUNCPREC(((cell_volt_avg/200)-vmin) / (vmax-vmin) * 100, 3);
+  *StdMetrics.ms_v_bat_pack_level_stddev = (float) TRUNCPREC((cell_volt_stddev/200) / (vmax-vmin) * 100, 3);
 }
 
 bool battery_pack::IsModified(size_t m_modifier)
