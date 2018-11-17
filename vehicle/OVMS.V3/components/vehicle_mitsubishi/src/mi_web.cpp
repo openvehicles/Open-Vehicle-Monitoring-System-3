@@ -53,7 +53,7 @@ void OvmsVehicleMitsubishi::WebInit()
    //vehicle menu:
    //MyWebServer.RegisterPage("/xtc/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
   // MyWebServer.RegisterPage("/xtc/batterydiag", "Battery Diagnostics", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
-   //MyWebServer.RegisterPage("/xmi/battmon", "Battery monitor", WebBattMon, PageMenu_Vehicle, PageAuth_Cookie);
+   MyWebServer.RegisterPage("/xmi/battmon", "Battery monitor", WebBattMon, PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 
@@ -228,7 +228,7 @@ void OvmsVehicleMitsubishi::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
  * WebBattMon: (/xmi/battmon)
  * TODO
  */
- 
+
 void OvmsVehicleMitsubishi::WebBattMon(PageEntry_t& p, PageContext_t& c)
 {
   c.head(200);
@@ -349,7 +349,9 @@ void OvmsVehicleMitsubishi::WebBattMon(PageEntry_t& p, PageContext_t& c)
           "events: {"
             "load: function () {"
               "$('#livestatus').on(\"msg:metrics\", function(e, update){"
-                "if (/\\.b\\.c.voltage/.test(Object.keys(update).join()))"
+                "if (update[\"v.b.c.voltage\"] != null\n"
+                  "|| update[\"v.b.c.voltage.min\"] != null\n"
+                  "|| update[\"v.b.c.voltage.max\"] != null)\n"
                   "update_cell_chart();"
               "});"
             "}"
@@ -427,7 +429,9 @@ void OvmsVehicleMitsubishi::WebBattMon(PageEntry_t& p, PageContext_t& c)
           "events: {"
             "load: function () {"
               "$('#livestatus').on(\"msg:metrics\", function(e, update){"
-                "if (/\\.b\\.c.temp/.test(Object.keys(update).join()))"
+                "if (update[\"v.b.c.temp\"] != null\n"
+                  "|| update[\"v.b.c.temp.min\"] != null\n"
+                  "|| update[\"v.b.c.temp.max\"] != null)\n"
                   "update_cmod_chart();"
               "});"
             "}"

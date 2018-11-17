@@ -104,7 +104,7 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     void WebInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
-    //static void WebBattMon(PageEntry_t& p, PageContext_t& c);
+    static void WebBattMon(PageEntry_t& p, PageContext_t& c);
 
   public:
     void GetDashboardConfig(DashboardConfig& cfg);

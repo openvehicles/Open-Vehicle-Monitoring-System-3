@@ -78,11 +78,11 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   //BMS
   BmsSetCellArrangementVoltage(88, 8);
   BmsSetCellArrangementTemperature(66, 6);
+  //MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
 
   // init commands:
   cmd_xmi = MyCommandApp.RegisterCommand("xmi", "Mitsubishi iMiEV", NULL, "", 0, 0, true);
   cmd_xmi->RegisterCommand("battreset", "Battery monitor", CommandBatteryReset, "", 0, 0, true);
-  //cmd_xmi->RegisterCommand("bms","Cell voltages", xmi_bms, 0,0, false);
   cmd_xmi->RegisterCommand("aux", "Aux Battery", xmi_aux, 0, 0, false);
   cmd_xmi->RegisterCommand("trip","Show trip info", xmi_trip, 0,0, false);
 
@@ -94,6 +94,7 @@ OvmsVehicleMitsubishi::~OvmsVehicleMitsubishi()
   // Release GPS.
   MyEvents.SignalEvent("vehicle.require.gps", NULL);
   MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
+  //MyWebServer.DeregisterPage("/bms/cellmon",);
   }
 
   /**
@@ -865,5 +866,5 @@ OvmsVehicleMitsubishiInit::OvmsVehicleMitsubishiInit()
   {
   ESP_LOGI(TAG, "Registering Vehicle: Mitsubishi iMiEV, Citroen C-Zero, Peugeot iOn (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleMitsubishi>("MI","Mitsubishi iMiEV, Citroen C-Zero, Peugeot iOn");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleMitsubishi>("MI","Trio");
   }
