@@ -51,6 +51,7 @@ static const char *TAG = "ota";
 #include "ovms_buffer.h"
 #include "ovms_boot.h"
 #include "ovms_netmanager.h"
+#include "ovms_version.h"
 #include "crypt_md5.h"
 
 OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
@@ -83,16 +84,26 @@ int buildverscmp(std::string v1, std::string v2)
 void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   ota_info info;
+  std::string version;
   int len = 0;
   bool check_update = (strcmp(cmd->GetName(), "status")==0);
   MyOTA.GetStatus(info, check_update);
 
+  if (info.version_firmware != "")
+    len += writer->printf("Firmware:          %s\n", info.version_firmware.c_str());
   if (info.partition_running != "")
     len += writer->printf("Running partition: %s\n", info.partition_running.c_str());
   if (info.partition_boot != "")
     len += writer->printf("Boot partition:    %s\n", info.partition_boot.c_str());
-  if (info.version_firmware != "")
-    len += writer->printf("Firmware:          %s\n", info.version_firmware.c_str());
+  version = GetOVMSPartitionVersion(ESP_PARTITION_SUBTYPE_APP_FACTORY);
+  if (version != "")
+      len += writer->printf("Factory image:     %s\n", version.c_str());
+  version = GetOVMSPartitionVersion(ESP_PARTITION_SUBTYPE_APP_OTA_0);
+  if (version != "")
+      len += writer->printf("OTA_O image:       %s\n", version.c_str());
+  version = GetOVMSPartitionVersion(ESP_PARTITION_SUBTYPE_APP_OTA_1);
+  if (version != "")
+      len += writer->printf("OTA_1 image:       %s\n", version.c_str());
   if (info.version_server != "")
     {
     len += writer->printf("Server Available:  %s%s\n", info.version_server.c_str(),

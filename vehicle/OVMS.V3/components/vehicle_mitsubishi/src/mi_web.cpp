@@ -228,7 +228,7 @@ void OvmsVehicleMitsubishi::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
  * WebBattMon: (/xmi/battmon)
  * TODO
  */
- /*
+ 
 void OvmsVehicleMitsubishi::WebBattMon(PageEntry_t& p, PageContext_t& c)
 {
   c.head(200);
@@ -486,7 +486,7 @@ void OvmsVehicleMitsubishi::WebBattMon(PageEntry_t& p, PageContext_t& c)
     "</script>");
   c.done();
 }
-*/
+
 /**
  * GetDashboardConfig: Mitsubishi i-MiEVm Citroen C-Zero, Peugeot iOn specific dashboard setup
  */

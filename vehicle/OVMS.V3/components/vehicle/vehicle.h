@@ -261,20 +261,22 @@ class OvmsVehicle : public InternalRamAllocated
 
   // BMS helpers
   protected:
-    float* m_bms_voltages;
-    float* m_bms_vmins;
-    float* m_bms_vmaxs;
-    bool m_bms_has_voltages;
-    float* m_bms_temperatures;
-    float* m_bms_tmins;
-    float* m_bms_tmaxs;
-    bool m_bms_has_temperatures;
-    std::vector<bool> m_bms_bitset_v;
-    std::vector<bool> m_bms_bitset_t;
-    int m_bms_readings_v;
-    int m_bms_readingspermodule_v;
-    int m_bms_readings_t;
-    int m_bms_readingspermodule_t;
+    float* m_bms_voltages;                    // BMS voltages (current value)
+    float* m_bms_vmins;                       // BMS minimum voltages seen (since reset)
+    float* m_bms_vmaxs;                       // BMS maximum voltages seen (since reset)
+    bool m_bms_has_voltages;                  // True if BMS has a complete set of voltage values
+    float* m_bms_temperatures;                // BMS temperatures (celcius current value)
+    float* m_bms_tmins;                       // BMS minimum temperatures seen (since reset)
+    float* m_bms_tmaxs;                       // BMS maximum temperatures seen (since reset)
+    bool m_bms_has_temperatures;              // True if BMS has a complete set of temperature values
+    std::vector<bool> m_bms_bitset_v;         // BMS tracking: true if corresponding voltage set
+    std::vector<bool> m_bms_bitset_t;         // BMS tracking: true if corresponding temperature set
+    int m_bms_bitset_cv;                      // BMS tracking: count of unique voltage values set
+    int m_bms_bitset_ct;                      // BMS tracking: count of unique temperature values set
+    int m_bms_readings_v;                     // Number of BMS voltage readings expected
+    int m_bms_readingspermodule_v;            // Number of BMS voltage readings per module
+    int m_bms_readings_t;                     // Number of BMS temperature readings expected
+    int m_bms_readingspermodule_t;            // Number of BMS temperature readings per module
 
   protected:
     void BmsSetCellArrangementVoltage(int readings, int readingspermodule);

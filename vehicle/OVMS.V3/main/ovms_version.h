@@ -33,8 +33,14 @@
 
 #include <string>
 
+#include <esp_partition.h>
+
+#define OVMS_VERSION_PREFIX "########OVMS_PRE########"
+#define OVMS_VERSION_POSTFIX "########OVMSPOST########"
+
 extern std::string GetOVMSVersion();
 extern std::string GetOVMSBuild();
 extern std::string GetOVMSHardware();
+extern std::string GetOVMSPartitionVersion(esp_partition_subtype_t);
 
 #endif //#ifndef __VFS_H__
