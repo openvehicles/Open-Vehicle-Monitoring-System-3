@@ -300,6 +300,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_bat_current->SetValue((((((d[2]*256.0)+d[3]))-32768))/100.0);
         StandardMetrics.ms_v_bat_voltage->SetValue((d[4]*256.0+d[5])/10.0);
         StandardMetrics.ms_v_bat_power->SetValue((StandardMetrics.ms_v_bat_voltage->AsFloat()*StandardMetrics.ms_v_bat_current->AsFloat())/1000.0*-1.0);
+        v_c_power_dc->SetValue(StandardMetrics.ms_v_bat_power->AsFloat()*-1.0);
       break;
       }
 
@@ -320,6 +321,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       {
         StandardMetrics.ms_v_charge_voltage->SetValue(d[1]*1.0);
         StandardMetrics.ms_v_charge_current->SetValue(d[6]/10.0);
+        v_c_power_ac->SetValue((StandardMetrics.ms_v_charge_voltage->AsFloat()*StandardMetrics.ms_v_charge_current->AsFloat())/1000);
       break;
       }
 
@@ -669,6 +671,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
       if((StandardMetrics.ms_v_charge_voltage->AsInt() > 90) && (StandardMetrics.ms_v_charge_voltage->AsInt() < 254) && (StandardMetrics.ms_v_charge_current->AsInt() < 16) && (StandardMetrics.ms_v_charge_current->AsInt() > 0) )
       {
         vehicle_charger_status(CHARGER_STATUS_CHARGING);
+        v_c_efficiency->SetValue(v_c_power_dc->AsFloat()/v_c_power_ac->AsFloat()*100);
       }
       else if((StandardMetrics.ms_v_bat_soc->AsInt() > 91) && (StandardMetrics.ms_v_charge_voltage->AsInt() > 90) && (StandardMetrics.ms_v_charge_current->AsInt() < 1) )
       {

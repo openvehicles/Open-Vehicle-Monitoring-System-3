@@ -91,7 +91,9 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     OvmsMetricBool*		m_v_env_blinker_right = MyMetrics.InitBool("xmi.e.rightblinker", 10, 0);
     OvmsMetricBool*		m_v_env_blinker_left = MyMetrics.InitBool("xmi.e.leftblinker", 10, 0);
     OvmsMetricBool*		m_v_env_warninglight = MyMetrics.InitBool("xmi.e.warninglight", 10, 0);
-
+    OvmsMetricFloat*  v_c_efficiency = MyMetrics.InitFloat("v.c.efficiency",SM_STALE_HIGH, Percentage);
+    OvmsMetricFloat*  v_c_power_ac = MyMetrics.InitFloat("v.c.power.ac",SM_STALE_MID, kW);
+    OvmsMetricFloat*  v_c_power_dc = MyMetrics.InitFloat("v.c.power.dc",SM_STALE_MID, kW);
 
     void vehicle_mitsubishi_car_on(bool isOn);
     float mi_trip_start_odo;
