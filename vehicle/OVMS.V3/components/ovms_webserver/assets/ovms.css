@@ -358,6 +358,13 @@ body.night {
 .night .panel-footer {
   background-color: #111;
 }
+.night .modal-content {
+  background-color: #222;
+}
+.night .close {
+  color: #fff;
+  opacity: 0.8;
+}
 .night samp {
   color: #0a0;
 }

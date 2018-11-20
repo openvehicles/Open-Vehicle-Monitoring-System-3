@@ -40,7 +40,19 @@ can can1 rx standard 557 33 43 35 33 53 35 33 50
 can can1 rx standard 55E 33 43 34 33 43 36 00 D5
 can can1 rx standard 55F 00 8E 73 00 00 23 E2 3E
 
-can can1 rx standard 556 33 63 35 33 53 34 33 5A
+# Leveled:
+
+can can1 rx standard 554 45 45 45 45 45 45 45 00
+can can1 rx standard 556 33 53 35 33 53 35 33 5A
+can can1 rx standard 557 33 53 35 33 53 35 33 50
+can can1 rx standard 55E 33 53 35 33 53 35 00 D5
+can can1 rx standard 55F 00 8E 73 00 00 23 E2 3E
+
+can can1 rx standard 554 45 45 45 46 45 45 45 00
+can can1 rx standard 556 33 53 35 33 63 35 33 5A
+can can1 rx standard 557 33 53 35 33 53 35 33 50
+can can1 rx standard 55E 33 53 35 33 53 35 00 D5
+can can1 rx standard 55F 00 8E 73 00 00 23 E2 3E
 
 can can1 rx standard 554 45 44 46 44 46 47 46 00
 can can1 rx standard 556 33 43 35 33 53 35 33 50
@@ -62,10 +74,21 @@ can can1 rx standard 557 31 53 15 31 63 18 31 8A
 can can1 rx standard 55E 31 93 18 31 83 1A 00 D5
 can can1 rx standard 55F 00 8E 73 00 00 23 E2 3E
 
+can can1 rx standard 554 45 44 46 44 46 49 46 00
+can can1 rx standard 556 31 93 1c 31 63 15 31 60
+can can1 rx standard 557 31 53 15 31 63 18 31 8A
+can can1 rx standard 55E 31 93 18 31 83 1a 00 D5
+can can1 rx standard 55F 00 8E 73 00 00 23 E2 3E
 
 # Alert:
 
-can can1 rx standard 554 88 45 45 44 45 45 46 00
+can can1 rx standard 554 45 44 46 44 46 47 46 00
+can can1 rx standard 556 31 92 FF 31 63 15 31 60
+can can1 rx standard 557 31 53 15 31 63 18 31 8A
+can can1 rx standard 55E 31 93 18 31 83 1A 00 D5
+can can1 rx standard 55F 00 8E 73 00 00 23 E2 3E
+
+can can1 rx standard 554 49 45 45 44 45 45 46 00
 can can1 rx standard 556 33 63 34 33 53 34 33 5A
 can can1 rx standard 557 33 43 35 33 53 35 33 50
 can can1 rx standard 55E 33 43 34 33 43 36 00 D5

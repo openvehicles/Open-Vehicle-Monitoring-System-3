@@ -92,7 +92,7 @@ struct PageContext : public ExternalRamAllocated
   void done();
   void panel_start(const char* type, const char* title);
   void panel_end(const char* footer="");
-  void form_start(const char* action);
+  void form_start(const char* action, const char* target=NULL);
   void form_end();
   void fieldset_start(const char* title, const char* css_class=NULL);
   void fieldset_end();
@@ -117,7 +117,7 @@ struct PageContext : public ExternalRamAllocated
   void input_slider(const char* label, const char* name, int size, const char* unit,
     int enabled, double value, double defval, double min, double max, double step=1,
     const char* helptext=NULL);
-  void input_button(const char* type, const char* label, const char* name=NULL, const char* value=NULL);
+  void input_button(const char* btnclass, const char* label, const char* name=NULL, const char* value=NULL);
   void input_info(const char* label, const char* text);
   void alert(const char* type, const char* text);
 };

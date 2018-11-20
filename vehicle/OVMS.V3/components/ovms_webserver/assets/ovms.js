@@ -1,34 +1,43 @@
 /* ovms.js | (c) Michael Balzer | https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3 */
 
 function setcontent(tgt, uri, text){
-  $("#nav .dropdown.open .dropdown-toggle").dropdown("toggle");
-  $("#nav .navbar-collapse").collapse("hide");
-  $("#nav li").removeClass("active");
-  var me = $("#nav [href='"+uri+"']");
-  me.parents("li").addClass("active");
+  if (tgt[0].id == "main") {
+    $("#nav .dropdown.open .dropdown-toggle").dropdown("toggle");
+    $("#nav .navbar-collapse").collapse("hide");
+    $("#nav li").removeClass("active");
+    var me = $("#nav [href='"+uri+"']");
+    me.parents("li").addClass("active");
+  }
   tgt[0].scrollIntoView();
   tgt.html(text).hide().fadeIn(50);
-  if (me.length > 0)
-    document.title = "OVMS " + (me.attr("title") || me.text());
-  else
-    document.title = "OVMS Console";
+  if (tgt[0].id == "main") {
+    if (me.length > 0)
+      document.title = "OVMS " + (me.attr("title") || me.text());
+    else
+      document.title = "OVMS Console";
+  }
 }
 
 function loaduri(target, method, uri, data){
-  var tgt = $(target);
+  var tgt = $(target), cont;
   if (tgt.length != 1)
     return false;
   
   tgt.data("uri", uri);
-  location.hash = "#" + uri;
+  if (tgt[0].id == "main") {
+    cont = $("html");
+    location.hash = "#" + uri;
+  } else {
+    cont = tgt.closest(".modal") || tgt.closest("form") || tgt;
+  }
   
   $.ajax({ "type": method, "url": uri, "data": data,
     "timeout": 15000,
     "beforeSend": function(){
-      $("html").addClass("loading");
+      cont.addClass("loading");
     },
     "complete": function(){
-      $("html").removeClass("loading");
+      cont.removeClass("loading");
     },
     "success": function(response){
       setcontent(tgt, uri, response);
@@ -294,6 +303,8 @@ $(function(){
       if (this.name)
         data += (data?"&":"") + encodeURI(this.name+"="+(this.value||"1"));
     }
+    if ($(this).data("dismiss") == "modal")
+      $(this).closest(".modal").removeClass("fade").modal("hide");
     if (!loaduri(target, method, uri, data))
       return true;
     event.stopPropagation();
@@ -350,6 +361,10 @@ $(function(){
   
   $(window).on("resize", function(event){
     $(".get-window-resize").trigger("window-resize");
+  });
+  
+  $("body").on("hidden.bs.modal", ".modal", function(evt) {
+    $(this).find(".modal-autoclear").html("");
   });
   
   window.onpopstate = getpage;
