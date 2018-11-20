@@ -79,6 +79,10 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   //BMS
   BmsSetCellArrangementVoltage(88, 8);
   BmsSetCellArrangementTemperature(66, 6);
+
+  BmsSetCellLimitsVoltage(2.6,4.9);
+  BmsSetCellLimitsTemperature(-40,70);
+
   MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
 
   // init commands:
@@ -96,6 +100,7 @@ OvmsVehicleMitsubishi::~OvmsVehicleMitsubishi()
   MyEvents.SignalEvent("vehicle.require.gps", NULL);
   MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
   MyWebServer.DeregisterPage("/bms/cellmon");
+  MyCommandApp.UnregisterCommand("xmi");
   }
 
   /**
@@ -297,16 +302,16 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       case 0x373: // Main Battery volt and current
       {
-        StandardMetrics.ms_v_bat_current->SetValue((((((d[2]*256.0)+d[3]))-32768))/100.0);
-        StandardMetrics.ms_v_bat_voltage->SetValue((d[4]*256.0+d[5])/10.0);
-        StandardMetrics.ms_v_bat_power->SetValue((StandardMetrics.ms_v_bat_voltage->AsFloat()*StandardMetrics.ms_v_bat_current->AsFloat())/1000.0*-1.0);
-        v_c_power_dc->SetValue(StandardMetrics.ms_v_bat_power->AsFloat()*-1.0);
+        StandardMetrics.ms_v_bat_current->SetValue((((((d[2]*256.0)+d[3]))-32768))/100.0,Amps);
+        StandardMetrics.ms_v_bat_voltage->SetValue((d[4]*256.0+d[5])/10.0,Volts);
+        StandardMetrics.ms_v_bat_power->SetValue((StandardMetrics.ms_v_bat_voltage->AsFloat(0,Volts)*StandardMetrics.ms_v_bat_current->AsFloat(0,Amps))/1000.0*-1.0,kW);
+        v_c_power_dc->SetValue(StandardMetrics.ms_v_bat_power->AsFloat()*-1.0,kW);
       break;
       }
 
       case 0x374: // Main Battery Soc
       {
-        StandardMetrics.ms_v_bat_soc->SetValue(((int)d[1]-10)/2.0);
+        StandardMetrics.ms_v_bat_soc->SetValue(((int)d[1]-10)/2.0,Percentage);
         StandardMetrics.ms_v_bat_cac->SetValue(d[7]/2.0);
       break;
       }
@@ -319,9 +324,9 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       case 0x389: // Charger voltage and current
       {
-        StandardMetrics.ms_v_charge_voltage->SetValue(d[1]*1.0);
-        StandardMetrics.ms_v_charge_current->SetValue(d[6]/10.0);
-        v_c_power_ac->SetValue((StandardMetrics.ms_v_charge_voltage->AsFloat()*StandardMetrics.ms_v_charge_current->AsFloat())/1000);
+        StandardMetrics.ms_v_charge_voltage->SetValue(d[1]*1.0,Volts);
+        StandardMetrics.ms_v_charge_current->SetValue(d[6]/10.0,Amps);
+        v_c_power_ac->SetValue((StandardMetrics.ms_v_charge_voltage->AsFloat()*StandardMetrics.ms_v_charge_current->AsFloat())/1000, kW);
       break;
       }
 
@@ -671,7 +676,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
       if((StandardMetrics.ms_v_charge_voltage->AsInt() > 90) && (StandardMetrics.ms_v_charge_voltage->AsInt() < 254) && (StandardMetrics.ms_v_charge_current->AsInt() < 16) && (StandardMetrics.ms_v_charge_current->AsInt() > 0) )
       {
         vehicle_charger_status(CHARGER_STATUS_CHARGING);
-        v_c_efficiency->SetValue(v_c_power_dc->AsFloat()/v_c_power_ac->AsFloat()*100);
+        v_c_efficiency->SetValue((v_c_power_dc->AsFloat()/v_c_power_ac->AsFloat())*100,Percentage);
       }
       else if((StandardMetrics.ms_v_bat_soc->AsInt() > 91) && (StandardMetrics.ms_v_charge_voltage->AsInt() > 90) && (StandardMetrics.ms_v_charge_current->AsInt() < 1) )
       {
@@ -709,6 +714,10 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
           StdMetrics.ms_v_pos_trip->SetValue( POS_ODO - mi_trip_start_odo , Kilometers);
 
         }
+        else
+          {
+          StandardMetrics.ms_v_bat_consumption->SetValue(0);
+          }
 
   }
 
