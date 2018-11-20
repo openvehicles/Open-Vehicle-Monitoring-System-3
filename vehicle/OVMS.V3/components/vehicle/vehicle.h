@@ -90,6 +90,13 @@ struct DashboardConfig;
 // 200+ reserved for custom commands
 
 
+// BMS default deviation thresholds:
+#define BMS_DEFTHR_VWARN    0.020   // [V]
+#define BMS_DEFTHR_VALERT   0.030   // [V]
+#define BMS_DEFTHR_TWARN    2.00    // [°C]
+#define BMS_DEFTHR_TALERT   3.00    // [°C]
+
+
 class OvmsVehicle : public InternalRamAllocated
   {
   public:
@@ -287,10 +294,16 @@ class OvmsVehicle : public InternalRamAllocated
     float m_bms_limit_tmax;                   // Maximum temperature limit (for sanity checking)
     float m_bms_limit_vmin;                   // Minimum voltage limit (for sanity checking)
     float m_bms_limit_vmax;                   // Maximum voltage limit (for sanity checking)
+    float m_bms_defthr_vwarn;                 // Default voltage deviation warn threshold [V]
+    float m_bms_defthr_valert;                // Default voltage deviation alert threshold [V]
+    float m_bms_defthr_twarn;                 // Default temperature deviation warn threshold [°C]
+    float m_bms_defthr_talert;                // Default temperature deviation alert threshold [°C]
 
   protected:
     void BmsSetCellArrangementVoltage(int readings, int readingspermodule);
     void BmsSetCellArrangementTemperature(int readings, int readingspermodule);
+    void BmsSetCellDefaultThresholdsVoltage(float warn, float alert);
+    void BmsSetCellDefaultThresholdsTemperature(float warn, float alert);
     void BmsSetCellLimitsVoltage(float min, float max);
     void BmsSetCellLimitsTemperature(float min, float max);
     void BmsSetCellVoltage(int index, float value);
@@ -302,6 +315,10 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void NotifyBmsAlerts();
 
   public:
+    int BmsGetCellArangementVoltage(int* readings=NULL, int* readingspermodule=NULL);
+    int BmsGetCellArangementTemperature(int* readings=NULL, int* readingspermodule=NULL);
+    void BmsGetCellDefaultThresholdsVoltage(float* warn, float* alert);
+    void BmsGetCellDefaultThresholdsTemperature(float* warn, float* alert);
     void BmsResetCellStats();
     virtual void BmsStatus(int verbosity, OvmsWriter* writer);
     virtual bool FormatBmsAlerts(int verbosity, OvmsWriter* writer, bool show_warnings);
