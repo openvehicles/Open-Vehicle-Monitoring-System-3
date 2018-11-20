@@ -301,12 +301,14 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
           if (batt_cmod_count != 8) {
             batt_cmod_count = 8;
             *m_batt_cmod_count = (int) batt_cmod_count;
+            BmsSetCellArrangementTemperature(batt_cmod_count, 1);
           }
         }
         else {
           if (batt_cmod_count != 7) {
             batt_cmod_count = 7;
             *m_batt_cmod_count = (int) batt_cmod_count;
+            BmsSetCellArrangementTemperature(batt_cmod_count, 1);
           }
         }
         
@@ -638,18 +640,21 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
           if (batt_cell_count != 16) {
             batt_cell_count = 16;
             *m_batt_cell_count = (int) batt_cell_count;
+            BmsSetCellArrangementVoltage(batt_cell_count, 1);
           }
         }
         else if (twizy_cell[14].volt_new != 0 && twizy_cell[14].volt_new != 0x0fff) {
           if (batt_cell_count != 15) {
             batt_cell_count = 15;
             *m_batt_cell_count = (int) batt_cell_count;
+            BmsSetCellArrangementVoltage(batt_cell_count, 1);
           }
         }
         else {
           if (batt_cell_count != 14) {
             batt_cell_count = 14;
             *m_batt_cell_count = (int) batt_cell_count;
+            BmsSetCellArrangementVoltage(batt_cell_count, 2);
           }
         }
 

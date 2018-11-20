@@ -134,6 +134,16 @@ void OvmsVehicleRenaultTwizy::BatteryInit()
   for (i = 0; i < BATT_CELLS; i++)
     twizy_cell[i].InitMetrics(i);
 
+  // BMS configuration:
+  //    Note: layout currently fixed to 2 voltages + 1 temperature per module,
+  //          this may need refinement for custom batteries
+  BmsSetCellArrangementVoltage(batt_cell_count, 2);
+  BmsSetCellArrangementTemperature(batt_cmod_count, 1);
+  BmsSetCellLimitsVoltage(2.0, 5.0);
+  BmsSetCellLimitsTemperature(-39, 200);
+  BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
+  BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
+
   // init commands
 
   cmd_batt = cmd_xrt->RegisterCommand("batt", "Battery monitor", NULL, "", 0, 0, true);
@@ -178,6 +188,12 @@ void OvmsVehicleRenaultTwizy::BatteryUpdateMetrics()
     cmod.UpdateMetrics();
   for (battery_cell &cell : twizy_cell)
     cell.UpdateMetrics();
+  
+  int i;
+  for (i = 0; i < batt_cmod_count; i++)
+    BmsSetCellTemperature(i, (float) twizy_cmod[i].temp_act - 40);
+  for (i = 0; i < batt_cell_count; i++)
+    BmsSetCellVoltage(i, (float) twizy_cell[i].volt_act / 200);
 }
 
 
@@ -261,6 +277,7 @@ void OvmsVehicleRenaultTwizy::BatteryReset()
     pack.last_volt_alerts = 0;
   }
   
+  BmsResetCellStats();
   BatteryUpdateMetrics();
 }
 
