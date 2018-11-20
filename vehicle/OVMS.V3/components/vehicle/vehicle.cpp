@@ -1915,8 +1915,38 @@ void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer)
     return;
     }
 
-  writer->puts("Vehicle BMS Status\n");
+  int vwarn=0, valert=0;
+  int twarn=0, talert=0;
+  for (c=0; c<m_bms_readings_v; c++) {
+    if (m_bms_valerts[c]==1) vwarn++;
+    if (m_bms_valerts[c]==2) valert++;
+  }
+  for (c=0; c<m_bms_readings_t; c++) {
+    if (m_bms_talerts[c]==1) twarn++;
+    if (m_bms_talerts[c]==2) talert++;
+  }
 
+  writer->puts("Voltage:");
+  writer->printf("    Average: %5.3fV [%5.3fV - %5.3fV]\n",
+    StdMetrics.ms_v_bat_pack_vavg->AsFloat(),
+    StdMetrics.ms_v_bat_pack_vmin->AsFloat(),
+    StdMetrics.ms_v_bat_pack_vmax->AsFloat());
+  writer->printf("  Deviation: SD %6.2fmV [max %.2fmV], %d warnings, %d alerts\n",
+    StdMetrics.ms_v_bat_pack_vstddev->AsFloat()*1000,
+    StdMetrics.ms_v_bat_pack_vstddev_max->AsFloat()*1000,
+    vwarn, valert);
+
+  writer->puts("Temperature:");
+  writer->printf("    Average: %5.1fC [%5.1fC - %5.1fC]\n",
+    StdMetrics.ms_v_bat_pack_tavg->AsFloat(),
+    StdMetrics.ms_v_bat_pack_tmin->AsFloat(),
+    StdMetrics.ms_v_bat_pack_tmax->AsFloat());
+  writer->printf("  Deviation: SD %6.2fC  [max %.2fC], %d warnings, %d alerts\n",
+    StdMetrics.ms_v_bat_pack_tstddev->AsFloat(),
+    StdMetrics.ms_v_bat_pack_tstddev_max->AsFloat(),
+    twarn, talert);
+
+  writer->puts("Cells:");
   int kv = 0;
   int kt = 0;
   for (int module = 0; module < (m_bms_readings_v/m_bms_readingspermodule_v); module++)
