@@ -139,10 +139,11 @@ void PageContext::panel_end(const char* footer) {
     , footer);
 }
 
-void PageContext::form_start(const char* action) {
+void PageContext::form_start(const char* action, const char* target /*=NULL*/) {
   mg_printf_http_chunk(nc,
-    "<form class=\"form-horizontal\" method=\"post\" action=\"%s\" target=\"#main\">"
-    , _attr(action));
+    "<form class=\"form-horizontal\" method=\"post\" action=\"%s\" target=\"%s\">"
+    , _attr(action)
+    , target ? _attr(target) : "#main");
 }
 
 void PageContext::form_end() {
@@ -321,7 +322,7 @@ void PageContext::input_slider(const char* label, const char* name, int size, co
     );
 }
 
-void PageContext::input_button(const char* type, const char* label,
+void PageContext::input_button(const char* btnclass, const char* label,
     const char* name /*=NULL*/, const char* value /*=NULL*/) {
   mg_printf_http_chunk(nc,
     "<div class=\"form-group\">"
@@ -329,7 +330,7 @@ void PageContext::input_button(const char* type, const char* label,
         "<button type=\"submit\" class=\"btn btn-%s\" %s%s%s %s%s%s>%s</button>"
       "</div>"
     "</div>"
-    , _attr(type)
+    , _attr(btnclass)
     , name ? "name=\"" : "", name ? _attr(name) : "", name ? "\"" : ""
     , value ? "value=\"" : "", value ? _attr(value) : "", value ? "\"" : ""
     , label);
