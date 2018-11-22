@@ -728,6 +728,39 @@ void OvmsVehicle::IncomingFrameCan3(CAN_frame_t* p_frame)
 
 void OvmsVehicle::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
   {
+  static int bufsize = 0; // bytes allocated
+  static uint8_t *buf = NULL;
+  static int bufpos = 0; // reassembled so far
+  static int expect_remain = -1;
+
+  ESP_LOGD(TAG, "IncomingPollReply before: expect_remain=%d bufpos=%d", expect_remain, bufpos);
+  ESP_LOGD(TAG, "IncomingPollReply add: moduleid=%#x pid=%#x length=%d remain=%d", m_poll_moduleid_low, pid, length, mlremain);
+  if (mlremain > expect_remain)
+    {
+    // must be a new reply, so reset to the beginning
+    bufpos = 0;
+    }
+  int i;
+  for (i=0; i<length; i++)
+    {
+    if ( bufpos >= bufsize )
+      {
+      bufsize = bufsize*2 ?: 256;
+      buf = (uint8_t *)realloc(buf, bufsize);
+      }
+    buf[bufpos++] = data[i];
+    }
+  if (mlremain == 0)
+    {
+    ESP_LOGD(TAG, "IncomingPollReply complete: moduleid=%#x pid=%#x length=%d", m_poll_moduleid_low, pid, bufpos);
+    IncomingPollComplete(bus, m_poll_moduleid_low, pid, buf, bufpos);
+    }
+  expect_remain = mlremain - 1;
+  ESP_LOGD(TAG, "IncomingPollReply after: expect_remain=%d bufpos=%d", expect_remain, bufpos);
+  }
+
+void OvmsVehicle::IncomingPollComplete(canbus* bus, uint16_t moduleid, uint16_t pid, uint8_t* data, uint8_t length)
+  {
   }
 
 void OvmsVehicle::Status(int verbosity, OvmsWriter* writer)
