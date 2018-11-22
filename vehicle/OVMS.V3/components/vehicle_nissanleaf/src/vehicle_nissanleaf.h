@@ -67,7 +67,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     ~OvmsVehicleNissanLeaf();
 
   public:
-    void IncomingPollComplete(canbus* bus, uint16_t moduleid, uint16_t pid, uint8_t* data, uint8_t length);
+    void IncomingPollComplete(canbus* bus, uint16_t moduleid, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length);
     void IncomingFrameCan1(CAN_frame_t* p_frame);
     void IncomingFrameCan2(CAN_frame_t* p_frame);
     vehicle_command_t CommandHomelink(int button, int durationms=1000);

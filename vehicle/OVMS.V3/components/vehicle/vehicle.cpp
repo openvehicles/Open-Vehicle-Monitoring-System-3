@@ -753,13 +753,13 @@ void OvmsVehicle::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, ui
   if (mlremain == 0)
     {
     ESP_LOGD(TAG, "IncomingPollReply complete: moduleid=%#x pid=%#x length=%d", m_poll_moduleid_low, pid, bufpos);
-    IncomingPollComplete(bus, m_poll_moduleid_low, pid, buf, bufpos);
+    IncomingPollComplete(bus, m_poll_moduleid_low, type, pid, buf, bufpos);
     }
   expect_remain = mlremain - 1;
   ESP_LOGD(TAG, "IncomingPollReply after: expect_remain=%d bufpos=%d", expect_remain, bufpos);
   }
 
-void OvmsVehicle::IncomingPollComplete(canbus* bus, uint16_t moduleid, uint16_t pid, uint8_t* data, uint8_t length)
+void OvmsVehicle::IncomingPollComplete(canbus* bus, uint16_t moduleid, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length)
   {
   }
 

@@ -291,7 +291,7 @@ void OvmsVehicleNissanLeaf::PollReply_VIN(uint8_t reply_data[], uint16_t reply_l
   StandardMetrics.ms_v_vin->SetValue((char*)reply_data);
   }
 
-void OvmsVehicleNissanLeaf::IncomingPollComplete(canbus* bus, uint16_t moduleid, uint16_t pid, uint8_t* data, uint8_t length)
+void OvmsVehicleNissanLeaf::IncomingPollComplete(canbus* bus, uint16_t moduleid, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length)
   {
   //ESP_LOGI(TAG, "IncomingPollComplete: moduleid=%#x pid=%#x len=%d", moduleid, pid, length);
   switch (moduleid<<16 | pid)
