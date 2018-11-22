@@ -124,10 +124,6 @@ OvmsVehicleRenaultTwizy::~OvmsVehicleRenaultTwizy()
 {
   ESP_LOGI(TAG, "Shutdown Renault Twizy vehicle module");
 
-  // release GPS:
-  MyEvents.SignalEvent("vehicle.release.gps", NULL);
-  MyEvents.SignalEvent("vehicle.release.gpstime", NULL);
-
   // unregister event listeners:
   MyEvents.DeregisterEvent(TAG);
 
