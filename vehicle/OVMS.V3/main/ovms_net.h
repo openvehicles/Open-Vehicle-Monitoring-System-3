@@ -31,7 +31,6 @@
 #ifndef __OVMS_NET_H__
 #define __OVMS_NET_H__
 
-#include <string.h>
 #include <stdint.h>
 #include "lwip/err.h"
 #include "lwip/sockets.h"

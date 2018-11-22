@@ -412,12 +412,14 @@ void esp32wifi::InitCSI()
   m_sta_rssi = 0;
   if ((err = esp_wifi_set_csi_rx_cb(CSIRxCallback, this)) != ESP_OK)
     ESP_LOGW(TAG, "cannot set CSI callback: error %d %s", err, esp_err_to_name(err));
-  wifi_csi_config_t csi_config;
-  csi_config.lltf_en = true;           /**< enable to receive legacy long training field(lltf) data. Default enabled */
-  csi_config.htltf_en = true;          /**< enable to receive HT long training field(htltf) data. Default enabled */
-  csi_config.stbc_htltf2_en = true;    /**< enable to receive space time block code HT long training field(stbc-htltf2) data. Default enabled */
-  csi_config.manu_scale = false;       /**< manually scale the CSI data by left shifting or automatically scale the CSI data. If set true, please set the shift bits. false: automatically. true: manually. Default false */
-  csi_config.shift = 0;                 /**< manually left shift bits of the scale of the CSI data. The range of the left shift bits is 0~15 */
+  wifi_csi_config_t csi_config =
+    {
+    .lltf_en = true,           /**< enable to receive legacy long training field(lltf) data. Default enabled */
+    .htltf_en = true,          /**< enable to receive HT long training field(htltf) data. Default enabled */
+    .stbc_htltf2_en = true,    /**< enable to receive space time block code HT long training field(stbc-htltf2) data. Default enabled */
+    .manu_scale = false,       /**< manually scale the CSI data by left shifting or automatically scale the CSI data. If set true, please set the shift bits. false: automatically. true: manually. Default false */ 
+    .shift = 0                 /**< manually left shift bits of the scale of the CSI data. The range of the left shift bits is 0~15 */
+    };
   if ((err = esp_wifi_set_csi_config(&csi_config)) != ESP_OK)
     ESP_LOGW(TAG, "cannot configure CSI: error %d %s", err, esp_err_to_name(err));
   if ((err = esp_wifi_set_csi(true)) != ESP_OK)
