@@ -46,7 +46,7 @@ class GsmNMEA
 
   public:
     void IncomingLine(const std::string line);
-    void Startup(bool force=false);
+    void Startup();
     void Shutdown(bool hard=false);
 
   public:
@@ -54,7 +54,6 @@ class GsmNMEA
     int           m_channel;
     bool          m_connected;
     bool          m_gpstime_enabled;
-    bool          m_gpstime_required;
   };
 
 #endif //#ifndef __GSM_NMEA__
