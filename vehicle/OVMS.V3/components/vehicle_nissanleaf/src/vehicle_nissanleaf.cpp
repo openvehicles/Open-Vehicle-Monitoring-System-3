@@ -39,6 +39,7 @@ static const char *TAG = "v-nissanleaf";
 #include "ovms_events.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
+#include "ovms_webserver.h"
 
 
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
@@ -83,6 +84,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_bms_t_int = new OvmsMetricVector<int>("xnl.bms.temps_int", SM_STALE_MIN, Celcius);
   BmsSetCellArrangementVoltage(96, 32);
   BmsSetCellArrangementTemperature(3, 1);
+  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -102,6 +104,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
 OvmsVehicleNissanLeaf::~OvmsVehicleNissanLeaf()
   {
   ESP_LOGI(TAG, "Shutdown Nissan Leaf vehicle module");
+  MyWebServer.DeregisterPage("/bms/cellmon");
   }
 
 ////////////////////////////////////////////////////////////////////////
