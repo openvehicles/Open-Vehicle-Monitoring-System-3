@@ -154,6 +154,44 @@ void vehicle_homelink(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
     }
   }
 
+void vehicle_climatecontrol(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+
+  bool on;
+  if (strcmp("on", argv[0]) == 0)
+    {
+    on = true;
+    }
+  else if (strcmp("off", argv[0]) == 0)
+    {
+    on = false;
+    }
+  else
+    {
+    writer->puts("Error: argument must be 'on' or 'off'");
+    return;
+    }
+
+  switch(MyVehicleFactory.m_currentvehicle->CommandClimateControl(on))
+    {
+    case OvmsVehicle::Success:
+      writer->puts("Climate Control ");
+      writer->puts(on ? "on" : "off");
+      break;
+    case OvmsVehicle::Fail:
+      writer->puts("Error: Climate Control failed");
+      break;
+    default:
+      writer->puts("Error: Climate Control functionality not available");
+      break;
+    }
+  }
+
 void vehicle_lock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (MyVehicleFactory.m_currentvehicle==NULL)
@@ -435,6 +473,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
 
   MyCommandApp.RegisterCommand("wakeup","Wake up vehicle",vehicle_wakeup,"",0,0,true);
   MyCommandApp.RegisterCommand("homelink","Activate specified homelink button",vehicle_homelink,"<homelink><durationms>",1,2,true);
+  MyCommandApp.RegisterCommand("climatecontrol","(De)Activate Climate Control",vehicle_climatecontrol,"<on|off>",1,1,true);
   MyCommandApp.RegisterCommand("lock","Lock vehicle",vehicle_lock,"<pin>",1,1,true);
   MyCommandApp.RegisterCommand("unlock","Unlock vehicle",vehicle_unlock,"<pin>",1,1,true);
   MyCommandApp.RegisterCommand("valet","Activate valet mode",vehicle_valet,"<pin>",1,1,true);
