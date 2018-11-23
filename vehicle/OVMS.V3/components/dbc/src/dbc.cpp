@@ -34,10 +34,9 @@ static const char *TAG = "dbc";
 #include <algorithm>
 #include <list>
 #include <vector>
+#include <string.h>
 #include "dbc.h"
 #include "ovms_config.h"
-
-dbc MyDBC __attribute__ ((init_priority (4510)));
 
 ////////////////////////////////////////////////////////////////////////
 // dbcComment...
@@ -72,16 +71,6 @@ void dbcCommentTable::EmptyContent()
   m_entrymap.clear();
   }
 
-void dbcCommentTable::ReplaceContent(dbcCommentTable* source)
-  {
-  EmptyContent();
-  for (std::string comment : source->m_entrymap)
-    {
-    m_entrymap.push_back(comment);
-    }
-  source->m_entrymap.clear();
-  }
-
 ////////////////////////////////////////////////////////////////////////
 // dbcNewSymbol...
 
@@ -113,16 +102,6 @@ bool dbcNewSymbolTable::HasSymbol(std::string symbol)
 void dbcNewSymbolTable::EmptyContent()
   {
   m_entrymap.clear();
-  }
-
-void dbcNewSymbolTable::ReplaceContent(dbcNewSymbolTable* source)
-  {
-  EmptyContent();
-  for (std::string ns : source->m_entrymap)
-    {
-    m_entrymap.push_back(ns);
-    }
-  source->m_entrymap.clear();
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -194,16 +173,6 @@ void dbcNodeTable::EmptyContent()
   m_entrymap.clear();
   }
 
-void dbcNodeTable::ReplaceContent(dbcNodeTable* source)
-  {
-  EmptyContent();
-  for (dbcNode* node : source->m_entrymap)
-    {
-    m_entrymap.push_back(node);
-    }
-  source->m_entrymap.clear();
-  }
-
 ////////////////////////////////////////////////////////////////////////
 // dbcBitTiming...
 
@@ -220,14 +189,6 @@ dbcBitTiming::~dbcBitTiming()
 
 void dbcBitTiming::EmptyContent()
   {
-  }
-
-void dbcBitTiming::ReplaceContent(dbcBitTiming* source)
-  {
-  m_baudrate = source->m_baudrate;
-  m_btr1 = source->m_btr1;
-  m_btr2 = source->m_btr2;
-  source->EmptyContent();
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -279,17 +240,6 @@ void dbcValueTable::EmptyContent()
   m_entrymap.clear();
   }
 
-void dbcValueTable::ReplaceContent(dbcValueTable* source)
-  {
-  dbcValueTableEntry_t::iterator it=m_entrymap.begin();
-  while (it!=m_entrymap.end())
-    {
-    m_entrymap[it->first] = it->second;
-    ++it;
-    }
-  source->m_entrymap.clear();
-  }
-
 dbcValueTableTable::dbcValueTableTable()
   {
   }
@@ -332,17 +282,6 @@ void dbcValueTableTable::EmptyContent()
     ++it;
     }
   m_entrymap.clear();
-  }
-
-void dbcValueTableTable::ReplaceContent(dbcValueTableTable* source)
-  {
-  dbcValueTableTableEntry_t::iterator it=m_entrymap.begin();
-  while (it!=m_entrymap.end())
-    {
-    m_entrymap[it->first] = it->second;
-    ++it;
-    }
-  source->m_entrymap.clear();
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -561,18 +500,6 @@ void dbcMessageTable::EmptyContent()
     ++it;
     }
   m_entrymap.clear();
-  }
-
-void dbcMessageTable::ReplaceContent(dbcMessageTable* source)
-  {
-  dbcMessageEntry_t::iterator it=m_entrymap.begin();
-  while (it!=m_entrymap.end())
-    {
-    m_entrymap[it->first] = it->second;
-    delete it->second;
-    ++it;
-    }
-  source->m_entrymap.clear();
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -921,266 +848,4 @@ bool dbcfile::LoadFile(const char* path)
     ESP_LOGW(TAG,"File %s only partially loaded (syntax errors)",path);
 
   return result;
-  }
-
-bool dbcfile::LoadString(const char* source)
-  {
-  return false;
-  }
-
-void dbcfile::ReplaceContent(dbcfile* dbc)
-  {
-  m_version = dbc->m_version;
-  m_newsymbols.ReplaceContent(&dbc->m_newsymbols);
-  m_bittiming.ReplaceContent(&dbc->m_bittiming);
-  m_nodes.ReplaceContent(&dbc->m_nodes);
-  m_values.ReplaceContent(&dbc->m_values);
-  m_messages.ReplaceContent(&dbc->m_messages);
-  m_comments.ReplaceContent(&dbc->m_comments);
-
-  delete dbc;
-  }
-
-void dbcfile::ShowStatusLine(OvmsWriter* writer)
-  {
-  int signalcount = 0;
-  for (auto it = m_messages.m_entrymap.begin();
-       it != m_messages.m_entrymap.end();
-       ++it)
-    {
-    dbcMessage* m = it->second;
-    signalcount += m->m_signals.size();
-    }
-
-  writer->printf("%d node(s), %d message(s), %d signal(s)",
-    m_nodes.m_entrymap.size(),
-    m_messages.m_entrymap.size(),
-    signalcount);
-
-  if (!m_version.empty())
-    writer->printf(" (version %s)",m_version.c_str());
-  }
-
-////////////////////////////////////////////////////////////////////////
-// dbc
-
-void dbc_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  OvmsMutexLock ldbc(&MyDBC.m_mutex);
-
-  dbcLoadedFiles_t::iterator it=MyDBC.m_dbclist.begin();
-  while (it!=MyDBC.m_dbclist.end())
-    {
-    writer->printf("%s: ",it->first.c_str());
-    dbcfile* dbcf = it->second;
-    dbcf->ShowStatusLine(writer);
-    writer->puts("");
-    ++it;
-    }
-  }
-
-void dbc_load(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  if (MyDBC.LoadFile(argv[0],argv[1]))
-    {
-    writer->printf("Loaded DBC %s ok\n",argv[0]);
-    }
-  else
-    {
-    writer->printf("Error: Failed to load DBC %s from %s\n",argv[0],argv[1]);
-    }
-  }
-
-void dbc_unload(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  if (MyDBC.Unload(argv[0]))
-    {
-    writer->printf("Unloaded DBC %s ok\n",argv[0]);
-    }
-  else
-    {
-    writer->printf("Error: Failed to unload DBC %s\n",argv[0]);
-    }
-  }
-
-void dbc_show(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  dbcfile* dbc = MyDBC.Find(argv[0]);
-  if (dbc == NULL)
-    {
-    writer->printf("Cannot find DBD file: %s",argv[0]);
-    return;
-    }
-
-  writer->printf("DBC: %s (version %s)\n",argv[0],dbc->m_version.c_str());
-  if (!dbc->m_path.empty()) writer->printf("Source: %s\n",dbc->m_path.c_str());
-  for (std::string c : dbc->m_comments.m_entrymap) writer->puts(c.c_str());
-  writer->puts("");
-
-  if (argc==1)
-    {
-    writer->printf("Nodes:");
-    for (dbcNode* n : dbc->m_nodes.m_entrymap)
-      {
-      writer->printf(" %s",n->m_name.c_str());
-      }
-    writer->puts("");
-    writer->printf("Messages:\n");
-    dbcMessageEntry_t::iterator it=dbc->m_messages.m_entrymap.begin();
-    while (it!=dbc->m_messages.m_entrymap.end())
-      {
-      writer->printf("  0x%x (%d): %s\n",
-        it->first, it->first, it->second->m_name.c_str());
-      ++it;
-      }
-    }
-  else if (argc==2)
-    {
-    dbcMessage* m = dbc->m_messages.FindMessage(atoi(argv[1]));
-    if (m==NULL)
-      {
-      writer->printf("Error: No message id #%s\n",argv[1]);
-      return;
-      }
-    writer->printf("Message: 0x%x (%d): %s (%d byte(s) from %s)\n",
-      m->m_id, m->m_id, m->m_name.c_str(),
-      m->m_size, m->m_transmitter_node.c_str());
-    for (std::string c : m->m_comments) writer->puts(c.c_str());
-    for (dbcSignal* s : m->m_signals)
-      {
-      writer->printf("  %s %d|%d@%d%c (%g,%g) [%g|%g]\n",
-        s->m_name.c_str(),
-        s->m_start_bit, s->m_signal_size, s->m_byte_order, s->m_value_type,
-        s->m_factor, s->m_offset, s->m_minimum, s->m_maximum);
-      }
-    }
-  else if (argc==3)
-    {
-    dbcMessage* m = dbc->m_messages.FindMessage(atoi(argv[1]));
-    if (m==NULL)
-      {
-      writer->printf("Error: No message id #%s\n",argv[1]);
-      return;
-      }
-    dbcSignal* s = m->FindSignal(argv[2]);
-    if (s==NULL)
-      {
-      writer->printf("Error: No signal %s on message id #%s\n",argv[2],argv[1]);
-      return;
-      }
-    writer->printf("Message: 0x%x (%d): %s (%d byte(s) from %s)\n",
-      m->m_id, m->m_id, m->m_name.c_str(),
-      m->m_size, m->m_transmitter_node.c_str());
-    for (std::string c : m->m_comments) writer->puts(c.c_str());
-    writer->printf("Signal: %s %d|%d@%d%c (%g,%g) [%g|%g]\n",
-      s->m_name.c_str(),
-      s->m_start_bit, s->m_signal_size, s->m_byte_order, s->m_value_type,
-      s->m_factor, s->m_offset, s->m_minimum, s->m_maximum);
-    for (std::string c : s->m_comments) writer->puts(c.c_str());
-    writer->printf("Receivers:");
-    for (std::string r : s->m_receivers)
-      {
-      writer->printf(" %s",r.c_str());
-      }
-    writer->puts("");
-    writer->printf("Values (%s):\n",s->m_values.m_name.c_str());
-    dbcValueTableEntry_t::iterator it=s->m_values.m_entrymap.begin();
-    while (it!=s->m_values.m_entrymap.end())
-      {
-      writer->printf("  %d: %s\n",
-        it->first, it->second.c_str());
-      ++it;
-      }
-    writer->puts("\n");
-    for (std::string c : s->m_comments)
-      {
-      writer->puts(c.c_str());
-      }
-    }
-  }
-
-dbc::dbc()
-  {
-  ESP_LOGI(TAG, "Initialising DBC (4510)");
-
-  OvmsCommand* cmd_dbc = MyCommandApp.RegisterCommand("dbc","DBC framework",NULL, "", 0, 0, true);
-
-  cmd_dbc->RegisterCommand("list", "List DBC status", dbc_list, "", 0, 0, true);
-  cmd_dbc->RegisterCommand("load", "Load DBC file", dbc_load, "<name> <path>", 2, 2, true);
-  cmd_dbc->RegisterCommand("unload", "Unload DBC file", dbc_unload, "<name>", 1, 1, true);
-  cmd_dbc->RegisterCommand("show", "Show DBC file", dbc_show, "<name>", 1, 3, true);
-  }
-
-dbc::~dbc()
-  {
-  }
-
-bool dbc::LoadFile(const char* name, const char* path)
-  {
-  OvmsMutexLock ldbc(&m_mutex);
-
-  dbcfile* ndbc = new dbcfile();
-  if (!ndbc->LoadFile(path))
-    {
-//    delete ndbc;
-//    return false;
-    }
-
-  auto k = m_dbclist.find(name);
-  if (k == m_dbclist.end())
-    {
-    // Create a new entry...
-    m_dbclist[name] = ndbc;
-    }
-  else
-    {
-    // Replace it inline...
-    k->second->ReplaceContent(ndbc);
-    }
-
-  return true;
-  }
-
-bool dbc::LoadString(const char* name, const char* source)
-  {
-  OvmsMutexLock ldbc(&m_mutex);
-
-  dbcfile* ndbc = new dbcfile();
-  if (!ndbc->LoadString(source))
-    {
-    delete ndbc;
-    return false;
-    }
-
-  auto k = m_dbclist.find(name);
-  if (k == m_dbclist.end())
-    {
-    // Create a new entry...
-    m_dbclist[name] = ndbc;
-    }
-  else
-    {
-    // Replace it inline...
-    k->second->ReplaceContent(ndbc);
-    }
-
-  return true;
-  }
-
-bool dbc::Unload(const char* name)
-  {
-  OvmsMutexLock ldbc(&m_mutex);
-
-  return false;
-  }
-
-dbcfile* dbc::Find(const char* name)
-  {
-  OvmsMutexLock ldbc(&m_mutex);
-
-  auto k = m_dbclist.find(name);
-  if (k == m_dbclist.end())
-    return NULL;
-  else
-    return k->second;
   }

@@ -34,9 +34,6 @@
 #include <string>
 #include <map>
 #include <list>
-#include "ovms_command.h"
-#include "ovms_mutex.h"
-#include "ovms_utils.h"
 
 #define DBC_MAX_LINELENGTH 2048
 
@@ -66,7 +63,6 @@ class dbcCommentTable
 
   public:
     void EmptyContent();
-    void ReplaceContent(dbcCommentTable* source);
 
   public:
     dbcCommentList_t m_entrymap;
@@ -86,7 +82,6 @@ class dbcNewSymbolTable
 
   public:
     void EmptyContent();
-    void ReplaceContent(dbcNewSymbolTable* source);
 
   public:
     dbcNewSymbolList_t m_entrymap;
@@ -123,7 +118,6 @@ class dbcNodeTable
 
   public:
     void EmptyContent();
-    void ReplaceContent(dbcNodeTable* source);
 
   public:
     dbcNodeList_t m_entrymap;
@@ -137,7 +131,6 @@ class dbcBitTiming
 
   public:
     void EmptyContent();
-    void ReplaceContent(dbcBitTiming* source);
 
   public:
     uint32_t m_baudrate;
@@ -161,7 +154,6 @@ class dbcValueTable
 
   public:
     void EmptyContent();
-    void ReplaceContent(dbcValueTable* source);
 
   public:
     std::string m_name;
@@ -182,7 +174,6 @@ class dbcValueTableTable
 
   public:
     void EmptyContent();
-    void ReplaceContent(dbcValueTableTable* source);
 
   public:
     dbcValueTableTableEntry_t m_entrymap;
@@ -272,7 +263,6 @@ class dbcMessageTable
 
   public:
     void EmptyContent();
-    void ReplaceContent(dbcMessageTable* source);
 
   public:
     dbcMessageEntry_t m_entrymap;
@@ -290,9 +280,6 @@ class dbcfile
 
   public:
     bool LoadFile(const char* path);
-    bool LoadString(const char* source);
-    void ReplaceContent(dbcfile* dbc);
-    void ShowStatusLine(OvmsWriter* writer);
 
   public:
     std::string m_path;
@@ -307,28 +294,5 @@ class dbcfile
   private:
     dbcMessage* m_lastmsg;
   };
-
-typedef std::map<std::string, dbcfile*> dbcLoadedFiles_t;
-
-class dbc
-  {
-  public:
-    dbc();
-    ~dbc();
-
-  public:
-    bool LoadFile(const char* name, const char* path);
-    bool LoadString(const char* name, const char* source);
-    bool Unload(const char* name);
-
-  public:
-    dbcfile* Find(const char* name);
-
-  public:
-    OvmsMutex m_mutex;
-    dbcLoadedFiles_t m_dbclist;
-  };
-
-extern dbc MyDBC;
 
 #endif //#ifndef __DBC_H__
