@@ -171,18 +171,30 @@ void vehicle_nissanleaf_charger_status(ChargerStatus status)
 
 void OvmsVehicleNissanLeaf::PollReply_Battery(uint16_t reply_id, uint8_t reply_data[], uint16_t reply_len)
   {
-  if (reply_len != 39)
+  if (reply_len != 39 &&    // 24 KWh Leafs
+      reply_len != 41)      // 30 KWh Leafs with Nissan BMS fix
     {
-    ESP_LOGI(TAG, "PollReply_Battery: len=%d != 39", reply_len);
+    ESP_LOGI(TAG, "PollReply_Battery: len=%d != 39 && != 41", reply_len);
     return;
     }
+
   //  > 0x79b 21 01
   //  < 0x7bb 61 01
   // [ 0.. 5] 0000020d 0287
   // [ 6..15] 00000363 ffffffff001c
   // [16..23] 2af89a89 2e4b 03a4
   // [24..31] 005c 269a 000ecf81
-  // [33..38] 0009d7b0 800001
+  // [32..38] 0009d7b0 800001
+  //
+  // or
+  // > 0x79b 21 01
+  // < 0x7bb 61 01
+  // [ 0,, 5] fffffc4e 028a
+  // [ 6..15] ffffff46 ffffffff 1290
+  // [16..23] 2af88fcd 32de 038b
+  // [24..31] 005c 1f3d 000896c6
+  // [32..38] 000b3290 800001
+  // [39..40] 0000
 
   uint16_t hx = (reply_data[26] << 8)
               |  reply_data[27];
@@ -196,6 +208,8 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(uint16_t reply_id, uint8_t reply_d
 
   // there may be a way to get the SoH directly from the BMS, but for now
   // divide by a configurable battery size
+  // - For 24 KWh : xnl.newCarAh = 66 (default)
+  // - For 30 KWh : xnl.newCarAh = 80 (i.e. shell command "config set xnl newCarAh 80")
   float newCarAh = MyConfig.GetParamValueFloat("xnl", "newCarAh", GEN_1_NEW_CAR_AH);
   StandardMetrics.ms_v_bat_soh->SetValue(ah / newCarAh * 100);
   }
