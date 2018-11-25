@@ -9,6 +9,12 @@
 
 ifdef CONFIG_OVMS_COMP_RE_TOOLS
 
+ifeq ($(HOSTTYPE), FreeBSD)
+YACC=	bison
+else
+YACC=	yacc
+endif
+
 COMPONENT_ADD_INCLUDEDIRS:=src yacclex
 COMPONENT_SRCDIRS:=src yacclex
 COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive
@@ -20,7 +26,7 @@ $(COMPONENT_PATH)/yacclex/dbc_tokeniser.c : $(COMPONENT_PATH)/src/dbc_tokeniser.
 	lex -o $(COMPONENT_PATH)/yacclex/dbc_tokeniser.c $(COMPONENT_PATH)/src/dbc_tokeniser.l
 
 $(COMPONENT_PATH)/yacclex/dbc_parser.hpp : $(COMPONENT_PATH)/src/dbc_parser.y
-	yacc -o $(COMPONENT_PATH)/yacclex/dbc_parser.cpp -d $(COMPONENT_PATH)/src/dbc_parser.y
+	$(YACC) -o $(COMPONENT_PATH)/yacclex/dbc_parser.cpp -d $(COMPONENT_PATH)/src/dbc_parser.y
 
 dbc.o: \
 	$(COMPONENT_PATH)/yacclex/dbc_tokeniser.c \
