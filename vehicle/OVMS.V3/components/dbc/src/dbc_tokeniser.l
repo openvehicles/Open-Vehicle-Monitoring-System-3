@@ -36,6 +36,9 @@
 #include <stdio.h>
 #include <string.h>
 #include "dbc_parser.hpp"
+
+#define YY_NO_INPUT
+#define YY_NO_UNPUT
 %}
 
 %option yylineno
