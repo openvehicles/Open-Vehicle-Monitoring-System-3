@@ -9,10 +9,11 @@
 
 ifdef CONFIG_OVMS_COMP_RE_TOOLS
 
+YACC=	yacc
+ifdef HOSTTYPE
 ifeq ($(HOSTTYPE), FreeBSD)
 YACC=	bison
-else
-YACC=	yacc
+endif
 endif
 
 COMPONENT_ADD_INCLUDEDIRS:=src yacclex

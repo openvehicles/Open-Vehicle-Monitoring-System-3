@@ -42,6 +42,7 @@
 %}
 
 %option yylineno
+%option nounput
 
 whitespace          [ \t]+
 newline             [\n\r]
