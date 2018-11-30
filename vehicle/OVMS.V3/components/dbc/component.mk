@@ -21,7 +21,11 @@ COMPONENT_SRCDIRS:=src yacclex
 COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive
 COMPONENT_OBJS = src/dbc_app.o src/dbc.o yacclex/dbc_tokeniser.o yacclex/dbc_parser.o
 
-COMPONENT_EXTRA_CLEAN := yacclex/dbc_tokeniser.cpp yacclex/dbc_tokeniser.hpp yacclex/dbc_parser.hpp yacclex/dbc_parser.cpp
+COMPONENT_EXTRA_CLEAN := $(COMPONENT_PATH)/yacclex/dbc_tokeniser.cpp \
+	$(COMPONENT_PATH)/yacclex/dbc_tokeniser.c \
+	$(COMPONENT_PATH)/yacclex/dbc_tokeniser.hpp \
+	$(COMPONENT_PATH)/yacclex/dbc_parser.hpp \
+	$(COMPONENT_PATH)/yacclex/dbc_parser.cpp
 
 src/dbc.o: $(COMPONENT_PATH)/yacclex/dbc_tokeniser.cpp $(COMPONENT_PATH)/yacclex/dbc_parser.hpp
 
