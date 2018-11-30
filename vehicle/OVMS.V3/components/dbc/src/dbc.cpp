@@ -34,9 +34,18 @@ static const char *TAG = "dbc";
 #include <algorithm>
 #include <list>
 #include <vector>
+#include <sstream>
 #include <string.h>
+#include <stdlib.h>
 #include "dbc.h"
+#include "dbc_tokeniser.hpp"
+#include "dbc_parser.hpp"
+#ifdef CONFIG_OVMS
 #include "ovms_config.h"
+#endif // #ifdef CONFIG_OVMS
+
+// N.B. The conditions on CONFIG_OVMS are to allow this module to be
+//      compiled and tested outside the OVMS subsystem.
 
 ////////////////////////////////////////////////////////////////////////
 // dbcComment...
@@ -55,6 +64,11 @@ void dbcCommentTable::AddComment(std::string comment)
   m_entrymap.push_back(comment);
   }
 
+void dbcCommentTable::AddComment(const char* comment)
+  {
+  m_entrymap.push_back(std::string(comment));
+  }
+
 void dbcCommentTable::RemoveComment(std::string comment)
   {
   m_entrymap.remove(comment);
@@ -69,6 +83,20 @@ bool dbcCommentTable::HasComment(std::string comment)
 void dbcCommentTable::EmptyContent()
   {
   m_entrymap.clear();
+  }
+
+void dbcCommentTable::WriteFile(dbcOutputCallback callback,
+                                void* param,
+                                std::string prefix)
+  {
+  for (dbcCommentList_t::iterator it=m_entrymap.begin();
+       it != m_entrymap.end();
+       ++it)
+    {
+    callback(param,prefix.c_str());
+    callback(param,it->c_str());
+    callback(param,"\"\n");
+    }
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -88,6 +116,11 @@ void dbcNewSymbolTable::AddSymbol(std::string symbol)
   m_entrymap.push_back(symbol);
   }
 
+void dbcNewSymbolTable::AddSymbol(const char* symbol)
+  {
+  m_entrymap.push_back(std::string(symbol));
+  }
+
 void dbcNewSymbolTable::RemoveSymbol(std::string symbol)
   {
   m_entrymap.remove(symbol);
@@ -104,6 +137,19 @@ void dbcNewSymbolTable::EmptyContent()
   m_entrymap.clear();
   }
 
+void dbcNewSymbolTable::WriteFile(dbcOutputCallback callback, void* param)
+  {
+  callback(param,"NS_ :");
+  for (dbcNewSymbolList_t::iterator it=m_entrymap.begin();
+       it != m_entrymap.end();
+       ++it)
+    {
+    callback(param," ");
+    callback(param,it->c_str());
+    }
+  callback(param,"\n\n");
+  }
+
 ////////////////////////////////////////////////////////////////////////
 // dbcNode...
 
@@ -116,6 +162,11 @@ dbcNode::dbcNode(std::string name)
   m_name = name;
   }
 
+dbcNode::dbcNode(const char* name)
+  {
+  m_name = std::string(name);
+  }
+
 dbcNode::~dbcNode()
   {
   }
@@ -123,6 +174,11 @@ dbcNode::~dbcNode()
 void dbcNode::AddComment(std::string comment)
   {
   m_comments.AddComment(comment);
+  }
+
+void dbcNode::AddComment(const char* comment)
+  {
+  m_comments.AddComment(std::string(comment));
   }
 
 void dbcNode::RemoveComment(std::string comment)
@@ -146,31 +202,58 @@ dbcNodeTable::~dbcNodeTable()
 
 void dbcNodeTable::AddNode(dbcNode* node)
   {
-  m_entrymap.push_back(node);
+  m_entrymap[node->m_name] = node;
   }
 
 void dbcNodeTable::RemoveNode(dbcNode* node, bool free)
   {
-  m_entrymap.remove(node);
+  m_entrymap.erase(node->m_name);
   if (free) delete node;
   }
 
 dbcNode* dbcNodeTable::FindNode(std::string name)
   {
-  for (dbcNode* node : m_entrymap)
-    {
-    if (node->m_name.compare(name)==0) return node;
-    }
-  return NULL;
+  auto search = m_entrymap.find(name);
+  if (search != m_entrymap.end())
+    return search->second;
+  else
+    return NULL;
   }
 
 void dbcNodeTable::EmptyContent()
   {
-  for (dbcNode* node : m_entrymap)
+  for (auto it = m_entrymap.begin(); it != m_entrymap.end(); it++)
     {
-    delete node;
+    delete it->second;
     }
   m_entrymap.clear();
+  }
+
+void dbcNodeTable::WriteFile(dbcOutputCallback callback, void* param)
+  {
+  callback(param, "BU_ :");
+  for (dbcNodeEntry_t::iterator it = m_entrymap.begin();
+       it != m_entrymap.end();
+       it++)
+    {
+    callback(param," ");
+    callback(param, it->second->m_name.c_str());
+    }
+  callback(param,"\n\n");
+  }
+
+void dbcNodeTable::WriteFileComments(dbcOutputCallback callback, void* param)
+  {
+  std::string prefix;
+  for (dbcNodeEntry_t::iterator it=m_entrymap.begin();
+       it != m_entrymap.end();
+       ++it)
+    {
+    prefix = std::string("CM_ BU_ ");
+    prefix.append(it->second->m_name);
+    prefix.append(" \"");
+    it->second->m_comments.WriteFile(callback, param, prefix);
+    }
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -191,6 +274,18 @@ void dbcBitTiming::EmptyContent()
   {
   }
 
+void dbcBitTiming::WriteFile(dbcOutputCallback callback, void* param)
+  {
+  callback(param, "BS_ : ");
+  if (m_baudrate != 0)
+    {
+    char buf[64];
+    sprintf(buf,"%u:%u,%u",m_baudrate,m_btr1,m_btr2);
+    callback(param, buf);
+    }
+  callback(param, "\n\n");
+  }
+
 ////////////////////////////////////////////////////////////////////////
 // dbcValueTable...
 
@@ -203,9 +298,19 @@ dbcValueTable::dbcValueTable(std::string name)
   m_name = name;
   }
 
+dbcValueTable::dbcValueTable(const char* name)
+  {
+  m_name = std::string(name);
+  }
+
 void dbcValueTable::AddValue(uint32_t id, std::string value)
   {
   m_entrymap[id] = value;
+  }
+
+void dbcValueTable::AddValue(uint32_t id, const char* value)
+  {
+  m_entrymap[id] = std::string(value);
   }
 
 void dbcValueTable::RemoveValue(uint32_t id)
@@ -240,6 +345,30 @@ void dbcValueTable::EmptyContent()
   m_entrymap.clear();
   }
 
+void dbcValueTable::WriteFile(dbcOutputCallback callback, void* param, const char* prefix)
+  {
+  if (prefix != NULL)
+    {
+    callback(param,prefix);
+    }
+  else
+    {
+    callback(param, "VAL_TABLE_ ");
+    callback(param, m_name.c_str());
+    }
+  for (dbcValueTableEntry_t::iterator it = m_entrymap.begin();
+       it != m_entrymap.end();
+       it++)
+    {
+    char buf[40];
+    sprintf(buf," %d \"",it->first);
+    callback(param,buf);
+    callback(param,it->second.c_str());
+    callback(param,"\"");
+    }
+  callback(param,";\n");
+  }
+
 dbcValueTableTable::dbcValueTableTable()
   {
   }
@@ -252,6 +381,11 @@ dbcValueTableTable::~dbcValueTableTable()
 void dbcValueTableTable::AddValueTable(std::string name, dbcValueTable* vt)
   {
   m_entrymap[name] = vt;
+  }
+
+void dbcValueTableTable::AddValueTable(const char* name, dbcValueTable* vt)
+  {
+  m_entrymap[std::string(name)] = vt;
   }
 
 void dbcValueTableTable::RemoveValueTable(std::string name, bool free)
@@ -282,6 +416,15 @@ void dbcValueTableTable::EmptyContent()
     ++it;
     }
   m_entrymap.clear();
+  }
+
+void dbcValueTableTable::WriteFile(dbcOutputCallback callback, void* param)
+  {
+  for (dbcValueTableTableEntry_t::iterator itt = m_entrymap.begin();
+       itt != m_entrymap.end();
+       itt++)
+    itt->second->WriteFile(callback, param, NULL);
+  callback(param, "\n");
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -318,18 +461,22 @@ bool dbcSignal::HasReceiver(std::string receiver)
 
 void dbcSignal::AddComment(std::string comment)
   {
-  m_comments.push_back(comment);
+  m_comments.AddComment(comment);
+  }
+
+void dbcSignal::AddComment(const char* comment)
+  {
+  m_comments.AddComment(comment);
   }
 
 void dbcSignal::RemoveComment(std::string comment)
   {
-  m_comments.remove(comment);
+  m_comments.RemoveComment(comment);
   }
 
 bool dbcSignal::HasComment(std::string comment)
   {
-  auto it = std::find(m_comments.begin(), m_comments.end(), comment);
-  return (it != m_comments.end());
+  return m_comments.HasComment(comment);
   }
 
 void dbcSignal::AddValue(uint32_t id, std::string value)
@@ -406,6 +553,87 @@ bool dbcSignal::SetMinMaxDBC(std::string dbcval)
   return true;
   }
 
+void dbcSignal::WriteFile(dbcOutputCallback callback, void* param)
+  {
+  char buf[64];
+  callback(param, "  SG_ ");
+  callback(param, m_name.c_str());
+  switch (m_mux.multiplexed)
+    {
+    case DBC_MUX_MULTIPLEXOR:
+      callback(param, " M");
+      break;
+    case DBC_MUX_MULTIPLEXED:
+      sprintf(buf," m%u",m_mux.switchvalue);
+      break;
+    default:
+      break;
+    }
+  callback(param, " : ");
+  sprintf(buf,"%u|%u@",m_start_bit,m_signal_size);
+  callback(param, buf);
+  switch(m_byte_order)
+    {
+    case DBC_BYTEORDER_BIG_ENDIAN:
+      callback(param, "1");
+      break;
+    default:
+      callback(param, "0");
+      break;
+    }
+  switch(m_value_type)
+    {
+    case DBC_VALUETYPE_SIGNED:
+      callback(param, "- ");
+      break;
+    default:
+      callback(param, "+ ");
+      break;
+    }
+  sprintf(buf,"(%f,%f) ",m_factor,m_offset);
+  callback(param, buf);
+  sprintf(buf,"[%f|%f] \"",m_minimum,m_maximum);
+  callback(param, buf);
+  callback(param, m_unit.c_str());
+  callback(param, "\" ");
+
+  bool first=true;
+  for (std::string receiver : m_receivers)
+    {
+    if (!first)
+      callback(param, ",");
+    callback(param, receiver.c_str());
+    first=false;
+    }
+
+  callback(param, "\n");
+  }
+
+void dbcSignal::WriteFileComments(dbcOutputCallback callback,
+                                  void* param,
+                                  std::string messageid)
+  {
+  std::string prefix("CM_ SG_ ");
+  prefix.append(messageid);
+  prefix.append(" ");
+  prefix.append(m_name);
+  prefix.append(" \"");
+  m_comments.WriteFile(callback, param, prefix);
+  }
+
+void dbcSignal::WriteFileValues(dbcOutputCallback callback,
+                                  void* param,
+                                  std::string messageid)
+  {
+  std::ostringstream ss;
+  ss << "VAL_ ";
+  ss << messageid;
+  ss << " ";
+  ss << m_name;
+  std::string prefix = ss.str();
+  m_values.WriteFile(callback, param, prefix.c_str());
+  }
+
 ////////////////////////////////////////////////////////////////////////
 // dbcMessage...
 
@@ -424,18 +652,22 @@ dbcMessage::~dbcMessage()
 
 void dbcMessage::AddComment(std::string comment)
   {
-  m_comments.push_back(comment);
+  m_comments.AddComment(comment);
+  }
+
+void dbcMessage::AddComment(const char* comment)
+  {
+  m_comments.AddComment(comment);
   }
 
 void dbcMessage::RemoveComment(std::string comment)
   {
-  m_comments.remove(comment);
+  m_comments.RemoveComment(comment);
   }
 
 bool dbcMessage::HasComment(std::string comment)
   {
-  auto it = std::find(m_comments.begin(), m_comments.end(), comment);
-  return (it != m_comments.end());
+  return m_comments.HasComment(comment);
   }
 
 void dbcMessage::AddSignal(dbcSignal* signal)
@@ -457,6 +689,66 @@ dbcSignal* dbcMessage::FindSignal(std::string name)
     }
   return NULL;
     }
+
+void dbcMessage::Count(int* signals, int* bits, int* covered)
+  {
+  *bits = m_size*8;
+  *signals = 0;
+  *covered = 0;
+  for (dbcSignal* signal : m_signals)
+    {
+    *signals += 1;
+    *covered += signal->m_signal_size;
+    }
+  }
+
+void dbcMessage::WriteFile(dbcOutputCallback callback, void* param)
+  {
+  char buf[40];
+  callback(param, "BO_ ");
+  sprintf(buf,"%u ",m_id);
+  callback(param, buf);
+  callback(param, m_name.c_str());
+  sprintf(buf,": %u ",m_size);
+  callback(param, buf);
+  callback(param, m_transmitter_node.c_str());
+  callback(param, "\n");
+
+  for (dbcSignal* signal : m_signals)
+    {
+    signal->WriteFile(callback, param);
+    }
+
+  callback(param, "\n");
+  }
+
+void dbcMessage::WriteFileComments(dbcOutputCallback callback, void* param)
+  {
+  std::ostringstream ss;
+  ss << m_id;
+  std::string id(ss.str());
+  std::string prefix("CM_ BO_ ");
+  prefix.append(id);
+  prefix.append(" \"");
+  m_comments.WriteFile(callback, param, prefix);
+
+  for (dbcSignal* s : m_signals)
+    {
+    s->WriteFileComments(callback, param, id);
+    }
+  }
+
+void dbcMessage::WriteFileValues(dbcOutputCallback callback, void* param)
+  {
+  std::ostringstream ss;
+  ss << m_id;
+  std::string id(ss.str());
+
+  for (dbcSignal* s : m_signals)
+    {
+    s->WriteFileValues(callback, param, id);
+    }
+  }
 
 dbcMessageTable::dbcMessageTable()
   {
@@ -491,6 +783,25 @@ dbcMessage* dbcMessageTable::FindMessage(uint32_t id)
     return NULL;
   }
 
+void dbcMessageTable::Count(int* messages, int* signals, int* bits, int* covered)
+  {
+  *messages = 0;
+  *signals = 0;
+  *bits = 0;
+  *covered = 0;
+  for (dbcMessageEntry_t::iterator itt = m_entrymap.begin();
+       itt != m_entrymap.end();
+       itt++)
+    {
+    *messages += 1;
+    int ms,mb,mc;
+    itt->second->Count(&ms, &mb, &mc);
+    *signals += ms;
+    *bits += mb;
+    *covered += mc;
+    }
+  }
+
 void dbcMessageTable::EmptyContent()
   {
   dbcMessageEntry_t::iterator it=m_entrymap.begin();
@@ -500,6 +811,30 @@ void dbcMessageTable::EmptyContent()
     ++it;
     }
   m_entrymap.clear();
+  }
+
+void dbcMessageTable::WriteFile(dbcOutputCallback callback, void* param)
+  {
+  for (dbcMessageEntry_t::iterator itt = m_entrymap.begin();
+       itt != m_entrymap.end();
+       itt++)
+    itt->second->WriteFile(callback, param);
+  }
+
+void dbcMessageTable::WriteFileComments(dbcOutputCallback callback, void* param)
+  {
+  for (dbcMessageEntry_t::iterator it=m_entrymap.begin();
+       it != m_entrymap.end();
+       ++it)
+    {
+    it->second->WriteFileComments(callback, param);
+    }
+  for (dbcMessageEntry_t::iterator it=m_entrymap.begin();
+       it != m_entrymap.end();
+       ++it)
+    {
+    it->second->WriteFileValues(callback, param);
+    }
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -514,294 +849,6 @@ dbcfile::~dbcfile()
   FreeAllocations();
   }
 
-bool dbcfile::LoadParseOneLine(int linenumber, std::string line)
-  {
-  std::vector<std::string> tokens;
-
-  int len = line.length();
-  bool inquote = false;
-  int arglen;
-  for (int k = 0; k < len; k++)
-    {
-    int start = k;
-    if ((k==0)&&(line[k]==' '))
-      {
-      while (k<len && line[k]==' ')
-        {
-        k++;
-        start++;
-        }
-      }
-    if (line[k] == '\"') inquote = true;
-    if (inquote)
-      {
-      k++;
-      start++;
-      while (k<len && line[k] != '\"')
-        k++;
-      if (k<len)
-        inquote = false;
-      arglen = k-start;
-      k++;
-      }
-    else
-      {
-      while (k<len && line[k]!=' ')
-        k++;
-      arglen = k-start;
-      if ((arglen>1)&&(line[start+arglen-1]==':'))
-        {
-        // Split off trailing ':' as a separate token
-        tokens.push_back(line.substr(start, arglen-1));
-        start = k-1;
-        arglen = 1;
-        }
-      }
-    tokens.push_back(line.substr(start, arglen));
-    }
- if (inquote)
-   {
-   ESP_LOGW(TAG,"Open quote (line #%d)", linenumber);
-   return false;
-   }
-
-  if (tokens.size() == 0) return true; // Skip blank lines
-
-  //for (int k=0;k<tokens.size();k++)
-  ///  ESP_LOGD(TAG,"Tokensize line#%d %d=%s",linenumber,k,tokens[k].c_str());
-
-  std::string keyword = tokens.front();
-  if (keyword.compare("VERSION")==0)
-    {
-    if (tokens.size()>=2)
-      m_version = tokens[1];
-    }
-  else if (keyword.compare("NS_")==0)
-    {
-    if ((tokens.size()>=3)&&(tokens[1].compare(":")==0))
-      {
-      for (int k=2; k<tokens.size(); k++)
-        {
-        m_newsymbols.AddSymbol(tokens[k]);
-        }
-      }
-    else
-      {
-      ESP_LOGW(TAG,"Syntax error in NS_ (line #%d)", linenumber);
-      return false;
-      }
-    }
-  else if (keyword.compare("BS_")==0)
-    {
-    // TODO: For the moment, ignore this
-    }
-  else if (keyword.compare("BU_")==0)
-    {
-    if ((tokens.size()>=3)&&(tokens[1].compare(":")==0))
-      {
-      for (int k=2; k<tokens.size(); k++)
-        {
-        dbcNode* node = new dbcNode(tokens[k]);
-        m_nodes.AddNode(node);
-        }
-      }
-    else
-      {
-      ESP_LOGW(TAG,"Syntax error in BU_ (line #%d)", linenumber);
-      return false;
-      }
-    }
-  else if (keyword.compare("VAL_TABLE_")==0)
-    {
-    if (tokens.size()>=4)
-      {
-      dbcValueTable* vt = new dbcValueTable(tokens[1]);
-      m_values.AddValueTable(tokens[1], vt);
-      for (int k=2; k<(tokens.size()-1); k+=2)
-        {
-        vt->AddValue(atoi(tokens[k].c_str()), tokens[k+1]);
-        }
-      }
-    else
-      {
-      ESP_LOGW(TAG,"Syntax error in VAL_TABLE_ (line #%d)", linenumber);
-      return false;
-      }
-    }
-  else if (keyword.compare("BO_")==0)
-    {
-    if (tokens.size()==6)
-      {
-      uint32_t id = atoi(tokens[1].c_str());
-      dbcMessage* m = new dbcMessage(id);
-      m->m_name = tokens[2];
-      m->m_size = atoi(tokens[4].c_str());
-      m->m_transmitter_node = tokens[5];
-      m_messages.AddMessage(id, m);
-      m_lastmsg = m;
-      }
-    else
-      {
-      ESP_LOGW(TAG,"Syntax error in BO_ (line #%d)", linenumber);
-      return false;
-      }
-    }
-  else if (keyword.compare("SG_")==0)
-    {
-    if (m_lastmsg == NULL)
-      {
-      ESP_LOGW(TAG,"Signal (SG_) definition without message (BO_) (line #%d)", linenumber);
-      return false;
-      }
-    if (tokens.size() >= 7)
-      {
-      dbcSignal* s = new dbcSignal(tokens[1]);
-      m_lastmsg->AddSignal(s);
-
-      int bitstart = 3;
-      if (tokens[2].compare(":") != 0)
-        {
-        const char *p = tokens[2].c_str();
-        if (*p == 'M')
-          {
-          s->m_multiplexed = true;
-          m_lastmsg->m_multiplexor = tokens[1];
-          }
-        else if (*p == 'm')
-          {
-          s->m_multiplexor_switch_value = atoi(p+1);
-          }
-        else
-          {
-          ESP_LOGW(TAG,"Syntax error in SG_ multiplexor expected (line #%d)", linenumber);
-          return false;
-          }
-        bitstart = 4;
-        }
-      if (!s->SetBitsDBC(tokens[bitstart]))
-        {
-        ESP_LOGW(TAG,"Syntax error in SG_ start/size/order/type bits (line #%d)", linenumber);
-        return false;
-        }
-      if (!s->SetFactorOffsetDBC(tokens[bitstart+1]))
-        {
-        ESP_LOGW(TAG,"Syntax error in SG_ factor/offset (line #%d)", linenumber);
-        return false;
-        }
-      if (!s->SetMinMaxDBC(tokens[bitstart+2]))
-        {
-        ESP_LOGW(TAG,"Syntax error in SG_ min/max (line #%d)", linenumber);
-          return false;
-        }
-      s->m_unit = tokens[bitstart+3];
-      for (int k=bitstart+4; k<tokens.size(); k++)
-        s->AddReceiver(tokens[k]);
-      }
-    else
-      {
-      ESP_LOGW(TAG,"Syntax error in SG_ (line #%d)", linenumber);
-      return false;
-      }
-    }
-  else if (keyword.compare("VAL_")==0)
-    {
-    if (tokens.size()>=4)
-      {
-      dbcMessage* m = m_messages.FindMessage(atoi(tokens[1].c_str()));
-      if (m==NULL)
-        {
-        ESP_LOGW(TAG,"Error in VAL_ (line #%d): no message id %s",
-          linenumber, tokens[1].c_str());
-        return false;
-        }
-      dbcSignal* s = m->FindSignal(tokens[2]);
-      if (s==NULL)
-        {
-        ESP_LOGW(TAG,"Error in VAL_ (line #%d): id %s no signal %s",
-          linenumber, tokens[1].c_str(), tokens[2].c_str());
-        return false;
-        }
-      for (int k=3; k<(tokens.size()-1); k+=2)
-        {
-        s->m_values.AddValue(atoi(tokens[k].c_str()), tokens[k+1]);
-        }
-      }
-    else
-      {
-      ESP_LOGW(TAG,"Syntax error in VAL_ (line #%d)", linenumber);
-      return false;
-      }
-    }
-  else if (keyword.compare("CM_")==0)
-    {
-    if (tokens.size()>=2)
-      {
-      if ((tokens.size()>=3)&&(tokens[1] == "BU_"))
-        {
-        dbcNode* n = m_nodes.FindNode(tokens[2]);
-        if (n == NULL)
-          {
-          ESP_LOGW(TAG,"Error in CM_ BU_ (line #%d): no node %s",
-            linenumber, tokens[1].c_str());
-          return false;
-          }
-        n->AddComment(tokens[3]);
-        }
-      else if ((tokens.size()>=3)&&(tokens[1] == "BO_"))
-        {
-        dbcMessage* m = m_messages.FindMessage(atoi(tokens[2].c_str()));
-        if (m == NULL)
-          {
-          ESP_LOGW(TAG,"Error in CM_ BO_ (line #%d): no message id %s",
-            linenumber, tokens[2].c_str());
-          return false;
-          }
-        m->AddComment(tokens[3]);
-        }
-      else if ((tokens.size()>=4)&&(tokens[1] == "SG_"))
-        {
-        dbcMessage* m = m_messages.FindMessage(atoi(tokens[2].c_str()));
-        if (m == NULL)
-          {
-          ESP_LOGW(TAG,"Error in CM_ SG_ (line #%d): no message id %s",
-            linenumber, tokens[2].c_str());
-          return false;
-          }
-        dbcSignal* s = m->FindSignal(tokens[3]);
-        if (s == NULL)
-          {
-          ESP_LOGW(TAG,"Error in CM_ SG_ (line #%d): no message id %s signal %s",
-            linenumber, tokens[2].c_str(), tokens[3].c_str());
-          return false;
-          }
-        s->AddComment(tokens[4]);
-        }
-      else if ((tokens.size()>=3)&&(tokens[1] == "EV_"))
-        {
-        // TODO: Silently ignore EV_ comments for the moment
-        }
-      else
-        {
-        m_comments.AddComment(tokens[1]);
-        }
-      }
-    else
-      {
-      ESP_LOGW(TAG,"Syntax error in CM_ (line #%d)", linenumber);
-      return false;
-      }
-    }
-  else
-    {
-    // Ignore unrecognised lines
-    ESP_LOGW(TAG,"Unrecognised token (line #%d): %s", linenumber,keyword.c_str());
-    for (int k=0;k<tokens.size();k++)
-      ESP_LOGW(TAG,"  line#%d %d=%s",linenumber,k,tokens[k].c_str());
-    }
-
-  return true;
-  }
-
 void dbcfile::FreeAllocations()
   {
   m_version.clear();
@@ -813,39 +860,97 @@ void dbcfile::FreeAllocations()
   m_comments.EmptyContent();
   }
 
-bool dbcfile::LoadFile(const char* path)
+bool dbcfile::LoadFile(const char* path, FILE* fd)
   {
+  FreeAllocations();
+
+#ifdef CONFIG_OVMS
   if (MyConfig.ProtectedPath(path))
     {
     ESP_LOGW(TAG,"Path %s is protected",path);
     return false;
     }
+#endif // #ifdef CONFIG_OVMS
 
-  FILE* f = fopen(path, "r");
-  if (!f)
-    {
-    ESP_LOGW(TAG,"Could not open %s for reading",path);
-    return false;
-    }
-
+  void yyrestart(FILE *input_file);
+  int yyparse (void *YYPARSE_PARAM);
+  bool result;
   m_path = path;
-  m_lastmsg = NULL;
-  char* buf = new char[DBC_MAX_LINELENGTH];
-  bool result = true;
-  int linenumber=0;
-  while (fgets(buf, DBC_MAX_LINELENGTH, f))
-    {
-    linenumber++;
-    int len = strlen(buf);
-    if ((len>0)&&(buf[len-1]=='\n')) buf[len-1]=0; // Remove trailing LF
-    len = strlen(buf);
-    if ((len>0)&&(buf[len-1]=='\r')) buf[len-1]=0; // Remove trailing CR
-    if (!LoadParseOneLine(linenumber,buf)) result=false;
-    }
-  delete [] buf;
 
-  if (!result)
-    ESP_LOGW(TAG,"File %s only partially loaded (syntax errors)",path);
+  if (fd == NULL)
+    {
+    fd = fopen(path, "r");
+    if (!fd)
+      {
+      ESP_LOGW(TAG,"Could not open %s for reading",path);
+      return false;
+      }
+    FILE *yyin = fd;
+    yyrestart(yyin);
+    result = (yyparse ((void *)this) == 0);
+    fclose(fd);
+    }
+  else
+    {
+    fseek(fd,0,SEEK_SET);
+    FILE *yyin = fd;
+    yyrestart(yyin);
+    result = (yyparse ((void *)this) == 0);
+    fseek(fd,0,SEEK_SET);
+    }
 
   return result;
+  }
+
+bool dbcfile::LoadString(const char* source, size_t length)
+  {
+  FreeAllocations();
+
+  void yyrestart(FILE *input_file);
+  int yyparse (void *YYPARSE_PARAM);
+
+  YY_BUFFER_STATE buffer = yy_scan_bytes(source, length);
+  bool result = (yyparse (this) == 0);
+  yy_delete_buffer(buffer);
+
+  return result;
+  }
+
+void dbcfile::WriteFile(dbcOutputCallback callback, void* param)
+  {
+  callback(param,"VERSION \"");
+  callback(param,m_version.c_str());
+  callback(param,"\"\n\n");
+
+  m_newsymbols.WriteFile(callback, param);
+  m_bittiming.WriteFile(callback, param);
+  m_nodes.WriteFile(callback, param);
+  m_values.WriteFile(callback, param);
+  m_messages.WriteFile(callback, param);
+  m_comments.WriteFile(callback, param, std::string("CM_ \""));
+  m_nodes.WriteFileComments(callback, param);
+  m_messages.WriteFileComments(callback, param);
+  }
+
+std::string dbcfile::Status()
+  {
+  std::ostringstream ss;
+  int messages, signals, bits, covered;
+  m_messages.Count(&messages, &signals, &bits, &covered);
+  if (m_version.length() > 0)
+    {
+    ss << m_version;
+    ss << ": ";
+    }
+  ss << messages;
+  ss << " message(s), ";
+  ss << signals;
+  ss << " signal(s)";
+  if (covered>0)
+    {
+    ss << ", ";
+    ss << (int)(covered*100)/bits;
+    ss << "% coverage";
+    }
+  return ss.str();
   }

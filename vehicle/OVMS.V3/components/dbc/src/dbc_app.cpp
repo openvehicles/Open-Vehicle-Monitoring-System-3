@@ -48,9 +48,7 @@ void dbc_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   while (it!=MyDBC.m_dbclist.end())
     {
     writer->printf("%s: ",it->first.c_str());
-    //dbcfile* dbcf = it->second;
-    //dbcf->ShowStatusLine(writer);
-    writer->puts("");
+    writer->puts(it->second->Status().c_str());
     ++it;
     }
   }
@@ -79,6 +77,13 @@ void dbc_unload(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     }
   }
 
+void dbc_show_callback(void* param, const char* buffer)
+  {
+  OvmsWriter* writer = (OvmsWriter*)param;
+
+  writer->write(buffer,strlen(buffer));
+  }
+
 void dbc_show(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   dbcfile* dbc = MyDBC.Find(argv[0]);
@@ -88,91 +93,9 @@ void dbc_show(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     return;
     }
 
-  writer->printf("DBC: %s (version %s)\n",argv[0],dbc->m_version.c_str());
-  if (!dbc->m_path.empty()) writer->printf("Source: %s\n",dbc->m_path.c_str());
-  for (std::string c : dbc->m_comments.m_entrymap) writer->puts(c.c_str());
-  writer->puts("");
-
-  if (argc==1)
-    {
-    writer->printf("Nodes:");
-    for (dbcNode* n : dbc->m_nodes.m_entrymap)
-      {
-      writer->printf(" %s",n->m_name.c_str());
-      }
-    writer->puts("");
-    writer->printf("Messages:\n");
-    dbcMessageEntry_t::iterator it=dbc->m_messages.m_entrymap.begin();
-    while (it!=dbc->m_messages.m_entrymap.end())
-      {
-      writer->printf("  0x%x (%d): %s\n",
-        it->first, it->first, it->second->m_name.c_str());
-      ++it;
-      }
-    }
-  else if (argc==2)
-    {
-    dbcMessage* m = dbc->m_messages.FindMessage(atoi(argv[1]));
-    if (m==NULL)
-      {
-      writer->printf("Error: No message id #%s\n",argv[1]);
-      return;
-      }
-    writer->printf("Message: 0x%x (%d): %s (%d byte(s) from %s)\n",
-      m->m_id, m->m_id, m->m_name.c_str(),
-      m->m_size, m->m_transmitter_node.c_str());
-    for (std::string c : m->m_comments) writer->puts(c.c_str());
-    for (dbcSignal* s : m->m_signals)
-      {
-      writer->printf("  %s %d|%d@%d%c (%g,%g) [%g|%g]\n",
-        s->m_name.c_str(),
-        s->m_start_bit, s->m_signal_size, s->m_byte_order, s->m_value_type,
-        s->m_factor, s->m_offset, s->m_minimum, s->m_maximum);
-      }
-    }
-  else if (argc==3)
-    {
-    dbcMessage* m = dbc->m_messages.FindMessage(atoi(argv[1]));
-    if (m==NULL)
-      {
-      writer->printf("Error: No message id #%s\n",argv[1]);
-      return;
-      }
-    dbcSignal* s = m->FindSignal(argv[2]);
-    if (s==NULL)
-      {
-      writer->printf("Error: No signal %s on message id #%s\n",argv[2],argv[1]);
-      return;
-      }
-    writer->printf("Message: 0x%x (%d): %s (%d byte(s) from %s)\n",
-      m->m_id, m->m_id, m->m_name.c_str(),
-      m->m_size, m->m_transmitter_node.c_str());
-    for (std::string c : m->m_comments) writer->puts(c.c_str());
-    writer->printf("Signal: %s %d|%d@%d%c (%g,%g) [%g|%g]\n",
-      s->m_name.c_str(),
-      s->m_start_bit, s->m_signal_size, s->m_byte_order, s->m_value_type,
-      s->m_factor, s->m_offset, s->m_minimum, s->m_maximum);
-    for (std::string c : s->m_comments) writer->puts(c.c_str());
-    writer->printf("Receivers:");
-    for (std::string r : s->m_receivers)
-      {
-      writer->printf(" %s",r.c_str());
-      }
-    writer->puts("");
-    writer->printf("Values (%s):\n",s->m_values.m_name.c_str());
-    dbcValueTableEntry_t::iterator it=s->m_values.m_entrymap.begin();
-    while (it!=s->m_values.m_entrymap.end())
-      {
-      writer->printf("  %d: %s\n",
-        it->first, it->second.c_str());
-      ++it;
-      }
-    writer->puts("\n");
-    for (std::string c : s->m_comments)
-      {
-      writer->puts(c.c_str());
-      }
-    }
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  dbc->WriteFile(std::bind(dbc_show_callback,_1,_2), writer);
   }
 
 dbc::dbc()
@@ -198,8 +121,8 @@ bool dbc::LoadFile(const char* name, const char* path)
   dbcfile* ndbc = new dbcfile();
   if (!ndbc->LoadFile(path))
     {
-//    delete ndbc;
-//    return false;
+    delete ndbc;
+    return false;
     }
 
   auto k = m_dbclist.find(name);
@@ -222,7 +145,18 @@ bool dbc::Unload(const char* name)
   {
   OvmsMutexLock ldbc(&m_mutex);
 
-  return false;
+  auto k = m_dbclist.find(name);
+  if (k == m_dbclist.end())
+    {
+    return false;
+    }
+  else
+    {
+    // Unload it...
+    delete k->second;
+    m_dbclist.erase(k);
+    return true;
+    }
   }
 
 dbcfile* dbc::Find(const char* name)
