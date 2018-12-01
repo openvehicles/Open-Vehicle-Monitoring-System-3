@@ -66,10 +66,6 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   StandardMetrics.ms_v_env_parktime->SetValue(0);
   StandardMetrics.ms_v_charge_type->SetValue("None");
 
-  // Require GPS.
-  MyEvents.SignalEvent("vehicle.require.gps", NULL);
-  MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
-
   memset(m_vin,0,sizeof(m_vin));
 
   mi_trip_start_odo = 0;
@@ -102,9 +98,6 @@ OvmsVehicleMitsubishi::~OvmsVehicleMitsubishi()
   {
   ESP_LOGI(TAG, "Stop Mitsubishi  vehicle module");
 
-  // Release GPS.
-  MyEvents.SignalEvent("vehicle.require.gps", NULL);
-  MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
   MyWebServer.DeregisterPage("/bms/cellmon");
   MyCommandApp.UnregisterCommand("xmi");
   }
