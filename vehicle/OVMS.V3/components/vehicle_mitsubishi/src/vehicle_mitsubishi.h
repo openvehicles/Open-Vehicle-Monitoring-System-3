@@ -54,6 +54,7 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
   protected:
     virtual void Ticker1(uint32_t ticker);
     virtual void Ticker10(uint32_t ticker);
+    void ConfigChanged(OvmsConfigParam* param);
 
   protected:
     virtual void Notify12vCritical();
@@ -95,13 +96,27 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     OvmsMetricFloat*  v_c_power_ac = MyMetrics.InitFloat("v.c.power.ac",SM_STALE_MID, kW);
     OvmsMetricFloat*  v_c_power_dc = MyMetrics.InitFloat("v.c.power.dc",SM_STALE_MID, kW);
 
+    OvmsMetricFloat*  m_v_env_heating_amp  = new OvmsMetricFloat("xmi.e.heating.amp", SM_STALE_MID, Amps);
+    OvmsMetricFloat*  m_v_env_heating_watt  = new OvmsMetricFloat("xmi.e.heating.watt", SM_STALE_MID, Watts);
+    OvmsMetricFloat*  m_v_env_heating_temp_return  = new OvmsMetricFloat("xmi.e.heating.temp.return", SM_STALE_MID, Celcius);
+    OvmsMetricFloat*  m_v_env_heating_temp_flow  = new OvmsMetricFloat("xmi.e.heating.temp.flow", SM_STALE_MID, Celcius);
+
+    OvmsMetricFloat*  m_v_env_ac_amp  = new OvmsMetricFloat("xmi.e.ac.amp", SM_STALE_MID, Amps);
+    OvmsMetricFloat*  m_v_env_ac_watt  = new OvmsMetricFloat("xmi.e.ac.watt", SM_STALE_MID, Watts);
     void vehicle_mitsubishi_car_on(bool isOn);
+
     float mi_trip_start_odo;
+    bool cfg_heater_old;
+    int cfg_soh;
+
 
     // --------------------------------------------------------------------------
     // Webserver subsystem
     //  - implementation: mi_web.(h,cpp)
     //
+  public:
+    void WebInit();
+    static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
 
   public:
     void GetDashboardConfig(DashboardConfig& cfg);

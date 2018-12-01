@@ -3,22 +3,22 @@
 ;    Date:          2th Sept 2018
 ;
 ;    Changes:
-;    0.1.0  Initial release: 13-oct-2018 - KommyKT (tested on Peugeot iOn 03-2012 LHD)
+;    0.1.0  Initial release: 01-dec-2018 - KommyKT (tested on Peugeot iOn 03-2012 LHD)
 ;       - web dashboard limit modifications
 ;       - all 66 temp sensor avg for battery temp
 ;       - all cell temperature stored
 ;       - basic charge states
 ;       - AC charger voltage / current measure
 ;       - DC
-;    0.1.1 11-nov-2018 - KommyKT
 ;       - BMS Command
 ;       - trip Command
 ;       - aux Command
 ;       - web battery status with volts and temperatures
-;    0.1.2 14-nov-2018
 ;       - new standardised BMS usage
-;    0.1.3 17-nov-2018
 ;       - new standardised BMS /web ui for BMS
+;       - heater flow/return temperature
+;       - heater generation change in web settings
+;       - soh setting to 'calibrate' ideal range
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018  Mark Webb-Johnson
@@ -48,7 +48,7 @@
 #include <stdio.h>
 #include "vehicle_mitsubishi.h"
 
-#define VERSION "0.1.2"
+#define VERSION "0.1.4"
 
 static const char *TAG = "v-mitsubishi";
 typedef enum
@@ -91,6 +91,12 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   cmd_xmi->RegisterCommand("aux", "Aux Battery", xmi_aux, 0, 0, false);
   cmd_xmi->RegisterCommand("trip","Show trip info", xmi_trip, 0,0, false);
 
+  WebInit();
+
+  // init configs:
+  MyConfig.RegisterParam("xmi", "Trio", true, true);
+  ConfigChanged(NULL);
+
   }
 OvmsVehicleMitsubishi::~OvmsVehicleMitsubishi()
   {
@@ -110,6 +116,16 @@ void OvmsVehicleMitsubishi::BatteryReset()
   {
     ESP_LOGD(TAG, "battmon reset");
     BmsResetCellStats();
+  }
+
+  /**
+   * ConfigChanged: reload single/all configuration variables
+   */
+void OvmsVehicleMitsubishi::ConfigChanged(OvmsConfigParam* param)
+  {
+    ESP_LOGD(TAG, "Trio reload configuration");
+    cfg_heater_old = MyConfig.GetParamValueBool("xmi", "oldheater", false);
+    cfg_soh = MyConfig.GetParamValueInt("xmi", "soh", 100);
   }
 
 /**
@@ -206,11 +222,15 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
           vehicle_mitsubishi_car_on(true);
         }else if(d[1] == 0)
         {
-          vehicle_mitsubishi_car_on(true);
+          vehicle_mitsubishi_car_on(false);
         }
 
       break;
       }
+
+      //case 0x119:{}
+      //case 0x149:{}
+      //case 0x156:{}
 
       case 0x208: // Brake pedal position
       {
@@ -223,7 +243,8 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_env_throttle->SetValue(d[2]*0.4);
       break;
       }
-
+      //case 0x212:{}
+        //case 0x215:{}
       case 0x231: // Brake pedal pressed?
       {
         if (d[4] == 0) {
@@ -241,10 +262,18 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
       }
 
+      //case 0x285:{} //Ignition?
+
       case 0x286: // Charger/inverter temperature
       {
         StandardMetrics.ms_v_charge_temp->SetValue((float)d[3]-40);
         StandardMetrics.ms_v_inv_temp->SetValue((float)d[3]-40);
+      break;
+      }
+
+      case 0x288: //ABS speed on both rear wheel
+      {
+
       break;
       }
 
@@ -280,8 +309,15 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
       }
 
-      case 0x325:
+      case 0x2f2: //Steering torque sensor
       {
+      break;
+      }
+
+        //case 0x308:{}
+
+      case 0x325:
+      { // if car sleep : 325 01 00
         /*d[0]==1?*/
       break;
       }
@@ -316,11 +352,36 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
       }
 
+      //case 0x375:{}
       case 0x384: //heating current?
       {
-        //d[4]/10 //heating current;
+        m_v_env_heating_amp->SetValue(d[4]/10.0);
+        m_v_env_heating_watt->SetValue(m_v_env_heating_amp->AsFloat()*StandardMetrics.ms_v_bat_voltage->AsFloat());
+
+        if (m_v_env_heating_watt->AsFloat() > 0.0){
+          StandardMetrics.ms_v_env_heating->SetValue(true);
+        }else{
+          StandardMetrics.ms_v_env_heating->SetValue(false);
+        }
+        if (cfg_heater_old)
+        {
+          m_v_env_heating_temp_return->SetValue(((d[5] - 32) / 1.8d) - 3.0d);
+          m_v_env_heating_temp_flow->SetValue(((d[6] - 32) / 1.8d) - 3.0d);
+        }
+        else
+          {
+            m_v_env_heating_temp_return->SetValue((d[5] * 0.6) - 40.0d);
+            m_v_env_heating_temp_flow->SetValue((d[6] * 0.6) - 40.0d);
+          }
+
+
+        m_v_env_ac_amp->SetValue((d[0]*256.0+d[1])/1000.0);
+        m_v_env_ac_watt->SetValue(m_v_env_ac_amp->AsFloat()*StandardMetrics.ms_v_bat_voltage->AsFloat());
+
       break;
       }
+
+      //case 0x385:{}
 
       case 0x389: // Charger voltage and current
       {
@@ -361,7 +422,10 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       if (((int)d[0]>>7) == 1)
       {
        // AC on
-      }
+       StandardMetrics.ms_v_env_hvac->SetValue(true);
+     }else{
+       StandardMetrics.ms_v_env_hvac->SetValue(false);
+     }
 
       string ventDirection = "-";
       switch ((d[1] & 240 >> 4)) {
@@ -387,11 +451,13 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       }
       break;
     }
+
     case 0x408:
-    {
+    {//if sleep : 408 00 00 00 00 00 00 00 00
       // all == 0
     break;
     }
+
     case 0x412: // Speed and odometer
     {
       if (d[1]>200)
@@ -551,18 +617,30 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         break;
       }
 
-    case 0x6e1: // Battery temperatures and voltages E1
+    case 0x695: // Gas pedal sensor
     {
-      if ((d[0]>=1)&&(d[0]<=12))
-        {
-          int idx = ((int)d[0]<<1)-2;
-          BmsSetCellTemperature(idx,d[2] - 50);
-          BmsSetCellTemperature(idx+1,d[3] - 50);
-          BmsSetCellVoltage(idx,(((d[4]*256.0+d[5])/200.0)+2.1));
-          BmsSetCellVoltage(idx+1,(((d[6]*256.0+d[7])/200.0)+2.1));
-        }
     break;
     }
+
+    case 0x696: // Motor current
+    {
+    break;
+    }
+
+      //case 0x697:{}
+
+    case 0x6e1: // Battery temperatures and voltages E1
+    {
+        if ((d[0]>=1)&&(d[0]<=12))
+          {
+            int idx = ((int)d[0]<<1)-2;
+            BmsSetCellTemperature(idx,d[2] - 50);
+            BmsSetCellTemperature(idx+1,d[3] - 50);
+            BmsSetCellVoltage(idx,(((d[4]*256.0+d[5])/200.0)+2.1));
+            BmsSetCellVoltage(idx+1,(((d[6]*256.0+d[7])/200.0)+2.1));
+          }
+      break;
+      }
 
     case 0x6e2: // Battery temperatures and voltages E2
     {
@@ -651,15 +729,17 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
     break;
     }
 
-  /*  case 0x762:
-    {
+    case 0x762:
+    {/*
         if (d[0] == 36)
-            {
+            {*/ //((d[3]/2)-5) = soc
+            //((d[3]*256)+d[4])-349 charge current
               StandardMetrics.ms_v_bat_cac->SetValue(((d[3]*256)+d[4])/10.0);
               StandardMetrics.ms_v_bat_soh->SetValue(StandardMetrics.ms_v_bat_cac->AsFloat()/48);
-            }
+
+          //  }
     break;
-  }*/
+  }
 
     default:
     break;
@@ -671,6 +751,9 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
 void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
   {
+    StandardMetrics.ms_v_bat_soh->SetValue(cfg_soh);
+
+
     if (StandardMetrics.ms_v_env_gear->AsInt() == -1)
     { //Charge state if transmission in P
       if((StandardMetrics.ms_v_charge_voltage->AsInt() > 90) && (StandardMetrics.ms_v_charge_voltage->AsInt() < 254) && (StandardMetrics.ms_v_charge_current->AsInt() < 16) && (StandardMetrics.ms_v_charge_current->AsInt() > 0) )
@@ -733,7 +816,7 @@ void OvmsVehicleMitsubishi::Ticker10(uint32_t ticker)
    */
 void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
     {
-
+/*
     if (isOn && !StdMetrics.ms_v_env_on->AsBool())
       {
   		// Car is ON
@@ -762,6 +845,7 @@ void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
     		if(mi_trip_start_odo==0 && POS_ODO!=0)
     			mi_trip_start_odo = POS_ODO;	// ODO at Start of trip
     		}
+*/
     }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandSetChargeMode(vehicle_mode_t mode)

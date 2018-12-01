@@ -45,6 +45,76 @@ using namespace std;
 #define _html(text) (c.encode_html(text).c_str())
 
 /**
+ * WebInit: register pages
+ */
+void OvmsVehicleMitsubishi::WebInit()
+{
+  // vehicle menu:
+  MyWebServer.RegisterPage("/xmi/features", "Settings", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
+}
+
+/**
+ * WebCfgFeatures: configure general parameters (URL /xmi/config)
+ */
+void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
+{
+  std::string error,soh;
+  bool oldheater;
+
+  if (c.method == "POST") {
+    // process form submission:
+    oldheater = (c.getvar("oldheater") == "yes");
+    soh = c.getvar("soh");
+    // check:
+    if (!soh.empty()) {
+      int n = atoi(soh.c_str());
+      if (n < 0 || n > 100)
+        error += "<li data-input=\"soh\">SOH out of range (0…100)</li>";
+    }
+    // check:
+    if (error == "") {
+      // store:
+      MyConfig.SetParamValueBool("xmi", "oldheater", oldheater);
+      MyConfig.SetParamValue("xmi", "soh", soh);
+
+      c.head(200);
+      c.alert("success", "<p class=\"lead\">Trio feature configuration saved.</p>");
+      MyWebServer.OutputHome(p, c);
+      c.done();
+      return;
+    }
+
+    // output error, return to form:
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    c.head(400);
+    c.alert("danger", error.c_str());
+  }
+  else {
+    // read configuration:
+    oldheater = MyConfig.GetParamValueBool("xmi", "oldheater", false);
+    soh = MyConfig.GetParamValue("xmi","soh","100");
+    c.head(200);
+  }
+
+  // generate form:
+
+  c.panel_start("primary", "Trio feature configuration");
+  c.form_start(p.uri);
+
+  c.fieldset_start("Heater");
+  c.input_checkbox("Heater 1. generation", "oldheater", oldheater,
+    "<p>Check this, if you have an early Mitshubishi i-MiEV (2011 and before). Testing which heater intalled in car, before using the car, compare to a batt temp, both temps should be nearly the same.</p>");
+  c.fieldset_start("SOH");
+  c.input_slider("SOH", "soh", 3, NULL,
+    -1, atof(soh.c_str()), 100, 0, 100, 1,
+    "<p>Default 100, you can set your battery SOH to 'calibrate' ideal range, now not supported automatic SOH detection, you can see soh valule on another app (such as CaniOn (free only Android), or EVBatMon (paid, iOS and Android))</p>");
+  c.input_button("default", "Save");
+  c.form_end();
+  c.panel_end();
+  c.done();
+}
+
+/**
  * GetDashboardConfig: Mitsubishi i-MiEVm Citroen C-Zero, Peugeot iOn specific dashboard setup
  */
 void OvmsVehicleMitsubishi::GetDashboardConfig(DashboardConfig& cfg)
