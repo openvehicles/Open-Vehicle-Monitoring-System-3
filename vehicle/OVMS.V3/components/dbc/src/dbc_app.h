@@ -1,14 +1,13 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          9th December 2017
+;    Date:          14th March 2017
 ;
 ;    Changes:
 ;    1.0  Initial release
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
-;    (C) 2011        Sonny Chen @ EPRO/DX
-;    (C) 2012-2017  Michael Balzer
+;    (C) 2011       Sonny Chen @ EPRO/DX
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -29,31 +28,34 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __GSM_NMEA_H__
-#define __GSM_NMEA_H__
+#ifndef __DBC_APP_H__
+#define __DBC_APP_H__
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-#include "driver/uart.h"
-#include "gsmmux.h"
+#include "dbc.h"
+#include "ovms_command.h"
+#include "ovms_mutex.h"
+#include "ovms_utils.h"
 
-class GsmNMEA
+typedef std::map<std::string, dbcfile*> dbcLoadedFiles_t;
+
+class dbc
   {
   public:
-    GsmNMEA(GsmMux* mux, int channel);
-    ~GsmNMEA();
+    dbc();
+    ~dbc();
 
   public:
-    void IncomingLine(const std::string line);
-    void Startup();
-    void Shutdown(bool hard=false);
+    bool LoadFile(const char* name, const char* path);
+    bool Unload(const char* name);
 
   public:
-    GsmMux*       m_mux;
-    int           m_channel;
-    bool          m_connected;
-    bool          m_gpstime_enabled;
+    dbcfile* Find(const char* name);
+
+  public:
+    OvmsMutex m_mutex;
+    dbcLoadedFiles_t m_dbclist;
   };
 
-#endif //#ifndef __GSM_NMEA__
+extern dbc MyDBC;
+
+#endif //#ifndef __DBC_APP_H__

@@ -310,6 +310,20 @@ void OvmsConfig::upgrade()
     SetParamValue("module", "init", "done");
     DeleteInstance("password", "changed");
     }
+
+  // Migrate vehicle.require.* signals to config:
+  if (GetParamValueInt("module", "cfgversion") < 2018112200)
+    {
+    std::string vt = GetParamValue("auto", "vehicle.type");
+    if (vt=="FT5E" || vt=="KS" || vt=="MI" || vt=="RT" || vt=="TGTC" || vt=="VA" || vt=="ZEVA")
+      {
+      SetParamValueBool("modem", "enable.gps", true);
+      SetParamValueBool("modem", "enable.gpstime", true);
+      }
+    }
+
+  // Done, set config version:
+  SetParamValueInt("module", "cfgversion", 2018112200);
   }
 
 void OvmsConfig::RegisterParam(std::string name, std::string title, bool writable, bool readable)
@@ -567,6 +581,8 @@ static bool install_dir(std::string src, std::string dst)
   {
   std::string dstbak = dst + ".old";
   rmtree(dstbak);
+  if (mkpath(dst) != 0) // ensure dst exists
+    return false;
   if (rename(dst.c_str(), dstbak.c_str()) == 0)
     {
     if (rename(src.c_str(), dst.c_str()) == 0)

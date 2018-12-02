@@ -15,6 +15,7 @@ Open Vehicle Monitor System v3 - Change log
     xrt [motor_rpm_rated] = 0         Rated speed in rpm, e.g. 2100
   See docs/Renault-Twizy/Twizy-Powermap-Calculator-Tbrk.ods for details.
 - Add inactivity watchdog timers to CAN buses
+- NissanLeaf: Fix for 0% SOH on 30KWh models with Nissan BMS update
 
 2018-10-24 MWJ  3.1.011  OTA release
 - Config backup & restore using encrypted ZIP archives

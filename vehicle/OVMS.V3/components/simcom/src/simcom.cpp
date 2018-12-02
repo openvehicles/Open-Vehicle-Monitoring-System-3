@@ -159,7 +159,6 @@ simcom::simcom(const char* name, uart_port_t uartnum, int baud, int rxpin, int t
   m_provider = "";
   m_sq = 99; // = unknown
   m_powermode = Off;
-  m_gps_required = false;
   m_line_unfinished = -1;
   m_line_buffer.clear();
   StartTask();
@@ -167,10 +166,6 @@ simcom::simcom(const char* name, uart_port_t uartnum, int baud, int rxpin, int t
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"ticker.1", std::bind(&simcom::Ticker, this, _1, _2));
-  MyEvents.RegisterEvent(TAG, "vehicle.require.gps", std::bind(&simcom::EventListener, this, _1, _2));
-  MyEvents.RegisterEvent(TAG, "vehicle.release.gps", std::bind(&simcom::EventListener, this, _1, _2));
-  MyEvents.RegisterEvent(TAG, "vehicle.require.gpstime", std::bind(&simcom::EventListener, this, _1, _2));
-  MyEvents.RegisterEvent(TAG, "vehicle.release.gpstime", std::bind(&simcom::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "system.shuttingdown", std::bind(&simcom::EventListener, this, _1, _2));
   }
 
@@ -285,39 +280,7 @@ void simcom::Ticker(std::string event, void* data)
 
 void simcom::EventListener(std::string event, void* data)
   {
-  if (event == "vehicle.require.gps")
-    {
-    m_gps_required = true;
-    if (!m_nmea.m_connected)
-      {
-      // power on if necessary:
-      SetPowerMode(On);
-      // if powering on now, GPS will be started automatically, else:
-      if (m_state1 != PoweringOn)
-        m_nmea.Startup(m_gps_required);
-      }
-    }
-  else if (event == "vehicle.release.gps")
-    {
-    m_gps_required = false;
-    if (m_nmea.m_connected && !MyConfig.GetParamValueBool("modem", "enable.gps", false))
-      {
-      // if we were powered on just for GPS, power off:
-      if (m_state1 == NetHold)
-        SetState1(PoweringOff);
-      else
-        m_nmea.Shutdown();
-      }
-    }
-  else if (event == "vehicle.require.gpstime")
-    {
-    m_nmea.m_gpstime_required = true;
-    }
-  else if (event == "vehicle.release.gpstime")
-    {
-    m_nmea.m_gpstime_required = false;
-    }
-  else if (event == "system.shuttingdown")
+  if (event == "system.shuttingdown")
     {
     if (m_state1 != PoweredOff)
       {
@@ -449,7 +412,7 @@ void simcom::State1Enter(SimcomState1 newstate)
     case NetWait:
       ESP_LOGI(TAG,"State: Enter NetWait state");
       MyEvents.SignalEvent("system.modem.netwait", NULL);
-      m_nmea.Startup(m_gps_required);
+      m_nmea.Startup();
       break;
     case NetStart:
       ESP_LOGI(TAG,"State: Enter NetStart state");
@@ -1095,12 +1058,10 @@ void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     }
   if (debug)
     {
-    writer->printf("     Status: %s%s\n",
-      MyConfig.GetParamValueBool("modem", "enable.gps", false) ? "enabled" : "disabled",
-      MyPeripherals->m_simcom->m_gps_required ? ", required" : "");
-    writer->printf("     Time: %s%s\n",
-      MyConfig.GetParamValueBool("modem", "enable.gpstime", false) ? "enabled" : "disabled",
-      MyPeripherals->m_simcom->m_nmea.m_gpstime_required ? ", required" : "");
+    writer->printf("     Status: %s\n",
+      MyConfig.GetParamValueBool("modem", "enable.gps", false) ? "enabled" : "disabled");
+    writer->printf("     Time: %s\n",
+      MyConfig.GetParamValueBool("modem", "enable.gpstime", false) ? "enabled" : "disabled");
     }
 
   }

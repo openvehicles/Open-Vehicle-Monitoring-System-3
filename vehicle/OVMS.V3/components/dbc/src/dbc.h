@@ -34,11 +34,24 @@
 #include <string>
 #include <map>
 #include <list>
-#include "ovms_command.h"
-#include "ovms_mutex.h"
-#include "ovms_utils.h"
+#include <functional>
 
 #define DBC_MAX_LINELENGTH 2048
+
+typedef std::function<void(void*, const char*)> dbcOutputCallback;
+
+typedef enum
+  {
+  DBC_MUX_NONE=0,
+  DBC_MUX_MULTIPLEXOR=1,
+  DBC_MUX_MULTIPLEXED=2
+  } dbcMultiplex_t;
+
+struct dbcMultiplexor_t
+  {
+  dbcMultiplex_t multiplexed;
+  uint32_t switchvalue;
+  };
 
 typedef enum
   {
@@ -61,12 +74,15 @@ class dbcCommentTable
 
   public:
     void AddComment(std::string comment);
+    void AddComment(const char* comment);
     void RemoveComment(std::string comment);
     bool HasComment(std::string comment);
 
   public:
     void EmptyContent();
-    void ReplaceContent(dbcCommentTable* source);
+
+  public:
+    void WriteFile(dbcOutputCallback callback, void* param, std::string prefix);
 
   public:
     dbcCommentList_t m_entrymap;
@@ -81,12 +97,15 @@ class dbcNewSymbolTable
 
   public:
     void AddSymbol(std::string symbol);
+    void AddSymbol(const char* symbol);
     void RemoveSymbol(std::string symbol);
     bool HasSymbol(std::string symbol);
 
   public:
     void EmptyContent();
-    void ReplaceContent(dbcNewSymbolTable* source);
+
+  public:
+    void WriteFile(dbcOutputCallback callback, void* param);
 
   public:
     dbcNewSymbolList_t m_entrymap;
@@ -97,10 +116,12 @@ class dbcNode
   public:
     dbcNode();
     dbcNode(std::string name);
+    dbcNode(const char* name);
     ~dbcNode();
 
   public:
     void AddComment(std::string comment);
+    void AddComment(const char* comment);
     void RemoveComment(std::string comment);
     bool HasComment(std::string comment);
 
@@ -109,7 +130,7 @@ class dbcNode
     dbcCommentTable m_comments;
   };
 
-typedef std::list<dbcNode*> dbcNodeList_t;
+typedef std::map<std::string, dbcNode*> dbcNodeEntry_t;
 class dbcNodeTable
   {
   public:
@@ -123,10 +144,13 @@ class dbcNodeTable
 
   public:
     void EmptyContent();
-    void ReplaceContent(dbcNodeTable* source);
 
   public:
-    dbcNodeList_t m_entrymap;
+    void WriteFile(dbcOutputCallback callback, void* param);
+    void WriteFileComments(dbcOutputCallback callback, void* param);
+
+  public:
+    dbcNodeEntry_t m_entrymap;
   };
 
 class dbcBitTiming
@@ -137,7 +161,9 @@ class dbcBitTiming
 
   public:
     void EmptyContent();
-    void ReplaceContent(dbcBitTiming* source);
+
+  public:
+    void WriteFile(dbcOutputCallback callback, void* param);
 
   public:
     uint32_t m_baudrate;
@@ -151,17 +177,21 @@ class dbcValueTable
   public:
     dbcValueTable();
     dbcValueTable(std::string name);
+    dbcValueTable(const char* name);
     ~dbcValueTable();
 
   public:
     void AddValue(uint32_t id, std::string value);
+    void AddValue(uint32_t id, const char* value);
     void RemoveValue(uint32_t id);
     bool HasValue(uint32_t id);
     std::string GetValue(uint32_t id);
 
   public:
     void EmptyContent();
-    void ReplaceContent(dbcValueTable* source);
+
+  public:
+    void WriteFile(dbcOutputCallback callback, void* param, const char* prefix);
 
   public:
     std::string m_name;
@@ -177,12 +207,15 @@ class dbcValueTableTable
 
   public:
     void AddValueTable(std::string name, dbcValueTable* vt);
+    void AddValueTable(const char* name, dbcValueTable* vt);
     void RemoveValueTable(std::string name, bool free=false);
     dbcValueTable* FindValueTable(std::string name);
 
   public:
     void EmptyContent();
-    void ReplaceContent(dbcValueTableTable* source);
+
+  public:
+    void WriteFile(dbcOutputCallback callback, void* param);
 
   public:
     dbcValueTableTableEntry_t m_entrymap;
@@ -201,6 +234,7 @@ class dbcSignal
     void RemoveReceiver(std::string receiver);
     bool HasReceiver(std::string receiver);
     void AddComment(std::string comment);
+    void AddComment(const char* comment);
     void RemoveComment(std::string comment);
     bool HasComment(std::string comment);
     void AddValue(uint32_t id, std::string value);
@@ -208,16 +242,19 @@ class dbcSignal
     bool HasValue(uint32_t id);
     std::string GetValue(uint32_t id);
 
-
   public:
     bool SetBitsDBC(std::string dbcval);
     bool SetFactorOffsetDBC(std::string dbcval);
     bool SetMinMaxDBC(std::string dbcval);
 
   public:
+    void WriteFile(dbcOutputCallback callback, void* param);
+    void WriteFileComments(dbcOutputCallback callback, void* param, std::string messageid);
+    void WriteFileValues(dbcOutputCallback callback, void* param, std::string messageid);
+
+  public:
     std::string m_name;
-    uint32_t m_multiplexor_switch_value;
-    bool m_multiplexed;
+    dbcMultiplexor_t m_mux;
     uint8_t m_start_bit;
     uint8_t m_signal_size;
     dbcByteOrder_t m_byte_order;
@@ -228,7 +265,7 @@ class dbcSignal
     double m_maximum;
     std::string m_unit;
     dbcReceiverList_t m_receivers;
-    dbcCommentList_t m_comments;
+    dbcCommentTable m_comments;
     dbcValueTable m_values;
   };
 
@@ -242,11 +279,18 @@ class dbcMessage
 
   public:
     void AddComment(std::string comment);
+    void AddComment(const char* comment);
     void RemoveComment(std::string comment);
     bool HasComment(std::string comment);
     void AddSignal(dbcSignal* signal);
     void RemoveSignal(dbcSignal* signal, bool free=false);
     dbcSignal* FindSignal(std::string name);
+    void Count(int* signals, int* bits, int* covered);
+
+  public:
+    void WriteFile(dbcOutputCallback callback, void* param);
+    void WriteFileComments(dbcOutputCallback callback, void* param);
+    void WriteFileValues(dbcOutputCallback callback, void* param);
 
   public:
     uint32_t m_id;
@@ -254,7 +298,7 @@ class dbcMessage
     uint8_t m_size;
     std::string m_transmitter_node;
     dbcSignalList_t m_signals;
-    dbcCommentList_t m_comments;
+    dbcCommentTable m_comments;
     std::string m_multiplexor;
   };
 
@@ -269,10 +313,15 @@ class dbcMessageTable
     void AddMessage(uint32_t id, dbcMessage* message);
     void RemoveMessage(uint32_t id, bool free=false);
     dbcMessage* FindMessage(uint32_t id);
+    void Count(int* messages, int* signals, int* bits, int* covered);
 
   public:
     void EmptyContent();
-    void ReplaceContent(dbcMessageTable* source);
+
+  public:
+    void WriteFile(dbcOutputCallback callback, void* param);
+    void WriteFileComments(dbcOutputCallback callback, void* param);
+    void WriteFileValues(dbcOutputCallback callback, void* param);
 
   public:
     dbcMessageEntry_t m_entrymap;
@@ -286,13 +335,12 @@ class dbcfile
 
   private:
     void FreeAllocations();
-    bool LoadParseOneLine(int linenumber, std::string line);
 
   public:
-    bool LoadFile(const char* path);
-    bool LoadString(const char* source);
-    void ReplaceContent(dbcfile* dbc);
-    void ShowStatusLine(OvmsWriter* writer);
+    bool LoadFile(const char* path, FILE *fd=NULL);
+    bool LoadString(const char* source, size_t length);
+    void WriteFile(dbcOutputCallback callback, void* param);
+    std::string Status();
 
   public:
     std::string m_path;
@@ -307,28 +355,5 @@ class dbcfile
   private:
     dbcMessage* m_lastmsg;
   };
-
-typedef std::map<std::string, dbcfile*> dbcLoadedFiles_t;
-
-class dbc
-  {
-  public:
-    dbc();
-    ~dbc();
-
-  public:
-    bool LoadFile(const char* name, const char* path);
-    bool LoadString(const char* name, const char* source);
-    bool Unload(const char* name);
-
-  public:
-    dbcfile* Find(const char* name);
-
-  public:
-    OvmsMutex m_mutex;
-    dbcLoadedFiles_t m_dbclist;
-  };
-
-extern dbc MyDBC;
 
 #endif //#ifndef __DBC_H__

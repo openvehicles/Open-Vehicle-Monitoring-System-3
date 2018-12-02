@@ -40,10 +40,6 @@ OvmsVehicleZeva::OvmsVehicleZeva()
   // Change CANbus speed to either 125 or 250KBPS 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_250KBPS);
 
-  // require GPS:
-  MyEvents.SignalEvent("vehicle.require.gps", NULL);
-  MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
-
   StandardMetrics.ms_v_type->SetValue("ZEVA");
   StandardMetrics.ms_v_vin->SetValue("ZEVAZEVAZEVAZEVA");
 

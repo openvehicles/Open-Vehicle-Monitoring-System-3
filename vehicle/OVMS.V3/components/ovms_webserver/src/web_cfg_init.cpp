@@ -984,7 +984,7 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
 std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::string step)
 {
   std::string error, info;
-  bool modem = false;
+  bool modem = false, gps = false;
   std::string apn, apn_user, apn_pass;
 
   if (c.method == "POST") {
@@ -1005,10 +1005,14 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
       apn = c.getvar("apn");
       apn_user = c.getvar("apn_user");
       apn_pass = c.getvar("apn_pass");
+      gps = c.getvar("gps") == "yes";
 
       MyConfig.SetParamValue("modem", "apn", apn);
       MyConfig.SetParamValue("modem", "apn.user", apn_user);
       MyConfig.SetParamValue("modem", "apn.password", apn_pass);
+      
+      MyConfig.SetParamValueBool("modem", "enable.gps", gps);
+      MyConfig.SetParamValueBool("modem", "enable.gpstime", gps);
       
       if (modem) {
         // start test:
@@ -1029,6 +1033,7 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
     apn = MyConfig.GetParamValue("modem", "apn");
     apn_user = MyConfig.GetParamValue("modem", "apn.user");
     apn_pass = MyConfig.GetParamValue("modem", "apn.password");
+    gps = MyConfig.GetParamValueBool("modem", "enable.gps", false);
 
     // default: hologram
     if (apn.empty())
@@ -1119,6 +1124,9 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
     "<p>For Hologram, use APN <code>hologram</code> with empty username &amp; password</p>");
   c.input_text("APN username", "apn_user", apn_user.c_str());
   c.input_text("APN password", "apn_pass", apn_pass.c_str());
+
+  c.input_checkbox("Enable GPS", "gps", gps,
+    "<p>This enables the modem GPS receiver. Use this if your car does not provide GPS.</p>");
 
   c.print(
     "<div class=\"form-group\">"

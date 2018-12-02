@@ -72,10 +72,6 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   m_candata_timer = VA_CANDATA_TIMEOUT;
   m_range_estimated_km = 0;
 
-  // require GPS:
-  MyEvents.SignalEvent("vehicle.require.gps", NULL);
-  MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
-
   // Config parameters
   MyConfig.RegisterParam("xva", "Volt/Ampera", true, true);
   m_range_rated_km = MyConfig.GetParamValueInt("xva", "range.km", 0);
