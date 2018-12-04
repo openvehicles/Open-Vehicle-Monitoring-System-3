@@ -193,11 +193,15 @@ class dbcBitTiming
 
   public:
     void EmptyContent();
+    uint32_t GetBaudRate();
+    uint32_t GetBTR1();
+    uint32_t GetBTR2();
+    void SetBaud(const uint32_t baudrate, const uint32_t btr1, const uint32_t btr2);
 
   public:
     void WriteFile(dbcOutputCallback callback, void* param);
 
-  public:
+  protected:
     uint32_t m_baudrate;
     uint32_t m_btr1;
     uint32_t m_btr2;

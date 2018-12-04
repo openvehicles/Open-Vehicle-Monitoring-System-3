@@ -224,9 +224,7 @@ bit_timing_section:
     T_BS T_COLON
   | T_BS T_COLON T_INT_VAL T_COLON T_INT_VAL T_COMMA T_INT_VAL
     {
-    current_dbc->m_bittiming.m_baudrate = $3;
-    current_dbc->m_bittiming.m_btr1 = $5;
-    current_dbc->m_bittiming.m_btr2 = $7;
+    current_dbc->m_bittiming.SetBaud($3,$5,$7);
     }
     ;
 

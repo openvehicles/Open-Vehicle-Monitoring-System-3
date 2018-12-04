@@ -357,6 +357,28 @@ void dbcBitTiming::EmptyContent()
   {
   }
 
+uint32_t dbcBitTiming::GetBaudRate()
+  {
+  return m_baudrate;
+  }
+
+uint32_t dbcBitTiming::GetBTR1()
+  {
+  return m_btr1;
+  }
+
+uint32_t dbcBitTiming::GetBTR2()
+  {
+  return m_btr2;
+  }
+
+void dbcBitTiming::SetBaud(const uint32_t baudrate, const uint32_t btr1, const uint32_t btr2)
+  {
+  m_baudrate = baudrate;
+  m_btr1 = btr1;
+  m_btr2 = btr2;
+  }
+
 void dbcBitTiming::WriteFile(dbcOutputCallback callback, void* param)
   {
   callback(param, "BS_ : ");
