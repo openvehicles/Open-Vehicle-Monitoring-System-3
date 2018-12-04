@@ -95,7 +95,52 @@ void dbc_show(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 
   using std::placeholders::_1;
   using std::placeholders::_2;
+  dbc->WriteSummary(std::bind(dbc_show_callback,_1,_2), writer);
+  }
+
+void dbc_dump(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  dbcfile* dbc = MyDBC.Find(argv[0]);
+  if (dbc == NULL)
+    {
+    writer->printf("Cannot find DBD file: %s",argv[0]);
+    return;
+    }
+
+  using std::placeholders::_1;
+  using std::placeholders::_2;
   dbc->WriteFile(std::bind(dbc_show_callback,_1,_2), writer);
+  }
+
+void dbc_save_callback(void* param, const char* buffer)
+  {
+  FILE* fd = (FILE*)param;
+
+  fwrite(buffer,strlen(buffer),1,fd);
+  }
+
+void dbc_save(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  dbcfile* dbc = MyDBC.Find(argv[0]);
+  if (dbc == NULL)
+    {
+    writer->printf("Cannot find DBD file: %s",argv[0]);
+    return;
+    }
+
+  FILE* fd = fopen(dbc->m_path.c_str(), "w");
+  if (fd == NULL)
+    {
+    writer->printf("Error: Could not open file '%s' for writing\n",dbc->m_path.c_str());
+    return;
+    }
+
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  dbc->WriteFile(std::bind(dbc_save_callback,_1,_2), fd);
+  fclose(fd);
+
+  writer->printf("Saved to: %s\n",dbc->m_path.c_str());
   }
 
 dbc::dbc()
@@ -107,6 +152,8 @@ dbc::dbc()
   cmd_dbc->RegisterCommand("list", "List DBC status", dbc_list, "", 0, 0, true);
   cmd_dbc->RegisterCommand("load", "Load DBC file", dbc_load, "<name> <path>", 2, 2, true);
   cmd_dbc->RegisterCommand("unload", "Unload DBC file", dbc_unload, "<name>", 1, 1, true);
+  cmd_dbc->RegisterCommand("save", "Save DBC file", dbc_save, "<name>", 1, 3, true);
+  cmd_dbc->RegisterCommand("dump", "Dump DBC file", dbc_dump, "<name>", 1, 3, true);
   cmd_dbc->RegisterCommand("show", "Show DBC file", dbc_show, "<name>", 1, 3, true);
   }
 

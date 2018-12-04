@@ -440,6 +440,11 @@ std::string dbcValueTable::GetValue(uint32_t id)
     return std::string("");
   }
 
+int dbcValueTable::GetCount()
+  {
+  return m_entrymap.size();
+  }
+
 dbcValueTable::~dbcValueTable()
   {
   EmptyContent();
@@ -831,13 +836,16 @@ void dbcSignal::WriteFileValues(dbcOutputCallback callback,
                                   void* param,
                                   std::string messageid)
   {
-  std::ostringstream ss;
-  ss << "VAL_ ";
-  ss << messageid;
-  ss << " ";
-  ss << m_name;
-  std::string prefix = ss.str();
-  m_values.WriteFile(callback, param, prefix.c_str());
+  if (m_values.GetCount()>0)
+    {
+    std::ostringstream ss;
+    ss << "VAL_ ";
+    ss << messageid;
+    ss << " ";
+    ss << m_name;
+    std::string prefix = ss.str();
+    m_values.WriteFile(callback, param, prefix.c_str());
+    }
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1117,6 +1125,14 @@ void dbcMessageTable::WriteFileComments(dbcOutputCallback callback, void* param)
     }
   }
 
+void dbcMessageTable::WriteSummary(dbcOutputCallback callback, void* param)
+  {
+  for (dbcMessageEntry_t::iterator itt = m_entrymap.begin();
+       itt != m_entrymap.end();
+       itt++)
+    itt->second->WriteFile(callback, param);
+  }
+
 ////////////////////////////////////////////////////////////////////////
 // dbcfile
 
@@ -1210,6 +1226,11 @@ void dbcfile::WriteFile(dbcOutputCallback callback, void* param)
   m_comments.WriteFile(callback, param, std::string("CM_ \""));
   m_nodes.WriteFileComments(callback, param);
   m_messages.WriteFileComments(callback, param);
+  }
+
+void dbcfile::WriteSummary(dbcOutputCallback callback, void* param)
+  {
+  m_messages.WriteSummary(callback, param);
   }
 
 std::string dbcfile::Status()

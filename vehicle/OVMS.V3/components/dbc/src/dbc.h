@@ -222,6 +222,7 @@ class dbcValueTable
     void RemoveValue(uint32_t id);
     bool HasValue(uint32_t id);
     std::string GetValue(uint32_t id);
+    int GetCount();
 
   public:
     void EmptyContent();
@@ -401,6 +402,7 @@ class dbcMessageTable
     void WriteFile(dbcOutputCallback callback, void* param);
     void WriteFileComments(dbcOutputCallback callback, void* param);
     void WriteFileValues(dbcOutputCallback callback, void* param);
+    void WriteSummary(dbcOutputCallback callback, void* param);
 
   public:
     dbcMessageEntry_t m_entrymap;
@@ -419,6 +421,7 @@ class dbcfile
     bool LoadFile(const char* path, FILE *fd=NULL);
     bool LoadString(const char* source, size_t length);
     void WriteFile(dbcOutputCallback callback, void* param);
+    void WriteSummary(dbcOutputCallback callback, void* param);
     std::string Status();
 
   public:
