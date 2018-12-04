@@ -37,6 +37,7 @@ static const char *TAG = "dbc";
 #include <sstream>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 #include "dbc.h"
 #include "dbc_tokeniser.hpp"
 #include "dbc_parser.hpp"
@@ -46,6 +47,85 @@ static const char *TAG = "dbc";
 
 // N.B. The conditions on CONFIG_OVMS are to allow this module to be
 //      compiled and tested outside the OVMS subsystem.
+
+////////////////////////////////////////////////////////////////////////
+// dbcNumber...
+
+dbcNumber::dbcNumber()
+  {
+  m_type = DBC_NUMBER_NONE;
+  }
+
+dbcNumber::~dbcNumber()
+  {
+  }
+
+void dbcNumber::Clear()
+  {
+  m_type = DBC_NUMBER_NONE;
+  }
+
+void dbcNumber::Set(int value)
+  {
+  m_type = DBC_NUMBER_INTEGER;
+  m_value.intval = value;
+  }
+
+void dbcNumber::Set(double value)
+  {
+  if (ceil(value)==value)
+    {
+    m_type = DBC_NUMBER_INTEGER;
+    m_value.intval = (int)value;
+    }
+  else
+    {
+    m_type = DBC_NUMBER_DOUBLE;
+    m_value.doubleval = value;
+    }
+  }
+
+std::ostream& operator<<(std::ostream& os, const dbcNumber& me)
+  {
+  switch (me.m_type)
+    {
+    case DBC_NUMBER_INTEGER:
+      os << me.m_value.intval;
+      break;
+    case DBC_NUMBER_DOUBLE:
+      os << me.m_value.doubleval;
+      break;
+    default:
+      os << 0;
+      break;
+    }
+
+    return os;
+  }
+
+dbcNumber& dbcNumber::operator=(const int value)
+  {
+  m_type = DBC_NUMBER_INTEGER;
+  m_value.intval = value;
+  return *this;
+  }
+
+dbcNumber& dbcNumber::operator=(const double value)
+  {
+  m_type = DBC_NUMBER_DOUBLE;
+  m_value.doubleval = value;
+  return *this;
+  }
+
+dbcNumber& dbcNumber::operator=(const dbcNumber& value)
+  {
+  if (this != &value)
+    {
+    m_type = value.m_type;
+    memcpy(&m_value,&value.m_value,sizeof(m_value));
+    }
+  return *this;
+  }
 
 ////////////////////////////////////////////////////////////////////////
 // dbcComment...
@@ -261,6 +341,9 @@ void dbcNodeTable::WriteFileComments(dbcOutputCallback callback, void* param)
 
 dbcBitTiming::dbcBitTiming()
   {
+  m_baudrate = 0;
+  m_btr1 = 0;
+  m_btr2 = 0;
   }
 
 dbcBitTiming::~dbcBitTiming()
@@ -432,6 +515,8 @@ void dbcValueTableTable::WriteFile(dbcOutputCallback callback, void* param)
 
 dbcSignal::dbcSignal()
   {
+  m_start_bit = 0;
+  m_signal_size = 0;
   }
 
 dbcSignal::dbcSignal(std::string name)
@@ -555,58 +640,52 @@ bool dbcSignal::SetMinMaxDBC(std::string dbcval)
 
 void dbcSignal::WriteFile(dbcOutputCallback callback, void* param)
   {
-  char buf[64];
-  callback(param, "  SG_ ");
-  callback(param, m_name.c_str());
+  std::ostringstream ss;
+
+  ss << "  SG_ ";
+  ss << m_name;
   switch (m_mux.multiplexed)
     {
     case DBC_MUX_MULTIPLEXOR:
-      callback(param, " M");
+      ss << " M";
       break;
     case DBC_MUX_MULTIPLEXED:
-      sprintf(buf," m%u",m_mux.switchvalue);
+      {
+      ss << " m";
+      ss << m_mux.switchvalue;
+      }
       break;
     default:
       break;
     }
-  callback(param, " : ");
-  sprintf(buf,"%u|%u@",m_start_bit,m_signal_size);
-  callback(param, buf);
-  switch(m_byte_order)
-    {
-    case DBC_BYTEORDER_BIG_ENDIAN:
-      callback(param, "1");
-      break;
-    default:
-      callback(param, "0");
-      break;
-    }
-  switch(m_value_type)
-    {
-    case DBC_VALUETYPE_SIGNED:
-      callback(param, "- ");
-      break;
-    default:
-      callback(param, "+ ");
-      break;
-    }
-  sprintf(buf,"(%f,%f) ",m_factor,m_offset);
-  callback(param, buf);
-  sprintf(buf,"[%f|%f] \"",m_minimum,m_maximum);
-  callback(param, buf);
-  callback(param, m_unit.c_str());
-  callback(param, "\" ");
+  ss << m_start_bit;
+  ss << '|';
+  ss << m_signal_size;
+  ss << '@';
+  ss << ((m_byte_order == DBC_BYTEORDER_BIG_ENDIAN)?"1":"0");
+  ss << ((m_value_type == DBC_VALUETYPE_SIGNED)?"- ":"+ ");
+  ss << '(';
+  ss << m_factor;
+  ss << ',';
+  ss << m_offset;
+  ss << ") [";
+  ss << m_minimum;
+  ss << '|';
+  ss << m_maximum;
+  ss << "] \"";
+  ss << m_unit;
+  ss << "\" ";
 
   bool first=true;
   for (std::string receiver : m_receivers)
     {
-    if (!first)
-      callback(param, ",");
-    callback(param, receiver.c_str());
+    if (!first) { ss << ","; }
+    ss << receiver;
     first=false;
     }
 
-  callback(param, "\n");
+  ss << "\n";
+  callback(param, ss.str().c_str());
   }
 
 void dbcSignal::WriteFileComments(dbcOutputCallback callback,
@@ -639,6 +718,8 @@ void dbcSignal::WriteFileValues(dbcOutputCallback callback,
 
 dbcMessage::dbcMessage()
   {
+  m_id = 0;
+  m_size = 0;
   }
 
 dbcMessage::dbcMessage(uint32_t id)

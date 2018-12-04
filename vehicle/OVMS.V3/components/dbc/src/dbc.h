@@ -35,6 +35,7 @@
 #include <map>
 #include <list>
 #include <functional>
+#include <iostream>
 
 #define DBC_MAX_LINELENGTH 2048
 
@@ -64,6 +65,37 @@ typedef enum
   DBC_VALUETYPE_UNSIGNED = '+',
   DBC_VALUETYPE_SIGNED = '-'
   } dbcValueType_t;
+
+typedef enum
+  {
+  DBC_NUMBER_NONE = 0,
+  DBC_NUMBER_INTEGER,
+  DBC_NUMBER_DOUBLE
+} dbcNumberType_t;
+
+class dbcNumber
+  {
+  public:
+    dbcNumber();
+    ~dbcNumber();
+
+  public:
+    void Clear();
+    void Set(int value);
+    void Set(double value);
+    friend std::ostream& operator<<(std::ostream& os, const dbcNumber& me);
+    dbcNumber& operator=(const int value);
+    dbcNumber& operator=(const double value);
+    dbcNumber& operator=(const dbcNumber& value);
+
+  public:
+    dbcNumberType_t m_type;
+    union
+      {
+      int intval;
+      double doubleval;
+      } m_value;
+  };
 
 typedef std::list<std::string> dbcCommentList_t;
 class dbcCommentTable
@@ -255,14 +287,14 @@ class dbcSignal
   public:
     std::string m_name;
     dbcMultiplexor_t m_mux;
-    uint8_t m_start_bit;
-    uint8_t m_signal_size;
+    int m_start_bit;
+    int m_signal_size;
     dbcByteOrder_t m_byte_order;
     dbcValueType_t m_value_type;
-    double m_factor;
-    double m_offset;
-    double m_minimum;
-    double m_maximum;
+    dbcNumber m_factor;
+    dbcNumber m_offset;
+    dbcNumber m_minimum;
+    dbcNumber m_maximum;
     std::string m_unit;
     dbcReceiverList_t m_receivers;
     dbcCommentTable m_comments;
