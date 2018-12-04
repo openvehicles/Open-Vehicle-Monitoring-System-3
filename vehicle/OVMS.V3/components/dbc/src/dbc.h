@@ -327,7 +327,7 @@ class dbcMessage
   public:
     uint32_t m_id;
     std::string m_name;
-    uint8_t m_size;
+    int m_size;
     std::string m_transmitter_node;
     dbcSignalList_t m_signals;
     dbcCommentTable m_comments;

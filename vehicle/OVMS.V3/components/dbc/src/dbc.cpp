@@ -658,6 +658,7 @@ void dbcSignal::WriteFile(dbcOutputCallback callback, void* param)
     default:
       break;
     }
+  ss << " : ";
   ss << m_start_bit;
   ss << '|';
   ss << m_signal_size;
@@ -785,15 +786,17 @@ void dbcMessage::Count(int* signals, int* bits, int* covered)
 
 void dbcMessage::WriteFile(dbcOutputCallback callback, void* param)
   {
-  char buf[40];
-  callback(param, "BO_ ");
-  sprintf(buf,"%u ",m_id);
-  callback(param, buf);
-  callback(param, m_name.c_str());
-  sprintf(buf,": %u ",m_size);
-  callback(param, buf);
-  callback(param, m_transmitter_node.c_str());
-  callback(param, "\n");
+  std::ostringstream ss;
+  ss << "BO_ ";
+  ss << m_id;
+  ss << " ";
+  ss << m_name;
+  ss << ": ";
+  ss << m_size;
+  ss << " ";
+  ss << m_transmitter_node;
+  ss << "\n";
+  callback(param, ss.str().c_str());
 
   for (dbcSignal* signal : m_signals)
     {
