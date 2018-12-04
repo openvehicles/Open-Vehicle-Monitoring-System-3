@@ -343,7 +343,7 @@ signal:
     current_signal->m_signal_size = (uint8_t)$7;
 
     current_signal->m_byte_order = (dbcByteOrder_t)$9;
-    current_signal->m_value_type = ($10 == 0)?DBC_VALUETYPE_UNSIGNED:DBC_VALUETYPE_UNSIGNED;
+    current_signal->m_value_type = ($10 == 0)?DBC_VALUETYPE_UNSIGNED:DBC_VALUETYPE_SIGNED;
 
     current_signal->m_factor = $12;
     current_signal->m_offset = $14;
