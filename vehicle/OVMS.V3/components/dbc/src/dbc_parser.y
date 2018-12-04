@@ -290,10 +290,10 @@ message_section_list:
 message_section:
     T_BO T_INT_VAL T_ID T_COLON T_INT_VAL T_ID signal_list
     {
-    current_message->m_id = (uint32_t)$2;
-    current_message->m_name = std::string($3); free($3);
-    current_message->m_size = $5;
-    current_message->m_transmitter_node = std::string($6); free($6);
+    current_message->SetID((uint32_t)$2);
+    current_message->SetName($3); free($3);
+    current_message->SetSize($5);
+    current_message->SetTransmitterNode($6); free($6);
     current_dbc->m_messages.AddMessage($2,current_message);
     current_message = NULL;
     }
@@ -313,24 +313,21 @@ signal:
     {
     if (current_message == NULL) current_message = new dbcMessage();
 
-    current_signal->m_name = std::string($2); free($2);
+    current_signal->SetName($2); free($2);
 
     if ($3 == NULL)
       {
-      current_signal->m_mux.multiplexed = DBC_MUX_NONE;
-      current_signal->m_mux.switchvalue = 0;
+      current_signal->ClearMultiplexed();
       }
    else
      {
      switch($3[0])
        {
        case 'M':
-         current_signal->m_mux.multiplexed = DBC_MUX_MULTIPLEXOR;
-         current_signal->m_mux.switchvalue = 0;
+         current_message->SetMultiplexorSignal(current_signal);
          break;
        case 'm':
-         current_signal->m_mux.multiplexed = DBC_MUX_MULTIPLEXED;
-         current_signal->m_mux.switchvalue = (uint32_t)strtoul($3+1, NULL, 10);
+         current_signal->SetMultiplexed((uint32_t)strtoul($3+1, NULL, 10));
          break;
        default:
          /* error: unknown mux type */
@@ -339,18 +336,13 @@ signal:
      free($3);
      }
 
-    current_signal->m_start_bit = (uint8_t)$5;
-    current_signal->m_signal_size = (uint8_t)$7;
+    current_signal->SetStartSize($5,$7);
+    current_signal->SetByteOrder((dbcByteOrder_t)$9);
+    current_signal->SetValueType(($10 == 0)?DBC_VALUETYPE_UNSIGNED:DBC_VALUETYPE_SIGNED);
+    current_signal->SetFactorOffset($12,$14);
+    current_signal->SetMinMax($17,$19);
 
-    current_signal->m_byte_order = (dbcByteOrder_t)$9;
-    current_signal->m_value_type = ($10 == 0)?DBC_VALUETYPE_UNSIGNED:DBC_VALUETYPE_SIGNED;
-
-    current_signal->m_factor = $12;
-    current_signal->m_offset = $14;
-    current_signal->m_minimum = $17;
-    current_signal->m_maximum = $19;
-
-    current_signal->m_unit = $21; free($21);
+    current_signal->SetUnit($21); free($21);
 
     current_message->AddSignal(current_signal);
     current_signal = NULL;

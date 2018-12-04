@@ -584,58 +584,162 @@ std::string dbcSignal::GetValue(uint32_t id)
   return m_values.GetValue(id);
   }
 
-bool dbcSignal::SetBitsDBC(std::string dbcval)
+const std::string& dbcSignal::GetName()
   {
-  // Set bits from a DBC style specification like 23|2@0+
-  const char *p = dbcval.c_str();
-
-  m_start_bit = atoi(p);
-
-  p = strchr(p,'|');
-  if (p==NULL) return false;
-
-  m_signal_size = atoi(p+1);
-
-  p = strchr(p,'@');
-  if (p==NULL) return false;
-
-  if (strlen(p)<3) return false;
-  m_byte_order = (p[1]=='0')?DBC_BYTEORDER_LITTLE_ENDIAN:DBC_BYTEORDER_BIG_ENDIAN;
-  m_value_type = (p[2]=='-')?DBC_VALUETYPE_SIGNED:DBC_VALUETYPE_UNSIGNED;
-
-  return true;
+  return m_name;
   }
 
-bool dbcSignal::SetFactorOffsetDBC(std::string dbcval)
+void dbcSignal::SetName(const std::string& name)
   {
-  // Set factor and offset from a DBC style specification like (1,0)
-  const char *p = dbcval.c_str();
-
-  if (*p != '(') return false;
-  m_factor = atof(p+1);
-
-  p = strchr(p,',');
-  if (p==NULL) return false;
-
-  m_offset = atof(p+1);
-
-  return true;
+  m_name = name;
   }
 
-bool dbcSignal::SetMinMaxDBC(std::string dbcval)
+void dbcSignal::SetName(const char* name)
   {
-  // Set min and max from a DBC style specification like [0,0]
-  const char *p = dbcval.c_str();
+  m_name = std::string(name);
+  }
 
-  if (*p != '[') return false;
-  m_minimum = atof(p+1);
+bool dbcSignal::IsMultiplexor()
+  {
+  return (m_mux.multiplexed == DBC_MUX_MULTIPLEXOR);
+  }
 
-  p = strchr(p,'|');
-  if (p==NULL) return false;
+bool dbcSignal::IsMultiplexSwitch()
+  {
+  return (m_mux.multiplexed == DBC_MUX_MULTIPLEXED);
+  }
 
-  m_maximum = atof(p+1);
+void dbcSignal::SetMultiplexor()
+  {
+  m_mux.multiplexed = DBC_MUX_MULTIPLEXOR;
+  }
 
-  return true;
+uint32_t dbcSignal::GetMultiplexSwitchvalue()
+  {
+  return m_mux.switchvalue;
+  }
+
+bool dbcSignal::SetMultiplexed(const uint32_t switchvalue)
+  {
+  if (m_mux.multiplexed == DBC_MUX_MULTIPLEXOR)
+    {
+    return false;
+    }
+  else
+    {
+    m_mux.multiplexed = DBC_MUX_MULTIPLEXED;
+    m_mux.switchvalue = switchvalue;
+    return true;
+    }
+  }
+
+bool dbcSignal::ClearMultiplexed()
+  {
+  if (m_mux.multiplexed == DBC_MUX_MULTIPLEXOR)
+    {
+    return false;
+    }
+  else
+    {
+    m_mux.multiplexed = DBC_MUX_NONE;
+    m_mux.switchvalue = 0;
+    return true;
+    }
+  }
+
+int dbcSignal::GetStartBit()
+  {
+  return m_start_bit;
+  }
+
+int dbcSignal::GetSignalSize()
+  {
+  return m_signal_size;
+  }
+
+dbcByteOrder_t dbcSignal::GetByteOrder()
+  {
+  return m_byte_order;
+  }
+
+dbcValueType_t dbcSignal::GetValueType()
+  {
+  return m_value_type;
+  }
+
+dbcNumber dbcSignal::GetFactor()
+  {
+  return m_factor;
+  }
+
+dbcNumber dbcSignal::GetOffset()
+  {
+  return m_offset;
+  }
+
+dbcNumber dbcSignal::GetMinimum()
+  {
+  return m_minimum;
+  }
+
+dbcNumber dbcSignal::GetMaximum()
+  {
+  return m_maximum;
+  }
+
+void dbcSignal::SetStartSize(const int startbit, const int size)
+  {
+  m_start_bit = startbit;
+  m_signal_size = size;
+  }
+
+void dbcSignal::SetByteOrder(const dbcByteOrder_t order)
+  {
+  m_byte_order = order;
+  }
+
+void dbcSignal::SetValueType(const dbcValueType_t type)
+  {
+  m_value_type = type;
+  }
+
+void dbcSignal::SetFactorOffset(const dbcNumber factor, const dbcNumber offset)
+  {
+  m_factor = factor;
+  m_offset = offset;
+  }
+
+void dbcSignal::SetFactorOffset(const double factor, const double offset)
+  {
+  m_factor = factor;
+  m_offset = offset;
+  }
+
+void dbcSignal::SetMinMax(const dbcNumber minimum, const dbcNumber maximum)
+  {
+  m_minimum = minimum;
+  m_maximum = maximum;
+  }
+
+void dbcSignal::SetMinMax(const double minimum, const double maximum)
+  {
+  m_minimum = minimum;
+  m_maximum = maximum;
+  }
+
+const std::string& dbcSignal::GetUnit()
+  {
+  return m_unit;
+  }
+
+void dbcSignal::SetUnit(const std::string& unit)
+  {
+  m_unit = unit;
+  }
+
+void dbcSignal::SetUnit(const char* unit)
+  {
+  m_unit = std::string(unit);
   }
 
 void dbcSignal::WriteFile(dbcOutputCallback callback, void* param)
@@ -721,6 +825,7 @@ dbcMessage::dbcMessage()
   {
   m_id = 0;
   m_size = 0;
+  m_multiplexor = NULL;
   }
 
 dbcMessage::dbcMessage(uint32_t id)
@@ -732,7 +837,7 @@ dbcMessage::~dbcMessage()
   {
   }
 
-void dbcMessage::AddComment(std::string comment)
+void dbcMessage::AddComment(const std::string& comment)
   {
   m_comments.AddComment(comment);
   }
@@ -742,12 +847,12 @@ void dbcMessage::AddComment(const char* comment)
   m_comments.AddComment(comment);
   }
 
-void dbcMessage::RemoveComment(std::string comment)
+void dbcMessage::RemoveComment(const std::string& comment)
   {
   m_comments.RemoveComment(comment);
   }
 
-bool dbcMessage::HasComment(std::string comment)
+bool dbcMessage::HasComment(const std::string& comment)
   {
   return m_comments.HasComment(comment);
   }
@@ -767,7 +872,7 @@ dbcSignal* dbcMessage::FindSignal(std::string name)
   {
   for (dbcSignal* signal : m_signals)
     {
-    if (signal->m_name.compare(name)==0) return signal;
+    if (signal->GetName().compare(name)==0) return signal;
     }
   return NULL;
     }
@@ -780,7 +885,76 @@ void dbcMessage::Count(int* signals, int* bits, int* covered)
   for (dbcSignal* signal : m_signals)
     {
     *signals += 1;
-    *covered += signal->m_signal_size;
+    *covered += signal->GetSignalSize();
+    }
+  }
+
+uint32_t dbcMessage::GetID()
+  {
+  return m_id;
+  }
+
+void dbcMessage::SetID(const uint32_t id)
+  {
+  m_id = id;
+  }
+
+int dbcMessage::GetSize()
+  {
+  return m_size;
+  }
+
+void dbcMessage::SetSize(const int size)
+  {
+  m_size = size;
+  }
+
+const std::string& dbcMessage::GetName()
+  {
+  return m_name;
+  }
+
+void dbcMessage::SetName(const std::string& name)
+  {
+  m_name = name;
+  }
+
+void dbcMessage::SetName(const char* name)
+  {
+  m_name = std::string(name);
+  }
+
+const std::string& dbcMessage::GetTransmitterNode()
+  {
+  return m_transmitter_node;
+  }
+
+void dbcMessage::SetTransmitterNode(std::string node)
+  {
+  m_transmitter_node = node;
+  }
+
+void dbcMessage::SetTransmitterNode(const char* node)
+  {
+  m_transmitter_node = std::string(node);
+  }
+
+bool dbcMessage::IsMultiplexor()
+  {
+  return (m_multiplexor != NULL);
+  }
+
+dbcSignal* dbcMessage::GetMultiplexorSignal()
+  {
+  return m_multiplexor;
+  }
+
+void dbcMessage::SetMultiplexorSignal(dbcSignal* signal)
+  {
+  m_multiplexor = signal;
+  if (signal != NULL)
+    {
+    signal->SetMultiplexor();
     }
   }
 
