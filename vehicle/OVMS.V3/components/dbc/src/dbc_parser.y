@@ -43,6 +43,10 @@
 #include <string>
 #include "dbc.h"
 #include "ovms_log.h"
+#ifdef CONFIG_OVMS
+#define YYMALLOC ExternalRamMalloc
+#include "ovms_malloc.h"
+#endif // #ifdef CONFIG_OVMS
 
 /* Tell Bison how much stack space is needed. */
 #define YYERROR_VERBOSE 1
@@ -71,6 +75,17 @@ extern "C"
     ESP_LOGE(TAG,"Error in line %d '%s', symbol '%s'",
       yylineno, msg, yytext);
     }
+#ifdef CONFIG_OVMS
+  void *yyalloc (size_t sz)
+    {
+    return ExternalRamMalloc(sz);
+    }
+
+  void *yyrealloc (void *ptr, size_t sz)
+    {
+    return ExternalRamRealloc(ptr,sz);
+    }
+#endif // #ifdef CONFIG_OVMS
   }
 
 dbcfile* current_dbc = NULL;

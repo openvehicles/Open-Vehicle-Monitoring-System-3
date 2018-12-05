@@ -1230,6 +1230,14 @@ void dbcfile::WriteFile(dbcOutputCallback callback, void* param)
 
 void dbcfile::WriteSummary(dbcOutputCallback callback, void* param)
   {
+  callback(param,"Path:    ");
+  callback(param,m_path.c_str());
+  callback(param,"\n");
+
+  callback(param,"Version: ");
+  callback(param,m_version.c_str());
+  callback(param,"\n\n");
+
   m_messages.WriteSummary(callback, param);
   }
 

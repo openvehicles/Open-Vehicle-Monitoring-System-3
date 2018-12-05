@@ -34,9 +34,13 @@ static const char *TAG = "dbc-app";
 #include <algorithm>
 #include <list>
 #include <vector>
+#include <string>
+#include <sys/types.h>
+#include <dirent.h>
 #include "dbc.h"
 #include "dbc_app.h"
 #include "ovms_config.h"
+#include "ovms_events.h"
 
 dbc MyDBC __attribute__ ((init_priority (4510)));
 
@@ -93,6 +97,8 @@ void dbc_show(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     return;
     }
 
+  writer->printf("DBC:     %s\n",argv[0]);
+
   using std::placeholders::_1;
   using std::placeholders::_2;
   dbc->WriteSummary(std::bind(dbc_show_callback,_1,_2), writer);
@@ -143,6 +149,19 @@ void dbc_save(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   writer->printf("Saved to: %s\n",dbc->m_path.c_str());
   }
 
+void dbc_autoload(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->puts("Auto-loading DBC files...");
+  MyDBC.LoadDirectory("/store/dbc", false);
+  MyDBC.LoadAutoExtras(false);
+  }
+
+void dbc_sdmounted(std::string event, void* data)
+  {
+  if (MyConfig.GetParamValueBool("auto", "dbc", false))
+    MyDBC.LoadAutoExtras(true);
+  }
+
 dbc::dbc()
   {
   ESP_LOGI(TAG, "Initialising DBC (4510)");
@@ -155,6 +174,16 @@ dbc::dbc()
   cmd_dbc->RegisterCommand("save", "Save DBC file", dbc_save, "<name>", 1, 3, true);
   cmd_dbc->RegisterCommand("dump", "Dump DBC file", dbc_dump, "<name>", 1, 3, true);
   cmd_dbc->RegisterCommand("show", "Show DBC file", dbc_show, "<name>", 1, 3, true);
+  cmd_dbc->RegisterCommand("autoload", "Autoload DBC files", dbc_autoload, "", 0, 0, true);
+
+  MyConfig.RegisterParam("dbc", "DBC Configuration", true, true);
+  // Our instances:
+  //   'autodirs': Space separated list of directories to auto load DBC files from
+
+  #undef bind  // Kludgy, but works
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG, "sd.mounted", std::bind(&dbc_sdmounted, _1, _2));
   }
 
 dbc::~dbc()
@@ -206,6 +235,56 @@ bool dbc::Unload(const char* name)
     }
   }
 
+void dbc::LoadDirectory(const char* path, bool log)
+  {
+  // Load all DBC files in the specified directory
+  DIR *dir;
+  struct dirent *dp;
+  if ((dir = opendir(path)) == NULL) return;
+  while ((dp = readdir(dir)) != NULL)
+    {
+    if ((strlen(dp->d_name)>4)&&
+        (strcmp(dp->d_name+(strlen(dp->d_name)-4),".dbc")==0))
+      {
+      std::string name(dp->d_name,0,strlen(dp->d_name)-4);
+      std::string fp(path);
+      fp.append("/");
+      fp.append(dp->d_name);
+      if (log) ESP_LOGI(TAG,"Loading %s (%s)",name.c_str(),fp.c_str());
+      LoadFile(name.c_str(),fp.c_str());
+      }
+    }
+  closedir(dir);
+  }
+
+void dbc::LoadAutoExtras(bool log)
+  {
+  std::string extra = MyConfig.GetParamValue("dbc", "autodirs");
+  if (!extra.empty())
+    {
+    size_t sep = 0;
+    while (sep != std::string::npos)
+      {
+      // Set the specified DNS servers
+      size_t next = extra.find(' ',sep);
+      std::string cpath;
+      if (next == std::string::npos)
+        {
+        // The last one
+        cpath = std::string(extra,sep,std::string::npos);
+        sep = std::string::npos;
+        }
+      else
+        {
+        // One of many
+        cpath = std::string(extra,sep,next-sep);
+        sep = next+1;
+        }
+      LoadDirectory(cpath.c_str(),log);
+      }
+    }
+  }
+
 dbcfile* dbc::Find(const char* name)
   {
   OvmsMutexLock ldbc(&m_mutex);
@@ -215,4 +294,10 @@ dbcfile* dbc::Find(const char* name)
     return NULL;
   else
     return k->second;
+  }
+
+void dbc::AutoInit()
+  {
+  if (MyConfig.GetParamValueBool("auto", "dbc", false))
+    LoadDirectory("/store/dbc", true);
   }

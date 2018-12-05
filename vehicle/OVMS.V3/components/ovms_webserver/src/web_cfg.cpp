@@ -1240,11 +1240,17 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, warn;
   bool init, ext12v, modem, server_v2, server_v3;
+#ifdef CONFIG_OVMS_COMP_RE_TOOLS
+  bool dbc;
+#endif
   std::string vehicle_type, obd2ecu, wifi_mode, wifi_ssid_client, wifi_ssid_ap;
 
   if (c.method == "POST") {
     // process form submission:
     init = (c.getvar("init") == "yes");
+#ifdef CONFIG_OVMS_COMP_RE_TOOLS
+    dbc = (c.getvar("dbc") == "yes");
+#endif
     ext12v = (c.getvar("ext12v") == "yes");
     modem = (c.getvar("modem") == "yes");
     server_v2 = (c.getvar("server_v2") == "yes");
@@ -1292,6 +1298,9 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
     if (error == "") {
       // success:
       MyConfig.SetParamValueBool("auto", "init", init);
+#ifdef CONFIG_OVMS_COMP_RE_TOOLS
+      MyConfig.SetParamValueBool("auto", "dbc", dbc);
+#endif
       MyConfig.SetParamValueBool("auto", "ext12v", ext12v);
       MyConfig.SetParamValueBool("auto", "modem", modem);
       MyConfig.SetParamValueBool("auto", "server.v2", server_v2);
@@ -1324,6 +1333,9 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
   else {
     // read configuration:
     init = MyConfig.GetParamValueBool("auto", "init", true);
+#ifdef CONFIG_OVMS_COMP_RE_TOOLS
+    dbc = MyConfig.GetParamValueBool("auto", "dbc", false);
+#endif
     ext12v = MyConfig.GetParamValueBool("auto", "ext12v", false);
     modem = MyConfig.GetParamValueBool("auto", "modem", false);
     server_v2 = MyConfig.GetParamValueBool("auto", "server.v2", false);
@@ -1346,6 +1358,11 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Enable auto start", "init", init,
     "<p>Note: if a crash occurs within 10 seconds after powering the module, autostart will be temporarily"
     " disabled. You may need to use the USB shell to access the module and fix the config.</p>");
+
+#ifdef CONFIG_OVMS_COMP_RE_TOOLS
+  c.input_checkbox("Autoload DBC files", "dbc", dbc,
+    "<p>Enable to autoload DBC files (for reverse engineering).</p>");
+#endif
 
   c.input_checkbox("Power on external 12V", "ext12v", ext12v,
     "<p>Enable to provide 12V to external devices connected to the module (i.e. ECU displays).</p>");

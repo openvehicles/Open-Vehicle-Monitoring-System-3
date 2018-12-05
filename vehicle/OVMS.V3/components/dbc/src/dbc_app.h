@@ -47,9 +47,12 @@ class dbc
   public:
     bool LoadFile(const char* name, const char* path);
     bool Unload(const char* name);
+    void LoadDirectory(const char* path, bool log=false);
+    void LoadAutoExtras(bool log=false);
+    dbcfile* Find(const char* name);
 
   public:
-    dbcfile* Find(const char* name);
+    void AutoInit();
 
   public:
     OvmsMutex m_mutex;
