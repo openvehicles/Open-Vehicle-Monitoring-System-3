@@ -135,6 +135,7 @@ class dbcNewSymbolTable
 
   public:
     void EmptyContent();
+    int GetCount();
 
   public:
     void WriteFile(dbcOutputCallback callback, void* param);
@@ -158,8 +159,15 @@ class dbcNode
     bool HasComment(std::string comment);
 
   public:
-    std::string m_name;
+    const std::string& GetName();
+    void SetName(const std::string& name);
+    void SetName(const char* name);
+
+  public:
     dbcCommentTable m_comments;
+
+  protected:
+    std::string m_name;
   };
 
 typedef std::map<std::string, dbcNode*> dbcNodeEntry_t;
@@ -173,6 +181,9 @@ class dbcNodeTable
     void AddNode(dbcNode* node);
     void RemoveNode(dbcNode* node, bool free=false);
     dbcNode* FindNode(std::string name);
+
+  public:
+    int GetCount();
 
   public:
     void EmptyContent();
@@ -222,6 +233,9 @@ class dbcValueTable
     void RemoveValue(uint32_t id);
     bool HasValue(uint32_t id);
     std::string GetValue(uint32_t id);
+    const std::string& GetName();
+    void SetName(const std::string& name);
+    void SetName(const char* name);
     int GetCount();
 
   public:
@@ -231,8 +245,10 @@ class dbcValueTable
     void WriteFile(dbcOutputCallback callback, void* param, const char* prefix);
 
   public:
-    std::string m_name;
     dbcValueTableEntry_t m_entrymap;
+
+  protected:
+    std::string m_name;
   };
 
 typedef std::map<std::string, dbcValueTable*> dbcValueTableTableEntry_t;

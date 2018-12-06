@@ -217,6 +217,11 @@ void dbcNewSymbolTable::EmptyContent()
   m_entrymap.clear();
   }
 
+int dbcNewSymbolTable::GetCount()
+  {
+  return m_entrymap.size();
+  }
+
 void dbcNewSymbolTable::WriteFile(dbcOutputCallback callback, void* param)
   {
   callback(param,"NS_ :");
@@ -271,6 +276,21 @@ bool dbcNode::HasComment(std::string comment)
   return m_comments.HasComment(comment);
   }
 
+const std::string& dbcNode::GetName()
+  {
+  return m_name;
+  }
+
+void dbcNode::SetName(const std::string& name)
+  {
+  m_name = name;
+  }
+
+void dbcNode::SetName(const char* name)
+  {
+  m_name = std::string(name);
+  }
+
 dbcNodeTable::dbcNodeTable()
   {
   }
@@ -282,12 +302,12 @@ dbcNodeTable::~dbcNodeTable()
 
 void dbcNodeTable::AddNode(dbcNode* node)
   {
-  m_entrymap[node->m_name] = node;
+  m_entrymap[node->GetName()] = node;
   }
 
 void dbcNodeTable::RemoveNode(dbcNode* node, bool free)
   {
-  m_entrymap.erase(node->m_name);
+  m_entrymap.erase(node->GetName());
   if (free) delete node;
   }
 
@@ -298,6 +318,11 @@ dbcNode* dbcNodeTable::FindNode(std::string name)
     return search->second;
   else
     return NULL;
+  }
+
+int dbcNodeTable::GetCount()
+  {
+  return m_entrymap.size();
   }
 
 void dbcNodeTable::EmptyContent()
@@ -317,7 +342,7 @@ void dbcNodeTable::WriteFile(dbcOutputCallback callback, void* param)
        it++)
     {
     callback(param," ");
-    callback(param, it->second->m_name.c_str());
+    callback(param, it->second->GetName().c_str());
     }
   callback(param,"\n\n");
   }
@@ -330,7 +355,7 @@ void dbcNodeTable::WriteFileComments(dbcOutputCallback callback, void* param)
        ++it)
     {
     prefix = std::string("CM_ BU_ ");
-    prefix.append(it->second->m_name);
+    prefix.append(it->second->GetName());
     prefix.append(" \"");
     it->second->m_comments.WriteFile(callback, param, prefix);
     }
@@ -440,6 +465,21 @@ std::string dbcValueTable::GetValue(uint32_t id)
     return std::string("");
   }
 
+const std::string& dbcValueTable::GetName()
+  {
+  return m_name;
+  }
+
+void dbcValueTable::SetName(const std::string& name)
+  {
+  m_name = name;
+  }
+
+void dbcValueTable::SetName(const char* name)
+  {
+  m_name = std::string(name);
+  }
+
 int dbcValueTable::GetCount()
   {
   return m_entrymap.size();
@@ -530,11 +570,14 @@ void dbcValueTableTable::EmptyContent()
 
 void dbcValueTableTable::WriteFile(dbcOutputCallback callback, void* param)
   {
-  for (dbcValueTableTableEntry_t::iterator itt = m_entrymap.begin();
-       itt != m_entrymap.end();
-       itt++)
-    itt->second->WriteFile(callback, param, NULL);
-  callback(param, "\n");
+  if (m_entrymap.size() > 0)
+    {
+    for (dbcValueTableTableEntry_t::iterator itt = m_entrymap.begin();
+         itt != m_entrymap.end();
+         itt++)
+      itt->second->WriteFile(callback, param, NULL);
+    callback(param, "\n");
+    }
   }
 
 ////////////////////////////////////////////////////////////////////////

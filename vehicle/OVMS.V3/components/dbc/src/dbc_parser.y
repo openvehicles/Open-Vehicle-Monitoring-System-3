@@ -92,7 +92,6 @@ dbcfile* current_dbc = NULL;
 dbcValueTable* current_value_table = NULL;
 dbcMessage* current_message = NULL;
 dbcSignal* current_signal = NULL;
-char* current_attribute = NULL;
 %}
 
 %token T_COLON
@@ -165,15 +164,26 @@ dbc:
   {
   current_dbc = (dbcfile*)dbcptr;
   current_value_table = NULL;
+  current_message = NULL;
+  current_signal = NULL;
   }
-  version_section           /* 2 */
-  symbol_section            /* 3 */
-  bit_timing_section        /* 4 */
-  node_list_section         /* 5 */
-  value_table_section_list  /* 6 */
-  message_section_list      /* 7 */
-  value_section_list        /* 8 */
-  comment_section_list      /* 9 */
+  dbc_sections
+  ;
+
+dbc_sections:
+  | dbc_sections dbc_section
+  ;
+
+dbc_section:
+  version_section
+  | symbol_section
+  | bit_timing_section
+  | node_list_section
+  | value_table_section
+  | message_section
+  | signal_section
+  | value_section
+  | comment_section
   ;
 
 /************************************************************************/
@@ -182,6 +192,7 @@ dbc:
 
 version_section: T_VERSION T_STRING_VAL
   {
+  ESP_LOGD(TAG,"VERSION parsed as: %s",$2);
   current_dbc->m_version = std::string($2);
   if ($2) { free($2); $2=NULL; }
   };
@@ -191,12 +202,13 @@ version_section: T_VERSION T_STRING_VAL
 /************************************************************************/
 
 symbol_section:
-    T_NS T_COLON
-  | T_NS T_COLON symbol_list
-    ;
+   T_NS T_COLON symbol_list
+   {
+   ESP_LOGD(TAG,"NS_ parsed %d symbols",current_dbc->m_newsymbols.GetCount());
+   }
+   ;
 
 symbol_list:
-    symbol
   | symbol_list symbol
     ;
 
@@ -237,8 +249,12 @@ symbol:
 
 bit_timing_section:
     T_BS T_COLON
+    {
+    ESP_LOGD(TAG,"BS_ parsed empty");
+    }
   | T_BS T_COLON T_INT_VAL T_COLON T_INT_VAL T_COMMA T_INT_VAL
     {
+    ESP_LOGD(TAG,"BS_ parsed %d,%d,%d",(int)$3,(int)$5,(int)$7);
     current_dbc->m_bittiming.SetBaud($3,$5,$7);
     }
     ;
@@ -248,16 +264,13 @@ bit_timing_section:
 /************************************************************************/
 
 node_list_section:
-    T_BU T_COLON
-  | T_BU T_COLON node_list
-    ;
+  T_BU T_COLON node_list
+  {
+  ESP_LOGD(TAG,"BU_ parsed %d nodes",current_dbc->m_nodes.GetCount());
+  }
+  ;
 
 node_list:
-    T_ID
-      {
-      current_dbc->m_nodes.AddNode(new dbcNode($1));
-      free($1);
-      }
   | node_list T_ID
       {
       current_dbc->m_nodes.AddNode(new dbcNode($2));
@@ -266,14 +279,16 @@ node_list:
     ;
 
 /************************************************************************/
-/* value_table_section_list (VAL_TABLE_)                                */
+/* value_table_section (VAL_TABLE_)                                     */
 /************************************************************************/
-
-value_table_section_list:
-  | value_table_section value_table_section_list;
 
 value_table_section:
     T_VAL_TABLE value_table_list T_SEMICOLON
+    {
+    ESP_LOGD(TAG,"VAL_TABLE_ parsed %s %d values",
+      current_value_table->GetName().c_str(),
+      current_value_table->GetCount());
+    }
     ;
 
 value_table_list:
@@ -293,61 +308,65 @@ value_table_list:
     ;
 
 /************************************************************************/
-/* message_section_list (BO_)                                           */
+/* message_section (BO_)                                                */
 /************************************************************************/
-
-message_section_list:
-  | message_section_list message_section;
 
 /* BO_ 1160 DAS_steeringControl: 4 NEO */
 message_section:
-    T_BO T_INT_VAL T_ID T_COLON T_INT_VAL T_ID signal_list
+    T_BO T_INT_VAL T_ID T_COLON T_INT_VAL T_ID
     {
-    current_message->SetID((uint32_t)$2);
+    ESP_LOGD(TAG,"BO_ parsed message %d",(int)$2);
+    current_message = new dbcMessage((uint32_t)$2);
     current_message->SetName($3); free($3);
     current_message->SetSize($5);
     current_message->SetTransmitterNode($6); free($6);
     current_dbc->m_messages.AddMessage($2,current_message);
-    current_message = NULL;
     }
     ;
 
-signal_list:
-  | signal_list signal
-  ;
+/************************************************************************/
+/* signal_section (SG_)                                                 */
+/************************************************************************/
 
 /* SG_ DAS_steeringAngleRequest : 6|15@0+ (0.1,-1638.35) [-1638.35|1638.35] "deg" EPAS */
-signal:
+signal_section:
     T_SG T_ID signal_mux T_COLON
          signal_start T_SEP signal_length T_AT signal_endian signal_sign
          T_PAR_OPEN signal_scale T_COMMA signal_offset T_PAR_CLOSE
          T_BOX_OPEN signal_min T_SEP signal_max T_BOX_CLOSE
          T_STRING_VAL receiver_list
     {
-    if (current_message == NULL) current_message = new dbcMessage();
-
+    ESP_LOGD(TAG,"SG_ parsed signal %s",$2);
     current_signal->SetName($2); free($2);
+
+    if (current_message == NULL)
+      {
+      yyerror(current_dbc, "SG_ not after a BO_ message");
+      free($21);
+      current_signal = NULL;
+      YYABORT;
+      }
 
     if ($3 == NULL)
       {
       current_signal->ClearMultiplexed();
       }
-   else
-     {
-     switch($3[0])
-       {
-       case 'M':
-         current_message->SetMultiplexorSignal(current_signal);
-         break;
-       case 'm':
-         current_signal->SetMultiplexed((uint32_t)strtoul($3+1, NULL, 10));
-         break;
-       default:
-         /* error: unknown mux type */
-         break;
+    else
+      {
+      switch($3[0])
+        {
+        case 'M':
+          current_message->SetMultiplexorSignal(current_signal);
+          break;
+        case 'm':
+          current_signal->SetMultiplexed((uint32_t)strtoul($3+1, NULL, 10));
+          break;
+        default:
+          /* error: unknown mux type */
+          break;
+         }
+       free($3);
        }
-     free($3);
-     }
 
     current_signal->SetStartSize($5,$7);
     current_signal->SetByteOrder((dbcByteOrder_t)$9);
@@ -391,7 +410,7 @@ signal_max:    double_val { $$ = $1; };
 
 receiver_list:
     receiver
-  | receiver T_COMMA receiver_list
+  | receiver_list T_COMMA receiver
     ;
 
 receiver:
@@ -403,11 +422,8 @@ receiver:
     ;
 
 /************************************************************************/
-/* value_section_list (VAL_)                                            */
+/* value_section (VAL_)                                                 */
 /************************************************************************/
-
-value_section_list:
-  | value_section_list value_section;
 
 /* VAL_ 792 GTW_updateInProgress 1 "IN_PROGRESS" 2 "IN_PROGRESS_NOT_USED"; */
 value_section:
@@ -431,6 +447,7 @@ value_list:
       free($3); free($5);
       YYABORT;
       }
+    ESP_LOGD(TAG,"VAL_ parsed %d/%s",(int)$2,$3);
     current_signal->AddValue((uint32_t)$4, std::string($5));
     free($3); free($5);
     }
@@ -446,13 +463,11 @@ value_list:
 /* comment_section_list (CM_)                                           */
 /************************************************************************/
 
-comment_section_list:
-  | comment_section_list comment_section;
-
 /* CM_ "This is my comment"; */
 comment_section:
     T_CM                     T_STRING_VAL T_SEMICOLON
     {
+    ESP_LOGD(TAG,"CM_ parsed %s",$2);
     current_dbc->m_comments.AddComment($2); free($2);
     }
   | T_CM T_BU T_ID           T_STRING_VAL T_SEMICOLON
@@ -460,6 +475,7 @@ comment_section:
     dbcNode* n = current_dbc->m_nodes.FindNode(std::string($3));
     if (n != NULL)
       {
+      ESP_LOGD(TAG,"CM_ BU_ parsed %s",$3);
       n->AddComment($4);
       }
     else
@@ -475,6 +491,7 @@ comment_section:
     dbcMessage* m = current_dbc->m_messages.FindMessage((uint32_t)$3);
     if (m != NULL)
       {
+      ESP_LOGD(TAG,"CM_ BO_ parsed %s",$4);
       m->AddComment($4);
       }
     else
@@ -493,6 +510,7 @@ comment_section:
       dbcSignal* s = m->FindSignal(std::string($4));
       if (s != NULL)
         {
+        ESP_LOGD(TAG,"CM_ SG_ parsed %s",$5);
         s->AddComment($5);
         }
       else
