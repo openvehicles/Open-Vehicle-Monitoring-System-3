@@ -446,6 +446,11 @@ class dbcfile
     std::string Status();
 
   public:
+    void LockFile();
+    void UnlockFile();
+    bool IsLocked();
+
+  public:
     std::string m_path;
     std::string m_version;
     dbcNewSymbolTable m_newsymbols;
@@ -457,6 +462,7 @@ class dbcfile
 
   private:
     dbcMessage* m_lastmsg;
+    int m_locks;
   };
 
 #endif //#ifndef __DBC_H__

@@ -1228,6 +1228,7 @@ void dbcMessageTable::WriteSummary(dbcOutputCallback callback, void* param)
 
 dbcfile::dbcfile()
   {
+  m_locks = 0;
   }
 
 dbcfile::~dbcfile()
@@ -1352,4 +1353,19 @@ std::string dbcfile::Status()
     ss << "% coverage";
     }
   return ss.str();
+  }
+
+void dbcfile::LockFile()
+  {
+  m_locks++;
+  }
+
+void dbcfile::UnlockFile()
+  {
+  m_locks--;
+  }
+
+bool dbcfile::IsLocked()
+  {
+  return (m_locks > 0);
   }
