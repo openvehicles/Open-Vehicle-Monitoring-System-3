@@ -81,14 +81,19 @@ class dbcNumber
 
   public:
     void Clear();
+    bool IsDefined();
+    bool IsInteger();
+    bool IsDouble();
     void Set(int value);
     void Set(double value);
+    int GetInteger();
+    double GetDouble();
     friend std::ostream& operator<<(std::ostream& os, const dbcNumber& me);
     dbcNumber& operator=(const int value);
     dbcNumber& operator=(const double value);
     dbcNumber& operator=(const dbcNumber& value);
 
-  public:
+  protected:
     dbcNumberType_t m_type;
     union
       {

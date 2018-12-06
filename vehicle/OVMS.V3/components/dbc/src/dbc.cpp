@@ -65,6 +65,21 @@ void dbcNumber::Clear()
   m_type = DBC_NUMBER_NONE;
   }
 
+bool dbcNumber::IsDefined()
+  {
+  return (m_type != DBC_NUMBER_NONE);
+  }
+
+bool dbcNumber::IsInteger()
+  {
+  return (m_type == DBC_NUMBER_INTEGER);
+  }
+
+bool dbcNumber::IsDouble()
+  {
+  return (m_type == DBC_NUMBER_DOUBLE);
+  }
+
 void dbcNumber::Set(int value)
   {
   m_type = DBC_NUMBER_INTEGER;
@@ -82,6 +97,38 @@ void dbcNumber::Set(double value)
     {
     m_type = DBC_NUMBER_DOUBLE;
     m_value.doubleval = value;
+    }
+  }
+
+int dbcNumber::GetInteger()
+  {
+  switch (m_type)
+    {
+    case DBC_NUMBER_INTEGER:
+      return m_value.intval;
+      break;
+    case DBC_NUMBER_DOUBLE:
+      return (int)m_value.doubleval;
+      break;
+    default:
+      return 0;
+      break;
+    }
+  }
+
+double dbcNumber::GetDouble()
+  {
+  switch (m_type)
+    {
+    case DBC_NUMBER_INTEGER:
+      return (double)m_value.intval;
+      break;
+    case DBC_NUMBER_DOUBLE:
+      return m_value.doubleval;
+      break;
+    default:
+      return 0;
+      break;
     }
   }
 
