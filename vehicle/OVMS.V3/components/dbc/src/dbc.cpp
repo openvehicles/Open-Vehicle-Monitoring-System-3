@@ -634,6 +634,7 @@ dbcSignal::dbcSignal()
   {
   m_start_bit = 0;
   m_signal_size = 0;
+  m_metric = NULL;
   }
 
 dbcSignal::dbcSignal(std::string name)
@@ -868,6 +869,21 @@ dbcNumber dbcSignal::Decode(struct CAN_frame_t& msg)
   {
   // TODO: An efficient decoding of the signal
   return dbcNumber();
+  }
+
+void dbcSignal::DecodeMetric()
+  {
+  // TODO: An efficient decoding of the signal to an OVMS metric
+  }
+
+void dbcSignal::AssignMetric(OvmsMetric* metric)
+  {
+  m_metric = metric;
+  }
+
+OvmsMetric* dbcSignal::GetMetric()
+  {
+  return m_metric;
   }
 
 void dbcSignal::WriteFile(dbcOutputCallback callback, void* param)

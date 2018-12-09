@@ -37,6 +37,7 @@
 #include <functional>
 #include <iostream>
 #include "can.h"
+#include "ovms_metrics.h"
 
 #define DBC_MAX_LINELENGTH 2048
 
@@ -333,6 +334,11 @@ class dbcSignal
   public:
     void Encode(dbcNumber& source, struct CAN_frame_t* msg);
     dbcNumber Decode(struct CAN_frame_t& msg);
+    void DecodeMetric();
+
+  public:
+    void AssignMetric(OvmsMetric* metric);
+    OvmsMetric* GetMetric();
 
   public:
     void WriteFile(dbcOutputCallback callback, void* param);
@@ -356,6 +362,7 @@ class dbcSignal
     dbcNumber m_minimum;
     dbcNumber m_maximum;
     std::string m_unit;
+    OvmsMetric* m_metric;
   };
 
 typedef std::list<dbcSignal*> dbcSignalList_t;
