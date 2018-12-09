@@ -32,6 +32,7 @@
 static const char *TAG = "vehicle_dbc";
 
 #include "vehicle_dbc.h"
+#include "dbc_app.h"
 
 OvmsVehicleDBC::OvmsVehicleDBC()
   {
@@ -44,43 +45,79 @@ OvmsVehicleDBC::~OvmsVehicleDBC()
   {
   if (m_dbc_can1)
     {
+    m_dbc_can1->UnlockFile();
     delete m_dbc_can1;
     m_dbc_can1 = NULL;
     }
   if (m_dbc_can2)
     {
+    m_dbc_can2->UnlockFile();
     delete m_dbc_can2;
     m_dbc_can2 = NULL;
     }
   if (m_dbc_can3)
     {
+    m_dbc_can3->UnlockFile();
     delete m_dbc_can3;
     m_dbc_can3 = NULL;
     }
   }
 
-bool OvmsVehicleDBC::RegisterCanBusDBC(int bus, CAN_mode_t mode, CAN_speed_t speed, const char* dbc)
+bool OvmsVehicleDBC::RegisterCanBusDBC(int bus, CAN_mode_t mode, const char* dbc)
   {
-  OvmsVehicle::RegisterCanBus(bus, mode, speed);
+  dbcfile* newdbc = new dbcfile;
+  if (!newdbc->LoadString(dbc, strlen(dbc)))
+    {
+    delete newdbc;
+    return false;
+    }
   switch (bus)
     {
     case 1:
-      m_dbc_can1 = new dbcfile();
-      return m_dbc_can1->LoadString(dbc, strlen(dbc));
+      m_dbc_can1 = newdbc;
       break;
     case 2:
-      m_dbc_can2 = new dbcfile();
-      return m_dbc_can2->LoadString(dbc, strlen(dbc));
+      m_dbc_can2 = newdbc;
       break;
     case 3:
-      m_dbc_can3 = new dbcfile();
-      return m_dbc_can3->LoadString(dbc, strlen(dbc));
+      m_dbc_can3 = newdbc;
       break;
     default:
       ESP_LOGE(TAG,"RegisterCanBusDBC(%d) out of range",bus);
+      delete newdbc;
       return false;
       break;
     }
+
+  newdbc->LockFile();
+  OvmsVehicle::RegisterCanBus(bus, mode, (CAN_speed_t)(newdbc->m_bittiming.GetBaudRate()/1000));
+  return true;
+  }
+
+bool OvmsVehicleDBC::RegisterCanBusDBCLoaded(int bus, CAN_mode_t mode, const char* dbcloaded)
+  {
+  dbcfile* newdbc = MyDBC.Find(dbcloaded);
+  if (newdbc==NULL) return false;
+  switch (bus)
+    {
+    case 1:
+      m_dbc_can1 = newdbc;
+      break;
+    case 2:
+      m_dbc_can2 = newdbc;
+      break;
+    case 3:
+      m_dbc_can3 = newdbc;
+      break;
+    default:
+      ESP_LOGE(TAG,"RegisterCanBusDBCPath(%d) out of range",bus);
+      return false;
+      break;
+    }
+
+  newdbc->LockFile();
+  OvmsVehicle::RegisterCanBus(bus, mode, (CAN_speed_t)(newdbc->m_bittiming.GetBaudRate()/1000));
+  return true;
   }
 
 void OvmsVehicleDBC::IncomingFrameCan1(CAN_frame_t* p_frame)
@@ -105,4 +142,64 @@ void OvmsVehicleDBC::IncomingFrameCan3(CAN_frame_t* p_frame)
   if (m_dbc_can3==NULL) return;
   // TODO: Find the DBC message for the given ID, and decode the
   // relevant signals
+  }
+
+OvmsVehiclePureDBC::OvmsVehiclePureDBC()
+  {
+  ESP_LOGI(TAG, "Pure DBC vehicle module");
+
+  std::string dbctype;
+
+  dbctype = MyConfig.GetParamValue("vehicle", "dbc.can1");
+  if (dbctype.length()>0)
+    {
+    ESP_LOGI(TAG,"Registering can bus #1 as DBC %s",dbctype.c_str());
+    RegisterCanBusDBCLoaded(1, CAN_MODE_LISTEN, dbctype.c_str());
+    }
+
+  dbctype = MyConfig.GetParamValue("vehicle", "dbc.can2");
+  if (dbctype.length()>0)
+    {
+    ESP_LOGI(TAG,"Registering can bus #2 as DBC %s",dbctype.c_str());
+    RegisterCanBusDBCLoaded(2, CAN_MODE_LISTEN, dbctype.c_str());
+    }
+
+  dbctype = MyConfig.GetParamValue("vehicle", "dbc.can3");
+  if (dbctype.length()>0)
+    {
+    ESP_LOGI(TAG,"Registering can bus #3 as DBC %s",dbctype.c_str());
+    RegisterCanBusDBCLoaded(3, CAN_MODE_LISTEN, dbctype.c_str());
+    }
+  }
+
+OvmsVehiclePureDBC::~OvmsVehiclePureDBC()
+  {
+  ESP_LOGI(TAG, "Shutdown Pure DBC vehicle module");
+  }
+
+void OvmsVehiclePureDBC::IncomingFrameCan1(CAN_frame_t* p_frame)
+  {
+  OvmsVehicleDBC::IncomingFrameCan1(p_frame);
+  }
+
+void OvmsVehiclePureDBC::IncomingFrameCan2(CAN_frame_t* p_frame)
+  {
+  OvmsVehicleDBC::IncomingFrameCan2(p_frame);
+  }
+
+void OvmsVehiclePureDBC::IncomingFrameCan3(CAN_frame_t* p_frame)
+  {
+  OvmsVehicleDBC::IncomingFrameCan3(p_frame);
+  }
+
+class OvmsVehiclePureDBCInit
+  {
+  public: OvmsVehiclePureDBCInit();
+  } MyOvmsVehiclePureDBCInit  __attribute__ ((init_priority (9000)));
+
+OvmsVehiclePureDBCInit::OvmsVehiclePureDBCInit()
+  {
+  ESP_LOGI(TAG, "Registering Vehicle: DBC based vehicle (9000)");
+
+  MyVehicleFactory.RegisterVehicle<OvmsVehiclePureDBC>("DBC","DBC based vehicle");
   }

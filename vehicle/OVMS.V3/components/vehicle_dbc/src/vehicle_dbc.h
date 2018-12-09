@@ -43,7 +43,8 @@ class OvmsVehicleDBC : public OvmsVehicle
     virtual ~OvmsVehicleDBC();
 
   protected:
-    bool RegisterCanBusDBC(int bus, CAN_mode_t mode, CAN_speed_t speed, const char* dbc);
+    bool RegisterCanBusDBC(int bus, CAN_mode_t mode, const char* dbc);
+    bool RegisterCanBusDBCLoaded(int bus, CAN_mode_t mode, const char* dbcloaded);
 
   protected:
     virtual void IncomingFrameCan1(CAN_frame_t* p_frame);
@@ -54,6 +55,18 @@ class OvmsVehicleDBC : public OvmsVehicle
     dbcfile* m_dbc_can1;
     dbcfile* m_dbc_can2;
     dbcfile* m_dbc_can3;
+  };
+
+class OvmsVehiclePureDBC : public OvmsVehicleDBC
+  {
+  public:
+    OvmsVehiclePureDBC();
+    ~OvmsVehiclePureDBC();
+
+  public:
+    void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingFrameCan2(CAN_frame_t* p_frame);
+    void IncomingFrameCan3(CAN_frame_t* p_frame);
   };
 
 #endif //#ifndef __VEHICLE_DBC_H__
