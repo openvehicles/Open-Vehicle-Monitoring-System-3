@@ -36,6 +36,7 @@
 #include <list>
 #include <functional>
 #include <iostream>
+#include "can.h"
 
 #define DBC_MAX_LINELENGTH 2048
 
@@ -328,6 +329,10 @@ class dbcSignal
     const std::string& GetUnit();
     void SetUnit(const std::string& unit);
     void SetUnit(const char* unit);
+
+  public:
+    void Encode(dbcNumber& source, struct CAN_frame_t* msg);
+    dbcNumber Decode(struct CAN_frame_t& msg);
 
   public:
     void WriteFile(dbcOutputCallback callback, void* param);

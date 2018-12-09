@@ -859,6 +859,17 @@ void dbcSignal::SetUnit(const char* unit)
   m_unit = std::string(unit);
   }
 
+void dbcSignal::Encode(dbcNumber& source, struct CAN_frame_t* msg)
+  {
+  // TODO: An efficient encoding of the signal
+  }
+
+dbcNumber dbcSignal::Decode(struct CAN_frame_t& msg)
+  {
+  // TODO: An efficient decoding of the signal
+  return dbcNumber();
+  }
+
 void dbcSignal::WriteFile(dbcOutputCallback callback, void* param)
   {
   std::ostringstream ss;
