@@ -640,6 +640,7 @@ dbcSignal::dbcSignal()
 dbcSignal::dbcSignal(std::string name)
   {
   m_name = name;
+  m_metric = MyMetrics.Find(name.c_str());
   }
 
 dbcSignal::~dbcSignal()
@@ -710,11 +711,13 @@ const std::string& dbcSignal::GetName()
 void dbcSignal::SetName(const std::string& name)
   {
   m_name = name;
+  m_metric = MyMetrics.Find(name.c_str());
   }
 
 void dbcSignal::SetName(const char* name)
   {
   m_name = std::string(name);
+  m_metric = MyMetrics.Find(name);
   }
 
 bool dbcSignal::IsMultiplexor()

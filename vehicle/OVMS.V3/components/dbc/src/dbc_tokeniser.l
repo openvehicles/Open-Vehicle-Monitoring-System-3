@@ -47,7 +47,7 @@
 whitespace          [ \t]+
 newline             [\n\r]
 
-identifier          [a-zA-Z_]([_a-zA-Z0-9]*)?
+identifier          [a-zA-Z_]([_\.a-zA-Z0-9]*)?
 
 string              \"([^"\\]|(\\.))*\"
 decimal             [-+]?[0-9]+
