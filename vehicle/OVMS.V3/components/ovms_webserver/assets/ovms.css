@@ -346,6 +346,17 @@ button.toggle-night, button.toggle-fullscreen {
   font-weight: bold;
 }
 
+/* Dialogs */
+
+.modal-title span.lead {
+  text-transform: capitalize;
+}
+.modal-title span.lead i {
+  font-style: normal;
+  font-size: 155%;
+  margin-right: 10px;
+}
+
 /* Night mode */
 
 body.night {
@@ -413,6 +424,15 @@ body.night {
 }
 .night .metric .unit {
   color: #909090;
+}
+.night .text-warning {
+  color: #ac7e2f;
+}
+.night .text-danger {
+  color: #d93d3a;
+}
+.night .text-info {
+  color: #55a5ce
 }
 
 /* Fullscreen mode */

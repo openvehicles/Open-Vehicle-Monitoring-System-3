@@ -1,0 +1,68 @@
+<!--
+  Test/Development/Documentation page
+  - enable web server file access
+  - upload to web file path, e.g. /sd/dev/notifications.htm
+  - open in framework by e.g. http://test1.local/#/dev/notifications.htm
+-->
+
+<div class="panel panel-primary">
+  <div class="panel-heading">Notification Test/Demo</div>
+  <div class="panel-body">
+  <h4>Receiver</h4>
+  <!--
+    You can use data-subscriptions to preconfigure subscriptions.
+    Note: types "info", "error" and "alert" get sent to all receivers.
+  -->
+  <pre id="log" class="receiver" data-subscriptions="notify/stream/myapp/#">I'm preconfigured to receive notify/stream/myapp/#</pre>
+  </div>
+  <div class="panel-footer">
+    <div>
+      <label for="topics">Test command:</label>
+      <input type="text" class="form-control" id="cmd" value="notify raise text stream myapp.input &quot;my first stream&quot;">
+      <button type="button" class="btn btn-default" id="action-exec">Execute</button>
+      <samp id="cmdres" />
+    </div>
+    <div>
+      <label for="topics">Topic subscription (separate topics by space):</label>
+      <input type="text" class="form-control" id="topics" value="notify/stream/myapp/#">
+      <button type="button" class="btn btn-default" id="action-sub">Sub</button>
+      <button type="button" class="btn btn-default" id="action-unsub">Unsub</button>
+      <button type="button" class="btn btn-default" id="action-unsuball">Unsub all</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+// Receiver event handling:
+$('#log').on('msg:notify', function(ev, msg) {
+  // You normally should filter by type/subtype here, e.g.:
+  // if (subtype.startsWith('myapp')) { … }
+  // msg has type, subtype and value
+  // Dump the msg into the receiver to show the structure:
+  $(this).text(JSON.stringify(msg, null, 2));
+});
+
+// Topic subscription can be done on page load using the data-subscriptions attribute
+// and/or on demand using the subscribe & unsubscribe calls:
+$('#action-sub').on('click', function(ev) {
+  var topics = $('#topics').val();
+  $('#log').subscribe(topics).text("added " + topics);
+});
+// The receiver remembers the subscriptions and does an auto unsubscribe on unload.
+// You can also unsubscribe topics 
+$('#action-unsub').on('click', function(ev) {
+  var topics = $('#topics').val();
+  $('#log').unsubscribe(topics).text("removed " + topics);
+});
+$('#action-unsuball').on('click', function(ev) {
+  $('#log').unsubscribe().text("removed all subscriptions");
+});
+
+// Command handler:
+$('#action-exec').on('click', function(ev) {
+  var cmd = $('#cmd').val();
+  if (cmd) loadcmd(cmd, '#cmdres');
+});
+
+</script>

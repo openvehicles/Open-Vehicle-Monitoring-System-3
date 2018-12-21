@@ -52,13 +52,15 @@ static const char *TAG = "websocket";
  * successive sends, the UpdateTicker sends collected intermediate updates.
  */
 
-WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t modifier)
+WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t slot, size_t modifier, size_t reader)
   : MgHandler(nc)
 {
   ESP_LOGV(TAG, "WebSocketHandler[%p] init: handler=%p modifier=%d", nc, this, modifier);
   
+  m_slot = slot;
   m_modifier = modifier;
-  m_jobqueue = xQueueCreate(30, sizeof(WebSocketTxJob));
+  m_reader = reader;
+  m_jobqueue = xQueueCreate(50, sizeof(WebSocketTxJob));
   m_jobqueue_overflow = 0;
   m_mutex = xSemaphoreCreateMutex();
   m_job.type = WSTX_None;
@@ -68,7 +70,7 @@ WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t modifier)
 WebSocketHandler::~WebSocketHandler()
 {
   while (xQueueReceive(m_jobqueue, &m_job, 0) == pdTRUE)
-    FreeTxJob(m_job);
+    ClearTxJob(m_job);
   vQueueDelete(m_jobqueue);
   vSemaphoreDelete(m_mutex);
 }
@@ -101,14 +103,13 @@ void WebSocketHandler::ProcessTxJob()
     {
       if (m_sent && m_ack) {
         ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done", m_nc, m_job.type);
-        m_job.type = WSTX_None;
+        ClearTxJob(m_job);
       } else {
         std::string msg;
         msg.reserve(128);
         msg = "{\"event\":\"";
         msg += m_job.event;
         msg += "\"}";
-        free(m_job.event);
         mg_send_websocket_frame(m_nc, WEBSOCKET_OP_TEXT, msg.data(), msg.size());
         m_sent = 1;
       }
@@ -154,38 +155,89 @@ void WebSocketHandler::ProcessTxJob()
       if (!m && m_ack == m_sent) {
         if (m_sent)
           ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done, sent=%d metrics", m_nc, m_job.type, m_sent);
-        m_job.type = WSTX_None;
+        ClearTxJob(m_job);
       }
       
       break;
     }
     
+    case WSTX_Notify:
+    {
+      if (m_sent && m_ack == m_job.notification->GetValueSize()+1) {
+        // done:
+        ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done, sent %d bytes", m_nc, m_job.type, m_sent);
+        ClearTxJob(m_job);
+      } else {
+        // build frame:
+        std::string msg;
+        msg.reserve(XFER_CHUNK_SIZE+128);
+        int op;
+        
+        if (m_sent == 0) {
+          op = WEBSOCKET_OP_TEXT;
+          msg += "{\"notify\":{\"type\":\"";
+          msg += m_job.notification->GetType()->m_name;
+          msg += "\",\"subtype\":\"";
+          msg += mqtt_topic(m_job.notification->GetSubType());
+          msg += "\",\"value\":\"";
+          m_sent = 1;
+        } else {
+          op = WEBSOCKET_OP_CONTINUE;
+        }
+        
+        extram::string part = m_job.notification->GetValue().substr(m_sent-1, XFER_CHUNK_SIZE);
+        msg += json_encode(part);
+        m_sent += part.size();
+        
+        if (m_sent < m_job.notification->GetValueSize()+1) {
+          op |= WEBSOCKET_DONT_FIN;
+        } else {
+          msg += "\"}}";
+        }
+        
+        // send frame:
+        mg_send_websocket_frame(m_nc, op, msg.data(), msg.size());
+      }
+    }
+    
     case WSTX_Config:
     {
       // todo: implement
-      m_job.type = WSTX_None;
+      ClearTxJob(m_job);
       m_sent = 0;
       break;
     }
     
     default:
-      m_job.type = WSTX_None;
+      ClearTxJob(m_job);
       m_sent = 0;
       break;
   }
 }
 
 
-void WebSocketHandler::FreeTxJob(WebSocketTxJob &job)
+void WebSocketTxJob::clear(size_t client)
 {
-  switch (job.type) {
+  auto& slot = MyWebServer.m_client_slots[client];
+  switch (type) {
     case WSTX_Event:
-      if (job.event)
-        free(job.event);
+      if (event)
+        free(event);
       break;
+    case WSTX_Notify:
+      if (notification) {
+        OvmsNotifyType* mt = notification->GetType();
+        if (mt) mt->MarkRead(slot.reader, notification);
+      }
     default:
       break;
   }
+  type = WSTX_None;
+}
+
+void WebSocketHandler::ClearTxJob(WebSocketTxJob &job)
+{
+  job.clear(m_slot);
 }
 
 
@@ -255,8 +307,7 @@ int WebSocketHandler::HandleEvent(int ev, void* p)
       websocket_message* wm = (websocket_message*) p;
       std::string msg;
       msg.assign((char*) wm->data, wm->size);
-      ESP_LOGD(TAG, "WebSocketHandler[%p]: received msg '%s'", m_nc, msg.c_str());
-      // Note: client commands not yet implemented
+      HandleIncomingMsg(msg);
       break;
     }
     
@@ -280,6 +331,32 @@ int WebSocketHandler::HandleEvent(int ev, void* p)
 }
 
 
+void WebSocketHandler::HandleIncomingMsg(std::string msg)
+{
+  ESP_LOGD(TAG, "WebSocketHandler[%p]: received msg '%s'", m_nc, msg.c_str());
+  
+  std::istringstream input(msg);
+  std::string cmd, arg;
+  input >> cmd;
+  
+  if (cmd == "subscribe") {
+    while (!input.eof()) {
+      input >> arg;
+      if (!arg.empty()) Subscribe(arg);
+    }
+  }
+  else if (cmd == "unsubscribe") {
+    while (!input.eof()) {
+      input >> arg;
+      if (!arg.empty()) Unsubscribe(arg);
+    }
+  }
+  else {
+    ESP_LOGW(TAG, "WebSocketHandler[%p]: unhandled message: '%s'", m_nc, msg.c_str());
+  }
+}
+
+
 /**
  * WebSocketHandler slot registry:
  *  WebSocketSlots keep metrics modifiers once allocated (limited ressource)
@@ -294,17 +371,29 @@ WebSocketHandler* OvmsWebServer::CreateWebSocketHandler(mg_connection* nc)
   int i;
   for (i=0; i<m_client_slots.size() && m_client_slots[i].handler != NULL; i++);
   
+  #undef bind  // Kludgy, but works
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  
   if (i == m_client_slots.size()) {
     // create new client slot:
     WebSocketSlot slot;
     slot.handler = NULL;
     slot.modifier = MyMetrics.RegisterModifier();
-    ESP_LOGD(TAG, "new WebSocket slot %d, registered modifier is %d", i, slot.modifier);
+    slot.reader = MyNotify.RegisterReader("ovmsweb", COMMAND_RESULT_VERBOSE,
+                                          std::bind(&OvmsWebServer::IncomingNotification, i, _1, _2), true,
+                                          std::bind(&OvmsWebServer::NotificationFilter, i, _1, _2));
+    ESP_LOGD(TAG, "new WebSocket slot %d, registered modifier is %d, reader %d", i, slot.modifier, slot.reader);
     m_client_slots.push_back(slot);
+  } else {
+    // reuse slot:
+    MyNotify.RegisterReader(m_client_slots[i].reader, "ovmsweb", COMMAND_RESULT_VERBOSE,
+                            std::bind(&OvmsWebServer::IncomingNotification, i, _1, _2), true,
+                            std::bind(&OvmsWebServer::NotificationFilter, i, _1, _2));
   }
   
   // create handler:
-  WebSocketHandler* handler = new WebSocketHandler(nc, m_client_slots[i].modifier);
+  WebSocketHandler* handler = new WebSocketHandler(nc, i, m_client_slots[i].modifier, m_client_slots[i].reader);
   m_client_slots[i].handler = handler;
   
   // start ticker:
@@ -313,6 +402,7 @@ WebSocketHandler* OvmsWebServer::CreateWebSocketHandler(mg_connection* nc)
     xTimerStart(m_update_ticker, 0);
   
   ESP_LOGD(TAG, "WebSocket[%p] handler %p opened; %d clients active", nc, handler, m_client_cnt);
+  MyEvents.SignalEvent("server.web.socket.opened", (void*)m_client_cnt);
   
   xSemaphoreGive(m_client_mutex);
   
@@ -336,18 +426,29 @@ void OvmsWebServer::DestroyWebSocketHandler(WebSocketHandler* handler)
       if (m_client_cnt == 0)
         xTimerStop(m_update_ticker, 0);
       
+      // deregister:
+      MyNotify.ClearReader(m_client_slots[i].reader);
+      
       // destroy handler:
       mg_connection* nc = handler->m_nc;
       m_client_slots[i].handler = NULL;
       delete handler;
       
       ESP_LOGD(TAG, "WebSocket[%p] handler %p closed; %d clients active", nc, handler, m_client_cnt);
+      MyEvents.SignalEvent("server.web.socket.closed", (void*)m_client_cnt);
       
       break;
     }
   }
   
   xSemaphoreGive(m_client_mutex);
+}
+
+
+bool OvmsWebServer::AddToBacklog(int client, WebSocketTxJob job)
+{
+  WebSocketTxTodo todo = { client, job };
+  return (xQueueSend(MyWebServer.m_client_backlog, &todo, 0) == pdTRUE);
 }
 
 
@@ -363,7 +464,16 @@ void OvmsWebServer::EventListener(std::string event, void* data)
   
   // forward events to all websocket clients:
   if (xSemaphoreTake(m_client_mutex, 0) != pdTRUE) {
-    ESP_LOGW(TAG, "EventListener: can't lock client list, event update dropped");
+    for (int i=0; i<m_client_cnt; i++) {
+      auto& slot = m_client_slots[i];
+      if (slot.handler) {
+        WebSocketTxJob job = { WSTX_Event, strdup(event.c_str()) };
+        if (!AddToBacklog(i, job)) {
+          ESP_LOGW(TAG, "EventListener: event '%s' dropped for client %d", event.c_str(), i);
+          free(job.event);
+        }
+      }
+    }
     return;
   }
   
@@ -392,10 +502,126 @@ void OvmsWebServer::UpdateTicker(TimerHandle_t timer)
     return;
   }
   
+  // check tx backlog:
+  WebSocketTxTodo todo;
+  while (xQueuePeek(MyWebServer.m_client_backlog, &todo, 0) == pdTRUE) {
+    auto& slot = MyWebServer.m_client_slots[todo.client];
+    if (!slot.handler) {
+      todo.job.clear(todo.client);
+    }
+    else if (slot.handler->AddTxJob(todo.job)) {
+      xQueueReceive(MyWebServer.m_client_backlog, &todo, 0);
+    }
+  }
+  
+  // trigger metrics update:
   for (auto slot: MyWebServer.m_client_slots) {
     if (slot.handler)
       slot.handler->AddTxJob({ WSTX_MetricsUpdate, NULL });
   }
   
   xSemaphoreGive(MyWebServer.m_client_mutex);
+}
+
+
+/**
+ * Notifications:
+ */
+
+void WebSocketHandler::Subscribe(std::string topic)
+{
+  for (auto it = m_subscriptions.begin(); it != m_subscriptions.end();) {
+    if (mg_mqtt_match_topic_expression(mg_mk_str(topic.c_str()), mg_mk_str((*it).c_str()))) {
+      // remove topic covered by new subscription:
+      ESP_LOGD(TAG, "WebSocketHandler[%p]: subscription '%s' removed", m_nc, (*it).c_str());
+      it = m_subscriptions.erase(it);
+    } else if (mg_mqtt_match_topic_expression(mg_mk_str((*it).c_str()), mg_mk_str(topic.c_str()))) {
+      // new subscription covered by existing:
+      ESP_LOGD(TAG, "WebSocketHandler[%p]: subscription '%s' already covered by '%s'", m_nc, topic.c_str(), (*it).c_str());
+      return;
+    } else {
+      it++;
+    }
+  }
+  m_subscriptions.insert(topic);
+  ESP_LOGD(TAG, "WebSocketHandler[%p]: subscription '%s' added", m_nc, topic.c_str());
+}
+
+void WebSocketHandler::Unsubscribe(std::string topic)
+{
+  for (auto it = m_subscriptions.begin(); it != m_subscriptions.end();) {
+    if (mg_mqtt_match_topic_expression(mg_mk_str(topic.c_str()), mg_mk_str((*it).c_str()))) {
+      ESP_LOGD(TAG, "WebSocketHandler[%p]: subscription '%s' removed", m_nc, (*it).c_str());
+      it = m_subscriptions.erase(it);
+    } else {
+      it++;
+    }
+  }
+}
+
+bool WebSocketHandler::IsSubscribedTo(std::string topic)
+{
+  for (auto it = m_subscriptions.begin(); it != m_subscriptions.end(); it++) {
+    if (mg_mqtt_match_topic_expression(mg_mk_str((*it).c_str()), mg_mk_str(topic.c_str()))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool OvmsWebServer::NotificationFilter(int client, OvmsNotifyType* type, const char* subtype)
+{
+  if (xSemaphoreTake(MyWebServer.m_client_mutex, 0) != pdTRUE) {
+    return true; // assume subscription (safe side)
+  }
+
+  bool accept = false;
+  const auto& slot = MyWebServer.m_client_slots[client];
+
+  if (slot.handler == NULL)
+  {
+    // client gone:
+    accept = false;
+  }
+  else if (strcmp(type->m_name, "info") == 0 ||
+           strcmp(type->m_name, "error") == 0 ||
+           strcmp(type->m_name, "alert") == 0)
+  {
+    // always forward these:
+    accept = true;
+  }
+  else if (strcmp(type->m_name, "data") == 0 ||
+           strcmp(type->m_name, "stream") == 0)
+  {
+    // forward if subscribed:
+    std::string topic = std::string("notify/") + type->m_name + "/" + mqtt_topic(subtype);
+    accept = slot.handler->IsSubscribedTo(topic);
+  }
+
+  xSemaphoreGive(MyWebServer.m_client_mutex);
+  return accept;
+}
+
+bool OvmsWebServer::IncomingNotification(int client, OvmsNotifyType* type, OvmsNotifyEntry* entry)
+{
+  WebSocketTxJob job;
+  job.type = WSTX_Notify;
+  job.notification = entry;
+  bool done = false;
+
+  if (xSemaphoreTake(MyWebServer.m_client_mutex, 0) != pdTRUE) {
+    if (!MyWebServer.AddToBacklog(client, job)) {
+      ESP_LOGW(TAG, "IncomingNotification of type '%s' subtype '%s' dropped for client %d",
+               type->m_name, entry->GetSubType(), client);
+      done = true;
+    }
+    return done;
+  }
+
+  const auto& slot = MyWebServer.m_client_slots[client];
+  if (!slot.handler || !slot.handler->AddTxJob(job, false))
+    done = true;
+
+  xSemaphoreGive(MyWebServer.m_client_mutex);
+  return done;
 }
