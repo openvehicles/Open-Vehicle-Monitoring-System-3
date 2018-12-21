@@ -40,6 +40,7 @@ static const char *TAG = "boot";
 #include "ovms_command.h"
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
+#include "ovms_config.h"
 #include "metrics_standard.h"
 #include "string_writer.h"
 #include <string.h>
@@ -216,6 +217,7 @@ const char* Boot::GetBootReasonName()
 
 static void boot_shutdown_done(const char* event, void* data)
   {
+  MyConfig.unmount();
   esp_restart();
   }
 
