@@ -483,7 +483,7 @@ void SevconClient::Ticker1(uint32_t ticker)
     m_drivemode.unsaved = (m_drivemode.profile_user > 0);
 
     // send result:
-    MyNotify.NotifyStringf("info", "xrt.sevcon.reset", "Tuning RESET: %s\n", FmtSwitchProfileResult(res).c_str());
+    MyNotify.NotifyStringf("info", "xrt.sevcon.profile.reset", "Tuning RESET: %s\n", FmtSwitchProfileResult(res).c_str());
 
     // reset button cnt:
     m_buttoncnt = 0;

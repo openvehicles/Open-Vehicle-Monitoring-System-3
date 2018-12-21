@@ -62,7 +62,7 @@ void OvmsVehicleRenaultTwizy::DoNotify()
     if (BatteryLock(0)) {
       StringWriter buf(200);
       FormatBatteryStatus(COMMAND_RESULT_NORMAL, &buf, 0);
-      MyNotify.NotifyString("alert", "batt.alert", buf.c_str());
+      MyNotify.NotifyString("alert", "battery.status", buf.c_str());
       BatteryUnlock();
       twizy_notifications &= ~SEND_BatteryAlert;
     }
@@ -72,7 +72,7 @@ void OvmsVehicleRenaultTwizy::DoNotify()
   if (which & SEND_SuffCharge) {
     StringWriter buf(200);
     CommandStat(COMMAND_RESULT_NORMAL, &buf);
-    MyNotify.NotifyString("info", "charge.sufficient", buf.c_str());
+    MyNotify.NotifyString("info", "charge.status.sufficient", buf.c_str());
     twizy_notifications &= ~SEND_SuffCharge;
   }
 
@@ -108,7 +108,7 @@ void OvmsVehicleRenaultTwizy::DoNotify()
   // Send power usage update?
   if (which & SEND_PowerStats) {
     if (PowerIsModified())
-      MyNotify.NotifyCommand("data", "xrt.pwr.log", "xrt power stats");
+      MyNotify.NotifyCommand("data", "xrt.power.log", "xrt power stats");
     twizy_notifications &= ~SEND_PowerStats;
   }
 
