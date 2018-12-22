@@ -220,8 +220,17 @@ OvmsConfig::OvmsConfig()
   cmd_config->RegisterCommand("rm","Remove parameter:instance",config_rm,"<param> {<instance> | *}",2,2,true);
 
 #ifdef CONFIG_OVMS_SC_ZIP
-  cmd_config->RegisterCommand("backup","Backup to file",config_backup,"<path> [password=module password]",1,2,true);
-  cmd_config->RegisterCommand("restore","Restore from file",config_restore,"<path> [password=module password]",1,2,true);
+  cmd_config->RegisterCommand("backup", "Backup to file", config_backup,
+    "<zipfile> [password=module password]\n"
+    "Backup /store/ovms_config, events & scripts into password protected ZIP file.\n"
+    "<password> defaults to the current module password, set to \"\" to disable encryption.\n"
+    "Hint: use 7z to unzip/create backup ZIPs on a PC.", 1, 2, true);
+  cmd_config->RegisterCommand("restore", "Restore from file", config_restore,
+    "<zipfile> [password=module password]\n"
+    "Restore /store/ovms_config, events & scripts from password protected ZIP file.\n"
+    "The module will perform a reboot after successful restore.\n"
+    "<password> defaults to the current module password.\n"
+    "Note: you need to supply the password used for the backup creation.", 1, 2, true);
 #endif // CONFIG_OVMS_SC_ZIP
 
   RegisterParam("password", "Password store", true, false);
