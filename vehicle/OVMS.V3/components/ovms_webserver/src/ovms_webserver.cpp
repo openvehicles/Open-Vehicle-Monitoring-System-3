@@ -58,6 +58,7 @@ OvmsWebServer::OvmsWebServer()
 
   m_client_cnt = 0;
   m_client_mutex = xSemaphoreCreateMutex();
+  m_client_backlog = xQueueCreate(50, sizeof(WebSocketTxTodo));
   m_update_ticker = xTimerCreate("Web client update ticker", 250 / portTICK_PERIOD_MS, pdTRUE, NULL, UpdateTicker);
 
   // read config:

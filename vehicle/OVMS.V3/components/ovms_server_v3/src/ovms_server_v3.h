@@ -52,6 +52,7 @@ class OvmsServerV3 : public OvmsServer
 
   public:
     void MetricModified(OvmsMetric* metric);
+    bool NotificationFilter(OvmsNotifyType* type, const char* subtype);
     bool IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry);
     void EventListener(std::string event, void* data);
     void ConfigChanged(OvmsConfigParam* param);

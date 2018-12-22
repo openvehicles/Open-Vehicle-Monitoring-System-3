@@ -12,13 +12,13 @@ Logging level for * set to verbose
 OVMS > can can1 start active 500000
 Can bus can1 started in mode active at speed 500000Kbps
 
-OVMS > co can1 start
+OVMS > copen can1 start
 CANopen worker started, 1 worker(s) running.
 I (129494) events: Signal(power.can1.on)
 I (129494) canopen: Worker started on can1
 I (129494) events: Signal(canopen.worker.start)
 
-OVMS > co status
+OVMS > copen status
 CANopen status:
   Active workers: 1
   can1:
@@ -48,7 +48,7 @@ co.can1.nd1.state                        Operational
 ## Get node info
 ## 
 
-OVMS > co can1 info 1
+OVMS > copen can1 info 1
 Node #1:
  Device type: 0x00000000
  Error state: 0x00
@@ -65,7 +65,7 @@ Node #1:
 ## Scan nodes
 ## 
 
-OVMS > co can1 scan
+OVMS > copen can1 scan
 Scan #1-127...
 Node #1:
  Device type: 0x00000000
@@ -94,16 +94,16 @@ D (253014) canopen: ReadSDO #87 0x1000.00: InitUpload failed, CANopen error code
 ## SEVCON login
 ## 
 
-OVMS > co can1 readsdo 1 5000 1
+OVMS > copen can1 readsdo 1 5000 1
 ReadSDO #1 0x5000.01: contsize=1 xfersize=1 dec=0 hex=0x00 str=''
 
 # 0 = not logged in
 
-OVMS > co can1 writesdo 1 5000 3 0
+OVMS > copen can1 writesdo 1 5000 3 0
 WriteSDO #1 0x5000.03: dec=0 => OK
-OVMS > co can1 writesdo 1 5000 2 0x4bdf
+OVMS > copen can1 writesdo 1 5000 2 0x4bdf
 WriteSDO #1 0x5000.02: hex=0x00004bdf => OK
-OVMS > co can1 readsdo 1 5000 1
+OVMS > copen can1 readsdo 1 5000 1
 ReadSDO #1 0x5000.01: contsize=1 xfersize=1 dec=4 hex=0x04 str='(binary)'
 
 # 4 = logged in level 4 → success
@@ -113,7 +113,7 @@ ReadSDO #1 0x5000.01: contsize=1 xfersize=1 dec=4 hex=0x04 str='(binary)'
 ## Statistics
 ## 
 
-OVMS > co status 
+OVMS > copen status 
 CANopen status:
   Active workers: 1
   can1:
@@ -128,7 +128,7 @@ CANopen status:
 ## NMT
 ## 
 
-OVMS > co can1 nmt preop
+OVMS > copen can1 nmt preop
 NMT command result: OK
 I (371354) canopen: can1 node 1 emergency: code=0x8200 type=0x10 data: 01 4f 02 01 01
 I (371354) events: Signal(canopen.node.emcy)
@@ -142,14 +142,14 @@ co.can1.nd1.emcy.code                    4096
 co.can1.nd1.emcy.type                    17
 co.can1.nd1.state                        PreOperational
 
-OVMS > co can1 nmt start 
+OVMS > copen can1 nmt start 
 NMT command result: OK
 I (389454) canopen: can1 node 1 new state: Operational
 I (389454) events: Signal(canopen.node.state)
 I (392884) canopen: can1 node 1 emergency: code=0x0000 type=0x10 data: 81 46 01 4f 27
 I (392884) events: Signal(canopen.node.emcy)
 
-OVMS > co can1 nmt start metrics list co.
+OVMS > copen can1 nmt start metrics list co.
 co.can1.nd1.emcy.code                    0
 co.can1.nd1.emcy.type                    16
 co.can1.nd1.state                        Operational

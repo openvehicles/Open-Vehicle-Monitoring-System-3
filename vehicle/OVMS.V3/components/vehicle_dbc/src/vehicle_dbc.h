@@ -7,7 +7,7 @@
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
-;    (C) 2011       Sonny Chen @ EPRO/DX
+;    (C) 2011        Sonny Chen @ EPRO/DX
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -28,37 +28,45 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __DBC_APP_H__
-#define __DBC_APP_H__
+#ifndef __VEHICLE_DBC_H__
+#define __VEHICLE_DBC_H__
 
+#include "vehicle.h"
 #include "dbc.h"
-#include "ovms_command.h"
-#include "ovms_mutex.h"
-#include "ovms_utils.h"
 
-typedef std::map<std::string, dbcfile*> dbcLoadedFiles_t;
+using namespace std;
 
-class dbc
+class OvmsVehicleDBC : public OvmsVehicle
   {
   public:
-    dbc();
-    ~dbc();
+    OvmsVehicleDBC();
+    virtual ~OvmsVehicleDBC();
 
-  public:
-    bool LoadFile(const char* name, const char* path);
-    bool Unload(const char* name);
-    void LoadDirectory(const char* path, bool log=false);
-    void LoadAutoExtras(bool log=false);
-    dbcfile* Find(const char* name);
+  protected:
+    bool RegisterCanBusDBC(int bus, CAN_mode_t mode, const char* dbc);
+    bool RegisterCanBusDBCLoaded(int bus, CAN_mode_t mode, const char* dbcloaded);
 
-  public:
-    void AutoInit();
+  protected:
+    virtual void IncomingFrameCan1(CAN_frame_t* p_frame);
+    virtual void IncomingFrameCan2(CAN_frame_t* p_frame);
+    virtual void IncomingFrameCan3(CAN_frame_t* p_frame);
 
-  public:
-    OvmsMutex m_mutex;
-    dbcLoadedFiles_t m_dbclist;
+  protected:
+    dbcfile* m_dbc_can1;
+    dbcfile* m_dbc_can2;
+    dbcfile* m_dbc_can3;
   };
 
-extern dbc MyDBC;
+class OvmsVehiclePureDBC : public OvmsVehicleDBC
+  {
+  public:
+    OvmsVehiclePureDBC();
+    ~OvmsVehiclePureDBC();
 
-#endif //#ifndef __DBC_APP_H__
+  public:
+    void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingFrameCan2(CAN_frame_t* p_frame);
+    void IncomingFrameCan3(CAN_frame_t* p_frame);
+  };
+
+#endif //#ifndef __VEHICLE_DBC_H__

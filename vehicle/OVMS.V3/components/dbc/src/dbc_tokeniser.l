@@ -47,7 +47,7 @@
 whitespace          [ \t]+
 newline             [\n\r]
 
-identifier          [a-zA-Z_]([_a-zA-Z0-9]*)?
+identifier          [a-zA-Z_]([_\.a-zA-Z0-9]*)?
 
 string              \"([^"\\]|(\\.))*\"
 decimal             [-+]?[0-9]+
@@ -74,33 +74,33 @@ floatingpoint       [-+]?[0-9]+(\.[0-9]+)?([eE][-+]?[0-9]+)?
 "ENUM"              { return T_ENUM; }
 "HEX"               { return T_HEX; }
 
-"NS_DESC_"          { yylval.string = strdup(yytext); return T_NS_DESC; }
-"CM_"               { yylval.string = strdup(yytext); return T_CM; }
-"BA_DEF_"           { yylval.string = strdup(yytext); return T_BA_DEF; }
-"BA_"               { yylval.string = strdup(yytext); return T_BA; }
-"VAL_"              { yylval.string = strdup(yytext); return T_VAL; }
-"CAT_DEF_"          { yylval.string = strdup(yytext); return T_CAT_DEF; }
-"CAT_"              { yylval.string = strdup(yytext); return T_CAT; }
-"FILTER"            { yylval.string = strdup(yytext); return T_FILTER; }
-"BA_DEF_DEF_"       { yylval.string = strdup(yytext); return T_BA_DEF_DEF; }
-"EV_DATA_"          { yylval.string = strdup(yytext); return T_EV_DATA; }
-"ENVVAR_DATA_"      { yylval.string = strdup(yytext); return T_ENVVAR_DATA; }
-"SGTYPE_"           { yylval.string = strdup(yytext); return T_SGTYPE; }
-"SGTYPE_VAL_"       { yylval.string = strdup(yytext); return T_SGTYPE_VAL; }
-"BA_DEF_SGTYPE_"    { yylval.string = strdup(yytext); return T_BA_DEF_SGTYPE; }
-"BA_SGTYPE_"        { yylval.string = strdup(yytext); return T_BA_SGTYPE; }
-"SIG_TYPE_REF_"     { yylval.string = strdup(yytext); return T_SIG_TYPE_REF; }
-"VAL_TABLE_"        { yylval.string = strdup(yytext); return T_VAL_TABLE; }
-"SIG_GROUP_"        { yylval.string = strdup(yytext); return T_SIG_GROUP; }
-"SIGTYPE_VALTYPE_"  { yylval.string = strdup(yytext); return T_SIGTYPE_VALTYPE; }
-"BO_TX_BU_"         { yylval.string = strdup(yytext); return T_BO_TX_BU; }
-"BA_DEF_REL_"       { yylval.string = strdup(yytext); return T_BA_DEF_REL; }
-"BA_REL_"           { yylval.string = strdup(yytext); return T_BA_REL; }
-"BA_DEF_DEF_REL_"   { yylval.string = strdup(yytext); return T_BA_DEF_DEF_REL; }
-"BU_SG_REL_"        { yylval.string = strdup(yytext); return T_BU_SG_REL; }
-"BU_EV_REL_"        { yylval.string = strdup(yytext); return T_BU_EV_REL; }
-"BU_BO_REL_"        { yylval.string = strdup(yytext); return T_BU_BO_REL; }
-"SG_MUL_VAL_"       { yylval.string = strdup(yytext); return T_SG_MUL_VAL; }
+"NS_DESC_"          { return T_NS_DESC; }
+"CM_"               { return T_CM; }
+"BA_DEF_"           { return T_BA_DEF; }
+"BA_"               { return T_BA; }
+"VAL_"              { return T_VAL; }
+"CAT_DEF_"          { return T_CAT_DEF; }
+"CAT_"              { return T_CAT; }
+"FILTER"            { return T_FILTER; }
+"BA_DEF_DEF_"       { return T_BA_DEF_DEF; }
+"EV_DATA_"          { return T_EV_DATA; }
+"ENVVAR_DATA_"      { return T_ENVVAR_DATA; }
+"SGTYPE_"           { return T_SGTYPE; }
+"SGTYPE_VAL_"       { return T_SGTYPE_VAL; }
+"BA_DEF_SGTYPE_"    { return T_BA_DEF_SGTYPE; }
+"BA_SGTYPE_"        { return T_BA_SGTYPE; }
+"SIG_TYPE_REF_"     { return T_SIG_TYPE_REF; }
+"VAL_TABLE_"        { return T_VAL_TABLE; }
+"SIG_GROUP_"        { return T_SIG_GROUP; }
+"SIGTYPE_VALTYPE_"  { return T_SIGTYPE_VALTYPE; }
+"BO_TX_BU_"         { return T_BO_TX_BU; }
+"BA_DEF_REL_"       { return T_BA_DEF_REL; }
+"BA_REL_"           { return T_BA_REL; }
+"BA_DEF_DEF_REL_"   { return T_BA_DEF_DEF_REL; }
+"BU_SG_REL_"        { return T_BU_SG_REL; }
+"BU_EV_REL_"        { return T_BU_EV_REL; }
+"BU_BO_REL_"        { return T_BU_BO_REL; }
+"SG_MUL_VAL_"       { return T_SG_MUL_VAL; }
 "DUMMY_NODE_VECTOR"[0-3] {
   yylval.number = yytext[17]-'0';
   return T_DUMMY_NODE_VECTOR;

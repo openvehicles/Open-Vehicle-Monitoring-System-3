@@ -52,7 +52,7 @@ CANopen::CANopen()
 
   // register commands:
 
-  OvmsCommand* cmd_co = MyCommandApp.RegisterCommand("co", "CANopen framework", NULL, "", 0, 0, true);
+  OvmsCommand* cmd_co = MyCommandApp.RegisterCommand("copen", "CANopen framework", NULL, "", 0, 0, true);
   cmd_co->RegisterCommand("status", "Show CANopen status", shell_status, "", 0, 0, true);
 
   for (int k=1; k <= CAN_INTERFACE_CNT; k++)

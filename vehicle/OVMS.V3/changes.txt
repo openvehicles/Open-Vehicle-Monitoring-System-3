@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Web UI: text notifications (info/error/alert) displayed as dialogs
 - Twizy: SEVCON monitoring & recording
   New commands:
     xrt mon start [<filename>]

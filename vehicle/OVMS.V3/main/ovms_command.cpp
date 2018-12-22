@@ -129,6 +129,15 @@ OvmsCommand* OvmsCommandMap::FindUniquePrefix(const char* key)
   return found;
   }
 
+OvmsCommand* OvmsCommandMap::FindCommand(const char* key)
+  {
+  iterator it = find(key);
+  if (it == end())
+    return NULL;
+  else
+    return it->second;
+  }
+
 OvmsCommand::OvmsCommand()
   {
   m_parent = NULL;
@@ -376,7 +385,7 @@ OvmsCommand* OvmsCommand::GetParent()
 
 OvmsCommand* OvmsCommand::FindCommand(const char* name)
   {
-  return m_children.FindUniquePrefix(name);
+  return m_children.FindCommand(name);
   }
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE

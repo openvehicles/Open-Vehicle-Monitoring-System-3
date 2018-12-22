@@ -27,6 +27,8 @@ COMPONENT_EXTRA_CLEAN := $(COMPONENT_PATH)/yacclex/dbc_tokeniser.cpp \
 	$(COMPONENT_PATH)/yacclex/dbc_parser.hpp \
 	$(COMPONENT_PATH)/yacclex/dbc_parser.cpp
 
+.NOTPARALLEL:
+
 src/dbc.o: $(COMPONENT_PATH)/yacclex/dbc_tokeniser.cpp $(COMPONENT_PATH)/yacclex/dbc_parser.hpp
 
 src/dbc_tokeniser.l:

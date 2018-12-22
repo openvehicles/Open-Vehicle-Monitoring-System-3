@@ -37,6 +37,7 @@ static const char *TAG = "dbc";
 #include <sstream>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 #include "dbc.h"
 #include "dbc_tokeniser.hpp"
 #include "dbc_parser.hpp"
@@ -46,6 +47,132 @@ static const char *TAG = "dbc";
 
 // N.B. The conditions on CONFIG_OVMS are to allow this module to be
 //      compiled and tested outside the OVMS subsystem.
+
+////////////////////////////////////////////////////////////////////////
+// dbcNumber...
+
+dbcNumber::dbcNumber()
+  {
+  m_type = DBC_NUMBER_NONE;
+  }
+
+dbcNumber::~dbcNumber()
+  {
+  }
+
+void dbcNumber::Clear()
+  {
+  m_type = DBC_NUMBER_NONE;
+  }
+
+bool dbcNumber::IsDefined()
+  {
+  return (m_type != DBC_NUMBER_NONE);
+  }
+
+bool dbcNumber::IsInteger()
+  {
+  return (m_type == DBC_NUMBER_INTEGER);
+  }
+
+bool dbcNumber::IsDouble()
+  {
+  return (m_type == DBC_NUMBER_DOUBLE);
+  }
+
+void dbcNumber::Set(int value)
+  {
+  m_type = DBC_NUMBER_INTEGER;
+  m_value.intval = value;
+  }
+
+void dbcNumber::Set(double value)
+  {
+  if (ceil(value)==value)
+    {
+    m_type = DBC_NUMBER_INTEGER;
+    m_value.intval = (int)value;
+    }
+  else
+    {
+    m_type = DBC_NUMBER_DOUBLE;
+    m_value.doubleval = value;
+    }
+  }
+
+int dbcNumber::GetInteger()
+  {
+  switch (m_type)
+    {
+    case DBC_NUMBER_INTEGER:
+      return m_value.intval;
+      break;
+    case DBC_NUMBER_DOUBLE:
+      return (int)m_value.doubleval;
+      break;
+    default:
+      return 0;
+      break;
+    }
+  }
+
+double dbcNumber::GetDouble()
+  {
+  switch (m_type)
+    {
+    case DBC_NUMBER_INTEGER:
+      return (double)m_value.intval;
+      break;
+    case DBC_NUMBER_DOUBLE:
+      return m_value.doubleval;
+      break;
+    default:
+      return 0;
+      break;
+    }
+  }
+
+std::ostream& operator<<(std::ostream& os, const dbcNumber& me)
+  {
+  switch (me.m_type)
+    {
+    case DBC_NUMBER_INTEGER:
+      os << me.m_value.intval;
+      break;
+    case DBC_NUMBER_DOUBLE:
+      os << me.m_value.doubleval;
+      break;
+    default:
+      os << 0;
+      break;
+    }
+
+    return os;
+  }
+
+dbcNumber& dbcNumber::operator=(const int value)
+  {
+  m_type = DBC_NUMBER_INTEGER;
+  m_value.intval = value;
+  return *this;
+  }
+
+dbcNumber& dbcNumber::operator=(const double value)
+  {
+  m_type = DBC_NUMBER_DOUBLE;
+  m_value.doubleval = value;
+  return *this;
+  }
+
+dbcNumber& dbcNumber::operator=(const dbcNumber& value)
+  {
+  if (this != &value)
+    {
+    m_type = value.m_type;
+    memcpy(&m_value,&value.m_value,sizeof(m_value));
+    }
+  return *this;
+  }
 
 ////////////////////////////////////////////////////////////////////////
 // dbcComment...
@@ -137,6 +264,11 @@ void dbcNewSymbolTable::EmptyContent()
   m_entrymap.clear();
   }
 
+int dbcNewSymbolTable::GetCount()
+  {
+  return m_entrymap.size();
+  }
+
 void dbcNewSymbolTable::WriteFile(dbcOutputCallback callback, void* param)
   {
   callback(param,"NS_ :");
@@ -191,6 +323,21 @@ bool dbcNode::HasComment(std::string comment)
   return m_comments.HasComment(comment);
   }
 
+const std::string& dbcNode::GetName()
+  {
+  return m_name;
+  }
+
+void dbcNode::SetName(const std::string& name)
+  {
+  m_name = name;
+  }
+
+void dbcNode::SetName(const char* name)
+  {
+  m_name = std::string(name);
+  }
+
 dbcNodeTable::dbcNodeTable()
   {
   }
@@ -202,12 +349,12 @@ dbcNodeTable::~dbcNodeTable()
 
 void dbcNodeTable::AddNode(dbcNode* node)
   {
-  m_entrymap[node->m_name] = node;
+  m_entrymap[node->GetName()] = node;
   }
 
 void dbcNodeTable::RemoveNode(dbcNode* node, bool free)
   {
-  m_entrymap.erase(node->m_name);
+  m_entrymap.erase(node->GetName());
   if (free) delete node;
   }
 
@@ -218,6 +365,11 @@ dbcNode* dbcNodeTable::FindNode(std::string name)
     return search->second;
   else
     return NULL;
+  }
+
+int dbcNodeTable::GetCount()
+  {
+  return m_entrymap.size();
   }
 
 void dbcNodeTable::EmptyContent()
@@ -237,7 +389,7 @@ void dbcNodeTable::WriteFile(dbcOutputCallback callback, void* param)
        it++)
     {
     callback(param," ");
-    callback(param, it->second->m_name.c_str());
+    callback(param, it->second->GetName().c_str());
     }
   callback(param,"\n\n");
   }
@@ -250,7 +402,7 @@ void dbcNodeTable::WriteFileComments(dbcOutputCallback callback, void* param)
        ++it)
     {
     prefix = std::string("CM_ BU_ ");
-    prefix.append(it->second->m_name);
+    prefix.append(it->second->GetName());
     prefix.append(" \"");
     it->second->m_comments.WriteFile(callback, param, prefix);
     }
@@ -261,6 +413,9 @@ void dbcNodeTable::WriteFileComments(dbcOutputCallback callback, void* param)
 
 dbcBitTiming::dbcBitTiming()
   {
+  m_baudrate = 0;
+  m_btr1 = 0;
+  m_btr2 = 0;
   }
 
 dbcBitTiming::~dbcBitTiming()
@@ -272,6 +427,28 @@ dbcBitTiming::~dbcBitTiming()
 
 void dbcBitTiming::EmptyContent()
   {
+  }
+
+uint32_t dbcBitTiming::GetBaudRate()
+  {
+  return m_baudrate;
+  }
+
+uint32_t dbcBitTiming::GetBTR1()
+  {
+  return m_btr1;
+  }
+
+uint32_t dbcBitTiming::GetBTR2()
+  {
+  return m_btr2;
+  }
+
+void dbcBitTiming::SetBaud(const uint32_t baudrate, const uint32_t btr1, const uint32_t btr2)
+  {
+  m_baudrate = baudrate;
+  m_btr1 = btr1;
+  m_btr2 = btr2;
   }
 
 void dbcBitTiming::WriteFile(dbcOutputCallback callback, void* param)
@@ -333,6 +510,26 @@ std::string dbcValueTable::GetValue(uint32_t id)
     return search->second;
   else
     return std::string("");
+  }
+
+const std::string& dbcValueTable::GetName()
+  {
+  return m_name;
+  }
+
+void dbcValueTable::SetName(const std::string& name)
+  {
+  m_name = name;
+  }
+
+void dbcValueTable::SetName(const char* name)
+  {
+  m_name = std::string(name);
+  }
+
+int dbcValueTable::GetCount()
+  {
+  return m_entrymap.size();
   }
 
 dbcValueTable::~dbcValueTable()
@@ -420,11 +617,14 @@ void dbcValueTableTable::EmptyContent()
 
 void dbcValueTableTable::WriteFile(dbcOutputCallback callback, void* param)
   {
-  for (dbcValueTableTableEntry_t::iterator itt = m_entrymap.begin();
-       itt != m_entrymap.end();
-       itt++)
-    itt->second->WriteFile(callback, param, NULL);
-  callback(param, "\n");
+  if (m_entrymap.size() > 0)
+    {
+    for (dbcValueTableTableEntry_t::iterator itt = m_entrymap.begin();
+         itt != m_entrymap.end();
+         itt++)
+      itt->second->WriteFile(callback, param, NULL);
+    callback(param, "\n");
+    }
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -432,11 +632,15 @@ void dbcValueTableTable::WriteFile(dbcOutputCallback callback, void* param)
 
 dbcSignal::dbcSignal()
   {
+  m_start_bit = 0;
+  m_signal_size = 0;
+  m_metric = NULL;
   }
 
 dbcSignal::dbcSignal(std::string name)
   {
   m_name = name;
+  m_metric = MyMetrics.Find(name.c_str());
   }
 
 dbcSignal::~dbcSignal()
@@ -499,114 +703,241 @@ std::string dbcSignal::GetValue(uint32_t id)
   return m_values.GetValue(id);
   }
 
-bool dbcSignal::SetBitsDBC(std::string dbcval)
+const std::string& dbcSignal::GetName()
   {
-  // Set bits from a DBC style specification like 23|2@0+
-  const char *p = dbcval.c_str();
-
-  m_start_bit = atoi(p);
-
-  p = strchr(p,'|');
-  if (p==NULL) return false;
-
-  m_signal_size = atoi(p+1);
-
-  p = strchr(p,'@');
-  if (p==NULL) return false;
-
-  if (strlen(p)<3) return false;
-  m_byte_order = (p[1]=='0')?DBC_BYTEORDER_LITTLE_ENDIAN:DBC_BYTEORDER_BIG_ENDIAN;
-  m_value_type = (p[2]=='-')?DBC_VALUETYPE_SIGNED:DBC_VALUETYPE_UNSIGNED;
-
-  return true;
+  return m_name;
   }
 
-bool dbcSignal::SetFactorOffsetDBC(std::string dbcval)
+void dbcSignal::SetName(const std::string& name)
   {
-  // Set factor and offset from a DBC style specification like (1,0)
-  const char *p = dbcval.c_str();
-
-  if (*p != '(') return false;
-  m_factor = atof(p+1);
-
-  p = strchr(p,',');
-  if (p==NULL) return false;
-
-  m_offset = atof(p+1);
-
-  return true;
+  m_name = name;
+  m_metric = MyMetrics.Find(name.c_str());
   }
 
-bool dbcSignal::SetMinMaxDBC(std::string dbcval)
+void dbcSignal::SetName(const char* name)
   {
-  // Set min and max from a DBC style specification like [0,0]
-  const char *p = dbcval.c_str();
+  m_name = std::string(name);
+  m_metric = MyMetrics.Find(name);
+  }
 
-  if (*p != '[') return false;
-  m_minimum = atof(p+1);
+bool dbcSignal::IsMultiplexor()
+  {
+  return (m_mux.multiplexed == DBC_MUX_MULTIPLEXOR);
+  }
 
-  p = strchr(p,'|');
-  if (p==NULL) return false;
+bool dbcSignal::IsMultiplexSwitch()
+  {
+  return (m_mux.multiplexed == DBC_MUX_MULTIPLEXED);
+  }
 
-  m_maximum = atof(p+1);
+void dbcSignal::SetMultiplexor()
+  {
+  m_mux.multiplexed = DBC_MUX_MULTIPLEXOR;
+  }
 
-  return true;
+uint32_t dbcSignal::GetMultiplexSwitchvalue()
+  {
+  return m_mux.switchvalue;
+  }
+
+bool dbcSignal::SetMultiplexed(const uint32_t switchvalue)
+  {
+  if (m_mux.multiplexed == DBC_MUX_MULTIPLEXOR)
+    {
+    return false;
+    }
+  else
+    {
+    m_mux.multiplexed = DBC_MUX_MULTIPLEXED;
+    m_mux.switchvalue = switchvalue;
+    return true;
+    }
+  }
+
+bool dbcSignal::ClearMultiplexed()
+  {
+  if (m_mux.multiplexed == DBC_MUX_MULTIPLEXOR)
+    {
+    return false;
+    }
+  else
+    {
+    m_mux.multiplexed = DBC_MUX_NONE;
+    m_mux.switchvalue = 0;
+    return true;
+    }
+  }
+
+int dbcSignal::GetStartBit()
+  {
+  return m_start_bit;
+  }
+
+int dbcSignal::GetSignalSize()
+  {
+  return m_signal_size;
+  }
+
+dbcByteOrder_t dbcSignal::GetByteOrder()
+  {
+  return m_byte_order;
+  }
+
+dbcValueType_t dbcSignal::GetValueType()
+  {
+  return m_value_type;
+  }
+
+dbcNumber dbcSignal::GetFactor()
+  {
+  return m_factor;
+  }
+
+dbcNumber dbcSignal::GetOffset()
+  {
+  return m_offset;
+  }
+
+dbcNumber dbcSignal::GetMinimum()
+  {
+  return m_minimum;
+  }
+
+dbcNumber dbcSignal::GetMaximum()
+  {
+  return m_maximum;
+  }
+
+void dbcSignal::SetStartSize(const int startbit, const int size)
+  {
+  m_start_bit = startbit;
+  m_signal_size = size;
+  }
+
+void dbcSignal::SetByteOrder(const dbcByteOrder_t order)
+  {
+  m_byte_order = order;
+  }
+
+void dbcSignal::SetValueType(const dbcValueType_t type)
+  {
+  m_value_type = type;
+  }
+
+void dbcSignal::SetFactorOffset(const dbcNumber factor, const dbcNumber offset)
+  {
+  m_factor = factor;
+  m_offset = offset;
+  }
+
+void dbcSignal::SetFactorOffset(const double factor, const double offset)
+  {
+  m_factor = factor;
+  m_offset = offset;
+  }
+
+void dbcSignal::SetMinMax(const dbcNumber minimum, const dbcNumber maximum)
+  {
+  m_minimum = minimum;
+  m_maximum = maximum;
+  }
+
+void dbcSignal::SetMinMax(const double minimum, const double maximum)
+  {
+  m_minimum = minimum;
+  m_maximum = maximum;
+  }
+
+const std::string& dbcSignal::GetUnit()
+  {
+  return m_unit;
+  }
+
+void dbcSignal::SetUnit(const std::string& unit)
+  {
+  m_unit = unit;
+  }
+
+void dbcSignal::SetUnit(const char* unit)
+  {
+  m_unit = std::string(unit);
+  }
+
+void dbcSignal::Encode(dbcNumber& source, struct CAN_frame_t* msg)
+  {
+  // TODO: An efficient encoding of the signal
+  }
+
+dbcNumber dbcSignal::Decode(struct CAN_frame_t& msg)
+  {
+  // TODO: An efficient decoding of the signal
+  return dbcNumber();
+  }
+
+void dbcSignal::DecodeMetric()
+  {
+  // TODO: An efficient decoding of the signal to an OVMS metric
+  }
+
+void dbcSignal::AssignMetric(OvmsMetric* metric)
+  {
+  m_metric = metric;
+  }
+
+OvmsMetric* dbcSignal::GetMetric()
+  {
+  return m_metric;
   }
 
 void dbcSignal::WriteFile(dbcOutputCallback callback, void* param)
   {
-  char buf[64];
-  callback(param, "  SG_ ");
-  callback(param, m_name.c_str());
+  std::ostringstream ss;
+
+  ss << "  SG_ ";
+  ss << m_name;
   switch (m_mux.multiplexed)
     {
     case DBC_MUX_MULTIPLEXOR:
-      callback(param, " M");
+      ss << " M";
       break;
     case DBC_MUX_MULTIPLEXED:
-      sprintf(buf," m%u",m_mux.switchvalue);
+      {
+      ss << " m";
+      ss << m_mux.switchvalue;
+      }
       break;
     default:
       break;
     }
-  callback(param, " : ");
-  sprintf(buf,"%u|%u@",m_start_bit,m_signal_size);
-  callback(param, buf);
-  switch(m_byte_order)
-    {
-    case DBC_BYTEORDER_BIG_ENDIAN:
-      callback(param, "1");
-      break;
-    default:
-      callback(param, "0");
-      break;
-    }
-  switch(m_value_type)
-    {
-    case DBC_VALUETYPE_SIGNED:
-      callback(param, "- ");
-      break;
-    default:
-      callback(param, "+ ");
-      break;
-    }
-  sprintf(buf,"(%f,%f) ",m_factor,m_offset);
-  callback(param, buf);
-  sprintf(buf,"[%f|%f] \"",m_minimum,m_maximum);
-  callback(param, buf);
-  callback(param, m_unit.c_str());
-  callback(param, "\" ");
+  ss << " : ";
+  ss << m_start_bit;
+  ss << '|';
+  ss << m_signal_size;
+  ss << '@';
+  ss << ((m_byte_order == DBC_BYTEORDER_BIG_ENDIAN)?"1":"0");
+  ss << ((m_value_type == DBC_VALUETYPE_SIGNED)?"- ":"+ ");
+  ss << '(';
+  ss << m_factor;
+  ss << ',';
+  ss << m_offset;
+  ss << ") [";
+  ss << m_minimum;
+  ss << '|';
+  ss << m_maximum;
+  ss << "] \"";
+  ss << m_unit;
+  ss << "\" ";
 
   bool first=true;
   for (std::string receiver : m_receivers)
     {
-    if (!first)
-      callback(param, ",");
-    callback(param, receiver.c_str());
+    if (!first) { ss << ","; }
+    ss << receiver;
     first=false;
     }
 
-  callback(param, "\n");
+  ss << "\n";
+  callback(param, ss.str().c_str());
   }
 
 void dbcSignal::WriteFileComments(dbcOutputCallback callback,
@@ -625,13 +956,16 @@ void dbcSignal::WriteFileValues(dbcOutputCallback callback,
                                   void* param,
                                   std::string messageid)
   {
-  std::ostringstream ss;
-  ss << "VAL_ ";
-  ss << messageid;
-  ss << " ";
-  ss << m_name;
-  std::string prefix = ss.str();
-  m_values.WriteFile(callback, param, prefix.c_str());
+  if (m_values.GetCount()>0)
+    {
+    std::ostringstream ss;
+    ss << "VAL_ ";
+    ss << messageid;
+    ss << " ";
+    ss << m_name;
+    std::string prefix = ss.str();
+    m_values.WriteFile(callback, param, prefix.c_str());
+    }
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -639,6 +973,9 @@ void dbcSignal::WriteFileValues(dbcOutputCallback callback,
 
 dbcMessage::dbcMessage()
   {
+  m_id = 0;
+  m_size = 0;
+  m_multiplexor = NULL;
   }
 
 dbcMessage::dbcMessage(uint32_t id)
@@ -650,7 +987,7 @@ dbcMessage::~dbcMessage()
   {
   }
 
-void dbcMessage::AddComment(std::string comment)
+void dbcMessage::AddComment(const std::string& comment)
   {
   m_comments.AddComment(comment);
   }
@@ -660,12 +997,12 @@ void dbcMessage::AddComment(const char* comment)
   m_comments.AddComment(comment);
   }
 
-void dbcMessage::RemoveComment(std::string comment)
+void dbcMessage::RemoveComment(const std::string& comment)
   {
   m_comments.RemoveComment(comment);
   }
 
-bool dbcMessage::HasComment(std::string comment)
+bool dbcMessage::HasComment(const std::string& comment)
   {
   return m_comments.HasComment(comment);
   }
@@ -685,7 +1022,7 @@ dbcSignal* dbcMessage::FindSignal(std::string name)
   {
   for (dbcSignal* signal : m_signals)
     {
-    if (signal->m_name.compare(name)==0) return signal;
+    if (signal->GetName().compare(name)==0) return signal;
     }
   return NULL;
     }
@@ -698,21 +1035,92 @@ void dbcMessage::Count(int* signals, int* bits, int* covered)
   for (dbcSignal* signal : m_signals)
     {
     *signals += 1;
-    *covered += signal->m_signal_size;
+    *covered += signal->GetSignalSize();
+    }
+  }
+
+uint32_t dbcMessage::GetID()
+  {
+  return m_id;
+  }
+
+void dbcMessage::SetID(const uint32_t id)
+  {
+  m_id = id;
+  }
+
+int dbcMessage::GetSize()
+  {
+  return m_size;
+  }
+
+void dbcMessage::SetSize(const int size)
+  {
+  m_size = size;
+  }
+
+const std::string& dbcMessage::GetName()
+  {
+  return m_name;
+  }
+
+void dbcMessage::SetName(const std::string& name)
+  {
+  m_name = name;
+  }
+
+void dbcMessage::SetName(const char* name)
+  {
+  m_name = std::string(name);
+  }
+
+const std::string& dbcMessage::GetTransmitterNode()
+  {
+  return m_transmitter_node;
+  }
+
+void dbcMessage::SetTransmitterNode(std::string node)
+  {
+  m_transmitter_node = node;
+  }
+
+void dbcMessage::SetTransmitterNode(const char* node)
+  {
+  m_transmitter_node = std::string(node);
+  }
+
+bool dbcMessage::IsMultiplexor()
+  {
+  return (m_multiplexor != NULL);
+  }
+
+dbcSignal* dbcMessage::GetMultiplexorSignal()
+  {
+  return m_multiplexor;
+  }
+
+void dbcMessage::SetMultiplexorSignal(dbcSignal* signal)
+  {
+  m_multiplexor = signal;
+  if (signal != NULL)
+    {
+    signal->SetMultiplexor();
     }
   }
 
 void dbcMessage::WriteFile(dbcOutputCallback callback, void* param)
   {
-  char buf[40];
-  callback(param, "BO_ ");
-  sprintf(buf,"%u ",m_id);
-  callback(param, buf);
-  callback(param, m_name.c_str());
-  sprintf(buf,": %u ",m_size);
-  callback(param, buf);
-  callback(param, m_transmitter_node.c_str());
-  callback(param, "\n");
+  std::ostringstream ss;
+  ss << "BO_ ";
+  ss << m_id;
+  ss << " ";
+  ss << m_name;
+  ss << ": ";
+  ss << m_size;
+  ss << " ";
+  ss << m_transmitter_node;
+  ss << "\n";
+  callback(param, ss.str().c_str());
 
   for (dbcSignal* signal : m_signals)
     {
@@ -837,11 +1245,20 @@ void dbcMessageTable::WriteFileComments(dbcOutputCallback callback, void* param)
     }
   }
 
+void dbcMessageTable::WriteSummary(dbcOutputCallback callback, void* param)
+  {
+  for (dbcMessageEntry_t::iterator itt = m_entrymap.begin();
+       itt != m_entrymap.end();
+       itt++)
+    itt->second->WriteFile(callback, param);
+  }
+
 ////////////////////////////////////////////////////////////////////////
 // dbcfile
 
 dbcfile::dbcfile()
   {
+  m_locks = 0;
   }
 
 dbcfile::~dbcfile()
@@ -932,6 +1349,19 @@ void dbcfile::WriteFile(dbcOutputCallback callback, void* param)
   m_messages.WriteFileComments(callback, param);
   }
 
+void dbcfile::WriteSummary(dbcOutputCallback callback, void* param)
+  {
+  callback(param,"Path:    ");
+  callback(param,m_path.c_str());
+  callback(param,"\n");
+
+  callback(param,"Version: ");
+  callback(param,m_version.c_str());
+  callback(param,"\n\n");
+
+  m_messages.WriteSummary(callback, param);
+  }
+
 std::string dbcfile::Status()
   {
   std::ostringstream ss;
@@ -953,4 +1383,19 @@ std::string dbcfile::Status()
     ss << "% coverage";
     }
   return ss.str();
+  }
+
+void dbcfile::LockFile()
+  {
+  m_locks++;
+  }
+
+void dbcfile::UnlockFile()
+  {
+  m_locks--;
+  }
+
+bool dbcfile::IsLocked()
+  {
+  return (m_locks > 0);
   }

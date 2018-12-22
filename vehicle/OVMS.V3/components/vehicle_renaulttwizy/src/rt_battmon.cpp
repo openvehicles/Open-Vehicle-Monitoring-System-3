@@ -1064,7 +1064,7 @@ void OvmsVehicleRenaultTwizy::BatterySendDataUpdate(bool force)
     if (pack_modified) {
       buf.clear();
       FormatPackData(COMMAND_RESULT_NORMAL, &buf, pack);
-      MyNotify.NotifyString("data", "xrt.batt.log", buf.c_str());
+      MyNotify.NotifyString("data", "xrt.battery.log", buf.c_str());
     }
 
   }
@@ -1078,7 +1078,7 @@ void OvmsVehicleRenaultTwizy::BatterySendDataUpdate(bool force)
     if (cell_modified) {
       buf.clear();
       FormatCellData(COMMAND_RESULT_NORMAL, &buf, cell);
-      MyNotify.NotifyString("data", "xrt.batt.log", buf.c_str());
+      MyNotify.NotifyString("data", "xrt.battery.log", buf.c_str());
     }
 
   }
