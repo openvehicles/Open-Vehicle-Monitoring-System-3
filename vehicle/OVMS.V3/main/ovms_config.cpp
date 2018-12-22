@@ -552,7 +552,8 @@ bool OvmsConfig::Backup(std::string path, std::string password, OvmsWriter* writ
   ZipArchive zip(path, password, ZIP_CREATE|ZIP_TRUNCATE);
   if (ok) ok = zip.chdir("/store");
   if (ok) ok = zip.add("ovms_config");
-  if (ok) ok = zip.add("events");
+  if (ok) ok = zip.add("events", true);
+  if (ok) ok = zip.add("scripts", true);
   if (ok) ok = zip.close();
 
   if (!ok)
@@ -585,7 +586,7 @@ static bool install_dir(std::string src, std::string dst)
     return false;
   if (rename(dst.c_str(), dstbak.c_str()) == 0)
     {
-    if (rename(src.c_str(), dst.c_str()) == 0)
+    if (!path_exists(src) || rename(src.c_str(), dst.c_str()) == 0)
       {
       rmtree(dstbak);
       return true;
@@ -622,7 +623,8 @@ bool OvmsConfig::Restore(std::string path, std::string password, OvmsWriter* wri
   ZipArchive zip(path, password, ZIP_RDONLY);
   if (ok) ok = zip.chdir("/store/ovms_config_restore");
   if (ok) ok = zip.extract("ovms_config");
-  if (ok) ok = zip.extract("events");
+  if (ok) ok = zip.extract("events", true);
+  if (ok) ok = zip.extract("scripts", true);
   if (ok) ok = zip.close();
 
   if (!ok)
@@ -643,13 +645,30 @@ bool OvmsConfig::Restore(std::string path, std::string password, OvmsWriter* wri
   else
     ESP_LOGD(TAG, "Restore '%s': installing...", path.c_str());
 
-  if (!install_dir("/store/ovms_config_restore/events",       "/store/events") ||
-      !install_dir("/store/ovms_config_restore/ovms_config",  "/store/ovms_config"))
+  if (!install_dir("/store/ovms_config_restore/ovms_config", "/store/ovms_config"))
     {
     if (writer)
-      writer->printf("Error: install failed: %s\n", strerror(errno));
+      writer->printf("Error: install 'ovms_config' failed: %s\n", strerror(errno));
     else
-      ESP_LOGE(TAG, "Restore '%s': install failed: %s", path.c_str(), strerror(errno));
+      ESP_LOGE(TAG, "Restore '%s': install 'ovms_config' failed: %s", path.c_str(), strerror(errno));
+    ok = false;
+    }
+
+  if (ok && !install_dir("/store/ovms_config_restore/events", "/store/events"))
+    {
+    if (writer)
+      writer->printf("Warning: install 'events' failed: %s\n", strerror(errno));
+    else
+      ESP_LOGW(TAG, "Restore '%s': install 'events' failed: %s", path.c_str(), strerror(errno));
+    ok = false;
+    }
+
+  if (ok && !install_dir("/store/ovms_config_restore/scripts", "/store/scripts"))
+    {
+    if (writer)
+      writer->printf("Warning: install 'scripts' failed: %s\n", strerror(errno));
+    else
+      ESP_LOGW(TAG, "Restore '%s': install 'scripts' failed: %s", path.c_str(), strerror(errno));
     ok = false;
     }
 

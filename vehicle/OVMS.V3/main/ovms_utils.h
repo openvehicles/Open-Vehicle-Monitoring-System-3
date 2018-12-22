@@ -152,7 +152,11 @@ int mkpath(std::string path, mode_t mode = 0);
 /**
  * rmtree: rmdir -r
  */
-int rmtree(std::string path);
+int rmtree(const std::string path);
 
+/**
+ * path_exists: check if filesystem path exists
+ */
+bool path_exists(const std::string path);
 
 #endif //#ifndef __UTILS_H__
