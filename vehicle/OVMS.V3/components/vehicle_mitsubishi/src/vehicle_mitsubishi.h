@@ -39,7 +39,6 @@ using namespace std;
 
 void CommandBatteryReset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xmi_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xmi_bms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xmi_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
 class OvmsVehicleMitsubishi : public OvmsVehicle
@@ -57,18 +56,10 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     void ConfigChanged(OvmsConfigParam* param);
 
   protected:
-    virtual void Notify12vCritical();
-    virtual void Notify12vRecovered();
-
-  protected:
     char m_vin[18];
     OvmsCommand *cmd_xmi;
 
   public:
-    void BatteryReset();
-
-    vehicle_command_t CommandBatt(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-
     virtual vehicle_command_t CommandSetChargeMode(vehicle_mode_t mode);
     virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
     virtual vehicle_command_t CommandStartCharge();
@@ -100,12 +91,17 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     OvmsMetricFloat*  m_v_env_heating_watt  = new OvmsMetricFloat("xmi.e.heating.watt", SM_STALE_MID, Watts);
     OvmsMetricFloat*  m_v_env_heating_temp_return  = new OvmsMetricFloat("xmi.e.heating.temp.return", SM_STALE_MID, Celcius);
     OvmsMetricFloat*  m_v_env_heating_temp_flow  = new OvmsMetricFloat("xmi.e.heating.temp.flow", SM_STALE_MID, Celcius);
-
     OvmsMetricFloat*  m_v_env_ac_amp  = new OvmsMetricFloat("xmi.e.ac.amp", SM_STALE_MID, Amps);
     OvmsMetricFloat*  m_v_env_ac_watt  = new OvmsMetricFloat("xmi.e.ac.watt", SM_STALE_MID, Watts);
+    OvmsMetricFloat*  m_v_trip_consumption1 = MyMetrics.InitFloat("xmi.v.trip.consumption.KWh/100km", 10, 0, Other);
+    OvmsMetricFloat*  m_v_trip_consumption2 = MyMetrics.InitFloat("xmi.v.trip.consumption.km/kWh", 10, 0, Other);
+
     void vehicle_mitsubishi_car_on(bool isOn);
 
     float mi_trip_start_odo;
+    float mi_start_cdc;
+    float mi_start_cc;
+    int mi_start_time_utc;
     bool cfg_heater_old;
     int cfg_soh;
 

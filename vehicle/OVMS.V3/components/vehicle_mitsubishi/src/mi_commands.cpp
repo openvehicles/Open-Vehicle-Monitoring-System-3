@@ -26,15 +26,6 @@
 #include "vehicle_mitsubishi.h"
 
 /**
- * Command to reset battery min / max
- */
-void CommandBatteryReset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-	{
-  	OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
-		trio->BatteryReset();
-	}
-
-/**
 * Print out aux battery.
 */
 void xmi_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -50,74 +41,6 @@ void xmi_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 		writer->printf("AUX BATTERY\n");
 		if (*auxBatt != '-') writer->printf("Aux battery voltage %s\n", auxBatt);
 		}
-
-/**
-* Print out the cell voltages.
-*/
-void xmi_bms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-{
-/*	float tmin = 1000;
-  float tmax = -1000;
-  float vmin = 1000;
-  float vmax = 0;
-  float vtot = 0;
-
-	OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
-
-	if (MyVehicleFactory.m_currentvehicle==NULL)
-		{
-			writer->puts("Error: No vehicle module selected");
-		  return;
-		}
-
-	if (trio->cell_volts_act == 0)
-		{
-			writer->puts("No BMS status data available");
-		  return;
-		}
-
-		for (int i=0;i<66;i++)
-		    {
-		    if (trio->cell_temps_act->GetElemValue(i)<tmin) tmin = trio->cell_temps_act->GetElemValue(i);
-		    if (trio->cell_temps_act->GetElemValue(i)>tmax) tmax = trio->cell_temps_act->GetElemValue(i);
-		    }
-
-		for (int j=0;j<88;j++)
-		    {
-		    if (trio->cell_volts_act->GetElemValue(j)<vmin) vmin = trio->cell_volts_act->GetElemValue(j);
-		    if (trio->cell_volts_act->GetElemValue(j)>vmax) vmax = trio->cell_volts_act->GetElemValue(j);
-				vtot += trio->cell_volts_act->GetElemValue(j);
-				}
-
-
-		writer->puts("   Mitsubishi iMiew, Citroen C-Zero, Peugeot iOn BMS status");
-  	writer->puts("   -------------------------------");
-		for (int cmu=1;cmu<12;cmu++ )
-		{
-			writer->printf("%2d |",cmu);
-			for (int cell=1;cell<=8;cell++)
-			 {
-				 if( cell < 4)
-				 {
-				 	writer->printf(" %4.3f V |",trio->cell_volts_act->GetElemValue(cmu*cell));
-			 	 	writer->printf(" %3.2f C |",trio->cell_temps_act->GetElemValue(cmu*cell));
-				}else if(cell > 3 && cell < 5){
-					writer->printf(" %4.3f V |",trio->cell_volts_act->GetElemValue(cmu*cell));
-				}else if( cell > 4 && cell < 8){
- 				 	writer->printf(" %4.3f V |",trio->cell_volts_act->GetElemValue(cmu*cell));
- 			 	 	writer->printf(" %3.2f C |",trio->cell_temps_act->GetElemValue(cmu*cell-1));
-				}else {
-					writer->printf(" %4.3f V \n",trio->cell_volts_act->GetElemValue(cmu*cell));
- 					writer->puts("   -------------------------------");
-				}
-
-			 }
-		}
-
-		writer->printf("   Tmin: %3.1f  Tmax: %3.1f  Vmax: %4.3f  Vmin: %4.3f  Vmax-Vmin: %4.3f  Vtot: %5.2f\n",
-    tmin, tmax, vmax, vmin, vmax-vmin, vtot);
-		*/
-}
 
 /**
 * Print out information of the current trip.

@@ -19,6 +19,7 @@
 ;       - heater flow/return temperature
 ;       - heater generation change in web settings
 ;       - soh setting to 'calibrate' ideal range
+;       - Charge if income A > 0.2A
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018  Mark Webb-Johnson
@@ -65,25 +66,27 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
 
   StandardMetrics.ms_v_env_parktime->SetValue(0);
   StandardMetrics.ms_v_charge_type->SetValue("None");
-
+  StandardMetrics.ms_v_bat_energy_used->SetValue(0);
+  StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
   memset(m_vin,0,sizeof(m_vin));
 
   mi_trip_start_odo = 0;
-
+  mi_start_cdc = 0;
+  mi_start_cc = 0;
+  mi_start_time_utc = StandardMetrics.ms_m_timeutc->AsInt();
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
 
   //BMS
   BmsSetCellArrangementVoltage(88, 8);
   BmsSetCellArrangementTemperature(66, 6);
 
-  BmsSetCellLimitsVoltage(2.6,4.9);
+  BmsSetCellLimitsVoltage(2.52,4.9);
   BmsSetCellLimitsTemperature(-40,70);
 
   MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
 
   // init commands:
   cmd_xmi = MyCommandApp.RegisterCommand("xmi", "Mitsubishi iMiEV", NULL, "", 0, 0, true);
-  //cmd_xmi->RegisterCommand("battreset", "Battery monitor", CommandBatteryReset, "", 0, 0, true);
   cmd_xmi->RegisterCommand("aux", "Aux Battery", xmi_aux, 0, 0, false);
   cmd_xmi->RegisterCommand("trip","Show trip info", xmi_trip, 0,0, false);
 
@@ -102,14 +105,6 @@ OvmsVehicleMitsubishi::~OvmsVehicleMitsubishi()
   MyCommandApp.UnregisterCommand("xmi");
   }
 
-  /**
-   * BatteryReset: reset battery min / max
-   */
-void OvmsVehicleMitsubishi::BatteryReset()
-  {
-    ESP_LOGD(TAG, "battmon reset");
-    BmsResetCellStats();
-  }
 
   /**
    * ConfigChanged: reload single/all configuration variables
@@ -164,7 +159,6 @@ void vehicle_charger_status(ChargerStatus status)
 
             break;
           case CHARGER_STATUS_FINISHED:
-
             StandardMetrics.ms_v_charge_climit->SetValue(0);
             StandardMetrics.ms_v_charge_current->SetValue(0);
             StandardMetrics.ms_v_charge_voltage->SetValue(0);
@@ -173,11 +167,13 @@ void vehicle_charger_status(ChargerStatus status)
             StandardMetrics.ms_v_charge_inprogress->SetValue(false);
             StandardMetrics.ms_v_charge_type->SetValue("None");
             StandardMetrics.ms_v_charge_state->SetValue("done");
-            StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+            StandardMetrics.ms_v_charge_substate->SetValue("stopped");
             StandardMetrics.ms_v_charge_mode->SetValue("Not charging");
             StandardMetrics.ms_v_env_charging12v->SetValue(false);
             StandardMetrics.ms_v_env_on->SetValue(false);
             StandardMetrics.ms_v_env_awake->SetValue(false);
+            StandardMetrics.ms_v_charge_current->SetValue(0);
+            StandardMetrics.ms_v_charge_voltage->SetValue(0);
             break;
           case CHARGER_STATUS_INTERRUPTED:
 
@@ -188,8 +184,8 @@ void vehicle_charger_status(ChargerStatus status)
             StandardMetrics.ms_v_charge_pilot->SetValue(false);
             StandardMetrics.ms_v_charge_inprogress->SetValue(false);
             StandardMetrics.ms_v_charge_type->SetValue("None");
-            StandardMetrics.ms_v_charge_state->SetValue("interrupted");
-            StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+            StandardMetrics.ms_v_charge_state->SetValue("stopped");
+            StandardMetrics.ms_v_charge_substate->SetValue("interrupted");
             StandardMetrics.ms_v_charge_mode->SetValue("Interrupted");
             StandardMetrics.ms_v_env_on->SetValue(false);
             StandardMetrics.ms_v_env_awake->SetValue(false);
@@ -210,20 +206,16 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
     {
       case 0x101: //Key status
       {
-        if(d[1] == 4)
+        if(d[0] == 4)
         {
           vehicle_mitsubishi_car_on(true);
-        }else if(d[1] == 0)
+        }else if(d[0] == 0)
         {
           vehicle_mitsubishi_car_on(false);
         }
 
       break;
       }
-
-      //case 0x119:{}
-      //case 0x149:{}
-      //case 0x156:{}
 
       case 0x208: // Brake pedal position
       {
@@ -236,8 +228,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_env_throttle->SetValue(d[2]*0.4);
       break;
       }
-      //case 0x212:{}
-        //case 0x215:{}
+
       case 0x231: // Brake pedal pressed?
       {
         if (d[4] == 0) {
@@ -250,23 +241,15 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       case 0x236: // Steeering wheel
       {
-        // (((d[0] * 256) +d[1])-4096)/2  //Negative angle - right, positive angle left
-        // ((d[2] * 256 + d[3] - 4096) / 2.0)) //Steering wheel movement
+        // (((d[0] * 256.0) +d[1])-4096) / 2.0  //Negative angle - right, positive angle left
+        // (((d[2] * 256.0) + d[3]) - 4096) / 2.0)) //Steering wheel movement
       break;
       }
-
-      //case 0x285:{} //Ignition?
 
       case 0x286: // Charger/inverter temperature
       {
         StandardMetrics.ms_v_charge_temp->SetValue((float)d[3]-40);
         StandardMetrics.ms_v_inv_temp->SetValue((float)d[3]-40);
-      break;
-      }
-
-      case 0x288: //ABS speed on both rear wheel
-      {
-
       break;
       }
 
@@ -302,19 +285,6 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
       }
 
-      case 0x2f2: //Steering torque sensor
-      {
-      break;
-      }
-
-        //case 0x308:{}
-
-      case 0x325:
-      { // if car sleep : 325 01 00
-        /*d[0]==1?*/
-      break;
-      }
-
       case 0x346: // Estimated range , // Handbrake state
       {
         StandardMetrics.ms_v_bat_range_est->SetValue(d[7]);
@@ -335,17 +305,26 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_bat_voltage->SetValue((d[4]*256.0+d[5])/10.0,Volts);
         StandardMetrics.ms_v_bat_power->SetValue((StandardMetrics.ms_v_bat_voltage->AsFloat(0,Volts)*StandardMetrics.ms_v_bat_current->AsFloat(0,Amps))/1000.0*-1.0,kW);
         v_c_power_dc->SetValue(StandardMetrics.ms_v_bat_power->AsFloat()*-1.0,kW);
+        /*
+        // energy usage
+        if(StandardMetrics.ms_v_bat_power->AsInt() > 0)
+          {
+            StandardMetrics.ms_v_bat_energy_used->SetValue((StandardMetrics.ms_v_bat_energy_used->AsFloat()+StandardMetrics.ms_v_bat_power->AsFloat()));
+          }
+          else
+          {
+            StandardMetrics.ms_v_bat_energy_recd->SetValue((StandardMetrics.ms_v_bat_energy_recd->AsFloat()+StandardMetrics.ms_v_bat_power->AsFloat())); ///(100.0*1000.0*3600.0)
+          }
+          */
       break;
       }
 
       case 0x374: // Main Battery Soc
       {
         StandardMetrics.ms_v_bat_soc->SetValue(((int)d[1]-10)/2.0,Percentage);
-        StandardMetrics.ms_v_bat_cac->SetValue(d[7]/2.0);
       break;
       }
 
-      //case 0x375:{}
       case 0x384: //heating current?
       {
         m_v_env_heating_amp->SetValue(d[4]/10.0);
@@ -374,8 +353,6 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
       }
 
-      //case 0x385:{}
-
       case 0x389: // Charger voltage and current
       {
         StandardMetrics.ms_v_charge_voltage->SetValue(d[1]*1.0,Volts);
@@ -402,14 +379,14 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         //heating level
         if (((int)d[0]<<4) == 112)
         {
-          //Heater off
+          //in the middle
         }else if (((int)d[0]<< 4) > 112)
         {
-          // Heating
+          // Warm
         }
         else if (((int)d[0]<< 4) < 112)
         {
-          //Cooling
+          //Cold
         }
 
       if (((int)d[0]>>7) == 1)
@@ -443,12 +420,6 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         break;
       }
       break;
-    }
-
-    case 0x408:
-    {//if sleep : 408 00 00 00 00 00 00 00 00
-      // all == 0
-    break;
     }
 
     case 0x412: // Speed and odometer
@@ -510,7 +481,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         //Windshield wipers	424	1	if bit5 = 1 then on else off
         //Rear window defrost	424	6	if bit5 = 1 then on else off
 
-        if ((d[0]& 4)!=0) //headlight
+        if ((d[0] & 4)!=0) //headlight
         { // ON
           StandardMetrics.ms_v_env_headlights->SetValue(true);
         }
@@ -519,7 +490,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
           StandardMetrics.ms_v_env_headlights->SetValue(false);
         }
 
-        if ((d[0]& 16)!=0) //Fog lights rear
+        if ((d[0] & 16)!=0) //Fog lights rear
         {// ON
           m_v_env_rearfog->SetValue(true);
         }
@@ -528,7 +499,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
           m_v_env_rearfog->SetValue(false);
         }
 
-        if ((d[0]& 8)!=0) //Fog lights front
+        if ((d[0] & 8)!=0) //Fog lights front
         { // ON
           m_v_env_frontfog->SetValue(true);
         }
@@ -537,7 +508,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
           m_v_env_frontfog->SetValue(false);
         }
 
-        if ((d[1]& 4)!=0)// Highbeam
+        if ((d[1] & 4)!=0)// Highbeam
         { // ON
           m_v_env_highbeam->SetValue(true);
         }
@@ -546,7 +517,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
           m_v_env_highbeam->SetValue(false);
         }
 
-        if ((d[1]& 1)!=0)// Flash lights right
+        if ((d[1] & 1)!=0)// Flash lights right
         { // ON
           m_v_env_blinker_right->SetValue(true);
         }
@@ -555,7 +526,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
           m_v_env_blinker_right->SetValue(false);
         }
 
-        if ((d[1]& 2)!=0) //Flash lights left
+        if ((d[1] & 2)!=0) //Flash lights left
         { // ON
           m_v_env_blinker_left->SetValue(true);
         }
@@ -564,7 +535,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
           m_v_env_blinker_left->SetValue(false);
         }
 
-        if ((d[1]& 32)!=0)  //Headlight
+        if ((d[1] & 32)!=0)  //Headlight
         {
 		        ESP_LOGI(TAG, "Headlight2 on");
         }
@@ -573,7 +544,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
         }
 
-        if ((d[1]& 64)!=0)
+        if ((d[1] & 64)!=0)
         { //Parkinglight
 		      ESP_LOGI(TAG, "Parkinglight on");
         }
@@ -582,7 +553,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
         }
 
-        if ((d[2]& 1)!=0) //any Door + trunk
+        if ((d[2] & 1)!=0) //any Door + trunk
         { //OPEN
             //StandardMetrics.ms_v_door_fr->SetValue(true);
         }
@@ -592,7 +563,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
 
 
-        if ((d[2]& 2)!=0) //LHD Driver Door
+        if ((d[2] & 2)!=0) //LHD Driver Door
         { //OPEN
           StandardMetrics.ms_v_door_fl->SetValue(true);
         }
@@ -600,27 +571,20 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
           StandardMetrics.ms_v_door_fl->SetValue(false);
         }
-
-        if ((d[2]& 128)!=0) //??
+        if ((d[2] & 3)!=0) //??
+        {
+        }
+        if ((d[2] & 128)!=0) //??
         {
         }
         else
         {
         }
+        if ((d[2] & 192)!=0) //??
+        {
+        }
         break;
       }
-
-    case 0x695: // Gas pedal sensor
-    {
-    break;
-    }
-
-    case 0x696: // Motor current
-    {
-    break;
-    }
-
-      //case 0x697:{}
 
     case 0x6e1: // Battery temperatures and voltages E1
     {
@@ -722,18 +686,6 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
     break;
     }
 
-    case 0x762:
-    {/*
-        if (d[0] == 36)
-            {*/ //((d[3]/2)-5) = soc
-            //((d[3]*256)+d[4])-349 charge current
-              StandardMetrics.ms_v_bat_cac->SetValue(((d[3]*256)+d[4])/10.0);
-              StandardMetrics.ms_v_bat_soh->SetValue(StandardMetrics.ms_v_bat_cac->AsFloat()/48);
-
-          //  }
-    break;
-  }
-
     default:
     break;
     }
@@ -744,32 +696,96 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
 void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
   {
-    StandardMetrics.ms_v_bat_soh->SetValue(cfg_soh);
 
-
-    if (StandardMetrics.ms_v_env_gear->AsInt() == -1)
-    { //Charge state if transmission in P
-      if((StandardMetrics.ms_v_charge_voltage->AsInt() > 90) && (StandardMetrics.ms_v_charge_voltage->AsInt() < 254) && (StandardMetrics.ms_v_charge_current->AsInt() < 16) && (StandardMetrics.ms_v_charge_current->AsInt() > 0) )
-      {
-        vehicle_charger_status(CHARGER_STATUS_CHARGING);
+    if(((v_c_power_dc->AsInt()==0) || (v_c_power_dc->AsInt() < 0)) && (v_c_power_ac->AsInt() == 0) )
+    {
+        v_c_efficiency->SetValue(0,Percentage);
+    }else {
         v_c_efficiency->SetValue((v_c_power_dc->AsFloat()/v_c_power_ac->AsFloat())*100,Percentage);
-      }
-      else if((StandardMetrics.ms_v_bat_soc->AsInt() > 91) && (StandardMetrics.ms_v_charge_voltage->AsInt() > 90) && (StandardMetrics.ms_v_charge_current->AsInt() < 1) )
-      {
-        vehicle_charger_status(CHARGER_STATUS_FINISHED);
-      }
-      else
-      {
-        vehicle_charger_status(CHARGER_STATUS_INTERRUPTED);
-      }
-      if ((StandardMetrics.ms_v_bat_current->AsInt() > 0) && (StandardMetrics.ms_v_charge_voltage->AsInt() > 260))
-      {
-        vehicle_charger_status(CHARGER_STATUS_QUICK_CHARGING);
-      }
     }
 
+    StandardMetrics.ms_v_bat_soh->SetValue(cfg_soh);
 
-    if (StandardMetrics.ms_v_bat_soc->AsInt() <= 10)
+    //  Trip consumption
+    if(StandardMetrics.ms_v_env_gear->AsInt() == 0 || StandardMetrics.ms_v_env_gear->AsInt() == 1 || StandardMetrics.ms_v_env_gear->AsInt() == 2 || StandardMetrics.ms_v_env_gear->AsInt() == 3 || StandardMetrics.ms_v_env_gear->AsInt() == -2)
+        {
+      // Trip started. Let's save current state as soon as they are available
+        if(mi_trip_start_odo==0 && POS_ODO!=0)
+          mi_trip_start_odo = POS_ODO;	// ODO at Start of trip
+        }
+
+    // Update trip data
+    if (StdMetrics.ms_v_env_on->AsBool() && mi_trip_start_odo!=0)
+      {
+        StdMetrics.ms_v_pos_trip->SetValue( POS_ODO - mi_trip_start_odo , Kilometers);
+      }
+      else
+        {
+          StandardMetrics.ms_v_bat_consumption->SetValue(0);
+        }
+      /*
+    if( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers)>0 )
+      m_v_trip_consumption1->SetValue( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) );
+    if( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh)>0 )
+      m_v_trip_consumption2->SetValue( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) );
+*/
+    /*
+     *   Charge states if car in park
+    */
+    if (StandardMetrics.ms_v_env_gear->AsInt() == -1)
+    { //Charge state if transmission in P
+      if((StandardMetrics.ms_v_charge_voltage->AsFloat() > 191) && (StandardMetrics.ms_v_charge_voltage->AsFloat() < 254) && (StandardMetrics.ms_v_charge_current->AsFloat() < 16.0) && (StandardMetrics.ms_v_charge_current->AsFloat() > 0.1) )
+      { ESP_LOGI(TAG, "Charging starting...");
+        vehicle_charger_status(CHARGER_STATUS_CHARGING);
+      }
+      else if((StandardMetrics.ms_v_bat_soc->AsFloat() > 91) && (StandardMetrics.ms_v_charge_current->AsFloat() < 0.2) )
+        {
+          ESP_LOGI(TAG, "Charging done...");
+          vehicle_charger_status(CHARGER_STATUS_FINISHED);
+        }
+        else if(StandardMetrics.ms_v_charge_voltage->AsFloat() < 190 && StandardMetrics.ms_v_bat_soc->AsFloat() < 90)
+            {
+              ESP_LOGI(TAG, "Charging Interrupted...");
+              vehicle_charger_status(CHARGER_STATUS_INTERRUPTED);
+            }
+      if (StandardMetrics.ms_v_bat_current->AsFloat() > 0 && ((StandardMetrics.ms_v_charge_voltage->AsFloat()  == 0 || StandardMetrics.ms_v_charge_voltage->AsFloat() > 260.0)))
+      {
+        StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
+        if(StandardMetrics.ms_v_charge_voltage->AsFloat() > 260.0)
+          {
+          ESP_LOGI(TAG, "Charging starting Quickcharge...");
+          vehicle_charger_status(CHARGER_STATUS_QUICK_CHARGING);
+          }
+      }
+    }else // clear all data when "transmission" not in 'P'
+      {
+        if(StandardMetrics.ms_v_charge_substate->AsString() == "interrupted")
+        {
+          StandardMetrics.ms_v_charge_climit->SetValue(0);
+          StandardMetrics.ms_v_charge_current->SetValue(0);
+          StandardMetrics.ms_v_charge_voltage->SetValue(0);
+          StandardMetrics.ms_v_door_chargeport->SetValue(false);
+          StandardMetrics.ms_v_charge_pilot->SetValue(false);
+          StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+          StandardMetrics.ms_v_charge_type->SetValue("None");
+          StandardMetrics.ms_v_charge_state->SetValue("done");
+          StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+          StandardMetrics.ms_v_charge_mode->SetValue("Not charging");
+          StandardMetrics.ms_v_env_charging12v->SetValue(false);
+          StandardMetrics.ms_v_env_on->SetValue(false);
+          StandardMetrics.ms_v_env_awake->SetValue(false);
+        }
+
+      }
+
+    // power calculation set to 0
+    if(!StandardMetrics.ms_v_charge_inprogress->AsBool())
+      {
+        v_c_power_ac->SetValue(0.0);
+        v_c_power_dc->SetValue(0.0);
+      }
+
+    if (StandardMetrics.ms_v_bat_soc->AsFloat() <= 10)
         {
           StandardMetrics.ms_v_bat_range_ideal->SetValue(0);
         }
@@ -783,18 +799,21 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
           StandardMetrics.ms_v_bat_range_ideal->SetValue((
           (StandardMetrics.ms_v_bat_soc->AsFloat()-10)*1.664)*SOH/100.0);
         }
-
-        // Update trip data
-        if (StdMetrics.ms_v_env_on->AsBool() && mi_trip_start_odo!=0)
+/*
+    // Update trip data
+    if (StdMetrics.ms_v_env_on->AsBool() && mi_trip_start_odo!=0)
+      {
+        StdMetrics.ms_v_pos_trip->SetValue( POS_ODO - mi_trip_start_odo , Kilometers);
+      }
+      else
         {
-          StdMetrics.ms_v_pos_trip->SetValue( POS_ODO - mi_trip_start_odo , Kilometers);
-
-        }
-        else
-          {
           StandardMetrics.ms_v_bat_consumption->SetValue(0);
-          }
-
+        }
+    if( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers)>0 )
+      m_v_trip_consumption1->SetValue( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) );
+    if( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh)>0 )
+    	m_v_trip_consumption2->SetValue( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) );
+*/
   }
 
 void OvmsVehicleMitsubishi::Ticker10(uint32_t ticker)
@@ -809,7 +828,7 @@ void OvmsVehicleMitsubishi::Ticker10(uint32_t ticker)
    */
 void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
     {
-/*
+
     if (isOn && !StdMetrics.ms_v_env_on->AsBool())
       {
   		// Car is ON
@@ -832,13 +851,8 @@ void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
       }
 
     //Make sure we update the different start values as soon as we have them available
-    if(isOn)
-    		{
-  		// Trip started. Let's save current state as soon as they are available
-    		if(mi_trip_start_odo==0 && POS_ODO!=0)
-    			mi_trip_start_odo = POS_ODO;	// ODO at Start of trip
-    		}
-*/
+
+
     }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandSetChargeMode(vehicle_mode_t mode)
@@ -850,7 +864,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandSetChargeCurrent(ui
     {
     StandardMetrics.ms_v_charge_climit->SetValue(limit);
 
-    return Success;
+    return NotImplemented;
     }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandStartCharge()
@@ -867,7 +881,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandStartCharge()
     StandardMetrics.ms_v_charge_voltage->SetValue(220);
     StandardMetrics.ms_v_charge_current->SetValue(16);
 
-    return Success;
+    return NotImplemented;
     }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandStopCharge()
@@ -880,7 +894,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandStopCharge()
     StandardMetrics.ms_v_charge_voltage->SetValue(0);
     StandardMetrics.ms_v_charge_current->SetValue(0);
 
-    return Success;
+    return NotImplemented;
     }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandSetChargeTimer(bool timeron, uint16_t timerstart)
@@ -904,48 +918,41 @@ OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandWakeup()
     StandardMetrics.ms_v_charge_current->SetValue(0);
     StandardMetrics.ms_v_env_on->SetValue(true);
 
-    return Success;
+    return NotImplemented;
     }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandLock(const char* pin)
     {
-    StandardMetrics.ms_v_env_locked->SetValue(true);
+    //StandardMetrics.ms_v_env_locked->SetValue(true);
 
-    return Success;
+    return NotImplemented;
     }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandUnlock(const char* pin)
     {
-    StandardMetrics.ms_v_env_locked->SetValue(false);
+    //StandardMetrics.ms_v_env_locked->SetValue(false);
 
-    return Success;
+    return NotImplemented;
     }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandActivateValet(const char* pin)
     {
-    StandardMetrics.ms_v_env_valet->SetValue(true);
+    //StandardMetrics.ms_v_env_valet->SetValue(true);
 
-    return Success;
+    return NotImplemented;
     }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandDeactivateValet(const char* pin)
     {
-    StandardMetrics.ms_v_env_valet->SetValue(false);
+    //StandardMetrics.ms_v_env_valet->SetValue(false);
 
-    return Success;
+    return NotImplemented;
     }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandHomelink(int button, int durationms)
     {
     return NotImplemented;
     }
-
-void OvmsVehicleMitsubishi::Notify12vCritical()
-      {
-      }
-void OvmsVehicleMitsubishi::Notify12vRecovered()
-      {
-      }
 
 class OvmsVehicleMitsubishiInit
   {
