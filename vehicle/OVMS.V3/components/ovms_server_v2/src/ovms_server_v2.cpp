@@ -785,7 +785,7 @@ void OvmsServerV2::Connect()
   opts.error_string = &err;
   if ((m_mgconn = mg_connect_opt(mgr, address.c_str(), OvmsServerV2MongooseCallback, opts)) == NULL)
     {
-    ESP_LOGE(TAG, "mg_connect(%s) failed: %s\n", address.c_str(), err);
+    ESP_LOGE(TAG, "mg_connect(%s) failed: %s", address.c_str(), err);
     SetStatus("Error: Connection failed", true, WaitReconnect);
     m_connretry = 20; // Try again in 20 seconds...
     return;
