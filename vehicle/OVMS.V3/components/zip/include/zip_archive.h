@@ -66,8 +66,8 @@ public:
   ~ZipArchive();
 
   bool chdir(const std::string& path);
-  bool add(std::string path);
-  bool extract(const std::string prefix);
+  bool add(std::string path, bool ignore_nonexist = false);
+  bool extract(const std::string prefix, bool ignore_nonexist = false);
   bool close();
   bool ok();
   const char* strerror();
