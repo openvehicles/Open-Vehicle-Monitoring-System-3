@@ -5,9 +5,9 @@
 ;    Changes:
 ;    0.1.0  Initial release: 01-dec-2018 - KommyKT (tested on Peugeot iOn 03-2012 LHD)
 ;       - web dashboard limit modifications
-;       - all 66 temp sensor avg for battery temp
+;       - all 66 temp sensorfor battery temp
 ;       - all cell temperature stored
-;       - basic charge states
+;       - use OVMS V2 charge states and add QC states
 ;       - AC charger voltage / current measure
 ;       - DC
 ;       - BMS Command
@@ -19,7 +19,7 @@
 ;       - heater flow/return temperature
 ;       - heater generation change in web settings
 ;       - soh setting to 'calibrate' ideal range
-;       - Charge if income A > 0.2A
+;       - Chage kWh based on charge volt/amps test
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018  Mark Webb-Johnson
@@ -73,6 +73,12 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   mi_trip_start_odo = 0;
   mi_start_cdc = 0;
   mi_start_cc = 0;
+  mi_est_range = 0;
+  mi_stale_charge = 0;
+  mi_QC = 0;
+  mi_QC_counter = 5;
+  mi_last_good_SOC = 0;
+  mi_last_good_range = 0;
   mi_start_time_utc = StandardMetrics.ms_m_timeutc->AsInt();
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
 
@@ -115,88 +121,6 @@ void OvmsVehicleMitsubishi::ConfigChanged(OvmsConfigParam* param)
     cfg_heater_old = MyConfig.GetParamValueBool("xmi", "oldheater", false);
     cfg_soh = MyConfig.GetParamValueInt("xmi", "soh", 100);
   }
-
-/**
- * Charge Status
- */
-void vehicle_charger_status(ChargerStatus status)
-        {
-        switch (status)
-          {
-          case CHARGER_STATUS_QUICK_CHARGING:
-
-            StandardMetrics.ms_v_pos_speed->SetValue(0);
-            StandardMetrics.ms_v_mot_rpm->SetValue(0);
-            StandardMetrics.ms_v_door_chargeport->SetValue(true);
-            StandardMetrics.ms_v_charge_pilot->SetValue(true);
-            StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-            StandardMetrics.ms_v_charge_type->SetValue("Chademo");
-            StandardMetrics.ms_v_charge_state->SetValue("charging");
-            StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
-            StandardMetrics.ms_v_charge_mode->SetValue("Quickcharge");
-            StandardMetrics.ms_v_env_charging12v->SetValue(true);
-            StandardMetrics.ms_v_env_on->SetValue(true);
-            StandardMetrics.ms_v_env_awake->SetValue(true);
-            StandardMetrics.ms_v_charge_climit->SetValue(125);
-            StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsInt());
-            StandardMetrics.ms_v_charge_current->SetValue(StandardMetrics.ms_v_bat_current->AsInt());
-            break;
-          case CHARGER_STATUS_CHARGING:
-
-            StandardMetrics.ms_v_pos_speed->SetValue(0);
-            StandardMetrics.ms_v_mot_rpm->SetValue(0);
-            StandardMetrics.ms_v_door_chargeport->SetValue(true);
-            StandardMetrics.ms_v_charge_pilot->SetValue(true);
-            StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-            StandardMetrics.ms_v_charge_type->SetValue("Type1");
-            StandardMetrics.ms_v_charge_state->SetValue("charging");
-            StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
-            StandardMetrics.ms_v_charge_mode->SetValue("Standard");
-            StandardMetrics.ms_v_env_charging12v->SetValue(true);
-            StandardMetrics.ms_v_env_on->SetValue(true);
-            StandardMetrics.ms_v_env_awake->SetValue(true);
-            StandardMetrics.ms_v_charge_climit->SetValue(16);
-
-            break;
-          case CHARGER_STATUS_FINISHED:
-            StandardMetrics.ms_v_charge_climit->SetValue(0);
-            StandardMetrics.ms_v_charge_current->SetValue(0);
-            StandardMetrics.ms_v_charge_voltage->SetValue(0);
-            StandardMetrics.ms_v_door_chargeport->SetValue(false);
-            StandardMetrics.ms_v_charge_pilot->SetValue(false);
-            StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-            StandardMetrics.ms_v_charge_type->SetValue("None");
-            StandardMetrics.ms_v_charge_state->SetValue("done");
-            StandardMetrics.ms_v_charge_substate->SetValue("stopped");
-            StandardMetrics.ms_v_charge_mode->SetValue("Not charging");
-            StandardMetrics.ms_v_env_charging12v->SetValue(false);
-            StandardMetrics.ms_v_env_on->SetValue(false);
-            StandardMetrics.ms_v_env_awake->SetValue(false);
-            StandardMetrics.ms_v_charge_current->SetValue(0);
-            StandardMetrics.ms_v_charge_voltage->SetValue(0);
-            break;
-          case CHARGER_STATUS_INTERRUPTED:
-
-            StandardMetrics.ms_v_charge_climit->SetValue(0);
-            StandardMetrics.ms_v_charge_current->SetValue(0);
-            StandardMetrics.ms_v_charge_voltage->SetValue(0);
-            StandardMetrics.ms_v_door_chargeport->SetValue(false);
-            StandardMetrics.ms_v_charge_pilot->SetValue(false);
-            StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-            StandardMetrics.ms_v_charge_type->SetValue("None");
-            StandardMetrics.ms_v_charge_state->SetValue("stopped");
-            StandardMetrics.ms_v_charge_substate->SetValue("interrupted");
-            StandardMetrics.ms_v_charge_mode->SetValue("Interrupted");
-            StandardMetrics.ms_v_env_on->SetValue(false);
-            StandardMetrics.ms_v_env_awake->SetValue(false);
-            break;
-          }
-        if (status != CHARGER_STATUS_CHARGING && status != CHARGER_STATUS_QUICK_CHARGING)
-          {
-            StandardMetrics.ms_v_charge_current->SetValue(0);
-            StandardMetrics.ms_v_charge_voltage->SetValue(0);
-          }
-        }
 
 void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
@@ -288,6 +212,11 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       case 0x346: // Estimated range , // Handbrake state
       {
         StandardMetrics.ms_v_bat_range_est->SetValue(d[7]);
+        mi_est_range = d[7];
+        if((mi_QC != 0) && (mi_est_range == 255))
+        {
+          mi_stale_charge = 30;
+        }
 
         if((d[4] & 32) == 0)
         {
@@ -305,17 +234,17 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_bat_voltage->SetValue((d[4]*256.0+d[5])/10.0,Volts);
         StandardMetrics.ms_v_bat_power->SetValue((StandardMetrics.ms_v_bat_voltage->AsFloat(0,Volts)*StandardMetrics.ms_v_bat_current->AsFloat(0,Amps))/1000.0*-1.0,kW);
         v_c_power_dc->SetValue(StandardMetrics.ms_v_bat_power->AsFloat()*-1.0,kW);
-        /*
+
         // energy usage
-        if(StandardMetrics.ms_v_bat_power->AsInt() > 0)
+        if(StandardMetrics.ms_v_bat_power->AsInt() < 0)
           {
-            StandardMetrics.ms_v_bat_energy_used->SetValue((StandardMetrics.ms_v_bat_energy_used->AsFloat()+StandardMetrics.ms_v_bat_power->AsFloat()));
+            StandardMetrics.ms_v_bat_energy_used->SetValue((StandardMetrics.ms_v_bat_energy_used->AsFloat()+(StandardMetrics.ms_v_bat_power->AsFloat()/360000.0)));
           }
           else
           {
-            StandardMetrics.ms_v_bat_energy_recd->SetValue((StandardMetrics.ms_v_bat_energy_recd->AsFloat()+StandardMetrics.ms_v_bat_power->AsFloat())); ///(100.0*1000.0*3600.0)
+            StandardMetrics.ms_v_bat_energy_recd->SetValue((StandardMetrics.ms_v_bat_energy_recd->AsFloat()+(StandardMetrics.ms_v_bat_power->AsFloat()/360000.0)));
           }
-          */
+
       break;
       }
 
@@ -357,6 +286,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       {
         StandardMetrics.ms_v_charge_voltage->SetValue(d[1]*1.0,Volts);
         StandardMetrics.ms_v_charge_current->SetValue(d[6]/10.0,Amps);
+        mi_stale_charge = 30; //Reset stale charging indicator
         v_c_power_ac->SetValue((StandardMetrics.ms_v_charge_voltage->AsFloat()*StandardMetrics.ms_v_charge_current->AsFloat())/1000, kW);
       break;
       }
@@ -695,15 +625,223 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
   }
 
 void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
+{
+  if (StandardMetrics.ms_v_env_gear->AsInt() == -1)
   {
-
-    if(((v_c_power_dc->AsInt()==0) || (v_c_power_dc->AsInt() < 0)) && (v_c_power_ac->AsInt() == 0) )
+    //Charge State determination if no CAN message on 0x389
+    if(mi_stale_charge > 0)
     {
-        v_c_efficiency->SetValue(0,Percentage);
-    }else {
-        v_c_efficiency->SetValue((v_c_power_dc->AsFloat()/v_c_power_ac->AsFloat())*100,Percentage);
+      if(--mi_stale_charge == 0) //Charge stale_charge
+      {
+      StandardMetrics.ms_v_charge_voltage->SetValue(0.0);
+      StandardMetrics.ms_v_charge_voltage->SetValue(0.0);
+      StandardMetrics.ms_v_bat_current->SetValue(0);
+      StandardMetrics.ms_v_bat_power->SetValue(0);
+      }
     }
 
+      ////////////////////////////////////////////////////////////////////////
+      // Quick/rapid charge detection
+      ////////////////////////////////////////////////////////////////////////
+      // Range of 255 is returned during rapid/quick charge
+      // We can use this to indicate charge rate, but we will need to
+      // calculate a new range based on the last seen SOC and estrange
+      // A reported estimated range of 255 is a probable signal that we are rapid charging.
+      // However, this has been seen to be reported during turn-on initialisation and
+      // it may be read in error at times too. So, we only accept it if we have seen it
+      // for 5 consecutive 1-second ticks. Then mi_QC_counter == 0 becomes an indicator
+      // of the rapid charge state
+      if (mi_est_range == 255)
+        {
+        if (mi_QC_counter > 0)
+          {
+          if (--mi_QC_counter == 0) mi_QC=1;
+          }
+        }
+      else
+        {
+        if (mi_QC_counter < 5) mi_QC_counter++;
+        if (mi_QC_counter == 5) mi_QC = 0;
+        }
+
+      ////////////////////////////////////////////////////////////////////////
+      // Range update
+      ////////////////////////////////////////////////////////////////////////
+      // Range of 255 is returned during rapid/quick charge
+      // We can use this to indicate charge rate, but we will need to
+      // calculate a new range based on the last seen SOC and estrange
+      if (mi_QC != 0) // Quick Charging
+        {
+        if (StandardMetrics.ms_v_bat_soc->AsInt() <= 10)
+          StandardMetrics.ms_v_bat_range_est->SetValue(0);
+        else
+          {
+          // Simple range stimation during quick/rapid charge based on
+          // last seen decent values of SOC and estrange and assuming that
+          // estrange hits 0 at 10% SOC and is linear from there to 100%
+
+          // If the last known SOC was too low for accurate guesstimating,
+          // use fundge-figures giving 72 mile (116 km)range as it is probably best
+          // to guess low-ish here (but not silly low)
+          if (StandardMetrics.ms_v_bat_soc->AsInt() < 20)
+            {
+            mi_last_good_SOC = 20;
+            mi_last_good_range = 8;
+            }
+          StandardMetrics.ms_v_bat_range_est->SetValue(
+            ((int)mi_last_good_range * (int)(StandardMetrics.ms_v_bat_soc->AsInt()-10))
+            /(int)(mi_last_good_SOC - 10));
+          }
+        }
+      else
+        {
+        // Not quick charging
+        if (mi_est_range != 255)
+          {
+          StandardMetrics.ms_v_bat_range_est->SetValue(mi_est_range);
+          if ((StandardMetrics.ms_v_bat_soc->AsInt() >= 20)&&
+              (StandardMetrics.ms_v_bat_range_est->AsInt() >= 5))
+            {
+            // Save last good value
+            mi_last_good_SOC = StandardMetrics.ms_v_bat_soc->AsInt();
+            mi_last_good_range = StandardMetrics.ms_v_bat_range_est->AsInt();
+            }
+          }
+        }
+
+////////////////////////////////////////////////////////////////////////
+// Charge state determination
+////////////////////////////////////////////////////////////////////////
+  if ((mi_QC != 0) || ((StandardMetrics.ms_v_charge_current->AsInt() != 0) && (StandardMetrics.ms_v_charge_voltage->AsInt() != 0)))
+  {
+    StandardMetrics.ms_v_env_charging12v->SetValue(true);
+    if (! StandardMetrics.ms_v_charge_pilot->AsBool())
+    {
+      // Charge has started
+      ESP_LOGI(TAG, "Charging started...");
+      StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+      StandardMetrics.ms_v_charge_pilot->SetValue(true);
+      StandardMetrics.ms_v_door_chargeport->SetValue(true);
+      StandardMetrics.ms_v_charge_state->SetValue("charging");
+      StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+      if (mi_QC != 0)
+        {
+          StandardMetrics.ms_v_charge_mode->SetValue("Quickcharge");
+          StandardMetrics.ms_v_charge_climit->SetValue(125);
+          StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsInt());
+          StandardMetrics.ms_v_charge_current->SetValue(StandardMetrics.ms_v_bat_current->AsInt()*-1.0);
+        }
+      else
+        {
+          StandardMetrics.ms_v_charge_mode->SetValue("standard");
+          StandardMetrics.ms_v_charge_climit->SetValue(16);
+        }
+        mi_chargekwh = 0;      // Reset charge kWh
+        mi_charge_timer = 0;    // Reset the per-second charge timer
+        mi_charge_wm = 0;       // Reset the per-minute watt accumulator
+    }
+    else
+        {
+          // Charge is ongoing...
+          ESP_LOGI(TAG, "Charging ongoing...");
+          mi_charge_timer++;
+          if (mi_charge_timer >= 60)
+          { // One minute has passed
+              mi_charge_timer = 0;
+              if (mi_QC == 0) // Not QC
+              {
+                  mi_charge_wm += (StandardMetrics.ms_v_charge_voltage->AsFloat()*StandardMetrics.ms_v_charge_current->AsFloat());
+                  if (mi_charge_wm >= 6000L)
+                  { // Let's move 1kWh to the virtual car
+                    mi_chargekwh += 0.1;
+                    StdMetrics.ms_v_charge_kwh->SetValue( mi_chargekwh, kWh );
+                    mi_charge_wm -= 6000L;
+                  }
+              }
+          }
+
+        }
+    }else if ((mi_QC == 0) && ((StandardMetrics.ms_v_charge_current->AsInt() == 0) && (StandardMetrics.ms_v_charge_voltage->AsInt() < 100)))
+          {
+          // Car is not charging
+
+          if (StandardMetrics.ms_v_charge_pilot->AsBool())
+            {
+            // Charge has completed / stopped
+
+              ESP_LOGI(TAG, "Charge stopped...");
+              StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+              StandardMetrics.ms_v_charge_pilot->SetValue(false);
+              StandardMetrics.ms_v_door_chargeport->SetValue(false);
+              StandardMetrics.ms_v_env_charging12v->SetValue(false);
+              if (StandardMetrics.ms_v_bat_soc->AsInt() < 92)
+                {
+                  // Assume charge was interrupted
+                  ESP_LOGI(TAG, "Charging interrupted...");
+                  StandardMetrics.ms_v_charge_state->SetValue("stopped");
+                  StandardMetrics.ms_v_charge_substate->SetValue("interrupted");
+                }
+                else
+                  {
+                    ESP_LOGI(TAG, "Charging done...");
+                    StandardMetrics.ms_v_charge_state->SetValue("done");
+                    StandardMetrics.ms_v_charge_substate->SetValue("stopped");
+                  }
+              mi_charge_timer = 0;       // Reset the per-second charge timer
+              mi_charge_wm = 0;          // Reset the per-minute watt accumulator
+              v_c_power_ac->SetValue(0.0);  // Reset charge power meter
+              v_c_power_dc->SetValue(0.0);  // Reset charge power meter
+              StandardMetrics.ms_v_charge_current->SetValue(0.0); //Reset charge current
+              StandardMetrics.ms_v_charge_climit->SetValue(0.0); //Reset charge limit
+              StandardMetrics.ms_v_charge_mode->SetValue("None"); //Set charge mode to NONE
+            }
+          }else if ((mi_QC != 0) && ((StandardMetrics.ms_v_charge_current->AsInt() == 0) && (StandardMetrics.ms_v_charge_voltage->AsInt() < 100)))
+            { // Quick charge end detection
+              // Car is not charging
+
+              if (StandardMetrics.ms_v_charge_pilot->AsBool())
+                {
+                // Charge has completed / stopped
+                  ESP_LOGI(TAG, "Charge QC stopped...");
+                  StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+                  StandardMetrics.ms_v_charge_pilot->SetValue(false);
+                  StandardMetrics.ms_v_door_chargeport->SetValue(false);
+                  StandardMetrics.ms_v_env_charging12v->SetValue(false);
+                  if (StandardMetrics.ms_v_bat_soc->AsInt() < 80)
+                    {
+                      // Assume charge was interrupted
+                      ESP_LOGI(TAG, "Charging QC interrupted...");
+                      StandardMetrics.ms_v_charge_state->SetValue("stopped");
+                      StandardMetrics.ms_v_charge_substate->SetValue("interrupted");
+                    }
+                    else
+                      {
+                        ESP_LOGI(TAG, "Charging QC done...");
+                        StandardMetrics.ms_v_charge_state->SetValue("done");
+                        StandardMetrics.ms_v_charge_substate->SetValue("stopped");
+                      }
+                  mi_charge_timer = 0;       // Reset the per-second charge timer
+                  mi_charge_wm = 0;          // Reset the per-minute watt accumulator
+                  v_c_power_ac->SetValue(0.0);  // Reset charge power meter
+                  v_c_power_dc->SetValue(0.0);  // Reset charge power meter
+                  StandardMetrics.ms_v_charge_current->SetValue(0.0); //Reset charge current
+                  StandardMetrics.ms_v_charge_climit->SetValue(0.0); //Reset charge limit
+                  StandardMetrics.ms_v_charge_mode->SetValue("None"); //Set charge mode to NONE
+                }
+            }
+
+
+    //Power calculation AC/DC
+    if(((v_c_power_dc->AsInt()==0) || (v_c_power_dc->AsInt() < 0)) && (v_c_power_ac->AsInt() == 0) )
+      {
+        v_c_efficiency->SetValue(0,Percentage);
+      }
+      else
+        {
+          v_c_efficiency->SetValue((v_c_power_dc->AsFloat()/v_c_power_ac->AsFloat())*100,Percentage);
+        }
+  } //Car in P "if" close
+  
     StandardMetrics.ms_v_bat_soh->SetValue(cfg_soh);
 
     //  Trip consumption
@@ -732,6 +870,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
     /*
      *   Charge states if car in park
     */
+    /*
     if (StandardMetrics.ms_v_env_gear->AsInt() == -1)
     { //Charge state if transmission in P
       if((StandardMetrics.ms_v_charge_voltage->AsFloat() > 191) && (StandardMetrics.ms_v_charge_voltage->AsFloat() < 254) && (StandardMetrics.ms_v_charge_current->AsFloat() < 16.0) && (StandardMetrics.ms_v_charge_current->AsFloat() > 0.1) )
@@ -777,13 +916,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
         }
 
       }
-
-    // power calculation set to 0
-    if(!StandardMetrics.ms_v_charge_inprogress->AsBool())
-      {
-        v_c_power_ac->SetValue(0.0);
-        v_c_power_dc->SetValue(0.0);
-      }
+*/
 
     if (StandardMetrics.ms_v_bat_soc->AsFloat() <= 10)
         {

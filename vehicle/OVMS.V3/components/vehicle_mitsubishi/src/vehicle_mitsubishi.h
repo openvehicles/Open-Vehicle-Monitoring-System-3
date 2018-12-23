@@ -103,7 +103,16 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     float mi_start_cc;
     int mi_start_time_utc;
     bool cfg_heater_old;
-    int cfg_soh;
+    unsigned char  cfg_soh;
+    unsigned char mi_charge_timer;
+    unsigned long mi_charge_wm;
+    float mi_chargekwh;
+    unsigned int mi_stale_charge;
+    unsigned int mi_est_range;
+    unsigned char mi_QC;
+    unsigned char mi_QC_counter;
+    unsigned char mi_last_good_SOC;
+    unsigned char mi_last_good_range;
 
 
     // --------------------------------------------------------------------------
