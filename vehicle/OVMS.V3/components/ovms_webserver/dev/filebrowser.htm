@@ -1,0 +1,120 @@
+<!--
+  Test/Development/Documentation page
+  - enable web server file access
+  - upload to web file path, e.g. /sd/dev/filebrowser.htm
+  - open in framework by e.g. http://test1.local/#/dev/filebrowser.htm
+-->
+
+<style>
+/* Note: set height or min-height on the filebrowser tbody.
+   Default height by class "filebrowser" is 310px (each file row has a height of 31px with the default font size) */
+#myfilebrowser tbody {
+  height: 35vh;
+}
+</style>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">FileBrowser Test/Demo</div>
+  <div class="panel-body">
+    
+    <div class="filebrowser" id="myfilebrowser" />
+    
+    <hr/>
+    <pre id="log"/>
+    <button type="button" class="btn btn-default" id="action-setpath">Set path to /sd/logs/log</button>
+    <button type="button" class="btn btn-default" id="action-stopload">Stop loading dir</button>
+    <button type="button" class="btn btn-default" id="action-filteron">Filter *.zip</button>
+    <button type="button" class="btn btn-default" id="action-filteroff">Filter off</button>
+    <button type="button" class="btn btn-default" id="action-sortoff">Sort off</button>
+    <p>Note: the test widget is configured to stop/inhibit loading on selection of a ".txt" file or a directory matching "DCIM".</p>
+  </div>
+</div>
+
+<script>
+
+// =======================================================================================
+// FileBrowser Widget:
+// 
+// Test/demo of init with all options.
+// Note: you can init a filebrowser without any options.
+// Defaults are path & quicknav as shown below, no sorting, no callbacks.
+// 
+// The input object passed to all callbacks contains these fields:
+//  - path          -- the full path (dir + "/" + file)
+//  - file          -- the file part of the currently selected path
+//  - dir           -- the directory part of the currently selected path
+//  - noload        -- set to true to inhibit directory loading (see onPathChange)
+// 
+// Note: path, file & dir are unvalidated user input.
+// 
+// Note on sorting: disabling initial sorting improves user interaction while loading the
+//  directory, i.e. to select files/dirs while the loader is running. This may
+//  be an option especially for large directories. The user can still sort manually.
+// 
+// Methods:
+//  - getInput()                  -- retrieve input object
+//  - setPath(newpath, reload)    -- add trailing slash to enter dir w/o file selection
+//  - sortList(by, dir)           -- sort file list
+//  - loadDir()                   -- trigger directory reload
+//  - stopLoad()                  -- abort directory loading
+//  - newDir()                    -- open create directory sub dialog
+// 
+
+$('#myfilebrowser').filebrowser({
+  path: '/sd/',
+  quicknav: ['/sd/', '/store/'],
+  filter: null,       // see Filter example below
+  sortBy: "name",     // …or "size" or "date" or null (disable)
+  sortDir: 1,         // …or -1 for reverse
+  onUpdate: function(input) {
+    // This is called after any widget configuration update, use for custom extensions.
+    $('#log').append('onUpdate: ' + JSON.stringify(input) + '\n');
+  },
+  onPathChange: function(input) {
+    // Called whenever the path changes.
+    $('#log').append('onPathChange: ' + JSON.stringify(input) + '\n');
+    // To inhibit loading the directory for the new path, set input.noload to true:
+    if (input.dir.indexOf("DCIM") >= 0 || input.file.indexOf('.txt') >= 0) {
+      $('#log').append('inhibiting directory loading\n');
+      input.noload = true;
+    }
+  },
+  onAction: function(input) {
+    // This is called when the user doubleclicks an entry or presses Enter in a directory:
+    $('#log').append('onAction: ' + JSON.stringify(input) + '\n');
+  },
+});
+
+$('#action-setpath').on('click', function(ev) {
+  $('#myfilebrowser').filebrowser('setPath', '/sd/logs/log', true);
+});
+$('#action-stopload').on('click', function(ev) {
+  $('#myfilebrowser').filebrowser('stopLoad');
+});
+$('#action-sortoff').on('click', function(ev) {
+  $('#myfilebrowser').filebrowser('sortList', '');
+});
+
+// Filter callback example:
+$('#action-filteron').on('click', function(ev) {
+  $('#myfilebrowser').filebrowser({
+    filter: function(f) { return f.isdir || f.name.match("\\.zip$"); }
+    // The filter callback is called per list entry object with…
+    // - isdir: true = is sub directory
+    // - name: the name part (file or directory, dir with trailing '/')
+    // - path: the full path of this entry
+    // - size: formatted size ('6.8k')
+    // - date: formatted date ('23-Nov-2018 17:42')
+    // - bytes: size in bytes, -1 for directories
+    // - isodate: ISO style date 'YYYY-mm-dd HH:MM'
+    // - class: '', can be used to add a custom row class
+    // Return true to allow the entry to be added to the list.
+  });
+});
+$('#action-filteroff').on('click', function(ev) {
+  $('#myfilebrowser').filebrowser({
+    filter: null
+  });
+});
+
+</script>

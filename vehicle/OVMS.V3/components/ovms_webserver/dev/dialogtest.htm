@@ -1,8 +1,8 @@
 <!--
   Test/Development/Documentation page
   - enable web server file access
-  - upload to web file path, e.g. /sd/dev/dialogtest.htm
-  - open in framework by e.g. http://test1.local/#/dev/dialogtest.htm
+  - upload to web dir, e.g. scp testpage.htm test1.local:/sd/dev/
+  - open in framework by e.g. http://test1.local/#/dev/testpage.htm
 -->
 
 <div class="panel panel-primary">
@@ -46,9 +46,12 @@
 //     contentClass: '',      added to .modal-content
 //     onShown: null,         function(input)
 //     onHidden: null,        function(input)
+//     onShow: null,          function(input)
+//     onHide: null,          function(input)
 //     onUpdate: null,        function(input)
 //     buttons: [{}],         see example
 //     timeout: 0,            in seconds
+//     input: null,           predefined/shared input object to use
 //   },
 
 // Note: use static dialogs (attached to the document) for speed and to store reusable
@@ -94,7 +97,7 @@ $('#action-dyn').on('click', function(){
       // add specific action callbacks to each button.
       { label: "Maybe…", btnClass: "warning", autoHide: false, action: function(input) {
         // input is the data container of the widget, with only predefined
-        // member being "button" = index of the button clicked (or null).
+        // member being "button" = the button clicked (or null).
         // You can use this container for custom extensions:
         input.clicked_maybe = true;
         $(this).find(".modal-body").append("<p>You're now a maybe person.</p>");
@@ -132,7 +135,7 @@ $('#action-confirm').on('click', function(){
   });
 });
 
-// The callback argument is the index of the button clicked, so
+// The callback argument is the index of the button clicked (or null), so
 // simple choice dialogs can be done like this:
 $('#action-choice').on('click', function(){
   $("#log").text("");

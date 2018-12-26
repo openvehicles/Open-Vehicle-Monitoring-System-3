@@ -1,0 +1,91 @@
+<!--
+  Test/Development/Documentation page
+  - enable web server file access
+  - upload to web file path, e.g. /sd/dev/filedialog.htm
+  - open in framework by e.g. http://test1.local/#/dev/filedialog.htm
+-->
+
+<div class="filedialog" id="fileselect"/>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">FileDialog Test</div>
+  <div class="panel-body">
+    <button class="btn btn-default" id="action-load">Load</button>
+    <button class="btn btn-default" id="action-save">Save</button>
+    <hr/>
+    <pre id="log"/>
+  </div>
+</div>
+
+<script>
+
+// =======================================================================================
+// FileDialog is a Dialog with an embedded FileBrowser.
+// 
+// The input object combines the dialog button and the file browser data.
+// 
+// Options:
+//     title: 'Select file',              -- dialog title
+//     submit: 'Select',                  -- label of submit button
+//     onSubmit: null,                    -- callback function(input)
+//     onCancel: null,                    -- callback function(input)
+// 
+// …inherited from FileBrowser:
+//     path: '',
+//     quicknav: ['/sd/', '/store/'], 
+//     filter: null,
+//     sortBy: null,
+//     sortDir: 1,
+// 
+// …inherited from Dialog:
+//     backdrop: true,
+//     keyboard: true,
+//     transition: 'fade',
+//     size: 'lg',
+//     onUpdate: null,
+// 
+
+// Init dialog:
+$("#fileselect").filedialog({
+  path: '/store/scripts/',
+  quicknav: ['/store/scripts/', '/store/events/', '/store/obd2ecu/'],
+});
+
+$('#action-load').on('click', function(){
+  $('#log').empty();
+  $("#fileselect").filedialog('show', {
+    title: "Load Script",
+    submit: "Load",
+    onSubmit: function(input) {
+      // This is called when the user doubleclicks an entry or presses Enter in a directory.
+      // Note: you need to check if input.file is valid (empty = directory selected).
+      if (input.file)
+        $('#log').text('Loading: "' + input.path + '"\n');
+      else
+        $('#log').text('Directory selection: "' + input.path + '"\n');
+    },
+    onCancel: function(input) {
+      // This is called when the user cancels or closes the dialog.
+      $('#log').text('Load cancelled\n');
+    },
+  });
+});
+
+$('#action-save').on('click', function(){
+  $('#log').empty();
+  $("#fileselect").filedialog('show', {
+    title: "Save Script",
+    submit: "Save",
+    onSubmit: function(input) {
+      if (input.file)
+        $('#log').text('Saving: "' + input.path + '"\n');
+      else
+        $('#log').text('Directory selection: "' + input.path + '"\n');
+    },
+    onCancel: function(input) {
+      $('#log').text('Save cancelled\n');
+    },
+  });
+});
+
+</script>

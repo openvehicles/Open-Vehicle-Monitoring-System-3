@@ -1,5 +1,7 @@
 /* ovms.js | (c) Michael Balzer | https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3 */
 
+const monthnames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
 
 /**
  * Utilities
@@ -33,10 +35,36 @@ function encode_html(s){
     .replace(/>/g, '&gt;');
 }
 
+function fix_minheight($el) {
+  var mh = parseInt($el.css("max-height")), h = $el.outerHeight();
+  $el.css("min-height", mh ? Math.min(h, mh) : h);
+}
+
+function getPathURL(path) {
+  // TODO: use actual http.server config
+  if (path.startsWith('/sd/'))
+    return path.substr(3);
+  else
+    return '';
+}
+
 
 /**
  * AJAX Pages & Commands
  */
+
+function xhrErrorInfo(request, textStatus, errorThrown) {
+  var txt = "";
+  if (request.status == 401 || request.status == 403)
+    txt = "Session expired. <a class=\"btn btn-sm btn-default\" href=\"javascript:reloadpage()\">Login</a>";
+  else if (request.status >= 400)
+    txt = "Error " + request.status + " " + request.statusText;
+  else if (textStatus)
+    txt = "Request " + textStatus + ", please retry";
+  else if (errorThrown)
+    txt = errorThrown;
+  return txt;
+}
 
 function setcontent(tgt, uri, text){
   if (!tgt || !tgt.length) return;
@@ -60,6 +88,7 @@ function setcontent(tgt, uri, text){
     tgt.html(text).hide().fadeIn(50);
   }
 
+  tgt.find(".get-window-resize").trigger('window-resize');
   tgt.find(".receiver").subscribe();
 }
 
@@ -102,67 +131,84 @@ function loaduri(target, method, uri, data){
   return true;
 }
 
-function loadcmd(command, target){
-  var data = "command=" + encodeURIComponent(command);
-  var output, outmode = "";
+function standardTextFilter(msg) {
+  if (msg.error)
+    return '<div class="bg-danger">'+msg.error+'</div>';
+  else
+    return $('<div/>').text(msg.text).html();
+}
 
-  if (typeof target == "object") {
-    output = target;
+function loadcmd(command, target, filter) {
+  var $output, outmode = "";
+
+  if (typeof target == "function") {
+    filter = target; target = null;
+  }
+  if (target == null) {
+    $output = $(null);
+  }
+  else if (typeof target == "object") {
+    $output = target;
   }
   else if (target.startsWith("+")) {
     outmode = "+";
-    output = $(target.substr(1));
+    $output = $(target.substr(1));
   } else {
-    output = $(target);
+    $output = $(target);
   }
+
+  if (!filter)
+    filter = standardTextFilter;
 
   var lastlen = 0, xhr, timeouthd, timeout = 20;
   if (/^(test |ota |co .* scan)/.test(command)) timeout = 300;
-  var checkabort = function(){ if (xhr.readyState != 4) xhr.abort("timeout"); };
+  var checkabort = function() {
+    if (xhr.readyState != 4)
+      xhr.abort("timeout");
+  };
+  var add_output = function(addhtml) {
+    if (addhtml == null || !$output.length) {
+      outmode = "+";
+      return;
+    }
+    if (outmode == "") { $output.empty(); outmode = "+"; }
+    var autoscroll = ($output.get(0).scrollTop + $output.height()) >= $output.get(0).scrollHeight;
+    $output.append(addhtml);
+    $output.closest('.get-window-resize').trigger('window-resize');
+    if (autoscroll) $output.scrollTop($output.get(0).scrollHeight);
+  };
 
-  xhr = $.ajax({ "type": "post", "url": "/api/execute", "data": data,
+  xhr = $.ajax({ "type": "post", "url": "/api/execute", "data": { "command": command },
     "timeout": 0,
-    "beforeSend": function(){
-      output.addClass("loading");
-      var mh = parseInt(output.css("max-height")), h = output.outerHeight();
-      output.css("min-height", mh ? Math.min(h, mh) : h);
-      output.scrollTop(output.get(0).scrollHeight);
+    "beforeSend": function() {
+      if ($output.length) {
+        $output.addClass("loading");
+        fix_minheight($output);
+      }
       timeouthd = window.setTimeout(checkabort, timeout*1000);
     },
-    "complete": function(){
+    "complete": function() {
       window.clearTimeout(timeouthd);
-      output.removeClass("loading");
-      var mh = parseInt(output.css("max-height")), h = output.outerHeight();
-      output.css("min-height", mh ? Math.min(h, mh) : h);
+      if ($output.length) {
+        $output.removeClass("loading");
+        fix_minheight($output);
+      }
     },
     "xhrFields": {
-      onprogress: function(e){
-        if (e.currentTarget.status != 200)
-          return;
-        var response = e.currentTarget.response;
-        var addtext = response.substring(lastlen);
-        lastlen = response.length;
-        if (outmode == "") { output.html(""); outmode = "+"; }
-        output.html(output.html() + $("<div/>").text(addtext).html());
-        output.scrollTop(output.get(0).scrollHeight);
+      onprogress: function(ev) {
+        var request = ev.currentTarget;
+        if (request.status != 200) return;
+        var addtext = request.response.substring(lastlen);
+        lastlen = request.response.length;
+        add_output(filter({ "request": request, "text": addtext }));
         window.clearTimeout(timeouthd);
         timeouthd = window.setTimeout(checkabort, timeout*1000);
       },
     },
-    "error": function(response, xhrerror, httperror){
-      console.log("loadcmd '" + command + "' ERROR: xhrerror=" + xhrerror + ", httperror=" + httperror);
-      var txt;
-      if (response.status == 401 || response.status == 403)
-        txt = "Session expired. <a class=\"btn btn-sm btn-default\" href=\"javascript:reloadpage()\">Login</a>";
-      else if (response.status >= 400)
-        txt = "Error " + response.status + " " + response.statusText;
-      else
-        txt = "Request " + (xhrerror||"failed") + ", please retry";
-      if (outmode == "")
-        output.html('<div class="bg-danger">'+txt+'</div>');
-      else
-        output.html(output.html() + '<div class="bg-danger">'+txt+'</div>');
-      output.scrollTop(output.get(0).scrollHeight);
+    "error": function(request, textStatus, errorThrown) {
+      console.log("loadcmd '" + command + "' ERROR: status=" + textStatus + ", httperror=" + errorThrown);
+      var txt = xhrErrorInfo(request, textStatus, errorThrown);
+      add_output(filter({ "request": request, "error": txt }));
     },
   });
 
@@ -326,6 +372,23 @@ $.fn.unsubscribe = function(topics) {
 };
 
 
+$.fn.reconnectTicker = function(msg) {
+  $("html").addClass("loading disabled");
+  ws_inhibit = 10;
+  if (ws) ws.close();
+  window.setInterval(function(){
+    if (ws && ws.readyState == ws.OPEN)
+      location.reload();
+    else
+      $("#reconnectTickerDots").append("•");
+  }, 1000);
+  return this.append(
+      (msg ? msg : '<p class="lead">Rebooting now…</p>') +
+      '<p>The window will automatically reload when the browser reconnects to the module.</p>' +
+      '<p id="reconnectTickerDots">•</p>');
+};
+
+
 /**
  * UI Widgets
  */
@@ -358,7 +421,7 @@ $.pluginMaker = function(plugin) {
 };
 
 // OVMS namespace:
-var ovms = {};
+var ovms = {uid:0};
 
 // Widget root class:
 ovms.Widget = function(el, options) {
@@ -368,6 +431,7 @@ $.extend(ovms.Widget.prototype, {
   cname: "widget",
   options: {},
   init: function(el, options) {
+    this.uid = ++ovms.uid;
     this.$el = $(el);
     this.$el.data(this.cname, this);
     this.$el.addClass(this.cname);
@@ -384,6 +448,7 @@ ovms.Dialog = function(el, options) {
 }
 $.extend(ovms.Dialog.prototype, ovms.Widget.prototype, {
   cname: "dialog",
+
   options: {
     title: '',
     body: '',
@@ -394,48 +459,62 @@ $.extend(ovms.Dialog.prototype, ovms.Widget.prototype, {
     transition: 'fade',
     size: '',
     contentClass: '',
+    onShow: null,
+    onHide: null,
     onShown: null,
     onHidden: null,
     onUpdate: null,
     buttons: [{}],
     timeout: 0,
+    input: null,
   },
+
   init: function(el, options) {
     if ($(el).parent().length == 0) {
       options = $.extend(options, { show: true, isDynamic: true });
     }
     ovms.Widget.prototype.init.call(this, el, options);
-    this.input = {};
+    this.input = options.input ? options.input : {};
+    this.$buttons = [];
     // convert element to modal if not predefined by user:
     if (this.$el.children().length == 0) {
       this.$el.html('<div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title"></h4></div><div class="modal-body"></div><div class="modal-footer"></div></div></div></div>');
       this.$el.addClass("modal");
     }
+    this.$el.on('show.bs.modal', $.proxy(this.onShow, this));
+    this.$el.on('hide.bs.modal', $.proxy(this.onHide, this));
     this.$el.on('shown.bs.modal', $.proxy(this.onShown, this));
     this.$el.on('hidden.bs.modal', $.proxy(this.onHidden, this));
     if (this.options.isDynamic) this.$el.appendTo('body');
     this.update(this.options);
   },
+
   update: function(options) {
     $.extend(this.options, options);
     // configure modal:
     this.$el.removeClass('fade').addClass(this.options.transition);
     this.$el.find('.modal-dialog').attr("class", "modal-dialog " + (this.options.size ? ("modal-" + this.options.size) : ""));
     this.$el.find('.modal-content').attr("class", "modal-content " + (this.options.contentClass || ""));
-    this.$el.find('.modal-title').html(this.options.title);
-    this.$el.find('.modal-body').html(this.options.body);
-    var footer = this.$el.find('.modal-footer');
-    footer.html('');
-    for (var i = 0; i < this.options.buttons.length; i++) {
-      var btn = $.extend({ label: 'Close', index: i, btnClass: 'default', autoHide: true, action: null }, this.options.buttons[i]);
-      this.options.buttons[i] = btn;
-      btn.$el = $('<button type="button" class="btn btn-'+btn.btnClass+'" value="'+btn.index+'">'+btn.label+'</button>')
-        .appendTo(footer).on('click', $.proxy(this.onClick, this, btn));
+    if (options.title != null)
+      this.$el.find('.modal-title').html(options.title);
+    if (options.body != null)
+      this.$el.find('.modal-body').html(options.body);
+    if (options.buttons != null) {
+      var footer = this.$el.find('.modal-footer');
+      footer.empty();
+      this.$buttons = [];
+      for (var i = 0; i < this.options.buttons.length; i++) {
+        var btn = $.extend({ label: 'Close', btnClass: 'default', autoHide: true, action: null }, this.options.buttons[i], { index: i });
+        this.options.buttons[i] = btn;
+        this.$buttons[i] = $('<button type="button" class="btn btn-'+btn.btnClass+'" value="'+btn.index+'">'+btn.label+'</button>')
+          .appendTo(footer).on('click', $.proxy(this.onClick, this, btn));
+      }
     }
     if (this.options.onUpdate)
       this.options.onUpdate.call(this.$el, this.input);
     this.$el.modal(this.options);
   },
+
   show: function(options) {
     if (options) this.update(options);
     this.$el.modal('show');
@@ -443,6 +522,17 @@ $.extend(ovms.Dialog.prototype, ovms.Widget.prototype, {
   hide: function() {
     this.$el.modal('hide');
   },
+
+  onShow: function() {
+    if (this.options.onShow)
+      this.options.onShow.call(this.$el, this.input);
+  },
+
+  onHide: function() {
+    if (this.options.onHide)
+      this.options.onHide.call(this.$el, this.input);
+  },
+
   onShown: function() {
     this.input.button = null;
     this.$el.find('.form-control, .btn').first().focus();
@@ -451,22 +541,44 @@ $.extend(ovms.Dialog.prototype, ovms.Widget.prototype, {
     if (this.options.timeout)
       after(this.options.timeout, $.proxy(this.hide, this));
   },
-  onClick: function(button) {
-    this.input.button = button.index;
-    if (button.autoHide)
-      this.hide();
-    else if (button.action)
-      button.action.call(this.$el, this.input);
-  },
+
   onHidden: function() {
     if (this.options.isDynamic)
       this.$el.detach();
     if (this.options.onHidden)
       this.options.onHidden.call(this.$el, this.input);
-    if (this.input.button != null) {
-      var button = this.options.buttons[this.input.button];
-      if (button.action)
-        button.action.call(this.$el, this.input);
+    if (this.input.button != null && this.input.button.action) {
+      this.input.button.action.call(this.$el, this.input);
+    }
+  },
+
+  triggerButton: function(button) {
+    var btn;
+    if (typeof button == "number") {
+      btn = this.$buttons[button];
+    }
+    else if (typeof button == "string") {
+      for (var i = 0; i < this.options.buttons.length; i++) {
+        if (this.options.buttons[i].label == button) {
+          btn = this.$buttons[i];
+          break;
+        }
+      }
+    }
+    if (btn) {
+      btn.trigger('click');
+      return true;
+    }
+    return false;
+  },
+
+  onClick: function(button) {
+    this.input.button = button;
+    if (button.autoHide)
+      this.hide();
+    else if (button.action) {
+      button.action.call(this.$el, this.input);
+      this.input.button = null;
     }
   },
 });
@@ -485,7 +597,7 @@ $.fn.confirmdialog = function(_title, _body, _buttons, _action, _timeout) {
     }
   }
   if (_action) {
-    options.onHidden = function(input) { _action(input.button); };
+    options.onHidden = function(input) { _action(input.button ? input.button.index : null); };
   }
   return this.dialog(options);
 };
@@ -493,8 +605,8 @@ var confirmdialog = function() { return $.fn.confirmdialog.apply($('<div />'), a
 
 $.fn.promptdialog = function(_type, _title, _prompt, _buttons, _action) {
   var options = { show: true, title: _title, buttons: [] };
-  var id = Math.random().toString().substr(2);
-  options.body = '<label for="prompt'+id+'">'+_prompt+'</label><input id="prompt'+id+'" type="'+_type+'" class="form-control">';
+  var uid = ++ovms.uid;
+  options.body = '<label for="prompt'+uid+'">'+_prompt+'</label><input id="prompt'+uid+'" type="'+_type+'" class="form-control">';
   if (_buttons) {
     for (var i = 0; i < _buttons.length; i++) {
       options.buttons.push({ label: _buttons[i],
@@ -509,11 +621,416 @@ $.fn.promptdialog = function(_type, _title, _prompt, _buttons, _action) {
   };
   options.onHidden = function(input) {
     if (input.button) input.text = $(this).find('input').val();
-    if (_action) _action(input.button, input.text);
+    if (_action) _action(input.button ? input.button.index : null, input.text);
   };
   return this.dialog(options);
 };
 var promptdialog = function() { return $.fn.promptdialog.apply($('<div />'), arguments); };
+
+
+// FileBrowser:
+ovms.FileBrowser = function(el, options) {
+  if (el) this.init(el, options);
+}
+$.extend(ovms.FileBrowser.prototype, ovms.Widget.prototype, {
+  cname: "filebrowser",
+
+  options: {
+    path: '',
+    quicknav: ['/sd/', '/store/'],
+    filter: null,
+    sortBy: null,
+    sortDir: 1,
+    onUpdate: null,
+    onPathChange: null,
+    onAction: null,
+    input: null,
+  },
+
+  init: function(el, options) {
+    ovms.Widget.prototype.init.call(this, el, options);
+
+    this.input = options.input ? options.input : {};
+    $.extend(this.input, {
+      path: '',
+      dir: '',
+      file: '',
+      noload: false,
+    });
+    this.data = {
+      lastpath: '',
+      lastdir: '',
+      listdir: '',
+      listsel: '',
+    };
+    this.xhr = null;
+
+    if (this.$el.children().length == 0) {
+      this.$el.html('<div class="fb-pathbox form-group"><label class="control-label" for="input-path-${uid}">Path (trailing slash = dir):</label><div class="input-group"><input type="text" class="form-control font-monospace" name="path" id="input-path-${uid}" value=""><div class="input-group-btn"><button type="button" class="btn btn-default fb-path-stop" disabled title="Stop">🗙</button><button type="button" class="btn btn-default fb-path-reload" title="Reload">⟲</button><button type="button" class="btn btn-default fb-path-up" title="Up">↰</button></div></div></div><div class="fb-quicknav form-group"/><div class="fb-files"><table class="table table-condensed table-hover table-scrollable font-monospace get-window-resize"><thead><tr><th class="col-xs-3 col-sm-2" data-key="size">Size</th><th class="hidden-xs col-sm-4" data-key="date">Date</th><th class="col-xs-9 col-sm-6" data-key="name">Name</th></tr></thead><tbody/></table></div>'.replace(/\$\{uid\}/g, this.uid));
+    }
+
+    this.$pathinput = this.$el.find("input[name=path]");
+    this.$pathinput.on('change', $.proxy(this.setPath, this)).on('keydown', $.proxy(function(ev) {
+      if (ev.which == 13) {
+        var lastdir = this.input.dir;
+        this.setPath();
+        if (this.input.file || this.input.dir == lastdir)
+          this.onAction();
+        ev.preventDefault();
+      }
+      else if (ev.which == 27) {
+        this.stopLoad();
+      }
+    }, this));
+    this.$el.find('.fb-path-up').on('click', $.proxy(function(ev) {
+      var parent = this.input.dir.replace(/\/[^/]+$/, '');
+      if (parent) this.setPath(parent+'/');
+      else this.setPath(this.input.dir+'/');
+    }, this));
+    this.$el.find('.fb-path-reload').on('click', $.proxy(function(ev) {
+      this.setPath(this.input.path, true);
+    }, this));
+    this.$btnstop = this.$el.find('.fb-path-stop');
+    this.$btnstop.on('click', $.proxy(function(ev) { this.stopLoad(); }, this));
+
+    this.$quicknav = this.$el.find(".fb-quicknav");
+
+    this.$filetable = this.$el.find(".fb-files>table");
+    this.$filecols = this.$filetable.find("thead th");
+    this.$filecols.on('click', $.proxy(function(ev) {
+      var by = $(ev.currentTarget).data("key");
+      var dir = $(ev.currentTarget).hasClass('sort-down') ? -1 : 1;
+      if (by == this.options.sortBy) dir = -dir;
+      this.sortList(by, dir);
+      this.$pathinput.focus();
+    }, this));
+
+    this.$filebody = this.$filetable.find("tbody");
+    this.$filebody.on('click', 'tr', $.proxy(function(ev) {
+      this.data.listsel = $(ev.currentTarget).data("name");
+      this.setPath(this.data.listdir + "/" + this.data.listsel);
+      ev.preventDefault();
+    }, this)).on('dblclick', 'tr', $.proxy(this.onAction, this));
+
+    this.update(this.options);
+  },
+
+  update: function(options) {
+    $.extend(this.options, options);
+
+    this.$quicknav.empty();
+    for (var i = 0; i < this.options.quicknav.length; i++) {
+      this.$quicknav.append('<button type="button" class="btn btn-sm btn-default"><code>' + this.options.quicknav[i] + '</code></button>');
+    }
+    this.$quicknav.find("button").on('click', $.proxy(function(ev) {
+      this.setPath($(ev.delegateTarget).text());
+    }, this));
+
+    if (this.options.onUpdate)
+      this.options.onUpdate.call(this.$el, this.input);
+
+    this.sortList(this.options.sortBy, this.options.sortDir);
+    if (options.path !== undefined) {
+      this.stopLoad();
+      this.setPath(options.path);
+    }
+    else if (options.filter !== undefined) {
+      this.loadDir();
+    }
+  },
+
+  getInput: function() {
+    return this.input;
+  },
+
+  setPath: function(newpath, reload) {
+    if (typeof newpath == "string") {
+      this.input.path = newpath;
+      this.$pathinput.val(newpath);
+    } else {
+      this.input.path = this.$pathinput.val();
+    }
+    this.input.dir = this.input.path.replace(/\/[^/]*$/, '');
+    this.input.file = this.input.path.substr(this.input.dir.length+1);
+
+    var fn = "";
+    if (this.input.dir == this.data.listdir)
+      fn = this.input.path.substr(this.data.listdir.length+1);
+    this.$filebody.children().each(function() {
+      if ($(this).data("name") === fn) $(this).addClass("active");
+      else $(this).removeClass("active");
+    });
+
+    if (reload)
+      this.data.lastdir = '';
+
+    if (this.input.path != this.data.lastpath) {
+      this.input.noload = false;
+      if (this.options.onPathChange)
+        this.options.onPathChange.call(this.$el, this.input);
+      this.data.lastpath = this.input.path;
+    }
+
+    if (this.input.dir != this.data.lastdir) {
+      if (this.input.noload) {
+        this.stopLoad();
+        this.data.lastdir = '';
+        this.$filebody.empty();
+        this.data.listdir = '';
+        this.data.listsel = '';
+      } else {
+        this.loadDir();
+        this.data.lastdir = this.input.dir;
+      }
+    }
+
+    this.$pathinput.focus();
+  },
+
+  loadDir: function() {
+    var self = this;
+    var fbuf = "";
+
+    this.stopLoad();
+    this.$filebody.empty();
+    this.data.listdir = this.input.dir;
+    this.data.listsel = '';
+    if (!this.data.listdir)
+      return;
+
+    this.$btnstop.prop('disabled', false);
+    this.xhr = loadcmd("vfs ls " + this.input.dir, this.$filebody, function(msg) {
+      if (msg.error) {
+        if (msg.error.startsWith("Request abort"))
+          return '<div class="bg-info">Stopped.</div>';
+        else
+          return '<div class="bg-danger">'+msg.error+'</div>';
+      }
+
+      fbuf += msg.text;
+      var lines = fbuf.split("\n");
+      if (!lines || lines.length < 2) return "";
+      fbuf = lines[lines.length-1];
+      var res = '', f = {};
+      for (var i = 0; i < lines.length-1; i++) {
+        if (!lines[i]) continue;
+        if (lines[i].startsWith("Error"))
+          return '<div class="bg-danger">' + lines[i] + '</div>';
+        f.size = lines[i].substring(0, 10).trim();
+        f.date = lines[i].substring(10, 29).trim();
+        f.name = lines[i].substring(29).trim();
+        if (!f.name) {
+          console.log("FileBrowser.loadDir: can't parse line: '" + lines[i] + "'");
+        } else {
+          f.path = self.data.listdir + '/' + f.name;
+          f.isdir = (f.size == '[DIR]');
+          f.bytes = self.sizeToBytes(f.size);
+          f.isodate = self.dateToISO(f.date);
+          f.class = "";
+          if (self.options.filter && !self.options.filter(f))
+            continue;
+          if (f.name == self.input.file) {
+            f.class += " active";
+            self.data.listsel = f.name;
+          } else {
+            f.class = "";
+          }
+          res += '<tr data-name="' + encode_html(f.name) + '" data-size="' + f.bytes +
+            '" data-date="' + f.isodate + '" class="' + f.class + '">' +
+            '<td class="col-xs-3 col-sm-2">' + f.size +
+            '</td><td class="hidden-xs col-sm-4">' + f.date +
+            '</td><td class="col-xs-9 col-sm-6">' + encode_html(f.name) + '</td></tr>';
+        }
+      }
+
+      if (!self.options.sortBy)
+        return res;
+      if (res) {
+        var scrollpos = self.$filebody.get(0).scrollTop;
+        self.$filebody.detach().append(res);
+        self.sortList();
+        self.$filebody.appendTo(self.$filetable).scrollTop(scrollpos);
+        self.$filetable.trigger('window-resize');
+      }
+      return null;
+    }).always($.proxy(function() {
+      this.$btnstop.prop('disabled', true);
+    }, this));
+  },
+
+  sizeToBytes: function(size) {
+    if (size == "[DIR]") return -1;
+    var unit = size[size.length-1], val = parseFloat(size);
+    if (unit == 'k') return val*1024;
+    else if (unit == 'M') return val*1048576;
+    else if (unit == 'G') return val*1073741824;
+    else return val;
+  },
+
+  dateToISO: function(date) {
+    var month = monthnames.indexOf(date.substr(3,3)) + 1;
+    return date.substr(7,4)+'-'+(month<10?'0':'')+month+'-'+date.substr(0,2)+' '+date.substr(12);
+  },
+
+  stopLoad: function() {
+    this.$btnstop.prop('disabled', true);
+    if (this.xhr)
+      this.xhr.abort();
+    this.$pathinput.focus();
+  },
+
+  sortList: function(by, dir) {
+    if (by == null) {
+      by = this.options.sortBy;
+      dir = this.options.sortDir;
+    } else {
+      dir = dir || 1;
+      this.options.sortBy = by;
+      this.options.sortDir = dir;
+      this.$filecols.removeClass('sort-up sort-down')
+        .filter('[data-key="'+by+'"]').addClass((dir<0) ? 'sort-down' : 'sort-up');
+    }
+    if (!by) return;
+    var rows = $.makeArray(this.$filebody.children());
+    rows.sort(function(a,b){
+      if (!a.dataset[by]) return 1; if (!b.dataset[by]) return -1;
+      var pri = a.dataset[by].localeCompare(b.dataset[by]);
+      var sec = (by!="name") ? a.dataset["name"].localeCompare(b.dataset["name"]) : 0;
+      return dir * (pri ? pri : sec);
+    });
+    this.$filebody.html(rows);
+  },
+
+  newDir: function() {
+    this.stopLoad();
+    var path = this.input.dir + "/";
+    var self = this;
+    promptdialog("text", "Create new directory", path + "… (empty = create this dir)", ["Cancel", "Create"], function(create, dirname) {
+      if (create) {
+        path = (path + dirname).replace(/\/+$/, "");
+        $.post("/api/execute", { "command": "vfs mkdir " + path }, function(result) {
+          if (result.startsWith("Error"))
+            confirmdialog("Error", result, ["OK"]);
+          else
+            self.setPath(path + "/", path == self.input.dir);
+        }).fail(function(request, textStatus, errorThrown){
+          confirmdialog("Error", xhrErrorInfo(request, textStatus, errorThrown), ["OK"]);
+        });
+      }
+    });
+  },
+
+  onAction: function() {
+    if (this.options.onAction)
+      this.options.onAction.call(this.$el, this.input);
+  },
+
+});
+$.pluginMaker(ovms.FileBrowser);
+
+
+// FileDialog:
+ovms.FileDialog = function(el, options) {
+  if (el) this.init(el, options);
+}
+$.extend(ovms.FileDialog.prototype, ovms.Widget.prototype, {
+  cname: "filedialog",
+
+  options: {
+    title: 'Select file',
+    submit: 'Select',
+    onSubmit: null,
+    onCancel: null,
+    path: '',
+    quicknav: ['/sd/', '/store/'],
+    filter: null,
+    sortBy: null,
+    sortDir: 1,
+    showNewDir: true,
+    backdrop: true,
+    keyboard: true,
+    transition: 'fade',
+    size: 'lg',
+    onUpdate: null,
+  },
+
+  init: function(el, options) {
+    ovms.Widget.prototype.init.call(this, el, options);
+    this.input = {};
+    this.$fb = null;
+    this.$el.dialog({
+      input: this.input,
+      body: '<div class="filebrowser"/>',
+      onHide: $.proxy(this.onHide, this),
+      onHidden: $.proxy(this.onHidden, this),
+    });
+    this.$fb = this.$el.find('.filebrowser').filebrowser({
+      input: this.input,
+      onAction: $.proxy(this.onAction, this),
+    });
+    this.update(this.options);
+  },
+
+  update: function(options) {
+    $.extend(this.options, options);
+    var newbtns = [];
+    if (this.options.showNewDir) newbtns.push(
+      { label: "New dir", btnClass: "default pull-left", autoHide: false, action: $.proxy(this.newDir, this) });
+    newbtns.push(
+      { label: "Cancel" },
+      { label: this.options.submit, btnClass: "primary" });
+    this.$el.dialog({
+      title: this.options.title,
+      buttons: newbtns,
+      backdrop: this.options.backdrop,
+      keyboard: this.options.keyboard,
+      transition: this.options.transition,
+      size: this.options.size,
+    });
+    this.$fb.filebrowser({
+      path: (options.path != null) ? options.path : this.input.path,
+      quicknav: this.options.quicknav,
+      filter: this.options.filter,
+      sortBy: this.options.sortBy,
+      sortDir: this.options.sortDir,
+    });
+    if (this.options.onUpdate)
+      this.options.onUpdate.call(this.$el, this.input);
+  },
+
+  show: function(options) {
+    if (options) this.update(options);
+    this.$el.dialog('show');
+  },
+  hide: function() {
+    this.$el.dialog('hide');
+  },
+
+  setPath: function(newpath, reload) {
+    this.$fb.filebrowser('setPath', newpath, reload);
+  },
+  newDir: function() {
+    this.$fb.filebrowser('newDir');
+  },
+
+  onAction: function() {
+    this.$el.dialog('triggerButton', this.options.submit);
+  },
+  onHide: function() {
+    this.$fb.filebrowser('stopLoad');
+  },
+  onHidden: function(input) {
+    if (input.button && input.button.label == this.options.submit) {
+      if (this.options.onSubmit)
+        this.options.onSubmit.call(this.$el, this.input);
+    }
+    else {
+      if (this.options.onCancel)
+        this.options.onCancel.call(this.$el, this.input);
+    }
+  },
+});
+$.pluginMaker(ovms.FileDialog);
 
 
 // Template list editor:
@@ -547,7 +1064,7 @@ $.fn.listEditor = function(op, data){
       });
     }
   });
-}
+};
 
 
 /**
@@ -667,12 +1184,16 @@ $(function(){
 
   // Modal autoclear:
   $("body").on("hidden.bs.modal", ".modal", function(evt) {
-    $(this).find(".modal-autoclear").html("");
+    $(this).find(".modal-autoclear").empty();
   });
 
   // Proxy window resize:
   $(window).on("resize", function(event){
     $(".get-window-resize").trigger("window-resize");
+  });
+  $("body").on("window-resize", ".table-scrollable", function(evt) {
+    var bw = $(this).find('>tbody').get(0).scrollWidth;
+    if (bw) $(this).find('>thead').css('width', bw);
   });
 
   // Monitor timer:
