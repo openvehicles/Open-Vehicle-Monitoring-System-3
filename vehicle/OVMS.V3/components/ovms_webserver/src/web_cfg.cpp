@@ -1649,8 +1649,23 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "</ol>");
   c.input_info("Upload",
     "Not yet implemented. Please copy your update file to an SD card and enter the path below.");
-  c.input_text("File path", "flash_vfs", mru.c_str(),
-    "Path to firmware file", "<p>SD card root: <code>/sd/</code></p>", "list=\"files\"");
+
+  c.printf(
+    "<div class=\"form-group\">\n"
+      "<label class=\"control-label col-sm-3\" for=\"input-flash_vfs\">File path:</label>\n"
+      "<div class=\"col-sm-9\">\n"
+        "<div class=\"input-group\">\n"
+          "<input type=\"text\" class=\"form-control\" placeholder=\"Path to firmware file\" name=\"flash_vfs\" id=\"input-flash_vfs\" value=\"%s\" list=\"files\">\n"
+          "<div class=\"input-group-btn\">\n"
+            "<button type=\"button\" class=\"btn btn-default\" id=\"input-flash_vfs-select\">Select</button>\n"
+          "</div>\n"
+        "</div>\n"
+        "<span class=\"help-block\">\n"
+          "<p>SD card root: <code>/sd/</code></p>\n"
+        "</span>\n"
+      "</div>\n"
+    "</div>\n"
+    , mru.c_str());
 
   c.print("<datalist id=\"files\">");
   if (mru != "")
@@ -1716,7 +1731,8 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
         "</div>"
       "</div>"
     "</div>"
-    "<script>"
+    "<div class=\"filedialog\" id=\"fwselect\"/>\n"
+    "<script>\n"
       "function setloading(sel, on){"
         "$(sel+\" button\").prop(\"disabled\", on);"
         "if (on) $(sel).addClass(\"loading\");"
@@ -1724,6 +1740,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
       "}"
       "$(\".section-flash button\").on(\"click\", function(ev){"
         "var action = $(this).attr(\"value\");"
+        "if (!action) return;"
         "$(\"#output\").text(\"Processing… (do not interrupt, may take some minutes)\\n\");"
         "setloading(\"#flash-dialog\", true);"
         "$(\"#flash-dialog\").modal(\"show\");"
@@ -1754,6 +1771,22 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
         "$(\"#flash-dialog\").removeClass(\"fade\").modal(\"hide\");"
         "loaduri(\"#main\", \"get\", \"/cfg/firmware\");"
       "});"
+      "$('#fwselect').filedialog({\n"
+        "path: '/sd/',\n"
+        "quicknav: ['/sd/', '/sd/firmware/'],\n"
+        "filter: function(f) { return f.isdir || f.name.match(\"\\\\.(bin|done)$\"); },\n"
+        "sortBy: 'date',\n"
+        "sortDir: -1,\n"
+        "showNewDir: false,\n"
+        "title: 'Select firmware file',\n"
+        "onSubmit: function(input) {\n"
+          "if (input.file) $('#input-flash_vfs').val(input.path);\n"
+        "},\n"
+      "});\n"
+      "$('#input-flash_vfs-select').on('click', function(ev){\n"
+        "var inp = $('#input-flash_vfs').val();\n"
+        "$('#fwselect').filedialog('show', inp ? { path: inp } : null);\n"
+      "});\n"
     "</script>");
 
   c.done();
