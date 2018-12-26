@@ -625,6 +625,7 @@ void OvmsWebServer::OutputReconnect(PageEntry_t& p, PageContext_t& c, const char
     "<p class=\"lead\">%s</p>"
     "<p>The window will automatically reload when the browser reconnects to the module.</p>"
     "<p id=\"dots\">•</p>"
+    "</div>"
     "<script>"
       "$(\"html\").addClass(\"loading\");"
       "ws_inhibit = 10;"
