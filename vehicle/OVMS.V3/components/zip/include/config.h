@@ -19,6 +19,7 @@
 /* #undef HAVE__STRTOUI64 */
 /* #undef HAVE__UMASK */
 /* #undef HAVE__UNLINK */
+#define RENAME_NEEDS_UNLINK
 /* #undef HAVE_CLONEFILE */
 /* #undef HAVE_COMMONCRYPTO */
 /* #undef HAVE_CHMOD */
