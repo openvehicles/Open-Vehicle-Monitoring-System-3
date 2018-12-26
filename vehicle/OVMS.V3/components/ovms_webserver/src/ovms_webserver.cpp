@@ -117,6 +117,7 @@ OvmsWebServer::OvmsWebServer()
 #endif
   RegisterPage("/cfg/logging", "Logging", HandleCfgLogging, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/locations", "Locations", HandleCfgLocations, PageMenu_Config, PageAuth_Cookie);
+  RegisterPage("/cfg/backup", "Backup &amp; Restore", HandleCfgBackup, PageMenu_Config, PageAuth_Cookie);
 }
 
 OvmsWebServer::~OvmsWebServer()

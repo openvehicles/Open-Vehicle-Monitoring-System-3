@@ -443,6 +443,7 @@ class OvmsWebServer : public ExternalRamAllocated
     static void HandleCfgFirmware(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgLogging(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgLocations(PageEntry_t& p, PageContext_t& c);
+    static void HandleCfgBackup(PageEntry_t& p, PageContext_t& c);
 
   public:
     void CfgInitStartup();
