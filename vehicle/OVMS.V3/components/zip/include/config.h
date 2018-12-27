@@ -19,7 +19,6 @@
 /* #undef HAVE__STRTOUI64 */
 /* #undef HAVE__UMASK */
 /* #undef HAVE__UNLINK */
-#define RENAME_NEEDS_UNLINK
 /* #undef HAVE_CLONEFILE */
 /* #undef HAVE_COMMONCRYPTO */
 /* #undef HAVE_CHMOD */
@@ -89,6 +88,10 @@ typedef long long ssize_t;
 #error no suitable type for ssize_t found
 #  endif
 #endif
+
+// OVMS build configuration
+#define ZIP_ALLOCATE_BUFFER
+#define RENAME_NEEDS_UNLINK
 
 // OVMS memory allocation
 #include "ovms_malloc.h"
