@@ -91,10 +91,12 @@ OvmsWebServer::OvmsWebServer()
   // register standard API calls:
   RegisterPage("/api/execute", "Execute command", HandleCommand, PageMenu_None, PageAuth_Cookie);
 
+  // register standard public pages:
+  RegisterPage("/dashboard", "Dashboard", HandleDashboard, PageMenu_Main, PageAuth_None);
+
   // register standard administration pages:
   RegisterPage("/status", "Status", HandleStatus, PageMenu_Main, PageAuth_Cookie);
   RegisterPage("/shell", "Shell", HandleShell, PageMenu_Tools, PageAuth_Cookie);
-  RegisterPage("/dashboard", "Dashboard", HandleDashboard, PageMenu_Main, PageAuth_Cookie);
   RegisterPage("/cfg/init", "Setup wizard", HandleCfgInit, PageMenu_None, PageAuth_Cookie);
   RegisterPage("/cfg/password", "Password", HandleCfgPassword, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/vehicle", "Vehicle", HandleCfgVehicle, PageMenu_Config, PageAuth_Cookie);
