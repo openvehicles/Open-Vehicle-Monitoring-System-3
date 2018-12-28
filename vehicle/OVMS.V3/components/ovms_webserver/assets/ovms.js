@@ -16,17 +16,6 @@ function now() {
   return Math.floor((new Date()).getTime() / 1000);
 }
 
-function getpage() {
-  uri = (location.hash || "#/home").substr(1);
-  if ($("#main").data("uri") != uri) {
-    loaduri("#main", "get", uri, {});
-  }
-}
-function reloadpage() {
-  uri = (location.hash || "#/home").substr(1);
-  loaduri("#main", "get", uri, {});
-}
-
 function encode_html(s){
   return String(s)
     .replace(/&/g, '&amp;')
@@ -53,6 +42,58 @@ function getPathURL(path) {
 /**
  * AJAX Pages & Commands
  */
+
+var page = {
+  uri: null,
+  path: null,
+  search: null,
+  params: {}
+};
+
+function setPage(uri) {
+  page.uri = uri;
+  var uriparts = uri.split("?");
+  page.path = uriparts[0];
+  page.search = uriparts[1];
+  page.params = {};
+  if (page.search) {
+    page.search.split("&").map(function(kv) {
+      var v = kv.split("=");
+      page.params[decodeURIComponent(v[0])] = (v[1] != null) ? decodeURIComponent(v[1]) : true;
+    });
+  }
+  if (page.params["nm"] == 1) $("body").addClass("night");
+  else if (page.params["nm"] == 0) $("body").removeClass("night");
+}
+
+function updateLocation(reload) {
+  page.search = '';
+  for (v in page.params)
+    page.search += "&" + encodeURIComponent(v) + "=" + encodeURIComponent(page.params[v]);
+  page.search = page.search.slice(1);
+  var hash = "#" + page.path + (page.search ? "?" + page.search : "");
+  if (!reload) $("#main").data("uri", hash.substr(1));
+  location.hash = hash;
+}
+
+function readLocation() {
+  var uri = location.hash.substr(1);
+  if (!uri.match("^/?[a-zA-Z0-9_]"))
+    uri = "/home";
+  return uri;
+}
+
+function loadPage() {
+  var uri = readLocation();
+  if ($("#main").data("uri") != uri) {
+    loaduri("#main", "get", uri, {});
+  }
+}
+
+function reloadpage() {
+  var uri = readLocation();
+  loaduri("#main", "get", uri, {});
+}
 
 function xhrErrorInfo(request, textStatus, errorThrown) {
   var txt = "";
@@ -102,6 +143,7 @@ function loaduri(target, method, uri, data){
   if (tgt[0].id == "main") {
     cont = $("html");
     location.hash = "#" + uri;
+    setPage(uri);
   } else {
     cont = tgt.closest(".modal") || tgt.closest("form") || tgt;
   }
@@ -1079,7 +1121,9 @@ $(function(){
 
   // Toggle night mode:
   $('body').on('click', '.toggle-night', function(event){
-    $('body').toggleClass("night");
+    var nm = $('body').toggleClass("night").hasClass("night");
+    page.params["nm"] = 0+nm;
+    updateLocation();
     event.stopPropagation();
     return false;
   });
@@ -1205,6 +1249,6 @@ $(function(){
     monitorTimer = window.setInterval(monitorUpdate, 1000);
 
   // AJAX page init:
-  window.onpopstate = getpage;
-  getpage();
+  window.onpopstate = loadPage;
+  loadPage();
 });
