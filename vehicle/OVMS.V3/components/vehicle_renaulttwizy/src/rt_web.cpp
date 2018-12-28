@@ -754,7 +754,7 @@ void OvmsVehicleRenaultTwizy::WebSevconMon(PageEntry_t& p, PageContext_t& c)
       "init_charts();\n"
     "} else {\n"
       "$.ajax({\n"
-        "url: \"/assets/charts.js\",\n"
+        "url: \"" URL_ASSETS_CHARTS_JS "\",\n"
         "dataType: \"script\",\n"
         "cache: true,\n"
         "success: function(){ init_charts(); }\n"

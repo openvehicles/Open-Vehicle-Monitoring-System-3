@@ -594,7 +594,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 
   c.print(
     "<script>"
-    "$.getJSON(\"/assets/zones.json\", function(data) {"
+    "$.getJSON(\"" URL_ASSETS_ZONES_JSON "\", function(data) {"
       "var items = [];"
       "var region = $('#input-timezone_region').val();"
       "$.each(data, function(key, val) {"

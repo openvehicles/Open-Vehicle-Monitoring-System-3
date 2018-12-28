@@ -47,6 +47,7 @@
 #include "ovms_command.h"
 #include "ovms_shell.h"
 #include "ovms_netmanager.h"
+#include "ovms_utils.h"
 
 #define OVMS_GLOBAL_AUTH_FILE     "/store/.htpasswd"
 
@@ -59,6 +60,12 @@
 
 #define WEBSRV_USE_MG_BROADCAST   0  // Note: mg_broadcast() not working reliably yet, do not enable for production!
 
+// Asset URLs with versioning:
+#define URL_ASSETS_SCRIPT_JS      "/assets/script.js?v="       STR(MTIME_ASSETS_SCRIPT_JS)
+#define URL_ASSETS_CHARTS_JS      "/assets/charts.js?v="       STR(MTIME_ASSETS_CHARTS_JS)
+#define URL_ASSETS_STYLE_CSS      "/assets/style.css?v="       STR(MTIME_ASSETS_STYLE_CSS)
+#define URL_ASSETS_FAVICON_PNG    "/apple-touch-icon.png?v="   STR(MTIME_ASSETS_FAVICON_PNG)
+#define URL_ASSETS_ZONES_JSON     "/assets/zones.json?v="      STR(MTIME_ASSETS_ZONES_JSON)
 
 struct user_session {
   uint64_t id;

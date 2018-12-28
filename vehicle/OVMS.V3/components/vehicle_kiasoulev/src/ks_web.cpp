@@ -467,7 +467,7 @@ void OvmsVehicleKiaSoulEv::WebBattMon(PageEntry_t& p, PageContext_t& c)
       "init_charts();"
     "} else {"
       "$.ajax({"
-        "url: \"/assets/charts.js\","
+        "url: \"" URL_ASSETS_CHARTS_JS "\","
         "dataType: \"script\","
         "cache: true,"
         "success: function(){ init_charts(); }"
