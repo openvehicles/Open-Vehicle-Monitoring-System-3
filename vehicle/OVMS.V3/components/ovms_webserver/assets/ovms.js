@@ -1,6 +1,7 @@
 /* ovms.js | (c) Michael Balzer | https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3 */
 
 const monthnames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const supportsTouch = 'ontouchstart' in window || navigator.msMaxTouchPoints;
 
 
 /**
@@ -535,7 +536,7 @@ $.extend(ovms.Dialog.prototype, ovms.Widget.prototype, {
 
   onShown: function() {
     this.input.button = null;
-    this.$el.find('.form-control, .btn').first().focus();
+    if (!supportsTouch) this.$el.find('.form-control, .btn').first().focus();
     if (this.options.onShown)
       this.options.onShown.call(this.$el, this.input);
     if (this.options.timeout)
@@ -619,6 +620,9 @@ $.fn.promptdialog = function(_type, _title, _prompt, _buttons, _action) {
       if (ev.which == 13) footer.find('.btn-primary').trigger('click');
     });
   };
+  options.onShown = function(input) {
+    $(this).find('input').first().focus();
+  }
   options.onHidden = function(input) {
     if (input.button) input.text = $(this).find('input').val();
     if (_action) _action(input.button ? input.button.index : null, input.text);
@@ -666,7 +670,7 @@ $.extend(ovms.FileBrowser.prototype, ovms.Widget.prototype, {
     this.xhr = null;
 
     if (this.$el.children().length == 0) {
-      this.$el.html('<div class="fb-pathbox form-group"><label class="control-label" for="input-path-${uid}">Path (trailing slash = dir):</label><div class="input-group"><input type="text" class="form-control font-monospace" name="path" id="input-path-${uid}" value=""><div class="input-group-btn"><button type="button" class="btn btn-default fb-path-stop" disabled title="Stop">🗙</button><button type="button" class="btn btn-default fb-path-reload" title="Reload">⟲</button><button type="button" class="btn btn-default fb-path-up" title="Up">↰</button></div></div></div><div class="fb-quicknav form-group"/><div class="fb-files"><table class="table table-condensed table-hover table-scrollable font-monospace get-window-resize"><thead><tr><th class="col-xs-3 col-sm-2" data-key="size">Size</th><th class="hidden-xs col-sm-4" data-key="date">Date</th><th class="col-xs-9 col-sm-6" data-key="name">Name</th></tr></thead><tbody/></table></div>'.replace(/\$\{uid\}/g, this.uid));
+      this.$el.html('<div class="fb-pathbox form-group"><label class="control-label" for="input-path-${uid}">Path (trailing slash = dir):</label><div class="input-group"><input type="text" class="form-control font-monospace" name="path" id="input-path-${uid}" value=""><div class="input-group-btn"><button type="button" class="btn btn-default fb-path-stop" disabled title="Stop">&times;</button><button type="button" class="btn btn-default fb-path-reload" title="Reload">⟲</button><button type="button" class="btn btn-default fb-path-up" title="Up">↰</button></div></div></div><div class="fb-quicknav form-group"/><div class="fb-files"><table class="table table-condensed table-hover table-scrollable font-monospace get-window-resize"><thead><tr><th class="col-xs-3 col-sm-2" data-key="size">Size</th><th class="hidden-xs col-sm-4" data-key="date">Date</th><th class="col-xs-9 col-sm-6" data-key="name">Name</th></tr></thead><tbody/></table></div>'.replace(/\$\{uid\}/g, this.uid));
     }
 
     this.$pathinput = this.$el.find("input[name=path]");
@@ -702,7 +706,7 @@ $.extend(ovms.FileBrowser.prototype, ovms.Widget.prototype, {
       var dir = $(ev.currentTarget).hasClass('sort-down') ? -1 : 1;
       if (by == this.options.sortBy) dir = -dir;
       this.sortList(by, dir);
-      this.$pathinput.focus();
+      if (!supportsTouch) this.$pathinput.focus();
     }, this));
 
     this.$filebody = this.$filetable.find("tbody");
@@ -784,7 +788,7 @@ $.extend(ovms.FileBrowser.prototype, ovms.Widget.prototype, {
       }
     }
 
-    this.$pathinput.focus();
+    if (!supportsTouch) this.$pathinput.focus();
   },
 
   loadDir: function() {
@@ -876,7 +880,7 @@ $.extend(ovms.FileBrowser.prototype, ovms.Widget.prototype, {
     this.$btnstop.prop('disabled', true);
     if (this.xhr)
       this.xhr.abort();
-    this.$pathinput.focus();
+    if (!supportsTouch) this.$pathinput.focus();
   },
 
   sortList: function(by, dir) {
