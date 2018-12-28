@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Web UI: night mode by URI parameter, e.g. "…/#/dashboard?nm=1"
+- Web UI: dashboard accessible w/o login
 - Web UI: added config backup & restore tool
 - Web UI: file selector added for firmware flashing from SD
 - Web UI: text notifications (info/error/alert) displayed as dialogs
