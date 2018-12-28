@@ -37,6 +37,14 @@
 #include <string>
 #include "ovms.h"
 
+// Macro utils:
+// see https://gcc.gnu.org/onlinedocs/cpp/Stringizing.html#Stringizing
+// STR(x) = string of x, x expanded if preprocessor macro
+#ifndef STR
+#define STRX(x)   #x
+#define STR(x)    STRX(x)
+#endif
+
 struct CmpStrOp
   {
   bool operator()(char const *a, char const *b)

@@ -46,10 +46,6 @@
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
 
-// Macro utils:
-#define XSTR(x)   STR(x)
-#define STR(x)    #x
-
 
 /**
  * HandleDashboard:

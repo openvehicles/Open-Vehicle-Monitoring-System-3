@@ -127,8 +127,8 @@ void OvmsVehicleRenaultTwizy::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     kickdown = MyConfig.GetParamValueBool("xrt", "kickdown", true);
     autopower = MyConfig.GetParamValueBool("xrt", "autopower", true);
     console = MyConfig.GetParamValueBool("xrt", "console", false);
-    kd_threshold = MyConfig.GetParamValue("xrt", "kd_threshold", XSTR(CFG_DEFAULT_KD_THRESHOLD));
-    kd_compzero = MyConfig.GetParamValue("xrt", "kd_compzero", XSTR(CFG_DEFAULT_KD_COMPZERO));
+    kd_threshold = MyConfig.GetParamValue("xrt", "kd_threshold", STR(CFG_DEFAULT_KD_THRESHOLD));
+    kd_compzero = MyConfig.GetParamValue("xrt", "kd_compzero", STR(CFG_DEFAULT_KD_COMPZERO));
     gpslogint = MyConfig.GetParamValue("xrt", "gpslogint", "0");
     
     c.head(200);
@@ -242,9 +242,9 @@ void OvmsVehicleRenaultTwizy::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
-    cap_nom_ah = MyConfig.GetParamValue("xrt", "cap_nom_ah", XSTR(CFG_DEFAULT_CAPACITY));
+    cap_nom_ah = MyConfig.GetParamValue("xrt", "cap_nom_ah", STR(CFG_DEFAULT_CAPACITY));
     cap_act_prc = MyConfig.GetParamValue("xrt", "cap_act_prc", "100");
-    maxrange = MyConfig.GetParamValue("xrt", "maxrange", XSTR(CFG_DEFAULT_MAXRANGE));
+    maxrange = MyConfig.GetParamValue("xrt", "maxrange", STR(CFG_DEFAULT_MAXRANGE));
     chargelevel = MyConfig.GetParamValue("xrt", "chargelevel", "0");
     chargemode = MyConfig.GetParamValue("xrt", "chargemode", "0");
     suffrange = MyConfig.GetParamValue("xrt", "suffrange", "0");
@@ -260,13 +260,13 @@ void OvmsVehicleRenaultTwizy::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   
   c.fieldset_start("Battery properties");
   
-  c.input("number", "Nominal capacity", "cap_nom_ah", cap_nom_ah.c_str(), "Default: " XSTR(CFG_DEFAULT_CAPACITY),
+  c.input("number", "Nominal capacity", "cap_nom_ah", cap_nom_ah.c_str(), "Default: " STR(CFG_DEFAULT_CAPACITY),
     "<p>This is the usable capacity of your battery when new.</p>",
     "min=\"1\" step=\"0.1\"", "Ah");
   c.input("number", "Actual capacity", "cap_act_prc", cap_act_prc.c_str(), "Default: 100",
     NULL, "min=\"1\" max=\"120\" step=\"0.01\"", "%");
   
-  c.input("number", "Maximum drive range", "maxrange", maxrange.c_str(), "Default: " XSTR(CFG_DEFAULT_MAXRANGE),
+  c.input("number", "Maximum drive range", "maxrange", maxrange.c_str(), "Default: " STR(CFG_DEFAULT_MAXRANGE),
     "<p>The range you normally get at 100% SOC and 20 °C.</p>",
     "min=\"1\" step=\"1\"", "km");
   

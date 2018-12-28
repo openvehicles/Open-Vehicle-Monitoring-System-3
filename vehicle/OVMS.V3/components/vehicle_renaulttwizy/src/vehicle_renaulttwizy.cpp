@@ -263,23 +263,23 @@ const std::string OvmsVehicleRenaultTwizy::GetFeature(int key)
   switch (key)
   {
     case 0:
-      return MyConfig.GetParamValue("xrt", "gpslogint", XSTR(0));
+      return MyConfig.GetParamValue("xrt", "gpslogint", STR(0));
     case 1:
-      return MyConfig.GetParamValue("xrt", "kd_threshold", XSTR(CFG_DEFAULT_KD_THRESHOLD));
+      return MyConfig.GetParamValue("xrt", "kd_threshold", STR(CFG_DEFAULT_KD_THRESHOLD));
     case 2:
-      return MyConfig.GetParamValue("xrt", "kd_compzero", XSTR(CFG_DEFAULT_KD_COMPZERO));
+      return MyConfig.GetParamValue("xrt", "kd_compzero", STR(CFG_DEFAULT_KD_COMPZERO));
     case 6:
-      return MyConfig.GetParamValue("xrt", "chargemode", XSTR(0));
+      return MyConfig.GetParamValue("xrt", "chargemode", STR(0));
     case 7:
-      return MyConfig.GetParamValue("xrt", "chargelevel", XSTR(0));
+      return MyConfig.GetParamValue("xrt", "chargelevel", STR(0));
     case 10:
-      return MyConfig.GetParamValue("xrt", "suffsoc", XSTR(0));
+      return MyConfig.GetParamValue("xrt", "suffsoc", STR(0));
     case 11:
-      return MyConfig.GetParamValue("xrt", "suffrange", XSTR(0));
+      return MyConfig.GetParamValue("xrt", "suffrange", STR(0));
     case 12:
-      return MyConfig.GetParamValue("xrt", "maxrange", XSTR(CFG_DEFAULT_MAXRANGE));
+      return MyConfig.GetParamValue("xrt", "maxrange", STR(CFG_DEFAULT_MAXRANGE));
     case 13:
-      return MyConfig.GetParamValue("xrt", "cap_act_prc", XSTR(100));
+      return MyConfig.GetParamValue("xrt", "cap_act_prc", STR(100));
     case 15:
     {
       int bits =
@@ -293,7 +293,7 @@ const std::string OvmsVehicleRenaultTwizy::GetFeature(int key)
       return std::string(buf);
     }
     case 16:
-      return MyConfig.GetParamValue("xrt", "cap_nom_ah", XSTR(CFG_DEFAULT_CAPACITY));
+      return MyConfig.GetParamValue("xrt", "cap_nom_ah", STR(CFG_DEFAULT_CAPACITY));
     default:
       return OvmsVehicle::GetFeature(key);
   }
