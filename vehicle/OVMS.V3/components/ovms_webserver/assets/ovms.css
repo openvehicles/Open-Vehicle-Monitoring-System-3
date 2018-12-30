@@ -81,6 +81,9 @@ pre {
   border-radius: 4px;
   border: 1px solid #333333;
 }
+.navbar-fixed-bottom .navbar-collapse, .navbar-fixed-top .navbar-collapse {
+  max-height: 75vh;
+}
 .tab-content>.tab-pane {
   padding: 10px;
   border: 1px solid #ddd;
@@ -94,10 +97,23 @@ pre {
   color: #300;
 }
 
+.panel-minpad .panel-body {
+  padding: 5px;
+}
+.panel-minpad .panel-footer {
+  padding: 5px 8px;
+}
+
 @media (max-width: 767px) {
   pre {
     white-space: pre-wrap;
     word-break: break-word;
+    padding: 3px;
+  }
+  #main > .alert {
+    margin: -9px -15px 9px;
+    border-radius: 0;
+    border: none;
   }
   .panel-single {
     margin: -9px -15px 0;
@@ -108,19 +124,9 @@ pre {
     padding: 5px 8px;
     border-radius: 0;
   }
-  .panel-single .panel-body {
-    padding: 0;
-  }
-  .panel-single .panel-footer {
-    padding: 10px;
-  }
-  .panel-single .form-horizontal .form-group {
-    margin-right: -10px;
-    margin-left: -10px;
-  }
 }
 
-@media (min-width: 992px) {
+@media (min-width: 768px) {
   .row.flex {
     display: flex;
     flex-wrap: wrap;

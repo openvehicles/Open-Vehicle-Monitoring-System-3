@@ -121,6 +121,8 @@ function setcontent(tgt, uri, text){
     mi.parents("li").addClass("active");
     tgt[0].scrollIntoView();
     tgt.html(text).hide().fadeIn(50);
+    var $p = tgt.find(">.panel");
+    if ($p.length == 1) $p.addClass("panel-single");
     if (mi.length > 0)
       document.title = "OVMS " + (mi.attr("title") || mi.text());
     else

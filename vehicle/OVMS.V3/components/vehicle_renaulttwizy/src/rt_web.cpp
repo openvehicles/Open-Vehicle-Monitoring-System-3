@@ -375,9 +375,10 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
     ".btn-default.base { background-color: #fffca8; }"
     ".btn-default.base:hover, .btn-default.base:focus { background-color: #fffa62; }"
     ".unsaved > *:after { content: \"*\"; }"
+    ".fullscreened .panel-single .panel-body { padding: 10px; }"
     "</style>");
   
-  c.panel_start("primary panel-single", "Drivemode");
+  c.panel_start("primary", "Drivemode");
   
   c.printf(
     "<samp id=\"loadres\">%s</samp>", _html(buf.str()));
@@ -489,7 +490,7 @@ void OvmsVehicleRenaultTwizy::WebSevconMon(PageEntry_t& p, PageContext_t& c)
     "<div class=\"panel panel-primary panel-single\">\n"
       "<div class=\"panel-heading\">Sevcon Monitor</div>\n"
       "<div class=\"panel-body\">\n"
-        "<div class=\"receiver\" id=\"livestatus\">\n"
+        "<div class=\"row receiver\" id=\"livestatus\">\n"
           "<div class=\"table-responsive\">\n"
             "<table class=\"table table-bordered table-condensed\">\n"
               "<tbody>\n"
