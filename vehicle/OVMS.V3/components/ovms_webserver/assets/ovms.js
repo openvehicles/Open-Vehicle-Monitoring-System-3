@@ -8,15 +8,15 @@ const supportsTouch = 'ontouchstart' in window || navigator.msMaxTouchPoints;
  * Utilities
  */
 
-function after(seconds, fn){
-  window.setTimeout(fn, seconds*1000);
+function after(seconds, fn) {
+  return window.setTimeout(fn, seconds*1000);
 }
 
 function now() {
   return Math.floor((new Date()).getTime() / 1000);
 }
 
-function encode_html(s){
+function encode_html(s) {
   return String(s)
     .replace(/&/g, '&amp;')
     .replace(/'/g, '&apos;')
@@ -348,7 +348,7 @@ function monitorUpdate(){
 function processNotification(msg) {
   var opts = { timeout: 0 };
   if (msg.type == "info") {
-    opts.title = '<span class="lead text-info"><i>🛈</i>' + msg.subtype + ' Info</span>';
+    opts.title = '<span class="lead text-info"><i>ⓘ</i>' + msg.subtype + ' Info</span>';
     opts.timeout = 60;
   }
   else if (msg.type == "alert") {
@@ -441,14 +441,16 @@ $.fn.reconnectTicker = function(msg) {
 $.pluginMaker = function(plugin) {
   $.fn[plugin.prototype.cname] = function(options) {
     var args = $.makeArray(arguments), after = args.slice(1);
-    return this.each(function() {
+    var ismethod = (typeof options == "string");
+    var result;
+    this.each(function() {
       // see if we have an instance
       var instance = $.data(this, plugin.prototype.cname);
       if (instance) {
-        if (typeof options == "string") {
+        if (ismethod) {
           // call a method on the instance
           if ($.isFunction(instance[options]))
-            instance[options].apply(instance, after);
+            result = instance[options].apply(instance, after);
           else
             throw "UndefinedMethod: " + plugin.prototype.cname + "." + options;
         } else if (instance.update) {
@@ -459,7 +461,8 @@ $.pluginMaker = function(plugin) {
         // create the plugin
         new plugin(this, options);
       }
-    })
+    });
+    return (ismethod && result != undefined) ? result : this;
   };
 };
 
@@ -478,7 +481,12 @@ $.extend(ovms.Widget.prototype, {
     this.$el = $(el);
     this.$el.data(this.cname, this);
     this.$el.addClass(this.cname);
-    this.options = $.extend({}, this.options, options);
+    var dataoptions = this.$el.data("options");
+    if (dataoptions != null && typeof dataoptions != "object") {
+      console.error("Invalid JSON syntax: " + this.$el.data("options"));
+      dataoptions = null;
+    }
+    this.options = $.extend({}, this.options, dataoptions, options);
   },
   update: function(options) {
     $.extend(this.options, options);
@@ -518,6 +526,7 @@ $.extend(ovms.Dialog.prototype, ovms.Widget.prototype, {
     }
     ovms.Widget.prototype.init.call(this, el, options);
     this.input = options.input ? options.input : {};
+    this.data = { showing: false };
     this.$buttons = [];
     // convert element to modal if not predefined by user:
     if (this.$el.children().length == 0) {
@@ -577,6 +586,7 @@ $.extend(ovms.Dialog.prototype, ovms.Widget.prototype, {
   },
 
   onShown: function() {
+    this.data.showing = true;
     this.input.button = null;
     if (!supportsTouch) this.$el.find('.form-control, .btn').first().focus();
     if (this.options.onShown)
@@ -586,6 +596,7 @@ $.extend(ovms.Dialog.prototype, ovms.Widget.prototype, {
   },
 
   onHidden: function() {
+    this.data.showing = false;
     if (this.options.isDynamic)
       this.$el.detach();
     if (this.options.onHidden)
@@ -593,6 +604,10 @@ $.extend(ovms.Dialog.prototype, ovms.Widget.prototype, {
     if (this.input.button != null && this.input.button.action) {
       this.input.button.action.call(this.$el, this.input);
     }
+  },
+
+  isShowing: function() {
+    return this.data.showing;
   },
 
   triggerButton: function(button) {
@@ -608,7 +623,7 @@ $.extend(ovms.Dialog.prototype, ovms.Widget.prototype, {
         }
       }
     }
-    if (btn) {
+    if (btn && !btn.prop("disabled")) {
       btn.trigger('click');
       return true;
     }
@@ -777,7 +792,6 @@ $.extend(ovms.FileBrowser.prototype, ovms.Widget.prototype, {
 
     this.sortList(this.options.sortBy, this.options.sortDir);
     if (options.path !== undefined) {
-      this.stopLoad();
       this.setPath(options.path);
     }
     else if (options.filter !== undefined) {
@@ -873,8 +887,11 @@ $.extend(ovms.FileBrowser.prototype, ovms.Widget.prototype, {
           f.bytes = self.sizeToBytes(f.size);
           f.isodate = self.dateToISO(f.date);
           f.class = "";
-          if (self.options.filter && !self.options.filter(f))
+          if (self.options.filter && (
+            (typeof self.options.filter == "string" && !f.isdir && !f.name.match(self.options.filter)) ||
+            (typeof self.options.filter == "function" && !self.options.filter(f)))) {
             continue;
+          }
           if (f.name == self.input.file) {
             f.class += " active";
             self.data.listsel = f.name;
@@ -992,12 +1009,14 @@ $.extend(ovms.FileDialog.prototype, ovms.Widget.prototype, {
     filter: null,
     sortBy: null,
     sortDir: 1,
+    select: 'f',
     showNewDir: true,
     backdrop: true,
     keyboard: true,
     transition: 'fade',
     size: 'lg',
     onUpdate: null,
+    show: false,
   },
 
   init: function(el, options) {
@@ -1012,6 +1031,7 @@ $.extend(ovms.FileDialog.prototype, ovms.Widget.prototype, {
     });
     this.$fb = this.$el.find('.filebrowser').filebrowser({
       input: this.input,
+      onPathChange: $.proxy(this.onPathChange, this),
       onAction: $.proxy(this.onAction, this),
     });
     this.update(this.options);
@@ -1033,6 +1053,7 @@ $.extend(ovms.FileDialog.prototype, ovms.Widget.prototype, {
       transition: this.options.transition,
       size: this.options.size,
     });
+    this.$btnsubmit = this.$el.find(".modal-footer .btn-primary");
     this.$fb.filebrowser({
       path: (options.path != null) ? options.path : this.input.path,
       quicknav: this.options.quicknav,
@@ -1040,8 +1061,16 @@ $.extend(ovms.FileDialog.prototype, ovms.Widget.prototype, {
       sortBy: this.options.sortBy,
       sortDir: this.options.sortDir,
     });
+    this.onPathChange();
     if (this.options.onUpdate)
       this.options.onUpdate.call(this.$el, this.input);
+    if (options.show != null) {
+      var showing = this.$el.dialog('isShowing');
+      if (options.show === true && !showing)
+        this.$el.dialog('show');
+      else if (options.show === false && showing)
+        this.$el.dialog('hide');
+    }
   },
 
   show: function(options) {
@@ -1059,6 +1088,12 @@ $.extend(ovms.FileDialog.prototype, ovms.Widget.prototype, {
     this.$fb.filebrowser('newDir');
   },
 
+  onPathChange: function() {
+    var ok = (
+      (this.options.select == 'f' && this.input.file) ||
+      (this.options.select == 'd' && !this.input.file));
+    this.$btnsubmit.prop("disabled", !ok);
+  },
   onAction: function() {
     this.$el.dialog('triggerButton', this.options.submit);
   },
@@ -1228,6 +1263,22 @@ $(function(){
   $("body").on("click", ".slider-down", function(evt) {
     $(this).closest(".slider").find(".slider-input")
       .val(function(){return 1*this.value - 1;}).trigger("input");
+  });
+
+  // data-toggle="filefialog":
+  $("body").on('click', '.btn[data-toggle="filedialog"]', function(evt) {
+    var $this = $(this);
+    var $tgt = $($this.data("target"));
+    var $inp = $($this.data("input"));
+    if ($tgt.length && $inp.length) {
+      var val = $inp.val();
+      var opt = {
+        show: true,
+        onSubmit: function(input) { $inp.val(input.path); }
+      };
+      if (val) opt.path = val;
+      $tgt.filedialog(opt);
+    }
   });
 
   // Modal autoclear:

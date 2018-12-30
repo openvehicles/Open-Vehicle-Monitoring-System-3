@@ -63,7 +63,7 @@
 $('#myfilebrowser').filebrowser({
   path: '/sd/',
   quicknav: ['/sd/', '/store/'],
-  filter: null,       // see Filter example below
+  filter: null,       // see Filter examples below
   sortBy: "name",     // …or "size" or "date" or null (disable)
   sortDir: 1,         // …or -1 for reverse
   onUpdate: function(input) {
@@ -95,11 +95,16 @@ $('#action-sortoff').on('click', function(ev) {
   $('#myfilebrowser').filebrowser('sortList', '');
 });
 
-// Filter callback example:
+// Filter example:
 $('#action-filteron').on('click', function(ev) {
   $('#myfilebrowser').filebrowser({
-    filter: function(f) { return f.isdir || f.name.match("\\.zip$"); }
-    // The filter callback is called per list entry object with…
+    // The list filter may be given as a string (regular expression applied to file name):
+    filter: "\\.zip$",
+    // A string filter always lists directories.
+    
+    // For advanced usage, you may alternatively specify a filter callback like this:
+    //  filter: function(f) { return f.isdir || f.name.match("\\.zip$"); }
+    // The function is called per list entry object with…
     // - isdir: true = is sub directory
     // - name: the name part (file or directory, dir with trailing '/')
     // - path: the full path of this entry
@@ -109,6 +114,10 @@ $('#action-filteron').on('click', function(ev) {
     // - isodate: ISO style date 'YYYY-mm-dd HH:MM'
     // - class: '', can be used to add a custom row class
     // Return true to allow the entry to be added to the list.
+    
+    // Note: list filters do not restrict the allowed path input. To do so,
+    // register onPathChange or onAction and check the input in your callback.
+    // See FileDialog widget "select" option handling for an example.
   });
 });
 $('#action-filteroff').on('click', function(ev) {

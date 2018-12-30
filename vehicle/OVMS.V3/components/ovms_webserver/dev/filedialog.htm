@@ -10,10 +10,37 @@
 <div class="panel panel-primary">
   <div class="panel-heading">FileDialog Test</div>
   <div class="panel-body">
-    <button class="btn btn-default" id="action-load">Load</button>
-    <button class="btn btn-default" id="action-save">Save</button>
-    <hr/>
+
+    <h2>Dynamic API</h2>
+
+    <p>
+      <button class="btn btn-default" id="action-load">Load</button>
+      <button class="btn btn-default" id="action-save">Save</button>
+    </p>
     <pre id="log"/>
+
+    <h2>Data API</h2>
+
+    <div class="input-group">
+      <input type="text" class="form-control font-monospace" placeholder="Enter file name"
+        name="filename" id="input-filename" value="" autocapitalize="none" autocorrect="off"
+        autocomplete="section-demo" spellcheck="false">
+      <div class="input-group-btn">
+        <!-- use data-toggle="filedialog", data-target & data-input on the button: -->
+        <button type="button" class="btn btn-default" data-toggle="filedialog" data-target="#fd-api" data-input="#input-filename">Select</button>
+      </div>
+    </div>
+
+    <!-- This is the file dialog triggered by the button: -->
+    <div class="filedialog" id="fd-api" data-options='{
+      "title": "This is a data API dialog",
+      "path": "/sd/foo/",
+      "quicknav": ["/sd/", "/sd/foo/", "/sd/bar"]
+    }' />
+    <!-- …that's it, no JS code necessary.
+      Note: JSON syntax needs to be strict here, see JS console for errors.
+    -->
+
   </div>
 </div>
 
@@ -27,6 +54,7 @@
 // Options:
 //     title: 'Select file',              -- dialog title
 //     submit: 'Select',                  -- label of submit button
+//     select: 'f',                       -- 'f' = only files selectable (default), 'd' = only directories
 //     onSubmit: null,                    -- callback function(input)
 //     onCancel: null,                    -- callback function(input)
 // 
