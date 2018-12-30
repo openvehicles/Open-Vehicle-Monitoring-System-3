@@ -74,6 +74,36 @@ struct user_session {
 };
 
 
+typedef enum {
+  PageMenu_None,
+  PageMenu_Main,              // → main menu
+  PageMenu_Tools,             // → tools menu
+  PageMenu_Config,            // → config menu
+  PageMenu_Vehicle,           // → vehicle menu
+} PageMenu_t;
+
+typedef enum {
+  PageAuth_None,              // public
+  PageAuth_Cookie,            // use auth cookie
+  PageAuth_File,              // use htaccess file(s) (digest auth)
+} PageAuth_t;
+
+typedef enum {
+  PageResult_OK,              // NOP
+  PageResult_STOP,            // stop page callbacks & handler execution
+} PageResult_t;
+
+struct PageEntry;
+typedef struct PageEntry PageEntry_t;
+struct PageContext;
+typedef struct PageContext PageContext_t;
+typedef void (*PageHandler_t)(PageEntry_t& p, PageContext_t& c);
+typedef PageResult_t (*PageCallback_t)(PageEntry_t& p, PageContext_t& c, const std::string& hook);
+
+// Page hook point definition (to be used in a handler with p = PageEntry&, c = PageContext&):
+#define PAGE_HOOK(code) { if (p.callback(c, code) == PageResult_STOP) return; }
+
+
 /**
  * PageContext: execution context of a URI/page handler call providing
  *  access to the HTTP context and utilities to generate HTML output.
@@ -129,9 +159,9 @@ struct PageContext : public ExternalRamAllocated
   void input_button(const char* btnclass, const char* label, const char* name=NULL, const char* value=NULL);
   void input_info(const char* label, const char* text);
   void alert(const char* type, const char* text);
-};
 
-typedef struct PageContext PageContext_t;
+  PageResult_t callback(PageEntry_t& p, const std::string& hook);
+};
 
 
 /**
@@ -142,23 +172,17 @@ typedef struct PageContext PageContext_t;
  *  URIs or patterns.
  */
 
-typedef enum {
-  PageMenu_None,
-  PageMenu_Main,              // → main menu
-  PageMenu_Tools,             // → tools menu
-  PageMenu_Config,            // → config menu
-  PageMenu_Vehicle,           // → vehicle menu
-} PageMenu_t;
-
-typedef enum {
-  PageAuth_None,              // public
-  PageAuth_Cookie,            // use auth cookie
-  PageAuth_File,              // use htaccess file(s) (digest auth)
-} PageAuth_t;
-
-struct PageEntry;
-typedef struct PageEntry PageEntry_t;
-typedef void (*PageHandler_t)(PageEntry_t& p, PageContext_t& c);
+struct PageCallbackEntry
+{
+  std::string       caller;
+  PageCallback_t    handler;
+  
+  PageCallbackEntry(std::string _caller, PageCallback_t _handler)
+  {
+    caller = _caller;
+    handler = _handler;
+  }
+};
 
 struct PageEntry
 {
@@ -167,6 +191,7 @@ struct PageEntry
   PageHandler_t handler;
   PageMenu_t menu;
   PageAuth_t auth;
+  std::forward_list<PageCallbackEntry*> callbacklist;
 
   PageEntry(const char* _uri, const char* _label, PageHandler_t _handler, PageMenu_t _menu=PageMenu_None, PageAuth_t _auth=PageAuth_None)
   {
@@ -178,6 +203,10 @@ struct PageEntry
   }
 
   void Serve(PageContext_t& c);
+
+  void RegisterCallback(std::string caller, PageCallback_t handler);
+  void DeregisterCallback(std::string caller);
+  PageResult_t callback(PageContext_t& c, const std::string& hook);
 };
 
 typedef std::forward_list<PageEntry*> PageMap_t;
@@ -404,6 +433,8 @@ class OvmsWebServer : public ExternalRamAllocated
       PageMenu_t menu=PageMenu_None, PageAuth_t auth=PageAuth_None);
     void DeregisterPage(const char* uri);
     PageEntry* FindPage(const char* uri);
+    bool RegisterCallback(std::string caller, const char* uri, PageCallback_t handler);
+    void DeregisterCallbacks(std::string caller);
 
   public:
     user_session* CreateSession(const http_message *hm);

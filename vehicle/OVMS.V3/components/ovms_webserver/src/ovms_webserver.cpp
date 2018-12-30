@@ -461,6 +461,51 @@ void PageEntry::Serve(PageContext_t& c)
 }
 
 
+/**
+ * Page Callback Registry:
+ */
+
+bool OvmsWebServer::RegisterCallback(std::string caller, const char* uri, PageCallback_t handler)
+{
+  PageEntry* e = FindPage(uri);
+  if (!e)
+    return false;
+  e->RegisterCallback(caller, handler);
+  return true;
+}
+
+void OvmsWebServer::DeregisterCallbacks(std::string caller)
+{
+  for (PageEntry* e : m_pagemap)
+    e->DeregisterCallback(caller);
+}
+
+void PageEntry::RegisterCallback(std::string caller, PageCallback_t handler)
+{
+  callbacklist.push_front(new PageCallbackEntry(caller, handler));
+}
+
+void PageEntry::DeregisterCallback(std::string caller)
+{
+  callbacklist.remove_if([caller](PageCallbackEntry* e){ return e->caller == caller; });
+}
+
+PageResult_t PageEntry::callback(PageContext_t& c, const std::string& hook)
+{
+  PageResult_t res = PageResult_OK;
+  for (PageCallbackEntry* e : callbacklist) {
+    res = e->handler(*this, c, hook);
+    if (res == PageResult_STOP)
+      break;
+  }
+  return res;
+}
+
+PageResult_t PageContext::callback(PageEntry_t& p, const std::string& hook)
+{
+  return p.callback(*this, hook);
+}
+
 
 /**
  * MgHandler.RequestPoll: init transmission from other context.

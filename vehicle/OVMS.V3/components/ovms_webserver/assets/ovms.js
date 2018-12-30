@@ -85,8 +85,9 @@ function readLocation() {
   return uri;
 }
 
-function loadPage() {
-  var uri = readLocation();
+function loadPage(uri) {
+  if (typeof uri != "string")
+    uri = readLocation();
   if ($("#main").data("uri") != uri) {
     loaduri("#main", "get", uri, {});
   }
@@ -136,6 +137,7 @@ function setcontent(tgt, uri, text){
 
   tgt.find(".get-window-resize").trigger('window-resize');
   tgt.find(".receiver").subscribe();
+  tgt.trigger("load");
 }
 
 function loaduri(target, method, uri, data){

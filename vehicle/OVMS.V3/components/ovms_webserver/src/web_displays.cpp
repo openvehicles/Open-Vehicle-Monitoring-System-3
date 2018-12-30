@@ -495,6 +495,7 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
     "</script>";
   
   c.head(200);
+  PAGE_HOOK("body.pre");
   c.printf(
     "<script type=\"text/javascript\">"
     "var vehicle_config = {"
