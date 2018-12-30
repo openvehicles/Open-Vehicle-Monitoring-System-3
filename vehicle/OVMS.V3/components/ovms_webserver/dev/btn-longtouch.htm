@@ -29,19 +29,21 @@
     <p>To activate the feature on a button, simply add the class <code>btn-longtouch</code> to the button.
     To activate it on a group of buttons, add the class to the container of the buttons.</p>
     
+    <p>The progress overlay shows the button title if set (HTML supported), else the button text.</p>
+    
     <form action="#">
       <div class="btn-group btn-group-justified btn-longtouch">
         <div class="btn-group btn-group-lg">
           <button type="submit" name="load" value="0" id="prof-0" class="btn btn-default"><strong>STD</strong></button>
         </div>
         <div class="btn-group btn-group-lg">
-          <button type="submit" name="load" value="1" id="prof-1" class="btn btn-default"><strong>PWR</strong></button>
+          <button type="submit" name="load" value="1" id="prof-1" class="btn btn-default" title="Power Mode"><strong>PWR</strong></button>
         </div>
         <div class="btn-group btn-group-lg">
           <button type="submit" name="load" value="2" id="prof-2" class="btn btn-success"><strong>ECO</strong></button>
         </div>
         <div class="btn-group btn-group-lg">
-          <button type="submit" name="load" value="3" id="prof-3" class="btn btn-default"><strong>ICE</strong></button>
+          <button type="submit" name="load" value="3" id="prof-3" class="btn btn-default" title="Winter Mode"><strong>ICE</strong></button>
         </div>
       </div>
     </form>
