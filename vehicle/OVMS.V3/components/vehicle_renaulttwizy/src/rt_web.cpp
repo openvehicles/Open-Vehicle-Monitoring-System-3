@@ -310,6 +310,26 @@ void OvmsVehicleRenaultTwizy::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 /**
  * WebConsole: (/xrt/drivemode)
  */
+
+static void print_loadmenu_buttons(PageContext_t& c, cfg_drivemode drivemode)
+{
+  // profile labels (todo: make configurable):
+  const char* proflabel[4] = { "STD", "PWR", "ECO", "ICE" };
+  
+  for (int prof=0; prof<=3; prof++) {
+    c.printf(
+        "<div class=\"btn-group btn-group-lg\">\n"
+          "<button type=\"submit\" name=\"load\" value=\"%d\" id=\"prof-%d\" class=\"btn btn-%s %s%s\"><strong>%s</strong></button>\n"
+        "</div>\n"
+      , prof, prof
+      , (drivemode.profile_user == prof) ? "warning" : "default"
+      , (drivemode.profile_cfgmode == prof) ? "base" : ""
+      , (drivemode.profile_user == prof && drivemode.unsaved) ? "unsaved" : ""
+      , proflabel[prof]
+      );
+  }
+}
+
 void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
 {
   OvmsVehicleRenaultTwizy* twizy = GetInstance();
@@ -319,36 +339,31 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
     return;
   }
   
-  if (c.method == "POST") {
-    std::string output, arg;
-    
-    if ((arg = c.getvar("load")) != "") {
-      // execute profile switch:
-      output = MyWebServer.ExecuteCommand("xrt cfg load " + arg);
+  std::string arg;
+  if ((arg = c.getvar("load")) != "") {
+    // execute profile switch:
+    std::string output;
+    output = MyWebServer.ExecuteCommand("xrt cfg load " + arg);
+    if (c.getvar("info") != "off")
       output += MyWebServer.ExecuteCommand("xrt cfg info");
-      
-      // output result:
-      c.head(200);
-      c.print(c.encode_html(output));
+    
+    // output result:
+    c.head(200);
+    c.print(c.encode_html(output));
+    c.printf(
+      "<script>"
+        "$('#loadmenu .btn').removeClass('base unsaved btn-warning').addClass('btn-default');"
+        "$('#prof-%d').removeClass('btn-default').addClass('btn-warning %s');"
+        , sc->m_drivemode.profile_user
+        , sc->m_drivemode.unsaved ? "unsaved" : "");
+    if (sc->m_drivemode.profile_user != sc->m_drivemode.profile_cfgmode) {
       c.printf(
-        "<script>"
-          "$('#loadmenu .btn').removeClass('base unsaved btn-warning').addClass('btn-default');"
-          "$('#prof-%d').removeClass('btn-default').addClass('btn-warning %s');"
-          , sc->m_drivemode.profile_user
-          , sc->m_drivemode.unsaved ? "unsaved" : "");
-      if (sc->m_drivemode.profile_user != sc->m_drivemode.profile_cfgmode) {
-        c.printf(
-          "$('#prof-%d').addClass('base');", sc->m_drivemode.profile_cfgmode);
-      }
-      c.print(
-        "</script>");
-      c.done();
-      return;
+        "$('#prof-%d').addClass('base');", sc->m_drivemode.profile_cfgmode);
     }
-    else {
-      c.error(400, "Bad request");
-      return;
-    }
+    c.print(
+      "</script>");
+    c.done();
+    return;
   }
   
   // output status page:
@@ -365,9 +380,6 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
   }
   
   buf << "\n\n" << MyWebServer.ExecuteCommand("xrt cfg info");
-  
-  // profile labels (todo: make configurable):
-  const char* proflabel[4] = { "STD", "PWR", "ECO", "ICE" };
   
   c.head(200);
   c.print(
@@ -386,7 +398,7 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
   c.print(
     "<div id=\"livestatus\" class=\"receiver\">"
       "<div class=\"row\">"
-        "<div class=\"col-sm-2 hidden-xs\"><label>Throttle:</label></div>"
+        "<div class=\"col-sm-2\"><label>Throttle:</label></div>"
         "<div class=\"col-sm-10\">"
           "<div class=\"progress\" data-metric=\"v.e.throttle\" data-prec=\"0\">"
             "<div id=\"pb-throttle\" class=\"progress-bar progress-bar-success no-transition text-left\" role=\"progressbar\""
@@ -399,20 +411,12 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
     "</div>");
   
   c.print(
-    "<div id=\"loadmenu\" class=\"center-block\"><ul class=\"list-inline\">");
-  for (int prof=0; prof<=3; prof++) {
-    c.printf(
-      "<li><a id=\"prof-%d\" class=\"btn btn-lg btn-%s %s%s\" data-method=\"post\" target=\"#loadres\" href=\"?load=%d\"><strong>%s</strong></a></li>"
-      , prof
-      , (sc->m_drivemode.profile_user == prof) ? "warning" : "default"
-      , (sc->m_drivemode.profile_cfgmode == prof) ? "base" : ""
-      , (sc->m_drivemode.profile_user == prof && sc->m_drivemode.unsaved) ? "unsaved" : ""
-      , prof
-      , proflabel[prof]
-      );
-  }
+    "<form id=\"loadmenu\" action=\"/xrt/drivemode\" target=\"#loadres\" method=\"post\">\n"
+      "<div class=\"btn-group btn-group-justified btn-longtouch\">\n");
+  print_loadmenu_buttons(c, sc->m_drivemode);
   c.print(
-    "</ul></div>");
+      "</div>\n"
+    "</form>\n");
   
   c.panel_end();
   
