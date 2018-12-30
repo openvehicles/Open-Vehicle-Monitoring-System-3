@@ -718,6 +718,7 @@ void OvmsWebServer::CheckSessions(void)
 void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
 {
   std::string error;
+  std::string uri = c.getvar("uri");
 
   if (c.method == "POST") {
     // validate login:
@@ -738,7 +739,9 @@ void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
     if (error == "") {
       // ok: set cookie, reload menu, redirect to /cfg/init, /cfg/password, original uri or /home:
       std::string init_step = MyConfig.GetParamValue("module", "init");
-      if (!init_step.empty() && init_step != "done")
+      if (uri != "")
+        c.uri = uri;
+      else if (!init_step.empty() && init_step != "done")
         c.uri = "/cfg/init";
       else if (MyConfig.GetParamValue("password", "module").empty())
         c.uri = "/cfg/password";
@@ -753,7 +756,7 @@ void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
         , SESSION_COOKIE_NAME, s->id);
       c.head(200, shead);
       c.printf(
-        "<script>$(\"#menu\").load(\"/menu\"); loaduri(\"#main\", \"get\", \"%s\", {})</script>"
+        "<script>loggedin = true; $(\"#menu\").load(\"/menu\"); loaduri(\"#main\", \"get\", \"%s\", {})</script>"
         , c.uri.c_str());
       c.done();
 
@@ -778,6 +781,8 @@ void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
   // generate form:
   c.panel_start("primary", "Login");
   c.form_start(c.uri.c_str());
+  if (uri != "")
+    c.printf("<input type=\"hidden\" name=\"uri\" value=\"%s\">", c.encode_html(uri).c_str());
   c.input_text("Username", "username", "", "empty = 'admin'", NULL, "autocomplete=\"section-login username\"");
   c.input_password("Password", "password", "", NULL, NULL, "autocomplete=\"section-login current-password\"");
   c.input_button("default", "Login");
@@ -807,6 +812,6 @@ void OvmsWebServer::HandleLogout(PageEntry_t& p, PageContext_t& c)
     , SESSION_COOKIE_NAME);
   c.head(200, shead);
   c.print(
-    "<script>$(\"#menu\").load(\"/menu\"); loaduri(\"#main\", \"get\", \"/home\", {})</script>");
+    "<script>loggedin = false; $(\"#menu\").load(\"/menu\"); loaduri(\"#main\", \"get\", \"/home\", {})</script>");
   c.done();
 }

@@ -434,8 +434,8 @@ std::string OvmsWebServer::CreateMenu(PageContext_t& c)
       "<li class=\"hidden-xs\"><a href=\"#\" class=\"toggle-fullscreen\">◱</a></li>"
       "<li class=\"hidden-xs\"><a href=\"#\" class=\"toggle-night\">◐</a></li>"
       + std::string(c.session
-      ? "<li><a href=\"/logout\" target=\"#main\">Logout</a></li>"
-      : "<li><a href=\"/login\" target=\"#main\">Login</a></li>") +
+      ? "<li><a href=\"/logout\" target=\"#main\">Logout</a></li><script>loggedin=true</script>"
+      : "<li><a href=\"/login\" target=\"#main\">Login</a></li><script>loggedin=false</script>") +
     "</ul>";
 
   return menu;

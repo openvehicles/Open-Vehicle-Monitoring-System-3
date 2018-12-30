@@ -3,6 +3,8 @@
 const monthnames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const supportsTouch = 'ontouchstart' in window || navigator.msMaxTouchPoints;
 
+var loggedin = false;
+
 
 /**
  * Utilities
