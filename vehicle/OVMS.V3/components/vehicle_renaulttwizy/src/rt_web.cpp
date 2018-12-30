@@ -57,6 +57,9 @@ void OvmsVehicleRenaultTwizy::WebInit()
 
   // main menu:
   MyWebServer.RegisterPage("/xrt/drivemode", "Drivemode", WebConsole, PageMenu_Main, PageAuth_Cookie);
+
+  // page callbacks:
+  MyWebServer.RegisterCallback("xrt", "/dashboard", WebExtDashboard);
 }
 
 
@@ -852,4 +855,46 @@ void OvmsVehicleRenaultTwizy::GetDashboardConfig(DashboardConfig& cfg)
         "{ from: 50, to: 110, className: 'normal-band border' },"
         "{ from: 110, to: 125, className: 'red-band border' }]"
     "}]";
+}
+
+/**
+ * WebExtDashboard: add profile switcher to dashboard
+ */
+PageResult_t OvmsVehicleRenaultTwizy::WebExtDashboard(PageEntry_t& p, PageContext_t& c, const std::string& hook)
+{
+  OvmsVehicleRenaultTwizy* twizy = GetInstance();
+  SevconClient* sc = twizy ? twizy->GetSevconClient() : NULL;
+  if (!sc)
+    return PageResult_OK;
+  
+  if (hook == "body.pre") {
+    c.print(
+      "<style>\n"
+      "#loadmenu { margin:10px 8px 0; }\n"
+      ".fullscreened #loadmenu { margin:10px 10px 0; }\n"
+      "</style>\n"
+      "\n"
+      "<div id=\"loadmenu\" style=\"display:none\">\n"
+        "<form action=\"/xrt/drivemode\" target=\"#loadres\" method=\"post\">\n"
+        "<input type=\"hidden\" name=\"info\" value=\"off\">\n"
+          "<div class=\"btn-group btn-group-justified btn-longtouch\">\n");
+    print_loadmenu_buttons(c, sc->m_drivemode);
+    c.print(
+          "</div>\n"
+        "</form>\n"
+        "<samp id=\"loadres\" class=\"text-center\"/>\n"
+      "</div>\n"
+      "\n"
+      "<script>\n"
+      "$('#main').one('load', function(ev) {\n"
+        "if (!loggedin) {\n"
+          "$('#loadmenu .btn').prop('disabled', true);\n"
+          "$('#loadmenu').append('<a class=\"btn btn-default btn-lg btn-block\" target=\"#main\" href=\"/login?uri=/dashboard\">LOGIN</a>');\n"
+        "}\n"
+        "$('#loadmenu').appendTo('.panel-dashboard .panel-body').show();\n"
+      "});\n"
+      "</script>\n");
+  }
+
+  return PageResult_OK;
 }
