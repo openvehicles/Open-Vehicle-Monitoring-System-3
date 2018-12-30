@@ -1,6 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Twizy web UI: drivemode buttons secured & added to dashboard
+- Twizy web UI: added file dialog for virtual dyno recording
+- Web API scripting: /api/execute supporting GET & output control
 - Web UI: night mode by URI parameter, e.g. "…/#/dashboard?nm=1"
 - Web UI: dashboard accessible w/o login
 - Web UI: added config backup & restore tool
