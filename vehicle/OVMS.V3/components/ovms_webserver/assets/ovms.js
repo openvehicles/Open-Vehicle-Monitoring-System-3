@@ -1245,6 +1245,40 @@ $(function(){
     return false;
   });
 
+  // Long touch buttons:
+  var longtouchTimeout, $longtouchProgress;
+  $('body').on('touchstart', '.btn-longtouch .btn, .btn.btn-longtouch', function(ev) {
+    var $this = $(this);
+    if ($this.prop('disabled')) return;
+    var action = $this.attr("title") || $this.text();
+    if (navigator.vibrate) navigator.vibrate([100,400,100,400,100,400]);
+    $longtouchProgress = $('<div class="hover-progress longtouch"><div class="hover-progress-body"><div class="info">Hold touch for/to</div><div class="action">'+action+'</div><div class="progress"><div class="progress-bar progress-bar-info" style="width:0%"></div></div></div></div>').appendTo("body").find(".progress-bar");
+    window.getComputedStyle($longtouchProgress.get(0)).width;
+    $longtouchProgress.css("width", "100%");
+    longtouchTimeout = window.setTimeout(function() {
+      if (navigator.vibrate) navigator.vibrate(1000);
+      if ($longtouchProgress) $longtouchProgress.closest(".hover-progress").remove();
+      longtouchTimeout = null;
+      $longtouchProgress = null;
+      $this.trigger('click');
+    }, 1500);
+    ev.preventDefault();
+  }).on('touchcancel touchend', '.btn-longtouch .btn, .btn.btn-longtouch', function(ev) {
+    window.clearTimeout(longtouchTimeout);
+    if (navigator.vibrate) navigator.vibrate(0);
+    if ($longtouchProgress) $longtouchProgress.closest(".hover-progress").remove();
+    longtouchTimeout = null;
+    $longtouchProgress = null;
+    ev.preventDefault();
+  }).on('contextmenu', function(ev) {
+    if ($longtouchProgress) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      ev.stopImmediatePropagation();
+      return false;
+    }
+  });
+
   // Slider widget:
   $("body").on("change", ".slider-enable", function(evt) {
     var slider = $(this).closest(".slider");

@@ -198,6 +198,45 @@ li.event {
   padding: 15px;
 }
 
+/* Hover progress */
+
+.hover-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 10000;
+  background: #000000c0;
+}
+.hover-progress-body {
+  width: 80vw;
+  max-width: 30em;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 20px;
+  margin: 30px auto;
+  border: 5px solid #f80;
+  text-align: center;
+}
+.hover-progress-body .info {
+  font-size: 200%;
+}
+.hover-progress-body .action {
+  font-size: 300%;
+  font-weight: bold;
+}
+.night .hover-progress-body {
+  background: #222;
+  color: #fff;
+}
+.hover-progress.longtouch .progress-bar {
+  -webkit-transition: width 1500ms linear;
+  -moz-transition: width 1500ms linear;
+  -o-transition: width 1500ms linear;
+  transition: width 1500ms linear;
+}
+
 /* Range input */
 
 input[type=range] {
