@@ -83,16 +83,20 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     OvmsMetricBool*		m_v_env_blinker_right = MyMetrics.InitBool("xmi.e.rightblinker", 10, 0);
     OvmsMetricBool*		m_v_env_blinker_left = MyMetrics.InitBool("xmi.e.leftblinker", 10, 0);
     OvmsMetricBool*		m_v_env_warninglight = MyMetrics.InitBool("xmi.e.warninglight", 10, 0);
+    OvmsMetricFloat*  m_v_charge_dc_kwh = MyMetrics.InitFloat("v.c.kwh.dc",SM_STALE_MID, kWh);
+    OvmsMetricFloat*  m_v_charge_ac_kwh = MyMetrics.InitFloat("v.c.kwh.ac",SM_STALE_MID, kWh);
     OvmsMetricFloat*  v_c_efficiency = MyMetrics.InitFloat("v.c.efficiency",SM_STALE_HIGH, Percentage);
     OvmsMetricFloat*  v_c_power_ac = MyMetrics.InitFloat("v.c.power.ac",SM_STALE_MID, kW);
     OvmsMetricFloat*  v_c_power_dc = MyMetrics.InitFloat("v.c.power.dc",SM_STALE_MID, kW);
 
     OvmsMetricFloat*  m_v_env_heating_amp  = new OvmsMetricFloat("xmi.e.heating.amp", SM_STALE_MID, Amps);
     OvmsMetricFloat*  m_v_env_heating_watt  = new OvmsMetricFloat("xmi.e.heating.watt", SM_STALE_MID, Watts);
+    OvmsMetricFloat*  m_v_env_heating_kwh = new OvmsMetricFloat("xmi.e.heating.kwh", SM_STALE_MID, kWh);
     OvmsMetricFloat*  m_v_env_heating_temp_return  = new OvmsMetricFloat("xmi.e.heating.temp.return", SM_STALE_MID, Celcius);
     OvmsMetricFloat*  m_v_env_heating_temp_flow  = new OvmsMetricFloat("xmi.e.heating.temp.flow", SM_STALE_MID, Celcius);
     OvmsMetricFloat*  m_v_env_ac_amp  = new OvmsMetricFloat("xmi.e.ac.amp", SM_STALE_MID, Amps);
     OvmsMetricFloat*  m_v_env_ac_watt  = new OvmsMetricFloat("xmi.e.ac.watt", SM_STALE_MID, Watts);
+    OvmsMetricFloat*  m_v_env_ac_kwh = new OvmsMetricFloat("xmi.e.ac.kwh", SM_STALE_MID, kWh);
     OvmsMetricFloat*  m_v_trip_consumption1 = MyMetrics.InitFloat("xmi.v.trip.consumption.KWh/100km", 10, 0, Other);
     OvmsMetricFloat*  m_v_trip_consumption2 = MyMetrics.InitFloat("xmi.v.trip.consumption.km/kWh", 10, 0, Other);
 
@@ -107,7 +111,6 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     unsigned char mi_charge_timer;
     unsigned long mi_charge_wm;
     float mi_chargekwh;
-    unsigned int mi_stale_charge;
     unsigned int mi_est_range;
     unsigned char mi_QC;
     unsigned char mi_QC_counter;

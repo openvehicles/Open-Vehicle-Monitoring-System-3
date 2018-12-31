@@ -63,26 +63,29 @@ void xmi_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 			  float consumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(rangeUnit);
 			  float consumption2 = StdMetrics.ms_v_pos_trip->AsFloat(rangeUnit) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh);
 			  // Discharge
-			  const char* discharge = StdMetrics.ms_v_bat_energy_used->AsUnitString("-", kWh, 1).c_str();
+			  const char* discharge = StdMetrics.ms_v_bat_energy_used->AsUnitString("-", kWh, 3).c_str();
 			  // Recuperation
-			  const char* recuparation = StdMetrics.ms_v_bat_energy_recd->AsUnitString("-", kWh, 1).c_str();
+			  const char* recuparation = StdMetrics.ms_v_bat_energy_recd->AsUnitString("-", kWh, 3).c_str();
 			  // Total consumption
-			  float totalConsumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) + StdMetrics.ms_v_bat_energy_recd->AsFloat(kWh);
+			  float totalConsumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) - StdMetrics.ms_v_bat_energy_recd->AsFloat(kWh);
 			  // ODO
 			  const char* ODO = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
+				// heating kwh
+				OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
+				float heatenergy = trio->m_v_env_heating_kwh->AsFloat();
 
 			  if (*distance != '-')
 			    writer->printf("Dist %s\n", distance);
 
 			  if(MyConfig.GetParamValue("vehicle", "units.distance") == "M")
 			  		{
-			    writer->printf("Con %.*fkWh/100mi\n", 2, consumption);
-			    writer->printf("Con %.*fmi/kWh\n", 2, consumption2);
+			    writer->printf("Con %.*fkWh/100mi\n", 4, consumption);
+			    writer->printf("Con %.*fmi/kWh\n", 4, consumption2);
 			  		}
 			  else
 			  		{
-			    writer->printf("Con %.*fkWh/100km\n", 2, consumption);
-			    writer->printf("Con %.*fkm/kWh\n", 2, consumption2);
+			    writer->printf("Con %.*fkWh/100km\n", 4, consumption);
+			    writer->printf("Con %.*fkm/kWh\n", 4, consumption2);
 			  		}
 
 			  if (*discharge != '-')
@@ -91,7 +94,8 @@ void xmi_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 			  if (*recuparation != '-')
 			    writer->printf("Rec %s\n", recuparation);
 
-			  writer->printf("Total %.*fkWh\n", 2, totalConsumption);
+			  writer->printf("Total %.*fkWh\n", 4, totalConsumption);
+				writer->printf("Heater energy usage: %.*fkWh\n", 2,heatenergy);
 
 			  if (*ODO != '-')
 			    writer->printf("ODO %s\n", ODO);
