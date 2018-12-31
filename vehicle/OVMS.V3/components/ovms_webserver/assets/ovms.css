@@ -31,6 +31,16 @@ pre {
 .loading * {
   cursor: progress;
 }
+.disabled {
+  cursor: wait;
+}
+.disabled * {
+  pointer-events: none;
+  cursor: wait;
+}
+.loading.disabled {
+  cursor: wait;
+}
 .checkmark {
   color: #05b508;
   font-size: 150%;
@@ -71,6 +81,9 @@ pre {
   border-radius: 4px;
   border: 1px solid #333333;
 }
+.navbar-fixed-bottom .navbar-collapse, .navbar-fixed-top .navbar-collapse {
+  max-height: 75vh;
+}
 .tab-content>.tab-pane {
   padding: 10px;
   border: 1px solid #ddd;
@@ -84,10 +97,23 @@ pre {
   color: #300;
 }
 
+.panel-minpad .panel-body {
+  padding: 5px;
+}
+.panel-minpad .panel-footer {
+  padding: 5px 8px;
+}
+
 @media (max-width: 767px) {
   pre {
     white-space: pre-wrap;
     word-break: break-word;
+    padding: 3px;
+  }
+  #main > .alert {
+    margin: -9px -15px 9px;
+    border-radius: 0;
+    border: none;
   }
   .panel-single {
     margin: -9px -15px 0;
@@ -98,19 +124,9 @@ pre {
     padding: 5px 8px;
     border-radius: 0;
   }
-  .panel-single .panel-body {
-    padding: 0;
-  }
-  .panel-single .panel-footer {
-    padding: 10px;
-  }
-  .panel-single .form-horizontal .form-group {
-    margin-right: -10px;
-    margin-left: -10px;
-  }
 }
 
-@media (min-width: 992px) {
+@media (min-width: 768px) {
   .row.flex {
     display: flex;
     flex-wrap: wrap;
@@ -135,6 +151,23 @@ pre {
 }
 .btn-default.active, .btn-default:active {
   font-weight: bold;
+}
+.btn code, .night .btn code {
+  color: initial;
+  background-color: initial;
+}
+
+.action-menu .btn {
+  margin: 0 5px 5px 0;
+}
+.action-menu .btn.pull-right {
+  margin: 0 0 5px 5px;
+}
+.text-right.action-menu .btn {
+  margin: 0 0 5px 5px;
+}
+.text-right.action-menu .btn.pull-left {
+  margin: 0 5px 5px 0;
 }
 
 .metric {
@@ -163,6 +196,45 @@ li.event {
 .form-table>tfoot>tr>th,
 .form-table>tfoot>tr>td {
   padding: 15px;
+}
+
+/* Hover progress */
+
+.hover-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 10000;
+  background: #000000c0;
+}
+.hover-progress-body {
+  width: 80vw;
+  max-width: 30em;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 20px;
+  margin: 30px auto;
+  border: 5px solid #f80;
+  text-align: center;
+}
+.hover-progress-body .info {
+  font-size: 200%;
+}
+.hover-progress-body .action {
+  font-size: 300%;
+  font-weight: bold;
+}
+.night .hover-progress-body {
+  background: #222;
+  color: #fff;
+}
+.hover-progress.longtouch .progress-bar {
+  -webkit-transition: width 1500ms linear;
+  -moz-transition: width 1500ms linear;
+  -o-transition: width 1500ms linear;
+  transition: width 1500ms linear;
 }
 
 /* Range input */
@@ -357,6 +429,79 @@ button.toggle-night, button.toggle-fullscreen {
   margin-right: 10px;
 }
 
+/* Tables */
+tbody>div {
+  display: table-row;
+}
+.table-scrollable,
+.table-scrollable thead,
+.table-scrollable tbody,
+.table-scrollable tfoot,
+.table-scrollable tr,
+.table-scrollable th,
+.table-scrollable td {
+  display: block;
+}
+.table-scrollable,
+.table-scrollable thead,
+.table-scrollable tbody,
+.table-scrollable tfoot,
+.table-scrollable tr {
+  width: 100%;
+}
+.table-scrollable tr {
+  float: left;
+}
+.table-scrollable tbody {
+  overflow-y: auto;
+}
+.table-scrollable tbody tr {
+  cursor: pointer;
+}
+.table-scrollable thead tr th,
+.table-scrollable tbody td {
+  float: left;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  user-select: none;
+}
+.table-hover>tbody>tr:hover {
+  background-color: #e6e6e6;
+}
+.night .table-hover>tbody>tr:hover {
+  background-color: #121f2d;
+}
+
+/* FileBrowser */
+.filebrowser .form-group {
+  margin-bottom: 5px;
+}
+.fb-quicknav .btn {
+  margin-right: 5px;
+  margin-bottom: 5px;
+}
+.filebrowser thead {
+  cursor: pointer;
+}
+.filebrowser tbody {
+  height: 310px;
+}
+.filebrowser .table>tbody>tr.active>td {
+  background-color: #bed2e3;
+}
+.night .filebrowser .table>tbody>tr.active>td {
+  background-color: #293746;
+}
+.sort-up::after {
+  content: "▲";
+  margin-left: 0.3em;
+}
+.sort-down::after {
+  content: "▼";
+  margin-left: 0.3em;
+}
+
 /* Night mode */
 
 body.night {
@@ -433,6 +578,21 @@ body.night {
 }
 .night .text-info {
   color: #55a5ce
+}
+.night .text-success {
+  color: #3fc641
+}
+.night .bg-warning {
+  background-color: #363010;
+}
+.night .bg-danger {
+  background-color: #6f0c0c;
+}
+.night .bg-info {
+  background-color: #056594;
+}
+.night .bg-success {
+  background-color: #163609;
 }
 
 /* Fullscreen mode */

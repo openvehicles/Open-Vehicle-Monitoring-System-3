@@ -1,0 +1,52 @@
+<!--
+  Test/Development/Documentation page
+  - enable web server file access
+  - upload to web dir, e.g. scp testpage.htm test1.local:/sd/dev/
+  - open in framework by e.g. http://test1.local/#/dev/testpage.htm
+-->
+
+<div class="panel panel-primary">
+  <div class="panel-heading">Longtouch Buttons</div>
+  <div class="panel-body">
+
+    <p>Note: open this test page with a mobile / touch screen device or simulate
+    a mobile device using the web debugger of your browser.</p>
+    
+    <p>The buttons below should work normally on a non-touch device.</p>
+    
+    <p>On a touch screen device, touching the buttons starts a countdown
+    of 1.5 seconds, showing an overlay with a progress bar and giving vibration
+    signals (on devices supporting this). The button action is triggered only
+    after the countdown has finished while holding the touch.</p>
+    
+    <p>This feature is meant to a) secure certain buttons against unintentional activation
+    and to b) allow secure usage of these buttons while driving, i.e. when the mobile phone /
+    tablet is mounted to a car holder.</p>
+    
+    <p>Standard candidates for this are buttons triggering deep modifications, i.e.
+    changing the car tuning or drive mode.</p>
+    
+    <p>To activate the feature on a button, simply add the class <code>btn-longtouch</code> to the button.
+    To activate it on a group of buttons, add the class to the container of the buttons.</p>
+    
+    <p>The progress overlay shows the button title if set (HTML supported), else the button text.</p>
+    
+    <form action="#">
+      <div class="btn-group btn-group-justified btn-longtouch">
+        <div class="btn-group btn-group-lg">
+          <button type="submit" name="load" value="0" id="prof-0" class="btn btn-default"><strong>STD</strong></button>
+        </div>
+        <div class="btn-group btn-group-lg">
+          <button type="submit" name="load" value="1" id="prof-1" class="btn btn-default" title="Power Mode"><strong>PWR</strong></button>
+        </div>
+        <div class="btn-group btn-group-lg">
+          <button type="submit" name="load" value="2" id="prof-2" class="btn btn-success"><strong>ECO</strong></button>
+        </div>
+        <div class="btn-group btn-group-lg">
+          <button type="submit" name="load" value="3" id="prof-3" class="btn btn-default" title="Winter Mode"><strong>ICE</strong></button>
+        </div>
+      </div>
+    </form>
+  
+  </div>
+</div>

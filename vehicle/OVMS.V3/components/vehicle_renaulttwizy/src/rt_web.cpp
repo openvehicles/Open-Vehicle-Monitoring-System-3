@@ -57,6 +57,9 @@ void OvmsVehicleRenaultTwizy::WebInit()
 
   // main menu:
   MyWebServer.RegisterPage("/xrt/drivemode", "Drivemode", WebConsole, PageMenu_Main, PageAuth_Cookie);
+
+  // page callbacks:
+  MyWebServer.RegisterCallback("xrt", "/dashboard", WebExtDashboard);
 }
 
 
@@ -127,8 +130,8 @@ void OvmsVehicleRenaultTwizy::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     kickdown = MyConfig.GetParamValueBool("xrt", "kickdown", true);
     autopower = MyConfig.GetParamValueBool("xrt", "autopower", true);
     console = MyConfig.GetParamValueBool("xrt", "console", false);
-    kd_threshold = MyConfig.GetParamValue("xrt", "kd_threshold", XSTR(CFG_DEFAULT_KD_THRESHOLD));
-    kd_compzero = MyConfig.GetParamValue("xrt", "kd_compzero", XSTR(CFG_DEFAULT_KD_COMPZERO));
+    kd_threshold = MyConfig.GetParamValue("xrt", "kd_threshold", STR(CFG_DEFAULT_KD_THRESHOLD));
+    kd_compzero = MyConfig.GetParamValue("xrt", "kd_compzero", STR(CFG_DEFAULT_KD_COMPZERO));
     gpslogint = MyConfig.GetParamValue("xrt", "gpslogint", "0");
     
     c.head(200);
@@ -242,9 +245,9 @@ void OvmsVehicleRenaultTwizy::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
-    cap_nom_ah = MyConfig.GetParamValue("xrt", "cap_nom_ah", XSTR(CFG_DEFAULT_CAPACITY));
+    cap_nom_ah = MyConfig.GetParamValue("xrt", "cap_nom_ah", STR(CFG_DEFAULT_CAPACITY));
     cap_act_prc = MyConfig.GetParamValue("xrt", "cap_act_prc", "100");
-    maxrange = MyConfig.GetParamValue("xrt", "maxrange", XSTR(CFG_DEFAULT_MAXRANGE));
+    maxrange = MyConfig.GetParamValue("xrt", "maxrange", STR(CFG_DEFAULT_MAXRANGE));
     chargelevel = MyConfig.GetParamValue("xrt", "chargelevel", "0");
     chargemode = MyConfig.GetParamValue("xrt", "chargemode", "0");
     suffrange = MyConfig.GetParamValue("xrt", "suffrange", "0");
@@ -260,13 +263,13 @@ void OvmsVehicleRenaultTwizy::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   
   c.fieldset_start("Battery properties");
   
-  c.input("number", "Nominal capacity", "cap_nom_ah", cap_nom_ah.c_str(), "Default: " XSTR(CFG_DEFAULT_CAPACITY),
+  c.input("number", "Nominal capacity", "cap_nom_ah", cap_nom_ah.c_str(), "Default: " STR(CFG_DEFAULT_CAPACITY),
     "<p>This is the usable capacity of your battery when new.</p>",
     "min=\"1\" step=\"0.1\"", "Ah");
   c.input("number", "Actual capacity", "cap_act_prc", cap_act_prc.c_str(), "Default: 100",
     NULL, "min=\"1\" max=\"120\" step=\"0.01\"", "%");
   
-  c.input("number", "Maximum drive range", "maxrange", maxrange.c_str(), "Default: " XSTR(CFG_DEFAULT_MAXRANGE),
+  c.input("number", "Maximum drive range", "maxrange", maxrange.c_str(), "Default: " STR(CFG_DEFAULT_MAXRANGE),
     "<p>The range you normally get at 100% SOC and 20 °C.</p>",
     "min=\"1\" step=\"1\"", "km");
   
@@ -310,6 +313,26 @@ void OvmsVehicleRenaultTwizy::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 /**
  * WebConsole: (/xrt/drivemode)
  */
+
+static void print_loadmenu_buttons(PageContext_t& c, cfg_drivemode drivemode)
+{
+  // profile labels (todo: make configurable):
+  const char* proflabel[4] = { "STD", "PWR", "ECO", "ICE" };
+  
+  for (int prof=0; prof<=3; prof++) {
+    c.printf(
+        "<div class=\"btn-group btn-group-lg\">\n"
+          "<button type=\"submit\" name=\"load\" value=\"%d\" id=\"prof-%d\" class=\"btn btn-%s %s%s\"><strong>%s</strong></button>\n"
+        "</div>\n"
+      , prof, prof
+      , (drivemode.profile_user == prof) ? "warning" : "default"
+      , (drivemode.profile_cfgmode == prof) ? "base" : ""
+      , (drivemode.profile_user == prof && drivemode.unsaved) ? "unsaved" : ""
+      , proflabel[prof]
+      );
+  }
+}
+
 void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
 {
   OvmsVehicleRenaultTwizy* twizy = GetInstance();
@@ -319,36 +342,31 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
     return;
   }
   
-  if (c.method == "POST") {
-    std::string output, arg;
-    
-    if ((arg = c.getvar("load")) != "") {
-      // execute profile switch:
-      output = MyWebServer.ExecuteCommand("xrt cfg load " + arg);
+  std::string arg;
+  if ((arg = c.getvar("load")) != "") {
+    // execute profile switch:
+    std::string output;
+    output = MyWebServer.ExecuteCommand("xrt cfg load " + arg);
+    if (c.getvar("info") != "off")
       output += MyWebServer.ExecuteCommand("xrt cfg info");
-      
-      // output result:
-      c.head(200);
-      c.print(c.encode_html(output));
+    
+    // output result:
+    c.head(200);
+    c.print(c.encode_html(output));
+    c.printf(
+      "<script>"
+        "$('#loadmenu .btn').removeClass('base unsaved btn-warning').addClass('btn-default');"
+        "$('#prof-%d').removeClass('btn-default').addClass('btn-warning %s');"
+        , sc->m_drivemode.profile_user
+        , sc->m_drivemode.unsaved ? "unsaved" : "");
+    if (sc->m_drivemode.profile_user != sc->m_drivemode.profile_cfgmode) {
       c.printf(
-        "<script>"
-          "$('#loadmenu .btn').removeClass('base unsaved btn-warning').addClass('btn-default');"
-          "$('#prof-%d').removeClass('btn-default').addClass('btn-warning %s');"
-          , sc->m_drivemode.profile_user
-          , sc->m_drivemode.unsaved ? "unsaved" : "");
-      if (sc->m_drivemode.profile_user != sc->m_drivemode.profile_cfgmode) {
-        c.printf(
-          "$('#prof-%d').addClass('base');", sc->m_drivemode.profile_cfgmode);
-      }
-      c.print(
-        "</script>");
-      c.done();
-      return;
+        "$('#prof-%d').addClass('base');", sc->m_drivemode.profile_cfgmode);
     }
-    else {
-      c.error(400, "Bad request");
-      return;
-    }
+    c.print(
+      "</script>");
+    c.done();
+    return;
   }
   
   // output status page:
@@ -366,18 +384,16 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
   
   buf << "\n\n" << MyWebServer.ExecuteCommand("xrt cfg info");
   
-  // profile labels (todo: make configurable):
-  const char* proflabel[4] = { "STD", "PWR", "ECO", "ICE" };
-  
   c.head(200);
   c.print(
     "<style>"
     ".btn-default.base { background-color: #fffca8; }"
     ".btn-default.base:hover, .btn-default.base:focus { background-color: #fffa62; }"
     ".unsaved > *:after { content: \"*\"; }"
+    ".fullscreened .panel-single .panel-body { padding: 10px; }"
     "</style>");
   
-  c.panel_start("primary panel-single", "Drivemode");
+  c.panel_start("primary", "Drivemode");
   
   c.printf(
     "<samp id=\"loadres\">%s</samp>", _html(buf.str()));
@@ -385,7 +401,7 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
   c.print(
     "<div id=\"livestatus\" class=\"receiver\">"
       "<div class=\"row\">"
-        "<div class=\"col-sm-2 hidden-xs\"><label>Throttle:</label></div>"
+        "<div class=\"col-sm-2\"><label>Throttle:</label></div>"
         "<div class=\"col-sm-10\">"
           "<div class=\"progress\" data-metric=\"v.e.throttle\" data-prec=\"0\">"
             "<div id=\"pb-throttle\" class=\"progress-bar progress-bar-success no-transition text-left\" role=\"progressbar\""
@@ -398,20 +414,12 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
     "</div>");
   
   c.print(
-    "<div id=\"loadmenu\" class=\"center-block\"><ul class=\"list-inline\">");
-  for (int prof=0; prof<=3; prof++) {
-    c.printf(
-      "<li><a id=\"prof-%d\" class=\"btn btn-lg btn-%s %s%s\" data-method=\"post\" target=\"#loadres\" href=\"?load=%d\"><strong>%s</strong></a></li>"
-      , prof
-      , (sc->m_drivemode.profile_user == prof) ? "warning" : "default"
-      , (sc->m_drivemode.profile_cfgmode == prof) ? "base" : ""
-      , (sc->m_drivemode.profile_user == prof && sc->m_drivemode.unsaved) ? "unsaved" : ""
-      , prof
-      , proflabel[prof]
-      );
-  }
+    "<form id=\"loadmenu\" action=\"/xrt/drivemode\" target=\"#loadres\" method=\"post\">\n"
+      "<div class=\"btn-group btn-group-justified btn-longtouch\">\n");
+  print_loadmenu_buttons(c, sc->m_drivemode);
   c.print(
-    "</ul></div>");
+      "</div>\n"
+    "</form>\n");
   
   c.panel_end();
   
@@ -489,7 +497,7 @@ void OvmsVehicleRenaultTwizy::WebSevconMon(PageEntry_t& p, PageContext_t& c)
     "<div class=\"panel panel-primary panel-single\">\n"
       "<div class=\"panel-heading\">Sevcon Monitor</div>\n"
       "<div class=\"panel-body\">\n"
-        "<div class=\"receiver\" id=\"livestatus\">\n"
+        "<div class=\"row receiver\" id=\"livestatus\">\n"
           "<div class=\"table-responsive\">\n"
             "<table class=\"table table-bordered table-condensed\">\n"
               "<tbody>\n"
@@ -546,10 +554,15 @@ void OvmsVehicleRenaultTwizy::WebSevconMon(PageEntry_t& p, PageContext_t& c)
           "<div class=\"form-group\">\n"
             "<label class=\"control-label col-sm-3\" for=\"input-filename\">Monitoring control:</label>\n"
             "<div class=\"col-sm-9\">\n"
-              "<input type=\"text\" class=\"form-control font-monospace\"\n"
-                "placeholder=\"optional recording file path, blank = monitoring only\"\n"
-                "name=\"filename\" id=\"input-filename\" value=\"\" autocapitalize=\"none\" autocorrect=\"off\"\n"
-                "autocomplete=\"section-scmon\" spellcheck=\"false\">\n"
+              "<div class=\"input-group\">\n"
+                "<input type=\"text\" class=\"form-control font-monospace\"\n"
+                  "placeholder=\"optional recording file path, blank = monitoring only\"\n"
+                  "name=\"filename\" id=\"input-filename\" value=\"\" autocapitalize=\"none\" autocorrect=\"off\"\n"
+                  "autocomplete=\"section-scmon\" spellcheck=\"false\">\n"
+                "<div class=\"input-group-btn\">\n"
+                  "<button type=\"button\" class=\"btn btn-default\" data-toggle=\"filedialog\" data-target=\"#select-recfile\" data-input=\"#input-filename\">Select</button>\n"
+                "</div>\n"
+              "</div>\n"
             "</div>\n"
             "<div class=\"col-sm-9 col-sm-offset-3\" style=\"margin-top:5px;\">\n"
               "<button type=\"button\" class=\"btn btn-default\" id=\"cmd-start\">Start</button>\n"
@@ -564,6 +577,12 @@ void OvmsVehicleRenaultTwizy::WebSevconMon(PageEntry_t& p, PageContext_t& c)
         "</form>\n"
       "</div>\n"
     "</div>\n"
+    "\n"
+    "<div class=\"filedialog\" id=\"select-recfile\" data-options='{\n"
+      "\"title\": \"Select recording file\",\n"
+      "\"path\": \"/sd/recordings/\",\n"
+      "\"quicknav\": [\"/sd/\", \"/sd/recordings/\"]\n"
+    "}' />\n"
     "\n"
     "<script>\n"
     "\n"
@@ -754,7 +773,7 @@ void OvmsVehicleRenaultTwizy::WebSevconMon(PageEntry_t& p, PageContext_t& c)
       "init_charts();\n"
     "} else {\n"
       "$.ajax({\n"
-        "url: \"/assets/charts.js\",\n"
+        "url: \"" URL_ASSETS_CHARTS_JS "\",\n"
         "dataType: \"script\",\n"
         "cache: true,\n"
         "success: function(){ init_charts(); }\n"
@@ -836,4 +855,46 @@ void OvmsVehicleRenaultTwizy::GetDashboardConfig(DashboardConfig& cfg)
         "{ from: 50, to: 110, className: 'normal-band border' },"
         "{ from: 110, to: 125, className: 'red-band border' }]"
     "}]";
+}
+
+/**
+ * WebExtDashboard: add profile switcher to dashboard
+ */
+PageResult_t OvmsVehicleRenaultTwizy::WebExtDashboard(PageEntry_t& p, PageContext_t& c, const std::string& hook)
+{
+  OvmsVehicleRenaultTwizy* twizy = GetInstance();
+  SevconClient* sc = twizy ? twizy->GetSevconClient() : NULL;
+  if (!sc)
+    return PageResult_OK;
+  
+  if (hook == "body.pre") {
+    c.print(
+      "<style>\n"
+      "#loadmenu { margin:10px 8px 0; }\n"
+      ".fullscreened #loadmenu { margin:10px 10px 0; }\n"
+      "</style>\n"
+      "\n"
+      "<div id=\"loadmenu\" style=\"display:none\">\n"
+        "<form action=\"/xrt/drivemode\" target=\"#loadres\" method=\"post\">\n"
+        "<input type=\"hidden\" name=\"info\" value=\"off\">\n"
+          "<div class=\"btn-group btn-group-justified btn-longtouch\">\n");
+    print_loadmenu_buttons(c, sc->m_drivemode);
+    c.print(
+          "</div>\n"
+        "</form>\n"
+        "<samp id=\"loadres\" class=\"text-center\"/>\n"
+      "</div>\n"
+      "\n"
+      "<script>\n"
+      "$('#main').one('load', function(ev) {\n"
+        "if (!loggedin) {\n"
+          "$('#loadmenu .btn').prop('disabled', true);\n"
+          "$('#loadmenu').append('<a class=\"btn btn-default btn-lg btn-block\" target=\"#main\" href=\"/login?uri=/dashboard\">LOGIN</a>');\n"
+        "}\n"
+        "$('#loadmenu').appendTo('.panel-dashboard .panel-body').show();\n"
+      "});\n"
+      "</script>\n");
+  }
+
+  return PageResult_OK;
 }

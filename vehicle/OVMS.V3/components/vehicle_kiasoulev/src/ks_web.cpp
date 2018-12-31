@@ -179,8 +179,8 @@ void OvmsVehicleKiaSoulEv::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
-  		cap_act_kwh = MyConfig.GetParamValue("xks", "cap_act_kwh", XSTR(CGF_DEFAULT_BATTERY_CAPACITY));
-    maxrange = MyConfig.GetParamValue("xks", "maxrange", XSTR(CFG_DEFAULT_MAXRANGE));
+    cap_act_kwh = MyConfig.GetParamValue("xks", "cap_act_kwh", STR(CGF_DEFAULT_BATTERY_CAPACITY));
+    maxrange = MyConfig.GetParamValue("xks", "maxrange", STR(CFG_DEFAULT_MAXRANGE));
     suffrange = MyConfig.GetParamValue("xks", "suffrange", "0");
     suffsoc = MyConfig.GetParamValue("xks", "suffsoc", "0");
 
@@ -194,11 +194,11 @@ void OvmsVehicleKiaSoulEv::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 
   c.fieldset_start("Battery properties");
 
-  c.input("number", "Battery capacity", "cap_nom_ah", cap_act_kwh.c_str(), "Default: " XSTR(CGF_DEFAULT_BATTERY_CAPACITY),
+  c.input("number", "Battery capacity", "cap_nom_ah", cap_act_kwh.c_str(), "Default: " STR(CGF_DEFAULT_BATTERY_CAPACITY),
     "<p>This is the usable battery capacity of your battery when new.</p>",
     "min=\"1\" step=\"0.1\"", "Wh");
 
-  c.input("number", "Maximum drive range", "maxrange", maxrange.c_str(), "Default: " XSTR(CFG_DEFAULT_MAXRANGE),
+  c.input("number", "Maximum drive range", "maxrange", maxrange.c_str(), "Default: " STR(CFG_DEFAULT_MAXRANGE),
     "<p>The range you normally get at 100% SOC and 20 °C.</p>",
     "min=\"1\" step=\"1\"", "km");
 
@@ -467,7 +467,7 @@ void OvmsVehicleKiaSoulEv::WebBattMon(PageEntry_t& p, PageContext_t& c)
       "init_charts();"
     "} else {"
       "$.ajax({"
-        "url: \"/assets/charts.js\","
+        "url: \"" URL_ASSETS_CHARTS_JS "\","
         "dataType: \"script\","
         "cache: true,"
         "success: function(){ init_charts(); }"

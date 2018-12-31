@@ -46,10 +46,6 @@
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
 
-// Macro utils:
-#define XSTR(x)   STR(x)
-#define STR(x)    #x
-
 
 /**
  * HandleDashboard:
@@ -70,22 +66,6 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
 
   // output dashboard:
   const char* content =
-    "<div class=\"panel panel-primary panel-single\">"
-      "<div class=\"panel-heading\">Dashboard</div>"
-      "<div class=\"panel-body\">"
-        "<div class=\"receiver get-window-resize\" id=\"livestatus\">"
-          "<div class=\"dashboard\" style=\"position: relative; width: 100%; height: 300px; margin: 0 auto\">"
-            "<div class=\"overlay\">"
-              "<div class=\"range-value\"><span class=\"value\">▼0 ▲0</span><span class=\"unit\">km</span></div>"
-              "<div class=\"energy-value\"><span class=\"value\">▲0.0 ▼0.0</span><span class=\"unit\">kWh</span></div>"
-            "</div>"
-            "<div id=\"gaugeset1\" style=\"width: 100%; height: 100%;\"></div>"
-          "</div>"
-        "</div>"
-      "</div>"
-    "</div>"
-    ""
-    ""
     "<style>"
     ""
     "@media (max-width: 767px) {"
@@ -258,6 +238,21 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
     "}"
     ""
     "</style>"
+    ""
+    "<div class=\"panel panel-primary panel-dashboard\">"
+      "<div class=\"panel-heading\">Dashboard</div>"
+      "<div class=\"panel-body\">"
+        "<div class=\"receiver get-window-resize\" id=\"livestatus\">"
+          "<div class=\"dashboard\" style=\"position: relative; width: 100%; height: 300px; margin: 0 auto\">"
+            "<div class=\"overlay\">"
+              "<div class=\"range-value\"><span class=\"value\">▼0 ▲0</span><span class=\"unit\">km</span></div>"
+              "<div class=\"energy-value\"><span class=\"value\">▲0.0 ▼0.0</span><span class=\"unit\">kWh</span></div>"
+            "</div>"
+            "<div id=\"gaugeset1\" style=\"width: 100%; height: 100%;\"></div>"
+          "</div>"
+        "</div>"
+      "</div>"
+    "</div>"
     ""
     "<script type=\"text/javascript\">"
     ""
@@ -490,7 +485,7 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
       "init_charts();"
     "} else {"
       "$.ajax({"
-        "url: \"/assets/charts.js\","
+        "url: \"" URL_ASSETS_CHARTS_JS "\","
         "dataType: \"script\","
         "cache: true,"
         "success: function(){ init_charts(); }"
@@ -500,6 +495,7 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
     "</script>";
   
   c.head(200);
+  PAGE_HOOK("body.pre");
   c.printf(
     "<script type=\"text/javascript\">"
     "var vehicle_config = {"
@@ -598,9 +594,11 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
     "<div class=\"panel panel-primary panel-single\">\n"
       "<div class=\"panel-heading\">BMS Cell Monitor</div>\n"
       "<div class=\"panel-body\">\n"
-        "<div class=\"receiver\" id=\"livestatus\">\n"
-          "<div id=\"voltchart\" style=\"width: 100%; max-width: 100%; height: 45vh; min-height: 280px; margin: 0 auto\"></div>\n"
-          "<div id=\"tempchart\" style=\"width: 100%; max-width: 100%; height: 25vh; min-height: 160px; margin: 0 auto\"></div>\n"
+        "<div class=\"row\">\n"
+          "<div class=\"receiver\" id=\"livestatus\">\n"
+            "<div id=\"voltchart\" style=\"width: 100%; max-width: 100%; height: 45vh; min-height: 280px; margin: 0 auto\"></div>\n"
+            "<div id=\"tempchart\" style=\"width: 100%; max-width: 100%; height: 25vh; min-height: 160px; margin: 0 auto\"></div>\n"
+          "</div>\n"
         "</div>\n"
       "</div>\n"
       "<div class=\"panel-footer\">\n"
@@ -1106,7 +1104,7 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
       "init_charts();\n"
     "} else {\n"
       "$.ajax({\n"
-        "url: \"/assets/charts.js\",\n"
+        "url: \"" URL_ASSETS_CHARTS_JS "\",\n"
         "dataType: \"script\",\n"
         "cache: true,\n"
         "success: function(){ init_charts(); }\n"

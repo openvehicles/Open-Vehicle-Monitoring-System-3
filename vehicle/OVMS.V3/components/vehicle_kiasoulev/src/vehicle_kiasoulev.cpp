@@ -983,11 +983,11 @@ const std::string OvmsVehicleKiaSoulEv::GetFeature(int key)
   {
     case 0:
     case 10:
-      return MyConfig.GetParamValue("xks", "suffsoc", XSTR(0));
+      return MyConfig.GetParamValue("xks", "suffsoc", STR(0));
     case 11:
-      return MyConfig.GetParamValue("xks", "suffrange", XSTR(0));
+      return MyConfig.GetParamValue("xks", "suffrange", STR(0));
     case 12:
-      return MyConfig.GetParamValue("xks", "maxrange", XSTR(CFG_DEFAULT_MAXRANGE));
+      return MyConfig.GetParamValue("xks", "maxrange", STR(CFG_DEFAULT_MAXRANGE));
     case 15:
     {
       int bits =
