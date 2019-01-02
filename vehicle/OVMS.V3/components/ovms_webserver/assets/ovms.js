@@ -1128,27 +1128,56 @@ $.fn.listEditor = function(op, data){
       $(this).trigger('list:'+op, data);
     } else {
       // init:
-      var el_itemid = $(this).find('.list-item-id');
-      var el_body = $(this).find('.list-items');
-      var el_template = $(this).find('template').html();
-      $(this).on('list:addItem', function(evt, data) {
+      var $this = $(this);
+      var el_itemid = $this.find('.list-item-id');
+      var el_body = $this.find('.list-items');
+      var el_template = $this.find('template').html();
+
+      $this.on('list:addItem', function(evt, data) {
         var id = Number(el_itemid.val()) + 1;
         el_itemid.val(id);
-        var txt = el_template.replace(/ITEM_ID/g, id);
-        if (data) {
-          for (key in data)
-            txt = txt.replace(new RegExp('ITEM_'+key,'g'), encode_html(data[key]));
-        }
+        data = $.extend({ MODE: "upd" }, data);
+        var txt = el_template.replace(/ITEM_ID/g, id).replace(/ITEM_MODE/g, data.MODE);
+        for (key in data)
+          txt = txt.replace(new RegExp('ITEM_'+key,'g'), encode_html(data[key]));
         txt = txt.replace(/ITEM_\w+/g, '');
-        $(txt).appendTo(el_body);
+        var $el = $(txt).appendTo(el_body);
+
+        $el.find("option[data-value]").each(function(){
+          $(this).prop("selected", $(this).val() == $(this).data("value"));
+        });
+        $el.find("input[data-value]").each(function(){
+          var sel = $(this).val() == $(this).data("value");
+          $(this).prop("checked", sel);
+          if (sel) $(this).parent().addClass("active");
+          else $(this).parent().removeClass("active");
+        });
+
+        var discl = (data.MODE == "add") ? "add-disabled" : "list-disabled";
+        $el.find("select."+discl).each(function(){
+          $(this).prop("disabled", true).append($('<input type="hidden">')
+            .attr("name", $(this).attr("name")).attr("value", $(this).val()));
+        });
+        $el.find("input."+discl).prop("readonly", true);
+        $el.find("button."+discl).prop("disabled", true);
+
+        $this.trigger('list:validate');
       });
-      $(this).on('click', '.list-item-add', function(evt) {
-        var data = JSON.parse($(this).data('preset') || '{}');
+
+      $this.on('change keyup', 'input,select,textarea', function(ev) {
+        $this.trigger('list:validate');
+      });
+
+      $this.on('click', '.list-item-add', function(evt) {
+        var data = $.extend({ MODE: "add" }, $(this).data('preset'));
         $(this).trigger('list:addItem', data);
       });
-      $(this).on('click', '.list-item-del', function(evt) {
+
+      $this.on('click', '.list-item-del', function(evt) {
         $(this).closest('.list-item').remove();
+        $this.trigger('list:validate');
       });
+
     }
   });
 };
