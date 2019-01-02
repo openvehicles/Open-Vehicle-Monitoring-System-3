@@ -61,7 +61,7 @@ class OvmsConfigParam
     void SetTitle(std::string title) { m_title = title; }
     void Load();
     void Save();
-    const ConfigParamMap* GetMap() { return &m_map; }
+    const ConfigParamMap& GetMap() { return m_map; }
     void SetMap(ConfigParamMap& map);
 
   protected:

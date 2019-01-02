@@ -524,7 +524,7 @@ const ConfigParamMap* OvmsConfig::GetParamMap(std::string param)
     RegisterParam(param, "", true, false);
   OvmsConfigParam* p = CachedParam(param);
   if (p)
-    return p->GetMap();
+    return &p->GetMap();
   else
     return NULL;
   }
