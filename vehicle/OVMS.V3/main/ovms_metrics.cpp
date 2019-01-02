@@ -348,7 +348,12 @@ void OvmsMetrics::DeregisterListener(const char* caller)
 
 void OvmsMetrics::NotifyModified(OvmsMetric* metric)
   {
-  if ((m_trace)&&(strcmp(metric->m_name,"m.monotonic")!=0))
+  if (m_trace &&
+      strcmp(metric->m_name, "m.monotonic") != 0 &&
+      strcmp(metric->m_name, "m.time.utc") != 0 &&
+      strcmp(metric->m_name, "v.e.parktime") != 0 &&
+      strcmp(metric->m_name, "v.e.drivetime") != 0 &&
+      strcmp(metric->m_name, "v.c.time") != 0)
     {
     ESP_LOGI(TAG, "Modified metric %s: %s",
       metric->m_name, metric->AsUnitString().c_str());
