@@ -573,15 +573,33 @@ static void microrl_get_complite (microrl_t * pThis)
 		if (compl_token[1] == NULL) {
 			len = strlen (compl_token[0]);
 		} else {
-			len = common_len (compl_token);
-			terminal_newline (pThis);
+			char str[_PRINT_BUFFER_LEN];
+			char *j = str;
+			*j++ = '\r';
+			*j++ = '\n';
 			while (compl_token [i] != NULL) {
-				pThis->print (pThis, compl_token[i]);
-				pThis->print (pThis, " ");
+				int l = strlen(compl_token[i]);
+				// 4 is for ' ' plus ending \r\n plus \0
+				if ((j > str) && (j - str + l + 4 > sizeof(str))) {
+					*j = '\0';
+					pThis->print (pThis, str);
+					j = str;
+				}
+				if (l + 4 > sizeof(str)) {
+					pThis->print (pThis, compl_token[i]);
+					pThis->print (pThis, " ");
+				} else {
+					j = stpcpy(j, compl_token[i]);
+					*j++ = ' ';
+				}
 				i++;
 			}
-			terminal_newline (pThis);
+			*j++ = '\r';
+			*j++ = '\n';
+			*j = '\0';
+			pThis->print (pThis, str);
 			print_prompt (pThis);
+			len = common_len (compl_token);
 			pos = 0;
 		}
 

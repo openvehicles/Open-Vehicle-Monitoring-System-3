@@ -67,7 +67,7 @@ void notify_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   for (OvmsNotifyCallbackMap_t::iterator itc=MyNotify.m_readers.begin(); itc!=MyNotify.m_readers.end(); itc++)
     {
     OvmsNotifyCallbackEntry* mc = itc->second;
-    writer->printf("  %s: verbosity=%d\n", mc->m_caller, mc->m_verbosity);
+    writer->printf("  %s(%d): verbosity=%d\n", mc->m_caller, mc->m_reader, mc->m_verbosity);
     }
 
   if (MyNotify.m_types.size() > 0)
@@ -136,11 +136,13 @@ OvmsNotifyEntry::OvmsNotifyEntry(const char* subtype)
   m_readers.reset();
   m_id = 0;
   m_created = monotonictime;
-  m_subtype = subtype;
+  m_type = NULL;
+  m_subtype = strdup(subtype);
   }
 
 OvmsNotifyEntry::~OvmsNotifyEntry()
   {
+  if (m_subtype) free(m_subtype);
   }
 
 bool OvmsNotifyEntry::IsRead(size_t reader)
@@ -235,9 +237,11 @@ uint32_t OvmsNotifyType::QueueEntry(OvmsNotifyEntry* entry)
   uint32_t id = m_nextid++;
 
   entry->m_id = id;
+  entry->m_type = this;
   m_entries[id] = entry;
 
-  if (strcmp(m_name, "data") != 0)
+  if (strcmp(m_name, "data") != 0 &&
+      strcmp(m_name, "stream") != 0)
     {
     std::string event("notify.");
     event.append(m_name);
@@ -320,18 +324,42 @@ void OvmsNotifyType::Cleanup(OvmsNotifyEntry* entry)
 // OvmsNotifyCallbackEntry contains the callback function for a
 // particular reader
 
-OvmsNotifyCallbackEntry::OvmsNotifyCallbackEntry(const char* caller, size_t reader, int verbosity, OvmsNotifyCallback_t callback, bool filtered)
+OvmsNotifyCallbackEntry::OvmsNotifyCallbackEntry(const char* caller, size_t reader, int verbosity, OvmsNotifyCallback_t callback,
+                                                 bool configfiltered/*=true*/, OvmsNotifyFilterCallback_t filtercallback/*=NULL*/)
   {
   m_caller = caller;
   m_reader = reader;
   m_verbosity = verbosity;
   m_callback = callback;
-  m_filtered = filtered;
+  m_configfiltered = configfiltered;
+  m_filtercallback = filtercallback;
   }
 
 OvmsNotifyCallbackEntry::~OvmsNotifyCallbackEntry()
   {
   }
+
+bool OvmsNotifyCallbackEntry::Accepts(OvmsNotifyType* type, const char* subtype, size_t size)
+  {
+  // Check size
+  if (size > m_verbosity)
+    return false;
+  // Check filter by config:
+  if (m_configfiltered)
+    {
+    std::string filter = MyConfig.GetParamValue("notify", subtype);
+    if (!filter.empty() && filter.find(m_caller) == string::npos)
+      return false;
+    }
+  // Check filter by callback:
+  if (m_filtercallback)
+    {
+    if (m_filtercallback(type, subtype) == false)
+      return false;
+    }
+  return true;
+  }
+
 
 ////////////////////////////////////////////////////////////////////////
 // OvmsNotifyCallbackEntry contains the callback function for a
@@ -365,28 +393,36 @@ OvmsNotify::OvmsNotify()
   cmd_notifytrace->RegisterCommand("on","Turn notification tracing ON",notify_trace,"", 0, 0, true);
   cmd_notifytrace->RegisterCommand("off","Turn notification tracing OFF",notify_trace,"", 0, 0, true);
 
-  RegisterType("info");
-  RegisterType("error");
-  RegisterType("alert");
-  RegisterType("data");
+  RegisterType("info");     // payload: human readable text message
+  RegisterType("error");    // payload: "<vehicletype>,<errorcode>,<errordata>"
+  RegisterType("alert");    // payload: human readable text message
+  RegisterType("data");     // payload: MP historical data record (tagged CSV, see MP documentation)
+  RegisterType("stream");   // payload: subtype specific, use for high volume / short latency data streams
   }
 
 OvmsNotify::~OvmsNotify()
   {
   }
 
-size_t OvmsNotify::RegisterReader(const char* caller, int verbosity, OvmsNotifyCallback_t callback, bool filtered)
+size_t OvmsNotify::RegisterReader(const char* caller, int verbosity, OvmsNotifyCallback_t callback,
+                                  bool configfiltered/*=false*/, OvmsNotifyFilterCallback_t filtercallback/*=NULL*/)
   {
   size_t reader = m_nextreader++;
 
-  m_readers[caller] = new OvmsNotifyCallbackEntry(caller, reader, verbosity, callback, filtered);
+  m_readers[reader] = new OvmsNotifyCallbackEntry(caller, reader, verbosity, callback, configfiltered, filtercallback);
 
   return reader;
   }
 
-void OvmsNotify::ClearReader(const char* caller)
+void OvmsNotify::RegisterReader(size_t reader, const char* caller, int verbosity, OvmsNotifyCallback_t callback,
+                                bool configfiltered/*=false*/, OvmsNotifyFilterCallback_t filtercallback/*=NULL*/)
   {
-  auto k = m_readers.find(caller);
+  m_readers[reader] = new OvmsNotifyCallbackEntry(caller, reader, verbosity, callback, configfiltered, filtercallback);
+  }
+
+void OvmsNotify::ClearReader(size_t reader)
+  {
+  auto k = m_readers.find(reader);
   if (k != m_readers.end())
     {
     for (OvmsNotifyTypeMap_t::iterator itt=m_types.begin(); itt!=m_types.end(); ++itt)
@@ -402,7 +438,7 @@ void OvmsNotify::ClearReader(const char* caller)
 
 size_t OvmsNotify::CountReaders()
   {
-  return m_nextreader-1;
+  return m_readers.size();
   }
 
 OvmsNotifyType* OvmsNotify::GetType(const char* type)
@@ -419,22 +455,30 @@ void OvmsNotify::NotifyReaders(OvmsNotifyType* type, OvmsNotifyEntry* entry)
   for (OvmsNotifyCallbackMap_t::iterator itc=m_readers.begin(); itc!=m_readers.end(); ++itc)
     {
     OvmsNotifyCallbackEntry* mc = itc->second;
-    if (mc->m_filtered)
+    if (mc->Accepts(type, entry->GetSubType(), entry->GetValueSize()))
       {
-      // Check if we need to filter this
-      std::string filter = MyConfig.GetParamValue("notify", entry->GetSubType());
-      if (!filter.empty())
-        {
-        if (filter.find(mc->m_caller) == string::npos)
-          {
-          entry->m_readers.reset(mc->m_reader);
-          continue; // This is filtered out
-          }
-        }
+      // deliver notification:
+      if (mc->m_callback(type,entry) == true)
+        entry->m_readers.reset(mc->m_reader);
       }
-    bool result = mc->m_callback(type,entry);
-    if (result) entry->m_readers.reset(mc->m_reader);
+    else
+      {
+      // in case the acceptance filter changed since queueing:
+      entry->m_readers.reset(mc->m_reader);
+      }
     }
+  }
+
+bool OvmsNotify::HasReader(const char* type, const char* subtype, size_t size)
+  {
+  OvmsNotifyType* mt = GetType(type);
+  for (OvmsNotifyCallbackMap_t::iterator itc=m_readers.begin(); itc!=m_readers.end(); ++itc)
+    {
+    OvmsNotifyCallbackEntry* mc = itc->second;
+    if (mc->Accepts(mt, subtype, size))
+      return true;
+    }
+  return false;
   }
 
 void OvmsNotify::RegisterType(const char* type)
@@ -459,24 +503,26 @@ uint32_t OvmsNotify::NotifyString(const char* type, const char* subtype, const c
 
   if (m_trace) ESP_LOGI(TAG, "Raise text %s: %s", type, value);
 
-  if (m_readers.size() == 0)
+  // determine all currently active readers accepting the message:
+  std::bitset<NOTIFY_MAX_READERS> readers;
+  size_t size = strlen(value);
+  for (OvmsNotifyCallbackMap_t::iterator itc=m_readers.begin(); itc!=m_readers.end(); ++itc)
     {
-    ESP_LOGD(TAG, "Abort: no readers");
+    OvmsNotifyCallbackEntry* mc = itc->second;
+    if (mc->Accepts(mt, subtype, size))
+      readers.set(mc->m_reader);
+    }
+  if (readers.count() == 0)
+    {
+    ESP_LOGD(TAG, "Abort: no readers for type '%s' subtype '%s' size %d", type, subtype, size);
     return 0;
     }
 
   // create message:
   OvmsNotifyEntry* msg = (OvmsNotifyEntry*) new OvmsNotifyEntryString(subtype, value);
+  msg->m_readers = readers;
 
-  // add all currently active readers accepting the message length:
-  for (OvmsNotifyCallbackMap_t::iterator itc=m_readers.begin(); itc!=m_readers.end(); ++itc)
-    {
-    OvmsNotifyCallbackEntry* mc = itc->second;
-    if (strlen(value) <= mc->m_verbosity)
-      msg->m_readers.set(mc->m_reader);
-    }
-
-  ESP_LOGD(TAG, "Created entry with length %d has %d readers pending", strlen(value), msg->m_readers.count());
+  ESP_LOGD(TAG, "Created entry type '%s' subtype '%s' size %d has %d readers pending", type, subtype, size, readers.count());
 
   return mt->QueueEntry(msg);
   }
@@ -492,37 +538,34 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* subtype, const 
 
   if (m_trace) ESP_LOGI(TAG, "Raise command %s: %s", type, cmd);
 
-  if (m_readers.size() == 0)
-    {
-    ESP_LOGD(TAG, "Abort: no readers");
-    return 0;
-    }
-
   // Strategy:
   //  to minimize RAM usage and command calls we try to reuse higher verbosity messages
   //  if their result length fits for lower verbosity readers as well.
 
+  // get verbosity levels needed by readers accepting the message:
   std::map<int, OvmsNotifyEntryCommand*> verbosity_msgs;
-  std::map<int, OvmsNotifyEntryCommand*>::iterator itm;
-  std::map<int, OvmsNotifyEntryCommand*>::reverse_iterator ritm;
-  OvmsNotifyCallbackMap_t::iterator itc;
-  OvmsNotifyEntryCommand *msg;
-  size_t msglen;
-
-  // get verbosity levels needed by readers:
-  for (itc=m_readers.begin(); itc!=m_readers.end(); itc++)
+  std::bitset<NOTIFY_MAX_READERS> readers;
+  for (auto itc=m_readers.begin(); itc!=m_readers.end(); itc++)
     {
     OvmsNotifyCallbackEntry* mc = itc->second;
-    verbosity_msgs[mc->m_verbosity] = NULL;
+    if (mc->Accepts(mt, subtype))
+      {
+      verbosity_msgs[mc->m_verbosity] = NULL;
+      readers.set(mc->m_reader); // cache acceptance
+      }
+    }
+  if (verbosity_msgs.size() == 0)
+    {
+    ESP_LOGD(TAG, "Abort: no readers for type '%s' subtype '%s'", type, subtype);
+    return 0;
     }
 
   // fetch verbosity levels beginning at highest verbosity:
-  msg = NULL;
-  msglen = 0;
-  for (ritm=verbosity_msgs.rbegin(); ritm!=verbosity_msgs.rend(); ritm++)
+  OvmsNotifyEntryCommand *msg = NULL;
+  size_t msglen = 0;
+  for (auto ritm=verbosity_msgs.rbegin(); ritm!=verbosity_msgs.rend(); ritm++)
     {
     int verbosity = ritm->first;
-
     if (msg && msglen <= verbosity)
       {
       // reuse last verbosity level message:
@@ -535,30 +578,33 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* subtype, const 
         {
         // create verbosity level message:
         msg = new OvmsNotifyEntryCommand(subtype, verbosity, cmd);
-        msglen = msg->GetValue().length();
+        msglen = msg->GetValueSize();
         verbosity_msgs[verbosity] = msg;
         }
       }
     }
 
   // add readers:
-  for (itc=m_readers.begin(); itc!=m_readers.end(); itc++)
+  for (auto itc=m_readers.begin(); itc!=m_readers.end(); itc++)
     {
     OvmsNotifyCallbackEntry* mc = itc->second;
-    msg = verbosity_msgs[mc->m_verbosity];
-    msg->m_readers.set(mc->m_reader);
+    if (readers.test(mc->m_reader))
+      {
+      msg = verbosity_msgs[mc->m_verbosity];
+      msg->m_readers.set(mc->m_reader);
+      }
     }
 
   // queue all verbosity level messages beginning at lowest verbosity (fastest delivery):
   msg = NULL;
   uint32_t queue_id = 0;
-  for (itm=verbosity_msgs.begin(); itm!=verbosity_msgs.end(); itm++)
+  for (auto itm=verbosity_msgs.begin(); itm!=verbosity_msgs.end(); itm++)
     {
     if (itm->second == msg)
       continue; // already queued
-
     msg = itm->second;
-    ESP_LOGD(TAG, "Created entry for verbosity %d has %d readers pending", itm->first, msg->m_readers.count());
+    ESP_LOGD(TAG, "Created entry type '%s' subtype '%s' verbosity %d has %d readers pending",
+             type, subtype, itm->first, msg->m_readers.count());
     queue_id = mt->QueueEntry(msg);
     }
 

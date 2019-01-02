@@ -37,6 +37,7 @@ static const char *TAG = "v-teslamodels";
 #include "vehicle_teslamodels.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
+#include "ovms_webserver.h"
 
 OvmsVehicleTeslaModelS::OvmsVehicleTeslaModelS()
   {
@@ -44,6 +45,7 @@ OvmsVehicleTeslaModelS::OvmsVehicleTeslaModelS()
 
   memset(m_vin,0,sizeof(m_vin));
   memset(m_type,0,sizeof(m_type));
+  m_charge_w = 0;
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -51,12 +53,17 @@ OvmsVehicleTeslaModelS::OvmsVehicleTeslaModelS()
 
   BmsSetCellArrangementVoltage(96, 6);
   BmsSetCellArrangementTemperature(32, 2);
+  BmsSetCellLimitsVoltage(1,4.9);
+  BmsSetCellLimitsTemperature(-90,90);
+
+  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
   }
 
 OvmsVehicleTeslaModelS::~OvmsVehicleTeslaModelS()
   {
   ESP_LOGI(TAG, "Shutdown Tesla Model S vehicle module");
   MyCommandApp.UnregisterCommand("xts");
+  MyWebServer.DeregisterPage("/bms/cellmon");
   }
 
 void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
@@ -110,9 +117,43 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
       break;
       }
+    case 0x222: // Charging related
+      {
+      m_charge_w = uint16_t(d[1]<<8)+d[0];
+      break;
+      }
     case 0x256: // Speed
       {
       StandardMetrics.ms_v_pos_speed->SetValue( ((((int)d[3]&0x0f)<<8) + (int)d[2])/10, (d[3]&0x80)?Kph:Mph );
+      break;
+      }
+    case 0x28C: // Charging related
+      {
+      float charge_v = (float)(uint16_t(d[1]<<8) + d[0])/256;
+      if ((charge_v != 0)&&(m_charge_w != 0))
+        { // Charging
+        StandardMetrics.ms_v_charge_current->SetValue((unsigned int)(m_charge_w/charge_v));
+        StandardMetrics.ms_v_charge_voltage->SetValue((unsigned int)charge_v);
+        StandardMetrics.ms_v_charge_pilot->SetValue(true);
+        StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+        StandardMetrics.ms_v_door_chargeport->SetValue(true);
+        StandardMetrics.ms_v_charge_mode->SetValue("standard");
+        StandardMetrics.ms_v_charge_state->SetValue("charging");
+        StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+        StandardMetrics.ms_v_charge_climit->SetValue((unsigned int)(m_charge_w/charge_v));
+        }
+      else
+        { // Not charging
+        StandardMetrics.ms_v_charge_current->SetValue(0);
+        StandardMetrics.ms_v_charge_voltage->SetValue(0);
+        StandardMetrics.ms_v_charge_pilot->SetValue(false);
+        StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+        StandardMetrics.ms_v_door_chargeport->SetValue(false);
+        StandardMetrics.ms_v_charge_mode->SetValue("standard");
+        StandardMetrics.ms_v_charge_state->SetValue("done");
+        StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+        StandardMetrics.ms_v_charge_climit->SetValue(0);
+        }
       break;
       }
     case 0x302: // SOC
@@ -167,23 +208,27 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
       int v2 = (((int)d[4]&0x0f)<<10) + (((int)d[3])<<2) + (d[2]>>6);
       int v3 = (((int)d[6]&0x03)<<12) + (((int)d[5])<<4) + (d[4]>>4);
       int v4 = (((int)d[7])<<6) + (((int)d[6]>>2));
-      if (d[0]<24)
+      if ((v1 != 0x3fff)&&(v2 != 0x3fff)&&(v3 != 0x3fff)&&(v4 != 0x3fff)&&
+          (v1 != 0)&&(v2 != 0)&&(v3 != 0)&&(v4 != 0))
         {
-        // Voltages
-        int k = d[0]*4;
-        BmsSetCellVoltage(k,   0.000305 * v1);
-        BmsSetCellVoltage(k+1, 0.000305 * v2);
-        BmsSetCellVoltage(k+2, 0.000305 * v3);
-        BmsSetCellVoltage(k+3, 0.000305 * v4);
-        }
-      else
-        {
-        // Temperatures
-        int k = (d[0]-24)*4;
-        BmsSetCellTemperature(k,   0.0122 * ((v1 & 0x1FFF) - (v1 & 0x2000)));
-        BmsSetCellTemperature(k+1, 0.0122 * ((v2 & 0x1FFF) - (v2 & 0x2000)));
-        BmsSetCellTemperature(k+2, 0.0122 * ((v3 & 0x1FFF) - (v3 & 0x2000)));
-        BmsSetCellTemperature(k+3, 0.0122 * ((v4 & 0x1FFF) - (v4 & 0x2000)));
+        if (d[0]<24)
+          {
+          // Voltages
+          int k = d[0]*4;
+          BmsSetCellVoltage(k,   0.000305 * v1);
+          BmsSetCellVoltage(k+1, 0.000305 * v2);
+          BmsSetCellVoltage(k+2, 0.000305 * v3);
+          BmsSetCellVoltage(k+3, 0.000305 * v4);
+          }
+        else
+          {
+          // Temperatures
+          int k = (d[0]-24)*4;
+          BmsSetCellTemperature(k,   0.0122 * ((v1 & 0x1FFF) - (v1 & 0x2000)));
+          BmsSetCellTemperature(k+1, 0.0122 * ((v2 & 0x1FFF) - (v2 & 0x2000)));
+          BmsSetCellTemperature(k+2, 0.0122 * ((v3 & 0x1FFF) - (v3 & 0x2000)));
+          BmsSetCellTemperature(k+3, 0.0122 * ((v4 & 0x1FFF) - (v4 & 0x2000)));
+          }
         }
       break;
       }

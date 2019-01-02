@@ -283,28 +283,6 @@ int FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsi
   return rlength;
   }
 
-/**
- * json_encode: encode string for JSON transport (see http://www.json.org/)
- */
-std::string json_encode(const std::string text)
-  {
-  std::string buf;
-  for (int i=0; i<text.size(); i++)
-    {
-    switch(text[i])
-      {
-      case '\n':        buf += "\\n"; break;
-      case '\r':        buf += "\\r"; break;
-      case '\t':        buf += "\\t"; break;
-      case '\b':        buf += "\\b"; break;
-      case '\f':        buf += "\\f"; break;
-      case '\"':        buf += "\\\""; break;
-      case '\\':        buf += "\\\\"; break;
-      default:          buf += text[i]; break;
-      }
-    }
-	return buf;
-  }
 
 /**
  * pwgen: simple password generator
@@ -395,7 +373,7 @@ int mkpath(std::string path, mode_t mode /*=0*/)
 /**
  * rmtree: rmdir -r
  */
-int rmtree(std::string path)
+int rmtree(const std::string path)
   {
   DIR *dir = opendir(path.c_str());
   if (!dir)
@@ -423,4 +401,32 @@ int rmtree(std::string path)
   closedir(dir);
   ok = (rmdir(path.c_str()) == 0);
   return ok ? 0 : -1;
+  }
+
+/**
+ * path_exists: check if filesystem path exists
+ */
+bool path_exists(const std::string path)
+  {
+  struct stat st;
+  return (stat(path.c_str(), &st) == 0);
+  }
+
+
+/**
+ * mqtt_topic: convert dotted string (e.g. notification subtype) to MQTT topic
+ *  - replace '.' by '/'
+ */
+std::string mqtt_topic(const std::string text)
+  {
+  std::string buf;
+  for (int i=0; i<text.size(); i++)
+    {
+    switch(text[i])
+      {
+      case '.':         buf += "/"; break;
+      default:          buf += text[i]; break;
+      }
+    }
+	return buf;
   }

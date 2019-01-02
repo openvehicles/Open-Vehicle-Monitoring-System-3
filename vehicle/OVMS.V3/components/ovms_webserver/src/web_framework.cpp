@@ -76,9 +76,17 @@ std::string PageContext::encode_html(std::string text) {
 
 
 std::string PageContext::getvar(const char* name, size_t maxlen /*=200*/) {
-  char varbuf[maxlen];
-  mg_get_http_var(&hm->body, name, varbuf, sizeof(varbuf));
-  return std::string(varbuf);
+  std::string res;
+  char* varbuf = new char[maxlen];
+  if (!varbuf)
+    return res;
+  if (method == "POST")
+    mg_get_http_var(&hm->body, name, varbuf, maxlen);
+  else
+    mg_get_http_var(&hm->query_string, name, varbuf, maxlen);
+  res.assign(varbuf);
+  delete[] varbuf;
+  return res;
 }
 
 
@@ -139,10 +147,11 @@ void PageContext::panel_end(const char* footer) {
     , footer);
 }
 
-void PageContext::form_start(const char* action) {
+void PageContext::form_start(const char* action, const char* target /*=NULL*/) {
   mg_printf_http_chunk(nc,
-    "<form class=\"form-horizontal\" method=\"post\" action=\"%s\" target=\"#main\">"
-    , _attr(action));
+    "<form class=\"form-horizontal\" method=\"post\" action=\"%s\" target=\"%s\">"
+    , _attr(action)
+    , target ? _attr(target) : "#main");
 }
 
 void PageContext::form_end() {
@@ -321,7 +330,7 @@ void PageContext::input_slider(const char* label, const char* name, int size, co
     );
 }
 
-void PageContext::input_button(const char* type, const char* label,
+void PageContext::input_button(const char* btnclass, const char* label,
     const char* name /*=NULL*/, const char* value /*=NULL*/) {
   mg_printf_http_chunk(nc,
     "<div class=\"form-group\">"
@@ -329,7 +338,7 @@ void PageContext::input_button(const char* type, const char* label,
         "<button type=\"submit\" class=\"btn btn-%s\" %s%s%s %s%s%s>%s</button>"
       "</div>"
     "</div>"
-    , _attr(type)
+    , _attr(btnclass)
     , name ? "name=\"" : "", name ? _attr(name) : "", name ? "\"" : ""
     , value ? "value=\"" : "", value ? _attr(value) : "", value ? "\"" : ""
     , label);
@@ -373,22 +382,33 @@ void PageContext::hr() {
  */
 std::string OvmsWebServer::CreateMenu(PageContext_t& c)
 {
-  std::string main, config, vehicle;
-  
+  std::string main, tools, config, vehicle;
+
   // collect menu items:
   for (PageEntry* e : MyWebServer.m_pagemap) {
     if (e->menu == PageMenu_Main)
       main += "<li><a href=\"" + std::string(e->uri) + "\" target=\"#main\">" + std::string(e->label) + "</a></li>";
+    else if (e->menu == PageMenu_Tools)
+      tools += "<li><a href=\"" + std::string(e->uri) + "\" target=\"#main\">" + std::string(e->label) + "</a></li>";
     else if (e->menu == PageMenu_Config)
       config += "<li><a href=\"" + std::string(e->uri) + "\" target=\"#main\">" + std::string(e->label) + "</a></li>";
     else if (e->menu == PageMenu_Vehicle)
       vehicle += "<li><a href=\"" + std::string(e->uri) + "\" target=\"#main\">" + std::string(e->label) + "</a></li>";
   }
-  
+
   // assemble menu:
   std::string menu =
     "<ul class=\"nav navbar-nav\">"
       + main;
+
+  menu +=
+    "<li class=\"dropdown\" id=\"menu-tools\">"
+      "<a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-haspopup=\"true\" aria-expanded=\"false\">Tools <span class=\"caret\"></span></a>"
+      "<ul class=\"dropdown-menu\">"
+        + tools +
+      "</ul>"
+    "</li>";
+
   if (vehicle != "") {
     std::string vehiclename = MyVehicleFactory.ActiveVehicleShortName();
     menu +=
@@ -401,6 +421,7 @@ std::string OvmsWebServer::CreateMenu(PageContext_t& c)
         "</ul>"
       "</li>";
   }
+
   menu +=
       "<li class=\"dropdown\" id=\"menu-cfg\">"
         "<a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-haspopup=\"true\" aria-expanded=\"false\">Config <span class=\"caret\"></span></a>"
@@ -413,8 +434,8 @@ std::string OvmsWebServer::CreateMenu(PageContext_t& c)
       "<li class=\"hidden-xs\"><a href=\"#\" class=\"toggle-fullscreen\">◱</a></li>"
       "<li class=\"hidden-xs\"><a href=\"#\" class=\"toggle-night\">◐</a></li>"
       + std::string(c.session
-      ? "<li><a href=\"/logout\" target=\"#main\">Logout</a></li>"
-      : "<li><a href=\"/login\" target=\"#main\">Login</a></li>") +
+      ? "<li><a href=\"/logout\" target=\"#main\">Logout</a></li><script>loggedin=true</script>"
+      : "<li><a href=\"/login\" target=\"#main\">Login</a></li><script>loggedin=false</script>") +
     "</ul>";
 
   return menu;
@@ -428,16 +449,18 @@ std::string OvmsWebServer::CreateMenu(PageContext_t& c)
 void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
 {
   // collect menu items:
-  std::string main, config, vehicle;
+  std::string main, config, tools, vehicle;
   for (PageEntry* e : MyWebServer.m_pagemap) {
     if (e->menu == PageMenu_Main)
       main += "<li><a class=\"btn btn-default\" href=\"" + std::string(e->uri) + "\" target=\"#main\">" + std::string(e->label) + "</a></li>";
+    else if (e->menu == PageMenu_Tools)
+      tools += "<li><a class=\"btn btn-default\" href=\"" + std::string(e->uri) + "\" target=\"#main\">" + std::string(e->label) + "</a></li>";
     else if (e->menu == PageMenu_Config)
       config += "<li><a class=\"btn btn-default\" href=\"" + std::string(e->uri) + "\" target=\"#main\">" + std::string(e->label) + "</a></li>";
     else if (e->menu == PageMenu_Vehicle)
       vehicle += "<li><a class=\"btn btn-default\" href=\"" + std::string(e->uri) + "\" target=\"#main\">" + std::string(e->label) + "</a></li>";
   }
-  
+
   // show setup warning:
   std::string init_step = MyConfig.GetParamValue("module", "init");
   if (init_step.empty()) {
@@ -452,14 +475,20 @@ void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
       "<p><strong>Warning:</strong> no admin password set. <strong>Web access is open to the public!</strong></p>"
       "<p><a class=\"btn btn-success\" href=\"/cfg/password\" target=\"#main\">Change password now</a></p>");
   }
-  
+
   c.panel_start("primary", "Home");
-  
+
   c.printf(
     "<fieldset><legend>Main menu</legend>"
     "<ul class=\"list-inline\">%s</ul>"
     "</fieldset>"
     , main.c_str());
+
+  c.printf(
+    "<fieldset><legend>Tools</legend>"
+    "<ul class=\"list-inline\">%s</ul>"
+    "</fieldset>"
+    , tools.c_str());
 
   if (vehicle != "") {
     const char* vehiclename = MyVehicleFactory.ActiveVehicleName();
@@ -469,7 +498,7 @@ void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
       "</fieldset>"
       , vehiclename, vehicle.c_str());
   }
-  
+
   c.printf(
     "<fieldset><legend>Configuration</legend>"
     "<ul class=\"list-inline\">%s</ul>"
@@ -477,7 +506,7 @@ void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
     , config.c_str());
 
   c.panel_end();
-  
+
   // check auto init, show warning if disabled:
   if (!MyConfig.GetParamValueBool("auto", "init", true)) {
     c.alert("warning", "<p><strong>Warning:</strong> auto start disabled. Check auto start configuration.</p>");
@@ -494,7 +523,7 @@ void OvmsWebServer::HandleHome(PageEntry_t& p, PageContext_t& c)
     c.done();
     return;
   }
-  
+
   c.head(200);
   c.alert("info", "<p class=\"lead\">Welcome to the OVMS web console.</p>");
   OutputHome(p, c);
@@ -508,7 +537,7 @@ void OvmsWebServer::HandleHome(PageEntry_t& p, PageContext_t& c)
 void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
 {
   std::string menu = CreateMenu(c);
-  
+
   // output page framework:
   c.head(200);
   c.print(
@@ -520,9 +549,9 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
         "<meta name=\"mobile-web-app-capable\" content=\"yes\">"
         "<title>OVMS Console</title>"
-        "<link rel=\"stylesheet\" href=\"/assets/style.css\">"
-        "<link rel=\"shortcut icon\" sizes=\"192x192\" href=\"/apple-touch-icon.png\">"
-        "<link rel=\"apple-touch-icon\" href=\"/apple-touch-icon.png\">"
+        "<link rel=\"stylesheet\" href=\"" URL_ASSETS_STYLE_CSS "\">"
+        "<link rel=\"shortcut icon\" sizes=\"192x192\" href=\"" URL_ASSETS_FAVICON_PNG "\">"
+        "<link rel=\"apple-touch-icon\" href=\"" URL_ASSETS_FAVICON_PNG "\">"
       "</head>"
       "<body>"
         "<nav id=\"nav\" class=\"navbar navbar-inverse navbar-fixed-top\">"
@@ -536,7 +565,7 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
               "</button>"
               "<button type=\"button\" class=\"navbar-toggle collapsed toggle-night\">◐</button>"
               "<button type=\"button\" class=\"navbar-toggle collapsed toggle-fullscreen\">◱</button>"
-              "<a class=\"navbar-brand\" href=\"/home\" target=\"#main\" title=\"Home\"><img alt=\"OVMS\" src=\"/apple-touch-icon.png\"></a>"
+              "<a class=\"navbar-brand\" href=\"/home\" target=\"#main\" title=\"Home\"><img alt=\"OVMS\" src=\"" URL_ASSETS_FAVICON_PNG "\"></a>"
             "</div>"
             "<div role=\"menu\" id=\"menu\" class=\"navbar-collapse collapse\">");
   c.print(menu);
@@ -546,7 +575,7 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
         "</nav>"
         "<div role=\"main\" id=\"main\" class=\"container-fluid\">"
         "</div>"
-        "<script src=\"/assets/script.js\"></script>"
+        "<script src=\"" URL_ASSETS_SCRIPT_JS "\"></script>"
       "</body>"
     "</html>");
   c.done();
@@ -604,6 +633,7 @@ void OvmsWebServer::OutputReconnect(PageEntry_t& p, PageContext_t& c, const char
     "<p class=\"lead\">%s</p>"
     "<p>The window will automatically reload when the browser reconnects to the module.</p>"
     "<p id=\"dots\">•</p>"
+    "</div>"
     "<script>"
       "$(\"html\").addClass(\"loading\");"
       "ws_inhibit = 10;"
@@ -643,7 +673,7 @@ void OvmsWebServer::HandleAsset(PageEntry_t& p, PageContext_t& c)
   time_t mtime;
   const char* type;
   bool gzip_encoded = true;
-  
+
   if (c.uri == "/assets/style.css") {
     data = style_css_gz_start;
     size = style_css_gz_end - style_css_gz_start;
@@ -679,13 +709,13 @@ void OvmsWebServer::HandleAsset(PageEntry_t& p, PageContext_t& c)
     mg_http_send_error(c.nc, 404, "Not found");
     return;
   }
-  
+
   char etag[50], current_time[50], last_modified[50];
   time_t t = (time_t) mg_time();
   snprintf(etag, sizeof(etag), "\"%lx.%" INT64_FMT "\"", (unsigned long) mtime, (int64_t) size);
   strftime(current_time, sizeof(current_time), "%a, %d %b %Y %H:%M:%S GMT", gmtime(&t));
   strftime(last_modified, sizeof(last_modified), "%a, %d %b %Y %H:%M:%S GMT", gmtime(&mtime));
-  
+
   mg_send_response_line(c.nc, 200, NULL);
   mg_printf(c.nc,
     "Date: %s\r\n"
@@ -700,7 +730,7 @@ void OvmsWebServer::HandleAsset(PageEntry_t& p, PageContext_t& c)
     , type
     , gzip_encoded ? "Content-Encoding: gzip\r\n" : ""
     , etag);
-  
+
   // start chunked transfer:
   new HttpDataSender(c.nc, data, size);
 }

@@ -326,15 +326,6 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   cmd_xks->RegisterCommand("sjb","Send command to SJB ECU", xks_sjb, "<b1><b2><b3>", 3,3, false);
   cmd_xks->RegisterCommand("bcm","Send command to BCM ECU", xks_bcm, "<b1><b2><b3>", 3,3, false);
 
-  MyConfig.SetParamValueBool("modem","enable.gps", true);
-  MyConfig.SetParamValueBool("modem","enable.gpstime", true);
-  MyConfig.SetParamValueBool("modem","enable.net", true);
-  MyConfig.SetParamValueBool("modem","enable.sms", true);
-
-  // Require GPS.
-  MyEvents.SignalEvent("vehicle.require.gps", NULL);
-  MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
-
   MyConfig.RegisterParam("xks", "Kia Soul EV spesific settings.", true, true);
   ConfigChanged(NULL);
 
@@ -355,10 +346,6 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
 OvmsVehicleKiaSoulEv::~OvmsVehicleKiaSoulEv()
   {
   ESP_LOGI(TAG, "Shutdown Kia Soul EV vehicle module");
-
-  // release GPS:
-  MyEvents.SignalEvent("vehicle.release.gps", NULL);
-  MyEvents.SignalEvent("vehicle.release.gpstime", NULL);
   }
 
 /**
@@ -996,11 +983,11 @@ const std::string OvmsVehicleKiaSoulEv::GetFeature(int key)
   {
     case 0:
     case 10:
-      return MyConfig.GetParamValue("xks", "suffsoc", XSTR(0));
+      return MyConfig.GetParamValue("xks", "suffsoc", STR(0));
     case 11:
-      return MyConfig.GetParamValue("xks", "suffrange", XSTR(0));
+      return MyConfig.GetParamValue("xks", "suffrange", STR(0));
     case 12:
-      return MyConfig.GetParamValue("xks", "maxrange", XSTR(CFG_DEFAULT_MAXRANGE));
+      return MyConfig.GetParamValue("xks", "maxrange", STR(CFG_DEFAULT_MAXRANGE));
     case 15:
     {
       int bits =

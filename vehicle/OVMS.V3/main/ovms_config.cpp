@@ -220,8 +220,19 @@ OvmsConfig::OvmsConfig()
   cmd_config->RegisterCommand("rm","Remove parameter:instance",config_rm,"<param> {<instance> | *}",2,2,true);
 
 #ifdef CONFIG_OVMS_SC_ZIP
-  cmd_config->RegisterCommand("backup","Backup to file",config_backup,"<path> [password=module password]",1,2,true);
-  cmd_config->RegisterCommand("restore","Restore from file",config_restore,"<path> [password=module password]",1,2,true);
+  cmd_config->RegisterCommand("backup", "Backup to file", config_backup,
+    "<zipfile> [password=module password]\n"
+    "Backup system configuration & scripts into password protected ZIP file.\n"
+    "Note: user files or directories in /store will not be included.\n"
+    "<password> defaults to the current module password, set to \"\" to disable encryption.\n"
+    "Hint: use 7z to unzip/create backup ZIPs on a PC.", 1, 2, true);
+  cmd_config->RegisterCommand("restore", "Restore from file", config_restore,
+    "<zipfile> [password=module password]\n"
+    "Restore system configuration & scripts from password protected ZIP file.\n"
+    "Note: user files or directories in /store will not be touched.\n"
+    "The module will perform a reboot after successful restore.\n"
+    "<password> defaults to the current module password.\n"
+    "Note: you need to supply the password used for the backup creation.", 1, 2, true);
 #endif // CONFIG_OVMS_SC_ZIP
 
   RegisterParam("password", "Password store", true, false);
@@ -310,6 +321,20 @@ void OvmsConfig::upgrade()
     SetParamValue("module", "init", "done");
     DeleteInstance("password", "changed");
     }
+
+  // Migrate vehicle.require.* signals to config:
+  if (GetParamValueInt("module", "cfgversion") < 2018112200)
+    {
+    std::string vt = GetParamValue("auto", "vehicle.type");
+    if (vt=="FT5E" || vt=="KS" || vt=="MI" || vt=="RT" || vt=="TGTC" || vt=="VA" || vt=="ZEVA")
+      {
+      SetParamValueBool("modem", "enable.gps", true);
+      SetParamValueBool("modem", "enable.gpstime", true);
+      }
+    }
+
+  // Done, set config version:
+  SetParamValueInt("module", "cfgversion", 2018112200);
   }
 
 void OvmsConfig::RegisterParam(std::string name, std::string title, bool writable, bool readable)
@@ -525,6 +550,22 @@ void OvmsConfig::SetParamMap(std::string param, ConfigParamMap& map)
 /**
  * Backup:
  */
+
+static struct
+  {
+  const char* name;
+  bool optional;
+  }
+  backup_dir[] =
+  {
+    { "ovms_config", false },
+    { "events", true },
+    { "scripts", true },
+    { "obd2ecu", true },
+    { "dbc", true },
+    { NULL, false }
+  };
+
 bool OvmsConfig::Backup(std::string path, std::string password, OvmsWriter* writer /*=NULL*/, int verbosity /*=1024*/)
   {
   if (writer)
@@ -537,8 +578,14 @@ bool OvmsConfig::Backup(std::string path, std::string password, OvmsWriter* writ
 
   ZipArchive zip(path, password, ZIP_CREATE|ZIP_TRUNCATE);
   if (ok) ok = zip.chdir("/store");
-  if (ok) ok = zip.add("ovms_config");
-  if (ok) ok = zip.add("events");
+  for (int i = 0; ok && backup_dir[i].name; i++)
+    {
+    if (writer && verbosity >= COMMAND_RESULT_NORMAL)
+      writer->printf("..add '%s'\n", backup_dir[i].name);
+    else if (!writer)
+      ESP_LOGD(TAG, "Backup '%s': add '%s'", path.c_str(), backup_dir[i].name);
+    ok = zip.add(backup_dir[i].name, backup_dir[i].optional);
+    }
   if (ok) ok = zip.close();
 
   if (!ok)
@@ -565,8 +612,15 @@ bool OvmsConfig::Backup(std::string path, std::string password, OvmsWriter* writ
 
 static bool install_dir(std::string src, std::string dst)
   {
+  if (!path_exists(src))
+    {
+    rmtree(dst);
+    return true;
+    }
   std::string dstbak = dst + ".old";
   rmtree(dstbak);
+  if (mkpath(dst) != 0) // ensure dst exists
+    return false;
   if (rename(dst.c_str(), dstbak.c_str()) == 0)
     {
     if (rename(src.c_str(), dst.c_str()) == 0)
@@ -591,9 +645,9 @@ bool OvmsConfig::Restore(std::string path, std::string password, OvmsWriter* wri
 
   // unzip into restore directory:
   // (Note: all paths beginning with "/store/ovms_config" are protected)
+  std::string tempdir = "/store/ovms_config_restore";
 
-  if (rmtree("/store/ovms_config_restore") != 0
-    || mkdir("/store/ovms_config_restore", 0) != 0)
+  if (rmtree(tempdir) != 0 || mkpath(tempdir) != 0)
     {
     if (writer)
       writer->printf("Error: prepare failed: %s\n", strerror(errno));
@@ -604,9 +658,15 @@ bool OvmsConfig::Restore(std::string path, std::string password, OvmsWriter* wri
     }
 
   ZipArchive zip(path, password, ZIP_RDONLY);
-  if (ok) ok = zip.chdir("/store/ovms_config_restore");
-  if (ok) ok = zip.extract("ovms_config");
-  if (ok) ok = zip.extract("events");
+  if (ok) ok = zip.chdir(tempdir);
+  for (int i = 0; ok && backup_dir[i].name; i++)
+    {
+    if (writer && verbosity >= COMMAND_RESULT_NORMAL)
+      writer->printf("..extract '%s'\n", backup_dir[i].name);
+    else if (!writer)
+      ESP_LOGD(TAG, "Restore '%s': extract '%s'", path.c_str(), backup_dir[i].name);
+    ok = zip.extract(backup_dir[i].name, backup_dir[i].optional);
+    }
   if (ok) ok = zip.close();
 
   if (!ok)
@@ -615,7 +675,7 @@ bool OvmsConfig::Restore(std::string path, std::string password, OvmsWriter* wri
       writer->printf("Error: unzip failed: %s\n", zip.strerror());
     else
       ESP_LOGE(TAG, "Restore '%s': unzip failed: %s", path.c_str(), zip.strerror());
-    rmtree("/store/ovms_config_restore");
+    rmtree(tempdir);
     m_store_lock.Unlock();
     return false;
     }
@@ -627,19 +687,37 @@ bool OvmsConfig::Restore(std::string path, std::string password, OvmsWriter* wri
   else
     ESP_LOGD(TAG, "Restore '%s': installing...", path.c_str());
 
-  if (!install_dir("/store/ovms_config_restore/events",       "/store/events") ||
-      !install_dir("/store/ovms_config_restore/ovms_config",  "/store/ovms_config"))
+  std::string dstbase = "/store/";
+  for (int i = 0; backup_dir[i].name; i++)
     {
-    if (writer)
-      writer->printf("Error: install failed: %s\n", strerror(errno));
-    else
-      ESP_LOGE(TAG, "Restore '%s': install failed: %s", path.c_str(), strerror(errno));
-    ok = false;
+    if (writer && verbosity >= COMMAND_RESULT_NORMAL)
+      writer->printf("..install '%s'\n", backup_dir[i].name);
+    else if (!writer)
+      ESP_LOGD(TAG, "Restore '%s':  install '%s'", path.c_str(), backup_dir[i].name);
+    if (!install_dir(tempdir + "/" + backup_dir[i].name, dstbase + backup_dir[i].name))
+      {
+      ok = false;
+      if (!backup_dir[i].optional)
+        {
+        if (writer)
+          writer->printf("Error: install '%s' failed: %s\n", backup_dir[i].name, strerror(errno));
+        else
+          ESP_LOGE(TAG, "Restore '%s': install '%s' failed: %s", path.c_str(), backup_dir[i].name, strerror(errno));
+        break;
+        }
+      else
+        {
+        if (writer)
+          writer->printf("Warning: install '%s' failed: %s\n", backup_dir[i].name, strerror(errno));
+        else
+          ESP_LOGW(TAG, "Restore '%s': install '%s' failed: %s", path.c_str(), backup_dir[i].name, strerror(errno));
+        }
+      }
     }
 
   // cleanup & reboot:
 
-  rmtree("/store/ovms_config_restore");
+  rmtree(tempdir);
 
   if (!ok)
     {

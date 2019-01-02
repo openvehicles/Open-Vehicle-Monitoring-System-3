@@ -59,10 +59,6 @@ OvmsVehicleThinkCity::OvmsVehicleThinkCity()
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   PollSetPidList(m_can1, obdii_polls);
   PollSetState(0);
-  
-  // require GPS:
-  MyEvents.SignalEvent("vehicle.require.gps", NULL);
-  MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
   }
 
 OvmsVehicleThinkCity::~OvmsVehicleThinkCity()

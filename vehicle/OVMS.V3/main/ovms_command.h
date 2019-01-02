@@ -98,6 +98,7 @@ class OvmsCommandMap : public std::map<const char*, OvmsCommand*, CompareCharPtr
   {
   public:
     OvmsCommand* FindUniquePrefix(const char* key);
+    OvmsCommand* FindCommand(const char* key);
   };
 
 class OvmsCommand : public ExternalRamAllocated

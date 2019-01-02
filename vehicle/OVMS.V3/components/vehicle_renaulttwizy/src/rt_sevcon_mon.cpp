@@ -156,19 +156,19 @@ void SevconClient::SendMonitoringData()
   
   msg = "RT-ENG-BatPwrDrv,0,86400,";
   msg.append(m_mon.m_bat_power_drv->AsString());
-  MyNotify.NotifyString("data", "xrt.pwr.mon", msg.c_str());
+  MyNotify.NotifyString("data", "xrt.power.dyno", msg.c_str());
   
   msg = "RT-ENG-BatPwrRec,0,86400,";
   msg.append(m_mon.m_bat_power_rec->AsString());
-  MyNotify.NotifyString("data", "xrt.pwr.mon", msg.c_str());
+  MyNotify.NotifyString("data", "xrt.power.dyno", msg.c_str());
   
   msg = "RT-ENG-MotTrqDrv,0,86400,";
   msg.append(m_mon.m_mot_torque_drv->AsString());
-  MyNotify.NotifyString("data", "xrt.pwr.mon", msg.c_str());
+  MyNotify.NotifyString("data", "xrt.power.dyno", msg.c_str());
   
   msg = "RT-ENG-MotTrqRec,0,86400,";
   msg.append(m_mon.m_mot_torque_rec->AsString());
-  MyNotify.NotifyString("data", "xrt.pwr.mon", msg.c_str());
+  MyNotify.NotifyString("data", "xrt.power.dyno", msg.c_str());
 }
 
 
@@ -212,7 +212,7 @@ void SevconClient::InitMonitoring()
  */
 void SevconClient::QueryMonitoringData()
 {
-  if (m_cfgmode_request || CtrlCfgMode() || !CtrlLoggedIn() || StdMetrics.ms_v_env_gear->AsInt()==0)
+  if (!m_mon_enable || m_cfgmode_request || CtrlCfgMode() || !CtrlLoggedIn() || StdMetrics.ms_v_env_gear->AsInt()==0)
     return;
   
   // 4600.0c Actual AC Motor Current [A]

@@ -134,6 +134,16 @@ void OvmsVehicleRenaultTwizy::BatteryInit()
   for (i = 0; i < BATT_CELLS; i++)
     twizy_cell[i].InitMetrics(i);
 
+  // BMS configuration:
+  //    Note: layout currently fixed to 2 voltages + 1 temperature per module,
+  //          this may need refinement for custom batteries
+  BmsSetCellArrangementVoltage(batt_cell_count, 2);
+  BmsSetCellArrangementTemperature(batt_cmod_count, 1);
+  BmsSetCellLimitsVoltage(2.0, 5.0);
+  BmsSetCellLimitsTemperature(-39, 200);
+  BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
+  BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
+
   // init commands
 
   cmd_batt = cmd_xrt->RegisterCommand("batt", "Battery monitor", NULL, "", 0, 0, true);
@@ -178,6 +188,12 @@ void OvmsVehicleRenaultTwizy::BatteryUpdateMetrics()
     cmod.UpdateMetrics();
   for (battery_cell &cell : twizy_cell)
     cell.UpdateMetrics();
+  
+  int i;
+  for (i = 0; i < batt_cmod_count; i++)
+    BmsSetCellTemperature(i, (float) twizy_cmod[i].temp_act - 40);
+  for (i = 0; i < batt_cell_count; i++)
+    BmsSetCellVoltage(i, (float) twizy_cell[i].volt_act / 200);
 }
 
 
@@ -261,6 +277,7 @@ void OvmsVehicleRenaultTwizy::BatteryReset()
     pack.last_volt_alerts = 0;
   }
   
+  BmsResetCellStats();
   BatteryUpdateMetrics();
 }
 
@@ -538,10 +555,10 @@ void battery_pack::UpdateMetrics()
   
   float vmin = MyConfig.GetParamValueFloat("xrt", "cell_volt_min", 3.165);
   float vmax = MyConfig.GetParamValueFloat("xrt", "cell_volt_max", 4.140);
-  *StdMetrics.ms_v_bat_cell_level_min = (float) TRUNCPREC((((float)cell_volt_min/200)-vmin) / (vmax-vmin) * 100, 3);
-  *StdMetrics.ms_v_bat_cell_level_max = (float) TRUNCPREC((((float)cell_volt_max/200)-vmin) / (vmax-vmin) * 100, 3);
-  *StdMetrics.ms_v_bat_cell_level_avg = (float) TRUNCPREC(((cell_volt_avg/200)-vmin) / (vmax-vmin) * 100, 3);
-  *StdMetrics.ms_v_bat_cell_level_stddev = (float) TRUNCPREC((cell_volt_stddev/200) / (vmax-vmin) * 100, 3);
+  *StdMetrics.ms_v_bat_pack_level_min = (float) TRUNCPREC((((float)cell_volt_min/200)-vmin) / (vmax-vmin) * 100, 3);
+  *StdMetrics.ms_v_bat_pack_level_max = (float) TRUNCPREC((((float)cell_volt_max/200)-vmin) / (vmax-vmin) * 100, 3);
+  *StdMetrics.ms_v_bat_pack_level_avg = (float) TRUNCPREC(((cell_volt_avg/200)-vmin) / (vmax-vmin) * 100, 3);
+  *StdMetrics.ms_v_bat_pack_level_stddev = (float) TRUNCPREC((cell_volt_stddev/200) / (vmax-vmin) * 100, 3);
 }
 
 bool battery_pack::IsModified(size_t m_modifier)
@@ -1047,7 +1064,7 @@ void OvmsVehicleRenaultTwizy::BatterySendDataUpdate(bool force)
     if (pack_modified) {
       buf.clear();
       FormatPackData(COMMAND_RESULT_NORMAL, &buf, pack);
-      MyNotify.NotifyString("data", "xrt.batt.log", buf.c_str());
+      MyNotify.NotifyString("data", "xrt.battery.log", buf.c_str());
     }
 
   }
@@ -1061,7 +1078,7 @@ void OvmsVehicleRenaultTwizy::BatterySendDataUpdate(bool force)
     if (cell_modified) {
       buf.clear();
       FormatCellData(COMMAND_RESULT_NORMAL, &buf, cell);
-      MyNotify.NotifyString("data", "xrt.batt.log", buf.c_str());
+      MyNotify.NotifyString("data", "xrt.battery.log", buf.c_str());
     }
 
   }

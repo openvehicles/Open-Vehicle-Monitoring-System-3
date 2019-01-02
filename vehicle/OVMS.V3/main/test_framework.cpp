@@ -292,6 +292,21 @@ void test_can(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     frames, elapsed / 1000000, elapsed % 1000000, uspt);
   }
 
+void test_mkstemp(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  int fd1, e1, fd2, e2;
+  char tn1[100], tn2[100];
+  snprintf(tn1, sizeof(tn1), "%s.XXXXXX", argv[0]);
+  snprintf(tn2, sizeof(tn2), "%s.XXXXXX", argv[0]);
+  errno = 0;
+  fd1 = mkstemp(tn1); e1 = errno;
+  fd2 = mkstemp(tn2); e2 = errno;
+  writer->printf("tempfile 1: '%s' => fd=%d error='%s'\n", tn1, fd1, (fd1<0) ? strerror(e1) : "-");
+  writer->printf("tempfile 2: '%s' => fd=%d error='%s'\n", tn2, fd2, (fd2<0) ? strerror(e2) : "-");
+  if (fd1 >= 0) { close(fd1); unlink(tn1); }
+  if (fd2 >= 0) { close(fd2); unlink(tn2); }
+  }
+
 class TestFrameworkInit
   {
   public: TestFrameworkInit();
@@ -315,4 +330,5 @@ TestFrameworkInit::TestFrameworkInit()
   cmd_test->RegisterCommand("strverscmp", "Test strverscmp function", test_strverscmp, "", 2, 2, true);
   cmd_test->RegisterCommand("cantx", "Test CAN bus transmission", test_can, "[<port>] [<number>]", 0, 2, true);
   cmd_test->RegisterCommand("canrx", "Test CAN bus reception", test_can, "[<port>] [<number>]", 0, 2, true);
+  cmd_test->RegisterCommand("mkstemp", "Test mkstemp function", test_mkstemp, "<file>", 1, 1, true);
   }

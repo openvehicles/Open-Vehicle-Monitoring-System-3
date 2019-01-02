@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-twizy";
 
-#define VERSION "0.18.1"
+#define VERSION "0.20.1"
 
 #include <stdio.h>
 #include <string>
@@ -104,10 +104,6 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "gps.lock.acquired", std::bind(&OvmsVehicleRenaultTwizy::EventListener, this, _1, _2));
 
-  // require GPS:
-  MyEvents.SignalEvent("vehicle.require.gps", NULL);
-  MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
-
   // init subsystems:
   BatteryInit();
   PowerInit();
@@ -127,10 +123,6 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
 OvmsVehicleRenaultTwizy::~OvmsVehicleRenaultTwizy()
 {
   ESP_LOGI(TAG, "Shutdown Renault Twizy vehicle module");
-
-  // release GPS:
-  MyEvents.SignalEvent("vehicle.release.gps", NULL);
-  MyEvents.SignalEvent("vehicle.release.gpstime", NULL);
 
   // unregister event listeners:
   MyEvents.DeregisterEvent(TAG);
@@ -271,23 +263,23 @@ const std::string OvmsVehicleRenaultTwizy::GetFeature(int key)
   switch (key)
   {
     case 0:
-      return MyConfig.GetParamValue("xrt", "gpslogint", XSTR(0));
+      return MyConfig.GetParamValue("xrt", "gpslogint", STR(0));
     case 1:
-      return MyConfig.GetParamValue("xrt", "kd_threshold", XSTR(CFG_DEFAULT_KD_THRESHOLD));
+      return MyConfig.GetParamValue("xrt", "kd_threshold", STR(CFG_DEFAULT_KD_THRESHOLD));
     case 2:
-      return MyConfig.GetParamValue("xrt", "kd_compzero", XSTR(CFG_DEFAULT_KD_COMPZERO));
+      return MyConfig.GetParamValue("xrt", "kd_compzero", STR(CFG_DEFAULT_KD_COMPZERO));
     case 6:
-      return MyConfig.GetParamValue("xrt", "chargemode", XSTR(0));
+      return MyConfig.GetParamValue("xrt", "chargemode", STR(0));
     case 7:
-      return MyConfig.GetParamValue("xrt", "chargelevel", XSTR(0));
+      return MyConfig.GetParamValue("xrt", "chargelevel", STR(0));
     case 10:
-      return MyConfig.GetParamValue("xrt", "suffsoc", XSTR(0));
+      return MyConfig.GetParamValue("xrt", "suffsoc", STR(0));
     case 11:
-      return MyConfig.GetParamValue("xrt", "suffrange", XSTR(0));
+      return MyConfig.GetParamValue("xrt", "suffrange", STR(0));
     case 12:
-      return MyConfig.GetParamValue("xrt", "maxrange", XSTR(CFG_DEFAULT_MAXRANGE));
+      return MyConfig.GetParamValue("xrt", "maxrange", STR(CFG_DEFAULT_MAXRANGE));
     case 13:
-      return MyConfig.GetParamValue("xrt", "cap_act_prc", XSTR(100));
+      return MyConfig.GetParamValue("xrt", "cap_act_prc", STR(100));
     case 15:
     {
       int bits =
@@ -301,7 +293,7 @@ const std::string OvmsVehicleRenaultTwizy::GetFeature(int key)
       return std::string(buf);
     }
     case 16:
-      return MyConfig.GetParamValue("xrt", "cap_nom_ah", XSTR(CFG_DEFAULT_CAPACITY));
+      return MyConfig.GetParamValue("xrt", "cap_nom_ah", STR(CFG_DEFAULT_CAPACITY));
     default:
       return OvmsVehicle::GetFeature(key);
   }
@@ -331,7 +323,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::ProcessMsgCo
   switch (command)
   {
     case CMD_BatteryAlert:
-      MyNotify.NotifyCommand("alert", "batt.alert", "xrt batt status");
+      MyNotify.NotifyCommand("alert", "battery.status", "xrt batt status");
       return Success;
 
     case CMD_BatteryStatus:
@@ -346,14 +338,14 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::ProcessMsgCo
       // send power usage text report:
       // args: <mode>: 't' = totals, fallback 'e' = efficiency
       if (args && (args[0] | 0x20) == 't')
-        MyNotify.NotifyCommand("info", "xrt.pwr.totals", "xrt power totals");
+        MyNotify.NotifyCommand("info", "xrt.power.totals", "xrt power totals");
       else
         MyNotify.NotifyCommand("info", "xrt.trip.report", "xrt power report");
       return Success;
 
     case CMD_PowerUsageStats:
       // send power usage data record:
-      MyNotify.NotifyCommand("data", "xrt.pwr.log", "xrt power stats");
+      MyNotify.NotifyCommand("data", "xrt.power.log", "xrt power stats");
       return Success;
 
     case CMD_QueryChargeAlerts:
@@ -400,7 +392,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandHo
   buf << "Profile #" << key+1 << ": " << m_sevcon->FmtSwitchProfileResult(res);
   result = buf.str();
 
-  MyNotify.NotifyStringf("info", "xrt.sevcon.profile", result.c_str());
+  MyNotify.NotifyStringf("info", "xrt.sevcon.profile.switch", result.c_str());
 
   if (res == COR_OK || res == COR_ERR_StateChangeFailed)
     return Success;

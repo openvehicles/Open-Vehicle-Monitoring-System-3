@@ -51,6 +51,14 @@ bool OvmsServerV3ReaderCallback(OvmsNotifyType* type, OvmsNotifyEntry* entry)
     return true; // No server v3 running, so just discard
   }
 
+bool OvmsServerV3ReaderFilterCallback(OvmsNotifyType* type, const char* subtype)
+  {
+  if (MyOvmsServerV3)
+    return MyOvmsServerV3->NotificationFilter(type, subtype);
+  else
+    return false;
+  }
+
 static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void *p)
   {
   struct mg_mqtt_message *msg = (struct mg_mqtt_message *) p;
@@ -204,7 +212,8 @@ OvmsServerV3::OvmsServerV3(const char* name)
 
   if (MyOvmsServerV3Reader == 0)
     {
-    MyOvmsServerV3Reader = MyNotify.RegisterReader("ovmsv3", COMMAND_RESULT_NORMAL, std::bind(OvmsServerV3ReaderCallback, _1, _2), true);
+    MyOvmsServerV3Reader = MyNotify.RegisterReader("ovmsv3", COMMAND_RESULT_NORMAL, std::bind(OvmsServerV3ReaderCallback, _1, _2),
+                                                   true, std::bind(OvmsServerV3ReaderFilterCallback, _1, _2));
     }
 
   // init event listener:
@@ -232,7 +241,7 @@ OvmsServerV3::~OvmsServerV3()
   {
   MyMetrics.DeregisterListener(TAG);
   MyEvents.DeregisterEvent(TAG);
-  MyNotify.ClearReader(TAG);
+  MyNotify.ClearReader(MyOvmsServerV3Reader);
   Disconnect();
   MyEvents.SignalEvent("server.v3.stopped", NULL);
   }
@@ -715,6 +724,17 @@ void OvmsServerV3::MetricModified(OvmsMetric* metric)
     metric->ClearModified(MyOvmsServerV3Modifier);
     TransmitMetric(metric);
     }
+  }
+
+bool OvmsServerV3::NotificationFilter(OvmsNotifyType* type, const char* subtype)
+  {
+  if (strcmp(type->m_name, "info") == 0 ||
+      strcmp(type->m_name, "error") == 0 ||
+      strcmp(type->m_name, "alert") == 0 ||
+      strcmp(type->m_name, "data") == 0)
+    return true;
+  else
+    return false;
   }
 
 bool OvmsServerV3::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry)

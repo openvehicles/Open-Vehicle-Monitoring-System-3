@@ -72,7 +72,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
   c.print(
     "<div id=\"livestatus\" class=\"receiver\">"
     "<div class=\"row flex\">"
-    "<div class=\"col-md-6 col-lg-4\">");
+    "<div class=\"col-sm-6 col-lg-4\">");
 
   c.panel_start("primary", "Live");
   c.print(
@@ -123,7 +123,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.print(
     "</div>"
-    "<div class=\"col-md-6 col-lg-4\">");
+    "<div class=\"col-sm-6 col-lg-4\">");
 
   c.panel_start("primary", "Vehicle");
   output = ExecuteCommand("stat");
@@ -139,7 +139,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.print(
     "</div>"
-    "<div class=\"col-md-6 col-lg-4\">");
+    "<div class=\"col-sm-6 col-lg-4\">");
 
   c.panel_start("primary", "Server");
   output = ExecuteCommand("server v2 status");
@@ -159,7 +159,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.print(
     "</div>"
-    "<div class=\"col-md-6 col-lg-4\">");
+    "<div class=\"col-sm-6 col-lg-4\">");
 
   c.panel_start("primary", "SD Card");
   output = ExecuteCommand("sd status");
@@ -173,7 +173,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.print(
     "</div>"
-    "<div class=\"col-md-6 col-lg-4\">");
+    "<div class=\"col-sm-6 col-lg-4\">");
 
   c.panel_start("primary", "Module");
   output = ExecuteCommand("boot status");
@@ -188,7 +188,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.print(
     "</div>"
-    "<div class=\"col-md-6 col-lg-4\">");
+    "<div class=\"col-sm-6 col-lg-4\">");
 
   c.panel_start("primary", "Network");
   output = ExecuteCommand("network status");
@@ -197,7 +197,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.print(
     "</div>"
-    "<div class=\"col-md-6 col-lg-4\">");
+    "<div class=\"col-sm-6 col-lg-4\">");
 
   c.panel_start("primary", "Wifi");
   output = ExecuteCommand("wifi status");
@@ -206,7 +206,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.print(
     "</div>"
-    "<div class=\"col-md-6 col-lg-4\">");
+    "<div class=\"col-sm-6 col-lg-4\">");
 
   c.panel_start("primary", "Modem");
   output = ExecuteCommand("simcom status");
@@ -251,13 +251,20 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsWebServer::HandleCommand(PageEntry_t& p, PageContext_t& c)
 {
-  std::string command = c.getvar("command");
+  std::string command = c.getvar("command", 2000);
+  std::string output = c.getvar("output");
 
-  // Note: application/octet-stream instead of text/plain is a workaround for an *old*
-  //  Chrome/Webkit bug: chunked text/plain is always buffered for the first 1024 bytes
-  c.head(200,
-    "Content-Type: application/octet-stream; charset=utf-8\r\n"
-    "Cache-Control: no-cache");
+  // Note: application/octet-stream default instead of text/plain is a workaround for an *old*
+  //  Chrome/Webkit bug: chunked text/plain is always buffered for the first 1024 bytes.
+  if (output == "text") {
+    c.head(200,
+      "Content-Type: text/plain; charset=utf-8\r\n"
+      "Cache-Control: no-cache");
+  } else {
+    c.head(200,
+      "Content-Type: application/octet-stream; charset=utf-8\r\n"
+      "Cache-Control: no-cache");
+  }
 
   if (command.empty())
     c.done();
@@ -271,7 +278,7 @@ void OvmsWebServer::HandleCommand(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
 {
-  std::string command = c.getvar("command");
+  std::string command = c.getvar("command", 2000);
   std::string output;
 
   if (command != "")
@@ -279,7 +286,7 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
 
   // generate form:
   c.head(200);
-  c.panel_start("primary panel-single", "Shell");
+  c.panel_start("primary panel-minpad", "Shell");
 
   c.printf(
     "<pre class=\"get-window-resize\" id=\"output\">%s</pre>"
@@ -308,7 +315,10 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
     "<script>"
     "$(window).on(\"resize\", function(){"
       "var pad = Number.parseInt($(\"#output\").parent().css(\"padding-top\")) + Number.parseInt($(\"#output\").parent().css(\"padding-bottom\"));"
-      "$(\"#output\").height($(window).height() - $(\"#output\").offset().top - pad - 73);"
+      "var h = $(window).height() - $(\"#output\").offset().top - pad - 73;"
+      "if ($(window).width() <= 767) h += 27;"
+      "if ($(\"body\").hasClass(\"fullscreened\")) h -= 4;"
+      "$(\"#output\").height(h);"
       "$(\"#output\").scrollTop($(\"#output\").get(0).scrollHeight);"
     "}).trigger(\"resize\");"
     "$(\"#shellform\").on(\"submit\", function(event){"
@@ -594,7 +604,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 
   c.print(
     "<script>"
-    "$.getJSON(\"/assets/zones.json\", function(data) {"
+    "$.getJSON(\"" URL_ASSETS_ZONES_JSON "\", function(data) {"
       "var items = [];"
       "var region = $('#input-timezone_region').val();"
       "$.each(data, function(key, val) {"
@@ -707,8 +717,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   c.fieldset_start("Features");
   c.input_checkbox("Enable SMS", "enable_sms", enable_sms);
   c.input_checkbox("Enable GPS", "enable_gps", enable_gps);
-  c.input_checkbox("Use GPS time", "enable_gpstime", enable_gpstime,
-    "<p>Note: GPS &amp; GPS time support can be left disabled, vehicles will activate them as needed</p>");
+  c.input_checkbox("Use GPS time", "enable_gpstime", enable_gpstime);
   c.fieldset_end();
 
   c.hr();
@@ -1241,11 +1250,17 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, warn;
   bool init, ext12v, modem, server_v2, server_v3;
+#ifdef CONFIG_OVMS_COMP_RE_TOOLS
+  bool dbc;
+#endif
   std::string vehicle_type, obd2ecu, wifi_mode, wifi_ssid_client, wifi_ssid_ap;
 
   if (c.method == "POST") {
     // process form submission:
     init = (c.getvar("init") == "yes");
+#ifdef CONFIG_OVMS_COMP_RE_TOOLS
+    dbc = (c.getvar("dbc") == "yes");
+#endif
     ext12v = (c.getvar("ext12v") == "yes");
     modem = (c.getvar("modem") == "yes");
     server_v2 = (c.getvar("server_v2") == "yes");
@@ -1293,6 +1308,9 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
     if (error == "") {
       // success:
       MyConfig.SetParamValueBool("auto", "init", init);
+#ifdef CONFIG_OVMS_COMP_RE_TOOLS
+      MyConfig.SetParamValueBool("auto", "dbc", dbc);
+#endif
       MyConfig.SetParamValueBool("auto", "ext12v", ext12v);
       MyConfig.SetParamValueBool("auto", "modem", modem);
       MyConfig.SetParamValueBool("auto", "server.v2", server_v2);
@@ -1325,6 +1343,9 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
   else {
     // read configuration:
     init = MyConfig.GetParamValueBool("auto", "init", true);
+#ifdef CONFIG_OVMS_COMP_RE_TOOLS
+    dbc = MyConfig.GetParamValueBool("auto", "dbc", false);
+#endif
     ext12v = MyConfig.GetParamValueBool("auto", "ext12v", false);
     modem = MyConfig.GetParamValueBool("auto", "modem", false);
     server_v2 = MyConfig.GetParamValueBool("auto", "server.v2", false);
@@ -1347,6 +1368,11 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Enable auto start", "init", init,
     "<p>Note: if a crash occurs within 10 seconds after powering the module, autostart will be temporarily"
     " disabled. You may need to use the USB shell to access the module and fix the config.</p>");
+
+#ifdef CONFIG_OVMS_COMP_RE_TOOLS
+  c.input_checkbox("Autoload DBC files", "dbc", dbc,
+    "<p>Enable to autoload DBC files (for reverse engineering).</p>");
+#endif
 
   c.input_checkbox("Power on external 12V", "ext12v", ext12v,
     "<p>Enable to provide 12V to external devices connected to the module (i.e. ECU displays).</p>");
@@ -1373,8 +1399,7 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
     c.input_select_option(kv.first.c_str(), kv.first.c_str(), (kv.first == wifi_ssid_client));
   c.input_select_end();
 
-  c.input_checkbox("Start modem", "modem", modem,
-    "<p>Note: a vehicle module may start the modem as necessary, independantly of this option.</p>");
+  c.input_checkbox("Start modem", "modem", modem);
 
   c.input_select_start("Vehicle type", "vehicle_type");
   c.input_select_option("&mdash;", "", vehicle_type.empty());
@@ -1634,8 +1659,23 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "</ol>");
   c.input_info("Upload",
     "Not yet implemented. Please copy your update file to an SD card and enter the path below.");
-  c.input_text("File path", "flash_vfs", mru.c_str(),
-    "Path to firmware file", "<p>SD card root: <code>/sd/</code></p>", "list=\"files\"");
+
+  c.printf(
+    "<div class=\"form-group\">\n"
+      "<label class=\"control-label col-sm-3\" for=\"input-flash_vfs\">File path:</label>\n"
+      "<div class=\"col-sm-9\">\n"
+        "<div class=\"input-group\">\n"
+          "<input type=\"text\" class=\"form-control\" placeholder=\"Path to firmware file\" name=\"flash_vfs\" id=\"input-flash_vfs\" value=\"%s\" list=\"files\">\n"
+          "<div class=\"input-group-btn\">\n"
+            "<button type=\"button\" class=\"btn btn-default\" data-toggle=\"filedialog\" data-target=\"#select-firmware\" data-input=\"#input-flash_vfs\">Select</button>\n"
+          "</div>\n"
+        "</div>\n"
+        "<span class=\"help-block\">\n"
+          "<p>SD card root: <code>/sd/</code></p>\n"
+        "</span>\n"
+      "</div>\n"
+    "</div>\n"
+    , mru.c_str());
 
   c.print("<datalist id=\"files\">");
   if (mru != "")
@@ -1701,7 +1741,18 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
         "</div>"
       "</div>"
     "</div>"
-    "<script>"
+    "\n"
+    "<div class=\"filedialog\" id=\"select-firmware\" data-options='{\n"
+      "\"title\": \"Select firmware file\",\n"
+      "\"path\": \"/sd/\",\n"
+      "\"quicknav\": [\"/sd/\", \"/sd/firmware/\"],\n"
+      "\"filter\": \"\\\\.(bin|done)$\",\n"
+      "\"sortBy\": \"date\",\n"
+      "\"sortDir\": -1,\n"
+      "\"showNewDir\": false\n"
+    "}' />\n"
+    "\n"
+    "<script>\n"
       "function setloading(sel, on){"
         "$(sel+\" button\").prop(\"disabled\", on);"
         "if (on) $(sel).addClass(\"loading\");"
@@ -1709,6 +1760,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
       "}"
       "$(\".section-flash button\").on(\"click\", function(ev){"
         "var action = $(this).attr(\"value\");"
+        "if (!action) return;"
         "$(\"#output\").text(\"Processing… (do not interrupt, may take some minutes)\\n\");"
         "setloading(\"#flash-dialog\", true);"
         "$(\"#flash-dialog\").modal(\"show\");"
@@ -2010,6 +2062,14 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
     c.head(200);
   }
 
+  c.print(
+    "<style>\n"
+    ".list-editor > table {\n"
+      "border-bottom: 1px solid #ddd;\n"
+    "}\n"
+    "</style>\n"
+    "\n");
+
   c.panel_start("primary panel-single", "Locations");
   c.form_start(p.uri);
 
@@ -2065,9 +2125,9 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
       "</table>"
       "<input type=\"hidden\" class=\"list-item-id\" name=\"loc\" value=\"0\">"
     "</div>"
-    "<hr>");
+    "<button type=\"submit\" class=\"btn btn-default center-block\">Save</button>\n"
+  );
 
-  c.input_button("default", "Save");
   c.form_end();
 
   c.print(
@@ -2101,5 +2161,137 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
   c.print("</script>");
 
   c.panel_end();
+  c.done();
+}
+
+
+/**
+ * HandleCfgBackup: config backup/restore (URL /cfg/backup)
+ */
+void OvmsWebServer::HandleCfgBackup(PageEntry_t& p, PageContext_t& c)
+{
+  c.head(200);
+  c.print(
+    "<style>\n"
+    "#backupbrowser tbody { height: 186px; }\n"
+    "</style>\n"
+    "\n"
+    "<div class=\"panel panel-primary\">\n"
+      "<div class=\"panel-heading\"><span class=\"hidden-xs\">Configuration</span> Backup &amp; Restore</div>\n"
+      "<div class=\"panel-body\">\n"
+        "<div class=\"filebrowser\" id=\"backupbrowser\" />\n"
+        "<div class=\"action-menu text-right\">\n"
+          "<button type=\"button\" class=\"btn btn-default pull-left\" id=\"action-newdir\">New dir</button>\n"
+          "<button type=\"button\" class=\"btn btn-primary\" id=\"action-backup\" disabled>Create backup</button>\n"
+          "<button type=\"button\" class=\"btn btn-primary\" id=\"action-restore\" disabled>Restore backup</button>\n"
+        "</div>\n"
+        "<pre id=\"log\" style=\"margin-top:15px\"/>\n"
+      "</div>\n"
+      "<div class=\"panel-footer\">\n"
+        "<p>Use this tool to create or restore backups of your system configuration &amp; scripts.\n"
+          "User files or directories in <code>/store</code> will not be included or restored.\n"
+          "ZIP files are password protected (hint: use 7z to unzip/create on a PC).</p>\n"
+        "<p>Note: the module will perform a reboot after successful restore.</p>\n"
+      "</div>\n"
+    "</div>\n"
+    "\n"
+    "<script>\n"
+    "(function(){\n"
+      "var suggest = '/sd/backup/cfg-' + new Date().toISOString().substr(0,10) + '.zip';\n"
+      "var zip = { exists: false, iszip: false };\n"
+      "var $panel = $('.panel-body');\n"
+    "\n"
+      "function updateButtons(enable) {\n"
+        "if (enable === false) {\n"
+          "$panel.addClass(\"loading disabled\");\n"
+          "return;\n"
+        "}\n"
+        "$panel.removeClass(\"loading disabled\");\n"
+        "if (!zip.iszip) {\n"
+          "$('#action-backup').prop('disabled', true);\n"
+          "$('#action-restore').prop('disabled', true);\n"
+        "} else if (zip.exists) {\n"
+          "$('#action-backup').prop('disabled', false).text(\"Overwrite backup\");\n"
+          "$('#action-restore').prop('disabled', false);\n"
+        "} else {\n"
+          "$('#action-backup').prop('disabled', false).text(\"Create backup\");\n"
+          "$('#action-restore').prop('disabled', true);\n"
+        "}\n"
+      "};\n"
+    "\n"
+      "$('#backupbrowser').filebrowser({\n"
+        "input: zip,\n"
+        "path: suggest,\n"
+        "quicknav: ['/sd/', '/sd/backup/', suggest],\n"
+        "filter: function(f) { return f.isdir || f.name.match('\\\\.zip$'); },\n"
+        "sortBy: 'date',\n"
+        "sortDir: -1,\n"
+        "onPathChange: function(input) {\n"
+          "input.iszip = (input.file.match('\\\\.zip$') != null);\n"
+          "if (!input.iszip) {\n"
+            "updateButtons();\n"
+            "$('#log').html('<div class=\"bg-warning\">Please select/enter a zip file</div>');\n"
+          "} else {\n"
+            "loadcmd(\"vfs stat \" + input.path).always(function(data) {\n"
+              "if (typeof data != \"string\" || data.startsWith(\"Error\")) {\n"
+                "input.exists = false;\n"
+                "$('#log').empty();\n"
+              "} else {\n"
+                "input.exists = true;\n"
+                "input.url = getPathURL(input.path);\n"
+                "$('#log').text(data).append(input.url ? '\\n<a href=\"'+input.url+'\">Download '+input.file+'</a>' : '');\n"
+              "}\n"
+              "updateButtons();\n"
+            "});\n"
+          "}\n"
+        "},\n"
+      "});\n"
+    "\n"
+      "$('#action-newdir').on('click', function(ev) {\n"
+        "$('#backupbrowser').filebrowser('newDir');\n"
+      "});\n"
+    "\n"
+      "$('#action-backup').on('click', function(ev) {\n"
+        "$('#backupbrowser').filebrowser('stopLoad');\n"
+        "promptdialog(\"password\", \"Create backup\", \"ZIP password / empty = use module password\", [\"Cancel\", \"Create backup\"], function(ok, password) {\n"
+          "if (ok) {\n"
+            "updateButtons(false);\n"
+            "loadcmd(\"config backup \" + zip.path + ((password) ? \" \" + password : \"\"), \"#log\").done(function(output) {\n"
+              "if (output.indexOf(\"Error\") < 0) {\n"
+                "zip.exists = true;\n"
+                "zip.url = getPathURL(zip.path);\n"
+                "$('#log').append(zip.url ? '\\n<a href=\"'+zip.url+'\">Download '+zip.file+'</a>' : '');\n"
+                "$('#backupbrowser').filebrowser('loadDir');\n"
+              "}\n"
+            "}).always(function() {\n"
+              "updateButtons();\n"
+            "});\n"
+          "}\n"
+        "});\n"
+      "});\n"
+    "\n"
+      "$('#action-restore').on('click', function(ev) {\n"
+        "$('#backupbrowser').filebrowser('stopLoad');\n"
+        "promptdialog(\"password\", \"Restore backup\", \"ZIP password / empty = use module password\", [\"Cancel\", \"Restore backup\"], function(ok, password) {\n"
+          "if (ok) {\n"
+            "var rebooting = false;\n"
+            "updateButtons(false);\n"
+            "loadcmd(\"config restore \" + zip.path + ((password) ? \" \" + password : \"\"), \"#log\", function(msg) {\n"
+              "if (msg.text && msg.text.indexOf(\"rebooting\") >= 0) {\n"
+                "rebooting = true;\n"
+                "msg.request.abort();\n"
+              "}\n"
+              "return rebooting ? null : standardTextFilter(msg);\n"
+            "}).always(function(data, status) {\n"
+              "updateButtons();\n"
+              "if (rebooting) $('#log').reconnectTicker();\n"
+            "});\n"
+          "}\n"
+        "});\n"
+      "});\n"
+    "\n"
+    "})();\n"
+    "</script>\n"
+  );
   c.done();
 }

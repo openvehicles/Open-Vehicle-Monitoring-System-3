@@ -129,6 +129,15 @@ OvmsCommand* OvmsCommandMap::FindUniquePrefix(const char* key)
   return found;
   }
 
+OvmsCommand* OvmsCommandMap::FindCommand(const char* key)
+  {
+  iterator it = find(key);
+  if (it == end())
+    return NULL;
+  else
+    return it->second;
+  }
+
 OvmsCommand::OvmsCommand()
   {
   m_parent = NULL;
@@ -194,7 +203,7 @@ const char* OvmsCommand::GetUsage(OvmsWriter* writer)
 void OvmsCommand::ExpandUsage(std::string usage, OvmsWriter* writer)
   {
   size_t pos;
-  if ((pos = usage.find_first_of("$C")) != std::string::npos)
+  if ((pos = usage.find("$C")) != std::string::npos)
     {
     m_usage += usage.substr(0, pos);
     pos += 2;
@@ -218,13 +227,13 @@ void OvmsCommand::ExpandUsage(std::string usage, OvmsWriter* writer)
     }
   else pos = 0;
   size_t pos2;
-  if ((pos2 = usage.find_first_of("$G", pos)) != std::string::npos)
+  if ((pos2 = usage.find("$G", pos)) != std::string::npos)
     {
     m_usage += usage.substr(pos, pos2-pos);
     pos2 += 2;
     size_t pos3;
     OvmsCommandMap::iterator it = m_children.end();
-    if ((pos3 = usage.find_first_of("$", pos2)) != std::string::npos)
+    if ((pos3 = usage.find('$', pos2)) != std::string::npos)
       {
       if (pos3 == pos2)
         it = m_children.begin();
@@ -376,7 +385,7 @@ OvmsCommand* OvmsCommand::GetParent()
 
 OvmsCommand* OvmsCommand::FindCommand(const char* name)
   {
-  return m_children.FindUniquePrefix(name);
+  return m_children.FindCommand(name);
   }
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE

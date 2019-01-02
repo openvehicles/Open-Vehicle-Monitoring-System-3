@@ -89,6 +89,10 @@ typedef long long ssize_t;
 #  endif
 #endif
 
+// OVMS build configuration
+#define ZIP_ALLOCATE_BUFFER
+#define RENAME_NEEDS_UNLINK
+
 // OVMS memory allocation
 #include "ovms_malloc.h"
 #define malloc ExternalRamMalloc

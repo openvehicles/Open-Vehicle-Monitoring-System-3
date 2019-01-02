@@ -132,7 +132,7 @@ bool ZipArchive::chdir(const std::string& path)
 /**
  * add: recursively add files & directories
  */
-bool ZipArchive::add(std::string path)
+bool ZipArchive::add(std::string path, bool ignore_nonexist /*=false*/)
 {
   struct stat st;
   std::string rpath;
@@ -148,7 +148,7 @@ bool ZipArchive::add(std::string path)
   
   if (stat(rpath.c_str(), &st)) {
     m_errno = errno;
-    return false;
+    return (ignore_nonexist) ? true : false;
   }
   
   if (S_ISDIR(st.st_mode))
@@ -206,7 +206,7 @@ bool ZipArchive::add(std::string path)
 /**
  * extract: extract files or directories matching prefix into current base directory
  */
-bool ZipArchive::extract(const std::string prefix)
+bool ZipArchive::extract(const std::string prefix, bool ignore_nonexist /*=false*/)
 {
   zip_int64_t idx, iend;
   const char* zname;
@@ -216,9 +216,13 @@ bool ZipArchive::extract(const std::string prefix)
   FILE *fp;
   std::vector<uint8_t> buf;
   
-  if (!m_zip || (iend = zip_get_num_entries(m_zip, 0)) <= 0) {
+  if (!m_zip) {
     m_errno = ENOENT;
     return false;
+  }
+  else if ((iend = zip_get_num_entries(m_zip, 0)) <= 0) {
+    m_errno = ENOENT;
+    return (ignore_nonexist) ? true : false;
   }
   
   m_errno = 0;

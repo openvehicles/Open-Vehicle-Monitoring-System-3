@@ -8,9 +8,9 @@ CANopen test frames
 
 log level verbose
 can can1 start active 500000
-co can1 start
+copen can1 start
 
-co status
+copen status
 can can1 status
 
 # …optional:
@@ -41,7 +41,7 @@ metrics list co.
 ## NMT
 
 # shell 1:
-co can1 nmt stop 1 5000
+copen can1 nmt stop 1 5000
 # shell 2:
 can can1 rx standard 701 04
 
@@ -54,7 +54,7 @@ I (6203824) events: Signal(canopen.node.state)
 ## Read SDO [expedited]
 
 # shell 1:
-co can1 readsdo 1 2720 01 5000
+copen can1 readsdo 1 2720 01 5000
 # shell 2:
 can can1 rx standard 581 4B 20 27 01 03 00 00 00
 
@@ -62,7 +62,7 @@ can can1 rx standard 581 4B 20 27 01 03 00 00 00
 ReadSDO #1 0x2720.01: size=2 dec=3 hex=0x3 txt='(binary)'
 
 # shell 1:
-co can1 readsdo 1 2720 01 5000
+copen can1 readsdo 1 2720 01 5000
 # shell 2:
 can can1 rx standard 581 47 20 27 01 43 41 4e 00
 
@@ -73,7 +73,7 @@ ReadSDO #1 0x2720.01: size=3 dec=5128515 hex=0x4e4143 txt='CAN'
 ## Read SDO [segmented]
 
 # shell 1:
-co can1 readsdo 1 2720 02 5000
+copen can1 readsdo 1 2720 02 5000
 
 # shell 2:
 can can1 rx standard 581 40 20 27 02 00 00 00 00
@@ -89,7 +89,7 @@ ReadSDO #1 0x2720.02: size=12 dec=1819043144 hex=0x6c6c6548 txt='Hello World!'
 ## Write SDO [expedited]
 
 # shell 1:
-co can1 writesdo 1 2720 02 0x11223344 5000
+copen can1 writesdo 1 2720 02 0x11223344 5000
 
 # shell 2:
 can can1 rx standard 581 60 20 27 02 00 00 00 00
@@ -101,7 +101,7 @@ WriteSDO #1 0x2720.02: size=4 hex=0x11223344 => OK
 ## Write SDO [expedited]
 
 # shell 1:
-co can1 writesdo 1 2720 02 "Hello World!" 5000
+copen can1 writesdo 1 2720 02 "Hello World!" 5000
 
 # shell 2:
 can can1 rx standard 581 60 20 27 02 00 00 00 00
@@ -116,29 +116,29 @@ WriteSDO #1 0x2720.02: size=12 str='Hello World!' => OK
 
 ## Node info
 
-co can1 info 1
+copen can1 info 1
 
 
 ## Node scan
 
-co can1 scan 1-10
+copen can1 scan 1-10
 
 # full scan (~20 seconds):
-co can1 scan
+copen can1 scan
 
 
 ## SEVCON login
 
 # get login level:
-co can1 readsdo 1 5000 1
+copen can1 readsdo 1 5000 1
 → 0
 
 # login:
-co can1 writesdo 1 5000 3 0
-co can1 writesdo 1 5000 2 0x4bdf
+copen can1 writesdo 1 5000 3 0
+copen can1 writesdo 1 5000 2 0x4bdf
 
 # get login level:
-co can1 readsdo 1 5000 1
+copen can1 readsdo 1 5000 1
 → 4
 
 

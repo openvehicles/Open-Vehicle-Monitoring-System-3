@@ -166,6 +166,14 @@ bool OvmsServerV2ReaderCallback(OvmsNotifyType* type, OvmsNotifyEntry* entry)
     return true; // No server v2 running, so just discard
   }
 
+bool OvmsServerV2ReaderFilterCallback(OvmsNotifyType* type, const char* subtype)
+  {
+  if (MyOvmsServerV2)
+    return MyOvmsServerV2->NotificationFilter(type, subtype);
+  else
+    return false;
+  }
+
 static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void *p)
   {
   switch (ev)
@@ -777,7 +785,7 @@ void OvmsServerV2::Connect()
   opts.error_string = &err;
   if ((m_mgconn = mg_connect_opt(mgr, address.c_str(), OvmsServerV2MongooseCallback, opts)) == NULL)
     {
-    ESP_LOGE(TAG, "mg_connect(%s) failed: %s\n", address.c_str(), err);
+    ESP_LOGE(TAG, "mg_connect(%s) failed: %s", address.c_str(), err);
     SetStatus("Error: Connection failed", true, WaitReconnect);
     m_connretry = 20; // Try again in 20 seconds...
     return;
@@ -1468,6 +1476,17 @@ void OvmsServerV2::MetricModified(OvmsMetric* metric)
     }
   }
 
+bool OvmsServerV2::NotificationFilter(OvmsNotifyType* type, const char* subtype)
+  {
+  if (strcmp(type->m_name, "info") == 0 ||
+      strcmp(type->m_name, "error") == 0 ||
+      strcmp(type->m_name, "alert") == 0 ||
+      strcmp(type->m_name, "data") == 0)
+    return true;
+  else
+    return false;
+  }
+
 bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry)
   {
   if (strcmp(type->m_name,"info")==0)
@@ -1711,7 +1730,8 @@ OvmsServerV2::OvmsServerV2(const char* name)
 
   if (MyOvmsServerV2Reader == 0)
     {
-    MyOvmsServerV2Reader = MyNotify.RegisterReader("ovmsv2", COMMAND_RESULT_NORMAL, std::bind(OvmsServerV2ReaderCallback, _1, _2), true);
+    MyOvmsServerV2Reader = MyNotify.RegisterReader("ovmsv2", COMMAND_RESULT_NORMAL, std::bind(OvmsServerV2ReaderCallback, _1, _2),
+                                                   true, std::bind(OvmsServerV2ReaderFilterCallback, _1, _2));
     }
 
   // init event listener:
@@ -1738,7 +1758,7 @@ OvmsServerV2::~OvmsServerV2()
   {
   MyMetrics.DeregisterListener(TAG);
   MyEvents.DeregisterEvent(TAG);
-  MyNotify.ClearReader(TAG);
+  MyNotify.ClearReader(MyOvmsServerV2Reader);
   Disconnect();
   if (m_buffer)
     {

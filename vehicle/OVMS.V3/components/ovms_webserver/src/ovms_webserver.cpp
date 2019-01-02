@@ -50,7 +50,7 @@ OvmsWebServer::OvmsWebServer()
 
   m_running = false;
   memset(m_sessions, 0, sizeof(m_sessions));
-  
+
 #if MG_ENABLE_FILESYSTEM
   m_file_enable = true;
   memset(&m_file_opts, 0, sizeof(m_file_opts));
@@ -58,6 +58,7 @@ OvmsWebServer::OvmsWebServer()
 
   m_client_cnt = 0;
   m_client_mutex = xSemaphoreCreateMutex();
+  m_client_backlog = xQueueCreate(50, sizeof(WebSocketTxTodo));
   m_update_ticker = xTimerCreate("Web client update ticker", 250 / portTICK_PERIOD_MS, pdTRUE, NULL, UpdateTicker);
 
   // read config:
@@ -86,14 +87,16 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/home", "Home", HandleHome);
   RegisterPage("/login", "Login", HandleLogin);
   RegisterPage("/logout", "Logout", HandleLogout);
-  
+
   // register standard API calls:
   RegisterPage("/api/execute", "Execute command", HandleCommand, PageMenu_None, PageAuth_Cookie);
 
+  // register standard public pages:
+  RegisterPage("/dashboard", "Dashboard", HandleDashboard, PageMenu_Main, PageAuth_None);
+
   // register standard administration pages:
   RegisterPage("/status", "Status", HandleStatus, PageMenu_Main, PageAuth_Cookie);
-  RegisterPage("/shell", "Shell", HandleShell, PageMenu_Main, PageAuth_Cookie);
-  RegisterPage("/dashboard", "Dashboard", HandleDashboard, PageMenu_Main, PageAuth_Cookie);
+  RegisterPage("/shell", "Shell", HandleShell, PageMenu_Tools, PageAuth_Cookie);
   RegisterPage("/cfg/init", "Setup wizard", HandleCfgInit, PageMenu_None, PageAuth_Cookie);
   RegisterPage("/cfg/password", "Password", HandleCfgPassword, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/vehicle", "Vehicle", HandleCfgVehicle, PageMenu_Config, PageAuth_Cookie);
@@ -116,6 +119,7 @@ OvmsWebServer::OvmsWebServer()
 #endif
   RegisterPage("/cfg/logging", "Logging", HandleCfgLogging, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/locations", "Locations", HandleCfgLocations, PageMenu_Config, PageAuth_Cookie);
+  RegisterPage("/cfg/backup", "Backup &amp; Restore", HandleCfgBackup, PageMenu_Config, PageAuth_Cookie);
 }
 
 OvmsWebServer::~OvmsWebServer()
@@ -171,7 +175,7 @@ void OvmsWebServer::ConfigChanged(std::string event, void* data)
   if (event == "config.mounted") {
     CfgInitStartup();
   }
-  
+
 #if MG_ENABLE_FILESYSTEM
   if (!param || param->GetName() == "password") {
     UpdateGlobalAuthFile();
@@ -457,6 +461,51 @@ void PageEntry::Serve(PageContext_t& c)
 }
 
 
+/**
+ * Page Callback Registry:
+ */
+
+bool OvmsWebServer::RegisterCallback(std::string caller, const char* uri, PageCallback_t handler)
+{
+  PageEntry* e = FindPage(uri);
+  if (!e)
+    return false;
+  e->RegisterCallback(caller, handler);
+  return true;
+}
+
+void OvmsWebServer::DeregisterCallbacks(std::string caller)
+{
+  for (PageEntry* e : m_pagemap)
+    e->DeregisterCallback(caller);
+}
+
+void PageEntry::RegisterCallback(std::string caller, PageCallback_t handler)
+{
+  callbacklist.push_front(new PageCallbackEntry(caller, handler));
+}
+
+void PageEntry::DeregisterCallback(std::string caller)
+{
+  callbacklist.remove_if([caller](PageCallbackEntry* e){ return e->caller == caller; });
+}
+
+PageResult_t PageEntry::callback(PageContext_t& c, const std::string& hook)
+{
+  PageResult_t res = PageResult_OK;
+  for (PageCallbackEntry* e : callbacklist) {
+    res = e->handler(*this, c, hook);
+    if (res == PageResult_STOP)
+      break;
+  }
+  return res;
+}
+
+PageResult_t PageContext::callback(PageEntry_t& p, const std::string& hook)
+{
+  return p.callback(*this, hook);
+}
+
 
 /**
  * MgHandler.RequestPoll: init transmission from other context.
@@ -714,6 +763,7 @@ void OvmsWebServer::CheckSessions(void)
 void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
 {
   std::string error;
+  std::string uri = c.getvar("uri");
 
   if (c.method == "POST") {
     // validate login:
@@ -734,7 +784,9 @@ void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
     if (error == "") {
       // ok: set cookie, reload menu, redirect to /cfg/init, /cfg/password, original uri or /home:
       std::string init_step = MyConfig.GetParamValue("module", "init");
-      if (!init_step.empty() && init_step != "done")
+      if (uri != "")
+        c.uri = uri;
+      else if (!init_step.empty() && init_step != "done")
         c.uri = "/cfg/init";
       else if (MyConfig.GetParamValue("password", "module").empty())
         c.uri = "/cfg/password";
@@ -749,7 +801,7 @@ void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
         , SESSION_COOKIE_NAME, s->id);
       c.head(200, shead);
       c.printf(
-        "<script>$(\"#menu\").load(\"/menu\"); loaduri(\"#main\", \"get\", \"%s\", {})</script>"
+        "<script>loggedin = true; $(\"#menu\").load(\"/menu\"); loaduri(\"#main\", \"get\", \"%s\", {})</script>"
         , c.uri.c_str());
       c.done();
 
@@ -774,6 +826,8 @@ void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
   // generate form:
   c.panel_start("primary", "Login");
   c.form_start(c.uri.c_str());
+  if (uri != "")
+    c.printf("<input type=\"hidden\" name=\"uri\" value=\"%s\">", c.encode_html(uri).c_str());
   c.input_text("Username", "username", "", "empty = 'admin'", NULL, "autocomplete=\"section-login username\"");
   c.input_password("Password", "password", "", NULL, NULL, "autocomplete=\"section-login current-password\"");
   c.input_button("default", "Login");
@@ -803,6 +857,6 @@ void OvmsWebServer::HandleLogout(PageEntry_t& p, PageContext_t& c)
     , SESSION_COOKIE_NAME);
   c.head(200, shead);
   c.print(
-    "<script>$(\"#menu\").load(\"/menu\"); loaduri(\"#main\", \"get\", \"/home\", {})</script>");
+    "<script>loggedin = false; $(\"#menu\").load(\"/menu\"); loaduri(\"#main\", \"get\", \"/home\", {})</script>");
   c.done();
 }

@@ -54,6 +54,7 @@ class OvmsVehicleTeslaModelS: public OvmsVehicle
   protected:
     char m_vin[18];
     char m_type[5];
+    uint16_t m_charge_w;
   };
 
 #endif //#ifndef __VEHICLE_TESLAMODELS_H__

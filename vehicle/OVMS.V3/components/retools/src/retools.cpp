@@ -241,16 +241,19 @@ void re::Task()
     {
     if (xQueueReceive(m_rxqueue, &frame, (portTickType)portMAX_DELAY)==pdTRUE)
       {
-      switch (m_mode)
+      if (MyRE != NULL) // Protect against MyRE not set (during init)
         {
-        case Serve:
-          DoServe(&frame);
-        case Analyse:
-        case Discover:
-          DoAnalyse(&frame);
-          break;
+        switch (m_mode)
+          {
+          case Serve:
+            DoServe(&frame);
+          case Analyse:
+          case Discover:
+            DoAnalyse(&frame);
+            break;
+          }
+        m_finished = monotonictime;
         }
-      m_finished = monotonictime;
       }
     }
   }
