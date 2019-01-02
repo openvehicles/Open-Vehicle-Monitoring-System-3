@@ -75,6 +75,31 @@ std::string PageContext::encode_html(std::string text) {
 #define _html(text) (encode_html(text).c_str())
 
 
+/**
+ * make_id: derive DOM id from text
+ *   
+ */
+std::string PageContext::make_id(const char* text) {
+	std::string buf;
+  char lc = 0;
+	for (int i=0; i<strlen(text); i++) {
+		if (isalnum(text[i]))
+			buf += (lc = tolower(text[i]));
+    else if (lc && lc != '-')
+      buf += (lc = '-');
+  }
+  while (lc == '-') {
+    lc = buf.back();
+    buf.pop_back();
+  }
+	return buf;
+}
+
+std::string PageContext::make_id(std::string text) {
+  return make_id(text.c_str());
+}
+
+
 std::string PageContext::getvar(const char* name, size_t maxlen /*=200*/) {
   std::string res;
   char* varbuf = new char[maxlen];
@@ -138,10 +163,10 @@ void PageContext::done() {
 
 void PageContext::panel_start(const char* type, const char* title) {
   mg_printf_http_chunk(nc,
-    "<div class=\"panel panel-%s\">"
+    "<div class=\"panel panel-%s\" id=\"panel-%s\">"
       "<div class=\"panel-heading\">%s</div>"
       "<div class=\"panel-body\">"
-    , _attr(type), title);
+    , _attr(type), make_id(title).c_str(), title);
 }
 
 void PageContext::panel_end(const char* footer) {
@@ -367,8 +392,9 @@ void PageContext::alert(const char* type, const char* text) {
 
 void PageContext::fieldset_start(const char* title, const char* css_class /*=NULL*/) {
   mg_printf_http_chunk(nc,
-    "<fieldset class=\"%s\"><legend>%s</legend>"
+    "<fieldset class=\"%s\" id=\"fieldset-%s\"><legend>%s</legend>"
     , css_class ? css_class : ""
+    , make_id(title).c_str()
     , title);
 }
 

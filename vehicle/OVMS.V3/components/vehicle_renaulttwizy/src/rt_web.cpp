@@ -891,7 +891,7 @@ PageResult_t OvmsVehicleRenaultTwizy::WebExtDashboard(PageEntry_t& p, PageContex
           "$('#loadmenu .btn').prop('disabled', true);\n"
           "$('#loadmenu').append('<a class=\"btn btn-default btn-lg btn-block\" target=\"#main\" href=\"/login?uri=/dashboard\">LOGIN</a>');\n"
         "}\n"
-        "$('#loadmenu').appendTo('.panel-dashboard .panel-body').show();\n"
+        "$('#loadmenu').appendTo('#panel-dashboard .panel-body').show();\n"
       "});\n"
       "</script>\n");
   }

@@ -137,6 +137,8 @@ struct PageContext : public ExternalRamAllocated
   std::string getvar(const char* name, size_t maxlen=200);
   static std::string encode_html(const char* text);
   static std::string encode_html(const std::string text);
+  static std::string make_id(const char* text);
+  static std::string make_id(const std::string text);
 
   // output:
   void error(int code, const char* text);

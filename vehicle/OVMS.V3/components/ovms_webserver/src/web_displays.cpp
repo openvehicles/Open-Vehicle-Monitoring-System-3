@@ -239,7 +239,7 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
     ""
     "</style>"
     ""
-    "<div class=\"panel panel-primary panel-dashboard\">"
+    "<div class=\"panel panel-primary\" id=\"panel-dashboard\">"
       "<div class=\"panel-heading\">Dashboard</div>"
       "<div class=\"panel-body\">"
         "<div class=\"receiver get-window-resize\" id=\"livestatus\">"
