@@ -631,7 +631,7 @@ std::string OvmsMetricBool::AsJSON(const char* defvalue, metric_unit_t units, in
     }
   else
     {
-    if ((strcasecmp(defvalue, "yes")==0)||(strcasecmp(defvalue, "1")==0)||(strcasecmp(defvalue, "true")==0))
+    if (strtobool(defvalue) == true)
       return std::string("true");
     else
       return std::string("false");
@@ -664,11 +664,7 @@ void OvmsMetricBool::SetValue(bool value)
 
 void OvmsMetricBool::SetValue(std::string value)
   {
-  bool nvalue;
-  if ((value == "yes")||(value == "1")||(value == "true"))
-    nvalue = true;
-  else
-    nvalue = false;
+  bool nvalue = strtobool(value);
   if (m_value != nvalue)
     {
     m_value = nvalue;
