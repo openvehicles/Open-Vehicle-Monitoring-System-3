@@ -392,6 +392,7 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
     ".unsaved > *:after { content: \"*\"; }"
     ".fullscreened .panel-single .panel-body { padding: 10px; }"
     "</style>");
+  PAGE_HOOK("body.pre");
   
   c.panel_start("primary", "Drivemode");
   
@@ -449,6 +450,7 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
     "});"
     "</script>");
   
+  PAGE_HOOK("body.post");
   c.done();
 }
 
@@ -461,6 +463,7 @@ void OvmsVehicleRenaultTwizy::WebSevconMon(PageEntry_t& p, PageContext_t& c)
   std::string cmd, output;
 
   c.head(200);
+  PAGE_HOOK("body.pre");
 
   c.print(
     "<style type=\"text/css\">\n"
@@ -783,6 +786,7 @@ void OvmsVehicleRenaultTwizy::WebSevconMon(PageEntry_t& p, PageContext_t& c)
     "</script>\n"
   );
 
+  PAGE_HOOK("body.post");
   c.done();
 }
 
