@@ -556,7 +556,9 @@ void OvmsWebServer::HandleHome(PageEntry_t& p, PageContext_t& c)
 
   c.head(200);
   c.alert("info", "<p class=\"lead\">Welcome to the OVMS web console.</p>");
+  PAGE_HOOK("body.pre");
   OutputHome(p, c);
+  PAGE_HOOK("body.post");
   c.done();
 }
 
@@ -570,6 +572,7 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
 
   // output page framework:
   c.head(200);
+  PAGE_HOOK("html.pre");
   c.print(
     "<!DOCTYPE html>"
     "<html lang=\"en\">"
@@ -581,7 +584,9 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
         "<title>OVMS Console</title>"
         "<link rel=\"stylesheet\" href=\"" URL_ASSETS_STYLE_CSS "\">"
         "<link rel=\"shortcut icon\" sizes=\"192x192\" href=\"" URL_ASSETS_FAVICON_PNG "\">"
-        "<link rel=\"apple-touch-icon\" href=\"" URL_ASSETS_FAVICON_PNG "\">"
+        "<link rel=\"apple-touch-icon\" href=\"" URL_ASSETS_FAVICON_PNG "\">");
+  PAGE_HOOK("head.post");
+  c.print(
       "</head>"
       "<body>"
         "<nav id=\"nav\" class=\"navbar navbar-inverse navbar-fixed-top\">"
@@ -605,7 +610,9 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
         "</nav>"
         "<div role=\"main\" id=\"main\" class=\"container-fluid\">"
         "</div>"
-        "<script src=\"" URL_ASSETS_SCRIPT_JS "\"></script>"
+        "<script src=\"" URL_ASSETS_SCRIPT_JS "\"></script>");
+  PAGE_HOOK("body.post");
+  c.print(
       "</body>"
     "</html>");
   c.done();

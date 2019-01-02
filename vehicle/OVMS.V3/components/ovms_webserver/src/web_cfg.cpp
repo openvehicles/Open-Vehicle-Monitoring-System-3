@@ -69,6 +69,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
     }
   }
 
+  PAGE_HOOK("body.pre");
   c.print(
     "<div id=\"livestatus\" class=\"receiver\">"
     "<div class=\"row flex\">"
@@ -242,6 +243,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
     "</script>"
     );
 
+  PAGE_HOOK("body.post");
   c.done();
 }
 
@@ -286,6 +288,7 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
 
   // generate form:
   c.head(200);
+  PAGE_HOOK("body.pre");
   c.panel_start("primary panel-minpad", "Shell");
 
   c.printf(
@@ -400,6 +403,7 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
     "</script>");
 
   c.panel_end();
+  PAGE_HOOK("body.post");
   c.done();
 }
 

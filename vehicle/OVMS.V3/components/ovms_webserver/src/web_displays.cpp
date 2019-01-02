@@ -589,6 +589,7 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
   alerts_enabled = MyConfig.GetParamValueBool("vehicle", "bms.alerts.enabled", true);
   
   c.head(200);
+  PAGE_HOOK("body.pre");
 
   c.print(
     "<div class=\"panel panel-primary panel-single\">\n"
@@ -1113,5 +1114,6 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
     "\n"
     "</script>\n");
   
+  PAGE_HOOK("body.post");
   c.done();
 }
