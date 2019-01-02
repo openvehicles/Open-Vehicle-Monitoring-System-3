@@ -560,6 +560,7 @@ static struct
     { "scripts", true },
     { "obd2ecu", true },
     { "dbc", true },
+    { "plugin", true },
     { NULL, false }
   };
 

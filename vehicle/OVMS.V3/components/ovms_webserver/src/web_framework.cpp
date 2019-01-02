@@ -111,6 +111,10 @@ void PageContext::print(const std::string text) {
   mg_send_http_chunk(nc, text.data(), text.size());
 }
 
+void PageContext::print(const extram::string text) {
+  mg_send_http_chunk(nc, text.data(), text.size());
+}
+
 void PageContext::print(const char* text) {
   mg_send_http_chunk(nc, text, strlen(text));
 }
@@ -147,7 +151,7 @@ void PageContext::panel_end(const char* footer) {
     , footer);
 }
 
-void PageContext::form_start(const char* action, const char* target /*=NULL*/) {
+void PageContext::form_start(std::string action, const char* target /*=NULL*/) {
   mg_printf_http_chunk(nc,
     "<form class=\"form-horizontal\" method=\"post\" action=\"%s\" target=\"%s\">"
     , _attr(action)
@@ -385,15 +389,15 @@ std::string OvmsWebServer::CreateMenu(PageContext_t& c)
   std::string main, tools, config, vehicle;
 
   // collect menu items:
-  for (PageEntry* e : MyWebServer.m_pagemap) {
-    if (e->menu == PageMenu_Main)
-      main += "<li><a href=\"" + std::string(e->uri) + "\" target=\"#main\">" + std::string(e->label) + "</a></li>";
-    else if (e->menu == PageMenu_Tools)
-      tools += "<li><a href=\"" + std::string(e->uri) + "\" target=\"#main\">" + std::string(e->label) + "</a></li>";
-    else if (e->menu == PageMenu_Config)
-      config += "<li><a href=\"" + std::string(e->uri) + "\" target=\"#main\">" + std::string(e->label) + "</a></li>";
-    else if (e->menu == PageMenu_Vehicle)
-      vehicle += "<li><a href=\"" + std::string(e->uri) + "\" target=\"#main\">" + std::string(e->label) + "</a></li>";
+  for (PageEntry& e : MyWebServer.m_pagemap) {
+    if (e.menu == PageMenu_Main)
+      main += "<li><a href=\"" + std::string(e.uri) + "\" target=\"#main\">" + std::string(e.label) + "</a></li>";
+    else if (e.menu == PageMenu_Tools)
+      tools += "<li><a href=\"" + std::string(e.uri) + "\" target=\"#main\">" + std::string(e.label) + "</a></li>";
+    else if (e.menu == PageMenu_Config)
+      config += "<li><a href=\"" + std::string(e.uri) + "\" target=\"#main\">" + std::string(e.label) + "</a></li>";
+    else if (e.menu == PageMenu_Vehicle)
+      vehicle += "<li><a href=\"" + std::string(e.uri) + "\" target=\"#main\">" + std::string(e.label) + "</a></li>";
   }
 
   // assemble menu:
@@ -450,15 +454,15 @@ void OvmsWebServer::OutputHome(PageEntry_t& p, PageContext_t& c)
 {
   // collect menu items:
   std::string main, config, tools, vehicle;
-  for (PageEntry* e : MyWebServer.m_pagemap) {
-    if (e->menu == PageMenu_Main)
-      main += "<li><a class=\"btn btn-default\" href=\"" + std::string(e->uri) + "\" target=\"#main\">" + std::string(e->label) + "</a></li>";
-    else if (e->menu == PageMenu_Tools)
-      tools += "<li><a class=\"btn btn-default\" href=\"" + std::string(e->uri) + "\" target=\"#main\">" + std::string(e->label) + "</a></li>";
-    else if (e->menu == PageMenu_Config)
-      config += "<li><a class=\"btn btn-default\" href=\"" + std::string(e->uri) + "\" target=\"#main\">" + std::string(e->label) + "</a></li>";
-    else if (e->menu == PageMenu_Vehicle)
-      vehicle += "<li><a class=\"btn btn-default\" href=\"" + std::string(e->uri) + "\" target=\"#main\">" + std::string(e->label) + "</a></li>";
+  for (PageEntry& e : MyWebServer.m_pagemap) {
+    if (e.menu == PageMenu_Main)
+      main += "<li><a class=\"btn btn-default\" href=\"" + std::string(e.uri) + "\" target=\"#main\">" + std::string(e.label) + "</a></li>";
+    else if (e.menu == PageMenu_Tools)
+      tools += "<li><a class=\"btn btn-default\" href=\"" + std::string(e.uri) + "\" target=\"#main\">" + std::string(e.label) + "</a></li>";
+    else if (e.menu == PageMenu_Config)
+      config += "<li><a class=\"btn btn-default\" href=\"" + std::string(e.uri) + "\" target=\"#main\">" + std::string(e.label) + "</a></li>";
+    else if (e.menu == PageMenu_Vehicle)
+      vehicle += "<li><a class=\"btn btn-default\" href=\"" + std::string(e.uri) + "\" target=\"#main\">" + std::string(e.label) + "</a></li>";
   }
 
   // show setup warning:
