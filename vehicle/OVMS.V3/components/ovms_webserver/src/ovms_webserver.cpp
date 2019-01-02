@@ -115,6 +115,7 @@ OvmsWebServer::OvmsWebServer()
 #endif
 #endif
   RegisterPage("/cfg/webserver", "Webserver", HandleCfgWebServer, PageMenu_Config, PageAuth_Cookie);
+  RegisterPage("/cfg/plugins", "Web Plugins", HandleCfgPlugins, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/autostart", "Autostart", HandleCfgAutoInit, PageMenu_Config, PageAuth_Cookie);
 #ifdef CONFIG_OVMS_COMP_OTA
   RegisterPage("/cfg/firmware", "Firmware", HandleCfgFirmware, PageMenu_Config, PageAuth_Cookie);
@@ -384,18 +385,19 @@ void OvmsWebServer::RegisterPlugins()
       continue;
     
     key = kv.first.substr(0, kv.first.length() - 7);
-    label = cp->GetValue(key+".label");
     page = cp->GetValue(key+".page");
     hook = cp->GetValue(key+".hook");
-    if (page == "" || (hook == "" && label == ""))
+    bool is_hook = cp->IsDefined(key+".hook");
+    if (page == "" || (is_hook && hook == ""))
       continue;
     
-    if (hook != "") {
+    if (is_hook) {
       m_plugin_parts.insert({ page + ":" + hook, PagePluginContent(key) });
       RegisterCallback("http.plugin", page, PluginCallback);
       ESP_LOGD(TAG, "Plugin hook registered: '%s:%s' => '%s'", page.c_str(), hook.c_str(), key.c_str());
     } else {
       m_plugin_pages.insert({ page, PagePluginContent(key) });
+      label = cp->GetValue(key+".label");
       menu = Code2PageMenu(cp->GetValue(key+".menu"));
       auth = Code2PageAuth(cp->GetValue(key+".auth"));
       RegisterPage(page, label, PluginHandler, menu, auth);

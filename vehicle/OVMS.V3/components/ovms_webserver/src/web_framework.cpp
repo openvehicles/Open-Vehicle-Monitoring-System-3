@@ -100,18 +100,31 @@ std::string PageContext::make_id(std::string text) {
 }
 
 
-std::string PageContext::getvar(const char* name, size_t maxlen /*=200*/) {
+std::string PageContext::getvar(const std::string& name, size_t maxlen /*=200*/) {
   std::string res;
   char* varbuf = new char[maxlen];
   if (!varbuf)
     return res;
   if (method == "POST")
-    mg_get_http_var(&hm->body, name, varbuf, maxlen);
+    mg_get_http_var(&hm->body, name.c_str(), varbuf, maxlen);
   else
-    mg_get_http_var(&hm->query_string, name, varbuf, maxlen);
+    mg_get_http_var(&hm->query_string, name.c_str(), varbuf, maxlen);
   res.assign(varbuf);
   delete[] varbuf;
   return res;
+}
+
+bool PageContext::getvar(const std::string& name, extram::string& dst) {
+  int len;
+  if (method == "POST") {
+    dst.resize(hm->body.len, '\0');
+    len = mg_get_http_var(&hm->body, name.c_str(), &dst[0], hm->body.len);
+  } else {
+    dst.resize(hm->query_string.len, '\0');
+    len = mg_get_http_var(&hm->query_string, name.c_str(), &dst[0], hm->query_string.len);
+  }
+  dst.resize((len >= 0) ? len : 0);
+  return (len >= 0);
 }
 
 

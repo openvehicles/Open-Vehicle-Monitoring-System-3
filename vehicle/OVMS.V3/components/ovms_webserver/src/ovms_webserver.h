@@ -134,7 +134,8 @@ struct PageContext : public ExternalRamAllocated
   std::string uri;
 
   // utils:
-  std::string getvar(const char* name, size_t maxlen=200);
+  std::string getvar(const std::string& name, size_t maxlen=200);
+  bool getvar(const std::string& name, extram::string& dst);
   static std::string encode_html(const char* text);
   static std::string encode_html(const std::string text);
   static std::string make_id(const char* text);
@@ -540,6 +541,7 @@ class OvmsWebServer : public ExternalRamAllocated
     static void HandleCfgLogging(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgLocations(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgBackup(PageEntry_t& p, PageContext_t& c);
+    static void HandleCfgPlugins(PageEntry_t& p, PageContext_t& c);
 
   public:
     void CfgInitStartup();
