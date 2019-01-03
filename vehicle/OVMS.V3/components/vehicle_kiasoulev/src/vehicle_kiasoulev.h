@@ -50,7 +50,6 @@ typedef union {
 
 void xks_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xks_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xks_cells(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xks_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xks_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void CommandOpenTrunk(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
@@ -79,6 +78,7 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     void Ticker1(uint32_t ticker);
     void Ticker10(uint32_t ticker);
     void Ticker300(uint32_t ticker);
+    void EventListener(std::string event, void* data);
     void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void ConfigChanged(OvmsConfigParam* param);
     bool SetFeature(int key, const char* value);
@@ -124,7 +124,6 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     int m_street_pos;
 
     uint32_t ks_tpms_id[4];
-    uint8_t ks_battery_cell_voltage[101];
     OvmsMetricInt* 		m_b_cell_volt_max_no;			//Max cell voltage no           02 21 01 -> 23 7
     OvmsMetricInt* 		m_b_cell_volt_min_no; 		//Min cell voltage no           02 21 01 -> 24 2
     OvmsMetricFloat*	m_b_cell_volt_max;     		// Battery cell maximum voltage
@@ -142,7 +141,6 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 
     OvmsMetricBool*		m_v_env_lowbeam;
     OvmsMetricBool*		m_v_env_highbeam;
-    OvmsMetricFloat* m_v_env_inside_temp;
     OvmsMetricFloat* m_v_env_climate_temp;
     OvmsMetricBool*  m_v_env_climate_driver_only;
     OvmsMetricBool*  m_v_env_climate_resirc;
@@ -237,7 +235,7 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     float ks_start_cc;  					// Used to calculate trip recuperation (Cumulated charge)
     float ks_cum_charge_start; 		// Used to calculate charged power.
 
-    INT ks_battery_current; 			// Temporary storage for Battery current: 0x7ec 02 21 01 -> 21 7+22 1
+    int16_t ks_battery_current; 			// Temporary storage for Battery current: 0x7ec 02 21 01 -> 21 7+22 1
 
     bool ks_openChargePort;				// Tells the Ticker1 to open charge port
     bool ks_key_fob_open_charge_port;	// Enable/disable open charge port using trunk-button on key fob
@@ -249,8 +247,6 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     uint32_t ks_battery_cum_charge; 						//Cumulated charge power      02 21 01 -> 25 7 + 26 1-3
     uint32_t ks_battery_cum_discharge; 				//Cumulated discharge power   02 21 01 -> 26 4-7
     uint32_t ks_battery_cum_op_time; 					//Cumulated operating time    02 21 01 -> 27 1-4
-
-    int8_t ks_battery_module_temp[8];
 
     uint8_t ks_heatsink_temperature; //TODO Remove?
     uint8_t ks_battery_fan_feedback;
@@ -264,6 +260,10 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     bool ks_ldc_enabled;
 
     bool ks_aux_bat_ok;
+
+    bool ks_ready_for_chargepollstate;
+
+    uint8_t ks_secs_with_no_client;
 
     struct {
       unsigned char ChargingChademo : 1;

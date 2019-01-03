@@ -277,61 +277,6 @@ void xks_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 	writer->printf("Sequence number: %c%c%c%c%c%c\n", soul->m_vin[11],soul->m_vin[12],soul->m_vin[13],soul->m_vin[14],soul->m_vin[15],soul->m_vin[16]);
 	}
 
-/**
- * Print out the cell voltages.
- */
-void xks_cells(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  if (MyVehicleFactory.m_currentvehicle==NULL)
-    {
-    writer->puts("Error: No vehicle module selected");
-    return;
-    }
-  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
-
-	const char* minimum = soul->m_b_cell_volt_min->AsUnitString("-", Volts, 2).c_str();
-	const char* maximum = soul->m_b_cell_volt_max->AsUnitString("-", Volts, 2).c_str();
-	const char* total = StdMetrics.ms_v_bat_voltage->AsUnitString("-", Volts, 2).c_str();
-	const char* minDet = soul->m_b_cell_det_min->AsUnitString("-", Percentage, 2).c_str();
-	const char* maxDet = soul->m_b_cell_det_max->AsUnitString("-", Percentage, 2).c_str();
-
-	writer->printf("CELLS\n");
-	if (*minimum != '-') writer->printf("Min %s #%d\n", minimum, soul->m_b_cell_volt_min_no->AsInt(0));
-	if (*maximum != '-') writer->printf("Max %s #%d\n", maximum, soul->m_b_cell_volt_max_no->AsInt(0));
-	if (*total != '-') writer->printf("Total %s\n", total);
-	if (*minDet != '-') writer->printf("Min Det %s #%d\n", minDet, soul->m_b_cell_det_min_no->AsInt(0));
-	if (*maxDet != '-') writer->printf("Max Det %s #%d\n", maxDet, soul->m_b_cell_det_max_no->AsInt(0));
-
-	if(verbosity>788)
-		{
-		for (uint8_t i=0; i < sizeof (soul->ks_battery_cell_voltage); i++)
-			{
-			if( i % 10 == 0) writer->printf("\n%02d:",i+1);
-			writer->printf("%.*fV ", 2, (float)soul->ks_battery_cell_voltage[i]/50.0);
-			}
-		writer->printf("\n");
-		}
-	else
-		{
-		uint8_t i, lines=(verbosity-80)/11;
-		// Count each voltage and print out number of cells with that voltage.
-		// Handles up to as many lines as verbosity allows. Hopefully it will be enough
-		for( i=0;i<225; i++)
-			{
-			uint8_t cnt=0;
-			for (uint8_t a=0; a < sizeof (soul->ks_battery_cell_voltage) && lines>0; a++)
-				{
-				if( soul->ks_battery_cell_voltage[a]==i) cnt++;
-				}
-			if(cnt>0)
-				{
-				writer->printf("%02d x %.*fV\n", cnt, 2, (float)i/50.0);
-				lines--;
-				}
-			}
-		}
-	}
-
 
 /**
  * Print out information of the tpms.
