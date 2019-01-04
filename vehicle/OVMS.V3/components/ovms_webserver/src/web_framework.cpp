@@ -623,6 +623,7 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
         "</nav>"
         "<div role=\"main\" id=\"main\" class=\"container-fluid\">"
         "</div>"
+        "<script>window.assets={\"charts_js\":\"" URL_ASSETS_CHARTS_JS "\"}</script>"
         "<script src=\"" URL_ASSETS_SCRIPT_JS "\"></script>");
   PAGE_HOOK("body.post");
   c.print(

@@ -115,6 +115,7 @@ function setcontent(tgt, uri, text){
   if (!tgt || !tgt.length) return;
 
   tgt.find(".receiver").unsubscribe();
+  tgt.chart("destroy");
 
   if (tgt[0].id == "main") {
     $("#nav .dropdown.open .dropdown-toggle").dropdown("toggle");
@@ -136,7 +137,7 @@ function setcontent(tgt, uri, text){
   }
 
   tgt.find(".get-window-resize").trigger('window-resize');
-  tgt.find(".receiver").subscribe();
+  tgt.find(".receiver").subscribe().trigger("msg:metrics", metrics);
   tgt.trigger("load");
 }
 
@@ -1184,6 +1185,56 @@ $.fn.listEditor = function(op, data){
 
 
 /**
+ * Highcharts
+ */
+
+var highchartsLoader;
+
+$.fn.chart = function(options) {
+  if (this.length == 0)
+    return this;
+  var $this = this;
+  if (options === "destroy") {
+    // destroy:
+    var $cl = this.find(".has-chart").add(this.filter(".has-chart"));
+    $cl.each(function() {
+      var chart = $(this).data("chart");
+      if (typeof chart == "object") {
+        $(this).data("chart", null);
+        chart.destroy();
+      }
+    });
+  } else {
+    // init:
+    function init_charts() {
+      $this.each(function() {
+        var chart = Highcharts.chart(this, options, function() {
+          if (this.userOptions && this.userOptions.onUpdate)
+            this.userOptions.onUpdate.call(this, metrics);
+        });
+        $(this).data("chart", chart).addClass("has-chart get-window-resize").on("window-resize", function() {
+          $(this).data("chart").reflow();
+        });
+      });
+    }
+    if (window.Highcharts) {
+      init_charts();
+    } else if (highchartsLoader) {
+      highchartsLoader.then(init_charts);
+    } else {
+      highchartsLoader = $.ajax({
+        url: (window.assets && window.assets["charts_js"]) || "/assets/charts.js?v=6.0.7",
+        dataType: "script",
+        cache: true,
+        success: function(){ init_charts(); }
+      });
+    }
+  }
+  return this;
+};
+
+
+/**
  * Framework Init
  */
 
@@ -1348,6 +1399,40 @@ $(function(){
       if (val) opt.path = val;
       $tgt.filedialog(opt);
     }
+  });
+
+  // Metrics displays:
+  $("body").on('msg:metrics', '.receiver', function(e, update) {
+    $(this).find(".metric").each(function() {
+      var $el = $(this), metric = $el.data("metric"), prec = $el.data("prec");
+      if (!metric) return;
+      // filter:
+      var keys = metric.split(","), val;
+      for (var i=0; i<keys.length; i++) {
+        if ((val = update[keys[i]]) != null) break;
+      }
+      if (val == null) return;
+      // process:
+      if ($el.hasClass("text")) {
+        $el.children(".value").text(val);
+      } else if ($el.hasClass("number")) {
+        var vf = (prec != null) ? Number(val).toFixed(prec) : val;
+        $el.children(".value").text(vf);
+      } else if ($el.hasClass("progress")) {
+        var $pb = $(this.firstElementChild), min = $pb.attr("aria-valuemin"), max = $pb.attr("aria-valuemax");
+        var vp = (val-min) / (max-min) * 100;
+        var vf = (prec != null) ? Number(val).toFixed(prec) : val;
+        $pb.css("width", vp+"%").attr("aria-valuenow", vp).find(".value").text(vf);
+        var lw = 0; $pb.find("span").each(function(){ lw += $(this).width(); });
+        if (($pb.parent().width()*vp/100) < lw) $pb.addClass("value-low"); else $pb.removeClass("value-low");
+      } else if ($el.hasClass("chart")) {
+        var ch = $(this.firstElementChild).data("chart");
+        if (ch && ch.userOptions && ch.userOptions.onUpdate)
+          ch.userOptions.onUpdate.call(ch, update);
+      } else {
+        $el.text(val);
+      }
+    });
   });
 
   // Modal autoclear:
