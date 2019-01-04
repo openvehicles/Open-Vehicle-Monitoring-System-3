@@ -354,14 +354,14 @@ function monitorUpdate(){
 function processNotification(msg) {
   var opts = { timeout: 0 };
   if (msg.type == "info") {
-    opts.title = '<span class="lead text-info"><i>ⓘ</i>' + msg.subtype + ' Info</span>';
+    opts.title = '<span class="lead text-info"><i>ⓘ</i> ' + msg.subtype + ' Info</span>';
     opts.timeout = 60;
   }
   else if (msg.type == "alert") {
-    opts.title = '<span class="lead text-danger"><i>⚠</i>' + msg.subtype + ' Alert</span>';
+    opts.title = '<span class="lead text-danger"><i>⚠</i> ' + msg.subtype + ' Alert</span>';
   }
   else if (msg.type == "error") {
-    opts.title = '<span class="lead text-warning"><i>⛍</i>' + msg.subtype + ' Error</span>';
+    opts.title = '<span class="lead text-warning"><i>⛍</i> ' + msg.subtype + ' Error</span>';
   }
   else
     return;

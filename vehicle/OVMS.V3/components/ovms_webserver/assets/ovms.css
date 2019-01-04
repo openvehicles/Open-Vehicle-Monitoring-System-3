@@ -424,6 +424,7 @@ button.toggle-night, button.toggle-fullscreen {
   text-transform: capitalize;
 }
 .modal-title span.lead i {
+  text-transform: none;
   font-style: normal;
   font-size: 155%;
   margin-right: 10px;
