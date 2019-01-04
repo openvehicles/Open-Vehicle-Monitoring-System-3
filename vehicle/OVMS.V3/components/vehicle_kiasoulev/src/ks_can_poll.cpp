@@ -32,7 +32,7 @@ static const char *TAG = "v-kiasoulev";
 void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
   {
 	//ESP_LOGW(TAG, "%03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", m_poll_moduleid_low, type, pid, length, data[0], data[1], data[2], data[3],
-	//		data[4], data[5], data[6], data[7]);
+	//	data[4], data[5], data[6], data[7]);
 	switch (m_poll_moduleid_low)
 		{
 		// ****** SJB *****
@@ -129,6 +129,10 @@ void OvmsVehicleKiaSoulEv::IncomingTPMS(canbus* bus, uint16_t type, uint16_t pid
 
 /**
  * Handle incoming messages from On Board Charger-poll
+ *
+ * - OBC-voltage
+ * - Pilot signal duty cycle
+ * - Charger temperature
  */
 void OvmsVehicleKiaSoulEv::IncomingOBC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
@@ -156,10 +160,16 @@ void OvmsVehicleKiaSoulEv::IncomingOBC(canbus* bus, uint16_t type, uint16_t pid,
 
 /**
  * Handle incoming messages from VMCU-poll
+ *
+ * - Gear shifter position
+ * - VIN
+ * - RPM
+ * - Motor temperature
+ * - Inverter temperature
  */
 void OvmsVehicleKiaSoulEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
-	UINT base;
+	INT base;
 	uint8_t bVal;
 
 	switch (pid)
@@ -176,9 +186,10 @@ void OvmsVehicleKiaSoulEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 			if (type == VEHICLE_POLL_TYPE_OBDIIVEHICLE)
 				{
 				base = m_poll_ml_offset - length;
-				for (bVal = 0; (bVal < length) && ((base + bVal)<(sizeof (m_vin) - 1)); bVal++)
-					m_vin[base + bVal] = CAN_BYTE(bVal);
-				if (m_poll_ml_remain == 0) m_vin[base + bVal] = 0;
+
+				for (bVal = 0; (bVal < length) && ((base + bVal)<sizeof (m_vin)); bVal++)
+					if(base+bVal>0) m_vin[base + bVal-1] = CAN_BYTE(bVal);
+				if (m_poll_ml_remain == 0 && base+bVal>=0) m_vin[base + bVal] = 0;
 
 				//Set VIN
 				StandardMetrics.ms_v_vin->SetValue(m_vin);
@@ -201,6 +212,14 @@ void OvmsVehicleKiaSoulEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 
 /**
  * Handle incoming messages from BMC-poll
+ *
+ * - Pilot signal available
+ * - ChaDeMo / J1772
+ * - Battery current
+ * - Battery voltage
+ * - Battery module temp 1-8
+ * - Cell voltage max / min + cell #
+ * + more
  */
 void OvmsVehicleKiaSoulEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
@@ -215,8 +234,6 @@ void OvmsVehicleKiaSoulEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
 				if (m_poll_ml_frame == 1) // 02 21 01 - 21
 					{
 					m_c_power->SetValue( (float)CAN_UINT(1)/100.0, kW);
-					//ks_battery_avail_discharge = (UINT8)(((UINT) can_databuffer[5 + CAN_ADJ]
-					//        | ((UINT) can_databuffer[4 + CAN_ADJ] << 8))>>2);
 					bVal = CAN_BYTE(5);
 					StdMetrics.ms_v_charge_pilot->SetValue((bVal & 0x80) > 0);
 					ks_charge_bits.ChargingChademo = ((bVal & 0x40) > 0);
@@ -229,20 +246,20 @@ void OvmsVehicleKiaSoulEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
 					ks_battery_current = (ks_battery_current & 0xFF00) | (UINT) CAN_BYTE(0);
 					StdMetrics.ms_v_bat_current->SetValue((float)ks_battery_current/10.0, Amps);
 					StdMetrics.ms_v_bat_voltage->SetValue((float)CAN_UINT(1)/10.0, Volts);
-					//StdMetrics.ms_v_bat_power->SetValue(
-					//		StdMetrics.ms_v_bat_voltage->AsFloat(Volts) * StdMetrics.ms_v_bat_current->AsFloat(Amps) / 1000.0 , kW);
-					ks_battery_module_temp[0] = CAN_BYTE(3);
-					ks_battery_module_temp[1] = CAN_BYTE(4);
-					ks_battery_module_temp[2] = CAN_BYTE(5);
-					ks_battery_module_temp[3] = CAN_BYTE(6);
+           BmsSetCellTemperature(0, CAN_BYTE(3));
+           BmsSetCellTemperature(1, CAN_BYTE(4));
+           BmsSetCellTemperature(2, CAN_BYTE(5));
+           BmsSetCellTemperature(3, CAN_BYTE(6));
+         	 StdMetrics.ms_v_bat_temp->SetValue(((float)CAN_BYTE(3) + CAN_BYTE(4) +
+         			CAN_BYTE(5) + CAN_BYTE(6)) / 4, Celcius);
 
 					}
 				else if (m_poll_ml_frame == 3) // 02 21 01 - 23
 					{
-					ks_battery_module_temp[4] = CAN_BYTE(0);
-					ks_battery_module_temp[5] = CAN_BYTE(1);
-					ks_battery_module_temp[6] = CAN_BYTE(2);
-					ks_battery_module_temp[7] = CAN_BYTE(3);
+           BmsSetCellTemperature(4, CAN_BYTE(0));
+           BmsSetCellTemperature(5, CAN_BYTE(1));
+           BmsSetCellTemperature(6, CAN_BYTE(2));
+           BmsSetCellTemperature(7, CAN_BYTE(3));
 					//TODO What about the 30kWh-version?
 
 					m_b_cell_volt_max->SetValue((float)CAN_BYTE(5)/50.0, Volts);
@@ -282,8 +299,11 @@ void OvmsVehicleKiaSoulEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
 		case 0x04:
 			// diag page 02-04: skip first frame (no data)
 			base = ((pid-2)<<5) + m_poll_ml_offset - (length - 3);
-			for (bVal = 0; bVal < length && ((base + bVal)<sizeof (ks_battery_cell_voltage)); bVal++)
-				ks_battery_cell_voltage[base + bVal] = CAN_BYTE(bVal);
+			for (bVal = 0; bVal < length && ((base + bVal)<101); bVal++)
+				{
+				BmsSetCellVoltage(base + bVal, CAN_BYTE(bVal) * 0.02);
+				//ks_battery_cell_voltage[base + bVal] = CAN_BYTE(bVal);
+			  }
 			break;
 
 		case 0x05:
@@ -291,8 +311,10 @@ void OvmsVehicleKiaSoulEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
 				{
 				//TODO Untested.
 				base = ((pid-2)<<5) + m_poll_ml_offset - (length - 3);
-				for (bVal = 0; bVal < length && ((base + bVal)<sizeof (ks_battery_cell_voltage)); bVal++)
-					ks_battery_cell_voltage[base + bVal] = CAN_BYTE(bVal);
+				for (bVal = 0; bVal < length && ((base + bVal)<101); bVal++){
+					//ks_battery_cell_voltage[base + bVal] = CAN_BYTE(bVal);
+           BmsSetCellVoltage(base + bVal, CAN_BYTE(bVal) * 0.02);
+					}
 
 				m_b_inlet_temperature->SetValue( CAN_BYTE(5) );
 				m_b_min_temperature->SetValue( CAN_BYTE(6) );
@@ -320,6 +342,11 @@ void OvmsVehicleKiaSoulEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
 
 /**
  * Handle incoming messages from LDC-poll
+ *
+ * - LDC out voltage
+ * - LDC out current
+ * - LDC in voltage
+ * - LDC temperature
  */
 void OvmsVehicleKiaSoulEv::IncomingLDC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
