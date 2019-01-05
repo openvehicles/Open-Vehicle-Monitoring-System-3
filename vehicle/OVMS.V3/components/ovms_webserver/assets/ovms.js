@@ -3,7 +3,8 @@
 const monthnames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const supportsTouch = 'ontouchstart' in window || navigator.msMaxTouchPoints;
 
-var loggedin = false;
+if (window.loggedin == undefined)
+  window.loggedin = false;
 
 
 /**
@@ -98,10 +99,20 @@ function reloadpage() {
   loaduri("#main", "get", uri, {});
 }
 
+function login(dsturi) {
+  if (!dsturi)
+    dsturi = page.uri || "/home";
+  loadPage("/login?uri=" + encodeURIComponent(dsturi));
+}
+
+function logout() {
+  loadPage("/logout");
+}
+
 function xhrErrorInfo(request, textStatus, errorThrown) {
   var txt = "";
   if (request.status == 401 || request.status == 403)
-    txt = "Session expired. <a class=\"btn btn-sm btn-default\" href=\"javascript:reloadpage()\">Login</a>";
+    txt = "Unauthorized. <a class=\"btn btn-sm btn-default\" href=\"javascript:login()\">Login</a>";
   else if (request.status >= 400)
     txt = "Error " + request.status + " " + request.statusText;
   else if (textStatus)
