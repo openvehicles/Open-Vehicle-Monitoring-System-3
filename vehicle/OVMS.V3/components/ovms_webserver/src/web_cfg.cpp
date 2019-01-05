@@ -2675,17 +2675,18 @@ static bool SavePluginEditor(PageEntry_t& p, PageContext_t& c, std::string& erro
 
 void OvmsWebServer::HandleCfgPlugins(PageEntry_t& p, PageContext_t& c)
 {
+  std::string cnt = c.getvar("cnt");
   std::string key = c.getvar("key");
   std::string error, info;
 
   if (c.method == "POST") {
-    if (key == "") {
+    if (cnt != "") {
       if (SavePluginList(p, c, error)) {
         info = "<p class=\"lead\">Plugin registration saved.</p>"
           "<script>$(\"#menu\").load(\"/menu\")</script>";
       }
     }
-    else {
+    else if (key != "") {
       if (SavePluginEditor(p, c, error)) {
         info = "<p class=\"lead\">Plugin <code>" + key + "</code> saved.</p>"
           "<script>$(\"#menu\").load(\"/menu\")</script>";
