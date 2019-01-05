@@ -348,7 +348,12 @@ void OvmsMetrics::DeregisterListener(const char* caller)
 
 void OvmsMetrics::NotifyModified(OvmsMetric* metric)
   {
-  if ((m_trace)&&(strcmp(metric->m_name,"m.monotonic")!=0))
+  if (m_trace &&
+      strcmp(metric->m_name, "m.monotonic") != 0 &&
+      strcmp(metric->m_name, "m.time.utc") != 0 &&
+      strcmp(metric->m_name, "v.e.parktime") != 0 &&
+      strcmp(metric->m_name, "v.e.drivetime") != 0 &&
+      strcmp(metric->m_name, "v.c.time") != 0)
     {
     ESP_LOGI(TAG, "Modified metric %s: %s",
       metric->m_name, metric->AsUnitString().c_str());
@@ -626,7 +631,7 @@ std::string OvmsMetricBool::AsJSON(const char* defvalue, metric_unit_t units, in
     }
   else
     {
-    if ((strcasecmp(defvalue, "yes")==0)||(strcasecmp(defvalue, "1")==0)||(strcasecmp(defvalue, "true")==0))
+    if (strtobool(defvalue) == true)
       return std::string("true");
     else
       return std::string("false");
@@ -659,11 +664,7 @@ void OvmsMetricBool::SetValue(bool value)
 
 void OvmsMetricBool::SetValue(std::string value)
   {
-  bool nvalue;
-  if ((value == "yes")||(value == "1")||(value == "true"))
-    nvalue = true;
-  else
-    nvalue = false;
+  bool nvalue = strtobool(value);
   if (m_value != nvalue)
     {
     m_value = nvalue;

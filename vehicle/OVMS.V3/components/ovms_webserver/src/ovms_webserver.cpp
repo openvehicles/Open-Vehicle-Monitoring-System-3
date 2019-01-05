@@ -34,6 +34,7 @@ static const char *TAG = "webserver";
 
 #include <string.h>
 #include <stdio.h>
+#include <fstream>
 #include "ovms_webserver.h"
 #include "ovms_config.h"
 #include "ovms_metrics.h"
@@ -62,7 +63,8 @@ OvmsWebServer::OvmsWebServer()
   m_update_ticker = xTimerCreate("Web client update ticker", 250 / portTICK_PERIOD_MS, pdTRUE, NULL, UpdateTicker);
 
   // read config:
-  MyConfig.RegisterParam("http.server", "Webserver", true, true);
+  MyConfig.RegisterParam("http.server", "Webserver configuration", true, true);
+  MyConfig.RegisterParam("http.plugin", "Webserver plugins", true, true);
   ConfigChanged("init", NULL);
 
   #undef bind  // Kludgy, but works
@@ -113,6 +115,7 @@ OvmsWebServer::OvmsWebServer()
 #endif
 #endif
   RegisterPage("/cfg/webserver", "Webserver", HandleCfgWebServer, PageMenu_Config, PageAuth_Cookie);
+  RegisterPage("/cfg/plugins", "Web Plugins", HandleCfgPlugins, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/autostart", "Autostart", HandleCfgAutoInit, PageMenu_Config, PageAuth_Cookie);
 #ifdef CONFIG_OVMS_COMP_OTA
   RegisterPage("/cfg/firmware", "Firmware", HandleCfgFirmware, PageMenu_Config, PageAuth_Cookie);
@@ -213,6 +216,11 @@ void OvmsWebServer::ConfigChanged(std::string event, void* data)
       MyConfig.GetParamValueBool("http.server", "auth.global", true) ? OVMS_GLOBAL_AUTH_FILE : NULL;
   }
 #endif //MG_ENABLE_FILESYSTEM
+
+  if (!param || param->GetName() == "http.plugin") {
+    DeregisterPlugins();
+    RegisterPlugins();
+  }
 }
 
 
@@ -301,37 +309,136 @@ const std::string OvmsWebServer::ExecuteCommand(const std::string command, int v
  * RegisterPage: add a page to the URI handler map
  * Note: use PageMenu_Vehicle for vehicle specific pages.
  */
-void OvmsWebServer::RegisterPage(const char* uri, const char* label, PageHandler_t handler,
+void OvmsWebServer::RegisterPage(std::string uri, std::string label, PageHandler_t handler,
   PageMenu_t menu /*=PageMenu_None*/, PageAuth_t auth /*=PageAuth_None*/)
 {
   auto prev = m_pagemap.before_begin();
   for (auto it = m_pagemap.begin(); it != m_pagemap.end(); prev = it++) {
-    if (strcmp((*it)->uri, uri) == 0) {
-      ESP_LOGE(TAG, "RegisterPage: second registration for uri '%s' (ignored)", uri);
+    if ((*it).uri == uri) {
+      ESP_LOGE(TAG, "RegisterPage: second registration for uri '%s' (ignored)", uri.c_str());
       return;
     }
   }
-  m_pagemap.insert_after(prev, new PageEntry(uri, label, handler, menu, auth));
+  m_pagemap.insert_after(prev, PageEntry(uri, label, handler, menu, auth));
 }
 
-void OvmsWebServer::DeregisterPage(const char* uri)
+void OvmsWebServer::DeregisterPage(std::string uri)
 {
-  auto prev = m_pagemap.before_begin();
-  for (auto it = m_pagemap.begin(); it != m_pagemap.end(); prev = it++) {
-    if (strcmp((*it)->uri, uri) == 0) {
-      m_pagemap.erase_after(prev);
-      break;
+  m_pagemap.remove_if([uri](PageEntry &e){ return (e.uri == uri); });
+}
+
+PageEntry* OvmsWebServer::FindPage(std::string uri)
+{
+  for (PageEntry& e : m_pagemap) {
+    if (e.uri == uri)
+      return &e;
+  }
+  return NULL;
+}
+
+
+/**
+ * Plugin Registry
+ */
+
+void PagePluginContent::LoadContent()
+{
+  std::string path = "/store/plugin/" + m_path;
+  std::ifstream file(path, std::ios::ate);
+  if (!file.is_open()) {
+    ESP_LOGE(TAG, "Plugin file missing: '%s'", path.c_str());
+    m_content = "<!-- ERROR: Plugin file missing: '";
+    m_content += PageContext::encode_html(path).c_str();
+    m_content += "' -->";
+  } else {
+    auto size = file.tellg();
+    m_content.resize(size, '\0');
+    file.seekg(0);
+    file.read(&m_content[0], size);
+    ESP_LOGD(TAG, "Plugin file loaded: '%s', %u bytes", path.c_str(), (size_t)size);
+  }
+}
+
+void OvmsWebServer::RegisterPlugins()
+{
+  OvmsConfigParam* cp = MyConfig.CachedParam("http.plugin");
+  if (!cp)
+    return;
+  const ConfigParamMap& pmap = cp->GetMap();
+  std::string key, label, page, hook;
+  PageAuth_t auth;
+  PageMenu_t menu;
+
+  // Instances:
+  //    <key>.enable        yes/no
+  //    <key>.label         e.g. "My Plugin"
+  //    <key>.page          e.g. "/myplugin" (page/hook URI)
+  //    <key>.auth          [page] <PageAuth_t> code name
+  //    <key>.menu          [page] <PageMenu_t> code name
+  //    <key>.hook          [hook] Callback hook code
+  // 
+  // Files:
+  //    /store/plugin/<key>
+
+  for (auto& kv: pmap) {
+    if (!endsWith(kv.first, ".enable") || !strtobool(kv.second))
+      continue;
+    
+    key = kv.first.substr(0, kv.first.length() - 7);
+    page = cp->GetValue(key+".page");
+    hook = cp->GetValue(key+".hook");
+    bool is_hook = cp->IsDefined(key+".hook");
+    if (page == "" || (is_hook && hook == ""))
+      continue;
+    
+    if (is_hook) {
+      m_plugin_parts.insert({ page + ":" + hook, PagePluginContent(key) });
+      RegisterCallback("http.plugin", page, PluginCallback);
+      ESP_LOGD(TAG, "Plugin hook registered: '%s:%s' => '%s'", page.c_str(), hook.c_str(), key.c_str());
+    } else {
+      m_plugin_pages.insert({ page, PagePluginContent(key) });
+      label = cp->GetValue(key+".label");
+      menu = Code2PageMenu(cp->GetValue(key+".menu"));
+      auth = Code2PageAuth(cp->GetValue(key+".auth"));
+      RegisterPage(page, label, PluginHandler, menu, auth);
+      ESP_LOGD(TAG, "Plugin page registered: '%s' => '%s'", page.c_str(), key.c_str());
     }
   }
 }
 
-PageEntry* OvmsWebServer::FindPage(const char* uri)
+void OvmsWebServer::DeregisterPlugins()
 {
-  for (PageEntry* e : m_pagemap) {
-    if (strcmp(e->uri, uri) == 0)
-      return e;
+  m_pagemap.remove_if([](PageEntry& e){ return e.handler == PluginHandler; });
+  m_plugin_pages.clear();
+  DeregisterCallbacks("http.plugin");
+  m_plugin_parts.clear();
+}
+
+void OvmsWebServer::PluginHandler(PageEntry_t& p, PageContext_t& c)
+{
+  auto i = MyWebServer.m_plugin_pages.find(p.uri);
+  if (i == MyWebServer.m_plugin_pages.end())
+    return;
+
+  extram::string& content = i->second.GetContent();
+  c.head(200);
+  c.print(content);
+  c.done();
+}
+
+PageResult_t OvmsWebServer::PluginCallback(PageEntry_t& p, PageContext_t& c, const std::string& hook)
+{
+  std::string key = p.uri + ':' + hook;
+  auto range = MyWebServer.m_plugin_parts.equal_range(key);
+  if (range.first == MyWebServer.m_plugin_parts.end())
+    return PageResult_OK;
+
+  for (auto i = range.first; i != range.second; i++) {
+    extram::string& content = i->second.GetContent();
+    c.print(content);
   }
-  return NULL;
+
+  return PageResult_OK;
 }
 
 
@@ -457,7 +564,7 @@ void PageEntry::Serve(PageContext_t& c)
   size_t checkpoint1 = heap_caps_get_free_size(MALLOC_CAP_8BIT);
   handler(*this, c);
   size_t checkpoint2 = heap_caps_get_free_size(MALLOC_CAP_8BIT);
-  ESP_LOGD(TAG, "Serve %s: %d bytes used, %d free", uri, checkpoint1-checkpoint2, checkpoint2);
+  ESP_LOGD(TAG, "Serve %s: %d bytes used, %d free", uri.c_str(), checkpoint1-checkpoint2, checkpoint2);
 }
 
 
@@ -465,7 +572,7 @@ void PageEntry::Serve(PageContext_t& c)
  * Page Callback Registry:
  */
 
-bool OvmsWebServer::RegisterCallback(std::string caller, const char* uri, PageCallback_t handler)
+bool OvmsWebServer::RegisterCallback(std::string caller, std::string uri, PageCallback_t handler)
 {
   PageEntry* e = FindPage(uri);
   if (!e)
@@ -476,25 +583,29 @@ bool OvmsWebServer::RegisterCallback(std::string caller, const char* uri, PageCa
 
 void OvmsWebServer::DeregisterCallbacks(std::string caller)
 {
-  for (PageEntry* e : m_pagemap)
-    e->DeregisterCallback(caller);
+  for (PageEntry& e : m_pagemap)
+    e.DeregisterCallback(caller);
 }
 
 void PageEntry::RegisterCallback(std::string caller, PageCallback_t handler)
 {
-  callbacklist.push_front(new PageCallbackEntry(caller, handler));
+  for (auto it = callbacklist.begin(); it != callbacklist.end(); it++) {
+    if ((*it).caller == caller && (*it).handler == handler)
+      return; // already registered
+  }
+  callbacklist.push_front(PageCallbackEntry(caller, handler));
 }
 
 void PageEntry::DeregisterCallback(std::string caller)
 {
-  callbacklist.remove_if([caller](PageCallbackEntry* e){ return e->caller == caller; });
+  callbacklist.remove_if([caller](PageCallbackEntry& e){ return e.caller == caller; });
 }
 
 PageResult_t PageEntry::callback(PageContext_t& c, const std::string& hook)
 {
   PageResult_t res = PageResult_OK;
-  for (PageCallbackEntry* e : callbacklist) {
-    res = e->handler(*this, c, hook);
+  for (PageCallbackEntry& e : callbacklist) {
+    res = e.handler(*this, c, hook);
     if (res == PageResult_STOP)
       break;
   }
@@ -539,20 +650,37 @@ void MgHandler::HandlePoll(mg_connection* nc, int ev, void* p)
 /**
  * HttpDataSender: chunked transfer of a memory region (needs to be const during xfer)
  */
+
+HttpDataSender::HttpDataSender(mg_connection* nc, MemRegionList xferlist, bool keepalive /*=true*/)
+: MgHandler(nc)
+{
+  m_xferlist = xferlist;
+  m_xfer = -1;
+  m_data = NULL;
+  m_size = 0;
+  m_sent = 0;
+  m_keepalive = keepalive;
+  //ESP_LOGV(TAG, "HttpDataSender[%p]: init %d regions", nc, m_xferlist.size());
+}
+
 HttpDataSender::HttpDataSender(mg_connection* nc, const uint8_t* data, size_t size, bool keepalive /*=true*/)
 : MgHandler(nc)
 {
-  m_data = data;
-  m_size = size;
+  m_xferlist.push_back({ data, size });
+  m_xfer = -1;
+  m_data = NULL;
+  m_size = 0;
   m_sent = 0;
   m_keepalive = keepalive;
-  ESP_LOGV(TAG, "HttpDataSender[%p]: init data=%p, %d bytes", nc, m_data, m_size);
+  //ESP_LOGV(TAG, "HttpDataSender[%p]: init data=%p, %d bytes", nc, data, size);
 }
 
 HttpDataSender::~HttpDataSender()
 {
-  if (m_sent < m_size)
-    ESP_LOGV(TAG, "HttpDataSender[%p]: abort data=%p, %d bytes sent", m_nc, m_data, m_sent);
+  if (m_sent < m_size || m_xfer < m_xferlist.size()) {
+    ESP_LOGV(TAG, "HttpDataSender[%p]: abort region=%d/%d, data=%p, %d/%d bytes sent",
+             m_nc, m_xfer+1, m_xferlist.size(), m_data, m_sent, m_size);
+  }
 }
 
 int HttpDataSender::HandleEvent(int ev, void* p)
@@ -561,6 +689,13 @@ int HttpDataSender::HandleEvent(int ev, void* p)
   {
     case MG_EV_SEND:          // last transmission has finished
     {
+      if (m_sent == m_size && ++m_xfer < m_xferlist.size()) {
+        // send next region:
+        m_data = m_xferlist[m_xfer].first;
+        m_size = m_xferlist[m_xfer].second;
+        m_sent = 0;
+        //ESP_LOGV(TAG, "HttpDataSender[%p]: next region=%d data=%p, %d bytes", m_nc, m_xfer+1, m_data, m_size);
+      }
       if (m_sent < m_size) {
         // send next chunk:
         size_t len = MIN(m_size - m_sent, XFER_CHUNK_SIZE);
@@ -573,7 +708,7 @@ int HttpDataSender::HandleEvent(int ev, void* p)
         if (!m_keepalive)
           m_nc->flags |= MG_F_SEND_AND_CLOSE;
         mg_send_http_chunk(m_nc, "", 0);
-        ESP_LOGV(TAG, "HttpDataSender[%p]: done data=%p, %d bytes sent", m_nc, m_data, m_sent);
+        //ESP_LOGV(TAG, "HttpDataSender[%p]: done", m_nc);
         delete this;
       }
     }
@@ -596,13 +731,14 @@ HttpStringSender::HttpStringSender(mg_connection* nc, std::string* msg, bool kee
   m_msg = msg;
   m_sent = 0;
   m_keepalive = keepalive;
-  ESP_LOGV(TAG, "HttpStringSender[%p]: init msg=%p, %d bytes", nc, m_msg, m_msg->size());
+  //ESP_LOGV(TAG, "HttpStringSender[%p]: init msg=%p, %d bytes", nc, m_msg, m_msg->size());
 }
 
 HttpStringSender::~HttpStringSender()
 {
-  if (m_sent < m_msg->size())
+  if (m_sent < m_msg->size()) {
     ESP_LOGV(TAG, "HttpStringSender[%p]: abort msg=%p, %d bytes sent", m_nc, m_msg, m_sent);
+  }
   delete m_msg;
 }
 
@@ -624,7 +760,7 @@ int HttpStringSender::HandleEvent(int ev, void* p)
         if (!m_keepalive)
           m_nc->flags |= MG_F_SEND_AND_CLOSE;
         mg_send_http_chunk(m_nc, "", 0);
-        ESP_LOGV(TAG, "HttpStringSender[%p]: done msg=%p, %d bytes sent", m_nc, m_msg, m_sent);
+        //ESP_LOGV(TAG, "HttpStringSender[%p]: done msg=%p, %d bytes sent", m_nc, m_msg, m_sent);
         delete this;
       }
     }

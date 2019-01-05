@@ -53,6 +53,11 @@ struct CmpStrOp
     }
   };
 
+inline bool strtobool(const std::string& str)
+  {
+  return (str == "yes" || str == "1" || str == "true");
+  }
+
 /**
  * chargestate_code: convert legacy chargestate key to code
  * chargestate_key: convert chargestate code to legacy key

@@ -33,7 +33,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 	{
 	uint8_t *d = p_frame->data.u8;
 
-	//ESP_LOGV(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
+	//ESP_LOGW(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
 	//		p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
 
 	switch (p_frame->MsgID)
@@ -72,9 +72,9 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 	case 0x110:
 		{
 		// Seat belt status Byte 7
-		m_v_seat_belt_back_right->SetValue(!(d[7] & 0x80));
-		m_v_seat_belt_back_middle->SetValue(!(d[7] & 0x20));
-		m_v_seat_belt_back_left->SetValue(!(d[7] & 0x08));
+		m_v_seat_belt_back_right->SetValue((d[7] & 0x80));
+		m_v_seat_belt_back_middle->SetValue((d[7] & 0x20));
+		m_v_seat_belt_back_left->SetValue((d[7] & 0x08));
 		}
 		break;
 
@@ -82,11 +82,11 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 		{
 		if (d[3] & 0x20)
 			{
-			//StdMetrics.ms_v_env_locked->SetValue(false); // This only keeps track of the lock signal from keyfob
+			StdMetrics.ms_v_env_locked->SetValue(false); // This only keeps track of the lock signal from keyfob
 			}
 		else if (d[3] & 0x10)
 			{
-			//StdMetrics.ms_v_env_locked->SetValue(true); // This only keeps track of the lock signal from keyfob
+			StdMetrics.ms_v_env_locked->SetValue(true); // This only keeps track of the lock signal from keyfob
 			}
 		if (d[3] & 0x40 && ks_key_fob_open_charge_port)
 			{
@@ -149,7 +149,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 			}
 		else if (d[2] == 0 && d[7] == 0
 				&& StdMetrics.ms_v_pos_speed->AsFloat(Kph) == 0
-				&& StdMetrics.ms_v_env_handbrake->AsBool())
+				/*&& StdMetrics.ms_v_env_handbrake->AsBool()*/)
 			{
 			// Both 2 and 7 and speed is 0, so we assumes the car is off.
 			vehicle_kiasoulev_car_on(false);
@@ -258,7 +258,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 	case 0x654:
 		{
 		// Inside temperature
-		m_v_env_inside_temp->SetValue(TO_CELCIUS(d[7]/2.0), Celcius);
+		StdMetrics.ms_v_env_cabintemp->SetValue(TO_CELCIUS(d[7]/2.0), Celcius);
 		}
 		break;
 

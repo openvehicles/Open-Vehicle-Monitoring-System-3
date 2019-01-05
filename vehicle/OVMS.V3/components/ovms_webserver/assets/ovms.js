@@ -115,6 +115,7 @@ function setcontent(tgt, uri, text){
   if (!tgt || !tgt.length) return;
 
   tgt.find(".receiver").unsubscribe();
+  tgt.chart("destroy");
 
   if (tgt[0].id == "main") {
     $("#nav .dropdown.open .dropdown-toggle").dropdown("toggle");
@@ -136,7 +137,7 @@ function setcontent(tgt, uri, text){
   }
 
   tgt.find(".get-window-resize").trigger('window-resize');
-  tgt.find(".receiver").subscribe();
+  tgt.find(".receiver").subscribe().trigger("msg:metrics", metrics);
   tgt.trigger("load");
 }
 
@@ -354,14 +355,14 @@ function monitorUpdate(){
 function processNotification(msg) {
   var opts = { timeout: 0 };
   if (msg.type == "info") {
-    opts.title = '<span class="lead text-info"><i>ⓘ</i>' + msg.subtype + ' Info</span>';
+    opts.title = '<span class="lead text-info"><i>ⓘ</i> ' + msg.subtype + ' Info</span>';
     opts.timeout = 60;
   }
   else if (msg.type == "alert") {
-    opts.title = '<span class="lead text-danger"><i>⚠</i>' + msg.subtype + ' Alert</span>';
+    opts.title = '<span class="lead text-danger"><i>⚠</i> ' + msg.subtype + ' Alert</span>';
   }
   else if (msg.type == "error") {
-    opts.title = '<span class="lead text-warning"><i>⛍</i>' + msg.subtype + ' Error</span>';
+    opts.title = '<span class="lead text-warning"><i>⛍</i> ' + msg.subtype + ' Error</span>';
   }
   else
     return;
@@ -1128,29 +1129,108 @@ $.fn.listEditor = function(op, data){
       $(this).trigger('list:'+op, data);
     } else {
       // init:
-      var el_itemid = $(this).find('.list-item-id');
-      var el_body = $(this).find('.list-items');
-      var el_template = $(this).find('template').html();
-      $(this).on('list:addItem', function(evt, data) {
+      var $this = $(this);
+      var el_itemid = $this.find('.list-item-id');
+      var el_body = $this.find('.list-items');
+      var el_template = $this.find('template').html();
+
+      $this.on('list:addItem', function(evt, data) {
         var id = Number(el_itemid.val()) + 1;
         el_itemid.val(id);
-        var txt = el_template.replace(/ITEM_ID/g, id);
-        if (data) {
-          for (key in data)
-            txt = txt.replace(new RegExp('ITEM_'+key,'g'), encode_html(data[key]));
-        }
+        data = $.extend({ MODE: "upd" }, data);
+        var txt = el_template.replace(/ITEM_ID/g, id).replace(/ITEM_MODE/g, data.MODE);
+        for (key in data)
+          txt = txt.replace(new RegExp('ITEM_'+key,'g'), encode_html(data[key]));
         txt = txt.replace(/ITEM_\w+/g, '');
-        $(txt).appendTo(el_body);
+        var $el = $(txt).appendTo(el_body);
+
+        $el.find("option[data-value]").each(function(){
+          $(this).prop("selected", $(this).val() == $(this).data("value"));
+        });
+        $el.find("input[data-value]").each(function(){
+          var sel = $(this).val() == $(this).data("value");
+          $(this).prop("checked", sel);
+          if (sel) $(this).parent().addClass("active");
+          else $(this).parent().removeClass("active");
+        });
+
+        var discl = (data.MODE == "add") ? "add-disabled" : "list-disabled";
+        $el.find("select."+discl).each(function(){
+          $(this).prop("disabled", true).append($('<input type="hidden">')
+            .attr("name", $(this).attr("name")).attr("value", $(this).val()));
+        });
+        $el.find("input."+discl).prop("readonly", true);
+        $el.find("button."+discl).prop("disabled", true);
+
+        $this.trigger('list:validate');
       });
-      $(this).on('click', '.list-item-add', function(evt) {
-        var data = JSON.parse($(this).data('preset') || '{}');
+
+      $this.on('change keyup', 'input,select,textarea', function(ev) {
+        $this.trigger('list:validate');
+      });
+
+      $this.on('click', '.list-item-add', function(evt) {
+        var data = $.extend({ MODE: "add" }, $(this).data('preset'));
         $(this).trigger('list:addItem', data);
       });
-      $(this).on('click', '.list-item-del', function(evt) {
+
+      $this.on('click', '.list-item-del', function(evt) {
         $(this).closest('.list-item').remove();
+        $this.trigger('list:validate');
       });
+
     }
   });
+};
+
+
+/**
+ * Highcharts
+ */
+
+var highchartsLoader;
+
+$.fn.chart = function(options) {
+  if (this.length == 0)
+    return this;
+  var $this = this;
+  if (options === "destroy") {
+    // destroy:
+    var $cl = this.find(".has-chart").add(this.filter(".has-chart"));
+    $cl.each(function() {
+      var chart = $(this).data("chart");
+      if (typeof chart == "object") {
+        $(this).data("chart", null);
+        chart.destroy();
+      }
+    });
+  } else {
+    // init:
+    function init_charts() {
+      $this.each(function() {
+        var chart = Highcharts.chart(this, options, function() {
+          if (this.userOptions && this.userOptions.onUpdate)
+            this.userOptions.onUpdate.call(this, metrics);
+        });
+        $(this).data("chart", chart).addClass("has-chart get-window-resize").on("window-resize", function() {
+          $(this).data("chart").reflow();
+        });
+      });
+    }
+    if (window.Highcharts) {
+      init_charts();
+    } else if (highchartsLoader) {
+      highchartsLoader.then(init_charts);
+    } else {
+      highchartsLoader = $.ajax({
+        url: (window.assets && window.assets["charts_js"]) || "/assets/charts.js?v=6.0.7",
+        dataType: "script",
+        cache: true,
+        success: function(){ init_charts(); }
+      });
+    }
+  }
+  return this;
 };
 
 
@@ -1319,6 +1399,40 @@ $(function(){
       if (val) opt.path = val;
       $tgt.filedialog(opt);
     }
+  });
+
+  // Metrics displays:
+  $("body").on('msg:metrics', '.receiver', function(e, update) {
+    $(this).find(".metric").each(function() {
+      var $el = $(this), metric = $el.data("metric"), prec = $el.data("prec");
+      if (!metric) return;
+      // filter:
+      var keys = metric.split(","), val;
+      for (var i=0; i<keys.length; i++) {
+        if ((val = update[keys[i]]) != null) break;
+      }
+      if (val == null) return;
+      // process:
+      if ($el.hasClass("text")) {
+        $el.children(".value").text(val);
+      } else if ($el.hasClass("number")) {
+        var vf = (prec != null) ? Number(val).toFixed(prec) : val;
+        $el.children(".value").text(vf);
+      } else if ($el.hasClass("progress")) {
+        var $pb = $(this.firstElementChild), min = $pb.attr("aria-valuemin"), max = $pb.attr("aria-valuemax");
+        var vp = (val-min) / (max-min) * 100;
+        var vf = (prec != null) ? Number(val).toFixed(prec) : val;
+        $pb.css("width", vp+"%").attr("aria-valuenow", vp).find(".value").text(vf);
+        var lw = 0; $pb.find("span").each(function(){ lw += $(this).width(); });
+        if (($pb.parent().width()*vp/100) < lw) $pb.addClass("value-low"); else $pb.removeClass("value-low");
+      } else if ($el.hasClass("chart")) {
+        var ch = $(this.firstElementChild).data("chart");
+        if (ch && ch.userOptions && ch.userOptions.onUpdate)
+          ch.userOptions.onUpdate.call(ch, update);
+      } else {
+        $el.text(val);
+      }
+    });
   });
 
   // Modal autoclear:

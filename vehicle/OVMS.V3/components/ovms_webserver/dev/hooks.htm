@@ -1,0 +1,80 @@
+<!--
+  Test/Development/Documentation page
+-->
+
+<div class="panel panel-primary">
+  <div class="panel-heading">Page Hook Plugins</div>
+  <div class="panel-body">
+
+  <p>Plugins can provide pages on their own or extend existing pages. To extend an existing
+    page, the page needs to support this by offering hook points.</p>
+
+  <p>You are not limited to the hook points for page modifications. To insert your extensions
+    at arbitrary places:</p>
+  <ul>
+    <li>insert your extensions dynamically or with <code>display:none</code>,</li>
+    <li>register a onetime handler for the <code>load</code> event on <code>#main</code>,</li>
+    <li>move your extensions into place and show them from the event handler.</li>
+  </ul>
+
+  <p>…and yes, you're also not limited to adding stuff.</p>
+
+  <h3>Example</h3>
+
+  <p>The following hook plugin adds a custom menu and some color to <code>/home</code>:</p>
+
+  <pre id="plugindisplay" style="font-size:85%"></pre>
+
+  <h3>Available Hooks</h3>
+
+  <p>…as of January 2019. This is work in progress, if you miss a hook somewhere, contact us.</p>
+
+  <table class="table table-condensed font-monospace">
+    <tr><th colspan="2">Framework</th></tr>
+    <tr><td>/                         </td><td>html.pre, head.post, body.post            </td></tr>
+    <tr><td>/home                     </td><td>body.pre, body.post                       </td></tr>
+    <tr><td>/dashboard                </td><td>body.pre                                  </td></tr>
+    <tr><td>/status                   </td><td>body.pre, body.post                       </td></tr>
+    <tr><td>/shell                    </td><td>body.pre, body.post                       </td></tr>
+    <tr><th colspan="2">Renault Twizy</th></tr>
+    <tr><td>/xrt/drivemode            </td><td>body.pre, body.post                       </td></tr>
+    <tr><td>/xrt/scmon                </td><td>body.pre, body.post                       </td></tr>
+  </table>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  var pluginsrc = $('#pluginsrc').html();
+  $('#plugindisplay').html(encode_html(pluginsrc.substr(1)));
+})();
+</script>
+
+<div id="pluginsrc" style="display:none">
+<!--
+  Hook plugin for /home:body.pre
+  - custom coloring of menu titles
+  - add custom menu "Test / Demo" after "Main"
+-->
+
+<style>
+.menu legend {
+  color: brown;
+}
+</style>
+
+<fieldset class="menu" id="fieldset-menu-demo1" style="display:none">
+  <legend>Test / Demo</legend>
+  <ul class="list-inline">
+    <li><a class="btn btn-default" href="/usr/demo/metrics" target="#main">Metrics 📏</a></li>
+    <li><a class="btn btn-info" href="/logs/log" target="_blank">Open Log File 📝</a></li>
+  </ul>
+</fieldset>
+
+<script>
+$('#main').one('load', function(ev) {
+  $('#fieldset-menu-demo1').insertAfter('#fieldset-menu-main').show();
+});
+</script>
+</div>

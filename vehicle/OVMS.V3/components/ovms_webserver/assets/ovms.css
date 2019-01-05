@@ -61,6 +61,10 @@ pre {
   -ms-user-select: all;
   user-select: all;
 }
+
+.progress-bar > div {
+  white-space: nowrap;
+}
 .progress-bar.text-left {
   text-align: left;
 }
@@ -68,6 +72,7 @@ pre {
   padding: 0 5px;
   text-align: left;
 }
+
 .list-inline>li {
   padding-left: 0;
   padding-bottom: 5px;
@@ -170,18 +175,6 @@ pre {
   margin: 0 5px 5px 0;
 }
 
-.metric {
-  display: inline-block;
-  margin-right: 10px;
-}
-.metric .value {
-  font-weight: bold;
-  padding-right: 3px;
-}
-.metric .unit {
-  font-size: 85%;
-  color: #676767;
-}
 li.event {
   font-size: 85%;
 }
@@ -424,6 +417,7 @@ button.toggle-night, button.toggle-fullscreen {
   text-transform: capitalize;
 }
 .modal-title span.lead i {
+  text-transform: none;
   font-style: normal;
   font-size: 155%;
   margin-right: 10px;
@@ -502,6 +496,214 @@ tbody>div {
   margin-left: 0.3em;
 }
 
+
+/* Metric displays */
+
+.metric {
+  position: relative;
+}
+
+.metric.number,
+.metric.text {
+  display: inline-block;
+  float: left;
+  margin-right: 10px;
+}
+
+.metric.number .label,
+.metric.text .label {
+  display: inline-block;
+  min-width: 6em;
+  text-align: right;
+  font-size: 85%;
+  color: #676767;
+  padding: 0 3px 0 0;
+}
+
+.metric .value {
+  font-weight: bold;
+  padding: 0 3px 0 0;
+}
+
+.metric.number .value {
+  display: inline-block;
+  min-width: 4em;
+  text-align: right;
+}
+.metric.number .unit,
+.metric.text .unit {
+  display: inline-block;
+  min-width: 2em;
+  font-size: 85%;
+  color: #676767;
+}
+
+.metric.progress .label {
+  display: inline-block;
+  min-width: 6em;
+  text-align: right;
+  font-size: 95%;
+  padding: 0 3px 0 0;
+}
+.metric.progress .value {
+  display: inline-block;
+  min-width: 4em;
+  text-align: right;
+}
+.metric.progress .unit {
+  display: inline-block;
+  min-width: 2em;
+  font-size: 95%;
+  color: #fff;
+}
+
+.metric.progress .value-low .label {
+  color: #676767;
+}
+.metric.progress .value-low .value {
+  color: #000;
+}
+.metric.progress .value-low .unit {
+  color: #676767;
+}
+
+.night .metric .value {
+  color: #f2f2f2;
+}
+.night .metric.number .unit, .night .metric.text .unit,
+.night .metric.number .label, .night .metric.text .label {
+  color: unset;
+}
+.night .metric.progress .value-low .label {
+  color: #fff;
+}
+.night .metric.progress .value-low .value {
+  color: #fff;
+}
+.night .metric.progress .value-low .unit {
+  color: #fff;
+}
+
+
+/* Highcharts */
+
+.chart-box {
+  width: 100%;
+  height: 100%;
+}
+
+.highcharts-background {
+  fill-opacity: 0;
+}
+.night .highcharts-axis-labels {
+  fill: #b1b1b1;
+}
+.night .highcharts-title {
+  fill: #6f6f6f;
+}
+.night .highcharts-grid-line {
+  stroke: #584f4f;
+}
+.night .highcharts-minor-grid-line {
+  stroke: #2d2d2d;
+}
+.night .highcharts-axis-line {
+  stroke: #626771;
+}
+.night .highcharts-tick {
+  stroke: #626771;
+}
+.night .highcharts-button {
+  fill: #b1b1b1;
+}
+
+.gaugechart .highcharts-plot-band,
+.gaugechart .highcharts-pane {
+  fill-opacity: 0;
+}
+.gaugechart .highcharts-plot-band.border {
+  stroke: #666666;
+  stroke-width: 1px;
+}
+
+.gaugechart .green-band {
+	fill: #55BF3B;
+	fill-opacity: 0.4;
+}
+.gaugechart .yellow-band {
+	fill: #DDDF0D;
+	fill-opacity: 0.5;
+}
+.gaugechart .red-band {
+	fill: #DF5353;
+	fill-opacity: 0.6;
+}
+.gaugechart .violet-band {
+  fill: #9622ff;
+  fill-opacity: 0.6;
+}
+.gaugechart .night .violet-band {
+  fill: #9622ff;
+  fill-opacity: 0.8;
+}
+
+.gaugechart .highcharts-gauge-series .highcharts-pivot {
+  stroke-width: 1px;
+  stroke: #757575;
+  fill-opacity: 1;
+  fill: black;
+}
+.gaugechart .highcharts-gauge-series.auxgauge .highcharts-pivot {
+  fill-opacity: 1;
+  fill: #fff;
+  stroke-width: 0;
+}
+.night .gaugechart .highcharts-gauge-series.auxgauge .highcharts-pivot {
+  fill: #000;
+}
+.gaugechart .highcharts-gauge-series .highcharts-dial {
+  fill: #d80000;
+  stroke: #000;
+  stroke-width: 0.5px;
+}
+
+.gaugechart .highcharts-yaxis-grid .highcharts-grid-line,
+.gaugechart .highcharts-yaxis-grid .highcharts-minor-grid-line {
+	display: none;
+}
+.gaugechart .highcharts-yaxis .highcharts-tick {
+	stroke-width: 2px;
+	stroke: #666666;
+}
+.night .gaugechart .highcharts-yaxis .highcharts-tick {
+  stroke: #e0e0e0;
+}
+.gaugechart .highcharts-yaxis .highcharts-minor-tick {
+  stroke-width: 1.8px;
+  stroke: #00000085;
+  stroke-dasharray: 6;
+  stroke-dashoffset: -4.8;
+  stroke-linecap: round;
+}
+.night .gaugechart .highcharts-yaxis .highcharts-minor-tick {
+  stroke: #ffffff85;
+}
+.gaugechart .highcharts-axis-labels {
+  fill: #000;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+.night .gaugechart .highcharts-axis-labels {
+  fill: #ddd;
+}
+.gaugechart .highcharts-data-label text {
+  fill: #333333;
+}
+.night .gaugechart .highcharts-data-label text {
+  fill: #fff;
+}
+
+
 /* Night mode */
 
 body.night {
@@ -567,9 +769,6 @@ body.night {
   background-image: linear-gradient(to bottom,#183752 0,#235a8a 100%);
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff183752', endColorstr='#ff235a8a', GradientType=0);
 }
-.night .metric .unit {
-  color: #909090;
-}
 .night .text-warning {
   color: #ac7e2f;
 }
@@ -594,6 +793,14 @@ body.night {
 .night .bg-success {
   background-color: #163609;
 }
+.night .progress {
+  background-image: -webkit-linear-gradient(top,#1f1f1f 0,#2e2e2e 100%);
+  background-image: -o-linear-gradient(top,#1f1f1f 0,#2e2e2e 100%);
+  background-image: -webkit-gradient(linear,left top,left bottom,from(#1f1f1f),to(#2e2e2e));
+  background-image: linear-gradient(to bottom,#1f1f1f 0,#2e2e2e 100%)
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff1f1f1f', endColorstr='#ff2e2e2e', GradientType=0);
+}
+
 
 /* Fullscreen mode */
 
@@ -629,31 +836,4 @@ body.night {
   .fullscreened .panel-single {
     margin: 0 -15px;
   }
-}
-
-/* Highcharts */
-
-.highcharts-background {
-  fill-opacity: 0;
-}
-.night .highcharts-axis-labels {
-  fill: #b1b1b1;
-}
-.night .highcharts-title {
-  fill: #6f6f6f;
-}
-.night .highcharts-grid-line {
-  stroke: #584f4f;
-}
-.night .highcharts-minor-grid-line {
-  stroke: #2d2d2d;
-}
-.night .highcharts-axis-line {
-  stroke: #626771;
-}
-.night .highcharts-tick {
-  stroke: #626771;
-}
-.night .highcharts-button {
-  fill: #b1b1b1;
 }

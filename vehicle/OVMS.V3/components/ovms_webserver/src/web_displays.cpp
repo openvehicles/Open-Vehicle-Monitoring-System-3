@@ -239,7 +239,7 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
     ""
     "</style>"
     ""
-    "<div class=\"panel panel-primary panel-dashboard\">"
+    "<div class=\"panel panel-primary\" id=\"panel-dashboard\">"
       "<div class=\"panel-heading\">Dashboard</div>"
       "<div class=\"panel-body\">"
         "<div class=\"receiver get-window-resize\" id=\"livestatus\">"
@@ -475,6 +475,7 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
           "});"
         "}"
       ");"
+      "$('#gaugeset1').data('chart', gaugeset1).addClass('has-chart');"
     "}"
     ""
     "function init_charts() {"
@@ -589,6 +590,7 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
   alerts_enabled = MyConfig.GetParamValueBool("vehicle", "bms.alerts.enabled", true);
   
   c.head(200);
+  PAGE_HOOK("body.pre");
 
   c.print(
     "<div class=\"panel panel-primary panel-single\">\n"
@@ -949,6 +951,7 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
           "},\n"
         "}]\n"
       "});\n"
+      "$('#voltchart').data('chart', voltchart).addClass('has-chart');"
     "}\n"
     "\n"
     "\n"
@@ -1088,6 +1091,7 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
           "},\n"
         "}]\n"
       "});\n"
+      "$('#tempchart').data('chart', tempchart).addClass('has-chart');"
     "}\n"
     "\n"
     "\n"
@@ -1113,5 +1117,6 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
     "\n"
     "</script>\n");
   
+  PAGE_HOOK("body.post");
   c.done();
 }

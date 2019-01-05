@@ -36,6 +36,8 @@
 #include <iterator>
 #include <vector>
 #include <memory>
+#include <utility>
+#include <map>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
@@ -82,11 +84,25 @@ typedef enum {
   PageMenu_Vehicle,           // → vehicle menu
 } PageMenu_t;
 
+inline PageMenu_t Code2PageMenu(std::string code) {
+  if (code == "Main")             return PageMenu_Main;
+  else if (code == "Tools")       return PageMenu_Tools;
+  else if (code == "Config")      return PageMenu_Config;
+  else if (code == "Vehicle")     return PageMenu_Vehicle;
+  else                            return PageMenu_None;
+}
+
 typedef enum {
   PageAuth_None,              // public
   PageAuth_Cookie,            // use auth cookie
   PageAuth_File,              // use htaccess file(s) (digest auth)
 } PageAuth_t;
+
+inline PageAuth_t Code2PageAuth(std::string code) {
+  if (code == "Cookie")           return PageAuth_Cookie;
+  else if (code == "File")        return PageAuth_File;
+  else                            return PageAuth_None;
+}
 
 typedef enum {
   PageResult_OK,              // NOP
@@ -118,20 +134,24 @@ struct PageContext : public ExternalRamAllocated
   std::string uri;
 
   // utils:
-  std::string getvar(const char* name, size_t maxlen=200);
-  std::string encode_html(const char* text);
-  std::string encode_html(const std::string text);
+  std::string getvar(const std::string& name, size_t maxlen=200);
+  bool getvar(const std::string& name, extram::string& dst);
+  static std::string encode_html(const char* text);
+  static std::string encode_html(const std::string text);
+  static std::string make_id(const char* text);
+  static std::string make_id(const std::string text);
 
   // output:
   void error(int code, const char* text);
   void head(int code, const char* headers=NULL);
   void print(const std::string text);
+  void print(const extram::string text);
   void print(const char* text);
   void printf(const char *fmt, ...);
   void done();
   void panel_start(const char* type, const char* title);
   void panel_end(const char* footer="");
-  void form_start(const char* action, const char* target=NULL);
+  void form_start(std::string action, const char* target=NULL);
   void form_end();
   void fieldset_start(const char* title, const char* css_class=NULL);
   void fieldset_end();
@@ -184,16 +204,18 @@ struct PageCallbackEntry
   }
 };
 
+typedef std::forward_list<PageCallbackEntry> PageCallbackMap_t;
+
 struct PageEntry
 {
-  const char* uri;
-  const char* label;
+  std::string uri;
+  std::string label;
   PageHandler_t handler;
   PageMenu_t menu;
   PageAuth_t auth;
-  std::forward_list<PageCallbackEntry*> callbacklist;
+  PageCallbackMap_t callbacklist;
 
-  PageEntry(const char* _uri, const char* _label, PageHandler_t _handler, PageMenu_t _menu=PageMenu_None, PageAuth_t _auth=PageAuth_None)
+  PageEntry(std::string _uri, std::string _label, PageHandler_t _handler, PageMenu_t _menu=PageMenu_None, PageAuth_t _auth=PageAuth_None)
   {
     uri = _uri;
     label = _label;
@@ -209,7 +231,33 @@ struct PageEntry
   PageResult_t callback(PageContext_t& c, const std::string& hook);
 };
 
-typedef std::forward_list<PageEntry*> PageMap_t;
+typedef std::forward_list<PageEntry> PageMap_t;
+
+
+/**
+ * Plugin Cache
+ */
+
+struct PagePluginContent
+{
+  std::string       m_path;
+  extram::string    m_content;
+
+  PagePluginContent(std::string path) {
+    m_path = path;
+  }
+
+  extram::string& GetContent() {
+    if (m_content.empty())
+      LoadContent();
+    return m_content;
+  }
+  
+  void LoadContent();
+};
+
+typedef std::map<std::string, PagePluginContent> PagePluginMap;
+typedef std::multimap<std::string, PagePluginContent> PagePluginMultiMap;
 
 
 /**
@@ -248,9 +296,14 @@ class MgHandler : public ExternalRamAllocated
 /**
  * HttpDataSender transmits a memory area (ROM/RAM) in HTTP chunks of XFER_CHUNK_SIZE size.
  */
+
+typedef std::pair<const uint8_t*, size_t> MemRegion;
+typedef std::vector<MemRegion> MemRegionList;
+
 class HttpDataSender : public MgHandler
 {
   public:
+    HttpDataSender(mg_connection* nc, MemRegionList xferlist, bool keepalive=true);
     HttpDataSender(mg_connection* nc, const uint8_t* data, size_t size, bool keepalive=true);
     ~HttpDataSender();
 
@@ -258,6 +311,8 @@ class HttpDataSender : public MgHandler
     int HandleEvent(int ev, void* p);
 
   public:
+    MemRegionList             m_xferlist;         // list of memory regions to send
+    ssize_t                   m_xfer;             // current region in process
     const uint8_t*            m_data;             // pointer to data
     size_t                    m_size;             // size of data to send
     size_t                    m_sent;             // size sent up to now
@@ -429,12 +484,16 @@ class OvmsWebServer : public ExternalRamAllocated
     static bool IncomingNotification(int client, OvmsNotifyType* type, OvmsNotifyEntry* entry);
 
   public:
-    void RegisterPage(const char* uri, const char* label, PageHandler_t handler,
+    void RegisterPage(std::string uri, std::string label, PageHandler_t handler,
       PageMenu_t menu=PageMenu_None, PageAuth_t auth=PageAuth_None);
-    void DeregisterPage(const char* uri);
-    PageEntry* FindPage(const char* uri);
-    bool RegisterCallback(std::string caller, const char* uri, PageCallback_t handler);
+    void DeregisterPage(std::string uri);
+    PageEntry* FindPage(std::string uri);
+    bool RegisterCallback(std::string caller, std::string uri, PageCallback_t handler);
     void DeregisterCallbacks(std::string caller);
+    void RegisterPlugins();
+    void DeregisterPlugins();
+    static void PluginHandler(PageEntry_t& p, PageContext_t& c);
+    static PageResult_t PluginCallback(PageEntry_t& p, PageContext_t& c, const std::string& hook);
 
   public:
     user_session* CreateSession(const http_message *hm);
@@ -482,6 +541,7 @@ class OvmsWebServer : public ExternalRamAllocated
     static void HandleCfgLogging(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgLocations(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgBackup(PageEntry_t& p, PageContext_t& c);
+    static void HandleCfgPlugins(PageEntry_t& p, PageContext_t& c);
 
   public:
     void CfgInitStartup();
@@ -504,6 +564,8 @@ class OvmsWebServer : public ExternalRamAllocated
 #endif //MG_ENABLE_FILESYSTEM
 
     PageMap_t                 m_pagemap;
+    PagePluginMap             m_plugin_pages;
+    PagePluginMultiMap        m_plugin_parts;
 
     user_session              m_sessions[NUM_SESSIONS];
 

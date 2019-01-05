@@ -700,21 +700,26 @@ int OvmsCommandApp::LogBuffer(LogBuffers* lb, const char* fmt, va_list args)
   int ret = vasprintf(&buffer, fmt, args);
   if (ret < 0) return ret;
 
-  // replace CR/LF except last by "|", but don't leave '|' at the end
+  // Replace CR/LF except last by "|", but don't leave '|' at the end.
+  // An ESC sequence to change color may be appended after the log text.
   char* s;
   for (s=buffer; *s; s++)
     {
-    if ((*s=='\r' || *s=='\n') && *(s+1))
-      *s = '|';
-    }
-  for (--s; s > buffer; --s)
-    {
     if (*s=='\r' || *s=='\n')
-      continue;
-    if (*s != '|')
+      {
+      char *t = s;
+      if (*(s+1) == '\033')
+        ++s;
+      else if (*(s+1) != '\0')
+        {
+        *s = '|';
+        continue;
+        }
+      while (t > buffer && *(t-1) == '|')
+        --t;
+      while ((*t++ = *s++)) ;
       break;
-    *s++ = '\n';
-    *s-- = '\0';
+      }
     }
 
   if (m_logfile)
