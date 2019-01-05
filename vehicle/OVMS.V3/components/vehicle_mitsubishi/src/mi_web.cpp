@@ -115,7 +115,7 @@ void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 }
 
 /**
- * GetDashboardConfig: Mitsubishi i-MiEVm Citroen C-Zero, Peugeot iOn specific dashboard setup
+ * GetDashboardConfig: Mitsubishi i-MiEV Citroen C-Zero, Peugeot iOn specific dashboard setup
  */
 void OvmsVehicleMitsubishi::GetDashboardConfig(DashboardConfig& cfg)
 {
@@ -124,8 +124,8 @@ void OvmsVehicleMitsubishi::GetDashboardConfig(DashboardConfig& cfg)
       // Speed:
       "min: 0, max: 135,"
       "plotBands: ["
-        "{ from: 0, to: 75, className: 'green-band' },"
-        "{ from: 75, to: 100, className: 'yellow-band' },"
+        "{ from: 0, to: 65, className: 'green-band' },"
+        "{ from: 65, to: 100, className: 'yellow-band' },"
         "{ from: 100, to: 135, className: 'red-band' }]"
     "},{"
       // Voltage:
@@ -136,10 +136,10 @@ void OvmsVehicleMitsubishi::GetDashboardConfig(DashboardConfig& cfg)
         "{ from: 341, to: 362, className: 'green-band' }]"
     "},{"
       // SOC:
-      "min: 0, max: 100,"
+      "min: 10, max: 100,"
       "plotBands: ["
-        "{ from: 0, to: 12.5, className: 'red-band' },"
-        "{ from: 12.5, to: 25, className: 'yellow-band' },"
+        "{ from: 10, to: 15.5, className: 'red-band' },"
+        "{ from: 15.5, to: 25, className: 'yellow-band' },"
         "{ from: 25, to: 100, className: 'green-band' }]"
     "},{"
       // Efficiency:
@@ -150,17 +150,17 @@ void OvmsVehicleMitsubishi::GetDashboardConfig(DashboardConfig& cfg)
         "{ from: 250, to: 300, className: 'red-band' }]"
     "},{"
       // Power:
-      "min: -30, max: 75,"
+      "min: -30, max: 65,"
       "plotBands: ["
         "{ from: -30, to: 0, className: 'violet-band' },"
-        "{ from: 0, to: 15, className: 'green-band' },"
-        "{ from: 15, to: 40, className: 'yellow-band' },"
-        "{ from: 40, to: 75, className: 'red-band' }]"
+        "{ from: 0, to: 16, className: 'green-band' },"
+        "{ from: 16, to: 40, className: 'yellow-band' },"
+        "{ from: 40, to: 65, className: 'red-band' }]"
     "},{"
       // Charger temperature:
-      "min: 20, max: 55, tickInterval: 20,"
+      "min: -10, max: 55, tickInterval: 20,"
       "plotBands: ["
-        "{ from: 20, to: 40, className: 'normal-band border' },"
+        "{ from: -10, to: 40, className: 'normal-band border' },"
         "{ from: 40, to: 55, className: 'red-band border' }]"
     "},{"
       // Battery temperature:
@@ -171,9 +171,9 @@ void OvmsVehicleMitsubishi::GetDashboardConfig(DashboardConfig& cfg)
         "{ from: 40, to: 65, className: 'red-band border' }]"
     "},{"
       // Inverter temperature:
-      "min: 20, max: 55, tickInterval: 20,"
+      "min: -10, max: 55, tickInterval: 20,"
       "plotBands: ["
-        "{ from: 20, to: 40, className: 'normal-band border' },"
+        "{ from: -10, to: 40, className: 'normal-band border' },"
         "{ from: 40, to: 55, className: 'red-band border' }]"
     "},{"
       // Motor temperature:

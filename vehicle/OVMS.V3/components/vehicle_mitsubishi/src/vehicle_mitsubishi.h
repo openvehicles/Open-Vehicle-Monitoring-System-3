@@ -72,6 +72,7 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     virtual vehicle_command_t CommandActivateValet(const char* pin);
     virtual vehicle_command_t CommandDeactivateValet(const char* pin);
     virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
+    virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
 
     OvmsMetricFloat* v_b_power_min  = new OvmsMetricFloat("xmi.b.power.min", SM_STALE_MID, kW);
     OvmsMetricFloat* v_b_power_max  = new OvmsMetricFloat("xmi.b.power.max", SM_STALE_MID, kW);
@@ -103,19 +104,22 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     void vehicle_mitsubishi_car_on(bool isOn);
 
     float mi_trip_start_odo;
+    int mi_start_time_utc;
     float mi_start_cdc;
     float mi_start_cc;
-    int mi_start_time_utc;
+    //config variables
     bool cfg_heater_old;
     unsigned char  cfg_soh;
-    unsigned char mi_charge_timer;
-    unsigned long mi_charge_wm;
-    float mi_chargekwh;
+    //variables for QuickCharge
     unsigned int mi_est_range;
     unsigned char mi_QC;
     unsigned char mi_QC_counter;
     unsigned char mi_last_good_SOC;
     unsigned char mi_last_good_range;
+    //charge variables
+    unsigned char mi_charge_timer;
+    unsigned long mi_charge_wm;
+    float mi_chargekwh;
 
 
     // --------------------------------------------------------------------------
