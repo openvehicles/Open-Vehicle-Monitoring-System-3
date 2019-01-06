@@ -1,0 +1,154 @@
+<!--
+  Test/Development/Documentation page; install as plugin to test
+-->
+
+<style>
+h3 {
+  margin-top: 40px;
+  margin-bottom: 20px;
+}
+.action-showsrc {
+  float: right;
+  position: relative;
+  top: -5px;
+}
+</style>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <button type="button" class="btn btn-sm btn-info action-showsrc">Show page source</button>
+    Commands &amp; Monitors
+  </div>
+  <div class="panel-body">
+
+  <p>Command execution is only allowed for an authorized session. The command API will
+    output "Unauthorized" and a Login button as necessary. The login state is also
+    available in the global variable <code>loggedin</code>. To send the user to the
+    login page and return to the current page after login, call <code>login()</code>:</p>
+
+  <p>
+    <button type="button" class="btn btn-default action-login" onclick="login()">Login</button>
+    <button type="button" class="btn btn-default action-logout" onclick="logout()">Logout</button>
+  </p>
+
+  <script>
+    $('.action-login').prop('disabled', loggedin);
+    $('.action-logout').prop('disabled', !loggedin);
+  </script>
+
+
+  <h3>Command Execution on Load</h3>
+
+  <p>To execute a command automatically on page load, simply add the <code>monitor</code> class
+    to an output element, set <code>data-updcmd</code> to the command to be executed and
+    <code>data-updcnt</code> to 1:</p>
+
+  <pre class="monitor" data-updcmd="boot status" data-updcnt="1">Fetching boot status…</pre>
+
+  <p>Output elements typically are <code>samp</code> or <code>pre</code>, as commands
+    normally output formatted plain text, but any element can be used. <code>samp</code>
+    by default compresses white space and has no visible area, while <code>pre</code>
+    is visible and preserves all spacing.</p>
+
+  <p><code>updcnt</code> will count down to zero and stop, or run indefinitely if started
+    below zero. The execution interval can be given in <code>data-updint</code> (in seconds).
+    You can set the data attributes any time using jQuery, all monitors are checked and
+    updated by the framework once per second.</p>
+
+
+  <h3>Command Execution on Events</h3>
+
+  <p>To automatically trigger a monitor update on OVMS events, additionally set the
+    <code>data-events</code> attribute to a regular expression matching the event(s) of
+    interest. This example monitor lists the active network channels and automatically
+    updates on all server connection events:</p>
+
+  <p><pre class="monitor"
+    data-events="server.*(connect|open|close|stop)"
+    data-updcmd="network list"
+    data-updcnt="1"></pre></p>
+
+  <p>
+    Try:
+    <a class="btn btn-default" onclick="window.open('/', '_blank', 'width=400,height=500')">Open new window</a>
+    <a class="btn btn-default" href="#" data-cmd="server v2 stop">Stop V2 server</a>
+    <a class="btn btn-default" href="#" data-cmd="server v2 start">Start V2 server</a>
+    <a class="btn btn-default" href="#" data-cmd="event raise server.fake.open">Send fake event</a>
+  </p>
+
+
+  <h3>Command Buttons</h3>
+
+  <p>A bootstrap button has the base class <code>btn</code>. Add the command to execute
+    as attribute <code>data-cmd</code> and optionally the output element as
+    <code>data-target</code> and you're done.</p>
+
+  <div class="row">
+
+    <div class="col-sm-6">
+      <button type="button" class="btn btn-default" data-target="#out1" data-cmd="wifi status">
+        Wifi Status → <code>&lt;samp&gt;</code>
+      </button>
+      <samp id="out1" />
+    </div>
+
+    <div class="col-sm-6">
+      <button type="button" class="btn btn-default" data-target="#out2" data-cmd="wifi status">
+        Wifi Status → <code>&lt;pre&gt;</code>
+      </button>
+      <pre id="out2" />
+    </div>
+
+  </div>
+
+  <p>Add class <code>samp-inline</code> or wrap in a <code>ul.list-inline</code> to place
+    the output element on the same line with the button. Prefix the target with a "+" to
+    append to it:</p>
+
+  <p>
+    External 12V power
+    <button type="button" class="btn btn-info" data-target="+#out3" data-cmd="power ext12v on">on</button>
+    <button type="button" class="btn btn-info" data-target="+#out3" data-cmd="power ext12v off">off</button>
+    <samp class="samp-inline" id="out3" />
+  </p>
+
+
+  <h3>Combining Buttons &amp; Monitors</h3>
+
+  <p>By combination of a button and a monitor, you can let the button start a repeated
+    execution of a command: set <code>data-watchcnt</code> on the button to the number of
+    repetitions (default 0) and <code>data-watchint</code> to the interval in seconds
+    (default 2).</p>
+
+  <p>
+    <button type="button" class="btn btn-default" data-target="#out4"
+      data-cmd="power simcom on" data-watchcnt="-1" data-watchint="3">
+      Power on modem &amp; get status updates every 3 seconds
+    </button>
+    <pre class="monitor" id="out4" data-updcmd="simcom status" />
+  </p>
+
+  <p>Note: to stop a monitor, set <code>data-updcnt</code> to 0:
+    <button type="button" class="btn btn-default" onclick="$('#out4').data('updcnt', 0)">
+      Stop updates
+    </button></p>
+
+
+  </div>
+</div>
+
+
+<script>
+(function(){
+  /* This is just the "show page source" script, you don't need scripts for commands & monitors */
+  var pagesrc = $('#main').html();
+  $('.action-showsrc').on('click', function() {
+    $('<div/>').dialog({
+      title: 'Source Code',
+      body: '<pre style="font-size:85%; height:calc(100vh - 230px);">'
+        + encode_html(pagesrc) + '</pre>',
+      size: 'lg',
+    });
+  });
+})();
+</script>

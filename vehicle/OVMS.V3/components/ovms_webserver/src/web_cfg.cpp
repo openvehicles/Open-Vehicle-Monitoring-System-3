@@ -2504,6 +2504,9 @@ static void OutputPluginEditor(PageEntry_t& p, PageContext_t& c)
     "<style>\n"
     ".textarea-control .btn {\n"
       "font-weight: bold;\n"
+      "font-size: 16px;\n"
+      "line-height: 16px;\n"
+      "padding: 4px 15px 2px;\n"
     "}\n"
     "</style>\n"
     "\n"
@@ -2591,11 +2594,11 @@ static void OutputPluginEditor(PageEntry_t& p, PageContext_t& c)
           "<div class=\"form-group\">\n"
             "<label class=\"control-label\" for=\"input-content\">Plugin content:</label>\n"
             "<div class=\"textarea-control pull-right\">\n"
-              "<button type=\"button\" class=\"btn btn-sm btn-default tac-wrap\" title=\"Wrap long lines\">☇</button>\n"
+              "<button type=\"button\" class=\"btn btn-sm btn-default tac-wrap\" title=\"Wrap long lines\">⇌</button>\n"
               "<button type=\"button\" class=\"btn btn-sm btn-default tac-smaller\">&minus;</button>\n"
               "<button type=\"button\" class=\"btn btn-sm btn-default tac-larger\">&plus;</button>\n"
             "</div>\n"
-            "<textarea class=\"form-control font-monospace\" style=\"max-width:100%; min-width:100%; height:300px; white-space:nowrap; font-size:13px;\" id=\"input-content\" rows=\"20\" name=\"content\">%s</textarea>\n"
+            "<textarea class=\"form-control font-monospace\" style=\"max-width:100%; min-width:100%; height:300px; white-space:pre; font-size:13px;\" id=\"input-content\" rows=\"20\" name=\"content\">%s</textarea>\n"
           "</div>\n"
           , _html(content.c_str()));
 
@@ -2613,7 +2616,7 @@ static void OutputPluginEditor(PageEntry_t& p, PageContext_t& c)
     "\n"
     "$('.tac-wrap').on('click', function(ev) {\n"
       "var $this = $(this), $ta = $this.parent().next();\n"
-      "$ta.css(\"white-space\", $this.hasClass(\"active\") ? \"nowrap\" : \"pre-wrap\").focus();\n"
+      "$ta.css(\"white-space\", $this.hasClass(\"active\") ? \"pre\" : \"pre-wrap\").focus();\n"
       "$this.toggleClass(\"active\");\n"
     "});\n"
     "$('.tac-smaller').on('click', function(ev) {\n"
@@ -2675,17 +2678,18 @@ static bool SavePluginEditor(PageEntry_t& p, PageContext_t& c, std::string& erro
 
 void OvmsWebServer::HandleCfgPlugins(PageEntry_t& p, PageContext_t& c)
 {
+  std::string cnt = c.getvar("cnt");
   std::string key = c.getvar("key");
   std::string error, info;
 
   if (c.method == "POST") {
-    if (key == "") {
+    if (cnt != "") {
       if (SavePluginList(p, c, error)) {
         info = "<p class=\"lead\">Plugin registration saved.</p>"
           "<script>$(\"#menu\").load(\"/menu\")</script>";
       }
     }
-    else {
+    else if (key != "") {
       if (SavePluginEditor(p, c, error)) {
         info = "<p class=\"lead\">Plugin <code>" + key + "</code> saved.</p>"
           "<script>$(\"#menu\").load(\"/menu\")</script>";
