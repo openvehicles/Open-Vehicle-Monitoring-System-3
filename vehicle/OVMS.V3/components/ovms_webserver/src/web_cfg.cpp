@@ -2501,15 +2501,6 @@ static void OutputPluginEditor(PageEntry_t& p, PageContext_t& c)
   }
 
   c.printf(
-    "<style>\n"
-    ".textarea-control .btn {\n"
-      "font-weight: bold;\n"
-      "font-size: 16px;\n"
-      "line-height: 16px;\n"
-      "padding: 4px 15px 2px;\n"
-    "}\n"
-    "</style>\n"
-    "\n"
     "<div class=\"panel panel-primary\">\n"
       "<div class=\"panel-heading\">Plugin Editor: <code>%s</code></div>\n"
       "<div class=\"panel-body\">\n"
@@ -2598,9 +2589,11 @@ static void OutputPluginEditor(PageEntry_t& p, PageContext_t& c)
               "<button type=\"button\" class=\"btn btn-sm btn-default tac-smaller\">&minus;</button>\n"
               "<button type=\"button\" class=\"btn btn-sm btn-default tac-larger\">&plus;</button>\n"
             "</div>\n"
-            "<textarea class=\"form-control font-monospace\" style=\"max-width:100%; min-width:100%; height:300px; white-space:pre; font-size:13px;\" id=\"input-content\" rows=\"20\" name=\"content\">%s</textarea>\n"
+            "<textarea class=\"form-control fullwidth font-monospace\" rows=\"20\"\n"
+              "autocapitalize=\"none\" autocorrect=\"off\" autocomplete=\"off\" spellcheck=\"false\"\n"
+              "id=\"input-content\" name=\"content\">%s</textarea>\n"
           "</div>\n"
-          , _html(content.c_str()));
+          , c.encode_html(content).c_str());
 
   c.print(
           "<div class=\"text-center\">\n"
@@ -2611,30 +2604,31 @@ static void OutputPluginEditor(PageEntry_t& p, PageContext_t& c)
         "</form>\n"
       "</div>\n"
     "</div>\n"
-    "\n"
     "<script>\n"
-    "\n"
+    "$('.action-cancel').on('click', function(ev) {\n"
+      "loaduri('#main', 'get', 'plugin_list.htm');\n"
+    "});\n"
+    "/* textarea controls */\n"
     "$('.tac-wrap').on('click', function(ev) {\n"
       "var $this = $(this), $ta = $this.parent().next();\n"
-      "$ta.css(\"white-space\", $this.hasClass(\"active\") ? \"pre\" : \"pre-wrap\").focus();\n"
       "$this.toggleClass(\"active\");\n"
+      "$ta.css(\"white-space\", $this.hasClass(\"active\") ? \"pre-wrap\" : \"pre\");\n"
+      "if (!supportsTouch) $ta.focus();\n"
     "});\n"
     "$('.tac-smaller').on('click', function(ev) {\n"
       "var $this = $(this), $ta = $this.parent().next();\n"
       "var fs = parseInt($ta.css(\"font-size\"));\n"
-      "$ta.css(\"font-size\", (fs-1)+\"px\").focus();\n"
+      "$ta.css(\"font-size\", (fs-1)+\"px\");\n"
+      "if (!supportsTouch) $ta.focus();\n"
     "});\n"
     "$('.tac-larger').on('click', function(ev) {\n"
       "var $this = $(this), $ta = $this.parent().next();\n"
       "var fs = parseInt($ta.css(\"font-size\"));\n"
-      "$ta.css(\"font-size\", (fs+1)+\"px\").focus();\n"
+      "$ta.css(\"font-size\", (fs+1)+\"px\");\n"
+      "if (!supportsTouch) $ta.focus();\n"
     "});\n"
-    "\n"
-    "$('.action-cancel').on('click', function(ev) {\n"
-      "loaduri('#main', 'get', '/cfg/plugins');\n"
-    "});\n"
-    "\n"
-    "</script>\n");
+    "</script>\n"
+    );
 }
 
 static bool SavePluginEditor(PageEntry_t& p, PageContext_t& c, std::string& error)
@@ -2668,8 +2662,9 @@ static bool SavePluginEditor(PageEntry_t& p, PageContext_t& c, std::string& erro
   std::ofstream file(path, std::ios::out | std::ios::trunc);
   if (file.is_open()) {
     file.write(content.data(), content.size());
-  } else {
-    error += "<li>Could not save plugin content to <code>" + path + "</code>!</li>";
+  }
+  if (file.fail()) {
+    error += "<li>Error writing to <code>" + c.encode_html(path) + "</code>: " + strerror(errno) + "</li>";
     return false;
   }
 
@@ -2691,7 +2686,7 @@ void OvmsWebServer::HandleCfgPlugins(PageEntry_t& p, PageContext_t& c)
     }
     else if (key != "") {
       if (SavePluginEditor(p, c, error)) {
-        info = "<p class=\"lead\">Plugin <code>" + key + "</code> saved.</p>"
+        info = "<p class=\"lead\">Plugin <code>" + c.encode_html(key) + "</code> saved.</p>"
           "<script>$(\"#menu\").load(\"/menu\")</script>";
         key = "";
       }

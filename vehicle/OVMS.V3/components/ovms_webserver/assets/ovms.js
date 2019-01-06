@@ -1313,6 +1313,24 @@ $(function(){
       $(this).closest(".modal").removeClass("fade").modal("hide");
     if (!loaduri(target, method, uri, data))
       return true;
+    event.preventDefault();
+    event.stopPropagation();
+    return false;
+  });
+  $('body').on('submit', 'form[target^="#"]', function(event) {
+    var $frm = $(this);
+    var method = $frm.attr("method") || "get";
+    var uri = $frm.attr("action");
+    var target = $frm.attr("target");
+    var data = $frm.serialize();
+    var $btn = $frm.find('input[type="submit"], button[type="submit"]').first();
+    if ($btn.length && $btn.attr("name"))
+      data += (data?"&":"") + encodeURI($btn.attr("name") +"="+ ($btn.val()||"1"));
+    if ($frm.data("dismiss") == "modal" || $btn.data("dismiss") == "modal")
+      $frm.closest(".modal").removeClass("fade").modal("hide");
+    if (!loaduri(target, method, uri, data))
+      return true;
+    event.preventDefault();
     event.stopPropagation();
     return false;
   });

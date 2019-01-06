@@ -71,6 +71,26 @@ std::string PageContext::encode_html(std::string text) {
   return encode_html(text.c_str());
 }
 
+extram::string PageContext::encode_html(const extram::string& text) {
+	extram::string buf;
+  buf.reserve(text.length() + 500);
+	for (int i=0; i<text.length(); i++) {
+		if (text[i] == '\"')
+			buf += "&quot;";
+		else if (text[i] == '\'')
+			buf += "&#x27;";
+		else if(text[i] == '<')
+			buf += "&lt;";
+		else if(text[i] == '>')
+			buf += "&gt;";
+		else if(text[i] == '&')
+			buf += "&amp;";
+		else
+			buf += text[i];
+  }
+	return buf;
+}
+
 #define _attr(text) (encode_html(text).c_str())
 #define _html(text) (encode_html(text).c_str())
 
