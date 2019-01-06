@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Web UI: text / script editor
 - Web UI: user plugin support (pages & hooks)
 - Twizy web UI: drivemode buttons secured & added to dashboard
 - Twizy web UI: added file dialog for virtual dyno recording
