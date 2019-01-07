@@ -289,11 +289,11 @@ var shellhist = [""], shellhpos = 0;
 function initSocketConnection(){
   ws = new WebSocket('ws://' + location.host + '/msg');
   ws.onopen = function(ev) {
-    console.log(ev);
+    console.log("WebSocket OPENED", ev);
     $(".receiver").subscribe();
   };
-  ws.onerror = function(ev) { console.log(ev); };
-  ws.onclose = function(ev) { console.log(ev); };
+  ws.onerror = function(ev) { console.log("WebSocket ERROR", ev); };
+  ws.onclose = function(ev) { console.log("WebSocket CLOSED", ev); };
   ws.onmessage = function(ev) {
     var msg;
     try {
@@ -1196,6 +1196,51 @@ $.fn.listEditor = function(op, data){
 
 
 /**
+ * Slider widget plugin
+ */
+
+$.fn.slider = function(options) {
+  return this.each(function() {
+    var $sld = $(this).closest('.slider');
+    var opts = $.extend($sld.data(), options);
+    // init?
+    if ($sld.children().length == 0) {
+      var id = $sld.attr('id');
+      $sld.html('\
+        <div class="slider-control form-inline">\
+          <input class="slider-enable" type="checkbox" checked>\
+          <input class="form-control slider-value" type="number" id="input-ID" name="ID">\
+          <span class="slider-unit">UNIT</span>\
+          <input class="btn btn-default slider-down" type="button" value="➖">\
+          <input class="btn btn-default slider-set" type="button" value="◈">\
+          <input class="btn btn-default slider-up" type="button" value="➕">\
+        </div>\
+        <input class="slider-input" type="range">'
+        .replace(/ID/g, id).replace(/UNIT/g, opts.unit));
+    }
+    // update:
+    var $inp = $sld.find('.slider-value, .slider-input'), oldval = $inp.val(),
+      $cb = $sld.find('.slider-enable'), olddis = !$cb.prop('checked'),
+      $sb = $sld.find('.slider-set');
+    if (opts.min != null) $inp.attr('min', opts.min);
+    if (opts.max != null) $inp.attr('max', opts.max);
+    if (opts.step != null) $inp.attr('step', opts.step);
+    if (opts.reset != null) $cb.data('reset', opts.reset);
+    if (opts.default != null) {
+      $sb.data('set', opts.default);
+      $cb.data('default', opts.default);
+    }
+    if (opts.value != null)
+      $inp.attr('value', opts.value).val(opts.value);
+    if (opts.disabled != null && opts.disabled != olddis)
+      $cb.prop('checked', !opts.disabled).trigger('change');
+    else if (opts.value != null && opts.value != oldval)
+      $inp.first().trigger('input').trigger('change');
+  });
+};
+
+
+/**
  * Highcharts
  */
 
@@ -1390,7 +1435,7 @@ $(function(){
     }
   });
 
-  // Slider widget:
+  // Slider widget event handling:
   $("body").on("change", ".slider-enable", function(evt) {
     var $this = $(this), slider = $this.closest(".slider"), data = $this.data(),
       $inp = slider.find(".slider-input, .slider-value");

@@ -1,3 +1,10 @@
+<style>
+/* Align multiple slider inputs by suitably fixing their value width: */
+.form-inline .form-control.slider-value {
+  width: 80px;
+}
+</style>
+
 <div class="panel panel-primary panel-single">
   <div class="panel-heading">Slider Widget</div>
   <div class="panel-body">
@@ -23,18 +30,47 @@
       reflect if the user control shall be applied:
     </p>
 
-    <div class="form-control slider">
-      <div class="slider-control form-inline">
-        <input class="slider-enable" type="checkbox" checked data-default="50" data-reset="false">
-        <input class="form-control slider-value" style="width:80px;"
-          type="number" id="input-sld1" name="sld1" value="80" min="-10" max="100" step="1">
-        <span class="slider-unit">%</span>
-        <input class="btn btn-default slider-down" type="button" value="➖">
-        <input class="btn btn-default slider-set" type="button" value="◈" data-set="50">
-        <input class="btn btn-default slider-up" type="button" value="➕">
+    <div class="row">
+      <div class="col-md-9">
+
+        <div class="form-control slider" id="sld1">
+          <div class="slider-control form-inline">
+            <input class="slider-enable" type="checkbox" checked data-default="50" data-reset="false">
+            <input class="form-control slider-value" type="number" id="input-sld1" name="sld1" value="80" min="-10" max="100" step="1">
+            <span class="slider-unit">%</span>
+            <input class="btn btn-default slider-down" type="button" value="➖">
+            <input class="btn btn-default slider-set" type="button" value="◈" data-set="50">
+            <input class="btn btn-default slider-up" type="button" value="➕">
+          </div>
+          <input class="slider-input" type="range" value="80" min="-10" max="100" step="1">
+        </div>
+        <br/>
+
+        <p>Sliders can also be created dynamically from minimal markup using the
+          <code>.slider()</code> plugin:</p>
+
+        <div class="form-control slider" id="sld2" data-min="-5" data-max="50" data-step="0.5"
+          data-default="40" data-unit="%" data-disabled="false" data-value="10" />
+        <br/>
+
+        <div class="form-control slider" id="sld3" />
+        <br/>
+
+        <p>…and slider state, limits and value can be set using the same method:
+          <button type="button" class="btn btn-default" onclick="$('#sld1').slider({ value:75 })">
+            Set slider #1 value to 75
+          </button>
+        </p>
+
       </div>
-      <input class="slider-input" type="range" value="80" min="-10" max="100" step="1">
+      <div class="col-md-3">
+
+        <p><u>Events &amp; values</u>:</p>
+        <pre id="show-sldev"></pre>
+
+      </div>
     </div>
+
     <br/>
 
     <p>
@@ -51,28 +87,16 @@
 
     <p>
       Values and checkbox status need to be consistent on init, or be set by your script.
-      To set the value, set either input value and trigger the <code>input</code> or
-      <code>change</code> event. To hook into value changes, attach event handlers to
-      these events as usual. Read the <code>disabled</code> property to get the
-      checkbox state:
+      To hook into value changes, attach event handlers to events <code>input</code>
+      and/or <code>change</code> as usual. Read the <code>disabled</code> property to get the
+      checkbox state.
     </p>
-
-    <pre id="show-sld1"></pre>
 
   </div>
 </div>
 
 <script>
 (function(){
-
-  /* Show slider events: */
-  var sld1ev = {};
-  $('#input-sld1').on('input change', function(ev) {
-    sld1ev["disabled"] = this.disabled;
-    // Note: this.value is unvalidated here for a direct entry, but the validation is simple:
-    sld1ev[ev.type] = Math.max(this.min, Math.min(this.max, 1*this.value));
-    $('#show-sld1').text(JSON.stringify(sld1ev, null, 2));
-  });
 
   /* Show page source: */
   var pagesrc = $('#main').html();
@@ -85,6 +109,19 @@
         + encode_html(pagesrc) + '</pre>',
       size: 'lg',
     });
+  });
+
+  /* Init slider 2 & 3: */
+  $('#sld2').slider();
+  $('#sld3').slider({ min:-10, max:10, step:0.1, default:2.5, unit:'kW', disabled:true, value:-3.8 });
+
+  /* Show slider events & values: */
+  var sldev = {};
+  $('#input-sld1, #input-sld2, #input-sld3').on('input change', function(ev) {
+    sldev[this.name] = $.extend(sldev[this.name], { disabled: this.disabled });
+    // Note: this.value is unvalidated here for a direct entry, but the validation is simple:
+    sldev[this.name][ev.type] = Math.max(this.min, Math.min(this.max, 1*this.value));
+    $('#show-sldev').text(JSON.stringify(sldev, null, 2));
   });
 
 })();
