@@ -52,6 +52,12 @@ SevconClient::SevconClient(OvmsVehicleRenaultTwizy* twizy)
   m_twizy = twizy;
   m_sevcon_type = 0;
 
+  ms_cfg_profile      = new OvmsMetricVector<short>("xrt.cfg.profile", SM_STALE_HIGH, Other);
+  ms_cfg_user         = new OvmsMetricInt("xrt.cfg.user", SM_STALE_HIGH, Other);
+  ms_cfg_base         = new OvmsMetricInt("xrt.cfg.base", SM_STALE_HIGH, Other);
+  ms_cfg_unsaved      = new OvmsMetricBool("xrt.cfg.unsaved", SM_STALE_HIGH, Other);
+  ms_cfg_type         = new OvmsMetricString("xrt.cfg.type", SM_STALE_HIGH, Other);
+
   m_drivemode.u32 = 0;
   m_drivemode.v3tag = 1;
   m_drivemode.profile_user = MyConfig.GetParamValueInt("xrt", "profile_user", 0);
@@ -455,51 +461,67 @@ void SevconClient::SetStatus(bool car_awake)
 
 void SevconClient::Ticker1(uint32_t ticker)
 {
-  // update metrics:
-  StdMetrics.ms_v_env_drivemode->SetValue((long) m_drivemode.u32);
-
   // Send fault alerts:
   uint16_t faultcode;
   while (xQueueReceive(m_faultqueue, &faultcode, 0) == pdTRUE) {
     SendFaultAlert(faultcode);
   }
 
-  if (!m_twizy->twizy_flags.CarAwake || !m_twizy->twizy_flags.EnableWrite)
-    return;
+  if (m_twizy->twizy_flags.CarAwake && m_twizy->twizy_flags.EnableWrite)
+  {
+    // Login to SEVCON:
+    if (!CtrlLoggedIn()) {
+      Login(true);
+    }
 
-  // Login to SEVCON:
-  if (!CtrlLoggedIn()) {
-    if (Login(true) != COR_OK)
-      return;
-  }
+    if (CtrlLoggedIn()) {
+      // Check for 3 successive button presses in STOP mode => CFG RESET:
+      if ((m_buttoncnt >= 5) && (!m_twizy->twizy_flags.DisableReset)) {
+        ESP_LOGW(TAG, "Sevcon: detected D/R button cfg reset request");
 
-  // Check for 3 successive button presses in STOP mode => CFG RESET:
-  if ((m_buttoncnt >= 5) && (!m_twizy->twizy_flags.DisableReset)) {
-    ESP_LOGW(TAG, "Sevcon: detected D/R button cfg reset request");
+        // reset current profile:
+        GetParamProfile(0, m_profile);
+        CANopenResult_t res = CfgApplyProfile(m_drivemode.profile_user);
+        m_drivemode.unsaved = (m_drivemode.profile_user > 0);
 
-    // reset current profile:
-    GetParamProfile(0, m_profile);
-    CANopenResult_t res = CfgApplyProfile(m_drivemode.profile_user);
-    m_drivemode.unsaved = (m_drivemode.profile_user > 0);
+        // send result:
+        MyNotify.NotifyStringf("info", "xrt.sevcon.profile.reset", "Tuning RESET: %s\n", FmtSwitchProfileResult(res).c_str());
 
-    // send result:
-    MyNotify.NotifyStringf("info", "xrt.sevcon.profile.reset", "Tuning RESET: %s\n", FmtSwitchProfileResult(res).c_str());
+        // reset button cnt:
+        m_buttoncnt = 0;
+      }
+      else if (m_buttoncnt > 0) {
+        m_buttoncnt--;
+      }
 
-    // reset button cnt:
-    m_buttoncnt = 0;
-  }
-  else if (m_buttoncnt > 0) {
-    m_buttoncnt--;
-  }
-
-  // Auto drive & recuperation adjustment (if enabled):
-  CfgAutoPower();
+      // Auto drive & recuperation adjustment (if enabled):
+      CfgAutoPower();
 
 #if 0 // TODO
-  // Valet mode: lock speed if valet max odometer reached:
-  if (ValetMode() && !CarLocked() && twizy_odometer > twizy_valet_odo)
-  {
-    vehicle_twizy_cfg_restrict_cmd(FALSE, CMD_Lock, NULL);
-  }
+      // Valet mode: lock speed if valet max odometer reached:
+      if (ValetMode() && !CarLocked() && twizy_odometer > twizy_valet_odo)
+      {
+        vehicle_twizy_cfg_restrict_cmd(FALSE, CMD_Lock, NULL);
+      }
 #endif
+    }
+  }
+
+  // update metrics:
+
+  std::vector<short> profile(sizeof(m_profile));
+  for (int i=0; i<sizeof(m_profile); i++)
+    profile[i] = ((short) ((uint8_t*) &m_profile)[i]) - 1;
+  ms_cfg_profile->SetValue(profile);
+
+  ms_cfg_user->SetValue(m_drivemode.profile_user);
+  ms_cfg_base->SetValue(m_drivemode.profile_cfgmode);
+  ms_cfg_unsaved->SetValue(m_drivemode.unsaved);
+  switch (m_drivemode.type) {
+    case  2: ms_cfg_type->SetValue("SC80GB45"); break;
+    case  1: ms_cfg_type->SetValue("Twizy45"); break;
+    default: ms_cfg_type->SetValue("Twizy80"); break;
+  }
+
+  StdMetrics.ms_v_env_drivemode->SetValue((long) m_drivemode.u32);
 }
