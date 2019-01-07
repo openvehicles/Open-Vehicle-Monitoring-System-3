@@ -1,0 +1,91 @@
+<div class="panel panel-primary panel-single">
+  <div class="panel-heading">Slider Widget</div>
+  <div class="panel-body">
+
+    <h3>Standard Numerical Inputs</h3>
+
+    <p>The number input is just the bootstrap default:</p>
+
+    <input class="form-control" type="number" id="input-num1" name="num1" value="80" min="0" max="100" step="1">
+    <br/>
+
+    <p>The range input has some styling optimization for touch devices:</p>
+
+    <input class="form-control" type="range" id="input-rng1" name="rng1" value="80" min="0" max="100" step="1">
+    <br/>
+
+    <h3>Slider Widget</h3>
+
+    <p>
+      In many cases you'd like to give especially the touchscreen user a combination of these input
+      elements, and as sliding may be too imprecise you also need large buttons for single step changes.
+      That's what the slider widget does. It also adds the option of a checkbox and a default value to
+      reflect if the user control shall be applied:
+    </p>
+
+    <div class="form-control slider">
+      <div class="slider-control form-inline">
+        <input class="slider-enable" type="checkbox" checked data-default="50" data-reset="false">
+        <input class="form-control slider-value" style="width:80px;"
+          type="number" id="input-sld1" name="sld1" value="80" min="-10" max="100" step="1">
+        <span class="slider-unit">%</span>
+        <input class="btn btn-default slider-down" type="button" value="➖">
+        <input class="btn btn-default slider-set" type="button" value="◈" data-set="50">
+        <input class="btn btn-default slider-up" type="button" value="➕">
+      </div>
+      <input class="slider-input" type="range" value="80" min="-10" max="100" step="1">
+    </div>
+    <br/>
+
+    <p>
+      Checkbox, buttons and unit are optional.
+      You can reduce the widget to just a number or just a range input, the input
+      then needs to have the <code>slider-input</code> class.
+    </p>
+
+    <p>
+      The checkbox element defines the default value to be set on unchecking in
+      <code>data-default</code>. By default, the checkbox will restore the previous
+      value when re-checked, to disable this, set <code>data-reset</code> to "true".
+    </p>
+
+    <p>
+      Values and checkbox status need to be consistent on init, or be set by your script.
+      To set the value, set either input value and trigger the <code>input</code> or
+      <code>change</code> event. To hook into value changes, attach event handlers to
+      these events as usual. Read the <code>disabled</code> property to get the
+      checkbox state:
+    </p>
+
+    <pre id="show-sld1"></pre>
+
+  </div>
+</div>
+
+<script>
+(function(){
+
+  /* Show slider events: */
+  var sld1ev = {};
+  $('#input-sld1').on('input change', function(ev) {
+    sld1ev["disabled"] = this.disabled;
+    // Note: this.value is unvalidated here for a direct entry, but the validation is simple:
+    sld1ev[ev.type] = Math.max(this.min, Math.min(this.max, 1*this.value));
+    $('#show-sld1').text(JSON.stringify(sld1ev, null, 2));
+  });
+
+  /* Show page source: */
+  var pagesrc = $('#main').html();
+  $('.panel-heading').prepend('<button type="button" class="btn btn-sm btn-info action-showsrc"' +
+    ' style="float:right; position:relative; top:-5px;">Show page source</button>');
+  $('.action-showsrc').on('click', function() {
+    $('<div/>').dialog({
+      title: 'Source Code',
+      body: '<pre style="font-size:85%; height:calc(100vh - 230px);">'
+        + encode_html(pagesrc) + '</pre>',
+      size: 'lg',
+    });
+  });
+
+})();
+</script>

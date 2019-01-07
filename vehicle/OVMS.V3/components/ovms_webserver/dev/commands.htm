@@ -7,18 +7,10 @@ h3 {
   margin-top: 40px;
   margin-bottom: 20px;
 }
-.action-showsrc {
-  float: right;
-  position: relative;
-  top: -5px;
-}
 </style>
 
 <div class="panel panel-primary">
-  <div class="panel-heading">
-    <button type="button" class="btn btn-sm btn-info action-showsrc">Show page source</button>
-    Commands &amp; Monitors
-  </div>
+  <div class="panel-heading">Commands &amp; Monitors</div>
   <div class="panel-body">
 
   <p>Command execution is only allowed for an authorized session. The command API will
@@ -140,8 +132,10 @@ h3 {
 
 <script>
 (function(){
-  /* This is just the "show page source" script, you don't need scripts for commands & monitors */
+  /* Show page source: */
   var pagesrc = $('#main').html();
+  $('.panel-heading').prepend('<button type="button" class="btn btn-sm btn-info action-showsrc"' +
+    ' style="float:right; position:relative; top:-5px;">Show page source</button>');
   $('.action-showsrc').on('click', function() {
     $('<div/>').dialog({
       title: 'Source Code',
