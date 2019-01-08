@@ -559,6 +559,7 @@ class OvmsWebServer : public ExternalRamAllocated
 
   public:
     bool                      m_running;
+    bool                      m_configured;
 
 #if MG_ENABLE_FILESYSTEM
     bool                      m_file_enable;

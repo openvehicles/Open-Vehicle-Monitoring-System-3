@@ -50,6 +50,7 @@ OvmsWebServer::OvmsWebServer()
   ESP_LOGI(TAG, "Initialising WEBSERVER (8200)");
 
   m_running = false;
+  m_configured = false;
   memset(m_sessions, 0, sizeof(m_sessions));
 
 #if MG_ENABLE_FILESYSTEM
@@ -62,18 +63,14 @@ OvmsWebServer::OvmsWebServer()
   m_client_backlog = xQueueCreate(50, sizeof(WebSocketTxTodo));
   m_update_ticker = xTimerCreate("Web client update ticker", 250 / portTICK_PERIOD_MS, pdTRUE, NULL, UpdateTicker);
 
-  // read config:
   MyConfig.RegisterParam("http.server", "Webserver configuration", true, true);
   MyConfig.RegisterParam("http.plugin", "Webserver plugins", true, true);
-  ConfigChanged("init", NULL);
 
   #undef bind  // Kludgy, but works
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"network.mgr.init", std::bind(&OvmsWebServer::NetManInit, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"network.mgr.stop", std::bind(&OvmsWebServer::NetManStop, this, _1, _2));
-  MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsWebServer::ConfigChanged, this, _1, _2));
-  MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsWebServer::ConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "*", std::bind(&OvmsWebServer::EventListener, this, _1, _2));
 
   // register standard framework URIs:
@@ -134,16 +131,21 @@ OvmsWebServer::~OvmsWebServer()
 
 void OvmsWebServer::NetManInit(std::string event, void* data)
 {
-  // Only initialise server for WIFI connections
-  // TODO: Disabled as this introduces a network interface ordering issue. It
-  //       seems that the correct way to do this is to always start the mongoose
-  //       listener, but to filter incoming connections to check that the
-  //       destination address is a Wifi interface address.
-  // if (!(MyNetManager.m_connected_wifi || MyNetManager.m_wifi_ap))
-  //  return;
-
   m_running = true;
   ESP_LOGI(TAG,"Launching Web Server");
+
+  if (!m_configured)
+  {
+    // read config:
+    ConfigChanged("init", NULL);
+
+    using std::placeholders::_1;
+    using std::placeholders::_2;
+    MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsWebServer::ConfigChanged, this, _1, _2));
+    MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsWebServer::ConfigChanged, this, _1, _2));
+
+    m_configured = true;
+  }
 
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
 
@@ -590,11 +592,12 @@ void OvmsWebServer::DeregisterCallbacks(std::string caller)
 
 void PageEntry::RegisterCallback(std::string caller, PageCallback_t handler)
 {
-  for (auto it = callbacklist.begin(); it != callbacklist.end(); it++) {
+  auto prev = callbacklist.before_begin();
+  for (auto it = callbacklist.begin(); it != callbacklist.end(); prev = it++) {
     if ((*it).caller == caller && (*it).handler == handler)
       return; // already registered
   }
-  callbacklist.push_front(PageCallbackEntry(caller, handler));
+  callbacklist.insert_after(prev, PageCallbackEntry(caller, handler));
 }
 
 void PageEntry::DeregisterCallback(std::string caller)
