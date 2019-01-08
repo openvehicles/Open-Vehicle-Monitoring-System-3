@@ -199,12 +199,18 @@ function standardTextFilter(msg) {
     return $('<div/>').text(msg.text).html();
 }
 
-function loadcmd(command, target, filter) {
+function loadcmd(command, target, filter, timeout) {
   var $output, outmode = "";
 
+  if (!command) return null;
+
+  if (typeof filter == "number") {
+    timeout = filter; filter = null;
+  }
   if (typeof target == "function") {
     filter = target; target = null;
   }
+
   if (target == null) {
     $output = $(null);
   }
@@ -221,8 +227,14 @@ function loadcmd(command, target, filter) {
   if (!filter)
     filter = standardTextFilter;
 
-  var lastlen = 0, xhr, timeouthd, timeout = 20;
-  if (/^(test |ota |co .* scan)/.test(command)) timeout = 300;
+  if (!timeout) {
+    if (/^(test |ota |copen .* scan)/.test(command))
+      timeout = 300;
+    else
+      timeout = 20;
+  }
+
+  var lastlen = 0, xhr, timeouthd;
   var checkabort = function() {
     if (xhr.readyState != 4)
       xhr.abort("timeout");
@@ -233,7 +245,7 @@ function loadcmd(command, target, filter) {
       return;
     }
     if (outmode == "") { $output.empty(); outmode = "+"; }
-    var autoscroll = ($output.get(0).scrollTop + $output.height()) >= $output.get(0).scrollHeight;
+    var autoscroll = ($output.get(0).scrollTop + $output.innerHeight()) >= $output.get(0).scrollHeight;
     $output.append(addhtml);
     $output.closest('.get-window-resize').trigger('window-resize');
     if (autoscroll) $output.scrollTop($output.get(0).scrollHeight);
