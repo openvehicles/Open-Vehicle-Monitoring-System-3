@@ -1,0 +1,60 @@
+<!--
+  Hook plugin for /dashboard:body.pre or :body.post
+  - add sliders to adjust recuperation power levels
+-->
+
+<style>
+#tuneslider {
+  margin: 10px 8px 0;
+}
+.form-inline .form-control.slider-value {
+  width: 80px;
+}
+</style>
+
+<div class="receiver" id="tuneslider" style="display:none">
+  <div class="form-group">
+    <label class="control-label" for="input-neutral">Neutral recuperation:</label>
+    <div class="form-control slider" id="neutral" />
+  </div>
+  <div class="form-group">
+    <label class="control-label" for="input-brake">Brake recuperation:</label>
+    <div class="form-control slider" id="brake" />
+  </div>
+</div>
+
+<script>
+(function(){
+
+  // Init sliders:
+  $('#neutral').slider({ min:0, max:100, step:1, unit:'%', default:18, value:18, checked:false });
+  $('#brake').slider({ min:0, max:100, step:1, unit:'%', default:18, value:18, checked:false });
+
+  // Update sliders on profile changes:
+  $('#tuneslider').on('msg:metrics', function(ev, update) {
+    var profile = update["xrt.cfg.profile"];
+    if (profile != null) {
+      var neutral = profile[7], brake = profile[8]; // see cfgconv.c tagnames for profile structure
+      $('#neutral').slider({ checked: (neutral!=-1), value: (neutral!=-1) ? neutral : null });
+      $('#brake').slider({ checked: (brake!=-1), value: (brake!=-1) ? brake : null });
+    }
+  });
+
+  // Update profile on slider changes:
+  $('#tuneslider .slider-value').on('change', function(ev) {
+    var neutral = $('#input-neutral').prop('checked') ? $('#input-neutral').val() : -1,
+      brake = $('#input-brake').prop('checked') ? $('#input-brake').val() : -1;
+    var cmd = "xrt cfg recup " + neutral + " " + brake;
+    loadcmd(cmd, '#loadres');
+  });
+
+  // Install into panel:
+  $('#main').one('load', function(ev) {
+    if (!loggedin) {
+      $('#tuneslider .slider').slider({ disabled: true });
+    }
+    $('#tuneslider').appendTo('#panel-dashboard .panel-body').show();
+  });
+
+})();
+</script>
