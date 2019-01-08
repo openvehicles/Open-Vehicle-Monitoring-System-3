@@ -431,7 +431,7 @@ typedef std::vector<WebSocketSlot> WebSocketSlots;
 class HttpCommandStream : public OvmsShell, public MgHandler
 {
   public:
-    HttpCommandStream(mg_connection* nc, std::string command, int verbosity=COMMAND_RESULT_NORMAL);
+    HttpCommandStream(mg_connection* nc, std::string command, int verbosity=COMMAND_RESULT_VERBOSE);
     ~HttpCommandStream();
 
   public:
