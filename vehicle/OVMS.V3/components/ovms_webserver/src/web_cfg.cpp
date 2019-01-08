@@ -2606,7 +2606,7 @@ static void OutputPluginEditor(PageEntry_t& p, PageContext_t& c)
     "</div>\n"
     "<script>\n"
     "$('.action-cancel').on('click', function(ev) {\n"
-      "loaduri('#main', 'get', 'plugin_list.htm');\n"
+      "loaduri('#main', 'get', '/cfg/plugins');\n"
     "});\n"
     "/* textarea controls */\n"
     "$('.tac-wrap').on('click', function(ev) {\n"
