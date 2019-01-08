@@ -3,7 +3,8 @@
 const monthnames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const supportsTouch = 'ontouchstart' in window || navigator.msMaxTouchPoints;
 
-var loggedin = false;
+if (window.loggedin == undefined)
+  window.loggedin = false;
 
 
 /**
@@ -98,10 +99,20 @@ function reloadpage() {
   loaduri("#main", "get", uri, {});
 }
 
+function login(dsturi) {
+  if (!dsturi)
+    dsturi = page.uri || "/home";
+  loadPage("/login?uri=" + encodeURIComponent(dsturi));
+}
+
+function logout() {
+  loadPage("/logout");
+}
+
 function xhrErrorInfo(request, textStatus, errorThrown) {
   var txt = "";
   if (request.status == 401 || request.status == 403)
-    txt = "Session expired. <a class=\"btn btn-sm btn-default\" href=\"javascript:reloadpage()\">Login</a>";
+    txt = "Unauthorized. <a class=\"btn btn-sm btn-default\" href=\"javascript:login()\">Login</a>";
   else if (request.status >= 400)
     txt = "Error " + request.status + " " + request.statusText;
   else if (textStatus)
@@ -115,6 +126,7 @@ function setcontent(tgt, uri, text){
   if (!tgt || !tgt.length) return;
 
   tgt.find(".receiver").unsubscribe();
+  tgt.chart("destroy");
 
   if (tgt[0].id == "main") {
     $("#nav .dropdown.open .dropdown-toggle").dropdown("toggle");
@@ -136,7 +148,7 @@ function setcontent(tgt, uri, text){
   }
 
   tgt.find(".get-window-resize").trigger('window-resize');
-  tgt.find(".receiver").subscribe();
+  tgt.find(".receiver").subscribe().trigger("msg:metrics", metrics);
   tgt.trigger("load");
 }
 
@@ -277,11 +289,11 @@ var shellhist = [""], shellhpos = 0;
 function initSocketConnection(){
   ws = new WebSocket('ws://' + location.host + '/msg');
   ws.onopen = function(ev) {
-    console.log(ev);
+    console.log("WebSocket OPENED", ev);
     $(".receiver").subscribe();
   };
-  ws.onerror = function(ev) { console.log(ev); };
-  ws.onclose = function(ev) { console.log(ev); };
+  ws.onerror = function(ev) { console.log("WebSocket ERROR", ev); };
+  ws.onclose = function(ev) { console.log("WebSocket CLOSED", ev); };
   ws.onmessage = function(ev) {
     var msg;
     try {
@@ -354,14 +366,14 @@ function monitorUpdate(){
 function processNotification(msg) {
   var opts = { timeout: 0 };
   if (msg.type == "info") {
-    opts.title = '<span class="lead text-info"><i>ⓘ</i>' + msg.subtype + ' Info</span>';
+    opts.title = '<span class="lead text-info"><i>ⓘ</i> ' + msg.subtype + ' Info</span>';
     opts.timeout = 60;
   }
   else if (msg.type == "alert") {
-    opts.title = '<span class="lead text-danger"><i>⚠</i>' + msg.subtype + ' Alert</span>';
+    opts.title = '<span class="lead text-danger"><i>⚠</i> ' + msg.subtype + ' Alert</span>';
   }
   else if (msg.type == "error") {
-    opts.title = '<span class="lead text-warning"><i>⛍</i>' + msg.subtype + ' Error</span>';
+    opts.title = '<span class="lead text-warning"><i>⛍</i> ' + msg.subtype + ' Error</span>';
   }
   else
     return;
@@ -1184,6 +1196,101 @@ $.fn.listEditor = function(op, data){
 
 
 /**
+ * Slider widget plugin
+ */
+
+$.fn.slider = function(options) {
+  return this.each(function() {
+    var $sld = $(this).closest('.slider');
+    var opts = $.extend($sld.data(), options);
+    // init?
+    if ($sld.children().length == 0) {
+      var id = $sld.attr('id');
+      $sld.html('\
+        <div class="slider-control form-inline">\
+          <input class="slider-enable" type="checkbox" checked>\
+          <input class="form-control slider-value" type="number" id="input-ID" name="ID">\
+          <span class="slider-unit">UNIT</span>\
+          <input class="btn btn-default slider-down" type="button" value="➖">\
+          <input class="btn btn-default slider-set" type="button" value="◈">\
+          <input class="btn btn-default slider-up" type="button" value="➕">\
+        </div>\
+        <input class="slider-input" type="range">'
+        .replace(/ID/g, id).replace(/UNIT/g, opts.unit));
+    }
+    // update:
+    var $inp = $sld.find('.slider-value, .slider-input'), oldval = $inp.val(),
+      $cb = $sld.find('.slider-enable'), olddis = !$cb.prop('checked'),
+      $sb = $sld.find('.slider-set');
+    if (opts.min != null) $inp.attr('min', opts.min);
+    if (opts.max != null) $inp.attr('max', opts.max);
+    if (opts.step != null) $inp.attr('step', opts.step);
+    if (opts.reset != null) $cb.data('reset', opts.reset);
+    if (opts.default != null) {
+      $sb.data('set', opts.default);
+      $cb.data('default', opts.default);
+    }
+    if (opts.value != null)
+      $inp.attr('value', opts.value).val(opts.value);
+    if (opts.disabled != null && opts.disabled != olddis)
+      $cb.prop('checked', !opts.disabled).trigger('change');
+    else if (opts.value != null && opts.value != oldval)
+      $inp.first().trigger('input').trigger('change');
+  });
+};
+
+
+/**
+ * Highcharts
+ */
+
+var highchartsLoader;
+
+$.fn.chart = function(options) {
+  if (this.length == 0)
+    return this;
+  var $this = this;
+  if (options === "destroy") {
+    // destroy:
+    var $cl = this.find(".has-chart").add(this.filter(".has-chart"));
+    $cl.each(function() {
+      var chart = $(this).data("chart");
+      if (typeof chart == "object") {
+        $(this).data("chart", null);
+        chart.destroy();
+      }
+    });
+  } else {
+    // init:
+    function init_charts() {
+      $this.each(function() {
+        var chart = Highcharts.chart(this, options, function() {
+          if (this.userOptions && this.userOptions.onUpdate)
+            this.userOptions.onUpdate.call(this, metrics);
+        });
+        $(this).data("chart", chart).addClass("has-chart get-window-resize").on("window-resize", function() {
+          $(this).data("chart").reflow();
+        });
+      });
+    }
+    if (window.Highcharts) {
+      init_charts();
+    } else if (highchartsLoader) {
+      highchartsLoader.then(init_charts);
+    } else {
+      highchartsLoader = $.ajax({
+        url: (window.assets && window.assets["charts_js"]) || "/assets/charts.js?v=6.0.7",
+        dataType: "script",
+        cache: true,
+        success: function(){ init_charts(); }
+      });
+    }
+  }
+  return this;
+};
+
+
+/**
  * Framework Init
  */
 
@@ -1251,6 +1358,24 @@ $(function(){
       $(this).closest(".modal").removeClass("fade").modal("hide");
     if (!loaduri(target, method, uri, data))
       return true;
+    event.preventDefault();
+    event.stopPropagation();
+    return false;
+  });
+  $('body').on('submit', 'form[target^="#"]', function(event) {
+    var $frm = $(this);
+    var method = $frm.attr("method") || "get";
+    var uri = $frm.attr("action");
+    var target = $frm.attr("target");
+    var data = $frm.serialize();
+    var $btn = $frm.find('input[type="submit"], button[type="submit"]').first();
+    if ($btn.length && $btn.attr("name"))
+      data += (data?"&":"") + encodeURI($btn.attr("name") +"="+ ($btn.val()||"1"));
+    if ($frm.data("dismiss") == "modal" || $btn.data("dismiss") == "modal")
+      $frm.closest(".modal").removeClass("fade").modal("hide");
+    if (!loaduri(target, method, uri, data))
+      return true;
+    event.preventDefault();
     event.stopPropagation();
     return false;
   });
@@ -1310,28 +1435,46 @@ $(function(){
     }
   });
 
-  // Slider widget:
+  // Slider widget event handling:
   $("body").on("change", ".slider-enable", function(evt) {
-    var slider = $(this).closest(".slider");
-    slider.find("input[type=number]").prop("disabled", !this.checked).trigger("input");
-    slider.find("input[type=range]").prop("disabled", !this.checked).trigger("input");
+    var $this = $(this), slider = $this.closest(".slider"), data = $this.data(),
+      $inp = slider.find(".slider-input, .slider-value");
+    if (this.checked) {
+      if (data["value"] != null && data["reset"] != true)
+        $inp.val(data["value"]);
+    } else {
+      $this.data("value", $inp.val());
+      if (data["default"] != null)
+        $inp.val(data["default"]);
+    }
+    $inp.prop("disabled", !this.checked).trigger("input").trigger("change");
     slider.find("input[type=button]").prop("disabled", !this.checked);
   });
-  $("body").on("input", ".slider-value", function(evt) {
-    $(this).closest(".slider").find(".slider-input").val(this.value);
+  $("body").on("input change", ".slider-value", function(evt, noprop) {
+    var $inp = $(this).closest(".slider").find(".slider-input");
+    $(this).val(Math.max(this.min, Math.min(this.max, 1*this.value)));
+    $inp.val(this.value);
+    if (!noprop) $inp.trigger(evt.type, true);
   });
-  $("body").on("input", ".slider-input", function(evt) {
-    if (this.disabled)
-      this.value = $(this).data("default");
-    $(this).closest(".slider").find(".slider-value").val(this.value);
+  $("body").on("input change", ".slider-input", function(evt, noprop) {
+    var $inp = $(this).closest(".slider").find(".slider-value");
+    $(this).val(Math.max(this.min, Math.min(this.max, 1*this.value)));
+    $inp.val(this.value);
+    if (!noprop) $inp.trigger(evt.type, true);
   });
   $("body").on("click", ".slider-up", function(evt) {
-    $(this).closest(".slider").find(".slider-input")
-      .val(function(){return 1*this.value + 1;}).trigger("input");
+    $(this).closest(".slider").find(".slider-input").val(function() {
+      return Math.min(1*this.value + (1*this.step||1), this.max);
+    }).trigger("input").trigger("change");
   });
   $("body").on("click", ".slider-down", function(evt) {
-    $(this).closest(".slider").find(".slider-input")
-      .val(function(){return 1*this.value - 1;}).trigger("input");
+    $(this).closest(".slider").find(".slider-input").val(function() {
+      return Math.max(1*this.value - (1*this.step||1), this.min);
+    }).trigger("input").trigger("change");
+  });
+  $("body").on("click", ".slider-set", function(evt) {
+    var $inp = $(this).closest(".slider").find(".slider-input");
+    $inp.val($(this).data("set")).trigger("input").trigger("change");
   });
 
   // data-toggle="filefialog":
@@ -1348,6 +1491,40 @@ $(function(){
       if (val) opt.path = val;
       $tgt.filedialog(opt);
     }
+  });
+
+  // Metrics displays:
+  $("body").on('msg:metrics', '.receiver', function(e, update) {
+    $(this).find(".metric").each(function() {
+      var $el = $(this), metric = $el.data("metric"), prec = $el.data("prec");
+      if (!metric) return;
+      // filter:
+      var keys = metric.split(","), val;
+      for (var i=0; i<keys.length; i++) {
+        if ((val = update[keys[i]]) != null) break;
+      }
+      if (val == null) return;
+      // process:
+      if ($el.hasClass("text")) {
+        $el.children(".value").text(val);
+      } else if ($el.hasClass("number")) {
+        var vf = (prec != null) ? Number(val).toFixed(prec) : val;
+        $el.children(".value").text(vf);
+      } else if ($el.hasClass("progress")) {
+        var $pb = $(this.firstElementChild), min = $pb.attr("aria-valuemin"), max = $pb.attr("aria-valuemax");
+        var vp = (val-min) / (max-min) * 100;
+        var vf = (prec != null) ? Number(val).toFixed(prec) : val;
+        $pb.css("width", vp+"%").attr("aria-valuenow", vp).find(".value").text(vf);
+        var lw = 0; $pb.find("span").each(function(){ lw += $(this).width(); });
+        if (($pb.parent().width()*vp/100) < lw) $pb.addClass("value-low"); else $pb.removeClass("value-low");
+      } else if ($el.hasClass("chart")) {
+        var ch = $(this.firstElementChild).data("chart");
+        if (ch && ch.userOptions && ch.userOptions.onUpdate)
+          ch.userOptions.onUpdate.call(ch, update);
+      } else {
+        $el.text(val);
+      }
+    });
   });
 
   // Modal autoclear:

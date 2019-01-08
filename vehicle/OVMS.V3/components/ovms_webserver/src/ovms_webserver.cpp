@@ -99,6 +99,7 @@ OvmsWebServer::OvmsWebServer()
   // register standard administration pages:
   RegisterPage("/status", "Status", HandleStatus, PageMenu_Main, PageAuth_Cookie);
   RegisterPage("/shell", "Shell", HandleShell, PageMenu_Tools, PageAuth_Cookie);
+  RegisterPage("/edit", "Editor", HandleEditor, PageMenu_Tools, PageAuth_Cookie);
   RegisterPage("/cfg/init", "Setup wizard", HandleCfgInit, PageMenu_None, PageAuth_Cookie);
   RegisterPage("/cfg/password", "Password", HandleCfgPassword, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/vehicle", "Vehicle", HandleCfgVehicle, PageMenu_Config, PageAuth_Cookie);

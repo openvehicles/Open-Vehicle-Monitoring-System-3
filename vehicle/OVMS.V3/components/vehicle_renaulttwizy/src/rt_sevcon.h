@@ -252,6 +252,12 @@ class SevconClient : public InternalRamAllocated
     cfg_profile               m_profile;
     bool                      m_cfgmode_request;
     
+    OvmsMetricVector<short>*  ms_cfg_profile;
+    OvmsMetricInt*            ms_cfg_user;
+    OvmsMetricInt*            ms_cfg_base;
+    OvmsMetricBool*           ms_cfg_unsaved;
+    OvmsMetricString*         ms_cfg_type;
+    
     QueueHandle_t             m_faultqueue;
     uint16_t                  m_lastfault;
     uint8_t                   m_buttoncnt;

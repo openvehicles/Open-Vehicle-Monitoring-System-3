@@ -138,6 +138,7 @@ struct PageContext : public ExternalRamAllocated
   bool getvar(const std::string& name, extram::string& dst);
   static std::string encode_html(const char* text);
   static std::string encode_html(const std::string text);
+  static extram::string encode_html(const extram::string& text);
   static std::string make_id(const char* text);
   static std::string make_id(const std::string text);
 
@@ -525,6 +526,7 @@ class OvmsWebServer : public ExternalRamAllocated
     static void HandleShell(PageEntry_t& p, PageContext_t& c);
     static void HandleDashboard(PageEntry_t& p, PageContext_t& c);
     static void HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c);
+    static void HandleEditor(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgPassword(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgVehicle(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgModem(PageEntry_t& p, PageContext_t& c);
