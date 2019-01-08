@@ -314,7 +314,7 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
     "<script>"
     "$(window).on(\"resize\", function(){"
       "var pad = Number.parseInt($(\"#output\").parent().css(\"padding-top\")) + Number.parseInt($(\"#output\").parent().css(\"padding-bottom\"));"
-      "var h = $(window).height() - $(\"#output\").offset().top - pad - 73;"
+      "var h = $(window).height() - $(\"#output\").offset().top - pad - 81;"
       "if ($(window).width() <= 767) h += 27;"
       "if ($(\"body\").hasClass(\"fullscreened\")) h -= 4;"
       "$(\"#output\").height(h);"
