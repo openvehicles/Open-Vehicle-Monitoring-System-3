@@ -2657,6 +2657,7 @@ static bool SavePluginEditor(PageEntry_t& p, PageContext_t& c, std::string& erro
 
   // write plugin content:
   c.getvar("content", content);
+  content = stripcr(content);
   mkpath("/store/plugin");
   std::string path = "/store/plugin/" + key;
   std::ofstream file(path, std::ios::out | std::ios::trunc);
@@ -2731,6 +2732,7 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
   if (c.method == "POST")
   {
     bool got_content = c.getvar("content", content);
+    content = stripcr(content);
 
     if (path == "") {
       error += "<li>Missing path!</li>";
