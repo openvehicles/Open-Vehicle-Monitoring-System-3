@@ -74,6 +74,8 @@ void OvmsVehicleKiaSoulEv::SendCanMessage(uint16_t id, uint8_t count,
 		uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
 		uint8_t b5, uint8_t b6)
 	{
+	if(!ks_enable_write) return;
+
 	uint8_t data[] = {count, serviceId, b1, b2, b3, b4, b5, b6};
 	m_can1->WriteStandard(id, 8, data);
 	ESP_LOGV(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", id, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
@@ -86,6 +88,8 @@ void OvmsVehicleKiaSoulEv::SendCanMessageTriple(uint16_t id, uint8_t count,
 		uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
 		uint8_t b5, uint8_t b6)
 	{
+	if(!ks_enable_write) return;
+
 	uint8_t data[] = {count, serviceId, b1, b2, b3, b4, b5, b6};
 	m_can1->WriteStandard(id, 8, data);
 	vTaskDelay( xDelay );
@@ -100,7 +104,8 @@ void OvmsVehicleKiaSoulEv::SendCanMessageTriple(uint16_t id, uint8_t count,
  */
 void OvmsVehicleKiaSoulEv::SetHeadLightDelay(bool on)
 	{
-	SendCanMessageTriple(0x014, 0,0, on ? 0x08:0x04 ,0,0,0,0,0);
+	if(ks_enable_write)
+		SendCanMessageTriple(0x014, 0,0, on ? 0x08:0x04 ,0,0,0,0,0);
 	}
 
 /**
@@ -113,7 +118,8 @@ void OvmsVehicleKiaSoulEv::SetHeadLightDelay(bool on)
  */
 void OvmsVehicleKiaSoulEv::	SetOneThouchTurnSignal(uint8_t value)
 	{
-	SendCanMessageTriple(0x014, (value+1)<<5 ,0,0,0,0,0,0,0);
+	if(ks_enable_write)
+		SendCanMessageTriple(0x014, (value+1)<<5 ,0,0,0,0,0,0,0);
 	}
 
 /**
@@ -125,7 +131,8 @@ void OvmsVehicleKiaSoulEv::	SetOneThouchTurnSignal(uint8_t value)
  */
 void OvmsVehicleKiaSoulEv::	SetAutoDoorUnlock(uint8_t value)
 	{
-	SendCanMessageTriple(0x014, 0,value,0,0,0,0,0,0);
+	if(ks_enable_write)
+		SendCanMessageTriple(0x014, 0,value,0,0,0,0,0,0);
 	}
 
 /**
@@ -136,7 +143,8 @@ void OvmsVehicleKiaSoulEv::	SetAutoDoorUnlock(uint8_t value)
  */
 void OvmsVehicleKiaSoulEv::SetAutoDoorLock(uint8_t value)
 	{
-	SendCanMessageTriple(0x014, 0,(value+1)<<5,0,0,0,0,0,0);
+	if(ks_enable_write)
+		SendCanMessageTriple(0x014, 0,(value+1)<<5,0,0,0,0,0,0);
 	}
 
 /**
@@ -149,6 +157,7 @@ void OvmsVehicleKiaSoulEv::SetAutoDoorLock(uint8_t value)
  */
 int8_t OvmsVehicleKiaSoulEv::GetDoorLockStatus()
 	{
+	if(!ks_enable_write) return -1;
 	int8_t result = -1;
 	SendTesterPresent(SMART_JUNCTION_BOX,2);
 	vTaskDelay( xDelay );
@@ -216,7 +225,8 @@ void OvmsVehicleKiaSoulEv::StopTesterPresentMessages()
  */
 void OvmsVehicleKiaSoulEv::SendTesterPresent(uint16_t id, uint8_t length)
 	{
-  SendCanMessage(id, length,VEHICLE_POLL_TYPE_OBDII_TESTER_PRESENT, 0,0,0,0,0,0);
+	if(ks_enable_write)
+		SendCanMessage(id, length,VEHICLE_POLL_TYPE_OBDII_TESTER_PRESENT, 0,0,0,0,0,0);
 	}
 
 /**
@@ -224,7 +234,7 @@ void OvmsVehicleKiaSoulEv::SendTesterPresent(uint16_t id, uint8_t length)
  */
 bool OvmsVehicleKiaSoulEv::SetSessionMode(uint16_t id, uint8_t mode)
 	{
-  return SendCanMessage_sync(id, 2,VEHICLE_POLL_TYPE_OBDIISESSION, mode,0,0,0,0,0);
+	return SendCanMessage_sync(id, 2,VEHICLE_POLL_TYPE_OBDIISESSION, mode,0,0,0,0,0);
 	}
 
 /**
@@ -232,6 +242,8 @@ bool OvmsVehicleKiaSoulEv::SetSessionMode(uint16_t id, uint8_t mode)
  */
 bool OvmsVehicleKiaSoulEv::SendCommandInSessionMode(uint16_t id, uint8_t count, uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint8_t b5, uint8_t b6, uint8_t mode )
 	{
+	if(!ks_enable_write) return false;
+
 	bool result = false;
 	SendTesterPresent(id,2);
 	vTaskDelay( xDelay );
