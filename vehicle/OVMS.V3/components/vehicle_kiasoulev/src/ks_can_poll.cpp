@@ -246,20 +246,20 @@ void OvmsVehicleKiaSoulEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
 					ks_battery_current = (ks_battery_current & 0xFF00) | (UINT) CAN_BYTE(0);
 					StdMetrics.ms_v_bat_current->SetValue((float)ks_battery_current/10.0, Amps);
 					StdMetrics.ms_v_bat_voltage->SetValue((float)CAN_UINT(1)/10.0, Volts);
-           BmsSetCellTemperature(0, CAN_BYTE(3));
-           BmsSetCellTemperature(1, CAN_BYTE(4));
-           BmsSetCellTemperature(2, CAN_BYTE(5));
-           BmsSetCellTemperature(3, CAN_BYTE(6));
+					//TODO  BmsSetCellTemperature(0, CAN_BYTE(3));
+					//TODO  BmsSetCellTemperature(1, CAN_BYTE(4));
+					//TODO BmsSetCellTemperature(2, CAN_BYTE(5));
+					//TODO BmsSetCellTemperature(3, CAN_BYTE(6));
          	 StdMetrics.ms_v_bat_temp->SetValue(((float)CAN_BYTE(3) + CAN_BYTE(4) +
          			CAN_BYTE(5) + CAN_BYTE(6)) / 4, Celcius);
 
 					}
 				else if (m_poll_ml_frame == 3) // 02 21 01 - 23
 					{
-           BmsSetCellTemperature(4, CAN_BYTE(0));
-           BmsSetCellTemperature(5, CAN_BYTE(1));
-           BmsSetCellTemperature(6, CAN_BYTE(2));
-           BmsSetCellTemperature(7, CAN_BYTE(3));
+           //TODO BmsSetCellTemperature(4, CAN_BYTE(0));
+					//TODO BmsSetCellTemperature(5, CAN_BYTE(1));
+					//TODO BmsSetCellTemperature(6, CAN_BYTE(2));
+					//TODO BmsSetCellTemperature(7, CAN_BYTE(3));
 					//TODO What about the 30kWh-version?
 
 					m_b_cell_volt_max->SetValue((float)CAN_BYTE(5)/50.0, Volts);
@@ -301,7 +301,7 @@ void OvmsVehicleKiaSoulEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
 			base = ((pid-2)<<5) + m_poll_ml_offset - (length - 3);
 			for (bVal = 0; bVal < length && ((base + bVal)<101); bVal++)
 				{
-				BmsSetCellVoltage(base + bVal, CAN_BYTE(bVal) * 0.02);
+				//TODO BmsSetCellVoltage(base + bVal, CAN_BYTE(bVal) * 0.02);
 				//ks_battery_cell_voltage[base + bVal] = CAN_BYTE(bVal);
 			  }
 			break;
@@ -313,7 +313,7 @@ void OvmsVehicleKiaSoulEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
 				base = ((pid-2)<<5) + m_poll_ml_offset - (length - 3);
 				for (bVal = 0; bVal < length && ((base + bVal)<101); bVal++){
 					//ks_battery_cell_voltage[base + bVal] = CAN_BYTE(bVal);
-           BmsSetCellVoltage(base + bVal, CAN_BYTE(bVal) * 0.02);
+           // TODO BmsSetCellVoltage(base + bVal, CAN_BYTE(bVal) * 0.02);
 					}
 
 				m_b_inlet_temperature->SetValue( CAN_BYTE(5) );
