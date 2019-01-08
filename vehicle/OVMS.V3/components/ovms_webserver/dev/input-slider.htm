@@ -27,16 +27,44 @@
       In many cases you'd like to give especially the touchscreen user a combination of these input
       elements, and as sliding may be too imprecise you also need large buttons for single step changes.
       That's what the slider widget does. It also adds the option of a checkbox and a default value to
-      reflect if the user control shall be applied:
+      reflect if the user control shall be applied.
     </p>
 
     <div class="row">
       <div class="col-md-9">
 
-        <div class="form-control slider" id="sld1">
+        <p>Sliders can easily be created from minimal markup using the <code>.slider()</code> plugin,
+          with configuration given by data attributes and/or dynamic options:</p>
+
+        <div class="form-control slider" id="sld1" data-min="-5" data-max="50" data-step="0.5"
+          data-default="40" data-unit="%" data-disabled="false" data-checked="true" data-value="10" />
+        <br/>
+
+        <div class="form-control slider" id="sld2" />
+        <br/>
+
+        <p>…and slider state, limits and value can be controlled using the same method:<br/>
+          <button type="button" class="btn btn-default" onclick="$('#sld1').slider({ value:42 })">
+            Set sld1 value to 42
+          </button>
+          <button type="button" class="btn btn-default" onclick="$('#sld1').slider({ checked:true })">
+            Check sld1
+          </button>
+          <button type="button" class="btn btn-default" onclick="$('#sld1').slider({ disabled:true })">
+            Disable sld1
+          </button>
+          <button type="button" class="btn btn-default" onclick="$('#sld1').slider({ disabled:false })">
+            Enable sld1
+          </button>
+        </p>
+        <br/>
+
+        <p>If you need even more control, you can create the slider markup yourself as well:</p>
+
+        <div class="form-control slider" id="sld3">
           <div class="slider-control form-inline">
             <input class="slider-enable" type="checkbox" checked data-default="50" data-reset="false">
-            <input class="form-control slider-value" type="number" id="input-sld1" name="sld1" value="80" min="-10" max="100" step="1">
+            <input class="form-control slider-value" type="number" id="input-sld3" name="sld3" value="80" min="-10" max="100" step="1">
             <span class="slider-unit">%</span>
             <input class="btn btn-default slider-down" type="button" value="➖">
             <input class="btn btn-default slider-set" type="button" value="◈" data-set="50">
@@ -45,22 +73,6 @@
           <input class="slider-input" type="range" value="80" min="-10" max="100" step="1">
         </div>
         <br/>
-
-        <p>Sliders can also be created dynamically from minimal markup using the
-          <code>.slider()</code> plugin:</p>
-
-        <div class="form-control slider" id="sld2" data-min="-5" data-max="50" data-step="0.5"
-          data-default="40" data-unit="%" data-disabled="false" data-value="10" />
-        <br/>
-
-        <div class="form-control slider" id="sld3" />
-        <br/>
-
-        <p>…and slider state, limits and value can be set using the same method:
-          <button type="button" class="btn btn-default" onclick="$('#sld1').slider({ value:75 })">
-            Set slider #1 value to 75
-          </button>
-        </p>
 
       </div>
       <div class="col-md-3">
@@ -74,9 +86,8 @@
     <br/>
 
     <p>
-      Checkbox, buttons and unit are optional.
-      You can reduce the widget to just a number or just a range input, the input
-      then needs to have the <code>slider-input</code> class.
+      Checkbox, buttons and unit are optional. You can reduce the widget to just a number or
+      just a range input, the input then needs to have the <code>slider-input</code> class.
     </p>
 
     <p>
@@ -88,7 +99,7 @@
     <p>
       Values and checkbox status need to be consistent on init, or be set by your script.
       To hook into value changes, attach event handlers to events <code>input</code>
-      and/or <code>change</code> as usual. Read the <code>disabled</code> property to get the
+      and/or <code>change</code> as usual. Read the <code>checked</code> property to get the
       checkbox state.
     </p>
 
@@ -111,14 +122,14 @@
     });
   });
 
-  /* Init slider 2 & 3: */
-  $('#sld2').slider();
-  $('#sld3').slider({ min:-10, max:10, step:0.1, default:2.5, unit:'kW', disabled:true, value:-3.8 });
+  /* Init sliders: */
+  $('.slider').slider();
+  $('#sld2').slider({ min:-10, max:10, step:0.1, default:2.5, unit:'kW', checked:false, value:-3.8 });
 
   /* Show slider events & values: */
   var sldev = {};
   $('#input-sld1, #input-sld2, #input-sld3').on('input change', function(ev) {
-    sldev[this.name] = $.extend(sldev[this.name], { disabled: this.disabled });
+    sldev[this.name] = $.extend(sldev[this.name], { checked: this.checked });
     // Note: this.value is unvalidated here for a direct entry, but the validation is simple:
     sldev[this.name][ev.type] = Math.max(this.min, Math.min(this.max, 1*this.value));
     $('#show-sldev').text(JSON.stringify(sldev, null, 2));
