@@ -211,7 +211,7 @@ int HttpCommandStream::printf(const char* fmt, ...)
 ssize_t HttpCommandStream::write(const void *buf, size_t nbyte)
 {
   if (!m_nc || nbyte == 0)
-    return nbyte;
+    return 0;
   
   hcs_writebuf wbuf;
   wbuf.data = (char*) ExternalRamMalloc(nbyte);
@@ -233,7 +233,7 @@ ssize_t HttpCommandStream::write(const void *buf, size_t nbyte)
 #endif // MG_ENABLE_BROADCAST && WEBSRV_USE_MG_BROADCAST
     ESP_LOGV(TAG, "HttpCommandStream[%p] AddQueue, qlen=%d done=%d sent=%d ack=%d", m_nc, uxQueueMessagesWaiting(m_writequeue), m_done, m_sent, m_ack);
   
-  return 0;
+  return nbyte;
 }
 
 void HttpCommandStream::Log(LogBuffers* message)

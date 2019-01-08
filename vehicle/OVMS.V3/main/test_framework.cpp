@@ -141,7 +141,7 @@ void test_chargen(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
         ch = ' ';
       }
     if (writer->write(buf, 73) <= 0)
-	break;
+      break;
     if (delay)
       vTaskDelay(delay/portTICK_PERIOD_MS);
     if (++start == 0x7F)
