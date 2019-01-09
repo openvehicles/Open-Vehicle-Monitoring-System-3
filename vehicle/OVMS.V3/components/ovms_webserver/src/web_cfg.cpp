@@ -2682,13 +2682,13 @@ void OvmsWebServer::HandleCfgPlugins(PageEntry_t& p, PageContext_t& c)
     if (cnt != "") {
       if (SavePluginList(p, c, error)) {
         info = "<p class=\"lead\">Plugin registration saved.</p>"
-          "<script>$(\"#menu\").load(\"/menu\")</script>";
+          "<script>after(0.5, reloadmenu)</script>";
       }
     }
     else if (key != "") {
       if (SavePluginEditor(p, c, error)) {
         info = "<p class=\"lead\">Plugin <code>" + c.encode_html(key) + "</code> saved.</p>"
-          "<script>$(\"#menu\").load(\"/menu\")</script>";
+          "<script>after(0.5, reloadmenu)</script>";
         key = "";
       }
     }

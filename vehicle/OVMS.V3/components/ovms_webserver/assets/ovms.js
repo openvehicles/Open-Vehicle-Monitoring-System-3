@@ -99,6 +99,10 @@ function reloadpage() {
   loaduri("#main", "get", uri, {});
 }
 
+function reloadmenu() {
+  $("#menu").load("/menu");
+}
+
 function login(dsturi) {
   if (!dsturi)
     dsturi = page.uri || "/home";
