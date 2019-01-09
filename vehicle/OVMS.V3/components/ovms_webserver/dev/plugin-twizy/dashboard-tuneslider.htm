@@ -31,9 +31,10 @@
   $('#brake').slider({ min:0, max:100, step:1, unit:'%', default:18, value:18, checked:false });
 
   // Update sliders on profile changes:
+  var profile;
   $('#tuneslider').on('msg:metrics', function(ev, update) {
-    var profile = update["xrt.cfg.profile"];
-    if (profile != null) {
+    if (update["xrt.cfg.profile"] != null) {
+      profile = update["xrt.cfg.profile"];
       var neutral = profile[7], brake = profile[8]; // see cfgconv.c tagnames for profile structure
       $('#neutral').slider({ checked: (neutral!=-1), value: (neutral!=-1) ? neutral : null });
       $('#brake').slider({ checked: (brake!=-1), value: (brake!=-1) ? brake : null });
@@ -43,8 +44,9 @@
   // Update profile on slider changes:
   $('#tuneslider .slider-value').on('change', function(ev) {
     var neutral = $('#input-neutral').prop('checked') ? $('#input-neutral').val() : -1,
-      brake = $('#input-brake').prop('checked') ? $('#input-brake').val() : -1;
-    var cmd = "xrt cfg recup " + neutral + " " + brake;
+      brake = $('#input-brake').prop('checked') ? $('#input-brake').val() : -1,
+      autorecup_minprc = profile[43], autorecup_ref = profile[44];
+    var cmd = "xrt cfg recup " + neutral + " " + brake + " " + autorecup_ref + " " + autorecup_minprc;
     loadcmd(cmd, '#loadres');
   });
 
