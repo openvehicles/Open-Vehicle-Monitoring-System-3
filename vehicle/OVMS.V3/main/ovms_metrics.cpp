@@ -140,11 +140,8 @@ OvmsMetrics::OvmsMetrics()
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
-  duk_context* ctx = MyScripts.Duktape();
-  duk_push_c_function(ctx, DukOvmsMetricValue, 1 /*nargs*/);
-  duk_put_global_string(ctx, "OvmsMetricValue");
-  duk_push_c_function(ctx, DukOvmsMetricFloat, 1 /*nargs*/);
-  duk_put_global_string(ctx, "OvmsMetricFloat");
+  MyScripts.RegisterDuktapeFunction(DukOvmsMetricValue, 1, "OvmsMetricValue");
+  MyScripts.RegisterDuktapeFunction(DukOvmsMetricFloat, 1, "OvmsMetricFloat");
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 

@@ -163,6 +163,21 @@ config OVMS_SC_ZIP
         This is based on libzip by Dieter Baron and Thomas Klausner and
         zlib by Jean-loup Gailly and Mark Adler.
 
+config OVMS_SC_JAVASCRIPT_DUKTAPE_STACK
+    int "JavaScript (DukTape) task stack size"
+    default 8192
+    depends on OVMS_SC_JAVASCRIPT_DUKTAPE
+    help
+        Stack size for the DukTape task ("Duk Task").
+        The DukTape task runs the javascript framework.
+
+config OVMS_SC_JAVASCRIPT_DUKTAPE_QUEUE_SIZE
+    int "JavaScript (DukTape) task queue size"
+    default 20
+    depends on OVMS_SC_JAVASCRIPT_DUKTAPE
+    help
+        The size of the DukTape queue (for outstanding requests).
+
 endmenu # Library support
 
 

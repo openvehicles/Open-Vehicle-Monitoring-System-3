@@ -32,9 +32,60 @@
 #define __SCRIPT_H__
 
 #include "ovms_command.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
+#include "freertos/semphr.h"
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 #include "duktape.h"
+
+typedef enum
+  {
+  DUKTAPE_none = 0,             // Do nothing
+  DUKTAPE_register,             // Register extension function
+  DUKTAPE_event,                // Event
+  DUKTAPE_autoinit,             // Auto init
+  DUKTAPE_evalnoresult,         // Execute script text (without result)
+  DUKTAPE_evalfloatresult,      // Execute script text (float result)
+  DUKTAPE_evalintresult         // Execute script text (int result)
+  } duktape_msg_t;
+
+typedef struct
+  {
+  union
+    {
+    struct
+      {
+      duk_c_function func;
+      duk_idx_t nargs;
+      const char* name;
+      } dt_register;
+    struct
+      {
+      const char* name;
+      void* data;
+      } dt_event;
+    struct
+      {
+      const char* text;
+      } dt_evalnoresult;
+    struct
+      {
+      const char* text;
+      float* result;
+      } dt_evalfloatresult;
+    struct
+      {
+      const char* text;
+      int* result;
+      } dt_evalintresult;
+    } body;
+  duktape_msg_t type;
+  QueueHandle_t waitcompletion;
+  OvmsWriter* writer;
+  } duktape_queue_t;
+
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
 class OvmsScripts
@@ -49,10 +100,26 @@ class OvmsScripts
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   public:
-    duk_context* Duktape();
+    void RegisterDuktapeFunction(duk_c_function func, duk_idx_t nargs, const char* name);
+    void AutoInitDuktape();
+
+  protected:
+    void DuktapeDispatch(duktape_queue_t* msg);
+    void DuktapeDispatchWait(duktape_queue_t* msg);
+
+  public:
+    void  DuktapeEvalNoResult(const char* text, OvmsWriter* writer=NULL);
+    float DuktapeEvalFloatResult(const char* text, OvmsWriter* writer=NULL);
+    int   DuktapeEvalIntResult(const char* text, OvmsWriter* writer=NULL);
+
+  public:
+    void DukTapeTask();
 
   protected:
     duk_context* m_dukctx;
+    TaskHandle_t m_duktaskid;
+    QueueHandle_t m_duktaskqueue;
+
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   };
 
