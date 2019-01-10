@@ -92,6 +92,18 @@ config OVMS_HW_CAN_TX_QUEUE_SIZE
 endmenu # Hardware Support
 
 
+menu "System Options"
+    depends on OVMS
+
+config OVMS_SYS_COMMAND_STACK_SIZE
+    int "Stack size for command execution"
+    default 6144
+    depends on OVMS
+    help
+        The stack size of the OVMS Console and dynamic command tasks.
+
+endmenu # System Options
+
 
 menu "Library Support"
     depends on OVMS

@@ -1002,7 +1002,7 @@ void OvmsCommandApp::ReadConfig()
 
 
 OvmsCommandTask::OvmsCommandTask(int _verbosity, OvmsWriter* _writer, OvmsCommand* _cmd, int _argc, const char* const* _argv)
-  : TaskBase(_cmd->GetName())
+  : TaskBase(_cmd->GetName(), CONFIG_OVMS_SYS_COMMAND_STACK_SIZE)
   {
   m_state = OCS_Init;
 

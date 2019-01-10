@@ -64,7 +64,7 @@ HttpCommandStream::HttpCommandStream(mg_connection* nc, std::string command, int
   m_writequeue = xQueueCreate(30, sizeof(hcs_writebuf));
   char name[configMAX_TASK_NAME_LEN];
   snprintf(name, sizeof(name), "%s", command.c_str());
-  xTaskCreatePinnedToCore(CommandTask, name, 5*1024, (void*)this, 4, &m_cmdtask, 1);
+  xTaskCreatePinnedToCore(CommandTask, name, CONFIG_OVMS_SYS_COMMAND_STACK_SIZE, (void*)this, 4, &m_cmdtask, 1);
 }
 
 HttpCommandStream::~HttpCommandStream()
