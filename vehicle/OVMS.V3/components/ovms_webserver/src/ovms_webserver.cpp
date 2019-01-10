@@ -69,8 +69,10 @@ OvmsWebServer::OvmsWebServer()
   #undef bind  // Kludgy, but works
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG,"network.mgr.init", std::bind(&OvmsWebServer::NetManInit, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"network.mgr.stop", std::bind(&OvmsWebServer::NetManStop, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "network.mgr.init", std::bind(&OvmsWebServer::NetManInit, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "network.mgr.stop", std::bind(&OvmsWebServer::NetManStop, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsWebServer::ConfigChanged, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsWebServer::ConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "*", std::bind(&OvmsWebServer::EventListener, this, _1, _2));
 
   // register standard framework URIs:
@@ -134,17 +136,9 @@ void OvmsWebServer::NetManInit(std::string event, void* data)
   m_running = true;
   ESP_LOGI(TAG,"Launching Web Server");
 
-  if (!m_configured)
-  {
-    // read config:
-    ConfigChanged("init", NULL);
-
-    using std::placeholders::_1;
-    using std::placeholders::_2;
-    MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsWebServer::ConfigChanged, this, _1, _2));
-    MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsWebServer::ConfigChanged, this, _1, _2));
-
-    m_configured = true;
+  if (!m_configured) {
+    // safety measure, should not happen normally
+    ConfigChanged("config.mounted", NULL);
   }
 
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
@@ -175,6 +169,7 @@ void OvmsWebServer::NetManStop(std::string event, void* data)
  */
 void OvmsWebServer::ConfigChanged(std::string event, void* data)
 {
+  m_configured = true;
   OvmsConfigParam* param = (OvmsConfigParam*) data;
   ESP_LOGD(TAG, "ConfigChanged: %s %s", event.c_str(), param ? param->GetName().c_str() : "");
 
@@ -183,10 +178,6 @@ void OvmsWebServer::ConfigChanged(std::string event, void* data)
   }
 
 #if MG_ENABLE_FILESYSTEM
-  if (!param || param->GetName() == "password") {
-    UpdateGlobalAuthFile();
-  }
-
   if (!param || param->GetName() == "http.server") {
     // Instances:
     //    Name                Default                 Function
@@ -217,6 +208,10 @@ void OvmsWebServer::ConfigChanged(std::string event, void* data)
       strdup(MyConfig.GetParamValue("http.server", "auth.file", ".htpasswd").c_str());
     m_file_opts.global_auth_file =
       MyConfig.GetParamValueBool("http.server", "auth.global", true) ? OVMS_GLOBAL_AUTH_FILE : NULL;
+  }
+
+  if (!param || param->GetName() == "password") {
+    UpdateGlobalAuthFile();
   }
 #endif //MG_ENABLE_FILESYSTEM
 
@@ -257,7 +252,8 @@ void OvmsWebServer::UpdateGlobalAuthFile()
     auth = MakeDigestAuth(m_file_opts.auth_domain, "", p.c_str());
     fprintf(fp, "%s\n", auth.c_str());
     ESP_LOGD(TAG, "UpdateGlobalAuthFile: '' => %s", auth.c_str());
-    fclose(fp);
+    if (fclose(fp) != 0)
+      ESP_LOGE(TAG, "UpdateGlobalAuthFile: can't write to '%s': %s", m_file_opts.global_auth_file, strerror(errno));
   }
 #endif //MG_ENABLE_FILESYSTEM
 }
