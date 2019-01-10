@@ -579,6 +579,7 @@ class OvmsWebServer : public ExternalRamAllocated
     TimerHandle_t             m_update_ticker;
 
     int                       m_init_timeout;
+    int                       m_restart_countdown;
 };
 
 extern OvmsWebServer MyWebServer;

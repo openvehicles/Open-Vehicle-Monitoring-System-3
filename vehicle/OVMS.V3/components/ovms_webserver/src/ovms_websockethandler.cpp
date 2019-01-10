@@ -34,6 +34,7 @@ static const char *TAG = "websocket";
 #include "ovms_webserver.h"
 #include "ovms_config.h"
 #include "ovms_metrics.h"
+#include "ovms_boot.h"
 #include "metrics_standard.h"
 #include "buffered_shell.h"
 #include "vehicle.h"
@@ -457,9 +458,17 @@ bool OvmsWebServer::AddToBacklog(int client, WebSocketTxJob job)
  */
 void OvmsWebServer::EventListener(std::string event, void* data)
 {
+  // shutdown delay to finish command output transmissions:
+  if (event == "system.shuttingdown") {
+    MyBoot.RestartPending("webserver");
+    m_restart_countdown = 3;
+  }
+  
   // ticker:
   if (event == "ticker.1") {
     CfgInitTicker();
+    if (m_restart_countdown > 0 && --m_restart_countdown == 0)
+      MyBoot.RestartReady("webserver");
   }
   
   // forward events to all websocket clients:

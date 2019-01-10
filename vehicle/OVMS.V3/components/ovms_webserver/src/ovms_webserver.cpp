@@ -51,6 +51,7 @@ OvmsWebServer::OvmsWebServer()
 
   m_running = false;
   m_configured = false;
+  m_restart_countdown = 0;
   memset(m_sessions, 0, sizeof(m_sessions));
 
 #if MG_ENABLE_FILESYSTEM
