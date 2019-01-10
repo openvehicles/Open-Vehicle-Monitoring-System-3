@@ -244,6 +244,7 @@ esp32wifi::esp32wifi(const char* name)
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.start",std::bind(&esp32wifi::EventWifiStaState, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.gotip",std::bind(&esp32wifi::EventWifiGotIp, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.wifi.sta.connected",std::bind(&esp32wifi::EventWifiStaConnected, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.disconnected",std::bind(&esp32wifi::EventWifiStaDisconnected, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"ticker.1",std::bind(&esp32wifi::EventTimer1, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"ticker.10",std::bind(&esp32wifi::EventTimer10, this, _1, _2));
@@ -746,6 +747,19 @@ void esp32wifi::EventWifiGotIp(std::string event, void* data)
   ESP_LOGI(TAG, "STA got IP with SSID: %s, MAC: " MACSTR ", IP: " IPSTR ", mask: " IPSTR ", gw: " IPSTR,
     m_wifi_sta_cfg.sta.ssid, MAC2STR(m_mac_sta),
     IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw));
+  }
+
+void esp32wifi::EventWifiStaConnected(std::string event, void* data)
+  {
+  system_event_sta_connected_t& conn = ((system_event_info_t*)data)->connected;
+
+  ESP_LOGI(TAG, "STA connected with SSID: %.*s, BSSID: " MACSTR ", Channel: %u, Auth: %s",
+    conn.ssid_len, conn.ssid, MAC2STR(conn.bssid), conn.channel,
+    conn.authmode == WIFI_AUTH_OPEN ? "None" : 
+    conn.authmode == WIFI_AUTH_WEP ? "WEP" :
+    conn.authmode == WIFI_AUTH_WPA_PSK ? "WPA" :
+    conn.authmode == WIFI_AUTH_WPA2_PSK ? "WPA2" :
+    conn.authmode == WIFI_AUTH_WPA_WPA2_PSK ? "WPA/WPA2" : "Unknown");
   }
 
 void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)

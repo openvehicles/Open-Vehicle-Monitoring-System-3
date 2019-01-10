@@ -80,6 +80,7 @@ class esp32wifi : public pcp, public InternalRamAllocated
   public:
     void EventWifiStaState(std::string event, void* data);
     void EventWifiGotIp(std::string event, void* data);
+    void EventWifiStaConnected(std::string event, void* data);
     void EventWifiStaDisconnected(std::string event, void* data);
     void EventWifiApState(std::string event, void* data);
     void EventWifiApUpdate(std::string event, void* data);
