@@ -287,11 +287,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeCurrent(
 
 	return Success;
 }
-
+#ifdef CONFIG_OVMS_COMP_MAX7317
 void SmartEDLockingTimer(TimerHandle_t timer) {
 	xTimerStop(timer, 0);
 	xTimerDelete(timer, 0);
 	//reset GEP 1 + 2
+	
 	MyPeripherals->m_max7317->Output(MAX7317_EGPIO_1, 0);
 	MyPeripherals->m_max7317->Output(MAX7317_EGPIO_2, 0);
 }
@@ -313,6 +314,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandUnlock() {
 	return Success;
 	//return NotImplemented;
 }
+#endif
 
 class OvmsVehicleSmartEDInit {
 	public:
