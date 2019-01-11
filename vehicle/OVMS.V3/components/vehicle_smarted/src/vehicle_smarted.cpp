@@ -42,9 +42,6 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
 
 	RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 
-	// require GPS:
-	MyEvents.SignalEvent("vehicle.require.gps", NULL);
-	MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
 }
 
 OvmsVehicleSmartED::~OvmsVehicleSmartED() {
