@@ -2750,21 +2750,34 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
     bool got_content = c.getvar("content", content);
     content = stripcr(content);
 
-    if (path == "") {
-      error += "<li>Missing path!</li>";
+    if (path == "" || path.front() != '/' || path.back() == '/') {
+      error += "<li>Missing or invalid path</li>";
     }
     else if (!got_content) {
-      error += "<li>Missing content!</li>";
+      error += "<li>Missing content</li>";
     }
     else {
+      // create path:
+      size_t n = path.rfind('/');
+      if (n != 0 && n != std::string::npos) {
+        std::string dir = path.substr(0, n);
+        if (!path_exists(dir)) {
+          if (mkpath(dir) != 0)
+            error += "<li>Error creating path <code>" + c.encode_html(dir) + "</code>: " + strerror(errno) + "</li>";
+          else
+            info += "<p class=\"lead\">Path <code>" + c.encode_html(dir) + "</code> created.</p>";
+        }
+      }
       // write file:
-      std::ofstream file(path, std::ios::out | std::ios::trunc);
-      if (file.is_open())
-        file.write(content.data(), content.size());
-      if (file.fail())
-        error += "<li>Error writing to <code>" + c.encode_html(path) + "</code>: " + strerror(errno) + "</li>";
-      else
-        info += "<p class=\"lead\">File <code>" + c.encode_html(path) + "</code> saved.</p>";
+      if (error == "") {
+        std::ofstream file(path, std::ios::out | std::ios::trunc);
+        if (file.is_open())
+          file.write(content.data(), content.size());
+        if (file.fail())
+          error += "<li>Error writing to <code>" + c.encode_html(path) + "</code>: " + strerror(errno) + "</li>";
+        else
+          info += "<p class=\"lead\">File <code>" + c.encode_html(path) + "</code> saved.</p>";
+      }
     }
   }
   else
@@ -2783,7 +2796,7 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
 
   // output:
   if (error != "") {
-    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    error = "<p class=\"lead\">Error:</p><ul class=\"errorlist\">" + error + "</ul>";
     c.head(400);
     c.alert("danger", error.c_str());
   } else {
@@ -2909,6 +2922,9 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
         "prefs.texteditor.fontsize = $ta.css(\"font-size\");\n"
         "prefs.texteditor.wrap = $('.tac-wrap').hasClass(\"active\");\n"
       "});\n"
+      "/* auto open file dialog: */\n"
+      "if (path == dir && $('#input-content').val() == '')\n"
+        "$('.action-open').trigger('click');\n"
     "})();\n"
     "</script>\n"
     );
