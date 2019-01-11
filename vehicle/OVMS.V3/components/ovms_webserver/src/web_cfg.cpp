@@ -2087,7 +2087,7 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
           "<col style=\"width:90%\">"
         "</colgroup>"
         "<template>"
-          "<tr class=\"list-item\">"
+          "<tr class=\"list-item mode-ITEM_MODE\">\n"
             "<td><button type=\"button\" class=\"btn btn-danger list-item-del\"><strong>✖</strong></button></td>"
             "<td>"
               "<div class=\"form-group\">"
@@ -2117,6 +2117,13 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
                   "<input type=\"text\" class=\"form-control\" placeholder=\"Enter name\" autocomplete=\"name\" name=\"name_ITEM_ID\" id=\"input-name_ITEM_ID\" value=\"ITEM_name\">"
                 "</div>"
               "</div>"
+              "<div class=\"form-group\">\n"
+                "<label class=\"control-label col-sm-2\">Scripts:</label>\n"
+                "<div class=\"col-sm-10\">\n"
+                  "<button type=\"button\" class=\"btn btn-default edit-scripts\" data-edit=\"location.enter.{name}\">Entering</button>\n"
+                  "<button type=\"button\" class=\"btn btn-default edit-scripts\" data-edit=\"location.leave.{name}\">Leaving</button>\n"
+                "</div>\n"
+              "</div>\n"
             "</td>"
           "</tr>"
         "</template>"
@@ -2131,7 +2138,10 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
       "</table>"
       "<input type=\"hidden\" class=\"list-item-id\" name=\"loc\" value=\"0\">"
     "</div>"
-    "<button type=\"submit\" class=\"btn btn-default center-block\">Save</button>\n"
+    "<div class=\"text-center\">\n"
+      "<button type=\"reset\" class=\"btn btn-default\">Reset</button>\n"
+      "<button type=\"submit\" class=\"btn btn-primary\">Save</button>\n"
+    "</div>\n"
   );
 
   c.form_end();
@@ -2152,7 +2162,25 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
         "var preset = { latlon: metrics['v.p.latitude']+','+metrics['v.p.longitude'], radius: 100 };"
         "$('#loced button.list-item-add').data('preset', JSON.stringify(preset));"
       "}"
-    "}).trigger('msg:metrics', metrics);");
+    "}).trigger('msg:metrics', metrics);"
+    "$('#loced').on('click', 'button.edit-scripts', function(evt) {\n"
+      "var $this = $(this), $tr = $this.closest('tr');\n"
+      "var name = $tr.find('input[name^=\"name_\"]').val();\n"
+      "var dir = '/store/events/' + $this.data('edit').replace(\"{name}\", name) + '/';\n"
+      "var changed = ($('#loced').find('.mode-add').length != 0);\n"
+      "if (!changed)\n"
+        "$('#loced input').each(function() { changed = changed || ($(this).val() != $(this).attr(\"value\")); });\n"
+      "if (name == \"\") {\n"
+        "confirmdialog(\"Error\", \"<p>Scripts are bound to the location name, please specify it.</p>\", [\"OK\"]);\n"
+      "} else if (!changed) {\n"
+        "loaduri('#main', 'get', '/edit', { \"path\": dir });\n"
+      "} else {\n"
+        "confirmdialog(\"Discard changes?\", \"Loading the editor will discard your list changes.\", [\"Cancel\", \"OK\"], function(ok) {\n"
+          "if (ok) loaduri('#main', 'get', '/edit', { \"path\": dir });\n"
+        "});\n"
+      "}\n"
+    "});\n"
+  );
 
   for (auto &kv: pmap) {
     lat = lon = 0;
