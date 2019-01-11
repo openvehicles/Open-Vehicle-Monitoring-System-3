@@ -280,7 +280,7 @@ config OVMS_VEHICLE_SMARTED
     default y
     depends on OVMS
     help
-        Enable to include support for Smart ED vehicle.
+Enable to include support for Smart ED vehicle.
 
 config OVMS_VEHICLE_MITSUBISHI
     bool "Include support for Mitsubishi iMiev vehicle"
