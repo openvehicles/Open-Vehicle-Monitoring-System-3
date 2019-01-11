@@ -122,7 +122,14 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     #define CAN_STATUS_ONLINE       0x80        //  bit 7 = 0x80: 1 = CAN-Bus online (test flag to detect offline)
     unsigned char twizy_status = CAN_STATUS_OFFLINE;
     
-    
+    OvmsMetricInt *mt_charger_status;           // CAN frame 627 → xrt.v.c.status
+    OvmsMetricInt *mt_bms_status;               // CAN frame 628 → xrt.v.b.status
+    OvmsMetricInt *mt_sevcon_status;            // CAN frame 629 → xrt.v.i.status
+
+    OvmsMetricBool *mt_bms_alert_12v;           // see https://github.com/dexterbg/Twizy-Virtual-BMS/blob/master/extras/Protocol.ods
+    OvmsMetricBool *mt_bms_alert_batt;
+    OvmsMetricBool *mt_bms_alert_temp;
+
     struct {
       
       // Status flags:

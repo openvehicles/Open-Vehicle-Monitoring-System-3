@@ -591,10 +591,30 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
       
       
+    case 0x627:
+      // --------------------------------------------------------------------------
+      // *** CHARGER status ***
+      // sent every 100 ms (10 per second) in drive & charge mode
+      mt_charger_status->SetValue(CAN_UINT24(0));
+      break;
+
+
+    case 0x628:
+      // --------------------------------------------------------------------------
+      // *** BMS status ***
+      // sent every 100 ms (10 per second) in drive & charge mode
+      mt_bms_status->SetValue(CAN_UINT24(0));
+      mt_bms_alert_12v->SetValue((CAN_BYTE(2) & 0x20) == 0x20);
+      mt_bms_alert_batt->SetValue((CAN_BYTE(2) & 0x40) == 0x40);
+      mt_bms_alert_temp->SetValue((CAN_BYTE(2) & 0x80) == 0x80);
+      break;
+
+
     case 0x629:
       // --------------------------------------------------------------------------
       // *** SEVCON status ***
       // sent every 100 ms (10 per second) while SEVCON is running
+      mt_sevcon_status->SetValue(CAN_UINT24(0));
       if (m_sevcon)
         m_sevcon->QueryMonitoringData();
       break;
