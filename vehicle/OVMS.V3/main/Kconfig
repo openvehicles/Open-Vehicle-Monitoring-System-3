@@ -92,6 +92,18 @@ config OVMS_HW_CAN_TX_QUEUE_SIZE
 endmenu # Hardware Support
 
 
+menu "System Options"
+    depends on OVMS
+
+config OVMS_SYS_COMMAND_STACK_SIZE
+    int "Stack size for command execution"
+    default 6144
+    depends on OVMS
+    help
+        The stack size of the OVMS Console and dynamic command tasks.
+
+endmenu # System Options
+
 
 menu "Library Support"
     depends on OVMS
@@ -263,19 +275,19 @@ config OVMS_VEHICLE_THINKCITY
     help
         Enable to include support for Think City vehicles.
 
+config OVMS_VEHICLE_SMARTED
+    bool "Include support for Smart ED vehicle"
+    default y
+    depends on OVMS
+    help
+Enable to include support for Smart ED vehicle.
+
 config OVMS_VEHICLE_MITSUBISHI
     bool "Include support for Mitsubishi iMiev vehicle"
     default y
     depends on OVMS
     help
         Enable to include support for Mitsubishi iMiev vehicle.
-		
-config OVMS_VEHICLE_SMARTED
-    bool "Include support for Smart ED vehicle"
-    default y
-    depends on OVMS
-    help
-        Enable to include support for Smart ED vehicle.
 
 config OVMS_VEHICLE_ZEVA
     bool "Include support for vehicles using Zeva BMS"
