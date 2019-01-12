@@ -310,13 +310,19 @@ const std::string OvmsWebServer::ExecuteCommand(const std::string command, int v
  * Note: use PageMenu_Vehicle for vehicle specific pages.
  */
 void OvmsWebServer::RegisterPage(std::string uri, std::string label, PageHandler_t handler,
-  PageMenu_t menu /*=PageMenu_None*/, PageAuth_t auth /*=PageAuth_None*/)
+  PageMenu_t menu /*=PageMenu_None*/, PageAuth_t auth /*=PageAuth_None*/, int priority /*=0*/)
 {
   auto prev = m_pagemap.before_begin();
   for (auto it = m_pagemap.begin(); it != m_pagemap.end(); prev = it++) {
     if ((*it).uri == uri) {
-      ESP_LOGE(TAG, "RegisterPage: second registration for uri '%s' (ignored)", uri.c_str());
-      return;
+      if (priority < 0) {
+        ESP_LOGE(TAG, "RegisterPage: second registration for uri '%s' (ignored)", uri.c_str());
+        return;
+      } else {
+        ESP_LOGI(TAG, "RegisterPage: second registration for uri '%s' prioritized", uri.c_str());
+        m_pagemap.erase_after(prev);
+        break;
+      }
     }
   }
   m_pagemap.insert_after(prev, PageEntry(uri, label, handler, menu, auth));
@@ -393,14 +399,14 @@ void OvmsWebServer::RegisterPlugins()
     
     if (is_hook) {
       m_plugin_parts.insert({ page + ":" + hook, PagePluginContent(key) });
-      RegisterCallback("http.plugin", page, PluginCallback);
+      RegisterCallback("http.plugin", page, PluginCallback, -1);
       ESP_LOGD(TAG, "Plugin hook registered: '%s:%s' => '%s'", page.c_str(), hook.c_str(), key.c_str());
     } else {
       m_plugin_pages.insert({ page, PagePluginContent(key) });
       label = cp->GetValue(key+".label");
       menu = Code2PageMenu(cp->GetValue(key+".menu"));
       auth = Code2PageAuth(cp->GetValue(key+".auth"));
-      RegisterPage(page, label, PluginHandler, menu, auth);
+      RegisterPage(page, label, PluginHandler, menu, auth, -1);
       ESP_LOGD(TAG, "Plugin page registered: '%s' => '%s'", page.c_str(), key.c_str());
     }
   }
@@ -538,11 +544,24 @@ void PageEntry::Serve(PageContext_t& c)
   (auth != PageAuth_None && !MyConfig.GetParamValue("password", "module").empty())
 #endif
   {
-    // use session cookie based auth:
+    // use session cookie / access based auth:
     if (c.session == NULL)
     {
-      MyWebServer.HandleLogin(*this, c);
-      return;
+      // Check per access auth:
+      // Note: apikey is currently just the admin password, but can later be replaced by an auth token
+      std::string apikey = c.getvar("apikey");
+      if (!MyWebServer.CheckLogin("admin", apikey)) {
+        if (apikey != "") {
+          // output API response:
+          c.head(403);
+          c.print("ERROR: Unauthorized\n");
+          c.done();
+        } else {
+          // forward user to login page:
+          MyWebServer.HandleLogin(*this, c);
+        }
+        return;
+      }
     }
   }
 #if MG_ENABLE_FILESYSTEM
@@ -561,10 +580,7 @@ void PageEntry::Serve(PageContext_t& c)
 #endif //MG_ENABLE_FILESYSTEM
 
   // call page handler:
-  size_t checkpoint1 = heap_caps_get_free_size(MALLOC_CAP_8BIT);
   handler(*this, c);
-  size_t checkpoint2 = heap_caps_get_free_size(MALLOC_CAP_8BIT);
-  ESP_LOGD(TAG, "Serve %s: %d bytes used, %d free", uri.c_str(), checkpoint1-checkpoint2, checkpoint2);
 }
 
 
@@ -572,12 +588,12 @@ void PageEntry::Serve(PageContext_t& c)
  * Page Callback Registry:
  */
 
-bool OvmsWebServer::RegisterCallback(std::string caller, std::string uri, PageCallback_t handler)
+bool OvmsWebServer::RegisterCallback(std::string caller, std::string uri, PageCallback_t handler, int priority /*=0*/)
 {
   PageEntry* e = FindPage(uri);
   if (!e)
     return false;
-  e->RegisterCallback(caller, handler);
+  e->RegisterCallback(caller, handler, priority);
   return true;
 }
 
@@ -587,14 +603,17 @@ void OvmsWebServer::DeregisterCallbacks(std::string caller)
     e.DeregisterCallback(caller);
 }
 
-void PageEntry::RegisterCallback(std::string caller, PageCallback_t handler)
+void PageEntry::RegisterCallback(std::string caller, PageCallback_t handler, int priority /*=0*/)
 {
   auto prev = callbacklist.before_begin();
   for (auto it = callbacklist.begin(); it != callbacklist.end(); prev = it++) {
     if ((*it).caller == caller && (*it).handler == handler)
       return; // already registered
   }
-  callbacklist.insert_after(prev, PageCallbackEntry(caller, handler));
+  if (priority < 0)
+    callbacklist.insert_after(prev, PageCallbackEntry(caller, handler));
+  else
+    callbacklist.push_front(PageCallbackEntry(caller, handler));
 }
 
 void PageEntry::DeregisterCallback(std::string caller)
