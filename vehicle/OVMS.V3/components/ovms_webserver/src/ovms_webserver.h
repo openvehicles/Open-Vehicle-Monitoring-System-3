@@ -227,7 +227,7 @@ struct PageEntry
 
   void Serve(PageContext_t& c);
 
-  void RegisterCallback(std::string caller, PageCallback_t handler);
+  void RegisterCallback(std::string caller, PageCallback_t handler, int priority=0);
   void DeregisterCallback(std::string caller);
   PageResult_t callback(PageContext_t& c, const std::string& hook);
 };
@@ -486,10 +486,10 @@ class OvmsWebServer : public ExternalRamAllocated
 
   public:
     void RegisterPage(std::string uri, std::string label, PageHandler_t handler,
-      PageMenu_t menu=PageMenu_None, PageAuth_t auth=PageAuth_None);
+      PageMenu_t menu=PageMenu_None, PageAuth_t auth=PageAuth_None, int priority=0);
     void DeregisterPage(std::string uri);
     PageEntry* FindPage(std::string uri);
-    bool RegisterCallback(std::string caller, std::string uri, PageCallback_t handler);
+    bool RegisterCallback(std::string caller, std::string uri, PageCallback_t handler, int priority=0);
     void DeregisterCallbacks(std::string caller);
     void RegisterPlugins();
     void DeregisterPlugins();
