@@ -544,11 +544,24 @@ void PageEntry::Serve(PageContext_t& c)
   (auth != PageAuth_None && !MyConfig.GetParamValue("password", "module").empty())
 #endif
   {
-    // use session cookie based auth:
+    // use session cookie / access based auth:
     if (c.session == NULL)
     {
-      MyWebServer.HandleLogin(*this, c);
-      return;
+      // Check per access auth:
+      // Note: apikey is currently just the admin password, but can later be replaced by an auth token
+      std::string apikey = c.getvar("apikey");
+      if (!MyWebServer.CheckLogin("admin", apikey)) {
+        if (apikey != "") {
+          // output API response:
+          c.head(403);
+          c.print("ERROR: Unauthorized\n");
+          c.done();
+        } else {
+          // forward user to login page:
+          MyWebServer.HandleLogin(*this, c);
+        }
+        return;
+      }
     }
   }
 #if MG_ENABLE_FILESYSTEM
@@ -567,10 +580,7 @@ void PageEntry::Serve(PageContext_t& c)
 #endif //MG_ENABLE_FILESYSTEM
 
   // call page handler:
-  size_t checkpoint1 = heap_caps_get_free_size(MALLOC_CAP_8BIT);
   handler(*this, c);
-  size_t checkpoint2 = heap_caps_get_free_size(MALLOC_CAP_8BIT);
-  ESP_LOGD(TAG, "Serve %s: %d bytes used, %d free", uri.c_str(), checkpoint1-checkpoint2, checkpoint2);
 }
 
 
