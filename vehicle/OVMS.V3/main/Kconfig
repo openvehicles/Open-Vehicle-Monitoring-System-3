@@ -92,6 +92,18 @@ config OVMS_HW_CAN_TX_QUEUE_SIZE
 endmenu # Hardware Support
 
 
+menu "System Options"
+    depends on OVMS
+
+config OVMS_SYS_COMMAND_STACK_SIZE
+    int "Stack size for command execution"
+    default 6144
+    depends on OVMS
+    help
+        The stack size of the OVMS Console and dynamic command tasks.
+
+endmenu # System Options
+
 
 menu "Library Support"
     depends on OVMS
@@ -162,6 +174,21 @@ config OVMS_SC_ZIP
         Enable to include zip archive support for config backup & restore.
         This is based on libzip by Dieter Baron and Thomas Klausner and
         zlib by Jean-loup Gailly and Mark Adler.
+
+config OVMS_SC_JAVASCRIPT_DUKTAPE_STACK
+    int "JavaScript (DukTape) task stack size"
+    default 8192
+    depends on OVMS_SC_JAVASCRIPT_DUKTAPE
+    help
+        Stack size for the DukTape task ("Duk Task").
+        The DukTape task runs the javascript framework.
+
+config OVMS_SC_JAVASCRIPT_DUKTAPE_QUEUE_SIZE
+    int "JavaScript (DukTape) task queue size"
+    default 20
+    depends on OVMS_SC_JAVASCRIPT_DUKTAPE
+    help
+        The size of the DukTape queue (for outstanding requests).
 
 endmenu # Library support
 
@@ -247,6 +274,13 @@ config OVMS_VEHICLE_THINKCITY
     depends on OVMS
     help
         Enable to include support for Think City vehicles.
+
+config OVMS_VEHICLE_SMARTED
+    bool "Include support for Smart ED vehicle"
+    default y
+    depends on OVMS
+    help
+Enable to include support for Smart ED vehicle.
 
 config OVMS_VEHICLE_MITSUBISHI
     bool "Include support for Mitsubishi iMiev vehicle"

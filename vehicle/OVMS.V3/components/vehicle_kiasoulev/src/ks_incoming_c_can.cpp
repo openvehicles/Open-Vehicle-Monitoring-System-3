@@ -24,7 +24,7 @@
  */
 #include "vehicle_kiasoulev.h"
 
-//static const char *TAG = "v-kiasoulev";
+static const char *TAG = "v-kiasoulev";
 
 /**
  * Handles incoming CAN-frames on bus 1, the C-bus
@@ -49,6 +49,13 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 
 		StdMetrics.ms_v_door_trunk->SetValue((d[5] & 0x80) > 0); 		//Byte 5 - Bit 7
 
+		if(StdMetrics.ms_v_door_fl->AsBool() || StdMetrics.ms_v_door_fr->AsBool() ||
+			StdMetrics.ms_v_door_rl->AsBool() || StdMetrics.ms_v_door_rr->AsBool() ||
+			StdMetrics.ms_v_door_trunk->AsBool()	)
+			{
+			StdMetrics.ms_v_env_locked->SetValue(false);
+			}
+
 		// Light status Byte 2,4 & 5
 		m_v_env_lowbeam->SetValue((d[2] & 0x01) > 0);		//Byte 2 - Bit 0 - Low beam
 		m_v_env_highbeam->SetValue((d[2] & 0x02) > 0);	//Byte 2 - Bit 1 - High beam
@@ -58,7 +65,10 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 		//byte 5 - Bit 5 - Right indicator light
 		uint8_t indLights = (d[5] & 0x60)>>5;
 		if( !m_v_emergency_lights->AsBool() && indLights==3)
+			{
+			//ks_check_door_lock = true;
 			m_v_emergency_lights->SetValue(true);
+			}
 		else if( m_v_emergency_lights->AsBool() && (indLights==1 || indLights==2))
 			m_v_emergency_lights->SetValue(false);
 
@@ -80,13 +90,23 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 
 	case 0x120: //Locks
 		{
+		if (d[2] & 0x10)
+			{
+			//ks_check_door_lock=true;
+			if( d[1] & 0x08) StdMetrics.ms_v_env_locked->SetValue(false);
+			if( d[1] & 0x01) StdMetrics.ms_v_env_locked->SetValue(true);
+			}
 		if (d[3] & 0x20)
 			{
-			StdMetrics.ms_v_env_locked->SetValue(false); // This only keeps track of the lock signal from keyfob
+			//ks_check_door_lock=true;
+			StdMetrics.ms_v_env_locked->SetValue(false);
+			if(ks_key_fob_open_charge_port && StdMetrics.ms_v_env_on->AsBool()) ks_lockDoors = true;
 			}
 		else if (d[3] & 0x10)
 			{
-			StdMetrics.ms_v_env_locked->SetValue(true); // This only keeps track of the lock signal from keyfob
+			//ks_check_door_lock=true;
+			StdMetrics.ms_v_env_locked->SetValue(true);
+			if(ks_key_fob_open_charge_port && StdMetrics.ms_v_env_on->AsBool()) ks_unlockDoors = true;
 			}
 		if (d[3] & 0x40 && ks_key_fob_open_charge_port)
 			{

@@ -121,8 +121,8 @@ int BufferedShell::printf(const char* fmt, ...)
 ssize_t BufferedShell::write(const void *buf, size_t nbyte)
   {
   if (!m_output)
-    return nbyte;
-  int done = 0;
+    return 0;
+  size_t done = 0;
   while (nbyte > 0)
     {
     if (m_left == 0)
@@ -140,7 +140,7 @@ ssize_t BufferedShell::write(const void *buf, size_t nbyte)
     *(m_buffer + BUFFER_SIZE - 1 - m_left) = '\0';
     nbyte -= n;
     }
-  return nbyte;
+  return done;
   }
 
 char ** BufferedShell::GetCompletion(OvmsCommandMap& children, const char* token)

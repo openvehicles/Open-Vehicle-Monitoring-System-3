@@ -607,12 +607,7 @@ void OvmsCommandApp::ConfigureLogging()
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
-  duk_context* ctx = MyScripts.Duktape();
-  if (ctx)
-    {
-    duk_push_c_function(ctx, DukOvmsCommand, 1 /*nargs*/);
-    duk_put_global_string(ctx, "OvmsCommand");
-    }
+  MyScripts.RegisterDuktapeFunction(DukOvmsCommand, 1, "OvmsCommand");
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
@@ -1007,7 +1002,7 @@ void OvmsCommandApp::ReadConfig()
 
 
 OvmsCommandTask::OvmsCommandTask(int _verbosity, OvmsWriter* _writer, OvmsCommand* _cmd, int _argc, const char* const* _argv)
-  : TaskBase(_cmd->GetName())
+  : TaskBase(_cmd->GetName(), CONFIG_OVMS_SYS_COMMAND_STACK_SIZE)
   {
   m_state = OCS_Init;
 

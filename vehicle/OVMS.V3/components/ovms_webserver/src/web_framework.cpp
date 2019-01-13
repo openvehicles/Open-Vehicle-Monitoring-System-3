@@ -71,6 +71,26 @@ std::string PageContext::encode_html(std::string text) {
   return encode_html(text.c_str());
 }
 
+extram::string PageContext::encode_html(const extram::string& text) {
+	extram::string buf;
+  buf.reserve(text.length() + 500);
+	for (int i=0; i<text.length(); i++) {
+		if (text[i] == '\"')
+			buf += "&quot;";
+		else if (text[i] == '\'')
+			buf += "&#x27;";
+		else if(text[i] == '<')
+			buf += "&lt;";
+		else if(text[i] == '>')
+			buf += "&gt;";
+		else if(text[i] == '&')
+			buf += "&amp;";
+		else
+			buf += text[i];
+  }
+	return buf;
+}
+
 #define _attr(text) (encode_html(text).c_str())
 #define _html(text) (encode_html(text).c_str())
 
@@ -339,33 +359,38 @@ void PageContext::input_slider(const char* label, const char* name, int size, co
       "<div class=\"col-sm-9\">"
         "<div class=\"form-control slider\">"
           "<div class=\"slider-control form-inline\">"
-            "<input id=\"input-%s\" class=\"slider-enable\" type=\"%s\" %s> "
-            "<input class=\"form-control slider-value\" %s type=\"number\" name=\"%s\" style=\"width:%dpx;\" value=\"%g\" min=\"%g\" max=\"%g\" step=\"%g\"> "
+            "<input class=\"slider-enable\" type=\"%s\" %s data-default=\"%g\" data-reset=\"false\"> "
+            "<input class=\"form-control slider-value\" %s type=\"number\" style=\"width:%dpx;\""
+              " id=\"input-%s\" name=\"%s\" value=\"%g\" min=\"%g\" max=\"%g\" step=\"%g\"> "
             "%s%s%s"
             "<input class=\"btn btn-default slider-down\" %s type=\"button\" value=\"➖\"> "
+            "<input class=\"btn btn-default slider-set\" %s type=\"button\" value=\"◈\" data-set=\"%g\"> "
             "<input class=\"btn btn-default slider-up\" %s type=\"button\" value=\"➕\">"
           "</div>"
-          "<input class=\"slider-input\" %s type=\"range\" value=\"%g\" min=\"%g\" max=\"%g\" step=\"%g\" data-default=\"%g\">"
+          "<input class=\"slider-input\" %s type=\"range\" value=\"%g\" min=\"%g\" max=\"%g\" step=\"%g\">"
         "</div>"
         "%s%s%s"
       "</div>"
     "</div>"
     , _attr(name)
     , label
-    , _attr(name)
     , (enabled < 0) ? "hidden" : "checkbox" // -1 => no checkbox
     , (enabled > 0) ? "checked" : ""
+    , defval
     , (enabled == 0) ? "disabled" : ""
-    , _attr(name)
     , width
+    , _attr(name)
+    , _attr(name)
     , value, min, max, step
     , unit ? "<span class=\"slider-unit\">" : ""
     , unit ? unit : ""
     , unit ? "</span> " : ""
     , (enabled == 0) ? "disabled" : ""
     , (enabled == 0) ? "disabled" : ""
+    , defval
     , (enabled == 0) ? "disabled" : ""
-    , value, min, max, step, defval
+    , (enabled == 0) ? "disabled" : ""
+    , value, min, max, step
     , helptext ? "<span class=\"help-block\">" : ""
     , helptext ? helptext : ""
     , helptext ? "</span>" : ""

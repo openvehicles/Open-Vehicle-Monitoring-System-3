@@ -262,6 +262,11 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     bool ks_aux_bat_ok;
 
     bool ks_ready_for_chargepollstate;
+    bool ks_check_door_lock;
+    bool ks_lockDoors;
+    bool ks_unlockDoors;
+
+    bool ks_enable_write;
 
     uint8_t ks_secs_with_no_client;
 

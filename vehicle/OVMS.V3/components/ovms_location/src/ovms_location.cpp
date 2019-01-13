@@ -286,9 +286,7 @@ OvmsLocations::OvmsLocations()
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
-  duk_context* ctx = MyScripts.Duktape();
-  duk_push_c_function(ctx, DukOvmsLocationStatus, 1 /*nargs*/);
-  duk_put_global_string(ctx, "OvmsLocationStatus");
+  MyScripts.RegisterDuktapeFunction(DukOvmsLocationStatus, 1, "OvmsLocationStatus");
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 

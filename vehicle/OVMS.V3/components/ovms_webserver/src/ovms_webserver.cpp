@@ -50,6 +50,8 @@ OvmsWebServer::OvmsWebServer()
   ESP_LOGI(TAG, "Initialising WEBSERVER (8200)");
 
   m_running = false;
+  m_configured = false;
+  m_restart_countdown = 0;
   memset(m_sessions, 0, sizeof(m_sessions));
 
 #if MG_ENABLE_FILESYSTEM
@@ -62,16 +64,14 @@ OvmsWebServer::OvmsWebServer()
   m_client_backlog = xQueueCreate(50, sizeof(WebSocketTxTodo));
   m_update_ticker = xTimerCreate("Web client update ticker", 250 / portTICK_PERIOD_MS, pdTRUE, NULL, UpdateTicker);
 
-  // read config:
   MyConfig.RegisterParam("http.server", "Webserver configuration", true, true);
   MyConfig.RegisterParam("http.plugin", "Webserver plugins", true, true);
-  ConfigChanged("init", NULL);
 
   #undef bind  // Kludgy, but works
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG,"network.mgr.init", std::bind(&OvmsWebServer::NetManInit, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"network.mgr.stop", std::bind(&OvmsWebServer::NetManStop, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "network.mgr.init", std::bind(&OvmsWebServer::NetManInit, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "network.mgr.stop", std::bind(&OvmsWebServer::NetManStop, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsWebServer::ConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsWebServer::ConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "*", std::bind(&OvmsWebServer::EventListener, this, _1, _2));
@@ -99,6 +99,7 @@ OvmsWebServer::OvmsWebServer()
   // register standard administration pages:
   RegisterPage("/status", "Status", HandleStatus, PageMenu_Main, PageAuth_Cookie);
   RegisterPage("/shell", "Shell", HandleShell, PageMenu_Tools, PageAuth_Cookie);
+  RegisterPage("/edit", "Editor", HandleEditor, PageMenu_Tools, PageAuth_Cookie);
   RegisterPage("/cfg/init", "Setup wizard", HandleCfgInit, PageMenu_None, PageAuth_Cookie);
   RegisterPage("/cfg/password", "Password", HandleCfgPassword, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/vehicle", "Vehicle", HandleCfgVehicle, PageMenu_Config, PageAuth_Cookie);
@@ -133,16 +134,13 @@ OvmsWebServer::~OvmsWebServer()
 
 void OvmsWebServer::NetManInit(std::string event, void* data)
 {
-  // Only initialise server for WIFI connections
-  // TODO: Disabled as this introduces a network interface ordering issue. It
-  //       seems that the correct way to do this is to always start the mongoose
-  //       listener, but to filter incoming connections to check that the
-  //       destination address is a Wifi interface address.
-  // if (!(MyNetManager.m_connected_wifi || MyNetManager.m_wifi_ap))
-  //  return;
-
   m_running = true;
   ESP_LOGI(TAG,"Launching Web Server");
+
+  if (!m_configured) {
+    // safety measure, should not happen normally
+    ConfigChanged("config.mounted", NULL);
+  }
 
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
 
@@ -172,6 +170,7 @@ void OvmsWebServer::NetManStop(std::string event, void* data)
  */
 void OvmsWebServer::ConfigChanged(std::string event, void* data)
 {
+  m_configured = true;
   OvmsConfigParam* param = (OvmsConfigParam*) data;
   ESP_LOGD(TAG, "ConfigChanged: %s %s", event.c_str(), param ? param->GetName().c_str() : "");
 
@@ -180,10 +179,6 @@ void OvmsWebServer::ConfigChanged(std::string event, void* data)
   }
 
 #if MG_ENABLE_FILESYSTEM
-  if (!param || param->GetName() == "password") {
-    UpdateGlobalAuthFile();
-  }
-
   if (!param || param->GetName() == "http.server") {
     // Instances:
     //    Name                Default                 Function
@@ -214,6 +209,10 @@ void OvmsWebServer::ConfigChanged(std::string event, void* data)
       strdup(MyConfig.GetParamValue("http.server", "auth.file", ".htpasswd").c_str());
     m_file_opts.global_auth_file =
       MyConfig.GetParamValueBool("http.server", "auth.global", true) ? OVMS_GLOBAL_AUTH_FILE : NULL;
+  }
+
+  if (!param || param->GetName() == "password") {
+    UpdateGlobalAuthFile();
   }
 #endif //MG_ENABLE_FILESYSTEM
 
@@ -254,7 +253,8 @@ void OvmsWebServer::UpdateGlobalAuthFile()
     auth = MakeDigestAuth(m_file_opts.auth_domain, "", p.c_str());
     fprintf(fp, "%s\n", auth.c_str());
     ESP_LOGD(TAG, "UpdateGlobalAuthFile: '' => %s", auth.c_str());
-    fclose(fp);
+    if (fclose(fp) != 0)
+      ESP_LOGE(TAG, "UpdateGlobalAuthFile: can't write to '%s': %s", m_file_opts.global_auth_file, strerror(errno));
   }
 #endif //MG_ENABLE_FILESYSTEM
 }
@@ -310,13 +310,19 @@ const std::string OvmsWebServer::ExecuteCommand(const std::string command, int v
  * Note: use PageMenu_Vehicle for vehicle specific pages.
  */
 void OvmsWebServer::RegisterPage(std::string uri, std::string label, PageHandler_t handler,
-  PageMenu_t menu /*=PageMenu_None*/, PageAuth_t auth /*=PageAuth_None*/)
+  PageMenu_t menu /*=PageMenu_None*/, PageAuth_t auth /*=PageAuth_None*/, int priority /*=0*/)
 {
   auto prev = m_pagemap.before_begin();
   for (auto it = m_pagemap.begin(); it != m_pagemap.end(); prev = it++) {
     if ((*it).uri == uri) {
-      ESP_LOGE(TAG, "RegisterPage: second registration for uri '%s' (ignored)", uri.c_str());
-      return;
+      if (priority < 0) {
+        ESP_LOGE(TAG, "RegisterPage: second registration for uri '%s' (ignored)", uri.c_str());
+        return;
+      } else {
+        ESP_LOGI(TAG, "RegisterPage: second registration for uri '%s' prioritized", uri.c_str());
+        m_pagemap.erase_after(prev);
+        break;
+      }
     }
   }
   m_pagemap.insert_after(prev, PageEntry(uri, label, handler, menu, auth));
@@ -393,14 +399,14 @@ void OvmsWebServer::RegisterPlugins()
     
     if (is_hook) {
       m_plugin_parts.insert({ page + ":" + hook, PagePluginContent(key) });
-      RegisterCallback("http.plugin", page, PluginCallback);
+      RegisterCallback("http.plugin", page, PluginCallback, -1);
       ESP_LOGD(TAG, "Plugin hook registered: '%s:%s' => '%s'", page.c_str(), hook.c_str(), key.c_str());
     } else {
       m_plugin_pages.insert({ page, PagePluginContent(key) });
       label = cp->GetValue(key+".label");
       menu = Code2PageMenu(cp->GetValue(key+".menu"));
       auth = Code2PageAuth(cp->GetValue(key+".auth"));
-      RegisterPage(page, label, PluginHandler, menu, auth);
+      RegisterPage(page, label, PluginHandler, menu, auth, -1);
       ESP_LOGD(TAG, "Plugin page registered: '%s' => '%s'", page.c_str(), key.c_str());
     }
   }
@@ -538,11 +544,24 @@ void PageEntry::Serve(PageContext_t& c)
   (auth != PageAuth_None && !MyConfig.GetParamValue("password", "module").empty())
 #endif
   {
-    // use session cookie based auth:
+    // use session cookie / access based auth:
     if (c.session == NULL)
     {
-      MyWebServer.HandleLogin(*this, c);
-      return;
+      // Check per access auth:
+      // Note: apikey is currently just the admin password, but can later be replaced by an auth token
+      std::string apikey = c.getvar("apikey");
+      if (!MyWebServer.CheckLogin("admin", apikey)) {
+        if (apikey != "") {
+          // output API response:
+          c.head(403);
+          c.print("ERROR: Unauthorized\n");
+          c.done();
+        } else {
+          // forward user to login page:
+          MyWebServer.HandleLogin(*this, c);
+        }
+        return;
+      }
     }
   }
 #if MG_ENABLE_FILESYSTEM
@@ -561,10 +580,7 @@ void PageEntry::Serve(PageContext_t& c)
 #endif //MG_ENABLE_FILESYSTEM
 
   // call page handler:
-  size_t checkpoint1 = heap_caps_get_free_size(MALLOC_CAP_8BIT);
   handler(*this, c);
-  size_t checkpoint2 = heap_caps_get_free_size(MALLOC_CAP_8BIT);
-  ESP_LOGD(TAG, "Serve %s: %d bytes used, %d free", uri.c_str(), checkpoint1-checkpoint2, checkpoint2);
 }
 
 
@@ -572,12 +588,12 @@ void PageEntry::Serve(PageContext_t& c)
  * Page Callback Registry:
  */
 
-bool OvmsWebServer::RegisterCallback(std::string caller, std::string uri, PageCallback_t handler)
+bool OvmsWebServer::RegisterCallback(std::string caller, std::string uri, PageCallback_t handler, int priority /*=0*/)
 {
   PageEntry* e = FindPage(uri);
   if (!e)
     return false;
-  e->RegisterCallback(caller, handler);
+  e->RegisterCallback(caller, handler, priority);
   return true;
 }
 
@@ -587,13 +603,17 @@ void OvmsWebServer::DeregisterCallbacks(std::string caller)
     e.DeregisterCallback(caller);
 }
 
-void PageEntry::RegisterCallback(std::string caller, PageCallback_t handler)
+void PageEntry::RegisterCallback(std::string caller, PageCallback_t handler, int priority /*=0*/)
 {
-  for (auto it = callbacklist.begin(); it != callbacklist.end(); it++) {
+  auto prev = callbacklist.before_begin();
+  for (auto it = callbacklist.begin(); it != callbacklist.end(); prev = it++) {
     if ((*it).caller == caller && (*it).handler == handler)
       return; // already registered
   }
-  callbacklist.push_front(PageCallbackEntry(caller, handler));
+  if (priority < 0)
+    callbacklist.insert_after(prev, PageCallbackEntry(caller, handler));
+  else
+    callbacklist.push_front(PageCallbackEntry(caller, handler));
 }
 
 void PageEntry::DeregisterCallback(std::string caller)

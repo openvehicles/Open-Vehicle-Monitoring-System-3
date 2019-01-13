@@ -99,6 +99,10 @@ function reloadpage() {
   loaduri("#main", "get", uri, {});
 }
 
+function reloadmenu() {
+  $("#menu").load("/menu");
+}
+
 function login(dsturi) {
   if (!dsturi)
     dsturi = page.uri || "/home";
@@ -199,12 +203,18 @@ function standardTextFilter(msg) {
     return $('<div/>').text(msg.text).html();
 }
 
-function loadcmd(command, target, filter) {
+function loadcmd(command, target, filter, timeout) {
   var $output, outmode = "";
 
+  if (!command) return null;
+
+  if (typeof filter == "number") {
+    timeout = filter; filter = null;
+  }
   if (typeof target == "function") {
     filter = target; target = null;
   }
+
   if (target == null) {
     $output = $(null);
   }
@@ -221,8 +231,14 @@ function loadcmd(command, target, filter) {
   if (!filter)
     filter = standardTextFilter;
 
-  var lastlen = 0, xhr, timeouthd, timeout = 20;
-  if (/^(test |ota |co .* scan)/.test(command)) timeout = 300;
+  if (!timeout) {
+    if (/^(test |ota |copen .* scan)/.test(command))
+      timeout = 300;
+    else
+      timeout = 20;
+  }
+
+  var lastlen = 0, xhr, timeouthd;
   var checkabort = function() {
     if (xhr.readyState != 4)
       xhr.abort("timeout");
@@ -233,7 +249,7 @@ function loadcmd(command, target, filter) {
       return;
     }
     if (outmode == "") { $output.empty(); outmode = "+"; }
-    var autoscroll = ($output.get(0).scrollTop + $output.height()) >= $output.get(0).scrollHeight;
+    var autoscroll = ($output.get(0).scrollTop + $output.innerHeight()) >= $output.get(0).scrollHeight;
     $output.append(addhtml);
     $output.closest('.get-window-resize').trigger('window-resize');
     if (autoscroll) $output.scrollTop($output.get(0).scrollHeight);
@@ -289,11 +305,11 @@ var shellhist = [""], shellhpos = 0;
 function initSocketConnection(){
   ws = new WebSocket('ws://' + location.host + '/msg');
   ws.onopen = function(ev) {
-    console.log(ev);
+    console.log("WebSocket OPENED", ev);
     $(".receiver").subscribe();
   };
-  ws.onerror = function(ev) { console.log(ev); };
-  ws.onclose = function(ev) { console.log(ev); };
+  ws.onerror = function(ev) { console.log("WebSocket ERROR", ev); };
+  ws.onclose = function(ev) { console.log("WebSocket CLOSED", ev); };
   ws.onmessage = function(ev) {
     var msg;
     try {
@@ -1196,6 +1212,69 @@ $.fn.listEditor = function(op, data){
 
 
 /**
+ * Slider widget plugin
+ */
+
+$.fn.slider = function(options) {
+  return this.each(function() {
+    var $sld = $(this).closest('.slider');
+    var opts = (typeof options == "object") ? options : $sld.data();
+    // init?
+    if ($sld.children().length == 0) {
+      var id = $sld.attr('id');
+      $sld.html('\
+        <div class="slider-control form-inline">\
+          <input class="slider-enable" type="checkbox" checked>\
+          <input class="form-control slider-value" type="number" id="input-ID" name="ID">\
+          <span class="slider-unit">UNIT</span>\
+          <input class="btn btn-default slider-down" type="button" value="➖">\
+          <input class="btn btn-default slider-set" type="button" value="◈">\
+          <input class="btn btn-default slider-up" type="button" value="➕">\
+        </div>\
+        <input class="slider-input" type="range">'
+        .replace(/ID/g, id).replace(/UNIT/g, opts.unit||''));
+    }
+    // update:
+    var $inp = $sld.find('.slider-value, .slider-input'),
+      $cb = $sld.find('.slider-enable'), oldchk = ($cb.prop('checked')==true),
+      $bt = $sld.find('input[type=button]'), $sb = $bt.filter('.slider-set'),
+      chk = (opts.checked != null) ? opts.checked : oldchk,
+      dis = (opts.disabled != null) ? opts.disabled : ($sld.prop('disabled')==true);
+    if (opts.unit != null) $sld.find('.slider-unit').html(opts.unit);
+    if (opts.min != null) $inp.attr('min', opts.min); else opts.min = $inp.attr('min');
+    if (opts.max != null) $inp.attr('max', opts.max); else opts.max = $inp.attr('max');
+    if (opts.step != null) $inp.attr('step', opts.step);
+    if (opts.reset != null) $cb.data('reset', opts.reset);
+    if (opts.default != null) {
+      $sb.data('set', opts.default);
+      $cb.data('default', opts.default);
+      if (!oldchk) $inp.val(opts.default);
+    }
+    if (opts.value != null) {
+      opts.value = Math.max(opts.min, Math.min(opts.max, 1*opts.value));
+      $cb.data('value', opts.value);
+      if (oldchk)
+        $inp.attr('value', opts.value).val(opts.value);
+    }
+    if (chk != oldchk) {
+      $cb.prop('checked', chk);
+      if (chk)
+        $inp.val($cb.data('value'));
+      else
+        $inp.val($cb.data('default'));
+    }
+    $cb.prop('disabled', dis);
+    $bt.prop('disabled', !chk || dis);
+    $inp.prop('disabled', !chk || dis).prop('checked', chk);
+    if (dis)
+      $sld.addClass('disabled').prop('disabled', true).attr('disabled', true);
+    else
+      $sld.removeClass('disabled').prop('disabled', false).attr('disabled', false);
+  });
+};
+
+
+/**
  * Highcharts
  */
 
@@ -1313,6 +1392,24 @@ $(function(){
       $(this).closest(".modal").removeClass("fade").modal("hide");
     if (!loaduri(target, method, uri, data))
       return true;
+    event.preventDefault();
+    event.stopPropagation();
+    return false;
+  });
+  $('body').on('submit', 'form[target^="#"]', function(event) {
+    var $frm = $(this);
+    var method = $frm.attr("method") || "get";
+    var uri = $frm.attr("action");
+    var target = $frm.attr("target");
+    var data = $frm.serialize();
+    var $btn = $frm.find('input[type="submit"], button[type="submit"]').first();
+    if ($btn.length && $btn.attr("name"))
+      data += (data?"&":"") + encodeURI($btn.attr("name") +"="+ ($btn.val()||"1"));
+    if ($frm.data("dismiss") == "modal" || $btn.data("dismiss") == "modal")
+      $frm.closest(".modal").removeClass("fade").modal("hide");
+    if (!loaduri(target, method, uri, data))
+      return true;
+    event.preventDefault();
     event.stopPropagation();
     return false;
   });
@@ -1372,28 +1469,46 @@ $(function(){
     }
   });
 
-  // Slider widget:
+  // Slider widget event handling:
   $("body").on("change", ".slider-enable", function(evt) {
-    var slider = $(this).closest(".slider");
-    slider.find("input[type=number]").prop("disabled", !this.checked).trigger("input");
-    slider.find("input[type=range]").prop("disabled", !this.checked).trigger("input");
-    slider.find("input[type=button]").prop("disabled", !this.checked);
+    var $this = $(this), slider = $this.closest(".slider"), data = $this.data(),
+      $inp = slider.find(".slider-input, .slider-value");
+    if (this.checked) {
+      if (data["value"] != null && data["reset"] != true)
+        $inp.val(data["value"]);
+    } else {
+      $this.data("value", $inp.val());
+      if (data["default"] != null)
+        $inp.val(data["default"]);
+    }
+    $(this).slider({ checked: this.checked });
+    $inp.trigger("input", true).trigger("change", true);
   });
-  $("body").on("input", ".slider-value", function(evt) {
-    $(this).closest(".slider").find(".slider-input").val(this.value);
+  $("body").on("input change", ".slider-value", function(evt, noprop) {
+    var $inp = $(this).closest(".slider").find(".slider-input");
+    $(this).val(Math.max(this.min, Math.min(this.max, 1*this.value)));
+    $inp.val(this.value);
+    if (!noprop) $inp.trigger(evt.type, true);
   });
-  $("body").on("input", ".slider-input", function(evt) {
-    if (this.disabled)
-      this.value = $(this).data("default");
-    $(this).closest(".slider").find(".slider-value").val(this.value);
+  $("body").on("input change", ".slider-input", function(evt, noprop) {
+    var $inp = $(this).closest(".slider").find(".slider-value");
+    $(this).val(Math.max(this.min, Math.min(this.max, 1*this.value)));
+    $inp.val(this.value);
+    if (!noprop) $inp.trigger(evt.type, true);
   });
   $("body").on("click", ".slider-up", function(evt) {
-    $(this).closest(".slider").find(".slider-input")
-      .val(function(){return 1*this.value + 1;}).trigger("input");
+    $(this).closest(".slider").find(".slider-input").val(function() {
+      return Math.min(1*this.value + (1*this.step||1), this.max);
+    }).trigger("input").trigger("change");
   });
   $("body").on("click", ".slider-down", function(evt) {
-    $(this).closest(".slider").find(".slider-input")
-      .val(function(){return 1*this.value - 1;}).trigger("input");
+    $(this).closest(".slider").find(".slider-input").val(function() {
+      return Math.max(1*this.value - (1*this.step||1), this.min);
+    }).trigger("input").trigger("change");
+  });
+  $("body").on("click", ".slider-set", function(evt) {
+    var $inp = $(this).closest(".slider").find(".slider-input");
+    $inp.val($(this).data("set")).trigger("input").trigger("change");
   });
 
   // data-toggle="filefialog":

@@ -126,6 +126,11 @@
 ;			- Uses the standard BmsCell-voltage and temperature (NB! Not really tested)
 ;			- Minimize aux battery consumption
 ;
+;		0.4.0 6-January-2019 - Geir Øyvind Vælidalo
+;			- Removed the fixed polling of lock status. Instead it checks after Keyfob-presses and both indicator lights are flashes.
+;		  - Temporarily disabled BmsCell-voltage and tempearature to prevent unwanted messages.
+;			- Implemented CAN Write access setting. If not eneabled, no commands can be sent to the car.
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -167,7 +172,7 @@
 #include "ovms_notify.h"
 #include <sys/param.h>
 
-#define VERSION "0.3.9"
+#define VERSION "0.4.0"
 
 static const char *TAG = "v-kiasoulev";
 
@@ -230,6 +235,9 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   ks_clock = 0;
   ks_utc_diff = 0;
   ks_openChargePort = false;
+  ks_check_door_lock=false;
+  ks_lockDoors=false;
+  ks_unlockDoors=false;
   ks_emergency_message_sent = false;
 
   ks_shift_bits.Park = true;
@@ -404,7 +412,7 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
   *StdMetrics.ms_v_charge_limit_soc = (float) MyConfig.GetParamValueInt("xks", "suffsoc");
   *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("xks", "suffrange");
 
-  //TODO ks_enable_write = MyConfig.GetParamValueBool("xks", "canwrite", false);
+  ks_enable_write = MyConfig.GetParamValueBool("xks", "canwrite", false);
 	}
 
 /**
@@ -462,12 +470,22 @@ void OvmsVehicleKiaSoulEv::vehicle_kiasoulev_car_on(bool isOn)
 void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 	{
 	ESP_LOGD(TAG,"Pollstate: %d sec with no client: %d ",m_poll_state, ks_secs_with_no_client);
-	// Open charge port if user demands it
+
+	// Open charge port. User pressed the third keyfob button.
 	if( ks_openChargePort )
 		{
 		char buffer[6];
 		OpenChargePort(itoa(MyConfig.GetParamValueInt("password","pin"), buffer, 10));
 		ks_openChargePort = false;
+		}
+
+	// Lock or unlock doors. User pressed keyfob while car was on.
+	if( ks_lockDoors || ks_unlockDoors)
+		{
+		char buffer[6];
+		SetDoorLock(ks_unlockDoors, itoa(MyConfig.GetParamValueInt("password","pin"), buffer, 10));
+		ks_lockDoors=false;
+		ks_unlockDoors=false;
 		}
 
 	if(m_poll_state>0) // Only do these things if car is on or charging
@@ -564,6 +582,13 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 		}
 	//**** End of AUX Battery drain prevention code ***
 
+	// Check door lock status if clients are connected and we think the status might have changed
+	if( (StdMetrics.ms_s_v2_peers->AsInt() + StdMetrics.ms_s_v3_peers->AsInt())>0 && ks_check_door_lock)
+		{
+		GetDoorLockStatus();
+		ks_check_door_lock=false;
+		}
+
 	// Reset emergency light if it is stale.
 	if( m_v_emergency_lights->IsStale() ) m_v_emergency_lights->SetValue(false);
 
@@ -590,12 +615,6 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
  */
 void OvmsVehicleKiaSoulEv::Ticker10(uint32_t ticker)
 	{
-	// If we have clients connected, check every 10 seconds
-	if( (StdMetrics.ms_s_v2_peers->AsInt() + StdMetrics.ms_s_v3_peers->AsInt())>0)
-		{
-		//Read door lock status
-		GetDoorLockStatus();
-		}
 
 	// Calculate difference to UTC
 	if( ks_clock>0 && StdMetrics.ms_m_timeutc->AsInt()>0)
@@ -617,7 +636,7 @@ void OvmsVehicleKiaSoulEv::EventListener(std::string event, void* data)
   {
   if (event == "app.connected")
     {
-		GetDoorLockStatus();
+  		ks_check_door_lock=true;
     }
   }
 
@@ -815,7 +834,7 @@ bool OvmsVehicleKiaSoulEv::SetDoorLock(bool open, const char* password)
     		LeftIndicator(true);
     		result = Send_SJB_Command(0xbc, open?0x11:0x10, 0x03);
     		ACCRelay(false,password	);
-    		GetDoorLockStatus();
+    		ks_check_door_lock=true;
     		}
   		}
 		return result;

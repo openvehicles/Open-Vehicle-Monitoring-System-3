@@ -90,6 +90,12 @@ std::string mp_encode(const std::string text);
 extram::string mp_encode(const extram::string text);
 
 /**
+ * stripcr:
+ *  - replace '\r\n' by '\n'
+ */
+extram::string stripcr(const extram::string& text);
+
+/**
  * startsWith: std::string prefix check
  */
 bool startsWith(const std::string& haystack, const std::string& needle);

@@ -138,6 +138,8 @@ pre {
   }
 }
 
+/* Inputs, Buttons, Forms */
+
 .btn-default, .btn-info, .btn-primary, .btn-warning, .btn-danger, .btn-success {
   background-image: -webkit-linear-gradient(top,#00000000 0,#0000001c 100%);
   background-image: -o-linear-gradient(top,#00000000 0,#0000001c 100%);
@@ -189,6 +191,42 @@ li.event {
 .form-table>tfoot>tr>th,
 .form-table>tfoot>tr>td {
   padding: 15px;
+}
+
+.textarea-control .btn {
+  font-weight: bold;
+  font-size: 16px;
+  line-height: 16px;
+  padding: 4px 15px 2px;
+}
+.textarea-control .btn:hover, .textarea-control .btn:focus {
+  background-color: #fff;
+}
+.night .textarea-control .btn:hover, .night .textarea-control .btn:focus {
+  background-color: #aaa;
+}
+.textarea-control .btn.active, .textarea-control .btn.active:hover {
+  background-color: #d4d4d4;
+  border: 1px solid #148712;
+}
+.night .textarea-control .btn.active, .night .textarea-control .btn.active:hover {
+  background-color: #dadada;
+  border: 1px solid #3acf44;
+}
+textarea.fullwidth {
+  max-width: 100%;
+  min-width: 100%;
+  height: 300px;
+  font-size:13px;
+  white-space: pre;
+}
+
+.form-group .flex-group {
+  display: flex;
+  margin-left: -5px;
+}
+.form-group .flex-group > * {
+  margin-left: 5px;
 }
 
 /* Hover progress */

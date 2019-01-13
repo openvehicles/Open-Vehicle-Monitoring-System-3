@@ -138,6 +138,7 @@ struct PageContext : public ExternalRamAllocated
   bool getvar(const std::string& name, extram::string& dst);
   static std::string encode_html(const char* text);
   static std::string encode_html(const std::string text);
+  static extram::string encode_html(const extram::string& text);
   static std::string make_id(const char* text);
   static std::string make_id(const std::string text);
 
@@ -226,7 +227,7 @@ struct PageEntry
 
   void Serve(PageContext_t& c);
 
-  void RegisterCallback(std::string caller, PageCallback_t handler);
+  void RegisterCallback(std::string caller, PageCallback_t handler, int priority=0);
   void DeregisterCallback(std::string caller);
   PageResult_t callback(PageContext_t& c, const std::string& hook);
 };
@@ -430,7 +431,7 @@ typedef std::vector<WebSocketSlot> WebSocketSlots;
 class HttpCommandStream : public OvmsShell, public MgHandler
 {
   public:
-    HttpCommandStream(mg_connection* nc, std::string command, int verbosity=COMMAND_RESULT_NORMAL);
+    HttpCommandStream(mg_connection* nc, std::string command, int verbosity=COMMAND_RESULT_VERBOSE);
     ~HttpCommandStream();
 
   public:
@@ -485,10 +486,10 @@ class OvmsWebServer : public ExternalRamAllocated
 
   public:
     void RegisterPage(std::string uri, std::string label, PageHandler_t handler,
-      PageMenu_t menu=PageMenu_None, PageAuth_t auth=PageAuth_None);
+      PageMenu_t menu=PageMenu_None, PageAuth_t auth=PageAuth_None, int priority=0);
     void DeregisterPage(std::string uri);
     PageEntry* FindPage(std::string uri);
-    bool RegisterCallback(std::string caller, std::string uri, PageCallback_t handler);
+    bool RegisterCallback(std::string caller, std::string uri, PageCallback_t handler, int priority=0);
     void DeregisterCallbacks(std::string caller);
     void RegisterPlugins();
     void DeregisterPlugins();
@@ -525,6 +526,7 @@ class OvmsWebServer : public ExternalRamAllocated
     static void HandleShell(PageEntry_t& p, PageContext_t& c);
     static void HandleDashboard(PageEntry_t& p, PageContext_t& c);
     static void HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c);
+    static void HandleEditor(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgPassword(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgVehicle(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgModem(PageEntry_t& p, PageContext_t& c);
@@ -557,6 +559,7 @@ class OvmsWebServer : public ExternalRamAllocated
 
   public:
     bool                      m_running;
+    bool                      m_configured;
 
 #if MG_ENABLE_FILESYSTEM
     bool                      m_file_enable;
@@ -576,6 +579,7 @@ class OvmsWebServer : public ExternalRamAllocated
     TimerHandle_t             m_update_ticker;
 
     int                       m_init_timeout;
+    int                       m_restart_countdown;
 };
 
 extern OvmsWebServer MyWebServer;

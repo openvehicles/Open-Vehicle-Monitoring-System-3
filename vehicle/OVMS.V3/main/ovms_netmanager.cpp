@@ -191,6 +191,7 @@ OvmsNetManager::OvmsNetManager()
     m_dns_modem[i] = (ip_addr_t)ip_addr_any;
     m_dns_wifi[i] = (ip_addr_t)ip_addr_any;
     }
+  m_previous_priority = NULL;
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   m_mongoose_task = 0;
@@ -527,6 +528,9 @@ void OvmsNetManager::PrioritiseAndIndicate()
     if ((pri->name[0]==search[0])&&
         (pri->name[1]==search[1]))
       {
+      if (pri == m_previous_priority)
+        return;
+      m_previous_priority = pri;
       ESP_LOGI(TAG, "Interface priority is %c%c%d (" IPSTR "/" IPSTR " gateway " IPSTR ")",
         pri->name[0], pri->name[1], pri->num,
         IP2STR(&pri->ip_addr.u_addr.ip4), IP2STR(&pri->netmask.u_addr.ip4), IP2STR(&pri->gw.u_addr.ip4));
