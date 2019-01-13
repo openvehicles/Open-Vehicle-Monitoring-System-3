@@ -1,0 +1,197 @@
+<!--
+  Test/Development/Documentation page; install as plugin to test
+-->
+
+<style>
+.solidgauge .highcharts-yaxis-grid .highcharts-grid-line,
+.solidgauge .highcharts-yaxis-grid .highcharts-minor-grid-line {
+	display: none;
+}
+.solidgauge .highcharts-pane {
+  fill: #eee;
+  fill-opacity: 1;
+  stroke: #aaa;
+  stroke-width: 2px;
+}
+.night .solidgauge .highcharts-pane {
+  fill: #b1b1b1;
+  stroke: #b1b1b1;
+}
+.solidgauge .highcharts-point {
+  transition: fill 500ms, stroke 500ms; /* see stops styles note */
+}
+#throttle-gauge .highcharts-color-0 {
+  fill: #eee; /* initial colors = pane for smooth fade in */
+  stroke: #aaa;
+  fill-opacity: 0.8;
+  stroke-width: 3px;
+  stroke-opacity: 0.5;
+}
+#rpm-gauge .highcharts-color-0 {
+  fill: #55e;
+  stroke: none;
+}
+</style>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">Solid Gauge</div>
+  <div class="panel-body">
+
+    <div class="receiver">
+
+      <div class="row">
+        <div class="col-sm-6">
+          <div class="metric chart" data-metric="v.e.throttle" style="height:220px">
+            <div class="chart-box solidgauge" id="throttle-gauge"/>
+          </div>
+          <p>
+            Note: stops don't work by default in styled mode. This example includes a simple redraw
+            event callback that applies styles from the stops. To get a smooth color transition,
+            the CSS transition time needs to be equal to the chart animation time.
+          </p>
+        </div>
+        <div class="col-sm-6">
+          <div class="metric chart" data-metric="v.m.rpm" style="height:220px">
+            <div class="chart-box solidgauge gaugechart" id="rpm-gauge"/>
+          </div>
+          <p>
+            Note: the <code>gaugechart</code> CSS class pulls in the default styling for the bands,
+            labels and ticks here. You can also copy those CSS rules from <code>ovms.css</code>
+            and do your own styling.
+          </p>
+        </div>
+      </div>
+
+      <p><button type="button" class="btn btn-default action-gendata">Generate random data</button></p>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+
+  /* Show page source: */
+  var pagesrc = $('#main').html();
+  $('.panel-heading').prepend('<button type="button" class="btn btn-sm btn-info action-showsrc"' +
+    ' style="float:right; position:relative; top:-5px;">Show page source</button>');
+  $('.action-showsrc').on('click', function() {
+    $('<div/>').dialog({
+      title: 'Source Code',
+      body: '<pre style="font-size:85%; height:calc(100vh - 230px);">'
+        + encode_html(pagesrc) + '</pre>',
+      size: 'lg',
+    });
+  });
+
+  /* Init throttle gauge: */
+  $("#throttle-gauge").chart({
+    chart: {
+      type: 'solidgauge',
+      spacing: [0, 0, 0, 0],
+      margin: [0, 0, 0, 0],
+      animation: { duration: 500, easing: 'easeOutExpo' },
+      events: {
+        // Apply stops styles on redraw:
+        redraw: function(ev) {
+          var y = this.series[0].yData[0], $pt = $(this.renderTo).find('.highcharts-point');
+          $.map(this.yAxis[0].stops, function(stop) { if (y >= stop[0]) $pt.css(stop[1]); });
+        },
+      },
+    },
+    title: { text: "Throttle", verticalAlign: "middle", y: 75 },
+    credits: { enabled: false },
+    tooltip: { enabled: false },
+    plotOptions: {
+      solidgauge: { dataLabels: { enabled: false }, overshoot: 1 }
+    },
+    pane: [{
+      startAngle: -90, endAngle: 90, size: '140%', center: ['50%', '85%'],
+      background: { innerRadius: '60%', outerRadius: '100%', shape: 'arc' },
+    }],
+    yAxis: [{
+      title: { text: '%' },
+      className: 'throttle',
+      reversed: false,
+      min: 0, max: 100,
+      stops: [
+        [0, { fill: '#afa', stroke: '#4f4' }],
+        [50, { fill: '#ffa', stroke: '#ff4' }],
+        [80, { fill: '#faa', stroke: '#f44' }],
+      ],
+      tickPixelInterval: 40, tickPosition: 'inside', tickLength: 13,
+      labels: { step: 2, distance: 10, x: 0, y: 0, zIndex: 2 },
+    }],
+    series: [{
+      name: 'Throttle', data: [40],
+      className: 'throttle',
+      animation: { duration: 0 },
+    }],
+    /* Update method: */
+    onUpdate: function(update) {
+      // Create gauge data set from metric:
+      var data = [ metrics["v.e.throttle"] ];
+      // Update chart:
+      this.series[0].setData(data);
+    },
+  });
+
+  /* Init rpm gauge: */
+  $("#rpm-gauge").chart({
+    chart: {
+      type: 'solidgauge',
+      spacing: [0, 0, 0, 0],
+      margin: [0, 0, 0, 0],
+      animation: { duration: 500, easing: 'easeOutExpo' },
+    },
+    title: { text: "RPM", verticalAlign: "middle", y: 75 },
+    credits: { enabled: false },
+    tooltip: { enabled: false },
+    plotOptions: {
+      solidgauge: { dataLabels: { enabled: false }, overshoot: 1 }
+    },
+    pane: [{
+      startAngle: -90, endAngle: 90, size: '140%', center: ['50%', '85%'],
+      background: { innerRadius: '70%', outerRadius: '100%', shape: 'arc' },
+    }],
+    yAxis: [{
+      title: { text: 'rpm' },
+      className: 'rpm',
+      reversed: false,
+      min: 0, max: 11000,
+      plotBands: [
+        { from: 0, to: 7000, className: 'green-band' },
+        { from: 7000, to: 9000, className: 'yellow-band' },
+        { from: 9000, to: 11000, className: 'red-band' },
+      ],
+      minorTickInterval: 'auto', minorTickLength: 5, minorTickPosition: 'inside',
+      tickPixelInterval: 40, tickPosition: 'inside', tickLength: 10,
+      labels: { step: 2, distance: 10, x: 0, y: 0, zIndex: 2 },
+    }],
+    series: [{
+      name: 'RPM', data: [4500],
+      className: 'rpm',
+      animation: { duration: 0 },
+      innerRadius: '72%',
+      radius: '92%'
+    }],
+    /* Update method: */
+    onUpdate: function(update) {
+      // Create gauge data set from metric:
+      var data = [ metrics["v.m.rpm"] ];
+      // Update chart:
+      this.series[0].setData(data);
+    },
+  });
+
+  /* Test metrics generator: */
+  $('.action-gendata').on('click', function() {
+    var td = {};
+    td["v.e.throttle"] = Math.random() * 100;
+    td["v.m.rpm"] = Math.random() * 11000;
+    $('.receiver').trigger('msg:metrics', $.extend(metrics, td));
+  });
+
+})();
+</script>
