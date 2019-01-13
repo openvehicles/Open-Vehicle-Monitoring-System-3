@@ -493,6 +493,7 @@ class OvmsWebServer : public ExternalRamAllocated
     void DeregisterCallbacks(std::string caller);
     void RegisterPlugins();
     void DeregisterPlugins();
+    void ReloadPlugin(std::string path);
     static void PluginHandler(PageEntry_t& p, PageContext_t& c);
     static PageResult_t PluginCallback(PageEntry_t& p, PageContext_t& c, const std::string& hook);
 

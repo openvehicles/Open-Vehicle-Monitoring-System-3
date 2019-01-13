@@ -420,6 +420,20 @@ void OvmsWebServer::DeregisterPlugins()
   m_plugin_parts.clear();
 }
 
+void OvmsWebServer::ReloadPlugin(std::string path)
+{
+  if (startsWith(path, "/store/plugin/"))
+    path = path.substr(14);
+  for (auto i = m_plugin_pages.begin(); i != m_plugin_pages.end(); i++) {
+    if (i->second.m_path == path)
+      i->second.LoadContent();
+  }
+  for (auto i = m_plugin_parts.begin(); i != m_plugin_parts.end(); i++) {
+    if (i->second.m_path == path)
+      i->second.LoadContent();
+  }
+}
+
 void OvmsWebServer::PluginHandler(PageEntry_t& p, PageContext_t& c)
 {
   auto i = MyWebServer.m_plugin_pages.find(p.uri);
