@@ -94,6 +94,7 @@ class esp32wifi : public pcp, public InternalRamAllocated
     bool m_poweredup;
     OvmsMutex m_mutex;
     esp32wifi_mode_t m_mode;
+    uint8_t m_previous_reason;
     uint8_t m_mac_sta[6];
     uint8_t m_mac_ap[6];
     tcpip_adapter_ip_info_t m_ip_info_sta;

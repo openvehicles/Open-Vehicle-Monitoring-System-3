@@ -227,6 +227,7 @@ esp32wifi::esp32wifi(const char* name)
   : pcp(name)
   {
   m_mode = ESP32WIFI_MODE_OFF;
+  m_previous_reason = 0;
   m_powermode = Off;
   m_poweredup = false;
   m_stareconnect = false;
@@ -760,14 +761,19 @@ void esp32wifi::EventWifiStaConnected(std::string event, void* data)
     conn.authmode == WIFI_AUTH_WPA_PSK ? "WPA" :
     conn.authmode == WIFI_AUTH_WPA2_PSK ? "WPA2" :
     conn.authmode == WIFI_AUTH_WPA_WPA2_PSK ? "WPA/WPA2" : "Unknown");
+  m_previous_reason = 0;
   }
 
 void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
   {
   system_event_info_t *info = (system_event_info_t*)data;
 
-  ESP_LOGI(TAG, "STA disconnected with reason %d",
-           info->disconnected.reason);
+  if (info->disconnected.reason != m_previous_reason)
+    {
+    ESP_LOGI(TAG, "STA disconnected with reason %d",
+      info->disconnected.reason);
+    m_previous_reason = info->disconnected.reason;
+    }
 
   if ((m_mode == ESP32WIFI_MODE_CLIENT) ||
       (m_mode == ESP32WIFI_MODE_APCLIENT))

@@ -112,6 +112,7 @@ class OvmsNetManager
     bool m_network_any;
     ip_addr_t m_dns_wifi[DNS_MAX_SERVERS];
     ip_addr_t m_dns_modem[DNS_MAX_SERVERS];
+    struct netif* m_previous_priority;
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   protected:
