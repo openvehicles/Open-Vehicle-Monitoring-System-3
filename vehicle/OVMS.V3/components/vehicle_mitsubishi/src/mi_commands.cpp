@@ -59,20 +59,21 @@ void xmi_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 
 			  // Trip distance
 			  const char* distance = StdMetrics.ms_v_pos_trip->AsUnitString("-", rangeUnit, 1).c_str();
-			  // Consumption
-			  float consumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(rangeUnit);
-			  float consumption2 = StdMetrics.ms_v_pos_trip->AsFloat(rangeUnit) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh);
-			  // Discharge
-			  const char* discharge = StdMetrics.ms_v_bat_energy_used->AsUnitString("-", kWh, 3).c_str();
-			  // Recuperation
-			  const char* recuparation = StdMetrics.ms_v_bat_energy_recd->AsUnitString("-", kWh, 3).c_str();
 			  // Total consumption
 			  float totalConsumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) - StdMetrics.ms_v_bat_energy_recd->AsFloat(kWh);
+			  // Consumption
+				float consumption = totalConsumption*100/StdMetrics.ms_v_pos_trip->AsFloat(rangeUnit);
+			  float consumption2 = StdMetrics.ms_v_pos_trip->AsFloat(rangeUnit) / totalConsumption;
+			  // Discharge
+			  const char* discharge = StdMetrics.ms_v_bat_energy_used->AsUnitString("-", kWh, 4).c_str();
+			  // Recuperation
+			  const char* recuparation = StdMetrics.ms_v_bat_energy_recd->AsUnitString("-", kWh, 4).c_str();
 			  // ODO
 			  const char* ODO = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
 				// heating kwh
 				OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
 				float heatenergy = trio->m_v_env_heating_kwh->AsFloat();
+				float coolingenergy = trio->m_v_env_ac_kwh->AsFloat();
 
 			  if (*distance != '-')
 			    writer->printf("Dist %s\n", distance);
@@ -95,7 +96,9 @@ void xmi_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 			    writer->printf("Rec %s\n", recuparation);
 
 			  writer->printf("Total %.*fkWh\n", 4, totalConsumption);
-				writer->printf("Heater energy usage: %.*fkWh\n", 2,heatenergy);
+				writer->printf("Heater energy usage: %.*fkWh\n", 4,heatenergy);
+				writer->printf("AC energy usage: %.*fkWh\n", 4,coolingenergy);
+
 
 			  if (*ODO != '-')
 			    writer->printf("ODO %s\n", ODO);

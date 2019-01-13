@@ -658,7 +658,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
   StdMetrics.ms_v_bat_temp->SetValue(StdMetrics.ms_v_bat_pack_tavg->AsFloat());
 
   if(StandardMetrics.ms_v_charge_inprogress->IsStale())
-  {
+  { //clear all charge variable if not charging
     mi_QC = 0;
     StandardMetrics.ms_v_charge_voltage->SetValue(0.0);
     StandardMetrics.ms_v_charge_current->SetValue(0.0);
@@ -744,7 +744,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
 ////////////////////////////////////////////////////////////////////////
 // Charge state determination
 ////////////////////////////////////////////////////////////////////////
-int bal_counter = 0;
+
   if ((mi_QC != 0) || ((StandardMetrics.ms_v_charge_current->AsInt() != 0) && (StandardMetrics.ms_v_charge_voltage->AsInt() != 0)))
   {
     StandardMetrics.ms_v_env_charging12v->SetValue(true);
@@ -754,12 +754,12 @@ int bal_counter = 0;
       m_v_charge_ac_kwh->SetValue(0);
       m_v_charge_dc_kwh->SetValue(0);
       StandardMetrics.ms_v_charge_kwh->SetValue(0.0,kWh);
+      mi_chargekwh = 0;      // Reset charge kWh
       StandardMetrics.ms_v_charge_inprogress->SetValue(true);
       StandardMetrics.ms_v_charge_pilot->SetValue(true);
       StandardMetrics.ms_v_door_chargeport->SetValue(true);
-      StandardMetrics.ms_v_charge_state->SetValue("charging");
+    //  StandardMetrics.ms_v_charge_state->SetValue("charging");
       StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
-      bal_counter = 5;
       if (mi_QC != 0)
         {
           StandardMetrics.ms_v_charge_mode->SetValue("Quickcharge");
@@ -772,14 +772,13 @@ int bal_counter = 0;
           StandardMetrics.ms_v_charge_type->SetValue("Type1");
           StandardMetrics.ms_v_charge_climit->SetValue(16);
         }
-        mi_chargekwh = 0;      // Reset charge kWh
-        mi_charge_timer = 0;    // Reset the per-second charge timer
-        mi_charge_wm = 0;       // Reset the per-minute watt accumulator
     }
     else
         {
+          StandardMetrics.ms_v_charge_state->SetValue("charging");
+
           // if charge and DC current is negative cell balancing is active. If charging battery current is negative, discharge is positive
-          if((StandardMetrics.ms_v_bat_current->AsFloat() < 0) && (--bal_counter <= 0) && (mi_QC == 0) && StandardMetrics.ms_v_bat_soc->AsInt() > 92)
+          if((StandardMetrics.ms_v_bat_current->AsFloat() < 0) && (mi_QC == 0) && StandardMetrics.ms_v_bat_soc->AsInt() > 92)
           {
             StandardMetrics.ms_v_charge_mode->SetValue("Balancing");
             StandardMetrics.ms_v_charge_state->SetValue("topoff");
@@ -810,8 +809,6 @@ int bal_counter = 0;
                     StandardMetrics.ms_v_charge_state->SetValue("done");
                     StandardMetrics.ms_v_charge_substate->SetValue("scheduledstop");
                   }
-              mi_charge_timer = 0;       // Reset the per-second charge timer
-              mi_charge_wm = 0;          // Reset the per-minute watt accumulator
               v_c_power_ac->SetValue(0.0);  // Reset charge power meter
               v_c_power_dc->SetValue(0.0);  // Reset charge power meter
               m_v_charge_ac_kwh->SetValue(StandardMetrics.ms_v_charge_kwh->AsFloat()); //save charge kwh to variable
@@ -861,13 +858,13 @@ int bal_counter = 0;
         }
       else
         {
-        // Ideal range 150km with 100% capacity
+        // Ideal range
         int SOH = StandardMetrics.ms_v_bat_soh->AsFloat();
         if (SOH == 0){
           SOH = 100; //ideal range as 100% else with SOH
         }
           StandardMetrics.ms_v_bat_range_ideal->SetValue((
-          (StandardMetrics.ms_v_bat_soc->AsFloat()-10)*1.664)*SOH/100.0);
+          (StandardMetrics.ms_v_bat_soc->AsFloat()-10)*1.4444)*SOH/100.0); //150km 1.664; 125km 1.3889; 130km 1.4444; 135km 1.5
         }
 
         StandardMetrics.ms_v_bat_cac->SetValue(48.0*(StandardMetrics.ms_v_bat_soh->AsFloat()/100));
@@ -881,15 +878,11 @@ int bal_counter = 0;
         {
           StandardMetrics.ms_v_bat_consumption->SetValue(0);
         }
+
     if( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers)>0 )
-      m_v_trip_consumption1->SetValue( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) );
+      m_v_trip_consumption1->SetValue( ((StdMetrics.ms_v_bat_energy_used->AsFloat(kWh)-StdMetrics.ms_v_bat_energy_recd->AsFloat(kWh)) * 100) / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) );
     if( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh)>0 )
-    	m_v_trip_consumption2->SetValue( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) );
-
-  }
-
-void OvmsVehicleMitsubishi::Ticker10(uint32_t ticker)
-  {
+    	m_v_trip_consumption2->SetValue( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) / (StdMetrics.ms_v_bat_energy_used->AsFloat(kWh)-StdMetrics.ms_v_bat_energy_recd->AsFloat(kWh)));
 
   }
 
@@ -922,88 +915,6 @@ void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
     	  StdMetrics.ms_v_pos_trip->SetValue( POS_ODO- mi_trip_start_odo );
     		StdMetrics.ms_v_env_charging12v->SetValue( false );
       }
-    }
-
-OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandSetChargeMode(vehicle_mode_t mode)
-    {
-    return NotImplemented;
-    }
-
-OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandSetChargeCurrent(uint16_t limit)
-    {
-    StandardMetrics.ms_v_charge_climit->SetValue(limit);
-
-    return NotImplemented;
-    }
-
-OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandStartCharge()
-    {
-    StandardMetrics.ms_v_pos_speed->SetValue(0);
-    StandardMetrics.ms_v_mot_rpm->SetValue(0);
-    //StandardMetrics.ms_v_env_awake->SetValue(false);
-    StandardMetrics.ms_v_env_on->SetValue(false);
-    StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-    StandardMetrics.ms_v_door_chargeport->SetValue(true);
-    StandardMetrics.ms_v_charge_state->SetValue("charging");
-    StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
-    StandardMetrics.ms_v_charge_pilot->SetValue(true);
-    StandardMetrics.ms_v_charge_voltage->SetValue(220);
-    StandardMetrics.ms_v_charge_current->SetValue(16);
-
-    return NotImplemented;
-    }
-
-OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandStopCharge()
-    {
-    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-    StandardMetrics.ms_v_door_chargeport->SetValue(false);
-    StandardMetrics.ms_v_charge_state->SetValue("done");
-    StandardMetrics.ms_v_charge_substate->SetValue("stopped");
-    StandardMetrics.ms_v_charge_pilot->SetValue(false);
-    StandardMetrics.ms_v_charge_voltage->SetValue(0);
-    StandardMetrics.ms_v_charge_current->SetValue(0);
-
-    return NotImplemented;
-    }
-
-OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandSetChargeTimer(bool timeron, uint16_t timerstart)
-    {
-    return NotImplemented;
-    }
-
-OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandCooldown(bool cooldownon)
-    {
-    return NotImplemented;
-    }
-
-OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandWakeup()
-    {
-    return NotImplemented;
-    }
-
-OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandLock(const char* pin)
-    {
-    return NotImplemented;
-    }
-
-OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandUnlock(const char* pin)
-    {
-    return NotImplemented;
-    }
-
-OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandActivateValet(const char* pin)
-    {
-    return NotImplemented;
-    }
-
-OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandDeactivateValet(const char* pin)
-    {
-    return NotImplemented;
-    }
-
-OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandHomelink(int button, int durationms)
-    {
-    return NotImplemented;
     }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandStat(int verbosity, OvmsWriter* writer)
@@ -1093,11 +1004,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandStat(int verbosity,
       if (*soh != '-')
         writer->printf("SOH: %s\n", soh);
 
-      const char* charge_kWh_ac = m_v_charge_ac_kwh->AsUnitString("-", Native, 0).c_str();
+      const char* charge_kWh_ac = m_v_charge_ac_kwh->AsUnitString("-", Native, 3).c_str();
       if (*charge_kWh_ac != '-')
         writer->printf("AC charge: %s kWh\n", charge_kWh_ac);
 
-      const char* charge_kWh_dc = m_v_charge_dc_kwh->AsUnitString("-", Native, 0).c_str();
+      const char* charge_kWh_dc = m_v_charge_dc_kwh->AsUnitString("-", Native, 3).c_str();
       if (*charge_kWh_dc != '-')
         writer->printf("DC charge: %s kWh\n", charge_kWh_dc);
 
