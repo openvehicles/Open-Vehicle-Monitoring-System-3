@@ -463,14 +463,21 @@ void OvmsWebServer::EventListener(std::string event, void* data)
     MyBoot.RestartPending("webserver");
     m_restart_countdown = 3;
   }
-  
+
   // ticker:
-  if (event == "ticker.1") {
+  else if (event == "ticker.1") {
     CfgInitTicker();
     if (m_restart_countdown > 0 && --m_restart_countdown == 0)
       MyBoot.RestartReady("webserver");
   }
-  
+
+  // reload plugins on changes:
+  else if (event == "system.vfs.file.changed") {
+    char* path = (char*)data;
+    if (strncmp(path, "/store/plugin/", 14) == 0)
+      ReloadPlugin(path);
+  }
+
   // forward events to all websocket clients:
   if (xSemaphoreTake(m_client_mutex, 0) != pdTRUE) {
     for (int i=0; i<m_client_cnt; i++) {

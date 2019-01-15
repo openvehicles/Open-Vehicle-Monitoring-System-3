@@ -2801,10 +2801,12 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
         std::ofstream file(path, std::ios::out | std::ios::trunc);
         if (file.is_open())
           file.write(content.data(), content.size());
-        if (file.fail())
+        if (file.fail()) {
           error += "<li>Error writing to <code>" + c.encode_html(path) + "</code>: " + strerror(errno) + "</li>";
-        else
+        } else {
           info += "<p class=\"lead\">File <code>" + c.encode_html(path) + "</code> saved.</p>";
+          MyEvents.SignalEvent("system.vfs.file.changed", (void*)path.c_str(), path.size()+1);
+        }
       }
     }
   }
