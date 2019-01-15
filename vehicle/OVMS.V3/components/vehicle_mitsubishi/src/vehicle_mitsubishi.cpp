@@ -259,7 +259,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
         if(StandardMetrics.ms_v_env_gear->AsInt() == -1 && StandardMetrics.ms_v_bat_power->AsInt() < 0 && (mi_QC != 0))
           {
-            //set battery voltage/current to charge voltage/current
+            //set battery voltage/current to charge voltage/current, when car in Park, and charging
             StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
             StandardMetrics.ms_v_charge_current->SetValue(StandardMetrics.ms_v_bat_current->AsFloat()*1.0);
           }
@@ -273,7 +273,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
       }
 
-      case 0x384://freq10 //heating current?
+      case 0x384://freq10 //heating current
       {
         m_v_env_heating_amp->SetValue(d[4]/10.0);
         m_v_env_heating_watt->SetValue(m_v_env_heating_amp->AsFloat()*StandardMetrics.ms_v_bat_voltage->AsFloat());
@@ -820,7 +820,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
             }
           }
 
-    //Power calculation AC/DC
+    //Efficiency calculation AC/DC
     if((v_c_power_dc->AsInt() <= 0) || (v_c_power_ac->AsInt() == 0) )
       {
         v_c_efficiency->SetValue(0,Percentage);
@@ -1014,6 +1014,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandStat(int verbosity,
 
       return Success;
     }
+
 class OvmsVehicleMitsubishiInit
   {
     public: OvmsVehicleMitsubishiInit();

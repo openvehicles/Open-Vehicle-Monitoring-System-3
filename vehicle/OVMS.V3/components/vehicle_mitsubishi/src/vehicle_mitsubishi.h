@@ -37,7 +37,6 @@
 
 using namespace std;
 
-void CommandBatteryReset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xmi_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xmi_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
@@ -64,13 +63,13 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     OvmsMetricFloat* v_b_power_min  = new OvmsMetricFloat("xmi.b.power.min", SM_STALE_MID, kW);
     OvmsMetricFloat* v_b_power_max  = new OvmsMetricFloat("xmi.b.power.max", SM_STALE_MID, kW);
 
-    OvmsMetricBool*		m_v_env_lowbeam = MyMetrics.InitBool("xmi.e.lowbeam", 10, 0);
-    OvmsMetricBool*		m_v_env_highbeam = MyMetrics.InitBool("xmi.e.highbeam", 10, 0);
-    OvmsMetricBool*		m_v_env_frontfog = MyMetrics.InitBool("xmi.e.frontfog", 10, 0);
-    OvmsMetricBool*		m_v_env_rearfog = MyMetrics.InitBool("xmi.e.rearfog", 10, 0);
-    OvmsMetricBool*		m_v_env_blinker_right = MyMetrics.InitBool("xmi.e.rightblinker", 10, 0);
-    OvmsMetricBool*		m_v_env_blinker_left = MyMetrics.InitBool("xmi.e.leftblinker", 10, 0);
-    OvmsMetricBool*		m_v_env_warninglight = MyMetrics.InitBool("xmi.e.warninglight", 10, 0);
+    OvmsMetricBool*	m_v_env_lowbeam = MyMetrics.InitBool("xmi.e.lowbeam", 10, 0);
+    OvmsMetricBool*	m_v_env_highbeam = MyMetrics.InitBool("xmi.e.highbeam", 10, 0);
+    OvmsMetricBool*	m_v_env_frontfog = MyMetrics.InitBool("xmi.e.frontfog", 10, 0);
+    OvmsMetricBool*	m_v_env_rearfog = MyMetrics.InitBool("xmi.e.rearfog", 10, 0);
+    OvmsMetricBool*	m_v_env_blinker_right = MyMetrics.InitBool("xmi.e.rightblinker", 10, 0);
+    OvmsMetricBool* m_v_env_blinker_left = MyMetrics.InitBool("xmi.e.leftblinker", 10, 0);
+    OvmsMetricBool* m_v_env_warninglight = MyMetrics.InitBool("xmi.e.warninglight", 10, 0);
     OvmsMetricFloat*  m_v_charge_dc_kwh = MyMetrics.InitFloat("v.c.kwh.dc",SM_STALE_MID, kWh);
     OvmsMetricFloat*  m_v_charge_ac_kwh = MyMetrics.InitFloat("v.c.kwh.ac",SM_STALE_MID, kWh);
     OvmsMetricFloat*  v_c_efficiency = MyMetrics.InitFloat("v.c.efficiency",SM_STALE_HIGH, Percentage);
