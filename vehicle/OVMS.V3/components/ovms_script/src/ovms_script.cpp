@@ -774,6 +774,11 @@ static void script_reload(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
   MyScripts.DuktapeReload();
   }
 
+static void script_eval(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyScripts.DuktapeEvalNoResult(argv[0], writer);
+  }
+
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
 static void script_ovms(bool print, int verbosity, OvmsWriter* writer,
@@ -918,6 +923,7 @@ OvmsScripts::OvmsScripts()
   cmd_script->RegisterCommand("run","Run a script",script_run,"<path>",1,1,true);
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   cmd_script->RegisterCommand("reload","Reload javascript framework",script_reload,"",0,0,true);
+  cmd_script->RegisterCommand("eval","Eval some javascript code",script_eval,"<code>",1,1,true);
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   MyCommandApp.RegisterCommand(".","Run a script",script_run,"<path>",1,1,true);
   }
