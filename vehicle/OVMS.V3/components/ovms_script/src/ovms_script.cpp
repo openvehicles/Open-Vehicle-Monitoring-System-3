@@ -688,16 +688,16 @@ void OvmsScripts::DukTapeTask()
           if (m_dukctx != NULL)
             {
             // Deliver the event to DUKTAPE
-            duk_get_global_string(m_dukctx, "PubSub");
-            duk_get_prop_string(m_dukctx, -1, "publish");
-            duk_dup(m_dukctx, -2);  /* this binding = process */
-            duk_push_string(m_dukctx, msg.body.dt_event.name);
-            duk_push_string(m_dukctx, "");
-            if (duk_pcall_method(m_dukctx, 2) != 0)
-              {
-              ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
-              }
-            duk_pop(m_dukctx);
+            //duk_get_global_string(m_dukctx, "PubSub");
+            //duk_get_prop_string(m_dukctx, -1, "publish");
+            //duk_dup(m_dukctx, -2);  /* this binding = process */
+            //duk_push_string(m_dukctx, msg.body.dt_event.name);
+            //duk_push_string(m_dukctx, "");
+            //if (duk_pcall_method(m_dukctx, 2) != 0)
+            //  {
+            //  ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
+            //  }
+            //duk_pop_2(m_dukctx);
             }
           }
           break;
