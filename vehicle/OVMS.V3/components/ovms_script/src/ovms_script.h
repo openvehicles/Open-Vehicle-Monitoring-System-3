@@ -32,6 +32,7 @@
 #define __SCRIPT_H__
 
 #include "ovms_command.h"
+#include "ovms_utils.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
@@ -44,12 +45,21 @@ typedef enum
   {
   DUKTAPE_none = 0,             // Do nothing
   DUKTAPE_register,             // Register extension function
+  DUKTAPE_reload,               // Reload DukTape engine
   DUKTAPE_event,                // Event
   DUKTAPE_autoinit,             // Auto init
   DUKTAPE_evalnoresult,         // Execute script text (without result)
   DUKTAPE_evalfloatresult,      // Execute script text (float result)
   DUKTAPE_evalintresult         // Execute script text (int result)
   } duktape_msg_t;
+
+typedef struct
+  {
+  duk_c_function func;
+  duk_idx_t nargs;
+} duktape_registerfunction_t;
+
+typedef std::map<const char*, duktape_registerfunction_t*, CmpStrOp> DuktapeFunctionMap;
 
 typedef struct
   {
@@ -111,15 +121,17 @@ class OvmsScripts
     void  DuktapeEvalNoResult(const char* text, OvmsWriter* writer=NULL);
     float DuktapeEvalFloatResult(const char* text, OvmsWriter* writer=NULL);
     int   DuktapeEvalIntResult(const char* text, OvmsWriter* writer=NULL);
+    void  DuktapeReload();
 
   public:
+    void DukTapeInit();
     void DukTapeTask();
 
   protected:
     duk_context* m_dukctx;
     TaskHandle_t m_duktaskid;
     QueueHandle_t m_duktaskqueue;
-
+    DuktapeFunctionMap m_fnmap;
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   };
 

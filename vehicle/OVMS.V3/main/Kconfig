@@ -177,7 +177,7 @@ config OVMS_SC_ZIP
 
 config OVMS_SC_JAVASCRIPT_DUKTAPE_STACK
     int "JavaScript (DukTape) task stack size"
-    default 8192
+    default 12288
     depends on OVMS_SC_JAVASCRIPT_DUKTAPE
     help
         Stack size for the DukTape task ("Duk Task").
