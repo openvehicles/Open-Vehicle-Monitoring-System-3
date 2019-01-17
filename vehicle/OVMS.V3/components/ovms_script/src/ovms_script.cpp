@@ -434,6 +434,16 @@ static duk_ret_t DukOvmsLoadModule(duk_context *ctx)
     duk_push_lstring(ctx, mod_pubsub_js_start, length);
     return 1;
     }
+  else if (strcmp(module_id,"int/json.js")==0)
+    {
+    // Load from internal RAM
+    extern const char mod_json_js_start[]     asm("_binary_json_js_start");
+    extern const char mod_json_js_end[]       asm("_binary_json_js_end");
+    duk_size_t length = mod_json_js_end - mod_json_js_start;
+    ESP_LOGD(TAG,"load_cb: id:'%s' (internally provided %d bytes)", module_id, length);
+    duk_push_lstring(ctx, mod_json_js_start, length);
+    return 1;
+    }
 
   ESP_LOGD(TAG,"load_cb: id:'%s', filename:'%s'", module_id, filename);
 
@@ -628,6 +638,13 @@ void OvmsScripts::DukTapeInit()
   // Load standard modules...
   ESP_LOGI(TAG,"Duktape: Preload internal module PubSub");
   duk_push_string(m_dukctx, "(function(){PubSub=require(\"int/pubsub\");})();");
+  if (duk_peval(m_dukctx) != 0)
+    {
+    ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
+    }
+  duk_pop(m_dukctx);
+  ESP_LOGI(TAG,"Duktape: Preload internal module JSON");
+  duk_push_string(m_dukctx, "(function(){JSON=require(\"int/json\");})();");
   if (duk_peval(m_dukctx) != 0)
     {
     ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
