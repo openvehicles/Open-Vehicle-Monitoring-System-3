@@ -51,6 +51,49 @@ OvmsScripts MyScripts __attribute__ ((init_priority (1600)));
 
 OvmsWriter* duktapewriter = NULL;
 
+DuktapeObjectRegistration::DuktapeObjectRegistration(const char* name)
+  {
+  m_name = name;
+  }
+
+DuktapeObjectRegistration::~DuktapeObjectRegistration()
+  {
+  }
+
+const char* DuktapeObjectRegistration::GetName()
+  {
+  return m_name;
+  }
+
+void DuktapeObjectRegistration::RegisterDuktapeFunction(duk_c_function func, duk_idx_t nargs, const char* name)
+  {
+  duktape_registerfunction_t* fn = new duktape_registerfunction_t;
+  fn->func = func;
+  fn->nargs = nargs;
+  m_fnmap[name] = fn;
+  }
+
+void DuktapeObjectRegistration::RegisterWithDuktape(duk_context* ctx)
+  {
+  duk_push_object(ctx);
+
+  DuktapeFunctionMap::iterator itm=m_fnmap.begin();
+  while (itm!=m_fnmap.end())
+    {
+    const char* name = itm->first;
+    duktape_registerfunction_t* fn = itm->second;
+    ESP_LOGI(TAG,"Duktape: Pre-Registered object %s function %s",m_name,name);
+    duk_push_c_function(ctx, fn->func, fn->nargs);
+    duk_push_string(ctx, "name");
+    duk_push_string(ctx, name);
+    duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE | DUK_DEFPROP_FORCE);  /* Improve stacktraces by displaying function name */
+    duk_put_prop_string(ctx, -2, name);
+    ++itm;
+    }
+
+  duk_put_global_string(ctx, m_name);
+  }
+
 static duk_int_t duk__eval_module_source(duk_context *ctx, void *udata);
 static void duk__push_module_object(duk_context *ctx, const char *id, duk_bool_t main);
 
@@ -535,6 +578,11 @@ duktape_registermodule_t* OvmsScripts::FindDuktapeModule(const char* name)
     { return mod->second; }
   }
 
+void OvmsScripts::RegisterDuktapeObject(DuktapeObjectRegistration* ob)
+  {
+  m_obmap[ob->GetName()] = ob;
+  }
+
 void OvmsScripts::AutoInitDuktape()
   {
   if (MyConfig.GetParamValueBool("auto", "scripting", true))
@@ -646,6 +694,20 @@ void OvmsScripts::DukTapeInit()
       ESP_LOGI(TAG,"Duktape: Pre-Registered function %s",name);
       duk_push_c_function(m_dukctx, fn->func, fn->nargs);
       duk_put_global_string(m_dukctx, name);
+      ++itm;
+      }
+    }
+
+  if (m_obmap.size() > 0)
+    {
+    // We have some objects to register...
+    DuktapeObjectMap::iterator itm=m_obmap.begin();
+    while (itm!=m_obmap.end())
+      {
+      const char* name = itm->first;
+      DuktapeObjectRegistration* ob = itm->second;
+      ESP_LOGI(TAG,"Duktape: Pre-Registered object %s",name);
+      ob->RegisterWithDuktape(m_dukctx);
       ++itm;
       }
     }

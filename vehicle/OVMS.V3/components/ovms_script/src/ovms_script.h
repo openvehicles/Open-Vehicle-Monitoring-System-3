@@ -70,6 +70,26 @@ typedef struct
 
 typedef std::map<const char*, duktape_registermodule_t*, CmpStrOp> DuktapeModuleMap;
 
+class DuktapeObjectRegistration
+  {
+  public:
+    DuktapeObjectRegistration(const char* name);
+    ~DuktapeObjectRegistration();
+
+  public:
+    const char* GetName();
+    void RegisterDuktapeFunction(duk_c_function func, duk_idx_t nargs, const char* name);
+
+  public:
+    void RegisterWithDuktape(duk_context* ctx);
+
+  protected:
+    const char* m_name;
+    DuktapeFunctionMap m_fnmap;
+  };
+
+typedef std::map<const char*, DuktapeObjectRegistration*, CmpStrOp> DuktapeObjectMap;
+
 typedef struct
   {
   union
@@ -122,6 +142,7 @@ class OvmsScripts
     void RegisterDuktapeFunction(duk_c_function func, duk_idx_t nargs, const char* name);
     void RegisterDuktapeModule(const char* start, size_t length, const char* name);
     duktape_registermodule_t* FindDuktapeModule(const char* name);
+    void RegisterDuktapeObject(DuktapeObjectRegistration* ob);
     void AutoInitDuktape();
 
   protected:
@@ -145,6 +166,7 @@ class OvmsScripts
     QueueHandle_t m_duktaskqueue;
     DuktapeFunctionMap m_fnmap;
     DuktapeModuleMap m_modmap;
+    DuktapeObjectMap m_obmap;
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   };
 
