@@ -82,7 +82,7 @@ void DuktapeObjectRegistration::RegisterWithDuktape(duk_context* ctx)
     {
     const char* name = itm->first;
     duktape_registerfunction_t* fn = itm->second;
-    ESP_LOGI(TAG,"Duktape: Pre-Registered object %s function %s",m_name,name);
+    ESP_LOGD(TAG,"Duktape: Pre-Registered object %s function %s",m_name,name);
     duk_push_c_function(ctx, fn->func, fn->nargs);
     duk_push_string(ctx, "name");
     duk_push_string(ctx, name);
@@ -691,7 +691,7 @@ void OvmsScripts::DukTapeInit()
       {
       const char* name = itm->first;
       duktape_registerfunction_t* fn = itm->second;
-      ESP_LOGI(TAG,"Duktape: Pre-Registered function %s",name);
+      ESP_LOGD(TAG,"Duktape: Pre-Registered function %s",name);
       duk_push_c_function(m_dukctx, fn->func, fn->nargs);
       duk_put_global_string(m_dukctx, name);
       ++itm;
@@ -706,7 +706,7 @@ void OvmsScripts::DukTapeInit()
       {
       const char* name = itm->first;
       DuktapeObjectRegistration* ob = itm->second;
-      ESP_LOGI(TAG,"Duktape: Pre-Registered object %s",name);
+      ESP_LOGD(TAG,"Duktape: Pre-Registered object %s",name);
       ob->RegisterWithDuktape(m_dukctx);
       ++itm;
       }
@@ -720,7 +720,7 @@ void OvmsScripts::DukTapeInit()
     while (itm!=m_modmap.end())
       {
       const char* name = itm->first;
-      ESP_LOGI(TAG,"Duktape: Pre-Registered module %s",name);
+      ESP_LOGD(TAG,"Duktape: Pre-Registered module %s",name);
       std::string loadfn("(function(){");
       loadfn.append(name);
       loadfn.append("=require(\"int/");
@@ -772,7 +772,7 @@ void OvmsScripts::DukTapeTask()
         case DUKTAPE_register:
           {
           // Register extension function
-          ESP_LOGI(TAG,"Duktape: Post-Registered function %s",msg.body.dt_register.name);
+          ESP_LOGD(TAG,"Duktape: Post-Registered function %s",msg.body.dt_register.name);
           duk_push_c_function(m_dukctx,
             msg.body.dt_register.func,
             msg.body.dt_register.nargs);
