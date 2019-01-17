@@ -46,6 +46,7 @@ typedef enum
   DUKTAPE_none = 0,             // Do nothing
   DUKTAPE_register,             // Register extension function
   DUKTAPE_reload,               // Reload DukTape engine
+  DUKTAPE_compact,              // Compact DukTape memory
   DUKTAPE_event,                // Event
   DUKTAPE_autoinit,             // Auto init
   DUKTAPE_evalnoresult,         // Execute script text (without result)
@@ -122,6 +123,7 @@ class OvmsScripts
     float DuktapeEvalFloatResult(const char* text, OvmsWriter* writer=NULL);
     int   DuktapeEvalIntResult(const char* text, OvmsWriter* writer=NULL);
     void  DuktapeReload();
+    void  DuktapeCompact();
 
   public:
     void DukTapeInit();

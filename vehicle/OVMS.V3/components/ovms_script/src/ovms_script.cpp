@@ -580,6 +580,14 @@ void OvmsScripts::DuktapeReload()
   DuktapeDispatchWait(&dmsg);
   }
 
+void OvmsScripts::DuktapeCompact()
+  {
+  duktape_queue_t dmsg;
+  memset(&dmsg, 0, sizeof(dmsg));
+  dmsg.type = DUKTAPE_compact;
+  DuktapeDispatchWait(&dmsg);
+  }
+
 void *DukAlloc(void *udata, duk_size_t size)
   {
   return NULL;
@@ -682,22 +690,33 @@ void OvmsScripts::DukTapeTask()
           DukTapeInit();
           }
           break;
+        case DUKTAPE_compact:
+          {
+          // Compact DUKTAPE memory
+          if (m_dukctx != NULL)
+            {
+            ESP_LOGI(TAG,"Duktape: Compacting DukTape memory");
+            duk_gc(m_dukctx, 0);
+            duk_gc(m_dukctx, 0);
+            }
+          }
+          break;
         case DUKTAPE_event:
           {
           // Event
           if (m_dukctx != NULL)
             {
             // Deliver the event to DUKTAPE
-            //duk_get_global_string(m_dukctx, "PubSub");
-            //duk_get_prop_string(m_dukctx, -1, "publish");
-            //duk_dup(m_dukctx, -2);  /* this binding = process */
-            //duk_push_string(m_dukctx, msg.body.dt_event.name);
-            //duk_push_string(m_dukctx, "");
-            //if (duk_pcall_method(m_dukctx, 2) != 0)
-            //  {
-            //  ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
-            //  }
-            //duk_pop_2(m_dukctx);
+            duk_get_global_string(m_dukctx, "PubSub");
+            duk_get_prop_string(m_dukctx, -1, "publish");
+            duk_dup(m_dukctx, -2);  /* this binding = process */
+            duk_push_string(m_dukctx, msg.body.dt_event.name);
+            duk_push_string(m_dukctx, "");
+            if (duk_pcall_method(m_dukctx, 2) != 0)
+              {
+              ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
+              }
+            duk_pop_2(m_dukctx);
             }
           }
           break;
@@ -777,6 +796,12 @@ static void script_reload(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
 static void script_eval(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   MyScripts.DuktapeEvalNoResult(argv[0], writer);
+  }
+
+static void script_compact(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->puts("Compacting javascript memory");
+  MyScripts.DuktapeCompact();
   }
 
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
@@ -924,6 +949,7 @@ OvmsScripts::OvmsScripts()
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   cmd_script->RegisterCommand("reload","Reload javascript framework",script_reload,"",0,0,true);
   cmd_script->RegisterCommand("eval","Eval some javascript code",script_eval,"<code>",1,1,true);
+  cmd_script->RegisterCommand("compact","Compact javascript heap",script_compact,"",0,0,true);
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   MyCommandApp.RegisterCommand(".","Run a script",script_run,"<path>",1,1,true);
   }
