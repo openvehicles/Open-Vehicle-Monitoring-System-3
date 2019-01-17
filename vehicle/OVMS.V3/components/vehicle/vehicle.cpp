@@ -34,6 +34,7 @@ static const char *TAG = "vehicle";
 #include <stdio.h>
 #include <algorithm>
 #include <ovms_command.h>
+#include <ovms_script.h>
 #include <ovms_metrics.h>
 #include <ovms_notify.h>
 #include <metrics_standard.h>
@@ -459,6 +460,188 @@ void bms_alerts(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     }
   }
 
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
+static duk_ret_t DukOvmsVehicleType(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle != NULL)
+    {
+    duk_push_string(ctx, MyVehicleFactory.m_currentvehicletype.c_str());
+    return 1;
+    }
+  else
+    {
+    return 0;
+    }
+  }
+
+static duk_ret_t DukOvmsVehicleWakeup(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    switch(MyVehicleFactory.m_currentvehicle->CommandWakeup())
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleHomelink(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    int homelink = duk_to_int(ctx,0);
+    int durationms = duk_to_int(ctx,-1);
+    if (durationms==0) durationms = 1000;
+
+    if ((homelink<1)||(homelink>3))
+      { duk_push_boolean(ctx, 0); }
+    else if (durationms < 100)
+      { duk_push_boolean(ctx, 0); }
+    else
+      {
+      switch(MyVehicleFactory.m_currentvehicle->CommandHomelink(homelink-1, durationms))
+        {
+        case OvmsVehicle::Success:
+          duk_push_boolean(ctx, 1);
+          break;
+        default:
+          duk_push_boolean(ctx, 0);
+          break;
+        }
+      }
+    }
+
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleClimateControl(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    bool on = duk_to_boolean(ctx,0);
+    switch(MyVehicleFactory.m_currentvehicle->CommandClimateControl(on))
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleLock(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    const char* pin = duk_safe_to_string(ctx, 0);
+    switch(MyVehicleFactory.m_currentvehicle->CommandLock(pin))
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleUnlock(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    const char* pin = duk_safe_to_string(ctx, 0);
+    switch(MyVehicleFactory.m_currentvehicle->CommandUnlock(pin))
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleValet(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    const char* pin = duk_safe_to_string(ctx, 0);
+    switch(MyVehicleFactory.m_currentvehicle->CommandActivateValet(pin))
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleUnvalet(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    const char* pin = duk_safe_to_string(ctx, 0);
+    switch(MyVehicleFactory.m_currentvehicle->CommandDeactivateValet(pin))
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
 OvmsVehicleFactory::OvmsVehicleFactory()
   {
   ESP_LOGI(TAG, "Initialising VEHICLE Factory (2000)");
@@ -496,6 +679,19 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   cmd_bms->RegisterCommand("status","Show BMS status",bms_status,"",0,0, true);
   cmd_bms->RegisterCommand("reset","Reset BMS statistics",bms_reset,"",0,0, true);
   cmd_bms->RegisterCommand("alerts","Show BMS alerts",bms_alerts,"",0,0, true);
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsVehicle");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleType, 0, "Type");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleWakeup, 0, "Wakeup");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleHomelink, 2, "Homelink");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleClimateControl, 1, "ClimateControl");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleLock, 1, "Lock");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleUnlock, 1, "Unlock");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleValet, 1, "Valet");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleUnvalet, 1, "Unvalet");
+  MyScripts.RegisterDuktapeObject(dto);
+#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
 OvmsVehicleFactory::~OvmsVehicleFactory()
@@ -634,7 +830,7 @@ OvmsVehicle::OvmsVehicle()
   m_bms_limit_tmax = 1000;
   m_bms_limit_vmin = -1000;
   m_bms_limit_vmax = 1000;
-  
+
   m_bms_defthr_vwarn  = BMS_DEFTHR_VWARN;
   m_bms_defthr_valert = BMS_DEFTHR_VALERT;
   m_bms_defthr_twarn  = BMS_DEFTHR_TWARN;
