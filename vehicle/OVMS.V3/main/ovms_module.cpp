@@ -392,13 +392,14 @@ void AddTaskToMap(TaskHandle_t task)
   }
 
 
-static void print_blocks(OvmsWriter* writer, TaskHandle_t task)
+static void print_blocks(OvmsWriter* writer, TaskHandle_t task, bool leaks)
   {
-  int count = 0, total = 0;
+  int count = 0, total = 0, size = 0;;
   bool separate = false;
   Name name;
   TaskMap* tm = TaskMap::instance();
   char pbuf[32];
+  tm->find(task, name);
   for (int i = 0; i < numbefore; ++i)
     {
     if (before[i].task != task)
@@ -409,7 +410,6 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task)
         break;
     if (j == numafter)
       {
-      tm->find(before[i].task, name);
       writer->printf("- t=%.15s s=%4d a=%p\n", name.bytes,
         before[i].size, before[i].address);
       ++count;
@@ -418,6 +418,7 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task)
   if (count)
     separate = true;
   total += count;
+  size = 0;
   count = 0;
   for (int i = 0; i < numafter; ++i)
     {
@@ -435,17 +436,26 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task)
         writer->printf("----------------------------\n");
         separate = false;
         }
-      tm->find(after[i].task, name);
-      for (int pi=0; pi<32; pi++)
-        pbuf[pi] = isprint(((char*)p)[pi]) ? ((char*)p)[pi] : '.';
-      writer->printf("  t=%.15s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X | %-32.32s\n",
-        name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], pbuf);
+      if (!leaks)
+        {
+        for (int pi=0; pi<32; pi++)
+          pbuf[pi] = isprint(((char*)p)[pi]) ? ((char*)p)[pi] : '.';
+        writer->printf("  t=%.15s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X | %-32.32s\n",
+          name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], pbuf);
+        }
+      size += after[i].size;
       ++count;
       }
     }
   if (count)
+    {
     separate = true;
+    if (leaks)
+      writer->printf("  t=%.15s s=%4d in %d blocks still allocated\n", name.bytes, size, count);
+    }
   total += count;
+  size = 0;
+  count = 0;
   for (int i = 0; i < numafter; ++i)
     {
     if (after[i].task != task)
@@ -462,14 +472,20 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task)
         writer->printf("----------------------------\n");
         separate = false;
         }
-      tm->find(after[i].task, name);
-      for (int pi=0; pi<32; pi++)
-        pbuf[pi] = isprint(((char*)p)[pi]) ? ((char*)p)[pi] : '.';
-      writer->printf("+ t=%.15s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X | %-32.32s\n",
-        name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], pbuf);
-      ++total;
+      if (numbefore > 0 || !leaks)
+        {
+        for (int pi=0; pi<32; pi++)
+          pbuf[pi] = isprint(((char*)p)[pi]) ? ((char*)p)[pi] : '.';
+        writer->printf("+ t=%.15s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X | %-32.32s\n",
+          name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], pbuf);
+        }
+      size += after[i].size;
+      ++count;
       }
     }
+  if (numbefore == 0 && leaks && count)
+    writer->printf("  t=%.15s s=%d in %d blocks allocated\n", name.bytes, size, count);
+  total += count;
   if (total)
     writer->printf("============================\n");
   }
@@ -543,6 +559,7 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
   static const char* ctasks[] = {}; // { "tiT", "wifi"};
   const char* const* tasks = ctasks;
   bool all = false;
+  bool leaks = *(cmd->GetName()) == 'l';
   if (argc > 0)
     {
     if (**argv == '*')
@@ -654,7 +671,7 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
       numafter, numafter < DUMPSIZE ? "" : " (limited)");
     tl = tasklist;
     for (int i = 0; i < tln; ++i, ++tl)
-      print_blocks(writer, *tl);
+      print_blocks(writer, *tl, leaks);
     }
   else if (!tasks)
     {
@@ -675,7 +692,7 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
             numafter, numafter < DUMPSIZE ? "" : " (limited)");
           headline = false;
           }
-        print_blocks(writer, (*changes).Task(i));
+        print_blocks(writer, (*changes).Task(i), leaks);
         }
       }
     }
@@ -877,6 +894,7 @@ class OvmsModuleInit
 
     OvmsCommand* cmd_module = MyCommandApp.RegisterCommand("module","MODULE framework",NULL,"",0,0,true);
     cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"[<task names or ids>|*|=]",0,TASKLIST,true);
+    cmd_module->RegisterCommand("leaks","Show module memory changes",module_memory,"[<task names or ids>|*|=]",0,TASKLIST,true);
     OvmsCommand* cmd_tasks = cmd_module->RegisterCommand("tasks","Show module task usage",module_tasks,"[stack]",0,1,true);
     cmd_tasks->RegisterCommand("stack","Show module task usage with stack",module_tasks,"",0,0,true);
     cmd_module->RegisterCommand("fault","Abort fault the module",module_fault,"",0,0,true);
