@@ -424,25 +424,22 @@ static duk_ret_t DukOvmsLoadModule(duk_context *ctx)
   duk_get_prop_string(ctx, 2, "filename");
   filename = duk_require_string(ctx, -1);
 
-  if (strcmp(module_id,"int/pubsub.js")==0)
+  if (strncmp(module_id,"int/",4)==0)
     {
-    // Load from internal RAM
-    extern const char mod_pubsub_js_start[]     asm("_binary_pubsub_js_start");
-    extern const char mod_pubsub_js_end[]       asm("_binary_pubsub_js_end");
-    duk_size_t length = mod_pubsub_js_end - mod_pubsub_js_start;
-    ESP_LOGD(TAG,"load_cb: id:'%s' (internally provided %d bytes)", module_id, length);
-    duk_push_lstring(ctx, mod_pubsub_js_start, length);
-    return 1;
-    }
-  else if (strcmp(module_id,"int/json.js")==0)
-    {
-    // Load from internal RAM
-    extern const char mod_json_js_start[]     asm("_binary_json_js_start");
-    extern const char mod_json_js_end[]       asm("_binary_json_js_end");
-    duk_size_t length = mod_json_js_end - mod_json_js_start;
-    ESP_LOGD(TAG,"load_cb: id:'%s' (internally provided %d bytes)", module_id, length);
-    duk_push_lstring(ctx, mod_json_js_start, length);
-    return 1;
+    // Load internal module
+    std::string name(module_id+4,strlen(module_id)-7);
+    duktape_registermodule_t* mod = MyScripts.FindDuktapeModule(name.c_str());
+    if (mod == NULL)
+      {
+      duk_error(ctx, DUK_ERR_TYPE_ERROR, "load_cb: cannot find internal module: %s", module_id);
+      return 0;
+      }
+    else
+      {
+      ESP_LOGD(TAG,"load_cb: id:'%s' (internally provided %d bytes)", module_id, mod->length);
+      duk_push_lstring(ctx, mod->start, mod->length);
+      return 1;
+      }
     }
 
   ESP_LOGD(TAG,"load_cb: id:'%s', filename:'%s'", module_id, filename);
@@ -458,7 +455,8 @@ static duk_ret_t DukOvmsLoadModule(duk_context *ctx)
     }
   if (sf == NULL)
     {
-    duk_error(ctx, DUK_ERR_TYPE_ERROR, "cannot find module: %s", module_id);
+    duk_error(ctx, DUK_ERR_TYPE_ERROR, "load_cb: cannot find module: %s", module_id);
+    return 0;
     }
   else
     {
@@ -518,6 +516,23 @@ void OvmsScripts::RegisterDuktapeFunction(duk_c_function func, duk_idx_t nargs, 
     dmsg.body.dt_register.name = name;
     DuktapeDispatch(&dmsg);
     }
+  }
+
+void OvmsScripts::RegisterDuktapeModule(const char* start, size_t length, const char* name)
+  {
+  duktape_registermodule_t* mn = new duktape_registermodule_t;
+  mn->start = start;
+  mn->length = length;
+  m_modmap[name] = mn;
+  }
+
+duktape_registermodule_t* OvmsScripts::FindDuktapeModule(const char* name)
+  {
+  auto mod = m_modmap.find(name);
+  if (mod == m_modmap.end())
+    { return NULL; }
+  else
+    { return mod->second; }
   }
 
 void OvmsScripts::AutoInitDuktape()
@@ -635,21 +650,29 @@ void OvmsScripts::DukTapeInit()
       }
     }
 
-  // Load standard modules...
-  ESP_LOGI(TAG,"Duktape: Preload internal module PubSub");
-  duk_push_string(m_dukctx, "(function(){PubSub=require(\"int/pubsub\");})();");
-  if (duk_peval(m_dukctx) != 0)
+  // Load registered modules
+  if (m_modmap.size() > 0)
     {
-    ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
+    // We have some modules to register...
+    DuktapeModuleMap::iterator itm=m_modmap.begin();
+    while (itm!=m_modmap.end())
+      {
+      const char* name = itm->first;
+      ESP_LOGI(TAG,"Duktape: Pre-Registered module %s",name);
+      std::string loadfn("(function(){");
+      loadfn.append(name);
+      loadfn.append("=require(\"int/");
+      loadfn.append(name);
+      loadfn.append("\");})();");
+      duk_push_string(m_dukctx, loadfn.c_str());
+      if (duk_peval(m_dukctx) != 0)
+        {
+        ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
+        }
+      duk_pop(m_dukctx);
+      ++itm;
+      }
     }
-  duk_pop(m_dukctx);
-  ESP_LOGI(TAG,"Duktape: Preload internal module JSON");
-  duk_push_string(m_dukctx, "(function(){JSON=require(\"int/json\");})();");
-  if (duk_peval(m_dukctx) != 0)
-    {
-    ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
-    }
-  duk_pop(m_dukctx);
 
   // ovmsmain
   FILE* sf = fopen("/store/scripts/ovmsmain.js", "r");
@@ -954,6 +977,17 @@ OvmsScripts::OvmsScripts()
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   ESP_LOGI(TAG, "Using DUKTAPE javascript engine");
+
+  // Register standard modules...
+  extern const char mod_pubsub_js_start[]     asm("_binary_pubsub_js_start");
+  extern const char mod_pubsub_js_end[]       asm("_binary_pubsub_js_end");
+  RegisterDuktapeModule(mod_pubsub_js_start, mod_pubsub_js_end - mod_pubsub_js_start, "PubSub");
+
+  extern const char mod_json_js_start[]     asm("_binary_json_js_start");
+  extern const char mod_json_js_end[]       asm("_binary_json_js_end");
+  RegisterDuktapeModule(mod_json_js_start, mod_json_js_end - mod_json_js_start, "JSON");
+
+  // Start the DukTape task...
   m_duktaskqueue = xQueueCreate(CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_QUEUE_SIZE,sizeof(duktape_queue_t));
   xTaskCreatePinnedToCore(DukTapeLaunchTask, "OVMS DukTape", CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_STACK, (void*)this, 5, &m_duktaskid, 1);
   AddTaskToMap(m_duktaskid);

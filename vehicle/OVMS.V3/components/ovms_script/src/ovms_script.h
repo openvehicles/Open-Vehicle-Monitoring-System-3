@@ -58,9 +58,17 @@ typedef struct
   {
   duk_c_function func;
   duk_idx_t nargs;
-} duktape_registerfunction_t;
+  } duktape_registerfunction_t;
 
 typedef std::map<const char*, duktape_registerfunction_t*, CmpStrOp> DuktapeFunctionMap;
+
+typedef struct
+  {
+  const char* start;
+  size_t length;
+  } duktape_registermodule_t;
+
+typedef std::map<const char*, duktape_registermodule_t*, CmpStrOp> DuktapeModuleMap;
 
 typedef struct
   {
@@ -112,6 +120,8 @@ class OvmsScripts
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   public:
     void RegisterDuktapeFunction(duk_c_function func, duk_idx_t nargs, const char* name);
+    void RegisterDuktapeModule(const char* start, size_t length, const char* name);
+    duktape_registermodule_t* FindDuktapeModule(const char* name);
     void AutoInitDuktape();
 
   protected:
@@ -134,6 +144,7 @@ class OvmsScripts
     TaskHandle_t m_duktaskid;
     QueueHandle_t m_duktaskqueue;
     DuktapeFunctionMap m_fnmap;
+    DuktapeModuleMap m_modmap;
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   };
 
