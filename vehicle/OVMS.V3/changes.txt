@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+
+2019-01-18 MWJ  3.2.000  OTA release
 - New vehicle: Smart ED (adaption by Martin Graml <martingraml@hotmail.com>)
 - Web API: per access authorization by "apikey=password" parameter
 - Web UI: text / script editor
@@ -28,6 +30,8 @@ Open Vehicle Monitor System v3 - Change log
   See docs/Renault-Twizy/Twizy-Powermap-Calculator-Tbrk.ods for details.
 - Add inactivity watchdog timers to CAN buses
 - NissanLeaf: Fix for 0% SOH on 30KWh models with Nissan BMS update
+- Introduction of support for DBC CAN bus configuration files
+- Javascript: New modular framework, and migration of all extensions to objects
 
 2018-10-24 MWJ  3.1.011  OTA release
 - Config backup & restore using encrypted ZIP archives
