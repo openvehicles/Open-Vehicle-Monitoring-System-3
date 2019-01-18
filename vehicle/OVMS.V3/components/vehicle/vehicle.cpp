@@ -335,7 +335,7 @@ void vehicle_charge_current(int verbosity, OvmsWriter* writer, OvmsCommand* cmd,
       writer->printf("Charge current limit set to %dA\n",limit);
       break;
     case OvmsVehicle::Fail:
-      writer->printf("Error: Could not sst charge current limit to %dA\n",limit);
+      writer->printf("Error: Could not set charge current limit to %dA\n",limit);
       break;
     default:
       writer->puts("Error: Charge current limit functionality not available");
