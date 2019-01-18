@@ -640,6 +640,158 @@ static duk_ret_t DukOvmsVehicleUnvalet(duk_context *ctx)
   return 1;
   }
 
+static duk_ret_t DukOvmsVehicleSetChargeMode(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    const char* mode = duk_safe_to_string(ctx, 0);
+    OvmsVehicle::vehicle_mode_t tmode = (OvmsVehicle::vehicle_mode_t)chargemode_key(mode);
+    switch(MyVehicleFactory.m_currentvehicle->CommandSetChargeMode(tmode))
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleSetChargeCurrent(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    int limit = duk_to_int(ctx,0);
+    switch(MyVehicleFactory.m_currentvehicle->CommandSetChargeCurrent(limit))
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleSetChargeTimer(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    bool timeron = duk_to_boolean(ctx,0);
+    int timerstart = duk_to_int(ctx,-1);
+    switch(MyVehicleFactory.m_currentvehicle->CommandSetChargeTimer(timeron, timerstart))
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleStopCharge(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    switch(MyVehicleFactory.m_currentvehicle->CommandStopCharge())
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleStartCharge(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    switch(MyVehicleFactory.m_currentvehicle->CommandStartCharge())
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleStartCooldown(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    switch(MyVehicleFactory.m_currentvehicle->CommandCooldown(true))
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleStopCooldown(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    switch(MyVehicleFactory.m_currentvehicle->CommandCooldown(false))
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
 OvmsVehicleFactory::OvmsVehicleFactory()
@@ -690,6 +842,13 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   dto->RegisterDuktapeFunction(DukOvmsVehicleUnlock, 1, "Unlock");
   dto->RegisterDuktapeFunction(DukOvmsVehicleValet, 1, "Valet");
   dto->RegisterDuktapeFunction(DukOvmsVehicleUnvalet, 1, "Unvalet");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleSetChargeMode, 1, "SetChargeMode");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleSetChargeCurrent, 1, "SetChargeCurrent");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleSetChargeTimer, 2, "SetChargeTimer");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleStopCharge, 0, "StopCharge");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleStartCharge, 0, "StartCharge");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleStartCooldown, 0, "StartCooldown");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleStopCooldown, 0, "StopCooldown");
   MyScripts.RegisterDuktapeObject(dto);
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
