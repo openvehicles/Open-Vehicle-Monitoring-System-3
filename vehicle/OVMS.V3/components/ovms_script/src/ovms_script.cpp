@@ -568,18 +568,6 @@ void OvmsScripts::RegisterDuktapeFunction(duk_c_function func, duk_idx_t nargs, 
   fn->func = func;
   fn->nargs = nargs;
   m_fnmap[name] = fn;
-
-  if (m_dukctx != NULL)
-    {
-    // Duktape is already running, so we need to dynamically register this
-    duktape_queue_t dmsg;
-    memset(&dmsg, 0, sizeof(dmsg));
-    dmsg.type = DUKTAPE_register;
-    dmsg.body.dt_register.func = func;
-    dmsg.body.dt_register.nargs = nargs;
-    dmsg.body.dt_register.name = name;
-    DuktapeDispatch(&dmsg);
-    }
   }
 
 void OvmsScripts::RegisterDuktapeModule(const char* start, size_t length, const char* name)
@@ -790,17 +778,6 @@ void OvmsScripts::DukTapeTask()
       duktapewriter = msg.writer;
       switch(msg.type)
         {
-        case DUKTAPE_register:
-          {
-          // Register extension function
-          ESP_LOGD(TAG,"Duktape: Post-Registered function %s",msg.body.dt_register.name);
-          duk_push_c_function(m_dukctx,
-            msg.body.dt_register.func,
-            msg.body.dt_register.nargs);
-          duk_put_global_string(m_dukctx,
-            msg.body.dt_register.name);
-          }
-          break;
         case DUKTAPE_reload:
           {
           // Reload DUKTAPE engine
