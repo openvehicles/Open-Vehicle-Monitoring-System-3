@@ -369,14 +369,14 @@ class OvmsMetricSet : public OvmsMetric
  *  - string representation as comma separated values
  *  - TODO: escaping / string encoding for non-numeric types
  *  - TODO: unit conversions
- * 
+ *
  * Usage example:
  *  OvmsMetricVector<float>* vf = new OvmsMetricVector<float>("test.volts", SM_STALE_MIN, Volts);
  *  vf->SetElemValue(3, 1.23);
  *  vf->SetElemValue(17, 2.34);
  *  float myvals[3] = { 5.5, 6.6, 7.7 };
  *  vf->SetElemValues(10, 3, myvals);
- * 
+ *
  * Note: use ExtRamAllocator<type> for large vectors (= use SPIRAM)
  */
 template
