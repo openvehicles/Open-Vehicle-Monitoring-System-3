@@ -48,7 +48,8 @@ typedef union {
   unsigned char value;
 } KsShiftBits;
 
-void xks_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xks_trip_since_parked(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xks_trip_since_charge(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xks_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xks_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xks_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
@@ -65,6 +66,28 @@ void xks_set_head_light_delay(int verbosity, OvmsWriter* writer, OvmsCommand* cm
 void xks_set_one_touch_turn_signal(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xks_set_auto_door_unlock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xks_set_auto_door_lock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+
+class KS_Trip_Counter
+	{
+private:
+  float odo_start;
+  float cdc_start; 					// Used to calculate trip power use (Cumulated discharge)
+  float cc_start;  					// Used to calculate trip recuperation (Cumulated charge)
+  float odo;
+  float cdc;
+  float cc;
+
+public:
+  KS_Trip_Counter();
+  ~KS_Trip_Counter();
+  void Reset(float odo, float cdc, float cc);
+  void Update(float odo, float cdc, float cc);
+  float GetDistance();
+  float GetEnergyUsed();
+  float GetEnergyRecuperated();
+  bool Started();
+  bool HasEnergyData();
+	};
 
 class OvmsVehicleKiaSoulEv : public OvmsVehicle
   {
@@ -154,6 +177,10 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     OvmsMetricInt*	  m_v_pos_arrival_minute;
     OvmsMetricString*	  m_v_pos_street;
 
+    OvmsMetricFloat* ms_v_pos_trip;
+    OvmsMetricFloat* ms_v_trip_energy_used;
+    OvmsMetricFloat* ms_v_trip_energy_recd;
+
     OvmsMetricFloat* m_obc_pilot_duty;
     OvmsMetricBool*  m_obc_timer_enabled;
 
@@ -228,11 +255,11 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     float ks_obc_volt;
     KsShiftBits ks_shift_bits;
 
-    float ks_trip_start_odo;
+    KS_Trip_Counter ks_park_trip_counter;
+    KS_Trip_Counter ks_charge_trip_counter;
+
     float ks_last_soc;
     float ks_last_ideal_range;
-    float ks_start_cdc; 					// Used to calculate trip power use (Cumulated discharge)
-    float ks_start_cc;  					// Used to calculate trip recuperation (Cumulated charge)
     float ks_cum_charge_start; 		// Used to calculate charged power.
 
     int16_t ks_battery_current; 			// Temporary storage for Battery current: 0x7ec 02 21 01 -> 21 7+22 1
@@ -300,6 +327,7 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
     public:
       void GetDashboardConfig(DashboardConfig& cfg);
   };
+
 
 #define SQR(n) ((n)*(n))
 #define ABS(n) (((n) < 0) ? -(n) : (n))

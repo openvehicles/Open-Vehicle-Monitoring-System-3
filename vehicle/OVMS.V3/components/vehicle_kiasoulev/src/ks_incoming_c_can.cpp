@@ -151,8 +151,11 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 	case 0x4f0:
 		{
 		// Odometer:
-		StdMetrics.ms_v_pos_odometer->SetValue(
-				(float) ((d[7] << 16) + (d[6] << 8) + d[5]) / 10.0, Kilometers);
+		if( d[7]+d[6]+d[5]>0)
+			{
+			StdMetrics.ms_v_pos_odometer->SetValue(
+					(float) ((d[7] << 16) + (d[6] << 8) + d[5]) / 10.0, Kilometers);
+			}
 		}
 		break;
 
@@ -179,6 +182,8 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 
 	case 0x534:
 		{
+		ESP_LOGI(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
+				p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
 		if( (d[1] & 0x3) == 0 )
 			{
 			m_v_steering_mode->SetValue("Normal");
