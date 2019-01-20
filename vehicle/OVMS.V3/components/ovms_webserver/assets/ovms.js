@@ -1442,7 +1442,7 @@ $(function(){
     if ($this.prop('disabled')) return;
     var action = $this.attr("title") || $this.text();
     if (navigator.vibrate) navigator.vibrate([100,400,100,400,100,400]);
-    $longtouchProgress = $('<div class="hover-progress longtouch"><div class="hover-progress-body"><div class="info">Hold touch for/to</div><div class="action">'+action+'</div><div class="progress"><div class="progress-bar progress-bar-info" style="width:0%"></div></div></div></div>').appendTo("body").find(".progress-bar");
+    $longtouchProgress = $('<div class="hover-progress longtouch"><div class="hover-progress-body"><div class="info">Hold touch for/to</div><div class="action">'+encode_html(action)+'</div><div class="progress"><div class="progress-bar progress-bar-info" style="width:0%"></div></div></div></div>').appendTo("body").find(".progress-bar");
     window.getComputedStyle($longtouchProgress.get(0)).width;
     $longtouchProgress.css("width", "100%");
     longtouchTimeout = window.setTimeout(function() {
