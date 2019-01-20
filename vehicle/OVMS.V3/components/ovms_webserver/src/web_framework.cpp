@@ -357,31 +357,32 @@ void PageContext::input_slider(const char* label, const char* name, int size, co
     "<div class=\"form-group\">"
       "<label class=\"control-label col-sm-3\" for=\"input-%s\">%s:</label>"
       "<div class=\"col-sm-9\">"
-        "<div class=\"form-control slider\">"
+        "<div class=\"form-control slider\" data-default=\"%g\" data-reset=\"false\""
+        " data-value=\"%g\" data-min=\"%g\" data-max=\"%g\" data-step=\"%g\">"
           "<div class=\"slider-control form-inline\">"
-            "<input class=\"slider-enable\" type=\"%s\" %s data-default=\"%g\" data-reset=\"false\"> "
+            "<input class=\"slider-enable\" type=\"%s\" %s> "
             "<input class=\"form-control slider-value\" %s type=\"number\" style=\"width:%dpx;\""
-              " id=\"input-%s\" name=\"%s\" value=\"%g\" min=\"%g\" max=\"%g\" step=\"%g\"> "
+              " id=\"input-%s\" name=\"%s\"> "
             "%s%s%s"
             "<input class=\"btn btn-default slider-down\" %s type=\"button\" value=\"➖\"> "
             "<input class=\"btn btn-default slider-set\" %s type=\"button\" value=\"◈\" data-set=\"%g\"> "
             "<input class=\"btn btn-default slider-up\" %s type=\"button\" value=\"➕\">"
           "</div>"
-          "<input class=\"slider-input\" %s type=\"range\" value=\"%g\" min=\"%g\" max=\"%g\" step=\"%g\">"
+          "<input class=\"slider-input\" %s type=\"range\">"
         "</div>"
         "%s%s%s"
       "</div>"
     "</div>"
+    "<script>$('#input-%s').slider()</script>"
     , _attr(name)
     , label
+    , defval, value, min, max, step
     , (enabled < 0) ? "hidden" : "checkbox" // -1 => no checkbox
     , (enabled > 0) ? "checked" : ""
-    , defval
     , (enabled == 0) ? "disabled" : ""
     , width
     , _attr(name)
     , _attr(name)
-    , value, min, max, step
     , unit ? "<span class=\"slider-unit\">" : ""
     , unit ? unit : ""
     , unit ? "</span> " : ""
@@ -390,10 +391,10 @@ void PageContext::input_slider(const char* label, const char* name, int size, co
     , defval
     , (enabled == 0) ? "disabled" : ""
     , (enabled == 0) ? "disabled" : ""
-    , value, min, max, step
     , helptext ? "<span class=\"help-block\">" : ""
     , helptext ? helptext : ""
     , helptext ? "</span>" : ""
+    , _attr(name)
     );
 }
 
