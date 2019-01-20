@@ -7,6 +7,12 @@
  * (c) 2018	Geir Øyvind Væidalo <geir@validalo.net>
  * (c) 2017  Michael Balzer <dexter@dexters-web.de>
  *
+ *Changes:
+ ;    1.0.0  Initial release:
+ ;       - Dashboard modificatiosn
+ ;    1.0.1
+ ;       - Dashboard modification from 80 cell charge_state
+ ;
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -119,67 +125,133 @@ void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsVehicleMitsubishi::GetDashboardConfig(DashboardConfig& cfg)
 {
-  cfg.gaugeset1 =
-    "yAxis: [{"
-      // Speed:
-      "min: 0, max: 135,"
-      "plotBands: ["
-        "{ from: 0, to: 65, className: 'green-band' },"
-        "{ from: 65, to: 100, className: 'yellow-band' },"
-        "{ from: 100, to: 135, className: 'red-band' }]"
-    "},{"
-      // Voltage:
-      "min: 294, max: 362,"
-      "plotBands: ["
-        "{ from: 194, to: 317, className: 'red-band' },"
-        "{ from: 317, to: 341, className: 'yellow-band' },"
-        "{ from: 341, to: 362, className: 'green-band' }]"
-    "},{"
-      // SOC:
-      "min: 10, max: 100,"
-      "plotBands: ["
-        "{ from: 10, to: 15.5, className: 'red-band' },"
-        "{ from: 15.5, to: 25, className: 'yellow-band' },"
-        "{ from: 25, to: 100, className: 'green-band' }]"
-    "},{"
-      // Efficiency:
-      "min: 0, max: 300,"
-      "plotBands: ["
-        "{ from: 0, to: 120, className: 'green-band' },"
-        "{ from: 120, to: 250, className: 'yellow-band' },"
-        "{ from: 250, to: 300, className: 'red-band' }]"
-    "},{"
-      // Power:
-      "min: -30, max: 65,"
-      "plotBands: ["
-        "{ from: -30, to: 0, className: 'violet-band' },"
-        "{ from: 0, to: 16, className: 'green-band' },"
-        "{ from: 16, to: 40, className: 'yellow-band' },"
-        "{ from: 40, to: 65, className: 'red-band' }]"
-    "},{"
-      // Charger temperature:
-      "min: -10, max: 55, tickInterval: 20,"
-      "plotBands: ["
-        "{ from: -10, to: 40, className: 'normal-band border' },"
-        "{ from: 40, to: 55, className: 'red-band border' }]"
-    "},{"
-      // Battery temperature:
-      "min: -15, max: 65, tickInterval: 25,"
-      "plotBands: ["
-        "{ from: -15, to: 0, className: 'red-band border' },"
-        "{ from: 0, to: 40, className: 'normal-band border' },"
-        "{ from: 40, to: 65, className: 'red-band border' }]"
-    "},{"
-      // Inverter temperature:
-      "min: -10, max: 55, tickInterval: 20,"
-      "plotBands: ["
-        "{ from: -10, to: 40, className: 'normal-band border' },"
-        "{ from: 40, to: 55, className: 'red-band border' }]"
-    "},{"
-      // Motor temperature:
-      "min: 20, max: 100, tickInterval: 25,"
-      "plotBands: ["
-        "{ from: 20, to: 75, className: 'normal-band border' },"
-        "{ from: 75, to: 100, className: 'red-band border' }]"
-    "}]";
+  if(StandardMetrics.ms_v_bat_voltage->AsFloat() > 340){
+    cfg.gaugeset1 =
+      "yAxis: [{"
+        // Speed:
+        "min: 0, max: 135,"
+        "plotBands: ["
+          "{ from: 0, to: 65, className: 'green-band' },"
+          "{ from: 65, to: 100, className: 'yellow-band' },"
+          "{ from: 100, to: 135, className: 'red-band' }]"
+      "},{"
+        // Voltage:
+        "min: 294, max: 363,"
+        "plotBands: ["
+          "{ from: 294, to: 317, className: 'red-band' },"
+          "{ from: 317, to: 341, className: 'yellow-band' },"
+          "{ from: 341, to: 363, className: 'green-band' }]"
+      "},{"
+        // SOC:
+        "min: 10, max: 100,"
+        "plotBands: ["
+          "{ from: 10, to: 15.5, className: 'red-band' },"
+          "{ from: 15.5, to: 25, className: 'yellow-band' },"
+          "{ from: 25, to: 100, className: 'green-band' }]"
+      "},{"
+        // Efficiency:
+        "min: 0, max: 300,"
+        "plotBands: ["
+          "{ from: 0, to: 120, className: 'green-band' },"
+          "{ from: 120, to: 250, className: 'yellow-band' },"
+          "{ from: 250, to: 300, className: 'red-band' }]"
+      "},{"
+        // Power:
+        "min: -30, max: 65,"
+        "plotBands: ["
+          "{ from: -30, to: 0, className: 'violet-band' },"
+          "{ from: 0, to: 16, className: 'green-band' },"
+          "{ from: 16, to: 40, className: 'yellow-band' },"
+          "{ from: 40, to: 65, className: 'red-band' }]"
+      "},{"
+        // Charger temperature:
+        "min: -10, max: 55, tickInterval: 20,"
+        "plotBands: ["
+          "{ from: -10, to: 40, className: 'normal-band border' },"
+          "{ from: 40, to: 55, className: 'red-band border' }]"
+      "},{"
+        // Battery temperature:
+        "min: -15, max: 65, tickInterval: 25,"
+        "plotBands: ["
+          "{ from: -15, to: 0, className: 'red-band border' },"
+          "{ from: 0, to: 40, className: 'normal-band border' },"
+          "{ from: 40, to: 65, className: 'red-band border' }]"
+      "},{"
+        // Inverter temperature:
+        "min: -10, max: 55, tickInterval: 20,"
+        "plotBands: ["
+          "{ from: -10, to: 40, className: 'normal-band border' },"
+          "{ from: 40, to: 55, className: 'red-band border' }]"
+      "},{"
+        // Motor temperature:
+        "min: 20, max: 100, tickInterval: 25,"
+        "plotBands: ["
+          "{ from: 20, to: 75, className: 'normal-band border' },"
+          "{ from: 75, to: 100, className: 'red-band border' }]"
+      "}]";
+    }else{
+      cfg.gaugeset1 =
+        "yAxis: [{"
+          // Speed:
+          "min: 0, max: 135,"
+          "plotBands: ["
+            "{ from: 0, to: 65, className: 'green-band' },"
+            "{ from: 65, to: 100, className: 'yellow-band' },"
+            "{ from: 100, to: 135, className: 'red-band' }]"
+        "},{"
+          // Voltage:
+          "min: 240, max: 330,"
+          "plotBands: ["
+            "{ from: 240, to: 280, className: 'red-band' },"
+            "{ from: 280, to: 310, className: 'yellow-band' },"
+            "{ from: 310, to: 330, className: 'green-band' }]"
+        "},{"
+          // SOC:
+          "min: 10, max: 100,"
+          "plotBands: ["
+            "{ from: 10, to: 15.5, className: 'red-band' },"
+            "{ from: 15.5, to: 25, className: 'yellow-band' },"
+            "{ from: 25, to: 100, className: 'green-band' }]"
+        "},{"
+          // Efficiency:
+          "min: 0, max: 300,"
+          "plotBands: ["
+            "{ from: 0, to: 120, className: 'green-band' },"
+            "{ from: 120, to: 250, className: 'yellow-band' },"
+            "{ from: 250, to: 300, className: 'red-band' }]"
+        "},{"
+          // Power:
+          "min: -30, max: 65,"
+          "plotBands: ["
+            "{ from: -30, to: 0, className: 'violet-band' },"
+            "{ from: 0, to: 16, className: 'green-band' },"
+            "{ from: 16, to: 40, className: 'yellow-band' },"
+            "{ from: 40, to: 65, className: 'red-band' }]"
+        "},{"
+          // Charger temperature:
+          "min: -10, max: 55, tickInterval: 20,"
+          "plotBands: ["
+            "{ from: -10, to: 40, className: 'normal-band border' },"
+            "{ from: 40, to: 55, className: 'red-band border' }]"
+        "},{"
+          // Battery temperature:
+          "min: -15, max: 65, tickInterval: 25,"
+          "plotBands: ["
+            "{ from: -15, to: 0, className: 'red-band border' },"
+            "{ from: 0, to: 40, className: 'normal-band border' },"
+            "{ from: 40, to: 65, className: 'red-band border' }]"
+        "},{"
+          // Inverter temperature:
+          "min: -10, max: 55, tickInterval: 20,"
+          "plotBands: ["
+            "{ from: -10, to: 40, className: 'normal-band border' },"
+            "{ from: 40, to: 55, className: 'red-band border' }]"
+        "},{"
+          // Motor temperature:
+          "min: 20, max: 100, tickInterval: 25,"
+          "plotBands: ["
+            "{ from: 20, to: 75, className: 'normal-band border' },"
+            "{ from: 75, to: 100, className: 'red-band border' }]"
+        "}]";
+    }
 }

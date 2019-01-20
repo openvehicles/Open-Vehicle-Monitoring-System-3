@@ -20,6 +20,9 @@
 ;       - soh setting to 'calibrate' ideal range
 ;       - Energy use, and heater energy use
 ;       - Count charge energy on AC and DC
+;    1.0.1
+;       - reworked voltage and temp
+;       - added support for 80 cell cars
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018  Mark Webb-Johnson
@@ -87,12 +90,18 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
 
+  //default cell numbers is set to 88, temp is 66;
+  cell_count = 88;
+  temp_count = 66;
   //BMS
   BmsSetCellArrangementVoltage(88, 8);
   BmsSetCellArrangementTemperature(66, 6);
 
   BmsSetCellLimitsVoltage(2.52,4.9);
   BmsSetCellLimitsTemperature(-40,70);
+
+  BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
+  BmsSetCellDefaultThresholdsTemperature(7.0, 10.0);
 
   MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
 
@@ -212,6 +221,12 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
               StandardMetrics.ms_v_vin->SetValue(m_vin);
             }
           }
+
+          if(m_vin[0] == 'V' && m_vin[1] == 'F' && m_vin[7] == 'Y'){
+            BmsSetCellArrangementVoltage(80, 8);
+            BmsSetCellArrangementTemperature(66, 6);
+          }
+
       break;
       }
 
@@ -538,118 +553,53 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         else
         {
         }
-        if ((d[2] & 192)!=0) //??
+        if ((d[2] & 192) != 0) //??
         {
         }
         break;
       }
 
     case 0x6e1://freq25 // Battery temperatures and voltages E1
+    case 0x6e2:
+    case 0x6e3:
+    case 0x6e4:
     {
-        if ((d[0]>=1)&&(d[0]<=12))
-          {
-            int idx = ((int)d[0]<<1)-2;
-            BmsSetCellTemperature(idx,d[2] - 50);
-            BmsSetCellTemperature(idx+1,d[3] - 50);
-            BmsSetCellVoltage(idx,(((d[4]*256.0+d[5])/200.0)+2.1));
-            BmsSetCellVoltage(idx+1,(((d[6]*256.0+d[7])/200.0)+2.1));
-          }
-      break;
+      //Pid index 0-3
+      int pidindex = (p_frame->MsgID) - 1761;
+      //cmu index 1-12
+      int cmu_id = d[0];
+      double temp1 = d[1] - 50.0;
+      double temp2 = d[2] - 50.0;
+      double temp3 = d[3] - 50.0;
+      double voltage1 = (((d[4] * 256.0 + d[5]) / 200.0) + 2.1);
+      double voltage2 = (((d[6] * 256.0 + d[7]) / 200.0) + 2.1);
+      int voltage_index = (cmu_id - 1) * 8 + 2 * pidindex;
+      int temp_index = (cmu_id - 1) * 6 + 2 * pidindex;
+      if(cmu_id >= 7)
+      {
+          voltage_index -= 4;
+          temp_index -= 3;
       }
 
-    case 0x6e2://freq25 // Battery temperatures and voltages E2
-    {
-        if ((d[0]>=1)&&(d[0]<=12))
-          {
-            int idx = ((int)d[0]<<1)+22;
-            if (d[0]==12)
-              {
-                BmsSetCellTemperature(idx-1,d[1] - 50);
-              }
-              else
-                {
-                  BmsSetCellTemperature(idx,d[1] - 50);
-                }
-            if((d[0]!=6) && (d[0]<6))
-              {
-                BmsSetCellTemperature(idx+1,d[2] - 50);
-              }
-              else if ((d[0]!=6) && (d[0]>6) && (d[0]!=12))
-                {
-                  BmsSetCellTemperature(idx-1,d[2] - 50);
-                }
+      BmsSetCellVoltage(voltage_index, voltage1);
+      BmsSetCellVoltage(voltage_index + 1, voltage2);
+
+      if(pidindex == 0){
+        BmsSetCellTemperature(temp_index, temp2);
+        BmsSetCellTemperature(temp_index + 1, temp3);
+      }else{
+        BmsSetCellTemperature(temp_index, temp1);
+        if(cmu_id != 6 && cmu_id != 12){
+            BmsSetCellTemperature(temp_index + 1, temp2);
         }
-        if ((d[0]>=1)&&(d[0]<=12))
-          {
-            int idx = ((int)d[0]<<1)+22;
-            BmsSetCellVoltage(idx,(((d[4]*256.0+d[5])/200.0)+2.1));
-            BmsSetCellVoltage(idx+1,(((d[6]*256.0+d[7])/200.0)+2.1));
-          }
-    break;
-    }
+      }
 
-    case 0x6e3://freq25 // Battery temperatures and voltages E3
-    {
-        if ((d[0]>=1)&&(d[0]<=12))
-          {
-            if((d[0]!=6) && (d[0]<6))
-              {
-                int idx = ((int)d[0]<<1)+44;
-                BmsSetCellTemperature(idx,d[1] - 50);
-                BmsSetCellTemperature(idx+1,d[2] - 50);
-              }
-              else if ((d[0]!=12) && (d[0]>6))
-                {
-                  int idx = ((int)d[0]<<1)+42;
-                  BmsSetCellTemperature(idx,d[1] - 50);
-                  BmsSetCellTemperature(idx+1,d[2] - 50);
-                }
-          }
-
-            if ((d[0]>=1)&&(d[0]<=12))
-              {
-                if((d[0]!=6) && (d[0]<6))
-                  {
-                    int idx = ((int)d[0]<<1)+46;
-                    BmsSetCellVoltage(idx,(((d[4]*256.0+d[5])/200.0)+2.1));
-                    BmsSetCellVoltage(idx+1,(((d[6]*256.0+d[7])/200.0)+2.1));
-                  }
-                  else if ((d[0]!=12) && (d[0]>6))
-                    {
-                      int idx = ((int)d[0]<<1)+44;
-                      BmsSetCellVoltage(idx,(((d[4]*256.0+d[5])/200.0)+2.1));
-                      BmsSetCellVoltage(idx+1,(((d[6]*256.0+d[7])/200.0)+2.1));
-                    }
-              }
-    break;
-    }
-
-    case 0x6e4://freq25 // Battery voltages E4
-    {
-        if ((d[0]>=1)&&(d[0]<=12))
-            {
-              if((d[0]!=6) && (d[0]<6))
-                {
-                  int idx = ((int)d[0]<<1)+66;
-                  BmsSetCellVoltage(idx,(((d[4]*256.0+d[5])/200.0)+2.1));
-                  BmsSetCellVoltage(idx+1,(((d[6]*256.0+d[7])/200.0)+2.1));
-                }
-                else if ((d[0]!=12) && (d[0]>6))
-                  {
-                    int idx = ((int)d[0]<<1)+64;
-                    BmsSetCellVoltage(idx,(((d[4]*256.0+d[5])/200.0)+2.1));
-                    BmsSetCellVoltage(idx+1,(((d[6]*256.0+d[7])/200.0)+2.1));
-                  }
-            }
-    break;
+      break;
     }
 
     default:
     break;
     }
-
-
-
   }
 
 void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)

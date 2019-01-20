@@ -105,6 +105,10 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     //charge variables
     float mi_chargekwh;
 
+    // cell numbers
+    unsigned int cell_count;
+    unsigned int temp_count;
+
 
     // --------------------------------------------------------------------------
     // Webserver subsystem
