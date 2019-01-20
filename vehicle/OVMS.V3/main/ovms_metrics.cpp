@@ -140,8 +140,10 @@ OvmsMetrics::OvmsMetrics()
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
-  MyScripts.RegisterDuktapeFunction(DukOvmsMetricValue, 1, "OvmsMetricValue");
-  MyScripts.RegisterDuktapeFunction(DukOvmsMetricFloat, 1, "OvmsMetricFloat");
+  DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsMetrics");
+  dto->RegisterDuktapeFunction(DukOvmsMetricValue, 1, "Value");
+  dto->RegisterDuktapeFunction(DukOvmsMetricFloat, 1, "AsFloat");
+  MyScripts.RegisterDuktapeObject(dto);
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 

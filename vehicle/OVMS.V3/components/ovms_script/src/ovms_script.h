@@ -44,7 +44,6 @@
 typedef enum
   {
   DUKTAPE_none = 0,             // Do nothing
-  DUKTAPE_register,             // Register extension function
   DUKTAPE_reload,               // Reload DukTape engine
   DUKTAPE_compact,              // Compact DukTape memory
   DUKTAPE_event,                // Event
@@ -94,12 +93,6 @@ typedef struct
   {
   union
     {
-    struct
-      {
-      duk_c_function func;
-      duk_idx_t nargs;
-      const char* name;
-      } dt_register;
     struct
       {
       const char* name;
