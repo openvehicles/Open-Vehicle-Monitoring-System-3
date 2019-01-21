@@ -2526,12 +2526,14 @@ static void OutputPluginEditor(PageEntry_t& p, PageContext_t& c)
 
   // read plugin content:
   std::string path = "/store/plugin/" + key;
-  std::ifstream file(path, std::ios::ate);
+  std::ifstream file(path, std::ios::in | std::ios::binary | std::ios::ate);
   if (file.is_open()) {
     auto size = file.tellg();
-    content.resize(size, '\0');
-    file.seekg(0);
-    file.read(&content[0], size);
+    if (size > 0) {
+      content.resize(size, '\0');
+      file.seekg(0);
+      file.read(&content[0], size);
+    }
   }
 
   c.printf(
@@ -2704,7 +2706,7 @@ static bool SavePluginEditor(PageEntry_t& p, PageContext_t& c, std::string& erro
   content = stripcr(content);
   mkpath("/store/plugin");
   std::string path = "/store/plugin/" + key;
-  std::ofstream file(path, std::ios::out | std::ios::trunc);
+  std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
   if (file.is_open()) {
     file.write(content.data(), content.size());
   }
@@ -2798,7 +2800,7 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
       }
       // write file:
       if (error == "") {
-        std::ofstream file(path, std::ios::out | std::ios::trunc);
+        std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
         if (file.is_open())
           file.write(content.data(), content.size());
         if (file.fail()) {
@@ -2814,12 +2816,14 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
   {
     if (path != "") {
       // read file:
-      std::ifstream file(path, std::ios::ate);
+      std::ifstream file(path, std::ios::in | std::ios::binary | std::ios::ate);
       if (file.is_open()) {
         auto size = file.tellg();
-        content.resize(size, '\0');
-        file.seekg(0);
-        file.read(&content[0], size);
+        if (size > 0) {
+          content.resize(size, '\0');
+          file.seekg(0);
+          file.read(&content[0], size);
+        }
       }
     }
   }
