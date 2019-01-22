@@ -285,6 +285,19 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
   // generate form:
   c.head(200);
   PAGE_HOOK("body.pre");
+
+  c.print(
+    "<style>"
+    ".fullscreened #output {"
+      "border: 0 none;"
+    "}"
+    "@media (max-width: 767px) {"
+      "#output {"
+        "border: 0 none;"
+      "}"
+    "}"
+    "</style>");
+
   c.panel_start("primary panel-minpad", "Shell");
 
   c.printf(
@@ -301,25 +314,16 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
     , _html(output.c_str()), _attr(command.c_str()));
 
   c.print(
-    "<style>"
-    ".fullscreened #output {"
-      "border: 0 none;"
-    "}"
-    "@media (max-width: 767px) {"
-      "#output {"
-        "border: 0 none;"
-      "}"
-    "}"
-    "</style>"
     "<script>"
-    "$(window).on(\"resize\", function(){"
-      "var pad = Number.parseInt($(\"#output\").parent().css(\"padding-top\")) + Number.parseInt($(\"#output\").parent().css(\"padding-bottom\"));"
-      "var h = $(window).height() - $(\"#output\").offset().top - pad - 81;"
+    "$(\"#output\").on(\"window-resize\", function(){"
+      "var $this = $(this);"
+      "var pad = Number.parseInt($this.parent().css(\"padding-top\")) + Number.parseInt($this.parent().css(\"padding-bottom\"));"
+      "var h = $(window).height() - $this.offset().top - pad - 81;"
       "if ($(window).width() <= 767) h += 27;"
       "if ($(\"body\").hasClass(\"fullscreened\")) h -= 4;"
-      "$(\"#output\").height(h);"
-      "$(\"#output\").scrollTop($(\"#output\").get(0).scrollHeight);"
-    "}).trigger(\"resize\");"
+      "$this.height(h);"
+      "$this.scrollTop($this.get(0).scrollHeight);"
+    "}).trigger(\"window-resize\");"
     "$(\"#shellform\").on(\"submit\", function(event){"
       "if (!$(\"html\").hasClass(\"loading\")) {"
         "var data = $(this).serialize();"
