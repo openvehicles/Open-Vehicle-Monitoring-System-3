@@ -377,11 +377,12 @@ static void terminal_print_line (microrl_t * pThis, int pos, int reset)
 }
 
 //*****************************************************************************
-void microrl_init (microrl_t * pThis, void (*print) (microrl_t*, const char *))
+void microrl_init (microrl_t * pThis, void (*print) (microrl_t*, const char *), void (*error_print) (microrl_t*, const char *))
 {
 	memset(pThis, 0, sizeof(microrl_t));
 	pThis->prompt_str = prompt_default;
 	pThis->print = print;
+	pThis->error_print = error_print;
 #ifdef _ENABLE_INIT_PROMPT
 	print_prompt (pThis);
 #endif
@@ -628,11 +629,10 @@ void new_line_handler(microrl_t * pThis){
 	if (status == -1){
 		//          pThis->print ("ERROR: Max token amount exseed\n");
 #ifdef _USE_QUOTING
-		pThis->print (pThis, "ERROR:too many tokens or invalid quoting");
+		pThis->error_print (pThis, "ERROR:too many tokens or invalid quoting" ENDL);
 #else
-		pThis->print (pThis, "ERROR:too many tokens");
+		pThis->error_print (pThis, "ERROR:too many tokens" ENDL);
 #endif
-		pThis->print (pThis, ENDL);
 	}
 	if ((status > 0) && (pThis->execute != NULL))
 		pThis->execute (pThis, status, tkn_arr);
