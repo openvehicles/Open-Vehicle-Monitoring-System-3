@@ -237,11 +237,11 @@ void OvmsVehicleKiaSoulEv::GetDashboardConfig(DashboardConfig& cfg)
         "{ from: 100, to: 145, className: 'red-band' }]"
     "},{"
       // Voltage:
-      "min: 260, max: 400,"
+      "min: 300, max: 400,"
       "plotBands: ["
-        "{ from: 260, to: 305, className: 'red-band' },"
-        "{ from: 305, to: 355, className: 'yellow-band' },"
-        "{ from: 355, to: 400, className: 'green-band' }]"
+        "{ from: 330, to: 360, className: 'red-band' },"
+        "{ from: 360, to: 380, className: 'yellow-band' },"
+        "{ from: 380, to: 400, className: 'green-band' }]"
     "},{"
       // SOC:
       "min: 0, max: 100,"

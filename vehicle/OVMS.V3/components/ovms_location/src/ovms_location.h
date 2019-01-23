@@ -34,22 +34,53 @@
 #include "ovms_metrics.h"
 #include "ovms_utils.h"
 
+enum LocationAction {
+  INVALID = 0,
+  HOMELINK,
+  ACC,
+  NOTIFY
+  };
+
+class OvmsLocationAction
+  {
+  public:
+    OvmsLocationAction(bool enter, enum LocationAction action, const char* params, int len);
+    const char* ActionString();
+
+  public:
+    bool m_enter;
+    enum LocationAction m_action;
+    string m_params;
+  };
+
+class ActionList : public std::list<OvmsLocationAction*>
+  {
+  public:
+    ~ActionList();
+    void clear();
+    iterator erase(iterator pos);
+  };
+
 class OvmsLocation
   {
   public:
-    OvmsLocation(std::string name, float latitude, float longitude, int radius);
+    OvmsLocation(const std::string& name);
     ~OvmsLocation();
 
   public:
     bool IsInLocation(float latitude, float longitude);
-    void Update(float latitude, float longitude, int radius);
+    bool Parse(const std::string& value);
+    void Store(std::string& buf);
+    void Render(std::string& buf);
 
   public:
     std::string m_name;
+    std::string m_value;
     float m_latitude;
     float m_longitude;
     int m_radius;
     bool m_inlocation;
+    ActionList m_actions;
   };
 
 typedef std::map<std::string, OvmsLocation*> LocationMap;

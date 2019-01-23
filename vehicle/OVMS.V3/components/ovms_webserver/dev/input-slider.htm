@@ -5,7 +5,7 @@
 }
 </style>
 
-<div class="panel panel-primary panel-single">
+<div class="panel panel-primary">
   <div class="panel-heading">Slider Widget</div>
   <div class="panel-body">
 
@@ -61,16 +61,18 @@
 
         <p>If you need even more control, you can create the slider markup yourself as well:</p>
 
-        <div class="form-control slider" id="sld3">
+        <div class="form-control slider" id="sld3" data-default="50" data-reset="false"
+          data-value="80" data-min="-10" data-max="100" data-step="1">
           <div class="slider-control form-inline">
-            <input class="slider-enable" type="checkbox" checked data-default="50" data-reset="false">
-            <input class="form-control slider-value" type="number" id="input-sld3" name="sld3" value="80" min="-10" max="100" step="1">
+            <input class="slider-enable" type="checkbox" checked>
+            <input class="form-control slider-value" type="number" id="input-sld3" name="sld3">
             <span class="slider-unit">%</span>
             <input class="btn btn-default slider-down" type="button" value="➖">
-            <input class="btn btn-default slider-set" type="button" value="◈" data-set="50">
+            <input class="btn btn-default slider-set" type="button" value="Lo" data-set="25">
+            <input class="btn btn-default slider-set" type="button" value="Hi" data-set="75">
             <input class="btn btn-default slider-up" type="button" value="➕">
           </div>
-          <input class="slider-input" type="range" value="80" min="-10" max="100" step="1">
+          <input class="slider-input" type="range">
         </div>
         <br/>
 
@@ -92,8 +94,11 @@
 
     <p>
       The checkbox element defines the default value to be set on unchecking in
-      <code>data-default</code>. By default, the checkbox will restore the previous
+      <code>data-default</code>. By default, the checkbox will restore the previous user
       value when re-checked, to disable this, set <code>data-reset</code> to "true".
+      To reset the value to the default from a script, call the <code>.slider()</code>
+      method with <code>value: null</code> (this resets both the actual and the stored
+      user value).
     </p>
 
     <p>

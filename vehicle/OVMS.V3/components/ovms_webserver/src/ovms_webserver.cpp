@@ -350,7 +350,7 @@ PageEntry* OvmsWebServer::FindPage(std::string uri)
 void PagePluginContent::LoadContent()
 {
   std::string path = "/store/plugin/" + m_path;
-  std::ifstream file(path, std::ios::ate);
+  std::ifstream file(path, std::ios::in | std::ios::binary | std::ios::ate);
   if (!file.is_open()) {
     ESP_LOGE(TAG, "Plugin file missing: '%s'", path.c_str());
     m_content = "<!-- ERROR: Plugin file missing: '";
@@ -358,10 +358,17 @@ void PagePluginContent::LoadContent()
     m_content += "' -->";
   } else {
     auto size = file.tellg();
-    m_content.resize(size, '\0');
-    file.seekg(0);
-    file.read(&m_content[0], size);
-    ESP_LOGD(TAG, "Plugin file loaded: '%s', %u bytes", path.c_str(), (size_t)size);
+    if (size < 0) {
+      ESP_LOGE(TAG, "Plugin file '%s': seek failed", path.c_str());
+      m_content = "<!-- ERROR: Plugin file missing: '";
+      m_content += PageContext::encode_html(path).c_str();
+      m_content += "' -->";
+    } else {
+      m_content.resize(size, '\0');
+      file.seekg(0);
+      file.read(&m_content[0], size);
+      ESP_LOGD(TAG, "Plugin file loaded: '%s', %u bytes", path.c_str(), (size_t)size);
+    }
   }
 }
 

@@ -541,24 +541,33 @@ static duk_ret_t DukOvmsAssert(duk_context *ctx)
   return 0;
   }
 
+static duk_ret_t DukOvmsCommand(duk_context *ctx)
+  {
+  const char *cmd = duk_to_string(ctx,0);
+
+  if (cmd != NULL)
+    {
+    BufferedShell* bs = new BufferedShell(false, COMMAND_RESULT_NORMAL);
+    bs->SetSecure(true); // this is an authorized channel
+    bs->ProcessChars(cmd, strlen(cmd));
+    bs->ProcessChar('\n');
+    std::string val; bs->Dump(val);
+    delete bs;
+    duk_push_string(ctx, val.c_str());
+    return 1;  /* one return value */
+    }
+  else
+    {
+    return 0;
+    }
+  }
+
 void OvmsScripts::RegisterDuktapeFunction(duk_c_function func, duk_idx_t nargs, const char* name)
   {
   duktape_registerfunction_t* fn = new duktape_registerfunction_t;
   fn->func = func;
   fn->nargs = nargs;
   m_fnmap[name] = fn;
-
-  if (m_dukctx != NULL)
-    {
-    // Duktape is already running, so we need to dynamically register this
-    duktape_queue_t dmsg;
-    memset(&dmsg, 0, sizeof(dmsg));
-    dmsg.type = DUKTAPE_register;
-    dmsg.body.dt_register.func = func;
-    dmsg.body.dt_register.nargs = nargs;
-    dmsg.body.dt_register.name = name;
-    DuktapeDispatch(&dmsg);
-    }
   }
 
 void OvmsScripts::RegisterDuktapeModule(const char* start, size_t length, const char* name)
@@ -769,17 +778,6 @@ void OvmsScripts::DukTapeTask()
       duktapewriter = msg.writer;
       switch(msg.type)
         {
-        case DUKTAPE_register:
-          {
-          // Register extension function
-          ESP_LOGD(TAG,"Duktape: Post-Registered function %s",msg.body.dt_register.name);
-          duk_push_c_function(m_dukctx,
-            msg.body.dt_register.func,
-            msg.body.dt_register.nargs);
-          duk_put_global_string(m_dukctx,
-            msg.body.dt_register.name);
-          }
-          break;
         case DUKTAPE_reload:
           {
           // Reload DUKTAPE engine
@@ -1049,12 +1047,17 @@ OvmsScripts::OvmsScripts()
   extern const char mod_json_js_end[]       asm("_binary_json_js_end");
   RegisterDuktapeModule(mod_json_js_start, mod_json_js_end - mod_json_js_start, "JSON");
 
+  // Register standard functions
+  RegisterDuktapeFunction(DukOvmsPrint, 1, "print");
+  RegisterDuktapeFunction(DukOvmsAssert, 2, "assert");
+  DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsCommand");
+  dto->RegisterDuktapeFunction(DukOvmsCommand, 1, "Exec");
+  RegisterDuktapeObject(dto);
+
   // Start the DukTape task...
   m_duktaskqueue = xQueueCreate(CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_QUEUE_SIZE,sizeof(duktape_queue_t));
   xTaskCreatePinnedToCore(DukTapeLaunchTask, "OVMS DukTape", CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_STACK, (void*)this, 5, &m_duktaskid, 1);
   AddTaskToMap(m_duktaskid);
-  RegisterDuktapeFunction(DukOvmsPrint, 1, "print");
-  RegisterDuktapeFunction(DukOvmsAssert, 2, "assert");
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
   OvmsCommand* cmd_script = MyCommandApp.RegisterCommand("script","SCRIPT framework",NULL, "", 0, 0, true);

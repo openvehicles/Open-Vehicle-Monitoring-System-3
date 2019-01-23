@@ -1217,8 +1217,8 @@ $.fn.listEditor = function(op, data){
 
 $.fn.slider = function(options) {
   return this.each(function() {
-    var $sld = $(this).closest('.slider');
-    var opts = (typeof options == "object") ? options : $sld.data();
+    var $sld = $(this).closest('.slider'), data = $.extend({ checked: true }, $sld.data());
+    var opts = (typeof options == "object") ? options : data;
     // init?
     if ($sld.children().length == 0) {
       var id = $sld.attr('id');
@@ -1235,33 +1235,44 @@ $.fn.slider = function(options) {
         .replace(/ID/g, id).replace(/UNIT/g, opts.unit||''));
     }
     // update:
-    var $inp = $sld.find('.slider-value, .slider-input'),
-      $cb = $sld.find('.slider-enable'), oldchk = ($cb.prop('checked')==true),
+    var $inp = $sld.find('.slider-value, .slider-input'), $cb = $sld.find('.slider-enable'),
       $bt = $sld.find('input[type=button]'), $sb = $bt.filter('.slider-set'),
-      chk = (opts.checked != null) ? opts.checked : oldchk,
+      oldchk = data.checked, chk = (opts.checked != null) ? opts.checked : oldchk,
       dis = (opts.disabled != null) ? opts.disabled : ($sld.prop('disabled')==true);
+    $.extend(data, opts);
     if (opts.unit != null) $sld.find('.slider-unit').html(opts.unit);
-    if (opts.min != null) $inp.attr('min', opts.min); else opts.min = $inp.attr('min');
-    if (opts.max != null) $inp.attr('max', opts.max); else opts.max = $inp.attr('max');
+    if (opts.min != null) $inp.attr('min', opts.min);
+    if (opts.max != null) $inp.attr('max', opts.max);
     if (opts.step != null) $inp.attr('step', opts.step);
-    if (opts.reset != null) $cb.data('reset', opts.reset);
     if (opts.default != null) {
-      $sb.data('set', opts.default);
-      $cb.data('default', opts.default);
-      if (!oldchk) $inp.val(opts.default);
+      if ($sb.length == 1)
+        $sb.data('set', opts.default);
+      if (!chk)
+        $inp.val(opts.default);
+      data.default = Math.max(data.min, Math.min(data.max, 1*opts.default));
     }
-    if (opts.value != null) {
-      opts.value = Math.max(opts.min, Math.min(opts.max, 1*opts.value));
-      $cb.data('value', opts.value);
-      if (oldchk)
-        $inp.attr('value', opts.value).val(opts.value);
+    if (opts.value !== undefined) {
+      if (opts.value === null)
+        data.value = data.uservalue = data.default;
+      else
+        data.value = Math.max(data.min, Math.min(data.max, 1*opts.value));
+      if (chk)
+        $inp.attr('value', data.value).val(data.value);
+      if (chk || data.uservalue == null)
+        data.uservalue = data.value;
     }
     if (chk != oldchk) {
       $cb.prop('checked', chk);
-      if (chk)
-        $inp.val($cb.data('value'));
-      else
-        $inp.val($cb.data('default'));
+      if (chk) {
+        if (opts.reset || data.reset)
+          data.value = data.default;
+        else
+          data.value = data.uservalue;
+      } else {
+        data.uservalue = data.value;
+        data.value = data.default;
+      }
+      $inp.val(data.value);
     }
     $cb.prop('disabled', dis);
     $bt.prop('disabled', !chk || dis);
@@ -1270,6 +1281,7 @@ $.fn.slider = function(options) {
       $sld.addClass('disabled').prop('disabled', true).attr('disabled', true);
     else
       $sld.removeClass('disabled').prop('disabled', false).attr('disabled', false);
+    $sld.data(data);
   });
 };
 
@@ -1442,7 +1454,7 @@ $(function(){
     if ($this.prop('disabled')) return;
     var action = $this.attr("title") || $this.text();
     if (navigator.vibrate) navigator.vibrate([100,400,100,400,100,400]);
-    $longtouchProgress = $('<div class="hover-progress longtouch"><div class="hover-progress-body"><div class="info">Hold touch for/to</div><div class="action">'+action+'</div><div class="progress"><div class="progress-bar progress-bar-info" style="width:0%"></div></div></div></div>').appendTo("body").find(".progress-bar");
+    $longtouchProgress = $('<div class="hover-progress longtouch"><div class="hover-progress-body"><div class="info">Hold touch for/to</div><div class="action">'+encode_html(action)+'</div><div class="progress"><div class="progress-bar progress-bar-info" style="width:0%"></div></div></div></div>').appendTo("body").find(".progress-bar");
     window.getComputedStyle($longtouchProgress.get(0)).width;
     $longtouchProgress.css("width", "100%");
     longtouchTimeout = window.setTimeout(function() {
@@ -1471,30 +1483,23 @@ $(function(){
 
   // Slider widget event handling:
   $("body").on("change", ".slider-enable", function(evt) {
-    var $this = $(this), slider = $this.closest(".slider"), data = $this.data(),
-      $inp = slider.find(".slider-input, .slider-value");
-    if (this.checked) {
-      if (data["value"] != null && data["reset"] != true)
-        $inp.val(data["value"]);
-    } else {
-      $this.data("value", $inp.val());
-      if (data["default"] != null)
-        $inp.val(data["default"]);
-    }
-    $(this).slider({ checked: this.checked });
+    var $this = $(this), $sld = $this.closest(".slider"), $inp = $sld.find(".slider-input, .slider-value");
+    $this.slider({ checked: this.checked });
     $inp.trigger("input", true).trigger("change", true);
   });
   $("body").on("input change", ".slider-value", function(evt, noprop) {
-    var $inp = $(this).closest(".slider").find(".slider-input");
-    $(this).val(Math.max(this.min, Math.min(this.max, 1*this.value)));
-    $inp.val(this.value);
-    if (!noprop) $inp.trigger(evt.type, true);
+    var $this = $(this), $sld = $this.closest(".slider"), $inp = $sld.find(".slider-input");
+    if (!noprop) {
+      $this.slider({ value: this.value });
+      $inp.trigger(evt.type, true);
+    }
   });
   $("body").on("input change", ".slider-input", function(evt, noprop) {
-    var $inp = $(this).closest(".slider").find(".slider-value");
-    $(this).val(Math.max(this.min, Math.min(this.max, 1*this.value)));
-    $inp.val(this.value);
-    if (!noprop) $inp.trigger(evt.type, true);
+    var $this = $(this), $sld = $this.closest(".slider"), $inp = $sld.find(".slider-value");
+    if (!noprop) {
+      $this.slider({ value: this.value });
+      $inp.trigger(evt.type, true);
+    }
   });
   $("body").on("click", ".slider-up", function(evt) {
     $(this).closest(".slider").find(".slider-input").val(function() {

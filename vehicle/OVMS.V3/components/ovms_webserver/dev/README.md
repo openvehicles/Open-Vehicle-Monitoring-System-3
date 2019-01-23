@@ -8,7 +8,6 @@
   - [Command Buttons & Monitors](commands.htm) – how to create simple manual & automatic command calls
   - [Notifications](notifications.htm) – how to subscribe to and process notifications
   - [Hook Plugins](hooks.htm) – how to extend existing pages
-  - [Dashboard Tuning Plugin](plugin-twizy/dashboard-tuneslider.htm) – add recuperation control to the dashboard
   - [Solid Gauges](solidgauge.htm) – two solid gauge metrics displays
   - [Dashboard](dashboard.htm) – multiple gauge charts with responsive rules
 
@@ -21,6 +20,11 @@
   - [File Dialogs](filedialog.htm) – file selection dialogs
   - [File Browser Widget](filebrowser.htm) – file browser for page/dialog integrations
   - [Slider Widget](input-slider.htm) – combined number & range control
+
+**Plugins**
+  - [Twizy: Dashboard Tuning Plugin](plugin-twizy/dashboard-tuneslider.htm) – add recuperation control to the dashboard
+  - [Twizy: Tuning Profile Editor](plugin-twizy/profile-editor.htm) – lots of sliders and a custom dialog
+  - [Twizy: Drivemode Button Editor](plugin-twizy/drivemode-config.htm) – dynamic UI creation
 
 
 ## Basics
