@@ -139,7 +139,7 @@ function setcontent(tgt, uri, text){
     var mi = $("#nav [href='"+uri+"']");
     mi.parents("li").addClass("active");
     tgt[0].scrollIntoView();
-    tgt.html(text).hide().fadeIn(50);
+    tgt.html(text);
     var $p = tgt.find(">.panel");
     if ($p.length == 1) $p.addClass("panel-single");
     if (mi.length > 0)
@@ -148,7 +148,7 @@ function setcontent(tgt, uri, text){
       document.title = "OVMS Console";
   } else {
     tgt[0].scrollIntoView();
-    tgt.html(text).hide().fadeIn(50);
+    tgt.html(text);
   }
 
   tgt.find(".get-window-resize").trigger('window-resize');
