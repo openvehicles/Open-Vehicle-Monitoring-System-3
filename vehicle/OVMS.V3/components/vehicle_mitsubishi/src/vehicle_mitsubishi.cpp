@@ -101,7 +101,7 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   BmsSetCellLimitsTemperature(-40,70);
 
   BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
-  BmsSetCellDefaultThresholdsTemperature(7.0, 10.0);
+  BmsSetCellDefaultThresholdsTemperature(7.0, 8.0);
 
   MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
 
@@ -224,7 +224,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
           if(m_vin[0] == 'V' && m_vin[1] == 'F' && m_vin[7] == 'Y'){
             BmsSetCellArrangementVoltage(80, 8);
-            BmsSetCellArrangementTemperature(66, 6);
+            BmsSetCellArrangementTemperature(60, 6);
           }
 
       break;
@@ -510,7 +510,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
         if ((d[1] & 32)!=0)  //Headlight
         {
-		        ESP_LOGI(TAG, "Headlight2 on");
+		       // ESP_LOGI(TAG, "Headlight2 on");
         }
         else
         {
@@ -519,7 +519,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
         if ((d[1] & 64)!=0)
         { //Parkinglight
-		      ESP_LOGI(TAG, "Parkinglight on");
+		      //ESP_LOGI(TAG, "Parkinglight on");
         }
         else
         {
@@ -581,6 +581,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
           temp_index -= 3;
       }
 
+      ESP_LOGI("CMU","pidindex: %i, cmu_id: %i, voltage_index: %i, temp_index: %i, voltage1: %f, voltage2: %f,temp1: %f,temp2: %f,temp3: %f",pidindex,cmu_id,voltage_index,temp_index,voltage1,voltage2,temp1,temp2,temp3);
       BmsSetCellVoltage(voltage_index, voltage1);
       BmsSetCellVoltage(voltage_index + 1, voltage2);
 

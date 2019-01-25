@@ -125,7 +125,8 @@ void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsVehicleMitsubishi::GetDashboardConfig(DashboardConfig& cfg)
 {
-  if(StandardMetrics.ms_v_bat_voltage->AsFloat() > 340){
+  OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
+  if(trio->cell_count == 88){
     cfg.gaugeset1 =
       "yAxis: [{"
         // Speed:
