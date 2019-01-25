@@ -1094,27 +1094,27 @@ void RSAKeyGenerator::Service()
   byte digest[SHA256_DIGEST_SIZE];
   Sha256 sha;
   const char* type = "ssh-rsa";
-  byte length[8];
+  uint32_t length[2];
   byte  exp[8];
   byte  mod[260];
   uint32_t explen = sizeof(exp);
   uint32_t modlen = sizeof(mod);
   ret = wc_RsaFlattenPublicKey(&key, exp, &explen, mod, &modlen);
   wc_InitSha256(&sha);
-  *(uint32_t*)length = htonl(strlen(type));
-  wc_Sha256Update(&sha, length, sizeof(uint32_t));
+  length[0] = htonl(strlen(type));
+  wc_Sha256Update(&sha, (byte*)length, sizeof(uint32_t));
   wc_Sha256Update(&sha, (const byte*)type, 7);
-  *(uint32_t*)length = htonl(explen);
-  wc_Sha256Update(&sha, length, sizeof(uint32_t));
+  length[0] = htonl(explen);
+  wc_Sha256Update(&sha, (byte*)length, sizeof(uint32_t));
   wc_Sha256Update(&sha, exp, explen);
   int extra = 0;
   if (mod[0] & 0x80)  // DER encoding inserts 0x00 byte if first data bit is 1
     {
     ++extra;
-    length[sizeof(uint32_t)] = 0x00;
+    length[1] = 0;
     }
-  *(uint32_t*)length = htonl(modlen+extra);
-  wc_Sha256Update(&sha, length, sizeof(uint32_t)+extra);
+  length[0] = htonl(modlen+extra);
+  wc_Sha256Update(&sha, (byte*)length, sizeof(uint32_t)+extra);
   wc_Sha256Update(&sha, mod, modlen);
   wc_Sha256Final(&sha, digest);
   unsigned char fp[48];
