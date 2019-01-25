@@ -385,7 +385,7 @@ size_t OvmsMetrics::RegisterModifier()
 OvmsMetric::OvmsMetric(const char* name, uint16_t autostale, metric_unit_t units)
   {
   m_defined = NeverDefined;
-  m_modified.reset();
+  m_modified = 0;
   m_name = name;
   m_lastmodified = 0;
   m_autostale = autostale;
@@ -456,7 +456,7 @@ void OvmsMetric::SetModified(bool changed)
   m_lastmodified = monotonictime;
   if (changed)
     {
-    m_modified.set();
+    m_modified = ULONG_MAX;
     MyMetrics.NotifyModified(this);
     }
   }
@@ -500,19 +500,19 @@ metric_unit_t OvmsMetric::GetUnits()
 
 bool OvmsMetric::IsModified(size_t modifier)
   {
-  return m_modified[modifier];
+  return m_modified & 1ul << modifier;
   }
 
 bool OvmsMetric::IsModifiedAndClear(size_t modifier)
   {
-  bool modified = m_modified[modifier];
-  if (modified) m_modified.reset(modifier);
-  return modified;
+  unsigned long bit = 1ul << modifier;
+  unsigned long mod = m_modified.fetch_and(~bit);
+  return mod & bit;
   }
 
 void OvmsMetric::ClearModified(size_t modifier)
   {
-  m_modified.reset(modifier);
+  m_modified &= ~(1ul << modifier);
   }
 
 OvmsMetricInt::OvmsMetricInt(const char* name, uint16_t autostale, metric_unit_t units)
@@ -770,20 +770,29 @@ OvmsMetricString::~OvmsMetricString()
 std::string OvmsMetricString::AsString(const char* defvalue, metric_unit_t units, int precision)
   {
   if (IsDefined())
+    {
+    OvmsMutexLock lock(&m_mutex);
     return m_value;
+    }
   else
+    {
     return std::string(defvalue);
+    }
   }
 
 void OvmsMetricString::SetValue(std::string value)
   {
-  if (m_value.compare(value)!=0)
+  if (m_mutex.Lock())
     {
-    m_value = value;
-    SetModified(true);
+    bool modified = false;
+    if (m_value.compare(value)!=0)
+      {
+      m_value = value;
+      modified = true;
+      }
+    m_mutex.Unlock();
+    SetModified(modified);
     }
-  else
-    SetModified(false);
   }
 
 const char* OvmsMetricUnitLabel(metric_unit_t units)

@@ -131,6 +131,10 @@
 ;		  - Temporarily disabled BmsCell-voltage and tempearature to prevent unwanted messages.
 ;			- Implemented CAN Write access setting. If not eneabled, no commands can be sent to the car.
 ;
+;		0.4.1 19-January-2019 - Geir Øyvind Vælidalo
+;			- Fixed issues with the new standard BMS module.
+;			- Added new command, xks tripch, which displays trip data since last charge
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -159,6 +163,8 @@
 //		- parkbreakservice is not working
 //		- Rear defogger works, but only as long as TesterPresent is sent.
 //			- Is it enough to send the testetpresent message every second?
+//  - steering mode
+//  -
 
 
 #include "ovms_log.h"
@@ -172,7 +178,7 @@
 #include "ovms_notify.h"
 #include <sys/param.h>
 
-#define VERSION "0.4.0"
+#define VERSION "0.4.1"
 
 static const char *TAG = "v-kiasoulev";
 
@@ -184,9 +190,9 @@ static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
     { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, 		{       0,  120,   0 } }, 	// VIN
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, 		{       0,   10,  10 } }, 	// BMC Diag page 01 *
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{       0,   10,  10 } }, 	// BMC Diag page 02
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x03, 		{       0,   60,  10 } }, 	// BMC Diag page 03
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x04, 		{       0,   60,  10 } }, 	// BMC Diag page 04
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x05, 		{       0,   60,  10 } },	  // BMC Diag page 05 *
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x03, 		{       0,   10,  10 } }, 	// BMC Diag page 03
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x04, 		{       0,   10,  10 } }, 	// BMC Diag page 04
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x05, 		{       0,   10,  10 } },	  // BMC Diag page 05 *
     { 0x794, 0x79c, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{       0,   60,  10 } }, 	// OBC - On board charger
   	  { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x00, 		{       0,   10,  10 } }, 	// VMCU Shift-stick
     { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{       0,   10,  30 } }, 	// VMCU Motor temp++
@@ -209,6 +215,9 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
 
   memset( ks_tpms_id, 0, sizeof(ks_tpms_id));
 
+  //ks_park_trip_counter = new KS_Trip_Counter();
+  //ks_charge_trip_counter = new KS_Trip_Counter();
+
   ks_obc_volt = 230;
   ks_battery_current = 0;
 
@@ -218,9 +227,9 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   ks_battery_cum_discharge = 0;
   ks_battery_cum_op_time = 0;
 
-  ks_trip_start_odo = 0;
-  ks_start_cdc = 0;
-  ks_start_cc = 0;
+  //ks_trip_start_odo = 0;
+  //ks_start_cdc = 0;
+  //ks_start_cc = 0;
 
   ks_charge_bits.ChargingChademo = false;
   ks_charge_bits.ChargingJ1772 = false;
@@ -249,10 +258,18 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
 
   ks_maxrange = CFG_DEFAULT_MAXRANGE;
 
-  BmsSetCellArrangementVoltage(101, 1);
+  BmsSetCellArrangementVoltage(96, 1);
   BmsSetCellArrangementTemperature(8, 1);
-  BmsSetCellLimitsVoltage(1,4.2);
-  BmsSetCellLimitsTemperature(-90,90);
+  BmsSetCellLimitsVoltage(2.0,5.0);
+  BmsSetCellLimitsTemperature(-35,90);
+  BmsSetCellDefaultThresholdsVoltage(0.1, 0.2); //TODO What values do we want here?
+  BmsSetCellDefaultThresholdsTemperature(4.0, 8.0); // and here?
+
+  //Disable BMS alerts by default
+  MyConfig.SetParamValueBool("vehicle", "bms.alerts.enabled", false);
+
+  //for(int i=0; i<96; i++)
+  	//	BmsSetCellVoltage(i, 2.0);
 
   // init metrics:
   m_version = MyMetrics.InitString("xks.version", 0, VERSION " " __DATE__ " " __TIME__);
@@ -300,6 +317,9 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   m_v_pos_arrival_hour = MyMetrics.InitInt("xks.e.pos.arrival.hour", 10, 0);
   m_v_pos_arrival_minute = MyMetrics.InitInt("xks.e.pos.arrival.minute", 10, 0);
   m_v_pos_street = MyMetrics.InitString("xks.e.pos.street", 10, "");
+  ms_v_pos_trip = MyMetrics.InitFloat("xks.e.trip", 10, 0, Kilometers);
+  ms_v_trip_energy_used = MyMetrics.InitFloat("xks.e.trip.energy.used", 10, 0, kWh);
+  ms_v_trip_energy_recd = MyMetrics.InitFloat("xks.e.trip.energy.recuperated", 10, 0, kWh);
 
   m_v_seat_belt_driver = MyMetrics.InitBool("xks.v.seat.belt.driver", 10, 0);
   m_v_seat_belt_passenger = MyMetrics.InitBool("xks.v.seat.belt.passenger", 10, 0);
@@ -329,7 +349,8 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
 
   // init commands:
   cmd_xks = MyCommandApp.RegisterCommand("xks","Kia Soul EV",NULL,"",0,0,true);
-  cmd_xks->RegisterCommand("trip","Show trip info", xks_trip, 0,0, false);
+  cmd_xks->RegisterCommand("trip","Show trip info since last parked", xks_trip_since_parked, 0,0, false);
+  cmd_xks->RegisterCommand("tripch","Show trip info since last charge", xks_trip_since_charge, 0,0, false);
   cmd_xks->RegisterCommand("tpms","Tire pressure monitor", xks_tpms, 0,0, false);
   cmd_xks->RegisterCommand("aux","Aux battery", xks_aux, 0,0, false);
   cmd_xks->RegisterCommand("vin","VIN information", xks_vin, 0,0, false);
@@ -402,6 +423,7 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
   //  suffrange        	Sufficient range [km] (Default: 0=disabled)
   //  maxrange         	Maximum ideal range at 20 °C [km] (Default: 160)
   //  remote_charge_port					Use "trunk" button on keyfob to open charge port (Default: 1=enabled)
+  //  canwrite					Enable commands
   ks_battery_capacity = (float)MyConfig.GetParamValueInt("xks", "cap_act_kwh", CGF_DEFAULT_BATTERY_CAPACITY);
   ks_key_fob_open_charge_port = (bool)MyConfig.GetParamValueBool("xks", "remote_charge_port", true);
 
@@ -429,14 +451,13 @@ void OvmsVehicleKiaSoulEv::vehicle_kiasoulev_car_on(bool isOn)
 		StdMetrics.ms_v_env_on->SetValue(isOn);
 		StdMetrics.ms_v_env_awake->SetValue(isOn);
 
-		//Reset trip variables so that they are updated as soon as they are available
-		ks_trip_start_odo = 0;
-		ks_start_cdc = 0;
-		ks_start_cc = 0;
-
 		StdMetrics.ms_v_env_charging12v->SetValue( false );
     POLLSTATE_RUNNING;
     ks_ready_for_chargepollstate = true;
+
+    ks_park_trip_counter.Reset(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
+
+    BmsResetCellStats();
     }
   else if(!isOn && StdMetrics.ms_v_env_on->AsBool())
     {
@@ -446,21 +467,17 @@ void OvmsVehicleKiaSoulEv::vehicle_kiasoulev_car_on(bool isOn)
   		StdMetrics.ms_v_env_on->SetValue( isOn );
   		StdMetrics.ms_v_env_awake->SetValue( isOn );
   		StdMetrics.ms_v_pos_speed->SetValue( 0 );
-  	  StdMetrics.ms_v_pos_trip->SetValue( POS_ODO- ks_trip_start_odo );
+  	  StdMetrics.ms_v_pos_trip->SetValue( ks_park_trip_counter.GetDistance() );
   		StdMetrics.ms_v_env_charging12v->SetValue( false );
     ks_ready_for_chargepollstate = true;
+
+    ks_park_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
     }
 
   //Make sure we update the different start values as soon as we have them available
   if(isOn)
   		{
 		// Trip started. Let's save current state as soon as they are available
-  		if(ks_trip_start_odo==0 && POS_ODO!=0)
-  			ks_trip_start_odo = POS_ODO;	// ODO at Start of trip
-  		if(ks_start_cdc==0 && CUM_DISCHARGE!=0)
-  			ks_start_cdc = CUM_DISCHARGE; // Register Cumulated discharge
-  		if(ks_start_cc==0 && CUM_CHARGE!=0)
-  			ks_start_cc = CUM_CHARGE; 		// Register Cumulated charge
   		}
   }
 
@@ -498,13 +515,27 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 		  	}
 
 		// Update trip data
-		if (StdMetrics.ms_v_env_on->AsBool() && ks_trip_start_odo!=0)
+		if (StdMetrics.ms_v_env_on->AsBool())
 			{
-			StdMetrics.ms_v_pos_trip->SetValue( POS_ODO - ks_trip_start_odo , Kilometers);
-			if( ks_start_cdc!=0 && ks_start_cc!=0)
+			if(ks_park_trip_counter.Started())
 				{
-				StdMetrics.ms_v_bat_energy_used->SetValue( (CUM_DISCHARGE - ks_start_cdc) - (CUM_CHARGE - ks_start_cc), kWh );
-				StdMetrics.ms_v_bat_energy_recd->SetValue( CUM_CHARGE - ks_start_cc, kWh );
+				ks_park_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
+				StdMetrics.ms_v_pos_trip->SetValue( ks_park_trip_counter.GetDistance() , Kilometers);
+				if( ks_park_trip_counter.HasEnergyData())
+					{
+					StdMetrics.ms_v_bat_energy_used->SetValue( ks_park_trip_counter.GetEnergyUsed(), kWh );
+					StdMetrics.ms_v_bat_energy_recd->SetValue( ks_park_trip_counter.GetEnergyRecuperated(), kWh );
+					}
+				}
+			if(ks_charge_trip_counter.Started())
+				{
+				ks_charge_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
+				ms_v_pos_trip->SetValue( ks_charge_trip_counter.GetDistance() , Kilometers);
+				if( ks_charge_trip_counter.HasEnergyData())
+					{
+					ms_v_trip_energy_used->SetValue( ks_charge_trip_counter.GetEnergyUsed(), kWh );
+					ms_v_trip_energy_recd->SetValue( ks_charge_trip_counter.GetEnergyRecuperated(), kWh );
+					}
 				}
 		  }
 
@@ -664,8 +695,9 @@ void OvmsVehicleKiaSoulEv::HandleCharging()
 		StdMetrics.ms_v_charge_inprogress->SetValue( true );
 		StdMetrics.ms_v_env_charging12v->SetValue( true);
 
-		POLLSTATE_CHARGING;
+		BmsResetCellStats();
 
+		POLLSTATE_CHARGING;
     }
   else
   		{
@@ -761,6 +793,10 @@ void OvmsVehicleKiaSoulEv::HandleChargeStop()
 	ks_charge_bits.ChargingChademo = false;
 	ks_charge_bits.ChargingJ1772 = false;
 	m_c_speed->SetValue(0);
+
+	// Reset trip counter for this charge
+	ks_charge_trip_counter.Reset(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
+
 	POLLSTATE_OFF;
 	}
 
@@ -1103,3 +1139,81 @@ OvmsVehicleKiaSoulEvInit::OvmsVehicleKiaSoulEvInit()
 
   MyVehicleFactory.RegisterVehicle<OvmsVehicleKiaSoulEv>("KS","Kia Soul EV");
   }
+
+/*******************************************************************************/
+KS_Trip_Counter::KS_Trip_Counter()
+	{
+	odo_start=0;
+	cdc_start=0;
+	cc_start=0;
+	odo=0;
+	cdc=0;
+	cc=0;
+	}
+
+KS_Trip_Counter::~KS_Trip_Counter()
+	{
+	}
+
+/*
+ * Resets the trip counter.
+ *
+ * odo - The current ODO
+ * cdc - Cumulated Discharge
+ * cc - Cumulated Charge
+ */
+void KS_Trip_Counter::Reset(float odo, float cdc, float cc)
+	{
+	Update(odo, cdc, cc);
+	if(odo_start==0 && odo!=0)
+		odo_start = odo;		// ODO at Start of trip
+	if(cdc_start==0 && cdc!=0)
+	  	cdc_start = cdc; 	// Register Cumulated discharge
+	if(cc_start==0 && cc!=0)
+	  	cc_start = cc; 		// Register Cumulated charge
+	}
+
+/*
+ * Update the trip counter with current ODO, accumulated discharge and accumulated charge..
+ *
+ * odo - The current ODO
+ * cdc - Accumulated Discharge
+ * cc - Accumulated Charge
+ */
+void KS_Trip_Counter::Update(float current_odo, float current_cdc, float current_cc)
+	{
+	odo=current_odo;
+	cdc=current_cdc;
+	cc=current_cc;
+	}
+
+/*
+ * Returns true if the trip counter has been initialized properly.
+ */
+bool KS_Trip_Counter::Started()
+	{
+	return odo_start!=0;
+	}
+
+/*
+ * Returns true if the trip counter have energy data.
+ */
+bool KS_Trip_Counter::HasEnergyData()
+	{
+	return cdc_start!=0 && cc_start!=0;
+	}
+
+float KS_Trip_Counter::GetDistance()
+	{
+	return odo-odo_start;
+	}
+
+float KS_Trip_Counter::GetEnergyUsed()
+	{
+	return (cdc-cdc_start) - (cc-cc_start);
+	}
+
+float KS_Trip_Counter::GetEnergyRecuperated()
+	{
+	return cc - cc_start;
+	}

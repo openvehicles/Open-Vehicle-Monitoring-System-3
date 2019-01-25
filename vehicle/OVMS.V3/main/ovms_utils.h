@@ -121,6 +121,7 @@ template <class src_string>
 std::string json_encode(const src_string text)
   {
   std::string buf;
+  buf.reserve(text.size() + (text.size() >> 3));
   for (int i=0; i<text.size(); i++)
     {
     switch(text[i])

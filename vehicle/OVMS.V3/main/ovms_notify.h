@@ -36,6 +36,7 @@
 #include <list>
 #include <string>
 #include <bitset>
+#include <atomic>
 #include <stdint.h>
 #include "ovms.h"
 #include "ovms_utils.h"
@@ -57,12 +58,13 @@ class OvmsNotifyEntry : public ExternalRamAllocated
     virtual const extram::string GetValue();
     virtual size_t GetValueSize() { return 0; }
     virtual bool IsRead(size_t reader);
+    virtual int CountPending();
     virtual bool IsAllRead();
     virtual OvmsNotifyType* GetType() { return m_type; }
     virtual const char* GetSubType();
 
   public:
-    std::bitset<NOTIFY_MAX_READERS> m_readers;
+    std::atomic_ulong m_pendingreaders;
     uint32_t m_id;
     uint32_t m_created;
     OvmsNotifyType* m_type;

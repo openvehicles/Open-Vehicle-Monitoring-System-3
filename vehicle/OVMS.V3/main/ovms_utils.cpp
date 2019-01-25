@@ -436,11 +436,12 @@ bool path_exists(const std::string path)
 std::string mqtt_topic(const std::string text)
   {
   std::string buf;
+  buf.reserve(text.size());
   for (int i=0; i<text.size(); i++)
     {
     switch(text[i])
       {
-      case '.':         buf += "/"; break;
+      case '.':         buf += '/'; break;
       default:          buf += text[i]; break;
       }
     }
