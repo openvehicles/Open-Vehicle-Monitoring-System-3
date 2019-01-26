@@ -116,7 +116,9 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   BatteryInit();
   PowerInit();
   ChargeInit();
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
+#endif
 
   // init can bus:
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);

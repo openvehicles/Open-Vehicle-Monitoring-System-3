@@ -94,14 +94,15 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   BmsSetCellLimitsVoltage(2.52,4.9);
   BmsSetCellLimitsTemperature(-40,70);
 
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  WebInit();
+#endif
 
   // init commands:
   cmd_xmi = MyCommandApp.RegisterCommand("xmi", "Mitsubishi iMiEV", NULL, "", 0, 0, true);
   cmd_xmi->RegisterCommand("aux", "Aux Battery", xmi_aux, 0, 0, false);
   cmd_xmi->RegisterCommand("trip","Show trip info", xmi_trip, 0,0, false);
-
-  WebInit();
 
   // init configs:
   MyConfig.RegisterParam("xmi", "Trio", true, true);
@@ -112,7 +113,9 @@ OvmsVehicleMitsubishi::~OvmsVehicleMitsubishi()
   {
   ESP_LOGI(TAG, "Stop Mitsubishi  vehicle module");
 
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   MyWebServer.DeregisterPage("/bms/cellmon");
+#endif
   MyCommandApp.UnregisterCommand("xmi");
   }
 

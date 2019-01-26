@@ -54,7 +54,9 @@ OvmsVehicleThinkCity::OvmsVehicleThinkCity()
   {
   ESP_LOGI(TAG, "Start Think City vehicle module");
 
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
+#endif
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   PollSetPidList(m_can1, obdii_polls);

@@ -387,9 +387,10 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   MyConfig.RegisterParam("xks", "Kia Soul EV spesific settings.", true, true);
   ConfigChanged(NULL);
 
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
-
   WebInit();
+#endif
 
   // C-Bus
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
@@ -406,7 +407,9 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
 OvmsVehicleKiaSoulEv::~OvmsVehicleKiaSoulEv()
   {
   ESP_LOGI(TAG, "Shutdown Kia Soul EV vehicle module");
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   MyWebServer.DeregisterPage("/bms/cellmon");
+#endif
   }
 
 /**

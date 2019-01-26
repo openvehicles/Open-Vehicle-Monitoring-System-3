@@ -23,6 +23,8 @@
  * THE SOFTWARE.
  */
 
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+
 // #include "ovms_log.h"
 // static const char *TAG = "v-twizy";
 
@@ -1850,3 +1852,5 @@ void OvmsVehicleRenaultTwizy::WebDrivemodeConfig(PageEntry_t& p, PageContext_t& 
   PAGE_HOOK("body.post");
   c.done();
 }
+
+#endif //CONFIG_OVMS_COMP_WEBSERVER
