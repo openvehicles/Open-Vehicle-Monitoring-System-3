@@ -26,6 +26,7 @@
  * THE SOFTWARE.
  */
 
+#include <sdkconfig.h>
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 
 #include <stdio.h>

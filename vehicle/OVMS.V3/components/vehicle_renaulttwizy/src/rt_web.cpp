@@ -1,19 +1,19 @@
 /**
  * Project:      Open Vehicle Monitor System
  * Module:       Renault Twizy Webserver
- * 
+ *
  * (c) 2017  Michael Balzer <dexter@dexters-web.de>
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -23,6 +23,7 @@
  * THE SOFTWARE.
  */
 
+#include <sdkconfig.h>
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 
 // #include "ovms_log.h"
@@ -86,7 +87,7 @@ void OvmsVehicleRenaultTwizy::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     kd_threshold = c.getvar("kd_threshold");
     kd_compzero = c.getvar("kd_compzero");
     gpslogint = c.getvar("gpslogint");
-    
+
     // check:
     if (!kd_threshold.empty()) {
       int n = atoi(kd_threshold.c_str());
@@ -103,7 +104,7 @@ void OvmsVehicleRenaultTwizy::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       if (n < 0)
         error += "<li data-input=\"gpslogint\">GPS log interval must be zero or positive</li>";
     }
-    
+
     if (error == "") {
       // store:
       MyConfig.SetParamValueBool("xrt", "canwrite", canwrite);
@@ -114,14 +115,14 @@ void OvmsVehicleRenaultTwizy::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("xrt", "kd_threshold", kd_threshold);
       MyConfig.SetParamValue("xrt", "kd_compzero", kd_compzero);
       MyConfig.SetParamValue("xrt", "gpslogint", gpslogint);
-      
+
       c.head(200);
       c.alert("success", "<p class=\"lead\">Twizy feature configuration saved.</p>");
       MyWebServer.OutputHome(p, c);
       c.done();
       return;
     }
-    
+
     // output error, return to form:
     error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
     c.head(400);
@@ -137,7 +138,7 @@ void OvmsVehicleRenaultTwizy::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     kd_threshold = MyConfig.GetParamValue("xrt", "kd_threshold", STR(CFG_DEFAULT_KD_THRESHOLD));
     kd_compzero = MyConfig.GetParamValue("xrt", "kd_compzero", STR(CFG_DEFAULT_KD_COMPZERO));
     gpslogint = MyConfig.GetParamValue("xrt", "gpslogint", "0");
-    
+
     c.head(200);
   }
 
@@ -145,7 +146,7 @@ void OvmsVehicleRenaultTwizy::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
   c.panel_start("primary", "Twizy feature configuration");
   c.form_start(p.uri);
-  
+
   c.fieldset_start("General");
   c.input_checkbox("Enable CAN writes", "canwrite", canwrite,
     "<p>Controls overall CAN write access, all control functions depend on this.</p>");
@@ -154,7 +155,7 @@ void OvmsVehicleRenaultTwizy::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Enable auto power adjustment", "autopower", autopower);
   c.input_checkbox("SimpleConsole connected", "console", console);
   c.fieldset_end();
-  
+
   c.fieldset_start("Kickdown");
   c.input_checkbox("Enable kickdown", "kickdown", kickdown);
   c.input_slider("Sensitivity", "kd_threshold", 3, NULL,
@@ -164,14 +165,14 @@ void OvmsVehicleRenaultTwizy::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     -1, atof(kd_compzero.c_str()), 120, 0, 250, 1,
     "<p>Default 120, lower value = higher sensitivity at high speeds</p>");
   c.fieldset_end();
-  
+
   c.fieldset_start("Telemetry");
   c.input("number", "GPS log interval", "gpslogint", gpslogint.c_str(), "Default: 0 = off",
     "<p>0 = no GPS log, else interval in seconds. Note: only applies while driving.</p>",
     "min=\"0\" step=\"1\"", "s");
   // todo: SDO log
   c.fieldset_end();
-  
+
   c.print("<hr>");
   c.input_button("default", "Save");
   c.form_end();
@@ -197,7 +198,7 @@ void OvmsVehicleRenaultTwizy::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
     chargemode = c.getvar("chargemode");
     suffrange = c.getvar("suffrange");
     suffsoc = c.getvar("suffsoc");
-    
+
     // check:
     if (!cap_nom_ah.empty()) {
       float n = atof(cap_nom_ah.c_str());
@@ -224,7 +225,7 @@ void OvmsVehicleRenaultTwizy::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
       if (n < 0)
         error += "<li data-input=\"suffsoc\">Sufficient SOC invalid, must be 0…100</li>";
     }
-    
+
     if (error == "") {
       // store:
       MyConfig.SetParamValue("xrt", "cap_nom_ah", cap_nom_ah);
@@ -234,14 +235,14 @@ void OvmsVehicleRenaultTwizy::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("xrt", "chargemode", chargemode);
       MyConfig.SetParamValue("xrt", "suffrange", suffrange);
       MyConfig.SetParamValue("xrt", "suffsoc", suffsoc);
-      
+
       c.head(200);
       c.alert("success", "<p class=\"lead\">Twizy battery setup saved.</p>");
       MyWebServer.OutputHome(p, c);
       c.done();
       return;
     }
-    
+
     // output error, return to form:
     error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
     c.head(400);
@@ -256,7 +257,7 @@ void OvmsVehicleRenaultTwizy::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
     chargemode = MyConfig.GetParamValue("xrt", "chargemode", "0");
     suffrange = MyConfig.GetParamValue("xrt", "suffrange", "0");
     suffsoc = MyConfig.GetParamValue("xrt", "suffsoc", "0");
-    
+
     c.head(200);
   }
 
@@ -264,23 +265,23 @@ void OvmsVehicleRenaultTwizy::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 
   c.panel_start("primary", "Twizy battery setup");
   c.form_start(p.uri);
-  
+
   c.fieldset_start("Battery properties");
-  
+
   c.input("number", "Nominal capacity", "cap_nom_ah", cap_nom_ah.c_str(), "Default: " STR(CFG_DEFAULT_CAPACITY),
     "<p>This is the usable capacity of your battery when new.</p>",
     "min=\"1\" step=\"0.1\"", "Ah");
   c.input("number", "Actual capacity", "cap_act_prc", cap_act_prc.c_str(), "Default: 100",
     NULL, "min=\"1\" max=\"120\" step=\"0.01\"", "%");
-  
+
   c.input("number", "Maximum drive range", "maxrange", maxrange.c_str(), "Default: " STR(CFG_DEFAULT_MAXRANGE),
     "<p>The range you normally get at 100% SOC and 20 °C.</p>",
     "min=\"1\" step=\"1\"", "km");
-  
+
   c.fieldset_end();
-  
+
   c.fieldset_start("Charge control");
-  
+
   c.input_select_start("Charge power limit", "chargelevel");
   c.input_select_option("&mdash;", "0", chargelevel == "0");
   c.input_select_option( "400W", "1", chargelevel == "1");
@@ -296,7 +297,7 @@ void OvmsVehicleRenaultTwizy::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   c.input_radiobtn_option("chargemode", "Notify", "0", chargemode == "0");
   c.input_radiobtn_option("chargemode", "Stop", "1", chargemode == "1");
   c.input_radiobtn_end();
-  
+
   c.input_slider("Sufficient range", "suffrange", 3, "km",
     atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 0, 0, 200, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
@@ -305,7 +306,7 @@ void OvmsVehicleRenaultTwizy::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
 
   c.fieldset_end();
-  
+
   c.print("<hr>");
   c.input_button("default", "Save");
   c.form_end();
@@ -362,7 +363,7 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
     c.error(404, "Twizy/SEVCON module not loaded");
     return;
   }
-  
+
   std::string arg;
   if ((arg = c.getvar("load")) != "") {
     // execute profile switch:
@@ -370,7 +371,7 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
     output = MyWebServer.ExecuteCommand("xrt cfg load " + arg);
     if (c.getvar("info") != "off")
       output += MyWebServer.ExecuteCommand("xrt cfg info");
-    
+
     // output result:
     c.head(200);
     c.print(c.encode_html(output));
@@ -389,11 +390,11 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
     c.done();
     return;
   }
-  
+
   // output status page:
-  
+
   ostringstream buf;
-  
+
   buf << "Active profile: ";
   if (sc->m_drivemode.profile_user == sc->m_drivemode.profile_cfgmode) {
     buf << "#" << sc->m_drivemode.profile_user;
@@ -402,9 +403,9 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
     buf << "base #" << sc->m_drivemode.profile_cfgmode;
     buf << ", live #" << sc->m_drivemode.profile_user;
   }
-  
+
   buf << "\n\n" << MyWebServer.ExecuteCommand("xrt cfg info");
-  
+
   c.head(200);
   c.print(
     "<style>\n"
@@ -417,12 +418,12 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
     ".fullscreened .panel-single .panel-body { padding: 10px; }\n"
     "</style>\n");
   PAGE_HOOK("body.pre");
-  
+
   c.panel_start("primary", "Drivemode");
-  
+
   c.printf(
     "<samp id=\"loadres\">%s</samp>", _html(buf.str()));
-  
+
   c.print(
     "<div id=\"livestatus\" class=\"receiver\">"
       "<div class=\"row\">"
@@ -437,7 +438,7 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
         "</div>"
       "</div>"
     "</div>");
-  
+
   c.print(
     "<form id=\"loadmenu\" action=\"/xrt/drivemode\" target=\"#loadres\" method=\"post\">\n"
       "<div class=\"btn-group btn-group-justified btn-longtouch\">\n");
@@ -450,7 +451,7 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
     "<button type=\"button\" class=\"btn btn-sm btn-default action-profed\">Edit current Profile</button>\n"
     "<button type=\"button\" class=\"btn btn-sm btn-default action-dmconfig\">Configure Buttons</button>\n"
   );
-  
+
   c.print(
     "<script>"
     "$(\"#livestatus\").on(\"msg:event\", function(e, event){"
@@ -468,7 +469,7 @@ void OvmsVehicleRenaultTwizy::WebConsole(PageEntry_t& p, PageContext_t& c)
       "loadPage(\"/xrt/dmconfig\");\n"
     "});\n"
     "</script>");
-  
+
   PAGE_HOOK("body.post");
   c.done();
 }
@@ -803,7 +804,7 @@ void OvmsVehicleRenaultTwizy::WebSevconMon(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsVehicleRenaultTwizy::GetDashboardConfig(DashboardConfig& cfg)
 {
-  cfg.gaugeset1 = 
+  cfg.gaugeset1 =
     "yAxis: [{"
       // Speed:
       "min: 0, max: 120,"
@@ -877,7 +878,7 @@ PageResult_t OvmsVehicleRenaultTwizy::WebExtDashboard(PageEntry_t& p, PageContex
   SevconClient* sc = twizy ? twizy->GetSevconClient() : NULL;
   if (!sc)
     return PageResult_OK;
-  
+
   if (hook == "body.pre") {
     c.print(
       "<style>\n"
@@ -940,7 +941,7 @@ void OvmsVehicleRenaultTwizy::WebProfileEditor(PageEntry_t& p, PageContext_t& c)
 {
   c.head(200);
   PAGE_HOOK("body.pre");
-  
+
   c.print(
     "<style>\n"
     ".form-inline .form-control.slider-value {\n"
@@ -1576,7 +1577,7 @@ void OvmsVehicleRenaultTwizy::WebProfileEditor(PageEntry_t& p, PageContext_t& c)
     "})();\n"
     "</script>\n"
   );
-  
+
   PAGE_HOOK("body.post");
   c.done();
 }
@@ -1589,7 +1590,7 @@ void OvmsVehicleRenaultTwizy::WebDrivemodeConfig(PageEntry_t& p, PageContext_t& 
 {
   c.head(200);
   PAGE_HOOK("body.pre");
-  
+
   c.print(
     "<style>\n"
     ".fullscreened .panel-single .panel-body {\n"
@@ -1848,7 +1849,7 @@ void OvmsVehicleRenaultTwizy::WebDrivemodeConfig(PageEntry_t& p, PageContext_t& 
     "})();\n"
     "</script>\n"
   );
-  
+
   PAGE_HOOK("body.post");
   c.done();
 }

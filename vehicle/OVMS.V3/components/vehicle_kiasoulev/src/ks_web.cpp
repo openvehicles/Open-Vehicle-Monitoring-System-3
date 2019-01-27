@@ -24,6 +24,7 @@
  * THE SOFTWARE.
  */
 
+#include <sdkconfig.h>
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 
 //static const char *TAG = "v-kiasoulev";
