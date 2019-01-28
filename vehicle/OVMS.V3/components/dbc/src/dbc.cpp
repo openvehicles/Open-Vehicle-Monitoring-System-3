@@ -711,13 +711,15 @@ const std::string& dbcSignal::GetName()
 void dbcSignal::SetName(const std::string& name)
   {
   m_name = name;
-  m_metric = MyMetrics.Find(name.c_str());
+
+  std::string mappedname(name);
+  std::replace( mappedname.begin(), mappedname.end(), '_', '.');
+  m_metric = MyMetrics.Find(mappedname.c_str());
   }
 
 void dbcSignal::SetName(const char* name)
   {
-  m_name = std::string(name);
-  m_metric = MyMetrics.Find(name);
+  SetName(std::string(name));
   }
 
 bool dbcSignal::IsMultiplexor()
