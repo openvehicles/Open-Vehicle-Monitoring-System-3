@@ -101,8 +101,8 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
 
   // init commands:
   cmd_xmi = MyCommandApp.RegisterCommand("xmi", "Mitsubishi iMiEV", NULL, "", 0, 0, true);
-  cmd_xmi->RegisterCommand("aux", "Aux Battery", xmi_aux, 0, 0, false);
-  cmd_xmi->RegisterCommand("trip","Show trip info", xmi_trip, 0,0, false);
+  cmd_xmi->RegisterCommand("aux", "Aux Battery", xmi_aux, "", 0, 0, false);
+  cmd_xmi->RegisterCommand("trip","Show trip info", xmi_trip, "", 0,0, false);
 
   // init configs:
   MyConfig.RegisterParam("xmi", "Trio", true, true);
