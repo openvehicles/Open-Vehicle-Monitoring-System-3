@@ -46,7 +46,7 @@ const char* SimcomState1Name(simcom::SimcomState1 state)
     case simcom::None:           return "None";
     case simcom::CheckPowerOff:  return "CheckPowerOff";
     case simcom::PoweringOn:     return "PoweringOn";
-    case simcom::PoweredOn:      return "PoweredOff";
+    case simcom::PoweredOn:      return "PoweredOn";
     case simcom::MuxStart:       return "MuxStart";
     case simcom::NetWait:        return "NetWait";
     case simcom::NetStart:       return "NetStart";
@@ -1081,8 +1081,8 @@ void simcom_setstate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     newstate = simcom::CheckPowerOff;
   else if (strcmp(statename,"PoweringOn")==0)
     newstate = simcom::PoweringOn;
-  else if (strcmp(statename,"PoweredOff")==0)
-    newstate = simcom::PoweredOff;
+  else if (strcmp(statename,"PoweredOn")==0)
+    newstate = simcom::PoweredOn;
   else if (strcmp(statename,"MuxStart")==0)
     newstate = simcom::MuxStart;
   else if (strcmp(statename,"NetWait")==0)
