@@ -1127,7 +1127,7 @@ SimcomInit::SimcomInit()
   OvmsCommand* cmd_simcom = MyCommandApp.RegisterCommand("simcom","SIMCOM framework",simcom_status, "", 0, 1);
   cmd_simcom->RegisterCommand("tx","Transmit data on SIMCOM",simcom_tx, "", 1, INT_MAX, true);
   cmd_simcom->RegisterCommand("muxtx","Transmit data on SIMCOM MUX",simcom_muxtx, "<chan> <data>", 2, INT_MAX, true);
-  OvmsCommand* cmd_status = cmd_simcom->RegisterCommand("status","Show SIMCOM status",simcom_status, "", 0);
+  OvmsCommand* cmd_status = cmd_simcom->RegisterCommand("status","Show SIMCOM status",simcom_status, "[debug]", 0);
   cmd_status->RegisterCommand("debug","Show extended SIMCOM status",simcom_status, "", 0);
   cmd_simcom->RegisterCommand("cmd","Send SIMCOM AT command",simcom_cmd, "<command>", 1, INT_MAX, true);
 
