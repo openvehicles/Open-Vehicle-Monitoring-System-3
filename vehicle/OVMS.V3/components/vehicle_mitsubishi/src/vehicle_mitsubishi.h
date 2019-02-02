@@ -33,7 +33,9 @@
 #define __VEHICLE_MITSUBISHI_H__
 
 #include "vehicle.h"
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
+#endif
 
 using namespace std;
 
@@ -106,6 +108,7 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     float mi_chargekwh;
 
 
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
     // --------------------------------------------------------------------------
     // Webserver subsystem
     //  - implementation: mi_web.(h,cpp)
@@ -117,6 +120,7 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
   public:
     void GetDashboardConfig(DashboardConfig& cfg);
 
+#endif //CONFIG_OVMS_COMP_WEBSERVER
 
   };
 

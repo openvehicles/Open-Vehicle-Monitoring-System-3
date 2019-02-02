@@ -26,6 +26,8 @@
  * THE SOFTWARE.
  */
 
+#include <sdkconfig.h>
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 
 #include <stdio.h>
 #include <string>
@@ -183,3 +185,5 @@ void OvmsVehicleMitsubishi::GetDashboardConfig(DashboardConfig& cfg)
         "{ from: 75, to: 100, className: 'red-band border' }]"
     "}]";
 }
+
+#endif //CONFIG_OVMS_COMP_WEBSERVER

@@ -80,7 +80,7 @@ SevconClient::SevconClient(OvmsVehicleRenaultTwizy* twizy)
   cmd_cfg->RegisterCommand("write", "Read & write register", shell_cfg_write, "<index_hex> <subindex_hex> <value>", 3, 3, true);
   cmd_cfg->RegisterCommand("writeonly", "Write register", shell_cfg_write, "<index_hex> <subindex_hex> <value>", 3, 3, true);
 
-  cmd_cfg->RegisterCommand("set", "Set tuning profile from base64 string", shell_cfg_set, "<key> <base64data>", 2, 2, true);
+  cmd_cfg->RegisterCommand("set", "Set tuning profile from base64 string", shell_cfg_set, "<key> <base64data> [<label>] [<title>]", 2, 4, true);
   cmd_cfg->RegisterCommand("reset", "Reset tuning profile", shell_cfg_set, "[key]", 0, 1, true);
   cmd_cfg->RegisterCommand("get", "Get tuning profile as base64 string", shell_cfg_get, "[key]", 0, 1, true);
   cmd_cfg->RegisterCommand("info", "Show tuning profile", shell_cfg_info, "[key]", 0, 1, true);

@@ -32,7 +32,9 @@
 #define __VEHICLE_THINKCITY_H__
 
 #include "vehicle.h"
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
+#endif
 
 using namespace std;
 
@@ -51,6 +53,7 @@ class OvmsVehicleThinkCity : public OvmsVehicle
     vehicle_command_t CommandActivateValet(const char* pin);
     vehicle_command_t CommandDeactivateValet(const char* pin);
 
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   // --------------------------------------------------------------------------
   // Webserver subsystem
   //  - implementation: ks_web.(h,cpp)
@@ -64,6 +67,8 @@ class OvmsVehicleThinkCity : public OvmsVehicle
 
   public:
     void GetDashboardConfig(DashboardConfig& cfg);
+
+#endif //CONFIG_OVMS_COMP_WEBSERVER
 
   protected:
     virtual void Ticker1(uint32_t ticker);

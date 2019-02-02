@@ -43,6 +43,7 @@ static const char *TAG = "test";
 #include "ovms_peripherals.h"
 #include "ovms_script.h"
 #include "metrics_standard.h"
+#include "ovms_config.h"
 #include "can.h"
 #include "strverscmp.h"
 
@@ -305,6 +306,58 @@ void test_mkstemp(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   if (fd2 >= 0) { close(fd2); unlink(tn2); }
   }
 
+void test_string(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  int loopcnt = atoi(argv[0]);
+  int mode = (argc > 1) ? atoi(argv[1]) : 1;
+  int stdlen = 0, errcnt = 0;
+  size_t pos;
+  OvmsMetric* m;
+  const char* t5 = "0123456789-abcdefghijk-";
+  std::string t6(t5);
+
+  for (int j = 1; j <= loopcnt; j++)
+    {
+    std::string msg;
+    msg.reserve(2048);
+    for (m = MyMetrics.m_first; msg.size() < 1024; m = m->m_next ? m->m_next : MyMetrics.m_first)
+      {
+      if (mode == 1)
+        msg += m->AsJSON();
+      else if (mode == 2)
+        msg += m->AsString();
+      else if (mode == 3)
+        msg += m->m_name;
+      else if (mode == 4)
+        msg += MyConfig.GetParamValue("module", "cfgversion", m->m_name);
+      else if (mode == 5)
+        msg += t5;
+      else if (mode == 6)
+        msg += t6;
+
+      // check for NUL bytes:
+      if ((pos = msg.rfind('\0')) != std::string::npos)
+        {
+        writer->printf("loop #%d: corruption detected at pos=%u size=%u\n%s\n\n", j, pos, msg.size(), msg.c_str());
+        if (++errcnt == 20)
+          {
+          writer->puts("too many errors, abort");
+          return;
+          }
+        break;
+        }
+      }
+
+    // display reference:
+    if (msg.size() > stdlen)
+      {
+      stdlen = msg.size();
+      writer->printf("#%d: stdlen = %d\n%s\n\n", j, stdlen, msg.c_str());
+      }
+    }
+  writer->puts("finished");
+  }
+
 class TestFrameworkInit
   {
   public: TestFrameworkInit();
@@ -329,4 +382,6 @@ TestFrameworkInit::TestFrameworkInit()
   cmd_test->RegisterCommand("cantx", "Test CAN bus transmission", test_can, "[<port>] [<number>]", 0, 2, true);
   cmd_test->RegisterCommand("canrx", "Test CAN bus reception", test_can, "[<port>] [<number>]", 0, 2, true);
   cmd_test->RegisterCommand("mkstemp", "Test mkstemp function", test_mkstemp, "<file>", 1, 1, true);
+  cmd_test->RegisterCommand("string", "Test std::string memory corruption", test_string, "<loopcnt> <mode>\n"
+    "mode: 1=m.AsJSON, 2=m.AsString, 3=m.name, 4=const cfg string, 5=const local cstr, 6=const local string", 2, 2, true);
   }

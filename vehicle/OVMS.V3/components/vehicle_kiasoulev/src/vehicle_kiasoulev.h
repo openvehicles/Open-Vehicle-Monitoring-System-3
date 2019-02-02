@@ -30,7 +30,9 @@
 #define __VEHICLE_KIASOULEV_H__
 
 #include "vehicle.h"
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
+#endif
 
 using namespace std;
 
@@ -313,6 +315,7 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 
     const TickType_t xDelay = 50 / portTICK_PERIOD_MS;
 
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
     // --------------------------------------------------------------------------
     // Webserver subsystem
     //  - implementation: ks_web.(h,cpp)
@@ -326,6 +329,7 @@ class OvmsVehicleKiaSoulEv : public OvmsVehicle
 
     public:
       void GetDashboardConfig(DashboardConfig& cfg);
+#endif //CONFIG_OVMS_COMP_WEBSERVER
   };
 
 
