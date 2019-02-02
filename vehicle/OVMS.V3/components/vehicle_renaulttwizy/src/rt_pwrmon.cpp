@@ -384,7 +384,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandPower
         twizy_levelpwr[i].rec / WH_DIV);
     }
     
-    writer->printf(",%.2f,%.2f\n",
+    writer->printf(",%.2f,%.2f",
       (float) twizy_charge_use / AH_DIV,
       (float) twizy_charge_rec / AH_DIV);
     
