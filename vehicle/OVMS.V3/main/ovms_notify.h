@@ -40,6 +40,7 @@
 #include <stdint.h>
 #include "ovms.h"
 #include "ovms_utils.h"
+#include "ovms_mutex.h"
 
 #define NOTIFY_MAX_READERS 32
 #define NOTIFY_ERROR_AUTOSUPPRESS 120 // Auto-suppress for 120 seconds
@@ -118,12 +119,13 @@ class OvmsNotifyType
     void MarkRead(size_t reader, OvmsNotifyEntry* entry);
 
   protected:
-    void Cleanup(OvmsNotifyEntry* entry);
+    void Cleanup(OvmsNotifyEntry* entry, NotifyEntryMap_t::iterator* next=NULL);
 
   public:
     const char* m_name;
     uint32_t m_nextid;
     NotifyEntryMap_t m_entries;
+    OvmsRecMutex m_mutex;
   };
 
 typedef std::function<bool(OvmsNotifyType*,OvmsNotifyEntry*)> OvmsNotifyCallback_t;
@@ -189,6 +191,7 @@ class OvmsNotify : public ExternalRamAllocated
 
   public:
     OvmsNotifyCallbackMap_t m_readers;
+    OvmsRecMutex m_mutex;
 
   protected:
     size_t m_nextreader;
