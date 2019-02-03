@@ -1,8 +1,8 @@
 /*
  ;    Project:       Open Vehicle Monitor System
- ;    Date:          29th December 2017
+ ;    Date:          21th January 2019
  ;
- ;    (C) 2017       Geir Øyvind Vælidalo <geir@validalo.net>
+ ;    (C) 2019       Geir Øyvind Vælidalo <geir@validalo.net>
  ;
  ; Permission is hereby granted, free of charge, to any person obtaining a copy
  ; of this software and associated documentation files (the "Software"), to deal
@@ -22,14 +22,14 @@
  ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  ; THE SOFTWARE.
  */
-#include "vehicle_kiasoulev.h"
+#include "vehicle_kianiroev.h"
 
-static const char *TAG = "v-kiasoulev";
+static const char *TAG = "v-kianiroev";
 
 /**
  * Handles incoming CAN-frames on bus 1, the C-bus
  */
-void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleKiaNiroEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 	{
 	uint8_t *d = p_frame->data.u8;
 
@@ -66,7 +66,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 		uint8_t indLights = (d[5] & 0x60)>>5;
 		if( !m_v_emergency_lights->AsBool() && indLights==3)
 			{
-			//ks_check_door_lock = true;
+			//kn_check_door_lock = true;
 			m_v_emergency_lights->SetValue(true);
 			}
 		else if( m_v_emergency_lights->AsBool() && (indLights==1 || indLights==2))
@@ -92,25 +92,25 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 		{
 		if (d[2] & 0x10)
 			{
-			//ks_check_door_lock=true;
+			//kn_check_door_lock=true;
 			if( d[1] & 0x08) StdMetrics.ms_v_env_locked->SetValue(false);
 			if( d[1] & 0x01) StdMetrics.ms_v_env_locked->SetValue(true);
 			}
 		if (d[3] & 0x20)
 			{
-			//ks_check_door_lock=true;
+			//kn_check_door_lock=true;
 			StdMetrics.ms_v_env_locked->SetValue(false);
-			if(ks_key_fob_open_charge_port && StdMetrics.ms_v_env_on->AsBool()) ks_lockDoors = true;
+			if(kn_key_fob_open_charge_port && StdMetrics.ms_v_env_on->AsBool()) kn_lockDoors = true;
 			}
 		else if (d[3] & 0x10)
 			{
-			//ks_check_door_lock=true;
+			//kn_check_door_lock=true;
 			StdMetrics.ms_v_env_locked->SetValue(true);
-			if(ks_key_fob_open_charge_port && StdMetrics.ms_v_env_on->AsBool()) ks_unlockDoors = true;
+			if(kn_key_fob_open_charge_port && StdMetrics.ms_v_env_on->AsBool()) kn_unlockDoors = true;
 			}
-		if (d[3] & 0x40 && ks_key_fob_open_charge_port)
+		if (d[3] & 0x40 && kn_key_fob_open_charge_port)
 			{
-			ks_openChargePort = true;
+			kn_openChargePort = true;
 			}
 		}
 		break;
@@ -133,13 +133,6 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 		}
 		break;
 
-	case 0x202:
-		{
-		m_v_power_usage->SetValue(
-				(float) (((int16_t) d[1] << 8) | d[2]), Watts);
-		}
-		break;
-
 	case 0x433:
 		{
 		// Parking brake status
@@ -147,13 +140,13 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 		}
 		break;
 
-	case 0x4b0:
-	  {
+		//case 0x4b0:
+		//  {
 		// Motor RPM based on wheel rotation
-		int rpm = (d[0]+(d[1]<<8)) * 8.206;
-		StdMetrics.ms_v_mot_rpm->SetValue( rpm );
-	  }
-		break;
+		//int rpm = (d[0]+(d[1]<<8)) * 8.206;
+		//StdMetrics.ms_v_mot_rpm->SetValue( rpm );
+		//  }
+		//  break;
 
 	case 0x4f0:
 		{
@@ -175,14 +168,14 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 		// Byte 2 and 7 are some sort of counters which runs while the car is on.
 		if (d[2] > 0 || d[7] > 0)
 			{
-			vehicle_kiasoulev_car_on(true);
+			vehicle_kianiroev_car_on(true);
 			}
 		else if (d[2] == 0 && d[7] == 0
 				&& StdMetrics.ms_v_pos_speed->AsFloat(Kph) == 0
 				/*&& StdMetrics.ms_v_env_handbrake->AsBool()*/)
 			{
 			// Both 2 and 7 and speed is 0, so we assumes the car is off.
-			vehicle_kiasoulev_car_on(false);
+			vehicle_kianiroev_car_on(false);
 			}
 		}
 		break;
@@ -218,7 +211,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 		{
 		// Clock:
 		if (d[1] > 0 || d[2] > 0 || d[3] > 0)
-			ks_clock=(((d[1]*60) + d[2])*60) + d[3];
+			kn_clock=(((d[1]*60) + d[2])*60) + d[3];
 		}
 		break;
 
@@ -234,29 +227,25 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 		m_obc_timer_enabled->SetValue( d[3] & 0x1 );
 		//Set the charge start time as seconds since midnight UTC.
 		StdMetrics.ms_v_charge_timerstart->SetValue(
-			(((d[4] & 0x1F)*60 + ((d[4]>>5) & 0x7)*10) + ks_utc_diff) * 60
+			(((d[4] & 0x1F)*60 + ((d[4]>>5) & 0x7)*10) + kn_utc_diff) * 60
 			);
 		}
 		break;
 
 	case 0x57B: //Charge timer
 		{
-		ks_charge_timer_off = d[2] & 0x8;
+		kn_charge_timer_off = d[2] & 0x8;
 		m_v_preheating->SetValue( d[4] & 0x1 ); //TODO Same bit for timer1 and timer2?
 		}
 		break;
 
 	case 0x581:
 		{
-		//m_v_power_usage->SetValue(
-		//		(float) (((uint16_t) d[0] << 8) | d[1]) / 1000.0, kW);
+		m_v_power_usage->SetValue(
+				(float) (((uint16_t) d[0] << 8) | d[1]) / 1000.0, kW);
 		// Car is CHARGING:
-		if( d[7]>0 && d[6]>0 )
-			{
-			StdMetrics.ms_v_bat_power->SetValue(
-					(float) (((uint16_t) d[7] << 8) | d[6]) / 256.0, kW);
-
-			}
+		StdMetrics.ms_v_bat_power->SetValue(
+				(float) (((uint16_t) d[7] << 8) | d[6]) / 256.0, kW);
 		}
 		break;
 
@@ -287,14 +276,14 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 	case 0x653:
 		{
 		// Ambient temperature
-		StdMetrics.ms_v_env_temp->SetValue(TO_CELCIUS(d[5]/2.0), Celcius);
+		//TODO StdMetrics.ms_v_env_temp->SetValue(TO_CELCIUS(d[5]/2.0), Celcius);
 		}
 		break;
 
 	case 0x654:
 		{
 		// Inside temperature
-		StdMetrics.ms_v_env_cabintemp->SetValue(TO_CELCIUS(d[7]/2.0), Celcius);
+		//TODO StdMetrics.ms_v_env_cabintemp->SetValue(TO_CELCIUS(d[7]/2.0), Celcius);
 		}
 		break;
 
@@ -307,19 +296,19 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 		}
 
 	// Check if response is from synchronous can message
-	if (ks_send_can.status == 0xff && p_frame->MsgID == (ks_send_can.id + 0x08))
+	if (kn_send_can.status == 0xff && p_frame->MsgID == (kn_send_can.id + 0x08))
 		{
 		//Store message bytes so that the async method can continue
-		ks_send_can.status = 3;
+		kn_send_can.status = 3;
 
-		ks_send_can.byte[0] = d[0];
-		ks_send_can.byte[1] = d[1];
-		ks_send_can.byte[2] = d[2];
-		ks_send_can.byte[3] = d[3];
-		ks_send_can.byte[4] = d[4];
-		ks_send_can.byte[5] = d[5];
-		ks_send_can.byte[6] = d[6];
-		ks_send_can.byte[7] = d[7];
+		kn_send_can.byte[0] = d[0];
+		kn_send_can.byte[1] = d[1];
+		kn_send_can.byte[2] = d[2];
+		kn_send_can.byte[3] = d[3];
+		kn_send_can.byte[4] = d[4];
+		kn_send_can.byte[5] = d[5];
+		kn_send_can.byte[6] = d[6];
+		kn_send_can.byte[7] = d[7];
 		}
 	}
 

@@ -198,7 +198,7 @@ void OvmsVehicleKiaSoulEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 				{
 				if (m_poll_ml_frame == 1)
 					{
-					StdMetrics.ms_v_mot_rpm->SetValue( ((uint16_t)CAN_BYTE(5)<<8) | (uint16_t)CAN_BYTE(6) );
+					//StdMetrics.ms_v_mot_rpm->SetValue( ((uint16_t)CAN_BYTE(5)<<8) | (uint16_t)CAN_BYTE(6) );
 					}
 				else if (m_poll_ml_frame == 3)
 					{
@@ -246,6 +246,7 @@ void OvmsVehicleKiaSoulEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
 					ks_battery_current = (ks_battery_current & 0xFF00) | (UINT) CAN_BYTE(0);
 					StdMetrics.ms_v_bat_current->SetValue((float)ks_battery_current/10.0, Amps);
 					StdMetrics.ms_v_bat_voltage->SetValue((float)CAN_UINT(1)/10.0, Volts);
+					StdMetrics.ms_v_bat_power->SetValue(StdMetrics.ms_v_bat_current->AsFloat(Amps)*StdMetrics.ms_v_bat_voltage->AsFloat(Volts), Watts);
 					BmsRestartCellTemperatures();
 					BmsSetCellTemperature(0, CAN_BYTE(3));
 					BmsSetCellTemperature(1, CAN_BYTE(4));

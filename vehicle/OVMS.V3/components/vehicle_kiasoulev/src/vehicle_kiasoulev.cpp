@@ -555,11 +555,12 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
   //Keep charging metrics up to date
 	if (ks_charge_bits.ChargingJ1772)  				// **** J1772 - Type 1  charging ****
 		{
-		SetChargeMetrics(ks_obc_volt, StdMetrics.ms_v_bat_power->AsFloat(0, kW) * 1000 / ks_obc_volt, 6600 / ks_obc_volt, false);
+		SetChargeMetrics(ks_obc_volt, StdMetrics.ms_v_bat_power->AsFloat(0, Watts) / ks_obc_volt, 6600 / ks_obc_volt, false);
+		//TODO SetChargeMetrics(ks_obc_volt, StdMetrics.ms_v_bat_power->AsFloat(0, kW) * 1000 / ks_obc_volt, 6600 / ks_obc_volt, false);
 	  }
 	else if (ks_charge_bits.ChargingChademo)  // **** ChaDeMo charging ****
 		{
-		SetChargeMetrics(StdMetrics.ms_v_bat_voltage->AsFloat(400,Volts), (float)ks_battery_current / -10.0, m_c_power->AsFloat(0,kW) * 10 / StdMetrics.ms_v_bat_voltage->AsFloat(400,Volts), true);
+		SetChargeMetrics(StdMetrics.ms_v_bat_voltage->AsFloat(400,Volts), -StdMetrics.ms_v_bat_current->AsFloat(Amps), m_c_power->AsFloat(0,kW) * 10 / StdMetrics.ms_v_bat_voltage->AsFloat(400,Volts), true);
 	  }
 
 
