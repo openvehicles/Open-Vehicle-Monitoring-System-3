@@ -135,6 +135,9 @@
 ;			- Fixed issues with the new standard BMS module.
 ;			- Added new command, xks tripch, which displays trip data since last charge
 ;
+;		0.4.2 02-February-2019 - Geir Øyvind Vælidalo
+;			- Minor changes to RPM and battery power reading
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -178,7 +181,7 @@
 #include "ovms_notify.h"
 #include <sys/param.h>
 
-#define VERSION "0.4.1"
+#define VERSION "0.4.2"
 
 static const char *TAG = "v-kiasoulev";
 
