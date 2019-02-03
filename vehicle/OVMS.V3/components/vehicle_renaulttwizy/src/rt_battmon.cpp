@@ -965,7 +965,7 @@ void OvmsVehicleRenaultTwizy::FormatPackData(int verbosity, OvmsWriter* writer, 
     ",%d,%d,%d"
     ",%d,%d,%d"
     ",%d,%d"
-    ",%d,%d\n",
+    ",%d,%d",
     pack+1,
     volt_alert, temp_alert,
     twizy_soc, twizy_soc_min, twizy_soc_max,
@@ -1018,7 +1018,7 @@ void OvmsVehicleRenaultTwizy::FormatCellData(int verbosity, OvmsWriter* writer, 
     "RT-BAT-C,%d,86400"
     ",%d,%d"
     ",%d,%d,%d,%d"
-    ",%d,%d,%d,%d\n",
+    ",%d,%d,%d,%d",
     cell+1,
     volt_alert, temp_alert,
     CONV_CellVolt(twizy_cell[cell].volt_act),

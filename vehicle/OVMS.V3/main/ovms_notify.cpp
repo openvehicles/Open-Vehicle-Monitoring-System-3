@@ -42,6 +42,7 @@ static const char *TAG = "notify";
 #include "vehicle.h"
 #include "buffered_shell.h"
 #include "string.h"
+#include "ovms_mutex.h"
 
 using namespace std;
 
@@ -62,6 +63,7 @@ void notify_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 
 void notify_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
+  OvmsRecMutexLock lock(&MyNotify.m_mutex);
   writer->printf("Notification system has %d readers registered\n",
     MyNotify.CountReaders());
   for (OvmsNotifyCallbackMap_t::iterator itc=MyNotify.m_readers.begin(); itc!=MyNotify.m_readers.end(); itc++)
@@ -76,13 +78,14 @@ void notify_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     for (OvmsNotifyTypeMap_t::iterator itm=MyNotify.m_types.begin(); itm!=MyNotify.m_types.end(); ++itm)
       {
       OvmsNotifyType* mt = itm->second;
+      OvmsRecMutexLock lock(&mt->m_mutex);
       writer->printf("  %s: %d entries\n",
         mt->m_name, mt->m_entries.size());
       for (NotifyEntryMap_t::iterator ite=mt->m_entries.begin(); ite!=mt->m_entries.end(); ++ite)
         {
         OvmsNotifyEntry* e = ite->second;
         writer->printf("    %d: [%d pending] %s\n",
-          ite->first, e->m_readers.count(), e->GetValue().c_str());
+          ite->first, e->CountPending(), e->GetValue().c_str());
         }
       }
     }
@@ -133,7 +136,7 @@ void notify_errorcode_clear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd,
 
 OvmsNotifyEntry::OvmsNotifyEntry(const char* subtype)
   {
-  m_readers.reset();
+  m_pendingreaders = 0;
   m_id = 0;
   m_created = monotonictime;
   m_type = NULL;
@@ -147,12 +150,24 @@ OvmsNotifyEntry::~OvmsNotifyEntry()
 
 bool OvmsNotifyEntry::IsRead(size_t reader)
   {
-  return !m_readers[reader];
+  return !(m_pendingreaders & 1ul << reader);
+  }
+
+int OvmsNotifyEntry::CountPending()
+  {
+  int cnt = 0;
+  unsigned long pend = m_pendingreaders;
+  for (int i=0; i<NOTIFY_MAX_READERS; i++)
+    {
+    cnt += pend & 1;
+    pend >>= 1;
+    }
+  return cnt;
   }
 
 bool OvmsNotifyEntry::IsAllRead()
   {
-  return (m_readers.count() == 0);
+  return (m_pendingreaders == 0);
   }
 
 const extram::string OvmsNotifyEntry::GetValue()
@@ -234,6 +249,7 @@ OvmsNotifyType::~OvmsNotifyType()
 
 uint32_t OvmsNotifyType::QueueEntry(OvmsNotifyEntry* entry)
   {
+  OvmsRecMutexLock lock(&m_mutex);
   uint32_t id = m_nextid++;
 
   entry->m_id = id;
@@ -261,25 +277,29 @@ uint32_t OvmsNotifyType::QueueEntry(OvmsNotifyEntry* entry)
 
 uint32_t OvmsNotifyType::AllocateNextID()
   {
+  OvmsRecMutexLock lock(&m_mutex);
   return m_nextid++;
   }
 
 void OvmsNotifyType::ClearReader(size_t reader)
   {
+  OvmsRecMutexLock lock(&m_mutex);
   if (m_entries.size() > 0)
     {
+    NotifyEntryMap_t::iterator next;
     for (NotifyEntryMap_t::iterator ite=m_entries.begin(); ite!=m_entries.end(); )
       {
       OvmsNotifyEntry* e = ite->second;
       ++ite;
-      e->m_readers.reset(reader);
-      Cleanup(e);
+      e->m_pendingreaders &= ~(1ul << reader);
+      Cleanup(e, &ite);
       }
     }
   }
 
 OvmsNotifyEntry* OvmsNotifyType::FirstUnreadEntry(size_t reader, uint32_t floor)
   {
+  OvmsRecMutexLock lock(&m_mutex);
   for (NotifyEntryMap_t::iterator ite=m_entries.begin(); ite!=m_entries.end(); ++ite)
     {
     OvmsNotifyEntry* e = ite->second;
@@ -291,6 +311,7 @@ OvmsNotifyEntry* OvmsNotifyType::FirstUnreadEntry(size_t reader, uint32_t floor)
 
 OvmsNotifyEntry* OvmsNotifyType::FindEntry(uint32_t id)
   {
+  OvmsRecMutexLock lock(&m_mutex);
   auto k = m_entries.find(id);
   if (k == m_entries.end())
     return NULL;
@@ -300,20 +321,22 @@ OvmsNotifyEntry* OvmsNotifyType::FindEntry(uint32_t id)
 
 void OvmsNotifyType::MarkRead(size_t reader, OvmsNotifyEntry* entry)
   {
-  entry->m_readers.reset(reader);
+  OvmsRecMutexLock lock(&m_mutex);
+  entry->m_pendingreaders &= ~(1ul << reader);
   Cleanup(entry);
   }
 
-void OvmsNotifyType::Cleanup(OvmsNotifyEntry* entry)
+void OvmsNotifyType::Cleanup(OvmsNotifyEntry* entry, NotifyEntryMap_t::iterator* next /*=NULL*/)
   {
   if (entry->IsAllRead())
     {
     // We can cleanup...
     auto k = m_entries.find(entry->m_id);
     if (k != m_entries.end())
-       {
-       m_entries.erase(k);
-       }
+      {
+      NotifyEntryMap_t::iterator it = m_entries.erase(k);
+      if (next) *next = it;
+      }
     if (MyNotify.m_trace)
       ESP_LOGI(TAG,"Cleanup type %s id %d",m_name,entry->m_id);
     delete entry;
@@ -407,6 +430,7 @@ OvmsNotify::~OvmsNotify()
 size_t OvmsNotify::RegisterReader(const char* caller, int verbosity, OvmsNotifyCallback_t callback,
                                   bool configfiltered/*=false*/, OvmsNotifyFilterCallback_t filtercallback/*=NULL*/)
   {
+  OvmsRecMutexLock lock(&m_mutex);
   size_t reader = m_nextreader++;
 
   m_readers[reader] = new OvmsNotifyCallbackEntry(caller, reader, verbosity, callback, configfiltered, filtercallback);
@@ -417,11 +441,13 @@ size_t OvmsNotify::RegisterReader(const char* caller, int verbosity, OvmsNotifyC
 void OvmsNotify::RegisterReader(size_t reader, const char* caller, int verbosity, OvmsNotifyCallback_t callback,
                                 bool configfiltered/*=false*/, OvmsNotifyFilterCallback_t filtercallback/*=NULL*/)
   {
+  OvmsRecMutexLock lock(&m_mutex);
   m_readers[reader] = new OvmsNotifyCallbackEntry(caller, reader, verbosity, callback, configfiltered, filtercallback);
   }
 
 void OvmsNotify::ClearReader(size_t reader)
   {
+  OvmsRecMutexLock lock(&m_mutex);
   auto k = m_readers.find(reader);
   if (k != m_readers.end())
     {
@@ -438,6 +464,7 @@ void OvmsNotify::ClearReader(size_t reader)
 
 size_t OvmsNotify::CountReaders()
   {
+  OvmsRecMutexLock lock(&m_mutex);
   return m_readers.size();
   }
 
@@ -452,6 +479,7 @@ OvmsNotifyType* OvmsNotify::GetType(const char* type)
 
 void OvmsNotify::NotifyReaders(OvmsNotifyType* type, OvmsNotifyEntry* entry)
   {
+  OvmsRecMutexLock lock(&m_mutex);
   for (OvmsNotifyCallbackMap_t::iterator itc=m_readers.begin(); itc!=m_readers.end(); ++itc)
     {
     OvmsNotifyCallbackEntry* mc = itc->second;
@@ -459,18 +487,19 @@ void OvmsNotify::NotifyReaders(OvmsNotifyType* type, OvmsNotifyEntry* entry)
       {
       // deliver notification:
       if (mc->m_callback(type,entry) == true)
-        entry->m_readers.reset(mc->m_reader);
+        entry->m_pendingreaders &= ~(1ul << mc->m_reader);
       }
     else
       {
       // in case the acceptance filter changed since queueing:
-      entry->m_readers.reset(mc->m_reader);
+      entry->m_pendingreaders &= ~(1ul << mc->m_reader);
       }
     }
   }
 
 bool OvmsNotify::HasReader(const char* type, const char* subtype, size_t size)
   {
+  OvmsRecMutexLock lock(&m_mutex);
   OvmsNotifyType* mt = GetType(type);
   for (OvmsNotifyCallbackMap_t::iterator itc=m_readers.begin(); itc!=m_readers.end(); ++itc)
     {
@@ -494,6 +523,7 @@ void OvmsNotify::RegisterType(const char* type)
 
 uint32_t OvmsNotify::NotifyString(const char* type, const char* subtype, const char* value)
   {
+  OvmsRecMutexLock lock(&m_mutex);
   OvmsNotifyType* mt = GetType(type);
   if (mt == NULL)
     {
@@ -520,7 +550,7 @@ uint32_t OvmsNotify::NotifyString(const char* type, const char* subtype, const c
 
   // create message:
   OvmsNotifyEntry* msg = (OvmsNotifyEntry*) new OvmsNotifyEntryString(subtype, value);
-  msg->m_readers = readers;
+  msg->m_pendingreaders = readers.to_ulong();
 
   ESP_LOGD(TAG, "Created entry type '%s' subtype '%s' size %d has %d readers pending", type, subtype, size, readers.count());
 
@@ -529,6 +559,7 @@ uint32_t OvmsNotify::NotifyString(const char* type, const char* subtype, const c
 
 uint32_t OvmsNotify::NotifyCommand(const char* type, const char* subtype, const char* cmd)
   {
+  OvmsRecMutexLock lock(&m_mutex);
   OvmsNotifyType* mt = GetType(type);
   if (mt == NULL)
     {
@@ -591,7 +622,7 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* subtype, const 
     if (readers.test(mc->m_reader))
       {
       msg = verbosity_msgs[mc->m_verbosity];
-      msg->m_readers.set(mc->m_reader);
+      msg->m_pendingreaders |= (1ul << mc->m_reader);
       }
     }
 
@@ -604,7 +635,7 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* subtype, const 
       continue; // already queued
     msg = itm->second;
     ESP_LOGD(TAG, "Created entry type '%s' subtype '%s' verbosity %d has %d readers pending",
-             type, subtype, itm->first, msg->m_readers.count());
+             type, subtype, itm->first, msg->CountPending());
     queue_id = mt->QueueEntry(msg);
     }
 

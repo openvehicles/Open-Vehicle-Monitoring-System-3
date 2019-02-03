@@ -24,6 +24,9 @@
  * THE SOFTWARE.
  */
 
+#include <sdkconfig.h>
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+
 //static const char *TAG = "v-kiasoulev";
 
 #include <stdio.h>
@@ -291,3 +294,5 @@ void OvmsVehicleKiaSoulEv::GetDashboardConfig(DashboardConfig& cfg)
         "{ from: 110, to: 125, className: 'red-band border' }]"
     "}]";
 }
+
+#endif //CONFIG_OVMS_COMP_WEBSERVER

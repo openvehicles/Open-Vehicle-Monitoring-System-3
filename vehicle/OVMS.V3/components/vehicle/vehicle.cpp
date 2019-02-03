@@ -335,7 +335,7 @@ void vehicle_charge_current(int verbosity, OvmsWriter* writer, OvmsCommand* cmd,
       writer->printf("Charge current limit set to %dA\n",limit);
       break;
     case OvmsVehicle::Fail:
-      writer->printf("Error: Could not sst charge current limit to %dA\n",limit);
+      writer->printf("Error: Could not set charge current limit to %dA\n",limit);
       break;
     default:
       writer->puts("Error: Charge current limit functionality not available");
@@ -1997,6 +1997,7 @@ void OvmsVehicle::BmsSetCellArrangementVoltage(int readings, int readingspermodu
   m_bms_vdevmaxs = new float[readings];
   if (m_bms_valerts != NULL) delete m_bms_valerts;
   m_bms_valerts = new short[readings];
+  m_bms_valerts_new = 0;
 
   m_bms_bitset_v.clear();
   m_bms_bitset_v.reserve(readings);

@@ -46,7 +46,7 @@ const char* SimcomState1Name(simcom::SimcomState1 state)
     case simcom::None:           return "None";
     case simcom::CheckPowerOff:  return "CheckPowerOff";
     case simcom::PoweringOn:     return "PoweringOn";
-    case simcom::PoweredOn:      return "PoweredOff";
+    case simcom::PoweredOn:      return "PoweredOn";
     case simcom::MuxStart:       return "MuxStart";
     case simcom::NetWait:        return "NetWait";
     case simcom::NetStart:       return "NetStart";
@@ -1081,8 +1081,8 @@ void simcom_setstate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     newstate = simcom::CheckPowerOff;
   else if (strcmp(statename,"PoweringOn")==0)
     newstate = simcom::PoweringOn;
-  else if (strcmp(statename,"PoweredOff")==0)
-    newstate = simcom::PoweredOff;
+  else if (strcmp(statename,"PoweredOn")==0)
+    newstate = simcom::PoweredOn;
   else if (strcmp(statename,"MuxStart")==0)
     newstate = simcom::MuxStart;
   else if (strcmp(statename,"NetWait")==0)
@@ -1127,7 +1127,7 @@ SimcomInit::SimcomInit()
   OvmsCommand* cmd_simcom = MyCommandApp.RegisterCommand("simcom","SIMCOM framework",simcom_status, "", 0, 1);
   cmd_simcom->RegisterCommand("tx","Transmit data on SIMCOM",simcom_tx, "", 1, INT_MAX, true);
   cmd_simcom->RegisterCommand("muxtx","Transmit data on SIMCOM MUX",simcom_muxtx, "<chan> <data>", 2, INT_MAX, true);
-  OvmsCommand* cmd_status = cmd_simcom->RegisterCommand("status","Show SIMCOM status",simcom_status, "", 0);
+  OvmsCommand* cmd_status = cmd_simcom->RegisterCommand("status","Show SIMCOM status",simcom_status, "[debug]", 0);
   cmd_status->RegisterCommand("debug","Show extended SIMCOM status",simcom_status, "", 0);
   cmd_simcom->RegisterCommand("cmd","Send SIMCOM AT command",simcom_cmd, "<command>", 1, INT_MAX, true);
 

@@ -35,7 +35,9 @@
 #include "ovms_config.h"
 #include "ovms_metrics.h"
 #include "ovms_command.h"
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
+#endif
 
 #include "rt_types.h"
 #include "rt_battmon.h"
@@ -440,6 +442,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     signed char twizy_button_cnt = 0;           // will count key presses (errors) in STOP mode (msg 081)
   
 
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   // --------------------------------------------------------------------------
   // Webserver subsystem
   //  - implementation: rt_web.(h,cpp)
@@ -451,12 +454,16 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
     static void WebConsole(PageEntry_t& p, PageContext_t& c);
     static void WebSevconMon(PageEntry_t& p, PageContext_t& c);
+    static void WebProfileEditor(PageEntry_t& p, PageContext_t& c);
+    static void WebDrivemodeConfig(PageEntry_t& p, PageContext_t& c);
 
   public:
     void GetDashboardConfig(DashboardConfig& cfg);
 
   public:
     static PageResult_t WebExtDashboard(PageEntry_t& p, PageContext_t& c, const std::string& hook);
+
+#endif //CONFIG_OVMS_COMP_WEBSERVER
   
 };
 

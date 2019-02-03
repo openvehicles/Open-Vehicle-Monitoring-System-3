@@ -349,11 +349,11 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
 
   // init commands:
   cmd_xks = MyCommandApp.RegisterCommand("xks","Kia Soul EV",NULL,"",0,0,true);
-  cmd_xks->RegisterCommand("trip","Show trip info since last parked", xks_trip_since_parked, 0,0, false);
-  cmd_xks->RegisterCommand("tripch","Show trip info since last charge", xks_trip_since_charge, 0,0, false);
-  cmd_xks->RegisterCommand("tpms","Tire pressure monitor", xks_tpms, 0,0, false);
-  cmd_xks->RegisterCommand("aux","Aux battery", xks_aux, 0,0, false);
-  cmd_xks->RegisterCommand("vin","VIN information", xks_vin, 0,0, false);
+  cmd_xks->RegisterCommand("trip","Show trip info since last parked", xks_trip_since_parked, "", 0,0, false);
+  cmd_xks->RegisterCommand("tripch","Show trip info since last charge", xks_trip_since_charge, "", 0,0, false);
+  cmd_xks->RegisterCommand("tpms","Tire pressure monitor", xks_tpms, "", 0,0, false);
+  cmd_xks->RegisterCommand("aux","Aux battery", xks_aux, "", 0,0, false);
+  cmd_xks->RegisterCommand("vin","VIN information", xks_vin, "", 0,0, false);
   cmd_xks->RegisterCommand("IGN1","IGN1 relay", xks_ign1, "<on/off><pin>",1,1, false);
   cmd_xks->RegisterCommand("IGN2","IGN2 relay", xks_ign2, "<on/off><pin>",1,1, false);
   cmd_xks->RegisterCommand("ACC","ACC relay", xks_acc_relay, "<on/off><pin>",1,1, false);
@@ -387,9 +387,10 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   MyConfig.RegisterParam("xks", "Kia Soul EV spesific settings.", true, true);
   ConfigChanged(NULL);
 
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
-
   WebInit();
+#endif
 
   // C-Bus
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
@@ -406,7 +407,9 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
 OvmsVehicleKiaSoulEv::~OvmsVehicleKiaSoulEv()
   {
   ESP_LOGI(TAG, "Shutdown Kia Soul EV vehicle module");
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   MyWebServer.DeregisterPage("/bms/cellmon");
+#endif
   }
 
 /**

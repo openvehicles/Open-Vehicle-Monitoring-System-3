@@ -1,0 +1,692 @@
+<!--
+  Twizy page plugin: Tuning Profile Editor
+  Note: included in firmware v3.2
+-->
+
+<style>
+.form-inline .form-control.slider-value {
+  width: 70px;
+}
+.radio-list {
+  height: 313px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 15px;
+}
+.radio-list .radio {
+  overflow: hidden;
+}
+.radio-list .key {
+  min-width: 20px;
+  display: inline-block;
+  text-align: center;
+  margin: 0 10px;
+}
+.radio-list kbd {
+  min-width: 60px;
+  display: inline-block;
+  text-align: center;
+  margin: 0 20px 0 10px;
+}
+.radio-list .radio label {
+  width: 100%;
+  text-align: left;
+  padding: 8px 30px;
+}
+.radio-list .radio label.active {
+  background-color: #337ab7;
+  color: #fff;
+  outline: none;
+}
+.radio-list .radio label.active input {
+  outline: none;
+}
+.night .radio-list .radio label:hover {
+  color: #fff;
+}
+</style>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">Tuning Profile <span id="headkey">Editor</span></div>
+  <div class="panel-body">
+    <form action="#">
+
+    <div class="form-group">
+      <div class="flex-group">
+        <button type="button" class="btn btn-default action-new">New</button>
+        <button type="button" class="btn btn-default action-load">Load…</button>
+        <input type="hidden" id="input-key" name="key" value="">
+        <input type="hidden" id="input-base64-reset" name="base64-reset" value="">
+        <input type="text" class="form-control font-monospace" placeholder="Base64 profile code"
+          name="base64" id="input-base64" value="" autocapitalize="none" autocorrect="off"
+          autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+
+    <ul class="nav nav-tabs">
+      <li class="active"><a data-toggle="tab" href="#tab-drive" aria-expanded="true">Drive</a></li>
+      <li class=""><a data-toggle="tab" href="#tab-recup" aria-expanded="false">Recup</a></li>
+      <li class=""><a data-toggle="tab" href="#tab-ramps" aria-expanded="false">Ramps</a></li>
+    </ul>
+    <div class="tab-content">
+
+      <div id="tab-drive" class="tab-pane section-drive active in">
+
+        <fieldset id="part-speed">
+          <legend>Speed</legend>
+          <div class="form-horizontal">
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-speed">Max speed:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="speed" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-warn">Warn speed:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="warn" /></div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset id="part-power">
+          <legend>Power</legend>
+          <div class="form-horizontal">
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-current">Current:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="current" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-torque">Torque:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="torque" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-power_low">Power low:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="power_low" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-power_high">Power high:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="power_high" /></div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset id="part-drive">
+          <legend>Drive</legend>
+          <div class="form-horizontal">
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-drive">Drive level:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="drive" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-autodrive_ref">Auto 100% ref:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="autodrive_ref" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-autodrive_minprc">Auto min level:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="autodrive_minprc" /></div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset id="part-tsmapd">
+          <legend>Torque/Speed-Map: Drive</legend>
+          <div class="form-horizontal">
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsd_prc1">Trq level 1:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsd_prc1" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsd_spd1">…at speed:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsd_spd1" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsd_prc2">Trq level 2:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsd_prc2" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsd_spd2">…at speed:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsd_spd2" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsd_prc3">Trq level 3:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsd_prc3" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsd_spd3">…at speed:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsd_spd3" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsd_prc4">Trq level 4:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsd_prc4" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsd_spd4">…at speed:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsd_spd4" /></div>
+            </div>
+          </div>
+        </fieldset>
+
+      </div>
+
+      <div id="tab-recup" class="tab-pane section-recup">
+
+        <fieldset id="part-recup">
+          <legend>Recup</legend>
+          <div class="form-horizontal">
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-neutral">Neutral level:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="neutral" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-brake">Brake level:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="brake" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-autorecup_ref">Auto 100% ref:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="autorecup_ref" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-autorecup_minprc">Auto min level:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="autorecup_minprc" /></div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset id="part-tsmapn">
+          <legend>Torque/Speed-Map: Neutral</legend>
+          <div class="form-horizontal">
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsn_prc1">Trq level 1:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsn_prc1" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsn_spd1">…at speed:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsn_spd1" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsn_prc2">Trq level 2:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsn_prc2" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsn_spd2">…at speed:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsn_spd2" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsn_prc3">Trq level 3:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsn_prc3" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsn_spd3">…at speed:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsn_spd3" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsn_prc4">Trq level 4:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsn_prc4" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsn_spd4">…at speed:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsn_spd4" /></div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset id="part-tsmapb">
+          <legend>Torque/Speed-Map: Brake</legend>
+          <div class="form-horizontal">
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsb_prc1">Trq level 1:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsb_prc1" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsb_spd1">…at speed:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsb_spd1" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsb_prc2">Trq level 2:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsb_prc2" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsb_spd2">…at speed:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsb_spd2" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsb_prc3">Trq level 3:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsb_prc3" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsb_spd3">…at speed:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsb_spd3" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsb_prc4">Trq level 4:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsb_prc4" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-tsb_spd4">…at speed:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="tsb_spd4" /></div>
+            </div>
+          </div>
+        </fieldset>
+
+      </div>
+
+      <div id="tab-ramps" class="tab-pane section-ramps">
+
+        <fieldset id="part-rampsglobal">
+          <legend>General</legend>
+          <div class="form-horizontal">
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-ramplimit_accel">Limit up:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="ramplimit_accel" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-ramplimit_decel">Limit down:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="ramplimit_decel" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-smooth">Smoothing:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="smooth" /></div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset id="part-ramps">
+          <legend>Ramp Speeds</legend>
+          <div class="form-horizontal">
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-ramp_start">Start/reverse:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="ramp_start" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-ramp_accel">Accelerate:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="ramp_accel" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-ramp_decel">Decelerate:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="ramp_decel" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-ramp_neutral">Neutral:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="ramp_neutral" /></div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="input-ramp_brake">Brake:</label>
+              <div class="col-sm-10"><div class="form-control slider" id="ramp_brake" /></div>
+            </div>
+          </div>
+        </fieldset>
+
+      </div>
+
+    </div>
+
+    <br>
+    <div class="form-horizontal">
+      <div class="form-group">
+        <label class="control-label col-sm-2" for="input-label">Label:</label>
+        <div class="col-sm-10">
+          <input type="text" class="form-control" placeholder="Short button label"
+            name="label" id="input-label" value="" autocapitalize="none" autocorrect="off"
+            autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="control-label col-sm-2" for="input-title">Title:</label>
+        <div class="col-sm-10">
+          <input type="text" class="form-control" placeholder="optional title/name"
+            name="title" id="input-title" value="" autocapitalize="none" autocorrect="off"
+            autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+    </div>
+
+    <br>
+    <div class="text-center">
+      <button type="button" class="btn btn-default action-reset">Reset</button>
+      <button type="button" class="btn btn-default action-saveas">Save as…</button>
+      <button type="button" class="btn btn-primary action-save">Save</button>
+    </div>
+
+    </form>
+  </div>
+</div>
+
+<div id="key-dialog" />
+
+<script>
+(function(){
+
+  // init sliders:
+
+  $('#speed').slider({ unit:'kph', min:6, max:120, default:80, value:80, checked:false });
+  $('#warn').slider({ unit:'kph', min:6, max:120, default:89, value:89, checked:false });
+
+  $('#current').slider({ unit:'%', min:10, max:123, default:100, value:100, checked:false });
+  $('#torque').slider({ unit:'%', min:10, max:130, default:100, value:100, checked:false });
+  $('#power_low').slider({ unit:'%', min:10, max:139, default:100, value:100, checked:false });
+  $('#power_high').slider({ unit:'%', min:10, max:130, default:100, value:100, checked:false });
+
+  $('#drive').slider({ unit:'%', min:10, max:100, default:100, value:100, checked:false });
+  $('#autodrive_ref').slider({ unit:'kW', min:0, max:25, step:0.1, default:0, value:0, checked:false });
+  $('#autodrive_minprc').slider({ unit:'%', min:0, max:100, default:0, value:0, checked:false });
+
+  $('#tsd_prc1').slider({ unit:'%', min:0, max:100, default:100, value:100, checked:false });
+  $('#tsd_spd1').slider({ unit:'kph', min:0, max:120, default:33, value:33, checked:false });
+  $('#tsd_prc2').slider({ unit:'%', min:0, max:100, default:100, value:100, checked:false });
+  $('#tsd_spd2').slider({ unit:'kph', min:0, max:120, default:39, value:39, checked:false });
+  $('#tsd_prc3').slider({ unit:'%', min:0, max:100, default:100, value:100, checked:false });
+  $('#tsd_spd3').slider({ unit:'kph', min:0, max:120, default:50, value:50, checked:false });
+  $('#tsd_prc4').slider({ unit:'%', min:0, max:100, default:100, value:100, checked:false });
+  $('#tsd_spd4').slider({ unit:'kph', min:0, max:120, default:66, value:66, checked:false });
+
+  $('#neutral').slider({ unit:'%', min:0, max:100, default:18, value:18, checked:false });
+  $('#brake').slider({ unit:'%', min:0, max:100, default:18, value:18, checked:false });
+  $('#autorecup_ref').slider({ unit:'kW', min:0, max:25, step:0.1, default:0, value:0, checked:false });
+  $('#autorecup_minprc').slider({ unit:'%', min:0, max:100, default:0, value:0, checked:false });
+
+  $('#tsn_prc1').slider({ unit:'%', min:0, max:100, default:100, value:100, checked:false });
+  $('#tsn_spd1').slider({ unit:'kph', min:0, max:120, default:33, value:33, checked:false });
+  $('#tsn_prc2').slider({ unit:'%', min:0, max:100, default:80, value:80, checked:false });
+  $('#tsn_spd2').slider({ unit:'kph', min:0, max:120, default:39, value:39, checked:false });
+  $('#tsn_prc3').slider({ unit:'%', min:0, max:100, default:50, value:50, checked:false });
+  $('#tsn_spd3').slider({ unit:'kph', min:0, max:120, default:50, value:50, checked:false });
+  $('#tsn_prc4').slider({ unit:'%', min:0, max:100, default:20, value:20, checked:false });
+  $('#tsn_spd4').slider({ unit:'kph', min:0, max:120, default:66, value:66, checked:false });
+
+  $('#tsb_prc1').slider({ unit:'%', min:0, max:100, default:100, value:100, checked:false });
+  $('#tsb_spd1').slider({ unit:'kph', min:0, max:120, default:33, value:33, checked:false });
+  $('#tsb_prc2').slider({ unit:'%', min:0, max:100, default:80, value:80, checked:false });
+  $('#tsb_spd2').slider({ unit:'kph', min:0, max:120, default:39, value:39, checked:false });
+  $('#tsb_prc3').slider({ unit:'%', min:0, max:100, default:50, value:50, checked:false });
+  $('#tsb_spd3').slider({ unit:'kph', min:0, max:120, default:50, value:50, checked:false });
+  $('#tsb_prc4').slider({ unit:'%', min:0, max:100, default:20, value:20, checked:false });
+  $('#tsb_spd4').slider({ unit:'kph', min:0, max:120, default:66, value:66, checked:false });
+
+
+  $('#ramplimit_accel').slider({ unit:'%', min:1, max:100, default:30, value:30, checked:false });
+  $('#ramplimit_decel').slider({ unit:'%', min:0, max:100, default:30, value:30, checked:false });
+  $('#smooth').slider({ unit:'%', min:0, max:100, default:70, value:70, checked:false });
+
+  $('#ramp_start').slider({ unit:'‰', min:1, max:250, default:40, value:40, checked:false });
+  $('#ramp_accel').slider({ unit:'%', min:1, max:100, default:25, value:25, checked:false });
+  $('#ramp_decel').slider({ unit:'%', min:0, max:100, default:20, value:20, checked:false });
+  $('#ramp_neutral').slider({ unit:'%', min:0, max:100, default:40, value:40, checked:false });
+  $('#ramp_brake').slider({ unit:'%', min:0, max:100, default:40, value:40, checked:false });
+
+  // profile handling:
+
+  const keys = [
+    "checksum",
+    "speed",
+    "warn",
+    "torque",
+    "power_low",
+    "power_high",
+    "drive",
+    "neutral",
+    "brake",
+    "tsd_spd1",
+    "tsd_spd2",
+    "tsd_spd3",
+    "tsd_spd4",
+    "tsd_prc1",
+    "tsd_prc2",
+    "tsd_prc3",
+    "tsd_prc4",
+    "tsn_spd1",
+    "tsn_spd2",
+    "tsn_spd3",
+    "tsn_spd4",
+    "tsn_prc1",
+    "tsn_prc2",
+    "tsn_prc3",
+    "tsn_prc4",
+    "tsb_spd1",
+    "tsb_spd2",
+    "tsb_spd3",
+    "tsb_spd4",
+    "tsb_prc1",
+    "tsb_prc2",
+    "tsb_prc3",
+    "tsb_prc4",
+    "ramp_start",
+    "ramp_accel",
+    "ramp_decel",
+    "ramp_neutral",
+    "ramp_brake",
+    "smooth",
+    "brakelight_on",
+    "brakelight_off",
+    "ramplimit_accel",
+    "ramplimit_decel",
+    "autorecup_minprc",
+    "autorecup_ref",
+    "autodrive_minprc",
+    "autodrive_ref",
+    "current",
+  ];
+
+  const scale = {
+    "autodrive_ref": 0.1,
+    "autorecup_ref": 0.1,
+  };
+
+  var profile = {};
+
+  var plist = [
+    { label: "–", title: "Working Set" },
+    { label: "PWR", title: "Power" },
+    { label: "ECO", title: "Economy" },
+    { label: "ICE", title: "Winter" },
+  ];
+
+  // load profile list:
+  var plistloader = loadcmd('config list xrt').then(function(data) {
+    var lines = data.split('\n'), line, i, key;
+    for (i = 0; i < lines.length; i++) {
+      line = lines[i].match(/profile([0-9]{2})\.?([^:]*): (.*)/);
+      if (line && line.length == 4) {
+        key = Number(line[1]);
+        if (key < 1 || key > 99) continue;
+        if (!plist[key]) plist[key] = {};
+        plist[key][line[2]||"profile"] = line[3];
+      }
+    }
+  });
+
+  // current control → power ranges:
+  function currentControl(on, trigger) {
+		if (on) {
+			$("#input-torque, #input-power_low, #input-power_high").slider({ max: 254 });
+		} else {
+			$("#input-torque, #input-power_high").slider({ max: 130 });
+			$("#input-power_low").slider({ max: 139 });
+		}
+  }
+  $('#input-current').on('change', function(ev) {
+    currentControl(this.checked);
+    $("#input-torque, #input-power_low, #input-power_high").trigger('change');
+  });
+
+  // load profile into sliders:
+  function loadProfile() {
+    currentControl(profile["current"] >= 0);
+    $.map(profile, function(val, key) {
+      $('#input-'+key).slider({ value: (val >= 0) ? (val * (scale[key]||1)) : null, checked: (val >= 0) });
+    });
+  }
+
+  // calculate profile checksum:
+  function calcChecksum() {
+    var checksum, i;
+    checksum = 0x0101;
+    for (i=1; i<keys.length; i++)
+      checksum += profile[keys[i]] + 1;
+    if ((checksum & 0x0ff) == 0)
+      checksum >>= 8;
+    return (checksum & 0x0ff) - 1;
+  }
+
+  // load a base64 string into profile:
+  function loadBase64(base64) {
+    var bin = atob(base64);
+    $.map(keys, function(key, i) { profile[key] = (bin.charCodeAt(i)||0) - 1; });
+    if (profile["checksum"] == calcChecksum()) {
+      loadProfile();
+      return true;
+    } else {
+      confirmdialog("Profile Error", "Invalid base64 code (checksum mismatch)", ["Close"]);
+      return false;
+    }
+  }
+
+  // make a base64 string from profile:
+  function makeBase64() {
+    profile["checksum"] = calcChecksum();
+    var u8 = new Uint8Array(keys.length);
+    $.map(keys, function(key, i) { u8[i] = profile[key] + 1; });
+    return btoa(String.fromCharCode.apply(null, u8));
+  }
+
+  // load a profile:
+  function loadKey(key) {
+    if (key < 0 || key > 99) return;
+    plistloader.then(function() {
+      $('#input-label').val(plist[key] && plist[key]["label"] || "");
+      $('#input-title').val(plist[key] && plist[key]["title"] || "");
+      loadcmd('xrt cfg get ' + key).fail(function(request, textStatus, errorThrown) {
+        confirmdialog("Load Profile", xhrErrorInfo(request, textStatus, errorThrown), ["Close"]);
+      }).done(function(res) {
+        var base64;
+        if (res.match(/error/i))
+          base64 = "AQ";
+        else
+          base64 = res.substr(res.lastIndexOf(' ')+1);
+        if (loadBase64(base64)) {
+          $('#input-key').val(key);
+          $('#input-base64, #input-base64-reset').val(base64);
+          $('#headkey').text('#' + key);
+        }
+      });
+    });
+  }
+
+  // save profile:
+  function saveKey(key) {
+    if (key < 0 || key > 99) return;
+    var base64 = $('#input-base64').val(),
+      label = $('#input-label').val().replace(/"/g, '\\"'),
+      title = $('#input-title').val().replace(/"/g, '\\"'),
+      ckey = 'profile' + ((key<10)?'0':'') + key;
+    var cmd = 'xrt cfg set ' + key + ' ' + base64 + ' "' + label + '" "' + title + '"';
+    loadcmd(cmd).fail(function(request, textStatus, errorThrown) {
+      confirmdialog("Save Profile", xhrErrorInfo(request, textStatus, errorThrown), ["Close"]);
+    }).done(function(res) {
+      confirmdialog("Save Profile", res, ["Close"]);
+      if (!res.match(/error/i)) {
+        if (key > 0) {
+          if (!plist[key]) plist[key] = {};
+          plist[key]["label"] = label;
+          plist[key]["title"] = title;
+        }
+        $('#input-key').val(key);
+        $('#input-base64-reset').val(base64);
+        $('#headkey').text('#' + key);
+      }
+    });
+  }
+
+  // base64 input:
+  $('#input-base64').on('change', function(ev) {
+    var base64 = $(this).val() || "AQ";
+    if (loadBase64(base64))
+      $('#input-base64-reset').val(base64);
+  });
+
+  // update profile & base64 on slider changes:
+  $('.slider-value').on('change', function(ev) {
+    var key = this.name;
+    var val = Math.max(this.min, Math.min(this.max, 1*this.value));
+    profile[key] = this.checked ? (val / (scale[key]||1)) : -1;
+    var base64 = makeBase64();
+    $('#input-base64').val(base64);
+  });
+
+  // prep key dialog:
+  $('#key-dialog').dialog({
+    show: false,
+    onShow: function(input) {
+      var $this = $(this);
+      $this.addClass("loading");
+      plistloader.then(function(data) {
+        var curkey = $('#input-key').val() || 0, i, label, title;
+        $plist = $('<div class="radio-list" data-toggle="buttons" />');
+        for (i = 0; i <= Math.min(99, plist.length + 2); i++) {
+          if (plist[i] && (i==0 || plist[i].profile)) {
+            label = plist[i].label || "–";
+            title = plist[i].title || (plist[i].profile.substr(0, 10) + "…");
+          } else {
+            label = "–";
+            title = "–new–";
+          }
+          $plist.append('<div class="radio"><label class="btn">' +
+            '<input type="radio" name="key" value="' + i + '"><span class="key">' +
+            ((i==0) ? "WS" : ("#" + ((i<10)?'0':'') + i)) + '</span> <kbd>' +
+            encode_html(label) + '</kbd> ' + encode_html(title) + '</label></div>');
+        }
+        $this.find('.modal-body').append($plist).find('input[value="'+curkey+'"]')
+          .prop("checked", true).parent().addClass("active");
+        $plist
+          .on('dblclick', 'label.btn', function(ev) { $this.dialog('triggerButton', 1); })
+          .on('keypress', function(ev) { if (ev.which==13) $this.dialog('triggerButton', 1); });
+        $this.removeClass("loading");
+      });
+    },
+    onShown: function(input) {
+      $(this).find('.btn.active').focus();
+    },
+    onHide: function(input) {
+      var $this = $(this), dlg = $this.data("dialog");
+      var key = $this.find('input[name="key"]:checked').val();
+      if (key !== undefined && input.button && input.button.index)
+        dlg.options.onAction.call(this, key);
+    },
+  });
+
+  // buttons:
+  $('.action-new').on('click', function(ev) {
+    $('.slider').slider({ value: null });
+    $('#headkey').text('Editor');
+    $('#input-base64, #input-label, #input-title').val('').trigger('change');
+  });
+  $('.action-reset').on('click', function(ev) {
+    $('#input-base64').val($('#input-base64-reset').val()).trigger('change');
+  });
+  $('.action-load').on('click', function(ev) {
+    $('#key-dialog').dialog({
+      show: true, title: 'Load Profile', body: '',
+      buttons: [{ label: 'Cancel', btnClass: 'default' },{ label: 'Load', btnClass: 'primary' }],
+      onAction: function(key) { loadKey(key) },
+    });
+  });
+  $('.action-saveas').on('click', function(ev) {
+    $('#key-dialog').dialog({
+      show: true, title: 'Save Profile', body: '',
+      buttons: [{ label: 'Cancel', btnClass: 'default' },{ label: 'Save', btnClass: 'primary' }],
+      onAction: function(key) { saveKey(key) },
+    });
+  });
+  $('.action-save').on('click', function(ev) {
+    var key = $('#input-key').val();
+    if (key === "")
+      $('.action-saveas').trigger('click');
+    else
+      saveKey(key);
+  });
+
+  // start: load profile / open load dialog:
+  if (page.params["key"] !== undefined)
+    loadKey(page.params["key"]);
+  else
+    $('.action-load').trigger('click');
+
+})();
+</script>
