@@ -204,6 +204,22 @@ extram::string mp_encode(const extram::string text)
   }
 
 /**
+ * stripcr:
+ *  - replace '\r\n' by '\n'
+ */
+extram::string stripcr(const extram::string& text)
+  {
+  extram::string res;
+  res.reserve(text.length());
+  for (int i = 0; i < text.length(); i++)
+    {
+    if (text[i] != '\r' || (i < text.length()-1 && text[i+1] != '\n'))
+      res += text[i];
+    }
+  return res;
+  }
+
+/**
  * startsWith: std::string prefix check
  */
 bool startsWith(const std::string& haystack, const std::string& needle)
@@ -420,11 +436,12 @@ bool path_exists(const std::string path)
 std::string mqtt_topic(const std::string text)
   {
   std::string buf;
+  buf.reserve(text.size());
   for (int i=0; i<text.size(); i++)
     {
     switch(text[i])
       {
-      case '.':         buf += "/"; break;
+      case '.':         buf += '/'; break;
       default:          buf += text[i]; break;
       }
     }

@@ -3,7 +3,8 @@
 const monthnames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const supportsTouch = 'ontouchstart' in window || navigator.msMaxTouchPoints;
 
-var loggedin = false;
+if (window.loggedin == undefined)
+  window.loggedin = false;
 
 
 /**
@@ -98,10 +99,24 @@ function reloadpage() {
   loaduri("#main", "get", uri, {});
 }
 
+function reloadmenu() {
+  $("#menu").load("/menu");
+}
+
+function login(dsturi) {
+  if (!dsturi)
+    dsturi = page.uri || "/home";
+  loadPage("/login?uri=" + encodeURIComponent(dsturi));
+}
+
+function logout() {
+  loadPage("/logout");
+}
+
 function xhrErrorInfo(request, textStatus, errorThrown) {
   var txt = "";
   if (request.status == 401 || request.status == 403)
-    txt = "Session expired. <a class=\"btn btn-sm btn-default\" href=\"javascript:reloadpage()\">Login</a>";
+    txt = "Unauthorized. <a class=\"btn btn-sm btn-default\" href=\"javascript:login()\">Login</a>";
   else if (request.status >= 400)
     txt = "Error " + request.status + " " + request.statusText;
   else if (textStatus)
@@ -115,6 +130,7 @@ function setcontent(tgt, uri, text){
   if (!tgt || !tgt.length) return;
 
   tgt.find(".receiver").unsubscribe();
+  tgt.chart("destroy");
 
   if (tgt[0].id == "main") {
     $("#nav .dropdown.open .dropdown-toggle").dropdown("toggle");
@@ -123,7 +139,7 @@ function setcontent(tgt, uri, text){
     var mi = $("#nav [href='"+uri+"']");
     mi.parents("li").addClass("active");
     tgt[0].scrollIntoView();
-    tgt.html(text).hide().fadeIn(50);
+    tgt.html(text);
     var $p = tgt.find(">.panel");
     if ($p.length == 1) $p.addClass("panel-single");
     if (mi.length > 0)
@@ -132,11 +148,11 @@ function setcontent(tgt, uri, text){
       document.title = "OVMS Console";
   } else {
     tgt[0].scrollIntoView();
-    tgt.html(text).hide().fadeIn(50);
+    tgt.html(text);
   }
 
   tgt.find(".get-window-resize").trigger('window-resize');
-  tgt.find(".receiver").subscribe();
+  tgt.find(".receiver").subscribe().trigger("msg:metrics", metrics);
   tgt.trigger("load");
 }
 
@@ -187,12 +203,18 @@ function standardTextFilter(msg) {
     return $('<div/>').text(msg.text).html();
 }
 
-function loadcmd(command, target, filter) {
+function loadcmd(command, target, filter, timeout) {
   var $output, outmode = "";
 
+  if (!command) return null;
+
+  if (typeof filter == "number") {
+    timeout = filter; filter = null;
+  }
   if (typeof target == "function") {
     filter = target; target = null;
   }
+
   if (target == null) {
     $output = $(null);
   }
@@ -209,8 +231,14 @@ function loadcmd(command, target, filter) {
   if (!filter)
     filter = standardTextFilter;
 
-  var lastlen = 0, xhr, timeouthd, timeout = 20;
-  if (/^(test |ota |co .* scan)/.test(command)) timeout = 300;
+  if (!timeout) {
+    if (/^(test |ota |copen .* scan)/.test(command))
+      timeout = 300;
+    else
+      timeout = 20;
+  }
+
+  var lastlen = 0, xhr, timeouthd;
   var checkabort = function() {
     if (xhr.readyState != 4)
       xhr.abort("timeout");
@@ -221,7 +249,7 @@ function loadcmd(command, target, filter) {
       return;
     }
     if (outmode == "") { $output.empty(); outmode = "+"; }
-    var autoscroll = ($output.get(0).scrollTop + $output.height()) >= $output.get(0).scrollHeight;
+    var autoscroll = ($output.get(0).scrollTop + $output.innerHeight()) >= $output.get(0).scrollHeight;
     $output.append(addhtml);
     $output.closest('.get-window-resize').trigger('window-resize');
     if (autoscroll) $output.scrollTop($output.get(0).scrollHeight);
@@ -277,11 +305,11 @@ var shellhist = [""], shellhpos = 0;
 function initSocketConnection(){
   ws = new WebSocket('ws://' + location.host + '/msg');
   ws.onopen = function(ev) {
-    console.log(ev);
+    console.log("WebSocket OPENED", ev);
     $(".receiver").subscribe();
   };
-  ws.onerror = function(ev) { console.log(ev); };
-  ws.onclose = function(ev) { console.log(ev); };
+  ws.onerror = function(ev) { console.log("WebSocket ERROR", ev); };
+  ws.onclose = function(ev) { console.log("WebSocket CLOSED", ev); };
   ws.onmessage = function(ev) {
     var msg;
     try {
@@ -354,14 +382,14 @@ function monitorUpdate(){
 function processNotification(msg) {
   var opts = { timeout: 0 };
   if (msg.type == "info") {
-    opts.title = '<span class="lead text-info"><i>ⓘ</i>' + msg.subtype + ' Info</span>';
+    opts.title = '<span class="lead text-info"><i>ⓘ</i> ' + msg.subtype + ' Info</span>';
     opts.timeout = 60;
   }
   else if (msg.type == "alert") {
-    opts.title = '<span class="lead text-danger"><i>⚠</i>' + msg.subtype + ' Alert</span>';
+    opts.title = '<span class="lead text-danger"><i>⚠</i> ' + msg.subtype + ' Alert</span>';
   }
   else if (msg.type == "error") {
-    opts.title = '<span class="lead text-warning"><i>⛍</i>' + msg.subtype + ' Error</span>';
+    opts.title = '<span class="lead text-warning"><i>⛍</i> ' + msg.subtype + ' Error</span>';
   }
   else
     return;
@@ -1128,29 +1156,183 @@ $.fn.listEditor = function(op, data){
       $(this).trigger('list:'+op, data);
     } else {
       // init:
-      var el_itemid = $(this).find('.list-item-id');
-      var el_body = $(this).find('.list-items');
-      var el_template = $(this).find('template').html();
-      $(this).on('list:addItem', function(evt, data) {
+      var $this = $(this);
+      var el_itemid = $this.find('.list-item-id');
+      var el_body = $this.find('.list-items');
+      var el_template = $this.find('template').html();
+
+      $this.on('list:addItem', function(evt, data) {
         var id = Number(el_itemid.val()) + 1;
         el_itemid.val(id);
-        var txt = el_template.replace(/ITEM_ID/g, id);
-        if (data) {
-          for (key in data)
-            txt = txt.replace(new RegExp('ITEM_'+key,'g'), encode_html(data[key]));
-        }
+        data = $.extend({ MODE: "upd" }, data);
+        var txt = el_template.replace(/ITEM_ID/g, id).replace(/ITEM_MODE/g, data.MODE);
+        for (key in data)
+          txt = txt.replace(new RegExp('ITEM_'+key,'g'), encode_html(data[key]));
         txt = txt.replace(/ITEM_\w+/g, '');
-        $(txt).appendTo(el_body);
+        var $el = $(txt).appendTo(el_body);
+
+        $el.find("option[data-value]").each(function(){
+          $(this).prop("selected", $(this).val() == $(this).data("value"));
+        });
+        $el.find("input[data-value]").each(function(){
+          var sel = $(this).val() == $(this).data("value");
+          $(this).prop("checked", sel);
+          if (sel) $(this).parent().addClass("active");
+          else $(this).parent().removeClass("active");
+        });
+
+        var discl = (data.MODE == "add") ? "add-disabled" : "list-disabled";
+        $el.find("select."+discl).each(function(){
+          $(this).prop("disabled", true).append($('<input type="hidden">')
+            .attr("name", $(this).attr("name")).attr("value", $(this).val()));
+        });
+        $el.find("input."+discl).prop("readonly", true);
+        $el.find("button."+discl).prop("disabled", true);
+
+        $this.trigger('list:validate');
       });
-      $(this).on('click', '.list-item-add', function(evt) {
-        var data = JSON.parse($(this).data('preset') || '{}');
+
+      $this.on('change keyup', 'input,select,textarea', function(ev) {
+        $this.trigger('list:validate');
+      });
+
+      $this.on('click', '.list-item-add', function(evt) {
+        var data = $.extend({ MODE: "add" }, $(this).data('preset'));
         $(this).trigger('list:addItem', data);
       });
-      $(this).on('click', '.list-item-del', function(evt) {
+
+      $this.on('click', '.list-item-del', function(evt) {
         $(this).closest('.list-item').remove();
+        $this.trigger('list:validate');
       });
+
     }
   });
+};
+
+
+/**
+ * Slider widget plugin
+ */
+
+$.fn.slider = function(options) {
+  return this.each(function() {
+    var $sld = $(this).closest('.slider'), data = $.extend({ checked: true }, $sld.data());
+    var opts = (typeof options == "object") ? options : data;
+    // init?
+    if ($sld.children().length == 0) {
+      var id = $sld.attr('id');
+      $sld.html('\
+        <div class="slider-control form-inline">\
+          <input class="slider-enable" type="checkbox" checked>\
+          <input class="form-control slider-value" type="number" id="input-ID" name="ID">\
+          <span class="slider-unit">UNIT</span>\
+          <input class="btn btn-default slider-down" type="button" value="➖">\
+          <input class="btn btn-default slider-set" type="button" value="◈">\
+          <input class="btn btn-default slider-up" type="button" value="➕">\
+        </div>\
+        <input class="slider-input" type="range">'
+        .replace(/ID/g, id).replace(/UNIT/g, opts.unit||''));
+    }
+    // update:
+    var $inp = $sld.find('.slider-value, .slider-input'), $cb = $sld.find('.slider-enable'),
+      $bt = $sld.find('input[type=button]'), $sb = $bt.filter('.slider-set'),
+      oldchk = data.checked, chk = (opts.checked != null) ? opts.checked : oldchk,
+      dis = (opts.disabled != null) ? opts.disabled : ($sld.prop('disabled')==true);
+    $.extend(data, opts);
+    if (opts.unit != null) $sld.find('.slider-unit').html(opts.unit);
+    if (opts.min != null) $inp.attr('min', opts.min);
+    if (opts.max != null) $inp.attr('max', opts.max);
+    if (opts.step != null) $inp.attr('step', opts.step);
+    if (opts.default != null) {
+      if ($sb.length == 1)
+        $sb.data('set', opts.default);
+      if (!chk)
+        $inp.val(opts.default);
+      data.default = Math.max(data.min, Math.min(data.max, 1*opts.default));
+    }
+    if (opts.value !== undefined) {
+      if (opts.value === null)
+        data.value = data.uservalue = data.default;
+      else
+        data.value = Math.max(data.min, Math.min(data.max, 1*opts.value));
+      if (chk)
+        $inp.attr('value', data.value).val(data.value);
+      if (chk || data.uservalue == null)
+        data.uservalue = data.value;
+    }
+    if (chk != oldchk) {
+      $cb.prop('checked', chk);
+      if (chk) {
+        if (opts.reset || data.reset)
+          data.value = data.default;
+        else
+          data.value = data.uservalue;
+      } else {
+        data.uservalue = data.value;
+        data.value = data.default;
+      }
+      $inp.val(data.value);
+    }
+    $cb.prop('disabled', dis);
+    $bt.prop('disabled', !chk || dis);
+    $inp.prop('disabled', !chk || dis).prop('checked', chk);
+    if (dis)
+      $sld.addClass('disabled').prop('disabled', true).attr('disabled', true);
+    else
+      $sld.removeClass('disabled').prop('disabled', false).attr('disabled', false);
+    $sld.data(data);
+  });
+};
+
+
+/**
+ * Highcharts
+ */
+
+var highchartsLoader;
+
+$.fn.chart = function(options) {
+  if (this.length == 0)
+    return this;
+  var $this = this;
+  if (options === "destroy") {
+    // destroy:
+    var $cl = this.find(".has-chart").add(this.filter(".has-chart"));
+    $cl.each(function() {
+      var chart = $(this).data("chart");
+      if (typeof chart == "object") {
+        $(this).data("chart", null);
+        chart.destroy();
+      }
+    });
+  } else {
+    // init:
+    function init_charts() {
+      $this.each(function() {
+        var chart = Highcharts.chart(this, options, function() {
+          if (this.userOptions && this.userOptions.onUpdate)
+            this.userOptions.onUpdate.call(this, metrics);
+        });
+        $(this).data("chart", chart).addClass("has-chart get-window-resize").on("window-resize", function() {
+          $(this).data("chart").reflow();
+        });
+      });
+    }
+    if (window.Highcharts) {
+      init_charts();
+    } else if (highchartsLoader) {
+      highchartsLoader.then(init_charts);
+    } else {
+      highchartsLoader = $.ajax({
+        url: (window.assets && window.assets["charts_js"]) || "/assets/charts.js?v=6.0.7",
+        dataType: "script",
+        cache: true,
+        success: function(){ init_charts(); }
+      });
+    }
+  }
+  return this;
 };
 
 
@@ -1222,6 +1404,24 @@ $(function(){
       $(this).closest(".modal").removeClass("fade").modal("hide");
     if (!loaduri(target, method, uri, data))
       return true;
+    event.preventDefault();
+    event.stopPropagation();
+    return false;
+  });
+  $('body').on('submit', 'form[target^="#"]', function(event) {
+    var $frm = $(this);
+    var method = $frm.attr("method") || "get";
+    var uri = $frm.attr("action");
+    var target = $frm.attr("target");
+    var data = $frm.serialize();
+    var $btn = $frm.find('input[type="submit"], button[type="submit"]').first();
+    if ($btn.length && $btn.attr("name"))
+      data += (data?"&":"") + encodeURI($btn.attr("name") +"="+ ($btn.val()||"1"));
+    if ($frm.data("dismiss") == "modal" || $btn.data("dismiss") == "modal")
+      $frm.closest(".modal").removeClass("fade").modal("hide");
+    if (!loaduri(target, method, uri, data))
+      return true;
+    event.preventDefault();
     event.stopPropagation();
     return false;
   });
@@ -1254,7 +1454,7 @@ $(function(){
     if ($this.prop('disabled')) return;
     var action = $this.attr("title") || $this.text();
     if (navigator.vibrate) navigator.vibrate([100,400,100,400,100,400]);
-    $longtouchProgress = $('<div class="hover-progress longtouch"><div class="hover-progress-body"><div class="info">Hold touch for/to</div><div class="action">'+action+'</div><div class="progress"><div class="progress-bar progress-bar-info" style="width:0%"></div></div></div></div>').appendTo("body").find(".progress-bar");
+    $longtouchProgress = $('<div class="hover-progress longtouch"><div class="hover-progress-body"><div class="info">Hold touch for/to</div><div class="action">'+encode_html(action)+'</div><div class="progress"><div class="progress-bar progress-bar-info" style="width:0%"></div></div></div></div>').appendTo("body").find(".progress-bar");
     window.getComputedStyle($longtouchProgress.get(0)).width;
     $longtouchProgress.css("width", "100%");
     longtouchTimeout = window.setTimeout(function() {
@@ -1281,28 +1481,39 @@ $(function(){
     }
   });
 
-  // Slider widget:
+  // Slider widget event handling:
   $("body").on("change", ".slider-enable", function(evt) {
-    var slider = $(this).closest(".slider");
-    slider.find("input[type=number]").prop("disabled", !this.checked).trigger("input");
-    slider.find("input[type=range]").prop("disabled", !this.checked).trigger("input");
-    slider.find("input[type=button]").prop("disabled", !this.checked);
+    var $this = $(this), $sld = $this.closest(".slider"), $inp = $sld.find(".slider-input, .slider-value");
+    $this.slider({ checked: this.checked });
+    $inp.trigger("input", true).trigger("change", true);
   });
-  $("body").on("input", ".slider-value", function(evt) {
-    $(this).closest(".slider").find(".slider-input").val(this.value);
+  $("body").on("input change", ".slider-value", function(evt, noprop) {
+    var $this = $(this), $sld = $this.closest(".slider"), $inp = $sld.find(".slider-input");
+    if (!noprop) {
+      $this.slider({ value: this.value });
+      $inp.trigger(evt.type, true);
+    }
   });
-  $("body").on("input", ".slider-input", function(evt) {
-    if (this.disabled)
-      this.value = $(this).data("default");
-    $(this).closest(".slider").find(".slider-value").val(this.value);
+  $("body").on("input change", ".slider-input", function(evt, noprop) {
+    var $this = $(this), $sld = $this.closest(".slider"), $inp = $sld.find(".slider-value");
+    if (!noprop) {
+      $this.slider({ value: this.value });
+      $inp.trigger(evt.type, true);
+    }
   });
   $("body").on("click", ".slider-up", function(evt) {
-    $(this).closest(".slider").find(".slider-input")
-      .val(function(){return 1*this.value + 1;}).trigger("input");
+    $(this).closest(".slider").find(".slider-input").val(function() {
+      return Math.min(1*this.value + (1*this.step||1), this.max);
+    }).trigger("input").trigger("change");
   });
   $("body").on("click", ".slider-down", function(evt) {
-    $(this).closest(".slider").find(".slider-input")
-      .val(function(){return 1*this.value - 1;}).trigger("input");
+    $(this).closest(".slider").find(".slider-input").val(function() {
+      return Math.max(1*this.value - (1*this.step||1), this.min);
+    }).trigger("input").trigger("change");
+  });
+  $("body").on("click", ".slider-set", function(evt) {
+    var $inp = $(this).closest(".slider").find(".slider-input");
+    $inp.val($(this).data("set")).trigger("input").trigger("change");
   });
 
   // data-toggle="filefialog":
@@ -1319,6 +1530,40 @@ $(function(){
       if (val) opt.path = val;
       $tgt.filedialog(opt);
     }
+  });
+
+  // Metrics displays:
+  $("body").on('msg:metrics', '.receiver', function(e, update) {
+    $(this).find(".metric").each(function() {
+      var $el = $(this), metric = $el.data("metric"), prec = $el.data("prec");
+      if (!metric) return;
+      // filter:
+      var keys = metric.split(","), val;
+      for (var i=0; i<keys.length; i++) {
+        if ((val = update[keys[i]]) != null) break;
+      }
+      if (val == null) return;
+      // process:
+      if ($el.hasClass("text")) {
+        $el.children(".value").text(val);
+      } else if ($el.hasClass("number")) {
+        var vf = (prec != null) ? Number(val).toFixed(prec) : val;
+        $el.children(".value").text(vf);
+      } else if ($el.hasClass("progress")) {
+        var $pb = $(this.firstElementChild), min = $pb.attr("aria-valuemin"), max = $pb.attr("aria-valuemax");
+        var vp = (val-min) / (max-min) * 100;
+        var vf = (prec != null) ? Number(val).toFixed(prec) : val;
+        $pb.css("width", vp+"%").attr("aria-valuenow", vp).find(".value").text(vf);
+        var lw = 0; $pb.find("span").each(function(){ lw += $(this).width(); });
+        if (($pb.parent().width()*vp/100) < lw) $pb.addClass("value-low"); else $pb.removeClass("value-low");
+      } else if ($el.hasClass("chart")) {
+        var ch = $(this.firstElementChild).data("chart");
+        if (ch && ch.userOptions && ch.userOptions.onUpdate)
+          ch.userOptions.onUpdate.call(ch, update);
+      } else {
+        $el.text(val);
+      }
+    });
   });
 
   // Modal autoclear:

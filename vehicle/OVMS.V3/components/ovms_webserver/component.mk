@@ -20,7 +20,11 @@ COMPONENT_EMBED_FILES := assets/script.js.gz assets/charts.js.gz assets/style.cs
 $(COMPONENT_PATH)/assets/script.js.gz : $(COMPONENT_PATH)/assets/jquery.min.js $(COMPONENT_PATH)/assets/bootstrap.min.js $(COMPONENT_PATH)/assets/ovms.js
 	cat $^ | gzip -c > $@
 
-$(COMPONENT_PATH)/assets/charts.js.gz : $(COMPONENT_PATH)/assets/highcharts.js $(COMPONENT_PATH)/assets/highcharts-more.js
+$(COMPONENT_PATH)/assets/charts.js.gz : $(COMPONENT_PATH)/assets/highcharts.js $(COMPONENT_PATH)/assets/highcharts-more.js \
+	$(COMPONENT_PATH)/assets/hc-modules/bullet.js \
+	$(COMPONENT_PATH)/assets/hc-modules/solid-gauge.js \
+	$(COMPONENT_PATH)/assets/hc-modules/streamgraph.js \
+	$(COMPONENT_PATH)/assets/hc-modules/xrange.js
 	cat $^ | gzip -c > $@
 
 $(COMPONENT_PATH)/assets/style.css.gz : $(COMPONENT_PATH)/assets/bootstrap.min.css $(COMPONENT_PATH)/assets/bootstrap-theme.min.css $(COMPONENT_PATH)/assets/highcharts.css $(COMPONENT_PATH)/assets/ovms.css

@@ -363,7 +363,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     if (!cmd)
       {
       writer->puts("Unrecognised command");
-      if (!m_usage.empty())
+      if (m_usage_template && *m_usage_template)
         writer->puts(GetUsage(writer));
       return;
       }
@@ -387,31 +387,6 @@ OvmsCommand* OvmsCommand::FindCommand(const char* name)
   {
   return m_children.FindCommand(name);
   }
-
-#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-
-static duk_ret_t DukOvmsCommand(duk_context *ctx)
-  {
-  const char *cmd = duk_to_string(ctx,0);
-
-  if (cmd != NULL)
-    {
-    BufferedShell* bs = new BufferedShell(false, COMMAND_RESULT_NORMAL);
-    bs->SetSecure(true); // this is an authorized channel
-    bs->ProcessChars(cmd, strlen(cmd));
-    bs->ProcessChar('\n');
-    std::string val; bs->Dump(val);
-    delete bs;
-    duk_push_string(ctx, val.c_str());
-    return 1;  /* one return value */
-    }
-  else
-    {
-    return 0;
-    }
-  }
-
-#endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
 void help(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -604,16 +579,6 @@ void OvmsCommandApp::ConfigureLogging()
   MyEvents.RegisterEvent(TAG, "ticker.3600", std::bind(&OvmsCommandApp::EventHandler, this, _1, _2));
 
   ReadConfig();
-
-#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-  ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
-  duk_context* ctx = MyScripts.Duktape();
-  if (ctx)
-    {
-    duk_push_c_function(ctx, DukOvmsCommand, 1 /*nargs*/);
-    duk_put_global_string(ctx, "OvmsCommand");
-    }
-#endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
 OvmsCommand* OvmsCommandApp::RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
@@ -700,21 +665,26 @@ int OvmsCommandApp::LogBuffer(LogBuffers* lb, const char* fmt, va_list args)
   int ret = vasprintf(&buffer, fmt, args);
   if (ret < 0) return ret;
 
-  // replace CR/LF except last by "|", but don't leave '|' at the end
+  // Replace CR/LF except last by "|", but don't leave '|' at the end.
+  // An ESC sequence to change color may be appended after the log text.
   char* s;
   for (s=buffer; *s; s++)
     {
-    if ((*s=='\r' || *s=='\n') && *(s+1))
-      *s = '|';
-    }
-  for (--s; s > buffer; --s)
-    {
     if (*s=='\r' || *s=='\n')
-      continue;
-    if (*s != '|')
+      {
+      char *t = s;
+      if (*(s+1) == '\033')
+        ++s;
+      else if (*(s+1) != '\0')
+        {
+        *s = '|';
+        continue;
+        }
+      while (t > buffer && *(t-1) == '|')
+        --t;
+      while ((*t++ = *s++)) ;
       break;
-    *s++ = '\n';
-    *s-- = '\0';
+      }
     }
 
   if (m_logfile)
@@ -1002,7 +972,7 @@ void OvmsCommandApp::ReadConfig()
 
 
 OvmsCommandTask::OvmsCommandTask(int _verbosity, OvmsWriter* _writer, OvmsCommand* _cmd, int _argc, const char* const* _argv)
-  : TaskBase(_cmd->GetName())
+  : TaskBase(_cmd->GetName(), CONFIG_OVMS_SYS_COMMAND_STACK_SIZE)
   {
   m_state = OCS_Init;
 

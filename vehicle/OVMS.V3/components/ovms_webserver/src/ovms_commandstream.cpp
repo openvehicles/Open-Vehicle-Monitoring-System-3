@@ -64,7 +64,7 @@ HttpCommandStream::HttpCommandStream(mg_connection* nc, std::string command, int
   m_writequeue = xQueueCreate(30, sizeof(hcs_writebuf));
   char name[configMAX_TASK_NAME_LEN];
   snprintf(name, sizeof(name), "%s", command.c_str());
-  xTaskCreatePinnedToCore(CommandTask, name, 5*1024, (void*)this, 4, &m_cmdtask, 1);
+  xTaskCreatePinnedToCore(CommandTask, name, CONFIG_OVMS_SYS_COMMAND_STACK_SIZE, (void*)this, 4, &m_cmdtask, 1);
 }
 
 HttpCommandStream::~HttpCommandStream()
@@ -211,7 +211,7 @@ int HttpCommandStream::printf(const char* fmt, ...)
 ssize_t HttpCommandStream::write(const void *buf, size_t nbyte)
 {
   if (!m_nc || nbyte == 0)
-    return nbyte;
+    return 0;
   
   hcs_writebuf wbuf;
   wbuf.data = (char*) ExternalRamMalloc(nbyte);
@@ -233,7 +233,7 @@ ssize_t HttpCommandStream::write(const void *buf, size_t nbyte)
 #endif // MG_ENABLE_BROADCAST && WEBSRV_USE_MG_BROADCAST
     ESP_LOGV(TAG, "HttpCommandStream[%p] AddQueue, qlen=%d done=%d sent=%d ack=%d", m_nc, uxQueueMessagesWaiting(m_writequeue), m_done, m_sent, m_ack);
   
-  return 0;
+  return nbyte;
 }
 
 void HttpCommandStream::Log(LogBuffers* message)

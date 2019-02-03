@@ -53,6 +53,11 @@ struct CmpStrOp
     }
   };
 
+inline bool strtobool(const std::string& str)
+  {
+  return (str == "yes" || str == "1" || str == "true");
+  }
+
 /**
  * chargestate_code: convert legacy chargestate key to code
  * chargestate_key: convert chargestate code to legacy key
@@ -85,6 +90,12 @@ std::string mp_encode(const std::string text);
 extram::string mp_encode(const extram::string text);
 
 /**
+ * stripcr:
+ *  - replace '\r\n' by '\n'
+ */
+extram::string stripcr(const extram::string& text);
+
+/**
  * startsWith: std::string prefix check
  */
 bool startsWith(const std::string& haystack, const std::string& needle);
@@ -110,6 +121,7 @@ template <class src_string>
 std::string json_encode(const src_string text)
   {
   std::string buf;
+  buf.reserve(text.size() + (text.size() >> 3));
   for (int i=0; i<text.size(); i++)
     {
     switch(text[i])

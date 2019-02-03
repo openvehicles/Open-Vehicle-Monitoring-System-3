@@ -69,5 +69,5 @@ int StringWriter::printf(const char* fmt, ...)
 ssize_t StringWriter::write(const void *buf, size_t nbyte)
   {
   append((const char*)buf, nbyte);
-  return 0;
+  return nbyte;
   }

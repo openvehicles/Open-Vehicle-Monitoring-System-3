@@ -1,0 +1,170 @@
+<!--
+  Test/Development/Documentation page; install as plugin to test
+-->
+
+<div class="panel panel-primary">
+  <div class="panel-heading">Asynchronous Command Streaming</div>
+  <div class="panel-body">
+
+    <h3>Synopsis</h3>
+
+    <p class="lead"><code>[jqxhr=] loadcmd(command [,target] [,filter] [,timeout])</code></p>
+
+    <p>The <code>loadcmd()</code> function executes a shell command with asynchronous
+      streaming of the output into a target element or onto a function.</p>
+
+
+    <h3>Basic Usage</h3>
+
+    <p>As this is the underlying function for command buttons, basic usage
+      is very similar, but fully scriptable:</p>
+
+    <p>
+      <button type="button" class="btn btn-default" onclick="loadcmd('boot status', '#out1')">
+        Show boot status
+      </button>
+    </p>
+    <pre id="out1" />
+
+    <p>As with command buttons, you can append the output by prefixing the target
+      selector with "+". You can omit the output by passing null as the target. If target
+      is a DOM element, loadcmd automatically sets the <code>loading</code> class on the
+      target while the command is processed.</p>
+
+    <p>The target element's min-height is automatically fixed to the current height
+      of the target before the output is set. This avoids page layout jumps when
+      reusing a target for commands.</p>
+
+    <p>If the target is scrollable and the content exceeds the visible area, the
+      element is automatically scrolled to show the new content, unless the user has
+      done a manual scrolling on the element.</p>
+
+    <p>If the command output stops for <code>timeout</code> seconds, the request is
+      aborted and a timeout error is shown. Default timeout is 20 seconds for standard
+      commands, 300 seconds for known long running commands.</p>
+
+
+    <h3>jqXHR Object</h3>
+
+    <p><code>loadcmd()</code> returns the jqXHR (XMLHttpRequest) object in charge for
+      the asynchronous execution of the request. This can be used to track the results
+      of the execution, check for errors or to abort the command.</p>
+
+    <p>
+      <button type="button" class="btn btn-default" id="startcg">Start chargen</button>
+      <button type="button" class="btn btn-default" id="abortcg" disabled>Abort chargen</button>
+    </p>
+    <pre id="out2" style="max-height:200px; overflow:auto;" />
+
+    <p>The jQuery XHR object is also a "thenable", so actions to be performed after
+      the command execution can simply be chained to the object. Example:</p>
+
+    <p><button type="button" class="btn btn-default" id="showstat">Show stat</button></p>
+
+    <p>See <a target="_blank" href="http://api.jquery.com/jQuery.ajax/#jqXHR">jQuery
+      documentation</a> for full details and options.</p>
+
+
+    <h3>Filter / Process Output</h3>
+
+    <p>Supply a filter function to hook into the asynchronous output stream. Use filters
+      to filter (ahem…) / preprocess / reformat the command output, scan the stream for some
+      info you'd like to know as soon as possible, or completely take over the output
+      processing.</p>
+
+    <p>The filter function is called when a new chunk of output has arrived or when
+      a stream error has occurred. The function gets a message object containing
+      the <code>request</code> object and either a <code>text</code> for normal outputs
+      or an <code>error</code>, which is a preformatted error output you can use or
+      ignore.</p>
+
+    <p>If the filter function returns a string, that will be added to the output target.
+      If it returns <code>null</code>, the target will remain untouched.</p>
+
+    <p>Hint: if you just want to scan the text for some info, you can pass on the message
+      after your scan to the default <code>standardTextFilter()</code>.</p>
+
+    <p>Example: let's reformat a <code>can status</code> dump into a nice Bootstrap table:</p>
+
+    <p><button type="button" class="btn btn-default" id="canstatus">CAN1 status</button></p>
+
+    <table class="table table-condensed table-border table-striped table-hover" id="canout">
+      <thead>
+        <tr><th class="col-xs-6">Key</th><th class="col-xs-6">Value</th></tr>
+      </thead>
+      <tbody/>
+    </table>
+
+  </div>
+</div>
+
+<script>
+(function(){
+
+  /* Show page source: */
+  var pagesrc = $('#main').html();
+  $('.panel-heading').prepend('<button type="button" class="btn btn-sm btn-info action-showsrc"' +
+    ' style="float:right; position:relative; top:-5px;">Show page source</button>');
+  $('.action-showsrc').on('click', function() {
+    $('<div/>').dialog({
+      title: 'Source Code',
+      body: '<pre style="font-size:85%; height:calc(100vh - 230px);">'
+        + encode_html(pagesrc) + '</pre>',
+      size: 'lg',
+    });
+  });
+
+  /* Example: jqXHR.abort() */
+  var xhr;
+  $('#startcg').on('click', function() {
+    xhr = loadcmd('test chargen 20 600', '#out2');
+    $('#abortcg').prop('disabled', false);
+  });
+  $('#abortcg').on('click', function() {
+    xhr.abort();
+  });
+
+  /* Example: jqXHR.then() */
+  $('#showstat').on('click', function() {
+    loadcmd('stat').then(function(output) {
+      confirmdialog('STAT result', '<samp>' + output + '</samp>', ['Close']);
+    });
+  });
+
+  /* Example: filter / output processor */
+  $('#canstatus').on('click', function() {
+    var $table = $('#canout > tbody');
+    var buf = '';
+    $table.empty();
+    loadcmd('can can1 status', function(msg) {
+      if (msg.error) {
+        // Render error into table row:
+        $('<tr class="danger"><td colspan="2">' + msg.error + '</td></tr>').appendTo($table);
+      }
+      else if (msg.text) {
+        // As this is a stream, the text chunks received need not be single or complete lines.
+        // We're interested in lines here, so we buffer the chunks and split the buffer at '\n':
+        buf += msg.text;
+        var lines = buf.split('\n');
+        if (lines.length > 1) {
+          buf = lines[lines.length-1];
+          for (var i = 0; i < lines.length-1; i++) {
+            // Skip empty lines:
+            if (lines[i] == "") continue;
+            // Split line into columns:
+            var col = lines[i].split(/: +/);
+            // Create table row & append to table, add some color on error counters:
+            if (col[0].match("[Ee]rr"))
+              $('<tr class="warning"><th>' + col[0] + '</th><td>' + col[1] + '</td></tr>').appendTo($table);
+            else
+              $('<tr><th>' + col[0] + '</th><td>' + col[1] + '</td></tr>').appendTo($table);
+          }
+        }
+      }
+      // Filter has handled everything:
+      return null;
+    });
+  });
+
+})();
+</script>

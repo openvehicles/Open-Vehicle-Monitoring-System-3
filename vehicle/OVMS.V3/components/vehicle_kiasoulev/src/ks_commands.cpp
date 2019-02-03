@@ -235,12 +235,16 @@ void xks_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 		{
 		writer->printf("Middle-high grade\n");
 		}
+	else if(soul->m_vin[4]=='X')
+		{
+		writer->printf("High grade\n");
+		}
 	else
 		{
 		writer->printf("Unknown %c\n", soul->m_vin[4]);
 		}
 
-	writer->printf("Model year: %04d\n", 2014 + soul->m_vin[9]-'E');
+	writer->printf("Model year: %04d\n", 2014 + soul->m_vin[9]-'E'); //TODO Will be wrong in for 2022. O and Q are not used.
 
 	writer->printf("Motor type: ");
 	if(soul->m_vin[7]=='E')
@@ -269,67 +273,16 @@ void xks_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 		{
 		writer->printf("Seosan (Korea)\n");
 		}
+	else if(soul->m_vin[10]=='Y')
+		{
+		writer->printf("Yangon (Myanmar)\n");
+		}
 	else
 		{
 		writer->printf("Unknown %c\n", soul->m_vin[10]);
 		}
 
 	writer->printf("Sequence number: %c%c%c%c%c%c\n", soul->m_vin[11],soul->m_vin[12],soul->m_vin[13],soul->m_vin[14],soul->m_vin[15],soul->m_vin[16]);
-	}
-
-/**
- * Print out the cell voltages.
- */
-void xks_cells(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  if (MyVehicleFactory.m_currentvehicle==NULL)
-    {
-    writer->puts("Error: No vehicle module selected");
-    return;
-    }
-  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
-
-	const char* minimum = soul->m_b_cell_volt_min->AsUnitString("-", Volts, 2).c_str();
-	const char* maximum = soul->m_b_cell_volt_max->AsUnitString("-", Volts, 2).c_str();
-	const char* total = StdMetrics.ms_v_bat_voltage->AsUnitString("-", Volts, 2).c_str();
-	const char* minDet = soul->m_b_cell_det_min->AsUnitString("-", Percentage, 2).c_str();
-	const char* maxDet = soul->m_b_cell_det_max->AsUnitString("-", Percentage, 2).c_str();
-
-	writer->printf("CELLS\n");
-	if (*minimum != '-') writer->printf("Min %s #%d\n", minimum, soul->m_b_cell_volt_min_no->AsInt(0));
-	if (*maximum != '-') writer->printf("Max %s #%d\n", maximum, soul->m_b_cell_volt_max_no->AsInt(0));
-	if (*total != '-') writer->printf("Total %s\n", total);
-	if (*minDet != '-') writer->printf("Min Det %s #%d\n", minDet, soul->m_b_cell_det_min_no->AsInt(0));
-	if (*maxDet != '-') writer->printf("Max Det %s #%d\n", maxDet, soul->m_b_cell_det_max_no->AsInt(0));
-
-	if(verbosity>788)
-		{
-		for (uint8_t i=0; i < sizeof (soul->ks_battery_cell_voltage); i++)
-			{
-			if( i % 10 == 0) writer->printf("\n%02d:",i+1);
-			writer->printf("%.*fV ", 2, (float)soul->ks_battery_cell_voltage[i]/50.0);
-			}
-		writer->printf("\n");
-		}
-	else
-		{
-		uint8_t i, lines=(verbosity-80)/11;
-		// Count each voltage and print out number of cells with that voltage.
-		// Handles up to as many lines as verbosity allows. Hopefully it will be enough
-		for( i=0;i<225; i++)
-			{
-			uint8_t cnt=0;
-			for (uint8_t a=0; a < sizeof (soul->ks_battery_cell_voltage) && lines>0; a++)
-				{
-				if( soul->ks_battery_cell_voltage[a]==i) cnt++;
-				}
-			if(cnt>0)
-				{
-				writer->printf("%02d x %.*fV\n", cnt, 2, (float)i/50.0);
-				lines--;
-				}
-			}
-		}
 	}
 
 
@@ -377,7 +330,7 @@ void xks_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 /**
  * Print out information of the current trip.
  */
-void xks_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void xks_trip_since_parked(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (MyVehicleFactory.m_currentvehicle==NULL)
     {
@@ -408,24 +361,80 @@ void xks_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 
   if(MyConfig.GetParamValue("vehicle", "units.distance") == "M")
   		{
-    writer->printf("Con %.*fkWh/100mi\n", 2, consumption);
-    writer->printf("Con %.*fmi/kWh\n", 2, consumption2);
+    writer->printf("Cons %.*fkWh/100mi\n", 2, consumption);
+    writer->printf("Cons %.*fmi/kWh\n", 2, consumption2);
   		}
   else
   		{
-    writer->printf("Con %.*fkWh/100km\n", 2, consumption);
-    writer->printf("Con %.*fkm/kWh\n", 2, consumption2);
+    writer->printf("Cons %.*fkWh/100km\n", 2, consumption);
+    writer->printf("Cons %.*fkm/kWh\n", 2, consumption2);
   		}
 
   if (*discharge != '-')
-    writer->printf("Dis %s\n", discharge);
+    writer->printf("Disc %s\n", discharge);
 
   if (*recuparation != '-')
     writer->printf("Rec %s\n", recuparation);
 
-  writer->printf("Total %.*fkWh\n", 2, totalConsumption);
+  writer->printf("Tot %.*fkWh\n", 2, totalConsumption);
 
   if (*ODO != '-')
     writer->printf("ODO %s\n", ODO);
   }
 
+/**
+ * Print out information of the current trip.
+ */
+void xks_trip_since_charge(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+
+  metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
+
+  OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
+
+  writer->printf("TRIP SINCE CHARGE\n");
+
+  // Trip distance
+  const char* distance = soul->ms_v_pos_trip->AsUnitString("-", rangeUnit, 1).c_str();
+  // Consumption
+  float consumption = soul->ms_v_trip_energy_used->AsFloat(kWh) * 100 / soul->ms_v_pos_trip->AsFloat(rangeUnit);
+  float consumption2 = soul->ms_v_pos_trip->AsFloat(rangeUnit) / soul->ms_v_trip_energy_used->AsFloat(kWh);
+  // Discharge
+  const char* discharge = soul->ms_v_trip_energy_used->AsUnitString("-", kWh, 1).c_str();
+  // Recuperation
+  const char* recuparation = soul->ms_v_trip_energy_recd->AsUnitString("-", kWh, 1).c_str();
+  // Total consumption
+  float totalConsumption = soul->ms_v_trip_energy_used->AsFloat(kWh) + soul->ms_v_trip_energy_recd->AsFloat(kWh);
+  // ODO
+  const char* ODO = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
+
+  if (*distance != '-')
+    writer->printf("Dist %s\n", distance);
+
+  if(MyConfig.GetParamValue("vehicle", "units.distance") == "M")
+  		{
+    writer->printf("Cons %.*fkWh/100mi\n", 2, consumption);
+    writer->printf("Cons %.*fmi/kWh\n", 2, consumption2);
+  		}
+  else
+  		{
+    writer->printf("Cons %.*fkWh/100km\n", 2, consumption);
+    writer->printf("Cons %.*fkm/kWh\n", 2, consumption2);
+  		}
+
+  if (*discharge != '-')
+    writer->printf("Disc %s\n", discharge);
+
+  if (*recuparation != '-')
+    writer->printf("Rec %s\n", recuparation);
+
+  writer->printf("Tot %.*fkWh\n", 2, totalConsumption);
+
+  if (*ODO != '-')
+    writer->printf("ODO %s\n", ODO);
+  }

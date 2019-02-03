@@ -34,6 +34,7 @@ static const char *TAG = "websocket";
 #include "ovms_webserver.h"
 #include "ovms_config.h"
 #include "ovms_metrics.h"
+#include "ovms_boot.h"
 #include "metrics_standard.h"
 #include "buffered_shell.h"
 #include "vehicle.h"
@@ -105,7 +106,7 @@ void WebSocketHandler::ProcessTxJob()
         ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done", m_nc, m_job.type);
         ClearTxJob(m_job);
       } else {
-        std::string msg;
+        extram::string msg;
         msg.reserve(128);
         msg = "{\"event\":\"";
         msg += m_job.event;
@@ -130,8 +131,8 @@ void WebSocketHandler::ProcessTxJob()
       for (i=0, m=MyMetrics.m_first; i < m_sent && m != NULL; m=m->m_next, i++);
       
       // build msg:
-      std::string msg;
-      msg.reserve(XFER_CHUNK_SIZE+128);
+      extram::string msg;
+      msg.reserve(2*XFER_CHUNK_SIZE+128);
       msg = "{\"metrics\":{";
       for (i=0; m && msg.size() < XFER_CHUNK_SIZE; m=m->m_next) {
         if (m->IsModifiedAndClear(m_modifier) || m_job.type == WSTX_MetricsAll) {
@@ -139,7 +140,7 @@ void WebSocketHandler::ProcessTxJob()
           msg += '\"';
           msg += m->m_name;
           msg += "\":";
-          msg += m->AsJSON();
+          msg += m->AsJSON().c_str();
           i++;
         }
       }
@@ -147,6 +148,7 @@ void WebSocketHandler::ProcessTxJob()
       // send msg:
       if (i) {
         msg += "}}";
+        //ESP_LOGV(TAG, "WebSocket msg: %s", msg.c_str());
         mg_send_websocket_frame(m_nc, WEBSOCKET_OP_TEXT, msg.data(), msg.size());
         m_sent += i;
       }
@@ -169,7 +171,7 @@ void WebSocketHandler::ProcessTxJob()
         ClearTxJob(m_job);
       } else {
         // build frame:
-        std::string msg;
+        extram::string msg;
         msg.reserve(XFER_CHUNK_SIZE+128);
         int op;
         
@@ -178,7 +180,7 @@ void WebSocketHandler::ProcessTxJob()
           msg += "{\"notify\":{\"type\":\"";
           msg += m_job.notification->GetType()->m_name;
           msg += "\",\"subtype\":\"";
-          msg += mqtt_topic(m_job.notification->GetSubType());
+          msg += mqtt_topic(m_job.notification->GetSubType()).c_str();
           msg += "\",\"value\":\"";
           m_sent = 1;
         } else {
@@ -186,7 +188,7 @@ void WebSocketHandler::ProcessTxJob()
         }
         
         extram::string part = m_job.notification->GetValue().substr(m_sent-1, XFER_CHUNK_SIZE);
-        msg += json_encode(part);
+        msg += json_encode(part).c_str();
         m_sent += part.size();
         
         if (m_sent < m_job.notification->GetValueSize()+1) {
@@ -457,11 +459,26 @@ bool OvmsWebServer::AddToBacklog(int client, WebSocketTxJob job)
  */
 void OvmsWebServer::EventListener(std::string event, void* data)
 {
-  // ticker:
-  if (event == "ticker.1") {
-    CfgInitTicker();
+  // shutdown delay to finish command output transmissions:
+  if (event == "system.shuttingdown") {
+    MyBoot.RestartPending("webserver");
+    m_restart_countdown = 3;
   }
-  
+
+  // ticker:
+  else if (event == "ticker.1") {
+    CfgInitTicker();
+    if (m_restart_countdown > 0 && --m_restart_countdown == 0)
+      MyBoot.RestartReady("webserver");
+  }
+
+  // reload plugins on changes:
+  else if (event == "system.vfs.file.changed") {
+    char* path = (char*)data;
+    if (strncmp(path, "/store/plugin/", 14) == 0)
+      ReloadPlugin(path);
+  }
+
   // forward events to all websocket clients:
   if (xSemaphoreTake(m_client_mutex, 0) != pdTRUE) {
     for (int i=0; i<m_client_cnt; i++) {

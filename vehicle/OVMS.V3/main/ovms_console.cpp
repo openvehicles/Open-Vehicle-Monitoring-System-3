@@ -37,7 +37,7 @@
 #include "log_buffers.h"
 
 //static const char *TAG = "Console";
-static char CRbuf[1] = { '\r' };
+static char CRbuf[4] = { '\r', '\033', '[', 'K' };
 static char NLbuf[1] = { '\n' };
 static char ctrlRbuf[1] = { 'R'-0100 };
 
@@ -182,7 +182,7 @@ void OvmsConsole::Poll(portTickType ticks, QueueHandle_t queue)
         if (m_state == AWAITING_NL)
           write(NLbuf, 1);
         else if (m_state == AT_PROMPT)
-          write(CRbuf, 1);
+          write(CRbuf, 4);
         char* buffer;
         size_t len;
         if (event.type == ALERT_MULTI)
@@ -234,7 +234,7 @@ void OvmsConsole::Poll(portTickType ticks, QueueHandle_t queue)
         if (m_state == AWAITING_NL)
           write(NLbuf, 1);
         else if (m_state == AT_PROMPT)
-          write(CRbuf, 1);
+          write(CRbuf, 4);
         printf("\033[33m[%d log messages lost]\033[0m", lost);
         m_state = AWAITING_NL;
         m_acked += lost;

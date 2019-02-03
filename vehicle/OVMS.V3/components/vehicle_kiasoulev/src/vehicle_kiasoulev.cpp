@@ -116,6 +116,25 @@
 ;			- Corrected LDC-metrics.
 ;			- Changed Ticker1 in order to do less processing when car is off and hopefully save the 12V battery.
 ;
+;		0.3.8 21-June-2018 - Geir Øyvind Vælidalo
+;			- Fixed issue with VIN
+;			- Removed m_v_env_inside_temp. Uses StdMetrics.ms_v_env_cabintemp	instead
+;			- Inverted back seat belt statuses.
+;			- Fixed issue with poll state
+;
+;		0.3.9 29-December-2018 - Geir Øyvind Vælidalo
+;			- Uses the standard BmsCell-voltage and temperature (NB! Not really tested)
+;			- Minimize aux battery consumption
+;
+;		0.4.0 6-January-2019 - Geir Øyvind Vælidalo
+;			- Removed the fixed polling of lock status. Instead it checks after Keyfob-presses and both indicator lights are flashes.
+;		  - Temporarily disabled BmsCell-voltage and tempearature to prevent unwanted messages.
+;			- Implemented CAN Write access setting. If not eneabled, no commands can be sent to the car.
+;
+;		0.4.1 19-January-2019 - Geir Øyvind Vælidalo
+;			- Fixed issues with the new standard BMS module.
+;			- Added new command, xks tripch, which displays trip data since last charge
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -144,6 +163,8 @@
 //		- parkbreakservice is not working
 //		- Rear defogger works, but only as long as TesterPresent is sent.
 //			- Is it enough to send the testetpresent message every second?
+//  - steering mode
+//  -
 
 
 #include "ovms_log.h"
@@ -157,7 +178,7 @@
 #include "ovms_notify.h"
 #include <sys/param.h>
 
-#define VERSION "0.3.7"
+#define VERSION "0.4.1"
 
 static const char *TAG = "v-kiasoulev";
 
@@ -166,17 +187,17 @@ static const char *TAG = "v-kiasoulev";
 // Pollstate 2 - car is charging
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
-    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, 		{  120, 120,   0 } }, 	// VIN
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, 		{  0,    10,  10 } }, 	// BMC Diag page 01
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{  0,    30,  10 } }, 	// BMC Diag page 02
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x03, 		{  0,    30,  10 } }, 	// BMC Diag page 03
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x04, 		{  0,    30,  10 } }, 	// BMC Diag page 04
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x05, 		{  0,    30,  10 } },		// BMC Diag page 05
-    { 0x794, 0x79c, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{  120,  30,  10 } }, 	// OBC - On board charger
-    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x00, 		{  120,  10,  10 } }, 	// VMCU Shift-stick
-    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{  120,  10,  30 } }, 	// VMCU Motor temp++
-    { 0x7df, 0x7de, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x06, 		{  0,    30,  60 } }, 	// TMPS
-    { 0x7c5, 0x7cd, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, 		{  120,  10,  10 } }, 	// LDC - Low voltage DC-DC
+    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, 		{       0,  120,   0 } }, 	// VIN
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, 		{       0,   10,  10 } }, 	// BMC Diag page 01 *
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{       0,   10,  10 } }, 	// BMC Diag page 02
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x03, 		{       0,   10,  10 } }, 	// BMC Diag page 03
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x04, 		{       0,   10,  10 } }, 	// BMC Diag page 04
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x05, 		{       0,   10,  10 } },	  // BMC Diag page 05 *
+    { 0x794, 0x79c, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{       0,   60,  10 } }, 	// OBC - On board charger
+  	  { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x00, 		{       0,   10,  10 } }, 	// VMCU Shift-stick
+    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{       0,   10,  30 } }, 	// VMCU Motor temp++
+    { 0x7df, 0x7de, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x06, 		{       0,   30,  60 } }, 	// TMPS
+    { 0x7c5, 0x7cd, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, 		{       0,   10,  10 } }, 	// LDC - Low voltage DC-DC
     { 0, 0, 0, 0, { 0, 0, 0 } }
   };
 
@@ -192,9 +213,10 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   memset( m_vin, 0, sizeof(m_vin));
   memset( m_street, 0, sizeof(m_street));
 
-  memset( ks_battery_cell_voltage ,0, sizeof(ks_battery_cell_voltage));
-  memset( ks_battery_module_temp, 0, sizeof(ks_battery_module_temp));
   memset( ks_tpms_id, 0, sizeof(ks_tpms_id));
+
+  //ks_park_trip_counter = new KS_Trip_Counter();
+  //ks_charge_trip_counter = new KS_Trip_Counter();
 
   ks_obc_volt = 230;
   ks_battery_current = 0;
@@ -205,9 +227,9 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   ks_battery_cum_discharge = 0;
   ks_battery_cum_op_time = 0;
 
-  ks_trip_start_odo = 0;
-  ks_start_cdc = 0;
-  ks_start_cc = 0;
+  //ks_trip_start_odo = 0;
+  //ks_start_cdc = 0;
+  //ks_start_cc = 0;
 
   ks_charge_bits.ChargingChademo = false;
   ks_charge_bits.ChargingJ1772 = false;
@@ -222,11 +244,32 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   ks_clock = 0;
   ks_utc_diff = 0;
   ks_openChargePort = false;
+  ks_check_door_lock=false;
+  ks_lockDoors=false;
+  ks_unlockDoors=false;
   ks_emergency_message_sent = false;
+
+  ks_shift_bits.Park = true;
+
+  ks_ready_for_chargepollstate = true;
+  ks_secs_with_no_client = 0;
 
   memset( ks_send_can.byte, 0, sizeof(ks_send_can.byte));
 
   ks_maxrange = CFG_DEFAULT_MAXRANGE;
+
+  BmsSetCellArrangementVoltage(96, 1);
+  BmsSetCellArrangementTemperature(8, 1);
+  BmsSetCellLimitsVoltage(2.0,5.0);
+  BmsSetCellLimitsTemperature(-35,90);
+  BmsSetCellDefaultThresholdsVoltage(0.1, 0.2); //TODO What values do we want here?
+  BmsSetCellDefaultThresholdsTemperature(4.0, 8.0); // and here?
+
+  //Disable BMS alerts by default
+  MyConfig.SetParamValueBool("vehicle", "bms.alerts.enabled", false);
+
+  //for(int i=0; i<96; i++)
+  	//	BmsSetCellVoltage(i, 2.0);
 
   // init metrics:
   m_version = MyMetrics.InitString("xks.version", 0, VERSION " " __DATE__ " " __TIME__);
@@ -258,7 +301,6 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
 
   m_v_env_lowbeam = MyMetrics.InitBool("xks.e.lowbeam", 10, 0);
   m_v_env_highbeam = MyMetrics.InitBool("xks.e.highbeam", 10, 0);
-  m_v_env_inside_temp = MyMetrics.InitFloat("xks.e.inside.temp", 10, 0, Celcius);
   m_v_env_climate_temp = MyMetrics.InitFloat("xks.e.climate.temp", 10, 0, Celcius);
   m_v_env_climate_driver_only = MyMetrics.InitBool("xks.e.climate.driver.only", 10, 0);
   m_v_env_climate_resirc = MyMetrics.InitBool("xks.e.climate.resirc", 10, 0);
@@ -275,6 +317,9 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   m_v_pos_arrival_hour = MyMetrics.InitInt("xks.e.pos.arrival.hour", 10, 0);
   m_v_pos_arrival_minute = MyMetrics.InitInt("xks.e.pos.arrival.minute", 10, 0);
   m_v_pos_street = MyMetrics.InitString("xks.e.pos.street", 10, "");
+  ms_v_pos_trip = MyMetrics.InitFloat("xks.e.trip", 10, 0, Kilometers);
+  ms_v_trip_energy_used = MyMetrics.InitFloat("xks.e.trip.energy.used", 10, 0, kWh);
+  ms_v_trip_energy_recd = MyMetrics.InitFloat("xks.e.trip.energy.recuperated", 10, 0, kWh);
 
   m_v_seat_belt_driver = MyMetrics.InitBool("xks.v.seat.belt.driver", 10, 0);
   m_v_seat_belt_passenger = MyMetrics.InitBool("xks.v.seat.belt.passenger", 10, 0);
@@ -304,11 +349,11 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
 
   // init commands:
   cmd_xks = MyCommandApp.RegisterCommand("xks","Kia Soul EV",NULL,"",0,0,true);
-  cmd_xks->RegisterCommand("trip","Show trip info", xks_trip, 0,0, false);
-  cmd_xks->RegisterCommand("tpms","Tire pressure monitor", xks_tpms, 0,0, false);
-  cmd_xks->RegisterCommand("cells","Cell voltages", xks_cells, 0,0, false);
-  cmd_xks->RegisterCommand("aux","Aux battery", xks_aux, 0,0, false);
-  cmd_xks->RegisterCommand("vin","VIN information", xks_vin, 0,0, false);
+  cmd_xks->RegisterCommand("trip","Show trip info since last parked", xks_trip_since_parked, "", 0,0, false);
+  cmd_xks->RegisterCommand("tripch","Show trip info since last charge", xks_trip_since_charge, "", 0,0, false);
+  cmd_xks->RegisterCommand("tpms","Tire pressure monitor", xks_tpms, "", 0,0, false);
+  cmd_xks->RegisterCommand("aux","Aux battery", xks_aux, "", 0,0, false);
+  cmd_xks->RegisterCommand("vin","VIN information", xks_vin, "", 0,0, false);
   cmd_xks->RegisterCommand("IGN1","IGN1 relay", xks_ign1, "<on/off><pin>",1,1, false);
   cmd_xks->RegisterCommand("IGN2","IGN2 relay", xks_ign2, "<on/off><pin>",1,1, false);
   cmd_xks->RegisterCommand("ACC","ACC relay", xks_acc_relay, "<on/off><pin>",1,1, false);
@@ -326,18 +371,34 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   cmd_xks->RegisterCommand("sjb","Send command to SJB ECU", xks_sjb, "<b1><b2><b3>", 3,3, false);
   cmd_xks->RegisterCommand("bcm","Send command to BCM ECU", xks_bcm, "<b1><b2><b3>", 3,3, false);
 
+  MyConfig.SetParamValueBool("modem","enable.gps", true);
+  MyConfig.SetParamValueBool("modem","enable.gpstime", true);
+  MyConfig.SetParamValueBool("modem","enable.net", true);
+  MyConfig.SetParamValueBool("modem","enable.sms", true);
+
+  // Require GPS.
+  MyEvents.SignalEvent("vehicle.require.gps", NULL);
+  MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
+
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG, "app.connected", std::bind(&OvmsVehicleKiaSoulEv::EventListener, this, _1, _2));
+
   MyConfig.RegisterParam("xks", "Kia Soul EV spesific settings.", true, true);
   ConfigChanged(NULL);
 
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
   WebInit();
+#endif
 
   // C-Bus
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   // M-Bus
   RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
 
-  POLLSTATE_OFF;
   PollSetPidList(m_can1,vehicle_kiasoulev_polls);
+  POLLSTATE_OFF;
   }
 
 /**
@@ -346,6 +407,9 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
 OvmsVehicleKiaSoulEv::~OvmsVehicleKiaSoulEv()
   {
   ESP_LOGI(TAG, "Shutdown Kia Soul EV vehicle module");
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+  MyWebServer.DeregisterPage("/bms/cellmon");
+#endif
   }
 
 /**
@@ -362,6 +426,7 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
   //  suffrange        	Sufficient range [km] (Default: 0=disabled)
   //  maxrange         	Maximum ideal range at 20 °C [km] (Default: 160)
   //  remote_charge_port					Use "trunk" button on keyfob to open charge port (Default: 1=enabled)
+  //  canwrite					Enable commands
   ks_battery_capacity = (float)MyConfig.GetParamValueInt("xks", "cap_act_kwh", CGF_DEFAULT_BATTERY_CAPACITY);
   ks_key_fob_open_charge_port = (bool)MyConfig.GetParamValueBool("xks", "remote_charge_port", true);
 
@@ -372,7 +437,7 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
   *StdMetrics.ms_v_charge_limit_soc = (float) MyConfig.GetParamValueInt("xks", "suffsoc");
   *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("xks", "suffrange");
 
-  //TODO ks_enable_write = MyConfig.GetParamValueBool("xks", "canwrite", false);
+  ks_enable_write = MyConfig.GetParamValueBool("xks", "canwrite", false);
 	}
 
 /**
@@ -382,42 +447,40 @@ void OvmsVehicleKiaSoulEv::ConfigChanged(OvmsConfigParam* param)
  */
 void OvmsVehicleKiaSoulEv::vehicle_kiasoulev_car_on(bool isOn)
   {
-
   if (isOn && !StdMetrics.ms_v_env_on->AsBool())
     {
 		// Car is ON
+  		ESP_LOGI(TAG,"CAR IS ON");
 		StdMetrics.ms_v_env_on->SetValue(isOn);
 		StdMetrics.ms_v_env_awake->SetValue(isOn);
 
-		//Reset trip variables so that they are updated as soon as they are available
-		ks_trip_start_odo = 0;
-		ks_start_cdc = 0;
-		ks_start_cc = 0;
-
 		StdMetrics.ms_v_env_charging12v->SetValue( false );
     POLLSTATE_RUNNING;
+    ks_ready_for_chargepollstate = true;
+
+    ks_park_trip_counter.Reset(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
+
+    BmsResetCellStats();
     }
   else if(!isOn && StdMetrics.ms_v_env_on->AsBool())
     {
     // Car is OFF
+		ESP_LOGI(TAG,"CAR IS OFF");
     POLLSTATE_OFF;
   		StdMetrics.ms_v_env_on->SetValue( isOn );
   		StdMetrics.ms_v_env_awake->SetValue( isOn );
   		StdMetrics.ms_v_pos_speed->SetValue( 0 );
-  	  StdMetrics.ms_v_pos_trip->SetValue( POS_ODO- ks_trip_start_odo );
+  	  StdMetrics.ms_v_pos_trip->SetValue( ks_park_trip_counter.GetDistance() );
   		StdMetrics.ms_v_env_charging12v->SetValue( false );
+    ks_ready_for_chargepollstate = true;
+
+    ks_park_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
     }
 
   //Make sure we update the different start values as soon as we have them available
   if(isOn)
   		{
 		// Trip started. Let's save current state as soon as they are available
-  		if(ks_trip_start_odo==0 && POS_ODO!=0)
-  			ks_trip_start_odo = POS_ODO;	// ODO at Start of trip
-  		if(ks_start_cdc==0 && CUM_DISCHARGE!=0)
-  			ks_start_cdc = CUM_DISCHARGE; // Register Cumulated discharge
-  		if(ks_start_cc==0 && CUM_CHARGE!=0)
-  			ks_start_cc = CUM_CHARGE; 		// Register Cumulated charge
   		}
   }
 
@@ -426,12 +489,23 @@ void OvmsVehicleKiaSoulEv::vehicle_kiasoulev_car_on(bool isOn)
  */
 void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 	{
-	// Open charge port if user demands it
+	ESP_LOGD(TAG,"Pollstate: %d sec with no client: %d ",m_poll_state, ks_secs_with_no_client);
+
+	// Open charge port. User pressed the third keyfob button.
 	if( ks_openChargePort )
 		{
 		char buffer[6];
 		OpenChargePort(itoa(MyConfig.GetParamValueInt("password","pin"), buffer, 10));
 		ks_openChargePort = false;
+		}
+
+	// Lock or unlock doors. User pressed keyfob while car was on.
+	if( ks_lockDoors || ks_unlockDoors)
+		{
+		char buffer[6];
+		SetDoorLock(ks_unlockDoors, itoa(MyConfig.GetParamValueInt("password","pin"), buffer, 10));
+		ks_lockDoors=false;
+		ks_unlockDoors=false;
 		}
 
 	if(m_poll_state>0) // Only do these things if car is on or charging
@@ -443,20 +517,28 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 		  	StdMetrics.ms_v_bat_range_ideal->SetValue( FULL_RANGE * BAT_SOC / 100.0, Kilometers);
 		  	}
 
-		// Register battery temperature
-		StdMetrics.ms_v_bat_temp->SetValue(((float)ks_battery_module_temp[0] + ks_battery_module_temp[1] +
-		          ks_battery_module_temp[2] + ks_battery_module_temp[3] +
-		          ks_battery_module_temp[4] + ks_battery_module_temp[5] +
-		          ks_battery_module_temp[6] + ks_battery_module_temp[7]) / 8, Celcius);
-
 		// Update trip data
-		if (StdMetrics.ms_v_env_on->AsBool() && ks_trip_start_odo!=0)
+		if (StdMetrics.ms_v_env_on->AsBool())
 			{
-			StdMetrics.ms_v_pos_trip->SetValue( POS_ODO - ks_trip_start_odo , Kilometers);
-			if( ks_start_cdc!=0 && ks_start_cc!=0)
+			if(ks_park_trip_counter.Started())
 				{
-				StdMetrics.ms_v_bat_energy_used->SetValue( (CUM_DISCHARGE - ks_start_cdc) - (CUM_CHARGE - ks_start_cc), kWh );
-				StdMetrics.ms_v_bat_energy_recd->SetValue( CUM_CHARGE - ks_start_cc, kWh );
+				ks_park_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
+				StdMetrics.ms_v_pos_trip->SetValue( ks_park_trip_counter.GetDistance() , Kilometers);
+				if( ks_park_trip_counter.HasEnergyData())
+					{
+					StdMetrics.ms_v_bat_energy_used->SetValue( ks_park_trip_counter.GetEnergyUsed(), kWh );
+					StdMetrics.ms_v_bat_energy_recd->SetValue( ks_park_trip_counter.GetEnergyRecuperated(), kWh );
+					}
+				}
+			if(ks_charge_trip_counter.Started())
+				{
+				ks_charge_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
+				ms_v_pos_trip->SetValue( ks_charge_trip_counter.GetDistance() , Kilometers);
+				if( ks_charge_trip_counter.HasEnergyData())
+					{
+					ms_v_trip_energy_used->SetValue( ks_charge_trip_counter.GetEnergyUsed(), kWh );
+					ms_v_trip_energy_recd->SetValue( ks_charge_trip_counter.GetEnergyRecuperated(), kWh );
+					}
 				}
 		  }
 
@@ -473,21 +555,19 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 
 		}
 
-	//Keep charging metrics up to date
+  //Keep charging metrics up to date
 	if (ks_charge_bits.ChargingJ1772)  				// **** J1772 - Type 1  charging ****
 		{
 		SetChargeMetrics(ks_obc_volt, StdMetrics.ms_v_bat_power->AsFloat(0, kW) * 1000 / ks_obc_volt, 6600 / ks_obc_volt, false);
 	  }
 	else if (ks_charge_bits.ChargingChademo)  // **** ChaDeMo charging ****
 		{
-		SetChargeMetrics(StdMetrics.ms_v_bat_voltage->AsFloat(400,Volts), -ks_battery_current / 10.0, m_c_power->AsFloat(0,kW) * 10 / StdMetrics.ms_v_bat_voltage->AsFloat(400,Volts), true);
+		SetChargeMetrics(StdMetrics.ms_v_bat_voltage->AsFloat(400,Volts), (float)ks_battery_current / -10.0, m_c_power->AsFloat(0,kW) * 10 / StdMetrics.ms_v_bat_voltage->AsFloat(400,Volts), true);
 	  }
 
 
 	// Check for charging status changes:
-	bool isCharging = StdMetrics.ms_v_charge_pilot->AsBool()
-			  						&& (ks_charge_bits.ChargingChademo || ks_charge_bits.ChargingJ1772)
-									&& (CHARGE_CURRENT > 0);
+	bool isCharging = (ks_charge_bits.ChargingChademo || ks_charge_bits.ChargingJ1772) 	&& (CHARGE_CURRENT > 0);
 
 	if (isCharging)
 		{
@@ -498,9 +578,49 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 		HandleChargeStop();
 		}
 
-	if(!isCharging && !StdMetrics.ms_v_env_on->AsBool())
+	if(m_poll_state==0 && StdMetrics.ms_v_door_chargeport->AsBool() && ks_ready_for_chargepollstate)	{
+  		//Set pollstate charging if car is off and chargeport is open.
+		ESP_LOGI(TAG, "CHARGEDOOR OPEN. READY FOR CHARGING.");
+  		POLLSTATE_CHARGING;
+  		ks_ready_for_chargepollstate = false;
+  		ks_secs_with_no_client = 0; //Reset no client counter
+  }
+
+	//**** AUX Battery drain prevention code ***
+	//If poll state is CHARGING and no clients are connected for 60 seconds, we'll turn off polling.
+	if((StdMetrics.ms_s_v2_peers->AsInt() + StdMetrics.ms_s_v3_peers->AsInt())==0)
 		{
-		POLLSTATE_OFF;
+		if(m_poll_state==2 )
+			{
+			ks_secs_with_no_client++;
+			if(ks_secs_with_no_client>60)
+				{
+				ESP_LOGI(TAG,"NO CLIENTS. Turning off polling.");
+				POLLSTATE_OFF;
+				}
+			}
+		}
+	//If client connects, we set the appropriate poll state
+	else if(ks_secs_with_no_client>0 && m_poll_state==0)
+		{
+		ks_secs_with_no_client=0;
+		ESP_LOGI(TAG,"CLIENT CONNECTED. Turning on polling.");
+		if(StdMetrics.ms_v_env_on->AsBool())
+			{
+			POLLSTATE_RUNNING;
+			}
+		else
+			{
+			POLLSTATE_CHARGING;
+			}
+		}
+	//**** End of AUX Battery drain prevention code ***
+
+	// Check door lock status if clients are connected and we think the status might have changed
+	if( (StdMetrics.ms_s_v2_peers->AsInt() + StdMetrics.ms_s_v3_peers->AsInt())>0 && ks_check_door_lock)
+		{
+		GetDoorLockStatus();
+		ks_check_door_lock=false;
 		}
 
 	// Reset emergency light if it is stale.
@@ -529,12 +649,6 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
  */
 void OvmsVehicleKiaSoulEv::Ticker10(uint32_t ticker)
 	{
-	// If we have clients connected, check every 10 seconds
-	if( (StdMetrics.ms_s_v2_peers->AsInt() + StdMetrics.ms_s_v3_peers->AsInt())>0)
-		{
-		//Read door lock status
-		//TODO GetDoorLockStatus();
-		}
 
 	// Calculate difference to UTC
 	if( ks_clock>0 && StdMetrics.ms_m_timeutc->AsInt()>0)
@@ -543,7 +657,6 @@ void OvmsVehicleKiaSoulEv::Ticker10(uint32_t ticker)
 		}
 
 	m_v_pos_street->SetValue(m_street);
-
 	}
 
 /**
@@ -551,9 +664,16 @@ void OvmsVehicleKiaSoulEv::Ticker10(uint32_t ticker)
  */
 void OvmsVehicleKiaSoulEv::Ticker300(uint32_t ticker)
 	{
-	//Always read door lock status every five minutes
-	GetDoorLockStatus();
 	}
+
+void OvmsVehicleKiaSoulEv::EventListener(std::string event, void* data)
+  {
+  if (event == "app.connected")
+    {
+  		ks_check_door_lock=true;
+    }
+  }
+
 
 /**
  * Update metrics when charging
@@ -578,8 +698,9 @@ void OvmsVehicleKiaSoulEv::HandleCharging()
 		StdMetrics.ms_v_charge_inprogress->SetValue( true );
 		StdMetrics.ms_v_env_charging12v->SetValue( true);
 
-		POLLSTATE_CHARGING;
+		BmsResetCellStats();
 
+		POLLSTATE_CHARGING;
     }
   else
   		{
@@ -616,11 +737,11 @@ void OvmsVehicleKiaSoulEv::HandleCharging()
 			}
 
 		if (ks_charge_bits.ChargingChademo)
-			{ //ChaDeMo charging means that we will reach maximum 83%.
-			chargeTarget_full = MIN(chargeTarget_full, ks_battery_capacity*0.83); //Limit charge target to 83% when using ChaDeMo
-			chargeTarget_soc = MIN(chargeTarget_soc, ks_battery_capacity*0.83); //Limit charge target to 83% when using ChaDeMo
-			chargeTarget_range = MIN(chargeTarget_range, ks_battery_capacity*0.83); //Limit charge target to 83% when using ChaDeMo
-			//TODO calculate the needed capacity above 83% as 32A
+			{ //ChaDeMo charging means that we will reach maximum 94%.
+			chargeTarget_full = MIN(chargeTarget_full, ks_battery_capacity*0.94); //Limit charge target to 94% when using ChaDeMo
+			chargeTarget_soc = MIN(chargeTarget_soc, ks_battery_capacity*0.94); //Limit charge target to 94% when using ChaDeMo
+			chargeTarget_range = MIN(chargeTarget_range, ks_battery_capacity*0.94); //Limit charge target to 94% when using ChaDeMo
+			//TODO calculate the needed capacity above 94% as 32A
 			}
 
 		// Calculate time to full, SOC-limit and range-limit.
@@ -639,7 +760,7 @@ void OvmsVehicleKiaSoulEv::HandleCharging()
   			SET_CHARGE_STATE("charging",NULL);
   			}
   		}
-  StdMetrics.ms_v_charge_kwh->SetValue(CUM_CHARGE - ks_cum_charge_start, kWh); // kWh charged
+  StdMetrics.ms_v_charge_kwh->SetValue((CUM_CHARGE - ks_cum_charge_start)/10.0, kWh); // kWh charged
   ks_last_soc = BAT_SOC;
   ks_last_ideal_range = IDEAL_RANGE;
 	}
@@ -667,12 +788,19 @@ void OvmsVehicleKiaSoulEv::HandleChargeStop()
 		SET_CHARGE_STATE("stopped","interrupted");
 		}
 	StdMetrics.ms_v_charge_substate->SetValue("onrequest");
-  StdMetrics.ms_v_charge_kwh->SetValue( CUM_CHARGE - ks_cum_charge_start, kWh );  // kWh charged
+  StdMetrics.ms_v_charge_kwh->SetValue( (CUM_CHARGE - ks_cum_charge_start)/10.0, kWh );  // kWh charged
 
   ks_cum_charge_start = 0;
   StdMetrics.ms_v_charge_inprogress->SetValue( false );
 	StdMetrics.ms_v_env_charging12v->SetValue( false );
+	ks_charge_bits.ChargingChademo = false;
+	ks_charge_bits.ChargingJ1772 = false;
 	m_c_speed->SetValue(0);
+
+	// Reset trip counter for this charge
+	ks_charge_trip_counter.Reset(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
+
+	POLLSTATE_OFF;
 	}
 
 /**
@@ -686,6 +814,8 @@ void OvmsVehicleKiaSoulEv::SetChargeMetrics(float voltage, float current, float 
 	StdMetrics.ms_v_charge_climit->SetValue( climit, Amps);
 	StdMetrics.ms_v_charge_type->SetValue( chademo ? "chademo" : "type1");
 	StdMetrics.ms_v_charge_substate->SetValue("onrequest");
+
+	ESP_LOGI(TAG, "SetChargeMetrics: volt=%1f current=%1f chargeLimit=%1f", voltage, current, climit);
 
 	//"Typical" consumption based on battery temperature and ambient temperature.
 	float temp = ((StdMetrics.ms_v_bat_temp->AsFloat(Celcius) * 3) + StdMetrics.ms_v_env_temp->AsFloat(Celcius)) / 4;
@@ -713,11 +843,9 @@ void OvmsVehicleKiaSoulEv::UpdateMaxRangeAndSOH(void)
 	StdMetrics.ms_v_bat_soh->SetValue( 110 - ( m_b_cell_det_max->AsFloat(0) + m_b_cell_det_min->AsFloat(0)) / 2 );
 	StdMetrics.ms_v_bat_cac->SetValue( (ks_battery_capacity * BAT_SOH * BAT_SOC/10000.0) / 400, AmpHours);
 
-	float maxRange = ks_maxrange * BAT_SOH / 100.0;
+	float maxRange = ks_maxrange;// * MIN(BAT_SOH,100) / 100.0;
 	float amb_temp = StdMetrics.ms_v_env_temp->AsFloat(20, Celcius);
 	float bat_temp = StdMetrics.ms_v_bat_temp->AsFloat(20, Celcius);
-
-	//ESP_LOGI(TAG, "MaxRange %.1f %.1f %.1f", maxRange, amb_temp, bat_temp);
 
 	// Temperature compensation:
 	//   - Assumes standard maxRange specified at 20 degrees C
@@ -745,7 +873,7 @@ bool OvmsVehicleKiaSoulEv::SetDoorLock(bool open, const char* password)
     		LeftIndicator(true);
     		result = Send_SJB_Command(0xbc, open?0x11:0x10, 0x03);
     		ACCRelay(false,password	);
-    		GetDoorLockStatus();
+    		ks_check_door_lock=true;
     		}
   		}
 		return result;
@@ -757,6 +885,7 @@ bool OvmsVehicleKiaSoulEv::SetDoorLock(bool open, const char* password)
  */
 bool OvmsVehicleKiaSoulEv::OpenTrunk(const char* password)
 	{
+
   if( ks_shift_bits.Park )
   		{
 		if( PinCheck((char*)password) )
@@ -776,7 +905,7 @@ bool OvmsVehicleKiaSoulEv::OpenTrunk(const char* password)
  */
 bool OvmsVehicleKiaSoulEv::OpenChargePort(const char* password)
 	{
-  if( ks_shift_bits.Park )
+  //TODO if( ks_shift_bits.Park )
   		{
 		if( PinCheck((char*)password) )
 			{
@@ -931,13 +1060,13 @@ void OvmsVehicleKiaSoulEv::DoNotify()
 
   if (which & SEND_EmergencyAlert)
   		{
-    MyNotify.NotifyCommand("alert", "Emergency.Alert","Emergency alert signals are turned on");
+    //TODO MyNotify.NotifyCommand("alert", "Emergency.Alert","Emergency alert signals are turned on");
     ks_notifications &= ~SEND_EmergencyAlert;
   		}
 
   if (which & SEND_EmergencyAlertOff)
   		{
-    MyNotify.NotifyCommand("alert", "Emergency.Alert","Emergency alert signals are turned off");
+    //TODO MyNotify.NotifyCommand("alert", "Emergency.Alert","Emergency alert signals are turned off");
     ks_notifications &= ~SEND_EmergencyAlertOff;
   		}
 
@@ -1013,3 +1142,81 @@ OvmsVehicleKiaSoulEvInit::OvmsVehicleKiaSoulEvInit()
 
   MyVehicleFactory.RegisterVehicle<OvmsVehicleKiaSoulEv>("KS","Kia Soul EV");
   }
+
+/*******************************************************************************/
+KS_Trip_Counter::KS_Trip_Counter()
+	{
+	odo_start=0;
+	cdc_start=0;
+	cc_start=0;
+	odo=0;
+	cdc=0;
+	cc=0;
+	}
+
+KS_Trip_Counter::~KS_Trip_Counter()
+	{
+	}
+
+/*
+ * Resets the trip counter.
+ *
+ * odo - The current ODO
+ * cdc - Cumulated Discharge
+ * cc - Cumulated Charge
+ */
+void KS_Trip_Counter::Reset(float odo, float cdc, float cc)
+	{
+	Update(odo, cdc, cc);
+	if(odo_start==0 && odo!=0)
+		odo_start = odo;		// ODO at Start of trip
+	if(cdc_start==0 && cdc!=0)
+	  	cdc_start = cdc; 	// Register Cumulated discharge
+	if(cc_start==0 && cc!=0)
+	  	cc_start = cc; 		// Register Cumulated charge
+	}
+
+/*
+ * Update the trip counter with current ODO, accumulated discharge and accumulated charge..
+ *
+ * odo - The current ODO
+ * cdc - Accumulated Discharge
+ * cc - Accumulated Charge
+ */
+void KS_Trip_Counter::Update(float current_odo, float current_cdc, float current_cc)
+	{
+	odo=current_odo;
+	cdc=current_cdc;
+	cc=current_cc;
+	}
+
+/*
+ * Returns true if the trip counter has been initialized properly.
+ */
+bool KS_Trip_Counter::Started()
+	{
+	return odo_start!=0;
+	}
+
+/*
+ * Returns true if the trip counter have energy data.
+ */
+bool KS_Trip_Counter::HasEnergyData()
+	{
+	return cdc_start!=0 && cc_start!=0;
+	}
+
+float KS_Trip_Counter::GetDistance()
+	{
+	return odo-odo_start;
+	}
+
+float KS_Trip_Counter::GetEnergyUsed()
+	{
+	return (cdc-cdc_start) - (cc-cc_start);
+	}
+
+float KS_Trip_Counter::GetEnergyRecuperated()
+	{
+	return cc - cc_start;
+	}

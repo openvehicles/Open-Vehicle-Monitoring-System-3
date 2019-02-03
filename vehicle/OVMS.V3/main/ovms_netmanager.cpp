@@ -190,7 +190,9 @@ OvmsNetManager::OvmsNetManager()
     {
     m_dns_modem[i] = (ip_addr_t)ip_addr_any;
     m_dns_wifi[i] = (ip_addr_t)ip_addr_any;
+    m_previous_dns[i] = (ip_addr_t)ip_addr_any;
     }
+  m_previous_name[0] = m_previous_name[1] = 0;
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   m_mongoose_task = 0;
@@ -272,7 +274,9 @@ void OvmsNetManager::WifiDownSTA(std::string event, void* data)
       {
       ESP_LOGI(TAG, "WIFI client down (with MODEM up): reconfigured for MODEM priority");
       MyEvents.SignalEvent("network.reconfigured",NULL);
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
       ScheduleCleanup();
+#endif
       }
     else
       {
@@ -292,7 +296,9 @@ void OvmsNetManager::WifiDownSTA(std::string event, void* data)
     // (in particular if an AP interface is up, and STA goes down, Wifi
     // stack seems to switch default interface to AP)
     PrioritiseAndIndicate();
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
     ScheduleCleanup();
+#endif
     }
   }
 
@@ -327,7 +333,9 @@ void OvmsNetManager::WifiDownAP(std::string event, void* data)
 void OvmsNetManager::WifiApStaDisconnect(std::string event, void* data)
   {
   ESP_LOGI(TAG, "WIFI access point station disconnected");
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   ScheduleCleanup();
+#endif
   }
 
 void OvmsNetManager::ModemUp(std::string event, void* data)
@@ -367,7 +375,9 @@ void OvmsNetManager::ModemDown(std::string event, void* data)
     if (m_connected_any)
       {
       ESP_LOGI(TAG, "MODEM down (with WIFI client up): staying with WIFI client priority");
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
       ScheduleCleanup();
+#endif
       }
     else
       {
@@ -387,7 +397,9 @@ void OvmsNetManager::ModemDown(std::string event, void* data)
     // (in particular if an AP interface is up, and STA goes down, Wifi
     // stack seems to switch default interface to AP)
     PrioritiseAndIndicate();
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
     ScheduleCleanup();
+#endif
     }
   }
 
@@ -444,9 +456,13 @@ void OvmsNetManager::SetDNSServer(ip_addr_t* dnsstore)
         cserver = std::string(servers,sep,next-sep);
         sep = next+1;
         }
-      ESP_LOGI(TAG, "Set DNS#%d %s",spos,cserver.c_str());
       ip4_addr_set_u32(ip_2_ip4(&serverip), ipaddr_addr(cserver.c_str()));
       serverip.type = IPADDR_TYPE_V4;
+      if (!ip_addr_cmp(&serverip, &m_previous_dns[spos]))
+        {
+        m_previous_dns[spos] = serverip;
+        ESP_LOGI(TAG, "Set DNS#%d %s",spos,cserver.c_str());
+        }
       dns_setserver(spos++, &serverip);
       }
     for (;spos<DNS_MAX_SERVERS;spos++)
@@ -459,7 +475,11 @@ void OvmsNetManager::SetDNSServer(ip_addr_t* dnsstore)
     // Set stored DNS servers:
     for (int i=0; i<DNS_MAX_SERVERS; i++)
       {
-      ESP_LOGI(TAG, "Set DNS#%d %s", i, inet_ntoa(dnsstore[i]));
+      if (ip_addr_cmp(&dnsstore[i], &m_previous_dns[i]))
+        {
+        m_previous_dns[i] = dnsstore[i];
+        ESP_LOGI(TAG, "Set DNS#%d %s", i, inet_ntoa(dnsstore[i]));
+        }
       dns_setserver(i, &dnsstore[i]);
       }
     }
@@ -527,9 +547,16 @@ void OvmsNetManager::PrioritiseAndIndicate()
     if ((pri->name[0]==search[0])&&
         (pri->name[1]==search[1]))
       {
-      ESP_LOGI(TAG, "Interface priority is %c%c%d (" IPSTR "/" IPSTR " gateway " IPSTR ")",
-        pri->name[0], pri->name[1], pri->num,
-        IP2STR(&pri->ip_addr.u_addr.ip4), IP2STR(&pri->netmask.u_addr.ip4), IP2STR(&pri->gw.u_addr.ip4));
+      if (search[0] != m_previous_name[0] || search[1] != m_previous_name[1])
+        {
+        ESP_LOGI(TAG, "Interface priority is %c%c%d (" IPSTR "/" IPSTR " gateway " IPSTR ")",
+          pri->name[0], pri->name[1], pri->num,
+          IP2STR(&pri->ip_addr.u_addr.ip4), IP2STR(&pri->netmask.u_addr.ip4), IP2STR(&pri->gw.u_addr.ip4));
+        m_previous_name[0] = search[0];
+        m_previous_name[1] = search[1];
+        for (int i=0; i<DNS_MAX_SERVERS; i++)
+          m_previous_dns[i] = (ip_addr_t)ip_addr_any;
+        }
       netif_set_default(pri);
       SetDNSServer(dns);
       return;

@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <string>
 #include <sstream>
+#include <fstream>
 #include <dirent.h>
 #include "ovms_webserver.h"
 #include "ovms_config.h"
@@ -69,6 +70,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
     }
   }
 
+  PAGE_HOOK("body.pre");
   c.print(
     "<div id=\"livestatus\" class=\"receiver\">"
     "<div class=\"row flex\">"
@@ -82,30 +84,30 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
           "<tr>"
             "<th>Module</th>"
             "<td>"
-              "<div class=\"metric\"><span class=\"value\" data-metric=\"m.freeram\">?</span><span class=\"unit\">bytes free</span></div>"
-              "<div class=\"metric\"><span class=\"value\" data-metric=\"m.tasks\">?</span><span class=\"unit\">tasks running</span></div>"
+              "<div class=\"metric number\" data-metric=\"m.freeram\"><span class=\"value\">?</span><span class=\"unit\">bytes free</span></div>"
+              "<div class=\"metric number\" data-metric=\"m.tasks\"><span class=\"value\">?</span><span class=\"unit\">tasks running</span></div>"
             "</td>"
           "</tr>"
           "<tr>"
             "<th>Network</th>"
             "<td>"
-              "<div class=\"metric\"><span class=\"value\" data-metric=\"m.net.provider\">?</span><span class=\"unit\" data-metric=\"m.net.type\">?</span></div>"
-              "<div class=\"metric\"><span class=\"value\" data-metric=\"m.net.sq\">?</span><span class=\"unit\">dBm</span></div>"
+              "<div class=\"metric text\" data-metric=\"m.net.provider\"><span class=\"value\">?</span><span class=\"metric unit\" data-metric=\"m.net.type\">?</span></div>"
+              "<div class=\"metric number\" data-metric=\"m.net.sq\"><span class=\"value\">?</span><span class=\"unit\">dBm</span></div>"
             "</td>"
           "</tr>"
           "<tr>"
             "<th>Main battery</th>"
             "<td>"
-              "<div class=\"metric\"><span class=\"value\" data-metric=\"v.b.soc\">?</span><span class=\"unit\">%</span></div>"
-              "<div class=\"metric\"><span class=\"value\" data-metric=\"v.b.voltage\">?</span><span class=\"unit\">V</span></div>"
-              "<div class=\"metric\"><span class=\"value\" data-metric=\"v.b.current\">?</span><span class=\"unit\">A</span></div>"
+              "<div class=\"metric number\" data-metric=\"v.b.soc\" data-prec=\"1\"><span class=\"value\">?</span><span class=\"unit\">%</span></div>"
+              "<div class=\"metric number\" data-metric=\"v.b.voltage\" data-prec=\"1\"><span class=\"value\">?</span><span class=\"unit\">V</span></div>"
+              "<div class=\"metric number\" data-metric=\"v.b.current\" data-prec=\"1\"><span class=\"value\">?</span><span class=\"unit\">A</span></div>"
             "</td>"
           "</tr>"
           "<tr>"
             "<th>12V battery</th>"
             "<td>"
-              "<div class=\"metric\"><span class=\"value\" data-metric=\"v.b.12v.voltage\">?</span><span class=\"unit\">V</span></div>"
-              "<div class=\"metric\"><span class=\"value\" data-metric=\"v.b.12v.current\">?</span><span class=\"unit\">A</span></div>"
+              "<div class=\"metric number\" data-metric=\"v.b.12v.voltage\" data-prec=\"1\"><span class=\"value\">?</span><span class=\"unit\">V</span></div>"
+              "<div class=\"metric number\" data-metric=\"v.b.12v.current\" data-prec=\"1\"><span class=\"value\">?</span><span class=\"unit\">A</span></div>"
             "</td>"
           "</tr>"
           "<tr>"
@@ -225,11 +227,6 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
     "$(\"button[name=action]\").on(\"click\", function(ev){"
       "loaduri(\"#main\", \"post\", \"/status\", { \"action\": $(this).val() });"
     "});"
-    "$(\"#livestatus\").on(\"msg:metrics\", function(e, update){"
-      "$(this).find(\"[data-metric]\").each(function(){"
-        "$(this).text(metrics[$(this).data(\"metric\")]);"
-      "});"
-    "}).trigger(\"msg:metrics\");"
     "$(\"#livestatus\").on(\"msg:event\", function(e, event){"
       "if (event.startsWith(\"ticker\"))"
         "return;"
@@ -242,6 +239,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
     "</script>"
     );
 
+  PAGE_HOOK("body.post");
   c.done();
 }
 
@@ -286,6 +284,20 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
 
   // generate form:
   c.head(200);
+  PAGE_HOOK("body.pre");
+
+  c.print(
+    "<style>"
+    ".fullscreened #output {"
+      "border: 0 none;"
+    "}"
+    "@media (max-width: 767px) {"
+      "#output {"
+        "border: 0 none;"
+      "}"
+    "}"
+    "</style>");
+
   c.panel_start("primary panel-minpad", "Shell");
 
   c.printf(
@@ -302,25 +314,16 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
     , _html(output.c_str()), _attr(command.c_str()));
 
   c.print(
-    "<style>"
-    ".fullscreened #output {"
-      "border: 0 none;"
-    "}"
-    "@media (max-width: 767px) {"
-      "#output {"
-        "border: 0 none;"
-      "}"
-    "}"
-    "</style>"
     "<script>"
-    "$(window).on(\"resize\", function(){"
-      "var pad = Number.parseInt($(\"#output\").parent().css(\"padding-top\")) + Number.parseInt($(\"#output\").parent().css(\"padding-bottom\"));"
-      "var h = $(window).height() - $(\"#output\").offset().top - pad - 73;"
+    "$(\"#output\").on(\"window-resize\", function(){"
+      "var $this = $(this);"
+      "var pad = Number.parseInt($this.parent().css(\"padding-top\")) + Number.parseInt($this.parent().css(\"padding-bottom\"));"
+      "var h = $(window).height() - $this.offset().top - pad - 81;"
       "if ($(window).width() <= 767) h += 27;"
       "if ($(\"body\").hasClass(\"fullscreened\")) h -= 4;"
-      "$(\"#output\").height(h);"
-      "$(\"#output\").scrollTop($(\"#output\").get(0).scrollHeight);"
-    "}).trigger(\"resize\");"
+      "$this.height(h);"
+      "$this.scrollTop($this.get(0).scrollHeight);"
+    "}).trigger(\"window-resize\");"
     "$(\"#shellform\").on(\"submit\", function(event){"
       "if (!$(\"html\").hasClass(\"loading\")) {"
         "var data = $(this).serialize();"
@@ -400,6 +403,7 @@ void OvmsWebServer::HandleShell(PageEntry_t& p, PageContext_t& c)
     "</script>");
 
   c.panel_end();
+  PAGE_HOOK("body.post");
   c.done();
 }
 
@@ -1249,7 +1253,7 @@ void OvmsWebServer::UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std:
 void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, warn;
-  bool init, ext12v, modem, server_v2, server_v3;
+  bool init, ext12v, modem, server_v2, server_v3, scripting;
 #ifdef CONFIG_OVMS_COMP_RE_TOOLS
   bool dbc;
 #endif
@@ -1265,6 +1269,7 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
     modem = (c.getvar("modem") == "yes");
     server_v2 = (c.getvar("server_v2") == "yes");
     server_v3 = (c.getvar("server_v3") == "yes");
+    scripting = (c.getvar("scripting") == "yes");
     vehicle_type = c.getvar("vehicle_type");
     obd2ecu = c.getvar("obd2ecu");
     wifi_mode = c.getvar("wifi_mode");
@@ -1315,6 +1320,7 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("auto", "modem", modem);
       MyConfig.SetParamValueBool("auto", "server.v2", server_v2);
       MyConfig.SetParamValueBool("auto", "server.v3", server_v3);
+      MyConfig.SetParamValueBool("auto", "scripting", scripting);
       MyConfig.SetParamValue("auto", "vehicle.type", vehicle_type);
       MyConfig.SetParamValue("auto", "obd2ecu", obd2ecu);
       MyConfig.SetParamValue("auto", "wifi.mode", wifi_mode);
@@ -1350,6 +1356,7 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
     modem = MyConfig.GetParamValueBool("auto", "modem", false);
     server_v2 = MyConfig.GetParamValueBool("auto", "server.v2", false);
     server_v3 = MyConfig.GetParamValueBool("auto", "server.v3", false);
+    scripting = MyConfig.GetParamValueBool("auto", "scripting", true);
     vehicle_type = MyConfig.GetParamValue("auto", "vehicle.type");
     obd2ecu = MyConfig.GetParamValue("auto", "obd2ecu");
     wifi_mode = MyConfig.GetParamValue("auto", "wifi.mode", "ap");
@@ -1368,6 +1375,9 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Enable auto start", "init", init,
     "<p>Note: if a crash occurs within 10 seconds after powering the module, autostart will be temporarily"
     " disabled. You may need to use the USB shell to access the module and fix the config.</p>");
+
+  c.input_checkbox("Enable scripting", "scripting", scripting,
+    "<p>Enable execution of user scripts as commands and on events.</p>");
 
 #ifdef CONFIG_OVMS_COMP_RE_TOOLS
   c.input_checkbox("Autoload DBC files", "dbc", dbc,
@@ -2081,7 +2091,7 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
           "<col style=\"width:90%\">"
         "</colgroup>"
         "<template>"
-          "<tr class=\"list-item\">"
+          "<tr class=\"list-item mode-ITEM_MODE\">\n"
             "<td><button type=\"button\" class=\"btn btn-danger list-item-del\"><strong>✖</strong></button></td>"
             "<td>"
               "<div class=\"form-group\">"
@@ -2111,6 +2121,13 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
                   "<input type=\"text\" class=\"form-control\" placeholder=\"Enter name\" autocomplete=\"name\" name=\"name_ITEM_ID\" id=\"input-name_ITEM_ID\" value=\"ITEM_name\">"
                 "</div>"
               "</div>"
+              "<div class=\"form-group\">\n"
+                "<label class=\"control-label col-sm-2\">Scripts:</label>\n"
+                "<div class=\"col-sm-10\">\n"
+                  "<button type=\"button\" class=\"btn btn-default edit-scripts\" data-edit=\"location.enter.{name}\">Entering</button>\n"
+                  "<button type=\"button\" class=\"btn btn-default edit-scripts\" data-edit=\"location.leave.{name}\">Leaving</button>\n"
+                "</div>\n"
+              "</div>\n"
             "</td>"
           "</tr>"
         "</template>"
@@ -2125,7 +2142,10 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
       "</table>"
       "<input type=\"hidden\" class=\"list-item-id\" name=\"loc\" value=\"0\">"
     "</div>"
-    "<button type=\"submit\" class=\"btn btn-default center-block\">Save</button>\n"
+    "<div class=\"text-center\">\n"
+      "<button type=\"reset\" class=\"btn btn-default\">Reset</button>\n"
+      "<button type=\"submit\" class=\"btn btn-primary\">Save</button>\n"
+    "</div>\n"
   );
 
   c.form_end();
@@ -2146,7 +2166,25 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
         "var preset = { latlon: metrics['v.p.latitude']+','+metrics['v.p.longitude'], radius: 100 };"
         "$('#loced button.list-item-add').data('preset', JSON.stringify(preset));"
       "}"
-    "}).trigger('msg:metrics', metrics);");
+    "}).trigger('msg:metrics', metrics);"
+    "$('#loced').on('click', 'button.edit-scripts', function(evt) {\n"
+      "var $this = $(this), $tr = $this.closest('tr');\n"
+      "var name = $tr.find('input[name^=\"name_\"]').val();\n"
+      "var dir = '/store/events/' + $this.data('edit').replace(\"{name}\", name) + '/';\n"
+      "var changed = ($('#loced').find('.mode-add').length != 0);\n"
+      "if (!changed)\n"
+        "$('#loced input').each(function() { changed = changed || ($(this).val() != $(this).attr(\"value\")); });\n"
+      "if (name == \"\") {\n"
+        "confirmdialog(\"Error\", \"<p>Scripts are bound to the location name, please specify it.</p>\", [\"OK\"]);\n"
+      "} else if (!changed) {\n"
+        "loaduri('#main', 'get', '/edit', { \"path\": dir });\n"
+      "} else {\n"
+        "confirmdialog(\"Discard changes?\", \"Loading the editor will discard your list changes.\", [\"Cancel\", \"OK\"], function(ok) {\n"
+          "if (ok) loaduri('#main', 'get', '/edit', { \"path\": dir });\n"
+        "});\n"
+      "}\n"
+    "});\n"
+  );
 
   for (auto &kv: pmap) {
     lat = lon = 0;
@@ -2293,5 +2331,641 @@ void OvmsWebServer::HandleCfgBackup(PageEntry_t& p, PageContext_t& c)
     "})();\n"
     "</script>\n"
   );
+  c.done();
+}
+
+/**
+ * HandleCfgPlugins: configure/edit web plugins (URL /cfg/plugins)
+ */
+
+static void OutputPluginList(PageEntry_t& p, PageContext_t& c)
+{
+  c.print(
+    "<style>\n"
+    ".list-editor > table {\n"
+      "border-bottom: 1px solid #ddd;\n"
+    "}\n"
+    ".list-input .form-control,\n"
+    ".list-input > .btn-group,\n"
+    ".list-input > button {\n"
+      "margin-right: 20px;\n"
+      "margin-bottom: 5px;\n"
+    "}\n"
+    "</style>\n"
+    "\n"
+    "<div class=\"panel panel-primary\">\n"
+      "<div class=\"panel-heading\">Webserver Plugins</div>\n"
+      "<div class=\"panel-body\">\n"
+        "<form class=\"form-inline\" method=\"post\" action=\"/cfg/plugins\" target=\"#main\">\n"
+        "<div class=\"list-editor\" id=\"pluginlist\">\n"
+          "<table class=\"table form-table\">\n"
+            "<colgroup>\n"
+              "<col style=\"width:10%\">\n"
+              "<col style=\"width:90%\">\n"
+            "</colgroup>\n"
+            "<template>\n"
+              "<tr class=\"list-item mode-ITEM_MODE\">\n"
+                "<td><button type=\"button\" class=\"btn btn-danger list-item-del\"><strong>✖</strong></button></td>\n"
+                "<td class=\"list-input\">\n"
+                  "<input type=\"hidden\" name=\"mode_ITEM_ID\" value=\"ITEM_MODE\">\n"
+                  "<select class=\"form-control list-disabled\" size=\"1\" name=\"type_ITEM_ID\">\n"
+                    "<option value=\"page\" data-value=\"ITEM_type\">Page</option>\n"
+                    "<option value=\"hook\" data-value=\"ITEM_type\">Hook</option>\n"
+                  "</select>\n"
+                  "<span><input type=\"text\" required pattern=\"^[a-zA-Z0-9._-]+$\" class=\"form-control font-monospace list-disabled\" placeholder=\"Unique name (letters: a-z/A-Z/0-9/./_/-)\"  title=\"Letters: a-z/A-Z/0-9/./_/-\" name=\"key_ITEM_ID\" id=\"input-key_ITEM_ID\" value=\"ITEM_key\"></span>\n"
+                  "<div class=\"btn-group\" data-toggle=\"buttons\">\n"
+                    "<label class=\"btn btn-default\">\n"
+                      "<input type=\"radio\" name=\"enable_ITEM_ID\" value=\"no\" data-value=\"ITEM_enable\"> OFF\n"
+                    "</label>\n"
+                    "<label class=\"btn btn-default\">\n"
+                      "<input type=\"radio\" name=\"enable_ITEM_ID\" value=\"yes\" data-value=\"ITEM_enable\"> ON\n"
+                    "</label>\n"
+                  "</div>\n"
+                  "<button type=\"button\" class=\"btn btn-default action-edit add-disabled\">Edit</button>\n"
+                "</td>\n"
+              "</tr>\n"
+            "</template>\n"
+            "<tbody class=\"list-items\">\n"
+            "</tbody>\n"
+            "<tfoot>\n"
+              "<tr>\n"
+                "<td><button type=\"button\" class=\"btn btn-success list-item-add\" data-preset='{ \"type\":\"page\", \"enable\":\"yes\" }'><strong>✚</strong></button></td>\n"
+                "<td></td>\n"
+              "</tr>\n"
+            "</tfoot>\n"
+          "</table>\n"
+          "<input type=\"hidden\" class=\"list-item-id\" name=\"cnt\" value=\"0\">\n"
+        "</div>\n"
+        "<div class=\"text-center\">\n"
+          "<button type=\"submit\" class=\"btn btn-primary\">Save</button>\n"
+        "</div>\n"
+        "</form>\n"
+      "</div>\n"
+      "<div class=\"panel-footer\">\n"
+        "<p>You can extend your OVMS web interface by using plugins. A plugin can be attached as a new page or hook into an existing page at predefined places.</p>\n"
+        "<p>Plugin content is loaded from <code>/store/plugin</code> (covered by backups). Plugins currently must contain valid HTML (other mime types will be supported in the future).</p>\n"
+      "</div>\n"
+    "</div>\n"
+    "\n"
+    "<script>\n"
+    "$('#pluginlist').listEditor().on('click', 'button.action-edit', function(evt) {\n"
+      "var $c = $(this).parent();\n"
+      "var data = {\n"
+        "key: $c.find('input[name^=\"key\"]').val(),\n"
+        "type: $c.find('select[name^=\"type\"]').val(),\n"
+      "};\n"
+      "if ($('.list-item.mode-add').length == 0) {\n"
+        "loaduri('#main', 'get', '/cfg/plugins', data);\n"
+      "} else {\n"
+        "confirmdialog(\"Discard changes?\", \"Loading the editor will discard your list changes.\", [\"Cancel\", \"OK\"], function(ok) {\n"
+          "if (ok) loaduri('#main', 'get', '/cfg/plugins', data);\n"
+        "});\n"
+      "}\n"
+    "}).on('list:validate', function(ev) {\n"
+      "var valid = true;\n"
+      "var keycnt = {};\n"
+      "$(this).find('[name^=\"key\"]').each(function(){ keycnt[$(this).val()] = (keycnt[$(this).val()]||0)+1; });\n"
+      "$(this).find('.mode-add [name^=\"key\"]').each(function() {\n"
+        "if (keycnt[$(this).val()] > 1 || !$(this).val().match($(this).attr(\"pattern\"))) {\n"
+          "valid = false;\n"
+          "$(this).parent().addClass(\"has-error\");\n"
+        "} else {\n"
+          "$(this).parent().removeClass(\"has-error\");\n"
+        "}\n"
+      "});\n"
+      "$(this).closest('form').find('button[type=submit]').prop(\"disabled\", !valid);\n"
+    "});\n"
+    );
+
+  OvmsConfigParam* cp = MyConfig.CachedParam("http.plugin");
+  if (cp)
+  {
+    const ConfigParamMap& pmap = cp->GetMap();
+    std::string key, type, enable;
+    
+    for (auto& kv : pmap)
+    {
+      if (!endsWith(kv.first, ".enable"))
+        continue;
+      key = kv.first.substr(0, kv.first.length() - 7);
+      type = cp->IsDefined(key+".hook") ? "hook" : "page";
+      enable = kv.second;
+      c.printf(
+        "$('#pluginlist').listEditor('addItem', { key: '%s', type: '%s', enable: '%s' });\n"
+        , key.c_str(), type.c_str(), enable.c_str());
+    }
+  }
+
+  c.print(
+    "</script>\n"
+    );
+}
+
+static bool SavePluginList(PageEntry_t& p, PageContext_t& c, std::string& error)
+{
+  OvmsConfigParam* cp = MyConfig.CachedParam("http.plugin");
+  if (!cp) {
+    error += "<li>Internal error: <code>http.plugin</code> config not found</li>";
+    return false;
+  }
+
+  const ConfigParamMap& pmap = cp->GetMap();
+  ConfigParamMap nmap;
+  std::string key, type, enable, mode;
+  int cnt = atoi(c.getvar("cnt").c_str());
+  char buf[20];
+
+  for (int i = 1; i <= cnt; i++)
+  {
+    sprintf(buf, "_%d", i);
+    key = c.getvar(std::string("key")+buf);
+    mode = c.getvar(std::string("mode")+buf);
+    if (key == "" || mode == "")
+      continue;
+    type = c.getvar(std::string("type")+buf);
+    enable = c.getvar(std::string("enable")+buf);
+    
+    nmap[key+".enable"] = enable;
+    nmap[key+".page"] = (mode=="add") ? "" : cp->GetValue(key+".page");
+    if (type == "page") {
+      nmap[key+".label"] = (mode=="add") ? "" : cp->GetValue(key+".label");
+      nmap[key+".menu"] = (mode=="add") ? "" : cp->GetValue(key+".menu");
+      nmap[key+".auth"] = (mode=="add") ? "" : cp->GetValue(key+".auth");
+    } else {
+      nmap[key+".hook"] = (mode=="add") ? "" : cp->GetValue(key+".hook");
+    }
+  }
+
+  // deleted:
+  for (auto& kv : pmap)
+  {
+    if (!endsWith(kv.first, ".enable"))
+      continue;
+    if (nmap.count(kv.first) == 0) {
+      key = "/store/plugin/" + kv.first.substr(0, kv.first.length() - 7);
+      unlink(key.c_str());
+    }
+  }
+
+  cp->SetMap(nmap);
+
+  return true;
+}
+
+static void OutputPluginEditor(PageEntry_t& p, PageContext_t& c)
+{
+  std::string key = c.getvar("key");
+  std::string type = c.getvar("type");
+  std::string page, hook, label, menu, auth;
+  extram::string content;
+
+  page = MyConfig.GetParamValue("http.plugin", key+".page");
+  if (type == "page") {
+    label = MyConfig.GetParamValue("http.plugin", key+".label");
+    menu = MyConfig.GetParamValue("http.plugin", key+".menu");
+    auth = MyConfig.GetParamValue("http.plugin", key+".auth");
+  } else {
+    hook = MyConfig.GetParamValue("http.plugin", key+".hook");
+  }
+
+  // read plugin content:
+  std::string path = "/store/plugin/" + key;
+  std::ifstream file(path, std::ios::in | std::ios::binary | std::ios::ate);
+  if (file.is_open()) {
+    auto size = file.tellg();
+    if (size > 0) {
+      content.resize(size, '\0');
+      file.seekg(0);
+      file.read(&content[0], size);
+    }
+  }
+
+  c.printf(
+    "<div class=\"panel panel-primary\">\n"
+      "<div class=\"panel-heading\">Plugin Editor: <code>%s</code></div>\n"
+      "<div class=\"panel-body\">\n"
+      , _html(key));
+
+  c.printf(
+        "<form method=\"post\" action=\"/cfg/plugins\" target=\"#main\">\n"
+          "<input type=\"hidden\" name=\"key\" value=\"%s\">\n"
+          "<input type=\"hidden\" name=\"type\" value=\"%s\">\n"
+          , _attr(key)
+          , _attr(type));
+
+  if (type == "page")
+  {
+    c.printf(
+          "<div class=\"form-group\">\n"
+            "<label class=\"control-label\" for=\"input-page\">Page:</label>\n"
+            "<input type=\"text\" class=\"form-control font-monospace\" id=\"input-page\" placeholder=\"Enter page URI\" name=\"page\" value=\"%s\">\n"
+            "<span class=\"help-block\">\n"
+              "<p>Note: framework URIs have priority. Use prefix <code>/usr/…</code> to avoid conflicts.</p>\n"
+            "</span>\n"
+          "</div>\n"
+          , _attr(page));
+    c.printf(
+          "<div class=\"form-group\">\n"
+            "<label class=\"control-label\" for=\"input-label\">Label:</label>\n"
+            "<input type=\"text\" class=\"form-control\" id=\"input-label\" placeholder=\"Enter menu label / page title\" name=\"label\" value=\"%s\">\n"
+          "</div>\n"
+          , _attr(label));
+    c.printf(
+          "<div class=\"row\">\n"
+            "<div class=\"form-group col-xs-6\">\n"
+              "<label class=\"control-menu\" for=\"input-menu\">Menu:</label>\n"
+              "<select class=\"form-control\" id=\"input-menu\" size=\"1\" name=\"menu\">\n"
+                "<option %s>None</option>\n"
+                "<option %s>Main</option>\n"
+                "<option %s>Tools</option>\n"
+                "<option %s>Config</option>\n"
+                "<option %s>Vehicle</option>\n"
+              "</select>\n"
+            "</div>\n"
+          , (menu == "None") ? "selected" : ""
+          , (menu == "Main") ? "selected" : ""
+          , (menu == "Tools") ? "selected" : ""
+          , (menu == "Config") ? "selected" : ""
+          , (menu == "Vehicle") ? "selected" : "");
+    c.printf(
+            "<div class=\"form-group col-xs-6\">\n"
+              "<label class=\"control-auth\" for=\"input-auth\">Authorization:</label>\n"
+              "<select class=\"form-control\" id=\"input-auth\" size=\"1\" name=\"auth\">\n"
+                "<option %s>None</option>\n"
+                "<option %s>Cookie</option>\n"
+                "<option %s>File</option>\n"
+              "</select>\n"
+            "</div>\n"
+          "</div>\n"
+          , (auth == "None") ? "selected" : ""
+          , (auth == "Cookie") ? "selected" : ""
+          , (auth == "File") ? "selected" : "");
+  }
+  else // type == "hook"
+  {
+    c.printf(
+          "<div class=\"form-group\">\n"
+            "<label class=\"control-label\" for=\"input-page\">Page:</label>\n"
+            "<input type=\"text\" class=\"form-control font-monospace\" id=\"input-page\" placeholder=\"Enter page URI\" name=\"page\" value=\"%s\">\n"
+          "</div>\n"
+          , _attr(page));
+    c.printf(
+          "<div class=\"form-group\">\n"
+            "<label class=\"control-label\" for=\"input-hook\">Hook:</label>\n"
+            "<input type=\"text\" class=\"form-control font-monospace\" id=\"input-hook\" placeholder=\"Enter hook code\" name=\"hook\" value=\"%s\" list=\"hooks\">\n"
+            "<datalist id=\"hooks\">\n"
+              "<option value=\"body.pre\">\n"
+              "<option value=\"body.post\">\n"
+            "</datalist>\n"
+          "</div>\n"
+          , _attr(hook));
+  }
+
+  c.printf(
+          "<div class=\"form-group\">\n"
+            "<label class=\"control-label\" for=\"input-content\">Plugin content:</label>\n"
+            "<div class=\"textarea-control pull-right\">\n"
+              "<button type=\"button\" class=\"btn btn-sm btn-default tac-wrap\" title=\"Wrap long lines\">⇌</button>\n"
+              "<button type=\"button\" class=\"btn btn-sm btn-default tac-smaller\">&minus;</button>\n"
+              "<button type=\"button\" class=\"btn btn-sm btn-default tac-larger\">&plus;</button>\n"
+            "</div>\n"
+            "<textarea class=\"form-control fullwidth font-monospace\" rows=\"20\"\n"
+              "autocapitalize=\"none\" autocorrect=\"off\" autocomplete=\"off\" spellcheck=\"false\"\n"
+              "id=\"input-content\" name=\"content\">%s</textarea>\n"
+          "</div>\n"
+          , c.encode_html(content).c_str());
+
+  c.print(
+          "<div class=\"text-center\">\n"
+            "<button type=\"reset\" class=\"btn btn-default\">Reset</button>\n"
+            "<button type=\"button\" class=\"btn btn-default action-cancel\">Cancel</button>\n"
+            "<button type=\"submit\" class=\"btn btn-primary action-save\">Save</button>\n"
+          "</div>\n"
+        "</form>\n"
+      "</div>\n"
+    "</div>\n"
+    "<script>\n"
+    "$('.action-cancel').on('click', function(ev) {\n"
+      "loaduri('#main', 'get', '/cfg/plugins');\n"
+    "});\n"
+    "/* textarea controls */\n"
+    "$('.tac-wrap').on('click', function(ev) {\n"
+      "var $this = $(this), $ta = $this.parent().next();\n"
+      "$this.toggleClass(\"active\");\n"
+      "$ta.css(\"white-space\", $this.hasClass(\"active\") ? \"pre-wrap\" : \"pre\");\n"
+      "if (!supportsTouch) $ta.focus();\n"
+    "});\n"
+    "$('.tac-smaller').on('click', function(ev) {\n"
+      "var $this = $(this), $ta = $this.parent().next();\n"
+      "var fs = parseInt($ta.css(\"font-size\"));\n"
+      "$ta.css(\"font-size\", (fs-1)+\"px\");\n"
+      "if (!supportsTouch) $ta.focus();\n"
+    "});\n"
+    "$('.tac-larger').on('click', function(ev) {\n"
+      "var $this = $(this), $ta = $this.parent().next();\n"
+      "var fs = parseInt($ta.css(\"font-size\"));\n"
+      "$ta.css(\"font-size\", (fs+1)+\"px\");\n"
+      "if (!supportsTouch) $ta.focus();\n"
+    "});\n"
+    "/* remember textarea config: */\n"
+    "window.prefs = $.extend({ plugineditor: { height: '300px', wrap: false, fontsize: '13px' } }, window.prefs);\n"
+    "$('#input-content').css(\"height\", prefs.plugineditor.height).css(\"font-size\", prefs.plugineditor.fontsize);\n"
+    "if (prefs.plugineditor.wrap) $('.tac-wrap').trigger('click');\n"
+    "$('#input-content, .textarea-control').on('click', function(ev) {\n"
+      "$ta = $('#input-content');\n"
+      "prefs.plugineditor.height = $ta.css(\"height\");\n"
+      "prefs.plugineditor.fontsize = $ta.css(\"font-size\");\n"
+      "prefs.plugineditor.wrap = $('.tac-wrap').hasClass(\"active\");\n"
+    "});\n"
+    "</script>\n"
+    );
+}
+
+static bool SavePluginEditor(PageEntry_t& p, PageContext_t& c, std::string& error)
+{
+  OvmsConfigParam* cp = MyConfig.CachedParam("http.plugin");
+  if (!cp) {
+    error += "<li>Internal error: <code>http.plugin</code> config not found</li>";
+    return false;
+  }
+
+  ConfigParamMap nmap = cp->GetMap();
+  std::string key = c.getvar("key");
+  std::string type = c.getvar("type");
+  extram::string content;
+
+  nmap[key+".page"] = c.getvar("page");
+  if (type == "page") {
+    nmap[key+".label"] = c.getvar("label");
+    nmap[key+".menu"] = c.getvar("menu");
+    nmap[key+".auth"] = c.getvar("auth");
+  } else {
+    nmap[key+".hook"] = c.getvar("hook");
+  }
+
+  cp->SetMap(nmap);
+
+  // write plugin content:
+  c.getvar("content", content);
+  content = stripcr(content);
+  mkpath("/store/plugin");
+  std::string path = "/store/plugin/" + key;
+  std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
+  if (file.is_open()) {
+    file.write(content.data(), content.size());
+  }
+  if (file.fail()) {
+    error += "<li>Error writing to <code>" + c.encode_html(path) + "</code>: " + strerror(errno) + "</li>";
+    return false;
+  }
+
+  return true;
+}
+
+void OvmsWebServer::HandleCfgPlugins(PageEntry_t& p, PageContext_t& c)
+{
+  std::string cnt = c.getvar("cnt");
+  std::string key = c.getvar("key");
+  std::string error, info;
+
+  if (c.method == "POST") {
+    if (cnt != "") {
+      if (SavePluginList(p, c, error)) {
+        info = "<p class=\"lead\">Plugin registration saved.</p>"
+          "<script>after(0.5, reloadmenu)</script>";
+      }
+    }
+    else if (key != "") {
+      if (SavePluginEditor(p, c, error)) {
+        info = "<p class=\"lead\">Plugin <code>" + c.encode_html(key) + "</code> saved.</p>"
+          "<script>after(0.5, reloadmenu)</script>";
+        key = "";
+      }
+    }
+  }
+
+  if (error != "") {
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    c.head(400);
+    c.alert("danger", error.c_str());
+  } else {
+    c.head(200);
+    if (info != "")
+      c.alert("success", info.c_str());
+  }
+
+  if (key == "")
+    OutputPluginList(p, c);
+  else
+    OutputPluginEditor(p, c);
+
+  c.done();
+}
+
+
+/**
+ * HandleEditor: simple text file editor
+ */
+void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
+{
+  std::string error, info;
+  std::string path = c.getvar("path");
+  extram::string content;
+
+  if (MyConfig.ProtectedPath(path)) {
+    c.head(400);
+    c.alert("danger", "<p class=\"lead\">Error: protected path</p>");
+    c.done();
+    return;
+  }
+
+  if (c.method == "POST")
+  {
+    bool got_content = c.getvar("content", content);
+    content = stripcr(content);
+
+    if (path == "" || path.front() != '/' || path.back() == '/') {
+      error += "<li>Missing or invalid path</li>";
+    }
+    else if (!got_content) {
+      error += "<li>Missing content</li>";
+    }
+    else {
+      // create path:
+      size_t n = path.rfind('/');
+      if (n != 0 && n != std::string::npos) {
+        std::string dir = path.substr(0, n);
+        if (!path_exists(dir)) {
+          if (mkpath(dir) != 0)
+            error += "<li>Error creating path <code>" + c.encode_html(dir) + "</code>: " + strerror(errno) + "</li>";
+          else
+            info += "<p class=\"lead\">Path <code>" + c.encode_html(dir) + "</code> created.</p>";
+        }
+      }
+      // write file:
+      if (error == "") {
+        std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
+        if (file.is_open())
+          file.write(content.data(), content.size());
+        if (file.fail()) {
+          error += "<li>Error writing to <code>" + c.encode_html(path) + "</code>: " + strerror(errno) + "</li>";
+        } else {
+          info += "<p class=\"lead\">File <code>" + c.encode_html(path) + "</code> saved.</p>";
+          MyEvents.SignalEvent("system.vfs.file.changed", (void*)path.c_str(), path.size()+1);
+        }
+      }
+    }
+  }
+  else
+  {
+    if (path != "") {
+      // read file:
+      std::ifstream file(path, std::ios::in | std::ios::binary | std::ios::ate);
+      if (file.is_open()) {
+        auto size = file.tellg();
+        if (size > 0) {
+          content.resize(size, '\0');
+          file.seekg(0);
+          file.read(&content[0], size);
+        }
+      }
+    }
+  }
+
+  // output:
+  if (error != "") {
+    error = "<p class=\"lead\">Error:</p><ul class=\"errorlist\">" + error + "</ul>";
+    c.head(400);
+    c.alert("danger", error.c_str());
+  } else {
+    c.head(200);
+    if (info != "")
+      c.alert("success", info.c_str());
+  }
+
+  c.printf(
+    "<div class=\"panel panel-primary\">\n"
+      "<div class=\"panel-heading\">Text Editor</div>\n"
+      "<div class=\"panel-body\">\n"
+        "<form method=\"post\" action=\"%s\" target=\"#main\">\n"
+          "<div class=\"form-group\">\n"
+            "<div class=\"flex-group\">\n"
+              "<button type=\"button\" class=\"btn btn-default action-open\">Open…</button>\n"
+              "<input type=\"text\" class=\"form-control font-monospace\" placeholder=\"File path\"\n"
+                "name=\"path\" id=\"input-path\" value=\"%s\" autocapitalize=\"none\" autocorrect=\"off\"\n"
+                "autocomplete=\"off\" spellcheck=\"false\">\n"
+            "</div>\n"
+          "</div>\n"
+    , _attr(p.uri), _attr(path));
+
+  c.printf(
+          "<div class=\"form-group\">\n"
+            "<div class=\"textarea-control pull-right\">\n"
+              "<button type=\"button\" class=\"btn btn-sm btn-default tac-wrap\" title=\"Wrap lines\">⇌</button>\n"
+              "<button type=\"button\" class=\"btn btn-sm btn-default tac-smaller\">&minus;</button>\n"
+              "<button type=\"button\" class=\"btn btn-sm btn-default tac-larger\">&plus;</button>\n"
+            "</div>\n"
+            "<textarea class=\"form-control fullwidth font-monospace\" rows=\"20\"\n"
+              "autocapitalize=\"none\" autocorrect=\"off\" autocomplete=\"off\" spellcheck=\"false\"\n"
+              "id=\"input-content\" name=\"content\">%s</textarea>\n"
+          "</div>\n"
+          "<div class=\"text-center\">\n"
+            "<button type=\"reset\" class=\"btn btn-default\">Reset</button>\n"
+            "<button type=\"button\" class=\"btn btn-default action-reload\">Reload</button>\n"
+            "<button type=\"button\" class=\"btn btn-default action-saveas\">Save as…</button>\n"
+            "<button type=\"button\" class=\"btn btn-primary action-save\">Save</button>\n"
+          "</div>\n"
+        "</form>\n"
+        "<div class=\"filedialog\" id=\"fileselect\" />\n"
+      "</div>\n"
+    "</div>\n"
+    , c.encode_html(content).c_str());
+
+  c.print(
+    "<script>\n"
+    "(function(){\n"
+      "var path = $('#input-path').val();\n"
+      "var quicknav = ['/sd/', '/store/'];\n"
+      "var dir = path.replace(/[^/]*$/, '');\n"
+      "if (dir && dir.length > 1 && quicknav.indexOf(dir) < 0)\n"
+        "quicknav.push(dir);\n"
+      "$(\"#fileselect\").filedialog({\n"
+        "\"path\": path,\n"
+        "\"quicknav\": quicknav,\n"
+      "});\n"
+      "$('#input-path').on('keydown', function(ev) {\n"
+        "if (ev.which == 13) {\n"
+          "ev.preventDefault();\n"
+          "return false;\n"
+        "}\n"
+      "});\n"
+      "$('.action-open').on('click', function() {\n"
+        "$(\"#fileselect\").filedialog('show', {\n"
+          "title: \"Load File\",\n"
+          "submit: \"Load\",\n"
+          "onSubmit: function(input) {\n"
+            "if (input.file)\n"
+              "loaduri(\"#main\", \"get\", page.path, { \"path\": input.path });\n"
+          "},\n"
+        "});\n"
+      "});\n"
+      "$('.action-saveas').on('click', function() {\n"
+        "$(\"#fileselect\").filedialog('show', {\n"
+          "title: \"Save File\",\n"
+          "submit: \"Save\",\n"
+          "onSubmit: function(input) {\n"
+            "if (input.file) {\n"
+              "$('#input-path').val(input.path);\n"
+              "$('form').submit();\n"
+            "}\n"
+          "},\n"
+        "});\n"
+      "});\n"
+      "$('.action-save').on('click', function() {\n"
+        "path = $('#input-path').val();\n"
+        "if (path)\n"
+          "$('form').submit();\n"
+      "});\n"
+      "$('.action-reload').on('click', function() {\n"
+        "path = $('#input-path').val();\n"
+        "if (path)\n"
+          "loaduri(\"#main\", \"get\", page.path, { \"path\": path });\n"
+      "});\n"
+      "/* textarea controls */\n"
+      "$('.tac-wrap').on('click', function(ev) {\n"
+        "var $this = $(this), $ta = $this.parent().next();\n"
+        "$this.toggleClass(\"active\");\n"
+        "$ta.css(\"white-space\", $this.hasClass(\"active\") ? \"pre-wrap\" : \"pre\");\n"
+        "if (!supportsTouch) $ta.focus();\n"
+      "});\n"
+      "$('.tac-smaller').on('click', function(ev) {\n"
+        "var $this = $(this), $ta = $this.parent().next();\n"
+        "var fs = parseInt($ta.css(\"font-size\"));\n"
+        "$ta.css(\"font-size\", (fs-1)+\"px\");\n"
+        "if (!supportsTouch) $ta.focus();\n"
+      "});\n"
+      "$('.tac-larger').on('click', function(ev) {\n"
+        "var $this = $(this), $ta = $this.parent().next();\n"
+        "var fs = parseInt($ta.css(\"font-size\"));\n"
+        "$ta.css(\"font-size\", (fs+1)+\"px\");\n"
+        "if (!supportsTouch) $ta.focus();\n"
+      "});\n"
+      "/* remember textarea config: */\n"
+      "window.prefs = $.extend({ texteditor: { height: '300px', wrap: false, fontsize: '13px' } }, window.prefs);\n"
+      "$('#input-content').css(\"height\", prefs.texteditor.height).css(\"font-size\", prefs.texteditor.fontsize);\n"
+      "if (prefs.texteditor.wrap) $('.tac-wrap').trigger('click');\n"
+      "$('#input-content, .textarea-control').on('click', function(ev) {\n"
+        "$ta = $('#input-content');\n"
+        "prefs.texteditor.height = $ta.css(\"height\");\n"
+        "prefs.texteditor.fontsize = $ta.css(\"font-size\");\n"
+        "prefs.texteditor.wrap = $('.tac-wrap').hasClass(\"active\");\n"
+      "});\n"
+      "/* auto open file dialog: */\n"
+      "if (path == dir && $('#input-content').val() == '')\n"
+        "$('.action-open').trigger('click');\n"
+    "})();\n"
+    "</script>\n"
+    );
+
   c.done();
 }

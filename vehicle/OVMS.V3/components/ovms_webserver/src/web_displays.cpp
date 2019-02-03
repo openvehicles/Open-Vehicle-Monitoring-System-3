@@ -239,7 +239,7 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
     ""
     "</style>"
     ""
-    "<div class=\"panel panel-primary panel-dashboard\">"
+    "<div class=\"panel panel-primary\" id=\"panel-dashboard\">"
       "<div class=\"panel-heading\">Dashboard</div>"
       "<div class=\"panel-body\">"
         "<div class=\"receiver get-window-resize\" id=\"livestatus\">"
@@ -259,8 +259,8 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
     "var gaugeset1;"
     ""
     "function get_dashboard_data() {"
-      "var rmin = metrics[\"v.b.range.est\"], rmax = metrics[\"v.b.range.ideal\"];"
-      "var euse = metrics[\"v.b.energy.used\"], erec = metrics[\"v.b.energy.recd\"];"
+      "var rmin = metrics[\"v.b.range.est\"]||0, rmax = metrics[\"v.b.range.ideal\"]||0;\n"
+      "var euse = metrics[\"v.b.energy.used\"]||0, erec = metrics[\"v.b.energy.recd\"]||0;\n"
       "if (rmin > rmax) { var x = rmin; rmin = rmax; rmax = x; }"
       "var md = {"
         "range: { value: \"▼\" + rmin.toFixed(0) + \" ▲\" + rmax.toFixed(0) },"
@@ -475,6 +475,7 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
           "});"
         "}"
       ");"
+      "$('#gaugeset1').data('chart', gaugeset1).addClass('has-chart');"
     "}"
     ""
     "function init_charts() {"
@@ -589,6 +590,7 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
   alerts_enabled = MyConfig.GetParamValueBool("vehicle", "bms.alerts.enabled", true);
   
   c.head(200);
+  PAGE_HOOK("body.pre");
 
   c.print(
     "<div class=\"panel panel-primary panel-single\">\n"
@@ -949,6 +951,7 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
           "},\n"
         "}]\n"
       "});\n"
+      "$('#voltchart').data('chart', voltchart).addClass('has-chart');"
     "}\n"
     "\n"
     "\n"
@@ -1088,6 +1091,7 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
           "},\n"
         "}]\n"
       "});\n"
+      "$('#tempchart').data('chart', tempchart).addClass('has-chart');"
     "}\n"
     "\n"
     "\n"
@@ -1113,5 +1117,6 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
     "\n"
     "</script>\n");
   
+  PAGE_HOOK("body.post");
   c.done();
 }

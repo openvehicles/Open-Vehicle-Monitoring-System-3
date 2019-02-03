@@ -36,6 +36,9 @@
 #include "freertos/queue.h"
 #include <freertos/semphr.h>
 
+/**
+ * Standard Mutex:
+ */
 class OvmsMutex
   {
   public:
@@ -61,6 +64,37 @@ class OvmsMutexLock
 
   protected:
     OvmsMutex* m_mutex;
+    bool m_locked;
+  };
+
+/**
+ * Recursive Mutex:
+ */
+class OvmsRecMutex
+  {
+  public:
+    OvmsRecMutex();
+    ~OvmsRecMutex();
+
+  public:
+    bool Lock(TickType_t timeout = portMAX_DELAY);
+    void Unlock();
+
+  protected:
+    QueueHandle_t m_mutex;
+  };
+
+class OvmsRecMutexLock
+  {
+  public:
+    OvmsRecMutexLock(OvmsRecMutex* mutex, TickType_t timeout = portMAX_DELAY);
+    ~OvmsRecMutexLock();
+
+  public:
+    bool IsLocked();
+
+  protected:
+    OvmsRecMutex* m_mutex;
     bool m_locked;
   };
 

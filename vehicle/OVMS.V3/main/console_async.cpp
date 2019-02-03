@@ -47,7 +47,7 @@ ConsoleAsync* ConsoleAsync::Instance()
   return m_instance;
   }
 
-ConsoleAsync::ConsoleAsync() : TaskBase("OVMS Console", 6*1024)
+ConsoleAsync::ConsoleAsync() : TaskBase("OVMS Console", CONFIG_OVMS_SYS_COMMAND_STACK_SIZE)
   {
   m_monitoring = true;
   uart_config_t uart_config =

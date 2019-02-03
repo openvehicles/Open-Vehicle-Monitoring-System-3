@@ -484,10 +484,7 @@ bool OvmsConfig::GetParamValueBool(std::string param, std::string instance, bool
   {
   std::string value = GetParamValue(param,instance);
   if (value.length() == 0) return defvalue;
-  if ((value == "yes")||(value == "1")||(value == "true"))
-    return true;
-  else
-    return false;
+  return strtobool(value);
   }
 
 bool OvmsConfig::IsDefined(std::string param, std::string instance)
@@ -527,7 +524,7 @@ const ConfigParamMap* OvmsConfig::GetParamMap(std::string param)
     RegisterParam(param, "", true, false);
   OvmsConfigParam* p = CachedParam(param);
   if (p)
-    return p->GetMap();
+    return &p->GetMap();
   else
     return NULL;
   }
@@ -563,6 +560,7 @@ static struct
     { "scripts", true },
     { "obd2ecu", true },
     { "dbc", true },
+    { "plugin", true },
     { NULL, false }
   };
 

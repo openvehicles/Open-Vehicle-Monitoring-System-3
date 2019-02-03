@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-twizy";
 
-#define VERSION "0.20.1"
+#define VERSION "0.23.2"
 
 #include <stdio.h>
 #include <string>
@@ -96,6 +96,14 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   }
   m_version = MyMetrics.InitString("xrt.m.version", 0, VERSION " " __DATE__ " " __TIME__);
 
+  mt_charger_status = MyMetrics.InitInt("xrt.v.c.status", SM_STALE_MIN, 0);
+  mt_bms_status     = MyMetrics.InitInt("xrt.v.b.status", SM_STALE_MIN, 0);
+  mt_sevcon_status  = MyMetrics.InitInt("xrt.v.i.status", SM_STALE_MIN, 0);
+
+  mt_bms_alert_12v  = MyMetrics.InitBool("xrt.v.b.alert.12v", SM_STALE_MIN, false);
+  mt_bms_alert_batt = MyMetrics.InitBool("xrt.v.b.alert.batt", SM_STALE_MIN, false);
+  mt_bms_alert_temp = MyMetrics.InitBool("xrt.v.b.alert.temp", SM_STALE_MIN, false);
+
   // init commands:
   cmd_xrt = MyCommandApp.RegisterCommand("xrt", "Renault Twizy", NULL, "", 0, 0, true);
 
@@ -108,7 +116,9 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   BatteryInit();
   PowerInit();
   ChargeInit();
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
+#endif
 
   // init can bus:
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
