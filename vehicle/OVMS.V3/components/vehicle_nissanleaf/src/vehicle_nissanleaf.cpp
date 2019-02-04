@@ -40,11 +40,14 @@ static const char *TAG = "v-nissanleaf";
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
 
+#define MAX_POLL_DATA_LEN 196
 
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
   {
     { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, {  0,999,999 } }, // VIN [19]
     { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 61, 61 } }, // bat [39]
+    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 67, 67 } }, // battery voltages [196]
+    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,307,307 } }, // battery temperatures [14]
     { 0, 0, 0x00, 0x00, { 0, 0, 0 } }
   };
 
@@ -77,6 +80,10 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_hx = MyMetrics.InitFloat("xnl.v.b.hx", SM_STALE_HIGH, 0);
   m_soc_new_car = MyMetrics.InitFloat("xnl.v.b.soc.newcar", SM_STALE_HIGH, 0, Percentage);
   m_soc_instrument = MyMetrics.InitFloat("xnl.v.b.soc.instrument", SM_STALE_HIGH, 0, Percentage);
+  m_bms_thermistor = new OvmsMetricVector<int>("xnl.bms.thermistor", SM_STALE_MIN, Native);
+  m_bms_temp_int = new OvmsMetricVector<int>("xnl.bms.temp_int", SM_STALE_MIN, Celcius);
+  BmsSetCellArrangementVoltage(96, 32);
+  BmsSetCellArrangementTemperature(3, 1);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -169,7 +176,7 @@ void vehicle_nissanleaf_charger_status(ChargerStatus status)
     }
   }
 
-void OvmsVehicleNissanLeaf::PollReply_Battery(uint16_t reply_id, uint8_t reply_data[], uint16_t reply_len)
+void OvmsVehicleNissanLeaf::PollReply_Battery(uint8_t reply_data[], uint16_t reply_len)
   {
   if (reply_len != 39 &&    // 24 KWh Leafs
       reply_len != 41)      // 30 KWh Leafs with Nissan BMS fix
@@ -214,7 +221,74 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(uint16_t reply_id, uint8_t reply_d
   StandardMetrics.ms_v_bat_soh->SetValue(ah / newCarAh * 100);
   }
 
-void OvmsVehicleNissanLeaf::PollReply_VIN(uint16_t reply_id, uint8_t reply_data[], uint16_t reply_len)
+void OvmsVehicleNissanLeaf::PollReply_BMS_Volt(uint8_t reply_data[], uint16_t reply_len)
+  {
+  if (reply_len != 196)
+    {
+    ESP_LOGI(TAG, "PollReply_BMS_Volt: len=%d != 196", reply_len);
+    return;
+    }
+  //  > 0x79b 21 02
+  //  < 0x7bb 61 02
+  // [ 0..191]: Contains all 96 of the cell voltages, in volts/1000 (2 bytes per cell)
+  // [192,193]: Pack voltage, in volts/100
+  // [194,195]: Bus voltage, in volts/100
+
+  int i;
+  for(i=0; i<96; i++)
+    {
+    int millivolt = reply_data[i*2] << 8 | reply_data[i*2+1];
+    BmsSetCellVoltage(i, millivolt / 1000.0);
+    }
+  }
+
+void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(uint8_t reply_data[], uint16_t reply_len)
+  {
+  if (reply_len != 14)
+    {
+    ESP_LOGI(TAG, "PollReply_BMS_Temp: len=%d != 14", reply_len);
+    return;
+    }
+  //  > 0x79b 21 04
+  //  < 0x7bb 61 04
+  // [ 0, 1] pack 1 thermistor
+  // [    2] pack 1 temp in degC
+  // [ 3, 4] pack 2 thermistor
+  // [    5] pack 2 temp in degC
+  // [ 6, 7] pack 3 thermistor (unused)
+  // [    8] pack 3 temp in degC (unused)
+  // [ 9,10] pack 4 thermistor
+  // [   11] pack 4 temp in degC
+  // [   12] pack 5 temp in degC
+  // [   13] unknown; varies in interesting ways
+  // 14 bytes:
+  //      0  1  2   3  4  5   6  7  8   9 10 11  12 13
+  // 14 [02 51 0c  02 4d 0d  ff ff ff  02 4d 0d  0c 00 ]
+  // 14 [02 52 0c  02 4e 0c  ff ff ff  02 4e 0c  0c 00 ]
+  // 14 [02 57 0c  02 57 0c  ff ff ff  02 58 0b  0b 00 ]
+  // 14 [02 5a 0b  02 59 0b  ff ff ff  02 5a 0b  0b 00 ]
+  //
+
+  int thermistor[4];
+  int temp_int[6];
+  int i;
+  int out = 0;
+  for(i=0; i<4; i++)
+    {
+    thermistor[i] = reply_data[i*3] << 8 | reply_data[i*3+1];
+    temp_int[i] = reply_data[i*3+2];
+    if(thermistor[i] != 0xffff)
+      {
+      BmsSetCellTemperature(out++, -0.102 * (thermistor[i] - 710));
+      }
+    }
+  temp_int[i++] = reply_data[12];
+  temp_int[i++] = reply_data[13];
+  m_bms_thermistor->SetElemValues(0, 4, thermistor);
+  m_bms_temp_int->SetElemValues(0, 6, temp_int);
+  }
+
+void OvmsVehicleNissanLeaf::PollReply_VIN(uint8_t reply_data[], uint16_t reply_len)
   {
   if (reply_len != 19)
     {
@@ -234,7 +308,7 @@ void OvmsVehicleNissanLeaf::IncomingPollReply(canbus* bus, uint16_t type, uint16
   {
   static int last_pid = -1;
   static int last_remain = -1;
-  static uint8_t buf[80];
+  static uint8_t buf[MAX_POLL_DATA_LEN];
   static int bufpos = 0;
 
   int i;
@@ -251,15 +325,23 @@ void OvmsVehicleNissanLeaf::IncomingPollReply(canbus* bus, uint16_t type, uint16
     }
   if (remain==0)
     {
-    switch (pid)
+    int id_pid = m_poll_moduleid_low<<8 | pid;
+    switch (id_pid)
       {
-      case 0x01: // battery
-        PollReply_Battery(pid, buf, bufpos);
+      case 0x7bb01: // battery
+        PollReply_Battery(buf, bufpos);
         break;
-      case 0x81: // VIN
-        PollReply_VIN(pid, buf, bufpos);
+      case 0x7bb02:
+        PollReply_BMS_Volt(buf, bufpos);
+        break;
+      case 0x7bb04:
+        PollReply_BMS_Temp(buf, bufpos);
+        break;
+      case 0x79a81: // VIN
+        PollReply_VIN(buf, bufpos);
         break;
       default:
+        ESP_LOGI(TAG, "IncomingPollReply: unknown reply module|pid=%#x len=%d", id_pid, bufpos);
         break;
       }
     last_pid=-1;
