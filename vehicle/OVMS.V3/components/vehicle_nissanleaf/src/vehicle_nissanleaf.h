@@ -51,6 +51,8 @@ typedef enum
   DISABLE_CLIMATE_CONTROL,
   START_CHARGING,
   AUTO_DISABLE_CLIMATE_CONTROL,
+  UNLOCK_DOORS,
+  LOCK_DOORS
   } RemoteCommand;
 
 typedef enum
@@ -72,6 +74,8 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void IncomingFrameCan2(CAN_frame_t* p_frame);
     vehicle_command_t CommandHomelink(int button, int durationms=1000);
     vehicle_command_t CommandClimateControl(bool enable);
+    vehicle_command_t CommandLock(const char* pin);
+    vehicle_command_t CommandUnlock(const char* pin);
     void RemoteCommandTimer();
     void CcDisableTimer();
 

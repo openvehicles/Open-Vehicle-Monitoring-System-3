@@ -662,6 +662,20 @@ void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
       data[2] = 0x32;
       data[3] = 0x00;
       break;
+    case UNLOCK_DOORS:
+      ESP_LOGI(TAG, "Unlook Doors");
+      data[0] = 0x11;
+      data[1] = 0x00;
+      data[2] = 0x00;
+      data[3] = 0x00;
+      break;
+    case LOCK_DOORS:
+      ESP_LOGI(TAG, "Look Doors");
+      data[0] = 0x60;
+      data[1] = 0x80;
+      data[2] = 0x00;
+      data[3] = 0x00;
+      break;
     default:
       // shouldn't be possible, but lets not send random data on the bus
       return;
@@ -788,6 +802,16 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandClimateControl(bool
   {
   ESP_LOGI(TAG, "CommandClimateControl");
   return RemoteCommandHandler(climatecontrolon ? ENABLE_CLIMATE_CONTROL : DISABLE_CLIMATE_CONTROL);
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandLock(const char* pin)
+  {
+  return RemoteCommandHandler(LOCK_DOORS);
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandUnlock(const char* pin)
+  {
+  return RemoteCommandHandler(UNLOCK_DOORS);
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandStartCharge()
