@@ -97,6 +97,8 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricFloat *m_hx;
     OvmsMetricFloat *m_soc_new_car;
     OvmsMetricFloat *m_soc_instrument;
+    OvmsMetricFloat *m_soh_new_car;
+    OvmsMetricInt *m_soh_instrument;
   };
 
 #endif //#ifndef __VEHICLE_NISSANLEAF_H__
