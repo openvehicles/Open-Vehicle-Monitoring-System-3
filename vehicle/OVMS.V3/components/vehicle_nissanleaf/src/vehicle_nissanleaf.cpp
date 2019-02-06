@@ -89,6 +89,8 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
 #endif
+  m_soh_new_car = MyMetrics.InitFloat("xnl.v.b.soh.newcar", SM_STALE_HIGH, 0, Percentage);
+  m_soh_instrument = MyMetrics.InitInt("xnl.v.b.soh.instrument", SM_STALE_HIGH, 0, Percentage);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -226,7 +228,12 @@ void OvmsVehicleNissanLeaf::PollReply_Battery(uint8_t reply_data[], uint16_t rep
   // - For 24 KWh : xnl.newCarAh = 66 (default)
   // - For 30 KWh : xnl.newCarAh = 80 (i.e. shell command "config set xnl newCarAh 80")
   float newCarAh = MyConfig.GetParamValueFloat("xnl", "newCarAh", GEN_1_NEW_CAR_AH);
-  StandardMetrics.ms_v_bat_soh->SetValue(ah / newCarAh * 100);
+  float soh = ah / newCarAh * 100;
+  m_soh_new_car->SetValue(soh);
+  if (MyConfig.GetParamValueBool("xnl", "soh.newcar", false))
+    {
+    StandardMetrics.ms_v_bat_soh->SetValue(soh);
+    }
   }
 
 void OvmsVehicleNissanLeaf::PollReply_BMS_Volt(uint8_t reply_data[], uint16_t reply_len)
@@ -655,6 +662,21 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_inv_temp->SetValue(d[7] / 2.0 - 40);
         }
       break;
+    case 0x5b3:
+      {
+      // soh as percentage
+      uint8_t soh = d[1] >> 1;
+      if (soh != 0)
+        {
+        m_soh_instrument->SetValue(soh);
+        // we use this unless the user has opted otherwise
+        if (!MyConfig.GetParamValueBool("xnl", "soh.newcar", false))
+          {
+          StandardMetrics.ms_v_bat_soh->SetValue(soh);
+          }
+        }
+      break;
+      }
     case 0x5c5:
       // This is the parking brake (which is foot-operated on some models).
       StandardMetrics.ms_v_env_handbrake->SetValue(d[0] & 4);
