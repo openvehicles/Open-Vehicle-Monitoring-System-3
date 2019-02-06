@@ -88,8 +88,11 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
 
     RemoteCommand nl_remote_command; // command to send, see RemoteCommandTimer()
     uint8_t nl_remote_command_ticker; // number remaining remote command frames to send
-    void PollReply_Battery(uint16_t reply_id, uint8_t reply_data[], uint16_t reply_len);
-    void PollReply_VIN(uint16_t reply_id, uint8_t reply_data[], uint16_t reply_len);
+    void PollReply_Battery(uint8_t reply_data[], uint16_t reply_len);
+    void PollReply_VIN(uint8_t reply_data[], uint16_t reply_len);
+    void PollReply_BMS_Volt(uint8_t reply_data[], uint16_t reply_len);
+    void PollReply_BMS_Temp(uint8_t reply_data[], uint16_t reply_len);
+
     TimerHandle_t m_remoteCommandTimer;
     TimerHandle_t m_ccDisableTimer;
     metric_unit_t m_odometer_units = Other;
@@ -97,6 +100,8 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricFloat *m_hx;
     OvmsMetricFloat *m_soc_new_car;
     OvmsMetricFloat *m_soc_instrument;
+    OvmsMetricVector<int> *m_bms_thermistor;
+    OvmsMetricVector<int> *m_bms_temp_int;
   };
 
 #endif //#ifndef __VEHICLE_NISSANLEAF_H__
