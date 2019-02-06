@@ -23,6 +23,10 @@
 ;    1.0.1
 ;       - reworked voltage and temp
 ;       - added support for 80 cell cars
+;       - ideal range from settings
+;       - disable bms notifications by default
+;       - add 80 cell car support
+;       - VIN command -> show VIN info and Car manufacturer, and battery cell numbers from VIN
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018  Mark Webb-Johnson
@@ -52,7 +56,7 @@
 #include <stdio.h>
 #include "vehicle_mitsubishi.h"
 
-#define VERSION "0.1.4"
+#define VERSION "1.0.1"
 
 static const char *TAG = "v-mitsubishi";
 typedef enum
@@ -89,28 +93,35 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   m_v_charge_dc_kwh->SetValue(0);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
-
-  //default cell numbers is set to 88, temp is 66;
-  cell_count = 88;
-  temp_count = 66;
   //BMS
-  BmsSetCellArrangementVoltage(88, 8);
-  BmsSetCellArrangementTemperature(66, 6);
+  //Disable BMS alerts by default
+  MyConfig.GetParamValueBool("vehicle", "bms.alerts.enabled", false);
+  //80 or 88 cell car.
+  cfg_newcell =  MyConfig.GetParamValueBool("xmi", "newcell", false);
+  if (cfg_newcell){
+
+    BmsSetCellArrangementVoltage(80, 8);
+    BmsSetCellArrangementTemperature(60, 6);
+  }
+  else{
+    BmsSetCellArrangementVoltage(88, 8);
+    BmsSetCellArrangementTemperature(66, 6);
+  }
 
   BmsSetCellLimitsVoltage(2.52,4.9);
-  BmsSetCellLimitsTemperature(-40,70);
+  BmsSetCellLimitsTemperature(-30,60);
 
   BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
-  BmsSetCellDefaultThresholdsTemperature(7.0, 8.0);
-
-  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
-
+  BmsSetCellDefaultThresholdsTemperature(10.0, 12.0);
+  #ifdef CONFIG_OVMS_COMP_WEBSERVER
+    MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  	WebInit();
+  #endif
   // init commands:
   cmd_xmi = MyCommandApp.RegisterCommand("xmi", "Mitsubishi iMiEV", NULL, "", 0, 0, true);
   cmd_xmi->RegisterCommand("aux", "Aux Battery", xmi_aux, 0, 0, false);
   cmd_xmi->RegisterCommand("trip","Show trip info", xmi_trip, 0,0, false);
-
-  WebInit();
+  cmd_xmi->RegisterCommand("vin","Show vin info", xmi_vin, 0,0, false);
 
   // init configs:
   MyConfig.RegisterParam("xmi", "Trio", true, true);
@@ -120,8 +131,9 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
 OvmsVehicleMitsubishi::~OvmsVehicleMitsubishi()
   {
   ESP_LOGI(TAG, "Stop Mitsubishi  vehicle module");
-
-  MyWebServer.DeregisterPage("/bms/cellmon");
+  #ifdef CONFIG_OVMS_COMP_WEBSERVER
+    MyWebServer.DeregisterPage("/bms/cellmon");
+  #endif
   MyCommandApp.UnregisterCommand("xmi");
   }
 
@@ -133,6 +145,16 @@ void OvmsVehicleMitsubishi::ConfigChanged(OvmsConfigParam* param)
     ESP_LOGD(TAG, "Trio reload configuration");
     cfg_heater_old = MyConfig.GetParamValueBool("xmi", "oldheater", false);
     cfg_soh = MyConfig.GetParamValueInt("xmi", "soh", 100);
+    cfg_ideal = MyConfig.GetParamValueInt("xmi","ideal",150);
+    cfg_newcell =  MyConfig.GetParamValueBool("xmi", "newcell", false);
+    if (cfg_newcell){
+      BmsSetCellArrangementVoltage(80, 8);
+      BmsSetCellArrangementTemperature(60, 6);
+    }
+    else{
+      BmsSetCellArrangementVoltage(88, 8);
+      BmsSetCellArrangementTemperature(66, 6);
+    }
   }
 
 void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
@@ -221,12 +243,12 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
               StandardMetrics.ms_v_vin->SetValue(m_vin);
             }
           }
-
+/*
           if(m_vin[0] == 'V' && m_vin[1] == 'F' && m_vin[7] == 'Y'){
             BmsSetCellArrangementVoltage(80, 8);
             BmsSetCellArrangementTemperature(60, 6);
           }
-
+*/
       break;
       }
 
@@ -559,33 +581,35 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         break;
       }
 
-    case 0x6e1://freq25 // Battery temperatures and voltages E1
+    case 0x6e1://freq25 // Battery temperatures and voltages
     case 0x6e2:
     case 0x6e3:
     case 0x6e4:
     {
       //Pid index 0-3
-      int pidindex = (p_frame->MsgID) - 1761;
+      int pid_index = (p_frame->MsgID) - 1761;
       //cmu index 1-12
       int cmu_id = d[0];
+      //
       double temp1 = d[1] - 50.0;
       double temp2 = d[2] - 50.0;
       double temp3 = d[3] - 50.0;
+
       double voltage1 = (((d[4] * 256.0 + d[5]) / 200.0) + 2.1);
       double voltage2 = (((d[6] * 256.0 + d[7]) / 200.0) + 2.1);
-      int voltage_index = (cmu_id - 1) * 8 + 2 * pidindex;
-      int temp_index = (cmu_id - 1) * 6 + 2 * pidindex;
+
+      int voltage_index = ((cmu_id - 1) * 8 + (2 * pid_index));
+      int temp_index = ((cmu_id - 1) * 6 + (2 * pid_index));
       if(cmu_id >= 7)
       {
           voltage_index -= 4;
           temp_index -= 3;
       }
 
-      ESP_LOGI("CMU","pidindex: %i, cmu_id: %i, voltage_index: %i, temp_index: %i, voltage1: %f, voltage2: %f,temp1: %f,temp2: %f,temp3: %f",pidindex,cmu_id,voltage_index,temp_index,voltage1,voltage2,temp1,temp2,temp3);
       BmsSetCellVoltage(voltage_index, voltage1);
       BmsSetCellVoltage(voltage_index + 1, voltage2);
 
-      if(pidindex == 0){
+      if(pid_index == 0){
         BmsSetCellTemperature(temp_index, temp2);
         BmsSetCellTemperature(temp_index + 1, temp3);
       }else{
@@ -729,7 +753,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
           StandardMetrics.ms_v_charge_state->SetValue("charging");
 
           // if charge and DC current is negative cell balancing is active. If charging battery current is negative, discharge is positive
-          if((StandardMetrics.ms_v_bat_current->AsFloat() < 0) && (mi_QC == 0) && StandardMetrics.ms_v_bat_soc->AsInt() > 92)
+          if((StandardMetrics.ms_v_bat_current->AsFloat() < 0) && (mi_QC == 0) && StandardMetrics.ms_v_bat_soc->AsInt() > 92 && StandardMetrics.ms_v_charge_mode->AsString() !="Balancing")
           {
             StandardMetrics.ms_v_charge_mode->SetValue("Balancing");
             StandardMetrics.ms_v_charge_state->SetValue("topoff");
@@ -815,7 +839,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
           SOH = 100; //ideal range as 100% else with SOH
         }
           StandardMetrics.ms_v_bat_range_ideal->SetValue((
-          (StandardMetrics.ms_v_bat_soc->AsFloat()-10)*1.4444)*SOH/100.0); //150km 1.664; 125km 1.3889; 130km 1.4444; 135km 1.5
+          (StandardMetrics.ms_v_bat_soc->AsFloat()-10)*cfg_ideal/90.0)*SOH/100.0);
         }
 
         StandardMetrics.ms_v_bat_cac->SetValue(48.0*(StandardMetrics.ms_v_bat_soh->AsFloat()/100));
@@ -976,4 +1000,13 @@ OvmsVehicleMitsubishiInit::OvmsVehicleMitsubishiInit()
   ESP_LOGI(TAG, "Registering Vehicle: Mitsubishi iMiEV, Citroen C-Zero, Peugeot iOn (9000)");
 
   MyVehicleFactory.RegisterVehicle<OvmsVehicleMitsubishi>("MI","Trio");
+  }
+
+/**
+* GetNotifyChargeStateDelay: framework hook
+*/
+int OvmsVehicleMitsubishi::GetNotifyChargeStateDelay(const char* state)
+  {
+    // Add a delay to charge notification to show correct current
+    return 3;
   }

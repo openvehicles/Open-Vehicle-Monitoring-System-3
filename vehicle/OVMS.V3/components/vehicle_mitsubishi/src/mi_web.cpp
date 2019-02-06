@@ -9,9 +9,11 @@
  *
  *Changes:
  ;    1.0.0  Initial release:
- ;       - Dashboard modificatiosn
+ ;       - Dashboard modifications
  ;    1.0.1
  ;       - Dashboard modification from 80 cell charge_state
+ ;       - Add Ideal range to settings
+ ;       - Add 80 cell support for settings
  ;
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,6 +34,8 @@
  * THE SOFTWARE.
  */
 
+#include <sdkconfig.h>
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 
 #include <stdio.h>
 #include <string>
@@ -64,24 +68,34 @@ void OvmsVehicleMitsubishi::WebInit()
  */
 void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
-  std::string error,soh;
-  bool oldheater;
+  std::string error,soh,ideal;
+  bool oldheater,newcell;
 
   if (c.method == "POST") {
     // process form submission:
     oldheater = (c.getvar("oldheater") == "yes");
     soh = c.getvar("soh");
-    // check:
+    ideal = c.getvar("ideal");
+    newcell = (c.getvar("newcell") == "yes");
+    // check: SOH
     if (!soh.empty()) {
       int n = atoi(soh.c_str());
       if (n < 0 || n > 100)
         error += "<li data-input=\"soh\">SOH out of range (0…100)</li>";
+    }
+    // check: ideal range
+    if (!ideal.empty()) {
+      int n = atoi(ideal.c_str());
+      if (n < 0 || n > 160)
+        error += "<li data-input=\"soh\">Ideal out of range (0…160)</li>";
     }
     // check:
     if (error == "") {
       // store:
       MyConfig.SetParamValueBool("xmi", "oldheater", oldheater);
       MyConfig.SetParamValue("xmi", "soh", soh);
+      MyConfig.SetParamValue("xmi","ideal", ideal);
+      MyConfig.SetParamValueBool("xmi","newcell",newcell);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Trio feature configuration saved.</p>");
@@ -99,6 +113,8 @@ void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     // read configuration:
     oldheater = MyConfig.GetParamValueBool("xmi", "oldheater", false);
     soh = MyConfig.GetParamValue("xmi","soh","100");
+    ideal = MyConfig.GetParamValue("xmi","ideal","150");
+    newcell = MyConfig.GetParamValueBool("xmi","newcell", false);
     c.head(200);
   }
 
@@ -110,10 +126,17 @@ void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.fieldset_start("Heater");
   c.input_checkbox("Heater 1. generation", "oldheater", oldheater,
     "<p>Check this, if you have an early Mitshubishi i-MiEV (2011 and before). Testing which heater intalled in car, before using the car, compare to a batt temp, both temps should be nearly the same.</p>");
+  c.fieldset_start("Cell");
+  c.input_checkbox("80 cell car","newcell",newcell,"<p>Check this, if you have a Peugeot iOn or Citroen C-Zero with the following VIN: if first two char is VF and the eight char is Y expamle <b>VF</b>31NZK<b>Y</b>Z*******.</p><p><b><font color='red'>You must restart the module if checkbox checked for proper operation!</font></b></p>");
   c.fieldset_start("SOH");
   c.input_slider("SOH", "soh", 3, NULL,
     -1, atof(soh.c_str()), 100, 0, 100, 1,
     "<p>Default 100, you can set your battery SOH to 'calibrate' ideal range, now not supported automatic SOH detection, you can see soh valule on another app (such as CaniOn (free only Android), or EVBatMon (paid, iOS and Android))</p>");
+  c.fieldset_start("Ideal range");
+  c.input("number", "Ideal range", "ideal", ideal.c_str(), "Default: 150",
+      "<p>You can set the ideal range</p>",
+      "min=\"0\" step=\"1\"", "km");
+  c.fieldset_end();
   c.input_button("default", "Save");
   c.form_end();
   c.panel_end();
@@ -126,7 +149,7 @@ void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 void OvmsVehicleMitsubishi::GetDashboardConfig(DashboardConfig& cfg)
 {
   OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
-  if(trio->cell_count == 88){
+  if(!trio->cfg_newcell){
     cfg.gaugeset1 =
       "yAxis: [{"
         // Speed:
@@ -256,3 +279,5 @@ void OvmsVehicleMitsubishi::GetDashboardConfig(DashboardConfig& cfg)
         "}]";
     }
 }
+
+#endif //CONFIG_OVMS_COMP_WEBSERVER
