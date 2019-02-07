@@ -118,24 +118,24 @@ void xmi_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 					if(strlen(trio->m_vin) != 0)
 					{
 						writer->printf("Vin: %s \n",trio->m_vin);
-						writer->printf("Car variant: ");
+						writer->printf("Car: ");
 						if(trio->m_vin[0] == 'J' && trio->m_vin[1] == 'F' && trio->m_vin[2] == '3'){
 							writer->printf("Mitsubishi i-MiEV \n");
 						}else if (trio->m_vin[0] == 'V' && trio->m_vin[1] == 'F'){
 							if (trio->m_vin[2] == '3'){
-								writer->printf("Car manufacturer:Peugeot iOn");
+								writer->printf("Peugeot iOn");
 							}else if(trio->m_vin[2] == '7'){
 							writer->printf("Citroen C-Zero ");
 							}
 							writer->printf("\n");
 						}
 						writer->printf("Battery cell count: ");
-						if (trio->m_vin[0] == 'V' && trio->m_vin[1] == 'F' && trio->m_vin[2] == 'Y'){
+						if (trio->m_vin[0] == 'V' && trio->m_vin[1] == 'F' && trio->m_vin[7] == 'Y'){
 							writer->printf("80 \n");
 						}else{
 							writer->printf("88 \n");
 						}
-						writer->printf("Modell year:");
+						writer->printf("Modell year: ");
 						switch (trio->m_vin[9]) {
 							case 'A':
 							{
