@@ -130,12 +130,12 @@ void xmi_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 							writer->printf("\n");
 						}
 						writer->printf("Battery cell count: ");
-						if (trio->m_vin[0] == 'V' && trio->m_vin[1] == 'F' && trio->m_vin[7] == 'Y'){
+						if (trio->m_vin[0] == 'V' && trio->m_vin[1] == 'F' && trio->m_vin[2] == 'Y'){
 							writer->printf("80 \n");
 						}else{
 							writer->printf("88 \n");
 						}
-						writer->printf("Modell year: ");
+						writer->printf("Modell year:");
 						switch (trio->m_vin[9]) {
 							case 'A':
 							{

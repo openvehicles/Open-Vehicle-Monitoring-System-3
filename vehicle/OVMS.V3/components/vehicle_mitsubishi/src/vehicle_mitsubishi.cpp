@@ -99,6 +99,7 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   //80 or 88 cell car.
   cfg_newcell =  MyConfig.GetParamValueBool("xmi", "newcell", false);
   if (cfg_newcell){
+
     BmsSetCellArrangementVoltage(80, 8);
     BmsSetCellArrangementTemperature(60, 6);
   }
@@ -155,92 +156,6 @@ void OvmsVehicleMitsubishi::ConfigChanged(OvmsConfigParam* param)
       BmsSetCellArrangementTemperature(66, 6);
     }
   }
-
-void vehicle_charger_status(ChargerStatus status)
-        {
-        switch (status)
-          {
-          case CHARGER_STATUS_QUICK_CHARGING:
-            if (!StandardMetrics.ms_v_charge_inprogress->AsBool())
-              {
-                StandardMetrics.ms_v_charge_kwh->SetValue(0); // Reset charge kWh
-              }
-            StandardMetrics.ms_v_pos_speed->SetValue(0);
-            StandardMetrics.ms_v_mot_rpm->SetValue(0);
-            StandardMetrics.ms_v_door_chargeport->SetValue(true);
-            StandardMetrics.ms_v_charge_pilot->SetValue(true);
-            StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-            StandardMetrics.ms_v_charge_type->SetValue("Chademo");
-            StandardMetrics.ms_v_charge_state->SetValue("charging");
-            StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
-            StandardMetrics.ms_v_charge_mode->SetValue("Quickcharge");
-            StandardMetrics.ms_v_env_charging12v->SetValue(true);
-            StandardMetrics.ms_v_env_on->SetValue(true);
-            StandardMetrics.ms_v_env_awake->SetValue(true);
-            StandardMetrics.ms_v_charge_climit->SetValue(125);
-            StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsInt());
-            StandardMetrics.ms_v_charge_current->SetValue(StandardMetrics.ms_v_bat_current->AsInt());
-            break;
-          case CHARGER_STATUS_CHARGING:
-            if (!StandardMetrics.ms_v_charge_inprogress->AsBool())
-              {
-                StandardMetrics.ms_v_charge_kwh->SetValue(0); // Reset charge kWh
-                m_charge_watt = 0; // reset watt
-              }
-            StandardMetrics.ms_v_pos_speed->SetValue(0);
-            StandardMetrics.ms_v_mot_rpm->SetValue(0);
-            StandardMetrics.ms_v_door_chargeport->SetValue(true);
-            StandardMetrics.ms_v_charge_pilot->SetValue(true);
-            StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-            StandardMetrics.ms_v_charge_type->SetValue("Type1");
-            StandardMetrics.ms_v_charge_state->SetValue("charging");
-            StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
-            StandardMetrics.ms_v_charge_mode->SetValue("Standard");
-            StandardMetrics.ms_v_env_charging12v->SetValue(true);
-            StandardMetrics.ms_v_env_on->SetValue(true);
-            StandardMetrics.ms_v_env_awake->SetValue(true);
-            StandardMetrics.ms_v_charge_climit->SetValue(16);
-            m_charge_watt += ( StandardMetrics.ms_v_charge_voltage->AsFloat() * StandardMetrics.ms_v_charge_current->AsFloat());
-            break;
-          case CHARGER_STATUS_FINISHED:
-            StandardMetrics.ms_v_charge_kwh->SetValue(m_charge_watt/1000.0/StandardMetrics.ms_v_charge_time->AsInt());
-            ESP_LOGI(TAG, "charge_watt %f",m_charge_watt);
-            m_charge_watt = 0;
-            StandardMetrics.ms_v_charge_climit->SetValue(0);
-            StandardMetrics.ms_v_charge_current->SetValue(0);
-            StandardMetrics.ms_v_charge_voltage->SetValue(0);
-            StandardMetrics.ms_v_door_chargeport->SetValue(false);
-            StandardMetrics.ms_v_charge_pilot->SetValue(false);
-            StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-            StandardMetrics.ms_v_charge_type->SetValue("None");
-            StandardMetrics.ms_v_charge_state->SetValue("done");
-            StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
-            StandardMetrics.ms_v_charge_mode->SetValue("Not charging");
-            StandardMetrics.ms_v_env_charging12v->SetValue(false);
-            StandardMetrics.ms_v_env_on->SetValue(false);
-            StandardMetrics.ms_v_env_awake->SetValue(false);
-            break;
-          case CHARGER_STATUS_INTERRUPTED:
-            StandardMetrics.ms_v_charge_climit->SetValue(0);
-            StandardMetrics.ms_v_charge_current->SetValue(0);
-            StandardMetrics.ms_v_charge_voltage->SetValue(0);
-            StandardMetrics.ms_v_door_chargeport->SetValue(false);
-            StandardMetrics.ms_v_charge_pilot->SetValue(false);
-            StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-            StandardMetrics.ms_v_charge_type->SetValue("None");
-            StandardMetrics.ms_v_charge_state->SetValue("interrupted");
-            StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
-            StandardMetrics.ms_v_charge_mode->SetValue("Interrupted");
-            StandardMetrics.ms_v_env_on->SetValue(false);
-            StandardMetrics.ms_v_env_awake->SetValue(false);
-            break;
-          }
-        if (status != CHARGER_STATUS_CHARGING && status != CHARGER_STATUS_QUICK_CHARGING)
-          {
-            StandardMetrics.ms_v_charge_current->SetValue(0);
-            StandardMetrics.ms_v_charge_voltage->SetValue(0);
-          }
-        }
 
 void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
