@@ -53,6 +53,32 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     void IncomingFrameCan1(CAN_frame_t* p_frame);
     char m_vin[18];
 
+  public:
+    virtual vehicle_command_t CommandSetChargeMode(vehicle_mode_t mode);
+    virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
+    virtual vehicle_command_t CommandStartCharge();
+    virtual vehicle_command_t CommandStopCharge();
+    virtual vehicle_command_t CommandSetChargeTimer(bool timeron, uint16_t timerstart);
+    virtual vehicle_command_t CommandCooldown(bool cooldownon);
+    virtual vehicle_command_t CommandWakeup();
+    virtual vehicle_command_t CommandLock(const char* pin);
+    virtual vehicle_command_t CommandUnlock(const char* pin);
+    virtual vehicle_command_t CommandActivateValet(const char* pin);
+    virtual vehicle_command_t CommandDeactivateValet(const char* pin);
+    virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
+    OvmsMetricVector<float>* cell_volt = new OvmsMetricVector<float>("test.volts", SM_STALE_MIN, Volts);
+    OvmsMetricVector<float>* cell_temp = new OvmsMetricVector<float>("test.temps", SM_STALE_MIN, Volts);
+
+
+  public:
+    void WebInit();
+    static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
+    static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
+    static void WebBattMon(PageEntry_t& p, PageContext_t& c);
+
+  public:
+    void GetDashboardConfig(DashboardConfig& cfg);
+
   protected:
     virtual void Ticker1(uint32_t ticker);
     void ConfigChanged(OvmsConfigParam* param);
