@@ -1001,12 +1001,3 @@ OvmsVehicleMitsubishiInit::OvmsVehicleMitsubishiInit()
 
   MyVehicleFactory.RegisterVehicle<OvmsVehicleMitsubishi>("MI","Trio");
   }
-
-/**
-* GetNotifyChargeStateDelay: framework hook
-*/
-int OvmsVehicleMitsubishi::GetNotifyChargeStateDelay(const char* state)
-  {
-    // Add a delay to charge notification to show correct current
-    return 3;
-  }
