@@ -56,7 +56,6 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
   protected:
     virtual void Ticker1(uint32_t ticker);
     void ConfigChanged(OvmsConfigParam* param);
-    int GetNotifyChargeStateDelay(const char* state);
 
   protected:
 
