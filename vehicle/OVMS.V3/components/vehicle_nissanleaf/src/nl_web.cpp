@@ -81,7 +81,7 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
     if (error == "") {
       // Get old value before we overwrite
-      maxgids_old = MyConfig.GetParamValue("xnl", "maxGids", XSTR(GEN_1_NEW_CAR_GIDS));
+      maxgids_old = MyConfig.GetParamValue("xnl", "maxGids", STR(GEN_1_NEW_CAR_GIDS));
 
       // store:
       MyConfig.SetParamValue("xnl", "modelyear", modelyear);
@@ -90,10 +90,10 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
       // Write derived values
       if (maxgids != maxgids_old) {
-          if (maxgids == XSTR(GEN_1_NEW_CAR_GIDS)) {
+          if (maxgids == STR(GEN_1_NEW_CAR_GIDS)) {
               MyConfig.SetParamValueInt("xnl", "newCarAh", GEN_1_NEW_CAR_AH);
           }
-          else if (maxgids == XSTR(GEN_1_30_NEW_CAR_GIDS)) {
+          else if (maxgids == STR(GEN_1_30_NEW_CAR_GIDS)) {
               MyConfig.SetParamValueInt("xnl", "newCarAh", GEN_1_30_NEW_CAR_AH);
           }
       }
@@ -112,8 +112,8 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
-    modelyear = MyConfig.GetParamValue("xnl", "modelyear", XSTR(DEFAULT_MODEL_YEAR));
-    maxgids   = MyConfig.GetParamValue("xnl", "maxGids", XSTR(GEN_1_NEW_CAR_GIDS));
+    modelyear = MyConfig.GetParamValue("xnl", "modelyear", STR(DEFAULT_MODEL_YEAR));
+    maxgids   = MyConfig.GetParamValue("xnl", "maxGids", STR(GEN_1_NEW_CAR_GIDS));
     canwrite  = MyConfig.GetParamValueBool("xnl", "canwrite", false);
 
     c.head(200);
@@ -125,12 +125,12 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.form_start(p.uri);
 
   c.fieldset_start("General");
-  c.input("number", "Model year", "modelyear", modelyear.c_str(), "Default: " XSTR(DEFAULT_MODEL_YEAR), NULL,
+  c.input("number", "Model year", "modelyear", modelyear.c_str(), "Default: " STR(DEFAULT_MODEL_YEAR), NULL,
     "min=\"2011\" step=\"1\"", "");
 
   c.input_radio_start("Battery capacity", "maxgids");
-  c.input_radio_option("maxgids", "24 kwh", XSTR(GEN_1_NEW_CAR_GIDS),    maxgids == XSTR(GEN_1_NEW_CAR_GIDS));
-  c.input_radio_option("maxgids", "30 kwh", XSTR(GEN_1_30_NEW_CAR_GIDS), maxgids == XSTR(GEN_1_30_NEW_CAR_GIDS));
+  c.input_radio_option("maxgids", "24 kwh", STR(GEN_1_NEW_CAR_GIDS),    maxgids == STR(GEN_1_NEW_CAR_GIDS));
+  c.input_radio_option("maxgids", "30 kwh", STR(GEN_1_30_NEW_CAR_GIDS), maxgids == STR(GEN_1_30_NEW_CAR_GIDS));
   c.input_radio_end("This would change ranges, and display formats to reflect type of battery in the car");
   c.fieldset_end();
 

@@ -37,7 +37,7 @@
 #include "vehicle.h"
 #include "ovms_webserver.h"
 
-#include "rt_types.h"
+#include "nl_types.h"
 
 
 #define DEFAULT_MODEL_YEAR 2012
