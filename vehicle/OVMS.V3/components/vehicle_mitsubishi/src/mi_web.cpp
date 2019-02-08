@@ -7,6 +7,14 @@
  * (c) 2018	Geir Øyvind Væidalo <geir@validalo.net>
  * (c) 2017  Michael Balzer <dexter@dexters-web.de>
  *
+ *Changes:
+ ;    1.0.0  Initial release:
+ ;       - Dashboard modifications
+ ;    1.0.1
+ ;       - Dashboard modification from 80 cell charge_state
+ ;       - Add Ideal range to settings
+ ;       - Add 80 cell support for settings
+ ;
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -60,24 +68,34 @@ void OvmsVehicleMitsubishi::WebInit()
  */
 void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
-  std::string error,soh;
-  bool oldheater;
+  std::string error,soh,ideal;
+  bool oldheater,newcell;
 
   if (c.method == "POST") {
     // process form submission:
     oldheater = (c.getvar("oldheater") == "yes");
     soh = c.getvar("soh");
-    // check:
+    ideal = c.getvar("ideal");
+    newcell = (c.getvar("newcell") == "yes");
+    // check: SOH
     if (!soh.empty()) {
       int n = atoi(soh.c_str());
       if (n < 0 || n > 100)
         error += "<li data-input=\"soh\">SOH out of range (0…100)</li>";
+    }
+    // check: ideal range
+    if (!ideal.empty()) {
+      int n = atoi(ideal.c_str());
+      if (n < 0 || n > 160)
+        error += "<li data-input=\"soh\">Ideal out of range (0…160)</li>";
     }
     // check:
     if (error == "") {
       // store:
       MyConfig.SetParamValueBool("xmi", "oldheater", oldheater);
       MyConfig.SetParamValue("xmi", "soh", soh);
+      MyConfig.SetParamValue("xmi","ideal", ideal);
+      MyConfig.SetParamValueBool("xmi","newcell",newcell);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Trio feature configuration saved.</p>");
@@ -95,6 +113,8 @@ void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     // read configuration:
     oldheater = MyConfig.GetParamValueBool("xmi", "oldheater", false);
     soh = MyConfig.GetParamValue("xmi","soh","100");
+    ideal = MyConfig.GetParamValue("xmi","ideal","150");
+    newcell = MyConfig.GetParamValueBool("xmi","newcell", false);
     c.head(200);
   }
 
@@ -106,10 +126,17 @@ void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.fieldset_start("Heater");
   c.input_checkbox("Heater 1. generation", "oldheater", oldheater,
     "<p>Check this, if you have an early Mitshubishi i-MiEV (2011 and before). Testing which heater intalled in car, before using the car, compare to a batt temp, both temps should be nearly the same.</p>");
+  c.fieldset_start("Cell");
+  c.input_checkbox("80 cell car","newcell",newcell,"<p>Check this, if you have a Peugeot iOn or Citroen C-Zero with the following VIN: if first two char is VF and the eight char is Y expamle <b>VF</b>31NZK<b>Y</b>Z*******.</p><p><b><font color='red'>You must restart the module if checkbox checked for proper operation!</font></b></p>");
   c.fieldset_start("SOH");
   c.input_slider("SOH", "soh", 3, NULL,
     -1, atof(soh.c_str()), 100, 0, 100, 1,
     "<p>Default 100, you can set your battery SOH to 'calibrate' ideal range, now not supported automatic SOH detection, you can see soh valule on another app (such as CaniOn (free only Android), or EVBatMon (paid, iOS and Android))</p>");
+  c.fieldset_start("Ideal range");
+  c.input("number", "Ideal range", "ideal", ideal.c_str(), "Default: 150",
+      "<p>You can set the ideal range</p>",
+      "min=\"0\" step=\"1\"", "km");
+  c.fieldset_end();
   c.input_button("default", "Save");
   c.form_end();
   c.panel_end();
@@ -121,69 +148,136 @@ void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsVehicleMitsubishi::GetDashboardConfig(DashboardConfig& cfg)
 {
-  cfg.gaugeset1 =
-    "yAxis: [{"
-      // Speed:
-      "min: 0, max: 135,"
-      "plotBands: ["
-        "{ from: 0, to: 65, className: 'green-band' },"
-        "{ from: 65, to: 100, className: 'yellow-band' },"
-        "{ from: 100, to: 135, className: 'red-band' }]"
-    "},{"
-      // Voltage:
-      "min: 294, max: 362,"
-      "plotBands: ["
-        "{ from: 194, to: 317, className: 'red-band' },"
-        "{ from: 317, to: 341, className: 'yellow-band' },"
-        "{ from: 341, to: 362, className: 'green-band' }]"
-    "},{"
-      // SOC:
-      "min: 10, max: 100,"
-      "plotBands: ["
-        "{ from: 10, to: 15.5, className: 'red-band' },"
-        "{ from: 15.5, to: 25, className: 'yellow-band' },"
-        "{ from: 25, to: 100, className: 'green-band' }]"
-    "},{"
-      // Efficiency:
-      "min: 0, max: 300,"
-      "plotBands: ["
-        "{ from: 0, to: 120, className: 'green-band' },"
-        "{ from: 120, to: 250, className: 'yellow-band' },"
-        "{ from: 250, to: 300, className: 'red-band' }]"
-    "},{"
-      // Power:
-      "min: -30, max: 65,"
-      "plotBands: ["
-        "{ from: -30, to: 0, className: 'violet-band' },"
-        "{ from: 0, to: 16, className: 'green-band' },"
-        "{ from: 16, to: 40, className: 'yellow-band' },"
-        "{ from: 40, to: 65, className: 'red-band' }]"
-    "},{"
-      // Charger temperature:
-      "min: -10, max: 55, tickInterval: 20,"
-      "plotBands: ["
-        "{ from: -10, to: 40, className: 'normal-band border' },"
-        "{ from: 40, to: 55, className: 'red-band border' }]"
-    "},{"
-      // Battery temperature:
-      "min: -15, max: 65, tickInterval: 25,"
-      "plotBands: ["
-        "{ from: -15, to: 0, className: 'red-band border' },"
-        "{ from: 0, to: 40, className: 'normal-band border' },"
-        "{ from: 40, to: 65, className: 'red-band border' }]"
-    "},{"
-      // Inverter temperature:
-      "min: -10, max: 55, tickInterval: 20,"
-      "plotBands: ["
-        "{ from: -10, to: 40, className: 'normal-band border' },"
-        "{ from: 40, to: 55, className: 'red-band border' }]"
-    "},{"
-      // Motor temperature:
-      "min: 20, max: 100, tickInterval: 25,"
-      "plotBands: ["
-        "{ from: 20, to: 75, className: 'normal-band border' },"
-        "{ from: 75, to: 100, className: 'red-band border' }]"
-    "}]";
+  OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
+  if(!trio->cfg_newcell){
+    cfg.gaugeset1 =
+      "yAxis: [{"
+        // Speed:
+        "min: 0, max: 135,"
+        "plotBands: ["
+          "{ from: 0, to: 65, className: 'green-band' },"
+          "{ from: 65, to: 100, className: 'yellow-band' },"
+          "{ from: 100, to: 135, className: 'red-band' }]"
+      "},{"
+        // Voltage:
+        "min: 294, max: 363,"
+        "plotBands: ["
+          "{ from: 294, to: 317, className: 'red-band' },"
+          "{ from: 317, to: 341, className: 'yellow-band' },"
+          "{ from: 341, to: 363, className: 'green-band' }]"
+      "},{"
+        // SOC:
+        "min: 10, max: 100,"
+        "plotBands: ["
+          "{ from: 10, to: 15.5, className: 'red-band' },"
+          "{ from: 15.5, to: 25, className: 'yellow-band' },"
+          "{ from: 25, to: 100, className: 'green-band' }]"
+      "},{"
+        // Efficiency:
+        "min: 0, max: 300,"
+        "plotBands: ["
+          "{ from: 0, to: 120, className: 'green-band' },"
+          "{ from: 120, to: 250, className: 'yellow-band' },"
+          "{ from: 250, to: 300, className: 'red-band' }]"
+      "},{"
+        // Power:
+        "min: -30, max: 65,"
+        "plotBands: ["
+          "{ from: -30, to: 0, className: 'violet-band' },"
+          "{ from: 0, to: 16, className: 'green-band' },"
+          "{ from: 16, to: 40, className: 'yellow-band' },"
+          "{ from: 40, to: 65, className: 'red-band' }]"
+      "},{"
+        // Charger temperature:
+        "min: -10, max: 55, tickInterval: 20,"
+        "plotBands: ["
+          "{ from: -10, to: 40, className: 'normal-band border' },"
+          "{ from: 40, to: 55, className: 'red-band border' }]"
+      "},{"
+        // Battery temperature:
+        "min: -15, max: 65, tickInterval: 25,"
+        "plotBands: ["
+          "{ from: -15, to: 0, className: 'red-band border' },"
+          "{ from: 0, to: 40, className: 'normal-band border' },"
+          "{ from: 40, to: 65, className: 'red-band border' }]"
+      "},{"
+        // Inverter temperature:
+        "min: -10, max: 55, tickInterval: 20,"
+        "plotBands: ["
+          "{ from: -10, to: 40, className: 'normal-band border' },"
+          "{ from: 40, to: 55, className: 'red-band border' }]"
+      "},{"
+        // Motor temperature:
+        "min: 20, max: 100, tickInterval: 25,"
+        "plotBands: ["
+          "{ from: 20, to: 75, className: 'normal-band border' },"
+          "{ from: 75, to: 100, className: 'red-band border' }]"
+      "}]";
+    }else{
+      cfg.gaugeset1 =
+        "yAxis: [{"
+          // Speed:
+          "min: 0, max: 135,"
+          "plotBands: ["
+            "{ from: 0, to: 65, className: 'green-band' },"
+            "{ from: 65, to: 100, className: 'yellow-band' },"
+            "{ from: 100, to: 135, className: 'red-band' }]"
+        "},{"
+          // Voltage:
+          "min: 240, max: 330,"
+          "plotBands: ["
+            "{ from: 240, to: 280, className: 'red-band' },"
+            "{ from: 280, to: 310, className: 'yellow-band' },"
+            "{ from: 310, to: 330, className: 'green-band' }]"
+        "},{"
+          // SOC:
+          "min: 10, max: 100,"
+          "plotBands: ["
+            "{ from: 10, to: 15.5, className: 'red-band' },"
+            "{ from: 15.5, to: 25, className: 'yellow-band' },"
+            "{ from: 25, to: 100, className: 'green-band' }]"
+        "},{"
+          // Efficiency:
+          "min: 0, max: 300,"
+          "plotBands: ["
+            "{ from: 0, to: 120, className: 'green-band' },"
+            "{ from: 120, to: 250, className: 'yellow-band' },"
+            "{ from: 250, to: 300, className: 'red-band' }]"
+        "},{"
+          // Power:
+          "min: -30, max: 65,"
+          "plotBands: ["
+            "{ from: -30, to: 0, className: 'violet-band' },"
+            "{ from: 0, to: 16, className: 'green-band' },"
+            "{ from: 16, to: 40, className: 'yellow-band' },"
+            "{ from: 40, to: 65, className: 'red-band' }]"
+        "},{"
+          // Charger temperature:
+          "min: -10, max: 55, tickInterval: 20,"
+          "plotBands: ["
+            "{ from: -10, to: 40, className: 'normal-band border' },"
+            "{ from: 40, to: 55, className: 'red-band border' }]"
+        "},{"
+          // Battery temperature:
+          "min: -15, max: 65, tickInterval: 25,"
+          "plotBands: ["
+            "{ from: -15, to: 0, className: 'red-band border' },"
+            "{ from: 0, to: 40, className: 'normal-band border' },"
+            "{ from: 40, to: 65, className: 'red-band border' }]"
+        "},{"
+          // Inverter temperature:
+          "min: -10, max: 55, tickInterval: 20,"
+          "plotBands: ["
+            "{ from: -10, to: 40, className: 'normal-band border' },"
+            "{ from: 40, to: 55, className: 'red-band border' }]"
+        "},{"
+          // Motor temperature:
+          "min: 20, max: 100, tickInterval: 25,"
+          "plotBands: ["
+            "{ from: 20, to: 75, className: 'normal-band border' },"
+            "{ from: 75, to: 100, className: 'red-band border' }]"
+        "}]";
+    }
 }
 
 #endif //CONFIG_OVMS_COMP_WEBSERVER

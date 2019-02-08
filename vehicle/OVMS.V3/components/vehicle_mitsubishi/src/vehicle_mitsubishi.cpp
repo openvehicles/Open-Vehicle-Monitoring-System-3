@@ -20,6 +20,13 @@
 ;       - soh setting to 'calibrate' ideal range
 ;       - Energy use, and heater energy use
 ;       - Count charge energy on AC and DC
+;    1.0.1
+;       - reworked voltage and temp
+;       - added support for 80 cell cars
+;       - ideal range from settings
+;       - disable bms notifications by default
+;       - add 80 cell car support
+;       - VIN command -> show VIN info and Car manufacturer, and battery cell numbers from VIN
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018  Mark Webb-Johnson
@@ -49,7 +56,7 @@
 #include <stdio.h>
 #include "vehicle_mitsubishi.h"
 
-#define VERSION "0.1.4"
+#define VERSION "1.0.1"
 
 static const char *TAG = "v-mitsubishi";
 typedef enum
@@ -86,23 +93,37 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   m_v_charge_dc_kwh->SetValue(0);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
-
+  
   //BMS
-  BmsSetCellArrangementVoltage(88, 8);
-  BmsSetCellArrangementTemperature(66, 6);
+  //Disable BMS alerts by default
+  MyConfig.GetParamValueBool("vehicle", "bms.alerts.enabled", false);
+
+  //80 or 88 cell car.
+  cfg_newcell =  MyConfig.GetParamValueBool("xmi", "newcell", false);
+
+  if (cfg_newcell){
+
+    BmsSetCellArrangementVoltage(80, 8);
+    BmsSetCellArrangementTemperature(60, 6);
+  }
+  else{
+    BmsSetCellArrangementVoltage(88, 8);
+    BmsSetCellArrangementTemperature(66, 6);
+  }
 
   BmsSetCellLimitsVoltage(2.52,4.9);
-  BmsSetCellLimitsTemperature(-40,70);
+  BmsSetCellLimitsTemperature(-30,60);
 
-#ifdef CONFIG_OVMS_COMP_WEBSERVER
-  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
-  WebInit();
-#endif
+  #ifdef CONFIG_OVMS_COMP_WEBSERVER
+    MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  	WebInit();
+  #endif
 
   // init commands:
   cmd_xmi = MyCommandApp.RegisterCommand("xmi", "Mitsubishi iMiEV", NULL, "", 0, 0, true);
-  cmd_xmi->RegisterCommand("aux", "Aux Battery", xmi_aux, "", 0, 0, false);
-  cmd_xmi->RegisterCommand("trip","Show trip info", xmi_trip, "", 0,0, false);
+  cmd_xmi->RegisterCommand("aux", "Aux Battery", xmi_aux, 0, 0, false);
+  cmd_xmi->RegisterCommand("trip","Show trip info", xmi_trip, 0,0, false);
+  cmd_xmi->RegisterCommand("vin","Show vin info", xmi_vin, 0,0, false);
 
   // init configs:
   MyConfig.RegisterParam("xmi", "Trio", true, true);
@@ -127,6 +148,16 @@ void OvmsVehicleMitsubishi::ConfigChanged(OvmsConfigParam* param)
     ESP_LOGD(TAG, "Trio reload configuration");
     cfg_heater_old = MyConfig.GetParamValueBool("xmi", "oldheater", false);
     cfg_soh = MyConfig.GetParamValueInt("xmi", "soh", 100);
+    cfg_ideal = MyConfig.GetParamValueInt("xmi","ideal",150);
+    cfg_newcell =  MyConfig.GetParamValueBool("xmi", "newcell", false);
+    if (cfg_newcell){
+      BmsSetCellArrangementVoltage(80, 8);
+      BmsSetCellArrangementTemperature(60, 6);
+    }
+    else{
+      BmsSetCellArrangementVoltage(88, 8);
+      BmsSetCellArrangementTemperature(66, 6);
+    }
   }
 
 void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
@@ -215,6 +246,12 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
               StandardMetrics.ms_v_vin->SetValue(m_vin);
             }
           }
+/*
+          if(m_vin[0] == 'V' && m_vin[1] == 'F' && m_vin[7] == 'Y'){
+            BmsSetCellArrangementVoltage(80, 8);
+            BmsSetCellArrangementTemperature(60, 6);
+          }
+*/
       break;
       }
 
@@ -498,7 +535,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
         if ((d[1] & 32)!=0)  //Headlight
         {
-		        ESP_LOGI(TAG, "Headlight2 on");
+		       // ESP_LOGI(TAG, "Headlight2 on");
         }
         else
         {
@@ -507,7 +544,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
         if ((d[1] & 64)!=0)
         { //Parkinglight
-		      ESP_LOGI(TAG, "Parkinglight on");
+		      //ESP_LOGI(TAG, "Parkinglight on");
         }
         else
         {
@@ -541,118 +578,56 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         else
         {
         }
-        if ((d[2] & 192)!=0) //??
+        if ((d[2] & 192) != 0) //??
         {
         }
         break;
       }
 
-    case 0x6e1://freq25 // Battery temperatures and voltages E1
+    case 0x6e1://freq25 // Battery temperatures and voltages
+    case 0x6e2:
+    case 0x6e3:
+    case 0x6e4:
     {
-        if ((d[0]>=1)&&(d[0]<=12))
-          {
-            int idx = ((int)d[0]<<1)-2;
-            BmsSetCellTemperature(idx,d[2] - 50);
-            BmsSetCellTemperature(idx+1,d[3] - 50);
-            BmsSetCellVoltage(idx,(((d[4]*256.0+d[5])/200.0)+2.1));
-            BmsSetCellVoltage(idx+1,(((d[6]*256.0+d[7])/200.0)+2.1));
-          }
-      break;
+      //Pid index 0-3
+      int pid_index = (p_frame->MsgID) - 1761;
+      //cmu index 1-12
+      int cmu_id = d[0];
+      //
+      double temp1 = d[1] - 50.0;
+      double temp2 = d[2] - 50.0;
+      double temp3 = d[3] - 50.0;
+
+      double voltage1 = (((d[4] * 256.0 + d[5]) / 200.0) + 2.1);
+      double voltage2 = (((d[6] * 256.0 + d[7]) / 200.0) + 2.1);
+
+      int voltage_index = ((cmu_id - 1) * 8 + (2 * pid_index));
+      int temp_index = ((cmu_id - 1) * 6 + (2 * pid_index));
+      if(cmu_id >= 7)
+      {
+          voltage_index -= 4;
+          temp_index -= 3;
       }
 
-    case 0x6e2://freq25 // Battery temperatures and voltages E2
-    {
-        if ((d[0]>=1)&&(d[0]<=12))
-          {
-            int idx = ((int)d[0]<<1)+22;
-            if (d[0]==12)
-              {
-                BmsSetCellTemperature(idx-1,d[1] - 50);
-              }
-              else
-                {
-                  BmsSetCellTemperature(idx,d[1] - 50);
-                }
-            if((d[0]!=6) && (d[0]<6))
-              {
-                BmsSetCellTemperature(idx+1,d[2] - 50);
-              }
-              else if ((d[0]!=6) && (d[0]>6) && (d[0]!=12))
-                {
-                  BmsSetCellTemperature(idx-1,d[2] - 50);
-                }
+      BmsSetCellVoltage(voltage_index, voltage1);
+      BmsSetCellVoltage(voltage_index + 1, voltage2);
+
+      if(pid_index == 0){
+        BmsSetCellTemperature(temp_index, temp2);
+        BmsSetCellTemperature(temp_index + 1, temp3);
+      }else{
+        BmsSetCellTemperature(temp_index, temp1);
+        if(cmu_id != 6 && cmu_id != 12){
+            BmsSetCellTemperature(temp_index + 1, temp2);
         }
-        if ((d[0]>=1)&&(d[0]<=12))
-          {
-            int idx = ((int)d[0]<<1)+22;
-            BmsSetCellVoltage(idx,(((d[4]*256.0+d[5])/200.0)+2.1));
-            BmsSetCellVoltage(idx+1,(((d[6]*256.0+d[7])/200.0)+2.1));
-          }
-    break;
-    }
+      }
 
-    case 0x6e3://freq25 // Battery temperatures and voltages E3
-    {
-        if ((d[0]>=1)&&(d[0]<=12))
-          {
-            if((d[0]!=6) && (d[0]<6))
-              {
-                int idx = ((int)d[0]<<1)+44;
-                BmsSetCellTemperature(idx,d[1] - 50);
-                BmsSetCellTemperature(idx+1,d[2] - 50);
-              }
-              else if ((d[0]!=12) && (d[0]>6))
-                {
-                  int idx = ((int)d[0]<<1)+42;
-                  BmsSetCellTemperature(idx,d[1] - 50);
-                  BmsSetCellTemperature(idx+1,d[2] - 50);
-                }
-          }
-
-            if ((d[0]>=1)&&(d[0]<=12))
-              {
-                if((d[0]!=6) && (d[0]<6))
-                  {
-                    int idx = ((int)d[0]<<1)+46;
-                    BmsSetCellVoltage(idx,(((d[4]*256.0+d[5])/200.0)+2.1));
-                    BmsSetCellVoltage(idx+1,(((d[6]*256.0+d[7])/200.0)+2.1));
-                  }
-                  else if ((d[0]!=12) && (d[0]>6))
-                    {
-                      int idx = ((int)d[0]<<1)+44;
-                      BmsSetCellVoltage(idx,(((d[4]*256.0+d[5])/200.0)+2.1));
-                      BmsSetCellVoltage(idx+1,(((d[6]*256.0+d[7])/200.0)+2.1));
-                    }
-              }
-    break;
-    }
-
-    case 0x6e4://freq25 // Battery voltages E4
-    {
-        if ((d[0]>=1)&&(d[0]<=12))
-            {
-              if((d[0]!=6) && (d[0]<6))
-                {
-                  int idx = ((int)d[0]<<1)+66;
-                  BmsSetCellVoltage(idx,(((d[4]*256.0+d[5])/200.0)+2.1));
-                  BmsSetCellVoltage(idx+1,(((d[6]*256.0+d[7])/200.0)+2.1));
-                }
-                else if ((d[0]!=12) && (d[0]>6))
-                  {
-                    int idx = ((int)d[0]<<1)+64;
-                    BmsSetCellVoltage(idx,(((d[4]*256.0+d[5])/200.0)+2.1));
-                    BmsSetCellVoltage(idx+1,(((d[6]*256.0+d[7])/200.0)+2.1));
-                  }
-            }
-    break;
+      break;
     }
 
     default:
     break;
     }
-
-
-
   }
 
 void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
@@ -781,7 +756,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
           StandardMetrics.ms_v_charge_state->SetValue("charging");
 
           // if charge and DC current is negative cell balancing is active. If charging battery current is negative, discharge is positive
-          if((StandardMetrics.ms_v_bat_current->AsFloat() < 0) && (mi_QC == 0) && StandardMetrics.ms_v_bat_soc->AsInt() > 92)
+          if((StandardMetrics.ms_v_bat_current->AsFloat() < 0) && (mi_QC == 0) && StandardMetrics.ms_v_bat_soc->AsInt() > 92 && StandardMetrics.ms_v_charge_mode->AsString() !="Balancing")
           {
             StandardMetrics.ms_v_charge_mode->SetValue("Balancing");
             StandardMetrics.ms_v_charge_state->SetValue("topoff");
@@ -867,7 +842,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
           SOH = 100; //ideal range as 100% else with SOH
         }
           StandardMetrics.ms_v_bat_range_ideal->SetValue((
-          (StandardMetrics.ms_v_bat_soc->AsFloat()-10)*1.4444)*SOH/100.0); //150km 1.664; 125km 1.3889; 130km 1.4444; 135km 1.5
+          (StandardMetrics.ms_v_bat_soc->AsFloat()-10)*cfg_ideal/90.0)*SOH/100.0);
         }
 
         StandardMetrics.ms_v_bat_cac->SetValue(48.0*(StandardMetrics.ms_v_bat_soh->AsFloat()/100));
