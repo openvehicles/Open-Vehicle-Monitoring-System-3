@@ -996,9 +996,9 @@ const std::string OvmsVehicleNissanLeaf::GetFeature(int key)
   {
     case 0:
     case 10:
-      return MyConfig.GetParamValue("xnl", "suffsoc", XSTR(0));
+      return MyConfig.GetParamValue("xnl", "suffsoc", STR(0));
     case 11:
-      return MyConfig.GetParamValue("xnl", "suffrange", XSTR(0));
+      return MyConfig.GetParamValue("xnl", "suffrange", STR(0));
     case 15:
     {
       int bits =
