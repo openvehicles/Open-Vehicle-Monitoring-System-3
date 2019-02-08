@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-twizy";
 
-#define VERSION "0.23.1"
+#define VERSION "0.23.2"
 
 #include <stdio.h>
 #include <string>
@@ -116,7 +116,9 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   BatteryInit();
   PowerInit();
   ChargeInit();
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
+#endif
 
   // init can bus:
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);

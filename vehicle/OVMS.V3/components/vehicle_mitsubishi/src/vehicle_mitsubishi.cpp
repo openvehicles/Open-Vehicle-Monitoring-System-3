@@ -93,11 +93,14 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   m_v_charge_dc_kwh->SetValue(0);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
+  
   //BMS
   //Disable BMS alerts by default
   MyConfig.GetParamValueBool("vehicle", "bms.alerts.enabled", false);
+
   //80 or 88 cell car.
   cfg_newcell =  MyConfig.GetParamValueBool("xmi", "newcell", false);
+
   if (cfg_newcell){
 
     BmsSetCellArrangementVoltage(80, 8);
@@ -111,12 +114,11 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   BmsSetCellLimitsVoltage(2.52,4.9);
   BmsSetCellLimitsTemperature(-30,60);
 
-  BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
-  BmsSetCellDefaultThresholdsTemperature(10.0, 12.0);
   #ifdef CONFIG_OVMS_COMP_WEBSERVER
     MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
   	WebInit();
   #endif
+
   // init commands:
   cmd_xmi = MyCommandApp.RegisterCommand("xmi", "Mitsubishi iMiEV", NULL, "", 0, 0, true);
   cmd_xmi->RegisterCommand("aux", "Aux Battery", xmi_aux, 0, 0, false);
@@ -131,9 +133,10 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
 OvmsVehicleMitsubishi::~OvmsVehicleMitsubishi()
   {
   ESP_LOGI(TAG, "Stop Mitsubishi  vehicle module");
-  #ifdef CONFIG_OVMS_COMP_WEBSERVER
-    MyWebServer.DeregisterPage("/bms/cellmon");
-  #endif
+
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+  MyWebServer.DeregisterPage("/bms/cellmon");
+#endif
   MyCommandApp.UnregisterCommand("xmi");
   }
 

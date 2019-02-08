@@ -274,7 +274,9 @@ void OvmsNetManager::WifiDownSTA(std::string event, void* data)
       {
       ESP_LOGI(TAG, "WIFI client down (with MODEM up): reconfigured for MODEM priority");
       MyEvents.SignalEvent("network.reconfigured",NULL);
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
       ScheduleCleanup();
+#endif
       }
     else
       {
@@ -294,7 +296,9 @@ void OvmsNetManager::WifiDownSTA(std::string event, void* data)
     // (in particular if an AP interface is up, and STA goes down, Wifi
     // stack seems to switch default interface to AP)
     PrioritiseAndIndicate();
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
     ScheduleCleanup();
+#endif
     }
   }
 
@@ -329,7 +333,9 @@ void OvmsNetManager::WifiDownAP(std::string event, void* data)
 void OvmsNetManager::WifiApStaDisconnect(std::string event, void* data)
   {
   ESP_LOGI(TAG, "WIFI access point station disconnected");
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   ScheduleCleanup();
+#endif
   }
 
 void OvmsNetManager::ModemUp(std::string event, void* data)
@@ -369,7 +375,9 @@ void OvmsNetManager::ModemDown(std::string event, void* data)
     if (m_connected_any)
       {
       ESP_LOGI(TAG, "MODEM down (with WIFI client up): staying with WIFI client priority");
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
       ScheduleCleanup();
+#endif
       }
     else
       {
@@ -389,7 +397,9 @@ void OvmsNetManager::ModemDown(std::string event, void* data)
     // (in particular if an AP interface is up, and STA goes down, Wifi
     // stack seems to switch default interface to AP)
     PrioritiseAndIndicate();
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
     ScheduleCleanup();
+#endif
     }
   }
 

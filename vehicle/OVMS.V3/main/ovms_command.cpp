@@ -363,7 +363,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     if (!cmd)
       {
       writer->puts("Unrecognised command");
-      if (!m_usage.empty())
+      if (m_usage_template && *m_usage_template)
         writer->puts(GetUsage(writer));
       return;
       }

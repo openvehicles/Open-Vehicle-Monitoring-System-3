@@ -1997,6 +1997,7 @@ void OvmsVehicle::BmsSetCellArrangementVoltage(int readings, int readingspermodu
   m_bms_vdevmaxs = new float[readings];
   if (m_bms_valerts != NULL) delete m_bms_valerts;
   m_bms_valerts = new short[readings];
+  m_bms_valerts_new = 0;
 
   m_bms_bitset_v.clear();
   m_bms_bitset_v.reserve(readings);
