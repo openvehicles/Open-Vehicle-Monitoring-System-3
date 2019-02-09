@@ -385,6 +385,9 @@ class dbcMessage
     void RemoveComment(const std::string& comment);
     bool HasComment(const std::string& comment);
     uint32_t GetID();
+    CAN_frame_format_t GetFormat();
+    bool IsExtended();
+    bool IsStandard();
     void SetID(const uint32_t id);
     int GetSize();
     void SetSize(const int size);
@@ -426,6 +429,7 @@ class dbcMessageTable
     void AddMessage(uint32_t id, dbcMessage* message);
     void RemoveMessage(uint32_t id, bool free=false);
     dbcMessage* FindMessage(uint32_t id);
+    dbcMessage* FindMessage(CAN_frame_format_t format, uint32_t id);
     void Count(int* messages, int* signals, int* bits, int* covered);
 
   public:

@@ -1046,6 +1046,21 @@ uint32_t dbcMessage::GetID()
   return m_id;
   }
 
+CAN_frame_format_t dbcMessage::GetFormat()
+  {
+  return ((m_id & 0x80000000) == 0)?CAN_frame_std:CAN_frame_ext;
+  }
+
+bool dbcMessage::IsExtended()
+  {
+  return ((m_id & 0x80000000) != 0);
+  }
+
+bool dbcMessage::IsStandard()
+  {
+  return ((m_id & 0x80000000) == 0);
+  }
+
 void dbcMessage::SetID(const uint32_t id)
   {
   m_id = id;
@@ -1186,6 +1201,20 @@ void dbcMessageTable::RemoveMessage(uint32_t id, bool free)
 
 dbcMessage* dbcMessageTable::FindMessage(uint32_t id)
   {
+  auto search = m_entrymap.find(id);
+  if (search != m_entrymap.end())
+    return search->second;
+  else
+    return NULL;
+  }
+
+dbcMessage* dbcMessageTable::FindMessage(CAN_frame_format_t format, uint32_t id)
+  {
+  if (format == CAN_frame_ext)
+    id |= 0x80000000;
+  else
+    id &= 0x7FFFFFFF;
+
   auto search = m_entrymap.find(id);
   if (search != m_entrymap.end())
     return search->second;
