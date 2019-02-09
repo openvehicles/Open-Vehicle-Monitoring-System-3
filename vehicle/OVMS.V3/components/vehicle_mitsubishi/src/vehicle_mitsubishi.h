@@ -33,12 +33,15 @@
 #define __VEHICLE_MITSUBISHI_H__
 
 #include "vehicle.h"
-#include "ovms_webserver.h"
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+  #include "ovms_webserver.h"
+#endif
 
 using namespace std;
 
 void xmi_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xmi_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xmi_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
 class OvmsVehicleMitsubishi : public OvmsVehicle
   {
@@ -48,13 +51,14 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
 
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
+    char m_vin[18];
 
   protected:
     virtual void Ticker1(uint32_t ticker);
     void ConfigChanged(OvmsConfigParam* param);
 
   protected:
-    char m_vin[18];
+
     OvmsCommand *cmd_xmi;
 
   public:
@@ -95,7 +99,10 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     float mi_start_cc;
     //config variables
     bool cfg_heater_old;
-    unsigned char  cfg_soh;
+    unsigned char cfg_soh;
+    unsigned char cfg_ideal;
+    bool cfg_bms;
+    bool cfg_newcell;
     //variables for QuickCharge
     unsigned int mi_est_range;
     unsigned char mi_QC;
@@ -106,6 +113,7 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     float mi_chargekwh;
 
 
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
     // --------------------------------------------------------------------------
     // Webserver subsystem
     //  - implementation: mi_web.(h,cpp)
@@ -117,6 +125,7 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
   public:
     void GetDashboardConfig(DashboardConfig& cfg);
 
+#endif //CONFIG_OVMS_COMP_WEBSERVER
 
   };
 

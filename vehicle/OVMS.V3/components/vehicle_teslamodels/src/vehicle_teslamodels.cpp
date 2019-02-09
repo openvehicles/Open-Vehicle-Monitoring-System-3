@@ -37,7 +37,9 @@ static const char *TAG = "v-teslamodels";
 #include "vehicle_teslamodels.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
+#endif
 
 OvmsVehicleTeslaModelS::OvmsVehicleTeslaModelS()
   {
@@ -56,14 +58,18 @@ OvmsVehicleTeslaModelS::OvmsVehicleTeslaModelS()
   BmsSetCellLimitsVoltage(1,4.9);
   BmsSetCellLimitsTemperature(-90,90);
 
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+#endif
   }
 
 OvmsVehicleTeslaModelS::~OvmsVehicleTeslaModelS()
   {
   ESP_LOGI(TAG, "Shutdown Tesla Model S vehicle module");
   MyCommandApp.UnregisterCommand("xts");
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   MyWebServer.DeregisterPage("/bms/cellmon");
+#endif
   }
 
 void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
@@ -246,6 +252,12 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan2(CAN_frame_t* p_frame)
     case 0x2f8: // MCU GPS speed/heading
       StandardMetrics.ms_v_pos_gpshdop->SetValue((float)d[0] / 10);
       StandardMetrics.ms_v_pos_direction->SetValue((float)(((uint32_t)d[2]<<8)+d[1])/128.0);
+      StandardMetrics.ms_v_pos_gpsspeed->SetValue((float)(((uint32_t)d[4]<<8)+d[3])/256.0,Kph);
+      if (d[0] < 255)
+        {
+        StandardMetrics.ms_v_pos_gpslock->SetValue(true);
+        StandardMetrics.ms_v_pos_gpsmode->SetValue("TESLA");
+        }
       break;
     case 0x3d8: // MCU GPS latitude / longitude
       StandardMetrics.ms_v_pos_latitude->SetValue((double)(((uint32_t)(d[3]&0x0f) << 24) +
@@ -271,6 +283,10 @@ void OvmsVehicleTeslaModelS::Notify12vCritical()
   }
 
 void OvmsVehicleTeslaModelS::Notify12vRecovered()
+  { // Not supported on Model S
+  }
+
+void OvmsVehicleTeslaModelS::NotifyBmsAlerts()
   { // Not supported on Model S
   }
 

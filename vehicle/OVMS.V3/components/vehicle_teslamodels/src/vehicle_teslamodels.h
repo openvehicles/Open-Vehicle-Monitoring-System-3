@@ -50,6 +50,7 @@ class OvmsVehicleTeslaModelS: public OvmsVehicle
   protected:
     virtual void Notify12vCritical();
     virtual void Notify12vRecovered();
+    virtual void NotifyBmsAlerts();
 
   protected:
     char m_vin[18];

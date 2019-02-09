@@ -26,6 +26,7 @@
 #ifndef __rt_sevcon_h__
 #define __rt_sevcon_h__
 
+#include "freertos/timers.h"
 #include "canopen.h"
 #include "rt_sevcon_mon.h"
 

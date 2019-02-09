@@ -46,7 +46,7 @@ void xmi_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 * Print out information of the current trip.
 */
 void xmi_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-			  {
+	{
 			  if (MyVehicleFactory.m_currentvehicle==NULL)
 			    {
 			    writer->puts("Error: No vehicle module selected");
@@ -102,4 +102,103 @@ void xmi_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 
 			  if (*ODO != '-')
 			    writer->printf("ODO %s\n", ODO);
-			  }
+		}
+
+void xmi_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+			{
+				  if (MyVehicleFactory.m_currentvehicle==NULL)
+				    {
+				    writer->puts("Error: No vehicle module selected");
+				    return;
+				    }
+
+				  OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
+
+					writer->printf("VIN\n");
+					if(strlen(trio->m_vin) != 0)
+					{
+						writer->printf("Vin: %s \n",trio->m_vin);
+						writer->printf("Car: ");
+						if(trio->m_vin[0] == 'J' && trio->m_vin[1] == 'F' && trio->m_vin[2] == '3'){
+							writer->printf("Mitsubishi i-MiEV \n");
+						}else if (trio->m_vin[0] == 'V' && trio->m_vin[1] == 'F'){
+							if (trio->m_vin[2] == '3'){
+								writer->printf("Peugeot iOn");
+							}else if(trio->m_vin[2] == '7'){
+							writer->printf("Citroen C-Zero ");
+							}
+							writer->printf("\n");
+						}
+						writer->printf("Battery cell count: ");
+						if (trio->m_vin[0] == 'V' && trio->m_vin[1] == 'F' && trio->m_vin[2] == 'Y'){
+							writer->printf("80 \n");
+						}else{
+							writer->printf("88 \n");
+						}
+						writer->printf("Modell year:");
+						switch (trio->m_vin[9]) {
+							case 'A':
+							{
+								writer->printf("2010");
+								break;
+							}
+							case 'B':
+							{
+								writer->printf("2011");
+								break;
+							}
+							case 'C':
+							{
+								writer->printf("2012");
+								break;
+							}
+							case 'D':
+							{
+								writer->printf("2013");
+								break;
+							}
+							case 'E':
+							{
+								writer->printf("2014");
+								break;
+							}
+							case 'F':
+							{
+								writer->printf("2015");
+								break;
+							}
+							case 'G':
+							{
+								writer->printf("2016");
+								break;
+							}
+							case 'H':
+							{
+								writer->printf("2017");
+								break;
+							}
+							case 'I':
+							{
+								writer->printf("2018");
+								break;
+							}
+							case 'J':
+							{
+								writer->printf("2019");
+								break;
+							}
+							case 'K':
+							{
+								writer->printf("2020");
+								break;
+							}
+							case 'L':
+							{
+								writer->printf("2021");
+								break;
+							}
+						}
+					}else{
+						writer->printf("No car VIN loaded!");
+					}
+			}
