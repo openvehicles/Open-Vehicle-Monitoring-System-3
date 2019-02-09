@@ -40,6 +40,7 @@
 #include "candump.h"
 #include "candump_crtd.h"
 #include "candump_pcap.h"
+#include "dbc.h"
 #include "pcp.h"
 #include "ovms.h"
 #include "ovms_mutex.h"
@@ -67,7 +68,7 @@ typedef struct
     } attr;
   } re_record_t;
 
-typedef std::map<uint32_t, uint8_t> re_id_map_t;
+typedef std::map<canbus*, dbcfile*> re_dbc_map_t;
 typedef std::map<std::string, re_record_t*> re_record_map_t;
 
 enum REMode { Serve, Analyse, Discover };
@@ -102,6 +103,9 @@ class re : public pcp, public ExternalRamAllocated
     void DoServe(CAN_frame_t* frame);
 
   protected:
+    dbcfile* FindDBC(canbus* bus);
+
+  protected:
     TaskHandle_t m_task;
     QueueHandle_t m_rxqueue;
 
@@ -109,7 +113,6 @@ class re : public pcp, public ExternalRamAllocated
     OvmsMutex m_mutex;
     REMode m_mode;
     REServeMode m_servemode;
-    re_id_map_t m_idmap;
     re_record_map_t m_rmap;
     candump* m_serveformat_in;
     candump* m_serveformat_out;
@@ -119,6 +122,7 @@ class re : public pcp, public ExternalRamAllocated
     uint32_t m_obdii_ext_max;
     uint32_t m_started;
     uint32_t m_finished;
+    re_dbc_map_t m_dbcmap;
   };
 
 #endif //#ifndef __RETOOLS_H__

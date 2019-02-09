@@ -332,8 +332,8 @@ class dbcSignal
     void SetUnit(const char* unit);
 
   public:
-    void Encode(dbcNumber& source, struct CAN_frame_t* msg);
-    dbcNumber Decode(struct CAN_frame_t& msg);
+    void Encode(dbcNumber* source, CAN_frame_t* msg);
+    dbcNumber Decode(CAN_frame_t* msg);
     void DecodeMetric();
 
   public:
