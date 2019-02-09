@@ -63,10 +63,10 @@ OvmsVehicleDBC::~OvmsVehicleDBC()
     }
   }
 
-bool OvmsVehicleDBC::RegisterCanBusDBC(int bus, CAN_mode_t mode, const char* dbc)
+bool OvmsVehicleDBC::RegisterCanBusDBC(int bus, CAN_mode_t mode, const char* name, const char* dbc)
   {
   dbcfile* newdbc = new dbcfile;
-  if (!newdbc->LoadString(dbc, strlen(dbc)))
+  if (!newdbc->LoadString(name, dbc, strlen(dbc)))
     {
     delete newdbc;
     return false;

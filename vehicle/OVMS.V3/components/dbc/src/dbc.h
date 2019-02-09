@@ -455,11 +455,14 @@ class dbcfile
     void FreeAllocations();
 
   public:
-    bool LoadFile(const char* path, FILE *fd=NULL);
-    bool LoadString(const char* source, size_t length);
+    bool LoadFile(const char* name, const char* path, FILE *fd=NULL);
+    bool LoadString(const char* name, const char* source, size_t length);
     void WriteFile(dbcOutputCallback callback, void* param);
     void WriteSummary(dbcOutputCallback callback, void* param);
     std::string Status();
+    std::string GetName();
+    std::string GetPath();
+    std::string GetVersion();
 
   public:
     void LockFile();
@@ -467,6 +470,7 @@ class dbcfile
     bool IsLocked();
 
   public:
+    std::string m_name;
     std::string m_path;
     std::string m_version;
     dbcNewSymbolTable m_newsymbols;

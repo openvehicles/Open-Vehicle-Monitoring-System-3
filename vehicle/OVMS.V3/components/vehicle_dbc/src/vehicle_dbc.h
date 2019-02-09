@@ -43,7 +43,7 @@ class OvmsVehicleDBC : public OvmsVehicle
     virtual ~OvmsVehicleDBC();
 
   protected:
-    bool RegisterCanBusDBC(int bus, CAN_mode_t mode, const char* dbc);
+    bool RegisterCanBusDBC(int bus, CAN_mode_t mode, const char* name, const char* dbc);
     bool RegisterCanBusDBCLoaded(int bus, CAN_mode_t mode, const char* dbcloaded);
 
   protected:

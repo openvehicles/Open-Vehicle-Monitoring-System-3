@@ -195,7 +195,7 @@ bool dbc::LoadFile(const char* name, const char* path)
   OvmsMutexLock ldbc(&m_mutex);
 
   dbcfile* ndbc = new dbcfile();
-  if (!ndbc->LoadFile(path))
+  if (!ndbc->LoadFile(name, path))
     {
     delete ndbc;
     return false;

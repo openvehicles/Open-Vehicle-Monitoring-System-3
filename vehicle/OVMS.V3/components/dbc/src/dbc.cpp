@@ -1308,9 +1308,10 @@ void dbcfile::FreeAllocations()
   m_comments.EmptyContent();
   }
 
-bool dbcfile::LoadFile(const char* path, FILE* fd)
+bool dbcfile::LoadFile(const char* name, const char* path, FILE* fd)
   {
   FreeAllocations();
+  m_name = std::string(name);
 
 #ifdef CONFIG_OVMS
   if (MyConfig.ProtectedPath(path))
@@ -1350,9 +1351,10 @@ bool dbcfile::LoadFile(const char* path, FILE* fd)
   return result;
   }
 
-bool dbcfile::LoadString(const char* source, size_t length)
+bool dbcfile::LoadString(const char* name, const char* source, size_t length)
   {
   FreeAllocations();
+  m_name = std::string(name);
 
   void yyrestart(FILE *input_file);
   int yyparse (void *YYPARSE_PARAM);
@@ -1414,6 +1416,21 @@ std::string dbcfile::Status()
     ss << "% coverage";
     }
   return ss.str();
+  }
+
+std::string dbcfile::GetName()
+  {
+  return m_name;
+  }
+
+std::string dbcfile::GetPath()
+  {
+  return m_path;
+  }
+
+std::string dbcfile::GetVersion()
+  {
+  return m_version;
   }
 
 void dbcfile::LockFile()
