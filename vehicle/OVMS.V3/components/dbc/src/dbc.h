@@ -71,7 +71,8 @@ typedef enum
 typedef enum
   {
   DBC_NUMBER_NONE = 0,
-  DBC_NUMBER_INTEGER,
+  DBC_NUMBER_INTEGER_SIGNED,
+  DBC_NUMBER_INTEGER_UNSIGNED,
   DBC_NUMBER_DOUBLE
 } dbcNumberType_t;
 
@@ -84,14 +85,18 @@ class dbcNumber
   public:
     void Clear();
     bool IsDefined();
-    bool IsInteger();
+    bool IsSignedInteger();
+    bool IsUnsignedInteger();
     bool IsDouble();
-    void Set(int value);
+    void Set(int32_t value);
+    void Set(uint32_t value);
     void Set(double value);
-    int GetInteger();
+    int32_t GetSignedInteger();
+    uint32_t GetUnsignedInteger();
     double GetDouble();
     friend std::ostream& operator<<(std::ostream& os, const dbcNumber& me);
-    dbcNumber& operator=(const int value);
+    dbcNumber& operator=(const int32_t value);
+    dbcNumber& operator=(const uint32_t value);
     dbcNumber& operator=(const double value);
     dbcNumber& operator=(const dbcNumber& value);
 
@@ -99,7 +104,8 @@ class dbcNumber
     dbcNumberType_t m_type;
     union
       {
-      int intval;
+      uint32_t uintval;
+      int32_t sintval;
       double doubleval;
       } m_value;
   };

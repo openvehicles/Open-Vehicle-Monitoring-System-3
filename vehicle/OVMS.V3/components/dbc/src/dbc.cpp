@@ -70,9 +70,14 @@ bool dbcNumber::IsDefined()
   return (m_type != DBC_NUMBER_NONE);
   }
 
-bool dbcNumber::IsInteger()
+bool dbcNumber::IsSignedInteger()
   {
-  return (m_type == DBC_NUMBER_INTEGER);
+  return (m_type == DBC_NUMBER_INTEGER_SIGNED);
+  }
+
+bool dbcNumber::IsUnsignedInteger()
+  {
+  return (m_type == DBC_NUMBER_INTEGER_UNSIGNED);
   }
 
 bool dbcNumber::IsDouble()
@@ -80,18 +85,32 @@ bool dbcNumber::IsDouble()
   return (m_type == DBC_NUMBER_DOUBLE);
   }
 
-void dbcNumber::Set(int value)
+void dbcNumber::Set(int32_t value)
   {
-  m_type = DBC_NUMBER_INTEGER;
-  m_value.intval = value;
+  m_type = DBC_NUMBER_INTEGER_SIGNED;
+  m_value.sintval = value;
+  }
+
+void dbcNumber::Set(uint32_t value)
+  {
+  m_type = DBC_NUMBER_INTEGER_UNSIGNED;
+  m_value.uintval = value;
   }
 
 void dbcNumber::Set(double value)
   {
   if (ceil(value)==value)
     {
-    m_type = DBC_NUMBER_INTEGER;
-    m_value.intval = (int)value;
+    if (value<0)
+      {
+      m_type = DBC_NUMBER_INTEGER_SIGNED;
+      m_value.sintval = (int32_t)value;
+      }
+    else
+      {
+      m_type = DBC_NUMBER_INTEGER_UNSIGNED;
+      m_value.uintval = (uint32_t)value;
+      }
     }
   else
     {
@@ -100,15 +119,37 @@ void dbcNumber::Set(double value)
     }
   }
 
-int dbcNumber::GetInteger()
+int32_t dbcNumber::GetSignedInteger()
   {
   switch (m_type)
     {
-    case DBC_NUMBER_INTEGER:
-      return m_value.intval;
+    case DBC_NUMBER_INTEGER_SIGNED:
+      return m_value.sintval;
+      break;
+    case DBC_NUMBER_INTEGER_UNSIGNED:
+      return (int32_t)m_value.uintval;
       break;
     case DBC_NUMBER_DOUBLE:
-      return (int)m_value.doubleval;
+      return (int32_t)m_value.doubleval;
+      break;
+    default:
+      return 0;
+      break;
+    }
+  }
+
+uint32_t dbcNumber::GetUnsignedInteger()
+  {
+  switch (m_type)
+    {
+    case DBC_NUMBER_INTEGER_SIGNED:
+      return (uint32_t)m_value.sintval;
+      break;
+    case DBC_NUMBER_INTEGER_UNSIGNED:
+      return m_value.uintval;
+      break;
+    case DBC_NUMBER_DOUBLE:
+      return (uint32_t)m_value.doubleval;
       break;
     default:
       return 0;
@@ -120,8 +161,11 @@ double dbcNumber::GetDouble()
   {
   switch (m_type)
     {
-    case DBC_NUMBER_INTEGER:
-      return (double)m_value.intval;
+    case DBC_NUMBER_INTEGER_SIGNED:
+      return (double)m_value.sintval;
+      break;
+    case DBC_NUMBER_INTEGER_UNSIGNED:
+      return (double)m_value.uintval;
       break;
     case DBC_NUMBER_DOUBLE:
       return m_value.doubleval;
@@ -136,8 +180,11 @@ std::ostream& operator<<(std::ostream& os, const dbcNumber& me)
   {
   switch (me.m_type)
     {
-    case DBC_NUMBER_INTEGER:
-      os << me.m_value.intval;
+    case DBC_NUMBER_INTEGER_SIGNED:
+      os << me.m_value.sintval;
+      break;
+    case DBC_NUMBER_INTEGER_UNSIGNED:
+      os << me.m_value.uintval;
       break;
     case DBC_NUMBER_DOUBLE:
       os << me.m_value.doubleval;
@@ -150,10 +197,17 @@ std::ostream& operator<<(std::ostream& os, const dbcNumber& me)
     return os;
   }
 
-dbcNumber& dbcNumber::operator=(const int value)
+dbcNumber& dbcNumber::operator=(const int32_t value)
   {
-  m_type = DBC_NUMBER_INTEGER;
-  m_value.intval = value;
+  m_type = DBC_NUMBER_INTEGER_SIGNED;
+  m_value.sintval = value;
+  return *this;
+  }
+
+dbcNumber& dbcNumber::operator=(const uint32_t value)
+  {
+  m_type = DBC_NUMBER_INTEGER_UNSIGNED;
+  m_value.uintval = value;
   return *this;
   }
 

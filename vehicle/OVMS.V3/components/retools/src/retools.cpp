@@ -423,7 +423,7 @@ std::string re::GetKey(CAN_frame_t* frame)
         // We have a multiplexed signal
         dbcSignal* s = m->GetMultiplexorSignal();
         dbcNumber muxn = s->Decode(frame);
-        int mux = muxn.GetInteger();
+        uint32_t mux = muxn.GetUnsignedInteger();
         char b[8];
         sprintf(b,":%04x",mux);
         key.append(b);
