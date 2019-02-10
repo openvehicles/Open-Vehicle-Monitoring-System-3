@@ -109,6 +109,7 @@ struct CAN_frame_t
     {
     uint8_t   u8[8];                    // Payload byte access
     uint32_t  u32[2];                   // Payload u32 access (Att: little endian!)
+    uint64_t  u64;                      // Payload u64 access (Att: little endian!)
     } data;
 
   esp_err_t Write(canbus* bus=NULL, TickType_t maxqueuewait=0);  // bus: NULL=origin
