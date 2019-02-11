@@ -371,6 +371,7 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->printf("Mode:      %s\n",(sbus->m_mode==CAN_MODE_OFF)?"Off":
                                    ((sbus->m_mode==CAN_MODE_LISTEN)?"Listen":"Active"));
   writer->printf("Speed:     %d\n",(sbus->m_speed)*1000);
+  writer->printf("DBC:       %s\n",(sbus->GetDBC())?sbus->GetDBC()->GetName().c_str():"none");
   writer->printf("Interrupts:%20d\n",sbus->m_status.interrupts);
   writer->printf("Rx pkt:    %20d\n",sbus->m_status.packets_rx);
   writer->printf("Rx err:    %20d\n",sbus->m_status.errors_rx);
@@ -385,6 +386,24 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     writer->printf("Wdg Timer: %20d sec(s)\n",monotonictime-sbus->m_watchdog_timer);
     }
   writer->printf("Err flags: 0x%08x\n",sbus->m_status.error_flags);
+  }
+
+void can_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  for (int k=1;k<4;k++)
+    {
+    static const char* name[4] = {"can1", "can2", "can3"};
+    canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(name[k-1]);
+    if (sbus != NULL)
+      {
+      writer->printf("%s: %s/%d dbc %s\n",
+        sbus->GetName(),
+        (sbus->m_mode==CAN_MODE_OFF)?"Off":
+          ((sbus->m_mode==CAN_MODE_LISTEN)?"Listen":"Active"),
+        sbus->m_speed * 1000,
+        (sbus->GetDBC())?sbus->GetDBC()->GetName().c_str():"none");
+      }
+    }
   }
 
 void can_clearstatus(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -460,6 +479,8 @@ can::can()
     cmd_canx->RegisterCommand("status","Show CAN status",can_status,"", 0, 0, true);
     cmd_canx->RegisterCommand("clear","Clear CAN status",can_clearstatus,"", 0, 0, true);
     }
+
+  cmd_can->RegisterCommand("list", "List CAN buses", can_list, "", 0, 0, true);
 
   OvmsCommand* cmd_canlog = cmd_can->RegisterCommand("log", "CAN logging framework", NULL, "", 0, 0, true);
   cmd_canlog->RegisterCommand("trace", "Logging to syslog", can_log,

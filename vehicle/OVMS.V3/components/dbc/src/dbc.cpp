@@ -1556,6 +1556,10 @@ std::string dbcfile::Status()
     ss << (int)(covered*100)/bits;
     ss << "% coverage";
     }
+  ss << ", ";
+  ss << m_locks;
+  ss << " lock(s)";
+
   return ss.str();
   }
 
