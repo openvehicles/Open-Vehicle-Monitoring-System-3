@@ -226,6 +226,40 @@ bool dbc::LoadFile(const char* name, const char* path)
   return true;
   }
 
+dbcfile* dbc::LoadString(const char* name, const char* content)
+  {
+  dbcfile* ndbc = new dbcfile;
+  if (!ndbc->LoadString(name, content, strlen(content)))
+    {
+    delete ndbc;
+    return NULL;
+    }
+
+  auto k = m_dbclist.find(name);
+  if (k == m_dbclist.end())
+    {
+    // Create a new entry...
+    m_dbclist[name] = ndbc;
+    }
+  else
+    {
+    // Replace it inline...
+    if (k->second->IsLocked())
+      {
+      ESP_LOGE(TAG,"DBC file %s is locked, so cannot be replaced",name);
+      delete ndbc;
+      return NULL;
+      }
+    else
+      {
+      delete k->second;
+      m_dbclist[name] = ndbc;
+      }
+    }
+
+  return ndbc;
+  }
+
 bool dbc::Unload(const char* name)
   {
   OvmsMutexLock ldbc(&m_mutex);

@@ -1129,24 +1129,24 @@ void OvmsVehicle::Status(int verbosity, OvmsWriter* writer)
   writer->puts("Vehicle module loaded and running");
   }
 
-void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed)
+void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile)
   {
   switch (bus)
     {
     case 1:
       m_can1 = (canbus*)MyPcpApp.FindDeviceByName("can1");
       m_can1->SetPowerMode(On);
-      m_can1->Start(mode,speed);
+      m_can1->Start(mode,speed,dbcfile);
       break;
     case 2:
       m_can2 = (canbus*)MyPcpApp.FindDeviceByName("can2");
       m_can2->SetPowerMode(On);
-      m_can2->Start(mode,speed);
+      m_can2->Start(mode,speed,dbcfile);
       break;
     case 3:
       m_can3 = (canbus*)MyPcpApp.FindDeviceByName("can3");
       m_can3->SetPowerMode(On);
-      m_can3->Start(mode,speed);
+      m_can3->Start(mode,speed,dbcfile);
       break;
     default:
       break;

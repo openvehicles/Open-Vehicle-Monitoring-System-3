@@ -50,11 +50,6 @@ class OvmsVehicleDBC : public OvmsVehicle
     virtual void IncomingFrameCan1(CAN_frame_t* p_frame);
     virtual void IncomingFrameCan2(CAN_frame_t* p_frame);
     virtual void IncomingFrameCan3(CAN_frame_t* p_frame);
-
-  protected:
-    dbcfile* m_dbc_can1;
-    dbcfile* m_dbc_can2;
-    dbcfile* m_dbc_can3;
   };
 
 class OvmsVehiclePureDBC : public OvmsVehicleDBC
