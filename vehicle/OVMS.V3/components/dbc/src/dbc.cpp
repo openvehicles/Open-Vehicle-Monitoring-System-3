@@ -119,6 +119,20 @@ void dbcNumber::Set(double value)
     }
   }
 
+void Cast(uint32_t value, dbcNumberType_t type)
+  {
+  switch(type)
+    {
+    case DBC_NUMBER_INTEGER_SIGNED:
+    case DBC_NUMBER_INTEGER_UNSIGNED:
+      m_value.uintval = value;
+      m_type = type;
+      break;
+    default:
+      break;
+    }
+  }
+
 int32_t dbcNumber::GetSignedInteger()
   {
   switch (m_type)

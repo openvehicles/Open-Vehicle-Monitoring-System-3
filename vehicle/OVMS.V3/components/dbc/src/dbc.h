@@ -91,6 +91,7 @@ class dbcNumber
     void Set(int32_t value);
     void Set(uint32_t value);
     void Set(double value);
+    void Cast(uint32_t value, dbcNumberType_t type);
     int32_t GetSignedInteger();
     uint32_t GetUnsignedInteger();
     double GetDouble();
