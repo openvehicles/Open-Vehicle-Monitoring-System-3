@@ -49,6 +49,63 @@ static const char *TAG = "dbc";
 //      compiled and tested outside the OVMS subsystem.
 
 ////////////////////////////////////////////////////////////////////////
+// Helper functions
+
+static inline uint64_t
+dbc_extract_bits(uint8_t *candata, unsigned int bpos, unsigned int align, unsigned int shifter, unsigned int pos)
+  {
+  uint64_t val = (uint64_t)candata[bpos/8];
+  unsigned int mask = (1 << shifter) - 1;
+  return ((val >> align) & mask) << pos;
+  }
+
+static uint64_t
+dbc_extract_bits_little_endian(uint8_t *candata, unsigned int bpos, unsigned int bits)
+  {
+  unsigned int pos, aligner, shifter;
+  uint64_t val = 0;
+
+  pos = 0;
+  while (bits > 0)
+    {
+    aligner = bpos % 8;
+    shifter = 8 - aligner;
+    shifter = MIN(shifter, bits);
+
+    val |= dbc_extract_bits(candata, bpos, aligner, shifter, pos);
+    pos += shifter;
+
+    bpos += shifter;
+    bits -= shifter;
+    }
+
+  return val;
+  }
+
+static uint64_t
+dbc_extract_bits_big_endian(uint8_t *candata, unsigned int bpos, unsigned int bits)
+  {
+  unsigned int pos, aligner, slicer;
+  uint64_t val = 0;
+
+  pos = bits;
+  while (bits > 0)
+    {
+    slicer = (bpos % 8) + 1;
+    slicer = MIN(slicer, bits);
+    aligner = ((bpos % 8) + 1) - slicer;
+
+    pos -= slicer;
+    val |= dbc_extract_bits(candata, bpos, aligner, slicer, pos);
+
+    bpos = ((bpos / 8) + 1) * 8 + 7;
+    bits -= slicer;
+    }
+
+  return val;
+  }
+
+////////////////////////////////////////////////////////////////////////
 // dbcNumber...
 
 dbcNumber::dbcNumber()
@@ -119,7 +176,7 @@ void dbcNumber::Set(double value)
     }
   }
 
-void Cast(uint32_t value, dbcNumberType_t type)
+void dbcNumber::Cast(uint32_t value, dbcNumberType_t type)
   {
   switch(type)
     {
@@ -940,8 +997,24 @@ void dbcSignal::Encode(dbcNumber* source, CAN_frame_t* msg)
 
 dbcNumber dbcSignal::Decode(CAN_frame_t* msg)
   {
-  // TODO: An efficient decoding of the signal
-  return dbcNumber();
+  uint64_t val;
+  dbcNumber result;
+
+  if (m_byte_order == DBC_BYTEORDER_BIG_ENDIAN)
+    val = dbc_extract_bits_big_endian(msg->data.u8,m_start_bit,m_signal_size);
+  else
+    val = dbc_extract_bits_little_endian(msg->data.u8,m_start_bit,m_signal_size);
+
+  if (m_value_type == DBC_VALUETYPE_UNSIGNED)
+    result.Cast((uint32_t)val, DBC_NUMBER_INTEGER_UNSIGNED);
+  else
+    result.Cast((uint32_t)val, DBC_NUMBER_INTEGER_SIGNED);
+
+  // TODO: Apply factor and offset
+  // dbcNumber m_factor;
+  // dbcNumber m_offset;
+
+  return result;
   }
 
 void dbcSignal::DecodeMetric()
