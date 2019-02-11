@@ -238,6 +238,7 @@ class canbus : public pcp, public InternalRamAllocated
 
   public:
     void AttachDBC(dbcfile *dbcfile);
+    bool AttachDBC(const char *name);
     void DetachDBC();
     dbcfile* GetDBC();
 

@@ -39,6 +39,7 @@ static const char *TAG = "can";
 #include "can.h"
 #include "canlog.h"
 #include "dbc.h"
+#include "dbc_app.h"
 #include <algorithm>
 #include <ctype.h>
 #include <string.h>
@@ -546,6 +547,18 @@ void canbus::AttachDBC(dbcfile *dbcfile)
   if (m_dbcfile) DetachDBC();
   m_dbcfile = dbcfile;
   m_dbcfile->LockFile();
+  }
+
+bool canbus::AttachDBC(const char *name)
+  {
+  if (m_dbcfile) DetachDBC();
+
+  dbcfile *dbcfile = MyDBC.Find(name);
+  if (dbcfile == NULL) return false;
+
+  m_dbcfile = dbcfile;
+  m_dbcfile->LockFile();
+  return true;
   }
 
 void canbus::DetachDBC()
