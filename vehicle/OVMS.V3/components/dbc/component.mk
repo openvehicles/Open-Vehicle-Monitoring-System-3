@@ -7,8 +7,6 @@
 # please read the ESP-IDF documents if you need to do this.
 #
 
-ifdef CONFIG_OVMS_COMP_RE_TOOLS
-
 YACC=	yacc
 ifdef HOSTTYPE
 ifeq ($(HOSTTYPE), FreeBSD)
@@ -44,5 +42,3 @@ $(COMPONENT_PATH)/yacclex/dbc_tokeniser.cpp : $(COMPONENT_PATH)/src/dbc_tokenise
 $(COMPONENT_PATH)/yacclex/dbc_parser.hpp : $(COMPONENT_PATH)/src/dbc_parser.y
 	echo YACC dbc_parser.y
 	$(YACC) -o $(COMPONENT_PATH)/yacclex/dbc_parser.cpp -d $(COMPONENT_PATH)/src/dbc_parser.y
-
-endif

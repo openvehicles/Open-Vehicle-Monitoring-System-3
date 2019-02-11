@@ -38,6 +38,7 @@ static const char *TAG = "can";
 
 #include "can.h"
 #include "canlog.h"
+#include "dbc.h"
 #include <algorithm>
 #include <ctype.h>
 #include <string.h>
@@ -500,6 +501,7 @@ canbus::canbus(const char* name)
   m_txqueue = xQueueCreate(CONFIG_OVMS_HW_CAN_TX_QUEUE_SIZE, sizeof(CAN_frame_t));
   m_mode = CAN_MODE_OFF;
   m_speed = CAN_SPEED_1000KBPS;
+  m_dbcfile = NULL;
   ClearStatus();
 
   using std::placeholders::_1;
@@ -518,8 +520,17 @@ esp_err_t canbus::Start(CAN_mode_t mode, CAN_speed_t speed)
   return ESP_FAIL;
   }
 
+esp_err_t canbus::Start(CAN_mode_t mode, CAN_speed_t speed, dbcfile *dbcfile)
+  {
+  if (m_dbcfile) DetachDBC();
+  if (dbcfile) AttachDBC(dbcfile);
+  return Start(mode, speed);
+  }
+
 esp_err_t canbus::Stop()
   {
+  if (m_dbcfile) DetachDBC();
+
   return ESP_FAIL;
   }
 
@@ -528,6 +539,27 @@ void canbus::ClearStatus()
   memset(&m_status, 0, sizeof(m_status));
   m_status_chksum = 0;
   m_watchdog_timer = monotonictime;
+  }
+
+void canbus::AttachDBC(dbcfile *dbcfile)
+  {
+  if (m_dbcfile) DetachDBC();
+  m_dbcfile = dbcfile;
+  m_dbcfile->LockFile();
+  }
+
+void canbus::DetachDBC()
+  {
+  if (m_dbcfile)
+    {
+    m_dbcfile->UnlockFile();
+    m_dbcfile = NULL;
+    }
+  }
+
+dbcfile* canbus::GetDBC()
+  {
+  return m_dbcfile;
   }
 
 void canbus::BusTicker10(std::string event, void* data)
