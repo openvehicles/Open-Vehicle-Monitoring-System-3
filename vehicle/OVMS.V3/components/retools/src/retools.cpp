@@ -414,7 +414,7 @@ std::string re::GetKey(CAN_frame_t* frame)
   // Check for, and process, multiplexed signal
   if (frame->origin != NULL)
     {
-    dbcfile* dbc = FindDBC(frame->origin);
+    dbcfile* dbc = frame->origin->GetDBC();
     if (dbc != NULL)
       {
       dbcMessage* m = dbc->m_messages.FindMessage(frame->FIR.B.FF, frame->MsgID);
@@ -432,15 +432,6 @@ std::string re::GetKey(CAN_frame_t* frame)
     }
 
   return key;
-  }
-
-dbcfile* re::FindDBC(canbus* bus)
-  {
-  auto k = m_dbcmap.find(bus);
-  if (k != m_dbcmap.end())
-    return k->second;
-  else
-    return NULL;
   }
 
 re::re(const char* name)
@@ -616,17 +607,6 @@ void re_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
 
   OvmsMutexLock lock(&MyRE->m_mutex);
 
-  writer->printf("DBC Map: %d DBC file(s) used\n",MyRE->m_dbcmap.size());
-  if (MyRE->m_dbcmap.size() > 0)
-    {
-    for (re_dbc_map_t::iterator it=MyRE->m_dbcmap.begin(); it!=MyRE->m_dbcmap.end(); ++it)
-      {
-      canbus* bus = it->first;
-      dbcfile* dbc = it->second;
-      writer->printf("         %s is %s\n",bus->GetName(),dbc->GetName().c_str());
-      }
-    }
-
   writer->printf("Key Map: %d entries\n",MyRE->m_rmap.size());
   if (MyRE->m_rmap.size() > 0)
     {
@@ -654,84 +634,6 @@ void re_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     writer->printf("         %d keys are new and discovered\n",ndiscovered);
     writer->printf("         %d bytes are discovered\n",bdiscovered);
     }
-  }
-
-void re_dbc_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  if (!MyRE)
-    {
-    writer->puts("Error: RE tools not running");
-    return;
-    }
-
-  OvmsMutexLock lock(&MyRE->m_mutex);
-
-  canbus *bus = (canbus*)MyPcpApp.FindDeviceByName(argv[0]);
-  if (bus == NULL)
-    {
-    writer->printf("Error: Cannot find CAN bus %s\n",argv[0]);
-    return;
-    }
-
-  dbcfile *dbc = MyDBC.Find(argv[1]);
-  if (dbc == NULL)
-    {
-    writer->printf("Error: Cannot find loaded DBC file %s\n",argv[1]);
-    return;
-    }
-
-  auto k = MyRE->m_dbcmap.find(bus);
-  if (k != MyRE->m_dbcmap.end())
-    {
-    k->second->UnlockFile();
-    MyRE->m_dbcmap.erase(k);
-    }
-
-  dbc->LockFile();
-  MyRE->m_dbcmap[bus] = dbc;
-  writer->printf("Bus %s is now DBC %s\n",argv[0],argv[1]);
-  }
-
-void re_dbc_clear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  if (!MyRE)
-    {
-    writer->puts("Error: RE tools not running");
-    return;
-    }
-
-  OvmsMutexLock lock(&MyRE->m_mutex);
-
-  if (argc > 0)
-    {
-    canbus *bus = (canbus*)MyPcpApp.FindDeviceByName(argv[0]);
-    if (bus == NULL)
-      {
-      writer->printf("Error: Cannot find CAN bus %s\n",argv[0]);
-      return;
-      }
-    auto k = MyRE->m_dbcmap.find(bus);
-    if (k != MyRE->m_dbcmap.end())
-      {
-      k->second->UnlockFile();
-      MyRE->m_dbcmap.erase(k);
-      writer->printf("CAN bus %s cleared\n",argv[0]);
-      }
-    else
-      {
-      writer->printf("Error: Could not find DBC file for bus %s\n",argv[0]);
-      }
-    return;
-    }
-
-  for (re_dbc_map_t::iterator it=MyRE->m_dbcmap.begin(); it!=MyRE->m_dbcmap.end(); ++it)
-    {
-    writer->printf("CAN bus %s cleared (was DBC %s)\n",
-                   it->first->GetName(),
-                   it->second->GetName().c_str());
-    it->second->UnlockFile();
-    }
-  MyRE->m_dbcmap.clear();
   }
 
 void re_obdii_std(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -991,9 +893,7 @@ REInit::REInit()
   cmd_re->RegisterCommand("clear","Clear RE records",re_clear, "", 0, 0, true);
   cmd_re->RegisterCommand("list","List RE records",re_list, "", 0, 1, true);
   cmd_re->RegisterCommand("status","Show RE status",re_status, "", 0, 0, true);
-  OvmsCommand* cmd_dbc = cmd_re->RegisterCommand("dbc","RE DBC framework",NULL, "", 0, 0, true);
-  cmd_dbc->RegisterCommand("set","Set DBC file for specified CAN bus",re_dbc_set, "<bus> <dbcfile>", 2, 2, true);
-  cmd_dbc->RegisterCommand("clear","Clear DBC file for specified CAN bus (or all)",re_dbc_clear, "[<bus>]", 0, 1, true);
+  //OvmsCommand* cmd_dbc = cmd_re->RegisterCommand("dbc","RE DBC framework",NULL, "", 0, 0, true);
   OvmsCommand* cmd_reobdii = cmd_re->RegisterCommand("obdii","RE OBDII framework",NULL, "", 0, 0, true);
   cmd_reobdii->RegisterCommand("standard","Set OBDII standard ID range",re_obdii_std, "<min> <max>", 2, 2, true);
   cmd_reobdii->RegisterCommand("extended","Set OBDII extended ID range",re_obdii_ext, "<min> <max>", 2, 2, true);
