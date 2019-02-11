@@ -58,8 +58,8 @@ struct dbcMultiplexor_t
 
 typedef enum
   {
-  DBC_BYTEORDER_LITTLE_ENDIAN=0,
-  DBC_BYTEORDER_BIG_ENDIAN=1
+  DBC_BYTEORDER_BIG_ENDIAN=0,
+  DBC_BYTEORDER_LITTLE_ENDIAN=1
   } dbcByteOrder_t;
 
 typedef enum
