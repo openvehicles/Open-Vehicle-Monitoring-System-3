@@ -598,17 +598,27 @@ void re_dbc_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
           if (msg)
             {
             // Let's look for signals...
+            dbcSignal* mux = msg->GetMultiplexorSignal();
+            uint32_t muxval;
+            if (mux)
+              {
+              dbcNumber r = mux->Decode(&it->second->last);
+              muxval = r.GetSignedInteger();
+              }
             for (dbcSignal* sig : msg->m_signals)
               {
-              dbcNumber r = sig->Decode(&it->second->last);
-              std::ostringstream ss;
-              ss << "  dbc/";
-              ss << sig->GetName();
-              ss << ": ";
-              ss << r;
-              ss << " ";
-              ss << sig->GetUnit();
-              writer->puts(ss.str().c_str());
+              if ((mux==NULL)||(sig->GetMultiplexSwitchvalue() == muxval))
+                {
+                dbcNumber r = sig->Decode(&it->second->last);
+                std::ostringstream ss;
+                ss << "  dbc/";
+                ss << sig->GetName();
+                ss << ": ";
+                ss << r;
+                ss << " ";
+                ss << sig->GetUnit();
+                writer->puts(ss.str().c_str());
+                }
               }
             }
           }
