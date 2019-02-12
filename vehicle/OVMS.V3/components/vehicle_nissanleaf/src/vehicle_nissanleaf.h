@@ -46,7 +46,7 @@
 #define GEN_1_KM_PER_KWH 7.1
 #define GEN_1_WH_PER_GID 80
 #define GEN_1_30_NEW_CAR_GIDS 356
-#define GEN_1_30_NEW_CAR_AH 80
+#define GEN_1_30_NEW_CAR_AH 79
 #define REMOTE_COMMAND_REPEAT_COUNT 24 // number of times to send the remote command after the first time
 #define ACTIVATION_REQUEST_TIME 10 // tenths of a second to hold activation request signal
 
