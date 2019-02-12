@@ -299,7 +299,6 @@ class dbcSignal
   public:
     void Encode(dbcNumber* source, CAN_frame_t* msg);
     dbcNumber Decode(CAN_frame_t* msg);
-    void DecodeMetric();
 
   public:
     void AssignMetric(OvmsMetric* metric);

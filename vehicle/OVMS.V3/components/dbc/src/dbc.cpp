@@ -829,11 +829,6 @@ dbcNumber dbcSignal::Decode(CAN_frame_t* msg)
   return result;
   }
 
-void dbcSignal::DecodeMetric()
-  {
-  // TODO: An efficient decoding of the signal to an OVMS metric
-  }
-
 void dbcSignal::AssignMetric(OvmsMetric* metric)
   {
   m_metric = metric;
