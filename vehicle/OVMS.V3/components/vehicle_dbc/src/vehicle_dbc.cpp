@@ -65,31 +65,49 @@ bool OvmsVehicleDBC::RegisterCanBusDBCLoaded(int bus, CAN_mode_t mode, const cha
 void OvmsVehicleDBC::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
   // This should be called from the IncomingFrameCan1 handler of the derived vehicle class
-  dbcfile* dbc = m_can1->GetDBC();
-  if (dbc==NULL) return;
-
-  // TODO: Find the DBC message for the given ID, and decode the
-  // relevant signals
+  IncomingFrame(m_can1, p_frame);
   }
 
 void OvmsVehicleDBC::IncomingFrameCan2(CAN_frame_t* p_frame)
   {
   // This should be called from the IncomingFrameCan1 handler of the derived vehicle class
-  dbcfile* dbc = m_can2->GetDBC();
-  if (dbc==NULL) return;
-
-  // TODO: Find the DBC message for the given ID, and decode the
-  // relevant signals
+  IncomingFrame(m_can2, p_frame);
   }
 
 void OvmsVehicleDBC::IncomingFrameCan3(CAN_frame_t* p_frame)
   {
   // This should be called from the IncomingFrameCan1 handler of the derived vehicle class
-  dbcfile* dbc = m_can3->GetDBC();
+  IncomingFrame(m_can3, p_frame);
+  }
+
+void OvmsVehicleDBC::IncomingFrame(canbus* bus, CAN_frame_t* frame)
+  {
+  dbcfile* dbc = bus->GetDBC();
   if (dbc==NULL) return;
 
-  // TODO: Find the DBC message for the given ID, and decode the
-  // relevant signals
+  dbcMessage* msg = dbc->m_messages.FindMessage(frame->FIR.B.FF, frame->MsgID);
+  if (msg)
+    {
+    dbcSignal* mux = msg->GetMultiplexorSignal();
+    uint32_t muxval;
+    if (mux)
+      {
+      dbcNumber r = mux->Decode(frame);
+      muxval = r.GetSignedInteger();
+      }
+    for (dbcSignal* sig : msg->m_signals)
+      {
+      OvmsMetric* m = sig->GetMetric();
+      if (m)
+        {
+        if ((mux==NULL)||(sig->GetMultiplexSwitchvalue() == muxval))
+          {
+          dbcNumber r = sig->Decode(frame);
+          m->SetValue(r);
+          }
+        }
+      }
+    }
   }
 
 OvmsVehiclePureDBC::OvmsVehiclePureDBC()
