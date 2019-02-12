@@ -555,13 +555,64 @@ void re_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
   writer->printf("%-20.20s %10s %6s %s\n","key","records","ms","last");
   for (re_record_map_t::iterator it=MyRE->m_rmap.begin(); it!=MyRE->m_rmap.end(); ++it)
     {
-    char vbuf[48];
-    char *s = vbuf;
-    FormatHexDump(&s, (const char*)it->second->last.data.u8, it->second->last.FIR.B.DLC, 8);
     if ((argc==0)||(strstr(it->first.c_str(),argv[0])))
       {
+      char vbuf[48];
+      char *s = vbuf;
+      FormatHexDump(&s, (const char*)it->second->last.data.u8, it->second->last.FIR.B.DLC, 8);
       writer->printf("%-20s %10d %6d %s\n",
         it->first.c_str(),it->second->rxcount,(tdiff/it->second->rxcount),vbuf);
+      }
+    }
+  }
+
+void re_dbc_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyRE)
+    {
+    writer->puts("Error: RE tools not running");
+    return;
+    }
+
+  uint32_t tdiff = (MyRE->m_finished - MyRE->m_started)*1000;
+  if (tdiff == 0) tdiff = 1000;
+
+  OvmsMutexLock lock(&MyRE->m_mutex);
+  writer->printf("%-20.20s %10s %6s %s\n","key","records","ms","last");
+  for (re_record_map_t::iterator it=MyRE->m_rmap.begin(); it!=MyRE->m_rmap.end(); ++it)
+    {
+    if ((argc==0)||(strstr(it->first.c_str(),argv[0])))
+      {
+      char vbuf[48];
+      char *s = vbuf;
+      FormatHexDump(&s, (const char*)it->second->last.data.u8, it->second->last.FIR.B.DLC, 8);
+      writer->printf("%-20s %10d %6d %s\n",
+        it->first.c_str(),it->second->rxcount,(tdiff/it->second->rxcount),vbuf);
+      if (it->second->last.origin)
+        {
+        dbcfile* dbc = it->second->last.origin->GetDBC();
+        if (dbc)
+          {
+          // We have a DBC attached.
+          dbcMessage* msg = dbc->m_messages.FindMessage(it->second->last.FIR.B.FF, it->second->last.MsgID);
+          if (msg)
+            {
+            // Let's look for signals...
+            for (dbcSignal* sig : msg->m_signals)
+              {
+              dbcNumber r = sig->Decode(&it->second->last);
+              std::ostringstream ss;
+              ss << "  dbc/";
+              ss << sig->GetName();
+              ss << ": ";
+              ss << r;
+              ss << " ";
+              ss << sig->GetUnit();
+              writer->puts(ss.str().c_str());
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -893,14 +944,19 @@ REInit::REInit()
   cmd_re->RegisterCommand("clear","Clear RE records",re_clear, "", 0, 0, true);
   cmd_re->RegisterCommand("list","List RE records",re_list, "", 0, 1, true);
   cmd_re->RegisterCommand("status","Show RE status",re_status, "", 0, 0, true);
-  //OvmsCommand* cmd_dbc = cmd_re->RegisterCommand("dbc","RE DBC framework",NULL, "", 0, 0, true);
+
+  OvmsCommand* cmd_dbc = cmd_re->RegisterCommand("dbc","RE DBC framework",NULL, "", 0, 0, true);
+  cmd_dbc->RegisterCommand("list","List RE DBC records",re_dbc_list, "", 0, 1, true);
+
   OvmsCommand* cmd_reobdii = cmd_re->RegisterCommand("obdii","RE OBDII framework",NULL, "", 0, 0, true);
   cmd_reobdii->RegisterCommand("standard","Set OBDII standard ID range",re_obdii_std, "<min> <max>", 2, 2, true);
   cmd_reobdii->RegisterCommand("extended","Set OBDII extended ID range",re_obdii_ext, "<min> <max>", 2, 2, true);
+
   OvmsCommand* cmd_mode = cmd_re->RegisterCommand("mode","RE mode framework",NULL, "", 0, 0, true);
   cmd_mode->RegisterCommand("serve","Set mode to serve",re_mode_serve, "", 0, 0, true);
   cmd_mode->RegisterCommand("analyse","Set mode to analyse",re_mode_analyse, "", 0, 0, true);
   cmd_mode->RegisterCommand("discover","Set mode to discover",re_mode_discover, "", 0, 0, true);
+
   OvmsCommand* cmd_discover = cmd_re->RegisterCommand("discover","RE discover framework",NULL, "", 0, 0, true);
   OvmsCommand* cmd_discover_list = cmd_discover->RegisterCommand("list","RE discover list framework",NULL, "", 0, 0, true);
   cmd_discover_list->RegisterCommand("changed","List changed records",re_list_changed, "", 0, 1, true);
@@ -908,6 +964,7 @@ REInit::REInit()
   OvmsCommand* cmd_discover_clear = cmd_discover->RegisterCommand("clear","RE discover clear framework",NULL, "", 0, 0, true);
   cmd_discover_clear->RegisterCommand("changed","Clear changed flags",re_clear_changed, "", 0, 0, true);
   cmd_discover_clear->RegisterCommand("discovered","Clear discovered flags",re_clear_discovered, "", 0, 0, true);
+
   OvmsCommand* cmd_serve = cmd_re->RegisterCommand("serve","RE serve framework",NULL, "", 0, 0, true);
   OvmsCommand* cmd_serve_format = cmd_serve->RegisterCommand("format","RE serve format framework",NULL, "", 0, 0, true);
   cmd_serve_format->RegisterCommand("crtd","Set RE server to CRTD format",re_serve_format, "", 0, 0, true);
