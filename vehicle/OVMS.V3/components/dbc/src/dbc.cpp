@@ -816,9 +816,15 @@ dbcNumber dbcSignal::Decode(CAN_frame_t* msg)
   else
     result.Cast((uint32_t)val, DBC_NUMBER_INTEGER_SIGNED);
 
-  // TODO: Apply factor and offset
-  // dbcNumber m_factor;
-  // dbcNumber m_offset;
+  // Apply factor and offset
+  if (!(m_factor == 1))
+    {
+    result = (result * m_factor);
+    }
+  if (!(m_offset == 0))
+    {
+    result = (result + m_offset);
+    }
 
   return result;
   }
