@@ -47,6 +47,9 @@ class dbcNumber
   {
   public:
     dbcNumber();
+    dbcNumber(int32_t value);
+    dbcNumber(uint32_t value);
+    dbcNumber(double value);
     ~dbcNumber();
 
   public:
@@ -67,6 +70,11 @@ class dbcNumber
     dbcNumber& operator=(const uint32_t value);
     dbcNumber& operator=(const double value);
     dbcNumber& operator=(const dbcNumber& value);
+    dbcNumber operator*(const dbcNumber& value);
+    dbcNumber operator+(const dbcNumber& value);
+    bool operator==(const int32_t value);
+    bool operator==(const uint32_t value);
+    bool operator==(const double value);
 
   protected:
     dbcNumberType_t m_type;

@@ -40,6 +40,21 @@ dbcNumber::dbcNumber()
   m_type = DBC_NUMBER_NONE;
   }
 
+dbcNumber::dbcNumber(int32_t value)
+  {
+  Set(value);
+  }
+
+dbcNumber::dbcNumber(uint32_t value)
+  {
+  Set(value);
+  }
+
+dbcNumber::dbcNumber(double value)
+  {
+  Set(value);
+  }
+
 dbcNumber::~dbcNumber()
   {
   }
@@ -224,4 +239,135 @@ dbcNumber& dbcNumber::operator=(const dbcNumber& value)
     memcpy(&m_value,&value.m_value,sizeof(m_value));
     }
   return *this;
+  }
+
+dbcNumber dbcNumber::operator*(const dbcNumber& value)
+  {
+  switch (value.m_type)
+    {
+    case DBC_NUMBER_INTEGER_SIGNED:
+      switch (m_type)
+        {
+        case DBC_NUMBER_INTEGER_SIGNED:
+          return dbcNumber(m_value.sintval * value.m_value.sintval);
+          break;
+        case DBC_NUMBER_INTEGER_UNSIGNED:
+          return dbcNumber((int32_t)m_value.uintval * value.m_value.sintval);
+          break;
+        case DBC_NUMBER_DOUBLE:
+          return dbcNumber(m_value.doubleval * value.m_value.sintval);
+          break;
+        default:
+          break;
+        }
+      break;
+    case DBC_NUMBER_INTEGER_UNSIGNED:
+      switch (m_type)
+        {
+        case DBC_NUMBER_INTEGER_SIGNED:
+          return dbcNumber(m_value.sintval * value.m_value.uintval);
+          break;
+        case DBC_NUMBER_INTEGER_UNSIGNED:
+          return dbcNumber(m_value.uintval * value.m_value.uintval);
+          break;
+        case DBC_NUMBER_DOUBLE:
+          return dbcNumber(m_value.doubleval * value.m_value.uintval);
+          break;
+        default:
+          break;
+        }
+      break;
+    case DBC_NUMBER_DOUBLE:
+      switch (m_type)
+        {
+        case DBC_NUMBER_INTEGER_SIGNED:
+          return dbcNumber((double)m_value.sintval * value.m_value.doubleval);
+          break;
+        case DBC_NUMBER_INTEGER_UNSIGNED:
+          return dbcNumber((double)m_value.uintval * value.m_value.doubleval);
+          break;
+        case DBC_NUMBER_DOUBLE:
+          return dbcNumber(m_value.doubleval * value.m_value.doubleval);
+          break;
+        default:
+          break;
+        }
+      break;
+    default:
+      break;
+    }
+  return dbcNumber((uint32_t)0);
+  }
+
+dbcNumber dbcNumber::operator+(const dbcNumber& value)
+  {
+  switch (value.m_type)
+    {
+    case DBC_NUMBER_INTEGER_SIGNED:
+      switch (m_type)
+        {
+        case DBC_NUMBER_INTEGER_SIGNED:
+          return dbcNumber(m_value.sintval + value.m_value.sintval);
+          break;
+        case DBC_NUMBER_INTEGER_UNSIGNED:
+          return dbcNumber((int32_t)m_value.uintval + value.m_value.sintval);
+          break;
+        case DBC_NUMBER_DOUBLE:
+          return dbcNumber(m_value.doubleval + value.m_value.sintval);
+          break;
+        default:
+          break;
+        }
+      break;
+    case DBC_NUMBER_INTEGER_UNSIGNED:
+      switch (m_type)
+        {
+        case DBC_NUMBER_INTEGER_SIGNED:
+          return dbcNumber(m_value.sintval + value.m_value.uintval);
+          break;
+        case DBC_NUMBER_INTEGER_UNSIGNED:
+          return dbcNumber(m_value.uintval + value.m_value.uintval);
+          break;
+        case DBC_NUMBER_DOUBLE:
+          return dbcNumber(m_value.doubleval + value.m_value.uintval);
+          break;
+        default:
+          break;
+        }
+      break;
+    case DBC_NUMBER_DOUBLE:
+      switch (m_type)
+        {
+        case DBC_NUMBER_INTEGER_SIGNED:
+          return dbcNumber((double)m_value.sintval + value.m_value.doubleval);
+          break;
+        case DBC_NUMBER_INTEGER_UNSIGNED:
+          return dbcNumber((double)m_value.uintval + value.m_value.doubleval);
+          break;
+        case DBC_NUMBER_DOUBLE:
+          return dbcNumber(m_value.doubleval + value.m_value.doubleval);
+          break;
+        default:
+          break;
+        }
+      break;
+    default:
+      break;
+    }
+  return dbcNumber((uint32_t)0);
+  }
+
+bool dbcNumber::operator==(const int32_t value)
+  {
+  return ((m_type == DBC_NUMBER_INTEGER_SIGNED)&&(m_value.sintval==value));
+  }
+
+bool dbcNumber::operator==(const uint32_t value)
+  {
+  return ((m_type == DBC_NUMBER_INTEGER_UNSIGNED)&&(m_value.uintval==value));
+  }
+
+bool dbcNumber::operator==(const double value)
+  {
+  return ((m_type == DBC_NUMBER_DOUBLE)&&(m_value.doubleval==value));
   }
