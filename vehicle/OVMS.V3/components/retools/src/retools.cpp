@@ -604,6 +604,14 @@ void re_dbc_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
               {
               dbcNumber r = mux->Decode(&it->second->last);
               muxval = r.GetSignedInteger();
+              std::ostringstream ss;
+              ss << "  dbc/mux/";
+              ss << mux->GetName();
+              ss << ": ";
+              ss << r;
+              ss << " ";
+              ss << mux->GetUnit();
+              writer->puts(ss.str().c_str());
               }
             for (dbcSignal* sig : msg->m_signals)
               {
