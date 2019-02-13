@@ -570,6 +570,8 @@ dbcSignal::dbcSignal()
 
 dbcSignal::dbcSignal(std::string name)
   {
+  m_start_bit = 0;
+  m_signal_size = 0;
   m_name = name;
   m_metric = MyMetrics.Find(name.c_str());
   }
@@ -930,6 +932,8 @@ dbcMessage::dbcMessage()
 
 dbcMessage::dbcMessage(uint32_t id)
   {
+  m_size = 0;
+  m_multiplexor = NULL;
   m_id = id;
   }
 
