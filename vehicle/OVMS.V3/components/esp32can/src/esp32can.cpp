@@ -163,6 +163,8 @@ esp32can::~esp32can()
 
 esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
   {
+  canbus::Start(mode, speed);
+
   double __tq; // Time quantum
 
   m_mode = mode;
@@ -261,6 +263,8 @@ esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
 
 esp_err_t esp32can::Stop()
   {
+  canbus::Stop();
+
 #ifdef CONFIG_OVMS_COMP_MAX7317
   // Power down the matching SN65 transciever
   MyPeripherals->m_max7317->Output(MAX7317_CAN1_EN, 1);

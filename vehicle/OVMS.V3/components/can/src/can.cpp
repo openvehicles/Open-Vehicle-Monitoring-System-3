@@ -38,6 +38,8 @@ static const char *TAG = "can";
 
 #include "can.h"
 #include "canlog.h"
+#include "dbc.h"
+#include "dbc_app.h"
 #include <algorithm>
 #include <ctype.h>
 #include <string.h>
@@ -62,22 +64,37 @@ void can_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     return;
     }
 
+  dbcfile *dbcfile = NULL;
+  if (argc>1)
+    {
+    dbcfile = MyDBC.Find(argv[1]);
+    if (dbcfile == NULL)
+      {
+      writer->printf("Error: Could not find dbc file %s\n",argv[1]);
+      return;
+      }
+    if (baud == 0)
+      {
+      baud = dbcfile->m_bittiming.GetBaudRate();
+      }
+    }
+
   switch (baud)
     {
     case 100000:
-      sbus->Start(smode,CAN_SPEED_100KBPS);
+      sbus->Start(smode,CAN_SPEED_100KBPS,dbcfile);
       break;
     case 125000:
-      sbus->Start(smode,CAN_SPEED_125KBPS);
+      sbus->Start(smode,CAN_SPEED_125KBPS,dbcfile);
       break;
     case 250000:
-      sbus->Start(smode,CAN_SPEED_250KBPS);
+      sbus->Start(smode,CAN_SPEED_250KBPS,dbcfile);
       break;
     case 500000:
-      sbus->Start(smode,CAN_SPEED_500KBPS);
+      sbus->Start(smode,CAN_SPEED_500KBPS,dbcfile);
       break;
     case 1000000:
-      sbus->Start(smode,CAN_SPEED_1000KBPS);
+      sbus->Start(smode,CAN_SPEED_1000KBPS,dbcfile);
       break;
     default:
       writer->puts("Error: Unrecognised speed (100000, 125000, 250000, 500000, 1000000 are accepted)");
@@ -98,6 +115,41 @@ void can_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     }
   sbus->Stop();
   writer->printf("Can bus %s stopped\n",bus);
+  }
+
+void can_dbc_attach(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* bus = cmd->GetParent()->GetParent()->GetName();
+  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->puts("Error: Cannot find named CAN bus");
+    return;
+    }
+
+  dbcfile *dbcfile = MyDBC.Find(argv[0]);
+  if (dbcfile == NULL)
+    {
+    writer->printf("Error: Could not find dbc file %s\n",argv[0]);
+    return;
+    }
+
+  sbus->AttachDBC(dbcfile);
+  writer->printf("DBC %s attached to %s\n",argv[0],bus);
+  }
+
+void can_dbc_detach(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* bus = cmd->GetParent()->GetParent()->GetName();
+  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->puts("Error: Cannot find named CAN bus");
+    return;
+    }
+
+  sbus->DetachDBC();
+  writer->printf("DBC detached from %s\n",bus);
   }
 
 void can_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -319,6 +371,7 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->printf("Mode:      %s\n",(sbus->m_mode==CAN_MODE_OFF)?"Off":
                                    ((sbus->m_mode==CAN_MODE_LISTEN)?"Listen":"Active"));
   writer->printf("Speed:     %d\n",(sbus->m_speed)*1000);
+  writer->printf("DBC:       %s\n",(sbus->GetDBC())?sbus->GetDBC()->GetName().c_str():"none");
   writer->printf("Interrupts:%20d\n",sbus->m_status.interrupts);
   writer->printf("Rx pkt:    %20d\n",sbus->m_status.packets_rx);
   writer->printf("Rx err:    %20d\n",sbus->m_status.errors_rx);
@@ -333,6 +386,24 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     writer->printf("Wdg Timer: %20d sec(s)\n",monotonictime-sbus->m_watchdog_timer);
     }
   writer->printf("Err flags: 0x%08x\n",sbus->m_status.error_flags);
+  }
+
+void can_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  for (int k=1;k<4;k++)
+    {
+    static const char* name[4] = {"can1", "can2", "can3"};
+    canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(name[k-1]);
+    if (sbus != NULL)
+      {
+      writer->printf("%s: %s/%d dbc %s\n",
+        sbus->GetName(),
+        (sbus->m_mode==CAN_MODE_OFF)?"Off":
+          ((sbus->m_mode==CAN_MODE_LISTEN)?"Listen":"Active"),
+        sbus->m_speed * 1000,
+        (sbus->GetDBC())?sbus->GetDBC()->GetName().c_str():"none");
+      }
+    }
   }
 
 void can_clearstatus(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -393,9 +464,12 @@ can::can()
     static const char* name[4] = {"can1", "can2", "can3"};
     OvmsCommand* cmd_canx = cmd_can->RegisterCommand(name[k-1],"CANx framework",NULL, "", 0, 0, true);
     OvmsCommand* cmd_canstart = cmd_canx->RegisterCommand("start","CAN start framework", NULL, "", 0, 0, true);
-    cmd_canstart->RegisterCommand("listen","Start CAN bus in listen mode",can_start,"<baud>", 1, 1, true);
-    cmd_canstart->RegisterCommand("active","Start CAN bus in active mode",can_start,"<baud>", 1, 1, true);
+    cmd_canstart->RegisterCommand("listen","Start CAN bus in listen mode",can_start,"<baud> [<dbc>]", 1, 2, true);
+    cmd_canstart->RegisterCommand("active","Start CAN bus in active mode",can_start,"<baud> [<dbc>]", 1, 2, true);
     cmd_canx->RegisterCommand("stop","Stop CAN bus",can_stop, "", 0, 0, true);
+    OvmsCommand* cmd_candbc = cmd_canx->RegisterCommand("dbc","CAN dbc framework", NULL, "", 0, 0, true);
+    cmd_candbc->RegisterCommand("attach","Attach a DBC file to a CAN bus",can_dbc_attach,"<dbc>", 1, 1, true);
+    cmd_candbc->RegisterCommand("detach","Detach the DBC file from a CAN bus",can_dbc_detach,"", 0, 0, true);
     OvmsCommand* cmd_cantx = cmd_canx->RegisterCommand("tx","CAN tx framework", NULL, "", 0, 0, true);
     cmd_cantx->RegisterCommand("standard","Transmit standard CAN frame",can_tx,"<id> <data...>", 1, 9, true);
     cmd_cantx->RegisterCommand("extended","Transmit extended CAN frame",can_tx,"<id> <data...>", 1, 9, true);
@@ -405,6 +479,8 @@ can::can()
     cmd_canx->RegisterCommand("status","Show CAN status",can_status,"", 0, 0, true);
     cmd_canx->RegisterCommand("clear","Clear CAN status",can_clearstatus,"", 0, 0, true);
     }
+
+  cmd_can->RegisterCommand("list", "List CAN buses", can_list, "", 0, 0, true);
 
   OvmsCommand* cmd_canlog = cmd_can->RegisterCommand("log", "CAN logging framework", NULL, "", 0, 0, true);
   cmd_canlog->RegisterCommand("trace", "Logging to syslog", can_log,
@@ -500,6 +576,7 @@ canbus::canbus(const char* name)
   m_txqueue = xQueueCreate(CONFIG_OVMS_HW_CAN_TX_QUEUE_SIZE, sizeof(CAN_frame_t));
   m_mode = CAN_MODE_OFF;
   m_speed = CAN_SPEED_1000KBPS;
+  m_dbcfile = NULL;
   ClearStatus();
 
   using std::placeholders::_1;
@@ -518,8 +595,17 @@ esp_err_t canbus::Start(CAN_mode_t mode, CAN_speed_t speed)
   return ESP_FAIL;
   }
 
+esp_err_t canbus::Start(CAN_mode_t mode, CAN_speed_t speed, dbcfile *dbcfile)
+  {
+  if (m_dbcfile) DetachDBC();
+  if (dbcfile) AttachDBC(dbcfile);
+  return Start(mode, speed);
+  }
+
 esp_err_t canbus::Stop()
   {
+  if (m_dbcfile) DetachDBC();
+
   return ESP_FAIL;
   }
 
@@ -528,6 +614,39 @@ void canbus::ClearStatus()
   memset(&m_status, 0, sizeof(m_status));
   m_status_chksum = 0;
   m_watchdog_timer = monotonictime;
+  }
+
+void canbus::AttachDBC(dbcfile *dbcfile)
+  {
+  if (m_dbcfile) DetachDBC();
+  m_dbcfile = dbcfile;
+  m_dbcfile->LockFile();
+  }
+
+bool canbus::AttachDBC(const char *name)
+  {
+  if (m_dbcfile) DetachDBC();
+
+  dbcfile *dbcfile = MyDBC.Find(name);
+  if (dbcfile == NULL) return false;
+
+  m_dbcfile = dbcfile;
+  m_dbcfile->LockFile();
+  return true;
+  }
+
+void canbus::DetachDBC()
+  {
+  if (m_dbcfile)
+    {
+    m_dbcfile->UnlockFile();
+    m_dbcfile = NULL;
+    }
+  }
+
+dbcfile* canbus::GetDBC()
+  {
+  return m_dbcfile;
   }
 
 void canbus::BusTicker10(std::string event, void* data)

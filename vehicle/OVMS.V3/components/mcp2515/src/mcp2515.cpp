@@ -152,6 +152,8 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
 
 esp_err_t mcp2515::Stop()
   {
+  canbus::Stop();
+
   uint8_t buf[16];
 
   // RESET command

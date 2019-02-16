@@ -190,7 +190,7 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void Status(int verbosity, OvmsWriter* writer);
 
   protected:
-    void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed);
+    void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile = NULL);
     bool PinCheck(char* pin);
 
   public:

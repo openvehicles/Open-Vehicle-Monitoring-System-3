@@ -36,6 +36,7 @@
 #include <list>
 #include <functional>
 #include <iostream>
+#include "dbc_number.h"
 #include "can.h"
 #include "ovms_metrics.h"
 
@@ -58,8 +59,8 @@ struct dbcMultiplexor_t
 
 typedef enum
   {
-  DBC_BYTEORDER_LITTLE_ENDIAN=0,
-  DBC_BYTEORDER_BIG_ENDIAN=1
+  DBC_BYTEORDER_BIG_ENDIAN=0,
+  DBC_BYTEORDER_LITTLE_ENDIAN=1
   } dbcByteOrder_t;
 
 typedef enum
@@ -67,42 +68,6 @@ typedef enum
   DBC_VALUETYPE_UNSIGNED = '+',
   DBC_VALUETYPE_SIGNED = '-'
   } dbcValueType_t;
-
-typedef enum
-  {
-  DBC_NUMBER_NONE = 0,
-  DBC_NUMBER_INTEGER,
-  DBC_NUMBER_DOUBLE
-} dbcNumberType_t;
-
-class dbcNumber
-  {
-  public:
-    dbcNumber();
-    ~dbcNumber();
-
-  public:
-    void Clear();
-    bool IsDefined();
-    bool IsInteger();
-    bool IsDouble();
-    void Set(int value);
-    void Set(double value);
-    int GetInteger();
-    double GetDouble();
-    friend std::ostream& operator<<(std::ostream& os, const dbcNumber& me);
-    dbcNumber& operator=(const int value);
-    dbcNumber& operator=(const double value);
-    dbcNumber& operator=(const dbcNumber& value);
-
-  protected:
-    dbcNumberType_t m_type;
-    union
-      {
-      int intval;
-      double doubleval;
-      } m_value;
-  };
 
 typedef std::list<std::string> dbcCommentList_t;
 class dbcCommentTable
@@ -332,9 +297,8 @@ class dbcSignal
     void SetUnit(const char* unit);
 
   public:
-    void Encode(dbcNumber& source, struct CAN_frame_t* msg);
-    dbcNumber Decode(struct CAN_frame_t& msg);
-    void DecodeMetric();
+    void Encode(dbcNumber* source, CAN_frame_t* msg);
+    dbcNumber Decode(CAN_frame_t* msg);
 
   public:
     void AssignMetric(OvmsMetric* metric);
@@ -385,6 +349,9 @@ class dbcMessage
     void RemoveComment(const std::string& comment);
     bool HasComment(const std::string& comment);
     uint32_t GetID();
+    CAN_frame_format_t GetFormat();
+    bool IsExtended();
+    bool IsStandard();
     void SetID(const uint32_t id);
     int GetSize();
     void SetSize(const int size);
@@ -426,6 +393,7 @@ class dbcMessageTable
     void AddMessage(uint32_t id, dbcMessage* message);
     void RemoveMessage(uint32_t id, bool free=false);
     dbcMessage* FindMessage(uint32_t id);
+    dbcMessage* FindMessage(CAN_frame_format_t format, uint32_t id);
     void Count(int* messages, int* signals, int* bits, int* covered);
 
   public:
@@ -451,11 +419,14 @@ class dbcfile
     void FreeAllocations();
 
   public:
-    bool LoadFile(const char* path, FILE *fd=NULL);
-    bool LoadString(const char* source, size_t length);
+    bool LoadFile(const char* name, const char* path, FILE *fd=NULL);
+    bool LoadString(const char* name, const char* source, size_t length);
     void WriteFile(dbcOutputCallback callback, void* param);
     void WriteSummary(dbcOutputCallback callback, void* param);
     std::string Status();
+    std::string GetName();
+    std::string GetPath();
+    std::string GetVersion();
 
   public:
     void LockFile();
@@ -463,6 +434,7 @@ class dbcfile
     bool IsLocked();
 
   public:
+    std::string m_name;
     std::string m_path;
     std::string m_version;
     dbcNewSymbolTable m_newsymbols;
