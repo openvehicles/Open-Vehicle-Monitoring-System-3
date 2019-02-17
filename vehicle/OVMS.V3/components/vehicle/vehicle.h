@@ -128,6 +128,10 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
 
   protected:
+    int m_minsoc;            // The minimum SOC level before alert
+    int m_minsoc_triggered;  // The triggered minimum SOC level to alert at
+
+  protected:
     uint32_t m_ticker;
     int m_12v_ticker;
     int m_chargestate_ticker;
@@ -152,6 +156,7 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void NotifyAlarmStopped();
     virtual void Notify12vCritical();
     virtual void Notify12vRecovered();
+    virtual void NotifyMinSocCritical();
 
   protected:
     virtual int GetNotifyChargeStateDelay(const char* state) { return 3; }
