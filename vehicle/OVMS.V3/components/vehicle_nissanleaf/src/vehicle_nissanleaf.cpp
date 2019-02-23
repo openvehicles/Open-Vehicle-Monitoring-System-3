@@ -88,6 +88,8 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
 
   m_soh_new_car = MyMetrics.InitFloat("xnl.v.b.soh.newcar", SM_STALE_HIGH, 0, Percentage);
   m_soh_instrument = MyMetrics.InitInt("xnl.v.b.soh.instrument", SM_STALE_HIGH, 0, Percentage);
+  m_bat_capacity = MyMetrics.InitFloat("xnl.v.b.cap", SM_STALE_HIGH, 0, kWh);
+  m_bat_energy = MyMetrics.InitFloat("xnl.v.b.energy", SM_STALE_HIGH, 0, kWh);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -536,6 +538,12 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_env_cabintemp->SetValue(d[0] / 2.0 - 14);
         }
       break;
+    case 0x59e:
+      {
+      uint16_t cap_gid = d[2] << 4 | d[3] >> 4;
+      m_bat_capacity->SetValue(cap_gid * GEN_1_WH_PER_GID, WattHours);
+      }
+      break;
     case 0x5bc:
     {
       uint16_t nl_gids = ((uint16_t) d[0] << 2) | ((d[1] & 0xc0) >> 6);
@@ -543,6 +551,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       if (nl_gids != 1023)
         {
         m_gids->SetValue(nl_gids);
+        m_bat_energy->SetValue(nl_gids * GEN_1_WH_PER_GID, WattHours);
 
         // new car soc -- 100% when the battery is new, less when it's degraded
         uint16_t max_gids = MyConfig.GetParamValueInt("xnl", "maxGids", GEN_1_NEW_CAR_GIDS);

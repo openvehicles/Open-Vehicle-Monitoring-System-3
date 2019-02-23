@@ -132,6 +132,8 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricVector<int> *m_bms_temp_int;
     OvmsMetricFloat *m_soh_new_car;
     OvmsMetricInt *m_soh_instrument;
+    OvmsMetricFloat *m_bat_capacity;
+    OvmsMetricFloat *m_bat_energy;
   };
 
 #endif //#ifndef __VEHICLE_NISSANLEAF_H__
