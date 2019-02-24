@@ -196,6 +196,12 @@ function loaduri(target, method, uri, data){
   return true;
 }
 
+$.fn.loaduri = function(method, uri, data) {
+  return this.each(function() {
+    loaduri(this, method, uri, data);
+  });
+};
+
 function standardTextFilter(msg) {
   if (msg.error)
     return '<div class="bg-danger">'+msg.error+'</div>';
@@ -291,6 +297,12 @@ function loadcmd(command, target, filter, timeout) {
 
   return xhr;
 }
+
+$.fn.loadcmd = function(command, filter, timeout) {
+  return this.each(function() {
+    loadcmd(command, $(this), filter, timeout);
+  });
+};
 
 
 /**
