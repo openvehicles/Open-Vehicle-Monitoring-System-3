@@ -38,15 +38,15 @@ static const char *TAG = "re";
 #include "ovms_peripherals.h"
 #include "ovms_events.h"
 #include "ovms_utils.h"
+#include "ovms_notify.h"
 
 re *MyRE = NULL;
 bool MyServing = false;
 
-const char* re_green = "\x1b" "[32m";
-const char* re_red = "\x1b" "[31m";
-const char* re_off = "\x1b" "[39m";
+const char* re_green[2][2] = { { "\x1b" "[32m", "\x1b" "[39m" }, { "<b>", "</b>" } };
+const char* re_red[2][2] = { { "\x1b" "[31m", "\x1b" "[39m" }, { "<u>", "</u>" } };
 
-void HighlightDump(char* bufferp, const char* data, size_t rlength, uint8_t red, uint8_t green)
+void HighlightDump(char* bufferp, const char* data, size_t rlength, uint8_t red, uint8_t green, int mode = 0)
   {
   const char *s = data;
   const char *os = data;
@@ -58,32 +58,19 @@ void HighlightDump(char* bufferp, const char* data, size_t rlength, uint8_t red,
     if (k<rlength)
       {
       if (green & mask)
-        {
-        strcpy(bufferp,re_green);
-        while (*bufferp != 0) bufferp++;
-        }
+        bufferp += sprintf(bufferp, "%s%2.2x%s ", re_green[mode][0], *s, re_green[mode][1]);
       else if (red & mask)
-        {
-        strcpy(bufferp,re_red);
-        while (*bufferp != 0) bufferp++;
-        }
-      sprintf(bufferp,"%2.2x ",*s);
-      bufferp += 3;
-      if ((green | red) & mask)
-        {
-        strcpy(bufferp,re_off);
-        while (*bufferp != 0) bufferp++;
-        }
+        bufferp += sprintf(bufferp, "%s%2.2x%s ", re_red[mode][0], *s, re_red[mode][1]);
+      else
+        bufferp += sprintf(bufferp, "%2.2x ", *s);
       s++;
       }
     else
       {
-      sprintf(bufferp,"   ");
-      bufferp += 3;
+      bufferp += sprintf(bufferp,"   ");
       }
     }
-  sprintf(bufferp,"| ");
-  bufferp += 2;
+  bufferp += sprintf(bufferp,"| ");
   s = os;
   for (int k=0;k<colsize;k++)
     {
@@ -91,31 +78,16 @@ void HighlightDump(char* bufferp, const char* data, size_t rlength, uint8_t red,
     if (k<rlength)
       {
       if (green & mask)
-        {
-        strcpy(bufferp,re_green);
-        while (*bufferp != 0) bufferp++;
-        }
+        bufferp += sprintf(bufferp, "%s%c%s", re_green[mode][0], isprint((int)*s) ? *s : '.', re_green[mode][1]);
       else if (red & mask)
-        {
-        strcpy(bufferp,re_red);
-        while (*bufferp != 0) bufferp++;
-        }
-      if (isprint((int)*s))
-        { *bufferp = *s; }
+        bufferp += sprintf(bufferp, "%s%c%s", re_red[mode][0], isprint((int)*s) ? *s : '.', re_red[mode][1]);
       else
-        { *bufferp = '.'; }
-      bufferp++;
-      if ((green | red) & mask)
-        {
-        strcpy(bufferp,re_off);
-        while (*bufferp != 0) bufferp++;
-        }
+        *bufferp++ = isprint((int)*s) ? *s : '.';
       s++;
       }
     else
       {
-      *bufferp = ' ';
-      bufferp++;
+      *bufferp++ = ' ';
       }
     }
   *bufferp = 0;
@@ -286,7 +258,7 @@ void re::DoAnalyse(CAN_frame_t* frame)
         r->attr.dd = 0xff;
         HighlightDump(vbuf, (const char*)frame->data.u8, frame->FIR.B.DLC, r->attr.dc, r->attr.dd);
         ESP_LOGV(TAG, "Discovered new %s%s%s %s",
-          re_green, key.c_str(), re_off, vbuf);
+          re_green[0][0], key.c_str(), re_green[0][1], vbuf);
         break;
       }
     m_rmap[key] = r;
@@ -447,8 +419,8 @@ re::re(const char* name)
   m_servemode = Ignore;
   m_serveformat_in = new candump_crtd();
   m_serveformat_out = new candump_crtd();
-  xTaskCreatePinnedToCore(RE_task, "OVMS RE", 4096, (void*)this, 5, &m_task, 1);
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
+  xTaskCreatePinnedToCore(RE_task, "OVMS RE", 4096, (void*)this, 5, &m_task, 1);
   MyCan.RegisterListener(m_rxqueue, true);
 
   #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
@@ -518,7 +490,10 @@ void re_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   if (MyRE)
     writer->puts("Error: RE tools already running");
   else
+    {
     MyRE = new re("re");
+    MyEvents.SignalEvent("retools.started", NULL);
+    }
   }
 
 void re_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -529,6 +504,7 @@ void re_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
     {
     delete MyRE;
     MyRE = NULL;
+    MyEvents.SignalEvent("retools.stopped", NULL);
     }
   }
 
@@ -537,7 +513,10 @@ void re_clear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   if (!MyRE)
     writer->puts("Error: RE tools not running");
   else
+    {
     MyRE->Clear();
+    MyEvents.SignalEvent("retools.cleared.all", NULL);
+    }
   }
 
 void re_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -564,6 +543,39 @@ void re_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
         it->first.c_str(),it->second->rxcount,(tdiff/it->second->rxcount),vbuf);
       }
     }
+  }
+
+void re_stream_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyRE)
+    {
+    writer->puts("[]");
+    return;
+    }
+
+  uint32_t tdiff = (MyRE->m_finished - MyRE->m_started)*1000;
+  if (tdiff == 0) tdiff = 1000;
+
+  OvmsMutexLock lock(&MyRE->m_mutex);
+  writer->printf("[");
+  int cnt = 0;
+  for (re_record_map_t::iterator it=MyRE->m_rmap.begin(); it!=MyRE->m_rmap.end(); ++it)
+    {
+    if ((argc==0)||(strstr(it->first.c_str(),argv[0])))
+      {
+      char vbuf[48];
+      char *s = vbuf;
+      FormatHexDump(&s, (const char*)it->second->last.data.u8, it->second->last.FIR.B.DLC, 8);
+      vbuf[24] = 0;
+      writer->printf("%s[\"%s\",%d,%d,\"%s\",\"%s\"]\n",
+        cnt ? "," : "",
+        json_encode(it->first).c_str(), it->second->rxcount, (tdiff/it->second->rxcount),
+        json_encode(std::string(vbuf)).c_str(),
+        json_encode(std::string(vbuf+25)).c_str());
+      cnt++;
+      }
+    }
+  writer->puts("]");
   }
 
 void re_dbc_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -743,6 +755,7 @@ void re_mode_serve(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 
   MyRE->m_mode = Serve;
   writer->puts("Now running in serve mode");
+  MyEvents.SignalEvent("retools.mode.serve", NULL);
   }
 
 void re_mode_analyse(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -755,6 +768,7 @@ void re_mode_analyse(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
 
   MyRE->m_mode = Analyse;
   writer->puts("Now running in analyse mode");
+  MyEvents.SignalEvent("retools.mode.analyse", NULL);
   }
 
 void re_mode_discover(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -774,6 +788,7 @@ void re_mode_discover(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
 
   MyRE->m_mode = Discover;
   writer->puts("Now running in discover mode");
+  MyEvents.SignalEvent("retools.mode.discover", NULL);
   }
 
 void re_clear_changed(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -792,6 +807,7 @@ void re_clear_changed(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
     }
 
   writer->puts("Cleared all change flags");
+  MyEvents.SignalEvent("retools.cleared.changed", NULL);
   }
 
 void re_clear_discovered(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -810,6 +826,7 @@ void re_clear_discovered(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
     }
 
   writer->puts("Cleared all discover flags");
+  MyEvents.SignalEvent("retools.cleared.discovered", NULL);
   }
 
 void re_list_changed(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -839,6 +856,43 @@ void re_list_changed(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
         }
       }
     }
+  }
+
+void re_stream_changed(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  char vbuf[256];
+  if (!MyRE)
+    {
+    writer->puts("[]");
+    return;
+    }
+
+  uint32_t tdiff = (MyRE->m_finished - MyRE->m_started)*1000;
+  if (tdiff == 0) tdiff = 1000;
+
+  OvmsMutexLock lock(&MyRE->m_mutex);
+  writer->printf("[");
+  int cnt = 0;
+  for (re_record_map_t::iterator it=MyRE->m_rmap.begin(); it!=MyRE->m_rmap.end(); ++it)
+    {
+    if ((it->second->attr.b.Changed)||(it->second->attr.dc))
+      {
+      HighlightDump(vbuf, (const char*)it->second->last.data.u8,
+        it->second->last.FIR.B.DLC, it->second->attr.dc, it->second->attr.dd, 1);
+      if ((argc==0)||(strstr(it->first.c_str(),argv[0])))
+        {
+        char *asc = strchr(vbuf, '|');
+        *asc = 0;
+        writer->printf("%s[\"%s\",%d,%d,\"%s\",\"%s\"]\n",
+          cnt ? "," : "",
+          json_encode(it->first).c_str(), it->second->rxcount, (tdiff/it->second->rxcount),
+          json_encode(std::string(vbuf)).c_str(),
+          json_encode(std::string(asc+2)).c_str());
+        cnt++;
+        }
+      }
+    }
+  writer->puts("]");
   }
 
 void re_list_discovered(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -920,6 +974,7 @@ class REInit
     REInit();
     void NetManInit(std::string event, void* data);
     void NetManStop(std::string event, void* data);
+    void Ticker1(std::string event, void* data);
 } REInit  __attribute__ ((init_priority (8800)));
 
 void REInit::NetManInit(std::string event, void* data)
@@ -950,6 +1005,22 @@ void REInit::NetManStop(std::string event, void* data)
     MyServing = false;
     }
 #endif // #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+  }
+
+void REInit::Ticker1(std::string event, void* data)
+  {
+  if (MyRE && MyNotify.HasReader("stream", "retools.status"))
+    {
+    StringWriter buf;
+    re_status(COMMAND_RESULT_VERBOSE, &buf, NULL, 0, NULL);
+    MyNotify.NotifyString("stream", "retools.status", buf.c_str());
+    }
+  if (MyRE && MyNotify.HasReader("stream", "retools.list.update"))
+    {
+    StringWriter buf;
+    re_stream_changed(COMMAND_RESULT_VERBOSE, &buf, NULL, 0, NULL);
+    MyNotify.NotifyString("stream", "retools.list.update", buf.c_str());
+    }
   }
 
 REInit::REInit()
@@ -992,8 +1063,13 @@ REInit::REInit()
   cmd_serve_mode->RegisterCommand("simulate","Set RE server to simulate incoming messages",re_serve_mode, "", 0, 0, true);
   cmd_serve_mode->RegisterCommand("transmit","Set RE server to transmit incoming messages",re_serve_mode, "", 0, 0, true);
 
+  OvmsCommand* cmd_stream = cmd_re->RegisterCommand("stream","RE JSON streaming",NULL, "", 0, 0, true);
+  cmd_stream->RegisterCommand("list","Output array of all RE records",re_stream_list, "[<filter>]", 0, 1, true);
+  cmd_stream->RegisterCommand("changed","Output array of changed RE records",re_stream_changed, "[<filter>]", 0, 1, true);
+
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "network.mgr.init", std::bind(&REInit::NetManInit, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "network.mgr.stop", std::bind(&REInit::NetManStop, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&REInit::Ticker1, this, _1, _2));
   }
