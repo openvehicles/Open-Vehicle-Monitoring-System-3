@@ -90,6 +90,12 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_soh_instrument = MyMetrics.InitInt("xnl.v.b.soh.instrument", SM_STALE_HIGH, 0, Percentage);
   m_battery_energy_capacity = MyMetrics.InitFloat("xnl.v.b.e.capacity", SM_STALE_HIGH, 0, kWh);
   m_battery_energy_available = MyMetrics.InitFloat("xnl.v.b.e.available", SM_STALE_HIGH, 0, kWh);
+  m_charge_duration_full_l2 = MyMetrics.InitFloat("xnl.v.c.duration.full.l2", SM_STALE_HIGH, 0, Minutes);
+  m_charge_duration_full_l1 = MyMetrics.InitFloat("xnl.v.c.duration.full.l1", SM_STALE_HIGH, 0, Minutes);
+  m_charge_duration_full_l0 = MyMetrics.InitFloat("xnl.v.c.duration.full.l0", SM_STALE_HIGH, 0, Minutes);
+  m_charge_duration_range_l2 = MyMetrics.InitFloat("xnl.v.c.duration.range.l2", SM_STALE_HIGH, 0, Minutes);
+  m_charge_duration_range_l1 = MyMetrics.InitFloat("xnl.v.c.duration.range.l1", SM_STALE_HIGH, 0, Minutes);
+  m_charge_duration_range_l0 = MyMetrics.InitFloat("xnl.v.c.duration.range.l0", SM_STALE_HIGH, 0, Minutes);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -545,7 +551,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       }
       break;
     case 0x5bc:
-    {
+      {
       uint16_t nl_gids = ((uint16_t) d[0] << 2) | ((d[1] & 0xc0) >> 6);
       // gids is invalid during startup
       if (nl_gids != 1023)
@@ -569,8 +575,36 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         float wh_per_gid = MyConfig.GetParamValueFloat("xnl", "whPerGid", GEN_1_WH_PER_GID);
         StandardMetrics.ms_v_bat_range_ideal->SetValue((nl_gids * wh_per_gid * km_per_kwh) / 1000);
         */
+        }
+      /* Estimated charge time is a set of multiplexed values:
+       *   d[5]     d[6]     d[7]
+       * 76543210 76543210 76543210
+       * ......mm mmmvvvvv vvvvvvv.
+       */
+      uint16_t mx  = ( d[5] << 3 | d[6] >> 5 ) & 0x1f;
+      uint16_t val = ( d[6] << 7 | d[7] >> 1 ) & 0xfff;
+      switch (mx)
+        {
+        case 0x05: // 00101
+          m_charge_duration_full_l2->SetValue(val);
+          break;
+        case 0x08: // 01100
+          m_charge_duration_full_l1->SetValue(val);
+          break;
+        case 0x0b: // 01101
+          m_charge_duration_full_l0->SetValue(val);
+          break;
+        case 0x12: // 10010
+          m_charge_duration_range_l2->SetValue(val);
+          break;
+        case 0x15: // 10101
+          m_charge_duration_range_l1->SetValue(val);
+          break;
+        case 0x18: // 10100
+          m_charge_duration_range_l0->SetValue(val);
+          break;
+        }
       }
-    }
       break;
     case 0x5bf:
       if (d[4] == 0xb0)
