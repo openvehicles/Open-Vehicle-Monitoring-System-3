@@ -585,22 +585,22 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       uint16_t val = ( d[6] << 7 | d[7] >> 1 ) & 0xfff;
       switch (mx)
         {
-        case 0x05: // 00101
+        case 0x05: //  5 = 0+5
           m_charge_duration_full_l2->SetValue(val);
           break;
-        case 0x08: // 01100
+        case 0x08: //  8 = 3+5
           m_charge_duration_full_l1->SetValue(val);
           break;
-        case 0x0b: // 01101
+        case 0x0b: // 11 = 6+5
           m_charge_duration_full_l0->SetValue(val);
           break;
-        case 0x12: // 10010
+        case 0x12: // 18 = 0+18
           m_charge_duration_range_l2->SetValue(val);
           break;
-        case 0x15: // 10101
+        case 0x15: // 21 = 3+18
           m_charge_duration_range_l1->SetValue(val);
           break;
-        case 0x18: // 10100
+        case 0x18: // 24 = 6+18
           m_charge_duration_range_l0->SetValue(val);
           break;
         }
