@@ -81,6 +81,7 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/assets/style.css", "style.css", HandleAsset);
   RegisterPage("/assets/script.js", "script.js", HandleAsset);
   RegisterPage("/assets/charts.js", "charts.js", HandleAsset);
+  RegisterPage("/assets/tables.js", "tables.js", HandleAsset);
   RegisterPage("/assets/zones.json", "zones.json", HandleAsset);
   RegisterPage("/assets/bootstrap.min.css.map", "-", HandleAsset);
   RegisterPage("/favicon.ico", "favicon.ico", HandleAsset);
