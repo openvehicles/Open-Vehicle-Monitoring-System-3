@@ -649,7 +649,7 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
         "</nav>"
         "<div role=\"main\" id=\"main\" class=\"container-fluid\">"
         "</div>"
-        "<script>window.assets={\"charts_js\":\"" URL_ASSETS_CHARTS_JS "\"}</script>"
+        "<script>window.assets={\"charts_js\":\"" URL_ASSETS_CHARTS_JS "\",\"tables_js\":\"" URL_ASSETS_TABLES_JS "\"}</script>"
         "<script src=\"" URL_ASSETS_SCRIPT_JS "\"></script>");
   PAGE_HOOK("body.post");
   c.print(
@@ -736,6 +736,8 @@ extern const uint8_t script_js_gz_start[]     asm("_binary_script_js_gz_start");
 extern const uint8_t script_js_gz_end[]       asm("_binary_script_js_gz_end");
 extern const uint8_t charts_js_gz_start[]     asm("_binary_charts_js_gz_start");
 extern const uint8_t charts_js_gz_end[]       asm("_binary_charts_js_gz_end");
+extern const uint8_t tables_js_gz_start[]     asm("_binary_tables_js_gz_start");
+extern const uint8_t tables_js_gz_end[]       asm("_binary_tables_js_gz_end");
 extern const uint8_t style_css_gz_start[]     asm("_binary_style_css_gz_start");
 extern const uint8_t style_css_gz_end[]       asm("_binary_style_css_gz_end");
 extern const uint8_t favicon_png_start[]      asm("_binary_favicon_png_start");
@@ -767,6 +769,12 @@ void OvmsWebServer::HandleAsset(PageEntry_t& p, PageContext_t& c)
     data = charts_js_gz_start;
     size = charts_js_gz_end - charts_js_gz_start;
     mtime = MTIME_ASSETS_CHARTS_JS;
+    type = "application/javascript";
+  }
+  else if (c.uri == "/assets/tables.js") {
+    data = tables_js_gz_start;
+    size = tables_js_gz_end - tables_js_gz_start;
+    mtime = MTIME_ASSETS_TABLES_JS;
     type = "application/javascript";
   }
   else if (c.uri == "/assets/zones.json") {

@@ -132,6 +132,14 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricVector<int> *m_bms_temp_int;
     OvmsMetricFloat *m_soh_new_car;
     OvmsMetricInt *m_soh_instrument;
+    OvmsMetricFloat *m_battery_energy_capacity;
+    OvmsMetricFloat *m_battery_energy_available;
+    OvmsMetricFloat *m_charge_duration_full_l2;
+    OvmsMetricFloat *m_charge_duration_full_l1;
+    OvmsMetricFloat *m_charge_duration_full_l0;
+    OvmsMetricFloat *m_charge_duration_range_l2;
+    OvmsMetricFloat *m_charge_duration_range_l1;
+    OvmsMetricFloat *m_charge_duration_range_l0;
   };
 
 #endif //#ifndef __VEHICLE_NISSANLEAF_H__

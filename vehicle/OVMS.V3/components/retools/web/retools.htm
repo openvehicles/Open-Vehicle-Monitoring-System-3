@@ -1,0 +1,181 @@
+<!--
+  Test/Development/Documentation page; install as plugin to test
+-->
+
+<style>
+.sidebox {
+  padding: 5px;
+  margin-bottom: 5px;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+}
+.sidebox-heading {
+  border-bottom: 1px solid #ddd;
+  margin: -5px -5px 5px;
+  padding: 5px 5px;
+  background-color: #eee;
+}
+.mainbox {
+  margin-bottom: 10px;
+}
+.night .sidebox {
+  background-color: #353535;
+}
+.night .sidebox-heading {
+  background-color: #353535;
+}
+td b {
+  color: #00aa00;
+}
+td u {
+  color: #aa0000;
+  font-weight: bold;
+  text-decoration: none;
+}
+#list tbody tr:hover {
+  cursor: pointer;
+}
+</style>
+
+
+<div class="panel panel-primary receiver" id="retools" data-subscriptions="notify/stream/retools/#">
+  <div class="panel-heading">Reverse Engineering</div>
+  <div class="panel-body">
+
+    <div class="row">
+      <div class="col-sm-2">
+        <div class="row">
+          <div class="col-xs-6 col-sm-12">
+            <div class="sidebox">
+              <div class="sidebox-heading">Control</div>
+              <div id="controls" class="action-menu">
+                <button type="button" class="btn btn-default action-start" data-target="#status" data-cmd="re start">Start</button>
+                <button type="button" class="btn btn-default action-stop" data-target="#status" data-cmd="re stop">Stop</button>
+                <div>Set mode:</div>
+                <button type="button" class="btn btn-default action-clear" data-target="#status" data-cmd="re mode discover">Discover</button>
+                <button type="button" class="btn btn-default action-clear" data-target="#status" data-cmd="re mode analyse">Analyse</button>
+                <button type="button" class="btn btn-default action-clear" data-target="#status" data-cmd="re mode serve">Serve</button>
+                <div>Clear:</div>
+                <button type="button" class="btn btn-default action-clear" data-target="#status" data-cmd="re clear">all</button>
+                <button type="button" class="btn btn-default action-clear" data-target="#status" data-cmd="re discover clear discovered">discovered</button>
+                <button type="button" class="btn btn-default action-clear" data-target="#status" data-cmd="re discover clear changed">changed</button>
+              </div>
+            </div>
+          </div>
+          <div class="col-xs-6 col-sm-12">
+            <div class="sidebox">
+              <div class="sidebox-heading">Status</div>
+              <samp id="status" class="monitor"
+                data-updcmd="re status" data-updcnt="1"
+                data-events="retools.(start|stop|mode|clear)" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-sm-8">
+        <div class="mainbox">
+          <table id="list" class="table table-striped table-bordered table-hover" style="width:100%" />
+        </div>
+      </div>
+
+      <div class="col-sm-2">
+        <div class="row">
+          <div class="col-xs-6 col-sm-12">
+            <div class="sidebox">
+              <div class="sidebox-heading">Info</div>
+              <samp id="info" class="monitor"/>
+            </div>
+          </div>
+          <div class="col-xs-6 col-sm-12">
+            <div class="sidebox">
+              <div class="sidebox-heading">Extra</div>
+              <samp id="extra" class="monitor"/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="panel-footer">
+    <p>A brief RE tools explanation</p>
+  </div>
+
+</div>
+
+
+<script>
+(function(){
+
+  // Init list table:
+  var $list;
+  $('#list').table({
+    columns: [
+      { title: "Key", className: "dt-body-mono", width: "20%" },
+      { title: "Records", className: "dt-body-right", width: "10%" },
+      { title: "Interval", className: "dt-body-right", width: "10%" },
+      { title: "Last data", className: "dt-body-mono", width: "35%" },
+      { title: "ASCII", className: "dt-body-mono", width: "25%" },
+    ],
+    rowId: 0,
+    responsive: true,
+    initComplete: function(settings) {
+      // Get table API:
+      $list = this.api();
+      // Request initial full list update:
+      loadcmd("notify raise command stream retools/list/set 're stream list'");
+    },
+  });
+
+  // Get detail info on list click:
+  $('#list').on('click', 'tbody tr', function() {
+    if (!$list) return;
+    var data = $list.row(this).data();
+    $('#info').loadcmd("re dbc list " + data[0]);
+  });
+
+  // Receiver event handling:
+  $('#retools').on('msg:notify', function(ev, msg) {
+    if (msg.type == "stream") {
+      if (msg.subtype == "retools/list/set") {
+        // full list update:
+        if (!$list) return;
+        try {
+          var redata = JSON.parse(msg.value);
+          $list.clear().rows.add(redata).draw();
+        } catch(e) {
+          console.error("retools/list/set error", e, msg);
+        }
+      }
+      else if (msg.subtype == "retools/list/update") {
+        // partial list update:
+        if (!$list) return;
+        try {
+          var redata = JSON.parse(msg.value), rid, row;
+          redata.forEach(function(upd) {
+            rid = upd[0].replace(/([:/])/g, "\\$1");
+            row = $list.row('#' + rid);
+            if (row.length)
+              row.data(upd);
+            else
+              $list.row.add(upd);
+          });
+          $list.draw();
+        } catch(e) {
+          console.error("retools/list/update error", e, msg);
+        }
+      }
+      else if (msg.subtype.startsWith("retools/")) {
+        // text display:
+        var boxid = '#' + msg.subtype.substr(8);
+        $(boxid).html($('<div/>').text(msg.value).html());
+      }
+    }
+  });
+
+})();
+</script>

@@ -199,7 +199,9 @@ void WebSocketHandler::ProcessTxJob()
         
         // send frame:
         mg_send_websocket_frame(m_nc, op, msg.data(), msg.size());
+        //ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d: sent %d bytes, op=%04x", m_nc, m_job.type, m_sent, op);
       }
+      break;
     }
     
     case WSTX_Config:
