@@ -49,129 +49,60 @@ static const char *TAG = "dbc";
 //      compiled and tested outside the OVMS subsystem.
 
 ////////////////////////////////////////////////////////////////////////
-// dbcNumber...
+// Helper functions
 
-dbcNumber::dbcNumber()
+static inline uint64_t
+dbc_extract_bits(uint8_t *candata, unsigned int bpos, unsigned int align, unsigned int shifter, unsigned int pos)
   {
-  m_type = DBC_NUMBER_NONE;
+  uint64_t val = (uint64_t)candata[bpos/8];
+  unsigned int mask = (1 << shifter) - 1;
+  return ((val >> align) & mask) << pos;
   }
 
-dbcNumber::~dbcNumber()
+static uint64_t
+dbc_extract_bits_little_endian(uint8_t *candata, unsigned int bpos, unsigned int bits)
   {
-  }
+  unsigned int pos, aligner, shifter;
+  uint64_t val = 0;
 
-void dbcNumber::Clear()
-  {
-  m_type = DBC_NUMBER_NONE;
-  }
-
-bool dbcNumber::IsDefined()
-  {
-  return (m_type != DBC_NUMBER_NONE);
-  }
-
-bool dbcNumber::IsInteger()
-  {
-  return (m_type == DBC_NUMBER_INTEGER);
-  }
-
-bool dbcNumber::IsDouble()
-  {
-  return (m_type == DBC_NUMBER_DOUBLE);
-  }
-
-void dbcNumber::Set(int value)
-  {
-  m_type = DBC_NUMBER_INTEGER;
-  m_value.intval = value;
-  }
-
-void dbcNumber::Set(double value)
-  {
-  if (ceil(value)==value)
+  pos = 0;
+  while (bits > 0)
     {
-    m_type = DBC_NUMBER_INTEGER;
-    m_value.intval = (int)value;
-    }
-  else
-    {
-    m_type = DBC_NUMBER_DOUBLE;
-    m_value.doubleval = value;
-    }
-  }
+    aligner = bpos % 8;
+    shifter = 8 - aligner;
+    shifter = MIN(shifter, bits);
 
-int dbcNumber::GetInteger()
-  {
-  switch (m_type)
-    {
-    case DBC_NUMBER_INTEGER:
-      return m_value.intval;
-      break;
-    case DBC_NUMBER_DOUBLE:
-      return (int)m_value.doubleval;
-      break;
-    default:
-      return 0;
-      break;
-    }
-  }
+    val |= dbc_extract_bits(candata, bpos, aligner, shifter, pos);
+    pos += shifter;
 
-double dbcNumber::GetDouble()
-  {
-  switch (m_type)
-    {
-    case DBC_NUMBER_INTEGER:
-      return (double)m_value.intval;
-      break;
-    case DBC_NUMBER_DOUBLE:
-      return m_value.doubleval;
-      break;
-    default:
-      return 0;
-      break;
-    }
-  }
-
-std::ostream& operator<<(std::ostream& os, const dbcNumber& me)
-  {
-  switch (me.m_type)
-    {
-    case DBC_NUMBER_INTEGER:
-      os << me.m_value.intval;
-      break;
-    case DBC_NUMBER_DOUBLE:
-      os << me.m_value.doubleval;
-      break;
-    default:
-      os << 0;
-      break;
+    bpos += shifter;
+    bits -= shifter;
     }
 
-    return os;
+  return val;
   }
 
-dbcNumber& dbcNumber::operator=(const int value)
+static uint64_t
+dbc_extract_bits_big_endian(uint8_t *candata, unsigned int bpos, unsigned int bits)
   {
-  m_type = DBC_NUMBER_INTEGER;
-  m_value.intval = value;
-  return *this;
-  }
+  unsigned int pos, aligner, slicer;
+  uint64_t val = 0;
 
-dbcNumber& dbcNumber::operator=(const double value)
-  {
-  m_type = DBC_NUMBER_DOUBLE;
-  m_value.doubleval = value;
-  return *this;
-  }
-
-dbcNumber& dbcNumber::operator=(const dbcNumber& value)
-  {
-  if (this != &value)
+  pos = bits;
+  while (bits > 0)
     {
-    m_type = value.m_type;
-    memcpy(&m_value,&value.m_value,sizeof(m_value));
+    slicer = (bpos % 8) + 1;
+    slicer = MIN(slicer, bits);
+    aligner = ((bpos % 8) + 1) - slicer;
+
+    pos -= slicer;
+    val |= dbc_extract_bits(candata, bpos, aligner, slicer, pos);
+
+    bpos = ((bpos / 8) + 1) * 8 + 7;
+    bits -= slicer;
     }
-  return *this;
+
+  return val;
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -639,6 +570,8 @@ dbcSignal::dbcSignal()
 
 dbcSignal::dbcSignal(std::string name)
   {
+  m_start_bit = 0;
+  m_signal_size = 0;
   m_name = name;
   m_metric = MyMetrics.Find(name.c_str());
   }
@@ -865,20 +798,37 @@ void dbcSignal::SetUnit(const char* unit)
   m_unit = std::string(unit);
   }
 
-void dbcSignal::Encode(dbcNumber& source, struct CAN_frame_t* msg)
+void dbcSignal::Encode(dbcNumber* source, CAN_frame_t* msg)
   {
   // TODO: An efficient encoding of the signal
   }
 
-dbcNumber dbcSignal::Decode(struct CAN_frame_t& msg)
+dbcNumber dbcSignal::Decode(CAN_frame_t* msg)
   {
-  // TODO: An efficient decoding of the signal
-  return dbcNumber();
-  }
+  uint64_t val;
+  dbcNumber result;
 
-void dbcSignal::DecodeMetric()
-  {
-  // TODO: An efficient decoding of the signal to an OVMS metric
+  if (m_byte_order == DBC_BYTEORDER_BIG_ENDIAN)
+    val = dbc_extract_bits_big_endian(msg->data.u8,m_start_bit,m_signal_size);
+  else
+    val = dbc_extract_bits_little_endian(msg->data.u8,m_start_bit,m_signal_size);
+
+  if (m_value_type == DBC_VALUETYPE_UNSIGNED)
+    result.Cast((uint32_t)val, DBC_NUMBER_INTEGER_UNSIGNED);
+  else
+    result.Cast((uint32_t)val, DBC_NUMBER_INTEGER_SIGNED);
+
+  // Apply factor and offset
+  if (!(m_factor == 1))
+    {
+    result = (result * m_factor);
+    }
+  if (!(m_offset == 0))
+    {
+    result = (result + m_offset);
+    }
+
+  return result;
   }
 
 void dbcSignal::AssignMetric(OvmsMetric* metric)
@@ -982,6 +932,8 @@ dbcMessage::dbcMessage()
 
 dbcMessage::dbcMessage(uint32_t id)
   {
+  m_size = 0;
+  m_multiplexor = NULL;
   m_id = id;
   }
 
@@ -1044,6 +996,21 @@ void dbcMessage::Count(int* signals, int* bits, int* covered)
 uint32_t dbcMessage::GetID()
   {
   return m_id;
+  }
+
+CAN_frame_format_t dbcMessage::GetFormat()
+  {
+  return ((m_id & 0x80000000) == 0)?CAN_frame_std:CAN_frame_ext;
+  }
+
+bool dbcMessage::IsExtended()
+  {
+  return ((m_id & 0x80000000) != 0);
+  }
+
+bool dbcMessage::IsStandard()
+  {
+  return ((m_id & 0x80000000) == 0);
   }
 
 void dbcMessage::SetID(const uint32_t id)
@@ -1193,6 +1160,20 @@ dbcMessage* dbcMessageTable::FindMessage(uint32_t id)
     return NULL;
   }
 
+dbcMessage* dbcMessageTable::FindMessage(CAN_frame_format_t format, uint32_t id)
+  {
+  if (format == CAN_frame_ext)
+    id |= 0x80000000;
+  else
+    id &= 0x7FFFFFFF;
+
+  auto search = m_entrymap.find(id);
+  if (search != m_entrymap.end())
+    return search->second;
+  else
+    return NULL;
+  }
+
 void dbcMessageTable::Count(int* messages, int* signals, int* bits, int* covered)
   {
   *messages = 0;
@@ -1279,9 +1260,10 @@ void dbcfile::FreeAllocations()
   m_comments.EmptyContent();
   }
 
-bool dbcfile::LoadFile(const char* path, FILE* fd)
+bool dbcfile::LoadFile(const char* name, const char* path, FILE* fd)
   {
   FreeAllocations();
+  m_name = std::string(name);
 
 #ifdef CONFIG_OVMS
   if (MyConfig.ProtectedPath(path))
@@ -1321,9 +1303,10 @@ bool dbcfile::LoadFile(const char* path, FILE* fd)
   return result;
   }
 
-bool dbcfile::LoadString(const char* source, size_t length)
+bool dbcfile::LoadString(const char* name, const char* source, size_t length)
   {
   FreeAllocations();
+  m_name = std::string(name);
 
   void yyrestart(FILE *input_file);
   int yyparse (void *YYPARSE_PARAM);
@@ -1384,7 +1367,26 @@ std::string dbcfile::Status()
     ss << (int)(covered*100)/bits;
     ss << "% coverage";
     }
+  ss << ", ";
+  ss << m_locks;
+  ss << " lock(s)";
+
   return ss.str();
+  }
+
+std::string dbcfile::GetName()
+  {
+  return m_name;
+  }
+
+std::string dbcfile::GetPath()
+  {
+  return m_path;
+  }
+
+std::string dbcfile::GetVersion()
+  {
+  return m_version;
   }
 
 void dbcfile::LockFile()

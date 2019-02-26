@@ -432,6 +432,10 @@ void OvmsMetric::SetValue(std::string value)
   {
   }
 
+void OvmsMetric::SetValue(dbcNumber& value)
+  {
+  }
+
 void OvmsMetric::operator=(std::string value)
   {
   }
@@ -594,6 +598,11 @@ void OvmsMetricInt::SetValue(std::string value)
     SetModified(false);
   }
 
+void OvmsMetricInt::SetValue(dbcNumber& value)
+  {
+  SetValue(value.GetSignedInteger());
+  }
+
 OvmsMetricBool::OvmsMetricBool(const char* name, uint16_t autostale, metric_unit_t units)
   : OvmsMetric(name, autostale, units)
   {
@@ -671,6 +680,11 @@ void OvmsMetricBool::SetValue(std::string value)
     }
   else
     SetModified(false);
+  }
+
+void OvmsMetricBool::SetValue(dbcNumber& value)
+  {
+  SetValue((bool)value.GetUnsignedInteger());
   }
 
 OvmsMetricFloat::OvmsMetricFloat(const char* name, uint16_t autostale, metric_unit_t units)
@@ -756,6 +770,11 @@ void OvmsMetricFloat::SetValue(std::string value)
     }
   else
     SetModified(false);
+  }
+
+void OvmsMetricFloat::SetValue(dbcNumber& value)
+  {
+  SetValue((float)value.GetDouble());
   }
 
 OvmsMetricString::OvmsMetricString(const char* name, uint16_t autostale, metric_unit_t units)

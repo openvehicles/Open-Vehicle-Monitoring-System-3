@@ -46,6 +46,7 @@ class dbc
 
   public:
     bool LoadFile(const char* name, const char* path);
+    dbcfile* LoadString(const char* name, const char* content);
     bool Unload(const char* name);
     void LoadDirectory(const char* path, bool log=false);
     void LoadAutoExtras(bool log=false);

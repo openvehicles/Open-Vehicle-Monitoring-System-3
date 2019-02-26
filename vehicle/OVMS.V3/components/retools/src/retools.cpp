@@ -33,19 +33,20 @@ static const char *TAG = "re";
 
 #include <string.h>
 #include "retools.h"
+#include "dbc_app.h"
 #include "ovms.h"
 #include "ovms_peripherals.h"
 #include "ovms_events.h"
 #include "ovms_utils.h"
+#include "ovms_notify.h"
 
 re *MyRE = NULL;
 bool MyServing = false;
 
-const char* re_green = "\x1b" "[32m";
-const char* re_red = "\x1b" "[31m";
-const char* re_off = "\x1b" "[39m";
+const char* re_green[2][2] = { { "\x1b" "[32m", "\x1b" "[39m" }, { "<b>", "</b>" } };
+const char* re_red[2][2] = { { "\x1b" "[31m", "\x1b" "[39m" }, { "<u>", "</u>" } };
 
-void HighlightDump(char* bufferp, const char* data, size_t rlength, uint8_t red, uint8_t green)
+void HighlightDump(char* bufferp, const char* data, size_t rlength, uint8_t red, uint8_t green, int mode = 0)
   {
   const char *s = data;
   const char *os = data;
@@ -57,32 +58,19 @@ void HighlightDump(char* bufferp, const char* data, size_t rlength, uint8_t red,
     if (k<rlength)
       {
       if (green & mask)
-        {
-        strcpy(bufferp,re_green);
-        while (*bufferp != 0) bufferp++;
-        }
+        bufferp += sprintf(bufferp, "%s%2.2x%s ", re_green[mode][0], *s, re_green[mode][1]);
       else if (red & mask)
-        {
-        strcpy(bufferp,re_red);
-        while (*bufferp != 0) bufferp++;
-        }
-      sprintf(bufferp,"%2.2x ",*s);
-      bufferp += 3;
-      if ((green | red) & mask)
-        {
-        strcpy(bufferp,re_off);
-        while (*bufferp != 0) bufferp++;
-        }
+        bufferp += sprintf(bufferp, "%s%2.2x%s ", re_red[mode][0], *s, re_red[mode][1]);
+      else
+        bufferp += sprintf(bufferp, "%2.2x ", *s);
       s++;
       }
     else
       {
-      sprintf(bufferp,"   ");
-      bufferp += 3;
+      bufferp += sprintf(bufferp,"   ");
       }
     }
-  sprintf(bufferp,"| ");
-  bufferp += 2;
+  bufferp += sprintf(bufferp,"| ");
   s = os;
   for (int k=0;k<colsize;k++)
     {
@@ -90,31 +78,16 @@ void HighlightDump(char* bufferp, const char* data, size_t rlength, uint8_t red,
     if (k<rlength)
       {
       if (green & mask)
-        {
-        strcpy(bufferp,re_green);
-        while (*bufferp != 0) bufferp++;
-        }
+        bufferp += sprintf(bufferp, "%s%c%s", re_green[mode][0], isprint((int)*s) ? *s : '.', re_green[mode][1]);
       else if (red & mask)
-        {
-        strcpy(bufferp,re_red);
-        while (*bufferp != 0) bufferp++;
-        }
-      if (isprint((int)*s))
-        { *bufferp = *s; }
+        bufferp += sprintf(bufferp, "%s%c%s", re_red[mode][0], isprint((int)*s) ? *s : '.', re_red[mode][1]);
       else
-        { *bufferp = '.'; }
-      bufferp++;
-      if ((green | red) & mask)
-        {
-        strcpy(bufferp,re_off);
-        while (*bufferp != 0) bufferp++;
-        }
+        *bufferp++ = isprint((int)*s) ? *s : '.';
       s++;
       }
     else
       {
-      *bufferp = ' ';
-      bufferp++;
+      *bufferp++ = ' ';
       }
     }
   *bufferp = 0;
@@ -285,7 +258,7 @@ void re::DoAnalyse(CAN_frame_t* frame)
         r->attr.dd = 0xff;
         HighlightDump(vbuf, (const char*)frame->data.u8, frame->FIR.B.DLC, r->attr.dc, r->attr.dd);
         ESP_LOGV(TAG, "Discovered new %s%s%s %s",
-          re_green, key.c_str(), re_off, vbuf);
+          re_green[0][0], key.c_str(), re_green[0][1], vbuf);
         break;
       }
     m_rmap[key] = r;
@@ -410,16 +383,21 @@ std::string re::GetKey(CAN_frame_t* frame)
     return key;
     }
 
-  auto k = m_idmap.find(frame->MsgID);
-  if (k != m_idmap.end())
+  // Check for, and process, multiplexed signal
+  if (frame->origin != NULL)
     {
-    uint8_t bytes = m_idmap[frame->MsgID];
-    for (int j=0;j<8;j++)
+    dbcfile* dbc = frame->origin->GetDBC();
+    if (dbc != NULL)
       {
-      if (bytes & (1<<j))
+      dbcMessage* m = dbc->m_messages.FindMessage(frame->FIR.B.FF, frame->MsgID);
+      if ((m != NULL)&&(m->IsMultiplexor()))
         {
-        char b[4];
-        sprintf(b,":%02x",frame->data.u8[j]);
+        // We have a multiplexed signal
+        dbcSignal* s = m->GetMultiplexorSignal();
+        dbcNumber muxn = s->Decode(frame);
+        uint32_t mux = muxn.GetUnsignedInteger();
+        char b[8];
+        sprintf(b,":%04x",mux);
         key.append(b);
         }
       }
@@ -441,8 +419,8 @@ re::re(const char* name)
   m_servemode = Ignore;
   m_serveformat_in = new candump_crtd();
   m_serveformat_out = new candump_crtd();
-  xTaskCreatePinnedToCore(RE_task, "OVMS RE", 4096, (void*)this, 5, &m_task, 1);
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
+  xTaskCreatePinnedToCore(RE_task, "OVMS RE", 4096, (void*)this, 5, &m_task, 1);
   MyCan.RegisterListener(m_rxqueue, true);
 
   #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
@@ -512,7 +490,10 @@ void re_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   if (MyRE)
     writer->puts("Error: RE tools already running");
   else
+    {
     MyRE = new re("re");
+    MyEvents.SignalEvent("retools.started", NULL);
+    }
   }
 
 void re_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -523,6 +504,7 @@ void re_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
     {
     delete MyRE;
     MyRE = NULL;
+    MyEvents.SignalEvent("retools.stopped", NULL);
     }
   }
 
@@ -531,7 +513,10 @@ void re_clear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   if (!MyRE)
     writer->puts("Error: RE tools not running");
   else
+    {
     MyRE->Clear();
+    MyEvents.SignalEvent("retools.cleared.all", NULL);
+    }
   }
 
 void re_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -549,13 +534,115 @@ void re_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
   writer->printf("%-20.20s %10s %6s %s\n","key","records","ms","last");
   for (re_record_map_t::iterator it=MyRE->m_rmap.begin(); it!=MyRE->m_rmap.end(); ++it)
     {
-    char vbuf[48];
-    char *s = vbuf;
-    FormatHexDump(&s, (const char*)it->second->last.data.u8, it->second->last.FIR.B.DLC, 8);
     if ((argc==0)||(strstr(it->first.c_str(),argv[0])))
       {
+      char vbuf[48];
+      char *s = vbuf;
+      FormatHexDump(&s, (const char*)it->second->last.data.u8, it->second->last.FIR.B.DLC, 8);
       writer->printf("%-20s %10d %6d %s\n",
         it->first.c_str(),it->second->rxcount,(tdiff/it->second->rxcount),vbuf);
+      }
+    }
+  }
+
+void re_stream_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyRE)
+    {
+    writer->puts("[]");
+    return;
+    }
+
+  uint32_t tdiff = (MyRE->m_finished - MyRE->m_started)*1000;
+  if (tdiff == 0) tdiff = 1000;
+
+  OvmsMutexLock lock(&MyRE->m_mutex);
+  writer->printf("[");
+  int cnt = 0;
+  for (re_record_map_t::iterator it=MyRE->m_rmap.begin(); it!=MyRE->m_rmap.end(); ++it)
+    {
+    if ((argc==0)||(strstr(it->first.c_str(),argv[0])))
+      {
+      char vbuf[48];
+      char *s = vbuf;
+      FormatHexDump(&s, (const char*)it->second->last.data.u8, it->second->last.FIR.B.DLC, 8);
+      vbuf[24] = 0;
+      writer->printf("%s[\"%s\",%d,%d,\"%s\",\"%s\"]\n",
+        cnt ? "," : "",
+        json_encode(it->first).c_str(), it->second->rxcount, (tdiff/it->second->rxcount),
+        json_encode(std::string(vbuf)).c_str(),
+        json_encode(std::string(vbuf+25)).c_str());
+      cnt++;
+      }
+    }
+  writer->puts("]");
+  }
+
+void re_dbc_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyRE)
+    {
+    writer->puts("Error: RE tools not running");
+    return;
+    }
+
+  uint32_t tdiff = (MyRE->m_finished - MyRE->m_started)*1000;
+  if (tdiff == 0) tdiff = 1000;
+
+  OvmsMutexLock lock(&MyRE->m_mutex);
+  writer->printf("%-20.20s %10s %6s %s\n","key","records","ms","last");
+  for (re_record_map_t::iterator it=MyRE->m_rmap.begin(); it!=MyRE->m_rmap.end(); ++it)
+    {
+    if ((argc==0)||(strstr(it->first.c_str(),argv[0])))
+      {
+      char vbuf[48];
+      char *s = vbuf;
+      FormatHexDump(&s, (const char*)it->second->last.data.u8, it->second->last.FIR.B.DLC, 8);
+      writer->printf("%-20s %10d %6d %s\n",
+        it->first.c_str(),it->second->rxcount,(tdiff/it->second->rxcount),vbuf);
+      if (it->second->last.origin)
+        {
+        dbcfile* dbc = it->second->last.origin->GetDBC();
+        if (dbc)
+          {
+          // We have a DBC attached.
+          dbcMessage* msg = dbc->m_messages.FindMessage(it->second->last.FIR.B.FF, it->second->last.MsgID);
+          if (msg)
+            {
+            // Let's look for signals...
+            dbcSignal* mux = msg->GetMultiplexorSignal();
+            uint32_t muxval;
+            if (mux)
+              {
+              dbcNumber r = mux->Decode(&it->second->last);
+              muxval = r.GetSignedInteger();
+              std::ostringstream ss;
+              ss << "  dbc/mux/";
+              ss << mux->GetName();
+              ss << ": ";
+              ss << r;
+              ss << " ";
+              ss << mux->GetUnit();
+              writer->puts(ss.str().c_str());
+              }
+            for (dbcSignal* sig : msg->m_signals)
+              {
+              if ((mux==NULL)||(sig->GetMultiplexSwitchvalue() == muxval))
+                {
+                dbcNumber r = sig->Decode(&it->second->last);
+                std::ostringstream ss;
+                ss << "  dbc/";
+                ss << sig->GetName();
+                ss << ": ";
+                ss << r;
+                ss << " ";
+                ss << sig->GetUnit();
+                writer->puts(ss.str().c_str());
+                }
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -628,59 +715,6 @@ void re_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     writer->printf("         %d keys are new and discovered\n",ndiscovered);
     writer->printf("         %d bytes are discovered\n",bdiscovered);
     }
-
-  writer->printf("ID Map:  %d entries\n",MyRE->m_idmap.size());
-  if (MyRE->m_idmap.size() > 0)
-    {
-    writer->puts("  ID BYTES");
-    for (re_id_map_t::iterator it=MyRE->m_idmap.begin(); it!=MyRE->m_idmap.end(); ++it)
-      {
-      uint32_t id = it->first;
-      uint8_t bytes = it->second;
-      writer->printf("%4x 0x%2.2x\n",id,bytes);
-      }
-    }
-  }
-
-void re_keyclear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  if (!MyRE)
-    {
-    writer->puts("Error: RE tools not running");
-    return;
-    }
-
-  uint32_t id = (uint32_t)strtol(argv[0],NULL,16);
-  OvmsMutexLock lock(&MyRE->m_mutex);
-  auto k = MyRE->m_idmap.find(id);
-  if (k != MyRE->m_idmap.end())
-    {
-    MyRE->m_idmap.erase(k);
-    writer->puts("Cleared ID key");
-    }
-  }
-
-void re_keyset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  if (!MyRE)
-    {
-    writer->puts("Error: RE tools not running");
-    return;
-    }
-
-  uint32_t id = (uint32_t)strtol(argv[0],NULL,16);
-  uint8_t bytes = 0;
-  for (int k=1;k<argc;k++)
-    {
-    int b = atoi(argv[k]);
-    if ((b>=1)&&(b<=8))
-      {
-      bytes |= (1<<(b-1));
-      }
-    }
-  OvmsMutexLock lock(&MyRE->m_mutex);
-  MyRE->m_idmap[id] = bytes;
-  writer->printf("Set ID %x to bytes 0x%02x\n",id);
   }
 
 void re_obdii_std(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -721,6 +755,7 @@ void re_mode_serve(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 
   MyRE->m_mode = Serve;
   writer->puts("Now running in serve mode");
+  MyEvents.SignalEvent("retools.mode.serve", NULL);
   }
 
 void re_mode_analyse(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -733,6 +768,7 @@ void re_mode_analyse(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
 
   MyRE->m_mode = Analyse;
   writer->puts("Now running in analyse mode");
+  MyEvents.SignalEvent("retools.mode.analyse", NULL);
   }
 
 void re_mode_discover(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -752,6 +788,7 @@ void re_mode_discover(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
 
   MyRE->m_mode = Discover;
   writer->puts("Now running in discover mode");
+  MyEvents.SignalEvent("retools.mode.discover", NULL);
   }
 
 void re_clear_changed(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -770,6 +807,7 @@ void re_clear_changed(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
     }
 
   writer->puts("Cleared all change flags");
+  MyEvents.SignalEvent("retools.cleared.changed", NULL);
   }
 
 void re_clear_discovered(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -788,6 +826,7 @@ void re_clear_discovered(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
     }
 
   writer->puts("Cleared all discover flags");
+  MyEvents.SignalEvent("retools.cleared.discovered", NULL);
   }
 
 void re_list_changed(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -817,6 +856,43 @@ void re_list_changed(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
         }
       }
     }
+  }
+
+void re_stream_changed(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  char vbuf[256];
+  if (!MyRE)
+    {
+    writer->puts("[]");
+    return;
+    }
+
+  uint32_t tdiff = (MyRE->m_finished - MyRE->m_started)*1000;
+  if (tdiff == 0) tdiff = 1000;
+
+  OvmsMutexLock lock(&MyRE->m_mutex);
+  writer->printf("[");
+  int cnt = 0;
+  for (re_record_map_t::iterator it=MyRE->m_rmap.begin(); it!=MyRE->m_rmap.end(); ++it)
+    {
+    if ((it->second->attr.b.Changed)||(it->second->attr.dc))
+      {
+      HighlightDump(vbuf, (const char*)it->second->last.data.u8,
+        it->second->last.FIR.B.DLC, it->second->attr.dc, it->second->attr.dd, 1);
+      if ((argc==0)||(strstr(it->first.c_str(),argv[0])))
+        {
+        char *asc = strchr(vbuf, '|');
+        *asc = 0;
+        writer->printf("%s[\"%s\",%d,%d,\"%s\",\"%s\"]\n",
+          cnt ? "," : "",
+          json_encode(it->first).c_str(), it->second->rxcount, (tdiff/it->second->rxcount),
+          json_encode(std::string(vbuf)).c_str(),
+          json_encode(std::string(asc+2)).c_str());
+        cnt++;
+        }
+      }
+    }
+  writer->puts("]");
   }
 
 void re_list_discovered(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -898,6 +974,7 @@ class REInit
     REInit();
     void NetManInit(std::string event, void* data);
     void NetManStop(std::string event, void* data);
+    void Ticker1(std::string event, void* data);
 } REInit  __attribute__ ((init_priority (8800)));
 
 void REInit::NetManInit(std::string event, void* data)
@@ -930,6 +1007,22 @@ void REInit::NetManStop(std::string event, void* data)
 #endif // #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   }
 
+void REInit::Ticker1(std::string event, void* data)
+  {
+  if (MyRE && MyNotify.HasReader("stream", "retools.status"))
+    {
+    StringWriter buf;
+    re_status(COMMAND_RESULT_VERBOSE, &buf, NULL, 0, NULL);
+    MyNotify.NotifyString("stream", "retools.status", buf.c_str());
+    }
+  if (MyRE && MyNotify.HasReader("stream", "retools.list.update"))
+    {
+    StringWriter buf;
+    re_stream_changed(COMMAND_RESULT_VERBOSE, &buf, NULL, 0, NULL);
+    MyNotify.NotifyString("stream", "retools.list.update", buf.c_str());
+    }
+  }
+
 REInit::REInit()
   {
   ESP_LOGI(TAG, "Initialising RE Tools (8800)");
@@ -940,16 +1033,19 @@ REInit::REInit()
   cmd_re->RegisterCommand("clear","Clear RE records",re_clear, "", 0, 0, true);
   cmd_re->RegisterCommand("list","List RE records",re_list, "", 0, 1, true);
   cmd_re->RegisterCommand("status","Show RE status",re_status, "", 0, 0, true);
-  OvmsCommand* cmd_rekey = cmd_re->RegisterCommand("key","RE KEY framework",NULL, "", 0, 0, true);
-  cmd_rekey->RegisterCommand("clear","Clear RE key",re_keyclear, "<id>", 1, 1, true);
-  cmd_rekey->RegisterCommand("set","Set RE key",re_keyset, "<id> {<bytes>}", 2, 9, true);
+
+  OvmsCommand* cmd_dbc = cmd_re->RegisterCommand("dbc","RE DBC framework",NULL, "", 0, 0, true);
+  cmd_dbc->RegisterCommand("list","List RE DBC records",re_dbc_list, "", 0, 1, true);
+
   OvmsCommand* cmd_reobdii = cmd_re->RegisterCommand("obdii","RE OBDII framework",NULL, "", 0, 0, true);
   cmd_reobdii->RegisterCommand("standard","Set OBDII standard ID range",re_obdii_std, "<min> <max>", 2, 2, true);
   cmd_reobdii->RegisterCommand("extended","Set OBDII extended ID range",re_obdii_ext, "<min> <max>", 2, 2, true);
+
   OvmsCommand* cmd_mode = cmd_re->RegisterCommand("mode","RE mode framework",NULL, "", 0, 0, true);
   cmd_mode->RegisterCommand("serve","Set mode to serve",re_mode_serve, "", 0, 0, true);
   cmd_mode->RegisterCommand("analyse","Set mode to analyse",re_mode_analyse, "", 0, 0, true);
   cmd_mode->RegisterCommand("discover","Set mode to discover",re_mode_discover, "", 0, 0, true);
+
   OvmsCommand* cmd_discover = cmd_re->RegisterCommand("discover","RE discover framework",NULL, "", 0, 0, true);
   OvmsCommand* cmd_discover_list = cmd_discover->RegisterCommand("list","RE discover list framework",NULL, "", 0, 0, true);
   cmd_discover_list->RegisterCommand("changed","List changed records",re_list_changed, "", 0, 1, true);
@@ -957,6 +1053,7 @@ REInit::REInit()
   OvmsCommand* cmd_discover_clear = cmd_discover->RegisterCommand("clear","RE discover clear framework",NULL, "", 0, 0, true);
   cmd_discover_clear->RegisterCommand("changed","Clear changed flags",re_clear_changed, "", 0, 0, true);
   cmd_discover_clear->RegisterCommand("discovered","Clear discovered flags",re_clear_discovered, "", 0, 0, true);
+
   OvmsCommand* cmd_serve = cmd_re->RegisterCommand("serve","RE serve framework",NULL, "", 0, 0, true);
   OvmsCommand* cmd_serve_format = cmd_serve->RegisterCommand("format","RE serve format framework",NULL, "", 0, 0, true);
   cmd_serve_format->RegisterCommand("crtd","Set RE server to CRTD format",re_serve_format, "", 0, 0, true);
@@ -966,8 +1063,13 @@ REInit::REInit()
   cmd_serve_mode->RegisterCommand("simulate","Set RE server to simulate incoming messages",re_serve_mode, "", 0, 0, true);
   cmd_serve_mode->RegisterCommand("transmit","Set RE server to transmit incoming messages",re_serve_mode, "", 0, 0, true);
 
+  OvmsCommand* cmd_stream = cmd_re->RegisterCommand("stream","RE JSON streaming",NULL, "", 0, 0, true);
+  cmd_stream->RegisterCommand("list","Output array of all RE records",re_stream_list, "[<filter>]", 0, 1, true);
+  cmd_stream->RegisterCommand("changed","Output array of changed RE records",re_stream_changed, "[<filter>]", 0, 1, true);
+
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "network.mgr.init", std::bind(&REInit::NetManInit, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "network.mgr.stop", std::bind(&REInit::NetManStop, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&REInit::Ticker1, this, _1, _2));
   }

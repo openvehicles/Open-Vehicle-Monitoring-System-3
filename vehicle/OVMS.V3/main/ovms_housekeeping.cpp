@@ -50,9 +50,7 @@ static const char *TAG = "housekeeping";
 #include "ovms_module.h"
 #include "ovms_boot.h"
 #include "vehicle.h"
-#ifdef CONFIG_OVMS_COMP_RE_TOOLS
 #include "dbc_app.h"
-#endif
 #ifdef CONFIG_OVMS_COMP_SERVER_V2
 #include "ovms_server_v2.h"
 #endif
@@ -174,10 +172,8 @@ void Housekeeping::Init(std::string event, void* data)
     MyPeripherals->m_ext12v->AutoInit();
 #endif // CONFIG_OVMS_COMP_EXT12V
 
-#ifdef CONFIG_OVMS_COMP_RE_TOOLS
   ESP_LOGI(TAG, "Auto init dbc (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
   MyDBC.AutoInit();
-#endif // CONFIG_OVMS_COMP_RE_TOOLS
 
 #ifdef CONFIG_OVMS_COMP_WIFI
     ESP_LOGI(TAG, "Auto init wifi (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
