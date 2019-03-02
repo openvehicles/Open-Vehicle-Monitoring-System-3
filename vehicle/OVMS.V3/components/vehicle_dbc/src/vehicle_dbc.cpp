@@ -36,112 +36,78 @@ static const char *TAG = "vehicle_dbc";
 
 OvmsVehicleDBC::OvmsVehicleDBC()
   {
-  m_dbc_can1 = NULL;
-  m_dbc_can2 = NULL;
-  m_dbc_can3 = NULL;
   }
 
 OvmsVehicleDBC::~OvmsVehicleDBC()
   {
-  if (m_dbc_can1)
-    {
-    m_dbc_can1->UnlockFile();
-    delete m_dbc_can1;
-    m_dbc_can1 = NULL;
-    }
-  if (m_dbc_can2)
-    {
-    m_dbc_can2->UnlockFile();
-    delete m_dbc_can2;
-    m_dbc_can2 = NULL;
-    }
-  if (m_dbc_can3)
-    {
-    m_dbc_can3->UnlockFile();
-    delete m_dbc_can3;
-    m_dbc_can3 = NULL;
-    }
+  if (m_can1) m_can1->DetachDBC();
+  if (m_can2) m_can2->DetachDBC();
+  if (m_can3) m_can3->DetachDBC();
   }
 
-bool OvmsVehicleDBC::RegisterCanBusDBC(int bus, CAN_mode_t mode, const char* dbc)
+bool OvmsVehicleDBC::RegisterCanBusDBC(int bus, CAN_mode_t mode, const char* name, const char* dbc)
   {
-  dbcfile* newdbc = new dbcfile;
-  if (!newdbc->LoadString(dbc, strlen(dbc)))
-    {
-    delete newdbc;
-    return false;
-    }
-  switch (bus)
-    {
-    case 1:
-      m_dbc_can1 = newdbc;
-      break;
-    case 2:
-      m_dbc_can2 = newdbc;
-      break;
-    case 3:
-      m_dbc_can3 = newdbc;
-      break;
-    default:
-      ESP_LOGE(TAG,"RegisterCanBusDBC(%d) out of range",bus);
-      delete newdbc;
-      return false;
-      break;
-    }
+  dbcfile *ndbc = MyDBC.LoadString(name, dbc);
+  if (ndbc == NULL) return false;
 
-  newdbc->LockFile();
-  OvmsVehicle::RegisterCanBus(bus, mode, (CAN_speed_t)(newdbc->m_bittiming.GetBaudRate()/1000));
+  OvmsVehicle::RegisterCanBus(bus, mode, (CAN_speed_t)(ndbc->m_bittiming.GetBaudRate()/1000),ndbc);
   return true;
   }
 
 bool OvmsVehicleDBC::RegisterCanBusDBCLoaded(int bus, CAN_mode_t mode, const char* dbcloaded)
   {
-  dbcfile* newdbc = MyDBC.Find(dbcloaded);
-  if (newdbc==NULL) return false;
-  switch (bus)
-    {
-    case 1:
-      m_dbc_can1 = newdbc;
-      break;
-    case 2:
-      m_dbc_can2 = newdbc;
-      break;
-    case 3:
-      m_dbc_can3 = newdbc;
-      break;
-    default:
-      ESP_LOGE(TAG,"RegisterCanBusDBCPath(%d) out of range",bus);
-      return false;
-      break;
-    }
-
-  newdbc->LockFile();
-  OvmsVehicle::RegisterCanBus(bus, mode, (CAN_speed_t)(newdbc->m_bittiming.GetBaudRate()/1000));
+  dbcfile* ndbc = MyDBC.Find(dbcloaded);
+  if (ndbc==NULL) return false;
+  OvmsVehicle::RegisterCanBus(bus, mode, (CAN_speed_t)(ndbc->m_bittiming.GetBaudRate()/1000),ndbc);
   return true;
   }
 
 void OvmsVehicleDBC::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
   // This should be called from the IncomingFrameCan1 handler of the derived vehicle class
-  if (m_dbc_can1==NULL) return;
-  // TODO: Find the DBC message for the given ID, and decode the
-  // relevant signals
+  IncomingFrame(m_can1, p_frame);
   }
 
 void OvmsVehicleDBC::IncomingFrameCan2(CAN_frame_t* p_frame)
   {
   // This should be called from the IncomingFrameCan1 handler of the derived vehicle class
-  if (m_dbc_can2==NULL) return;
-  // TODO: Find the DBC message for the given ID, and decode the
-  // relevant signals
+  IncomingFrame(m_can2, p_frame);
   }
 
 void OvmsVehicleDBC::IncomingFrameCan3(CAN_frame_t* p_frame)
   {
   // This should be called from the IncomingFrameCan1 handler of the derived vehicle class
-  if (m_dbc_can3==NULL) return;
-  // TODO: Find the DBC message for the given ID, and decode the
-  // relevant signals
+  IncomingFrame(m_can3, p_frame);
+  }
+
+void OvmsVehicleDBC::IncomingFrame(canbus* bus, CAN_frame_t* frame)
+  {
+  dbcfile* dbc = bus->GetDBC();
+  if (dbc==NULL) return;
+
+  dbcMessage* msg = dbc->m_messages.FindMessage(frame->FIR.B.FF, frame->MsgID);
+  if (msg)
+    {
+    dbcSignal* mux = msg->GetMultiplexorSignal();
+    uint32_t muxval;
+    if (mux)
+      {
+      dbcNumber r = mux->Decode(frame);
+      muxval = r.GetSignedInteger();
+      }
+    for (dbcSignal* sig : msg->m_signals)
+      {
+      OvmsMetric* m = sig->GetMetric();
+      if (m)
+        {
+        if ((mux==NULL)||(sig->GetMultiplexSwitchvalue() == muxval))
+          {
+          dbcNumber r = sig->Decode(frame);
+          m->SetValue(r);
+          }
+        }
+      }
+    }
   }
 
 OvmsVehiclePureDBC::OvmsVehiclePureDBC()

@@ -109,6 +109,7 @@ struct CAN_frame_t
     {
     uint8_t   u8[8];                    // Payload byte access
     uint32_t  u32[2];                   // Payload u32 access (Att: little endian!)
+    uint64_t  u64;                      // Payload u64 access (Att: little endian!)
     } data;
 
   esp_err_t Write(canbus* bus=NULL, TickType_t maxqueuewait=0);  // bus: NULL=origin
@@ -221,6 +222,7 @@ typedef struct
   } CAN_LogMsg_t;
 
 class canlog;
+class dbcfile;
 
 class canbus : public pcp, public InternalRamAllocated
   {
@@ -230,8 +232,15 @@ class canbus : public pcp, public InternalRamAllocated
 
   public:
     virtual esp_err_t Start(CAN_mode_t mode, CAN_speed_t speed);
+    virtual esp_err_t Start(CAN_mode_t mode, CAN_speed_t speed, dbcfile *dbcfile);
     virtual esp_err_t Stop();
     virtual void ClearStatus();
+
+  public:
+    void AttachDBC(dbcfile *dbcfile);
+    bool AttachDBC(const char *name);
+    void DetachDBC();
+    dbcfile* GetDBC();
 
   public:
     virtual esp_err_t Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
@@ -257,6 +266,9 @@ class canbus : public pcp, public InternalRamAllocated
     uint32_t m_status_chksum;
     uint32_t m_watchdog_timer;
     QueueHandle_t m_txqueue;
+
+  protected:
+    dbcfile *m_dbcfile;
   };
 
 typedef std::map<QueueHandle_t, bool> CanListenerMap_t;

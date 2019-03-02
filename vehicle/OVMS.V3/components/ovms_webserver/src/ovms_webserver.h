@@ -65,6 +65,7 @@
 // Asset URLs with versioning:
 #define URL_ASSETS_SCRIPT_JS      "/assets/script.js?v="       STR(MTIME_ASSETS_SCRIPT_JS)
 #define URL_ASSETS_CHARTS_JS      "/assets/charts.js?v="       STR(MTIME_ASSETS_CHARTS_JS)
+#define URL_ASSETS_TABLES_JS      "/assets/tables.js?v="       STR(MTIME_ASSETS_TABLES_JS)
 #define URL_ASSETS_STYLE_CSS      "/assets/style.css?v="       STR(MTIME_ASSETS_STYLE_CSS)
 #define URL_ASSETS_FAVICON_PNG    "/apple-touch-icon.png?v="   STR(MTIME_ASSETS_FAVICON_PNG)
 #define URL_ASSETS_ZONES_JSON     "/assets/zones.json?v="      STR(MTIME_ASSETS_ZONES_JSON)

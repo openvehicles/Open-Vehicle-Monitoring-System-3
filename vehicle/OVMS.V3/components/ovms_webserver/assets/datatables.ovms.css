@@ -1,0 +1,67 @@
+/* DataTables OVMS stylesheet */
+@charset "utf-8";
+
+tbody .dt-body-mono {
+  font-family: "Monaco", "Menlo", "Consolas", "QuickType Mono", "Lucida Console", "Roboto Mono", "Ubuntu Mono", "DejaVu Sans Mono", "Droid Sans Mono", monospace;
+}
+tbody .dt-body-right {
+  text-align: right;
+}
+tbody .dt-body-center {
+  text-align: center;
+}
+
+table.dataTable thead .sorting:after,
+table.dataTable thead .sorting_asc:after,
+table.dataTable thead .sorting_desc:after,
+table.dataTable thead .sorting_asc_disabled:after,
+table.dataTable thead .sorting_desc_disabled:after {
+  font-family: monospace;
+}
+table.dataTable thead .sorting:after {
+  content: "◆";
+}
+table.dataTable thead .sorting_asc:after {
+  content: "▲";
+}
+table.dataTable thead .sorting_desc:after {
+  content: "▼";
+}
+
+.night select, .night input {
+  background-color: #222;
+  color: #eee;
+}
+.night .dataTables_wrapper label {
+  color: #aaa;
+}
+.night table.dataTable tbody tr {
+  background-color: #111;
+}
+.night .table-striped>tbody>tr:nth-of-type(odd) {
+  background-color: #222;
+}
+.night .table-striped>tbody>tr:nth-of-type(odd):hover {
+  background-color: #121f2d;
+}
+.night .pagination>li>a,
+.night .pagination>li>span {
+  background-color: #222;
+}
+.night .pagination>.disabled>a,
+.night .pagination>.disabled>a:focus,
+.night .pagination>.disabled>a:hover,
+.night .pagination>.disabled>span,
+.night .pagination>.disabled>span:focus,
+.night .pagination>.disabled>span:hover {
+  background-color: #222;
+}
+.night .pagination>.active>a,
+.night .pagination>.active>a:focus,
+.night .pagination>.active>a:hover,
+.night .pagination>.active>span,
+.night .pagination>.active>span:focus,
+.night .pagination>.active>span:hover {
+  background-color: #104b7e;
+  border-color: #ddd;
+}

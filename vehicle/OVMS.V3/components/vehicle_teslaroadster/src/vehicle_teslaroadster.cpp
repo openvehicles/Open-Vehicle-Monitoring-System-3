@@ -343,7 +343,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
             { // v2.x cars
             StandardMetrics.ms_v_charge_mode->SetValue(chargemode_code((d[5]>>4) & 0x0f));
             }
-          StandardMetrics.ms_v_charge_kwh->SetValue((float)d[7]*10);
+          StandardMetrics.ms_v_charge_kwh->SetValue((float)d[7]);
           break;
           }
         case 0x96: // Doors / Charging yes/no

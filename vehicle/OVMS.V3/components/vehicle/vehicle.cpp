@@ -995,6 +995,9 @@ OvmsVehicle::OvmsVehicle()
   m_bms_defthr_twarn  = BMS_DEFTHR_TWARN;
   m_bms_defthr_talert = BMS_DEFTHR_TALERT;
 
+  m_minsoc = 0;
+  m_minsoc_triggered = 0;
+
   m_rxqueue = xQueueCreate(CONFIG_OVMS_VEHICLE_CAN_RX_QUEUE_SIZE,sizeof(CAN_frame_t));
   xTaskCreatePinnedToCore(OvmsVehicleRxTask, "OVMS Vehicle",
     CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_rxtask, 1);
@@ -1129,24 +1132,24 @@ void OvmsVehicle::Status(int verbosity, OvmsWriter* writer)
   writer->puts("Vehicle module loaded and running");
   }
 
-void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed)
+void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile)
   {
   switch (bus)
     {
     case 1:
       m_can1 = (canbus*)MyPcpApp.FindDeviceByName("can1");
       m_can1->SetPowerMode(On);
-      m_can1->Start(mode,speed);
+      m_can1->Start(mode,speed,dbcfile);
       break;
     case 2:
       m_can2 = (canbus*)MyPcpApp.FindDeviceByName("can2");
       m_can2->SetPowerMode(On);
-      m_can2->Start(mode,speed);
+      m_can2->Start(mode,speed,dbcfile);
       break;
     case 3:
       m_can3 = (canbus*)MyPcpApp.FindDeviceByName("can3");
       m_can3->SetPowerMode(On);
-      m_can3->Start(mode,speed);
+      m_can3->Start(mode,speed,dbcfile);
       break;
     default:
       break;
@@ -1239,7 +1242,27 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
       MyEvents.SignalEvent("vehicle.alert.12v.off", NULL);
       if (m_autonotifications) Notify12vRecovered();
       }
-    } // 12V battery monitor
+    }
+
+  if ((m_ticker % 10)==0)
+    {
+    // Check MINSOC
+    int soc = (int)StandardMetrics.ms_v_bat_soc->AsFloat();
+    m_minsoc = MyConfig.GetParamValueInt("vehicle", "minsoc", 0);
+    if ((soc >= (m_minsoc+2)) && (m_minsoc > 0))
+      {
+      m_minsoc_triggered = m_minsoc;
+      }
+    if ((m_minsoc_triggered > 0) && (soc <= m_minsoc_triggered))
+      {
+      // We have reached the minimum SOC level
+      if (m_autonotifications) NotifyMinSocCritical();
+      if (soc > 1)
+        m_minsoc_triggered = soc - 1;
+      else
+        m_minsoc_triggered = 0;
+      }
+    }
 
   // BMS alerts:
   if (m_bms_valerts_new || m_bms_talerts_new)
@@ -1352,6 +1375,13 @@ void OvmsVehicle::Notify12vRecovered()
   float vref = StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat();
 
   MyNotify.NotifyStringf("alert", "batt.12v.recovered", "12V Battery restored: %.1fV (ref=%.1fV)", volt, vref);
+  }
+
+void OvmsVehicle::NotifyMinSocCritical()
+  {
+  float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
+
+  MyNotify.NotifyStringf("alert", "batt.soc.alert", "Battery SOC critical: %.1f%% (alert<=%d%%)", soc, m_minsoc);
   }
 
 void OvmsVehicle::NotifyBmsAlerts()

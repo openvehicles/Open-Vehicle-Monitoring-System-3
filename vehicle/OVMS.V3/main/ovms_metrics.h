@@ -43,6 +43,7 @@
 #include <atomic>
 #include "ovms_utils.h"
 #include "ovms_mutex.h"
+#include "dbc_number.h"
 
 #define METRICS_MAX_MODIFIERS 32
 
@@ -94,7 +95,7 @@ typedef enum : uint8_t
   // Energy consumption:
   WattHoursPK   = 100,  // Wh/km
   WattHoursPM   = 101,  // Wh/mi
-  
+
   // Torque:
   Nm            = 110,
   } metric_unit_t;
@@ -122,6 +123,7 @@ class OvmsMetric
     virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
     virtual float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     virtual void SetValue(std::string value);
+    virtual void SetValue(dbcNumber& value);
     virtual void operator=(std::string value);
     virtual uint32_t LastModified();
     virtual uint32_t Age();
@@ -161,6 +163,7 @@ class OvmsMetricBool : public OvmsMetric
     void SetValue(bool value);
     void operator=(bool value) { SetValue(value); }
     void SetValue(std::string value);
+    void SetValue(dbcNumber& value);
     void operator=(std::string value) { SetValue(value); }
 
   protected:
@@ -181,6 +184,7 @@ class OvmsMetricInt : public OvmsMetric
     void SetValue(int value, metric_unit_t units = Other);
     void operator=(int value) { SetValue(value); }
     void SetValue(std::string value);
+    void SetValue(dbcNumber& value);
     void operator=(std::string value) { SetValue(value); }
 
   protected:
@@ -201,6 +205,7 @@ class OvmsMetricFloat : public OvmsMetric
     void SetValue(float value, metric_unit_t units = Other);
     void operator=(float value) { SetValue(value); }
     void SetValue(std::string value);
+    void SetValue(dbcNumber& value);
     void operator=(std::string value) { SetValue(value); }
 
   protected:
