@@ -90,14 +90,27 @@ void dbc_show_callback(void* param, const char* buffer)
 
 void dbc_show(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  dbcfile* dbc = MyDBC.Find(argv[0]);
-  if (dbc == NULL)
+  dbcfile* dbc;
+  if (argc == 0)
     {
-    writer->printf("Cannot find DBD file: %s",argv[0]);
-    return;
+    dbc = MyDBC.m_selected;
+    if (dbc == NULL)
+      {
+      writer->puts("Error: No selected DBC file");
+      return;
+      }
+    }
+  else
+    {
+    dbc = MyDBC.Find(argv[0]);
+    if (dbc == NULL)
+      {
+      writer->printf("Cannot find DBC file: %s\n",argv[0]);
+      return;
+      }
     }
 
-  writer->printf("DBC:     %s\n",argv[0]);
+  writer->printf("DBC:     %s\n",dbc->GetName().c_str());
 
   using std::placeholders::_1;
   using std::placeholders::_2;
@@ -106,11 +119,24 @@ void dbc_show(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 
 void dbc_dump(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  dbcfile* dbc = MyDBC.Find(argv[0]);
-  if (dbc == NULL)
+  dbcfile* dbc;
+  if (argc == 0)
     {
-    writer->printf("Cannot find DBD file: %s",argv[0]);
-    return;
+    dbc = MyDBC.m_selected;
+    if (dbc == NULL)
+      {
+      writer->puts("Error: No selected DBC file");
+      return;
+      }
+    }
+  else
+    {
+    dbc = MyDBC.Find(argv[0]);
+    if (dbc == NULL)
+      {
+      writer->printf("Cannot find DBC file: %s\n",argv[0]);
+      return;
+      }
     }
 
   using std::placeholders::_1;
@@ -127,11 +153,24 @@ void dbc_save_callback(void* param, const char* buffer)
 
 void dbc_save(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  dbcfile* dbc = MyDBC.Find(argv[0]);
-  if (dbc == NULL)
+  dbcfile* dbc;
+  if (argc == 0)
     {
-    writer->printf("Cannot find DBD file: %s",argv[0]);
-    return;
+    dbc = MyDBC.m_selected;
+    if (dbc == NULL)
+      {
+      writer->puts("Error: No selected DBC file");
+      return;
+      }
+    }
+  else
+    {
+    dbc = MyDBC.Find(argv[0]);
+    if (dbc == NULL)
+      {
+      writer->printf("Cannot find DBC file: %s\n",argv[0]);
+      return;
+      }
     }
 
   FILE* fd = fopen(dbc->m_path.c_str(), "w");
@@ -162,19 +201,358 @@ void dbc_sdmounted(std::string event, void* data)
     MyDBC.LoadAutoExtras(true);
   }
 
+void dbc_select(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (argc == 0)
+    {
+    MyDBC.DeselectFile();
+    writer->puts("DBC deselected");
+    return;
+    }
+
+  if (MyDBC.SelectFile(argv[0]))
+    {
+    writer->printf("DBC file %s selected\n",argv[0]);
+    }
+  else
+    {
+    writer->printf("Error: Cannot find DBC file: %s\n",argv[0]);
+    }
+  }
+
+void dbc_deselect(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyDBC.DeselectFile();
+  writer->puts("DBC deselected");
+  }
+
+void dbc_set_version(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyDBC.m_selected == NULL)
+    {
+    writer->puts("Error: No DBC selected");
+    return;
+    }
+
+  MyDBC.m_selected->m_version = std::string(argv[0]);
+  writer->printf("DBC: Version set to '%s'\n",argv[0]);
+  }
+
+void dbc_set_timing(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyDBC.m_selected == NULL)
+    {
+    writer->puts("Error: No DBC selected");
+    return;
+    }
+
+  MyDBC.m_selected->m_bittiming.SetBaud(atoi(argv[0]),atoi(argv[1]),atoi(argv[2]));
+  writer->printf("DBC: Bit timing set to %s : %s,%s'\n",argv[0],argv[1],argv[2]);
+  }
+
+void dbc_node_clear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyDBC.m_selected == NULL)
+    {
+    writer->puts("Error: No DBC selected");
+    return;
+    }
+
+  MyDBC.m_selected->m_nodes.EmptyContent();
+  writer->puts("DBC: Node table cleared");
+  }
+
+void dbc_node_add(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyDBC.m_selected == NULL)
+    {
+    writer->puts("Error: No DBC selected");
+    return;
+    }
+
+  if (MyDBC.m_selected->m_nodes.FindNode(argv[0]) != NULL)
+    {
+    writer->printf("Error: Node %s already exists\n",argv[0]);
+    return;
+    }
+
+  dbcNode* node = new dbcNode(argv[0]);
+  MyDBC.m_selected->m_nodes.AddNode(node);
+  writer->printf("DBC: Added node %s\n",argv[0]);
+  }
+
+void dbc_node_remove(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyDBC.m_selected == NULL)
+    {
+    writer->puts("No DBC selected");
+    return;
+    }
+
+  dbcNode* node = MyDBC.m_selected->m_nodes.FindNode(argv[0]);
+  if (node != NULL)
+    {
+    MyDBC.m_selected->m_nodes.RemoveNode(node,true);
+    writer->printf("DBC: Node %s removed\n",argv[0]);
+    }
+  else
+    {
+    writer->printf("Error: Could not find node %s\n",argv[0]);
+    }
+  }
+
+void dbc_message_clear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyDBC.m_selected == NULL)
+    {
+    writer->puts("Error: No DBC selected");
+    return;
+    }
+
+  MyDBC.m_selected->m_messages.EmptyContent();
+  writer->puts("DBC: Message table cleared");
+  }
+
+void dbc_message_add(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyDBC.m_selected == NULL)
+    {
+    writer->puts("Error: No DBC selected");
+    return;
+    }
+
+  uint32_t msgid = dbcMessageIdFromString(argv[0]);
+  if (MyDBC.m_selected->m_messages.FindMessage(msgid))
+    {
+    writer->printf("Error: Message %s already exists\n",argv[0]);
+    return;
+    }
+
+  dbcMessage* msg = new dbcMessage(msgid);
+  msg->SetName(argv[1]);
+  msg->SetSize(atoi(argv[2]));
+  msg->SetTransmitterNode(argv[3]);
+  MyDBC.m_selected->m_messages.AddMessage(msgid,msg);
+  writer->printf("DBC: Added message %s\n",argv[0]);
+  }
+
+void dbc_message_remove(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyDBC.m_selected == NULL)
+    {
+    writer->puts("Error: No DBC selected");
+    return;
+    }
+
+  uint32_t msgid = dbcMessageIdFromString(argv[0]);
+  dbcMessage* msg = MyDBC.m_selected->m_messages.FindMessage(msgid);
+  if (msg != NULL)
+    {
+    MyDBC.m_selected->m_messages.RemoveMessage(msg->GetID(),true);
+    writer->printf("DBC: Message %s removed\n",argv[0]);
+    }
+  else
+    {
+    writer->printf("Error: Could not find message %s\n",argv[0]);
+    }
+  }
+
+void dbc_message_set_mux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyDBC.m_selected == NULL)
+    {
+    writer->puts("Error: No DBC selected");
+    return;
+    }
+
+  uint32_t msgid = dbcMessageIdFromString(argv[0]);
+  dbcMessage* msg = MyDBC.m_selected->m_messages.FindMessage(msgid);
+  if (msg == NULL)
+    {
+    writer->printf("Error: Could not find message %s\n",argv[0]);
+    return;
+    }
+
+  if (argc == 1)
+    {
+    msg->SetMultiplexorSignal(NULL);
+    writer->printf("DBC: Cleared mux for %s\n",argv[0]);
+    return;
+    }
+
+  dbcSignal* signal = msg->FindSignal(argv[1]);
+  if (signal == NULL)
+    {
+    writer->printf("Error: Could not find signal %s on messgae %s\n",argv[1],argv[0]);
+    return;
+    }
+
+  msg->SetMultiplexorSignal(signal);
+  writer->printf("DBC: Set mux for message %s to %s\n",argv[0],argv[1]);
+  }
+
+void dbc_signal_clear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyDBC.m_selected == NULL)
+    {
+    writer->puts("Error: No DBC selected");
+    return;
+    }
+
+  uint32_t msgid = dbcMessageIdFromString(argv[0]);
+  dbcMessage* msg = MyDBC.m_selected->m_messages.FindMessage(msgid);
+  if (msg == NULL)
+    {
+    writer->printf("Error: Could not find message %s\n",argv[0]);
+    return;
+    }
+  else
+    {
+    msg->RemoveAllSignals(true);
+    msg->SetMultiplexorSignal(NULL);
+    writer->printf("DBC: Cleared all signals for %s\n",argv[0]);
+    }
+  }
+
+void dbc_signal_add(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyDBC.m_selected == NULL)
+    {
+    writer->puts("Error: No DBC selected");
+    return;
+    }
+
+  uint32_t msgid = dbcMessageIdFromString(argv[0]);
+  dbcMessage* msg = MyDBC.m_selected->m_messages.FindMessage(msgid);
+  if (msg == NULL)
+    {
+    writer->printf("Error: Could not find message %s\n",argv[0]);
+    return;
+    }
+
+  dbcSignal* signal = msg->FindSignal(argv[1]);
+  if (signal != NULL)
+    {
+    writer->printf("Error: Signal %s on message %s already exists\n",argv[1],argv[0]);
+    return;
+    }
+
+  signal = new dbcSignal(argv[1]);
+  signal->SetStartSize(atoi(argv[2]),atoi(argv[3]));
+  signal->SetByteOrder((dbcByteOrder_t)atoi(argv[4]));
+  if (*argv[5] == '+')
+    signal->SetValueType(DBC_VALUETYPE_UNSIGNED);
+  else
+    signal->SetValueType(DBC_VALUETYPE_SIGNED);
+  signal->SetFactorOffset(atof(argv[6]),atof(argv[7]));
+  signal->SetMinMax(atof(argv[8]),atof(argv[9]));
+  signal->SetUnit(argv[10]);
+  signal->AddReceiver(argv[11]);
+  msg->AddSignal(signal);
+  writer->printf("DBC: Added signal %s on message %s\n",argv[1],argv[0]);
+  }
+
+void dbc_signal_remove(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyDBC.m_selected == NULL)
+    {
+    writer->puts("Error: No DBC selected");
+    return;
+    }
+
+  uint32_t msgid = dbcMessageIdFromString(argv[0]);
+  dbcMessage* msg = MyDBC.m_selected->m_messages.FindMessage(msgid);
+  if (msg == NULL)
+    {
+    writer->printf("Error: Could not find message %s\n",argv[0]);
+    return;
+    }
+
+  dbcSignal* signal = msg->FindSignal(argv[1]);
+  if (signal == NULL)
+    {
+    writer->printf("Error: Could not find signal %s on message %s\n",argv[1],argv[0]);
+    return;
+    }
+  else
+    {
+    msg->RemoveSignal(signal, true);
+    writer->printf("DBC: Removed signal %s on message %s\n",argv[1],argv[0]);
+    }
+  }
+
+void dbc_signal_set_mux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyDBC.m_selected == NULL)
+    {
+    writer->puts("Error: No DBC selected");
+    return;
+    }
+
+  uint32_t msgid = dbcMessageIdFromString(argv[0]);
+  dbcMessage* msg = MyDBC.m_selected->m_messages.FindMessage(msgid);
+  if (msg == NULL)
+    {
+    writer->printf("Error: Could not find message %s\n",argv[0]);
+    return;
+    }
+
+  dbcSignal* signal = msg->FindSignal(argv[1]);
+  if (signal == NULL)
+    {
+    writer->printf("Error: Could not find signal %s on message %s\n",argv[1],argv[0]);
+    return;
+    }
+
+  if (argc > 2)
+    {
+    signal->SetMultiplexed(atoi(argv[2]));
+    writer->printf("DBC: Set mux %s for signal %s on message %s\n",argv[2],argv[1],argv[0]);
+    }
+  else
+    {
+    signal->ClearMultiplexed();
+    writer->printf("DBC: Cleared mux for signal %s on message %s\n",argv[1],argv[0]);
+    }
+  }
+
 dbc::dbc()
   {
   ESP_LOGI(TAG, "Initialising DBC (4510)");
+  m_selected = NULL;
 
   OvmsCommand* cmd_dbc = MyCommandApp.RegisterCommand("dbc","DBC framework",NULL, "", 0, 0, true);
 
   cmd_dbc->RegisterCommand("list", "List DBC status", dbc_list, "", 0, 0, true);
   cmd_dbc->RegisterCommand("load", "Load DBC file", dbc_load, "<name> <path>", 2, 2, true);
   cmd_dbc->RegisterCommand("unload", "Unload DBC file", dbc_unload, "<name>", 1, 1, true);
-  cmd_dbc->RegisterCommand("save", "Save DBC file", dbc_save, "<name>", 1, 3, true);
-  cmd_dbc->RegisterCommand("dump", "Dump DBC file", dbc_dump, "<name>", 1, 3, true);
-  cmd_dbc->RegisterCommand("show", "Show DBC file", dbc_show, "<name>", 1, 3, true);
+  cmd_dbc->RegisterCommand("save", "Save DBC file", dbc_save, "[<name>]", 0, 1, true);
+  cmd_dbc->RegisterCommand("dump", "Dump DBC file", dbc_dump, "[<name>]", 0, 1, true);
+  cmd_dbc->RegisterCommand("show", "Show DBC file", dbc_show, "[<name>]", 0, 1, true);
   cmd_dbc->RegisterCommand("autoload", "Autoload DBC files", dbc_autoload, "", 0, 0, true);
+  cmd_dbc->RegisterCommand("select", "Select DBC file for editing", dbc_select, "[<name>]", 0, 1, true);
+  cmd_dbc->RegisterCommand("deselect", "Deselect DBC file for editing", dbc_deselect, "", 0, 0, true);
+
+  OvmsCommand* cmd_set = cmd_dbc->RegisterCommand("set","DBC Set framework",NULL, "", 0, 0, true);
+  cmd_set->RegisterCommand("version", "Set version for selected DBC file", dbc_set_version, "<version>", 1, 1, true);
+  cmd_set->RegisterCommand("timing", "Set bit timing for selected DBC file", dbc_set_timing, "<baud> <btr1> <btr2>", 3, 3, true);
+  cmd_set->RegisterCommand("messagemux", "Set message mux for selected DBC file", dbc_message_set_mux, "<id> [<signal>]", 1, 2, true);
+  cmd_set->RegisterCommand("signalmux", "Set signal mux for selected DBC file", dbc_signal_set_mux, "<id> <name> [<value>]", 2, 3, true);
+
+  OvmsCommand* cmd_add = cmd_dbc->RegisterCommand("add","DBC Add framework",NULL, "", 0, 0, true);
+  cmd_add->RegisterCommand("node", "Add node for selected DBC file", dbc_node_add, "<node>", 1, 1, true);
+  cmd_add->RegisterCommand("message", "Add message for selected DBC file", dbc_message_add, "<id> <name> <size> <transmitter>", 4, 4, true);
+  cmd_add->RegisterCommand("signal", "Add signal for selected DBC file", dbc_signal_add, "<id> <name> <start> <size> <order> <type> <factor> <offset> <min> <max> <unit> <receiver>", 12, 12, true);
+
+  OvmsCommand* cmd_remove = cmd_dbc->RegisterCommand("remove","DBC Remove framework",NULL, "", 0, 0, true);
+  cmd_remove->RegisterCommand("node", "Remove node for selected DBC file", dbc_node_remove, "<node>", 1, 1, true);
+  cmd_remove->RegisterCommand("message", "Remove message for selected DBC file", dbc_message_remove, "<id>", 1, 1, true);
+  cmd_remove->RegisterCommand("signal", "Remove signal for selected DBC file", dbc_signal_remove, "<id> <name>", 2, 2, true);
+
+  OvmsCommand* cmd_clear = cmd_dbc->RegisterCommand("clear","DBC Clear framework",NULL, "", 0, 0, true);
+  cmd_clear->RegisterCommand("node", "Clear all nodes for selected DBC file", dbc_node_clear, "", 0, 0, true);
+  cmd_clear->RegisterCommand("message", "Clear all messages for selected DBC file", dbc_message_clear, "", 0, 0, true);
+  cmd_clear->RegisterCommand("signal", "Clear all signals for selected DBC file", dbc_signal_clear, "<id>", 1, 1, true);
 
   MyConfig.RegisterParam("dbc", "DBC Configuration", true, true);
   // Our instances:
@@ -188,6 +566,7 @@ dbc::dbc()
 
 dbc::~dbc()
   {
+  DeselectFile();
   }
 
 bool dbc::LoadFile(const char* name, const char* path)
@@ -342,6 +721,39 @@ dbcfile* dbc::Find(const char* name)
     return NULL;
   else
     return k->second;
+  }
+
+bool dbc::SelectFile(dbcfile* select)
+  {
+  DeselectFile();
+  m_selected = select;
+  m_selected->LockFile();
+  return true;
+  }
+
+bool dbc::SelectFile(const char* name)
+  {
+  dbcfile* select = Find(name);
+  if (select == NULL) return false;
+
+  DeselectFile();
+  m_selected = select;
+  m_selected->LockFile();
+  return true;
+  }
+
+void dbc::DeselectFile()
+  {
+  if (m_selected)
+    {
+    m_selected->UnlockFile();
+    m_selected = NULL;
+    }
+  }
+
+dbcfile* dbc::SelectedFile()
+  {
+  return m_selected;
   }
 
 void dbc::AutoInit()
