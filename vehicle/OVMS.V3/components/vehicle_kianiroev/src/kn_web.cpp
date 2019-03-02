@@ -119,7 +119,7 @@ void OvmsVehicleKiaNiroEv::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 void OvmsVehicleKiaNiroEv::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 {
   std::string error;
-  //	  cap_act_kwh			Battery capacity in wH (Default: 270000)
+  //	  cap_act_kwh			Battery capacity in wH (Default: 640000)
   //  suffsoc          	Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange        	Sufficient range [km] (Default: 0=disabled)
   //  maxrange         	Maximum ideal range at 20 °C [km] (Default: 160)

@@ -21,6 +21,7 @@ MWJ     Done         Metric formatting
 MWJ     Done         Base vehicle support
 MWJ     Done         OBDII Poll support
 MWJ     Done         Tesla roadster port
+GV      80%          Kia e-Niro support
 GV      Done         Kia Soul port
                      Kyburz port
 MWJ     Done         Mitsubishi iMiev port

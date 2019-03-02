@@ -51,19 +51,37 @@ static const char *TAG = "v-kianiroev";
 // Pollstate 2 - car is charging
 static const OvmsVehicle::poll_pid_t vehicle_kianiroev_polls[] =
   {
-    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, 		{       0,  120,   0 } }, 	// VIN
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDII_2201,  	0x01, 		{       0,   10,  10 } }, 	// BMC Diag page 01
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDII_2201,  	0x02, 		{       0,   10,  10 } }, 	// BMC Diag page 02
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDII_2201,  	0x03, 		{       0,   10,  10 } }, 	// BMC Diag page 03
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDII_2201,  	0x04, 		{       0,   10,  10 } }, 	// BMC Diag page 04
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDII_2201,  	0x05, 		{       0,   10,  10 } },	  // BMC Diag page 05
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{       0,   10,  10 } },	  //
-    { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_OBDII_2201,  	0x00, 		{       0,   10,  10 } },	  // HVAC
-    //{ 0x794, 0x79c, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{       0,   60,  10 } }, 	// OBC - On board charger
-  	  //{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x00, 		{       0,   10,  10 } }, 	// VMCU Shift-stick
-    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{       0,   10,  30 } }, 	// VMCU Motor temp++
-    //{ 0x7df, 0x7de, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x06, 		{       0,   30,  60 } }, 	// TMPS
-    //{ 0x7c5, 0x7cd, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, 		{       0,   10,  10 } }, 	// LDC - Low voltage DC-DC
+    //Nothing { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIVEHICLE,    0x02, 		  {      10,   10,  10 } }, 	// VIN
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0101, 		{      10,   10,  10 } }, 	// BMC Diag page 01
+																																												// Must be called when off to detect when charging
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0102, 		{       0,   10,  10 } }, 	// BMC Diag page 02
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0103, 		{       0,   10,  10 } }, 	// BMC Diag page 03
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0104, 		{       0,   10,  10 } }, 	// BMC Diag page 04
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0105, 		{       0,   10,  10 } },		// BMC Diag page 05
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0106, 		{       0,   10,  10 } },		// BMC Diag page 06
+
+		{ 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xB00E, 		{      10,   10,  10 } },  // BCM Chargeport ++
+    { 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,   0xC002, 		{       0,   60,  60 } }, 	// TMPS - ID's
+    { 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,   0xC00B, 		{       0,   30,  30 } }, 	// TMPS - Pressure and Temp
+
+		{ 0x770, 0x778, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xbc03, 		{      10,   10,  10 } },  // IGMP Door status + IGN1 & IGN2
+		{ 0x770, 0x778, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xbc04, 		{      10,   10,  10 } },  // IGMP Door status
+
+		{ 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0100, 		{       0,   10,  10 } },  // AirCon
+		{ 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0102, 		{       0,   10,  10 } },  // AirCon
+
+		{ 0x7d1, 0x7d9, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xc101, 		{       0,   10,  10 } },  // ABS/ESP
+
+    //{ 0x794, 0x79c, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 					{      10,   10,  10 } }, 	// TEST! OBC - On board charger
+
+		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x01, 			{       0,   10,  10 } },  // VMCU - Shift position
+		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x02, 			{      60,   10,  10 } },  // VMCU - Aux Battery data
+		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDII_SERVICE1A, 0x80, 			{       0,   60,  60 } },  // VMCU - VIN
+
+		{ 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x02, 					{       0,   10,  10 } },  // MCU
+
+    //{ 0x7c5, 0x7cd, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, 		{       10,   10,  10 } }, 	// TEST! LDC - Low voltage DC-DC
+
     { 0, 0, 0, 0, { 0, 0, 0 } }
   };
 
@@ -72,17 +90,15 @@ static const OvmsVehicle::poll_pid_t vehicle_kianiroev_polls[] =
  */
 OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   {
-  ESP_LOGI(TAG, "Kia Niro EV v3.0 vehicle module");
+  ESP_LOGI(TAG, "Kia Niro EV v1.0 vehicle module");
 
   StopTesterPresentMessages();
 
   memset( m_vin, 0, sizeof(m_vin));
-  memset( m_street, 0, sizeof(m_street));
 
   memset( kn_tpms_id, 0, sizeof(kn_tpms_id));
 
   kn_obc_volt = 230;
-  kn_battery_current = 0;
 
   kn_battery_cum_charge_current = 0;
   kn_battery_cum_discharge_current = 0;
@@ -106,8 +122,6 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   kn_send_can.status = 0;
   kn_clock = 0;
   kn_utc_diff = 0;
-  kn_openChargePort = false;
-  kn_check_door_lock=false;
   kn_lockDoors=false;
   kn_unlockDoors=false;
   kn_emergency_message_sent = false;
@@ -122,7 +136,7 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   kn_maxrange = CFG_DEFAULT_MAXRANGE;
 
   BmsSetCellArrangementVoltage(98, 1);
-  BmsSetCellArrangementTemperature(5, 1);
+  BmsSetCellArrangementTemperature(4, 1);
   BmsSetCellLimitsVoltage(2.0,5.0);
   BmsSetCellLimitsTemperature(-35,90);
   BmsSetCellDefaultThresholdsVoltage(0.1, 0.2); //TODO What values do we want here?
@@ -140,7 +154,6 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   m_b_cell_volt_min = MyMetrics.InitFloat("xkn.b.cell.volt.min", 10, 0, Volts);
   m_b_cell_volt_max_no = MyMetrics.InitInt("xkn.b.cell.volt.max.no", 10, 0);
   m_b_cell_volt_min_no = MyMetrics.InitInt("xkn.b.cell.volt.min.no", 10, 0);
-  m_b_cell_det_max = MyMetrics.InitFloat("xkn.b.cell.det.max", 0, 0, Percentage);
   m_b_cell_det_min = MyMetrics.InitFloat("xkn.b.cell.det.min", 0, 0, Percentage);
   m_b_cell_det_max_no = MyMetrics.InitInt("xkn.b.cell.det.max.no", 10, 0);
   m_b_cell_det_min_no = MyMetrics.InitInt("xkn.b.cell.det.min.no", 10, 0);
@@ -152,7 +165,7 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   m_b_heat_1_temperature = MyMetrics.InitInt("xkn.b.heat1.temp", 10, 0, Celcius);
   m_b_heat_2_temperature = MyMetrics.InitInt("xkn.b.heat2.temp", 10, 0, Celcius);
   m_b_bms_soc = MyMetrics.InitFloat("xkn.b.bms.soc", 10, 0, Percentage);
-  m_b_aux_soc = MyMetrics.InitFloat("xkn.b.aux.soc", 0, 0, Percentage);
+  m_b_aux_soc = MyMetrics.InitInt("xkn.b.aux.soc", 0, 0, Percentage);
 
   m_ldc_out_voltage = MyMetrics.InitFloat("xkn.ldc.out.volt", 10, 12, Volts);
   m_ldc_in_voltage = MyMetrics.InitFloat("xkn.ldc.in.volt", 10, 12, Volts);
@@ -165,22 +178,11 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
 
   m_v_env_lowbeam = MyMetrics.InitBool("xkn.e.lowbeam", 10, 0);
   m_v_env_highbeam = MyMetrics.InitBool("xkn.e.highbeam", 10, 0);
-  m_v_env_climate_temp = MyMetrics.InitFloat("xkn.e.climate.temp", 10, 0, Celcius);
-  m_v_env_climate_driver_only = MyMetrics.InitBool("xkn.e.climate.driver.only", 10, 0);
-  m_v_env_climate_resirc = MyMetrics.InitBool("xkn.e.climate.resirc", 10, 0);
-  m_v_env_climate_auto = MyMetrics.InitBool("xkn.e.climate.auto", 10, 0);
-  m_v_env_climate_ac = MyMetrics.InitBool("xkn.e.climate.ac", 10, 0);
-  m_v_env_climate_fan_speed = MyMetrics.InitInt("xkn.e.climate.fan.speed", 10, 0);
-  m_v_env_climate_mode = MyMetrics.InitInt("xkn.e.climate.mode", 10, 0);
 
   m_v_preheat_timer1_enabled = MyMetrics.InitBool("xkn.e.preheat.timer1.enabled", 10, 0);
   m_v_preheat_timer2_enabled = MyMetrics.InitBool("xkn.e.preheat.timer2.enabled", 10, 0);
   m_v_preheating = MyMetrics.InitBool("xkn.e.preheating", 10, 0);
 
-  m_v_pos_dist_to_dest = MyMetrics.InitInt("xkn.e.pos.dist.to.dest", 10, 0, Kilometers);
-  m_v_pos_arrival_hour = MyMetrics.InitInt("xkn.e.pos.arrival.hour", 10, 0);
-  m_v_pos_arrival_minute = MyMetrics.InitInt("xkn.e.pos.arrival.minute", 10, 0);
-  m_v_pos_street = MyMetrics.InitString("xkn.e.pos.street", 10, "");
   ms_v_pos_trip = MyMetrics.InitFloat("xkn.e.trip", 10, 0, Kilometers);
   ms_v_trip_energy_used = MyMetrics.InitFloat("xkn.e.trip.energy.used", 10, 0, kWh);
   ms_v_trip_energy_recd = MyMetrics.InitFloat("xkn.e.trip.energy.recuperated", 10, 0, kWh);
@@ -191,25 +193,25 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   m_v_seat_belt_back_middle = MyMetrics.InitBool("xkn.v.seat.belt.back.middle", 10, 0);
   m_v_seat_belt_back_left = MyMetrics.InitBool("xkn.v.seat.belt.back.left", 10, 0);
 
-  m_v_traction_control = MyMetrics.InitBool("xkn.v.traction.control", 10, 0);
-  m_v_cruise_control = MyMetrics.InitBool("xkn.v.cruise.control.enabled", 10, 0);
-
   m_v_emergency_lights = MyMetrics.InitBool("xkn.v.emergency.lights", 10, 0);
-
-  m_v_steering_mode = MyMetrics.InitString("xkn.v.steering.mode", 0, "Unknown");
 
   m_v_power_usage = MyMetrics.InitFloat("xkn.v.power.usage", 10, 0, kW);
 
   m_v_trip_consumption1 = MyMetrics.InitFloat("xkn.v.trip.consumption.KWh/100km", 10, 0, Other);
   m_v_trip_consumption2 = MyMetrics.InitFloat("xkn.v.trip.consumption.km/kWh", 10, 0, Other);
 
-  m_b_cell_det_max->SetValue(0);
+  m_v_door_lock_fl = MyMetrics.InitBool("xkn.v.door.lock.front.left", 10, 0);
+  m_v_door_lock_fr = MyMetrics.InitBool("xkn.v.door.lock.front.right", 10, 0);
+  m_v_door_lock_rl = MyMetrics.InitBool("xkn.v.door.lock.rear.left", 10, 0);
+  m_v_door_lock_rr = MyMetrics.InitBool("xkn.v.door.lock.rear.right", 10, 0);
+
   m_b_cell_det_min->SetValue(0);
 
   StdMetrics.ms_v_bat_12v_voltage->SetValue(12.5, Volts);
   StdMetrics.ms_v_charge_inprogress->SetValue(false);
   StdMetrics.ms_v_env_on->SetValue(false);
   StdMetrics.ms_v_bat_temp->SetValue(20, Celcius);
+  kn_shift_bits.CarOn = false;
 
   // init commands:
   cmd_xkn = MyCommandApp.RegisterCommand("xkn","Kia Niro EV",NULL,"",0,0,true);
@@ -231,8 +233,8 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   //cmd_xkn->RegisterCommand("ParkBreakService","Enable break pad service", CommandParkBreakService, "<on/off/off2>",1,1, false);
 
   // For test purposes
-  cmd_xkn->RegisterCommand("sjb","Send command to SJB ECU", xkn_sjb, "<b1><b2><b3>", 3,3, false);
-  cmd_xkn->RegisterCommand("bcm","Send command to BCM ECU", xkn_bcm, "<b1><b2><b3>", 3,3, false);
+  //cmd_xkn->RegisterCommand("sjb","Send command to SJB ECU", xkn_sjb, "<b1><b2><b3>", 3,3, false);
+  //cmd_xkn->RegisterCommand("bcm","Send command to BCM ECU", xkn_bcm, "<b1><b2><b3>", 3,3, false);
 
   MyConfig.SetParamValueBool("modem","enable.gps", true);
   MyConfig.SetParamValueBool("modem","enable.gpstime", true);
@@ -257,10 +259,11 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   // C-Bus
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   // M-Bus
-  RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
+  // RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
 
+  POLLSTATE_RUNNING;
+  kn_secs_with_no_client=0;
   PollSetPidList(m_can1,vehicle_kianiroev_polls);
-  POLLSTATE_OFF;
   }
 
 /**
@@ -280,24 +283,22 @@ void OvmsVehicleKiaNiroEv::ConfigChanged(OvmsConfigParam* param)
   ESP_LOGD(TAG, "Kia Niro EV reload configuration");
 
   // Instances:
-  // xks
-  //	  cap_act_kwh			Battery capacity in wH (Default: 270000)
+  // xkn
+  //	  cap_act_kwh			Battery capacity in wH (Default: 640000)
   //  suffsoc          	Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange        	Sufficient range [km] (Default: 0=disabled)
   //  maxrange         	Maximum ideal range at 20 °C [km] (Default: 160)
-  //  remote_charge_port					Use "trunk" button on keyfob to open charge port (Default: 1=enabled)
   //  canwrite					Enable commands
-  kn_battery_capacity = (float)MyConfig.GetParamValueInt("xks", "cap_act_kwh", CGF_DEFAULT_BATTERY_CAPACITY);
-  kn_key_fob_open_charge_port = (bool)MyConfig.GetParamValueBool("xks", "remote_charge_port", true);
+  kn_battery_capacity = (float)MyConfig.GetParamValueInt("xkn", "cap_act_kwh", CGF_DEFAULT_BATTERY_CAPACITY);
 
-  kn_maxrange = MyConfig.GetParamValueInt("xks", "maxrange", CFG_DEFAULT_MAXRANGE);
+  kn_maxrange = MyConfig.GetParamValueInt("xkn", "maxrange", CFG_DEFAULT_MAXRANGE);
   if (kn_maxrange <= 0)
     kn_maxrange = CFG_DEFAULT_MAXRANGE;
 
-  *StdMetrics.ms_v_charge_limit_soc = (float) MyConfig.GetParamValueInt("xks", "suffsoc");
-  *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("xks", "suffrange");
+  *StdMetrics.ms_v_charge_limit_soc = (float) MyConfig.GetParamValueInt("xkn", "suffsoc");
+  *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("xkn", "suffrange");
 
-  kn_enable_write = MyConfig.GetParamValueBool("xks", "canwrite", false);
+  kn_enable_write = MyConfig.GetParamValueBool("xkn", "canwrite", false);
 	}
 
 /**
@@ -307,42 +308,29 @@ void OvmsVehicleKiaNiroEv::ConfigChanged(OvmsConfigParam* param)
  */
 void OvmsVehicleKiaNiroEv::vehicle_kianiroev_car_on(bool isOn)
   {
-  if (isOn && !StdMetrics.ms_v_env_on->AsBool())
+	kn_shift_bits.CarOn=isOn;
+	StdMetrics.ms_v_env_awake->SetValue(isOn);
+  if (isOn)
     {
 		// Car is ON
   		ESP_LOGI(TAG,"CAR IS ON");
-		StdMetrics.ms_v_env_on->SetValue(isOn);
-		StdMetrics.ms_v_env_awake->SetValue(isOn);
-
-		StdMetrics.ms_v_env_charging12v->SetValue( false );
     POLLSTATE_RUNNING;
+		StdMetrics.ms_v_env_charging12v->SetValue( true );
     kn_ready_for_chargepollstate = true;
-
     kn_park_trip_counter.Reset(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
-
     BmsResetCellStats();
     }
-  else if(!isOn && StdMetrics.ms_v_env_on->AsBool())
+  else if(!isOn)
     {
     // Car is OFF
 		ESP_LOGI(TAG,"CAR IS OFF");
-    POLLSTATE_OFF;
-  		StdMetrics.ms_v_env_on->SetValue( isOn );
-  		StdMetrics.ms_v_env_awake->SetValue( isOn );
+    kn_secs_with_no_client=0;
   		StdMetrics.ms_v_pos_speed->SetValue( 0 );
   	  StdMetrics.ms_v_pos_trip->SetValue( kn_park_trip_counter.GetDistance() );
   		StdMetrics.ms_v_env_charging12v->SetValue( false );
     kn_ready_for_chargepollstate = true;
-
     kn_park_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
     }
-
-  //Make sure we update the different start values as soon as we have them available
-  if(isOn)
-  		{
-    POLLSTATE_RUNNING;
-		// Trip started. Let's save current state as soon as they are available
-  		}
   }
 
 /**
@@ -350,16 +338,19 @@ void OvmsVehicleKiaNiroEv::vehicle_kianiroev_car_on(bool isOn)
  */
 void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
 	{
-	ESP_LOGD(TAG,"Pollstate: %d sec with no client: %d ",m_poll_state, kn_secs_with_no_client);
+	//ESP_LOGD(TAG,"Pollstate: %d sec with no client: %d ",m_poll_state, kn_secs_with_no_client);
 
-	// Open charge port. User pressed the third keyfob button.
-	if( kn_openChargePort )
+	// Register car as locked only if all doors are locked
+	StdMetrics.ms_v_env_locked->SetValue(
+			m_v_door_lock_fr->AsBool() & m_v_door_lock_fl->AsBool() & m_v_door_lock_rr->AsBool() & m_v_door_lock_rl->AsBool() & !StdMetrics.ms_v_door_trunk->AsBool()
+	);
+
+	if(kn_shift_bits.CarOn!=StdMetrics.ms_v_env_on->AsBool())
 		{
-		char buffer[6];
-		OpenChargePort(itoa(MyConfig.GetParamValueInt("password","pin"), buffer, 10));
-		kn_openChargePort = false;
+		vehicle_kianiroev_car_on(StdMetrics.ms_v_env_on->AsBool());
 		}
 
+/*
 	// Lock or unlock doors. User pressed keyfob while car was on.
 	if( kn_lockDoors || kn_unlockDoors)
 		{
@@ -368,64 +359,83 @@ void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
 		kn_lockDoors=false;
 		kn_unlockDoors=false;
 		}
-
-	if(m_poll_state>0) // Only do these things if car is on or charging
+*/
+	UpdateMaxRangeAndSOH();
+	if (FULL_RANGE > 0) //  If we have the battery full range, we can calculate the ideal range too
 		{
-		UpdateMaxRangeAndSOH();
+			StdMetrics.ms_v_bat_range_ideal->SetValue( FULL_RANGE * BAT_SOC / 100.0, Kilometers);
+			}
 
-		if (FULL_RANGE > 0) //  If we have the battery full range, we can calculate the ideal range too
+	//TODO How to find the range as displayed in the cluster?
+	StdMetrics.ms_v_bat_range_est->SetValue(StdMetrics.ms_v_bat_range_ideal->AsFloat());
+
+	// Update trip data
+	if (StdMetrics.ms_v_env_on->AsBool())
+		{
+		if(kn_park_trip_counter.Started())
 			{
-		  	StdMetrics.ms_v_bat_range_ideal->SetValue( FULL_RANGE * BAT_SOC / 100.0, Kilometers);
-		  	}
-
-		// Update trip data
-		if (StdMetrics.ms_v_env_on->AsBool())
+			kn_park_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
+			StdMetrics.ms_v_pos_trip->SetValue( kn_park_trip_counter.GetDistance() , Kilometers);
+			if( kn_park_trip_counter.HasEnergyData())
+				{
+				StdMetrics.ms_v_bat_energy_used->SetValue( kn_park_trip_counter.GetEnergyUsed(), kWh );
+				StdMetrics.ms_v_bat_energy_recd->SetValue( kn_park_trip_counter.GetEnergyRecuperated(), kWh );
+				}
+			}
+		if(kn_charge_trip_counter.Started())
 			{
-			if(kn_park_trip_counter.Started())
+			kn_charge_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
+			ms_v_pos_trip->SetValue( kn_charge_trip_counter.GetDistance() , Kilometers);
+			if( kn_charge_trip_counter.HasEnergyData())
 				{
-				kn_park_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
-				StdMetrics.ms_v_pos_trip->SetValue( kn_park_trip_counter.GetDistance() , Kilometers);
-				if( kn_park_trip_counter.HasEnergyData())
-					{
-					StdMetrics.ms_v_bat_energy_used->SetValue( kn_park_trip_counter.GetEnergyUsed(), kWh );
-					StdMetrics.ms_v_bat_energy_recd->SetValue( kn_park_trip_counter.GetEnergyRecuperated(), kWh );
-					}
+				ms_v_trip_energy_used->SetValue( kn_charge_trip_counter.GetEnergyUsed(), kWh );
+				ms_v_trip_energy_recd->SetValue( kn_charge_trip_counter.GetEnergyRecuperated(), kWh );
 				}
-			if(kn_charge_trip_counter.Started())
-				{
-				kn_charge_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
-				ms_v_pos_trip->SetValue( kn_charge_trip_counter.GetDistance() , Kilometers);
-				if( kn_charge_trip_counter.HasEnergyData())
-					{
-					ms_v_trip_energy_used->SetValue( kn_charge_trip_counter.GetEnergyUsed(), kWh );
-					ms_v_trip_energy_recd->SetValue( kn_charge_trip_counter.GetEnergyRecuperated(), kWh );
-					}
-				}
-		  }
+			}
+		}
 
-		// Charge timer on/off?
-		StdMetrics.ms_v_charge_timermode->SetValue( m_obc_timer_enabled->AsBool() && !kn_charge_timer_off );
+	// Charge timer on/off?
+	//TODO StdMetrics.ms_v_charge_timermode->SetValue( m_obc_timer_enabled->AsBool() && !kn_charge_timer_off );
 
-		// Cooling?
-		StdMetrics.ms_v_env_cooling->SetValue (  m_v_env_climate_ac->AsBool() && StdMetrics.ms_v_env_temp->AsFloat(10,Celcius) > m_v_env_climate_temp->AsFloat(16, Celcius) );
+	if( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers)>0 )
+			m_v_trip_consumption1->SetValue( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) );
+	if( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh)>0 )
+			m_v_trip_consumption2->SetValue( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) );
 
-	  if( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers)>0 )
-	  		m_v_trip_consumption1->SetValue( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) );
-	  if( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh)>0 )
-	  		m_v_trip_consumption2->SetValue( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) );
+	StdMetrics.ms_v_bat_power->SetValue( StdMetrics.ms_v_bat_voltage->AsFloat(400,Volts) * StdMetrics.ms_v_bat_current->AsFloat(1,Amps)/1000,kW );
 
+	//Calculate charge current and "guess" charging type
+	if(StdMetrics.ms_v_bat_power->AsFloat(0, kW)<0 )
+		{
+		// We are charging! Now lets calculate which type! (This is a hack until we find this information elsewhere)
+		StdMetrics.ms_v_charge_current->SetValue(-StdMetrics.ms_v_bat_current->AsFloat(1,Amps));
+		if(StdMetrics.ms_v_bat_power->AsFloat(0, kW)<-7.36)
+			{
+				kn_charge_bits.ChargingCCS=true;
+				kn_charge_bits.ChargingType2=false;
+			}
+		else
+			{
+			kn_charge_bits.ChargingCCS=false;
+			kn_charge_bits.ChargingType2=true;
+			}
+		}
+	else
+		{
+		StdMetrics.ms_v_charge_current->SetValue(0);
+		kn_charge_bits.ChargingCCS=false;
+		kn_charge_bits.ChargingType2=false;
 		}
 
   //Keep charging metrics up to date
 	if (kn_charge_bits.ChargingType2)  				// **** Type 2  charging ****
 		{
-		SetChargeMetrics(kn_obc_volt, StdMetrics.ms_v_bat_power->AsFloat(0, kW) * 1000 / kn_obc_volt, 6600 / kn_obc_volt, false);
+		SetChargeMetrics(kn_obc_volt, -StdMetrics.ms_v_bat_power->AsFloat(0, kW) * 1000 / kn_obc_volt, 32, false);
 	  }
 	else if (kn_charge_bits.ChargingCCS)  // **** CCS charging ****
 		{
-		SetChargeMetrics(StdMetrics.ms_v_bat_voltage->AsFloat(400,Volts), (float)kn_battery_current / -10.0, m_c_power->AsFloat(0,kW) * 10 / StdMetrics.ms_v_bat_voltage->AsFloat(400,Volts), true);
+		SetChargeMetrics(StdMetrics.ms_v_bat_voltage->AsFloat(400,Volts), StdMetrics.ms_v_charge_current->AsFloat(1,Amps), /*m_c_power->AsFloat(0,kW) * 1000 / StdMetrics.ms_v_bat_voltage->AsFloat(400,Volts)*/ 200, true);
 	  }
-
 
 	// Check for charging status changes:
 	bool isCharging = (kn_charge_bits.ChargingCCS || kn_charge_bits.ChargingType2) 	&& (CHARGE_CURRENT > 0);
@@ -448,10 +458,10 @@ void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
   }
 
 	//**** AUX Battery drain prevention code ***
-	//If poll state is CHARGING and no clients are connected for 60 seconds, we'll turn off polling.
+	//If no clients are connected for 60 seconds, we'll turn off polling.
 	if((StdMetrics.ms_s_v2_peers->AsInt() + StdMetrics.ms_s_v3_peers->AsInt())==0)
 		{
-		if(m_poll_state==2 )
+		if(!StdMetrics.ms_v_env_on->AsBool() && !isCharging )
 			{
 			kn_secs_with_no_client++;
 			if(kn_secs_with_no_client>60)
@@ -461,8 +471,8 @@ void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
 				}
 			}
 		}
-	//If client connects, we set the appropriate poll state
-	else if(kn_secs_with_no_client>0 && m_poll_state==0)
+	//If client connects while poll state is off, we set the appropriate poll state
+	else if(m_poll_state==0)
 		{
 		kn_secs_with_no_client=0;
 		ESP_LOGI(TAG,"CLIENT CONNECTED. Turning on polling.");
@@ -476,13 +486,6 @@ void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
 			}
 		}
 	//**** End of AUX Battery drain prevention code ***
-
-	// Check door lock status if clients are connected and we think the status might have changed
-	if( (StdMetrics.ms_s_v2_peers->AsInt() + StdMetrics.ms_s_v3_peers->AsInt())>0 && kn_check_door_lock)
-		{
-		GetDoorLockStatus();
-		kn_check_door_lock=false;
-		}
 
 	// Reset emergency light if it is stale.
 	if( m_v_emergency_lights->IsStale() ) m_v_emergency_lights->SetValue(false);
@@ -516,8 +519,6 @@ void OvmsVehicleKiaNiroEv::Ticker10(uint32_t ticker)
 		{
 		kn_utc_diff = (kn_clock/60)-((StdMetrics.ms_m_timeutc->AsInt()/60) % 1440);
 		}
-
-	m_v_pos_street->SetValue(m_street);
 	}
 
 /**
@@ -531,7 +532,15 @@ void OvmsVehicleKiaNiroEv::EventListener(std::string event, void* data)
   {
   if (event == "app.connected")
     {
-  		kn_check_door_lock=true;
+    	kn_secs_with_no_client=0;
+		if(StdMetrics.ms_v_env_on->AsBool())
+			{
+			POLLSTATE_RUNNING;
+			}
+		else
+			{
+			POLLSTATE_CHARGING;
+			}
     }
   }
 
@@ -621,9 +630,10 @@ void OvmsVehicleKiaNiroEv::HandleCharging()
   			SET_CHARGE_STATE("charging",NULL);
   			}
   		}
-  StdMetrics.ms_v_charge_kwh->SetValue((CUM_CHARGE - kn_cum_charge_start)/10.0, kWh); // kWh charged
+  StdMetrics.ms_v_charge_kwh->SetValue(CUM_CHARGE - kn_cum_charge_start, kWh); // kWh charged
   kn_last_soc = BAT_SOC;
   kn_last_ideal_range = IDEAL_RANGE;
+	StdMetrics.ms_v_charge_pilot->SetValue(true);
 	}
 
 /**
@@ -649,19 +659,19 @@ void OvmsVehicleKiaNiroEv::HandleChargeStop()
 		SET_CHARGE_STATE("stopped","interrupted");
 		}
 	StdMetrics.ms_v_charge_substate->SetValue("onrequest");
-  StdMetrics.ms_v_charge_kwh->SetValue( (CUM_CHARGE - kn_cum_charge_start)/10.0, kWh );  // kWh charged
+  StdMetrics.ms_v_charge_kwh->SetValue( CUM_CHARGE - kn_cum_charge_start, kWh );  // kWh charged
 
   kn_cum_charge_start = 0;
   StdMetrics.ms_v_charge_inprogress->SetValue( false );
 	StdMetrics.ms_v_env_charging12v->SetValue( false );
+	StdMetrics.ms_v_charge_pilot->SetValue(false);
 	kn_charge_bits.ChargingCCS = false;
 	kn_charge_bits.ChargingType2 = false;
 	m_c_speed->SetValue(0);
 
 	// Reset trip counter for this charge
 	kn_charge_trip_counter.Reset(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
-
-	POLLSTATE_OFF;
+  kn_secs_with_no_client = 0;
 	}
 
 /**
@@ -676,7 +686,7 @@ void OvmsVehicleKiaNiroEv::SetChargeMetrics(float voltage, float current, float 
 	StdMetrics.ms_v_charge_type->SetValue( ccs ? "ccs" : "type2");
 	StdMetrics.ms_v_charge_substate->SetValue("onrequest");
 
-	ESP_LOGI(TAG, "SetChargeMetrics: volt=%1f current=%1f chargeLimit=%1f", voltage, current, climit);
+	//ESP_LOGI(TAG, "SetChargeMetrics: volt=%1f current=%1f chargeLimit=%1f", voltage, current, climit);
 
 	//"Typical" consumption based on battery temperature and ambient temperature.
 	float temp = ((StdMetrics.ms_v_bat_temp->AsFloat(Celcius) * 3) + StdMetrics.ms_v_env_temp->AsFloat(Celcius)) / 4;
@@ -701,7 +711,7 @@ uint16_t OvmsVehicleKiaNiroEv::calcMinutesRemaining(float target)
 void OvmsVehicleKiaNiroEv::UpdateMaxRangeAndSOH(void)
 	{
 	//Update State of Health using following assumption: 10% buffer
-	StdMetrics.ms_v_bat_soh->SetValue( 110 - ( m_b_cell_det_max->AsFloat(0) + m_b_cell_det_min->AsFloat(0)) / 2 );
+	//StdMetrics.ms_v_bat_soh->SetValue( 110 - ( m_b_cell_det_max->AsFloat(0) + m_b_cell_det_min->AsFloat(0)) / 2 );
 	StdMetrics.ms_v_bat_cac->SetValue( (kn_battery_capacity * BAT_SOH * BAT_SOC/10000.0) / 400, AmpHours);
 
 	float maxRange = kn_maxrange;// * MIN(BAT_SOH,100) / 100.0;
@@ -734,7 +744,6 @@ bool OvmsVehicleKiaNiroEv::SetDoorLock(bool open, const char* password)
     		LeftIndicator(true);
     		result = Send_SJB_Command(0xbc, open?0x11:0x10, 0x03);
     		ACCRelay(false,password	);
-    		kn_check_door_lock=true;
     		}
   		}
 		return result;
@@ -755,22 +764,6 @@ bool OvmsVehicleKiaNiroEv::OpenTrunk(const char* password)
     		LeftIndicator(true);
   			return Send_SJB_Command(0xbc, 0x09, 0x03);
     		StartRelay(false,password	);
-  			}
-  		}
-		return false;
-	}
-
-/**
- * Open charge port
- * 7a0 04 2F B0 61 03
- */
-bool OvmsVehicleKiaNiroEv::OpenChargePort(const char* password)
-	{
-  //TODO if( kn_shift_bits.Park )
-  		{
-		if( PinCheck((char*)password) )
-			{
-			return Send_BCM_Command(0xb0, 0x61, 0x03);
   			}
   		}
 		return false;
@@ -943,18 +936,18 @@ bool OvmsVehicleKiaNiroEv::SetFeature(int key, const char *value)
   switch (key)
   {
     case 10:
-      MyConfig.SetParamValue("xks", "suffsoc", value);
+      MyConfig.SetParamValue("xkn", "suffsoc", value);
       return true;
     case 11:
-      MyConfig.SetParamValue("xks", "suffrange", value);
+      MyConfig.SetParamValue("xkn", "suffrange", value);
       return true;
     case 12:
-      MyConfig.SetParamValue("xks", "maxrange", value);
+      MyConfig.SetParamValue("xkn", "maxrange", value);
       return true;
     case 15:
     {
       int bits = atoi(value);
-      MyConfig.SetParamValueBool("xks", "canwrite",  (bits& 1)!=0);
+      MyConfig.SetParamValueBool("xkn", "canwrite",  (bits& 1)!=0);
       return true;
     }
     default:
@@ -973,15 +966,15 @@ const std::string OvmsVehicleKiaNiroEv::GetFeature(int key)
   {
     case 0:
     case 10:
-      return MyConfig.GetParamValue("xks", "suffsoc", STR(0));
+      return MyConfig.GetParamValue("xkn", "suffsoc", STR(0));
     case 11:
-      return MyConfig.GetParamValue("xks", "suffrange", STR(0));
+      return MyConfig.GetParamValue("xkn", "suffrange", STR(0));
     case 12:
-      return MyConfig.GetParamValue("xks", "maxrange", STR(CFG_DEFAULT_MAXRANGE));
+      return MyConfig.GetParamValue("xkn", "maxrange", STR(CFG_DEFAULT_MAXRANGE));
     case 15:
     {
       int bits =
-        ( MyConfig.GetParamValueBool("xks", "canwrite",  false) ?  1 : 0);
+        ( MyConfig.GetParamValueBool("xkn", "canwrite",  false) ?  1 : 0);
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);
@@ -1001,7 +994,7 @@ OvmsVehicleKiaNiroEvInit::OvmsVehicleKiaNiroEvInit()
   {
   ESP_LOGI(TAG, "Registering Vehicle: Kia Niro EV (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleKiaNiroEv>("KS","Kia Niro EV");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleKiaNiroEv>("KN","Kia Niro EV");
   }
 
 /*******************************************************************************/

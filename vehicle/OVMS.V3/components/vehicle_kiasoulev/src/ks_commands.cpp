@@ -213,6 +213,10 @@ void xks_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 		{
 		writer->printf("Soul\n");
 		}
+	else if(soul->m_vin[3]=='C')
+		{
+		writer->printf("e-Niro\n");
+		}
 	else
 		{
 		writer->printf("Unknown %c\n", soul->m_vin[3]);

@@ -37,11 +37,11 @@ using namespace std;
 typedef union {
   struct { //TODO Is this the correct order, or should it be swapped?
     unsigned char Park : 1;
-    unsigned char Reverse : 1;
-    unsigned char Neutral : 1;
-    unsigned char Drive : 1;
-    unsigned char Break : 1;
-    unsigned char ECOOff : 1;
+    unsigned char Reverse: 1;
+    unsigned char Neutral: 1;
+    unsigned char Drive: 1;
+    unsigned char CarOn: 1;
+    unsigned char : 1;
     unsigned char : 1;
     unsigned char : 1;
   };
@@ -97,7 +97,6 @@ class OvmsVehicleKiaNiroEv : public OvmsVehicle
 
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
-    void IncomingFrameCan2(CAN_frame_t* p_frame);
     void Ticker1(uint32_t ticker);
     void Ticker10(uint32_t ticker);
     void Ticker300(uint32_t ticker);
@@ -130,7 +129,6 @@ class OvmsVehicleKiaNiroEv : public OvmsVehicle
     virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
 
     bool OpenTrunk(const char* password);
-    bool OpenChargePort(const char* password);
     bool ACCRelay(bool,const char *password);
     bool IGN1Relay(bool,const char *password);
     bool IGN2Relay(bool,const char *password);
@@ -143,8 +141,6 @@ class OvmsVehicleKiaNiroEv : public OvmsVehicle
 
 
     char m_vin[18];
-    char m_street[128]; //Current street
-    int m_street_pos;
 
     uint32_t kn_tpms_id[4];
     OvmsMetricInt* 		m_b_cell_volt_max_no;			//Max cell voltage no           02 21 01 -> 23 7
@@ -153,7 +149,6 @@ class OvmsVehicleKiaNiroEv : public OvmsVehicle
     OvmsMetricFloat*	m_b_cell_volt_min;     		// Battery cell minimum voltage
     OvmsMetricInt* 		m_b_cell_det_max_no; 			//02 21 05 -> 24 3
     OvmsMetricInt*		m_b_cell_det_min_no; 			//02 21 05 -> 24 6
-    OvmsMetricFloat*	m_b_cell_det_max;      		// Battery cell maximum detoriation
     OvmsMetricFloat*	m_b_cell_det_min;      		// Battery cell minimum detoriation
     OvmsMetricInt* 		m_b_min_temperature; 			//02 21 05 -> 21 7
     OvmsMetricInt*		m_b_inlet_temperature; 		//02 21 05 -> 21 6
@@ -165,18 +160,6 @@ class OvmsVehicleKiaNiroEv : public OvmsVehicle
 
     OvmsMetricBool*		m_v_env_lowbeam;
     OvmsMetricBool*		m_v_env_highbeam;
-    OvmsMetricFloat* m_v_env_climate_temp;
-    OvmsMetricBool*  m_v_env_climate_driver_only;
-    OvmsMetricBool*  m_v_env_climate_resirc;
-    OvmsMetricBool*  m_v_env_climate_auto;
-    OvmsMetricBool*  m_v_env_climate_ac;
-    OvmsMetricInt*	  m_v_env_climate_fan_speed;
-    OvmsMetricInt*	  m_v_env_climate_mode;
-
-    OvmsMetricInt*	  m_v_pos_dist_to_dest;
-    OvmsMetricInt*	  m_v_pos_arrival_hour;
-    OvmsMetricInt*	  m_v_pos_arrival_minute;
-    OvmsMetricString*	  m_v_pos_street;
 
     OvmsMetricFloat* ms_v_pos_trip;
     OvmsMetricFloat* ms_v_trip_energy_used;
@@ -196,10 +179,10 @@ class OvmsVehicleKiaNiroEv : public OvmsVehicle
     OvmsMetricBool*  m_v_seat_belt_back_middle;
     OvmsMetricBool*  m_v_seat_belt_back_left;
 
-    OvmsMetricBool*  m_v_traction_control;
-    OvmsMetricBool*  m_v_cruise_control;
-
-    OvmsMetricString*	  m_v_steering_mode;
+    OvmsMetricBool*  m_v_door_lock_fl;
+    OvmsMetricBool*  m_v_door_lock_fr;
+    OvmsMetricBool*  m_v_door_lock_rl;
+    OvmsMetricBool*  m_v_door_lock_rr;
 
     OvmsMetricBool*  m_v_preheat_timer1_enabled;
     OvmsMetricBool*  m_v_preheat_timer2_enabled;
@@ -218,13 +201,16 @@ class OvmsVehicleKiaNiroEv : public OvmsVehicle
   protected:
     void HandleCharging();
     void HandleChargeStop();
-    void IncomingTPMS(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void IncomingOBC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingMCU(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void IncomingBMC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingBCM(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingIGMP(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void IncomingLDC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void IncomingSJB(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingHVAC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingAirCon(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingAbsEsp(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void RequestNotify(unsigned int which);
     void DoNotify();
     void vehicle_kianiroev_car_on(bool isOn);
@@ -246,10 +232,10 @@ class OvmsVehicleKiaNiroEv : public OvmsVehicle
     OvmsMetricFloat*  m_c_power;            				// Available charge power
     OvmsMetricFloat*  m_c_speed;									// km/h
 
-		#define CFG_DEFAULT_MAXRANGE 160
+		#define CFG_DEFAULT_MAXRANGE 440
     int kn_maxrange = CFG_DEFAULT_MAXRANGE;        // Configured max range at 20 °C
 
-		#define CGF_DEFAULT_BATTERY_CAPACITY 27000
+		#define CGF_DEFAULT_BATTERY_CAPACITY 64000
     float kn_battery_capacity = CGF_DEFAULT_BATTERY_CAPACITY; //TODO Detect battery capacity from VIN or number of batterycells
 
     unsigned int kn_notifications = 0;
@@ -263,11 +249,6 @@ class OvmsVehicleKiaNiroEv : public OvmsVehicle
     float kn_last_soc;
     float kn_last_ideal_range;
     float kn_cum_charge_start; 		// Used to calculate charged power.
-
-    int16_t kn_battery_current; 			// Temporary storage for Battery current: 0x7ec 02 21 01 -> 21 7+22 1
-
-    bool kn_openChargePort;				// Tells the Ticker1 to open charge port
-    bool kn_key_fob_open_charge_port;	// Enable/disable open charge port using trunk-button on key fob
 
     bool kn_charge_timer_off; //True if the charge timer button is on
 
@@ -291,7 +272,6 @@ class OvmsVehicleKiaNiroEv : public OvmsVehicle
     bool kn_aux_bat_ok;
 
     bool kn_ready_for_chargepollstate;
-    bool kn_check_door_lock;
     bool kn_lockDoors;
     bool kn_unlockDoors;
 
@@ -338,6 +318,7 @@ class OvmsVehicleKiaNiroEv : public OvmsVehicle
 
 // CAN buffer access macros: b=byte# 0..7 / n=nibble# 0..15
 #define CAN_BYTE(b)     data[b]
+#define CAN_INT(b)      ((int16_t)CAN_UINT(b))
 #define CAN_UINT(b)     (((UINT)CAN_BYTE(b) << 8) | CAN_BYTE(b+1))
 #define CAN_UINT24(b)   (((uint32_t)CAN_BYTE(b) << 16) | ((UINT)CAN_BYTE(b+1) << 8) | CAN_BYTE(b+2))
 #define CAN_UINT32(b)   (((uint32_t)CAN_BYTE(b) << 24) | ((uint32_t)CAN_BYTE(b+1) << 16)  | ((UINT)CAN_BYTE(b+2) << 8) | CAN_BYTE(b+3))
@@ -369,7 +350,7 @@ class OvmsVehicleKiaNiroEv : public OvmsVehicle
 #define VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID 0x2F	// InputOutputControlByCommonID
 #define VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_LOC_ID	0x30 	// InputOutputControlByLocalID
 #define VEHICLE_POLL_TYPE_OBDII_TESTER_PRESENT	0x3E 	// TesterPresent
-#define VEHICLE_POLL_TYPE_OBDII_2201		0x2201 //TODO IS this correct?
+#define VEHICLE_POLL_TYPE_OBDII_SERVICE1A 0x1a
 
 #define DEFAULT_SESSION 0x01
 #define PROGRAMMING_SESSION 0x02
