@@ -83,6 +83,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_hx = MyMetrics.InitFloat("xnl.v.b.hx", SM_STALE_HIGH, 0);
   m_soc_new_car = MyMetrics.InitFloat("xnl.v.b.soc.newcar", SM_STALE_HIGH, 0, Percentage);
   m_soc_instrument = MyMetrics.InitFloat("xnl.v.b.soc.instrument", SM_STALE_HIGH, 0, Percentage);
+  m_range_instrument = MyMetrics.InitInt("xnl.v.b.range.instrument", SM_STALE_HIGH, 0, Kilometers);
   m_bms_thermistor = new OvmsMetricVector<int>("xnl.bms.thermistor", SM_STALE_MIN, Native);
   m_bms_temp_int = new OvmsMetricVector<int>("xnl.bms.temp_int", SM_STALE_MIN, Celcius);
   BmsSetCellArrangementVoltage(96, 32);
@@ -772,6 +773,15 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_inv_temp->SetValue(d[7] / 2.0 - 40);
         }
       break;
+    case 0x5a9:
+      {
+      uint16_t nl_range = d[1] << 4 | d[2] >> 4;
+      if (nl_range != 0xfff)
+        {
+        m_range_instrument->SetValue(nl_range / 5, Kilometers);
+        }
+      break;
+      }
     case 0x5b3:
       {
       // soh as percentage

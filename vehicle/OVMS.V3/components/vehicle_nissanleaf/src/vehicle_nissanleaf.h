@@ -130,6 +130,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricFloat *m_hx;
     OvmsMetricFloat *m_soc_new_car;
     OvmsMetricFloat *m_soc_instrument;
+    OvmsMetricInt *m_range_instrument;
     OvmsMetricVector<int> *m_bms_thermistor;
     OvmsMetricVector<int> *m_bms_temp_int;
     OvmsMetricFloat *m_soh_new_car;
