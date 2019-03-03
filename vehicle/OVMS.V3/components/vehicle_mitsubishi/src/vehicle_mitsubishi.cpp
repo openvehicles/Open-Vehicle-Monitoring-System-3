@@ -98,6 +98,8 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   m_v_trip_park_heating_kwh->SetValue(0);
   m_v_trip_park_ac_kwh->SetValue(0);
 
+  set_odo = false;
+
   if(POS_ODO > 0)
     {
       has_odo = true;
@@ -492,11 +494,14 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         if(StandardMetrics.ms_v_pos_odometer->AsInt() > 0 && has_odo == false && StandardMetrics.ms_v_bat_soc->AsFloat() > 0)
           {
             has_odo = true;
-            mi_charge_trip_counter.Reset(POS_ODO);
+            if (!set_odo)
+            {
+              mi_charge_trip_counter.Reset(POS_ODO);
 
-            ms_v_trip_charge_soc_start->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
-            ms_v_trip_charge_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
-
+              ms_v_trip_charge_soc_start->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
+              ms_v_trip_charge_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
+              set_odo = true;
+            }
 
           }
 

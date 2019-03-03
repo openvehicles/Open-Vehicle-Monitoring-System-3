@@ -152,6 +152,7 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     MI_Trip_Counter mi_charge_trip_counter;
 
     bool has_odo;
+    bool set_odo;
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     // --------------------------------------------------------------------------
