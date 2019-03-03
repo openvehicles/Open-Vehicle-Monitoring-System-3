@@ -354,9 +354,9 @@ CANopenResult_t SevconClient::CfgMakePowermap(void
   SevconJob sc(this);
   CANopenResult_t err;
   uint8_t i, pt;
-  uint16_t rpm, rpm2, rpm3;   // rpm3 maximum is 59.360 rpm, as pwr_hi level is not less than 15%
-  uint16_t trq;
-  uint16_t pwr;
+  uint32_t rpm, rpm2, rpm3;
+  uint32_t trq;
+  uint32_t pwr;
   float rpm_d2, pwr_d2, rpm_d3;
   float trq_brk, rpm_rtd;
 

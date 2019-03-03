@@ -53,11 +53,18 @@ class dbc
     dbcfile* Find(const char* name);
 
   public:
+    bool SelectFile(dbcfile* select);
+    bool SelectFile(const char* name);
+    void DeselectFile();
+    dbcfile* SelectedFile();
+
+  public:
     void AutoInit();
 
   public:
     OvmsMutex m_mutex;
     dbcLoadedFiles_t m_dbclist;
+    dbcfile* m_selected;
   };
 
 extern dbc MyDBC;

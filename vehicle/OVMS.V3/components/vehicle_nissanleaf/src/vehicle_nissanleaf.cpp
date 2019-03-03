@@ -46,6 +46,8 @@ static const char *TAG = "v-nissanleaf";
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
   {
     { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, {  0,999,999 } }, // VIN [19]
+    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1203, {  0,999,999 } }, // QC [4]
+    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1205, {  0,999,999 } }, // L0/L1/L2 [4]
     { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 61, 61 } }, // bat [39]
     { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 67, 67 } }, // battery voltages [196]
     { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,307,307 } }, // battery temperatures [14]
@@ -96,6 +98,8 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_charge_duration_range_l2 = MyMetrics.InitFloat("xnl.v.c.duration.range.l2", SM_STALE_HIGH, 0, Minutes);
   m_charge_duration_range_l1 = MyMetrics.InitFloat("xnl.v.c.duration.range.l1", SM_STALE_HIGH, 0, Minutes);
   m_charge_duration_range_l0 = MyMetrics.InitFloat("xnl.v.c.duration.range.l0", SM_STALE_HIGH, 0, Minutes);
+  m_charge_count_qc     = MyMetrics.InitInt("xnl.v.c.count.qc",     SM_STALE_MIN, 0);
+  m_charge_count_l0l1l2 = MyMetrics.InitInt("xnl.v.c.count.l0l1l2", SM_STALE_MIN, 0); 
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -331,6 +335,42 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(uint8_t reply_data[], uint16_t re
   m_bms_temp_int->SetElemValues(0, 6, temp_int);
   }
 
+void OvmsVehicleNissanLeaf::PollReply_QC(uint8_t reply_data[], uint16_t reply_len)
+  {
+  if (reply_len != 4)
+    {
+    ESP_LOGI(TAG, "PollReply_QC: len=%d != 4", reply_len);
+    return;
+    }
+  //  > 0x797 22 12 03
+  //  < 0x79a 62 12 03
+  // [ 0..3] 00 0C 00 00
+
+  uint16_t count = reply_data[0] * 0x100 + reply_data[1];
+  if (count != 0xFFFF)
+    {
+    m_charge_count_qc->SetValue(count);
+    }
+  }
+
+void OvmsVehicleNissanLeaf::PollReply_L0L1L2(uint8_t reply_data[], uint16_t reply_len)
+  {
+  if (reply_len != 4)
+    {
+    ESP_LOGI(TAG, "PollReply_L0L1L2: len=%d != 4", reply_len);
+    return;
+    }
+  //  > 0x797 22 12 05
+  //  < 0x79a 62 12 05
+  // [ 0..3] 00 5D 00 00
+
+  uint16_t count = reply_data[0] * 0x100 + reply_data[1];
+  if (count != 0xFFFF)
+    {
+    m_charge_count_l0l1l2->SetValue(count);
+    }
+  }
+
 void OvmsVehicleNissanLeaf::PollReply_VIN(uint8_t reply_data[], uint16_t reply_len)
   {
   if (reply_len != 19)
@@ -368,19 +408,25 @@ void OvmsVehicleNissanLeaf::IncomingPollReply(canbus* bus, uint16_t type, uint16
     }
   if (remain==0)
     {
-    int id_pid = m_poll_moduleid_low<<8 | pid;
+    uint32_t id_pid = m_poll_moduleid_low<<16 | pid;
     switch (id_pid)
       {
-      case 0x7bb01: // battery
+      case 0x7bb0001: // battery
         PollReply_Battery(buf, bufpos);
         break;
-      case 0x7bb02:
+      case 0x7bb0002:
         PollReply_BMS_Volt(buf, bufpos);
         break;
-      case 0x7bb04:
+      case 0x7bb0004:
         PollReply_BMS_Temp(buf, bufpos);
         break;
-      case 0x79a81: // VIN
+      case 0x79a1203: // QC
+        PollReply_QC(buf, bufpos);
+        break;
+      case 0x79a1205: // L0/L1/L2
+        PollReply_L0L1L2(buf, bufpos);
+        break;
+      case 0x79a0081: // VIN
         PollReply_VIN(buf, bufpos);
         break;
       default:
@@ -1059,6 +1105,7 @@ void OvmsVehicleNissanLeaf::HandleRange()
   // Trace
   ESP_LOGV(TAG, "Range: ideal=%0.0f km, est=%0.0f km, full=%0.0f km", range_ideal, range_est, range_full);
   }
+
 
 ////////////////////////////////////////////////////////////////////////
 // Wake up the car & send Climate Control or Remote Charge message to VCU,
