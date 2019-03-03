@@ -131,13 +131,14 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     void vehicle_mitsubishi_car_on(bool isOn);
 
     int mi_start_time_utc;
+
     //config variables
     bool cfg_heater_old;
     unsigned char cfg_soh;
     unsigned char cfg_ideal;
-
     bool cfg_bms;
     bool cfg_newcell;
+
     //variables for QuickCharge
     unsigned int mi_est_range;
     unsigned char mi_QC;
@@ -149,6 +150,8 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
 
     MI_Trip_Counter mi_park_trip_counter;
     MI_Trip_Counter mi_charge_trip_counter;
+
+    bool has_odo;
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     // --------------------------------------------------------------------------
