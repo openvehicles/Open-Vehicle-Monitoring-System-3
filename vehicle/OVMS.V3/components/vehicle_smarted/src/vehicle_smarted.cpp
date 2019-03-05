@@ -37,6 +37,8 @@ static const char *TAG = "v-smarted";
 #include "ovms_metrics.h"
 #include "ovms_peripherals.h"
 
+float soc = 0;
+
 /**
  * Constructor & destructor
  */
@@ -81,6 +83,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
 		 = 167 (in base10) und das nun halbieren
 		 = 83,5%*/
 		mt_displayed_soc->SetValue((d[7]/2));
+		soc = (d[7]/2);
 		break;
 	}
 	case 0x2D5: //realSOC
@@ -169,6 +172,10 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
 	}
 	case 0x318: // range and powerbar
 	{
+		if(soc > 0) {
+			float smart_range_ideal = (135 * soc) / 100;
+			StandardMetrics.ms_v_bat_range_ideal->SetValue(smart_range_ideal); // ToDo
+		}
 		StandardMetrics.ms_v_bat_range_est->SetValue(d[7], Kilometers);
 		mt_max_avail_power->SetValue(d[5]);
 		break;
