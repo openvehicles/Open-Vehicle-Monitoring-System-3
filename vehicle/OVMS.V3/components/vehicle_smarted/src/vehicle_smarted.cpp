@@ -37,10 +37,29 @@ static const char *TAG = "v-smarted";
 #include "ovms_metrics.h"
 #include "ovms_peripherals.h"
 
+/**
+ * Constructor & destructor
+ */
+size_t OvmsVehicleSmartED::m_modifier = 0;
 OvmsVehicleSmartED::OvmsVehicleSmartED() {
 	ESP_LOGI(TAG, "Start Smart ED vehicle module");
 
+    // init metrics:
+    if (m_modifier == 0) {
+    m_modifier = MyMetrics.RegisterModifier();
+    ESP_LOGD(TAG, "registered metric modifier is #%d", m_modifier);
+
+	mt_displayed_soc = MyMetrics.InitInt("v.display.soc", SM_STALE_MIN, 0);
+    mt_vehicle_time = MyMetrics.InitInt("v.display.time", SM_STALE_MIN, 0);
+    mt_max_avail_power = MyMetrics.InitInt("v.display.power.max", SM_STALE_MIN, 0);
+    mt_energy_used_reset = MyMetrics.InitInt("v.display.soc", SM_STALE_MIN, 0);
+    mt_trip_start = MyMetrics.InitInt("v.display.trip.start", SM_STALE_MIN, 0);
+    mt_trip_reset = MyMetrics.InitInt("v.display.trip.reset", SM_STALE_MIN, 0);	
+    mt_hv_active = MyMetrics.InitBool("v.b.hv.active", SM_STALE_MIN, false);
+	
 	RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+  }	
+	
 
 }
 
@@ -61,7 +80,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
 		 = A7 (in HEX)
 		 = 167 (in base10) und das nun halbieren
 		 = 83,5%*/
-		//StandardMetrics.ms_v_bat_soc->SetValue(d[7]/2);
+		mt_displayed_soc->SetValue((d[7]/2));
 		break;
 	}
 	case 0x2D5: //realSOC
@@ -81,7 +100,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
 		value = (uint16_t) (d[2] & 0x3F) * 256 + (uint16_t) d[3];
 		value = (value - 0x2000) / 10.0;
 		StandardMetrics.ms_v_bat_current->SetValue(value, Amps);
-		//StandardMetrics.ms_v_charge_state
+		//StandardMetrics.ms_v_charge_state->SetValue(d[?]);
 		break;
 	}
 	case 0x448: //HV Voltage
@@ -115,7 +134,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
 	case 0x512: // system time? and departure time [0] = hour, [1]= minutes
 	{
 		uint32_t time = (d[0] * 60 + d[1]) * 60;
-		StandardMetrics.ms_m_timeutc->SetValue(time, Seconds);
+		mt_vehicle_time->SetValue(time, Seconds);
 		time = (d[2] * 60 + d[3]) * 60;
 		StandardMetrics.ms_v_charge_timerstart->SetValue(time, Seconds);
 		break;
@@ -151,21 +170,21 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
 	case 0x318: // range and powerbar
 	{
 		StandardMetrics.ms_v_bat_range_est->SetValue(d[7], Kilometers);
-		//StandardMetrics.ms ->SetValue(d[5]); max available power
+		mt_max_avail_power->SetValue(d[5]);
 		break;
 	}
 	case 0x443: //air condition and fan
 	{
-		//StandardMetrics.
+		//MyMetrics.
 		break;
 	}
 	case 0x3F2: //Eco display
 	{
-		/*myDRV->ECO_accel                             = rxBuf[0] >> 1;
-		 myDRV->ECO_const                               = rxBuf[1] >> 1;
-		 myDRV->ECO_coast                               = rxBuf[2] >> 1;
-		 myDRV->ECO_total                               = rxBuf[3] >> 1;
-		 //StandardMetrics*/
+		/*myMetrics.->ECO_accel                             = rxBuf[0] >> 1;
+		 myMetrics.->ECO_const                               = rxBuf[1] >> 1;
+		 myMetrics.->ECO_coast                               = rxBuf[2] >> 1;
+		 myMetrics.->ECO_total                               = rxBuf[3] >> 1;
+		 */
 		break;
 	}
 	case 0x418: //gear shift
@@ -182,24 +201,24 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
 	{
 		StandardMetrics.ms_v_bat_energy_used->SetValue(
 				(d[0] * 256 + d[1]) * 1000, WattHoursPK);
-		//StandardMetrics.ms_v_bat_energy_used_Reset->SetValue(d[2]*256 + d[3]);
+		mt_energy_used_reset->SetValue(d[2]*256 + d[3]);
 		break;
 	}
 	case 0x504: //Strecke ab Start und ab Reset
 	{
 		uint16_t value = d[1] * 256 + d[2];
 		if (value != 254) {
-			//StandardMetrics.ms_xxx_trip_start->SetValue(value);
+			mt_trip_start->SetValue(value);
 		}
 		value = d[4] * 256 + d[5];
 		if (value != 254) {
-			//StandardMetrics.ms_xxx_trip_reset->SetValue(value);
+			mt_trip_reset->SetValue(value);
 		}
 		break;
 	}
 	case 0x3D7: //HV Status
 	{	//HV active
-		//StandardMetrics. ->SetValue(d[0]);
+		mt_hv_active->SetValue(d[0]);
 		break;
 	}
 	case 0x312: //motor ?

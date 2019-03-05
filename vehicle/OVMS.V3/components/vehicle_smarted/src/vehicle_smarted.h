@@ -58,6 +58,15 @@ class OvmsVehicleSmartED : public OvmsVehicle
   protected:
     virtual void Ticker60(uint32_t ticker);
 	TimerHandle_t m_locking_timer;
+	
+	static size_t m_modifier;
+	OvmsMetricInt *mt_displayed_soc;       // displayed SOC
+    OvmsMetricInt *mt_vehicle_time;        // vehicle time
+    OvmsMetricInt *mt_max_avail_power;     // max available power
+    OvmsMetricInt *mt_energy_used_reset;   // Energy consumption since Reset
+    OvmsMetricInt *mt_trip_start;          // trip since start
+    OvmsMetricInt *mt_trip_reset;          // trip since Reset	
+	OvmsMetricBool *mt_hv_active; 		   // HV active	
 
 };
 
