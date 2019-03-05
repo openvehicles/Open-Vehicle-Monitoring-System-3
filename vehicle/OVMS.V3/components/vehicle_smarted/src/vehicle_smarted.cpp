@@ -194,7 +194,8 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
 	}
 	case 0x408: //temp outdoor
 	{
-		//StandardMetrics.ms_v_env_temp->SetValue();
+		float TEMPERATUR = ((d[4] - 50 ) - 32 ) / 1.8; 
+		StandardMetrics.ms_v_env_temp->SetValue(TEMPERATUR);
 		break;
 	}
 	case 0x3CE: //Verbrauch ab Start und ab Reset
@@ -297,6 +298,33 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeCurrent(
 	frame.data.u8[3] = 0xFF;
 	frame.data.u8[4] = 0x00;
 	frame.data.u8[5] = (uint8_t) (100 + 2 * limit);
+	frame.data.u8[6] = 0x00;
+	frame.data.u8[7] = 0x00;
+	m_can1->Write(&frame);
+
+	return Success;
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
+	/*So we still have to get the car to wake up. Can someone please test these two queries when the car is asleep:
+	0x218 00 00 00 00 00 00 00 00 or
+	0x210 00 00 00 01 00 00 00 00
+	Both patterns should comply with the Bosch CAN bus spec. for waking up a sleeping bus with recessive bits.*/
+
+	CAN_frame_t frame;
+	memset(&frame, 0, sizeof(frame));
+
+	frame.origin = m_can1;
+	frame.FIR.U = 0;
+	frame.FIR.B.DLC = 8;
+	frame.FIR.B.FF = CAN_frame_std;
+	frame.MsgID = 0x218;
+	frame.data.u8[0] = 0x00;
+	frame.data.u8[1] = 0x00;
+	frame.data.u8[2] = 0x00;
+	frame.data.u8[3] = 0x00;
+	frame.data.u8[4] = 0x00;
+	frame.data.u8[5] = 0x00;
 	frame.data.u8[6] = 0x00;
 	frame.data.u8[7] = 0x00;
 	m_can1->Write(&frame);
