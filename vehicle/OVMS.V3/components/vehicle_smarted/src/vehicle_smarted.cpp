@@ -177,6 +177,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
 			StandardMetrics.ms_v_bat_range_ideal->SetValue(smart_range_ideal); // ToDo
 		}
 		StandardMetrics.ms_v_bat_range_est->SetValue(d[7], Kilometers);
+		StandardMetrics.ms_v_env_throttle->SetValue(d[5]);
 		mt_max_avail_power->SetValue(d[5]);
 		break;
 	}
@@ -196,7 +197,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
 	}
 	case 0x418: //gear shift
 	{
-		//StandardMetrics.ms_v_env_gear->SetValue();
+		StandardMetrics.ms_v_env_gear->SetValue(d[0]);
 		break;
 	}
 	case 0x408: //temp outdoor
