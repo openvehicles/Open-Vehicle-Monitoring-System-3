@@ -209,6 +209,8 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
 	{
 		StandardMetrics.ms_v_bat_energy_used->SetValue(
 				(d[0] * 256 + d[1]) / 100);
+		StandardMetrics.ms_v_bat_energy_recd->SetValue(
+				(d[2] * 256 + d[3]) / 100);
 		mt_energy_used_reset->SetValue(d[2]*256 + d[3]);
 		break;
 	}
@@ -256,13 +258,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(
 	 0x512 00 00 12 1E 00 00 00 00
 	 setzt man z.B. die Uhrzeit auf 18:30. Maskiert man nun Byte 3 (0x12) mit 0x40 (und setzt so dort das zweite Bit auf High) wird die A/C Funktion mit aktiviert.
 	 */
-	int t = timerstart + 3600; // Store the current time in time
+	int t = timerstart + 3600; // Store the current time in time + GMT+1
 	int days = (t / 86400);
 	t = t - (days * 86400);
 	int hours = (t / 3600);
 	t = t - (hours * 3600);
 	int minutes = (t / 60);
-	minutes = (minutes - (minutes % 15)) + 15;
+	minutes = (minutes - (minutes % 5)) + 5;
 	
 	CAN_frame_t frame;
 	memset(&frame, 0, sizeof(frame));
@@ -276,9 +278,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(
 	frame.data.u8[1] = 0x00;
 	frame.data.u8[2] = (hours & 0xff);
 	if (timeron) {
-		frame.data.u8[3] = 0x1e + 0x40; //(timerstart >> 8) & 0xff;
+		frame.data.u8[3] = (minutes & 0xff) + 0x40; //(timerstart >> 8) & 0xff;
 	} else {
-		frame.data.u8[3] = 0x1e; //((timerstart >> 8) & 0xff) + 0x40;
+		frame.data.u8[3] = (minutes & 0xff); //((timerstart >> 8) & 0xff) + 0x40;
 	}
 	frame.data.u8[4] = 0x00;
 	frame.data.u8[5] = 0x00;

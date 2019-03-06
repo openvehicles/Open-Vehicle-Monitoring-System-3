@@ -50,7 +50,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
 	
   public:
 	virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
-	virtual vehicle_command_t CommandSetChargeTimer(bool timeron, uint16_t timerstart);
+	virtual vehicle_command_t CommandSetChargeTimer(bool timeron, uint32_t timerstart);
 	virtual vehicle_command_t CommandClimateControl(bool enable);
 	virtual vehicle_command_t CommandLock();
     virtual vehicle_command_t CommandUnlock();
