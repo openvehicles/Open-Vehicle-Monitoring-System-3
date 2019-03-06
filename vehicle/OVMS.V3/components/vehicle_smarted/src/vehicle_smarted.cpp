@@ -245,17 +245,25 @@ void OvmsVehicleSmartED::Ticker60(uint32_t ticker) {
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandClimateControl(
 		bool enable) {
-	OvmsVehicleSmartED::CommandSetChargeTimer(enable, StandardMetrics.ms_m_timeutc->AsInt(0, Seconds));
+	OvmsVehicleSmartED::CommandSetChargeTimer(enable, StandardMetrics.ms_m_timeutc->AsInt(0));
 	return Success;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(
-		bool timeron, uint16_t timerstart) {
+		bool timeron, uint32_t timerstart) {
 //Set the charge start time as seconds since midnight or 8 Bit hour and 8 bit minutes?
 	/*Mit
 	 0x512 00 00 12 1E 00 00 00 00
 	 setzt man z.B. die Uhrzeit auf 18:30. Maskiert man nun Byte 3 (0x12) mit 0x40 (und setzt so dort das zweite Bit auf High) wird die A/C Funktion mit aktiviert.
 	 */
+	int t = timerstart + 3600; // Store the current time in time
+	int days = (t / 86400);
+	t = t - (days * 86400);
+	int hours = (t / 3600);
+	t = t - (hours * 3600);
+	int minutes = (t / 60);
+	minutes = (minutes - (minutes % 15)) + 15;
+	
 	CAN_frame_t frame;
 	memset(&frame, 0, sizeof(frame));
 
@@ -266,7 +274,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(
 	frame.MsgID = 0x512;
 	frame.data.u8[0] = 0x00;
 	frame.data.u8[1] = 0x00;
-	frame.data.u8[2] = 0x12; //(timerstart & 0xff);
+	frame.data.u8[2] = (hours & 0xff);
 	if (timeron) {
 		frame.data.u8[3] = 0x1e + 0x40; //(timerstart >> 8) & 0xff;
 	} else {
