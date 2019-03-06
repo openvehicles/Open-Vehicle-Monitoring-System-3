@@ -54,7 +54,7 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
 	mt_displayed_soc = MyMetrics.InitInt("v.display.soc", SM_STALE_MIN, 0);
     mt_vehicle_time = MyMetrics.InitInt("v.display.time", SM_STALE_MIN, 0);
     mt_max_avail_power = MyMetrics.InitInt("v.display.power.max", SM_STALE_MIN, 0);
-    mt_energy_used_reset = MyMetrics.InitInt("v.display.soc", SM_STALE_MIN, 0);
+    mt_energy_used_reset = MyMetrics.InitInt("v.display.energy.reset", SM_STALE_MIN, 0);
     mt_trip_start = MyMetrics.InitInt("v.display.trip.start", SM_STALE_MIN, 0);
     mt_trip_reset = MyMetrics.InitInt("v.display.trip.reset", SM_STALE_MIN, 0);	
     mt_hv_active = MyMetrics.InitBool("v.b.hv.active", SM_STALE_MIN, false);
@@ -208,7 +208,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
 	case 0x3CE: //Verbrauch ab Start und ab Reset
 	{
 		StandardMetrics.ms_v_bat_energy_used->SetValue(
-				(d[0] * 256 + d[1]) * 1000, WattHoursPK);
+				(d[0] * 256 + d[1]) / 100);
 		mt_energy_used_reset->SetValue(d[2]*256 + d[3]);
 		break;
 	}
@@ -266,12 +266,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(
 	frame.MsgID = 0x512;
 	frame.data.u8[0] = 0x00;
 	frame.data.u8[1] = 0x00;
+	frame.data.u8[2] = 0x12; //(timerstart & 0xff);
 	if (timeron) {
-		frame.data.u8[2] = (timerstart >> 8) & 0xff;
+		frame.data.u8[3] = 0x1e + 0x40; //(timerstart >> 8) & 0xff;
 	} else {
-		frame.data.u8[2] = ((timerstart >> 8) & 0xff) & 0x40;
+		frame.data.u8[3] = 0x1e; //((timerstart >> 8) & 0xff) + 0x40;
 	}
-	frame.data.u8[3] = (timerstart & 0xff);
 	frame.data.u8[4] = 0x00;
 	frame.data.u8[5] = 0x00;
 	frame.data.u8[6] = 0x00;
@@ -325,11 +325,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
 	frame.FIR.U = 0;
 	frame.FIR.B.DLC = 8;
 	frame.FIR.B.FF = CAN_frame_std;
-	frame.MsgID = 0x218;
+	frame.MsgID = 0x210;
 	frame.data.u8[0] = 0x00;
 	frame.data.u8[1] = 0x00;
 	frame.data.u8[2] = 0x00;
-	frame.data.u8[3] = 0x00;
+	frame.data.u8[3] = 0x01;
 	frame.data.u8[4] = 0x00;
 	frame.data.u8[5] = 0x00;
 	frame.data.u8[6] = 0x00;
