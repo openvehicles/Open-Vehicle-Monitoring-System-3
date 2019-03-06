@@ -99,11 +99,12 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
 	}
 	case 0x508: //HV ampere and charging yes/no
 	{
-		int16_t value = 0;
-		value = (uint16_t) (d[2] & 0x3F) * 256 + (uint16_t) d[3];
-		value = (value - 0x2000) / 10.0;
+		float value = 0;
+		value = (float) (d[2] & 0x3F) * 256 + (float) d[3];
+		value = (value / 10.0) - 819.2;
 		StandardMetrics.ms_v_bat_current->SetValue(value, Amps);
 		//StandardMetrics.ms_v_charge_state->SetValue(d[?]);
+		//HVA = (((rxBuf[2] & 0x3F) * 256 + rxBuf[3]) * 0.1) - 819.2; 
 		break;
 	}
 	case 0x448: //HV Voltage
