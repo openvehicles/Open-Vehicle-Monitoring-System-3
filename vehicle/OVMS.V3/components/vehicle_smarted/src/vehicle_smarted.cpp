@@ -207,10 +207,11 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
 	}
 	case 0x3CE: //Verbrauch ab Start und ab Reset
 	{
-		StandardMetrics.ms_v_bat_energy_used->SetValue(
-				(d[0] * 256 + d[1]) / 100);
-		StandardMetrics.ms_v_bat_energy_recd->SetValue(
-				(d[2] * 256 + d[3]) / 100);
+		float energy_used = (d[0] * 256 + d[1]) / 100;
+		float energy_recd = (d[2] * 256 + d[3]) / 100;
+		
+		StandardMetrics.ms_v_bat_energy_used->SetValue(energy_used);
+		StandardMetrics.ms_v_bat_energy_recd->SetValue(energy_recd);
 		mt_energy_used_reset->SetValue(d[2]*256 + d[3]);
 		break;
 	}
