@@ -250,8 +250,7 @@ void OvmsVehicleSmartED::Ticker60(uint32_t ticker) {
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandClimateControl(
 		bool enable) {
-	OvmsVehicleSmartED::CommandSetChargeTimer(enable, StandardMetrics.ms_m_timeutc->AsInt(0));
-	return Success;
+	return CommandSetChargeTimer(enable, StandardMetrics.ms_m_timeutc->AsInt());
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(
@@ -329,11 +328,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandHomelink(int button, i
 	bool enable;
 	if (button == 0) {
 		enable = true;
-		return CommandSetChargeTimer(enable, StandardMetrics.ms_m_timeutc->AsInt(0));
+		return CommandSetChargeTimer(enable, StandardMetrics.ms_m_timeutc->AsInt());
     }
 	if (button == 1) {
 		enable = false;
-		return CommandSetChargeTimer(enable, StandardMetrics.ms_m_timeutc->AsInt(0));
+		return CommandSetChargeTimer(enable, StandardMetrics.ms_m_timeutc->AsInt());
     }
 	return NotImplemented;
 }
