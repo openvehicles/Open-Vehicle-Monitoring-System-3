@@ -325,6 +325,19 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeCurrent(
 	return Success;
 }
 
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandHomelink(int button, int durationms) {
+	bool enable;
+	if (button == 0) {
+		enable = true;
+		return CommandSetChargeTimer(enable, StandardMetrics.ms_m_timeutc->AsInt(0));
+    }
+	if (button == 1) {
+		enable = false;
+		return CommandSetChargeTimer(enable, StandardMetrics.ms_m_timeutc->AsInt(0));
+    }
+	return NotImplemented;
+}
+
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
 	/*So we still have to get the car to wake up. Can someone please test these two queries when the car is asleep:
 	0x218 00 00 00 00 00 00 00 00 or
