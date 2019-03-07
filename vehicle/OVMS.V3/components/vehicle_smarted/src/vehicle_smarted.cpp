@@ -260,6 +260,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(
 	 0x512 00 00 12 1E 00 00 00 00
 	 setzt man z.B. die Uhrzeit auf 18:30. Maskiert man nun Byte 3 (0x12) mit 0x40 (und setzt so dort das zweite Bit auf High) wird die A/C Funktion mit aktiviert.
 	 */
+	if(timerstart == 0) { 
+		return Fail;
+	}
 	int t = timerstart + 3600; // Store the current time in time + GMT+1
 	int days = (t / 86400);
 	t = t - (days * 86400);
