@@ -112,6 +112,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     case 0x448: //HV Voltage
     {
         float HV;
+        float HVA = StandardMetrics.ms_v_bat_current->AsFloat();
         HV = ((float) d[6] * 256 + (float) d[7]);
         HV = HV / 10.0;
         float HVP = (HV * HVA) / 1000;
@@ -177,6 +178,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     }
     case 0x318: // range and powerbar
     {
+        float soc = StandardMetrics.ms_v_bat_soh->AsFloat();
         if(soc > 0) {
             float smart_range_ideal = (135 * soc) / 100;
             StandardMetrics.ms_v_bat_range_ideal->SetValue(smart_range_ideal); // ToDo
