@@ -30,7 +30,7 @@
 */
 void xmi_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	  {
-	  if (MyVehicleFactory.m_currentvehicle==NULL)
+	  if (MyVehicleFactory.m_currentvehicle == NULL)
 	    {
 	    writer->puts("Error: No vehicle module selected");
 	    return;
@@ -45,48 +45,54 @@ void xmi_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 /**
 * Print out information of the current trip.
 */
-void xmi_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void xmi_trip_since_parked(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
-			  if (MyVehicleFactory.m_currentvehicle==NULL)
+			  if (MyVehicleFactory.m_currentvehicle == NULL)
 			    {
 			    writer->puts("Error: No vehicle module selected");
 			    return;
 			    }
 
+				OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
+
 			  metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
 
-			  writer->printf("TRIP\n");
+			  writer->printf("TRIP\n\n");
 
 			  // Trip distance
-			  const char* distance = StdMetrics.ms_v_pos_trip->AsUnitString("-", rangeUnit, 1).c_str();
+			  const char* distance = trio->ms_v_pos_trip_park->AsUnitString("-", rangeUnit, 1).c_str();
 			  // Total consumption
-			  float totalConsumption = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) - StdMetrics.ms_v_bat_energy_recd->AsFloat(kWh);
+			  float totalConsumption = trio->ms_v_trip_park_energy_used->AsFloat(kWh) - trio->ms_v_trip_park_energy_recd->AsFloat(kWh);
 			  // Consumption
-				float consumption = totalConsumption*100/StdMetrics.ms_v_pos_trip->AsFloat(rangeUnit);
-			  float consumption2 = StdMetrics.ms_v_pos_trip->AsFloat(rangeUnit) / totalConsumption;
+				float consumption = totalConsumption * 100 / trio->ms_v_pos_trip_park->AsFloat(rangeUnit);
+			  float consumption2 = trio->ms_v_pos_trip_park->AsFloat(rangeUnit) / totalConsumption;
 			  // Discharge
-			  const char* discharge = StdMetrics.ms_v_bat_energy_used->AsUnitString("-", kWh, 4).c_str();
+			  const char* discharge = trio->ms_v_trip_park_energy_used->AsUnitString("-", kWh, 4).c_str();
 			  // Recuperation
-			  const char* recuparation = StdMetrics.ms_v_bat_energy_recd->AsUnitString("-", kWh, 4).c_str();
+			  const char* recuparation = trio->ms_v_trip_park_energy_recd->AsUnitString("-", kWh, 4).c_str();
 			  // ODO
 			  const char* ODO = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
 				// heating kwh
-				OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
-				float heatenergy = trio->m_v_env_heating_kwh->AsFloat();
-				float coolingenergy = trio->m_v_env_ac_kwh->AsFloat();
+				float heatenergy = trio->m_v_trip_park_heating_kwh->AsFloat();
+				float coolingenergy = trio->m_v_trip_park_ac_kwh->AsFloat();
+
+				float soc_start = trio->ms_v_trip_park_soc_start->AsFloat();
+				float soc_stop = trio->ms_v_trip_park_soc_stop->AsFloat();
 
 			  if (*distance != '-')
 			    writer->printf("Dist %s\n", distance);
 
+				writer->printf("Soc: %.*f%% - %.*f%% \n\n",1, soc_start,1, soc_stop);
+
 			  if(MyConfig.GetParamValue("vehicle", "units.distance") == "M")
 			  		{
 			    writer->printf("Con %.*fkWh/100mi\n", 4, consumption);
-			    writer->printf("Con %.*fmi/kWh\n", 4, consumption2);
+			    writer->printf("Con %.*fmi/kWh\n\n", 4, consumption2);
 			  		}
 			  else
 			  		{
 			    writer->printf("Con %.*fkWh/100km\n", 4, consumption);
-			    writer->printf("Con %.*fkm/kWh\n", 4, consumption2);
+			    writer->printf("Con %.*fkm/kWh\n\n", 4, consumption2);
 			  		}
 
 			  if (*discharge != '-')
@@ -95,7 +101,7 @@ void xmi_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 			  if (*recuparation != '-')
 			    writer->printf("Rec %s\n", recuparation);
 
-			  writer->printf("Total %.*fkWh\n", 4, totalConsumption);
+			  writer->printf("Total %.*fkWh\n\n", 4, totalConsumption);
 				writer->printf("Heater energy usage: %.*fkWh\n", 4,heatenergy);
 				writer->printf("AC energy usage: %.*fkWh\n", 4,coolingenergy);
 
@@ -104,9 +110,76 @@ void xmi_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 			    writer->printf("ODO %s\n", ODO);
 		}
 
+/**
+* Print out information of the current trip since charge.
+*/
+void xmi_trip_since_charge(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+				{
+				if (MyVehicleFactory.m_currentvehicle == NULL)
+					{
+					writer->puts("Error: No vehicle module selected");
+					return;
+					}
+
+				metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
+
+				OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
+
+				writer->printf("TRIP SINCE CHARGE\n\n");
+
+				// Trip distance
+				const char* distance = trio->ms_v_pos_trip_charge->AsUnitString("-", rangeUnit, 1).c_str();
+				// Total consumption
+				float totalConsumption = trio->ms_v_trip_charge_energy_used->AsFloat(kWh) - trio->ms_v_trip_charge_energy_recd->AsFloat(kWh);
+				// Consumption
+				float consumption = totalConsumption * 100 / trio->ms_v_pos_trip_charge->AsFloat(rangeUnit);
+				float consumption2 = trio->ms_v_pos_trip_charge->AsFloat(rangeUnit) / totalConsumption;
+				// Discharge
+				const char* discharge = trio->ms_v_trip_charge_energy_used->AsUnitString("-", kWh, 4).c_str();
+				// Recuperation
+				const char* recuparation = trio->ms_v_trip_charge_energy_recd->AsUnitString("-", kWh, 4).c_str();
+				// ODO
+				const char* ODO = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
+				// heating kwh
+				float heatenergy = trio->m_v_trip_charge_heating_kwh->AsFloat();
+				float coolingenergy = trio->m_v_trip_charge_ac_kwh->AsFloat();
+
+				float soc_start = trio->ms_v_trip_charge_soc_start->AsFloat();
+				float soc_stop = trio->ms_v_trip_charge_soc_stop->AsFloat();
+
+				if (*distance != '-')
+					writer->printf("Dist: %s\n", distance);
+
+				writer->printf("Soc: %.*f%% - %.*f%% \n\n",1, soc_start,1, soc_stop);
+
+				if(MyConfig.GetParamValue("vehicle", "units.distance") == "M")
+						{
+					writer->printf("Cons: %.*fkWh/100mi\n", 4, consumption);
+					writer->printf("Cons: %.*fmi/kWh\n\n", 4, consumption2);
+						}
+				else
+						{
+					writer->printf("Cons: %.*fkWh/100km\n", 4, consumption);
+					writer->printf("Cons: %.*fkm/kWh\n\n", 4, consumption2);
+						}
+
+				if (*discharge != '-')
+					writer->printf("Disc. %s\n", discharge);
+
+				if (*recuparation != '-')
+					writer->printf("Rec: %s\n", recuparation);
+
+				writer->printf("Tot: %.*fkWh\n\n", 4, totalConsumption);
+				writer->printf("Heater energy usage: %.*fkWh\n", 4,heatenergy);
+				writer->printf("AC energy usage: %.*fkWh\n", 4,coolingenergy);
+
+				if (*ODO != '-')
+					writer->printf("ODO %s\n", ODO);
+				}
+
 void xmi_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 			{
-				  if (MyVehicleFactory.m_currentvehicle==NULL)
+				  if (MyVehicleFactory.m_currentvehicle == NULL)
 				    {
 				    writer->puts("Error: No vehicle module selected");
 				    return;
@@ -114,7 +187,7 @@ void xmi_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 
 				  OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
 
-					writer->printf("VIN\n");
+					writer->printf("VIN\n\n");
 					if(strlen(trio->m_vin) != 0)
 					{
 						writer->printf("Vin: %s \n",trio->m_vin);
@@ -199,6 +272,44 @@ void xmi_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 							}
 						}
 					}else{
-						writer->printf("No car VIN loaded!");
+						writer->printf("No car VIN loaded!\n");
 					}
 			}
+/**
+* Print out information of the current trip since charge.
+*/
+void xmi_charge(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+{
+	if (MyVehicleFactory.m_currentvehicle == NULL)
+		{
+			writer->puts("Error: No vehicle module selected");
+			return;
+		}
+
+		OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
+
+		float ac_energy_usage = trio->m_v_charge_ac_kwh->AsFloat();
+		float dc_energy_usage = trio->m_v_charge_dc_kwh->AsFloat();
+		float efficiency = dc_energy_usage / ac_energy_usage;
+
+		int num_seconds = trio->v_c_time->AsInt();
+		int hours = num_seconds / (60 * 60);
+		num_seconds -= hours * (60 * 60);
+		int minutes = num_seconds / 60;
+		num_seconds -= minutes * 60;
+
+		float soc_start = trio->v_c_soc_start->AsFloat();
+		float soc_stop = trio->v_c_soc_stop->AsFloat();
+
+		writer->printf("LAST CHARGE \n\n");
+		writer->printf("Soc: %.*f%% - %.*f%% \n",1, soc_start,1, soc_stop);
+		//writer->printf("",1, soc_stop);
+		writer->printf("Charge time: %d:%d.%d \n", hours, minutes, num_seconds);
+		writer->printf("DC energy usage: %.*fkWh \n", 4, dc_energy_usage);
+		if (ac_energy_usage != 0)
+			{
+				writer->printf("AC energy usage: %.*fkWh \n", 4, ac_energy_usage);
+				writer->printf("Efficiency: %.*f%% \n",4 ,efficiency * 100);
+			}
+
+}

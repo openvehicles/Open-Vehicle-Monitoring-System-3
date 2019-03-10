@@ -39,9 +39,27 @@
 
 using namespace std;
 
-void xmi_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+//void xmi_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xmi_trip_since_parked(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xmi_trip_since_charge(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xmi_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xmi_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xmi_charge(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+
+class MI_Trip_Counter
+	{
+private:
+  float odo_start;
+  float odo;
+
+public:
+  MI_Trip_Counter();
+  ~MI_Trip_Counter();
+  void Reset(float odo);
+  void Update(float odo);
+  float GetDistance();
+  bool Started();
+	};
 
 class OvmsVehicleMitsubishi : public OvmsVehicle
   {
@@ -64,8 +82,8 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
   public:
     virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
 
-    OvmsMetricFloat* v_b_power_min  = new OvmsMetricFloat("xmi.b.power.min", SM_STALE_MID, kW);
-    OvmsMetricFloat* v_b_power_max  = new OvmsMetricFloat("xmi.b.power.max", SM_STALE_MID, kW);
+    OvmsMetricFloat* v_b_power_min  = MyMetrics.InitFloat("xmi.b.power.min", 10, 0, kW);
+    OvmsMetricFloat* v_b_power_max  = MyMetrics.InitFloat("xmi.b.power.max", 10, 0, kW);
 
     OvmsMetricBool*	m_v_env_lowbeam = MyMetrics.InitBool("xmi.e.lowbeam", 10, 0);
     OvmsMetricBool*	m_v_env_highbeam = MyMetrics.InitBool("xmi.e.highbeam", 10, 0);
@@ -74,35 +92,53 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     OvmsMetricBool*	m_v_env_blinker_right = MyMetrics.InitBool("xmi.e.rightblinker", 10, 0);
     OvmsMetricBool* m_v_env_blinker_left = MyMetrics.InitBool("xmi.e.leftblinker", 10, 0);
     OvmsMetricBool* m_v_env_warninglight = MyMetrics.InitBool("xmi.e.warninglight", 10, 0);
-    OvmsMetricFloat*  m_v_charge_dc_kwh = MyMetrics.InitFloat("v.c.kwh.dc",SM_STALE_MID, kWh);
-    OvmsMetricFloat*  m_v_charge_ac_kwh = MyMetrics.InitFloat("v.c.kwh.ac",SM_STALE_MID, kWh);
-    OvmsMetricFloat*  v_c_efficiency = MyMetrics.InitFloat("v.c.efficiency",SM_STALE_HIGH, Percentage);
-    OvmsMetricFloat*  v_c_power_ac = MyMetrics.InitFloat("v.c.power.ac",SM_STALE_MID, kW);
-    OvmsMetricFloat*  v_c_power_dc = MyMetrics.InitFloat("v.c.power.dc",SM_STALE_MID, kW);
+    OvmsMetricFloat*  m_v_charge_dc_kwh = MyMetrics.InitFloat("xmi.c.kwh.dc", 10, 0, kWh);
+    OvmsMetricFloat*  m_v_charge_ac_kwh = MyMetrics.InitFloat("xmi.c.kwh.ac", 10, 0, kWh);
+    OvmsMetricFloat*  v_c_efficiency = MyMetrics.InitFloat("xmi.c.efficiency", 10, 0, Percentage);
+    OvmsMetricFloat*  v_c_power_ac = MyMetrics.InitFloat("xmi.c.power.ac", 10, 0, kW);
+    OvmsMetricFloat*  v_c_power_dc = MyMetrics.InitFloat("xmi.c.power.dc", 10, 0, kW);
+    OvmsMetricFloat*  v_c_time = MyMetrics.InitFloat("xmi.c.time", 10, 0, Seconds);
+    OvmsMetricFloat*  v_c_soc_start = MyMetrics.InitFloat("xmi.c.soc.start", 10, 0, Percentage);
+    OvmsMetricFloat*  v_c_soc_stop = MyMetrics.InitFloat("xmi.c.soc.stop", 10, 0, Percentage);
 
-    OvmsMetricFloat*  m_v_env_heating_amp  = new OvmsMetricFloat("xmi.e.heating.amp", SM_STALE_MID, Amps);
-    OvmsMetricFloat*  m_v_env_heating_watt  = new OvmsMetricFloat("xmi.e.heating.watt", SM_STALE_MID, Watts);
-    OvmsMetricFloat*  m_v_env_heating_kwh = new OvmsMetricFloat("xmi.e.heating.kwh", SM_STALE_MID, kWh);
-    OvmsMetricFloat*  m_v_env_heating_temp_return  = new OvmsMetricFloat("xmi.e.heating.temp.return", SM_STALE_MID, Celcius);
-    OvmsMetricFloat*  m_v_env_heating_temp_flow  = new OvmsMetricFloat("xmi.e.heating.temp.flow", SM_STALE_MID, Celcius);
-    OvmsMetricFloat*  m_v_env_ac_amp  = new OvmsMetricFloat("xmi.e.ac.amp", SM_STALE_MID, Amps);
-    OvmsMetricFloat*  m_v_env_ac_watt  = new OvmsMetricFloat("xmi.e.ac.watt", SM_STALE_MID, Watts);
-    OvmsMetricFloat*  m_v_env_ac_kwh = new OvmsMetricFloat("xmi.e.ac.kwh", SM_STALE_MID, kWh);
+    OvmsMetricFloat*  m_v_env_heating_amp = MyMetrics.InitFloat("xmi.e.heating.amp", 10, 0, Amps);
+    OvmsMetricFloat*  m_v_env_heating_watt  = MyMetrics.InitFloat("xmi.e.heating.watt", 10, 0, Watts);
+    OvmsMetricFloat*  m_v_env_heating_temp_return = MyMetrics.InitFloat("xmi.e.heating.temp.return", 10, 0, Celcius);
+    OvmsMetricFloat*  m_v_env_heating_temp_flow = MyMetrics.InitFloat("xmi.e.heating.temp.flow", 10, 0, Celcius);
+    OvmsMetricFloat*  m_v_env_ac_amp  = MyMetrics.InitFloat("xmi.e.ac.amp", 10, 0, Amps);
+    OvmsMetricFloat*  m_v_env_ac_watt = MyMetrics.InitFloat("xmi.e.ac.watt", 10, 0, Watts);
+
     OvmsMetricFloat*  m_v_trip_consumption1 = MyMetrics.InitFloat("xmi.v.trip.consumption.KWh/100km", 10, 0, Other);
     OvmsMetricFloat*  m_v_trip_consumption2 = MyMetrics.InitFloat("xmi.v.trip.consumption.km/kWh", 10, 0, Other);
 
+    OvmsMetricFloat*  ms_v_pos_trip_park = MyMetrics.InitFloat("xmi.e.trip.park",10,0,Kilometers);
+    OvmsMetricFloat*  ms_v_trip_park_energy_used = MyMetrics.InitFloat("xmi.e.trip.park.energy.used", 10, 0, kWh);
+    OvmsMetricFloat*  ms_v_trip_park_energy_recd = MyMetrics.InitFloat("xmi.e.trip.park.energy.recuperated", 10, 0, kWh);
+    OvmsMetricFloat*  m_v_trip_park_heating_kwh = MyMetrics.InitFloat("xmi.e.trip.park.heating.kwh",10, 0, kWh);
+    OvmsMetricFloat*  m_v_trip_park_ac_kwh  = MyMetrics.InitFloat("xmi.e.trip.park.ac.kwh", 10, 0, kWh);
+    OvmsMetricFloat*  ms_v_trip_park_soc_start = MyMetrics.InitFloat("xmi.e.trip.park.soc.start", 10, 0, Percentage);
+    OvmsMetricFloat*  ms_v_trip_park_soc_stop = MyMetrics.InitFloat("xmi.e.trip.park.soc.stop", 10, 0, Percentage);
+
+    OvmsMetricFloat*  ms_v_pos_trip_charge = MyMetrics.InitFloat("xmi.e.trip.charge", 10, 0, Kilometers);
+    OvmsMetricFloat*  ms_v_trip_charge_energy_used = MyMetrics.InitFloat("xmi.e.trip.charge.energy.used", 10, 0, kWh);
+    OvmsMetricFloat*  ms_v_trip_charge_energy_recd = MyMetrics.InitFloat("xmi.e.trip.charge.energy.recuperated", 10, 0, kWh);
+    OvmsMetricFloat*  m_v_trip_charge_heating_kwh = MyMetrics.InitFloat("xmi.e.trip.charge.heating.kwh", 10, 0, kWh);
+    OvmsMetricFloat*  m_v_trip_charge_ac_kwh  = MyMetrics.InitFloat("xmi.e.trip.charge.ac.kwh", 10, 0, kWh);
+    OvmsMetricFloat*  ms_v_trip_charge_soc_start = MyMetrics.InitFloat("xmi.e.trip.charge.soc.start", 10, 0, Percentage);
+    OvmsMetricFloat*  ms_v_trip_charge_soc_stop = MyMetrics.InitFloat("xmi.e.trip.charge.soc.stop", 10, 0, Percentage);
+
+
     void vehicle_mitsubishi_car_on(bool isOn);
 
-    float mi_trip_start_odo;
     int mi_start_time_utc;
-    float mi_start_cdc;
-    float mi_start_cc;
+
     //config variables
     bool cfg_heater_old;
     unsigned char cfg_soh;
     unsigned char cfg_ideal;
     bool cfg_bms;
     bool cfg_newcell;
+
     //variables for QuickCharge
     unsigned int mi_est_range;
     unsigned char mi_QC;
@@ -112,6 +148,11 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     //charge variables
     float mi_chargekwh;
 
+    MI_Trip_Counter mi_park_trip_counter;
+    MI_Trip_Counter mi_charge_trip_counter;
+
+    bool has_odo;
+    bool set_odo;
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     // --------------------------------------------------------------------------
