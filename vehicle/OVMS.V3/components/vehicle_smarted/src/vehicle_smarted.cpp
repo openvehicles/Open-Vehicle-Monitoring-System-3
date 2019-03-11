@@ -178,7 +178,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     }
     case 0x318: // range and powerbar
     {
-        float soc = StandardMetrics.ms_v_bat_soh->AsFloat();
+        float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
         if(soc > 0) {
             float smart_range_ideal = (135 * soc) / 100;
             StandardMetrics.ms_v_bat_range_ideal->SetValue(smart_range_ideal); // ToDo
