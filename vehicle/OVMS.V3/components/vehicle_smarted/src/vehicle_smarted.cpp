@@ -84,7 +84,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
          = 83,5%*/
         float soc = (d[7]/2);
         mt_displayed_soc->SetValue((float) soc);
-        StandardMetrics.ms_v_bat_soh->SetValue((float) soc);
+        StandardMetrics.ms_v_bat_soc->SetValue((float) soc);
         break;
     }
     case 0x2D5: //realSOC
