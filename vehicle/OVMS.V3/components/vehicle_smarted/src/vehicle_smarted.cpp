@@ -352,6 +352,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
     0x210 00 00 00 01 00 00 00 00
     Both patterns should comply with the Bosch CAN bus spec. for waking up a sleeping bus with recessive bits.*/
 
+    ESP_LOGI(TAG, "Send Wakeup Command");
+    
     CAN_frame_t frame;
     memset(&frame, 0, sizeof(frame));
 
