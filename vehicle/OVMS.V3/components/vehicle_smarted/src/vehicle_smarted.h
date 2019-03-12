@@ -59,6 +59,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
 	
   protected:
 	virtual void Ticker60(uint32_t ticker);
+    void GetDashboardConfig(DashboardConfig& cfg);
 	TimerHandle_t m_locking_timer;
 	
 	static size_t m_modifier;
