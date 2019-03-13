@@ -155,7 +155,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
         StandardMetrics.ms_v_charge_timerstart->SetValue(time, Seconds);
         break;
     }
-    case 0x423: //Zündung,Türen,Fenster,Schloss, Licht, Blinker, Heckscheibenheizung
+    case 0x423: // Zündung,Türen,Fenster,Schloss, Licht, Blinker, Heckscheibenheizung
     {
         /*D0 is the state of the Ignition Key
         No Key is 0x40 in D0, Key on is 0x01
@@ -164,15 +164,15 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
          D2 are the doors (0x00 all close, 0x01 driver open, 0x02 passenger open, etc)
          D3 state of the Headlamps, etc*/
 
-        StandardMetrics.ms_v_env_headlights->SetValue(((d[3] & 0x02) > 0));
-        StandardMetrics.ms_v_env_on->SetValue(((d[0] & 0x01) > 0));  //Zündung
-        StandardMetrics.ms_v_door_fl->SetValue(((d[2] & 0x01) > 0));
-        StandardMetrics.ms_v_door_fr->SetValue(((d[2] & 0x02) > 0));
-        StandardMetrics.ms_v_door_trunk->SetValue(((d[2] & 0x04) > 0));
+        StandardMetrics.ms_v_env_on->SetValue((d[0] & 0x01) > 0);
+        StandardMetrics.ms_v_door_fl->SetValue((d[2] & 0x01) > 0);
+        StandardMetrics.ms_v_door_fr->SetValue((d[2] & 0x02) > 0);
+        StandardMetrics.ms_v_door_trunk->SetValue((d[2] & 0x04) > 0);
+        StandardMetrics.ms_v_env_headlights->SetValue((d[3] & 0x02) > 0);
         //StandardMetrics.ms_v_env_locked->SetBValue();
         break;
     }
-    case 0x200: //hand brake and speed
+    case 0x200: // hand brake and speed
     {
         StandardMetrics.ms_v_env_handbrake->SetValue(d[0]);
         float velocity = (d[2] * 256 + d[3]) / 18;
