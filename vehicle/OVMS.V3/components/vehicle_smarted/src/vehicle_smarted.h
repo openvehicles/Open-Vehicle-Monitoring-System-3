@@ -47,30 +47,34 @@ class OvmsVehicleSmartED : public OvmsVehicle
 
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
-	
+    
   public:
-	virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
-	virtual vehicle_command_t CommandSetChargeTimer(bool timeron, uint32_t timerstart);
-	virtual vehicle_command_t CommandClimateControl(bool enable);
-	virtual vehicle_command_t CommandLock();
+    virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
+    virtual vehicle_command_t CommandSetChargeTimer(bool timeron, uint32_t timerstart);
+    virtual vehicle_command_t CommandClimateControl(bool enable);
+    virtual vehicle_command_t CommandLock();
     virtual vehicle_command_t CommandUnlock();
     virtual vehicle_command_t CommandWakeup();
-	virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
-	
+    virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
+    
   protected:
-	virtual void Ticker60(uint32_t ticker);
+    virtual void Ticker1(uint32_t ticker);
+    virtual void Ticker60(uint32_t ticker);
     void GetDashboardConfig(DashboardConfig& cfg);
-	TimerHandle_t m_locking_timer;
-	
-	static size_t m_modifier;
-	OvmsMetricInt *mt_displayed_soc;		// displayed SOC
-	OvmsMetricInt *mt_vehicle_time;			// vehicle time
-	OvmsMetricInt *mt_max_avail_power;		// max available power
-	OvmsMetricInt *mt_energy_used_reset;	// Energy consumption since Reset
-	OvmsMetricInt *mt_trip_start;			// trip since start
-	OvmsMetricInt *mt_trip_reset;			// trip since Reset
-	OvmsMetricBool *mt_hv_active;			// HV active
+    TimerHandle_t m_locking_timer;
+    
+    static size_t m_modifier;
+    OvmsMetricInt *mt_displayed_soc;        // displayed SOC
+    OvmsMetricInt *mt_vehicle_time;         // vehicle time
+    OvmsMetricInt *mt_max_avail_power;      // max available power
+    OvmsMetricInt *mt_energy_used_reset;    // Energy consumption since Reset
+    OvmsMetricInt *mt_trip_start;           // trip since start
+    OvmsMetricInt *mt_trip_reset;           // trip since Reset
+    OvmsMetricBool *mt_hv_active;           // HV active
 
+  private:
+    unsigned int m_candata_timer;
+    unsigned int m_candata_poll = 0;
 };
 
 #endif //#ifndef __VEHICLE_SMARTED_H__

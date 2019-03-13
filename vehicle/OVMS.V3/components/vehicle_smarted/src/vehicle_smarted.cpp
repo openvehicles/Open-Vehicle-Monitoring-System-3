@@ -37,32 +37,32 @@ static const char *TAG = "v-smarted";
 #include "ovms_metrics.h"
 #include "ovms_peripherals.h"
 
+#define SE_CANDATA_TIMEOUT 10
 
 /**
  * Constructor & destructor
  */
 size_t OvmsVehicleSmartED::m_modifier = 0;
+
 OvmsVehicleSmartED::OvmsVehicleSmartED() {
     ESP_LOGI(TAG, "Start Smart ED vehicle module");
 
     StandardMetrics.ms_v_env_hvac->SetValue(false);
     // init metrics:
     if (m_modifier == 0) {
-    m_modifier = MyMetrics.RegisterModifier();
-    ESP_LOGD(TAG, "registered metric modifier is #%d", m_modifier);
+        m_modifier = MyMetrics.RegisterModifier();
+        ESP_LOGD(TAG, "registered metric modifier is #%d", m_modifier);
 
-    mt_displayed_soc = MyMetrics.InitInt("v.display.soc", SM_STALE_MIN, 0);
-    mt_vehicle_time = MyMetrics.InitInt("v.display.time", SM_STALE_MIN, 0);
-    mt_max_avail_power = MyMetrics.InitInt("v.display.power.max", SM_STALE_MIN, 0);
-    mt_energy_used_reset = MyMetrics.InitInt("v.display.energy.reset", SM_STALE_MIN, 0);
-    mt_trip_start = MyMetrics.InitInt("v.display.trip.start", SM_STALE_MIN, 0);
-    mt_trip_reset = MyMetrics.InitInt("v.display.trip.reset", SM_STALE_MIN, 0); 
-    mt_hv_active = MyMetrics.InitBool("v.b.hv.active", SM_STALE_MIN, false);
-    
-    RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-  } 
-    
+        mt_displayed_soc = MyMetrics.InitInt("v.display.soc", SM_STALE_MIN, 0);
+        mt_vehicle_time = MyMetrics.InitInt("v.display.time", SM_STALE_MIN, 0);
+        mt_max_avail_power = MyMetrics.InitInt("v.display.power.max", SM_STALE_MIN, 0);
+        mt_energy_used_reset = MyMetrics.InitInt("v.display.energy.reset", SM_STALE_MIN, 0);
+        mt_trip_start = MyMetrics.InitInt("v.display.trip.start", SM_STALE_MIN, 0);
+        mt_trip_reset = MyMetrics.InitInt("v.display.trip.reset", SM_STALE_MIN, 0); 
+        mt_hv_active = MyMetrics.InitBool("v.b.hv.active", SM_STALE_MIN, false);
 
+        RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+    }
 }
 
 OvmsVehicleSmartED::~OvmsVehicleSmartED() {
@@ -70,7 +70,14 @@ OvmsVehicleSmartED::~OvmsVehicleSmartED() {
 }
 
 void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
-
+    
+    if (m_candata_poll != 1) {
+        ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
+        StandardMetrics.ms_v_env_awake->SetValue(true);
+        m_candata_poll = 1;
+    }
+    m_candata_timer = SE_CANDATA_TIMEOUT;
+    
     uint8_t *d = p_frame->data.u8;
     
     switch (p_frame->MsgID) {
@@ -248,6 +255,18 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     }
 }
 
+void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
+    if (m_candata_timer > 0) {
+        if (--m_candata_timer == 0) {
+            // Car has gone to sleep
+            ESP_LOGI(TAG,"Car has gone to sleep (CAN bus timeout)");
+            //StandardMetrics.ms_v_env_on->SetValue(false);
+            StandardMetrics.ms_v_env_awake->SetValue(false);
+            //PollSetState(0);
+            m_candata_poll = 0;
+        }
+    }
+}
 
 void OvmsVehicleSmartED::Ticker60(uint32_t ticker) {
 
