@@ -266,6 +266,12 @@ void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
             m_candata_poll = 0;
         }
     }
+    
+    if (StandardMetrics.ms_v_pos_speed->AsInt() == 0 && StandardMetrics.ms_v_bat_current->AsFloat() > 1 && mt_hv_active) {
+        StandardMetrics.ms_v_charge_state->SetValue("charging");
+    } else {
+        StandardMetrics.ms_v_charge_state->SetValue("done");
+    }
 }
 
 void OvmsVehicleSmartED::Ticker60(uint32_t ticker) {
