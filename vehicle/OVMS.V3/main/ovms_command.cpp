@@ -184,44 +184,45 @@ const char* OvmsCommand::GetTitle()
 // - $Gfoo$ expands to the usage of the child named "foo"
 // - Parameters after command and subcommand tokens may be explicit like " <metric>"
 // - Empty usage template "" defaults to "$C" for non-terminal OvmsCommand
-const char* OvmsCommand::GetUsage(OvmsWriter* writer)
+void OvmsCommand::PutUsage(OvmsWriter* writer)
   {
-  std::string usage = !m_usage_template ? "" : (!*m_usage_template && !m_execute) ? "$C" : m_usage_template;
-  m_usage ="Usage: ";
-  size_t pos = m_usage.size();
+  const char* usage = !m_usage_template ? "" : (!*m_usage_template && !m_execute) ? "$C" : m_usage_template;
+  std::string result ="Usage: ";
+  size_t pos = result.size();
   for (OvmsCommand* parent = m_parent; parent && parent->m_parent; parent = parent->m_parent)
     {
-    m_usage.insert(pos, " ");
-    m_usage.insert(pos, parent->m_name);
+    result.insert(pos, " ");
+    result.insert(pos, parent->m_name);
     }
-  m_usage += m_name;
-  m_usage += " ";
-  ExpandUsage(usage, writer);
-  return m_usage.c_str();
+  result += m_name;
+  result += " ";
+  ExpandUsage(usage, writer, result);
+  writer->puts(result.c_str());
   }
 
-void OvmsCommand::ExpandUsage(std::string usage, OvmsWriter* writer)
+void OvmsCommand::ExpandUsage(const char* templ, OvmsWriter* writer, std::string& result)
   {
+  std::string usage = templ;
   size_t pos;
   if ((pos = usage.find("$C")) != std::string::npos)
     {
-    m_usage += usage.substr(0, pos);
+    result += usage.substr(0, pos);
     pos += 2;
-    size_t z = m_usage.size();
+    size_t z = result.size();
     bool found = false;
     for (OvmsCommandMap::iterator it = m_children.begin(); it != m_children.end(); ++it)
       {
       if (!it->second->m_secure || writer->m_issecure)
         {
         if (found)
-          m_usage += "|";
-        m_usage += it->first;
+          result += "|";
+        result += it->first;
         found = true;
         }
       }
-    if (m_usage.size() == z)
+    if (result.size() == z)
       {
-      m_usage = "All subcommands require 'enable' mode";
+      result = "All subcommands require 'enable' mode";
       pos = usage.size();       // Don't append any more
       }
     }
@@ -229,7 +230,7 @@ void OvmsCommand::ExpandUsage(std::string usage, OvmsWriter* writer)
   size_t pos2;
   if ((pos2 = usage.find("$G", pos)) != std::string::npos)
     {
-    m_usage += usage.substr(pos, pos2-pos);
+    result += usage.substr(pos, pos2-pos);
     pos2 += 2;
     size_t pos3;
     OvmsCommandMap::iterator it = m_children.end();
@@ -243,16 +244,15 @@ void OvmsCommand::ExpandUsage(std::string usage, OvmsWriter* writer)
       if (it != m_children.end() && (!it->second->m_secure || writer->m_issecure))
         {
         OvmsCommand* child = it->second;
-        child->ExpandUsage(child->m_usage_template, writer);
-        m_usage += child->m_usage;
+        child->ExpandUsage(child->m_usage_template, writer, result);
         }
       }
     else
       pos = pos2;
     if (it == m_children.end())
-      m_usage += "ERROR IN USAGE TEMPLATE";
+      result += "ERROR IN USAGE TEMPLATE";
     }
-  m_usage += usage.substr(pos);
+  result += usage.substr(pos);
   }
 
 OvmsCommand* OvmsCommand::RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
@@ -322,7 +322,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     //puts("Executing directly...");
     if (argc < m_min || argc > m_max || (argc > 0 && strcmp(argv[argc-1],"?")==0))
       {
-      writer->puts(GetUsage(writer));
+      PutUsage(writer);
       return;
       }
     if ((!m_secure)||(m_secure && writer->m_issecure))
@@ -337,13 +337,13 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     if (argc <= 0)
       {
       writer->puts("Subcommand required");
-      writer->puts(GetUsage(writer));
+      PutUsage(writer);
       return;
       }
     if (strcmp(argv[0],"?")==0)
       {
       if (m_usage_template && *m_usage_template && m_execute)
-        writer->puts(GetUsage(writer));
+        PutUsage(writer);
       // Show available commands
       int avail = 0;
       for (OvmsCommandMap::iterator it=m_children.begin(); it!=m_children.end(); ++it)
@@ -364,7 +364,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
       {
       writer->puts("Unrecognised command");
       if (m_usage_template && *m_usage_template)
-        writer->puts(GetUsage(writer));
+        PutUsage(writer);
       return;
       }
     if (argc>1)
