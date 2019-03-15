@@ -123,14 +123,14 @@ class OvmsCommand : public ExternalRamAllocated
     bool IsSecure() { return m_secure; }
 
   private:
-    void ExpandUsage(std::string usage, OvmsWriter* writer);
+    void PutUsage(OvmsWriter* writer);
+    void ExpandUsage(const char* templ, OvmsWriter* writer, std::string& result);
 
   protected:
     const char* m_name;
     const char* m_title;
     void (*m_execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*);
     const char* m_usage_template;
-    std::string m_usage;
     int m_min;
     int m_max;
     bool m_secure;
