@@ -322,9 +322,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(
     frame.data.u8[5] = 0x00;
     frame.data.u8[6] = 0x00;
     frame.data.u8[7] = 0x00;
-    if (timeron) {
-        m_can1->Write(&frame);
-    }
     m_can1->Write(&frame);
     return Success;
 }
@@ -386,11 +383,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
     frame.FIR.U = 0;
     frame.FIR.B.DLC = 8;
     frame.FIR.B.FF = CAN_frame_std;
-    frame.MsgID = 0x210;
-    frame.data.u8[0] = 0x00;
-    frame.data.u8[1] = 0x00;
-    frame.data.u8[2] = 0x00;
-    frame.data.u8[3] = 0x01;
+    frame.MsgID = 0x0e0;
+    frame.data.u8[0] = 0xff;
+    frame.data.u8[1] = 0xff;
+    frame.data.u8[2] = 0xff;
+    frame.data.u8[3] = 0x00;
     frame.data.u8[4] = 0x00;
     frame.data.u8[5] = 0x00;
     frame.data.u8[6] = 0x00;
