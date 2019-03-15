@@ -138,6 +138,23 @@ OvmsCommand* OvmsCommandMap::FindCommand(const char* key)
     return it->second;
   }
 
+char ** OvmsCommandMap::GetCompletion(OvmsWriter* writer, const char* token)
+  {
+  unsigned int index = 0;
+  char** tokens = writer->SetCompletion(index, NULL);
+  if (token)
+    {
+    for (iterator it = begin(); it != end(); ++it)
+      {
+      if (it->second->IsSecure() && !writer->IsSecure())
+        continue;
+      if (strncmp(it->first, token, strlen(token)) == 0)
+        writer->SetCompletion(index++, it->first);
+      }
+    }
+  return tokens;
+  }
+
 OvmsCommand::OvmsCommand()
   {
   m_parent = NULL;
@@ -296,12 +313,12 @@ char ** OvmsCommand::Complete(OvmsWriter* writer, int argc, const char * const *
   {
   if (argc <= 1)
     {
-    return writer->GetCompletion(m_children, argc > 0 ? argv[0] : "");
+    return m_children.GetCompletion(writer, argc > 0 ? argv[0] : "");
     }
   OvmsCommand* cmd = m_children.FindUniquePrefix(argv[0]);
   if (!cmd)
     {
-    return writer->GetCompletion(m_children, NULL);
+    return writer->SetCompletion(0, NULL);
     }
   return cmd->Complete(writer, argc-1, ++argv);
   }

@@ -76,31 +76,21 @@ void OvmsConsole::Initialize(const char* console)
   m_ready = true;
   }
 
-char ** OvmsConsole::GetCompletion(OvmsCommandMap& children, const char* token)
+char** OvmsConsole::SetCompletion(int index, const char* token)
   {
-  unsigned int index = 0;
-  if (token)
+  if (index < COMPLETION_MAX_TOKENS+1)
     {
-    for (OvmsCommandMap::iterator it = children.begin(); it != children.end(); ++it)
+    if (index == COMPLETION_MAX_TOKENS)
+      token = "...";
+    if (token)
       {
-      const char *key = it->first;
-      if (strncmp(key, token, strlen(token)) == 0)
-        {
-        if (index < COMPLETION_MAX_TOKENS+1)
-          {
-          if (it->second->IsSecure() && !m_issecure)
-            continue;
-          if (index == COMPLETION_MAX_TOKENS)
-            key = "...";
-          strncpy(m_space[index], key, TOKEN_MAX_LENGTH-1);
-          m_space[index][TOKEN_MAX_LENGTH-1] = '\0';
-          m_completions[index] = m_space[index];
-          ++index;
-          }
-        }
+      strncpy(m_space[index], token, TOKEN_MAX_LENGTH-1);
+      m_space[index][TOKEN_MAX_LENGTH-1] = '\0';
+      m_completions[index] = m_space[index];
+      ++index;
       }
+    m_completions[index] = NULL;
     }
-  m_completions[index] = NULL;
   return m_completions;
   }
 

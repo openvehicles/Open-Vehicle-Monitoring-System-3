@@ -65,7 +65,8 @@ class OvmsWriter
     virtual int puts(const char* s) = 0;
     virtual int printf(const char* fmt, ...) = 0;
     virtual ssize_t write(const void *buf, size_t nbyte) = 0;
-    virtual char ** GetCompletion(OvmsCommandMap& children, const char* token) = 0;
+    virtual char** SetCompletion(int index, const char* token) { return NULL; }
+    virtual char** GetCompletions() { return NULL; }
     virtual void Log(LogBuffers* message) = 0;
     virtual void Exit();
     virtual bool IsInteractive() { return true; }
@@ -99,6 +100,7 @@ class OvmsCommandMap : public std::map<const char*, OvmsCommand*, CompareCharPtr
   public:
     OvmsCommand* FindUniquePrefix(const char* key);
     OvmsCommand* FindCommand(const char* key);
+    char** GetCompletion(OvmsWriter* writer, const char* token);
   };
 
 class OvmsCommand : public ExternalRamAllocated
