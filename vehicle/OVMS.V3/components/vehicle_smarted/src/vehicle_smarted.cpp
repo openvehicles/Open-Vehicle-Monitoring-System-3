@@ -270,7 +270,9 @@ void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
     if (StandardMetrics.ms_v_pos_speed->AsInt() == 0 && StandardMetrics.ms_v_bat_current->AsInt() > 1 && mt_hv_active) {
         StandardMetrics.ms_v_charge_state->SetValue("charging");
     } else {
-        StandardMetrics.ms_v_charge_state->SetValue("done");
+        if (StandardMetrics.ms_v_charge_state->AsValue() != "done") {
+            StandardMetrics.ms_v_charge_state->SetValue("done");
+        }
     }
 }
 
