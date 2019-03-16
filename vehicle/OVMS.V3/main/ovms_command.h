@@ -108,12 +108,14 @@ class OvmsCommand : public ExternalRamAllocated
   public:
     OvmsCommand();
     OvmsCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
-                const char *usage, int min, int max, bool secure = false);
+                const char *usage, int min, int max, bool secure = false,
+                int (*validate)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool) = NULL);
     virtual ~OvmsCommand();
 
   public:
     OvmsCommand* RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
-                                 const char *usage = "", int min = 0, int max = INT_MAX, bool secure = false);
+                                 const char *usage = "", int min = 0, int max = INT_MAX, bool secure = false,
+                                 int (*validate)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool) = NULL);
     bool UnregisterCommand(const char* name = NULL);
     const char* GetName();
     const char* GetTitle();
@@ -132,6 +134,7 @@ class OvmsCommand : public ExternalRamAllocated
     const char* m_name;
     const char* m_title;
     void (*m_execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*);
+    int (*m_validate)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool);
     const char* m_usage_template;
     int m_min;
     int m_max;

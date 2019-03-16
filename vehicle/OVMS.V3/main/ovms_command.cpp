@@ -161,7 +161,8 @@ OvmsCommand::OvmsCommand()
   }
 
 OvmsCommand::OvmsCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
-                         const char *usage, int min, int max, bool secure)
+                         const char *usage, int min, int max, bool secure,
+                         int (*validate)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool))
   {
   m_name = name;
   m_title = title;
@@ -171,6 +172,7 @@ OvmsCommand::OvmsCommand(const char* name, const char* title, void (*execute)(in
   m_max = max;
   m_parent = NULL;
   m_secure = secure;
+  m_validate = validate;
   }
 
 OvmsCommand::~OvmsCommand()
@@ -208,6 +210,11 @@ void OvmsCommand::PutUsage(OvmsWriter* writer)
   size_t pos = result.size();
   for (OvmsCommand* parent = m_parent; parent && parent->m_parent; parent = parent->m_parent)
     {
+    if (parent->m_validate)
+      {
+      result.insert(pos, " ");
+      result.insert(pos, parent->m_usage_template);
+      }
     result.insert(pos, " ");
     result.insert(pos, parent->m_name);
     }
@@ -273,13 +280,14 @@ void OvmsCommand::ExpandUsage(const char* templ, OvmsWriter* writer, std::string
   }
 
 OvmsCommand* OvmsCommand::RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
-                                          const char *usage, int min, int max, bool secure)
+                                          const char *usage, int min, int max, bool secure,
+                                          int (*validate)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool))
   {
   // Protect against duplicate registrations
   OvmsCommand* cmd = FindCommand(name);
   if (cmd == NULL)
     {
-    cmd = new OvmsCommand(name, title, execute, usage, min, max, secure);
+    cmd = new OvmsCommand(name, title, execute, usage, min, max, secure, validate);
     m_children[name] = cmd;
     cmd->m_parent = this;
     }
@@ -311,6 +319,16 @@ bool OvmsCommand::UnregisterCommand(const char* name)
 
 char ** OvmsCommand::Complete(OvmsWriter* writer, int argc, const char * const * argv)
   {
+  if (m_validate)
+    {
+    int used = -1;
+    if (argc >= m_min)
+      used = m_validate(writer, this, argc, argv, true);
+    if (used < 0 || used == argc)
+      return writer->GetCompletions();
+    argc -= used;
+    argv += used;
+    }
   if (argc <= 1)
     {
     return m_children.GetCompletion(writer, argc > 0 ? argv[0] : "");
@@ -350,6 +368,20 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     }
   else
     {
+    if (m_validate && argc >= m_min)
+      {
+      int used = m_validate(writer, this, argc, argv, false);
+      if (used < 0)
+        {
+        if (argc > 0 && strcmp(argv[argc-1],"?") != 0)
+          writer->puts("Unrecognised command");
+        if (m_usage_template && *m_usage_template)
+          PutUsage(writer);
+        return;
+        }
+      argc -= used;
+      argv += used;
+      }
     //puts("Looking for a matching command");
     if (argc <= 0)
       {
