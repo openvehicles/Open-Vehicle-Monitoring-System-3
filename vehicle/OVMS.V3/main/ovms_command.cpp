@@ -213,8 +213,13 @@ void OvmsCommand::PutUsage(OvmsWriter* writer)
     {
     if (parent->m_validate)
       {
-      result.insert(pos, " ");
-      result.insert(pos, parent->m_usage_template);
+      size_t len = strlen(parent->m_usage_template);
+      char* dollar = index(parent->m_usage_template, '$');
+      if (dollar)
+        len = dollar - parent->m_usage_template;
+      else
+        result.insert(pos, " ");
+      result.insert(pos, parent->m_usage_template, len);
       }
     result.insert(pos, " ");
     result.insert(pos, parent->m_name);
