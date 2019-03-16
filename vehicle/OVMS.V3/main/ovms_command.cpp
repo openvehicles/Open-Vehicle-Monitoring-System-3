@@ -448,14 +448,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
         PutUsage(writer);
       return;
       }
-    if (argc>1)
-      {
-      cmd->Execute(verbosity,writer,argc-1,++argv);
-      }
-    else
-      {
-      cmd->Execute(verbosity,writer,0,NULL);
-      }
+    cmd->Execute(verbosity,writer,argc-1,++argv);
     }
   }
 
@@ -819,6 +812,7 @@ void OvmsCommandApp::Execute(int verbosity, OvmsWriter* writer, int argc, const 
     }
   else
     {
+    writer->SetArgv(argv);
     m_root.Execute(verbosity, writer, argc, argv);
     }
   }

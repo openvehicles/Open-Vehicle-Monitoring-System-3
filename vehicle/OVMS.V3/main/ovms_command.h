@@ -67,6 +67,8 @@ class OvmsWriter
     virtual ssize_t write(const void *buf, size_t nbyte) = 0;
     virtual char** SetCompletion(int index, const char* token) { return NULL; }
     virtual char** GetCompletions() { return NULL; }
+    virtual void SetArgv(const char* const* argv) { return; }
+    virtual const char* const* GetArgv() { return NULL; }
     virtual void Log(LogBuffers* message) = 0;
     virtual void Exit();
     virtual bool IsInteractive() { return true; }
