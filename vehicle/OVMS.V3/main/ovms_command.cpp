@@ -201,6 +201,7 @@ const char* OvmsCommand::GetTitle()
 // - "[$C]" expands to optional children as [child1|child2|child3]
 // - $G$ expands to the usage of the first child (typically used after $C)
 // - $Gfoo$ expands to the usage of the child named "foo"
+// - $L lists a full usage line for each of the children
 // - Parameters after command and subcommand tokens may be explicit like " <metric>"
 // - Empty usage template "" defaults to "$C" for non-terminal OvmsCommand
 void OvmsCommand::PutUsage(OvmsWriter* writer)
@@ -228,6 +229,37 @@ void OvmsCommand::ExpandUsage(const char* templ, OvmsWriter* writer, std::string
   {
   std::string usage = templ;
   size_t pos;
+  if ((pos = usage.find("$L")) != std::string::npos)
+    {
+    result += usage.substr(0, pos);
+    pos += 2;
+    size_t z = result.size();
+    bool found = false;
+    for (OvmsCommandMap::iterator it = m_children.begin(); it != m_children.end(); ++it)
+      {
+      OvmsCommand* child = it->second;
+      if (!child->m_secure || writer->m_issecure)
+        {
+        if (found)
+          {
+          result += "\n";
+          result += result.substr(0, z);
+          }
+        result += it->first;
+        result += " ";
+        found = true;
+        child->ExpandUsage(child->m_usage_template, writer, result);
+        }
+      }
+    if (result.size() == z)
+      {
+      result = "All subcommands require 'enable' mode";
+      pos = usage.size();       // Don't append any more
+      }
+    result += usage.substr(pos);
+    return;
+    }
+
   if ((pos = usage.find("$C")) != std::string::npos)
     {
     result += usage.substr(0, pos);
