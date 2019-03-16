@@ -92,6 +92,46 @@ class OvmsWriter
     bool m_monitoring;
   };
 
+template <typename T>
+class NameMap : public std::map<std::string, T>
+  {
+  public:
+    T FindUniquePrefix(std::string& key)
+      {
+      size_t len = key.length();
+      T found = NULL;
+      for (typename NameMap<T>::iterator it = NameMap<T>::begin(); it != NameMap<T>::end(); ++it)
+	{
+	if (it->first.compare(0, len, key) == 0)
+	  {
+	  if (len == it->first.length())
+	    return it->second;
+	  if (found)
+	    return NULL;
+	  else
+	    found = it->second;
+	  }
+	}
+      return found;
+      }
+
+    char** GetCompletion(OvmsWriter* writer, const char* token)
+      {
+      unsigned int index = 0;
+      char** tokens = writer->SetCompletion(index, NULL);
+      if (token)
+        {
+        size_t len = strlen(token);
+        for (typename NameMap<T>::iterator it = NameMap<T>::begin(); it != NameMap<T>::end(); ++it)
+          {
+          if (it->first.compare(0, len, token) == 0)
+            writer->SetCompletion(index++, it->first.c_str());
+          }
+        }
+      return tokens;
+      }
+  };
+
 struct CompareCharPtr
   {
   bool operator()(const char* a, const char* b);
