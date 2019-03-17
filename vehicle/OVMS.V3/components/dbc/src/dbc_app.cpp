@@ -521,38 +521,38 @@ dbc::dbc()
   ESP_LOGI(TAG, "Initialising DBC (4510)");
   m_selected = NULL;
 
-  OvmsCommand* cmd_dbc = MyCommandApp.RegisterCommand("dbc","DBC framework",NULL, "", 0, 0, true);
+  OvmsCommand* cmd_dbc = MyCommandApp.RegisterCommand("dbc","DBC framework");
 
-  cmd_dbc->RegisterCommand("list", "List DBC status", dbc_list, "", 0, 0, true);
-  cmd_dbc->RegisterCommand("load", "Load DBC file", dbc_load, "<name> <path>", 2, 2, true);
-  cmd_dbc->RegisterCommand("unload", "Unload DBC file", dbc_unload, "<name>", 1, 1, true);
-  cmd_dbc->RegisterCommand("save", "Save DBC file", dbc_save, "[<name>]", 0, 1, true);
-  cmd_dbc->RegisterCommand("dump", "Dump DBC file", dbc_dump, "[<name>]", 0, 1, true);
-  cmd_dbc->RegisterCommand("show", "Show DBC file", dbc_show, "[<name>]", 0, 1, true);
-  cmd_dbc->RegisterCommand("autoload", "Autoload DBC files", dbc_autoload, "", 0, 0, true);
-  cmd_dbc->RegisterCommand("select", "Select DBC file for editing", dbc_select, "[<name>]", 0, 1, true);
-  cmd_dbc->RegisterCommand("deselect", "Deselect DBC file for editing", dbc_deselect, "", 0, 0, true);
+  cmd_dbc->RegisterCommand("list", "List DBC status", dbc_list);
+  cmd_dbc->RegisterCommand("load", "Load DBC file", dbc_load, "<name> <path>", 2, 2);
+  cmd_dbc->RegisterCommand("unload", "Unload DBC file", dbc_unload, "<name>", 1, 1);
+  cmd_dbc->RegisterCommand("save", "Save DBC file", dbc_save, "[<name>]", 0, 1);
+  cmd_dbc->RegisterCommand("dump", "Dump DBC file", dbc_dump, "[<name>]", 0, 1);
+  cmd_dbc->RegisterCommand("show", "Show DBC file", dbc_show, "[<name>]", 0, 1);
+  cmd_dbc->RegisterCommand("autoload", "Autoload DBC files", dbc_autoload);
+  cmd_dbc->RegisterCommand("select", "Select DBC file for editing", dbc_select, "[<name>]", 0, 1);
+  cmd_dbc->RegisterCommand("deselect", "Deselect DBC file for editing", dbc_deselect);
 
-  OvmsCommand* cmd_set = cmd_dbc->RegisterCommand("set","DBC Set framework",NULL, "", 0, 0, true);
-  cmd_set->RegisterCommand("version", "Set version for selected DBC file", dbc_set_version, "<version>", 1, 1, true);
-  cmd_set->RegisterCommand("timing", "Set bit timing for selected DBC file", dbc_set_timing, "<baud> <btr1> <btr2>", 3, 3, true);
-  cmd_set->RegisterCommand("messagemux", "Set message mux for selected DBC file", dbc_message_set_mux, "<id> [<signal>]", 1, 2, true);
-  cmd_set->RegisterCommand("signalmux", "Set signal mux for selected DBC file", dbc_signal_set_mux, "<id> <name> [<value>]", 2, 3, true);
+  OvmsCommand* cmd_set = cmd_dbc->RegisterCommand("set","DBC Set framework");
+  cmd_set->RegisterCommand("version", "Set version for selected DBC file", dbc_set_version, "<version>", 1, 1);
+  cmd_set->RegisterCommand("timing", "Set bit timing for selected DBC file", dbc_set_timing, "<baud> <btr1> <btr2>", 3, 3);
+  cmd_set->RegisterCommand("messagemux", "Set message mux for selected DBC file", dbc_message_set_mux, "<id> [<signal>]", 1, 2);
+  cmd_set->RegisterCommand("signalmux", "Set signal mux for selected DBC file", dbc_signal_set_mux, "<id> <name> [<value>]", 2, 3);
 
-  OvmsCommand* cmd_add = cmd_dbc->RegisterCommand("add","DBC Add framework",NULL, "", 0, 0, true);
-  cmd_add->RegisterCommand("node", "Add node for selected DBC file", dbc_node_add, "<node>", 1, 1, true);
-  cmd_add->RegisterCommand("message", "Add message for selected DBC file", dbc_message_add, "<id> <name> <size> <transmitter>", 4, 4, true);
-  cmd_add->RegisterCommand("signal", "Add signal for selected DBC file", dbc_signal_add, "<id> <name> <start> <size> <order> <type> <factor> <offset> <min> <max> <unit> <receiver>", 12, 12, true);
+  OvmsCommand* cmd_add = cmd_dbc->RegisterCommand("add","DBC Add framework");
+  cmd_add->RegisterCommand("node", "Add node for selected DBC file", dbc_node_add, "<node>", 1, 1);
+  cmd_add->RegisterCommand("message", "Add message for selected DBC file", dbc_message_add, "<id> <name> <size> <transmitter>", 4, 4);
+  cmd_add->RegisterCommand("signal", "Add signal for selected DBC file", dbc_signal_add, "<id> <name> <start> <size> <order> <type> <factor> <offset> <min> <max> <unit> <receiver>", 12, 12);
 
-  OvmsCommand* cmd_remove = cmd_dbc->RegisterCommand("remove","DBC Remove framework",NULL, "", 0, 0, true);
-  cmd_remove->RegisterCommand("node", "Remove node for selected DBC file", dbc_node_remove, "<node>", 1, 1, true);
-  cmd_remove->RegisterCommand("message", "Remove message for selected DBC file", dbc_message_remove, "<id>", 1, 1, true);
-  cmd_remove->RegisterCommand("signal", "Remove signal for selected DBC file", dbc_signal_remove, "<id> <name>", 2, 2, true);
+  OvmsCommand* cmd_remove = cmd_dbc->RegisterCommand("remove","DBC Remove framework");
+  cmd_remove->RegisterCommand("node", "Remove node for selected DBC file", dbc_node_remove, "<node>", 1, 1);
+  cmd_remove->RegisterCommand("message", "Remove message for selected DBC file", dbc_message_remove, "<id>", 1, 1);
+  cmd_remove->RegisterCommand("signal", "Remove signal for selected DBC file", dbc_signal_remove, "<id> <name>", 2, 2);
 
-  OvmsCommand* cmd_clear = cmd_dbc->RegisterCommand("clear","DBC Clear framework",NULL, "", 0, 0, true);
-  cmd_clear->RegisterCommand("node", "Clear all nodes for selected DBC file", dbc_node_clear, "", 0, 0, true);
-  cmd_clear->RegisterCommand("message", "Clear all messages for selected DBC file", dbc_message_clear, "", 0, 0, true);
-  cmd_clear->RegisterCommand("signal", "Clear all signals for selected DBC file", dbc_signal_clear, "<id>", 1, 1, true);
+  OvmsCommand* cmd_clear = cmd_dbc->RegisterCommand("clear","DBC Clear framework");
+  cmd_clear->RegisterCommand("node", "Clear all nodes for selected DBC file", dbc_node_clear);
+  cmd_clear->RegisterCommand("message", "Clear all messages for selected DBC file", dbc_message_clear);
+  cmd_clear->RegisterCommand("signal", "Clear all signals for selected DBC file", dbc_signal_clear, "<id>", 1, 1);
 
   MyConfig.RegisterParam("dbc", "DBC Configuration", true, true);
   // Our instances:

@@ -622,24 +622,24 @@ OvmsCommandApp::OvmsCommandApp()
   m_logfile_maxsize = 0;
   m_expiretask = 0;
 
-  m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0);
-  m_root.RegisterCommand("exit", "End console session", Exit , "", 0, 0);
-  OvmsCommand* cmd_log = MyCommandApp.RegisterCommand("log","LOG framework",NULL, "", 0, 0, true);
-  cmd_log->RegisterCommand("file", "Start logging to specified file", log_file , "<vfspath>", 0, 1, true);
-  cmd_log->RegisterCommand("close", "Stop logging to file", log_file , "", 0, 0, true);
-  cmd_log->RegisterCommand("expire", "Expire old log files", log_expire, "[<keepdays>]", 0, 1, true);
-  OvmsCommand* level_cmd = cmd_log->RegisterCommand("level", "Set logging level", NULL, "$C [<tag>]");
-  level_cmd->RegisterCommand("verbose", "Log at the VERBOSE level (5)", log_level , "[<tag>]", 0, 1, true);
-  level_cmd->RegisterCommand("debug", "Log at the DEBUG level (4)", log_level , "[<tag>]", 0, 1, true);
-  level_cmd->RegisterCommand("info", "Log at the INFO level (3)", log_level , "[<tag>]", 0, 1, true);
-  level_cmd->RegisterCommand("warn", "Log at the WARN level (2)", log_level , "[<tag>]", 0, 1);
-  level_cmd->RegisterCommand("error", "Log at the ERROR level (1)", log_level , "[<tag>]", 0, 1);
-  level_cmd->RegisterCommand("none", "No logging (0)", log_level , "[<tag>]", 0, 1);
-  monitor = cmd_log->RegisterCommand("monitor", "Monitor log on this console", log_monitor , "[$C]", 0, 1, true);
-  monitor_yes = monitor->RegisterCommand("yes", "Monitor log", log_monitor , "", 0, 0, true);
-  monitor->RegisterCommand("no", "Don't monitor log", log_monitor , "", 0, 0, true);
-  m_root.RegisterCommand("enable","Enter secure mode (enable access to all commands)", enable, "[<password>]", 0, 1);
-  m_root.RegisterCommand("disable","Leave secure mode (disable access to most commands)", disable, "", 0, 0, true);
+  m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0, false);
+  m_root.RegisterCommand("exit", "End console session", Exit , "", 0, 0, false);
+  OvmsCommand* cmd_log = MyCommandApp.RegisterCommand("log","LOG framework");
+  cmd_log->RegisterCommand("file", "Start logging to specified file", log_file , "<vfspath>", 0, 1);
+  cmd_log->RegisterCommand("close", "Stop logging to file", log_file);
+  cmd_log->RegisterCommand("expire", "Expire old log files", log_expire, "[<keepdays>]", 0, 1);
+  OvmsCommand* level_cmd = cmd_log->RegisterCommand("level", "Set logging level", NULL, "$C [<tag>]", 0, 0, false);
+  level_cmd->RegisterCommand("verbose", "Log at the VERBOSE level (5)", log_level , "[<tag>]", 0, 1);
+  level_cmd->RegisterCommand("debug", "Log at the DEBUG level (4)", log_level , "[<tag>]", 0, 1);
+  level_cmd->RegisterCommand("info", "Log at the INFO level (3)", log_level , "[<tag>]", 0, 1);
+  level_cmd->RegisterCommand("warn", "Log at the WARN level (2)", log_level , "[<tag>]", 0, 1, false);
+  level_cmd->RegisterCommand("error", "Log at the ERROR level (1)", log_level , "[<tag>]", 0, 1, false);
+  level_cmd->RegisterCommand("none", "No logging (0)", log_level , "[<tag>]", 0, 1, false);
+  monitor = cmd_log->RegisterCommand("monitor", "Monitor log on this console", log_monitor , "[$C]");
+  monitor_yes = monitor->RegisterCommand("yes", "Monitor log", log_monitor);
+  monitor->RegisterCommand("no", "Don't monitor log", log_monitor);
+  m_root.RegisterCommand("enable","Enter secure mode (enable access to all commands)", enable, "[<password>]", 0, 1, false);
+  m_root.RegisterCommand("disable","Leave secure mode (disable access to most commands)", disable);
   }
 
 OvmsCommandApp::~OvmsCommandApp()

@@ -892,16 +892,16 @@ class OvmsModuleInit
     MyEvents.RegisterEvent(TAG, "ticker.1", module_eventhandler);
 #endif //CONFIG_OVMS_COMP_SDCARD
 
-    OvmsCommand* cmd_module = MyCommandApp.RegisterCommand("module","MODULE framework",NULL,"",0,0,true);
-    cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"[<task names or ids>|*|=]",0,TASKLIST,true);
-    cmd_module->RegisterCommand("leaks","Show module memory changes",module_memory,"[<task names or ids>|*|=]",0,TASKLIST,true);
-    OvmsCommand* cmd_tasks = cmd_module->RegisterCommand("tasks","Show module task usage",module_tasks,"[stack]",0,1,true);
-    cmd_tasks->RegisterCommand("stack","Show module task usage with stack",module_tasks,"",0,0,true);
-    cmd_module->RegisterCommand("fault","Abort fault the module",module_fault,"",0,0,true);
-    cmd_module->RegisterCommand("reset","Reset module",module_reset,"",0,0,true);
-    cmd_module->RegisterCommand("check","Check heap integrity",module_check,"",0,0,true);
-    OvmsCommand* cmd_factory = cmd_module->RegisterCommand("factory","MODULE FACTORY framework",NULL,"",0,0,true);
-    cmd_factory->RegisterCommand("reset","Factory Reset module",module_factory_reset,"",0,0,true);
+    OvmsCommand* cmd_module = MyCommandApp.RegisterCommand("module","MODULE framework");
+    cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"[<task names or ids>|*|=]",0,TASKLIST);
+    cmd_module->RegisterCommand("leaks","Show module memory changes",module_memory,"[<task names or ids>|*|=]",0,TASKLIST);
+    OvmsCommand* cmd_tasks = cmd_module->RegisterCommand("tasks","Show module task usage",module_tasks,"[stack]",0,1);
+    cmd_tasks->RegisterCommand("stack","Show module task usage with stack",module_tasks);
+    cmd_module->RegisterCommand("fault","Abort fault the module",module_fault);
+    cmd_module->RegisterCommand("reset","Reset module",module_reset);
+    cmd_module->RegisterCommand("check","Check heap integrity",module_check);
+    OvmsCommand* cmd_factory = cmd_module->RegisterCommand("factory","MODULE FACTORY framework");
+    cmd_factory->RegisterCommand("reset","Factory Reset module",module_factory_reset);
     }
   } MyOvmsModuleInit  __attribute__ ((init_priority (5100)));
 

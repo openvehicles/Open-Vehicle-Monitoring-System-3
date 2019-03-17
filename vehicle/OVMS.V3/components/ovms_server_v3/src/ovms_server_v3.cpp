@@ -976,10 +976,10 @@ OvmsServerV3Init::OvmsServerV3Init()
   ESP_LOGI(TAG, "Initialising OVMS V3 Server (6200)");
 
   OvmsCommand* cmd_server = MyCommandApp.FindCommand("server");
-  OvmsCommand* cmd_v3 = cmd_server->RegisterCommand("v3","OVMS Server V3 Protocol", NULL, "", 0, 0, true);
-  cmd_v3->RegisterCommand("start","Start an OVMS V3 Server Connection",ovmsv3_start, "", 0, 0, true);
-  cmd_v3->RegisterCommand("stop","Stop an OVMS V3 Server Connection",ovmsv3_stop, "", 0, 0, true);
-  cmd_v3->RegisterCommand("status","Show OVMS V3 Server connection status",ovmsv3_status, "", 0, 0, false);
+  OvmsCommand* cmd_v3 = cmd_server->RegisterCommand("v3","OVMS Server V3 Protocol");
+  cmd_v3->RegisterCommand("start","Start an OVMS V3 Server Connection",ovmsv3_start);
+  cmd_v3->RegisterCommand("stop","Stop an OVMS V3 Server Connection",ovmsv3_stop);
+  cmd_v3->RegisterCommand("status","Show OVMS V3 Server connection status",ovmsv3_status);
 
   using std::placeholders::_1;
   using std::placeholders::_2;

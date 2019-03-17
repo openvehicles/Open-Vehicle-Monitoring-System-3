@@ -71,5 +71,5 @@ OvmsServerInit::OvmsServerInit()
   {
   ESP_LOGI(TAG, "Initialising OVMS Server (6000)");
 
-  MyCommandApp.RegisterCommand("server","OVMS Server Connection framework",NULL, "", 0, 0, true);
+  MyCommandApp.RegisterCommand("server","OVMS Server Connection framework");
   }

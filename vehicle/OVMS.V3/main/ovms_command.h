@@ -149,14 +149,16 @@ class OvmsCommand : public ExternalRamAllocated
   {
   public:
     OvmsCommand();
-    OvmsCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
-                const char *usage, int min, int max, bool secure = false,
-                int (*validate)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool) = NULL);
+    OvmsCommand(const char* name, const char* title,
+		void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
+                const char *usage, int min, int max, bool secure,
+                int (*validate)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool));
     virtual ~OvmsCommand();
 
   public:
-    OvmsCommand* RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
-                                 const char *usage = "", int min = 0, int max = INT_MAX, bool secure = false,
+    OvmsCommand* RegisterCommand(const char* name, const char* title, 
+                                 void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*) = NULL,
+                                 const char *usage = "", int min = 0, int max = 0, bool secure = true,
                                  int (*validate)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool) = NULL);
     bool UnregisterCommand(const char* name = NULL);
     const char* GetName();
@@ -222,8 +224,9 @@ class OvmsCommandApp
     virtual ~OvmsCommandApp();
 
   public:
-    OvmsCommand* RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
-                                 const char *usage = "", int min = 0, int max = INT_MAX, bool secure = false);
+    OvmsCommand* RegisterCommand(const char* name, const char* title, 
+                                 void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*) = NULL,
+                                 const char *usage = "", int min = 0, int max = 0, bool secure = true);
     bool UnregisterCommand(const char* name);
     OvmsCommand* FindCommand(const char* name);
     void RegisterConsole(OvmsWriter* writer);

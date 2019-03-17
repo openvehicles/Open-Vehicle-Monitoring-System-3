@@ -498,18 +498,18 @@ OvmsLocations::OvmsLocations()
   m_park_longitude = 0;
 
   // Register our commands
-  OvmsCommand* cmd_location = MyCommandApp.RegisterCommand("location","LOCATION framework",NULL, "", 0, 0, true);
-  cmd_location->RegisterCommand("list","Show all locations",location_list, "", 0, 0, true);
-  cmd_location->RegisterCommand("set","Set the position of a location",location_set, "<name> [<latitude> <longitude> [<radius>]]", 1, 4, true);
-  cmd_location->RegisterCommand("radius","Set the radius of a location",location_radius, "<name> <radius>", 2, 2, true);
-  cmd_location->RegisterCommand("rm","Remove a defined location",location_rm, "<name>", 1, 1, true);
-  cmd_location->RegisterCommand("status","Show location status",location_status, "", 0, 0, true);
-  OvmsCommand* cmd_action = cmd_location->RegisterCommand("action","Set an action for a location",NULL, "", 0, 0, true);
-  cmd_action->RegisterCommand("enter","Set an action upon entering a location",location_action, "<name> <action> [<parameters>]", 2, INT_MAX, true);
-  cmd_action->RegisterCommand("leave","Set an action upon leaving a location",location_action, "<name> <action> [<parameters>]", 2, INT_MAX, true);
-  OvmsCommand* cmd_rm_action = cmd_action->RegisterCommand("rm","Remove a location action",NULL, "", 0, 0, true);
-  cmd_rm_action->RegisterCommand("enter","Remove an action from entering a location",location_rm_action, "<name> [<action>] [<parameters>]", 1, INT_MAX, true);
-  cmd_rm_action->RegisterCommand("leave","Remove an action from leaving a location",location_rm_action, "<name> [<action>] [<parameters>]", 1, INT_MAX, true);
+  OvmsCommand* cmd_location = MyCommandApp.RegisterCommand("location","LOCATION framework");
+  cmd_location->RegisterCommand("list","Show all locations",location_list);
+  cmd_location->RegisterCommand("set","Set the position of a location",location_set, "<name> [<latitude> <longitude> [<radius>]]", 1, 4);
+  cmd_location->RegisterCommand("radius","Set the radius of a location",location_radius, "<name> <radius>", 2, 2);
+  cmd_location->RegisterCommand("rm","Remove a defined location",location_rm, "<name>", 1, 1);
+  cmd_location->RegisterCommand("status","Show location status",location_status);
+  OvmsCommand* cmd_action = cmd_location->RegisterCommand("action","Set an action for a location");
+  cmd_action->RegisterCommand("enter","Set an action upon entering a location",location_action, "<name> <action> [<parameters>]", 2, INT_MAX);
+  cmd_action->RegisterCommand("leave","Set an action upon leaving a location",location_action, "<name> <action> [<parameters>]", 2, INT_MAX);
+  OvmsCommand* cmd_rm_action = cmd_action->RegisterCommand("rm","Remove a location action");
+  cmd_rm_action->RegisterCommand("enter","Remove an action from entering a location",location_rm_action, "<name> [<action>] [<parameters>]", 1, INT_MAX);
+  cmd_rm_action->RegisterCommand("leave","Remove an action from leaving a location",location_rm_action, "<name> [<action>] [<parameters>]", 1, INT_MAX);
 
   // Register our parameters
   MyConfig.RegisterParam(LOCATIONS_PARAM, "Geo Locations", true, true);

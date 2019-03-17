@@ -210,14 +210,14 @@ OvmsConfig::OvmsConfig()
   
   m_mounted = false;
 
-  OvmsCommand* cmd_store = MyCommandApp.RegisterCommand("store","STORE framework",NULL,"",0,0,true);
-  cmd_store->RegisterCommand("mount","Mount STORE",store_mount,"",0,0,true);
-  cmd_store->RegisterCommand("unmount","Unmount STORE",store_unmount,"",0,0,true);
+  OvmsCommand* cmd_store = MyCommandApp.RegisterCommand("store","STORE framework");
+  cmd_store->RegisterCommand("mount","Mount STORE",store_mount);
+  cmd_store->RegisterCommand("unmount","Unmount STORE",store_unmount);
 
-  OvmsCommand* cmd_config = MyCommandApp.RegisterCommand("config","CONFIG framework",NULL,"",0,0,true);
-  cmd_config->RegisterCommand("list","Show configuration parameters/instances",config_list,"[<param>]",0,1,true);
-  cmd_config->RegisterCommand("set","Set parameter:instance=value",config_set,"<param> <instance> <value>",3,3,true);
-  cmd_config->RegisterCommand("rm","Remove parameter:instance",config_rm,"<param> {<instance> | *}",2,2,true);
+  OvmsCommand* cmd_config = MyCommandApp.RegisterCommand("config","CONFIG framework");
+  cmd_config->RegisterCommand("list","Show configuration parameters/instances",config_list,"[<param>]",0,1);
+  cmd_config->RegisterCommand("set","Set parameter:instance=value",config_set,"<param> <instance> <value>",3,3);
+  cmd_config->RegisterCommand("rm","Remove parameter:instance",config_rm,"<param> {<instance> | *}",2,2);
 
 #ifdef CONFIG_OVMS_SC_ZIP
   cmd_config->RegisterCommand("backup", "Backup to file", config_backup,
@@ -225,14 +225,14 @@ OvmsConfig::OvmsConfig()
     "Backup system configuration & scripts into password protected ZIP file.\n"
     "Note: user files or directories in /store will not be included.\n"
     "<password> defaults to the current module password, set to \"\" to disable encryption.\n"
-    "Hint: use 7z to unzip/create backup ZIPs on a PC.", 1, 2, true);
+    "Hint: use 7z to unzip/create backup ZIPs on a PC.", 1, 2);
   cmd_config->RegisterCommand("restore", "Restore from file", config_restore,
     "<zipfile> [password=module password]\n"
     "Restore system configuration & scripts from password protected ZIP file.\n"
     "Note: user files or directories in /store will not be touched.\n"
     "The module will perform a reboot after successful restore.\n"
     "<password> defaults to the current module password.\n"
-    "Note: you need to supply the password used for the backup creation.", 1, 2, true);
+    "Note: you need to supply the password used for the backup creation.", 1, 2);
 #endif // CONFIG_OVMS_SC_ZIP
 
   RegisterParam("password", "Password store", true, false);

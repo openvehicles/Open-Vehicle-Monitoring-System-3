@@ -1027,45 +1027,45 @@ REInit::REInit()
   {
   ESP_LOGI(TAG, "Initialising RE Tools (8800)");
 
-  OvmsCommand* cmd_re = MyCommandApp.RegisterCommand("re","RE framework",NULL, "", 0, 0, true);
-  cmd_re->RegisterCommand("start","Start RE tools",re_start, "", 0, 0, true);
-  cmd_re->RegisterCommand("stop","Stop RE tools",re_stop, "", 0, 0, true);
-  cmd_re->RegisterCommand("clear","Clear RE records",re_clear, "", 0, 0, true);
-  cmd_re->RegisterCommand("list","List RE records",re_list, "", 0, 1, true);
-  cmd_re->RegisterCommand("status","Show RE status",re_status, "", 0, 0, true);
+  OvmsCommand* cmd_re = MyCommandApp.RegisterCommand("re","RE framework");
+  cmd_re->RegisterCommand("start","Start RE tools",re_start);
+  cmd_re->RegisterCommand("stop","Stop RE tools",re_stop);
+  cmd_re->RegisterCommand("clear","Clear RE records",re_clear);
+  cmd_re->RegisterCommand("list","List RE records",re_list, "", 0, 1);
+  cmd_re->RegisterCommand("status","Show RE status",re_status);
 
-  OvmsCommand* cmd_dbc = cmd_re->RegisterCommand("dbc","RE DBC framework",NULL, "", 0, 0, true);
-  cmd_dbc->RegisterCommand("list","List RE DBC records",re_dbc_list, "", 0, 1, true);
+  OvmsCommand* cmd_dbc = cmd_re->RegisterCommand("dbc","RE DBC framework");
+  cmd_dbc->RegisterCommand("list","List RE DBC records",re_dbc_list, "", 0, 1);
 
-  OvmsCommand* cmd_reobdii = cmd_re->RegisterCommand("obdii","RE OBDII framework",NULL, "", 0, 0, true);
-  cmd_reobdii->RegisterCommand("standard","Set OBDII standard ID range",re_obdii_std, "<min> <max>", 2, 2, true);
-  cmd_reobdii->RegisterCommand("extended","Set OBDII extended ID range",re_obdii_ext, "<min> <max>", 2, 2, true);
+  OvmsCommand* cmd_reobdii = cmd_re->RegisterCommand("obdii","RE OBDII framework");
+  cmd_reobdii->RegisterCommand("standard","Set OBDII standard ID range",re_obdii_std, "<min> <max>", 2, 2);
+  cmd_reobdii->RegisterCommand("extended","Set OBDII extended ID range",re_obdii_ext, "<min> <max>", 2, 2);
 
-  OvmsCommand* cmd_mode = cmd_re->RegisterCommand("mode","RE mode framework",NULL, "", 0, 0, true);
-  cmd_mode->RegisterCommand("serve","Set mode to serve",re_mode_serve, "", 0, 0, true);
-  cmd_mode->RegisterCommand("analyse","Set mode to analyse",re_mode_analyse, "", 0, 0, true);
-  cmd_mode->RegisterCommand("discover","Set mode to discover",re_mode_discover, "", 0, 0, true);
+  OvmsCommand* cmd_mode = cmd_re->RegisterCommand("mode","RE mode framework");
+  cmd_mode->RegisterCommand("serve","Set mode to serve",re_mode_serve);
+  cmd_mode->RegisterCommand("analyse","Set mode to analyse",re_mode_analyse);
+  cmd_mode->RegisterCommand("discover","Set mode to discover",re_mode_discover);
 
-  OvmsCommand* cmd_discover = cmd_re->RegisterCommand("discover","RE discover framework",NULL, "", 0, 0, true);
-  OvmsCommand* cmd_discover_list = cmd_discover->RegisterCommand("list","RE discover list framework",NULL, "", 0, 0, true);
-  cmd_discover_list->RegisterCommand("changed","List changed records",re_list_changed, "", 0, 1, true);
-  cmd_discover_list->RegisterCommand("discovered","List discovered records",re_list_discovered, "", 0, 1, true);
-  OvmsCommand* cmd_discover_clear = cmd_discover->RegisterCommand("clear","RE discover clear framework",NULL, "", 0, 0, true);
-  cmd_discover_clear->RegisterCommand("changed","Clear changed flags",re_clear_changed, "", 0, 0, true);
-  cmd_discover_clear->RegisterCommand("discovered","Clear discovered flags",re_clear_discovered, "", 0, 0, true);
+  OvmsCommand* cmd_discover = cmd_re->RegisterCommand("discover","RE discover framework");
+  OvmsCommand* cmd_discover_list = cmd_discover->RegisterCommand("list","RE discover list framework");
+  cmd_discover_list->RegisterCommand("changed","List changed records",re_list_changed, "", 0, 1);
+  cmd_discover_list->RegisterCommand("discovered","List discovered records",re_list_discovered, "", 0, 1);
+  OvmsCommand* cmd_discover_clear = cmd_discover->RegisterCommand("clear","RE discover clear framework");
+  cmd_discover_clear->RegisterCommand("changed","Clear changed flags",re_clear_changed);
+  cmd_discover_clear->RegisterCommand("discovered","Clear discovered flags",re_clear_discovered);
 
-  OvmsCommand* cmd_serve = cmd_re->RegisterCommand("serve","RE serve framework",NULL, "", 0, 0, true);
-  OvmsCommand* cmd_serve_format = cmd_serve->RegisterCommand("format","RE serve format framework",NULL, "", 0, 0, true);
-  cmd_serve_format->RegisterCommand("crtd","Set RE server to CRTD format",re_serve_format, "", 0, 0, true);
-  cmd_serve_format->RegisterCommand("pcap","Set RE server to PCAP format",re_serve_format, "", 0, 0, true);
-  OvmsCommand* cmd_serve_mode = cmd_serve->RegisterCommand("mode","RE serve mode framework",NULL, "", 0, 0, true);
-  cmd_serve_mode->RegisterCommand("ignore","Set RE server to ignore incoming messages",re_serve_mode, "", 0, 0, true);
-  cmd_serve_mode->RegisterCommand("simulate","Set RE server to simulate incoming messages",re_serve_mode, "", 0, 0, true);
-  cmd_serve_mode->RegisterCommand("transmit","Set RE server to transmit incoming messages",re_serve_mode, "", 0, 0, true);
+  OvmsCommand* cmd_serve = cmd_re->RegisterCommand("serve","RE serve framework");
+  OvmsCommand* cmd_serve_format = cmd_serve->RegisterCommand("format","RE serve format framework");
+  cmd_serve_format->RegisterCommand("crtd","Set RE server to CRTD format",re_serve_format);
+  cmd_serve_format->RegisterCommand("pcap","Set RE server to PCAP format",re_serve_format);
+  OvmsCommand* cmd_serve_mode = cmd_serve->RegisterCommand("mode","RE serve mode framework");
+  cmd_serve_mode->RegisterCommand("ignore","Set RE server to ignore incoming messages",re_serve_mode);
+  cmd_serve_mode->RegisterCommand("simulate","Set RE server to simulate incoming messages",re_serve_mode);
+  cmd_serve_mode->RegisterCommand("transmit","Set RE server to transmit incoming messages",re_serve_mode);
 
-  OvmsCommand* cmd_stream = cmd_re->RegisterCommand("stream","RE JSON streaming",NULL, "", 0, 0, true);
-  cmd_stream->RegisterCommand("list","Output array of all RE records",re_stream_list, "[<filter>]", 0, 1, true);
-  cmd_stream->RegisterCommand("changed","Output array of changed RE records",re_stream_changed, "[<filter>]", 0, 1, true);
+  OvmsCommand* cmd_stream = cmd_re->RegisterCommand("stream","RE JSON streaming");
+  cmd_stream->RegisterCommand("list","Output array of all RE records",re_stream_list, "[<filter>]", 0, 1);
+  cmd_stream->RegisterCommand("changed","Output array of changed RE records",re_stream_changed, "[<filter>]", 0, 1);
 
   using std::placeholders::_1;
   using std::placeholders::_2;

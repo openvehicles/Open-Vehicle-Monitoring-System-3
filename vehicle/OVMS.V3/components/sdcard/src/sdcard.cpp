@@ -373,8 +373,8 @@ SDCardInit::SDCardInit()
 
   MyConfig.RegisterParam("sdcard", "SD CARD configuration", true, true);
 
-  OvmsCommand* cmd_sd = MyCommandApp.RegisterCommand("sd","SD CARD framework",NULL,"",0,0,true);
-  cmd_sd->RegisterCommand("mount","Mount SD CARD",sdcard_mount,"",0,0,true);
-  cmd_sd->RegisterCommand("unmount","Unmount SD CARD",sdcard_unmount,"[<maxwait_seconds>]",0,1,true);
-  cmd_sd->RegisterCommand("status","Show SD CARD status",sdcard_status,"",0,0,true);
+  OvmsCommand* cmd_sd = MyCommandApp.RegisterCommand("sd","SD CARD framework");
+  cmd_sd->RegisterCommand("mount","Mount SD CARD",sdcard_mount);
+  cmd_sd->RegisterCommand("unmount","Unmount SD CARD",sdcard_unmount,"[<maxwait_seconds>]",0,1);
+  cmd_sd->RegisterCommand("status","Show SD CARD status",sdcard_status);
   }
