@@ -698,6 +698,11 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
          *  ---- | -- | --  --  -- | --  --  -- |
          *     1 |  ? |  ?   9  17 |  ?  10  18*|
          *     2 |  0 |  5   8  11 | 18* 21  24 |
+         *
+         * Only type 1 and type 2 24kwh models from before 2016 will report a valid 'range 80%'.
+         * Any type 2 24 or 30kwh models starting mid 2015 (USA/Jap) or 2016 (UK), will always 
+         * return 0x1fff, and therefore never enter this if with mx values 18, 21 or 24.
+         * This is linked to Nissan removing the 'long life mode (80%)' from the car settings.
          */
         int cd = -1;
         switch (mx)
@@ -714,11 +719,11 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
               {
               case BATTERY_TYPE_1_24kWh: cd = CHARGE_DURATION_RANGE_L0; break;
               case BATTERY_TYPE_2_24kWh: cd = CHARGE_DURATION_RANGE_L2; break;
-              case BATTERY_TYPE_2_30kWh: cd = CHARGE_DURATION_RANGE_L2; break;
+              case BATTERY_TYPE_2_30kWh: break;  // Will never occur with val != 0x1fff
               }
             break;
-          case 21: cd = CHARGE_DURATION_RANGE_L1; break;
-          case 24: cd = CHARGE_DURATION_RANGE_L0; break;
+          case 21: cd = CHARGE_DURATION_RANGE_L1; type = BATTERY_TYPE_2_24kWh; break;
+          case 24: cd = CHARGE_DURATION_RANGE_L0; type = BATTERY_TYPE_2_24kWh; break;
           }
         if (cd != -1) m_charge_duration->SetElemValue(cd, val/2);
         }
@@ -726,12 +731,6 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       if (type != -1)
         {
         m_battery_type->SetValue(type);
-        }
-      else if (!m_battery_type->IsDefined())
-        {
-        // Only init to type 2-24kwh here if still undefined.
-        // We may have already worked out that it is type 1 (always 24kwh) or a type 2-30kwh.
-        m_battery_type->SetValue(BATTERY_TYPE_2_24kWh);
         }
       }
       break;
