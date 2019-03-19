@@ -359,7 +359,7 @@ char ** OvmsCommand::Complete(OvmsWriter* writer, int argc, const char * const *
   if (m_validate)
     {
     int used = -1;
-    if (argc >= m_min)
+    if (argc >= 0)
       used = m_validate(writer, this, argc, argv, true);
     if (used < 0 || used == argc)
       return writer->GetCompletions();
