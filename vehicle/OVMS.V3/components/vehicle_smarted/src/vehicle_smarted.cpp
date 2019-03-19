@@ -309,7 +309,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(
     int hours = (t / 3600);
     t = t - (hours * 3600);
     int minutes = (t / 60);
-    minutes = (minutes - (minutes % 5)) + 5;
+    minutes = (minutes - (minutes % 5));
     
     CAN_frame_t frame;
     memset(&frame, 0, sizeof(frame));
