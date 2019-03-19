@@ -1837,6 +1837,7 @@ void OvmsVehicle::PollerSend()
           break;
         case VEHICLE_POLL_TYPE_OBDIIVEHICLE:
         case VEHICLE_POLL_TYPE_OBDIIGROUP:
+        case VEHICLE_POLL_TYPE_OBDII_1A:
           // 8 bit PID request for multi frame response:
           m_poll_ml_remain = 0;
           txframe.data.u8[0] = 0x02;
@@ -1845,8 +1846,9 @@ void OvmsVehicle::PollerSend()
           break;
         case VEHICLE_POLL_TYPE_OBDIIEXTENDED:
           // 16 bit PID request:
+          m_poll_ml_remain = 0;
           txframe.data.u8[0] = 0x03;
-          txframe.data.u8[1] = VEHICLE_POLL_TYPE_OBDIIEXTENDED;    // Get extended PID
+          txframe.data.u8[1] = m_poll_type; //VEHICLE_POLL_TYPE_OBDIIEXTENDED;    // Get extended PID
           txframe.data.u8[2] = m_poll_pid >> 8;
           txframe.data.u8[3] = m_poll_pid & 0xff;
           break;
@@ -1881,6 +1883,7 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
       break;
     case VEHICLE_POLL_TYPE_OBDIIVEHICLE:
     case VEHICLE_POLL_TYPE_OBDIIGROUP:
+    case VEHICLE_POLL_TYPE_OBDII_1A:
       // 8 bit PID multiple frame response:
       if (((frame->data.u8[0]>>4) == 0x1)&&
           (frame->data.u8[2] == 0x40+m_poll_type)&&
