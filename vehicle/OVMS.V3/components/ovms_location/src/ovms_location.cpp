@@ -142,33 +142,6 @@ bool OvmsLocation::IsInLocation(float latitude, float longitude)
   return m_inlocation;
   }
 
-enum LocationAction validate_action(bool enter, const char* act, int alen, const char* par, int plen, const char** msg)
-  {
-  *msg = NULL;
-  if (alen == 8 && strncasecmp(act, "homelink", alen) == 0)
-    {
-    if (plen != 1 || *par < '1' || *par > '3')
-      {
-      *msg = "homelink parameter must be 1, 2. or 3";
-      return INVALID;
-      }
-    return HOMELINK;
-    }
-  if (alen == 3 && strncasecmp(act, "acc", alen) == 0)
-    {
-    if (!enter)
-      {
-      *msg = "Location action ACC not valid on leave";
-      return INVALID;
-      }
-    return ACC;
-    }
-  if (alen == 6 && strncasecmp(act, "notify", alen) == 0)
-    return  NOTIFY;
-  *msg = "Unrecognized action keyword";
-  return INVALID;
-  }
-
 bool OvmsLocation::Parse(const std::string& value)
   {
   const char *p = value.c_str();
@@ -211,12 +184,29 @@ bool OvmsLocation::Parse(const std::string& value)
     if (*p++ != ':')
       return false;
     len = strcspn(p, ";");
-    const char* msg;
-    action = validate_action(enter, act, alen, p, len, &msg);
-    if (action == INVALID)
+    if (alen == 8 && strncasecmp(act, "homelink", alen) == 0)
       {
-      if (msg)
-        ESP_LOGE(TAG, "%s", msg);
+      if (len != 1 || *p < '1' || *p > '3')
+        {
+        ESP_LOGE(TAG, "homelink parameter must be 1, 2. or 3");
+        return false;
+        }
+      action = HOMELINK;
+      }
+    else if (alen == 3 && strncasecmp(act, "acc", alen) == 0)
+      {
+      if (!enter)
+        {
+        ESP_LOGE(TAG, "Location action ACC not valid on leave");
+        return false;
+        }
+      action = ACC;
+      }
+    else if (alen == 6 && strncasecmp(act, "notify", alen) == 0)
+      action =  NOTIFY;
+    else
+      {
+      ESP_LOGE(TAG, "Unrecognized action keyword");
       return false;
       }
     m_actions.push_back(new OvmsLocationAction(enter, action, p, len));
@@ -310,6 +300,7 @@ void location_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
       writer->printf("Location %s is invalid: %s\n", name.c_str(), value.c_str());
       }
     }
+  writer->puts("NOTE: Actions are not implemented yet!");       // XXX IMPLEMENT AND REMOVE THIS!
   }
 
 void location_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -340,7 +331,7 @@ void location_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 void location_radius(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   const char *name = argv[0];
-  OvmsLocation* loc = MyLocations.Find(name);
+  OvmsLocation* loc = MyLocations.m_locations.FindUniquePrefix(name);
 
   if (loc == NULL)
     {
@@ -356,7 +347,16 @@ void location_radius(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
 
 void location_rm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  MyConfig.DeleteInstance(LOCATIONS_PARAM,argv[0]);
+  const char *name = argv[0];
+  OvmsLocation* loc = MyLocations.m_locations.FindUniquePrefix(name);
+
+  if (loc == NULL)
+    {
+    writer->printf("Error: No location %s defined\n",name);
+    return;
+    }
+
+  MyConfig.DeleteInstance(LOCATIONS_PARAM,loc->m_name);
   writer->puts("Location removed");
   }
 
@@ -391,81 +391,116 @@ void location_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     writer->puts("No active locations");
   }
 
-void location_action(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+int location_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
   {
-  bool enter = *(cmd->GetName()) == 'e';
-  const char *name = argv[0];
-  OvmsLocation* loc = MyLocations.Find(name);
-  if (loc == NULL)
-    {
-    writer->printf("Error: No location %s defined\n",name);
-    return;
-    }
-  const char *action = argv[1];
-  std::string params;
-  for (int i = 2; i < argc; ++i)
-    {
-    params.append(argv[i]);
-    if (i < argc-1)
-      params.append(1, ' ');
-    }
-  const char* p = params.c_str();
-  const char* msg;
-  enum LocationAction act = validate_action(enter, action, strlen(action), p, strlen(p), &msg);
-  if (act == INVALID)
-    {
-    if (msg)
-      writer->printf("Error: %s\n", msg);
-    return;
-    }
-  loc->m_actions.push_back(new OvmsLocationAction(enter, act, p, params.length()));
-  loc->Store(params);
-  writer->puts("Location action set");
+  return MyLocations.m_locations.Validate(writer, argv[0], complete);
   }
 
-void location_rm_action(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+int location_validate_radius(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
   {
-  bool enter = *(cmd->GetName()) == 'e';
-  const char *name = argv[0];
-  OvmsLocation* loc = MyLocations.Find(name);
+  const char* token = NULL;
+  if (argc == 1)
+    token = argv[0];
+  return MyLocations.m_locations.Validate(writer, token, complete);
+  }
+
+void location_action(int verbosity, OvmsWriter* writer, enum LocationAction act, std::string& params)
+  {
+  const char* const* rargv = writer->GetArgv();
+  int remove = *rargv[2] == 'r' ? 1 : 0;
+  bool enter = *rargv[2+remove] == 'e';
+  const char* name = rargv[3+remove];
+  OvmsLocation* loc = MyLocations.m_locations.FindUniquePrefix(name);
   if (loc == NULL)
     {
     writer->printf("Error: No location %s defined\n",name);
     return;
     }
-  const char *action = argc > 1 ? argv[1] : NULL;
+  if (!remove)
+    {
+    loc->m_actions.push_back(new OvmsLocationAction(enter, act, params.c_str(), params.length()));
+    loc->Store(params);
+    writer->puts("Location action set");
+    writer->puts("NOTE: Actions are not implemented yet!");       // XXX IMPLEMENT AND REMOVE THIS!
+    }
+  else
+    {
+    int removed = 0;
+    for (ActionList::iterator it = loc->m_actions.begin(); it != loc->m_actions.end(); )
+      {
+      OvmsLocationAction* ola = *it;
+      if (ola->m_enter != enter)
+        {
+        ++it;
+        continue;
+        }
+      if (act != INVALID)
+        {
+        if (ola->m_action != act)
+          {
+          ++it;
+          continue;
+          }
+        if (!params.empty() && ola->m_params != params)
+          {
+          ++it;
+          continue;
+          }
+        }
+      ++removed;
+      it = loc->m_actions.erase(it);
+      if (it == loc->m_actions.end())
+        break;
+      }
+    if (!removed)
+      {
+      writer->printf("Error: No matching action found in location %s\n",name);
+      return;
+      }
+    loc->Store(params);
+    writer->printf("%d action%s removed from location %s\n", removed, removed > 1 ? "s" : "", name);
+    }
+  }
+
+void location_homelink(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string params = cmd->GetName();
+  enum LocationAction act = HOMELINK;
+  location_action(verbosity, writer, act, params);
+  }
+
+void location_homelink_any(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
   std::string params;
-  for (int i = 2; i < argc; ++i)
+  enum LocationAction act = HOMELINK;
+  location_action(verbosity, writer, act, params);
+  }
+
+void location_acc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string params = argc ? argv[0] : "";
+  enum LocationAction act = ACC;
+  location_action(verbosity, writer, act, params);
+  }
+
+void location_notify(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string params;
+  for (int i = 0; i < argc; ++i)
     {
     params.append(argv[i]);
     if (i < argc-1)
       params.append(1, ' ');
     }
-  int removed = 0;
-  for (ActionList::iterator it = loc->m_actions.begin(); it != loc->m_actions.end(); ++it)
-    {
-    OvmsLocationAction* ola = *it;
-    if (ola->m_enter != enter)
-      continue;
-    if (action)
-      {
-      if (strcmp(ola->ActionString(), action) != 0)
-        continue;
-      if (!params.empty() && ola->m_params != params)
-        continue;
-      }
-    ++removed;
-    it = loc->m_actions.erase(it);
-    if (it == loc->m_actions.end())
-      break;
-    }
-  if (!removed)
-    {
-    writer->printf("Error: No matching action found in location %s\n",name);
-    return;
-    }
-  loc->Store(params);
-  writer->printf("%d action%s removed from location %s\n", removed, removed > 1 ? "s" : "", name);
+  enum LocationAction act = NOTIFY;
+  location_action(verbosity, writer, act, params);
+  }
+
+void location_all(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string params;
+  enum LocationAction act = INVALID;
+  location_action(verbosity, writer, act, params);
   }
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
@@ -473,7 +508,7 @@ void location_rm_action(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int
 static duk_ret_t DukOvmsLocationStatus(duk_context *ctx)
   {
   const char *mn = duk_to_string(ctx,0);
-  OvmsLocation *loc = MyLocations.Find(mn);
+  OvmsLocation *loc = MyLocations.m_locations.FindUniquePrefix(mn);
   if (loc)
     {
     duk_push_boolean(ctx, loc->m_inlocation);
@@ -501,15 +536,39 @@ OvmsLocations::OvmsLocations()
   OvmsCommand* cmd_location = MyCommandApp.RegisterCommand("location","LOCATION framework");
   cmd_location->RegisterCommand("list","Show all locations",location_list);
   cmd_location->RegisterCommand("set","Set the position of a location",location_set, "<name> [<latitude> <longitude> [<radius>]]", 1, 4);
-  cmd_location->RegisterCommand("radius","Set the radius of a location",location_radius, "<name> <radius>", 2, 2);
-  cmd_location->RegisterCommand("rm","Remove a defined location",location_rm, "<name>", 1, 1);
+  cmd_location->RegisterCommand("radius","Set the radius of a location",location_radius, "<name> <radius>", 2, 2, true, location_validate_radius);
+  cmd_location->RegisterCommand("rm","Remove a defined location",location_rm, "<name>", 1, 1, true, location_validate);
   cmd_location->RegisterCommand("status","Show location status",location_status);
   OvmsCommand* cmd_action = cmd_location->RegisterCommand("action","Set an action for a location");
-  cmd_action->RegisterCommand("enter","Set an action upon entering a location",location_action, "<name> <action> [<parameters>]", 2, INT_MAX);
-  cmd_action->RegisterCommand("leave","Set an action upon leaving a location",location_action, "<name> <action> [<parameters>]", 2, INT_MAX);
+  OvmsCommand* cmd_enter = cmd_action->RegisterCommand("enter","Set an action upon entering a location", NULL, "<location> $L", 1, 1, true, location_validate);
+  OvmsCommand* cmd_leave = cmd_action->RegisterCommand("leave","Set an action upon leaving a location", NULL, "<location> $L", 1, 1, true, location_validate);
   OvmsCommand* cmd_rm_action = cmd_action->RegisterCommand("rm","Remove a location action");
-  cmd_rm_action->RegisterCommand("enter","Remove an action from entering a location",location_rm_action, "<name> [<action>] [<parameters>]", 1, INT_MAX);
-  cmd_rm_action->RegisterCommand("leave","Remove an action from leaving a location",location_rm_action, "<name> [<action>] [<parameters>]", 1, INT_MAX);
+  OvmsCommand* cmd_rm_enter = cmd_rm_action->RegisterCommand("enter","Remove an action from entering a location", location_all, "<location> [$C]", 1, 1, true, location_validate);
+  OvmsCommand* cmd_rm_leave = cmd_rm_action->RegisterCommand("leave","Remove an action from leaving a location", location_all, "<location> [$C]", 1, 1, true, location_validate);
+
+  OvmsCommand* enter_homelink = cmd_enter->RegisterCommand("homelink","Transmit Homelink signal",NULL,"1|2|3");
+  enter_homelink->RegisterCommand("1","Homelink 1 signal",location_homelink,"", 0, 0, true);
+  enter_homelink->RegisterCommand("2","Homelink 2 signal",location_homelink,"", 0, 0, true);
+  enter_homelink->RegisterCommand("3","Homelink 3 signal",location_homelink,"", 0, 0, true);
+  cmd_enter->RegisterCommand("acc","ACC profile",location_acc,"<profile>", 1, 1, true);
+  cmd_enter->RegisterCommand("notify","Text notification",location_notify,"<text>", 1, INT_MAX, true);
+  OvmsCommand* leave_homelink = cmd_leave->RegisterCommand("homelink","Transmit Homelink signal",NULL,"1|2|3");
+  leave_homelink->RegisterCommand("1","Homelink 1 signal",location_homelink,"", 0, 0, true);
+  leave_homelink->RegisterCommand("2","Homelink 2 signal",location_homelink,"", 0, 0, true);
+  leave_homelink->RegisterCommand("3","Homelink 3 signal",location_homelink,"", 0, 0, true);
+  cmd_leave->RegisterCommand("notify","Text notification",location_notify,"<text>", 1, INT_MAX, true);
+
+  OvmsCommand* rm_enter_homelink = cmd_rm_enter->RegisterCommand("homelink","Remove Homelink signal",location_homelink_any,"[1|2|3]");
+  rm_enter_homelink->RegisterCommand("1","Homelink 1 signal",location_homelink,"", 0, 0, true);
+  rm_enter_homelink->RegisterCommand("2","Homelink 2 signal",location_homelink,"", 0, 0, true);
+  rm_enter_homelink->RegisterCommand("3","Homelink 3 signal",location_homelink,"", 0, 0, true);
+  cmd_rm_enter->RegisterCommand("acc","Remove ACC profile",location_acc,"[<profile>]", 0, 1, true);
+  cmd_rm_enter->RegisterCommand("notify","Remove text notification",location_notify,"[<text>]", 0, INT_MAX, true);
+  OvmsCommand* rm_leave_homelink = cmd_rm_leave->RegisterCommand("homelink","Remove Homelink signal",location_homelink_any,"[1|2|3]");
+  rm_leave_homelink->RegisterCommand("1","Homelink 1 signal",location_homelink,"", 0, 0, true);
+  rm_leave_homelink->RegisterCommand("2","Homelink 2 signal",location_homelink,"", 0, 0, true);
+  rm_leave_homelink->RegisterCommand("3","Homelink 3 signal",location_homelink,"", 0, 0, true);
+  cmd_rm_leave->RegisterCommand("notify","Remove text notification",location_notify,"[<text>]", 0, INT_MAX, true);
 
   // Register our parameters
   MyConfig.RegisterParam(LOCATIONS_PARAM, "Geo Locations", true, true);
@@ -664,15 +723,6 @@ void OvmsLocations::CheckTheft()
     m_park_longitude = 0;
     MyNotify.NotifyString("alert", "flatbed.moved", "Vehicle is being transported while parked - possible theft/flatbed");
     }
-  }
-
-OvmsLocation* OvmsLocations::Find(std::string name)
-  {
-  auto k = m_locations.find(name);
-  if (k == m_locations.end())
-    return NULL;
-  else
-    return k->second;
   }
 
 void OvmsLocations::UpdatedConfig(std::string event, void* data)
