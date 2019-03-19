@@ -212,15 +212,15 @@ esp32wifiInit::esp32wifiInit()
   {
   ESP_LOGI(TAG, "Initialising ESP32WIFI (8000)");
 
-  OvmsCommand* cmd_wifi = MyCommandApp.RegisterCommand("wifi","WIFI framework", wifi_status, "", 0, 1, true);
-  cmd_wifi->RegisterCommand("scan","Perform a wifi scan",wifi_scan, "", 0, 0, true);
-  cmd_wifi->RegisterCommand("status","Show wifi status",wifi_status, "", 0, 0, true);
+  OvmsCommand* cmd_wifi = MyCommandApp.RegisterCommand("wifi","WIFI framework", wifi_status);
+  cmd_wifi->RegisterCommand("scan","Perform a wifi scan",wifi_scan);
+  cmd_wifi->RegisterCommand("status","Show wifi status",wifi_status);
 
-  OvmsCommand* cmd_mode = cmd_wifi->RegisterCommand("mode","WIFI mode framework",NULL, "", 0, 0, true);
-  cmd_mode->RegisterCommand("client","Connect to a WIFI network as a client",wifi_mode_client, "<ssid> <bssid>", 0, 2, true);
-  cmd_mode->RegisterCommand("ap","Acts as a WIFI Access Point",wifi_mode_ap, "<ssid>", 1, 1, true);
-  cmd_mode->RegisterCommand("apclient","Acts as a WIFI Access Point and Client",wifi_mode_apclient, "<apssid> <stassid>", 2, 2, true);
-  cmd_mode->RegisterCommand("off","Turn off wifi networking",wifi_mode_off, "", 0, 0, true);
+  OvmsCommand* cmd_mode = cmd_wifi->RegisterCommand("mode","WIFI mode framework");
+  cmd_mode->RegisterCommand("client","Connect to a WIFI network as a client",wifi_mode_client, "<ssid> <bssid>", 0, 2);
+  cmd_mode->RegisterCommand("ap","Acts as a WIFI Access Point",wifi_mode_ap, "<ssid>", 1, 1);
+  cmd_mode->RegisterCommand("apclient","Acts as a WIFI Access Point and Client",wifi_mode_apclient, "<apssid> <stassid>", 2, 2);
+  cmd_mode->RegisterCommand("off","Turn off wifi networking",wifi_mode_off);
   }
 
 esp32wifi::esp32wifi(const char* name)

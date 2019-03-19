@@ -69,6 +69,8 @@ typedef enum
   DBC_VALUETYPE_SIGNED = '-'
   } dbcValueType_t;
 
+uint32_t dbcMessageIdFromString(const char* id);
+
 typedef std::list<std::string> dbcCommentList_t;
 class dbcCommentTable
   {
@@ -340,6 +342,7 @@ class dbcMessage
   public:
     void AddSignal(dbcSignal* signal);
     void RemoveSignal(dbcSignal* signal, bool free=false);
+    void RemoveAllSignals(bool free=false);
     dbcSignal* FindSignal(std::string name);
     void Count(int* signals, int* bits, int* covered);
 

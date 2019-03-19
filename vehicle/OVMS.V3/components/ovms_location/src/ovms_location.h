@@ -33,6 +33,7 @@
 
 #include "ovms_metrics.h"
 #include "ovms_utils.h"
+#include "ovms_command.h"
 
 enum LocationAction {
   INVALID = 0,
@@ -83,7 +84,7 @@ class OvmsLocation
     ActionList m_actions;
   };
 
-typedef std::map<std::string, OvmsLocation*> LocationMap;
+typedef NameMap<OvmsLocation*> LocationMap;
 
 class OvmsLocations
   {
@@ -103,7 +104,6 @@ class OvmsLocations
     void ReloadMap();
     void UpdateLocations();
     void CheckTheft();
-    OvmsLocation* Find(std::string name);
 
   public:
     void UpdatedGpsLock(OvmsMetric* metric);

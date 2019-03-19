@@ -49,7 +49,6 @@ class StringWriter : public std::string, public OvmsWriter
     ssize_t write(const void *buf, size_t nbyte);
 
   public:
-    char ** GetCompletion(OvmsCommandMap& children, const char* token) { return NULL; }
     void Log(LogBuffers* message) {}
     virtual bool IsInteractive() { return false; }
   };

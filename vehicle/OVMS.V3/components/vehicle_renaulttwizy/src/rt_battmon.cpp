@@ -146,16 +146,16 @@ void OvmsVehicleRenaultTwizy::BatteryInit()
 
   // init commands
 
-  cmd_batt = cmd_xrt->RegisterCommand("batt", "Battery monitor", NULL, "", 0, 0, true);
+  cmd_batt = cmd_xrt->RegisterCommand("batt", "Battery monitor");
   {
-    cmd_batt->RegisterCommand("reset", "Reset alerts & watches", vehicle_twizy_batt, "", 0, 0, true);
-    cmd_batt->RegisterCommand("status", "Status report", vehicle_twizy_batt, "[<pack>]", 0, 1, true);
-    cmd_batt->RegisterCommand("volt", "Show voltages", vehicle_twizy_batt, "", 0, 0, true);
-    cmd_batt->RegisterCommand("vdev", "Show voltage deviations", vehicle_twizy_batt, "", 0, 0, true);
-    cmd_batt->RegisterCommand("temp", "Show temperatures", vehicle_twizy_batt, "", 0, 0, true);
-    cmd_batt->RegisterCommand("tdev", "Show temperature deviations", vehicle_twizy_batt, "", 0, 0, true);
-    cmd_batt->RegisterCommand("data-pack", "Output pack record", vehicle_twizy_batt, "[<pack>]", 0, 1, true);
-    cmd_batt->RegisterCommand("data-cell", "Output cell record", vehicle_twizy_batt, "<cell>", 1, 1, true);
+    cmd_batt->RegisterCommand("reset", "Reset alerts & watches", vehicle_twizy_batt);
+    cmd_batt->RegisterCommand("status", "Status report", vehicle_twizy_batt, "[<pack>]", 0, 1);
+    cmd_batt->RegisterCommand("volt", "Show voltages", vehicle_twizy_batt);
+    cmd_batt->RegisterCommand("vdev", "Show voltage deviations", vehicle_twizy_batt);
+    cmd_batt->RegisterCommand("temp", "Show temperatures", vehicle_twizy_batt);
+    cmd_batt->RegisterCommand("tdev", "Show temperature deviations", vehicle_twizy_batt);
+    cmd_batt->RegisterCommand("data-pack", "Output pack record", vehicle_twizy_batt, "[<pack>]", 0, 1);
+    cmd_batt->RegisterCommand("data-cell", "Output cell record", vehicle_twizy_batt, "<cell>", 1, 1);
   }
 }
 
