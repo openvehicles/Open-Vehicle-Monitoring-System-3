@@ -267,7 +267,7 @@ void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
         }
     }
     
-    if (StandardMetrics.ms_v_pos_speed->AsInt() == 0 && StandardMetrics.ms_v_bat_current->AsInt() > 1 && mt_hv_active) {
+    if (StandardMetrics.ms_v_pos_speed->AsInt() == 0 && StandardMetrics.ms_v_bat_current->AsInt() > 2 && mt_hv_active) {
         if (StandardMetrics.ms_v_charge_state->AsString() != "charging") {
             StandardMetrics.ms_v_charge_state->SetValue("charging");
             StandardMetrics.ms_v_charge_inprogress->SetValue(true);
@@ -298,6 +298,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(
      setzt man z.B. die Uhrzeit auf 18:30. Maskiert man nun Byte 3 (0x12) mit 0x40 (und setzt so dort das zweite Bit auf High) wird die A/C Funktion mit aktiviert.
      */
     if(timerstart == 0) { 
+        return Fail;
+    }
+    if(!StandardMetrics.ms_v_env_awake->AsBool()) {
         return Fail;
     }
     int t = timerstart + 3600; // Store the current time in time + GMT+1
