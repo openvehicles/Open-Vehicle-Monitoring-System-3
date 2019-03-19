@@ -426,6 +426,14 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     //puts("Looking for a matching command");
     if (argc <= 0)
       {
+      if (m_execute)
+        {
+        if ((!m_secure)||(m_secure && writer->m_issecure))
+          m_execute(verbosity,writer,this,argc,argv);
+        else
+          writer->puts("Error: Secure command requires 'enable' mode");
+        return;
+        }
       writer->puts("Subcommand required");
       PutUsage(writer);
       return;
