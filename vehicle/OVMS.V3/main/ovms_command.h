@@ -96,13 +96,13 @@ template <typename T>
 class NameMap : public std::map<std::string, T>
   {
   public:
-    T FindUniquePrefix(std::string& key)
+    T FindUniquePrefix(const char* token)
       {
-      size_t len = key.length();
+      size_t len = strlen(token);
       T found = NULL;
       for (typename NameMap<T>::iterator it = NameMap<T>::begin(); it != NameMap<T>::end(); ++it)
 	{
-	if (it->first.compare(0, len, key) == 0)
+	if (it->first.compare(0, len, token) == 0)
 	  {
 	  if (len == it->first.length())
 	    return it->second;
@@ -129,6 +129,24 @@ class NameMap : public std::map<std::string, T>
           }
         }
       return tokens;
+      }
+
+    int Validate(OvmsWriter* writer, const char* token, bool complete)
+      {
+      if (complete)
+	{
+	if (*GetCompletion(writer, token) == NULL)
+	  return -1;
+	}
+      else
+	{
+	if (FindUniquePrefix(token) == NULL)
+	  {
+	  writer->printf("Error: %s is not defined\n", token);
+	  return -1;
+	  }
+	}
+      return 1;
       }
   };
 
