@@ -216,7 +216,11 @@ void OvmsCommand::PutUsage(OvmsWriter* writer)
       size_t len = strlen(parent->m_usage_template);
       char* dollar = index(parent->m_usage_template, '$');
       if (dollar)
+        {
         len = dollar - parent->m_usage_template;
+        if (len > 0 && *(dollar-1) == '[')
+          --len;
+        }
       else
         result.insert(pos, " ");
       result.insert(pos, parent->m_usage_template, len);
