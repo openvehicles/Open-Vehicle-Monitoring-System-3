@@ -167,14 +167,14 @@ void config_backup(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     writer->printf("Error: path '%s' is protected\n", argv[0]);
     return;
     }
-  
+
   // get password:
   std::string password;
   if (argc >= 2)
     password = argv[1];
   else
     password = MyConfig.GetParamValue("password", "module");
-  
+
   MyConfig.Backup(argv[0], password, writer, verbosity);
   }
 
@@ -192,14 +192,14 @@ void config_restore(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     writer->printf("Error: path '%s' is protected\n", argv[0]);
     return;
     }
-  
+
   // get password:
   std::string password;
   if (argc >= 2)
     password = argv[1];
   else
     password = MyConfig.GetParamValue("password", "module");
-  
+
   MyConfig.Restore(argv[0], password, writer, verbosity);
   }
 #endif // CONFIG_OVMS_SC_ZIP
@@ -207,7 +207,7 @@ void config_restore(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
 OvmsConfig::OvmsConfig()
   {
   ESP_LOGI(TAG, "Initialising CONFIG (1400)");
-  
+
   m_mounted = false;
 
   OvmsCommand* cmd_store = MyCommandApp.RegisterCommand("store","STORE framework");
@@ -736,6 +736,23 @@ bool OvmsConfig::Restore(std::string path, std::string password, OvmsWriter* wri
 
 #endif // CONFIG_OVMS_SC_ZIP
 
+void OvmsConfig::SupportSummary(OvmsWriter* writer)
+  {
+  writer->puts("\nConfiguration");
+
+  for (ConfigMap::iterator mi=m_map.begin(); mi!=m_map.end(); ++mi)
+    {
+    writer->printf("  [%s]\n",mi->first.c_str());
+    OvmsConfigParam* p = mi->second;
+    for (ConfigParamMap::iterator it=p->m_map.begin(); it!=p->m_map.end(); ++it)
+      {
+      if (p->Readable())
+        { writer->printf("    %s: %s\n",it->first.c_str(), it->second.c_str()); }
+      else
+        { writer->printf("    %s: **redacted**\n",it->first.c_str()); }
+      }
+    }
+  }
 
 OvmsConfigParam::OvmsConfigParam(std::string name, std::string title, bool writable, bool readable)
   {

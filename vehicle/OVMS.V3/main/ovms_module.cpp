@@ -43,6 +43,7 @@ static const char *TAG = "ovms-module";
 #include "ovms_events.h"
 #include "ovms_config.h"
 #include "ovms_command.h"
+#include "metrics_standard.h"
 #ifdef CONFIG_HEAP_TASK_TRACKING
 #include "esp_heap_task_info.h"
 #endif
@@ -877,6 +878,24 @@ static void module_eventhandler(std::string event, void* data)
   }
 #endif
 
+static void module_summary(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->puts("OVMS MODULE SUMMARY");
+
+  writer->puts("\nModule");
+  writer->printf("  Version:  %s\n",StandardMetrics.ms_m_version->AsString().c_str());
+  writer->printf("  Hardware: %s\n",StandardMetrics.ms_m_hardware->AsString().c_str());
+  writer->printf("  12v:      %0.1fv\n",StandardMetrics.ms_v_bat_12v_voltage->AsFloat());
+
+#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+  MyPeripherals->m_simcom->SupportSummary(writer);
+#endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+
+  MyConfig.SupportSummary(writer);
+
+  writer->puts("\nREPORT ENDS");
+  }
+
 class OvmsModuleInit
   {
   public:
@@ -900,6 +919,7 @@ class OvmsModuleInit
     cmd_module->RegisterCommand("fault","Abort fault the module",module_fault);
     cmd_module->RegisterCommand("reset","Reset module",module_reset);
     cmd_module->RegisterCommand("check","Check heap integrity",module_check);
+    cmd_module->RegisterCommand("summary","Show module summary",module_summary);
     OvmsCommand* cmd_factory = cmd_module->RegisterCommand("factory","MODULE FACTORY framework");
     cmd_factory->RegisterCommand("reset","Factory Reset module",module_factory_reset);
     }

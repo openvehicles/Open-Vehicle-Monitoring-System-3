@@ -180,6 +180,68 @@ void simcom::AutoInit()
     SetPowerMode(On);
   }
 
+void simcom::SupportSummary(OvmsWriter* writer)
+  {
+  writer->puts("\nSIMCOM Modem Status");
+
+  writer->printf("  Network Registration: %s\n  Provider: %s\n  Signal: %d dBm\n  State: %s\n",
+    SimcomNetRegName(m_netreg),
+    m_provider.c_str(),
+    UnitConvert(sq, dbm, m_sq),
+    SimcomState1Name(m_state1));
+
+  writer->printf("    Ticker: %d\n    User Data: %d\n",
+    m_state1_ticker,
+    m_state1_userdata);
+
+  if (m_state1_timeout_goto != None)
+    {
+    writer->printf("    State Timeout Goto: %s (in %d seconds)\n",
+      SimcomState1Name(m_state1_timeout_goto),
+      m_state1_timeout_ticks);
+    }
+
+  writer->printf("  Mux\n    Status: %s\n", m_mux.IsMuxUp()?"up":"down");
+
+  writer->printf("    Open Channels: %d\n", m_mux.m_openchannels);
+
+  writer->printf("    Framing Errors: %d\n", m_mux.m_framingerrors);
+
+  writer->printf("    Last RX frame: %d sec(s) ago\n",
+    (m_mux.m_lastgoodrxframe==0)?0:(monotonictime-m_mux.m_lastgoodrxframe));
+
+  writer->printf("    RX frames: %d\n", m_mux.m_rxframecount);
+
+  writer->printf("    TX frames: %d\n", m_mux.m_txframecount);
+
+  if (m_ppp.m_connected)
+    {
+    writer->printf("  PPP: Connected on channel: #%d\n", m_ppp.m_channel);
+    }
+  else
+    {
+    writer->puts("  PPP: Not connected");
+    }
+  if (m_ppp.m_lasterrcode > 0)
+    {
+    writer->printf("     Last Error: %s\n", m_ppp.ErrCodeName(m_ppp.m_lasterrcode));
+    }
+
+  if (m_nmea.m_connected)
+    {
+    writer->printf("  GPS: Connected on channel: #%d\n", m_nmea.m_channel);
+    }
+  else
+    {
+    writer->puts("  GPS: Not connected");
+    }
+
+  writer->printf("     Status: %s\n",
+    MyConfig.GetParamValueBool("modem", "enable.gps", false) ? "enabled" : "disabled");
+  writer->printf("     Time: %s\n",
+    MyConfig.GetParamValueBool("modem", "enable.gpstime", false) ? "enabled" : "disabled");
+  }
+
 void simcom::StartTask()
   {
   if (!m_task)
@@ -993,7 +1055,7 @@ void simcom_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
 void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   bool debug = (strcmp(cmd->GetName(), "debug") == 0);
-  
+
   writer->printf("Network Registration: %s\nProvider: %s\nSignal: %d dBm\n\nState: %s\n",
     SimcomNetRegName(MyPeripherals->m_simcom->m_netreg),
     MyPeripherals->m_simcom->m_provider.c_str(),

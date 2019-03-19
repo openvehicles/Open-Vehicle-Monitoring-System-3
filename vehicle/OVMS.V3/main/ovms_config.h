@@ -126,6 +126,9 @@ class OvmsConfig
     esp_err_t unmount();
     bool ismounted();
 
+  public:
+    void SupportSummary(OvmsWriter* writer);
+
   protected:
     void upgrade();
 
