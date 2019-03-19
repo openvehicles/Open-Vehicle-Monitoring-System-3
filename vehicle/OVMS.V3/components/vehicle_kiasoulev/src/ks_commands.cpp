@@ -63,19 +63,19 @@ void CommandParkBreakService(int verbosity, OvmsWriter* writer, OvmsCommand* cmd
 
 	if( strcmp(argv[0],"on")==0 )
 		{
-	  //soul->Send_EBP_Command(0x02, 0x01, KS_90_DIAGNOSTIC_SESSION);
-		if( soul->SetSessionMode(ABS_EBP_UNIT, KS_90_DIAGNOSTIC_SESSION ))
+	  //soul->Send_EBP_Command(0x02, 0x01, KIA_90_DIAGNOSTIC_SESSION);
+		if( soul->SetSessionMode(ABS_EBP_UNIT, KIA_90_DIAGNOSTIC_SESSION ))
 			{
-			soul->SendCanMessage(ABS_EBP_UNIT, 3, VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_LOC_ID, 0x02, 0x01, 0, 0, 0, 0 );
+			soul->SendCanMessage(ABS_EBP_UNIT, 3, UDS_SID_IOCTRL_BY_LOC_ID, 0x02, 0x01, 0, 0, 0, 0 );
 			}
 		}
 	else if( strcmp(argv[0],"off")==0 )
 		{
-	  soul->Send_EBP_Command(0x02, 0x03, KS_90_DIAGNOSTIC_SESSION);
+	  soul->Send_EBP_Command(0x02, 0x03, KIA_90_DIAGNOSTIC_SESSION);
 		}
 	else if( strcmp(argv[0],"off2")==0 ) //Disengange 7d5h	8	03 30 01 01 00 00 00 00
 		{
-	  soul->Send_EBP_Command(0x01, 0x01, KS_90_DIAGNOSTIC_SESSION);
+	  soul->Send_EBP_Command(0x01, 0x01, KIA_90_DIAGNOSTIC_SESSION);
 		}
 
 	for(int i=0; i<100; i++)
@@ -83,7 +83,7 @@ void CommandParkBreakService(int verbosity, OvmsWriter* writer, OvmsCommand* cmd
 		soul->	SendTesterPresent(ABS_EBP_UNIT,2);
 		vTaskDelay( 20 / portTICK_PERIOD_MS );
 		}
-	soul->SetSessionMode(ABS_EBP_UNIT, DEFAULT_SESSION);
+	soul->SetSessionMode(ABS_EBP_UNIT, UDS_DEFAULT_SESSION);
 	}
 
 /**
@@ -318,16 +318,16 @@ void xks_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 	const char* rr_temp = StdMetrics.ms_v_tpms_rr_t->AsUnitString("-", Celcius, 1).c_str();
 
 	if (*fl_pressure != '-')
-    writer->printf("1 ID:%lu %s %s\n", soul->ks_tpms_id[0], fl_pressure, fl_temp);
+    writer->printf("1 ID:%lu %s %s\n", soul->kia_tpms_id[0], fl_pressure, fl_temp);
 
   if (*fr_pressure != '-')
-    writer->printf("2 ID:%lu %s %s\n",soul->ks_tpms_id[1], fr_pressure, fr_temp);
+    writer->printf("2 ID:%lu %s %s\n",soul->kia_tpms_id[1], fr_pressure, fr_temp);
 
   if (*rl_pressure != '-')
-    writer->printf("3 ID:%lu %s %s\n",soul->ks_tpms_id[2], rl_pressure, rl_temp);
+    writer->printf("3 ID:%lu %s %s\n",soul->kia_tpms_id[2], rl_pressure, rl_temp);
 
   if (*rr_pressure != '-')
-    writer->printf("4 ID:%lu %s %s\n",soul->ks_tpms_id[3], rr_pressure, rr_temp);
+    writer->printf("4 ID:%lu %s %s\n",soul->kia_tpms_id[3], rr_pressure, rr_temp);
   }
 
 

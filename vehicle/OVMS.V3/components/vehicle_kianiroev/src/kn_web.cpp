@@ -26,8 +26,8 @@
 
 //static const char *TAG = "v-kianiroev";
 
-#include <stdio.h>
-#include <string>
+//#include <stdio.h>
+//#include <string>
 #include "ovms_metrics.h"
 #include "ovms_events.h"
 #include "ovms_config.h"
@@ -37,6 +37,7 @@
 #include "ovms_webserver.h"
 
 #include "vehicle_kianiroev.h"
+#include "../../vehicle_kiasoulev/src/kia_common.h"
 
 using namespace std;
 

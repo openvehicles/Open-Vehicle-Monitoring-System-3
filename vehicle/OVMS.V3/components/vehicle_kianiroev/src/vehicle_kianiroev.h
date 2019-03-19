@@ -29,13 +29,17 @@
 #ifndef __VEHICLE_KIANIROEV_H__
 #define __VEHICLE_KIANIROEV_H__
 
+#include "../../vehicle_kiasoulev/src/kia_common.h"
 #include "vehicle.h"
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
+#endif
+
 
 using namespace std;
 
 typedef union {
-  struct { //TODO Is this the correct order, or should it be swapped?
+  struct {
     unsigned char Park : 1;
     unsigned char Reverse: 1;
     unsigned char Neutral: 1;
@@ -66,30 +70,7 @@ void xkn_set_one_touch_turn_signal(int verbosity, OvmsWriter* writer, OvmsComman
 void xkn_set_auto_door_unlock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void xkn_set_auto_door_lock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
-class KN_Trip_Counter
-	{
-private:
-  float odo_start;
-  float cdc_start; 					// Used to calculate trip power use (Cumulated discharge)
-  float cc_start;  					// Used to calculate trip recuperation (Cumulated charge)
-  float odo;
-  float cdc;
-  float cc;
-
-public:
-  KN_Trip_Counter();
-  ~KN_Trip_Counter();
-  void Reset(float odo, float cdc, float cc);
-  void Update(float odo, float cdc, float cc);
-  float GetDistance();
-  float GetEnergyUsed();
-  float GetEnergyRecuperated();
-  bool Started();
-  bool HasEnergyData();
-	};
-
-
-class OvmsVehicleKiaNiroEv : public OvmsVehicle
+class OvmsVehicleKiaNiroEv : public KiaVehicle
   {
   public:
 		OvmsVehicleKiaNiroEv();
@@ -107,6 +88,7 @@ class OvmsVehicleKiaNiroEv : public OvmsVehicle
     const std::string GetFeature(int key);
     vehicle_command_t CommandHandler(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     bool Send_SJB_Command( uint8_t b1, uint8_t b2, uint8_t b3);
+    bool Send_IGMP_Command( uint8_t b1, uint8_t b2, uint8_t b3);
     bool Send_BCM_Command( uint8_t b1, uint8_t b2, uint8_t b3);
     bool Send_SMK_Command( uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint8_t b5, uint8_t b6, uint8_t b7);
     bool Send_EBP_Command( uint8_t b1, uint8_t b2, uint8_t mode);
@@ -137,66 +119,8 @@ class OvmsVehicleKiaNiroEv : public OvmsVehicle
     void SetOneThouchTurnSignal(uint8_t);
     void SetAutoDoorUnlock(uint8_t);
     void SetAutoDoorLock(uint8_t);
-    int8_t GetDoorLockStatus();
 
-
-    char m_vin[18];
-
-    uint32_t kn_tpms_id[4];
-    OvmsMetricInt* 		m_b_cell_volt_max_no;			//Max cell voltage no           02 21 01 -> 23 7
-    OvmsMetricInt* 		m_b_cell_volt_min_no; 		//Min cell voltage no           02 21 01 -> 24 2
-    OvmsMetricFloat*	m_b_cell_volt_max;     		// Battery cell maximum voltage
-    OvmsMetricFloat*	m_b_cell_volt_min;     		// Battery cell minimum voltage
-    OvmsMetricInt* 		m_b_cell_det_max_no; 			//02 21 05 -> 24 3
-    OvmsMetricInt*		m_b_cell_det_min_no; 			//02 21 05 -> 24 6
-    OvmsMetricFloat*	m_b_cell_det_min;      		// Battery cell minimum detoriation
-    OvmsMetricInt* 		m_b_min_temperature; 			//02 21 05 -> 21 7
-    OvmsMetricInt*		m_b_inlet_temperature; 		//02 21 05 -> 21 6
-    OvmsMetricInt*		m_b_max_temperature; 			//02 21 05 -> 22 1
-    OvmsMetricInt*		m_b_heat_1_temperature; 	//02 21 05 -> 23 6
-    OvmsMetricInt*		m_b_heat_2_temperature; 	//02 21 05 -> 23 7
-    OvmsMetricFloat*	m_b_bms_soc; 						// The bms soc, which differs from displayed soc.
-    OvmsMetricInt*		m_b_aux_soc; 						// The soc for aux battery.
-
-    OvmsMetricBool*		m_v_env_lowbeam;
-    OvmsMetricBool*		m_v_env_highbeam;
-
-    OvmsMetricFloat* ms_v_pos_trip;
-    OvmsMetricFloat* ms_v_trip_energy_used;
-    OvmsMetricFloat* ms_v_trip_energy_recd;
-
-    OvmsMetricFloat* m_obc_pilot_duty;
-    OvmsMetricBool*  m_obc_timer_enabled;
-
-    OvmsMetricFloat* m_ldc_out_voltage;
-    OvmsMetricFloat* m_ldc_out_current;
-    OvmsMetricFloat* m_ldc_in_voltage;
-    OvmsMetricFloat* m_ldc_temperature;
-
-    OvmsMetricBool*  m_v_seat_belt_driver;
-    OvmsMetricBool*  m_v_seat_belt_passenger;
-    OvmsMetricBool*  m_v_seat_belt_back_right;
-    OvmsMetricBool*  m_v_seat_belt_back_middle;
-    OvmsMetricBool*  m_v_seat_belt_back_left;
-
-    OvmsMetricBool*  m_v_door_lock_fl;
-    OvmsMetricBool*  m_v_door_lock_fr;
-    OvmsMetricBool*  m_v_door_lock_rl;
-    OvmsMetricBool*  m_v_door_lock_rr;
-
-    OvmsMetricBool*  m_v_preheat_timer1_enabled;
-    OvmsMetricBool*  m_v_preheat_timer2_enabled;
-    OvmsMetricBool*  m_v_preheating;
-
-    OvmsMetricFloat* m_v_power_usage;
-
-    OvmsMetricFloat* m_v_trip_consumption1;
-    OvmsMetricFloat* m_v_trip_consumption2;
-
-    OvmsMetricBool*  m_v_emergency_lights;
     bool  kn_emergency_message_sent;
-
-    const TickType_t xDelay10 = 10 / portTICK_PERIOD_MS;
 
   protected:
     void HandleCharging();
@@ -207,10 +131,9 @@ class OvmsVehicleKiaNiroEv : public OvmsVehicle
     void IncomingBMC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void IncomingBCM(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void IncomingIGMP(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingLDC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingSJB(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void IncomingAirCon(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void IncomingAbsEsp(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingCM(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void RequestNotify(unsigned int which);
     void DoNotify();
     void vehicle_kianiroev_car_on(bool isOn);
@@ -220,17 +143,13 @@ class OvmsVehicleKiaNiroEv : public OvmsVehicle
     bool LeftIndicator(bool);
     bool RightIndicator(bool);
     bool RearDefogger(bool);
+    bool FoldMirrors(bool);
     bool BlueChargeLed(bool on, uint8_t mode);
     void SetChargeMetrics(float voltage, float current, float climit, bool ccs);
     void SendTesterPresentMessages();
     void StopTesterPresentMessages();
 
     OvmsCommand *cmd_xkn;
-
-    // Kia Niro EV specific metrics
-    OvmsMetricString* m_version;
-    OvmsMetricFloat*  m_c_power;            				// Available charge power
-    OvmsMetricFloat*  m_c_speed;									// km/h
 
 		#define CFG_DEFAULT_MAXRANGE 440
     int kn_maxrange = CFG_DEFAULT_MAXRANGE;        // Configured max range at 20 °C
@@ -240,44 +159,18 @@ class OvmsVehicleKiaNiroEv : public OvmsVehicle
 
     unsigned int kn_notifications = 0;
 
-    float kn_obc_volt;
     KnShiftBits kn_shift_bits;
 
-    KN_Trip_Counter kn_park_trip_counter;
-    KN_Trip_Counter kn_charge_trip_counter;
-
-    float kn_last_soc;
-    float kn_last_ideal_range;
-    float kn_cum_charge_start; 		// Used to calculate charged power.
-
     bool kn_charge_timer_off; //True if the charge timer button is on
-
-    uint32_t kn_battery_cum_charge_current; 		//Cumulated charge current    02 21 01 -> 24 6+7 & 25 1+2
-    uint32_t kn_battery_cum_discharge_current;	//Cumulated discharge current 02 21 01 -> 25 3-6
-    uint32_t kn_battery_cum_charge; 						//Cumulated charge power      02 21 01 -> 25 7 + 26 1-3
-    uint32_t kn_battery_cum_discharge; 				//Cumulated discharge power   02 21 01 -> 26 4-7
-    uint32_t kn_battery_cum_op_time; 					//Cumulated operating time    02 21 01 -> 27 1-4
 
     uint8_t kn_heatsink_temperature; //TODO Remove?
     uint8_t kn_battery_fan_feedback;
 
-    int16_t sjb_tester_present_seconds;
-    int16_t smk_tester_present_seconds;
-
-    uint32_t kn_clock;
-    int16_t kn_utc_diff;
+    int16_t igmp_tester_present_seconds;
+    int16_t bcm_tester_present_seconds;
+    int16_t smk_tester_present_seconds; //TODO Remove?
 
     bool kn_ldc_enabled;
-
-    bool kn_aux_bat_ok;
-
-    bool kn_ready_for_chargepollstate;
-    bool kn_lockDoors;
-    bool kn_unlockDoors;
-
-    bool kn_enable_write;
-
-    uint8_t kn_secs_with_no_client;
 
     struct {
       unsigned char ChargingCCS : 1;
@@ -287,83 +180,26 @@ class OvmsVehicleKiaNiroEv : public OvmsVehicle
       unsigned char FanStatus : 4;
     } kn_charge_bits;
 
-    struct {
-      uint8_t byte[8];
-      uint8_t status;
-      uint16_t id;
-    } kn_send_can;
-
-    const TickType_t xDelay = 50 / portTICK_PERIOD_MS;
-
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
     // --------------------------------------------------------------------------
     // Webserver subsystem
-    //  - implementation: kn_web.(h,cpp)
+    //  - implementation: ks_web.(h,cpp)
     //
 
     public:
-      void WebInit();
+      virtual void WebInit();
       static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
       static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
       static void WebBattMon(PageEntry_t& p, PageContext_t& c);
 
     public:
       void GetDashboardConfig(DashboardConfig& cfg);
+#endif //CONFIG_OVMS_COMP_WEBSERVER
   };
 
-
-#define SQR(n) ((n)*(n))
-#define ABS(n) (((n) < 0) ? -(n) : (n))
-#define LIMIT_MIN(n,lim) ((n) < (lim) ? (lim) : (n))
-#define LIMIT_MAX(n,lim) ((n) > (lim) ? (lim) : (n))
-
-// CAN buffer access macros: b=byte# 0..7 / n=nibble# 0..15
-#define CAN_BYTE(b)     data[b]
-#define CAN_INT(b)      ((int16_t)CAN_UINT(b))
-#define CAN_UINT(b)     (((UINT)CAN_BYTE(b) << 8) | CAN_BYTE(b+1))
-#define CAN_UINT24(b)   (((uint32_t)CAN_BYTE(b) << 16) | ((UINT)CAN_BYTE(b+1) << 8) | CAN_BYTE(b+2))
-#define CAN_UINT32(b)   (((uint32_t)CAN_BYTE(b) << 24) | ((uint32_t)CAN_BYTE(b+1) << 16)  | ((UINT)CAN_BYTE(b+2) << 8) | CAN_BYTE(b+3))
-#define CAN_NIBL(b)     (can_databuffer[b] & 0x0f)
-#define CAN_NIBH(b)     (can_databuffer[b] >> 4)
-#define CAN_NIB(n)      (((n)&1) ? CAN_NIBL((n)>>1) : CAN_NIBH((n)>>1))
-
-#define TO_CELCIUS(n)	((float)n-40)
-#define TO_PSI(n)		((float)n/4.0)
-
-#define BAT_SOC			StdMetrics.ms_v_bat_soc->AsFloat(100)
-#define BAT_SOH			StdMetrics.ms_v_bat_soh->AsFloat(100)
-#define LIMIT_SOC		StdMetrics.ms_v_charge_limit_soc->AsFloat(0)
-#define LIMIT_RANGE		StdMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers)
-#define EST_RANGE		StdMetrics.ms_v_bat_range_est->AsFloat(100, Kilometers)
-#define IDEAL_RANGE		StdMetrics.ms_v_bat_range_ideal->AsFloat(100, Kilometers)
-#define FULL_RANGE		StdMetrics.ms_v_bat_range_full->AsFloat(160, Kilometers)
-#define POS_ODO			StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers)
-#define CHARGE_CURRENT	StdMetrics.ms_v_charge_current->AsFloat(0, Amps)
-#define CHARGE_VOLTAGE	StdMetrics.ms_v_charge_voltage->AsFloat(0, Volts)
-#define SET_CHARGE_STATE(n,m)		StdMetrics.ms_v_charge_state->SetValue(n); if(m!=NULL) StdMetrics.ms_v_charge_substate->SetValue(m)
-#define CUM_CHARGE		((float)kn_battery_cum_charge/10.0)
-#define CUM_DISCHARGE	((float)kn_battery_cum_discharge/10.0)
-#define SET_TPMS_ID(n, v)	if (v > 0) kn_tpms_id[n] = v;
-
-#define SET_SJB_TP_TIMEOUT(n)	sjb_tester_present_seconds = on ? MAX(sjb_tester_present_seconds, n) : 0;
+#define SET_IGMP_TP_TIMEOUT(n)	igmp_tester_present_seconds = on ? MAX(igmp_tester_present_seconds, n) : 0;
+#define SET_BCM_TP_TIMEOUT(n)	bcm_tester_present_seconds = on ? MAX(bcm_tester_present_seconds, n) : 0;
 #define SET_SMK_TP_TIMEOUT(n)	smk_tester_present_seconds = on ? MAX(smk_tester_present_seconds, n) : 0;
-
-#define VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_ID 0x2F	// InputOutputControlByCommonID
-#define VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_LOC_ID	0x30 	// InputOutputControlByLocalID
-#define VEHICLE_POLL_TYPE_OBDII_TESTER_PRESENT	0x3E 	// TesterPresent
-#define VEHICLE_POLL_TYPE_OBDII_SERVICE1A 0x1a
-
-#define DEFAULT_SESSION 0x01
-#define PROGRAMMING_SESSION 0x02
-#define EXTENDED_DIAGNOSTIC_SESSION 0x03
-#define SAFETY_SYSTEM_DIAGNOSTIC_SESSION 0x04
-#define KN_90_DIAGNOSTIC_SESSION 0x90
-
-// ECUs
-#define SMART_JUNCTION_BOX 0x771
-#define BODY_CONTROL_MODULE  0x7A0
-#define SMART_KEY_UNIT 0x7A5
-#define ABS_EBP_UNIT 0x7A5
-#define ON_BOARD_CHARGER_UNIT 0x794
 
 // Notifications:
 //#define SEND_AuxBattery_Low           (1<< 0)  // text alert: AUX battery problem
@@ -375,9 +211,5 @@ class OvmsVehicleKiaNiroEv : public OvmsVehicle
 #define SEND_EmergencyAlertOff        (1<< 6)  // Emergency lights are turned off
 //#define SEND_ResetResult            (1<< 7)  // text alert: RESET OK/FAIL
 //#define SEND_ChargeState            (1<< 8)  // text alert: STAT command
-
-#define POLLSTATE_OFF					PollSetState(0);
-#define POLLSTATE_RUNNING			PollSetState(1);
-#define POLLSTATE_CHARGING		PollSetState(2);
 
 #endif //#ifndef __VEHICLE_KIANIROEV_H__

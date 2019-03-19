@@ -262,16 +262,16 @@ void xkn_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 	const char* rr_temp = StdMetrics.ms_v_tpms_rr_t->AsUnitString("-", Celcius, 1).c_str();
 
 	if (*fl_pressure != '-')
-    writer->printf("1 ID:%lu %s %s\n", car->kn_tpms_id[0], fl_pressure, fl_temp);
+    writer->printf("1 ID:%lu %s %s\n", car->kia_tpms_id[0], fl_pressure, fl_temp);
 
   if (*fr_pressure != '-')
-    writer->printf("2 ID:%lu %s %s\n",car->kn_tpms_id[1], fr_pressure, fr_temp);
+    writer->printf("2 ID:%lu %s %s\n",car->kia_tpms_id[1], fr_pressure, fr_temp);
 
   if (*rl_pressure != '-')
-    writer->printf("3 ID:%lu %s %s\n",car->kn_tpms_id[2], rl_pressure, rl_temp);
+    writer->printf("3 ID:%lu %s %s\n",car->kia_tpms_id[2], rl_pressure, rl_temp);
 
   if (*rr_pressure != '-')
-    writer->printf("4 ID:%lu %s %s\n",car->kn_tpms_id[3], rr_pressure, rr_temp);
+    writer->printf("4 ID:%lu %s %s\n",car->kia_tpms_id[3], rr_pressure, rr_temp);
   }
 
 

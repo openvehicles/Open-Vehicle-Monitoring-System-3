@@ -24,7 +24,7 @@
  */
 #include "vehicle_kianiroev.h"
 
-static const char *TAG = "v-kianiroev";
+//static const char *TAG = "v-kianiroev";
 
 /**
  * Handles incoming CAN-frames on bus 1, the C-bus
@@ -33,24 +33,23 @@ void OvmsVehicleKiaNiroEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 	{
 
 	uint8_t *d = p_frame->data.u8;
-	if( 1==1 ) return; //TODO
 	//ESP_LOGD(TAG, "IFC %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
 	//		p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
 
 	// Check if response is from synchronous can message
-	if (kn_send_can.status == 0xff && p_frame->MsgID == (kn_send_can.id + 0x08))
+	if (kia_send_can.status == 0xff && p_frame->MsgID == (kia_send_can.id + 0x08))
 		{
 		//Store message bytes so that the async method can continue
-		kn_send_can.status = 3;
+		kia_send_can.status = 3;
 
-		kn_send_can.byte[0] = d[0];
-		kn_send_can.byte[1] = d[1];
-		kn_send_can.byte[2] = d[2];
-		kn_send_can.byte[3] = d[3];
-		kn_send_can.byte[4] = d[4];
-		kn_send_can.byte[5] = d[5];
-		kn_send_can.byte[6] = d[6];
-		kn_send_can.byte[7] = d[7];
+		kia_send_can.byte[0] = d[0];
+		kia_send_can.byte[1] = d[1];
+		kia_send_can.byte[2] = d[2];
+		kia_send_can.byte[3] = d[3];
+		kia_send_can.byte[4] = d[4];
+		kia_send_can.byte[5] = d[5];
+		kia_send_can.byte[6] = d[6];
+		kia_send_can.byte[7] = d[7];
 		}
 	}
 

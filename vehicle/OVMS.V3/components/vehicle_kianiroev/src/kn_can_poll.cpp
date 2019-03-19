@@ -40,13 +40,8 @@ void OvmsVehicleKiaNiroEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
 			IncomingIGMP(bus, type, pid, data, length, mlremain);
 			break;
 
-		// ****** SJB *****
-		case 0x779:
-			IncomingSJB(bus, type, pid, data, length, mlremain);
-			break;
-
 		// ****** OBC ******
-		case 0x79c:
+		case 0x7ed:
 			IncomingOBC(bus, type, pid, data, length, mlremain);
 			break;
 
@@ -80,9 +75,9 @@ void OvmsVehicleKiaNiroEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
 			IncomingBMC(bus, type, pid, data, length, mlremain);
 			break;
 
-		// ***** LDC ****
-		case 0x7cd:
-			IncomingLDC(bus, type, pid, data, length, mlremain);
+		// ***** CM ****
+		case 0x7ce:
+			IncomingCM(bus, type, pid, data, length, mlremain);
 			break;
 
 		default:
@@ -90,6 +85,24 @@ void OvmsVehicleKiaNiroEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
 			break;
 	  }
   }
+
+/**
+ * Handle incoming messages from cluster.
+ */
+void OvmsVehicleKiaNiroEv::IncomingCM(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+	{
+	//ESP_LOGD(TAG, "Cluster PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, m_poll_ml_frame, data[0], data[1], data[2], data[3],
+	//		data[4], data[5], data[6]);
+	switch (pid)
+		{
+		case 0xb002:
+			if (m_poll_ml_frame == 1)
+				{
+				StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(3), Kilometers );
+				}
+			break;
+		}
+	}
 
 /**
  * Handle incoming messages from Aircon poll.
@@ -129,35 +142,9 @@ void OvmsVehicleKiaNiroEv::IncomingAbsEsp(canbus* bus, uint16_t type, uint16_t p
 		case 0xC101:
 			if( m_poll_ml_frame == 3)
 				{
-				m_v_emergency_lights->SetValue((CAN_BYTE(2)>>6) & 1);
-				}
-			else if( m_poll_ml_frame == 4)
-				{
-				//TODO Check byte 3 & 5 for parkbrake
-				//StdMetrics.ms_v_env_handbrake->SetValue();
-				}
-			else if (m_poll_ml_frame == 5)
-				{
-//				// Park 	0000 0000 0
-//				// Drive 0011 0011 3
-//				// Rev   0010 1011 2
-//				uint8_t shift = (data[1]>>4) & 3;
-//				kn_shift_bits.Park = shift==0;
-//				kn_shift_bits.Drive = shift==3;
-//				kn_shift_bits.Reverse = shift==2; //Not working...
-//
-//				//ESP_LOGD(TAG, "ABS/ESP %02x %02x", data[1], shift);
-//
-//				if( shift == 0)
-//					{
-//					StdMetrics.ms_v_env_gear->SetValue(0);
-//					}
-//				else if( shift==2 )
-//					{
-//					StdMetrics.ms_v_env_gear->SetValue(-1);
-//					}
-//				else
-//					StdMetrics.ms_v_env_gear->SetValue(1);
+//				m_v_emergency_lights->SetValue((CAN_BYTE(2)>>6) & 1);
+				m_v_emergency_lights->SetValue(CAN_BIT(2,6));
+				m_v_traction_control->SetValue(CAN_BIT(1,6));
 				}
 			break;
 		}
@@ -175,22 +162,27 @@ void OvmsVehicleKiaNiroEv::IncomingOBC(canbus* bus, uint16_t type, uint16_t pid,
 	{
 	switch (pid)
 		{
-		case 0x02:
+		case 0x01:
+			if (m_poll_ml_frame == 4)
+				{
+				m_obc_pilot_duty->SetValue((float)CAN_BYTE(3)/10.0); //Untested
+				}
+			else if (m_poll_ml_frame == 6)
+				{
+				StdMetrics.ms_v_charge_temp->SetValue( (float) (CAN_BYTE(2)/2.0)-40.0, Celcius ); //Untested
+				kia_obc_ac_voltage = (float) CAN_BYTE(6);
+				}
+			else if (m_poll_ml_frame == 7)
+				{
+				float main_batt_voltage = CAN_UINT(3)/10.0;
+				ESP_LOGD(TAG, "OBC Main batt: %f", main_batt_voltage);
+				}
+			break;
+
+		case 0x03:
 			if (m_poll_ml_frame == 1)
 				{
-				kn_obc_volt = (float) CAN_UINT(2) / 10.0;
-				//} else if (vehicle_poll_ml_frame == 2) {
-				//kn_obc_ampere = ((UINT) can_databuffer[4 + CAN_ADJ] << 8)
-				//        | (UINT) can_databuffer[5 + CAN_ADJ];
-				}
-			else if (m_poll_ml_frame == 2)
-				{
-				m_obc_pilot_duty->SetValue( (float) CAN_BYTE(6) / 3.0 );
-				}
-			else if (m_poll_ml_frame == 3)
-				{
-				//TODO Virker dette?
-				StdMetrics.ms_v_charge_temp->SetValue( (float) (CAN_BYTE(0)+CAN_BYTE(1)+CAN_BYTE(2))/3, Celcius );
+				kia_obc_ac_current = (float) CAN_UINT(0) / 100.0;
 				}
 			break;
 		}
@@ -203,8 +195,6 @@ void OvmsVehicleKiaNiroEv::IncomingOBC(canbus* bus, uint16_t type, uint16_t pid,
  */
 void OvmsVehicleKiaNiroEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
-	INT base;
-	uint8_t bVal;
 	switch (pid)
 		{
 		case 0x01:
@@ -252,7 +242,7 @@ void OvmsVehicleKiaNiroEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 			break;
 
 		case 0x80:
-			if( type==VEHICLE_POLL_TYPE_OBDII_SERVICE1A )
+			if( type==VEHICLE_POLL_TYPE_OBDII_1A )
 				{
 				if( m_poll_ml_frame==2)
 					{
@@ -290,7 +280,7 @@ void OvmsVehicleKiaNiroEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 /**
  * Handle incoming messages from VMCU-poll
  *
- * - Aux battery SOC, Voltage and current
+ * -
  */
 void OvmsVehicleKiaNiroEv::IncomingMCU(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
@@ -303,15 +293,14 @@ void OvmsVehicleKiaNiroEv::IncomingMCU(canbus* bus, uint16_t type, uint16_t pid,
 					{
 					//ESP_LOGD(TAG, "VMCU PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, m_poll_ml_frame, data[0], data[1], data[2], data[3],
 					//		data[4], data[5], data[6]);
-						StdMetrics.ms_v_mot_temp->SetValue((int8_t)CAN_BYTE(4)); //TODO Correct?
-						StdMetrics.ms_v_inv_temp->SetValue((int8_t)CAN_BYTE(3)); //TODO Correct?
+						StdMetrics.ms_v_mot_temp->SetValue((int8_t)CAN_BYTE(4)); //TODO Correct? Could be byte 2 *2
+						StdMetrics.ms_v_inv_temp->SetValue((int8_t)CAN_BYTE(3)); //TODO Correct? Could be byte 1 *2
 					}
-				else if (m_poll_ml_frame == 3)
-					{
-					ESP_LOGD(TAG, "VMCU PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, m_poll_ml_frame, data[0], data[1], data[2], data[3],
-							data[4], data[5], data[6]);
-					StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(1)/2.0); //ODO=
-					}
+//				else if (m_poll_ml_frame == 3)
+//					{
+//					ESP_LOGD(TAG, "VMCU PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, m_poll_ml_frame, data[0], data[1], data[2], data[3],
+//							data[4], data[5], data[6]);
+//					}
 				}
 			break;
 
@@ -376,23 +365,23 @@ void OvmsVehicleKiaNiroEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
 					m_b_cell_volt_min_no->SetValue(CAN_BYTE(2));
 					kn_battery_fan_feedback = CAN_BYTE(3); //TODO Battery fan feedback
 					kn_charge_bits.FanStatus = CAN_BYTE(4) & 0xF;  //TODO Battery fan speed
-					kn_battery_cum_charge_current = (kn_battery_cum_charge_current & 0x00FFFFFF) | ((uint32_t) CAN_UINT(6) << 24);
+					kia_battery_cum_charge_current = (kia_battery_cum_charge_current & 0x00FFFFFF) | ((uint32_t) CAN_UINT(6) << 24);
 					}
 				else if (m_poll_ml_frame == 5)
 					{
-					kn_battery_cum_charge_current = (kn_battery_cum_charge_current & 0xFF000000) | ((uint32_t) CAN_UINT24(0));
-					kn_battery_cum_discharge_current = CAN_UINT32(3);
+					kia_battery_cum_charge_current = (kia_battery_cum_charge_current & 0xFF000000) | ((uint32_t) CAN_UINT24(0));
+					kia_battery_cum_discharge_current = CAN_UINT32(3);
 
 					}
 				else if (m_poll_ml_frame == 6)
 					{
-					kn_battery_cum_charge = CAN_UINT32(0);
-					kn_battery_cum_discharge = (kn_battery_cum_discharge & 0xFF) | ((uint32_t) CAN_UINT24(4) << 8);
+					kia_battery_cum_charge = CAN_UINT32(0);
+					kia_battery_cum_discharge = (kia_battery_cum_discharge & 0xFF) | ((uint32_t) CAN_UINT24(4) << 8);
 					}
 				else if (m_poll_ml_frame == 7)
 					{
-					kn_battery_cum_discharge = (kn_battery_cum_discharge & 0xFFFFFF00) | ((uint32_t) CAN_BYTE(0));
-					kn_battery_cum_op_time = CAN_UINT32(1) / 3600;
+					kia_battery_cum_discharge = (kia_battery_cum_discharge & 0xFFFFFF00) | ((uint32_t) CAN_BYTE(0));
+					kia_battery_cum_op_time = CAN_UINT32(1) / 3600;
 					}
 				break;
 
@@ -463,20 +452,20 @@ void OvmsVehicleKiaNiroEv::IncomingBCM(canbus* bus, uint16_t type, uint16_t pid,
 				if (m_poll_ml_frame == 1)
 					{
 					SET_TPMS_ID(0, CAN_UINT32(1));
-					lVal = (kn_tpms_id[1] & 0x0000ffff) | ((uint32_t)CAN_UINT(5)<<16);
+					lVal = (kia_tpms_id[1] & 0x0000ffff) | ((uint32_t)CAN_UINT(5)<<16);
 					SET_TPMS_ID(1, lVal);
 					}
 				else if (m_poll_ml_frame == 2)
 					{
-					lVal = (uint32_t) CAN_UINT(0) | (kn_tpms_id[1] & 0xffff0000);
+					lVal = (uint32_t) CAN_UINT(0) | (kia_tpms_id[1] & 0xffff0000);
 					SET_TPMS_ID(1, lVal);
 					SET_TPMS_ID(2, CAN_UINT32(2));
-					lVal = (kn_tpms_id[1] & 0x00ffffff) | ((uint32_t)CAN_BYTE(5)<<24);
+					lVal = (kia_tpms_id[1] & 0x00ffffff) | ((uint32_t)CAN_BYTE(5)<<24);
 					SET_TPMS_ID(3, lVal);
 					}
 				else if (m_poll_ml_frame == 3)
 					{
-					lVal = (uint32_t) CAN_UINT24(0) | (kn_tpms_id[3] & 0xff000000);
+					lVal = (uint32_t) CAN_UINT24(0) | (kia_tpms_id[3] & 0xff000000);
 					SET_TPMS_ID(3, lVal);
 					}
 				break;
@@ -527,78 +516,51 @@ void OvmsVehicleKiaNiroEv::IncomingIGMP(canbus* bus, uint16_t type, uint16_t pid
 				if (m_poll_ml_frame == 1)
 					{
 					//StdMetrics.ms_v_door_chargeport->SetValue((CAN_BYTE(1)>>4) & 1);
-					StdMetrics.ms_v_door_trunk->SetValue((CAN_BYTE(1)>>7) & 1);
-					StdMetrics.ms_v_door_fl->SetValue((CAN_BYTE(1)>>5) & 1);
-					StdMetrics.ms_v_door_fr->SetValue((CAN_BYTE(1)>>4) & 1);
-					StdMetrics.ms_v_door_rl->SetValue(CAN_BYTE(1) & 1);
-					StdMetrics.ms_v_door_rr->SetValue((CAN_BYTE(1)>>2) & 1);
+//					StdMetrics.ms_v_door_trunk->SetValue((CAN_BYTE(1)>>7) & 1);
+//					StdMetrics.ms_v_door_fl->SetValue((CAN_BYTE(1)>>5) & 1);
+//					StdMetrics.ms_v_door_fr->SetValue((CAN_BYTE(1)>>4) & 1);
+//					StdMetrics.ms_v_door_rl->SetValue(CAN_BYTE(1) & 1);
+//					StdMetrics.ms_v_door_rr->SetValue((CAN_BYTE(1)>>2) & 1);
 
-					StdMetrics.ms_v_door_hood->SetValue(CAN_BYTE(2) & 1);
+					StdMetrics.ms_v_door_trunk->SetValue(CAN_BIT(1,7));
+					StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(1,5));
+					StdMetrics.ms_v_door_fr->SetValue(CAN_BIT(1,4));
+					StdMetrics.ms_v_door_rl->SetValue(CAN_BIT(1,0));
+					StdMetrics.ms_v_door_rr->SetValue(CAN_BIT(1,2));
 
-					m_v_door_lock_rl->SetValue((CAN_BYTE(1)>>1) & 1);
-					m_v_door_lock_rr->SetValue((CAN_BYTE(1)>>3) & 1);
+//					StdMetrics.ms_v_door_hood->SetValue(CAN_BYTE(2) & 1);
+					StdMetrics.ms_v_door_hood->SetValue(CAN_BIT(2,0));
+
+//					m_v_door_lock_rl->SetValue((CAN_BYTE(1)>>1) & 1);
+//					m_v_door_lock_rr->SetValue((CAN_BYTE(1)>>3) & 1);
+					m_v_door_lock_rl->SetValue(CAN_BIT(1,1));
+					m_v_door_lock_rr->SetValue(CAN_BIT(1,3));
 
 					StdMetrics.ms_v_env_on->SetValue((CAN_BYTE(2) & 0x60)>0);
 
-					//TODO StdMetrics.ms_v_door_trunk->SetValue((d[5] & 0x80) > 0);
-					//TODO StdMetrics.ms_v_env_locked->SetValue(false);
+//					m_v_seat_belt_driver->SetValue((CAN_BYTE(2) & 0x2) == 0x2);
+//					m_v_seat_belt_passenger->SetValue((CAN_BYTE(2) & 0x4) == 0x4);
+					m_v_seat_belt_driver->SetValue(CAN_BIT(2,1));
+					m_v_seat_belt_passenger->SetValue(CAN_BIT(2,2));
 					}
 				break;
 
 			case 0xbc04:
 				if (m_poll_ml_frame == 1)
 					{
-					m_v_door_lock_fl->SetValue((CAN_BYTE(1)>>3) & 1);
-					m_v_door_lock_fr->SetValue((CAN_BYTE(1)>>2) & 1);
+//					m_v_door_lock_fl->SetValue((CAN_BYTE(1)>>3) & 1);
+//					m_v_door_lock_fr->SetValue((CAN_BYTE(1)>>2) & 1);
+					m_v_door_lock_fl->SetValue(CAN_BIT(1,3));
+					m_v_door_lock_fr->SetValue(CAN_BIT(1,2));
+
+					m_v_seat_belt_back_left->SetValue(CAN_BIT(4,2));
+					m_v_seat_belt_back_middle->SetValue(CAN_BIT(4,3));
+					m_v_seat_belt_back_right->SetValue(CAN_BIT(4,1));
+
+					StdMetrics.ms_v_env_headlights->SetValue(CAN_BIT(4,4));
 					}
 				break;
 
 			}
-		}
-	}
-
-
-/**
- * Handle incoming messages from LDC-poll
- *
- * - LDC out voltage
- * - LDC out current
- * - LDC in voltage
- * - LDC temperature
- */
-void OvmsVehicleKiaNiroEv::IncomingLDC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
-	{
-	switch (pid)
-		{
-		case 0x01:
-			ESP_LOGI(TAG, "LDC %04x %02x %02x %02x %02x %02x %02x %02x %02x", pid, m_poll_ml_frame, CAN_BYTE(0), CAN_BYTE(1), CAN_BYTE(2), CAN_BYTE(3), CAN_BYTE(4), CAN_BYTE(5), CAN_BYTE(6));
-
-			// 12V system
-			kn_ldc_enabled = (CAN_BYTE(0) & 0x07) != 0;
-			if( CAN_BYTE(0)==0x07 )
-				{
-				m_ldc_out_voltage->SetValue( CAN_BYTE(1) / 10.0 );
-				m_ldc_out_current->SetValue( CAN_BYTE(2) );
-				m_ldc_in_voltage->SetValue( CAN_BYTE(3) * 2 );
-				m_ldc_temperature->SetValue( CAN_BYTE(4) - 100 );
-				}
-			break;
-		}
-	}
-
-/**
- * Handle incoming messages from SJB-poll
- */
-void OvmsVehicleKiaNiroEv::IncomingSJB(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
-	{
-	//ESP_LOGW(TAG, "779X %02x %02x %02x %02x %02x %02x %02x %02x %02x", pid, m_poll_ml_frame, CAN_BYTE(0), CAN_BYTE(1), CAN_BYTE(2), CAN_BYTE(3), CAN_BYTE(4), CAN_BYTE(5), CAN_BYTE(6));
-	switch (pid)
-		{
-		case 0x04:
-			if (m_poll_ml_frame == 1)
-				{
-				//ESP_LOGW(TAG, "779 8 21 %02x %02x %02x %02x %02x %02x %02x", CAN_BYTE(0), CAN_BYTE(1), CAN_BYTE(2), CAN_BYTE(3), CAN_BYTE(4), CAN_BYTE(5), CAN_BYTE(6));
-				}
-			break;
 		}
 	}
