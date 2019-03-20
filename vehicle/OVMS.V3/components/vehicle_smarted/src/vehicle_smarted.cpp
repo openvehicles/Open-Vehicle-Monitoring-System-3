@@ -415,7 +415,7 @@ void SmartEDLockingTimer(TimerHandle_t timer) {
     MyPeripherals->m_max7317->Output(MAX7317_EGPIO_2, 0);
 }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandLock() {
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandLock(const char* pin) {
     //switch 12v to GEP 1
     MyPeripherals->m_max7317->Output(MAX7317_EGPIO_1, 1);
     m_locking_timer = xTimerCreate("Smart ED Locking Timer", 500 / portTICK_PERIOD_MS, pdTRUE, this, SmartEDLockingTimer);
@@ -424,7 +424,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandLock() {
     //return NotImplemented;
 }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandUnlock() {
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandUnlock(const char* pin) {
     //switch 12v to GEP 2 
     MyPeripherals->m_max7317->Output(MAX7317_EGPIO_2, 1);
     m_locking_timer = xTimerCreate("Smart ED Locking Timer", 500 / portTICK_PERIOD_MS, pdTRUE, this, SmartEDLockingTimer);
