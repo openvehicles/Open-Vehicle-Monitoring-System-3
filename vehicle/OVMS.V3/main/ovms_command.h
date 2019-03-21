@@ -96,11 +96,11 @@ template <typename T>
 class NameMap : public std::map<std::string, T>
   {
   public:
-    T FindUniquePrefix(const char* token)
+    T FindUniquePrefix(const char* token) const
       {
       size_t len = strlen(token);
       T found = NULL;
-      for (typename NameMap<T>::iterator it = NameMap<T>::begin(); it != NameMap<T>::end(); ++it)
+      for (typename NameMap<T>::const_iterator it = NameMap<T>::begin(); it != NameMap<T>::end(); ++it)
 	{
 	if (it->first.compare(0, len, token) == 0)
 	  {
@@ -115,14 +115,14 @@ class NameMap : public std::map<std::string, T>
       return found;
       }
 
-    char** GetCompletion(OvmsWriter* writer, const char* token)
+    char** GetCompletion(OvmsWriter* writer, const char* token) const
       {
       unsigned int index = 0;
       char** tokens = writer->SetCompletion(index, NULL);
       if (token)
         {
         size_t len = strlen(token);
-        for (typename NameMap<T>::iterator it = NameMap<T>::begin(); it != NameMap<T>::end(); ++it)
+        for (typename NameMap<T>::const_iterator it = NameMap<T>::begin(); it != NameMap<T>::end(); ++it)
           {
           if (it->first.compare(0, len, token) == 0)
             writer->SetCompletion(index++, it->first.c_str());
@@ -131,7 +131,7 @@ class NameMap : public std::map<std::string, T>
       return tokens;
       }
 
-    int Validate(OvmsWriter* writer, const char* token, bool complete)
+    int Validate(OvmsWriter* writer, const char* token, bool complete) const
       {
       if (complete)
 	{
