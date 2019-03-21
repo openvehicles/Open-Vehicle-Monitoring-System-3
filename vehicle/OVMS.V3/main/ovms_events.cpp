@@ -66,6 +66,33 @@ void event_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   writer->printf("Event tracing is now %s\n",cmd->GetName());
   }
 
+void event_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string event;
+  for (EventMap::const_iterator itm=MyEvents.Map().begin(); itm != MyEvents.Map().end(); ++itm)
+    {
+    if (argc > 0 && itm->first.find(argv[0]) == std::string::npos)
+      continue;
+    event.append(itm->first);
+    event.append(":  ");
+    EventCallbackList* el = itm->second;
+    for (EventCallbackList::iterator itc=el->begin(); itc!=el->end(); )
+      {
+      EventCallbackEntry* ec = *itc;
+      event.append(ec->m_caller);
+      if (++itc != el->end())
+        event.append(", ");
+      }
+    event.append("\n");
+    }
+  writer->printf("%s", event.c_str());
+  }
+
+int event_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  return MyEvents.Map().Validate(writer, argv[0], complete);
+  }
+
 void event_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   std::string event(argv[0]);
@@ -88,7 +115,8 @@ OvmsEvents::OvmsEvents()
 
   // Register our commands
   OvmsCommand* cmd_event = MyCommandApp.RegisterCommand("event","EVENT framework");
-  cmd_event->RegisterCommand("raise","Raise a textual event",event_raise,"<event>", 1, 1);
+  cmd_event->RegisterCommand("list","List registered events",event_list,"[<key>]", 0, 1);
+  cmd_event->RegisterCommand("raise","Raise a textual event",event_raise,"<event>", 1, 1, true, event_validate);
   OvmsCommand* cmd_eventtrace = cmd_event->RegisterCommand("trace","EVENT trace framework");
   cmd_eventtrace->RegisterCommand("on","Turn event tracing ON",event_trace);
   cmd_eventtrace->RegisterCommand("off","Turn event tracing OFF",event_trace);
