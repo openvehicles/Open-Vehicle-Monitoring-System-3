@@ -48,7 +48,7 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] =
     { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, {  0,999,999 } }, // VIN [19]
     { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1203, {  0,999,999 } }, // QC [4]
     { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1205, {  0,999,999 } }, // L0/L1/L2 [4]
-    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 61, 61 } }, // bat [39]
+    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 61, 61 } }, // bat [39/41]
     { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 67, 67 } }, // battery voltages [196]
     { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,307,307 } }, // battery temperatures [14]
     { 0, 0, 0x00, 0x00, { 0, 0, 0 } }
@@ -244,18 +244,8 @@ void vehicle_nissanleaf_charger_status(ChargerStatus status)
 
 void OvmsVehicleNissanLeaf::PollReply_Battery(uint8_t reply_data[], uint16_t reply_len)
   {
-  if (reply_len == 39)    // 24 KWh Leafs
-    {
-    // We may have already worked out from 0x5bc that it is type 1 (which
-    // must be 24kWh), so only set to type 2 here if still undefined.
-    if (!m_battery_type->IsDefined())
-      m_battery_type->SetValue(BATTERY_TYPE_2_24kWh);
-    }
-  else if (reply_len == 41)      // 30 KWh Leafs with Nissan BMS fix
-    {
-    m_battery_type->SetValue(BATTERY_TYPE_2_30kWh);
-    }
-  else
+  if (reply_len != 39 &&    // 24 KWh Leafs
+      reply_len != 41)      // 30 KWh Leafs with Nissan BMS fix
     {
     ESP_LOGI(TAG, "PollReply_Battery: len=%d != 39 && != 41", reply_len);
     return;
@@ -639,39 +629,58 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x59e:
       {
-      /* This does not give a sensible capacity estimate for 30kWh battery,
-       * but leave it here for now until we either figure out what this
-       * really is or find a way to read capacity some other way.
-       */
-      uint16_t cap_gid = d[2] << 4 | d[3] >> 4;
-      m_battery_energy_capacity->SetValue(cap_gid * GEN_1_WH_PER_GID, WattHours);
+      switch(m_battery_type->AsInt(BATTERY_TYPE_2_24kWh))
+        {
+        case BATTERY_TYPE_1_24kWh:
+        case BATTERY_TYPE_2_24kWh:
+          {
+          uint16_t cap_gid = d[2] << 4 | d[3] >> 4;
+          m_battery_energy_capacity->SetValue(cap_gid * GEN_1_WH_PER_GID, WattHours);
+          }
+          break;
+        case BATTERY_TYPE_2_30kWh:
+          // This msg does not give a sensible capacity estimate for 30kWh battery,
+          // instead m_battery_energy_capacity is set from message 0x5bc
+          break;
+        }      
       }
       break;
     case 0x5bc:
       {
       uint16_t nl_gids = ((uint16_t) d[0] << 2) | ((d[1] & 0xc0) >> 6);
+      uint8_t  mx_gids = (d[5] & 0x10) >> 4;
+      int type = -1;
       // gids is invalid during startup
       if (nl_gids != 1023)
         {
-        m_gids->SetValue(nl_gids);
-        m_battery_energy_available->SetValue(nl_gids * GEN_1_WH_PER_GID, WattHours);
-
-        // new car soc -- 100% when the battery is new, less when it's degraded
-        uint16_t max_gids = MyConfig.GetParamValueInt("xnl", "maxGids", GEN_1_NEW_CAR_GIDS);
-        float soc_new_car = (nl_gids * 100.0) / max_gids;
-        m_soc_new_car->SetValue(soc_new_car);
-
-        // we use the instrument cluster soc from 0x1db unless the user has opted otherwise
-        if (MyConfig.GetParamValueBool("xnl", "soc.newcar", false))
+        switch (mx_gids)
           {
-          StandardMetrics.ms_v_bat_soc->SetValue(soc_new_car);
-          }
+          case 0x00:
+            {
+            // Current gids on 24 and 30kwh models
+            m_gids->SetValue(nl_gids);
+            m_battery_energy_available->SetValue(nl_gids * GEN_1_WH_PER_GID, WattHours);
 
-        /* range calculation now done in HandleRange(), called from Ticker10
-        float km_per_kwh = MyConfig.GetParamValueFloat("xnl", "kmPerKWh", GEN_1_KM_PER_KWH);
-        float wh_per_gid = MyConfig.GetParamValueFloat("xnl", "whPerGid", GEN_1_WH_PER_GID);
-        StandardMetrics.ms_v_bat_range_ideal->SetValue((nl_gids * wh_per_gid * km_per_kwh) / 1000);
-        */
+            // new car soc -- 100% when the battery is new, less when it's degraded
+            uint16_t max_gids = MyConfig.GetParamValueInt("xnl", "maxGids", GEN_1_NEW_CAR_GIDS);
+            float soc_new_car = (nl_gids * 100.0) / max_gids;
+            m_soc_new_car->SetValue(soc_new_car);
+
+            // we use the instrument cluster soc from 0x1db unless the user has opted otherwise
+            if (MyConfig.GetParamValueBool("xnl", "soc.newcar", false))
+              {
+              StandardMetrics.ms_v_bat_soc->SetValue(soc_new_car);
+              }
+            }
+            break;
+          case  0x01:
+            {
+            // Max gids, this mx value only occurs on 30kwh models. For 24 kwh models we use the value from msg 0x59e
+            m_battery_energy_capacity->SetValue(nl_gids * GEN_1_WH_PER_GID, WattHours);
+            type = BATTERY_TYPE_2_30kWh;
+            }
+            break;
+          }
         }
       /* Estimated charge time is a set of multiplexed values:
        *   d[5]     d[6]     d[7]
@@ -689,9 +698,13 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
          *  ---- | -- | --  --  -- | --  --  -- |
          *     1 |  ? |  ?   9  17 |  ?  10  18*|
          *     2 |  0 |  5   8  11 | 18* 21  24 |
+         *
+         * Only type 1 and type 2 24kwh models from before 2016 will report a valid 'range 80%'.
+         * Any type 2 24 or 30kwh models starting mid 2015 (USA/Jap) or 2016 (UK), will always 
+         * return 0x1fff, and therefore never enter this if with mx values 18, 21 or 24.
+         * This is linked to Nissan removing the 'long life mode (80%)' from the car settings.
          */
         int cd = -1;
-        int type = -1;
         switch (mx)
           {
           case  0: m_quick_charge->SetValue(val); break;
@@ -706,14 +719,18 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
               {
               case BATTERY_TYPE_1_24kWh: cd = CHARGE_DURATION_RANGE_L0; break;
               case BATTERY_TYPE_2_24kWh: cd = CHARGE_DURATION_RANGE_L2; break;
-              case BATTERY_TYPE_2_30kWh: cd = CHARGE_DURATION_RANGE_L2; break;
+              case BATTERY_TYPE_2_30kWh: break;  // Will never occur with val != 0x1fff
               }
             break;
-          case 21: cd = CHARGE_DURATION_RANGE_L1; break;
-          case 24: cd = CHARGE_DURATION_RANGE_L0; break;
+          case 21: cd = CHARGE_DURATION_RANGE_L1; type = BATTERY_TYPE_2_24kWh; break;
+          case 24: cd = CHARGE_DURATION_RANGE_L0; type = BATTERY_TYPE_2_24kWh; break;
           }
         if (cd != -1) m_charge_duration->SetElemValue(cd, val/2);
-        if (type != -1) m_battery_type->SetValue(type);
+        }
+      // If detected, save battery type
+      if (type != -1)
+        {
+        m_battery_type->SetValue(type);
         }
       }
       break;
