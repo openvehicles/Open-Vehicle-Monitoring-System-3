@@ -38,6 +38,7 @@ static const char *TAG = "v-smarted";
 #include "ovms_peripherals.h"
 
 #define SE_CANDATA_TIMEOUT 10
+#define SE_EGPIO_TIMEOUT 5
 
 /**
  * Constructor & destructor
@@ -46,8 +47,11 @@ size_t OvmsVehicleSmartED::m_modifier = 0;
 
 OvmsVehicleSmartED::OvmsVehicleSmartED() {
     ESP_LOGI(TAG, "Start Smart ED vehicle module");
-
-    StandardMetrics.ms_v_env_hvac->SetValue(false);
+#ifdef CONFIG_OVMS_COMP_MAX7317
+    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_1, 0);
+    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_2, 0);
+    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_3, 0);
+#endif
     // init metrics:
     if (m_modifier == 0) {
         m_modifier = MyMetrics.RegisterModifier();
@@ -266,7 +270,7 @@ void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
             m_candata_poll = 0;
         }
     }
-    
+    /*
     if (StandardMetrics.ms_v_pos_speed->AsInt() == 0 && StandardMetrics.ms_v_bat_current->AsInt() > 2 && mt_hv_active) {
         if (StandardMetrics.ms_v_charge_state->AsString() != "charging") {
             StandardMetrics.ms_v_charge_state->SetValue("charging");
@@ -278,10 +282,18 @@ void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
             StandardMetrics.ms_v_charge_inprogress->SetValue(false);
         }
     }
+    */
 }
 
 void OvmsVehicleSmartED::Ticker60(uint32_t ticker) {
-
+#ifdef CONFIG_OVMS_COMP_MAX7317
+    if (m_egpio_timer > 0) {
+        if (--m_egpio_timer == 0) {
+            ESP_LOGI(TAG,"EGPIO 3 off");
+            MyPeripherals->m_max7317->Output(MAX7317_EGPIO_3, 0);
+        }
+    }
+#endif
 }
 
 
@@ -374,6 +386,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandHomelink(int button, i
         enable = false;
         return CommandSetChargeTimer(enable, StandardMetrics.ms_m_timeutc->AsInt());
     }
+#ifdef CONFIG_OVMS_COMP_MAX7317
+    if (button == 2) {
+        MyPeripherals->m_max7317->Output(MAX7317_EGPIO_3, 1);
+        m_egpio_timer = SE_EGPIO_TIMEOUT;
+        return Success;
+    }
+#endif
     return NotImplemented;
 }
 
@@ -392,10 +411,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
     frame.FIR.U = 0;
     frame.FIR.B.DLC = 8;
     frame.FIR.B.FF = CAN_frame_std;
-    frame.MsgID = 0x0e0;
-    frame.data.u8[0] = 0xff;
-    frame.data.u8[1] = 0xff;
-    frame.data.u8[2] = 0xff;
+    frame.MsgID = 0x218;
+    frame.data.u8[0] = 0x00;
+    frame.data.u8[1] = 0x00;
+    frame.data.u8[2] = 0x00;
     frame.data.u8[3] = 0x00;
     frame.data.u8[4] = 0x00;
     frame.data.u8[5] = 0x00;

@@ -75,6 +75,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
   private:
     unsigned int m_candata_timer;
     unsigned int m_candata_poll = 0;
+    unsigned int m_egpio_timer = 0;
 };
 
 #endif //#ifndef __VEHICLE_SMARTED_H__
