@@ -54,15 +54,6 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] =
     { 0, 0, 0x00, 0x00, { 0, 0, 0 } }
   };
 
-typedef enum
-  {
-  CHARGER_STATUS_IDLE,
-  CHARGER_STATUS_PLUGGED_IN_TIMER_WAIT,
-  CHARGER_STATUS_CHARGING,
-  CHARGER_STATUS_QUICK_CHARGING,
-  CHARGER_STATUS_FINISHED
-  } ChargerStatus;
-
 void remoteCommandTimer(TimerHandle_t timer)
   {
   OvmsVehicleNissanLeaf* nl = (OvmsVehicleNissanLeaf*) pvTimerGetTimerID(timer);
@@ -171,14 +162,37 @@ void OvmsVehicleNissanLeaf::ConfigChanged(OvmsConfigParam* param)
   //TODO nl_enable_write = MyConfig.GetParamValueBool("xnl", "canwrite", false);
 }
 
+
+// Takes care of setting all the state appropriate when the car is on
+// or off.
+//
+void OvmsVehicleNissanLeaf::vehicle_nissanleaf_car_on(bool isOn)
+  {
+  if (isOn && !StandardMetrics.ms_v_env_on->AsBool())
+    {
+    // Car is ON
+    StandardMetrics.ms_v_env_on->SetValue(true);
+    PollSetState(1);
+
+    // Reset trip values
+    StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
+    StandardMetrics.ms_v_bat_energy_used->SetValue(0);
+    }
+  else if (!isOn && StandardMetrics.ms_v_env_on->AsBool())
+    {
+    // Car is OFF
+    StandardMetrics.ms_v_env_on->SetValue(false);
+    PollSetState(0);
+    }
+  }
+
 ////////////////////////////////////////////////////////////////////////
 // vehicle_nissanleaf_charger_status()
 // Takes care of setting all the charger state bit when the charger
 // switches on or off. Separate from vehicle_nissanleaf_poll1() to make
 // it clearer what is going on.
 //
-
-void vehicle_nissanleaf_charger_status(ChargerStatus status)
+void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus status)
   {
   switch (status)
     {
@@ -905,12 +919,10 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
         case 0: // off
         case 1: // accessory
         case 2: // on (not ready to drive)
-          StandardMetrics.ms_v_env_on->SetValue(false);
-          PollSetState(0);
+          vehicle_nissanleaf_car_on(false);
           break;
         case 3: // ready to drive
-          StandardMetrics.ms_v_env_on->SetValue(true);
-          PollSetState(1);
+          vehicle_nissanleaf_car_on(true);
           break;
         }
       // The two lock bits are 0x10 driver door and 0x08 other doors.
@@ -1054,6 +1066,10 @@ void OvmsVehicleNissanLeaf::Ticker1(uint32_t ticker)
     {
     StandardMetrics.ms_v_env_awake->SetValue(false);
     }
+
+  // Update any derived values
+  // Energy used varies a lot during driving
+  HandleEnergy();
   }
 
 /**
@@ -1068,7 +1084,34 @@ void OvmsVehicleNissanLeaf::Ticker10(uint32_t ticker)
   }
 
 /**
+ * Update derived energy metrics while driving
+ * Called once per second from Ticker1
+ */
+void OvmsVehicleNissanLeaf::HandleEnergy()
+  {
+  float voltage  = StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
+  float current  = StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
+
+  // Power (in kw) resulting from voltage and current
+  float power = voltage * current / 1000.0;
+  StandardMetrics.ms_v_bat_power->SetValue(power);
+
+  // Are we driving?
+  if (power != 0.0 &&
+      StandardMetrics.ms_v_env_on->AsBool() )
+    {
+    // Update energy used and recovered
+    float energy = power / 3600.0;    // 1 second worth of energy in kwh's
+    if (energy < 0.0f)
+      StandardMetrics.ms_v_bat_energy_used->SetValue( StandardMetrics.ms_v_bat_energy_used->AsFloat() - energy);
+    else // (energy > 0.0f)
+      StandardMetrics.ms_v_bat_energy_recd->SetValue( StandardMetrics.ms_v_bat_energy_recd->AsFloat() + energy);
+    }
+}
+
+/**
  * Update derived metrics when charging
+ * Called once per 10 seconds from Ticker10
  */
 void OvmsVehicleNissanLeaf::HandleCharging()
   {
@@ -1085,9 +1128,15 @@ void OvmsVehicleNissanLeaf::HandleCharging()
     return;
     }
 
-  // Check if we have what is needed to calculate remaining minutes
+  // Check if we have what is needed to calculate energy and remaining minutes
   if (charge_voltage > 0 && charge_current > 0)
     {
+    // Update energy taken
+    // Value is reset to 0 when a new charging session starts...
+    float power  = charge_voltage * charge_current / 1000.0;     // power in kw
+    float energy = power / 3600.0 * 10.0;                        // 10 second worth of energy in kwh's
+    StandardMetrics.ms_v_charge_kwh->SetValue( StandardMetrics.ms_v_charge_kwh->AsFloat() + energy);
+
     // always calculate remaining charge time to full
     float full_soc           = 100.0;     // 100%
     int   minsremaining_full = calcMinutesRemaining(full_soc);

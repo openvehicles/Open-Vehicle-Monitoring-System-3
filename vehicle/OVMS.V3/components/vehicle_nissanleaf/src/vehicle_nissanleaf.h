@@ -67,6 +67,15 @@ typedef enum
   COMMAND_RESULT_OK
   } CommandResult;
 
+typedef enum
+  {
+  CHARGER_STATUS_IDLE,
+  CHARGER_STATUS_PLUGGED_IN_TIMER_WAIT,
+  CHARGER_STATUS_CHARGING,
+  CHARGER_STATUS_QUICK_CHARGING,
+  CHARGER_STATUS_FINISHED
+  } ChargerStatus;
+
 class OvmsVehicleNissanLeaf : public OvmsVehicle
   {
   public:
@@ -104,9 +113,12 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void GetDashboardConfig(DashboardConfig& cfg);
 
   private:
+    void vehicle_nissanleaf_car_on(bool isOn);
+    void vehicle_nissanleaf_charger_status(ChargerStatus status);
     void SendCanMessage(uint16_t id, uint8_t length, uint8_t *data);
     void Ticker1(uint32_t ticker);
     void Ticker10(uint32_t ticker);
+    void HandleEnergy();
     void HandleCharging();
     void HandleRange();
     int  calcMinutesRemaining(float target);
