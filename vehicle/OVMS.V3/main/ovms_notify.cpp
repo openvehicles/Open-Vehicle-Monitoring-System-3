@@ -403,18 +403,18 @@ OvmsNotify::OvmsNotify()
   MyConfig.RegisterParam("notify", "Notification filters", true, true);
 
   // Register our commands
-  OvmsCommand* cmd_notify = MyCommandApp.RegisterCommand("notify","NOTIFICATION framework",NULL, "", 1, 0, true);
-  cmd_notify->RegisterCommand("status","Show notification status",notify_status,"", 0, 0, true);
-  OvmsCommand* cmd_notifyraise = cmd_notify->RegisterCommand("raise","NOTIFICATION raise framework", NULL, "", 0, 0, true);
-  cmd_notifyraise->RegisterCommand("text","Raise a textual notification",notify_raise,"<type><subtype><message>", 3, 3, true);
-  cmd_notifyraise->RegisterCommand("command","Raise a command callback notification",notify_raise,"<type><subtype><command>", 3, 3, true);
-  cmd_notifyraise->RegisterCommand("errorcode","Raise an error code notification",notify_raise,"<code><data><raised>", 3, 3, true);
-  OvmsCommand* cmd_notifyerrorcode = cmd_notify->RegisterCommand("errorcode","NOTIFICATION error code framework", NULL, "", 0, 0, true);
-  cmd_notifyerrorcode->RegisterCommand("list","List error codes raised",notify_errorcode_list,"", 0, 0, true);
-  cmd_notifyerrorcode->RegisterCommand("clear","Clear error code list",notify_errorcode_clear,"", 0, 0, true);
-  OvmsCommand* cmd_notifytrace = cmd_notify->RegisterCommand("trace","NOTIFICATION trace framework", NULL, "", 0, 0, true);
-  cmd_notifytrace->RegisterCommand("on","Turn notification tracing ON",notify_trace,"", 0, 0, true);
-  cmd_notifytrace->RegisterCommand("off","Turn notification tracing OFF",notify_trace,"", 0, 0, true);
+  OvmsCommand* cmd_notify = MyCommandApp.RegisterCommand("notify","NOTIFICATION framework");
+  cmd_notify->RegisterCommand("status","Show notification status",notify_status);
+  OvmsCommand* cmd_notifyraise = cmd_notify->RegisterCommand("raise","NOTIFICATION raise framework");
+  cmd_notifyraise->RegisterCommand("text","Raise a textual notification",notify_raise,"<type><subtype><message>", 3, 3);
+  cmd_notifyraise->RegisterCommand("command","Raise a command callback notification",notify_raise,"<type><subtype><command>", 3, 3);
+  cmd_notifyraise->RegisterCommand("errorcode","Raise an error code notification",notify_raise,"<code><data><raised>", 3, 3);
+  OvmsCommand* cmd_notifyerrorcode = cmd_notify->RegisterCommand("errorcode","NOTIFICATION error code framework");
+  cmd_notifyerrorcode->RegisterCommand("list","List error codes raised",notify_errorcode_list);
+  cmd_notifyerrorcode->RegisterCommand("clear","Clear error code list",notify_errorcode_clear);
+  OvmsCommand* cmd_notifytrace = cmd_notify->RegisterCommand("trace","NOTIFICATION trace framework");
+  cmd_notifytrace->RegisterCommand("on","Turn notification tracing ON",notify_trace);
+  cmd_notifytrace->RegisterCommand("off","Turn notification tracing OFF",notify_trace);
 
   RegisterType("info");     // payload: human readable text message
   RegisterType("error");    // payload: "<vehicletype>,<errorcode>,<errordata>"

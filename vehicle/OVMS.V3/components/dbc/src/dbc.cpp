@@ -105,6 +105,21 @@ dbc_extract_bits_big_endian(uint8_t *candata, unsigned int bpos, unsigned int bi
   return val;
   }
 
+uint32_t dbcMessageIdFromString(const char* id)
+  {
+  uint32_t msgid = 0;
+  uint32_t mask = 0;
+
+  if (*id == 's')
+    { mask = 0; id++; }
+  else if (*id == 'e')
+    { mask = 0x80000000; id++; }
+
+  msgid = (uint32_t)strtoul(id, NULL, 0);
+
+  return msgid | mask;
+  }
+
 ////////////////////////////////////////////////////////////////////////
 // dbcComment...
 
@@ -970,6 +985,15 @@ void dbcMessage::RemoveSignal(dbcSignal* signal, bool free)
   {
   m_signals.remove(signal);
   if (free) delete signal;
+  }
+
+void dbcMessage::RemoveAllSignals(bool free)
+  {
+  for (dbcSignal* signal : m_signals)
+    {
+    if (free) delete signal;
+    }
+  m_signals.clear();
   }
 
 dbcSignal* dbcMessage::FindSignal(std::string name)

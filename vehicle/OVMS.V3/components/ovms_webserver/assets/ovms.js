@@ -131,6 +131,7 @@ function setcontent(tgt, uri, text){
 
   tgt.find(".receiver").unsubscribe();
   tgt.chart("destroy");
+  tgt.table("destroy");
 
   if (tgt[0].id == "main") {
     $("#nav .dropdown.open .dropdown-toggle").dropdown("toggle");
@@ -195,6 +196,12 @@ function loaduri(target, method, uri, data){
 
   return true;
 }
+
+$.fn.loaduri = function(method, uri, data) {
+  return this.each(function() {
+    loaduri(this, method, uri, data);
+  });
+};
 
 function standardTextFilter(msg) {
   if (msg.error)
@@ -291,6 +298,12 @@ function loadcmd(command, target, filter, timeout) {
 
   return xhr;
 }
+
+$.fn.loadcmd = function(command, filter, timeout) {
+  return this.each(function() {
+    loadcmd(command, $(this), filter, timeout);
+  });
+};
 
 
 /**
@@ -1337,6 +1350,55 @@ $.fn.chart = function(options) {
 
 
 /**
+ * DataTables
+ */
+
+var datatablesLoader;
+
+$.fn.table = function(options) {
+  if (this.length == 0)
+    return this;
+  var $this = this;
+  if (options === "destroy") {
+    // destroy:
+    var $tl = this.find(".has-dataTable").add(this.filter(".has-dataTable"));
+    $tl.each(function() {
+      var table = $(this).data("dataTable");
+      if (typeof table == "object") {
+        $(this).data("dataTable", null);
+        table.destroy();
+      }
+    });
+  } else {
+    // init:
+    function init_tables() {
+      $this.each(function() {
+        $(this).one("init.dt", function(ev, settings) {
+          if (settings && settings.oInstance && settings.oInit && settings.oInit.onUpdate)
+            settings.oInit.onUpdate.call(settings.oInstance.api(), metrics);
+        });
+        var table = $(this).DataTable(options);
+        $(this).data("dataTable", table).addClass("has-dataTable");
+      });
+    }
+    if ($.fn.DataTables) {
+      init_tables();
+    } else if (datatablesLoader) {
+      datatablesLoader.then(init_tables);
+    } else {
+      datatablesLoader = $.ajax({
+        url: (window.assets && window.assets["tables_js"]) || "/assets/tables.js?v=1.10.18",
+        dataType: "script",
+        cache: true,
+        success: function(){ init_tables(); }
+      });
+    }
+  }
+  return this;
+};
+
+
+/**
  * Framework Init
  */
 
@@ -1560,6 +1622,10 @@ $(function(){
         var ch = $(this.firstElementChild).data("chart");
         if (ch && ch.userOptions && ch.userOptions.onUpdate)
           ch.userOptions.onUpdate.call(ch, update);
+      } else if ($el.hasClass("table")) {
+        var dt = $(this.firstElementChild).data("dataTable");
+        if (dt && dt.settings() && dt.settings().oInit && dt.settings().oInit.onUpdate)
+          dt.settings().oInit.onUpdate.call(dt, update);
       } else {
         $el.text(val);
       }

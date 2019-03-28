@@ -367,21 +367,21 @@ TestFrameworkInit::TestFrameworkInit()
   {
   ESP_LOGI(TAG, "Initialising TEST (5000)");
 
-  OvmsCommand* cmd_test = MyCommandApp.RegisterCommand("test","Test framework",NULL,"",0,0,true);
-  cmd_test->RegisterCommand("sleep","Test Deep Sleep",test_deepsleep,"[<seconds>]",0,1,true);
+  OvmsCommand* cmd_test = MyCommandApp.RegisterCommand("test","Test framework");
+  cmd_test->RegisterCommand("sleep","Test Deep Sleep",test_deepsleep,"[<seconds>]",0,1);
 #ifdef CONFIG_OVMS_COMP_SDCARD
-  cmd_test->RegisterCommand("sdcard","Test CD CARD",test_sdcard,"",0,0,true);
+  cmd_test->RegisterCommand("sdcard","Test CD CARD",test_sdcard);
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
-  cmd_test->RegisterCommand("javascript","Test Javascript",test_javascript,"",0,0,true);
-  cmd_test->RegisterCommand("chargen","Character generator [<#lines>] [<delay_ms>]",test_chargen,"",0,2,true);
-  cmd_test->RegisterCommand("echo", "Test getchar", test_echo, "", 0, 0,true);
-  cmd_test->RegisterCommand("watchdog", "Test task spinning (and watchdog firing)", test_watchdog, "", 0, 0,true);
-  cmd_test->RegisterCommand("realloc", "Test memory re-allocations", test_realloc, "", 0, 0,true);
-  cmd_test->RegisterCommand("spiram", "Test SPI RAM memory usage", test_spiram, "", 0, 0,true);
-  cmd_test->RegisterCommand("strverscmp", "Test strverscmp function", test_strverscmp, "", 2, 2, true);
-  cmd_test->RegisterCommand("cantx", "Test CAN bus transmission", test_can, "[<port>] [<number>]", 0, 2, true);
-  cmd_test->RegisterCommand("canrx", "Test CAN bus reception", test_can, "[<port>] [<number>]", 0, 2, true);
-  cmd_test->RegisterCommand("mkstemp", "Test mkstemp function", test_mkstemp, "<file>", 1, 1, true);
+  cmd_test->RegisterCommand("javascript","Test Javascript",test_javascript);
+  cmd_test->RegisterCommand("chargen","Character generator",test_chargen,"[<#lines>] [<delay_ms>]",0,2);
+  cmd_test->RegisterCommand("echo", "Test getchar", test_echo);
+  cmd_test->RegisterCommand("watchdog", "Test task spinning (and watchdog firing)", test_watchdog);
+  cmd_test->RegisterCommand("realloc", "Test memory re-allocations", test_realloc);
+  cmd_test->RegisterCommand("spiram", "Test SPI RAM memory usage", test_spiram);
+  cmd_test->RegisterCommand("strverscmp", "Test strverscmp function", test_strverscmp, "", 2, 2);
+  cmd_test->RegisterCommand("cantx", "Test CAN bus transmission", test_can, "[<port>] [<number>]", 0, 2);
+  cmd_test->RegisterCommand("canrx", "Test CAN bus reception", test_can, "[<port>] [<number>]", 0, 2);
+  cmd_test->RegisterCommand("mkstemp", "Test mkstemp function", test_mkstemp, "<file>", 1, 1);
   cmd_test->RegisterCommand("string", "Test std::string memory corruption", test_string, "<loopcnt> <mode>\n"
-    "mode: 1=m.AsJSON, 2=m.AsString, 3=m.name, 4=const cfg string, 5=const local cstr, 6=const local string", 2, 2, true);
+    "mode: 1=m.AsJSON, 2=m.AsString, 3=m.name, 4=const cfg string, 5=const local cstr, 6=const local string", 2, 2);
   }

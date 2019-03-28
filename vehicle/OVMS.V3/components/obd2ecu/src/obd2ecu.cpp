@@ -838,15 +838,15 @@ obd2ecuInit::obd2ecuInit()
   {
   ESP_LOGI(TAG, "Initialising OBD2ECU (7000)");
 
-  OvmsCommand* cmd_obdii = MyCommandApp.RegisterCommand("obdii","OBDII framework",NULL, "", 1, 1,true);
-  OvmsCommand* cmd_ecu = cmd_obdii->RegisterCommand("ecu","OBDII ECU framework",NULL, "", 1, 1,true);
-  OvmsCommand* cmd_start = cmd_ecu->RegisterCommand("start","Start an OBDII ECU",NULL, "", 1, 1,true);
-  cmd_start->RegisterCommand("can1","start an OBDII ECU on can1",obd2ecu_start, "", 0, 0,true);
-  cmd_start->RegisterCommand("can2","Start an OBDII ECU on can2",obd2ecu_start, "", 0, 0,true);
-  cmd_start->RegisterCommand("can3","Start an OBDII ECU on can3",obd2ecu_start, "", 0, 0,true);
-  cmd_ecu->RegisterCommand("stop","Stop the OBDII ECU",obd2ecu_stop, "", 0, 0,true);
-  cmd_ecu->RegisterCommand("list","Show OBDII ECU pid list",obd2ecu_list, "", 0, 1,true);
-  cmd_ecu->RegisterCommand("reload","Reload OBDII ECU pid map",obd2ecu_reload, "", 0, 0,true);
+  OvmsCommand* cmd_obdii = MyCommandApp.RegisterCommand("obdii","OBDII framework");
+  OvmsCommand* cmd_ecu = cmd_obdii->RegisterCommand("ecu","OBDII ECU framework");
+  OvmsCommand* cmd_start = cmd_ecu->RegisterCommand("start","Start an OBDII ECU");
+  cmd_start->RegisterCommand("can1","start an OBDII ECU on can1",obd2ecu_start);
+  cmd_start->RegisterCommand("can2","Start an OBDII ECU on can2",obd2ecu_start);
+  cmd_start->RegisterCommand("can3","Start an OBDII ECU on can3",obd2ecu_start);
+  cmd_ecu->RegisterCommand("stop","Stop the OBDII ECU",obd2ecu_stop);
+  cmd_ecu->RegisterCommand("list","Show OBDII ECU pid list",obd2ecu_list, "", 0, 1);
+  cmd_ecu->RegisterCommand("reload","Reload OBDII ECU pid map",obd2ecu_reload);
 
   MyConfig.RegisterParam("obd2ecu", "OBD2ECU configuration", true, true);
   MyConfig.RegisterParam("obd2ecu.map", "OBD2ECU metric map", true, true);

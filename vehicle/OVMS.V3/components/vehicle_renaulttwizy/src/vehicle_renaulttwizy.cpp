@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-twizy";
 
-#define VERSION "0.23.2"
+#define VERSION "0.23.3"
 
 #include <stdio.h>
 #include <string>
@@ -105,7 +105,7 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   mt_bms_alert_temp = MyMetrics.InitBool("xrt.v.b.alert.temp", SM_STALE_MIN, false);
 
   // init commands:
-  cmd_xrt = MyCommandApp.RegisterCommand("xrt", "Renault Twizy", NULL, "", 0, 0, true);
+  cmd_xrt = MyCommandApp.RegisterCommand("xrt", "Renault Twizy");
 
   // init event listener:
   using std::placeholders::_1;

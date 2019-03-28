@@ -14,34 +14,63 @@ COMPONENT_ADD_INCLUDEDIRS:=src
 COMPONENT_SRCDIRS:=src assets
 COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive
 
-COMPONENT_EXTRA_CLEAN := assets/script.js.gz assets/charts.js.gz assets/style.css.gz assets/zones.json.gz
-COMPONENT_EMBED_FILES := assets/script.js.gz assets/charts.js.gz assets/style.css.gz assets/zones.json.gz assets/favicon.png
+COMPONENT_EXTRA_CLEAN := \
+	assets/script.js.gz \
+	assets/charts.js.gz \
+	assets/tables.js.gz \
+	assets/style.css.gz \
+	assets/zones.json.gz
+COMPONENT_EMBED_FILES := \
+	assets/script.js.gz \
+	assets/charts.js.gz \
+	assets/tables.js.gz \
+	assets/style.css.gz \
+	assets/zones.json.gz \
+	assets/favicon.png
 
-$(COMPONENT_PATH)/assets/script.js.gz : $(COMPONENT_PATH)/assets/jquery.min.js $(COMPONENT_PATH)/assets/bootstrap.min.js $(COMPONENT_PATH)/assets/ovms.js
+$(COMPONENT_PATH)/assets/script.js.gz : \
+	$(COMPONENT_PATH)/assets/jquery.min.js \
+	$(COMPONENT_PATH)/assets/bootstrap.min.js \
+	$(COMPONENT_PATH)/assets/ovms.js
 	cat $^ | gzip -c > $@
 
-$(COMPONENT_PATH)/assets/charts.js.gz : $(COMPONENT_PATH)/assets/highcharts.js $(COMPONENT_PATH)/assets/highcharts-more.js \
+$(COMPONENT_PATH)/assets/charts.js.gz : \
+	$(COMPONENT_PATH)/assets/highcharts.js \
+	$(COMPONENT_PATH)/assets/highcharts-more.js \
 	$(COMPONENT_PATH)/assets/hc-modules/bullet.js \
 	$(COMPONENT_PATH)/assets/hc-modules/solid-gauge.js \
 	$(COMPONENT_PATH)/assets/hc-modules/streamgraph.js \
 	$(COMPONENT_PATH)/assets/hc-modules/xrange.js
 	cat $^ | gzip -c > $@
 
-$(COMPONENT_PATH)/assets/style.css.gz : $(COMPONENT_PATH)/assets/bootstrap.min.css $(COMPONENT_PATH)/assets/bootstrap-theme.min.css $(COMPONENT_PATH)/assets/highcharts.css $(COMPONENT_PATH)/assets/ovms.css
+$(COMPONENT_PATH)/assets/tables.js.gz : \
+	$(COMPONENT_PATH)/assets/datatables.min.js
 	cat $^ | gzip -c > $@
 
-$(COMPONENT_PATH)/assets/zones.json.gz : $(COMPONENT_PATH)/assets/zones.json
+$(COMPONENT_PATH)/assets/style.css.gz : \
+	$(COMPONENT_PATH)/assets/bootstrap.min.css \
+	$(COMPONENT_PATH)/assets/bootstrap-theme.min.css \
+	$(COMPONENT_PATH)/assets/highcharts.css \
+	$(COMPONENT_PATH)/assets/datatables.min.css \
+	$(COMPONENT_PATH)/assets/datatables.ovms.css \
+	$(COMPONENT_PATH)/assets/ovms.css
+	cat $^ | gzip -c > $@
+
+$(COMPONENT_PATH)/assets/zones.json.gz : \
+	$(COMPONENT_PATH)/assets/zones.json
 	cat $^ | gzip -c > $@
 
 src/web_framework.o: \
 	$(COMPONENT_PATH)/assets/script.js.gz \
 	$(COMPONENT_PATH)/assets/charts.js.gz \
+	$(COMPONENT_PATH)/assets/tables.js.gz \
 	$(COMPONENT_PATH)/assets/style.css.gz \
 	$(COMPONENT_PATH)/assets/favicon.png \
 	$(COMPONENT_PATH)/assets/zones.json.gz
 
 CPPFLAGS += -DMTIME_ASSETS_SCRIPT_JS=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/script.js.gz")[9]')
 CPPFLAGS += -DMTIME_ASSETS_CHARTS_JS=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/charts.js.gz")[9]')
+CPPFLAGS += -DMTIME_ASSETS_TABLES_JS=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/tables.js.gz")[9]')
 CPPFLAGS += -DMTIME_ASSETS_STYLE_CSS=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/style.css.gz")[9]')
 CPPFLAGS += -DMTIME_ASSETS_FAVICON_PNG=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/favicon.png")[9]')
 CPPFLAGS += -DMTIME_ASSETS_ZONES_JSON=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/zones.json.gz")[9]')

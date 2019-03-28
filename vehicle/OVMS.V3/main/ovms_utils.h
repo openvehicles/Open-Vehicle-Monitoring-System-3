@@ -121,6 +121,7 @@ template <class src_string>
 std::string json_encode(const src_string text)
   {
   std::string buf;
+  char hex[10];
   buf.reserve(text.size() + (text.size() >> 3));
   for (int i=0; i<text.size(); i++)
     {
@@ -133,7 +134,17 @@ std::string json_encode(const src_string text)
       case '\f':        buf += "\\f"; break;
       case '\"':        buf += "\\\""; break;
       case '\\':        buf += "\\\\"; break;
-      default:          buf += text[i]; break;
+      default:
+        if (iscntrl(text[i]))
+          {
+          sprintf(hex, "\\u%04x", (unsigned int)text[i]);
+          buf += hex;
+          }
+        else
+          {
+          buf += text[i];
+          }
+        break;
       }
     }
 	return buf;

@@ -348,28 +348,28 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   StdMetrics.ms_v_bat_temp->SetValue(20, Celcius);
 
   // init commands:
-  cmd_xks = MyCommandApp.RegisterCommand("xks","Kia Soul EV",NULL,"",0,0,true);
-  cmd_xks->RegisterCommand("trip","Show trip info since last parked", xks_trip_since_parked, "", 0,0, false);
-  cmd_xks->RegisterCommand("tripch","Show trip info since last charge", xks_trip_since_charge, "", 0,0, false);
-  cmd_xks->RegisterCommand("tpms","Tire pressure monitor", xks_tpms, "", 0,0, false);
-  cmd_xks->RegisterCommand("aux","Aux battery", xks_aux, "", 0,0, false);
-  cmd_xks->RegisterCommand("vin","VIN information", xks_vin, "", 0,0, false);
-  cmd_xks->RegisterCommand("IGN1","IGN1 relay", xks_ign1, "<on/off><pin>",1,1, false);
-  cmd_xks->RegisterCommand("IGN2","IGN2 relay", xks_ign2, "<on/off><pin>",1,1, false);
-  cmd_xks->RegisterCommand("ACC","ACC relay", xks_acc_relay, "<on/off><pin>",1,1, false);
-  cmd_xks->RegisterCommand("START","Start relay", xks_start_relay, "<on/off><pin>",1,1, false);
-  cmd_xks->RegisterCommand("headlightdelay","Set Head Light Delay", xks_set_head_light_delay, "<on/off>",1,1, false);
-  cmd_xks->RegisterCommand("onetouchturnsignal","Set one touch turn signal", xks_set_one_touch_turn_signal, "<0=Off, 1=3 blink, 2=5 blink, 3=7 blink>",1,1, false);
-  cmd_xks->RegisterCommand("autodoorunlock","Set auto door unlock", xks_set_auto_door_unlock, "<1 = Off, 2 = Vehicle Off, 3 = On shift to P ,4 = Driver door unlock>",1,1, false);
-  cmd_xks->RegisterCommand("autodoorlock","Set auto door lock", xks_set_auto_door_lock, "<0 =Off, 1=Enable on speed, 2=Enable on Shift>",1,1, false);
+  cmd_xks = MyCommandApp.RegisterCommand("xks","Kia Soul EV");
+  cmd_xks->RegisterCommand("trip","Show trip info since last parked", xks_trip_since_parked);
+  cmd_xks->RegisterCommand("tripch","Show trip info since last charge", xks_trip_since_charge);
+  cmd_xks->RegisterCommand("tpms","Tire pressure monitor", xks_tpms);
+  cmd_xks->RegisterCommand("aux","Aux battery", xks_aux);
+  cmd_xks->RegisterCommand("vin","VIN information", xks_vin);
+  cmd_xks->RegisterCommand("IGN1","IGN1 relay", xks_ign1, "<on/off><pin>",1,1);
+  cmd_xks->RegisterCommand("IGN2","IGN2 relay", xks_ign2, "<on/off><pin>",1,1);
+  cmd_xks->RegisterCommand("ACC","ACC relay", xks_acc_relay, "<on/off><pin>",1,1);
+  cmd_xks->RegisterCommand("START","Start relay", xks_start_relay, "<on/off><pin>",1,1);
+  cmd_xks->RegisterCommand("headlightdelay","Set Head Light Delay", xks_set_head_light_delay, "<on/off>",1,1);
+  cmd_xks->RegisterCommand("onetouchturnsignal","Set one touch turn signal", xks_set_one_touch_turn_signal, "<0=Off, 1=3 blink, 2=5 blink, 3=7 blink>",1,1);
+  cmd_xks->RegisterCommand("autodoorunlock","Set auto door unlock", xks_set_auto_door_unlock, "<1 = Off, 2 = Vehicle Off, 3 = On shift to P ,4 = Driver door unlock>",1,1);
+  cmd_xks->RegisterCommand("autodoorlock","Set auto door lock", xks_set_auto_door_lock, "<0 =Off, 1=Enable on speed, 2=Enable on Shift>",1,1);
 
-  cmd_xks->RegisterCommand("trunk","Open trunk", CommandOpenTrunk, "<pin>",1,1, false);
-  cmd_xks->RegisterCommand("chargeport","Open chargeport", CommandOpenChargePort, "<pin>",1,1, false);
-  cmd_xks->RegisterCommand("ParkBreakService","Enable break pad service", CommandParkBreakService, "<on/off/off2>",1,1, false);
+  cmd_xks->RegisterCommand("trunk","Open trunk", CommandOpenTrunk, "<pin>",1,1);
+  cmd_xks->RegisterCommand("chargeport","Open chargeport", CommandOpenChargePort, "<pin>",1,1);
+  cmd_xks->RegisterCommand("ParkBreakService","Enable break pad service", CommandParkBreakService, "<on/off/off2>",1,1);
 
   // For test purposes
-  cmd_xks->RegisterCommand("sjb","Send command to SJB ECU", xks_sjb, "<b1><b2><b3>", 3,3, false);
-  cmd_xks->RegisterCommand("bcm","Send command to BCM ECU", xks_bcm, "<b1><b2><b3>", 3,3, false);
+  cmd_xks->RegisterCommand("sjb","Send command to SJB ECU", xks_sjb, "<b1><b2><b3>", 3,3);
+  cmd_xks->RegisterCommand("bcm","Send command to BCM ECU", xks_bcm, "<b1><b2><b3>", 3,3);
 
   MyConfig.SetParamValueBool("modem","enable.gps", true);
   MyConfig.SetParamValueBool("modem","enable.gpstime", true);

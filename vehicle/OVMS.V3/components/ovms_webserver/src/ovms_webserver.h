@@ -65,6 +65,7 @@
 // Asset URLs with versioning:
 #define URL_ASSETS_SCRIPT_JS      "/assets/script.js?v="       STR(MTIME_ASSETS_SCRIPT_JS)
 #define URL_ASSETS_CHARTS_JS      "/assets/charts.js?v="       STR(MTIME_ASSETS_CHARTS_JS)
+#define URL_ASSETS_TABLES_JS      "/assets/tables.js?v="       STR(MTIME_ASSETS_TABLES_JS)
 #define URL_ASSETS_STYLE_CSS      "/assets/style.css?v="       STR(MTIME_ASSETS_STYLE_CSS)
 #define URL_ASSETS_FAVICON_PNG    "/apple-touch-icon.png?v="   STR(MTIME_ASSETS_FAVICON_PNG)
 #define URL_ASSETS_ZONES_JSON     "/assets/zones.json?v="      STR(MTIME_ASSETS_ZONES_JSON)
@@ -450,7 +451,6 @@ class HttpCommandStream : public OvmsShell, public MgHandler
   public:
     void Initialize(bool print);
     virtual bool IsInteractive() { return false; }
-    char** GetCompletion(OvmsCommandMap& children, const char* token) { return NULL; }
     int puts(const char* s);
     int printf(const char* fmt, ...);
     ssize_t write(const void *buf, size_t nbyte);

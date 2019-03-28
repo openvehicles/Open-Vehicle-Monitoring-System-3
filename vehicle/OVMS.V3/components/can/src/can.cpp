@@ -457,36 +457,36 @@ can::can()
   {
   ESP_LOGI(TAG, "Initialising CAN (4500)");
 
-  OvmsCommand* cmd_can = MyCommandApp.RegisterCommand("can","CAN framework",NULL, "", 0, 0, true);
+  OvmsCommand* cmd_can = MyCommandApp.RegisterCommand("can","CAN framework");
 
   for (int k=1;k<4;k++)
     {
     static const char* name[4] = {"can1", "can2", "can3"};
-    OvmsCommand* cmd_canx = cmd_can->RegisterCommand(name[k-1],"CANx framework",NULL, "", 0, 0, true);
-    OvmsCommand* cmd_canstart = cmd_canx->RegisterCommand("start","CAN start framework", NULL, "", 0, 0, true);
-    cmd_canstart->RegisterCommand("listen","Start CAN bus in listen mode",can_start,"<baud> [<dbc>]", 1, 2, true);
-    cmd_canstart->RegisterCommand("active","Start CAN bus in active mode",can_start,"<baud> [<dbc>]", 1, 2, true);
-    cmd_canx->RegisterCommand("stop","Stop CAN bus",can_stop, "", 0, 0, true);
-    OvmsCommand* cmd_candbc = cmd_canx->RegisterCommand("dbc","CAN dbc framework", NULL, "", 0, 0, true);
-    cmd_candbc->RegisterCommand("attach","Attach a DBC file to a CAN bus",can_dbc_attach,"<dbc>", 1, 1, true);
-    cmd_candbc->RegisterCommand("detach","Detach the DBC file from a CAN bus",can_dbc_detach,"", 0, 0, true);
-    OvmsCommand* cmd_cantx = cmd_canx->RegisterCommand("tx","CAN tx framework", NULL, "", 0, 0, true);
-    cmd_cantx->RegisterCommand("standard","Transmit standard CAN frame",can_tx,"<id> <data...>", 1, 9, true);
-    cmd_cantx->RegisterCommand("extended","Transmit extended CAN frame",can_tx,"<id> <data...>", 1, 9, true);
-    OvmsCommand* cmd_canrx = cmd_canx->RegisterCommand("rx","CAN rx framework", NULL, "", 0, 0, true);
-    cmd_canrx->RegisterCommand("standard","Simulate reception of standard CAN frame",can_rx,"<id> <data...>", 1, 9, true);
-    cmd_canrx->RegisterCommand("extended","Simulate reception of extended CAN frame",can_rx,"<id> <data...>", 1, 9, true);
-    cmd_canx->RegisterCommand("status","Show CAN status",can_status,"", 0, 0, true);
-    cmd_canx->RegisterCommand("clear","Clear CAN status",can_clearstatus,"", 0, 0, true);
+    OvmsCommand* cmd_canx = cmd_can->RegisterCommand(name[k-1],"CANx framework");
+    OvmsCommand* cmd_canstart = cmd_canx->RegisterCommand("start","CAN start framework");
+    cmd_canstart->RegisterCommand("listen","Start CAN bus in listen mode",can_start,"<baud> [<dbc>]", 1, 2);
+    cmd_canstart->RegisterCommand("active","Start CAN bus in active mode",can_start,"<baud> [<dbc>]", 1, 2);
+    cmd_canx->RegisterCommand("stop","Stop CAN bus",can_stop);
+    OvmsCommand* cmd_candbc = cmd_canx->RegisterCommand("dbc","CAN dbc framework");
+    cmd_candbc->RegisterCommand("attach","Attach a DBC file to a CAN bus",can_dbc_attach,"<dbc>", 1, 1);
+    cmd_candbc->RegisterCommand("detach","Detach the DBC file from a CAN bus",can_dbc_detach);
+    OvmsCommand* cmd_cantx = cmd_canx->RegisterCommand("tx","CAN tx framework");
+    cmd_cantx->RegisterCommand("standard","Transmit standard CAN frame",can_tx,"<id> <data...>", 1, 9);
+    cmd_cantx->RegisterCommand("extended","Transmit extended CAN frame",can_tx,"<id> <data...>", 1, 9);
+    OvmsCommand* cmd_canrx = cmd_canx->RegisterCommand("rx","CAN rx framework");
+    cmd_canrx->RegisterCommand("standard","Simulate reception of standard CAN frame",can_rx,"<id> <data...>", 1, 9);
+    cmd_canrx->RegisterCommand("extended","Simulate reception of extended CAN frame",can_rx,"<id> <data...>", 1, 9);
+    cmd_canx->RegisterCommand("status","Show CAN status",can_status);
+    cmd_canx->RegisterCommand("clear","Clear CAN status",can_clearstatus);
     }
 
-  cmd_can->RegisterCommand("list", "List CAN buses", can_list, "", 0, 0, true);
+  cmd_can->RegisterCommand("list", "List CAN buses", can_list);
 
-  OvmsCommand* cmd_canlog = cmd_can->RegisterCommand("log", "CAN logging framework", NULL, "", 0, 0, true);
+  OvmsCommand* cmd_canlog = cmd_can->RegisterCommand("log", "CAN logging framework");
   cmd_canlog->RegisterCommand("trace", "Logging to syslog", can_log,
     "[filter1] [filter2] [filter3]\n"
     "Filter: <bus> / <id>[-<id>] / <bus>:<id>[-<id>]\n"
-    "Example: 2:2a0-37f", 0, 3, true);
+    "Example: 2:2a0-37f", 0, 3);
   const char* const* logtype = canlog::GetTypeList();
   while (*logtype)
     {
@@ -495,12 +495,12 @@ can::can()
       cmd_canlog->RegisterCommand(*logtype, "...format logging", can_log,
         "<path> [filter1] [filter2] [filter3]\n"
         "Filter: <bus> / <id>[-<id>] / <bus>:<id>[-<id>]\n"
-        "Example: 2:2a0-37f", 1, 4, true);
+        "Example: 2:2a0-37f", 1, 4);
       }
     logtype++;
     }
-  cmd_canlog->RegisterCommand("off", "Stop logging", can_log, "", 0, 0, true);
-  cmd_canlog->RegisterCommand("status", "Logging status", can_log, "", 0, 0, true);
+  cmd_canlog->RegisterCommand("off", "Stop logging", can_log);
+  cmd_canlog->RegisterCommand("status", "Logging status", can_log);
 
   m_rxqueue = xQueueCreate(CONFIG_OVMS_HW_CAN_RX_QUEUE_SIZE,sizeof(CAN_msg_t));
   xTaskCreatePinnedToCore(CAN_rxtask, "OVMS CanRx", 2048, (void*)this, 23, &m_rxtask, 0);
