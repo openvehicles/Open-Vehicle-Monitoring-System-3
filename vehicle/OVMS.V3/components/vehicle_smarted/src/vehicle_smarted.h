@@ -53,7 +53,8 @@ class OvmsVehicleSmartED : public OvmsVehicle
 	virtual vehicle_command_t CommandSetChargeTimer(bool timeron, uint16_t timerstart);
 	virtual vehicle_command_t CommandClimateControl(bool enable);
 	virtual vehicle_command_t CommandLock();
-    virtual vehicle_command_t CommandUnlock();
+        virtual vehicle_command_t CommandUnlock();
+    	virtual vehicle_command_t CommandWakeup();
 	
   protected:
     virtual void Ticker60(uint32_t ticker);
