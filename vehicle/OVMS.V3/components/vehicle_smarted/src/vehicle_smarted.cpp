@@ -49,10 +49,9 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     m_modifier = MyMetrics.RegisterModifier();
     ESP_LOGD(TAG, "registered metric modifier is #%d", m_modifier);
 
-	mt_displayed_soc = MyMetrics.InitInt("v.display.soc", SM_STALE_MIN, 0);
     mt_vehicle_time = MyMetrics.InitInt("v.display.time", SM_STALE_MIN, 0);
     mt_max_avail_power = MyMetrics.InitInt("v.display.power.max", SM_STALE_MIN, 0);
-    mt_energy_used_reset = MyMetrics.InitInt("v.display.soc", SM_STALE_MIN, 0);
+    mt_energy_used_reset = MyMetrics.InitInt("v.display.", SM_STALE_MIN, 0);
     mt_trip_start = MyMetrics.InitInt("v.display.trip.start", SM_STALE_MIN, 0);
     mt_trip_reset = MyMetrics.InitInt("v.display.trip.reset", SM_STALE_MIN, 0);	
     mt_hv_active = MyMetrics.InitBool("v.b.hv.active", SM_STALE_MIN, false);
@@ -80,7 +79,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
 		 = A7 (in HEX)
 		 = 167 (in base10) und das nun halbieren
 		 = 83,5%*/
-		mt_displayed_soc->SetValue((d[7]/2));
+		StandardMetrics.ms_v_bat_soc->SetValue((d[7]/2));
 		break;
 	}
 	case 0x2D5: //realSOC
@@ -91,7 +90,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
 		 = 340 (in HEX)
 		 = 832 (in base10) und das nun durch zehn
 		 = 83,2% */
-		StandardMetrics.ms_v_bat_soc->SetValue(((float) ((d[4] & 0x03) * 256 + d[5])) / 10, Percentage);
+		StandardMetrics.ms_v_bat_soh->SetValue(((float) ((d[4] & 0x03) * 256 + d[5])) / 10, Percentage);
 		break;
 	}
 	case 0x508: //HV ampere and charging yes/no
@@ -100,7 +99,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
 		value = (uint16_t) (d[2] & 0x3F) * 256 + (uint16_t) d[3];
 		value = (value - 0x2000) / 10.0;
 		StandardMetrics.ms_v_bat_current->SetValue(value, Amps);
-		//StandardMetrics.ms_v_charge_state->SetValue(d[?]);
+		StandardMetrics.ms_v_charge_state->SetValue(d[2]&0x40);
 		break;
 	}
 	case 0x448: //HV Voltage
@@ -199,8 +198,8 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
 	}
 	case 0x3CE: //Verbrauch ab Start und ab Reset
 	{
-		StandardMetrics.ms_v_bat_energy_used->SetValue(
-				(d[0] * 256 + d[1]) * 1000, WattHoursPK);
+		StandardMetrics.ms_v_bat_consumption->SetValue(
+				(d[0] * 256 + d[1]) * 10, WattHoursPK);
 		mt_energy_used_reset->SetValue(d[2]*256 + d[3]);
 		break;
 	}
@@ -303,6 +302,29 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeCurrent(
 
 	return Success;
 }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
+	//0x210 00 00 00 01 00 00 00 00 or 0x218 00 00 00 00 00 00 00 00
+	CAN_frame_t frame;
+	memset(&frame, 0, sizeof(frame));
+	frame.origin = m_can1;
+	frame.FIR.U = 0;
+	frame.FIR.B.DLC = 8;
+	frame.FIR.B.FF = CAN_frame_std;
+	frame.MsgID = 0x210;
+	frame.data.u8[0] = 0x00;
+	frame.data.u8[1] = 0x00;
+	frame.data.u8[2] = 0x00;
+	frame.data.u8[3] = 0x01;
+	frame.data.u8[4] = 0x00;
+	frame.data.u8[5] = 0x00;
+	frame.data.u8[6] = 0x00;
+	frame.data.u8[7] = 0x00;
+	m_can1->Write(&frame);	
+	
+	return Success;
+}
+
 #ifdef CONFIG_OVMS_COMP_MAX7317
 void SmartEDLockingTimer(TimerHandle_t timer) {
 	xTimerStop(timer, 0);
