@@ -113,8 +113,8 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_charge_duration_label->SetElemValue(CHARGE_DURATION_RANGE_L0, "range.l0");
   m_quick_charge = new OvmsMetricInt("xnl.v.c.quick", SM_STALE_HIGH);
   m_soc_nominal = new OvmsMetricFloat("xnl.v.b.soc.nominal", SM_STALE_HIGH, Percentage);
-  m_charge_count_qc     = MyMetrics.InitInt("xnl.v.c.count.qc",     SM_STALE_MIN, 0);
-  m_charge_count_l0l1l2 = MyMetrics.InitInt("xnl.v.c.count.l0l1l2", SM_STALE_MIN, 0); 
+  m_charge_count_qc     = MyMetrics.InitInt("xnl.v.c.count.qc",     SM_STALE_NONE, 0);
+  m_charge_count_l0l1l2 = MyMetrics.InitInt("xnl.v.c.count.l0l1l2", SM_STALE_NONE, 0);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
