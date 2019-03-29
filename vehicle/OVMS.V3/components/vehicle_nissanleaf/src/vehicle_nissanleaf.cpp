@@ -113,8 +113,8 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_charge_duration_label->SetElemValue(CHARGE_DURATION_RANGE_L0, "range.l0");
   m_quick_charge = new OvmsMetricInt("xnl.v.c.quick", SM_STALE_HIGH);
   m_soc_nominal = new OvmsMetricFloat("xnl.v.b.soc.nominal", SM_STALE_HIGH, Percentage);
-  m_charge_count_qc     = MyMetrics.InitInt("xnl.v.c.count.qc",     SM_STALE_MIN, 0);
-  m_charge_count_l0l1l2 = MyMetrics.InitInt("xnl.v.c.count.l0l1l2", SM_STALE_MIN, 0); 
+  m_charge_count_qc     = MyMetrics.InitInt("xnl.v.c.count.qc",     SM_STALE_NONE, 0);
+  m_charge_count_l0l1l2 = MyMetrics.InitInt("xnl.v.c.count.l0l1l2", SM_STALE_NONE, 0);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -483,6 +483,18 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
 
   switch (p_frame->MsgID)
     {
+    case 0x1da:
+    {
+      // Signed value, negative for reverse
+      // Values 0x7fff and 0x7ffe are seen during turning on of car
+      int16_t nl_rpm = (int16_t)( d[4] << 8 | d[5] );
+      if (nl_rpm != 0x7fff &&
+          nl_rpm != 0x7ffe)
+        {
+        StandardMetrics.ms_v_mot_rpm->SetValue(nl_rpm/2);
+        }
+    }
+      break;
     case 0x1db:
     {
       // sent by the LBC, measured inside the battery box
