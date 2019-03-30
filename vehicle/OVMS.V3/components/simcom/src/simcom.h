@@ -37,6 +37,7 @@
 #include "ovms_events.h"
 #include "gsmmux.h"
 #include "ovms_buffer.h"
+#include "ovms_command.h"
 
 #define SIMCOM_BUF_SIZE 1024
 
@@ -49,6 +50,7 @@ class simcom : public pcp, public InternalRamAllocated
   public:
     virtual void SetPowerMode(PowerMode powermode);
     void AutoInit();
+    void SupportSummary(OvmsWriter* writer);
 
   public:
     void tx(uint8_t* data, size_t size);

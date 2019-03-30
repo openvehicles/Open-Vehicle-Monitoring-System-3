@@ -451,7 +451,6 @@ class HttpCommandStream : public OvmsShell, public MgHandler
   public:
     void Initialize(bool print);
     virtual bool IsInteractive() { return false; }
-    char** GetCompletion(OvmsCommandMap& children, const char* token) { return NULL; }
     int puts(const char* s);
     int printf(const char* fmt, ...);
     ssize_t write(const void *buf, size_t nbyte);

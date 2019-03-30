@@ -74,7 +74,7 @@ pcpapp::pcpapp()
   m_mappm["sleep"] = Sleep;
   m_mappm["deepsleep"] = DeepSleep;
   m_mappm["off"] = Off;
-  powercmd = MyCommandApp.RegisterCommand("power","Power control",NULL,"$C $G$",0,0,true);
+  powercmd = MyCommandApp.RegisterCommand("power","Power control",NULL,"$C $G$");
   }
 
 pcpapp::~pcpapp()
@@ -84,12 +84,12 @@ pcpapp::~pcpapp()
 void pcpapp::Register(const char* name, pcp* device)
   {
   m_map[name] = device;
-  OvmsCommand* devcmd = powercmd->RegisterCommand(name,"Power control",NULL,"$C",0,0,true);
+  OvmsCommand* devcmd = powercmd->RegisterCommand(name,"Power control",NULL,"$C");
   for (auto it=m_mappm.begin(); it!=m_mappm.end(); ++it)
     {
-    devcmd->RegisterCommand(it->first,"Power control",power_cmd,"",0,0, true);
+    devcmd->RegisterCommand(it->first,"Power control",power_cmd);
     }
-  devcmd->RegisterCommand("status","Power control status",power_status,"",0,0, true);
+  devcmd->RegisterCommand("status","Power control status",power_status);
   }
 
 void pcpapp::Deregister(const char* name)

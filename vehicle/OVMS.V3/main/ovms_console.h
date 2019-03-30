@@ -81,7 +81,8 @@ class OvmsConsole : public OvmsShell
 
   public:
     void Initialize(const char* console);
-    char ** GetCompletion(OvmsCommandMap& children, const char* token);
+    char** SetCompletion(int index, const char* token);
+    char** GetCompletions() { return m_completions; }
     void Log(LogBuffers* message);
     void Poll(portTickType ticks, QueueHandle_t queue = NULL);
 

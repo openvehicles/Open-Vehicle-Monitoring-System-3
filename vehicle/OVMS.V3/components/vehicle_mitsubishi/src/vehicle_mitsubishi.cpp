@@ -150,12 +150,12 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   #endif
 
   // init commands:
-  cmd_xmi = MyCommandApp.RegisterCommand("xmi", "Mitsubishi iMiEV", NULL, "", 0, 0, true);
-  cmd_xmi->RegisterCommand("aux", "Aux Battery", xmi_aux, "", 0, 0, false);
-  cmd_xmi->RegisterCommand("trip", "Show trip info since last parked", xmi_trip_since_parked, "", 0, 0, false);
-  cmd_xmi->RegisterCommand("tripch", "Show trip info since last charger", xmi_trip_since_charge, "", 0, 0, false);
-  cmd_xmi->RegisterCommand("vin", "Show vin info", xmi_vin, "", 0, 0, false);
-  cmd_xmi->RegisterCommand("charge", "Show last charge info", xmi_charge, "", 0, 0, false);
+  cmd_xmi = MyCommandApp.RegisterCommand("xmi", "Mitsubishi iMiEV");
+  cmd_xmi->RegisterCommand("aux", "Aux Battery", xmi_aux);
+  cmd_xmi->RegisterCommand("trip", "Show trip info since last parked", xmi_trip_since_parked);
+  cmd_xmi->RegisterCommand("tripch", "Show trip info since last charger", xmi_trip_since_charge);
+  cmd_xmi->RegisterCommand("vin", "Show vin info", xmi_vin);
+  cmd_xmi->RegisterCommand("charge", "Show last charge info", xmi_charge);
 
   // init configs:
   MyConfig.RegisterParam( "xmi", "Trio", true, true);
