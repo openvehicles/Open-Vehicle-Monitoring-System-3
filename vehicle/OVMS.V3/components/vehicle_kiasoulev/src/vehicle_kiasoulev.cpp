@@ -141,6 +141,9 @@
 ;		0.4.3 19-March-2019 - Geir Øyvind Vælidalo
 ;			- Moved part of code to kia_common to share with the Kia Niro EV
 ;
+;		0.4.4 31-march-2019 - Geir Øyvind Vælidalo
+;			- Converted remaining charge time from a static calculation to one based on a charge profile.
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -184,7 +187,7 @@
 #include "ovms_notify.h"
 #include <sys/param.h>
 
-#define VERSION "0.4.3"
+#define VERSION "0.4.4"
 
 static const char *TAG = "v-kiasoulev";
 
@@ -206,6 +209,32 @@ static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
     { 0x7c5, 0x7cd, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, 		{       0,   10,  10 } }, 	// LDC - Low voltage DC-DC
     { 0, 0, 0, 0, { 0, 0, 0 } }
   };
+
+// Charging profile
+// Based partly on logged charging from 120kW Delta Charger
+charging_profile soul_charge_steps[] = {
+		//from%, to%, Chargespeed in Wh
+		 { 0,5,20 },
+		 { 5,10,40 },
+     { 10,20,45 },
+     { 20,30,47 },
+     { 30,50,49 },
+     { 50,70,68 },
+     { 70,72,55 },
+     { 72,74,46.8 },
+		 { 74,76,44.14 },
+		 { 76,79,37.5 },
+     { 79,81,30.5 },
+     { 81,83,27.5 },
+     { 83,89,21.5 },
+     { 89,90,20.5 },
+     { 90,91,18 },
+     { 91,92,15.5 },
+     { 92,93,13.2 },
+     { 93,95,9 },
+     { 95,100,8 },
+     { 0,0,0 },
+};
 
 /**
  * Constructor for Kia Soul EV
@@ -725,33 +754,62 @@ void OvmsVehicleKiaSoulEv::HandleCharging()
   // Check if we have what is needed to calculate remaining minutes
   if (CHARGE_VOLTAGE > 0 && CHARGE_CURRENT > 0)
   		{
-    	//Calculate remaining charge time
-		float chargeTarget_full 	= ks_battery_capacity;
-		float chargeTarget_soc 		= ks_battery_capacity;
-		float chargeTarget_range 	= ks_battery_capacity;
+//    	//Calculate remaining charge time
+//		float chargeTarget_full 	= ks_battery_capacity;
+//		float chargeTarget_soc 		= ks_battery_capacity;
+//		float chargeTarget_range 	= ks_battery_capacity;
+//
+//		if (LIMIT_SOC > 0) //If SOC limit is set, lets calculate target battery capacity
+//			{
+//			chargeTarget_soc = ks_battery_capacity * LIMIT_SOC / 100.0;
+//			}
+//		else if (LIMIT_RANGE > 0)  //If range limit is set, lets calculate target battery capacity
+//			{
+//			chargeTarget_range = LIMIT_RANGE * ks_battery_capacity / FULL_RANGE;
+//			}
+//
+//		if (ks_charge_bits.ChargingChademo)
+//			{ //ChaDeMo charging means that we will reach maximum 94%.
+//			chargeTarget_full = MIN(chargeTarget_full, ks_battery_capacity*0.94); //Limit charge target to 94% when using ChaDeMo
+//			chargeTarget_soc = MIN(chargeTarget_soc, ks_battery_capacity*0.94); //Limit charge target to 94% when using ChaDeMo
+//			chargeTarget_range = MIN(chargeTarget_range, ks_battery_capacity*0.94); //Limit charge target to 94% when using ChaDeMo
+//			//TODO calculate the needed capacity above 94% as 32A
+//			}
+//
+//		// Calculate time to full, SOC-limit and range-limit.
+//		StdMetrics.ms_v_charge_duration_full->SetValue( calcMinutesRemaining(chargeTarget_full), Minutes);
+//		StdMetrics.ms_v_charge_duration_soc->SetValue( calcMinutesRemaining(chargeTarget_soc), Minutes);
+//		StdMetrics.ms_v_charge_duration_range->SetValue( calcMinutesRemaining(chargeTarget_range), Minutes);
 
-		if (LIMIT_SOC > 0) //If SOC limit is set, lets calculate target battery capacity
-			{
-			chargeTarget_soc = ks_battery_capacity * LIMIT_SOC / 100.0;
-			}
-		else if (LIMIT_RANGE > 0)  //If range limit is set, lets calculate target battery capacity
-			{
-			chargeTarget_range = LIMIT_RANGE * ks_battery_capacity / FULL_RANGE;
-			}
+    if (CHARGE_VOLTAGE > 0 && CHARGE_CURRENT > 0)
+    		{
+      	//Calculate remaining charge time
+  			float chargeTarget_full 	= 100;
+  			float chargeTarget_soc 		= 100;
+  			float chargeTarget_range 	= 100;
 
-		if (ks_charge_bits.ChargingChademo)
-			{ //ChaDeMo charging means that we will reach maximum 94%.
-			chargeTarget_full = MIN(chargeTarget_full, ks_battery_capacity*0.94); //Limit charge target to 94% when using ChaDeMo
-			chargeTarget_soc = MIN(chargeTarget_soc, ks_battery_capacity*0.94); //Limit charge target to 94% when using ChaDeMo
-			chargeTarget_range = MIN(chargeTarget_range, ks_battery_capacity*0.94); //Limit charge target to 94% when using ChaDeMo
-			//TODO calculate the needed capacity above 94% as 32A
-			}
+  			if (LIMIT_SOC > 0) //If SOC limit is set, lets calculate target battery capacity
+  				{
+  				chargeTarget_soc =  LIMIT_SOC * 100;
+  				}
+  			else if (LIMIT_RANGE > 0)  //If range limit is set, lets calculate target battery capacity
+  				{
+  				chargeTarget_range = LIMIT_RANGE * 100 / FULL_RANGE;
+  				}
 
-		// Calculate time to full, SOC-limit and range-limit.
-		StdMetrics.ms_v_charge_duration_full->SetValue( calcMinutesRemaining(chargeTarget_full), Minutes);
-		StdMetrics.ms_v_charge_duration_soc->SetValue( calcMinutesRemaining(chargeTarget_soc), Minutes);
-		StdMetrics.ms_v_charge_duration_range->SetValue( calcMinutesRemaining(chargeTarget_range), Minutes);
-    }
+  			if (ks_charge_bits.ChargingChademo)
+  				{ //CCS charging means that we will reach maximum 80%.
+  				chargeTarget_full = MIN(chargeTarget_full, 80);
+  				chargeTarget_soc = MIN(chargeTarget_soc, 80);
+  				chargeTarget_range = MIN(chargeTarget_range, 80);
+  				}
+
+    		StdMetrics.ms_v_charge_duration_full->SetValue( CalcRemainingChargeMinutes(CHARGE_VOLTAGE*CHARGE_CURRENT, BAT_SOC, chargeTarget_full, ks_battery_capacity, soul_charge_steps), Minutes);
+    		StdMetrics.ms_v_charge_duration_soc->SetValue( CalcRemainingChargeMinutes(CHARGE_VOLTAGE*CHARGE_CURRENT, BAT_SOC, chargeTarget_soc, ks_battery_capacity, soul_charge_steps), Minutes);
+    		StdMetrics.ms_v_charge_duration_range->SetValue( CalcRemainingChargeMinutes(CHARGE_VOLTAGE*CHARGE_CURRENT, BAT_SOC, chargeTarget_range, ks_battery_capacity, soul_charge_steps), Minutes);
+      }
+
+  		}
   else
   		{
   		if( m_v_preheating->AsBool())

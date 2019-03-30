@@ -6,6 +6,18 @@
  */
 #include "kia_common.h"
 
+int KiaVehicle::CalcRemainingChargeMinutes(float chargespeed, int fromSoc, int toSoc, int batterySize, charging_profile charge_steps[])
+{
+       int minutes = 0, percents_In_Step;
+       for (int i = 0; charge_steps[i].toPercent != 0; i++) {
+             if (charge_steps[i].toPercent > fromSoc && charge_steps[i].fromPercent<toSoc) {
+                    percents_In_Step = (charge_steps[i].toPercent>toSoc ? toSoc : charge_steps[i].toPercent) - (charge_steps[i].fromPercent<fromSoc ? fromSoc : charge_steps[i].fromPercent);
+                    minutes += batterySize * percents_In_Step * 0.6 / (chargespeed<charge_steps[i].maxChargeSpeed ? chargespeed : charge_steps[i].maxChargeSpeed);
+             }
+       }
+       return minutes;
+}
+
 Kia_Trip_Counter::Kia_Trip_Counter()
 	{
 	odo_start=0;

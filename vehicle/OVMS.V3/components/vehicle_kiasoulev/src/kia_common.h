@@ -5,6 +5,13 @@
 
 using namespace std;
 
+typedef struct{
+       int    fromPercent;
+       int toPercent;
+       float maxChargeSpeed;
+}charging_profile;
+
+
 class Kia_Trip_Counter
     {
     private:
@@ -76,7 +83,6 @@ public:
 
   OvmsMetricString*	  m_v_steering_mode;
 
-
   OvmsMetricBool*  m_v_door_lock_fl;
   OvmsMetricBool*  m_v_door_lock_fr;
   OvmsMetricBool*  m_v_door_lock_rl;
@@ -85,6 +91,9 @@ public:
   OvmsMetricBool*  m_v_preheat_timer1_enabled;
   OvmsMetricBool*  m_v_preheat_timer2_enabled;
   OvmsMetricBool*  m_v_preheating;
+
+  OvmsMetricBool*  m_v_heated_handle;
+  OvmsMetricBool*  m_v_rear_defogger;
 
   OvmsMetricFloat* m_v_power_usage;
 
@@ -99,6 +108,8 @@ protected:
     uint8_t status;
     uint16_t id;
   } kia_send_can;
+
+  int CalcRemainingChargeMinutes(float chargespeed, int fromSoc, int toSoc, int batterySize, charging_profile charge_steps[]);
 
   Kia_Trip_Counter kia_park_trip_counter;
   Kia_Trip_Counter kia_charge_trip_counter;

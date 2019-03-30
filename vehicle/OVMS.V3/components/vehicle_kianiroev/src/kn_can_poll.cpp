@@ -226,6 +226,10 @@ void OvmsVehicleKiaNiroEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 						StdMetrics.ms_v_env_gear->SetValue(0);
 						}
 					}
+				else if(m_poll_ml_frame==2)
+					{
+					StdMetrics.ms_v_pos_speed->SetValue(CAN_UINT(2)/100.0);
+					}
 				}
 			break;
 
@@ -235,7 +239,7 @@ void OvmsVehicleKiaNiroEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 				if (m_poll_ml_frame == 3)
 					{
 					StdMetrics.ms_v_bat_12v_voltage->SetValue(((CAN_BYTE(2)<<8)+CAN_BYTE(1))/1000.0, Volts);
-					StdMetrics.ms_v_bat_12v_current->SetValue( (int16_t)((CAN_BYTE(4)<<8)+CAN_BYTE(3))/1000.0, Amps);
+					StdMetrics.ms_v_bat_12v_current->SetValue((((int16_t)CAN_BYTE(4)<<8)+CAN_BYTE(3))/1000.0, Amps);
 					m_b_aux_soc->SetValue( CAN_BYTE(5), Percentage);
 					}
 				}
@@ -269,7 +273,6 @@ void OvmsVehicleKiaNiroEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 					m_vin[14]=CAN_BYTE(3);
 					m_vin[15]=CAN_BYTE(4);
 					m_vin[16]=CAN_BYTE(5);
-					//m_vin[10]=CAN_BYTE(6);
 					StandardMetrics.ms_v_vin->SetValue(m_vin);
 					}
 				}
@@ -444,7 +447,15 @@ void OvmsVehicleKiaNiroEv::IncomingBCM(canbus* bus, uint16_t type, uint16_t pid,
 			case 0xB00E:
 				if (m_poll_ml_frame == 1)
 					{
-					StdMetrics.ms_v_door_chargeport->SetValue((CAN_BYTE(1)>>4) & 1);
+					//StdMetrics.ms_v_door_chargeport->SetValue((CAN_BYTE(1)>>4) & 1);
+					StdMetrics.ms_v_door_chargeport->SetValue(CAN_BIT(1,4));
+					}
+				break;
+
+			case 0xB00C:
+				if (m_poll_ml_frame == 1)
+					{
+					m_v_heated_handle->SetValue(CAN_BIT(1,5));
 					}
 				break;
 
@@ -558,6 +569,13 @@ void OvmsVehicleKiaNiroEv::IncomingIGMP(canbus* bus, uint16_t type, uint16_t pid
 					m_v_seat_belt_back_right->SetValue(CAN_BIT(4,1));
 
 					StdMetrics.ms_v_env_headlights->SetValue(CAN_BIT(4,4));
+					}
+				break;
+
+			case 0xbc07:
+				if (m_poll_ml_frame == 1)
+					{
+					m_v_rear_defogger->SetValue(CAN_BIT(2,1));
 					}
 				break;
 

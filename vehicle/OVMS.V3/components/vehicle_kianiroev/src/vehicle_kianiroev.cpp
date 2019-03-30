@@ -3,8 +3,11 @@
 ;    Date:          21th January 2019
 ;
 ;    Changes:
-;    0.1.0  Initial stub
+;    0.0.1  Initial stub
 ;			- Ported from Kia Soul. Totally untested.
+;
+;    0.1.0  First version on par with Soul
+;			- First "complete" version.
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
@@ -43,7 +46,7 @@
 #include <sys/param.h>
 #include "../../vehicle_kiasoulev/src/kia_common.h"
 
-#define VERSION "0.0.1"
+#define VERSION "0.1.0"
 
 static const char *TAG = "v-kianiroev";
 
@@ -52,40 +55,37 @@ static const char *TAG = "v-kianiroev";
 // Pollstate 2 - car is charging
 static const OvmsVehicle::poll_pid_t vehicle_kianiroev_polls[] =
   {
-    //Nothing { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIVEHICLE,    0x02, 		  {      10,   10,  10 } }, 	// VIN
-  		//{ 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT,    0xA6, 		  {      10,   10,  10 } }, 	// ODOMETER?? Husk å sjekk om noe svarer
+  		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDII_1A, 				0x80, 			{       0,  999, 999 } },  // VMCU - VIN
 
-
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0101, 		{      10,   10,  10 } }, 	// BMC Diag page 01
-																																												// Must be called when off to detect when charging
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0102, 		{       0,   10,  10 } }, 	// BMC Diag page 02
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0103, 		{       0,   10,  10 } }, 	// BMC Diag page 03
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0104, 		{       0,   10,  10 } }, 	// BMC Diag page 04
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0105, 		{       0,   10,  10 } },		// BMC Diag page 05
+		{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0101, 		{      10,   10,  10 } }, 	// BMC Diag page 01 - Must be called when off to detect when charging
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0102, 		{       0,   15,  10 } }, 	// BMC Diag page 02
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0103, 		{       0,   15,  10 } }, 	// BMC Diag page 03
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0104, 		{       0,   15,  10 } }, 	// BMC Diag page 04
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0105, 		{       0,   15,  10 } },		// BMC Diag page 05
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0106, 		{       0,   10,  10 } },		// BMC Diag page 06
 
-		{ 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xB00E, 		{      10,   10,  10 } },  // BCM Chargeport ++
-    { 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,   0xC002, 		{       0,   60,  60 } }, 	// TMPS - ID's
-    { 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,   0xC00B, 		{       0,   30,  30 } }, 	// TMPS - Pressure and Temp
+		{ 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xB00C, 		{       0,   10,  10 } },   // BCM Heated handle
+		{ 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xB00E, 		{      10,   10,  10 } },   // BCM Chargeport ++
+    { 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,   0xC002, 		{       0,  999,   0 } }, 	// TMPS - ID's
+    { 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,   0xC00B, 		{       0,   10,   0 } }, 	// TMPS - Pressure and Temp
 
-		{ 0x770, 0x778, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xbc03, 		{      10,   10,  10 } },  // IGMP Door status + IGN1 & IGN2
+		{ 0x770, 0x778, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xbc03, 		{      10,   10,  10 } },  // IGMP Door status + IGN1 & IGN2 - Detects when car is turned on
 		{ 0x770, 0x778, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xbc04, 		{      10,   10,  10 } },  // IGMP Door status
+		{ 0x770, 0x778, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xbc07, 		{      10,   10,  10 } },  // IGMP Rear/mirror defogger
 
 		{ 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0100, 		{       0,   10,  10 } },  // AirCon
 		{ 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0102, 		{       0,   10,  10 } },  // AirCon
 
 		{ 0x7c6, 0x7ce, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xB002, 		{       0,  120,  10 } },  // Cluster. ODO
 
-		{ 0x7d1, 0x7d9, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xc101, 		{       0,   10,  10 } },  // ABS/ESP
+		{ 0x7d1, 0x7d9, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xc101, 		{       0,   10,  10 } },  // ABS/ESP - Emergency lights
 
     { 0x7e5, 0x7ed, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x01, 			{      10,   10,  10 } }, 	// TEST! OBC - On board charger
     //{ 0x7e5, 0x7ed, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x02, 			{      10,   10,  10 } }, 	// TEST! OBC - On board charger
     { 0x7e5, 0x7ed, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x03, 			{      10,   10,  10 } }, 	// TEST! OBC - On board charger
 
 		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x01, 			{       0,   10,  10 } },  // VMCU - Shift position
-		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x02, 			{      60,   10,  10 } },  // VMCU - Aux Battery data
-
-		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDII_1A, 				0x80, 			{       0,   60,  60 } },  // VMCU - VIN
+		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x02, 			{      10,   10,  10 } },  // VMCU - Aux Battery data
 
 		{ 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x02, 			{       0,   10,  10 } },  // MCU
 
@@ -93,6 +93,21 @@ static const OvmsVehicle::poll_pid_t vehicle_kianiroev_polls[] =
 
     { 0, 0, 0, 0, { 0, 0, 0 } }
   };
+
+// Charging profile
+// Based mostly on this graph: https://support.fastned.nl/hc/en-gb/articles/360007699174-Charging-with-a-Kia-e-Niro
+charging_profile niro_charge_steps[] = {
+			 //from%, to%, Chargespeed in Wh
+       {  0, 10,	34000 },
+       { 10, 40, 78000 },
+       { 40, 55, 70000 },
+       { 55, 73, 58000 },
+       { 73, 78, 38000 },
+       { 78, 87, 25000 },
+       { 87, 95, 10000 },
+       { 95, 100, 7200 },
+       { 0,0,0 },
+};
 
 /**
  * Constructor for Kia Niro EV
@@ -142,14 +157,11 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   BmsSetCellArrangementTemperature(4, 1);
   BmsSetCellLimitsVoltage(2.0,5.0);
   BmsSetCellLimitsTemperature(-35,90);
-  BmsSetCellDefaultThresholdsVoltage(0.1, 0.2); //TODO What values do we want here?
-  BmsSetCellDefaultThresholdsTemperature(4.0, 8.0); // and here?
+  BmsSetCellDefaultThresholdsVoltage(0.1, 0.2);
+  BmsSetCellDefaultThresholdsTemperature(4.0, 8.0);
 
   //Disable BMS alerts by default
   MyConfig.SetParamValueBool("vehicle", "bms.alerts.enabled", false);
-
-  //for(int i=0; i<96; i++)
-  	//	BmsSetCellVoltage(i, 2.0);
 
   // init metrics:
   m_version = MyMetrics.InitString("xkn.version", 0, VERSION " " __DATE__ " " __TIME__);
@@ -186,6 +198,9 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   m_v_preheat_timer2_enabled = MyMetrics.InitBool("xkn.e.preheat.timer2.enabled", 10, 0);
   m_v_preheating = MyMetrics.InitBool("xkn.e.preheating", 10, 0);
 
+  m_v_heated_handle = MyMetrics.InitBool("xkn.e.heated.steering", 10, 0);
+  m_v_rear_defogger = MyMetrics.InitBool("xkn.e.rear.defogger", 10, 0);
+
   ms_v_pos_trip = MyMetrics.InitFloat("xkn.e.trip", 10, 0, Kilometers);
   ms_v_trip_energy_used = MyMetrics.InitFloat("xkn.e.trip.energy.used", 10, 0, kWh);
   ms_v_trip_energy_recd = MyMetrics.InitFloat("xkn.e.trip.energy.recuperated", 10, 0, kWh);
@@ -217,27 +232,14 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   kn_shift_bits.CarOn = false;
 
   // init commands:
-  cmd_xkn = MyCommandApp.RegisterCommand("xkn","Kia Niro EV",NULL,"",0,0,true);
-  cmd_xkn->RegisterCommand("trip","Show trip info since last parked", xkn_trip_since_parked, 0,0, false);
-  cmd_xkn->RegisterCommand("tripch","Show trip info since last charge", xkn_trip_since_charge, 0,0, false);
-  cmd_xkn->RegisterCommand("tpms","Tire pressure monitor", xkn_tpms, 0,0, false);
-  cmd_xkn->RegisterCommand("aux","Aux battery", xkn_aux, 0,0, false);
-  cmd_xkn->RegisterCommand("vin","VIN information", xkn_vin, 0,0, false);
-/*  cmd_xkn->RegisterCommand("IGN1","IGN1 relay", xkn_ign1, "<on/off><pin>",1,1, false);
-  cmd_xkn->RegisterCommand("IGN2","IGN2 relay", xkn_ign2, "<on/off><pin>",1,1, false);
-  cmd_xkn->RegisterCommand("ACC","ACC relay", xkn_acc_relay, "<on/off><pin>",1,1, false);
-  cmd_xkn->RegisterCommand("START","Start relay", xkn_start_relay, "<on/off><pin>",1,1, false);
-  cmd_xkn->RegisterCommand("headlightdelay","Set Head Light Delay", xkn_set_head_light_delay, "<on/off>",1,1, false);
-  cmd_xkn->RegisterCommand("onetouchturnsignal","Set one touch turn signal", xkn_set_one_touch_turn_signal, "<0=Off, 1=3 blink, 2=5 blink, 3=7 blink>",1,1, false);
-  cmd_xkn->RegisterCommand("autodoorunlock","Set auto door unlock", xkn_set_auto_door_unlock, "<1 = Off, 2 = Vehicle Off, 3 = On shift to P ,4 = Driver door unlock>",1,1, false);
-  cmd_xkn->RegisterCommand("autodoorlock","Set auto door lock", xkn_set_auto_door_lock, "<0 =Off, 1=Enable on speed, 2=Enable on Shift>",1,1, false);
-*/
-  cmd_xkn->RegisterCommand("trunk","Open trunk", CommandOpenTrunk, "<pin>",1,1, false);
-  //cmd_xkn->RegisterCommand("ParkBreakService","Enable break pad service", CommandParkBreakService, "<on/off/off2>",1,1, false);
+  cmd_xkn = MyCommandApp.RegisterCommand("xkn","Kia Niro EV");
+  cmd_xkn->RegisterCommand("trip","Show trip info since last parked", xkn_trip_since_parked);
+  cmd_xkn->RegisterCommand("tripch","Show trip info since last charge", xkn_trip_since_charge);
+  cmd_xkn->RegisterCommand("tpms","Tire pressure monitor", xkn_tpms);
+  cmd_xkn->RegisterCommand("aux","Aux battery", xkn_aux);
+  cmd_xkn->RegisterCommand("vin","VIN information", xkn_vin);
 
-  // For test purposes
-  //cmd_xkn->RegisterCommand("sjb","Send command to SJB ECU", xkn_sjb, "<b1><b2><b3>", 3,3, false);
-  //cmd_xkn->RegisterCommand("bcm","Send command to BCM ECU", xkn_bcm, "<b1><b2><b3>", 3,3, false);
+  cmd_xkn->RegisterCommand("trunk","Open trunk", CommandOpenTrunk, "<pin>",1,1);
 
   MyConfig.SetParamValueBool("modem","enable.gps", true);
   MyConfig.SetParamValueBool("modem","enable.gpstime", true);
@@ -591,31 +593,29 @@ void OvmsVehicleKiaNiroEv::HandleCharging()
   if (CHARGE_VOLTAGE > 0 && CHARGE_CURRENT > 0)
   		{
     	//Calculate remaining charge time
-		float chargeTarget_full 	= kn_battery_capacity;
-		float chargeTarget_soc 		= kn_battery_capacity;
-		float chargeTarget_range 	= kn_battery_capacity;
+		float chargeTarget_full 	= 100;
+		float chargeTarget_soc 		= 100;
+		float chargeTarget_range 	= 100;
 
 		if (LIMIT_SOC > 0) //If SOC limit is set, lets calculate target battery capacity
 			{
-			chargeTarget_soc = kn_battery_capacity * LIMIT_SOC / 100.0;
+			chargeTarget_soc =  LIMIT_SOC * 100;
 			}
 		else if (LIMIT_RANGE > 0)  //If range limit is set, lets calculate target battery capacity
 			{
-			chargeTarget_range = LIMIT_RANGE * kn_battery_capacity / FULL_RANGE;
+			chargeTarget_range = LIMIT_RANGE * 100 / FULL_RANGE;
 			}
 
 		if (kn_charge_bits.ChargingCCS)
-			{ //CCS charging means that we will reach maximum 94%.
-			chargeTarget_full = MIN(chargeTarget_full, kn_battery_capacity*0.94); //Limit charge target to 94% when using CCS
-			chargeTarget_soc = MIN(chargeTarget_soc, kn_battery_capacity*0.94); //Limit charge target to 94% when using CCS
-			chargeTarget_range = MIN(chargeTarget_range, kn_battery_capacity*0.94); //Limit charge target to 94% when using CCS
-			//TODO calculate the needed capacity above 94% as 32A
+			{ //CCS charging means that we will reach maximum 80%.
+			chargeTarget_full = MIN(chargeTarget_full, 80);
+			chargeTarget_soc = MIN(chargeTarget_soc, 80);
+			chargeTarget_range = MIN(chargeTarget_range, 80);
 			}
 
-		// Calculate time to full, SOC-limit and range-limit.
-		StdMetrics.ms_v_charge_duration_full->SetValue( calcMinutesRemaining(chargeTarget_full), Minutes);
-		StdMetrics.ms_v_charge_duration_soc->SetValue( calcMinutesRemaining(chargeTarget_soc), Minutes);
-		StdMetrics.ms_v_charge_duration_range->SetValue( calcMinutesRemaining(chargeTarget_range), Minutes);
+  		StdMetrics.ms_v_charge_duration_full->SetValue( CalcRemainingChargeMinutes(CHARGE_VOLTAGE*CHARGE_CURRENT, BAT_SOC, chargeTarget_full, kn_battery_capacity, niro_charge_steps), Minutes);
+  		StdMetrics.ms_v_charge_duration_soc->SetValue( CalcRemainingChargeMinutes(CHARGE_VOLTAGE*CHARGE_CURRENT, BAT_SOC, chargeTarget_soc, kn_battery_capacity, niro_charge_steps), Minutes);
+  		StdMetrics.ms_v_charge_duration_range->SetValue( CalcRemainingChargeMinutes(CHARGE_VOLTAGE*CHARGE_CURRENT, BAT_SOC, chargeTarget_range, kn_battery_capacity, niro_charge_steps), Minutes);
     }
   else
   		{
@@ -729,7 +729,6 @@ void OvmsVehicleKiaNiroEv::UpdateMaxRangeAndSOH(void)
 
 /**
  * Open or lock the doors
- * 770 04 2F BC 1[0:1] 03
  */
 bool OvmsVehicleKiaNiroEv::SetDoorLock(bool open, const char* password)
 	{
@@ -768,7 +767,6 @@ bool OvmsVehicleKiaNiroEv::OpenTrunk(const char* password)
 
 /**
  * Turn on and off left indicator light
- * 770 04 2f bc 15 0[3:0]
  */
 bool OvmsVehicleKiaNiroEv::LeftIndicator(bool on)
 	{
@@ -782,7 +780,6 @@ bool OvmsVehicleKiaNiroEv::LeftIndicator(bool on)
 
 /**
  * Turn on and off right indicator light
- * 770 04 2f bc 16 0[3:0]
  */
 bool OvmsVehicleKiaNiroEv::RightIndicator(bool on)
 	{
