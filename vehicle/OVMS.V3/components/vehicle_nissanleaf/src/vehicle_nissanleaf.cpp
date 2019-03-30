@@ -48,20 +48,11 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] =
     { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, {  0,999,999 } }, // VIN [19]
     { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1203, {  0,999,999 } }, // QC [4]
     { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1205, {  0,999,999 } }, // L0/L1/L2 [4]
-    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 61, 61 } }, // bat [39]
+    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 61, 61 } }, // bat [39/41]
     { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 67, 67 } }, // battery voltages [196]
     { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,307,307 } }, // battery temperatures [14]
     { 0, 0, 0x00, 0x00, { 0, 0, 0 } }
   };
-
-typedef enum
-  {
-  CHARGER_STATUS_IDLE,
-  CHARGER_STATUS_PLUGGED_IN_TIMER_WAIT,
-  CHARGER_STATUS_CHARGING,
-  CHARGER_STATUS_QUICK_CHARGING,
-  CHARGER_STATUS_FINISHED
-  } ChargerStatus;
 
 void remoteCommandTimer(TimerHandle_t timer)
   {
@@ -122,8 +113,8 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_charge_duration_label->SetElemValue(CHARGE_DURATION_RANGE_L0, "range.l0");
   m_quick_charge = new OvmsMetricInt("xnl.v.c.quick", SM_STALE_HIGH);
   m_soc_nominal = new OvmsMetricFloat("xnl.v.b.soc.nominal", SM_STALE_HIGH, Percentage);
-  m_charge_count_qc     = MyMetrics.InitInt("xnl.v.c.count.qc",     SM_STALE_MIN, 0);
-  m_charge_count_l0l1l2 = MyMetrics.InitInt("xnl.v.c.count.l0l1l2", SM_STALE_MIN, 0); 
+  m_charge_count_qc     = MyMetrics.InitInt("xnl.v.c.count.qc",     SM_STALE_NONE, 0);
+  m_charge_count_l0l1l2 = MyMetrics.InitInt("xnl.v.c.count.l0l1l2", SM_STALE_NONE, 0);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -171,14 +162,37 @@ void OvmsVehicleNissanLeaf::ConfigChanged(OvmsConfigParam* param)
   //TODO nl_enable_write = MyConfig.GetParamValueBool("xnl", "canwrite", false);
 }
 
+
+// Takes care of setting all the state appropriate when the car is on
+// or off.
+//
+void OvmsVehicleNissanLeaf::vehicle_nissanleaf_car_on(bool isOn)
+  {
+  if (isOn && !StandardMetrics.ms_v_env_on->AsBool())
+    {
+    // Car is ON
+    StandardMetrics.ms_v_env_on->SetValue(true);
+    PollSetState(1);
+
+    // Reset trip values
+    StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
+    StandardMetrics.ms_v_bat_energy_used->SetValue(0);
+    }
+  else if (!isOn && StandardMetrics.ms_v_env_on->AsBool())
+    {
+    // Car is OFF
+    StandardMetrics.ms_v_env_on->SetValue(false);
+    PollSetState(0);
+    }
+  }
+
 ////////////////////////////////////////////////////////////////////////
 // vehicle_nissanleaf_charger_status()
 // Takes care of setting all the charger state bit when the charger
 // switches on or off. Separate from vehicle_nissanleaf_poll1() to make
 // it clearer what is going on.
 //
-
-void vehicle_nissanleaf_charger_status(ChargerStatus status)
+void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus status)
   {
   switch (status)
     {
@@ -244,18 +258,8 @@ void vehicle_nissanleaf_charger_status(ChargerStatus status)
 
 void OvmsVehicleNissanLeaf::PollReply_Battery(uint8_t reply_data[], uint16_t reply_len)
   {
-  if (reply_len == 39)    // 24 KWh Leafs
-    {
-    // We may have already worked out from 0x5bc that it is type 1 (which
-    // must be 24kWh), so only set to type 2 here if still undefined.
-    if (!m_battery_type->IsDefined())
-      m_battery_type->SetValue(BATTERY_TYPE_2_24kWh);
-    }
-  else if (reply_len == 41)      // 30 KWh Leafs with Nissan BMS fix
-    {
-    m_battery_type->SetValue(BATTERY_TYPE_2_30kWh);
-    }
-  else
+  if (reply_len != 39 &&    // 24 KWh Leafs
+      reply_len != 41)      // 30 KWh Leafs with Nissan BMS fix
     {
     ESP_LOGI(TAG, "PollReply_Battery: len=%d != 39 && != 41", reply_len);
     return;
@@ -479,6 +483,18 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
 
   switch (p_frame->MsgID)
     {
+    case 0x1da:
+    {
+      // Signed value, negative for reverse
+      // Values 0x7fff and 0x7ffe are seen during turning on of car
+      int16_t nl_rpm = (int16_t)( d[4] << 8 | d[5] );
+      if (nl_rpm != 0x7fff &&
+          nl_rpm != 0x7ffe)
+        {
+        StandardMetrics.ms_v_mot_rpm->SetValue(nl_rpm/2);
+        }
+    }
+      break;
     case 0x1db:
     {
       // sent by the LBC, measured inside the battery box
@@ -639,39 +655,58 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x59e:
       {
-      /* This does not give a sensible capacity estimate for 30kWh battery,
-       * but leave it here for now until we either figure out what this
-       * really is or find a way to read capacity some other way.
-       */
-      uint16_t cap_gid = d[2] << 4 | d[3] >> 4;
-      m_battery_energy_capacity->SetValue(cap_gid * GEN_1_WH_PER_GID, WattHours);
+      switch(m_battery_type->AsInt(BATTERY_TYPE_2_24kWh))
+        {
+        case BATTERY_TYPE_1_24kWh:
+        case BATTERY_TYPE_2_24kWh:
+          {
+          uint16_t cap_gid = d[2] << 4 | d[3] >> 4;
+          m_battery_energy_capacity->SetValue(cap_gid * GEN_1_WH_PER_GID, WattHours);
+          }
+          break;
+        case BATTERY_TYPE_2_30kWh:
+          // This msg does not give a sensible capacity estimate for 30kWh battery,
+          // instead m_battery_energy_capacity is set from message 0x5bc
+          break;
+        }      
       }
       break;
     case 0x5bc:
       {
       uint16_t nl_gids = ((uint16_t) d[0] << 2) | ((d[1] & 0xc0) >> 6);
+      uint8_t  mx_gids = (d[5] & 0x10) >> 4;
+      int type = -1;
       // gids is invalid during startup
       if (nl_gids != 1023)
         {
-        m_gids->SetValue(nl_gids);
-        m_battery_energy_available->SetValue(nl_gids * GEN_1_WH_PER_GID, WattHours);
-
-        // new car soc -- 100% when the battery is new, less when it's degraded
-        uint16_t max_gids = MyConfig.GetParamValueInt("xnl", "maxGids", GEN_1_NEW_CAR_GIDS);
-        float soc_new_car = (nl_gids * 100.0) / max_gids;
-        m_soc_new_car->SetValue(soc_new_car);
-
-        // we use the instrument cluster soc from 0x1db unless the user has opted otherwise
-        if (MyConfig.GetParamValueBool("xnl", "soc.newcar", false))
+        switch (mx_gids)
           {
-          StandardMetrics.ms_v_bat_soc->SetValue(soc_new_car);
-          }
+          case 0x00:
+            {
+            // Current gids on 24 and 30kwh models
+            m_gids->SetValue(nl_gids);
+            m_battery_energy_available->SetValue(nl_gids * GEN_1_WH_PER_GID, WattHours);
 
-        /* range calculation now done in HandleRange(), called from Ticker10
-        float km_per_kwh = MyConfig.GetParamValueFloat("xnl", "kmPerKWh", GEN_1_KM_PER_KWH);
-        float wh_per_gid = MyConfig.GetParamValueFloat("xnl", "whPerGid", GEN_1_WH_PER_GID);
-        StandardMetrics.ms_v_bat_range_ideal->SetValue((nl_gids * wh_per_gid * km_per_kwh) / 1000);
-        */
+            // new car soc -- 100% when the battery is new, less when it's degraded
+            uint16_t max_gids = MyConfig.GetParamValueInt("xnl", "maxGids", GEN_1_NEW_CAR_GIDS);
+            float soc_new_car = (nl_gids * 100.0) / max_gids;
+            m_soc_new_car->SetValue(soc_new_car);
+
+            // we use the instrument cluster soc from 0x1db unless the user has opted otherwise
+            if (MyConfig.GetParamValueBool("xnl", "soc.newcar", false))
+              {
+              StandardMetrics.ms_v_bat_soc->SetValue(soc_new_car);
+              }
+            }
+            break;
+          case  0x01:
+            {
+            // Max gids, this mx value only occurs on 30kwh models. For 24 kwh models we use the value from msg 0x59e
+            m_battery_energy_capacity->SetValue(nl_gids * GEN_1_WH_PER_GID, WattHours);
+            type = BATTERY_TYPE_2_30kWh;
+            }
+            break;
+          }
         }
       /* Estimated charge time is a set of multiplexed values:
        *   d[5]     d[6]     d[7]
@@ -689,9 +724,13 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
          *  ---- | -- | --  --  -- | --  --  -- |
          *     1 |  ? |  ?   9  17 |  ?  10  18*|
          *     2 |  0 |  5   8  11 | 18* 21  24 |
+         *
+         * Only type 1 and type 2 24kwh models from before 2016 will report a valid 'range 80%'.
+         * Any type 2 24 or 30kwh models starting mid 2015 (USA/Jap) or 2016 (UK), will always 
+         * return 0x1fff, and therefore never enter this if with mx values 18, 21 or 24.
+         * This is linked to Nissan removing the 'long life mode (80%)' from the car settings.
          */
         int cd = -1;
-        int type = -1;
         switch (mx)
           {
           case  0: m_quick_charge->SetValue(val); break;
@@ -706,14 +745,18 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
               {
               case BATTERY_TYPE_1_24kWh: cd = CHARGE_DURATION_RANGE_L0; break;
               case BATTERY_TYPE_2_24kWh: cd = CHARGE_DURATION_RANGE_L2; break;
-              case BATTERY_TYPE_2_30kWh: cd = CHARGE_DURATION_RANGE_L2; break;
+              case BATTERY_TYPE_2_30kWh: break;  // Will never occur with val != 0x1fff
               }
             break;
-          case 21: cd = CHARGE_DURATION_RANGE_L1; break;
-          case 24: cd = CHARGE_DURATION_RANGE_L0; break;
+          case 21: cd = CHARGE_DURATION_RANGE_L1; type = BATTERY_TYPE_2_24kWh; break;
+          case 24: cd = CHARGE_DURATION_RANGE_L0; type = BATTERY_TYPE_2_24kWh; break;
           }
         if (cd != -1) m_charge_duration->SetElemValue(cd, val/2);
-        if (type != -1) m_battery_type->SetValue(type);
+        }
+      // If detected, save battery type
+      if (type != -1)
+        {
+        m_battery_type->SetValue(type);
         }
       }
       break;
@@ -888,12 +931,10 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
         case 0: // off
         case 1: // accessory
         case 2: // on (not ready to drive)
-          StandardMetrics.ms_v_env_on->SetValue(false);
-          PollSetState(0);
+          vehicle_nissanleaf_car_on(false);
           break;
         case 3: // ready to drive
-          StandardMetrics.ms_v_env_on->SetValue(true);
-          PollSetState(1);
+          vehicle_nissanleaf_car_on(true);
           break;
         }
       // The two lock bits are 0x10 driver door and 0x08 other doors.
@@ -1037,6 +1078,10 @@ void OvmsVehicleNissanLeaf::Ticker1(uint32_t ticker)
     {
     StandardMetrics.ms_v_env_awake->SetValue(false);
     }
+
+  // Update any derived values
+  // Energy used varies a lot during driving
+  HandleEnergy();
   }
 
 /**
@@ -1051,7 +1096,34 @@ void OvmsVehicleNissanLeaf::Ticker10(uint32_t ticker)
   }
 
 /**
+ * Update derived energy metrics while driving
+ * Called once per second from Ticker1
+ */
+void OvmsVehicleNissanLeaf::HandleEnergy()
+  {
+  float voltage  = StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
+  float current  = StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
+
+  // Power (in kw) resulting from voltage and current
+  float power = voltage * current / 1000.0;
+  StandardMetrics.ms_v_bat_power->SetValue(power);
+
+  // Are we driving?
+  if (power != 0.0 &&
+      StandardMetrics.ms_v_env_on->AsBool() )
+    {
+    // Update energy used and recovered
+    float energy = power / 3600.0;    // 1 second worth of energy in kwh's
+    if (energy < 0.0f)
+      StandardMetrics.ms_v_bat_energy_used->SetValue( StandardMetrics.ms_v_bat_energy_used->AsFloat() - energy);
+    else // (energy > 0.0f)
+      StandardMetrics.ms_v_bat_energy_recd->SetValue( StandardMetrics.ms_v_bat_energy_recd->AsFloat() + energy);
+    }
+}
+
+/**
  * Update derived metrics when charging
+ * Called once per 10 seconds from Ticker10
  */
 void OvmsVehicleNissanLeaf::HandleCharging()
   {
@@ -1068,9 +1140,15 @@ void OvmsVehicleNissanLeaf::HandleCharging()
     return;
     }
 
-  // Check if we have what is needed to calculate remaining minutes
+  // Check if we have what is needed to calculate energy and remaining minutes
   if (charge_voltage > 0 && charge_current > 0)
     {
+    // Update energy taken
+    // Value is reset to 0 when a new charging session starts...
+    float power  = charge_voltage * charge_current / 1000.0;     // power in kw
+    float energy = power / 3600.0 * 10.0;                        // 10 second worth of energy in kwh's
+    StandardMetrics.ms_v_charge_kwh->SetValue( StandardMetrics.ms_v_charge_kwh->AsFloat() + energy);
+
     // always calculate remaining charge time to full
     float full_soc           = 100.0;     // 100%
     int   minsremaining_full = calcMinutesRemaining(full_soc);

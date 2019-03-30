@@ -39,6 +39,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
+#include "ovms_command.h"
 
 typedef std::function<void(std::string,void*)> EventCallback;
 
@@ -54,7 +55,7 @@ class EventCallbackEntry
   };
 
 typedef std::list<EventCallbackEntry*> EventCallbackList;
-typedef std::map<std::string, EventCallbackList*> EventMap;
+typedef NameMap<EventCallbackList*> EventMap;
 
 typedef void (*event_signal_done_fn)(const char* event, void* data);
 
@@ -98,6 +99,7 @@ class OvmsEvents
     void FreeQueueSignalEvent(event_queue_t* msg);
     static esp_err_t ReceiveSystemEvent(void *ctx, system_event_t *event);
     void SignalSystemEvent(system_event_t *event);
+    const EventMap& Map() { return m_map; }
 
   protected:
     EventMap m_map;
