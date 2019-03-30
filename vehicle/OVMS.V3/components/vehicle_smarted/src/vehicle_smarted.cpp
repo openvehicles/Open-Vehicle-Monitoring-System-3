@@ -116,8 +116,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
         HVA = (float) (d[2] & 0x3F) * 256 + (float) d[3];
         HVA = (HVA / 10.0) - 819.2;
         StandardMetrics.ms_v_bat_current->SetValue(HVA, Amps);
-        //StandardMetrics.ms_v_charge_state->SetValue(d[?]);
-        //HVA = (((rxBuf[2] & 0x3F) * 256 + rxBuf[3]) * 0.1) - 819.2; 
+        StandardMetrics.ms_v_charge_state->SetValue(d[2]&0x40);
         break;
     }
     case 0x448: //HV Voltage
