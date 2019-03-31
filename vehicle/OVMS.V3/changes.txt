@@ -3,6 +3,9 @@ Open Vehicle Monitor System v3 - Change log
 ????-??-?? ???  ???????  OTA release
 
 2019-01-19 MWJ  3.2.001  OTA release
+- OTA: add option to allow scheduled auto updates via modem
+  New config:
+    ota [auto.allow.modem] = false
 - Twizy web UI: tuning profile and drivemode button editors
 - New vehicle: Smart ED (adaption by Martin Graml <martingraml@hotmail.com>)
 - Web API: per access authorization by "apikey=password" parameter
