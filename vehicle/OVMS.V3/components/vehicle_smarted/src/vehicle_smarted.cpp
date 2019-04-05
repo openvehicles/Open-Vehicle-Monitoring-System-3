@@ -38,7 +38,7 @@ static const char *TAG = "v-smarted";
 #include "ovms_peripherals.h"
 
 #define SE_CANDATA_TIMEOUT 10
-#define SE_EGPIO_TIMEOUT 5
+#define SE_EGPIO_TIMEOUT 2
 
 /**
  * Constructor & destructor
@@ -116,7 +116,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
         HVA = (float) (d[2] & 0x3F) * 256 + (float) d[3];
         HVA = (HVA / 10.0) - 819.2;
         StandardMetrics.ms_v_bat_current->SetValue(HVA, Amps);
-        StandardMetrics.ms_v_charge_state->SetValue(d[2]&0x40);
+        //StandardMetrics.ms_v_charge_state->SetValue(d[2]&0x40);
         break;
     }
     case 0x448: //HV Voltage
@@ -387,6 +387,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandHomelink(int button, i
     }
 #ifdef CONFIG_OVMS_COMP_MAX7317
     if (button == 2) {
+        ESP_LOGI(TAG,"EGPIO 3 on");
         MyPeripherals->m_max7317->Output(MAX7317_EGPIO_3, 1);
         m_egpio_timer = SE_EGPIO_TIMEOUT;
         return Success;
@@ -438,6 +439,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandLock(const char* pin) 
     MyPeripherals->m_max7317->Output(MAX7317_EGPIO_1, 1);
     m_locking_timer = xTimerCreate("Smart ED Locking Timer", 500 / portTICK_PERIOD_MS, pdTRUE, this, SmartEDLockingTimer);
     xTimerStart(m_locking_timer, 0);
+    StandardMetrics.ms_v_env_locked->SetValue(true);
     return Success;
     //return NotImplemented;
 }
@@ -447,6 +449,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandUnlock(const char* pin
     MyPeripherals->m_max7317->Output(MAX7317_EGPIO_2, 1);
     m_locking_timer = xTimerCreate("Smart ED Locking Timer", 500 / portTICK_PERIOD_MS, pdTRUE, this, SmartEDLockingTimer);
     xTimerStart(m_locking_timer, 0);
+    StandardMetrics.ms_v_env_locked->SetValue(false);
     return Success;
     //return NotImplemented;
 }
