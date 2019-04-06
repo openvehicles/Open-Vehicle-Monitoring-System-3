@@ -170,9 +170,8 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_car_on(bool isOn)
   {
   if (isOn && !StandardMetrics.ms_v_env_on->AsBool())
     {
-    // Car is ON
-    StandardMetrics.ms_v_env_on->SetValue(true);
-    PollSetState(1);
+    // Log once that car is being turned on
+    ESP_LOGI(TAG,"CAR IS ON");
 
     // Reset trip values
     StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
@@ -180,10 +179,13 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_car_on(bool isOn)
     }
   else if (!isOn && StandardMetrics.ms_v_env_on->AsBool())
     {
-    // Car is OFF
-    StandardMetrics.ms_v_env_on->SetValue(false);
-    PollSetState(0);
+    // Log once that car is being turned off
+    ESP_LOGI(TAG,"CAR IS OFF");
     }
+
+  // Always set this value to prevent it from going stale
+  StandardMetrics.ms_v_env_on->SetValue(isOn);
+  PollSetState( (isOn) ? 1 : 0 );
   }
 
 ////////////////////////////////////////////////////////////////////////
