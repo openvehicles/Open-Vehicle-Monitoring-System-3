@@ -9,6 +9,11 @@
 ;    0.1.0  First version on par with Soul
 ;			- First "complete" version.
 ;
+;		 0.1.1 06-apr-2019 - Geir Øyvind Vælidalo
+;			- Minor changes after proper real life testing
+;			- VIN is working
+;			- Removed more of the polling when car is off in order to prevent AUX battery drain
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -46,7 +51,7 @@
 #include <sys/param.h>
 #include "../../vehicle_kiasoulev/src/kia_common.h"
 
-#define VERSION "0.1.0"
+#define VERSION "0.1.1"
 
 static const char *TAG = "v-kianiroev";
 
@@ -55,7 +60,7 @@ static const char *TAG = "v-kianiroev";
 // Pollstate 2 - car is charging
 static const OvmsVehicle::poll_pid_t vehicle_kianiroev_polls[] =
   {
-  		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDII_1A, 				0x80, 			{       0,  999, 999 } },  // VMCU - VIN
+  		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDII_1A, 				0x80, 			{       0,  120,	 120 } },  // VMCU - VIN
 
 		{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0101, 		{      10,   10,  10 } }, 	// BMC Diag page 01 - Must be called when off to detect when charging
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0102, 		{       0,   15,  10 } }, 	// BMC Diag page 02
@@ -66,30 +71,28 @@ static const OvmsVehicle::poll_pid_t vehicle_kianiroev_polls[] =
 
 		{ 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xB00C, 		{       0,   10,  10 } },   // BCM Heated handle
 		{ 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xB00E, 		{      10,   10,  10 } },   // BCM Chargeport ++
-    { 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,   0xC002, 		{       0,  999,   0 } }, 	// TMPS - ID's
+    { 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,   0xC002, 		{       0,   30,   0 } }, 	// TMPS - ID's
     { 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,   0xC00B, 		{       0,   10,   0 } }, 	// TMPS - Pressure and Temp
 
 		{ 0x770, 0x778, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xbc03, 		{      10,   10,  10 } },  // IGMP Door status + IGN1 & IGN2 - Detects when car is turned on
-		{ 0x770, 0x778, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xbc04, 		{      10,   10,  10 } },  // IGMP Door status
-		{ 0x770, 0x778, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xbc07, 		{      10,   10,  10 } },  // IGMP Rear/mirror defogger
+		{ 0x770, 0x778, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xbc04, 		{       0,   10,  10 } },  // IGMP Door status
+		{ 0x770, 0x778, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xbc07, 		{       0,   10,  10 } },  // IGMP Rear/mirror defogger
 
 		{ 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0100, 		{       0,   10,  10 } },  // AirCon
 		{ 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0102, 		{       0,   10,  10 } },  // AirCon
 
-		{ 0x7c6, 0x7ce, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xB002, 		{       0,  120,  10 } },  // Cluster. ODO
+		{ 0x7c6, 0x7ce, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xB002, 		{       0,   10, 120 } },  // Cluster. ODO
 
 		{ 0x7d1, 0x7d9, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xc101, 		{       0,   10,  10 } },  // ABS/ESP - Emergency lights
 
-    { 0x7e5, 0x7ed, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x01, 			{      10,   10,  10 } }, 	// TEST! OBC - On board charger
-    //{ 0x7e5, 0x7ed, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x02, 			{      10,   10,  10 } }, 	// TEST! OBC - On board charger
-    { 0x7e5, 0x7ed, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x03, 			{      10,   10,  10 } }, 	// TEST! OBC - On board charger
+    { 0x7e5, 0x7ed, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x01, 			{       0,   10,  10 } }, 	// OBC - On board charger
+    //{ 0x7e5, 0x7ed, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x02, 			{       0,   10,  10 } }, 	// OBC
+    { 0x7e5, 0x7ed, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x03, 			{       0,   10,  10 } }, 	// OBC
 
 		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x01, 			{       0,   10,  10 } },  // VMCU - Shift position
-		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x02, 			{      10,   10,  10 } },  // VMCU - Aux Battery data
+		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x02, 			{     600,   10,  10 } },  // VMCU - Aux Battery data
 
 		{ 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x02, 			{       0,   10,  10 } },  // MCU
-
-    //{ 0x7c5, 0x7cd, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, 		{       10,   10,  10 } }, 	// TEST! LDC - Low voltage DC-DC
 
     { 0, 0, 0, 0, { 0, 0, 0 } }
   };
@@ -178,7 +181,6 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   m_b_max_temperature = MyMetrics.InitInt("xkn.b.max.temp", 10, 0, Celcius);
   m_b_inlet_temperature = MyMetrics.InitInt("xkn.b.inlet.temp", 10, 0, Celcius);
   m_b_heat_1_temperature = MyMetrics.InitInt("xkn.b.heat1.temp", 10, 0, Celcius);
-  m_b_heat_2_temperature = MyMetrics.InitInt("xkn.b.heat2.temp", 10, 0, Celcius);
   m_b_bms_soc = MyMetrics.InitFloat("xkn.b.bms.soc", 10, 0, Percentage);
   m_b_aux_soc = MyMetrics.InitInt("xkn.b.aux.soc", 0, 0, Percentage);
 
@@ -200,6 +202,8 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
 
   m_v_heated_handle = MyMetrics.InitBool("xkn.e.heated.steering", 10, 0);
   m_v_rear_defogger = MyMetrics.InitBool("xkn.e.rear.defogger", 10, 0);
+
+  m_v_traction_control = MyMetrics.InitBool("xkn.v.traction.control", 10, 0);
 
   ms_v_pos_trip = MyMetrics.InitFloat("xkn.e.trip", 10, 0, Kilometers);
   ms_v_trip_energy_used = MyMetrics.InitFloat("xkn.e.trip.energy.used", 10, 0, kWh);
@@ -261,10 +265,8 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
 
   WebInit();
 
-  // C-Bus
+  // D-Bus
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-  // M-Bus
-  // RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
 
   POLLSTATE_RUNNING;
   kia_secs_with_no_client=0;
@@ -656,7 +658,6 @@ void OvmsVehicleKiaNiroEv::HandleChargeStop()
   		{
 		SET_CHARGE_STATE("stopped","interrupted");
 		}
-	StdMetrics.ms_v_charge_substate->SetValue("onrequest");
   StdMetrics.ms_v_charge_kwh->SetValue( CUM_CHARGE - kia_cum_charge_start, kWh );  // kWh charged
 
   kia_cum_charge_start = 0;
@@ -733,14 +734,13 @@ void OvmsVehicleKiaNiroEv::UpdateMaxRangeAndSOH(void)
 bool OvmsVehicleKiaNiroEv::SetDoorLock(bool open, const char* password)
 	{
 	bool result=false;
+
 	if( kn_shift_bits.Park )
   		{
     if( PinCheck((char*)password) )
     		{
-    		//ACCRelay(true,password	);
     		LeftIndicator(true);
     		result = Send_IGMP_Command(0xbc, open?0x11:0x10, 0x03);
-    		//ACCRelay(false,password	);
     		}
   		}
 		return result;
@@ -748,20 +748,20 @@ bool OvmsVehicleKiaNiroEv::SetDoorLock(bool open, const char* password)
 
 /**
  * Open trunk door
- * 771 04 2F BC 09 03
+ * 770 04 2F BC 09 03
  */
 bool OvmsVehicleKiaNiroEv::OpenTrunk(const char* password)
 	{
-//  if( kn_shift_bits.Park )
-//  		{
-//		if( PinCheck((char*)password) )
-//			{
-//    		StartRelay(true,password	);
-//    		LeftIndicator(true);
-//  			return Send_SJB_Command(0xbc, 0x09, 0x03);
-//    		StartRelay(false,password	);
-//  			}
-//  		}
+  if( kn_shift_bits.Park )
+  		{
+		if( PinCheck((char*)password) )
+			{
+    		StartRelay(true,password	);
+    		LeftIndicator(true);
+  			return Send_IGMP_Command(0xbc, 0x09, 0x03);
+    		StartRelay(false,password	);
+  			}
+  		}
 		return false;
 	}
 
@@ -882,30 +882,6 @@ bool OvmsVehicleKiaNiroEv::StartRelay(bool on, const char* password)
 //				else return Send_SMK_Command(4, 0xb1, 0x0b, 0, 0, 0, 0);
 //				}
 //		}
-	return false;
-	}
-
-/**
- * Control blue charger leds
- * mode:
- * 	4 - All leds
- * 	3 - Right led
- * 	2 - Left led
- * 	1 - Center led
- */
-bool OvmsVehicleKiaNiroEv::BlueChargeLed(bool on, uint8_t mode)
-	{
-//	if( kn_shift_bits.Park )
-//			{
-//  			SendTesterPresent(ON_BOARD_CHARGER_UNIT, 2);
-//			SetSessionMode(ON_BOARD_CHARGER_UNIT, 0x81); //Nesessary?
-//			vTaskDelay( xDelay );
-//			SetSessionMode(ON_BOARD_CHARGER_UNIT, 0x90);
-//			vTaskDelay( xDelay );
-//			SendCanMessage(ON_BOARD_CHARGER_UNIT, 	8, 0x03, VEHICLE_POLL_TYPE_OBDII_IOCTRL_BY_LOC_ID, mode, on? 0 : 0x11,0,0,0);
-//			vTaskDelay( xDelay );
-//			SendTesterPresent(ON_BOARD_CHARGER_UNIT, 2);
-//			}
 	return false;
 	}
 

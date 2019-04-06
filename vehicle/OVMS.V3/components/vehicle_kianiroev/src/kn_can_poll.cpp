@@ -98,7 +98,7 @@ void OvmsVehicleKiaNiroEv::IncomingCM(canbus* bus, uint16_t type, uint16_t pid, 
 		case 0xb002:
 			if (m_poll_ml_frame == 1)
 				{
-				StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(3), Kilometers );
+			StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(3), Kilometers );
 				}
 			break;
 		}
@@ -195,6 +195,9 @@ void OvmsVehicleKiaNiroEv::IncomingOBC(canbus* bus, uint16_t type, uint16_t pid,
  */
 void OvmsVehicleKiaNiroEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
+	//ESP_LOGD(TAG, "VMCU TYPE: %02x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", type, pid, length, m_poll_ml_frame, data[0], data[1], data[2], data[3],
+	//		data[4], data[5], data[6]);
+
 	switch (pid)
 		{
 		case 0x01:
@@ -255,7 +258,7 @@ void OvmsVehicleKiaNiroEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 					m_vin[2]=CAN_BYTE(5);
 					m_vin[3]=CAN_BYTE(6);
 					}
-				else if( m_poll_ml_frame==3 || m_poll_ml_frame==4)
+				else if( m_poll_ml_frame==3)
 					{
 					m_vin[4]=CAN_BYTE(0);
 					m_vin[5]=CAN_BYTE(1);
@@ -413,7 +416,6 @@ void OvmsVehicleKiaNiroEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
 					}
 				else if (m_poll_ml_frame == 4)
 					{
-					m_b_heat_2_temperature->SetValue( CAN_BYTE(0) );
 					StdMetrics.ms_v_bat_soh->SetValue( (float)CAN_UINT(1)/10.0 );
 					m_b_cell_det_max_no->SetValue( CAN_BYTE(3) );
 					m_b_cell_det_min->SetValue( (float)CAN_UINT(4)/10.0 );
@@ -526,31 +528,19 @@ void OvmsVehicleKiaNiroEv::IncomingIGMP(canbus* bus, uint16_t type, uint16_t pid
 			case 0xbc03:
 				if (m_poll_ml_frame == 1)
 					{
-					//StdMetrics.ms_v_door_chargeport->SetValue((CAN_BYTE(1)>>4) & 1);
-//					StdMetrics.ms_v_door_trunk->SetValue((CAN_BYTE(1)>>7) & 1);
-//					StdMetrics.ms_v_door_fl->SetValue((CAN_BYTE(1)>>5) & 1);
-//					StdMetrics.ms_v_door_fr->SetValue((CAN_BYTE(1)>>4) & 1);
-//					StdMetrics.ms_v_door_rl->SetValue(CAN_BYTE(1) & 1);
-//					StdMetrics.ms_v_door_rr->SetValue((CAN_BYTE(1)>>2) & 1);
-
 					StdMetrics.ms_v_door_trunk->SetValue(CAN_BIT(1,7));
 					StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(1,5));
 					StdMetrics.ms_v_door_fr->SetValue(CAN_BIT(1,4));
 					StdMetrics.ms_v_door_rl->SetValue(CAN_BIT(1,0));
 					StdMetrics.ms_v_door_rr->SetValue(CAN_BIT(1,2));
 
-//					StdMetrics.ms_v_door_hood->SetValue(CAN_BYTE(2) & 1);
 					StdMetrics.ms_v_door_hood->SetValue(CAN_BIT(2,0));
 
-//					m_v_door_lock_rl->SetValue((CAN_BYTE(1)>>1) & 1);
-//					m_v_door_lock_rr->SetValue((CAN_BYTE(1)>>3) & 1);
 					m_v_door_lock_rl->SetValue(CAN_BIT(1,1));
 					m_v_door_lock_rr->SetValue(CAN_BIT(1,3));
 
 					StdMetrics.ms_v_env_on->SetValue((CAN_BYTE(2) & 0x60)>0);
 
-//					m_v_seat_belt_driver->SetValue((CAN_BYTE(2) & 0x2) == 0x2);
-//					m_v_seat_belt_passenger->SetValue((CAN_BYTE(2) & 0x4) == 0x4);
 					m_v_seat_belt_driver->SetValue(CAN_BIT(2,1));
 					m_v_seat_belt_passenger->SetValue(CAN_BIT(2,2));
 					}
@@ -559,8 +549,6 @@ void OvmsVehicleKiaNiroEv::IncomingIGMP(canbus* bus, uint16_t type, uint16_t pid
 			case 0xbc04:
 				if (m_poll_ml_frame == 1)
 					{
-//					m_v_door_lock_fl->SetValue((CAN_BYTE(1)>>3) & 1);
-//					m_v_door_lock_fr->SetValue((CAN_BYTE(1)>>2) & 1);
 					m_v_door_lock_fl->SetValue(CAN_BIT(1,3));
 					m_v_door_lock_fr->SetValue(CAN_BIT(1,2));
 

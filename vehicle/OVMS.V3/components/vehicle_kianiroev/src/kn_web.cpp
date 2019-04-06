@@ -227,18 +227,18 @@ void OvmsVehicleKiaNiroEv::GetDashboardConfig(DashboardConfig& cfg)
   cfg.gaugeset1 =
     "yAxis: [{"
       // Speed:
-      "min: 0, max: 145,"
+      "min: 0, max: 170,"
       "plotBands: ["
         "{ from: 0, to: 70, className: 'green-band' },"
-        "{ from: 70, to: 100, className: 'yellow-band' },"
-        "{ from: 100, to: 145, className: 'red-band' }]"
+        "{ from: 70, to: 120, className: 'yellow-band' },"
+        "{ from: 120, to: 170, className: 'red-band' }]"
     "},{"
       // Voltage:
-      "min: 300, max: 400,"
+      "min: 300, max: 405,"
       "plotBands: ["
         "{ from: 330, to: 360, className: 'red-band' },"
         "{ from: 360, to: 380, className: 'yellow-band' },"
-        "{ from: 380, to: 400, className: 'green-band' }]"
+        "{ from: 380, to: 405, className: 'green-band' }]"
     "},{"
       // SOC:
       "min: 0, max: 100,"

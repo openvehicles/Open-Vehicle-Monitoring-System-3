@@ -966,7 +966,7 @@ bool OvmsVehicleKiaSoulEv::OpenTrunk(const char* password)
  */
 bool OvmsVehicleKiaSoulEv::OpenChargePort(const char* password)
 	{
-  //TODO if( ks_shift_bits.Park )
+  if( ks_shift_bits.Park )
   		{
 		if( PinCheck((char*)password) )
 			{
