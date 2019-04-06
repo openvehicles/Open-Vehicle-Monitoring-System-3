@@ -175,8 +175,8 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
       }
     case 0x338: // MCU_range
       {
-      StandardMetrics.ms_v_bat_range_ideal->SetValue(((uint32_t)d[3]<<8)+d[2],Miles);
-      StandardMetrics.ms_v_bat_range_est->SetValue(((uint32_t)d[1]<<8)+d[0],Miles);
+      StandardMetrics.ms_v_bat_range_est->SetValue(((uint32_t)d[3]<<8)+d[2],Miles);
+      StandardMetrics.ms_v_bat_range_ideal->SetValue(((uint32_t)d[1]<<8)+d[0],Miles);
       StandardMetrics.ms_v_bat_consumption->SetValue(((uint32_t)d[5]<<8)+d[4],WattHoursPM);
       break;
       }
