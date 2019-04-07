@@ -5,7 +5,7 @@
 ;    Changes:
 ;    1.0  Initial stub
 ;
-;    (C) 2017        Geir Øyvind Vælidalo <geir@validalo.net>
+;    (C) 2018        Geir Øyvind Vælidalo <geir@validalo.net>
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -26,59 +26,58 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __VEHICLE_KIASOULEV_H__
-#define __VEHICLE_KIASOULEV_H__
+#ifndef __VEHICLE_KIANIROEV_H__
+#define __VEHICLE_KIANIROEV_H__
 
-#include "kia_common.h"
+#include "../../vehicle_kiasoulev/src/kia_common.h"
 #include "vehicle.h"
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
 #endif
 
+
 using namespace std;
 
 typedef union {
-  struct { //TODO Is this the correct order, or should it be swapped?
+  struct {
     unsigned char Park : 1;
-    unsigned char Reverse : 1;
-    unsigned char Neutral : 1;
-    unsigned char Drive : 1;
-    unsigned char Break : 1;
-    unsigned char ECOOff : 1;
+    unsigned char Reverse: 1;
+    unsigned char Neutral: 1;
+    unsigned char Drive: 1;
+    unsigned char CarOn: 1;
+    unsigned char : 1;
     unsigned char : 1;
     unsigned char : 1;
   };
   unsigned char value;
-} KsShiftBits;
+} KnShiftBits;
 
-void xks_trip_since_parked(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xks_trip_since_charge(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xks_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xks_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xks_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xkn_trip_since_parked(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xkn_trip_since_charge(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xkn_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xkn_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xkn_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void CommandOpenTrunk(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void CommandOpenChargePort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 void CommandParkBreakService(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xks_sjb(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xks_bcm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xks_ign1(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xks_ign2(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xks_acc_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xks_start_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xks_set_head_light_delay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xks_set_one_touch_turn_signal(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xks_set_auto_door_unlock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xks_set_auto_door_lock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xkn_sjb(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xkn_bcm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xkn_ign1(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xkn_ign2(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xkn_acc_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xkn_start_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xkn_set_head_light_delay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xkn_set_one_touch_turn_signal(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xkn_set_auto_door_unlock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xkn_set_auto_door_lock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
-class OvmsVehicleKiaSoulEv : public KiaVehicle
+class OvmsVehicleKiaNiroEv : public KiaVehicle
   {
   public:
-    OvmsVehicleKiaSoulEv();
-    ~OvmsVehicleKiaSoulEv();
+		OvmsVehicleKiaNiroEv();
+    ~OvmsVehicleKiaNiroEv();
 
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
-    void IncomingFrameCan2(CAN_frame_t* p_frame);
     void Ticker1(uint32_t ticker);
     void Ticker10(uint32_t ticker);
     void Ticker300(uint32_t ticker);
@@ -89,6 +88,7 @@ class OvmsVehicleKiaSoulEv : public KiaVehicle
     const std::string GetFeature(int key);
     vehicle_command_t CommandHandler(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     bool Send_SJB_Command( uint8_t b1, uint8_t b2, uint8_t b3);
+    bool Send_IGMP_Command( uint8_t b1, uint8_t b2, uint8_t b3);
     bool Send_BCM_Command( uint8_t b1, uint8_t b2, uint8_t b3);
     bool Send_SMK_Command( uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint8_t b5, uint8_t b6, uint8_t b7);
     bool Send_EBP_Command( uint8_t b1, uint8_t b2, uint8_t mode);
@@ -111,7 +111,6 @@ class OvmsVehicleKiaSoulEv : public KiaVehicle
     virtual OvmsVehicle::vehicle_command_t CommandUnlock(const char* pin);
 
     bool OpenTrunk(const char* password);
-    bool OpenChargePort(const char* password);
     bool ACCRelay(bool,const char *password);
     bool IGN1Relay(bool,const char *password);
     bool IGN2Relay(bool,const char *password);
@@ -120,86 +119,66 @@ class OvmsVehicleKiaSoulEv : public KiaVehicle
     void SetOneThouchTurnSignal(uint8_t);
     void SetAutoDoorUnlock(uint8_t);
     void SetAutoDoorLock(uint8_t);
-    int8_t GetDoorLockStatus();
 
-    char m_street[128]; //Current street
-    int m_street_pos;
-
-    OvmsMetricFloat* m_v_env_climate_temp;
-    OvmsMetricBool*  m_v_env_climate_driver_only;
-    OvmsMetricBool*  m_v_env_climate_resirc;
-    OvmsMetricBool*  m_v_env_climate_auto;
-    OvmsMetricBool*  m_v_env_climate_ac;
-    OvmsMetricInt*	  m_v_env_climate_fan_speed;
-    OvmsMetricInt*	  m_v_env_climate_mode;
-
-    OvmsMetricInt*	  m_v_pos_dist_to_dest;
-    OvmsMetricInt*	  m_v_pos_arrival_hour;
-    OvmsMetricInt*	  m_v_pos_arrival_minute;
-    OvmsMetricString*	  m_v_pos_street;
-
-    bool  ks_emergency_message_sent;
+    bool  kn_emergency_message_sent;
 
   protected:
     void HandleCharging();
     void HandleChargeStop();
-    void IncomingTPMS(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void IncomingOBC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingMCU(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void IncomingBMC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingLDC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingSJB(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingBCM(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingIGMP(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingAirCon(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingAbsEsp(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingCM(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void RequestNotify(unsigned int which);
     void DoNotify();
-    void vehicle_kiasoulev_car_on(bool isOn);
+    void vehicle_kianiroev_car_on(bool isOn);
     void UpdateMaxRangeAndSOH(void);
     uint16_t calcMinutesRemaining(float target);
     bool SetDoorLock(bool open, const char* password);
     bool LeftIndicator(bool);
     bool RightIndicator(bool);
     bool RearDefogger(bool);
+    bool FoldMirrors(bool);
     bool BlueChargeLed(bool on, uint8_t mode);
-    void SetChargeMetrics(float voltage, float current, float climit, bool chademo);
+    void SetChargeMetrics(float voltage, float current, float climit, bool ccs);
     void SendTesterPresentMessages();
     void StopTesterPresentMessages();
 
-    OvmsCommand *cmd_xks;
+    OvmsCommand *cmd_xkn;
 
-		#define CFG_DEFAULT_MAXRANGE 160
-    int ks_maxrange = CFG_DEFAULT_MAXRANGE;        // Configured max range at 20 °C
+		#define CFG_DEFAULT_MAXRANGE 440
+    int kn_maxrange = CFG_DEFAULT_MAXRANGE;        // Configured max range at 20 °C
 
-		#define CGF_DEFAULT_BATTERY_CAPACITY 27000
-    float ks_battery_capacity = CGF_DEFAULT_BATTERY_CAPACITY; //TODO Detect battery capacity from VIN or number of batterycells
+		#define CGF_DEFAULT_BATTERY_CAPACITY 64000
+    float kn_battery_capacity = CGF_DEFAULT_BATTERY_CAPACITY; //TODO Detect battery capacity from VIN or number of batterycells
 
-    unsigned int ks_notifications = 0;
+    unsigned int kn_notifications = 0;
 
-    KsShiftBits ks_shift_bits;
+    KnShiftBits kn_shift_bits;
 
-    int16_t ks_battery_current; 			// Temporary storage for Battery current: 0x7ec 02 21 01 -> 21 7+22 1
+    bool kn_charge_timer_off; //True if the charge timer button is on
 
-    bool ks_openChargePort;				// Tells the Ticker1 to open charge port
-    bool ks_key_fob_open_charge_port;	// Enable/disable open charge port using trunk-button on key fob
+    uint8_t kn_heatsink_temperature; //TODO Remove?
+    uint8_t kn_battery_fan_feedback;
 
-    bool ks_charge_timer_off; //True if the charge timer button is on
+    int16_t igmp_tester_present_seconds;
+    int16_t bcm_tester_present_seconds;
+    int16_t smk_tester_present_seconds; //TODO Remove?
 
-    uint8_t ks_heatsink_temperature; //TODO Remove?
-    uint8_t ks_battery_fan_feedback;
-
-    int16_t sjb_tester_present_seconds;
-    int16_t smk_tester_present_seconds;
-
-    uint32_t ks_clock;
-    int16_t ks_utc_diff;
-
-    bool ks_ldc_enabled;
+    bool kn_ldc_enabled;
 
     struct {
-      unsigned char ChargingChademo : 1;
-      unsigned char ChargingJ1772 : 1;
+      unsigned char ChargingCCS : 1;
+      unsigned char ChargingType2 : 1;
       unsigned char : 1;
       unsigned char : 1;
       unsigned char FanStatus : 4;
-    } ks_charge_bits;
+    } kn_charge_bits;
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     // --------------------------------------------------------------------------
@@ -218,7 +197,8 @@ class OvmsVehicleKiaSoulEv : public KiaVehicle
 #endif //CONFIG_OVMS_COMP_WEBSERVER
   };
 
-#define SET_SJB_TP_TIMEOUT(n)	sjb_tester_present_seconds = on ? MAX(sjb_tester_present_seconds, n) : 0;
+#define SET_IGMP_TP_TIMEOUT(n)	igmp_tester_present_seconds = on ? MAX(igmp_tester_present_seconds, n) : 0;
+#define SET_BCM_TP_TIMEOUT(n)	bcm_tester_present_seconds = on ? MAX(bcm_tester_present_seconds, n) : 0;
 #define SET_SMK_TP_TIMEOUT(n)	smk_tester_present_seconds = on ? MAX(smk_tester_present_seconds, n) : 0;
 
 // Notifications:
@@ -232,4 +212,4 @@ class OvmsVehicleKiaSoulEv : public KiaVehicle
 //#define SEND_ResetResult            (1<< 7)  // text alert: RESET OK/FAIL
 //#define SEND_ChargeState            (1<< 8)  // text alert: STAT command
 
-#endif //#ifndef __VEHICLE_KIASOULEV_H__
+#endif //#ifndef __VEHICLE_KIANIROEV_H__
