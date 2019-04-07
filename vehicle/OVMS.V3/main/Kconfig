@@ -296,6 +296,13 @@ config OVMS_VEHICLE_ZEVA
     help
         Enable to include support for vehicles using Zeva BMS.
 
+config OVMS_VEHICLE_KIANIROEV
+    bool "Include support for Kia e-Niro"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Kia e-Niro.
+
 config OVMS_VEHICLE_FIAT500
     bool "Include support for Fiat 500 vehicle"
     default y

@@ -1837,6 +1837,7 @@ void OvmsVehicle::PollerSend()
           break;
         case VEHICLE_POLL_TYPE_OBDIIVEHICLE:
         case VEHICLE_POLL_TYPE_OBDIIGROUP:
+        case VEHICLE_POLL_TYPE_OBDII_1A:
           // 8 bit PID request for multi frame response:
           m_poll_ml_remain = 0;
           txframe.data.u8[0] = 0x02;
@@ -1845,8 +1846,9 @@ void OvmsVehicle::PollerSend()
           break;
         case VEHICLE_POLL_TYPE_OBDIIEXTENDED:
           // 16 bit PID request:
+          m_poll_ml_remain = 0;
           txframe.data.u8[0] = 0x03;
-          txframe.data.u8[1] = VEHICLE_POLL_TYPE_OBDIIEXTENDED;    // Get extended PID
+          txframe.data.u8[1] = m_poll_type; //VEHICLE_POLL_TYPE_OBDIIEXTENDED;    // Get extended PID
           txframe.data.u8[2] = m_poll_pid >> 8;
           txframe.data.u8[3] = m_poll_pid & 0xff;
           break;
@@ -1881,6 +1883,7 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
       break;
     case VEHICLE_POLL_TYPE_OBDIIVEHICLE:
     case VEHICLE_POLL_TYPE_OBDIIGROUP:
+    case VEHICLE_POLL_TYPE_OBDII_1A:
       // 8 bit PID multiple frame response:
       if (((frame->data.u8[0]>>4) == 0x1)&&
           (frame->data.u8[2] == 0x40+m_poll_type)&&
@@ -1948,10 +1951,67 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
       break;
     case VEHICLE_POLL_TYPE_OBDIIEXTENDED:
       // 16 bit PID response:
-      if ((frame->data.u8[1] == 0x62)&&
-          ((frame->data.u8[3]+(((uint16_t) frame->data.u8[2]) << 8)) == m_poll_pid))
+      if (((frame->data.u8[0]>>4) == 0x1)&&
+          (frame->data.u8[2] == 0x40+m_poll_type)&&
+          ((frame->data.u8[4]+(((uint16_t) frame->data.u8[3]) << 8))  == m_poll_pid))
         {
-        IncomingPollReply(m_poll_bus, m_poll_type, m_poll_pid, &frame->data.u8[4], 4, 0);
+        // First frame is 4 bytes header (2 ISO-TP, 2 OBDII), 4 bytes data:
+        // [first=1,lenH] [lenL] [type+40] [pid] [data0] [data1] [data2] [data3]
+        // Note that the value of 'len' includes the OBDII type and pid bytes,
+        // but we don't count these in the data we pass to IncomingPollReply.
+        //
+        // First frame; send flow control frame:
+        CAN_frame_t txframe;
+        memset(&txframe,0,sizeof(txframe));
+        txframe.origin = m_poll_bus;
+        txframe.FIR.B.FF = CAN_frame_std; //CAN_frame_ext?
+        txframe.FIR.B.DLC = 8;
+
+        if (m_poll_moduleid_sent == 0x7df)
+          {
+          // broadcast request: derive module ID from response ID:
+          // (Note: this only works for the SAE standard ID scheme)
+          txframe.MsgID = frame->MsgID - 8;
+          }
+        else
+          {
+          // use known module ID:
+          txframe.MsgID = m_poll_moduleid_sent;
+          }
+
+        txframe.data.u8[0] = 0x30; // flow control frame type
+        txframe.data.u8[1] = 0x00; // request all frames available
+        txframe.data.u8[2] = 0x19; // with 25ms send interval
+        m_poll_bus->Write(&txframe);
+
+        // prepare frame processing, first frame contains first 4 bytes:
+        m_poll_ml_remain = (((uint16_t)(frame->data.u8[0]&0x0f))<<8) + frame->data.u8[1] - 3;
+        m_poll_ml_offset = 3;
+        m_poll_ml_frame = 0;
+
+        //ESP_LOGD(TAG, "Poll ML first frame (frame=%d, remain=%d)",m_poll_ml_frame,m_poll_ml_remain);
+        IncomingPollReply(m_poll_bus, m_poll_type, m_poll_pid, &frame->data.u8[4], 4, m_poll_ml_remain);
+        return;
+        }
+      else if (((frame->data.u8[0]>>4)==0x2)&&(m_poll_ml_remain>0))
+        {
+        // Consecutive frame (1 control + 7 data bytes)
+        uint16_t len;
+        if (m_poll_ml_remain>7)
+          {
+          m_poll_ml_remain -= 7;
+          m_poll_ml_offset += 7;
+          len = 7;
+          }
+        else
+          {
+          len = m_poll_ml_remain;
+          m_poll_ml_offset += m_poll_ml_remain;
+          m_poll_ml_remain = 0;
+          }
+        m_poll_ml_frame++;
+        //ESP_LOGD(TAG, "Poll ML subsequent frame (frame=%d, remain=%d)",m_poll_ml_frame,m_poll_ml_remain);
+        IncomingPollReply(m_poll_bus, m_poll_type, m_poll_pid, &frame->data.u8[1], len, m_poll_ml_remain);
         return;
         }
       break;
