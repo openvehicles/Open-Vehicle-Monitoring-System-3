@@ -71,14 +71,20 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error;
   bool canwrite;
+  bool socnewcar;
+  bool sohnewcar;
   std::string modelyear;
-  std::string maxgids, maxgids_old;
+  std::string maxgids;
+  std::string newcarah;
 
   if (c.method == "POST") {
     // process form submission:
     modelyear = c.getvar("modelyear");
     maxgids   = c.getvar("maxgids");
-    canwrite = (c.getvar("canwrite") == "yes");
+    newcarah  = c.getvar("newcarah");
+    socnewcar = (c.getvar("socnewcar") == "yes");
+    sohnewcar = (c.getvar("sohnewcar") == "yes");
+    canwrite  = (c.getvar("canwrite") == "yes");
 
     // check:
     if (!modelyear.empty()) {
@@ -88,23 +94,13 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     }
 
     if (error == "") {
-      // Get old value before we overwrite
-      maxgids_old = MyConfig.GetParamValue("xnl", "maxGids", STR(GEN_1_NEW_CAR_GIDS));
-
       // store:
       MyConfig.SetParamValue("xnl", "modelyear", modelyear);
-      MyConfig.SetParamValue("xnl", "maxGids", maxgids);
-      MyConfig.SetParamValueBool("xnl", "canwrite", canwrite);
-
-      // Write derived values
-      if (maxgids != maxgids_old) {
-          if (maxgids == STR(GEN_1_NEW_CAR_GIDS)) {
-              MyConfig.SetParamValueInt("xnl", "newCarAh", GEN_1_NEW_CAR_AH);
-          }
-          else if (maxgids == STR(GEN_1_30_NEW_CAR_GIDS)) {
-              MyConfig.SetParamValueInt("xnl", "newCarAh", GEN_1_30_NEW_CAR_AH);
-          }
-      }
+      MyConfig.SetParamValue("xnl", "maxGids",   maxgids);
+      MyConfig.SetParamValue("xnl", "newCarAh",  newcarah);
+      MyConfig.SetParamValueBool("xnl", "soc.newcar", socnewcar);
+      MyConfig.SetParamValueBool("xnl", "soh.newcar", sohnewcar);
+      MyConfig.SetParamValueBool("xnl", "canwrite",   canwrite);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Nissan Leaf feature configuration saved.</p>");
@@ -122,6 +118,9 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     // read configuration:
     modelyear = MyConfig.GetParamValue("xnl", "modelyear", STR(DEFAULT_MODEL_YEAR));
     maxgids   = MyConfig.GetParamValue("xnl", "maxGids", STR(GEN_1_NEW_CAR_GIDS));
+    newcarah  = MyConfig.GetParamValue("xnl", "newCarAh", STR(GEN_1_NEW_CAR_AH));
+    socnewcar = MyConfig.GetParamValueBool("xnl", "soc.newcar", false);
+    sohnewcar = MyConfig.GetParamValueBool("xnl", "soh.newcar", false);
     canwrite  = MyConfig.GetParamValueBool("xnl", "canwrite", false);
 
     c.head(200);
@@ -133,18 +132,29 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.form_start(p.uri);
 
   c.fieldset_start("General");
-  c.input("number", "Model year", "modelyear", modelyear.c_str(), "Default: " STR(DEFAULT_MODEL_YEAR), NULL,
-    "min=\"2011\" step=\"1\"", "");
+  c.input_radio_start("SOC Display", "socnewcar");
+  c.input_radio_option("socnewcar", "from dashboard display",   "no",  socnewcar == false);
+  c.input_radio_option("socnewcar", "relative to fixed value:", "yes", socnewcar == true);
+  c.input_radio_end("");
+  c.input("number", NULL, "maxgids", maxgids.c_str(), "Default: " STR(GEN_1_NEW_CAR_GIDS),
+      "<p>Enter the maximum GIDS value when fully charged. Default values are " STR(GEN_1_NEW_CAR_GIDS) " (24kwh) or " STR(GEN_1_30_NEW_CAR_GIDS) " (30kwh)</p>",
+      "min=\"1\" step=\"1\"", "GIDS");
 
-  c.input_radio_start("Battery capacity", "maxgids");
-  c.input_radio_option("maxgids", "24 kwh", STR(GEN_1_NEW_CAR_GIDS),    maxgids == STR(GEN_1_NEW_CAR_GIDS));
-  c.input_radio_option("maxgids", "30 kwh", STR(GEN_1_30_NEW_CAR_GIDS), maxgids == STR(GEN_1_30_NEW_CAR_GIDS));
-  c.input_radio_end("This would change ranges, and display formats to reflect type of battery in the car");
+  c.input_radio_start("SOH Display", "sohnewcar");
+  c.input_radio_option("sohnewcar", "from dashboard display",   "no",  sohnewcar == false);
+  c.input_radio_option("sohnewcar", "relative to fixed value:", "yes", sohnewcar == true);
+  c.input_radio_end("");
+  c.input("number", NULL, "newcarah", newcarah.c_str(), "Default: " STR(GEN_1_NEW_CAR_AH),
+      "<p>This is the usable capacity of your battery when new. Default values are " STR(GEN_1_NEW_CAR_AH) " (24kwh) or " STR(GEN_1_30_NEW_CAR_AH) " (30kwh)</p>",
+      "min=\"1\" step=\"1\"", "Ah");
   c.fieldset_end();
 
   c.fieldset_start("Remote Control");
   c.input_checkbox("Enable CAN writes", "canwrite", canwrite,
     "<p>Controls overall CAN write access, some functions depend on this.</p>");
+  c.input("number", "Model year", "modelyear", modelyear.c_str(), "Default: " STR(DEFAULT_MODEL_YEAR),
+    "<p>This determines the format of CAN write messages as it differs slightly between model years.</p>",
+    "min=\"2011\" step=\"1\"", "");
   c.fieldset_end();
 
   c.print("<hr>");
