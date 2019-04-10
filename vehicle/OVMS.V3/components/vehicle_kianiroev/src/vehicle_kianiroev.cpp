@@ -14,6 +14,12 @@
 ;			- VIN is working
 ;			- Removed more of the polling when car is off in order to prevent AUX battery drain
 ;
+;		 0.1.2 10-apr-2019 - Geir Øyvind Vælidalo
+;			- Fixed TPMS reading
+;			- Fixed xks aux
+;			- Estimated range show WLTP in lack of the actual displayed range
+;			- Door lock works even after ECU goes to sleep.
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -51,7 +57,7 @@
 #include <sys/param.h>
 #include "../../vehicle_kiasoulev/src/kia_common.h"
 
-#define VERSION "0.1.1"
+#define VERSION "0.1.2"
 
 static const char *TAG = "v-kianiroev";
 
@@ -63,16 +69,17 @@ static const OvmsVehicle::poll_pid_t vehicle_kianiroev_polls[] =
   		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDII_1A, 				0x80, 			{       0,  120,	 120 } },  // VMCU - VIN
 
 		{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0101, 		{      10,   10,  10 } }, 	// BMC Diag page 01 - Must be called when off to detect when charging
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0102, 		{       0,   15,  10 } }, 	// BMC Diag page 02
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0103, 		{       0,   15,  10 } }, 	// BMC Diag page 03
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0104, 		{       0,   15,  10 } }, 	// BMC Diag page 04
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0105, 		{       0,   15,  10 } },		// BMC Diag page 05
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0106, 		{       0,   10,  10 } },		// BMC Diag page 06
+		{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0102, 		{       0,   15,  10 } }, 	// BMC Diag page 02
+		{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0103, 		{       0,   15,  10 } }, 	// BMC Diag page 03
+		{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0104, 		{       0,   15,  10 } }, 	// BMC Diag page 04
+		{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0105, 		{       0,   15,  10 } },		// BMC Diag page 05
+		{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0106, 		{       0,   10,  10 } },		// BMC Diag page 06
 
 		{ 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xB00C, 		{       0,   10,  10 } },   // BCM Heated handle
 		{ 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xB00E, 		{      10,   10,  10 } },   // BCM Chargeport ++
-    { 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,   0xC002, 		{       0,   30,   0 } }, 	// TMPS - ID's
-    { 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,   0xC00B, 		{       0,   10,   0 } }, 	// TMPS - Pressure and Temp
+
+		{ 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,   0xC002, 		{       0,   30,   0 } }, 	// TMPS - ID's
+		{ 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,   0xC00B, 		{       0,   10,   0 } }, 	// TMPS - Pressure and Temp
 
 		{ 0x770, 0x778, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xbc03, 		{      10,   10,  10 } },  // IGMP Door status + IGN1 & IGN2 - Detects when car is turned on
 		{ 0x770, 0x778, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xbc04, 		{       0,   10,  10 } },  // IGMP Door status
@@ -85,9 +92,9 @@ static const OvmsVehicle::poll_pid_t vehicle_kianiroev_polls[] =
 
 		{ 0x7d1, 0x7d9, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xc101, 		{       0,   10,  10 } },  // ABS/ESP - Emergency lights
 
-    { 0x7e5, 0x7ed, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x01, 			{       0,   10,  10 } }, 	// OBC - On board charger
+		{ 0x7e5, 0x7ed, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x01, 			{       0,   10,  10 } }, 	// OBC - On board charger
     //{ 0x7e5, 0x7ed, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x02, 			{       0,   10,  10 } }, 	// OBC
-    { 0x7e5, 0x7ed, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x03, 			{       0,   10,  10 } }, 	// OBC
+		{ 0x7e5, 0x7ed, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x03, 			{       0,   10,  10 } }, 	// OBC
 
 		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x01, 			{       0,   10,  10 } },  // VMCU - Shift position
 		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x02, 			{     600,   10,  10 } },  // VMCU - Aux Battery data
@@ -372,9 +379,6 @@ void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
 		{
 			StdMetrics.ms_v_bat_range_ideal->SetValue( FULL_RANGE * BAT_SOC / 100.0, Kilometers);
 			}
-
-	//TODO How to find the range as displayed in the cluster?
-	StdMetrics.ms_v_bat_range_est->SetValue(StdMetrics.ms_v_bat_range_ideal->AsFloat());
 
 	// Update trip data
 	if (StdMetrics.ms_v_env_on->AsBool())
@@ -714,6 +718,7 @@ void OvmsVehicleKiaNiroEv::UpdateMaxRangeAndSOH(void)
 	StdMetrics.ms_v_bat_cac->SetValue( (kn_battery_capacity * BAT_SOH * BAT_SOC/10000.0) / 400, AmpHours);
 
 	float maxRange = kn_maxrange;// * MIN(BAT_SOH,100) / 100.0;
+	float wltpRange = 455;
 	float amb_temp = StdMetrics.ms_v_env_temp->AsFloat(20, Celcius);
 	float bat_temp = StdMetrics.ms_v_bat_temp->AsFloat(20, Celcius);
 
@@ -724,7 +729,11 @@ void OvmsVehicleKiaNiroEv::UpdateMaxRangeAndSOH(void)
 		{
 		maxRange = (maxRange * (100.0 - (int) (ABS(20.0 - (amb_temp+bat_temp * 3)/4)* 1.25))) / 100.0;
 		}
+	wltpRange = (wltpRange * (100.0 - (int) (ABS(20.0 - (amb_temp+bat_temp * 3)/4)* 1.25))) / 100.0;
 	StdMetrics.ms_v_bat_range_full->SetValue(maxRange, Kilometers);
+
+	//TODO How to find the range as displayed in the cluster? Use the WLTP until we find it
+	StdMetrics.ms_v_bat_range_est->SetValue( wltpRange * BAT_SOC / 100.0, Kilometers);
 	}
 
 
@@ -739,8 +748,10 @@ bool OvmsVehicleKiaNiroEv::SetDoorLock(bool open, const char* password)
   		{
     if( PinCheck((char*)password) )
     		{
+    	  ACCRelay(true,password	);
     		LeftIndicator(true);
     		result = Send_IGMP_Command(0xbc, open?0x11:0x10, 0x03);
+    		ACCRelay(false,password	);
     		}
   		}
 		return result;
@@ -826,14 +837,14 @@ bool OvmsVehicleKiaNiroEv::FoldMirrors(bool on)
  */
 bool OvmsVehicleKiaNiroEv::ACCRelay(bool on, const char* password)
 	{
-//	if(PinCheck((char*)password))
-//		{
-//		if( kn_shift_bits.Park )
-//				{
-//				if( on ) return Send_SMK_Command(7, 0xb1, 0x08, 0x03, 0x0a, 0x0a, 0x05);
-//				else return Send_SMK_Command(4, 0xb1, 0x08, 0, 0, 0, 0);
-//				}
-//		}
+	if(PinCheck((char*)password))
+		{
+		if( kn_shift_bits.Park )
+				{
+				if( on ) return Send_SMK_Command(7, 0xb1, 0x08, 0x03, 0x0a, 0x0a, 0x05);
+				else return Send_SMK_Command(4, 0xb1, 0x08, 0, 0, 0, 0);
+				}
+		}
 	return false;
 	}
 
@@ -842,14 +853,14 @@ bool OvmsVehicleKiaNiroEv::ACCRelay(bool on, const char* password)
  */
 bool OvmsVehicleKiaNiroEv::IGN1Relay(bool on, const char* password)
 	{
-//	if(PinCheck((char*)password))
-//		{
-//		if( kn_shift_bits.Park )
-//				{
-//				if( on ) return Send_SMK_Command(7, 0xb1, 0x09, 0x03, 0x0a, 0x0a, 0x05);
-//				else return Send_SMK_Command(4, 0xb1, 0x09, 0, 0, 0, 0);
-//				}
-//		}
+	if(PinCheck((char*)password))
+		{
+		if( kn_shift_bits.Park )
+				{
+				if( on ) return Send_SMK_Command(7, 0xb1, 0x09, 0x03, 0x0a, 0x0a, 0x05);
+				else return Send_SMK_Command(4, 0xb1, 0x09, 0, 0, 0, 0);
+				}
+		}
 	return false;
 	}
 
@@ -858,14 +869,14 @@ bool OvmsVehicleKiaNiroEv::IGN1Relay(bool on, const char* password)
  */
 bool OvmsVehicleKiaNiroEv::IGN2Relay(bool on, const char* password)
 	{
-//	if(PinCheck((char*)password))
-//		{
-//		if( kn_shift_bits.Park )
-//				{
-//				if( on ) return Send_SMK_Command(7, 0xb1, 0x0a, 0x03, 0x0a, 0x0a, 0x05);
-//				else return Send_SMK_Command(4, 0xb1, 0x0a, 0, 0, 0, 0);
-//				}
-//		}
+	if(PinCheck((char*)password))
+		{
+		if( kn_shift_bits.Park )
+				{
+				if( on ) return Send_SMK_Command(7, 0xb1, 0x0a, 0x03, 0x0a, 0x0a, 0x05);
+				else return Send_SMK_Command(4, 0xb1, 0x0a, 0, 0, 0, 0);
+				}
+		}
 	return false;
 	}
 
@@ -874,14 +885,14 @@ bool OvmsVehicleKiaNiroEv::IGN2Relay(bool on, const char* password)
  */
 bool OvmsVehicleKiaNiroEv::StartRelay(bool on, const char* password)
 	{
-//	if(PinCheck((char*)password))
-//		{
-//		if( kn_shift_bits.Park )
-//				{
-//				if( on ) return Send_SMK_Command(7, 0xb1, 0x0b, 0x03, 0x02, 0x02, 0x01);
-//				else return Send_SMK_Command(4, 0xb1, 0x0b, 0, 0, 0, 0);
-//				}
-//		}
+	if(PinCheck((char*)password))
+		{
+		if( kn_shift_bits.Park )
+				{
+				if( on ) return Send_SMK_Command(7, 0xb1, 0x0b, 0x03, 0x02, 0x02, 0x01);
+				else return Send_SMK_Command(4, 0xb1, 0x0b, 0, 0, 0, 0);
+				}
+		}
 	return false;
 	}
 
