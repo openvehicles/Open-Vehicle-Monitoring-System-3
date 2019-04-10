@@ -144,6 +144,10 @@
 ;		0.4.4 31-march-2019 - Geir Øyvind Vælidalo
 ;			- Converted remaining charge time from a static calculation to one based on a charge profile.
 ;
+;		0.4.5 10-april-2019 - Geir Øyvind Vælidalo
+;			- Fixed the new charge profile.
+;
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -187,7 +191,7 @@
 #include "ovms_notify.h"
 #include <sys/param.h>
 
-#define VERSION "0.4.4"
+#define VERSION "0.4.5"
 
 static const char *TAG = "v-kiasoulev";
 
@@ -214,25 +218,25 @@ static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
 // Based partly on logged charging from 120kW Delta Charger
 charging_profile soul_charge_steps[] = {
 		//from%, to%, Chargespeed in Wh
-		 { 0,5,20 },
-		 { 5,10,40 },
-     { 10,20,45 },
-     { 20,30,47 },
-     { 30,50,49 },
-     { 50,70,68 },
-     { 70,72,55 },
-     { 72,74,46.8 },
-		 { 74,76,44.14 },
-		 { 76,79,37.5 },
-     { 79,81,30.5 },
-     { 81,83,27.5 },
-     { 83,89,21.5 },
-     { 89,90,20.5 },
-     { 90,91,18 },
-     { 91,92,15.5 },
-     { 92,93,13.2 },
-     { 93,95,9 },
-     { 95,100,8 },
+		 { 0,5,20000 },
+		 { 5,10,40000 },
+     { 10,20,45000 },
+     { 20,30,47000 },
+     { 30,50,49000 },
+     { 50,70,68000 },
+     { 70,72,55000 },
+     { 72,74,46800 },
+		 { 74,76,44140 },
+		 { 76,79,37500 },
+     { 79,81,30500 },
+     { 81,83,27500 },
+     { 83,89,21500 },
+     { 89,90,20500 },
+     { 90,91,18000 },
+     { 91,92,15500 },
+     { 92,93,13200 },
+     { 93,95,9000 },
+     { 95,100,8000 },
      { 0,0,0 },
 };
 
