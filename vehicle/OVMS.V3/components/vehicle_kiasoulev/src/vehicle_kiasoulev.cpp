@@ -325,6 +325,7 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   m_b_heat_1_temperature = MyMetrics.InitInt("xks.b.heat1.temp", 10, 0, Celcius);
   m_b_heat_2_temperature = MyMetrics.InitInt("xks.b.heat2.temp", 10, 0, Celcius);
   m_b_bms_soc = MyMetrics.InitFloat("xks.b.bms.soc", 10, 0, Percentage);
+  m_b_aux_soc = MyMetrics.InitInt("xks.b.aux.soc", 0, 0, Percentage);
 
   m_ldc_out_voltage = MyMetrics.InitFloat("xks.ldc.out.volt", 10, 12, Volts);
   m_ldc_in_voltage = MyMetrics.InitFloat("xks.ldc.in.volt", 10, 12, Volts);
