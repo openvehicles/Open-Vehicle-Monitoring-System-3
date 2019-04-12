@@ -147,6 +147,8 @@
 ;		0.4.5 10-april-2019 - Geir Øyvind Vælidalo
 ;			- Fixed the new charge profile.
 ;
+;		0.4.6 11-april-2019 - Geir Øyvind Vælidalo
+;			- Added AUX battery SOC.
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
@@ -191,7 +193,7 @@
 #include "ovms_notify.h"
 #include <sys/param.h>
 
-#define VERSION "0.4.5"
+#define VERSION "0.4.6"
 
 static const char *TAG = "v-kiasoulev";
 
@@ -265,10 +267,6 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   kia_battery_cum_charge = 0;
   kia_battery_cum_discharge = 0;
   kia_battery_cum_op_time = 0;
-
-  //ks_trip_start_odo = 0;
-  //ks_start_cdc = 0;
-  //ks_start_cc = 0;
 
   ks_charge_bits.ChargingChademo = false;
   ks_charge_bits.ChargingJ1772 = false;
@@ -548,10 +546,7 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 
 	UpdateMaxRangeAndSOH();
 
-	if (FULL_RANGE > 0) //  If we have the battery full range, we can calculate the ideal range too
-		{
-			StdMetrics.ms_v_bat_range_ideal->SetValue( FULL_RANGE * BAT_SOC / 100.0, Kilometers);
-			}
+	m_b_aux_soc->SetValue( CalcAUXSoc( StdMetrics.ms_v_bat_12v_voltage->AsFloat() ) );
 
 	// Update trip data
 	if (StdMetrics.ms_v_env_on->AsBool())
@@ -918,6 +913,7 @@ void OvmsVehicleKiaSoulEv::UpdateMaxRangeAndSOH(void)
 	if (maxRange != 0)
 		{
 		maxRange = (maxRange * (100.0 - (int) (ABS(20.0 - (amb_temp+bat_temp * 3)/4)* 1.25))) / 100.0;
+		StdMetrics.ms_v_bat_range_ideal->SetValue( maxRange * BAT_SOC / 100.0, Kilometers);
 		}
 	StdMetrics.ms_v_bat_range_full->SetValue(maxRange, Kilometers);
 	}

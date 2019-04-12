@@ -170,7 +170,7 @@ void OvmsVehicleKiaNiroEv::IncomingOBC(canbus* bus, uint16_t type, uint16_t pid,
 				}
 			else if (m_poll_ml_frame == 6)
 				{
-				StdMetrics.ms_v_charge_temp->SetValue( (float) (CAN_BYTE(2)/2.0)-40.0, Celcius ); //Untested
+				StdMetrics.ms_v_charge_temp->SetValue( (float) (CAN_BYTE(3)/2.0)-40.0, Celcius ); //Untested
 				kia_obc_ac_voltage = (float) CAN_BYTE(6);
 				}
 			else if (m_poll_ml_frame == 7)
@@ -215,7 +215,7 @@ void OvmsVehicleKiaNiroEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 					//ESP_LOGD(TAG, "VMCU PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, m_poll_ml_frame, data[0], data[1], data[2], data[3],
 					//		data[4], data[5], data[6]);
 
-					ESP_LOGD(TAG, "ABS/ESP %02x %02x", data[1], data[2]);
+					//ESP_LOGD(TAG, "ABS/ESP %02x %02x", data[1], data[2]);
 
 					if( kn_shift_bits.Reverse)
 						{
@@ -232,7 +232,8 @@ void OvmsVehicleKiaNiroEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 					}
 				else if(m_poll_ml_frame==2)
 					{
-					StdMetrics.ms_v_pos_speed->SetValue(CAN_UINT(2)/100.0);
+					//StdMetrics.ms_v_pos_speed->SetValue(CAN_UINT(2)/100.0);
+					StdMetrics.ms_v_pos_speed->SetValue(CAN_UINT(1)/10.0); // Alex said the other one was wrong. Maybe this is correct?
 					}
 				}
 			break;

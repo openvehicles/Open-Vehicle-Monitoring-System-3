@@ -110,6 +110,7 @@ protected:
   } kia_send_can;
 
   int CalcRemainingChargeMinutes(float chargespeed, int fromSoc, int toSoc, int batterySize, charging_profile charge_steps[]);
+  int CalcAUXSoc(float volt);
 
   Kia_Trip_Counter kia_park_trip_counter;
   Kia_Trip_Counter kia_charge_trip_counter;
@@ -142,6 +143,33 @@ protected:
 
   const TickType_t xDelay = 50 / portTICK_PERIOD_MS;
 	};
+
+class RangeCalculator
+{
+#define     RANGE_CALC_DATA_PATH "/sd/RangeCalc.dat"
+
+private:
+       typedef struct {
+             float consumption;  //Total kWh
+             float distance;            //km
+       }trip_consumptions;
+
+       trip_consumptions trips[20];
+       int currentTripPointer = 0;
+       float minimumTrip = 1;
+       float weightOfCurrentTrip = 4;
+       float batteryCapacity = 64;
+
+       void storeTrips();
+       void restoreTrips();
+
+public:
+       RangeCalculator(float minimumTrip, float weightOfCurrentTrip, float defaultRange, float batteryCapacity);
+       ~RangeCalculator();
+       void updateTrip(float distance, float consumption);
+       void tripEnded(float distance, float consumption);
+       float getRange();
+};
 
 #define SQR(n) ((n)*(n))
 #define ABS(n) (((n) < 0) ? -(n) : (n))

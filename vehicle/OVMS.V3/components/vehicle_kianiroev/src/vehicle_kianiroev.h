@@ -180,6 +180,8 @@ class OvmsVehicleKiaNiroEv : public KiaVehicle
       unsigned char FanStatus : 4;
     } kn_charge_bits;
 
+    RangeCalculator *kn_range_calc;// = new RangeCalculator(1, 4, 455, 64);
+
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     // --------------------------------------------------------------------------
     // Webserver subsystem

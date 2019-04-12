@@ -20,6 +20,12 @@
 ;			- Estimated range show WLTP in lack of the actual displayed range
 ;			- Door lock works even after ECU goes to sleep.
 ;
+;		 0.1.3 12-apr-2019 - Geir Øyvind Vælidalo
+;			- Fixed OBC temp reading
+;			- Removed a couple of pollings when car is off, in order to save AUX battery
+;			- Added range calculator for estimated range instead of WLTP. It now uses 20 last trips as a basis.
+;
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -57,7 +63,7 @@
 #include <sys/param.h>
 #include "../../vehicle_kiasoulev/src/kia_common.h"
 
-#define VERSION "0.1.2"
+#define VERSION "0.1.3"
 
 static const char *TAG = "v-kianiroev";
 
@@ -76,7 +82,7 @@ static const OvmsVehicle::poll_pid_t vehicle_kianiroev_polls[] =
 		{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0106, 		{       0,   10,  10 } },		// BMC Diag page 06
 
 		{ 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xB00C, 		{       0,   10,  10 } },   // BCM Heated handle
-		{ 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xB00E, 		{      10,   10,  10 } },   // BCM Chargeport ++
+		{ 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xB00E, 		{       0,   10,  10 } },   // BCM Chargeport ++
 
 		{ 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,   0xC002, 		{       0,   30,   0 } }, 	// TMPS - ID's
 		{ 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,   0xC00B, 		{       0,   10,   0 } }, 	// TMPS - Pressure and Temp
@@ -97,7 +103,7 @@ static const OvmsVehicle::poll_pid_t vehicle_kianiroev_polls[] =
 		{ 0x7e5, 0x7ed, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x03, 			{       0,   10,  10 } }, 	// OBC
 
 		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x01, 			{       0,   10,  10 } },  // VMCU - Shift position
-		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x02, 			{     600,   10,  10 } },  // VMCU - Aux Battery data
+		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x02, 			{     	  0,   10,  10 } },  // VMCU - Aux Battery data
 
 		{ 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x02, 			{       0,   10,  10 } },  // MCU
 
@@ -278,6 +284,8 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   POLLSTATE_RUNNING;
   kia_secs_with_no_client=0;
   PollSetPidList(m_can1,vehicle_kianiroev_polls);
+
+  kn_range_calc = new RangeCalculator(1, 4, 455, 64);
   }
 
 /**
@@ -338,13 +346,14 @@ void OvmsVehicleKiaNiroEv::vehicle_kianiroev_car_on(bool isOn)
     {
     // Car is OFF
 		ESP_LOGI(TAG,"CAR IS OFF");
+    kia_park_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
     kia_secs_with_no_client=0;
   		StdMetrics.ms_v_pos_speed->SetValue( 0 );
   	  StdMetrics.ms_v_pos_trip->SetValue( kia_park_trip_counter.GetDistance() );
   		StdMetrics.ms_v_env_charging12v->SetValue( false );
     kia_ready_for_chargepollstate = true;
-    kia_park_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
-    }
+		kn_range_calc->tripEnded(kia_park_trip_counter.GetDistance(), kia_park_trip_counter.GetEnergyUsed());
+    	}
   }
 
 /**
@@ -375,10 +384,6 @@ void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
 		}
 */
 	UpdateMaxRangeAndSOH();
-	if (FULL_RANGE > 0) //  If we have the battery full range, we can calculate the ideal range too
-		{
-			StdMetrics.ms_v_bat_range_ideal->SetValue( FULL_RANGE * BAT_SOC / 100.0, Kilometers);
-			}
 
 	// Update trip data
 	if (StdMetrics.ms_v_env_on->AsBool())
@@ -714,11 +719,12 @@ uint16_t OvmsVehicleKiaNiroEv::calcMinutesRemaining(float target)
 void OvmsVehicleKiaNiroEv::UpdateMaxRangeAndSOH(void)
 	{
 	//Update State of Health using following assumption: 10% buffer
-	//StdMetrics.ms_v_bat_soh->SetValue( 110 - ( m_b_cell_det_max->AsFloat(0) + m_b_cell_det_min->AsFloat(0)) / 2 );
 	StdMetrics.ms_v_bat_cac->SetValue( (kn_battery_capacity * BAT_SOH * BAT_SOC/10000.0) / 400, AmpHours);
 
+	kn_range_calc->updateTrip(kia_park_trip_counter.GetDistance(), kia_park_trip_counter.GetEnergyUsed());
+
 	float maxRange = kn_maxrange;// * MIN(BAT_SOH,100) / 100.0;
-	float wltpRange = 455;
+	float wltpRange = kn_range_calc->getRange();
 	float amb_temp = StdMetrics.ms_v_env_temp->AsFloat(20, Celcius);
 	float bat_temp = StdMetrics.ms_v_bat_temp->AsFloat(20, Celcius);
 
@@ -728,12 +734,14 @@ void OvmsVehicleKiaNiroEv::UpdateMaxRangeAndSOH(void)
 	if (maxRange != 0)
 		{
 		maxRange = (maxRange * (100.0 - (int) (ABS(20.0 - (amb_temp+bat_temp * 3)/4)* 1.25))) / 100.0;
+		StdMetrics.ms_v_bat_range_ideal->SetValue( maxRange * BAT_SOC / 100.0, Kilometers);
 		}
-	wltpRange = (wltpRange * (100.0 - (int) (ABS(20.0 - (amb_temp+bat_temp * 3)/4)* 1.25))) / 100.0;
 	StdMetrics.ms_v_bat_range_full->SetValue(maxRange, Kilometers);
 
 	//TODO How to find the range as displayed in the cluster? Use the WLTP until we find it
+	//wltpRange = (wltpRange * (100.0 - (int) (ABS(20.0 - (amb_temp+bat_temp * 3)/4)* 1.25))) / 100.0;
 	StdMetrics.ms_v_bat_range_est->SetValue( wltpRange * BAT_SOC / 100.0, Kilometers);
+
 	}
 
 
