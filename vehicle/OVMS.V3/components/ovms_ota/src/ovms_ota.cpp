@@ -633,7 +633,7 @@ void OvmsOTA::Ticker600(std::string event, void* data)
   time ( &rawtime );
   struct tm* tmu = localtime(&rawtime);
   if ((tmu->tm_hour == MyConfig.GetParamValueInt("ota","auto.hour",2))&&
-      (MyNetManager.m_connected_wifi))
+      (MyNetManager.m_connected_wifi || MyConfig.GetParamValueBool("ota", "auto.allow.modem")))
     {
     LaunchAutoFlash();
     }
