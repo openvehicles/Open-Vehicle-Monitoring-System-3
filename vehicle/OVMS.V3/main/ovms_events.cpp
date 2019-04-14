@@ -90,7 +90,7 @@ void event_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
 
 int event_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
   {
-  return MyEvents.Map().Validate(writer, argv[0], complete);
+  return MyEvents.Map().Validate(writer, argc, argv[0], complete);
   }
 
 void event_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)

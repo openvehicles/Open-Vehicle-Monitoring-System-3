@@ -115,27 +115,31 @@ class NameMap : public std::map<std::string, T>
       return found;
       }
 
-    char** GetCompletion(OvmsWriter* writer, const char* token) const
+    bool GetCompletion(OvmsWriter* writer, const char* token) const
       {
       unsigned int index = 0;
-      char** tokens = writer->SetCompletion(index, NULL);
+      bool match = false;
+      writer->SetCompletion(index, NULL);
       if (token)
         {
         size_t len = strlen(token);
         for (typename NameMap<T>::const_iterator it = NameMap<T>::begin(); it != NameMap<T>::end(); ++it)
           {
           if (it->first.compare(0, len, token) == 0)
+            {
             writer->SetCompletion(index++, it->first.c_str());
+            match = true;
+            }
           }
         }
-      return tokens;
+      return match;
       }
 
-    int Validate(OvmsWriter* writer, const char* token, bool complete) const
+    int Validate(OvmsWriter* writer, int argc, const char* token, bool complete) const
       {
       if (complete)
 	{
-	if (*GetCompletion(writer, token) == NULL)
+	if (!GetCompletion(writer, token))
 	  return -1;
 	}
       else
@@ -146,8 +150,19 @@ class NameMap : public std::map<std::string, T>
 	  return -1;
 	  }
 	}
-      return 1;
+      return argc;
       }
+  };
+
+class NameStringMap : public std::map<std::string, std::string>
+  {
+  public:
+    const std::string& FindUniquePrefix(const char* token) const;
+    bool GetCompletion(OvmsWriter* writer, const char* token) const;
+    int Validate(OvmsWriter* writer, int argc, const char* token, bool complete) const;
+
+  protected:
+    static const std::string m_null;
   };
 
 struct CompareCharPtr

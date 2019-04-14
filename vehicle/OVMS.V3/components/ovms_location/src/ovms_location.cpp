@@ -394,7 +394,7 @@ void location_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
 int location_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
   {
   if (argc == 1)
-    return MyLocations.m_locations.Validate(writer, argv[0], complete);
+    return MyLocations.m_locations.Validate(writer, argc, argv[0], complete);
   return -1;
   }
 
