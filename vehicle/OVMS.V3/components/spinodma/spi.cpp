@@ -81,7 +81,11 @@ uint8_t* spi::spi_cmd(spi_nodma_device_handle_t spi, uint8_t* buf, int rxlen, in
   t.user=(void*)0;                // D/C needs to be set to 0
   if (LockBus(portMAX_DELAY))
     {
+    if (spi->cfg.spics_io_num == -1) // use software CS
+      spi_nodma_device_select(spi,0);
     ret=spi_nodma_device_transmit(spi, &t, portMAX_DELAY);  // Transmit!
+    if (spi->cfg.spics_io_num == -1) // use software CS
+      spi_nodma_device_deselect(spi);
     assert(ret==ESP_OK);            // Should have had no issues.
     UnlockBus();
     }
