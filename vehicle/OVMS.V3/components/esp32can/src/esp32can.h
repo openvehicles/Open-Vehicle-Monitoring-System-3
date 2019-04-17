@@ -59,7 +59,7 @@ class esp32can : public canbus
 
   public:
     esp_err_t Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
-    void TxCallback();
+    void TxCallback(CAN_frame_t* p_frame, bool success);
 
   public:
     void SetPowerMode(PowerMode powermode);

@@ -103,7 +103,6 @@ class mcp2515 : public canbus
   protected:
     spi_nodma_device_interface_config_t m_devcfg;
     spi_nodma_host_device_t m_host;
-    CAN_frame_t tx_frame;
     int m_clockspeed;
     int m_cspin;
     int m_intpin;

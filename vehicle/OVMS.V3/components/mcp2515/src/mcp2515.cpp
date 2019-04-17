@@ -294,8 +294,6 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=
   else
     return QueueWrite(p_frame, maxqueuewait);  // otherwise, queue the frame and wait.  Single frame at a time!
 
-  tx_frame = *p_frame; // save a local copy of this frame to be used later in txcallback
-
   if (p_frame->FIR.B.FF == CAN_frame_std)
     {
     // Transmit a standard frame

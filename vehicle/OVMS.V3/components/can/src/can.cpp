@@ -959,6 +959,7 @@ void canbus::TxCallback(CAN_frame_t* p_frame, bool success)
  */
 esp_err_t canbus::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
   {
+  tx_frame = *p_frame; // save a local copy of this frame to be used later in txcallback
   return ESP_OK;
   }
 
