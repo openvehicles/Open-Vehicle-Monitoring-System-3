@@ -56,6 +56,8 @@ class OvmsVehicleSmartED : public OvmsVehicle
     virtual vehicle_command_t CommandUnlock(const char* pin);
     virtual vehicle_command_t CommandWakeup();
     virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
+    virtual vehicle_command_t CommandActivateValet(const char* pin);
+    virtual vehicle_command_t CommandDeactivateValet(const char* pin);
     
   protected:
     virtual void Ticker1(uint32_t ticker);

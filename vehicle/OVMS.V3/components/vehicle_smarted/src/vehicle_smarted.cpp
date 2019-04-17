@@ -38,7 +38,7 @@ static const char *TAG = "v-smarted";
 #include "ovms_peripherals.h"
 
 #define SE_CANDATA_TIMEOUT 10
-#define SE_EGPIO_TIMEOUT 2
+#define SE_EGPIO_TIMEOUT 5
 
 /**
  * Constructor & destructor
@@ -93,9 +93,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
          = A7 (in HEX)
          = 167 (in base10) und das nun halbieren
          = 83,5%*/
-        float soc = (d[7]/2);
-        mt_displayed_soc->SetValue((float) soc);
-        StandardMetrics.ms_v_bat_soc->SetValue((float) soc);
+        StandardMetrics.ms_v_bat_soc->SetValue((float) (d[7]/2));
         break;
     }
     case 0x2D5: //realSOC
@@ -116,6 +114,11 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
         HVA = (float) (d[2] & 0x3F) * 256 + (float) d[3];
         HVA = (HVA / 10.0) - 819.2;
         StandardMetrics.ms_v_bat_current->SetValue(HVA, Amps);
+        /*if(d[2] == 0x20 || d[2] == 0x1F) {
+            StandardMetrics.ms_v_charge_state->SetValue("done");
+        } else {
+            StandardMetrics.ms_v_charge_state->SetValue("charging");
+        }*/
         //StandardMetrics.ms_v_charge_state->SetValue(d[2]&0x40);
         break;
     }
@@ -200,7 +203,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     }
     case 0x443: //air condition and fan
     {
-        //MyMetrics.
+        StandardMetrics.ms_v_env_hvac->SetValue(d[2] & 0xC8);
         break;
     }
     case 0x3F2: //Eco display
@@ -214,7 +217,20 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     }
     case 0x418: //gear shift
     {
-        StandardMetrics.ms_v_env_gear->SetValue(d[0]);
+        switch(d[4]) {
+            case 0xDD: // Parking
+                StandardMetrics.ms_v_env_gear->SetValue(0);
+                break;
+            case 0xBB: // Rear
+                StandardMetrics.ms_v_env_gear->SetValue(-1);
+                break;
+            case 0x00: // Neutral
+                StandardMetrics.ms_v_env_gear->SetValue(0);
+                break;
+            case 0x11: // Drive
+                StandardMetrics.ms_v_env_gear->SetValue(1);
+                break;
+        }
         break;
     }
     case 0x408: //temp outdoor
@@ -288,39 +304,40 @@ void OvmsVehicleSmartED::Ticker60(uint32_t ticker) {
 #ifdef CONFIG_OVMS_COMP_MAX7317
     if (m_egpio_timer > 0) {
         if (--m_egpio_timer == 0) {
-            ESP_LOGI(TAG,"EGPIO 3 off");
+            ESP_LOGI(TAG,"Ignition EGPIO 3 off");
             MyPeripherals->m_max7317->Output(MAX7317_EGPIO_3, 0);
+            StandardMetrics.ms_v_env_valet->SetValue(false);
         }
     }
 #endif
 }
 
 
-OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandClimateControl(
-        bool enable) {
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandClimateControl(bool enable) {
     return CommandSetChargeTimer(enable, StandardMetrics.ms_m_timeutc->AsInt());
 }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(
-        bool timeron, uint32_t timerstart) {
-//Set the charge start time as seconds since midnight or 8 Bit hour and 8 bit minutes?
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool timeron, uint32_t timerstart) {
+    //Set the charge start time as seconds since midnight or 8 Bit hour and 8 bit minutes?
     /*Mit
      0x512 00 00 12 1E 00 00 00 00
      setzt man z.B. die Uhrzeit auf 18:30. Maskiert man nun Byte 3 (0x12) mit 0x40 (und setzt so dort das zweite Bit auf High) wird die A/C Funktion mit aktiviert.
-     */
+    */
     if(timerstart == 0) { 
         return Fail;
     }
     if(!StandardMetrics.ms_v_env_awake->AsBool()) {
         return Fail;
     }
-    int t = timerstart + 3600; // Store the current time in time + GMT+1
+    int t = timerstart + 7500; // Store the current time in time + GMT+1 + 30 min
     int days = (t / 86400);
     t = t - (days * 86400);
     int hours = (t / 3600);
     t = t - (hours * 3600);
     int minutes = (t / 60);
     minutes = (minutes - (minutes % 5));
+    
+    ESP_LOGI(TAG,"%d:%d", hours, minutes);
     
     CAN_frame_t frame;
     memset(&frame, 0, sizeof(frame));
@@ -346,13 +363,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(
     return Success;
 }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeCurrent(
-        uint16_t limit) {
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeCurrent(uint16_t limit) {
     /*Den Ladestrom ändert man mit
      0x512 00 00 1F FF 00 7C 00 00 auf 12A.
      8A = 0x74, 12A = 0x7C and 32A = 0xA4 (als max. bei 22kW).
      Also einen Offset berechnen 0xA4 = d164: z.B. 12A = 0xA4 - 0x7C = 0x28 = d40 -> vom Maximum (0xA4 = 32A) abziehen
-     und dann durch zwei dividieren, um auf den Wert für 20A zu kommen (mit 0,5A Auflösung).*/
+     und dann durch zwei dividieren, um auf den Wert für 20A zu kommen (mit 0,5A Auflösung).
+    */
 
     CAN_frame_t frame;
     memset(&frame, 0, sizeof(frame));
@@ -385,14 +402,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandHomelink(int button, i
         enable = false;
         return CommandSetChargeTimer(enable, StandardMetrics.ms_m_timeutc->AsInt());
     }
-#ifdef CONFIG_OVMS_COMP_MAX7317
-    if (button == 2) {
-        ESP_LOGI(TAG,"EGPIO 3 on");
-        MyPeripherals->m_max7317->Output(MAX7317_EGPIO_3, 1);
-        m_egpio_timer = SE_EGPIO_TIMEOUT;
-        return Success;
-    }
-#endif
     return NotImplemented;
 }
 
@@ -400,7 +409,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
     /*So we still have to get the car to wake up. Can someone please test these two queries when the car is asleep:
     0x218 00 00 00 00 00 00 00 00 or
     0x210 00 00 00 01 00 00 00 00
-    Both patterns should comply with the Bosch CAN bus spec. for waking up a sleeping bus with recessive bits.*/
+    Both patterns should comply with the Bosch CAN bus spec. for waking up a sleeping bus with recessive bits.
+    */
 
     ESP_LOGI(TAG, "Send Wakeup Command");
     
@@ -452,6 +462,22 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandUnlock(const char* pin
     StandardMetrics.ms_v_env_locked->SetValue(false);
     return Success;
     //return NotImplemented;
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandActivateValet(const char* pin) {
+    ESP_LOGI(TAG,"Ignition EGPIO 3 on");
+    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_3, 1);
+    m_egpio_timer = SE_EGPIO_TIMEOUT;
+    StandardMetrics.ms_v_env_valet->SetValue(true);
+    return Success;
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandDeactivateValet(const char* pin) {
+    ESP_LOGI(TAG,"Ignition EGPIO 3 off");
+    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_3, 0);
+    m_egpio_timer = 0;
+    StandardMetrics.ms_v_env_valet->SetValue(false);
+    return Success;
 }
 #endif
 
