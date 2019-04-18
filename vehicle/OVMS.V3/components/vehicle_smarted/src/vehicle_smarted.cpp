@@ -43,7 +43,6 @@ static const char *TAG = "v-smarted";
 /**
  * Constructor & destructor
  */
-size_t OvmsVehicleSmartED::m_modifier = 0;
 
 OvmsVehicleSmartED::OvmsVehicleSmartED() {
     ESP_LOGI(TAG, "Start Smart ED vehicle module");
@@ -53,20 +52,12 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     MyPeripherals->m_max7317->Output(MAX7317_EGPIO_3, 0);
 #endif
     // init metrics:
-    if (m_modifier == 0) {
-        m_modifier = MyMetrics.RegisterModifier();
-        ESP_LOGD(TAG, "registered metric modifier is #%d", m_modifier);
+    mt_vehicle_time = MyMetrics.InitInt("v.display.time", SM_STALE_MIN, 0);
+    mt_trip_start = MyMetrics.InitInt("v.display.trip.start", SM_STALE_MIN, 0);
+    mt_trip_reset = MyMetrics.InitInt("v.display.trip.reset", SM_STALE_MIN, 0); 
+    mt_hv_active = MyMetrics.InitBool("v.b.hv.active", SM_STALE_MIN, false);
 
-        mt_displayed_soc = MyMetrics.InitInt("v.display.soc", SM_STALE_MIN, 0);
-        mt_vehicle_time = MyMetrics.InitInt("v.display.time", SM_STALE_MIN, 0);
-        mt_max_avail_power = MyMetrics.InitInt("v.display.power.max", SM_STALE_MIN, 0);
-        mt_energy_used_reset = MyMetrics.InitInt("v.display.energy.reset", SM_STALE_MIN, 0);
-        mt_trip_start = MyMetrics.InitInt("v.display.trip.start", SM_STALE_MIN, 0);
-        mt_trip_reset = MyMetrics.InitInt("v.display.trip.reset", SM_STALE_MIN, 0); 
-        mt_hv_active = MyMetrics.InitBool("v.b.hv.active", SM_STALE_MIN, false);
-
-        RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-    }
+    RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS); 
 }
 
 OvmsVehicleSmartED::~OvmsVehicleSmartED() {
@@ -198,7 +189,6 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
         }
         StandardMetrics.ms_v_bat_range_est->SetValue(d[7], Kilometers);
         StandardMetrics.ms_v_env_throttle->SetValue(d[5]);
-        mt_max_avail_power->SetValue(d[5]);
         break;
     }
     case 0x443: //air condition and fan
@@ -246,7 +236,6 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
         
         StandardMetrics.ms_v_bat_energy_used->SetValue(energy_used);
         StandardMetrics.ms_v_bat_energy_recd->SetValue(energy_recd);
-        mt_energy_used_reset->SetValue(d[2]*256 + d[3]);
         break;
     }
     case 0x504: //Strecke ab Start und ab Reset
