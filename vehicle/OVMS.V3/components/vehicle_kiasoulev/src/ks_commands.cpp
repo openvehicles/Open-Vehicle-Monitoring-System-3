@@ -170,59 +170,19 @@ void xks_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
     return;
     }
 
-  float volt = StdMetrics.ms_v_bat_12v_voltage->AsFloat();
 	const char* auxBatt = StdMetrics.ms_v_bat_12v_voltage->AsUnitString("-", Volts, 2).c_str();
 
 	writer->printf("AUX BATTERY\n");
 	if (*auxBatt != '-')
 		{
 		writer->printf("Aux battery voltage %s\n", auxBatt);
-		int soc=0;
-		if( volt>=12.73)
-			{
-			soc=100;
-			}
-		else if(volt>=12.62)
-			{
-			soc=((volt-12.62)*90.0)+90;
-			}
-		else if(volt>=12.50)
-			{
-			soc=((volt-12.50)*83.33)+80;
-			}
-		else if(volt>=12.37)
-			{
-			soc=((volt-12.37)*76.92)+70;
-			}
-		else if(volt>=12.24)
-			{
-			soc=((volt-12.24)*76.92)+60;
-			}
-		else if(volt>=12.10)
-			{
-			soc=((volt-12.10)*71.42)+50;
-			}
-		else if(volt>=11.96)
-			{
-			soc=((volt-11.96)*71.42)+40;
-			}
-		else if(volt>=11.81)
-			{
-			soc=((volt-11.81)*66.67)+30;
-			}
-		else if(volt>=11.66)
-			{
-			soc=((volt-11.66)*66.67)+20;
-			}
-		else if(volt>=11.51)
-			{
-			soc=((volt-11.51)*66.67)+10;
-			}
-		else if (volt>=11.36)
-			{
-			soc=((volt-11.36)*66.67);
-			}
-		writer->printf("Aux battery SOC %d\n", soc);
+
+		OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
+
+		const char* auxSOC = soul->m_b_aux_soc->AsUnitString("-", Percentage, 1).c_str();
+
+		if (*auxSOC != '-') writer->printf("Aux battery SOC %s\n", auxSOC);
+
 		}
 	}
 

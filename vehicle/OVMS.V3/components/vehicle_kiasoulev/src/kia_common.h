@@ -6,11 +6,10 @@
 using namespace std;
 
 typedef struct{
-       int    fromPercent;
+       int fromPercent;
        int toPercent;
        float maxChargeSpeed;
 }charging_profile;
-
 
 class Kia_Trip_Counter
     {
@@ -36,6 +35,7 @@ class Kia_Trip_Counter
 
 class KiaVehicle : public OvmsVehicle
 	{
+#define     SAVE_STATUS_DATA_PATH "/sd/SaveStatu.dat"
 public:
   char m_vin[18];
 
@@ -109,11 +109,20 @@ protected:
     uint16_t id;
   } kia_send_can;
 
+  typedef struct {
+  		float soc;
+  }Kia_Save_Status;
+
+
   int CalcRemainingChargeMinutes(float chargespeed, int fromSoc, int toSoc, int batterySize, charging_profile charge_steps[]);
   int CalcAUXSoc(float volt);
+  void SaveStatus();
+  void RestoreStatus();
 
   Kia_Trip_Counter kia_park_trip_counter;
   Kia_Trip_Counter kia_charge_trip_counter;
+
+  Kia_Save_Status kia_save_status;
 
   OvmsMetricString* m_version;
   OvmsMetricFloat*  m_c_power;            				// Available charge power
@@ -152,9 +161,9 @@ private:
        typedef struct {
              float consumption;  //Total kWh
              float distance;            //km
-       }trip_consumptions;
+       }TripConsumption;
 
-       trip_consumptions trips[20];
+       TripConsumption trips[20];
        int currentTripPointer = 0;
        float minimumTrip = 1;
        float weightOfCurrentTrip = 4;

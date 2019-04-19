@@ -18,6 +18,9 @@ int KiaVehicle::CalcRemainingChargeMinutes(float chargespeed, int fromSoc, int t
        return minutes;
 }
 
+/*
+ * A crude voltage to SOC calculator for AUX-battery
+ */
 int KiaVehicle::CalcAUXSoc(float volt)
 	{
 	int soc=0;
@@ -67,6 +70,40 @@ int KiaVehicle::CalcAUXSoc(float volt)
 		}
 	return soc;
 	}
+
+void KiaVehicle::SaveStatus()
+	{
+	FILE *sf = NULL;
+	sf = fopen(SAVE_STATUS_DATA_PATH, "w");
+	if (sf == NULL)
+		{
+		return;
+		}
+
+	// Set standard metrics automatically
+	kia_save_status.soc = StdMetrics.ms_v_bat_soc->AsFloat(0);
+
+	fwrite(&kia_save_status, sizeof(Kia_Save_Status), 1, sf);
+	fclose(sf);
+	}
+
+void KiaVehicle::RestoreStatus()
+	{
+	FILE *sf = NULL;
+	sf = fopen(SAVE_STATUS_DATA_PATH, "w");
+	if (sf == NULL)
+		{
+		return;
+		}
+	fread(&kia_save_status, sizeof(Kia_Save_Status), 1, sf);
+	fclose(sf);
+
+	//Set the standard metrics automatically
+	StdMetrics.ms_v_bat_soc->SetValue( kia_save_status.soc );
+
+	return;
+	}
+
 
 Kia_Trip_Counter::Kia_Trip_Counter()
 	{
@@ -152,12 +189,12 @@ float Kia_Trip_Counter::GetEnergyRecuperated()
 	}
 
 /*
-Constructor for the range calculator
-int minimumTrip  - The minium length a trip has to be in order to be included in the future calculations.
-float weightOfCurrentTrip - How much the current trip should be weighted compared to the others. Should be 1 or higher
-float defaultRange - A default start range in km with 100% battery. WLTP.
-float batteryCapacity - Battery capacity in kWh
-*/
+ * Constructor for the range calculator
+ * int minimumTrip  - The minium length a trip has to be in order to be included in the future calculations.
+ * float weightOfCurrentTrip - How much the current trip should be weighted compared to the others. Should be 1 or higher
+ * float defaultRange - A default start range in km with 100% battery. WLTP.
+ * float batteryCapacity - Battery capacity in kWh
+ */
 RangeCalculator::RangeCalculator(float minimumTrip, float weightOfCurrentTrip, float defaultRange, float batteryCapacity)
 	{
 	this->minimumTrip = minimumTrip;
@@ -178,9 +215,9 @@ RangeCalculator::~RangeCalculator()
 	}
 
 /*
-Called whenever the car gets parked and the trip
-is longer than specified in minimumTrip
-*/
+ * Called whenever the car gets parked and the trip
+ * is longer than specified in minimumTrip
+ */
 void RangeCalculator::storeTrips()
 	{
 	FILE *sf = NULL;
@@ -190,13 +227,13 @@ void RangeCalculator::storeTrips()
 		return;
 		}
 	fwrite(&currentTripPointer, sizeof(int), 1, sf);
-	fwrite(trips, sizeof(trip_consumptions), 20, sf);
+	fwrite(trips, sizeof(TripConsumption), 20, sf);
 	fclose(sf);
 	}
 
 /*
-Restores the saved trips history used for calculations
-*/
+ * Restores the saved trips history used for calculations
+ */
 void RangeCalculator::restoreTrips()
 	{
 	FILE *sf = NULL;
@@ -206,14 +243,14 @@ void RangeCalculator::restoreTrips()
 		return;
 		}
 	fread(&currentTripPointer, sizeof(int), 1, sf);
-	fread(trips, sizeof(trip_consumptions), 20, sf);
+	fread(trips, sizeof(TripConsumption), 20, sf);
 	fclose(sf);
 	if (currentTripPointer >= 20 || currentTripPointer<0) currentTripPointer = 0;
 	}
 
 /*
-Updates the internal current trip
-*/
+ * Updates the internal current trip
+ */
 void RangeCalculator::updateTrip(float distance, float consumption)
 	{
 	trips[currentTripPointer].consumption = consumption;
@@ -221,12 +258,12 @@ void RangeCalculator::updateTrip(float distance, float consumption)
 	}
 
 /*
-Stores the current trip and rotates the pointer so that the oldest trip
-will be over written next.
-
-Should be called when the car gets parked.
-Note that only trips longer than specified in minimumTrip get stored.
-*/
+ * Stores the current trip and rotates the pointer so that the oldest trip
+ * will be over written next.
+ *
+ * Should be called when the car gets parked.
+ * Note that only trips longer than specified in minimumTrip get stored.
+ */
 void RangeCalculator::tripEnded(float distance, float consumption)
 	{
 	updateTrip(distance, consumption);
@@ -242,8 +279,8 @@ void RangeCalculator::tripEnded(float distance, float consumption)
 	}
 
 /*
-Returns the calculated full range based on driving history
-*/
+ * Returns the calculated full range based on driving history
+ */
 float RangeCalculator::getRange()
 	{
 	float totalDistance = 0, totalConsumption = 0;

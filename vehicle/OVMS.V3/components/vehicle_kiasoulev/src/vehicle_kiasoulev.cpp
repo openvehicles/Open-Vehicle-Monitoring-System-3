@@ -150,6 +150,9 @@
 ;		0.4.6 11-april-2019 - Geir Øyvind Vælidalo
 ;			- Added AUX battery SOC.
 ;
+;		0.4.7 13-apr-2019 - Geir Øyvind Vælidalo
+;			- Added SaveStatus so that the SOC is as correct as possible even after a (unwanted) reboot while car is off.
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -193,7 +196,7 @@
 #include "ovms_notify.h"
 #include <sys/param.h>
 
-#define VERSION "0.4.6"
+#define VERSION "0.4.7"
 
 static const char *TAG = "v-kiasoulev";
 
@@ -429,6 +432,8 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   WebInit();
 #endif
 
+  RestoreStatus();
+
   // C-Bus
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   // M-Bus
@@ -512,6 +517,7 @@ void OvmsVehicleKiaSoulEv::vehicle_kiasoulev_car_on(bool isOn)
     kia_ready_for_chargepollstate = true;
 
     kia_park_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
+		SaveStatus();
     }
 
   //Make sure we update the different start values as soon as we have them available
@@ -860,6 +866,7 @@ void OvmsVehicleKiaSoulEv::HandleChargeStop()
 
 	// Reset trip counter for this charge
 	kia_charge_trip_counter.Reset(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
+	SaveStatus();
 
 	POLLSTATE_OFF;
 	}
