@@ -322,7 +322,7 @@ void OvmsVehicleSmartED::Ticker60(uint32_t ticker) {
 
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandClimateControl(bool enable) {
-    return CommandSetChargeTimer(enable, StandardMetrics.ms_m_timeutc->AsInt());
+    return CommandSetChargeTimer(enable, mt_vehicle_time->AsInt());
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool timeron, uint32_t timerstart) {
@@ -337,9 +337,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool ti
     if(!StandardMetrics.ms_v_env_awake->AsBool()) {
         return Fail;
     }
-    int t = timerstart + 7500; // Store the current time in time + GMT+1 + 30 min
-    int days = (t / 86400);
-    t = t - (days * 86400);
+    int t = timerstart + 600; // mt_vehicle_time + 10 min
+    //int days = (t / 86400);
+    //t = t - (days * 86400);
     int hours = (t / 3600);
     t = t - (hours * 3600);
     int minutes = (t / 60);
@@ -404,11 +404,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandHomelink(int button, i
     bool enable;
     if (button == 0) {
         enable = true;
-        return CommandSetChargeTimer(enable, StandardMetrics.ms_m_timeutc->AsInt());
+        return CommandSetChargeTimer(enable, mt_vehicle_time->AsInt());
     }
     if (button == 1) {
         enable = false;
-        return CommandSetChargeTimer(enable, StandardMetrics.ms_m_timeutc->AsInt());
+        return CommandSetChargeTimer(enable, mt_vehicle_time->AsInt());
     }
     return NotImplemented;
 }
