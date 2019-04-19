@@ -46,11 +46,15 @@ static const char *TAG = "v-smarted";
 
 OvmsVehicleSmartED::OvmsVehicleSmartED() {
     ESP_LOGI(TAG, "Start Smart ED vehicle module");
+    
+    memset(m_vin, 0, sizeof(m_vin));
+    
 #ifdef CONFIG_OVMS_COMP_MAX7317
     MyPeripherals->m_max7317->Output(MAX7317_EGPIO_1, 0);
     MyPeripherals->m_max7317->Output(MAX7317_EGPIO_2, 0);
     MyPeripherals->m_max7317->Output(MAX7317_EGPIO_3, 0);
 #endif
+
     // init metrics:
     mt_vehicle_time = MyMetrics.InitInt("v.display.time", SM_STALE_MIN, 0);
     mt_trip_start = MyMetrics.InitInt("v.display.trip.start", SM_STALE_MIN, 0);
@@ -76,6 +80,21 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     uint8_t *d = p_frame->data.u8;
     
     switch (p_frame->MsgID) {
+    case 0x6FA:
+    {
+        // CarVIN
+        if (d[0]==1) for (int k = 0; k < 7; k++) m_vin[k] = d[k+1];
+        else if (d[0] == 2) for (int k = 0; k < 7; k++) m_vin[k+7] = d[k+1];
+        else if (d[0] == 3) {
+            m_vin[14] = d[1];
+            m_vin[15] = d[2];
+            m_vin[16] = d[3];
+            m_vin[17] = 0;
+        }
+        if ( (m_vin[0] != 0) && (m_vin[7] != 0) && (m_vin[14] != 0) ) {
+            StandardMetrics.ms_v_vin->SetValue(m_vin);
+        }
+    }
     case 0x518: // displayed SOC
     {
         /*ID:518 Nibble 15,16 (Wert halbieren)
@@ -408,21 +427,18 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
 
     frame.origin = m_can1;
     frame.FIR.U = 0;
-    frame.FIR.B.DLC = 8;
+    frame.FIR.B.DLC = 4;
     frame.FIR.B.FF = CAN_frame_std;
-    frame.MsgID = 0x218;
-    frame.data.u8[0] = 0x00;
+    frame.MsgID = 0x423;
+    frame.data.u8[0] = 0x01;
     frame.data.u8[1] = 0x00;
     frame.data.u8[2] = 0x00;
     frame.data.u8[3] = 0x00;
-    frame.data.u8[4] = 0x00;
-    frame.data.u8[5] = 0x00;
-    frame.data.u8[6] = 0x00;
-    frame.data.u8[7] = 0x00;
     m_can1->Write(&frame);
 
     return Success;
 }
+
 #ifdef CONFIG_OVMS_COMP_MAX7317
 void SmartEDLockingTimer(TimerHandle_t timer) {
     xTimerStop(timer, 0);

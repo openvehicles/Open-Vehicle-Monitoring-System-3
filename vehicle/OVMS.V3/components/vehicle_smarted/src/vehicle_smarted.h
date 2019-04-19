@@ -47,6 +47,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
 
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
+    char m_vin[17];
     
   public:
     virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
