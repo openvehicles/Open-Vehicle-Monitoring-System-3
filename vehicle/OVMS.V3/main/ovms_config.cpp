@@ -67,6 +67,16 @@ void store_unmount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   writer->puts("Unmounted STORE");
   }
 
+int config_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  if (!MyConfig.ismounted())
+    return -1;
+  if (argc == 1)
+    return MyConfig.m_map.Validate(writer, argc, argv[0], complete);
+  OvmsConfigParam* p = MyConfig.m_map.FindUniquePrefix(argv[0]);
+  return p->m_map.Validate(writer, argc, argv[1], complete);
+  }
+
 void config_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (!MyConfig.ismounted()) return;
@@ -85,7 +95,7 @@ void config_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     OvmsConfigParam *p = MyConfig.CachedParam(argv[0]);
     if (p)
       {
-      writer->printf("%s (%s %s)\n",argv[0],
+      writer->printf("%s (%s %s)\n",p->GetName().c_str(),
         (p->Readable()?"readable":"protected"),
         (p->Writable()?"writeable":"read-only"));
       for (ConfigParamMap::iterator it=p->m_map.begin(); it!=p->m_map.end(); ++it)
@@ -215,9 +225,9 @@ OvmsConfig::OvmsConfig()
   cmd_store->RegisterCommand("unmount","Unmount STORE",store_unmount);
 
   OvmsCommand* cmd_config = MyCommandApp.RegisterCommand("config","CONFIG framework");
-  cmd_config->RegisterCommand("list","Show configuration parameters/instances",config_list,"[<param>]",0,1);
-  cmd_config->RegisterCommand("set","Set parameter:instance=value",config_set,"<param> <instance> <value>",3,3);
-  cmd_config->RegisterCommand("rm","Remove parameter:instance",config_rm,"<param> {<instance> | *}",2,2);
+  cmd_config->RegisterCommand("list","Show configuration parameters/instances",config_list,"[<param>]",0,1, true, config_validate);
+  cmd_config->RegisterCommand("set","Set parameter:instance=value",config_set,"<param> <instance> <value>",3,3, true, config_validate);
+  cmd_config->RegisterCommand("rm","Remove parameter:instance",config_rm,"<param> {<instance> | *}",2,2, true, config_validate);
 
 #ifdef CONFIG_OVMS_SC_ZIP
   cmd_config->RegisterCommand("backup", "Backup to file", config_backup,
@@ -498,11 +508,7 @@ OvmsConfigParam* OvmsConfig::CachedParam(std::string param)
   {
   if (!m_mounted) return NULL;
 
-  auto k = m_map.find(param);
-  if (k == m_map.end())
-    return NULL;
-  else
-    return k->second;
+  return m_map.FindUniquePrefix(param.c_str());
   }
 
 bool OvmsConfig::ProtectedPath(std::string path)

@@ -393,15 +393,9 @@ void location_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
 
 int location_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
   {
-  return MyLocations.m_locations.Validate(writer, argv[0], complete);
-  }
-
-int location_validate_radius(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
-  {
-  const char* token = NULL;
   if (argc == 1)
-    token = argv[0];
-  return MyLocations.m_locations.Validate(writer, token, complete);
+    return MyLocations.m_locations.Validate(writer, argc, argv[0], complete);
+  return -1;
   }
 
 void location_action(int verbosity, OvmsWriter* writer, enum LocationAction act, std::string& params)
@@ -536,7 +530,7 @@ OvmsLocations::OvmsLocations()
   OvmsCommand* cmd_location = MyCommandApp.RegisterCommand("location","LOCATION framework");
   cmd_location->RegisterCommand("list","Show all locations",location_list);
   cmd_location->RegisterCommand("set","Set the position of a location",location_set, "<name> [<latitude> <longitude> [<radius>]]", 1, 4);
-  cmd_location->RegisterCommand("radius","Set the radius of a location",location_radius, "<name> <radius>", 2, 2, true, location_validate_radius);
+  cmd_location->RegisterCommand("radius","Set the radius of a location",location_radius, "<name> <radius>", 2, 2, true, location_validate);
   cmd_location->RegisterCommand("rm","Remove a defined location",location_rm, "<name>", 1, 1, true, location_validate);
   cmd_location->RegisterCommand("status","Show location status",location_status);
   OvmsCommand* cmd_action = cmd_location->RegisterCommand("action","Set an action for a location");
