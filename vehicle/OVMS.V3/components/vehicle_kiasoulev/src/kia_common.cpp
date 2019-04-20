@@ -4,6 +4,9 @@
  *  Created on: 4. mar. 2019
  *      Author: goev
  */
+#include <fstream>
+#include <sdkconfig.h>
+#include "ovms_webserver.h"
 #include "kia_common.h"
 
 int KiaVehicle::CalcRemainingChargeMinutes(float chargespeed, int fromSoc, int toSoc, int batterySize, charging_profile charge_steps[])
@@ -103,6 +106,85 @@ void KiaVehicle::RestoreStatus()
 
 	return;
 	}
+
+/*
+ * Save the current aux voltage to the history file.
+ */
+void KiaVehicle::Save12VHistory()
+	{
+	// Save Aux voltage to history file
+	uint64_t timeStamp = StdMetrics.ms_m_timeutc->AsInt()*(uint64_t)1000;
+	if(StdMetrics.ms_v_bat_12v_voltage->AsFloat()>0 && timeStamp>0)
+		{
+		float auxVoltage = StdMetrics.ms_v_bat_12v_voltage->AsFloat();
+
+		FILE *sf = NULL;
+		sf = fopen(AUX_VOLTAGE_HISTORY_DATA_PATH, "a");
+		if (sf == NULL)
+			{
+			return;
+			}
+		fprintf(sf, "[%llu,%.2f],",timeStamp, auxVoltage);
+		fclose(sf);
+		}
+	}
+
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+
+/**
+ * WebAuxBattery: Show AUX voltage
+ */
+void KiaVehicle::WebAuxBattery(PageEntry_t& p, PageContext_t& c)
+{
+  std::string error;
+
+  KiaVehicle* kia = (KiaVehicle*) MyVehicleFactory.ActiveVehicle();
+
+  c.head(200);
+
+  PAGE_HOOK("body.pre");
+  c.panel_start("primary", "AUX battery status");
+  c.printf("Voltage: <b>%.2f</b>V - Current: <b>%.2f</b>A - SOC: <b>%i</b>%%<br>", StdMetrics.ms_v_bat_12v_voltage->AsFloat(), StdMetrics.ms_v_bat_12v_current->AsFloat(), kia->m_b_aux_soc->AsInt() );
+  c.panel_end();
+  c.panel_start("primary", "AUX battery monitor");
+  c.print("<script >"
+  			"	$.ajax({url: '12VHistory.dat', dataType: 'text', success: function(dataFile){"
+  			"{"
+			"dataFile = '['+dataFile.substring(0,dataFile.length-1)+']';"
+		  "data = JSON.parse(dataFile);"
+			"Highcharts.chart('auxVoltageGraphDiv', {"
+			"	chart: {"
+			"		zoomType: 'x',"
+			"		panning: true,"
+			"		panKey: 'ctrl'"
+			"},"
+			"	title: {text: 'AUX Battery Voltage over time'},"
+			"	credits: { enabled: false },"
+			"	subtitle: {text: document.ontouchstart === undefined ? 'Click and drag in the plot area to zoom in. Time is in UTC' : 'Pinch the chart to zoom in. Time is in UTC'},"
+			"	xAxis: { type: 'datetime' },"
+			"	yAxis: { title: {text: 'Voltage'}},"
+			"	series: [{type: 'line', name: 'Voltage', data: data}]"
+			"});"
+		  "}"
+  		  "}});"
+      "if (window.Highcharts) {\n"
+        "init_charts();\n"
+      "} else {\n"
+        "$.ajax({\n"
+          "url: \"" URL_ASSETS_CHARTS_JS "\",\n"
+          "dataType: \"script\",\n"
+          "cache: true,\n"
+          "success: function(){ init_charts(); }\n"
+        "});\n"
+      "}\n"
+			"</script>"
+  			"<div id='auxVoltageGraphDiv' style='min-width: 110px; height: 400px; margin: 0 auto'></div>"
+  );
+  c.panel_end();
+  c.done();
+}
+
+#endif //CONFIG_OVMS_COMP_WEBSERVER
 
 
 Kia_Trip_Counter::Kia_Trip_Counter()
@@ -299,5 +381,6 @@ float RangeCalculator::getRange()
 
 	return batteryCapacity / averageConsumption;
 	}
+
 
 

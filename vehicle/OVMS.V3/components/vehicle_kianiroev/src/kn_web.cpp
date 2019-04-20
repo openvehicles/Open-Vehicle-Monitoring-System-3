@@ -25,9 +25,9 @@
  */
 
 //static const char *TAG = "v-kianiroev";
+#include <sdkconfig.h>
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 
-//#include <stdio.h>
-//#include <string>
 #include "ovms_metrics.h"
 #include "ovms_events.h"
 #include "ovms_config.h"
@@ -51,6 +51,8 @@ using namespace std;
 void OvmsVehicleKiaNiroEv::WebInit()
 {
   // vehicle menu:
+  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xkn/Auxbattery", "Aux battery monitor", WebAuxBattery, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xkn/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xkn/battery", "Battery config", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
 }
@@ -288,3 +290,5 @@ void OvmsVehicleKiaNiroEv::GetDashboardConfig(DashboardConfig& cfg)
         "{ from: 110, to: 125, className: 'red-band border' }]"
     "}]";
 }
+
+#endif //CONFIG_OVMS_COMP_WEBSERVER

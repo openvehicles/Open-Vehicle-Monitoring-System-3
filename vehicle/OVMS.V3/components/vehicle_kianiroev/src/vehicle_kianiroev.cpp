@@ -31,6 +31,9 @@
 ;		 0.1.5 18-apr-2019 - Geir Øyvind Vælidalo
 ;			- Changed poll frequencies to minimize the strain on the CAN-write function.
 ;
+;		 0.1.6 20-apr-2019 - Geir Øyvind Vælidalo
+;			- AUX Battery monitor..
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -68,7 +71,7 @@
 #include <sys/param.h>
 #include "../../vehicle_kiasoulev/src/kia_common.h"
 
-#define VERSION "0.1.5"
+#define VERSION "0.1.6"
 
 static const char *TAG = "v-kianiroev";
 
@@ -280,7 +283,6 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   ConfigChanged(NULL);
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
-  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
   WebInit();
 #endif
 
@@ -521,7 +523,7 @@ void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
 	}
 
 /**
- * Ticker10: Called every second
+ * Ticker10: Called every ten seconds
  */
 void OvmsVehicleKiaNiroEv::Ticker10(uint32_t ticker)
 	{
@@ -532,6 +534,7 @@ void OvmsVehicleKiaNiroEv::Ticker10(uint32_t ticker)
  */
 void OvmsVehicleKiaNiroEv::Ticker300(uint32_t ticker)
 	{
+	Save12VHistory();
 	}
 
 void OvmsVehicleKiaNiroEv::EventListener(std::string event, void* data)

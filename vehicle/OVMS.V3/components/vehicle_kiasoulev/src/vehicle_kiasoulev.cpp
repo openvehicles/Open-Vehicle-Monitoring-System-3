@@ -428,7 +428,6 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   ConfigChanged(NULL);
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
-  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
   WebInit();
 #endif
 
