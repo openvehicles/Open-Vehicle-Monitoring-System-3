@@ -54,6 +54,7 @@ void OvmsVehicleRenaultTwizy::WebInit()
 {
   // vehicle menu:
   MyWebServer.RegisterPage("/xrt/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xrt/brakelight", "Brake Light", OvmsWebServer::HandleCfgBrakelight, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xrt/profed", "Profile Editor", WebProfileEditor, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xrt/dmconfig", "Drivemode Config", WebDrivemodeConfig, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xrt/battery", "Battery Config", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);

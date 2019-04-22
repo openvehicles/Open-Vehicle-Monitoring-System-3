@@ -133,6 +133,19 @@ class OvmsVehicle : public InternalRamAllocated
     int m_minsoc_triggered;  // The triggered minimum SOC level to alert at
 
   protected:
+    float m_accel_refspeed;                 // Acceleration calculation: last speed measured (m/s)
+    uint32_t m_accel_reftime;               // … timestamp for refspeed (ms)
+    float m_accel_smoothing;                // … smoothing factor (samples, 0 = none, default 2.0)
+
+  protected:
+    bool m_brakelight_enable;               // Regen brake light enable (default no)
+    int m_brakelight_port;                  // … MAX7317 output port number (1, 3…9, default 1 = SW_12V)
+    float m_brakelight_on;                  // … activation threshold (deceleration in m/s², default 1.3)
+    float m_brakelight_off;                 // … deactivation threshold (deceleration in m/s², default 0.7)
+    uint32_t m_brakelight_start;            // … activation start time
+    virtual bool SetBrakelight(int on);     // … hardware control method (override for non MAX7317 control)
+
+  protected:
     uint32_t m_ticker;
     int m_12v_ticker;
     int m_chargestate_ticker;
