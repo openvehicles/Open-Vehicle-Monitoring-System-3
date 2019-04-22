@@ -91,14 +91,15 @@ void OvmsVehicleKiaNiroEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
  */
 void OvmsVehicleKiaNiroEv::IncomingCM(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
-	//ESP_LOGD(TAG, "Cluster PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, m_poll_ml_frame, data[0], data[1], data[2], data[3],
-	//		data[4], data[5], data[6]);
+//	ESP_LOGI(TAG, "CM PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, m_poll_ml_frame, data[0], data[1], data[2], data[3],
+//			data[4], data[5], data[6]);
+//	ESP_LOGI(TAG, "---");
 	switch (pid)
 		{
 		case 0xb002:
 			if (m_poll_ml_frame == 1)
 				{
-			StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(3), Kilometers );
+				StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(3), Kilometers );
 				}
 			break;
 		}
@@ -169,7 +170,7 @@ void OvmsVehicleKiaNiroEv::IncomingOBC(canbus* bus, uint16_t type, uint16_t pid,
 				}
 			else if (m_poll_ml_frame == 6)
 				{
-				StdMetrics.ms_v_charge_temp->SetValue( (float) (CAN_BYTE(2)/2.0)-40.0, Celcius ); //Untested
+				StdMetrics.ms_v_charge_temp->SetValue( (float) (CAN_BYTE(3)/2.0)-40.0, Celcius ); //Untested
 				kia_obc_ac_voltage = (float) CAN_BYTE(6);
 				}
 			else if (m_poll_ml_frame == 7)
@@ -214,7 +215,7 @@ void OvmsVehicleKiaNiroEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 					//ESP_LOGD(TAG, "VMCU PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, m_poll_ml_frame, data[0], data[1], data[2], data[3],
 					//		data[4], data[5], data[6]);
 
-					ESP_LOGD(TAG, "ABS/ESP %02x %02x", data[1], data[2]);
+					//ESP_LOGD(TAG, "ABS/ESP %02x %02x", data[1], data[2]);
 
 					if( kn_shift_bits.Reverse)
 						{
@@ -231,7 +232,8 @@ void OvmsVehicleKiaNiroEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 					}
 				else if(m_poll_ml_frame==2)
 					{
-					StdMetrics.ms_v_pos_speed->SetValue(CAN_UINT(2)/100.0);
+					//StdMetrics.ms_v_pos_speed->SetValue(CAN_UINT(2)/100.0);
+					StdMetrics.ms_v_pos_speed->SetValue(CAN_UINT(1)/10.0); // Alex said the other one was wrong. Maybe this is correct?
 					}
 				}
 			break;
@@ -290,6 +292,9 @@ void OvmsVehicleKiaNiroEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
  */
 void OvmsVehicleKiaNiroEv::IncomingMCU(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
+//	ESP_LOGI(TAG, "MCU PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, m_poll_ml_frame, data[0], data[1], data[2], data[3],
+//				data[4], data[5], data[6]);
+//	ESP_LOGI(TAG, "-");
 	switch (pid)
 		{
 		case 0x02:
@@ -297,8 +302,6 @@ void OvmsVehicleKiaNiroEv::IncomingMCU(canbus* bus, uint16_t type, uint16_t pid,
 				{
 				if (m_poll_ml_frame == 2)
 					{
-					//ESP_LOGD(TAG, "VMCU PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, m_poll_ml_frame, data[0], data[1], data[2], data[3],
-					//		data[4], data[5], data[6]);
 						StdMetrics.ms_v_mot_temp->SetValue((int8_t)CAN_BYTE(4)); //TODO Correct? Could be byte 2 *2
 						StdMetrics.ms_v_inv_temp->SetValue((int8_t)CAN_BYTE(3)); //TODO Correct? Could be byte 1 *2
 					}
@@ -449,7 +452,6 @@ void OvmsVehicleKiaNiroEv::IncomingBCM(canbus* bus, uint16_t type, uint16_t pid,
 			case 0xB00E:
 				if (m_poll_ml_frame == 1)
 					{
-					//StdMetrics.ms_v_door_chargeport->SetValue((CAN_BYTE(1)>>4) & 1);
 					StdMetrics.ms_v_door_chargeport->SetValue(CAN_BIT(1,4));
 					}
 				break;
@@ -483,7 +485,7 @@ void OvmsVehicleKiaNiroEv::IncomingBCM(canbus* bus, uint16_t type, uint16_t pid,
 					}
 				break;
 
-			case 0xC006:
+			case 0xC00B:
 				if (m_poll_ml_frame == 1)
 					{
 					bVal = CAN_BYTE(1);
@@ -554,9 +556,9 @@ void OvmsVehicleKiaNiroEv::IncomingIGMP(canbus* bus, uint16_t type, uint16_t pid
 
 					m_v_seat_belt_back_left->SetValue(CAN_BIT(4,2));
 					m_v_seat_belt_back_middle->SetValue(CAN_BIT(4,3));
-					m_v_seat_belt_back_right->SetValue(CAN_BIT(4,1));
+					m_v_seat_belt_back_right->SetValue(CAN_BIT(4,4));
 
-					StdMetrics.ms_v_env_headlights->SetValue(CAN_BIT(4,4));
+					StdMetrics.ms_v_env_headlights->SetValue(CAN_BIT(5,4));
 					}
 				break;
 

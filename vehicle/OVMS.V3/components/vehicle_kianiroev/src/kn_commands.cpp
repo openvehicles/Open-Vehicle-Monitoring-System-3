@@ -39,8 +39,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleKiaNiroEv::CommandUnlock(const char* p
  */
 void xkn_ign1(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
-  //OvmsVehicleKiaNiroEv* car = (OvmsVehicleKiaNiroEv*) MyVehicleFactory.ActiveVehicle();
-  //car->IGN1Relay( strcmp(argv[0],"on")==0, argv[1] );
+  OvmsVehicleKiaNiroEv* car = (OvmsVehicleKiaNiroEv*) MyVehicleFactory.ActiveVehicle();
+  car->IGN1Relay( strcmp(argv[0],"on")==0, argv[1] );
 	}
 
 /**
@@ -58,8 +58,8 @@ void xkn_ign2(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
  */
 void xkn_acc_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
-  //OvmsVehicleKiaNiroEv* car = (OvmsVehicleKiaNiroEv*) MyVehicleFactory.ActiveVehicle();
-  //car->ACCRelay( strcmp(argv[0],"on")==0, argv[1] );
+  OvmsVehicleKiaNiroEv* car = (OvmsVehicleKiaNiroEv*) MyVehicleFactory.ActiveVehicle();
+  car->ACCRelay( strcmp(argv[0],"on")==0, argv[1] );
 	}
 
 /**
@@ -67,8 +67,8 @@ void xkn_acc_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
  */
 void xkn_start_relay(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 	{
-  //OvmsVehicleKiaNiroEv* car = (OvmsVehicleKiaNiroEv*) MyVehicleFactory.ActiveVehicle();
-  //car->StartRelay( strcmp(argv[0],"on")==0, argv[1] );
+  OvmsVehicleKiaNiroEv* car = (OvmsVehicleKiaNiroEv*) MyVehicleFactory.ActiveVehicle();
+  car->StartRelay( strcmp(argv[0],"on")==0, argv[1] );
 	}
 
 void xkn_sjb(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -122,6 +122,12 @@ void xkn_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 
 	writer->printf("AUX BATTERY\n");
 	if (*auxBatt != '-') writer->printf("Aux battery voltage %s\n", auxBatt);
+
+  OvmsVehicleKiaNiroEv* niro = (OvmsVehicleKiaNiroEv*) MyVehicleFactory.ActiveVehicle();
+
+	const char* auxSOC = niro->m_b_aux_soc->AsUnitString("-", Percentage, 1).c_str();
+
+	if (*auxSOC != '-') writer->printf("Aux battery SOC %s\n", auxSOC);
 	}
 
 /**
@@ -161,13 +167,17 @@ void xkn_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 		{
 		writer->printf("Soul\n");
 		}
+	else 	if(soul->m_vin[3]=='C')
+		{
+		writer->printf("Niro\n");
+		}
 	else
 		{
 		writer->printf("Unknown %c\n", soul->m_vin[3]);
 		}
 
 	writer->printf("Model: ");
-	if(soul->m_vin[4]=='M')
+	/*if(soul->m_vin[4]=='M')
 		{
 		writer->printf("Low grade\n");
 		}
@@ -187,17 +197,26 @@ void xkn_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 		{
 		writer->printf("High grade\n");
 		}
+	else*/ if(soul->m_vin[4]=='C')
+		{
+		writer->printf("High grade.\n");
+		}
 	else
 		{
 		writer->printf("Unknown %c\n", soul->m_vin[4]);
 		}
 
-	writer->printf("Model year: %04d\n", 2014 + soul->m_vin[9]-'E'); //TODO Will be wrong in for 2022. O and Q are not used.
+	int year = soul->m_vin[9]-'F';
+	writer->printf("Model year: %04d\n", 2014 + year); //TODO Is off by a year. O and Q are not used.
 
 	writer->printf("Motor type: ");
 	if(soul->m_vin[7]=='E')
 		{
 		writer->printf("Battery [LiPB 350 V, 75 Ah] + Motor [3-phase AC 80 KW]\n");
+		}
+	else if(soul->m_vin[7]=='G')
+		{
+		writer->printf("Battery [LiPB 356 V, 180 Ah] + Motor [3-phase AC 150 KW]\n");
 		}
 	else
 		{

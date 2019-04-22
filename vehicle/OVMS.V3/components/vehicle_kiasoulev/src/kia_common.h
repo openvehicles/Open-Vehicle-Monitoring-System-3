@@ -2,15 +2,15 @@
 #define __VEHICLE_KIA_COMMON_H__
 
 #include "vehicle.h"
+#include "ovms_webserver.h"
 
 using namespace std;
 
 typedef struct{
-       int    fromPercent;
+       int fromPercent;
        int toPercent;
        float maxChargeSpeed;
 }charging_profile;
-
 
 class Kia_Trip_Counter
     {
@@ -36,24 +36,26 @@ class Kia_Trip_Counter
 
 class KiaVehicle : public OvmsVehicle
 	{
+#define     SAVE_STATUS_DATA_PATH "/sd/SaveStatus.dat"
+#define     AUX_VOLTAGE_HISTORY_DATA_PATH "/sd/12VHistory.dat"
 public:
   char m_vin[18];
 
   uint32_t kia_tpms_id[4];
 
-  OvmsMetricInt* 		m_b_cell_volt_max_no;			//Max cell voltage no           02 21 01 -> 23 7
-  OvmsMetricInt* 		m_b_cell_volt_min_no; 		//Min cell voltage no           02 21 01 -> 24 2
+  OvmsMetricInt* 		m_b_cell_volt_max_no;			// Max cell voltage no           02 21 01 -> 23 7
+  OvmsMetricInt* 		m_b_cell_volt_min_no; 		// Min cell voltage no           02 21 01 -> 24 2
   OvmsMetricFloat*		m_b_cell_volt_max;     		// Battery cell maximum voltage
   OvmsMetricFloat*		m_b_cell_volt_min;     		// Battery cell minimum voltage
-  OvmsMetricInt* 		m_b_cell_det_max_no; 			//02 21 05 -> 24 3
-  OvmsMetricInt*			m_b_cell_det_min_no; 			//02 21 05 -> 24 6
+  OvmsMetricInt* 		m_b_cell_det_max_no; 			// 02 21 05 -> 24 3
+  OvmsMetricInt*			m_b_cell_det_min_no; 			// 02 21 05 -> 24 6
   OvmsMetricFloat*		m_b_cell_det_max;      		// Battery cell maximum detoriation
   OvmsMetricFloat*		m_b_cell_det_min;      		// Battery cell minimum detoriation
-  OvmsMetricInt* 		m_b_min_temperature; 			//02 21 05 -> 21 7
-  OvmsMetricInt*			m_b_inlet_temperature; 		//02 21 05 -> 21 6
-  OvmsMetricInt*			m_b_max_temperature; 			//02 21 05 -> 22 1
-  OvmsMetricInt*			m_b_heat_1_temperature; 	//02 21 05 -> 23 6
-  OvmsMetricInt*			m_b_heat_2_temperature; 	//02 21 05 -> 23 7
+  OvmsMetricInt* 		m_b_min_temperature; 			// 02 21 05 -> 21 7
+  OvmsMetricInt*			m_b_inlet_temperature; 		// 02 21 05 -> 21 6
+  OvmsMetricInt*			m_b_max_temperature; 			// 02 21 05 -> 22 1
+  OvmsMetricInt*			m_b_heat_1_temperature; 	// 02 21 05 -> 23 6
+  OvmsMetricInt*			m_b_heat_2_temperature; 	// 02 21 05 -> 23 7
   OvmsMetricFloat*		m_b_bms_soc; 						// The bms soc, which differs from displayed soc.
   OvmsMetricInt*			m_b_aux_soc; 						// The soc for aux battery.
 
@@ -102,6 +104,12 @@ public:
 
   OvmsMetricBool*  m_v_emergency_lights;
 
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+    public:
+      static void WebAuxBattery(PageEntry_t& p, PageContext_t& c);
+#endif //CONFIG_OVMS_COMP_WEBSERVER
+
+
 protected:
   struct {
     uint8_t byte[8];
@@ -109,10 +117,21 @@ protected:
     uint16_t id;
   } kia_send_can;
 
+  typedef struct {
+  		float soc;
+  }Kia_Save_Status;
+
+
   int CalcRemainingChargeMinutes(float chargespeed, int fromSoc, int toSoc, int batterySize, charging_profile charge_steps[]);
+  int CalcAUXSoc(float volt);
+  void SaveStatus();
+  void RestoreStatus();
+  void Save12VHistory();
 
   Kia_Trip_Counter kia_park_trip_counter;
   Kia_Trip_Counter kia_charge_trip_counter;
+
+  Kia_Save_Status kia_save_status;
 
   OvmsMetricString* m_version;
   OvmsMetricFloat*  m_c_power;            				// Available charge power
@@ -142,6 +161,33 @@ protected:
 
   const TickType_t xDelay = 50 / portTICK_PERIOD_MS;
 	};
+
+class RangeCalculator
+{
+#define     RANGE_CALC_DATA_PATH "/sd/RangeCalc.dat"
+
+private:
+       typedef struct {
+             float consumption;  //Total kWh
+             float distance;            //km
+       }TripConsumption;
+
+       TripConsumption trips[20];
+       int currentTripPointer = 0;
+       float minimumTrip = 1;
+       float weightOfCurrentTrip = 4;
+       float batteryCapacity = 64;
+
+       void storeTrips();
+       void restoreTrips();
+
+public:
+       RangeCalculator(float minimumTrip, float weightOfCurrentTrip, float defaultRange, float batteryCapacity);
+       ~RangeCalculator();
+       void updateTrip(float distance, float consumption);
+       void tripEnded(float distance, float consumption);
+       float getRange();
+};
 
 #define SQR(n) ((n)*(n))
 #define ABS(n) (((n) < 0) ? -(n) : (n))

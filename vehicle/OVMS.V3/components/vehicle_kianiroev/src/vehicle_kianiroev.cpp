@@ -14,6 +14,26 @@
 ;			- VIN is working
 ;			- Removed more of the polling when car is off in order to prevent AUX battery drain
 ;
+;		 0.1.2 10-apr-2019 - Geir Øyvind Vælidalo
+;			- Fixed TPMS reading
+;			- Fixed xks aux
+;			- Estimated range show WLTP in lack of the actual displayed range
+;			- Door lock works even after ECU goes to sleep.
+;
+;		 0.1.3 12-apr-2019 - Geir Øyvind Vælidalo
+;			- Fixed OBC temp reading
+;			- Removed a couple of pollings when car is off, in order to save AUX battery
+;			- Added range calculator for estimated range instead of WLTP. It now uses 20 last trips as a basis.
+;
+;		 0.1.4 13-apr-2019 - Geir Øyvind Vælidalo
+;			- Added SaveStatus so that the SOC is as correct as possible even after a (unwanted) reboot while car is off.
+;
+;		 0.1.5 18-apr-2019 - Geir Øyvind Vælidalo
+;			- Changed poll frequencies to minimize the strain on the CAN-write function.
+;
+;		 0.1.6 20-apr-2019 - Geir Øyvind Vælidalo
+;			- AUX Battery monitor..
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -51,7 +71,7 @@
 #include <sys/param.h>
 #include "../../vehicle_kiasoulev/src/kia_common.h"
 
-#define VERSION "0.1.1"
+#define VERSION "0.1.6"
 
 static const char *TAG = "v-kianiroev";
 
@@ -62,37 +82,38 @@ static const OvmsVehicle::poll_pid_t vehicle_kianiroev_polls[] =
   {
   		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDII_1A, 				0x80, 			{       0,  120,	 120 } },  // VMCU - VIN
 
-		{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0101, 		{      10,   10,  10 } }, 	// BMC Diag page 01 - Must be called when off to detect when charging
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0102, 		{       0,   15,  10 } }, 	// BMC Diag page 02
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0103, 		{       0,   15,  10 } }, 	// BMC Diag page 03
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0104, 		{       0,   15,  10 } }, 	// BMC Diag page 04
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0105, 		{       0,   15,  10 } },		// BMC Diag page 05
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0106, 		{       0,   10,  10 } },		// BMC Diag page 06
+		{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0101, 		{      10,    9,   9 } }, 	// BMC Diag page 01 - Must be called when off to detect when charging
+		{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0102, 		{       0,   59,   9 } }, 	// BMC Diag page 02
+		{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0103, 		{       0,   59,   9 } }, 	// BMC Diag page 03
+		{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0104, 		{       0,   59,   9 } }, 	// BMC Diag page 04
+		{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0105, 		{       0,   59,   9 } },		// BMC Diag page 05
+		{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0106, 		{       0,    9,   9 } },		// BMC Diag page 06
 
-		{ 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xB00C, 		{       0,   10,  10 } },   // BCM Heated handle
-		{ 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xB00E, 		{      10,   10,  10 } },   // BCM Chargeport ++
-    { 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,   0xC002, 		{       0,   30,   0 } }, 	// TMPS - ID's
-    { 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,   0xC00B, 		{       0,   10,   0 } }, 	// TMPS - Pressure and Temp
+		{ 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xB00C, 		{       0,   29,  29 } },   // BCM Heated handle
+		{ 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xB00E, 		{       0,   10,  10 } },   // BCM Chargeport ++
 
-		{ 0x770, 0x778, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xbc03, 		{      10,   10,  10 } },  // IGMP Door status + IGN1 & IGN2 - Detects when car is turned on
-		{ 0x770, 0x778, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xbc04, 		{       0,   10,  10 } },  // IGMP Door status
-		{ 0x770, 0x778, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xbc07, 		{       0,   10,  10 } },  // IGMP Rear/mirror defogger
+		{ 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,   0xC002, 		{       0,   60,   0 } }, 	// TMPS - ID's
+		{ 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_OBDIIEXTENDED,   0xC00B, 		{       0,   13,   0 } }, 	// TMPS - Pressure and Temp
+
+		{ 0x770, 0x778, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xbc03, 		{      10,    7,   7 } },  // IGMP Door status + IGN1 & IGN2 - Detects when car is turned on
+		{ 0x770, 0x778, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xbc04, 		{       0,   11,  11 } },  // IGMP Door status
+		{ 0x770, 0x778, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xbc07, 		{       0,   13,  13 } },  // IGMP Rear/mirror defogger
 
 		{ 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0100, 		{       0,   10,  10 } },  // AirCon
-		{ 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0102, 		{       0,   10,  10 } },  // AirCon
+		//{ 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0x0102, 		{       0,   10,  10 } },  // AirCon - No usable values found yet
 
-		{ 0x7c6, 0x7ce, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xB002, 		{       0,   10, 120 } },  // Cluster. ODO
+		{ 0x7c6, 0x7ce, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xB002, 		{       0,   19, 120 } },  // Cluster. ODO
 
-		{ 0x7d1, 0x7d9, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xc101, 		{       0,   10,  10 } },  // ABS/ESP - Emergency lights
+		{ 0x7d1, 0x7d9, VEHICLE_POLL_TYPE_OBDIIEXTENDED,  	0xc101, 		{       0,   27,  27 } },  // ABS/ESP - Emergency lights
 
-    { 0x7e5, 0x7ed, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x01, 			{       0,   10,  10 } }, 	// OBC - On board charger
-    //{ 0x7e5, 0x7ed, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x02, 			{       0,   10,  10 } }, 	// OBC
-    { 0x7e5, 0x7ed, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x03, 			{       0,   10,  10 } }, 	// OBC
+		{ 0x7e5, 0x7ed, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x01, 			{       0,   58,  11 } }, 	// OBC - On board charger
+    //{ 0x7e5, 0x7ed, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x02, 			{       0,   58,  11 } }, 	// OBC
+		{ 0x7e5, 0x7ed, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x03, 			{       0,   58,  11 } }, 	// OBC
 
-		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x01, 			{       0,   10,  10 } },  // VMCU - Shift position
-		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x02, 			{     600,   10,  10 } },  // VMCU - Aux Battery data
+		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x01, 			{       0,    7,  19 } },  // VMCU - Shift position
+		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x02, 			{     	  0,    7,  7 } },  // VMCU - Aux Battery data
 
-		{ 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x02, 			{       0,   10,  10 } },  // MCU
+		{ 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIGROUP,  		0x02, 			{       0,   11,  11 } },  // MCU
 
     { 0, 0, 0, 0, { 0, 0, 0 } }
   };
@@ -261,9 +282,11 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   MyConfig.RegisterParam("xkn", "Kia Niro EV spesific settings.", true, true);
   ConfigChanged(NULL);
 
-  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
-
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
+#endif
+
+  RestoreStatus();
 
   // D-Bus
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
@@ -271,6 +294,8 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   POLLSTATE_RUNNING;
   kia_secs_with_no_client=0;
   PollSetPidList(m_can1,vehicle_kianiroev_polls);
+
+  kn_range_calc = new RangeCalculator(1, 4, 455, 64);
   }
 
 /**
@@ -331,13 +356,15 @@ void OvmsVehicleKiaNiroEv::vehicle_kianiroev_car_on(bool isOn)
     {
     // Car is OFF
 		ESP_LOGI(TAG,"CAR IS OFF");
+    kia_park_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
     kia_secs_with_no_client=0;
   		StdMetrics.ms_v_pos_speed->SetValue( 0 );
   	  StdMetrics.ms_v_pos_trip->SetValue( kia_park_trip_counter.GetDistance() );
   		StdMetrics.ms_v_env_charging12v->SetValue( false );
     kia_ready_for_chargepollstate = true;
-    kia_park_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
-    }
+		kn_range_calc->tripEnded(kia_park_trip_counter.GetDistance(), kia_park_trip_counter.GetEnergyUsed());
+		SaveStatus();
+    	}
   }
 
 /**
@@ -357,24 +384,7 @@ void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
 		vehicle_kianiroev_car_on(StdMetrics.ms_v_env_on->AsBool());
 		}
 
-/*
-	// Lock or unlock doors. User pressed keyfob while car was on.
-	if( kn_lockDoors || kn_unlockDoors)
-		{
-		char buffer[6];
-		SetDoorLock(kn_unlockDoors, itoa(MyConfig.GetParamValueInt("password","pin"), buffer, 10));
-		kn_lockDoors=false;
-		kn_unlockDoors=false;
-		}
-*/
 	UpdateMaxRangeAndSOH();
-	if (FULL_RANGE > 0) //  If we have the battery full range, we can calculate the ideal range too
-		{
-			StdMetrics.ms_v_bat_range_ideal->SetValue( FULL_RANGE * BAT_SOC / 100.0, Kilometers);
-			}
-
-	//TODO How to find the range as displayed in the cluster?
-	StdMetrics.ms_v_bat_range_est->SetValue(StdMetrics.ms_v_bat_range_ideal->AsFloat());
 
 	// Update trip data
 	if (StdMetrics.ms_v_env_on->AsBool())
@@ -400,9 +410,6 @@ void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
 				}
 			}
 		}
-
-	// Charge timer on/off?
-	//TODO StdMetrics.ms_v_charge_timermode->SetValue( m_obc_timer_enabled->AsBool() && !kn_charge_timer_off );
 
 	if( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers)>0 )
 			m_v_trip_consumption1->SetValue( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) );
@@ -435,14 +442,13 @@ void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
 		}
 
   //Keep charging metrics up to date
-	if (kn_charge_bits.ChargingType2)  				// **** Type 2  charging ****
+	if (kn_charge_bits.ChargingType2)  		// **** Type 2  charging ****
 		{
-//		SetChargeMetrics(kn_obc_ac_voltage, -StdMetrics.ms_v_bat_power->AsFloat(0, kW) * 1000 / kn_obc_ac_voltage, 32, false);
 		SetChargeMetrics(kia_obc_ac_voltage, kia_obc_ac_current, 32, false);
 	  }
 	else if (kn_charge_bits.ChargingCCS)  // **** CCS charging ****
 		{
-		SetChargeMetrics(StdMetrics.ms_v_bat_voltage->AsFloat(400,Volts), StdMetrics.ms_v_charge_current->AsFloat(1,Amps), /*m_c_power->AsFloat(0,kW) * 1000 / StdMetrics.ms_v_bat_voltage->AsFloat(400,Volts)*/ 200, true);
+		SetChargeMetrics(StdMetrics.ms_v_bat_voltage->AsFloat(400,Volts), StdMetrics.ms_v_charge_current->AsFloat(1,Amps), 200, true);
 	  }
 
 	// Check for charging status changes:
@@ -517,7 +523,7 @@ void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
 	}
 
 /**
- * Ticker10: Called every second
+ * Ticker10: Called every ten seconds
  */
 void OvmsVehicleKiaNiroEv::Ticker10(uint32_t ticker)
 	{
@@ -528,6 +534,7 @@ void OvmsVehicleKiaNiroEv::Ticker10(uint32_t ticker)
  */
 void OvmsVehicleKiaNiroEv::Ticker300(uint32_t ticker)
 	{
+	Save12VHistory();
 	}
 
 void OvmsVehicleKiaNiroEv::EventListener(std::string event, void* data)
@@ -671,6 +678,7 @@ void OvmsVehicleKiaNiroEv::HandleChargeStop()
 	// Reset trip counter for this charge
 	kia_charge_trip_counter.Reset(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
   kia_secs_with_no_client = 0;
+	SaveStatus();
 	}
 
 /**
@@ -710,10 +718,12 @@ uint16_t OvmsVehicleKiaNiroEv::calcMinutesRemaining(float target)
 void OvmsVehicleKiaNiroEv::UpdateMaxRangeAndSOH(void)
 	{
 	//Update State of Health using following assumption: 10% buffer
-	//StdMetrics.ms_v_bat_soh->SetValue( 110 - ( m_b_cell_det_max->AsFloat(0) + m_b_cell_det_min->AsFloat(0)) / 2 );
 	StdMetrics.ms_v_bat_cac->SetValue( (kn_battery_capacity * BAT_SOH * BAT_SOC/10000.0) / 400, AmpHours);
 
+	kn_range_calc->updateTrip(kia_park_trip_counter.GetDistance(), kia_park_trip_counter.GetEnergyUsed());
+
 	float maxRange = kn_maxrange;// * MIN(BAT_SOH,100) / 100.0;
+	float wltpRange = kn_range_calc->getRange();
 	float amb_temp = StdMetrics.ms_v_env_temp->AsFloat(20, Celcius);
 	float bat_temp = StdMetrics.ms_v_bat_temp->AsFloat(20, Celcius);
 
@@ -723,8 +733,14 @@ void OvmsVehicleKiaNiroEv::UpdateMaxRangeAndSOH(void)
 	if (maxRange != 0)
 		{
 		maxRange = (maxRange * (100.0 - (int) (ABS(20.0 - (amb_temp+bat_temp * 3)/4)* 1.25))) / 100.0;
+		StdMetrics.ms_v_bat_range_ideal->SetValue( maxRange * BAT_SOC / 100.0, Kilometers);
 		}
 	StdMetrics.ms_v_bat_range_full->SetValue(maxRange, Kilometers);
+
+	//TODO How to find the range as displayed in the cluster? Use the WLTP until we find it
+	//wltpRange = (wltpRange * (100.0 - (int) (ABS(20.0 - (amb_temp+bat_temp * 3)/4)* 1.25))) / 100.0;
+	StdMetrics.ms_v_bat_range_est->SetValue( wltpRange * BAT_SOC / 100.0, Kilometers);
+
 	}
 
 
@@ -739,8 +755,10 @@ bool OvmsVehicleKiaNiroEv::SetDoorLock(bool open, const char* password)
   		{
     if( PinCheck((char*)password) )
     		{
+    	  ACCRelay(true,password	);
     		LeftIndicator(true);
     		result = Send_IGMP_Command(0xbc, open?0x11:0x10, 0x03);
+    		ACCRelay(false,password	);
     		}
   		}
 		return result;
@@ -826,14 +844,14 @@ bool OvmsVehicleKiaNiroEv::FoldMirrors(bool on)
  */
 bool OvmsVehicleKiaNiroEv::ACCRelay(bool on, const char* password)
 	{
-//	if(PinCheck((char*)password))
-//		{
-//		if( kn_shift_bits.Park )
-//				{
-//				if( on ) return Send_SMK_Command(7, 0xb1, 0x08, 0x03, 0x0a, 0x0a, 0x05);
-//				else return Send_SMK_Command(4, 0xb1, 0x08, 0, 0, 0, 0);
-//				}
-//		}
+	if(PinCheck((char*)password))
+		{
+		if( kn_shift_bits.Park )
+				{
+				if( on ) return Send_SMK_Command(7, 0xb1, 0x08, 0x03, 0x0a, 0x0a, 0x05);
+				else return Send_SMK_Command(4, 0xb1, 0x08, 0, 0, 0, 0);
+				}
+		}
 	return false;
 	}
 
@@ -842,14 +860,14 @@ bool OvmsVehicleKiaNiroEv::ACCRelay(bool on, const char* password)
  */
 bool OvmsVehicleKiaNiroEv::IGN1Relay(bool on, const char* password)
 	{
-//	if(PinCheck((char*)password))
-//		{
-//		if( kn_shift_bits.Park )
-//				{
-//				if( on ) return Send_SMK_Command(7, 0xb1, 0x09, 0x03, 0x0a, 0x0a, 0x05);
-//				else return Send_SMK_Command(4, 0xb1, 0x09, 0, 0, 0, 0);
-//				}
-//		}
+	if(PinCheck((char*)password))
+		{
+		if( kn_shift_bits.Park )
+				{
+				if( on ) return Send_SMK_Command(7, 0xb1, 0x09, 0x03, 0x0a, 0x0a, 0x05);
+				else return Send_SMK_Command(4, 0xb1, 0x09, 0, 0, 0, 0);
+				}
+		}
 	return false;
 	}
 
@@ -858,14 +876,14 @@ bool OvmsVehicleKiaNiroEv::IGN1Relay(bool on, const char* password)
  */
 bool OvmsVehicleKiaNiroEv::IGN2Relay(bool on, const char* password)
 	{
-//	if(PinCheck((char*)password))
-//		{
-//		if( kn_shift_bits.Park )
-//				{
-//				if( on ) return Send_SMK_Command(7, 0xb1, 0x0a, 0x03, 0x0a, 0x0a, 0x05);
-//				else return Send_SMK_Command(4, 0xb1, 0x0a, 0, 0, 0, 0);
-//				}
-//		}
+	if(PinCheck((char*)password))
+		{
+		if( kn_shift_bits.Park )
+				{
+				if( on ) return Send_SMK_Command(7, 0xb1, 0x0a, 0x03, 0x0a, 0x0a, 0x05);
+				else return Send_SMK_Command(4, 0xb1, 0x0a, 0, 0, 0, 0);
+				}
+		}
 	return false;
 	}
 
@@ -874,14 +892,14 @@ bool OvmsVehicleKiaNiroEv::IGN2Relay(bool on, const char* password)
  */
 bool OvmsVehicleKiaNiroEv::StartRelay(bool on, const char* password)
 	{
-//	if(PinCheck((char*)password))
-//		{
-//		if( kn_shift_bits.Park )
-//				{
-//				if( on ) return Send_SMK_Command(7, 0xb1, 0x0b, 0x03, 0x02, 0x02, 0x01);
-//				else return Send_SMK_Command(4, 0xb1, 0x0b, 0, 0, 0, 0);
-//				}
-//		}
+	if(PinCheck((char*)password))
+		{
+		if( kn_shift_bits.Park )
+				{
+				if( on ) return Send_SMK_Command(7, 0xb1, 0x0b, 0x03, 0x02, 0x02, 0x01);
+				else return Send_SMK_Command(4, 0xb1, 0x0b, 0, 0, 0, 0);
+				}
+		}
 	return false;
 	}
 

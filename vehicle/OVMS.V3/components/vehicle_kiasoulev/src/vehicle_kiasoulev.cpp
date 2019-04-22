@@ -144,6 +144,15 @@
 ;		0.4.4 31-march-2019 - Geir Øyvind Vælidalo
 ;			- Converted remaining charge time from a static calculation to one based on a charge profile.
 ;
+;		0.4.5 10-april-2019 - Geir Øyvind Vælidalo
+;			- Fixed the new charge profile.
+;
+;		0.4.6 11-april-2019 - Geir Øyvind Vælidalo
+;			- Added AUX battery SOC.
+;
+;		0.4.7 13-apr-2019 - Geir Øyvind Vælidalo
+;			- Added SaveStatus so that the SOC is as correct as possible even after a (unwanted) reboot while car is off.
+;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
@@ -187,7 +196,7 @@
 #include "ovms_notify.h"
 #include <sys/param.h>
 
-#define VERSION "0.4.4"
+#define VERSION "0.4.7"
 
 static const char *TAG = "v-kiasoulev";
 
@@ -214,25 +223,25 @@ static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
 // Based partly on logged charging from 120kW Delta Charger
 charging_profile soul_charge_steps[] = {
 		//from%, to%, Chargespeed in Wh
-		 { 0,5,20 },
-		 { 5,10,40 },
-     { 10,20,45 },
-     { 20,30,47 },
-     { 30,50,49 },
-     { 50,70,68 },
-     { 70,72,55 },
-     { 72,74,46.8 },
-		 { 74,76,44.14 },
-		 { 76,79,37.5 },
-     { 79,81,30.5 },
-     { 81,83,27.5 },
-     { 83,89,21.5 },
-     { 89,90,20.5 },
-     { 90,91,18 },
-     { 91,92,15.5 },
-     { 92,93,13.2 },
-     { 93,95,9 },
-     { 95,100,8 },
+		 { 0,5,20000 },
+		 { 5,10,40000 },
+     { 10,20,45000 },
+     { 20,30,47000 },
+     { 30,50,49000 },
+     { 50,70,68000 },
+     { 70,72,55000 },
+     { 72,74,46800 },
+		 { 74,76,44140 },
+		 { 76,79,37500 },
+     { 79,81,30500 },
+     { 81,83,27500 },
+     { 83,89,21500 },
+     { 89,90,20500 },
+     { 90,91,18000 },
+     { 91,92,15500 },
+     { 92,93,13200 },
+     { 93,95,9000 },
+     { 95,100,8000 },
      { 0,0,0 },
 };
 
@@ -261,10 +270,6 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   kia_battery_cum_charge = 0;
   kia_battery_cum_discharge = 0;
   kia_battery_cum_op_time = 0;
-
-  //ks_trip_start_odo = 0;
-  //ks_start_cdc = 0;
-  //ks_start_cc = 0;
 
   ks_charge_bits.ChargingChademo = false;
   ks_charge_bits.ChargingJ1772 = false;
@@ -323,6 +328,7 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   m_b_heat_1_temperature = MyMetrics.InitInt("xks.b.heat1.temp", 10, 0, Celcius);
   m_b_heat_2_temperature = MyMetrics.InitInt("xks.b.heat2.temp", 10, 0, Celcius);
   m_b_bms_soc = MyMetrics.InitFloat("xks.b.bms.soc", 10, 0, Percentage);
+  m_b_aux_soc = MyMetrics.InitInt("xks.b.aux.soc", 0, 0, Percentage);
 
   m_ldc_out_voltage = MyMetrics.InitFloat("xks.ldc.out.volt", 10, 12, Volts);
   m_ldc_in_voltage = MyMetrics.InitFloat("xks.ldc.in.volt", 10, 12, Volts);
@@ -422,9 +428,10 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   ConfigChanged(NULL);
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
-  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
   WebInit();
 #endif
+
+  RestoreStatus();
 
   // C-Bus
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
@@ -509,6 +516,7 @@ void OvmsVehicleKiaSoulEv::vehicle_kiasoulev_car_on(bool isOn)
     kia_ready_for_chargepollstate = true;
 
     kia_park_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
+		SaveStatus();
     }
 
   //Make sure we update the different start values as soon as we have them available
@@ -544,10 +552,7 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 
 	UpdateMaxRangeAndSOH();
 
-	if (FULL_RANGE > 0) //  If we have the battery full range, we can calculate the ideal range too
-		{
-			StdMetrics.ms_v_bat_range_ideal->SetValue( FULL_RANGE * BAT_SOC / 100.0, Kilometers);
-			}
+	m_b_aux_soc->SetValue( CalcAUXSoc( StdMetrics.ms_v_bat_12v_voltage->AsFloat() ) );
 
 	// Update trip data
 	if (StdMetrics.ms_v_env_on->AsBool())
@@ -860,6 +865,7 @@ void OvmsVehicleKiaSoulEv::HandleChargeStop()
 
 	// Reset trip counter for this charge
 	kia_charge_trip_counter.Reset(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
+	SaveStatus();
 
 	POLLSTATE_OFF;
 	}
@@ -914,6 +920,7 @@ void OvmsVehicleKiaSoulEv::UpdateMaxRangeAndSOH(void)
 	if (maxRange != 0)
 		{
 		maxRange = (maxRange * (100.0 - (int) (ABS(20.0 - (amb_temp+bat_temp * 3)/4)* 1.25))) / 100.0;
+		StdMetrics.ms_v_bat_range_ideal->SetValue( maxRange * BAT_SOC / 100.0, Kilometers);
 		}
 	StdMetrics.ms_v_bat_range_full->SetValue(maxRange, Kilometers);
 	}
