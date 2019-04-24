@@ -50,9 +50,9 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     memset(m_vin, 0, sizeof(m_vin));
     
 #ifdef CONFIG_OVMS_COMP_MAX7317
-    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_1, 0);
-    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_2, 0);
-    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_3, 0);
+    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_6, 0);
+    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_7, 0);
+    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_8, 0);
 #endif
 
     // init metrics:
@@ -80,7 +80,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     uint8_t *d = p_frame->data.u8;
     
     switch (p_frame->MsgID) {
-    case 0x6FA:
+    case 0x6FA: // Vehicle identification number
     {
         // CarVIN
         if (d[0]==1) for (int k = 0; k < 7; k++) m_vin[k] = d[k+1];
@@ -313,7 +313,7 @@ void OvmsVehicleSmartED::Ticker60(uint32_t ticker) {
     if (m_egpio_timer > 0) {
         if (--m_egpio_timer == 0) {
             ESP_LOGI(TAG,"Ignition EGPIO 3 off");
-            MyPeripherals->m_max7317->Output(MAX7317_EGPIO_3, 0);
+            MyPeripherals->m_max7317->Output(MAX7317_EGPIO_6, 0);
             StandardMetrics.ms_v_env_valet->SetValue(false);
         }
     }
@@ -445,13 +445,13 @@ void SmartEDLockingTimer(TimerHandle_t timer) {
     xTimerDelete(timer, 0);
     //reset GEP 1 + 2
     
-    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_1, 0);
-    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_2, 0);
+    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_7, 0);
+    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_8, 0);
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandLock(const char* pin) {
     //switch 12v to GEP 1
-    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_1, 1);
+    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_8, 1);
     m_locking_timer = xTimerCreate("Smart ED Locking Timer", 500 / portTICK_PERIOD_MS, pdTRUE, this, SmartEDLockingTimer);
     xTimerStart(m_locking_timer, 0);
     StandardMetrics.ms_v_env_locked->SetValue(true);
@@ -461,7 +461,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandLock(const char* pin) 
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandUnlock(const char* pin) {
     //switch 12v to GEP 2 
-    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_2, 1);
+    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_7, 1);
     m_locking_timer = xTimerCreate("Smart ED Locking Timer", 500 / portTICK_PERIOD_MS, pdTRUE, this, SmartEDLockingTimer);
     xTimerStart(m_locking_timer, 0);
     StandardMetrics.ms_v_env_locked->SetValue(false);
@@ -471,7 +471,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandUnlock(const char* pin
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandActivateValet(const char* pin) {
     ESP_LOGI(TAG,"Ignition EGPIO 3 on");
-    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_3, 1);
+    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_6, 1);
     m_egpio_timer = SE_EGPIO_TIMEOUT;
     StandardMetrics.ms_v_env_valet->SetValue(true);
     return Success;
@@ -479,7 +479,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandActivateValet(const ch
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandDeactivateValet(const char* pin) {
     ESP_LOGI(TAG,"Ignition EGPIO 3 off");
-    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_3, 0);
+    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_6, 0);
     m_egpio_timer = 0;
     StandardMetrics.ms_v_env_valet->SetValue(false);
     return Success;
