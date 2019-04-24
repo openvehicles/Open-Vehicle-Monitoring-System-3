@@ -48,7 +48,12 @@ class OvmsVehicleSmartED : public OvmsVehicle
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
     char m_vin[17];
-    
+
+  public:
+    void WebInit();
+    void WebDeInit();
+    static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
+
   public:
     virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
     virtual vehicle_command_t CommandSetChargeTimer(bool timeron, uint32_t timerstart);

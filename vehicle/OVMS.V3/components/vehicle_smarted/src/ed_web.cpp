@@ -48,6 +48,134 @@ using namespace std;
 
 
 /**
+ * WebInit: register pages
+ */
+void OvmsVehicleSmartED::WebInit()
+{
+  // vehicle menu:
+  MyWebServer.RegisterPage("/xse/features",   "Features",         WebCfgFeatures,                      PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xse/brakelight", "Brake Light",      OvmsWebServer::HandleCfgBrakelight,  PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/bms/cellmon",    "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+}
+
+/**
+ * WebDeInit: deregister pages
+ */
+void OvmsVehicleSmartED::WebDeInit()
+{
+  MyWebServer.DeregisterPage("/xse/features");
+  MyWebServer.DeregisterPage("/xse/brakelight");
+  MyWebServer.DeregisterPage("/bms/cellmon");
+}
+
+/**
+ * WebCfgFeatures: configure general parameters (URL /xse/config)
+ */
+void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
+{
+  std::string error, info;
+  bool enable;
+  std::string door_open, door_close, ignition;
+
+  if (c.method == "POST") {
+    // process form submission:
+    door_open = c.getvar("door_open");
+    door_close = c.getvar("door_close");
+    ignition = c.getvar("ignition");
+
+    // validate:
+    if (door_open != "") {
+      int v = atoi(door_open.c_str());
+      if (v < 2 || v > 9) {
+        error += "<li data-input=\"door_open\">Port must be one of 2…9</li>";
+      }
+    }
+    if (door_close != "") {
+      int v = atoi(door_close.c_str());
+      if (v < 2 || v > 9) {
+        error += "<li data-input=\"door_close\">Port must be one of 2…9</li>";
+      }
+    }
+    if (ignition != "") {
+      int v = atoi(ignition.c_str());
+      if (v < 2 || v > 9) {
+        error += "<li data-input=\"ignition\">Port must be one of 2…9</li>";
+      }
+    }
+    
+    if (error == "") {
+      // success:
+      MyConfig.SetParamValue("xse", "doorOpen.port", door_open);
+      MyConfig.SetParamValue("xse", "doorClose.port", door_close);
+      MyConfig.SetParamValue("xse", "Ignition.port", ignition);
+
+      info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
+      c.head(200);
+      c.alert("success", info.c_str());
+      OutputHome(p, c);
+      c.done();
+      return;
+    }
+
+    // output error, return to form:
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    c.head(400);
+    c.alert("danger", error.c_str());
+  }
+  else {
+    // read configuration:
+    door_open = MyConfig.GetParamValue("xse", "doorOpen.port", "2");
+    door_close = MyConfig.GetParamValue("xse", "doorClose.port", "3");
+    ignition = MyConfig.GetParamValue("xse", "Ignition.port", "4");
+    c.head(200);
+  }
+
+  // generate form:
+  c.panel_start("primary", "Smart ED3 feature configuration");
+  c.form_start(p.uri);
+
+  c.input_select_start("… Vehicle open port", "door_open");
+  c.input_select_option("EGPIO_1", "2", door_open == "2");
+  c.input_select_option("EGPIO_2", "3", door_open == "3");
+  c.input_select_option("EGPIO_3", "4", door_open == "4");
+  c.input_select_option("EGPIO_4", "5", door_open == "5");
+  c.input_select_option("EGPIO_5", "6", door_open == "6");
+  c.input_select_option("EGPIO_6", "7", door_open == "7");
+  c.input_select_option("EGPIO_7", "8", door_open == "8");
+  c.input_select_option("EGPIO_8", "9", door_open == "9");
+  c.input_select_end();
+
+  c.input_select_start("… Vehicle close port", "door_close");
+  c.input_select_option("EGPIO_1", "2", door_close == "2");
+  c.input_select_option("EGPIO_2", "3", door_close == "3");
+  c.input_select_option("EGPIO_3", "4", door_close == "4");
+  c.input_select_option("EGPIO_4", "5", door_close == "5");
+  c.input_select_option("EGPIO_5", "6", door_close == "6");
+  c.input_select_option("EGPIO_6", "7", door_close == "7");
+  c.input_select_option("EGPIO_7", "8", door_close == "8");
+  c.input_select_option("EGPIO_8", "9", door_close == "9");
+  c.input_select_end();
+
+  c.input_select_start("… Ignition port", "ignition");
+  c.input_select_option("EGPIO_1", "2", ignition == "2");
+  c.input_select_option("EGPIO_2", "3", ignition == "3");
+  c.input_select_option("EGPIO_3", "4", ignition == "4");
+  c.input_select_option("EGPIO_4", "5", ignition == "5");
+  c.input_select_option("EGPIO_5", "6", ignition == "6");
+  c.input_select_option("EGPIO_6", "7", ignition == "7");
+  c.input_select_option("EGPIO_7", "8", ignition == "8");
+  c.input_select_option("EGPIO_8", "9", ignition == "9");
+  c.input_select_end();
+
+  c.print("<hr>");
+  c.input_button("default", "Save");
+  c.form_end();
+  c.panel_end();
+
+  c.done();
+}
+
+/**
  * GetDashboardConfig: smart ED specific dashboard setup
  */
 void OvmsVehicleSmartED::GetDashboardConfig(DashboardConfig& cfg)
