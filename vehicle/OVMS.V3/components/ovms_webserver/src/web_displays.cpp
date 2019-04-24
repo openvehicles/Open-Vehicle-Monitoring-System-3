@@ -1120,3 +1120,131 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
   PAGE_HOOK("body.post");
   c.done();
 }
+
+/**
+ * HandleCfgBrakelight: configure vehicle brake light control
+ * 
+ * Note: this is not enabled by default, as most vehicles do not need this.
+ * To enable, include this in the vehicle init:
+ *   MyWebServer.RegisterPage("/cfg/brakelight", "Brake light control", OvmsWebServer::HandleCfgBrakelight, PageMenu_Vehicle, PageAuth_Cookie);
+ * You can change the URL path, title, menu association and authentication as you like.
+ * For a clean shutdown, add
+ *   MyWebServer.DeregisterPage("/cfg/brakelight");
+ * …in your vehicle cleanup.
+ */
+void OvmsWebServer::HandleCfgBrakelight(PageEntry_t& p, PageContext_t& c)
+{
+  std::string error, info;
+  bool enable;
+  std::string smooth, port, level_on, level_off;
+
+  if (c.method == "POST") {
+    // process form submission:
+    enable = (c.getvar("enable") == "yes");
+    smooth = c.getvar("smooth");
+    port = c.getvar("port");
+    level_on = c.getvar("level_on");
+    level_off = c.getvar("level_off");
+
+    // validate:
+    if (smooth != "") {
+      int v = atof(smooth.c_str());
+      if (v < 0) {
+        error += "<li data-input=\"smooth\">Smoothing must be greater or equal 0.</li>";
+      }
+    }
+    if (port != "") {
+      int v = atoi(port.c_str());
+      if (v == 2 || v < 1 || v > 9) {
+        error += "<li data-input=\"port\">Port must be one of 1, 3…9</li>";
+      }
+    }
+    if (level_on != "") {
+      int v = atof(level_on.c_str());
+      if (v < 0) {
+        error += "<li data-input=\"level_on\">Activation level must be greater or equal 0.</li>";
+      }
+    }
+    if (level_off != "") {
+      int v = atof(level_off.c_str());
+      if (v < 0) {
+        error += "<li data-input=\"level_off\">Deactivation level must be greater or equal 0.</li>";
+      }
+    }
+
+    if (error == "") {
+      // success:
+      MyConfig.SetParamValue("vehicle", "accel.smoothing", smooth);
+      MyConfig.SetParamValueBool("vehicle", "brakelight.enable", enable);
+      MyConfig.SetParamValue("vehicle", "brakelight.port", port);
+      MyConfig.SetParamValue("vehicle", "brakelight.on", level_on);
+      MyConfig.SetParamValue("vehicle", "brakelight.off", level_off);
+
+      info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
+      c.head(200);
+      c.alert("success", info.c_str());
+      OutputHome(p, c);
+      c.done();
+      return;
+    }
+
+    // output error, return to form:
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    c.head(400);
+    c.alert("danger", error.c_str());
+  }
+  else {
+    // read configuration:
+    smooth = MyConfig.GetParamValue("vehicle", "accel.smoothing");
+    enable = MyConfig.GetParamValueBool("vehicle", "brakelight.enable", false);
+    port = MyConfig.GetParamValue("vehicle", "brakelight.port", "1");
+    level_on = MyConfig.GetParamValue("vehicle", "brakelight.on");
+    level_off = MyConfig.GetParamValue("vehicle", "brakelight.off");
+    c.head(200);
+  }
+
+  // generate form:
+  c.panel_start("primary", "Regen Brake Light");
+  c.form_start(p.uri);
+
+  c.input_slider("Acceleration smoothing", "smooth", 3, NULL,
+    -1, smooth.empty() ? 2.0 : atof(smooth.c_str()), 2.0, 0.0, 10.0, 0.1,
+    "<p>Speed/acceleration smoothing eliminates road bump and gear box backlash noise.</p>"
+    "<p>Lower value = higher sensitivity. Set to zero if your vehicle speed is already smoothed.</p>");
+
+  c.input_checkbox("Enable regenerative braking signal", "enable", enable);
+
+  c.input_select_start("… control port", "port");
+  c.input_select_option("SW_12V (DA26 pin 18)", "1", port == "1");
+  c.input_select_option("EGPIO_2", "3", port == "3");
+  c.input_select_option("EGPIO_3", "4", port == "4");
+  c.input_select_option("EGPIO_4", "5", port == "5");
+  c.input_select_option("EGPIO_5", "6", port == "6");
+  c.input_select_option("EGPIO_6", "7", port == "7");
+  c.input_select_option("EGPIO_7", "8", port == "8");
+  c.input_select_option("EGPIO_8", "9", port == "9");
+  c.input_select_end();
+
+  c.input_slider("… activation level", "level_on", 3, "m/s²",
+    -1, level_on.empty() ? 1.3 : atof(level_on.c_str()), 1.3, 0.0, 3.0, 0.1,
+    "<p>Deceleration threshold to activate regen brake light.</p>"
+    "<p>Under UN regulation 13H, brake light illumination is required for decelerations &gt;1.3 m/s².</p>");
+
+  c.input_slider("… deactivation level", "level_off", 3, "m/s²",
+    -1, level_off.empty() ? 0.7 : atof(level_off.c_str()), 0.7, 0.0, 3.0, 0.1,
+    "<p>Deceleration threshold to deactivate regen brake light.</p>"
+    "<p>Under UN regulation 13H, brake lights must not be illuminated for decelerations &le;0.7 m/s².</p>");
+
+  c.input_button("default", "Save");
+  c.form_end();
+  c.panel_end(
+    "<p>The OVMS generated regenerative braking signal needs a hardware modification to drive your"
+    " vehicle brake lights. See your OVMS vehicle manual section for details on how to do this.</p>"
+    "<p>The regen brake signal is activated when the deceleration level exceeds the configured threshold,"
+    " the speed is above 1 m/s (3.6 kph / 2.2 mph) and the battery power is negative (charging).</p>"
+    "<p>The signal is deactivated when deceleration drops below the deactivation level, speed drops"
+    " below 1 m/s or battery power indicates discharging."
+    " The signal will be held activated for at least 500 ms.</p>");
+
+  c.done();
+}

@@ -37,9 +37,9 @@
 #include "esp_vfs_fat.h"
 #include "wear_levelling.h"
 #include "ovms_mutex.h"
+#include "ovms_command.h"
 
-class OvmsWriter;
-typedef std::map<std::string, std::string> ConfigParamMap;
+typedef NameStringMap ConfigParamMap;
 
 class OvmsConfigParam
   {
@@ -79,7 +79,7 @@ class OvmsConfigParam
     ConfigParamMap m_map;
   };
 
-typedef std::map<std::string, OvmsConfigParam*> ConfigMap;
+typedef NameMap<OvmsConfigParam*> ConfigMap;
 
 typedef enum
   {

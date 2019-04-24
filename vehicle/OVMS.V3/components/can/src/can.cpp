@@ -485,7 +485,7 @@ can::can()
   OvmsCommand* cmd_canlog = cmd_can->RegisterCommand("log", "CAN logging framework");
   cmd_canlog->RegisterCommand("trace", "Logging to syslog", can_log,
     "[filter1] [filter2] [filter3]\n"
-    "Filter: <bus> / <id>[-<id>] / <bus>:<id>[-<id>]\n"
+    "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
     "Example: 2:2a0-37f", 0, 3);
   const char* const* logtype = canlog::GetTypeList();
   while (*logtype)
@@ -494,7 +494,7 @@ can::can()
       {
       cmd_canlog->RegisterCommand(*logtype, "...format logging", can_log,
         "<path> [filter1] [filter2] [filter3]\n"
-        "Filter: <bus> / <id>[-<id>] / <bus>:<id>[-<id>]\n"
+        "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
         "Example: 2:2a0-37f", 1, 4);
       }
     logtype++;

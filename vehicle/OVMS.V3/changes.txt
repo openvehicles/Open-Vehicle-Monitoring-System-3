@@ -3,6 +3,17 @@ Open Vehicle Monitor System v3 - Change log
 ????-??-?? ???  ???????  OTA release
 
 2019-01-19 MWJ  3.2.001  OTA release
+- Twizy web UI: regenerative braking signal configuration
+- Vehicle framework: regenerative braking signal generation
+  New config:
+    vehicle [accel.smoothing] = 2.0     Acceleration smoothing factor (samples, 0 = none)
+    vehicle [brakelight.enable] = no    Regen brake light enable
+    vehicle [brakelight.port] = 1       … MAX7317 output port number (1, 3…9, default 1 = SW_12V)
+    vehicle [brakelight.on] = 1.3       … activation threshold (deceleration in m/s²)
+    vehicle [brakelight.off] = 0.7      … deactivation threshold (deceleration in m/s²)
+  New metrics:
+    v.p.acceleration    = acceleration/deceleration in m/s² derived from v.p.speed
+    v.e.regenbrake      = regenerative brake light state
 - New vehicle: Kia e-Niro (by Geir Øyvind Vælidalo <geir@validalo.net>)
 - OTA: add option to allow scheduled auto updates via modem
   New config:

@@ -225,7 +225,7 @@ void PageContext::input(const char* type, const char* label, const char* name, c
     const char* unit /*=NULL*/) {
   mg_printf_http_chunk(nc,
     "<div class=\"form-group\">"
-      "<label class=\"control-label col-sm-3\" for=\"input-%s\">%s:</label>"
+      "<label class=\"control-label col-sm-3\" for=\"input-%s\">%s%s</label>"
       "<div class=\"col-sm-9\">"
         "%s" // unit (input-group)
         "<input type=\"%s\" class=\"form-control\" placeholder=\"%s%s\" name=\"%s\" id=\"input-%s\" value=\"%s\" %s>"
@@ -233,7 +233,8 @@ void PageContext::input(const char* type, const char* label, const char* name, c
         "%s%s%s" // helptext
       "</div>"
     "</div>"
-    , _attr(name), label
+    , _attr(name)
+    , label ? label : "", label ? ":" : ""
     , unit ? "<div class=\"input-group\">" : ""
     , _attr(type)
     , placeholder ? "" : "Enter "

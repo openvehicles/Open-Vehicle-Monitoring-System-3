@@ -173,7 +173,17 @@ void xks_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 	const char* auxBatt = StdMetrics.ms_v_bat_12v_voltage->AsUnitString("-", Volts, 2).c_str();
 
 	writer->printf("AUX BATTERY\n");
-	if (*auxBatt != '-') writer->printf("Aux battery voltage %s\n", auxBatt);
+	if (*auxBatt != '-')
+		{
+		writer->printf("Aux battery voltage %s\n", auxBatt);
+
+		OvmsVehicleKiaSoulEv* soul = (OvmsVehicleKiaSoulEv*) MyVehicleFactory.ActiveVehicle();
+
+		const char* auxSOC = soul->m_b_aux_soc->AsUnitString("-", Percentage, 1).c_str();
+
+		if (*auxSOC != '-') writer->printf("Aux battery SOC %s\n", auxSOC);
+
+		}
 	}
 
 /**

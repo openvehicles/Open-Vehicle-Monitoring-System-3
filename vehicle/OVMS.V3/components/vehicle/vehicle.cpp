@@ -41,6 +41,7 @@ static const char *TAG = "vehicle";
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include <ovms_webserver.h>
 #endif // #ifdef CONFIG_OVMS_COMP_WEBSERVER
+#include <ovms_peripherals.h>
 #include <string_writer.h>
 #include "vehicle.h"
 
@@ -998,6 +999,16 @@ OvmsVehicle::OvmsVehicle()
   m_minsoc = 0;
   m_minsoc_triggered = 0;
 
+  m_accel_refspeed = 0;
+  m_accel_reftime = 0;
+  m_accel_smoothing = 2.0;
+
+  m_brakelight_enable = false;
+  m_brakelight_on = 1.3;
+  m_brakelight_off = 0.7;
+  m_brakelight_port = 1;
+  m_brakelight_start = 0;
+
   m_rxqueue = xQueueCreate(CONFIG_OVMS_VEHICLE_CAN_RX_QUEUE_SIZE,sizeof(CAN_frame_t));
   xTaskCreatePinnedToCore(OvmsVehicleRxTask, "OVMS Vehicle",
     CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_rxtask, 1);
@@ -1007,6 +1018,7 @@ OvmsVehicle::OvmsVehicle()
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicle::VehicleTicker1, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
+  VehicleConfigChanged("config.mounted", NULL);
 
   MyMetrics.RegisterListener(TAG, "*", std::bind(&OvmsVehicle::MetricModified, this, _1));
   }
@@ -1559,9 +1571,31 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWrite
   return Success;
   }
 
-void OvmsVehicle::VehicleConfigChanged(std::string event, void* param)
+void OvmsVehicle::VehicleConfigChanged(std::string event, void* data)
   {
-  ConfigChanged((OvmsConfigParam*) param);
+  OvmsConfigParam* param = (OvmsConfigParam*) data;
+
+  // read vehicle framework config:
+  if (!param || param->GetName() == "vehicle")
+    {
+    // acceleration calculation:
+    m_accel_smoothing = MyConfig.GetParamValueFloat("vehicle", "accel.smoothing", 2.0);
+
+    // brakelight control:
+    if (m_brakelight_enable)
+      {
+      SetBrakelight(0);
+      StdMetrics.ms_v_env_regenbrake->SetValue(false);
+      }
+    m_brakelight_enable = MyConfig.GetParamValueBool("vehicle", "brakelight.enable", false);
+    m_brakelight_on = MyConfig.GetParamValueFloat("vehicle", "brakelight.on", 1.3);
+    m_brakelight_off = MyConfig.GetParamValueFloat("vehicle", "brakelight.off", 0.7);
+    m_brakelight_port = MyConfig.GetParamValueInt("vehicle", "brakelight.port", 1);
+    m_brakelight_start = 0;
+    }
+
+  // read vehicle specific config:
+  ConfigChanged(param);
   }
 
 void OvmsVehicle::ConfigChanged(OvmsConfigParam* param)
@@ -1579,6 +1613,12 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       }
     else
       {
+      if (m_brakelight_enable && m_brakelight_start)
+        {
+        SetBrakelight(0);
+        m_brakelight_start = 0;
+        StdMetrics.ms_v_env_regenbrake->SetValue(false);
+        }
       MyEvents.SignalEvent("vehicle.off",NULL);
       NotifiedVehicleOff();
       }
@@ -1746,6 +1786,95 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       }
     NotifiedVehicleChargeState(m);
     }
+  else if (metric == StdMetrics.ms_v_pos_speed)
+    {
+    // Derive acceleration / deceleration level from speed change:
+    uint32_t now = esp_log_timestamp();
+    float speed = 0, accel = 0;
+    if (now > m_accel_reftime)
+      {
+      speed = ABS(StdMetrics.ms_v_pos_speed->AsFloat(0, Kph)) * 1000 / 3600;
+      accel = (speed - m_accel_refspeed) / (now - m_accel_reftime) * 1000;
+      // smooth out road bumps & gear box backlash:
+      accel = (StdMetrics.ms_v_pos_acceleration->AsFloat() * m_accel_smoothing + accel) / (m_accel_smoothing + 1);
+      StdMetrics.ms_v_pos_acceleration->SetValue(accel);
+      m_accel_refspeed = speed;
+      m_accel_reftime = now;
+      }
+
+    // Brake light control:
+    if (m_brakelight_enable)
+      {
+      // Notes:
+      // a) This depends on a regular and frequent speed update with <= 100 ms period. If the vehicle
+      //    delivers speed values at too large intervals, the trigger will still work but come
+      //    too late (reducing/deactivating acceleration smoothing may help).
+      //    If the vehicle raw speed is already smoothed, reducing acceleration smoothing will
+      //    provide a faster trigger.
+      // b) The battery power regen threshold is assumed as 0 here. If the vehicle has a very high
+      //    base power consumption, that may need adjustment / configuration. 0 works without
+      //    battery power measurement from the vehicle.
+      // c) To reduce flicker the brake light has a minimum hold time of currently fixed 500 ms.
+      bool car_on = StdMetrics.ms_v_env_on->AsBool();
+      float batpwr = StdMetrics.ms_v_bat_power->AsFloat();
+      const float batpwr_base = 0;
+      const uint32_t holdtime = 500;
+      if (accel < -m_brakelight_on && speed >= 1 && batpwr <= batpwr_base && car_on)
+        {
+        if (!m_brakelight_start)
+          {
+          if (SetBrakelight(1))
+            {
+            ESP_LOGD(TAG, "brakelight on at speed=%.2f m/s, accel=%.2f m/s^2", speed, accel);
+            m_brakelight_start = now;
+            StdMetrics.ms_v_env_regenbrake->SetValue(true);
+            }
+          else
+            ESP_LOGW(TAG, "can't activate brakelight");
+          }
+        else
+          m_brakelight_start = now;
+        }
+      else if (accel >= -m_brakelight_off || speed < 1 || batpwr > batpwr_base || !car_on)
+        {
+        if (m_brakelight_start && now >= m_brakelight_start + holdtime)
+          {
+          if (SetBrakelight(0))
+            {
+            ESP_LOGD(TAG, "brakelight off at speed=%.2f m/s, accel=%.2f m/s^2", speed, accel);
+            m_brakelight_start = 0;
+            StdMetrics.ms_v_env_regenbrake->SetValue(false);
+            }
+          else
+            ESP_LOGW(TAG, "can't deactivate brakelight");
+          }
+        }
+      } // m_brakelight_enable
+    } // metric == StdMetrics.ms_v_pos_speed
+  }
+
+/**
+ * SetBrakelight: hardware brake light control method
+ * Override for custom control, e.g. CAN.
+ */
+bool OvmsVehicle::SetBrakelight(int on)
+  {
+#ifdef CONFIG_OVMS_COMP_MAX7317
+  // port 2 = SN65 for esp32can
+  if (m_brakelight_port == 1 || (m_brakelight_port >= 3 && m_brakelight_port <= 9))
+    {
+    MyPeripherals->m_max7317->Output(m_brakelight_port, on);
+    return true;
+    }
+  else
+    {
+    ESP_LOGE(TAG, "SetBrakelight: invalid port configuration (valid: 1, 3..9)");
+    return false;
+    }
+#else // CONFIG_OVMS_COMP_MAX7317
+  ESP_LOGE(TAG, "SetBrakelight: OVMS_COMP_MAX7317 missing");
+  return false;
+#endif // CONFIG_OVMS_COMP_MAX7317
   }
 
 void OvmsVehicle::NotifyChargeState()
