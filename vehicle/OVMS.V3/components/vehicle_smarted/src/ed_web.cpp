@@ -71,7 +71,7 @@ void OvmsVehicleSmartED::WebDeInit()
 /**
  * WebCfgFeatures: configure general parameters (URL /xse/config)
  */
-void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
+void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
   bool enable;
@@ -105,9 +105,9 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     
     if (error == "") {
       // success:
-      MyConfig.SetParamValue("xse", "doorOpen.port", door_open);
-      MyConfig.SetParamValue("xse", "doorClose.port", door_close);
-      MyConfig.SetParamValue("xse", "Ignition.port", ignition);
+      MyConfig.SetParamValue("xse", "doorlock.port", door_open);
+      MyConfig.SetParamValue("xse", "doorunlock.port", door_close);
+      MyConfig.SetParamValue("xse", "ignition.port", ignition);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
@@ -124,9 +124,9 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
-    door_open = MyConfig.GetParamValue("xse", "doorOpen.port", "2");
-    door_close = MyConfig.GetParamValue("xse", "doorClose.port", "3");
-    ignition = MyConfig.GetParamValue("xse", "Ignition.port", "4");
+    door_open = MyConfig.GetParamValue("xse", "doorlock.port", "2");
+    door_close = MyConfig.GetParamValue("xse", "doorunlock.port", "3");
+    ignition = MyConfig.GetParamValue("xse", "ignition.port", "4");
     c.head(200);
   }
 

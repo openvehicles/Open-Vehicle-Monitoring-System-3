@@ -58,14 +58,40 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     // init metrics:
     mt_vehicle_time = MyMetrics.InitInt("v.display.time", SM_STALE_MIN, 0);
     mt_trip_start = MyMetrics.InitInt("v.display.trip.start", SM_STALE_MIN, 0);
-    mt_trip_reset = MyMetrics.InitInt("v.display.trip.reset", SM_STALE_MIN, 0); 
+    mt_trip_reset = MyMetrics.InitInt("v.display.trip.reset", SM_STALE_MIN, 0);
     mt_hv_active = MyMetrics.InitBool("v.b.hv.active", SM_STALE_MIN, false);
 
-    RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS); 
+    RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+    
+    MyConfig.RegisterParam("xse", "Smart ED", true, true);
+    ConfigChanged(NULL);
+
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+    WebInit();
+#endif
 }
 
 OvmsVehicleSmartED::~OvmsVehicleSmartED() {
     ESP_LOGI(TAG, "Stop Smart ED vehicle module");
+    
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+    WebDeInit();
+#endif
+}
+
+/**
+ * ConfigChanged: reload single/all configuration variables
+ */
+void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
+    if (param && param->GetName() != "xse")
+        return;
+
+    ESP_LOGI(TAG, "Smart ED reload configuration");
+    
+    m_doorlock_port = MyConfig.GetParamValueInt("xse", "doorlock.port", 2);
+    m_doorunlock_port = MyConfig.GetParamValueInt("xse", "doorunlock.port", 3);
+    m_ignition_port = MyConfig.GetParamValueInt("xse", "ignition.port", 4);
+    
 }
 
 void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
@@ -293,26 +319,13 @@ void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
             m_candata_poll = 0;
         }
     }
-    /*
-    if (StandardMetrics.ms_v_pos_speed->AsInt() == 0 && StandardMetrics.ms_v_bat_current->AsInt() > 2 && mt_hv_active) {
-        if (StandardMetrics.ms_v_charge_state->AsString() != "charging") {
-            StandardMetrics.ms_v_charge_state->SetValue("charging");
-            StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-        }
-    } else {
-        if (StandardMetrics.ms_v_charge_state->AsString() != "done") {
-            StandardMetrics.ms_v_charge_state->SetValue("done");
-            StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-        }
-    }
-    */
 }
 
 void OvmsVehicleSmartED::Ticker60(uint32_t ticker) {
 #ifdef CONFIG_OVMS_COMP_MAX7317
     if (m_egpio_timer > 0) {
         if (--m_egpio_timer == 0) {
-            ESP_LOGI(TAG,"Ignition EGPIO 3 off");
+            ESP_LOGI(TAG,"Ignition EGPIO off");
             MyPeripherals->m_max7317->Output(MAX7317_EGPIO_6, 0);
             StandardMetrics.ms_v_env_valet->SetValue(false);
         }
@@ -470,7 +483,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandUnlock(const char* pin
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandActivateValet(const char* pin) {
-    ESP_LOGI(TAG,"Ignition EGPIO 3 on");
+    ESP_LOGI(TAG,"Ignition EGPIO on");
     MyPeripherals->m_max7317->Output(MAX7317_EGPIO_6, 1);
     m_egpio_timer = SE_EGPIO_TIMEOUT;
     StandardMetrics.ms_v_env_valet->SetValue(true);
@@ -478,7 +491,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandActivateValet(const ch
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandDeactivateValet(const char* pin) {
-    ESP_LOGI(TAG,"Ignition EGPIO 3 off");
+    ESP_LOGI(TAG,"Ignition EGPIO off");
     MyPeripherals->m_max7317->Output(MAX7317_EGPIO_6, 0);
     m_egpio_timer = 0;
     StandardMetrics.ms_v_env_valet->SetValue(false);
