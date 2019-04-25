@@ -75,38 +75,38 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
   bool enable;
-  std::string door_open, door_close, ignition;
+  std::string doorlock, doorunlock, ignition;
 
   if (c.method == "POST") {
     // process form submission:
-    door_open = c.getvar("door_open");
-    door_close = c.getvar("door_close");
+    doorlock = c.getvar("doorlock");
+    doorunlock = c.getvar("doorunlock");
     ignition = c.getvar("ignition");
 
     // validate:
-    if (door_open != "") {
-      int v = atoi(door_open.c_str());
-      if (v < 2 || v > 9) {
-        error += "<li data-input=\"door_open\">Port must be one of 2…9</li>";
+    if (doorlock != "") {
+      int v = atoi(doorlock.c_str());
+      if (v < 3 || v > 9) {
+        error += "<li data-input=\"doorlock\">Port must be one of 3…9</li>";
       }
     }
-    if (door_close != "") {
-      int v = atoi(door_close.c_str());
-      if (v < 2 || v > 9) {
-        error += "<li data-input=\"door_close\">Port must be one of 2…9</li>";
+    if (doorunlock != "") {
+      int v = atoi(doorunlock.c_str());
+      if (v < 3 || v > 9) {
+        error += "<li data-input=\"doorunlock\">Port must be one of 3…9</li>";
       }
     }
     if (ignition != "") {
       int v = atoi(ignition.c_str());
-      if (v < 2 || v > 9) {
-        error += "<li data-input=\"ignition\">Port must be one of 2…9</li>";
+      if (v < 3 || v > 9) {
+        error += "<li data-input=\"ignition\">Port must be one of 3…9</li>";
       }
     }
     
     if (error == "") {
       // success:
-      MyConfig.SetParamValue("xse", "doorlock.port", door_open);
-      MyConfig.SetParamValue("xse", "doorunlock.port", door_close);
+      MyConfig.SetParamValue("xse", "doorlock.port", doorlock);
+      MyConfig.SetParamValue("xse", "doorunlock.port", doorunlock);
       MyConfig.SetParamValue("xse", "ignition.port", ignition);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
@@ -124,36 +124,36 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
-    door_open = MyConfig.GetParamValue("xse", "doorlock.port", "2");
-    door_close = MyConfig.GetParamValue("xse", "doorunlock.port", "3");
+    doorlock = MyConfig.GetParamValue("xse", "doorlock.port", "2");
+    doorunlock = MyConfig.GetParamValue("xse", "doorunlock.port", "3");
     ignition = MyConfig.GetParamValue("xse", "ignition.port", "4");
     c.head(200);
   }
 
   // generate form:
-  c.panel_start("primary", "Smart ED3 feature configuration");
+  c.panel_start("primary", "Smart ED feature configuration");
   c.form_start(p.uri);
 
-  c.input_select_start("… Vehicle open port", "door_open");
-  c.input_select_option("EGPIO_1", "2", door_open == "2");
-  c.input_select_option("EGPIO_2", "3", door_open == "3");
-  c.input_select_option("EGPIO_3", "4", door_open == "4");
-  c.input_select_option("EGPIO_4", "5", door_open == "5");
-  c.input_select_option("EGPIO_5", "6", door_open == "6");
-  c.input_select_option("EGPIO_6", "7", door_open == "7");
-  c.input_select_option("EGPIO_7", "8", door_open == "8");
-  c.input_select_option("EGPIO_8", "9", door_open == "9");
+  c.input_select_start("… Vehicle lock port", "doorlock");
+  c.input_select_option("EGPIO_1", "2", doorlock == "2");
+  c.input_select_option("EGPIO_2", "3", doorlock == "3");
+  c.input_select_option("EGPIO_3", "4", doorlock == "4");
+  c.input_select_option("EGPIO_4", "5", doorlock == "5");
+  c.input_select_option("EGPIO_5", "6", doorlock == "6");
+  c.input_select_option("EGPIO_6", "7", doorlock == "7");
+  c.input_select_option("EGPIO_7", "8", doorlock == "8");
+  c.input_select_option("EGPIO_8", "9", doorlock == "9");
   c.input_select_end();
 
-  c.input_select_start("… Vehicle close port", "door_close");
-  c.input_select_option("EGPIO_1", "2", door_close == "2");
-  c.input_select_option("EGPIO_2", "3", door_close == "3");
-  c.input_select_option("EGPIO_3", "4", door_close == "4");
-  c.input_select_option("EGPIO_4", "5", door_close == "5");
-  c.input_select_option("EGPIO_5", "6", door_close == "6");
-  c.input_select_option("EGPIO_6", "7", door_close == "7");
-  c.input_select_option("EGPIO_7", "8", door_close == "8");
-  c.input_select_option("EGPIO_8", "9", door_close == "9");
+  c.input_select_start("… Vehicle unlock port", "doorunlock");
+  c.input_select_option("EGPIO_1", "2", doorunlock == "2");
+  c.input_select_option("EGPIO_2", "3", doorunlock == "3");
+  c.input_select_option("EGPIO_3", "4", doorunlock == "4");
+  c.input_select_option("EGPIO_4", "5", doorunlock == "5");
+  c.input_select_option("EGPIO_5", "6", doorunlock == "6");
+  c.input_select_option("EGPIO_6", "7", doorunlock == "7");
+  c.input_select_option("EGPIO_7", "8", doorunlock == "8");
+  c.input_select_option("EGPIO_8", "9", doorunlock == "9");
   c.input_select_end();
 
   c.input_select_start("… Ignition port", "ignition");

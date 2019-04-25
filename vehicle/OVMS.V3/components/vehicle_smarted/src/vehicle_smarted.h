@@ -82,9 +82,9 @@ class OvmsVehicleSmartED : public OvmsVehicle
     unsigned int m_egpio_timer = 0;
 
   protected:
-    int m_doorlock_port;                    // … MAX7317 output port number (2…9, default 2 = EGPIO_1)
-    int m_doorunlock_port;                  // … MAX7317 output port number (2…9, default 3 = EGPIO_2)
-    int m_ignition_port;                    // … MAX7317 output port number (2…9, default 4 = EGPIO_3)
+    int m_doorlock_port;                    // … MAX7317 output port number (3…9, default 3 = EGPIO_2)
+    int m_doorunlock_port;                  // … MAX7317 output port number (3…9, default 4 = EGPIO_3)
+    int m_ignition_port;                    // … MAX7317 output port number (3…9, default 5 = EGPIO_4)
     
 };
 

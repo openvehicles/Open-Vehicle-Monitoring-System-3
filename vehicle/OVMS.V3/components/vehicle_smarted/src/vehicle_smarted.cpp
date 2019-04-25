@@ -49,12 +49,6 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     
     memset(m_vin, 0, sizeof(m_vin));
     
-#ifdef CONFIG_OVMS_COMP_MAX7317
-    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_6, 0);
-    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_7, 0);
-    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_8, 0);
-#endif
-
     // init metrics:
     mt_vehicle_time = MyMetrics.InitInt("v.display.time", SM_STALE_MIN, 0);
     mt_trip_start = MyMetrics.InitInt("v.display.trip.start", SM_STALE_MIN, 0);
@@ -88,10 +82,15 @@ void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
 
     ESP_LOGI(TAG, "Smart ED reload configuration");
     
-    m_doorlock_port = MyConfig.GetParamValueInt("xse", "doorlock.port", 2);
-    m_doorunlock_port = MyConfig.GetParamValueInt("xse", "doorunlock.port", 3);
-    m_ignition_port = MyConfig.GetParamValueInt("xse", "ignition.port", 4);
-    
+    m_doorlock_port = MyConfig.GetParamValueInt("xse", "doorlock.port", 3);
+    m_doorunlock_port = MyConfig.GetParamValueInt("xse", "doorunlock.port", 4);
+    m_ignition_port = MyConfig.GetParamValueInt("xse", "ignition.port", 5);
+
+#ifdef CONFIG_OVMS_COMP_MAX7317
+    MyPeripherals->m_max7317->Output(m_doorlock_port, 0);
+    MyPeripherals->m_max7317->Output(m_doorunlock_port, 0);
+    MyPeripherals->m_max7317->Output(m_ignition_port, 0);
+#endif
 }
 
 void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
@@ -326,7 +325,7 @@ void OvmsVehicleSmartED::Ticker60(uint32_t ticker) {
     if (m_egpio_timer > 0) {
         if (--m_egpio_timer == 0) {
             ESP_LOGI(TAG,"Ignition EGPIO off");
-            MyPeripherals->m_max7317->Output(MAX7317_EGPIO_6, 0);
+            MyPeripherals->m_max7317->Output(m_ignition_port, 0);
             StandardMetrics.ms_v_env_valet->SetValue(false);
         }
     }
@@ -458,13 +457,13 @@ void SmartEDLockingTimer(TimerHandle_t timer) {
     xTimerDelete(timer, 0);
     //reset GEP 1 + 2
     
-    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_7, 0);
-    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_8, 0);
+    MyPeripherals->m_max7317->Output(m_doorlock_port, 0);
+    MyPeripherals->m_max7317->Output(m_doorunlock_port, 0);
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandLock(const char* pin) {
     //switch 12v to GEP 1
-    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_8, 1);
+    MyPeripherals->m_max7317->Output(m_doorunlock_port, 1);
     m_locking_timer = xTimerCreate("Smart ED Locking Timer", 500 / portTICK_PERIOD_MS, pdTRUE, this, SmartEDLockingTimer);
     xTimerStart(m_locking_timer, 0);
     StandardMetrics.ms_v_env_locked->SetValue(true);
@@ -474,7 +473,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandLock(const char* pin) 
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandUnlock(const char* pin) {
     //switch 12v to GEP 2 
-    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_7, 1);
+    MyPeripherals->m_max7317->Output(m_doorlock_port, 1);
     m_locking_timer = xTimerCreate("Smart ED Locking Timer", 500 / portTICK_PERIOD_MS, pdTRUE, this, SmartEDLockingTimer);
     xTimerStart(m_locking_timer, 0);
     StandardMetrics.ms_v_env_locked->SetValue(false);
@@ -484,7 +483,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandUnlock(const char* pin
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandActivateValet(const char* pin) {
     ESP_LOGI(TAG,"Ignition EGPIO on");
-    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_6, 1);
+    MyPeripherals->m_max7317->Output(m_ignition_port, 1);
     m_egpio_timer = SE_EGPIO_TIMEOUT;
     StandardMetrics.ms_v_env_valet->SetValue(true);
     return Success;
@@ -492,7 +491,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandActivateValet(const ch
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandDeactivateValet(const char* pin) {
     ESP_LOGI(TAG,"Ignition EGPIO off");
-    MyPeripherals->m_max7317->Output(MAX7317_EGPIO_6, 0);
+    MyPeripherals->m_max7317->Output(m_ignition_port, 0);
     m_egpio_timer = 0;
     StandardMetrics.ms_v_env_valet->SetValue(false);
     return Success;
