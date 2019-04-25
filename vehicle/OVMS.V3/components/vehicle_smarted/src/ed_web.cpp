@@ -74,14 +74,14 @@ void OvmsVehicleSmartED::WebDeInit()
 void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
-  bool enable;
-  std::string doorlock, doorunlock, ignition;
+  std::string doorlock, doorunlock, ignition, rangeideal;
 
   if (c.method == "POST") {
     // process form submission:
     doorlock = c.getvar("doorlock");
     doorunlock = c.getvar("doorunlock");
     ignition = c.getvar("ignition");
+    rangeideal = c.getvar("rangeideal");
 
     // validate:
     if (doorlock != "") {
@@ -102,17 +102,24 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
         error += "<li data-input=\"ignition\">Port must be one of 3…9</li>";
       }
     }
+    if (rangeideal != "") {
+      int v = atoi(rangeideal.c_str());
+      if (v < 90 || v > 200) {
+        error += "<li data-input=\"rangeideal\">Range Ideal must be of 90…200 km</li>";
+      }
+    }
     
     if (error == "") {
       // success:
       MyConfig.SetParamValue("xse", "doorlock.port", doorlock);
       MyConfig.SetParamValue("xse", "doorunlock.port", doorunlock);
       MyConfig.SetParamValue("xse", "ignition.port", ignition);
+      MyConfig.SetParamValue("xse", "rangeideal", rangeideal);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
       c.alert("success", info.c_str());
-      OutputHome(p, c);
+      MyWebServer.OutputHome(p, c);
       c.done();
       return;
     }
@@ -124,18 +131,22 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
-    doorlock = MyConfig.GetParamValue("xse", "doorlock.port", "2");
-    doorunlock = MyConfig.GetParamValue("xse", "doorunlock.port", "3");
-    ignition = MyConfig.GetParamValue("xse", "ignition.port", "4");
+    doorlock = MyConfig.GetParamValue("xse", "doorlock.port", "9");
+    doorunlock = MyConfig.GetParamValue("xse", "doorunlock.port", "8");
+    ignition = MyConfig.GetParamValue("xse", "ignition.port", "7");
+    rangeideal = MyConfig.GetParamValue("xse", "rangeideal", "135");
     c.head(200);
   }
 
   // generate form:
   c.panel_start("primary", "Smart ED feature configuration");
   c.form_start(p.uri);
+  
+  c.input("number", "Range Ideal", "rangeideal", rangeideal.c_str(), "Default: 135",
+    "<p>This determines the Ideal Range.</p>",
+    "min=\"90\" step=\"1\"", "");
 
   c.input_select_start("… Vehicle lock port", "doorlock");
-  c.input_select_option("EGPIO_1", "2", doorlock == "2");
   c.input_select_option("EGPIO_2", "3", doorlock == "3");
   c.input_select_option("EGPIO_3", "4", doorlock == "4");
   c.input_select_option("EGPIO_4", "5", doorlock == "5");
@@ -146,7 +157,6 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_select_end();
 
   c.input_select_start("… Vehicle unlock port", "doorunlock");
-  c.input_select_option("EGPIO_1", "2", doorunlock == "2");
   c.input_select_option("EGPIO_2", "3", doorunlock == "3");
   c.input_select_option("EGPIO_3", "4", doorunlock == "4");
   c.input_select_option("EGPIO_4", "5", doorunlock == "5");
@@ -157,7 +167,6 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_select_end();
 
   c.input_select_start("… Ignition port", "ignition");
-  c.input_select_option("EGPIO_1", "2", ignition == "2");
   c.input_select_option("EGPIO_2", "3", ignition == "3");
   c.input_select_option("EGPIO_3", "4", ignition == "4");
   c.input_select_option("EGPIO_4", "5", ignition == "5");

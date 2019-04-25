@@ -53,6 +53,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     void WebInit();
     void WebDeInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
+    void ConfigChanged(OvmsConfigParam* param);
 
   public:
     virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
@@ -85,6 +86,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     int m_doorlock_port;                    // … MAX7317 output port number (3…9, default 9 = EGPIO_8)
     int m_doorunlock_port;                  // … MAX7317 output port number (3…9, default 8 = EGPIO_7)
     int m_ignition_port;                    // … MAX7317 output port number (3…9, default 7 = EGPIO_6)
+    int m_range_ideal;                      // … Range Ideal (default 135 km)
     
 };
 

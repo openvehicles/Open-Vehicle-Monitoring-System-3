@@ -85,6 +85,8 @@ void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
     m_doorlock_port = MyConfig.GetParamValueInt("xse", "doorlock.port", 9);
     m_doorunlock_port = MyConfig.GetParamValueInt("xse", "doorunlock.port", 8);
     m_ignition_port = MyConfig.GetParamValueInt("xse", "ignition.port", 7);
+    
+    m_range_ideal = MyConfig.GetParamValueInt("xse", "rangeideal", 135);
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
     MyPeripherals->m_max7317->Output(m_doorlock_port, 0);
@@ -228,7 +230,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     {
         float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
         if(soc > 0) {
-            float smart_range_ideal = (135 * soc) / 100;
+            float smart_range_ideal = (m_range_ideal * soc) / 100;
             StandardMetrics.ms_v_bat_range_ideal->SetValue(smart_range_ideal); // ToDo
         }
         StandardMetrics.ms_v_bat_range_est->SetValue(d[7], Kilometers);
@@ -456,6 +458,8 @@ void SmartEDLockingTimer(TimerHandle_t timer) {
     xTimerStop(timer, 0);
     xTimerDelete(timer, 0);
     //reset GEP 1 + 2
+    int m_doorlock_port   = MyConfig.GetParamValueInt("xse", "doorlock.port", 9);
+    int m_doorunlock_port = MyConfig.GetParamValueInt("xse", "doorunlock.port", 8);
     
     MyPeripherals->m_max7317->Output(m_doorlock_port, 0);
     MyPeripherals->m_max7317->Output(m_doorunlock_port, 0);
