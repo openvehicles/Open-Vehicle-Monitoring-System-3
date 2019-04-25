@@ -87,6 +87,7 @@ void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
     m_ignition_port = MyConfig.GetParamValueInt("xse", "ignition.port", 7);
     
     m_range_ideal = MyConfig.GetParamValueInt("xse", "rangeideal", 135);
+    m_egpio_timout = MyConfig.GetParamValueInt("xse", "egpio_timout", 5);
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
     MyPeripherals->m_max7317->Output(m_doorlock_port, 0);
@@ -326,7 +327,7 @@ void OvmsVehicleSmartED::Ticker60(uint32_t ticker) {
 #ifdef CONFIG_OVMS_COMP_MAX7317
     if (m_egpio_timer > 0) {
         if (--m_egpio_timer == 0) {
-            ESP_LOGI(TAG,"Ignition EGPIO off");
+            ESP_LOGI(TAG,"Ignition EGPIO off port: %d", m_ignition_port);
             MyPeripherals->m_max7317->Output(m_ignition_port, 0);
             StandardMetrics.ms_v_env_valet->SetValue(false);
         }
@@ -486,7 +487,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandUnlock(const char* pin
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandActivateValet(const char* pin) {
-    ESP_LOGI(TAG,"Ignition EGPIO on");
+    ESP_LOGI(TAG,"Ignition EGPIO on port: %d", m_ignition_port);
     MyPeripherals->m_max7317->Output(m_ignition_port, 1);
     m_egpio_timer = SE_EGPIO_TIMEOUT;
     StandardMetrics.ms_v_env_valet->SetValue(true);
@@ -494,7 +495,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandActivateValet(const ch
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandDeactivateValet(const char* pin) {
-    ESP_LOGI(TAG,"Ignition EGPIO off");
+    ESP_LOGI(TAG,"Ignition EGPIO off port: %d", m_ignition_port);
     MyPeripherals->m_max7317->Output(m_ignition_port, 0);
     m_egpio_timer = 0;
     StandardMetrics.ms_v_env_valet->SetValue(false);

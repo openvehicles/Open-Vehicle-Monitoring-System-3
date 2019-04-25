@@ -55,7 +55,7 @@ void OvmsVehicleSmartED::WebInit()
   // vehicle menu:
   MyWebServer.RegisterPage("/xse/features",   "Features",         WebCfgFeatures,                      PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xse/brakelight", "Brake Light",      OvmsWebServer::HandleCfgBrakelight,  PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/bms/cellmon",    "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  //MyWebServer.RegisterPage("/bms/cellmon",    "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 /**
@@ -65,7 +65,7 @@ void OvmsVehicleSmartED::WebDeInit()
 {
   MyWebServer.DeregisterPage("/xse/features");
   MyWebServer.DeregisterPage("/xse/brakelight");
-  MyWebServer.DeregisterPage("/bms/cellmon");
+  //MyWebServer.DeregisterPage("/bms/cellmon");
 }
 
 /**
@@ -74,7 +74,7 @@ void OvmsVehicleSmartED::WebDeInit()
 void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
-  std::string doorlock, doorunlock, ignition, rangeideal;
+  std::string doorlock, doorunlock, ignition, rangeideal, egpio_timout;
 
   if (c.method == "POST") {
     // process form submission:
@@ -82,6 +82,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     doorunlock = c.getvar("doorunlock");
     ignition = c.getvar("ignition");
     rangeideal = c.getvar("rangeideal");
+    egpio_timout = c.getvar("egpio_timout");
 
     // validate:
     if (doorlock != "") {
@@ -108,6 +109,12 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
         error += "<li data-input=\"rangeideal\">Range Ideal must be of 90…200 km</li>";
       }
     }
+    if (egpio_timout != "") {
+      int v = atoi(egpio_timout.c_str());
+      if (v < 1) {
+        error += "<li data-input=\"egpio_timout\">Ignition Timeout must be greater or equal 1.</li>";
+      }
+    }
     
     if (error == "") {
       // success:
@@ -115,6 +122,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("xse", "doorunlock.port", doorunlock);
       MyConfig.SetParamValue("xse", "ignition.port", ignition);
       MyConfig.SetParamValue("xse", "rangeideal", rangeideal);
+      MyConfig.SetParamValue("xse", "egpio_timout", egpio_timout);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
@@ -135,6 +143,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     doorunlock = MyConfig.GetParamValue("xse", "doorunlock.port", "8");
     ignition = MyConfig.GetParamValue("xse", "ignition.port", "7");
     rangeideal = MyConfig.GetParamValue("xse", "rangeideal", "135");
+    egpio_timout = MyConfig.GetParamValue("xse", "egpio_timout", "5");
     c.head(200);
   }
 
@@ -175,6 +184,10 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_select_option("EGPIO_7", "8", ignition == "8");
   c.input_select_option("EGPIO_8", "9", ignition == "9");
   c.input_select_end();
+
+  c.input_slider("… Ignition Timeout", "egpio_timout", 5, "min",
+    -1, egpio_timout.empty() ? 5 : atof(egpio_timout.c_str()), 5, 1, 20, 1,
+    "<p>Wie lange die Zuendung an bleiben soll.</p>");
 
   c.print("<hr>");
   c.input_button("default", "Save");

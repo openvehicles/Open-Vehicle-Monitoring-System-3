@@ -87,6 +87,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     int m_doorunlock_port;                  // … MAX7317 output port number (3…9, default 8 = EGPIO_7)
     int m_ignition_port;                    // … MAX7317 output port number (3…9, default 7 = EGPIO_6)
     int m_range_ideal;                      // … Range Ideal (default 135 km)
+    int m_egpio_timout;                     // … EGPIO Ignition Timout (default 5 min)
     
 };
 
