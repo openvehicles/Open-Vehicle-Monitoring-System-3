@@ -6,6 +6,7 @@
  ;    1.0  Initial release
  ;
  ;    (C) 2018       Martin Graml
+ ;    (C) 2019       Thomas Heuer
  ;
  ; Permission is hereby granted, free of charge, to any person obtaining a copy
  ; of this software and associated documentation files (the "Software"), to deal
@@ -88,6 +89,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     int m_ignition_port;                    // … MAX7317 output port number (3…9, default 7 = EGPIO_6)
     int m_range_ideal;                      // … Range Ideal (default 135 km)
     int m_egpio_timout;                     // … EGPIO Ignition Timout (default 5 min)
+    bool m_soc_rsoc;                        // Display SOC=SOC or rSOC=SOC
     
 };
 

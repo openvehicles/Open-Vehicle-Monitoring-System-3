@@ -6,6 +6,7 @@
  ;    1.0  Initial release
  ;
  ;    (C) 2018       Martin Graml
+ ;    (C) 2019       Thomas Heuer
  ;
  ; Permission is hereby granted, free of charge, to any person obtaining a copy
  ; of this software and associated documentation files (the "Software"), to deal
@@ -55,6 +56,13 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     mt_trip_reset = MyMetrics.InitInt("v.display.trip.reset", SM_STALE_MIN, 0);
     mt_hv_active = MyMetrics.InitBool("v.b.hv.active", SM_STALE_MIN, false);
 
+    m_doorlock_port     = 9;
+    m_doorunlock_port   = 8;
+    m_ignition_port     = 7;
+    m_range_ideal       = 135;
+    m_egpio_timout      = 5;
+    m_soc_rsoc          = false;
+    
     RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
     
     MyConfig.RegisterParam("xse", "Smart ED", true, true);
@@ -88,6 +96,7 @@ void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
     
     m_range_ideal = MyConfig.GetParamValueInt("xse", "rangeideal", 135);
     m_egpio_timout = MyConfig.GetParamValueInt("xse", "egpio_timout", 5);
+    m_soc_rsoc = MyConfig.GetParamValueBool("xse", "soc_rsoc", false);
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
     MyPeripherals->m_max7317->Output(m_doorlock_port, 0);
@@ -99,7 +108,7 @@ void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
 void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     
     if (m_candata_poll != 1) {
-        ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
+        ESP_LOGD(TAG,"Car has woken (CAN bus activity)");
         StandardMetrics.ms_v_env_awake->SetValue(true);
         m_candata_poll = 1;
     }
@@ -131,7 +140,11 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
          = A7 (in HEX)
          = 167 (in base10) und das nun halbieren
          = 83,5%*/
-        StandardMetrics.ms_v_bat_soc->SetValue((float) (d[7]/2));
+        if (m_soc_rsoc) {
+          StandardMetrics.ms_v_bat_soh->SetValue((float) (d[7]/2));
+        } else {
+          StandardMetrics.ms_v_bat_soc->SetValue((float) (d[7]/2));
+        }
         break;
     }
     case 0x2D5: //realSOC
@@ -142,8 +155,11 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
          = 340 (in HEX)
          = 832 (in base10) und das nun durch zehn
          = 83,2% */
-        //StandardMetrics.ms_v_bat_soc->SetValue(((float) ((d[4] & 0x03) * 256 + d[5])) / 10, Percentage);
-        StandardMetrics.ms_v_bat_soh->SetValue(((float) ((d[4] & 0x03) * 256 + d[5])) / 10, Percentage);
+        if (m_soc_rsoc) {
+          StandardMetrics.ms_v_bat_soc->SetValue(((float) ((d[4] & 0x03) * 256 + d[5])) / 10, Percentage);
+        } else {
+          StandardMetrics.ms_v_bat_soh->SetValue(((float) ((d[4] & 0x03) * 256 + d[5])) / 10, Percentage);
+        }
         break;
     }
     case 0x508: //HV ampere and charging yes/no
@@ -314,7 +330,7 @@ void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
     if (m_candata_timer > 0) {
         if (--m_candata_timer == 0) {
             // Car has gone to sleep
-            ESP_LOGI(TAG,"Car has gone to sleep (CAN bus timeout)");
+            ESP_LOGD(TAG,"Car has gone to sleep (CAN bus timeout)");
             //StandardMetrics.ms_v_env_on->SetValue(false);
             StandardMetrics.ms_v_env_awake->SetValue(false);
             //PollSetState(0);
@@ -489,7 +505,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandUnlock(const char* pin
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandActivateValet(const char* pin) {
     ESP_LOGI(TAG,"Ignition EGPIO on port: %d", m_ignition_port);
     MyPeripherals->m_max7317->Output(m_ignition_port, 1);
-    m_egpio_timer = SE_EGPIO_TIMEOUT;
+    m_egpio_timer = m_egpio_timout;
     StandardMetrics.ms_v_env_valet->SetValue(true);
     return Success;
 }

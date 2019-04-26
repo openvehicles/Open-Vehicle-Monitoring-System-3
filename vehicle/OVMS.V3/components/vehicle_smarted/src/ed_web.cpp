@@ -6,6 +6,7 @@
  ;    1.0  Initial release
  ;
  ;    (C) 2018       Martin Graml
+ ;    (C) 2019       Thomas Heuer
  ;
  ; Permission is hereby granted, free of charge, to any person obtaining a copy
  ; of this software and associated documentation files (the "Software"), to deal
@@ -74,6 +75,7 @@ void OvmsVehicleSmartED::WebDeInit()
 void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
+  bool soc_rsoc;
   std::string doorlock, doorunlock, ignition, rangeideal, egpio_timout;
 
   if (c.method == "POST") {
@@ -83,6 +85,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     ignition = c.getvar("ignition");
     rangeideal = c.getvar("rangeideal");
     egpio_timout = c.getvar("egpio_timout");
+    soc_rsoc = (c.getvar("soc_rsoc") == "yes");
 
     // validate:
     if (doorlock != "") {
@@ -123,6 +126,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("xse", "ignition.port", ignition);
       MyConfig.SetParamValue("xse", "rangeideal", rangeideal);
       MyConfig.SetParamValue("xse", "egpio_timout", egpio_timout);
+      MyConfig.SetParamValueBool("xse", "soc_rsoc", soc_rsoc);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
@@ -144,6 +148,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     ignition = MyConfig.GetParamValue("xse", "ignition.port", "7");
     rangeideal = MyConfig.GetParamValue("xse", "rangeideal", "135");
     egpio_timout = MyConfig.GetParamValue("xse", "egpio_timout", "5");
+    soc_rsoc = MyConfig.GetParamValueBool("xse", "soc_rsoc", false);
     c.head(200);
   }
 
@@ -154,6 +159,8 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input("number", "Range Ideal", "rangeideal", rangeideal.c_str(), "Default: 135",
     "<p>This determines the Ideal Range.</p>",
     "min=\"90\" step=\"1\"", "");
+  
+  c.input_checkbox("Display real SOC = SOC", "soc_rsoc", soc_rsoc);
 
   c.input_select_start("… Vehicle lock port", "doorlock");
   c.input_select_option("EGPIO_2", "3", doorlock == "3");
