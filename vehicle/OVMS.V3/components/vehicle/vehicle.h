@@ -136,6 +136,7 @@ class OvmsVehicle : public InternalRamAllocated
     float m_accel_refspeed;                 // Acceleration calculation: last speed measured (m/s)
     uint32_t m_accel_reftime;               // … timestamp for refspeed (ms)
     float m_accel_smoothing;                // … smoothing factor (samples, 0 = none, default 2.0)
+    void CalculateAcceleration();           // Call after ms_v_pos_speed update to derive acceleration
 
   protected:
     bool m_brakelight_enable;               // Regen brake light enable (default no)
@@ -143,6 +144,7 @@ class OvmsVehicle : public InternalRamAllocated
     float m_brakelight_on;                  // … activation threshold (deceleration in m/s², default 1.3)
     float m_brakelight_off;                 // … deactivation threshold (deceleration in m/s², default 0.7)
     uint32_t m_brakelight_start;            // … activation start time
+    void CheckBrakelight();                 // … check vehicle metrics for regen braking state
     virtual bool SetBrakelight(int on);     // … hardware control method (override for non MAX7317 control)
 
   protected:

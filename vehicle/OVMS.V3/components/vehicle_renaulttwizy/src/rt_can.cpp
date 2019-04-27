@@ -518,6 +518,7 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
         
         twizy_speed = u;
         *StdMetrics.ms_v_pos_speed = (float) twizy_speed / 100;
+        CalculateAcceleration();
       }
       
       break; // case 0x599
