@@ -27,6 +27,30 @@
  ; THE SOFTWARE.
  ;
  ; Most of the CAN Messages are based on https://github.com/MyLab-odyssey/ED_BMSdiag
+ 
+const PROGMEM byte rqBattHWrev[4]                 = {0x03, 0x22, 0xF1, 0x50};
+const PROGMEM byte rqBattSWrev[4]                 = {0x03, 0x22, 0xF1, 0x51};
+const PROGMEM byte rqBattVIN[4]                   = {0x03, 0x22, 0xF1, 0x90};
+const PROGMEM byte rqBattTemperatures[4]          = {0x03, 0x22, 0x02, 0x01}; 
+const PROGMEM byte rqBattModuleTemperatures[4]    = {0x03, 0x22, 0x02, 0x02};
+const PROGMEM byte rqBattHVstatus[4]              = {0x03, 0x22, 0x02, 0x04};
+const PROGMEM byte rqBattADCref[4]                = {0x03, 0x22, 0x02, 0x07};
+const PROGMEM byte rqBattVolts[6]                 = {0x03, 0x22, 0x02, 0x08, 28, 57};
+const PROGMEM byte rqBattIsolation[4]             = {0x03, 0x22, 0x02, 0x09};
+const PROGMEM byte rqBattAmps[4]                  = {0x03, 0x22, 0x02, 0x03};
+const PROGMEM byte rqBattDate[4]                  = {0x03, 0x22, 0x03, 0x04};
+const PROGMEM byte rqBattProdDate[4]              = {0x03, 0x22, 0xF1, 0x8C};
+const PROGMEM byte rqBattCapacity[6]              = {0x03, 0x22, 0x03, 0x10, 31, 59};
+const PROGMEM byte rqBattHVContactorCyclesLeft[4] = {0x03, 0x22, 0x03, 0x0B};
+const PROGMEM byte rqBattHVContactorMax[4]        = {0x03, 0x22, 0x03, 0x0C};
+const PROGMEM byte rqBattHVContactorState[4]      = {0x03, 0x22, 0xD0, 0x00};
+
+const PROGMEM byte rqCarVIN[4]                   = {0x02, 0x09, 0x02, 0x00};
+
+//Experimental readouts
+const PROGMEM byte rqBattCapInit[4]               = {0x03, 0x22, 0x03, 0x05};
+const PROGMEM byte rqBattCapLoss[4]               = {0x03, 0x22, 0x03, 0x09};
+const PROGMEM byte rqBattUnknownCounter[4]        = {0x03, 0x22, 0x01, 0x01};
  */
 
 #include "ovms_log.h"
@@ -40,6 +64,14 @@ static const char *TAG = "v-smarted";
 
 #define SE_CANDATA_TIMEOUT 10
 #define SE_EGPIO_TIMEOUT 5
+
+#define MAX_POLL_DATA_LEN 238
+
+static const OvmsVehicle::poll_pid_t obdii_polls[] =
+{
+    { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0,31,59 } }, // BattVIN [19]
+    { 0, 0, 0x00, 0x00, { 0, 0, 0 } }
+};
 
 /**
  * Constructor & destructor
@@ -63,7 +95,13 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     m_egpio_timout      = 5;
     m_soc_rsoc          = false;
     
+    m_candata_timer     = 0;
+    m_candata_poll      = 0;
+    m_egpio_timer       = 0;
+    
     RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+    //PollSetPidList(m_can1,obdii_polls);
+    //PollSetState(0);
     
     MyConfig.RegisterParam("xse", "Smart ED", true, true);
     ConfigChanged(NULL);
@@ -105,12 +143,49 @@ void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
 #endif
 }
 
+void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
+  static int last_pid = -1;
+  static int last_remain = -1;
+  static uint8_t buf[MAX_POLL_DATA_LEN];
+  static int bufpos = 0;
+ESP_LOGI(TAG, "IncomingPollReply: ");
+  int i;
+  if ( pid != last_pid || remain >= last_remain )
+    {
+    // must be a new reply, so reset to the beginning
+    last_pid=pid;
+    last_remain=remain;
+    bufpos=0;
+    }
+  for (i=0; i<length; i++)
+    {
+    if ( bufpos < sizeof(buf) ) buf[bufpos++] = data[i];
+    }
+  if (remain==0)
+    {
+    uint32_t id_pid = m_poll_moduleid_low<<16 | pid;
+    switch (id_pid)
+      {
+      //case 0x7EF: // battery
+      //  ESP_LOGI(TAG, "IncomingPollReply: unknown reply module|pid=%#x len=%d", id_pid, bufpos);
+      //  break;
+      default:
+        ESP_LOGI(TAG, "IncomingPollReply: unknown reply module|pid=%#x len=%d", id_pid, bufpos);
+        break;
+      }
+    last_pid=-1;
+    last_remain=-1;
+    bufpos=0;
+    }
+}
+
 void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     
     if (m_candata_poll != 1) {
         ESP_LOGD(TAG,"Car has woken (CAN bus activity)");
         StandardMetrics.ms_v_env_awake->SetValue(true);
         m_candata_poll = 1;
+        //PollSetState(1);
     }
     m_candata_timer = SE_CANDATA_TIMEOUT;
     

@@ -47,6 +47,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     ~OvmsVehicleSmartED();
 
   public:
+    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void IncomingFrameCan1(CAN_frame_t* p_frame);
     char m_vin[17];
 
@@ -80,8 +81,8 @@ class OvmsVehicleSmartED : public OvmsVehicle
 
   private:
     unsigned int m_candata_timer;
-    unsigned int m_candata_poll = 0;
-    unsigned int m_egpio_timer = 0;
+    unsigned int m_candata_poll;
+    unsigned int m_egpio_timer;
 
   protected:
     int m_doorlock_port;                    // … MAX7317 output port number (3…9, default 9 = EGPIO_8)

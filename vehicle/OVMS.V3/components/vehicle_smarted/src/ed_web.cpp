@@ -158,7 +158,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   
   c.input("number", "Range Ideal", "rangeideal", rangeideal.c_str(), "Default: 135",
     "<p>This determines the Ideal Range.</p>",
-    "min=\"90\" step=\"1\"", "");
+    "min=\"90\" max=\"200\" step=\"1\"");
   
   c.input_checkbox("Display real SOC = SOC", "soc_rsoc", soc_rsoc);
 
@@ -194,7 +194,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
   c.input_slider("… Ignition Timeout", "egpio_timout", 5, "min",
     -1, egpio_timout.empty() ? 5 : atof(egpio_timout.c_str()), 5, 1, 20, 1,
-    "<p>Wie lange die Zuendung an bleiben soll.</p>");
+    "<p>How long the Ignition should stay on in minutes.</p>");
 
   c.print("<hr>");
   c.input_button("default", "Save");
