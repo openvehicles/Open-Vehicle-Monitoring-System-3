@@ -27,6 +27,7 @@
  ; THE SOFTWARE.
  ;
  ; Most of the CAN Messages are based on https://github.com/MyLab-odyssey/ED_BMSdiag
+ ; http://ed.no-limit.de/wiki/index.php/Hauptseite
  
 const PROGMEM byte rqBattHWrev[4]                 = {0x03, 0x22, 0xF1, 0x50};
 const PROGMEM byte rqBattSWrev[4]                 = {0x03, 0x22, 0xF1, 0x51};
@@ -209,12 +210,21 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     }
     case 0x518: // displayed SOC
     {
-        /*ID:518 Nibble 15,16 (Wert halbieren)
-         Beispiel:
-         ID: 518  Data: 01 24 00 00 F8 7F C8 A7
-         = A7 (in HEX)
-         = 167 (in base10) und das nun halbieren
-         = 83,5%*/
+        /*
+        ID:518 Nibble 15,16 (Wert halbieren)
+        Beispiel:
+        ID: 518  Data: 01 24 00 00 F8 7F C8 A7
+        = A7 (in HEX)
+        = 167 (in base10) und das nun halbieren
+        = 83,5%
+        
+        0x518 01 4E 00 00 F8 7F C8 B4 //Pilotsignal von der Säule - Valide Ja/Nein
+        Pilot valide = 01
+        Pilot wird gemessen != 01 
+        
+        0x518 01 4E 00 00 F8 7F C8 B4 //Pilotsignal von der Säule - max lieferbarer Strom 
+        4E = 78 Faktor 0,5 = 39 Ampere 
+        */
         if (m_soc_rsoc) {
           StandardMetrics.ms_v_bat_soh->SetValue((float) (d[7]/2));
         } else {
@@ -392,9 +402,13 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
         mt_hv_active->SetValue(d[0]);
         break;
     }
-    case 0x312: //motor ?
+    case 0x312: //Powerflow von/zum Motor 
     {
-        //StandardMetrics
+        /*
+        0x312 08 21 00 00 07 D0 07 D0
+        Benötigt wird Byte 0 und 1, interpretiert als eine Zahl.
+        (0x0821 - 2000) * 0.2 = 14,6% 
+        */
         break;
     }
     }
