@@ -101,8 +101,8 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     m_egpio_timer       = 0;
     
     RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-    //PollSetPidList(m_can1,obdii_polls);
-    //PollSetState(0);
+    PollSetPidList(m_can1,obdii_polls);
+    PollSetState(0);
     
     MyConfig.RegisterParam("xse", "Smart ED", true, true);
     ConfigChanged(NULL);
@@ -144,40 +144,47 @@ void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
 #endif
 }
 
+void OvmsVehicleSmartED::PollReply_BMS_BattTemp(uint8_t reply_data[], uint16_t reply_len) {
+    ESP_LOGI(TAG, "PollReply_BMS_BattTemp: len=%d != 18", reply_len);
+    
+    int i;
+    for(i=0; i<reply_len; i++) {
+        ESP_LOGI(TAG, "PollReply_BMS_BattTemp: data[%d]=%x ", i, reply_data[i]);
+    }
+    
+    
+}
+
 void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
   static int last_pid = -1;
   static int last_remain = -1;
   static uint8_t buf[MAX_POLL_DATA_LEN];
   static int bufpos = 0;
-ESP_LOGI(TAG, "IncomingPollReply: ");
+
   int i;
-  if ( pid != last_pid || remain >= last_remain )
-    {
+  if ( pid != last_pid || remain >= last_remain ) {
     // must be a new reply, so reset to the beginning
     last_pid=pid;
     last_remain=remain;
     bufpos=0;
-    }
-  for (i=0; i<length; i++)
-    {
+  }
+  for (i=0; i<length; i++) {
     if ( bufpos < sizeof(buf) ) buf[bufpos++] = data[i];
-    }
-  if (remain==0)
-    {
+  }
+  if (remain==0) {
     uint32_t id_pid = m_poll_moduleid_low<<16 | pid;
-    switch (id_pid)
-      {
-      //case 0x7EF: // battery
-      //  ESP_LOGI(TAG, "IncomingPollReply: unknown reply module|pid=%#x len=%d", id_pid, bufpos);
-      //  break;
+    switch (id_pid) {
+      case 0x7EF0201: // rqBattTemperatures
+        PollReply_BMS_BattTemp(buf, bufpos);
+        break;
       default:
         ESP_LOGI(TAG, "IncomingPollReply: unknown reply module|pid=%#x len=%d", id_pid, bufpos);
         break;
-      }
+    }
     last_pid=-1;
     last_remain=-1;
     bufpos=0;
-    }
+  }
 }
 
 void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
@@ -186,7 +193,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
         ESP_LOGD(TAG,"Car has woken (CAN bus activity)");
         StandardMetrics.ms_v_env_awake->SetValue(true);
         m_candata_poll = 1;
-        //PollSetState(1);
+        PollSetState(1);
     }
     m_candata_timer = SE_CANDATA_TIMEOUT;
     
@@ -421,7 +428,7 @@ void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
             ESP_LOGD(TAG,"Car has gone to sleep (CAN bus timeout)");
             //StandardMetrics.ms_v_env_on->SetValue(false);
             StandardMetrics.ms_v_env_awake->SetValue(false);
-            //PollSetState(0);
+            PollSetState(0);
             m_candata_poll = 0;
         }
     }

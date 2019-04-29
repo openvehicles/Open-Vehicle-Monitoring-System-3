@@ -74,6 +74,9 @@ class OvmsVehicleSmartED : public OvmsVehicle
     void GetDashboardConfig(DashboardConfig& cfg);
     TimerHandle_t m_locking_timer;
     
+    //void PollReply_BMS_BattVolts(uint8_t reply_data[], uint16_t reply_len);
+    void PollReply_BMS_BattTemp(uint8_t reply_data[], uint16_t reply_len);
+    
     OvmsMetricInt *mt_vehicle_time;         // vehicle time
     OvmsMetricInt *mt_trip_start;           // trip since start
     OvmsMetricInt *mt_trip_reset;           // trip since Reset
