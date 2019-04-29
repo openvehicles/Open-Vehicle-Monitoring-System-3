@@ -261,8 +261,10 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
         HVA = (HVA - 0x2000) / 10.0;
         StandardMetrics.ms_v_bat_current->SetValue(HVA, Amps);
         if(d[2]&0x40) {
+            StandardMetrics.ms_v_door_chargeport->SetValue(true);
             StandardMetrics.ms_v_charge_state->SetValue("charging");
         } else {
+            StandardMetrics.ms_v_door_chargeport->SetValue(false);
             StandardMetrics.ms_v_charge_state->SetValue("done");
         }
         break;
