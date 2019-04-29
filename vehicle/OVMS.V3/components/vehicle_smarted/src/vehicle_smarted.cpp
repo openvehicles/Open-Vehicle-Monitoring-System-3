@@ -69,7 +69,7 @@ static const char *TAG = "v-smarted";
 
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
 {
-    { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0,31,59 } }, // BattVIN [19]
+    { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0201, {  0,999,999 } }, // rqBattTemperatures
     { 0, 0, 0x00, 0x00, { 0, 0, 0 } }
 };
 
