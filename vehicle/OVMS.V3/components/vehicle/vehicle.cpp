@@ -1834,12 +1834,13 @@ void OvmsVehicle::CheckBrakelight()
   float speed = ABS(StdMetrics.ms_v_pos_speed->AsFloat(0, Kph)) * 1000 / 3600;
   float accel = StdMetrics.ms_v_pos_acceleration->AsFloat();
   bool car_on = StdMetrics.ms_v_env_on->AsBool();
+  bool footbrake = StdMetrics.ms_v_env_footbrake->AsFloat() > 0;
   float batpwr = StdMetrics.ms_v_bat_power->AsFloat();
   const float batpwr_base = 0;
   const uint32_t holdtime = 500;
 
   // activate brake light?
-  if (accel < -m_brakelight_on && speed >= 1 && batpwr <= batpwr_base && car_on)
+  if (accel < -m_brakelight_on && speed >= 1 && batpwr <= batpwr_base && car_on && !footbrake)
     {
     if (!m_brakelight_start)
       {
@@ -1856,7 +1857,7 @@ void OvmsVehicle::CheckBrakelight()
       m_brakelight_start = now;
     }
   // deactivate brake light?
-  else if (accel >= -m_brakelight_off || speed < 1 || batpwr > batpwr_base || !car_on)
+  else if (accel >= -m_brakelight_off || speed < 1 || batpwr > batpwr_base || !car_on || footbrake)
     {
     if (m_brakelight_start && now >= m_brakelight_start + holdtime)
       {
