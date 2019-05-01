@@ -34,8 +34,6 @@ using namespace std;
 
 struct battery_pack
 {
-  // Model
-  
   UINT volt_act = 0; // current voltage in 1/10 V
   UINT volt_new = 0; // sensor buffer
   UINT volt_min = 1000; // charge cycle min voltage
@@ -67,86 +65,24 @@ struct battery_pack
   
   int max_drive_pwr = 0; // in 500 W
   int max_recup_pwr = 0; // in 500 W
-  
-  // Metrics
-  
-  void InitMetrics(int i);
-  void UpdateMetrics();
-  bool IsModified(size_t modifier);
-  
-  OvmsMetricFloat *m_volt_min;
-  OvmsMetricFloat *m_volt_max;
-  
-  OvmsMetricFloat *m_temp_min;
-  OvmsMetricFloat *m_temp_max;
-  
-  OvmsMetricBitset<32> *m_volt_watches;
-  OvmsMetricBitset<32> *m_volt_alerts;
-  
-  OvmsMetricBitset<32> *m_temp_watches;
-  OvmsMetricBitset<32> *m_temp_alerts;
-  
-  OvmsMetricFloat *m_cell_volt_min;
-  OvmsMetricFloat *m_cell_volt_max;
-  OvmsMetricFloat *m_cell_volt_avg;
-  OvmsMetricFloat *m_cell_volt_stddev;
-  OvmsMetricFloat *m_cell_volt_stddev_max;
-  
-  OvmsMetricFloat *m_cmod_temp_min;
-  OvmsMetricFloat *m_cmod_temp_max;
-  OvmsMetricFloat *m_cmod_temp_avg;
-  OvmsMetricFloat *m_cmod_temp_stddev;
-  OvmsMetricFloat *m_cmod_temp_stddev_max;
-  
-  OvmsMetricInt *m_max_drive_pwr;
-  OvmsMetricInt *m_max_recup_pwr;
-  
 };
 
 struct battery_cmod // cell module
 {
-  // Model
-  
   UINT8 temp_act = 0; // current temperature in °C + 40
   UINT8 temp_new = 0; // sensor buffer
   UINT8 temp_min = 240; // charge cycle min temperature
   UINT8 temp_max = 0; // charge cycle max temperature
   float temp_maxdev = 0; // charge cycle max temperature deviation
-  
-  // Metrics
-  
-  void InitMetrics(int i);
-  void UpdateMetrics();
-  bool IsModified(size_t modifier);
-  
-  OvmsMetricFloat *m_temp_act;
-  OvmsMetricFloat *m_temp_min;
-  OvmsMetricFloat *m_temp_max;
-  OvmsMetricFloat *m_temp_maxdev;
-  
 };
 
 struct battery_cell
 {
-  // Model
-  
   UINT volt_act = 0; // current voltage in 1/200 V
   UINT volt_new = 0; // sensor buffer
   UINT volt_min = 2000; // charge cycle min voltage
   UINT volt_max = 0; // charge cycle max voltage
   float volt_maxdev = 0; // charge cycle max voltage deviation
-  
-  // Metrics
-  
-  void InitMetrics(int i);
-  void UpdateMetrics();
-  bool IsModified(size_t modifier);
-  
-  OvmsMetricFloat *m_volt_act;
-  OvmsMetricFloat *m_volt_min;
-  OvmsMetricFloat *m_volt_max;
-  OvmsMetricFloat *m_volt_maxdev;
-  
 };
 
 // Conversion utils:
