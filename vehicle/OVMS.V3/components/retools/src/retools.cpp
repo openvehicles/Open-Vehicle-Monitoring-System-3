@@ -166,6 +166,8 @@ void re::MongooseHandler(struct mg_connection *nc, int ev, void *p)
           }
         size_t used = m_serveformat_out->put(&frame, bp, bl);
         //ESP_EARLY_LOGI(TAG,"CRTD used %d bytes",used);
+        if (used > bl)
+            used = bl;
         if (used <= 0)
           {
           if (consumed > 0) mbuf_remove(&nc->recv_mbuf, consumed);

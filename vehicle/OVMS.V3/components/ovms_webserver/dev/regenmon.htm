@@ -11,6 +11,14 @@
   display: block;
   border-radius: 50px;
 }
+.metric.number .label {
+  min-width: 8em;
+}
+.metric.number {
+  display: block;
+  float: none;
+  text-align: center;
+}
 </style>
 
 <div class="panel panel-primary">
@@ -28,6 +36,16 @@
             <span class="label">Acceleration:</span>
             <span class="value">?</span>
             <span class="unit">m/s²</span>
+          </div>
+          <div class="metric number" data-metric="v.p.speed" data-prec="1">
+            <span class="label">Speed:</span>
+            <span class="value">?</span>
+            <span class="unit">kph</span>
+          </div>
+          <div class="metric number" data-metric="v.b.power" data-prec="1">
+            <span class="label">Battery power:</span>
+            <span class="value">?</span>
+            <span class="unit">kW</span>
           </div>
           <br class="clearfix"/>
         </div>
@@ -55,7 +73,7 @@
       type: 'gauge',
       spacing: [0, 0, 0, 0],
       margin: [0, 0, 0, 0],
-      animation: { duration: 100, easing: 'easeOutExpo' },
+      animation: { duration: 250, easing: 'easeOutExpo' },
     },
     title: { text: "Acceleration", verticalAlign: "middle", y: 75 },
     credits: { enabled: false },

@@ -365,13 +365,16 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     
     OvmsCommand *cmd_batt;
     
-    OvmsMetricFloat *m_batt_soc_min;
-    OvmsMetricFloat *m_batt_soc_max;
-    
-    OvmsMetricInt *m_batt_pack_count;
-    OvmsMetricInt *m_batt_cmod_count;
-    OvmsMetricInt *m_batt_cell_count;
-    
+    OvmsMetricFloat *m_batt_use_soc_min;
+    OvmsMetricFloat *m_batt_use_soc_max;
+    OvmsMetricFloat *m_batt_use_volt_min;
+    OvmsMetricFloat *m_batt_use_volt_max;
+    OvmsMetricFloat *m_batt_use_temp_min;
+    OvmsMetricFloat *m_batt_use_temp_max;
+
+    //OvmsMetricFloat *m_batt_max_drive_pwr;
+    //OvmsMetricFloat *m_batt_max_recup_pwr;
+
     battery_pack twizy_batt[BATT_PACKS];
     battery_cmod twizy_cmod[BATT_CMODS];
     battery_cell twizy_cell[BATT_CELLS];

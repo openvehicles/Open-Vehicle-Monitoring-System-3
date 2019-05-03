@@ -139,7 +139,7 @@ size_t candump_crtd::put(CAN_frame_t *frame, uint8_t *buffer, size_t len)
     frame->FIR.B.FF = CAN_frame_ext;
     }
   else
-    return k+2;
+    return k+1;
 
   if (b[3] != ' ') return k+1;
   b += 4;

@@ -1786,71 +1786,91 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       }
     NotifiedVehicleChargeState(m);
     }
-  else if (metric == StdMetrics.ms_v_pos_speed)
+  else if (metric == StandardMetrics.ms_v_pos_acceleration)
     {
-    // Derive acceleration / deceleration level from speed change:
-    uint32_t now = esp_log_timestamp();
-    float speed = 0, accel = 0;
-    if (now > m_accel_reftime)
-      {
-      speed = ABS(StdMetrics.ms_v_pos_speed->AsFloat(0, Kph)) * 1000 / 3600;
-      accel = (speed - m_accel_refspeed) / (now - m_accel_reftime) * 1000;
-      // smooth out road bumps & gear box backlash:
-      accel = (StdMetrics.ms_v_pos_acceleration->AsFloat() * m_accel_smoothing + accel) / (m_accel_smoothing + 1);
-      StdMetrics.ms_v_pos_acceleration->SetValue(accel);
-      m_accel_refspeed = speed;
-      m_accel_reftime = now;
-      }
-
-    // Brake light control:
     if (m_brakelight_enable)
+      CheckBrakelight();
+    }
+  }
+
+/**
+ * CalculateAcceleration: derive acceleration / deceleration level from speed change
+ * Note:
+ *  IF you want to let the framework calculate acceleration, call this after your regular
+ *  update to StdMetrics.ms_v_pos_speed. This is optional, you can set ms_v_pos_acceleration
+ *  yourself if your vehicle provides this metric.
+ */
+void OvmsVehicle::CalculateAcceleration()
+  {
+  uint32_t now = esp_log_timestamp();
+  if (now > m_accel_reftime)
+    {
+    float speed = ABS(StdMetrics.ms_v_pos_speed->AsFloat(0, Kph)) * 1000 / 3600;
+    float accel = (speed - m_accel_refspeed) / (now - m_accel_reftime) * 1000;
+    // smooth out road bumps & gear box backlash:
+    accel = (StdMetrics.ms_v_pos_acceleration->AsFloat() * m_accel_smoothing + accel) / (m_accel_smoothing + 1);
+    StdMetrics.ms_v_pos_acceleration->SetValue(TRUNCPREC(accel, 3));
+    m_accel_refspeed = speed;
+    m_accel_reftime = now;
+    }
+  }
+
+/**
+ * CheckBrakelight: check for regenerative braking, control brakelight accordingly
+ * Notes:
+ *  a) This depends on a regular and frequent speed update with <= 100 ms period. If the vehicle
+ *     delivers speed values at too large intervals, the trigger will still work but come
+ *     too late (reducing/deactivating acceleration smoothing may help).
+ *     If the vehicle raw speed is already smoothed, reducing acceleration smoothing will
+ *     provide a faster trigger.
+ *  b) The battery power regen threshold is assumed as 0 here. If the vehicle has a very high
+ *     base power consumption, that may need adjustment / configuration. 0 works without
+ *     battery power measurement from the vehicle.
+ *  c) To reduce flicker the brake light has a minimum hold time of currently fixed 500 ms.
+ */
+void OvmsVehicle::CheckBrakelight()
+  {
+  uint32_t now = esp_log_timestamp();
+  float speed = ABS(StdMetrics.ms_v_pos_speed->AsFloat(0, Kph)) * 1000 / 3600;
+  float accel = StdMetrics.ms_v_pos_acceleration->AsFloat();
+  bool car_on = StdMetrics.ms_v_env_on->AsBool();
+  bool footbrake = StdMetrics.ms_v_env_footbrake->AsFloat() > 0;
+  float batpwr = StdMetrics.ms_v_bat_power->AsFloat();
+  const float batpwr_base = 0;
+  const uint32_t holdtime = 500;
+
+  // activate brake light?
+  if (accel < -m_brakelight_on && speed >= 1 && batpwr <= batpwr_base && car_on && !footbrake)
+    {
+    if (!m_brakelight_start)
       {
-      // Notes:
-      // a) This depends on a regular and frequent speed update with <= 100 ms period. If the vehicle
-      //    delivers speed values at too large intervals, the trigger will still work but come
-      //    too late (reducing/deactivating acceleration smoothing may help).
-      //    If the vehicle raw speed is already smoothed, reducing acceleration smoothing will
-      //    provide a faster trigger.
-      // b) The battery power regen threshold is assumed as 0 here. If the vehicle has a very high
-      //    base power consumption, that may need adjustment / configuration. 0 works without
-      //    battery power measurement from the vehicle.
-      // c) To reduce flicker the brake light has a minimum hold time of currently fixed 500 ms.
-      bool car_on = StdMetrics.ms_v_env_on->AsBool();
-      float batpwr = StdMetrics.ms_v_bat_power->AsFloat();
-      const float batpwr_base = 0;
-      const uint32_t holdtime = 500;
-      if (accel < -m_brakelight_on && speed >= 1 && batpwr <= batpwr_base && car_on)
+      if (SetBrakelight(1))
         {
-        if (!m_brakelight_start)
-          {
-          if (SetBrakelight(1))
-            {
-            ESP_LOGD(TAG, "brakelight on at speed=%.2f m/s, accel=%.2f m/s^2", speed, accel);
-            m_brakelight_start = now;
-            StdMetrics.ms_v_env_regenbrake->SetValue(true);
-            }
-          else
-            ESP_LOGW(TAG, "can't activate brakelight");
-          }
-        else
-          m_brakelight_start = now;
+        ESP_LOGD(TAG, "brakelight on at speed=%.2f m/s, accel=%.2f m/s^2", speed, accel);
+        m_brakelight_start = now;
+        StdMetrics.ms_v_env_regenbrake->SetValue(true);
         }
-      else if (accel >= -m_brakelight_off || speed < 1 || batpwr > batpwr_base || !car_on)
+      else
+        ESP_LOGW(TAG, "can't activate brakelight");
+      }
+    else
+      m_brakelight_start = now;
+    }
+  // deactivate brake light?
+  else if (accel >= -m_brakelight_off || speed < 1 || batpwr > batpwr_base || !car_on || footbrake)
+    {
+    if (m_brakelight_start && now >= m_brakelight_start + holdtime)
+      {
+      if (SetBrakelight(0))
         {
-        if (m_brakelight_start && now >= m_brakelight_start + holdtime)
-          {
-          if (SetBrakelight(0))
-            {
-            ESP_LOGD(TAG, "brakelight off at speed=%.2f m/s, accel=%.2f m/s^2", speed, accel);
-            m_brakelight_start = 0;
-            StdMetrics.ms_v_env_regenbrake->SetValue(false);
-            }
-          else
-            ESP_LOGW(TAG, "can't deactivate brakelight");
-          }
+        ESP_LOGD(TAG, "brakelight off at speed=%.2f m/s, accel=%.2f m/s^2", speed, accel);
+        m_brakelight_start = 0;
+        StdMetrics.ms_v_env_regenbrake->SetValue(false);
         }
-      } // m_brakelight_enable
-    } // metric == StdMetrics.ms_v_pos_speed
+      else
+        ESP_LOGW(TAG, "can't deactivate brakelight");
+      }
+    }
   }
 
 /**

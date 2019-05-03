@@ -207,8 +207,8 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandStat(
   // SOC + min/max:
   writer->printf("SOC: %s (%s..%s)\n",
     (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str(),
-    (char*) m_batt_soc_min->AsString("-", Native, 1).c_str(),
-    (char*) m_batt_soc_max->AsUnitString("-", Native, 1).c_str());
+    (char*) m_batt_use_soc_min->AsString("-", Native, 1).c_str(),
+    (char*) m_batt_use_soc_max->AsUnitString("-", Native, 1).c_str());
 
   // ODOMETER:
   const char* odometer = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
