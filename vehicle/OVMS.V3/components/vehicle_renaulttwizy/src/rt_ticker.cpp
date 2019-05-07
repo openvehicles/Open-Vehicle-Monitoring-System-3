@@ -506,6 +506,14 @@ void OvmsVehicleRenaultTwizy::Ticker10(uint32_t ticker)
     }
   }
   
+
+  // --------------------------------------------------------------------------
+  // Valet mode: lock speed to 6 kph if valet max odometer reached:
+  
+  if (ValetMode() && !CarLocked() && twizy_odometer > twizy_valet_odo) {
+    ESP_LOGI(TAG, "valet mode: odo limit %.2f reached; locking car", twizy_valet_odo / 100.0f);
+    string buf;
+    MsgCommandRestrict(buf, CMD_Lock, NULL);
+    MyNotify.NotifyString("alert", "valetmode.odolimit", buf.c_str());
+  }
 }
-
-

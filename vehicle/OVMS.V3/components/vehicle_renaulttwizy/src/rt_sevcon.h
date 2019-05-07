@@ -195,6 +195,11 @@ class SevconClient : public InternalRamAllocated
     static void KickdownTimer(TimerHandle_t xTimer);
 
   public:
+    // restricting (lock & valet mode):
+    CANopenResult_t CfgLock(int lock_kph);
+    CANopenResult_t CfgUnlock();
+
+  public:
     // diagnostics / statistics:
     void AddFaultInfo(ostringstream& buf, uint16_t faultcode);
     CANopenResult_t QueryLogs(int verbosity, OvmsWriter* writer, int which, int start, int* totalcnt, int* sendcnt);
@@ -275,23 +280,10 @@ class SevconClient : public InternalRamAllocated
     int                       twizy_autodrive_checkpoint = 0;     // change detection for autopower function
     uint16_t                  twizy_autodrive_level = 1000;       // autopower: current drive level (per mille)
     
-    uint8_t                   twizy_lock_speed = 0;               // if Lock mode: fix speed to this (kph)
-    uint32_t                  twizy_valet_odo = 0;                // if Valet mode: reduce speed if odometer > this
-    
     uint32_t                  m_drive_level = 1000;               // current drive level [per mille]
     TimerHandle_t             m_kickdown_timer;
   
 };
-
-#define CtrlLoggedIn()        (StdMetrics.ms_v_env_ctrl_login->AsBool())
-#define CtrlCfgMode()         (StdMetrics.ms_v_env_ctrl_config->AsBool())
-#define CarLocked()           (StdMetrics.ms_v_env_locked->AsBool())
-#define ValetMode()           (StdMetrics.ms_v_env_valet->AsBool())
-
-#define SetCtrlLoggedIn(b)    (StdMetrics.ms_v_env_ctrl_login->SetValue(b))
-#define SetCtrlCfgMode(b)     (StdMetrics.ms_v_env_ctrl_config->SetValue(b))
-#define SetCarLocked(b)       (StdMetrics.ms_v_env_locked->SetValue(b))
-#define SetValetMode(b)       (StdMetrics.ms_v_env_valet->SetValue(b))
 
 
 // 
