@@ -240,7 +240,10 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     
     int twizy_chargeduration = 0;           // charge duration in seconds
     
-    UINT8 twizy_fan_timer = 0;              // countdown timer for RB1 charger fan
+    int cfg_aux_fan_port = 0;               // EGPIO port number for auxiliary charger fan
+    int cfg_aux_charger_port = 0;           // EGPIO port number for auxiliary charger
+    
+    UINT8 twizy_fan_timer = 0;              // countdown timer for auxiliary charger fan
     #define TWIZY_FAN_THRESHOLD   45    // temperature in °C
     #define TWIZY_FAN_OVERSHOOT   5     // hold time in minutes after switch-off
     

@@ -216,6 +216,9 @@ void OvmsVehicleRenaultTwizy::ConfigChanged(OvmsConfigParam* param)
     twizy_valet_odo = MyConfig.GetParamValueInt("xrt", "valet_on");
     SetValetMode(true);
   }
+
+  cfg_aux_fan_port = MyConfig.GetParamValueInt("xrt", "aux_fan_port");
+  cfg_aux_charger_port = MyConfig.GetParamValueInt("xrt", "aux_charger_port");
 }
 
 
