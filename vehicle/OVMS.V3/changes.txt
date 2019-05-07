@@ -3,6 +3,14 @@ Open Vehicle Monitor System v3 - Change log
 ????-??-?? ???  ???????  OTA release
 
 2019-01-19 MWJ  3.2.001  OTA release
+- Twizy: support auxiliary charger fan and auxiliary charger
+  New configs:
+    xrt [aux_fan_port]        = EGPIO port number, 0 (default) = off
+    xrt [aux_charger_port]    = EGPIO port number, 0 (default) = off
+- Twizy: lock & valet mode
+  New configs for crash/reboot persistency:
+    xrt [lock_on]   = currently active lock speed [kph]
+    xrt [valet_on]  = currently active odometer limit [10m]
 - Twizy web UI: regenerative braking signal configuration
 - Vehicle framework: regenerative braking signal generation
   New config:
