@@ -840,10 +840,21 @@ int OvmsCommandApp::LogBuffer(LogBuffers* lb, const char* fmt, va_list args)
   if (m_logfile)
     {
     // Log to the log file as well...
-    // We need to protect this with a mutex lock, as fsync appears to NOT be thread safe
-    // https://github.com/espressif/esp-idf/issues/1837
     OvmsMutexLock fsynclock(&m_fsync_mutex);
-    m_logfile_size += fwrite(buffer,1,strlen(buffer),m_logfile);
+
+    // add timestamp:
+    time_t rawtime;
+    time(&rawtime);
+    struct tm* tmu = localtime(&rawtime);
+    char tb[64];
+    strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S %Z ", tmu);
+    m_logfile_size += fwrite(tb, 1, strlen(tb), m_logfile);
+
+    // add log entry:
+    std::string le = stripesc(buffer);
+    m_logfile_size += fwrite(le.data(), 1, le.size(), m_logfile);
+    
+    // check file size:
     if (m_logfile_maxsize && m_logfile_size > (m_logfile_maxsize*1024))
       {
       CycleLogfile();
@@ -854,6 +865,7 @@ int OvmsCommandApp::LogBuffer(LogBuffers* lb, const char* fmt, va_list args)
       fsync(fileno(m_logfile));
       }
     }
+
   lb->append(buffer);
   return ret;
   }
