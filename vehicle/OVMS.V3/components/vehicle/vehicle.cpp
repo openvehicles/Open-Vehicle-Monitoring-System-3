@@ -2163,6 +2163,11 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
         IncomingPollReply(m_poll_bus, m_poll_type, m_poll_pid, &frame->data.u8[1], len, m_poll_ml_remain);
         return;
         }
+      else if ((frame->data.u8[1] == 0x62)&&
+               ((frame->data.u8[3]+(((uint16_t) frame->data.u8[2]) << 8)) == m_poll_pid))
+        {
+        IncomingPollReply(m_poll_bus, m_poll_type, m_poll_pid, &frame->data.u8[4], 4, 0);
+        }
       break;
     }
   }
