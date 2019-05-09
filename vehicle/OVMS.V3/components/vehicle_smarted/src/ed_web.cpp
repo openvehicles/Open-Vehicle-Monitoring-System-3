@@ -56,7 +56,7 @@ void OvmsVehicleSmartED::WebInit()
   // vehicle menu:
   MyWebServer.RegisterPage("/xse/features",   "Features",         WebCfgFeatures,                      PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xse/brakelight", "Brake Light",      OvmsWebServer::HandleCfgBrakelight,  PageMenu_Vehicle, PageAuth_Cookie);
-  //MyWebServer.RegisterPage("/bms/cellmon",    "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/bms/cellmon",    "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 /**
@@ -102,8 +102,8 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     }
     if (ignition != "") {
       int v = atoi(ignition.c_str());
-      if (v < 3 || v > 9) {
-        error += "<li data-input=\"ignition\">Port must be one of 3…9</li>";
+      if (v == 2 || v < 1 || v > 9) {
+        error += "<li data-input=\"ignition\">Port must be one of 1, 3…9</li>";
       }
     }
     if (rangeideal != "") {
@@ -183,6 +183,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_select_end();
 
   c.input_select_start("… Ignition port", "ignition");
+  c.input_select_option("SW_12V (DA26 pin 18)", "1", ignition == "1");
   c.input_select_option("EGPIO_2", "3", ignition == "3");
   c.input_select_option("EGPIO_3", "4", ignition == "4");
   c.input_select_option("EGPIO_4", "5", ignition == "5");

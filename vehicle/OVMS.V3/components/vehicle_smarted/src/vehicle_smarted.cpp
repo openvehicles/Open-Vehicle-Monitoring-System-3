@@ -28,30 +28,6 @@
  ;
  ; Most of the CAN Messages are based on https://github.com/MyLab-odyssey/ED_BMSdiag
  ; http://ed.no-limit.de/wiki/index.php/Hauptseite
- 
-const PROGMEM byte rqBattHWrev[4]                 = {0x03, 0x22, 0xF1, 0x50};
-const PROGMEM byte rqBattSWrev[4]                 = {0x03, 0x22, 0xF1, 0x51};
-const PROGMEM byte rqBattVIN[4]                   = {0x03, 0x22, 0xF1, 0x90};
-const PROGMEM byte rqBattTemperatures[4]          = {0x03, 0x22, 0x02, 0x01}; 
-const PROGMEM byte rqBattModuleTemperatures[4]    = {0x03, 0x22, 0x02, 0x02};
-const PROGMEM byte rqBattHVstatus[4]              = {0x03, 0x22, 0x02, 0x04};
-const PROGMEM byte rqBattADCref[4]                = {0x03, 0x22, 0x02, 0x07};
-const PROGMEM byte rqBattVolts[6]                 = {0x03, 0x22, 0x02, 0x08, 28, 57};
-const PROGMEM byte rqBattIsolation[4]             = {0x03, 0x22, 0x02, 0x09};
-const PROGMEM byte rqBattAmps[4]                  = {0x03, 0x22, 0x02, 0x03};
-const PROGMEM byte rqBattDate[4]                  = {0x03, 0x22, 0x03, 0x04};
-const PROGMEM byte rqBattProdDate[4]              = {0x03, 0x22, 0xF1, 0x8C};
-const PROGMEM byte rqBattCapacity[6]              = {0x03, 0x22, 0x03, 0x10, 31, 59};
-const PROGMEM byte rqBattHVContactorCyclesLeft[4] = {0x03, 0x22, 0x03, 0x0B};
-const PROGMEM byte rqBattHVContactorMax[4]        = {0x03, 0x22, 0x03, 0x0C};
-const PROGMEM byte rqBattHVContactorState[4]      = {0x03, 0x22, 0xD0, 0x00};
-
-const PROGMEM byte rqCarVIN[4]                   = {0x02, 0x09, 0x02, 0x00};
-
-//Experimental readouts
-const PROGMEM byte rqBattCapInit[4]               = {0x03, 0x22, 0x03, 0x05};
-const PROGMEM byte rqBattCapLoss[4]               = {0x03, 0x22, 0x03, 0x09};
-const PROGMEM byte rqBattUnknownCounter[4]        = {0x03, 0x22, 0x01, 0x01};
  */
 
 #include "ovms_log.h"
@@ -63,15 +39,19 @@ static const char *TAG = "v-smarted";
 #include "ovms_metrics.h"
 #include "ovms_peripherals.h"
 
-#define SE_CANDATA_TIMEOUT 10
-#define SE_EGPIO_TIMEOUT 5
-
-#define MAX_POLL_DATA_LEN 238
 
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
 {
-    { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0201, {  0,999,999 } }, // rqBattTemperatures
-    { 0, 0, 0x00, 0x00, { 0, 0, 0 } }
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0201, {  0,300,600 } }, // rqBattTemperatures
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0202, {  0,300,600 } }, // rqBattModuleTemperatures
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0208, {  0,300,600 } }, // rqBattVolts
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF111, {  0,120,999 } }, // rqChargerPN_HW
+//  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF121, {  0,300,300 } }, // rqChargerSWrev
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0226, {  0,120,999 } }, // rqChargerVoltages
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0225, {  0,120,999 } }, // rqChargerAmps
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x022A, {  0,120,999 } }, // rqChargerSelCurrent
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0223, {  0,120,999 } }, // rqChargerTemperatures
+  { 0, 0, 0x00, 0x00, { 0, 0, 0 } }
 };
 
 /**
@@ -99,6 +79,19 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     m_candata_timer     = 0;
     m_candata_poll      = 0;
     m_egpio_timer       = 0;
+    m_charge_timer      = 0;
+    
+    StandardMetrics.ms_v_charge_mode->SetValue("standard");
+    StandardMetrics.ms_v_charge_type->SetValue("type2");
+    StandardMetrics.ms_v_charge_limit_soc->SetValue(80);
+    
+    // BMS configuration:
+    BmsSetCellArrangementVoltage(93, 1);
+    BmsSetCellArrangementTemperature(3, 1);
+    BmsSetCellLimitsVoltage(2.0, 5.0);
+    BmsSetCellLimitsTemperature(-39, 200);
+    BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
+    BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
     
     RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
     PollSetPidList(m_can1,obdii_polls);
@@ -144,56 +137,99 @@ void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
 #endif
 }
 
-void OvmsVehicleSmartED::PollReply_BMS_BattTemp(uint8_t reply_data[], uint16_t reply_len) {
-    ESP_LOGI(TAG, "PollReply_BMS_BattTemp: len=%d != 18", reply_len);
-    
-    int i;
-    for(i=0; i<reply_len; i++) {
-        ESP_LOGI(TAG, "PollReply_BMS_BattTemp: data[%d]=%x ", i, reply_data[i]);
-    }
-    
-    
+void OvmsVehicleSmartED::vehicle_smarted_car_on(bool isOn) {
+  if (isOn && !StandardMetrics.ms_v_env_on->AsBool()) {
+    // Log once that car is being turned on
+    ESP_LOGI(TAG,"CAR IS ON");
+    PollSetState(2);
+
+    // Reset trip values
+    StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
+    StandardMetrics.ms_v_bat_energy_used->SetValue(0);
+  }
+  else if (!isOn && StandardMetrics.ms_v_env_on->AsBool()) {
+    // Log once that car is being turned off
+    ESP_LOGI(TAG,"CAR IS OFF");
+    PollSetState(1);
+  }
+
+  // Always set this value to prevent it from going stale
+  StandardMetrics.ms_v_env_on->SetValue(isOn);
 }
 
-void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
-  static int last_pid = -1;
-  static int last_remain = -1;
-  static uint8_t buf[MAX_POLL_DATA_LEN];
-  static int bufpos = 0;
+/**
+ * Update derived metrics when charging
+ * Called once per 10 seconds from Ticker10
+ */
+void OvmsVehicleSmartED::HandleCharging() {
+  float limit_soc       = StandardMetrics.ms_v_charge_limit_soc->AsFloat(0);
+  //float charge_current  = StandardMetrics.ms_v_charge_current->AsFloat(0, Amps);
+  //float charge_voltage  = StandardMetrics.ms_v_charge_voltage->AsFloat(0, Volts);
+  float charge_current  = StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
+  float charge_voltage  = StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
+  
+  // Are we charging?
+  if (!StandardMetrics.ms_v_charge_pilot->AsBool()      ||
+      !StandardMetrics.ms_v_charge_inprogress->AsBool() ||
+      (charge_current <= 0.0) ) {
+    return;
+  }
+  
+  // Check if we have what is needed to calculate energy and remaining minutes
+  if (charge_voltage > 0 && charge_current > 0) {
+    // Update energy taken
+    // Value is reset to 0 when a new charging session starts...
+    float power  = charge_voltage * charge_current / 1000.0;     // power in kw
+    float energy = power / 3600.0 * 10.0;                        // 10 second worth of energy in kwh's
+    StandardMetrics.ms_v_charge_kwh->SetValue( StandardMetrics.ms_v_charge_kwh->AsFloat() + energy);
 
-  int i;
-  if ( pid != last_pid || remain >= last_remain ) {
-    // must be a new reply, so reset to the beginning
-    last_pid=pid;
-    last_remain=remain;
-    bufpos=0;
-  }
-  for (i=0; i<length; i++) {
-    if ( bufpos < sizeof(buf) ) buf[bufpos++] = data[i];
-  }
-  if (remain==0) {
-    uint32_t id_pid = m_poll_moduleid_low<<16 | pid;
-    switch (id_pid) {
-      case 0x7EF0201: // rqBattTemperatures
-        PollReply_BMS_BattTemp(buf, bufpos);
-        break;
-      default:
-        ESP_LOGI(TAG, "IncomingPollReply: unknown reply module|pid=%#x len=%d", id_pid, bufpos);
-        break;
+    // always calculate remaining charge time to full
+    float full_soc           = 100.0;     // 100%
+    int   minsremaining_full = calcMinutesRemaining(full_soc);
+
+    StandardMetrics.ms_v_charge_duration_full->SetValue(minsremaining_full, Minutes);
+    ESP_LOGV(TAG, "Time remaining: %d mins to full", minsremaining_full);
+    
+    if (limit_soc > 0) {
+      // if limit_soc is set, then calculate remaining time to limit_soc
+      int minsremaining_soc = calcMinutesRemaining(limit_soc);
+
+      StandardMetrics.ms_v_charge_duration_soc->SetValue(minsremaining_soc, Minutes);
+      ESP_LOGV(TAG, "Time remaining: %d mins to %0.0f%% soc", minsremaining_soc, limit_soc);
     }
-    last_pid=-1;
-    last_remain=-1;
-    bufpos=0;
   }
 }
 
+/**
+ * Calculates minutes remaining before target is reached. Based on current charge speed.
+ * TODO: Should be calculated based on actual charge curve. Maybe in a later version?
+ */
+int OvmsVehicleSmartED::calcMinutesRemaining(float target_soc) {
+  float bat_soc = StandardMetrics.ms_v_bat_soc->AsFloat(100);
+  if (bat_soc > target_soc)
+    {
+    return 0;   // Done!
+    }
+
+  //float charge_current  = StandardMetrics.ms_v_charge_current->AsFloat(0, Amps);
+  //float charge_voltage  = StandardMetrics.ms_v_charge_voltage->AsFloat(0, Volts);
+  float charge_current  = StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
+  float charge_voltage  = StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
+
+  float remaining_wh    = DEFAULT_BATTERY_CAPACITY * (target_soc - bat_soc) / 100.0;
+  float remaining_hours = remaining_wh / (charge_current * charge_voltage);
+  float remaining_mins  = remaining_hours * 60.0;
+
+  return MIN( 1440, (int)remaining_mins );
+}
+  
 void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     
     if (m_candata_poll != 1) {
-        ESP_LOGD(TAG,"Car has woken (CAN bus activity)");
-        StandardMetrics.ms_v_env_awake->SetValue(true);
-        m_candata_poll = 1;
-        PollSetState(1);
+      ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
+      StandardMetrics.ms_v_env_awake->SetValue(true);
+      m_candata_poll = 1;
+      PollSetState(1);
     }
     m_candata_timer = SE_CANDATA_TIMEOUT;
     
@@ -261,11 +297,22 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
         HVA = (HVA - 0x2000) / 10.0;
         StandardMetrics.ms_v_bat_current->SetValue(HVA, Amps);
         if(d[2]&0x40) {
+            if (!StandardMetrics.ms_v_charge_inprogress->AsBool()) {
+              StandardMetrics.ms_v_charge_kwh->SetValue(0); // Reset charge kWh
+            }
+            StandardMetrics.ms_v_charge_pilot->SetValue(true);
             StandardMetrics.ms_v_door_chargeport->SetValue(true);
+            StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+            //StandardMetrics.ms_v_charge_current->SetValue(StandardMetrics.ms_v_bat_current->AsFloat());
+            //StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
             StandardMetrics.ms_v_charge_state->SetValue("charging");
+            m_charge_timer = 10;
         } else {
+            StandardMetrics.ms_v_charge_pilot->SetValue(false);
             StandardMetrics.ms_v_door_chargeport->SetValue(false);
-            StandardMetrics.ms_v_charge_state->SetValue("done");
+            //StandardMetrics.ms_v_charge_current->SetValue(0);
+            //StandardMetrics.ms_v_charge_voltage->SetValue(0);
+            //StandardMetrics.ms_v_charge_state->SetValue("done");
         }
         break;
     }
@@ -317,7 +364,8 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
          D2 are the doors (0x00 all close, 0x01 driver open, 0x02 passenger open, etc)
          D3 state of the Headlamps, etc*/
 
-        StandardMetrics.ms_v_env_on->SetValue((d[0] & 0x01) > 0);
+        vehicle_smarted_car_on((d[0] & 0x01) > 0);
+        //StandardMetrics.ms_v_env_on->SetValue((d[0] & 0x01) > 0);
         StandardMetrics.ms_v_door_fl->SetValue((d[2] & 0x01) > 0);
         StandardMetrics.ms_v_door_fr->SetValue((d[2] & 0x02) > 0);
         StandardMetrics.ms_v_door_trunk->SetValue((d[2] & 0x04) > 0);
@@ -330,6 +378,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
         StandardMetrics.ms_v_env_handbrake->SetValue(d[0]);
         float velocity = (d[2] * 256 + d[3]) / 18;
         StandardMetrics.ms_v_pos_speed->SetValue(velocity, Kph);
+        CalculateAcceleration();
         break;
     }
     case 0x236: // paddels recu up and down
@@ -424,27 +473,37 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
 }
 
 void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
-    if (m_candata_timer > 0) {
-        if (--m_candata_timer == 0) {
-            // Car has gone to sleep
-            ESP_LOGD(TAG,"Car has gone to sleep (CAN bus timeout)");
-            //StandardMetrics.ms_v_env_on->SetValue(false);
-            StandardMetrics.ms_v_env_awake->SetValue(false);
-            PollSetState(0);
-            m_candata_poll = 0;
-        }
+  if (m_candata_timer > 0) {
+    if (--m_candata_timer == 0) {
+      // Car has gone to sleep
+      ESP_LOGI(TAG,"Car has gone to sleep (CAN bus timeout)");
+      //StandardMetrics.ms_v_env_on->SetValue(false);
+      StandardMetrics.ms_v_env_awake->SetValue(false);
+      PollSetState(0);
+      m_candata_poll = 0;
     }
+  }
+  if (m_charge_timer > 0) {
+    if (--m_charge_timer == 0) {
+      StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+      StandardMetrics.ms_v_charge_state->SetValue("done");
+    }
+  }
+}
+
+void OvmsVehicleSmartED::Ticker10(uint32_t ticker) {
+  HandleCharging();
 }
 
 void OvmsVehicleSmartED::Ticker60(uint32_t ticker) {
 #ifdef CONFIG_OVMS_COMP_MAX7317
-    if (m_egpio_timer > 0) {
-        if (--m_egpio_timer == 0) {
-            ESP_LOGI(TAG,"Ignition EGPIO off port: %d", m_ignition_port);
-            MyPeripherals->m_max7317->Output(m_ignition_port, 0);
-            StandardMetrics.ms_v_env_valet->SetValue(false);
-        }
+  if (m_egpio_timer > 0) {
+    if (--m_egpio_timer == 0) {
+      ESP_LOGI(TAG,"Ignition EGPIO off port: %d", m_ignition_port);
+      MyPeripherals->m_max7317->Output(m_ignition_port, 0);
+      StandardMetrics.ms_v_env_valet->SetValue(false);
     }
+  }
 #endif
 }
 
