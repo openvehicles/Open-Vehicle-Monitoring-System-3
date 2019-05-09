@@ -1131,6 +1131,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
   {
   float limit_soc       = StandardMetrics.ms_v_charge_limit_soc->AsFloat(0);
   float limit_range     = StandardMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
+  float max_range       = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
   float charge_current  = StandardMetrics.ms_v_charge_current->AsFloat(0, Amps);
   float charge_voltage  = StandardMetrics.ms_v_charge_voltage->AsFloat(0, Volts);
 
@@ -1153,7 +1154,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
 
     // always calculate remaining charge time to full
     float full_soc           = 100.0;     // 100%
-    int   minsremaining_full = calcMinutesRemaining(full_soc);
+    int   minsremaining_full = calcMinutesRemaining(full_soc, charge_voltage, charge_current);
 
     StandardMetrics.ms_v_charge_duration_full->SetValue(minsremaining_full, Minutes);
     ESP_LOGV(TAG, "Time remaining: %d mins to full", minsremaining_full);
@@ -1161,21 +1162,17 @@ void OvmsVehicleNissanLeaf::HandleCharging()
     if (limit_soc > 0) 
       {
       // if limit_soc is set, then calculate remaining time to limit_soc
-      int minsremaining_soc = calcMinutesRemaining(limit_soc);
+      int minsremaining_soc = calcMinutesRemaining(limit_soc, charge_voltage, charge_current);
 
       StandardMetrics.ms_v_charge_duration_soc->SetValue(minsremaining_soc, Minutes);
       ESP_LOGV(TAG, "Time remaining: %d mins to %0.0f%% soc", minsremaining_soc, limit_soc);
       }
-    if (limit_range > 0)  
+
+    if (limit_range > 0 && max_range > 0.0)  
       {
       // if range limit is set, then compute required soc and then calculate remaining time to that soc
-      float km_per_kwh    = MyConfig.GetParamValueFloat("xnl", "kmPerKWh", GEN_1_KM_PER_KWH);
-      float wh_per_gid    = MyConfig.GetParamValueFloat("xnl", "whPerGid", GEN_1_WH_PER_GID);
-      float max_gids      = MyConfig.GetParamValueFloat("xnl", "maxGids",  GEN_1_NEW_CAR_GIDS);
-      float max_range     = max_gids * wh_per_gid / 1000.0 * km_per_kwh;
-
       float range_soc           = limit_range / max_range * 100.0;
-      int   minsremaining_range = calcMinutesRemaining(range_soc);
+      int   minsremaining_range = calcMinutesRemaining(range_soc, charge_voltage, charge_current);
 
       StandardMetrics.ms_v_charge_duration_range->SetValue(minsremaining_range, Minutes);
       ESP_LOGV(TAG, "Time remaining: %d mins for %0.0f km (%0.0f%% soc)", minsremaining_range, limit_range, range_soc);
@@ -1188,7 +1185,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
  * Calculates minutes remaining before target is reached. Based on current charge speed.
  * TODO: Should be calculated based on actual charge curve. Maybe in a later version?
  */
-int OvmsVehicleNissanLeaf::calcMinutesRemaining(float target_soc)
+int OvmsVehicleNissanLeaf::calcMinutesRemaining(float target_soc, float charge_voltage, float charge_current)
   {
   float bat_soc = m_soc_instrument->AsFloat(100);
   if (bat_soc > target_soc)
@@ -1196,14 +1193,13 @@ int OvmsVehicleNissanLeaf::calcMinutesRemaining(float target_soc)
     return 0;   // Done!
     }
 
-  float charge_current  = StandardMetrics.ms_v_charge_current->AsFloat(0, Amps);
-  float charge_voltage  = StandardMetrics.ms_v_charge_voltage->AsFloat(0, Volts);
+  if (charge_voltage <= 0 || charge_current <= 0)
+    {
+    return 1440;
+    }
 
-  float max_gids        = MyConfig.GetParamValueFloat("xnl", "maxGids",  GEN_1_NEW_CAR_GIDS);
-  float wh_per_gid      = MyConfig.GetParamValueFloat("xnl", "whPerGid", GEN_1_WH_PER_GID);
-
-  float remaining_gids  = max_gids * (target_soc - bat_soc) / 100.0;
-  float remaining_wh    = remaining_gids * wh_per_gid;
+  float bat_cap_kwh     = m_battery_energy_capacity->AsFloat(24, kWh);
+  float remaining_wh    = bat_cap_kwh * 1000.0 * (target_soc - bat_soc) / 100.0;
   float remaining_hours = remaining_wh / (charge_current * charge_voltage);
   float remaining_mins  = remaining_hours * 60.0;
 
@@ -1215,6 +1211,7 @@ int OvmsVehicleNissanLeaf::calcMinutesRemaining(float target_soc)
  */
 void OvmsVehicleNissanLeaf::HandleRange()
   {
+  float bat_cap_kwh = m_battery_energy_capacity->AsFloat(24, kWh);
   float bat_soc     = StandardMetrics.ms_v_bat_soc->AsFloat(0);
   float bat_soh     = StandardMetrics.ms_v_bat_soh->AsFloat(100);
   float bat_temp    = StandardMetrics.ms_v_bat_temp->AsFloat(20, Celcius);
@@ -1223,6 +1220,11 @@ void OvmsVehicleNissanLeaf::HandleRange()
   float km_per_kwh  = MyConfig.GetParamValueFloat("xnl", "kmPerKWh", GEN_1_KM_PER_KWH);
   float wh_per_gid  = MyConfig.GetParamValueFloat("xnl", "whPerGid", GEN_1_WH_PER_GID);
   float max_gids    = MyConfig.GetParamValueFloat("xnl", "maxGids",  GEN_1_NEW_CAR_GIDS);
+
+  // we use detected battery capacity unless the user has opted otherwise
+  float max_kwh     = (!MyConfig.GetParamValueBool("xnl", "soh.newcar", false))
+                            ? bat_cap_kwh
+                            : max_gids * wh_per_gid / 1000.0;
 
   // Temperature compensation:
   //   - Assumes standard max range specified at 20 degrees C
@@ -1233,7 +1235,7 @@ void OvmsVehicleNissanLeaf::HandleRange()
   float factor_temp = (100.0 - ABS(avg_temp - 20.0) * 1.25) / 100.0;
 
   // Derive max and ideal range, taking into account SOC, but not SOH or temperature
-  float range_max   = max_gids * wh_per_gid / 1000.0 * km_per_kwh;
+  float range_max   = max_kwh * km_per_kwh;
   float range_ideal = range_max * bat_soc / 100.0;
 
   // Derive max range when full and estimated range, taking into account SOC, SOH and temperature
