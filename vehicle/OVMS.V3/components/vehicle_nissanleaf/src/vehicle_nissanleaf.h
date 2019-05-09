@@ -121,7 +121,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void HandleEnergy();
     void HandleCharging();
     void HandleRange();
-    int  calcMinutesRemaining(float target);
+    int  calcMinutesRemaining(float target, float charge_voltage, float charge_current);
     void SendCommand(RemoteCommand);
     OvmsVehicle::vehicle_command_t RemoteCommandHandler(RemoteCommand command);
     OvmsVehicle::vehicle_command_t CommandStartCharge();
