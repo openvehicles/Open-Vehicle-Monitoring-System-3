@@ -36,6 +36,7 @@ static const char *TAG = "v-twizy";
 #include "ovms_command.h"
 #include "metrics_standard.h"
 #include "ovms_notify.h"
+#include "ovms_peripherals.h"
 
 #include "vehicle_renaulttwizy.h"
 
@@ -268,12 +269,12 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     
     // Switch on additional charger if not in / short before CV phase
     // and charge power level has not been limited by the user:
-#if 0 // TODO
-    if ((twizy_chargestate == 1) && (twizy_soc < 9400) && (cfg_chargelevel == 0))
-      PORTBbits.RB4 = 1;
-    else
-      PORTBbits.RB4 = 0;
-#endif
+    if (cfg_aux_charger_port) {
+      if ((twizy_chargestate == 1) && (twizy_soc < 9400) && (cfg_chargelevel == 0))
+        MyPeripherals->m_max7317->Output(cfg_aux_charger_port, 1);
+      else
+        MyPeripherals->m_max7317->Output(cfg_aux_charger_port, 0);
+    }
     
     // END OF STATE: CHARGING
   }
@@ -285,7 +286,9 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
     // 
 
     // Switch off additional charger:
-    // TODO PORTBbits.RB4 = 0;
+    if (cfg_aux_charger_port) {
+      MyPeripherals->m_max7317->Output(cfg_aux_charger_port, 0);
+    }
 
     // Calculate range:
     if (twizy_range_est > 0)
@@ -415,7 +418,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   }
   
 
-  
   // --------------------------------------------------------------------------
   // Publish metrics:
   
@@ -476,36 +478,47 @@ void OvmsVehicleRenaultTwizy::Ticker10(uint32_t ticker)
   }
   
   
-  // Control additional charger fan by RB1:
+  // --------------------------------------------------------------------------
+  // Control additional charger fan:
   // Elips 2000W specified operation range is -20..+50 °C
   // => switch on additional fan above 45 °C, off below 45 °C
   // As we don't get temperature updates after switching the
   // Twizy off, we need the timer to keep the fan ON for a while.
 
-  if (twizy_flags.CarAwake || twizy_flags.Charging) {
-    if (StdMetrics.ms_v_charge_temp->AsFloat() > TWIZY_FAN_THRESHOLD) {
-      // TODO PORTBbits.RB1 = 1;
-      if (twizy_fan_timer == 0)
-        ESP_LOGW(TAG, "charger temperature %.1f celcius; extra fan switched ON",
-          StdMetrics.ms_v_charge_temp->AsFloat());
-      twizy_fan_timer = TWIZY_FAN_OVERSHOOT * 6;
+  if (cfg_aux_fan_port) {
+    if (twizy_flags.CarAwake || twizy_flags.Charging) {
+      if (StdMetrics.ms_v_charge_temp->AsFloat() > TWIZY_FAN_THRESHOLD) {
+        MyPeripherals->m_max7317->Output(cfg_aux_fan_port, 1);
+        if (twizy_fan_timer == 0)
+          ESP_LOGW(TAG, "charger temperature %.1f celcius; extra fan switched ON",
+            StdMetrics.ms_v_charge_temp->AsFloat());
+        twizy_fan_timer = TWIZY_FAN_OVERSHOOT * 6;
+      }
+      else if (StdMetrics.ms_v_charge_temp->AsFloat() < TWIZY_FAN_THRESHOLD) {
+        MyPeripherals->m_max7317->Output(cfg_aux_fan_port, 0);
+        if (twizy_fan_timer != 0)
+          ESP_LOGI(TAG, "charger temperature %.1f celcius; extra fan switched OFF",
+            StdMetrics.ms_v_charge_temp->AsFloat());
+        twizy_fan_timer = 0;
+      }
     }
-    else if (StdMetrics.ms_v_charge_temp->AsFloat() < TWIZY_FAN_THRESHOLD) {
-      // TODO PORTBbits.RB1 = 0;
-      if (twizy_fan_timer != 0)
-        ESP_LOGI(TAG, "charger temperature %.1f celcius; extra fan switched OFF",
-          StdMetrics.ms_v_charge_temp->AsFloat());
-      twizy_fan_timer = 0;
-    }
-  }
-  else {
-    if (twizy_fan_timer > 0 && --twizy_fan_timer == 0) {
-      // TODO PORTBbits.RB1 = 0;
-      if (twizy_fan_timer != 0)
-        ESP_LOGI(TAG, "charger extra fan overshoot end; switched OFF");
+    else {
+      if (twizy_fan_timer > 0 && --twizy_fan_timer == 0) {
+        MyPeripherals->m_max7317->Output(cfg_aux_fan_port, 0);
+        if (twizy_fan_timer != 0)
+          ESP_LOGI(TAG, "charger extra fan overshoot end; switched OFF");
+      }
     }
   }
   
+
+  // --------------------------------------------------------------------------
+  // Valet mode: lock speed to 6 kph if valet max odometer reached:
+  
+  if (ValetMode() && !CarLocked() && twizy_odometer > twizy_valet_odo) {
+    ESP_LOGI(TAG, "valet mode: odo limit %.2f reached; locking car", twizy_valet_odo / 100.0f);
+    string buf;
+    MsgCommandRestrict(buf, CMD_Lock, NULL);
+    MyNotify.NotifyString("alert", "valetmode.odolimit", buf.c_str());
+  }
 }
-
-

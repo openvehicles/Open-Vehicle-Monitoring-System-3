@@ -61,6 +61,17 @@ using namespace std;
 #define CMD_QueryLogs               210 // (which, start)
 
 
+#define CtrlLoggedIn()        (StdMetrics.ms_v_env_ctrl_login->AsBool())
+#define CtrlCfgMode()         (StdMetrics.ms_v_env_ctrl_config->AsBool())
+#define CarLocked()           (StdMetrics.ms_v_env_locked->AsBool())
+#define ValetMode()           (StdMetrics.ms_v_env_valet->AsBool())
+
+#define SetCtrlLoggedIn(b)    (StdMetrics.ms_v_env_ctrl_login->SetValue(b))
+#define SetCtrlCfgMode(b)     (StdMetrics.ms_v_env_ctrl_config->SetValue(b))
+#define SetCarLocked(b)       (StdMetrics.ms_v_env_locked->SetValue(b))
+#define SetValetMode(b)       (StdMetrics.ms_v_env_valet->SetValue(b))
+
+
 class OvmsVehicleRenaultTwizy : public OvmsVehicle
 {
   friend class SevconClient;
@@ -229,7 +240,10 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     
     int twizy_chargeduration = 0;           // charge duration in seconds
     
-    UINT8 twizy_fan_timer = 0;              // countdown timer for RB1 charger fan
+    int cfg_aux_fan_port = 0;               // EGPIO port number for auxiliary charger fan
+    int cfg_aux_charger_port = 0;           // EGPIO port number for auxiliary charger
+    
+    UINT8 twizy_fan_timer = 0;              // countdown timer for auxiliary charger fan
     #define TWIZY_FAN_THRESHOLD   45    // temperature in °C
     #define TWIZY_FAN_OVERSHOOT   5     // hold time in minutes after switch-off
     
@@ -279,7 +293,6 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     
     void SendGPSLog();
     void SendTripLog();
-    //void SendSDOLog();
   
   
   // --------------------------------------------------------------------------
@@ -440,6 +453,16 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     vehicle_command_t MsgCommandQueryLogs(string& result, int command, const char* args);
     vehicle_command_t MsgCommandResetLogs(string& result, int command, const char* args);
     
+  public:
+    vehicle_command_t CommandLock(const char* pin);
+    vehicle_command_t CommandUnlock(const char* pin);
+    vehicle_command_t CommandActivateValet(const char* pin);
+    vehicle_command_t CommandDeactivateValet(const char* pin);
+
+  public:
+    int               twizy_lock_speed = 6;     // if Lock mode: fix speed to this (kph)
+    uint32_t          twizy_valet_odo = 0;      // if Valet mode: reduce speed if twizy_odometer > this
+
   protected:
     SevconClient *m_sevcon = NULL;
     signed char twizy_button_cnt = 0;           // will count key presses (errors) in STOP mode (msg 081)

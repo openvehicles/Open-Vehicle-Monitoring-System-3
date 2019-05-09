@@ -337,7 +337,7 @@ void OvmsNotifyType::Cleanup(OvmsNotifyEntry* entry, NotifyEntryMap_t::iterator*
       NotifyEntryMap_t::iterator it = m_entries.erase(k);
       if (next) *next = it;
       }
-    if (MyNotify.m_trace)
+    if (MyNotify.m_trace && strcmp(m_name, "stream") != 0)
       ESP_LOGI(TAG,"Cleanup type %s id %d",m_name,entry->m_id);
     delete entry;
     }
@@ -531,7 +531,8 @@ uint32_t OvmsNotify::NotifyString(const char* type, const char* subtype, const c
     return 0;
     }
 
-  if (m_trace) ESP_LOGI(TAG, "Raise text %s: %s", type, value);
+  if (m_trace && strcmp(type, "stream") != 0)
+    ESP_LOGI(TAG, "Raise text %s/%s: %s", type, subtype, value);
 
   // determine all currently active readers accepting the message:
   std::bitset<NOTIFY_MAX_READERS> readers;
@@ -567,7 +568,8 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* subtype, const 
     return 0;
     }
 
-  if (m_trace) ESP_LOGI(TAG, "Raise command %s: %s", type, cmd);
+  if (m_trace && strcmp(type, "stream") != 0)
+    ESP_LOGI(TAG, "Raise command %s/%s: %s", type, subtype, cmd);
 
   // Strategy:
   //  to minimize RAM usage and command calls we try to reuse higher verbosity messages
@@ -587,6 +589,14 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* subtype, const 
     }
   if (verbosity_msgs.size() == 0)
     {
+    if (m_trace && strcmp(type, "stream") != 0)
+      {
+      // no readers, but tracing enabled, so log command result:
+      const int verbosity = COMMAND_RESULT_NORMAL;
+      OvmsNotifyEntryCommand *msg = new OvmsNotifyEntryCommand(subtype, verbosity, cmd);
+      ESP_LOGI(TAG, "Raise cmdres[%d] %s/%s: %s", verbosity, type, subtype, msg->GetValue().c_str());
+      delete msg;
+      }
     ESP_LOGD(TAG, "Abort: no readers for type '%s' subtype '%s'", type, subtype);
     return 0;
     }
@@ -611,6 +621,8 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* subtype, const 
         msg = new OvmsNotifyEntryCommand(subtype, verbosity, cmd);
         msglen = msg->GetValueSize();
         verbosity_msgs[verbosity] = msg;
+        if (m_trace && strcmp(type, "stream") != 0)
+          ESP_LOGI(TAG, "Raise cmdres[%d] %s/%s: %s", verbosity, type, subtype, msg->GetValue().c_str());
         }
       }
     }

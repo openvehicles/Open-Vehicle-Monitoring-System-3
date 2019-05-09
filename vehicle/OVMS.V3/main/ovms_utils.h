@@ -96,6 +96,11 @@ extram::string mp_encode(const extram::string text);
 extram::string stripcr(const extram::string& text);
 
 /**
+ * stripesc: remove terminal escape sequences from (log) string
+ */
+std::string stripesc(const char* s);
+
+/**
  * startsWith: std::string prefix check
  */
 bool startsWith(const std::string& haystack, const std::string& needle);

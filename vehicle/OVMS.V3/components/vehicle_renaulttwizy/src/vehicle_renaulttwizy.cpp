@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-twizy";
 
-#define VERSION "0.25.1"
+#define VERSION "1.0.0"
 
 #include <stdio.h>
 #include <string>
@@ -207,6 +207,18 @@ void OvmsVehicleRenaultTwizy::ConfigChanged(OvmsConfigParam* param)
 
   cfg_kd_threshold = MyConfig.GetParamValueInt("xrt", "kd_threshold", CFG_DEFAULT_KD_THRESHOLD);
   cfg_kd_compzero = MyConfig.GetParamValueInt("xrt", "kd_compzero", CFG_DEFAULT_KD_COMPZERO);
+
+  if (MyConfig.IsDefined("xrt", "lock_on") && !CarLocked()) {
+    twizy_lock_speed = MyConfig.GetParamValueInt("xrt", "lock_on", 6);
+    SetCarLocked(true);
+  }
+  if (MyConfig.IsDefined("xrt", "valet_on") && !ValetMode()) {
+    twizy_valet_odo = MyConfig.GetParamValueInt("xrt", "valet_on");
+    SetValetMode(true);
+  }
+
+  cfg_aux_fan_port = MyConfig.GetParamValueInt("xrt", "aux_fan_port");
+  cfg_aux_charger_port = MyConfig.GetParamValueInt("xrt", "aux_charger_port");
 }
 
 
@@ -413,11 +425,116 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandHo
 
 /**
  * MsgCommandRestrict: lock/unlock, valet/unvalet
+ *
+ * case CMD_Lock:
+ *    param = kph: restrict speed (default=6 kph)
+ * case CMD_UnLock:
+ *    set speed back to profile, if valet allow +1 km
+ *
+ * case CMD_ValetOn:
+ *    param = km to drive before locking to 6 kph
+ * case CMD_ValetOff:
+ *    disable km limit, set speed back to profile
  */
 OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandRestrict(string& result, int command, const char* args)
 {
-  // TODO
-  return NotImplemented;
+  int pval;
+  CANopenResult_t res = COR_OK;
+
+  switch (command)
+  {
+    case CMD_Lock:
+      // set fwd/rev speed lock:
+      pval = (args && *args) ? atoi(args) : 6;
+      res = m_sevcon->CfgLock(pval);
+      if (res == COR_OK) {
+        twizy_lock_speed = pval;
+        SetCarLocked(true);
+        MyConfig.SetParamValueInt("xrt", "lock_on", pval);
+      }
+      break;
+
+    case CMD_ValetOn:
+      // switch on valet mode:
+      pval = (args && *args) ? atoi(args) : 1;
+      twizy_valet_odo = twizy_odometer + (pval * 100);
+      SetValetMode(true);
+      MyConfig.SetParamValueInt("xrt", "valet_on", pval);
+      break;
+
+    case CMD_ValetOff:
+      // switch off valet mode:
+      SetValetMode(false);
+      MyConfig.DeleteInstance("xrt", "valet_on");
+      if (!CarLocked())
+        break;
+      // car is locked, continue with UnLock:
+      
+    case CMD_UnLock:
+      res = m_sevcon->CfgUnlock();
+      if (res == COR_OK) {
+        SetCarLocked(false);
+        MyConfig.DeleteInstance("xrt", "lock_on");
+        // if in valet mode, allow 1 more km:
+        if (ValetMode()) {
+          twizy_valet_odo = twizy_odometer + 100;
+          MyConfig.SetParamValueInt("xrt", "valet_on", twizy_valet_odo);
+        }
+      }
+      break;
+  }
+  
+  // format status result:
+
+  ostringstream buf;
+
+  if (res != COR_OK) {
+    buf << m_sevcon->GetResultString(res);
+    buf << " - Status: ";
+  }
+
+  if (CarLocked())
+    buf << "LOCKED to max kph=" << twizy_lock_speed;
+  else
+    buf << "UNLOCKED";
+
+  if (ValetMode())
+    buf << ", VALET ON at odo=" << (float)twizy_valet_odo / 100;
+  else
+    buf << ", VALET OFF";
+  
+  result = buf.str();
+  ESP_LOGD(TAG, "MsgCommandRestrict: cmd_%d(%s) => %s", command, args ? args : "", result.c_str());
+
+  if (res == COR_OK)
+    return Success;
+  else
+    return Fail;
+}
+
+
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandLock(const char* pin)
+{
+  string buf;
+  return MsgCommandRestrict(buf, CMD_Lock, pin);
+}
+
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandUnlock(const char* pin)
+{
+  string buf;
+  return MsgCommandRestrict(buf, CMD_UnLock, pin);
+}
+
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandActivateValet(const char* pin)
+{
+  string buf;
+  return MsgCommandRestrict(buf, CMD_ValetOn, pin);
+}
+
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandDeactivateValet(const char* pin)
+{
+  string buf;
+  return MsgCommandRestrict(buf, CMD_ValetOff, pin);
 }
 
 

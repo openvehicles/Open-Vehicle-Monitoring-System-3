@@ -736,7 +736,7 @@ CANopenResult_t SevconClient::CfgSpeed(int max_kph, int warn_kph)
 
   // set fwd rpm:
   if (CarLocked())
-    err = sc.Write(0x2920, 0x05, scale(CFG.DefaultRpmMax, CFG.DefaultKphMax, twizy_lock_speed, 0, 65535));
+    err = sc.Write(0x2920, 0x05, scale(CFG.DefaultRpmMax, CFG.DefaultKphMax, m_twizy->twizy_lock_speed, 0, 65535));
   else
     err = sc.Write(0x2920, 0x05, rpm);
   if (err)
@@ -744,7 +744,7 @@ CANopenResult_t SevconClient::CfgSpeed(int max_kph, int warn_kph)
 
   // set rev rpm:
   if (CarLocked())
-    err = sc.Write(0x2920, 0x06, scale(CFG.DefaultRpmMax, CFG.DefaultKphMax, twizy_lock_speed, 0, CFG.DefaultRpmRev));
+    err = sc.Write(0x2920, 0x06, scale(CFG.DefaultRpmMax, CFG.DefaultKphMax, m_twizy->twizy_lock_speed, 0, CFG.DefaultRpmRev));
   else
     err = sc.Write(0x2920, 0x06, LIMIT_MAX(rpm, CFG.DefaultRpmRev));
   if (err)
@@ -1691,4 +1691,51 @@ void SevconClient::KickdownTimer(TimerHandle_t timer)
     me->Kickdown(false);
   else
     xTimerStop(timer, 0);
+}
+
+
+/**
+ * CfgLock: set speed limit
+ */
+CANopenResult_t SevconClient::CfgLock(int lock_kph)
+{
+  SevconJob sc(this);
+  CANopenResult_t err;
+
+  int max_kph = cfgparam(speed);
+  if (max_kph == -1)
+    max_kph = CFG.DefaultKphMax;
+  
+  // parameter validation:
+  if (lock_kph > max_kph)
+    return COR_ERR_ParamRange;
+
+  // set fwd & rev speed:
+  if ((err = sc.Write(0x2920, 0x05, scale(CFG.DefaultRpmMax, CFG.DefaultKphMax, lock_kph, 0, 65535))) != COR_OK)
+    return err;
+  if ((err = sc.Write(0x2920, 0x06, scale(CFG.DefaultRpmMax, CFG.DefaultKphMax, lock_kph, 0, CFG.DefaultRpmRev))) != COR_OK)
+    return err;
+
+  return COR_OK;
+}
+
+/**
+ * CfgUnlock: clear speed limit
+ */
+CANopenResult_t SevconClient::CfgUnlock()
+{
+  SevconJob sc(this);
+  CANopenResult_t err;
+
+  int max_kph = cfgparam(speed);
+  if (max_kph == -1)
+    max_kph = CFG.DefaultKphMax;
+  
+  // set fwd & rev speed:
+  if ((err = sc.Write(0x2920, 0x05, scale(CFG.DefaultRpmMax, CFG.DefaultKphMax, max_kph, 0, 65535))) != COR_OK)
+    return err;
+  if ((err = sc.Write(0x2920, 0x06, scale(CFG.DefaultRpmMax, CFG.DefaultKphMax, max_kph, 0, CFG.DefaultRpmRev))) != COR_OK)
+    return err;
+
+  return COR_OK;
 }
