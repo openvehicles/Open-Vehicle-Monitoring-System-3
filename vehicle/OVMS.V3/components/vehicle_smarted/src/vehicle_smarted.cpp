@@ -273,6 +273,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
         } else {
           StandardMetrics.ms_v_bat_soc->SetValue((float) (d[7]/2));
         }
+        StandardMetrics.ms_v_charge_climit->SetValue(d[1]/2);
         break;
     }
     case 0x2D5: //realSOC
@@ -412,21 +413,21 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     }
     case 0x418: //gear shift
     {
-        switch(d[4]) {
-            case 0xDD: // Parking
-                StandardMetrics.ms_v_env_gear->SetValue(0);
-                break;
-            case 0xBB: // Rear
-                StandardMetrics.ms_v_env_gear->SetValue(-1);
-                break;
-            case 0x00: // Neutral
-                StandardMetrics.ms_v_env_gear->SetValue(0);
-                break;
-            case 0x11: // Drive
-                StandardMetrics.ms_v_env_gear->SetValue(1);
-                break;
-        }
-        break;
+      switch(d[4]) {
+        case 0xDD: // Parking
+          StandardMetrics.ms_v_env_gear->SetValue(0);
+          break;
+        case 0xBB: // Rear
+          StandardMetrics.ms_v_env_gear->SetValue(-1);
+          break;
+        case 0x00: // Neutral
+          StandardMetrics.ms_v_env_gear->SetValue(0);
+          break;
+        case 0x11: // Drive
+          StandardMetrics.ms_v_env_gear->SetValue(1);
+          break;
+      }
+      break;
     }
     case 0x408: //temp outdoor
     {
