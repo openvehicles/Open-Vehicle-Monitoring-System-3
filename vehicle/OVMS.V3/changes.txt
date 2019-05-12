@@ -2,6 +2,14 @@ Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
 
+2019-05-12 MWJ  3.2.002  OTA release
+- Locations: Introduce support for location actions
+- Twizy: Release 1.0.0 -- all V2 features planned are now included in V3
+- Vehicle framework: Regenerative braking signal generation
+- Vehicle framework: DBC and RETOOLS integrations
+- Vehicles: Extensions to Kia Niro, Kia Soul, Mitsubishi, Nissan Leaf,
+  Renault Twizy, SmartID, Tesla Model S, and Think City
+
 2019-01-19 MWJ  3.2.001  OTA release
 - Twizy: support auxiliary charger fan and auxiliary charger
   New configs:
