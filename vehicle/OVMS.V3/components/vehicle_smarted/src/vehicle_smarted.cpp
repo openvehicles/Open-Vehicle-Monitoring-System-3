@@ -79,7 +79,6 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     m_candata_timer     = 0;
     m_candata_poll      = 0;
     m_egpio_timer       = 0;
-    m_charge_timer      = 0;
     
     StandardMetrics.ms_v_charge_mode->SetValue("standard");
     StandardMetrics.ms_v_charge_type->SetValue("type2");
@@ -163,8 +162,6 @@ void OvmsVehicleSmartED::vehicle_smarted_car_on(bool isOn) {
  */
 void OvmsVehicleSmartED::HandleCharging() {
   float limit_soc       = StandardMetrics.ms_v_charge_limit_soc->AsFloat(0);
-  //float charge_current  = StandardMetrics.ms_v_charge_current->AsFloat(0, Amps);
-  //float charge_voltage  = StandardMetrics.ms_v_charge_voltage->AsFloat(0, Volts);
   float charge_current  = StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
   float charge_voltage  = StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
   
@@ -185,14 +182,14 @@ void OvmsVehicleSmartED::HandleCharging() {
 
     // always calculate remaining charge time to full
     float full_soc           = 100.0;     // 100%
-    int   minsremaining_full = calcMinutesRemaining(full_soc);
+    int   minsremaining_full = calcMinutesRemaining(full_soc, charge_voltage, charge_current);
 
     StandardMetrics.ms_v_charge_duration_full->SetValue(minsremaining_full, Minutes);
     ESP_LOGV(TAG, "Time remaining: %d mins to full", minsremaining_full);
     
     if (limit_soc > 0) {
       // if limit_soc is set, then calculate remaining time to limit_soc
-      int minsremaining_soc = calcMinutesRemaining(limit_soc);
+      int minsremaining_soc = calcMinutesRemaining(limit_soc, charge_voltage, charge_current);
 
       StandardMetrics.ms_v_charge_duration_soc->SetValue(minsremaining_soc, Minutes);
       ESP_LOGV(TAG, "Time remaining: %d mins to %0.0f%% soc", minsremaining_soc, limit_soc);
@@ -204,212 +201,229 @@ void OvmsVehicleSmartED::HandleCharging() {
  * Calculates minutes remaining before target is reached. Based on current charge speed.
  * TODO: Should be calculated based on actual charge curve. Maybe in a later version?
  */
-int OvmsVehicleSmartED::calcMinutesRemaining(float target_soc) {
+int OvmsVehicleSmartED::calcMinutesRemaining(float target_soc, float charge_voltage, float charge_current) {
   float bat_soc = StandardMetrics.ms_v_bat_soc->AsFloat(100);
-  if (bat_soc > target_soc)
-    {
+  if (bat_soc > target_soc) {
     return 0;   // Done!
-    }
-
-  //float charge_current  = StandardMetrics.ms_v_charge_current->AsFloat(0, Amps);
-  //float charge_voltage  = StandardMetrics.ms_v_charge_voltage->AsFloat(0, Volts);
-  float charge_current  = StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
-  float charge_voltage  = StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
-
+  }
   float remaining_wh    = DEFAULT_BATTERY_CAPACITY * (target_soc - bat_soc) / 100.0;
   float remaining_hours = remaining_wh / (charge_current * charge_voltage);
   float remaining_mins  = remaining_hours * 60.0;
 
   return MIN( 1440, (int)remaining_mins );
 }
+
+/**
+ * Update charging status
+ */
+void OvmsVehicleSmartED::HandleChargingStatus(bool status) {
+  float charge_current  = StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
+  float charge_voltage  = StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
   
+  if (StandardMetrics.ms_v_door_chargeport->AsBool()) {
+    if (status && charge_voltage > 50 && charge_current > 0) {
+      if (!StandardMetrics.ms_v_charge_inprogress->AsBool()) {
+        StandardMetrics.ms_v_charge_kwh->SetValue(0); // Reset charge kWh
+      }
+      StandardMetrics.ms_v_charge_pilot->SetValue(true);
+      StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+      StandardMetrics.ms_v_charge_state->SetValue("charging");
+      StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+    }
+    else if (!status && !(charge_voltage > 50) && !(charge_current > 0)) {
+      StandardMetrics.ms_v_charge_pilot->SetValue(false);
+      StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+      StandardMetrics.ms_v_charge_state->SetValue("done");
+      StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+    }
+    else if (status && !(charge_voltage > 50) && !(charge_current > 0)) {
+      StandardMetrics.ms_v_charge_state->SetValue("stopped");
+      StandardMetrics.ms_v_charge_substate->SetValue("stopped");
+    }
+  } else if (!(charge_voltage > 50) && !(charge_current > 0)) {
+    StandardMetrics.ms_v_charge_pilot->SetValue(false);
+    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+    StandardMetrics.ms_v_charge_state->SetValue("done");
+    StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+  }
+}
+
 void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     
-    if (m_candata_poll != 1) {
-      ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
-      StandardMetrics.ms_v_env_awake->SetValue(true);
-      m_candata_poll = 1;
-      PollSetState(1);
-    }
-    m_candata_timer = SE_CANDATA_TIMEOUT;
-    
-    uint8_t *d = p_frame->data.u8;
-    
-    switch (p_frame->MsgID) {
+  if (m_candata_poll != 1) {
+    ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
+    StandardMetrics.ms_v_env_awake->SetValue(true);
+    m_candata_poll = 1;
+    PollSetState(1);
+  }
+  m_candata_timer = SE_CANDATA_TIMEOUT;
+  
+  uint8_t *d = p_frame->data.u8;
+  
+  switch (p_frame->MsgID) {
     case 0x6FA: // Vehicle identification number
     {
-        // CarVIN
-        if (d[0]==1) for (int k = 0; k < 7; k++) m_vin[k] = d[k+1];
-        else if (d[0] == 2) for (int k = 0; k < 7; k++) m_vin[k+7] = d[k+1];
-        else if (d[0] == 3) {
-            m_vin[14] = d[1];
-            m_vin[15] = d[2];
-            m_vin[16] = d[3];
-            m_vin[17] = 0;
-        }
-        if ( (m_vin[0] != 0) && (m_vin[7] != 0) && (m_vin[14] != 0) ) {
-            StandardMetrics.ms_v_vin->SetValue(m_vin);
-        }
+      // CarVIN
+      if (d[0]==1) for (int k = 0; k < 7; k++) m_vin[k] = d[k+1];
+      else if (d[0] == 2) for (int k = 0; k < 7; k++) m_vin[k+7] = d[k+1];
+      else if (d[0] == 3) {
+        m_vin[14] = d[1];
+        m_vin[15] = d[2];
+        m_vin[16] = d[3];
+        m_vin[17] = 0;
+      }
+      if ( (m_vin[0] != 0) && (m_vin[7] != 0) && (m_vin[14] != 0) ) {
+        StandardMetrics.ms_v_vin->SetValue(m_vin);
+      }
+      break;
     }
     case 0x518: // displayed SOC
     {
-        /*
-        ID:518 Nibble 15,16 (Wert halbieren)
-        Beispiel:
-        ID: 518  Data: 01 24 00 00 F8 7F C8 A7
-        = A7 (in HEX)
-        = 167 (in base10) und das nun halbieren
-        = 83,5%
-        
-        0x518 01 4E 00 00 F8 7F C8 B4 //Pilotsignal von der Säule - Valide Ja/Nein
-        Pilot valide = 01
-        Pilot wird gemessen != 01 
-        
-        0x518 01 4E 00 00 F8 7F C8 B4 //Pilotsignal von der Säule - max lieferbarer Strom 
-        4E = 78 Faktor 0,5 = 39 Ampere 
-        */
-        if (m_soc_rsoc) {
-          StandardMetrics.ms_v_bat_soh->SetValue((float) (d[7]/2));
-        } else {
-          StandardMetrics.ms_v_bat_soc->SetValue((float) (d[7]/2));
-        }
-        StandardMetrics.ms_v_charge_climit->SetValue(d[1]/2);
-        break;
+      ESP_LOGV(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+      /*
+      ID:518 Nibble 15,16 (Wert halbieren)
+      Beispiel:
+      ID: 518  Data: 01 24 00 00 F8 7F C8 A7
+      = A7 (in HEX)
+      = 167 (in base10) und das nun halbieren
+      = 83,5%
+      
+      0x518 [01] 4E 00 00 F8 7F C8 B4 //Pilotsignal von der Säule - Valide Ja/Nein
+      Pilot valide = 01
+      Pilot wird gemessen != 01 
+      
+      0x518 01 [4E] 00 00 F8 7F C8 B4 //Pilotsignal von der Säule - max lieferbarer Strom 
+      4E = 78 Faktor 0,5 = 39 Ampere 
+      
+      0x518 01 4e 00 00 [f8 7f] c8 b4 // Lade dauer? 
+      */
+      if (m_soc_rsoc) {
+        StandardMetrics.ms_v_bat_soh->SetValue((float) (d[7]/2));
+      } else {
+        StandardMetrics.ms_v_bat_soc->SetValue((float) (d[7]/2));
+      }
+      StandardMetrics.ms_v_charge_climit->SetValue(d[1]/2);
+      HandleChargingStatus(d[1]!=0);
+      break;
     }
     case 0x2D5: //realSOC
     {
-        /*ID:2D5 Nibble 10,11,12 (Wert durch zehn)
-         Beispiel:
-         ID: 2D5  Data: 00 00 4F 14 03 40 00 00
-         = 340 (in HEX)
-         = 832 (in base10) und das nun durch zehn
-         = 83,2% */
-        if (m_soc_rsoc) {
-          StandardMetrics.ms_v_bat_soc->SetValue(((float) ((d[4] & 0x03) * 256 + d[5])) / 10, Percentage);
-        } else {
-          StandardMetrics.ms_v_bat_soh->SetValue(((float) ((d[4] & 0x03) * 256 + d[5])) / 10, Percentage);
-        }
-        break;
+      /*ID:2D5 Nibble 10,11,12 (Wert durch zehn)
+       Beispiel:
+       ID: 2D5  Data: 00 00 4F 14 03 40 00 00
+       = 340 (in HEX)
+       = 832 (in base10) und das nun durch zehn
+       = 83,2% */
+      if (m_soc_rsoc) {
+        StandardMetrics.ms_v_bat_soc->SetValue(((float) ((d[4] & 0x03) * 256 + d[5])) / 10, Percentage);
+      } else {
+        StandardMetrics.ms_v_bat_soh->SetValue(((float) ((d[4] & 0x03) * 256 + d[5])) / 10, Percentage);
+      }
+      break;
     }
     case 0x508: //HV ampere and charging yes/no
     {
-        float HVA = 0;
-        HVA = (float) (d[2] & 0x3F) * 256 + (float) d[3];
-        HVA = (HVA - 0x2000) / 10.0;
-        StandardMetrics.ms_v_bat_current->SetValue(HVA, Amps);
-        if(d[2]&0x40) {
-            if (!StandardMetrics.ms_v_charge_inprogress->AsBool()) {
-              StandardMetrics.ms_v_charge_kwh->SetValue(0); // Reset charge kWh
-            }
-            StandardMetrics.ms_v_charge_pilot->SetValue(true);
-            StandardMetrics.ms_v_door_chargeport->SetValue(true);
-            StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-            //StandardMetrics.ms_v_charge_current->SetValue(StandardMetrics.ms_v_bat_current->AsFloat());
-            //StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
-            StandardMetrics.ms_v_charge_state->SetValue("charging");
-            m_charge_timer = 10;
-        } else {
-            StandardMetrics.ms_v_charge_pilot->SetValue(false);
-            StandardMetrics.ms_v_door_chargeport->SetValue(false);
-            //StandardMetrics.ms_v_charge_current->SetValue(0);
-            //StandardMetrics.ms_v_charge_voltage->SetValue(0);
-            //StandardMetrics.ms_v_charge_state->SetValue("done");
-        }
-        break;
+      //ESP_LOGV(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+      float HVA = 0;
+      HVA = (float) (d[2] & 0x3F) * 256 + (float) d[3];
+      HVA = (HVA - 0x2000) / 10.0;
+      StandardMetrics.ms_v_bat_current->SetValue(HVA, Amps);
+      StandardMetrics.ms_v_door_chargeport->SetValue(d[2]&0x40);
+      break;
     }
     case 0x448: //HV Voltage
     {
-        float HV;
-        float HVA = StandardMetrics.ms_v_bat_current->AsFloat();
-        HV = ((float) d[6] * 256 + (float) d[7]);
-        HV = HV / 10.0;
-        float HVP = (HV * HVA) / 1000;
-        StandardMetrics.ms_v_bat_voltage->SetValue(HV, Volts);
-        StandardMetrics.ms_v_bat_power->SetValue(HVP);
-        break;
+      float HV;
+      float HVA = StandardMetrics.ms_v_bat_current->AsFloat();
+      HV = ((float) d[6] * 256 + (float) d[7]);
+      HV = HV / 10.0;
+      float HVP = (HV * HVA) / 1000;
+      StandardMetrics.ms_v_bat_voltage->SetValue(HV, Volts);
+      StandardMetrics.ms_v_bat_power->SetValue(HVP);
+      break;
     }
     case 0x3D5: //LV Voltage
     {
-        float LV;
-        LV = ((float) d[3]);
-        LV = LV / 10.0;
-        StandardMetrics.ms_v_bat_12v_voltage->SetValue(LV, Volts);
-        break;
+      float LV;
+      LV = ((float) d[3]);
+      LV = LV / 10.0;
+      StandardMetrics.ms_v_bat_12v_voltage->SetValue(LV, Volts);
+      break;
     }
     case 0x412: //ODO
     {
-        /*ID:412 Nibble 7,8,9,10
-         Beispiel:
-         ID: 412  Data: 3B FF 00 63 5D 80 00 10
-         = 635D (in HEX)
-         = 25437 (in base10) Kilometer*/
-        unsigned long ODO = (unsigned long) (d[2] * 65535 + (uint16_t) d[3] * 256
-                + (uint16_t) d[4]);
-        StandardMetrics.ms_v_pos_odometer->SetValue(ODO, Kilometers);
-        break;
+      /*ID:412 Nibble 7,8,9,10
+       Beispiel:
+       ID: 412  Data: 3B FF 00 63 5D 80 00 10
+       = 635D (in HEX)
+       = 25437 (in base10) Kilometer*/
+      unsigned long ODO = (unsigned long) (d[2] * 65535 + (uint16_t) d[3] * 256
+              + (uint16_t) d[4]);
+      StandardMetrics.ms_v_pos_odometer->SetValue(ODO, Kilometers);
+      break;
     }
     case 0x512: // system time? and departure time [0] = hour, [1]= minutes
     {
-        uint32_t time = (d[0] * 60 + d[1]) * 60;
-        mt_vehicle_time->SetValue(time, Seconds);
-        time = (d[2] * 60 + d[3]) * 60;
-        StandardMetrics.ms_v_charge_timerstart->SetValue(time, Seconds);
-        break;
+      uint32_t time = (d[0] * 60 + d[1]) * 60;
+      mt_vehicle_time->SetValue(time, Seconds);
+      time = (d[2] * 60 + d[3]) * 60;
+      StandardMetrics.ms_v_charge_timerstart->SetValue(time, Seconds);
+      break;
     }
     case 0x423: // Zündung,Türen,Fenster,Schloss, Licht, Blinker, Heckscheibenheizung
     {
-        /*D0 is the state of the Ignition Key
-        No Key is 0x40 in D0, Key on is 0x01
+      /*D0 is the state of the Ignition Key
+      No Key is 0x40 in D0, Key on is 0x01
 
-         D1 state of the Turn Lights
-         D2 are the doors (0x00 all close, 0x01 driver open, 0x02 passenger open, etc)
-         D3 state of the Headlamps, etc*/
+       D1 state of the Turn Lights
+       D2 are the doors (0x00 all close, 0x01 driver open, 0x02 passenger open, etc)
+       D3 state of the Headlamps, etc*/
 
-        vehicle_smarted_car_on((d[0] & 0x01) > 0);
-        //StandardMetrics.ms_v_env_on->SetValue((d[0] & 0x01) > 0);
-        StandardMetrics.ms_v_door_fl->SetValue((d[2] & 0x01) > 0);
-        StandardMetrics.ms_v_door_fr->SetValue((d[2] & 0x02) > 0);
-        StandardMetrics.ms_v_door_trunk->SetValue((d[2] & 0x04) > 0);
-        StandardMetrics.ms_v_env_headlights->SetValue((d[3] & 0x02) > 0);
-        //StandardMetrics.ms_v_env_locked->SetBValue();
-        break;
+      vehicle_smarted_car_on((d[0] & 0x01) > 0);
+      //StandardMetrics.ms_v_env_on->SetValue((d[0] & 0x01) > 0);
+      StandardMetrics.ms_v_door_fl->SetValue((d[2] & 0x01) > 0);
+      StandardMetrics.ms_v_door_fr->SetValue((d[2] & 0x02) > 0);
+      StandardMetrics.ms_v_door_trunk->SetValue((d[2] & 0x04) > 0);
+      StandardMetrics.ms_v_env_headlights->SetValue((d[3] & 0x02) > 0);
+      //StandardMetrics.ms_v_env_locked->SetBValue();
+      break;
     }
     case 0x200: // hand brake and speed
     {
-        StandardMetrics.ms_v_env_handbrake->SetValue(d[0]);
-        float velocity = (d[2] * 256 + d[3]) / 18;
-        StandardMetrics.ms_v_pos_speed->SetValue(velocity, Kph);
-        CalculateAcceleration();
-        break;
+      StandardMetrics.ms_v_env_handbrake->SetValue(d[0]);
+      float velocity = (d[2] * 256 + d[3]) / 18;
+      StandardMetrics.ms_v_pos_speed->SetValue(velocity, Kph);
+      CalculateAcceleration();
+      break;
     }
     case 0x236: // paddels recu up and down
     {
-        break;
+      break;
     }
     case 0x318: // range and powerbar
     {
-        float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
-        if(soc > 0) {
-            float smart_range_ideal = (m_range_ideal * soc) / 100;
-            StandardMetrics.ms_v_bat_range_ideal->SetValue(smart_range_ideal); // ToDo
-        }
-        StandardMetrics.ms_v_bat_range_est->SetValue(d[7], Kilometers);
-        StandardMetrics.ms_v_env_throttle->SetValue(d[5]);
-        break;
+      float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
+      if(soc > 0) {
+          float smart_range_ideal = (m_range_ideal * soc) / 100;
+          StandardMetrics.ms_v_bat_range_ideal->SetValue(smart_range_ideal); // ToDo
+      }
+      StandardMetrics.ms_v_bat_range_est->SetValue(d[7], Kilometers);
+      StandardMetrics.ms_v_env_throttle->SetValue(d[5]);
+      break;
     }
     case 0x443: //air condition and fan
     {
-        StandardMetrics.ms_v_env_hvac->SetValue(d[2] & 0xC8);
-        break;
+      StandardMetrics.ms_v_env_hvac->SetValue(d[2] & 0xC8);
+      break;
     }
     case 0x3F2: //Eco display
     {
-        /*myMetrics.->ECO_accel                             = rxBuf[0] >> 1;
-         myMetrics.->ECO_const                               = rxBuf[1] >> 1;
-         myMetrics.->ECO_coast                               = rxBuf[2] >> 1;
-         myMetrics.->ECO_total                               = rxBuf[3] >> 1;
-         */
-        break;
+      /*myMetrics.->ECO_accel                             = rxBuf[0] >> 1;
+       myMetrics.->ECO_const                               = rxBuf[1] >> 1;
+       myMetrics.->ECO_coast                               = rxBuf[2] >> 1;
+       myMetrics.->ECO_total                               = rxBuf[3] >> 1;
+       */
+      break;
     }
     case 0x418: //gear shift
     {
@@ -431,46 +445,46 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     }
     case 0x408: //temp outdoor
     {
-        float TEMPERATUR = ((d[4] - 50 ) - 32 ) / 1.8; 
-        StandardMetrics.ms_v_env_temp->SetValue(TEMPERATUR);
-        break;
+      float TEMPERATUR = ((d[4] - 50 ) - 32 ) / 1.8; 
+      StandardMetrics.ms_v_env_temp->SetValue(TEMPERATUR);
+      break;
     }
     case 0x3CE: //Verbrauch ab Start und ab Reset
     {
-        float energy_used = (d[0] * 256 + d[1]) / 100;
-        float energy_recd = (d[2] * 256 + d[3]) / 100;
-        
-        StandardMetrics.ms_v_bat_energy_used->SetValue(energy_used);
-        StandardMetrics.ms_v_bat_energy_recd->SetValue(energy_recd);
-        break;
+      float energy_used = (d[0] * 256 + d[1]) / 100;
+      float energy_recd = (d[2] * 256 + d[3]) / 100;
+      
+      StandardMetrics.ms_v_bat_energy_used->SetValue(energy_used);
+      StandardMetrics.ms_v_bat_energy_recd->SetValue(energy_recd);
+      break;
     }
     case 0x504: //Strecke ab Start und ab Reset
     {
-        uint16_t value = d[1] * 256 + d[2];
-        if (value != 254) {
-            mt_trip_start->SetValue(value);
-        }
-        value = d[4] * 256 + d[5];
-        if (value != 254) {
-            mt_trip_reset->SetValue(value);
-        }
-        break;
+      uint16_t value = d[1] * 256 + d[2];
+      if (value != 254) {
+        mt_trip_start->SetValue(value);
+      }
+      value = d[4] * 256 + d[5];
+      if (value != 254) {
+        mt_trip_reset->SetValue(value);
+      }
+      break;
     }
     case 0x3D7: //HV Status
     {   //HV active
-        mt_hv_active->SetValue(d[0]);
-        break;
+      mt_hv_active->SetValue(d[0]);
+      break;
     }
     case 0x312: //Powerflow von/zum Motor 
     {
-        /*
-        0x312 08 21 00 00 07 D0 07 D0
-        Benötigt wird Byte 0 und 1, interpretiert als eine Zahl.
-        (0x0821 - 2000) * 0.2 = 14,6% 
-        */
-        break;
+      /*
+      0x312 08 21 00 00 07 D0 07 D0
+      Benötigt wird Byte 0 und 1, interpretiert als eine Zahl.
+      (0x0821 - 2000) * 0.2 = 14,6% 
+      */
+      break;
     }
-    }
+  }
 }
 
 void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
@@ -478,16 +492,9 @@ void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
     if (--m_candata_timer == 0) {
       // Car has gone to sleep
       ESP_LOGI(TAG,"Car has gone to sleep (CAN bus timeout)");
-      //StandardMetrics.ms_v_env_on->SetValue(false);
       StandardMetrics.ms_v_env_awake->SetValue(false);
       PollSetState(0);
       m_candata_poll = 0;
-    }
-  }
-  if (m_charge_timer > 0) {
-    if (--m_charge_timer == 0) {
-      StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-      StandardMetrics.ms_v_charge_state->SetValue("done");
     }
   }
 }
@@ -673,6 +680,99 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandDeactivateValet(const 
     m_egpio_timer = 0;
     StandardMetrics.ms_v_env_valet->SetValue(false);
     return Success;
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandStat(int verbosity, OvmsWriter* writer) {
+  metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
+
+  bool chargeport_open = StdMetrics.ms_v_door_chargeport->AsBool();
+  if (chargeport_open)
+    {
+    std::string charge_mode = StdMetrics.ms_v_charge_mode->AsString();
+    std::string charge_state = StdMetrics.ms_v_charge_state->AsString();
+    bool show_details = !(charge_state == "done" || charge_state == "stopped");
+
+    // Translate mode codes:
+    if (charge_mode == "standard")
+      charge_mode = "Standard";
+    else if (charge_mode == "storage")
+      charge_mode = "Storage";
+    else if (charge_mode == "range")
+      charge_mode = "Range";
+    else if (charge_mode == "performance")
+      charge_mode = "Performance";
+
+    // Translate state codes:
+    if (charge_state == "charging")
+      charge_state = "Charging";
+    else if (charge_state == "topoff")
+      charge_state = "Topping off";
+    else if (charge_state == "done")
+      charge_state = "Charge Done";
+    else if (charge_state == "preparing")
+      charge_state = "Preparing";
+    else if (charge_state == "heating")
+      charge_state = "Charging, Heating";
+    else if (charge_state == "stopped")
+      charge_state = "Charge Stopped";
+
+    writer->printf("%s - %s\n", charge_mode.c_str(), charge_state.c_str());
+
+    if (show_details)
+      {
+      writer->printf("%s/%s\n",
+        (char*) StdMetrics.ms_v_charge_voltage->AsUnitString("-", Native, 1).c_str(),
+        (char*) StdMetrics.ms_v_charge_current->AsUnitString("-", Native, 1).c_str());
+
+      int duration_full = StdMetrics.ms_v_charge_duration_full->AsInt();
+      if (duration_full > 0)
+        writer->printf("Full: %d mins\n", duration_full);
+
+      int duration_soc = StdMetrics.ms_v_charge_duration_soc->AsInt();
+      if (duration_soc > 0)
+        writer->printf("%s: %d mins\n",
+          (char*) StdMetrics.ms_v_charge_limit_soc->AsUnitString("SOC", Native, 0).c_str(),
+          duration_soc);
+
+      int duration_range = StdMetrics.ms_v_charge_duration_range->AsInt();
+      if (duration_range > 0)
+        writer->printf("%s: %d mins\n",
+          (char*) StdMetrics.ms_v_charge_limit_range->AsUnitString("Range", rangeUnit, 0).c_str(),
+          duration_range);
+      }
+    }
+  else
+    {
+    writer->puts("Not charging");
+    }
+
+  writer->printf("SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
+
+  const char* range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("-", rangeUnit, 0).c_str();
+  if (*range_ideal != '-')
+    writer->printf("Ideal range: %s\n", range_ideal);
+
+  const char* range_est = StdMetrics.ms_v_bat_range_est->AsUnitString("-", rangeUnit, 0).c_str();
+  if (*range_est != '-')
+    writer->printf("Est. range: %s\n", range_est);
+
+  const char* chargedkwh = StdMetrics.ms_v_charge_kwh->AsUnitString("-", Native, 2).c_str();
+  if (*chargedkwh != '-')
+    writer->printf("Energy charged: %s\n", chargedkwh);
+
+  const char* odometer = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
+  if (*odometer != '-')
+    writer->printf("ODO: %s\n", odometer);
+
+  const char* cac = StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str();
+  if (*cac != '-')
+    writer->printf("CAC: %s\n", cac);
+
+  const char* soh = StdMetrics.ms_v_bat_soh->AsUnitString("-", Native, 0).c_str();
+  if (*soh != '-')
+    writer->printf("SOH: %s\n", soh);
+
+  return Success;
 }
 #endif
 

@@ -68,6 +68,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
     virtual vehicle_command_t CommandActivateValet(const char* pin);
     virtual vehicle_command_t CommandDeactivateValet(const char* pin);
+    virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
     
   protected:
     virtual void Ticker1(uint32_t ticker);
@@ -78,7 +79,8 @@ class OvmsVehicleSmartED : public OvmsVehicle
     TimerHandle_t m_locking_timer;
     
     void HandleCharging();
-    int  calcMinutesRemaining(float target);
+    int  calcMinutesRemaining(float target, float charge_voltage, float charge_current);
+    void HandleChargingStatus(bool status);
     void PollReply_BMS_BattVolts(uint8_t reply_data[], uint16_t reply_len);
     void PollReply_BMS_BattTemp(uint8_t reply_data[], uint16_t reply_len);
     void PollReply_BMS_ModuleTemp(uint8_t reply_data[], uint16_t reply_len);
@@ -98,7 +100,6 @@ class OvmsVehicleSmartED : public OvmsVehicle
     unsigned int m_candata_timer;
     unsigned int m_candata_poll;
     unsigned int m_egpio_timer;
-    unsigned int m_charge_timer;
 
   protected:
     int m_doorlock_port;                    // … MAX7317 output port number (3…9, default 9 = EGPIO_8)
