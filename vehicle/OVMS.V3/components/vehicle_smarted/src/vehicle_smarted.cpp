@@ -230,13 +230,13 @@ void OvmsVehicleSmartED::HandleChargingStatus(bool status) {
       StandardMetrics.ms_v_charge_state->SetValue("charging");
       StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
     }
-    else if (!status && !(charge_voltage > 50) && !(charge_current > 0)) {
+    else if (!status && (charge_voltage > 50) && !(charge_current > 0)) {
       StandardMetrics.ms_v_charge_pilot->SetValue(false);
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
       StandardMetrics.ms_v_charge_state->SetValue("done");
       StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
     }
-    else if (status && !(charge_voltage > 50) && !(charge_current > 0)) {
+    else if (status && (charge_voltage > 50) && !(charge_current > 0)) {
       StandardMetrics.ms_v_charge_state->SetValue("stopped");
       StandardMetrics.ms_v_charge_substate->SetValue("stopped");
     }
@@ -279,23 +279,23 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     }
     case 0x518: // displayed SOC
     {
-      ESP_LOGV(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+      //ESP_LOGV(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       /*
-      ID:518 Nibble 15,16 (Wert halbieren)
-      Beispiel:
+      ID:518 Nibble 15,16 (Cut the value in half)
+      example:
       ID: 518  Data: 01 24 00 00 F8 7F C8 A7
       = A7 (in HEX)
-      = 167 (in base10) und das nun halbieren
+      = 167 (in base10) and halve that now
       = 83,5%
       
-      0x518 [01] 4E 00 00 F8 7F C8 B4 //Pilotsignal von der Säule - Valide Ja/Nein
-      Pilot valide = 01
-      Pilot wird gemessen != 01 
+      0x518 [01] 4E 00 00 F8 7F C8 B4 //Pilot signal from the column - valid Yes / No
+      Pilot valid = 01
+      Pilot is measured != 01 
       
-      0x518 01 [4E] 00 00 F8 7F C8 B4 //Pilotsignal von der Säule - max lieferbarer Strom 
-      4E = 78 Faktor 0,5 = 39 Ampere 
+      0x518 01 [4E] 00 00 F8 7F C8 B4 //Pilot signal from the column - max. Supply current
+      4E = 78 factor 0,5 = 39 Ampere 
       
-      0x518 01 4e 00 00 [f8 7f] c8 b4 // Lade dauer? 
+      0x518 01 4e 00 00 [f8 7f] c8 b4 // Charge duration? 
       */
       if (m_soc_rsoc) {
         StandardMetrics.ms_v_bat_soh->SetValue((float) (d[7]/2));
@@ -308,11 +308,11 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     }
     case 0x2D5: //realSOC
     {
-      /*ID:2D5 Nibble 10,11,12 (Wert durch zehn)
-       Beispiel:
+      /*ID:2D5 Nibble 10,11,12 (Value by ten)
+       example:
        ID: 2D5  Data: 00 00 4F 14 03 40 00 00
        = 340 (in HEX)
-       = 832 (in base10) und das nun durch zehn
+       = 832 (in base10) and now by ten
        = 83,2% */
       if (m_soc_rsoc) {
         StandardMetrics.ms_v_bat_soc->SetValue(((float) ((d[4] & 0x03) * 256 + d[5])) / 10, Percentage);
@@ -353,10 +353,10 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     case 0x412: //ODO
     {
       /*ID:412 Nibble 7,8,9,10
-       Beispiel:
+       Example:
        ID: 412  Data: 3B FF 00 63 5D 80 00 10
        = 635D (in HEX)
-       = 25437 (in base10) Kilometer*/
+       = 25437 (in base10) kilometre*/
       unsigned long ODO = (unsigned long) (d[2] * 65535 + (uint16_t) d[3] * 256
               + (uint16_t) d[4]);
       StandardMetrics.ms_v_pos_odometer->SetValue(ODO, Kilometers);
@@ -370,7 +370,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
       StandardMetrics.ms_v_charge_timerstart->SetValue(time, Seconds);
       break;
     }
-    case 0x423: // Zündung,Türen,Fenster,Schloss, Licht, Blinker, Heckscheibenheizung
+    case 0x423: // Ignition, doors, windows, lock, lights, turn signals, rear window heating
     {
       /*D0 is the state of the Ignition Key
       No Key is 0x40 in D0, Key on is 0x01
@@ -385,7 +385,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
       StandardMetrics.ms_v_door_fr->SetValue((d[2] & 0x02) > 0);
       StandardMetrics.ms_v_door_trunk->SetValue((d[2] & 0x04) > 0);
       StandardMetrics.ms_v_env_headlights->SetValue((d[3] & 0x02) > 0);
-      //StandardMetrics.ms_v_env_locked->SetBValue();
+      //StandardMetrics.ms_v_env_locked->SetValue();
       break;
     }
     case 0x200: // hand brake and speed
@@ -413,7 +413,13 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     }
     case 0x443: //air condition and fan
     {
-      StandardMetrics.ms_v_env_hvac->SetValue(d[2] & 0xC8);
+      if (StandardMetrics.ms_v_env_on->AsBool()) 
+        StandardMetrics.ms_v_env_hvac->SetValue((d[0] & 0x80) > 0);
+      else
+        StandardMetrics.ms_v_env_hvac->SetValue(d[2] > 0);
+      
+      StandardMetrics.ms_v_env_cooling->SetValue(d[2] == 0);
+      StandardMetrics.ms_v_env_heating->SetValue(d[2] > 0);
       break;
     }
     case 0x3F2: //Eco display
@@ -449,7 +455,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
       StandardMetrics.ms_v_env_temp->SetValue(TEMPERATUR);
       break;
     }
-    case 0x3CE: //Verbrauch ab Start und ab Reset
+    case 0x3CE: //Consumption from start and from reset
     {
       float energy_used = (d[0] * 256 + d[1]) / 100;
       float energy_recd = (d[2] * 256 + d[3]) / 100;
@@ -458,7 +464,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
       StandardMetrics.ms_v_bat_energy_recd->SetValue(energy_recd);
       break;
     }
-    case 0x504: //Strecke ab Start und ab Reset
+    case 0x504: //Distance from start and from reset
     {
       uint16_t value = d[1] * 256 + d[2];
       if (value != 254) {
@@ -475,11 +481,11 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
       mt_hv_active->SetValue(d[0]);
       break;
     }
-    case 0x312: //Powerflow von/zum Motor 
+    case 0x312: //Powerflow from/to Engine 
     {
       /*
       0x312 08 21 00 00 07 D0 07 D0
-      Benötigt wird Byte 0 und 1, interpretiert als eine Zahl.
+      Requires bytes 0 and 1, interpreted as a number.
       (0x0821 - 2000) * 0.2 = 14,6% 
       */
       break;
@@ -522,9 +528,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandClimateControl(bool en
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool timeron, uint32_t timerstart) {
     //Set the charge start time as seconds since midnight or 8 Bit hour and 8 bit minutes?
-    /*Mit
+    /*With
      0x512 00 00 12 1E 00 00 00 00
-     setzt man z.B. die Uhrzeit auf 18:30. Maskiert man nun Byte 3 (0x12) mit 0x40 (und setzt so dort das zweite Bit auf High) wird die A/C Funktion mit aktiviert.
+     if one sets e.g. the time at 18:30. If you now mask byte 3 (0x12) with 0x40 (and set the second bit to high there), the A / C function is also activated.
     */
     if(timerstart == 0) { 
         return Fail;
@@ -567,11 +573,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool ti
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeCurrent(uint16_t limit) {
-    /*Den Ladestrom ändert man mit
+    /*The charging current changes with
      0x512 00 00 1F FF 00 7C 00 00 auf 12A.
-     8A = 0x74, 12A = 0x7C and 32A = 0xA4 (als max. bei 22kW).
-     Also einen Offset berechnen 0xA4 = d164: z.B. 12A = 0xA4 - 0x7C = 0x28 = d40 -> vom Maximum (0xA4 = 32A) abziehen
-     und dann durch zwei dividieren, um auf den Wert für 20A zu kommen (mit 0,5A Auflösung).
+     8A = 0x74, 12A = 0x7C and 32A = 0xA4 (as max. at 22kW).
+     So calculate an offset 0xA4 = d164: e.g. 12A = 0xA4 - 0x7C = 0x28 = d40 -> subtract from the maximum (0xA4 = 32A)
+      then divide by two to get the value for 20A (with 0.5A resolution).
     */
 
     CAN_frame_t frame;
@@ -613,6 +619,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
     0x218 00 00 00 00 00 00 00 00 or
     0x210 00 00 00 01 00 00 00 00
     Both patterns should comply with the Bosch CAN bus spec. for waking up a sleeping bus with recessive bits.
+    0x423 01 00 00 00 will wake up the CAN bus but not the right on.
     */
 
     ESP_LOGI(TAG, "Send Wakeup Command");

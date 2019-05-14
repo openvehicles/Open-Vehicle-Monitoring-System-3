@@ -66,7 +66,7 @@ void OvmsVehicleSmartED::WebDeInit()
 {
   MyWebServer.DeregisterPage("/xse/features");
   MyWebServer.DeregisterPage("/xse/brakelight");
-  //MyWebServer.DeregisterPage("/bms/cellmon");
+  MyWebServer.DeregisterPage("/bms/cellmon");
 }
 
 /**
