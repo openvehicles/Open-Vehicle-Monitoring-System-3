@@ -220,6 +220,7 @@ void OvmsVehicleSmartED::PollReply_NLG6_ChargerVoltages(uint8_t reply_data[], ui
       NLG6MainsVoltage[0] = (reply_data[8] * 256 + reply_data[9])/10.0;
     } else {
       NLG6MainsVoltage[0] = 0;
+      //NLG6MainsVoltage[0] = StandardMetrics.ms_v_charge_voltage->AsFloat(0);
     }
     NLG6MainsVoltage[1] = 0;
     NLG6MainsVoltage[2] = 0;
@@ -243,9 +244,9 @@ void OvmsVehicleSmartED::PollReply_NLG6_ChargerAmps(uint8_t reply_data[], uint16
   } else {
     if ((reply_data[3] * 256 + reply_data[4]) != 2047) {  //OBL showing only valid data while charging
       NLG6MainsAmps[0] = (reply_data[3] * 256 + reply_data[4])/10.0;
-
     } else {
       NLG6MainsAmps[0] = 0;
+      //NLG6MainsAmps[0] = StandardMetrics.ms_v_charge_current->AsFloat(0);
     }
     NLG6MainsAmps[1] = 0;
     NLG6MainsAmps[2] = 0;

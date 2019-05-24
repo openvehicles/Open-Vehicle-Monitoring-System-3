@@ -80,6 +80,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     
     void HandleCharging();
     int  calcMinutesRemaining(float target, float charge_voltage, float charge_current);
+    void calcBusAktivity(bool state, uint8_t pos);
     void HandleChargingStatus(bool status);
     void PollReply_BMS_BattVolts(uint8_t reply_data[], uint16_t reply_len);
     void PollReply_BMS_BattTemp(uint8_t reply_data[], uint16_t reply_len);
@@ -95,6 +96,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     OvmsMetricInt *mt_trip_start;           // trip since start
     OvmsMetricInt *mt_trip_reset;           // trip since Reset
     OvmsMetricBool *mt_hv_active;           // HV active
+    OvmsMetricBool *mt_c_active;            // charge active
 
   private:
     unsigned int m_candata_timer;
@@ -108,7 +110,8 @@ class OvmsVehicleSmartED : public OvmsVehicle
     int m_range_ideal;                      // … Range Ideal (default 135 km)
     int m_egpio_timout;                     // … EGPIO Ignition Timout (default 5 min)
     bool m_soc_rsoc;                        // Display SOC=SOC or rSOC=SOC
-    
+
+  protected:
     char NLG6_PN_HW[12] = "4519822221";     //!< Part number for NLG6 fast charging hardware
     bool NLG6present = false;               //!< Flag to show NLG6 detected in system
     float NLG6MainsAmps[3];                 //!< AC current of L1, L2, L3

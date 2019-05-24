@@ -65,9 +65,10 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     
     // init metrics:
     mt_vehicle_time = MyMetrics.InitInt("v.display.time", SM_STALE_MIN, 0);
-    mt_trip_start = MyMetrics.InitInt("v.display.trip.start", SM_STALE_MIN, 0);
-    mt_trip_reset = MyMetrics.InitInt("v.display.trip.reset", SM_STALE_MIN, 0);
-    mt_hv_active = MyMetrics.InitBool("v.b.hv.active", SM_STALE_MIN, false);
+    mt_trip_start   = MyMetrics.InitInt("v.display.trip.start", SM_STALE_MIN, 0);
+    mt_trip_reset   = MyMetrics.InitInt("v.display.trip.reset", SM_STALE_MIN, 0);
+    mt_hv_active    = MyMetrics.InitBool("v.b.hv.active", SM_STALE_MIN, false);
+    mt_c_active     = MyMetrics.InitBool("v.c.active", SM_STALE_MIN, false);
 
     m_doorlock_port     = 9;
     m_doorunlock_port   = 8;
@@ -83,6 +84,7 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     StandardMetrics.ms_v_charge_mode->SetValue("standard");
     StandardMetrics.ms_v_charge_type->SetValue("type2");
     StandardMetrics.ms_v_charge_limit_soc->SetValue(80);
+    StandardMetrics.ms_v_door_chargeport->SetValue(false);
     
     // BMS configuration:
     BmsSetCellArrangementVoltage(93, 1);
@@ -213,14 +215,47 @@ int OvmsVehicleSmartED::calcMinutesRemaining(float target_soc, float charge_volt
   return MIN( 1440, (int)remaining_mins );
 }
 
+void OvmsVehicleSmartED::calcBusAktivity(bool state, uint8_t pos) {
+  static uint8_t counter_a = 0;
+  static uint8_t counter_b = 0;
+  
+  switch (pos) {
+    case 1:
+      if (state != StandardMetrics.ms_v_door_chargeport->AsBool()) {
+        counter_a++;
+      } else {
+        counter_a = 0;
+      }
+      if (counter_a == 5) {
+        StandardMetrics.ms_v_door_chargeport->SetValue(state);
+        counter_a = 0;
+      }
+    break;
+    case 2:
+      if (state != mt_c_active->AsBool()) {
+        counter_b++;
+      } else {
+        counter_b = 0;
+      }
+      if (counter_b == 5) {
+        mt_c_active->SetValue(state);
+        counter_b = 0;
+      }
+    break;
+  }
+}
+
 /**
  * Update charging status
  */
 void OvmsVehicleSmartED::HandleChargingStatus(bool status) {
   float charge_current  = StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
   float charge_voltage  = StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
+  bool climit           = (StandardMetrics.ms_v_charge_climit->AsInt(0)!=0 ? true : false);
+  bool port             = StandardMetrics.ms_v_door_chargeport->AsBool();
+  int soc               = StandardMetrics.ms_v_bat_soc->AsInt(0);
   
-  if (StandardMetrics.ms_v_door_chargeport->AsBool()) {
+  if (port) {
     if (status && charge_voltage > 50 && charge_current > 0) {
       if (!StandardMetrics.ms_v_charge_inprogress->AsBool()) {
         StandardMetrics.ms_v_charge_kwh->SetValue(0); // Reset charge kWh
@@ -230,17 +265,17 @@ void OvmsVehicleSmartED::HandleChargingStatus(bool status) {
       StandardMetrics.ms_v_charge_state->SetValue("charging");
       StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
     }
-    else if (!status && (charge_voltage > 50) && !(charge_current > 0)) {
+    else if (!status && !climit) {
       StandardMetrics.ms_v_charge_pilot->SetValue(false);
-      StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+      //StandardMetrics.ms_v_charge_inprogress->SetValue(false);
       StandardMetrics.ms_v_charge_state->SetValue("done");
       StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
     }
-    else if (status && (charge_voltage > 50) && !(charge_current > 0)) {
+    else if (!status && climit && soc < 99) {
       StandardMetrics.ms_v_charge_state->SetValue("stopped");
       StandardMetrics.ms_v_charge_substate->SetValue("stopped");
     }
-  } else if (!(charge_voltage > 50) && !(charge_current > 0)) {
+  } else if (!status) {
     StandardMetrics.ms_v_charge_pilot->SetValue(false);
     StandardMetrics.ms_v_charge_inprogress->SetValue(false);
     StandardMetrics.ms_v_charge_state->SetValue("done");
@@ -261,6 +296,16 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
   uint8_t *d = p_frame->data.u8;
   
   switch (p_frame->MsgID) {
+    case 0x168:
+    {
+      bool active;
+      if (d[7] == 0x20 || d[7] == 0x40)
+        active = true;
+      else
+        active = false;
+      calcBusAktivity(active, 2);
+      break;
+    }
     case 0x6FA: // Vehicle identification number
     {
       // CarVIN
@@ -303,7 +348,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
         StandardMetrics.ms_v_bat_soc->SetValue((float) (d[7]/2));
       }
       StandardMetrics.ms_v_charge_climit->SetValue(d[1]/2);
-      HandleChargingStatus(d[1]!=0);
+      //HandleChargingStatus(d[1]!=0);
       break;
     }
     case 0x2D5: //realSOC
@@ -328,7 +373,9 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
       HVA = (float) (d[2] & 0x3F) * 256 + (float) d[3];
       HVA = (HVA - 0x2000) / 10.0;
       StandardMetrics.ms_v_bat_current->SetValue(HVA, Amps);
-      StandardMetrics.ms_v_door_chargeport->SetValue(d[2]&0x40);
+      
+      calcBusAktivity((d[2]&0x40), 1);
+      //StandardMetrics.ms_v_door_chargeport->SetValue((d[2]&0x40));
       break;
     }
     case 0x448: //HV Voltage
@@ -503,6 +550,8 @@ void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
       m_candata_poll = 0;
     }
   }
+  if (StandardMetrics.ms_v_env_awake->AsBool())
+    HandleChargingStatus(mt_c_active->AsBool());
 }
 
 void OvmsVehicleSmartED::Ticker10(uint32_t ticker) {
