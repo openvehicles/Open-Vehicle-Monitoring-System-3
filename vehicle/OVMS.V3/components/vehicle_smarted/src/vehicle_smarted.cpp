@@ -64,11 +64,28 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     memset(m_vin, 0, sizeof(m_vin));
     
     // init metrics:
-    mt_vehicle_time = MyMetrics.InitInt("v.display.time", SM_STALE_MIN, 0);
-    mt_trip_start   = MyMetrics.InitInt("v.display.trip.start", SM_STALE_MIN, 0);
-    mt_trip_reset   = MyMetrics.InitInt("v.display.trip.reset", SM_STALE_MIN, 0);
-    mt_hv_active    = MyMetrics.InitBool("v.b.hv.active", SM_STALE_MIN, false);
-    mt_c_active     = MyMetrics.InitBool("v.c.active", SM_STALE_MIN, false);
+    mt_vehicle_time          = MyMetrics.InitInt("v.display.time", SM_STALE_MIN, 0);
+    mt_trip_start            = MyMetrics.InitInt("v.display.trip.start", SM_STALE_MIN, 0);
+    mt_trip_reset            = MyMetrics.InitInt("v.display.trip.reset", SM_STALE_MIN, 0);
+    mt_hv_active             = MyMetrics.InitBool("v.b.hv.active", SM_STALE_MIN, false);
+    mt_c_active              = MyMetrics.InitBool("v.c.active", SM_STALE_MIN, false);
+    mt_bat_energy_used_start = MyMetrics.InitFloat("v.b.energy.used.start", SM_STALE_MID, kWh);
+    mt_bat_energy_used_reset = MyMetrics.InitFloat("v.b.energy.used.reset", SM_STALE_MID, kWh);
+
+    mt_nlg6_present             = MyMetrics.InitBool("v.nlg6.present", SM_STALE_MIN, false);
+    mt_nlg6_main_volts          = new OvmsMetricVector<float>("v.nlg6.main.volts", SM_STALE_HIGH, Volts);
+    mt_nlg6_main_amps           = new OvmsMetricVector<float>("v.nlg6.main.amps", SM_STALE_HIGH, Amps);
+    mt_nlg6_amps_setpoint       = MyMetrics.InitFloat("v.nlg6.amps.setpoint", SM_STALE_MIN, Amps);
+    mt_nlg6_amps_cablecode      = MyMetrics.InitFloat("v.nlg6.amps.cablecode", SM_STALE_MIN, Amps);
+    mt_nlg6_amps_chargingpoint  = MyMetrics.InitFloat("v.nlg6.amps.chargingpoint", SM_STALE_MIN, Amps);
+    mt_nlg6_dc_current          = MyMetrics.InitFloat("v.nlg6.dc.current", SM_STALE_MIN, Volts);
+    mt_nlg6_dc_hv               = MyMetrics.InitFloat("v.nlg6.dc.hv", SM_STALE_MIN, Volts);
+    mt_nlg6_dc_lv               = MyMetrics.InitFloat("v.nlg6.dc.lv", SM_STALE_MIN, Volts);
+    mt_nlg6_temps               = new OvmsMetricVector<float>("v.nlg6.temps", SM_STALE_HIGH, Celcius);
+    mt_nlg6_temp_reported       = MyMetrics.InitFloat("v.nlg6.temp.reported", SM_STALE_MIN, Celcius);
+    mt_nlg6_temp_socket         = MyMetrics.InitFloat("v.nlg6.temp.socket", SM_STALE_MIN, Celcius);
+    mt_nlg6_temp_coolingplate   = MyMetrics.InitFloat("v.nlg6.temp.coolingplate", SM_STALE_MIN, Celcius);
+    mt_nlg6_pn_hw               = MyMetrics.InitString("v.nlg6.pn.hw", SM_STALE_MIN, 0);
 
     m_doorlock_port     = 9;
     m_doorunlock_port   = 8;
@@ -504,11 +521,11 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     }
     case 0x3CE: //Consumption from start and from reset
     {
-      float energy_used = (d[0] * 256 + d[1]) / 100;
-      float energy_recd = (d[2] * 256 + d[3]) / 100;
+      float energy_start = (d[0] * 256 + d[1]) / 100;
+      float energy_reset = (d[2] * 256 + d[3]) / 100;
       
-      StandardMetrics.ms_v_bat_energy_used->SetValue(energy_used);
-      StandardMetrics.ms_v_bat_energy_recd->SetValue(energy_recd);
+      mt_bat_energy_used_start->SetValue(energy_start);
+      mt_bat_energy_used_reset->SetValue(energy_reset);
       break;
     }
     case 0x504: //Distance from start and from reset
@@ -540,6 +557,28 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
   }
 }
 
+/**
+ * Update derived energy metrics while driving
+ * Called once per second from Ticker1
+ */
+void OvmsVehicleSmartED::HandleEnergy() {
+  float voltage  = StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
+  float current  = StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
+
+  // Power (in kw) resulting from voltage and current
+  float power = voltage * current / 1000.0;
+
+  // Are we driving?
+  if (power != 0.0 && StandardMetrics.ms_v_env_on->AsBool()) {
+    // Update energy used and recovered
+    float energy = power / 3600.0;    // 1 second worth of energy in kwh's
+    if (energy < 0.0f)
+      StandardMetrics.ms_v_bat_energy_used->SetValue( StandardMetrics.ms_v_bat_energy_used->AsFloat() - energy);
+    else // (energy > 0.0f)
+      StandardMetrics.ms_v_bat_energy_recd->SetValue( StandardMetrics.ms_v_bat_energy_recd->AsFloat() + energy);
+  }
+}
+
 void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
   if (m_candata_timer > 0) {
     if (--m_candata_timer == 0) {
@@ -550,6 +589,7 @@ void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
       m_candata_poll = 0;
     }
   }
+  HandleEnergy();
   if (StandardMetrics.ms_v_env_awake->AsBool())
     HandleChargingStatus(mt_c_active->AsBool());
 }
@@ -812,7 +852,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandStat(int verbosity, Ov
   if (*range_est != '-')
     writer->printf("Est. range: %s\n", range_est);
 
-  const char* chargedkwh = StdMetrics.ms_v_charge_kwh->AsUnitString("-", Native, 2).c_str();
+  const char* chargedkwh = StdMetrics.ms_v_charge_kwh->AsUnitString("-", Native, 3).c_str();
   if (*chargedkwh != '-')
     writer->printf("Energy charged: %s\n", chargedkwh);
 
