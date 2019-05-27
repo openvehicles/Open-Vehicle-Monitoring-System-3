@@ -1086,7 +1086,6 @@ void RSAKeyGenerator::Service()
     ESP_LOGE(tag, "Failed to convert SSH server key to DER format, error = %d", size);
     return;
     }
-  MyConfig.SetParamValueBinary("ssh.server", "key", std::string((char*)m_der, size));
 
   // Calculate the SHA256 fingerprint of the public half of the key, which
   // is the hash of the 32-bit length of the item and the item itself for
@@ -1127,6 +1126,7 @@ void RSAKeyGenerator::Service()
     }
   fp[43] = '\0';
   MyConfig.SetParamValue("ssh.info", "fingerprint", std::string((char*)fp, fplen));
+  MyConfig.SetParamValueBinary("ssh.server", "key", std::string((char*)m_der, size));
 
   if (wc_FreeRsaKey(&key) != 0)
     ESP_LOGE(tag, "RSA key free failed");
