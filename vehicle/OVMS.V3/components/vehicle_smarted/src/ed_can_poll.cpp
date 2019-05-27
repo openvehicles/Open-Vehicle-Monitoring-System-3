@@ -186,16 +186,21 @@ void OvmsVehicleSmartED::PollReply_NLG6_ChargerPN_HW(uint8_t reply_data[], uint1
   
   int n;
   int comp = 0;
-  for (n = 1; n < 14; n++) {
+  char NLG6PN_HW[12];
+  memset(NLG6PN_HW, 0, sizeof(NLG6PN_HW));
+  
+  for (n = 1; n < 12; n++) {
     NLG6PN_HW[n - 1] = reply_data[n];
     if (reply_data[n] == NLG6_PN_HW[n - 1]) {
       comp++;
     }
   }
+  mt_nlg6_pn_hw->SetValue(NLG6PN_HW);
+  
   if (comp == 10){
-    NLG6present = true;
+    mt_nlg6_present->SetValue(true);
   } else {
-    NLG6present = false;
+    mt_nlg6_present->SetValue(false);
   }
 }
 
@@ -203,18 +208,20 @@ void OvmsVehicleSmartED::PollReply_NLG6_ChargerVoltages(uint8_t reply_data[], ui
   ESP_LOGD(TAG, "PollReply_NLG6_ChargerVoltages: len=%d ", reply_len);
   PollReply_LogDebug("PollReply_NLG6_ChargerVoltages", reply_data, reply_len);
   
-  if (NLG6present){
-    NLG6LV = reply_data[5]/10.0;
-    NLG6DC_HV = (reply_data[6] * 256 + reply_data[7])/10.0;
+  float NLG6MainsVoltage[3];
+  
+  if (mt_nlg6_present->AsBool()){
+    mt_nlg6_dc_lv->SetValue(reply_data[5]/10.0);
+    mt_nlg6_dc_hv->SetValue((reply_data[6] * 256 + reply_data[7])/10.0);
     NLG6MainsVoltage[0] = (reply_data[8] * 256 + reply_data[9])/10.0;
     NLG6MainsVoltage[1] = (reply_data[10] * 256 + reply_data[11])/10.0;
     NLG6MainsVoltage[2] = (reply_data[12] * 256 + reply_data[13])/10.0;
   } else {
-    NLG6LV = reply_data[3]/10.0;
+    mt_nlg6_dc_lv->SetValue(reply_data[3]/10.0);
     if ((reply_data[6] * 256 + reply_data[7]) != 8190) {  //OBL showing only valid data while charging
-      NLG6DC_HV = (reply_data[6] * 256 + reply_data[7])/10.0;
+      mt_nlg6_dc_hv->SetValue((reply_data[6] * 256 + reply_data[7])/10.0);
     } else {
-      NLG6DC_HV = 0;
+      mt_nlg6_dc_hv->SetValue(0);
     }
     if ((reply_data[8] * 256 + reply_data[9]) != 8190) {  //OBL showing only valid data while charging
       NLG6MainsVoltage[0] = (reply_data[8] * 256 + reply_data[9])/10.0;
@@ -224,77 +231,76 @@ void OvmsVehicleSmartED::PollReply_NLG6_ChargerVoltages(uint8_t reply_data[], ui
     NLG6MainsVoltage[1] = 0;
     NLG6MainsVoltage[2] = 0;
   }
-  StandardMetrics.ms_v_charge_voltage->SetValue(NLG6MainsVoltage[0]);
-  
-  ESP_LOGD(TAG, "NLG6MainsVoltage: %f, NLG6LV: %f, NLG6DC_HV: %f", NLG6MainsVoltage[0], NLG6LV, NLG6DC_HV);
+  mt_nlg6_main_volts->SetElemValues(0, 3, NLG6MainsVoltage);
+  if (NLG6MainsVoltage[0] != 0) StandardMetrics.ms_v_charge_voltage->SetValue(NLG6MainsVoltage[0]);
 }
 
 void OvmsVehicleSmartED::PollReply_NLG6_ChargerAmps(uint8_t reply_data[], uint16_t reply_len) {
   ESP_LOGD(TAG, "PollReply_NLG6_ChargerAmps: len=%d ", reply_len);
   PollReply_LogDebug("PollReply_NLG6_ChargerAmps", reply_data, reply_len);
   
-  if (NLG6present){
-    NLG6DC_Current = (reply_data[1] * 256 + reply_data[2])/10.0; 
+  float NLG6MainsAmps[3]; 
+  
+  if (mt_nlg6_present->AsBool()){
+    mt_nlg6_dc_current->SetValue((reply_data[1] * 256 + reply_data[2])/10.0); 
     NLG6MainsAmps[0] = (reply_data[3] * 256 + reply_data[4])/10.0;  
     NLG6MainsAmps[1] = (reply_data[5] * 256 + reply_data[6])/10.0;
     NLG6MainsAmps[2] = (reply_data[7] * 256 + reply_data[8])/10.0; 
-    NLG6AmpsChargingpoint = (reply_data[13] * 256 + reply_data[14])/10.0;
-    NLG6AmpsCableCode = (reply_data[15] * 256 + reply_data[16])/10.0;
+    mt_nlg6_amps_chargingpoint->SetValue((reply_data[13] * 256 + reply_data[14])/10.0);
+    mt_nlg6_amps_cablecode->SetValue((reply_data[15] * 256 + reply_data[16])/10.0);
   } else {
     if ((reply_data[3] * 256 + reply_data[4]) != 2047) {  //OBL showing only valid data while charging
       NLG6MainsAmps[0] = (reply_data[3] * 256 + reply_data[4])/10.0;
-
     } else {
       NLG6MainsAmps[0] = 0;
     }
     NLG6MainsAmps[1] = 0;
     NLG6MainsAmps[2] = 0;
-    NLG6AmpsChargingpoint = 0;
+    mt_nlg6_amps_chargingpoint->SetValue(0);
     if ((reply_data[15] * 256 + reply_data[16]) != 2047) {  //OBL showing only valid data while charging
-      NLG6DC_Current = (reply_data[15] * 256 + reply_data[16])/10.0;
+      mt_nlg6_dc_current->SetValue((reply_data[15] * 256 + reply_data[16])/10.0);
     } else {
-      NLG6DC_Current = 0;
+      mt_nlg6_dc_current->SetValue(0);
     }
     //Usable AmpsCode from Cable seem to be also a word with OBL as with NLG6?!
-    NLG6AmpsCableCode = (reply_data[5] * 256 + reply_data[6])/10.0;
+    mt_nlg6_amps_cablecode->SetValue((reply_data[5] * 256 + reply_data[6])/10.0);
     //NLG6AmpsCableCode = data[12]; //12
   }
-  StandardMetrics.ms_v_charge_current->SetValue(NLG6MainsAmps[0]);
-  
-  ESP_LOGD(TAG, "NLG6MainsAmps: %f, NLG6DC_Current: %f, NLG6AmpsChargingpoint: %f, NLG6AmpsCableCode: %f", NLG6MainsAmps[0], NLG6DC_Current, NLG6AmpsChargingpoint, NLG6AmpsCableCode);
+  mt_nlg6_main_amps->SetElemValues(0, 3, NLG6MainsAmps);
+  if (NLG6MainsAmps[0] != 0) StandardMetrics.ms_v_charge_current->SetValue(NLG6MainsAmps[0]);
 }
 
 void OvmsVehicleSmartED::PollReply_NLG6_ChargerSelCurrent(uint8_t reply_data[], uint16_t reply_len) {
   ESP_LOGD(TAG, "PollReply_NLG6_ChargerSelCurrent: len=%d ", reply_len);
   PollReply_LogDebug("PollReply_NLG6_ChargerSelCurrent", reply_data, reply_len);
   
-  if(NLG6present){
-    NLG6Amps_setpoint = reply_data[5]; //Get data for NLG6 fast charger
+  if(mt_nlg6_present->AsBool()){
+    mt_nlg6_amps_setpoint->SetValue(reply_data[5]); //Get data for NLG6 fast charger
   } else {
-    NLG6Amps_setpoint = reply_data[4]; //7 //Get data for standard OBL
+    mt_nlg6_amps_setpoint->SetValue(reply_data[4]); //7 //Get data for standard OBL
   }
-  ESP_LOGD(TAG, "NLG6Amps_setpoint: %f", NLG6Amps_setpoint);
 }
 
 void OvmsVehicleSmartED::PollReply_NLG6_ChargerTemperatures(uint8_t reply_data[], uint16_t reply_len) {
   ESP_LOGD(TAG, "PollReply_NLG6_ChargerTemperatures: len=%d ", reply_len);
   PollReply_LogDebug("PollReply_NLG6_ChargerTemperatures", reply_data, reply_len);
   
-  if (NLG6present){
-    NLG6CoolingPlateTemp = (reply_data[1] < 0xFF) ? reply_data[1]-40 : 0;
+  float NLG6Temps[9];
+  
+  if (mt_nlg6_present->AsBool()){
+    mt_nlg6_temp_coolingplate->SetValue((reply_data[1] < 0xFF) ? reply_data[1]-40 : 0);
     for(int n = 0; n < 8; n++) {
       NLG6Temps[n] = (reply_data[n + 2] < 0xFF) ? reply_data[n + 2]-40 : 0;
     }
-    NLG6ReportedTemp = (reply_data[9] < 0xFF) ? reply_data[9]-40 : 0;
-    NLG6SocketTemp = (reply_data[10] < 0xFF) ? reply_data[10]-40 : 0;
+    mt_nlg6_temp_reported->SetValue((reply_data[9] < 0xFF) ? reply_data[9]-40 : 0);
+    mt_nlg6_temp_socket->SetValue((reply_data[10] < 0xFF) ? reply_data[10]-40 : 0);
+    mt_nlg6_temps->SetElemValues(0, 8, NLG6Temps);
   } else {
-    NLG6CoolingPlateTemp = (reply_data[2] < 0xFF) ? reply_data[2]-40 : 0; //5
-    NLG6ReportedTemp = (reply_data[4] < 0xFF) ? reply_data[4]-40 : 0; //7
-    NLG6SocketTemp = (reply_data[6] < 0xFF) ? reply_data[6]-40 : 0; //9
+    mt_nlg6_temp_coolingplate->SetValue((reply_data[2] < 0xFF) ? reply_data[2]-40 : 0); //5
+    mt_nlg6_temp_reported->SetValue((reply_data[4] < 0xFF) ? reply_data[4]-40 : 0); //7
+    mt_nlg6_temp_socket->SetValue((reply_data[6] < 0xFF) ? reply_data[6]-40 : 0); //9
   }
-  if (NLG6ReportedTemp != 0) StandardMetrics.ms_v_charge_temp->SetValue(NLG6ReportedTemp);
-  
-  ESP_LOGD(TAG, "NLG6CoolingPlateTemp: %f, NLG6ReportedTemp: %f, NLG6SocketTemp: %f", NLG6CoolingPlateTemp, NLG6ReportedTemp, NLG6SocketTemp);
+  if (mt_nlg6_temp_reported->AsFloat() != 0) StandardMetrics.ms_v_charge_temp->SetValue(mt_nlg6_temp_reported->AsFloat());
 }
 
 void OvmsVehicleSmartED::PollReply_LogDebug(const char* name, uint8_t reply_data[], uint16_t reply_len) {

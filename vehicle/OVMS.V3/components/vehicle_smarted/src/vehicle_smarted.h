@@ -79,7 +79,9 @@ class OvmsVehicleSmartED : public OvmsVehicle
     TimerHandle_t m_locking_timer;
     
     void HandleCharging();
+    void HandleEnergy();
     int  calcMinutesRemaining(float target, float charge_voltage, float charge_current);
+    void calcBusAktivity(bool state, uint8_t pos);
     void HandleChargingStatus(bool status);
     void PollReply_BMS_BattVolts(uint8_t reply_data[], uint16_t reply_len);
     void PollReply_BMS_BattTemp(uint8_t reply_data[], uint16_t reply_len);
@@ -91,10 +93,13 @@ class OvmsVehicleSmartED : public OvmsVehicle
     void PollReply_NLG6_ChargerTemperatures(uint8_t reply_data[], uint16_t reply_len);
     void PollReply_LogDebug(const char* name, uint8_t reply_data[], uint16_t reply_len);
     
-    OvmsMetricInt *mt_vehicle_time;         // vehicle time
-    OvmsMetricInt *mt_trip_start;           // trip since start
-    OvmsMetricInt *mt_trip_reset;           // trip since Reset
-    OvmsMetricBool *mt_hv_active;           // HV active
+    OvmsMetricInt *mt_vehicle_time;             // vehicle time
+    OvmsMetricInt *mt_trip_start;               // trip since start
+    OvmsMetricInt *mt_trip_reset;               // trip since Reset
+    OvmsMetricBool *mt_hv_active;               // HV active
+    OvmsMetricBool *mt_c_active;                // charge active
+    OvmsMetricFloat *mt_bat_energy_used_start;  // display enery used/100km
+    OvmsMetricFloat *mt_bat_energy_used_reset;  // display enery used/100km
 
   private:
     unsigned int m_candata_timer;
@@ -108,22 +113,23 @@ class OvmsVehicleSmartED : public OvmsVehicle
     int m_range_ideal;                      // … Range Ideal (default 135 km)
     int m_egpio_timout;                     // … EGPIO Ignition Timout (default 5 min)
     bool m_soc_rsoc;                        // Display SOC=SOC or rSOC=SOC
-    
-    char NLG6_PN_HW[12] = "4519822221";     //!< Part number for NLG6 fast charging hardware
-    bool NLG6present = false;               //!< Flag to show NLG6 detected in system
-    float NLG6MainsAmps[3];                 //!< AC current of L1, L2, L3
-    float NLG6MainsVoltage[3];              //!< AC voltage of L1, L2, L3
-    float NLG6Amps_setpoint;                //!< AC charging current set by user in BC (Board Computer)
-    float NLG6AmpsCableCode;                //!< Maximum current cable (resistor coded)
-    float NLG6AmpsChargingpoint;            //!< Maxiumum current of chargingpoint
-    float NLG6DC_Current;                   //!< DC current measured by charger
-    float NLG6DC_HV;                        //!< DC HV measured by charger
-    float NLG6LV;                           //!< 12V onboard voltage of Charger DC/DC
-    float NLG6Temps[8];                     //!< internal temperatures in charger unit and heat exchanger
-    float NLG6ReportedTemp;                 //!< mean temperature, reported by charger
-    float NLG6SocketTemp;                   //!< temperature of mains socket charger
-    float NLG6CoolingPlateTemp;             //!< temperature of cooling plate 
-    char NLG6PN_HW[12];                     //!< Part number of base hardware (wo revisioning)
+
+  protected:
+    char NLG6_PN_HW[12] = "4519822221";           //!< Part number for NLG6 fast charging hardware
+    OvmsMetricBool *mt_nlg6_present;              //!< Flag to show NLG6 detected in system
+    OvmsMetricVector<float> *mt_nlg6_main_amps;   //!< AC current of L1, L2, L3
+    OvmsMetricVector<float> *mt_nlg6_main_volts;  //!< AC voltage of L1, L2, L3
+    OvmsMetricFloat *mt_nlg6_amps_setpoint;       //!< AC charging current set by user in BC (Board Computer)
+    OvmsMetricFloat *mt_nlg6_amps_cablecode;      //!< Maximum current cable (resistor coded)
+    OvmsMetricFloat *mt_nlg6_amps_chargingpoint;  //!< Maxiumum current of chargingpoint
+    OvmsMetricFloat *mt_nlg6_dc_current;          //!< DC current measured by charger
+    OvmsMetricFloat *mt_nlg6_dc_hv;               //!< DC HV measured by charger
+    OvmsMetricFloat *mt_nlg6_dc_lv;               //!< 12V onboard voltage of Charger DC/DC
+    OvmsMetricVector<float> *mt_nlg6_temps;       //!< internal temperatures in charger unit and heat exchanger
+    OvmsMetricFloat *mt_nlg6_temp_reported;       //!< mean temperature, reported by charger
+    OvmsMetricFloat *mt_nlg6_temp_socket;         //!< temperature of mains socket charger
+    OvmsMetricFloat *mt_nlg6_temp_coolingplate;   //!< temperature of cooling plate 
+    OvmsMetricString *mt_nlg6_pn_hw;              //!< Part number of base hardware (wo revisioning)
     
     #define DEFAULT_BATTERY_CAPACITY 17600
     #define MAX_POLL_DATA_LEN 238
