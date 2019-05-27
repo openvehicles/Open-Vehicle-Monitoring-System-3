@@ -300,6 +300,7 @@ config OVMS_VEHICLE_KIANIROEV
     bool "Include support for Kia e-Niro"
     default y
     depends on OVMS
+    depends on OVMS_VEHICLE_KIASOULEV
     help
         Enable to include support for Kia e-Niro.
 
