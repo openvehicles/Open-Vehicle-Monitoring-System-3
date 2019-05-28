@@ -527,7 +527,7 @@ config OVMS_DEV_CONFIGVFS
     help
         Enable to permit VFS access to configuration files (danger: insecure)
 
-config OMMS_DEV_SDCARDSCRIPTS
+config OVMS_DEV_SDCARDSCRIPTS
     bool "Run event scripts from /sd, as well as /store (note: may be insecure)"
     default n
     depends on OVMS

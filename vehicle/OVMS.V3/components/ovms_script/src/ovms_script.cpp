@@ -957,11 +957,11 @@ static void script_run(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int 
     }
   else
     {
-#ifdef CONFIG_OMMS_DEV_SDCARDSCRIPTS
+#ifdef CONFIG_OVMS_DEV_SDCARDSCRIPTS
     path = std::string("/sd/scripts/");
     path.append(argv[0]);
     sf = fopen(path.c_str(), "r");
-#endif // #ifdef CONFIG_OMMS_DEV_SDCARDSCRIPTS
+#endif // #ifdef CONFIG_OVMS_DEV_SDCARDSCRIPTS
     if (sf == NULL)
       {
       path = std::string("/store/scripts/");
@@ -1016,11 +1016,11 @@ void OvmsScripts::EventScript(std::string event, void* data)
   DuktapeDispatchWait(&dmsg);
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
-#ifdef CONFIG_OMMS_DEV_SDCARDSCRIPTS
+#ifdef CONFIG_OVMS_DEV_SDCARDSCRIPTS
   path=std::string("/sd/events/");
   path.append(event);
   AllScripts(path);
-#endif // #ifdef CONFIG_OMMS_DEV_SDCARDSCRIPTS
+#endif // #ifdef CONFIG_OVMS_DEV_SDCARDSCRIPTS
 
   path=std::string("/store/events/");
   path.append(event);
