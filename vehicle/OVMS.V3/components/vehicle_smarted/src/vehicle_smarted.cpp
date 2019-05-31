@@ -611,8 +611,65 @@ void OvmsVehicleSmartED::Ticker60(uint32_t ticker) {
 }
 
 
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeCurrent(uint16_t limit) {
+    /*The charging current changes with
+     0x512 00 00 1F FF 00 7C 00 00 auf 12A.
+     8A = 0x74, 12A = 0x7C and 32A = 0xA4 (as max. at 22kW).
+     So calculate an offset 0xA4 = d164: e.g. 12A = 0xA4 - 0x7C = 0x28 = d40 -> subtract from the maximum (0xA4 = 32A)
+      then divide by two to get the value for 20A (with 0.5A resolution).
+    */
+
+    CAN_frame_t frame;
+    memset(&frame, 0, sizeof(frame));
+
+    frame.origin = m_can1;
+    frame.FIR.U = 0;
+    frame.FIR.B.DLC = 8;
+    frame.FIR.B.FF = CAN_frame_std;
+    frame.MsgID = 0x512;
+    frame.data.u8[0] = 0x00;
+    frame.data.u8[1] = 0x00;
+    frame.data.u8[2] = 0x1F;
+    frame.data.u8[3] = 0xFF;
+    frame.data.u8[4] = 0x00;
+    frame.data.u8[5] = (uint8_t) (100 + 2 * limit);
+    frame.data.u8[6] = 0x00;
+    frame.data.u8[7] = 0x00;
+    m_can1->Write(&frame);
+
+    return Success;
+}
+
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
+    /*So we still have to get the car to wake up. Can someone please test these two queries when the car is asleep:
+    0x218 00 00 00 00 00 00 00 00 or
+    0x210 00 00 00 01 00 00 00 00
+    Both patterns should comply with the Bosch CAN bus spec. for waking up a sleeping bus with recessive bits.
+    0x423 01 00 00 00 will wake up the CAN bus but not the right on.
+    */
+
+    ESP_LOGI(TAG, "Send Wakeup Command");
+    
+    CAN_frame_t frame;
+    memset(&frame, 0, sizeof(frame));
+
+    frame.origin = m_can1;
+    frame.FIR.U = 0;
+    frame.FIR.B.DLC = 4;
+    frame.FIR.B.FF = CAN_frame_std;
+    frame.MsgID = 0x423;
+    frame.data.u8[0] = 0x01;
+    frame.data.u8[1] = 0x00;
+    frame.data.u8[2] = 0x00;
+    frame.data.u8[3] = 0x00;
+    m_can1->Write(&frame);
+
+    return Success;
+}
+
+#ifdef CONFIG_OVMS_COMP_MAX7317
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandClimateControl(bool enable) {
-    return CommandSetChargeTimer(enable, mt_vehicle_time->AsInt());
+  return CommandSetChargeTimer(enable, mt_vehicle_time->AsInt());
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool timeron, uint32_t timerstart) {
@@ -661,35 +718,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool ti
     return Success;
 }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeCurrent(uint16_t limit) {
-    /*The charging current changes with
-     0x512 00 00 1F FF 00 7C 00 00 auf 12A.
-     8A = 0x74, 12A = 0x7C and 32A = 0xA4 (as max. at 22kW).
-     So calculate an offset 0xA4 = d164: e.g. 12A = 0xA4 - 0x7C = 0x28 = d40 -> subtract from the maximum (0xA4 = 32A)
-      then divide by two to get the value for 20A (with 0.5A resolution).
-    */
-
-    CAN_frame_t frame;
-    memset(&frame, 0, sizeof(frame));
-
-    frame.origin = m_can1;
-    frame.FIR.U = 0;
-    frame.FIR.B.DLC = 8;
-    frame.FIR.B.FF = CAN_frame_std;
-    frame.MsgID = 0x512;
-    frame.data.u8[0] = 0x00;
-    frame.data.u8[1] = 0x00;
-    frame.data.u8[2] = 0x1F;
-    frame.data.u8[3] = 0xFF;
-    frame.data.u8[4] = 0x00;
-    frame.data.u8[5] = (uint8_t) (100 + 2 * limit);
-    frame.data.u8[6] = 0x00;
-    frame.data.u8[7] = 0x00;
-    m_can1->Write(&frame);
-
-    return Success;
-}
-
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandHomelink(int button, int durationms) {
     bool enable;
     if (button == 0) {
@@ -703,34 +731,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandHomelink(int button, i
     return NotImplemented;
 }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
-    /*So we still have to get the car to wake up. Can someone please test these two queries when the car is asleep:
-    0x218 00 00 00 00 00 00 00 00 or
-    0x210 00 00 00 01 00 00 00 00
-    Both patterns should comply with the Bosch CAN bus spec. for waking up a sleeping bus with recessive bits.
-    0x423 01 00 00 00 will wake up the CAN bus but not the right on.
-    */
-
-    ESP_LOGI(TAG, "Send Wakeup Command");
-    
-    CAN_frame_t frame;
-    memset(&frame, 0, sizeof(frame));
-
-    frame.origin = m_can1;
-    frame.FIR.U = 0;
-    frame.FIR.B.DLC = 4;
-    frame.FIR.B.FF = CAN_frame_std;
-    frame.MsgID = 0x423;
-    frame.data.u8[0] = 0x01;
-    frame.data.u8[1] = 0x00;
-    frame.data.u8[2] = 0x00;
-    frame.data.u8[3] = 0x00;
-    m_can1->Write(&frame);
-
-    return Success;
-}
-
-#ifdef CONFIG_OVMS_COMP_MAX7317
 void SmartEDLockingTimer(TimerHandle_t timer) {
     xTimerStop(timer, 0);
     xTimerDelete(timer, 0);
@@ -777,6 +777,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandDeactivateValet(const 
     StandardMetrics.ms_v_env_valet->SetValue(false);
     return Success;
 }
+#endif
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandStat(int verbosity, OvmsWriter* writer) {
   metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
@@ -870,7 +871,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandStat(int verbosity, Ov
 
   return Success;
 }
-#endif
 
 class OvmsVehicleSmartEDInit {
     public:
