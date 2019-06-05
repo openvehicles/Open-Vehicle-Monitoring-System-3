@@ -4,7 +4,8 @@
 # (Uses default behaviour of compiling all source files in directory, adding 'include' to include path.)
 
 COMPONENT_ADD_INCLUDEDIRS := .
-COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive -T main/ovms_boot.ld
+COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive -T main/ovms_boot.ld \
+	-L$(HOME)/esp/xtensa-esp32-elf/xtensa-esp32-elf/sysroot/lib/esp32-psram
 
 OVMS_VERSION := $(shell git describe --always --tags --dirty)
 CPPFLAGS := -D OVMS_VERSION=\"$(OVMS_VERSION)\" $(CPPFLAGS)
