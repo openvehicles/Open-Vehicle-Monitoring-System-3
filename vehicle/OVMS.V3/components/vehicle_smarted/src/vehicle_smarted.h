@@ -60,15 +60,17 @@ class OvmsVehicleSmartED : public OvmsVehicle
 
   public:
     virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
+    virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t CommandWakeup();
+#ifdef CONFIG_OVMS_COMP_MAX7317
     virtual vehicle_command_t CommandSetChargeTimer(bool timeron, uint32_t timerstart);
     virtual vehicle_command_t CommandClimateControl(bool enable);
     virtual vehicle_command_t CommandLock(const char* pin);
     virtual vehicle_command_t CommandUnlock(const char* pin);
-    virtual vehicle_command_t CommandWakeup();
     virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
     virtual vehicle_command_t CommandActivateValet(const char* pin);
     virtual vehicle_command_t CommandDeactivateValet(const char* pin);
-    virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
+#endif
     
   protected:
     virtual void Ticker1(uint32_t ticker);
