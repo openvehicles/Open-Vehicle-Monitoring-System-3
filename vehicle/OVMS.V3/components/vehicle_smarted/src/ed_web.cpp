@@ -29,6 +29,8 @@
  ; Most of the CAN Messages are based on https://github.com/MyLab-odyssey/ED_BMSdiag
  */
 
+#include <sdkconfig.h>
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 
 #include <stdio.h>
 #include <string>
@@ -56,7 +58,7 @@ void OvmsVehicleSmartED::WebInit()
   // vehicle menu:
   MyWebServer.RegisterPage("/xse/features",   "Features",         WebCfgFeatures,                      PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xse/brakelight", "Brake Light",      OvmsWebServer::HandleCfgBrakelight,  PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/bms/cellmon",    "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xse/cellmon",    "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 /**
@@ -66,7 +68,7 @@ void OvmsVehicleSmartED::WebDeInit()
 {
   MyWebServer.DeregisterPage("/xse/features");
   MyWebServer.DeregisterPage("/xse/brakelight");
-  MyWebServer.DeregisterPage("/bms/cellmon");
+  MyWebServer.DeregisterPage("/xse/cellmon");
 }
 
 /**
@@ -75,6 +77,7 @@ void OvmsVehicleSmartED::WebDeInit()
 void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
+  bool canwrite;
   bool soc_rsoc;
   std::string doorlock, doorunlock, ignition, rangeideal, egpio_timout;
 
@@ -86,6 +89,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     rangeideal = c.getvar("rangeideal");
     egpio_timout = c.getvar("egpio_timout");
     soc_rsoc = (c.getvar("soc_rsoc") == "yes");
+    canwrite  = (c.getvar("canwrite") == "yes");
 
     // validate:
     if (doorlock != "") {
@@ -127,6 +131,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("xse", "rangeideal", rangeideal);
       MyConfig.SetParamValue("xse", "egpio_timout", egpio_timout);
       MyConfig.SetParamValueBool("xse", "soc_rsoc", soc_rsoc);
+      MyConfig.SetParamValueBool("xse", "canwrite",   canwrite);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
@@ -149,6 +154,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     rangeideal = MyConfig.GetParamValue("xse", "rangeideal", "135");
     egpio_timout = MyConfig.GetParamValue("xse", "egpio_timout", "5");
     soc_rsoc = MyConfig.GetParamValueBool("xse", "soc_rsoc", false);
+    canwrite  = MyConfig.GetParamValueBool("xse", "canwrite", false);
     c.head(200);
   }
 
@@ -161,6 +167,9 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "min=\"90\" max=\"200\" step=\"1\"");
   
   c.input_checkbox("Display real SOC = SOC", "soc_rsoc", soc_rsoc);
+  
+  c.input_checkbox("Enable CAN write(Poll)", "canwrite", canwrite,
+    "<p>Controls overall CAN write access, some functions depend on this.</p>");
 
   c.input_select_start("… Vehicle lock port", "doorlock");
   c.input_select_option("EGPIO_2", "3", doorlock == "3");
@@ -274,3 +283,5 @@ void OvmsVehicleSmartED::GetDashboardConfig(DashboardConfig& cfg)
         "{ from: 110, to: 125, className: 'red-band border' }]"
     "}]";
 }
+
+#endif //CONFIG_OVMS_COMP_WEBSERVER
