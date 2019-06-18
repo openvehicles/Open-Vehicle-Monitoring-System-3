@@ -57,6 +57,7 @@ void OvmsVehicleSmartED::WebInit()
 {
   // vehicle menu:
   MyWebServer.RegisterPage("/xse/features",   "Features",         WebCfgFeatures,                      PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xse/battery",    "Battery config",   WebCfgBattery,                       PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xse/brakelight", "Brake Light",      OvmsWebServer::HandleCfgBrakelight,  PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xse/cellmon",    "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
 }
@@ -67,6 +68,7 @@ void OvmsVehicleSmartED::WebInit()
 void OvmsVehicleSmartED::WebDeInit()
 {
   MyWebServer.DeregisterPage("/xse/features");
+  MyWebServer.DeregisterPage("/xse/battery");
   MyWebServer.DeregisterPage("/xse/brakelight");
   MyWebServer.DeregisterPage("/xse/cellmon");
 }
@@ -211,6 +213,82 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.form_end();
   c.panel_end();
 
+  c.done();
+}
+
+/**
+ * WebCfgBattery: configure battery parameters (URL /xnl/battery)
+ */
+void OvmsVehicleSmartED::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
+{
+  std::string error;
+  //  suffsoc          	Sufficient SOC [%] (Default: 0=disabled)
+  //  suffrange        	Sufficient range [km] (Default: 0=disabled)
+  std::string suffrange, suffsoc;
+
+  if (c.method == "POST") {
+    // process form submission:
+    suffrange = c.getvar("suffrange");
+    suffsoc   = c.getvar("suffsoc");
+
+    // check:
+    if (!suffrange.empty()) {
+      float n = atof(suffrange.c_str());
+      if (n < 0)
+        error += "<li data-input=\"suffrange\">Sufficient range invalid, must be &ge; 0</li>";
+    }
+    if (!suffsoc.empty()) {
+      float n = atof(suffsoc.c_str());
+      if (n < 0 || n > 100)
+        error += "<li data-input=\"suffsoc\">Sufficient SOC invalid, must be 0…100</li>";
+    }
+
+    if (error == "") {
+      // store:
+      MyConfig.SetParamValue("xse", "suffrange", suffrange);
+      MyConfig.SetParamValue("xse", "suffsoc", suffsoc);
+
+      c.head(200);
+      c.alert("success", "<p class=\"lead\">SmartED3 battery setup saved.</p>");
+      MyWebServer.OutputHome(p, c);
+      c.done();
+      return;
+    }
+
+    // output error, return to form:
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    c.head(400);
+    c.alert("danger", error.c_str());
+  }
+  else {
+    // read configuration:
+    suffrange = MyConfig.GetParamValue("xse", "suffrange", "0");
+    suffsoc = MyConfig.GetParamValue("xse", "suffsoc", "0");
+
+    c.head(200);
+  }
+
+  // generate form:
+
+  c.panel_start("primary", "SmartED3 battery setup");
+  c.form_start(p.uri);
+
+  c.fieldset_start("Charge control");
+
+  c.input_slider("Sufficient range", "suffrange", 3, "km",
+    atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 0, 0, 150, 1,
+    "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
+
+  c.input_slider("Sufficient SOC", "suffsoc", 3, "%",
+    atof(suffsoc.c_str()) > 0, atof(suffsoc.c_str()), 0, 0, 100, 1,
+    "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
+
+  c.fieldset_end();
+
+  c.print("<hr>");
+  c.input_button("default", "Save");
+  c.form_end();
+  c.panel_end();
   c.done();
 }
 

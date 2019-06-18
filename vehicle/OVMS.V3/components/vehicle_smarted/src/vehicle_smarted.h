@@ -64,6 +64,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     void WebInit();
     void WebDeInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
+    static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
     void ConfigChanged(OvmsConfigParam* param);
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);

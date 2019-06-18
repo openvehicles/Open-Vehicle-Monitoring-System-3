@@ -109,7 +109,6 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     
     StandardMetrics.ms_v_charge_mode->SetValue("standard");
     StandardMetrics.ms_v_charge_type->SetValue("type2");
-    StandardMetrics.ms_v_charge_limit_soc->SetValue(80);
     StandardMetrics.ms_v_door_chargeport->SetValue(false);
     
     // BMS configuration:
@@ -158,6 +157,9 @@ void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
     m_soc_rsoc        = MyConfig.GetParamValueBool("xse", "soc_rsoc", false);
     
     m_enable_write    = MyConfig.GetParamValueBool("xse", "canwrite", false);
+    
+    StandardMetrics.ms_v_charge_limit_soc->SetValue((float) MyConfig.GetParamValueInt("xse", "suffsoc", 0), Percentage );
+    StandardMetrics.ms_v_charge_limit_range->SetValue((float) MyConfig.GetParamValueInt("xse", "suffrange", 0), Kilometers );
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
     MyPeripherals->m_max7317->Output(m_doorlock_port, 0);
@@ -173,8 +175,8 @@ void OvmsVehicleSmartED::vehicle_smarted_car_on(bool isOn) {
     if (m_enable_write) PollSetState(2);
 
     // Reset trip values
-    StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
-    StandardMetrics.ms_v_bat_energy_used->SetValue(0);
+    //StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
+    //StandardMetrics.ms_v_bat_energy_used->SetValue(0);
   }
   else if (!isOn && StandardMetrics.ms_v_env_on->AsBool()) {
     // Log once that car is being turned off
@@ -192,6 +194,8 @@ void OvmsVehicleSmartED::vehicle_smarted_car_on(bool isOn) {
  */
 void OvmsVehicleSmartED::HandleCharging() {
   float limit_soc       = StandardMetrics.ms_v_charge_limit_soc->AsFloat(0);
+  float limit_range     = StandardMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
+  float max_range       = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
   float charge_current  = StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
   float charge_voltage  = StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
   
@@ -223,6 +227,14 @@ void OvmsVehicleSmartED::HandleCharging() {
 
       StandardMetrics.ms_v_charge_duration_soc->SetValue(minsremaining_soc, Minutes);
       ESP_LOGV(TAG, "Time remaining: %d mins to %0.0f%% soc", minsremaining_soc, limit_soc);
+    }
+    if (limit_range > 0 && max_range > 0.0) {
+      // if range limit is set, then compute required soc and then calculate remaining time to that soc
+      float range_soc           = limit_range / max_range * 100.0;
+      int   minsremaining_range = calcMinutesRemaining(range_soc, charge_voltage, charge_current);
+
+      StandardMetrics.ms_v_charge_duration_range->SetValue(minsremaining_range, Minutes);
+      ESP_LOGV(TAG, "Time remaining: %d mins for %0.0f km (%0.0f%% soc)", minsremaining_range, limit_range, range_soc);
     }
   }
 }
@@ -286,7 +298,11 @@ void OvmsVehicleSmartED::HandleChargingStatus(bool status) {
   if (port) {
     if (status && charge_voltage > 50 && charge_current > 0) {
       if (!StandardMetrics.ms_v_charge_inprogress->AsBool()) {
-        StandardMetrics.ms_v_charge_kwh->SetValue(0); // Reset charge kWh
+        // Reset charge kWh
+        StandardMetrics.ms_v_charge_kwh->SetValue(0);
+        // Reset trip values
+        StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
+        StandardMetrics.ms_v_bat_energy_used->SetValue(0);
       }
       StandardMetrics.ms_v_charge_pilot->SetValue(true);
       StandardMetrics.ms_v_charge_inprogress->SetValue(true);
@@ -483,6 +499,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
       if(soc > 0) {
           float smart_range_ideal = (m_range_ideal * soc) / 100;
           StandardMetrics.ms_v_bat_range_ideal->SetValue(smart_range_ideal); // ToDo
+          StandardMetrics.ms_v_bat_range_full->SetValue((float) (d[7] / soc) * 100, Kilometers); // ToDo
       }
       StandardMetrics.ms_v_bat_range_est->SetValue(d[7], Kilometers);
       StandardMetrics.ms_v_env_throttle->SetValue(d[5]);
@@ -656,7 +673,6 @@ const std::string OvmsVehicleSmartED::GetFeature(int key)
 {
   switch (key)
   {
-    case 0:
     case 10:
       return MyConfig.GetParamValue("xse", "suffsoc", STR(0));
     case 11:
