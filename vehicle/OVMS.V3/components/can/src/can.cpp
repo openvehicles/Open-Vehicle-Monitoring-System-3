@@ -43,10 +43,16 @@ static const char *TAG = "can";
 #include <algorithm>
 #include <ctype.h>
 #include <string.h>
+#include <iomanip>
+#include "ovms_config.h"
 #include "ovms_command.h"
 #include "metrics_standard.h"
 
-can MyCan __attribute__ ((init_priority (4500)));
+can MyCan __attribute__ ((init_priority (4510)));
+
+////////////////////////////////////////////////////////////////////////
+// CAN command processing
+////////////////////////////////////////////////////////////////////////
 
 void can_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -216,145 +222,6 @@ void can_rx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
   MyCan.IncomingFrame(&frame);
   }
 
-
-// Shell command:
-//    can log <type> [path] [filter1] [filter2] [filter3]
-//    can log off
-//    can log status
-//
-// Filter: [bus:][id][-id]
-// Examples:
-//    can log trace                     → enable syslog tracing for all buses, all ids
-//    can log trace 1 3:780-7ff         → enable syslog for bus 1 and id range 780-7ff on bus 3
-//    can log crtd /sd/cap1 2:100-1ff   → capture id range 100-1ff of bus 2 in crtd file /sd/cap1
-//
-// Path and filters can be changed on the fly.
-//
-void can_log(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  const char* type = cmd->GetName();
-  bool is_trace = (strcmp(type, "trace") == 0);
-  canlog* cl = MyCan.GetLogger();
-
-  if (strcmp(type, "status") == 0)
-    {
-    if (cl)
-      writer->printf("CAN logging active: %s\nStatistics: %s\n", cl->GetInfo().c_str(), cl->GetStats().c_str());
-    else
-      writer->puts("CAN logging inactive.");
-    return;
-    }
-
-  if (strcmp(type, "off") == 0)
-    {
-    if (!cl)
-      {
-      writer->puts("CAN logging inactive.");
-      return;
-      }
-    writer->printf("Closing log: %s\n", cl->GetInfo().c_str());
-    MyCan.UnsetLogger();
-    vTaskDelay(pdMS_TO_TICKS(100)); // give logger task time to finish
-    cl->Close();
-    writer->printf("Statistics: %s\n", cl->GetStats().c_str());
-    delete cl;
-    writer->puts("CAN logging stopped.");
-    return;
-    }
-
-  if (cl && strcmp(type, cl->GetType()) != 0)
-    {
-    writer->printf("Error: logger of type '%s' still running, please stop first\n", cl->GetType());
-    return;
-    }
-
-  // parse args:
-
-  const char* path = (cl && !is_trace) ? cl->GetPath().c_str() : "";
-  canlog_filter_t filter[CANLOG_MAX_FILTERS] = {};
-  int fcnt = 0;
-
-  for (int i=0; i<argc; i++)
-    {
-    if (argv[i][0] == '/' && !is_trace)
-      {
-      path = argv[i];
-      }
-    else if (fcnt < CANLOG_MAX_FILTERS)
-      {
-      char* s = (char*) argv[i];
-      if (s[1] == 0)
-        {
-        filter[fcnt].bus = s[0];
-        filter[fcnt].id_from = 0;
-        filter[fcnt].id_to = UINT32_MAX;
-        }
-      else
-        {
-        if (s[1] == ':')
-          {
-          filter[fcnt].bus = s[0];
-          s += 2;
-          }
-        filter[fcnt].id_from = strtol(s, &s, 16);
-        if (*s)
-          filter[fcnt].id_to = strtol(s+1, NULL, 16); // id range
-        else
-          filter[fcnt].id_to = filter[fcnt].id_from; // single id
-        if (filter[fcnt].id_to < filter[fcnt].id_from)
-          {
-          uint32_t tmp = filter[fcnt].id_to;
-          filter[fcnt].id_to = filter[fcnt].id_from;
-          filter[fcnt].id_from = tmp;
-          }
-        }
-      fcnt++;
-      }
-    }
-
-  if (!is_trace && !path[0])
-    {
-    writer->puts("Error: no path specified");
-    return;
-    }
-
-  // start / reconfigure logger:
-
-  if (!cl)
-    {
-    cl = canlog::Instantiate(type);
-    if (!cl)
-      {
-      writer->printf("Error: cannot create logger of type '%s'\n", type);
-      return;
-      }
-    }
-
-  if (!is_trace && cl->IsOpen() && cl->GetPath() != path)
-    {
-    writer->printf("Closing path '%s'\n", cl->GetPath().c_str());
-    MyCan.UnsetLogger();
-    vTaskDelay(pdMS_TO_TICKS(100)); // give logger task time to finish
-    writer->printf("Statistics: %s\n", cl->GetStats().c_str());
-    cl->Close();
-    }
-
-  cl->SetFilter(fcnt, filter);
-
-  if (!is_trace && !cl->IsOpen() && !cl->Open(path))
-    {
-    writer->printf("Error: cannot open log path '%s'\n", path);
-    delete cl;
-    return;
-    }
-
-  MyCan.SetLogger(cl);
-  writer->printf("CAN logging active: %s\n", cl->GetInfo().c_str());
-  if (is_trace)
-    writer->puts("Note: info logging is done at log level debug, frame logging at verbose");
-  }
-
-
 void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   const char* bus = cmd->GetParent()->GetName();
@@ -420,10 +287,240 @@ void can_clearstatus(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
   writer->puts("Status cleared");
   }
 
+////////////////////////////////////////////////////////////////////////
+// CAN Filtering (software based filter)
+// The canfilter object encapsulates the filtering of CAN frames
+////////////////////////////////////////////////////////////////////////
+
+canfilter::canfilter()
+  {
+  }
+
+canfilter::~canfilter()
+  {
+  ClearFilters();
+  }
+
+void canfilter::ClearFilters()
+  {
+  for (CAN_filter_t* filter : m_filters)
+    {
+    delete filter;
+    }
+  m_filters.clear();
+  }
+
+void canfilter::AddFilter(uint8_t bus, uint32_t id_from, uint32_t id_to)
+  {
+  CAN_filter_t* f = new CAN_filter_t;
+  f->bus = bus;
+  f->id_from = id_from;
+  f->id_to = id_to;
+  m_filters.push_back(f);
+  }
+
+void canfilter::AddFilter(const char* filterstring)
+  {
+  char* fs = (char*)filterstring;
+  if (fs[1] == 0)
+    {
+    AddFilter((uint8_t)fs[0]);
+    }
+  else
+    {
+    uint8_t bus = 0;
+    uint32_t id_from = 0;
+    uint32_t id_to = UINT32_MAX;
+    if (fs[1] == ':')
+      {
+      bus = fs[0];
+      fs += 2;
+      }
+    id_from = strtol(fs, &fs, 16);
+    if (*fs)
+      id_to = strtol(fs+1, NULL, 16); // id range
+    else
+      id_to = id_from; // single id
+    AddFilter(bus,id_from,id_to);
+    }
+  }
+
+bool canfilter::RemoveFilter(uint8_t bus, uint32_t id_from, uint32_t id_to)
+  {
+  for (CAN_filter_t* filter : m_filters)
+    {
+    if ((filter->bus == bus)&&
+        (filter->id_from == id_from)&&
+        (filter->id_to == id_to))
+      {
+      delete filter;
+      return true;
+      }
+    }
+  return false;
+  }
+
+bool canfilter::IsFiltered(const CAN_frame_t* p_frame)
+  {
+  if (m_filters.size() == 0) return true;
+  if (! p_frame) return false;
+
+  char buskey = '0';
+  if (p_frame->origin) buskey = p_frame->origin->GetName()[3];
+
+  for (CAN_filter_t* filter : m_filters)
+    {
+    if ((filter->bus)&&(filter->bus != buskey)) continue;
+    if ((p_frame->MsgID >= filter->id_from) && (p_frame->MsgID <= filter->id_to))
+      return true;
+    }
+
+  return false;
+  }
+
+bool canfilter::IsFiltered(canbus* bus)
+  {
+  if (m_filters.size() == 0) return true;
+  if (bus == NULL) return true;
+
+  char buskey = bus->GetName()[3];
+
+  for (CAN_filter_t* filter : m_filters)
+    {
+    if ((filter->bus)&&(filter->bus == buskey)) return true;
+    }
+
+  return false;
+  }
+
+std::string canfilter::Info()
+  {
+  std::ostringstream buf;
+
+  for (CAN_filter_t* filter : m_filters)
+    {
+    if (filter->bus > 0) buf << std::setfill(' ') << std::dec << filter->bus << ':';
+    buf << std::setfill('0') << std::setw(3) << std::hex;
+    if (filter->id_from == filter->id_to)
+      { buf << filter->id_from << ' '; }
+    else
+      { buf << filter->id_from << '-' << filter->id_to << ' '; }
+    }
+
+  return buf.str();
+  }
+
+////////////////////////////////////////////////////////////////////////
+// CAN logging and tracing
+// These structures are involved in formatting, logging and tracing of
+// CAN messages (both frames and status/control messages)
+////////////////////////////////////////////////////////////////////////
+
+static const char* const CAN_log_type_names[] = {
+  "RX",
+  "TX",
+  "TX_Queue",
+  "TX_Fail",
+  "Error",
+  "Status",
+  "Comment",
+  "Info",
+  "Event"
+  };
+
+const char* GetCanLogTypeName(CAN_log_type_t type)
+  {
+  return CAN_log_type_names[type];
+  }
+
+void can::LogFrame(canbus* bus, CAN_log_type_t type, const CAN_frame_t* frame)
+  {
+  if (m_logger)
+    m_logger->LogFrame(bus, type, frame);
+  }
+
+void can::LogStatus(canbus* bus, CAN_log_type_t type, const CAN_status_t* status)
+  {
+  if (m_logger)
+    m_logger->LogStatus(bus, type, status);
+  }
+
+void can::LogInfo(canbus* bus, CAN_log_type_t type, const char* text)
+  {
+  if (m_logger)
+    m_logger->LogInfo(bus, type, text);
+  }
+
+void canbus::LogFrame(CAN_log_type_t type, const CAN_frame_t* frame)
+  {
+  MyCan.LogFrame(this, type, frame);
+  }
+
+void canbus::LogStatus(CAN_log_type_t type)
+  {
+  if (!MyCan.GetLogger() || (type==CAN_LogStatus_Error && !StatusChanged()))
+    return;
+  MyCan.LogStatus(this, type, &m_status);
+  }
+
+void canbus::LogInfo(CAN_log_type_t type, const char* text)
+  {
+  MyCan.LogInfo(this, type, text);
+  }
+
+bool canbus::StatusChanged()
+  {
+  // simple checksum to prevent log flooding:
+  uint32_t chksum = m_status.packets_rx + m_status.packets_tx + m_status.errors_rx + m_status.errors_tx
+    + m_status.rxbuf_overflow + m_status.txbuf_overflow + m_status.error_flags + m_status.txbuf_delay
+    + m_status.watchdog_resets;
+  if (chksum != m_status_chksum)
+    {
+    m_status_chksum = chksum;
+    return true;
+    }
+  return false;
+  }
+
+void can::SetLogger(canlog* logger, int filterc, const char* const* filterv)
+  {
+  if (m_logger != NULL)
+    {
+    m_logger->Close();
+    delete m_logger;
+    }
+
+  if (filterc>0)
+    {
+    canfilter *filter = new canfilter();
+    for (int k=0;k<filterc;k++)
+      {
+      filter->AddFilter(filterv[k]);
+      }
+    logger->SetFilter(filter);
+    }
+
+  m_logger = logger;
+  }
+
+canlog* can::GetLogger()
+  {
+  return m_logger;
+  }
+
+void can::ClearLogger()
+  {
+  m_logger = NULL;
+  }
+
+////////////////////////////////////////////////////////////////////////
+// CAN controller task
+////////////////////////////////////////////////////////////////////////
+
 static void CAN_rxtask(void *pvParameters)
   {
   can *me = (can*)pvParameters;
-  CAN_msg_t msg;
+  CAN_queue_msg_t msg;
 
   while(1)
     {
@@ -453,9 +550,15 @@ static void CAN_rxtask(void *pvParameters)
     }
   }
 
+////////////////////////////////////////////////////////////////////////
+// can - the CAN system controller
+////////////////////////////////////////////////////////////////////////
+
 can::can()
   {
-  ESP_LOGI(TAG, "Initialising CAN (4500)");
+  ESP_LOGI(TAG, "Initialising CAN (4510)");
+
+  MyConfig.RegisterParam("can", "CAN Configuration", true, true);
 
   OvmsCommand* cmd_can = MyCommandApp.RegisterCommand("can","CAN framework");
 
@@ -482,27 +585,7 @@ can::can()
 
   cmd_can->RegisterCommand("list", "List CAN buses", can_list);
 
-  OvmsCommand* cmd_canlog = cmd_can->RegisterCommand("log", "CAN logging framework");
-  cmd_canlog->RegisterCommand("trace", "Logging to syslog", can_log,
-    "[filter1] [filter2] [filter3]\n"
-    "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
-    "Example: 2:2a0-37f", 0, 3);
-  const char* const* logtype = canlog::GetTypeList();
-  while (*logtype)
-    {
-    if (strcmp(*logtype, "trace") != 0)
-      {
-      cmd_canlog->RegisterCommand(*logtype, "...format logging", can_log,
-        "<path> [filter1] [filter2] [filter3]\n"
-        "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
-        "Example: 2:2a0-37f", 1, 4);
-      }
-    logtype++;
-    }
-  cmd_canlog->RegisterCommand("off", "Stop logging", can_log);
-  cmd_canlog->RegisterCommand("status", "Logging status", can_log);
-
-  m_rxqueue = xQueueCreate(CONFIG_OVMS_HW_CAN_RX_QUEUE_SIZE,sizeof(CAN_msg_t));
+  m_rxqueue = xQueueCreate(CONFIG_OVMS_HW_CAN_RX_QUEUE_SIZE,sizeof(CAN_queue_msg_t));
   xTaskCreatePinnedToCore(CAN_rxtask, "OVMS CanRx", 2048, (void*)this, 23, &m_rxtask, 0);
   m_logger = NULL;
   }
@@ -569,6 +652,10 @@ void can::ExecuteCallbacks(const CAN_frame_t* frame, bool tx)
       entry->m_callback(frame);
     }
   }
+
+////////////////////////////////////////////////////////////////////////
+// canbus - the definition of a CAN bus
+////////////////////////////////////////////////////////////////////////
 
 canbus::canbus(const char* name)
   : pcp(name)
@@ -780,60 +867,4 @@ esp_err_t CAN_frame_t::Write(canbus* bus /*=NULL*/, TickType_t maxqueuewait /*=0
   if (!bus)
     bus = origin;
   return bus ? bus->Write(this, maxqueuewait) : ESP_FAIL;
-  }
-
-
-/**
- * Tracing/logging
- */
-
-void can::LogFrame(canbus* bus, CAN_LogEntry_t type, const CAN_frame_t* frame)
-  {
-  if (m_logger)
-    m_logger->LogFrame(bus, type, frame);
-  }
-
-void can::LogStatus(canbus* bus, CAN_LogEntry_t type, const CAN_status_t* status)
-  {
-  if (m_logger)
-    m_logger->LogStatus(bus, type, status);
-  }
-
-void can::LogInfo(canbus* bus, CAN_LogEntry_t type, const char* text)
-  {
-  if (m_logger)
-    m_logger->LogInfo(bus, type, text);
-  }
-
-
-void canbus::LogFrame(CAN_LogEntry_t type, const CAN_frame_t* frame)
-  {
-  MyCan.LogFrame(this, type, frame);
-  }
-
-void canbus::LogStatus(CAN_LogEntry_t type)
-  {
-  if (!MyCan.GetLogger() || (type==CAN_LogStatus_Error && !StatusChanged()))
-    return;
-  MyCan.LogStatus(this, type, &m_status);
-  }
-
-void canbus::LogInfo(CAN_LogEntry_t type, const char* text)
-  {
-  MyCan.LogInfo(this, type, text);
-  }
-
-
-bool canbus::StatusChanged()
-  {
-  // simple checksum to prevent log flooding:
-  uint32_t chksum = m_status.packets_rx + m_status.packets_tx + m_status.errors_rx + m_status.errors_tx
-    + m_status.rxbuf_overflow + m_status.txbuf_overflow + m_status.error_flags + m_status.txbuf_delay
-    + m_status.watchdog_resets;
-  if (chksum != m_status_chksum)
-    {
-    m_status_chksum = chksum;
-    return true;
-    }
-  return false;
   }

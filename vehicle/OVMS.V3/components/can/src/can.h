@@ -46,10 +46,18 @@
 #include <esp_err.h>
 #include "ovms_events.h"
 
+////////////////////////////////////////////////////////////////////////
+// Constant ESP_QUEUED to indicate a 'queued' response
+// (rather than ESP_OK or ESP_FAIL, for example)
+////////////////////////////////////////////////////////////////////////
+
 #ifndef ESP_QUEUED
 #define ESP_QUEUED           1    // frame has been queued for later processing
 #endif
 
+////////////////////////////////////////////////////////////////////////
+// CAN BUS constants and objects
+////////////////////////////////////////////////////////////////////////
 
 class canbus; // Forward definition
 
@@ -100,6 +108,8 @@ typedef union
   } CAN_FIR_t;
 
 // CAN Frame
+// Note: Take care changing this structure, as it is a union with
+// CAN_log_message_t and position of 'origin' is fixed.
 struct CAN_frame_t
   {
   canbus*     origin;                   // Origin of the frame
@@ -114,69 +124,6 @@ struct CAN_frame_t
 
   esp_err_t Write(canbus* bus=NULL, TickType_t maxqueuewait=0);  // bus: NULL=origin
   };
-
-
-/**
- * canbitset<StoreType>: CAN data packed bit extraction utility
- *  Usage examples:
- *    canbitset<uint64_t> canbits(p_frame->data.u8, 8) -- load whole CAN frame
- *    canbitset<uint32_t> canbits(data+1, 3) -- load 3 bytes beginning at second
- *    val = canbits.get(12,23) -- extract bits 12-23 of bytes loaded
- *  Note: no sanity checks.
- *  Hint: for best performance on ESP32, avoid StoreType uint64_t
- */
-template <typename StoreType>
-class canbitset
-  {
-  private:
-    StoreType m_store;
-
-  public:
-    canbitset(uint8_t* src, int len)
-      {
-      load(src, len);
-      }
-
-    // load message bytes:
-    void load(uint8_t* src, int len)
-      {
-      m_store = 0;
-      for (int i=0; i<len; i++)
-        {
-        m_store <<= 8;
-        m_store |= src[i];
-        }
-      m_store <<= ((sizeof(StoreType)-len) << 3);
-      }
-
-    // extract message part:
-    //  - start,end: bit positions 0…63, 0=MSB of first msg byte
-    StoreType get(int start, int end)
-      {
-      return (StoreType) ((m_store << start) >> (start + (sizeof(StoreType)<<3) - end - 1));
-      }
-  };
-
-
-// CAN message type
-typedef enum
-  {
-  CAN_frame = 0,
-  CAN_rxcallback,
-  CAN_txcallback,
-  CAN_logerror
-  } CAN_MSGID_t;
-
-// CAN message
-typedef struct
-  {
-  CAN_MSGID_t type;
-  union
-    {
-    CAN_frame_t frame;  // CAN_frame
-    canbus* bus;        // CAN_rxcallback, CAN_txcallback, CAN_logerror
-    } body;
-  } CAN_msg_t;
 
 // CAN status
 typedef struct
@@ -193,6 +140,73 @@ typedef struct
   uint16_t watchdog_resets;         // Watchdog reset counter
   } CAN_status_t;
 
+////////////////////////////////////////////////////////////////////////
+// CAN messages queue
+// This queue is between the CAN bus controller MyCAN and tasks that
+// inject/receive CAN bus messages (such as MCP2515 and esp32can)
+////////////////////////////////////////////////////////////////////////
+
+// CAN message type
+typedef enum
+  {
+  CAN_frame = 0,
+  CAN_rxcallback,
+  CAN_txcallback,
+  CAN_logerror
+} CAN_queue_type_t;
+
+// CAN message
+typedef struct
+  {
+  CAN_queue_type_t type;
+  union
+    {
+    CAN_frame_t frame;  // CAN_frame
+    canbus* bus;        // CAN_rxcallback, CAN_txcallback, CAN_logerror
+    } body;
+  } CAN_queue_msg_t;
+
+////////////////////////////////////////////////////////////////////////
+// CAN Filtering (software based filter)
+// The canfilter object encapsulates the filtering of CAN frames
+////////////////////////////////////////////////////////////////////////
+
+typedef struct
+  {
+  uint8_t bus;
+  uint32_t id_from;
+  uint32_t id_to;
+  } CAN_filter_t;
+
+typedef std::list<CAN_filter_t*> CAN_filter_list_t;
+
+class canfilter
+  {
+  public:
+    canfilter();
+    virtual ~canfilter();
+
+  public:
+    void ClearFilters();
+    void AddFilter(uint8_t bus=0, uint32_t id_from=0, uint32_t id_to=UINT32_MAX);
+    void AddFilter(const char* filterstring);
+    bool RemoveFilter(uint8_t bus=0, uint32_t id_from=0, uint32_t id_to=UINT32_MAX);
+
+  public:
+    bool IsFiltered(const CAN_frame_t* p_frame);
+    bool IsFiltered(canbus* bus);
+    std::string Info();
+
+  protected:
+    CAN_filter_list_t m_filters;
+  };
+
+////////////////////////////////////////////////////////////////////////
+// CAN logging and tracing
+// These structures are involved in formatting, logging and tracing of
+// CAN messages (both frames and status/control messages)
+////////////////////////////////////////////////////////////////////////
+
 // Log entry types:
 typedef enum
   {
@@ -205,21 +219,33 @@ typedef enum
   CAN_LogInfo_Comment,        // general comment
   CAN_LogInfo_Config,         // logger setup info (type, file, filters, vehicle)
   CAN_LogInfo_Event,          // system event (i.e. vehicle started)
-  } CAN_LogEntry_t;
+  } CAN_log_type_t;
 
 // Log message:
 typedef struct
   {
-  uint32_t timestamp;
-  canbus* bus;
-  CAN_LogEntry_t type;
+  CAN_log_type_t type;
+  struct timeval timestamp;
   union
     {
     CAN_frame_t frame;
-    CAN_status_t status;
-    char* text;
+    struct
+      {
+      canbus* origin;
+      union
+        {
+        CAN_status_t status;
+        char* text;
+        };
+      };
     };
-  } CAN_LogMsg_t;
+  } CAN_log_message_t;
+
+extern const char* GetCanLogTypeName(CAN_log_type_t type);
+
+////////////////////////////////////////////////////////////////////////
+// canbus - the definition of a CAN bus
+////////////////////////////////////////////////////////////////////////
 
 class canlog;
 class dbcfile;
@@ -254,9 +280,9 @@ class canbus : public pcp, public InternalRamAllocated
     void BusTicker10(std::string event, void* data);
 
   public:
-    void LogFrame(CAN_LogEntry_t type, const CAN_frame_t* p_frame);
-    void LogStatus(CAN_LogEntry_t type);
-    void LogInfo(CAN_LogEntry_t type, const char* text);
+    void LogFrame(CAN_log_type_t type, const CAN_frame_t* p_frame);
+    void LogStatus(CAN_log_type_t type);
+    void LogInfo(CAN_log_type_t type, const char* text);
     bool StatusChanged();
 
   public:
@@ -270,6 +296,10 @@ class canbus : public pcp, public InternalRamAllocated
   protected:
     dbcfile *m_dbcfile;
   };
+
+////////////////////////////////////////////////////////////////////////
+// can - the CAN system controller
+////////////////////////////////////////////////////////////////////////
 
 typedef std::map<QueueHandle_t, bool> CanListenerMap_t;
 
@@ -312,12 +342,12 @@ class can : public InternalRamAllocated
     void ExecuteCallbacks(const CAN_frame_t* frame, bool tx);
 
   public:
-    void SetLogger(canlog* logger) { m_logger = logger; }
-    canlog* GetLogger() { return m_logger; }
-    void UnsetLogger() { m_logger = NULL; }
-    void LogFrame(canbus* bus, CAN_LogEntry_t type, const CAN_frame_t* frame);
-    void LogStatus(canbus* bus, CAN_LogEntry_t type, const CAN_status_t* status);
-    void LogInfo(canbus* bus, CAN_LogEntry_t type, const char* text);
+    void SetLogger(canlog* logger, int filterc=0, const char* const* filterv=NULL);
+    canlog* GetLogger();
+    void ClearLogger();
+    void LogFrame(canbus* bus, CAN_log_type_t type, const CAN_frame_t* frame);
+    void LogStatus(canbus* bus, CAN_log_type_t type, const CAN_status_t* status);
+    void LogInfo(canbus* bus, CAN_log_type_t type, const char* text);
 
   private:
     CanListenerMap_t m_listeners;

@@ -109,7 +109,7 @@ static void reMongooseHandler(struct mg_connection *nc, int ev, void *p)
 void re::MongooseHandler(struct mg_connection *nc, int ev, void *p)
   {
   char addr[32];
-  CAN_frame_t frame;
+  CAN_log_message_t message;
   switch (ev)
     {
     case MG_EV_ACCEPT:
@@ -164,7 +164,7 @@ void re::MongooseHandler(struct mg_connection *nc, int ev, void *p)
           //ESP_LOGI(TAG,"CRTD complete consumed %d bytes",consumed);
           return;
           }
-        size_t used = m_serveformat_out->put(&frame, bp, bl);
+        size_t used = m_serveformat_out->put(&message, bp, bl);
         //ESP_EARLY_LOGI(TAG,"CRTD used %d bytes",used);
         if (used > bl)
             used = bl;
@@ -177,15 +177,15 @@ void re::MongooseHandler(struct mg_connection *nc, int ev, void *p)
         bp += used;
         bl -= used;
         consumed += used;
-        if (frame.origin != NULL)
+        if (message.frame.origin != NULL)
           {
           switch (m_servemode)
             {
             case Simulate:
-              MyCan.IncomingFrame(&frame);
+              MyCan.IncomingFrame(&message.frame);
               break;
             case Transmit:
-              frame.origin->Write(&frame);
+              message.frame.origin->Write(&message.frame);
               break;
             default:
               break;
@@ -210,21 +210,21 @@ static void RE_task(void *pvParameters)
 
 void re::Task()
   {
-  CAN_frame_t frame;
+  CAN_log_message_t message;
 
   while(1)
     {
-    if (xQueueReceive(m_rxqueue, &frame, (portTickType)portMAX_DELAY)==pdTRUE)
+    if (xQueueReceive(m_rxqueue, &message.frame, (portTickType)portMAX_DELAY)==pdTRUE)
       {
       if (MyRE != NULL) // Protect against MyRE not set (during init)
         {
         switch (m_mode)
           {
           case Serve:
-            DoServe(&frame);
+            DoServe(&message);
           case Analyse:
           case Discover:
-            DoAnalyse(&frame);
+            DoAnalyse(&message.frame);
             break;
           }
         m_finished = monotonictime;
@@ -306,16 +306,17 @@ void re::DoAnalyse(CAN_frame_t* frame)
   r->rxcount++;
   }
 
-void re::DoServe(CAN_frame_t* frame)
+void re::DoServe(CAN_log_message_t* message)
   {
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   if (m_smap.size() > 0)
     {
     OvmsMutexLock lock(&m_smapmutex);
 
-    struct timeval t;
-    gettimeofday(&t,NULL);
-    std::string encoded = m_serveformat_in->get(&t, frame);
+    message->type = CAN_LogFrame_RX;
+    gettimeofday(&message->timestamp,NULL);
+    message->origin = message->frame.origin;
+    std::string encoded = m_serveformat_in->get(message);
     const char* s = encoded.c_str();
     size_t len = encoded.length();
 
@@ -419,8 +420,8 @@ re::re(const char* name)
   m_finished = monotonictime;
   m_mode = Serve;
   m_servemode = Ignore;
-  m_serveformat_in = new candump_crtd();
-  m_serveformat_out = new candump_crtd();
+  m_serveformat_in = MyCanFormatFactory.NewFormat("crtd");
+  m_serveformat_out = MyCanFormatFactory.NewFormat("crtd");
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
   xTaskCreatePinnedToCore(RE_task, "OVMS RE", 4096, (void*)this, 5, &m_task, 1);
   MyCan.RegisterListener(m_rxqueue, true);
@@ -660,7 +661,7 @@ void re_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
   switch (MyRE->m_mode)
     {
     case Serve:
-      writer->printf("Mode:    Serving (%s)\n",MyRE->m_serveformat_in->formatname());
+      writer->printf("Mode:    Serving (%s)\n",MyRE->m_serveformat_in->type());
       switch (MyRE->m_servemode)
         {
         case Ignore:
@@ -938,18 +939,18 @@ void re_serve_format(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     {
     delete MyRE->m_serveformat_in;
     delete MyRE->m_serveformat_out;
-    MyRE->m_serveformat_in = new candump_crtd();
-    MyRE->m_serveformat_out = new candump_crtd();
+    MyRE->m_serveformat_in = MyCanFormatFactory.NewFormat("crtd");
+    MyRE->m_serveformat_out = MyCanFormatFactory.NewFormat("crtd");
     }
   else if (strcmp(cmd->GetName(), "pcap")==0)
     {
     delete MyRE->m_serveformat_in;
     delete MyRE->m_serveformat_out;
-    MyRE->m_serveformat_in = new candump_pcap();
-    MyRE->m_serveformat_out = new candump_pcap();
+    MyRE->m_serveformat_in = MyCanFormatFactory.NewFormat("pcap");
+    MyRE->m_serveformat_out = MyCanFormatFactory.NewFormat("pcap");
     }
 
-  writer->printf("RE serve format is %s\n",MyRE->m_serveformat_in->formatname());
+  writer->printf("RE serve format is %s\n",MyRE->m_serveformat_in->type());
   }
 
 void re_serve_mode(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)

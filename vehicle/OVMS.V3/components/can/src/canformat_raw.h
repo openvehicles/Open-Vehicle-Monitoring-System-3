@@ -24,30 +24,25 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __CANDUMP_CRTD_H__
-#define __CANDUMP_CRTD_H__
+#ifndef __CANFORMAT_RAW_H__
+#define __CANFORMAT_RAW_H__
 
-#include "candump.h"
+#include "canformat.h"
 
-#define CANDUMP_CRTD_MAXLEN 63
-
-class candump_crtd : public candump
+class canformat_raw : public canformat
   {
   public:
-    candump_crtd();
-    virtual ~candump_crtd();
-
-  public:
-    virtual const char* formatname();
+    canformat_raw(const char* type);
+    virtual ~canformat_raw();
 
   protected:
-    char m_buf[CANDUMP_CRTD_MAXLEN+1];
+    char m_buf[sizeof(CAN_log_message_t)];
     size_t m_bufpos;
 
   public:
-    virtual std::string get(struct timeval *time, CAN_frame_t *frame);
+    virtual std::string get(CAN_log_message_t* message);
     virtual std::string getheader(struct timeval *time);
-    virtual size_t put(CAN_frame_t *frame, uint8_t *buffer, size_t len);
+    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len);
   };
 
-#endif // __CANDUMP_CRTD_H__
+#endif // __CANFORMAT_RAW_H__

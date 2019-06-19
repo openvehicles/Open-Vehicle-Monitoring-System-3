@@ -62,9 +62,21 @@ const PROGMEM byte rqChargerSelCurrent[4]         = {0x03, 0x22, 0x02, 0x2A};
 const PROGMEM byte rqChargerTemperatures[4]       = {0x03, 0x22, 0x02, 0x23};
  */
 
-#include "vehicle_smarted.h"
-
+#include "ovms_log.h"
 static const char *TAG = "v-smarted";
+
+#include <stdio.h>
+#include <string>
+#include <iomanip>
+#include "pcp.h"
+#include "ovms_metrics.h"
+#include "ovms_events.h"
+#include "ovms_config.h"
+#include "ovms_command.h"
+#include "metrics_standard.h"
+#include "ovms_notify.h"
+
+#include "vehicle_smarted.h"
 
 
 /**
@@ -86,19 +98,21 @@ void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t 
     last_remain=remain;
     bufpos=0;
   }
-  if (bufpos == MAX_POLL_DATA_LEN) { 
-    remain=0;
-    m_poll_ml_remain=0;
-  } else {
-    for (i=0; i<length; i++) {
-      if ( bufpos < sizeof(buf) ) buf[bufpos++] = data[i];
-    }
-  }
+  
   if (pid == 0xF111 && remain <= 3) {
     remain=0;
     m_poll_ml_remain=0;
     for (i=0; i<length; i++) {
       if ( bufpos < sizeof(buf) ) buf[bufpos++] = data[i];
+    }
+  } else {
+    if (bufpos == MAX_POLL_DATA_LEN) { 
+      remain=0;
+      m_poll_ml_remain=0;
+    } else {
+      for (i=0; i<length; i++) {
+        if ( bufpos < sizeof(buf) ) buf[bufpos++] = data[i];
+      }
     }
   }
   if (remain==0) {
@@ -132,58 +146,49 @@ void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t 
         ESP_LOGI(TAG, "IncomingPollReply: unknown reply module|pid=%#x len=%d", id_pid, bufpos);
         break;
     }
-    last_pid=-1;
-    last_remain=-1;
+    last_pid=pid;
+    last_remain=remain;
     bufpos=0;
+    memset(buf, 0, sizeof(buf));
   }
 }
 
-void OvmsVehicleSmartED::PollReply_BMS_BattTemp(uint8_t reply_data[], uint16_t reply_len) {
-  ESP_LOGD(TAG, "PollReply_BMS_BattTemp: len=%d ", reply_len);
-  
+void OvmsVehicleSmartED::PollReply_BMS_BattTemp(uint8_t* reply_data, uint16_t reply_len) {
   int16_t Temps[4];
+  int n;
   
-  for(uint16_t n = 0; n < (7 * 2); n = n + 2){
+  for(n = 0; n < (7 * 2); n = n + 2){
     Temps[n/2] = ((reply_data[n + 1] * 256 + reply_data[n + 2]));
   }
   if (Temps[0]/64 != -512)
     StandardMetrics.ms_v_bat_temp->SetValue(Temps[0]/64);
-  
-  PollReply_LogDebug("PollReply_BMS_BattTemp", reply_data, reply_len);
 }
 
-void OvmsVehicleSmartED::PollReply_BMS_ModuleTemp(uint8_t reply_data[], uint16_t reply_len) {
-  ESP_LOGD(TAG, "PollReply_BMS_ModuleTemp: len=%d ", reply_len);
-
+void OvmsVehicleSmartED::PollReply_BMS_ModuleTemp(uint8_t* reply_data, uint16_t reply_len) {
   int16_t Temps[13];
+  int n;
+  int i;
 
-  for(uint16_t n = 0; n < (9 * 2); n = n + 2){
+  for(n = 0; n < (9 * 2); n = n + 2){
     Temps[n/2] = ((reply_data[n + 1] * 256 + reply_data[n + 2]));
   }
-  for (uint16_t n = 0; n < 9; n = n + 3) {
-    for (uint16_t i = 0; i < 3; i++) {
+  for (n = 0; n < 9; n = n + 3) {
+    for (i = 0; i < 3; i++) {
       if (i==2) BmsSetCellTemperature(n/3, (float) Temps[n + i]/64);
     }
   }
-  PollReply_LogDebug("PollReply_BMS_ModuleTemp", reply_data, reply_len);
 }
 
-void OvmsVehicleSmartED::PollReply_BMS_BattVolts(uint8_t reply_data[], uint16_t reply_len) {
-  ESP_LOGD(TAG, "PollReply_BMS_BattVolts: len=%d ", reply_len);
+void OvmsVehicleSmartED::PollReply_BMS_BattVolts(uint8_t* reply_data, uint16_t reply_len) {
+  int n;
   
-  for(uint16_t n = 0; n < (CELLCOUNT * 2); n = n + 2){
-    //Cells[n/2] = ((reply_data[n + highOffset] * 256 + reply_data[n + highOffset + 1]));
+  for(n = 0; n < (CELLCOUNT * 2); n = n + 2){
     float Cells = (reply_data[n + 1] * 256 + reply_data[n + 2]);
     BmsSetCellVoltage(n/2, Cells/1000);
-  }
-  
-  PollReply_LogDebug("PollReply_BMS_BattVolts", reply_data, reply_len);
+  } 
 }
 
-void OvmsVehicleSmartED::PollReply_NLG6_ChargerPN_HW(uint8_t reply_data[], uint16_t reply_len) {
-  ESP_LOGD(TAG, "PollReply_NLG6_ChargerPN_HW: len=%d ", reply_len);
-  PollReply_LogDebug("PollReply_NLG6_ChargerPN_HW", reply_data, reply_len);
-  
+void OvmsVehicleSmartED::PollReply_NLG6_ChargerPN_HW(uint8_t* reply_data, uint16_t reply_len) {
   int n;
   int comp = 0;
   char NLG6PN_HW[12];
@@ -204,10 +209,7 @@ void OvmsVehicleSmartED::PollReply_NLG6_ChargerPN_HW(uint8_t reply_data[], uint1
   }
 }
 
-void OvmsVehicleSmartED::PollReply_NLG6_ChargerVoltages(uint8_t reply_data[], uint16_t reply_len) {
-  ESP_LOGD(TAG, "PollReply_NLG6_ChargerVoltages: len=%d ", reply_len);
-  PollReply_LogDebug("PollReply_NLG6_ChargerVoltages", reply_data, reply_len);
-  
+void OvmsVehicleSmartED::PollReply_NLG6_ChargerVoltages(uint8_t* reply_data, uint16_t reply_len) {
   float NLG6MainsVoltage[3];
   
   if (mt_nlg6_present->AsBool()){
@@ -235,10 +237,7 @@ void OvmsVehicleSmartED::PollReply_NLG6_ChargerVoltages(uint8_t reply_data[], ui
   if (NLG6MainsVoltage[0] != 0) StandardMetrics.ms_v_charge_voltage->SetValue(NLG6MainsVoltage[0]);
 }
 
-void OvmsVehicleSmartED::PollReply_NLG6_ChargerAmps(uint8_t reply_data[], uint16_t reply_len) {
-  ESP_LOGD(TAG, "PollReply_NLG6_ChargerAmps: len=%d ", reply_len);
-  PollReply_LogDebug("PollReply_NLG6_ChargerAmps", reply_data, reply_len);
-  
+void OvmsVehicleSmartED::PollReply_NLG6_ChargerAmps(uint8_t* reply_data, uint16_t reply_len) {
   float NLG6MainsAmps[3]; 
   
   if (mt_nlg6_present->AsBool()){
@@ -270,10 +269,7 @@ void OvmsVehicleSmartED::PollReply_NLG6_ChargerAmps(uint8_t reply_data[], uint16
   if (NLG6MainsAmps[0] != 0) StandardMetrics.ms_v_charge_current->SetValue(NLG6MainsAmps[0]);
 }
 
-void OvmsVehicleSmartED::PollReply_NLG6_ChargerSelCurrent(uint8_t reply_data[], uint16_t reply_len) {
-  ESP_LOGD(TAG, "PollReply_NLG6_ChargerSelCurrent: len=%d ", reply_len);
-  PollReply_LogDebug("PollReply_NLG6_ChargerSelCurrent", reply_data, reply_len);
-  
+void OvmsVehicleSmartED::PollReply_NLG6_ChargerSelCurrent(uint8_t* reply_data, uint16_t reply_len) {
   if(mt_nlg6_present->AsBool()){
     mt_nlg6_amps_setpoint->SetValue(reply_data[5]); //Get data for NLG6 fast charger
   } else {
@@ -281,15 +277,13 @@ void OvmsVehicleSmartED::PollReply_NLG6_ChargerSelCurrent(uint8_t reply_data[], 
   }
 }
 
-void OvmsVehicleSmartED::PollReply_NLG6_ChargerTemperatures(uint8_t reply_data[], uint16_t reply_len) {
-  ESP_LOGD(TAG, "PollReply_NLG6_ChargerTemperatures: len=%d ", reply_len);
-  PollReply_LogDebug("PollReply_NLG6_ChargerTemperatures", reply_data, reply_len);
-  
+void OvmsVehicleSmartED::PollReply_NLG6_ChargerTemperatures(uint8_t* reply_data, uint16_t reply_len) {
   float NLG6Temps[9];
+  int n;
   
   if (mt_nlg6_present->AsBool()){
     mt_nlg6_temp_coolingplate->SetValue((reply_data[1] < 0xFF) ? reply_data[1]-40 : 0);
-    for(int n = 0; n < 8; n++) {
+    for(n = 0; n < 8; n++) {
       NLG6Temps[n] = (reply_data[n + 2] < 0xFF) ? reply_data[n + 2]-40 : 0;
     }
     mt_nlg6_temp_reported->SetValue((reply_data[9] < 0xFF) ? reply_data[9]-40 : 0);
@@ -303,12 +297,3 @@ void OvmsVehicleSmartED::PollReply_NLG6_ChargerTemperatures(uint8_t reply_data[]
   if (mt_nlg6_temp_reported->AsFloat() != 0) StandardMetrics.ms_v_charge_temp->SetValue(mt_nlg6_temp_reported->AsFloat());
 }
 
-void OvmsVehicleSmartED::PollReply_LogDebug(const char* name, uint8_t reply_data[], uint16_t reply_len) {
-  int x;
-  char output[(reply_len * 2) + 1 + reply_len];
-  char *ptr = &output[0];
-  for(x=0; x<reply_len; x++) {
-    ptr += sprintf (ptr, "%02X:", reply_data[x]);
-  }
-  ESP_LOGD(TAG, "%s: data=%s ", name, output);
-}

@@ -25,54 +25,74 @@
 */
 
 #include "ovms_log.h"
-static const char *TAG = "candump-pcap";
+static const char *TAG = "canformat-pcap";
 
 #include <errno.h>
 #include <endian.h>
 #include "pcp.h"
-#include "candump_pcap.h"
+#include "canformat_pcap.h"
 
-candump_pcap::candump_pcap()
+class OvmsCanFormatPCAPInit
+  {
+  public: OvmsCanFormatPCAPInit();
+} MyOvmsCanFormatPCAPInit  __attribute__ ((init_priority (4505)));
+
+OvmsCanFormatPCAPInit::OvmsCanFormatPCAPInit()
+  {
+  ESP_LOGI(TAG, "Registering CAN Format: PCAP (4505)");
+
+  MyCanFormatFactory.RegisterCanFormat<canformat_pcap>("pcap");
+  }
+
+canformat_pcap::canformat_pcap(const char* type)
+  : canformat(type)
   {
   m_bufpos = 0;
   m_discarding = false;
   }
 
-candump_pcap::~candump_pcap()
+canformat_pcap::~canformat_pcap()
   {
   }
 
-const char* candump_pcap::formatname()
-  {
-  return "pcap";
-  }
-
-std::string candump_pcap::get(struct timeval *time, CAN_frame_t *frame)
+std::string canformat_pcap::get(CAN_log_message_t* message)
   {
   m_bufpos = 0;
 
+  if (message->type != CAN_LogFrame_RX)
+    {
+    return std::string("");
+    }
+    
   pcaprec_can_t* m = (pcaprec_can_t*)&m_buf;
   memset(m_buf,0,sizeof(pcaprec_can_t));
 
-  m->hdr.ts_sec = htobe32(time->tv_sec);
-  m->hdr.ts_usec = htobe32(time->tv_usec);
+  m->hdr.ts_sec = htobe32(message->timestamp.tv_sec);
+  m->hdr.ts_usec = htobe32(message->timestamp.tv_usec);
   m->hdr.incl_len = htobe32(16);
   m->hdr.orig_len = htobe32(16);
 
-  uint32_t idfl = frame->MsgID;
-  if (frame->FIR.B.FF == CAN_frame_ext) idfl |= CANDUMP_PCAP_FL_EXT;
-  if (frame->FIR.B.RTR == CAN_RTR) idfl |= CANDUMP_PCAP_FL_RTR;
+  uint32_t idfl = message->frame.MsgID;
+  if (message->frame.FIR.B.FF == CAN_frame_ext) idfl |= CANFORMAT_PCAP_FL_EXT;
+  if (message->frame.FIR.B.RTR == CAN_RTR) idfl |= CANFORMAT_PCAP_FL_RTR;
   m->phdr.idflags = htobe32(idfl);
-  m->phdr.len = frame->FIR.B.DLC;
+  m->phdr.len = message->frame.FIR.B.DLC;
 
-  memcpy(m->data, frame->data.u8, frame->FIR.B.DLC);
+  memcpy(m->data, message->frame.data.u8, message->frame.FIR.B.DLC);
 
   return std::string((const char*)m, sizeof(pcaprec_can_t));
   }
 
-std::string candump_pcap::getheader(struct timeval *time)
+std::string canformat_pcap::getheader(struct timeval *time)
   {
   m_bufpos = 0;
+  struct timeval t;
+
+  if (time == NULL)
+    {
+    gettimeofday(&t,NULL);
+    time = &t;
+    }
 
   pcap_hdr_t* h = (pcap_hdr_t*)&m_buf;
   memset(m_buf,0,sizeof(pcap_hdr_t));
@@ -85,12 +105,12 @@ std::string candump_pcap::getheader(struct timeval *time)
   return std::string((const char*)h, sizeof(pcap_hdr_t));
   }
 
-size_t candump_pcap::put(CAN_frame_t *frame, uint8_t *buffer, size_t len)
+size_t canformat_pcap::put(CAN_log_message_t* message, uint8_t *buffer, size_t len)
   {
   // Check if we've failed somewhere and are simply discarding
   if (m_discarding)
     {
-    frame->origin = NULL;
+    message->origin = NULL;
     return len;
     }
 
@@ -104,7 +124,7 @@ size_t candump_pcap::put(CAN_frame_t *frame, uint8_t *buffer, size_t len)
       // Just bring in what we can..
       memcpy(m_buf+m_bufpos, buffer, len);
       m_bufpos += len;
-      frame->origin = NULL;
+      message->origin = NULL;
       return len;
       }
     else
@@ -125,7 +145,7 @@ size_t candump_pcap::put(CAN_frame_t *frame, uint8_t *buffer, size_t len)
     // This is a PCAP header - just ignore it
     if (be32toh(h->network) != 0xe3) m_discarding = true;
     m_bufpos = 0;
-    frame->origin = NULL;
+    message->origin = NULL;
     return consumed;
     }
   else if ((magic == 0xd4c3b2a1)||
@@ -135,7 +155,7 @@ size_t candump_pcap::put(CAN_frame_t *frame, uint8_t *buffer, size_t len)
     ESP_LOGW(TAG,"pcap format %08x not supported - ignoring data stream",magic);
     m_discarding = true;
     m_bufpos = 0;
-    frame->origin = NULL;
+    message->origin = NULL;
     return consumed;
     }
 
@@ -146,7 +166,7 @@ size_t candump_pcap::put(CAN_frame_t *frame, uint8_t *buffer, size_t len)
     // Just bring in what we can..
     memcpy(m_buf+m_bufpos, buffer, len);
     m_bufpos += len;
-    frame->origin = NULL;
+    message->origin = NULL;
     return consumed+len;
     }
   else
@@ -160,22 +180,22 @@ size_t candump_pcap::put(CAN_frame_t *frame, uint8_t *buffer, size_t len)
 
   // At this point, we have our 32 bytes...
   pcaprec_can_t* m = (pcaprec_can_t*)&m_buf;
-  memset(frame,0,sizeof(CAN_frame_t));
+  memset(message,0,sizeof(CAN_log_message_t));
 
   uint32_t idf = be32toh(m->phdr.idflags);
-  if (idf & CANDUMP_PCAP_FL_MSG)
+  if (idf & CANFORMAT_PCAP_FL_MSG)
     {
     // Just ignore it
-    frame->origin = NULL;
     m_bufpos = 0;
     return consumed;
     }
-  frame->FIR.B.RTR = (idf & CANDUMP_PCAP_FL_RTR)?CAN_RTR:CAN_no_RTR;
-  frame->FIR.B.FF = (idf & CANDUMP_PCAP_FL_EXT)?CAN_frame_ext:CAN_frame_std;
-  frame->MsgID = idf & CANDUMP_PCAP_FL_MASK;
-  frame->origin = (canbus*)MyPcpApp.FindDeviceByName("can1");
-  frame->FIR.B.DLC = m->phdr.len;
-  memcpy(frame->data.u8, m->data, m->phdr.len);
+  message->type = CAN_LogFrame_RX;
+  message->frame.FIR.B.RTR = (idf & CANFORMAT_PCAP_FL_RTR)?CAN_RTR:CAN_no_RTR;
+  message->frame.FIR.B.FF = (idf & CANFORMAT_PCAP_FL_EXT)?CAN_frame_ext:CAN_frame_std;
+  message->frame.MsgID = idf & CANFORMAT_PCAP_FL_MASK;
+  message->origin = (canbus*)MyPcpApp.FindDeviceByName("can1");
+  message->frame.FIR.B.DLC = m->phdr.len;
+  memcpy(message->frame.data.u8, m->data, m->phdr.len);
 
   m_bufpos = 0;
   return consumed;

@@ -24,12 +24,12 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __CANDUMP_PCAP_H__
-#define __CANDUMP_PCAP_H__
+#ifndef __CANFORMAT_PCAP_H__
+#define __CANFORMAT_PCAP_H__
 
-#include "candump.h"
+#include "canformat.h"
 
-#define CANDUMP_PCAP_MAXLEN 32
+#define CANFORMAT_PCAP_MAXLEN 32
 
 typedef struct __attribute__ ((__packed__))
   {
@@ -66,29 +66,26 @@ typedef struct __attribute__ ((__packed__))
   uint8_t data[8];
   } pcaprec_can_t;
 
-#define CANDUMP_PCAP_FL_MSG  0x20000000
-#define CANDUMP_PCAP_FL_RTR  0x40000000
-#define CANDUMP_PCAP_FL_EXT  0x80000000
-#define CANDUMP_PCAP_FL_MASK 0x1fffffff
+#define CANFORMAT_PCAP_FL_MSG  0x20000000
+#define CANFORMAT_PCAP_FL_RTR  0x40000000
+#define CANFORMAT_PCAP_FL_EXT  0x80000000
+#define CANFORMAT_PCAP_FL_MASK 0x1fffffff
 
-class candump_pcap : public candump
+class canformat_pcap : public canformat
   {
   public:
-    candump_pcap();
-    virtual ~candump_pcap();
-
-  public:
-    virtual const char* formatname();
+    canformat_pcap(const char* type);
+    virtual ~canformat_pcap();
 
   protected:
-    uint8_t m_buf[CANDUMP_PCAP_MAXLEN];
+    uint8_t m_buf[CANFORMAT_PCAP_MAXLEN];
     size_t m_bufpos;
     bool m_discarding;
 
   public:
-    virtual std::string get(struct timeval *time, CAN_frame_t *frame);
+    virtual std::string get(CAN_log_message_t* message);
     virtual std::string getheader(struct timeval *time);
-    virtual size_t put(CAN_frame_t *frame, uint8_t *buffer, size_t len);
+    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len);
   };
 
-#endif // __CANDUMP_PCAP_H__
+#endif // __CANFORMAT_PCAP_H__

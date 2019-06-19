@@ -45,7 +45,7 @@ esp32can* MyESP32can = NULL;
 
 static IRAM_ATTR void ESP32CAN_rxframe(esp32can *me)
   {
-  CAN_msg_t msg;
+  CAN_queue_msg_t msg;
 
   while (MODULE_ESP32CAN->SR.B.RBS)
     {
@@ -96,7 +96,7 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
   if ((interrupt & __CAN_IRQ_TX) != 0)
     {
   	// Request TxCallback:
-    CAN_msg_t msg;
+    CAN_queue_msg_t msg;
     msg.type = CAN_txcallback;
     msg.body.bus = me;
     xQueueSendFromISR(MyCan.m_rxqueue, &msg, 0);
@@ -125,7 +125,7 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
       MODULE_ESP32CAN->CMR.B.CDO = 1;
       }
     // Request error log:
-    CAN_msg_t msg;
+    CAN_queue_msg_t msg;
     msg.type = CAN_logerror;
     msg.body.bus = me;
     xQueueSendFromISR(MyCan.m_rxqueue, &msg, 0);

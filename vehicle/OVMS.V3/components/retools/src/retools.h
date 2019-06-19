@@ -37,9 +37,7 @@
 #include <string>
 #include <map>
 #include "can.h"
-#include "candump.h"
-#include "candump_crtd.h"
-#include "candump_pcap.h"
+#include "canformat.h"
 #include "dbc.h"
 #include "pcp.h"
 #include "ovms.h"
@@ -99,7 +97,7 @@ class re : public pcp, public ExternalRamAllocated
 
   protected:
     void DoAnalyse(CAN_frame_t* frame);
-    void DoServe(CAN_frame_t* frame);
+    void DoServe(CAN_log_message_t* message);
 
   protected:
     TaskHandle_t m_task;
@@ -110,8 +108,8 @@ class re : public pcp, public ExternalRamAllocated
     REMode m_mode;
     REServeMode m_servemode;
     re_record_map_t m_rmap;
-    candump* m_serveformat_in;
-    candump* m_serveformat_out;
+    canformat* m_serveformat_in;
+    canformat* m_serveformat_out;
     uint32_t m_obdii_std_min;
     uint32_t m_obdii_std_max;
     uint32_t m_obdii_ext_min;
