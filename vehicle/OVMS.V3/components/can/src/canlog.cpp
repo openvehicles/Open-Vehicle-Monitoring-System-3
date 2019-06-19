@@ -36,62 +36,104 @@ static const char *TAG = "canlog";
 #include <sstream>
 #include <iomanip>
 #include "ovms_config.h"
+#include "ovms_command.h"
 #include "ovms_events.h"
 #include "ovms_peripherals.h"
 #include "metrics_standard.h"
 
+////////////////////////////////////////////////////////////////////////
+// Command Processing
+////////////////////////////////////////////////////////////////////////
 
-/***************************************************************************************************
- * canlog Factory
- */
-
-static const char* const typelist[] = { "trace", "crtd", NULL };
-
-const char* const* canlog::GetTypeList()
+void can_log_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  return typelist;
+  canlog* cl = MyCan.GetLogger();
+
+  if (!cl)
+    {
+    writer->puts("CAN logging is not running");
+    return;
+    }
+
+  writer->printf("Closing log: %s\n", cl->GetInfo().c_str());
+  MyCan.ClearLogger();
+  vTaskDelay(pdMS_TO_TICKS(100)); // give logger task time to finish
+  cl->Close();
+  writer->printf("CAN logging stopped at %s\n", cl->GetStats().c_str());
+  delete cl;
   }
 
-canlog* canlog::Instantiate(const char* type)
+void can_log_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (strcasecmp(type, "trace") == 0)
-    return new canlog_trace();
-  if (strcasecmp(type, "crtd") == 0)
-    return new canlog_crtd();
+  canlog* cl = MyCan.GetLogger();
 
-  ESP_LOGE(TAG, "canlog::Instantiate: Unknown type '%s'", type);
-  return NULL;
+  if (cl)
+    writer->printf("CAN logging active: %s\nStatistics: %s\n", cl->GetInfo().c_str(), cl->GetStats().c_str());
+  else
+    writer->puts("CAN logging inactive");
   }
 
+////////////////////////////////////////////////////////////////////////
+// CAN Logging System initialisation
+////////////////////////////////////////////////////////////////////////
 
-/***************************************************************************************************
- * canlog: Base CAN logger implementation
- */
-
-canlog::canlog(int queuesize /*=30*/)
+class OvmsCanLogInit
   {
-  m_file = NULL;
-  m_path = "";
-  m_filtercnt = 0;
-  m_queue = xQueueCreate(queuesize, sizeof(CAN_LogMsg_t));
-  xTaskCreatePinnedToCore(RxTask, "OVMS CanLog", 4096, (void*)this, 10, &m_task, 1);
+  public: OvmsCanLogInit();
+} MyOvmsCanLogInit  __attribute__ ((init_priority (4550)));
+
+OvmsCanLogInit::OvmsCanLogInit()
+  {
+  ESP_LOGI(TAG, "Initialising CAN logging (4550)");
+
+  OvmsCommand* cmd_can = MyCommandApp.FindCommand("can");
+  if (cmd_can == NULL)
+    {
+    ESP_LOGE(TAG,"Cannot find CAN command - aborting log command registration");
+    return;
+    }
+
+  OvmsCommand* cmd_canlog = cmd_can->RegisterCommand("log", "CAN logging framework");
+  cmd_canlog->RegisterCommand("stop", "Stop logging", can_log_stop);
+  cmd_canlog->RegisterCommand("status", "Logging status", can_log_status);
+  cmd_canlog->RegisterCommand("start", "CAN logging start framework");
+  }
+
+////////////////////////////////////////////////////////////////////////
+// CAN Logger class
+////////////////////////////////////////////////////////////////////////
+
+canlog::canlog(const char* type, std::string format)
+  {
+  m_type = type;
+  m_format = format;
+  m_formatter = MyCanFormatFactory.NewFormat(format.c_str());
+  m_filter = NULL;
+
   m_msgcount = 0;
   m_dropcount = 0;
+  m_filtercount = 0;
 
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG, "sd.mounted", std::bind(&canlog::MountListener, this, _1, _2));
-  MyEvents.RegisterEvent(TAG, "sd.unmounting", std::bind(&canlog::MountListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "*", std::bind(&canlog::EventListener, this, _1, _2));
+
+  int queuesize = MyConfig.GetParamValueInt("can", "log.queuesize",100);
+  m_queue = xQueueCreate(queuesize, sizeof(CAN_log_message_t));
+  xTaskCreatePinnedToCore(RxTask, "OVMS CanLog", 4096, (void*)this, 10, &m_task, 1);
   }
 
 canlog::~canlog()
   {
   if (m_task)
+    {
     vTaskDelete(m_task);
+    m_task = NULL;
+    }
 
   if (m_queue)
     {
-    CAN_LogMsg_t msg;
+    CAN_log_message_t msg;
     while (xQueueReceive(m_queue, &msg, 0) == pdTRUE)
       {
       switch (msg.type)
@@ -107,12 +149,24 @@ canlog::~canlog()
       }
     vQueueDelete(m_queue);
     }
+
+  if (m_formatter)
+    {
+    delete m_formatter;
+    m_formatter = NULL;
+    }
+
+  if (m_filter)
+    {
+    delete m_filter;
+    m_filter = NULL;
+    }
   }
 
 void canlog::RxTask(void *context)
   {
   canlog* me = (canlog*) context;
-  CAN_LogMsg_t msg;
+  CAN_log_message_t msg;
   while (1)
     {
     if (xQueueReceive(me->m_queue, &msg, (portTickType)portMAX_DELAY) == pdTRUE)
@@ -133,101 +187,42 @@ void canlog::RxTask(void *context)
     }
   }
 
-bool canlog::Open(std::string path)
+void canlog::EventListener(std::string event, void* data)
   {
-  if (MyConfig.ProtectedPath(path))
-    {
-    ESP_LOGE(TAG, "canlog[%s].Open: protected path '%s'", GetType(), path.c_str());
-    return false;
-    }
-#ifdef CONFIG_OVMS_COMP_SDCARD
-  if (startsWith(path, "/sd") && (!MyPeripherals || !MyPeripherals->m_sdcard || !MyPeripherals->m_sdcard->isavailable()))
-    {
-    ESP_LOGE(TAG, "canlog[%s].Open: cannot open '%s', SD filesystem not available", GetType(), path.c_str());
-    return false;
-    }
-#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
-
-  FILE* file = fopen(path.c_str(), "w");
-  if (!file)
-    {
-    ESP_LOGE(TAG, "canlog[%s].Open: can't write to '%s'", GetType(), path.c_str());
-    return false;
-    }
-
-  m_path = path;
-  m_file = file;
-  m_msgcount = 0;
-  m_dropcount = 0;
-
-  LogInfo(NULL, CAN_LogInfo_Config, GetInfo().c_str());
-  ESP_LOGI(TAG, "canlog[%s].Open: writing to '%s'", GetType(), path.c_str());
-  return true;
+  if (startsWith(event, "vehicle"))
+    LogInfo(NULL, CAN_LogInfo_Event, event.c_str());
   }
 
-void canlog::Close()
+const char* canlog::GetType()
   {
-  if (m_file)
-    {
-    FILE* file = m_file;
-    m_file = NULL;
-    fclose(file);
-    ESP_LOGI(TAG, "canlog[%s].Close: '%s' closed. Statistics: %s",
-      GetType(), m_path.c_str(), GetStats().c_str());
-    }
+  return m_type;
   }
 
-void canlog::MountListener(std::string event, void* data)
+const char* canlog::GetFormat()
   {
-  if (event == "sd.unmounting" && startsWith(m_path, "/sd"))
-    Close();
-  else if (event == "sd.mounted" && startsWith(m_path, "/sd"))
-    Open(m_path);
+  return m_format.c_str();
   }
 
-static const char* const CAN_LogEntryTypeName[] = {
-  "RX",
-  "TX",
-  "TX_Queue",
-  "TX_Fail",
-  "Error",
-  "Status",
-  "Comment",
-  "Info",
-  "Event"
-};
-
-const char* canlog::GetLogEntryTypeName(CAN_LogEntry_t type)
+void canlog::OutputMsg(CAN_log_message_t& msg)
   {
-  return CAN_LogEntryTypeName[type];
   }
 
 std::string canlog::GetInfo()
   {
   std::ostringstream buf;
 
-  buf << "Type:" << GetType();
+  buf << "Type:" << m_type << " Format:" << m_format;
 
-  if (IsOpen())
-    buf << "; Path:'" << GetPath() << "'";
-
-  if (m_filtercnt)
+  if (m_filter)
     {
-    buf << "; Filter:" << std::hex;
-    for (int i=0; i<m_filtercnt; i++)
-      {
-      buf << ((i==0)?"":",");
-      if (m_filter[i].bus)
-        buf << m_filter[i].bus << ":";
-      buf << m_filter[i].id_from << "-" << m_filter[i].id_to;
-      }
+    buf << " Filter:" << m_filter->Info();
     }
   else
     {
-    buf << "; Filter:off";
+    buf << " Filter:off";
     }
 
-  buf << "; Vehicle:" << StdMetrics.ms_v_type->AsString() << ";";
+  buf << " Vehicle:" << StdMetrics.ms_v_type->AsString();
 
   return buf.str();
   }
@@ -235,225 +230,95 @@ std::string canlog::GetInfo()
 std::string canlog::GetStats()
   {
   std::ostringstream buf;
+
   float droprate = (m_msgcount > 0) ? ((float) m_dropcount/m_msgcount*100) : 0;
   uint32_t waiting = uxQueueMessagesWaiting(m_queue);
+
   buf << "total messages: " << m_msgcount
     << ", dropped: " << m_dropcount
+    << ", filtered: " << m_filtercount
     << " = " << std::fixed << std::setprecision(1) << droprate << "%";
+
   if (waiting > 0)
     buf << ", waiting: " << waiting;
+
   return buf.str();
   }
 
-void canlog::SetFilter(int filtercnt, canlog_filter_t filter[])
+void canlog::SetFilter(canfilter* filter)
   {
-  m_filtercnt = MIN(filtercnt, CANLOG_MAX_FILTERS);
-  memcpy(m_filter, filter, m_filtercnt*sizeof(canlog_filter_t));
-  LogInfo(NULL, CAN_LogInfo_Config, GetInfo().c_str());
-  }
-
-bool canlog::CheckFilter(canbus* bus, CAN_LogEntry_t type, const CAN_frame_t* frame)
-  {
-  if (!bus || m_filtercnt == 0)
-    return true;
-  char buskey = bus->GetName()[3];
-  for (int i=0; i<m_filtercnt; i++)
+  if (m_filter)
     {
-    if (m_filter[i].bus && m_filter[i].bus != buskey)
-      continue;
-    if (!frame)
-      return true;
-    if (m_filter[i].id_from <= frame->MsgID && frame->MsgID <= m_filter[i].id_to)
-      return true;
+    delete m_filter;
     }
-  return false;
+  m_filter = filter;
   }
 
-void canlog::LogFrame(canbus* bus, CAN_LogEntry_t type, const CAN_frame_t* frame)
+void canlog::ClearFilter()
   {
-  if (!IsOpen() || !bus || !frame)
-    return;
-  if (CheckFilter(bus, type, frame))
+  if (m_filter)
     {
-    CAN_LogMsg_t msg;
-    msg.timestamp = esp_log_timestamp();
-    msg.bus = bus;
+    delete m_filter;
+    m_filter = NULL;
+    }
+  }
+
+void canlog::LogFrame(canbus* bus, CAN_log_type_t type, const CAN_frame_t* frame)
+  {
+  if (!IsOpen() || !bus || !frame) return;
+
+  if ((m_filter == NULL)||(m_filter->IsFiltered(frame)))
+    {
+    CAN_log_message_t msg;
     msg.type = type;
-    msg.frame = *frame;
+    gettimeofday(&msg.timestamp,NULL);
+    memcpy(&msg.frame,frame,sizeof(CAN_frame_t));
+    msg.frame.origin = bus;
     m_msgcount++;
-    if (xQueueSend(m_queue, &msg, 0) != pdTRUE)
-      m_dropcount++;
+    if (xQueueSend(m_queue, &msg, 0) != pdTRUE) m_dropcount++;
+    }
+  else
+    {
+    m_filtercount++;
     }
   }
 
-void canlog::LogStatus(canbus* bus, CAN_LogEntry_t type, const CAN_status_t* status)
+void canlog::LogStatus(canbus* bus, CAN_log_type_t type, const CAN_status_t* status)
   {
-  if (!IsOpen() || !bus)
-    return;
-  if (CheckFilter(bus, type))
+  if (!IsOpen() || !bus) return;
+
+  if ((m_filter == NULL)||(m_filter->IsFiltered(bus)))
     {
-    CAN_LogMsg_t msg;
-    msg.timestamp = esp_log_timestamp();
-    msg.bus = bus;
+    CAN_log_message_t msg;
     msg.type = type;
-    msg.status = *status;
+    gettimeofday(&msg.timestamp,NULL);
+    msg.origin = bus;
+    memcpy(&msg.status,status,sizeof(CAN_status_t));
     m_msgcount++;
-    if (xQueueSend(m_queue, &msg, 0) != pdTRUE)
-      m_dropcount++;
+    if (xQueueSend(m_queue, &msg, 0) != pdTRUE) m_dropcount++;
+    }
+  else
+    {
+    m_filtercount++;
     }
   }
 
-void canlog::LogInfo(canbus* bus, CAN_LogEntry_t type, const char* text)
+void canlog::LogInfo(canbus* bus, CAN_log_type_t type, const char* text)
   {
-  if (!IsOpen() || !text)
-    return;
-  if (CheckFilter(bus, type))
+  if (!IsOpen() || !text) return;
+
+  if ((m_filter == NULL)||(m_filter->IsFiltered(bus)))
     {
-    CAN_LogMsg_t msg;
-    msg.timestamp = esp_log_timestamp();
-    msg.bus = bus;
+    CAN_log_message_t msg;
     msg.type = type;
+    gettimeofday(&msg.timestamp,NULL);
+    msg.origin = bus;
     msg.text = strdup(text);
     m_msgcount++;
-    if (xQueueSend(m_queue, &msg, 0) != pdTRUE)
-      m_dropcount++;
+    if (xQueueSend(m_queue, &msg, 0) != pdTRUE) m_dropcount++;
     }
-  }
-
-
-
-/***************************************************************************************************
- * canlog_trace: log to syslog
- */
-
-void canlog_trace::OutputMsg(CAN_LogMsg_t& msg)
-  {
-  switch (msg.type)
+  else
     {
-    case CAN_LogFrame_RX:
-    case CAN_LogFrame_TX:
-    case CAN_LogFrame_TX_Queue:
-    case CAN_LogFrame_TX_Fail:
-      {
-      char buffer[100];
-      char *hexdump = buffer + snprintf(buffer, sizeof(buffer), "%s %s id %0*x len %d: ",
-        GetLogEntryTypeName(msg.type), msg.bus->GetName(),
-        (msg.frame.FIR.B.FF == CAN_frame_std) ? 3 : 8, msg.frame.MsgID, msg.frame.FIR.B.DLC);
-      FormatHexDump(&hexdump, (const char*)msg.frame.data.u8, msg.frame.FIR.B.DLC, 8);
-      esp_log_write(ESP_LOG_VERBOSE, TAG, LOG_FORMAT(V, "%s"), msg.timestamp, TAG, buffer);
-      }
-      break;
-
-    case CAN_LogStatus_Error:
-      esp_log_write(ESP_LOG_ERROR, TAG,
-        LOG_FORMAT(E, "%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d wdgreset=%d"),
-        msg.timestamp, TAG,
-        GetLogEntryTypeName(msg.type), msg.bus->GetName(),
-        msg.status.interrupts,
-        msg.status.packets_rx, msg.status.packets_tx,
-        msg.status.error_flags, msg.status.errors_rx, msg.status.errors_tx,
-        msg.status.rxbuf_overflow, msg.status.txbuf_overflow,
-        msg.status.txbuf_delay, msg.status.watchdog_resets);
-      break;
-    case CAN_LogStatus_Statistics:
-      esp_log_write(ESP_LOG_DEBUG, TAG,
-        LOG_FORMAT(D, "%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d wdgreset=%d"),
-        msg.timestamp, TAG,
-        GetLogEntryTypeName(msg.type), msg.bus->GetName(),
-        msg.status.interrupts,
-        msg.status.packets_rx, msg.status.packets_tx,
-        msg.status.error_flags, msg.status.errors_rx, msg.status.errors_tx,
-        msg.status.rxbuf_overflow, msg.status.txbuf_overflow,
-        msg.status.txbuf_delay, msg.status.watchdog_resets);
-      break;
-
-    case CAN_LogInfo_Comment:
-    case CAN_LogInfo_Config:
-    case CAN_LogInfo_Event:
-      esp_log_write(ESP_LOG_DEBUG, TAG,
-        LOG_FORMAT(D, "canlog %s %s %s"),
-        msg.timestamp, TAG,
-        GetLogEntryTypeName(msg.type), msg.bus ? msg.bus->GetName() : "*", msg.text);
-      break;
-
-    default:
-      break;
-    }
-  }
-
-
-/***************************************************************************************************
- * canlog_crtd: log to file; OVMS CRTD format by Mark Webb-Johnson
- *    see doc/Format-CRTD.md
- */
-
-canlog_crtd::canlog_crtd()
-  {
-  using std::placeholders::_1;
-  using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG, "*", std::bind(&canlog_crtd::EventListener, this, _1, _2));
-  }
-
-canlog_crtd::~canlog_crtd()
-  {
-  MyEvents.DeregisterEvent(TAG);
-  }
-
-void canlog_crtd::EventListener(std::string event, void* data)
-  {
-  if (startsWith(event, "vehicle"))
-    LogInfo(NULL, CAN_LogInfo_Event, event.c_str());
-  }
-
-void canlog_crtd::OutputMsg(CAN_LogMsg_t& msg)
-  {
-  switch (msg.type)
-    {
-    case CAN_LogFrame_RX:
-    case CAN_LogFrame_TX:
-      fprintf(m_file, "%d.%03d %s%c%s %0*X",
-        msg.timestamp / 1000, msg.timestamp % 1000, msg.bus->GetName()+3,
-        (msg.type == CAN_LogFrame_RX) ? 'R' : 'T', (msg.frame.FIR.B.FF == CAN_frame_std) ? "11" : "29",
-        (msg.frame.FIR.B.FF == CAN_frame_std) ? 3 : 8, msg.frame.MsgID);
-      for (int i=0; i<msg.frame.FIR.B.DLC; i++)
-        fprintf(m_file, " %02X", msg.frame.data.u8[i]);
-      fputc('\n', m_file);
-      break;
-
-    case CAN_LogFrame_TX_Queue:
-    case CAN_LogFrame_TX_Fail:
-      fprintf(m_file, "%d.%03d %sCEV %s %c%s %0*X",
-        msg.timestamp / 1000, msg.timestamp % 1000, msg.bus->GetName()+3,
-        GetLogEntryTypeName(msg.type),
-        (msg.type == CAN_LogFrame_RX) ? 'R' : 'T', (msg.frame.FIR.B.FF == CAN_frame_std) ? "11" : "29",
-        (msg.frame.FIR.B.FF == CAN_frame_std) ? 3 : 8, msg.frame.MsgID);
-      for (int i=0; i<msg.frame.FIR.B.DLC; i++)
-        fprintf(m_file, " %02X", msg.frame.data.u8[i]);
-      fputc('\n', m_file);
-      break;
-
-    case CAN_LogStatus_Error:
-    case CAN_LogStatus_Statistics:
-      fprintf(m_file, "%d.%03d %s%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d wdgreset=%d\n",
-        msg.timestamp / 1000, msg.timestamp % 1000, msg.bus->GetName()+3,
-        (msg.type == CAN_LogStatus_Error) ? "CEV" : "CXX",
-        GetLogEntryTypeName(msg.type), msg.status.interrupts,
-        msg.status.packets_rx, msg.status.packets_tx, msg.status.error_flags,
-        msg.status.errors_rx, msg.status.errors_tx, msg.status.rxbuf_overflow, msg.status.txbuf_overflow,
-        msg.status.txbuf_delay, msg.status.watchdog_resets);
-      break;
-      break;
-
-    case CAN_LogInfo_Comment:
-    case CAN_LogInfo_Config:
-    case CAN_LogInfo_Event:
-      fprintf(m_file, "%d.%03d %s%s %s %s\n",
-        msg.timestamp / 1000, msg.timestamp % 1000, msg.bus ? msg.bus->GetName()+3 : "",
-        (msg.type == CAN_LogInfo_Event) ? "CEV" : "CXX",
-        GetLogEntryTypeName(msg.type), msg.text);
-      break;
-
-    default:
-      break;
+    m_filtercount++;
     }
   }

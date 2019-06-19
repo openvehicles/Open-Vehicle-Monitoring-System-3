@@ -1,9 +1,10 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Module:        CAN dump framework
+;    Module:        CAN logging framework
 ;    Date:          18th January 2018
 ;
-;    (C) 2018       Mark Webb-Johnson
+;    (C) 2018       Michael Balzer
+;    (C) 2019       Mark Webb-Johnson
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -24,27 +25,28 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __CANDUMP_H__
-#define __CANDUMP_H__
+#ifndef __CANLOG_TCP_CLIENT_H__
+#define __CANLOG_TCP_CLIENT_H__
 
-#include <string>
-#include <sys/time.h>
-#include <string.h>
-#include "can.h"
+#include "canlog.h"
 
-class candump
+class canlog_tcpclient : public canlog
   {
   public:
-    candump();
-    virtual ~candump();
+    canlog_tcpclient(std::string path, std::string format);
+    virtual ~canlog_tcpclient();
 
   public:
-    virtual const char* formatname();
+    virtual bool Open();
+    virtual void Close();
+    virtual bool IsOpen();
+    virtual std::string GetInfo();
 
   public:
-    virtual std::string get(struct timeval *time, CAN_frame_t *frame);
-    virtual std::string getheader(struct timeval *time);
-    virtual size_t put(CAN_frame_t *frame, uint8_t *buffer, size_t len);
+    virtual void OutputMsg(CAN_log_message_t& msg);
+
+  public:
+    std::string         m_path;
   };
 
-#endif // __CANDUMP_H__
+#endif // __CANLOG_TCP_CLIENT_H__

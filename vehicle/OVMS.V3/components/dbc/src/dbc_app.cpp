@@ -42,7 +42,7 @@ static const char *TAG = "dbc-app";
 #include "ovms_config.h"
 #include "ovms_events.h"
 
-dbc MyDBC __attribute__ ((init_priority (4510)));
+dbc MyDBC __attribute__ ((init_priority (4520)));
 
 void dbc_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -518,7 +518,7 @@ void dbc_signal_set_mux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int
 
 dbc::dbc()
   {
-  ESP_LOGI(TAG, "Initialising DBC (4510)");
+  ESP_LOGI(TAG, "Initialising DBC (4520)");
   m_selected = NULL;
 
   OvmsCommand* cmd_dbc = MyCommandApp.RegisterCommand("dbc","DBC framework");
