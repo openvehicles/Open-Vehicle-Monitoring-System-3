@@ -32,7 +32,15 @@
 #ifndef __VEHICLE_SMARTED_H__
 #define __VEHICLE_SMARTED_H__
 
+#include <atomic>
+
+#include "can.h"
 #include "vehicle.h"
+
+#include "ovms_log.h"
+#include "ovms_config.h"
+#include "ovms_metrics.h"
+#include "ovms_command.h"
 #include "freertos/timers.h"
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
@@ -48,15 +56,18 @@ class OvmsVehicleSmartED : public OvmsVehicle
     ~OvmsVehicleSmartED();
 
   public:
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     char m_vin[18];
 
   public:
     void WebInit();
     void WebDeInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
+    static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
     void ConfigChanged(OvmsConfigParam* param);
+    bool SetFeature(int key, const char* value);
+    const std::string GetFeature(int key);
 
   public:
     virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
@@ -85,15 +96,15 @@ class OvmsVehicleSmartED : public OvmsVehicle
     int  calcMinutesRemaining(float target, float charge_voltage, float charge_current);
     void calcBusAktivity(bool state, uint8_t pos);
     void HandleChargingStatus(bool status);
-    void PollReply_BMS_BattVolts(uint8_t reply_data[], uint16_t reply_len);
-    void PollReply_BMS_BattTemp(uint8_t reply_data[], uint16_t reply_len);
-    void PollReply_BMS_ModuleTemp(uint8_t reply_data[], uint16_t reply_len);
-    void PollReply_NLG6_ChargerPN_HW(uint8_t reply_data[], uint16_t reply_len);
-    void PollReply_NLG6_ChargerVoltages(uint8_t reply_data[], uint16_t reply_len);
-    void PollReply_NLG6_ChargerAmps(uint8_t reply_data[], uint16_t reply_len);
-    void PollReply_NLG6_ChargerSelCurrent(uint8_t reply_data[], uint16_t reply_len);
-    void PollReply_NLG6_ChargerTemperatures(uint8_t reply_data[], uint16_t reply_len);
-    void PollReply_LogDebug(const char* name, uint8_t reply_data[], uint16_t reply_len);
+    void PollReply_BMS_BattVolts(uint8_t* reply_data, uint16_t reply_len);
+    void PollReply_BMS_BattTemp(uint8_t* reply_data, uint16_t reply_len);
+    void PollReply_BMS_ModuleTemp(uint8_t* reply_data, uint16_t reply_len);
+    void PollReply_NLG6_ChargerPN_HW(uint8_t* reply_data, uint16_t reply_len);
+    void PollReply_NLG6_ChargerVoltages(uint8_t* reply_data, uint16_t reply_len);
+    void PollReply_NLG6_ChargerAmps(uint8_t* reply_data, uint16_t reply_len);
+    void PollReply_NLG6_ChargerSelCurrent(uint8_t* reply_data, uint16_t reply_len);
+    void PollReply_NLG6_ChargerTemperatures(uint8_t* reply_data, uint16_t reply_len);
+
     
     OvmsMetricInt *mt_vehicle_time;             // vehicle time
     OvmsMetricInt *mt_trip_start;               // trip since start
@@ -115,6 +126,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     int m_range_ideal;                      // … Range Ideal (default 135 km)
     int m_egpio_timout;                     // … EGPIO Ignition Timout (default 5 min)
     bool m_soc_rsoc;                        // Display SOC=SOC or rSOC=SOC
+    bool m_enable_write;                    // canwrite
 
   protected:
     char NLG6_PN_HW[12] = "4519822221";           //!< Part number for NLG6 fast charging hardware

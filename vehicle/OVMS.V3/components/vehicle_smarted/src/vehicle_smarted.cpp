@@ -31,26 +31,35 @@
  */
 
 #include "ovms_log.h"
-#include "vehicle_smarted.h"
-
 static const char *TAG = "v-smarted";
 
+#define VERSION "1.0.0"
+
 #include <stdio.h>
+#include <string>
+#include <iomanip>
+#include "pcp.h"
 #include "ovms_metrics.h"
+#include "ovms_events.h"
+#include "ovms_config.h"
+#include "ovms_command.h"
+#include "metrics_standard.h"
+#include "ovms_notify.h"
 #include "ovms_peripherals.h"
+
+#include "vehicle_smarted.h"
 
 
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
 {
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0201, {  0,300,600 } }, // rqBattTemperatures
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0202, {  0,300,600 } }, // rqBattModuleTemperatures
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0208, {  0,300,600 } }, // rqBattVolts
   { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF111, {  0,120,999 } }, // rqChargerPN_HW
-//  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF121, {  0,300,300 } }, // rqChargerSWrev
   { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0226, {  0,120,999 } }, // rqChargerVoltages
   { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0225, {  0,120,999 } }, // rqChargerAmps
   { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x022A, {  0,120,999 } }, // rqChargerSelCurrent
   { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0223, {  0,120,999 } }, // rqChargerTemperatures
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0201, {  0,300,600 } }, // rqBattTemperatures
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0202, {  0,300,600 } }, // rqBattModuleTemperatures
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0208, {  0,300,600 } }, // rqBattVolts
   { 0, 0, 0x00, 0x00, { 0, 0, 0 } }
 };
 
@@ -100,7 +109,6 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     
     StandardMetrics.ms_v_charge_mode->SetValue("standard");
     StandardMetrics.ms_v_charge_type->SetValue("type2");
-    StandardMetrics.ms_v_charge_limit_soc->SetValue(80);
     StandardMetrics.ms_v_door_chargeport->SetValue(false);
     
     // BMS configuration:
@@ -140,13 +148,18 @@ void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
 
     ESP_LOGI(TAG, "Smart ED reload configuration");
     
-    m_doorlock_port = MyConfig.GetParamValueInt("xse", "doorlock.port", 9);
+    m_doorlock_port   = MyConfig.GetParamValueInt("xse", "doorlock.port", 9);
     m_doorunlock_port = MyConfig.GetParamValueInt("xse", "doorunlock.port", 8);
-    m_ignition_port = MyConfig.GetParamValueInt("xse", "ignition.port", 7);
+    m_ignition_port   = MyConfig.GetParamValueInt("xse", "ignition.port", 7);
     
-    m_range_ideal = MyConfig.GetParamValueInt("xse", "rangeideal", 135);
-    m_egpio_timout = MyConfig.GetParamValueInt("xse", "egpio_timout", 5);
-    m_soc_rsoc = MyConfig.GetParamValueBool("xse", "soc_rsoc", false);
+    m_range_ideal     = MyConfig.GetParamValueInt("xse", "rangeideal", 135);
+    m_egpio_timout    = MyConfig.GetParamValueInt("xse", "egpio_timout", 5);
+    m_soc_rsoc        = MyConfig.GetParamValueBool("xse", "soc_rsoc", false);
+    
+    m_enable_write    = MyConfig.GetParamValueBool("xse", "canwrite", false);
+    
+    StandardMetrics.ms_v_charge_limit_soc->SetValue((float) MyConfig.GetParamValueInt("xse", "suffsoc", 0), Percentage );
+    StandardMetrics.ms_v_charge_limit_range->SetValue((float) MyConfig.GetParamValueInt("xse", "suffrange", 0), Kilometers );
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
     MyPeripherals->m_max7317->Output(m_doorlock_port, 0);
@@ -159,16 +172,16 @@ void OvmsVehicleSmartED::vehicle_smarted_car_on(bool isOn) {
   if (isOn && !StandardMetrics.ms_v_env_on->AsBool()) {
     // Log once that car is being turned on
     ESP_LOGI(TAG,"CAR IS ON");
-    PollSetState(2);
+    if (m_enable_write) PollSetState(2);
 
     // Reset trip values
-    StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
-    StandardMetrics.ms_v_bat_energy_used->SetValue(0);
+    //StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
+    //StandardMetrics.ms_v_bat_energy_used->SetValue(0);
   }
   else if (!isOn && StandardMetrics.ms_v_env_on->AsBool()) {
     // Log once that car is being turned off
     ESP_LOGI(TAG,"CAR IS OFF");
-    PollSetState(1);
+    if (m_enable_write) PollSetState(1);
   }
 
   // Always set this value to prevent it from going stale
@@ -181,6 +194,8 @@ void OvmsVehicleSmartED::vehicle_smarted_car_on(bool isOn) {
  */
 void OvmsVehicleSmartED::HandleCharging() {
   float limit_soc       = StandardMetrics.ms_v_charge_limit_soc->AsFloat(0);
+  float limit_range     = StandardMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
+  float max_range       = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
   float charge_current  = StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
   float charge_voltage  = StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
   
@@ -212,6 +227,14 @@ void OvmsVehicleSmartED::HandleCharging() {
 
       StandardMetrics.ms_v_charge_duration_soc->SetValue(minsremaining_soc, Minutes);
       ESP_LOGV(TAG, "Time remaining: %d mins to %0.0f%% soc", minsremaining_soc, limit_soc);
+    }
+    if (limit_range > 0 && max_range > 0.0) {
+      // if range limit is set, then compute required soc and then calculate remaining time to that soc
+      float range_soc           = limit_range / max_range * 100.0;
+      int   minsremaining_range = calcMinutesRemaining(range_soc, charge_voltage, charge_current);
+
+      StandardMetrics.ms_v_charge_duration_range->SetValue(minsremaining_range, Minutes);
+      ESP_LOGV(TAG, "Time remaining: %d mins for %0.0f km (%0.0f%% soc)", minsremaining_range, limit_range, range_soc);
     }
   }
 }
@@ -275,7 +298,11 @@ void OvmsVehicleSmartED::HandleChargingStatus(bool status) {
   if (port) {
     if (status && charge_voltage > 50 && charge_current > 0) {
       if (!StandardMetrics.ms_v_charge_inprogress->AsBool()) {
-        StandardMetrics.ms_v_charge_kwh->SetValue(0); // Reset charge kWh
+        // Reset charge kWh
+        StandardMetrics.ms_v_charge_kwh->SetValue(0);
+        // Reset trip values
+        StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
+        StandardMetrics.ms_v_bat_energy_used->SetValue(0);
       }
       StandardMetrics.ms_v_charge_pilot->SetValue(true);
       StandardMetrics.ms_v_charge_inprogress->SetValue(true);
@@ -302,12 +329,14 @@ void OvmsVehicleSmartED::HandleChargingStatus(bool status) {
 
 void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     
-  if (m_candata_poll != 1) {
+  if (m_candata_poll != 1 && mt_hv_active) {
     ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
     StandardMetrics.ms_v_env_awake->SetValue(true);
     m_candata_poll = 1;
-    PollSetState(1);
+    //PollSetState(1);
+    if (m_enable_write) PollSetState(1);
   }
+  
   m_candata_timer = SE_CANDATA_TIMEOUT;
   
   uint8_t *d = p_frame->data.u8;
@@ -470,6 +499,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
       if(soc > 0) {
           float smart_range_ideal = (m_range_ideal * soc) / 100;
           StandardMetrics.ms_v_bat_range_ideal->SetValue(smart_range_ideal); // ToDo
+          StandardMetrics.ms_v_bat_range_full->SetValue((float) (d[7] / soc) * 100, Kilometers); // ToDo
       }
       StandardMetrics.ms_v_bat_range_est->SetValue(d[7], Kilometers);
       StandardMetrics.ms_v_env_throttle->SetValue(d[5]);
@@ -585,7 +615,7 @@ void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
       // Car has gone to sleep
       ESP_LOGI(TAG,"Car has gone to sleep (CAN bus timeout)");
       StandardMetrics.ms_v_env_awake->SetValue(false);
-      PollSetState(0);
+      if (m_enable_write) PollSetState(0);
       m_candata_poll = 0;
     }
   }
@@ -608,6 +638,55 @@ void OvmsVehicleSmartED::Ticker60(uint32_t ticker) {
     }
   }
 #endif
+}
+
+/**
+ * SetFeature: V2 compatibility config wrapper
+ *  Note: V2 only supported integer values, V3 values may be text
+ */
+bool OvmsVehicleSmartED::SetFeature(int key, const char *value)
+{
+  switch (key)
+  {
+    case 10:
+      MyConfig.SetParamValue("xse", "suffsoc", value);
+      return true;
+    case 11:
+      MyConfig.SetParamValue("xse", "suffrange", value);
+      return true;
+    case 15:
+    {
+      int bits = atoi(value);
+      MyConfig.SetParamValueBool("xse", "canwrite",  (bits& 1)!=0);
+      return true;
+    }
+    default:
+      return OvmsVehicle::SetFeature(key, value);
+  }
+}
+
+/**
+ * GetFeature: V2 compatibility config wrapper
+ *  Note: V2 only supported integer values, V3 values may be text
+ */
+const std::string OvmsVehicleSmartED::GetFeature(int key)
+{
+  switch (key)
+  {
+    case 10:
+      return MyConfig.GetParamValue("xse", "suffsoc", STR(0));
+    case 11:
+      return MyConfig.GetParamValue("xse", "suffrange", STR(0));
+    case 15:
+    {
+      int bits = ( MyConfig.GetParamValueBool("xse", "canwrite",  false) ?  1 : 0);
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }
+    default:
+      return OvmsVehicle::GetFeature(key);
+  }
 }
 
 
