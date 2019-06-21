@@ -151,6 +151,7 @@ class OvmsVehicle : public InternalRamAllocated
     uint32_t m_ticker;
     int m_12v_ticker;
     int m_chargestate_ticker;
+    int m_idle_ticker;
     virtual void Ticker1(uint32_t ticker);
     virtual void Ticker10(uint32_t ticker);
     virtual void Ticker60(uint32_t ticker);
@@ -173,6 +174,7 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void Notify12vCritical();
     virtual void Notify12vRecovered();
     virtual void NotifyMinSocCritical();
+    virtual void NotifyVehicleIdling();
 
   protected:
     virtual int GetNotifyChargeStateDelay(const char* state) { return 3; }
