@@ -944,6 +944,7 @@ OvmsVehicle::OvmsVehicle()
   m_ticker = 0;
   m_12v_ticker = 0;
   m_chargestate_ticker = 0;
+  m_idle_ticker = 0;
   m_registeredlistener = false;
   m_autonotifications = true;
 
@@ -1286,6 +1287,17 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     m_bms_valerts_new = 0;
     m_bms_talerts_new = 0;
     }
+
+  // Idle alert:
+  if (!StdMetrics.ms_v_env_awake->AsBool() || StdMetrics.ms_v_pos_speed->AsFloat() > 0)
+    {
+    m_idle_ticker = 15 * 60; // first alert after 15 minutes
+    }
+  else if (m_idle_ticker > 0 && --m_idle_ticker == 0)
+    {
+    NotifyVehicleIdling();
+    m_idle_ticker = 60 * 60; // successive alerts every 60 minutes
+    }
   } // VehicleTicker1()
 
 void OvmsVehicle::Ticker1(uint32_t ticker)
@@ -1394,6 +1406,11 @@ void OvmsVehicle::NotifyMinSocCritical()
   float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
 
   MyNotify.NotifyStringf("alert", "batt.soc.alert", "Battery SOC critical: %.1f%% (alert<=%d%%)", soc, m_minsoc);
+  }
+
+void OvmsVehicle::NotifyVehicleIdling()
+  {
+  MyNotify.NotifyString("alert", "vehicle.idle", "Vehicle is idling / stopped turned on");
   }
 
 void OvmsVehicle::NotifyBmsAlerts()
