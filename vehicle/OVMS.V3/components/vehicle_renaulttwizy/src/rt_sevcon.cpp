@@ -71,50 +71,50 @@ SevconClient::SevconClient(OvmsVehicleRenaultTwizy* twizy)
 
   // register shell commands:
 
-  OvmsCommand *cmd_cfg = m_twizy->cmd_xrt->RegisterCommand("cfg", "SEVCON tuning", NULL, "", 0, 0, true);
+  OvmsCommand *cmd_cfg = m_twizy->cmd_xrt->RegisterCommand("cfg", "SEVCON tuning");
 
-  cmd_cfg->RegisterCommand("pre", "Enter configuration mode (pre-operational)", shell_cfg_mode, "", 0, 0, true);
-  cmd_cfg->RegisterCommand("op", "Leave configuration mode (go operational)", shell_cfg_mode, "", 0, 0, true);
+  cmd_cfg->RegisterCommand("pre", "Enter configuration mode (pre-operational)", shell_cfg_mode);
+  cmd_cfg->RegisterCommand("op", "Leave configuration mode (go operational)", shell_cfg_mode);
 
-  cmd_cfg->RegisterCommand("read", "Read register", shell_cfg_read, "<index_hex> <subindex_hex>", 2, 2, true);
-  cmd_cfg->RegisterCommand("write", "Read & write register", shell_cfg_write, "<index_hex> <subindex_hex> <value>", 3, 3, true);
-  cmd_cfg->RegisterCommand("writeonly", "Write register", shell_cfg_write, "<index_hex> <subindex_hex> <value>", 3, 3, true);
+  cmd_cfg->RegisterCommand("read", "Read register", shell_cfg_read, "<index_hex> <subindex_hex>", 2, 2);
+  cmd_cfg->RegisterCommand("write", "Read & write register", shell_cfg_write, "<index_hex> <subindex_hex> <value>", 3, 3);
+  cmd_cfg->RegisterCommand("writeonly", "Write register", shell_cfg_write, "<index_hex> <subindex_hex> <value>", 3, 3);
 
-  cmd_cfg->RegisterCommand("set", "Set tuning profile from base64 string", shell_cfg_set, "<key> <base64data> [<label>] [<title>]", 2, 4, true);
-  cmd_cfg->RegisterCommand("reset", "Reset tuning profile", shell_cfg_set, "[key]", 0, 1, true);
-  cmd_cfg->RegisterCommand("get", "Get tuning profile as base64 string", shell_cfg_get, "[key]", 0, 1, true);
-  cmd_cfg->RegisterCommand("info", "Show tuning profile", shell_cfg_info, "[key]", 0, 1, true);
-  cmd_cfg->RegisterCommand("save", "Save current tuning profile", shell_cfg_save, "[key]", 0, 1, true);
-  cmd_cfg->RegisterCommand("load", "Load stored tuning profile", shell_cfg_load, "[key]", 0, 1, true);
+  cmd_cfg->RegisterCommand("set", "Set tuning profile from base64 string", shell_cfg_set, "<key> <base64data> [<label>] [<title>]", 2, 4);
+  cmd_cfg->RegisterCommand("reset", "Reset tuning profile", shell_cfg_set, "[key]", 0, 1);
+  cmd_cfg->RegisterCommand("get", "Get tuning profile as base64 string", shell_cfg_get, "[key]", 0, 1);
+  cmd_cfg->RegisterCommand("info", "Show tuning profile", shell_cfg_info, "[key]", 0, 1);
+  cmd_cfg->RegisterCommand("save", "Save current tuning profile", shell_cfg_save, "[key]", 0, 1);
+  cmd_cfg->RegisterCommand("load", "Load stored tuning profile", shell_cfg_load, "[key]", 0, 1);
 
   cmd_cfg->RegisterCommand("drive", "Tune drive power level", shell_cfg_drive,
-                            "[max_prc] [autopower_ref] [autopower_minprc] [kickdown_threshold] [kickdown_compzero]", 0, 5, true);
+                            "[max_prc] [autopower_ref] [autopower_minprc] [kickdown_threshold] [kickdown_compzero]", 0, 5);
   cmd_cfg->RegisterCommand("recup", "Tune recuperation power levels", shell_cfg_recup,
-                            "[neutral_prc] [brake_prc] [autopower_ref] [autopower_minprc]", 0, 4, true);
+                            "[neutral_prc] [brake_prc] [autopower_ref] [autopower_minprc]", 0, 4);
   cmd_cfg->RegisterCommand("ramps", "Tune pedal reaction", shell_cfg_ramps,
-                            "[start_prc] [accel_prc] [decel_prc] [neutral_prc] [brake_prc]", 0, 5, true);
+                            "[start_prc] [accel_prc] [decel_prc] [neutral_prc] [brake_prc]", 0, 5);
   cmd_cfg->RegisterCommand("ramplimits", "Tune max pedal reaction", shell_cfg_ramplimits,
-                            "[accel_prc] [decel_prc]", 0, 2, true);
+                            "[accel_prc] [decel_prc]", 0, 2);
   cmd_cfg->RegisterCommand("smooth", "Tune pedal smoothing", shell_cfg_smooth,
-                            "[prc]", 0, 1, true);
+                            "[prc]", 0, 1);
   cmd_cfg->RegisterCommand("speed", "Tune max & warn speed", shell_cfg_speed,
-                            "[max_kph] [warn_kph]", 0, 2, true);
+                            "[max_kph] [warn_kph]", 0, 2);
   cmd_cfg->RegisterCommand("power", "Tune torque, power & current levels", shell_cfg_power,
-                            "[trq_prc] [pwr_lo_prc] [pwr_hi_prc] [curr_prc]", 0, 4, true);
+                            "[trq_prc] [pwr_lo_prc] [pwr_hi_prc] [curr_prc]", 0, 4);
   cmd_cfg->RegisterCommand("tsmap", "Tune torque/speed maps", shell_cfg_tsmap,
-                            "[maps] [t1_prc[@t1_spd]] [t2_prc[@t2_spd]] [t3_prc[@t3_spd]] [t4_prc[@t4_spd]]", 0, 5, true);
+                            "[maps] [t1_prc[@t1_spd]] [t2_prc[@t2_spd]] [t3_prc[@t3_spd]] [t4_prc[@t4_spd]]", 0, 5);
   cmd_cfg->RegisterCommand("brakelight", "Tune brakelight trigger levels", shell_cfg_brakelight,
-                            "[on_lev] [off_lev]", 0, 2, true);
+                            "[on_lev] [off_lev]", 0, 2);
 
-  cmd_cfg->RegisterCommand("showlogs", "Display SEVCON diag logs", shell_cfg_querylogs, "[which=1] [start=0]", 0, 2, true);
-  cmd_cfg->RegisterCommand("querylogs", "Send SEVCON diag logs to server", shell_cfg_querylogs, "[which=1] [start=0]", 0, 2, true);
-  cmd_cfg->RegisterCommand("clearlogs", "Clear SEVCON diag logs", shell_cfg_clearlogs, "[which=99]", 0, 1, true);
+  cmd_cfg->RegisterCommand("showlogs", "Display SEVCON diag logs", shell_cfg_querylogs, "[which=1] [start=0]", 0, 2);
+  cmd_cfg->RegisterCommand("querylogs", "Send SEVCON diag logs to server", shell_cfg_querylogs, "[which=1] [start=0]", 0, 2);
+  cmd_cfg->RegisterCommand("clearlogs", "Clear SEVCON diag logs", shell_cfg_clearlogs, "[which=99]", 0, 1);
 
-  OvmsCommand *cmd_mon = m_twizy->cmd_xrt->RegisterCommand("mon", "SEVCON monitoring", NULL, "", 0, 0, true);
+  OvmsCommand *cmd_mon = m_twizy->cmd_xrt->RegisterCommand("mon", "SEVCON monitoring");
 
-  cmd_mon->RegisterCommand("start", "Start monitoring", shell_mon_start, "[<filename>]", 0, 1, true);
-  cmd_mon->RegisterCommand("stop", "Stop monitoring", shell_mon_stop, "", 0, 0, true);
-  cmd_mon->RegisterCommand("reset", "Reset monitoring", shell_mon_reset, "", 0, 0, true);
+  cmd_mon->RegisterCommand("start", "Start monitoring", shell_mon_start, "[<filename>]", 0, 1);
+  cmd_mon->RegisterCommand("stop", "Stop monitoring", shell_mon_stop);
+  cmd_mon->RegisterCommand("reset", "Reset monitoring", shell_mon_reset);
 
 
   // TODO:

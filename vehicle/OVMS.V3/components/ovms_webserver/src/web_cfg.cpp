@@ -886,7 +886,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
       if (password != "")
         MyConfig.SetParamValue("password", "server.v3", password);
       MyConfig.SetParamValue("server.v3", "port", port);
-      MyConfig.SetParamValue("server.v3", "topic_prefix", topic_prefix);
+      MyConfig.SetParamValue("server.v3", "topic.prefix", topic_prefix);
       MyConfig.SetParamValue("server.v3", "updatetime.connected", updatetime_connected);
       MyConfig.SetParamValue("server.v3", "updatetime.idle", updatetime_idle);
 
@@ -908,7 +908,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     user = MyConfig.GetParamValue("server.v3", "user");
     password = MyConfig.GetParamValue("password", "server.v3");
     port = MyConfig.GetParamValue("server.v3", "port");
-    topic_prefix = MyConfig.GetParamValue("server.v3", "topic_prefix");
+    topic_prefix = MyConfig.GetParamValue("server.v3", "topic.prefix");
     updatetime_connected = MyConfig.GetParamValue("server.v3", "updatetime.connected");
     updatetime_idle = MyConfig.GetParamValue("server.v3", "updatetime.idle");
 
@@ -1440,7 +1440,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   std::string cmdres, mru;
   std::string action;
   ota_info info;
-  bool auto_enable;
+  bool auto_enable, auto_allow_modem;
   std::string auto_hour, server, tag;
   std::string output;
   std::string version;
@@ -1453,6 +1453,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     action = c.getvar("action");
 
     auto_enable = (c.getvar("auto_enable") == "yes");
+    auto_allow_modem = (c.getvar("auto_allow_modem") == "yes");
     auto_hour = c.getvar("auto_hour");
     server = c.getvar("server");
     tag = c.getvar("tag");
@@ -1478,6 +1479,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
 
       if (!error) {
         MyConfig.SetParamValueBool("auto", "ota", auto_enable);
+        MyConfig.SetParamValueBool("ota", "auto.allow.modem", auto_allow_modem);
         MyConfig.SetParamValue("ota", "auto.hour", auto_hour);
         MyConfig.SetParamValue("ota", "server", server);
         MyConfig.SetParamValue("ota", "tag", tag);
@@ -1515,6 +1517,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   else {
     // read config:
     auto_enable = MyConfig.GetParamValueBool("auto", "ota", true);
+    auto_allow_modem = MyConfig.GetParamValueBool("ota", "auto.allow.modem", false);
     auto_hour = MyConfig.GetParamValue("ota", "auto.hour", "2");
     server = MyConfig.GetParamValue("ota", "server");
     tag = MyConfig.GetParamValue("ota", "tag");
@@ -1574,8 +1577,10 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
   // Server & auto update:
   c.print("<hr>");
   c.input_checkbox("Enable auto update", "auto_enable", auto_enable,
-    "<p>Strongly recommended: if enabled, the module will perform automatic firmware updates within the hour of day specified, but only if a wifi network is available.</p>");
+    "<p>Strongly recommended: if enabled, the module will perform automatic firmware updates within the hour of day specified.</p>");
   c.input("number", "Auto update hour of day", "auto_hour", auto_hour.c_str(), "0-23, default: 2", NULL, "min=\"0\" max=\"23\" step=\"1\"");
+  c.input_checkbox("…allow via modem", "auto_allow_modem", auto_allow_modem,
+    "<p>Automatic updates are normally only done if a wifi connection is available at the time. Before allowing updates via modem, be aware a single firmware image has a size of around 3 MB, which may lead to additional costs on your data plan.</p>");
   c.print(
     "<datalist id=\"server-list\">"
       "<option value=\"api.openvehicles.com/firmware/ota\">"

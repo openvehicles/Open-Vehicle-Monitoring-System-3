@@ -41,6 +41,7 @@ static const char *TAG = "vehicle";
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include <ovms_webserver.h>
 #endif // #ifdef CONFIG_OVMS_COMP_WEBSERVER
+#include <ovms_peripherals.h>
 #include <string_writer.h>
 #include "vehicle.h"
 
@@ -801,36 +802,36 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   m_currentvehicle = NULL;
   m_currentvehicletype.clear();
 
-  OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework",NULL,"",0,0, true);
-  cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1, true);
-  cmd_vehicle->RegisterCommand("list","Show list of available vehicle modules",vehicle_list,"",0,0, true);
-  cmd_vehicle->RegisterCommand("status","Show vehicle module status",vehicle_status,"",0,0, true);
+  OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework");
+  cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1);
+  cmd_vehicle->RegisterCommand("list","Show list of available vehicle modules",vehicle_list);
+  cmd_vehicle->RegisterCommand("status","Show vehicle module status",vehicle_status);
 
-  MyCommandApp.RegisterCommand("wakeup","Wake up vehicle",vehicle_wakeup,"",0,0,true);
-  MyCommandApp.RegisterCommand("homelink","Activate specified homelink button",vehicle_homelink,"<homelink><durationms>",1,2,true);
-  MyCommandApp.RegisterCommand("climatecontrol","(De)Activate Climate Control",vehicle_climatecontrol,"<on|off>",1,1,true);
-  MyCommandApp.RegisterCommand("lock","Lock vehicle",vehicle_lock,"<pin>",1,1,true);
-  MyCommandApp.RegisterCommand("unlock","Unlock vehicle",vehicle_unlock,"<pin>",1,1,true);
-  MyCommandApp.RegisterCommand("valet","Activate valet mode",vehicle_valet,"<pin>",1,1,true);
-  MyCommandApp.RegisterCommand("unvalet","Deactivate valet mode",vehicle_unvalet,"<pin>",1,1,true);
+  MyCommandApp.RegisterCommand("wakeup","Wake up vehicle",vehicle_wakeup);
+  MyCommandApp.RegisterCommand("homelink","Activate specified homelink button",vehicle_homelink,"<homelink><durationms>",1,2);
+  MyCommandApp.RegisterCommand("climatecontrol","(De)Activate Climate Control",vehicle_climatecontrol,"<on|off>",1,1);
+  MyCommandApp.RegisterCommand("lock","Lock vehicle",vehicle_lock,"<pin>",1,1);
+  MyCommandApp.RegisterCommand("unlock","Unlock vehicle",vehicle_unlock,"<pin>",1,1);
+  MyCommandApp.RegisterCommand("valet","Activate valet mode",vehicle_valet,"<pin>",1,1);
+  MyCommandApp.RegisterCommand("unvalet","Deactivate valet mode",vehicle_unvalet,"<pin>",1,1);
 
-  OvmsCommand* cmd_charge = MyCommandApp.RegisterCommand("charge","Charging framework",NULL,"",0,0,true);
-  OvmsCommand* cmd_chargemode = cmd_charge->RegisterCommand("mode","Set vehicle charge mode",NULL,"",0,0,true);
-  cmd_chargemode->RegisterCommand("standard","Set vehicle standard charge mode",vehicle_charge_mode,"",0,0,true);
-  cmd_chargemode->RegisterCommand("storage","Set vehicle standard charge mode",vehicle_charge_mode,"",0,0,true);
-  cmd_chargemode->RegisterCommand("range","Set vehicle standard charge mode",vehicle_charge_mode,"",0,0,true);
-  cmd_chargemode->RegisterCommand("performance","Set vehicle standard charge mode",vehicle_charge_mode,"",0,0,true);
-  cmd_charge->RegisterCommand("start","Start a vehicle charge",vehicle_charge_start,"",0,0,true);
-  cmd_charge->RegisterCommand("stop","Stop a vehicle charge",vehicle_charge_stop,"",0,0,true);
-  cmd_charge->RegisterCommand("current","Limit charge current",vehicle_charge_current,"<amps>",1,1,true);
-  cmd_charge->RegisterCommand("cooldown","Start a vehicle cooldown",vehicle_charge_cooldown,"",0,0,true);
+  OvmsCommand* cmd_charge = MyCommandApp.RegisterCommand("charge","Charging framework");
+  OvmsCommand* cmd_chargemode = cmd_charge->RegisterCommand("mode","Set vehicle charge mode");
+  cmd_chargemode->RegisterCommand("standard","Set vehicle standard charge mode",vehicle_charge_mode);
+  cmd_chargemode->RegisterCommand("storage","Set vehicle standard charge mode",vehicle_charge_mode);
+  cmd_chargemode->RegisterCommand("range","Set vehicle standard charge mode",vehicle_charge_mode);
+  cmd_chargemode->RegisterCommand("performance","Set vehicle standard charge mode",vehicle_charge_mode);
+  cmd_charge->RegisterCommand("start","Start a vehicle charge",vehicle_charge_start);
+  cmd_charge->RegisterCommand("stop","Stop a vehicle charge",vehicle_charge_stop);
+  cmd_charge->RegisterCommand("current","Limit charge current",vehicle_charge_current,"<amps>",1,1);
+  cmd_charge->RegisterCommand("cooldown","Start a vehicle cooldown",vehicle_charge_cooldown);
 
-  MyCommandApp.RegisterCommand("stat","Show vehicle status",vehicle_stat,"",0,0,true);
+  MyCommandApp.RegisterCommand("stat","Show vehicle status",vehicle_stat);
 
-  OvmsCommand* cmd_bms = MyCommandApp.RegisterCommand("bms","BMS framework",NULL,"",0,0, true);
-  cmd_bms->RegisterCommand("status","Show BMS status",bms_status,"",0,0, true);
-  cmd_bms->RegisterCommand("reset","Reset BMS statistics",bms_reset,"",0,0, true);
-  cmd_bms->RegisterCommand("alerts","Show BMS alerts",bms_alerts,"",0,0, true);
+  OvmsCommand* cmd_bms = MyCommandApp.RegisterCommand("bms","BMS framework");
+  cmd_bms->RegisterCommand("status","Show BMS status",bms_status);
+  cmd_bms->RegisterCommand("reset","Reset BMS statistics",bms_reset);
+  cmd_bms->RegisterCommand("alerts","Show BMS alerts",bms_alerts);
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsVehicle");
@@ -943,6 +944,7 @@ OvmsVehicle::OvmsVehicle()
   m_ticker = 0;
   m_12v_ticker = 0;
   m_chargestate_ticker = 0;
+  m_idle_ticker = 0;
   m_registeredlistener = false;
   m_autonotifications = true;
 
@@ -998,6 +1000,16 @@ OvmsVehicle::OvmsVehicle()
   m_minsoc = 0;
   m_minsoc_triggered = 0;
 
+  m_accel_refspeed = 0;
+  m_accel_reftime = 0;
+  m_accel_smoothing = 2.0;
+
+  m_brakelight_enable = false;
+  m_brakelight_on = 1.3;
+  m_brakelight_off = 0.7;
+  m_brakelight_port = 1;
+  m_brakelight_start = 0;
+
   m_rxqueue = xQueueCreate(CONFIG_OVMS_VEHICLE_CAN_RX_QUEUE_SIZE,sizeof(CAN_frame_t));
   xTaskCreatePinnedToCore(OvmsVehicleRxTask, "OVMS Vehicle",
     CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_rxtask, 1);
@@ -1007,6 +1019,7 @@ OvmsVehicle::OvmsVehicle()
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicle::VehicleTicker1, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
+  VehicleConfigChanged("config.mounted", NULL);
 
   MyMetrics.RegisterListener(TAG, "*", std::bind(&OvmsVehicle::MetricModified, this, _1));
   }
@@ -1274,6 +1287,17 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     m_bms_valerts_new = 0;
     m_bms_talerts_new = 0;
     }
+
+  // Idle alert:
+  if (!StdMetrics.ms_v_env_awake->AsBool() || StdMetrics.ms_v_pos_speed->AsFloat() > 0)
+    {
+    m_idle_ticker = 15 * 60; // first alert after 15 minutes
+    }
+  else if (m_idle_ticker > 0 && --m_idle_ticker == 0)
+    {
+    NotifyVehicleIdling();
+    m_idle_ticker = 60 * 60; // successive alerts every 60 minutes
+    }
   } // VehicleTicker1()
 
 void OvmsVehicle::Ticker1(uint32_t ticker)
@@ -1382,6 +1406,11 @@ void OvmsVehicle::NotifyMinSocCritical()
   float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
 
   MyNotify.NotifyStringf("alert", "batt.soc.alert", "Battery SOC critical: %.1f%% (alert<=%d%%)", soc, m_minsoc);
+  }
+
+void OvmsVehicle::NotifyVehicleIdling()
+  {
+  MyNotify.NotifyString("alert", "vehicle.idle", "Vehicle is idling / stopped turned on");
   }
 
 void OvmsVehicle::NotifyBmsAlerts()
@@ -1559,9 +1588,31 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWrite
   return Success;
   }
 
-void OvmsVehicle::VehicleConfigChanged(std::string event, void* param)
+void OvmsVehicle::VehicleConfigChanged(std::string event, void* data)
   {
-  ConfigChanged((OvmsConfigParam*) param);
+  OvmsConfigParam* param = (OvmsConfigParam*) data;
+
+  // read vehicle framework config:
+  if (!param || param->GetName() == "vehicle")
+    {
+    // acceleration calculation:
+    m_accel_smoothing = MyConfig.GetParamValueFloat("vehicle", "accel.smoothing", 2.0);
+
+    // brakelight control:
+    if (m_brakelight_enable)
+      {
+      SetBrakelight(0);
+      StdMetrics.ms_v_env_regenbrake->SetValue(false);
+      }
+    m_brakelight_enable = MyConfig.GetParamValueBool("vehicle", "brakelight.enable", false);
+    m_brakelight_on = MyConfig.GetParamValueFloat("vehicle", "brakelight.on", 1.3);
+    m_brakelight_off = MyConfig.GetParamValueFloat("vehicle", "brakelight.off", 0.7);
+    m_brakelight_port = MyConfig.GetParamValueInt("vehicle", "brakelight.port", 1);
+    m_brakelight_start = 0;
+    }
+
+  // read vehicle specific config:
+  ConfigChanged(param);
   }
 
 void OvmsVehicle::ConfigChanged(OvmsConfigParam* param)
@@ -1579,6 +1630,12 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       }
     else
       {
+      if (m_brakelight_enable && m_brakelight_start)
+        {
+        SetBrakelight(0);
+        m_brakelight_start = 0;
+        StdMetrics.ms_v_env_regenbrake->SetValue(false);
+        }
       MyEvents.SignalEvent("vehicle.off",NULL);
       NotifiedVehicleOff();
       }
@@ -1746,6 +1803,115 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       }
     NotifiedVehicleChargeState(m);
     }
+  else if (metric == StandardMetrics.ms_v_pos_acceleration)
+    {
+    if (m_brakelight_enable)
+      CheckBrakelight();
+    }
+  }
+
+/**
+ * CalculateAcceleration: derive acceleration / deceleration level from speed change
+ * Note:
+ *  IF you want to let the framework calculate acceleration, call this after your regular
+ *  update to StdMetrics.ms_v_pos_speed. This is optional, you can set ms_v_pos_acceleration
+ *  yourself if your vehicle provides this metric.
+ */
+void OvmsVehicle::CalculateAcceleration()
+  {
+  uint32_t now = esp_log_timestamp();
+  if (now > m_accel_reftime)
+    {
+    float speed = ABS(StdMetrics.ms_v_pos_speed->AsFloat(0, Kph)) * 1000 / 3600;
+    float accel = (speed - m_accel_refspeed) / (now - m_accel_reftime) * 1000;
+    // smooth out road bumps & gear box backlash:
+    accel = (StdMetrics.ms_v_pos_acceleration->AsFloat() * m_accel_smoothing + accel) / (m_accel_smoothing + 1);
+    StdMetrics.ms_v_pos_acceleration->SetValue(TRUNCPREC(accel, 3));
+    m_accel_refspeed = speed;
+    m_accel_reftime = now;
+    }
+  }
+
+/**
+ * CheckBrakelight: check for regenerative braking, control brakelight accordingly
+ * Notes:
+ *  a) This depends on a regular and frequent speed update with <= 100 ms period. If the vehicle
+ *     delivers speed values at too large intervals, the trigger will still work but come
+ *     too late (reducing/deactivating acceleration smoothing may help).
+ *     If the vehicle raw speed is already smoothed, reducing acceleration smoothing will
+ *     provide a faster trigger.
+ *  b) The battery power regen threshold is assumed as 0 here. If the vehicle has a very high
+ *     base power consumption, that may need adjustment / configuration. 0 works without
+ *     battery power measurement from the vehicle.
+ *  c) To reduce flicker the brake light has a minimum hold time of currently fixed 500 ms.
+ */
+void OvmsVehicle::CheckBrakelight()
+  {
+  uint32_t now = esp_log_timestamp();
+  float speed = ABS(StdMetrics.ms_v_pos_speed->AsFloat(0, Kph)) * 1000 / 3600;
+  float accel = StdMetrics.ms_v_pos_acceleration->AsFloat();
+  bool car_on = StdMetrics.ms_v_env_on->AsBool();
+  bool footbrake = StdMetrics.ms_v_env_footbrake->AsFloat() > 0;
+  float batpwr = StdMetrics.ms_v_bat_power->AsFloat();
+  const float batpwr_base = 0;
+  const uint32_t holdtime = 500;
+
+  // activate brake light?
+  if (accel < -m_brakelight_on && speed >= 1 && batpwr <= batpwr_base && car_on && !footbrake)
+    {
+    if (!m_brakelight_start)
+      {
+      if (SetBrakelight(1))
+        {
+        ESP_LOGD(TAG, "brakelight on at speed=%.2f m/s, accel=%.2f m/s^2", speed, accel);
+        m_brakelight_start = now;
+        StdMetrics.ms_v_env_regenbrake->SetValue(true);
+        }
+      else
+        ESP_LOGW(TAG, "can't activate brakelight");
+      }
+    else
+      m_brakelight_start = now;
+    }
+  // deactivate brake light?
+  else if (accel >= -m_brakelight_off || speed < 1 || batpwr > batpwr_base || !car_on || footbrake)
+    {
+    if (m_brakelight_start && now >= m_brakelight_start + holdtime)
+      {
+      if (SetBrakelight(0))
+        {
+        ESP_LOGD(TAG, "brakelight off at speed=%.2f m/s, accel=%.2f m/s^2", speed, accel);
+        m_brakelight_start = 0;
+        StdMetrics.ms_v_env_regenbrake->SetValue(false);
+        }
+      else
+        ESP_LOGW(TAG, "can't deactivate brakelight");
+      }
+    }
+  }
+
+/**
+ * SetBrakelight: hardware brake light control method
+ * Override for custom control, e.g. CAN.
+ */
+bool OvmsVehicle::SetBrakelight(int on)
+  {
+#ifdef CONFIG_OVMS_COMP_MAX7317
+  // port 2 = SN65 for esp32can
+  if (m_brakelight_port == 1 || (m_brakelight_port >= 3 && m_brakelight_port <= 9))
+    {
+    MyPeripherals->m_max7317->Output(m_brakelight_port, on);
+    return true;
+    }
+  else
+    {
+    ESP_LOGE(TAG, "SetBrakelight: invalid port configuration (valid: 1, 3..9)");
+    return false;
+    }
+#else // CONFIG_OVMS_COMP_MAX7317
+  ESP_LOGE(TAG, "SetBrakelight: OVMS_COMP_MAX7317 missing");
+  return false;
+#endif // CONFIG_OVMS_COMP_MAX7317
   }
 
 void OvmsVehicle::NotifyChargeState()
@@ -1837,6 +2003,7 @@ void OvmsVehicle::PollerSend()
           break;
         case VEHICLE_POLL_TYPE_OBDIIVEHICLE:
         case VEHICLE_POLL_TYPE_OBDIIGROUP:
+        case VEHICLE_POLL_TYPE_OBDII_1A:
           // 8 bit PID request for multi frame response:
           m_poll_ml_remain = 0;
           txframe.data.u8[0] = 0x02;
@@ -1845,8 +2012,9 @@ void OvmsVehicle::PollerSend()
           break;
         case VEHICLE_POLL_TYPE_OBDIIEXTENDED:
           // 16 bit PID request:
+          m_poll_ml_remain = 0;
           txframe.data.u8[0] = 0x03;
-          txframe.data.u8[1] = VEHICLE_POLL_TYPE_OBDIIEXTENDED;    // Get extended PID
+          txframe.data.u8[1] = m_poll_type; //VEHICLE_POLL_TYPE_OBDIIEXTENDED;    // Get extended PID
           txframe.data.u8[2] = m_poll_pid >> 8;
           txframe.data.u8[3] = m_poll_pid & 0xff;
           break;
@@ -1881,6 +2049,7 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
       break;
     case VEHICLE_POLL_TYPE_OBDIIVEHICLE:
     case VEHICLE_POLL_TYPE_OBDIIGROUP:
+    case VEHICLE_POLL_TYPE_OBDII_1A:
       // 8 bit PID multiple frame response:
       if (((frame->data.u8[0]>>4) == 0x1)&&
           (frame->data.u8[2] == 0x40+m_poll_type)&&
@@ -1948,11 +2117,73 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
       break;
     case VEHICLE_POLL_TYPE_OBDIIEXTENDED:
       // 16 bit PID response:
-      if ((frame->data.u8[1] == 0x62)&&
-          ((frame->data.u8[3]+(((uint16_t) frame->data.u8[2]) << 8)) == m_poll_pid))
+      if (((frame->data.u8[0]>>4) == 0x1)&&
+          (frame->data.u8[2] == 0x40+m_poll_type)&&
+          ((frame->data.u8[4]+(((uint16_t) frame->data.u8[3]) << 8))  == m_poll_pid))
+        {
+        // First frame is 4 bytes header (2 ISO-TP, 2 OBDII), 4 bytes data:
+        // [first=1,lenH] [lenL] [type+40] [pid] [data0] [data1] [data2] [data3]
+        // Note that the value of 'len' includes the OBDII type and pid bytes,
+        // but we don't count these in the data we pass to IncomingPollReply.
+        //
+        // First frame; send flow control frame:
+        CAN_frame_t txframe;
+        memset(&txframe,0,sizeof(txframe));
+        txframe.origin = m_poll_bus;
+        txframe.FIR.B.FF = CAN_frame_std; //CAN_frame_ext?
+        txframe.FIR.B.DLC = 8;
+
+        if (m_poll_moduleid_sent == 0x7df)
+          {
+          // broadcast request: derive module ID from response ID:
+          // (Note: this only works for the SAE standard ID scheme)
+          txframe.MsgID = frame->MsgID - 8;
+          }
+        else
+          {
+          // use known module ID:
+          txframe.MsgID = m_poll_moduleid_sent;
+          }
+
+        txframe.data.u8[0] = 0x30; // flow control frame type
+        txframe.data.u8[1] = 0x00; // request all frames available
+        txframe.data.u8[2] = 0x19; // with 25ms send interval
+        m_poll_bus->Write(&txframe);
+
+        // prepare frame processing, first frame contains first 4 bytes:
+        m_poll_ml_remain = (((uint16_t)(frame->data.u8[0]&0x0f))<<8) + frame->data.u8[1] - 3;
+        m_poll_ml_offset = 3;
+        m_poll_ml_frame = 0;
+
+        //ESP_LOGD(TAG, "Poll ML first frame (frame=%d, remain=%d)",m_poll_ml_frame,m_poll_ml_remain);
+        IncomingPollReply(m_poll_bus, m_poll_type, m_poll_pid, &frame->data.u8[4], 4, m_poll_ml_remain);
+        return;
+        }
+      else if (((frame->data.u8[0]>>4)==0x2)&&(m_poll_ml_remain>0))
+        {
+        // Consecutive frame (1 control + 7 data bytes)
+        uint16_t len;
+        if (m_poll_ml_remain>7)
+          {
+          m_poll_ml_remain -= 7;
+          m_poll_ml_offset += 7;
+          len = 7;
+          }
+        else
+          {
+          len = m_poll_ml_remain;
+          m_poll_ml_offset += m_poll_ml_remain;
+          m_poll_ml_remain = 0;
+          }
+        m_poll_ml_frame++;
+        //ESP_LOGD(TAG, "Poll ML subsequent frame (frame=%d, remain=%d)",m_poll_ml_frame,m_poll_ml_remain);
+        IncomingPollReply(m_poll_bus, m_poll_type, m_poll_pid, &frame->data.u8[1], len, m_poll_ml_remain);
+        return;
+        }
+      else if ((frame->data.u8[1] == 0x62)&&
+               ((frame->data.u8[3]+(((uint16_t) frame->data.u8[2]) << 8)) == m_poll_pid))
         {
         IncomingPollReply(m_poll_bus, m_poll_type, m_poll_pid, &frame->data.u8[4], 4, 0);
-        return;
         }
       break;
     }

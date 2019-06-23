@@ -92,32 +92,32 @@ void OvmsVehicleKiaSoulEv::IncomingTPMS(canbus* bus, uint16_t type, uint16_t pid
 				bVal = CAN_BYTE(0);
 				if (bVal > 0) StdMetrics.ms_v_tpms_fl_p->SetValue( TO_PSI(bVal), PSI);
 				StdMetrics.ms_v_tpms_fl_t->SetValue( TO_CELCIUS(CAN_BYTE(1)), Celcius);
-				lVal = (ks_tpms_id[1] & 0x000000ff) | (CAN_UINT32(4) & 0xffffff00);
+				lVal = (kia_tpms_id[1] & 0x000000ff) | (CAN_UINT32(4) & 0xffffff00);
 				SET_TPMS_ID(1, lVal);
 				}
 			else if (m_poll_ml_frame == 2)
 				{
-				lVal = (uint32_t) CAN_BYTE(0) | (ks_tpms_id[1] & 0xffffff00);
+				lVal = (uint32_t) CAN_BYTE(0) | (kia_tpms_id[1] & 0xffffff00);
 				SET_TPMS_ID(1, lVal);
 				bVal = CAN_BYTE(1);
 				if (bVal > 0) StdMetrics.ms_v_tpms_fr_p->SetValue( TO_PSI(bVal), PSI);
 				StdMetrics.ms_v_tpms_fr_t->SetValue( TO_CELCIUS(CAN_BYTE(2)), Celcius);
-				lVal = (ks_tpms_id[2] & 0x0000ffff) | (CAN_UINT32(5) & 0xffff0000);
+				lVal = (kia_tpms_id[2] & 0x0000ffff) | (CAN_UINT32(5) & 0xffff0000);
 				SET_TPMS_ID(2, lVal);
 
 				}
 			else if (m_poll_ml_frame == 3)
 				{
-				lVal = ((uint32_t) CAN_UINT(0)) | (ks_tpms_id[2] & 0xffff0000);
+				lVal = ((uint32_t) CAN_UINT(0)) | (kia_tpms_id[2] & 0xffff0000);
 				SET_TPMS_ID(2, lVal);
 				bVal = CAN_BYTE(2);
 				if (bVal > 0) StdMetrics.ms_v_tpms_rl_p->SetValue( TO_PSI(bVal), PSI);
 				StdMetrics.ms_v_tpms_rl_t->SetValue( TO_CELCIUS(CAN_BYTE(3)), Celcius);
-				lVal = (ks_tpms_id[3] & 0x00ffffff) | ((uint32_t) CAN_BYTE(6) << 24);
+				lVal = (kia_tpms_id[3] & 0x00ffffff) | ((uint32_t) CAN_BYTE(6) << 24);
 				SET_TPMS_ID(3, lVal);
 
 			} else if (m_poll_ml_frame == 4) {
-				lVal = (CAN_UINT24(0)) | (ks_tpms_id[3] & 0xff000000);
+				lVal = (CAN_UINT24(0)) | (kia_tpms_id[3] & 0xff000000);
 				SET_TPMS_ID(3, lVal);
 				bVal = CAN_BYTE(3);
 				if (bVal > 0) StdMetrics.ms_v_tpms_rr_p->SetValue( TO_PSI(bVal), PSI);
@@ -141,7 +141,7 @@ void OvmsVehicleKiaSoulEv::IncomingOBC(canbus* bus, uint16_t type, uint16_t pid,
 		case 0x02:
 			if (m_poll_ml_frame == 1)
 				{
-				ks_obc_volt = (float) CAN_UINT(2) / 10.0;
+				kia_obc_ac_voltage = (float) CAN_UINT(2) / 10.0;
 				//} else if (vehicle_poll_ml_frame == 2) {
 				//ks_obc_ampere = ((UINT) can_databuffer[4 + CAN_ADJ] << 8)
 				//        | (UINT) can_databuffer[5 + CAN_ADJ];
@@ -198,7 +198,7 @@ void OvmsVehicleKiaSoulEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 				{
 				if (m_poll_ml_frame == 1)
 					{
-					StdMetrics.ms_v_mot_rpm->SetValue( ((uint16_t)CAN_BYTE(5)<<8) | (uint16_t)CAN_BYTE(6) );
+					//StdMetrics.ms_v_mot_rpm->SetValue( ((uint16_t)CAN_BYTE(5)<<8) | (uint16_t)CAN_BYTE(6) );
 					}
 				else if (m_poll_ml_frame == 3)
 					{
@@ -246,6 +246,7 @@ void OvmsVehicleKiaSoulEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
 					ks_battery_current = (ks_battery_current & 0xFF00) | (UINT) CAN_BYTE(0);
 					StdMetrics.ms_v_bat_current->SetValue((float)ks_battery_current/10.0, Amps);
 					StdMetrics.ms_v_bat_voltage->SetValue((float)CAN_UINT(1)/10.0, Volts);
+					StdMetrics.ms_v_bat_power->SetValue(StdMetrics.ms_v_bat_current->AsFloat(Amps)*StdMetrics.ms_v_bat_voltage->AsFloat(Volts), Watts);
 					BmsRestartCellTemperatures();
 					BmsSetCellTemperature(0, CAN_BYTE(3));
 					BmsSetCellTemperature(1, CAN_BYTE(4));
@@ -274,23 +275,23 @@ void OvmsVehicleKiaSoulEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
 					ks_battery_fan_feedback = CAN_BYTE(2);
 					ks_charge_bits.FanStatus = CAN_BYTE(3) & 0xF;
 					StdMetrics.ms_v_bat_12v_voltage->SetValue ((float)CAN_BYTE(4)/10.0 , Volts);
-					ks_battery_cum_charge_current = (ks_battery_cum_charge_current & 0x0000FFFF) | ((uint32_t) CAN_UINT(5) << 16);
+					kia_battery_cum_charge_current = (kia_battery_cum_charge_current & 0x0000FFFF) | ((uint32_t) CAN_UINT(5) << 16);
 
 					}
 				else if (m_poll_ml_frame == 5) // 02 21 01 - 25
 					{
-					ks_battery_cum_charge_current = (ks_battery_cum_charge_current & 0xFFFF0000) | ((uint32_t) CAN_UINT(0));
-					ks_battery_cum_discharge_current = CAN_UINT32(2);
-					ks_battery_cum_charge = (ks_battery_cum_charge & 0x00FFFFFF) | ((uint32_t) CAN_BYTE(6)) << 24;
+					kia_battery_cum_charge_current = (kia_battery_cum_charge_current & 0xFFFF0000) | ((uint32_t) CAN_UINT(0));
+					kia_battery_cum_discharge_current = CAN_UINT32(2);
+					kia_battery_cum_charge = (kia_battery_cum_charge & 0x00FFFFFF) | ((uint32_t) CAN_BYTE(6)) << 24;
 					}
 				else if (m_poll_ml_frame == 6) // 02 21 01 - 26
 					{
-					ks_battery_cum_charge = (ks_battery_cum_charge & 0xFF000000) | ((uint32_t) CAN_UINT24(0));
-					ks_battery_cum_discharge = CAN_UINT32(3);
+					kia_battery_cum_charge = (kia_battery_cum_charge & 0xFF000000) | ((uint32_t) CAN_UINT24(0));
+					kia_battery_cum_discharge = CAN_UINT32(3);
 					}
 				else if (m_poll_ml_frame == 7) // 02 21 01 - 27
 					{
-					ks_battery_cum_op_time = CAN_UINT32(0) / 3600;
+					kia_battery_cum_op_time = CAN_UINT32(0) / 3600;
 					}
 				}
 			break;

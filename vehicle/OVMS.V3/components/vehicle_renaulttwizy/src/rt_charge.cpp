@@ -70,7 +70,7 @@ void OvmsVehicleRenaultTwizy::ChargeInit()
   twizy_chg_stop_request = false;
   
   // init command
-  cmd_ca = cmd_xrt->RegisterCommand("ca", "Charge attributes", vehicle_twizy_ca, "[R] | [<range>] [<soc>%] [L<0-7>] [S|N|H]", 0, 4, true);
+  cmd_ca = cmd_xrt->RegisterCommand("ca", "Charge attributes", vehicle_twizy_ca, "[R] | [<range>] [<soc>%] [L<0-7>] [S|N|H]", 0, 4);
 }
 
 

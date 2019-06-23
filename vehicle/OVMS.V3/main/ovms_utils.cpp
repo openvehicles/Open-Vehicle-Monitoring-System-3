@@ -220,6 +220,27 @@ extram::string stripcr(const extram::string& text)
   }
 
 /**
+ * stripesc: remove terminal escape sequences from (log) string
+ */
+std::string stripesc(const char* s)
+  {
+  std::string res;
+  res.reserve(200);
+  bool skip = false;
+  while (s && *s)
+    {
+    if (*s == '\033' && *(s+1) == '[')
+      skip = true;
+    else if (!skip)
+      res += *s;
+    else if (*s == 'm')
+      skip = false;
+    ++s;
+    }
+  return res;
+  }
+
+/**
  * startsWith: std::string prefix check
  */
 bool startsWith(const std::string& haystack, const std::string& needle)

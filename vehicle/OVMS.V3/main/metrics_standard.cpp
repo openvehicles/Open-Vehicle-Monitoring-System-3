@@ -146,6 +146,7 @@ MetricsStandard::MetricsStandard()
   ms_v_env_throttle = new OvmsMetricFloat(MS_V_ENV_THROTTLE, SM_STALE_MID, Percentage);
   ms_v_env_footbrake = new OvmsMetricFloat(MS_V_ENV_FOOTBRAKE, SM_STALE_MID, Percentage);
   ms_v_env_handbrake = new OvmsMetricBool(MS_V_ENV_HANDBRAKE, SM_STALE_MID);
+  ms_v_env_regenbrake = new OvmsMetricBool(MS_V_ENV_REGENBRAKE, SM_STALE_MID);
   ms_v_env_awake = new OvmsMetricBool(MS_V_ENV_AWAKE, SM_STALE_MID);
   ms_v_env_charging12v = new OvmsMetricBool(MS_V_ENV_CHARGING12V, SM_STALE_MID);
   ms_v_env_cooling = new OvmsMetricBool(MS_V_ENV_COOLING, SM_STALE_MID);
@@ -170,6 +171,7 @@ MetricsStandard::MetricsStandard()
   ms_v_pos_direction = new OvmsMetricFloat(MS_V_POS_DIRECTION, SM_STALE_MID, Degrees);
   ms_v_pos_altitude = new OvmsMetricFloat(MS_V_POS_ALTITUDE, SM_STALE_MID, Meters);
   ms_v_pos_speed = new OvmsMetricFloat(MS_V_POS_SPEED, SM_STALE_MID, Kph);
+  ms_v_pos_acceleration = new OvmsMetricFloat(MS_V_POS_ACCELERATION, SM_STALE_MID, MetersPSS);
   ms_v_pos_gpsspeed = new OvmsMetricFloat(MS_V_POS_GPSSPEED, SM_STALE_MID, Kph);
   ms_v_pos_odometer = new OvmsMetricFloat(MS_V_POS_ODOMETER, SM_STALE_MID, Kilometers);
   ms_v_pos_trip = new OvmsMetricFloat(MS_V_POS_TRIP, SM_STALE_MID, Kilometers);

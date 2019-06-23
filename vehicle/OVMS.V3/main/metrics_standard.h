@@ -147,6 +147,7 @@
 #define MS_V_ENV_THROTTLE           "v.e.throttle"
 #define MS_V_ENV_FOOTBRAKE          "v.e.footbrake"
 #define MS_V_ENV_HANDBRAKE          "v.e.handbrake"
+#define MS_V_ENV_REGENBRAKE         "v.e.regenbrake"
 #define MS_V_ENV_AWAKE              "v.e.awake"
 #define MS_V_ENV_CHARGING12V        "v.e.charging12v"
 #define MS_V_ENV_COOLING            "v.e.cooling"
@@ -174,6 +175,7 @@
 #define MS_V_POS_DIRECTION          "v.p.direction"
 #define MS_V_POS_ALTITUDE           "v.p.altitude"
 #define MS_V_POS_SPEED              "v.p.speed"
+#define MS_V_POS_ACCELERATION       "v.p.acceleration"
 #define MS_V_POS_GPSSPEED           "v.p.gpsspeed"
 #define MS_V_POS_ODOMETER           "v.p.odometer"
 #define MS_V_POS_TRIP               "v.p.trip"
@@ -306,6 +308,7 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_env_throttle;            // Drive pedal state [%]
     OvmsMetricFloat*  ms_v_env_footbrake;           // Brake pedal state [%]
     OvmsMetricBool*   ms_v_env_handbrake;           // Handbrake state
+    OvmsMetricBool*   ms_v_env_regenbrake;          // Regenerative braking state
     OvmsMetricBool*   ms_v_env_awake;               // Vehicle/bus awake (switched on)
     OvmsMetricBool*   ms_v_env_charging12v;         // 12V battery charging
     OvmsMetricBool*   ms_v_env_cooling;
@@ -332,6 +335,7 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_pos_direction;
     OvmsMetricFloat*  ms_v_pos_altitude;
     OvmsMetricFloat*  ms_v_pos_speed;               // Vehicle speed [kph]
+    OvmsMetricFloat*  ms_v_pos_acceleration;        // Vehicle acceleration [m/s²]
     OvmsMetricFloat*  ms_v_pos_gpsspeed;            // GPS speed over ground [kph]
     OvmsMetricFloat*  ms_v_pos_odometer;
     OvmsMetricFloat*  ms_v_pos_trip;

@@ -67,6 +67,16 @@ void store_unmount(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   writer->puts("Unmounted STORE");
   }
 
+int config_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  if (!MyConfig.ismounted())
+    return -1;
+  if (argc == 1)
+    return MyConfig.m_map.Validate(writer, argc, argv[0], complete);
+  OvmsConfigParam* p = MyConfig.m_map.FindUniquePrefix(argv[0]);
+  return p->m_map.Validate(writer, argc, argv[1], complete);
+  }
+
 void config_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (!MyConfig.ismounted()) return;
@@ -85,7 +95,7 @@ void config_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     OvmsConfigParam *p = MyConfig.CachedParam(argv[0]);
     if (p)
       {
-      writer->printf("%s (%s %s)\n",argv[0],
+      writer->printf("%s (%s %s)\n",p->GetName().c_str(),
         (p->Readable()?"readable":"protected"),
         (p->Writable()?"writeable":"read-only"));
       for (ConfigParamMap::iterator it=p->m_map.begin(); it!=p->m_map.end(); ++it)
@@ -167,14 +177,14 @@ void config_backup(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     writer->printf("Error: path '%s' is protected\n", argv[0]);
     return;
     }
-  
+
   // get password:
   std::string password;
   if (argc >= 2)
     password = argv[1];
   else
     password = MyConfig.GetParamValue("password", "module");
-  
+
   MyConfig.Backup(argv[0], password, writer, verbosity);
   }
 
@@ -192,14 +202,14 @@ void config_restore(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     writer->printf("Error: path '%s' is protected\n", argv[0]);
     return;
     }
-  
+
   // get password:
   std::string password;
   if (argc >= 2)
     password = argv[1];
   else
     password = MyConfig.GetParamValue("password", "module");
-  
+
   MyConfig.Restore(argv[0], password, writer, verbosity);
   }
 #endif // CONFIG_OVMS_SC_ZIP
@@ -207,17 +217,17 @@ void config_restore(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
 OvmsConfig::OvmsConfig()
   {
   ESP_LOGI(TAG, "Initialising CONFIG (1400)");
-  
+
   m_mounted = false;
 
-  OvmsCommand* cmd_store = MyCommandApp.RegisterCommand("store","STORE framework",NULL,"",0,0,true);
-  cmd_store->RegisterCommand("mount","Mount STORE",store_mount,"",0,0,true);
-  cmd_store->RegisterCommand("unmount","Unmount STORE",store_unmount,"",0,0,true);
+  OvmsCommand* cmd_store = MyCommandApp.RegisterCommand("store","STORE framework");
+  cmd_store->RegisterCommand("mount","Mount STORE",store_mount);
+  cmd_store->RegisterCommand("unmount","Unmount STORE",store_unmount);
 
-  OvmsCommand* cmd_config = MyCommandApp.RegisterCommand("config","CONFIG framework",NULL,"",0,0,true);
-  cmd_config->RegisterCommand("list","Show configuration parameters/instances",config_list,"[<param>]",0,1,true);
-  cmd_config->RegisterCommand("set","Set parameter:instance=value",config_set,"<param> <instance> <value>",3,3,true);
-  cmd_config->RegisterCommand("rm","Remove parameter:instance",config_rm,"<param> {<instance> | *}",2,2,true);
+  OvmsCommand* cmd_config = MyCommandApp.RegisterCommand("config","CONFIG framework");
+  cmd_config->RegisterCommand("list","Show configuration parameters/instances",config_list,"[<param>]",0,1, true, config_validate);
+  cmd_config->RegisterCommand("set","Set parameter:instance=value",config_set,"<param> <instance> <value>",3,3, true, config_validate);
+  cmd_config->RegisterCommand("rm","Remove parameter:instance",config_rm,"<param> {<instance> | *}",2,2, true, config_validate);
 
 #ifdef CONFIG_OVMS_SC_ZIP
   cmd_config->RegisterCommand("backup", "Backup to file", config_backup,
@@ -225,14 +235,14 @@ OvmsConfig::OvmsConfig()
     "Backup system configuration & scripts into password protected ZIP file.\n"
     "Note: user files or directories in /store will not be included.\n"
     "<password> defaults to the current module password, set to \"\" to disable encryption.\n"
-    "Hint: use 7z to unzip/create backup ZIPs on a PC.", 1, 2, true);
+    "Hint: use 7z to unzip/create backup ZIPs on a PC.", 1, 2);
   cmd_config->RegisterCommand("restore", "Restore from file", config_restore,
     "<zipfile> [password=module password]\n"
     "Restore system configuration & scripts from password protected ZIP file.\n"
     "Note: user files or directories in /store will not be touched.\n"
     "The module will perform a reboot after successful restore.\n"
     "<password> defaults to the current module password.\n"
-    "Note: you need to supply the password used for the backup creation.", 1, 2, true);
+    "Note: you need to supply the password used for the backup creation.", 1, 2);
 #endif // CONFIG_OVMS_SC_ZIP
 
   RegisterParam("password", "Password store", true, false);
@@ -498,11 +508,7 @@ OvmsConfigParam* OvmsConfig::CachedParam(std::string param)
   {
   if (!m_mounted) return NULL;
 
-  auto k = m_map.find(param);
-  if (k == m_map.end())
-    return NULL;
-  else
-    return k->second;
+  return m_map.FindUniquePrefix(param.c_str());
   }
 
 bool OvmsConfig::ProtectedPath(std::string path)
@@ -736,6 +742,23 @@ bool OvmsConfig::Restore(std::string path, std::string password, OvmsWriter* wri
 
 #endif // CONFIG_OVMS_SC_ZIP
 
+void OvmsConfig::SupportSummary(OvmsWriter* writer)
+  {
+  writer->puts("\nConfiguration");
+
+  for (ConfigMap::iterator mi=m_map.begin(); mi!=m_map.end(); ++mi)
+    {
+    writer->printf("  [%s]\n",mi->first.c_str());
+    OvmsConfigParam* p = mi->second;
+    for (ConfigParamMap::iterator it=p->m_map.begin(); it!=p->m_map.end(); ++it)
+      {
+      if (p->Readable())
+        { writer->printf("    %s: %s\n",it->first.c_str(), it->second.c_str()); }
+      else
+        { writer->printf("    %s: **redacted**\n",it->first.c_str()); }
+      }
+    }
+  }
 
 OvmsConfigParam::OvmsConfigParam(std::string name, std::string title, bool writable, bool readable)
   {

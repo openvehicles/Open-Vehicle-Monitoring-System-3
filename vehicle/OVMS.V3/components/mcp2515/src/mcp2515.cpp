@@ -47,7 +47,7 @@ static void MCP2515_isr(void *pvParameters)
   // we don't know the IRQ source and querying by SPI is too slow for an ISR,
   // so we let RxCallback() figure out what to do
 
-  CAN_msg_t msg;
+  CAN_queue_msg_t msg;
   msg.type = CAN_rxcallback;
   msg.body.bus = me;
 

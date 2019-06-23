@@ -187,7 +187,7 @@ Boot::Boot()
   xt_set_error_handler_callback(ErrorCallback);
 
   // Register our commands
-  OvmsCommand* cmd_boot = MyCommandApp.RegisterCommand("boot","BOOT framework",boot_status, "", 0, 1);
+  OvmsCommand* cmd_boot = MyCommandApp.RegisterCommand("boot","BOOT framework",boot_status, "", 0, 0, false);
   cmd_boot->RegisterCommand("status","Show boot system status",boot_status,"", 0, 0, false);
   }
 

@@ -100,13 +100,13 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 			{
 			//ks_check_door_lock=true;
 			StdMetrics.ms_v_env_locked->SetValue(false);
-			if(ks_key_fob_open_charge_port && StdMetrics.ms_v_env_on->AsBool()) ks_lockDoors = true;
+			if(ks_key_fob_open_charge_port && StdMetrics.ms_v_env_on->AsBool()) kia_lockDoors = true;
 			}
 		else if (d[3] & 0x10)
 			{
 			//ks_check_door_lock=true;
 			StdMetrics.ms_v_env_locked->SetValue(true);
-			if(ks_key_fob_open_charge_port && StdMetrics.ms_v_env_on->AsBool()) ks_unlockDoors = true;
+			if(ks_key_fob_open_charge_port && StdMetrics.ms_v_env_on->AsBool()) kia_unlockDoors = true;
 			}
 		if (d[3] & 0x40 && ks_key_fob_open_charge_port)
 			{
@@ -133,6 +133,13 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 		}
 		break;
 
+	case 0x202:
+		{
+		m_v_power_usage->SetValue(
+				(float) (((int16_t) d[1] << 8) | d[2]), Watts);
+		}
+		break;
+
 	case 0x433:
 		{
 		// Parking brake status
@@ -140,13 +147,13 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 		}
 		break;
 
-		//case 0x4b0:
-		//  {
+	case 0x4b0:
+	  {
 		// Motor RPM based on wheel rotation
-		//int rpm = (d[0]+(d[1]<<8)) * 8.206;
-		//StdMetrics.ms_v_mot_rpm->SetValue( rpm );
-		//  }
-		//  break;
+		int rpm = (d[0]+(d[1]<<8)) * 8.206;
+		StdMetrics.ms_v_mot_rpm->SetValue( rpm );
+	  }
+		break;
 
 	case 0x4f0:
 		{
@@ -241,11 +248,15 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 
 	case 0x581:
 		{
-		m_v_power_usage->SetValue(
-				(float) (((uint16_t) d[0] << 8) | d[1]) / 1000.0, kW);
+		//m_v_power_usage->SetValue(
+		//		(float) (((uint16_t) d[0] << 8) | d[1]) / 1000.0, kW);
 		// Car is CHARGING:
-		StdMetrics.ms_v_bat_power->SetValue(
-				(float) (((uint16_t) d[7] << 8) | d[6]) / 256.0, kW);
+		if( d[7]>0 && d[6]>0 )
+			{
+			StdMetrics.ms_v_bat_power->SetValue(
+					(float) (((uint16_t) d[7] << 8) | d[6]) / 256.0, kW);
+
+			}
 		}
 		break;
 
@@ -296,19 +307,19 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 		}
 
 	// Check if response is from synchronous can message
-	if (ks_send_can.status == 0xff && p_frame->MsgID == (ks_send_can.id + 0x08))
+	if (kia_send_can.status == 0xff && p_frame->MsgID == (kia_send_can.id + 0x08))
 		{
 		//Store message bytes so that the async method can continue
-		ks_send_can.status = 3;
+		kia_send_can.status = 3;
 
-		ks_send_can.byte[0] = d[0];
-		ks_send_can.byte[1] = d[1];
-		ks_send_can.byte[2] = d[2];
-		ks_send_can.byte[3] = d[3];
-		ks_send_can.byte[4] = d[4];
-		ks_send_can.byte[5] = d[5];
-		ks_send_can.byte[6] = d[6];
-		ks_send_can.byte[7] = d[7];
+		kia_send_can.byte[0] = d[0];
+		kia_send_can.byte[1] = d[1];
+		kia_send_can.byte[2] = d[2];
+		kia_send_can.byte[3] = d[3];
+		kia_send_can.byte[4] = d[4];
+		kia_send_can.byte[5] = d[5];
+		kia_send_can.byte[6] = d[6];
+		kia_send_can.byte[7] = d[7];
 		}
 	}
 

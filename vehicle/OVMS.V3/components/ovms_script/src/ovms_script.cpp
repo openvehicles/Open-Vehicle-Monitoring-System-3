@@ -957,11 +957,11 @@ static void script_run(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int 
     }
   else
     {
-#ifdef CONFIG_OMMS_DEV_SDCARDSCRIPTS
+#ifdef CONFIG_OVMS_DEV_SDCARDSCRIPTS
     path = std::string("/sd/scripts/");
     path.append(argv[0]);
     sf = fopen(path.c_str(), "r");
-#endif // #ifdef CONFIG_OMMS_DEV_SDCARDSCRIPTS
+#endif // #ifdef CONFIG_OVMS_DEV_SDCARDSCRIPTS
     if (sf == NULL)
       {
       path = std::string("/store/scripts/");
@@ -1016,11 +1016,11 @@ void OvmsScripts::EventScript(std::string event, void* data)
   DuktapeDispatchWait(&dmsg);
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
-#ifdef CONFIG_OMMS_DEV_SDCARDSCRIPTS
+#ifdef CONFIG_OVMS_DEV_SDCARDSCRIPTS
   path=std::string("/sd/events/");
   path.append(event);
   AllScripts(path);
-#endif // #ifdef CONFIG_OMMS_DEV_SDCARDSCRIPTS
+#endif // #ifdef CONFIG_OVMS_DEV_SDCARDSCRIPTS
 
   path=std::string("/store/events/");
   path.append(event);
@@ -1060,14 +1060,14 @@ OvmsScripts::OvmsScripts()
   AddTaskToMap(m_duktaskid);
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
-  OvmsCommand* cmd_script = MyCommandApp.RegisterCommand("script","SCRIPT framework",NULL, "", 0, 0, true);
-  cmd_script->RegisterCommand("run","Run a script",script_run,"<path>",1,1,true);
+  OvmsCommand* cmd_script = MyCommandApp.RegisterCommand("script","SCRIPT framework");
+  cmd_script->RegisterCommand("run","Run a script",script_run,"<path>",1,1);
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-  cmd_script->RegisterCommand("reload","Reload javascript framework",script_reload,"",0,0,true);
-  cmd_script->RegisterCommand("eval","Eval some javascript code",script_eval,"<code>",1,1,true);
-  cmd_script->RegisterCommand("compact","Compact javascript heap",script_compact,"",0,0,true);
+  cmd_script->RegisterCommand("reload","Reload javascript framework",script_reload);
+  cmd_script->RegisterCommand("eval","Eval some javascript code",script_eval,"<code>",1,1);
+  cmd_script->RegisterCommand("compact","Compact javascript heap",script_compact);
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-  MyCommandApp.RegisterCommand(".","Run a script",script_run,"<path>",1,1,true);
+  MyCommandApp.RegisterCommand(".","Run a script",script_run,"<path>",1,1);
   }
 
 OvmsScripts::~OvmsScripts()

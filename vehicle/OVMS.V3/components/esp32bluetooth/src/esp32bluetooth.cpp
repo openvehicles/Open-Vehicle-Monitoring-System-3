@@ -255,7 +255,7 @@ esp32bluetoothInit::esp32bluetoothInit()
 
   ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
 
-  OvmsCommand* cmd_bt = MyCommandApp.RegisterCommand("bt","BLUETOOTH framework", bluetooth_status, "", 0, 1, true);
-  cmd_bt->RegisterCommand("status","Show bluetooth status",bluetooth_status, "", 0, 0, true);
-  cmd_bt->RegisterCommand("clear","Clear bluetooth registrations",bluetooth_clear, "(<mac>)", 0, 1, true);
+  OvmsCommand* cmd_bt = MyCommandApp.RegisterCommand("bt","BLUETOOTH framework", bluetooth_status);
+  cmd_bt->RegisterCommand("status","Show bluetooth status",bluetooth_status);
+  cmd_bt->RegisterCommand("clear","Clear bluetooth registrations",bluetooth_clear, "(<mac>)", 0, 1);
   }

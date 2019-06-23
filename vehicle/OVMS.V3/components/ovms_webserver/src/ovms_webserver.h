@@ -451,7 +451,6 @@ class HttpCommandStream : public OvmsShell, public MgHandler
   public:
     void Initialize(bool print);
     virtual bool IsInteractive() { return false; }
-    char** GetCompletion(OvmsCommandMap& children, const char* token) { return NULL; }
     int puts(const char* s);
     int printf(const char* fmt, ...);
     ssize_t write(const void *buf, size_t nbyte);
@@ -528,6 +527,7 @@ class OvmsWebServer : public ExternalRamAllocated
     static void HandleShell(PageEntry_t& p, PageContext_t& c);
     static void HandleDashboard(PageEntry_t& p, PageContext_t& c);
     static void HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c);
+    static void HandleCfgBrakelight(PageEntry_t& p, PageContext_t& c);
     static void HandleEditor(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgPassword(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgVehicle(PageEntry_t& p, PageContext_t& c);

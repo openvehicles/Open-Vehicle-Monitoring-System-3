@@ -53,6 +53,7 @@ struct DashboardConfig;
 #define VEHICLE_POLL_TYPE_OBDIIFREEZE   0x02 // Mode 02 "freeze frame data"
 #define VEHICLE_POLL_TYPE_OBDIIVEHICLE  0x09 // Mode 09 "vehicle information"
 #define VEHICLE_POLL_TYPE_OBDIISESSION  0x10 // UDS: Diagnostic Session Control
+#define VEHICLE_POLL_TYPE_OBDII_1A  			0x1A // Mode 1A
 #define VEHICLE_POLL_TYPE_OBDIIGROUP    0x21 // enhanced data by 8 bit PID
 #define VEHICLE_POLL_TYPE_OBDIIEXTENDED 0x22 // enhanced data by 16 bit PID
 
@@ -132,9 +133,25 @@ class OvmsVehicle : public InternalRamAllocated
     int m_minsoc_triggered;  // The triggered minimum SOC level to alert at
 
   protected:
+    float m_accel_refspeed;                 // Acceleration calculation: last speed measured (m/s)
+    uint32_t m_accel_reftime;               // … timestamp for refspeed (ms)
+    float m_accel_smoothing;                // … smoothing factor (samples, 0 = none, default 2.0)
+    void CalculateAcceleration();           // Call after ms_v_pos_speed update to derive acceleration
+
+  protected:
+    bool m_brakelight_enable;               // Regen brake light enable (default no)
+    int m_brakelight_port;                  // … MAX7317 output port number (1, 3…9, default 1 = SW_12V)
+    float m_brakelight_on;                  // … activation threshold (deceleration in m/s², default 1.3)
+    float m_brakelight_off;                 // … deactivation threshold (deceleration in m/s², default 0.7)
+    uint32_t m_brakelight_start;            // … activation start time
+    void CheckBrakelight();                 // … check vehicle metrics for regen braking state
+    virtual bool SetBrakelight(int on);     // … hardware control method (override for non MAX7317 control)
+
+  protected:
     uint32_t m_ticker;
     int m_12v_ticker;
     int m_chargestate_ticker;
+    int m_idle_ticker;
     virtual void Ticker1(uint32_t ticker);
     virtual void Ticker10(uint32_t ticker);
     virtual void Ticker60(uint32_t ticker);
@@ -157,6 +174,7 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void Notify12vCritical();
     virtual void Notify12vRecovered();
     virtual void NotifyMinSocCritical();
+    virtual void NotifyVehicleIdling();
 
   protected:
     virtual int GetNotifyChargeStateDelay(const char* state) { return 3; }

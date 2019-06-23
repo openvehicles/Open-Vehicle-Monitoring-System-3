@@ -173,6 +173,13 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_mot_temp->SetValue((int)d[2]-40);
       break;
       }
+    case 0x338: // MCU_range
+      {
+      StandardMetrics.ms_v_bat_range_est->SetValue(((uint32_t)d[3]<<8)+d[2],Miles);
+      StandardMetrics.ms_v_bat_range_ideal->SetValue(((uint32_t)d[1]<<8)+d[0],Miles);
+      StandardMetrics.ms_v_bat_consumption->SetValue(((uint32_t)d[5]<<8)+d[4],WattHoursPM);
+      break;
+      }
     case 0x398: // Country
       {
       m_type[0] = 'T';

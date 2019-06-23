@@ -201,12 +201,12 @@ OvmsNetManager::OvmsNetManager()
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
   // Register our commands
-  OvmsCommand* cmd_network = MyCommandApp.RegisterCommand("network","NETWORK framework",network_status, "", 0, 1);
+  OvmsCommand* cmd_network = MyCommandApp.RegisterCommand("network","NETWORK framework",network_status, "", 0, 0, false);
   cmd_network->RegisterCommand("status","Show network status",network_status, "", 0, 0, false);
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-  cmd_network->RegisterCommand("list", "List network connections", network_connections, "", 0, 0, true);
-  cmd_network->RegisterCommand("close", "Close network connection(s)", network_connections, "<id>\nUse ID from connection list / 0 to close all", 1, 1, true);
-  cmd_network->RegisterCommand("cleanup", "Close orphaned network connections", network_connections, "", 0, 0, true);
+  cmd_network->RegisterCommand("list", "List network connections", network_connections);
+  cmd_network->RegisterCommand("close", "Close network connection(s)", network_connections, "<id>\nUse ID from connection list / 0 to close all", 1, 1);
+  cmd_network->RegisterCommand("cleanup", "Close orphaned network connections", network_connections);
 #endif // CONFIG_OVMS_SC_GPL_MONGOOSE
 
   // Register our events

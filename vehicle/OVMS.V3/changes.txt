@@ -2,7 +2,39 @@ Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
 
+2019-05-12 MWJ  3.2.002  OTA release
+- Vehicle framework: added idling alert (ported from V2)
+- Locations: Introduce support for location actions
+- Twizy: Release 1.0.0 -- all V2 features planned are now included in V3
+- Vehicle framework: Regenerative braking signal generation
+- Vehicle framework: DBC and RETOOLS integrations
+- Vehicles: Extensions to Kia Niro, Kia Soul, Mitsubishi, Nissan Leaf,
+  Renault Twizy, SmartID, Tesla Model S, and Think City
+
 2019-01-19 MWJ  3.2.001  OTA release
+- Twizy: support auxiliary charger fan and auxiliary charger
+  New configs:
+    xrt [aux_fan_port]        = EGPIO port number, 0 (default) = off
+    xrt [aux_charger_port]    = EGPIO port number, 0 (default) = off
+- Twizy: lock & valet mode
+  New configs for crash/reboot persistency:
+    xrt [lock_on]   = currently active lock speed [kph]
+    xrt [valet_on]  = currently active odometer limit [10m]
+- Twizy web UI: regenerative braking signal configuration
+- Vehicle framework: regenerative braking signal generation
+  New config:
+    vehicle [accel.smoothing] = 2.0     Acceleration smoothing factor (samples, 0 = none)
+    vehicle [brakelight.enable] = no    Regen brake light enable
+    vehicle [brakelight.port] = 1       … MAX7317 output port number (1, 3…9, default 1 = SW_12V)
+    vehicle [brakelight.on] = 1.3       … activation threshold (deceleration in m/s²)
+    vehicle [brakelight.off] = 0.7      … deactivation threshold (deceleration in m/s²)
+  New metrics:
+    v.p.acceleration    = acceleration/deceleration in m/s² derived from v.p.speed
+    v.e.regenbrake      = regenerative brake light state
+- New vehicle: Kia e-Niro (by Geir Øyvind Vælidalo <geir@validalo.net>)
+- OTA: add option to allow scheduled auto updates via modem
+  New config:
+    ota [auto.allow.modem] = false
 - Twizy web UI: tuning profile and drivemode button editors
 - New vehicle: Smart ED (adaption by Martin Graml <martingraml@hotmail.com>)
 - Web API: per access authorization by "apikey=password" parameter
