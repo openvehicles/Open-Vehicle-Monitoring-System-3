@@ -1,6 +1,6 @@
-=============================
-Tesla Model S Vehicle Support
-=============================
+=============
+Tesla Model S
+=============
 
 Vehicle Type: **TS**
 

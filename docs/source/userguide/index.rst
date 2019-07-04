@@ -9,5 +9,18 @@ User Guide
    warnings
    components
    installation
+   console
+   logging
+   configuration
+   vfs
+   metrics
+   ota
+   boot
    events
-
+   locations
+   notifications
+   time
+   scripting
+   factory
+   ecu
+   

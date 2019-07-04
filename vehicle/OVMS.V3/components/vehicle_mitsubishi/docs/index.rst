@@ -1,6 +1,6 @@
-===============================
-Mitsubishi Trio Vehicle Support
-===============================
+===============
+Mitsubishi Trio
+===============
 
 Vehicle Type: **MI**
 

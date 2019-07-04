@@ -1,6 +1,6 @@
-========================
-Smart ED Vehicle Support
-========================
+========
+Smart ED
+========
 
 Vehicle Type: **SE**
 

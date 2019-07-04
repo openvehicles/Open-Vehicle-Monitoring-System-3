@@ -1,6 +1,6 @@
-===========================
-Kia Soul EV Vehicle Support
-===========================
+===========
+Kia Soul EV
+===========
 
 Vehicle Type: **KS**
 
@@ -39,9 +39,9 @@ OBD-II cable
 
 The Kia Soul EV have two different CAN-busses available on the OBD-II port: C-can and M-can. 
 
-C-can is the main can-bus and M-can is the multimedia bus. The latter one is not necessary for OVMS, but some metrics are fetched from the M-bus and these metrics will be empty if you don’t have the proper cable. The standard OBD-II to DB9 cable from Fasttech supports only C-can, so make sure you buy the Kia Soul specific one.
+C-can is the main can-bus and M-can is the multimedia bus. The latter one is not necessary for OVMS, but some metrics are fetched from the M-bus and these metrics will be empty if you don't have the proper cable. The standard OBD-II to DB9 cable from Fasttech supports only C-can, so make sure you buy the Kia Soul specific one.
 
-In case you want to build your own cable, here’s the pinout:
+In case you want to build your own cable, here's the pinout:
 
 ======= ======= ========
 J1962-M DB9-F   Signal

@@ -15,10 +15,3 @@ Open Vehicles Monitoring System
    :caption: Vehicle Specific Guides:
 
    components/vehicle_*/docs/index*
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

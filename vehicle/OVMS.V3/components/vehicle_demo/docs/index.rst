@@ -1,6 +1,6 @@
-====================
-DEMO Vehicle Support
-====================
+============
+DEMO Vehicle
+============
 
 Vehicle Type: **DEMO**
 

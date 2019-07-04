@@ -1,6 +1,6 @@
-==========================
-Kia e-Niro Vehicle Support
-==========================
+==========
+Kia e-Niro
+==========
 
 Vehicle Type: **KN**
 

@@ -1,6 +1,6 @@
-=========================
-DBC Based Vehicle Support
-=========================
+==================
+DBC Based Vehicles
+==================
 
 Vehicle Type: **DBC**
 
