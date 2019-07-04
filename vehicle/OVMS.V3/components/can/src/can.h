@@ -72,12 +72,18 @@ typedef enum
 // CAN link speed (100kbps -> 1MHz)
 typedef enum
   {
+  CAN_SPEED_33KBPS=33,       // CAN Node runs at 33.333kBit/s
+  CAN_SPEED_83KBPS=83,       // CAN Node runs at 83.333kBit/s
   CAN_SPEED_100KBPS=100,     // CAN Node runs at 100kBit/s
   CAN_SPEED_125KBPS=125,     // CAN Node runs at 125kBit/s
   CAN_SPEED_250KBPS=250,     // CAN Node runs at 250kBit/s
   CAN_SPEED_500KBPS=500,     // CAN Node runs at 500kBit/s
   CAN_SPEED_1000KBPS=1000    // CAN Node runs at 1000kBit/s
   } CAN_speed_t;
+
+/* Map CAN_speed_t to a Bit/s value */
+#define MAP_CAN_SPEED(s) \
+    ((s) > CAN_SPEED_83KBPS ? (((int)(s)) * 1000) : ((((int)(s)) * 1000) + 333))
 
 // CAN frame type (standard/extended)
 typedef enum

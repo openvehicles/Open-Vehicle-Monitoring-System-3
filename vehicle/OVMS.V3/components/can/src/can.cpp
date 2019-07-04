@@ -59,6 +59,7 @@ void can_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
   const char* bus = cmd->GetParent()->GetParent()->GetName();
   const char* mode = cmd->GetName();
   int baud = atoi(argv[0]);
+  esp_err_t res;
 
   CAN_mode_t smode = CAN_MODE_LISTEN;
   if (strcmp(mode, "active")==0) smode = CAN_MODE_ACTIVE;
@@ -87,27 +88,36 @@ void can_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
 
   switch (baud)
     {
+    case 33333:
+      res = sbus->Start(smode,CAN_SPEED_33KBPS,dbcfile);
+      break;
+    case 83333:
+      res = sbus->Start(smode,CAN_SPEED_83KBPS,dbcfile);
+      break;
     case 100000:
-      sbus->Start(smode,CAN_SPEED_100KBPS,dbcfile);
+      res = sbus->Start(smode,CAN_SPEED_100KBPS,dbcfile);
       break;
     case 125000:
-      sbus->Start(smode,CAN_SPEED_125KBPS,dbcfile);
+      res = sbus->Start(smode,CAN_SPEED_125KBPS,dbcfile);
       break;
     case 250000:
-      sbus->Start(smode,CAN_SPEED_250KBPS,dbcfile);
+      res = sbus->Start(smode,CAN_SPEED_250KBPS,dbcfile);
       break;
     case 500000:
-      sbus->Start(smode,CAN_SPEED_500KBPS,dbcfile);
+      res = sbus->Start(smode,CAN_SPEED_500KBPS,dbcfile);
       break;
     case 1000000:
-      sbus->Start(smode,CAN_SPEED_1000KBPS,dbcfile);
+      res = sbus->Start(smode,CAN_SPEED_1000KBPS,dbcfile);
       break;
     default:
-      writer->puts("Error: Unrecognised speed (100000, 125000, 250000, 500000, 1000000 are accepted)");
+      writer->puts("Error: Unrecognised speed (33333, 83333, 100000, 125000, 250000, 500000, 1000000 are accepted)");
       return;
     }
-  writer->printf("Can bus %s started in mode %s at speed %dbps\n",
+  if (res == ESP_OK)
+    writer->printf("Can bus %s started in mode %s at speed %dbps\n",
                  bus, mode, baud);
+  else
+    writer->printf("Failed to start can bus %s\n",bus);
   }
 
 void can_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -237,7 +247,7 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->printf("CAN:       %s\n",sbus->GetName());
   writer->printf("Mode:      %s\n",(sbus->m_mode==CAN_MODE_OFF)?"Off":
                                    ((sbus->m_mode==CAN_MODE_LISTEN)?"Listen":"Active"));
-  writer->printf("Speed:     %d\n",(sbus->m_speed)*1000);
+  writer->printf("Speed:     %d\n",MAP_CAN_SPEED(sbus->m_speed));
   writer->printf("DBC:       %s\n",(sbus->GetDBC())?sbus->GetDBC()->GetName().c_str():"none");
   writer->printf("Interrupts:%20d\n",sbus->m_status.interrupts);
   writer->printf("Rx pkt:    %20d\n",sbus->m_status.packets_rx);
@@ -267,7 +277,7 @@ void can_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
         sbus->GetName(),
         (sbus->m_mode==CAN_MODE_OFF)?"Off":
           ((sbus->m_mode==CAN_MODE_LISTEN)?"Listen":"Active"),
-        sbus->m_speed * 1000,
+        MAP_CAN_SPEED(sbus->m_speed),
         (sbus->GetDBC())?sbus->GetDBC()->GetName().c_str():"none");
       }
     }
