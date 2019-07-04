@@ -2,6 +2,8 @@
 Tesla Model S Vehicle Support
 =============================
 
+Vehicle Type: **TS**
+
 At present, support for the Tesla Model S in OVMS is experimental and under development. This vehicle type should not be used by anyone other than those actively involved in development of support for this vehicle.
 
 ----------------

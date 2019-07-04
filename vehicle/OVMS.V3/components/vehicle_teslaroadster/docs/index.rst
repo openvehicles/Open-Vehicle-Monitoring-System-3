@@ -2,6 +2,8 @@
 Tesla Roadster Vehicle Support
 ==============================
 
+Vehicle Type: **TR**
+
 The Tesla Roadster support in OVMS is perhaps the most mature in the project. All versions (1.x, 2.x, and 3.x) are supported, for both North American and other variants.
 
 ----------------
