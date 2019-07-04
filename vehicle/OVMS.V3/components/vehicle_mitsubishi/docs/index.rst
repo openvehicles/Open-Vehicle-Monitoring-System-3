@@ -152,5 +152,5 @@ Set the port as necessary and the checkbox to enable the brakelight.
 For monitoring and fine tuning, use the „regenmon“ web plugin:
 https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/ovms_webserver/dev/regenmon.htm
 
-... image:: trio2.png
+.. image:: trio2.png
 
