@@ -129,12 +129,11 @@ I use 2/b (relay shield) variant: Be aware the MAX71317 outputs are open drain, 
 
 Inside OVMS Box: Connect JP1 Pin10 (GEP7) to Pin12 (EGPIO_8) with jumper
 
-In DA26 connector:
+In DA26 connector::
 
   pin 24(+3.3) ----- [ 680 Ohms ] ---+--- [ Relay board IN ]                                   		
                                      |
                             pin 21 (EGPIO_8)
-
   pin 9 ----- [Relay board DC+]
   pin 8 ----- [Relay board DC-]
   [Relay board COM] ----- Brake pedal switch one side

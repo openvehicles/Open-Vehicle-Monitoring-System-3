@@ -193,7 +193,7 @@ Read only commands
 Active Commands
 ^^^^^^^^^^^^^^^
 
-| ``xks trunk <pin code>`
+| ``xks trunk <pin code>``
 | Opens up the trunk
 
 | ``xks chargeport <pin code>``
