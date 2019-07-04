@@ -9,4 +9,5 @@ User Guide
    warnings
    components
    installation
+   events
 
