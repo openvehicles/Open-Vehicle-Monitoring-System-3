@@ -54,7 +54,11 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 html_context = {
-  'css_files': [
-    '_static/theme_overrides.css',
-  ],
 }
+
+def setup(app):
+    app.add_stylesheet('theme_overrides.css')
+    app.add_stylesheet('copybutton.css')
+    app.add_javascript('clipboard.min.js')
+    app.add_javascript('copybutton.js')
+
