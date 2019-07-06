@@ -14,9 +14,9 @@ Support Overview
 Function                    Support Status
 =========================== ==============
 Hardware                    No specific requirements (except for regen brake light control, see below)
-Vehicle Cable               OVMS Data Cable, left version
-GSM Antenna                 Standard OVMS GSM antenna
-GPS Antenna                 Standard OVMS GPS antenna
+Vehicle Cable               OBD-II to DB9 Data Cable for OVMS (1441200 right, or 1139300 left)
+GSM Antenna                 1000500 Open Vehicles OVMS GSM Antenna (or any compatible antenna)
+GPS Antenna                 1020200 Universal GPS Antenna (SMA Connector) (or any compatible antenna)
 SOC Display                 Yes
 Range Display               Yes
 GPS Location                Yes
