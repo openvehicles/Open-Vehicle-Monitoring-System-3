@@ -4,15 +4,13 @@ Renault Twizy
 
 Vehicle Type: **RT**
 
-At present, support for the Tesla Model S in OVMS is experimental and under development. This vehicle type should not be used by anyone other than those actively involved in development of support for this vehicle.
-
 ----------------
 Support Overview
 ----------------
 
-=========================== ==============
+=========================== ================================================================
 Function                    Support Status
-=========================== ==============
+=========================== ================================================================
 Hardware                    No specific requirements (except for regen brake light control, see below)
 Vehicle Cable               OBD-II to DB9 Data Cable for OVMS (1441200 right, or 1139300 left)
 GSM Antenna                 1000500 Open Vehicles OVMS GSM Antenna (or any compatible antenna)
@@ -30,23 +28,21 @@ Charge Control              Current limit, stop, SOC/range limit
 Cabin Pre-heat/cool Control No
 Lock/Unlock Vehicle         Mapped to dynamic speed lock
 Valet Mode Control          Mapped to odometer based speed lock
-Others                      Battery & motor power & energy monitoring, battery health & capacity, SEVCON monitoring & tuning (tuning only SC firmware <= 0712.0002 / ~07/2016), kickdown, auto power adjust, regen brake light,  extended trip & GPS logging
-=========================== ==============
+Others                      - Battery & motor power & energy monitoring
+                            - Battery health & capacity
+                            - SEVCON monitoring & tuning (Note: tuning only SC firmware <= 0712.0002 / ~07/2016)
+                            - Kickdown
+                            - Auto power adjust
+                            - Regen brake light
+                            - Extended trip & GPS logging
+=========================== ================================================================
 
 Note: regarding the Twizy, V3 works very similar to V2. All telemetry data tables and tuning profiles are fully compatible, and the commands are very similar. Therefore, the basic descriptions and background info from the V2 manual are valid for V3 as well.
 
-The V2 FAQ can be found here:
-
-	https://dexters-web.de/faq/en		(english)
-	https://dexters-web.de/faq		(german)
-
-All latest V2 document versions can be found here:
-
-  github.com/openvehicles/.../Renault-Twizy
-
-Direct link to the V2 user manual (PDF):
-
-  github.com/openvehicles/.../OVMS-UserGuide-RenaultTwizy.pdf
+  * `V2 FAQ (english) <https://dexters-web.de/faq/en>`_
+  * `V2 FAQ (german) <https://dexters-web.de/faq>`_
+  * `V2 documents directory <https://github.com/openvehicles/Open-Vehicle-Monitoring-System/tree/master/docs/Renault-Twizy>`_
+  * `V2 user manual (PDF) <https://github.com/openvehicles/Open-Vehicle-Monitoring-System/raw/master/docs/Renault-Twizy/OVMS-UserGuide-RenaultTwizy.pdf>`_
 
 ---------------------------
 Hints on V3 commands vs. V2
@@ -55,8 +51,8 @@ Hints on V3 commands vs. V2
 * V3 commands need to be in lower case.
 * When accessing via USB terminal, first issue enable (login).
 * V3 commands are similar to V2 commands, just structured slightly different.
-* Try “help”, “?” and “xrt ?”. Twizy commands are subcommands of "xrt".
-* TAB only works via USB / SSH. Shortcuts can be used generally, e.g.  “mo t” instead of “module tasks”.
+* Try ``help``, ``?`` and ``xrt ?``. Twizy commands are subcommands of ``xrt``.
+* TAB only works via USB / SSH. Shortcuts can be used generally, e.g.  ``mo t`` instead of ``module tasks``.
 * A usage info is shown if a command syntax is wrong or incomplete.
 
 -------------
@@ -87,7 +83,7 @@ Why?
 
 The Twizy recuperation levels are very low by default, regenerative braking is so weak it doesn‘t need to trigger the brake light – so a regen braking indication has been omitted by Renault. The Twizy can be tuned to one pedal driving though with high neutral braking power.
 
-The SEVCON normally can generate a regen braking signal itself. That signal can be configured using the „xrt cfg brakelight“ tuning command. Pin 11 on the SEVCON main connector will go to GND on activation. The problem is, that pin is not connected on the Twizy, using it needs modification of the connector. To my knowledge this hasn‘t been done successfully up to now, so we don‘t even know if the Twizy SEVCON firmware includes that functionality.
+The SEVCON normally can generate a regen braking signal itself. That signal can be configured using the ``xrt cfg brakelight`` tuning command. Pin 11 on the SEVCON main connector will go to GND on activation. The problem is, that pin is not connected on the Twizy, using it needs modification of the connector. To my knowledge this hasn‘t been done successfully up to now, so we don‘t even know if the Twizy SEVCON firmware includes that functionality.
 
 ^^^^^^^^^^^^^^^^^
 How does it work?
@@ -154,8 +150,8 @@ Build
 
 9. Do a test: plug in the OVMS (Note: the relay switches on during the first OVMS boot), switch on the Twizy, issue commands:
 
-  * *egpio output 1 1“ should activate the brakelight*
-  * *egpio output 1 0“ should deactivate the brakelight*
+  * ``egpio output 1 1`` should activate the brakelight
+  * ``egpio output 1 0`` should deactivate the brakelight
   * Note: if you‘re using another EGPIO port, use the according port number (3-9) instead
 
 10. Mount the glovebox and you‘re done.
