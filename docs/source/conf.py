@@ -40,6 +40,18 @@ exclude_patterns = ['*/wolfssl/*', '*/duktape/*']
 
 master_doc = 'index'
 
+
+# -- Source configuration ----------------------------------------------------
+
+# - |clearfix| global substitution to clear floats (e.g. images)
+rst_epilog = """
+.. |clearfix| raw:: html
+
+  <div class="clearfix"></div>
+
+"""
+
+
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
