@@ -15,6 +15,7 @@ Open Vehicles Monitoring System
 
    crtd/index
    components/ovms_webserver/docs/index
+   components/canopen/docs/index
 
 .. toctree::
    :maxdepth: 1
