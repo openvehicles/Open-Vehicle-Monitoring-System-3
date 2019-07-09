@@ -33,6 +33,8 @@ static const char *TAG = "canlog-tcpclient";
 #include "ovms_config.h"
 #include "ovms_peripherals.h"
 
+canlog_tcpclient* MyCanLogTcpClient = NULL;
+
 void can_log_tcpclient_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   std::string format(cmd->GetName());
@@ -85,36 +87,74 @@ OvmsCanLogTcpClientInit::OvmsCanLogTcpClientInit()
     }
   }
 
+static void tcMongooseHandler(struct mg_connection *nc, int ev, void *p)
+  {
+  if (MyCanLogTcpClient)
+    MyCanLogTcpClient->MongooseHandler(nc, ev, p);
+  else if (ev == MG_EV_ACCEPT)
+    {
+    ESP_LOGI(TAG, "Log service connection rejected (logger not running)");
+    nc->flags |= MG_F_CLOSE_IMMEDIATELY;
+    }
+  }
+
 canlog_tcpclient::canlog_tcpclient(std::string path, std::string format)
   : canlog("tcpclient", format)
   {
+  MyCanLogTcpClient = this;
+  m_mgconn = NULL;
+  m_isopen = false;
   m_path = path;
   }
 
 canlog_tcpclient::~canlog_tcpclient()
   {
   Close();
+  MyCanLogTcpClient = NULL;
   }
 
 bool canlog_tcpclient::Open()
   {
-  //ESP_LOGI(TAG, "Now logging CAN messages as a tcp client to %s",m_path.c_str());
-  //std::string header = m_formatter->getheader();
-  //if (header.length()>0)
-  //  { ESP_LOGD(TAG,"%s",header.c_str()); }
-
-  ESP_LOGE(TAG, "Not yet implemented");
-  return false;
+  struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
+  if (mgr != NULL)
+    {
+    ESP_LOGI(TAG, "Launching TCP client to %s",m_path.c_str());
+    struct mg_connect_opts opts;
+    const char* err;
+    memset(&opts, 0, sizeof(opts));
+    opts.error_string = &err;
+    if ((m_mgconn = mg_connect_opt(mgr, m_path.c_str(), tcMongooseHandler, opts)) != NULL)
+      {
+      m_isopen = true;
+      return true;
+      }
+    else
+      {
+      ESP_LOGE(TAG,"Could not connect to %s",m_path.c_str());
+      return false;
+      }
+    }
+  else
+    {
+    ESP_LOGE(TAG,"Network manager is not available");
+    return false;
+    }
   }
 
 void canlog_tcpclient::Close()
   {
-  ESP_LOGI(TAG, "Closed TCP client log: %s", GetStats().c_str());
+  if ((m_isopen)&&(m_mgconn != NULL))
+    {
+    ESP_LOGI(TAG, "Closed TCP client log: %s", GetStats().c_str());
+    m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
+    m_mgconn = NULL;
+    m_isopen = false;
+    }
   }
 
 bool canlog_tcpclient::IsOpen()
   {
-  return false;
+  return m_isopen;
   }
 
 std::string canlog_tcpclient::GetInfo()
@@ -128,4 +168,67 @@ std::string canlog_tcpclient::GetInfo()
 void canlog_tcpclient::OutputMsg(CAN_log_message_t& msg)
   {
   if (m_formatter == NULL) return;
+
+  if ((m_mgconn != NULL)&&(m_isopen))
+    {
+    std::string result = m_formatter->get(&msg);
+    if (result.length()>0)
+      {
+      if (m_mgconn->send_mbuf.len < 4096)
+        {
+        mg_send(m_mgconn, (const char*)result.c_str(), result.length());
+        }
+      else
+        {
+        m_dropcount++;
+        }
+      }
+    }
+  }
+
+void canlog_tcpclient::MongooseHandler(struct mg_connection *nc, int ev, void *p)
+  {
+  switch (ev)
+    {
+    case MG_EV_CONNECT:
+      {
+      int *success = (int*)p;
+      ESP_LOGV(TAG, "MongooseHandler(MG_EV_CONNECT=%d)",*success);
+      if (*success == 0)
+        {
+        // Successful connection
+        ESP_LOGI(TAG, "Connection successful to %s",m_path.c_str());
+        if (m_formatter != NULL)
+          {
+          std::string result = m_formatter->getheader();
+          if (result.length()>0)
+            {
+            mg_send(nc, (const char*)result.c_str(), result.length());
+            }
+          }
+        }
+      else
+        {
+        // Connection failed
+        ESP_LOGE(TAG, "Connection failed to %s",m_path.c_str());
+        m_mgconn = NULL;
+        m_isopen = false;
+        }
+      }
+      break;
+    case MG_EV_CLOSE:
+      ESP_LOGV(TAG, "MongooseHandler(MG_EV_CLOSE)");
+      if (m_isopen)
+        {
+        ESP_LOGE(TAG,"Disconnected from %s",m_path.c_str());
+        m_mgconn = NULL;
+        m_isopen = false;
+        }
+      break;
+    case MG_EV_RECV:
+      ESP_LOGV(TAG, "MongooseHandler(MG_EV_RECV)");
+      break;
+    default:
+      break;
+    }
   }
