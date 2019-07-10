@@ -34,8 +34,10 @@
 #include "can.h"
 #include "ovms_utils.h"
 #include "ovms_command.h"
-
+#include "ovms_buffer.h"
 using namespace std;
+
+#define CANFORMAT_SERVE_BUFFERSIZE 1024
 
 class canformat
   {
@@ -55,6 +57,18 @@ class canformat
 
   private:
     const char* m_type;
+
+  public:
+    typedef enum { Discard, Simulate, Transmit } canformat_serve_mode_t;
+    canformat_serve_mode_t GetServeMode();
+    void SetServeMode(canformat_serve_mode_t mode);
+    bool GetServeDiscarding();
+    void SetServeDiscarding(bool discarding);
+    virtual size_t Serve(uint8_t *buffer, size_t len);
+
+  protected:
+    canformat_serve_mode_t m_servemode;
+    bool m_servediscarding;
   };
 
 template<typename Type> canformat* CreateCanFormat(const char* type)

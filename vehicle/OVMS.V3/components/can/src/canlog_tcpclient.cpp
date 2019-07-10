@@ -226,8 +226,19 @@ void canlog_tcpclient::MongooseHandler(struct mg_connection *nc, int ev, void *p
         }
       break;
     case MG_EV_RECV:
+      {
       ESP_LOGV(TAG, "MongooseHandler(MG_EV_RECV)");
+      size_t used = nc->recv_mbuf.len;
+      if (m_formatter != NULL)
+        {
+        used = m_formatter->Serve((uint8_t*)nc->recv_mbuf.buf, used);
+        }
+      if (used > 0)
+        {
+        mbuf_remove(&nc->recv_mbuf, used);
+        }
       break;
+      }
     default:
       break;
     }

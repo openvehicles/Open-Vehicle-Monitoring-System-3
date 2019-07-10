@@ -66,6 +66,8 @@ void OvmsCanFormatFactory::RegisterCommandSet(OvmsCommand* base, const char* tit
 canformat::canformat(const char* type)
   {
   m_type = type;
+  m_servemode = Discard;
+  m_servediscarding = false;
   }
 
 canformat::~canformat()
@@ -90,4 +92,68 @@ std::string canformat::getheader(struct timeval *time)
 size_t canformat::put(CAN_log_message_t* message, uint8_t *buffer, size_t len)
   {
   return 0;
+  }
+
+size_t canformat::Serve(uint8_t *buffer, size_t len)
+  {
+  if ((m_servediscarding)||(m_servemode == Discard))
+    {
+    return len; // Simply discard...
+    }
+
+  size_t consumed = 0;
+  while(len>0)
+    {
+    CAN_log_message_t msg;
+    memset(&msg,0,sizeof(msg));
+
+    size_t used = put(&msg, buffer, len);
+    if (used > 0)
+      {
+      consumed += used;
+      buffer += used;
+      len -= used;
+      }
+    else
+      {
+      len = 0;
+      }
+
+    if (msg.frame.origin != NULL)
+      {
+      switch (m_servemode)
+        {
+        case Simulate:
+          MyCan.IncomingFrame(&msg.frame);
+          break;
+        case Transmit:
+          msg.frame.origin->Write(&msg.frame);
+          break;
+        default:
+          break;
+        }
+      }
+    }
+
+  return consumed;
+  }
+
+canformat::canformat_serve_mode_t canformat::GetServeMode()
+  {
+  return m_servemode;
+  }
+
+void canformat::SetServeMode(canformat_serve_mode_t mode)
+  {
+  m_servemode = mode;
+  }
+
+bool canformat::GetServeDiscarding()
+  {
+  return m_servediscarding;
+  }
+
+void canformat::SetServeDiscarding(bool discarding)
+  {
+  m_servediscarding = discarding;
   }

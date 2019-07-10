@@ -234,8 +234,15 @@ void canlog_tcpserver::MongooseHandler(struct mg_connection *nc, int ev, void *p
     case MG_EV_RECV:
       {
       // Receive data on the network connection
-      size_t bl = nc->recv_mbuf.len;
-      mbuf_remove(&nc->recv_mbuf, bl);
+      size_t used = nc->recv_mbuf.len;
+      if (m_formatter != NULL)
+        {
+        used = m_formatter->Serve((uint8_t*)nc->recv_mbuf.buf, used);
+        }
+      if (used > 0)
+        {
+        mbuf_remove(&nc->recv_mbuf, used);
+        }
       break;
       }
 
