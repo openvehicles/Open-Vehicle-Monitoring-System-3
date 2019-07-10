@@ -70,10 +70,23 @@ void max7317::Output(uint8_t port, uint8_t level)
 
 uint8_t max7317::Input(uint8_t port)
   {
-  uint8_t buf[4];
+  uint8_t buf[4], *res;
 
-  uint8_t* p = m_spibus->spi_cmd(m_spi, buf, 1, 1, port + 0x80);
-  return *p;
+  // MAX7317 SPI read needs a deselect between tx and rx (see specs pg. 8)
+  if (port < 8)
+    {
+    m_spibus->spi_cmd(m_spi, buf, 0, 2, 0x8E, 0);
+    m_spibus->spi_deselect(m_spi);
+    res = m_spibus->spi_cmd(m_spi, buf, 2, 0);
+    return (res[1] & (1 << port)) ? 1 : 0;
+    }
+  else
+    {
+    m_spibus->spi_cmd(m_spi, buf, 0, 2, 0x8F, 0);
+    m_spibus->spi_deselect(m_spi);
+    res = m_spibus->spi_cmd(m_spi, buf, 2, 0);
+    return (res[1] & (1 << (port-8))) ? 1 : 0;
+    }
   }
 
 void max7317_output(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -95,6 +108,20 @@ void max7317_output(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   writer->printf("EGPIO port %d set to output level %d\n", port, level);
   }
 
+void max7317_input(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  int port = atoi(argv[0]);
+  if ((port <0)||(port>9))
+    {
+    writer->puts("Error: Port should be in range 0..9");
+    return;
+    }
+
+  MyPeripherals->m_max7317->Output((uint8_t)port,(uint8_t)1); // set port to input
+  int level = MyPeripherals->m_max7317->Input((uint8_t)port);
+  writer->printf("EGPIO port %d has input level %d\n", port, level);
+  }
+
 class Max7317Init
   {
   public: Max7317Init();
@@ -106,4 +133,5 @@ Max7317Init::Max7317Init()
 
   OvmsCommand* cmd_egpio = MyCommandApp.RegisterCommand("egpio","EGPIO framework");
   cmd_egpio->RegisterCommand("output","Set EGPIO output level",max7317_output, "<port> <level>", 2, 2);
+  cmd_egpio->RegisterCommand("input","Get EGPIO input level",max7317_input, "<port>", 1, 1);
   }

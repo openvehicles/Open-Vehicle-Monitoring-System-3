@@ -29,6 +29,7 @@
 #define __CANLOG_TCP_CLIENT_H__
 
 #include "canlog.h"
+#include "ovms_netmanager.h"
 
 class canlog_tcpclient : public canlog
   {
@@ -44,6 +45,13 @@ class canlog_tcpclient : public canlog
 
   public:
     virtual void OutputMsg(CAN_log_message_t& msg);
+
+  public:
+    void MongooseHandler(struct mg_connection *nc, int ev, void *p);
+
+  public:
+    struct mg_connection *m_mgconn;
+    bool m_isopen;
 
   public:
     std::string         m_path;

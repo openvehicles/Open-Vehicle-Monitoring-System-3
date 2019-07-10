@@ -24,6 +24,9 @@
 ; THE SOFTWARE.
 */
 
+#include <sdkconfig.h>
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
 #include "ovms_log.h"
 static const char *TAG = "canlog-tcpserver";
 
@@ -32,6 +35,8 @@ static const char *TAG = "canlog-tcpserver";
 #include "canlog_tcpserver.h"
 #include "ovms_config.h"
 #include "ovms_peripherals.h"
+
+canlog_tcpserver* MyCanLogTcpServer = NULL;
 
 void can_log_tcpserver_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -85,36 +90,81 @@ OvmsCanLogTcpServerInit::OvmsCanLogTcpServerInit()
     }
   }
 
+static void tsMongooseHandler(struct mg_connection *nc, int ev, void *p)
+  {
+  if (MyCanLogTcpServer)
+    MyCanLogTcpServer->MongooseHandler(nc, ev, p);
+  else if (ev == MG_EV_ACCEPT)
+    {
+    ESP_LOGI(TAG, "Log service connection rejected (logger not running)");
+    nc->flags |= MG_F_CLOSE_IMMEDIATELY;
+    }
+  }
+
 canlog_tcpserver::canlog_tcpserver(std::string path, std::string format)
   : canlog("tcpserver", format)
   {
+  MyCanLogTcpServer = this;
   m_path = path;
+  if (m_path.find(':') == std::string::npos)
+    {
+    m_path.append(":3000");
+    }
+  m_isopen = false;
   }
 
 canlog_tcpserver::~canlog_tcpserver()
   {
   Close();
+  MyCanLogTcpServer = NULL;
   }
 
 bool canlog_tcpserver::Open()
   {
-  //ESP_LOGI(TAG, "Now logging CAN messages as a tcp server on %s",m_path.c_str());
-  //std::string header = m_formatter->getheader();
-  //if (header.length()>0)
-  //  { ESP_LOGD(TAG,"%s",header.c_str()); }
+  if (m_isopen) return true;
 
-  ESP_LOGE(TAG, "Not yet implemented");
-  return false;
+  ESP_LOGI(TAG, "Launching TCP server at %s",m_path.c_str());
+  struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
+  if (mgr != NULL)
+    {
+    if (mg_bind(mgr, m_path.c_str(), tsMongooseHandler))
+      {
+      m_isopen = true;
+      return true;
+      }
+    else
+      {
+      ESP_LOGE(TAG,"Could not listen on %s",m_path.c_str());
+      return false;
+      }
+    }
+  else
+    {
+    ESP_LOGE(TAG,"Network manager is not available");
+    return false;
+    }
   }
 
 void canlog_tcpserver::Close()
   {
-  ESP_LOGI(TAG, "Closed TCP server log: %s", GetStats().c_str());
+  if (m_isopen)
+    {
+    if (m_smap.size() > 0)
+      {
+      for (ts_map_t::iterator it=m_smap.begin(); it!=m_smap.end(); ++it)
+        {
+        it->first->flags |= MG_F_CLOSE_IMMEDIATELY;
+        }
+      m_smap.clear();
+      }
+    ESP_LOGI(TAG, "Closed TCP server log: %s", GetStats().c_str());
+    m_isopen = false;
+    }
   }
 
 bool canlog_tcpserver::IsOpen()
   {
-  return false;
+  return m_isopen;
   }
 
 std::string canlog_tcpserver::GetInfo()
@@ -128,4 +178,70 @@ std::string canlog_tcpserver::GetInfo()
 void canlog_tcpserver::OutputMsg(CAN_log_message_t& msg)
   {
   if (m_formatter == NULL) return;
+
+  std::string result = m_formatter->get(&msg);
+  if (result.length()>0)
+    {
+    for (ts_map_t::iterator it=m_smap.begin(); it!=m_smap.end(); ++it)
+      {
+      if (it->first->send_mbuf.len < 4096)
+        {
+        // Limit to 4KB queue on output buffer
+        mg_send(it->first, (const char*)result.c_str(), result.length());
+        }
+      else
+        {
+        m_dropcount++;
+        }
+      }
+    }
   }
+
+void canlog_tcpserver::MongooseHandler(struct mg_connection *nc, int ev, void *p)
+  {
+  char addr[32];
+
+  switch (ev)
+    {
+    case MG_EV_ACCEPT:
+      {
+      // New network connection has arrived
+      mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr), MG_SOCK_STRINGIFY_IP);
+      ESP_LOGI(TAG, "Log service connection from %s",addr);
+      m_smap[nc] = 1;
+      if (m_formatter != NULL)
+        {
+        std::string result = m_formatter->getheader();
+        if (result.length()>0)
+          {
+          mg_send(nc, (const char*)result.c_str(), result.length());
+          }
+        }
+      break;
+      }
+
+    case MG_EV_CLOSE:
+      {
+      // Network connection has gone
+      mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr), MG_SOCK_STRINGIFY_IP);
+      ESP_LOGI(TAG, "Log service disconnection from %s",addr);
+      auto k = m_smap.find(nc);
+      if (k != m_smap.end())
+        m_smap.erase(k);
+      break;
+      }
+
+    case MG_EV_RECV:
+      {
+      // Receive data on the network connection
+      size_t bl = nc->recv_mbuf.len;
+      mbuf_remove(&nc->recv_mbuf, bl);
+      break;
+      }
+
+    default:
+      break;
+    }
+  }
+
+#endif // #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE

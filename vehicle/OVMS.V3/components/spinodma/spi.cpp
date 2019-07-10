@@ -87,3 +87,14 @@ uint8_t* spi::spi_cmd(spi_nodma_device_handle_t spi, uint8_t* buf, int rxlen, in
     }
   return buf + txlen;
   }
+
+esp_err_t spi::spi_deselect(spi_nodma_device_handle_t spi)
+  {
+  esp_err_t ret = ESP_OK;
+  if (LockBus(portMAX_DELAY))
+    {
+    ret = spi_nodma_device_deselect(spi);
+    UnlockBus();
+    }
+  return ret;
+  }
