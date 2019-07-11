@@ -29,7 +29,7 @@
 
 #include "canformat.h"
 
-#define CANFORMAT_CRTD_MAXLEN 256
+#define CANFORMAT_CRTD_MAXLEN 64
 
 class canformat_crtd : public canformat
   {
@@ -37,14 +37,10 @@ class canformat_crtd : public canformat
     canformat_crtd(const char* type);
     virtual ~canformat_crtd();
 
-  protected:
-    char m_buf[CANFORMAT_CRTD_MAXLEN+1];
-    size_t m_bufpos;
-
   public:
     virtual std::string get(CAN_log_message_t* message);
     virtual std::string getheader(struct timeval *time);
-    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len);
+    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata=NULL);
   };
 
 #endif // __CANFORMAT_CRTD_H__

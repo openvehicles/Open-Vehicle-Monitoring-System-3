@@ -47,8 +47,6 @@ OvmsCanFormatPCAPInit::OvmsCanFormatPCAPInit()
 canformat_pcap::canformat_pcap(const char* type)
   : canformat(type)
   {
-  m_bufpos = 0;
-  m_discarding = false;
   }
 
 canformat_pcap::~canformat_pcap()
@@ -57,35 +55,34 @@ canformat_pcap::~canformat_pcap()
 
 std::string canformat_pcap::get(CAN_log_message_t* message)
   {
-  m_bufpos = 0;
+  pcaprec_can_t m;
 
   if (message->type != CAN_LogFrame_RX)
     {
     return std::string("");
     }
-    
-  pcaprec_can_t* m = (pcaprec_can_t*)&m_buf;
-  memset(m_buf,0,sizeof(pcaprec_can_t));
 
-  m->hdr.ts_sec = htobe32(message->timestamp.tv_sec);
-  m->hdr.ts_usec = htobe32(message->timestamp.tv_usec);
-  m->hdr.incl_len = htobe32(16);
-  m->hdr.orig_len = htobe32(16);
+  memset(&m,0,sizeof(m));
+
+  m.hdr.ts_sec = htobe32(message->timestamp.tv_sec);
+  m.hdr.ts_usec = htobe32(message->timestamp.tv_usec);
+  m.hdr.incl_len = htobe32(16);
+  m.hdr.orig_len = htobe32(16);
 
   uint32_t idfl = message->frame.MsgID;
   if (message->frame.FIR.B.FF == CAN_frame_ext) idfl |= CANFORMAT_PCAP_FL_EXT;
   if (message->frame.FIR.B.RTR == CAN_RTR) idfl |= CANFORMAT_PCAP_FL_RTR;
-  m->phdr.idflags = htobe32(idfl);
-  m->phdr.len = message->frame.FIR.B.DLC;
+  m.phdr.idflags = htobe32(idfl);
+  m.phdr.len = message->frame.FIR.B.DLC;
 
-  memcpy(m->data, message->frame.data.u8, message->frame.FIR.B.DLC);
+  memcpy(m.data, message->frame.data.u8, message->frame.FIR.B.DLC);
 
-  return std::string((const char*)m, sizeof(pcaprec_can_t));
+  return std::string((const char*)&m, sizeof(m));
   }
 
 std::string canformat_pcap::getheader(struct timeval *time)
   {
-  m_bufpos = 0;
+  pcap_hdr_t h;
   struct timeval t;
 
   if (time == NULL)
@@ -94,99 +91,62 @@ std::string canformat_pcap::getheader(struct timeval *time)
     time = &t;
     }
 
-  pcap_hdr_t* h = (pcap_hdr_t*)&m_buf;
-  memset(m_buf,0,sizeof(pcap_hdr_t));
-  h->magic_number = htobe32(0xa1b2c3d4);
-  h->version_major = htobe16(2);
-  h->version_minor = htobe16(4);
-  h->snaplen = htobe32(8);
-  h->network = htobe32(0xe3);
+  memset(&h,0,sizeof(h));
+  h.magic_number = htobe32(0xa1b2c3d4);
+  h.version_major = htobe16(2);
+  h.version_minor = htobe16(4);
+  h.snaplen = htobe32(8);
+  h.network = htobe32(0xe3);
 
-  return std::string((const char*)h, sizeof(pcap_hdr_t));
+  return std::string((const char*)&h, sizeof(h));
   }
 
-size_t canformat_pcap::put(CAN_log_message_t* message, uint8_t *buffer, size_t len)
+size_t canformat_pcap::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata)
   {
-  // Check if we've failed somewhere and are simply discarding
-  if (m_discarding)
+  union
     {
-    message->origin = NULL;
-    return len;
-    }
+    pcap_hdr_t header;
+    pcaprec_can_t record;
+    } m;
 
-  // I need 24 bytes, to make a decision as to what this is...
-  size_t remain = 24 - m_bufpos;
-  size_t consumed = 0;
-  if (remain > 0)
-    {
-    if (len < remain)
-      {
-      // Just bring in what we can..
-      memcpy(m_buf+m_bufpos, buffer, len);
-      m_bufpos += len;
-      message->origin = NULL;
-      return len;
-      }
-    else
-      {
-      memcpy(m_buf+m_bufpos, buffer, remain);
-      m_bufpos += remain;
-      buffer += remain;
-      len -= remain;
-      consumed += remain;
-      }
-    }
+  if (m_buf.FreeSpace()==0) SetServeDiscarding(true); // Buffer full, so discard from now on
+  if (IsServeDiscarding()) return len;  // Quick return if discarding
+
+  size_t consumed = Stuff(buffer,len);  // Stuff m_buf with as much as possible
+
+  if (m_buf.UsedSpace() < 24) return consumed; // Insufficient data so far
 
   // At this point, we have our 24 bytes...
-  pcap_hdr_t* h = (pcap_hdr_t*)&m_buf;
-  uint32_t magic = be32toh(h->magic_number);
+  m_buf.Peek(24,(uint8_t*)&m);
+  uint32_t magic = be32toh(m.header.magic_number);
   if (magic == 0xa1b2c3d4)
     {
     // This is a PCAP header - just ignore it
-    if (be32toh(h->network) != 0xe3) m_discarding = true;
-    m_bufpos = 0;
-    message->origin = NULL;
-    return consumed;
+    if (be32toh(m.header.network) != 0xe3)
+      {
+      ESP_LOGE(TAG,"PCAP header network != 0xe3: Discarding");
+      SetServeDiscarding(true);
+      return consumed;
+      }
+    m_buf.Pop(24,(uint8_t*)&m);
     }
   else if ((magic == 0xd4c3b2a1)||
            (magic == 0xa1b23c4d)||
            (magic == 0x4d3cb2a1))
     {
-    ESP_LOGW(TAG,"pcap format %08x not supported - ignoring data stream",magic);
-    m_discarding = true;
-    m_bufpos = 0;
-    message->origin = NULL;
+    ESP_LOGE(TAG,"pcap format %08x not supported: Discarding",magic);
+    SetServeDiscarding(true);
     return consumed;
     }
 
-  // We must have a message, so need 32 bytes...
-  remain = 32 - m_bufpos;
-  if (len < remain)
-    {
-    // Just bring in what we can..
-    memcpy(m_buf+m_bufpos, buffer, len);
-    m_bufpos += len;
-    message->origin = NULL;
-    return consumed+len;
-    }
-  else
-    {
-    memcpy(m_buf+m_bufpos, buffer, remain);
-    m_bufpos += remain;
-    buffer += remain;
-    len -= remain;
-    consumed += remain;
-    }
+  if (m_buf.UsedSpace() < sizeof(pcaprec_can_t)) return consumed; // Insufficient data so far
 
-  // At this point, we have our 32 bytes...
-  pcaprec_can_t* m = (pcaprec_can_t*)&m_buf;
-  memset(message,0,sizeof(CAN_log_message_t));
+  m_buf.Pop(sizeof(pcaprec_can_t), (uint8_t*)&m);
 
-  uint32_t idf = be32toh(m->phdr.idflags);
+  uint32_t idf = be32toh(m.record.phdr.idflags);
   if (idf & CANFORMAT_PCAP_FL_MSG)
     {
     // Just ignore it
-    m_bufpos = 0;
     return consumed;
     }
   message->type = CAN_LogFrame_RX;
@@ -194,9 +154,8 @@ size_t canformat_pcap::put(CAN_log_message_t* message, uint8_t *buffer, size_t l
   message->frame.FIR.B.FF = (idf & CANFORMAT_PCAP_FL_EXT)?CAN_frame_ext:CAN_frame_std;
   message->frame.MsgID = idf & CANFORMAT_PCAP_FL_MASK;
   message->origin = (canbus*)MyPcpApp.FindDeviceByName("can1");
-  message->frame.FIR.B.DLC = m->phdr.len;
-  memcpy(message->frame.data.u8, m->data, m->phdr.len);
+  message->frame.FIR.B.DLC = m.record.phdr.len;
+  memcpy(message->frame.data.u8, m.record.data, m.record.phdr.len);
 
-  m_bufpos = 0;
   return consumed;
   }

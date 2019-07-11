@@ -64,10 +64,12 @@ void OvmsCanFormatFactory::RegisterCommandSet(OvmsCommand* base, const char* tit
   }
 
 canformat::canformat(const char* type)
+  : m_buf(CANFORMAT_SERVE_BUFFERSIZE)
   {
   m_type = type;
-  m_servemode = Discard;
+  m_servemode = Simulate;
   m_servediscarding = false;
+  m_putcallback_fn = NULL;
   }
 
 canformat::~canformat()
@@ -89,12 +91,12 @@ std::string canformat::getheader(struct timeval *time)
   return std::string("");
   }
 
-size_t canformat::put(CAN_log_message_t* message, uint8_t *buffer, size_t len)
+size_t canformat::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata)
   {
   return 0;
   }
 
-size_t canformat::Serve(uint8_t *buffer, size_t len)
+size_t canformat::Serve(uint8_t *buffer, size_t len, void* userdata)
   {
   if ((m_servediscarding)||(m_servemode == Discard))
     {
@@ -107,7 +109,7 @@ size_t canformat::Serve(uint8_t *buffer, size_t len)
     CAN_log_message_t msg;
     memset(&msg,0,sizeof(msg));
 
-    size_t used = put(&msg, buffer, len);
+    size_t used = put(&msg, buffer, len, userdata);
     if (used > 0)
       {
       consumed += used;
@@ -138,6 +140,15 @@ size_t canformat::Serve(uint8_t *buffer, size_t len)
   return consumed;
   }
 
+size_t canformat::Stuff(uint8_t *buffer, size_t len)
+  {
+  // Stuff incoming data into the put buffer
+  if (len==0) return 0;
+  size_t consumed = (len>m_buf.FreeSpace())?m_buf.FreeSpace():len;
+  m_buf.Push(buffer,consumed);
+  return consumed;
+  }
+
 canformat::canformat_serve_mode_t canformat::GetServeMode()
   {
   return m_servemode;
@@ -148,12 +159,17 @@ void canformat::SetServeMode(canformat_serve_mode_t mode)
   m_servemode = mode;
   }
 
-bool canformat::GetServeDiscarding()
+bool canformat::IsServeDiscarding()
   {
-  return m_servediscarding;
+  return ((m_servediscarding)||(m_servemode == Discard));
   }
 
 void canformat::SetServeDiscarding(bool discarding)
   {
   m_servediscarding = discarding;
+  }
+
+void canformat::SetPutCallback(canformat_put_write_fn callback)
+  {
+  m_putcallback_fn = callback;
   }

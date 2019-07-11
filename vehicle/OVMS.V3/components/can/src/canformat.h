@@ -39,6 +39,8 @@ using namespace std;
 
 #define CANFORMAT_SERVE_BUFFERSIZE 1024
 
+typedef void (*canformat_put_write_fn)(uint8_t *buffer, size_t len, void* data);
+
 class canformat
   {
   public:
@@ -53,7 +55,7 @@ class canformat
     virtual std::string getheader(struct timeval *time = NULL);
 
   public: // Conversion from specific format to OVMS CAN log messages
-    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len);
+    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata=NULL);
 
   private:
     const char* m_type;
@@ -62,13 +64,17 @@ class canformat
     typedef enum { Discard, Simulate, Transmit } canformat_serve_mode_t;
     canformat_serve_mode_t GetServeMode();
     void SetServeMode(canformat_serve_mode_t mode);
-    bool GetServeDiscarding();
+    bool IsServeDiscarding();
     void SetServeDiscarding(bool discarding);
-    virtual size_t Serve(uint8_t *buffer, size_t len);
+    void SetPutCallback(canformat_put_write_fn callback);
+    virtual size_t Serve(uint8_t *buffer, size_t len, void* userdata=NULL);
+    virtual size_t Stuff(uint8_t *buffer, size_t len);
 
   protected:
+    canformat_put_write_fn m_putcallback_fn;
     canformat_serve_mode_t m_servemode;
     bool m_servediscarding;
+    OvmsBuffer m_buf;
   };
 
 template<typename Type> canformat* CreateCanFormat(const char* type)

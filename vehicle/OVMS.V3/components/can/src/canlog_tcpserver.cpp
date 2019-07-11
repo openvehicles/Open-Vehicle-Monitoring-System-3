@@ -101,6 +101,14 @@ static void tsMongooseHandler(struct mg_connection *nc, int ev, void *p)
     }
   }
 
+void tsPutCallback(uint8_t *buffer, size_t len, void* data)
+  {
+  struct mg_connection *nc = (struct mg_connection *)data;
+
+  //ESP_LOGD(TAG,"Sent %d bytes of put callback response",len);
+  mg_send(nc, buffer, len);
+  }
+
 canlog_tcpserver::canlog_tcpserver(std::string path, std::string format)
   : canlog("tcpserver", format)
   {
@@ -111,6 +119,11 @@ canlog_tcpserver::canlog_tcpserver(std::string path, std::string format)
     m_path.append(":3000");
     }
   m_isopen = false;
+
+  if (m_formatter)
+    {
+    m_formatter->SetPutCallback(tsPutCallback);
+    }
   }
 
 canlog_tcpserver::~canlog_tcpserver()
@@ -235,9 +248,10 @@ void canlog_tcpserver::MongooseHandler(struct mg_connection *nc, int ev, void *p
       {
       // Receive data on the network connection
       size_t used = nc->recv_mbuf.len;
+      //ESP_LOGD(TAG,"Received %d bytes of data",used);
       if (m_formatter != NULL)
         {
-        used = m_formatter->Serve((uint8_t*)nc->recv_mbuf.buf, used);
+        used = m_formatter->Serve((uint8_t*)nc->recv_mbuf.buf, used, nc);
         }
       if (used > 0)
         {

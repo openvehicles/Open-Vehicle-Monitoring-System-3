@@ -35,14 +35,10 @@ class canformat_raw : public canformat
     canformat_raw(const char* type);
     virtual ~canformat_raw();
 
-  protected:
-    char m_buf[sizeof(CAN_log_message_t)];
-    size_t m_bufpos;
-
   public:
     virtual std::string get(CAN_log_message_t* message);
     virtual std::string getheader(struct timeval *time);
-    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len);
+    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata=NULL);
   };
 
 #endif // __CANFORMAT_RAW_H__

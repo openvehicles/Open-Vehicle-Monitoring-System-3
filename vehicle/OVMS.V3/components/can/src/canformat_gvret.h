@@ -166,19 +166,10 @@ class canformat_gvret : public canformat
     canformat_gvret(const char* type);
     virtual ~canformat_gvret();
 
-  protected:
-    union
-      {
-      gvret_commandmsg_t m_cmd;
-      uint8_t m_buf[CANFORMAT_GVRET_MAXLEN];
-    } m_msg;
-    size_t m_bufpos;
-    bool m_discarding;
-
   public:
     virtual std::string get(CAN_log_message_t* message);
     virtual std::string getheader(struct timeval *time);
-    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len);
+    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata=NULL);
   };
 
 class canformat_gvret_ascii : public canformat_gvret
@@ -186,7 +177,7 @@ class canformat_gvret_ascii : public canformat_gvret
   public:
     canformat_gvret_ascii(const char* type);
     virtual std::string get(CAN_log_message_t* message);
-    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len);
+    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata=NULL);
   };
 
 class canformat_gvret_binary : public canformat_gvret
@@ -194,10 +185,7 @@ class canformat_gvret_binary : public canformat_gvret
   public:
     canformat_gvret_binary(const char* type);
     virtual std::string get(CAN_log_message_t* message);
-    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len);
-
-  public:
-    size_t m_expecting;
+    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata=NULL);
   };
 
 #endif // __CANFORMAT_GVRET_H__
