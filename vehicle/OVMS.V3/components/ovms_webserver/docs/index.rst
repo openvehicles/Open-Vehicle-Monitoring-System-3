@@ -16,7 +16,6 @@ Read the source and install them as plugins (see below) to see how they work.
    notifications
    hooks
    solidgauge
-   dashboard
 
 .. toctree::
    :maxdepth: 1
@@ -39,6 +38,7 @@ Read the source and install them as plugins (see below) to see how they work.
    :caption: Plugin examples
    
    regenmon
+   dashboard
    plugin-twizy/dashboard-tuneslider
    plugin-twizy/profile-editor
    plugin-twizy/drivemode-config
