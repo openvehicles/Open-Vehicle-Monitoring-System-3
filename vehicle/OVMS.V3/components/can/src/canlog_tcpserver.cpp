@@ -101,6 +101,14 @@ static void tsMongooseHandler(struct mg_connection *nc, int ev, void *p)
     }
   }
 
+void tsPutCallback(uint8_t *buffer, size_t len, void* data)
+  {
+  struct mg_connection *nc = (struct mg_connection *)data;
+
+  //ESP_LOGD(TAG,"Sent %d bytes of put callback response",len);
+  mg_send(nc, buffer, len);
+  }
+
 canlog_tcpserver::canlog_tcpserver(std::string path, std::string format)
   : canlog("tcpserver", format)
   {
@@ -111,6 +119,12 @@ canlog_tcpserver::canlog_tcpserver(std::string path, std::string format)
     m_path.append(":3000");
     }
   m_isopen = false;
+  m_mgconn = NULL;
+
+  if (m_formatter)
+    {
+    m_formatter->SetPutCallback(tsPutCallback);
+    }
   }
 
 canlog_tcpserver::~canlog_tcpserver()
@@ -127,7 +141,8 @@ bool canlog_tcpserver::Open()
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
   if (mgr != NULL)
     {
-    if (mg_bind(mgr, m_path.c_str(), tsMongooseHandler))
+    m_mgconn = mg_bind(mgr, m_path.c_str(), tsMongooseHandler);
+    if (m_mgconn != NULL)
       {
       m_isopen = true;
       return true;
@@ -158,6 +173,8 @@ void canlog_tcpserver::Close()
       m_smap.clear();
       }
     ESP_LOGI(TAG, "Closed TCP server log: %s", GetStats().c_str());
+    m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
+    m_mgconn = NULL;
     m_isopen = false;
     }
   }
@@ -223,19 +240,29 @@ void canlog_tcpserver::MongooseHandler(struct mg_connection *nc, int ev, void *p
     case MG_EV_CLOSE:
       {
       // Network connection has gone
-      mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr), MG_SOCK_STRINGIFY_IP);
-      ESP_LOGI(TAG, "Log service disconnection from %s",addr);
       auto k = m_smap.find(nc);
       if (k != m_smap.end())
+        {
+        mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr), MG_SOCK_STRINGIFY_IP);
+        ESP_LOGI(TAG, "Log service disconnection from %s",addr);
         m_smap.erase(k);
+        }
       break;
       }
 
     case MG_EV_RECV:
       {
       // Receive data on the network connection
-      size_t bl = nc->recv_mbuf.len;
-      mbuf_remove(&nc->recv_mbuf, bl);
+      size_t used = nc->recv_mbuf.len;
+      //ESP_LOGD(TAG,"Received %d bytes of data",used);
+      if (m_formatter != NULL)
+        {
+        used = m_formatter->Serve((uint8_t*)nc->recv_mbuf.buf, used, nc);
+        }
+      if (used > 0)
+        {
+        mbuf_remove(&nc->recv_mbuf, used);
+        }
       break;
       }
 

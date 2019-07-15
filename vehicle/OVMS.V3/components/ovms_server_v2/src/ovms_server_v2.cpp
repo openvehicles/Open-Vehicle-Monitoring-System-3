@@ -1024,13 +1024,15 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
     << ((stale)?",0,":",1,")
     << ((m_units_distance == Kilometers)? StandardMetrics.ms_v_pos_speed->AsString("0") : StandardMetrics.ms_v_pos_speed->AsString("0",Mph))
     << ","
+    << StandardMetrics.ms_v_pos_trip->AsString("0",m_units_distance,3)
+    << ","
     << drivemode
     << ","
-    << StandardMetrics.ms_v_bat_power->AsString("0",Other,1)
+    << StandardMetrics.ms_v_bat_power->AsString("0",Other,3)
     << ","
-    << StandardMetrics.ms_v_bat_energy_used->AsString("0",Other,1)
+    << StandardMetrics.ms_v_bat_energy_used->AsString("0",Other,3)
     << ","
-    << StandardMetrics.ms_v_bat_energy_recd->AsString("0",Other,1)
+    << StandardMetrics.ms_v_bat_energy_recd->AsString("0",Other,3)
     ;
 
   Transmit(buffer.str().c_str());

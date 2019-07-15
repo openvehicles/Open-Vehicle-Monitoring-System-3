@@ -57,6 +57,7 @@ class canlog_tcpserver : public canlog
     typedef std::map<mg_connection*, uint8_t> ts_map_t;
     ts_map_t m_smap;
     bool m_isopen;
+    struct mg_connection *m_mgconn;
 
   public:
     std::string         m_path;

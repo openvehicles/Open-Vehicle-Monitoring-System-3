@@ -109,7 +109,7 @@ static void reMongooseHandler(struct mg_connection *nc, int ev, void *p)
 void re::MongooseHandler(struct mg_connection *nc, int ev, void *p)
   {
   char addr[32];
-  CAN_log_message_t message;
+
   switch (ev)
     {
     case MG_EV_ACCEPT:
@@ -145,53 +145,18 @@ void re::MongooseHandler(struct mg_connection *nc, int ev, void *p)
     case MG_EV_RECV:
       {
       // Receive data on the network connection
-      uint8_t *bp = (uint8_t*)nc->recv_mbuf.buf;
-      size_t bl = nc->recv_mbuf.len;
-      size_t consumed = 0;
-
       if (m_servemode == Ignore)
         {
-        mbuf_remove(&nc->recv_mbuf, bl);
+        mbuf_remove(&nc->recv_mbuf, nc->recv_mbuf.len);
         return;
         }
 
-      //ESP_EARLY_LOGI(TAG,"MG_EV_RECV %d bytes",bl);
-      while(1)
+      size_t used = m_serveformat_out->Serve((uint8_t*)nc->recv_mbuf.buf, nc->recv_mbuf.len);
+      if (used > 0)
         {
-        if (bl == 0)
-          {
-          if (consumed > 0) mbuf_remove(&nc->recv_mbuf, consumed);
-          //ESP_LOGI(TAG,"CRTD complete consumed %d bytes",consumed);
-          return;
-          }
-        size_t used = m_serveformat_out->put(&message, bp, bl);
-        //ESP_EARLY_LOGI(TAG,"CRTD used %d bytes",used);
-        if (used > bl)
-            used = bl;
-        if (used <= 0)
-          {
-          if (consumed > 0) mbuf_remove(&nc->recv_mbuf, consumed);
-          //ESP_EARLY_LOGI(TAG,"CRTD complete consumed %d bytes",consumed);
-          return;
-          }
-        bp += used;
-        bl -= used;
-        consumed += used;
-        if (message.frame.origin != NULL)
-          {
-          switch (m_servemode)
-            {
-            case Simulate:
-              MyCan.IncomingFrame(&message.frame);
-              break;
-            case Transmit:
-              message.frame.origin->Write(&message.frame);
-              break;
-            default:
-              break;
-              }
-          }
+        mbuf_remove(&nc->recv_mbuf, used);
         }
+
       break;
       }
 

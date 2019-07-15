@@ -47,7 +47,6 @@ OvmsCanFormatRawInit::OvmsCanFormatRawInit()
 canformat_raw::canformat_raw(const char* type)
   : canformat(type)
   {
-  m_bufpos = 0;
   }
 
 canformat_raw::~canformat_raw()
@@ -64,31 +63,16 @@ std::string canformat_raw::getheader(struct timeval *time)
   return std::string("");
   }
 
-size_t canformat_raw::put(CAN_log_message_t* message, uint8_t *buffer, size_t len)
+size_t canformat_raw::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata)
   {
-  size_t need = sizeof(CAN_log_message_t);
-  size_t remain = need - m_bufpos;
-  size_t consumed = 0;
+  if (m_buf.FreeSpace()==0) SetServeDiscarding(true); // Buffer full, so discard from now on
+  if (IsServeDiscarding()) return len;  // Quick return if discarding
 
-  if (remain > 0)
-    {
-    if (len < remain)
-      {
-      // Just bring in what we can..
-      memcpy(m_buf+m_bufpos, buffer, len);
-      m_bufpos += len;
-      return len;
-      }
-    else
-      {
-      memcpy(m_buf+m_bufpos, buffer, remain);
-      m_bufpos += remain;
-      buffer += remain;
-      len -= remain;
-      consumed += remain;
-      }
-    }
+  size_t consumed = Stuff(buffer,len);  // Stuff m_buf with as much as possible
 
-  memcpy(message,m_buf,need);
+  if (m_buf.UsedSpace() < sizeof(CAN_log_message_t)) return consumed; // Insufficient data so far
+
+  m_buf.Pop(sizeof(CAN_log_message_t), (uint8_t*)message);
+
   return consumed;
   }

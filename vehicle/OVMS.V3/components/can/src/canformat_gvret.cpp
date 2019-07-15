@@ -56,8 +56,6 @@ OvmsCanFormatGVRETInit::OvmsCanFormatGVRETInit()
 canformat_gvret::canformat_gvret(const char* type)
   : canformat(type)
   {
-  m_bufpos = 0;
-  m_discarding = false;
   }
 
 canformat_gvret::~canformat_gvret()
@@ -74,7 +72,7 @@ std::string canformat_gvret::getheader(struct timeval *time)
   return std::string("");
   }
 
-size_t canformat_gvret::put(CAN_log_message_t* message, uint8_t *buffer, size_t len)
+size_t canformat_gvret::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata)
   {
   return len;
   }
@@ -117,9 +115,75 @@ std::string canformat_gvret_ascii::get(CAN_log_message_t* message)
   return std::string(buf);
   }
 
-size_t canformat_gvret_ascii::put(CAN_log_message_t* message, uint8_t *buffer, size_t len)
+size_t canformat_gvret_ascii::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata)
   {
-  return len;
+  if (m_buf.FreeSpace()==0) SetServeDiscarding(true); // Buffer full, so discard from now on
+  if (IsServeDiscarding()) return len;  // Quick return if discarding
+
+  size_t consumed = Stuff(buffer,len);  // Stuff m_buf with as much as possible
+
+  if (!m_buf.HasLine())
+    {
+    return consumed; // No line, so quick exit
+    }
+  else
+    {
+    std::string line = m_buf.ReadLine();
+    char *b = strdup(line.c_str());
+
+    // We look for something like
+    // 1000 - 100 S 0 4 01 02 03 04
+    // timestamp, message ID (hex), S or X, length, data bytes
+
+    message->type = CAN_LogFrame_RX;
+
+    uint32_t timestamp = strtol(b,&b,10);
+    message->timestamp.tv_sec = timestamp % 1000000;
+    message->timestamp.tv_usec = timestamp / 1000000;
+
+    b += 2; // Skip the '-'
+
+    message->frame.MsgID = strtol(b,&b,16);
+    if (b[1] == 'S')
+      {
+      message->frame.FIR.B.FF = CAN_frame_std;
+      }
+    else if (b[1] == 'X')
+      {
+      message->frame.FIR.B.FF = CAN_frame_ext;
+      }
+    else
+      {
+      // Bad frame type - discard
+      free(b);
+      return consumed;
+      }
+
+    b += 2; // Skip the frame type
+
+    uint32_t busnumber = strtol(b,&b,10);
+
+    message->frame.FIR.B.DLC = strtol(b,&b,10);
+    if (message->frame.FIR.B.DLC > 8)
+      {
+      // Bad frame length - discard
+      free(b);
+      return consumed;
+      }
+
+    for (size_t x=0;x<message->frame.FIR.B.DLC;x++)
+      {
+      message->frame.data.u8[x] = strtol(b,&b,16);
+      }
+
+    char cbus[5] = "can";
+    cbus[3] = busnumber;
+    cbus[4] = 0;
+    message->origin = (canbus*)MyPcpApp.FindDeviceByName(cbus);
+
+    free(b);
+    return consumed;
+    }
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -129,7 +193,6 @@ size_t canformat_gvret_ascii::put(CAN_log_message_t* message, uint8_t *buffer, s
 canformat_gvret_binary::canformat_gvret_binary(const char* type)
   : canformat_gvret(type)
   {
-  m_expecting = 0;
   }
 
 std::string canformat_gvret_binary::get(CAN_log_message_t* message)
@@ -149,19 +212,91 @@ std::string canformat_gvret_binary::get(CAN_log_message_t* message)
   else
     { busnumber = "1"; }
 
-
   frame.startbyte = GVRET_START_BYTE;
   frame.command = BUILD_CAN_FRAME;
   frame.microseconds = (uint32_t)((message->timestamp.tv_sec * 1000000) + message->timestamp.tv_usec);
-  frame.id = (uint32_t)message->frame.MsgID +
-              (message->frame.FIR.B.FF == CAN_frame_std)? 0 : 0x8000;
+  frame.id = (uint32_t)message->frame.MsgID |
+              ((message->frame.FIR.B.FF == CAN_frame_std)? 0 : 0x80000000);
   frame.lenbus = message->frame.FIR.B.DLC + ((busnumber[0]-1)<<4);
   for (int k=0; k<message->frame.FIR.B.DLC; k++)
     frame.data[k] = message->frame.data.u8[k];
   return std::string((const char*)&frame,12 + message->frame.FIR.B.DLC);
   }
 
-size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, size_t len)
+size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata)
   {
-  return len;
+  if (m_buf.FreeSpace()==0) SetServeDiscarding(true); // Buffer full, so discard from now on
+  if (IsServeDiscarding()) return len;  // Quick return if discarding
+
+  size_t consumed = Stuff(buffer,len);  // Stuff m_buf with as much as possible
+
+  uint8_t firstbyte;
+  while ((m_buf.Peek(1,&firstbyte) == 1)&&(firstbyte != GVRET_START_BYTE))
+    {
+    if (firstbyte == GVRET_SET_BINARY)
+      {
+      ESP_LOGV(TAG,"GVRET request to set binary mode");
+      }
+    m_buf.Pop(1,&firstbyte);
+    }
+
+  if (m_buf.UsedSpace() >= 2)
+    {
+    gvret_replymsg_t r;
+    gvret_commandmsg_t m;
+    memset(&m,0,sizeof(m));
+    m_buf.Peek(2,(uint8_t*)&m);
+    r.startbyte = m.startbyte;
+    r.command = m.command;
+    switch (m.command)
+      {
+      case TIME_SYNC:
+        m_buf.Pop(2,(uint8_t*)&m);
+        break;
+      case GET_DIG_INPUTS:
+        m_buf.Pop(2,(uint8_t*)&m);
+        break;
+      case GET_ANALOG_INPUTS:
+        m_buf.Pop(2,(uint8_t*)&m);
+        break;
+      case SET_DIG_OUTPUTS:
+        m_buf.Pop(2,(uint8_t*)&m);
+        break;
+      case SETUP_CANBUS:
+        m_buf.Pop(2,(uint8_t*)&m);
+        break;
+      case GET_CANBUS_PARAMS:
+        m_buf.Pop(2,(uint8_t*)&m);
+        break;
+      case GET_DEVICE_INFO:
+        m_buf.Pop(2,(uint8_t*)&m);
+        break;
+      case SET_SINGLEWIRE_MODE:
+        m_buf.Pop(2,(uint8_t*)&m);
+        break;
+      case KEEP_ALIVE:
+        m_buf.Pop(2,(uint8_t*)&m);
+        r.body.keep_alive.notdead1 = GVRET_NOTDEAD_1;
+        r.body.keep_alive.notdead2 = GVRET_NOTDEAD_2;
+        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,4,userdata);
+        break;
+      case SET_SYSTEM_TYPE:
+        m_buf.Pop(2,(uint8_t*)&m);
+        break;
+      case ECHO_CAN_FRAME:
+        m_buf.Pop(2,(uint8_t*)&m);
+        break;
+      case GET_NUM_BUSES:
+        m_buf.Pop(2,(uint8_t*)&m);
+        break;
+      case GET_EXT_BUSES:
+        m_buf.Pop(2,(uint8_t*)&m);
+        break;
+      default:
+        ESP_LOGW(TAG,"Unrecognised GVRET command %02x - skipping",m.command);
+        m_buf.Pop(2,(uint8_t*)&m);
+      }
+    }
+
+  return consumed;
   }

@@ -106,7 +106,7 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
           break;
         case 3: // Neutral
           StandardMetrics.ms_v_env_gear->SetValue(0);
-          StandardMetrics.ms_v_env_on->SetValue(true);
+          StandardMetrics.ms_v_env_on->SetValue(false);
           StandardMetrics.ms_v_env_awake->SetValue(true);
           StandardMetrics.ms_v_env_handbrake->SetValue(false);
           StandardMetrics.ms_v_env_charging12v->SetValue(true);

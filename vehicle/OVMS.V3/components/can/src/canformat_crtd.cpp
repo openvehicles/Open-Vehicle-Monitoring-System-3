@@ -46,7 +46,6 @@ OvmsCanFormatCRTDInit::OvmsCanFormatCRTDInit()
 canformat_crtd::canformat_crtd(const char *type)
   : canformat(type)
   {
-  m_bufpos = 0;
   }
 
 canformat_crtd::~canformat_crtd()
@@ -55,7 +54,7 @@ canformat_crtd::~canformat_crtd()
 
 std::string canformat_crtd::get(CAN_log_message_t* message)
   {
-  m_bufpos = 0;
+  char buf[CANFORMAT_CRTD_MAXLEN];
 
   const char* busnumber;
   if (message->origin != NULL)
@@ -67,7 +66,7 @@ std::string canformat_crtd::get(CAN_log_message_t* message)
     {
     case CAN_LogFrame_RX:
     case CAN_LogFrame_TX:
-      sprintf(m_buf,"%ld.%06ld %s%c%s %0*X",
+      sprintf(buf,"%ld.%06ld %s%c%s %0*X",
         message->timestamp.tv_sec, message->timestamp.tv_usec,
         busnumber,
         (message->type == CAN_LogFrame_RX) ? 'R' : 'T',
@@ -75,12 +74,12 @@ std::string canformat_crtd::get(CAN_log_message_t* message)
         (message->frame.FIR.B.FF == CAN_frame_std) ? 3 : 8,
         message->frame.MsgID);
       for (int k=0; k<message->frame.FIR.B.DLC; k++)
-        sprintf(m_buf+strlen(m_buf)," %02x", message->frame.data.u8[k]);
+        sprintf(buf+strlen(buf)," %02x", message->frame.data.u8[k]);
       break;
 
     case CAN_LogFrame_TX_Queue:
     case CAN_LogFrame_TX_Fail:
-      sprintf(m_buf,"%ld.%06ld %sCER %s %c%s %0*X",
+      sprintf(buf,"%ld.%06ld %sCER %s %c%s %0*X",
         message->timestamp.tv_sec, message->timestamp.tv_usec,
         busnumber,
         GetCanLogTypeName(message->type),
@@ -89,12 +88,12 @@ std::string canformat_crtd::get(CAN_log_message_t* message)
         (message->frame.FIR.B.FF == CAN_frame_std) ? 3 : 8,
         message->frame.MsgID);
       for (int k=0; k<message->frame.FIR.B.DLC; k++)
-        sprintf(m_buf+strlen(m_buf)," %02x", message->frame.data.u8[k]);
+        sprintf(buf+strlen(buf)," %02x", message->frame.data.u8[k]);
       break;
 
     case CAN_LogStatus_Error:
     case CAN_LogStatus_Statistics:
-      sprintf(m_buf, "%ld.%06ld %s%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d wdgreset=%d",
+      sprintf(buf, "%ld.%06ld %s%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d wdgreset=%d",
         message->timestamp.tv_sec, message->timestamp.tv_usec,
         busnumber,
         (message->type == CAN_LogStatus_Error) ? "CER" : "CST",
@@ -108,7 +107,7 @@ std::string canformat_crtd::get(CAN_log_message_t* message)
     case CAN_LogInfo_Comment:
     case CAN_LogInfo_Config:
     case CAN_LogInfo_Event:
-      sprintf(m_buf, "%ld.%06ld %s%s %s %s",
+      sprintf(buf, "%ld.%06ld %s%s %s %s",
         message->timestamp.tv_sec, message->timestamp.tv_usec,
         busnumber,
         (message->type == CAN_LogInfo_Event) ? "CEV" : "CXX",
@@ -117,17 +116,17 @@ std::string canformat_crtd::get(CAN_log_message_t* message)
       break;
 
     default:
-      m_buf[0] = 0;
+      buf[0] = 0;
       break;
     }
 
-  strcat(m_buf,"\n");
-  return std::string(m_buf);
+  strcat(buf,"\n");
+  return std::string(buf);
   }
 
 std::string canformat_crtd::getheader(struct timeval *time)
   {
-  m_bufpos = 0;
+  char buf[CANFORMAT_CRTD_MAXLEN];
   struct timeval t;
 
   if (time == NULL)
@@ -136,107 +135,93 @@ std::string canformat_crtd::getheader(struct timeval *time)
     time = &t;
     }
 
-  sprintf(m_buf,"%ld.%06ld CXX OVMS CRTD\n",
+  sprintf(buf,"%ld.%06ld CXX OVMS CRTD\n",
     time->tv_sec, time->tv_usec);
 
-  return std::string(m_buf);
+  return std::string(buf);
   }
 
-size_t canformat_crtd::put(CAN_log_message_t* message, uint8_t *buffer, size_t len)
+size_t canformat_crtd::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata)
   {
-  size_t k;
-  char *b = (char*)buffer;
+  if (m_buf.FreeSpace()==0) SetServeDiscarding(true); // Buffer full, so discard from now on
+  if (IsServeDiscarding()) return len;  // Quick return if discarding
 
-  memset(message,0,sizeof(CAN_log_message_t));
+  size_t consumed = Stuff(buffer,len);  // Stuff m_buf with as much as possible
 
-  for (k=0;k<len;k++)
+  if (!m_buf.HasLine())
     {
-    if ((b[k]=='\r')||(b[k]=='\n'))
-      {
-      //ESP_EARLY_LOGI(TAG,"CRTD GOT CR/LF %02x",b[k]);
-      if (m_bufpos == 0)
-        continue;
-      else
-        break;
-      }
-    m_buf[m_bufpos] = b[k];
-    if (m_bufpos < CANFORMAT_CRTD_MAXLEN) m_bufpos++;
-    }
-  //ESP_EARLY_LOGI(TAG,"CRTD PUT bufpos=%d inlen=%d now=%d",m_bufpos,len,k);
-  if (k>=len) return len;
-
-  // OK. We have a buffer ready for decoding...
-  // buffer[Start .. k-1]
-  m_buf[m_bufpos] = 0;
-  //ESP_EARLY_LOGI(TAG,"CRTD message buffer is %d bytes",m_bufpos);
-  m_bufpos = 0; // Prepare for next message
-  b = m_buf;
-
-  // We look for something like
-  // 1524311386.811100 1R11 100 01 02 03
-  if (!isdigit(b[0])) return k+1;
-  for (;((*b != 0)&&(*b != ' '));b++) {}
-  if (*b == 0) return k+1;
-  b++;
-  char bus = '1';
-  if (isdigit(*b))
-    {
-    bus = *b;
-    b++;
-    }
-
-  if ((b[0]=='R')&&(b[1]=='1')&&(b[2]=='1'))
-    {
-    // R11 incoming CAN frame
-    message->type = CAN_LogFrame_RX;
-    message->frame.FIR.B.FF = CAN_frame_std;
-    }
-  else if ((b[0]=='R')&&(b[1]=='2')&&(b[2]=='9'))
-    {
-    // R29 incoming CAN frame
-    message->type = CAN_LogFrame_RX;
-    message->frame.FIR.B.FF = CAN_frame_ext;
-    }
-  else if ((b[0]=='T')&&(b[1]=='1')&&(b[2]=='1'))
-    {
-    // T11 outgoing CAN frame
-    message->type = CAN_LogFrame_TX;
-    message->frame.FIR.B.FF = CAN_frame_std;
-    }
-  else if ((b[0]=='T')&&(b[1]=='2')&&(b[2]=='9'))
-    {
-    // T29 outgoingCAN frame
-    message->type = CAN_LogFrame_TX;
-    message->frame.FIR.B.FF = CAN_frame_ext;
+    return consumed; // No line, so quick exit
     }
   else
-    return k+1;
-
-  if (b[3] != ' ') return k+1;
-  b += 4;
-
-  char *p;
-  errno = 0;
-  message->frame.MsgID = (uint32_t)strtol(b,&p,16);
-  if ((message->frame.MsgID == 0)&&(errno != 0)) return k+1;
-  b = p;
-  for (int k=0;k<8;k++)
     {
-    if (*b==0) break;
+    std::string line = m_buf.ReadLine();
+    const char *b = line.c_str();
+
+    // We look for something like
+    // 1524311386.811100 1R11 100 01 02 03
+    if (!isdigit(b[0])) return consumed;    // Discard invalid line
+    for (;((*b != 0)&&(*b != ' '));b++) {}
+    if (*b == 0) return consumed;           // Discard invalid line
     b++;
+    char bus = '1';
+    if (isdigit(*b))
+      {
+      bus = *b;
+      b++;
+      }
+
+    if ((b[0]=='R')&&(b[1]=='1')&&(b[2]=='1'))
+      {
+      // R11 incoming CAN frame
+      message->type = CAN_LogFrame_RX;
+      message->frame.FIR.B.FF = CAN_frame_std;
+      }
+    else if ((b[0]=='R')&&(b[1]=='2')&&(b[2]=='9'))
+      {
+      // R29 incoming CAN frame
+      message->type = CAN_LogFrame_RX;
+      message->frame.FIR.B.FF = CAN_frame_ext;
+      }
+    else if ((b[0]=='T')&&(b[1]=='1')&&(b[2]=='1'))
+      {
+      // T11 outgoing CAN frame
+      message->type = CAN_LogFrame_TX;
+      message->frame.FIR.B.FF = CAN_frame_std;
+      }
+    else if ((b[0]=='T')&&(b[1]=='2')&&(b[2]=='9'))
+      {
+      // T29 outgoingCAN frame
+      message->type = CAN_LogFrame_TX;
+      message->frame.FIR.B.FF = CAN_frame_ext;
+      }
+    else
+      return consumed;  // Discard invalid line
+
+    if (b[3] != ' ') return consumed; // Discard invalid line
+    b += 4;
+
+    char *p;
     errno = 0;
-    long d = strtol(b,&p,16);
-    if ((d==0)&&(errno != 0)) break;
-    message->frame.data.u8[k] = (uint8_t)d;
-    message->frame.FIR.B.DLC++;
+    message->frame.MsgID = (uint32_t)strtol(b,&p,16);
+    if ((message->frame.MsgID == 0)&&(errno != 0)) return consumed; // Discard invalid line
     b = p;
+    for (int k=0;k<8;k++)
+      {
+      if (*b==0) break;
+      b++;
+      errno = 0;
+      long d = strtol(b,&p,16);
+      if ((d==0)&&(errno != 0)) break;
+      message->frame.data.u8[k] = (uint8_t)d;
+      message->frame.FIR.B.DLC++;
+      b = p;
+      }
+
+    char cbus[5] = "can";
+    cbus[3] = bus;
+    cbus[4] = 0;
+    message->origin = (canbus*)MyPcpApp.FindDeviceByName(cbus);
+
+    return consumed;
     }
-
-  char cbus[5] = "can";
-  cbus[3] = bus;
-  cbus[4] = 0;
-  message->origin = (canbus*)MyPcpApp.FindDeviceByName(cbus);
-
-  //ESP_EARLY_LOGI(TAG,"CRTD done return=%d",k+1);
-  return k+1;
   }
