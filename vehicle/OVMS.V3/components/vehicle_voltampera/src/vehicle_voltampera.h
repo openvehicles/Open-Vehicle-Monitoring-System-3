@@ -35,6 +35,10 @@
 
 using namespace std;
 
+#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+#include "swcan.h"
+#endif
+
 class OvmsVehicleVoltAmpera : public OvmsVehicle
   {
   public:
@@ -44,9 +48,18 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
   public:
     void Status(int verbosity, OvmsWriter* writer);
 
+    vehicle_command_t CommandWakeup();
+    vehicle_command_t CommandClimateControl(bool enable);
+    vehicle_command_t CommandLock(const char* pin);
+    vehicle_command_t CommandUnlock(const char* pin);
+
   protected:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingFrameCan3(CAN_frame_t* p_frame);
+    void IncomingFrameSWCan(CAN_frame_t* p_frame);
     void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void TxCallback(const CAN_frame_t* p_frame, bool success);
+    void CommandWakeupComplete(const CAN_frame_t* p_frame, bool success);
     virtual void Ticker1(uint32_t ticker);
 
   protected:
@@ -58,6 +71,11 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
     unsigned int m_candata_timer;
     unsigned int m_range_rated_km;
     unsigned int m_range_estimated_km;
+#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+    swcan* p_swcan;  
+#endif
+    CanFrameCallback wakeup_frame_sent;
+    unsigned int m_tx_retry_counter;
   };
 
 #endif //#ifndef __VEHICLE_VOLTAMPERA_H__
