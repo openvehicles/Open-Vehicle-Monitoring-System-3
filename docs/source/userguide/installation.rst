@@ -47,6 +47,15 @@ OVMS has partnered with Hologram and is providing a Hologram SIM pre-installed i
 
 Hologram Coupon Code: **OVMS**
 
+To activate your Hologram SIM, register at https://dashboard.hologram.io/, then invoke "Activate SIM" in the dashboard.
+
+.. note::
+  You don't need to purchase a phone number for your SIM right now, as there is no SMS support in V3 yet.
+  For the current status of SMS support, see…
+
+  - `Issue #62 SMS Notifications <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/62>`_
+  - `Issue #63 SMS Command Gateway <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/63>`_
+
 When activating your Hologram SIM, you'll need to enter the ICCID written on the SIM itself. You can also get that electronically (without having to open up the package) from the web or terminal shells with the following command:
 
 ``OVMS# metric list m.net.mdm.iccid``
@@ -69,8 +78,9 @@ Server account
 
 If you want to use the OVMS App and/or server based telemetry services, you'll need a server account. If you have not registered for an OVMS server account yet, you can do so before starting the wizard to avoid needing to switch networks in between. There are currently two public OVMS servers:
 
-Asia-Pacific: https://www.openvehicles.com/
-Europe:	https://dexters-web.de/
+#. Asia-Pacific: https://www.openvehicles.com/
+
+#. Europe:	https://dexters-web.de/
 
 You will need to create a user account first. Within your user account you then need to create a vehicle account. You'll need to pick a unique vehicle ID for this, e.g. your vehicle license plate number.
 
