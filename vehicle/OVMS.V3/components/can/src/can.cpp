@@ -194,6 +194,7 @@ void can_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
   frame.FIR.B.DLC = argc-1;
   frame.FIR.B.FF = smode;
   frame.MsgID = (int)strtol(argv[0],NULL,16);
+  frame.callback = NULL;
   for(int k=0;k<(argc-1);k++)
     {
     frame.data.u8[k] = strtol(argv[k+1],NULL,16);
@@ -226,6 +227,7 @@ void can_rx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
   frame.FIR.B.DLC = argc-1;
   frame.FIR.B.FF = smode;
   frame.MsgID = (int)strtol(argv[0],NULL,16);
+  frame.callback = NULL;
   for(int k=0;k<(argc-1);k++)
     {
     frame.data.u8[k] = strtol(argv[k+1],NULL,16);
