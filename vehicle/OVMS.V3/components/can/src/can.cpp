@@ -300,6 +300,19 @@ void can_clearstatus(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
   writer->puts("Status cleared");
   }
 
+void can_view_registers(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* bus = cmd->GetParent()->GetName();
+  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->puts("Error: Cannot find named CAN bus");
+    return;
+    }
+
+  sbus->ViewRegisters();
+  }
+
 ////////////////////////////////////////////////////////////////////////
 // CAN Filtering (software based filter)
 // The canfilter object encapsulates the filtering of CAN frames
@@ -716,6 +729,7 @@ can::can()
     cmd_canrx->RegisterCommand("extended","Simulate reception of extended CAN frame",can_rx,"<id> <data...>", 1, 9);
     cmd_canx->RegisterCommand("status","Show CAN status",can_status);
     cmd_canx->RegisterCommand("clear","Clear CAN status",can_clearstatus);
+    cmd_canx->RegisterCommand("viewregisters","view can controller registers",can_view_registers);
     }
 
   cmd_can->RegisterCommand("list", "List CAN buses", can_list);
@@ -864,6 +878,12 @@ esp_err_t canbus::Stop()
 
   return ESP_FAIL;
   }
+
+
+void canbus::ViewRegisters()
+  {
+  }
+
 
 void canbus::ClearStatus()
   {

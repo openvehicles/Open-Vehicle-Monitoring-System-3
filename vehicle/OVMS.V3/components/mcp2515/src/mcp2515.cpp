@@ -274,6 +274,29 @@ esp_err_t mcp2515::Stop()
   return ESP_OK;
   }
 
+void mcp2515::ViewRegisters() 
+  {
+  uint8_t buf[16];
+  uint8_t cnf[3];
+  // fetch configuration registers
+  uint8_t * rcvbuf = m_spibus->spi_cmd(m_spi, buf, 8, 2, CMD_READ, REG_CNF3);
+  cnf[0] = rcvbuf[2];
+  cnf[1] = rcvbuf[1];
+  cnf[2] = rcvbuf[0];
+  ESP_LOGI(TAG, "%s: configuration registers: CNF 0x%02x 0x%02x 0x%02x", this->GetName(),
+      cnf[0], cnf[1], cnf[2]);
+  ESP_LOGI(TAG, "%s: CANINTE 0x%02x CANINTF 0x%02x EFLG 0x%02x CANSTAT 0x%02x CANCTRL 0x%02x", this->GetName(),
+      rcvbuf[3], rcvbuf[4], rcvbuf[5], rcvbuf[6], rcvbuf[7]);
+  // read error counters
+  rcvbuf = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, REG_TEC);
+  uint8_t errors_tx = rcvbuf[0];
+  uint8_t errors_rx = rcvbuf[1];
+  ESP_LOGI(TAG, "%s: tx_errors: 0x%02x. rx_errors: 0x%02x", this->GetName(),
+      errors_tx, errors_rx);
+  rcvbuf = m_spibus->spi_cmd(m_spi, buf, 1, 2, CMD_READ, REG_BFPCTRL);
+  ESP_LOGI(TAG, "%s: BFPCTRL 0x%02x", this->GetName(), rcvbuf[0]);
+  }
+
 esp_err_t mcp2515::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
   {
   uint8_t buf[16];

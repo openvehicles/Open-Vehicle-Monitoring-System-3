@@ -88,13 +88,14 @@ class mcp2515 : public canbus
     esp_err_t WriteReg( uint8_t reg, uint8_t value );
     esp_err_t WriteRegAndVerify( uint8_t reg, uint8_t value, uint8_t read_back_mask = 0xff);
     esp_err_t ChangeMode( uint8_t mode );
+    void ViewRegisters();
 
   public:
     esp_err_t Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
-    virtual bool RxCallback(CAN_frame_t* frame);
+    bool RxCallback(CAN_frame_t* frame);
 
   public:
-    virtual void SetPowerMode(PowerMode powermode);
+    void SetPowerMode(PowerMode powermode);
 
   public:
     spi* m_spibus;

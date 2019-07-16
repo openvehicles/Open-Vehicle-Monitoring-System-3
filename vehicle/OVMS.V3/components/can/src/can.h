@@ -276,6 +276,7 @@ class canbus : public pcp, public InternalRamAllocated
     virtual esp_err_t Start(CAN_mode_t mode, CAN_speed_t speed, dbcfile *dbcfile);
     virtual esp_err_t Stop();
     virtual void ClearStatus();
+    virtual void ViewRegisters();
 
   public:
     void AttachDBC(dbcfile *dbcfile);
