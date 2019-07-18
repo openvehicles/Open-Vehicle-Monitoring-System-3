@@ -268,9 +268,9 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
 
 void can_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  for (int k=1;k<4;k++)
+  for (int k=1;k<5;k++)
     {
-    static const char* name[4] = {"can1", "can2", "can3"};
+    static const char* name[4] = {"can1", "can2", "can3", "swcan"};
     canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(name[k-1]);
     if (sbus != NULL)
       {
@@ -662,7 +662,11 @@ static void CAN_rxtask(void *pvParameters)
             }
           break;
         case CAN_txcallback:
-          msg.body.bus->TxCallback();
+          msg.body.bus->TxCallback(&msg.body.frame, true);
+          break;
+        case CAN_txfailedcallback:
+          msg.body.bus->TxCallback(&msg.body.frame, false);
+          msg.body.bus->LogStatus(CAN_LogStatus_Error);
           break;
         case CAN_logerror:
           msg.body.bus->LogStatus(CAN_LogStatus_Error);
@@ -691,9 +695,9 @@ can::can()
 
   for (int k=0;k<CAN_MAXBUSES;k++) m_buslist[k] = NULL;
 
-  for (int k=1;k<4;k++)
+  for (int k=1;k<5;k++)
     {
-    static const char* name[4] = {"can1", "can2", "can3"};
+    static const char* name[4] = {"can1", "can2", "can3", "swcan"};
     OvmsCommand* cmd_canx = cmd_can->RegisterCommand(name[k-1],"CANx framework");
     OvmsCommand* cmd_canstart = cmd_canx->RegisterCommand("start","CAN start framework");
     cmd_canstart->RegisterCommand("listen","Start CAN bus in listen mode",can_start,"<baud> [<dbc>]", 1, 2);
@@ -729,10 +733,18 @@ canbus* can::GetBus(int busnumber)
   canbus* found = m_buslist[busnumber];
   if (found != NULL) return found;
 
-  char cbus[5] = "can";
-  cbus[3] = busnumber+'1';
-  cbus[4] = 0;
-  found = (canbus*)MyPcpApp.FindDeviceByName(cbus);
+  char cbus[5];
+  if (busnumber<3)
+    {
+    strcpy(cbus,"can");
+    cbus[3] = busnumber+'1';
+    cbus[4] = 0;
+    found = (canbus*)MyPcpApp.FindDeviceByName(cbus);
+    }
+  else
+    {
+    found = (canbus*)MyPcpApp.FindDeviceByName("swcan");
+    }
   if (found)
     {
     m_buslist[busnumber] = found;
@@ -746,7 +758,7 @@ void can::IncomingFrame(CAN_frame_t* p_frame)
   p_frame->origin->m_watchdog_timer = monotonictime;
   p_frame->origin->LogFrame(CAN_LogFrame_RX, p_frame);
 
-  ExecuteCallbacks(p_frame, false);
+  ExecuteCallbacks(p_frame, false, true /*ignored*/);
   NotifyListeners(p_frame, false);
   }
 
@@ -785,17 +797,22 @@ void can::DeregisterCallback(const char* caller)
   m_txcallbacks.remove_if([caller](CanFrameCallbackEntry* entry){ return strcmp(entry->m_caller, caller)==0; });
   }
 
-void can::ExecuteCallbacks(const CAN_frame_t* frame, bool tx)
+void can::ExecuteCallbacks(const CAN_frame_t* frame, bool tx, bool success)
   {
   if (tx)
     {
-    for (auto entry : m_txcallbacks)
-      entry->m_callback(frame);
+    if (frame->callback)
+      {
+      (*(frame->callback))(frame, success); // invoke frame-specific callback function
+      }
+    for (auto entry : m_txcallbacks) {      // invoke generic tx callbacks
+      entry->m_callback(frame, success);
+      }
     }
   else
     {
     for (auto entry : m_rxcallbacks)
-      entry->m_callback(frame);
+      entry->m_callback(frame, success);
     }
   }
 
@@ -806,7 +823,10 @@ void can::ExecuteCallbacks(const CAN_frame_t* frame, bool tx)
 canbus::canbus(const char* name)
   : pcp(name)
   {
-  m_busnumber = name[strlen(name)-1] - '1';
+  if (strcmp(name,"swcan")==0)
+    m_busnumber = 3;
+  else
+    m_busnumber = name[strlen(name)-1] - '1';
   m_txqueue = xQueueCreate(CONFIG_OVMS_HW_CAN_TX_QUEUE_SIZE, sizeof(CAN_frame_t));
   m_mode = CAN_MODE_OFF;
   m_speed = CAN_SPEED_1000KBPS;
@@ -915,8 +935,19 @@ bool canbus::RxCallback(CAN_frame_t* frame)
   return false;
   }
 
-void canbus::TxCallback()
+void canbus::TxCallback(CAN_frame_t* p_frame, bool success)
   {
+  if (success)
+    {
+    m_status.packets_tx++;
+    MyCan.NotifyListeners(p_frame, true);
+    LogFrame(CAN_LogFrame_TX, p_frame);
+    }
+  else
+    {
+    LogFrame(CAN_LogFrame_TX_Fail, p_frame);
+    }
+  MyCan.ExecuteCallbacks(p_frame, true, success);
   }
 
 /**
@@ -925,17 +956,9 @@ void canbus::TxCallback()
  *      … ESP_OK = frame delivered to CAN transceiver (not necessarily sent!)
  *      … ESP_FAIL = TX queue is full (TX overflow)
  *    - actual TX implementation in driver override
- *    - here: counting & logging of frames sent (called by driver after a successful TX)
  */
 esp_err_t canbus::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
   {
-  m_status.packets_tx++;
-
-  LogFrame(CAN_LogFrame_TX, p_frame);
-
-  MyCan.ExecuteCallbacks(p_frame, true);
-  MyCan.NotifyListeners(p_frame, true);
-
   return ESP_OK;
   }
 
