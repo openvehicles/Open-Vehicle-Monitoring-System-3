@@ -146,6 +146,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     OvmsMetricString *mt_nlg6_pn_hw;              //!< Part number of base hardware (wo revisioning)
     
     #define DEFAULT_BATTERY_CAPACITY 17600
+    #define DEFAULT_BATTERY_AMPHOURS 53
     #define MAX_POLL_DATA_LEN 238
     #define CELLCOUNT 93
     #define SE_CANDATA_TIMEOUT 10
