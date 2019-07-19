@@ -304,6 +304,14 @@ config OVMS_VEHICLE_KIANIROEV
     help
         Enable to include support for Kia e-Niro.
 
+config OVMS_VEHICLE_HYUNDAIKONAEV
+    bool "Include support for Hyundai Kona"
+    default y
+    depends on OVMS
+    depends on OVMS_VEHICLE_KIASOULEV
+    help
+        Enable to include support for Hyundai Kona.
+
 config OVMS_VEHICLE_FIAT500
     bool "Include support for Fiat 500 vehicle"
     default y
