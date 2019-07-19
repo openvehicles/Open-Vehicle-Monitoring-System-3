@@ -282,6 +282,13 @@ config OVMS_VEHICLE_SMARTED
     help
         Enable to include support for Smart ED vehicle.
 
+config OVMS_VEHICLE_SMARTEQ
+    bool "Include support for Smart ED/EQ Gen.4 vehicle"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Smart ED/EQ Gen.4 vehicle.
+
 config OVMS_VEHICLE_MITSUBISHI
     bool "Include support for Mitsubishi iMiev vehicle"
     default y
