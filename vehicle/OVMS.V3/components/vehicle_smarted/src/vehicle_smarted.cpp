@@ -389,9 +389,9 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
       0x518 01 4e 00 00 [f8 7f] c8 b4 // Charge duration? 
       */
       if (m_soc_rsoc) {
-        StandardMetrics.ms_v_bat_soh->SetValue((float) (d[7]/2));
+        StandardMetrics.ms_v_bat_soh->SetValue((float) (d[7]/2.0));
       } else {
-        StandardMetrics.ms_v_bat_soc->SetValue((float) (d[7]/2));
+        StandardMetrics.ms_v_bat_soc->SetValue((float) (d[7]/2.0));
       }
       StandardMetrics.ms_v_charge_climit->SetValue(d[1]/2);
       //HandleChargingStatus(d[1]!=0);
@@ -405,11 +405,13 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
        = 340 (in HEX)
        = 832 (in base10) and now by ten
        = 83,2% */
+      float rsoc = ((d[4] & 0x03) * 256 + d[5]) / 10.0;
       if (m_soc_rsoc) {
-        StandardMetrics.ms_v_bat_soc->SetValue(((float) ((d[4] & 0x03) * 256 + d[5])) / 10, Percentage);
+        StandardMetrics.ms_v_bat_soc->SetValue(rsoc, Percentage);
       } else {
-        StandardMetrics.ms_v_bat_soh->SetValue(((float) ((d[4] & 0x03) * 256 + d[5])) / 10, Percentage);
+        StandardMetrics.ms_v_bat_soh->SetValue(rsoc, Percentage);
       }
+      StandardMetrics.ms_v_bat_cac->SetValue((DEFAULT_BATTERY_AMPHOURS * rsoc) / 100, AmpHours);
       break;
     }
     case 0x508: //HV ampere and charging yes/no
@@ -757,12 +759,21 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool ti
      0x512 00 00 12 1E 00 00 00 00
      if one sets e.g. the time at 18:30. If you now mask byte 3 (0x12) with 0x40 (and set the second bit to high there), the A / C function is also activated.
     */
-    if(timerstart == 0) { 
-        return Fail;
-    }
     if(!StandardMetrics.ms_v_env_awake->AsBool()) {
-        return Fail;
+      if (!MyConfig.IsDefined("password","pin")) return Fail;
+      
+      std::string vpin = MyConfig.GetParamValue("password","pin");
+      CommandUnlock(vpin.c_str());
+      vTaskDelay(600 / portTICK_PERIOD_MS);
+      CommandLock(vpin.c_str());
+      vTaskDelay(600 / portTICK_PERIOD_MS);
+      if(!StandardMetrics.ms_v_env_awake->AsBool()) return Fail;
     }
+    if(timerstart == 0) { 
+      timerstart = mt_vehicle_time->AsInt();
+      if(timerstart == 0) return Fail;
+    }
+    
     int t = timerstart + 600; // mt_vehicle_time + 10 min
     //int days = (t / 86400);
     //t = t - (days * 86400);
@@ -794,6 +805,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool ti
     frame.data.u8[6] = 0x00;
     frame.data.u8[7] = 0x00;
     m_can1->Write(&frame);
+    vTaskDelay(50 / portTICK_PERIOD_MS);
+    m_can1->Write(&frame);
+    vTaskDelay(50 / portTICK_PERIOD_MS);
+    m_can1->Write(&frame);
+    
     return Success;
 }
 
@@ -958,6 +974,5 @@ class OvmsVehicleSmartEDInit {
 
 OvmsVehicleSmartEDInit::OvmsVehicleSmartEDInit() {
     ESP_LOGI(TAG, "Registering Vehicle: SMART ED (9000)");
-    MyVehicleFactory.RegisterVehicle<OvmsVehicleSmartED>("SE", "Smart ED");
+    MyVehicleFactory.RegisterVehicle<OvmsVehicleSmartED>("SE", "Smart ED 3.Gen");
 }
-
