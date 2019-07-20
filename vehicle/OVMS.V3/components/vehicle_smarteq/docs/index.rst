@@ -1,10 +1,10 @@
 ========
-Smart ED Gen.3
+Smart ED/EQ Gen.4 (453)
 ========
 
-Vehicle Type: **SE**
+Vehicle Type: **SQ**
 
-The Smart ED will be documented here.
+The Smart ED/EQ Gen.4 will be documented here.
 
 ----------------
 Support Overview
@@ -21,13 +21,13 @@ SOC Display                 Yes
 Range Display               Yes
 GPS Location                Yes (from modem module GPS)
 Speed Display               Yes
-Temperature Display         Yes
-BMS v+t Display             Yes
+Temperature Display         Yes (External Temp and Battery)
+BMS v+t Display             only Cell Volts atm.
 TPMS Display                No
 Charge Status Display       Yes
-Charge Interruption Alerts  Yes
-Charge Control              Current limit
-Cabin Pre-heat/cool Control When charging and CAN-Bus Active
+Charge Interruption Alerts  No
+Charge Control              No
+Cabin Pre-heat/cool Control No
 Lock/Unlock Vehicle         No
 Valet Mode Control          No
 Others

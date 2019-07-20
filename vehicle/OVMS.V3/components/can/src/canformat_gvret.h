@@ -134,11 +134,11 @@ typedef struct __attribute__ ((__packed__))
       uint8_t notdead1;      // 0xDE
       uint8_t notdead2;      // 0xAD - So, if it isn't dead it responds with DEAD.
       } keep_alive;
-    struct
+    struct // 12 - Get number of buses
       {
       uint8_t buses;         // Number of buses
       } get_num_buses;
-    struct
+    struct // 13 - Get extended buses
       {
       uint8_t swcan_mode;    // Bit 0 - Enable  Bit 4 - Listen only
       uint32_t swcan_speed;  // CAN0 Speed LSB to MSB

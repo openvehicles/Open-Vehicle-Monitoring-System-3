@@ -245,19 +245,64 @@ size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, 
     gvret_replymsg_t r;
     gvret_commandmsg_t m;
     memset(&m,0,sizeof(m));
+    memset(&r,0,sizeof(r));
     m_buf.Peek(2,(uint8_t*)&m);
     r.startbyte = m.startbyte;
     r.command = m.command;
     switch (m.command)
       {
+      case BUILD_CAN_FRAME:
+        if (m_buf.UsedSpace() >= 8)
+          {
+          m_buf.Peek(8,(uint8_t*)&m);
+          if (m_buf.UsedSpace() >= 8 + m.body.build_can_frame.length)
+            {
+            m_buf.Pop(8 + m.body.build_can_frame.length,(uint8_t*)&m);
+            CAN_frame_t msg;
+            memset(&msg,0,sizeof(msg));
+            char cbus[5] = "can";
+            cbus[3] = '1' + m.body.build_can_frame.bus;
+            cbus[4] = 0;
+            msg.origin = (canbus*)MyPcpApp.FindDeviceByName(cbus);
+            if (m.body.build_can_frame.id & 0x8000000)
+              {
+              msg.MsgID = m.body.build_can_frame.id & 0x7fffffff;
+              msg.FIR.B.FF = CAN_frame_ext;
+              }
+            else
+              {
+              msg.MsgID = m.body.build_can_frame.id;
+              msg.FIR.B.FF = CAN_frame_std;
+              }
+            msg.FIR.B.DLC = m.body.build_can_frame.length;
+            memcpy(&msg.data, &m.body.build_can_frame.data, m.body.build_can_frame.length);
+            // We have a frame to be transmitted / simulated
+            switch (m_servemode)
+              {
+              case Transmit:
+                if (msg.origin) msg.origin->Write(&msg);
+                break;
+              case Simulate:
+                if (msg.origin) MyCan.IncomingFrame(&msg);
+                break;
+              default:
+                break;
+              }
+            }
+          }
+        break;
       case TIME_SYNC:
         m_buf.Pop(2,(uint8_t*)&m);
+        r.body.time_sync.microseconds = 0;
+        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,6,userdata);
         break;
       case GET_DIG_INPUTS:
         m_buf.Pop(2,(uint8_t*)&m);
+        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,4,userdata);
         break;
       case GET_ANALOG_INPUTS:
         m_buf.Pop(2,(uint8_t*)&m);
+        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,11,userdata);
         break;
       case SET_DIG_OUTPUTS:
         m_buf.Pop(2,(uint8_t*)&m);
@@ -267,9 +312,20 @@ size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, 
         break;
       case GET_CANBUS_PARAMS:
         m_buf.Pop(2,(uint8_t*)&m);
+        r.body.get_canbus_params.can1_mode = 1;
+        r.body.get_canbus_params.can1_speed = 1000000;
+        r.body.get_canbus_params.can2_mode = 1;
+        r.body.get_canbus_params.can2_speed = 1000000;
+        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,12,userdata);
         break;
       case GET_DEVICE_INFO:
         m_buf.Pop(2,(uint8_t*)&m);
+        r.body.get_device_info.build = 0;
+        r.body.get_device_info.eeprom = 0;
+        r.body.get_device_info.filetype = 0;
+        r.body.get_device_info.autolog = 0;
+        r.body.get_device_info.singlewire = 0;
+        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,8,userdata);
         break;
       case SET_SINGLEWIRE_MODE:
         m_buf.Pop(2,(uint8_t*)&m);
@@ -288,9 +344,12 @@ size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, 
         break;
       case GET_NUM_BUSES:
         m_buf.Pop(2,(uint8_t*)&m);
+        r.body.get_num_buses.buses = 3;
+        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,3,userdata);
         break;
       case GET_EXT_BUSES:
         m_buf.Pop(2,(uint8_t*)&m);
+        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,17,userdata);
         break;
       default:
         ESP_LOGW(TAG,"Unrecognised GVRET command %02x - skipping",m.command);
