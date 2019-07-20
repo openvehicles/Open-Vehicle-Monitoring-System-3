@@ -174,6 +174,7 @@ void canlog_tcpclient::OutputMsg(CAN_log_message_t& msg)
     std::string result = m_formatter->get(&msg);
     if (result.length()>0)
       {
+      OvmsMutexLock lock(&m_mgmutex);
       if (m_mgconn->send_mbuf.len < 4096)
         {
         mg_send(m_mgconn, (const char*)result.c_str(), result.length());
@@ -188,6 +189,8 @@ void canlog_tcpclient::OutputMsg(CAN_log_message_t& msg)
 
 void canlog_tcpclient::MongooseHandler(struct mg_connection *nc, int ev, void *p)
   {
+  OvmsMutexLock lock(&m_mgmutex);
+
   switch (ev)
     {
     case MG_EV_CONNECT:
