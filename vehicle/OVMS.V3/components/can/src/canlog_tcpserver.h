@@ -34,6 +34,7 @@
 #include "canlog.h"
 #include "canlog_tcpserver.h"
 #include "ovms_netmanager.h"
+#include "ovms_mutex.h"
 
 class canlog_tcpserver : public canlog
   {
@@ -55,6 +56,7 @@ class canlog_tcpserver : public canlog
 
   public:
     typedef std::map<mg_connection*, uint8_t> ts_map_t;
+    OvmsMutex m_mgmutex;
     ts_map_t m_smap;
     bool m_isopen;
     struct mg_connection *m_mgconn;
