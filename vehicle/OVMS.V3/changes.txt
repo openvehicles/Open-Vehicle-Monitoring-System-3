@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- New vehicle: Smart ED/EQ 4.Generation (453) (adaption by Thomas Heuer <egon@heuer-humfeld.de>)
 
 2019-05-12 MWJ  3.2.002  OTA release
 - Vehicle framework: added idling alert (ported from V2)
@@ -9,7 +10,7 @@ Open Vehicle Monitor System v3 - Change log
 - Vehicle framework: Regenerative braking signal generation
 - Vehicle framework: DBC and RETOOLS integrations
 - Vehicles: Extensions to Kia Niro, Kia Soul, Mitsubishi, Nissan Leaf,
-  Renault Twizy, SmartID, Tesla Model S, and Think City
+  Renault Twizy, SmartED, Tesla Model S, and Think City
 
 2019-01-19 MWJ  3.2.001  OTA release
 - Twizy: support auxiliary charger fan and auxiliary charger
