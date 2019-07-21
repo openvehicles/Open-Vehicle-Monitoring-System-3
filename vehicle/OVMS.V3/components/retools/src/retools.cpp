@@ -41,7 +41,6 @@ static const char *TAG = "re";
 #include "ovms_notify.h"
 
 re *MyRE = NULL;
-bool MyServing = false;
 
 const char* re_green[2][2] = { { "\x1b" "[32m", "\x1b" "[39m" }, { "<b>", "</b>" } };
 const char* re_red[2][2] = { { "\x1b" "[31m", "\x1b" "[39m" }, { "<u>", "</u>" } };
@@ -93,80 +92,6 @@ void HighlightDump(char* bufferp, const char* data, size_t rlength, uint8_t red,
   *bufferp = 0;
   }
 
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-
-static void reMongooseHandler(struct mg_connection *nc, int ev, void *p)
-  {
-  if (MyRE)
-    MyRE->MongooseHandler(nc, ev, p);
-  else if (ev == MG_EV_ACCEPT)
-    {
-    ESP_LOGI(TAG, "Log service connection rejected (RETOOLS not running)");
-    nc->flags |= MG_F_CLOSE_IMMEDIATELY;
-    }
-  }
-
-void re::MongooseHandler(struct mg_connection *nc, int ev, void *p)
-  {
-  char addr[32];
-
-  switch (ev)
-    {
-    case MG_EV_ACCEPT:
-      {
-      // New network connection has arrived
-      mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr), MG_SOCK_STRINGIFY_IP);
-      ESP_LOGI(TAG, "Log service connection from %s",addr);
-      OvmsMutexLock lock(&m_smapmutex);
-      m_smap[nc] = 1;
-      if (m_serveformat_in)
-        {
-        struct timeval t;
-        gettimeofday(&t,NULL);
-        std::string encoded = m_serveformat_in->getheader(&t);
-        if (encoded.length() > 0)
-          mg_send(nc, (const char*)encoded.c_str(), encoded.length());
-        }
-      break;
-      }
-
-    case MG_EV_CLOSE:
-      {
-      // Network connection has gone
-      mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr), MG_SOCK_STRINGIFY_IP);
-      ESP_LOGI(TAG, "Log service disconnection from %s",addr);
-      OvmsMutexLock lock(&m_smapmutex);
-      auto k = m_smap.find(nc);
-      if (k != m_smap.end())
-        m_smap.erase(k);
-      break;
-      }
-
-    case MG_EV_RECV:
-      {
-      // Receive data on the network connection
-      if (m_servemode == Ignore)
-        {
-        mbuf_remove(&nc->recv_mbuf, nc->recv_mbuf.len);
-        return;
-        }
-
-      size_t used = m_serveformat_out->Serve((uint8_t*)nc->recv_mbuf.buf, nc->recv_mbuf.len);
-      if (used > 0)
-        {
-        mbuf_remove(&nc->recv_mbuf, used);
-        }
-
-      break;
-      }
-
-    default:
-      break;
-    }
-  }
-
-#endif // #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-
 static void RE_task(void *pvParameters)
   {
   re *me = (re*)pvParameters;
@@ -185,11 +110,16 @@ void re::Task()
         {
         switch (m_mode)
           {
-          case Serve:
-            DoServe(&message);
           case Analyse:
           case Discover:
-            DoAnalyse(&message.frame);
+            if ((m_filter)&&(!m_filter->IsFiltered(&message.frame)))
+              {
+              // Frame is filtered, just drop it...
+              }
+            else
+              {
+              DoAnalyse(&message.frame);
+              }
             break;
           }
         m_finished = monotonictime;
@@ -216,8 +146,6 @@ void re::DoAnalyse(CAN_frame_t* frame)
     r->attr.dc = 0xff;
     switch (MyRE->m_mode)
       {
-      case Serve:
-        break;
       case Analyse:
         break;
       case Discover:
@@ -235,8 +163,6 @@ void re::DoAnalyse(CAN_frame_t* frame)
     r = k->second;
     switch (MyRE->m_mode)
       {
-      case Serve:
-        break;
       case Analyse:
         for (int k=0;k<r->last.FIR.B.DLC;k++)
           {
@@ -269,32 +195,6 @@ void re::DoAnalyse(CAN_frame_t* frame)
     }
   memcpy(&r->last,frame,sizeof(CAN_frame_t));
   r->rxcount++;
-  }
-
-void re::DoServe(CAN_log_message_t* message)
-  {
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-  if (m_smap.size() > 0)
-    {
-    OvmsMutexLock lock(&m_smapmutex);
-
-    message->type = CAN_LogFrame_RX;
-    gettimeofday(&message->timestamp,NULL);
-    message->origin = message->frame.origin;
-    std::string encoded = m_serveformat_in->get(message);
-    const char* s = encoded.c_str();
-    size_t len = encoded.length();
-
-    for (re_serve_map_t::iterator it=m_smap.begin(); it!=m_smap.end(); ++it)
-      {
-      if (it->first->send_mbuf.len < 4096)
-        {
-        // Limit to 4KB queue on output buffer
-        mg_send(it->first, s, len);
-        }
-      }
-    }
-#endif // #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   }
 
 std::string re::GetKey(CAN_frame_t* frame)
@@ -374,53 +274,34 @@ std::string re::GetKey(CAN_frame_t* frame)
   return key;
   }
 
-re::re(const char* name)
+re::re(const char* name, canfilter* filter)
   : pcp(name)
   {
+  m_filter = filter;
   m_obdii_std_min = 0;
   m_obdii_std_max = 0;
   m_obdii_ext_min = 0;
   m_obdii_ext_max = 0;
   m_started = monotonictime;
   m_finished = monotonictime;
-  m_mode = Serve;
-  m_servemode = Ignore;
-  m_serveformat_in = MyCanFormatFactory.NewFormat("crtd");
-  m_serveformat_out = MyCanFormatFactory.NewFormat("crtd");
+  m_mode = Analyse;
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
   xTaskCreatePinnedToCore(RE_task, "OVMS RE", 4096, (void*)this, 5, &m_task, 1);
   MyCan.RegisterListener(m_rxqueue, true);
-
-  #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-  if ((!MyServing)&&(MyNetManager.m_network_any))
-    {
-    ESP_LOGI(TAG, "Launching RETOOLS Server");
-    struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
-    mg_bind(mgr, ":3000", reMongooseHandler);
-    MyServing = true;
-    }
-  #endif // #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   }
 
 re::~re()
   {
   MyCan.DeregisterListener(m_rxqueue);
 
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-  if (m_smap.size() > 0)
-    {
-    OvmsMutexLock lock(&m_smapmutex);
-    for (re_serve_map_t::iterator it=m_smap.begin(); it!=m_smap.end(); ++it)
-      {
-      it->first->flags |= MG_F_CLOSE_IMMEDIATELY;
-      }
-    m_smap.clear();
-    }
-#endif // #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-
   Clear();
   vQueueDelete(m_rxqueue);
   vTaskDelete(m_task);
+  if (m_filter)
+    {
+    delete m_filter;
+    m_filter = NULL;
+    }
   }
 
 void re::SetPowerMode(PowerMode powermode)
@@ -459,7 +340,16 @@ void re_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     writer->puts("Error: RE tools already running");
   else
     {
-    MyRE = new re("re");
+    canfilter* filter = NULL;
+    if (argc>0)
+      {
+      filter = new canfilter();
+      for (int k=0;k<argc;k++)
+        {
+        filter->AddFilter(argv[k]);
+        }
+      }
+    MyRE = new re("re", filter);
     MyEvents.SignalEvent("retools.started", NULL);
     }
   }
@@ -625,23 +515,6 @@ void re_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
 
   switch (MyRE->m_mode)
     {
-    case Serve:
-      writer->printf("Mode:    Serving (%s)\n",MyRE->m_serveformat_in->type());
-      switch (MyRE->m_servemode)
-        {
-        case Ignore:
-          writer->puts("         ignoring incoming messages");
-          break;
-        case Simulate:
-          writer->puts("         simulating incoming messages");
-          break;
-        case Transmit:
-          writer->puts("         transmitting incoming messages");
-          break;
-        default:
-          break;
-        }
-      break;
     case Analyse:
       writer->puts("Mode:    Analysing");
       break;
@@ -650,12 +523,12 @@ void re_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
       break;
     }
 
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-  writer->printf("Serving: %d log clients\n",MyRE->m_smap.size());
-#endif // #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+  if (MyRE->m_filter)
+    {
+    writer->printf("Filter:  %s\n", MyRE->m_filter->Info().c_str());
+    }
 
   OvmsMutexLock lock(&MyRE->m_mutex);
-
   writer->printf("Key Map: %d entries\n",MyRE->m_rmap.size());
   if (MyRE->m_rmap.size() > 0)
     {
@@ -711,19 +584,6 @@ void re_obdii_ext(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   MyRE->m_obdii_ext_max = (uint32_t)strtol(argv[1],NULL,16);
 
   writer->printf("Set OBDII extended ID range %08x-%08x\n",MyRE->m_obdii_ext_min,MyRE->m_obdii_ext_max);
-  }
-
-void re_mode_serve(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  if (!MyRE)
-    {
-    writer->puts("Error: RE tools not running");
-    return;
-    }
-
-  MyRE->m_mode = Serve;
-  writer->puts("Now running in serve mode");
-  MyEvents.SignalEvent("retools.mode.serve", NULL);
   }
 
 void re_mode_analyse(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -892,88 +752,12 @@ void re_list_discovered(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int
     }
   }
 
-void re_serve_format(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  if (!MyRE)
-    {
-    writer->puts("Error: RE tools not running");
-    return;
-    }
-
-  if (strcmp(cmd->GetName(), "crtd")==0)
-    {
-    delete MyRE->m_serveformat_in;
-    delete MyRE->m_serveformat_out;
-    MyRE->m_serveformat_in = MyCanFormatFactory.NewFormat("crtd");
-    MyRE->m_serveformat_out = MyCanFormatFactory.NewFormat("crtd");
-    }
-  else if (strcmp(cmd->GetName(), "pcap")==0)
-    {
-    delete MyRE->m_serveformat_in;
-    delete MyRE->m_serveformat_out;
-    MyRE->m_serveformat_in = MyCanFormatFactory.NewFormat("pcap");
-    MyRE->m_serveformat_out = MyCanFormatFactory.NewFormat("pcap");
-    }
-
-  writer->printf("RE serve format is %s\n",MyRE->m_serveformat_in->type());
-  }
-
-void re_serve_mode(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  if (!MyRE)
-    {
-    writer->puts("Error: RE tools not running");
-    return;
-    }
-
-  if (strcmp(cmd->GetName(), "ignore")==0)
-    MyRE->m_servemode = Ignore;
-  else if (strcmp(cmd->GetName(), "simulate")==0)
-    MyRE->m_servemode = Simulate;
-  else if (strcmp(cmd->GetName(), "transmit")==0)
-    MyRE->m_servemode = Transmit;
-
-  writer->printf("RE serve mode is %s\n",cmd->GetName());
-  }
-
 class REInit
   {
   public:
     REInit();
-    void NetManInit(std::string event, void* data);
-    void NetManStop(std::string event, void* data);
     void Ticker1(std::string event, void* data);
 } REInit  __attribute__ ((init_priority (8800)));
-
-void REInit::NetManInit(std::string event, void* data)
-  {
-  // Only initialise server for WIFI connections
-  // TODO: Disabled as this introduces a network interface ordering issue. It
-  //       seems that the correct way to do this is to always start the mongoose
-  //       listener, but to filter incoming connections to check that the
-  //       destination address is a Wifi interface address.
-
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-  if (MyRE)
-    {
-    ESP_LOGI(TAG, "Launching RETOOLS Server");
-    struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
-    mg_bind(mgr, ":3000", reMongooseHandler);
-    MyServing = true;
-    }
-#endif // #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-  }
-
-void REInit::NetManStop(std::string event, void* data)
-  {
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-  if (MyRE)
-    {
-    ESP_LOGI(TAG, "Stopping RETOOLS Server");
-    MyServing = false;
-    }
-#endif // #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-  }
 
 void REInit::Ticker1(std::string event, void* data)
   {
@@ -996,7 +780,12 @@ REInit::REInit()
   ESP_LOGI(TAG, "Initialising RE Tools (8800)");
 
   OvmsCommand* cmd_re = MyCommandApp.RegisterCommand("re","RE framework");
-  cmd_re->RegisterCommand("start","Start RE tools",re_start);
+  cmd_re->RegisterCommand("start","Start RE tools",
+    re_start,
+    "[filter1] ... [filterN]\n"
+    "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
+    "Example: 2:2a0-37f",
+    0, 9);
   cmd_re->RegisterCommand("stop","Stop RE tools",re_stop);
   cmd_re->RegisterCommand("clear","Clear RE records",re_clear);
   cmd_re->RegisterCommand("list","List RE records",re_list, "", 0, 1);
@@ -1010,7 +799,6 @@ REInit::REInit()
   cmd_reobdii->RegisterCommand("extended","Set OBDII extended ID range",re_obdii_ext, "<min> <max>", 2, 2);
 
   OvmsCommand* cmd_mode = cmd_re->RegisterCommand("mode","RE mode framework");
-  cmd_mode->RegisterCommand("serve","Set mode to serve",re_mode_serve);
   cmd_mode->RegisterCommand("analyse","Set mode to analyse",re_mode_analyse);
   cmd_mode->RegisterCommand("discover","Set mode to discover",re_mode_discover);
 
@@ -1022,22 +810,11 @@ REInit::REInit()
   cmd_discover_clear->RegisterCommand("changed","Clear changed flags",re_clear_changed);
   cmd_discover_clear->RegisterCommand("discovered","Clear discovered flags",re_clear_discovered);
 
-  OvmsCommand* cmd_serve = cmd_re->RegisterCommand("serve","RE serve framework");
-  OvmsCommand* cmd_serve_format = cmd_serve->RegisterCommand("format","RE serve format framework");
-  cmd_serve_format->RegisterCommand("crtd","Set RE server to CRTD format",re_serve_format);
-  cmd_serve_format->RegisterCommand("pcap","Set RE server to PCAP format",re_serve_format);
-  OvmsCommand* cmd_serve_mode = cmd_serve->RegisterCommand("mode","RE serve mode framework");
-  cmd_serve_mode->RegisterCommand("ignore","Set RE server to ignore incoming messages",re_serve_mode);
-  cmd_serve_mode->RegisterCommand("simulate","Set RE server to simulate incoming messages",re_serve_mode);
-  cmd_serve_mode->RegisterCommand("transmit","Set RE server to transmit incoming messages",re_serve_mode);
-
   OvmsCommand* cmd_stream = cmd_re->RegisterCommand("stream","RE JSON streaming");
   cmd_stream->RegisterCommand("list","Output array of all RE records",re_stream_list, "[<filter>]", 0, 1);
   cmd_stream->RegisterCommand("changed","Output array of changed RE records",re_stream_changed, "[<filter>]", 0, 1);
 
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG, "network.mgr.init", std::bind(&REInit::NetManInit, this, _1, _2));
-  MyEvents.RegisterEvent(TAG, "network.mgr.stop", std::bind(&REInit::NetManStop, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&REInit::Ticker1, this, _1, _2));
   }

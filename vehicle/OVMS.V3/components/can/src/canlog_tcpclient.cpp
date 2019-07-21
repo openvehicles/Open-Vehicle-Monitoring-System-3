@@ -58,8 +58,11 @@ void can_log_tcpclient_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd
 
 class OvmsCanLogTcpClientInit
   {
-  public: OvmsCanLogTcpClientInit();
-} MyOvmsCanLogTcpClientInit  __attribute__ ((init_priority (4560)));
+  public:
+    OvmsCanLogTcpClientInit();
+    void NetManInit(std::string event, void* data);
+    void NetManStop(std::string event, void* data);
+  } MyOvmsCanLogTcpClientInit  __attribute__ ((init_priority (4560)));
 
 OvmsCanLogTcpClientInit::OvmsCanLogTcpClientInit()
   {
@@ -85,6 +88,20 @@ OvmsCanLogTcpClientInit::OvmsCanLogTcpClientInit()
         }
       }
     }
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG, "network.mgr.init", std::bind(&OvmsCanLogTcpClientInit::NetManInit, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "network.mgr.stop", std::bind(&OvmsCanLogTcpClientInit::NetManStop, this, _1, _2));
+  }
+
+void OvmsCanLogTcpClientInit::NetManInit(std::string event, void* data)
+  {
+  if (MyCanLogTcpClient) MyCanLogTcpClient->Open();
+  }
+
+void OvmsCanLogTcpClientInit::NetManStop(std::string event, void* data)
+  {
+  if (MyCanLogTcpClient) MyCanLogTcpClient->Close();
   }
 
 static void tcMongooseHandler(struct mg_connection *nc, int ev, void *p)
@@ -115,23 +132,33 @@ canlog_tcpclient::~canlog_tcpclient()
 
 bool canlog_tcpclient::Open()
   {
+  if (m_isopen) return true;
+
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
   if (mgr != NULL)
     {
-    ESP_LOGI(TAG, "Launching TCP client to %s",m_path.c_str());
-    struct mg_connect_opts opts;
-    const char* err;
-    memset(&opts, 0, sizeof(opts));
-    opts.error_string = &err;
-    if ((m_mgconn = mg_connect_opt(mgr, m_path.c_str(), tcMongooseHandler, opts)) != NULL)
+    if (MyNetManager.m_network_any)
       {
-      m_isopen = true;
-      return true;
+      ESP_LOGI(TAG, "Launching TCP client to %s",m_path.c_str());
+      struct mg_connect_opts opts;
+      const char* err;
+      memset(&opts, 0, sizeof(opts));
+      opts.error_string = &err;
+      if ((m_mgconn = mg_connect_opt(mgr, m_path.c_str(), tcMongooseHandler, opts)) != NULL)
+        {
+        m_isopen = true;
+        return true;
+        }
+      else
+        {
+        ESP_LOGE(TAG,"Could not connect to %s",m_path.c_str());
+        return false;
+        }
       }
     else
       {
-      ESP_LOGE(TAG,"Could not connect to %s",m_path.c_str());
-      return false;
+      ESP_LOGI(TAG,"Delay TCP client (as network manager not up)");
+      return true;
       }
     }
   else
@@ -174,6 +201,7 @@ void canlog_tcpclient::OutputMsg(CAN_log_message_t& msg)
     std::string result = m_formatter->get(&msg);
     if (result.length()>0)
       {
+      OvmsMutexLock lock(&m_mgmutex);
       if (m_mgconn->send_mbuf.len < 4096)
         {
         mg_send(m_mgconn, (const char*)result.c_str(), result.length());
@@ -188,6 +216,8 @@ void canlog_tcpclient::OutputMsg(CAN_log_message_t& msg)
 
 void canlog_tcpclient::MongooseHandler(struct mg_connection *nc, int ev, void *p)
   {
+  OvmsMutexLock lock(&m_mgmutex);
+
   switch (ev)
     {
     case MG_EV_CONNECT:

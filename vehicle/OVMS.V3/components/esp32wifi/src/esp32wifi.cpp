@@ -419,6 +419,8 @@ void esp32wifi::InitCSI()
     .lltf_en = true,           /**< enable to receive legacy long training field(lltf) data. Default enabled */
     .htltf_en = true,          /**< enable to receive HT long training field(htltf) data. Default enabled */
     .stbc_htltf2_en = true,    /**< enable to receive space time block code HT long training field(stbc-htltf2) data. Default enabled */
+    .ltf_merge_en = true,      /**< enable to generate htlft data by averaging lltf and ht_ltf data when receiving HT packet. Otherwise, use ht_ltf data directly. Default enabled */
+    .channel_filter_en = true, /**< enable to turn on channel filter to smooth adjacent sub-carrier. Disable it to keep independence of adjacent sub-carrier. Default enabled */
     .manu_scale = false,       /**< manually scale the CSI data by left shifting or automatically scale the CSI data. If set true, please set the shift bits. false: automatically. true: manually. Default false */ 
     .shift = 0                 /**< manually left shift bits of the scale of the CSI data. The range of the left shift bits is 0~15 */
     };

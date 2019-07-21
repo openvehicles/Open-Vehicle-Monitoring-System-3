@@ -30,6 +30,7 @@
 
 #include "canlog.h"
 #include "ovms_netmanager.h"
+#include "ovms_mutex.h"
 
 class canlog_tcpclient : public canlog
   {
@@ -50,6 +51,7 @@ class canlog_tcpclient : public canlog
     void MongooseHandler(struct mg_connection *nc, int ev, void *p);
 
   public:
+    OvmsMutex m_mgmutex;
     struct mg_connection *m_mgconn;
     bool m_isopen;
 

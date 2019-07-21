@@ -37,7 +37,7 @@ static const char *ntp = "ntp";
 #include <lwip/def.h>
 #include <lwip/sockets.h>
 #include <time.h>
-#include "apps/sntp/sntp.h"
+#include "lwip/apps/sntp.h"
 #include "ovms.h"
 #include "ovms_time.h"
 #include "ovms_config.h"
