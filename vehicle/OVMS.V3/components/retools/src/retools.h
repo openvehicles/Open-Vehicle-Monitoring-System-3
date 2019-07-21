@@ -73,7 +73,7 @@ enum REMode { Analyse, Discover };
 class re : public pcp, public ExternalRamAllocated
   {
   public:
-    re(const char* name);
+    re(const char* name, canfilter* filter = NULL);
     ~re();
 
   public:
@@ -93,6 +93,7 @@ class re : public pcp, public ExternalRamAllocated
 
   public:
     OvmsMutex m_mutex;
+    canfilter* m_filter;
     REMode m_mode;
     re_record_map_t m_rmap;
     uint32_t m_obdii_std_min;

@@ -112,7 +112,14 @@ void re::Task()
           {
           case Analyse:
           case Discover:
-            DoAnalyse(&message.frame);
+            if ((m_filter)&&(!m_filter->IsFiltered(&message.frame)))
+              {
+              // Frame is filtered, just drop it...
+              }
+            else
+              {
+              DoAnalyse(&message.frame);
+              }
             break;
           }
         m_finished = monotonictime;
@@ -267,9 +274,10 @@ std::string re::GetKey(CAN_frame_t* frame)
   return key;
   }
 
-re::re(const char* name)
+re::re(const char* name, canfilter* filter)
   : pcp(name)
   {
+  m_filter = filter;
   m_obdii_std_min = 0;
   m_obdii_std_max = 0;
   m_obdii_ext_min = 0;
@@ -289,6 +297,11 @@ re::~re()
   Clear();
   vQueueDelete(m_rxqueue);
   vTaskDelete(m_task);
+  if (m_filter)
+    {
+    delete m_filter;
+    m_filter = NULL;
+    }
   }
 
 void re::SetPowerMode(PowerMode powermode)
@@ -327,7 +340,16 @@ void re_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     writer->puts("Error: RE tools already running");
   else
     {
-    MyRE = new re("re");
+    canfilter* filter = NULL;
+    if (argc>0)
+      {
+      filter = new canfilter();
+      for (int k=0;k<argc;k++)
+        {
+        filter->AddFilter(argv[k]);
+        }
+      }
+    MyRE = new re("re", filter);
     MyEvents.SignalEvent("retools.started", NULL);
     }
   }
@@ -499,6 +521,11 @@ void re_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     case Discover:
       writer->puts("Mode:    Discovering");
       break;
+    }
+
+  if (MyRE->m_filter)
+    {
+    writer->printf("Filter:  %s\n", MyRE->m_filter->Info().c_str());
     }
 
   OvmsMutexLock lock(&MyRE->m_mutex);
@@ -753,7 +780,12 @@ REInit::REInit()
   ESP_LOGI(TAG, "Initialising RE Tools (8800)");
 
   OvmsCommand* cmd_re = MyCommandApp.RegisterCommand("re","RE framework");
-  cmd_re->RegisterCommand("start","Start RE tools",re_start);
+  cmd_re->RegisterCommand("start","Start RE tools",
+    re_start,
+    "[filter1] ... [filterN]\n"
+    "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
+    "Example: 2:2a0-37f",
+    0, 9);
   cmd_re->RegisterCommand("stop","Stop RE tools",re_stop);
   cmd_re->RegisterCommand("clear","Clear RE records",re_clear);
   cmd_re->RegisterCommand("list","List RE records",re_list, "", 0, 1);
