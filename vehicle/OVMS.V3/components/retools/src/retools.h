@@ -68,8 +68,7 @@ typedef struct
 
 typedef std::map<std::string, re_record_t*> re_record_map_t;
 
-enum REMode { Serve, Analyse, Discover };
-enum REServeMode { Ignore, Simulate, Transmit };
+enum REMode { Analyse, Discover };
 
 class re : public pcp, public ExternalRamAllocated
   {
@@ -85,19 +84,8 @@ class re : public pcp, public ExternalRamAllocated
     void Clear();
     std::string GetKey(CAN_frame_t* frame);
 
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-  public:
-    void MongooseHandler(struct mg_connection *nc, int ev, void *p);
-
-  public:
-    typedef std::map<mg_connection*, uint8_t> re_serve_map_t;
-    re_serve_map_t m_smap;
-    OvmsMutex m_smapmutex;
-#endif // #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-
   protected:
     void DoAnalyse(CAN_frame_t* frame);
-    void DoServe(CAN_log_message_t* message);
 
   protected:
     TaskHandle_t m_task;
@@ -106,10 +94,7 @@ class re : public pcp, public ExternalRamAllocated
   public:
     OvmsMutex m_mutex;
     REMode m_mode;
-    REServeMode m_servemode;
     re_record_map_t m_rmap;
-    canformat* m_serveformat_in;
-    canformat* m_serveformat_out;
     uint32_t m_obdii_std_min;
     uint32_t m_obdii_std_max;
     uint32_t m_obdii_ext_min;
