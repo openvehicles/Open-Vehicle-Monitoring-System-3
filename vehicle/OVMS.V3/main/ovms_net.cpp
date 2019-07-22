@@ -32,6 +32,7 @@
 static const char *TAG = "net";
 
 #include "ovms_net.h"
+#include <string.h>
 
 OvmsNetConnection::OvmsNetConnection()
   {

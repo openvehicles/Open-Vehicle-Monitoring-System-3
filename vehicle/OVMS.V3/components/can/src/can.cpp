@@ -376,7 +376,7 @@ bool canfilter::IsFiltered(const CAN_frame_t* p_frame)
   if (! p_frame) return false;
 
   char buskey = '0';
-  if (p_frame->origin) buskey = p_frame->origin->GetName()[3];
+  if (p_frame->origin) buskey = p_frame->origin->m_busnumber + '1';
 
   for (CAN_filter_t* filter : m_filters)
     {
@@ -572,6 +572,8 @@ can::can()
 
   OvmsCommand* cmd_can = MyCommandApp.RegisterCommand("can","CAN framework");
 
+  for (int k=0;k<CAN_MAXBUSES;k++) m_buslist[k] = NULL;
+
   for (int k=1;k<4;k++)
     {
     static const char* name[4] = {"can1", "can2", "can3"};
@@ -602,6 +604,24 @@ can::can()
 
 can::~can()
   {
+  }
+
+canbus* can::GetBus(int busnumber)
+  {
+  if ((busnumber<0)||(busnumber>=CAN_MAXBUSES)) return NULL;
+
+  canbus* found = m_buslist[busnumber];
+  if (found != NULL) return found;
+
+  char cbus[5] = "can";
+  cbus[3] = busnumber+'1';
+  cbus[4] = 0;
+  found = (canbus*)MyPcpApp.FindDeviceByName(cbus);
+  if (found)
+    {
+    m_buslist[busnumber] = found;
+    }
+  return found;
   }
 
 void can::IncomingFrame(CAN_frame_t* p_frame)
@@ -670,6 +690,7 @@ void can::ExecuteCallbacks(const CAN_frame_t* frame, bool tx)
 canbus::canbus(const char* name)
   : pcp(name)
   {
+  m_busnumber = name[strlen(name)-1] - '1';
   m_txqueue = xQueueCreate(CONFIG_OVMS_HW_CAN_TX_QUEUE_SIZE, sizeof(CAN_frame_t));
   m_mode = CAN_MODE_OFF;
   m_speed = CAN_SPEED_1000KBPS;

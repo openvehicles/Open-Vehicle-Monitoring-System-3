@@ -96,17 +96,13 @@ std::string canformat_gvret_ascii::get(CAN_log_message_t* message)
     return std::string("");
     }
 
-  const char* busnumber;
-  if (message->origin != NULL)
-    { busnumber = message->origin->GetName()+3; }
-  else
-    { busnumber = "1"; }
+  char busnumber = (message->origin != NULL)?message->origin->m_busnumber + '0':'0';
 
   sprintf(buf,"%u - %x %s %c %d",
     (uint32_t)((message->timestamp.tv_sec * 1000000) + message->timestamp.tv_usec),
     message->frame.MsgID,
     (message->frame.FIR.B.FF == CAN_frame_std) ? "S" : "X",
-    busnumber[0]-1,
+    busnumber,
     message->frame.FIR.B.DLC);
     for (int k=0; k<message->frame.FIR.B.DLC; k++)
       sprintf(buf+strlen(buf)," %02x", message->frame.data.u8[k]);
@@ -176,10 +172,7 @@ size_t canformat_gvret_ascii::put(CAN_log_message_t* message, uint8_t *buffer, s
       message->frame.data.u8[x] = strtol(b,&b,16);
       }
 
-    char cbus[5] = "can";
-    cbus[3] = busnumber;
-    cbus[4] = 0;
-    message->origin = (canbus*)MyPcpApp.FindDeviceByName(cbus);
+    message->origin = MyCan.GetBus(busnumber-'0');
 
     free(b);
     return consumed;
@@ -206,18 +199,14 @@ std::string canformat_gvret_binary::get(CAN_log_message_t* message)
     return std::string("");
     }
 
-  const char* busnumber;
-  if (message->origin != NULL)
-    { busnumber = message->origin->GetName()+3; }
-  else
-    { busnumber = "1"; }
+  char busnumber = (message->origin != NULL)?message->origin->m_busnumber:0;
 
   frame.startbyte = GVRET_START_BYTE;
   frame.command = BUILD_CAN_FRAME;
   frame.microseconds = (uint32_t)((message->timestamp.tv_sec * 1000000) + message->timestamp.tv_usec);
   frame.id = (uint32_t)message->frame.MsgID |
               ((message->frame.FIR.B.FF == CAN_frame_std)? 0 : 0x80000000);
-  frame.lenbus = message->frame.FIR.B.DLC + ((busnumber[0]-1)<<4);
+  frame.lenbus = message->frame.FIR.B.DLC + (busnumber<<4);
   for (int k=0; k<message->frame.FIR.B.DLC; k++)
     frame.data[k] = message->frame.data.u8[k];
   return std::string((const char*)&frame,12 + message->frame.FIR.B.DLC);
@@ -260,10 +249,7 @@ size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, 
             m_buf.Pop(8 + m.body.build_can_frame.length,(uint8_t*)&m);
             CAN_frame_t msg;
             memset(&msg,0,sizeof(msg));
-            char cbus[5] = "can";
-            cbus[3] = '1' + m.body.build_can_frame.bus;
-            cbus[4] = 0;
-            msg.origin = (canbus*)MyPcpApp.FindDeviceByName(cbus);
+            msg.origin = MyCan.GetBus(m.body.build_can_frame.bus);
             if (m.body.build_can_frame.id & 0x8000000)
               {
               msg.MsgID = m.body.build_can_frame.id & 0x7fffffff;

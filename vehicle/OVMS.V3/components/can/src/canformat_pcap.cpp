@@ -153,7 +153,7 @@ size_t canformat_pcap::put(CAN_log_message_t* message, uint8_t *buffer, size_t l
   message->frame.FIR.B.RTR = (idf & CANFORMAT_PCAP_FL_RTR)?CAN_RTR:CAN_no_RTR;
   message->frame.FIR.B.FF = (idf & CANFORMAT_PCAP_FL_EXT)?CAN_frame_ext:CAN_frame_std;
   message->frame.MsgID = idf & CANFORMAT_PCAP_FL_MASK;
-  message->origin = (canbus*)MyPcpApp.FindDeviceByName("can1");
+  message->origin = MyCan.GetBus(0);
   message->frame.FIR.B.DLC = m.record.phdr.len;
   memcpy(message->frame.data.u8, m.record.data, m.record.phdr.len);
 
