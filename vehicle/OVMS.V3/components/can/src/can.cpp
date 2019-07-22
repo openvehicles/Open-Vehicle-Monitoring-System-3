@@ -376,7 +376,7 @@ bool canfilter::IsFiltered(const CAN_frame_t* p_frame)
   if (! p_frame) return false;
 
   char buskey = '0';
-  if (p_frame->origin) buskey = p_frame->origin->GetName()[3];
+  if (p_frame->origin) buskey = p_frame->origin->m_busnumber + '1';
 
   for (CAN_filter_t* filter : m_filters)
     {
