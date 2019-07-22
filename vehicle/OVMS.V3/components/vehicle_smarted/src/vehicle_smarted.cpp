@@ -432,7 +432,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
       float HVA = StandardMetrics.ms_v_bat_current->AsFloat();
       HV = ((float) d[6] * 256 + (float) d[7]);
       HV = HV / 10.0;
-      float HVP = (HV * HVA) / 1000;
+      float HVP = (HV * HVA) / 1000.0;
       StandardMetrics.ms_v_bat_voltage->SetValue(HV, Volts);
       StandardMetrics.ms_v_bat_power->SetValue(HVP);
       break;
@@ -486,7 +486,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     case 0x200: // hand brake and speed
     {
       StandardMetrics.ms_v_env_handbrake->SetValue(d[0]);
-      float velocity = (d[2] * 256 + d[3]) / 18;
+      float velocity = (d[2] * 256 + d[3]) / 18.0;
       StandardMetrics.ms_v_pos_speed->SetValue(velocity, Kph);
       CalculateAcceleration();
       break;
@@ -499,9 +499,9 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     {
       float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
       if(soc > 0) {
-          float smart_range_ideal = (m_range_ideal * soc) / 100;
+          float smart_range_ideal = (m_range_ideal * soc) / 100.0;
           StandardMetrics.ms_v_bat_range_ideal->SetValue(smart_range_ideal); // ToDo
-          StandardMetrics.ms_v_bat_range_full->SetValue((float) (d[7] / soc) * 100, Kilometers); // ToDo
+          StandardMetrics.ms_v_bat_range_full->SetValue((float) (d[7] / soc) * 100.0, Kilometers); // ToDo
       }
       StandardMetrics.ms_v_bat_range_est->SetValue(d[7], Kilometers);
       StandardMetrics.ms_v_env_throttle->SetValue(d[5]);
@@ -553,8 +553,8 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     }
     case 0x3CE: //Consumption from start and from reset
     {
-      float energy_start = (d[0] * 256 + d[1]) / 100;
-      float energy_reset = (d[2] * 256 + d[3]) / 100;
+      float energy_start = (d[0] * 256 + d[1]) / 100.0;
+      float energy_reset = (d[2] * 256 + d[3]) / 100.0;
       
       mt_bat_energy_used_start->SetValue(energy_start);
       mt_bat_energy_used_reset->SetValue(energy_reset);
