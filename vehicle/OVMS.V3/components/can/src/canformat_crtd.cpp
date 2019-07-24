@@ -56,17 +56,17 @@ std::string canformat_crtd::get(CAN_log_message_t* message)
   {
   char buf[CANFORMAT_CRTD_MAXLEN];
 
-  const char* busnumber;
+  char busnumber;
   if (message->origin != NULL)
-    { busnumber = message->origin->GetName()+3; }
+    { busnumber = message->origin->m_busnumber + '1'; }
   else
-    { busnumber = ""; }
+    { busnumber = '1'; }
 
   switch (message->type)
     {
     case CAN_LogFrame_RX:
     case CAN_LogFrame_TX:
-      sprintf(buf,"%ld.%06ld %s%c%s %0*X",
+      sprintf(buf,"%ld.%06ld %c%c%s %0*X",
         message->timestamp.tv_sec, message->timestamp.tv_usec,
         busnumber,
         (message->type == CAN_LogFrame_RX) ? 'R' : 'T',
@@ -79,7 +79,7 @@ std::string canformat_crtd::get(CAN_log_message_t* message)
 
     case CAN_LogFrame_TX_Queue:
     case CAN_LogFrame_TX_Fail:
-      sprintf(buf,"%ld.%06ld %sCER %s %c%s %0*X",
+      sprintf(buf,"%ld.%06ld %cCER %s %c%s %0*X",
         message->timestamp.tv_sec, message->timestamp.tv_usec,
         busnumber,
         GetCanLogTypeName(message->type),
@@ -93,7 +93,7 @@ std::string canformat_crtd::get(CAN_log_message_t* message)
 
     case CAN_LogStatus_Error:
     case CAN_LogStatus_Statistics:
-      sprintf(buf, "%ld.%06ld %s%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d wdgreset=%d",
+      sprintf(buf, "%ld.%06ld %c%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d wdgreset=%d",
         message->timestamp.tv_sec, message->timestamp.tv_usec,
         busnumber,
         (message->type == CAN_LogStatus_Error) ? "CER" : "CST",
@@ -107,7 +107,7 @@ std::string canformat_crtd::get(CAN_log_message_t* message)
     case CAN_LogInfo_Comment:
     case CAN_LogInfo_Config:
     case CAN_LogInfo_Event:
-      sprintf(buf, "%ld.%06ld %s%s %s %s",
+      sprintf(buf, "%ld.%06ld %c%s %s %s",
         message->timestamp.tv_sec, message->timestamp.tv_usec,
         busnumber,
         (message->type == CAN_LogInfo_Event) ? "CEV" : "CXX",
@@ -217,10 +217,7 @@ size_t canformat_crtd::put(CAN_log_message_t* message, uint8_t *buffer, size_t l
       b = p;
       }
 
-    char cbus[5] = "can";
-    cbus[3] = bus;
-    cbus[4] = 0;
-    message->origin = (canbus*)MyPcpApp.FindDeviceByName(cbus);
+    message->origin = MyCan.GetBus(bus - '1');
 
     return consumed;
     }

@@ -59,6 +59,8 @@
 // CAN BUS constants and objects
 ////////////////////////////////////////////////////////////////////////
 
+#define CAN_MAXBUSES 5            // Limit of number of CAN buses supported
+
 class canbus; // Forward definition
 
 // CAN mode
@@ -298,6 +300,7 @@ class canbus : public pcp, public InternalRamAllocated
     uint32_t m_status_chksum;
     uint32_t m_watchdog_timer;
     QueueHandle_t m_txqueue;
+    int m_busnumber;
 
   protected:
     dbcfile *m_dbcfile;
@@ -355,7 +358,11 @@ class can : public InternalRamAllocated
     void LogStatus(canbus* bus, CAN_log_type_t type, const CAN_status_t* status);
     void LogInfo(canbus* bus, CAN_log_type_t type, const char* text);
 
+  public:
+    canbus* GetBus(int busnumber);
+
   private:
+    canbus* m_buslist[CAN_MAXBUSES];
     CanListenerMap_t m_listeners;
     CanFrameCallbackList_t m_rxcallbacks;
     CanFrameCallbackList_t m_txcallbacks;

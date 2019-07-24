@@ -55,7 +55,10 @@ canformat_raw::~canformat_raw()
 
 std::string canformat_raw::get(CAN_log_message_t* message)
   {
-  return std::string((const char*)message,sizeof(CAN_log_message_t));
+  CAN_log_message_t raw;
+  memcpy(&raw,message,sizeof(raw));
+  raw.origin = (canbus*)raw.origin->m_busnumber;
+  return std::string((const char*)&raw,sizeof(CAN_log_message_t));
   }
 
 std::string canformat_raw::getheader(struct timeval *time)
@@ -73,6 +76,6 @@ size_t canformat_raw::put(CAN_log_message_t* message, uint8_t *buffer, size_t le
   if (m_buf.UsedSpace() < sizeof(CAN_log_message_t)) return consumed; // Insufficient data so far
 
   m_buf.Pop(sizeof(CAN_log_message_t), (uint8_t*)message);
-
+  message->origin = MyCan.GetBus((int)message->origin);
   return consumed;
   }

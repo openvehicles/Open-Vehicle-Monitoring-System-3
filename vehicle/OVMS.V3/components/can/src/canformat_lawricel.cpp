@@ -155,7 +155,7 @@ size_t canformat_lawricel::put(CAN_log_message_t* message, uint8_t *buffer, size
       }
 
     gettimeofday(&message->timestamp,NULL);
-    message->origin = (canbus*)MyPcpApp.FindDeviceByName("can1");
+    message->origin = MyCan.GetBus(0);
 
     return consumed;
     }
