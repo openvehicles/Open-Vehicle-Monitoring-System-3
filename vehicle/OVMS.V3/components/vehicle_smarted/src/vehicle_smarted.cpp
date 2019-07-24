@@ -699,7 +699,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeCurrent(uint1
      So calculate an offset 0xA4 = d164: e.g. 12A = 0xA4 - 0x7C = 0x28 = d40 -> subtract from the maximum (0xA4 = 32A)
       then divide by two to get the value for 20A (with 0.5A resolution).
     */
-
+    if(!m_enable_write)
+      return Fail;
+    
     CAN_frame_t frame;
     memset(&frame, 0, sizeof(frame));
 
@@ -728,7 +730,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
     Both patterns should comply with the Bosch CAN bus spec. for waking up a sleeping bus with recessive bits.
     0x423 01 00 00 00 will wake up the CAN bus but not the right on.
     */
-
+    if(!m_enable_write)
+      return Fail;
+    
     ESP_LOGI(TAG, "Send Wakeup Command");
     
     CAN_frame_t frame;
@@ -759,6 +763,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool ti
      0x512 00 00 12 1E 00 00 00 00
      if one sets e.g. the time at 18:30. If you now mask byte 3 (0x12) with 0x40 (and set the second bit to high there), the A / C function is also activated.
     */
+    if(!m_enable_write)
+      return Fail;
+    
     if(!StandardMetrics.ms_v_env_awake->AsBool()) {
       if (!MyConfig.IsDefined("password","pin")) return Fail;
       
