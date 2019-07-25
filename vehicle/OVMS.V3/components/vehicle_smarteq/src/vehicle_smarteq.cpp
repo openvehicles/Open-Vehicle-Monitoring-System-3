@@ -52,6 +52,7 @@ static const char *TAG = "v-smarteq";
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
 {
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x80, {  0,120,999 } }, // rqIDpart OBL_7KW_Installed
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,120,999 } }, // rqBattTemperatures
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, {  0,120,999 } }, // rqBattVoltages_P1
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,120,999 } }, // rqBattVoltages_P2
   { 0, 0, 0x00, 0x00, { 0, 0, 0 } }
@@ -66,11 +67,13 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
 
   // BMS configuration:
   BmsSetCellArrangementVoltage(96, 1);
-  BmsSetCellArrangementTemperature(3, 1);
+  BmsSetCellArrangementTemperature(28, 1);
   BmsSetCellLimitsVoltage(2.0, 5.0);
   BmsSetCellLimitsTemperature(-39, 200);
   BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
   BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
+  
+  mt_bms_temps = new OvmsMetricVector<float>("xsq.v.bms.temps", SM_STALE_HIGH, Celcius);
   
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   PollSetPidList(m_can1, obdii_polls);

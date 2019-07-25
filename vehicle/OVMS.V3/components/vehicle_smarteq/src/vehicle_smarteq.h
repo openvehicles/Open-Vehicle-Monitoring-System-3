@@ -78,6 +78,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void GetDashboardConfig(DashboardConfig& cfg);
     
     void PollReply_BMS_BattVolts(uint8_t* reply_data, uint16_t reply_len, uint16_t start);
+    void PollReply_BMS_BattTemps(uint8_t* reply_data, uint16_t reply_len);
 
   protected:
     bool m_enable_write;                    // canwrite
@@ -88,6 +89,8 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     #define CELLCOUNT 96
     #define SQ_CANDATA_TIMEOUT 10
     
+  protected:
+    OvmsMetricVector<float> *mt_bms_temps;       // BMS temperatures
 };
 
 #endif //#ifndef __VEHICLE_SMARTED_H__
