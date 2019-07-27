@@ -116,6 +116,9 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/cfg/server/v3", "Server V3 (MQTT)", HandleCfgServerV3, PageMenu_Config, PageAuth_Cookie);
 #endif
 #endif
+#ifdef CONFIG_OVMS_COMP_PUSHOVER
+  RegisterPage("/cfg/notification", "Notification", HandleCfgNotification, PageMenu_Config, PageAuth_Cookie);
+#endif
   RegisterPage("/cfg/webserver", "Webserver", HandleCfgWebServer, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/plugins", "Web Plugins", HandleCfgPlugins, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/autostart", "Autostart", HandleCfgAutoInit, PageMenu_Config, PageAuth_Cookie);
@@ -147,6 +150,7 @@ void OvmsWebServer::NetManInit(std::string event, void* data)
 
   char *error_string;
   struct mg_bind_opts bind_opts = {};
+  memset(&bind_opts, 0, sizeof(bind_opts));
   bind_opts.error_string = (const char**) &error_string;
   struct mg_connection *nc = mg_bind_opt(mgr, ":80", EventHandler, bind_opts);
   if (!nc)

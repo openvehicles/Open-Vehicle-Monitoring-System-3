@@ -462,6 +462,13 @@ config OVMS_COMP_SSH
     help
         Enable to include support for SSH server.
 
+config OVMS_COMP_PUSHOVER
+    bool "Include support for Pushover notification system"
+    default y
+    depends on OVMS_SC_GPL_MONGOOSE
+    help
+        Enable to include support for Pushover. 
+
 config OVMS_COMP_MODEM_SIMCOM
     bool "Include support for SIMCOM modems"
     default y
