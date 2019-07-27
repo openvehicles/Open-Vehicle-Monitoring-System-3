@@ -526,10 +526,17 @@ void OvmsWebServer::UpdateTicker(TimerHandle_t timer)
   while (xQueuePeek(MyWebServer.m_client_backlog, &todo, 0) == pdTRUE) {
     auto& slot = MyWebServer.m_client_slots[todo.client];
     if (!slot.handler) {
+      // client is gone, discard job:
       todo.job.clear(todo.client);
+      xQueueReceive(MyWebServer.m_client_backlog, &todo, 0);
     }
     else if (slot.handler->AddTxJob(todo.job)) {
+      // job has been queued, remove:
       xQueueReceive(MyWebServer.m_client_backlog, &todo, 0);
+    }
+    else {
+      // job queue is full: abort backlog processing
+      break;
     }
   }
   

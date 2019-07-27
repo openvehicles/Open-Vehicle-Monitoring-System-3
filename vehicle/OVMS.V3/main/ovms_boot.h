@@ -71,6 +71,7 @@ typedef struct
   unsigned int crash_count_early;   // Number of times system has crashed before reaching stable state
   unsigned int crash_count_total;   // Total number of times system has crashed since power on
   crash_data_t crash_data;          // Register dump & backtrace info
+  esp_reset_reason_t reset_hint;    // Copy of RTC_RESET_CAUSE_REG
   } boot_data_t;
 
 extern boot_data_t boot_data;
@@ -84,6 +85,8 @@ class Boot
   public:
     bootreason_t GetBootReason() { return m_bootreason; }
     const char* GetBootReasonName();
+    esp_reset_reason_t GetResetReason() { return m_resetreason; }
+    const char* GetResetReasonName();
     unsigned int GetCrashCount() { return boot_data.crash_count_total; }
     unsigned int GetEarlyCrashCount() { return m_crash_count_early; }
     bool GetStable() { return boot_data.stable_reached; }
@@ -109,6 +112,7 @@ class Boot
 
   protected:
     bootreason_t m_bootreason;
+    esp_reset_reason_t m_resetreason;
     unsigned int m_crash_count_early;
   };
 
