@@ -823,13 +823,22 @@ void OvmsWebServer::HandleCfgNotification(PageEntry_t& p, PageContext_t& c)
         }
       else if (c.getvar("action") == "test")
         {
-        MyPushoverClient.SendMessage(
-          c.getvar("test_message"),
-          atoi(c.getvar("test_priority").c_str()),
-          c.getvar("test_sound") );
-
+        std::string reply;
+        std::string popup;
         c.head(200);
-        c.alert("success", "<p class=\"lead\">Test message sent!</p>");
+        c.alert("success", "<p class=\"lead\">Sending message</p>");
+        if (!MyPushoverClient.SendMessageOpt(
+            c.getvar("user_key"),
+            c.getvar("token"),
+            c.getvar("test_message"),
+            atoi(c.getvar("test_priority").c_str()),
+            c.getvar("test_sound"), 
+            atoi(c.getvar("retry").c_str()),
+            atoi(c.getvar("expire").c_str()),
+            true /* receive server reply as reply/pushover-type notification */ ))
+          {
+          c.alert("danger", "<p class=\"lead\">Could not send test message!</p>");
+          }
         }
     } 
     else {
@@ -850,6 +859,11 @@ void OvmsWebServer::HandleCfgNotification(PageEntry_t& p, PageContext_t& c)
 
   c.panel_start("primary", "Pushover server configuration");
   c.form_start(p.uri);
+
+  c.printf("<div><p>Please visit <a href=\"https://pushover.net\">Pushover web site</a> to create an account (identified by a <b>user key</b>) "
+    " and then register OVMS as an application in order to receive an application <b>token</b>).<br>"
+    "Install Pushover iOS/Android application and specify your user key. <br>Finally enter both the user key and the application token here and test connectivity.<br>"
+    "To receive specific notifications and events, configure them below.</p></div>" );
 
   c.input_checkbox("Enable Pushover connectivity", "enable", pmap["enable"] == "yes");
   c.input_text("User key", "user_key", pmap["user_key"].c_str(), "Enter user key (alphanumerical key consisting of around 30 characters");
@@ -927,12 +941,12 @@ void OvmsWebServer::HandleCfgNotification(PageEntry_t& p, PageContext_t& c)
   gen_options_sound(pmap["sound.emergency"]);
   c.input_select_end();
 
-  c.input("number", "Expiration", "expire", pmap["expire"].c_str(), "Default: 1800",
-    "<p>Time period after emergency priority message will expire (not cause new notification) if message is not acknowledged.</p>",
-    "min=\"0\" step=\"1\"", "secs");
   c.input("number", "Retry", "retry", pmap["retry"].c_str(), "Default: 30",
     "<p>Time period after which new notification is sent if emergency priority message is not acknowledged.</p>",
     "min=\"30\" step=\"1\"", "secs");
+  c.input("number", "Expiration", "expire", pmap["expire"].c_str(), "Default: 1800",
+    "<p>Time period after an emergency priority message will expire (and will not cause a new notification) if the message is not acknowledged.</p>",
+    "min=\"0\" step=\"1\"", "secs");
 
   // Test message area
   c.print(
@@ -994,7 +1008,7 @@ void OvmsWebServer::HandleCfgNotification(PageEntry_t& p, PageContext_t& c)
             "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\"><strong>✖</strong></button></td>"
             "<td><input type=\"text\" class=\"form-control\" name=\"nfy_%d\" value=\"%s\" placeholder=\"Enter notification type/subtype\""
               " autocomplete=\"section-notification-type\"></td>"
-            "<td><select class=\"form-control\" name=\"np_%d\" size=\"1\">"
+            "<td width=\"20%\"><select class=\"form-control\" name=\"np_%d\" size=\"1\">"
       , max, _attr(name)
       , max);
     gen_options_priority(kv.second);
@@ -1013,11 +1027,12 @@ void OvmsWebServer::HandleCfgNotification(PageEntry_t& p, PageContext_t& c)
       "</table>"
       "<input type=\"hidden\" name=\"npmax\" value=\"%d\">"
     "</div>"
+    "<p>Enter the type of notification (for example <i>\"alert\"</i> or <i>\"info\"</i>) or more specifically the type/subtype tuple (for example <i>\"alert/alarm.sounding\"</i>). "
+    " If a notification matches multiple filters, only the more specific will be used. "
+    "For more complete listing, see <a href=\"https://docs.openvehicles.com/en/latest/userguide/notifications.html\">OVMS User Guide</a></p>"
     "</div>"
     "</div>"
     , max);
-
-
 
 
   // Input area for Events
@@ -1031,8 +1046,8 @@ void OvmsWebServer::HandleCfgNotification(PageEntry_t& p, PageContext_t& c)
             "<tr>"
               "<th width=\"10%\"></th>"
               "<th width=\"20%\">Event</th>"
-              "<th width=\"60%\">Message</th>"
-              "<th width=\"10%\">Priority</th>"
+              "<th width=\"55%\">Message</th>"
+              "<th width=\"15%\">Priority</th>"
             "</tr>"
           "</thead>"
           "<tbody>");
@@ -1043,6 +1058,7 @@ void OvmsWebServer::HandleCfgNotification(PageEntry_t& p, PageContext_t& c)
     if (!startsWith(kv.first, "ep."))
       continue;
     max++;
+    // Priority and message is saved as "priority/message" tuple (eg. "-1/this is a message")
     name = kv.first.substr(3);
     if (kv.second[1]=='/') {
       pri = kv.second.substr(0,1);
@@ -1079,6 +1095,8 @@ void OvmsWebServer::HandleCfgNotification(PageEntry_t& p, PageContext_t& c)
       "</table>"
       "<input type=\"hidden\" name=\"epmax\" value=\"%d\">"
     "</div>"
+    "<p>Enter the event name (for example <i>\"vehicle.locked\"</i> or <i>\"vehicle.alert.12v.on\"</i>). "
+    "For more complete listing, see <a href=\"https://docs.openvehicles.com/en/latest/userguide/events.html\">OVMS User Guide</a></p>"
     "</div>"
     "</div>"
     , max);

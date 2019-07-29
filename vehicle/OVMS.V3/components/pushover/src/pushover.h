@@ -1,6 +1,6 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          18th July 2019
+;    Date:          23rd July 2019
 ;
 ;    Changes:
 ;    1.0  Initial release
@@ -43,20 +43,21 @@ class Pushover : public pcp, public InternalRamAllocated
     ~Pushover();
 
   public:
-    bool SendMessage( const std::string message, int priority, const std::string sound );
+    bool SendMessage( const std::string message, int priority, const std::string sound, bool replyNotification=false );
+    bool SendMessageOpt( const std::string user_key, const std::string token, 
+      const std::string message, int priority, const std::string sound, int retry, int expire, bool replyNotification );
+    bool SendMessageBlocking( const std::string message, std::string * reply, int priority, const std::string sound ); // Use only from different task..
+    size_t IncomingData(uint8_t* data, size_t len);
     bool NotificationFilter(OvmsNotifyType* type, const char* subtype);
     bool IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry);
     struct mg_connection *m_mgconn;
-    OvmsMutex m_mgconn_mutex;
-    int m_connretry;
-    //void AutoInit();
-    size_t IncomingData(uint8_t* data, size_t len);
     OvmsBuffer* m_buffer;
+    std::string m_reply;
+    OvmsMutex m_mgconn_mutex;
+    bool sendReplyNotification;
 
   protected:
-    void ConfigChanged(OvmsConfigParam* param);
     void EventListener(std::string event, void* data);
-    void Ticker1(std::string event, void* data);
 
   private:
     size_t reader;

@@ -1,6 +1,6 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          18th July 2019
+;    Date:          23rd July 2019
 ;
 ;    Changes:
 ;    1.0  Initial release
@@ -30,6 +30,7 @@
 
 #define DEFAULT_PUSHOVER_RETRY 30 // Default retry interval in secs for unacknowledged emergency priority messages
 #define DEFAULT_PUSHOVER_EXPIRE 1800 // Default expiration time in secs for unacknowledged emergency priority messages
+#define MG_CONN_MUTEX_TIMEOUT (30*1000 / portTICK_PERIOD_MS) // 30s
 
 #include "ovms_log.h"
 static const char *TAG = "pushover";
@@ -45,7 +46,6 @@ static const char *TAG = "pushover";
 #include "mongoose.h"
 
 Pushover MyPushoverClient __attribute__ ((init_priority (8800)));
-
 
 
 void pushover_send_message(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -79,15 +79,18 @@ void pushover_send_message(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
   MyPushoverClient.SendMessage(argv[0], priority, sound);
   }
 
+
 bool PushoverReaderCallback(OvmsNotifyType* type, OvmsNotifyEntry* entry)
   {
   return MyPushoverClient.IncomingNotification(type, entry);
   }
 
+
 bool PushoverReaderFilterCallback(OvmsNotifyType* type, const char* subtype)
   {
   return MyPushoverClient.NotificationFilter(type, subtype);
   }
+
 
 Pushover::Pushover()
   : pcp("pushover")
@@ -106,7 +109,9 @@ Pushover::Pushover()
 
   reader = MyNotify.RegisterReader("pushover", COMMAND_RESULT_NORMAL, std::bind(PushoverReaderCallback, _1, _2),
                                                    true, std::bind(PushoverReaderFilterCallback, _1, _2));
+
   }
+
 
 Pushover::~Pushover()
   {
@@ -129,6 +134,7 @@ bool Pushover::NotificationFilter(OvmsNotifyType* type, const char* subtype)
   else
     return false;
   }
+
 
 bool Pushover::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry)
   {
@@ -160,7 +166,7 @@ bool Pushover::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry
   nfy.append(entry->GetSubType());
   priority = pmap[nfy];
   if (priority == "")
-  {
+    {
     // try more general type
     nfy = "np.";
     nfy.append(type->m_name);
@@ -170,7 +176,7 @@ bool Pushover::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry
       ESP_LOGD(TAG,"IncomingNotification: No priority set -> ignore notification");
       return false;
       }
-  }
+    }
 
   msg = std::string(entry->GetValue().c_str());
   if (priority == "0")
@@ -179,40 +185,9 @@ bool Pushover::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry
     sound = pmap["sound.high"];
   else if (priority == "2")
     sound = pmap["sound.emergency"];
+
   SendMessage(msg, atoi(priority.c_str()), sound);
-
-
-  /*
-  if (strcmp(type->m_name,"info")==0)
-    {
-    // Info notifications
-´    if (!StandardMetrics.ms_s_v3_connected->AsBool()) return false;
-    TransmitNotificationInfo(entry);
-    return true; // Mark it as read, as we've managed to send it
-    }
-  else if (strcmp(type->m_name,"error")==0)
-    {
-    // Error notification
-    if (!StandardMetrics.ms_s_v3_connected->AsBool()) return false;
-    TransmitNotificationError(entry);
-    return true; // Mark it as read, as we've managed to send it
-    }
-  else if (strcmp(type->m_name,"alert")==0)
-    {
-    // Alert notifications
-    if (!StandardMetrics.ms_s_v3_connected->AsBool()) return false;
-    TransmitNotificationAlert(entry);
-    return true; // Mark it as read, as we've managed to send it
-    }
-  else if (strcmp(type->m_name,"data")==0)
-    {
-    // Data notifications
-    if (!StandardMetrics.ms_s_v3_connected->AsBool()) return false;
-    m_notify_data_pending = true;
-    return false; // We just flag it for later transmission
-    }
-  else*/
-    return true; // Mark it read, as no interest to us
+  return true;
   }
 
 
@@ -222,10 +197,6 @@ void Pushover::EventListener(std::string event, void* data)
   if ( (event == "ticker.1") || (event == "ticker.10") )
     return;
   ESP_LOGD(TAG,"EventListener %s",event.c_str());
-  if (event == "config.changed" || event == "config.mounted")
-    {
-    ConfigChanged((OvmsConfigParam*) data);
-    }
 
   if (!MyNetManager.m_connected_any)
     {
@@ -247,20 +218,23 @@ void Pushover::EventListener(std::string event, void* data)
   name.append(event);
   setting = pmap[name];
   if (setting == "")
-  {
+    {
     ESP_LOGD(TAG,"EventListener: No priority set -> ignore notification");
     return;
-  }
-  // Priority and message is saved as "priority/message" tuple
-  if (setting[1]=='/') {
+    }
+  // Priority and message is saved as "priority/message" tuple (eg. "-1/this is a message")
+  if (setting[1]=='/') 
+    {
     pri = setting.substr(0,1);
     msg = setting.substr(2);
-  } else
-  if (setting[2]=='/') {
+    } 
+  else if (setting[2]=='/') 
+    {
     pri = setting.substr(0,2);
     msg = setting.substr(3);
-  }
+    }
 
+  // lower priorities don't make sound
   if (pri == "0")
     sound = pmap["sound.normal"];
   else if (pri == "1")
@@ -272,11 +246,6 @@ void Pushover::EventListener(std::string event, void* data)
   }
 
 
-void Pushover::ConfigChanged(OvmsConfigParam* param)
-  {
-  }
-
-
 size_t Pushover::IncomingData(uint8_t* data, size_t len)
   {
   if (m_buffer->Push(data, len))
@@ -284,6 +253,8 @@ size_t Pushover::IncomingData(uint8_t* data, size_t len)
     while ((m_buffer->HasLine()>=0)&&(m_mgconn))
       {
       std::string line = m_buffer->ReadLine();
+      m_reply.append(line);
+      m_reply.append("\r\n");
       ESP_LOGV(TAG, "Reply: %s",line.c_str());
       }
     return len;
@@ -307,14 +278,24 @@ static void PushoverMongooseCallback(struct mg_connection *nc, int ev, void *p)
       else
         {
         ESP_LOGE(TAG, "Connection failed");
+        if (MyPushoverClient.sendReplyNotification)
+          {
+          MyNotify.NotifyString("info","pushover","Connection failed");
+          }
+        MyPushoverClient.m_mgconn_mutex.Unlock();
         }
       }
       break;
     case MG_EV_CLOSE:
       ESP_LOGD(TAG, "PushoverMongooseCallback(MG_EV_CLOSE)");
+      if (MyPushoverClient.sendReplyNotification)
+        {
+        MyNotify.NotifyString("info","pushover",MyPushoverClient.m_reply.c_str());
+        }
       MyPushoverClient.m_mgconn->flags |= MG_F_SEND_AND_CLOSE;
       MyPushoverClient.m_mgconn = 0;
       MyPushoverClient.m_buffer->EmptyAll();
+      MyPushoverClient.m_mgconn_mutex.Unlock();
       break;
     case MG_EV_SEND:
       ESP_LOGD(TAG, "PushoverMongooseCallback(MG_EV_SEND) %d bytes",*(uint32_t*)p);
@@ -332,16 +313,21 @@ static void PushoverMongooseCallback(struct mg_connection *nc, int ev, void *p)
   }
 
 
-bool Pushover::SendMessage( const std::string message, int priority, const std::string sound )
+
+bool Pushover::SendMessage( const std::string message, int priority, const std::string sound, bool replyNotification )
+  {
+  return SendMessageOpt(MyConfig.GetParamValue("pushover", "user_key"), MyConfig.GetParamValue("pushover", "token"), 
+    message, priority, sound, 
+    MyConfig.GetParamValueInt("pushover", "retry", DEFAULT_PUSHOVER_RETRY),
+    MyConfig.GetParamValueInt("pushover", "expire", DEFAULT_PUSHOVER_EXPIRE),
+    replyNotification);
+  }
+
+bool Pushover::SendMessageOpt( const std::string user_key, const std::string token, 
+  const std::string message, int priority, const std::string sound, int retry, int expire, bool replyNotification )
   {
   std::string _server = "api.pushover.net:443";
   bool parse_html = false;
-
-  if (m_mgconn) 
-    {
-    ESP_LOGE(TAG,"Transmit pending!");
-    return false;
-    }
 
   ESP_LOGI(TAG,"Sending message %s with priority %d", message.c_str(), priority);
 
@@ -349,16 +335,14 @@ bool Pushover::SendMessage( const std::string message, int priority, const std::
   extram::ostringstream* http = new extram::ostringstream();
 
   // construct body
-  *post << "token=" << MyConfig.GetParamValue("pushover", "token") 
-        << "&user=" << MyConfig.GetParamValue("pushover", "user_key")
+  *post << "token=" << token 
+        << "&user=" << user_key
         << "&message=" << message 
         << "&priority=" << priority
         << "&title=" << MyConfig.GetParamValue("vehicle", "id") 
         << "&sound=" << sound;
   if (priority==2) 
     {
-    int retry = MyConfig.GetParamValueInt("pushover", "retry", DEFAULT_PUSHOVER_RETRY);
-    int expire = MyConfig.GetParamValueInt("pushover", "expire", DEFAULT_PUSHOVER_EXPIRE);
     *post << "&retry=" << retry
           << "&expire=" << expire;
     }
@@ -370,7 +354,14 @@ bool Pushover::SendMessage( const std::string message, int priority, const std::
   *http << "POST /1/messages.json HTTP/1.1\r\nHost: api.pushover.net\r\nConnection: close\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\nContent-Length: "
     << len << "\r\n\r\n" << post->str();
 
-  OvmsMutexLock mg(&m_mgconn_mutex);
+  if (!m_mgconn_mutex.Lock(MG_CONN_MUTEX_TIMEOUT))
+    {
+    ESP_LOGE(TAG,"Transmit pending (mg_conn_mutex timeout)! Not sending msg..");
+    return false;
+    }
+
+  m_reply = "";
+  sendReplyNotification = replyNotification;
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
   struct mg_connect_opts opts;
   const char* err;
@@ -382,11 +373,12 @@ bool Pushover::SendMessage( const std::string message, int priority, const std::
 
   if ((m_mgconn = mg_connect_opt(mgr, _server.c_str(), PushoverMongooseCallback, opts)) == NULL)
     {
+    m_mgconn_mutex.Unlock();
     ESP_LOGE(TAG, "mg_connect_opt(%s) failed: %s", _server.c_str(), err);
     return false;
     }
 
-  ESP_LOGV(TAG,"msg: %s",http->str().c_str());
+  ESP_LOGV(TAG,"Msg: %s",http->str().c_str());
   mg_send(m_mgconn, http->str().c_str(), http->str().length());
 
   delete http;
@@ -395,5 +387,25 @@ bool Pushover::SendMessage( const std::string message, int priority, const std::
   }
 
 
+bool Pushover::SendMessageBlocking( const std::string message, std::string * reply, int priority, const std::string sound )
+  {
+  if (!SendMessage(message,priority,sound))
+    {
+    return false;
+    }
 
+  // wait for the reply..
+  if (!m_mgconn_mutex.Lock(MG_CONN_MUTEX_TIMEOUT))
+    {
+    ESP_LOGE(TAG,"Reply timeout..!");
+    // TODO: Do we need to unlock the mutex here or can will MG_EV_CLOSE be signaled eventually?
+    return false;
+    }
+  if (reply)
+    reply->append(m_reply);
+  m_reply = "";
+
+  m_mgconn_mutex.Unlock();
+  return true;
+  }
 
