@@ -63,7 +63,7 @@ OvmsCanLogMonitorInit::OvmsCanLogMonitorInit()
         OvmsCommand* start = cmd_can_log_start->RegisterCommand("monitor", "CAN logging to MONITOR");
         MyCanFormatFactory.RegisterCommandSet(start, "Start CAN logging to MONITOR",
           can_log_monitor_start,
-          "<format> [filter1] ... [filterN]\n"
+          "[filter1] ... [filterN]\n"
           "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
           "Example: 2:2a0-37f",
           0, 9);

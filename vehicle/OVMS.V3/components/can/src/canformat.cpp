@@ -29,6 +29,16 @@ static const char *TAG = "canformat";
 
 #include "canformat.h"
 
+canformat::canformat_serve_mode_t GetFormatModeType(std::string name)
+  {
+  if (name.compare("simulate")==0)
+    return canformat::Simulate;
+  else if (name.compare("transmit")==0)
+    return canformat::Transmit;
+  else
+    return canformat::Discard;
+  }
+
 OvmsCanFormatFactory MyCanFormatFactory __attribute__ ((init_priority (4500)));
 
 OvmsCanFormatFactory::OvmsCanFormatFactory()
@@ -63,11 +73,11 @@ void OvmsCanFormatFactory::RegisterCommandSet(OvmsCommand* base, const char* tit
     }
   }
 
-canformat::canformat(const char* type)
+canformat::canformat(const char* type, canformat_serve_mode_t mode)
   : m_buf(CANFORMAT_SERVE_BUFFERSIZE)
   {
   m_type = type;
-  m_servemode = Simulate;
+  m_servemode = mode;
   m_servediscarding = false;
   m_putcallback_fn = NULL;
   }
@@ -152,6 +162,19 @@ size_t canformat::Stuff(uint8_t *buffer, size_t len)
 canformat::canformat_serve_mode_t canformat::GetServeMode()
   {
   return m_servemode;
+  }
+
+const char* canformat::GetServeModeName()
+  {
+  switch (m_servemode)
+    {
+    case Simulate:
+      return "simulate";
+    case Transmit:
+      return "transmit";
+    default:
+      return "discard";
+    }
   }
 
 void canformat::SetServeMode(canformat_serve_mode_t mode)

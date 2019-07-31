@@ -39,7 +39,7 @@
 class canlog_tcpserver : public canlog
   {
   public:
-    canlog_tcpserver(std::string path, std::string format);
+    canlog_tcpserver(std::string path, std::string format, canformat::canformat_serve_mode_t mode);
     virtual ~canlog_tcpserver();
 
   public:

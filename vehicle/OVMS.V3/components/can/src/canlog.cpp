@@ -155,11 +155,12 @@ OvmsCanLogInit::OvmsCanLogInit()
 // CAN Logger class
 ////////////////////////////////////////////////////////////////////////
 
-canlog::canlog(const char* type, std::string format)
+canlog::canlog(const char* type, std::string format, canformat::canformat_serve_mode_t mode)
   {
   m_type = type;
   m_format = format;
   m_formatter = MyCanFormatFactory.NewFormat(format.c_str());
+  m_formatter->SetServeMode(mode);
   m_filter = NULL;
 
   m_msgcount = 0;
@@ -264,6 +265,10 @@ std::string canlog::GetInfo()
   std::ostringstream buf;
 
   buf << "Type:" << m_type << " Format:" << m_format;
+  if (m_formatter)
+    {
+    buf << "(" << m_formatter->GetServeModeName() << ")";
+    }
 
   if (m_filter)
     {

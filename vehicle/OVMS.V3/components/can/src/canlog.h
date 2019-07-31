@@ -54,7 +54,7 @@
 class canlog : public InternalRamAllocated
   {
   public:
-    canlog(const char* type, std::string format);
+    canlog(const char* type, std::string format, canformat::canformat_serve_mode_t mode=canformat::Discard);
     virtual ~canlog();
 
   public:
