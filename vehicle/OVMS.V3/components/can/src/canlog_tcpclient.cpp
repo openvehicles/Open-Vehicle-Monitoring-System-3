@@ -44,9 +44,9 @@ void can_log_tcpclient_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd
   if (logger->IsOpen())
     {
     if (argc>1)
-      { MyCan.SetLogger(logger, argc-1, &argv[1]); }
+      { MyCan.AddLogger(logger, argc-1, &argv[1]); }
     else
-      { MyCan.SetLogger(logger); }
+      { MyCan.AddLogger(logger); }
     writer->printf("CAN logging as TCP client: %s\n", logger->GetInfo().c_str());
     }
   else

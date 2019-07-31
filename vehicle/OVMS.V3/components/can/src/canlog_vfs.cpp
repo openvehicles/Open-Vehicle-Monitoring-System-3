@@ -42,9 +42,9 @@ void can_log_vfs_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int 
   if (logger->IsOpen())
     {
     if (argc>1)
-      { MyCan.SetLogger(logger, argc-1, &argv[1]); }
+      { MyCan.AddLogger(logger, argc-1, &argv[1]); }
     else
-      { MyCan.SetLogger(logger); }
+      { MyCan.AddLogger(logger); }
     writer->printf("CAN logging to VFS active: %s\n", logger->GetInfo().c_str());
     }
   else
