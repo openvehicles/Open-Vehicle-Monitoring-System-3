@@ -7,7 +7,8 @@
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
-;    (C) 2011        Sonny Chen @ EPRO/DX
+;    (C) 2011       Sonny Chen @ EPRO/DX
+;    (C) 2019       Marko Juhanne
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -34,8 +35,18 @@ static const char *TAG = "v-voltampera";
 #include <stdio.h>
 #include "ovms_config.h"
 #include "vehicle_voltampera.h"
+#include "canutils.h"
 
 #define VA_CANDATA_TIMEOUT 10
+
+#define VA_CHARGING_12V_THRESHOLD (float)12.7
+
+#define VA_PREHEAT_STOPPED 0
+#define VA_PREHEAT_STARTING 1
+#define VA_PREHEAT_STARTED 2
+#define VA_PREHEAT_STOPPING 3
+#define VA_PREHEAT_TIMEOUT 10 //seconds
+#define VA_PREHEAT_MAX_TIME_DEFAULT 20*60 // seconds
 
 // Use states:
 // 0 = bus is idle, car sleeping
@@ -45,8 +56,6 @@ static const OvmsVehicle::poll_pid_t va_polls[]
   {
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4369, {  0, 10,  0 } }, // On-board charger current
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4368, {  0, 10,  0 } }, // On-board charger voltage
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x801f, {  0, 10,  0 } }, // Outside temperature (filtered)
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x801e, {  0, 10,  0 } }, // Outside temperature (raw)
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x434f, {  0, 10,  0 } }, // High-voltage Battery temperature
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1c43, {  0, 10,  0 } }, // PEM temperature
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x8334, {  0, 10,  0 } }, // SOC
@@ -55,6 +64,8 @@ static const OvmsVehicle::poll_pid_t va_polls[]
   };
 // These are not polled anymore but instead received passively
 // { 0x7e0, 0x7e8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x000d, {  0, 10,  0 } }, // Vehicle speed
+//  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x801f, {  0, 10,  0 } }, // Outside temperature (filtered)
+//  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x801e, {  0, 10,  0 } }, // Outside temperature (raw)
 
 OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   {
@@ -72,10 +83,22 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   m_charge_wm = 0;
   m_candata_timer = VA_CANDATA_TIMEOUT;
   m_range_estimated_km = 0;
+  m_tx_retry_counter = 0;
 
   // Config parameters
   MyConfig.RegisterParam("xva", "Volt/Ampera", true, true);
   m_range_rated_km = MyConfig.GetParamValueInt("xva", "range.km", 0);
+  m_preheat_override_BCM = MyConfig.GetParamValueBool("xva", "preheat.override_bcm", false);
+  m_preheat_max_time = MyConfig.GetParamValueInt("xva", "preheat.max_time", VA_PREHEAT_MAX_TIME_DEFAULT); 
+  m_preheat_BCM_overridden = false;
+
+  // New VA specific metrics
+  mt_coolant_temp         = MyMetrics.InitInt("xva.v.e.coolant_temp", SM_STALE_MIN, 0);
+  mt_coolant_heater_pwr   = MyMetrics.InitFloat("xva.v.e.coolant_heater_pwr", SM_STALE_MIN, 0);
+  mt_preheat_status       = MyMetrics.InitInt("xva.v.ac.preheat", SM_STALE_MIN, VA_PREHEAT_STOPPED);
+  mt_preheat_timer        = MyMetrics.InitInt("xva.v.ac.preheat_timer", SM_STALE_MIN, 0);
+  mt_ac_active            = MyMetrics.InitBool("xva.v.ac.active", SM_STALE_MIN, 0);
+  mt_ac_front_blower_fan_speed = MyMetrics.InitInt("xva.v.ac.front_blower_fan_speed", SM_STALE_MIN, 0);
 
   // Register CAN bus and polling requests
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);  // powertrain bus
@@ -114,6 +137,7 @@ void OvmsVehicleVoltAmpera::Status(int verbosity, OvmsWriter* writer)
     m_range_rated_km, m_range_estimated_km);
   writer->printf("Charge:   Timer %d (%d wm)\n", m_charge_timer, m_charge_wm);
   writer->printf("Can Data: Timer %d (poll state %d)\n",m_candata_timer,m_poll_state);
+  writer->printf("Preheat status: %d - Cabin temperature %2.1f\n", mt_preheat_status->AsInt(), StandardMetrics.ms_v_env_cabintemp->AsFloat());
   }
 
 
@@ -147,11 +171,6 @@ void OvmsVehicleVoltAmpera::TxCallback(const CAN_frame_t* p_frame, bool success)
   }
 
 
-#define GET8(frame, pos) (frame->data.u8[pos])
-#define GET16(frame, pos) ((frame->data.u8[pos] << 8) | frame->data.u8[pos+1])
-#define GET24(frame, pos) ((frame->data.u8[pos] << 16) | (frame->data.u8[pos+1] << 8) | frame->data.u8[pos+2])
-#define GET32(frame, pos) ((frame->data.u8[pos] << 24) | (frame->data.u8[pos+1] << 16) | (frame->data.u8[pos+2] << 8) | frame->data.u8[pos+3])
-
 void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
@@ -174,34 +193,81 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
   // Process the incoming message
   switch (p_frame->MsgID)
     {
-    case 0x0c9: {
+    case 0x0c9: 
+      {
+      bool powertrain_enabled = ((d[0] & 0xC0) != 0);
+      if (StandardMetrics.ms_v_env_on->AsBool() != powertrain_enabled)
+        {
+        ESP_LOGI(TAG,"Powertrain %s",powertrain_enabled ? "enabled" : "disabled");
+        StandardMetrics.ms_v_env_on->SetValue(powertrain_enabled);
+        }
       StandardMetrics.ms_v_mot_rpm->SetValue( GET16(p_frame, 1) >> 2 );
       break;
       }
 
-    case 0x120: {
+    /*
+    case 0x1ef: {
+      // Which is better source of engine RPM?
+      StandardMetrics.ms_v_mot_rpm->SetValue( GET16(p_frame, 2) );
+      break;
+      }
+    */
+
+    /*
+    // Which is more reliable indicator of Engine On?
+    case 0x0bc: {
+      bool powertrain_enabled = (d[0] & 0x80) != 0);
+      if (StandardMetrics.ms_v_env_on->GetValueAsBool() != powertrain_enabled)
+        {
+        ESP_LOGI(TAG,"Powertrain %s",powertrain_enabled ? "enabled", "disabled");
+        StandardMetrics.ms_v_env_on->SetValue(powertrain_enabled);
+        }
+      break;
+      }
+    */
+
+    case 0x120: 
+      {
       StandardMetrics.ms_v_pos_odometer->SetValue( GET32(p_frame, 0) / 64);
       break;
       } 
 
     case 0x3e9:
-      StandardMetrics.ms_v_pos_speed->SetValue(GET16(p_frame, 0), Miles);
+      {
+      StandardMetrics.ms_v_pos_speed->SetValue(GET16(p_frame, 0)/100, Miles);
       break;
+      } 
 
     case 0x1a1:
-      StandardMetrics.ms_v_env_throttle->SetValue( d[7] );
+      {
+      StandardMetrics.ms_v_env_throttle->SetValue( d[7]*100/256 );
       break;
+      } 
 
     case 0xd1:
+      {
       StandardMetrics.ms_v_env_footbrake->SetValue( d[4] );
       break;
+      } 
 
+    case 0x4c1: 
+      {
+      // Outside temperature (filtered) (aka ambient temperature)
+      StandardMetrics.ms_v_env_temp->SetValue((int)d[4]/2 - 0x28);
+      // Coolant temp
+      mt_coolant_temp->SetValue((int)d[2] - 0x28);
+      break;
+      }
+
+    // VIN digits 10-17
     case 0x4e1:
       {
       for (k=0;k<8;k++)
         m_vin[k+9] = d[k];
       break;
       }
+
+    // VIN digits 2-9
     case 0x514:
       {
       for (k=0;k<8;k++)
@@ -242,40 +308,22 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
       break;
       }
-    case 0x135:
+
+    case 0x1f5: // Byte 4: Shift Position PRNDL 1=Park, 2=Reverse, 3=Neutral, 4=Drive, 5=Low
       {
-      if (d[0] == 0)
-        {
-        // Car is in PARK
-        StandardMetrics.ms_v_env_gear->SetValue(0);
-        StandardMetrics.ms_v_env_on->SetValue(false);
-        StandardMetrics.ms_v_env_handbrake->SetValue(true);
-        }
-      else
-        {
-        // Car is not in PARK
-        StandardMetrics.ms_v_env_on->SetValue(true);
-        StandardMetrics.ms_v_env_handbrake->SetValue(false);
-        }
+      if (d[3]==1) 
+        StandardMetrics.ms_v_env_gear->SetValue(-1); // Park
+      else if (d[3]==2)
+        StandardMetrics.ms_v_env_gear->SetValue(-2); // Reverse
+      else if (d[3]==3)
+        StandardMetrics.ms_v_env_gear->SetValue(0); // Neutral
+      else if (d[3]==4)
+        StandardMetrics.ms_v_env_gear->SetValue(1); // Drive
+      else if (d[3]==5)
+        StandardMetrics.ms_v_env_gear->SetValue(2); // L
       break;
       }
-    case 0x241:
-      {
-      // Theft horn
-      // TODO: TEST!
-      if (d[0] == 0x07 && d[1] == 0xae && d[2] == 0x10 && d[3] == 0x03)
-        {
-        if (d[4] == 0x03)
-          {
-          StandardMetrics.ms_v_env_alarm->SetValue(true);
-          }
-        else
-          {
-          StandardMetrics.ms_v_env_alarm->SetValue(false);
-          }
-        }
-      break;
-      }
+
     default:
       break;
     }
@@ -291,6 +339,7 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan3(CAN_frame_t* p_frame)
 void OvmsVehicleVoltAmpera::IncomingFrameSWCan(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
+  bool unexpected_data = false;
 
   // Activity on the bus, so resume polling
   if (m_poll_state != 1)
@@ -304,16 +353,19 @@ void OvmsVehicleVoltAmpera::IncomingFrameSWCan(CAN_frame_t* p_frame)
   // Process the incoming message
   switch (p_frame->MsgID)
     {
-    case 0x107220A9:  // seat heater
+    // Front seat heat cool control
+    case 0x107220A9:
       {
       if ( (d[0]==0) && (d[1]==0) )
         ESP_LOGI(TAG,"Driver and passenger seat heater off");
       else
-        ESP_LOGI(TAG,"Seat heaters %02x / %02x", d[1],d[3]);
+        ESP_LOGI(TAG,"Seat heaters %02x / %02x", d[2],d[3]);
       break;
       }
 
-    case 0x0C414040: {
+    // Door lock command
+    case 0x0C414040: 
+      {
       bool with_fob = false;
       if (d[3]==5)
         with_fob = true;  // d[3] == 1 -> with console panel button
@@ -332,45 +384,184 @@ void OvmsVehicleVoltAmpera::IncomingFrameSWCan(CAN_frame_t* p_frame)
         }
       break;
       }
-      
-    case 0x102CA040: {
+
+    /*
+    // Read gear data from high speed CAN bus      
+    case 0x102CA040: 
+      {
       int ngear = d[6] & 7;
       if (ngear > 0 && ngear < 6) {
         StandardMetrics.ms_v_env_gear->SetValue(ngear - 1);
         }
       break;
       }
+    */
 
-    case 0x103D4040: {
-      // tire pressure
-      StandardMetrics.ms_v_tpms_fl_p->SetValue( d[2] );
-      StandardMetrics.ms_v_tpms_rl_p->SetValue( d[3] );
-      StandardMetrics.ms_v_tpms_fr_p->SetValue( d[4] );
-      StandardMetrics.ms_v_tpms_rr_p->SetValue( d[5] );
+    // Coolant Heater Status
+    case 0x1047809D: 
+      {
+      mt_coolant_heater_pwr->SetValue((float)d[1]*0.02);
+      break;
+      }
+
+    // Climate control general status
+    case 0x10734099: 
+      {
+      uint8_t mode = (d[0] >> 4) & 3;
+      // this flag is active when AC is turned on from dashboard, or when preheat is initiated via fob or via Onstar (but NOT when overriding BCM)
+      if (mode==1)
+        {
+        mt_ac_active->SetValue(false);
+        }
+      else if (mode==2)
+        {
+        mt_ac_active->SetValue(true);
+        }
+      else
+        unexpected_data = true;
+
+      // Incorrect DBC entry: This is not absolute target temperature but some kind of differential temp. Needs more investigating..
+      //mt_ac_target_temp->SetValue( (GET16(p_frame, 2) & 0x3ff) / 10 - 10);
+      break;
+      }
+
+    // Climate Control Basic Status
+    case 0x10814099: 
+      {
+      mt_ac_front_blower_fan_speed->SetValue( (float)d[1]*0.39 );
+
+      // Blower fan speed is the only reliable indicator (that I know of) of whether preheat is switched on or not, since
+      // the Climate_control_general_status:ac_active flag is not set if we override BCM...
+      if (d[1] != 0)
+        {
+        if (mt_preheat_status->AsInt()==VA_PREHEAT_STARTING)
+          {
+          mt_preheat_status->SetValue(VA_PREHEAT_STARTED);
+          MyEvents.SignalEvent("vehicle.preheat.started",NULL);
+          }
+        } else
+        {
+        if (mt_preheat_status->AsInt()==VA_PREHEAT_STOPPING)
+          {
+          mt_preheat_status->SetValue(VA_PREHEAT_STOPPED);
+          MyEvents.SignalEvent("vehicle.preheat.stopped",NULL);
+          }
+        }
+
+      // this flag is active only when turning AC on manually on the dashboard, but NOT when preheating
+      //mt_ac_active->SetValue( (d[0]>>5)&1 );
+      break;
+    }
+
+    // Alarm_2_Request_LS (provides us with estimated cabin temperature)
+    case 0x10440099: 
+      {
+      // This is estimated roof surface temperature
+      ESP_LOGI(TAG,"CAbin temp: 0x%x %f",d[5], (float)d[5]/2 - 40);
+      StandardMetrics.ms_v_env_cabintemp->SetValue( (float)d[5]/2 - 40 ); 
+
+      // There is also estimated bulk internal air temperature, but for comfort I think we prefer the surface temperature
+      //StandardMetrics.ms_v_env_cabintemp->SetValue( (float)d[4]/2 - 40 ); 
+
+      // this flag is active only when turning AC on manually on the dashboard, but NOT when preheating
+      //mt_ac_active->SetValue( (d[0]>>5)&1 );
+      break;
+    }
+
+    // Tire pressure
+    case 0x103D4040: 
+      {
+      StandardMetrics.ms_v_tpms_fl_p->SetValue( d[2] << 2 );
+      StandardMetrics.ms_v_tpms_rl_p->SetValue( d[3] << 2 );
+      StandardMetrics.ms_v_tpms_fr_p->SetValue( d[4] << 2 );
+      StandardMetrics.ms_v_tpms_rr_p->SetValue( d[5] << 2 );
       break;
       } 
 
-    case 0x10424040: {
-      // TODO: which temp is which? is env_temp same as when polled?
-      //StandardMetrics.ms_v_env_temp->SetValue( d[1] );
-      StandardMetrics.ms_v_env_cabintemp->SetValue( d[2] );
+    // Remote start status (Preheating)
+    case 0x10390040: 
+      {
+      if (d[0]==0)
+        // Remote start off
+        {
+        if  ((mt_preheat_status->AsInt()==VA_PREHEAT_STARTING) || (mt_preheat_status->AsInt()==VA_PREHEAT_STARTED) )
+          {
+          if (m_preheat_BCM_overridden)
+            {
+            ESP_LOGI(TAG,"BCM attempted to turn off preheating. Overriding by sending new start message...");
+            CAN_frame_t txframe;
+            SEND_EXT_FRAME(m_swcan, txframe,  0x10390040,  0x03)
+            } 
+          else
+            {
+            ESP_LOGI(TAG,"BCM switching preheat off (after maximum time-on?)");
+            MyEvents.SignalEvent("vehicle.preheat.stopping",NULL);
+            mt_preheat_status->SetValue(VA_PREHEAT_STOPPING);
+            mt_preheat_timer->SetValue(0);
+            }
+          }
+        }
+      else if ( (d[0]>>1) & 1)  
+        // Remote start request
+        {
+        // Preheat switched on most likely via key fob
+        ESP_LOGI(TAG,"Preheating initiated by BCM (via key fob?)");
+        MyEvents.SignalEvent("vehicle.preheat.starting",NULL);
+        mt_preheat_status->SetValue(VA_PREHEAT_STARTING);
+        mt_preheat_timer->SetValue(0);
+        }
       break;
-      } 
+      }
 
-    case 0x10254040: {
-      switch(d[0]) {
-        case 0: StandardMetrics.ms_v_env_drivemode->SetValue(0); break;
-        case 1: StandardMetrics.ms_v_env_drivemode->SetValue(1); break;
-        case 4: StandardMetrics.ms_v_env_drivemode->SetValue(2); break;
-        case 16: StandardMetrics.ms_v_env_drivemode->SetValue(3); break;
+    // Content theft sensor
+    case 0x10260040:
+      {
+      switch (d[2] & 0x7) // alarm status
+        {
+        case 0x2:
+          {
+          ESP_LOGI(TAG,"Alarm unarmed");
+          MyEvents.SignalEvent("vehicle.alarm.unarmed",NULL);
+          // If previously alarm sounded, notify it as off
+          if (StandardMetrics.ms_v_env_alarm->AsBool())
+            StandardMetrics.ms_v_env_alarm->SetValue(false);
+          break;
+          }
+        case 0x1:
+          {
+          ESP_LOGI(TAG,"Alarm armed");
+          MyEvents.SignalEvent("vehicle.alarm.armed",NULL);
+          break;
+          }
+        case 0x4:
+          {
+          // This is the first status after doors are locked. After about 30 secs it is transitioned to 0x1 (armed)
+          ESP_LOGI(TAG,"Alarm standby(?)");
+          break;
+          }
+        case 0x3:
+          {
+          ESP_LOGW(TAG,"Alarm sounded!");
+          StandardMetrics.ms_v_env_alarm->SetValue(true);  // Event is signaled here
+          // TODO: Parse alarm trigger source (door, window break, charger removed, tilt sensor etc..)
+          break;
+          }
+        default:
+          {
+          ESP_LOGW(TAG,"Alarm: unhandled status %d", d[2] & 0x7);
+          break;
+          }
         }
       break;
       } 
 
-
     default:
       break;
     }
+        
+  if (unexpected_data)
+    ESP_LOGE(TAG,"IncomingFrameSWCan: Unexpected data! Id %08x: %02x %02x %02x %02x %02x %02x %02x %02x", 
+      p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
   }
 
 void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
@@ -406,11 +597,9 @@ void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16
         StandardMetrics.ms_v_bat_range_est->SetValue((soc * m_range_estimated_km)/100, Kilometers);
       break;
       }
-    /*
     case 0x000d:  // Vehicle speed
       StandardMetrics.ms_v_pos_speed->SetValue(value,Kilometers);
       break;
-    */
     case 0x2487:  //Distance Traveled on Battery Energy This Drive Cycle
       {
       unsigned int edriven = (((int)data[4])<<8) + data[5];
@@ -421,6 +610,15 @@ void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16
       }
     default:
       break;
+    }
+  }
+
+void OvmsVehicleVoltAmpera::Ticker10(uint32_t ticker)
+  {
+  if (m_tx_retry_counter>0) 
+    {
+    ESP_LOGI(TAG, "Resetting tx_retry_counter");
+    m_tx_retry_counter=0;
     }
   }
 
@@ -436,13 +634,15 @@ void OvmsVehicleVoltAmpera::Ticker1(uint32_t ticker)
       StandardMetrics.ms_v_env_gear->SetValue(0);
       StandardMetrics.ms_v_env_on->SetValue(false);
       StandardMetrics.ms_v_env_awake->SetValue(false);
-      StandardMetrics.ms_v_env_handbrake->SetValue(true);
       PollSetState(0);
       }
     }
 
+  ClimateControlWatchdog();
+
   int cc = StandardMetrics.ms_v_charge_current->AsInt();
   int cv = StandardMetrics.ms_v_charge_voltage->AsInt();
+
   if ((cc != 0)&&(cv != 0))
     {
     // The car is charging
@@ -510,7 +710,12 @@ void OvmsVehicleVoltAmpera::Ticker1(uint32_t ticker)
       m_charge_timer = 0;
       m_charge_wm = 0;
       }
-    StandardMetrics.ms_v_env_charging12v->SetValue(false);
+
+    // 12V battery may be charging via High Voltage battery when car is on, or via external battery charger
+    if (StandardMetrics.ms_v_bat_12v_voltage->AsFloat() > VA_CHARGING_12V_THRESHOLD)
+      StandardMetrics.ms_v_env_charging12v->SetValue(true);
+    else
+      StandardMetrics.ms_v_env_charging12v->SetValue(false);
     }
 
   }
@@ -520,8 +725,9 @@ void OvmsVehicleVoltAmpera::CommandWakeupComplete( const CAN_frame_t* p_frame, b
   {
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
   ESP_LOGI(TAG,"CommandWakeupComplete. Success: %d", success);
-  // return from high voltage wakeup mode after wakeup CAN messages have been sent
-  // return to normal mode no matter if the wakeup msg was sent successfully or not
+  // Return from high voltage wakeup mode after wakeup CAN messages have been sent
+
+  // Switch to normal mode no matter if the wakeup msg was sent successfully or not
   vTaskDelay(20 / portTICK_PERIOD_MS);  
   p_swcan->SetTransceiverMode(tmode_normal);
 #endif // #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
@@ -534,117 +740,58 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandWakeup()
   p_swcan->SetTransceiverMode(tmode_highvoltagewakeup);
 
   CAN_frame_t txframe;
-  memset(&txframe,0,sizeof(txframe));
-  txframe.origin = p_swcan;
-  txframe.MsgID = 0x100;
-  txframe.FIR.B.FF = CAN_frame_std;
-  txframe.FIR.B.DLC = 0; //8;
-  p_swcan->Write(&txframe);
 
-  vTaskDelay(80 / portTICK_PERIOD_MS);  
-  memset(&txframe,0,sizeof(txframe));
-  txframe.origin = p_swcan;
-  txframe.MsgID = 0x620;
-  txframe.FIR.B.FF = CAN_frame_std;
-  txframe.FIR.B.DLC = 8;
-  txframe.data.u8[0] = 0x01;
-  txframe.data.u8[1] = 0xff;
-  txframe.data.u8[2] = 0xff;
-  txframe.data.u8[3] = 0xff;
-  txframe.data.u8[4] = 0xff;
-  txframe.data.u8[5] = 0xff;
-  txframe.data.u8[6] = 0x00;
-  txframe.data.u8[7] = 0x00;
-  p_swcan->Write(&txframe);
+  SEND_STD_FRAME(p_swcan, txframe,  0x100,  0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00)
+  vTaskDelay(220 / portTICK_PERIOD_MS);
+  SEND_STD_FRAME(p_swcan, txframe,  0x100,  0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00)
 
-  vTaskDelay(10 / portTICK_PERIOD_MS);
-  memset(&txframe,0,sizeof(txframe));
-  txframe.origin = p_swcan;
-  txframe.MsgID = 0x621;
-  txframe.FIR.B.FF = CAN_frame_std;
-  txframe.FIR.B.DLC = 8;
-  txframe.data.u8[0] = 0x01;
-  txframe.data.u8[1] = 0xff;
-  txframe.data.u8[2] = 0xff;
-  txframe.data.u8[3] = 0xff;
-  txframe.data.u8[4] = 0xff;
-  txframe.data.u8[5] = 0xff;
-  txframe.data.u8[6] = 0x00;
-  txframe.data.u8[7] = 0x00;
-  p_swcan->Write(&txframe);
+  vTaskDelay(360 / portTICK_PERIOD_MS);
+  SEND_STD_FRAME(p_swcan, txframe,  0x620,  0x00,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
+  vTaskDelay(180 / portTICK_PERIOD_MS);
+  SEND_STD_FRAME(p_swcan, txframe,  0x620,  0x01,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
 
-  vTaskDelay(10 / portTICK_PERIOD_MS);
-  memset(&txframe,0,sizeof(txframe));
-  txframe.origin = p_swcan;
-  txframe.MsgID = 0x622;
-  txframe.FIR.B.FF = CAN_frame_std;
-  txframe.FIR.B.DLC = 8;
-  txframe.data.u8[0] = 0x01;
-  txframe.data.u8[1] = 0xff;
-  txframe.data.u8[2] = 0xff;
-  txframe.data.u8[3] = 0xff;
-  txframe.data.u8[4] = 0xff;
-  txframe.data.u8[5] = 0xff;
-  txframe.data.u8[6] = 0x00;
-  txframe.data.u8[7] = 0x00;
-  p_swcan->Write(&txframe);
+  // Body Control Module (BCM)
+  vTaskDelay(360 / portTICK_PERIOD_MS);
+  SEND_STD_FRAME(p_swcan, txframe,  0x621,  0x00,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
+  vTaskDelay(180 / portTICK_PERIOD_MS);
+  SEND_STD_FRAME(p_swcan, txframe,  0x621,  0x01,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
 
-  vTaskDelay(10 / portTICK_PERIOD_MS);
-  memset(&txframe,0,sizeof(txframe));
-  txframe.origin = p_swcan;
-  txframe.MsgID = 0x100;
-  txframe.FIR.B.FF = CAN_frame_std;
-  txframe.FIR.B.DLC = 0; //8;
-  p_swcan->Write(&txframe);
+  // Theft Deterrent Module (TDM) ?
+  vTaskDelay(360 / portTICK_PERIOD_MS);
+  SEND_STD_FRAME(p_swcan, txframe,  0x622,  0x00,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
+  vTaskDelay(180 / portTICK_PERIOD_MS);
+  SEND_STD_FRAME(p_swcan, txframe,  0x622,  0x01,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
 
-  vTaskDelay(10 / portTICK_PERIOD_MS);  
-  memset(&txframe,0,sizeof(txframe));
-  txframe.origin = p_swcan;
-  txframe.MsgID = 0x627;
-  txframe.FIR.B.FF = CAN_frame_std;
-  txframe.FIR.B.DLC = 8;
-  txframe.data.u8[0] = 0x01;
-  txframe.data.u8[1] = 0xff;
-  txframe.data.u8[2] = 0xff;
-  txframe.data.u8[3] = 0xff;
-  txframe.data.u8[4] = 0xff;
-  txframe.data.u8[5] = 0xff;
-  txframe.data.u8[6] = 0x00;
-  txframe.data.u8[7] = 0x00;
-  p_swcan->Write(&txframe);
+  vTaskDelay(360 / portTICK_PERIOD_MS);
+  SEND_STD_FRAME(p_swcan, txframe,  0x100,  0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00)
 
-  vTaskDelay(10 / portTICK_PERIOD_MS);  
-  memset(&txframe,0,sizeof(txframe));
-  txframe.origin = p_swcan;
-  txframe.MsgID = 0x62c;
-  txframe.FIR.B.FF = CAN_frame_std;
-  txframe.FIR.B.DLC = 8;
-  txframe.data.u8[0] = 0x01;
-  txframe.data.u8[1] = 0xff;
-  txframe.data.u8[2] = 0xff;
-  txframe.data.u8[3] = 0xff;
-  txframe.data.u8[4] = 0xff;
-  txframe.data.u8[5] = 0xff;
-  txframe.data.u8[6] = 0x00;
-  txframe.data.u8[7] = 0x00;
-  p_swcan->Write(&txframe);
+  // Sensing and Diagmostic module (SDM) ?
+  vTaskDelay(360 / portTICK_PERIOD_MS);
+  SEND_STD_FRAME(p_swcan, txframe,  0x627,  0x00,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
+  vTaskDelay(180 / portTICK_PERIOD_MS);
+  SEND_STD_FRAME(p_swcan, txframe,  0x627,  0x01,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
 
-  vTaskDelay(10 / portTICK_PERIOD_MS);  
-  memset(&txframe,0,sizeof(txframe));
-  txframe.origin = p_swcan;
-  txframe.MsgID = 0x62d;
-  txframe.FIR.B.FF = CAN_frame_std;
-  txframe.FIR.B.DLC = 8;
-  txframe.data.u8[0] = 0x01;
-  txframe.data.u8[1] = 0xff;
-  txframe.data.u8[2] = 0xff;
-  txframe.data.u8[3] = 0xff;
-  txframe.data.u8[4] = 0xff;
-  txframe.data.u8[5] = 0xff;
-  txframe.data.u8[6] = 0x00;
-  txframe.data.u8[7] = 0x00;
-  // register tx callback for this frame
-  // we want to set mode from high voltage wakeup mode back to normal mode only after these messages have been sent
+  // Instrument Panel Cluster (IPC)
+  vTaskDelay(360 / portTICK_PERIOD_MS);
+  SEND_STD_FRAME(p_swcan, txframe,  0x62c,  0x00,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
+  vTaskDelay(180 / portTICK_PERIOD_MS);
+  SEND_STD_FRAME(p_swcan, txframe,  0x62c,  0x01,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
+
+  // ?
+  vTaskDelay(360 / portTICK_PERIOD_MS);
+  SEND_STD_FRAME(p_swcan, txframe,  0x62d,  0x00,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
+  vTaskDelay(180 / portTICK_PERIOD_MS);
+  SEND_STD_FRAME(p_swcan, txframe,  0x62d,  0x01,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
+
+  // Heating Ventilation Air Conditioning (HVAC)
+  vTaskDelay(360 / portTICK_PERIOD_MS);
+  SEND_STD_FRAME(p_swcan, txframe,  0x631,  0x00,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
+  vTaskDelay(180 / portTICK_PERIOD_MS);
+  SEND_STD_FRAME(p_swcan, txframe,  0x631,  0x01,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
+
+  // Send the last message with callback so that High Voltage Wakeup mode can be exited
+  vTaskDelay(360 / portTICK_PERIOD_MS);
+  FRAME_FILL(0, p_swcan, txframe,   0x100,  0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00)
   txframe.callback = &wakeup_frame_sent;
   p_swcan->Write(&txframe);
 
@@ -660,24 +807,27 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandWakeup()
 OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandLock(const char* pin)
   {
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
-  // DOES NOT WORK ON MY 2014->
   CommandWakeup();
-  vTaskDelay(500 / portTICK_PERIOD_MS);  
+
   CAN_frame_t txframe;
-  memset(&txframe,0,sizeof(txframe));
-  txframe.origin = p_swcan;
-  txframe.MsgID = 0x1024E097;
-  txframe.FIR.B.FF = CAN_frame_ext;
-  txframe.FIR.B.DLC = 3; // 6;
-  txframe.data.u8[0] = 0x00;
-  txframe.data.u8[1] = 0x01;
-  txframe.data.u8[2] = 0xff;
+
+  // Onstar lock command emulation
+  // Does not seem to work on MY2014 Ampera
+
+  // Telematics control
+  vTaskDelay(720 / portTICK_PERIOD_MS);  
+  SEND_EXT_FRAME(p_swcan, txframe, 0x1024E097,  0x00,0x01,0xff)
+  vTaskDelay(180 / portTICK_PERIOD_MS);  
+  SEND_EXT_FRAME(p_swcan, txframe, 0x1024E097,  0x0c,0x00,0xff)
+  vTaskDelay(1250 / portTICK_PERIOD_MS);  
+  SEND_EXT_FRAME(p_swcan, txframe, 0x1024E097,  0x00,0x00,0xff)
   /*
-  txframe.data.u8[3] = 0x00;
-  txframe.data.u8[4] = 0x00;
-  txframe.data.u8[5] = 0xff;
+  Alternative: Diagnostic lock command. But will not arm alarm!
+  SEND_STD_FRAME(m_can1, txframe,  0x241,  0x01,0x3e,0x00,0x00,0x00,0x00,0x00,0x00)
+  vTaskDelay(100 / portTICK_PERIOD_MS);
+  SEND_STD_FRAME(m_can1, txframe,  0x241,  0x07,0xae,0x01,0x01,0x01,0x00,0x00,0x00)
   */
-  p_swcan->Write(&txframe);
+
   return Success;
 #else
   return NotImplemented;
@@ -687,67 +837,154 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandLock(const char* pi
 OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandUnlock(const char* pin)
   {
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
-  // DOES NOT WORK ON MY 2014->
   CommandWakeup();
-  vTaskDelay(500 / portTICK_PERIOD_MS);  
+
   CAN_frame_t txframe;
-  memset(&txframe,0,sizeof(txframe));
-  txframe.origin = p_swcan;
-  txframe.MsgID = 0x1024E097; 
-  txframe.FIR.B.FF = CAN_frame_ext;
-  txframe.FIR.B.DLC = 3; // 6;
-  txframe.data.u8[0] = 0x00;
-  txframe.data.u8[1] = 0x03;
-  txframe.data.u8[2] = 0xff;
+  // Onstar unlock command emulation
+  // Does not seem to work on MY2014 Ampera
+
+  // Telematics control
+  vTaskDelay(720 / portTICK_PERIOD_MS);  
+  SEND_EXT_FRAME(p_swcan, txframe, 0x1024E097,  0x00,0x03,0xff)
+  vTaskDelay(180 / portTICK_PERIOD_MS);  
+  SEND_EXT_FRAME(p_swcan, txframe, 0x1024E097,  0x0c,0x00,0xff)
+  vTaskDelay(1250 / portTICK_PERIOD_MS);  
+  SEND_EXT_FRAME(p_swcan, txframe, 0x1024E097,  0x00,0x00,0xff)
+
   /*
-  txframe.data.u8[3] = 0x00;
-  txframe.data.u8[4] = 0x00;
-  txframe.data.u8[5] = 0xff;
+  Alternative: Diagnostic unlock command. WILL NOT DISARM ALARM! 
+  SEND_STD_FRAME(m_can1, txframe,  0x241,  0x01,0x3e,0x00,0x00,0x00,0x00,0x00,0x00)
+  vTaskDelay(100 / portTICK_PERIOD_MS);
+  // Driver door unlock
+  SEND_STD_FRAME(m_can1, txframe,  0x241,  0x07,0xae,0x01,0x04,0x04,0x00,0x00,0x00)
+  // Passengers door unlock
+  SEND_STD_FRAME(m_can1, txframe,  0x241,  0x07,0xae,0x01,0x02,0x02,0x00,0x00,0x00)
   */
-  p_swcan->Write(&txframe);
+
   return Success;
 #else
   return NotImplemented;
 #endif // #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
   }
 
+
+void OvmsVehicleVoltAmpera::ClimateControlWatchdog()
+  {
+  if (mt_preheat_status->AsInt() != VA_PREHEAT_STOPPED)
+    {
+    mt_preheat_timer->SetValue(mt_preheat_timer->AsInt()+1);
+    }
+
+  switch (mt_preheat_status->AsInt())
+    {
+    case VA_PREHEAT_STARTING:
+      {
+      if (mt_preheat_timer->AsInt() > VA_PREHEAT_TIMEOUT)
+        {
+        ESP_LOGE(TAG,"Preheat did not start!");
+        MyEvents.SignalEvent("vehicle.preheat.error", NULL);
+        mt_preheat_status->SetValue(VA_PREHEAT_STOPPED);
+        mt_preheat_timer->SetValue(0);
+        }
+      break;
+      }
+    case VA_PREHEAT_STARTED:
+      {
+      if (m_preheat_BCM_overridden)
+        {
+        if (mt_preheat_timer->AsInt() > m_preheat_max_time)
+          {
+          ESP_LOGI(TAG,"Maximum preheat time reached. Stopping..");
+          mt_preheat_status->SetValue(VA_PREHEAT_STOPPING);
+          CommandClimateControl(false);
+          }
+        } else
+        {
+          // Let BCM handle turning off preheat when the time comes..
+        }
+      break;
+      }
+    case VA_PREHEAT_STOPPING:
+      {
+      if (m_preheat_BCM_overridden)
+        {
+        if (mt_preheat_timer->AsInt() > VA_PREHEAT_TIMEOUT)
+          {
+          ESP_LOGE(TAG,"Preheat did not stop! Retrying..");
+          CommandClimateControl(false);
+          }
+        }
+      break;
+      }
+    default:
+      break;
+    }
+  }
+
 OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandClimateControl(bool enable)
   {
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
-  // DOES NOT WORK ON MY 2014->
-  CommandWakeup();
-  vTaskDelay(50 / portTICK_PERIOD_MS);  
-  CommandLock(0);
-  vTaskDelay(500 / portTICK_PERIOD_MS);  
 
   CAN_frame_t txframe;
-  memset(&txframe,0,sizeof(txframe));
-  txframe.origin = p_swcan;
-  txframe.MsgID = 0x1024E097;
-  txframe.FIR.B.FF = CAN_frame_ext;
-  txframe.FIR.B.DLC = 3;
-  if (enable)
+  if ( ((mt_preheat_status->AsInt()==VA_PREHEAT_STOPPED) && (enable)) || 
+       ((mt_preheat_status->AsInt()!=VA_PREHEAT_STOPPED) && (!enable) )  )
     {
-    txframe.data.u8[0] = 0x80;
-    txframe.data.u8[1] = 0x01;
-    } else
-    {
-    txframe.data.u8[0] = 0x40;
-    txframe.data.u8[1] = 0x00; // or 0x01 ?
-    }
-  txframe.data.u8[2] = 0xff;
-  p_swcan->Write(&txframe);
+    CommandWakeup();
+    vTaskDelay(720 / portTICK_PERIOD_MS);
+    mt_preheat_timer->SetValue(0);
 
-  vTaskDelay(1000 / portTICK_PERIOD_MS);  
-  memset(&txframe,0,sizeof(txframe));
-  txframe.origin = p_swcan;
-  txframe.MsgID = 0x1024E097;
-  txframe.FIR.B.FF = CAN_frame_ext;
-  txframe.FIR.B.DLC = 3;
-  txframe.data.u8[0] = 0x00;
-  txframe.data.u8[1] = 0x00;
-  txframe.data.u8[2] = 0xff;
-  p_swcan->Write(&txframe);
+    if (!enable)
+      {
+      MyEvents.SignalEvent("vehicle.preheat.stopping",NULL);
+      mt_preheat_status->SetValue(VA_PREHEAT_STOPPING);
+      } else
+      {
+      MyEvents.SignalEvent("vehicle.preheat.starting",NULL);        
+      mt_preheat_status->SetValue(VA_PREHEAT_STARTING);
+      }
+
+    if (m_preheat_override_BCM)
+      {
+      // Emulate BCM by sending Remote_Start_Status START message. Also overriding similar messages sent by BCM (but with STOP command) is needed
+      // and this is done above by receiving Remote_Start_Status frame and sending immediately a counteracting START message - The HVAC
+      // module won't even have time to turn off the preheating..
+      if (enable)
+        {
+        ESP_LOGI(TAG,"Turn on preheat via overriding BCM");
+        m_preheat_BCM_overridden = true;
+        SEND_EXT_FRAME(m_swcan, txframe,  0x10390040,  0x02)
+        vTaskDelay(720 / portTICK_PERIOD_MS);
+        SEND_EXT_FRAME(m_swcan, txframe,  0x10390040,  0x03)
+        } else
+        {
+        ESP_LOGI(TAG,"Turn off preheat via overriding BCM");
+        m_preheat_BCM_overridden = false;
+        SEND_EXT_FRAME(m_swcan, txframe,  0x10390040,  0x00)
+        } 
+      }
+    else 
+      {
+      // Onstar preheat command emulation
+      // Does not seem to work on MY2014 Ampera
+      if (enable)
+        {
+        ESP_LOGI(TAG,"Turning preheating on via Onstar emulation");
+        SEND_EXT_FRAME(p_swcan, txframe, 0x1024E097,  0x80,0x01,0xff)
+        }
+      else
+        {
+        ESP_LOGI(TAG,"Turning preheating off via Onstar emulation");
+        SEND_EXT_FRAME(p_swcan, txframe, 0x1024E097,  0x40,0x01,0xff)
+        }
+      vTaskDelay(360 / portTICK_PERIOD_MS);  
+      SEND_EXT_FRAME(p_swcan, txframe, 0x1024E097,  0x00,0x00,0xff)
+      }
+    } 
+  else
+    {
+    ESP_LOGE(TAG,"Preheat already %s!", enable ? "active" : "inactive");
+    return Fail;
+    }
 
   return Success;
 #else
