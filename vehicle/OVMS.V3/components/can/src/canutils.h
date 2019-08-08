@@ -82,7 +82,7 @@ class canbitset
 
 // Helper macros for filling out the CAN frame 
 
-#define FRAME_FILL_0(frame,x) ;
+#define FRAME_FILL_0(frame) ;
 
 #define FRAME_FILL_1(frame,d1)  \
          frame.data.u8[0] = d1; 
@@ -122,10 +122,6 @@ class canbitset
     GET_9TH_ARG(,##__VA_ARGS__,  FRAME_FILL_8, FRAME_FILL_7, FRAME_FILL_6, FRAME_FILL_5, \
                 FRAME_FILL_4, FRAME_FILL_3, FRAME_FILL_2, FRAME_FILL_1, FRAME_FILL_0)
 
-//  Uses the method as above, but for counting the number of payload bytes based on parameter count
-#define FRAME_FILL_PAYLOAD_COUNTER(...) \
-    GET_9TH_ARG(,##__VA_ARGS__,  8, 7, 6, 5, 4, 3, 2, 1, 0)
-
 /* 
 Usage:
   ext = 1 (extended frame), 0 (standard frame)
@@ -135,21 +131,21 @@ Usage:
  Optional bytes:
   d1, ... ,d8 (payload)
 */
-#define FRAME_FILL(ext,bus,frame,id, ...) \
+#define FRAME_FILL(ext,bus,frame,id,len, ...) \
   memset(&frame,0,sizeof(frame)); \
   frame.origin = bus; \
   frame.MsgID = id;   \
   frame.FIR.B.FF = (ext ? CAN_frame_ext : CAN_frame_std);     \
-  frame.FIR.B.DLC = FRAME_FILL_PAYLOAD_COUNTER(__VA__ARGS__);  \
+  frame.FIR.B.DLC = len; \
   FRAME_FILL_MACRO_CHOOSER(__VA_ARGS__)(frame ,##__VA_ARGS__)
 
 // Convenience macros for initializing and sending standard and exteneded frame CAN messages
-#define SEND_STD_FRAME(bus,frame,id, ...) \
-  FRAME_FILL(0, bus,frame,id, __VA_ARGS__)  \
+#define SEND_STD_FRAME(bus,frame,id,len, ...) \
+  FRAME_FILL(0, bus,frame,id,len, ##__VA_ARGS__) \
   bus->Write(&frame);
 
-#define SEND_EXT_FRAME(bus,frame,id, ...) \
-  FRAME_FILL(1, bus,frame,id, __VA_ARGS__)  \
+#define SEND_EXT_FRAME(bus,frame,id,len, ...) \
+  FRAME_FILL(1, bus,frame,id,len, ##__VA_ARGS__)  \
   bus->Write(&frame);
 
 // Helper functions for getting 1-4 byte chunks from CAN message payload
@@ -157,6 +153,5 @@ Usage:
 #define GET16(frame, pos) ((frame->data.u8[pos] << 8) | frame->data.u8[pos+1])
 #define GET24(frame, pos) ((frame->data.u8[pos] << 16) | (frame->data.u8[pos+1] << 8) | frame->data.u8[pos+2])
 #define GET32(frame, pos) ((frame->data.u8[pos] << 24) | (frame->data.u8[pos+1] << 16) | (frame->data.u8[pos+2] << 8) | frame->data.u8[pos+3])
-
 
 #endif //#ifndef __CAN_UTILS_H__
