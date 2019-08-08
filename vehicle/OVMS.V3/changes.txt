@@ -1,6 +1,15 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Twizy: OBD2 VIN reading & cluster DTC monitoring
+  New commands:
+    xrt dtc [show]                      Show DTC report
+    xrt dtc reset                       Reset statistics
+    xrt dtc clear                       Clear DTC stored in OVMS & car
+  New configs:
+    xrt [dtc_autoreset] = no            Reset statistics on each drive/charge
+  New history records:
+    RT-OBD-ClusterDTC (rec_nr = DTC slot nr)
 - New vehicle: Smart ED/EQ 4.Generation (453) (adaption by Thomas Heuer <egon@heuer-humfeld.de>)
 
 2019-05-12 MWJ  3.2.002  OTA release

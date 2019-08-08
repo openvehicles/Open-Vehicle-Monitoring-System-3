@@ -2043,6 +2043,7 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
       if ((frame->data.u8[1] == 0x40+m_poll_type)&&
           (frame->data.u8[2] == m_poll_pid))
         {
+        m_poll_ml_frame = 0;
         IncomingPollReply(m_poll_bus, m_poll_type, m_poll_pid, &frame->data.u8[3], 5, 0);
         return;
         }

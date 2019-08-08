@@ -250,7 +250,7 @@ int OvmsSSH::Authenticate(uint8_t type, const WS_UserAuthData* data, void* ctx)
     if (key.empty())
       return WOLFSSH_USERAUTH_INVALID_USER;
     byte der[560];
-    uint32_t len;
+    uint32_t len = sizeof(der);
     if (Base64_Decode((const byte*)key.data(), key.size(), der, &len) != 0 ||
       len != data->sf.publicKey.publicKeySz ||
       memcmp(data->sf.publicKey.publicKey, der, len) != 0)
