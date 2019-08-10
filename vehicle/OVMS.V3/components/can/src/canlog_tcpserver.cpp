@@ -41,15 +41,16 @@ canlog_tcpserver* MyCanLogTcpServer = NULL;
 void can_log_tcpserver_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   std::string format(cmd->GetName());
-  canlog_tcpserver* logger = new canlog_tcpserver(argv[0],format);
+  std::string mode(cmd->GetParent()->GetName());
+  canlog_tcpserver* logger = new canlog_tcpserver(argv[0],format,GetFormatModeType(mode));
   logger->Open();
 
   if (logger->IsOpen())
     {
     if (argc>1)
-      { MyCan.SetLogger(logger, argc-1, &argv[1]); }
+      { MyCan.AddLogger(logger, argc-1, &argv[1]); }
     else
-      { MyCan.SetLogger(logger); }
+      { MyCan.AddLogger(logger); }
     writer->printf("CAN logging as TCP server: %s\n", logger->GetInfo().c_str());
     }
   else
@@ -82,9 +83,24 @@ OvmsCanLogTcpServerInit::OvmsCanLogTcpServerInit()
         {
         // We have a place to put our command tree..
         OvmsCommand* start = cmd_can_log_start->RegisterCommand("tcpserver", "CAN logging as TCP server");
-        MyCanFormatFactory.RegisterCommandSet(start, "Start CAN logging as TCP server",
+        OvmsCommand* discard = start->RegisterCommand("discard","CAN logging as TCP server (discard mode)");
+        OvmsCommand* simulate = start->RegisterCommand("simulate","CAN logging as TCP server (simulate mode)");
+        OvmsCommand* transmit = start->RegisterCommand("transmit","CAN logging as TCP server (transmit mode)");
+        MyCanFormatFactory.RegisterCommandSet(discard, "Start CAN logging as TCP server (discard mode)",
           can_log_tcpserver_start,
-          "<format> <port> [filter1] ... [filterN]\n"
+          "<port> [filter1] ... [filterN]\n"
+          "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
+          "Example: 2:2a0-37f",
+          1, 9);
+        MyCanFormatFactory.RegisterCommandSet(simulate, "Start CAN logging as TCP server (simulate mode)",
+          can_log_tcpserver_start,
+          "<port> [filter1] ... [filterN]\n"
+          "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
+          "Example: 2:2a0-37f",
+          1, 9);
+        MyCanFormatFactory.RegisterCommandSet(transmit, "Start CAN logging as TCP server (transmit mode)",
+          can_log_tcpserver_start,
+          "<port> [filter1] ... [filterN]\n"
           "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
           "Example: 2:2a0-37f",
           1, 9);
@@ -127,8 +143,8 @@ void tsPutCallback(uint8_t *buffer, size_t len, void* data)
   mg_send(nc, buffer, len);
   }
 
-canlog_tcpserver::canlog_tcpserver(std::string path, std::string format)
-  : canlog("tcpserver", format)
+canlog_tcpserver::canlog_tcpserver(std::string path, std::string format, canformat::canformat_serve_mode_t mode)
+  : canlog("tcpserver", format, mode)
   {
   MyCanLogTcpServer = this;
   m_path = path;

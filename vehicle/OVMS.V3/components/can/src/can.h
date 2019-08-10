@@ -256,6 +256,7 @@ extern const char* GetCanLogTypeName(CAN_log_type_t type);
 ////////////////////////////////////////////////////////////////////////
 
 class canlog;
+class canplay;
 class dbcfile;
 
 class canbus : public pcp, public InternalRamAllocated
@@ -351,9 +352,20 @@ class can : public InternalRamAllocated
     void ExecuteCallbacks(const CAN_frame_t* frame, bool tx);
 
   public:
-    void SetLogger(canlog* logger, int filterc=0, const char* const* filterv=NULL);
-    canlog* GetLogger();
-    void ClearLogger();
+    uint32_t AddLogger(canlog* logger, int filterc=0, const char* const* filterv=NULL);
+    bool HasLogger();
+    canlog* GetLogger(uint32_t id);
+    bool RemoveLogger(uint32_t id);
+    void RemoveLoggers();
+
+  public:
+    uint32_t AddPlayer(canplay* player, int filterc=0, const char* const* filterv=NULL);
+    bool HasPlayer();
+    canplay* GetPlayer(uint32_t id);
+    bool RemovePlayer(uint32_t id);
+    void RemovePlayers();
+
+  public:
     void LogFrame(canbus* bus, CAN_log_type_t type, const CAN_frame_t* frame);
     void LogStatus(canbus* bus, CAN_log_type_t type, const CAN_status_t* status);
     void LogInfo(canbus* bus, CAN_log_type_t type, const char* text);
@@ -361,13 +373,24 @@ class can : public InternalRamAllocated
   public:
     canbus* GetBus(int busnumber);
 
+  public:
+    typedef std::map<uint32_t, canlog*> canlog_map_t;
+    canlog_map_t m_loggermap;
+    OvmsMutex m_loggermap_mutex;
+    uint32_t m_logger_id;
+
+  public:
+    typedef std::map<uint32_t, canplay*> canplay_map_t;
+    canplay_map_t m_playermap;
+    OvmsMutex m_playermap_mutex;
+    uint32_t m_player_id;
+
   private:
     canbus* m_buslist[CAN_MAXBUSES];
     CanListenerMap_t m_listeners;
     CanFrameCallbackList_t m_rxcallbacks;
     CanFrameCallbackList_t m_txcallbacks;
     TaskHandle_t m_rxtask;            // Task to handle reception
-    canlog* m_logger;
   };
 
 extern can MyCan;

@@ -25,18 +25,16 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __CANLOG_TCP_CLIENT_H__
-#define __CANLOG_TCP_CLIENT_H__
+#ifndef __CANPLAY_VFS_H__
+#define __CANPLAY_VFS_H__
 
-#include "canlog.h"
-#include "ovms_netmanager.h"
-#include "ovms_mutex.h"
+#include "canplay.h"
 
-class canlog_tcpclient : public canlog
+class canplay_vfs : public canplay
   {
   public:
-    canlog_tcpclient(std::string path, std::string format, canformat::canformat_serve_mode_t mode);
-    virtual ~canlog_tcpclient();
+    canplay_vfs(std::string path, std::string format);
+    virtual ~canplay_vfs();
 
   public:
     virtual bool Open();
@@ -45,18 +43,14 @@ class canlog_tcpclient : public canlog
     virtual std::string GetInfo();
 
   public:
-    virtual void OutputMsg(CAN_log_message_t& msg);
+    virtual bool InputMsg(CAN_log_message_t* msg);
 
   public:
-    void MongooseHandler(struct mg_connection *nc, int ev, void *p);
-
-  public:
-    OvmsMutex m_mgmutex;
-    struct mg_connection *m_mgconn;
-    bool m_isopen;
+    virtual void MountListener(std::string event, void* data);
 
   public:
     std::string         m_path;
+    FILE*               m_file;
   };
 
-#endif // __CANLOG_TCP_CLIENT_H__
+#endif // __CANPLAY_VFS_H__

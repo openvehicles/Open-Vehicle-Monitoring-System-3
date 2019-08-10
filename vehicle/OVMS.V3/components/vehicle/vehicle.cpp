@@ -858,6 +858,7 @@ OvmsVehicleFactory::~OvmsVehicleFactory()
   {
   if (m_currentvehicle)
     {
+    m_currentvehicle->m_ready = false;
     delete m_currentvehicle;
     m_currentvehicle = NULL;
     m_currentvehicletype.clear();
@@ -878,6 +879,7 @@ void OvmsVehicleFactory::ClearVehicle()
   {
   if (m_currentvehicle)
     {
+    m_currentvehicle->m_ready = false;
     delete m_currentvehicle;
     m_currentvehicle = NULL;
     m_currentvehicletype.clear();
@@ -890,11 +892,13 @@ void OvmsVehicleFactory::SetVehicle(const char* type)
   {
   if (m_currentvehicle)
     {
+    m_currentvehicle->m_ready = false;
     delete m_currentvehicle;
     m_currentvehicle = NULL;
     m_currentvehicletype.clear();
     }
   m_currentvehicle = NewVehicle(type);
+  m_currentvehicle->m_ready = true;
   m_currentvehicletype = std::string(type);
   StandardMetrics.ms_v_type->SetValue(m_currentvehicle ? type : "");
   MyEvents.SignalEvent("vehicle.type.set", (void*)type, strlen(type)+1);
@@ -947,6 +951,7 @@ OvmsVehicle::OvmsVehicle()
   m_idle_ticker = 0;
   m_registeredlistener = false;
   m_autonotifications = true;
+  m_ready = false;
 
   m_poll_state = 0;
   m_poll_bus = NULL;
@@ -1108,6 +1113,8 @@ void OvmsVehicle::RxTask()
     {
     if (xQueueReceive(m_rxqueue, &frame, (portTickType)portMAX_DELAY)==pdTRUE)
       {
+      if (!m_ready)
+        continue;
       if ((frame.origin == m_poll_bus)&&(m_poll_plist))
         {
         // This is intended for our poller
@@ -1185,6 +1192,9 @@ bool OvmsVehicle::PinCheck(char* pin)
 
 void OvmsVehicle::VehicleTicker1(std::string event, void* data)
   {
+  if (!m_ready)
+    return;
+
   m_ticker++;
 
   if (m_poll_plist)

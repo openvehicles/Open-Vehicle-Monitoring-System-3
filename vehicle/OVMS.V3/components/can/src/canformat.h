@@ -44,7 +44,10 @@ typedef void (*canformat_put_write_fn)(uint8_t *buffer, size_t len, void* data);
 class canformat
   {
   public:
-    canformat(const char* type);
+    typedef enum { Discard, Simulate, Transmit } canformat_serve_mode_t;
+
+  public:
+    canformat(const char* type, canformat_serve_mode_t mode = Discard);
     virtual ~canformat();
 
   public:
@@ -61,8 +64,8 @@ class canformat
     const char* m_type;
 
   public:
-    typedef enum { Discard, Simulate, Transmit } canformat_serve_mode_t;
     canformat_serve_mode_t GetServeMode();
+    const char* GetServeModeName();
     void SetServeMode(canformat_serve_mode_t mode);
     bool IsServeDiscarding();
     void SetServeDiscarding(bool discarding);
@@ -81,6 +84,8 @@ template<typename Type> canformat* CreateCanFormat(const char* type)
   {
   return new Type(type);
   }
+
+canformat::canformat_serve_mode_t GetFormatModeType(std::string name);
 
 class OvmsCanFormatFactory
   {

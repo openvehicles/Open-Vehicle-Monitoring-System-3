@@ -38,6 +38,7 @@ static const char *TAG = "can";
 
 #include "can.h"
 #include "canlog.h"
+#include "canplay.h"
 #include "dbc.h"
 #include "dbc_app.h"
 #include <algorithm>
@@ -445,20 +446,32 @@ const char* GetCanLogTypeName(CAN_log_type_t type)
 
 void can::LogFrame(canbus* bus, CAN_log_type_t type, const CAN_frame_t* frame)
   {
-  if (m_logger)
-    m_logger->LogFrame(bus, type, frame);
+  OvmsMutexLock lock(&m_loggermap_mutex);
+
+  for (canlog_map_t::iterator it=m_loggermap.begin(); it!=m_loggermap.end(); ++it)
+    {
+    it->second->LogFrame(bus, type, frame);
+    }
   }
 
 void can::LogStatus(canbus* bus, CAN_log_type_t type, const CAN_status_t* status)
   {
-  if (m_logger)
-    m_logger->LogStatus(bus, type, status);
+  OvmsMutexLock lock(&m_loggermap_mutex);
+
+  for (canlog_map_t::iterator it=m_loggermap.begin(); it!=m_loggermap.end(); ++it)
+    {
+    it->second->LogStatus(bus, type, status);
+    }
   }
 
 void can::LogInfo(canbus* bus, CAN_log_type_t type, const char* text)
   {
-  if (m_logger)
-    m_logger->LogInfo(bus, type, text);
+  OvmsMutexLock lock(&m_loggermap_mutex);
+
+  for (canlog_map_t::iterator it=m_loggermap.begin(); it!=m_loggermap.end(); ++it)
+    {
+    it->second->LogInfo(bus, type, text);
+    }
   }
 
 void canbus::LogFrame(CAN_log_type_t type, const CAN_frame_t* frame)
@@ -468,7 +481,7 @@ void canbus::LogFrame(CAN_log_type_t type, const CAN_frame_t* frame)
 
 void canbus::LogStatus(CAN_log_type_t type)
   {
-  if (!MyCan.GetLogger() || (type==CAN_LogStatus_Error && !StatusChanged()))
+  if (!MyCan.HasLogger() || (type==CAN_LogStatus_Error && !StatusChanged()))
     return;
   MyCan.LogStatus(this, type, &m_status);
   }
@@ -492,14 +505,8 @@ bool canbus::StatusChanged()
   return false;
   }
 
-void can::SetLogger(canlog* logger, int filterc, const char* const* filterv)
+uint32_t can::AddLogger(canlog* logger, int filterc, const char* const* filterv)
   {
-  if (m_logger != NULL)
-    {
-    m_logger->Close();
-    delete m_logger;
-    }
-
   if (filterc>0)
     {
     canfilter *filter = new canfilter();
@@ -510,17 +517,124 @@ void can::SetLogger(canlog* logger, int filterc, const char* const* filterv)
     logger->SetFilter(filter);
     }
 
-  m_logger = logger;
+  OvmsMutexLock lock(&m_loggermap_mutex);
+  uint32_t id = m_logger_id++;
+  m_loggermap[id] = logger;
+
+  return id;
   }
 
-canlog* can::GetLogger()
+bool can::HasLogger()
   {
-  return m_logger;
+  OvmsMutexLock lock(&m_loggermap_mutex);
+
+  return (m_loggermap.size() > 0);
   }
 
-void can::ClearLogger()
+canlog* can::GetLogger(uint32_t id)
   {
-  m_logger = NULL;
+  OvmsMutexLock lock(&m_loggermap_mutex);
+
+  auto k = m_loggermap.find(id);
+  if (k != m_loggermap.end())
+    return k->second;
+  else
+    return NULL;
+  }
+
+bool can::RemoveLogger(uint32_t id)
+  {
+  OvmsMutexLock lock(&m_loggermap_mutex);
+
+  auto k = m_loggermap.find(id);
+  if (k != m_loggermap.end())
+    {
+    k->second->Close();
+    vTaskDelay(pdMS_TO_TICKS(100)); // give logger task time to finish
+    delete k->second;
+    m_loggermap.erase(k);
+    return true;
+    }
+  return false;
+  }
+
+void can::RemoveLoggers()
+  {
+  OvmsMutexLock lock(&m_loggermap_mutex);
+
+  for (canlog_map_t::iterator it=m_loggermap.begin(); it!=m_loggermap.end(); ++it)
+    {
+    it->second->Close();
+    vTaskDelay(pdMS_TO_TICKS(100)); // give logger task time to finish
+    delete it->second;
+    m_loggermap.erase(it);
+    }
+  }
+
+uint32_t can::AddPlayer(canplay* player, int filterc, const char* const* filterv)
+  {
+  if (filterc>0)
+    {
+    canfilter *filter = new canfilter();
+    for (int k=0;k<filterc;k++)
+      {
+      filter->AddFilter(filterv[k]);
+      }
+    player->SetFilter(filter);
+    }
+
+  OvmsMutexLock lock(&m_playermap_mutex);
+  uint32_t id = m_player_id++;
+  m_playermap[id] = player;
+
+  return id;
+  }
+
+bool can::HasPlayer()
+  {
+  OvmsMutexLock lock(&m_playermap_mutex);
+
+  return (m_playermap.size() > 0);
+  }
+
+canplay* can::GetPlayer(uint32_t id)
+  {
+  OvmsMutexLock lock(&m_playermap_mutex);
+
+  auto k = m_playermap.find(id);
+  if (k != m_playermap.end())
+    return k->second;
+  else
+    return NULL;
+  }
+
+bool can::RemovePlayer(uint32_t id)
+  {
+  OvmsMutexLock lock(&m_playermap_mutex);
+
+  auto k = m_playermap.find(id);
+  if (k != m_playermap.end())
+    {
+    k->second->Close();
+    vTaskDelay(pdMS_TO_TICKS(100)); // give logger task time to finish
+    delete k->second;
+    m_playermap.erase(k);
+    return true;
+    }
+  return false;
+  }
+
+void can::RemovePlayers()
+  {
+  OvmsMutexLock lock(&m_playermap_mutex);
+
+  for (canplay_map_t::iterator it=m_playermap.begin(); it!=m_playermap.end(); ++it)
+    {
+    it->second->Close();
+    vTaskDelay(pdMS_TO_TICKS(100)); // give logger task time to finish
+    delete it->second;
+    m_playermap.erase(it);
+    }
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -568,6 +682,9 @@ can::can()
   {
   ESP_LOGI(TAG, "Initialising CAN (4510)");
 
+  m_logger_id = 1;
+  m_player_id = 1;
+
   MyConfig.RegisterParam("can", "CAN Configuration", true, true);
 
   OvmsCommand* cmd_can = MyCommandApp.RegisterCommand("can","CAN framework");
@@ -599,7 +716,6 @@ can::can()
 
   m_rxqueue = xQueueCreate(CONFIG_OVMS_HW_CAN_RX_QUEUE_SIZE,sizeof(CAN_queue_msg_t));
   xTaskCreatePinnedToCore(CAN_rxtask, "OVMS CanRx", 2048, (void*)this, 23, &m_rxtask, 0);
-  m_logger = NULL;
   }
 
 can::~can()

@@ -129,8 +129,6 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
 
   // init OBD2 poller:
   ObdInit();
-
-  m_ready = true;
 }
 
 OvmsVehicleRenaultTwizy::~OvmsVehicleRenaultTwizy()
