@@ -207,7 +207,7 @@ const struct twizy_cfg_params twizy_cfg_params[] =
   } // CFG[1] = TWIZY45
 
   ,{
-    // CFG[2] = T80 SEVCON with T45 Gearbox:
+    // CFG[2] = T80 SEVCON with T45 Gearbox (SC80GB45):
     //    - use if mounting a T80 SEVCON G4845 instead of the G4827 in a T45
     //    - hybrid: power & torque values of T80, speed & rpm values of T45
     //
@@ -265,7 +265,68 @@ const struct twizy_cfg_params twizy_cfg_params[] =
             // DefaultMapSpd:
     { 4357, 5083, 6535, 8714 }
   
-  } // CFG[2] = T80 SEVCON with T45 Gearbox
+  } // CFG[2] = T80 SEVCON with T45 Gearbox (SC80GB45)
+
+  ,{
+    // CFG[3] = T45 SEVCON with T80 Gearbox (SC45GB80):
+    //    - use if mounting a T45 SEVCON G4827 instead of the G4845 in a T80
+    //    - hybrid: power & torque values of T45, speed & rpm values of T80
+    //
+    //    32.5 Nm (0x4611.0x01) = default max power map (PMAP) torque
+    //    33 Nm (0x6076.0x00) = default peak torque
+    //    33 Nm (0x2916.0x01) = rated torque (??? should be equal to 0x6076...)
+    //    36 Nm (0x4610.0x11) = max motor torque according to flux map
+    //
+    //    7250 rpm (0x2920.0x05) = default max fwd speed = ~80 kph
+    //    8050 rpm = default overspeed warning trigger (STOP lamp ON) = ~89 kph
+    //    8500 rpm = default overspeed brakedown trigger = ~94 kph
+    //    10000 rpm = max neutral speed (0x3813.2d) = ~110 kph
+    //    11000 rpm = severe overspeed fault (0x4624.00) = ~121 kph
+
+    80,     // DefaultKphMax
+    7250,   // DefaultRpmMax
+    900,    // DefaultRpmMaxRev
+    400,    // DeltaBrkStart
+    800,    // DeltaBrkEnd
+    1250,   // DeltaBrkDown
+
+    89,     // DefaultKphWarn
+    8050,   // DefaultRpmWarn
+    550,    // DeltaWarnOff
+
+    32500,  // DefaultTrq
+    33000,  // DefaultTrqRated
+    36000,  // DefaultTrqLim
+    500,    // DeltaMapTrq
+
+    270000, // DefaultCurrLim
+    290,    // DefaultCurrStatorMax
+    330,    // BoostCurr
+    { 480, 8192, 576, 8960 }, // DefaultFMAP
+    { 656, 9600, 1328, 11901 }, // ExtendedFMAP
+    
+    7050,   // DefaultPwrLo
+    10000,  // DefaultPwrLoLim
+    7650,   // DefaultPwrHi
+    10000,  // DefaultPwrHiLim
+    2688,   // DefaultMaxMotorPwr [1/256 kW]
+
+    209,    // DefaultRecup
+    21,     // DefaultRecupPrc
+
+    300,    // DefaultRampStart
+    30,     // DefaultRampStartPrm
+    2083,   // DefaultRampAccel
+    21,     // DefaultRampAccelPrc
+
+            // DefaultPMAP:
+    { 520,0, 520,2050, 437,2500, 363,3000, 314,3500,
+      279,4000, 247,4500, 226,5000, 195,6000 },
+
+            // DefaultMapSpd:
+    { 3000, 3500, 4500, 6000 }
+  
+  } // CFG[3] = T45 SEVCON with T80 Gearbox (SC45GB80)
 
 }; // const struct twizy_cfg_params twizy_cfg_params[]
 

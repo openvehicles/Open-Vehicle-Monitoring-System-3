@@ -55,10 +55,11 @@ typedef union __attribute__ ((__packed__))
     unsigned unsaved:1;               // CFG: RAM profile changed & not yet saved to EEPROM
     unsigned applied:1;               // CFG: applyprofile success flag
     unsigned keystate:1;              // CFG: profile button push state
-    unsigned type:4;                  // CFG: 0=Twizy80, 1=Twizy45, 2=SC80GB45 (SEVCON_T80+Gearbox_T45)
-                                      //      0/1   = auto detect
-                                      //      2     = config set xrt type SC80GB45
-                                      //      3…15  = reserved
+    unsigned type:4;                  // CFG: SEVCON & Gearbox type
+                                      //      0/1   = auto detect (standard Twizy80/Twizy45)
+                                      //      2     = config set xrt type SC80GB45 (SEVCON_T80 + Gearbox_T45)
+                                      //      3     = config set xrt type SC45GB80 (SEVCON_T45 + Gearbox_T80)
+                                      //      4…15  = reserved
     
     unsigned :8;                      // padding/reserved
   };

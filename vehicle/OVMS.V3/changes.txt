@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Twizy: added tuning option for SEVCON_T45 + Gearbox_T80 hybrid
+  Configuration: xrt [type] = "SC45GB80"
 - Twizy: OBD2 VIN reading & cluster DTC monitoring
   New commands:
     xrt dtc [show]                      Show DTC report
