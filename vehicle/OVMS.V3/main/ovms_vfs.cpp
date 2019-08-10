@@ -134,7 +134,7 @@ void vfs_cat(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 
 void vfs_head(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  const char *filename;
+  const char *filename = NULL;
   int nrlines = 20;
 
   for (int i=0; i<argc; i++)
@@ -145,6 +145,11 @@ void vfs_head(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
       filename = argv[i];
     }
 
+  if (!filename)
+    {
+    writer->puts("Error: no filename given");
+    return;
+    }
   if (MyConfig.ProtectedPath(filename))
     {
     writer->puts("Error: protected path");
