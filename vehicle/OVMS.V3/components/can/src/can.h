@@ -163,7 +163,7 @@ typedef struct
 typedef enum
   {
   CAN_frame = 0,
-  CAN_rxcallback,
+  CAN_asyncinterrupthandler, // used for asynchronous handling of rx and other interrupts from MCP2515
   CAN_txcallback,
   CAN_txfailedcallback,
   CAN_logerror
@@ -277,6 +277,7 @@ class canbus : public pcp, public InternalRamAllocated
     virtual esp_err_t Stop();
     virtual void ClearStatus();
     virtual void ViewRegisters();
+    virtual esp_err_t WriteReg( uint8_t reg, uint8_t value );
 
   public:
     void AttachDBC(dbcfile *dbcfile);
@@ -288,7 +289,7 @@ class canbus : public pcp, public InternalRamAllocated
     virtual esp_err_t Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
     virtual esp_err_t WriteExtended(uint32_t id, uint8_t length, uint8_t *data, TickType_t maxqueuewait=0);
     virtual esp_err_t WriteStandard(uint16_t id, uint8_t length, uint8_t *data, TickType_t maxqueuewait=0);
-    virtual bool RxCallback(CAN_frame_t* frame);
+    virtual bool AsynchronousInterruptHandler(CAN_frame_t* frame, bool* frameReceived);
     virtual void TxCallback(CAN_frame_t* frame, bool success);
 
   protected:

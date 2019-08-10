@@ -66,10 +66,10 @@ void swcan::systemUp(std::string event, void* data)
   m_rx_led->Blink(200,3);
   }
 
-bool swcan::RxCallback(CAN_frame_t* frame)
+bool swcan::AsynchronousInterruptHandler(CAN_frame_t* frame, bool* frameReceived)
   {
-  bool res = mcp2515::RxCallback(frame);
-  if (res)
+  bool res = mcp2515::AsynchronousInterruptHandler(frame, frameReceived);
+  if (*frameReceived)
     {
     // frame was received -> blink led
     m_rx_led->Blink(LED_BLINK_TIME);

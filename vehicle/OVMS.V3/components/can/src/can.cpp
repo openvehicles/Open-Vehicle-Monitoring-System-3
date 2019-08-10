@@ -313,6 +313,36 @@ void can_view_registers(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int
   sbus->ViewRegisters();
   }
 
+void can_set_register(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* bus = cmd->GetParent()->GetName();
+  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->puts("Error: Cannot find named CAN bus");
+    return;
+    }
+  if (argc<2)
+    {
+    writer->puts("Error: register address and value must be given");
+    return;
+    }
+  uint32_t addr = (int)strtol(argv[0],NULL,16);
+  uint32_t value = (int)strtol(argv[1],NULL,16);
+  if (addr > 255)
+    {
+    writer->puts("Error: Register address out of range");
+    return;
+    }
+  if (value > 255)
+    {
+    writer->puts("Error: Register value out of range");
+    return;
+    }
+
+  sbus->WriteReg(addr,value);
+  }
+
 ////////////////////////////////////////////////////////////////////////
 // CAN Filtering (software based filter)
 // The canfilter object encapsulates the filtering of CAN frames
@@ -670,12 +700,16 @@ static void CAN_rxtask(void *pvParameters)
         case CAN_frame:
           me->IncomingFrame(&msg.body.frame);
           break;
-        case CAN_rxcallback:
-          while (msg.body.bus->RxCallback(&msg.body.frame))
+        case CAN_asyncinterrupthandler:
+          {
+          bool receivedFrame = false;
+          while (msg.body.bus->AsynchronousInterruptHandler(&msg.body.frame, &receivedFrame))
             {
-            me->IncomingFrame(&msg.body.frame);
+            if (receivedFrame)
+              me->IncomingFrame(&msg.body.frame);
             }
           break;
+          }
         case CAN_txcallback:
           msg.body.bus->TxCallback(&msg.body.frame, true);
           break;
@@ -730,12 +764,13 @@ can::can()
     cmd_canx->RegisterCommand("status","Show CAN status",can_status);
     cmd_canx->RegisterCommand("clear","Clear CAN status",can_clearstatus);
     cmd_canx->RegisterCommand("viewregisters","view can controller registers",can_view_registers);
+    cmd_canx->RegisterCommand("setregister","set can controller register",can_set_register,"<reg> <value>",2,2);
     }
 
   cmd_can->RegisterCommand("list", "List CAN buses", can_list);
 
   m_rxqueue = xQueueCreate(CONFIG_OVMS_HW_CAN_RX_QUEUE_SIZE,sizeof(CAN_queue_msg_t));
-  xTaskCreatePinnedToCore(CAN_rxtask, "OVMS CanRx", 2048, (void*)this, 23, &m_rxtask, 0);
+  xTaskCreatePinnedToCore(CAN_rxtask, "OVMS CanRx", 2*2048, (void*)this, 23, &m_rxtask, 0);
   }
 
 can::~can()
@@ -879,11 +914,14 @@ esp_err_t canbus::Stop()
   return ESP_FAIL;
   }
 
-
 void canbus::ViewRegisters()
   {
   }
 
+esp_err_t canbus::WriteReg( uint8_t reg, uint8_t value )
+  {
+  return ESP_FAIL;
+  }
 
 void canbus::ClearStatus()
   {
@@ -952,7 +990,7 @@ void canbus::BusTicker10(std::string event, void* data)
     }
   }
 
-bool canbus::RxCallback(CAN_frame_t* frame)
+bool canbus::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameReceived)
   {
   return false;
   }

@@ -47,7 +47,7 @@ class swcan : public mcp2515
     esp_err_t Stop();
     void SetPowerMode(PowerMode powermode);
     void SetTransceiverMode(TransceiverMode opmode);
-    bool RxCallback(CAN_frame_t* frame);
+    bool AsynchronousInterruptHandler(CAN_frame_t* frame, bool* frameReceived);
     void TxCallback(CAN_frame_t* frame, bool success);
     //void AutoInit();
     swcan_led * m_status_led, * m_tx_led, * m_rx_led;
