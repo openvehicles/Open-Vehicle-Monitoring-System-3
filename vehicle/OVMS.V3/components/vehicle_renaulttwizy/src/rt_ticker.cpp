@@ -154,7 +154,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
   // Subsystem updates:
   
   PowerUpdate();
-  
+  ObdTicker1();
   if (m_sevcon)
     m_sevcon->Ticker1(ticker);
   
@@ -521,4 +521,10 @@ void OvmsVehicleRenaultTwizy::Ticker10(uint32_t ticker)
     MsgCommandRestrict(buf, CMD_Lock, NULL);
     MyNotify.NotifyString("alert", "valetmode.odolimit", buf.c_str());
   }
+
+
+  // --------------------------------------------------------------------------
+  // Subsystem updates:
+  ObdTicker10();
+
 }
