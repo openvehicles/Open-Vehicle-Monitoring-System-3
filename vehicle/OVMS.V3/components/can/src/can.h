@@ -256,6 +256,7 @@ extern const char* GetCanLogTypeName(CAN_log_type_t type);
 ////////////////////////////////////////////////////////////////////////
 
 class canlog;
+class canplay;
 class dbcfile;
 
 class canbus : public pcp, public InternalRamAllocated
@@ -358,6 +359,13 @@ class can : public InternalRamAllocated
     void RemoveLoggers();
 
   public:
+    uint32_t AddPlayer(canplay* player, int filterc=0, const char* const* filterv=NULL);
+    bool HasPlayer();
+    canplay* GetPlayer(uint32_t id);
+    bool RemovePlayer(uint32_t id);
+    void RemovePlayers();
+
+  public:
     void LogFrame(canbus* bus, CAN_log_type_t type, const CAN_frame_t* frame);
     void LogStatus(canbus* bus, CAN_log_type_t type, const CAN_status_t* status);
     void LogInfo(canbus* bus, CAN_log_type_t type, const char* text);
@@ -370,6 +378,12 @@ class can : public InternalRamAllocated
     canlog_map_t m_loggermap;
     OvmsMutex m_loggermap_mutex;
     uint32_t m_logger_id;
+
+  public:
+    typedef std::map<uint32_t, canplay*> canplay_map_t;
+    canplay_map_t m_playermap;
+    OvmsMutex m_playermap_mutex;
+    uint32_t m_player_id;
 
   private:
     canbus* m_buslist[CAN_MAXBUSES];

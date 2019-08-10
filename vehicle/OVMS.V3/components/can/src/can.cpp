@@ -38,6 +38,7 @@ static const char *TAG = "can";
 
 #include "can.h"
 #include "canlog.h"
+#include "canplay.h"
 #include "dbc.h"
 #include "dbc_app.h"
 #include <algorithm>
@@ -570,6 +571,72 @@ void can::RemoveLoggers()
     }
   }
 
+uint32_t can::AddPlayer(canplay* player, int filterc, const char* const* filterv)
+  {
+  if (filterc>0)
+    {
+    canfilter *filter = new canfilter();
+    for (int k=0;k<filterc;k++)
+      {
+      filter->AddFilter(filterv[k]);
+      }
+    player->SetFilter(filter);
+    }
+
+  OvmsMutexLock lock(&m_playermap_mutex);
+  uint32_t id = m_player_id++;
+  m_playermap[id] = player;
+
+  return id;
+  }
+
+bool can::HasPlayer()
+  {
+  OvmsMutexLock lock(&m_playermap_mutex);
+
+  return (m_playermap.size() > 0);
+  }
+
+canplay* can::GetPlayer(uint32_t id)
+  {
+  OvmsMutexLock lock(&m_playermap_mutex);
+
+  auto k = m_playermap.find(id);
+  if (k != m_playermap.end())
+    return k->second;
+  else
+    return NULL;
+  }
+
+bool can::RemovePlayer(uint32_t id)
+  {
+  OvmsMutexLock lock(&m_playermap_mutex);
+
+  auto k = m_playermap.find(id);
+  if (k != m_playermap.end())
+    {
+    k->second->Close();
+    vTaskDelay(pdMS_TO_TICKS(100)); // give logger task time to finish
+    delete k->second;
+    m_playermap.erase(k);
+    return true;
+    }
+  return false;
+  }
+
+void can::RemovePlayers()
+  {
+  OvmsMutexLock lock(&m_playermap_mutex);
+
+  for (canplay_map_t::iterator it=m_playermap.begin(); it!=m_playermap.end(); ++it)
+    {
+    it->second->Close();
+    vTaskDelay(pdMS_TO_TICKS(100)); // give logger task time to finish
+    delete it->second;
+    m_playermap.erase(it);
+    }
+  }
+
 ////////////////////////////////////////////////////////////////////////
 // CAN controller task
 ////////////////////////////////////////////////////////////////////////
@@ -616,6 +683,7 @@ can::can()
   ESP_LOGI(TAG, "Initialising CAN (4510)");
 
   m_logger_id = 1;
+  m_player_id = 1;
 
   MyConfig.RegisterParam("can", "CAN Configuration", true, true);
 
