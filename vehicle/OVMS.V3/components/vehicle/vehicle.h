@@ -100,6 +100,8 @@ struct DashboardConfig;
 
 class OvmsVehicle : public InternalRamAllocated
   {
+  friend class OvmsVehicleFactory;
+
   public:
     OvmsVehicle();
     virtual ~OvmsVehicle();
@@ -110,6 +112,7 @@ class OvmsVehicle : public InternalRamAllocated
     TaskHandle_t m_rxtask;
     bool m_registeredlistener;
     bool m_autonotifications;
+    bool m_ready;
 
   public:
     canbus* m_can1;

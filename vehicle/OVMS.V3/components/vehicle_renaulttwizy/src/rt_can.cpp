@@ -141,10 +141,6 @@ void OvmsVehicleRenaultTwizy::CanResponder(const CAN_frame_t* p_frame)
 
 void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
 {
-  // no processing until fully initialized:
-  if (!m_ready)
-    return;
-
   unsigned int u;
   int s;
   

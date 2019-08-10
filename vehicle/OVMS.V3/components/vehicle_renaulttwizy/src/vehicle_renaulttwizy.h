@@ -104,7 +104,6 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     void NotifiedVehicleChargeState(const char* state);
 
   protected:
-    bool m_ready = false;
     static size_t m_modifier;
     OvmsMetricString *m_version;
     OvmsCommand *cmd_xrt;

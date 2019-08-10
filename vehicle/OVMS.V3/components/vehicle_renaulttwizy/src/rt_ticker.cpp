@@ -49,9 +49,6 @@ using namespace std;
 
 void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
 {
-  if (!m_ready)
-    return;
-
   // --------------------------------------------------------------------------
   // Update standard metrics:
   // 
@@ -457,9 +454,6 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
 
 void OvmsVehicleRenaultTwizy::Ticker10(uint32_t ticker)
 {
-  if (!m_ready)
-    return;
-
   // Check if CAN-Bus has turned offline:
   if (twizy_status & CAN_STATUS_ONLINE)
   {
