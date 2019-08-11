@@ -50,14 +50,17 @@ Installing Plugins
 The framework supports installing user content as pages or extensions to
 pages. To install an example:
 
-1. Menu Config → Web Plugins
-2. Add plugin: type "Page", name e.g. "dev.metrics" (used as the file
+1. Tools → Editor
+2. Navigate to ``/store/`` and if ``/store/plugin`` doesn't exist
+   use "New dir" to create it.
+3. Menu Config → Web Plugins
+4. Add plugin: type "Page", name e.g. "dev.metrics" (used as the file
    name in ``/store/plugin``)
-3. Save → Edit
-4. Set page to e.g. "/usr/dev/metrics", label to e.g. "Dev: Metrics"
-5. Set the menu to e.g. "Tools" and auth to e.g. "None"
-6. Paste the page source into the content area
-7. Save → the page is now accessible in the "Tools" menu.
+5. Save → Edit
+6. Set page to e.g. "/usr/dev/metrics", label to e.g. "Dev: Metrics"
+7. Set the menu to e.g. "Tools" and auth to e.g. "None"
+8. Paste the page source into the content area
+9. Save → the page is now accessible in the "Tools" menu.
 
 Hint: use the standard editor (tools menu) in a second session to edit a
 plugin repeatedly during test / development.
