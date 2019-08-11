@@ -375,7 +375,8 @@ void location_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
       MyLocations.m_park_latitude,
       MyLocations.m_park_longitude);
   n = MyLocations.m_locations.size();
-  writer->printf("There are %d location%s defined\n", n, n == 1 ? "" : "s");
+  writer->printf("There %s %d location%s defined\n",
+    n == 1 ? "is" : "are", n, n == 1 ? "" : "s");
 
   bool found = false;
   for (LocationMap::iterator it=MyLocations.m_locations.begin(); it!=MyLocations.m_locations.end(); ++it)
