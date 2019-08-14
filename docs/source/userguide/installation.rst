@@ -159,7 +159,7 @@ To activate your Hologram SIM, register at https://dashboard.hologram.io/, then 
   - `Issue #62 SMS Notifications <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/62>`_
   - `Issue #63 SMS Command Gateway <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/63>`_
 
-When activating your Hologram SIM, you'll need to enter the ICCID written on the SIM itself. You can also get that electronically (without having to open up the package) from the OVMS web or terminal shells with the following command:
+When activating your Hologram SIM, you'll need to enter the ICCID written on the SIM itself. You can also get that electronically (without having to open up the enclosure) from the OVMS web or terminal shell (Tools > Shell) with the following command:
 
 ``OVMS# metric list m.net.mdm.iccid``
 
