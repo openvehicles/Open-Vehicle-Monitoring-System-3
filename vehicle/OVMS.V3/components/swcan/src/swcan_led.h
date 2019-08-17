@@ -40,13 +40,20 @@ class swcan_led
     swcan_led(const char * name, int pin, int defaultState=0 );
     ~swcan_led();
 
-    void SetState( int state );
+    void Set( int state );
     void SetDefaultState( int defaultState );
-    void Blink( int duration, int count=1 );
+    void Blink( int onDuration, int offDuration=-1, int count=1, int burstCount=1, int interBurstInterval=1000 );
+
+    void SetState( int state );
     int pin;
-  	int blinks;
+  	int transitions;
+    int blink_state;
   	int state;
   	int default_state;
+    int count;
+    int burst_count;
+    int inter_burst_interval;
+    int on_duration, off_duration;
     TimerHandle_t m_timer;
 
   };

@@ -32,6 +32,7 @@ static const char *TAG = "swcan";
 #include "swcan.h"
 #include "ovms_peripherals.h"
 #include "ovms_config.h"
+#include <metrics_standard.h>
 
 #define MCP2515_MODE_SWITCH // is the mode0/mode1 switching done indirectly by MCP2515 RXnBF pins or directly by MAX7317 ?
 
@@ -42,28 +43,68 @@ static const char *TAG = "swcan";
 swcan::swcan(const char* name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin, int intpin, bool hw_cs /*=true*/)
   : mcp2515(name,spibus,host,clockspeed,cspin,intpin,hw_cs)
   {
-  m_status_led = new swcan_led("status led", MAX7317_SWCAN_STATUS_LED, 1); // default on
+  m_status_led = new swcan_led("status led", MAX7317_SWCAN_STATUS_LED);
   m_tx_led = new swcan_led("tx led", MAX7317_SWCAN_TX_LED);
   m_rx_led = new swcan_led("rx led", MAX7317_SWCAN_RX_LED);
 
-
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG,"system.start", std::bind(&swcan::systemUp, this, _1, _2));  
+  MyEvents.RegisterEvent(TAG,"system.start", std::bind(&swcan::SystemUp, this, _1, _2));  
+  MyEvents.RegisterEvent(TAG,"server.v2.connected", std::bind(&swcan::ServerConnected, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"server.v2.disconnected", std::bind(&swcan::ServerDisconnected, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"server.v2.waitreconnect", std::bind(&swcan::ServerDisconnected, this, _1, _2));  
+  MyEvents.RegisterEvent(TAG,"system.modem.poweredon", std::bind(&swcan::ModemEvent, this, _1, _2));  
+  MyEvents.RegisterEvent(TAG,"system.modem.muxstart", std::bind(&swcan::ModemEvent, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.modem.netwait", std::bind(&swcan::ModemEvent, this, _1, _2));  
+  MyEvents.RegisterEvent(TAG,"system.modem.netstart", std::bind(&swcan::ModemEvent, this, _1, _2));  
   }
 
 swcan::~swcan()
   {
+  MyEvents.DeregisterEvent(TAG);  
   }
 
-void swcan::systemUp(std::string event, void* data)
+void swcan::ModemEvent(std::string event, void* data)
   {
-  // flash all LEDS three times and then leave status led on
-  m_status_led->Blink(200,3);
+  ESP_LOGD(TAG, "Modem event: %s", event.c_str());
+  // Ignore modem states if we are anyway connected to server via WiFi
+  if (StdMetrics.ms_s_v2_connected->AsBool())
+    return;
+
+  if (event=="system.modem.poweredon")
+    m_status_led->Blink(50,200,1,-1,800);
+  if (event=="system.modem.muxstart")
+    m_status_led->Blink(50,200,2,-1,800);
+  if (event=="system.modem.netwait")
+    m_status_led->Blink(50,200,3,-1,800);
+  if (event=="system.modem.netstart")
+    m_status_led->Blink(50,200,4,-1,800);
+
+  }
+
+void swcan::ServerConnected(std::string event, void* data)
+  {
+  ESP_LOGI(TAG, "Server connected");
+  m_status_led->Set(true);
+  }
+
+void swcan::ServerDisconnected(std::string event, void* data)
+  {
+  ESP_LOGW(TAG, "Server disconnected");
+  m_status_led->Blink(250,250,-1);
+  }
+
+void swcan::SystemUp(std::string event, void* data)
+  {
+  // flash all LEDS three times
+  m_status_led->Blink(200,200,3);
   vTaskDelay(50 / portTICK_PERIOD_MS);  
-  m_tx_led->Blink(200,3);
-  vTaskDelay(50 / portTICK_PERIOD_MS);  
-  m_rx_led->Blink(200,3);
+  m_tx_led->Blink(200,200, 3);
+  vTaskDelay(50 / portTICK_PERIOD_MS);
+  m_rx_led->Blink(200,200, 3);
+
+  // Blink status led indefinitely until server is connected or modem state changes
+  m_status_led->Blink(500,500,-1);
   }
 
 bool swcan::AsynchronousInterruptHandler(CAN_frame_t* frame, bool* frameReceived)

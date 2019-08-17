@@ -53,7 +53,11 @@ class swcan : public mcp2515
     swcan_led * m_status_led, * m_tx_led, * m_rx_led;
 
   private:
-    void systemUp(std::string event, void* data);
+    void SystemUp(std::string event, void* data);
+    void ServerConnected(std::string event, void* data);
+    void ServerDisconnected(std::string event, void* data);
+    void ModemEvent(std::string event, void* data);
+
     void DoSetTransceiverMode(bool mode0, bool mode1);
   	TransceiverMode m_tmode;
 

@@ -27,7 +27,7 @@
 */
 
 #include "ovms_log.h"
-//static const char *TAG = "swcan_led";
+static const char *TAG = "swcan_led";
 #include "swcan_led.h"
 #include "ovms_peripherals.h"
 #include "freertos/timers.h"
@@ -36,17 +36,38 @@
 void LedHandler( TimerHandle_t xTimer )
   { 
   swcan_led * led = (swcan_led*) pvTimerGetTimerID(xTimer);
-  if (led->blinks > 0) 
+  if (led->transitions==0)
     {
-      led->blinks--;
+    if (led->burst_count == 0)
+      {
+      // All blinks have finished
+      led->SetState(led->default_state);
+      xTimerStop(led->m_timer,100);
+      } 
+    else
+      {
+      // Start new group of blinks
+      if (led->burst_count != -1)
+        led->burst_count--;
+      led->transitions = led->count * 2 -1;
       led->SetState( (led->state+1)&1 );
-
-      xTimerReset(led->m_timer,10);
-    } 
+      led->blink_state = (led->blink_state+1)&1;
+      xTimerChangePeriod(led->m_timer, led->inter_burst_interval / portTICK_PERIOD_MS, 10);
+      }
+    }
   else
-  	led->SetState( led->default_state );
+    {
+    // New on/off transition of a blink in a burst
+    if (led->transitions != -1)
+      led->transitions--;
+    led->SetState( (led->state+1)&1 );
+    led->blink_state = (led->blink_state+1)&1;
+    if (led->blink_state)
+      xTimerChangePeriod(led->m_timer, led->on_duration / portTICK_PERIOD_MS, 10);
+    else
+      xTimerChangePeriod(led->m_timer, led->off_duration / portTICK_PERIOD_MS, 10);
+    } 
   }
-
 
 swcan_led::swcan_led( const char * name, int max7317_pin, int defaultState )
   {
@@ -67,21 +88,48 @@ void swcan_led::SetDefaultState( int defaultState )
 
 void swcan_led::SetState( int newState )
 	{
-    if (MyPeripherals) 
- 		{
-    	//ESP_LOGE(TAG, "set %s to %d", pcTimerGetTimerName(m_timer), newState);
-   		state = newState;
-   		MyPeripherals->m_max7317->Output( pin, state ? 0 : 1);
-   		}
-   	}
+  if (MyPeripherals) 
+    {
+ 		state = newState;
+ 		MyPeripherals->m_max7317->Output( pin, state ? 0 : 1);
+ 		}
+  }
+
+void swcan_led::Set( int newState )
+  {
+  //ESP_LOGD(TAG, "set %s to %d", pcTimerGetTimerName(m_timer), newState);
+  if (transitions != 0)
+    xTimerStop(m_timer,100);
+  SetState(newState);
+  }
 
 
-void swcan_led::Blink( int duration, int count )
+void swcan_led::Blink( int onDuration, int offDuration, int _count, int burstCount, int interBurstInterval)
 	{
-	if (count > 0)
-		{
-		blinks = count * 2 -1;
-		SetState( (state+1)&1 );
-		xTimerChangePeriod(m_timer, duration / portTICK_PERIOD_MS, 10);
-		}
+  count = _count;
+  if ( (count==0) || (burstCount==0) )
+    return;
+  if (count > 0)
+    transitions = (count-1)*2;
+  else
+    transitions = -1; // blink indefinitely
+
+  on_duration = onDuration;
+  if (offDuration != -1)
+    off_duration = offDuration;
+  else
+    off_duration = on_duration;
+  burst_count = burstCount;
+  if (burst_count != -1)
+    burst_count--;
+  inter_burst_interval = interBurstInterval;
+
+  // There's a separate blink_state apart from the actual LED state, because if we want to blink an always-on LED, it transitions to off and then back on
+  blink_state = 1;
+  SetState( (default_state+1)&1 );
+  //ESP_LOGD(TAG,"blink transitions %d burst %d state %d",transitions,burst_count,state);
+	xTimerChangePeriod(m_timer, on_duration / portTICK_PERIOD_MS, 10);
 	}
+
+
+
