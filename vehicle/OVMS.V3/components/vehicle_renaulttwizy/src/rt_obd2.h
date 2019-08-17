@@ -93,7 +93,7 @@ struct __attribute__ ((__packed__)) cluster_dtc {
   // Bytes 8…11
   uint8_t   IgnitionCycle;    // ? 0xFF = off
   uint8_t   TimeCounter;      // ? reoccurrence count? normally 0
-  uint8_t   BL;               // Battery SOC level [%]
+  int8_t    BL;               // Battery SOC level [%]
   int8_t    Speed;            // [kph] / 0xFF
 
 
