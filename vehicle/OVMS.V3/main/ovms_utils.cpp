@@ -287,8 +287,9 @@ char* HexByte(char* p, uint8_t byte)
 /**
  * FormatHexDump: create/fill hexdump buffer including printable representation
  * Note: allocates buffer as necessary in *bufferp, caller must free.
+ * Returns new remaining length
  */
-int FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsize /*=16*/)
+size_t FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsize /*=16*/)
   {
   const char *s = data;
 
@@ -332,7 +333,10 @@ int FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsi
       p++;
       }
     *p = 0;
-    rlength -= colsize;
+    if (rlength > colsize)
+      rlength -= colsize;
+    else
+      rlength = 0;
     }
 
   return rlength;
