@@ -141,12 +141,16 @@ Usage:
 
 // Convenience macros for initializing and sending standard and exteneded frame CAN messages
 #define SEND_STD_FRAME(bus,frame,id,len, ...) \
+  { \
   FRAME_FILL(0, bus,frame,id,len, ##__VA_ARGS__) \
-  bus->Write(&frame);
+  bus->Write(&frame); \
+  }
 
 #define SEND_EXT_FRAME(bus,frame,id,len, ...) \
+  { \
   FRAME_FILL(1, bus,frame,id,len, ##__VA_ARGS__)  \
-  bus->Write(&frame);
+  bus->Write(&frame); \
+  }
 
 // Helper functions for getting 1-4 byte chunks from CAN message payload
 #define GET8(frame, pos) (frame->data.u8[pos])

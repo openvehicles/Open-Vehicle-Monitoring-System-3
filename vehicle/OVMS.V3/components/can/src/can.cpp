@@ -702,12 +702,14 @@ static void CAN_rxtask(void *pvParameters)
           break;
         case CAN_asyncinterrupthandler:
           {
-          bool receivedFrame = false;
-          while (msg.body.bus->AsynchronousInterruptHandler(&msg.body.frame, &receivedFrame))
-            {
+          bool loop;
+          // Loop until all interrupts are handled
+          do {
+            bool receivedFrame;
+            loop = msg.body.bus->AsynchronousInterruptHandler(&msg.body.frame, &receivedFrame);
             if (receivedFrame)
               me->IncomingFrame(&msg.body.frame);
-            }
+            } while (loop);
           break;
           }
         case CAN_txcallback:

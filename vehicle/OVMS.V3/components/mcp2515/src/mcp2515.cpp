@@ -361,6 +361,8 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameRecei
   {
   uint8_t buf[16];
 
+  *frameReceived = false;
+
   // read interrupts (CANINTF 0x2c) and errors (EFLG 0x2d):
   uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, REG_CANINTF);
   uint8_t intstat = p[0];
