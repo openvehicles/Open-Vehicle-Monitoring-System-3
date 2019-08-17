@@ -27,7 +27,7 @@
 */
 
 #include "ovms_log.h"
-// static const char *TAG = "webserver";
+static const char *TAG = "webserver";
 
 #include <string.h>
 #include <stdio.h>
@@ -643,14 +643,15 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 {
-  std::string apn, apn_user, apn_pass, network_dns;
-  bool enable_gps, enable_gpstime, enable_net, enable_sms;
+  std::string apn, apn_user, apn_pass, network_dns, pincode;
+  bool enable_gps, enable_gpstime, enable_net, enable_sms, wrongpincode;
 
   if (c.method == "POST") {
     // process form submission:
     apn = c.getvar("apn");
     apn_user = c.getvar("apn_user");
     apn_pass = c.getvar("apn_pass");
+    pincode = c.getvar("pincode");
     network_dns = c.getvar("network_dns");
     enable_net = (c.getvar("enable_net") == "yes");
     enable_sms = (c.getvar("enable_sms") == "yes");
@@ -660,6 +661,12 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
     MyConfig.SetParamValue("modem", "apn", apn);
     MyConfig.SetParamValue("modem", "apn.user", apn_user);
     MyConfig.SetParamValue("modem", "apn.password", apn_pass);
+    if ( MyConfig.GetParamValueBool("modem","wrongpincode") && (MyConfig.GetParamValue("modem","pincode") != pincode) )
+      {
+      ESP_LOGI(TAG,"New SIM card PIN code entered. Cleared wrong_pin_code flag");
+      MyConfig.SetParamValueBool("modem", "wrongpincode", false);
+      }
+    MyConfig.SetParamValue("modem", "pincode", pincode);
     MyConfig.SetParamValue("network", "dns", network_dns);
     MyConfig.SetParamValueBool("modem", "enable.net", enable_net);
     MyConfig.SetParamValueBool("modem", "enable.sms", enable_sms);
@@ -677,6 +684,8 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   apn = MyConfig.GetParamValue("modem", "apn");
   apn_user = MyConfig.GetParamValue("modem", "apn.user");
   apn_pass = MyConfig.GetParamValue("modem", "apn.password");
+  pincode = MyConfig.GetParamValue("modem", "pincode");
+  wrongpincode = MyConfig.GetParamValueBool("modem", "wrongpincode",false);
   network_dns = MyConfig.GetParamValue("network", "dns");
   enable_net = MyConfig.GetParamValueBool("modem", "enable.net", true);
   enable_sms = MyConfig.GetParamValueBool("modem", "enable.sms", true);
@@ -711,6 +720,8 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
       "</script>";
   }
   c.input_info("SIM ICCID", info.c_str());
+  c.input_text("SIM card PIN code", "pincode", pincode.c_str(), "", 
+    wrongpincode ? "<p style=\"color: red\">Wrong PIN code entered previously!</p>" : "<p>Not needed for Hologram SIM cards</p>");
 
   c.fieldset_start("Internet");
   c.input_checkbox("Enable IP networking", "enable_net", enable_net);
