@@ -16,7 +16,6 @@ Pre-Installation Steps
 Prior to installation, please make sure you have the following available:
 
 #. The OVMS v3 module in it's enclosure.
-#. A small screwdriver, for opening the module (if necessary).
 #. A micro-usb cable suitable for connecting to your computer.
 #. A laptop or desktop computer (if necessary).
 #. A cable suitable for connecting to your vehicle.
@@ -24,43 +23,6 @@ Prior to installation, please make sure you have the following available:
 #. A GPS antenna (if your vehicle type requires one).
 
 You should also have ready access to this User Guide, and wifi connectivity to the Internet.
-
----------------------------
-OVMS v2 Server Registration
----------------------------
-
-Prior to installation, you should create an account, and register your vehicle on one of the public OVMS v2 servers:
-
-#. https://www.openvehicles.com/
-   This OVMS v2 server is run by the project. It is hosted in Hong Kong.
-
-#. https://dexters-web.de/
-   This OVMS v2 server is hosted in Europe.
-
-During the registration process you will need to decide a VehicleID (unique ID to be identify your vehicle), and a Server Password (password to be used on cellphone apps, servers, and vehicle modules). The server itself will also have a specific hostname and port it uses for OVMS protocol v2 communications.
-
--------------------
-Hologram Activation
--------------------
-
-OVMS has partnered with Hologram and is providing a Hologram SIM pre-installed in every OVMS modem board. In addition, Hologram have provided our community a coupon code valid for US$5 off data usage:
-
-Hologram Coupon Code: **OVMS**
-
-To activate your Hologram SIM, register at https://dashboard.hologram.io/, then invoke "Activate SIM" in the dashboard.
-
-.. note::
-  You don't need to purchase a phone number for your SIM right now, as there is no SMS support in V3 yet.
-  For the current status of SMS support, see…
-
-  - `Issue #62 SMS Notifications <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/62>`_
-  - `Issue #63 SMS Command Gateway <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/63>`_
-
-When activating your Hologram SIM, you'll need to enter the ICCID written on the SIM itself. You can also get that electronically (without having to open up the package) from the web or terminal shells with the following command:
-
-``OVMS# metric list m.net.mdm.iccid``
-
-The ICCID is also displayed during the setup process and on the modem configuration page when using the web user interface.
 
 ------------------------
 OVMS Module Installation
@@ -72,11 +34,11 @@ Powering the module
 
 If you intend to configure the module on your desk before connecting it to the vehicle, make sure your USB port delivers power (around 500mA, depending on modem and wifi activity). We recommend using a USB hub with a separate power supply or a direct port of your laptop / PC.
 
-^^^^^^^^^^^^^^
-Server account
-^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
+OVMS Server account
+^^^^^^^^^^^^^^^^^^
 
-If you want to use the OVMS App and/or server based telemetry services, you'll need a server account. If you have not registered for an OVMS server account yet, you can do so before starting the wizard to avoid needing to switch networks in between. There are currently two public OVMS servers:
+If you want to use the OVMS App and/or server based telemetry services, you'll need an OVMS v2 server account. If you have not registered for an OVMS server account yet, you can do so before starting the wizard to avoid needing to switch networks in between. There are currently two public v2 OVMS servers:
 
 #. Asia-Pacific: https://www.openvehicles.com/
 
@@ -96,6 +58,8 @@ Password:	OVMSinit
 As this is insecure, you should take care not to leave the module running unconfigured.
 
 Using your laptop/tablet/phone, establish a wifi connection to the module. You should see an IP address in the range 192.168.4.x allocated, with a gateway at 192.168.4.1.
+
+Note: Some smartphones (e.g Android) require mobile data to be switched off to use a WiFi connection without a interent connectivity. 
 
 Launch your web browser, and connect as follows:
 
@@ -177,6 +141,29 @@ OVMS v3 has a number of networking options to choose from. You can either use th
 #. Wifi Access Point. OVMS can operate as a WiFi Access Point itself, using standard WiFi (802.11 b/g/n) protocols. This allows users to connect to the OVMS module itself. Note that OVMS v3 is not intended to be a hotspot and users cannot access the Internet via the OVMS module. Wifi Access Point mode can be combined with simple Wifi Client mode, to provide an access point for maintenance of the module, as well as a client to access the Internet via another Access Point within range.
 
 #. Cellular Data. OVMS supports optional modems to provide cellular connectivity. These are configured via Config / Modem.
+
+-----------------------------
+GSM SIM Activation (Hologram)
+-----------------------------
+
+OVMS has partnered with Hologram and to provide a Hologram GSM SIM pre-installed in every OVMS modem board. In addition, Hologram have provided OVMS a coupon code valid for US$5 off data usage:
+
+Hologram Coupon Code: **OVMS**
+
+To activate your Hologram SIM, register at https://dashboard.hologram.io/, then invoke "Activate SIM" in the dashboard.
+
+.. note::
+  You don't need to purchase a phone number for your SIM right now, as there is no SMS support in V3 yet.
+  For the current status of SMS support, see…
+
+  - `Issue #62 SMS Notifications <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/62>`_
+  - `Issue #63 SMS Command Gateway <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/63>`_
+
+When activating your Hologram SIM, you'll need to enter the ICCID written on the SIM itself. You can also get that electronically (without having to open up the enclosure) from the OVMS web or terminal shell (Tools > Shell) with the following command:
+
+``OVMS# metric list m.net.mdm.iccid``
+
+The ICCID is also displayed during the setup process and on the modem configuration page when using the web user interface.
 
 .. image:: setup6.jpg
 
