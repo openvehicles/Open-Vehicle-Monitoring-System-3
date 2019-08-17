@@ -71,8 +71,7 @@ void OvmsVehicleRenaultTwizy::ObdInit()
   cmd = cmd_xrt->RegisterCommand("dtc", "Show DTC report / clear DTC", shell_obd_showdtc);
   cmd->RegisterCommand("show", "Show DTC report", shell_obd_showdtc);
   cmd->RegisterCommand("clear", "Clear stored DTC in car", shell_obd_cleardtc,
-    "Att: this clears the car DTC store if the car is turned on.\n"
-    "Invoke with car turned off to just clear the OVMS DTC alert buffer.");
+    "Att: this clears the car DTC store (car must be turned on).");
   cmd->RegisterCommand("reset", "Reset OVMS DTC statistics", shell_obd_resetdtc,
     "Resets internal DTC buffer and presence counters.\n"
     "No change is done on the car side.");
@@ -101,7 +100,9 @@ void OvmsVehicleRenaultTwizy::ObdTicker1()
 {
   int new_state;
   
-  if (twizy_flags.Charging)
+  if (!twizy_flags.EnableWrite)
+    new_state = 0;
+  else if (twizy_flags.Charging)
     new_state = 2;
   else if (twizy_flags.CarAwake)
     new_state = 1;
@@ -356,12 +357,16 @@ void OvmsVehicleRenaultTwizy::shell_obd_cleardtc(int verbosity, OvmsWriter* writ
   if (!twizy)
     return;
 
-  twizy->ResetDTCStats();
-
-  if (!twizy->twizy_flags.CarAwake) {
-    writer->puts("NOTE: Car is offline, only OVMS DTC buffer has been cleared.");
+  if (!twizy->twizy_flags.EnableWrite) {
+    writer->puts("ERROR: CAN bus write access disabled.");
     return;
   }
+  else if (!twizy->twizy_flags.CarAwake) {
+    writer->puts("ERROR: Car is offline.");
+    return;
+  }
+
+  twizy->ResetDTCStats();
 
   CAN_frame_t txframe = {};
   txframe.FIR.B.FF = CAN_frame_std;
