@@ -142,12 +142,18 @@ class OvmsVehicle : public InternalRamAllocated
     void CalculateAcceleration();           // Call after ms_v_pos_speed update to derive acceleration
 
   protected:
+    float m_batpwr_smoothing;               // … smoothing factor (samples, 0 = none, default 2.0) …
+    float m_batpwr_smoothed;                // … and smoothed value of ms_v_bat_power
+
+  protected:
     bool m_brakelight_enable;               // Regen brake light enable (default no)
     int m_brakelight_port;                  // … MAX7317 output port number (1, 3…9, default 1 = SW_12V)
     float m_brakelight_on;                  // … activation threshold (deceleration in m/s², default 1.3)
     float m_brakelight_off;                 // … deactivation threshold (deceleration in m/s², default 0.7)
+    float m_brakelight_basepwr;             // … base power area (+/- from 0 in kW, default 0)
+    bool m_brakelight_ignftbrk;             // … ignore foot brake (default no)
     uint32_t m_brakelight_start;            // … activation start time
-    void CheckBrakelight();                 // … check vehicle metrics for regen braking state
+    virtual void CheckBrakelight();         // … check vehicle metrics for regen braking state (override to customize)
     virtual bool SetBrakelight(int on);     // … hardware control method (override for non MAX7317 control)
 
   protected:
