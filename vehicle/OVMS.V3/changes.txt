@@ -1,6 +1,11 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Regen brake signal: added power base range, power smoothing & foot brake config
+  New configs:
+    vehicle [batpwr.smoothing] = 2.0    Battery power smoothing factor (samples, 0 = none)
+    vehicle [brakelight.basepwr] = 0    Base power range around zero [kW]
+    vehicle [brakelight.ignftbrk] = no  Ignore foot brake
 - Twizy: added tuning option for SEVCON_T45 + Gearbox_T80 hybrid
   Configuration: xrt [type] = "SC45GB80"
 - Twizy: OBD2 VIN reading & cluster DTC monitoring

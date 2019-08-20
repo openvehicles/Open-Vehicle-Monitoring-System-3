@@ -1135,22 +1135,31 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
 void OvmsWebServer::HandleCfgBrakelight(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
-  bool enable;
-  std::string smooth, port, level_on, level_off;
+  bool enable, ignftbrk;
+  std::string smooth_acc, smooth_bat, port, level_on, level_off, basepwr;
 
   if (c.method == "POST") {
     // process form submission:
     enable = (c.getvar("enable") == "yes");
-    smooth = c.getvar("smooth");
+    smooth_acc = c.getvar("smooth_acc");
+    smooth_bat = c.getvar("smooth_bat");
     port = c.getvar("port");
     level_on = c.getvar("level_on");
     level_off = c.getvar("level_off");
+    ignftbrk = (c.getvar("ignftbrk") == "yes");
+    basepwr = c.getvar("basepwr");
 
     // validate:
-    if (smooth != "") {
-      int v = atof(smooth.c_str());
+    if (smooth_acc != "") {
+      int v = atof(smooth_acc.c_str());
       if (v < 0) {
-        error += "<li data-input=\"smooth\">Smoothing must be greater or equal 0.</li>";
+        error += "<li data-input=\"smooth_acc\">Acceleration smoothing must be greater or equal 0.</li>";
+      }
+    }
+    if (smooth_bat != "") {
+      int v = atof(smooth_bat.c_str());
+      if (v < 0) {
+        error += "<li data-input=\"smooth_bat\">Battery power smoothing must be greater or equal 0.</li>";
       }
     }
     if (port != "") {
@@ -1172,13 +1181,23 @@ void OvmsWebServer::HandleCfgBrakelight(PageEntry_t& p, PageContext_t& c)
       }
     }
 
+    if (basepwr != "") {
+      int v = atof(basepwr.c_str());
+      if (v < 0) {
+        error += "<li data-input=\"basepwr\">Base power level must be greater or equal 0.</li>";
+      }
+    }
+
     if (error == "") {
       // success:
-      MyConfig.SetParamValue("vehicle", "accel.smoothing", smooth);
+      MyConfig.SetParamValue("vehicle", "accel.smoothing", smooth_acc);
+      MyConfig.SetParamValue("vehicle", "batpwr.smoothing", smooth_bat);
       MyConfig.SetParamValueBool("vehicle", "brakelight.enable", enable);
       MyConfig.SetParamValue("vehicle", "brakelight.port", port);
       MyConfig.SetParamValue("vehicle", "brakelight.on", level_on);
       MyConfig.SetParamValue("vehicle", "brakelight.off", level_off);
+      MyConfig.SetParamValueBool("vehicle", "brakelight.ignftbrk", ignftbrk);
+      MyConfig.SetParamValue("vehicle", "brakelight.basepwr", basepwr);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
@@ -1195,11 +1214,14 @@ void OvmsWebServer::HandleCfgBrakelight(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
-    smooth = MyConfig.GetParamValue("vehicle", "accel.smoothing");
+    smooth_acc = MyConfig.GetParamValue("vehicle", "accel.smoothing");
+    smooth_bat = MyConfig.GetParamValue("vehicle", "batpwr.smoothing");
     enable = MyConfig.GetParamValueBool("vehicle", "brakelight.enable", false);
     port = MyConfig.GetParamValue("vehicle", "brakelight.port", "1");
     level_on = MyConfig.GetParamValue("vehicle", "brakelight.on");
     level_off = MyConfig.GetParamValue("vehicle", "brakelight.off");
+    ignftbrk = MyConfig.GetParamValueBool("vehicle", "brakelight.ignftbrk", false);
+    basepwr = MyConfig.GetParamValue("vehicle", "brakelight.basepwr");
     c.head(200);
   }
 
@@ -1207,12 +1229,22 @@ void OvmsWebServer::HandleCfgBrakelight(PageEntry_t& p, PageContext_t& c)
   c.panel_start("primary", "Regen Brake Light");
   c.form_start(p.uri);
 
-  c.input_slider("Acceleration smoothing", "smooth", 3, NULL,
-    -1, smooth.empty() ? 2.0 : atof(smooth.c_str()), 2.0, 0.0, 10.0, 0.1,
+  c.input_slider("Acceleration smoothing", "smooth_acc", 3, NULL,
+    -1, smooth_acc.empty() ? 2.0 : atof(smooth_acc.c_str()), 2.0, 0.0, 10.0, 0.1,
     "<p>Speed/acceleration smoothing eliminates road bump and gear box backlash noise.</p>"
-    "<p>Lower value = higher sensitivity. Set to zero if your vehicle speed is already smoothed.</p>");
+    "<p>Lower value = higher sensitivity. Set to zero if your vehicle data is already smoothed.</p>");
 
-  c.input_checkbox("Enable regenerative braking signal", "enable", enable);
+  c.input_slider("Battery power smoothing", "smooth_bat", 3, NULL,
+    -1, smooth_bat.empty() ? 2.0 : atof(smooth_bat.c_str()), 2.0, 0.0, 10.0, 0.1,
+    "<p>Battery power smoothing eliminates road bump and gear box backlash noise.</p>"
+    "<p>Lower value = higher sensitivity. Set to zero if your vehicle data is already smoothed.</p>");
+
+  c.print("<hr>");
+
+  c.input_radiobtn_start("Regen brake signal", "enable");
+  c.input_radiobtn_option("enable", "OFF", "no", !enable);
+  c.input_radiobtn_option("enable", "ON", "yes", enable);
+  c.input_radiobtn_end();
 
   c.input_select_start("… control port", "port");
   c.input_select_option("SW_12V (DA26 pin 18)", "1", port == "1");
@@ -1234,6 +1266,16 @@ void OvmsWebServer::HandleCfgBrakelight(PageEntry_t& p, PageContext_t& c)
     -1, level_off.empty() ? 0.7 : atof(level_off.c_str()), 0.7, 0.0, 3.0, 0.1,
     "<p>Deceleration threshold to deactivate regen brake light.</p>"
     "<p>Under UN regulation 13H, brake lights must not be illuminated for decelerations &le;0.7 m/s².</p>");
+
+  c.input_slider("… base power range", "basepwr", 3, "kW",
+    -1, basepwr.empty() ? 0 : atof(basepwr.c_str()), 0, 0.0, 5.0, 0.1,
+    "<p>Battery power range around zero (+/-) ignored for the regen signal. Raise to desensitize the signal"
+    " for minor power levels (if the vehicle supports the battery power metric).</p>");
+
+  c.input_checkbox("<strong>Ignore foot brake</strong>", "ignftbrk", ignftbrk,
+    "<p>Create regen signal independent of the foot brake status.</p>");
+
+  c.print("<hr>");
 
   c.input_button("default", "Save");
   c.form_end();

@@ -1009,11 +1009,16 @@ OvmsVehicle::OvmsVehicle()
   m_accel_reftime = 0;
   m_accel_smoothing = 2.0;
 
+  m_batpwr_smoothing = 2.0;
+  m_batpwr_smoothed = 0;
+
   m_brakelight_enable = false;
   m_brakelight_on = 1.3;
   m_brakelight_off = 0.7;
   m_brakelight_port = 1;
   m_brakelight_start = 0;
+  m_brakelight_basepwr = 0;
+  m_brakelight_ignftbrk = false;
 
   m_rxqueue = xQueueCreate(CONFIG_OVMS_VEHICLE_CAN_RX_QUEUE_SIZE,sizeof(CAN_frame_t));
   xTaskCreatePinnedToCore(OvmsVehicleRxTask, "OVMS Vehicle",
@@ -1608,6 +1613,9 @@ void OvmsVehicle::VehicleConfigChanged(std::string event, void* data)
     // acceleration calculation:
     m_accel_smoothing = MyConfig.GetParamValueFloat("vehicle", "accel.smoothing", 2.0);
 
+    // brakelight battery power smoothing:
+    m_batpwr_smoothing = MyConfig.GetParamValueFloat("vehicle", "batpwr.smoothing", 2.0);
+
     // brakelight control:
     if (m_brakelight_enable)
       {
@@ -1618,6 +1626,8 @@ void OvmsVehicle::VehicleConfigChanged(std::string event, void* data)
     m_brakelight_on = MyConfig.GetParamValueFloat("vehicle", "brakelight.on", 1.3);
     m_brakelight_off = MyConfig.GetParamValueFloat("vehicle", "brakelight.off", 0.7);
     m_brakelight_port = MyConfig.GetParamValueInt("vehicle", "brakelight.port", 1);
+    m_brakelight_basepwr = MyConfig.GetParamValueFloat("vehicle", "brakelight.basepwr", 0);
+    m_brakelight_ignftbrk = MyConfig.GetParamValueBool("vehicle", "brakelight.ignftbrk", false);
     m_brakelight_start = 0;
     }
 
@@ -1818,6 +1828,13 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
     if (m_brakelight_enable)
       CheckBrakelight();
     }
+  else if (metric == StandardMetrics.ms_v_bat_power)
+    {
+    if (m_batpwr_smoothing > 0)
+      m_batpwr_smoothed = (m_batpwr_smoothed + metric->AsFloat() * m_batpwr_smoothing) / (m_batpwr_smoothing + 1);
+    else
+      m_batpwr_smoothed = metric->AsFloat();
+    }
   }
 
 /**
@@ -1835,7 +1852,8 @@ void OvmsVehicle::CalculateAcceleration()
     float speed = ABS(StdMetrics.ms_v_pos_speed->AsFloat(0, Kph)) * 1000 / 3600;
     float accel = (speed - m_accel_refspeed) / (now - m_accel_reftime) * 1000;
     // smooth out road bumps & gear box backlash:
-    accel = (StdMetrics.ms_v_pos_acceleration->AsFloat() * m_accel_smoothing + accel) / (m_accel_smoothing + 1);
+    if (m_accel_smoothing > 0)
+      accel = (accel + StdMetrics.ms_v_pos_acceleration->AsFloat() * m_accel_smoothing) / (m_accel_smoothing + 1);
     StdMetrics.ms_v_pos_acceleration->SetValue(TRUNCPREC(accel, 3));
     m_accel_refspeed = speed;
     m_accel_reftime = now;
@@ -1849,11 +1867,14 @@ void OvmsVehicle::CalculateAcceleration()
  *     delivers speed values at too large intervals, the trigger will still work but come
  *     too late (reducing/deactivating acceleration smoothing may help).
  *     If the vehicle raw speed is already smoothed, reducing acceleration smoothing will
- *     provide a faster trigger.
- *  b) The battery power regen threshold is assumed as 0 here. If the vehicle has a very high
- *     base power consumption, that may need adjustment / configuration. 0 works without
- *     battery power measurement from the vehicle.
+ *     provide a faster trigger. Same applies for the battery power level.
+ *  b) The battery power regen threshold is defined at -[brakelight.basepwr] for activation
+ *     and +[brakelight.basepwr] for deactivation. The config default is 0 as that works
+ *     on vehicles without the battery power metric.
  *  c) To reduce flicker the brake light has a minimum hold time of currently fixed 500 ms.
+ *  d) Normal operation is "regen light XOR foot brake light", set [brakelight.ignftbrk]
+ *     to true to disable this.
+ * Override to customize.
  */
 void OvmsVehicle::CheckBrakelight()
   {
@@ -1862,12 +1883,11 @@ void OvmsVehicle::CheckBrakelight()
   float accel = StdMetrics.ms_v_pos_acceleration->AsFloat();
   bool car_on = StdMetrics.ms_v_env_on->AsBool();
   bool footbrake = StdMetrics.ms_v_env_footbrake->AsFloat() > 0;
-  float batpwr = StdMetrics.ms_v_bat_power->AsFloat();
-  const float batpwr_base = 0;
   const uint32_t holdtime = 500;
 
   // activate brake light?
-  if (accel < -m_brakelight_on && speed >= 1 && batpwr <= batpwr_base && car_on && !footbrake)
+  if (car_on && accel < -m_brakelight_on && speed >= 1 && m_batpwr_smoothed <= -m_brakelight_basepwr
+    && (m_brakelight_ignftbrk || !footbrake))
     {
     if (!m_brakelight_start)
       {
@@ -1884,7 +1904,8 @@ void OvmsVehicle::CheckBrakelight()
       m_brakelight_start = now;
     }
   // deactivate brake light?
-  else if (accel >= -m_brakelight_off || speed < 1 || batpwr > batpwr_base || !car_on || footbrake)
+  else if (!car_on || accel >= -m_brakelight_off || speed < 1 || m_batpwr_smoothed > m_brakelight_basepwr
+    || (!m_brakelight_ignftbrk && footbrake))
     {
     if (m_brakelight_start && now >= m_brakelight_start + holdtime)
       {
