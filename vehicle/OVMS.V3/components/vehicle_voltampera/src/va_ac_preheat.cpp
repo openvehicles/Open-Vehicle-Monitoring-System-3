@@ -136,6 +136,12 @@ void OvmsVehicleVoltAmpera::ClimateControlIncomingSWCAN(CAN_frame_t* p_frame)
 		    case 11:
 		      {
 		      ESP_LOGI(TAG,"Fob key press: PREHEAT");
+		      if (m_preheat_commander==OVMS)
+		        {
+		      	ESP_LOGI(TAG,"<--- Relinquish the control of the preheating to BCM ---->");
+		      	m_preheat_commander=Fob;
+		        PreheatModeChange(VA_PREHEAT_STARTING);
+		        }
 		      break;
 		      }
 		    case 12:
@@ -294,6 +300,7 @@ void OvmsVehicleVoltAmpera::PreheatModeChange( uint8_t preheat_status )
 	    {
 	    ESP_LOGI(TAG,"PreheatModeChange: Preheat started");
 	    mt_preheat_status->SetValue(VA_PREHEAT_STARTED);
+	    StandardMetrics.ms_v_env_hvac->SetValue(true);
 	    MyEvents.SignalEvent("vehicle.preheat.started",NULL);
 	    if (m_preheat_commander == OVMS)
 	      {
@@ -324,6 +331,7 @@ void OvmsVehicleVoltAmpera::PreheatModeChange( uint8_t preheat_status )
 	    {
 	    ESP_LOGI(TAG,"PreheatModeChange: Preheat stopped");
 	    mt_preheat_status->SetValue(VA_PREHEAT_STOPPED);
+	    StandardMetrics.ms_v_env_hvac->SetValue(false);
 	    MyEvents.SignalEvent("vehicle.preheat.stopped",NULL);
 	    mt_preheat_timer->SetValue(0);
 	    if (m_preheat_commander == OVMS)
