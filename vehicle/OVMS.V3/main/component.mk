@@ -5,6 +5,7 @@
 
 COMPONENT_ADD_INCLUDEDIRS := .
 COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive -T main/ovms_boot.ld
+CPPFLAGS += -DMG_ENABLE_SSL
 
 OVMS_VERSION := $(shell git describe --always --tags --dirty)
 CPPFLAGS := -D OVMS_VERSION=\"$(OVMS_VERSION)\" $(CPPFLAGS)
