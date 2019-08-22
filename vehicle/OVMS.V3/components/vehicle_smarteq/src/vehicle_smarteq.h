@@ -58,6 +58,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
     void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
+    void HandleEnergy();
 
   public:
     void WebInit();
@@ -82,8 +83,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
 
   protected:
     bool m_enable_write;                    // canwrite
-    bool m_enable_can;
-    bool m_enable_charge;
+
     #define DEFAULT_BATTERY_CAPACITY 17600
     #define MAX_POLL_DATA_LEN 126
     #define CELLCOUNT 96

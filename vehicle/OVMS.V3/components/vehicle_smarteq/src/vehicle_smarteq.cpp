@@ -105,8 +105,6 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   ESP_LOGI(TAG, "Smart EQ reload configuration");
   
   m_enable_write  = MyConfig.GetParamValueBool("xsq", "canwrite", false);
-  m_enable_can    = MyConfig.GetParamValueBool("xsq", "canenable", false);
-  m_enable_charge = MyConfig.GetParamValueBool("xsq", "cancharge", false);
 }
 
 uint64_t OvmsVehicleSmartEQ::swap_uint64(uint64_t val) {
@@ -162,13 +160,26 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
         if (isCharging) { // EVENT started charging
           StandardMetrics.ms_v_charge_pilot->SetValue(true);
           StandardMetrics.ms_v_charge_inprogress->SetValue(isCharging);
+          StandardMetrics.ms_v_charge_mode->SetValue("standard");
+          StandardMetrics.ms_v_charge_type->SetValue("type2");
           StandardMetrics.ms_v_charge_state->SetValue("charging");
           StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
         } else { // EVENT stopped charging
           StandardMetrics.ms_v_charge_pilot->SetValue(false);
           StandardMetrics.ms_v_charge_inprogress->SetValue(isCharging);
-          StandardMetrics.ms_v_charge_state->SetValue("done");
-          StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+          StandardMetrics.ms_v_charge_mode->SetValue("standard");
+          StandardMetrics.ms_v_charge_type->SetValue("type2");
+          if (StandardMetrics.ms_v_bat_soc->AsInt() < 95) {
+            // Assume the charge was interrupted
+            ESP_LOGI(TAG,"Car charge session was interrupted");
+            StandardMetrics.ms_v_charge_state->SetValue("stopped");
+            StandardMetrics.ms_v_charge_substate->SetValue("interrupted");
+          } else {
+            // Assume the charge completed normally
+            ESP_LOGI(TAG,"Car charge session completed");
+            StandardMetrics.ms_v_charge_state->SetValue("done");
+            StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+          }
         }
       }
       lastCharging = isCharging;
@@ -177,6 +188,28 @@ void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
     default:
       //ESP_LOGD(TAG, "IFC %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       break;
+  }
+}
+
+/**
+ * Update derived energy metrics while driving
+ * Called once per second from Ticker1
+ */
+void OvmsVehicleSmartEQ::HandleEnergy() {
+  float voltage  = StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
+  float current  = StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
+
+  // Power (in kw) resulting from voltage and current
+  float power = voltage * current / 1000.0;
+
+  // Are we driving?
+  if (power != 0.0 && StandardMetrics.ms_v_env_on->AsBool()) {
+    // Update energy used and recovered
+    float energy = power / 3600.0;    // 1 second worth of energy in kwh's
+    if (energy < 0.0f)
+      StandardMetrics.ms_v_bat_energy_used->SetValue( StandardMetrics.ms_v_bat_energy_used->AsFloat() - energy);
+    else // (energy > 0.0f)
+      StandardMetrics.ms_v_bat_energy_recd->SetValue( StandardMetrics.ms_v_bat_energy_recd->AsFloat() + energy);
   }
 }
 
