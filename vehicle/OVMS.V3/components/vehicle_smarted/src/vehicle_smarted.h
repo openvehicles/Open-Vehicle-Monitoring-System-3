@@ -129,7 +129,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     bool m_enable_write;                    // canwrite
 
   protected:
-    char NLG6_PN_HW[12] = "4519822221";           //!< Part number for NLG6 fast charging hardware
+    char NLG6_PN_HW[11] = "4519822221";           //!< Part number for NLG6 fast charging hardware
     OvmsMetricBool *mt_nlg6_present;              //!< Flag to show NLG6 detected in system
     OvmsMetricVector<float> *mt_nlg6_main_amps;   //!< AC current of L1, L2, L3
     OvmsMetricVector<float> *mt_nlg6_main_volts;  //!< AC voltage of L1, L2, L3
