@@ -48,6 +48,7 @@
 
 using namespace std;
 
+void xse_recu(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
 class OvmsVehicleSmartED : public OvmsVehicle
 {
@@ -66,9 +67,11 @@ class OvmsVehicleSmartED : public OvmsVehicle
     void WebDeInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
+    static void WebCfgCommands(PageEntry_t& p, PageContext_t& c);
     void ConfigChanged(OvmsConfigParam* param);
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);
+    bool CommandSetRecu(bool on);
 
   public:
     virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
@@ -106,6 +109,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     void PollReply_NLG6_ChargerSelCurrent(uint8_t* reply_data, uint16_t reply_len);
     void PollReply_NLG6_ChargerTemperatures(uint8_t* reply_data, uint16_t reply_len);
 
+    OvmsCommand *cmd_xse;
     
     OvmsMetricInt *mt_vehicle_time;             // vehicle time
     OvmsMetricInt *mt_trip_start;               // trip since start
@@ -124,10 +128,12 @@ class OvmsVehicleSmartED : public OvmsVehicle
     int m_doorlock_port;                    // … MAX7317 output port number (3…9, default 9 = EGPIO_8)
     int m_doorunlock_port;                  // … MAX7317 output port number (3…9, default 8 = EGPIO_7)
     int m_ignition_port;                    // … MAX7317 output port number (3…9, default 7 = EGPIO_6)
+    int m_doorstatus_port;                  // … MAX7317 output port number (3…9, default 6 = EGPIO_5)
     int m_range_ideal;                      // … Range Ideal (default 135 km)
     int m_egpio_timout;                     // … EGPIO Ignition Timout (default 5 min)
     bool m_soc_rsoc;                        // Display SOC=SOC or rSOC=SOC
     bool m_enable_write;                    // canwrite
+    bool m_lock_state;                      // Door lock/unlock state
 
   protected:
     char NLG6_PN_HW[11] = "4519822221";           //!< Part number for NLG6 fast charging hardware
