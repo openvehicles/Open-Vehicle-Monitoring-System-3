@@ -57,6 +57,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
 
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingFrameCan2(CAN_frame_t* p_frame);
     void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     char m_vin[18];
 
@@ -95,7 +96,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     void HandleEnergy();
     int  calcMinutesRemaining(float target, float charge_voltage, float charge_current);
     void calcBusAktivity(bool state, uint8_t pos);
-    void HandleChargingStatus(bool status);
+    void HandleChargingStatus();
     void PollReply_BMS_BattVolts(uint8_t* reply_data, uint16_t reply_len);
     void PollReply_BMS_BattTemp(uint8_t* reply_data, uint16_t reply_len);
     void PollReply_BMS_ModuleTemp(uint8_t* reply_data, uint16_t reply_len);

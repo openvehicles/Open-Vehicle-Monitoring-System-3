@@ -120,6 +120,7 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
     
     RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+    RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
     PollSetPidList(m_can1,obdii_polls);
     PollSetState(0);
     
@@ -288,42 +289,57 @@ void OvmsVehicleSmartED::calcBusAktivity(bool state, uint8_t pos) {
 /**
  * Update charging status
  */
-void OvmsVehicleSmartED::HandleChargingStatus(bool status) {
-  float charge_current  = StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
-  float charge_voltage  = StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
-  bool climit           = (StandardMetrics.ms_v_charge_climit->AsInt(0)!=0 ? true : false);
-  bool port             = StandardMetrics.ms_v_door_chargeport->AsBool();
-  int soc               = StandardMetrics.ms_v_bat_soc->AsInt(0);
+void OvmsVehicleSmartED::HandleChargingStatus() {
+  bool port   = StandardMetrics.ms_v_door_chargeport->AsBool();
+  bool status = mt_c_active->AsBool();
+  static bool isCharging = false;
   
   if (port) {
-    if (status && charge_voltage > 50 && charge_current > 0) {
+    if (status) {
+      // The car is charging
+      //StandardMetrics.ms_v_env_charging12v->SetValue(true);
       if (!StandardMetrics.ms_v_charge_inprogress->AsBool()) {
-        // Reset charge kWh
-        StandardMetrics.ms_v_charge_kwh->SetValue(0);
-        // Reset trip values
-        StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
-        StandardMetrics.ms_v_bat_energy_used->SetValue(0);
+        if (!isCharging) {
+          isCharging = true;
+          // Reset charge kWh
+          StandardMetrics.ms_v_charge_kwh->SetValue(0);
+          // Reset trip values
+          StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
+          StandardMetrics.ms_v_bat_energy_used->SetValue(0);
+        }
+        
+        StandardMetrics.ms_v_charge_pilot->SetValue(true);
+        StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+        StandardMetrics.ms_v_charge_mode->SetValue("standard");
+        StandardMetrics.ms_v_charge_type->SetValue("type2");
+        StandardMetrics.ms_v_charge_state->SetValue("charging");
+        StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
       }
-      StandardMetrics.ms_v_charge_pilot->SetValue(true);
-      StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-      StandardMetrics.ms_v_charge_state->SetValue("charging");
-      StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+    } else {
+      // The car is not charging
+      if (StandardMetrics.ms_v_charge_inprogress->AsBool()) {
+        // The charge has completed/stopped
+        StandardMetrics.ms_v_charge_pilot->SetValue(false);
+        StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+        StandardMetrics.ms_v_charge_mode->SetValue("standard");
+        StandardMetrics.ms_v_charge_type->SetValue("type2");
+        StandardMetrics.ms_v_charge_duration_full->SetValue(0, Minutes);
+        if (StandardMetrics.ms_v_bat_soc->AsInt() < 95) {
+          // Assume the charge was interrupted
+          ESP_LOGI(TAG,"Car charge session was interrupted");
+          StandardMetrics.ms_v_charge_state->SetValue("stopped");
+          StandardMetrics.ms_v_charge_substate->SetValue("interrupted");
+        } else {
+          // Assume the charge completed normally
+          ESP_LOGI(TAG,"Car charge session completed");
+          StandardMetrics.ms_v_charge_state->SetValue("done");
+          StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+        }
+      }
+      //StandardMetrics.ms_v_env_charging12v->SetValue(false);
     }
-    else if (!status && !climit) {
-      StandardMetrics.ms_v_charge_pilot->SetValue(false);
-      //StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-      StandardMetrics.ms_v_charge_state->SetValue("done");
-      StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
-    }
-    else if (!status && climit && soc < 99) {
-      StandardMetrics.ms_v_charge_state->SetValue("stopped");
-      StandardMetrics.ms_v_charge_substate->SetValue("stopped");
-    }
-  } else if (!status) {
-    StandardMetrics.ms_v_charge_pilot->SetValue(false);
-    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-    StandardMetrics.ms_v_charge_state->SetValue("done");
-    StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+  } else if (isCharging) {
+    isCharging = false;
   }
 }
 
@@ -589,6 +605,14 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
   }
 }
 
+void OvmsVehicleSmartED::IncomingFrameCan2(CAN_frame_t* p_frame) {
+  //uint8_t *d = p_frame->data.u8;
+  
+  switch (p_frame->MsgID) {
+    
+  }
+}
+
 /**
  * Update derived energy metrics while driving
  * Called once per second from Ticker1
@@ -623,7 +647,7 @@ void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
   }
   HandleEnergy();
   if (StandardMetrics.ms_v_env_awake->AsBool())
-    HandleChargingStatus(mt_c_active->AsBool());
+    HandleChargingStatus();
 }
 
 void OvmsVehicleSmartED::Ticker10(uint32_t ticker) {
