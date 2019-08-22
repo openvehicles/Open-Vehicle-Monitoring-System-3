@@ -29,7 +29,7 @@
 
 #include "canformat.h"
 
-#define CANFORMAT_CRTD_MAXLEN 64
+#define CANFORMAT_CRTD_MAXLEN 192
 
 class canformat_crtd : public canformat
   {

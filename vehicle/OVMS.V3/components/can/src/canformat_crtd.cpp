@@ -30,6 +30,7 @@ static const char *TAG = "canformat-crtd";
 #include <errno.h>
 #include "pcp.h"
 #include "canformat_crtd.h"
+#include "ovms_utils.h"
 
 class OvmsCanFormatCRTDInit
   {
@@ -55,6 +56,7 @@ canformat_crtd::~canformat_crtd()
 std::string canformat_crtd::get(CAN_log_message_t* message)
   {
   char buf[CANFORMAT_CRTD_MAXLEN];
+  char *p;
 
   char busnumber;
   if (message->origin != NULL)
@@ -66,20 +68,25 @@ std::string canformat_crtd::get(CAN_log_message_t* message)
     {
     case CAN_LogFrame_RX:
     case CAN_LogFrame_TX:
-      sprintf(buf,"%ld.%06ld %c%c%s %0*X",
+      snprintf(buf,sizeof(buf),"%ld.%06ld %c%c%s %0*X",
         message->timestamp.tv_sec, message->timestamp.tv_usec,
         busnumber,
         (message->type == CAN_LogFrame_RX) ? 'R' : 'T',
         (message->frame.FIR.B.FF == CAN_frame_std) ? "11":"29",
         (message->frame.FIR.B.FF == CAN_frame_std) ? 3 : 8,
         message->frame.MsgID);
+      p = buf+strlen(buf);
       for (int k=0; k<message->frame.FIR.B.DLC; k++)
-        sprintf(buf+strlen(buf)," %02x", message->frame.data.u8[k]);
+        {
+        *p++ = ' ';
+        p = HexByte(p,message->frame.data.u8[k]);
+        }
+      *p = 0;
       break;
 
     case CAN_LogFrame_TX_Queue:
     case CAN_LogFrame_TX_Fail:
-      sprintf(buf,"%ld.%06ld %cCER %s %c%s %0*X",
+      snprintf(buf,sizeof(buf),"%ld.%06ld %cCER %s %c%s %0*X",
         message->timestamp.tv_sec, message->timestamp.tv_usec,
         busnumber,
         GetCanLogTypeName(message->type),
@@ -87,13 +94,18 @@ std::string canformat_crtd::get(CAN_log_message_t* message)
         (message->frame.FIR.B.FF == CAN_frame_std) ? "11":"29",
         (message->frame.FIR.B.FF == CAN_frame_std) ? 3 : 8,
         message->frame.MsgID);
-      for (int k=0; k<message->frame.FIR.B.DLC; k++)
-        sprintf(buf+strlen(buf)," %02x", message->frame.data.u8[k]);
+        p = buf+strlen(buf);
+        for (int k=0; k<message->frame.FIR.B.DLC; k++)
+          {
+          *p++ = ' ';
+          p = HexByte(p,message->frame.data.u8[k]);
+          }
+        *p = 0;
       break;
 
     case CAN_LogStatus_Error:
     case CAN_LogStatus_Statistics:
-      sprintf(buf, "%ld.%06ld %c%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d wdgreset=%d",
+      snprintf(buf,sizeof(buf),"%ld.%06ld %c%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d wdgreset=%d",
         message->timestamp.tv_sec, message->timestamp.tv_usec,
         busnumber,
         (message->type == CAN_LogStatus_Error) ? "CER" : "CST",
@@ -107,7 +119,7 @@ std::string canformat_crtd::get(CAN_log_message_t* message)
     case CAN_LogInfo_Comment:
     case CAN_LogInfo_Config:
     case CAN_LogInfo_Event:
-      sprintf(buf, "%ld.%06ld %c%s %s %s",
+      snprintf(buf,sizeof(buf),"%ld.%06ld %c%s %s %s",
         message->timestamp.tv_sec, message->timestamp.tv_usec,
         busnumber,
         (message->type == CAN_LogInfo_Event) ? "CEV" : "CXX",
@@ -135,7 +147,7 @@ std::string canformat_crtd::getheader(struct timeval *time)
     time = &t;
     }
 
-  sprintf(buf,"%ld.%06ld CXX OVMS CRTD\n",
+  snprintf(buf,sizeof(buf),"%ld.%06ld CXX OVMS CRTD\n",
     time->tv_sec, time->tv_usec);
 
   return std::string(buf);

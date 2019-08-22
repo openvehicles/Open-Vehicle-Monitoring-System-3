@@ -33,6 +33,9 @@ static const char *TAG = "boot";
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/xtensa_api.h"
+#include "rom/rtc.h"
+#include "soc/rtc_cntl_reg.h"
+#include "esp_system.h"
 #include "esp_panic.h"
 
 #include "ovms.h"
@@ -73,6 +76,58 @@ static const char *sdesc[] = {
     "A14     ", "A15     ", "SAR     ", "EXCCAUSE", "EXCVADDR", "LBEG    ", "LEND    ", "LCOUNT  "
 };
 
+// Boot reasons [bootreason_t]
+static const char* const bootreason_name[] = {
+    "PowerOn",
+    "SoftReset",
+    "FirmwareUpdate",
+    "EarlyCrash",
+    "Crash",
+};
+#define NUM_BOOTREASONS (sizeof(bootreason_name) / sizeof(char *))
+
+// Reset reasons [esp_reset_reason_t]
+static const char *resetreason_name[] = {
+    "Unknown/unset",
+    "Power-on event",
+    "External pin",
+    "esp_restart",
+    "Exception/panic",
+    "Interrupt watchdog",
+    "Task watchdog",
+    "Other watchdogs",
+    "Exiting deep sleep",
+    "Brownout",
+    "SDIO",
+};
+#define NUM_RESETREASONS (sizeof(resetreason_name) / sizeof(char *))
+
+
+/**
+ * ovms_reset_reason_get_hint()
+ * 
+ * This is a copy of esp_reset_reason_get_hint() from esp32/reset_reason.c. Because the
+ * default esp32 init only checks the reason for CPU0 and then clears the reason register,
+ * we need to store a copy in our boot_data record, but esp_reset_reason_get_hint()
+ * is an internal method.
+ */
+
+#define RST_REASON_BIT  0x80000000
+#define RST_REASON_MASK 0x7FFF
+#define RST_REASON_SHIFT 16
+
+/* in IRAM, can be called from panic handler */
+static esp_reset_reason_t IRAM_ATTR ovms_reset_reason_get_hint(void)
+{
+    uint32_t reset_reason_hint = REG_READ(RTC_RESET_CAUSE_REG);
+    uint32_t high = (reset_reason_hint >> RST_REASON_SHIFT) & RST_REASON_MASK;
+    uint32_t low = reset_reason_hint & RST_REASON_MASK;
+    if ((reset_reason_hint & RST_REASON_BIT) == 0 || high != low) {
+        return ESP_RST_UNKNOWN;
+    }
+    return (esp_reset_reason_t) low;
+}
+
 
 void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -91,6 +146,7 @@ void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
   writer->printf("  This is reset #%d since last power cycle\n",boot_data.boot_count);
   writer->printf("  Detected boot reason: %s (%d/%d)\n",MyBoot.GetBootReasonName(),boot_data.bootreason_cpu0,boot_data.bootreason_cpu1);
+  writer->printf("  Reset reason: %s (%d)\n",MyBoot.GetResetReasonName(),MyBoot.GetResetReason());
   writer->printf("  Crash counters: %d total, %d early\n",MyBoot.GetCrashCount(),MyBoot.GetEarlyCrashCount());
 
   if (MyBoot.m_restart_timer>0)
@@ -133,6 +189,8 @@ Boot::Boot()
   m_restart_timer = 0;
   m_restart_pending = 0;
 
+  m_resetreason = esp_reset_reason(); // Note: necessary to link reset_reason module
+
   if (cpu0 == POWERON_RESET)
     {
     memset(&boot_data,0,sizeof(boot_data_t));
@@ -143,6 +201,9 @@ Boot::Boot()
     {
     boot_data.boot_count++;
     ESP_LOGI(TAG, "Boot #%d reasons for CPU0=%d and CPU1=%d",boot_data.boot_count,cpu0,cpu1);
+
+    m_resetreason = boot_data.reset_hint;
+    ESP_LOGI(TAG, "Reset reason %s (%d)", GetResetReasonName(), GetResetReason());
 
     if (boot_data.soft_reset)
       {
@@ -201,18 +262,18 @@ void Boot::SetStable()
   boot_data.crash_count_early = 0;
   }
 
-static const char* const bootreason_name[] =
-  {
-  "PowerOn",
-  "SoftReset",
-  "FirmwareUpdate",
-  "EarlyCrash",
-  "Crash",
-  };
-
 const char* Boot::GetBootReasonName()
   {
-  return bootreason_name[m_bootreason];
+  return (m_bootreason >= 0 && m_bootreason < NUM_BOOTREASONS)
+    ? bootreason_name[m_bootreason]
+    : "Unknown boot reason";
+  }
+
+const char* Boot::GetResetReasonName()
+  {
+  return (m_resetreason >= 0 && m_resetreason < NUM_RESETREASONS)
+    ? resetreason_name[m_resetreason]
+    : "Unknown reset reason";
   }
 
 static void boot_shutdown_done(const char* event, void* data)
@@ -290,6 +351,7 @@ bool Boot::IsShuttingDown()
 
 void Boot::ErrorCallback(XtExcFrame *frame, int core_id, bool is_abort)
   {
+  boot_data.reset_hint = ovms_reset_reason_get_hint();
   boot_data.crash_data.core_id = core_id;
   boot_data.crash_data.is_abort = is_abort;
 
@@ -325,6 +387,7 @@ void Boot::NotifyDebugCrash()
     //  ,<firmware_version>
     //  ,<bootcount>,<bootreason_name>,<bootreason_cpu0>,<bootreason_cpu1>
     //  ,<crashcnt>,<earlycrashcnt>,<crashtype>,<crashcore>,<registers>,<backtrace>
+    //  ,<resetreason>,<resetreason_name>
 
     StringWriter buf;
     buf.reserve(1024);
@@ -352,6 +415,9 @@ void Boot::NotifyDebugCrash()
     buf.append(",");
     for (int i=0; i<OVMS_BT_LEVELS && boot_data.crash_data.bt[i].pc; i++)
       buf.printf("0x%08lx ", boot_data.crash_data.bt[i].pc);
+
+    // Reset reason:
+    buf.printf(",%d,%s", GetResetReason(), GetResetReasonName());
 
     MyNotify.NotifyString("data", "debug.crash", buf.c_str());
     }

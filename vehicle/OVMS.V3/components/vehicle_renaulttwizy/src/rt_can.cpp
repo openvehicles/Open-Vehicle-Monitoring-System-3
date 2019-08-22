@@ -141,10 +141,6 @@ void OvmsVehicleRenaultTwizy::CanResponder(const CAN_frame_t* p_frame)
 
 void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
 {
-  // no processing until fully initialized:
-  if (!m_ready)
-    return;
-
   unsigned int u;
   int s;
   
@@ -619,6 +615,7 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
 
 
+#if 0
     case 0x69F:
       // --------------------------------------------------------------------------
       // *** VIN ***
@@ -637,6 +634,7 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
         *StdMetrics.ms_v_vin = (string) twizy_vin;
       }
       break;
+#endif
     
     
     case 0x700:

@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-twizy";
 
-#define VERSION "1.0.0"
+#define VERSION "1.2.3"
 
 #include <stdio.h>
 #include <string>
@@ -127,7 +127,8 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   // init SEVCON connection:
   m_sevcon = new SevconClient(this);
 
-  m_ready = true;
+  // init OBD2 poller:
+  ObdInit();
 }
 
 OvmsVehicleRenaultTwizy::~OvmsVehicleRenaultTwizy()
@@ -180,6 +181,14 @@ void OvmsVehicleRenaultTwizy::ConfigChanged(OvmsConfigParam* param)
   //  kd_threshold      Kickdown threshold (Default: 35)
   //  kd_compzero       Kickdown pedal compensation (Default: 120)
   //
+  //  lock_on           Engage lock mode (Default: no)
+  //  valet_on          Engage valet mode (Default: no)
+  //
+  //  aux_fan_port      EGPIO port to control auxiliary charger fan (Default: 0 = disabled)
+  //  aux_charger_port  EGPIO port to control auxiliary charger (Default: 0 = disabled)
+  //
+  //  dtc_autoreset     Reset DTC statistics on every drive/charge start (Default: no)
+  //
 
   cfg_maxrange = MyConfig.GetParamValueInt("xrt", "maxrange", CFG_DEFAULT_MAXRANGE);
   if (cfg_maxrange <= 0)
@@ -219,6 +228,8 @@ void OvmsVehicleRenaultTwizy::ConfigChanged(OvmsConfigParam* param)
 
   cfg_aux_fan_port = MyConfig.GetParamValueInt("xrt", "aux_fan_port");
   cfg_aux_charger_port = MyConfig.GetParamValueInt("xrt", "aux_charger_port");
+
+  cfg_dtc_autoreset = MyConfig.GetParamValueBool("xrt", "dtc_autoreset", false);
 }
 
 

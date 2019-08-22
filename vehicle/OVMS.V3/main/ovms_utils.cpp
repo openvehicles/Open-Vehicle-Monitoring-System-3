@@ -267,10 +267,29 @@ bool endsWith(const std::string& haystack, const char needle)
   }
 
 /**
+ * HexByte: Write a single byte as two hexadecimal characters
+ * Returns new pointer to end of string (p + 2)
+ */
+char* HexByte(char* p, uint8_t byte)
+  {
+  uint8_t nibble;
+
+  nibble = byte >> 4;   // high nibble
+  nibble += '0'; if (nibble>'9') nibble += 39;
+  *p = nibble; p++;
+
+  nibble = byte & 0x0f; // low nibble
+  nibble += '0'; if (nibble>'9') nibble += 39;
+  *p = nibble; p++;
+  return p;
+  }
+
+/**
  * FormatHexDump: create/fill hexdump buffer including printable representation
  * Note: allocates buffer as necessary in *bufferp, caller must free.
+ * Returns new remaining length
  */
-int FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsize /*=16*/)
+size_t FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsize /*=16*/)
   {
   const char *s = data;
 
@@ -314,7 +333,10 @@ int FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsi
       p++;
       }
     *p = 0;
-    rlength -= colsize;
+    if (rlength > colsize)
+      rlength -= colsize;
+    else
+      rlength = 0;
     }
 
   return rlength;
@@ -379,7 +401,7 @@ TaskHandle_t TaskGetHandle(const char *name)
 
 /**
  * mkpath: mkdir -p
- * 
+ *
  * Original: https://stackoverflow.com/a/12904145
  */
 int mkpath(std::string path, mode_t mode /*=0*/)
@@ -415,7 +437,7 @@ int rmtree(const std::string path)
   DIR *dir = opendir(path.c_str());
   if (!dir)
     return 0;
-  
+
   struct dirent *dp;
   struct stat st;
   std::string sub;
@@ -434,7 +456,7 @@ int rmtree(const std::string path)
     if (!ok)
       break;
   }
-  
+
   closedir(dir);
   ok = (rmdir(path.c_str()) == 0);
   return ok ? 0 : -1;

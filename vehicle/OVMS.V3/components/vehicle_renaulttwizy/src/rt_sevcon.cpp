@@ -338,6 +338,10 @@ CANopenResult_t SevconClient::Login(bool on)
     ESP_LOGD(TAG, "Twizy type 2 = SC80GB45");
     m_drivemode.type = 2; // SC80GB45
   }
+  else if (MyConfig.GetParamValue("xrt", "type") == "SC45GB80") {
+    ESP_LOGD(TAG, "Twizy type 3 = SC45GB80");
+    m_drivemode.type = 3; // SC45GB80
+  }
   else if (m_sevcon_type == SC_Gen4_4845) {
     ESP_LOGD(TAG, "Twizy type 0 = Twizy80");
     m_drivemode.type = 0; // Twizy80
@@ -518,6 +522,7 @@ void SevconClient::Ticker1(uint32_t ticker)
   ms_cfg_base->SetValue(m_drivemode.profile_cfgmode);
   ms_cfg_unsaved->SetValue(m_drivemode.unsaved);
   switch (m_drivemode.type) {
+    case  3: ms_cfg_type->SetValue("SC45GB80"); break;
     case  2: ms_cfg_type->SetValue("SC80GB45"); break;
     case  1: ms_cfg_type->SetValue("Twizy45"); break;
     default: ms_cfg_type->SetValue("Twizy80"); break;

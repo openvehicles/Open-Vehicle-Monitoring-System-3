@@ -113,10 +113,17 @@ bool endsWith(const std::string& haystack, const std::string& needle);
 bool endsWith(const std::string& haystack, const char needle);
 
 /**
+ * HexByte: Write a single byte as two hexadecimal characters
+ * Returns new pointer to end of string (p + 2)
+ */
+char* HexByte(char* p, uint8_t byte);
+
+/**
  * FormatHexDump: create/fill hexdump buffer including printable representation
  * Note: allocates buffer as necessary in *bufferp, caller must free.
+ * Returns new remaining length
  */
-int FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsize=16);
+size_t FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsize=16);
 
 
 /**

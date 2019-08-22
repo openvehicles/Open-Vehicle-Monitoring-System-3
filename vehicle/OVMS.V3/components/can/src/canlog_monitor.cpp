@@ -35,7 +35,7 @@ void can_log_monitor_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
   std::string format(cmd->GetName());
   canlog_monitor* logger = new canlog_monitor(format);
   logger->Open();
-  MyCan.SetLogger(logger, argc, argv);
+  MyCan.AddLogger(logger, argc, argv);
 
   writer->printf("CAN logging to MONITOR active: %s\n", logger->GetInfo().c_str());
   writer->puts("Note: info logging is at debug log level, frame logging is at verbose, and errors as usual");
@@ -63,7 +63,7 @@ OvmsCanLogMonitorInit::OvmsCanLogMonitorInit()
         OvmsCommand* start = cmd_can_log_start->RegisterCommand("monitor", "CAN logging to MONITOR");
         MyCanFormatFactory.RegisterCommandSet(start, "Start CAN logging to MONITOR",
           can_log_monitor_start,
-          "<format> [filter1] ... [filterN]\n"
+          "[filter1] ... [filterN]\n"
           "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
           "Example: 2:2a0-37f",
           0, 9);

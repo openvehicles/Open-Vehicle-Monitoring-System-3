@@ -47,30 +47,81 @@ static const char *TAG = "canlog";
 
 void can_log_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  canlog* cl = MyCan.GetLogger();
-
-  if (!cl)
+  if (!MyCan.HasLogger())
     {
-    writer->puts("CAN logging is not running");
+    writer->puts("Error: No loggers running");
     return;
     }
 
-  writer->printf("Closing log: %s\n", cl->GetInfo().c_str());
-  MyCan.ClearLogger();
-  vTaskDelay(pdMS_TO_TICKS(100)); // give logger task time to finish
-  cl->Close();
-  writer->printf("CAN logging stopped at %s\n", cl->GetStats().c_str());
-  delete cl;
+  if (argc==0)
+    {
+    // Stop all loggers
+    writer->puts("Stopping all loggers");
+    MyCan.RemoveLoggers();
+    return;
+    }
+
+  if (MyCan.RemoveLogger(atoi(argv[0])))
+    {
+    writer->puts("Stopped logger");
+    }
+  else
+    {
+    writer->puts("Error: Cannot find specified logger");
+    }
   }
 
 void can_log_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  canlog* cl = MyCan.GetLogger();
-
-  if (cl)
-    writer->printf("CAN logging active: %s\nStatistics: %s\n", cl->GetInfo().c_str(), cl->GetStats().c_str());
-  else
+  if (!MyCan.HasLogger())
+    {
     writer->puts("CAN logging inactive");
+    return;
+    }
+
+  if (argc>0)
+    {
+    canlog* cl = MyCan.GetLogger(atoi(argv[0]));
+    if (cl)
+      {
+      writer->printf("CAN logging active: %s\n  Statistics: %s\n", cl->GetInfo().c_str(), cl->GetStats().c_str());
+      }
+    else
+      {
+      writer->puts("Error: Cannot find specified can logger");
+      }
+    return;
+    }
+  else
+    {
+    // Show the status of all loggers
+    OvmsMutexLock lock(&MyCan.m_loggermap_mutex);
+    for (can::canlog_map_t::iterator it=MyCan.m_loggermap.begin(); it!=MyCan.m_loggermap.end(); ++it)
+      {
+      canlog* cl = it->second;
+      writer->printf("CAN logger #%d: %s\n  Statistics: %s\n",
+        it->first, cl->GetInfo().c_str(), cl->GetStats().c_str());
+      }
+    }
+  }
+
+void can_log_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyCan.HasLogger())
+    {
+    writer->puts("CAN logging inactive");
+    return;
+    }
+  else
+    {
+    // Show the list of all loggers
+    OvmsMutexLock lock(&MyCan.m_loggermap_mutex);
+    for (can::canlog_map_t::iterator it=MyCan.m_loggermap.begin(); it!=MyCan.m_loggermap.end(); ++it)
+      {
+      canlog* cl = it->second;
+      writer->printf("#%d: %s\n", it->first, cl->GetInfo().c_str());
+      }
+    }
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -94,8 +145,9 @@ OvmsCanLogInit::OvmsCanLogInit()
     }
 
   OvmsCommand* cmd_canlog = cmd_can->RegisterCommand("log", "CAN logging framework");
-  cmd_canlog->RegisterCommand("stop", "Stop logging", can_log_stop);
-  cmd_canlog->RegisterCommand("status", "Logging status", can_log_status);
+  cmd_canlog->RegisterCommand("stop", "Stop logging", can_log_stop,"[<id>]",0,1);
+  cmd_canlog->RegisterCommand("status", "Logging status", can_log_status,"[<id>]",0,1);
+  cmd_canlog->RegisterCommand("list", "Logging list", can_log_list);
   cmd_canlog->RegisterCommand("start", "CAN logging start framework");
   }
 
@@ -103,11 +155,12 @@ OvmsCanLogInit::OvmsCanLogInit()
 // CAN Logger class
 ////////////////////////////////////////////////////////////////////////
 
-canlog::canlog(const char* type, std::string format)
+canlog::canlog(const char* type, std::string format, canformat::canformat_serve_mode_t mode)
   {
   m_type = type;
   m_format = format;
   m_formatter = MyCanFormatFactory.NewFormat(format.c_str());
+  m_formatter->SetServeMode(mode);
   m_filter = NULL;
 
   m_msgcount = 0;
@@ -212,6 +265,10 @@ std::string canlog::GetInfo()
   std::ostringstream buf;
 
   buf << "Type:" << m_type << " Format:" << m_format;
+  if (m_formatter)
+    {
+    buf << "(" << m_formatter->GetServeModeName() << ")";
+    }
 
   if (m_filter)
     {

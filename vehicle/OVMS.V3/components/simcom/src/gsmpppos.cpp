@@ -31,6 +31,9 @@
 #include "ovms_log.h"
 static const char *TAG = "gsm-ppp";
 
+#include <lwip/ip_addr.h>
+#include <lwip/netif.h>
+#include <lwip/dns.h>
 #include "gsmpppos.h"
 #include "ovms_command.h"
 #include "ovms_config.h"
@@ -61,6 +64,10 @@ static void GsmPPPOS_StatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
       ESP_LOGI(TAG, "   our_ipaddr  = %s", ipaddr_ntoa(&pppif->ip_addr));
       ESP_LOGI(TAG, "   his_ipaddr  = %s", ipaddr_ntoa(&pppif->gw));
       ESP_LOGI(TAG, "   netmask     = %s", ipaddr_ntoa(&pppif->netmask));
+      ip_addr_t dns = dns_getserver(0);
+      ESP_LOGI(TAG, "   DNS#0       = %s", ipaddr_ntoa(&dns));
+      dns = dns_getserver(1);
+      ESP_LOGI(TAG, "   DNS#1       = %s", ipaddr_ntoa(&dns));
 #endif /* PPP_IPV4_SUPPORT */
 #if PPP_IPV6_SUPPORT
       ESP_LOGI(TAG, "   our6_ipaddr = %s", ip6addr_ntoa(netif_ip6_addr(pppif, 0)));
@@ -198,6 +205,7 @@ void GsmPPPOS::Connect()
   pppapi_set_auth(m_ppp, PPPAUTHTYPE_PAP,
     MyConfig.GetParamValue("modem", "apn.user").c_str(),
     MyConfig.GetParamValue("modem", "apn.password").c_str());
+  ppp_set_usepeerdns(m_ppp, 1); // Ask the peer for up to 2 DNS server addresses
   pppapi_connect(m_ppp, 0);
   }
 

@@ -1,6 +1,22 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Regen brake signal: added power base range, power smoothing & foot brake config
+  New configs:
+    vehicle [batpwr.smoothing] = 2.0    Battery power smoothing factor (samples, 0 = none)
+    vehicle [brakelight.basepwr] = 0    Base power range around zero [kW]
+    vehicle [brakelight.ignftbrk] = no  Ignore foot brake
+- Twizy: added tuning option for SEVCON_T45 + Gearbox_T80 hybrid
+  Configuration: xrt [type] = "SC45GB80"
+- Twizy: OBD2 VIN reading & cluster DTC monitoring
+  New commands:
+    xrt dtc [show]                      Show DTC report
+    xrt dtc reset                       Reset statistics
+    xrt dtc clear                       Clear DTC stored in OVMS & car
+  New configs:
+    xrt [dtc_autoreset] = no            Reset statistics on each drive/charge
+  New history records:
+    RT-OBD-ClusterDTC (rec_nr = DTC slot nr)
 - New vehicle: Smart ED/EQ 4.Generation (453) (adaption by Thomas Heuer <egon@heuer-humfeld.de>)
 
 2019-05-12 MWJ  3.2.002  OTA release
