@@ -85,6 +85,8 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   m_tester_present_timer = 0;
   m_controlled_lights = 0;
 
+  mt_charging_limits = MyMetrics.InitVector<int>("xva.v.b.charging_limits", SM_STALE_HIGH, "0");
+
   // Config parameters
   MyConfig.RegisterParam("xva", "Volt/Ampera", true, true);
   ConfigChanged(NULL);
@@ -318,6 +320,18 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
             }
           }
         }
+      if (mt_charging_limits->AsString()=="0")
+        {
+        // Set defaults
+        if (m_type[2]=='V') 
+          {
+          mt_charging_limits->SetValue("12,8");
+          }
+        else if (m_type[2]=='A') 
+          {
+          mt_charging_limits->SetValue("10,6");
+          }
+        }
       break;
       }
 
@@ -406,6 +420,34 @@ void OvmsVehicleVoltAmpera::IncomingFrameSWCan(CAN_frame_t* p_frame)
       break;
       }
     */
+
+    // High Volt Time Based Chrg (Current and available charging levels)
+    case 0x1086C0CB:
+      {
+      int set_level = (GET8(p_frame, 3) >> 4) & 0x07; 
+
+      int levels[4];
+      levels[0] = (GET16(p_frame, 3) >> 7) & 0x1f; // normal (maximum) charging level
+      levels[1] = (GET8(p_frame, 4) >> 2) & 0x1f;
+      levels[2] = (GET16(p_frame, 4) >> 5) & 0x1f; 
+      levels[3] = (GET8(p_frame, 5) >> 0) & 0x1f;
+      int i=1;
+      while ((i<4) && (levels[i]>0) )
+        i++;
+
+      mt_charging_limits->SetElemValues(0,i,levels);
+
+      if (set_level>=i)
+        {
+        ESP_LOGE(TAG,"Invalid charging level index %d. Available levels: %s",set_level, mt_charging_limits->AsString().c_str());
+        }
+      else
+        {
+        ESP_LOGI(TAG,"Current charging limit: %d amps. Available levels: %s", levels[set_level], mt_charging_limits->AsString().c_str());
+        StandardMetrics.ms_v_charge_climit->SetValue( (float)levels[set_level]);
+        }
+      break;
+      }
 
     // Tire pressure
     case 0x103D4040: 
@@ -885,6 +927,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandLights(va_light_t l
         }
 
     m_can1->Write(&txframe);
+    return Success;
     }
 
   // Set the bitwise status of the lights that we control and are now ON. If any of these are set, we send periodic Tester Present messages
@@ -925,6 +968,36 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandHomelink(int button
   return NotImplemented;
   }
 
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandSetChargeCurrent(uint16_t limit)
+  {
+  ESP_LOGI(TAG,"CommandSetChargeCurrent: %d amps",limit);
+  CommandWakeup();
+
+  int highest=0;
+  int highest_index=-1;
+  // Find the highest possible available charging limit
+  for (int i=0;i<mt_charging_limits->GetSize();i++)
+    {
+    int lim = mt_charging_limits->GetElemValue(i);
+    ESP_LOGI(TAG,"CommandSetChargeCurrent: %d:%d",i,lim);
+    if ( (lim<=limit) && (lim > highest) )
+      {
+      highest = mt_charging_limits->GetElemValue(i);
+      highest_index = i;
+      }
+    }
+  if (highest_index == -1)
+    {
+    ESP_LOGE(TAG,"CommandSetChargeCurrent: No valid current limit found!");
+    return Fail;      
+    }
+
+  ESP_LOGI(TAG,"CommandSetChargeCurrent: Selected charging limit %d:%d amps",highest_index,highest);
+  CAN_frame_t txframe;
+  SEND_EXT_FRAME(m_swcan, txframe, 0x10864080, 8, (highest_index+1) << 4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)
+  return Success;
+  }
 
 void OvmsVehicleVoltAmpera::SendTesterPresentMessage( uint32_t id )
   {

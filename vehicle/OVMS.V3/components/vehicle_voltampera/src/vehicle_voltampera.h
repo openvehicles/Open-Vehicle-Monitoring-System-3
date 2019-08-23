@@ -79,6 +79,7 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
     vehicle_command_t CommandUnlock(const char* pin);
     vehicle_command_t CommandHomelink(int button, int durationms=1000);
     vehicle_command_t CommandLights(va_light_t lights, bool turn_on);
+    vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
     void FlashLights(va_light_t light, int interval=500, int count=1); // milliseconds
 
   protected:
@@ -127,12 +128,11 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
     OvmsMetricInt *  mt_ac_front_blower_fan_speed;  // %
     OvmsMetricFloat *  mt_coolant_heater_pwr;       // kW
     OvmsMetricInt *  mt_coolant_temp;
+    OvmsMetricVector<int> * mt_charging_limits;
 
     unsigned long m_preheat_modechange_timer;
-    //unsigned long m_bcm_override_timestamp;
     va_preheat_commander_t m_preheat_commander;
     unsigned int m_preheat_retry_counter;
-    //bool m_preheat_BCM_overridden;       // Imitate BCM this preheating session (this is disabled when preheat initiated using key fob)
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   // --------------------------------------------------------------------------
