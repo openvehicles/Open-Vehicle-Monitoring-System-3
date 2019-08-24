@@ -1,6 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Network: provide dedicated metrics for modem & wifi channel states
+  New metrics:
+    m.net.mdm.network
+    m.net.mdm.sq
+    m.net.wifi.network
+    m.net.wifi.sq
 - Regen brake signal: added power base range, power smoothing & foot brake config
   New configs:
     vehicle [batpwr.smoothing] = 2.0    Battery power smoothing factor (samples, 0 = none)

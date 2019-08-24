@@ -740,6 +740,8 @@ std::string esp32wifi::GetAPSSID()
 
 void esp32wifi::UpdateNetMetrics()
   {
+  StdMetrics.ms_m_net_wifi_network->SetValue(GetSSID());
+  StdMetrics.ms_m_net_wifi_sq->SetValue((float)m_sta_rssi/10, dbm);
   if (StdMetrics.ms_m_net_type->AsString() == "wifi")
     {
     StdMetrics.ms_m_net_provider->SetValue(GetSSID());

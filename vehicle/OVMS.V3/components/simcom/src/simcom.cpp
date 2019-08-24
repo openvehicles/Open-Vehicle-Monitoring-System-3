@@ -294,6 +294,8 @@ bool simcom::IsStarted()
 
 void simcom::UpdateNetMetrics()
   {
+  StdMetrics.ms_m_net_mdm_network->SetValue(m_provider);
+  StdMetrics.ms_m_net_mdm_sq->SetValue(m_sq, sq);
   if (StdMetrics.ms_m_net_type->AsString() == "modem")
     {
     StdMetrics.ms_m_net_provider->SetValue(m_provider);

@@ -45,6 +45,10 @@ MetricsStandard::MetricsStandard()
   ms_m_net_type = new OvmsMetricString(MS_N_TYPE, SM_STALE_MAX);
   ms_m_net_sq = new OvmsMetricInt(MS_N_SQ, SM_STALE_MAX, dbm);
   ms_m_net_provider = new OvmsMetricString(MS_N_PROVIDER, SM_STALE_MAX);
+  ms_m_net_wifi_sq = new OvmsMetricFloat(MS_N_WIFI_SQ, SM_STALE_MAX, dbm);
+  ms_m_net_wifi_network = new OvmsMetricString(MS_N_WIFI_NETWORK, SM_STALE_MAX);
+  ms_m_net_mdm_sq = new OvmsMetricFloat(MS_N_MDM_SQ, SM_STALE_MAX, dbm);
+  ms_m_net_mdm_network = new OvmsMetricString(MS_N_MDM_NETWORK, SM_STALE_MAX);
   ms_m_net_mdm_iccid = new OvmsMetricString(MS_N_MDM_ICCID, SM_STALE_MAX);
   ms_m_net_mdm_model = new OvmsMetricString(MS_N_MDM_MODEL, SM_STALE_MAX);
 
