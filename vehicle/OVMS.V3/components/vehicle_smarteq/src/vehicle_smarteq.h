@@ -58,6 +58,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
     void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
+    void HandleEnergy();
 
   public:
     void WebInit();
@@ -78,16 +79,18 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void GetDashboardConfig(DashboardConfig& cfg);
     
     void PollReply_BMS_BattVolts(uint8_t* reply_data, uint16_t reply_len, uint16_t start);
+    void PollReply_BMS_BattTemps(uint8_t* reply_data, uint16_t reply_len);
 
   protected:
     bool m_enable_write;                    // canwrite
-    bool m_enable_can;
-    bool m_enable_charge;
+
     #define DEFAULT_BATTERY_CAPACITY 17600
     #define MAX_POLL_DATA_LEN 126
     #define CELLCOUNT 96
     #define SQ_CANDATA_TIMEOUT 10
     
+  protected:
+    OvmsMetricVector<float> *mt_bms_temps;       // BMS temperatures
 };
 
 #endif //#ifndef __VEHICLE_SMARTED_H__

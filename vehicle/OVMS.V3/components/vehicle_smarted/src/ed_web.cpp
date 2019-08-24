@@ -58,8 +58,9 @@ void OvmsVehicleSmartED::WebInit()
   // vehicle menu:
   MyWebServer.RegisterPage("/xse/features",   "Features",         WebCfgFeatures,                      PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xse/battery",    "Battery config",   WebCfgBattery,                       PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/xse/brakelight", "Brake Light",      OvmsWebServer::HandleCfgBrakelight,  PageMenu_Vehicle, PageAuth_Cookie);
+  //MyWebServer.RegisterPage("/xse/brakelight", "Brake Light",      OvmsWebServer::HandleCfgBrakelight,  PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xse/cellmon",    "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xse/commands",   "Commands",         WebCfgCommands,                      PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 /**
@@ -69,8 +70,9 @@ void OvmsVehicleSmartED::WebDeInit()
 {
   MyWebServer.DeregisterPage("/xse/features");
   MyWebServer.DeregisterPage("/xse/battery");
-  MyWebServer.DeregisterPage("/xse/brakelight");
+  //MyWebServer.DeregisterPage("/xse/brakelight");
   MyWebServer.DeregisterPage("/xse/cellmon");
+  MyWebServer.DeregisterPage("/xse/commands");
 }
 
 /**
@@ -81,17 +83,20 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   std::string error, info;
   bool canwrite;
   bool soc_rsoc;
-  std::string doorlock, doorunlock, ignition, rangeideal, egpio_timout;
+  bool lockstate;
+  std::string doorlock, doorunlock, ignition, doorstatus, rangeideal, egpio_timout;
 
   if (c.method == "POST") {
     // process form submission:
     doorlock = c.getvar("doorlock");
     doorunlock = c.getvar("doorunlock");
     ignition = c.getvar("ignition");
+    doorstatus = c.getvar("doorstatus");
     rangeideal = c.getvar("rangeideal");
     egpio_timout = c.getvar("egpio_timout");
     soc_rsoc = (c.getvar("soc_rsoc") == "yes");
     canwrite  = (c.getvar("canwrite") == "yes");
+    lockstate  = (c.getvar("lockstate") == "yes");
 
     // validate:
     if (doorlock != "") {
@@ -112,6 +117,12 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
         error += "<li data-input=\"ignition\">Port must be one of 1, 3…9</li>";
       }
     }
+    if (doorstatus != "") {
+      int v = atoi(doorstatus.c_str());
+      if (v == 2 || v < 1 || v > 9) {
+        error += "<li data-input=\"doorstatus\">Port must be one of 1, 3…9</li>";
+      }
+    }
     if (rangeideal != "") {
       int v = atoi(rangeideal.c_str());
       if (v < 90 || v > 200) {
@@ -130,10 +141,12 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("xse", "doorlock.port", doorlock);
       MyConfig.SetParamValue("xse", "doorunlock.port", doorunlock);
       MyConfig.SetParamValue("xse", "ignition.port", ignition);
+      MyConfig.SetParamValue("xse", "doorstatus.port", doorstatus);
       MyConfig.SetParamValue("xse", "rangeideal", rangeideal);
       MyConfig.SetParamValue("xse", "egpio_timout", egpio_timout);
       MyConfig.SetParamValueBool("xse", "soc_rsoc", soc_rsoc);
       MyConfig.SetParamValueBool("xse", "canwrite",   canwrite);
+      MyConfig.SetParamValueBool("xse", "lockstate",   lockstate);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
@@ -150,13 +163,15 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
-    doorlock = MyConfig.GetParamValue("xse", "doorlock.port", "9");
-    doorunlock = MyConfig.GetParamValue("xse", "doorunlock.port", "8");
-    ignition = MyConfig.GetParamValue("xse", "ignition.port", "7");
-    rangeideal = MyConfig.GetParamValue("xse", "rangeideal", "135");
+    doorlock     = MyConfig.GetParamValue("xse", "doorlock.port", "9");
+    doorunlock   = MyConfig.GetParamValue("xse", "doorunlock.port", "8");
+    ignition     = MyConfig.GetParamValue("xse", "ignition.port", "7");
+    doorstatus   = MyConfig.GetParamValue("xse", "doorstatus.port", "6");
+    rangeideal   = MyConfig.GetParamValue("xse", "rangeideal", "135");
     egpio_timout = MyConfig.GetParamValue("xse", "egpio_timout", "5");
-    soc_rsoc = MyConfig.GetParamValueBool("xse", "soc_rsoc", false);
-    canwrite  = MyConfig.GetParamValueBool("xse", "canwrite", false);
+    soc_rsoc     = MyConfig.GetParamValueBool("xse", "soc_rsoc", false);
+    canwrite     = MyConfig.GetParamValueBool("xse", "canwrite", false);
+    lockstate    = MyConfig.GetParamValueBool("xse", "lockstate", false);
     c.head(200);
   }
 
@@ -172,6 +187,9 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   
   c.input_checkbox("Enable CAN write(Poll)", "canwrite", canwrite,
     "<p>Controls overall CAN write access, some functions depend on this.</p>");
+  
+  c.input_checkbox("Enable Door lock/unlock Status)", "lockstate", lockstate,
+    "<p>Only needed when External door status wired to expansion.</p>");
 
   c.input_select_start("… Vehicle lock port", "doorlock");
   c.input_select_option("EGPIO_2", "3", doorlock == "3");
@@ -203,9 +221,20 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_select_option("EGPIO_7", "8", ignition == "8");
   c.input_select_option("EGPIO_8", "9", ignition == "9");
   c.input_select_end();
+  
+  c.input_select_start("… Vehicle lock/unlock Status", "doorstatus");
+  c.input_select_option("SW_12V (DA26 pin 18)", "1", doorstatus == "1");
+  c.input_select_option("EGPIO_2", "3", doorstatus == "3");
+  c.input_select_option("EGPIO_3", "4", doorstatus == "4");
+  c.input_select_option("EGPIO_4", "5", doorstatus == "5");
+  c.input_select_option("EGPIO_5", "6", doorstatus == "6");
+  c.input_select_option("EGPIO_6", "7", doorstatus == "7");
+  c.input_select_option("EGPIO_7", "8", doorstatus == "8");
+  c.input_select_option("EGPIO_8", "9", doorstatus == "9");
+  c.input_select_end();
 
   c.input_slider("… Ignition Timeout", "egpio_timout", 5, "min",
-    -1, egpio_timout.empty() ? 5 : atof(egpio_timout.c_str()), 5, 1, 20, 1,
+    -1, egpio_timout.empty() ? 5 : atof(egpio_timout.c_str()), 5, 1, 30, 1,
     "<p>How long the Ignition should stay on in minutes.</p>");
 
   c.print("<hr>");
@@ -217,7 +246,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 }
 
 /**
- * WebCfgBattery: configure battery parameters (URL /xnl/battery)
+ * WebCfgBattery: configure battery parameters (URL /xse/battery)
  */
 void OvmsVehicleSmartED::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 {
@@ -270,7 +299,7 @@ void OvmsVehicleSmartED::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 
   // generate form:
 
-  c.panel_start("primary", "SmartED3 battery setup");
+  c.panel_start("primary", "Smart ED Battery Setup");
   c.form_start(p.uri);
 
   c.fieldset_start("Charge control");
@@ -292,6 +321,26 @@ void OvmsVehicleSmartED::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   c.done();
 }
 
+/**
+ * WebCfgCommands: Vehicle Commands (URL /xse/commands)
+ */
+void OvmsVehicleSmartED::WebCfgCommands(PageEntry_t& p, PageContext_t& c)
+{
+  // generate form:
+  c.head(200);
+  PAGE_HOOK("body.pre");
+  c.panel_start("primary", "Smart ED Vehicle Commands");
+  c.print(
+    "<div class=\"panel-body\">\n"
+      "<button class=\"btn btn-default\" data-cmd=\"xse recu up\" data-target=\"#output\" data-watchcnt=\"0\">Recu Up</button>\n"
+      "<button class=\"btn btn-default\" data-cmd=\"xse recu down\" data-target=\"#output\" data-watchcnt=\"0\">Recu Down</button>\n"
+      "<samp id=\"output\" class=\"samp-inline\"></samp>\n"
+    "</div>\n"
+  );
+  c.panel_end();
+
+  c.done();
+}
 /**
  * GetDashboardConfig: smart ED specific dashboard setup
  */

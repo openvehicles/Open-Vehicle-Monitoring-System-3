@@ -58,6 +58,7 @@ void OvmsVehicleSmartEQ::WebInit()
   // vehicle menu:
   MyWebServer.RegisterPage("/xsq/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xsq/battery", "Battery config", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xsq/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 /**
@@ -67,6 +68,7 @@ void OvmsVehicleSmartEQ::WebDeInit()
 {
   MyWebServer.DeregisterPage("/xsq/features");
   MyWebServer.DeregisterPage("/xsq/battery");
+  MyWebServer.DeregisterPage("/xsq/cellmon");
 }
 
 /**
@@ -75,19 +77,15 @@ void OvmsVehicleSmartEQ::WebDeInit()
 void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
-  bool canwrite, canenable, cancharge;
+  bool canwrite;
 
   if (c.method == "POST") {
     // process form submission:
     canwrite  = (c.getvar("canwrite") == "yes");
-    canenable  = (c.getvar("canenable") == "yes");
-    cancharge  = (c.getvar("cancharge") == "yes");
 
     if (error == "") {
       // success:
       MyConfig.SetParamValueBool("xsq", "canwrite",   canwrite);
-      MyConfig.SetParamValueBool("xsq", "canenable",  canenable);
-      MyConfig.SetParamValueBool("xsq", "cancharge",  cancharge);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
@@ -105,8 +103,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   else {
     // read configuration:
     canwrite  = MyConfig.GetParamValueBool("xsq", "canwrite", false);
-    canenable = MyConfig.GetParamValueBool("xsq", "canenable", false);
-    cancharge = MyConfig.GetParamValueBool("xsq", "cancharge", false);
     c.head(200);
   }
 
@@ -117,12 +113,6 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Enable CAN write(Poll)", "canwrite", canwrite,
     "<p>Controls overall CAN write access, some functions depend on this.</p>");
   
-  c.input_checkbox("Enable CAN read/test", "canenable", canenable,
-    "<p>Enable some CAN Frame Msg tests.</p>");
-  
-  c.input_checkbox("Enable CAN test Charging", "cancharge", cancharge,
-    "<p>Enable some CAN Frame Msg for Charging tests.</p>");
-
   c.print("<hr>");
   c.input_button("default", "Save");
   c.form_end();
