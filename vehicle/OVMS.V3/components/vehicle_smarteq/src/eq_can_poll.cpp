@@ -114,6 +114,9 @@ void OvmsVehicleSmartEQ::IncomingPollReply(canbus* bus, uint16_t type, uint16_t 
           case 0x42: // rqBattVoltages_P2
             PollReply_BMS_BattVolts(buf, bufpos, 48);
             break;
+          case 0x04: // rqBattTemperatures
+            PollReply_BMS_BattTemps(buf, 31);
+            break;
         }
         break;
       case 0x793:
@@ -151,14 +154,22 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattVolts(uint8_t* reply_data, uint16_t r
     }
   }
 }
-/*
-this->ReadCellVoltage(data, 3, CELLCOUNT / 2);
-void canDiag::ReadCellVoltage(byte data_in[], uint16_t highOffset, uint16_t length) {
-  uint16_t CV;
-  for (uint16_t n = 0; n < (length * 2); n = n + 2) {
-    CV = (data_in[n + highOffset] * 256 + data_in[n + highOffset + 1]);
-    CV = CV / 1024.0 * 1000;
-    CellVoltage.push(CV);
+
+void OvmsVehicleSmartEQ::PollReply_BMS_BattTemps(uint8_t* reply_data, uint16_t reply_len) {
+  int16_t Temps[31];
+  float BMStemps[31];
+  
+  for (uint16_t n = 0; n < (reply_len * 2); n = n + 2) {
+    int16_t value = reply_data[n] * 256 + reply_data[n + 1];
+    if (n > 4) {
+      //Test for negative min. module temperature and apply offset
+      if (Temps[1] & 0x8000) {
+        value = value - 0xA00; //minus offset
+      }
+    }
+    Temps[n / 2] = value;
+    BMStemps[n / 2] = value / 64.0;
+    mt_bms_temps->SetElemValues(0, 31, BMStemps);
   }
 }
-*/
+

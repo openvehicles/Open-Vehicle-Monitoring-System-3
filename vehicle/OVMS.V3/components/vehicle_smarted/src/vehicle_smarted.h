@@ -48,6 +48,7 @@
 
 using namespace std;
 
+void xse_recu(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
 class OvmsVehicleSmartED : public OvmsVehicle
 {
@@ -57,6 +58,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
 
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingFrameCan2(CAN_frame_t* p_frame);
     void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     char m_vin[18];
 
@@ -65,9 +67,11 @@ class OvmsVehicleSmartED : public OvmsVehicle
     void WebDeInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
+    static void WebCfgCommands(PageEntry_t& p, PageContext_t& c);
     void ConfigChanged(OvmsConfigParam* param);
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);
+    bool CommandSetRecu(bool on);
 
   public:
     virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
@@ -95,7 +99,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     void HandleEnergy();
     int  calcMinutesRemaining(float target, float charge_voltage, float charge_current);
     void calcBusAktivity(bool state, uint8_t pos);
-    void HandleChargingStatus(bool status);
+    void HandleChargingStatus();
     void PollReply_BMS_BattVolts(uint8_t* reply_data, uint16_t reply_len);
     void PollReply_BMS_BattTemp(uint8_t* reply_data, uint16_t reply_len);
     void PollReply_BMS_ModuleTemp(uint8_t* reply_data, uint16_t reply_len);
@@ -105,6 +109,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     void PollReply_NLG6_ChargerSelCurrent(uint8_t* reply_data, uint16_t reply_len);
     void PollReply_NLG6_ChargerTemperatures(uint8_t* reply_data, uint16_t reply_len);
 
+    OvmsCommand *cmd_xse;
     
     OvmsMetricInt *mt_vehicle_time;             // vehicle time
     OvmsMetricInt *mt_trip_start;               // trip since start
@@ -123,13 +128,15 @@ class OvmsVehicleSmartED : public OvmsVehicle
     int m_doorlock_port;                    // … MAX7317 output port number (3…9, default 9 = EGPIO_8)
     int m_doorunlock_port;                  // … MAX7317 output port number (3…9, default 8 = EGPIO_7)
     int m_ignition_port;                    // … MAX7317 output port number (3…9, default 7 = EGPIO_6)
+    int m_doorstatus_port;                  // … MAX7317 output port number (3…9, default 6 = EGPIO_5)
     int m_range_ideal;                      // … Range Ideal (default 135 km)
     int m_egpio_timout;                     // … EGPIO Ignition Timout (default 5 min)
     bool m_soc_rsoc;                        // Display SOC=SOC or rSOC=SOC
     bool m_enable_write;                    // canwrite
+    bool m_lock_state;                      // Door lock/unlock state
 
   protected:
-    char NLG6_PN_HW[12] = "4519822221";           //!< Part number for NLG6 fast charging hardware
+    char NLG6_PN_HW[11] = "4519822221";           //!< Part number for NLG6 fast charging hardware
     OvmsMetricBool *mt_nlg6_present;              //!< Flag to show NLG6 detected in system
     OvmsMetricVector<float> *mt_nlg6_main_amps;   //!< AC current of L1, L2, L3
     OvmsMetricVector<float> *mt_nlg6_main_volts;  //!< AC voltage of L1, L2, L3
