@@ -1,6 +1,13 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Network: avoid using wifi networks with too bad signal quality
+  New configs:
+    [network] wifi.sq.good  [dBm], default -87 (network usable if SQ >= this)
+    [network] wifi.sq.bad   [dBm], default -89 (disconnect if SQ <= this)
+  New events:
+    network.wifi.sta.good
+    network.wifi.sta.bad
 - Network: provide dedicated metrics for modem & wifi channel states
   New metrics:
     m.net.mdm.network
