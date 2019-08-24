@@ -53,6 +53,10 @@
 #define MS_N_PROVIDER               "m.net.provider"
 #define MS_N_MDM_ICCID              "m.net.mdm.iccid"
 #define MS_N_MDM_MODEL              "m.net.mdm.model"
+#define MS_N_MDM_NETWORK            "m.net.mdm.network"
+#define MS_N_MDM_SQ                 "m.net.mdm.sq"
+#define MS_N_WIFI_NETWORK           "m.net.wifi.network"
+#define MS_N_WIFI_SQ                "m.net.wifi.sq"
 
 #define MS_S_V2_CONNECTED           "s.v2.connected"
 #define MS_S_V2_PEERS               "s.v2.peers"
@@ -207,6 +211,10 @@ class MetricsStandard
     OvmsMetricString* ms_m_net_type;                // none, wifi, modem
     OvmsMetricInt*    ms_m_net_sq;                  // Network signal quality [dbm]
     OvmsMetricString* ms_m_net_provider;            // Network provider name
+    OvmsMetricString* ms_m_net_wifi_network;        // Wifi network SSID
+    OvmsMetricFloat*  ms_m_net_wifi_sq;             // Wifi network signal quality [dbm]
+    OvmsMetricString* ms_m_net_mdm_network;         // Modem network operator
+    OvmsMetricFloat*  ms_m_net_mdm_sq;              // Modem network signal quality [dbm]
     OvmsMetricString* ms_m_net_mdm_iccid;
     OvmsMetricString* ms_m_net_mdm_model;
 

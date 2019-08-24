@@ -236,6 +236,7 @@ esp32wifi::esp32wifi(const char* name)
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
   memset(&m_mac_ap,0,sizeof(m_mac_ap));
   memset(&m_mac_sta,0,sizeof(m_mac_sta));
+  memset(&m_mac_sta_ap,0,sizeof(m_mac_sta_ap));
   memset(&m_ip_info_sta,0,sizeof(m_ip_info_sta));
   memset(&m_ip_info_ap,0,sizeof(m_ip_info_ap));
   MyConfig.RegisterParam("wifi.ssid", "WIFI SSID", true, false);
@@ -433,7 +434,12 @@ void esp32wifi::InitCSI()
 void esp32wifi::CSIRxCallback(void* ctx, wifi_csi_info_t* data)
   {
   esp32wifi *me = (esp32wifi*) ctx;
-  me->m_sta_rssi = (me->m_sta_rssi * 7 + data->rx_ctrl.rssi * 10) / 8;
+  // CSI packets can come from all APs including our own SoftAP, filter current STA AP:
+  if (memcmp(data->mac, me->m_mac_sta_ap, sizeof(me->m_mac_sta_ap)) == 0)
+    {
+    int newrssi = data->rx_ctrl.rssi * 10;
+    me->m_sta_rssi = (me->m_sta_rssi * 7 + newrssi) / 8;
+    }
   }
 
 void esp32wifi::StartClientMode(std::string ssid, std::string password, uint8_t* bssid)
@@ -593,10 +599,12 @@ void esp32wifi::StopStation()
   OvmsMutexLock exclusive(&m_mutex);
 
   m_stareconnect = false;
+  m_sta_rssi = 0;
   memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
   memset(&m_mac_ap,0,sizeof(m_mac_ap));
   memset(&m_mac_sta,0,sizeof(m_mac_sta));
+  memset(&m_mac_sta_ap,0,sizeof(m_mac_sta_ap));
   memset(&m_ip_info_sta,0,sizeof(m_ip_info_sta));
   memset(&m_ip_info_ap,0,sizeof(m_ip_info_ap));
 
@@ -732,10 +740,12 @@ std::string esp32wifi::GetAPSSID()
 
 void esp32wifi::UpdateNetMetrics()
   {
+  StdMetrics.ms_m_net_wifi_network->SetValue(GetSSID());
+  StdMetrics.ms_m_net_wifi_sq->SetValue((float)m_sta_rssi/10, dbm);
   if (StdMetrics.ms_m_net_type->AsString() == "wifi")
     {
     StdMetrics.ms_m_net_provider->SetValue(GetSSID());
-    StdMetrics.ms_m_net_sq->SetValue((int)(m_sta_rssi+5)/10, dbm);
+    StdMetrics.ms_m_net_sq->SetValue((int)(m_sta_rssi-5)/10, dbm);
     }
   }
 
@@ -755,6 +765,8 @@ void esp32wifi::EventWifiGotIp(std::string event, void* data)
 void esp32wifi::EventWifiStaConnected(std::string event, void* data)
   {
   system_event_sta_connected_t& conn = ((system_event_info_t*)data)->connected;
+
+  memcpy(m_mac_sta_ap, conn.bssid, sizeof(m_mac_sta_ap));
 
   ESP_LOGI(TAG, "STA connected with SSID: %.*s, BSSID: " MACSTR ", Channel: %u, Auth: %s",
     conn.ssid_len, conn.ssid, MAC2STR(conn.bssid), conn.channel,
@@ -938,14 +950,16 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
     {
     case ESP32WIFI_MODE_CLIENT:
     case ESP32WIFI_MODE_SCLIENT:
-      writer->printf("\nSTA SSID: %s (%d dBm)\n  MAC: " MACSTR "\n  IP: " IPSTR "/" IPSTR "\n  GW: " IPSTR "\n",
-        m_wifi_sta_cfg.sta.ssid, (int)(m_sta_rssi+5)/10, MAC2STR(m_mac_sta),
-        IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw));
+      writer->printf("\nSTA SSID: %s (%.1f dBm)\n  MAC: " MACSTR "\n  IP: " IPSTR "/" IPSTR "\n  GW: " IPSTR "\n  AP: " MACSTR "\n",
+        m_wifi_sta_cfg.sta.ssid, (float)m_sta_rssi/10, MAC2STR(m_mac_sta),
+        IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw),
+        MAC2STR(m_mac_sta_ap));
       break;
     case ESP32WIFI_MODE_APCLIENT:
-      writer->printf("\nSTA SSID: %s (%d dBm)\n  MAC: " MACSTR "\n  IP: " IPSTR "/" IPSTR "\n  GW: " IPSTR "\n",
-        m_wifi_sta_cfg.sta.ssid, (int)(m_sta_rssi+5)/10, MAC2STR(m_mac_sta),
-        IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw));
+      writer->printf("\nSTA SSID: %s (%.1f dBm)\n  MAC: " MACSTR "\n  IP: " IPSTR "/" IPSTR "\n  GW: " IPSTR "\n  AP: " MACSTR "\n",
+        m_wifi_sta_cfg.sta.ssid, (float)m_sta_rssi/10, MAC2STR(m_mac_sta),
+        IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw),
+        MAC2STR(m_mac_sta_ap));
       // Falling through (no break) to ESP32WIFI_MODE_AP on purpose
     case ESP32WIFI_MODE_AP:
       writer->printf("\nAP SSID: %s\n  MAC: " MACSTR "\n  IP: " IPSTR "\n",
