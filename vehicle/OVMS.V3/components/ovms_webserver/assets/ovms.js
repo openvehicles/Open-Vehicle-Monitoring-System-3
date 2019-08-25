@@ -906,7 +906,7 @@ $.extend(ovms.FileBrowser.prototype, ovms.Widget.prototype, {
       return;
 
     this.$btnstop.prop('disabled', false);
-    this.xhr = loadcmd("vfs ls " + this.input.dir, this.$filebody, function(msg) {
+    this.xhr = loadcmd("vfs ls '" + this.input.dir + "'", this.$filebody, function(msg) {
       if (msg.error) {
         if (msg.error.startsWith("Request abort"))
           return '<div class="bg-info">Stopped.</div>';
@@ -1018,7 +1018,7 @@ $.extend(ovms.FileBrowser.prototype, ovms.Widget.prototype, {
     promptdialog("text", "Create new directory", path + "… (empty = create this dir)", ["Cancel", "Create"], function(create, dirname) {
       if (create) {
         path = (path + dirname).replace(/\/+$/, "");
-        $.post("/api/execute", { "command": "vfs mkdir " + path }, function(result) {
+        $.post("/api/execute", { "command": "vfs mkdir '" + path + "'" }, function(result) {
           if (result.startsWith("Error"))
             confirmdialog("Error", result, ["OK"]);
           else
