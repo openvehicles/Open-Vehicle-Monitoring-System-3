@@ -43,15 +43,19 @@ Remote Climate Control
 2011-2013 models
 ^^^^^^^^^^^^^^^^
 
-Gen1 Cars (2011-2014), require a hardware modification to enable OVMS to control remote climate. Wire RC3 to TCU pin 11, [more info](https://carrott.org/emini/Nissan_Leaf_OVMS#Remote_Climate_Control)
+Gen1 Cars (2011-2014), require a hardware modification to enable OVMS to control remote climate. Wire RC3 to TCU pin 11, `more info <https://carrott.org/emini/Nissan_Leaf_OVMS#Remote_Climate_Control)>`_
 
 ^^^^^^^^^^^^^^^^
 2014-2016 models
 ^^^^^^^^^^^^^^^^
 
-To enable OVMS to activate Nissan remote climate the Nissan TCU (telecommunications) module must be unplugged if fitted (only on Acenta and Tekna models). The TCU is located behind the glovebox on LHD cars or on the left hand side of the drivers footwell on RHD cars. The large plug on the TCU should be un-plugged [see more info](http://www.arachnon.de/wb/pages/en/nissan-leaf/tcu.php).   
+To use OVMS activate remote climate the Nissan TCU (Telematics Control Unit) module must be unplugged if fitted (only on Acenta and Tekna models). The TCU is located behind the glovebox on LHD cars or on the riught hand side of the drivers footwell on RHD cars. The large white plug on the TCU should be un-plugged, push down tab in the middle and pull to un-plug, `see video for RHD cars <https://photos.app.goo.gl/MuvpCaXQUjbCdoox6>`_ and `this page for LHD cars <http://www.arachnon.de/wb/pages/en/nissan-leaf/tcu.php>`_
 
-OVMS remote climate support will 'just work' on Visia models and Visia/Acenta e-NV200 with no telematics unit fitted.
+Note: Unplugging the TCU will disable Nissan EV connect / CARWINGS features e.g Nissan mobile app and updating EV charge points. All other car functions will not be effected e.g GPS, maps, radio, bluetooth, microphone all work just the same as before. OVMS can be used to more than substitute the loss of Nissan Connect features. The TCU can be plugged back in at any point in the future if required.
+
+OVMS remote climate support will 'just work' on Visia models and Visia/Acenta e-NV200 since these models have not TCU fitted.
+
+All other OVMS functions eappart from remote climate will function just fine alongside the Nissan TCU if you do not wish to unplug. 
  
 
 ^^^^^^^^^^^^^^^^
@@ -86,7 +90,7 @@ For models with a 30 kwhr battery pack, set  the capacity manually as follows
 2018+ models
 ^^^^^^^^^^^^
 
-2018+ 40kWh LEAF is not yet supported. Please get in touch if your interested in helping to add support. Relevant 2018 CANbus messages have already been decoaded and docuemented, see [MyNissanLEAF thread](https://mynissanleaf.com/viewtopic.php?f=44&t=4131&start=480)
+2018+ 40kWh LEAF is not yet supported. Please get in touch if your interested in helping to add support. Relevant 2018 CANbus messages have already been decoaded and docuemented, see `MyNissanLEAF thread <https://mynissanleaf.com/viewtopic.php?f=44&t=4131&start=480>`_
 
 
 -----------------
@@ -99,8 +103,8 @@ The OVMS uses two configuration options to calculate remaining range, whPerGid (
 Resources
 -----------------
 
-- Nissan LEAF supported addded by Tom Parker, see [his wiki](https://carrott.org/emini/Nissan_Leaf_OVMS) for lots of documentation and resouces. Some info is outdated
-- [MyNissanLEAF thread for Nissan CANbus decoding discussion](http://www.mynissanleaf.com/viewtopic.php?f=44&t=4131&hilit=open+CAN+discussion&start=440]
+- Nissan LEAF supported addded by Tom Parker, see `his wiki <https://carrott.org/emini/Nissan_Leaf_OVMS`_ for lots of documentation and resouces, some info is outdated.
+- `MyNissanLEAF thread for Nissan CANbus decoding discussion <http://www.mynissanleaf.com/viewtopic.php?f=44&t=4131&hilit=open+CAN+discussion&start=440>`_
 
 Assistance is appreciated as I haven't had time to try to override the TCU using the OVMS or find an alternative solution to prevent the TCU overriding the messages while still allowing the hands free microphone to work.
 
