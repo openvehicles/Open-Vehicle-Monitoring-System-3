@@ -167,7 +167,10 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   switch (m_speed)
     {
     case CAN_SPEED_33KBPS:
-      cnf1=0x09; cnf2=0xbe; cnf3=0x07;
+      // Recommended SWCAN settings according to GMLAN specs (GMW3089): SJW=2 and Sample Point = 86,67%
+      cnf1=0x4f; // SJW=2, BRP=15
+      cnf2=0xad; // BTLMODE=1, SAM=0,  PHSEG1=5 (6 Tq), PRSEG=5 (6 Tq) 
+      cnf3=0x81; // SOF=1, WAKFIL=0, PHSEG2=1 (2 tQ)
       break;
     case CAN_SPEED_83KBPS:
       cnf1=0x03; cnf2=0xbe; cnf3=0x07;
@@ -199,7 +202,7 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   if (ret != ESP_OK)
       return ESP_FAIL;
 
-  m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, REG_CANCTRL, CANSTAT_OSM | CANSTAT_ABAT, CANSTAT_OSM);
+  m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, REG_CANCTRL, CANSTAT_OSM | CANSTAT_ABAT, 0);
 
   // finally verify configuration registers
   uint8_t * rcvbuf = m_spibus->spi_cmd(m_spi, buf, 3, 2, CMD_READ, REG_CNF3);
@@ -483,6 +486,16 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameRecei
     {
     m_status.error_flags |= 0x0800;
     m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, REG_EFLG, errflag & 0b11000000, 0x00);
+    }
+  if ( (intstat & 0b10100000) && (errflag & 0b00111111) )
+    {
+    ESP_LOGW(TAG, "%s EFLG: %s%s%s%s%s%s", this->GetName(),
+      (errflag & 0b00100000) ? "Bus-off " : "",
+      (errflag & 0b00010000) ? "TX_Err_Passv " : "",
+      (errflag & 0b00001000) ? "RX_Err_Passv " : "",
+      (errflag & 0b00000100) ? "TX_Err_Warn " : "",
+      (errflag & 0b00000010) ? "RX_Err_Warn " : "",
+      (errflag & 0b00000001) ? "EWARN " : "" );
     }
 
   // clear error & wakeup interrupts:
