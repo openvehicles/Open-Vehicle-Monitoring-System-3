@@ -53,10 +53,15 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     std::string v = m->AsString();
     if ((argc==0)||(strstr(k,argv[0])))
       {
+      int age = m->Age();
+      if (age>99)
+        age=99;
       if (v.empty())
-        writer->printf("%s\n",k);
+        writer->printf("[---] %s\n",k);
       else
-        writer->printf("%-40.40s %s%s\n",k,v.c_str(),OvmsMetricUnitLabel(m->GetUnits()));
+        writer->printf("[%02d%c] %-40.40s %s%s\n",
+          age, (m->IsStale() ? 'S' : '-' ),
+          k,v.c_str(),OvmsMetricUnitLabel(m->GetUnits()));
       found = true;
       }
     }
