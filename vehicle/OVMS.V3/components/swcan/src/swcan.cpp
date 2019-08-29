@@ -86,12 +86,14 @@ void swcan::ServerConnected(std::string event, void* data)
   {
   ESP_LOGI(TAG, "Server connected");
   m_status_led->Set(true);
+  m_status_led->SetDefaultState(true);
   }
 
 void swcan::ServerDisconnected(std::string event, void* data)
   {
   ESP_LOGW(TAG, "Server disconnected");
   m_status_led->Blink(250,250,-1);
+  m_status_led->SetDefaultState(false);
   }
 
 void swcan::SystemUp(std::string event, void* data)
