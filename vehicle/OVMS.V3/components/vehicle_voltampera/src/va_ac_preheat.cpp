@@ -41,6 +41,7 @@ static const char *TAG = "v-voltampera";
 #define VA_PREHEAT_STARTED 		3
 #define VA_PREHEAT_STOPPING 	4
 #define VA_PREHEAT_ERROR			5
+#define VA_PREHEAT_RELINQUISH	6 // Used only when preheating is activated via key fob while BCM overriding is on-going
 
 const char* const va_preheat_status_strings[] = {
 	"Stopped",
@@ -139,8 +140,7 @@ void OvmsVehicleVoltAmpera::ClimateControlIncomingSWCAN(CAN_frame_t* p_frame)
 		      if (m_preheat_commander==OVMS)
 		        {
 		      	ESP_LOGI(TAG,"<--- Relinquish the control of the preheating to BCM ---->");
-		      	m_preheat_commander=Fob;
-		        PreheatModeChange(VA_PREHEAT_STARTING);
+		        PreheatModeChange(VA_PREHEAT_RELINQUISH);
 		        }
 		      break;
 		      }
@@ -226,13 +226,20 @@ void OvmsVehicleVoltAmpera::ClimateControlIncomingSWCAN(CAN_frame_t* p_frame)
           {
           if (m_preheat_commander==OVMS)
             {
-            ESP_LOGI(TAG,"BCM attempted to turn off preheating. Overriding by sending new start message...");
+            ESP_LOGW(TAG,"BCM attempted to turn off preheating. Overriding by sending new start message...");
             PreheatModeChange(VA_PREHEAT_SWITCH_ON);
             } 
-          else
-            {
-            ESP_LOGI(TAG,"BCM switching preheat off (after maximum time-on?)");
-            PreheatModeChange(VA_PREHEAT_STOPPING);
+          else 
+          	{
+          	if ( (m_preheat_commander==Onstar) && (mt_preheat_status->AsInt()==VA_PREHEAT_STARTING) )
+	          	{
+	            ESP_LOGW(TAG,"BCM sending preheating off msg while trying to start? Ignoring for now..");
+	          	}
+	          else
+	            {
+	            ESP_LOGW(TAG,"BCM switching preheat off (after maximum time-on?)");
+	            PreheatModeChange(VA_PREHEAT_STOPPING);
+			        }
             }
           }
         }
@@ -268,6 +275,11 @@ void OvmsVehicleVoltAmpera::PreheatModeChange( uint8_t preheat_status )
 
 	switch (preheat_status)
     {
+    case VA_PREHEAT_RELINQUISH:	// used only when preheating is started via key fob while BCM overriding is on-going
+    	{
+	      CommandLights(VA_PREHEAT_LIGHTS_ACTIVE,false);
+      	m_preheat_commander=Fob;
+      } // intentional fall-thru
 	  case VA_PREHEAT_STARTING:
 	    {
 	    // Reset timer only if it's actually starting the first time (not cycled between started -> starting -> started)
@@ -356,7 +368,7 @@ void OvmsVehicleVoltAmpera::PreheatModeChange( uint8_t preheat_status )
 // AC status changed
 void OvmsVehicleVoltAmpera::AirConStatusUpdated( bool ac_enabled )
   {
-  ESP_LOGI(TAG,"AirConStatusUpdated: ac_enabled %d, preheat_status: %s", ac_enabled, PreheatStatus());
+  ESP_LOGD(TAG,"AirConStatusUpdated: ac_enabled %d, preheat_status: %s", ac_enabled, PreheatStatus());
 
   if (m_preheat_commander == Disabled)
   	return;

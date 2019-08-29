@@ -142,8 +142,11 @@ void OvmsVehicleVoltAmpera::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.fieldset_start("HVAC / Preheating / Remote Start");
   c.input_checkbox("Enable BCM overriding when invoking Remote Start", "preheat_override_BCM", preheat_override_BCM,
     "<p>Normally Remote start is invoked via key fob or by sending CAN messages that mimic those sent by Onstar module. However this does not "
-    "seem to work on certain models (2014 Ampera). By enabling this iption the OVMS takes control of the preheating/precooling "
-    "and overrides the BCM by sending Remote Start CAN messages. Allows us also to set the maximum preheating time to longer than 20 minutes.</p>");
+    "seem to work on certain models (2014 Ampera). By enabling this option the OVMS takes control of the preheating/precooling "
+    "and overrides the BCM by sending Remote Start CAN messages. Allows us also to set the maximum preheating time to longer than 20 minutes.</p>"
+    "<p>Warning! Currently does not enable the 14V Auxiliary Module, so using this option may cause charge depletion of the 12V battery unless "
+    "charging cable is connected!</p>"
+    );
   c.input("number", "Maximum preheating/precooling time", "preheat_max_time", preheat_max_time.c_str(), "Default: 20 minutes",
     "<p>Maximum preheating time allowed. Note! This only applies when BCM overriding is enabled.</p>",
     "min=\"1\" step=\"1\" max=\"30\"", "minutes");

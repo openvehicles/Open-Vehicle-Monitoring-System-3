@@ -139,7 +139,7 @@ void OvmsVehicleVoltAmpera::ConfigChanged(OvmsConfigParam* param)
   ESP_LOGD(TAG, "Volt/Ampera reload configuration");
 
   m_range_rated_km = MyConfig.GetParamValueInt("xva", "range.km", 0);
-  m_extended_wakeup = MyConfig.GetParamValueInt("xva", "extended_wakeup", false);
+  m_extended_wakeup = MyConfig.GetParamValueBool("xva", "extended_wakeup", false);
   }
 
 void OvmsVehicleVoltAmpera::Status(int verbosity, OvmsWriter* writer)
@@ -157,6 +157,7 @@ void OvmsVehicleVoltAmpera::Status(int verbosity, OvmsWriter* writer)
 
 void OvmsVehicleVoltAmpera::TxCallback(const CAN_frame_t* p_frame, bool success)
   {
+  const uint8_t *d = p_frame->data.u8;
   if (p_frame->MsgID == 0x7e4)
     {
     if (!success)
@@ -166,21 +167,13 @@ void OvmsVehicleVoltAmpera::TxCallback(const CAN_frame_t* p_frame, bool success)
 
   if (success) 
     {
-    ESP_LOGI(TAG, "TxCallback. MsgId: 0x%x. Success: %d", p_frame->MsgID, success);
-    m_tx_retry_counter = 0;
+    ESP_LOGD(TAG,"TxCallback. Success. Frame %08x: [%02x %02x %02x %02x %02x %02x %02x %02x]", 
+      p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
     } 
   else
     {
-    if (m_tx_retry_counter < 5)
-      {
-      m_tx_retry_counter++;
-      ESP_LOGE(TAG, "TxCallback. Failed sending MsgId: 0x%x, global retry %d", p_frame->MsgID, m_tx_retry_counter);
-      p_frame->origin->Write(p_frame);
-      } 
-    else
-      {
-      ESP_LOGE(TAG, "TxCallback. Maximum retries reached!");
-      }
+    ESP_LOGE(TAG,"TxCallback. Failed! Frame %08x: [%02x %02x %02x %02x %02x %02x %02x %02x]", 
+      p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
     }
   }
 
@@ -189,6 +182,9 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
   int k;
+
+  ESP_LOGV(TAG,"CAN1 message received: %08x: [%02x %02x %02x %02x %02x %02x %02x %02x]", 
+    p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
 
   if ((p_frame->MsgID == 0x7e8)||
       (p_frame->MsgID == 0x7ec)||
@@ -372,8 +368,8 @@ void OvmsVehicleVoltAmpera::IncomingFrameSWCan(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
 
-  //ESP_LOGI(TAG,"SW CAN message received: %08x: %02x %02x %02x %02x %02x %02x %02x %02x", 
-  //  p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
+  ESP_LOGV(TAG,"SW CAN message received: %08x: [%02x %02x %02x %02x %02x %02x %02x %02x]", 
+    p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
 
   // Activity on the bus, so resume polling
   if (m_poll_state != 1)
@@ -708,76 +704,74 @@ void OvmsVehicleVoltAmpera::CommandWakeupComplete( const CAN_frame_t* p_frame, b
   }
 
 
+#define WAKEUP_DELAY_1 220
+#define WAKEUP_DELAY_2 360
+#define WAKEUP_DELAY_3 180
+
 OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandWakeup()
   {
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
-  p_swcan->SetTransceiverMode(tmode_highvoltagewakeup);
-
   CAN_frame_t txframe;
 
-  SEND_STD_FRAME(p_swcan, txframe,  0x100, 8, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00)
+  p_swcan->SetTransceiverMode(tmode_highvoltagewakeup);
 
-  if (m_extended_wakeup)
-    {
-    vTaskDelay(220 / portTICK_PERIOD_MS);
-    SEND_STD_FRAME(p_swcan, txframe,  0x100, 8, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00)
+  // Send the 0x100 message with callback so that High Voltage Wakeup mode can be exited
+  FRAME_FILL(0, p_swcan, txframe,   0x100, 0, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00)
+  txframe.callback = &wakeup_frame_sent;
+  p_swcan->Write(&txframe);
 
-    vTaskDelay(360 / portTICK_PERIOD_MS);
-    SEND_STD_FRAME(p_swcan, txframe,  0x620, 8, 0x00,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
-    vTaskDelay(180 / portTICK_PERIOD_MS);
-    SEND_STD_FRAME(p_swcan, txframe,  0x620, 8, 0x01,0xff,0xff,0xff,0xff,0xff,0x00,0x00)      
-    }
+  vTaskDelay(WAKEUP_DELAY_1 / portTICK_PERIOD_MS);
 
   // Body Control Module (BCM)
-  vTaskDelay(360 / portTICK_PERIOD_MS);
   SEND_STD_FRAME(p_swcan, txframe,  0x621, 8, 0x00,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
-  vTaskDelay(180 / portTICK_PERIOD_MS);
-  SEND_STD_FRAME(p_swcan, txframe,  0x621, 8, 0x01,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
 
   if (m_extended_wakeup)
     {
-    // Theft Deterrent Module (TDM) ?
-    vTaskDelay(360 / portTICK_PERIOD_MS);
-    SEND_STD_FRAME(p_swcan, txframe,  0x622, 8, 0x00,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
-    vTaskDelay(180 / portTICK_PERIOD_MS);
-    SEND_STD_FRAME(p_swcan, txframe,  0x622, 8, 0x01,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
+    ESP_LOGI(TAG,"Sending extended wake up messages...");
+    vTaskDelay(WAKEUP_DELAY_3 / portTICK_PERIOD_MS);
+    SEND_STD_FRAME(p_swcan, txframe,  0x621, 8, 0x01,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
 
-    vTaskDelay(360 / portTICK_PERIOD_MS);
+    SEND_STD_FRAME(p_swcan, txframe,  0x100, 8, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00)
+
+    // ?
+    vTaskDelay(WAKEUP_DELAY_2 / portTICK_PERIOD_MS);
+    SEND_STD_FRAME(p_swcan, txframe,  0x620, 8, 0x00,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
+    vTaskDelay(WAKEUP_DELAY_3 / portTICK_PERIOD_MS);
+    SEND_STD_FRAME(p_swcan, txframe,  0x620, 8, 0x01,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
+    vTaskDelay(WAKEUP_DELAY_2 / portTICK_PERIOD_MS);
+
+    // Theft Deterrent Module (TDM) ?
+    vTaskDelay(WAKEUP_DELAY_2 / portTICK_PERIOD_MS);
+    SEND_STD_FRAME(p_swcan, txframe,  0x622, 8, 0x00,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
+    vTaskDelay(WAKEUP_DELAY_3 / portTICK_PERIOD_MS);
+    SEND_STD_FRAME(p_swcan, txframe,  0x622, 8, 0x01,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
+    vTaskDelay(WAKEUP_DELAY_2 / portTICK_PERIOD_MS);
     SEND_STD_FRAME(p_swcan, txframe,  0x100, 8, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00)
 
     // Sensing and Diagmostic module (SDM) ?
-    vTaskDelay(360 / portTICK_PERIOD_MS);
+    vTaskDelay(WAKEUP_DELAY_2 / portTICK_PERIOD_MS);
     SEND_STD_FRAME(p_swcan, txframe,  0x627, 8, 0x00,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
-    vTaskDelay(180 / portTICK_PERIOD_MS);
+    vTaskDelay(WAKEUP_DELAY_3 / portTICK_PERIOD_MS);
     SEND_STD_FRAME(p_swcan, txframe,  0x627, 8, 0x01,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
-    }
 
-  // Instrument Panel Cluster (IPC)
-  vTaskDelay(360 / portTICK_PERIOD_MS);
-  SEND_STD_FRAME(p_swcan, txframe,  0x62c, 8, 0x00,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
-  vTaskDelay(180 / portTICK_PERIOD_MS);
-  SEND_STD_FRAME(p_swcan, txframe,  0x62c, 8, 0x01,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
+    // Instrument Panel Cluster (IPC)
+    vTaskDelay(WAKEUP_DELAY_2 / portTICK_PERIOD_MS);
+    SEND_STD_FRAME(p_swcan, txframe,  0x62c, 8, 0x00,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
+    vTaskDelay(WAKEUP_DELAY_3 / portTICK_PERIOD_MS);
+    SEND_STD_FRAME(p_swcan, txframe,  0x62c, 8, 0x01,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
 
-  if (m_extended_wakeup)
-    {
     // ?
-    vTaskDelay(360 / portTICK_PERIOD_MS);
+    vTaskDelay(WAKEUP_DELAY_2 / portTICK_PERIOD_MS);
     SEND_STD_FRAME(p_swcan, txframe,  0x62d, 8, 0x00,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
-    vTaskDelay(180 / portTICK_PERIOD_MS);
+    vTaskDelay(WAKEUP_DELAY_3 / portTICK_PERIOD_MS);
     SEND_STD_FRAME(p_swcan, txframe,  0x62d, 8, 0x01,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
-    }
 
-  // Heating Ventilation Air Conditioning (HVAC)
-  vTaskDelay(360 / portTICK_PERIOD_MS);
-  SEND_STD_FRAME(p_swcan, txframe,  0x631, 8, 0x00,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
-  vTaskDelay(180 / portTICK_PERIOD_MS);
-  SEND_STD_FRAME(p_swcan, txframe,  0x631, 8, 0x01,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
-
-  // Send the last message with callback so that High Voltage Wakeup mode can be exited
-  vTaskDelay(360 / portTICK_PERIOD_MS);
-  FRAME_FILL(0, p_swcan, txframe,   0x100, 8, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00)
-  txframe.callback = &wakeup_frame_sent;
-  p_swcan->Write(&txframe);
+    // Heating Ventilation Air Conditioning (HVAC)
+    vTaskDelay(WAKEUP_DELAY_2 / portTICK_PERIOD_MS);
+    SEND_STD_FRAME(p_swcan, txframe,  0x631, 8, 0x00,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
+    vTaskDelay(WAKEUP_DELAY_3 / portTICK_PERIOD_MS);
+    SEND_STD_FRAME(p_swcan, txframe,  0x631, 8, 0x01,0xff,0xff,0xff,0xff,0xff,0x00,0x00)
+  }
 
   FlashLights(Interior_lamp);
 
@@ -857,7 +851,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandLights(va_light_t l
   {
   ESP_LOGI(TAG,"CommandLights: lights 0x%x:%d",(uint32_t)lights,turn_on);
   SendTesterPresentMessage(VA_BCM);
-  vTaskDelay(50 / portTICK_PERIOD_MS);  
+  vTaskDelay(200 / portTICK_PERIOD_MS);  
 
   CAN_frame_t txframe;
   uint8_t *d = txframe.data.u8;
