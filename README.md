@@ -1,12 +1,4 @@
-# Open-Vehicle-Monitoring-System-3 - SWCAN branch
-
-----------------------
-
-This branch of OVMS contains patches to add SWCAN (Single-Wire CAN, GMLAN) support to OVMS. It is possible to use the existing hardware of OVMS v3, but to fully support SWCAN capabilities (especially the High-Voltage Wake-Up function to wake the car and consequentally to enable larger remote controlling capabilities), an [add-on SWCAN board](https://github.com/mjuhanne/OVMS-SWCAN) is needed.
-
-To enable the additional hardware support, launch "make menuconfig" and select Component config -> OVMS -> Component options -> Include support for external SWCAN module
-
-----------------------
+# Open-Vehicle-Monitoring-System-3
 
 Open Vehicle Monitoring System
 
