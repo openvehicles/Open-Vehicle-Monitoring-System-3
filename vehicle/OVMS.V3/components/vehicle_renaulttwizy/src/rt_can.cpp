@@ -578,7 +578,7 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
         | ((unsigned long) CAN_BYTE(3) << 12)
         | ((unsigned long) CAN_BYTE(2) << 20);
       if (!twizy_odometer_tripstart)
-        twizy_odometer_tripstart = twizy_odometer_tripend = twizy_odometer;
+        twizy_odometer_tripstart = twizy_odometer;
       break;
       
       
