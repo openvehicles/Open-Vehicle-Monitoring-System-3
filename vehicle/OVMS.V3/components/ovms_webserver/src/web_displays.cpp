@@ -261,6 +261,7 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
     "function get_dashboard_data() {"
       "var rmin = metrics[\"v.b.range.est\"]||0, rmax = metrics[\"v.b.range.ideal\"]||0;\n"
       "var euse = metrics[\"v.b.energy.used\"]||0, erec = metrics[\"v.b.energy.recd\"]||0;\n"
+      "euse = Math.floor(euse*10)/10; erec = Math.floor(erec*10)/10;"
       "if (rmin > rmax) { var x = rmin; rmin = rmax; rmax = x; }"
       "var md = {"
         "range: { value: \"▼\" + rmin.toFixed(0) + \" ▲\" + rmax.toFixed(0) },"
