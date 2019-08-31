@@ -95,16 +95,18 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
 
   // Register CAN bus and polling requests
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);  // powertrain bus
-  RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);  // chassis bus 
+  //RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);  // chassis bus 
   PollSetPidList(m_can1,va_polls);
   PollSetState(0);
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
   ESP_LOGI(TAG, "Volt/Ampera vehicle module: Register SWCAN using external CAN module");
   RegisterCanBus(4,CAN_MODE_ACTIVE,CAN_SPEED_33KBPS);
-  p_swcan = (swcan*)MyPcpApp.FindDeviceByName("swcan");
+  p_swcan = m_swcan;
+  p_swcan_if = (swcan*)MyPcpApp.FindDeviceByName("swcan");
 #else
   ESP_LOGI(TAG, "Volt/Ampera vehicle module: Register 2nd MCP2515 as SWCAN");
   RegisterCanBus(3,CAN_MODE_ACTIVE,CAN_SPEED_33KBPS);  // single wire can
+  p_swcan = m_can3;
 #endif // #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
 
   // register tx callback
@@ -699,7 +701,7 @@ void OvmsVehicleVoltAmpera::CommandWakeupComplete( const CAN_frame_t* p_frame, b
 
   // Switch to normal mode no matter if the wakeup msg was sent successfully or not
   vTaskDelay(20 / portTICK_PERIOD_MS);  
-  p_swcan->SetTransceiverMode(tmode_normal);
+  p_swcan_if->SetTransceiverMode(tmode_normal);
 #endif // #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
   }
 
@@ -713,7 +715,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandWakeup()
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
   CAN_frame_t txframe;
 
-  p_swcan->SetTransceiverMode(tmode_highvoltagewakeup);
+  p_swcan_if->SetTransceiverMode(tmode_highvoltagewakeup);
 
   // Send the 0x100 message with callback so that High Voltage Wakeup mode can be exited
   FRAME_FILL(0, p_swcan, txframe,   0x100, 0, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00)

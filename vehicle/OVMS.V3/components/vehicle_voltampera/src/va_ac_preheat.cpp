@@ -450,23 +450,23 @@ void OvmsVehicleVoltAmpera::PreheatWatchdog()
       }
     case VA_PREHEAT_STOPPING:
       {
-      if (m_preheat_commander==OVMS)
+      if (m_preheat_modechange_timer > VA_PREHEAT_TIMEOUT)
         {
-        if (m_preheat_modechange_timer > VA_PREHEAT_TIMEOUT)
+        if (mt_ac_front_blower_fan_speed->IsStale())
           {
-          if (mt_ac_front_blower_fan_speed->IsStale())
-            {
-            // AC actually did stop, but we did not receive the last fan_speed=0 message. Assume AC is off
-            ESP_LOGW(TAG,"AC status went stale... Assume AC is off");
-            PreheatModeChange(VA_PREHEAT_STOPPED);
-            }
-          else
-            {
-            ESP_LOGE(TAG,"Preheat did not stop! Retrying..");
-            MyEvents.SignalEvent("vehicle.preheat.error", NULL);
-            PreheatModeChange(VA_PREHEAT_STOPPING);
-            }
+          // AC actually did stop, but we did not receive the last fan_speed=0 message. Assume AC is off
+          ESP_LOGW(TAG,"AC status went stale... Assume AC is off");
+          PreheatModeChange(VA_PREHEAT_STOPPED);
           }
+        else
+          {
+          if (m_preheat_commander==OVMS)
+						{
+						ESP_LOGE(TAG,"Preheat did not stop! Retrying..");
+	          MyEvents.SignalEvent("vehicle.preheat.error", NULL);
+	          PreheatModeChange(VA_PREHEAT_STOPPING);
+	          }
+	        }
         }
       break;
       }
