@@ -1024,7 +1024,7 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
     << ((stale)?",0,":",1,")
     << ((m_units_distance == Kilometers)? StandardMetrics.ms_v_pos_speed->AsString("0") : StandardMetrics.ms_v_pos_speed->AsString("0",Mph))
     << ","
-    << StandardMetrics.ms_v_pos_trip->AsString("0",m_units_distance,3)
+    << int(StandardMetrics.ms_v_pos_trip->AsFloat(0, m_units_distance)*10)
     << ","
     << drivemode
     << ","

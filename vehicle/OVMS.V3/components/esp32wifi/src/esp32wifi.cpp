@@ -50,6 +50,45 @@ const char* const esp32wifi_mode_names[] = {
   "SCAN mode"
 };
 
+static const char* wifi_err_reason_code(wifi_err_reason_t reason)
+  {
+  const char* code;
+  switch (reason)
+    {
+    case WIFI_REASON_UNSPECIFIED:                 code = "UNSPECIFIED"; break;
+    case WIFI_REASON_AUTH_EXPIRE:                 code = "AUTH_EXPIRE"; break;
+    case WIFI_REASON_AUTH_LEAVE:                  code = "AUTH_LEAVE"; break;
+    case WIFI_REASON_ASSOC_EXPIRE:                code = "ASSOC_EXPIRE"; break;
+    case WIFI_REASON_ASSOC_TOOMANY:               code = "ASSOC_TOOMANY"; break;
+    case WIFI_REASON_NOT_AUTHED:                  code = "NOT_AUTHED"; break;
+    case WIFI_REASON_NOT_ASSOCED:                 code = "NOT_ASSOCED"; break;
+    case WIFI_REASON_ASSOC_LEAVE:                 code = "ASSOC_LEAVE"; break;
+    case WIFI_REASON_ASSOC_NOT_AUTHED:            code = "ASSOC_NOT_AUTHED"; break;
+    case WIFI_REASON_DISASSOC_PWRCAP_BAD:         code = "DISASSOC_PWRCAP_BAD"; break;
+    case WIFI_REASON_DISASSOC_SUPCHAN_BAD:        code = "DISASSOC_SUPCHAN_BAD"; break;
+    case WIFI_REASON_IE_INVALID:                  code = "IE_INVALID"; break;
+    case WIFI_REASON_MIC_FAILURE:                 code = "MIC_FAILURE"; break;
+    case WIFI_REASON_4WAY_HANDSHAKE_TIMEOUT:      code = "4WAY_HANDSHAKE_TIMEOUT"; break;
+    case WIFI_REASON_GROUP_KEY_UPDATE_TIMEOUT:    code = "GROUP_KEY_UPDATE_TIMEOUT"; break;
+    case WIFI_REASON_IE_IN_4WAY_DIFFERS:          code = "IE_IN_4WAY_DIFFERS"; break;
+    case WIFI_REASON_GROUP_CIPHER_INVALID:        code = "GROUP_CIPHER_INVALID"; break;
+    case WIFI_REASON_PAIRWISE_CIPHER_INVALID:     code = "PAIRWISE_CIPHER_INVALID"; break;
+    case WIFI_REASON_AKMP_INVALID:                code = "AKMP_INVALID"; break;
+    case WIFI_REASON_UNSUPP_RSN_IE_VERSION:       code = "UNSUPP_RSN_IE_VERSION"; break;
+    case WIFI_REASON_INVALID_RSN_IE_CAP:          code = "INVALID_RSN_IE_CAP"; break;
+    case WIFI_REASON_802_1X_AUTH_FAILED:          code = "802_1X_AUTH_FAILED"; break;
+    case WIFI_REASON_CIPHER_SUITE_REJECTED:       code = "CIPHER_SUITE_REJECTED"; break;
+    case WIFI_REASON_BEACON_TIMEOUT:              code = "BEACON_TIMEOUT"; break;
+    case WIFI_REASON_NO_AP_FOUND:                 code = "NO_AP_FOUND"; break;
+    case WIFI_REASON_AUTH_FAIL:                   code = "AUTH_FAIL"; break;
+    case WIFI_REASON_ASSOC_FAIL:                  code = "ASSOC_FAIL"; break;
+    case WIFI_REASON_HANDSHAKE_TIMEOUT:           code = "HANDSHAKE_TIMEOUT"; break;
+    case WIFI_REASON_CONNECTION_FAIL:             code = "CONNECTION_FAIL"; break;
+    default:                                      code = "UNKNOWN"; break;
+    }
+  return code;
+  }
+
 
 void wifi_mode_client(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -784,8 +823,8 @@ void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
 
   if (info->disconnected.reason != m_previous_reason)
     {
-    ESP_LOGI(TAG, "STA disconnected with reason %d",
-      info->disconnected.reason);
+    ESP_LOGI(TAG, "STA disconnected with reason %d = %s",
+      info->disconnected.reason, wifi_err_reason_code((wifi_err_reason_t)info->disconnected.reason));
     m_previous_reason = info->disconnected.reason;
     }
 
