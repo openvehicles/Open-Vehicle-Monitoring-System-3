@@ -248,8 +248,6 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       // MOTOR TEMPERATURE:
       if (CAN_BYTE(5) > 0 && CAN_BYTE(5) < 0xf0)
         twizy_tmotor = (signed int) CAN_BYTE(5) - 40;
-      else
-        twizy_tmotor = 0;
       
       break;
     
@@ -448,8 +446,6 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       // CHARGER temperature:
       if (CAN_BYTE(7) > 0 && CAN_BYTE(7) < 0xf0)
         *StdMetrics.ms_v_charge_temp = (float) CAN_BYTE(7) - 40;
-      else
-        *StdMetrics.ms_v_charge_temp = (float) 0;
       
       break; // case 0x597
     
@@ -570,8 +566,6 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       // SEVCON TEMPERATURE:
       if (CAN_BYTE(5) > 0 && CAN_BYTE(5) < 0xf0)
         *StdMetrics.ms_v_inv_temp = (float) CAN_BYTE(5) - 40;
-      else
-        *StdMetrics.ms_v_inv_temp = (float) 0;
       
       break;
     
@@ -583,6 +577,8 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
         | ((unsigned long) CAN_BYTE(4) << 4)
         | ((unsigned long) CAN_BYTE(3) << 12)
         | ((unsigned long) CAN_BYTE(2) << 20);
+      if (!twizy_odometer_tripstart)
+        twizy_odometer_tripstart = twizy_odometer_tripend = twizy_odometer;
       break;
       
       
