@@ -4,6 +4,12 @@ CAN Bus Data Logging
 
 OVMS can be used as CAN bus datalogging tool.
 
+Note: 'Edge' firmware is currently required for full CAN bus datalogging functions.
+
+Currently: ``3.2.002-191-g8d532fb/ota_0/edge (build idf v3.1-dev-4770-ge97f72e Aug 26 2019 00:00:50``
+
+Edge firmware can be selected via the web interface 'config > firmware', enter ``edge`` in firmware tag. To load edge firmware select 'flash from web > Flash now'.
+
 --------------------
 Physical Connections
 --------------------
