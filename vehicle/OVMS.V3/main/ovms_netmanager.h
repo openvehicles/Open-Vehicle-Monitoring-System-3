@@ -89,6 +89,8 @@ class OvmsNetManager
 
   public:
     void WifiStaGotIP(std::string event, void* data);
+    void WifiStaLostIP(std::string event, void* data);
+    void WifiStaConnected(std::string event, void* data);
     void WifiStaStop(std::string event, void* data);
     void WifiStaGood(std::string event, void* data);
     void WifiStaBad(std::string event, void* data);

@@ -270,12 +270,13 @@ esp32wifi::esp32wifi(const char* name)
   m_powermode = Off;
   m_poweredup = false;
   m_stareconnect = false;
-  m_sta_rssi = 0;
+  m_sta_connected = false;
+  m_sta_rssi = -1270;
   memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
   memset(&m_mac_ap,0,sizeof(m_mac_ap));
   memset(&m_mac_sta,0,sizeof(m_mac_sta));
-  memset(&m_mac_sta_ap,0,sizeof(m_mac_sta_ap));
+  memset(&m_sta_ap_info,0,sizeof(m_sta_ap_info));
   memset(&m_ip_info_sta,0,sizeof(m_ip_info_sta));
   memset(&m_ip_info_ap,0,sizeof(m_ip_info_ap));
   MyConfig.RegisterParam("wifi.ssid", "WIFI SSID", true, false);
@@ -285,6 +286,7 @@ esp32wifi::esp32wifi(const char* name)
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.start",std::bind(&esp32wifi::EventWifiStaState, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.gotip",std::bind(&esp32wifi::EventWifiGotIp, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.wifi.sta.lostip",std::bind(&esp32wifi::EventWifiLostIp, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.connected",std::bind(&esp32wifi::EventWifiStaConnected, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.disconnected",std::bind(&esp32wifi::EventWifiStaDisconnected, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"ticker.1",std::bind(&esp32wifi::EventTimer1, this, _1, _2));
@@ -448,39 +450,6 @@ void esp32wifi::PowerDown()
     }
   }
 
-void esp32wifi::InitCSI()
-  {
-  esp_err_t err;
-  m_sta_rssi = 0;
-  if ((err = esp_wifi_set_csi_rx_cb(CSIRxCallback, this)) != ESP_OK)
-    ESP_LOGW(TAG, "cannot set CSI callback: error %d %s", err, esp_err_to_name(err));
-  wifi_csi_config_t csi_config =
-    {
-    .lltf_en = true,           /**< enable to receive legacy long training field(lltf) data. Default enabled */
-    .htltf_en = true,          /**< enable to receive HT long training field(htltf) data. Default enabled */
-    .stbc_htltf2_en = true,    /**< enable to receive space time block code HT long training field(stbc-htltf2) data. Default enabled */
-    .ltf_merge_en = true,      /**< enable to generate htlft data by averaging lltf and ht_ltf data when receiving HT packet. Otherwise, use ht_ltf data directly. Default enabled */
-    .channel_filter_en = true, /**< enable to turn on channel filter to smooth adjacent sub-carrier. Disable it to keep independence of adjacent sub-carrier. Default enabled */
-    .manu_scale = false,       /**< manually scale the CSI data by left shifting or automatically scale the CSI data. If set true, please set the shift bits. false: automatically. true: manually. Default false */ 
-    .shift = 0                 /**< manually left shift bits of the scale of the CSI data. The range of the left shift bits is 0~15 */
-    };
-  if ((err = esp_wifi_set_csi_config(&csi_config)) != ESP_OK)
-    ESP_LOGW(TAG, "cannot configure CSI: error %d %s", err, esp_err_to_name(err));
-  if ((err = esp_wifi_set_csi(true)) != ESP_OK)
-    ESP_LOGW(TAG, "cannot enable CSI: error %d %s", err, esp_err_to_name(err));
-  }
-
-void esp32wifi::CSIRxCallback(void* ctx, wifi_csi_info_t* data)
-  {
-  esp32wifi *me = (esp32wifi*) ctx;
-  // CSI packets can come from all APs including our own SoftAP, filter current STA AP:
-  if (memcmp(data->mac, me->m_mac_sta_ap, sizeof(me->m_mac_sta_ap)) == 0)
-    {
-    int newrssi = data->rx_ctrl.rssi * 10;
-    me->m_sta_rssi = (me->m_sta_rssi * 7 + newrssi) / 8;
-    }
-  }
-
 void esp32wifi::StartClientMode(std::string ssid, std::string password, uint8_t* bssid)
   {
   m_stareconnect = false;
@@ -518,7 +487,6 @@ void esp32wifi::StartClientMode(std::string ssid, std::string password, uint8_t*
   m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
   ESP_ERROR_CHECK(esp_wifi_start());
-  InitCSI();
   }
 
   ESP_ERROR_CHECK(esp_wifi_connect());
@@ -547,7 +515,6 @@ void esp32wifi::StartScanningClientMode()
   m_wifi_sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
   m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
   ESP_ERROR_CHECK(esp_wifi_start());
-  InitCSI();
   }
 
   // if we are triggered by a startup script, monotonictime will be zero which
@@ -627,7 +594,6 @@ void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appas
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
 
   ESP_ERROR_CHECK(esp_wifi_start());
-  InitCSI();
   }
 
   ESP_ERROR_CHECK(esp_wifi_connect());
@@ -636,16 +602,6 @@ void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appas
 void esp32wifi::StopStation()
   {
   OvmsMutexLock exclusive(&m_mutex);
-
-  m_stareconnect = false;
-  m_sta_rssi = 0;
-  memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
-  memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
-  memset(&m_mac_ap,0,sizeof(m_mac_ap));
-  memset(&m_mac_sta,0,sizeof(m_mac_sta));
-  memset(&m_mac_sta_ap,0,sizeof(m_mac_sta_ap));
-  memset(&m_ip_info_sta,0,sizeof(m_ip_info_sta));
-  memset(&m_ip_info_ap,0,sizeof(m_ip_info_ap));
 
   if (m_mode != ESP32WIFI_MODE_OFF)
     {
@@ -657,6 +613,17 @@ void esp32wifi::StopStation()
     ESP_ERROR_CHECK(esp_wifi_stop());
     m_mode = ESP32WIFI_MODE_OFF;
     }
+
+  m_stareconnect = false;
+  m_sta_connected = false;
+  memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
+  memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
+  memset(&m_mac_ap,0,sizeof(m_mac_ap));
+  memset(&m_mac_sta,0,sizeof(m_mac_sta));
+  memset(&m_ip_info_sta,0,sizeof(m_ip_info_sta));
+  memset(&m_ip_info_ap,0,sizeof(m_ip_info_ap));
+
+  UpdateNetMetrics();
   }
 
 void esp32wifi::Scan(OvmsWriter* writer)
@@ -779,6 +746,18 @@ std::string esp32wifi::GetAPSSID()
 
 void esp32wifi::UpdateNetMetrics()
   {
+  // update/clear access point info:
+  if (m_sta_connected && esp_wifi_sta_get_ap_info(&m_sta_ap_info) == ESP_OK)
+    {
+    int newrssi = m_sta_ap_info.rssi * 10;
+    m_sta_rssi = (m_sta_rssi * 3 + newrssi) / 4;
+    }
+  else
+    {
+    memset(&m_sta_ap_info, 0, sizeof(m_sta_ap_info));
+    m_sta_rssi = -1270;
+    }
+
   StdMetrics.ms_m_net_wifi_network->SetValue(GetSSID());
   StdMetrics.ms_m_net_wifi_sq->SetValue((float)m_sta_rssi/10, dbm);
   if (StdMetrics.ms_m_net_type->AsString() == "wifi")
@@ -796,16 +775,25 @@ void esp32wifi::EventWifiGotIp(std::string event, void* data)
   m_ip_info_sta = info->got_ip.ip_info;
   esp_wifi_get_mac(ESP_IF_WIFI_STA, m_mac_sta);
   UpdateNetMetrics();
-  ESP_LOGI(TAG, "STA got IP with SSID: %s, MAC: " MACSTR ", IP: " IPSTR ", mask: " IPSTR ", gw: " IPSTR,
-    m_wifi_sta_cfg.sta.ssid, MAC2STR(m_mac_sta),
+  ESP_LOGI(TAG, "STA got IP with SSID '%s' AP " MACSTR ": MAC: " MACSTR ", IP: " IPSTR ", mask: " IPSTR ", gw: " IPSTR,
+    m_wifi_sta_cfg.sta.ssid, MAC2STR(m_sta_ap_info.bssid), MAC2STR(m_mac_sta),
     IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw));
+  }
+
+void esp32wifi::EventWifiLostIp(std::string event, void* data)
+  {
+  memset(&m_ip_info_sta,0,sizeof(m_ip_info_sta));
+  UpdateNetMetrics();
+  ESP_LOGI(TAG, "STA lost IP from SSID '%s' AP " MACSTR,
+    m_wifi_sta_cfg.sta.ssid, MAC2STR(m_sta_ap_info.bssid));
   }
 
 void esp32wifi::EventWifiStaConnected(std::string event, void* data)
   {
   system_event_sta_connected_t& conn = ((system_event_info_t*)data)->connected;
 
-  memcpy(m_mac_sta_ap, conn.bssid, sizeof(m_mac_sta_ap));
+  m_sta_connected = true;
+  UpdateNetMetrics();
 
   ESP_LOGI(TAG, "STA connected with SSID: %.*s, BSSID: " MACSTR ", Channel: %u, Auth: %s",
     conn.ssid_len, conn.ssid, MAC2STR(conn.bssid), conn.channel,
@@ -821,6 +809,8 @@ void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
   {
   system_event_info_t *info = (system_event_info_t*)data;
 
+  m_sta_connected = false;
+
   if (info->disconnected.reason != m_previous_reason)
     {
     ESP_LOGI(TAG, "STA disconnected with reason %d = %s",
@@ -832,6 +822,7 @@ void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
       (m_mode == ESP32WIFI_MODE_APCLIENT))
     {
     m_stareconnect = true;
+    memset(&m_ip_info_sta,0,sizeof(m_ip_info_sta));
     }
   else if (m_mode == ESP32WIFI_MODE_SCLIENT)
     {
@@ -992,13 +983,13 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
       writer->printf("\nSTA SSID: %s (%.1f dBm)\n  MAC: " MACSTR "\n  IP: " IPSTR "/" IPSTR "\n  GW: " IPSTR "\n  AP: " MACSTR "\n",
         m_wifi_sta_cfg.sta.ssid, (float)m_sta_rssi/10, MAC2STR(m_mac_sta),
         IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw),
-        MAC2STR(m_mac_sta_ap));
+        MAC2STR(m_sta_ap_info.bssid));
       break;
     case ESP32WIFI_MODE_APCLIENT:
       writer->printf("\nSTA SSID: %s (%.1f dBm)\n  MAC: " MACSTR "\n  IP: " IPSTR "/" IPSTR "\n  GW: " IPSTR "\n  AP: " MACSTR "\n",
         m_wifi_sta_cfg.sta.ssid, (float)m_sta_rssi/10, MAC2STR(m_mac_sta),
         IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw),
-        MAC2STR(m_mac_sta_ap));
+        MAC2STR(m_sta_ap_info.bssid));
       // Falling through (no break) to ESP32WIFI_MODE_AP on purpose
     case ESP32WIFI_MODE_AP:
       writer->printf("\nAP SSID: %s\n  MAC: " MACSTR "\n  IP: " IPSTR "\n",
