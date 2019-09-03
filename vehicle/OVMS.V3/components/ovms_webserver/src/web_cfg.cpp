@@ -203,7 +203,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.panel_start("primary", "Wifi");
   output = ExecuteCommand("wifi status");
-  c.printf("<samp class=\"monitor\" data-updcmd=\"wifi status\" data-events=\"^system.wifi\">%s</samp>", _html(output));
+  c.printf("<samp class=\"monitor\" data-updcmd=\"wifi status\" data-events=\"\\.wifi\\.\">%s</samp>", _html(output));
   c.panel_end();
 
   c.print(
@@ -212,7 +212,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.panel_start("primary", "Modem");
   output = ExecuteCommand("simcom status");
-  c.printf("<samp class=\"monitor\" data-updcmd=\"simcom status\" data-events=\"system.modem\">%s</samp>", _html(output));
+  c.printf("<samp class=\"monitor\" data-updcmd=\"simcom status\" data-events=\"\\.modem\\.\">%s</samp>", _html(output));
   c.panel_end(
     "<ul class=\"list-inline\">"
       "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power simcom on\">Start modem</button></li>"

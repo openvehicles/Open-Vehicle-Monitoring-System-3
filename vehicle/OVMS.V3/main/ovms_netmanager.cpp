@@ -219,9 +219,11 @@ OvmsNetManager::OvmsNetManager()
   using std::placeholders::_2;
 
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.gotip", std::bind(&OvmsNetManager::WifiStaGotIP, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.wifi.sta.lostip", std::bind(&OvmsNetManager::WifiStaLostIP, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"network.wifi.sta.good", std::bind(&OvmsNetManager::WifiStaGood, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"network.wifi.sta.bad", std::bind(&OvmsNetManager::WifiStaBad, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.stop", std::bind(&OvmsNetManager::WifiStaStop, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.wifi.sta.connected", std::bind(&OvmsNetManager::WifiStaConnected, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.disconnected", std::bind(&OvmsNetManager::WifiStaStop, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.down", std::bind(&OvmsNetManager::WifiStaStop, this, _1, _2));
 
@@ -314,7 +316,38 @@ void OvmsNetManager::WifiStaGotIP(std::string event, void* data)
   m_wifi_sta = true;
   ESP_LOGI(TAG, "WIFI client got IP");
   SaveDNSServer(m_dns_wifi);
+
+  // Re-prioritise, just in case, as Wifi stack seems to mess with this
+  // (in particular if an AP interface is up, and STA goes down, Wifi
+  // stack seems to switch default interface to AP)
+  PrioritiseAndIndicate();
+  #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+    ScheduleCleanup();
+  #endif
+
   WifiStaCheckSQ(NULL);
+  }
+
+void OvmsNetManager::WifiStaLostIP(std::string event, void* data)
+  {
+  // Re-prioritise, just in case, as Wifi stack seems to mess with this
+  // (in particular if an AP interface is up, and STA goes down, Wifi
+  // stack seems to switch default interface to AP)
+  PrioritiseAndIndicate();
+  #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+    ScheduleCleanup();
+  #endif
+  }
+
+void OvmsNetManager::WifiStaConnected(std::string event, void* data)
+  {
+  // Re-prioritise, just in case, as Wifi stack seems to mess with this
+  // (in particular if an AP interface is up, and STA goes down, Wifi
+  // stack seems to switch default interface to AP)
+  PrioritiseAndIndicate();
+  #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+    ScheduleCleanup();
+  #endif
   }
 
 void OvmsNetManager::WifiStaStop(std::string event, void* data)
@@ -326,18 +359,17 @@ void OvmsNetManager::WifiStaStop(std::string event, void* data)
     if (m_connected_wifi)
       {
       WifiDisconnect();
-      }
-    else
-      {
-      // Re-prioritise, just in case, as Wifi stack seems to mess with this
-      // (in particular if an AP interface is up, and STA goes down, Wifi
-      // stack seems to switch default interface to AP)
-      PrioritiseAndIndicate();
-      #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-        ScheduleCleanup();
-      #endif
+      return;
       }
     }
+
+  // Re-prioritise, just in case, as Wifi stack seems to mess with this
+  // (in particular if an AP interface is up, and STA goes down, Wifi
+  // stack seems to switch default interface to AP)
+  PrioritiseAndIndicate();
+  #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+    ScheduleCleanup();
+  #endif
   }
 
 void OvmsNetManager::WifiStaGood(std::string event, void* data)
@@ -487,6 +519,12 @@ void OvmsNetManager::ConfigChanged(std::string event, void* data)
     // Network config has been changed, apply:
     m_cfg_wifi_sq_good = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
     m_cfg_wifi_sq_bad  = MyConfig.GetParamValueFloat("network", "wifi.sq.bad",  -89);
+    if (m_cfg_wifi_sq_good < m_cfg_wifi_sq_bad)
+      {
+      float x = m_cfg_wifi_sq_good;
+      m_cfg_wifi_sq_good = m_cfg_wifi_sq_bad;
+      m_cfg_wifi_sq_bad = x;
+      }
     WifiStaCheckSQ(NULL);
     if (param && m_network_any)
       PrioritiseAndIndicate();
@@ -641,6 +679,7 @@ void OvmsNetManager::PrioritiseAndIndicate()
       return;
       }
     }
+  ESP_LOGE(TAG, "Inconsistent state: no interface of type '%s' found", search);
   }
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
