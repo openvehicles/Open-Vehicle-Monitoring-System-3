@@ -180,6 +180,15 @@ void simcom::AutoInit()
     SetPowerMode(On);
   }
 
+void simcom::Restart()
+  {
+  ESP_LOGI(TAG, "Restart");
+  if (MyConfig.GetParamValueBool("auto", "modem", false))
+    SetState1((m_state1 != PoweredOff) ? PowerOffOn : PoweringOn);
+  else
+    SetState1(PoweringOff);
+  }
+
 void simcom::SupportSummary(OvmsWriter* writer)
   {
   writer->puts("\nSIMCOM Modem Status");

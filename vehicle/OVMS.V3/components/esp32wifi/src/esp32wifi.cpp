@@ -398,6 +398,15 @@ void esp32wifi::AutoInit()
     }
   }
 
+void esp32wifi::Restart()
+  {
+  ESP_LOGI(TAG, "Restart");
+  if (m_poweredup)
+    PowerDown();
+  PowerUp();
+  AutoInit();
+  }
+
 void esp32wifi::SetPowerMode(PowerMode powermode)
   {
   m_powermode = powermode;
