@@ -103,6 +103,7 @@ class OvmsNetManager
     void InterfaceUp(std::string event, void* data);
     void ConfigChanged(std::string event, void* data);
     void EventSystemShuttingDown(std::string event, void* data);
+    void RestartNetwork();
 
   protected:
     void WifiConnect();

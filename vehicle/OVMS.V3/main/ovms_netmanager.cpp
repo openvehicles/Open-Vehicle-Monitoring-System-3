@@ -95,6 +95,13 @@ void network_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
   }
 
+void network_restart(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->puts("Restarting network...");
+  vTaskDelay(pdMS_TO_TICKS(100));
+  MyNetManager.RestartNetwork();
+  }
+
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
 void network_connections(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -207,6 +214,7 @@ OvmsNetManager::OvmsNetManager()
   // Register our commands
   OvmsCommand* cmd_network = MyCommandApp.RegisterCommand("network","NETWORK framework",network_status, "", 0, 0, false);
   cmd_network->RegisterCommand("status","Show network status",network_status, "", 0, 0, false);
+  cmd_network->RegisterCommand("restart","Restart network",network_restart, "", 0, 0, false);
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   cmd_network->RegisterCommand("list", "List network connections", network_connections);
   cmd_network->RegisterCommand("close", "Close network connection(s)", network_connections, "<id>\nUse ID from connection list / 0 to close all", 1, 1);
@@ -250,6 +258,19 @@ OvmsNetManager::OvmsNetManager()
 
 OvmsNetManager::~OvmsNetManager()
   {
+  }
+
+void OvmsNetManager::RestartNetwork()
+  {
+#ifdef CONFIG_OVMS_COMP_WIFI
+  if (MyPeripherals && MyPeripherals->m_esp32wifi)
+    MyPeripherals->m_esp32wifi->Restart();
+#endif // #ifdef CONFIG_OVMS_COMP_WIFI
+
+#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+  if (MyPeripherals && MyPeripherals->m_simcom)
+    MyPeripherals->m_simcom->Restart();
+#endif // CONFIG_OVMS_COMP_MODEM_SIMCOM
   }
 
 void OvmsNetManager::WifiConnect()

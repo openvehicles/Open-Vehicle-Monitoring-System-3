@@ -58,6 +58,7 @@ class esp32wifi : public pcp, public InternalRamAllocated
 
   public:
     void AutoInit();
+    void Restart();
     void SetPowerMode(PowerMode powermode);
     void PowerUp();
     void PowerDown();

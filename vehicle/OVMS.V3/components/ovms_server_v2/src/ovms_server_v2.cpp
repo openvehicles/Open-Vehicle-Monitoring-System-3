@@ -228,6 +228,7 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
 
 void OvmsServerV2::ProcessServerMsg()
   {
+  m_lastrx_time = monotonictime;
   std::string line = m_buffer->ReadLine();
 
   if (line.compare(0,7,"MP-S 0 ") == 0)
@@ -1637,6 +1638,14 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
 
   if (StandardMetrics.ms_s_v2_connected->AsBool())
     {
+    // check for issue #241 condition:
+    if (monotonictime - m_lastrx_time > 960)
+      {
+      ESP_LOGW(TAG, "Detected stale connection (issue #241), restarting network");
+      MyNetManager.RestartNetwork();
+      return;
+      }
+
     // Periodic transmission of metrics
     bool caron = StandardMetrics.ms_v_env_on->AsBool();
     int now = StandardMetrics.ms_m_monotonic->AsInt();
