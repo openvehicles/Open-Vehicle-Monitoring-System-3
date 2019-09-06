@@ -96,6 +96,8 @@ class OvmsVehicleSmartED : public OvmsVehicle
     void vehicle_smarted_car_on(bool isOn);
     TimerHandle_t m_locking_timer;
     
+    void SaveStatus();
+    void RestoreStatus();
     void HandleCharging();
     void HandleEnergy();
     int  calcMinutesRemaining(float target, float charge_voltage, float charge_current);

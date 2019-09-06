@@ -124,6 +124,8 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
     BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
     
+    RestoreStatus();
+    
     RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
     RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
     PollSetPidList(m_can1,obdii_polls);
@@ -191,6 +193,7 @@ void OvmsVehicleSmartED::vehicle_smarted_car_on(bool isOn) {
     // Log once that car is being turned off
     ESP_LOGI(TAG,"CAR IS OFF");
     if (m_enable_write) PollSetState(1);
+    SaveStatus();
   }
 
   // Always set this value to prevent it from going stale
