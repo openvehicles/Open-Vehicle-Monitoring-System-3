@@ -49,6 +49,7 @@
 using namespace std;
 
 void xse_recu(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xse_chargetimer(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
 class OvmsVehicleSmartED : public OvmsVehicle
 {
@@ -78,7 +79,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandWakeup();
 #ifdef CONFIG_OVMS_COMP_MAX7317
-    virtual vehicle_command_t CommandSetChargeTimer(bool timeron, uint32_t timerstart);
+    virtual vehicle_command_t CommandSetChargeTimer(bool timeron, int hours, int minutes);
     virtual vehicle_command_t CommandClimateControl(bool enable);
     virtual vehicle_command_t CommandLock(const char* pin);
     virtual vehicle_command_t CommandUnlock(const char* pin);

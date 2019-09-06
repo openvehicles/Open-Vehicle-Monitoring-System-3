@@ -114,6 +114,7 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     // init commands:
     cmd_xse = MyCommandApp.RegisterCommand("xse","SmartED 451 Gen.3");
     cmd_xse->RegisterCommand("recu","Set recu..", xse_recu, "<up/down>",1,1);
+    cmd_xse->RegisterCommand("charge","Set charging Timer..", xse_chargetimer, "<hour> <minutes>", 2, 2);
     
     // BMS configuration:
     BmsSetCellArrangementVoltage(93, 1);
@@ -760,6 +761,10 @@ bool OvmsVehicleSmartED::CommandSetRecu(bool on) {
   frame.MsgID = 0x236;
   frame.data.u8[0] = (on == true ? 0x02 : 0x04);
   m_can1->Write(&frame);
+  vTaskDelay(50 / portTICK_PERIOD_MS);
+  m_can1->Write(&frame);
+  vTaskDelay(50 / portTICK_PERIOD_MS);
+  m_can1->Write(&frame);
 
   return true;
 }
@@ -826,10 +831,16 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandClimateControl(bool enable) {
-  return CommandSetChargeTimer(enable, mt_vehicle_time->AsInt());
+  time_t rawtime;
+  time ( &rawtime );
+  struct tm* tmu = localtime(&rawtime);
+  int hours = tmu->tm_hour;
+  int minutes = tmu->tm_min;
+  minutes = (minutes - (minutes % 5));
+  return CommandSetChargeTimer(enable, hours, minutes);
 }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool timeron, uint32_t timerstart) {
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool timeron, int hours, int minutes) {
     //Set the charge start time as seconds since midnight or 8 Bit hour and 8 bit minutes?
     /*With
      0x512 00 00 12 1E 00 00 00 00
@@ -855,13 +866,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool ti
       if(!StandardMetrics.ms_v_env_awake->AsBool()) return Fail;
     }
     
-    time_t rawtime;
-    time ( &rawtime );
-    struct tm* tmu = localtime(&rawtime);
-    int hours = tmu->tm_hour;
-    int minutes = tmu->tm_min;
-    minutes = (minutes - (minutes % 5));
-   
     ESP_LOGI(TAG,"ClimaStartTime: %d:%d", hours, minutes);
     
     CAN_frame_t frame;
@@ -896,13 +900,19 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool ti
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandHomelink(int button, int durationms) {
     bool enable;
+    time_t rawtime;
+    time ( &rawtime );
+    struct tm* tmu = localtime(&rawtime);
+    int hours = tmu->tm_hour;
+    int minutes = tmu->tm_min;
+    minutes = (minutes - (minutes % 5));
     if (button == 0) {
         enable = true;
-        return CommandSetChargeTimer(enable, mt_vehicle_time->AsInt());
+        return CommandSetChargeTimer(enable, hours, minutes);
     }
     if (button == 1) {
         enable = false;
-        return CommandSetChargeTimer(enable, mt_vehicle_time->AsInt());
+        return CommandSetChargeTimer(enable, hours, minutes);
     }
     return NotImplemented;
 }
