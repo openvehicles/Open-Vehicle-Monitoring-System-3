@@ -34,7 +34,7 @@
 
 
 /**
- * Print out information of the tpms.
+ * Set Recu wippen.
  */
 void xse_recu(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
   if (MyVehicleFactory.m_currentvehicle==NULL) {
@@ -58,5 +58,33 @@ void xse_recu(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     writer->printf("Recu set to: %s\n", (on == true ? "up" : "down"));
   else
     writer->puts("Error: Function need CAN-Write enable");
+}
+
+/**
+ * Set ChargeTimer.
+ */
+void xse_chargetimer(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
+  if (MyVehicleFactory.m_currentvehicle==NULL) {
+    writer->puts("Error: No vehicle module selected");
+    return;
+  }
+  bool enable = false;
+  int hours    = strtol(argv[0], NULL, 10);
+  int minutes  = strtol(argv[1], NULL, 10);
+  if (hours < 0 || hours > 23) {
+    writer->puts("ERROR: Hour invalid (0-23)");
+    return;
+  }
+  if (minutes < 0 || minutes > 59) {
+    writer->puts("ERROR: Minute invalid (0-59)");
+    return;
+  }
+  OvmsVehicleSmartED* smart = (OvmsVehicleSmartED*) MyVehicleFactory.ActiveVehicle();
+  if( smart->CommandSetChargeTimer(enable, hours, minutes) == OvmsVehicle::Success ) {
+    writer->printf("Charging Time set to: %d:%d\n", hours, minutes);
+  }
+  else {
+    writer->puts("Error: Function need CAN-Write enable");
+  }
 }
 
