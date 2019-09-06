@@ -80,6 +80,7 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     mt_c_active              = MyMetrics.InitBool("xse.v.c.active", SM_STALE_MIN, false);
     mt_bat_energy_used_start = MyMetrics.InitFloat("xse.v.b.energy.used.start", SM_STALE_MID, kWh);
     mt_bat_energy_used_reset = MyMetrics.InitFloat("xse.v.b.energy.used.reset", SM_STALE_MID, kWh);
+    mt_pos_odometer_start    = MyMetrics.InitFloat("xse.v.pos.odometer.start", SM_STALE_MID, Kilometers);
 
     mt_nlg6_present             = MyMetrics.InitBool("xse.v.nlg6.present", SM_STALE_MIN, false);
     mt_nlg6_main_volts          = new OvmsMetricVector<float>("xse.v.nlg6.main.volts", SM_STALE_HIGH, Volts);
@@ -95,6 +96,8 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     mt_nlg6_temp_socket         = MyMetrics.InitFloat("xse.v.nlg6.temp.socket", SM_STALE_MIN, Celcius);
     mt_nlg6_temp_coolingplate   = MyMetrics.InitFloat("xse.v.nlg6.temp.coolingplate", SM_STALE_MIN, Celcius);
     mt_nlg6_pn_hw               = MyMetrics.InitString("xse.v.nlg6.pn.hw", SM_STALE_MIN, 0);
+    
+    mt_pos_odometer_start->SetValue(0);
 
     m_doorlock_port     = 9;
     m_doorunlock_port   = 8;
@@ -310,6 +313,8 @@ void OvmsVehicleSmartED::HandleChargingStatus() {
           // Reset trip values
           StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
           StandardMetrics.ms_v_bat_energy_used->SetValue(0);
+          mt_pos_odometer_start->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat());
+          StandardMetrics.ms_v_pos_trip->SetValue(0);
         }
         
         StandardMetrics.ms_v_charge_pilot->SetValue(true);
@@ -656,6 +661,14 @@ void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
   HandleEnergy();
   if (StandardMetrics.ms_v_env_awake->AsBool())
     HandleChargingStatus();
+  
+  // Handle Tripcounter
+  if (mt_pos_odometer_start->AsFloat(0) == 0 && StandardMetrics.ms_v_pos_odometer->AsFloat(0) > 0.0) {
+    mt_pos_odometer_start->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat());
+  }
+  if (StandardMetrics.ms_v_env_on->AsBool() && StandardMetrics.ms_v_pos_odometer->AsFloat(0) > 0.0 && mt_pos_odometer_start->AsFloat(0) > 0.0) {
+    StandardMetrics.ms_v_pos_trip->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat(0) - mt_pos_odometer_start->AsFloat(0));
+  }
 }
 
 void OvmsVehicleSmartED::Ticker10(uint32_t ticker) {

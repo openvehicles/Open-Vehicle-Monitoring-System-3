@@ -118,6 +118,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     OvmsMetricBool *mt_c_active;                // charge active
     OvmsMetricFloat *mt_bat_energy_used_start;  // display enery used/100km
     OvmsMetricFloat *mt_bat_energy_used_reset;  // display enery used/100km
+    OvmsMetricFloat *mt_pos_odometer_start;     // ODOmeter at Start
 
   private:
     unsigned int m_candata_timer;
