@@ -49,6 +49,7 @@
 using namespace std;
 
 void xse_recu(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+void xse_chargetimer(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
 class OvmsVehicleSmartED : public OvmsVehicle
 {
@@ -78,7 +79,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandWakeup();
 #ifdef CONFIG_OVMS_COMP_MAX7317
-    virtual vehicle_command_t CommandSetChargeTimer(bool timeron, uint32_t timerstart);
+    virtual vehicle_command_t CommandSetChargeTimer(bool timeron, int hours, int minutes);
     virtual vehicle_command_t CommandClimateControl(bool enable);
     virtual vehicle_command_t CommandLock(const char* pin);
     virtual vehicle_command_t CommandUnlock(const char* pin);
@@ -95,6 +96,8 @@ class OvmsVehicleSmartED : public OvmsVehicle
     void vehicle_smarted_car_on(bool isOn);
     TimerHandle_t m_locking_timer;
     
+    void SaveStatus();
+    void RestoreStatus();
     void HandleCharging();
     void HandleEnergy();
     int  calcMinutesRemaining(float target, float charge_voltage, float charge_current);
@@ -118,6 +121,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     OvmsMetricBool *mt_c_active;                // charge active
     OvmsMetricFloat *mt_bat_energy_used_start;  // display enery used/100km
     OvmsMetricFloat *mt_bat_energy_used_reset;  // display enery used/100km
+    OvmsMetricFloat *mt_pos_odometer_start;     // ODOmeter at Start
 
   private:
     unsigned int m_candata_timer;

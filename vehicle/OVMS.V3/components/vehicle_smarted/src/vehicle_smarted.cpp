@@ -80,6 +80,7 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     mt_c_active              = MyMetrics.InitBool("xse.v.c.active", SM_STALE_MIN, false);
     mt_bat_energy_used_start = MyMetrics.InitFloat("xse.v.b.energy.used.start", SM_STALE_MID, kWh);
     mt_bat_energy_used_reset = MyMetrics.InitFloat("xse.v.b.energy.used.reset", SM_STALE_MID, kWh);
+    mt_pos_odometer_start    = MyMetrics.InitFloat("xse.v.pos.odometer.start", SM_STALE_MID, Kilometers);
 
     mt_nlg6_present             = MyMetrics.InitBool("xse.v.nlg6.present", SM_STALE_MIN, false);
     mt_nlg6_main_volts          = new OvmsMetricVector<float>("xse.v.nlg6.main.volts", SM_STALE_HIGH, Volts);
@@ -95,6 +96,8 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     mt_nlg6_temp_socket         = MyMetrics.InitFloat("xse.v.nlg6.temp.socket", SM_STALE_MIN, Celcius);
     mt_nlg6_temp_coolingplate   = MyMetrics.InitFloat("xse.v.nlg6.temp.coolingplate", SM_STALE_MIN, Celcius);
     mt_nlg6_pn_hw               = MyMetrics.InitString("xse.v.nlg6.pn.hw", SM_STALE_MIN, 0);
+    
+    mt_pos_odometer_start->SetValue(0);
 
     m_doorlock_port     = 9;
     m_doorunlock_port   = 8;
@@ -111,6 +114,7 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     // init commands:
     cmd_xse = MyCommandApp.RegisterCommand("xse","SmartED 451 Gen.3");
     cmd_xse->RegisterCommand("recu","Set recu..", xse_recu, "<up/down>",1,1);
+    cmd_xse->RegisterCommand("charge","Set charging Timer..", xse_chargetimer, "<hour> <minutes>", 2, 2);
     
     // BMS configuration:
     BmsSetCellArrangementVoltage(93, 1);
@@ -119,6 +123,8 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
     BmsSetCellLimitsTemperature(-39, 200);
     BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
     BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
+    
+    RestoreStatus();
     
     RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
     RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
@@ -187,6 +193,7 @@ void OvmsVehicleSmartED::vehicle_smarted_car_on(bool isOn) {
     // Log once that car is being turned off
     ESP_LOGI(TAG,"CAR IS OFF");
     if (m_enable_write) PollSetState(1);
+    SaveStatus();
   }
 
   // Always set this value to prevent it from going stale
@@ -310,6 +317,8 @@ void OvmsVehicleSmartED::HandleChargingStatus() {
           // Reset trip values
           StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
           StandardMetrics.ms_v_bat_energy_used->SetValue(0);
+          mt_pos_odometer_start->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat());
+          StandardMetrics.ms_v_pos_trip->SetValue(0);
         }
         
         StandardMetrics.ms_v_charge_pilot->SetValue(true);
@@ -327,7 +336,6 @@ void OvmsVehicleSmartED::HandleChargingStatus() {
         StandardMetrics.ms_v_charge_inprogress->SetValue(false);
         StandardMetrics.ms_v_charge_mode->SetValue("standard");
         StandardMetrics.ms_v_charge_type->SetValue("type2");
-        StandardMetrics.ms_v_charge_duration_full->SetValue(0, Minutes);
         if (StandardMetrics.ms_v_bat_soc->AsInt() < 95) {
           // Assume the charge was interrupted
           ESP_LOGI(TAG,"Car charge session was interrupted");
@@ -344,6 +352,7 @@ void OvmsVehicleSmartED::HandleChargingStatus() {
     }
   } else if (isCharging) {
     isCharging = false;
+    StandardMetrics.ms_v_charge_state->SetValue("done");
   }
 }
 
@@ -471,8 +480,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
        ID: 412  Data: 3B FF 00 63 5D 80 00 10
        = 635D (in HEX)
        = 25437 (in base10) kilometre*/
-      unsigned long ODO = (unsigned long) (d[2] * 65535 + (uint16_t) d[3] * 256
-              + (uint16_t) d[4]);
+      float ODO = (float) (d[2] * 65535 + (uint16_t) d[3] * 256 + (uint16_t) d[4]);
       StandardMetrics.ms_v_pos_odometer->SetValue(ODO, Kilometers);
       break;
     }
@@ -656,6 +664,14 @@ void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
   HandleEnergy();
   if (StandardMetrics.ms_v_env_awake->AsBool())
     HandleChargingStatus();
+  
+  // Handle Tripcounter
+  if (mt_pos_odometer_start->AsFloat(0) == 0 && StandardMetrics.ms_v_pos_odometer->AsFloat(0) > 0.0) {
+    mt_pos_odometer_start->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat());
+  }
+  if (StandardMetrics.ms_v_env_on->AsBool() && StandardMetrics.ms_v_pos_odometer->AsFloat(0) > 0.0 && mt_pos_odometer_start->AsFloat(0) > 0.0) {
+    StandardMetrics.ms_v_pos_trip->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat(0) - mt_pos_odometer_start->AsFloat(0));
+  }
 }
 
 void OvmsVehicleSmartED::Ticker10(uint32_t ticker) {
@@ -747,6 +763,10 @@ bool OvmsVehicleSmartED::CommandSetRecu(bool on) {
   frame.MsgID = 0x236;
   frame.data.u8[0] = (on == true ? 0x02 : 0x04);
   m_can1->Write(&frame);
+  vTaskDelay(50 / portTICK_PERIOD_MS);
+  m_can1->Write(&frame);
+  vTaskDelay(50 / portTICK_PERIOD_MS);
+  m_can1->Write(&frame);
 
   return true;
 }
@@ -813,10 +833,16 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandClimateControl(bool enable) {
-  return CommandSetChargeTimer(enable, mt_vehicle_time->AsInt());
+  time_t rawtime;
+  time ( &rawtime );
+  struct tm* tmu = localtime(&rawtime);
+  int hours = tmu->tm_hour;
+  int minutes = tmu->tm_min;
+  minutes = (minutes - (minutes % 5));
+  return CommandSetChargeTimer(enable, hours, minutes);
 }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool timeron, uint32_t timerstart) {
+OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool timeron, int hours, int minutes) {
     //Set the charge start time as seconds since midnight or 8 Bit hour and 8 bit minutes?
     /*With
      0x512 00 00 12 1E 00 00 00 00
@@ -842,13 +868,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool ti
       if(!StandardMetrics.ms_v_env_awake->AsBool()) return Fail;
     }
     
-    time_t rawtime;
-    time ( &rawtime );
-    struct tm* tmu = localtime(&rawtime);
-    int hours = tmu->tm_hour;
-    int minutes = tmu->tm_min;
-    minutes = (minutes - (minutes % 5));
-   
     ESP_LOGI(TAG,"ClimaStartTime: %d:%d", hours, minutes);
     
     CAN_frame_t frame;
@@ -883,13 +902,19 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool ti
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandHomelink(int button, int durationms) {
     bool enable;
+    time_t rawtime;
+    time ( &rawtime );
+    struct tm* tmu = localtime(&rawtime);
+    int hours = tmu->tm_hour;
+    int minutes = tmu->tm_min;
+    minutes = (minutes - (minutes % 5));
     if (button == 0) {
         enable = true;
-        return CommandSetChargeTimer(enable, mt_vehicle_time->AsInt());
+        return CommandSetChargeTimer(enable, hours, minutes);
     }
     if (button == 1) {
         enable = false;
-        return CommandSetChargeTimer(enable, mt_vehicle_time->AsInt());
+        return CommandSetChargeTimer(enable, hours, minutes);
     }
     return NotImplemented;
 }
