@@ -333,7 +333,6 @@ void OvmsVehicleSmartED::HandleChargingStatus() {
         StandardMetrics.ms_v_charge_inprogress->SetValue(false);
         StandardMetrics.ms_v_charge_mode->SetValue("standard");
         StandardMetrics.ms_v_charge_type->SetValue("type2");
-        StandardMetrics.ms_v_charge_duration_full->SetValue(0, Minutes);
         if (StandardMetrics.ms_v_bat_soc->AsInt() < 95) {
           // Assume the charge was interrupted
           ESP_LOGI(TAG,"Car charge session was interrupted");
@@ -350,6 +349,7 @@ void OvmsVehicleSmartED::HandleChargingStatus() {
     }
   } else if (isCharging) {
     isCharging = false;
+    StandardMetrics.ms_v_charge_state->SetValue("done");
   }
 }
 
@@ -477,8 +477,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
        ID: 412  Data: 3B FF 00 63 5D 80 00 10
        = 635D (in HEX)
        = 25437 (in base10) kilometre*/
-      unsigned long ODO = (unsigned long) (d[2] * 65535 + (uint16_t) d[3] * 256
-              + (uint16_t) d[4]);
+      float ODO = (float) (d[2] * 65535 + (uint16_t) d[3] * 256 + (uint16_t) d[4]);
       StandardMetrics.ms_v_pos_odometer->SetValue(ODO, Kilometers);
       break;
     }
