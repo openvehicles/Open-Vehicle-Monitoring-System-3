@@ -1261,7 +1261,8 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
       StandardMetrics.ms_v_bat_12v_voltage_ref->SetValue(StandardMetrics.ms_v_bat_12v_voltage->AsFloat());
       }
     }
-  else if ((m_ticker % 60) == 0)
+
+  if ((m_ticker % 60) == 0)
     {
     // check 12V voltage:
     float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
