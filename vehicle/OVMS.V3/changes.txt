@@ -1,6 +1,19 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Module: task CPU usage statistics & debug records
+  New command:
+    module tasks data       -- Output task stats record
+  New config:
+    [module] debug.tasks    -- [bool] send task debug stats (default: yes)
+  New history record:
+    "*-OVM-DebugTasks" v1: <taskcnt,totaltime> + per task:
+      <tasknum,name,state,stack_now,stack_max,stack_total,
+       heap_total,heap_32bit,heap_spi,runtime>
+    Note: CPU core use percentage = runtime / totaltime
+- Server V2: restart network on RX connection loss (issue #241 workaround)
+  New config:
+    [server.v2] timeout.rx  -- [seconds], default: 960
 - Network: avoid using wifi networks with too bad signal quality
   New configs:
     [network] wifi.sq.good  [dBm], default -87 (network usable if SQ >= this)
