@@ -93,7 +93,6 @@ bool PushoverReaderFilterCallback(OvmsNotifyType* type, const char* subtype)
 
 
 Pushover::Pushover()
-  : pcp("pushover")
   {
   ESP_LOGI(TAG, "Initialising Pushover client (8800)");
 
