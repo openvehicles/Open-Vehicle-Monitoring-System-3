@@ -1396,12 +1396,13 @@ void OvmsServerV2::TransmitNotifyData()
     if (eol != std::string::npos)
       msg.resize(eol);
 
+    uint32_t now = esp_log_timestamp();
     extram::ostringstream buffer;
     buffer
       << "MP-0 h"
       << e->m_id
       << ","
-      << -(int)(monotonictime - e->m_created)
+      << -((int)(now - e->m_created) / 1000)
       << ","
       << msg;
     Transmit(buffer.str().c_str());
