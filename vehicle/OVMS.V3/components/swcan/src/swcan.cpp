@@ -144,6 +144,12 @@ esp_err_t swcan::Stop()
   {
   esp_err_t ret = mcp2515::Stop();
   SetTransceiverMode(tmode_sleep);
+
+  m_status_led->Set(false);
+  m_status_led->SetDefaultState(false);
+  m_tx_led->Set(false);
+  m_rx_led->Set(false);
+
   return ret;
   }
 
