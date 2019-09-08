@@ -29,7 +29,7 @@
 */
 
 #include "ovms_log.h"
-static const char *TAG = "ovms-module";
+static const char *TAG = "module";
 
 #include <stdio.h>
 #include <string.h>
@@ -48,6 +48,9 @@ static const char *TAG = "ovms-module";
 #include "esp_heap_task_info.h"
 #endif
 #include "ovms_boot.h"
+#include "ovms_mutex.h"
+#include "ovms_notify.h"
+#include "string_writer.h"
 
 #define MAX_TASKS 30
 #define DUMPSIZE 1000
@@ -108,6 +111,9 @@ class HeapTotals;
 static heap_task_info_params_t* params = NULL;
 static TaskHandle_t* tasklist = NULL;
 static TaskStatus_t* taskstatus = NULL;
+static uint32_t taskstatus_cnt = 0;
+static uint32_t totalruntime = 0;
+static OvmsMutex taskstatus_mutex;
 static heap_task_block_t* before = NULL;
 static heap_task_block_t* after = NULL;
 static size_t numbefore = 0, numafter = 0;
@@ -234,12 +240,12 @@ class TaskMap
         map[i].name.set(j, '\0');
         map[i].name.words[NAMELEN/4-1] |= 0x80000000;
         }
-      UBaseType_t n = uxTaskGetSystemState(taskstatus, MAX_TASKS, NULL);
-      for (UBaseType_t i = 0; i < n; ++i)
+      taskstatus_cnt = uxTaskGetSystemState(taskstatus, MAX_TASKS, &totalruntime);
+      for (UBaseType_t i = 0; i < taskstatus_cnt; ++i)
         {
         insert(taskstatus[i].xHandle, taskstatus[i].pcTaskName);
         }
-      return n;
+      return taskstatus_cnt;
       }
     bool zero(TaskHandle_t taskid)
       {
@@ -557,6 +563,7 @@ static void get_memory(TaskHandle_t* tasks, size_t taskslen)
 
 static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
+  OvmsMutexLock lock(&taskstatus_mutex);
   static const char* ctasks[] = {}; // { "tiT", "wifi"};
   const char* const* tasks = ctasks;
   bool all = false;
@@ -709,8 +716,9 @@ static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, i
 
 static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
+  OvmsMutexLock lock(&taskstatus_mutex);
   UBaseType_t num = uxTaskGetNumberOfTasks();
-  writer->printf("Number of Tasks =%3u%s  Stack:  Now   Max Total    Heap 32-bit SPIRAM C# PRI\n", num,
+  writer->printf("Number of Tasks =%3u%s    Stack:  Now   Max Total    Heap 32-bit SPIRAM C# PRI CPU%%\n", num,
     num > MAX_TASKS ? ">max" : "    ");
   if (!allocate())
     {
@@ -718,8 +726,19 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
     return;
     }
   bool showStack = (strcmp(cmd->GetName(),"stack") == 0);
+
+  // copy last taskstatus for comparison:
+  std::map<UBaseType_t, uint32_t> last_runtime;
+  for (int i = 0; i < taskstatus_cnt; i++)
+    last_runtime[taskstatus[i].xTaskNumber] = taskstatus[i].ulRunTimeCounter;
+  uint32_t last_totalruntime = totalruntime;
+
+  // update taskstatus:
   UBaseType_t n = get_tasks();
   get_memory(tasklist, 0);
+  uint32_t diff_totalruntime = totalruntime - last_totalruntime;
+
+  // output task info sorted by xTaskNumber:
   num = 0;
   for (UBaseType_t j = 0; j < n; )
     {
@@ -738,10 +757,12 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
         uint32_t total = (uint32_t)taskstatus[i].pxStackBase >> 16;
         uint32_t used = total - ((uint32_t)taskstatus[i].pxStackBase & 0xFFFF);
         int core = xTaskGetAffinity(taskstatus[i].xHandle);
-        writer->printf("%08X %2u %s %-15s %5u %5u %5u %7u%7u%7u  %c %3d\n", taskstatus[i].xHandle,
+        uint32_t runtime = taskstatus[i].ulRunTimeCounter - last_runtime[taskstatus[i].xTaskNumber];
+        writer->printf("%08X %4u %s %-15s %5u %5u %5u %7u%7u%7u  %c %3d %3.0f%%\n", taskstatus[i].xHandle,
           taskstatus[i].xTaskNumber, states[taskstatus[i].eCurrentState], taskstatus[i].pcTaskName,
           used, total - taskstatus[i].usStackHighWaterMark, total, heaptotal, heap32bit, heapspi,
-          (core == tskNO_AFFINITY) ? '*' : '0'+core, taskstatus[i].uxCurrentPriority);
+          (core == tskNO_AFFINITY) ? '*' : '0'+core, taskstatus[i].uxCurrentPriority,
+          diff_totalruntime ? ((float) runtime / diff_totalruntime * 100) : 0.0f);
         if (showStack)
           {
           uint32_t* stack = (uint32_t*)(pxTaskGetStackStart(taskstatus[i].xHandle) + total);
@@ -761,6 +782,82 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
         }
       }
     ++num;
+    }
+  }
+
+static void module_tasks_data(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  OvmsMutexLock lock(&taskstatus_mutex);
+  StringWriter buf;
+  buf.reserve(2048);
+
+  UBaseType_t num = uxTaskGetNumberOfTasks();
+  if (!allocate())
+    {
+    if (writer)
+      writer->printf("Can't allocate storage for task diagnostics\n");
+    return;
+    }
+
+  // copy last taskstatus for comparison:
+  std::map<UBaseType_t, uint32_t> last_runtime;
+  for (int i = 0; i < taskstatus_cnt; i++)
+    last_runtime[taskstatus[i].xTaskNumber] = taskstatus[i].ulRunTimeCounter;
+  uint32_t last_totalruntime = totalruntime;
+
+  // update taskstatus:
+  UBaseType_t n = get_tasks();
+  get_memory(tasklist, 0);
+  uint32_t diff_totalruntime = totalruntime - last_totalruntime;
+
+  // output task count & total runtime diff:
+  buf.printf("*-OVM-DebugTasks,1,86400,%u,%u", n, diff_totalruntime);
+
+  // output tasks sorted by xTaskNumber:
+  num = 0;
+  for (UBaseType_t j = 0; j < n; )
+    {
+    for (UBaseType_t i = 0; i < n; ++i)
+      {
+      if (taskstatus[i].xTaskNumber == num)
+        {
+        int k = changes->find(taskstatus[i].xHandle);
+        int heaptotal = 0, heap32bit = 0, heapspi = 0;
+        if (k >= 0)
+          {
+          heaptotal = (*changes).After(k, DRAM) + (*changes).After(k, D_IRAM);
+          heap32bit = (*changes).After(k, IRAM);
+          heapspi = (*changes).After(k, SPIRAM);
+          }
+        uint32_t total = (uint32_t)taskstatus[i].pxStackBase >> 16;
+        uint32_t used = total - ((uint32_t)taskstatus[i].pxStackBase & 0xFFFF);
+        uint32_t runtime = taskstatus[i].ulRunTimeCounter - last_runtime[taskstatus[i].xTaskNumber];
+
+        // output task info block:
+        //  ,<num>,<name>,<state>
+        //  ,<stack_now>,<stack_max>,<stack_total>
+        //  ,<heaptotal>,<heap32bit>,<heapspi>
+        //  ,<runtime>
+        buf.printf(",%u,%-.15s,%s,%u,%u,%u,%u,%u,%u,%u",
+          taskstatus[i].xTaskNumber, taskstatus[i].pcTaskName, states[taskstatus[i].eCurrentState],
+          used, total - taskstatus[i].usStackHighWaterMark, total,
+          heaptotal, heap32bit, heapspi, runtime);
+
+        ++j;
+        break;
+        }
+      }
+    ++num;
+    }
+
+  if (writer)
+    {
+    writer->puts(buf.substr(25).c_str());
+    }
+  else
+    {
+    ESP_LOGD(TAG, "Task stats: %s", buf.substr(25).c_str());
+    MyNotify.NotifyString("data", "debug.tasks", buf.c_str());
     }
   }
 
@@ -843,10 +940,16 @@ static void module_factory_reset(int verbosity, OvmsWriter* writer, OvmsCommand*
   writer->RegisterInsertCallback(module_factory_reset_yesno, NULL);
   }
 
-#ifdef CONFIG_OVMS_COMP_SDCARD
 static void module_eventhandler(std::string event, void* data)
   {
-  if (event == "sd.mounted")
+  if (event == "ticker.300")
+    {
+    if (MyConfig.GetParamValueBool("module", "debug.tasks", true))
+      module_tasks_data(0, NULL, NULL, 0, NULL);
+    }
+
+#ifdef CONFIG_OVMS_COMP_SDCARD
+  else if (event == "sd.mounted")
     {
     if (unlink("/sd/factoryreset.txt") == 0)
       {
@@ -875,8 +978,8 @@ static void module_eventhandler(std::string event, void* data)
       module_perform_factoryreset(NULL);
       }
     }
-  }
 #endif
+  }
 
 static void module_summary(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -910,12 +1013,14 @@ class OvmsModuleInit
     MyEvents.RegisterEvent(TAG, "sd.mounted", module_eventhandler);
     MyEvents.RegisterEvent(TAG, "ticker.1", module_eventhandler);
 #endif //CONFIG_OVMS_COMP_SDCARD
+    MyEvents.RegisterEvent(TAG, "ticker.300", module_eventhandler);
 
     OvmsCommand* cmd_module = MyCommandApp.RegisterCommand("module","MODULE framework");
     cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"[<task names or ids>|*|=]",0,TASKLIST);
     cmd_module->RegisterCommand("leaks","Show module memory changes",module_memory,"[<task names or ids>|*|=]",0,TASKLIST);
     OvmsCommand* cmd_tasks = cmd_module->RegisterCommand("tasks","Show module task usage",module_tasks,"[stack]",0,1);
     cmd_tasks->RegisterCommand("stack","Show module task usage with stack",module_tasks);
+    cmd_tasks->RegisterCommand("data","Output module task stats record",module_tasks_data);
     cmd_module->RegisterCommand("fault","Abort fault the module",module_fault);
     cmd_module->RegisterCommand("reset","Reset module",module_reset);
     cmd_module->RegisterCommand("check","Check heap integrity",module_check);
