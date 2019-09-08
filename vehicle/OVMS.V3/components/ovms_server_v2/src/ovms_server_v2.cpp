@@ -228,7 +228,7 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
 
 void OvmsServerV2::ProcessServerMsg()
   {
-  m_lastrx_time = monotonictime;
+  m_lastrx_time = esp_log_timestamp();
   std::string line = m_buffer->ReadLine();
 
   if (line.compare(0,7,"MP-S 0 ") == 0)
@@ -1374,6 +1374,8 @@ void OvmsServerV2::TransmitNotifyData()
   if (data == NULL) return;
 
   uint32_t starttime = esp_log_timestamp();
+  int cnt = 0;
+  size_t size = 0;
 
   while(1)
     {
@@ -1396,21 +1398,25 @@ void OvmsServerV2::TransmitNotifyData()
     if (eol != std::string::npos)
       msg.resize(eol);
 
+    uint32_t now = esp_log_timestamp();
     extram::ostringstream buffer;
     buffer
       << "MP-0 h"
       << e->m_id
       << ","
-      << -(int)(monotonictime - e->m_created)
+      << -((int)(now - e->m_created) / 1000)
       << ","
       << msg;
     Transmit(buffer.str().c_str());
     m_pending_notify_data_last = e->m_id;
 
-    // use max 500 ms of the ticker.1 event time per run:
-    if (esp_log_timestamp() - starttime > 500)
+    // be nice to other tasks, the network & the server:
+    // limits per second: 300 ms / 5 transmissions / 4000 bytes payload
+    cnt++;
+    size += buffer.str().size();
+    if (now - starttime >= 300 || cnt == 5 || size >= 4000)
       {
-      ESP_LOGD(TAG, "TransmitNotifyData: used %d ms", esp_log_timestamp() - starttime);
+      ESP_LOGD(TAG, "TransmitNotifyData: used %d ms for %d records, %u bytes", now - starttime, cnt, size);
       return;
       }
     }
@@ -1639,7 +1645,7 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
   if (StandardMetrics.ms_s_v2_connected->AsBool())
     {
     // check for issue #241 condition:
-    if (monotonictime - m_lastrx_time > 960)
+    if (esp_log_timestamp() - m_lastrx_time > MyConfig.GetParamValueInt("server.v2", "timeout.rx", 960) * 1000)
       {
       ESP_LOGW(TAG, "Detected stale connection (issue #241), restarting network");
       MyNetManager.RestartNetwork();
