@@ -109,3 +109,21 @@ The log file can also be viewed in a browser with ``http://<ovms-ipaddress>/sd/c
   
 
 The logfiles can then be imported into a tool like SavvyCan for analysis.
+
+-----------------
+Network Streaming
+-----------------
+
+CAN data can be streamed directly to SavvyCan (or other compatible application) using the OVMS tcpserver CAN logging feature over a local network. Start tcpserver CAN logging with:
+
+``OVMS# can log start tcpserver discard gvret-b :23``
+
+This will start a tcpserver on port 23 (as required by SavvyCan) using the GVRET format supported by SavvyCAN. 
+
+Once OVMS CAN logging tcpserver is running open up SavvyCan and select: 
+
+``Connection > Add New Device Connection > Network Connection`` 
+
+then enter the OVMS WiFi local network IP address (no port number required). CAN packets should now appear streaming into SavvyCan. 
+
+*Note: CAN tcpserver network streaming is a beta feture currently in edge firmware and may be buggy*
