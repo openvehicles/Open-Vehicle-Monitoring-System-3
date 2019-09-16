@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- New vehicle: Renault Zoe (adaption by Marcos Mezo <mmezo@selexco.net>)
 - Module: task CPU usage statistics & debug records
   New command:
     module tasks data       -- Output task stats record
