@@ -95,6 +95,7 @@ OvmsVehicleTeslaRoadster::OvmsVehicleTeslaRoadster()
   m_cooldown_prev_charging = false;
   m_cooldown_limit_temp = 0;
   m_cooldown_limit_minutes = 0;
+  m_cooldown_current = 12;
   m_cooldown_cycles_done = 0;
   m_cooldown_recycle_ticker = -1;
 
@@ -342,7 +343,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
             { // v2.x cars
             StandardMetrics.ms_v_charge_mode->SetValue(chargemode_code((d[5]>>4) & 0x0f));
             }
-          StandardMetrics.ms_v_charge_kwh->SetValue((float)d[7]*10);
+          StandardMetrics.ms_v_charge_kwh->SetValue((float)d[7]);
           break;
           }
         case 0x96: // Doors / Charging yes/no
@@ -400,8 +401,8 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           int max = d[7];
           float cac = (float)d[3] + ((float)d[2]/256);
           StandardMetrics.ms_v_bat_cac->SetValue(cac);
-          StandardMetrics.ms_v_bat_cell_level_min->SetValue((float)min);
-          StandardMetrics.ms_v_bat_cell_level_max->SetValue((float)max);
+          StandardMetrics.ms_v_bat_pack_level_min->SetValue((float)min);
+          StandardMetrics.ms_v_bat_pack_level_max->SetValue((float)max);
           if (cac > 165)
             { // Assume a R80 roadster
             StandardMetrics.ms_v_bat_soh->SetValue(
@@ -594,11 +595,11 @@ void OvmsVehicleTeslaRoadster::Ticker1(uint32_t ticker)
         CommandSetChargeMode(Range);
         m_cooldown_recycle_ticker = 60;
         }
-      if (StandardMetrics.ms_v_charge_climit->AsInt() != 10)
+      if (StandardMetrics.ms_v_charge_climit->AsInt() != m_cooldown_current)
         {
-        // 10A charge when cooling down
-        ESP_LOGI(TAG, "Cooldown: Cycle %d fix charge current to 10A",m_cooldown_cycles_done);
-        CommandSetChargeCurrent(10);
+        // Low current charge when cooling down
+        ESP_LOGI(TAG, "Cooldown: Cycle %d fix charge current to %dA",m_cooldown_cycles_done,m_cooldown_current);
+        CommandSetChargeCurrent(m_cooldown_current);
         }
       }
     }
@@ -608,10 +609,11 @@ void OvmsVehicleTeslaRoadster::Ticker60(uint32_t ticker)
   {
   if (m_cooldown_running)
     {
-    ESP_LOGI(TAG,"Cooldown: %d cycles %dC/%dC (with %d minute(s) remaining)",
+    ESP_LOGI(TAG,"Cooldown: %d cycles %dC/%dC %dA (with %d minute(s) remaining)",
       m_cooldown_cycles_done,
       StandardMetrics.ms_v_bat_temp->AsInt(),
       m_cooldown_limit_temp,
+      m_cooldown_current,
       m_cooldown_limit_minutes);
     }
 
@@ -630,12 +632,16 @@ void OvmsVehicleTeslaRoadster::Ticker60(uint32_t ticker)
         ESP_LOGI(TAG, "Cooldown: Cycle %d cooldown completed",m_cooldown_cycles_done);
         CommandSetChargeCurrent(m_cooldown_prev_chargelimit);
         CommandSetChargeMode(m_cooldown_prev_chargemode);
+        m_cooldown_running = false;
+        m_cooldown_recycle_ticker = -1;
         if (m_cooldown_prev_charging)
           {
           CommandStartCharge();
           }
-        m_cooldown_running = false;
-        m_cooldown_recycle_ticker = -1;
+        else
+          {
+          CommandStopCharge();
+          }
         }
       }
     }
@@ -869,6 +875,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandCooldown(bool co
   m_cooldown_prev_chargelimit = StandardMetrics.ms_v_charge_climit->AsInt();
   m_cooldown_limit_minutes = MyConfig.GetParamValueInt("xtr", "cooldown.timelimit", 60);
   m_cooldown_limit_temp = MyConfig.GetParamValueInt("xtr", "cooldown.templimit", 31);
+  m_cooldown_current = MyConfig.GetParamValueInt("xtr", "cooldown.current", 12);
 
   if ((StandardMetrics.ms_v_bat_temp->AsInt() <= m_cooldown_limit_temp) ||
       (StandardMetrics.ms_v_env_on->AsBool()) ||
@@ -883,7 +890,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandCooldown(bool co
   vTaskDelay(100 / portTICK_PERIOD_MS);
   for (int k=0; k<2; k++)
     {
-    CommandSetChargeCurrent(10); // Set a 10A charge
+    CommandSetChargeCurrent(m_cooldown_current); // Set a low-current charge
     vTaskDelay(100 / portTICK_PERIOD_MS);
     CommandSetChargeMode(Range); // Switch to RANGE mode
     vTaskDelay(100 / portTICK_PERIOD_MS);

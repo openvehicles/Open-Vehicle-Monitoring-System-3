@@ -1,0 +1,260 @@
+<!--
+  Test/Development/Documentation page; install as plugin to test
+-->
+
+<div class="panel panel-primary">
+  <div class="panel-heading">Metrics Displays Test/Demo</div>
+  <div class="panel-body">
+
+    <p>OVMS V3 is based on metrics. Metrics can be single numerical or textual values or complex values
+      like sets and arrays. The web framework keeps all metrics in a global object, which can be read
+      simply by e.g. <code>metrics["v.b.soc"]</code>.</p>
+
+    <p>Metrics updates (as well as other updates) are sent to all DOM elements having the
+      <code>receiver</code> class. To hook into these updates, simply add an event listener for
+      <code>msg:metrics</code>. Listening to the event is not necessary if all you need is some metrics
+      display. This is covered by the <code>metric</code> class family as shown here.</p>
+
+    <p>
+      <button type="button" class="btn btn-default action-gendata">Generate random data</button>
+      <button type="button" class="btn btn-default action-showsrc">Show page source</button>
+    </p>
+
+    <hr/>
+
+    <div class="receiver">
+
+      <h4>Basic usage</h4>
+
+      <p>All elements of class <code>metric</code> in a <code>receiver</code> are checked for the
+        <code>data-metric</code> attribute. If no specific metric class is given, the metric value
+        is simply set as the element text: <span class="metric" data-metric="m.net.provider">?</span>
+        is your current network provider.</p>
+
+      <h4>Text &amp; Number</h4>
+
+      <p><code>number</code> &amp; <code>text</code> displays get the metric value set in their child of
+        class <code>value</code>. They may additionally have labels and units. <code>data-prec</code> can
+        be used on <code>number</code> to set the precision. They have fixed min widths and float by
+        default, so you can simply put multiple displays into the same container:</p>
+
+      <div class="clearfix">
+        <div class="metric number" data-metric="v.e.throttle" data-prec="0">
+          <span class="label">Throttle:</span>
+          <span class="value">?</span>
+          <span class="unit">%</span>
+        </div>
+        <div class="metric number" data-metric="v.b.12v.voltage.ref" data-prec="1">
+          <span class="value">?</span>
+          <span class="unit">V<sub>ref</sub></span>
+        </div>
+        <div class="metric text" data-metric="m.net.provider">
+          <span class="label">Network:</span>
+          <span class="value">?</span>
+        </div>
+      </div>
+
+      <h4>Progress Bar</h4>
+
+      <p>Bootstrap <code>progress</code> bars can be used as lightweight graphical indicators.
+        Labels and units are available as well. Again, all you need is a bit of markup:</p>
+
+      <div class="clearfix">
+        <div class="metric progress" data-metric="v.e.throttle" data-prec="0">
+          <div class="progress-bar progress-bar-success value-low text-left" role="progressbar"
+            aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width:0%">
+            <div>
+              <span class="label">Throttle:</span>
+              <span class="value">?</span>
+              <span class="unit">%</span>
+            </div>
+          </div>
+        </div>
+        <div class="metric progress" data-metric="v.b.12v.voltage.ref" data-prec="1">
+          <div class="progress-bar progress-bar-info value-low text-left" role="progressbar"
+            aria-valuenow="0" aria-valuemin="5" aria-valuemax="15" style="width:0%">
+            <div>
+              <span class="label">12V ref:</span>
+              <span class="value">?</span>
+              <span class="unit">V</span>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <h4>Gauges &amp; Charts</h4>
+
+      <p>The OVMS web framework has builtin support for the highly versatile <b>Highcharts library</b>
+        with loads of chart types and options. <code>chart</code> metric examples:</p>
+
+      <div class="row">
+        <div class="col-sm-6">
+          <div class="metric chart" data-metric="v.e.throttle" style="height:220px">
+            <div class="chart-box gaugechart" id="throttle-gauge"/>
+          </div>
+        </div>
+        <div class="col-sm-6">
+          <div class="metric chart" data-metric="v.b.c.voltage,v.b.c.voltage.min" style="height:220px">
+            <div class="chart-box barchart" id="cell-voltages"/>
+          </div>
+        </div>
+      </div>
+
+      <p><button type="button" class="btn btn-default action-gendata">Generate random data</button></p>
+
+      <p>For charts, a little bit of scripting is necessary.
+        The scripts for these charts contain the chart configuration, part of which is the update
+        function you need to define. The update function translates metrics data into chart data.
+        This is trivial for single values like the throttle, the cell voltage chart is an example
+        on basic array processing.</p>
+
+      <p>Also, while charts <em>can</em> be defined with few options, you'll <em>love</em> to explore
+        all the features and fine tuning options provided by Highcharts. For inspiration,
+        have a look at the <a target="_blank" href="https://www.highcharts.com/demo">Highcharts demos</a>
+        and the <a target="_blank" href="https://www.highcharts.com/docs/">Highcharts documentation</a>.
+        We're using <a target="_blank" href="https://www.highcharts.com/docs/chart-design-and-style/style-by-css">
+        styled mode</a>, so some options don't apply, but everything can be styled by standard CSS.</p>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+
+  /* Get page source before chart rendering: */
+  var pagesrc = $('#main').html();
+
+  /* Init throttle gauge: */
+  $("#throttle-gauge").chart({
+    chart: {
+      type: 'gauge',
+      spacing: [0, 0, 0, 0],
+      margin: [0, 0, 0, 0],
+      animation: { duration: 500, easing: 'easeOutExpo' },
+    },
+    title: { text: "Throttle", verticalAlign: "middle", y: 75 },
+    credits: { enabled: false },
+    tooltip: { enabled: false },
+    plotOptions: {
+      gauge: { dataLabels: { enabled: false }, overshoot: 1 }
+    },
+    pane: [{
+      startAngle: -125, endAngle: 125, size: '100%', center: ['50%', '60%']
+    }],
+    yAxis: [{
+      title: { text: '%' },
+      className: 'throttle',
+      reversed: false,
+      min: 0, max: 100,
+      plotBands: [
+        { from: 0, to: 60, className: 'green-band' },
+        { from: 60, to: 80, className: 'yellow-band' },
+        { from: 80, to: 100, className: 'red-band' },
+      ],
+      minorTickInterval: 'auto', minorTickLength: 5, minorTickPosition: 'inside',
+      tickPixelInterval: 40, tickPosition: 'inside', tickLength: 13,
+      labels: { step: 2, distance: -28, x: 0, y: 5, zIndex: 2 },
+    }],
+    series: [{
+      name: 'Throttle', data: [0],
+      className: 'throttle',
+      animation: { duration: 0 },
+      pivot: { radius: '10' },
+      dial: { radius: '88%', topWidth: 1, baseLength: '20%', baseWidth: 10, rearLength: '20%' },
+    }],
+    /* Update method: */
+    onUpdate: function(update) {
+      // Create gauge data set from metric:
+      var data = [ metrics["v.e.throttle"] ];
+      // Update chart:
+      this.series[0].setData(data);
+    },
+  });
+
+  /* Init cell voltages chart */
+  $("#cell-voltages").chart({
+    chart: {
+      type: 'column',
+      animation: { duration: 500, easing: 'easeOutExpo' },
+    },
+    title: { text: "Cell Voltages" },
+    credits: { enabled: false },
+    tooltip: {
+      enabled: true,
+      shared: true,
+      headerFormat: 'Cell #{point.key}:<br/>',
+      pointFormat: '{series.name}: <b>{point.y}</b><br/>',
+      valueSuffix: " V"
+    },
+    legend: { enabled: true },
+    xAxis: {
+      categories: []
+    },
+    yAxis: [{
+      title: { text: null },
+      labels: { format: "{value:.2f}V" },
+      tickAmount: 4, startOnTick: false, endOnTick: false,
+      floor: 3.3, ceiling: 4.2,
+      minorTickInterval: 'auto',
+    }],
+    series: [{
+      name: 'Current', data: [],
+      className: 'cell-voltage',
+      animation: { duration: 0 },
+    },{
+      name: 'Minimum', data: [],
+      className: 'cell-voltage-min',
+      animation: { duration: 0 },
+    }],
+    /* Update method: */
+    onUpdate: function(update) {
+      // Note: the 'update' parameter contains the actual update set.
+      // You can use this to reduce chart updates to the actual changes.
+      // For this demo, we just use the global metrics object:
+      var
+        m_vlt = metrics["v.b.c.voltage"] || [],
+        m_min = metrics["v.b.c.voltage.min"] || [];
+      // Create categories (cell numbers) & rounded values:
+      var cat = [], val0 = [], val1 = [];
+      for (var i = 0; i < m_vlt.length; i++) {
+        cat.push(i+1);
+        val0.push(Number((m_vlt[i]||0).toFixed(3)));
+        val1.push(Number((m_min[i]||0).toFixed(3)));
+      }
+      // Update chart:
+      this.xAxis[0].setCategories(cat);
+      this.series[0].setData(val0);
+      this.series[1].setData(val1);
+    },
+  });
+
+  /* Test metrics generator: */
+  $('.action-gendata').on('click', function() {
+    var td = {};
+    td["m.net.provider"] = ["hologram","Vodafone","Telekom"][Math.floor(Math.random()*3)];
+    td["v.e.throttle"] = Math.random() * 100;
+    td["v.b.12v.voltage.ref"] = 10 + Math.random() * 4;
+    var m_vlt = [], m_min = [];
+    for (var i = 1; i <= 16; i++) {
+      m_vlt.push(3.6 + Math.random() * 0.5);
+      m_min.push(3.4 + Math.random() * 0.2);
+    }
+    td["v.b.c.voltage"] = m_vlt;
+    td["v.b.c.voltage.min"] = m_min;
+    $('.receiver').trigger('msg:metrics', $.extend(metrics, td));
+  });
+
+  /* Display page source: */
+  $('.action-showsrc').on('click', function() {
+    $('<div/>').dialog({
+      title: 'Source Code',
+      body: '<pre style="font-size:85%; height:calc(100vh - 230px);">'
+        + encode_html(pagesrc) + '</pre>',
+      size: 'lg',
+    });
+  });
+
+})();
+</script>

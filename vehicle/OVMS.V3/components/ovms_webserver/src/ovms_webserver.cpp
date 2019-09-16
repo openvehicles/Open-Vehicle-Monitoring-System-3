@@ -34,6 +34,7 @@ static const char *TAG = "webserver";
 
 #include <string.h>
 #include <stdio.h>
+#include <fstream>
 #include "ovms_webserver.h"
 #include "ovms_config.h"
 #include "ovms_metrics.h"
@@ -49,8 +50,10 @@ OvmsWebServer::OvmsWebServer()
   ESP_LOGI(TAG, "Initialising WEBSERVER (8200)");
 
   m_running = false;
+  m_configured = false;
+  m_restart_countdown = 0;
   memset(m_sessions, 0, sizeof(m_sessions));
-  
+
 #if MG_ENABLE_FILESYSTEM
   m_file_enable = true;
   memset(&m_file_opts, 0, sizeof(m_file_opts));
@@ -58,17 +61,17 @@ OvmsWebServer::OvmsWebServer()
 
   m_client_cnt = 0;
   m_client_mutex = xSemaphoreCreateMutex();
+  m_client_backlog = xQueueCreate(50, sizeof(WebSocketTxTodo));
   m_update_ticker = xTimerCreate("Web client update ticker", 250 / portTICK_PERIOD_MS, pdTRUE, NULL, UpdateTicker);
 
-  // read config:
-  MyConfig.RegisterParam("http.server", "Webserver", true, true);
-  ConfigChanged("init", NULL);
+  MyConfig.RegisterParam("http.server", "Webserver configuration", true, true);
+  MyConfig.RegisterParam("http.plugin", "Webserver plugins", true, true);
 
   #undef bind  // Kludgy, but works
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG,"network.mgr.init", std::bind(&OvmsWebServer::NetManInit, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"network.mgr.stop", std::bind(&OvmsWebServer::NetManStop, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "network.mgr.init", std::bind(&OvmsWebServer::NetManInit, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "network.mgr.stop", std::bind(&OvmsWebServer::NetManStop, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsWebServer::ConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsWebServer::ConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "*", std::bind(&OvmsWebServer::EventListener, this, _1, _2));
@@ -78,6 +81,7 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/assets/style.css", "style.css", HandleAsset);
   RegisterPage("/assets/script.js", "script.js", HandleAsset);
   RegisterPage("/assets/charts.js", "charts.js", HandleAsset);
+  RegisterPage("/assets/tables.js", "tables.js", HandleAsset);
   RegisterPage("/assets/zones.json", "zones.json", HandleAsset);
   RegisterPage("/assets/bootstrap.min.css.map", "-", HandleAsset);
   RegisterPage("/favicon.ico", "favicon.ico", HandleAsset);
@@ -86,14 +90,17 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/home", "Home", HandleHome);
   RegisterPage("/login", "Login", HandleLogin);
   RegisterPage("/logout", "Logout", HandleLogout);
-  
+
   // register standard API calls:
   RegisterPage("/api/execute", "Execute command", HandleCommand, PageMenu_None, PageAuth_Cookie);
 
+  // register standard public pages:
+  RegisterPage("/dashboard", "Dashboard", HandleDashboard, PageMenu_Main, PageAuth_None);
+
   // register standard administration pages:
   RegisterPage("/status", "Status", HandleStatus, PageMenu_Main, PageAuth_Cookie);
-  RegisterPage("/shell", "Shell", HandleShell, PageMenu_Main, PageAuth_Cookie);
-  RegisterPage("/dashboard", "Dashboard", HandleDashboard, PageMenu_Main, PageAuth_Cookie);
+  RegisterPage("/shell", "Shell", HandleShell, PageMenu_Tools, PageAuth_Cookie);
+  RegisterPage("/edit", "Editor", HandleEditor, PageMenu_Tools, PageAuth_Cookie);
   RegisterPage("/cfg/init", "Setup wizard", HandleCfgInit, PageMenu_None, PageAuth_Cookie);
   RegisterPage("/cfg/password", "Password", HandleCfgPassword, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/vehicle", "Vehicle", HandleCfgVehicle, PageMenu_Config, PageAuth_Cookie);
@@ -110,12 +117,14 @@ OvmsWebServer::OvmsWebServer()
 #endif
 #endif
   RegisterPage("/cfg/webserver", "Webserver", HandleCfgWebServer, PageMenu_Config, PageAuth_Cookie);
+  RegisterPage("/cfg/plugins", "Web Plugins", HandleCfgPlugins, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/autostart", "Autostart", HandleCfgAutoInit, PageMenu_Config, PageAuth_Cookie);
 #ifdef CONFIG_OVMS_COMP_OTA
   RegisterPage("/cfg/firmware", "Firmware", HandleCfgFirmware, PageMenu_Config, PageAuth_Cookie);
 #endif
   RegisterPage("/cfg/logging", "Logging", HandleCfgLogging, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/locations", "Locations", HandleCfgLocations, PageMenu_Config, PageAuth_Cookie);
+  RegisterPage("/cfg/backup", "Backup &amp; Restore", HandleCfgBackup, PageMenu_Config, PageAuth_Cookie);
 }
 
 OvmsWebServer::~OvmsWebServer()
@@ -126,16 +135,13 @@ OvmsWebServer::~OvmsWebServer()
 
 void OvmsWebServer::NetManInit(std::string event, void* data)
 {
-  // Only initialise server for WIFI connections
-  // TODO: Disabled as this introduces a network interface ordering issue. It
-  //       seems that the correct way to do this is to always start the mongoose
-  //       listener, but to filter incoming connections to check that the
-  //       destination address is a Wifi interface address.
-  // if (!(MyNetManager.m_connected_wifi || MyNetManager.m_wifi_ap))
-  //  return;
-
   m_running = true;
   ESP_LOGI(TAG,"Launching Web Server");
+
+  if (!m_configured) {
+    // safety measure, should not happen normally
+    ConfigChanged("config.mounted", NULL);
+  }
 
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
 
@@ -165,18 +171,15 @@ void OvmsWebServer::NetManStop(std::string event, void* data)
  */
 void OvmsWebServer::ConfigChanged(std::string event, void* data)
 {
+  m_configured = true;
   OvmsConfigParam* param = (OvmsConfigParam*) data;
   ESP_LOGD(TAG, "ConfigChanged: %s %s", event.c_str(), param ? param->GetName().c_str() : "");
 
   if (event == "config.mounted") {
     CfgInitStartup();
   }
-  
-#if MG_ENABLE_FILESYSTEM
-  if (!param || param->GetName() == "password") {
-    UpdateGlobalAuthFile();
-  }
 
+#if MG_ENABLE_FILESYSTEM
   if (!param || param->GetName() == "http.server") {
     // Instances:
     //    Name                Default                 Function
@@ -208,7 +211,16 @@ void OvmsWebServer::ConfigChanged(std::string event, void* data)
     m_file_opts.global_auth_file =
       MyConfig.GetParamValueBool("http.server", "auth.global", true) ? OVMS_GLOBAL_AUTH_FILE : NULL;
   }
+
+  if (!param || param->GetName() == "password") {
+    UpdateGlobalAuthFile();
+  }
 #endif //MG_ENABLE_FILESYSTEM
+
+  if (!param || param->GetName() == "http.plugin") {
+    DeregisterPlugins();
+    RegisterPlugins();
+  }
 }
 
 
@@ -242,7 +254,8 @@ void OvmsWebServer::UpdateGlobalAuthFile()
     auth = MakeDigestAuth(m_file_opts.auth_domain, "", p.c_str());
     fprintf(fp, "%s\n", auth.c_str());
     ESP_LOGD(TAG, "UpdateGlobalAuthFile: '' => %s", auth.c_str());
-    fclose(fp);
+    if (fclose(fp) != 0)
+      ESP_LOGE(TAG, "UpdateGlobalAuthFile: can't write to '%s': %s", m_file_opts.global_auth_file, strerror(errno));
   }
 #endif //MG_ENABLE_FILESYSTEM
 }
@@ -297,37 +310,163 @@ const std::string OvmsWebServer::ExecuteCommand(const std::string command, int v
  * RegisterPage: add a page to the URI handler map
  * Note: use PageMenu_Vehicle for vehicle specific pages.
  */
-void OvmsWebServer::RegisterPage(const char* uri, const char* label, PageHandler_t handler,
-  PageMenu_t menu /*=PageMenu_None*/, PageAuth_t auth /*=PageAuth_None*/)
+void OvmsWebServer::RegisterPage(std::string uri, std::string label, PageHandler_t handler,
+  PageMenu_t menu /*=PageMenu_None*/, PageAuth_t auth /*=PageAuth_None*/, int priority /*=0*/)
 {
   auto prev = m_pagemap.before_begin();
   for (auto it = m_pagemap.begin(); it != m_pagemap.end(); prev = it++) {
-    if (strcmp((*it)->uri, uri) == 0) {
-      ESP_LOGE(TAG, "RegisterPage: second registration for uri '%s' (ignored)", uri);
-      return;
+    if ((*it).uri == uri) {
+      if (priority < 0) {
+        ESP_LOGE(TAG, "RegisterPage: second registration for uri '%s' (ignored)", uri.c_str());
+        return;
+      } else {
+        ESP_LOGI(TAG, "RegisterPage: second registration for uri '%s' prioritized", uri.c_str());
+        m_pagemap.erase_after(prev);
+        break;
+      }
     }
   }
-  m_pagemap.insert_after(prev, new PageEntry(uri, label, handler, menu, auth));
+  m_pagemap.insert_after(prev, PageEntry(uri, label, handler, menu, auth));
 }
 
-void OvmsWebServer::DeregisterPage(const char* uri)
+void OvmsWebServer::DeregisterPage(std::string uri)
 {
-  auto prev = m_pagemap.before_begin();
-  for (auto it = m_pagemap.begin(); it != m_pagemap.end(); prev = it++) {
-    if (strcmp((*it)->uri, uri) == 0) {
-      m_pagemap.erase_after(prev);
-      break;
-    }
-  }
+  m_pagemap.remove_if([uri](PageEntry &e){ return (e.uri == uri); });
 }
 
-PageEntry* OvmsWebServer::FindPage(const char* uri)
+PageEntry* OvmsWebServer::FindPage(std::string uri)
 {
-  for (PageEntry* e : m_pagemap) {
-    if (strcmp(e->uri, uri) == 0)
-      return e;
+  for (PageEntry& e : m_pagemap) {
+    if (e.uri == uri)
+      return &e;
   }
   return NULL;
+}
+
+
+/**
+ * Plugin Registry
+ */
+
+void PagePluginContent::LoadContent()
+{
+  std::string path = "/store/plugin/" + m_path;
+  std::ifstream file(path, std::ios::in | std::ios::binary | std::ios::ate);
+  if (!file.is_open()) {
+    ESP_LOGE(TAG, "Plugin file missing: '%s'", path.c_str());
+    m_content = "<!-- ERROR: Plugin file missing: '";
+    m_content += PageContext::encode_html(path).c_str();
+    m_content += "' -->";
+  } else {
+    auto size = file.tellg();
+    if (size < 0) {
+      ESP_LOGE(TAG, "Plugin file '%s': seek failed", path.c_str());
+      m_content = "<!-- ERROR: Plugin file missing: '";
+      m_content += PageContext::encode_html(path).c_str();
+      m_content += "' -->";
+    } else {
+      m_content.resize(size, '\0');
+      file.seekg(0);
+      file.read(&m_content[0], size);
+      ESP_LOGD(TAG, "Plugin file loaded: '%s', %u bytes", path.c_str(), (size_t)size);
+    }
+  }
+}
+
+void OvmsWebServer::RegisterPlugins()
+{
+  OvmsConfigParam* cp = MyConfig.CachedParam("http.plugin");
+  if (!cp)
+    return;
+  const ConfigParamMap& pmap = cp->GetMap();
+  std::string key, label, page, hook;
+  PageAuth_t auth;
+  PageMenu_t menu;
+
+  // Instances:
+  //    <key>.enable        yes/no
+  //    <key>.label         e.g. "My Plugin"
+  //    <key>.page          e.g. "/myplugin" (page/hook URI)
+  //    <key>.auth          [page] <PageAuth_t> code name
+  //    <key>.menu          [page] <PageMenu_t> code name
+  //    <key>.hook          [hook] Callback hook code
+  // 
+  // Files:
+  //    /store/plugin/<key>
+
+  for (auto& kv: pmap) {
+    if (!endsWith(kv.first, ".enable") || !strtobool(kv.second))
+      continue;
+    
+    key = kv.first.substr(0, kv.first.length() - 7);
+    page = cp->GetValue(key+".page");
+    hook = cp->GetValue(key+".hook");
+    bool is_hook = cp->IsDefined(key+".hook");
+    if (page == "" || (is_hook && hook == ""))
+      continue;
+    
+    if (is_hook) {
+      m_plugin_parts.insert({ page + ":" + hook, PagePluginContent(key) });
+      RegisterCallback("http.plugin", page, PluginCallback, -1);
+      ESP_LOGD(TAG, "Plugin hook registered: '%s:%s' => '%s'", page.c_str(), hook.c_str(), key.c_str());
+    } else {
+      m_plugin_pages.insert({ page, PagePluginContent(key) });
+      label = cp->GetValue(key+".label");
+      menu = Code2PageMenu(cp->GetValue(key+".menu"));
+      auth = Code2PageAuth(cp->GetValue(key+".auth"));
+      RegisterPage(page, label, PluginHandler, menu, auth, -1);
+      ESP_LOGD(TAG, "Plugin page registered: '%s' => '%s'", page.c_str(), key.c_str());
+    }
+  }
+}
+
+void OvmsWebServer::DeregisterPlugins()
+{
+  m_pagemap.remove_if([](PageEntry& e){ return e.handler == PluginHandler; });
+  m_plugin_pages.clear();
+  DeregisterCallbacks("http.plugin");
+  m_plugin_parts.clear();
+}
+
+void OvmsWebServer::ReloadPlugin(std::string path)
+{
+  if (startsWith(path, "/store/plugin/"))
+    path = path.substr(14);
+  for (auto i = m_plugin_pages.begin(); i != m_plugin_pages.end(); i++) {
+    if (i->second.m_path == path)
+      i->second.LoadContent();
+  }
+  for (auto i = m_plugin_parts.begin(); i != m_plugin_parts.end(); i++) {
+    if (i->second.m_path == path)
+      i->second.LoadContent();
+  }
+}
+
+void OvmsWebServer::PluginHandler(PageEntry_t& p, PageContext_t& c)
+{
+  auto i = MyWebServer.m_plugin_pages.find(p.uri);
+  if (i == MyWebServer.m_plugin_pages.end())
+    return;
+
+  extram::string& content = i->second.GetContent();
+  c.head(200);
+  c.print(content);
+  c.done();
+}
+
+PageResult_t OvmsWebServer::PluginCallback(PageEntry_t& p, PageContext_t& c, const std::string& hook)
+{
+  std::string key = p.uri + ':' + hook;
+  auto range = MyWebServer.m_plugin_parts.equal_range(key);
+  if (range.first == MyWebServer.m_plugin_parts.end())
+    return PageResult_OK;
+
+  for (auto i = range.first; i != range.second; i++) {
+    extram::string& content = i->second.GetContent();
+    c.print(content);
+  }
+
+  return PageResult_OK;
 }
 
 
@@ -427,11 +566,24 @@ void PageEntry::Serve(PageContext_t& c)
   (auth != PageAuth_None && !MyConfig.GetParamValue("password", "module").empty())
 #endif
   {
-    // use session cookie based auth:
+    // use session cookie / access based auth:
     if (c.session == NULL)
     {
-      MyWebServer.HandleLogin(*this, c);
-      return;
+      // Check per access auth:
+      // Note: apikey is currently just the admin password, but can later be replaced by an auth token
+      std::string apikey = c.getvar("apikey");
+      if (!MyWebServer.CheckLogin("admin", apikey)) {
+        if (apikey != "") {
+          // output API response:
+          c.head(403);
+          c.print("ERROR: Unauthorized\n");
+          c.done();
+        } else {
+          // forward user to login page:
+          MyWebServer.HandleLogin(*this, c);
+        }
+        return;
+      }
     }
   }
 #if MG_ENABLE_FILESYSTEM
@@ -450,12 +602,62 @@ void PageEntry::Serve(PageContext_t& c)
 #endif //MG_ENABLE_FILESYSTEM
 
   // call page handler:
-  size_t checkpoint1 = heap_caps_get_free_size(MALLOC_CAP_8BIT);
   handler(*this, c);
-  size_t checkpoint2 = heap_caps_get_free_size(MALLOC_CAP_8BIT);
-  ESP_LOGD(TAG, "Serve %s: %d bytes used, %d free", uri, checkpoint1-checkpoint2, checkpoint2);
 }
 
+
+/**
+ * Page Callback Registry:
+ */
+
+bool OvmsWebServer::RegisterCallback(std::string caller, std::string uri, PageCallback_t handler, int priority /*=0*/)
+{
+  PageEntry* e = FindPage(uri);
+  if (!e)
+    return false;
+  e->RegisterCallback(caller, handler, priority);
+  return true;
+}
+
+void OvmsWebServer::DeregisterCallbacks(std::string caller)
+{
+  for (PageEntry& e : m_pagemap)
+    e.DeregisterCallback(caller);
+}
+
+void PageEntry::RegisterCallback(std::string caller, PageCallback_t handler, int priority /*=0*/)
+{
+  auto prev = callbacklist.before_begin();
+  for (auto it = callbacklist.begin(); it != callbacklist.end(); prev = it++) {
+    if ((*it).caller == caller && (*it).handler == handler)
+      return; // already registered
+  }
+  if (priority < 0)
+    callbacklist.insert_after(prev, PageCallbackEntry(caller, handler));
+  else
+    callbacklist.push_front(PageCallbackEntry(caller, handler));
+}
+
+void PageEntry::DeregisterCallback(std::string caller)
+{
+  callbacklist.remove_if([caller](PageCallbackEntry& e){ return e.caller == caller; });
+}
+
+PageResult_t PageEntry::callback(PageContext_t& c, const std::string& hook)
+{
+  PageResult_t res = PageResult_OK;
+  for (PageCallbackEntry& e : callbacklist) {
+    res = e.handler(*this, c, hook);
+    if (res == PageResult_STOP)
+      break;
+  }
+  return res;
+}
+
+PageResult_t PageContext::callback(PageEntry_t& p, const std::string& hook)
+{
+  return p.callback(*this, hook);
+}
 
 
 /**
@@ -490,20 +692,37 @@ void MgHandler::HandlePoll(mg_connection* nc, int ev, void* p)
 /**
  * HttpDataSender: chunked transfer of a memory region (needs to be const during xfer)
  */
+
+HttpDataSender::HttpDataSender(mg_connection* nc, MemRegionList xferlist, bool keepalive /*=true*/)
+: MgHandler(nc)
+{
+  m_xferlist = xferlist;
+  m_xfer = -1;
+  m_data = NULL;
+  m_size = 0;
+  m_sent = 0;
+  m_keepalive = keepalive;
+  //ESP_LOGV(TAG, "HttpDataSender[%p]: init %d regions", nc, m_xferlist.size());
+}
+
 HttpDataSender::HttpDataSender(mg_connection* nc, const uint8_t* data, size_t size, bool keepalive /*=true*/)
 : MgHandler(nc)
 {
-  m_data = data;
-  m_size = size;
+  m_xferlist.push_back({ data, size });
+  m_xfer = -1;
+  m_data = NULL;
+  m_size = 0;
   m_sent = 0;
   m_keepalive = keepalive;
-  ESP_LOGV(TAG, "HttpDataSender[%p]: init data=%p, %d bytes", nc, m_data, m_size);
+  //ESP_LOGV(TAG, "HttpDataSender[%p]: init data=%p, %d bytes", nc, data, size);
 }
 
 HttpDataSender::~HttpDataSender()
 {
-  if (m_sent < m_size)
-    ESP_LOGV(TAG, "HttpDataSender[%p]: abort data=%p, %d bytes sent", m_nc, m_data, m_sent);
+  if (m_sent < m_size || m_xfer < m_xferlist.size()) {
+    ESP_LOGV(TAG, "HttpDataSender[%p]: abort region=%d/%d, data=%p, %d/%d bytes sent",
+             m_nc, m_xfer+1, m_xferlist.size(), m_data, m_sent, m_size);
+  }
 }
 
 int HttpDataSender::HandleEvent(int ev, void* p)
@@ -512,6 +731,13 @@ int HttpDataSender::HandleEvent(int ev, void* p)
   {
     case MG_EV_SEND:          // last transmission has finished
     {
+      if (m_sent == m_size && ++m_xfer < m_xferlist.size()) {
+        // send next region:
+        m_data = m_xferlist[m_xfer].first;
+        m_size = m_xferlist[m_xfer].second;
+        m_sent = 0;
+        //ESP_LOGV(TAG, "HttpDataSender[%p]: next region=%d data=%p, %d bytes", m_nc, m_xfer+1, m_data, m_size);
+      }
       if (m_sent < m_size) {
         // send next chunk:
         size_t len = MIN(m_size - m_sent, XFER_CHUNK_SIZE);
@@ -524,7 +750,7 @@ int HttpDataSender::HandleEvent(int ev, void* p)
         if (!m_keepalive)
           m_nc->flags |= MG_F_SEND_AND_CLOSE;
         mg_send_http_chunk(m_nc, "", 0);
-        ESP_LOGV(TAG, "HttpDataSender[%p]: done data=%p, %d bytes sent", m_nc, m_data, m_sent);
+        //ESP_LOGV(TAG, "HttpDataSender[%p]: done", m_nc);
         delete this;
       }
     }
@@ -547,13 +773,14 @@ HttpStringSender::HttpStringSender(mg_connection* nc, std::string* msg, bool kee
   m_msg = msg;
   m_sent = 0;
   m_keepalive = keepalive;
-  ESP_LOGV(TAG, "HttpStringSender[%p]: init msg=%p, %d bytes", nc, m_msg, m_msg->size());
+  //ESP_LOGV(TAG, "HttpStringSender[%p]: init msg=%p, %d bytes", nc, m_msg, m_msg->size());
 }
 
 HttpStringSender::~HttpStringSender()
 {
-  if (m_sent < m_msg->size())
+  if (m_sent < m_msg->size()) {
     ESP_LOGV(TAG, "HttpStringSender[%p]: abort msg=%p, %d bytes sent", m_nc, m_msg, m_sent);
+  }
   delete m_msg;
 }
 
@@ -575,7 +802,7 @@ int HttpStringSender::HandleEvent(int ev, void* p)
         if (!m_keepalive)
           m_nc->flags |= MG_F_SEND_AND_CLOSE;
         mg_send_http_chunk(m_nc, "", 0);
-        ESP_LOGV(TAG, "HttpStringSender[%p]: done msg=%p, %d bytes sent", m_nc, m_msg, m_sent);
+        //ESP_LOGV(TAG, "HttpStringSender[%p]: done msg=%p, %d bytes sent", m_nc, m_msg, m_sent);
         delete this;
       }
     }
@@ -714,6 +941,7 @@ void OvmsWebServer::CheckSessions(void)
 void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
 {
   std::string error;
+  std::string uri = c.getvar("uri");
 
   if (c.method == "POST") {
     // validate login:
@@ -734,7 +962,9 @@ void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
     if (error == "") {
       // ok: set cookie, reload menu, redirect to /cfg/init, /cfg/password, original uri or /home:
       std::string init_step = MyConfig.GetParamValue("module", "init");
-      if (!init_step.empty() && init_step != "done")
+      if (uri != "")
+        c.uri = uri;
+      else if (!init_step.empty() && init_step != "done")
         c.uri = "/cfg/init";
       else if (MyConfig.GetParamValue("password", "module").empty())
         c.uri = "/cfg/password";
@@ -749,7 +979,7 @@ void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
         , SESSION_COOKIE_NAME, s->id);
       c.head(200, shead);
       c.printf(
-        "<script>$(\"#menu\").load(\"/menu\"); loaduri(\"#main\", \"get\", \"%s\", {})</script>"
+        "<script>loggedin = true; $(\"#menu\").load(\"/menu\"); loaduri(\"#main\", \"get\", \"%s\", {})</script>"
         , c.uri.c_str());
       c.done();
 
@@ -774,6 +1004,8 @@ void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
   // generate form:
   c.panel_start("primary", "Login");
   c.form_start(c.uri.c_str());
+  if (uri != "")
+    c.printf("<input type=\"hidden\" name=\"uri\" value=\"%s\">", c.encode_html(uri).c_str());
   c.input_text("Username", "username", "", "empty = 'admin'", NULL, "autocomplete=\"section-login username\"");
   c.input_password("Password", "password", "", NULL, NULL, "autocomplete=\"section-login current-password\"");
   c.input_button("default", "Login");
@@ -803,6 +1035,6 @@ void OvmsWebServer::HandleLogout(PageEntry_t& p, PageContext_t& c)
     , SESSION_COOKIE_NAME);
   c.head(200, shead);
   c.print(
-    "<script>$(\"#menu\").load(\"/menu\"); loaduri(\"#main\", \"get\", \"/home\", {})</script>");
+    "<script>loggedin = false; $(\"#menu\").load(\"/menu\"); loaduri(\"#main\", \"get\", \"/home\", {})</script>");
   c.done();
 }

@@ -1,0 +1,172 @@
+<!--
+  Test/Development/Documentation page
+  - enable web server file access
+  - upload to web dir, e.g. scp testpage.htm test1.local:/sd/dev/
+  - open in framework by e.g. http://test1.local/#/dev/testpage.htm
+-->
+
+<div class="panel panel-primary">
+  <div class="panel-heading">Dialog Test/Demo</div>
+  <div class="panel-body">
+	<h4>Core Widget</h4>
+	<button class="btn btn-default" id="action-load">Dialog 1</button>
+	<button class="btn btn-default" id="action-save">Dialog 2</button>
+	<button class="btn btn-default" id="action-both">Both together</button>
+	<button class="btn btn-default" id="action-dyn">Dynamic custom</button>
+	<hr />
+	<h4>Utility Wrappers</h4>
+	<button class="btn btn-default" id="action-info">Alert</button>
+	<button class="btn btn-default" id="action-confirm">Confirm</button>
+	<button class="btn btn-default" id="action-choice">Choice</button>
+	<button class="btn btn-default" id="action-prompt">Prompt</button>
+	<button class="btn btn-default" id="action-password">Password</button>
+	<hr />
+	<h4>Log</h4>
+	<pre id="log" />
+  </div>
+</div>
+
+<div id="dialog1" />
+<div id="dialog2" />
+<div id="dialog3" />
+
+<script>
+
+// =======================================================================================
+// Dialog core widget:
+//   options: {
+//     title: '',
+//     body: '',
+//     show: false,           / true = open directly on init
+//     remote: false,
+//     backdrop: true,        background overlay
+//     keyboard: true,        ESC = close
+//     transition: 'fade',    / ''
+//     size: '',              / 'sm' / 'lg'
+//     contentClass: '',      added to .modal-content
+//     onShown: null,         function(input)
+//     onHidden: null,        function(input)
+//     onShow: null,          function(input)
+//     onHide: null,          function(input)
+//     onUpdate: null,        function(input)
+//     buttons: [{}],         see example
+//     timeout: 0,            in seconds
+//     input: null,           predefined/shared input object to use
+//   },
+
+// Note: use static dialogs (attached to the document) for speed and to store reusable
+// input, e.g. for a promptdialog.
+
+// The default dialog will contain just a "Close" button:
+$('#dialog1').dialog({
+  title: 'Please note',
+  body: '<p>This is just a test.</p>'
+});
+$('#dialog2').dialog({
+  title: 'Alert',
+  body: '<p>Danger, Will Robinson, danger!</p>',
+  contentClass: 'alert-danger', // note: looks strange, just an example -- don't use
+});
+
+// You can simply open preconfigured dialogs like this:
+$('#action-load').on('click', function(){
+  $('#dialog1').dialog('show');
+});
+$('#action-save').on('click', function(){
+  $('#dialog2').dialog('show');
+});
+
+// …or you can reconfigure dialogs on the fly like this:
+// Note: the new configuration is stored in the dialog.
+$('#action-both').on('click', function(){
+  $('#dialog1').dialog('show', { body: '<p>This is now another test.</p>' });
+  // This example also opens a second dialog on top of the first:
+  $('#dialog2').dialog('show', { body: '<p>This is a second layer dialog.</p>' });
+});
+
+// Use dynamic dialogs for single shot purposes:
+$('#action-dyn').on('click', function(){
+  $("#log").text("");
+  $('<div />').dialog({
+    title: 'Dynamic…',
+    body: '<p>…dialog with custom buttons.</p>',
+    buttons: [
+      // Buttons default to auto hiding the dialog:
+      { label: "Nope" },
+      // You can get the button clicked in the onHidden callback, or you can
+      // add specific action callbacks to each button.
+      { label: "Maybe…", btnClass: "warning", autoHide: false, action: function(input) {
+        // input is the data container of the widget, with only predefined
+        // member being "button" = the button clicked (or null).
+        // You can use this container for custom extensions:
+        input.clicked_maybe = true;
+        $(this).find(".modal-body").append("<p>You're now a maybe person.</p>");
+      } },
+      // autoHide callbacks are called on the hidden event, so a fade out
+      // is guaranteed to be finished in the callback.
+      { label: "Done", btnClass: "primary", action: function(input) {
+        $("#log").text(JSON.stringify(input, null, 2));
+      } },
+    ],
+  });
+});
+
+
+// =======================================================================================
+// Dialog utility wrappers:
+//   confirmdialog(title, body, buttons, [callback,] timeout)
+//   promptdialog(type, title, body, buttons, callback)
+// Both can be used plugin style or standalone for dynamic dialogs.
+
+// Dynamic alert() style dialog with 5 seconds timeout:
+$('#action-info').on('click', function(){
+  confirmdialog("Sorry…", "I'm afraid I can't do that, Dave.", ["OK"], 5);
+  // Note: you can also add a callback here to know when the dialog is dismissed.
+});
+
+// Dynamic confirm() style dialog:
+$('#action-confirm').on('click', function(){
+  $("#log").text("");
+  confirmdialog("Load file", "Discard unsaved changes?", ["No", "Yes"], function(confirmed){
+    if (confirmed)
+      $("#log").text("Loading now…");
+    else
+      $("#log").text("Load aborted.");
+  });
+});
+
+// The callback argument is the index of the button clicked (or null), so
+// simple choice dialogs can be done like this:
+$('#action-choice').on('click', function(){
+  $("#log").text("");
+  confirmdialog("Select", "Please select the slot to use:", ["1", "2", "3", "4"], function(button){
+    if (button != null)
+      $("#log").text("Using slot " + (button+1));
+    else
+      $("#log").text("Abort.");
+  });
+});
+
+// Static prompt() style text input dialog (with #dialog3 keeping the dialog):
+$('#action-prompt').on('click', function(){
+  $("#log").text("");
+  $('#dialog3').promptdialog("text", "Save data", "Please enter file name:", ["Cancel", "Save"], function(button, input){
+    if (button && input)
+      $("#log").text("Saving to file: " + input);
+    else
+      $("#log").text("Save aborted.");
+  });
+});
+
+// All single field HTML5 input types can be used:
+$('#action-password').on('click', function(){
+  $("#log").text("");
+  promptdialog("password", "Authentication", "Please enter PIN:", ["Cancel", "Continue"], function(button, input){
+    if (button && input)
+      $("#log").text("PIN entered: " + input);
+    else
+      $("#log").text("Auth aborted.");
+  });
+});
+
+</script>

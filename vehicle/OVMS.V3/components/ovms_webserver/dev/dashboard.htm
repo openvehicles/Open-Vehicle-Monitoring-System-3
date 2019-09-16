@@ -1,0 +1,578 @@
+<!-- Main -->
+
+<style>
+@media (max-width: 767px) {
+  .panel-single .panel-body {
+    padding: 2px;
+  }
+}
+.dashboard .highcharts-data-label text {
+  font-size: 2em;
+}
+.dashboard .overlay {
+  position: absolute;
+  z-index: 10;
+  top: 62%;
+  text-align: center;
+  left: 0%;
+  right: 0%;
+}
+.dashboard .overlay .value {
+  color: #04282b;
+  background: #97b597;
+  padding: 2px 5px;
+  margin-right: 0.2em;
+  text-align: center;
+  border: 1px inset #c3c3c380;
+  font-family: "Monaco", "Menlo", "Consolas", "QuickType Mono", "Lucida Console", "Roboto Mono", "Ubuntu Mono", "DejaVu Sans Mono", "Droid Sans Mono", monospace;
+  display: inline-block;
+}
+.night .dashboard .overlay .value {
+  color: #fff;
+  background: #252525;
+}
+.dashboard .overlay .unit {
+  color: #666;
+  font-size: 12px;
+}
+.dashboard .overlay .range-value .value {
+  margin-left: 10px;
+  width: 100px;
+}
+.dashboard .overlay .energy-value {
+  margin-top: 4px;
+}
+.dashboard .overlay .energy-value .value {
+  margin-left: 18px;
+  width: 100px;
+  font-size: 12px;
+}
+</style>
+
+<div class="panel panel-primary" id="panel-dashboard">
+  <div class="panel-heading">Dashboard</div>
+  <div class="panel-body">
+
+    <div class="receiver get-window-resize" id="livestatus">
+      <div class="dashboard" style="position: relative; width: 100%; height: 300px; margin: 0 auto">
+        <div class="overlay">
+          <div class="range-value"><span class="value">▲0 ▼0</span><span class="unit">km</span></div>
+          <div class="energy-value"><span class="value">▲0.0 ▼0.0</span><span class="unit">kWh</span></div>
+        </div>
+        <div id="gaugeset1" style="width: 100%; height: 100%;"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- Chart -->
+
+<style>
+.highcharts-plot-band, .highcharts-pane {
+  fill-opacity: 0;
+}
+.highcharts-plot-band.border {
+  stroke: #666666;
+  stroke-width: 1px;
+}
+
+.green-band {
+	fill: #55BF3B;
+	fill-opacity: 0.4;
+}
+.yellow-band {
+	fill: #DDDF0D;
+	fill-opacity: 0.5;
+}
+.red-band {
+	fill: #DF5353;
+	fill-opacity: 0.6;
+}
+.violet-band {
+  fill: #9622ff;
+  fill-opacity: 0.6;
+}
+.night .violet-band {
+  fill: #9622ff;
+  fill-opacity: 0.8;
+}
+
+.highcharts-gauge-series .highcharts-pivot {
+  stroke-width: 1px;
+  stroke: #757575;
+  fill-opacity: 1;
+  fill: black;
+}
+.highcharts-gauge-series.auxgauge .highcharts-pivot {
+  fill-opacity: 1;
+  fill: #fff;
+  stroke-width: 0;
+}
+.night .highcharts-gauge-series.auxgauge .highcharts-pivot {
+  fill: #000;
+}
+.highcharts-gauge-series .highcharts-dial {
+  fill: #d80000;
+  stroke: #000;
+  stroke-width: 0.5px;
+}
+.highcharts-yaxis-grid .highcharts-grid-line,
+.highcharts-yaxis-grid .highcharts-minor-grid-line {
+	display: none;
+}
+.highcharts-yaxis .highcharts-tick {
+	stroke-width: 2px;
+	stroke: #666666;
+}
+.night .highcharts-yaxis .highcharts-tick {
+  stroke: #e0e0e0;
+}
+.highcharts-yaxis .highcharts-minor-tick {
+  stroke-width: 1.8px;
+  stroke: #00000085;
+  stroke-dasharray: 6;
+  stroke-dashoffset: -4.8;
+  stroke-linecap: round;
+}
+.night .highcharts-yaxis .highcharts-minor-tick {
+  stroke: #ffffff85;
+}
+.highcharts-axis-labels {
+  fill: #000;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+.night .highcharts-axis-labels {
+  fill: #ddd;
+}
+.highcharts-data-label text {
+  fill: #333333;
+}
+.night .highcharts-data-label text {
+  fill: #fff;
+}
+
+.highcharts-axis-labels.speed {
+  font-size: 1.2em;
+}
+</style>
+
+<script type="text/javascript">
+
+// Vehicle specific configuration:
+
+var vehicle_config_twizy = {
+  yAxis: [{
+    // Speed:
+    min: 0, max: 120,
+    plotBands: [
+      { from: 0, to: 70, className: 'green-band' },
+      { from: 70, to: 100, className: 'yellow-band' },
+      { from: 100, to: 120, className: 'red-band' }]
+  },{
+    // Voltage:
+    min: 45, max: 60,
+    plotBands: [
+      { from: 45, to: 47.5, className: 'red-band' },
+      { from: 47.5, to: 50, className: 'yellow-band' },
+      { from: 50, to: 60, className: 'green-band' }]
+  },{
+    // SOC:
+    min: 0, max: 100,
+    plotBands: [
+      { from: 0, to: 12.5, className: 'red-band' },
+      { from: 12.5, to: 25, className: 'yellow-band' },
+      { from: 25, to: 100, className: 'green-band' }]
+  },{
+    // Efficiency:
+    min: 0, max: 300,
+    plotBands: [
+      { from: 0, to: 150, className: 'green-band' },
+      { from: 150, to: 250, className: 'yellow-band' },
+      { from: 250, to: 300, className: 'red-band' }]
+  },{
+    // Power:
+    min: -10, max: 30,
+    plotBands: [
+      { from: -10, to: 0, className: 'violet-band' },
+      { from: 0, to: 15, className: 'green-band' },
+      { from: 15, to: 25, className: 'yellow-band' },
+      { from: 25, to: 30, className: 'red-band' }]
+  },{
+    // Charger temperature:
+    min: 20, max: 80, tickInterval: 20,
+    plotBands: [
+      { from: 20, to: 65, className: 'normal-band border' },
+      { from: 65, to: 80, className: 'red-band border' }]
+  },{
+    // Battery temperature:
+    min: -15, max: 65, tickInterval: 25,
+    plotBands: [
+      { from: -15, to: 0, className: 'red-band border' },
+      { from: 0, to: 50, className: 'normal-band border' },
+      { from: 50, to: 65, className: 'red-band border' }]
+  },{
+    // Inverter temperature:
+    min: 20, max: 80, tickInterval: 20,
+    plotBands: [
+      { from: 20, to: 70, className: 'normal-band border' },
+      { from: 70, to: 80, className: 'red-band border' }]
+  },{
+    // Motor temperature:
+    min: 50, max: 125, tickInterval: 25,
+    plotBands: [
+      { from: 50, to: 110, className: 'normal-band border' },
+      { from: 110, to: 125, className: 'red-band border' }]
+  }]
+};
+
+var vehicle_config_default = {
+  yAxis: [{
+    // Speed:
+    min: 0, max: 120,
+    plotBands: [
+      { from: 0, to: 70, className: 'green-band' },
+      { from: 70, to: 100, className: 'yellow-band' },
+      { from: 100, to: 120, className: 'red-band' }]
+  },{
+    // Voltage:
+    min: 310, max: 410,
+    plotBands: [
+      { from: 310, to: 325, className: 'red-band' },
+      { from: 325, to: 340, className: 'yellow-band' },
+      { from: 340, to: 410, className: 'green-band' }]
+  },{
+    // SOC:
+    min: 0, max: 100,
+    plotBands: [
+      { from: 0, to: 12.5, className: 'red-band' },
+      { from: 12.5, to: 25, className: 'yellow-band' },
+      { from: 25, to: 100, className: 'green-band' }]
+  },{
+    // Efficiency:
+    min: 0, max: 400,
+    plotBands: [
+      { from: 0, to: 200, className: 'green-band' },
+      { from: 200, to: 300, className: 'yellow-band' },
+      { from: 300, to: 400, className: 'red-band' }]
+  },{
+    // Power:
+    min: -50, max: 200,
+    plotBands: [
+      { from: -50, to: 0, className: 'violet-band' },
+      { from: 0, to: 100, className: 'green-band' },
+      { from: 100, to: 150, className: 'yellow-band' },
+      { from: 150, to: 200, className: 'red-band' }]
+  },{
+    // Charger temperature:
+    min: 20, max: 80, tickInterval: 20,
+    plotBands: [
+      { from: 20, to: 65, className: 'normal-band border' },
+      { from: 65, to: 80, className: 'red-band border' }]
+  },{
+    // Battery temperature:
+    min: -15, max: 65, tickInterval: 25,
+    plotBands: [
+      { from: -15, to: 0, className: 'red-band border' },
+      { from: 0, to: 50, className: 'normal-band border' },
+      { from: 50, to: 65, className: 'red-band border' }]
+  },{
+    // Inverter temperature:
+    min: 20, max: 80, tickInterval: 20,
+    plotBands: [
+      { from: 20, to: 70, className: 'normal-band border' },
+      { from: 70, to: 80, className: 'red-band border' }]
+  },{
+    // Motor temperature:
+    min: 50, max: 125, tickInterval: 25,
+    plotBands: [
+      { from: 50, to: 110, className: 'normal-band border' },
+      { from: 110, to: 125, className: 'red-band border' }]
+  }]
+};
+
+var vehicle_config = vehicle_config_twizy;
+
+var gaugeset1;
+
+function get_dashboard_data() {
+  var rmin = metrics["v.b.range.est"]||0, rmax = metrics["v.b.range.ideal"]||0;
+  var euse = metrics["v.b.energy.used"]||0, erec = metrics["v.b.energy.recd"]||0;
+  if (rmin > rmax) { var x = rmin; rmin = rmax; rmax = x; }
+  var md = {
+    range: { value: "▲" + rmax.toFixed(0) + " ▼" + rmin.toFixed(0) },
+    energy: { value: "▲" + euse.toFixed(1) + " ▼" + erec.toFixed(1) },
+    series: [
+      { data: [metrics["v.p.speed"]] },
+      { data: [metrics["v.b.voltage"]] },
+      { data: [metrics["v.b.soc"]] },
+      { data: [metrics["v.b.consumption"]] },
+      { data: [metrics["v.b.power"]] },
+      { data: [metrics["v.c.temp"]] },
+      { data: [metrics["v.b.temp"]] },
+      { data: [metrics["v.i.temp"]] },
+      { data: [metrics["v.m.temp"]] }],
+  };
+  return md;
+}
+
+function update_dashboard() {
+  var md = get_dashboard_data();
+  $('.range-value .value').text(md.range.value);
+  $('.energy-value .value').text(md.energy.value);
+  gaugeset1.update({ series: md.series });
+}
+
+function init_gaugeset1() {
+  var chart_config = {
+    chart: {
+      type: 'gauge',
+      spacing: [0, 0, 0, 0],
+      margin: [0, 0, 0, 0],
+      animation: { duration: 0, easing: 'swing' },
+    },
+    title: { text: null },
+    credits: { enabled: false },
+    tooltip: { enabled: false },
+
+    pane: [
+      { startAngle: -125, endAngle: 125, center: ['50%', '45%'], size: '80%' }, // Speed
+      { startAngle: 70, endAngle: 110, center: ['-20%', '20%'], size: '100%' }, // Voltage
+      { startAngle: 70, endAngle: 110, center: ['-20%', '60%'], size: '100%' }, // SOC
+      { startAngle: -110, endAngle: -70, center: ['120%', '20%'], size: '100%' }, // Efficiency
+      { startAngle: -110, endAngle: -70, center: ['120%', '60%'], size: '100%' }, // Power
+      { startAngle: -45, endAngle: 45, center: ['20%', '100%'], size: '30%' }, // Charger temperature
+      { startAngle: -45, endAngle: 45, center: ['40%', '100%'], size: '30%' }, // Battery temperature
+      { startAngle: -45, endAngle: 45, center: ['60%', '100%'], size: '30%' }, // Inverter temperature
+      { startAngle: -45, endAngle: 45, center: ['80%', '100%'], size: '30%' }], // Motor temperature
+    
+    responsive: {
+      rules: [{
+        condition: { minWidth: 0, maxWidth: 400 },
+        chartOptions: {
+          pane: [
+            { size: '60%' }, // Speed
+            { center: ['-20%', '20%'] }, // Voltage
+            { center: ['-20%', '60%'] }, // SOC
+            { center: ['120%', '20%'] }, // Efficiency
+            { center: ['120%', '60%'] }, // Power
+            { center: ['15%', '100%']   , size: '25%' }, // Charger temperature
+            { center: ['38.33%', '100%'], size: '25%' }, // Battery temperature
+            { center: ['61.66%', '100%'], size: '25%' }, // Inverter temperature
+            { center: ['85%', '100%']   , size: '25%' }], // Motor temperature
+          yAxis: [{ labels: { step: 1 } }], // Speed
+        },
+      },{
+        condition: { minWidth: 401, maxWidth: 450 },
+        chartOptions: {
+          pane: [
+            { size: '70%' }, // Speed
+            { center: ['-15%', '20%'] }, // Voltage
+            { center: ['-15%', '60%'] }, // SOC
+            { center: ['115%', '20%'] }, // Efficiency
+            { center: ['115%', '60%'] }, // Power
+            { center: ['15%', '100%']   , size: '27.5%' }, // Charger temperature
+            { center: ['38.33%', '100%'], size: '27.5%' }, // Battery temperature
+            { center: ['61.66%', '100%'], size: '27.5%' }, // Inverter temperature
+            { center: ['85%', '100%']   , size: '27.5%' }], // Motor temperature
+        },
+      },{
+        condition: { minWidth: 451, maxWidth: 600 },
+        chartOptions: {
+          pane: [
+            { size: '80%' }, // Speed
+            { center: ['-10%', '20%'] }, // Voltage
+            { center: ['-10%', '60%'] }, // SOC
+            { center: ['110%', '20%'] }, // Efficiency
+            { center: ['110%', '60%'] }], // Power
+        },
+      },{
+        condition: { minWidth: 601 },
+        chartOptions: {
+          pane: [
+            { size: '85%' }, // Speed
+            { center: ['0%', '20%'] }, // Voltage
+            { center: ['0%', '60%'] }, // SOC
+            { center: ['100%', '20%'] }, // Efficiency
+            { center: ['100%', '60%'] }], // Power
+        },
+      }]
+    },
+    
+    yAxis: [{
+      // Speed axis:
+      pane: 0, className: 'speed', title: { text: 'km/h' },
+      reversed: false,
+      minorTickInterval: 'auto', minorTickLength: 5, minorTickPosition: 'inside',
+      tickPixelInterval: 30, tickPosition: 'inside', tickLength: 13,
+      labels: { step: 2, distance: -28, x: 0, y: 5, zIndex: 2 },
+    },{
+      // Voltage axis:
+      pane: 1, className: 'voltage', title: { text: 'Volt', align: 'low', x: 90, y: 35, },
+      reversed: true,
+      minorTickInterval: 'auto', minorTickLength: 5, minorTickPosition: 'inside',
+      tickPixelInterval: 30, tickPosition: 'inside', tickLength: 13,
+      labels: { step: 1, distance: -25, x: 0, y: 5, zIndex: 2 },
+    },{
+      // SOC axis:
+      pane: 2, className: 'soc', title: { text: 'SOC', align: 'low', x: 85, y: 35 },
+      reversed: true,
+      minorTickInterval: 'auto', minorTickLength: 5, minorTickPosition: 'inside',
+      tickPixelInterval: 30, tickPosition: 'inside', tickLength: 13,
+      labels: { step: 1, distance: -25, x: 0, y: 5, zIndex: 2 },
+    },{
+      // Efficiency axis:
+      pane: 3, className: 'efficiency', title: { text: 'Wh/km', align: 'low', x: -125, y: 35 },
+      reversed: false,
+      minorTickInterval: 'auto', minorTickLength: 5, minorTickPosition: 'inside',
+      tickPixelInterval: 30, tickPosition: 'inside', tickLength: 13,
+      labels: { step: 1, distance: -25, x: 0, y: 5, zIndex: 2 },
+    },{
+      // Power axis:
+      pane: 4, className: 'power', title: { text: 'kW', align: 'low', x: -115, y: 35 },
+      reversed: false,
+      minorTickInterval: 'auto', minorTickLength: 5, minorTickPosition: 'inside',
+      tickPixelInterval: 30, tickPosition: 'inside', tickLength: 13,
+      labels: { step: 1, distance: -25, x: 0, y: 5, zIndex: 2 },
+    },{
+      // Charger temperature axis:
+      pane: 5, className: 'temp-charger', title: { text: 'CHG °C', y: 10 },
+      tickPosition: 'inside', tickLength: 10, minorTickInterval: null,
+      labels: { step: 1, distance: 3, x: 0, y: 0, zIndex: 2 },
+    },{
+      // Battery temperature axis:
+      pane: 6, className: 'temp-battery', title: { text: 'BAT °C', y: 10 },
+      tickPosition: 'inside', tickLength: 10, minorTickInterval: null,
+      labels: { step: 1, distance: 3, x: 0, y: 0, zIndex: 2 },
+    },{
+      // Inverter temperature axis:
+      pane: 7, className: 'temp-inverter', title: { text: 'PEM °C', y: 10 },
+      tickPosition: 'inside', tickLength: 10, minorTickInterval: null,
+      labels: { step: 1, distance: 3, x: 0, y: 0, zIndex: 2 },
+    },{
+      // Motor temperature axis:
+      pane: 8, className: 'temp-motor', title: { text: 'MOT °C', y: 10 },
+      tickPosition: 'inside', tickLength: 10, minorTickInterval: null,
+      labels: { step: 1, distance: 3, x: 0, y: 0, zIndex: 2 },
+    }],
+    
+    plotOptions: {
+      gauge: {
+        dataLabels: { enabled: false },
+        overshoot: 1
+      }
+    },
+    series: [{
+      // Speed value:
+      yAxis: 0, name: 'Speed', className: 'speed fullgauge', data: [0],
+      pivot: { radius: '10' },
+      dial: { radius: '88%', topWidth: 1, baseLength: '20%', baseWidth: 10, rearLength: '20%' },
+    },{
+      // Voltage value:
+      yAxis: 1, name: 'Voltage', className: 'voltage auxgauge', data: [0],
+      pivot: { radius: '85' },
+      dial: { radius: '95%', baseWidth: 5, baseLength: '90%' },
+    },{
+      // SOC value:
+      yAxis: 2, name: 'SOC', className: 'soc auxgauge', data: [0],
+      pivot: { radius: '85' },
+      dial: { radius: '95%', baseWidth: 5, baseLength: '90%' },
+    },{
+      // Efficiency value:
+      yAxis: 3, name: 'Efficiency', className: 'efficiency auxgauge', data: [0],
+      pivot: { radius: '85' },
+      dial: { radius: '95%', baseWidth: 5, baseLength: '90%' },
+    },{
+      // Power value:
+      yAxis: 4, name: 'Power', className: 'power auxgauge', data: [0],
+      pivot: { radius: '85' },
+      dial: { radius: '95%', baseWidth: 5, baseLength: '90%' },
+    },{
+      // Charger temperature value:
+      yAxis: 5, name: 'Charger temperature', className: 'temp-charger tempgauge', data: [0],
+      dial: { radius: '90%', baseWidth: 3, baseLength: '90%' },
+    },{
+      // Battery temperature value:
+      yAxis: 6, name: 'Battery temperature', className: 'temp-battery tempgauge', data: [0],
+      dial: { radius: '90%', baseWidth: 3, baseLength: '90%' },
+    },{
+      // Inverter temperature value:
+      yAxis: 7, name: 'Inverter temperature', className: 'temp-inverter tempgauge', data: [0],
+      dial: { radius: '90%', baseWidth: 3, baseLength: '90%' },
+    },{
+      // Motor temperature value:
+      yAxis: 8, name: 'Motor temperature', className: 'temp-motor tempgauge', data: [0],
+      dial: { radius: '90%', baseWidth: 3, baseLength: '90%' },
+    }]
+  };
+  
+  // Inject vehicle config:
+  for (var i = 0; i < chart_config.yAxis.length; i++) {
+    $.extend(chart_config.yAxis[i], vehicle_config.yAxis[i]);
+  }
+  
+  gaugeset1 = Highcharts.chart('gaugeset1', chart_config,
+    function (chart) {
+      chart.update({ chart: { animation: { duration: 1000, easing: 'swing' } } });
+      $('#livestatus').on("msg:metrics", function(e, update){
+        update_dashboard();
+      }).on("window-resize", function(e){
+        chart.reflow();
+      });
+    }
+  );
+}
+
+function init_charts() {
+  init_gaugeset1();
+}
+
+if (window.Highcharts) {
+  init_charts();
+} else {
+  $.ajax({
+    url: window.assets.charts_js,
+    dataType: "script",
+    cache: true,
+    success: function(){ init_charts(); }
+  });
+}
+
+</script>
+
+
+
+<!-- ***************** TESTDATENGENERATOR ****************** -->
+<br class="clearfix">
+<div id="viewportinfo">WxH</div>
+<div id="debugfs"></div>
+<button class="btn btn-info" id="mkmetrics">Make test metrics</button>
+<br class="clearfix">
+<script type="text/javascript">
+$("#mkmetrics").on("click", function(){
+    var msg = {
+      metrics: {
+        "v.b.range.est": Math.random()*80,
+        "v.b.range.ideal": Math.random()*80,
+        "v.b.energy.used": Math.random()*20,
+        "v.b.energy.recd": Math.random()*20,
+        "v.p.speed": Math.random()*120,
+        "v.b.voltage": 45 + Math.random()*15,
+        "v.b.soc": Math.random()*100,
+        "v.b.consumption": Math.random()*300,
+        "v.b.power": Math.random()*40 - 10,
+        "v.c.temp": Math.random()*80,
+        "v.b.temp": Math.random()*80,
+        "v.i.temp": Math.random()*80,
+        "v.m.temp": Math.random()*80,
+      }
+    };
+    $.extend(metrics, msg.metrics);
+    $(".receiver").trigger("msg:metrics", msg.metrics);
+});
+$(window).on("resize", function(){
+  $("#viewportinfo").text($(window).width() + " x " + $(window).height());
+}).trigger("resize");
+</script>

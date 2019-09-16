@@ -32,7 +32,7 @@ static const char *TAG = "v-kiasoulev";
 void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
   {
 	//ESP_LOGW(TAG, "%03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", m_poll_moduleid_low, type, pid, length, data[0], data[1], data[2], data[3],
-	//		data[4], data[5], data[6], data[7]);
+	//	data[4], data[5], data[6], data[7]);
 	switch (m_poll_moduleid_low)
 		{
 		// ****** SJB *****
@@ -92,32 +92,32 @@ void OvmsVehicleKiaSoulEv::IncomingTPMS(canbus* bus, uint16_t type, uint16_t pid
 				bVal = CAN_BYTE(0);
 				if (bVal > 0) StdMetrics.ms_v_tpms_fl_p->SetValue( TO_PSI(bVal), PSI);
 				StdMetrics.ms_v_tpms_fl_t->SetValue( TO_CELCIUS(CAN_BYTE(1)), Celcius);
-				lVal = (ks_tpms_id[1] & 0x000000ff) | (CAN_UINT32(4) & 0xffffff00);
+				lVal = (kia_tpms_id[1] & 0x000000ff) | (CAN_UINT32(4) & 0xffffff00);
 				SET_TPMS_ID(1, lVal);
 				}
 			else if (m_poll_ml_frame == 2)
 				{
-				lVal = (uint32_t) CAN_BYTE(0) | (ks_tpms_id[1] & 0xffffff00);
+				lVal = (uint32_t) CAN_BYTE(0) | (kia_tpms_id[1] & 0xffffff00);
 				SET_TPMS_ID(1, lVal);
 				bVal = CAN_BYTE(1);
 				if (bVal > 0) StdMetrics.ms_v_tpms_fr_p->SetValue( TO_PSI(bVal), PSI);
 				StdMetrics.ms_v_tpms_fr_t->SetValue( TO_CELCIUS(CAN_BYTE(2)), Celcius);
-				lVal = (ks_tpms_id[2] & 0x0000ffff) | (CAN_UINT32(5) & 0xffff0000);
+				lVal = (kia_tpms_id[2] & 0x0000ffff) | (CAN_UINT32(5) & 0xffff0000);
 				SET_TPMS_ID(2, lVal);
 
 				}
 			else if (m_poll_ml_frame == 3)
 				{
-				lVal = ((uint32_t) CAN_UINT(0)) | (ks_tpms_id[2] & 0xffff0000);
+				lVal = ((uint32_t) CAN_UINT(0)) | (kia_tpms_id[2] & 0xffff0000);
 				SET_TPMS_ID(2, lVal);
 				bVal = CAN_BYTE(2);
 				if (bVal > 0) StdMetrics.ms_v_tpms_rl_p->SetValue( TO_PSI(bVal), PSI);
 				StdMetrics.ms_v_tpms_rl_t->SetValue( TO_CELCIUS(CAN_BYTE(3)), Celcius);
-				lVal = (ks_tpms_id[3] & 0x00ffffff) | ((uint32_t) CAN_BYTE(6) << 24);
+				lVal = (kia_tpms_id[3] & 0x00ffffff) | ((uint32_t) CAN_BYTE(6) << 24);
 				SET_TPMS_ID(3, lVal);
 
 			} else if (m_poll_ml_frame == 4) {
-				lVal = (CAN_UINT24(0)) | (ks_tpms_id[3] & 0xff000000);
+				lVal = (CAN_UINT24(0)) | (kia_tpms_id[3] & 0xff000000);
 				SET_TPMS_ID(3, lVal);
 				bVal = CAN_BYTE(3);
 				if (bVal > 0) StdMetrics.ms_v_tpms_rr_p->SetValue( TO_PSI(bVal), PSI);
@@ -129,6 +129,10 @@ void OvmsVehicleKiaSoulEv::IncomingTPMS(canbus* bus, uint16_t type, uint16_t pid
 
 /**
  * Handle incoming messages from On Board Charger-poll
+ *
+ * - OBC-voltage
+ * - Pilot signal duty cycle
+ * - Charger temperature
  */
 void OvmsVehicleKiaSoulEv::IncomingOBC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
@@ -137,7 +141,7 @@ void OvmsVehicleKiaSoulEv::IncomingOBC(canbus* bus, uint16_t type, uint16_t pid,
 		case 0x02:
 			if (m_poll_ml_frame == 1)
 				{
-				ks_obc_volt = (float) CAN_UINT(2) / 10.0;
+				kia_obc_ac_voltage = (float) CAN_UINT(2) / 10.0;
 				//} else if (vehicle_poll_ml_frame == 2) {
 				//ks_obc_ampere = ((UINT) can_databuffer[4 + CAN_ADJ] << 8)
 				//        | (UINT) can_databuffer[5 + CAN_ADJ];
@@ -156,10 +160,16 @@ void OvmsVehicleKiaSoulEv::IncomingOBC(canbus* bus, uint16_t type, uint16_t pid,
 
 /**
  * Handle incoming messages from VMCU-poll
+ *
+ * - Gear shifter position
+ * - VIN
+ * - RPM
+ * - Motor temperature
+ * - Inverter temperature
  */
 void OvmsVehicleKiaSoulEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
-	UINT base;
+	INT base;
 	uint8_t bVal;
 
 	switch (pid)
@@ -176,9 +186,10 @@ void OvmsVehicleKiaSoulEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 			if (type == VEHICLE_POLL_TYPE_OBDIIVEHICLE)
 				{
 				base = m_poll_ml_offset - length;
-				for (bVal = 0; (bVal < length) && ((base + bVal)<(sizeof (m_vin) - 1)); bVal++)
-					m_vin[base + bVal] = CAN_BYTE(bVal);
-				if (m_poll_ml_remain == 0) m_vin[base + bVal] = 0;
+
+				for (bVal = 0; (bVal < length) && ((base + bVal)<sizeof (m_vin)); bVal++)
+					if(base+bVal>0) m_vin[base + bVal-1] = CAN_BYTE(bVal);
+				if (m_poll_ml_remain == 0 && base+bVal>=0) m_vin[base + bVal] = 0;
 
 				//Set VIN
 				StandardMetrics.ms_v_vin->SetValue(m_vin);
@@ -187,7 +198,7 @@ void OvmsVehicleKiaSoulEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 				{
 				if (m_poll_ml_frame == 1)
 					{
-					StdMetrics.ms_v_mot_rpm->SetValue( ((uint16_t)CAN_BYTE(5)<<8) | (uint16_t)CAN_BYTE(6) );
+					//StdMetrics.ms_v_mot_rpm->SetValue( ((uint16_t)CAN_BYTE(5)<<8) | (uint16_t)CAN_BYTE(6) );
 					}
 				else if (m_poll_ml_frame == 3)
 					{
@@ -201,6 +212,14 @@ void OvmsVehicleKiaSoulEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 
 /**
  * Handle incoming messages from BMC-poll
+ *
+ * - Pilot signal available
+ * - ChaDeMo / J1772
+ * - Battery current
+ * - Battery voltage
+ * - Battery module temp 1-8
+ * - Cell voltage max / min + cell #
+ * + more
  */
 void OvmsVehicleKiaSoulEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
@@ -215,8 +234,6 @@ void OvmsVehicleKiaSoulEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
 				if (m_poll_ml_frame == 1) // 02 21 01 - 21
 					{
 					m_c_power->SetValue( (float)CAN_UINT(1)/100.0, kW);
-					//ks_battery_avail_discharge = (UINT8)(((UINT) can_databuffer[5 + CAN_ADJ]
-					//        | ((UINT) can_databuffer[4 + CAN_ADJ] << 8))>>2);
 					bVal = CAN_BYTE(5);
 					StdMetrics.ms_v_charge_pilot->SetValue((bVal & 0x80) > 0);
 					ks_charge_bits.ChargingChademo = ((bVal & 0x40) > 0);
@@ -229,20 +246,22 @@ void OvmsVehicleKiaSoulEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
 					ks_battery_current = (ks_battery_current & 0xFF00) | (UINT) CAN_BYTE(0);
 					StdMetrics.ms_v_bat_current->SetValue((float)ks_battery_current/10.0, Amps);
 					StdMetrics.ms_v_bat_voltage->SetValue((float)CAN_UINT(1)/10.0, Volts);
-					//StdMetrics.ms_v_bat_power->SetValue(
-					//		StdMetrics.ms_v_bat_voltage->AsFloat(Volts) * StdMetrics.ms_v_bat_current->AsFloat(Amps) / 1000.0 , kW);
-					ks_battery_module_temp[0] = CAN_BYTE(3);
-					ks_battery_module_temp[1] = CAN_BYTE(4);
-					ks_battery_module_temp[2] = CAN_BYTE(5);
-					ks_battery_module_temp[3] = CAN_BYTE(6);
+					StdMetrics.ms_v_bat_power->SetValue(StdMetrics.ms_v_bat_current->AsFloat(Amps)*StdMetrics.ms_v_bat_voltage->AsFloat(Volts), Watts);
+					BmsRestartCellTemperatures();
+					BmsSetCellTemperature(0, CAN_BYTE(3));
+					BmsSetCellTemperature(1, CAN_BYTE(4));
+					BmsSetCellTemperature(2, CAN_BYTE(5));
+					BmsSetCellTemperature(3, CAN_BYTE(6));
+         	StdMetrics.ms_v_bat_temp->SetValue(((float)CAN_BYTE(3) + CAN_BYTE(4) +
+         			CAN_BYTE(5) + CAN_BYTE(6)) / 4.0, Celcius);
 
 					}
 				else if (m_poll_ml_frame == 3) // 02 21 01 - 23
 					{
-					ks_battery_module_temp[4] = CAN_BYTE(0);
-					ks_battery_module_temp[5] = CAN_BYTE(1);
-					ks_battery_module_temp[6] = CAN_BYTE(2);
-					ks_battery_module_temp[7] = CAN_BYTE(3);
+           BmsSetCellTemperature(4, CAN_BYTE(0));
+					BmsSetCellTemperature(5, CAN_BYTE(1));
+					BmsSetCellTemperature(6, CAN_BYTE(2));
+					BmsSetCellTemperature(7, CAN_BYTE(4));
 					//TODO What about the 30kWh-version?
 
 					m_b_cell_volt_max->SetValue((float)CAN_BYTE(5)/50.0, Volts);
@@ -256,23 +275,23 @@ void OvmsVehicleKiaSoulEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
 					ks_battery_fan_feedback = CAN_BYTE(2);
 					ks_charge_bits.FanStatus = CAN_BYTE(3) & 0xF;
 					StdMetrics.ms_v_bat_12v_voltage->SetValue ((float)CAN_BYTE(4)/10.0 , Volts);
-					ks_battery_cum_charge_current = (ks_battery_cum_charge_current & 0x0000FFFF) | ((uint32_t) CAN_UINT(5) << 16);
+					kia_battery_cum_charge_current = (kia_battery_cum_charge_current & 0x0000FFFF) | ((uint32_t) CAN_UINT(5) << 16);
 
 					}
 				else if (m_poll_ml_frame == 5) // 02 21 01 - 25
 					{
-					ks_battery_cum_charge_current = (ks_battery_cum_charge_current & 0xFFFF0000) | ((uint32_t) CAN_UINT(0));
-					ks_battery_cum_discharge_current = CAN_UINT32(2);
-					ks_battery_cum_charge = (ks_battery_cum_charge & 0x00FFFFFF) | ((uint32_t) CAN_BYTE(6)) << 24;
+					kia_battery_cum_charge_current = (kia_battery_cum_charge_current & 0xFFFF0000) | ((uint32_t) CAN_UINT(0));
+					kia_battery_cum_discharge_current = CAN_UINT32(2);
+					kia_battery_cum_charge = (kia_battery_cum_charge & 0x00FFFFFF) | ((uint32_t) CAN_BYTE(6)) << 24;
 					}
 				else if (m_poll_ml_frame == 6) // 02 21 01 - 26
 					{
-					ks_battery_cum_charge = (ks_battery_cum_charge & 0xFF000000) | ((uint32_t) CAN_UINT24(0));
-					ks_battery_cum_discharge = CAN_UINT32(3);
+					kia_battery_cum_charge = (kia_battery_cum_charge & 0xFF000000) | ((uint32_t) CAN_UINT24(0));
+					kia_battery_cum_discharge = CAN_UINT32(3);
 					}
 				else if (m_poll_ml_frame == 7) // 02 21 01 - 27
 					{
-					ks_battery_cum_op_time = CAN_UINT32(0) / 3600;
+					kia_battery_cum_op_time = CAN_UINT32(0) / 3600;
 					}
 				}
 			break;
@@ -281,18 +300,30 @@ void OvmsVehicleKiaSoulEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
 		case 0x03:
 		case 0x04:
 			// diag page 02-04: skip first frame (no data)
-			base = ((pid-2)<<5) + m_poll_ml_offset - (length - 3);
-			for (bVal = 0; bVal < length && ((base + bVal)<sizeof (ks_battery_cell_voltage)); bVal++)
-				ks_battery_cell_voltage[base + bVal] = CAN_BYTE(bVal);
+			if(m_poll_ml_frame==0 && pid==2) BmsRestartCellVoltages();
+			if(m_poll_ml_frame>0)
+				{
+				base = ((pid-2)*32) + (m_poll_ml_frame-1) * 7;
+				for (bVal = 0; bVal < length && ((base + bVal)<96); bVal++)
+					{
+					//ESP_LOGI(TAG, "[%d %d] = %f", pid, base+bVal, (float)CAN_BYTE(bVal) * 0.02);
+					BmsSetCellVoltage((uint8_t)(base + bVal), (float)CAN_BYTE(bVal) * 0.02);
+				  }
+				}
 			break;
 
 		case 0x05:
 			if (m_poll_ml_frame == 1)
 				{
-				//TODO Untested.
-				base = ((pid-2)<<5) + m_poll_ml_offset - (length - 3);
-				for (bVal = 0; bVal < length && ((base + bVal)<sizeof (ks_battery_cell_voltage)); bVal++)
-					ks_battery_cell_voltage[base + bVal] = CAN_BYTE(bVal);
+				base = 95;
+				for (bVal = 0; bVal < length && ((base + bVal)<96); bVal++)
+					{
+					if(CAN_BYTE(bVal)!=0 ) // For 30kWh version.
+						{
+						//ESP_LOGI(TAG, "[%d %d] = %f", pid, base+bVal, (float)CAN_BYTE(bVal) * 0.02);
+	           BmsSetCellVoltage((uint8_t)(base + bVal), (float)CAN_BYTE(bVal) * 0.02);
+						}
+					}
 
 				m_b_inlet_temperature->SetValue( CAN_BYTE(5) );
 				m_b_min_temperature->SetValue( CAN_BYTE(6) );
@@ -320,6 +351,11 @@ void OvmsVehicleKiaSoulEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
 
 /**
  * Handle incoming messages from LDC-poll
+ *
+ * - LDC out voltage
+ * - LDC out current
+ * - LDC in voltage
+ * - LDC temperature
  */
 void OvmsVehicleKiaSoulEv::IncomingLDC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
 	{

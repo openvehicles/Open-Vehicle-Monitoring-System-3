@@ -377,11 +377,12 @@ static void terminal_print_line (microrl_t * pThis, int pos, int reset)
 }
 
 //*****************************************************************************
-void microrl_init (microrl_t * pThis, void (*print) (microrl_t*, const char *))
+void microrl_init (microrl_t * pThis, void (*print) (microrl_t*, const char *), void (*error_print) (microrl_t*, const char *))
 {
 	memset(pThis, 0, sizeof(microrl_t));
 	pThis->prompt_str = prompt_default;
 	pThis->print = print;
+	pThis->error_print = error_print;
 #ifdef _ENABLE_INIT_PROMPT
 	print_prompt (pThis);
 #endif
@@ -573,15 +574,33 @@ static void microrl_get_complite (microrl_t * pThis)
 		if (compl_token[1] == NULL) {
 			len = strlen (compl_token[0]);
 		} else {
-			len = common_len (compl_token);
-			terminal_newline (pThis);
+			char str[_PRINT_BUFFER_LEN];
+			char *j = str;
+			*j++ = '\r';
+			*j++ = '\n';
 			while (compl_token [i] != NULL) {
-				pThis->print (pThis, compl_token[i]);
-				pThis->print (pThis, " ");
+				int l = strlen(compl_token[i]);
+				// 4 is for ' ' plus ending \r\n plus \0
+				if ((j > str) && (j - str + l + 4 > sizeof(str))) {
+					*j = '\0';
+					pThis->print (pThis, str);
+					j = str;
+				}
+				if (l + 4 > sizeof(str)) {
+					pThis->print (pThis, compl_token[i]);
+					pThis->print (pThis, " ");
+				} else {
+					j = stpcpy(j, compl_token[i]);
+					*j++ = ' ';
+				}
 				i++;
 			}
-			terminal_newline (pThis);
+			*j++ = '\r';
+			*j++ = '\n';
+			*j = '\0';
+			pThis->print (pThis, str);
 			print_prompt (pThis);
+			len = common_len (compl_token);
 			pos = 0;
 		}
 
@@ -610,11 +629,10 @@ void new_line_handler(microrl_t * pThis){
 	if (status == -1){
 		//          pThis->print ("ERROR: Max token amount exseed\n");
 #ifdef _USE_QUOTING
-		pThis->print (pThis, "ERROR:too many tokens or invalid quoting");
+		pThis->error_print (pThis, "ERROR:too many tokens or invalid quoting" ENDL);
 #else
-		pThis->print (pThis, "ERROR:too many tokens");
+		pThis->error_print (pThis, "ERROR:too many tokens" ENDL);
 #endif
-		pThis->print (pThis, ENDL);
 	}
 	if ((status > 0) && (pThis->execute != NULL))
 		pThis->execute (pThis, status, tkn_arr);

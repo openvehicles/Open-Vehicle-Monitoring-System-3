@@ -250,7 +250,7 @@ int OvmsSSH::Authenticate(uint8_t type, const WS_UserAuthData* data, void* ctx)
     if (key.empty())
       return WOLFSSH_USERAUTH_INVALID_USER;
     byte der[560];
-    uint32_t len;
+    uint32_t len = sizeof(der);
     if (Base64_Decode((const byte*)key.data(), key.size(), der, &len) != 0 ||
       len != data->sf.publicKey.publicKeySz ||
       memcmp(data->sf.publicKey.publicKey, der, len) != 0)
@@ -1086,7 +1086,6 @@ void RSAKeyGenerator::Service()
     ESP_LOGE(tag, "Failed to convert SSH server key to DER format, error = %d", size);
     return;
     }
-  MyConfig.SetParamValueBinary("ssh.server", "key", std::string((char*)m_der, size));
 
   // Calculate the SHA256 fingerprint of the public half of the key, which
   // is the hash of the 32-bit length of the item and the item itself for
@@ -1094,27 +1093,27 @@ void RSAKeyGenerator::Service()
   byte digest[SHA256_DIGEST_SIZE];
   Sha256 sha;
   const char* type = "ssh-rsa";
-  byte length[8];
+  uint32_t length[2];
   byte  exp[8];
   byte  mod[260];
   uint32_t explen = sizeof(exp);
   uint32_t modlen = sizeof(mod);
   ret = wc_RsaFlattenPublicKey(&key, exp, &explen, mod, &modlen);
   wc_InitSha256(&sha);
-  *(uint32_t*)length = htonl(strlen(type));
-  wc_Sha256Update(&sha, length, sizeof(uint32_t));
+  length[0] = htonl(strlen(type));
+  wc_Sha256Update(&sha, (byte*)length, sizeof(uint32_t));
   wc_Sha256Update(&sha, (const byte*)type, 7);
-  *(uint32_t*)length = htonl(explen);
-  wc_Sha256Update(&sha, length, sizeof(uint32_t));
+  length[0] = htonl(explen);
+  wc_Sha256Update(&sha, (byte*)length, sizeof(uint32_t));
   wc_Sha256Update(&sha, exp, explen);
   int extra = 0;
   if (mod[0] & 0x80)  // DER encoding inserts 0x00 byte if first data bit is 1
     {
     ++extra;
-    length[sizeof(uint32_t)] = 0x00;
+    length[1] = 0;
     }
-  *(uint32_t*)length = htonl(modlen+extra);
-  wc_Sha256Update(&sha, length, sizeof(uint32_t)+extra);
+  length[0] = htonl(modlen+extra);
+  wc_Sha256Update(&sha, (byte*)length, sizeof(uint32_t)+extra);
   wc_Sha256Update(&sha, mod, modlen);
   wc_Sha256Final(&sha, digest);
   unsigned char fp[48];
@@ -1127,6 +1126,7 @@ void RSAKeyGenerator::Service()
     }
   fp[43] = '\0';
   MyConfig.SetParamValue("ssh.info", "fingerprint", std::string((char*)fp, fplen));
+  MyConfig.SetParamValueBinary("ssh.server", "key", std::string((char*)m_der, size));
 
   if (wc_FreeRsaKey(&key) != 0)
     ESP_LOGE(tag, "RSA key free failed");

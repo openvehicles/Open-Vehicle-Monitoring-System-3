@@ -47,7 +47,7 @@ static void MCP2515_isr(void *pvParameters)
   // we don't know the IRQ source and querying by SPI is too slow for an ISR,
   // so we let RxCallback() figure out what to do
 
-  CAN_msg_t msg;
+  CAN_queue_msg_t msg;
   msg.type = CAN_rxcallback;
   msg.body.bus = me;
 
@@ -120,6 +120,12 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   uint8_t cnf3 = 0;
   switch (m_speed)
     {
+    case CAN_SPEED_33KBPS:
+      cnf1=0x09; cnf2=0xbe; cnf3=0x07;
+      break;
+    case CAN_SPEED_83KBPS:
+      cnf1=0x03; cnf2=0xbe; cnf3=0x07;
+      break;
     case CAN_SPEED_100KBPS:
       cnf1=0x03; cnf2=0xfa; cnf3=0x87;
       break;
@@ -152,6 +158,8 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
 
 esp_err_t mcp2515::Stop()
   {
+  canbus::Stop();
+
   uint8_t buf[16];
 
   // RESET command

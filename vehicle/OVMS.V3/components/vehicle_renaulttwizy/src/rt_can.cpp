@@ -141,10 +141,6 @@ void OvmsVehicleRenaultTwizy::CanResponder(const CAN_frame_t* p_frame)
 
 void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
 {
-  // no processing until fully initialized:
-  if (!m_ready)
-    return;
-
   unsigned int u;
   int s;
   
@@ -252,8 +248,6 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       // MOTOR TEMPERATURE:
       if (CAN_BYTE(5) > 0 && CAN_BYTE(5) < 0xf0)
         twizy_tmotor = (signed int) CAN_BYTE(5) - 40;
-      else
-        twizy_tmotor = 0;
       
       break;
     
@@ -300,13 +294,13 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
         if (twizy_cmod[7].temp_new > 0 && twizy_cmod[7].temp_new < 0xf0) {
           if (batt_cmod_count != 8) {
             batt_cmod_count = 8;
-            *m_batt_cmod_count = (int) batt_cmod_count;
+            BmsSetCellArrangementTemperature(batt_cmod_count, 1);
           }
         }
         else {
           if (batt_cmod_count != 7) {
             batt_cmod_count = 7;
-            *m_batt_cmod_count = (int) batt_cmod_count;
+            BmsSetCellArrangementTemperature(batt_cmod_count, 1);
           }
         }
         
@@ -452,8 +446,6 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       // CHARGER temperature:
       if (CAN_BYTE(7) > 0 && CAN_BYTE(7) < 0xf0)
         *StdMetrics.ms_v_charge_temp = (float) CAN_BYTE(7) - 40;
-      else
-        *StdMetrics.ms_v_charge_temp = (float) 0;
       
       break; // case 0x597
     
@@ -516,6 +508,7 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
         
         twizy_speed = u;
         *StdMetrics.ms_v_pos_speed = (float) twizy_speed / 100;
+        CalculateAcceleration();
       }
       
       break; // case 0x599
@@ -573,8 +566,6 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       // SEVCON TEMPERATURE:
       if (CAN_BYTE(5) > 0 && CAN_BYTE(5) < 0xf0)
         *StdMetrics.ms_v_inv_temp = (float) CAN_BYTE(5) - 40;
-      else
-        *StdMetrics.ms_v_inv_temp = (float) 0;
       
       break;
     
@@ -586,9 +577,41 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
         | ((unsigned long) CAN_BYTE(4) << 4)
         | ((unsigned long) CAN_BYTE(3) << 12)
         | ((unsigned long) CAN_BYTE(2) << 20);
+      if (!twizy_odometer_tripstart)
+        twizy_odometer_tripstart = twizy_odometer;
       break;
       
       
+    case 0x627:
+      // --------------------------------------------------------------------------
+      // *** CHARGER status ***
+      // sent every 100 ms (10 per second) in drive & charge mode
+      mt_charger_status->SetValue(CAN_UINT24(0));
+      break;
+
+
+    case 0x628:
+      // --------------------------------------------------------------------------
+      // *** BMS status ***
+      // sent every 100 ms (10 per second) in drive & charge mode
+      mt_bms_status->SetValue(CAN_UINT24(0));
+      mt_bms_alert_12v->SetValue((CAN_BYTE(2) & 0x20) == 0x20);
+      mt_bms_alert_batt->SetValue((CAN_BYTE(2) & 0x40) == 0x40);
+      mt_bms_alert_temp->SetValue((CAN_BYTE(2) & 0x80) == 0x80);
+      break;
+
+
+    case 0x629:
+      // --------------------------------------------------------------------------
+      // *** SEVCON status ***
+      // sent every 100 ms (10 per second) while SEVCON is running
+      mt_sevcon_status->SetValue(CAN_UINT24(0));
+      if (m_sevcon)
+        m_sevcon->QueryMonitoringData();
+      break;
+
+
+#if 0
     case 0x69F:
       // --------------------------------------------------------------------------
       // *** VIN ***
@@ -607,6 +630,7 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
         *StdMetrics.ms_v_vin = (string) twizy_vin;
       }
       break;
+#endif
     
     
     case 0x700:
@@ -628,19 +652,19 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
         if (twizy_cell[15].volt_new != 0 && twizy_cell[15].volt_new != 0x0fff) {
           if (batt_cell_count != 16) {
             batt_cell_count = 16;
-            *m_batt_cell_count = (int) batt_cell_count;
+            BmsSetCellArrangementVoltage(batt_cell_count, 1);
           }
         }
         else if (twizy_cell[14].volt_new != 0 && twizy_cell[14].volt_new != 0x0fff) {
           if (batt_cell_count != 15) {
             batt_cell_count = 15;
-            *m_batt_cell_count = (int) batt_cell_count;
+            BmsSetCellArrangementVoltage(batt_cell_count, 1);
           }
         }
         else {
           if (batt_cell_count != 14) {
             batt_cell_count = 14;
-            *m_batt_cell_count = (int) batt_cell_count;
+            BmsSetCellArrangementVoltage(batt_cell_count, 2);
           }
         }
 

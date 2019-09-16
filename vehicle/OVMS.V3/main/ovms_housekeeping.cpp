@@ -41,6 +41,7 @@ static const char *TAG = "housekeeping";
 #include "ovms_housekeeping.h"
 #include "ovms_peripherals.h"
 #include "ovms_events.h"
+#include "ovms_script.h"
 #include "ovms_config.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
@@ -49,6 +50,7 @@ static const char *TAG = "housekeeping";
 #include "ovms_module.h"
 #include "ovms_boot.h"
 #include "vehicle.h"
+#include "dbc_app.h"
 #ifdef CONFIG_OVMS_COMP_SERVER_V2
 #include "ovms_server_v2.h"
 #endif
@@ -170,6 +172,9 @@ void Housekeeping::Init(std::string event, void* data)
     MyPeripherals->m_ext12v->AutoInit();
 #endif // CONFIG_OVMS_COMP_EXT12V
 
+  ESP_LOGI(TAG, "Auto init dbc (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
+  MyDBC.AutoInit();
+
 #ifdef CONFIG_OVMS_COMP_WIFI
     ESP_LOGI(TAG, "Auto init wifi (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyPeripherals->m_esp32wifi->AutoInit();
@@ -198,6 +203,11 @@ void Housekeeping::Init(std::string event, void* data)
     MyOvmsServerV3Init.AutoInit();
 #endif // CONFIG_OVMS_COMP_SERVER_V3
 #endif // CONFIG_OVMS_COMP_SERVER
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+    ESP_LOGI(TAG, "Auto init javascript (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
+    MyScripts.AutoInitDuktape();
+#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
     ESP_LOGI(TAG, "Auto init done (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     }

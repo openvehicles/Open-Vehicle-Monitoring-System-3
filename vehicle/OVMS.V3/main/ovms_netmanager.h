@@ -40,6 +40,7 @@ extern "C"
   };
 #include "ovms_events.h"
 #include "ovms_command.h"
+#include "ovms_metrics.h"
 #include "string_writer.h"
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
@@ -87,8 +88,13 @@ class OvmsNetManager
     ~OvmsNetManager();
 
   public:
-    void WifiUpSTA(std::string event, void* data);
-    void WifiDownSTA(std::string event, void* data);
+    void WifiStaGotIP(std::string event, void* data);
+    void WifiStaLostIP(std::string event, void* data);
+    void WifiStaConnected(std::string event, void* data);
+    void WifiStaStop(std::string event, void* data);
+    void WifiStaGood(std::string event, void* data);
+    void WifiStaBad(std::string event, void* data);
+    void WifiStaCheckSQ(OvmsMetric* metric);
     void WifiUpAP(std::string event, void* data);
     void WifiDownAP(std::string event, void* data);
     void WifiApStaDisconnect(std::string event, void* data);
@@ -97,8 +103,11 @@ class OvmsNetManager
     void InterfaceUp(std::string event, void* data);
     void ConfigChanged(std::string event, void* data);
     void EventSystemShuttingDown(std::string event, void* data);
+    void RestartNetwork();
 
   protected:
+    void WifiConnect();
+    void WifiDisconnect();
     void PrioritiseAndIndicate();
     void SetNetType(std::string type);
     void SaveDNSServer(ip_addr_t* dnsstore);
@@ -108,10 +117,18 @@ class OvmsNetManager
     bool m_connected_wifi;
     bool m_connected_modem;
     bool m_connected_any;
+    bool m_wifi_sta;
+    bool m_wifi_good;
     bool m_wifi_ap;
     bool m_network_any;
     ip_addr_t m_dns_wifi[DNS_MAX_SERVERS];
     ip_addr_t m_dns_modem[DNS_MAX_SERVERS];
+    ip_addr_t m_previous_dns[DNS_MAX_SERVERS];
+    char m_previous_name[2];
+
+  protected:
+    float m_cfg_wifi_sq_good;               // config network wifi.sq.good   [dBm] default -87
+    float m_cfg_wifi_sq_bad;                // config network wifi.sq.bad    [dBm] default -89
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   protected:

@@ -51,6 +51,14 @@ bool OvmsServerV3ReaderCallback(OvmsNotifyType* type, OvmsNotifyEntry* entry)
     return true; // No server v3 running, so just discard
   }
 
+bool OvmsServerV3ReaderFilterCallback(OvmsNotifyType* type, const char* subtype)
+  {
+  if (MyOvmsServerV3)
+    return MyOvmsServerV3->NotificationFilter(type, subtype);
+  else
+    return false;
+  }
+
 static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void *p)
   {
   struct mg_mqtt_message *msg = (struct mg_mqtt_message *) p;
@@ -204,7 +212,8 @@ OvmsServerV3::OvmsServerV3(const char* name)
 
   if (MyOvmsServerV3Reader == 0)
     {
-    MyOvmsServerV3Reader = MyNotify.RegisterReader("ovmsv3", COMMAND_RESULT_NORMAL, std::bind(OvmsServerV3ReaderCallback, _1, _2), true);
+    MyOvmsServerV3Reader = MyNotify.RegisterReader("ovmsv3", COMMAND_RESULT_NORMAL, std::bind(OvmsServerV3ReaderCallback, _1, _2),
+                                                   true, std::bind(OvmsServerV3ReaderFilterCallback, _1, _2));
     }
 
   // init event listener:
@@ -232,7 +241,7 @@ OvmsServerV3::~OvmsServerV3()
   {
   MyMetrics.DeregisterListener(TAG);
   MyEvents.DeregisterEvent(TAG);
-  MyNotify.ClearReader(TAG);
+  MyNotify.ClearReader(MyOvmsServerV3Reader);
   Disconnect();
   MyEvents.SignalEvent("server.v3.stopped", NULL);
   }
@@ -343,7 +352,8 @@ int OvmsServerV3::TransmitNotificationData(OvmsNotifyEntry* entry)
   topic.append("/");
   topic.append(itoa(entry->m_id,base,10));
   topic.append("/");
-  topic.append(itoa(entry->m_created - monotonictime,base,10));
+  uint32_t now = esp_log_timestamp();
+  topic.append(itoa(-((int)(now - entry->m_created) / 1000),base,10));
 
   // terminate payload at first LF:
   extram::string msg = entry->GetValue();
@@ -717,6 +727,17 @@ void OvmsServerV3::MetricModified(OvmsMetric* metric)
     }
   }
 
+bool OvmsServerV3::NotificationFilter(OvmsNotifyType* type, const char* subtype)
+  {
+  if (strcmp(type->m_name, "info") == 0 ||
+      strcmp(type->m_name, "error") == 0 ||
+      strcmp(type->m_name, "alert") == 0 ||
+      strcmp(type->m_name, "data") == 0)
+    return true;
+  else
+    return false;
+  }
+
 bool OvmsServerV3::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry)
   {
   if (strcmp(type->m_name,"info")==0)
@@ -956,10 +977,10 @@ OvmsServerV3Init::OvmsServerV3Init()
   ESP_LOGI(TAG, "Initialising OVMS V3 Server (6200)");
 
   OvmsCommand* cmd_server = MyCommandApp.FindCommand("server");
-  OvmsCommand* cmd_v3 = cmd_server->RegisterCommand("v3","OVMS Server V3 Protocol", NULL, "", 0, 0, true);
-  cmd_v3->RegisterCommand("start","Start an OVMS V3 Server Connection",ovmsv3_start, "", 0, 0, true);
-  cmd_v3->RegisterCommand("stop","Stop an OVMS V3 Server Connection",ovmsv3_stop, "", 0, 0, true);
-  cmd_v3->RegisterCommand("status","Show OVMS V3 Server connection status",ovmsv3_status, "", 0, 0, false);
+  OvmsCommand* cmd_v3 = cmd_server->RegisterCommand("v3","OVMS Server V3 Protocol");
+  cmd_v3->RegisterCommand("start","Start an OVMS V3 Server Connection",ovmsv3_start);
+  cmd_v3->RegisterCommand("stop","Stop an OVMS V3 Server Connection",ovmsv3_stop);
+  cmd_v3->RegisterCommand("status","Show OVMS V3 Server connection status",ovmsv3_status);
 
   using std::placeholders::_1;
   using std::placeholders::_2;

@@ -104,6 +104,65 @@ void OvmsWriter::SetSecure(bool secure)
   m_issecure = secure;
   }
 
+const std::string NameStringMap::m_null = std::string();
+
+const std::string& NameStringMap::FindUniquePrefix(const char* token) const
+  {
+  size_t len = strlen(token);
+  const std::string* found = &m_null;
+  for (const_iterator it = begin(); it != end(); ++it)
+    {
+    if (it->first.compare(0, len, token) == 0)
+      {
+      if (len == it->first.length())
+	return it->second;
+      if (found == &m_null)
+	return m_null;
+      else
+	found = &it->second;
+      }
+    }
+  return *found;
+  }
+
+bool NameStringMap::GetCompletion(OvmsWriter* writer, const char* token) const
+  {
+  unsigned int index = 0;
+  bool match = false;
+  writer->SetCompletion(index, NULL);
+  if (token)
+    {
+    size_t len = strlen(token);
+    for (const_iterator it = begin(); it != end(); ++it)
+      {
+      if (it->first.compare(0, len, token) == 0)
+        {
+	writer->SetCompletion(index++, it->first.c_str());
+        match = true;
+        }
+      }
+    }
+  return match;
+  }
+
+int NameStringMap::Validate(OvmsWriter* writer, int argc, const char* token, bool complete) const
+  {
+  if (complete)
+    {
+    if (!GetCompletion(writer, token))
+      return -1;
+    }
+  else
+    {
+    if (FindUniquePrefix(token).empty())
+      {
+      writer->printf("Error: %s is not defined\n", token);
+      return -1;
+      }
+    }
+  return argc;
+  }
+
 OvmsCommand* OvmsCommandMap::FindUniquePrefix(const char* key)
   {
   int len = strlen(key);
@@ -129,13 +188,40 @@ OvmsCommand* OvmsCommandMap::FindUniquePrefix(const char* key)
   return found;
   }
 
+OvmsCommand* OvmsCommandMap::FindCommand(const char* key)
+  {
+  iterator it = find(key);
+  if (it == end())
+    return NULL;
+  else
+    return it->second;
+  }
+
+char ** OvmsCommandMap::GetCompletion(OvmsWriter* writer, const char* token)
+  {
+  unsigned int index = 0;
+  char** tokens = writer->SetCompletion(index, NULL);
+  if (token)
+    {
+    for (iterator it = begin(); it != end(); ++it)
+      {
+      if (it->second->IsSecure() && !writer->IsSecure())
+        continue;
+      if (strncmp(it->first, token, strlen(token)) == 0)
+        writer->SetCompletion(index++, it->first);
+      }
+    }
+  return tokens;
+  }
+
 OvmsCommand::OvmsCommand()
   {
   m_parent = NULL;
   }
 
 OvmsCommand::OvmsCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
-                         const char *usage, int min, int max, bool secure)
+                         const char *usage, int min, int max, bool secure,
+                         int (*validate)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool))
   {
   m_name = name;
   m_title = title;
@@ -145,10 +231,17 @@ OvmsCommand::OvmsCommand(const char* name, const char* title, void (*execute)(in
   m_max = max;
   m_parent = NULL;
   m_secure = secure;
+  m_validate = validate;
   }
 
 OvmsCommand::~OvmsCommand()
   {
+  for (auto it = m_children.begin(); it != m_children.end(); ++it)
+    {
+    OvmsCommand* cmd = it->second;
+    delete cmd;
+    }
+  m_children.clear();
   }
 
 const char* OvmsCommand::GetName()
@@ -167,58 +260,105 @@ const char* OvmsCommand::GetTitle()
 // - "[$C]" expands to optional children as [child1|child2|child3]
 // - $G$ expands to the usage of the first child (typically used after $C)
 // - $Gfoo$ expands to the usage of the child named "foo"
+// - $L lists a full usage line for each of the children
 // - Parameters after command and subcommand tokens may be explicit like " <metric>"
 // - Empty usage template "" defaults to "$C" for non-terminal OvmsCommand
-const char* OvmsCommand::GetUsage(OvmsWriter* writer)
+void OvmsCommand::PutUsage(OvmsWriter* writer)
   {
-  std::string usage = !m_usage_template ? "" : (!*m_usage_template && !m_execute) ? "$C" : m_usage_template;
-  m_usage ="Usage: ";
-  size_t pos = m_usage.size();
+  const char* usage = !m_usage_template ? "" : (!*m_usage_template && !m_execute) ? "$C" : m_usage_template;
+  std::string result ="Usage: ";
+  size_t pos = result.size();
   for (OvmsCommand* parent = m_parent; parent && parent->m_parent; parent = parent->m_parent)
     {
-    m_usage.insert(pos, " ");
-    m_usage.insert(pos, parent->m_name);
+    if (parent->m_validate)
+      {
+      size_t len = strlen(parent->m_usage_template);
+      char* dollar = index(parent->m_usage_template, '$');
+      if (dollar)
+        {
+        len = dollar - parent->m_usage_template;
+        if (len > 0 && *(dollar-1) == '[')
+          --len;
+        }
+      else
+        result.insert(pos, " ");
+      result.insert(pos, parent->m_usage_template, len);
+      }
+    result.insert(pos, " ");
+    result.insert(pos, parent->m_name);
     }
-  m_usage += m_name;
-  m_usage += " ";
-  ExpandUsage(usage, writer);
-  return m_usage.c_str();
+  result += m_name;
+  result += " ";
+  ExpandUsage(usage, writer, result);
+  writer->puts(result.c_str());
   }
 
-void OvmsCommand::ExpandUsage(std::string usage, OvmsWriter* writer)
+void OvmsCommand::ExpandUsage(const char* templ, OvmsWriter* writer, std::string& result)
   {
+  std::string usage = templ;
   size_t pos;
-  if ((pos = usage.find_first_of("$C")) != std::string::npos)
+  if ((pos = usage.find("$L")) != std::string::npos)
     {
-    m_usage += usage.substr(0, pos);
+    result += usage.substr(0, pos);
     pos += 2;
-    size_t z = m_usage.size();
+    size_t z = result.size();
+    bool found = false;
+    for (OvmsCommandMap::iterator it = m_children.begin(); it != m_children.end(); ++it)
+      {
+      OvmsCommand* child = it->second;
+      if (!child->m_secure || writer->m_issecure)
+        {
+        if (found)
+          {
+          result += "\n";
+          result += result.substr(0, z);
+          }
+        result += it->first;
+        result += " ";
+        found = true;
+        child->ExpandUsage(child->m_usage_template, writer, result);
+        }
+      }
+    if (result.size() == z)
+      {
+      result = "All subcommands require 'enable' mode";
+      pos = usage.size();       // Don't append any more
+      }
+    result += usage.substr(pos);
+    return;
+    }
+
+  if ((pos = usage.find("$C")) != std::string::npos)
+    {
+    result += usage.substr(0, pos);
+    pos += 2;
+    size_t z = result.size();
     bool found = false;
     for (OvmsCommandMap::iterator it = m_children.begin(); it != m_children.end(); ++it)
       {
       if (!it->second->m_secure || writer->m_issecure)
         {
         if (found)
-          m_usage += "|";
-        m_usage += it->first;
+          result += "|";
+        result += it->first;
         found = true;
         }
       }
-    if (m_usage.size() == z)
+    if (result.size() == z)
       {
-      m_usage = "All subcommands require 'enable' mode";
+      result = "All subcommands require 'enable' mode";
       pos = usage.size();       // Don't append any more
       }
     }
   else pos = 0;
   size_t pos2;
-  if ((pos2 = usage.find_first_of("$G", pos)) != std::string::npos)
+  if ((pos2 = usage.find("$G", pos)) != std::string::npos)
     {
-    m_usage += usage.substr(pos, pos2-pos);
+    result += usage.substr(pos, pos2-pos);
     pos2 += 2;
     size_t pos3;
     OvmsCommandMap::iterator it = m_children.end();
-    if ((pos3 = usage.find_first_of("$", pos2)) != std::string::npos)
+    if ((pos3 = usage.find('$', pos2)) != std::string::npos)
       {
       if (pos3 == pos2)
         it = m_children.begin();
@@ -228,38 +368,75 @@ void OvmsCommand::ExpandUsage(std::string usage, OvmsWriter* writer)
       if (it != m_children.end() && (!it->second->m_secure || writer->m_issecure))
         {
         OvmsCommand* child = it->second;
-        child->ExpandUsage(child->m_usage_template, writer);
-        m_usage += child->m_usage;
+        child->ExpandUsage(child->m_usage_template, writer, result);
         }
       }
     else
       pos = pos2;
     if (it == m_children.end())
-      m_usage += "ERROR IN USAGE TEMPLATE";
+      result += "ERROR IN USAGE TEMPLATE";
     }
-  m_usage += usage.substr(pos);
+  result += usage.substr(pos);
   }
 
 OvmsCommand* OvmsCommand::RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
-                                          const char *usage, int min, int max, bool secure)
+                                          const char *usage, int min, int max, bool secure,
+                                          int (*validate)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool))
   {
-  OvmsCommand* cmd = new OvmsCommand(name, title, execute, usage, min, max, secure);
-  m_children[name] = cmd;
-  cmd->m_parent = this;
-  //printf("Registered '%s' under '%s'\n",name,m_title);
+  // Protect against duplicate registrations
+  OvmsCommand* cmd = FindCommand(name);
+  if (cmd == NULL)
+    {
+    cmd = new OvmsCommand(name, title, execute, usage, min, max, secure, validate);
+    m_children[name] = cmd;
+    cmd->m_parent = this;
+    }
   return cmd;
+  }
+
+bool OvmsCommand::UnregisterCommand(const char* name)
+  {
+  if (name == NULL)
+    {
+    // Unregister this command
+    return m_parent->UnregisterCommand(m_name);
+    }
+
+  // Unregister the specified child command
+  auto pos = m_children.find(name);
+  if (pos == m_children.end())
+    {
+    return false;
+    }
+  else
+    {
+    OvmsCommand* cmd = pos->second;
+    m_children.erase(pos);
+    delete cmd;
+    return true;
+    }
   }
 
 char ** OvmsCommand::Complete(OvmsWriter* writer, int argc, const char * const * argv)
   {
+  if (m_validate)
+    {
+    int used = -1;
+    if (argc > 0)
+      used = m_validate(writer, this, argc > m_max ? m_max : argc, argv, true);
+    if (used < 0 || used == argc)
+      return writer->GetCompletions();
+    argc -= used;
+    argv += used;
+    }
   if (argc <= 1)
     {
-    return writer->GetCompletion(m_children, argc > 0 ? argv[0] : "");
+    return m_children.GetCompletion(writer, argc > 0 ? argv[0] : "");
     }
   OvmsCommand* cmd = m_children.FindUniquePrefix(argv[0]);
   if (!cmd)
     {
-    return writer->GetCompletion(m_children, NULL);
+    return writer->SetCompletion(0, NULL);
     }
   return cmd->Complete(writer, argc-1, ++argv);
   }
@@ -280,7 +457,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     //puts("Executing directly...");
     if (argc < m_min || argc > m_max || (argc > 0 && strcmp(argv[argc-1],"?")==0))
       {
-      writer->puts(GetUsage(writer));
+      PutUsage(writer);
       return;
       }
     if ((!m_secure)||(m_secure && writer->m_issecure))
@@ -291,17 +468,39 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     }
   else
     {
+    if (m_validate && argc >= m_min)
+      {
+      int used = m_validate(writer, this, argc, argv, false);
+      if (used < 0)
+        {
+        if (argc > 0 && strcmp(argv[argc-1],"?") != 0)
+          writer->puts("Unrecognised command");
+        if (m_usage_template && *m_usage_template)
+          PutUsage(writer);
+        return;
+        }
+      argc -= used;
+      argv += used;
+      }
     //puts("Looking for a matching command");
     if (argc <= 0)
       {
+      if (m_execute)
+        {
+        if ((!m_secure)||(m_secure && writer->m_issecure))
+          m_execute(verbosity,writer,this,argc,argv);
+        else
+          writer->puts("Error: Secure command requires 'enable' mode");
+        return;
+        }
       writer->puts("Subcommand required");
-      writer->puts(GetUsage(writer));
+      PutUsage(writer);
       return;
       }
     if (strcmp(argv[0],"?")==0)
       {
       if (m_usage_template && *m_usage_template && m_execute)
-        writer->puts(GetUsage(writer));
+        PutUsage(writer);
       // Show available commands
       int avail = 0;
       for (OvmsCommandMap::iterator it=m_children.begin(); it!=m_children.end(); ++it)
@@ -321,18 +520,11 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     if (!cmd)
       {
       writer->puts("Unrecognised command");
-      if (!m_usage.empty())
-        writer->puts(GetUsage(writer));
+      if (m_usage_template && *m_usage_template)
+        PutUsage(writer);
       return;
       }
-    if (argc>1)
-      {
-      cmd->Execute(verbosity,writer,argc-1,++argv);
-      }
-    else
-      {
-      cmd->Execute(verbosity,writer,0,NULL);
-      }
+    cmd->Execute(verbosity,writer,argc-1,++argv);
     }
   }
 
@@ -343,33 +535,8 @@ OvmsCommand* OvmsCommand::GetParent()
 
 OvmsCommand* OvmsCommand::FindCommand(const char* name)
   {
-  return m_children.FindUniquePrefix(name);
+  return m_children.FindCommand(name);
   }
-
-#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-
-static duk_ret_t DukOvmsCommand(duk_context *ctx)
-  {
-  const char *cmd = duk_to_string(ctx,0);
-
-  if (cmd != NULL)
-    {
-    BufferedShell* bs = new BufferedShell(false, COMMAND_RESULT_NORMAL);
-    bs->SetSecure(true); // this is an authorized channel
-    bs->ProcessChars(cmd, strlen(cmd));
-    bs->ProcessChar('\n');
-    std::string val; bs->Dump(val);
-    delete bs;
-    duk_push_string(ctx, val.c_str());
-    return 1;  /* one return value */
-    }
-  else
-    {
-    return 0;
-    }
-  }
-
-#endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
 void help(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -526,24 +693,24 @@ OvmsCommandApp::OvmsCommandApp()
   m_logfile_maxsize = 0;
   m_expiretask = 0;
 
-  m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0);
-  m_root.RegisterCommand("exit", "End console session", Exit , "", 0, 0);
-  OvmsCommand* cmd_log = MyCommandApp.RegisterCommand("log","LOG framework",NULL, "", 0, 0, true);
-  cmd_log->RegisterCommand("file", "Start logging to specified file", log_file , "<vfspath>", 0, 1, true);
-  cmd_log->RegisterCommand("close", "Stop logging to file", log_file , "", 0, 0, true);
-  cmd_log->RegisterCommand("expire", "Expire old log files", log_expire, "[<keepdays>]", 0, 1, true);
-  OvmsCommand* level_cmd = cmd_log->RegisterCommand("level", "Set logging level", NULL, "$C [<tag>]");
-  level_cmd->RegisterCommand("verbose", "Log at the VERBOSE level (5)", log_level , "[<tag>]", 0, 1, true);
-  level_cmd->RegisterCommand("debug", "Log at the DEBUG level (4)", log_level , "[<tag>]", 0, 1, true);
-  level_cmd->RegisterCommand("info", "Log at the INFO level (3)", log_level , "[<tag>]", 0, 1, true);
-  level_cmd->RegisterCommand("warn", "Log at the WARN level (2)", log_level , "[<tag>]", 0, 1);
-  level_cmd->RegisterCommand("error", "Log at the ERROR level (1)", log_level , "[<tag>]", 0, 1);
-  level_cmd->RegisterCommand("none", "No logging (0)", log_level , "[<tag>]", 0, 1);
-  monitor = cmd_log->RegisterCommand("monitor", "Monitor log on this console", log_monitor , "[$C]", 0, 1, true);
-  monitor_yes = monitor->RegisterCommand("yes", "Monitor log", log_monitor , "", 0, 0, true);
-  monitor->RegisterCommand("no", "Don't monitor log", log_monitor , "", 0, 0, true);
-  m_root.RegisterCommand("enable","Enter secure mode (enable access to all commands)", enable, "[<password>]", 0, 1);
-  m_root.RegisterCommand("disable","Leave secure mode (disable access to most commands)", disable, "", 0, 0, true);
+  m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0, false);
+  m_root.RegisterCommand("exit", "End console session", Exit , "", 0, 0, false);
+  OvmsCommand* cmd_log = MyCommandApp.RegisterCommand("log","LOG framework");
+  cmd_log->RegisterCommand("file", "Start logging to specified file", log_file , "<vfspath>", 0, 1);
+  cmd_log->RegisterCommand("close", "Stop logging to file", log_file);
+  cmd_log->RegisterCommand("expire", "Expire old log files", log_expire, "[<keepdays>]", 0, 1);
+  OvmsCommand* level_cmd = cmd_log->RegisterCommand("level", "Set logging level", NULL, "$C [<tag>]", 0, 0, false);
+  level_cmd->RegisterCommand("verbose", "Log at the VERBOSE level (5)", log_level , "[<tag>]", 0, 1);
+  level_cmd->RegisterCommand("debug", "Log at the DEBUG level (4)", log_level , "[<tag>]", 0, 1);
+  level_cmd->RegisterCommand("info", "Log at the INFO level (3)", log_level , "[<tag>]", 0, 1);
+  level_cmd->RegisterCommand("warn", "Log at the WARN level (2)", log_level , "[<tag>]", 0, 1, false);
+  level_cmd->RegisterCommand("error", "Log at the ERROR level (1)", log_level , "[<tag>]", 0, 1, false);
+  level_cmd->RegisterCommand("none", "No logging (0)", log_level , "[<tag>]", 0, 1, false);
+  monitor = cmd_log->RegisterCommand("monitor", "Monitor log on this console", log_monitor , "[$C]");
+  monitor_yes = monitor->RegisterCommand("yes", "Monitor log", log_monitor);
+  monitor->RegisterCommand("no", "Don't monitor log", log_monitor);
+  m_root.RegisterCommand("enable","Enter secure mode (enable access to all commands)", enable, "[<password>]", 0, 1, false);
+  m_root.RegisterCommand("disable","Leave secure mode (disable access to most commands)", disable);
   }
 
 OvmsCommandApp::~OvmsCommandApp()
@@ -562,22 +729,18 @@ void OvmsCommandApp::ConfigureLogging()
   MyEvents.RegisterEvent(TAG, "ticker.3600", std::bind(&OvmsCommandApp::EventHandler, this, _1, _2));
 
   ReadConfig();
-
-#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-  ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
-  duk_context* ctx = MyScripts.Duktape();
-  if (ctx)
-    {
-    duk_push_c_function(ctx, DukOvmsCommand, 1 /*nargs*/);
-    duk_put_global_string(ctx, "OvmsCommand");
-    }
-#endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
 OvmsCommand* OvmsCommandApp::RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
                                              const char *usage, int min, int max, bool secure)
   {
   return m_root.RegisterCommand(name, title, execute, usage, min, max, secure);
+  }
+
+bool OvmsCommandApp::UnregisterCommand(const char* name)
+  {
+  // Unregister the specified child command
+  return m_root.UnregisterCommand(name);
   }
 
 OvmsCommand* OvmsCommandApp::FindCommand(const char* name)
@@ -652,30 +815,46 @@ int OvmsCommandApp::LogBuffer(LogBuffers* lb, const char* fmt, va_list args)
   int ret = vasprintf(&buffer, fmt, args);
   if (ret < 0) return ret;
 
-  // replace CR/LF except last by "|", but don't leave '|' at the end
+  // Replace CR/LF except last by "|", but don't leave '|' at the end.
+  // An ESC sequence to change color may be appended after the log text.
   char* s;
   for (s=buffer; *s; s++)
     {
-    if ((*s=='\r' || *s=='\n') && *(s+1))
-      *s = '|';
-    }
-  for (--s; s > buffer; --s)
-    {
     if (*s=='\r' || *s=='\n')
-      continue;
-    if (*s != '|')
+      {
+      char *t = s;
+      if (*(s+1) == '\033')
+        ++s;
+      else if (*(s+1) != '\0')
+        {
+        *s = '|';
+        continue;
+        }
+      while (t > buffer && *(t-1) == '|')
+        --t;
+      while ((*t++ = *s++)) ;
       break;
-    *s++ = '\n';
-    *s-- = '\0';
+      }
     }
 
   if (m_logfile)
     {
     // Log to the log file as well...
-    // We need to protect this with a mutex lock, as fsync appears to NOT be thread safe
-    // https://github.com/espressif/esp-idf/issues/1837
     OvmsMutexLock fsynclock(&m_fsync_mutex);
-    m_logfile_size += fwrite(buffer,1,strlen(buffer),m_logfile);
+
+    // add timestamp:
+    time_t rawtime;
+    time(&rawtime);
+    struct tm* tmu = localtime(&rawtime);
+    char tb[64];
+    strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S %Z ", tmu);
+    m_logfile_size += fwrite(tb, 1, strlen(tb), m_logfile);
+
+    // add log entry:
+    std::string le = stripesc(buffer);
+    m_logfile_size += fwrite(le.data(), 1, le.size(), m_logfile);
+    
+    // check file size:
     if (m_logfile_maxsize && m_logfile_size > (m_logfile_maxsize*1024))
       {
       CycleLogfile();
@@ -686,6 +865,7 @@ int OvmsCommandApp::LogBuffer(LogBuffers* lb, const char* fmt, va_list args)
       fsync(fileno(m_logfile));
       }
     }
+
   lb->append(buffer);
   return ret;
   }
@@ -720,6 +900,7 @@ void OvmsCommandApp::Execute(int verbosity, OvmsWriter* writer, int argc, const 
     }
   else
     {
+    writer->SetArgv(argv);
     m_root.Execute(verbosity, writer, argc, argv);
     }
   }
@@ -954,7 +1135,7 @@ void OvmsCommandApp::ReadConfig()
 
 
 OvmsCommandTask::OvmsCommandTask(int _verbosity, OvmsWriter* _writer, OvmsCommand* _cmd, int _argc, const char* const* _argv)
-  : TaskBase(_cmd->GetName())
+  : TaskBase(_cmd->GetName(), CONFIG_OVMS_SYS_COMMAND_STACK_SIZE)
   {
   m_state = OCS_Init;
 

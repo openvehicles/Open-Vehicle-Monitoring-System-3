@@ -37,7 +37,7 @@ static const char *ntp = "ntp";
 #include <lwip/def.h>
 #include <lwip/sockets.h>
 #include <time.h>
-#include "apps/sntp/sntp.h"
+#include "lwip/apps/sntp.h"
 #include "ovms.h"
 #include "ovms_time.h"
 #include "ovms_config.h"
@@ -132,9 +132,9 @@ OvmsTime::OvmsTime()
   sntp_setservername(0, (char*)"pool.ntp.org");
 
   // Register our commands
-  OvmsCommand* cmd_time = MyCommandApp.RegisterCommand("time","TIME framework",time_status, "", 0, 1);
+  OvmsCommand* cmd_time = MyCommandApp.RegisterCommand("time","TIME framework",time_status, "", 0, 0, false);
   cmd_time->RegisterCommand("status","Show time status",time_status,"", 0, 0, false);
-  cmd_time->RegisterCommand("set","Set current UTC time",time_set,"<time>", 1, 1, true);
+  cmd_time->RegisterCommand("set","Set current UTC time",time_set,"<time>", 1, 1);
 
   #undef bind  // Kludgy, but works
   using std::placeholders::_1;

@@ -131,20 +131,19 @@ OvmsMetrics::OvmsMetrics()
   m_trace = false;
 
   // Register our commands
-  OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework",NULL, "", 0, 0, true);
-  cmd_metric->RegisterCommand("list","Show all metrics",metrics_list, "[<metric>]", 0, 1, true);
-  cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set, "<metric> <value>", 2, 2, true);
-  OvmsCommand* cmd_metrictrace = cmd_metric->RegisterCommand("trace","METRIC trace framework", NULL, "", 0, 0, true);
-  cmd_metrictrace->RegisterCommand("on","Turn metric tracing ON",metrics_trace,"", 0, 0, true);
-  cmd_metrictrace->RegisterCommand("off","Turn metric tracing OFF",metrics_trace,"", 0, 0, true);
+  OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework");
+  cmd_metric->RegisterCommand("list","Show all metrics",metrics_list, "[<metric>]", 0, 1);
+  cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set, "<metric> <value>", 2, 2);
+  OvmsCommand* cmd_metrictrace = cmd_metric->RegisterCommand("trace","METRIC trace framework");
+  cmd_metrictrace->RegisterCommand("on","Turn metric tracing ON",metrics_trace);
+  cmd_metrictrace->RegisterCommand("off","Turn metric tracing OFF",metrics_trace);
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
-  duk_context* ctx = MyScripts.Duktape();
-  duk_push_c_function(ctx, DukOvmsMetricValue, 1 /*nargs*/);
-  duk_put_global_string(ctx, "OvmsMetricValue");
-  duk_push_c_function(ctx, DukOvmsMetricFloat, 1 /*nargs*/);
-  duk_put_global_string(ctx, "OvmsMetricFloat");
+  DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsMetrics");
+  dto->RegisterDuktapeFunction(DukOvmsMetricValue, 1, "Value");
+  dto->RegisterDuktapeFunction(DukOvmsMetricFloat, 1, "AsFloat");
+  MyScripts.RegisterDuktapeObject(dto);
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
@@ -348,7 +347,12 @@ void OvmsMetrics::DeregisterListener(const char* caller)
 
 void OvmsMetrics::NotifyModified(OvmsMetric* metric)
   {
-  if ((m_trace)&&(strcmp(metric->m_name,"m.monotonic")!=0))
+  if (m_trace &&
+      strcmp(metric->m_name, "m.monotonic") != 0 &&
+      strcmp(metric->m_name, "m.time.utc") != 0 &&
+      strcmp(metric->m_name, "v.e.parktime") != 0 &&
+      strcmp(metric->m_name, "v.e.drivetime") != 0 &&
+      strcmp(metric->m_name, "v.c.time") != 0)
     {
     ESP_LOGI(TAG, "Modified metric %s: %s",
       metric->m_name, metric->AsUnitString().c_str());
@@ -381,7 +385,7 @@ size_t OvmsMetrics::RegisterModifier()
 OvmsMetric::OvmsMetric(const char* name, uint16_t autostale, metric_unit_t units)
   {
   m_defined = NeverDefined;
-  m_modified.reset();
+  m_modified = 0;
   m_name = name;
   m_lastmodified = 0;
   m_autostale = autostale;
@@ -428,6 +432,10 @@ void OvmsMetric::SetValue(std::string value)
   {
   }
 
+void OvmsMetric::SetValue(dbcNumber& value)
+  {
+  }
+
 void OvmsMetric::operator=(std::string value)
   {
   }
@@ -452,7 +460,7 @@ void OvmsMetric::SetModified(bool changed)
   m_lastmodified = monotonictime;
   if (changed)
     {
-    m_modified.set();
+    m_modified = ULONG_MAX;
     MyMetrics.NotifyModified(this);
     }
   }
@@ -496,19 +504,19 @@ metric_unit_t OvmsMetric::GetUnits()
 
 bool OvmsMetric::IsModified(size_t modifier)
   {
-  return m_modified[modifier];
+  return m_modified & 1ul << modifier;
   }
 
 bool OvmsMetric::IsModifiedAndClear(size_t modifier)
   {
-  bool modified = m_modified[modifier];
-  if (modified) m_modified.reset(modifier);
-  return modified;
+  unsigned long bit = 1ul << modifier;
+  unsigned long mod = m_modified.fetch_and(~bit);
+  return mod & bit;
   }
 
 void OvmsMetric::ClearModified(size_t modifier)
   {
-  m_modified.reset(modifier);
+  m_modified &= ~(1ul << modifier);
   }
 
 OvmsMetricInt::OvmsMetricInt(const char* name, uint16_t autostale, metric_unit_t units)
@@ -590,6 +598,11 @@ void OvmsMetricInt::SetValue(std::string value)
     SetModified(false);
   }
 
+void OvmsMetricInt::SetValue(dbcNumber& value)
+  {
+  SetValue(value.GetSignedInteger());
+  }
+
 OvmsMetricBool::OvmsMetricBool(const char* name, uint16_t autostale, metric_unit_t units)
   : OvmsMetric(name, autostale, units)
   {
@@ -626,7 +639,7 @@ std::string OvmsMetricBool::AsJSON(const char* defvalue, metric_unit_t units, in
     }
   else
     {
-    if ((strcasecmp(defvalue, "yes")==0)||(strcasecmp(defvalue, "1")==0)||(strcasecmp(defvalue, "true")==0))
+    if (strtobool(defvalue) == true)
       return std::string("true");
     else
       return std::string("false");
@@ -659,11 +672,7 @@ void OvmsMetricBool::SetValue(bool value)
 
 void OvmsMetricBool::SetValue(std::string value)
   {
-  bool nvalue;
-  if ((value == "yes")||(value == "1")||(value == "true"))
-    nvalue = true;
-  else
-    nvalue = false;
+  bool nvalue = strtobool(value);
   if (m_value != nvalue)
     {
     m_value = nvalue;
@@ -671,6 +680,11 @@ void OvmsMetricBool::SetValue(std::string value)
     }
   else
     SetModified(false);
+  }
+
+void OvmsMetricBool::SetValue(dbcNumber& value)
+  {
+  SetValue((bool)value.GetUnsignedInteger());
   }
 
 OvmsMetricFloat::OvmsMetricFloat(const char* name, uint16_t autostale, metric_unit_t units)
@@ -758,6 +772,11 @@ void OvmsMetricFloat::SetValue(std::string value)
     SetModified(false);
   }
 
+void OvmsMetricFloat::SetValue(dbcNumber& value)
+  {
+  SetValue((float)value.GetDouble());
+  }
+
 OvmsMetricString::OvmsMetricString(const char* name, uint16_t autostale, metric_unit_t units)
   : OvmsMetric(name, autostale, units)
   {
@@ -770,20 +789,29 @@ OvmsMetricString::~OvmsMetricString()
 std::string OvmsMetricString::AsString(const char* defvalue, metric_unit_t units, int precision)
   {
   if (IsDefined())
+    {
+    OvmsMutexLock lock(&m_mutex);
     return m_value;
+    }
   else
+    {
     return std::string(defvalue);
+    }
   }
 
 void OvmsMetricString::SetValue(std::string value)
   {
-  if (m_value.compare(value)!=0)
+  if (m_mutex.Lock())
     {
-    m_value = value;
-    SetModified(true);
+    bool modified = false;
+    if (m_value.compare(value)!=0)
+      {
+      m_value = value;
+      modified = true;
+      }
+    m_mutex.Unlock();
+    SetModified(modified);
     }
-  else
-    SetModified(false);
   }
 
 const char* OvmsMetricUnitLabel(metric_unit_t units)
@@ -819,6 +847,7 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
     case Percentage:   return "%";
     case WattHoursPK:  return "Wh/km";
     case WattHoursPM:  return "Wh/mi";
+    case Nm:           return "Nm";
     default:           return "";
     }
   }

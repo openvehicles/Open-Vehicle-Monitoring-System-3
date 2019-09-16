@@ -37,9 +37,8 @@
 #include <string>
 #include <map>
 #include "can.h"
-#include "candump.h"
-#include "candump_crtd.h"
-#include "candump_pcap.h"
+#include "canformat.h"
+#include "dbc.h"
 #include "pcp.h"
 #include "ovms.h"
 #include "ovms_mutex.h"
@@ -67,16 +66,14 @@ typedef struct
     } attr;
   } re_record_t;
 
-typedef std::map<uint32_t, uint8_t> re_id_map_t;
 typedef std::map<std::string, re_record_t*> re_record_map_t;
 
-enum REMode { Serve, Analyse, Discover };
-enum REServeMode { Ignore, Simulate, Transmit };
+enum REMode { Analyse, Discover };
 
 class re : public pcp, public ExternalRamAllocated
   {
   public:
-    re(const char* name);
+    re(const char* name, canfilter* filter = NULL);
     ~re();
 
   public:
@@ -87,19 +84,8 @@ class re : public pcp, public ExternalRamAllocated
     void Clear();
     std::string GetKey(CAN_frame_t* frame);
 
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-  public:
-    void MongooseHandler(struct mg_connection *nc, int ev, void *p);
-
-  public:
-    typedef std::map<mg_connection*, uint8_t> re_serve_map_t;
-    re_serve_map_t m_smap;
-    OvmsMutex m_smapmutex;
-#endif // #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-
   protected:
     void DoAnalyse(CAN_frame_t* frame);
-    void DoServe(CAN_frame_t* frame);
 
   protected:
     TaskHandle_t m_task;
@@ -107,12 +93,9 @@ class re : public pcp, public ExternalRamAllocated
 
   public:
     OvmsMutex m_mutex;
+    canfilter* m_filter;
     REMode m_mode;
-    REServeMode m_servemode;
-    re_id_map_t m_idmap;
     re_record_map_t m_rmap;
-    candump* m_serveformat_in;
-    candump* m_serveformat_out;
     uint32_t m_obdii_std_min;
     uint32_t m_obdii_std_max;
     uint32_t m_obdii_ext_min;

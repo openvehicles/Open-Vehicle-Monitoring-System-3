@@ -33,6 +33,7 @@
 
 #include "crypt_base64.h"
 #include "ovms_notify.h"
+#include "string_writer.h"
 
 #include "vehicle_renaulttwizy.h"
 #include "rt_sevcon.h"
@@ -224,7 +225,7 @@ void SevconClient::shell_cfg_write(int verbosity, OvmsWriter* writer, OvmsComman
 
 
 // Shell command: xrt cfg …
-//    set <key> <base64data>
+//    set <key> <base64data> [<label>] [<title>]
 //    reset [key]
 // 
 //   key 0 → update working set & try to apply
@@ -277,32 +278,43 @@ void SevconClient::shell_cfg_set(int verbosity, OvmsWriter* writer, OvmsCommand*
     // signal "unsaved" if WS now differs from stored profile:
     if (key == me->m_drivemode.profile_user)
       me->m_drivemode.unsaved = 1;
+
+    // optionally set/clear label and title:
+    StringWriter profile;
+    profile.printf("profile%02d", key);
+    if (strcmp(cmd->GetName(), "reset") == 0) {
+      MyConfig.SetParamValue("xrt", profile + ".label", "");
+      MyConfig.SetParamValue("xrt", profile + ".title", "");
+    } else {
+      if (argc > 2)
+        MyConfig.SetParamValue("xrt", profile + ".label", argv[2]);
+      if (argc > 3)
+        MyConfig.SetParamValue("xrt", profile + ".title", argv[3]);
+    }
   }
   else {
-    if (memcmp(&me->m_profile, &profile, sizeof(profile)) != 0) {
-      
-      // update working set:
-      me->m_profile = profile;
-      
-      // signal "unsaved" if custom profile active:
-      me->m_drivemode.unsaved = (me->m_drivemode.profile_user > 0);
-      
-      // try to apply profile:
 
-      CANopenResult_t res = me->CheckBus();
-      if (res != COR_OK) {
-        writer->printf("Profile updated, SEVCON unchanged: %s\n", me->GetResultString(res).c_str());
-        return;
-      }
-      
-      res = me->CfgApplyProfile(me->m_drivemode.profile_user);
-      if (res == COR_OK)
-        writer->puts("OK, live & base tuning changed");
-      else if (res == COR_ERR_StateChangeFailed)
-        writer->puts("Live tuning changed, base tuning needs STOP mode");
-      else
-        writer->printf("ERROR: %s\n", me->GetResultString(res));
+    // update working set:
+    me->m_profile = profile;
+    
+    // signal "unsaved" if custom profile active:
+    me->m_drivemode.unsaved = (me->m_drivemode.profile_user > 0);
+    
+    // try to apply profile:
+
+    CANopenResult_t res = me->CheckBus();
+    if (res != COR_OK) {
+      writer->printf("Profile updated, SEVCON unchanged: %s\n", me->GetResultString(res).c_str());
+      return;
     }
+    
+    res = me->CfgApplyProfile(me->m_drivemode.profile_user);
+    if (res == COR_OK)
+      writer->puts("OK, live & base tuning changed");
+    else if (res == COR_ERR_StateChangeFailed)
+      writer->puts("Live tuning changed, base tuning needs STOP mode");
+    else
+      writer->printf("ERROR: %s\n", me->GetResultString(res));
   }
 }
 

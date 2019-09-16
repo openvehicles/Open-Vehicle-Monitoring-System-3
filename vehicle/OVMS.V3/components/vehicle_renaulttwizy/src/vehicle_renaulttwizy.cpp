@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-twizy";
 
-#define VERSION "0.17.4"
+#define VERSION "1.2.4"
 
 #include <stdio.h>
 #include <string>
@@ -96,23 +96,29 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   }
   m_version = MyMetrics.InitString("xrt.m.version", 0, VERSION " " __DATE__ " " __TIME__);
 
+  mt_charger_status = MyMetrics.InitInt("xrt.v.c.status", SM_STALE_MIN, 0);
+  mt_bms_status     = MyMetrics.InitInt("xrt.v.b.status", SM_STALE_MIN, 0);
+  mt_sevcon_status  = MyMetrics.InitInt("xrt.v.i.status", SM_STALE_MIN, 0);
+
+  mt_bms_alert_12v  = MyMetrics.InitBool("xrt.v.b.alert.12v", SM_STALE_MIN, false);
+  mt_bms_alert_batt = MyMetrics.InitBool("xrt.v.b.alert.batt", SM_STALE_MIN, false);
+  mt_bms_alert_temp = MyMetrics.InitBool("xrt.v.b.alert.temp", SM_STALE_MIN, false);
+
   // init commands:
-  cmd_xrt = MyCommandApp.RegisterCommand("xrt", "Renault Twizy", NULL, "", 0, 0, true);
+  cmd_xrt = MyCommandApp.RegisterCommand("xrt", "Renault Twizy");
 
   // init event listener:
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "gps.lock.acquired", std::bind(&OvmsVehicleRenaultTwizy::EventListener, this, _1, _2));
 
-  // require GPS:
-  MyEvents.SignalEvent("vehicle.require.gps", NULL);
-  MyEvents.SignalEvent("vehicle.require.gpstime", NULL);
-
   // init subsystems:
   BatteryInit();
   PowerInit();
   ChargeInit();
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
+#endif
 
   // init can bus:
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
@@ -121,16 +127,13 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   // init SEVCON connection:
   m_sevcon = new SevconClient(this);
 
-  m_ready = true;
+  // init OBD2 poller:
+  ObdInit();
 }
 
 OvmsVehicleRenaultTwizy::~OvmsVehicleRenaultTwizy()
 {
   ESP_LOGI(TAG, "Shutdown Renault Twizy vehicle module");
-
-  // release GPS:
-  MyEvents.SignalEvent("vehicle.release.gps", NULL);
-  MyEvents.SignalEvent("vehicle.release.gpstime", NULL);
 
   // unregister event listeners:
   MyEvents.DeregisterEvent(TAG);
@@ -178,6 +181,14 @@ void OvmsVehicleRenaultTwizy::ConfigChanged(OvmsConfigParam* param)
   //  kd_threshold      Kickdown threshold (Default: 35)
   //  kd_compzero       Kickdown pedal compensation (Default: 120)
   //
+  //  lock_on           Engage lock mode (Default: no)
+  //  valet_on          Engage valet mode (Default: no)
+  //
+  //  aux_fan_port      EGPIO port to control auxiliary charger fan (Default: 0 = disabled)
+  //  aux_charger_port  EGPIO port to control auxiliary charger (Default: 0 = disabled)
+  //
+  //  dtc_autoreset     Reset DTC statistics on every drive/charge start (Default: no)
+  //
 
   cfg_maxrange = MyConfig.GetParamValueInt("xrt", "maxrange", CFG_DEFAULT_MAXRANGE);
   if (cfg_maxrange <= 0)
@@ -205,6 +216,20 @@ void OvmsVehicleRenaultTwizy::ConfigChanged(OvmsConfigParam* param)
 
   cfg_kd_threshold = MyConfig.GetParamValueInt("xrt", "kd_threshold", CFG_DEFAULT_KD_THRESHOLD);
   cfg_kd_compzero = MyConfig.GetParamValueInt("xrt", "kd_compzero", CFG_DEFAULT_KD_COMPZERO);
+
+  if (MyConfig.IsDefined("xrt", "lock_on") && !CarLocked()) {
+    twizy_lock_speed = MyConfig.GetParamValueInt("xrt", "lock_on", 6);
+    SetCarLocked(true);
+  }
+  if (MyConfig.IsDefined("xrt", "valet_on") && !ValetMode()) {
+    twizy_valet_odo = MyConfig.GetParamValueInt("xrt", "valet_on");
+    SetValetMode(true);
+  }
+
+  cfg_aux_fan_port = MyConfig.GetParamValueInt("xrt", "aux_fan_port");
+  cfg_aux_charger_port = MyConfig.GetParamValueInt("xrt", "aux_charger_port");
+
+  cfg_dtc_autoreset = MyConfig.GetParamValueBool("xrt", "dtc_autoreset", false);
 }
 
 
@@ -271,23 +296,23 @@ const std::string OvmsVehicleRenaultTwizy::GetFeature(int key)
   switch (key)
   {
     case 0:
-      return MyConfig.GetParamValue("xrt", "gpslogint", XSTR(0));
+      return MyConfig.GetParamValue("xrt", "gpslogint", STR(0));
     case 1:
-      return MyConfig.GetParamValue("xrt", "kd_threshold", XSTR(CFG_DEFAULT_KD_THRESHOLD));
+      return MyConfig.GetParamValue("xrt", "kd_threshold", STR(CFG_DEFAULT_KD_THRESHOLD));
     case 2:
-      return MyConfig.GetParamValue("xrt", "kd_compzero", XSTR(CFG_DEFAULT_KD_COMPZERO));
+      return MyConfig.GetParamValue("xrt", "kd_compzero", STR(CFG_DEFAULT_KD_COMPZERO));
     case 6:
-      return MyConfig.GetParamValue("xrt", "chargemode", XSTR(0));
+      return MyConfig.GetParamValue("xrt", "chargemode", STR(0));
     case 7:
-      return MyConfig.GetParamValue("xrt", "chargelevel", XSTR(0));
+      return MyConfig.GetParamValue("xrt", "chargelevel", STR(0));
     case 10:
-      return MyConfig.GetParamValue("xrt", "suffsoc", XSTR(0));
+      return MyConfig.GetParamValue("xrt", "suffsoc", STR(0));
     case 11:
-      return MyConfig.GetParamValue("xrt", "suffrange", XSTR(0));
+      return MyConfig.GetParamValue("xrt", "suffrange", STR(0));
     case 12:
-      return MyConfig.GetParamValue("xrt", "maxrange", XSTR(CFG_DEFAULT_MAXRANGE));
+      return MyConfig.GetParamValue("xrt", "maxrange", STR(CFG_DEFAULT_MAXRANGE));
     case 13:
-      return MyConfig.GetParamValue("xrt", "cap_act_prc", XSTR(100));
+      return MyConfig.GetParamValue("xrt", "cap_act_prc", STR(100));
     case 15:
     {
       int bits =
@@ -301,7 +326,7 @@ const std::string OvmsVehicleRenaultTwizy::GetFeature(int key)
       return std::string(buf);
     }
     case 16:
-      return MyConfig.GetParamValue("xrt", "cap_nom_ah", XSTR(CFG_DEFAULT_CAPACITY));
+      return MyConfig.GetParamValue("xrt", "cap_nom_ah", STR(CFG_DEFAULT_CAPACITY));
     default:
       return OvmsVehicle::GetFeature(key);
   }
@@ -331,7 +356,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::ProcessMsgCo
   switch (command)
   {
     case CMD_BatteryAlert:
-      MyNotify.NotifyCommand("alert", "batt.alert", "xrt batt status");
+      MyNotify.NotifyCommand("alert", "battery.status", "xrt batt status");
       return Success;
 
     case CMD_BatteryStatus:
@@ -346,14 +371,14 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::ProcessMsgCo
       // send power usage text report:
       // args: <mode>: 't' = totals, fallback 'e' = efficiency
       if (args && (args[0] | 0x20) == 't')
-        MyNotify.NotifyCommand("info", "xrt.pwr.totals", "xrt power totals");
+        MyNotify.NotifyCommand("info", "xrt.power.totals", "xrt power totals");
       else
         MyNotify.NotifyCommand("info", "xrt.trip.report", "xrt power report");
       return Success;
 
     case CMD_PowerUsageStats:
       // send power usage data record:
-      MyNotify.NotifyCommand("data", "xrt.pwr.log", "xrt power stats");
+      MyNotify.NotifyCommand("data", "xrt.power.log", "xrt power stats");
       return Success;
 
     case CMD_QueryChargeAlerts:
@@ -400,7 +425,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandHo
   buf << "Profile #" << key+1 << ": " << m_sevcon->FmtSwitchProfileResult(res);
   result = buf.str();
 
-  MyNotify.NotifyStringf("info", "xrt.sevcon.profile", result.c_str());
+  MyNotify.NotifyStringf("info", "xrt.sevcon.profile.switch", result.c_str());
 
   if (res == COR_OK || res == COR_ERR_StateChangeFailed)
     return Success;
@@ -411,11 +436,116 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandHo
 
 /**
  * MsgCommandRestrict: lock/unlock, valet/unvalet
+ *
+ * case CMD_Lock:
+ *    param = kph: restrict speed (default=6 kph)
+ * case CMD_UnLock:
+ *    set speed back to profile, if valet allow +1 km
+ *
+ * case CMD_ValetOn:
+ *    param = km to drive before locking to 6 kph
+ * case CMD_ValetOff:
+ *    disable km limit, set speed back to profile
  */
 OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandRestrict(string& result, int command, const char* args)
 {
-  // TODO
-  return NotImplemented;
+  int pval;
+  CANopenResult_t res = COR_OK;
+
+  switch (command)
+  {
+    case CMD_Lock:
+      // set fwd/rev speed lock:
+      pval = (args && *args) ? atoi(args) : 6;
+      res = m_sevcon->CfgLock(pval);
+      if (res == COR_OK) {
+        twizy_lock_speed = pval;
+        SetCarLocked(true);
+        MyConfig.SetParamValueInt("xrt", "lock_on", pval);
+      }
+      break;
+
+    case CMD_ValetOn:
+      // switch on valet mode:
+      pval = (args && *args) ? atoi(args) : 1;
+      twizy_valet_odo = twizy_odometer + (pval * 100);
+      SetValetMode(true);
+      MyConfig.SetParamValueInt("xrt", "valet_on", pval);
+      break;
+
+    case CMD_ValetOff:
+      // switch off valet mode:
+      SetValetMode(false);
+      MyConfig.DeleteInstance("xrt", "valet_on");
+      if (!CarLocked())
+        break;
+      // car is locked, continue with UnLock:
+      
+    case CMD_UnLock:
+      res = m_sevcon->CfgUnlock();
+      if (res == COR_OK) {
+        SetCarLocked(false);
+        MyConfig.DeleteInstance("xrt", "lock_on");
+        // if in valet mode, allow 1 more km:
+        if (ValetMode()) {
+          twizy_valet_odo = twizy_odometer + 100;
+          MyConfig.SetParamValueInt("xrt", "valet_on", twizy_valet_odo);
+        }
+      }
+      break;
+  }
+  
+  // format status result:
+
+  ostringstream buf;
+
+  if (res != COR_OK) {
+    buf << m_sevcon->GetResultString(res);
+    buf << " - Status: ";
+  }
+
+  if (CarLocked())
+    buf << "LOCKED to max kph=" << twizy_lock_speed;
+  else
+    buf << "UNLOCKED";
+
+  if (ValetMode())
+    buf << ", VALET ON at odo=" << (float)twizy_valet_odo / 100;
+  else
+    buf << ", VALET OFF";
+  
+  result = buf.str();
+  ESP_LOGD(TAG, "MsgCommandRestrict: cmd_%d(%s) => %s", command, args ? args : "", result.c_str());
+
+  if (res == COR_OK)
+    return Success;
+  else
+    return Fail;
+}
+
+
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandLock(const char* pin)
+{
+  string buf;
+  return MsgCommandRestrict(buf, CMD_Lock, pin);
+}
+
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandUnlock(const char* pin)
+{
+  string buf;
+  return MsgCommandRestrict(buf, CMD_UnLock, pin);
+}
+
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandActivateValet(const char* pin)
+{
+  string buf;
+  return MsgCommandRestrict(buf, CMD_ValetOn, pin);
+}
+
+OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandDeactivateValet(const char* pin)
+{
+  string buf;
+  return MsgCommandRestrict(buf, CMD_ValetOff, pin);
 }
 
 

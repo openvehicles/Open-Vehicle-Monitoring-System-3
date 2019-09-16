@@ -166,6 +166,14 @@ bool OvmsServerV2ReaderCallback(OvmsNotifyType* type, OvmsNotifyEntry* entry)
     return true; // No server v2 running, so just discard
   }
 
+bool OvmsServerV2ReaderFilterCallback(OvmsNotifyType* type, const char* subtype)
+  {
+  if (MyOvmsServerV2)
+    return MyOvmsServerV2->NotificationFilter(type, subtype);
+  else
+    return false;
+  }
+
 static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void *p)
   {
   switch (ev)
@@ -220,6 +228,7 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
 
 void OvmsServerV2::ProcessServerMsg()
   {
+  m_lastrx_time = esp_log_timestamp();
   std::string line = m_buffer->ReadLine();
 
   if (line.compare(0,7,"MP-S 0 ") == 0)
@@ -777,7 +786,7 @@ void OvmsServerV2::Connect()
   opts.error_string = &err;
   if ((m_mgconn = mg_connect_opt(mgr, address.c_str(), OvmsServerV2MongooseCallback, opts)) == NULL)
     {
-    ESP_LOGE(TAG, "mg_connect(%s) failed: %s\n", address.c_str(), err);
+    ESP_LOGE(TAG, "mg_connect(%s) failed: %s", address.c_str(), err);
     SetStatus("Error: Connection failed", true, WaitReconnect);
     m_connretry = 20; // Try again in 20 seconds...
     return;
@@ -1016,13 +1025,15 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
     << ((stale)?",0,":",1,")
     << ((m_units_distance == Kilometers)? StandardMetrics.ms_v_pos_speed->AsString("0") : StandardMetrics.ms_v_pos_speed->AsString("0",Mph))
     << ","
+    << int(StandardMetrics.ms_v_pos_trip->AsFloat(0, m_units_distance)*10)
+    << ","
     << drivemode
     << ","
-    << StandardMetrics.ms_v_bat_power->AsString("0",Other,1)
+    << StandardMetrics.ms_v_bat_power->AsString("0",Other,3)
     << ","
-    << StandardMetrics.ms_v_bat_energy_used->AsString("0",Other,1)
+    << StandardMetrics.ms_v_bat_energy_used->AsString("0",Other,3)
     << ","
-    << StandardMetrics.ms_v_bat_energy_recd->AsString("0",Other,1)
+    << StandardMetrics.ms_v_bat_energy_recd->AsString("0",Other,3)
     ;
 
   Transmit(buffer.str().c_str());
@@ -1363,6 +1374,8 @@ void OvmsServerV2::TransmitNotifyData()
   if (data == NULL) return;
 
   uint32_t starttime = esp_log_timestamp();
+  int cnt = 0;
+  size_t size = 0;
 
   while(1)
     {
@@ -1385,21 +1398,25 @@ void OvmsServerV2::TransmitNotifyData()
     if (eol != std::string::npos)
       msg.resize(eol);
 
+    uint32_t now = esp_log_timestamp();
     extram::ostringstream buffer;
     buffer
       << "MP-0 h"
       << e->m_id
       << ","
-      << -(int)(monotonictime - e->m_created)
+      << -((int)(now - e->m_created) / 1000)
       << ","
       << msg;
     Transmit(buffer.str().c_str());
     m_pending_notify_data_last = e->m_id;
 
-    // use max 500 ms of the ticker.1 event time per run:
-    if (esp_log_timestamp() - starttime > 500)
+    // be nice to other tasks, the network & the server:
+    // limits per second: 300 ms / 5 transmissions / 4000 bytes payload
+    cnt++;
+    size += buffer.str().size();
+    if (now - starttime >= 300 || cnt == 5 || size >= 4000)
       {
-      ESP_LOGD(TAG, "TransmitNotifyData: used %d ms", esp_log_timestamp() - starttime);
+      ESP_LOGD(TAG, "TransmitNotifyData: used %d ms for %d records, %u bytes", now - starttime, cnt, size);
       return;
       }
     }
@@ -1466,6 +1483,17 @@ void OvmsServerV2::MetricModified(OvmsMetric* metric)
     {
     m_now_gps = true;
     }
+  }
+
+bool OvmsServerV2::NotificationFilter(OvmsNotifyType* type, const char* subtype)
+  {
+  if (strcmp(type->m_name, "info") == 0 ||
+      strcmp(type->m_name, "error") == 0 ||
+      strcmp(type->m_name, "alert") == 0 ||
+      strcmp(type->m_name, "data") == 0)
+    return true;
+  else
+    return false;
   }
 
 bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry)
@@ -1616,6 +1644,14 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
 
   if (StandardMetrics.ms_s_v2_connected->AsBool())
     {
+    // check for issue #241 condition:
+    if (esp_log_timestamp() - m_lastrx_time > MyConfig.GetParamValueInt("server.v2", "timeout.rx", 960) * 1000)
+      {
+      ESP_LOGW(TAG, "Detected stale connection (issue #241), restarting network");
+      MyNetManager.RestartNetwork();
+      return;
+      }
+
     // Periodic transmission of metrics
     bool caron = StandardMetrics.ms_v_env_on->AsBool();
     int now = StandardMetrics.ms_m_monotonic->AsInt();
@@ -1711,7 +1747,8 @@ OvmsServerV2::OvmsServerV2(const char* name)
 
   if (MyOvmsServerV2Reader == 0)
     {
-    MyOvmsServerV2Reader = MyNotify.RegisterReader("ovmsv2", COMMAND_RESULT_NORMAL, std::bind(OvmsServerV2ReaderCallback, _1, _2), true);
+    MyOvmsServerV2Reader = MyNotify.RegisterReader("ovmsv2", COMMAND_RESULT_NORMAL, std::bind(OvmsServerV2ReaderCallback, _1, _2),
+                                                   true, std::bind(OvmsServerV2ReaderFilterCallback, _1, _2));
     }
 
   // init event listener:
@@ -1738,7 +1775,7 @@ OvmsServerV2::~OvmsServerV2()
   {
   MyMetrics.DeregisterListener(TAG);
   MyEvents.DeregisterEvent(TAG);
-  MyNotify.ClearReader(TAG);
+  MyNotify.ClearReader(MyOvmsServerV2Reader);
   Disconnect();
   if (m_buffer)
     {
@@ -1831,10 +1868,10 @@ OvmsServerV2Init::OvmsServerV2Init()
   ESP_LOGI(TAG, "Initialising OVMS V2 Server (6100)");
 
   OvmsCommand* cmd_server = MyCommandApp.FindCommand("server");
-  OvmsCommand* cmd_v2 = cmd_server->RegisterCommand("v2","OVMS Server V2 Protocol", NULL, "", 0, 0, true);
-  cmd_v2->RegisterCommand("start","Start an OVMS V2 Server Connection",ovmsv2_start, "", 0, 0, true);
-  cmd_v2->RegisterCommand("stop","Stop an OVMS V2 Server Connection",ovmsv2_stop, "", 0, 0, true);
-  cmd_v2->RegisterCommand("status","Show OVMS V2 Server connection status",ovmsv2_status, "", 0, 0, false);
+  OvmsCommand* cmd_v2 = cmd_server->RegisterCommand("v2","OVMS Server V2 Protocol");
+  cmd_v2->RegisterCommand("start","Start an OVMS V2 Server Connection",ovmsv2_start);
+  cmd_v2->RegisterCommand("stop","Stop an OVMS V2 Server Connection",ovmsv2_stop);
+  cmd_v2->RegisterCommand("status","Show OVMS V2 Server connection status",ovmsv2_status);
 
   MyConfig.RegisterParam("server.v2", "V2 Server Configuration", true, false);
   // Our instances:

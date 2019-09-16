@@ -56,3 +56,6 @@ dkms.conf
 .DS_Store
 .project
 *.swp
+
+# Sphinx builds
+docs/build/

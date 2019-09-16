@@ -116,7 +116,8 @@ void OvmsVehicleRenaultTwizy::UpdateChargeTimes()
 
 int OvmsVehicleRenaultTwizy::CalcChargeTime(int dstsoc)
 {
-  int minutes, d, amps;
+  int minutes, d;
+  float amps = 0;
   
   if (dstsoc > 10000)
     dstsoc = 10000;
@@ -145,11 +146,23 @@ int OvmsVehicleRenaultTwizy::CalcChargeTime(int dstsoc)
     // default time:
     d = (((long) dstsoc - twizy_soc) * CHARGETIME_CC
       + (CHARGETIME_CVSOC/2)) / CHARGETIME_CVSOC;
-    // correction for reduced charge power:
-    // (current is 32A at level 7, else level * 5A)
-    amps = cfg_chargelevel * 5;
-    if ((twizy_flags.EnableWrite) && (amps > 0) && (amps < 35))
-      d = (d * 32) / amps;
+
+    // correction for reduced/higher charge power:
+    if (twizy_flags.Charging) {
+      // charging, use actual current reading:
+      amps = (float) -twizy_current / 4;
+    }
+    else if (twizy_flags.EnableWrite && cfg_chargelevel > 0) {
+      // charge level control is active, assume:
+      if (cfg_chargelevel == 7)
+        amps = 32;
+      else
+        amps = cfg_chargelevel * 5;
+    }
+    // scale duration linearly from 32A:
+    if (amps > 0)
+      d *= 32.0f / amps;
+
     minutes += d;
   }
   

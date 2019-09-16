@@ -66,6 +66,33 @@ void event_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   writer->printf("Event tracing is now %s\n",cmd->GetName());
   }
 
+void event_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string event;
+  for (EventMap::const_iterator itm=MyEvents.Map().begin(); itm != MyEvents.Map().end(); ++itm)
+    {
+    if (argc > 0 && itm->first.find(argv[0]) == std::string::npos)
+      continue;
+    event.append(itm->first);
+    event.append(":  ");
+    EventCallbackList* el = itm->second;
+    for (EventCallbackList::iterator itc=el->begin(); itc!=el->end(); )
+      {
+      EventCallbackEntry* ec = *itc;
+      event.append(ec->m_caller);
+      if (++itc != el->end())
+        event.append(", ");
+      }
+    event.append("\n");
+    }
+  writer->printf("%s", event.c_str());
+  }
+
+int event_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  return MyEvents.Map().Validate(writer, argc, argv[0], complete);
+  }
+
 void event_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   std::string event(argv[0]);
@@ -87,11 +114,12 @@ OvmsEvents::OvmsEvents()
   ESP_ERROR_CHECK(esp_event_loop_init(ReceiveSystemEvent, (void*)this));
 
   // Register our commands
-  OvmsCommand* cmd_event = MyCommandApp.RegisterCommand("event","EVENT framework",NULL, "", 0, 0, true);
-  cmd_event->RegisterCommand("raise","Raise a textual event",event_raise,"<event>", 1, 1, true);
-  OvmsCommand* cmd_eventtrace = cmd_event->RegisterCommand("trace","EVENT trace framework", NULL, "", 0, 0, true);
-  cmd_eventtrace->RegisterCommand("on","Turn event tracing ON",event_trace,"", 0, 0, true);
-  cmd_eventtrace->RegisterCommand("off","Turn event tracing OFF",event_trace,"", 0, 0, true);
+  OvmsCommand* cmd_event = MyCommandApp.RegisterCommand("event","EVENT framework");
+  cmd_event->RegisterCommand("list","List registered events",event_list,"[<key>]", 0, 1);
+  cmd_event->RegisterCommand("raise","Raise a textual event",event_raise,"<event>", 1, 1, true, event_validate);
+  OvmsCommand* cmd_eventtrace = cmd_event->RegisterCommand("trace","EVENT trace framework");
+  cmd_eventtrace->RegisterCommand("on","Turn event tracing ON",event_trace);
+  cmd_eventtrace->RegisterCommand("off","Turn event tracing OFF",event_trace);
 
   m_taskqueue = xQueueCreate(CONFIG_OVMS_HW_EVENT_QUEUE_SIZE,sizeof(event_queue_t));
   xTaskCreatePinnedToCore(EventLaunchTask, "OVMS Events", 8192, (void*)this, 5, &m_taskid, 1);
@@ -314,9 +342,9 @@ void OvmsEvents::SignalSystemEvent(system_event_t *event)
       SignalEvent("network.interface.up", NULL);
       SignalEvent("system.wifi.sta.gotip",(void*)&event->event_info,sizeof(event->event_info));
       break;
-//    case SYSTEM_EVENT_STA_LOST_IP:         // ESP32 station lost IP and the IP is reset to 0
-//      SignalEvent("system.wifi.sta.lostip",(void*)&event->event_info);
-//      break;
+    case SYSTEM_EVENT_STA_LOST_IP:         // ESP32 station lost IP and the IP is reset to 0
+      SignalEvent("system.wifi.sta.lostip",(void*)&event->event_info);
+      break;
     case SYSTEM_EVENT_STA_WPS_ER_SUCCESS:  // ESP32 station wps succeeds in enrollee mode
       SignalEvent("system.wifi.sta.wpser.success",(void*)&event->event_info,sizeof(event->event_info));
       break;
@@ -340,6 +368,9 @@ void OvmsEvents::SignalSystemEvent(system_event_t *event)
       break;
     case SYSTEM_EVENT_AP_STADISCONNECTED:  // a station disconnected from ESP32 soft-AP
       SignalEvent("system.wifi.ap.sta.disconnected",(void*)&event->event_info,sizeof(event->event_info));
+      break;
+    case SYSTEM_EVENT_AP_STAIPASSIGNED:    // ESP32 soft-AP assigned an IP to a connected station
+      SignalEvent("system.wifi.ap.sta.ipassigned",(void*)&event->event_info,sizeof(event->event_info));
       break;
     case SYSTEM_EVENT_AP_PROBEREQRECVED:   // Receive probe request packet in soft-AP interface
       SignalEvent("system.wifi.ap.proberx",(void*)&event->event_info,sizeof(event->event_info));

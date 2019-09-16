@@ -204,6 +204,43 @@ extram::string mp_encode(const extram::string text)
   }
 
 /**
+ * stripcr:
+ *  - replace '\r\n' by '\n'
+ */
+extram::string stripcr(const extram::string& text)
+  {
+  extram::string res;
+  res.reserve(text.length());
+  for (int i = 0; i < text.length(); i++)
+    {
+    if (text[i] != '\r' || (i < text.length()-1 && text[i+1] != '\n'))
+      res += text[i];
+    }
+  return res;
+  }
+
+/**
+ * stripesc: remove terminal escape sequences from (log) string
+ */
+std::string stripesc(const char* s)
+  {
+  std::string res;
+  res.reserve(200);
+  bool skip = false;
+  while (s && *s)
+    {
+    if (*s == '\033' && *(s+1) == '[')
+      skip = true;
+    else if (!skip)
+      res += *s;
+    else if (*s == 'm')
+      skip = false;
+    ++s;
+    }
+  return res;
+  }
+
+/**
  * startsWith: std::string prefix check
  */
 bool startsWith(const std::string& haystack, const std::string& needle)
@@ -230,10 +267,29 @@ bool endsWith(const std::string& haystack, const char needle)
   }
 
 /**
+ * HexByte: Write a single byte as two hexadecimal characters
+ * Returns new pointer to end of string (p + 2)
+ */
+char* HexByte(char* p, uint8_t byte)
+  {
+  uint8_t nibble;
+
+  nibble = byte >> 4;   // high nibble
+  nibble += '0'; if (nibble>'9') nibble += 39;
+  *p = nibble; p++;
+
+  nibble = byte & 0x0f; // low nibble
+  nibble += '0'; if (nibble>'9') nibble += 39;
+  *p = nibble; p++;
+  return p;
+  }
+
+/**
  * FormatHexDump: create/fill hexdump buffer including printable representation
  * Note: allocates buffer as necessary in *bufferp, caller must free.
+ * Returns new remaining length
  */
-int FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsize /*=16*/)
+size_t FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsize /*=16*/)
   {
   const char *s = data;
 
@@ -277,34 +333,15 @@ int FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsi
       p++;
       }
     *p = 0;
-    rlength -= colsize;
+    if (rlength > colsize)
+      rlength -= colsize;
+    else
+      rlength = 0;
     }
 
   return rlength;
   }
 
-/**
- * json_encode: encode string for JSON transport (see http://www.json.org/)
- */
-std::string json_encode(const std::string text)
-  {
-  std::string buf;
-  for (int i=0; i<text.size(); i++)
-    {
-    switch(text[i])
-      {
-      case '\n':        buf += "\\n"; break;
-      case '\r':        buf += "\\r"; break;
-      case '\t':        buf += "\\t"; break;
-      case '\b':        buf += "\\b"; break;
-      case '\f':        buf += "\\f"; break;
-      case '\"':        buf += "\\\""; break;
-      case '\\':        buf += "\\\\"; break;
-      default:          buf += text[i]; break;
-      }
-    }
-	return buf;
-  }
 
 /**
  * pwgen: simple password generator
@@ -364,7 +401,7 @@ TaskHandle_t TaskGetHandle(const char *name)
 
 /**
  * mkpath: mkdir -p
- * 
+ *
  * Original: https://stackoverflow.com/a/12904145
  */
 int mkpath(std::string path, mode_t mode /*=0*/)
@@ -395,12 +432,12 @@ int mkpath(std::string path, mode_t mode /*=0*/)
 /**
  * rmtree: rmdir -r
  */
-int rmtree(std::string path)
+int rmtree(const std::string path)
   {
   DIR *dir = opendir(path.c_str());
   if (!dir)
     return 0;
-  
+
   struct dirent *dp;
   struct stat st;
   std::string sub;
@@ -419,8 +456,37 @@ int rmtree(std::string path)
     if (!ok)
       break;
   }
-  
+
   closedir(dir);
   ok = (rmdir(path.c_str()) == 0);
   return ok ? 0 : -1;
+  }
+
+/**
+ * path_exists: check if filesystem path exists
+ */
+bool path_exists(const std::string path)
+  {
+  struct stat st;
+  return (stat(path.c_str(), &st) == 0);
+  }
+
+
+/**
+ * mqtt_topic: convert dotted string (e.g. notification subtype) to MQTT topic
+ *  - replace '.' by '/'
+ */
+std::string mqtt_topic(const std::string text)
+  {
+  std::string buf;
+  buf.reserve(text.size());
+  for (int i=0; i<text.size(); i++)
+    {
+    switch(text[i])
+      {
+      case '.':         buf += '/'; break;
+      default:          buf += text[i]; break;
+      }
+    }
+	return buf;
   }

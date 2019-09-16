@@ -1,11 +1,122 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Module: task CPU usage statistics & debug records
+  New command:
+    module tasks data       -- Output task stats record
+  New config:
+    [module] debug.tasks    -- [bool] send task debug stats (default: yes)
+  New history record:
+    "*-OVM-DebugTasks" v1: <taskcnt,totaltime> + per task:
+      <tasknum,name,state,stack_now,stack_max,stack_total,
+       heap_total,heap_32bit,heap_spi,runtime>
+    Note: CPU core use percentage = runtime / totaltime
+- Server V2: restart network on RX connection loss (issue #241 workaround)
+  New config:
+    [server.v2] timeout.rx  -- [seconds], default: 960
+- Network: avoid using wifi networks with too bad signal quality
+  New configs:
+    [network] wifi.sq.good  [dBm], default -87 (network usable if SQ >= this)
+    [network] wifi.sq.bad   [dBm], default -89 (disconnect if SQ <= this)
+  New events:
+    network.wifi.sta.good
+    network.wifi.sta.bad
+- Network: provide dedicated metrics for modem & wifi channel states
+  New metrics:
+    m.net.mdm.network
+    m.net.mdm.sq
+    m.net.wifi.network
+    m.net.wifi.sq
+- Regen brake signal: added power base range, power smoothing & foot brake config
+  New configs:
+    vehicle [batpwr.smoothing] = 2.0    Battery power smoothing factor (samples, 0 = none)
+    vehicle [brakelight.basepwr] = 0    Base power range around zero [kW]
+    vehicle [brakelight.ignftbrk] = no  Ignore foot brake
+- Twizy: added tuning option for SEVCON_T45 + Gearbox_T80 hybrid
+  Configuration: xrt [type] = "SC45GB80"
+- Twizy: OBD2 VIN reading & cluster DTC monitoring
+  New commands:
+    xrt dtc [show]                      Show DTC report
+    xrt dtc reset                       Reset statistics
+    xrt dtc clear                       Clear DTC stored in OVMS & car
+  New configs:
+    xrt [dtc_autoreset] = no            Reset statistics on each drive/charge
+  New history records:
+    RT-OBD-ClusterDTC (rec_nr = DTC slot nr)
+- New vehicle: Smart ED/EQ 4.Generation (453) (adaption by Thomas Heuer <egon@heuer-humfeld.de>)
+
+2019-05-12 MWJ  3.2.002  OTA release
+- Vehicle framework: added idling alert (ported from V2)
+- Locations: Introduce support for location actions
+- Twizy: Release 1.0.0 -- all V2 features planned are now included in V3
+- Vehicle framework: Regenerative braking signal generation
+- Vehicle framework: DBC and RETOOLS integrations
+- Vehicles: Extensions to Kia Niro, Kia Soul, Mitsubishi, Nissan Leaf,
+  Renault Twizy, SmartED, Tesla Model S, and Think City
+
+2019-01-19 MWJ  3.2.001  OTA release
+- Twizy: support auxiliary charger fan and auxiliary charger
+  New configs:
+    xrt [aux_fan_port]        = EGPIO port number, 0 (default) = off
+    xrt [aux_charger_port]    = EGPIO port number, 0 (default) = off
+- Twizy: lock & valet mode
+  New configs for crash/reboot persistency:
+    xrt [lock_on]   = currently active lock speed [kph]
+    xrt [valet_on]  = currently active odometer limit [10m]
+- Twizy web UI: regenerative braking signal configuration
+- Vehicle framework: regenerative braking signal generation
+  New config:
+    vehicle [accel.smoothing] = 2.0     Acceleration smoothing factor (samples, 0 = none)
+    vehicle [brakelight.enable] = no    Regen brake light enable
+    vehicle [brakelight.port] = 1       … MAX7317 output port number (1, 3…9, default 1 = SW_12V)
+    vehicle [brakelight.on] = 1.3       … activation threshold (deceleration in m/s²)
+    vehicle [brakelight.off] = 0.7      … deactivation threshold (deceleration in m/s²)
+  New metrics:
+    v.p.acceleration    = acceleration/deceleration in m/s² derived from v.p.speed
+    v.e.regenbrake      = regenerative brake light state
+- New vehicle: Kia e-Niro (by Geir Øyvind Vælidalo <geir@validalo.net>)
+- OTA: add option to allow scheduled auto updates via modem
+  New config:
+    ota [auto.allow.modem] = false
+- Twizy web UI: tuning profile and drivemode button editors
+- New vehicle: Smart ED (adaption by Martin Graml <martingraml@hotmail.com>)
+- Web API: per access authorization by "apikey=password" parameter
+- Web UI: text / script editor
+- Web UI: user plugin support (pages & hooks)
+- Twizy web UI: drivemode buttons secured & added to dashboard
+- Twizy web UI: added file dialog for virtual dyno recording
+- Web API scripting: /api/execute supporting GET & output control
+- Web UI: night mode by URI parameter, e.g. "…/#/dashboard?nm=1"
+- Web UI: dashboard accessible w/o login
+- Web UI: added config backup & restore tool
+- Web UI: file selector added for firmware flashing from SD
+- Web UI: text notifications (info/error/alert) displayed as dialogs
+- Twizy: SEVCON monitoring & recording
+  New commands:
+    xrt mon start [<filename>]
+    xrt mon stop
+    xrt mon reset
+  New metrics:
+    xrt.i.* = operational inverter data
+    xrt.s.* = power & torque by speed (virtual dyno)
+- Twizy: experimental powermap calculation including region 3 / breakdown torque
+  New config:
+    xrt [motor_trq_breakdown] = 0     Breakdown torque in Nm, e.g. 210.375
+    xrt [motor_rpm_rated] = 0         Rated speed in rpm, e.g. 2100
+  See docs/Renault-Twizy/Twizy-Powermap-Calculator-Tbrk.ods for details.
+- Add inactivity watchdog timers to CAN buses
+- NissanLeaf: Fix for 0% SOH on 30KWh models with Nissan BMS update
+- Introduction of support for DBC CAN bus configuration files
+- Javascript: New modular framework, and migration of all extensions to objects
+- Mitsubishi i-MiEV OVMS3 rewrite
+
+2018-10-24 MWJ  3.1.011  OTA release
 - Config backup & restore using encrypted ZIP archives
     (AES 256 bit encryption, supported by e.g. 7z)
   New commands:
     config backup <path> [password=module password]
     config restore <path> [password=module password]
+- Support custom MAC address (config network mac ...)
 
 2018-08-26 MWJ  3.1.010  OTA release
 - TeslaRoadster: Fix for digital speedo bug

@@ -37,9 +37,9 @@
 #include "esp_vfs_fat.h"
 #include "wear_levelling.h"
 #include "ovms_mutex.h"
+#include "ovms_command.h"
 
-class OvmsWriter;
-typedef std::map<std::string, std::string> ConfigParamMap;
+typedef NameStringMap ConfigParamMap;
 
 class OvmsConfigParam
   {
@@ -61,7 +61,7 @@ class OvmsConfigParam
     void SetTitle(std::string title) { m_title = title; }
     void Load();
     void Save();
-    const ConfigParamMap* GetMap() { return &m_map; }
+    const ConfigParamMap& GetMap() { return m_map; }
     void SetMap(ConfigParamMap& map);
 
   protected:
@@ -79,7 +79,7 @@ class OvmsConfigParam
     ConfigParamMap m_map;
   };
 
-typedef std::map<std::string, OvmsConfigParam*> ConfigMap;
+typedef NameMap<OvmsConfigParam*> ConfigMap;
 
 typedef enum
   {
@@ -125,6 +125,9 @@ class OvmsConfig
     esp_err_t mount();
     esp_err_t unmount();
     bool ismounted();
+
+  public:
+    void SupportSummary(OvmsWriter* writer);
 
   protected:
     void upgrade();

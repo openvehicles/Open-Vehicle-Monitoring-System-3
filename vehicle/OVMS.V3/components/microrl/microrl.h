@@ -99,6 +99,7 @@ struct microrl {
 	int (*execute) (microrl_t* pThis, int argc, const char * const * argv );            // ptr to 'execute' callback
 	char ** (*get_completion) (microrl_t* pThis, int argc, const char * const * argv ); // ptr to 'completion' callback
 	void (*print) (microrl_t* pThis, const char *);                                     // ptr to 'print' callback
+	void (*error_print) (microrl_t* pThis, const char *);                               // ptr to 'print' callback for error msg
 #ifdef _USE_CTLR_C
 	void (*sigint) (microrl_t* pThis);
 #endif
@@ -106,7 +107,7 @@ struct microrl {
 };
 
 // init internal data, calls once at start up
-void microrl_init (microrl_t * pThis, void (*print)(microrl_t* pThis, const char*));
+void microrl_init (microrl_t * pThis, void (*print)(microrl_t* pThis, const char*), void (*error_print)(microrl_t* pThis, const char*));
 
 // set echo mode (true/false), using for disabling echo for password input
 // echo mode will enabled after user press Enter.

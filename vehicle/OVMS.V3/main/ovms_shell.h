@@ -47,12 +47,15 @@ class OvmsShell : public OvmsWriter
     void ProcessChars(const char* buf, int len);
     void PrintConditional(const char* buf);
     virtual void SetSecure(bool secure=true);
+    virtual void SetArgv(const char* const* argv) { m_argv = argv; return; }
+    virtual const char* const* GetArgv() { return m_argv; }
 
   protected:
     virtual void finalise() {}
 
   protected:
     microrl_t m_rl;
+    const char* const* m_argv;
 
   public:
     int m_verbosity;

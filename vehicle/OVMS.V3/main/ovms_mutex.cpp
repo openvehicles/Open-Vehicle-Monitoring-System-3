@@ -30,6 +30,9 @@
 
 #include "ovms_mutex.h"
 
+/**
+ * Standard Mutex:
+ */
 OvmsMutex::OvmsMutex()
   {
   m_mutex = xSemaphoreCreateMutex();
@@ -62,6 +65,45 @@ OvmsMutexLock::~OvmsMutexLock()
   }
 
 bool OvmsMutexLock::IsLocked()
+  {
+  return m_locked;
+  }
+
+/**
+ * Recursive Mutex:
+ */
+OvmsRecMutex::OvmsRecMutex()
+  {
+  m_mutex = xSemaphoreCreateRecursiveMutex();
+  }
+
+OvmsRecMutex::~OvmsRecMutex()
+  {
+  vSemaphoreDelete(m_mutex);
+  }
+
+bool OvmsRecMutex::Lock(TickType_t timeout)
+  {
+  return (xSemaphoreTakeRecursive(m_mutex, timeout) == pdTRUE);
+  }
+
+void OvmsRecMutex::Unlock()
+  {
+  xSemaphoreGiveRecursive(m_mutex);
+  }
+
+OvmsRecMutexLock::OvmsRecMutexLock(OvmsRecMutex* mutex, TickType_t timeout)
+  {
+  m_mutex = mutex;
+  m_locked = m_mutex->Lock(timeout);
+  }
+
+OvmsRecMutexLock::~OvmsRecMutexLock()
+  {
+  if (m_locked) m_mutex->Unlock();
+  }
+
+bool OvmsRecMutexLock::IsLocked()
   {
   return m_locked;
   }

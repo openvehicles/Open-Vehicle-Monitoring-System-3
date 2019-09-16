@@ -26,7 +26,9 @@
 #ifndef __rt_sevcon_h__
 #define __rt_sevcon_h__
 
+#include "freertos/timers.h"
 #include "canopen.h"
+#include "rt_sevcon_mon.h"
 
 using namespace std;
 
@@ -53,10 +55,11 @@ typedef union __attribute__ ((__packed__))
     unsigned unsaved:1;               // CFG: RAM profile changed & not yet saved to EEPROM
     unsigned applied:1;               // CFG: applyprofile success flag
     unsigned keystate:1;              // CFG: profile button push state
-    unsigned type:4;                  // CFG: 0=Twizy80, 1=Twizy45, 2=SC80GB45 (SEVCON_T80+Gearbox_T45)
-                                      //      0/1   = auto detect
-                                      //      2     = config set xrt type SC80GB45
-                                      //      3…15  = reserved
+    unsigned type:4;                  // CFG: SEVCON & Gearbox type
+                                      //      0/1   = auto detect (standard Twizy80/Twizy45)
+                                      //      2     = config set xrt type SC80GB45 (SEVCON_T80 + Gearbox_T45)
+                                      //      3     = config set xrt type SC45GB80 (SEVCON_T45 + Gearbox_T80)
+                                      //      4…15  = reserved
     
     unsigned :8;                      // padding/reserved
   };
@@ -94,6 +97,10 @@ struct __attribute__ ((__packed__)) cfg_profile
 #define cfgvalue(VAL)   ((uint8_t)((VAL)+1))
 
 
+// 
+// SevconClient: main class
+// 
+
 class OvmsVehicleRenaultTwizy;
 class SevconJob;
 
@@ -117,6 +124,7 @@ class SevconClient : public InternalRamAllocated
   public:
     // Framework interface:
     void EmcyListener(string event, void* data);
+    void UnmountListener(string event, void* data);
     void SetStatus(bool car_awake);
     void Ticker1(uint32_t ticker);
   
@@ -125,6 +133,15 @@ class SevconClient : public InternalRamAllocated
     CANopenResult_t Read(CANopenJob& job, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize);
     CANopenResult_t Read(CANopenJob& job, uint16_t index, uint8_t subindex, uint32_t& var) {
       return Read(job, index, subindex, (uint8_t*)&var, 4);
+    }
+    CANopenResult_t Read(CANopenJob& job, uint16_t index, uint8_t subindex, int32_t& var) {
+      return Read(job, index, subindex, (uint8_t*)&var, 4);
+    }
+    CANopenResult_t Read(CANopenJob& job, uint16_t index, uint8_t subindex, uint16_t& var) {
+      return Read(job, index, subindex, (uint8_t*)&var, 2);
+    }
+    CANopenResult_t Read(CANopenJob& job, uint16_t index, uint8_t subindex, int16_t& var) {
+      return Read(job, index, subindex, (uint8_t*)&var, 2);
     }
     CANopenResult_t Write(CANopenJob& job, uint16_t index, uint8_t subindex, uint8_t* buf, size_t bufsize);
     CANopenResult_t Write(CANopenJob& job, uint16_t index, uint8_t subindex, uint32_t value) {
@@ -135,9 +152,14 @@ class SevconClient : public InternalRamAllocated
   
   public:
     // Asynchronous access:
+    CANopenResult_t SendRead(uint16_t index, uint8_t subindex, uint32_t* value);
+    CANopenResult_t SendRead(uint16_t index, uint8_t subindex, int32_t* value);
+    CANopenResult_t SendRead(uint16_t index, uint8_t subindex, uint16_t* value);
+    CANopenResult_t SendRead(uint16_t index, uint8_t subindex, int16_t* value);
     CANopenResult_t SendWrite(uint16_t index, uint8_t subindex, uint32_t* value);
     CANopenResult_t SendRequestState(CANopenNMTCommand_t command);
-    void ProcessAsyncResults();
+    static void SevconAsyncTaskEntry(void *pvParameters);
+    void SevconAsyncTask();
   
   public:
     // State management:
@@ -174,11 +196,22 @@ class SevconClient : public InternalRamAllocated
     static void KickdownTimer(TimerHandle_t xTimer);
 
   public:
+    // restricting (lock & valet mode):
+    CANopenResult_t CfgLock(int lock_kph);
+    CANopenResult_t CfgUnlock();
+
+  public:
     // diagnostics / statistics:
     void AddFaultInfo(ostringstream& buf, uint16_t faultcode);
     CANopenResult_t QueryLogs(int verbosity, OvmsWriter* writer, int which, int start, int* totalcnt, int* sendcnt);
     CANopenResult_t ResetLogs(int which, int* retcnt);
 
+  public:
+    // Monitoring:
+    void InitMonitoring();
+    void QueryMonitoringData();
+    void ProcessMonitoringData(CANopenJob &job);
+    void SendMonitoringData();
   
   public:
     // Shell commands:
@@ -205,17 +238,32 @@ class SevconClient : public InternalRamAllocated
     
     static void shell_cfg_querylogs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void shell_cfg_clearlogs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    
+    static void shell_mon_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void shell_mon_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void shell_mon_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
   
   private:
     OvmsVehicleRenaultTwizy*  m_twizy;
     const int                 m_nodeid = 1;
     CANopenClient             m_sync;
     CANopenAsyncClient        m_async;
+    TaskHandle_t              m_asynctask = 0;
+    sc_mondata                m_mon = {};
+    bool                      m_mon_enable = false;
+    volatile FILE*            m_mon_file = NULL;
+    OvmsMutex                 m_mon_mutex;
     
     uint32_t                  m_sevcon_type;
     cfg_drivemode             m_drivemode;
     cfg_profile               m_profile;
     bool                      m_cfgmode_request;
+    
+    OvmsMetricVector<short>*  ms_cfg_profile;
+    OvmsMetricInt*            ms_cfg_user;
+    OvmsMetricInt*            ms_cfg_base;
+    OvmsMetricBool*           ms_cfg_unsaved;
+    OvmsMetricString*         ms_cfg_type;
     
     QueueHandle_t             m_faultqueue;
     uint16_t                  m_lastfault;
@@ -225,6 +273,7 @@ class SevconClient : public InternalRamAllocated
     uint32_t                  twizy_max_trq = 0;                  // CFG: max torque (mNm: 0..70125)
     uint32_t                  twizy_max_pwr_lo = 0;               // CFG: max power low speed (W: 0..17000)
     uint32_t                  twizy_max_pwr_hi = 0;               // CFG: max power high speed (W: 0..17000)
+    uint32_t                  twizy_max_curr = 0;                 // CFG: max current level (%: 10..123)
 
     int                       twizy_autorecup_checkpoint = 0;     // change detection for autorecup function
     uint16_t                  twizy_autorecup_level = 1000;       // autorecup: current recup level (per mille)
@@ -232,24 +281,15 @@ class SevconClient : public InternalRamAllocated
     int                       twizy_autodrive_checkpoint = 0;     // change detection for autopower function
     uint16_t                  twizy_autodrive_level = 1000;       // autopower: current drive level (per mille)
     
-    uint8_t                   twizy_lock_speed = 0;               // if Lock mode: fix speed to this (kph)
-    uint32_t                  twizy_valet_odo = 0;                // if Valet mode: reduce speed if odometer > this
-    
     uint32_t                  m_drive_level = 1000;               // current drive level [per mille]
     TimerHandle_t             m_kickdown_timer;
   
 };
 
-#define CtrlLoggedIn()        (StdMetrics.ms_v_env_ctrl_login->AsBool())
-#define CtrlCfgMode()         (StdMetrics.ms_v_env_ctrl_config->AsBool())
-#define CarLocked()           (StdMetrics.ms_v_env_locked->AsBool())
-#define ValetMode()           (StdMetrics.ms_v_env_valet->AsBool())
 
-#define SetCtrlLoggedIn(b)    (StdMetrics.ms_v_env_ctrl_login->SetValue(b))
-#define SetCtrlCfgMode(b)     (StdMetrics.ms_v_env_ctrl_config->SetValue(b))
-#define SetCarLocked(b)       (StdMetrics.ms_v_env_locked->SetValue(b))
-#define SetValetMode(b)       (StdMetrics.ms_v_env_valet->SetValue(b))
-
+// 
+// SevconJob: SevconClient attached CANopenJob
+// 
 
 class SevconJob : public InternalRamAllocated
 {
@@ -271,6 +311,18 @@ class SevconJob : public InternalRamAllocated
       return m_client->Read(m_job, index, subindex, buf, bufsize);
     }
     CANopenResult_t Read(uint16_t index, uint8_t subindex, uint32_t& var) {
+      m_job.Init();
+      return m_client->Read(m_job, index, subindex, var);
+    }
+    CANopenResult_t Read(uint16_t index, uint8_t subindex, int32_t& var) {
+      m_job.Init();
+      return m_client->Read(m_job, index, subindex, var);
+    }
+    CANopenResult_t Read(uint16_t index, uint8_t subindex, uint16_t& var) {
+      m_job.Init();
+      return m_client->Read(m_job, index, subindex, var);
+    }
+    CANopenResult_t Read(uint16_t index, uint8_t subindex, int16_t& var) {
       m_job.Init();
       return m_client->Read(m_job, index, subindex, var);
     }

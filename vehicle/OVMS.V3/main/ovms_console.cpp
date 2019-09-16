@@ -37,7 +37,7 @@
 #include "log_buffers.h"
 
 //static const char *TAG = "Console";
-static char CRbuf[1] = { '\r' };
+static char CRbuf[4] = { '\r', '\033', '[', 'K' };
 static char NLbuf[1] = { '\n' };
 static char ctrlRbuf[1] = { 'R'-0100 };
 
@@ -76,31 +76,21 @@ void OvmsConsole::Initialize(const char* console)
   m_ready = true;
   }
 
-char ** OvmsConsole::GetCompletion(OvmsCommandMap& children, const char* token)
+char** OvmsConsole::SetCompletion(int index, const char* token)
   {
-  unsigned int index = 0;
-  if (token)
+  if (index < COMPLETION_MAX_TOKENS+1)
     {
-    for (OvmsCommandMap::iterator it = children.begin(); it != children.end(); ++it)
+    if (index == COMPLETION_MAX_TOKENS)
+      token = "...";
+    if (token)
       {
-      const char *key = it->first;
-      if (strncmp(key, token, strlen(token)) == 0)
-        {
-        if (index < COMPLETION_MAX_TOKENS+1)
-          {
-          if (it->second->IsSecure() && !m_issecure)
-            continue;
-          if (index == COMPLETION_MAX_TOKENS)
-            key = "...";
-          strncpy(m_space[index], key, TOKEN_MAX_LENGTH-1);
-          m_space[index][TOKEN_MAX_LENGTH-1] = '\0';
-          m_completions[index] = m_space[index];
-          ++index;
-          }
-        }
+      strncpy(m_space[index], token, TOKEN_MAX_LENGTH-1);
+      m_space[index][TOKEN_MAX_LENGTH-1] = '\0';
+      m_completions[index] = m_space[index];
+      ++index;
       }
+    m_completions[index] = NULL;
     }
-  m_completions[index] = NULL;
   return m_completions;
   }
 
@@ -182,7 +172,7 @@ void OvmsConsole::Poll(portTickType ticks, QueueHandle_t queue)
         if (m_state == AWAITING_NL)
           write(NLbuf, 1);
         else if (m_state == AT_PROMPT)
-          write(CRbuf, 1);
+          write(CRbuf, 4);
         char* buffer;
         size_t len;
         if (event.type == ALERT_MULTI)
@@ -234,7 +224,7 @@ void OvmsConsole::Poll(portTickType ticks, QueueHandle_t queue)
         if (m_state == AWAITING_NL)
           write(NLbuf, 1);
         else if (m_state == AT_PROMPT)
-          write(CRbuf, 1);
+          write(CRbuf, 4);
         printf("\033[33m[%d log messages lost]\033[0m", lost);
         m_state = AWAITING_NL;
         m_acked += lost;

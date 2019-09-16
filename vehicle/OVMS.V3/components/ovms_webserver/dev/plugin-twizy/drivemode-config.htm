@@ -1,0 +1,281 @@
+<!--
+  Twizy page plugin: Drivemode Button Configuration
+  Note: included in firmware v3.2
+-->
+
+<style>
+.fullscreened .panel-single .panel-body {
+  padding: 10px;
+}
+
+.btn-group-lg>.btn,
+.btn-lg {
+  padding: 10px 3px;
+  overflow: hidden;
+}
+#loadmenu .btn {
+  font-weight: bold;
+}
+.btn-group.btn-group-lg.exchange {
+  width: 2%;
+}
+#editor .btn:hover {
+  background-color: #e6e6e6;
+}
+#editor .btn-group-lg>.btn,
+#editor .btn-lg {
+  padding: 10px 0px;
+  font-size: 15px;
+}
+#editor .exchange .btn {
+  font-weight: bold;
+}
+.night #editor .btn {
+  color: #000;
+  background: #888;
+}
+.night #editor .btn.focus,
+.night #editor .btn:focus,
+.night #editor .btn:hover {
+  background-color: #e0e0e0;
+}
+
+.radio-list {
+  height: 313px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 15px;
+}
+.radio-list .radio {
+  overflow: hidden;
+}
+.radio-list .key {
+  min-width: 20px;
+  display: inline-block;
+  text-align: center;
+  margin: 0 10px;
+}
+.radio-list kbd {
+  min-width: 60px;
+  display: inline-block;
+  text-align: center;
+  margin: 0 20px 0 10px;
+}
+.radio-list .radio label {
+  width: 100%;
+  text-align: left;
+  padding: 8px 30px;
+}
+.radio-list .radio label.active {
+  background-color: #337ab7;
+  color: #fff;
+  outline: none;
+}
+.radio-list .radio label.active input {
+  outline: none;
+}
+.night .radio-list .radio label:hover {
+  color: #fff;
+}
+</style>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">Drivemode Button Configuration</div>
+  <div class="panel-body">
+    <form action="#">
+
+    <p id="info">Loading button configuration…</p>
+
+    <div id="loadmenu" class="btn-group btn-group-justified"></div>
+    <div id="editor" class="btn-group btn-group-justified">
+      <div class="btn-group btn-group-lg add back">
+        <button type="button" class="btn" title="Add button">✚</button>
+      </div>
+    </div>
+
+    <br>
+    <br>
+    <div class="text-center">
+      <button type="button" class="btn btn-default" onclick="reloadpage()">Reset</button>
+      <button type="button" class="btn btn-primary action-save">Save</button>
+    </div>
+
+    </form>
+  </div>
+  <div class="panel-footer">
+    <a class="btn btn-sm btn-default" target="#main" href="/dashboard">Dashboard</a>
+    <a class="btn btn-sm btn-default" target="#main" href="/xrt/drivemode">Drivemode</a>
+  </div>
+</div>
+
+<div id="key-dialog" />
+
+<script>
+(function(){
+
+  var $menu = $('#loadmenu'), $edit = $('#editor'), $back = $edit.find('.back');
+
+  var pbuttons = [0,1,2,3];
+  var plist = [
+    { label: "STD", title: "Standard" },
+    { label: "PWR", title: "Power" },
+    { label: "ECO", title: "Economy" },
+    { label: "ICE", title: "Winter" },
+  ];
+  
+  // load profile list & button config:
+  $('.panel').addClass("loading");
+  var plistloader = loadcmd('config list xrt').then(function(data) {
+    var lines = data.split('\n'), line, i, key;
+    for (i = 0; i < lines.length; i++) {
+      line = lines[i].match(/profile([0-9]{2})\.?([^:]*): (.*)/);
+      if (line && line.length == 4) {
+        key = Number(line[1]);
+        if (key < 1 || key > 99) continue;
+        if (!plist[key]) plist[key] = {};
+        plist[key][line[2]||"profile"] = line[3];
+        continue;
+      }
+      line = lines[i].match(/profile_buttons: (.*)/);
+      if (line && line.length == 2) {
+        try {
+          pbuttons = JSON.parse("[" + line[1] + "]");
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+  });
+
+  // prep key dialog:
+  $('#key-dialog').dialog({
+    show: false,
+    title: "Select Profile",
+    buttons: [{ label: 'Cancel', btnClass: 'default' },{ label: 'Select', btnClass: 'primary' }],
+    onShow: function(input) {
+      var $this = $(this), dlg = $this.data("dialog");
+      $this.addClass("loading");
+      plistloader.then(function(data) {
+        var curkey = dlg.options.key || 0, i, label, title;
+        $plist = $('<div class="radio-list" data-toggle="buttons" />');
+        for (i = 0; i <= Math.min(99, plist.length-1); i++) {
+          if (plist[i] && (i==0 || plist[i].profile)) {
+            label = plist[i].label || "–";
+            title = plist[i].title || (plist[i].profile.substr(0, 10) + "…");
+          } else {
+            label = "–";
+            title = "–new–";
+          }
+          $plist.append('<div class="radio"><label class="btn">' +
+            '<input type="radio" name="key" value="' + i + '"><span class="key">' +
+            ((i==0) ? "STD" : ("#" + ((i<10)?'0':'') + i)) + '</span> <kbd>' +
+            encode_html(label) + '</kbd> ' + encode_html(title) + '</label></div>');
+        }
+        $this.find('.modal-body').html($plist).find('input[value="'+curkey+'"]')
+          .prop("checked", true).parent().addClass("active");
+        $plist
+          .on('dblclick', 'label.btn', function(ev) { $this.dialog('triggerButton', 1); })
+          .on('keypress', function(ev) { if (ev.which==13) $this.dialog('triggerButton', 1); });
+        $this.removeClass("loading");
+      });
+    },
+    onShown: function(input) {
+      $(this).find('.btn.active').focus();
+    },
+    onHide: function(input) {
+      var $this = $(this), dlg = $this.data("dialog");
+      var key = $this.find('input[name="key"]:checked').val();
+      if (key !== undefined && input.button && input.button.index)
+        dlg.options.onAction.call(this, key);
+    },
+  });
+
+  // profile selection:
+  $('#loadmenu').on('click', 'button', function(ev) {
+    var $this = $(this);
+    $('#key-dialog').dialog({
+      show: true,
+      key: $this.val(),
+      onAction: function(key) {
+        var prof = plist[key] || {};
+        $this.val(key);
+        $this.attr("title", prof.title || "");
+        $this.text(prof.label || ("#"+((key<10)?"0":"")+key));
+      },
+    });
+  });
+
+  // create buttons:
+  
+  function addButton(key, front) {
+    var prof = plist[key] || {};
+    if ($menu[0].childElementCount == 0) {
+      $back.before('\
+        <div class="btn-group btn-group-lg add front">\
+          <button type="button" class="btn" title="Add button">✚</button>\
+        </div>\
+        <div class="btn-group btn-group-lg remove">\
+          <button type="button" class="btn" title="Remove button">✖</button>\
+        </div>');
+    } else {
+      $back.before('\
+        <div class="btn-group btn-group-lg exchange">\
+          <button type="button" class="btn" title="Exchange buttons">⇄</button>\
+        </div>\
+        <div class="btn-group btn-group-lg remove">\
+          <button type="button" class="btn" title="Remove button">✖</button>\
+        </div>');
+    }
+    var $btn = $('\
+      <div class="btn-group btn-group-lg">\
+        <button type="button" value="{key}" class="btn btn-default" title="{title}">{label}</button>\
+      </div>'
+      .replace("{key}", key)
+      .replace("{title}", encode_html(prof.title || ""))
+      .replace("{label}", encode_html(prof.label || "#"+((key<10)?"0":"")+key)));
+    if (front)
+      $menu.prepend($btn);
+    else
+      $menu.append($btn);
+  }
+  
+  plistloader.then(function() {
+    var key, prof;
+    for (var i = 0; i < pbuttons.length; i++) {
+      addButton(pbuttons[i]);
+    }
+    $('.panel').removeClass("loading");
+    $('#info').text("Click button to select profile:");
+  });
+
+  // editor buttons:
+  $('#editor').on('click', '.add .btn', function(ev) {
+    addButton(0, $(this).parent().hasClass("front"));
+  }).on('click', '.remove .btn', function(ev) {
+    var $this = $(this), pos = $edit.find('.btn').index(this) >> 1;
+    $($menu.children().get(pos)).detach();
+    if (pos > 0 || $menu[0].childElementCount == 0)
+      $this.parent().prev().detach();
+    else if ($menu[0].childElementCount != 0)
+      $this.parent().next().detach();
+    $this.parent().detach();
+  }).on('click', '.exchange .btn', function(ev) {
+    var pos = $edit.find('.btn').index(this) >> 1;
+    if (pos > 0) $($menu.children().get(pos)).insertBefore($($menu.children().get(pos-1)));
+  });
+
+  // save:
+  $('.action-save').on('click', function(ev) {
+    pbuttons = [];
+    $menu.find('.btn').each(function() { pbuttons.push(this.value) });
+    loadcmd('config set xrt profile_buttons ' + pbuttons.toString())
+      .fail(function(request, textStatus, errorThrown) {
+        confirmdialog("Save Configuration", xhrErrorInfo(request, textStatus, errorThrown), ["Close"]);
+      })
+      .done(function(res) {
+        confirmdialog("Save Configuration", res, ["Close"]);
+      });
+  });
+
+})();
+</script>

@@ -39,7 +39,11 @@
 #include <stdint.h>
 #include <sstream>
 #include <set>
+#include <vector>
+#include <atomic>
 #include "ovms_utils.h"
+#include "ovms_mutex.h"
+#include "dbc_number.h"
 
 #define METRICS_MAX_MODIFIERS 32
 
@@ -91,6 +95,9 @@ typedef enum : uint8_t
   // Energy consumption:
   WattHoursPK   = 100,  // Wh/km
   WattHoursPM   = 101,  // Wh/mi
+
+  // Torque:
+  Nm            = 110,
   } metric_unit_t;
 
 typedef enum : uint8_t
@@ -116,6 +123,7 @@ class OvmsMetric
     virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
     virtual float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     virtual void SetValue(std::string value);
+    virtual void SetValue(dbcNumber& value);
     virtual void operator=(std::string value);
     virtual uint32_t LastModified();
     virtual uint32_t Age();
@@ -133,7 +141,7 @@ class OvmsMetric
   public:
     OvmsMetric* m_next;
     const char* m_name;
-    std::bitset<METRICS_MAX_MODIFIERS> m_modified;
+    std::atomic_ulong m_modified;
     uint32_t m_lastmodified;
     uint16_t m_autostale;
     metric_unit_t m_units;
@@ -155,6 +163,7 @@ class OvmsMetricBool : public OvmsMetric
     void SetValue(bool value);
     void operator=(bool value) { SetValue(value); }
     void SetValue(std::string value);
+    void SetValue(dbcNumber& value);
     void operator=(std::string value) { SetValue(value); }
 
   protected:
@@ -175,6 +184,7 @@ class OvmsMetricInt : public OvmsMetric
     void SetValue(int value, metric_unit_t units = Other);
     void operator=(int value) { SetValue(value); }
     void SetValue(std::string value);
+    void SetValue(dbcNumber& value);
     void operator=(std::string value) { SetValue(value); }
 
   protected:
@@ -195,6 +205,7 @@ class OvmsMetricFloat : public OvmsMetric
     void SetValue(float value, metric_unit_t units = Other);
     void operator=(float value) { SetValue(value); }
     void SetValue(std::string value);
+    void SetValue(dbcNumber& value);
     void operator=(std::string value) { SetValue(value); }
 
   protected:
@@ -213,6 +224,7 @@ class OvmsMetricString : public OvmsMetric
     void operator=(std::string value) { SetValue(value); }
 
   protected:
+    OvmsMutex m_mutex;
     std::string m_value;
   };
 
@@ -239,6 +251,7 @@ class OvmsMetricBitset : public OvmsMetric
       if (!IsDefined())
         return std::string(defvalue);
       std::ostringstream ss;
+      OvmsMutexLock lock(&m_mutex);
       for (int i = 0; i < N; i++)
         {
         if (m_value[i])
@@ -270,22 +283,30 @@ class OvmsMetricBitset : public OvmsMetric
 
     std::bitset<N> AsBitset(const std::bitset<N> defvalue = std::bitset<N>(0), metric_unit_t units = Other)
       {
-      return IsDefined() ? m_value : defvalue;
+      if (!IsDefined())
+        return defvalue;
+      OvmsMutexLock lock(&m_mutex);
+      return m_value;
       }
 
     void SetValue(std::bitset<N> value, metric_unit_t units = Other)
       {
-      if (m_value != value)
+      if (m_mutex.Lock())
         {
-        m_value = value;
-        SetModified(true);
+        bool modified = false;
+        if (m_value != value)
+          {
+          m_value = value;
+          modified = true;
+          }
+        m_mutex.Unlock();
+        SetModified(modified);
         }
-      else
-        SetModified(false);
       }
     void operator=(std::bitset<N> value) { SetValue(value); }
 
   protected:
+    OvmsMutex m_mutex;
     std::bitset<N> m_value;
   };
 
@@ -313,6 +334,7 @@ class OvmsMetricSet : public OvmsMetric
       if (!IsDefined())
         return std::string(defvalue);
       std::ostringstream ss;
+      OvmsMutexLock lock(&m_mutex);
       for (auto i = m_value.begin(); i != m_value.end(); i++)
         {
         if (ss.tellp() > 0)
@@ -340,23 +362,196 @@ class OvmsMetricSet : public OvmsMetric
 
     std::set<ElemType> AsSet(const std::set<ElemType> defvalue = std::set<ElemType>(), metric_unit_t units = Other)
       {
-      return IsDefined() ? m_value : defvalue;
+      if (!IsDefined())
+        return defvalue;
+      OvmsMutexLock lock(&m_mutex);
+      return m_value;
       }
 
     void SetValue(std::set<ElemType> value, metric_unit_t units = Other)
       {
-      if (m_value != value)
+      if (m_mutex.Lock())
         {
-        m_value = value;
-        SetModified(true);
+        bool modified = false;
+        if (m_value != value)
+          {
+          m_value = value;
+          modified = true;
+          }
+        m_mutex.Unlock();
+        SetModified(modified);
         }
-      else
-        SetModified(false);
       }
     void operator=(std::set<ElemType> value) { SetValue(value); }
 
   protected:
+    OvmsMutex m_mutex;
     std::set<ElemType> m_value;
+  };
+
+
+/**
+ * OvmsMetricVector<type>: metric wrapper for std::vector<type>
+ *  - string representation as comma separated values
+ *  - TODO: escaping / string encoding for non-numeric types
+ *  - TODO: unit conversions
+ *
+ * Usage example:
+ *  OvmsMetricVector<float>* vf = new OvmsMetricVector<float>("test.volts", SM_STALE_MIN, Volts);
+ *  vf->SetElemValue(3, 1.23);
+ *  vf->SetElemValue(17, 2.34);
+ *  float myvals[3] = { 5.5, 6.6, 7.7 };
+ *  vf->SetElemValues(10, 3, myvals);
+ *
+ * Note: use ExtRamAllocator<type> for large vectors (= use SPIRAM)
+ */
+template
+  <
+  typename ElemType,
+  class Allocator = std::allocator<ElemType>
+  >
+class OvmsMetricVector : public OvmsMetric
+  {
+  public:
+    OvmsMetricVector(const char* name, uint16_t autostale=0, metric_unit_t units = Other)
+      : OvmsMetric(name, autostale, units)
+      {
+      }
+    virtual ~OvmsMetricVector()
+      {
+      }
+
+  public:
+    virtual std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
+      {
+      if (!IsDefined())
+        return std::string(defvalue);
+      std::ostringstream ss;
+      if (precision >= 0)
+        {
+        ss.precision(precision); // Set desired precision
+        ss << fixed;
+        }
+      OvmsMutexLock lock(&m_mutex);
+      for (auto i = m_value.begin(); i != m_value.end(); i++)
+        {
+        if (ss.tellp() > 0)
+          ss << ',';
+        ss << *i;
+        }
+      return ss.str();
+      }
+
+    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
+      {
+      std::string json = "[";
+      json += AsString(defvalue, units, precision);
+      json += "]";
+      return json;
+      }
+
+    virtual void SetValue(std::string value)
+      {
+      std::vector<ElemType, Allocator> n_value;
+      std::istringstream vs(value);
+      std::string token;
+      ElemType elem;
+      while(std::getline(vs, token, ','))
+        {
+        std::istringstream ts(token);
+        ts >> elem;
+        n_value.push_back(elem);
+        }
+      SetValue(n_value);
+      }
+    void operator=(std::string value) { SetValue(value); }
+
+    void SetValue(std::vector<ElemType, Allocator> value, metric_unit_t units = Other)
+      {
+      if (m_mutex.Lock())
+        {
+        bool modified = false;
+        if (m_value != value)
+          {
+          m_value = value;
+          modified = true;
+          }
+        m_mutex.Unlock();
+        SetModified(modified);
+        }
+      }
+    void operator=(std::vector<ElemType, Allocator> value) { SetValue(value); }
+
+    void ClearValue()
+      {
+      if (IsDefined())
+        {
+        if (m_mutex.Lock())
+          {
+          m_value.clear();
+          m_mutex.Unlock();
+          }
+        SetModified(true);
+        }
+      }
+
+    std::vector<ElemType, Allocator> AsVector(const std::vector<ElemType, Allocator> defvalue = std::vector<ElemType, Allocator>(), metric_unit_t units = Other)
+      {
+      if (!IsDefined())
+        return defvalue;
+      OvmsMutexLock lock(&m_mutex);
+      return m_value;
+      }
+
+    ElemType GetElemValue(size_t n)
+      {
+      ElemType val{};
+      OvmsMutexLock lock(&m_mutex);
+      if (m_value.size() > n)
+        val = m_value[n];
+      return val;
+      }
+
+    void SetElemValue(size_t n, ElemType value)
+      {
+      bool modified = false;
+      if (m_mutex.Lock())
+        {
+        if (m_value.size() < n+1)
+          m_value.resize(n+1);
+        if (m_value[n] != value)
+          {
+          m_value[n] = value;
+          modified = true;
+          }
+        m_mutex.Unlock();
+        }
+      SetModified(modified);
+      }
+
+    void SetElemValues(size_t start, size_t cnt, ElemType* values)
+      {
+      bool modified = false;
+      if (m_mutex.Lock())
+        {
+        if (m_value.size() < start+cnt)
+          m_value.resize(start+cnt);
+        for (size_t i = 0; i < cnt; i++)
+          {
+          if (m_value[start+i] != values[i])
+            {
+            m_value[start+i] = values[i];
+            modified = true;
+            }
+          }
+        m_mutex.Unlock();
+        }
+      SetModified(modified);
+      }
+
+  protected:
+    OvmsMutex m_mutex;
+    std::vector<ElemType, Allocator> m_value;
   };
 
 

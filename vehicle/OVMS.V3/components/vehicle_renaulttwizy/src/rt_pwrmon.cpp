@@ -82,11 +82,11 @@ void OvmsVehicleRenaultTwizy::PowerInit()
   
   // init commands
   
-  cmd_power = cmd_xrt->RegisterCommand("power", "Power/energy info", NULL, "", 0, 0, true);
+  cmd_power = cmd_xrt->RegisterCommand("power", "Power/energy info");
   {
-    cmd_power->RegisterCommand("report", "Trip efficiency report", vehicle_twizy_power, "", 0, 0, true);
-    cmd_power->RegisterCommand("totals", "Power totals", vehicle_twizy_power, "", 0, 0, true);
-    cmd_power->RegisterCommand("stats", "Generate RT-PWR-Stats entry", vehicle_twizy_power, "", 0, 0, true);
+    cmd_power->RegisterCommand("report", "Trip efficiency report", vehicle_twizy_power);
+    cmd_power->RegisterCommand("totals", "Power totals", vehicle_twizy_power);
+    cmd_power->RegisterCommand("stats", "Generate RT-PWR-Stats entry", vehicle_twizy_power);
   }
   
 }
@@ -384,7 +384,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandPower
         twizy_levelpwr[i].rec / WH_DIV);
     }
     
-    writer->printf(",%.2f,%.2f\n",
+    writer->printf(",%.2f,%.2f",
       (float) twizy_charge_use / AH_DIV,
       (float) twizy_charge_rec / AH_DIV);
     

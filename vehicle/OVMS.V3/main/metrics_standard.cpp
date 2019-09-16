@@ -45,6 +45,10 @@ MetricsStandard::MetricsStandard()
   ms_m_net_type = new OvmsMetricString(MS_N_TYPE, SM_STALE_MAX);
   ms_m_net_sq = new OvmsMetricInt(MS_N_SQ, SM_STALE_MAX, dbm);
   ms_m_net_provider = new OvmsMetricString(MS_N_PROVIDER, SM_STALE_MAX);
+  ms_m_net_wifi_sq = new OvmsMetricFloat(MS_N_WIFI_SQ, SM_STALE_MAX, dbm);
+  ms_m_net_wifi_network = new OvmsMetricString(MS_N_WIFI_NETWORK, SM_STALE_MAX);
+  ms_m_net_mdm_sq = new OvmsMetricFloat(MS_N_MDM_SQ, SM_STALE_MAX, dbm);
+  ms_m_net_mdm_network = new OvmsMetricString(MS_N_MDM_NETWORK, SM_STALE_MAX);
   ms_m_net_mdm_iccid = new OvmsMetricString(MS_N_MDM_ICCID, SM_STALE_MAX);
   ms_m_net_mdm_model = new OvmsMetricString(MS_N_MDM_MODEL, SM_STALE_MAX);
 
@@ -76,10 +80,35 @@ MetricsStandard::MetricsStandard()
   ms_v_bat_12v_current = new OvmsMetricFloat(MS_V_BAT_12V_CURRENT, SM_STALE_HIGH, Amps);
   ms_v_bat_12v_voltage_ref = new OvmsMetricFloat(MS_V_BAT_12V_VOLTAGE_REF, SM_STALE_HIGH, Volts);
   ms_v_bat_12v_voltage_alert = new OvmsMetricBool(MS_V_BAT_12V_VOLTAGE_ALERT, SM_STALE_MID);
-  ms_v_bat_cell_level_min = new OvmsMetricFloat(MS_V_BAT_CELL_LEVEL_MIN, SM_STALE_HIGH, Percentage);
-  ms_v_bat_cell_level_max = new OvmsMetricFloat(MS_V_BAT_CELL_LEVEL_MAX, SM_STALE_HIGH, Percentage);
-  ms_v_bat_cell_level_avg = new OvmsMetricFloat(MS_V_BAT_CELL_LEVEL_AVG, SM_STALE_HIGH, Percentage);
-  ms_v_bat_cell_level_stddev = new OvmsMetricFloat(MS_V_BAT_CELL_LEVEL_STDDEV, SM_STALE_HIGH, Percentage);
+  
+  ms_v_bat_pack_level_min = new OvmsMetricFloat(MS_V_BAT_PACK_LEVEL_MIN, SM_STALE_HIGH, Percentage);
+  ms_v_bat_pack_level_max = new OvmsMetricFloat(MS_V_BAT_PACK_LEVEL_MAX, SM_STALE_HIGH, Percentage);
+  ms_v_bat_pack_level_avg = new OvmsMetricFloat(MS_V_BAT_PACK_LEVEL_AVG, SM_STALE_HIGH, Percentage);
+  ms_v_bat_pack_level_stddev = new OvmsMetricFloat(MS_V_BAT_PACK_LEVEL_STDDEV, SM_STALE_HIGH, Percentage);
+  
+  ms_v_bat_pack_vmin = new OvmsMetricFloat(MS_V_BAT_PACK_VMIN, SM_STALE_HIGH, Volts);
+  ms_v_bat_pack_vmax = new OvmsMetricFloat(MS_V_BAT_PACK_VMAX, SM_STALE_HIGH, Volts);
+  ms_v_bat_pack_vavg = new OvmsMetricFloat(MS_V_BAT_PACK_VAVG, SM_STALE_HIGH, Volts);
+  ms_v_bat_pack_vstddev = new OvmsMetricFloat(MS_V_BAT_PACK_VSTDDEV, SM_STALE_HIGH, Volts);
+  ms_v_bat_pack_vstddev_max = new OvmsMetricFloat(MS_V_BAT_PACK_VSTDDEVMAX, SM_STALE_HIGH, Volts);
+
+  ms_v_bat_pack_tmin = new OvmsMetricFloat(MS_V_BAT_PACK_TMIN, SM_STALE_HIGH, Celcius);
+  ms_v_bat_pack_tmax = new OvmsMetricFloat(MS_V_BAT_PACK_TMAX, SM_STALE_HIGH, Celcius);
+  ms_v_bat_pack_tavg = new OvmsMetricFloat(MS_V_BAT_PACK_TAVG, SM_STALE_HIGH, Celcius);
+  ms_v_bat_pack_tstddev = new OvmsMetricFloat(MS_V_BAT_PACK_TSTDDEV, SM_STALE_HIGH, Celcius);
+  ms_v_bat_pack_tstddev_max = new OvmsMetricFloat(MS_V_BAT_PACK_TSTDDEVMAX, SM_STALE_HIGH, Celcius);
+
+  ms_v_bat_cell_voltage = new OvmsMetricVector<float>(MS_V_BAT_CELL_VOLTAGE, SM_STALE_HIGH, Volts);
+  ms_v_bat_cell_vmin = new OvmsMetricVector<float>(MS_V_BAT_CELL_VMIN, SM_STALE_HIGH, Volts);
+  ms_v_bat_cell_vmax = new OvmsMetricVector<float>(MS_V_BAT_CELL_VMAX, SM_STALE_HIGH, Volts);
+  ms_v_bat_cell_vdevmax = new OvmsMetricVector<float>(MS_V_BAT_CELL_VDEVMAX, SM_STALE_HIGH, Volts);
+  ms_v_bat_cell_valert = new OvmsMetricVector<short>(MS_V_BAT_CELL_VALERT, SM_STALE_HIGH, Other);
+  
+  ms_v_bat_cell_temp = new OvmsMetricVector<float>(MS_V_BAT_CELL_TEMP, SM_STALE_HIGH, Celcius);
+  ms_v_bat_cell_tmin = new OvmsMetricVector<float>(MS_V_BAT_CELL_TMIN, SM_STALE_HIGH, Celcius);
+  ms_v_bat_cell_tmax = new OvmsMetricVector<float>(MS_V_BAT_CELL_TMAX, SM_STALE_HIGH, Celcius);
+  ms_v_bat_cell_tdevmax = new OvmsMetricVector<float>(MS_V_BAT_CELL_TDEVMAX, SM_STALE_HIGH, Celcius);
+  ms_v_bat_cell_talert = new OvmsMetricVector<short>(MS_V_BAT_CELL_TALERT, SM_STALE_HIGH, Other);
 
   ms_v_charge_voltage = new OvmsMetricFloat(MS_V_CHARGE_VOLTAGE, SM_STALE_MID, Volts);
   ms_v_charge_current = new OvmsMetricFloat(MS_V_CHARGE_CURRENT, SM_STALE_MID, Amps);
@@ -121,6 +150,7 @@ MetricsStandard::MetricsStandard()
   ms_v_env_throttle = new OvmsMetricFloat(MS_V_ENV_THROTTLE, SM_STALE_MID, Percentage);
   ms_v_env_footbrake = new OvmsMetricFloat(MS_V_ENV_FOOTBRAKE, SM_STALE_MID, Percentage);
   ms_v_env_handbrake = new OvmsMetricBool(MS_V_ENV_HANDBRAKE, SM_STALE_MID);
+  ms_v_env_regenbrake = new OvmsMetricBool(MS_V_ENV_REGENBRAKE, SM_STALE_MID);
   ms_v_env_awake = new OvmsMetricBool(MS_V_ENV_AWAKE, SM_STALE_MID);
   ms_v_env_charging12v = new OvmsMetricBool(MS_V_ENV_CHARGING12V, SM_STALE_MID);
   ms_v_env_cooling = new OvmsMetricBool(MS_V_ENV_COOLING, SM_STALE_MID);
@@ -145,6 +175,7 @@ MetricsStandard::MetricsStandard()
   ms_v_pos_direction = new OvmsMetricFloat(MS_V_POS_DIRECTION, SM_STALE_MID, Degrees);
   ms_v_pos_altitude = new OvmsMetricFloat(MS_V_POS_ALTITUDE, SM_STALE_MID, Meters);
   ms_v_pos_speed = new OvmsMetricFloat(MS_V_POS_SPEED, SM_STALE_MID, Kph);
+  ms_v_pos_acceleration = new OvmsMetricFloat(MS_V_POS_ACCELERATION, SM_STALE_MID, MetersPSS);
   ms_v_pos_gpsspeed = new OvmsMetricFloat(MS_V_POS_GPSSPEED, SM_STALE_MID, Kph);
   ms_v_pos_odometer = new OvmsMetricFloat(MS_V_POS_ODOMETER, SM_STALE_MID, Kilometers);
   ms_v_pos_trip = new OvmsMetricFloat(MS_V_POS_TRIP, SM_STALE_MID, Kilometers);

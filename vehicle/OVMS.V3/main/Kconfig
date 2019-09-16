@@ -92,6 +92,18 @@ config OVMS_HW_CAN_TX_QUEUE_SIZE
 endmenu # Hardware Support
 
 
+menu "System Options"
+    depends on OVMS
+
+config OVMS_SYS_COMMAND_STACK_SIZE
+    int "Stack size for command execution"
+    default 6144
+    depends on OVMS
+    help
+        The stack size of the OVMS Console and dynamic command tasks.
+
+endmenu # System Options
+
 
 menu "Library Support"
     depends on OVMS
@@ -162,6 +174,29 @@ config OVMS_SC_ZIP
         Enable to include zip archive support for config backup & restore.
         This is based on libzip by Dieter Baron and Thomas Klausner and
         zlib by Jean-loup Gailly and Mark Adler.
+
+config OVMS_SC_JAVASCRIPT_DUKTAPE_STACK
+    int "JavaScript (DukTape) task stack size"
+    default 12288
+    depends on OVMS_SC_JAVASCRIPT_DUKTAPE
+    help
+        Stack size for the DukTape task ("OVMS DukTape").
+        The DukTape task runs the javascript framework.
+
+config OVMS_SC_JAVASCRIPT_DUKTAPE_QUEUE_SIZE
+    int "JavaScript (DukTape) task queue size"
+    default 20
+    depends on OVMS_SC_JAVASCRIPT_DUKTAPE
+    help
+        The size of the DukTape queue (for outstanding requests).
+
+config OVMS_SC_JAVASCRIPT_DUKTAPE_PRIORITY
+    int "JavaScript (DukTape) task priority"
+    default 3
+    depends on OVMS_SC_JAVASCRIPT_DUKTAPE
+    help
+        Priority for the DukTape task ("OVMS DukTape").
+        The DukTape task runs the javascript framework.
 
 endmenu # Library support
 
@@ -256,6 +291,20 @@ config OVMS_VEHICLE_THINKCITY
     help
         Enable to include support for Think City vehicles.
 
+config OVMS_VEHICLE_SMARTED
+    bool "Include support for Smart ED vehicle"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Smart ED vehicle.
+
+config OVMS_VEHICLE_SMARTEQ
+    bool "Include support for Smart ED/EQ Gen.4 vehicle"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Smart ED/EQ Gen.4 vehicle.
+
 config OVMS_VEHICLE_MITSUBISHI
     bool "Include support for Mitsubishi iMiev vehicle"
     default y
@@ -269,6 +318,14 @@ config OVMS_VEHICLE_ZEVA
     depends on OVMS
     help
         Enable to include support for vehicles using Zeva BMS.
+
+config OVMS_VEHICLE_KIANIROEV
+    bool "Include support for Kia e-Niro"
+    default y
+    depends on OVMS
+    depends on OVMS_VEHICLE_KIASOULEV
+    help
+        Enable to include support for Kia e-Niro.
 
 config OVMS_VEHICLE_FIAT500
     bool "Include support for Fiat 500 vehicle"
@@ -493,7 +550,7 @@ config OVMS_DEV_CONFIGVFS
     help
         Enable to permit VFS access to configuration files (danger: insecure)
 
-config OMMS_DEV_SDCARDSCRIPTS
+config OVMS_DEV_SDCARDSCRIPTS
     bool "Run event scripts from /sd, as well as /store (note: may be insecure)"
     default n
     depends on OVMS

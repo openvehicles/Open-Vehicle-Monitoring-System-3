@@ -53,6 +53,10 @@
 #define MS_N_PROVIDER               "m.net.provider"
 #define MS_N_MDM_ICCID              "m.net.mdm.iccid"
 #define MS_N_MDM_MODEL              "m.net.mdm.model"
+#define MS_N_MDM_NETWORK            "m.net.mdm.network"
+#define MS_N_MDM_SQ                 "m.net.mdm.sq"
+#define MS_N_WIFI_NETWORK           "m.net.wifi.network"
+#define MS_N_WIFI_SQ                "m.net.wifi.sq"
 
 #define MS_S_V2_CONNECTED           "s.v2.connected"
 #define MS_S_V2_PEERS               "s.v2.peers"
@@ -83,10 +87,31 @@
 #define MS_V_BAT_12V_VOLTAGE_REF    "v.b.12v.voltage.ref"
 #define MS_V_BAT_12V_VOLTAGE_ALERT  "v.b.12v.voltage.alert"
 #define MS_V_BAT_TEMP               "v.b.temp"
-#define MS_V_BAT_CELL_LEVEL_MIN     "v.b.c.level.min"
-#define MS_V_BAT_CELL_LEVEL_MAX     "v.b.c.level.max"
-#define MS_V_BAT_CELL_LEVEL_AVG     "v.b.c.level.avg"
-#define MS_V_BAT_CELL_LEVEL_STDDEV  "v.b.c.level.stddev"
+
+#define MS_V_BAT_PACK_LEVEL_MIN     "v.b.p.level.min"
+#define MS_V_BAT_PACK_LEVEL_MAX     "v.b.p.level.max"
+#define MS_V_BAT_PACK_LEVEL_AVG     "v.b.p.level.avg"
+#define MS_V_BAT_PACK_LEVEL_STDDEV  "v.b.p.level.stddev"
+#define MS_V_BAT_PACK_VMIN          "v.b.p.voltage.min"
+#define MS_V_BAT_PACK_VMAX          "v.b.p.voltage.max"
+#define MS_V_BAT_PACK_VAVG          "v.b.p.voltage.avg"
+#define MS_V_BAT_PACK_VSTDDEV       "v.b.p.voltage.stddev"
+#define MS_V_BAT_PACK_VSTDDEVMAX    "v.b.p.voltage.stddev.max"
+#define MS_V_BAT_PACK_TMIN          "v.b.p.temp.min"
+#define MS_V_BAT_PACK_TMAX          "v.b.p.temp.max"
+#define MS_V_BAT_PACK_TAVG          "v.b.p.temp.avg"
+#define MS_V_BAT_PACK_TSTDDEV       "v.b.p.temp.stddev"
+#define MS_V_BAT_PACK_TSTDDEVMAX    "v.b.p.temp.stddev.max"
+#define MS_V_BAT_CELL_VOLTAGE       "v.b.c.voltage"
+#define MS_V_BAT_CELL_VMIN          "v.b.c.voltage.min"
+#define MS_V_BAT_CELL_VMAX          "v.b.c.voltage.max"
+#define MS_V_BAT_CELL_VDEVMAX       "v.b.c.voltage.dev.max"
+#define MS_V_BAT_CELL_VALERT        "v.b.c.voltage.alert"
+#define MS_V_BAT_CELL_TEMP          "v.b.c.temp"
+#define MS_V_BAT_CELL_TMIN          "v.b.c.temp.min"
+#define MS_V_BAT_CELL_TMAX          "v.b.c.temp.max"
+#define MS_V_BAT_CELL_TDEVMAX       "v.b.c.temp.dev.max"
+#define MS_V_BAT_CELL_TALERT        "v.b.c.temp.alert"
 
 #define MS_V_CHARGE_VOLTAGE         "v.c.voltage"
 #define MS_V_CHARGE_CURRENT         "v.c.current"
@@ -126,6 +151,7 @@
 #define MS_V_ENV_THROTTLE           "v.e.throttle"
 #define MS_V_ENV_FOOTBRAKE          "v.e.footbrake"
 #define MS_V_ENV_HANDBRAKE          "v.e.handbrake"
+#define MS_V_ENV_REGENBRAKE         "v.e.regenbrake"
 #define MS_V_ENV_AWAKE              "v.e.awake"
 #define MS_V_ENV_CHARGING12V        "v.e.charging12v"
 #define MS_V_ENV_COOLING            "v.e.cooling"
@@ -153,6 +179,7 @@
 #define MS_V_POS_DIRECTION          "v.p.direction"
 #define MS_V_POS_ALTITUDE           "v.p.altitude"
 #define MS_V_POS_SPEED              "v.p.speed"
+#define MS_V_POS_ACCELERATION       "v.p.acceleration"
 #define MS_V_POS_GPSSPEED           "v.p.gpsspeed"
 #define MS_V_POS_ODOMETER           "v.p.odometer"
 #define MS_V_POS_TRIP               "v.p.trip"
@@ -184,6 +211,10 @@ class MetricsStandard
     OvmsMetricString* ms_m_net_type;                // none, wifi, modem
     OvmsMetricInt*    ms_m_net_sq;                  // Network signal quality [dbm]
     OvmsMetricString* ms_m_net_provider;            // Network provider name
+    OvmsMetricString* ms_m_net_wifi_network;        // Wifi network SSID
+    OvmsMetricFloat*  ms_m_net_wifi_sq;             // Wifi network signal quality [dbm]
+    OvmsMetricString* ms_m_net_mdm_network;         // Modem network operator
+    OvmsMetricFloat*  ms_m_net_mdm_sq;              // Modem network signal quality [dbm]
     OvmsMetricString* ms_m_net_mdm_iccid;
     OvmsMetricString* ms_m_net_mdm_model;
 
@@ -216,10 +247,36 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_bat_12v_voltage_ref;     // Auxiliary 12V battery reference voltage [V]
     OvmsMetricBool*   ms_v_bat_12v_voltage_alert;   // True = auxiliary battery under voltage alert
     OvmsMetricFloat*  ms_v_bat_temp;                // Battery temperature [°C]
-    OvmsMetricFloat*  ms_v_bat_cell_level_min;      // Cell level - weakest cells [%]
-    OvmsMetricFloat*  ms_v_bat_cell_level_max;      // Cell level - strongest cells [%]
-    OvmsMetricFloat*  ms_v_bat_cell_level_avg;      // Cell level - average [%]
-    OvmsMetricFloat*  ms_v_bat_cell_level_stddev;   // Cell level - std dev [%]
+
+    OvmsMetricFloat*  ms_v_bat_pack_level_min;            // Cell level - weakest cell in pack [%]
+    OvmsMetricFloat*  ms_v_bat_pack_level_max;            // Cell level - strongest cell in pack [%]
+    OvmsMetricFloat*  ms_v_bat_pack_level_avg;            // Cell level - pack average [%]
+    OvmsMetricFloat*  ms_v_bat_pack_level_stddev;         // Cell level - pack standard deviation [%]
+                                                          // Note: "level" = voltage levels normalized to percent
+
+    OvmsMetricFloat*  ms_v_bat_pack_vmin;                 // Cell voltage - weakest cell in pack [V]
+    OvmsMetricFloat*  ms_v_bat_pack_vmax;                 // Cell voltage - strongest cell in pack [V]
+    OvmsMetricFloat*  ms_v_bat_pack_vavg;                 // Cell voltage - pack average [V]
+    OvmsMetricFloat*  ms_v_bat_pack_vstddev;              // Cell voltage - current standard deviation [V]
+    OvmsMetricFloat*  ms_v_bat_pack_vstddev_max;          // Cell voltage - maximum standard deviation observed [V]
+
+    OvmsMetricFloat*  ms_v_bat_pack_tmin;                 // Cell temperature - coldest cell in pack [°C]
+    OvmsMetricFloat*  ms_v_bat_pack_tmax;                 // Cell temperature - warmest cell in pack [°C]
+    OvmsMetricFloat*  ms_v_bat_pack_tavg;                 // Cell temperature - pack average [°C]
+    OvmsMetricFloat*  ms_v_bat_pack_tstddev;              // Cell temperature - current standard deviation [°C]
+    OvmsMetricFloat*  ms_v_bat_pack_tstddev_max;          // Cell temperature - maximum standard deviation observed [°C]
+
+    OvmsMetricVector<float>* ms_v_bat_cell_voltage;       // Cell voltages [V]
+    OvmsMetricVector<float>* ms_v_bat_cell_vmin;          // Cell minimum voltages [V]
+    OvmsMetricVector<float>* ms_v_bat_cell_vmax;          // Cell maximum voltages [V]
+    OvmsMetricVector<float>* ms_v_bat_cell_vdevmax;       // Cell maximum voltage deviation observed [V]
+    OvmsMetricVector<short>* ms_v_bat_cell_valert;        // Cell voltage deviation alert level [0=normal, 1=warning, 2=alert]
+
+    OvmsMetricVector<float>* ms_v_bat_cell_temp;          // Cell temperatures [°C]
+    OvmsMetricVector<float>* ms_v_bat_cell_tmin;          // Cell minimum temperatures [°C]
+    OvmsMetricVector<float>* ms_v_bat_cell_tmax;          // Cell maximum temperatures [°C]
+    OvmsMetricVector<float>* ms_v_bat_cell_tdevmax;       // Cell maximum temperature deviation observed [°C]
+    OvmsMetricVector<short>* ms_v_bat_cell_talert;        // Cell temperature deviation alert level [0=normal, 1=warning, 2=alert]
 
     OvmsMetricFloat*  ms_v_charge_voltage;          // Momentary charger supply voltage [V]
     OvmsMetricFloat*  ms_v_charge_current;          // Momentary charger output current [A]
@@ -259,6 +316,7 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_env_throttle;            // Drive pedal state [%]
     OvmsMetricFloat*  ms_v_env_footbrake;           // Brake pedal state [%]
     OvmsMetricBool*   ms_v_env_handbrake;           // Handbrake state
+    OvmsMetricBool*   ms_v_env_regenbrake;          // Regenerative braking state
     OvmsMetricBool*   ms_v_env_awake;               // Vehicle/bus awake (switched on)
     OvmsMetricBool*   ms_v_env_charging12v;         // 12V battery charging
     OvmsMetricBool*   ms_v_env_cooling;
@@ -285,6 +343,7 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_pos_direction;
     OvmsMetricFloat*  ms_v_pos_altitude;
     OvmsMetricFloat*  ms_v_pos_speed;               // Vehicle speed [kph]
+    OvmsMetricFloat*  ms_v_pos_acceleration;        // Vehicle acceleration [m/s²]
     OvmsMetricFloat*  ms_v_pos_gpsspeed;            // GPS speed over ground [kph]
     OvmsMetricFloat*  ms_v_pos_odometer;
     OvmsMetricFloat*  ms_v_pos_trip;

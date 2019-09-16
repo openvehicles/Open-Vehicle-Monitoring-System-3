@@ -51,6 +51,7 @@ static const char *TAG = "ota";
 #include "ovms_buffer.h"
 #include "ovms_boot.h"
 #include "ovms_netmanager.h"
+#include "ovms_version.h"
 #include "crypt_md5.h"
 
 OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
@@ -83,16 +84,26 @@ int buildverscmp(std::string v1, std::string v2)
 void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   ota_info info;
+  std::string version;
   int len = 0;
   bool check_update = (strcmp(cmd->GetName(), "status")==0);
   MyOTA.GetStatus(info, check_update);
 
+  if (info.version_firmware != "")
+    len += writer->printf("Firmware:          %s\n", info.version_firmware.c_str());
   if (info.partition_running != "")
     len += writer->printf("Running partition: %s\n", info.partition_running.c_str());
   if (info.partition_boot != "")
     len += writer->printf("Boot partition:    %s\n", info.partition_boot.c_str());
-  if (info.version_firmware != "")
-    len += writer->printf("Firmware:          %s\n", info.version_firmware.c_str());
+  version = GetOVMSPartitionVersion(ESP_PARTITION_SUBTYPE_APP_FACTORY);
+  if (version != "")
+      len += writer->printf("Factory image:     %s\n", version.c_str());
+  version = GetOVMSPartitionVersion(ESP_PARTITION_SUBTYPE_APP_OTA_0);
+  if (version != "")
+      len += writer->printf("OTA_O image:       %s\n", version.c_str());
+  version = GetOVMSPartitionVersion(ESP_PARTITION_SUBTYPE_APP_OTA_1);
+  if (version != "")
+      len += writer->printf("OTA_1 image:       %s\n", version.c_str());
   if (info.version_server != "")
     {
     len += writer->printf("Server Available:  %s%s\n", info.version_server.c_str(),
@@ -530,21 +541,21 @@ OvmsOTA::OvmsOTA()
   MyEvents.RegisterEvent(TAG,"sd.mounted", std::bind(&OvmsOTA::AutoFlashSD, this, _1, _2));
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
-  OvmsCommand* cmd_ota = MyCommandApp.RegisterCommand("ota","OTA framework",NULL,"",0,0,true);
+  OvmsCommand* cmd_ota = MyCommandApp.RegisterCommand("ota","OTA framework");
 
-  OvmsCommand* cmd_otastatus = cmd_ota->RegisterCommand("status","Show OTA status",ota_status,"[nocheck]",0,1,true);
-  cmd_otastatus->RegisterCommand("nocheck","…skip check for available update",ota_status,"",0,0,true);
+  OvmsCommand* cmd_otastatus = cmd_ota->RegisterCommand("status","Show OTA status",ota_status,"[nocheck]",0,1);
+  cmd_otastatus->RegisterCommand("nocheck","…skip check for available update",ota_status);
 
-  OvmsCommand* cmd_otaflash = cmd_ota->RegisterCommand("flash","OTA flash",NULL,"",0,0,true);
-  cmd_otaflash->RegisterCommand("vfs","OTA flash vfs",ota_flash_vfs,"<file>",1,1,true);
-  cmd_otaflash->RegisterCommand("http","OTA flash http",ota_flash_http,"<url>",0,1,true);
-  OvmsCommand* cmd_otaflash_auto = cmd_otaflash->RegisterCommand("auto","Automatic regular OTA flash (over web)",ota_flash_auto,"[force]",0,1,true);
-  cmd_otaflash_auto->RegisterCommand("force","…force update (even if server version older)",ota_flash_auto,"",0,0,true);
+  OvmsCommand* cmd_otaflash = cmd_ota->RegisterCommand("flash","OTA flash");
+  cmd_otaflash->RegisterCommand("vfs","OTA flash vfs",ota_flash_vfs,"<file>",1,1);
+  cmd_otaflash->RegisterCommand("http","OTA flash http",ota_flash_http,"[<url>]",0,1);
+  OvmsCommand* cmd_otaflash_auto = cmd_otaflash->RegisterCommand("auto","Automatic regular OTA flash (over web)",ota_flash_auto,"[force]",0,1);
+  cmd_otaflash_auto->RegisterCommand("force","…force update (even if server version older)",ota_flash_auto);
 
-  OvmsCommand* cmd_otaboot = cmd_ota->RegisterCommand("boot","OTA boot",NULL,"",0,0,true);
-  cmd_otaboot->RegisterCommand("factory","Boot from factory image",ota_boot, "", 0, 0, true);
-  cmd_otaboot->RegisterCommand("ota_0","Boot from ota_0 image",ota_boot, "", 0, 0, true);
-  cmd_otaboot->RegisterCommand("ota_1","Boot from ota_1 image",ota_boot, "", 0, 0, true);
+  OvmsCommand* cmd_otaboot = cmd_ota->RegisterCommand("boot","OTA boot");
+  cmd_otaboot->RegisterCommand("factory","Boot from factory image",ota_boot);
+  cmd_otaboot->RegisterCommand("ota_0","Boot from ota_0 image",ota_boot);
+  cmd_otaboot->RegisterCommand("ota_1","Boot from ota_1 image",ota_boot);
   }
 
 OvmsOTA::~OvmsOTA()
@@ -622,7 +633,7 @@ void OvmsOTA::Ticker600(std::string event, void* data)
   time ( &rawtime );
   struct tm* tmu = localtime(&rawtime);
   if ((tmu->tm_hour == MyConfig.GetParamValueInt("ota","auto.hour",2))&&
-      (MyNetManager.m_connected_wifi))
+      (MyNetManager.m_connected_wifi || MyConfig.GetParamValueBool("ota", "auto.allow.modem")))
     {
     LaunchAutoFlash();
     }

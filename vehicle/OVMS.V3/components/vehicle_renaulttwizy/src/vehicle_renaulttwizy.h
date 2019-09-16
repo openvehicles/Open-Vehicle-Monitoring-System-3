@@ -35,12 +35,15 @@
 #include "ovms_config.h"
 #include "ovms_metrics.h"
 #include "ovms_command.h"
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
+#endif
 
 #include "rt_types.h"
 #include "rt_battmon.h"
 #include "rt_pwrmon.h"
 #include "rt_sevcon.h"
+#include "rt_obd2.h"
 
 using namespace std;
 
@@ -57,6 +60,17 @@ using namespace std;
 #define CMD_PowerUsageStats         208 // ()
 #define CMD_ResetLogs               209 // (which, start)
 #define CMD_QueryLogs               210 // (which, start)
+
+
+#define CtrlLoggedIn()        (StdMetrics.ms_v_env_ctrl_login->AsBool())
+#define CtrlCfgMode()         (StdMetrics.ms_v_env_ctrl_config->AsBool())
+#define CarLocked()           (StdMetrics.ms_v_env_locked->AsBool())
+#define ValetMode()           (StdMetrics.ms_v_env_valet->AsBool())
+
+#define SetCtrlLoggedIn(b)    (StdMetrics.ms_v_env_ctrl_login->SetValue(b))
+#define SetCtrlCfgMode(b)     (StdMetrics.ms_v_env_ctrl_config->SetValue(b))
+#define SetCarLocked(b)       (StdMetrics.ms_v_env_locked->SetValue(b))
+#define SetValetMode(b)       (StdMetrics.ms_v_env_valet->SetValue(b))
 
 
 class OvmsVehicleRenaultTwizy : public OvmsVehicle
@@ -76,6 +90,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   public:
     void CanResponder(const CAN_frame_t* p_frame);
     void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void Ticker1(uint32_t ticker);
     void Ticker10(uint32_t ticker);
     void ConfigChanged(OvmsConfigParam* param);
@@ -89,7 +104,6 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     void NotifiedVehicleChargeState(const char* state);
 
   protected:
-    bool m_ready = false;
     static size_t m_modifier;
     OvmsMetricString *m_version;
     OvmsCommand *cmd_xrt;
@@ -108,7 +122,9 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     int CalcChargeTime(int dstsoc);
   
   protected:
+#if 0 // replaced by OBD2 VIN
     char twizy_vin[8] = "";                     // last 7 digits of full VIN
+#endif
     
     // Car + charge status from CAN:
     #define CAN_STATUS_FOOTBRAKE    0x01        //  bit 0 = 0x01: 1 = Footbrake
@@ -122,7 +138,14 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     #define CAN_STATUS_ONLINE       0x80        //  bit 7 = 0x80: 1 = CAN-Bus online (test flag to detect offline)
     unsigned char twizy_status = CAN_STATUS_OFFLINE;
     
-    
+    OvmsMetricInt *mt_charger_status;           // CAN frame 627 → xrt.v.c.status
+    OvmsMetricInt *mt_bms_status;               // CAN frame 628 → xrt.v.b.status
+    OvmsMetricInt *mt_sevcon_status;            // CAN frame 629 → xrt.v.i.status
+
+    OvmsMetricBool *mt_bms_alert_12v;           // see https://github.com/dexterbg/Twizy-Virtual-BMS/blob/master/extras/Protocol.ods
+    OvmsMetricBool *mt_bms_alert_batt;
+    OvmsMetricBool *mt_bms_alert_temp;
+
     struct {
       
       // Status flags:
@@ -220,7 +243,10 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     
     int twizy_chargeduration = 0;           // charge duration in seconds
     
-    UINT8 twizy_fan_timer = 0;              // countdown timer for RB1 charger fan
+    int cfg_aux_fan_port = 0;               // EGPIO port number for auxiliary charger fan
+    int cfg_aux_charger_port = 0;           // EGPIO port number for auxiliary charger
+    
+    UINT8 twizy_fan_timer = 0;              // countdown timer for auxiliary charger fan
     #define TWIZY_FAN_THRESHOLD   45    // temperature in °C
     #define TWIZY_FAN_OVERSHOOT   5     // hold time in minutes after switch-off
     
@@ -270,7 +296,6 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     
     void SendGPSLog();
     void SendTripLog();
-    //void SendSDOLog();
   
   
   // --------------------------------------------------------------------------
@@ -356,13 +381,16 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     
     OvmsCommand *cmd_batt;
     
-    OvmsMetricFloat *m_batt_soc_min;
-    OvmsMetricFloat *m_batt_soc_max;
-    
-    OvmsMetricInt *m_batt_pack_count;
-    OvmsMetricInt *m_batt_cmod_count;
-    OvmsMetricInt *m_batt_cell_count;
-    
+    OvmsMetricFloat *m_batt_use_soc_min;
+    OvmsMetricFloat *m_batt_use_soc_max;
+    OvmsMetricFloat *m_batt_use_volt_min;
+    OvmsMetricFloat *m_batt_use_volt_max;
+    OvmsMetricFloat *m_batt_use_temp_min;
+    OvmsMetricFloat *m_batt_use_temp_max;
+
+    //OvmsMetricFloat *m_batt_max_drive_pwr;
+    //OvmsMetricFloat *m_batt_max_recup_pwr;
+
     battery_pack twizy_batt[BATT_PACKS];
     battery_cmod twizy_cmod[BATT_CMODS];
     battery_cell twizy_cell[BATT_CELLS];
@@ -428,11 +456,52 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     vehicle_command_t MsgCommandQueryLogs(string& result, int command, const char* args);
     vehicle_command_t MsgCommandResetLogs(string& result, int command, const char* args);
     
+  public:
+    vehicle_command_t CommandLock(const char* pin);
+    vehicle_command_t CommandUnlock(const char* pin);
+    vehicle_command_t CommandActivateValet(const char* pin);
+    vehicle_command_t CommandDeactivateValet(const char* pin);
+
+  public:
+    int               twizy_lock_speed = 6;     // if Lock mode: fix speed to this (kph)
+    uint32_t          twizy_valet_odo = 0;      // if Valet mode: reduce speed if twizy_odometer > this
+
   protected:
     SevconClient *m_sevcon = NULL;
     signed char twizy_button_cnt = 0;           // will count key presses (errors) in STOP mode (msg 081)
-  
 
+
+  // --------------------------------------------------------------------------
+  // OBD2 subsystem
+  //  - implementation: rt_obd2.(h,cpp)
+  // 
+  
+  public:
+    void ObdInit();
+    void ObdTicker1();
+    void ObdTicker10();
+
+  public:
+    // Shell commands:
+    static void shell_obd_showdtc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void shell_obd_cleardtc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void shell_obd_resetdtc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+
+  protected:
+    void ResetDTCStats();
+    void FormatDTC(StringWriter& buf, int i, cluster_dtc& e);
+    void SendDTC(int i, cluster_dtc& e);
+
+  protected:
+    cluster_dtc_store   twizy_cluster_dtc = {};
+    cluster_dtc_store   twizy_cluster_dtc_new = {};
+    bool                twizy_cluster_dtc_updated = false;
+    bool                twizy_cluster_dtc_inhibit_alert = true;   // prevent alert for historical DTCs
+    uint16_t            twizy_cluster_dtc_present[DTC_COUNT] = {};
+    bool                cfg_dtc_autoreset = false;
+
+
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   // --------------------------------------------------------------------------
   // Webserver subsystem
   //  - implementation: rt_web.(h,cpp)
@@ -443,11 +512,18 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
     static void WebConsole(PageEntry_t& p, PageContext_t& c);
-    static void WebBattMon(PageEntry_t& p, PageContext_t& c);
-  
+    static void WebSevconMon(PageEntry_t& p, PageContext_t& c);
+    static void WebProfileEditor(PageEntry_t& p, PageContext_t& c);
+    static void WebDrivemodeConfig(PageEntry_t& p, PageContext_t& c);
+
   public:
     void GetDashboardConfig(DashboardConfig& cfg);
 
+  public:
+    static PageResult_t WebExtDashboard(PageEntry_t& p, PageContext_t& c, const std::string& hook);
+
+#endif //CONFIG_OVMS_COMP_WEBSERVER
+  
 };
 
 #endif // __VEHICLE_RENAULTTWIZY_H__

@@ -32,6 +32,7 @@
 #define __VEHICLE_H__
 
 #include <map>
+#include <vector>
 #include <string>
 #include "can.h"
 #include "ovms_events.h"
@@ -52,6 +53,7 @@ struct DashboardConfig;
 #define VEHICLE_POLL_TYPE_OBDIIFREEZE   0x02 // Mode 02 "freeze frame data"
 #define VEHICLE_POLL_TYPE_OBDIIVEHICLE  0x09 // Mode 09 "vehicle information"
 #define VEHICLE_POLL_TYPE_OBDIISESSION  0x10 // UDS: Diagnostic Session Control
+#define VEHICLE_POLL_TYPE_OBDII_1A  			0x1A // Mode 1A
 #define VEHICLE_POLL_TYPE_OBDIIGROUP    0x21 // enhanced data by 8 bit PID
 #define VEHICLE_POLL_TYPE_OBDIIEXTENDED 0x22 // enhanced data by 16 bit PID
 
@@ -89,8 +91,17 @@ struct DashboardConfig;
 // 200+ reserved for custom commands
 
 
+// BMS default deviation thresholds:
+#define BMS_DEFTHR_VWARN    0.020   // [V]
+#define BMS_DEFTHR_VALERT   0.030   // [V]
+#define BMS_DEFTHR_TWARN    2.00    // [°C]
+#define BMS_DEFTHR_TALERT   3.00    // [°C]
+
+
 class OvmsVehicle : public InternalRamAllocated
   {
+  friend class OvmsVehicleFactory;
+
   public:
     OvmsVehicle();
     virtual ~OvmsVehicle();
@@ -101,6 +112,7 @@ class OvmsVehicle : public InternalRamAllocated
     TaskHandle_t m_rxtask;
     bool m_registeredlistener;
     bool m_autonotifications;
+    bool m_ready;
 
   public:
     canbus* m_can1;
@@ -120,9 +132,35 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
 
   protected:
+    int m_minsoc;            // The minimum SOC level before alert
+    int m_minsoc_triggered;  // The triggered minimum SOC level to alert at
+
+  protected:
+    float m_accel_refspeed;                 // Acceleration calculation: last speed measured (m/s)
+    uint32_t m_accel_reftime;               // … timestamp for refspeed (ms)
+    float m_accel_smoothing;                // … smoothing factor (samples, 0 = none, default 2.0)
+    void CalculateAcceleration();           // Call after ms_v_pos_speed update to derive acceleration
+
+  protected:
+    float m_batpwr_smoothing;               // … smoothing factor (samples, 0 = none, default 2.0) …
+    float m_batpwr_smoothed;                // … and smoothed value of ms_v_bat_power
+
+  protected:
+    bool m_brakelight_enable;               // Regen brake light enable (default no)
+    int m_brakelight_port;                  // … MAX7317 output port number (1, 3…9, default 1 = SW_12V)
+    float m_brakelight_on;                  // … activation threshold (deceleration in m/s², default 1.3)
+    float m_brakelight_off;                 // … deactivation threshold (deceleration in m/s², default 0.7)
+    float m_brakelight_basepwr;             // … base power area (+/- from 0 in kW, default 0)
+    bool m_brakelight_ignftbrk;             // … ignore foot brake (default no)
+    uint32_t m_brakelight_start;            // … activation start time
+    virtual void CheckBrakelight();         // … check vehicle metrics for regen braking state (override to customize)
+    virtual bool SetBrakelight(int on);     // … hardware control method (override for non MAX7317 control)
+
+  protected:
     uint32_t m_ticker;
     int m_12v_ticker;
     int m_chargestate_ticker;
+    int m_idle_ticker;
     virtual void Ticker1(uint32_t ticker);
     virtual void Ticker10(uint32_t ticker);
     virtual void Ticker60(uint32_t ticker);
@@ -144,6 +182,8 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void NotifyAlarmStopped();
     virtual void Notify12vCritical();
     virtual void Notify12vRecovered();
+    virtual void NotifyMinSocCritical();
+    virtual void NotifyVehicleIdling();
 
   protected:
     virtual int GetNotifyChargeStateDelay(const char* state) { return 3; }
@@ -182,7 +222,7 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void Status(int verbosity, OvmsWriter* writer);
 
   protected:
-    void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed);
+    void RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile = NULL);
     bool PinCheck(char* pin);
 
   public:
@@ -257,6 +297,63 @@ class OvmsVehicle : public InternalRamAllocated
   protected:
     void PollSetPidList(canbus* bus, const poll_pid_t* plist);
     void PollSetState(uint8_t state);
+
+  // BMS helpers
+  protected:
+    float* m_bms_voltages;                    // BMS voltages (current value)
+    float* m_bms_vmins;                       // BMS minimum voltages seen (since reset)
+    float* m_bms_vmaxs;                       // BMS maximum voltages seen (since reset)
+    float* m_bms_vdevmaxs;                    // BMS maximum voltage deviations seen (since reset)
+    short* m_bms_valerts;                     // BMS voltage deviation alerts (since reset)
+    int m_bms_valerts_new;                    // BMS new voltage alerts since last notification
+    bool m_bms_has_voltages;                  // True if BMS has a complete set of voltage values
+    float* m_bms_temperatures;                // BMS temperatures (celcius current value)
+    float* m_bms_tmins;                       // BMS minimum temperatures seen (since reset)
+    float* m_bms_tmaxs;                       // BMS maximum temperatures seen (since reset)
+    float* m_bms_tdevmaxs;                    // BMS maximum temperature deviations seen (since reset)
+    short* m_bms_talerts;                     // BMS temperature deviation alerts (since reset)
+    int m_bms_talerts_new;                    // BMS new temperature alerts since last notification
+    bool m_bms_has_temperatures;              // True if BMS has a complete set of temperature values
+    std::vector<bool> m_bms_bitset_v;         // BMS tracking: true if corresponding voltage set
+    std::vector<bool> m_bms_bitset_t;         // BMS tracking: true if corresponding temperature set
+    int m_bms_bitset_cv;                      // BMS tracking: count of unique voltage values set
+    int m_bms_bitset_ct;                      // BMS tracking: count of unique temperature values set
+    int m_bms_readings_v;                     // Number of BMS voltage readings expected
+    int m_bms_readingspermodule_v;            // Number of BMS voltage readings per module
+    int m_bms_readings_t;                     // Number of BMS temperature readings expected
+    int m_bms_readingspermodule_t;            // Number of BMS temperature readings per module
+    float m_bms_limit_tmin;                   // Minimum temperature limit (for sanity checking)
+    float m_bms_limit_tmax;                   // Maximum temperature limit (for sanity checking)
+    float m_bms_limit_vmin;                   // Minimum voltage limit (for sanity checking)
+    float m_bms_limit_vmax;                   // Maximum voltage limit (for sanity checking)
+    float m_bms_defthr_vwarn;                 // Default voltage deviation warn threshold [V]
+    float m_bms_defthr_valert;                // Default voltage deviation alert threshold [V]
+    float m_bms_defthr_twarn;                 // Default temperature deviation warn threshold [°C]
+    float m_bms_defthr_talert;                // Default temperature deviation alert threshold [°C]
+
+  protected:
+    void BmsSetCellArrangementVoltage(int readings, int readingspermodule);
+    void BmsSetCellArrangementTemperature(int readings, int readingspermodule);
+    void BmsSetCellDefaultThresholdsVoltage(float warn, float alert);
+    void BmsSetCellDefaultThresholdsTemperature(float warn, float alert);
+    void BmsSetCellLimitsVoltage(float min, float max);
+    void BmsSetCellLimitsTemperature(float min, float max);
+    void BmsSetCellVoltage(int index, float value);
+    void BmsResetCellVoltages();
+    void BmsSetCellTemperature(int index, float value);
+    void BmsResetCellTemperatures();
+    void BmsRestartCellVoltages();
+    void BmsRestartCellTemperatures();
+    virtual void NotifyBmsAlerts();
+
+  public:
+    int BmsGetCellArangementVoltage(int* readings=NULL, int* readingspermodule=NULL);
+    int BmsGetCellArangementTemperature(int* readings=NULL, int* readingspermodule=NULL);
+    void BmsGetCellDefaultThresholdsVoltage(float* warn, float* alert);
+    void BmsGetCellDefaultThresholdsTemperature(float* warn, float* alert);
+    void BmsResetCellStats();
+    virtual void BmsStatus(int verbosity, OvmsWriter* writer);
+    virtual bool FormatBmsAlerts(int verbosity, OvmsWriter* writer, bool show_warnings);
   };
 
 template<typename Type> OvmsVehicle* CreateVehicle()

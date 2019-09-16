@@ -32,15 +32,35 @@
 static const char *TAG = "vehicle";
 
 #include <stdio.h>
+#include <algorithm>
 #include <ovms_command.h>
+#include <ovms_script.h>
 #include <ovms_metrics.h>
 #include <ovms_notify.h>
 #include <metrics_standard.h>
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include <ovms_webserver.h>
 #endif // #ifdef CONFIG_OVMS_COMP_WEBSERVER
+#include <ovms_peripherals.h>
 #include <string_writer.h>
 #include "vehicle.h"
+
+#undef SQR
+#define SQR(n) ((n)*(n))
+#undef ABS
+#define ABS(n) (((n) < 0) ? -(n) : (n))
+#undef LIMIT_MIN
+#define LIMIT_MIN(n,lim) ((n) < (lim) ? (lim) : (n))
+#undef LIMIT_MAX
+#define LIMIT_MAX(n,lim) ((n) > (lim) ? (lim) : (n))
+
+#undef TRUNCPREC
+#define TRUNCPREC(fval,prec) (trunc((fval) * pow(10,(prec))) / pow(10,(prec)))
+#undef ROUNDPREC
+#define ROUNDPREC(fval,prec) (round((fval) * pow(10,(prec))) / pow(10,(prec)))
+#undef CEILPREC
+#define CEILPREC(fval,prec)  (ceil((fval)  * pow(10,(prec))) / pow(10,(prec)))
+
 
 OvmsVehicleFactory MyVehicleFactory __attribute__ ((init_priority (2000)));
 
@@ -132,6 +152,44 @@ void vehicle_homelink(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
       break;
     default:
       writer->puts("Error: Homelink functionality not available");
+      break;
+    }
+  }
+
+void vehicle_climatecontrol(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+
+  bool on;
+  if (strcmp("on", argv[0]) == 0)
+    {
+    on = true;
+    }
+  else if (strcmp("off", argv[0]) == 0)
+    {
+    on = false;
+    }
+  else
+    {
+    writer->puts("Error: argument must be 'on' or 'off'");
+    return;
+    }
+
+  switch(MyVehicleFactory.m_currentvehicle->CommandClimateControl(on))
+    {
+    case OvmsVehicle::Success:
+      writer->puts("Climate Control ");
+      writer->puts(on ? "on" : "off");
+      break;
+    case OvmsVehicle::Fail:
+      writer->puts("Error: Climate Control failed");
+      break;
+    default:
+      writer->puts("Error: Climate Control functionality not available");
       break;
     }
   }
@@ -278,7 +336,7 @@ void vehicle_charge_current(int verbosity, OvmsWriter* writer, OvmsCommand* cmd,
       writer->printf("Charge current limit set to %dA\n",limit);
       break;
     case OvmsVehicle::Fail:
-      writer->printf("Error: Could not sst charge current limit to %dA\n",limit);
+      writer->printf("Error: Could not set charge current limit to %dA\n",limit);
       break;
     default:
       writer->puts("Error: Charge current limit functionality not available");
@@ -366,6 +424,377 @@ void vehicle_stat(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     }
   }
 
+void bms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle != NULL)
+    {
+    MyVehicleFactory.m_currentvehicle->BmsStatus(verbosity, writer);
+    }
+  else
+    {
+    writer->puts("No vehicle module selected");
+    }
+  }
+
+void bms_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle != NULL)
+    {
+    MyVehicleFactory.m_currentvehicle->BmsResetCellStats();
+    writer->puts("BMS cell statistics have been reset.");
+    }
+  else
+    {
+    writer->puts("No vehicle module selected");
+    }
+  }
+
+void bms_alerts(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle != NULL)
+    {
+    MyVehicleFactory.m_currentvehicle->FormatBmsAlerts(verbosity, writer, true);
+    }
+  else
+    {
+    writer->puts("No vehicle module selected");
+    }
+  }
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
+static duk_ret_t DukOvmsVehicleType(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle != NULL)
+    {
+    duk_push_string(ctx, MyVehicleFactory.m_currentvehicletype.c_str());
+    return 1;
+    }
+  else
+    {
+    return 0;
+    }
+  }
+
+static duk_ret_t DukOvmsVehicleWakeup(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    switch(MyVehicleFactory.m_currentvehicle->CommandWakeup())
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleHomelink(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    int homelink = duk_to_int(ctx,0);
+    int durationms = duk_to_int(ctx,-1);
+    if (durationms==0) durationms = 1000;
+
+    if ((homelink<1)||(homelink>3))
+      { duk_push_boolean(ctx, 0); }
+    else if (durationms < 100)
+      { duk_push_boolean(ctx, 0); }
+    else
+      {
+      switch(MyVehicleFactory.m_currentvehicle->CommandHomelink(homelink-1, durationms))
+        {
+        case OvmsVehicle::Success:
+          duk_push_boolean(ctx, 1);
+          break;
+        default:
+          duk_push_boolean(ctx, 0);
+          break;
+        }
+      }
+    }
+
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleClimateControl(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    bool on = duk_to_boolean(ctx,0);
+    switch(MyVehicleFactory.m_currentvehicle->CommandClimateControl(on))
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleLock(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    const char* pin = duk_safe_to_string(ctx, 0);
+    switch(MyVehicleFactory.m_currentvehicle->CommandLock(pin))
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleUnlock(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    const char* pin = duk_safe_to_string(ctx, 0);
+    switch(MyVehicleFactory.m_currentvehicle->CommandUnlock(pin))
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleValet(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    const char* pin = duk_safe_to_string(ctx, 0);
+    switch(MyVehicleFactory.m_currentvehicle->CommandActivateValet(pin))
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleUnvalet(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    const char* pin = duk_safe_to_string(ctx, 0);
+    switch(MyVehicleFactory.m_currentvehicle->CommandDeactivateValet(pin))
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleSetChargeMode(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    const char* mode = duk_safe_to_string(ctx, 0);
+    OvmsVehicle::vehicle_mode_t tmode = (OvmsVehicle::vehicle_mode_t)chargemode_key(mode);
+    switch(MyVehicleFactory.m_currentvehicle->CommandSetChargeMode(tmode))
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleSetChargeCurrent(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    int limit = duk_to_int(ctx,0);
+    switch(MyVehicleFactory.m_currentvehicle->CommandSetChargeCurrent(limit))
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleSetChargeTimer(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    bool timeron = duk_to_boolean(ctx,0);
+    int timerstart = duk_to_int(ctx,-1);
+    switch(MyVehicleFactory.m_currentvehicle->CommandSetChargeTimer(timeron, timerstart))
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleStopCharge(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    switch(MyVehicleFactory.m_currentvehicle->CommandStopCharge())
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleStartCharge(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    switch(MyVehicleFactory.m_currentvehicle->CommandStartCharge())
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleStartCooldown(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    switch(MyVehicleFactory.m_currentvehicle->CommandCooldown(true))
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+static duk_ret_t DukOvmsVehicleStopCooldown(duk_context *ctx)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    duk_push_boolean(ctx, 0);
+    }
+  else
+    {
+    switch(MyVehicleFactory.m_currentvehicle->CommandCooldown(false))
+      {
+      case OvmsVehicle::Success:
+        duk_push_boolean(ctx, 1);
+        break;
+      default:
+        duk_push_boolean(ctx, 0);
+        break;
+      }
+    }
+  return 1;
+  }
+
+#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
 OvmsVehicleFactory::OvmsVehicleFactory()
   {
   ESP_LOGI(TAG, "Initialising VEHICLE Factory (2000)");
@@ -373,34 +802,63 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   m_currentvehicle = NULL;
   m_currentvehicletype.clear();
 
-  OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework",NULL,"",0,0, true);
-  cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1, true);
-  cmd_vehicle->RegisterCommand("list","Show list of available vehicle modules",vehicle_list,"",0,0, true);
-  cmd_vehicle->RegisterCommand("status","Show vehicle module status",vehicle_status,"",0,0, true);
+  OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework");
+  cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1);
+  cmd_vehicle->RegisterCommand("list","Show list of available vehicle modules",vehicle_list);
+  cmd_vehicle->RegisterCommand("status","Show vehicle module status",vehicle_status);
 
-  MyCommandApp.RegisterCommand("wakeup","Wake up vehicle",vehicle_wakeup,"",0,0,true);
-  MyCommandApp.RegisterCommand("homelink","Activate specified homelink button",vehicle_homelink,"<homelink><durationms>",1,2,true);
-  MyCommandApp.RegisterCommand("lock","Lock vehicle",vehicle_lock,"<pin>",1,1,true);
-  MyCommandApp.RegisterCommand("unlock","Unlock vehicle",vehicle_unlock,"<pin>",1,1,true);
-  MyCommandApp.RegisterCommand("valet","Activate valet mode",vehicle_valet,"<pin>",1,1,true);
-  MyCommandApp.RegisterCommand("unvalet","Deactivate valet mode",vehicle_unvalet,"<pin>",1,1,true);
-  OvmsCommand* cmd_charge = MyCommandApp.RegisterCommand("charge","Charging framework",NULL,"",0,0,true);
-  OvmsCommand* cmd_chargemode = cmd_charge->RegisterCommand("mode","Set vehicle charge mode",NULL,"",0,0,true);
-  cmd_chargemode->RegisterCommand("standard","Set vehicle standard charge mode",vehicle_charge_mode,"",0,0,true);
-  cmd_chargemode->RegisterCommand("storage","Set vehicle standard charge mode",vehicle_charge_mode,"",0,0,true);
-  cmd_chargemode->RegisterCommand("range","Set vehicle standard charge mode",vehicle_charge_mode,"",0,0,true);
-  cmd_chargemode->RegisterCommand("performance","Set vehicle standard charge mode",vehicle_charge_mode,"",0,0,true);
-  cmd_charge->RegisterCommand("start","Start a vehicle charge",vehicle_charge_start,"",0,0,true);
-  cmd_charge->RegisterCommand("stop","Stop a vehicle charge",vehicle_charge_stop,"",0,0,true);
-  cmd_charge->RegisterCommand("current","Limit charge current",vehicle_charge_current,"<amps>",1,1,true);
-  cmd_charge->RegisterCommand("cooldown","Start a vehicle cooldown",vehicle_charge_cooldown,"",0,0,true);
-  MyCommandApp.RegisterCommand("stat","Show vehicle status",vehicle_stat,"",0,0,true);
+  MyCommandApp.RegisterCommand("wakeup","Wake up vehicle",vehicle_wakeup);
+  MyCommandApp.RegisterCommand("homelink","Activate specified homelink button",vehicle_homelink,"<homelink><durationms>",1,2);
+  MyCommandApp.RegisterCommand("climatecontrol","(De)Activate Climate Control",vehicle_climatecontrol,"<on|off>",1,1);
+  MyCommandApp.RegisterCommand("lock","Lock vehicle",vehicle_lock,"<pin>",1,1);
+  MyCommandApp.RegisterCommand("unlock","Unlock vehicle",vehicle_unlock,"<pin>",1,1);
+  MyCommandApp.RegisterCommand("valet","Activate valet mode",vehicle_valet,"<pin>",1,1);
+  MyCommandApp.RegisterCommand("unvalet","Deactivate valet mode",vehicle_unvalet,"<pin>",1,1);
+
+  OvmsCommand* cmd_charge = MyCommandApp.RegisterCommand("charge","Charging framework");
+  OvmsCommand* cmd_chargemode = cmd_charge->RegisterCommand("mode","Set vehicle charge mode");
+  cmd_chargemode->RegisterCommand("standard","Set vehicle standard charge mode",vehicle_charge_mode);
+  cmd_chargemode->RegisterCommand("storage","Set vehicle standard charge mode",vehicle_charge_mode);
+  cmd_chargemode->RegisterCommand("range","Set vehicle standard charge mode",vehicle_charge_mode);
+  cmd_chargemode->RegisterCommand("performance","Set vehicle standard charge mode",vehicle_charge_mode);
+  cmd_charge->RegisterCommand("start","Start a vehicle charge",vehicle_charge_start);
+  cmd_charge->RegisterCommand("stop","Stop a vehicle charge",vehicle_charge_stop);
+  cmd_charge->RegisterCommand("current","Limit charge current",vehicle_charge_current,"<amps>",1,1);
+  cmd_charge->RegisterCommand("cooldown","Start a vehicle cooldown",vehicle_charge_cooldown);
+
+  MyCommandApp.RegisterCommand("stat","Show vehicle status",vehicle_stat);
+
+  OvmsCommand* cmd_bms = MyCommandApp.RegisterCommand("bms","BMS framework");
+  cmd_bms->RegisterCommand("status","Show BMS status",bms_status);
+  cmd_bms->RegisterCommand("reset","Reset BMS statistics",bms_reset);
+  cmd_bms->RegisterCommand("alerts","Show BMS alerts",bms_alerts);
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsVehicle");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleType, 0, "Type");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleWakeup, 0, "Wakeup");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleHomelink, 2, "Homelink");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleClimateControl, 1, "ClimateControl");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleLock, 1, "Lock");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleUnlock, 1, "Unlock");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleValet, 1, "Valet");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleUnvalet, 1, "Unvalet");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleSetChargeMode, 1, "SetChargeMode");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleSetChargeCurrent, 1, "SetChargeCurrent");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleSetChargeTimer, 2, "SetChargeTimer");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleStopCharge, 0, "StopCharge");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleStartCharge, 0, "StartCharge");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleStartCooldown, 0, "StartCooldown");
+  dto->RegisterDuktapeFunction(DukOvmsVehicleStopCooldown, 0, "StopCooldown");
+  MyScripts.RegisterDuktapeObject(dto);
+#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
 OvmsVehicleFactory::~OvmsVehicleFactory()
   {
   if (m_currentvehicle)
     {
+    m_currentvehicle->m_ready = false;
     delete m_currentvehicle;
     m_currentvehicle = NULL;
     m_currentvehicletype.clear();
@@ -421,6 +879,7 @@ void OvmsVehicleFactory::ClearVehicle()
   {
   if (m_currentvehicle)
     {
+    m_currentvehicle->m_ready = false;
     delete m_currentvehicle;
     m_currentvehicle = NULL;
     m_currentvehicletype.clear();
@@ -433,11 +892,13 @@ void OvmsVehicleFactory::SetVehicle(const char* type)
   {
   if (m_currentvehicle)
     {
+    m_currentvehicle->m_ready = false;
     delete m_currentvehicle;
     m_currentvehicle = NULL;
     m_currentvehicletype.clear();
     }
   m_currentvehicle = NewVehicle(type);
+  m_currentvehicle->m_ready = true;
   m_currentvehicletype = std::string(type);
   StandardMetrics.ms_v_type->SetValue(m_currentvehicle ? type : "");
   MyEvents.SignalEvent("vehicle.type.set", (void*)type, strlen(type)+1);
@@ -462,15 +923,15 @@ const char* OvmsVehicleFactory::ActiveVehicleType()
 
 const char* OvmsVehicleFactory::ActiveVehicleName()
   {
-  map_vehicle_t::iterator it = m_vmap.find(StandardMetrics.ms_v_type->AsString().c_str());
+  map_vehicle_t::iterator it = m_vmap.find(m_currentvehicletype.c_str());
   if (it != m_vmap.end())
     return it->second.name;
-  return NULL;
+  return "";
   }
 
 const char* OvmsVehicleFactory::ActiveVehicleShortName()
   {
-  return m_currentvehicle ? m_currentvehicle->VehicleShortName() : NULL;
+  return m_currentvehicle ? m_currentvehicle->VehicleShortName() : "";
   }
 
 static void OvmsVehicleRxTask(void *pvParameters)
@@ -487,8 +948,10 @@ OvmsVehicle::OvmsVehicle()
   m_ticker = 0;
   m_12v_ticker = 0;
   m_chargestate_ticker = 0;
+  m_idle_ticker = 0;
   m_registeredlistener = false;
   m_autonotifications = true;
+  m_ready = false;
 
   m_poll_state = 0;
   m_poll_bus = NULL;
@@ -504,6 +967,59 @@ OvmsVehicle::OvmsVehicle()
   m_poll_ml_offset = 0;
   m_poll_ml_frame = 0;
 
+  m_bms_voltages = NULL;
+  m_bms_vmins = NULL;
+  m_bms_vmaxs = NULL;
+  m_bms_vdevmaxs = NULL;
+  m_bms_valerts = NULL;
+  m_bms_valerts_new = 0;
+  m_bms_has_voltages = false;
+
+  m_bms_temperatures = NULL;
+  m_bms_tmins = NULL;
+  m_bms_tmaxs = NULL;
+  m_bms_tdevmaxs = NULL;
+  m_bms_talerts = NULL;
+  m_bms_talerts_new = 0;
+  m_bms_has_temperatures = false;
+
+  m_bms_bitset_v.clear();
+  m_bms_bitset_t.clear();
+  m_bms_bitset_cv = 0;
+  m_bms_bitset_ct = 0;
+  m_bms_readings_v = 0;
+  m_bms_readingspermodule_v = 0;
+  m_bms_readings_t = 0;
+  m_bms_readingspermodule_t = 0;
+
+  m_bms_limit_tmin = -1000;
+  m_bms_limit_tmax = 1000;
+  m_bms_limit_vmin = -1000;
+  m_bms_limit_vmax = 1000;
+
+  m_bms_defthr_vwarn  = BMS_DEFTHR_VWARN;
+  m_bms_defthr_valert = BMS_DEFTHR_VALERT;
+  m_bms_defthr_twarn  = BMS_DEFTHR_TWARN;
+  m_bms_defthr_talert = BMS_DEFTHR_TALERT;
+
+  m_minsoc = 0;
+  m_minsoc_triggered = 0;
+
+  m_accel_refspeed = 0;
+  m_accel_reftime = 0;
+  m_accel_smoothing = 2.0;
+
+  m_batpwr_smoothing = 2.0;
+  m_batpwr_smoothed = 0;
+
+  m_brakelight_enable = false;
+  m_brakelight_on = 1.3;
+  m_brakelight_off = 0.7;
+  m_brakelight_port = 1;
+  m_brakelight_start = 0;
+  m_brakelight_basepwr = 0;
+  m_brakelight_ignftbrk = false;
+
   m_rxqueue = xQueueCreate(CONFIG_OVMS_VEHICLE_CAN_RX_QUEUE_SIZE,sizeof(CAN_frame_t));
   xTaskCreatePinnedToCore(OvmsVehicleRxTask, "OVMS Vehicle",
     CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_rxtask, 1);
@@ -513,6 +1029,7 @@ OvmsVehicle::OvmsVehicle()
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicle::VehicleTicker1, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
+  VehicleConfigChanged("config.mounted", NULL);
 
   MyMetrics.RegisterListener(TAG, "*", std::bind(&OvmsVehicle::MetricModified, this, _1));
   }
@@ -522,6 +1039,58 @@ OvmsVehicle::~OvmsVehicle()
   if (m_can1) m_can1->SetPowerMode(Off);
   if (m_can2) m_can2->SetPowerMode(Off);
   if (m_can3) m_can3->SetPowerMode(Off);
+
+  if (m_bms_voltages != NULL)
+    {
+    delete [] m_bms_voltages;
+    m_bms_voltages = NULL;
+    }
+  if (m_bms_vmins != NULL)
+    {
+    delete [] m_bms_vmins;
+    m_bms_vmins = NULL;
+    }
+  if (m_bms_vmaxs != NULL)
+    {
+    delete [] m_bms_vmaxs;
+    m_bms_vmaxs = NULL;
+    }
+  if (m_bms_vdevmaxs != NULL)
+    {
+    delete [] m_bms_vdevmaxs;
+    m_bms_vdevmaxs = NULL;
+    }
+  if (m_bms_valerts != NULL)
+    {
+    delete [] m_bms_valerts;
+    m_bms_valerts = NULL;
+    }
+
+  if (m_bms_temperatures != NULL)
+    {
+    delete [] m_bms_temperatures;
+    m_bms_temperatures = NULL;
+    }
+  if (m_bms_tmins != NULL)
+    {
+    delete [] m_bms_tmins;
+    m_bms_tmins = NULL;
+    }
+  if (m_bms_tmaxs != NULL)
+    {
+    delete [] m_bms_tmaxs;
+    m_bms_tmaxs = NULL;
+    }
+  if (m_bms_tdevmaxs != NULL)
+    {
+    delete [] m_bms_tdevmaxs;
+    m_bms_tdevmaxs = NULL;
+    }
+  if (m_bms_talerts != NULL)
+    {
+    delete [] m_bms_talerts;
+    m_bms_talerts = NULL;
+    }
 
   if (m_registeredlistener)
     {
@@ -549,6 +1118,8 @@ void OvmsVehicle::RxTask()
     {
     if (xQueueReceive(m_rxqueue, &frame, (portTickType)portMAX_DELAY)==pdTRUE)
       {
+      if (!m_ready)
+        continue;
       if ((frame.origin == m_poll_bus)&&(m_poll_plist))
         {
         // This is intended for our poller
@@ -586,24 +1157,24 @@ void OvmsVehicle::Status(int verbosity, OvmsWriter* writer)
   writer->puts("Vehicle module loaded and running");
   }
 
-void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed)
+void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile)
   {
   switch (bus)
     {
     case 1:
       m_can1 = (canbus*)MyPcpApp.FindDeviceByName("can1");
       m_can1->SetPowerMode(On);
-      m_can1->Start(mode,speed);
+      m_can1->Start(mode,speed,dbcfile);
       break;
     case 2:
       m_can2 = (canbus*)MyPcpApp.FindDeviceByName("can2");
       m_can2->SetPowerMode(On);
-      m_can2->Start(mode,speed);
+      m_can2->Start(mode,speed,dbcfile);
       break;
     case 3:
       m_can3 = (canbus*)MyPcpApp.FindDeviceByName("can3");
       m_can3->SetPowerMode(On);
-      m_can3->Start(mode,speed);
+      m_can3->Start(mode,speed,dbcfile);
       break;
     default:
       break;
@@ -626,6 +1197,9 @@ bool OvmsVehicle::PinCheck(char* pin)
 
 void OvmsVehicle::VehicleTicker1(std::string event, void* data)
   {
+  if (!m_ready)
+    return;
+
   m_ticker++;
 
   if (m_poll_plist)
@@ -696,7 +1270,49 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
       MyEvents.SignalEvent("vehicle.alert.12v.off", NULL);
       if (m_autonotifications) Notify12vRecovered();
       }
-    } // 12V battery monitor
+    }
+
+  if ((m_ticker % 10)==0)
+    {
+    // Check MINSOC
+    int soc = (int)StandardMetrics.ms_v_bat_soc->AsFloat();
+    m_minsoc = MyConfig.GetParamValueInt("vehicle", "minsoc", 0);
+    if ((soc >= (m_minsoc+2)) && (m_minsoc > 0))
+      {
+      m_minsoc_triggered = m_minsoc;
+      }
+    if ((m_minsoc_triggered > 0) && (soc <= m_minsoc_triggered))
+      {
+      // We have reached the minimum SOC level
+      if (m_autonotifications) NotifyMinSocCritical();
+      if (soc > 1)
+        m_minsoc_triggered = soc - 1;
+      else
+        m_minsoc_triggered = 0;
+      }
+    }
+
+  // BMS alerts:
+  if (m_bms_valerts_new || m_bms_talerts_new)
+    {
+    ESP_LOGW(TAG, "BMS new alerts: %d voltages, %d temperatures", m_bms_valerts_new, m_bms_talerts_new);
+    MyEvents.SignalEvent("vehicle.alert.bms", NULL);
+    if (m_autonotifications && MyConfig.GetParamValueBool("vehicle", "bms.alerts.enabled", true))
+      NotifyBmsAlerts();
+    m_bms_valerts_new = 0;
+    m_bms_talerts_new = 0;
+    }
+
+  // Idle alert:
+  if (!StdMetrics.ms_v_env_awake->AsBool() || StdMetrics.ms_v_pos_speed->AsFloat() > 0)
+    {
+    m_idle_ticker = 15 * 60; // first alert after 15 minutes
+    }
+  else if (m_idle_ticker > 0 && --m_idle_ticker == 0)
+    {
+    NotifyVehicleIdling();
+    m_idle_ticker = 60 * 60; // successive alerts every 60 minutes
+    }
   } // VehicleTicker1()
 
 void OvmsVehicle::Ticker1(uint32_t ticker)
@@ -798,6 +1414,25 @@ void OvmsVehicle::Notify12vRecovered()
   float vref = StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat();
 
   MyNotify.NotifyStringf("alert", "batt.12v.recovered", "12V Battery restored: %.1fV (ref=%.1fV)", volt, vref);
+  }
+
+void OvmsVehicle::NotifyMinSocCritical()
+  {
+  float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
+
+  MyNotify.NotifyStringf("alert", "batt.soc.alert", "Battery SOC critical: %.1f%% (alert<=%d%%)", soc, m_minsoc);
+  }
+
+void OvmsVehicle::NotifyVehicleIdling()
+  {
+  MyNotify.NotifyString("alert", "vehicle.idle", "Vehicle is idling / stopped turned on");
+  }
+
+void OvmsVehicle::NotifyBmsAlerts()
+  {
+  StringWriter buf(200);
+  if (FormatBmsAlerts(COMMAND_RESULT_SMS, &buf, false))
+    MyNotify.NotifyString("alert", "batt.bms.alert", buf.c_str());
   }
 
 // Default efficiency calculation by speed & power per second, average smoothed over 5 seconds.
@@ -968,9 +1603,36 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWrite
   return Success;
   }
 
-void OvmsVehicle::VehicleConfigChanged(std::string event, void* param)
+void OvmsVehicle::VehicleConfigChanged(std::string event, void* data)
   {
-  ConfigChanged((OvmsConfigParam*) param);
+  OvmsConfigParam* param = (OvmsConfigParam*) data;
+
+  // read vehicle framework config:
+  if (!param || param->GetName() == "vehicle")
+    {
+    // acceleration calculation:
+    m_accel_smoothing = MyConfig.GetParamValueFloat("vehicle", "accel.smoothing", 2.0);
+
+    // brakelight battery power smoothing:
+    m_batpwr_smoothing = MyConfig.GetParamValueFloat("vehicle", "batpwr.smoothing", 2.0);
+
+    // brakelight control:
+    if (m_brakelight_enable)
+      {
+      SetBrakelight(0);
+      StdMetrics.ms_v_env_regenbrake->SetValue(false);
+      }
+    m_brakelight_enable = MyConfig.GetParamValueBool("vehicle", "brakelight.enable", false);
+    m_brakelight_on = MyConfig.GetParamValueFloat("vehicle", "brakelight.on", 1.3);
+    m_brakelight_off = MyConfig.GetParamValueFloat("vehicle", "brakelight.off", 0.7);
+    m_brakelight_port = MyConfig.GetParamValueInt("vehicle", "brakelight.port", 1);
+    m_brakelight_basepwr = MyConfig.GetParamValueFloat("vehicle", "brakelight.basepwr", 0);
+    m_brakelight_ignftbrk = MyConfig.GetParamValueBool("vehicle", "brakelight.ignftbrk", false);
+    m_brakelight_start = 0;
+    }
+
+  // read vehicle specific config:
+  ConfigChanged(param);
   }
 
 void OvmsVehicle::ConfigChanged(OvmsConfigParam* param)
@@ -988,6 +1650,12 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       }
     else
       {
+      if (m_brakelight_enable && m_brakelight_start)
+        {
+        SetBrakelight(0);
+        m_brakelight_start = 0;
+        StdMetrics.ms_v_env_regenbrake->SetValue(false);
+        }
       MyEvents.SignalEvent("vehicle.off",NULL);
       NotifiedVehicleOff();
       }
@@ -1155,6 +1823,126 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       }
     NotifiedVehicleChargeState(m);
     }
+  else if (metric == StandardMetrics.ms_v_pos_acceleration)
+    {
+    if (m_brakelight_enable)
+      CheckBrakelight();
+    }
+  else if (metric == StandardMetrics.ms_v_bat_power)
+    {
+    if (m_batpwr_smoothing > 0)
+      m_batpwr_smoothed = (m_batpwr_smoothed + metric->AsFloat() * m_batpwr_smoothing) / (m_batpwr_smoothing + 1);
+    else
+      m_batpwr_smoothed = metric->AsFloat();
+    }
+  }
+
+/**
+ * CalculateAcceleration: derive acceleration / deceleration level from speed change
+ * Note:
+ *  IF you want to let the framework calculate acceleration, call this after your regular
+ *  update to StdMetrics.ms_v_pos_speed. This is optional, you can set ms_v_pos_acceleration
+ *  yourself if your vehicle provides this metric.
+ */
+void OvmsVehicle::CalculateAcceleration()
+  {
+  uint32_t now = esp_log_timestamp();
+  if (now > m_accel_reftime)
+    {
+    float speed = ABS(StdMetrics.ms_v_pos_speed->AsFloat(0, Kph)) * 1000 / 3600;
+    float accel = (speed - m_accel_refspeed) / (now - m_accel_reftime) * 1000;
+    // smooth out road bumps & gear box backlash:
+    if (m_accel_smoothing > 0)
+      accel = (accel + StdMetrics.ms_v_pos_acceleration->AsFloat() * m_accel_smoothing) / (m_accel_smoothing + 1);
+    StdMetrics.ms_v_pos_acceleration->SetValue(TRUNCPREC(accel, 3));
+    m_accel_refspeed = speed;
+    m_accel_reftime = now;
+    }
+  }
+
+/**
+ * CheckBrakelight: check for regenerative braking, control brakelight accordingly
+ * Notes:
+ *  a) This depends on a regular and frequent speed update with <= 100 ms period. If the vehicle
+ *     delivers speed values at too large intervals, the trigger will still work but come
+ *     too late (reducing/deactivating acceleration smoothing may help).
+ *     If the vehicle raw speed is already smoothed, reducing acceleration smoothing will
+ *     provide a faster trigger. Same applies for the battery power level.
+ *  b) The battery power regen threshold is defined at -[brakelight.basepwr] for activation
+ *     and +[brakelight.basepwr] for deactivation. The config default is 0 as that works
+ *     on vehicles without the battery power metric.
+ *  c) To reduce flicker the brake light has a minimum hold time of currently fixed 500 ms.
+ *  d) Normal operation is "regen light XOR foot brake light", set [brakelight.ignftbrk]
+ *     to true to disable this.
+ * Override to customize.
+ */
+void OvmsVehicle::CheckBrakelight()
+  {
+  uint32_t now = esp_log_timestamp();
+  float speed = ABS(StdMetrics.ms_v_pos_speed->AsFloat(0, Kph)) * 1000 / 3600;
+  float accel = StdMetrics.ms_v_pos_acceleration->AsFloat();
+  bool car_on = StdMetrics.ms_v_env_on->AsBool();
+  bool footbrake = StdMetrics.ms_v_env_footbrake->AsFloat() > 0;
+  const uint32_t holdtime = 500;
+
+  // activate brake light?
+  if (car_on && accel < -m_brakelight_on && speed >= 1 && m_batpwr_smoothed <= -m_brakelight_basepwr
+    && (m_brakelight_ignftbrk || !footbrake))
+    {
+    if (!m_brakelight_start)
+      {
+      if (SetBrakelight(1))
+        {
+        ESP_LOGD(TAG, "brakelight on at speed=%.2f m/s, accel=%.2f m/s^2", speed, accel);
+        m_brakelight_start = now;
+        StdMetrics.ms_v_env_regenbrake->SetValue(true);
+        }
+      else
+        ESP_LOGW(TAG, "can't activate brakelight");
+      }
+    else
+      m_brakelight_start = now;
+    }
+  // deactivate brake light?
+  else if (!car_on || accel >= -m_brakelight_off || speed < 1 || m_batpwr_smoothed > m_brakelight_basepwr
+    || (!m_brakelight_ignftbrk && footbrake))
+    {
+    if (m_brakelight_start && now >= m_brakelight_start + holdtime)
+      {
+      if (SetBrakelight(0))
+        {
+        ESP_LOGD(TAG, "brakelight off at speed=%.2f m/s, accel=%.2f m/s^2", speed, accel);
+        m_brakelight_start = 0;
+        StdMetrics.ms_v_env_regenbrake->SetValue(false);
+        }
+      else
+        ESP_LOGW(TAG, "can't deactivate brakelight");
+      }
+    }
+  }
+
+/**
+ * SetBrakelight: hardware brake light control method
+ * Override for custom control, e.g. CAN.
+ */
+bool OvmsVehicle::SetBrakelight(int on)
+  {
+#ifdef CONFIG_OVMS_COMP_MAX7317
+  // port 2 = SN65 for esp32can
+  if (m_brakelight_port == 1 || (m_brakelight_port >= 3 && m_brakelight_port <= 9))
+    {
+    MyPeripherals->m_max7317->Output(m_brakelight_port, on);
+    return true;
+    }
+  else
+    {
+    ESP_LOGE(TAG, "SetBrakelight: invalid port configuration (valid: 1, 3..9)");
+    return false;
+    }
+#else // CONFIG_OVMS_COMP_MAX7317
+  ESP_LOGE(TAG, "SetBrakelight: OVMS_COMP_MAX7317 missing");
+  return false;
+#endif // CONFIG_OVMS_COMP_MAX7317
   }
 
 void OvmsVehicle::NotifyChargeState()
@@ -1246,6 +2034,7 @@ void OvmsVehicle::PollerSend()
           break;
         case VEHICLE_POLL_TYPE_OBDIIVEHICLE:
         case VEHICLE_POLL_TYPE_OBDIIGROUP:
+        case VEHICLE_POLL_TYPE_OBDII_1A:
           // 8 bit PID request for multi frame response:
           m_poll_ml_remain = 0;
           txframe.data.u8[0] = 0x02;
@@ -1254,8 +2043,9 @@ void OvmsVehicle::PollerSend()
           break;
         case VEHICLE_POLL_TYPE_OBDIIEXTENDED:
           // 16 bit PID request:
+          m_poll_ml_remain = 0;
           txframe.data.u8[0] = 0x03;
-          txframe.data.u8[1] = VEHICLE_POLL_TYPE_OBDIIEXTENDED;    // Get extended PID
+          txframe.data.u8[1] = m_poll_type; //VEHICLE_POLL_TYPE_OBDIIEXTENDED;    // Get extended PID
           txframe.data.u8[2] = m_poll_pid >> 8;
           txframe.data.u8[3] = m_poll_pid & 0xff;
           break;
@@ -1284,12 +2074,14 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
       if ((frame->data.u8[1] == 0x40+m_poll_type)&&
           (frame->data.u8[2] == m_poll_pid))
         {
+        m_poll_ml_frame = 0;
         IncomingPollReply(m_poll_bus, m_poll_type, m_poll_pid, &frame->data.u8[3], 5, 0);
         return;
         }
       break;
     case VEHICLE_POLL_TYPE_OBDIIVEHICLE:
     case VEHICLE_POLL_TYPE_OBDIIGROUP:
+    case VEHICLE_POLL_TYPE_OBDII_1A:
       // 8 bit PID multiple frame response:
       if (((frame->data.u8[0]>>4) == 0x1)&&
           (frame->data.u8[2] == 0x40+m_poll_type)&&
@@ -1357,11 +2149,73 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
       break;
     case VEHICLE_POLL_TYPE_OBDIIEXTENDED:
       // 16 bit PID response:
-      if ((frame->data.u8[1] == 0x62)&&
-          ((frame->data.u8[3]+(((uint16_t) frame->data.u8[2]) << 8)) == m_poll_pid))
+      if (((frame->data.u8[0]>>4) == 0x1)&&
+          (frame->data.u8[2] == 0x40+m_poll_type)&&
+          ((frame->data.u8[4]+(((uint16_t) frame->data.u8[3]) << 8))  == m_poll_pid))
+        {
+        // First frame is 4 bytes header (2 ISO-TP, 2 OBDII), 4 bytes data:
+        // [first=1,lenH] [lenL] [type+40] [pid] [data0] [data1] [data2] [data3]
+        // Note that the value of 'len' includes the OBDII type and pid bytes,
+        // but we don't count these in the data we pass to IncomingPollReply.
+        //
+        // First frame; send flow control frame:
+        CAN_frame_t txframe;
+        memset(&txframe,0,sizeof(txframe));
+        txframe.origin = m_poll_bus;
+        txframe.FIR.B.FF = CAN_frame_std; //CAN_frame_ext?
+        txframe.FIR.B.DLC = 8;
+
+        if (m_poll_moduleid_sent == 0x7df)
+          {
+          // broadcast request: derive module ID from response ID:
+          // (Note: this only works for the SAE standard ID scheme)
+          txframe.MsgID = frame->MsgID - 8;
+          }
+        else
+          {
+          // use known module ID:
+          txframe.MsgID = m_poll_moduleid_sent;
+          }
+
+        txframe.data.u8[0] = 0x30; // flow control frame type
+        txframe.data.u8[1] = 0x00; // request all frames available
+        txframe.data.u8[2] = 0x19; // with 25ms send interval
+        m_poll_bus->Write(&txframe);
+
+        // prepare frame processing, first frame contains first 4 bytes:
+        m_poll_ml_remain = (((uint16_t)(frame->data.u8[0]&0x0f))<<8) + frame->data.u8[1] - 3;
+        m_poll_ml_offset = 3;
+        m_poll_ml_frame = 0;
+
+        //ESP_LOGD(TAG, "Poll ML first frame (frame=%d, remain=%d)",m_poll_ml_frame,m_poll_ml_remain);
+        IncomingPollReply(m_poll_bus, m_poll_type, m_poll_pid, &frame->data.u8[4], 4, m_poll_ml_remain);
+        return;
+        }
+      else if (((frame->data.u8[0]>>4)==0x2)&&(m_poll_ml_remain>0))
+        {
+        // Consecutive frame (1 control + 7 data bytes)
+        uint16_t len;
+        if (m_poll_ml_remain>7)
+          {
+          m_poll_ml_remain -= 7;
+          m_poll_ml_offset += 7;
+          len = 7;
+          }
+        else
+          {
+          len = m_poll_ml_remain;
+          m_poll_ml_offset += m_poll_ml_remain;
+          m_poll_ml_remain = 0;
+          }
+        m_poll_ml_frame++;
+        //ESP_LOGD(TAG, "Poll ML subsequent frame (frame=%d, remain=%d)",m_poll_ml_frame,m_poll_ml_remain);
+        IncomingPollReply(m_poll_bus, m_poll_type, m_poll_pid, &frame->data.u8[1], len, m_poll_ml_remain);
+        return;
+        }
+      else if ((frame->data.u8[1] == 0x62)&&
+               ((frame->data.u8[3]+(((uint16_t) frame->data.u8[2]) << 8)) == m_poll_pid))
         {
         IncomingPollReply(m_poll_bus, m_poll_type, m_poll_pid, &frame->data.u8[4], 4, 0);
-        return;
         }
       break;
     }
@@ -1420,6 +2274,428 @@ const std::string OvmsVehicle::GetFeature(int key)
 OvmsVehicle::vehicle_command_t OvmsVehicle::ProcessMsgCommand(std::string &result, int command, const char* args)
   {
   return NotImplemented;
+  }
+
+// BMS helpers
+
+void OvmsVehicle::BmsSetCellArrangementVoltage(int readings, int readingspermodule)
+  {
+  if (m_bms_voltages != NULL) delete m_bms_voltages;
+  m_bms_voltages = new float[readings];
+  if (m_bms_vmins != NULL) delete m_bms_vmins;
+  m_bms_vmins = new float[readings];
+  if (m_bms_vmaxs != NULL) delete m_bms_vmaxs;
+  m_bms_vmaxs = new float[readings];
+  if (m_bms_vdevmaxs != NULL) delete m_bms_vdevmaxs;
+  m_bms_vdevmaxs = new float[readings];
+  if (m_bms_valerts != NULL) delete m_bms_valerts;
+  m_bms_valerts = new short[readings];
+  m_bms_valerts_new = 0;
+
+  m_bms_bitset_v.clear();
+  m_bms_bitset_v.reserve(readings);
+
+  m_bms_readings_v = readings;
+  m_bms_readingspermodule_v = readingspermodule;
+
+  BmsResetCellVoltages();
+  }
+
+void OvmsVehicle::BmsSetCellArrangementTemperature(int readings, int readingspermodule)
+  {
+  if (m_bms_temperatures != NULL) delete m_bms_temperatures;
+  m_bms_temperatures = new float[readings];
+  if (m_bms_tmins != NULL) delete m_bms_tmins;
+  m_bms_tmins = new float[readings];
+  if (m_bms_tmaxs != NULL) delete m_bms_tmaxs;
+  m_bms_tmaxs = new float[readings];
+  if (m_bms_tdevmaxs != NULL) delete m_bms_tdevmaxs;
+  m_bms_tdevmaxs = new float[readings];
+  if (m_bms_talerts != NULL) delete m_bms_talerts;
+  m_bms_talerts = new short[readings];
+  m_bms_talerts_new = 0;
+
+  m_bms_bitset_t.clear();
+  m_bms_bitset_t.reserve(readings);
+
+  m_bms_readings_t = readings;
+  m_bms_readingspermodule_t = readingspermodule;
+
+  BmsResetCellTemperatures();
+  }
+
+int OvmsVehicle::BmsGetCellArangementVoltage(int* readings, int* readingspermodule)
+  {
+  if (readings) *readings = m_bms_readings_v;
+  if (readingspermodule) *readingspermodule = m_bms_readingspermodule_v;
+  return m_bms_readings_v;
+  }
+int OvmsVehicle::BmsGetCellArangementTemperature(int* readings, int* readingspermodule)
+  {
+  if (readings) *readings = m_bms_readings_t;
+  if (readingspermodule) *readingspermodule = m_bms_readingspermodule_t;
+  return m_bms_readings_t;
+  }
+
+void OvmsVehicle::BmsSetCellDefaultThresholdsVoltage(float warn, float alert)
+  {
+  m_bms_defthr_vwarn = warn;
+  m_bms_defthr_valert = alert;
+  }
+void OvmsVehicle::BmsGetCellDefaultThresholdsVoltage(float* warn, float* alert)
+  {
+  if (warn) *warn = m_bms_defthr_vwarn;
+  if (alert) *alert = m_bms_defthr_valert;
+  }
+
+void OvmsVehicle::BmsSetCellDefaultThresholdsTemperature(float warn, float alert)
+  {
+  m_bms_defthr_twarn = warn;
+  m_bms_defthr_talert = alert;
+  }
+void OvmsVehicle::BmsGetCellDefaultThresholdsTemperature(float* warn, float* alert)
+  {
+  if (warn) *warn = m_bms_defthr_twarn;
+  if (alert) *alert = m_bms_defthr_talert;
+  }
+
+void OvmsVehicle::BmsSetCellLimitsVoltage(float min, float max)
+  {
+  m_bms_limit_vmin = min;
+  m_bms_limit_vmax = max;
+  }
+
+void OvmsVehicle::BmsSetCellLimitsTemperature(float min, float max)
+  {
+  m_bms_limit_tmin = min;
+  m_bms_limit_tmax = max;
+  }
+
+void OvmsVehicle::BmsSetCellVoltage(int index, float value)
+  {
+  // ESP_LOGI(TAG,"BmsSetCellVoltage(%d,%f) c=%d", index, value, m_bms_bitset_cv);
+  if ((index<0)||(index>=m_bms_readings_v)) return;
+  if ((value<m_bms_limit_vmin)||(value>m_bms_limit_vmax)) return;
+  m_bms_voltages[index] = value;
+
+  if (! m_bms_has_voltages)
+    {
+    m_bms_vmins[index] = value;
+    m_bms_vmaxs[index] = value;
+    }
+  else if (m_bms_vmins[index] > value)
+    m_bms_vmins[index] = value;
+  else if (m_bms_vmaxs[index] < value)
+    m_bms_vmaxs[index] = value;
+
+  if (m_bms_bitset_v[index] == false) m_bms_bitset_cv++;
+  if (m_bms_bitset_cv == m_bms_readings_v)
+    {
+    // get min, max, avg & standard deviation:
+    double sum=0, sqrsum=0, avg, stddev=0;
+    float min=0, max=0;
+    for (int i=0; i<m_bms_readings_v; i++)
+      {
+      sum += m_bms_voltages[i];
+      sqrsum += SQR(m_bms_voltages[i]);
+      if (min==0 || m_bms_voltages[i]<min)
+        min = m_bms_voltages[i];
+      if (max==0 || m_bms_voltages[i]>max)
+        max = m_bms_voltages[i];
+      }
+    avg = sum / m_bms_readings_v;
+    stddev = sqrt(LIMIT_MIN((sqrsum / m_bms_readings_v) - SQR(avg), 0));
+    // check cell deviations:
+    float dev;
+    float thr_warn  = MyConfig.GetParamValueFloat("vehicle", "bms.dev.voltage.warn", m_bms_defthr_vwarn);
+    float thr_alert = MyConfig.GetParamValueFloat("vehicle", "bms.dev.voltage.alert", m_bms_defthr_valert);
+    for (int i=0; i<m_bms_readings_v; i++)
+      {
+      dev = ROUNDPREC(m_bms_voltages[i] - avg, 5);
+      if (ABS(dev) > ABS(m_bms_vdevmaxs[i]))
+        m_bms_vdevmaxs[i] = dev;
+      if (ABS(dev) >= thr_alert && m_bms_valerts[i] < 2)
+        {
+        m_bms_valerts[i] = 2;
+        m_bms_valerts_new++; // trigger notification
+        }
+      else if (ABS(dev) >= thr_warn && m_bms_valerts[i] < 1)
+        m_bms_valerts[i] = 1;
+      }
+    // publish to metrics:
+    avg = ROUNDPREC(avg, 5);
+    stddev = ROUNDPREC(stddev, 5);
+    StandardMetrics.ms_v_bat_pack_vmin->SetValue(min);
+    StandardMetrics.ms_v_bat_pack_vmax->SetValue(max);
+    StandardMetrics.ms_v_bat_pack_vavg->SetValue(avg);
+    StandardMetrics.ms_v_bat_pack_vstddev->SetValue(stddev);
+    if (stddev > StandardMetrics.ms_v_bat_pack_vstddev_max->AsFloat())
+      StandardMetrics.ms_v_bat_pack_vstddev_max->SetValue(stddev);
+    StandardMetrics.ms_v_bat_cell_voltage->SetElemValues(0, m_bms_readings_v, m_bms_voltages);
+    StandardMetrics.ms_v_bat_cell_vmin->SetElemValues(0, m_bms_readings_v, m_bms_vmins);
+    StandardMetrics.ms_v_bat_cell_vmax->SetElemValues(0, m_bms_readings_v, m_bms_vmaxs);
+    StandardMetrics.ms_v_bat_cell_vdevmax->SetElemValues(0, m_bms_readings_v, m_bms_vdevmaxs);
+    StandardMetrics.ms_v_bat_cell_valert->SetElemValues(0, m_bms_readings_v, m_bms_valerts);
+    // complete:
+    m_bms_has_voltages = true;
+    m_bms_bitset_v.clear();
+    m_bms_bitset_v.resize(m_bms_readings_v);
+    m_bms_bitset_cv = 0;
+    }
+  else
+    {
+    m_bms_bitset_v[index] = true;
+    }
+  }
+
+void OvmsVehicle::BmsSetCellTemperature(int index, float value)
+  {
+  // ESP_LOGI(TAG,"BmsSetCellTemperature(%d,%f) c=%d", index, value, m_bms_bitset_ct);
+  if ((index<0)||(index>=m_bms_readings_t)) return;
+  if ((value<m_bms_limit_tmin)||(value>m_bms_limit_tmax)) return;
+  m_bms_temperatures[index] = value;
+
+  if (! m_bms_has_temperatures)
+    {
+    m_bms_tmins[index] = value;
+    m_bms_tmaxs[index] = value;
+    }
+  else if (m_bms_tmins[index] > value)
+    m_bms_tmins[index] = value;
+  else if (m_bms_tmaxs[index] < value)
+    m_bms_tmaxs[index] = value;
+
+  if (m_bms_bitset_t[index] == false) m_bms_bitset_ct++;
+  if (m_bms_bitset_ct == m_bms_readings_t)
+    {
+    // get min, max, avg & standard deviation:
+    double sum=0, sqrsum=0, avg, stddev=0;
+    float min=0, max=0;
+    for (int i=0; i<m_bms_readings_t; i++)
+      {
+      sum += m_bms_temperatures[i];
+      sqrsum += SQR(m_bms_temperatures[i]);
+      if (min==0 || m_bms_temperatures[i]<min)
+        min = m_bms_temperatures[i];
+      if (max==0 || m_bms_temperatures[i]>max)
+        max = m_bms_temperatures[i];
+      }
+    avg = sum / m_bms_readings_t;
+    stddev = sqrt(LIMIT_MIN((sqrsum / m_bms_readings_t) - SQR(avg), 0));
+    // check cell deviations:
+    float dev;
+    float thr_warn  = MyConfig.GetParamValueFloat("vehicle", "bms.dev.temp.warn", m_bms_defthr_twarn);
+    float thr_alert = MyConfig.GetParamValueFloat("vehicle", "bms.dev.temp.alert", m_bms_defthr_talert);
+    for (int i=0; i<m_bms_readings_t; i++)
+      {
+      dev = ROUNDPREC(m_bms_temperatures[i] - avg, 2);
+      if (ABS(dev) > ABS(m_bms_tdevmaxs[i]))
+        m_bms_tdevmaxs[i] = dev;
+      if (ABS(dev) >= thr_alert && m_bms_talerts[i] < 2)
+        {
+        m_bms_talerts[i] = 2;
+        m_bms_talerts_new++; // trigger notification
+        }
+      else if (ABS(dev) >= thr_warn && m_bms_valerts[i] < 1)
+        m_bms_talerts[i] = 1;
+      }
+    // publish to metrics:
+    avg = ROUNDPREC(avg, 2);
+    stddev = ROUNDPREC(stddev, 2);
+    StandardMetrics.ms_v_bat_pack_tmin->SetValue(min);
+    StandardMetrics.ms_v_bat_pack_tmax->SetValue(max);
+    StandardMetrics.ms_v_bat_pack_tavg->SetValue(avg);
+    StandardMetrics.ms_v_bat_pack_tstddev->SetValue(stddev);
+    if (stddev > StandardMetrics.ms_v_bat_pack_tstddev_max->AsFloat())
+      StandardMetrics.ms_v_bat_pack_tstddev_max->SetValue(stddev);
+    StandardMetrics.ms_v_bat_cell_temp->SetElemValues(0, m_bms_readings_t, m_bms_temperatures);
+    StandardMetrics.ms_v_bat_cell_tmin->SetElemValues(0, m_bms_readings_t, m_bms_tmins);
+    StandardMetrics.ms_v_bat_cell_tmax->SetElemValues(0, m_bms_readings_t, m_bms_tmaxs);
+    StandardMetrics.ms_v_bat_cell_tdevmax->SetElemValues(0, m_bms_readings_t, m_bms_tdevmaxs);
+    StandardMetrics.ms_v_bat_cell_talert->SetElemValues(0, m_bms_readings_t, m_bms_talerts);
+    // complete:
+    m_bms_has_temperatures = true;
+    m_bms_bitset_t.clear();
+    m_bms_bitset_t.resize(m_bms_readings_t);
+    m_bms_bitset_ct = 0;
+    }
+  else
+    {
+    m_bms_bitset_t[index] = true;
+    }
+  }
+
+void OvmsVehicle::BmsRestartCellVoltages()
+  {
+  m_bms_bitset_v.clear();
+  m_bms_bitset_v.resize(m_bms_readings_v);
+  m_bms_bitset_cv = 0;
+  }
+
+void OvmsVehicle::BmsRestartCellTemperatures()
+  {
+  m_bms_bitset_t.clear();
+  m_bms_bitset_v.resize(m_bms_readings_t);
+  m_bms_bitset_ct = 0;
+  }
+
+void OvmsVehicle::BmsResetCellVoltages()
+  {
+  if (m_bms_readings_v > 0)
+    {
+    m_bms_bitset_v.clear();
+    m_bms_bitset_v.resize(m_bms_readings_v);
+    m_bms_bitset_cv = 0;
+    m_bms_has_voltages = false;
+    for (int k=0; k<m_bms_readings_v; k++)
+      {
+      m_bms_vmins[k] = 0;
+      m_bms_vmaxs[k] = 0;
+      m_bms_vdevmaxs[k] = 0;
+      m_bms_valerts[k] = 0;
+      }
+    m_bms_valerts_new = 0;
+    StandardMetrics.ms_v_bat_cell_vmin->ClearValue();
+    StandardMetrics.ms_v_bat_cell_vmax->ClearValue();
+    StandardMetrics.ms_v_bat_cell_vdevmax->ClearValue();
+    StandardMetrics.ms_v_bat_cell_valert->ClearValue();
+    StandardMetrics.ms_v_bat_pack_tstddev_max->SetValue(StandardMetrics.ms_v_bat_pack_tstddev->AsFloat());
+    }
+  }
+
+void OvmsVehicle::BmsResetCellTemperatures()
+  {
+  if (m_bms_readings_t > 0)
+    {
+    m_bms_bitset_t.clear();
+    m_bms_bitset_t.resize(m_bms_readings_t);
+    m_bms_bitset_ct = 0;
+    m_bms_has_temperatures = false;
+    for (int k=0; k<m_bms_readings_t; k++)
+      {
+      m_bms_tmins[k] = 0;
+      m_bms_tmaxs[k] = 0;
+      m_bms_tdevmaxs[k] = 0;
+      m_bms_talerts[k] = 0;
+      }
+    m_bms_talerts_new = 0;
+    StandardMetrics.ms_v_bat_cell_tmin->ClearValue();
+    StandardMetrics.ms_v_bat_cell_tmax->ClearValue();
+    StandardMetrics.ms_v_bat_cell_tdevmax->ClearValue();
+    StandardMetrics.ms_v_bat_cell_talert->ClearValue();
+    StandardMetrics.ms_v_bat_pack_tstddev_max->SetValue(StandardMetrics.ms_v_bat_pack_tstddev->AsFloat());
+    }
+  }
+
+void OvmsVehicle::BmsResetCellStats()
+  {
+  BmsResetCellVoltages();
+  BmsResetCellTemperatures();
+  }
+
+void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer)
+  {
+  int c;
+
+  if ((! m_bms_has_voltages)||(! m_bms_has_temperatures))
+    {
+    writer->puts("No BMS status data available");
+    return;
+    }
+
+  int vwarn=0, valert=0;
+  int twarn=0, talert=0;
+  for (c=0; c<m_bms_readings_v; c++) {
+    if (m_bms_valerts[c]==1) vwarn++;
+    if (m_bms_valerts[c]==2) valert++;
+  }
+  for (c=0; c<m_bms_readings_t; c++) {
+    if (m_bms_talerts[c]==1) twarn++;
+    if (m_bms_talerts[c]==2) talert++;
+  }
+
+  writer->puts("Voltage:");
+  writer->printf("    Average: %5.3fV [%5.3fV - %5.3fV]\n",
+    StdMetrics.ms_v_bat_pack_vavg->AsFloat(),
+    StdMetrics.ms_v_bat_pack_vmin->AsFloat(),
+    StdMetrics.ms_v_bat_pack_vmax->AsFloat());
+  writer->printf("  Deviation: SD %6.2fmV [max %.2fmV], %d warnings, %d alerts\n",
+    StdMetrics.ms_v_bat_pack_vstddev->AsFloat()*1000,
+    StdMetrics.ms_v_bat_pack_vstddev_max->AsFloat()*1000,
+    vwarn, valert);
+
+  writer->puts("Temperature:");
+  writer->printf("    Average: %5.1fC [%5.1fC - %5.1fC]\n",
+    StdMetrics.ms_v_bat_pack_tavg->AsFloat(),
+    StdMetrics.ms_v_bat_pack_tmin->AsFloat(),
+    StdMetrics.ms_v_bat_pack_tmax->AsFloat());
+  writer->printf("  Deviation: SD %6.2fC  [max %.2fC], %d warnings, %d alerts\n",
+    StdMetrics.ms_v_bat_pack_tstddev->AsFloat(),
+    StdMetrics.ms_v_bat_pack_tstddev_max->AsFloat(),
+    twarn, talert);
+
+  writer->puts("Cells:");
+  int kv = 0;
+  int kt = 0;
+  for (int module = 0; module < (m_bms_readings_v/m_bms_readingspermodule_v); module++)
+    {
+    writer->printf("    +");
+    for (c=0;c<m_bms_readingspermodule_v;c++) { writer->printf("-------"); }
+    writer->printf("-+");
+    for (c=0;c<m_bms_readingspermodule_t;c++) { writer->printf("-------"); }
+    writer->puts("-+");
+    writer->printf("%3d |",module+1);
+    for (c=0; c<m_bms_readingspermodule_v; c++)
+      {
+      writer->printf(" %5.3fV",m_bms_voltages[kv++]);
+      }
+    writer->printf(" |");
+    for (c=0; c<m_bms_readingspermodule_t; c++)
+      {
+      writer->printf(" %5.1fC",m_bms_temperatures[kt++]);
+      }
+    writer->puts(" |");
+    }
+
+  writer->printf("    +");
+  for (c=0;c<m_bms_readingspermodule_v;c++) { writer->printf("-------"); }
+  writer->printf("-+");
+  for (c=0;c<m_bms_readingspermodule_t;c++) { writer->printf("-------"); }
+  writer->puts("-+");
+  }
+
+bool OvmsVehicle::FormatBmsAlerts(int verbosity, OvmsWriter* writer, bool show_warnings)
+  {
+  // Voltages:
+  writer->printf("Voltage: SD=%dmV", (int)(StdMetrics.ms_v_bat_pack_vstddev_max->AsFloat() * 1000));
+  bool has_valerts = false;
+  for (int i=0; i<m_bms_readings_v; i++)
+    {
+    int sts = StdMetrics.ms_v_bat_cell_valert->GetElemValue(i);
+    if (sts == 0) continue;
+    if (sts == 1 && !show_warnings) continue;
+    int dev = StdMetrics.ms_v_bat_cell_vdevmax->GetElemValue(i) * 1000;
+    writer->printf(" %c%d:%+dmV", (sts==1) ? '?' : '!', i+1, dev);
+    has_valerts = true;
+    }
+  writer->printf("%s\n", has_valerts ? "" : " OK");
+
+  // Temperatures:
+  // (Note: '°' is not SMS safe, so we only output 'C')
+  writer->printf("Temperature: SD=%.1fC", StdMetrics.ms_v_bat_pack_tstddev_max->AsFloat());
+  bool has_talerts = false;
+  for (int i=0; i<m_bms_readings_v; i++)
+    {
+    int sts = StdMetrics.ms_v_bat_cell_talert->GetElemValue(i);
+    if (sts == 0) continue;
+    if (sts == 1 && !show_warnings) continue;
+    float dev = StdMetrics.ms_v_bat_cell_tdevmax->GetElemValue(i);
+    writer->printf(" %c%d:%+.1fC", (sts==1) ? '?' : '!', i+1, dev);
+    has_talerts = true;
+    }
+  writer->printf("%s\n", has_talerts ? "" : " OK");
+
+  return has_valerts || has_talerts;
   }
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER

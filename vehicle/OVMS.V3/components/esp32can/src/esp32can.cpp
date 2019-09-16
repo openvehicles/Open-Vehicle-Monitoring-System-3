@@ -45,7 +45,7 @@ esp32can* MyESP32can = NULL;
 
 static IRAM_ATTR void ESP32CAN_rxframe(esp32can *me)
   {
-  CAN_msg_t msg;
+  CAN_queue_msg_t msg;
 
   while (MODULE_ESP32CAN->SR.B.RBS)
     {
@@ -96,7 +96,7 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
   if ((interrupt & __CAN_IRQ_TX) != 0)
     {
   	// Request TxCallback:
-    CAN_msg_t msg;
+    CAN_queue_msg_t msg;
     msg.type = CAN_txcallback;
     msg.body.bus = me;
     xQueueSendFromISR(MyCan.m_rxqueue, &msg, 0);
@@ -125,7 +125,7 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
       MODULE_ESP32CAN->CMR.B.CDO = 1;
       }
     // Request error log:
-    CAN_msg_t msg;
+    CAN_queue_msg_t msg;
     msg.type = CAN_logerror;
     msg.body.bus = me;
     xQueueSendFromISR(MyCan.m_rxqueue, &msg, 0);
@@ -163,6 +163,19 @@ esp32can::~esp32can()
 
 esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
   {
+  switch (speed)
+    {
+    case CAN_SPEED_33KBPS:
+    case CAN_SPEED_83KBPS:
+      /* XXX not yet */
+      ESP_LOGW(TAG,"%d not supported",speed);
+      return ESP_FAIL;
+    default:
+      break;
+    }
+
+  canbus::Start(mode, speed);
+
   double __tq; // Time quantum
 
   m_mode = mode;
@@ -261,6 +274,8 @@ esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
 
 esp_err_t esp32can::Stop()
   {
+  canbus::Stop();
+
 #ifdef CONFIG_OVMS_COMP_MAX7317
   // Power down the matching SN65 transciever
   MyPeripherals->m_max7317->Output(MAX7317_CAN1_EN, 1);
