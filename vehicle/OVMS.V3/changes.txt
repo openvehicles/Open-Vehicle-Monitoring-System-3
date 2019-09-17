@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+
+2019-09-17 MWJ  3.2.003  OTA release
 - New vehicle: Renault Zoe (adaption by Marcos Mezo <mmezo@selexco.net>)
 - Module: task CPU usage statistics & debug records
   New command:
