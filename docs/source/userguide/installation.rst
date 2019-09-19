@@ -34,9 +34,9 @@ Powering the module
 
 If you intend to configure the module on your desk before connecting it to the vehicle, make sure your USB port delivers power (around 500mA, depending on modem and wifi activity). We recommend using a USB hub with a separate power supply or a direct port of your laptop / PC.
 
-^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
 OVMS Server account
-^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
 
 If you want to use the OVMS App and/or server based telemetry services, you'll need an OVMS v2 server account. If you have not registered for an OVMS server account yet, you can do so before starting the wizard to avoid needing to switch networks in between. There are currently two public v2 OVMS servers:
 
