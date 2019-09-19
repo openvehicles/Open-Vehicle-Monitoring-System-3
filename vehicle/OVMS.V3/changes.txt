@@ -7,7 +7,7 @@ Open Vehicle Monitor System v3 - Change log
   Users that volunteer to submit tasks debug historical data to the Open Vehicles
   project, should (with appreciation) set:
     config set module debug.tasks yes
-  This will be transmit approximately 700MB of data a month (over cellular/wifi).
+  This will be transmit approximately 7MB of data a month (over cellular/wifi).
 
 2019-09-19 MWJ  3.2.004  OTA release
 - Skipped for Chinese superstitous reasons
