@@ -2,6 +2,16 @@ Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
 
+2019-09-19 MWJ  3.2.005  OTA release
+- Default module/debug.tasks to FALSE
+  Users that volunteer to submit tasks debug historical data to the Open Vehicles
+  project, should (with appreciation) set:
+    config set module debug.tasks yes
+  This will be transmit approximately 700MB of data a month (over cellular/wifi).
+
+2019-09-19 MWJ  3.2.004  OTA release
+- Skipped for Chinese superstitous reasons
+
 2019-09-17 MWJ  3.2.003  OTA release
 - New vehicle: Renault Zoe (adaption by Marcos Mezo <mmezo@selexco.net>)
 - Module: task CPU usage statistics & debug records
