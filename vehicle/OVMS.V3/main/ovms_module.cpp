@@ -944,7 +944,7 @@ static void module_eventhandler(std::string event, void* data)
   {
   if (event == "ticker.300")
     {
-    if (MyConfig.GetParamValueBool("module", "debug.tasks", true))
+    if (MyConfig.GetParamValueBool("module", "debug.tasks", false))
       module_tasks_data(0, NULL, NULL, 0, NULL);
     }
 
