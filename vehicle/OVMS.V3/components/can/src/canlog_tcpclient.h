@@ -29,11 +29,13 @@
 #define __CANLOG_TCP_CLIENT_H__
 
 #include "canlog.h"
+#include "ovms_netmanager.h"
+#include "ovms_mutex.h"
 
 class canlog_tcpclient : public canlog
   {
   public:
-    canlog_tcpclient(std::string path, std::string format);
+    canlog_tcpclient(std::string path, std::string format, canformat::canformat_serve_mode_t mode);
     virtual ~canlog_tcpclient();
 
   public:
@@ -44,6 +46,14 @@ class canlog_tcpclient : public canlog
 
   public:
     virtual void OutputMsg(CAN_log_message_t& msg);
+
+  public:
+    void MongooseHandler(struct mg_connection *nc, int ev, void *p);
+
+  public:
+    OvmsMutex m_mgmutex;
+    struct mg_connection *m_mgconn;
+    bool m_isopen;
 
   public:
     std::string         m_path;

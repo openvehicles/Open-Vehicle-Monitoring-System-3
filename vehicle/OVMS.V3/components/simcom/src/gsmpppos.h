@@ -40,7 +40,7 @@ extern "C"
   {
 #include "netif/ppp/pppos.h"
 #include "netif/ppp/ppp.h"
-#include "lwip/pppapi.h"
+#include "netif/ppp/pppapi.h"
   };
 #include "gsmmux.h"
 

@@ -2,6 +2,62 @@ Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
 
+2019-09-19 MWJ  3.2.005  OTA release
+- Default module/debug.tasks to FALSE
+  Users that volunteer to submit tasks debug historical data to the Open Vehicles
+  project, should (with appreciation) set:
+    config set module debug.tasks yes
+  This will be transmit approximately 7MB of data a month (over cellular/wifi).
+
+2019-09-19 MWJ  3.2.004  OTA release
+- Skipped for Chinese superstitous reasons
+
+2019-09-17 MWJ  3.2.003  OTA release
+- New vehicle: Renault Zoe (adaption by Marcos Mezo <mmezo@selexco.net>)
+- Module: task CPU usage statistics & debug records
+  New command:
+    module tasks data       -- Output task stats record
+  New config:
+    [module] debug.tasks    -- [bool] send task debug stats (default: yes)
+  New history record:
+    "*-OVM-DebugTasks" v1: <taskcnt,totaltime> + per task:
+      <tasknum,name,state,stack_now,stack_max,stack_total,
+       heap_total,heap_32bit,heap_spi,runtime>
+    Note: CPU core use percentage = runtime / totaltime
+- Server V2: restart network on RX connection loss (issue #241 workaround)
+  New config:
+    [server.v2] timeout.rx  -- [seconds], default: 960
+- Network: avoid using wifi networks with too bad signal quality
+  New configs:
+    [network] wifi.sq.good  [dBm], default -87 (network usable if SQ >= this)
+    [network] wifi.sq.bad   [dBm], default -89 (disconnect if SQ <= this)
+  New events:
+    network.wifi.sta.good
+    network.wifi.sta.bad
+- Network: provide dedicated metrics for modem & wifi channel states
+  New metrics:
+    m.net.mdm.network
+    m.net.mdm.sq
+    m.net.wifi.network
+    m.net.wifi.sq
+- Regen brake signal: added power base range, power smoothing & foot brake config
+  New configs:
+    vehicle [batpwr.smoothing] = 2.0    Battery power smoothing factor (samples, 0 = none)
+    vehicle [brakelight.basepwr] = 0    Base power range around zero [kW]
+    vehicle [brakelight.ignftbrk] = no  Ignore foot brake
+- Twizy: added tuning option for SEVCON_T45 + Gearbox_T80 hybrid
+  Configuration: xrt [type] = "SC45GB80"
+- Twizy: OBD2 VIN reading & cluster DTC monitoring
+  New commands:
+    xrt dtc [show]                      Show DTC report
+    xrt dtc reset                       Reset statistics
+    xrt dtc clear                       Clear DTC stored in OVMS & car
+  New configs:
+    xrt [dtc_autoreset] = no            Reset statistics on each drive/charge
+  New history records:
+    RT-OBD-ClusterDTC (rec_nr = DTC slot nr)
+- New vehicle: Smart ED/EQ 4.Generation (453) (adaption by Thomas Heuer <egon@heuer-humfeld.de>)
+
 2019-05-12 MWJ  3.2.002  OTA release
 - Vehicle framework: added idling alert (ported from V2)
 - Locations: Introduce support for location actions
@@ -9,7 +65,7 @@ Open Vehicle Monitor System v3 - Change log
 - Vehicle framework: Regenerative braking signal generation
 - Vehicle framework: DBC and RETOOLS integrations
 - Vehicles: Extensions to Kia Niro, Kia Soul, Mitsubishi, Nissan Leaf,
-  Renault Twizy, SmartID, Tesla Model S, and Think City
+  Renault Twizy, SmartED, Tesla Model S, and Think City
 
 2019-01-19 MWJ  3.2.001  OTA release
 - Twizy: support auxiliary charger fan and auxiliary charger

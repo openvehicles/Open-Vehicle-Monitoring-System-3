@@ -95,6 +95,13 @@ void network_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
   }
 
+void network_restart(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->puts("Restarting network...");
+  vTaskDelay(pdMS_TO_TICKS(100));
+  MyNetManager.RestartNetwork();
+  }
+
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
 void network_connections(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -183,8 +190,12 @@ OvmsNetManager::OvmsNetManager()
   m_connected_wifi = false;
   m_connected_modem = false;
   m_connected_any = false;
+  m_wifi_sta = false;
+  m_wifi_good = false;
   m_wifi_ap = false;
   m_network_any = false;
+  m_cfg_wifi_sq_good = -87;
+  m_cfg_wifi_sq_bad = -89;
 
   for (int i=0; i<DNS_MAX_SERVERS; i++)
     {
@@ -203,6 +214,7 @@ OvmsNetManager::OvmsNetManager()
   // Register our commands
   OvmsCommand* cmd_network = MyCommandApp.RegisterCommand("network","NETWORK framework",network_status, "", 0, 0, false);
   cmd_network->RegisterCommand("status","Show network status",network_status, "", 0, 0, false);
+  cmd_network->RegisterCommand("restart","Restart network",network_restart, "", 0, 0, false);
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   cmd_network->RegisterCommand("list", "List network connections", network_connections);
   cmd_network->RegisterCommand("close", "Close network connection(s)", network_connections, "<id>\nUse ID from connection list / 0 to close all", 1, 1);
@@ -213,55 +225,83 @@ OvmsNetManager::OvmsNetManager()
   #undef bind  // Kludgy, but works
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG,"system.wifi.sta.gotip", std::bind(&OvmsNetManager::WifiUpSTA, this, _1, _2));
+
+  MyEvents.RegisterEvent(TAG,"system.wifi.sta.gotip", std::bind(&OvmsNetManager::WifiStaGotIP, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.wifi.sta.lostip", std::bind(&OvmsNetManager::WifiStaLostIP, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"network.wifi.sta.good", std::bind(&OvmsNetManager::WifiStaGood, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"network.wifi.sta.bad", std::bind(&OvmsNetManager::WifiStaBad, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.wifi.sta.stop", std::bind(&OvmsNetManager::WifiStaStop, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.wifi.sta.connected", std::bind(&OvmsNetManager::WifiStaConnected, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.wifi.sta.disconnected", std::bind(&OvmsNetManager::WifiStaStop, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.wifi.down", std::bind(&OvmsNetManager::WifiStaStop, this, _1, _2));
+
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.start", std::bind(&OvmsNetManager::WifiUpAP, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"system.wifi.sta.stop", std::bind(&OvmsNetManager::WifiDownSTA, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.stop", std::bind(&OvmsNetManager::WifiDownAP, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"system.wifi.sta.disconnected", std::bind(&OvmsNetManager::WifiDownSTA, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.sta.disconnected", std::bind(&OvmsNetManager::WifiApStaDisconnect, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"system.wifi.down", std::bind(&OvmsNetManager::WifiDownSTA, this, _1, _2));
+
   MyEvents.RegisterEvent(TAG,"system.modem.gotip", std::bind(&OvmsNetManager::ModemUp, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.stop", std::bind(&OvmsNetManager::ModemDown, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.down", std::bind(&OvmsNetManager::ModemDown, this, _1, _2));
+
+  MyEvents.RegisterEvent(TAG,"config.mounted", std::bind(&OvmsNetManager::ConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsNetManager::ConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.shuttingdown", std::bind(&OvmsNetManager::EventSystemShuttingDown, this, _1, _2));
 
   MyConfig.RegisterParam("network", "Network Configuration", true, true);
   // Our instances:
-  //   'dns': Space-separated list of DNS servers
+  //   dns                Space-separated list of DNS servers
+  //   wifi.sq.good       Threshold for usable wifi signal [dBm], default -87
+  //   wifi.sq.bad        Threshold for unusable wifi signal [dBm], default -89
+
+  MyMetrics.RegisterListener(TAG, MS_N_WIFI_SQ, std::bind(&OvmsNetManager::WifiStaCheckSQ, this, _1));
   }
 
 OvmsNetManager::~OvmsNetManager()
   {
   }
 
-void OvmsNetManager::WifiUpSTA(std::string event, void* data)
+void OvmsNetManager::RestartNetwork()
   {
-  m_connected_wifi = true;
-  SaveDNSServer(m_dns_wifi);
-  PrioritiseAndIndicate();
+#ifdef CONFIG_OVMS_COMP_WIFI
+  if (MyPeripherals && MyPeripherals->m_esp32wifi)
+    MyPeripherals->m_esp32wifi->Restart();
+#endif // #ifdef CONFIG_OVMS_COMP_WIFI
 
-  MyEvents.SignalEvent("network.wifi.up",NULL);
-
-  if (m_connected_modem)
-    {
-    ESP_LOGI(TAG, "WIFI client up (with MODEM up): reconfigured for WIFI client priority");
-    MyEvents.SignalEvent("network.reconfigured",NULL);
-    }
-  else
-    {
-    ESP_LOGI(TAG, "WIFI client up (with MODEM down): starting network with WIFI client");
-    MyEvents.SignalEvent("network.up",NULL);
-    }
-
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-  StartMongooseTask();
-#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-
-  MyEvents.SignalEvent("network.interface.change",NULL);
+#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+  if (MyPeripherals && MyPeripherals->m_simcom)
+    MyPeripherals->m_simcom->Restart();
+#endif // CONFIG_OVMS_COMP_MODEM_SIMCOM
   }
 
-void OvmsNetManager::WifiDownSTA(std::string event, void* data)
+void OvmsNetManager::WifiConnect()
+  {
+  if (m_wifi_sta && !m_connected_wifi)
+    {
+    m_connected_wifi = true;
+    PrioritiseAndIndicate();
+
+    MyEvents.SignalEvent("network.wifi.up",NULL);
+
+    if (m_connected_modem)
+      {
+      ESP_LOGI(TAG, "WIFI client up (with MODEM up): reconfigured for WIFI client priority");
+      MyEvents.SignalEvent("network.reconfigured",NULL);
+      }
+    else
+      {
+      ESP_LOGI(TAG, "WIFI client up (with MODEM down): starting network with WIFI client");
+      MyEvents.SignalEvent("network.up",NULL);
+      }
+
+    #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+      StartMongooseTask();
+    #endif
+
+    MyEvents.SignalEvent("network.interface.change",NULL);
+    }
+  }
+
+void OvmsNetManager::WifiDisconnect()
   {
   if (m_connected_wifi)
     {
@@ -274,31 +314,120 @@ void OvmsNetManager::WifiDownSTA(std::string event, void* data)
       {
       ESP_LOGI(TAG, "WIFI client down (with MODEM up): reconfigured for MODEM priority");
       MyEvents.SignalEvent("network.reconfigured",NULL);
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-      ScheduleCleanup();
-#endif
+      #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+        ScheduleCleanup();
+      #endif
       }
     else
       {
       ESP_LOGI(TAG, "WIFI client down (with MODEM down): network connectivity has been lost");
       MyEvents.SignalEvent("network.down",NULL);
 
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-      StopMongooseTask();
-#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+      #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+        StopMongooseTask();
+      #endif
       }
 
     MyEvents.SignalEvent("network.interface.change",NULL);
     }
-  else
-    {
-    // Re-prioritise, just in case, as Wifi stack seems to mess with this
-    // (in particular if an AP interface is up, and STA goes down, Wifi
-    // stack seems to switch default interface to AP)
-    PrioritiseAndIndicate();
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+  }
+
+void OvmsNetManager::WifiStaGotIP(std::string event, void* data)
+  {
+  m_wifi_sta = true;
+  ESP_LOGI(TAG, "WIFI client got IP");
+  SaveDNSServer(m_dns_wifi);
+
+  // Re-prioritise, just in case, as Wifi stack seems to mess with this
+  // (in particular if an AP interface is up, and STA goes down, Wifi
+  // stack seems to switch default interface to AP)
+  PrioritiseAndIndicate();
+  #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
     ScheduleCleanup();
-#endif
+  #endif
+
+  WifiStaCheckSQ(NULL);
+  }
+
+void OvmsNetManager::WifiStaLostIP(std::string event, void* data)
+  {
+  // Re-prioritise, just in case, as Wifi stack seems to mess with this
+  // (in particular if an AP interface is up, and STA goes down, Wifi
+  // stack seems to switch default interface to AP)
+  PrioritiseAndIndicate();
+  #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+    ScheduleCleanup();
+  #endif
+  }
+
+void OvmsNetManager::WifiStaConnected(std::string event, void* data)
+  {
+  // Re-prioritise, just in case, as Wifi stack seems to mess with this
+  // (in particular if an AP interface is up, and STA goes down, Wifi
+  // stack seems to switch default interface to AP)
+  PrioritiseAndIndicate();
+  #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+    ScheduleCleanup();
+  #endif
+  }
+
+void OvmsNetManager::WifiStaStop(std::string event, void* data)
+  {
+  if (m_wifi_sta)
+    {
+    m_wifi_sta = false;
+    ESP_LOGI(TAG, "WIFI client stop");
+    if (m_connected_wifi)
+      {
+      WifiDisconnect();
+      return;
+      }
+    }
+
+  // Re-prioritise, just in case, as Wifi stack seems to mess with this
+  // (in particular if an AP interface is up, and STA goes down, Wifi
+  // stack seems to switch default interface to AP)
+  PrioritiseAndIndicate();
+  #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+    ScheduleCleanup();
+  #endif
+  }
+
+void OvmsNetManager::WifiStaGood(std::string event, void* data)
+  {
+  if (m_wifi_sta && !m_connected_wifi)
+    {
+    ESP_LOGI(TAG, "WIFI client has good signal quality (%.1f dBm); connect",
+             StdMetrics.ms_m_net_wifi_sq->AsFloat());
+    WifiConnect();
+    }
+  }
+
+void OvmsNetManager::WifiStaBad(std::string event, void* data)
+  {
+  if (m_wifi_sta && m_connected_wifi)
+    {
+    ESP_LOGI(TAG, "WIFI client has bad signal quality (%.1f dBm); disconnect",
+             StdMetrics.ms_m_net_wifi_sq->AsFloat());
+    WifiDisconnect();
+    }
+  }
+
+void OvmsNetManager::WifiStaCheckSQ(OvmsMetric* metric)
+  {
+  if (m_wifi_sta)
+    {
+    float sq = StdMetrics.ms_m_net_wifi_sq->AsFloat();
+    if ((!metric || !m_wifi_good) && sq >= m_cfg_wifi_sq_good)
+      {
+      m_wifi_good = true;
+      MyEvents.SignalEvent("network.wifi.sta.good", NULL);
+      }
+    else if ((!metric || m_wifi_good) && sq <= m_cfg_wifi_sq_bad)
+      {
+      m_wifi_good = false;
+      MyEvents.SignalEvent("network.wifi.sta.bad", NULL);
+      }
     }
   }
 
@@ -406,10 +535,19 @@ void OvmsNetManager::ModemDown(std::string event, void* data)
 void OvmsNetManager::ConfigChanged(std::string event, void* data)
   {
   OvmsConfigParam* param = (OvmsConfigParam*)data;
-  if (param && param->GetName() == "network")
+  if (!param || param->GetName() == "network")
     {
     // Network config has been changed, apply:
-    if (m_network_any)
+    m_cfg_wifi_sq_good = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
+    m_cfg_wifi_sq_bad  = MyConfig.GetParamValueFloat("network", "wifi.sq.bad",  -89);
+    if (m_cfg_wifi_sq_good < m_cfg_wifi_sq_bad)
+      {
+      float x = m_cfg_wifi_sq_good;
+      m_cfg_wifi_sq_good = m_cfg_wifi_sq_bad;
+      m_cfg_wifi_sq_bad = x;
+      }
+    WifiStaCheckSQ(NULL);
+    if (param && m_network_any)
       PrioritiseAndIndicate();
     }
   }
@@ -562,6 +700,7 @@ void OvmsNetManager::PrioritiseAndIndicate()
       return;
       }
     }
+  ESP_LOGE(TAG, "Inconsistent state: no interface of type '%s' found", search);
   }
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE

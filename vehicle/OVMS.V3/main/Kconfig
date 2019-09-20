@@ -180,7 +180,7 @@ config OVMS_SC_JAVASCRIPT_DUKTAPE_STACK
     default 12288
     depends on OVMS_SC_JAVASCRIPT_DUKTAPE
     help
-        Stack size for the DukTape task ("Duk Task").
+        Stack size for the DukTape task ("OVMS DukTape").
         The DukTape task runs the javascript framework.
 
 config OVMS_SC_JAVASCRIPT_DUKTAPE_QUEUE_SIZE
@@ -189,6 +189,14 @@ config OVMS_SC_JAVASCRIPT_DUKTAPE_QUEUE_SIZE
     depends on OVMS_SC_JAVASCRIPT_DUKTAPE
     help
         The size of the DukTape queue (for outstanding requests).
+
+config OVMS_SC_JAVASCRIPT_DUKTAPE_PRIORITY
+    int "JavaScript (DukTape) task priority"
+    default 3
+    depends on OVMS_SC_JAVASCRIPT_DUKTAPE
+    help
+        Priority for the DukTape task ("OVMS DukTape").
+        The DukTape task runs the javascript framework.
 
 endmenu # Library support
 
@@ -254,6 +262,14 @@ config OVMS_VEHICLE_RENAULTTWIZY
     help
         Enable to include support for Renault Twizy vehicles.
 
+config OVMS_VEHICLE_RENAULTZOE
+    bool "Include support for Renault Zoe vehicles"
+    default y
+    depends on OVMS
+    depends on OVMS_COMP_CANOPEN
+    help
+        Enable to include support for Renault Zoe vehicles.
+
 config OVMS_VEHICLE_KIASOULEV
     bool "Include support for Kia Soul EV vehicles"
     default y
@@ -281,6 +297,13 @@ config OVMS_VEHICLE_SMARTED
     depends on OVMS
     help
         Enable to include support for Smart ED vehicle.
+
+config OVMS_VEHICLE_SMARTEQ
+    bool "Include support for Smart ED/EQ Gen.4 vehicle"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Smart ED/EQ Gen.4 vehicle.
 
 config OVMS_VEHICLE_MITSUBISHI
     bool "Include support for Mitsubishi iMiev vehicle"

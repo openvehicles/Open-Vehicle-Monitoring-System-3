@@ -362,18 +362,21 @@ void location_rm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
 void location_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
+  int n;
   writer->printf("Currently at %0.6f,%0.6f ",MyLocations.m_latitude,MyLocations.m_longitude);
-  if (MyLocations.m_gpslock)
-    writer->puts("(with good GPS lock)");
-  else
-    writer->puts("(without GPS lock)");
+  writer->printf("(%sGPS lock", MyLocations.m_gpslock ? "" : "without ");
+  n = StandardMetrics.ms_v_pos_satcount->AsInt();
+  if (n > 0)
+    writer->printf(", %d satellite%s", n, n == 1 ? "" : "s");
+  writer->puts(")");
 
   if ((MyLocations.m_park_latitude != 0)&&(MyLocations.m_park_longitude != 0))
     writer->printf("Vehicle is parked at %0.6f,%0.6f\n",
       MyLocations.m_park_latitude,
       MyLocations.m_park_longitude);
-
-  writer->printf("There are %d location(s) defined\n",MyLocations.m_locations.size());
+  n = MyLocations.m_locations.size();
+  writer->printf("There %s %d location%s defined\n",
+    n == 1 ? "is" : "are", n, n == 1 ? "" : "s");
 
   bool found = false;
   for (LocationMap::iterator it=MyLocations.m_locations.begin(); it!=MyLocations.m_locations.end(); ++it)

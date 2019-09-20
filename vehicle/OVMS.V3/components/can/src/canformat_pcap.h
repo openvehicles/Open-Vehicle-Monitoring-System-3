@@ -77,15 +77,10 @@ class canformat_pcap : public canformat
     canformat_pcap(const char* type);
     virtual ~canformat_pcap();
 
-  protected:
-    uint8_t m_buf[CANFORMAT_PCAP_MAXLEN];
-    size_t m_bufpos;
-    bool m_discarding;
-
   public:
     virtual std::string get(CAN_log_message_t* message);
     virtual std::string getheader(struct timeval *time);
-    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len);
+    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata=NULL);
   };
 
 #endif // __CANFORMAT_PCAP_H__

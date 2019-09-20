@@ -56,7 +56,7 @@ void vfs_ls(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
   struct dirent *dp;
   char size[64], mod[64], path[PATH_MAX];
   struct stat st;
-  
+
   if (argc == 0)
     {
     if ((dir = opendir (".")) == NULL)
@@ -87,7 +87,7 @@ void vfs_ls(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
     int64_t fsize = st.st_size;
     int is_dir = S_ISDIR(st.st_mode);
     const char *slash = is_dir ? "/" : "";
-    
+
     if (is_dir) {
       strcpy(size, "[DIR]   ");
     } else {
@@ -102,7 +102,7 @@ void vfs_ls(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
       }
     }
     strftime(mod, sizeof(mod), "%d-%b-%Y %H:%M", localtime(&st.st_mtime));
-    
+
     writer->printf("%8.8s  %17.17s  %s%s\n", size, mod, dp->d_name, slash);
     }
 
@@ -128,6 +128,47 @@ void vfs_cat(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
   while(size_t n = fread(buf, sizeof(char), sizeof(buf), f))
     {
     writer->write(buf, n);
+    }
+  fclose(f);
+  }
+
+void vfs_head(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char *filename = NULL;
+  int nrlines = 20;
+
+  for (int i=0; i<argc; i++)
+    {
+    if (argv[i][0] == '-')
+      nrlines = atoi(argv[i]+1);
+    else
+      filename = argv[i];
+    }
+
+  if (!filename)
+    {
+    writer->puts("Error: no filename given");
+    return;
+    }
+  if (MyConfig.ProtectedPath(filename))
+    {
+    writer->puts("Error: protected path");
+    return;
+    }
+
+  FILE* f = fopen(filename, "r");
+  if (f == NULL)
+    {
+    writer->puts("Error: VFS file cannot be opened");
+    return;
+    }
+
+  char buf[512];
+  int k =0;
+  while (fgets(buf,sizeof(buf),f)!=NULL)
+    {
+    writer->write(buf,strlen(buf));
+    if (++k >= nrlines) break;
     }
   fclose(f);
   }
@@ -301,7 +342,7 @@ class VfsTailCommand : public OvmsCommandTask
     char buf[128];
     off_t fpos;
     ssize_t len;
-    
+
     OvmsCommandState_t Prepare()
       {
       // parse args:
@@ -312,7 +353,7 @@ class VfsTailCommand : public OvmsCommandTask
         else
           filename = argv[i];
         }
-      
+
       // check file:
       if (!filename || !*filename || MyConfig.ProtectedPath(filename))
         {
@@ -325,7 +366,7 @@ class VfsTailCommand : public OvmsCommandTask
         writer->puts("Error: VFS file cannot be opened");
         return OCS_Error;
         }
-      
+
       // seek nrlines back from end of file:
       fpos = lseek(fd, 0, SEEK_END);
       int lcnt = ((nrlines > 0) ? nrlines : 10) + 1;
@@ -343,7 +384,7 @@ class VfsTailCommand : public OvmsCommandTask
             }
           }
         }
-      
+
       // determine run mode:
       if (nrlines <= 0 && writer->IsInteractive())
         {
@@ -352,7 +393,7 @@ class VfsTailCommand : public OvmsCommandTask
         }
       return OCS_RunOnce;
       }
-    
+
     void Service()
       {
       while (true)
@@ -372,15 +413,15 @@ class VfsTailCommand : public OvmsCommandTask
         fpos = lseek(fd, 0, SEEK_CUR);
         close(fd);
         fd = -1;
-        
+
         // done/abort?
         if (m_state != OCS_RunLoop)
           break;
-        
+
         vTaskDelay(pdMS_TO_TICKS(250));
         }
       }
-    
+
     static void Execute(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
       {
       VfsTailCommand* me = new VfsTailCommand(verbosity, writer, cmd, argc, argv);
@@ -401,6 +442,7 @@ VfsInit::VfsInit()
   OvmsCommand* cmd_vfs = MyCommandApp.RegisterCommand("vfs","Virtual File System framework",NULL,"$C <file(s)>");
   cmd_vfs->RegisterCommand("ls","VFS Directory Listing",vfs_ls, "[<file>]", 0, 1);
   cmd_vfs->RegisterCommand("cat","VFS Display a file",vfs_cat, "<file>", 1, 1);
+  cmd_vfs->RegisterCommand("head","VFS Display first 20 lines of a file",vfs_head, "[-nrlines] <file>", 1, 2);
   cmd_vfs->RegisterCommand("stat","VFS Status of a file",vfs_stat, "<file>", 1, 1);
   cmd_vfs->RegisterCommand("mkdir","VFS Create a directory",vfs_mkdir, "<path>", 1, 1);
   cmd_vfs->RegisterCommand("rmdir","VFS Delete a directory",vfs_rmdir, "<path>", 1, 1);

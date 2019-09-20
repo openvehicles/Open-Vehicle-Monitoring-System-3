@@ -42,9 +42,9 @@ void can_log_vfs_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int 
   if (logger->IsOpen())
     {
     if (argc>1)
-      { MyCan.SetLogger(logger, argc-1, &argv[1]); }
+      { MyCan.AddLogger(logger, argc-1, &argv[1]); }
     else
-      { MyCan.SetLogger(logger); }
+      { MyCan.AddLogger(logger); }
     writer->printf("CAN logging to VFS active: %s\n", logger->GetInfo().c_str());
     }
   else
@@ -76,7 +76,7 @@ OvmsCanLogVFSInit::OvmsCanLogVFSInit()
         OvmsCommand* start = cmd_can_log_start->RegisterCommand("vfs", "CAN logging to VFS");
         MyCanFormatFactory.RegisterCommandSet(start, "Start CAN logging to VFS",
           can_log_vfs_start,
-          "<format> <path> [filter1] ... [filterN]\n"
+          "<path> [filter1] ... [filterN]\n"
           "Filter: <bus> | <id>[-<id>] | <bus>:<id>[-<id>]\n"
           "Example: 2:2a0-37f",
           1, 9);

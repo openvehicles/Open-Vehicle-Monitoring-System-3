@@ -50,6 +50,7 @@ class simcom : public pcp, public InternalRamAllocated
   public:
     virtual void SetPowerMode(PowerMode powermode);
     void AutoInit();
+    void Restart();
     void SupportSummary(OvmsWriter* writer);
 
   public:

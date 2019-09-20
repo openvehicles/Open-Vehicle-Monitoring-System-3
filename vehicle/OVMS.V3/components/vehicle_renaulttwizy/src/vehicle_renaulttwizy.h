@@ -43,6 +43,7 @@
 #include "rt_battmon.h"
 #include "rt_pwrmon.h"
 #include "rt_sevcon.h"
+#include "rt_obd2.h"
 
 using namespace std;
 
@@ -89,6 +90,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   public:
     void CanResponder(const CAN_frame_t* p_frame);
     void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void Ticker1(uint32_t ticker);
     void Ticker10(uint32_t ticker);
     void ConfigChanged(OvmsConfigParam* param);
@@ -102,7 +104,6 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     void NotifiedVehicleChargeState(const char* state);
 
   protected:
-    bool m_ready = false;
     static size_t m_modifier;
     OvmsMetricString *m_version;
     OvmsCommand *cmd_xrt;
@@ -121,7 +122,9 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     int CalcChargeTime(int dstsoc);
   
   protected:
+#if 0 // replaced by OBD2 VIN
     char twizy_vin[8] = "";                     // last 7 digits of full VIN
+#endif
     
     // Car + charge status from CAN:
     #define CAN_STATUS_FOOTBRAKE    0x01        //  bit 0 = 0x01: 1 = Footbrake
@@ -466,7 +469,37 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   protected:
     SevconClient *m_sevcon = NULL;
     signed char twizy_button_cnt = 0;           // will count key presses (errors) in STOP mode (msg 081)
+
+
+  // --------------------------------------------------------------------------
+  // OBD2 subsystem
+  //  - implementation: rt_obd2.(h,cpp)
+  // 
   
+  public:
+    void ObdInit();
+    void ObdTicker1();
+    void ObdTicker10();
+
+  public:
+    // Shell commands:
+    static void shell_obd_showdtc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void shell_obd_cleardtc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void shell_obd_resetdtc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+
+  protected:
+    void ResetDTCStats();
+    void FormatDTC(StringWriter& buf, int i, cluster_dtc& e);
+    void SendDTC(int i, cluster_dtc& e);
+
+  protected:
+    cluster_dtc_store   twizy_cluster_dtc = {};
+    cluster_dtc_store   twizy_cluster_dtc_new = {};
+    bool                twizy_cluster_dtc_updated = false;
+    bool                twizy_cluster_dtc_inhibit_alert = true;   // prevent alert for historical DTCs
+    uint16_t            twizy_cluster_dtc_present[DTC_COUNT] = {};
+    bool                cfg_dtc_autoreset = false;
+
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   // --------------------------------------------------------------------------

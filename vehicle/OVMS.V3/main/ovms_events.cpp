@@ -342,9 +342,9 @@ void OvmsEvents::SignalSystemEvent(system_event_t *event)
       SignalEvent("network.interface.up", NULL);
       SignalEvent("system.wifi.sta.gotip",(void*)&event->event_info,sizeof(event->event_info));
       break;
-//    case SYSTEM_EVENT_STA_LOST_IP:         // ESP32 station lost IP and the IP is reset to 0
-//      SignalEvent("system.wifi.sta.lostip",(void*)&event->event_info);
-//      break;
+    case SYSTEM_EVENT_STA_LOST_IP:         // ESP32 station lost IP and the IP is reset to 0
+      SignalEvent("system.wifi.sta.lostip",(void*)&event->event_info);
+      break;
     case SYSTEM_EVENT_STA_WPS_ER_SUCCESS:  // ESP32 station wps succeeds in enrollee mode
       SignalEvent("system.wifi.sta.wpser.success",(void*)&event->event_info,sizeof(event->event_info));
       break;
@@ -368,6 +368,9 @@ void OvmsEvents::SignalSystemEvent(system_event_t *event)
       break;
     case SYSTEM_EVENT_AP_STADISCONNECTED:  // a station disconnected from ESP32 soft-AP
       SignalEvent("system.wifi.ap.sta.disconnected",(void*)&event->event_info,sizeof(event->event_info));
+      break;
+    case SYSTEM_EVENT_AP_STAIPASSIGNED:    // ESP32 soft-AP assigned an IP to a connected station
+      SignalEvent("system.wifi.ap.sta.ipassigned",(void*)&event->event_info,sizeof(event->event_info));
       break;
     case SYSTEM_EVENT_AP_PROBEREQRECVED:   // Receive probe request packet in soft-AP interface
       SignalEvent("system.wifi.ap.proberx",(void*)&event->event_info,sizeof(event->event_info));

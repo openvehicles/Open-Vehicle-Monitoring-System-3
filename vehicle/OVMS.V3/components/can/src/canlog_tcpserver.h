@@ -28,12 +28,18 @@
 #ifndef __CANLOG_TCP_SERVER_H__
 #define __CANLOG_TCP_SERVER_H__
 
+#include <sdkconfig.h>
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
 #include "canlog.h"
+#include "canlog_tcpserver.h"
+#include "ovms_netmanager.h"
+#include "ovms_mutex.h"
 
 class canlog_tcpserver : public canlog
   {
   public:
-    canlog_tcpserver(std::string path, std::string format);
+    canlog_tcpserver(std::string path, std::string format, canformat::canformat_serve_mode_t mode);
     virtual ~canlog_tcpserver();
 
   public:
@@ -46,7 +52,18 @@ class canlog_tcpserver : public canlog
     virtual void OutputMsg(CAN_log_message_t& msg);
 
   public:
+    void MongooseHandler(struct mg_connection *nc, int ev, void *p);
+
+  public:
+    typedef std::map<mg_connection*, uint8_t> ts_map_t;
+    OvmsMutex m_mgmutex;
+    ts_map_t m_smap;
+    bool m_isopen;
+    struct mg_connection *m_mgconn;
+
+  public:
     std::string         m_path;
   };
 
+#endif // #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 #endif // __CANLOG_TCP_SERVER_H__

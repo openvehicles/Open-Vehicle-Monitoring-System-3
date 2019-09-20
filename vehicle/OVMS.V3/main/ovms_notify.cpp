@@ -138,7 +138,7 @@ OvmsNotifyEntry::OvmsNotifyEntry(const char* subtype)
   {
   m_pendingreaders = 0;
   m_id = 0;
-  m_created = monotonictime;
+  m_created = esp_log_timestamp();
   m_type = NULL;
   m_subtype = strdup(subtype);
   }

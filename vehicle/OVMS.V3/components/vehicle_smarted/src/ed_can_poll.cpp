@@ -191,10 +191,10 @@ void OvmsVehicleSmartED::PollReply_BMS_BattVolts(uint8_t* reply_data, uint16_t r
 void OvmsVehicleSmartED::PollReply_NLG6_ChargerPN_HW(uint8_t* reply_data, uint16_t reply_len) {
   int n;
   int comp = 0;
-  char NLG6PN_HW[12];
+  char NLG6PN_HW[11];
   memset(NLG6PN_HW, 0, sizeof(NLG6PN_HW));
   
-  for (n = 1; n < 12; n++) {
+  for (n = 1; n < 11; n++) {
     NLG6PN_HW[n - 1] = reply_data[n];
     if (reply_data[n] == NLG6_PN_HW[n - 1]) {
       comp++;

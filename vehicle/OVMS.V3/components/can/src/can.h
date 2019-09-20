@@ -59,6 +59,8 @@
 // CAN BUS constants and objects
 ////////////////////////////////////////////////////////////////////////
 
+#define CAN_MAXBUSES 5            // Limit of number of CAN buses supported
+
 class canbus; // Forward definition
 
 // CAN mode
@@ -72,12 +74,18 @@ typedef enum
 // CAN link speed (100kbps -> 1MHz)
 typedef enum
   {
+  CAN_SPEED_33KBPS=33,       // CAN Node runs at 33.333kBit/s
+  CAN_SPEED_83KBPS=83,       // CAN Node runs at 83.333kBit/s
   CAN_SPEED_100KBPS=100,     // CAN Node runs at 100kBit/s
   CAN_SPEED_125KBPS=125,     // CAN Node runs at 125kBit/s
   CAN_SPEED_250KBPS=250,     // CAN Node runs at 250kBit/s
   CAN_SPEED_500KBPS=500,     // CAN Node runs at 500kBit/s
   CAN_SPEED_1000KBPS=1000    // CAN Node runs at 1000kBit/s
   } CAN_speed_t;
+
+/* Map CAN_speed_t to a Bit/s value */
+#define MAP_CAN_SPEED(s) \
+    ((s) > CAN_SPEED_83KBPS ? (((int)(s)) * 1000) : ((((int)(s)) * 1000) + 333))
 
 // CAN frame type (standard/extended)
 typedef enum
@@ -248,6 +256,7 @@ extern const char* GetCanLogTypeName(CAN_log_type_t type);
 ////////////////////////////////////////////////////////////////////////
 
 class canlog;
+class canplay;
 class dbcfile;
 
 class canbus : public pcp, public InternalRamAllocated
@@ -292,6 +301,7 @@ class canbus : public pcp, public InternalRamAllocated
     uint32_t m_status_chksum;
     uint32_t m_watchdog_timer;
     QueueHandle_t m_txqueue;
+    int m_busnumber;
 
   protected:
     dbcfile *m_dbcfile;
@@ -342,19 +352,45 @@ class can : public InternalRamAllocated
     void ExecuteCallbacks(const CAN_frame_t* frame, bool tx);
 
   public:
-    void SetLogger(canlog* logger, int filterc=0, const char* const* filterv=NULL);
-    canlog* GetLogger();
-    void ClearLogger();
+    uint32_t AddLogger(canlog* logger, int filterc=0, const char* const* filterv=NULL);
+    bool HasLogger();
+    canlog* GetLogger(uint32_t id);
+    bool RemoveLogger(uint32_t id);
+    void RemoveLoggers();
+
+  public:
+    uint32_t AddPlayer(canplay* player, int filterc=0, const char* const* filterv=NULL);
+    bool HasPlayer();
+    canplay* GetPlayer(uint32_t id);
+    bool RemovePlayer(uint32_t id);
+    void RemovePlayers();
+
+  public:
     void LogFrame(canbus* bus, CAN_log_type_t type, const CAN_frame_t* frame);
     void LogStatus(canbus* bus, CAN_log_type_t type, const CAN_status_t* status);
     void LogInfo(canbus* bus, CAN_log_type_t type, const char* text);
 
+  public:
+    canbus* GetBus(int busnumber);
+
+  public:
+    typedef std::map<uint32_t, canlog*> canlog_map_t;
+    canlog_map_t m_loggermap;
+    OvmsMutex m_loggermap_mutex;
+    uint32_t m_logger_id;
+
+  public:
+    typedef std::map<uint32_t, canplay*> canplay_map_t;
+    canplay_map_t m_playermap;
+    OvmsMutex m_playermap_mutex;
+    uint32_t m_player_id;
+
   private:
+    canbus* m_buslist[CAN_MAXBUSES];
     CanListenerMap_t m_listeners;
     CanFrameCallbackList_t m_rxcallbacks;
     CanFrameCallbackList_t m_txcallbacks;
     TaskHandle_t m_rxtask;            // Task to handle reception
-    canlog* m_logger;
   };
 
 extern can MyCan;

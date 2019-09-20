@@ -352,7 +352,8 @@ int OvmsServerV3::TransmitNotificationData(OvmsNotifyEntry* entry)
   topic.append("/");
   topic.append(itoa(entry->m_id,base,10));
   topic.append("/");
-  topic.append(itoa(entry->m_created - monotonictime,base,10));
+  uint32_t now = esp_log_timestamp();
+  topic.append(itoa(-((int)(now - entry->m_created) / 1000),base,10));
 
   // terminate payload at first LF:
   extram::string msg = entry->GetValue();
