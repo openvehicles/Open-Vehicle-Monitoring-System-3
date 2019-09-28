@@ -23,4 +23,5 @@ Open Vehicles Monitoring System
    crtd/can_logging
    crtd/index
    components/ovms_webserver/docs/index
+   components/ovms_script/docs/index
    components/canopen/docs/index
