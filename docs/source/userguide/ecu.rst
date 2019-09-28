@@ -12,7 +12,7 @@ The OBDII interface is a connector, electrical specification, and protocol used 
 Cabling
 -------
 
-The cable and OBDII connector are not provided with the OVMSv3 module, and can be built using the diagram below. In future, a standard cable will be available for this, and this guide updated when that happens.
+The cable and OBDII connector are not provided with the OVMSv3 module, and can be built using the diagram below. Alternatively, you can purchase the `OVMS V3 HUD / OBD II-F Cable from FastTech <https://www.fasttech.com/product/9652027-ovms-v3-hud-obd-ii-f-cable>`_.
 
 ==== ============ ===========
 DA26 OBDII Female Signal name
