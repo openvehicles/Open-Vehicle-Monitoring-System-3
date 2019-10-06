@@ -14,11 +14,13 @@ xrt.b.u.temp.max                         20°C                     Current trip/
 xrt.b.u.temp.min                         18.1429°C                Current trip/charge pack temp min
 xrt.b.u.volt.max                         55V                      Current trip/charge pack volt max
 xrt.b.u.volt.min                         50.2V                    Current trip/charge pack volt min
+xrt.cfg.applied                          yes                      Tuning working set has been applied to SEVCON
 xrt.cfg.base                             2                        Tuning base profile (preop mode params)
 xrt.cfg.profile                          144,110,111,182,…        Tuning profile params
 xrt.cfg.type                             Twizy80                  Tuning vehicle type
-xrt.cfg.unsaved                          yes                      Tuning changed/unsaved flag
-xrt.cfg.user                             2                        Tuning user live profile (op mode params)
+xrt.cfg.unsaved                          yes                      Tuning working set has unsaved changes
+xrt.cfg.user                             2                        Tuning user/live profile (op mode params)
+xrt.cfg.ws                               0                        Tuning profile last loaded into working set
 xrt.i.cur.act                            0A                       SC monitor: motor current level
 xrt.i.frq.output                         0                        SC monitor: motor output frequency
 xrt.i.frq.slip                           0                        SC monitor: motor slip frequency

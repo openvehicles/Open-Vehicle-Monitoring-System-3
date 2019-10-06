@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-twizy";
 
-#define VERSION "1.2.4"
+#define VERSION "1.3.0"
 
 #include <stdio.h>
 #include <string>
@@ -419,6 +419,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandHo
 
   // switch profile:
   CANopenResult_t res = m_sevcon->CfgSwitchProfile(key+1);
+  m_sevcon->UpdateProfileMetrics();
 
   // send result:
   ostringstream buf;

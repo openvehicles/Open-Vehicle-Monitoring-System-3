@@ -1641,6 +1641,7 @@ CANopenResult_t SevconClient::CfgSwitchProfile(uint8_t key)
 
   // load profile:
   GetParamProfile(key, m_profile);
+  m_drivemode.profile_ws = key;
   m_drivemode.unsaved = 0;
   
   // try to apply profile:

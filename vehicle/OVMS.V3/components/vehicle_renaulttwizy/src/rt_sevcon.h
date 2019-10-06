@@ -61,7 +61,8 @@ typedef union __attribute__ ((__packed__))
                                       //      3     = config set xrt type SC45GB80 (SEVCON_T45 + Gearbox_T80)
                                       //      4…15  = reserved
     
-    unsigned :8;                      // padding/reserved
+    unsigned profile_ws:7;            // CFG: profile key last loaded into working set
+    unsigned :1;                      // padding/reserved
   };
 } cfg_drivemode;
 
@@ -191,6 +192,7 @@ class SevconClient : public InternalRamAllocated
     string FmtSwitchProfileResult(CANopenResult_t res);
     
     static int PrintProfile(int capacity, OvmsWriter* writer, cfg_profile& profile);
+    void UpdateProfileMetrics();
     
     void Kickdown(bool on);
     static void KickdownTimer(TimerHandle_t xTimer);
@@ -262,7 +264,9 @@ class SevconClient : public InternalRamAllocated
     OvmsMetricVector<short>*  ms_cfg_profile;
     OvmsMetricInt*            ms_cfg_user;
     OvmsMetricInt*            ms_cfg_base;
+    OvmsMetricInt*            ms_cfg_ws;
     OvmsMetricBool*           ms_cfg_unsaved;
+    OvmsMetricBool*           ms_cfg_applied;
     OvmsMetricString*         ms_cfg_type;
     
     QueueHandle_t             m_faultqueue;
