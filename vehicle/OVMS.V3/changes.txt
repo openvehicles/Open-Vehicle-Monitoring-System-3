@@ -1,6 +1,11 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Twizy: immediate tuning metrics updates (was delegated to ticker before),
+  remember profile key loaded into working set, remember tuning applied state
+  New metrics:
+    xrt.cfg.applied   -- yes = tuning has been applied to SEVCON
+    xrt.cfg.ws        -- tuning profile loaded into working set
 
 2019-09-19 MWJ  3.2.005  OTA release
 - Default module/debug.tasks to FALSE
