@@ -140,6 +140,25 @@ The OvmsCommand object exposes one method “Exec”. This method is passed a si
     Detected boot reason: PowerOn (1/14)
     Crash counters: 0 total, 0 early
 
+``OvmsEvents``
+
+The OvmsEvents object exposes the method "Raise". It accepts one or two parameters, the first being the event name to raise, the second an optional delay in milliseconds (must be given as a number).
+
+While you may raise system events, the primary use is to raise custom events. Sending custom events is a lightweight method to inform the web UI (or other plugins)
+about simple state changes. Use the prefix ``usr.`` on custom event names to prevent conflicts with later framework additions.
+
+Another use is the emulation of the ``setTimeout()`` and ``setInterval()`` browser methods by subscribing to a delayed event. Pattern:
+
+.. code-block:: javascript
+
+  function myTimeoutHandler() {
+    // raise the timeout event again here to emulate setInterval()
+  }
+  PubSub.subscribe('usr.myplugin.timeout', myTimeoutHandler);
+  
+  // start timeout:
+  OvmsEvents.Raise('usr.myplugin.timeout', 1500);
+
 ``OvmsLocation``
 
 The OvmsLocation object exposes one method “Status”. This method is passed a single parameter as the location name. It returns true if the vehicle is currently in that location’s geofence, false if not, or undefined if the location name passed is not valid.
@@ -176,6 +195,9 @@ You can see the global context objects, methods, functions, and modules with the
     "print": function () { [native code] },
     "OvmsCommand": {
       "Exec": function Exec() { [native code] }
+    },
+    "OvmsEvents": {
+      "Raise": function Raise() { [native code] }
     },
     "OvmsLocation": {
       "Status": function Status() { [native code] }

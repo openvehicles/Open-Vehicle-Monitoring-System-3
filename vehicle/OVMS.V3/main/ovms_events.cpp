@@ -95,10 +95,27 @@ int event_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* c
 
 void event_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  std::string event(argv[0]);
+  std::string event;
+  uint32_t delay_ms = 0;
 
-  writer->printf("Raising event: %s\n",argv[0]);
-  MyEvents.SignalEvent(event, NULL);
+  for (int i=0; i<argc; i++)
+    {
+    if (argv[i][0]=='-' && argv[i][1]=='d')
+      delay_ms = atol(argv[i]+2);
+    else
+      event = argv[i];
+    }
+
+  if (delay_ms)
+    {
+    writer->printf("Raising event in %u ms: %s\n", delay_ms, argv[0]);
+    MyEvents.SignalEvent(event, NULL, (size_t)0, delay_ms);
+    }
+  else
+    {
+    writer->printf("Raising event: %s\n", argv[0]);
+    MyEvents.SignalEvent(event, NULL);
+    }
   }
 
 OvmsEvents::OvmsEvents()
@@ -116,7 +133,7 @@ OvmsEvents::OvmsEvents()
   // Register our commands
   OvmsCommand* cmd_event = MyCommandApp.RegisterCommand("event","EVENT framework");
   cmd_event->RegisterCommand("list","List registered events",event_list,"[<key>]", 0, 1);
-  cmd_event->RegisterCommand("raise","Raise a textual event",event_raise,"<event>", 1, 1, true, event_validate);
+  cmd_event->RegisterCommand("raise","Raise a textual event",event_raise,"[-d<delay_ms>] <event>", 1, 2, true, event_validate);
   OvmsCommand* cmd_eventtrace = cmd_event->RegisterCommand("trace","EVENT trace framework");
   cmd_eventtrace->RegisterCommand("on","Turn event tracing ON",event_trace);
   cmd_eventtrace->RegisterCommand("off","Turn event tracing OFF",event_trace);
@@ -260,7 +277,64 @@ void OvmsEvents::DeregisterEvent(std::string caller)
     }
   }
 
-void OvmsEvents::SignalEvent(std::string event, void* data, event_signal_done_fn callback)
+static void SignalScheduledEvent(TimerHandle_t timer)
+  {
+  event_queue_t* msg = (event_queue_t*) pvTimerGetTimerID(timer);
+  if (xQueueSend(MyEvents.m_taskqueue, msg, 0) != pdTRUE)
+    {
+    ESP_LOGE(TAG, "SignalScheduledEvent: queue overflow, event '%s' dropped", msg->body.signal.event);
+    MyEvents.FreeQueueSignalEvent(msg);
+    }
+  delete msg;
+  }
+
+bool OvmsEvents::ScheduleEvent(event_queue_t* msg, uint32_t delay_ms)
+  {
+  OvmsMutexLock lock(&m_timers_mutex);
+  TimerHandle_t timer;
+  TimerList::iterator it;
+  event_queue_t *msgdup = new event_queue_t(*msg);
+  if (!msgdup)
+    return false;
+  // find available timer:
+  for (it = m_timers.begin(); it != m_timers.end(); it++)
+    {
+    timer = *it;
+    if (xTimerIsTimerActive(timer) == pdFALSE)
+      break;
+    }
+  if (it == m_timers.end())
+    {
+    // create new timer:
+    timer = xTimerCreate("ScheduleEvent", pdMS_TO_TICKS(delay_ms), pdFALSE, msgdup, SignalScheduledEvent);
+    if (!timer)
+      {
+      delete msgdup;
+      return false;
+      }
+    m_timers.push_back(timer);
+    }
+  else
+    {
+    // update timer:
+    if (xTimerChangePeriod(timer, pdMS_TO_TICKS(delay_ms), 0) != pdPASS)
+      {
+      delete msgdup;
+      return false;
+      }
+    vTimerSetTimerID(timer, msgdup);
+    }
+  // start timer:
+  if (xTimerStart(timer, 0) != pdPASS)
+    {
+    delete msgdup;
+    return false;
+    }
+  return true;
+  }
+
+void OvmsEvents::SignalEvent(std::string event, void* data, event_signal_done_fn callback /*=NULL*/,
+                             uint32_t delay_ms /*=0*/)
   {
   event_queue_t msg;
   memset(&msg, 0, sizeof(msg));
@@ -271,14 +345,26 @@ void OvmsEvents::SignalEvent(std::string event, void* data, event_signal_done_fn
   msg.body.signal.data = data;
   msg.body.signal.donefn = callback;
 
-  if (xQueueSend(m_taskqueue, &msg, 0) != pdTRUE)
+  if (delay_ms == 0)
     {
-    ESP_LOGE(TAG, "SignalEvent: queue overflow, event '%s' dropped", msg.body.signal.event);
-    FreeQueueSignalEvent(&msg);
+    if (xQueueSend(m_taskqueue, &msg, 0) != pdTRUE)
+      {
+      ESP_LOGE(TAG, "SignalEvent: queue overflow, event '%s' dropped", msg.body.signal.event);
+      FreeQueueSignalEvent(&msg);
+      }
+    }
+  else
+    {
+    if (ScheduleEvent(&msg, delay_ms) != true)
+      {
+      ESP_LOGE(TAG, "SignalEvent: no timer available, event '%s' dropped", msg.body.signal.event);
+      FreeQueueSignalEvent(&msg);
+      }
     }
   }
 
-void OvmsEvents::SignalEvent(std::string event, void* data, size_t length)
+void OvmsEvents::SignalEvent(std::string event, void* data, size_t length,
+                             uint32_t delay_ms /*=0*/)
   {
   event_queue_t msg;
   memset(&msg, 0, sizeof(msg));
@@ -298,10 +384,21 @@ void OvmsEvents::SignalEvent(std::string event, void* data, size_t length)
     msg.body.signal.donefn = NULL;
     }
 
-  if (xQueueSend(m_taskqueue, &msg, 0) != pdTRUE)
+  if (delay_ms == 0)
     {
-    ESP_LOGE(TAG, "SignalEvent: queue overflow, event '%s' dropped", msg.body.signal.event);
-    FreeQueueSignalEvent(&msg);
+    if (xQueueSend(m_taskqueue, &msg, 0) != pdTRUE)
+      {
+      ESP_LOGE(TAG, "SignalEvent: queue overflow, event '%s' dropped", msg.body.signal.event);
+      FreeQueueSignalEvent(&msg);
+      }
+    }
+  else
+    {
+    if (ScheduleEvent(&msg, delay_ms) != true)
+      {
+      ESP_LOGE(TAG, "SignalEvent: no timer available, event '%s' dropped", msg.body.signal.event);
+      FreeQueueSignalEvent(&msg);
+      }
     }
   }
 

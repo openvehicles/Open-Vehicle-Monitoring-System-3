@@ -152,8 +152,10 @@ about simple state changes. In this case we'd like to inform listeners when the 
 light actually physically is switched on or off, so the web UI can give visual feedback
 to the driver on this.
 
-As there currently is no OvmsEvent API (may change in the future), we simply use the
-standard command ``event raise`` for this:
+Beginning with firmware release 3.2.006 there is a native API ``OvmsEvents.Raise()``
+available to send events.
+
+Before 3.2.006 we simply use the standard command ``event raise``:
 
 .. code-block:: javascript
   :caption: Module Plugin
