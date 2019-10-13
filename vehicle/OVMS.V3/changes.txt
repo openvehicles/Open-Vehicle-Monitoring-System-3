@@ -1,7 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
-- Scripting: new Javascript API: OvmsEvents.Raise(event, [delay_ms])
+- Scripting: new Javascript APIs:
+    - OvmsEvents.Raise(event, [delay_ms])
+    - id = OvmsNotify.Raise(type, subtype, message)
 - Twizy: immediate tuning metrics updates (was delegated to ticker before),
   remember profile key loaded into working set, remember tuning applied state
   New metrics:
