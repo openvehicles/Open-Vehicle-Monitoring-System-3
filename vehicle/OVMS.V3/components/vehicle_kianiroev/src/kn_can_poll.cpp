@@ -120,6 +120,10 @@ void OvmsVehicleKiaNiroEv::IncomingAirCon(canbus* bus, uint16_t type, uint16_t p
 				StdMetrics.ms_v_env_temp->SetValue((data[3]/2.0)-40, Celcius);
 				StdMetrics.ms_v_env_cabintemp->SetValue((data[2]/2.0)-40, Celcius);
 				}
+			if (m_poll_ml_frame == 4)
+				{
+				StdMetrics.ms_v_pos_speed->SetValue(CAN_BYTE(5)); //Speed moved to here --TP
+				}
 			break;
 
 		case 0x0102:
@@ -233,7 +237,7 @@ void OvmsVehicleKiaNiroEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 				else if(m_poll_ml_frame==2)
 					{
 					//StdMetrics.ms_v_pos_speed->SetValue(CAN_UINT(2)/100.0);
-					StdMetrics.ms_v_pos_speed->SetValue(CAN_UINT(1)/10.0); // Alex said the other one was wrong. Maybe this is correct?
+					//StdMetrics.ms_v_pos_speed->SetValue(CAN_UINT(1)/10.0); // Alex said the other one was wrong. Maybe this is correct? No speed is in 7b3 220100 frame 4 Byte 5
 					}
 				}
 			break;
