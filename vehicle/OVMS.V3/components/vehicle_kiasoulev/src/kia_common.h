@@ -142,6 +142,7 @@ protected:
   uint32_t kia_battery_cum_charge; 						//Cumulated charge power
   uint32_t kia_battery_cum_discharge; 					//Cumulated discharge power
   uint32_t kia_battery_cum_op_time; 						//Cumulated operating time
+  uint32_t kia_last_battery_cum_charge;					
 
   float kia_obc_ac_voltage;
   float kia_obc_ac_current;
@@ -149,6 +150,7 @@ protected:
   float kia_last_soc;
   float kia_last_ideal_range;
   float kia_cum_charge_start; 		// Used to calculate charged power.
+  
 
   bool kia_ready_for_chargepollstate;
   bool kia_check_door_lock;
