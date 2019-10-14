@@ -197,11 +197,11 @@ void OvmsVehicleRenaultZoe::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   c.fieldset_start("Charge control");
   
   c.input_slider("Range Ideal", "rangeideal", 3, "km",
-    atoi(rangeideal.c_str()) > 0, atoi(rangeideal.c_str()), 160, 80, 500, 1,
+    -1, atoi(rangeideal.c_str()), 160, 80, 500, 1,
     "<p>Default 160km. Ideal Range...</p>");
   
   c.input_slider("Battery Capacity", "battcapacity", 5, "Wh",
-    atoi(battcapacity.c_str()) > 0, atoi(battcapacity.c_str()), 27000, 10000, 50000, 100,
+    -1, atoi(battcapacity.c_str()), 27000, 10000, 50000, 100,
     "<p>Default 27000. Battery Capacity...</p>");
 
   c.input_slider("Sufficient range", "suffrange", 3, "km",

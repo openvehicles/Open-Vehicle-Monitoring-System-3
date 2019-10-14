@@ -44,6 +44,7 @@ static const char *TAG = "v-zoe";
 #include "metrics_standard.h"
 #include "ovms_notify.h"
 #include "ovms_peripherals.h"
+#include "ovms_netmanager.h"
 
 #include "vehicle_renaultzoe.h"
 
@@ -55,7 +56,7 @@ static const OvmsVehicle::poll_pid_t vehicle_renaultzoe_polls[] = {
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2002, { 0, 10, 10, 10 } },  // SOC
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2006, { 0, 10, 10, 10 } },  // Odometer
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3203, { 0, 10, 10, 10 } },  // Battery Voltage
-  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3204, { 0, 30, 10, 5 } },  // Battery Current
+  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3204, { 0, 30, 1, 2 } },  // Battery Current
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3028, { 0, 10, 10, 10 } },  // 12Battery Current
   // 7ec,24,39,.005,0,0,kwh,22320C,62320C,ff,Available discharge Energy
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x320C, { 0, 10, 10, 10 } },  // Available discharge Energy
@@ -65,7 +66,6 @@ static const OvmsVehicle::poll_pid_t vehicle_renaultzoe_polls[] = {
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3206, { 0, 10, 10, 10 } },  // Battery SOH
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x33dc, { 0, 10, 10, 10 } },  // Consumed Domnestic Engergy
   //{ 0x75a, 0x77e, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3018, { 0, 10, 10, 10 } },  // DCDC Temp
-  //{ 0x7e4, 0x77e, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x302b, { 0, 10, 10, 10 } },  // Inverter Temp
   //{ 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504A, { 0, 10, 10, 10 } },  // Mains active Power consumed
   //{ 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5063, { 0, 10, 10, 10 } },  // Charging State
   // { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5062, { 0, 10, 10, 10 } },  // Ground Resistance
@@ -73,9 +73,22 @@ static const OvmsVehicle::poll_pid_t vehicle_renaultzoe_polls[] = {
   //+"7bc,28,39,1,4094,0,N·m,224B7C,624B7C,ff,Electric brake wheels torque request\n" //
       //+ "Uncoupled Braking Pedal,2197,V,7bc,79c,UBP,-,5902ff\n"
   //{ 0x79c, 0x7bc, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, { 0, 120, 1, 120 } }, // Braking Pedal
+  //{ 0x742, 0x762, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x012D, { 0, 0, 10, 10 } }, // Motor temperature (nope)
   // -END-
   { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 } }
 };
+
+OvmsVehicleRenaultZoe* OvmsVehicleRenaultZoe::GetInstance(OvmsWriter* writer /*=NULL*/)
+{
+  OvmsVehicleRenaultZoe* zoe = (OvmsVehicleRenaultZoe*) MyVehicleFactory.ActiveVehicle();
+  string type = StdMetrics.ms_v_type->AsString();
+  if (!zoe || type != "RZ") {
+    if (writer)
+      writer->puts("Error: Renault Zoe vehicle module not selected");
+    return NULL;
+  }
+  return zoe;
+}
 
 OvmsVehicleRenaultZoe::OvmsVehicleRenaultZoe() {
   ESP_LOGI(TAG, "Start Renault Zoe vehicle module");
@@ -94,7 +107,13 @@ OvmsVehicleRenaultZoe::OvmsVehicleRenaultZoe() {
   ConfigChanged(NULL);
   
   // init metrics:
-  mt_pos_odometer_start    = MyMetrics.InitFloat("xrz.v.pos.odometer.start", SM_STALE_MID, 0, Kilometers);
+  mt_pos_odometer_start   = MyMetrics.InitFloat("xrz.v.pos.odometer.start", SM_STALE_MID, 0, Kilometers);
+  mt_bus_awake            = MyMetrics.InitBool("xrz.v.bus.awake", SM_STALE_MIN, false);
+	
+	// init commands:
+  cmd_zoe = MyCommandApp.RegisterCommand("zoe", "Renault Zoe");
+	cmd_zoe->RegisterCommand("trip", "Show vehicle trip", zoe_trip);
+	//MyCommandApp.RegisterCommand("trip", "Show vehicle trip", zoe_trip);
   
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
@@ -118,7 +137,8 @@ void OvmsVehicleRenaultZoe::IncomingFrameCan1(CAN_frame_t* p_frame) {
   
   if (m_candata_poll != 1 && m_ready) {
     ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
-    StandardMetrics.ms_v_env_awake->SetValue(true);
+    mt_bus_awake->SetValue(true);
+    //StandardMetrics.ms_v_env_awake->SetValue(true);
     m_candata_poll = 1;
     if (m_enable_write) POLLSTATE_ON;
   }
@@ -559,10 +579,12 @@ void OvmsVehicleRenaultZoe::IncomingFrameCan1(CAN_frame_t* p_frame) {
           // Reset charge kWh
           StandardMetrics.ms_v_charge_kwh->SetValue(0);
           // Reset trip values
-          StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
-          StandardMetrics.ms_v_bat_energy_used->SetValue(0);
-          mt_pos_odometer_start->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat());
-          StandardMetrics.ms_v_pos_trip->SetValue(0);
+          if (m_reset_trip) {
+            StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
+            StandardMetrics.ms_v_bat_energy_used->SetValue(0);
+            mt_pos_odometer_start->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat());
+            StandardMetrics.ms_v_pos_trip->SetValue(0);
+          }
           // Start charging
           StandardMetrics.ms_v_charge_pilot->SetValue(true);
           StandardMetrics.ms_v_charge_inprogress->SetValue(isCharging);
@@ -722,7 +744,11 @@ void OvmsVehicleRenaultZoe::IncomingFrameCan1(CAN_frame_t* p_frame) {
 void OvmsVehicleRenaultZoe::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
 	ESP_LOGV(TAG, "%03x TYPE:%x PID:%02x Lenght:%x Data:%02x %02x %02x %02x %02x %02x %02x %02x", m_poll_moduleid_low, type, pid, length, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
 	switch (m_poll_moduleid_low) {
-		// ****** EVC *****
+		// ****** EPS *****
+		case 0x762:
+			IncomingEPS(bus, type, pid, data, length, remain);
+			break;
+    // ****** EVC *****
 		case 0x7ec:
 			IncomingEVC(bus, type, pid, data, length, remain);
 			break;
@@ -746,6 +772,18 @@ void OvmsVehicleRenaultZoe::IncomingPollReply(canbus* bus, uint16_t type, uint16
 	}
 }
 
+/**
+ * Handle incoming polls from the EPS Computer
+ */
+void OvmsVehicleRenaultZoe::IncomingEPS(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
+  switch (pid) {
+    case 0x012D: {			// Motor temperature
+      //762,24,31,2,0,0,°C,22012D,62012D,ff,DID - Motor temperature
+      StandardMetrics.ms_v_mot_temp->SetValue(CAN_BYTE(0), Celcius);
+      break;
+    }
+  }
+}
 /**
  * Handle incoming polls from the EVC Computer
  */
@@ -785,6 +823,11 @@ void OvmsVehicleRenaultZoe::IncomingEVC(canbus* bus, uint16_t type, uint16_t pid
     case 0x320C: {
       // 7ec,24,39,.005,0,0,kwh,22320C,62320C,ff,Available discharge Energy
       //m_b_bat_avail_energy->SetValue(float(CAN_UINT(0))*0.005);
+      break;
+    }
+    case 0x33F6: {
+      // ,7ec,24,31,1,40,0,°C,2233F6,6233F6,ff,Temperature of the inverter given by PEB (CAN ETS)
+      ESP_LOGI(TAG, "7ec inv temp: %d", CAN_BYTE(0) - 40);
       break;
     }
     case 0x33dc: {
@@ -957,12 +1000,15 @@ void OvmsVehicleRenaultZoe::IncomingUBP(canbus* bus, uint16_t type, uint16_t pid
 void OvmsVehicleRenaultZoe::IncomingPEB(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
 	switch (pid) {
     case 0x3018: {
+      // 77e,24,39,0.015625,0,2,ºC,223018,623018,ff\n" // DCDC converter temperature
       // zoe_dcdc_temp=CAN_UINT(4);
       break;
     }
     case 0x302b: {
       // 77e,24,31,0.015625,0,2,°C,22302b,62302b,ff\n" // inverter temperature
-      // 77e,24,39,0.015625,0,2,ºC,223018,623018,ff\n" // DCDC converter temperature
+      // 77e,24,39,1,0,0,°C,22302B,62302B,ff,InverterTempOrder
+      ESP_LOGI(TAG, "77e inv temp: %f", CAN_BYTE(0) * 0.015625);
+      ESP_LOGI(TAG, "77e inv temp: %d", CAN_UINT(0));
       break;
     }
 	}
@@ -977,16 +1023,27 @@ void OvmsVehicleRenaultZoe::IncomingPEB(canbus* bus, uint16_t type, uint16_t pid
 void OvmsVehicleRenaultZoe::car_on(bool isOn) {
   if (isOn && !StandardMetrics.ms_v_env_on->AsBool()) {
 		// Car is beeing turned ON
+    ESP_LOGI(TAG,"CAR IS ON");
 		StandardMetrics.ms_v_env_on->SetValue(isOn);
-		//StandardMetrics.ms_v_env_awake->SetValue(isOn);
+		StandardMetrics.ms_v_env_awake->SetValue(isOn);
     if (m_enable_write) POLLSTATE_RUNNING;
+    // Reset trip values
+    if (!m_reset_trip) {
+      StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
+      StandardMetrics.ms_v_bat_energy_used->SetValue(0);
+      mt_pos_odometer_start->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat());
+      StandardMetrics.ms_v_pos_trip->SetValue(0);
+    }
   }
   else if(!isOn && StandardMetrics.ms_v_env_on->AsBool()) {
     // Car is being turned OFF
-    POLLSTATE_ON;
+    ESP_LOGI(TAG,"CAR IS OFF");
+    if (m_enable_write) POLLSTATE_ON;
 		StandardMetrics.ms_v_env_on->SetValue( isOn );
-		//StandardMetrics.ms_v_env_awake->SetValue( isOn );
+		StandardMetrics.ms_v_env_awake->SetValue( isOn );
 		StandardMetrics.ms_v_pos_speed->SetValue( 0 );
+		if (StandardMetrics.ms_v_pos_trip->AsFloat(0) > 0.1)
+			NotifyTrip();
   }
 }
 
@@ -995,11 +1052,25 @@ void OvmsVehicleRenaultZoe::Ticker1(uint32_t ticker) {
     if (--m_candata_timer == 0) {
       // Car has gone to sleep
       ESP_LOGI(TAG,"Car has gone to sleep (CAN bus timeout)");
-      StandardMetrics.ms_v_env_awake->SetValue(false);
+      mt_bus_awake->SetValue(false);
+      //StandardMetrics.ms_v_env_awake->SetValue(false);
       StandardMetrics.ms_v_bat_12v_current->SetValue(0);
       m_candata_poll = 0;
       POLLSTATE_OFF;
     }
+  }
+  
+  HandleEnergy();
+  
+  // Handle 12Vcharging
+  float b12v_volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat(0);
+  if (b12v_volt > 13.1 && !StandardMetrics.ms_v_env_charging12v->AsBool()) {
+    ESP_LOGI(TAG,"Start Charging 12V");
+    StandardMetrics.ms_v_env_charging12v->SetValue(true);
+  } 
+  if (b12v_volt < 13.1 && StandardMetrics.ms_v_env_charging12v->AsBool()) {
+    ESP_LOGI(TAG,"Stop Charging 12V");
+    StandardMetrics.ms_v_env_charging12v->SetValue(false);
   }
   
   // Handle Tripcounter
@@ -1009,10 +1080,42 @@ void OvmsVehicleRenaultZoe::Ticker1(uint32_t ticker) {
   if (StandardMetrics.ms_v_env_on->AsBool() && StandardMetrics.ms_v_pos_odometer->AsFloat(0) > 0.0 && mt_pos_odometer_start->AsFloat(0) > 0.0) {
     StandardMetrics.ms_v_pos_trip->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat(0) - mt_pos_odometer_start->AsFloat(0));
   }
+  
+  // Handle v2Server connection
+  if (StandardMetrics.ms_s_v2_connected->AsBool()) {
+    m_reboot_ticker = 5 * 60; // set reboot ticker
+  }
+  else if (m_reboot_ticker > 0 && --m_reboot_ticker == 0) {
+    MyNetManager.RestartNetwork();
+    m_reboot_ticker = 5 * 60;
+    //MyBoot.Restart(); // restart Module
+  }
 }
 
 void OvmsVehicleRenaultZoe::Ticker10(uint32_t ticker) {
   HandleCharging();
+}
+
+/**
+ * Update derived energy metrics while driving
+ * Called once per second
+ */
+void OvmsVehicleRenaultZoe::HandleEnergy() {
+  float voltage  = StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
+  float current  = StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
+
+  // Power (in kw) resulting from voltage and current
+  float power = voltage * current / 1000.0;
+
+  // Are we driving?
+  if (power != 0.0 && StandardMetrics.ms_v_env_on->AsBool()) {
+    // Update energy used and recovered
+    float energy = power / 3600.0;    // 1 second worth of energy in kwh's
+    if (energy < 0.0f)
+      StandardMetrics.ms_v_bat_energy_used->SetValue( StandardMetrics.ms_v_bat_energy_used->AsFloat() - energy);
+    else // (energy > 0.0f)
+      StandardMetrics.ms_v_bat_energy_recd->SetValue( StandardMetrics.ms_v_bat_energy_recd->AsFloat() + energy);
+  }
 }
 
 /**
@@ -1087,6 +1190,9 @@ void OvmsVehicleRenaultZoe::ConfigChanged(OvmsConfigParam* param) {
   m_enable_write      = MyConfig.GetParamValueBool("xrz", "canwrite", false);
   m_range_ideal       = MyConfig.GetParamValueInt("xrz", "rangeideal", 160);
   m_battery_capacity  = MyConfig.GetParamValueInt("xrz", "battcapacity", 27000);
+  m_enable_egpio      = MyConfig.GetParamValueBool("xrz", "enable_egpio", false);
+  
+  m_reset_trip        = MyConfig.GetParamValueBool("xrz", "reset.trip.charge", false);
   
   StandardMetrics.ms_v_charge_limit_soc->SetValue((float) MyConfig.GetParamValueInt("xrz", "suffsoc", 0), Percentage );
   StandardMetrics.ms_v_charge_limit_range->SetValue((float) MyConfig.GetParamValueInt("xrz", "suffrange", 0), Kilometers );
