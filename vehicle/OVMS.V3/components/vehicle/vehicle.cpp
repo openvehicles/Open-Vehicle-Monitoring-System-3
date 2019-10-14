@@ -945,7 +945,7 @@ OvmsVehicle::OvmsVehicle()
   m_can1 = NULL;
   m_can2 = NULL;
   m_can3 = NULL;
-  m_swcan = NULL;
+  m_can4 = NULL;
 
   m_ticker = 0;
   m_12v_ticker = 0;
@@ -1041,7 +1041,7 @@ OvmsVehicle::~OvmsVehicle()
   if (m_can1) m_can1->SetPowerMode(Off);
   if (m_can2) m_can2->SetPowerMode(Off);
   if (m_can3) m_can3->SetPowerMode(Off);
-  if (m_swcan) m_swcan->SetPowerMode(Off);
+  if (m_can4) m_can4->SetPowerMode(Off);
 
   if (m_bms_voltages != NULL)
     {
@@ -1135,7 +1135,7 @@ void OvmsVehicle::RxTask()
       if (m_can1 == frame.origin) IncomingFrameCan1(&frame);
       else if (m_can2 == frame.origin) IncomingFrameCan2(&frame);
       else if (m_can3 == frame.origin) IncomingFrameCan3(&frame);
-      else if (m_swcan == frame.origin) IncomingFrameSWCan(&frame);
+      else if (m_can4 == frame.origin) IncomingFrameCan4(&frame);
       }
     }
   }
@@ -1152,7 +1152,7 @@ void OvmsVehicle::IncomingFrameCan3(CAN_frame_t* p_frame)
   {
   }
 
-void OvmsVehicle::IncomingFrameSWCan(CAN_frame_t* p_frame)
+void OvmsVehicle::IncomingFrameCan4(CAN_frame_t* p_frame)
   {
   }
 
@@ -1183,13 +1183,11 @@ void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, db
       m_can3 = (canbus*)MyPcpApp.FindDeviceByName("can3");
       m_can3->SetPowerMode(On);
       m_can3->Start(mode,speed,dbcfile);
+      break;
     case 4:
-      m_swcan = (canbus*)MyPcpApp.FindDeviceByName("swcan");
-      if (m_swcan)
-        {
-        m_swcan->SetPowerMode(On);
-        m_swcan->canbus::Start(mode,speed,dbcfile);
-        }
+      m_can4 = (canbus*)MyPcpApp.FindDeviceByName("can4");
+      m_can4->SetPowerMode(On);
+      m_can4->Start(mode,speed,dbcfile);
       break;
     default:
       break;

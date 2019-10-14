@@ -86,7 +86,7 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
     void IncomingFrameCan1(CAN_frame_t* p_frame);
     void IncomingFrameCan2(CAN_frame_t* p_frame);
     void IncomingFrameCan3(CAN_frame_t* p_frame);
-    void IncomingFrameSWCan(CAN_frame_t* p_frame);
+    void IncomingFrameCan4(CAN_frame_t* p_frame);
     void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void TxCallback(const CAN_frame_t* p_frame, bool success);
     void CommandWakeupComplete(const CAN_frame_t* p_frame, bool success);
@@ -113,7 +113,7 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
     unsigned int m_range_estimated_km;
 
 
-    canbus* p_swcan;    // Either "swcan" or "can3" bus, depending on which is connected to slow speed GMLAN bus
+    canbus* p_swcan;    // Either "can4" or "can3" bus, depending on which is connected to slow speed GMLAN bus
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
     swcan* p_swcan_if;  // Actual SWCAN interface with facilities to switch between normal and HVWUP modes
 #endif

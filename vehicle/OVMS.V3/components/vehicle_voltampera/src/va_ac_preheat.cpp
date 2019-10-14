@@ -302,9 +302,9 @@ void OvmsVehicleVoltAmpera::PreheatModeChange( uint8_t preheat_status )
 	    	{
 	      ESP_LOGI(TAG,"Turn on preheat via overriding BCM");
 	      //m_preheat_BCM_overridden = true;
-	      //SEND_EXT_FRAME(m_swcan, txframe,  0x10390040, 1, 0x02)
+	      //SEND_EXT_FRAME(p_swcan, txframe,  0x10390040, 1, 0x02)
 	      //vTaskDelay(720 / portTICK_PERIOD_MS);
-	      SEND_EXT_FRAME(m_swcan, txframe,  0x10390040, 1, 0x03)
+	      SEND_EXT_FRAME(p_swcan, txframe,  0x10390040, 1, 0x03)
 	    	}
 	    break;
 	    }
@@ -335,7 +335,7 @@ void OvmsVehicleVoltAmpera::PreheatModeChange( uint8_t preheat_status )
 	    else if (m_preheat_commander == OVMS)
 	    	{
 	    	ESP_LOGI(TAG,"Turn off preheat via overriding BCM");
-	    	SEND_EXT_FRAME(m_swcan, txframe,  0x10390040, 1, 0x00)
+	    	SEND_EXT_FRAME(p_swcan, txframe,  0x10390040, 1, 0x00)
 	    	}
 	    break;
 	    }

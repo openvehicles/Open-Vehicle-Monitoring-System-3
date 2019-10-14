@@ -101,8 +101,8 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
   ESP_LOGI(TAG, "Volt/Ampera vehicle module: Register SWCAN using external CAN module");
   RegisterCanBus(4,CAN_MODE_ACTIVE,CAN_SPEED_33KBPS);
-  p_swcan = m_swcan;
-  p_swcan_if = (swcan*)MyPcpApp.FindDeviceByName("swcan");
+  p_swcan = m_can4;
+  p_swcan_if = (swcan*)MyPcpApp.FindDeviceByName("can4");
 #else
   ESP_LOGI(TAG, "Volt/Ampera vehicle module: Register 2nd MCP2515 as SWCAN");
   RegisterCanBus(3,CAN_MODE_ACTIVE,CAN_SPEED_33KBPS);  // single wire can
@@ -362,11 +362,11 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan2(CAN_frame_t* p_frame)
 
 void OvmsVehicleVoltAmpera::IncomingFrameCan3(CAN_frame_t* p_frame)
   {
-  IncomingFrameSWCan(p_frame);  // assume third can bus messages coming from SWCAN bus
+  IncomingFrameCan4(p_frame);  // assume third can bus messages coming from SWCAN bus
   }
 
 
-void OvmsVehicleVoltAmpera::IncomingFrameSWCan(CAN_frame_t* p_frame)
+void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
 
@@ -991,7 +991,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandSetChargeCurrent(ui
 
   ESP_LOGI(TAG,"CommandSetChargeCurrent: Selected charging limit %d:%d amps",highest_index,highest);
   CAN_frame_t txframe;
-  SEND_EXT_FRAME(m_swcan, txframe, 0x10864080, 8, (highest_index+1) << 4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)
+  SEND_EXT_FRAME(p_swcan, txframe, 0x10864080, 8, (highest_index+1) << 4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)
   return Success;
   }
 

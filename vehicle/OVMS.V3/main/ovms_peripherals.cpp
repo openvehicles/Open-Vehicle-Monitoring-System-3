@@ -145,12 +145,10 @@ Peripherals::Peripherals()
 #endif // #ifdef CONFIG_OVMS_COMP_MCP2515
 
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
-  ESP_LOGI(TAG, "  SWCAN (MCP2515 + TH8056 DRIVER)");
-  ESP_LOGI(TAG, "  SWCAN  - setting unused can3 to sleep");
-  m_mcp2515_2->SetPowerMode(Off);  // Do we need to do this?  It is powered off by default in the end of mcp2515 constructor
+  ESP_LOGI(TAG, "  can4/swcan (MCP2515 + TH8056 DRIVER)");
 
   // External SWCAN module with MCP2515. Here we use software CS (maximum 3 HW CS pins already used)
-  m_mcp2515_swcan = new swcan("swcan", m_spibus, VSPI_NODMA_HOST, 10000000, VSPI_PIN_MCP2515_SWCAN_CS, VSPI_PIN_MCP2515_SWCAN_INT, false);
+  m_mcp2515_swcan = new swcan("can4", m_spibus, VSPI_NODMA_HOST, 10000000, VSPI_PIN_MCP2515_SWCAN_CS, VSPI_PIN_MCP2515_SWCAN_INT, false);
 #endif // #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
