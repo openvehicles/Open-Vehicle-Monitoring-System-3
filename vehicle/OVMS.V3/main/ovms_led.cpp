@@ -27,15 +27,15 @@
 */
 
 #include "ovms_log.h"
-static const char *TAG = "swcan_led";
-#include "swcan_led.h"
+//static const char *TAG = "ovms_led";
+#include "ovms_led.h"
 #include "ovms_peripherals.h"
 #include "freertos/timers.h"
 
 
 void LedHandler( TimerHandle_t xTimer )
   { 
-  swcan_led * led = (swcan_led*) pvTimerGetTimerID(xTimer);
+  ovms_led * led = (ovms_led*) pvTimerGetTimerID(xTimer);
   if (led->transitions==0)
     {
     if (led->burst_count == 0)
@@ -69,7 +69,7 @@ void LedHandler( TimerHandle_t xTimer )
     } 
   }
 
-swcan_led::swcan_led( const char * name, int max7317_pin, int defaultState )
+ovms_led::ovms_led( const char * name, int max7317_pin, int defaultState )
   {
   pin = max7317_pin;
   state = 0;
@@ -77,16 +77,16 @@ swcan_led::swcan_led( const char * name, int max7317_pin, int defaultState )
   m_timer = xTimerCreate(name,40 / portTICK_PERIOD_MS,pdFALSE,this,LedHandler);
   }
 
-swcan_led::~swcan_led()
+ovms_led::~ovms_led()
   {
   }
 
-void swcan_led::SetDefaultState( int defaultState )
+void ovms_led::SetDefaultState( int defaultState )
 	{
 	default_state = defaultState;
 	}
 
-void swcan_led::SetState( int newState )
+void ovms_led::SetState( int newState )
 	{
   if (MyPeripherals) 
     {
@@ -95,7 +95,7 @@ void swcan_led::SetState( int newState )
  		}
   }
 
-void swcan_led::Set( int newState )
+void ovms_led::Set( int newState )
   {
   //ESP_LOGD(TAG, "set %s to %d", pcTimerGetTimerName(m_timer), newState);
   if (transitions != 0)
@@ -104,7 +104,7 @@ void swcan_led::Set( int newState )
   }
 
 
-void swcan_led::Blink( int onDuration, int offDuration, int _count, int burstCount, int interBurstInterval)
+void ovms_led::Blink( int onDuration, int offDuration, int _count, int burstCount, int interBurstInterval)
 	{
   count = _count;
   if ( (count==0) || (burstCount==0) )

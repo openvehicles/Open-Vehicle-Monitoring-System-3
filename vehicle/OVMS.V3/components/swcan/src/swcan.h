@@ -31,7 +31,7 @@
 #define __OVMS_SWCAN_H__
 
 #include "mcp2515.h"
-#include "swcan_led.h"
+#include "ovms_led.h"
 
 enum TransceiverMode { tmode_normal, tmode_sleep, tmode_highvoltagewakeup, tmode_highspeed };
 
@@ -50,7 +50,7 @@ class swcan : public mcp2515
     bool AsynchronousInterruptHandler(CAN_frame_t* frame, bool* frameReceived);
     void TxCallback(CAN_frame_t* frame, bool success);
     //void AutoInit();
-    swcan_led * m_status_led, * m_tx_led, * m_rx_led;
+    ovms_led * m_status_led, * m_tx_led, * m_rx_led;
 
   private:
     void SystemUp(std::string event, void* data);

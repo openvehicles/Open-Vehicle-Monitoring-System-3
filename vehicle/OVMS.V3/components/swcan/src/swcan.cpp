@@ -43,9 +43,9 @@ static const char *TAG = "swcan";
 swcan::swcan(const char* name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin, int intpin, bool hw_cs /*=true*/)
   : mcp2515(name,spibus,host,clockspeed,cspin,intpin,hw_cs)
   {
-  m_status_led = new swcan_led("status led", MAX7317_SWCAN_STATUS_LED);
-  m_tx_led = new swcan_led("tx led", MAX7317_SWCAN_TX_LED);
-  m_rx_led = new swcan_led("rx led", MAX7317_SWCAN_RX_LED);
+  m_status_led = new ovms_led("status led", MAX7317_SWCAN_STATUS_LED);
+  m_tx_led = new ovms_led("tx led", MAX7317_SWCAN_TX_LED);
+  m_rx_led = new ovms_led("rx led", MAX7317_SWCAN_RX_LED);
 
   using std::placeholders::_1;
   using std::placeholders::_2;
