@@ -562,6 +562,18 @@ static duk_ret_t DukOvmsCommand(duk_context *ctx)
     }
   }
 
+static duk_ret_t DukOvmsRaiseEvent(duk_context *ctx)
+  {
+  const char *event = duk_to_string(ctx,0);
+  uint32_t delay_ms = duk_is_number(ctx,1) ? duk_to_uint32(ctx,1) : 0;
+
+  if (event != NULL)
+    {
+    MyEvents.SignalEvent(event, NULL, (size_t)0, delay_ms);
+    }
+  return 0;  /* no return value */
+  }
+
 void OvmsScripts::RegisterDuktapeFunction(duk_c_function func, duk_idx_t nargs, const char* name)
   {
   duktape_registerfunction_t* fn = new duktape_registerfunction_t;
@@ -1052,6 +1064,9 @@ OvmsScripts::OvmsScripts()
   RegisterDuktapeFunction(DukOvmsAssert, 2, "assert");
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsCommand");
   dto->RegisterDuktapeFunction(DukOvmsCommand, 1, "Exec");
+  RegisterDuktapeObject(dto);
+  dto = new DuktapeObjectRegistration("OvmsEvents");
+  dto->RegisterDuktapeFunction(DukOvmsRaiseEvent, 2, "Raise");
   RegisterDuktapeObject(dto);
 
   // Start the DukTape task...

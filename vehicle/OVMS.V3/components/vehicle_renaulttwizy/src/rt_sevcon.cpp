@@ -55,14 +55,19 @@ SevconClient::SevconClient(OvmsVehicleRenaultTwizy* twizy)
   ms_cfg_profile      = new OvmsMetricVector<short>("xrt.cfg.profile", SM_STALE_HIGH, Other);
   ms_cfg_user         = new OvmsMetricInt("xrt.cfg.user", SM_STALE_HIGH, Other);
   ms_cfg_base         = new OvmsMetricInt("xrt.cfg.base", SM_STALE_HIGH, Other);
+  ms_cfg_ws           = new OvmsMetricInt("xrt.cfg.ws", SM_STALE_HIGH, Other);
   ms_cfg_unsaved      = new OvmsMetricBool("xrt.cfg.unsaved", SM_STALE_HIGH, Other);
+  ms_cfg_applied      = new OvmsMetricBool("xrt.cfg.applied", SM_STALE_HIGH, Other);
   ms_cfg_type         = new OvmsMetricString("xrt.cfg.type", SM_STALE_HIGH, Other);
 
   m_drivemode.u32 = 0;
   m_drivemode.v3tag = 1;
   m_drivemode.profile_user = MyConfig.GetParamValueInt("xrt", "profile_user", 0);
   m_drivemode.profile_cfgmode = MyConfig.GetParamValueInt("xrt", "profile_cfgmode", m_drivemode.profile_user);
+  m_drivemode.profile_ws = m_drivemode.profile_user;
+  m_drivemode.applied = (m_drivemode.profile_user == m_drivemode.profile_cfgmode);
   GetParamProfile(m_drivemode.profile_user, m_profile);
+  UpdateProfileMetrics();
 
   m_cfgmode_request = false;
 
@@ -486,6 +491,7 @@ void SevconClient::Ticker1(uint32_t ticker)
         // reset current profile:
         GetParamProfile(0, m_profile);
         CANopenResult_t res = CfgApplyProfile(m_drivemode.profile_user);
+        m_drivemode.profile_ws = 0;
         m_drivemode.unsaved = (m_drivemode.profile_user > 0);
 
         // send result:
@@ -512,7 +518,12 @@ void SevconClient::Ticker1(uint32_t ticker)
   }
 
   // update metrics:
+  UpdateProfileMetrics();
+}
 
+
+void SevconClient::UpdateProfileMetrics()
+{
   std::vector<short> profile(sizeof(m_profile));
   for (int i=0; i<sizeof(m_profile); i++)
     profile[i] = ((short) ((uint8_t*) &m_profile)[i]) - 1;
@@ -520,7 +531,9 @@ void SevconClient::Ticker1(uint32_t ticker)
 
   ms_cfg_user->SetValue(m_drivemode.profile_user);
   ms_cfg_base->SetValue(m_drivemode.profile_cfgmode);
+  ms_cfg_ws->SetValue(m_drivemode.profile_ws);
   ms_cfg_unsaved->SetValue(m_drivemode.unsaved);
+  ms_cfg_applied->SetValue(m_drivemode.applied);
   switch (m_drivemode.type) {
     case  3: ms_cfg_type->SetValue("SC45GB80"); break;
     case  2: ms_cfg_type->SetValue("SC80GB45"); break;

@@ -39,6 +39,7 @@ static const char *TAG = "notify";
 #include "ovms_command.h"
 #include "ovms_config.h"
 #include "ovms_events.h"
+#include "ovms_script.h"
 #include "vehicle.h"
 #include "buffered_shell.h"
 #include "string.h"
@@ -125,6 +126,28 @@ void notify_errorcode_clear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd,
     }
   MyNotify.m_errorcodes.clear();
   }
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
+static duk_ret_t DukOvmsNotifyRaise(duk_context *ctx)
+  {
+  const char *type = duk_to_string(ctx,0);
+  const char *subtype = duk_to_string(ctx,1);
+  const char *message = duk_to_string(ctx,2);
+
+  if (type && subtype && message)
+    {
+    uint32_t id = MyNotify.NotifyString(type, subtype, message);
+    duk_push_uint(ctx, id);
+    }
+  else
+    {
+    duk_push_uint(ctx, 0);
+    }
+  return 1;  /* one return value */
+  }
+
+#endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
 ////////////////////////////////////////////////////////////////////////
 // OvmsNotifyEntry is the virtual object for notification entries.
@@ -421,6 +444,13 @@ OvmsNotify::OvmsNotify()
   RegisterType("alert");    // payload: human readable text message
   RegisterType("data");     // payload: MP historical data record (tagged CSV, see MP documentation)
   RegisterType("stream");   // payload: subtype specific, use for high volume / short latency data streams
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
+  DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsNotify");
+  dto->RegisterDuktapeFunction(DukOvmsNotifyRaise, 3, "Raise");
+  MyScripts.RegisterDuktapeObject(dto);
+#endif // CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
 OvmsNotify::~OvmsNotify()

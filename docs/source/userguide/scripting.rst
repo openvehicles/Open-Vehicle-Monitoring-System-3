@@ -56,7 +56,9 @@ That script can in turn include other code. If you make a change to such persist
 JavaScript Modules
 ------------------
 
-The OVMS JavaScript engine supports the concept of modules (using the node.js style of exports). Such modules can be written like this::
+The OVMS JavaScript engine supports the concept of modules (using the node.js style of exports). Such modules can be written like this:
+
+.. code-block:: javascript
 
   exports.print = function(obj, ind) {
     var type = typeof obj;
@@ -95,80 +97,39 @@ The OVMS JavaScript engine supports the concept of modules (using the node.js st
     if (ind == '') print('\n');
   }
 
-By convention, modules such as this are placed in the /store/scripts/lib directory as <modulename>.js. These modules can be loaded with::
+By convention, modules such as this are placed in the ``/store/scripts/lib`` directory as ``<modulename>.js``. 
+These modules can be loaded with:
+
+.. code-block:: javascript
 
   JSON = require("lib/JSON");
 
-And used as::
+And used as:
+
+.. code-block:: javascript
 
   JSON.print(this);
 
-There are a number of internal modules already provided with the firmware, and by convention these are provided under the int/<modulename> namespace. The above JSON module is, for example, provided as int/JSON and automatically loaded into the global context. These internal modules can be directly used (so JSON.print(this) work directly).
-Internal Modules
+To automatically load a custom module on startup, add the ``MyPlugin = require("lib/MyPlugin");`` line to ``ovmsmain.js``.
 
-The JSON module is provided with a single ‘print’ method, to print out a given javascript object in JSON format.
+There are a number of **internal modules** already provided with the firmware, and by convention these are 
+provided under the ``int/<modulename>`` namespace. The above JSON module is, for example, provided as 
+``int/JSON`` and automatically loaded into the global context. These internal modules can be directly used (so 
+``JSON.print(this)`` works directly).
 
-The PubSub module is provided to provide access to a Publish-Subscribe framework. In particular, this framework is used to deliver events to the persistent JavaScript framework in a high performance flexible manner. An example script to print out the ticker.10 event is::
-
-  var myTicker=function(msg,data){ print("Event: "+msg+"\n"); };
-
-  PubSub.subscribe("ticker.10",myTicker);
-
-The above example created a function MyTicker in global context, to print out the provided event name. Then, the PubSub.subscribe module method is used to subscribe to the ticker.10 event and have it call myTicker every ten seconds. The result is ‘Event: ticker.10’ printed once every ten seconds.
 
 --------------------------------------
 Internal Objects and Functions/Methods
 --------------------------------------
 
-A number of OVMS objects have been exposed to the JavaScript engine, and are available for use by custom scripts. These include:
+A number of OVMS objects have been exposed to the JavaScript engine, and are available for use by custom 
+scripts via the global context.
 
-``assert(condition,message)``
+The global context is the analog to the ``window`` object in a browser context, it can be referenced 
+explicitly as ``this`` on the JavaScript toplevel.
 
-Assert that the given condition is true. If not, raise a JavaScript exception error with the given message.
-
-``print(string)``
-
- Print the given string on the current terminal. If no terminal (for example a background script) then print to the system console as an informational message.
-
-``OvmsCommand``
-
-The OvmsCommand object exposes one method “Exec”. This method is passed a single parameter as the command to be executed, runs that command, and then returns the textual output of the command as a string. For example::
-
-  print(OvmsCommand.Exec(“boot status”));
-  Last boot was 14 second(s) ago
-    This is reset #0 since last power cycle
-    Detected boot reason: PowerOn (1/14)
-    Crash counters: 0 total, 0 early
-
-``OvmsLocation``
-
-The OvmsLocation object exposes one method “Status”. This method is passed a single parameter as the location name. It returns true if the vehicle is currently in that location’s geofence, false if not, or undefined if the location name passed is not valid.
-
-``OvmsMetrics``
-
-The OvmsMetrics object exposes the Value() and AsFloat() methods. Both are passed a single string as the metric name to lookup, and return the metric value as strings or floats appropriately.
-
-``OvmsVehicle``
-
-The OvmsVehicle object is the most comprehensive, and exposes several methods to access the current vehicle. These include:
-
-* Type() to return the type of the currently loaded vehicle module
-* Wakeup() to wakeup the vehicle (return TRUE if successful)
-* Homelink(button,durationms) to fire the given homelink button
-* ClimateControl(onoff) to turn on/off climate control
-* Lock(pin) to lock the vehicle
-* Unlock(pin) to unlock the vehicle
-* Valet(pin) to activate valet mode
-* Unvalet(pin) to deactivate valet mode
-* SetChargeMode(mode) to set the charge mode
-* SetChargeCurrent(limit) to set the charge current limit
-* SetChargeTimer(onoff, start) to set the charge timer
-* StartCharge() to start the charge
-* StopCharge() to stop the charge
-* StartCooldown() to start a cooldown charge
-* StopCooldown() to stop the cooldown charge
-
-You can see the global context objects, methods, functions, and modules with the JSON.print(this) method::
+You can see the global context objects, methods, functions and modules with the ``JSON.print(this)``
+method::
 
   OVMS# script eval 'JSON.print(this)'
   {
@@ -177,12 +138,18 @@ You can see the global context objects, methods, functions, and modules with the
     "OvmsCommand": {
       "Exec": function Exec() { [native code] }
     },
+    "OvmsEvents": {
+      "Raise": function Raise() { [native code] }
+    },
     "OvmsLocation": {
       "Status": function Status() { [native code] }
     },
     "OvmsMetrics": {
       "AsFloat": function AsFloat() { [native code] },
       "Value": function Value() { [native code] }
+    },
+    "OvmsNotify": {
+      "Raise": function Raise() { [native code] }
     },
     "OvmsVehicle": {
       "ClimateControl": function ClimateControl() { [native code] },
@@ -202,6 +169,7 @@ You can see the global context objects, methods, functions, and modules with the
       "Wakeup": function Wakeup() { [native code] }
     },
     "JSON": {
+      "format": function () { [ecmascript code] },
       "print": function () { [ecmascript code] }
     },
     "PubSub": {
@@ -212,3 +180,178 @@ You can see the global context objects, methods, functions, and modules with the
       "unsubscribe": function () { [ecmascript code] }
     }
   }
+
+
+Global Context
+^^^^^^^^^^^^^^
+
+- ``assert(condition,message)``
+    Assert that the given condition is true. If not, raise a JavaScript exception error with the given message.
+
+- ``print(string)``
+    Print the given string on the current terminal. If no terminal (for example a background script) then 
+    print to the system console as an informational message.
+
+
+JSON
+^^^^
+
+The JSON module is provided with a ``format`` and a ``print`` method, to format and/or print out a given 
+javascript object in JSON format. Both by default insert spacing and indentation for readability and accept an 
+optional ``false`` as a second parameter to produce a compact version for transmission.
+
+- ``JSON.print(data)``
+    Output data (any Javascript data) as JSON, readable
+- ``JSON.print(data, false)``
+    …compact (without spacing/indentation)
+- ``str = JSON.format(data)``
+    Format data as JSON string, readable
+- ``str = JSON.format(data, false)``
+    …compact (without spacing/indentation)
+
+
+PubSub
+^^^^^^
+
+The PubSub module provides access to a Publish-Subscribe framework. In particular, this framework is used to 
+deliver events to the persistent JavaScript framework in a high performance flexible manner. An example script 
+to print out the ticker.10 event is:
+
+.. code-block:: javascript
+
+  var myTicker=function(msg,data){ print("Event: "+msg+"\n"); };
+
+  PubSub.subscribe("ticker.10",myTicker);
+
+The above example created a function ``myTicker`` in global context, to print out the provided event name. 
+Then, the ``PubSub.subscribe`` module method is used to subscribe to the ``ticker.10`` event and have it call 
+``myTicker`` every ten seconds. The result is "Event: ticker.10" printed once every ten seconds.
+
+- ``id = PubSub.subscribe(topic, handler)``
+    Subscribe the function ``handler`` to messages of the given topic. Note that types are not limited to
+    OVMS events. The method returns an ``id`` to be used to unsubscribe the handler.
+- ``PubSub.publish(topic, [data])``
+    Publish a message of the given topic. All subscribed handlers will be called with the topic and data as
+    arguments. ``data`` can be any Javascript data.
+- ``PubSub.unsubscribe(id | handler | topic)``
+    Cancel a specific subscription, all subscriptions of a specific handler or all subscriptions
+    to a topic.
+
+
+OvmsCommand
+^^^^^^^^^^^
+
+- ``str = OvmsCommand.Exec(command)``
+    The OvmsCommand object exposes one method “Exec”. This method is passed a single parameter as the command 
+    to be executed, runs that command, and then returns the textual output of the command as a string. For 
+    example::
+
+      print(OvmsCommand.Exec("boot status"));
+      Last boot was 14 second(s) ago
+        This is reset #0 since last power cycle
+        Detected boot reason: PowerOn (1/14)
+        Crash counters: 0 total, 0 early
+
+
+OvmsEvents
+^^^^^^^^^^
+
+This provides access to the OVMS event system. While you may raise system events, the primary use is to raise 
+custom events. Sending custom events is a lightweight method to inform the web UI (or other plugins) about 
+simple state changes. Use the prefix ``usr.`` on custom event names to prevent conflicts with later framework 
+additions.
+
+Another use is the emulation of the ``setTimeout()`` and ``setInterval()`` browser methods by subscribing to a 
+delayed event. Pattern:
+
+.. code-block:: javascript
+
+  function myTimeoutHandler() {
+    // raise the timeout event again here to emulate setInterval()
+  }
+  PubSub.subscribe('usr.myplugin.timeout', myTimeoutHandler);
+  
+  // start timeout:
+  OvmsEvents.Raise('usr.myplugin.timeout', 1500);
+
+- ``OvmsEvents.Raise(event, [delay_ms])``
+    Signal the event, optionally with a delay (milliseconds, must be given as a number).
+    Delays are handled by the event system, the method call returns immediately.
+
+
+OvmsLocation
+^^^^^^^^^^^^
+
+- ``isatlocation = OvmsLocation.Status(location)``
+    Check if the vehicle is currently in a location's geofence (pass the location name as defined).
+    Returns ``true`` or ``false``, or ``undefined`` if the location name passed is not valid.
+
+Note: to get the actual GPS coordinates, simply read metrics ``v.p.latitude``, ``v.p.longitude`` and
+``v.p.altitude``.
+
+
+OvmsMetrics
+^^^^^^^^^^^
+
+- ``str = OvmsMetrics.Value(metricname)``
+    Returns the string representation of the metric value.
+- ``num = OvmsMetrics.AsFloat(metricname)``
+    Returns the float representation of the metric value.
+
+
+OvmsNotify
+^^^^^^^^^^
+
+- ``id = OvmsNotify.Raise(type, subtype, message)``
+    Send a notification of the given type and subtype with message as contents.
+    Returns the message id allocated or 0 in case of failure.
+    Examples:
+    
+    .. code-block:: javascript
+    
+      // send an info notification to the user:
+      OvmsNotify.Raise("info", "usr.myplugin.status", "Alive and kicking!");
+      
+      // send a JSON stream to a web plugin:
+      OvmsNotify.Raise("stream", "usr.myplugin.update", JSON.format(streamdata, false));
+      
+      // send a CSV data record to a server:
+      OvmsNotify.Raise("data", "usr.myplugin.record", "*-MyStatus,0,86400,Alive");
+
+
+OvmsVehicle
+^^^^^^^^^^^
+
+The OvmsVehicle object is the most comprehensive, and exposes several methods to access the current vehicle. These include:
+
+- ``str = OvmsVehicle.Type()``
+    Return the type of the currently loaded vehicle module
+- ``success = OvmsVehicle.Wakeup()``
+    Wakeup the vehicle (return TRUE if successful)
+- ``success = OvmsVehicle.Homelink(button,durationms)``
+    Fire the given homelink button
+- ``success = OvmsVehicle.ClimateControl(onoff)``
+    Turn on/off climate control
+- ``success = OvmsVehicle.Lock(pin)``
+    Lock the vehicle
+- ``success = OvmsVehicle.Unlock(pin)``
+    Unlock the vehicle
+- ``success = OvmsVehicle.Valet(pin)``
+    Activate valet mode
+- ``success = OvmsVehicle.Unvalet(pin)``
+    Deactivate valet mode
+- ``success = OvmsVehicle.SetChargeMode(mode)``
+    Set the charge mode ("standard" / "storage" / "range" / "performance")
+- ``success = OvmsVehicle.SetChargeCurrent(limit)``
+    Set the charge current limit (in amps)
+- ``success = OvmsVehicle.SetChargeTimer(onoff, start)``
+    Set the charge timer
+- ``success = OvmsVehicle.StartCharge()``
+    Start the charge
+- ``success = OvmsVehicle.StopCharge()``
+    Stop the charge
+- ``success = OvmsVehicle.StartCooldown()``
+    Start a cooldown charge
+- ``success = OvmsVehicle.StopCooldown()``
+    Stop the cooldown charge
+
