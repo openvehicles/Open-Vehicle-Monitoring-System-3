@@ -275,7 +275,7 @@ esp_err_t mcp2515::Stop()
   return ESP_OK;
   }
 
-void mcp2515::ViewRegisters() 
+esp_err_t mcp2515::ViewRegisters() 
   {
   uint8_t buf[16];
   uint8_t cnf[3];
@@ -296,6 +296,7 @@ void mcp2515::ViewRegisters()
       errors_tx, errors_rx);
   rcvbuf = m_spibus->spi_cmd(m_spi, buf, 1, 2, CMD_READ, REG_BFPCTRL);
   ESP_LOGI(TAG, "%s: BFPCTRL 0x%02x", this->GetName(), rcvbuf[0]);
+  return ESP_OK;
   }
 
 esp_err_t mcp2515::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)

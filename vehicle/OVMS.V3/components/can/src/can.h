@@ -276,7 +276,7 @@ class canbus : public pcp, public InternalRamAllocated
     virtual esp_err_t Start(CAN_mode_t mode, CAN_speed_t speed, dbcfile *dbcfile);
     virtual esp_err_t Stop();
     virtual void ClearStatus();
-    virtual void ViewRegisters();
+    virtual esp_err_t ViewRegisters();
     virtual esp_err_t WriteReg( uint8_t reg, uint8_t value );
 
   public:

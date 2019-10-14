@@ -310,7 +310,10 @@ void can_view_registers(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int
     return;
     }
 
-  sbus->ViewRegisters();
+  if (sbus->ViewRegisters() == ESP_ERR_NOT_SUPPORTED)
+    writer->puts("Error: Not implemented");
+  else
+    writer->puts("See logs for details");
   }
 
 void can_set_register(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -906,8 +909,9 @@ esp_err_t canbus::Stop()
   return ESP_FAIL;
   }
 
-void canbus::ViewRegisters()
+esp_err_t canbus::ViewRegisters()
   {
+  return ESP_ERR_NOT_SUPPORTED;
   }
 
 esp_err_t canbus::WriteReg( uint8_t reg, uint8_t value )
