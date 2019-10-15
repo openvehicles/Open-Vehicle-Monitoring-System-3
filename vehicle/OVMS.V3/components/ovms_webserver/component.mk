@@ -75,7 +75,5 @@ CPPFLAGS += -DMTIME_ASSETS_STYLE_CSS=$(shell perl -e 'print +(stat "$(COMPONENT_
 CPPFLAGS += -DMTIME_ASSETS_FAVICON_PNG=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/favicon.png")[9]')
 CPPFLAGS += -DMTIME_ASSETS_ZONES_JSON=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/zones.json.gz")[9]')
 
-CPPFLAGS += -DMG_ENABLE_SSL
-
 endif
 endif

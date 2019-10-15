@@ -1,2 +1,1 @@
-CFLAGS += -mlongcalls -DMG_LOCALS -DMG_ENABLE_SSL -DMG_SSL_IF=MG_SSL_IF_MBEDTLS -DMG_SSL_MBED_DUMMY_RANDOM=1  -DMG_SSL_IF_MBEDTLS_FREE_CERTS=1 -DMG_SSL_IF_MBEDTLS_MAX_FRAG_LEN=2048 -DCS_ENABLE_DEBUG 
-# Also remember to enable "Component config" -> mbedTLS" -> TLS Key Exchange Methods" -> Enable pre-shared-key ciphersuites" -> "Enable PSK based ciphersuite modes"
+CFLAGS += -mlongcalls -DMG_LOCALS

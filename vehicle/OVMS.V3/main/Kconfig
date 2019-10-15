@@ -150,6 +150,14 @@ config MG_ENABLE_DIRECTORY_LISTING
     help
         Enable MONGOOSE directory listing support
 
+config MG_ENABLE_SSL
+    bool "Enable MONGOOSE SSL/TSL support"
+    default n
+    depends on OVMS_SC_GPL_MONGOOSE
+    depends on MBEDTLS_PSK_MODES
+    help
+        Enable MONGOOSE SSL/TSL support
+
 config MG_ENABLE_DEBUG
     bool "Enable MONGOOSE debug logging"
     default n
@@ -465,7 +473,7 @@ config OVMS_COMP_SSH
 config OVMS_COMP_PUSHOVER
     bool "Include support for Pushover notification system"
     default y
-    depends on OVMS_SC_GPL_MONGOOSE
+    depends on MG_ENABLE_SSL
     help
         Enable to include support for Pushover. 
 
