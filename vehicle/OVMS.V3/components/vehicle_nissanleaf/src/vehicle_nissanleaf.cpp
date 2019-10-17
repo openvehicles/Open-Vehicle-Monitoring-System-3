@@ -176,6 +176,8 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_car_on(bool isOn)
     // Reset trip values
     StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
     StandardMetrics.ms_v_bat_energy_used->SetValue(0);
+    m_cum_energy_recd_wh = 0.0f;
+    m_cum_energy_used_wh = 0.0f;
     }
   else if (!isOn && StandardMetrics.ms_v_env_on->AsBool())
     {
@@ -213,6 +215,7 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
       if (!StandardMetrics.ms_v_charge_inprogress->AsBool())
         {
         StandardMetrics.ms_v_charge_kwh->SetValue(0); // Reset charge kWh
+        m_cum_energy_charge_wh = 0.0f;
         }
       StandardMetrics.ms_v_charge_inprogress->SetValue(true);
       StandardMetrics.ms_v_charge_state->SetValue("charging");
@@ -507,11 +510,30 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         // negative so extend the sign bit
         nl_battery_current |= 0xf800;
         }
-      StandardMetrics.ms_v_bat_current->SetValue(nl_battery_current / 2.0f);
+      float battery_current = nl_battery_current / 2.0f;
 
       // voltage is 10 bits unsigned big endian starting at bit 16
       int16_t nl_battery_voltage = ((uint16_t) d[2] << 2) | (d[3] & 0xc0) >> 6;
-      StandardMetrics.ms_v_bat_voltage->SetValue(nl_battery_voltage / 2.0f);
+      float battery_voltage = nl_battery_voltage / 2.0f;
+
+      // Power (in kw) resulting from voltage and current
+      float battery_power = battery_voltage * battery_current / 1000.0f;
+
+      StandardMetrics.ms_v_bat_current->SetValue(battery_current, Amps);
+      StandardMetrics.ms_v_bat_voltage->SetValue(battery_voltage, Volts);
+      StandardMetrics.ms_v_bat_power->SetValue(battery_power, kW);
+
+      // Energy (in wh) from 10ms worth of power
+      float energy = battery_power * 10 / 3600;
+      if (energy < 0.0)
+        {
+        m_cum_energy_used_wh -= energy;
+        }
+      else
+        {
+        m_cum_energy_recd_wh += energy;
+        m_cum_energy_charge_wh += energy;
+        }
 
       // soc displayed on the instrument cluster
       uint8_t soc = d[4] & 0x7f;
@@ -1103,23 +1125,15 @@ void OvmsVehicleNissanLeaf::Ticker10(uint32_t ticker)
  */
 void OvmsVehicleNissanLeaf::HandleEnergy()
   {
-  float voltage  = StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts);
-  float current  = StandardMetrics.ms_v_bat_current->AsFloat(0, Amps);
-
-  // Power (in kw) resulting from voltage and current
-  float power = voltage * current / 1000.0;
-  StandardMetrics.ms_v_bat_power->SetValue(power);
-
   // Are we driving?
-  if (power != 0.0 &&
-      StandardMetrics.ms_v_env_on->AsBool() )
+  if (StandardMetrics.ms_v_env_on->AsBool() &&
+      (m_cum_energy_used_wh > 0.0f || m_cum_energy_recd_wh > 0.0f) )
     {
     // Update energy used and recovered
-    float energy = power / 3600.0;    // 1 second worth of energy in kwh's
-    if (energy < 0.0f)
-      StandardMetrics.ms_v_bat_energy_used->SetValue( StandardMetrics.ms_v_bat_energy_used->AsFloat() - energy);
-    else // (energy > 0.0f)
-      StandardMetrics.ms_v_bat_energy_recd->SetValue( StandardMetrics.ms_v_bat_energy_recd->AsFloat() + energy);
+    StandardMetrics.ms_v_bat_energy_used->SetValue( StandardMetrics.ms_v_bat_energy_used->AsFloat() + m_cum_energy_used_wh / 1000.0, kWh);
+    StandardMetrics.ms_v_bat_energy_recd->SetValue( StandardMetrics.ms_v_bat_energy_recd->AsFloat() + m_cum_energy_recd_wh / 1000.0, kWh);
+    m_cum_energy_used_wh = 0.0f;
+    m_cum_energy_recd_wh = 0.0f;
     }
 }
 
@@ -1129,32 +1143,29 @@ void OvmsVehicleNissanLeaf::HandleEnergy()
  */
 void OvmsVehicleNissanLeaf::HandleCharging()
   {
-  float limit_soc       = StandardMetrics.ms_v_charge_limit_soc->AsFloat(0);
-  float limit_range     = StandardMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
-  float max_range       = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
-  float charge_current  = StandardMetrics.ms_v_charge_current->AsFloat(0, Amps);
-  float charge_voltage  = StandardMetrics.ms_v_charge_voltage->AsFloat(0, Volts);
-
   // Are we charging?
   if (!StandardMetrics.ms_v_charge_pilot->AsBool()      ||
-      !StandardMetrics.ms_v_charge_inprogress->AsBool() ||
-      (charge_current <= 0.0) )
+      !StandardMetrics.ms_v_charge_inprogress->AsBool() )
     {
     return;
     }
 
   // Check if we have what is needed to calculate energy and remaining minutes
-  if (charge_voltage > 0 && charge_current > 0)
+  if (m_cum_energy_charge_wh > 0)
     {
-    // Update energy taken
-    // Value is reset to 0 when a new charging session starts...
-    float power  = charge_voltage * charge_current / 1000.0;     // power in kw
-    float energy = power / 3600.0 * 10.0;                        // 10 second worth of energy in kwh's
-    StandardMetrics.ms_v_charge_kwh->SetValue( StandardMetrics.ms_v_charge_kwh->AsFloat() + energy);
+    // Convert 10sec worth of energy back to an average charge power (in watts)
+    float charge_power_w = m_cum_energy_charge_wh * 3600 / 10;
+
+    StandardMetrics.ms_v_charge_kwh->SetValue( StandardMetrics.ms_v_charge_kwh->AsFloat() + m_cum_energy_charge_wh / 1000.0, kWh);
+    m_cum_energy_charge_wh = 0.0f;
+
+    float limit_soc      = StandardMetrics.ms_v_charge_limit_soc->AsFloat(0);
+    float limit_range    = StandardMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
+    float max_range      = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
 
     // always calculate remaining charge time to full
     float full_soc           = 100.0;     // 100%
-    int   minsremaining_full = calcMinutesRemaining(full_soc, charge_voltage, charge_current);
+    int   minsremaining_full = calcMinutesRemaining(full_soc, charge_power_w);
 
     StandardMetrics.ms_v_charge_duration_full->SetValue(minsremaining_full, Minutes);
     ESP_LOGV(TAG, "Time remaining: %d mins to full", minsremaining_full);
@@ -1162,7 +1173,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
     if (limit_soc > 0) 
       {
       // if limit_soc is set, then calculate remaining time to limit_soc
-      int minsremaining_soc = calcMinutesRemaining(limit_soc, charge_voltage, charge_current);
+      int minsremaining_soc = calcMinutesRemaining(limit_soc, charge_power_w);
 
       StandardMetrics.ms_v_charge_duration_soc->SetValue(minsremaining_soc, Minutes);
       ESP_LOGV(TAG, "Time remaining: %d mins to %0.0f%% soc", minsremaining_soc, limit_soc);
@@ -1172,7 +1183,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
       {
       // if range limit is set, then compute required soc and then calculate remaining time to that soc
       float range_soc           = limit_range / max_range * 100.0;
-      int   minsremaining_range = calcMinutesRemaining(range_soc, charge_voltage, charge_current);
+      int   minsremaining_range = calcMinutesRemaining(range_soc, charge_power_w);
 
       StandardMetrics.ms_v_charge_duration_range->SetValue(minsremaining_range, Minutes);
       ESP_LOGV(TAG, "Time remaining: %d mins for %0.0f km (%0.0f%% soc)", minsremaining_range, limit_range, range_soc);
@@ -1185,7 +1196,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
  * Calculates minutes remaining before target is reached. Based on current charge speed.
  * TODO: Should be calculated based on actual charge curve. Maybe in a later version?
  */
-int OvmsVehicleNissanLeaf::calcMinutesRemaining(float target_soc, float charge_voltage, float charge_current)
+int OvmsVehicleNissanLeaf::calcMinutesRemaining(float target_soc, float charge_power_w)
   {
   float bat_soc = m_soc_instrument->AsFloat(100);
   if (bat_soc > target_soc)
@@ -1193,14 +1204,14 @@ int OvmsVehicleNissanLeaf::calcMinutesRemaining(float target_soc, float charge_v
     return 0;   // Done!
     }
 
-  if (charge_voltage <= 0 || charge_current <= 0)
+  if (charge_power_w <= 0.0f)
     {
     return 1440;
     }
 
   float bat_cap_kwh     = m_battery_energy_capacity->AsFloat(24, kWh);
   float remaining_wh    = bat_cap_kwh * 1000.0 * (target_soc - bat_soc) / 100.0;
-  float remaining_hours = remaining_wh / (charge_current * charge_voltage);
+  float remaining_hours = remaining_wh / charge_power_w;
   float remaining_mins  = remaining_hours * 60.0;
 
   return MIN( 1440, (int)remaining_mins );
