@@ -1,6 +1,35 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- SWCAN: Support for add-on SWCAN module (see https://github.com/mjuhanne/OVMS-SWCAN)
+    Add new "can4" bus (if compiled in)
+    SWCAN leds (board and/or dongle):
+      - Status led shows network connectivity
+      - TX/RX led for SWCAN traffic
+- MCP2515: Additional debugging commands
+  New commands:
+    viewregisters   Show MCP2515 register info
+    writeregister   Write MCP2515 registers
+- Volt/Ampera: Major update
+  Add web config interface
+  Support for SWCAN module and SWCAN messages
+  Read following metrics:
+    CAN1: engine on, motor rpm, odometer, speed, throttle, footbrake, gear
+    SWCAN: Lock status, alarm status, fob button functions, tire pressure
+    SWCAN: Ambient temperature, cabin temperature, AC front blower fan speed, coolant temperature, coolant heater power
+    SWCAN: Configured charging current limit
+  Proper event handling for charging started/stopped and alarm
+  SWCAN High Voltage Wake Up functionality (requires separate SWCAN add-on module)
+    - Interior light blinked after the wake up sequence
+  Add following features (which all depend on SWCAN Wake Up):
+    Mimic Onstar functionality: Door lock/unlock, Preheating
+    Preheating (BCM overriding mode) for those cars that don't seem to respond to Onstar message
+      - configurable maximum preheat time
+    Set charging current limit
+- Pushover: New Pushover notification framework support
+  Configurable via Config/Notification web page
+- SIMCOM: Allow user to set custom SIM PIN code
+- Metrics: 'metric list -s' shows metric age and staleness
 - Twizy: send custom OBD2 requests, output response as hex dump
   New command:
     xrt obd request cluster|bms|charger|broadcast <request>
@@ -71,35 +100,6 @@ Open Vehicle Monitor System v3 - Change log
   New history records:
     RT-OBD-ClusterDTC (rec_nr = DTC slot nr)
 - New vehicle: Smart ED/EQ 4.Generation (453) (adaption by Thomas Heuer <egon@heuer-humfeld.de>)
-- SWCAN: Support for add-on SWCAN module (see https://github.com/mjuhanne/OVMS-SWCAN)    
-    Add new "swcan" bus
-    SWCAN leds (board and/or dongle):
-      - Status led shows network connectivity
-      - TX/RX led for SWCAN traffic 
-- MCP2515: Additional debugging commands
-  New commands:
-    viewregisters   Show MCP2515 register info
-    writeregister   Write MCP2515 registers
-- Volt/Ampera: Major update
-  Add web config interface
-  Support for SWCAN module and SWCAN messages
-  Read following metrics:
-    CAN1: engine on, motor rpm, odometer, speed, throttle, footbrake, gear
-    SWCAN: Lock status, alarm status, fob button functions, tire pressure
-    SWCAN: Ambient temperature, cabin temperature, AC front blower fan speed, coolant temperature, coolant heater power
-    SWCAN: Configured charging current limit
-  Proper event handling for charging started/stopped and alarm
-  SWCAN High Voltage Wake Up functionality (requires separate SWCAN add-on module)
-    - Interior light blinked after the wake up sequence
-  Add following features (which all depend on SWCAN Wake Up):
-    Mimic Onstar functionality: Door lock/unlock, Preheating
-    Preheating (BCM overriding mode) for those cars that don't seem to respond to Onstar message
-      - configurable maximum preheat time
-    Set charging current limit
-- Pushover: New Pushover notification framework support
-  Configurable via Config/Notification web page
-- SIMCOM: Allow user to set custom SIM PIN code
-- Metrics: 'metric list' shows metric age and staleness
 
 2019-05-12 MWJ  3.2.002  OTA release
 - Vehicle framework: added idling alert (ported from V2)
