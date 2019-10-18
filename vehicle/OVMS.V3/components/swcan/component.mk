@@ -7,6 +7,8 @@
 # please read the ESP-IDF documents if you need to do this.
 #
 
-COMPONENT_ADD_INCLUDEDIRS:=src
-COMPONENT_SRCDIRS:=src
+ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+COMPONENT_SRCDIRS := src
+COMPONENT_ADD_INCLUDEDIRS := src
 COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive
+endif

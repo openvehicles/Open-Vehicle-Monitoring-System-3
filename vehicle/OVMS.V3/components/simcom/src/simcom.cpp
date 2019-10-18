@@ -37,6 +37,7 @@ static const char *TAG = "simcom";
 #include "metrics_standard.h"
 #include "ovms_config.h"
 #include "ovms_events.h"
+#include "ovms_notify.h"
 #include "ovms_boot.h"
 
 const char* SimcomState1Name(simcom::SimcomState1 state)
@@ -161,6 +162,7 @@ simcom::simcom(const char* name, uart_port_t uartnum, int baud, int rxpin, int t
   m_powermode = Off;
   m_line_unfinished = -1;
   m_line_buffer.clear();
+  m_pincode_required = false;
   StartTask();
 
   using std::placeholders::_1;
@@ -193,6 +195,12 @@ void simcom::SupportSummary(OvmsWriter* writer)
   {
   writer->puts("\nSIMCOM Modem Status");
 
+  if (m_pincode_required)
+    {
+    writer->printf("SIM card PIN code required.\n");
+    if (MyConfig.GetParamValueBool("modem","wrongpincode"))
+      writer->printf("Wrong PIN (%s) entered!\n", MyConfig.GetParamValue("modem","pincode").c_str());
+    }
   writer->printf("  Network Registration: %s\n  Provider: %s\n  Signal: %d dBm\n  State: %s\n",
     SimcomNetRegName(m_netreg),
     m_provider.c_str(),
@@ -903,6 +911,42 @@ void simcom::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
       ESP_LOGI(TAG,"SMS length is %d",(int)buf->m_userdata);
       }
     }
+  // SIM card PIN code required:
+  else if (line.compare(0, 14, "+CPIN: SIM PIN") == 0)
+    {
+    ESP_LOGI(TAG,"SIM card PIN code required");
+    m_pincode_required=true;
+    std::string pincode = MyConfig.GetParamValue("modem", "pincode");
+    if (!MyConfig.GetParamValueBool("modem","wrongpincode"))
+      {
+      if (pincode != "")
+        {
+        ESP_LOGI(TAG,"Using PIN code \"%s\"",pincode.c_str());
+        std::string at = "AT+CPIN=\"";
+        at.append(pincode);
+        at.append("\"\r\n");
+        tx(at.c_str());
+        }
+      else
+        {
+        ESP_LOGE(TAG,"SIM card PIN code not set!");
+        MyEvents.SignalEvent("system.modem.pincode_not_set", NULL);
+        MyNotify.NotifyString("alert", "modem.no_pincode", "No PIN code for SIM card configured!");
+        }
+      } else
+      {
+      ESP_LOGW(TAG,"Wrong PIN code (%s) previously entered.. Will not re-enter until changed!", pincode.c_str());
+      MyNotify.NotifyStringf("alert", "modem.wrongpincode", "Wrong pin code (%s) previously entered! Did not re-enter it..",pincode.c_str());
+      }
+    }
+  else if (line.compare(0, 30, "+CME ERROR: incorrect password") == 0)
+    {
+    ESP_LOGE(TAG,"Wrong PIN code entered!");
+    MyEvents.SignalEvent("system.modem.wrongpingcode", NULL);
+    MyNotify.NotifyStringf("alert", "modem.wrongpincode", "Wrong pin code (%s) entered!", MyConfig.GetParamValue("modem", "pincode"));
+    MyConfig.SetParamValueBool("modem","wrongpincode",true);
+    }
+
   // MMI/USSD response (URC):
   //  sent on all free channels, so we only process GSM_MUX_CHAN_CMD
   else if (channel == GSM_MUX_CHAN_CMD && line.compare(0, 7, "+CUSD: ") == 0)
@@ -1067,6 +1111,12 @@ void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   {
   bool debug = (strcmp(cmd->GetName(), "debug") == 0);
 
+  if (MyPeripherals->m_simcom->m_pincode_required)
+    {
+    writer->printf("SIM card PIN code required.\n");
+    if (MyConfig.GetParamValueBool("modem","wrongpincode"))
+      writer->printf("Wrong PIN (%s) entered!\n", MyConfig.GetParamValue("modem","pincode").c_str());
+    }
   writer->printf("Network Registration: %s\nProvider: %s\nSignal: %d dBm\n\nState: %s\n",
     SimcomNetRegName(MyPeripherals->m_simcom->m_netreg),
     MyPeripherals->m_simcom->m_provider.c_str(),

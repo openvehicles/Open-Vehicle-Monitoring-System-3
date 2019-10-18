@@ -194,6 +194,7 @@ void can_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
   frame.FIR.B.DLC = argc-1;
   frame.FIR.B.FF = smode;
   frame.MsgID = (int)strtol(argv[0],NULL,16);
+  frame.callback = NULL;
   for(int k=0;k<(argc-1);k++)
     {
     frame.data.u8[k] = strtol(argv[k+1],NULL,16);
@@ -226,6 +227,7 @@ void can_rx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
   frame.FIR.B.DLC = argc-1;
   frame.FIR.B.FF = smode;
   frame.MsgID = (int)strtol(argv[0],NULL,16);
+  frame.callback = NULL;
   for(int k=0;k<(argc-1);k++)
     {
     frame.data.u8[k] = strtol(argv[k+1],NULL,16);
@@ -268,9 +270,9 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
 
 void can_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  for (int k=1;k<4;k++)
+  for (int k=1;k<5;k++)
     {
-    static const char* name[4] = {"can1", "can2", "can3"};
+    static const char* name[4] = {"can1", "can2", "can3", "can4"};
     canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(name[k-1]);
     if (sbus != NULL)
       {
@@ -296,6 +298,52 @@ void can_clearstatus(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
 
   sbus->ClearStatus();
   writer->puts("Status cleared");
+  }
+
+void can_view_registers(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* bus = cmd->GetParent()->GetName();
+  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->puts("Error: Cannot find named CAN bus");
+    return;
+    }
+
+  if (sbus->ViewRegisters() == ESP_ERR_NOT_SUPPORTED)
+    writer->puts("Error: Not implemented");
+  else
+    writer->puts("See logs for details");
+  }
+
+void can_set_register(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* bus = cmd->GetParent()->GetName();
+  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->puts("Error: Cannot find named CAN bus");
+    return;
+    }
+  if (argc<2)
+    {
+    writer->puts("Error: register address and value must be given");
+    return;
+    }
+  uint32_t addr = (int)strtol(argv[0],NULL,16);
+  uint32_t value = (int)strtol(argv[1],NULL,16);
+  if (addr > 255)
+    {
+    writer->puts("Error: Register address out of range");
+    return;
+    }
+  if (value > 255)
+    {
+    writer->puts("Error: Register value out of range");
+    return;
+    }
+
+  sbus->WriteReg(addr,value);
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -655,14 +703,24 @@ static void CAN_rxtask(void *pvParameters)
         case CAN_frame:
           me->IncomingFrame(&msg.body.frame);
           break;
-        case CAN_rxcallback:
-          while (msg.body.bus->RxCallback(&msg.body.frame))
-            {
-            me->IncomingFrame(&msg.body.frame);
-            }
+        case CAN_asyncinterrupthandler:
+          {
+          bool loop;
+          // Loop until all interrupts are handled
+          do {
+            bool receivedFrame;
+            loop = msg.body.bus->AsynchronousInterruptHandler(&msg.body.frame, &receivedFrame);
+            if (receivedFrame)
+              me->IncomingFrame(&msg.body.frame);
+            } while (loop);
           break;
+          }
         case CAN_txcallback:
-          msg.body.bus->TxCallback();
+          msg.body.bus->TxCallback(&msg.body.frame, true);
+          break;
+        case CAN_txfailedcallback:
+          msg.body.bus->TxCallback(&msg.body.frame, false);
+          msg.body.bus->LogStatus(CAN_LogStatus_Error);
           break;
         case CAN_logerror:
           msg.body.bus->LogStatus(CAN_LogStatus_Error);
@@ -691,9 +749,9 @@ can::can()
 
   for (int k=0;k<CAN_MAXBUSES;k++) m_buslist[k] = NULL;
 
-  for (int k=1;k<4;k++)
+  for (int k=1;k<5;k++)
     {
-    static const char* name[4] = {"can1", "can2", "can3"};
+    static const char* name[4] = {"can1", "can2", "can3", "can4"};
     OvmsCommand* cmd_canx = cmd_can->RegisterCommand(name[k-1],"CANx framework");
     OvmsCommand* cmd_canstart = cmd_canx->RegisterCommand("start","CAN start framework");
     cmd_canstart->RegisterCommand("listen","Start CAN bus in listen mode",can_start,"<baud> [<dbc>]", 1, 2);
@@ -710,12 +768,14 @@ can::can()
     cmd_canrx->RegisterCommand("extended","Simulate reception of extended CAN frame",can_rx,"<id> <data...>", 1, 9);
     cmd_canx->RegisterCommand("status","Show CAN status",can_status);
     cmd_canx->RegisterCommand("clear","Clear CAN status",can_clearstatus);
+    cmd_canx->RegisterCommand("viewregisters","view can controller registers",can_view_registers);
+    cmd_canx->RegisterCommand("setregister","set can controller register",can_set_register,"<reg> <value>",2,2);
     }
 
   cmd_can->RegisterCommand("list", "List CAN buses", can_list);
 
   m_rxqueue = xQueueCreate(CONFIG_OVMS_HW_CAN_RX_QUEUE_SIZE,sizeof(CAN_queue_msg_t));
-  xTaskCreatePinnedToCore(CAN_rxtask, "OVMS CanRx", 2048, (void*)this, 23, &m_rxtask, 0);
+  xTaskCreatePinnedToCore(CAN_rxtask, "OVMS CanRx", 2*2048, (void*)this, 23, &m_rxtask, 0);
   }
 
 can::~can()
@@ -729,7 +789,8 @@ canbus* can::GetBus(int busnumber)
   canbus* found = m_buslist[busnumber];
   if (found != NULL) return found;
 
-  char cbus[5] = "can";
+  char cbus[5];
+  strcpy(cbus,"can");
   cbus[3] = busnumber+'1';
   cbus[4] = 0;
   found = (canbus*)MyPcpApp.FindDeviceByName(cbus);
@@ -746,7 +807,7 @@ void can::IncomingFrame(CAN_frame_t* p_frame)
   p_frame->origin->m_watchdog_timer = monotonictime;
   p_frame->origin->LogFrame(CAN_LogFrame_RX, p_frame);
 
-  ExecuteCallbacks(p_frame, false);
+  ExecuteCallbacks(p_frame, false, true /*ignored*/);
   NotifyListeners(p_frame, false);
   }
 
@@ -785,17 +846,22 @@ void can::DeregisterCallback(const char* caller)
   m_txcallbacks.remove_if([caller](CanFrameCallbackEntry* entry){ return strcmp(entry->m_caller, caller)==0; });
   }
 
-void can::ExecuteCallbacks(const CAN_frame_t* frame, bool tx)
+void can::ExecuteCallbacks(const CAN_frame_t* frame, bool tx, bool success)
   {
   if (tx)
     {
-    for (auto entry : m_txcallbacks)
-      entry->m_callback(frame);
+    if (frame->callback)
+      {
+      (*(frame->callback))(frame, success); // invoke frame-specific callback function
+      }
+    for (auto entry : m_txcallbacks) {      // invoke generic tx callbacks
+      entry->m_callback(frame, success);
+      }
     }
   else
     {
     for (auto entry : m_rxcallbacks)
-      entry->m_callback(frame);
+      entry->m_callback(frame, success);
     }
   }
 
@@ -840,6 +906,16 @@ esp_err_t canbus::Stop()
   {
   if (m_dbcfile) DetachDBC();
 
+  return ESP_FAIL;
+  }
+
+esp_err_t canbus::ViewRegisters()
+  {
+  return ESP_ERR_NOT_SUPPORTED;
+  }
+
+esp_err_t canbus::WriteReg( uint8_t reg, uint8_t value )
+  {
   return ESP_FAIL;
   }
 
@@ -910,13 +986,24 @@ void canbus::BusTicker10(std::string event, void* data)
     }
   }
 
-bool canbus::RxCallback(CAN_frame_t* frame)
+bool canbus::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameReceived)
   {
   return false;
   }
 
-void canbus::TxCallback()
+void canbus::TxCallback(CAN_frame_t* p_frame, bool success)
   {
+  if (success)
+    {
+    m_status.packets_tx++;
+    MyCan.NotifyListeners(p_frame, true);
+    LogFrame(CAN_LogFrame_TX, p_frame);
+    }
+  else
+    {
+    LogFrame(CAN_LogFrame_TX_Fail, p_frame);
+    }
+  MyCan.ExecuteCallbacks(p_frame, true, success);
   }
 
 /**
@@ -925,17 +1012,10 @@ void canbus::TxCallback()
  *      … ESP_OK = frame delivered to CAN transceiver (not necessarily sent!)
  *      … ESP_FAIL = TX queue is full (TX overflow)
  *    - actual TX implementation in driver override
- *    - here: counting & logging of frames sent (called by driver after a successful TX)
  */
 esp_err_t canbus::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
   {
-  m_status.packets_tx++;
-
-  LogFrame(CAN_LogFrame_TX, p_frame);
-
-  MyCan.ExecuteCallbacks(p_frame, true);
-  MyCan.NotifyListeners(p_frame, true);
-
+  tx_frame = *p_frame; // save a local copy of this frame to be used later in txcallback
   return ESP_OK;
   }
 

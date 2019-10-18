@@ -71,7 +71,7 @@ typedef enum
   CAN_MODE_ACTIVE=2
   } CAN_mode_t;
 
-// CAN link speed (100kbps -> 1MHz)
+// CAN link speed (33.3kbps -> 1MHz)
 typedef enum
   {
   CAN_SPEED_33KBPS=33,       // CAN Node runs at 33.333kBit/s
@@ -115,12 +115,17 @@ typedef union
     } B;
   } CAN_FIR_t;
 
+
+typedef struct CAN_frame_t CAN_frame_t;
+typedef std::function<void(const CAN_frame_t*, bool)> CanFrameCallback;
+
 // CAN Frame
 // Note: Take care changing this structure, as it is a union with
 // CAN_log_message_t and position of 'origin' is fixed.
 struct CAN_frame_t
   {
   canbus*     origin;                   // Origin of the frame
+  CanFrameCallback * callback;          // Frame-specific callback. Is called when this frame is successfully sent (or sending failed)
   CAN_FIR_t   FIR;                      // Frame information record
   uint32_t    MsgID;                    // Message ID
   union
@@ -158,8 +163,9 @@ typedef struct
 typedef enum
   {
   CAN_frame = 0,
-  CAN_rxcallback,
+  CAN_asyncinterrupthandler, // used for asynchronous handling of rx and other interrupts from MCP2515
   CAN_txcallback,
+  CAN_txfailedcallback,
   CAN_logerror
 } CAN_queue_type_t;
 
@@ -170,7 +176,7 @@ typedef struct
   union
     {
     CAN_frame_t frame;  // CAN_frame
-    canbus* bus;        // CAN_rxcallback, CAN_txcallback, CAN_logerror
+    canbus* bus;        
     } body;
   } CAN_queue_msg_t;
 
@@ -270,6 +276,8 @@ class canbus : public pcp, public InternalRamAllocated
     virtual esp_err_t Start(CAN_mode_t mode, CAN_speed_t speed, dbcfile *dbcfile);
     virtual esp_err_t Stop();
     virtual void ClearStatus();
+    virtual esp_err_t ViewRegisters();
+    virtual esp_err_t WriteReg( uint8_t reg, uint8_t value );
 
   public:
     void AttachDBC(dbcfile *dbcfile);
@@ -281,8 +289,8 @@ class canbus : public pcp, public InternalRamAllocated
     virtual esp_err_t Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
     virtual esp_err_t WriteExtended(uint32_t id, uint8_t length, uint8_t *data, TickType_t maxqueuewait=0);
     virtual esp_err_t WriteStandard(uint16_t id, uint8_t length, uint8_t *data, TickType_t maxqueuewait=0);
-    virtual bool RxCallback(CAN_frame_t* frame);
-    virtual void TxCallback();
+    virtual bool AsynchronousInterruptHandler(CAN_frame_t* frame, bool* frameReceived);
+    virtual void TxCallback(CAN_frame_t* frame, bool success);
 
   protected:
     virtual esp_err_t QueueWrite(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
@@ -298,6 +306,7 @@ class canbus : public pcp, public InternalRamAllocated
     CAN_speed_t m_speed;
     CAN_mode_t m_mode;
     CAN_status_t m_status;
+    CAN_frame_t tx_frame;
     uint32_t m_status_chksum;
     uint32_t m_watchdog_timer;
     QueueHandle_t m_txqueue;
@@ -313,7 +322,7 @@ class canbus : public pcp, public InternalRamAllocated
 
 typedef std::map<QueueHandle_t, bool> CanListenerMap_t;
 
-typedef std::function<void(const CAN_frame_t*)> CanFrameCallback;
+
 class CanFrameCallbackEntry
   {
   public:
@@ -349,7 +358,7 @@ class can : public InternalRamAllocated
   public:
     void RegisterCallback(const char* caller, CanFrameCallback callback, bool txfeedback=false);
     void DeregisterCallback(const char* caller);
-    void ExecuteCallbacks(const CAN_frame_t* frame, bool tx);
+    void ExecuteCallbacks(const CAN_frame_t* frame, bool tx, bool success);
 
   public:
     uint32_t AddLogger(canlog* logger, int filterc=0, const char* const* filterv=NULL);

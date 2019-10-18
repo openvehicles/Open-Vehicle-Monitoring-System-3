@@ -74,6 +74,8 @@ void HousekeepingUpdate12V()
   OvmsMetricFloat* m1 = StandardMetrics.ms_v_bat_12v_voltage;
   if (m1 == NULL)
     return;
+  if (MyPeripherals == NULL)
+    return;
 
   // Allow the user to adjust the ADC conversion factor
   float f = MyConfig.GetParamValueFloat("system.adc","factor12v");

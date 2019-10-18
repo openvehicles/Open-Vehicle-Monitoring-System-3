@@ -57,6 +57,15 @@
 #define MG_ENABLE_DIRECTORY_LISTING 1
 #endif
 
+#ifdef CONFIG_MG_ENABLE_SSL
+#define MG_ENABLE_SSL 1
+#define MG_SSL_IF MG_SSL_IF_MBEDTLS
+#define MG_SSL_MBED_DUMMY_RANDOM 1
+#define MG_SSL_IF_MBEDTLS_MAX_FRAG_LEN 2048
+#define MG_SSL_IF_MBEDTLS_FREE_CERTS 1
+//#define CS_ENABLE_DEBUG
+#endif
+
 // Override memory allocation macros in mongoose.c
 #define CS_COMMON_MG_MEM_H_
 #define MG_MALLOC ExternalRamMalloc
