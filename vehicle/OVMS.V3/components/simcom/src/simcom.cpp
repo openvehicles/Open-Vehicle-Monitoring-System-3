@@ -282,7 +282,7 @@ void simcom::StartTask()
     // Set UART pins
     uart_set_pin(m_uartnum, m_txpin, m_rxpin, 0, 0);
 
-    xTaskCreatePinnedToCore(SIMCOM_task, "OVMS SIMCOM", 4096, (void*)this, 5, &m_task, 1);
+    xTaskCreatePinnedToCore(SIMCOM_task, "OVMS SIMCOM", 4096, (void*)this, 5, &m_task, CORE(1));
     }
   }
 

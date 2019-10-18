@@ -1105,7 +1105,7 @@ void OvmsCommandApp::EventHandler(std::string event, void* data)
     time_t utm = time(NULL);
     struct tm* ltm = localtime(&utm);
     if (keepdays && ltm->tm_hour == 0 && !m_expiretask)
-      xTaskCreatePinnedToCore(ExpireTask, "OVMS ExpireLogs", 4096, NULL, 0, &m_expiretask, 1);
+      xTaskCreatePinnedToCore(ExpireTask, "OVMS ExpireLogs", 4096, NULL, 0, &m_expiretask, CORE(1));
     }
   }
 

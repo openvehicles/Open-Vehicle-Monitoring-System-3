@@ -286,7 +286,7 @@ re::re(const char* name, canfilter* filter)
   m_finished = monotonictime;
   m_mode = Analyse;
   m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
-  xTaskCreatePinnedToCore(RE_task, "OVMS RE", 4096, (void*)this, 5, &m_task, 1);
+  xTaskCreatePinnedToCore(RE_task, "OVMS RE", 4096, (void*)this, 5, &m_task, CORE(1));
   MyCan.RegisterListener(m_rxqueue, true);
   }
 

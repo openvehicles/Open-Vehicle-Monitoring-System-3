@@ -757,7 +757,7 @@ void OvmsNetManager::StartMongooseTask()
       while (m_mongoose_task)
         vTaskDelay(pdMS_TO_TICKS(50));
       // start new task:
-      xTaskCreatePinnedToCore(MongooseRawTask, "OVMS NetMan", 8*1024, (void*)this, 5, &m_mongoose_task, 1);
+      xTaskCreatePinnedToCore(MongooseRawTask, "OVMS NetMan", 8*1024, (void*)this, 5, &m_mongoose_task, CORE(1));
       AddTaskToMap(m_mongoose_task);
       }
     }

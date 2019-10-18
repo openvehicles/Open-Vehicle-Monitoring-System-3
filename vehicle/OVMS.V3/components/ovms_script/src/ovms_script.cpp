@@ -1073,7 +1073,7 @@ OvmsScripts::OvmsScripts()
   m_duktaskqueue = xQueueCreate(CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_QUEUE_SIZE,sizeof(duktape_queue_t));
   xTaskCreatePinnedToCore(DukTapeLaunchTask, "OVMS DukTape",
                           CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_STACK, (void*)this,
-                          CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_PRIORITY, &m_duktaskid, 1);
+                          CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_PRIORITY, &m_duktaskid, CORE(1));
   AddTaskToMap(m_duktaskid);
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 

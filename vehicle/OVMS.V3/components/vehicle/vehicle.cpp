@@ -1024,7 +1024,7 @@ OvmsVehicle::OvmsVehicle()
 
   m_rxqueue = xQueueCreate(CONFIG_OVMS_VEHICLE_CAN_RX_QUEUE_SIZE,sizeof(CAN_frame_t));
   xTaskCreatePinnedToCore(OvmsVehicleRxTask, "OVMS Vehicle",
-    CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_rxtask, 1);
+    CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_rxtask, CORE(1));
 
   using std::placeholders::_1;
   using std::placeholders::_2;

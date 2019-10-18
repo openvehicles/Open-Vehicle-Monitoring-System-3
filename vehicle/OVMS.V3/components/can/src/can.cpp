@@ -775,7 +775,7 @@ can::can()
   cmd_can->RegisterCommand("list", "List CAN buses", can_list);
 
   m_rxqueue = xQueueCreate(CONFIG_OVMS_HW_CAN_RX_QUEUE_SIZE,sizeof(CAN_queue_msg_t));
-  xTaskCreatePinnedToCore(CAN_rxtask, "OVMS CanRx", 2*2048, (void*)this, 23, &m_rxtask, 0);
+  xTaskCreatePinnedToCore(CAN_rxtask, "OVMS CanRx", 2*2048, (void*)this, 23, &m_rxtask, CORE(0));
   }
 
 can::~can()

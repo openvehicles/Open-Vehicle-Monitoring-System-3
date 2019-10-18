@@ -668,7 +668,7 @@ void OvmsOTA::LaunchAutoFlash(bool force)
     }
 
   xTaskCreatePinnedToCore(OTAFlashTask, "OVMS AutoFlash",
-    6144, (void*)force, 5, &m_autotask, 1);
+    6144, (void*)force, 5, &m_autotask, CORE(1));
   }
 
 bool OvmsOTA::AutoFlash(bool force)
