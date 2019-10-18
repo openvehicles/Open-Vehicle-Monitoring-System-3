@@ -40,6 +40,7 @@
 #include "ovms_metrics.h"
 #include "ovms_command.h"
 #include "metrics_standard.h"
+#include "ovms_mutex.h"
 
 using namespace std;
 struct DashboardConfig;
@@ -280,6 +281,7 @@ class OvmsVehicle : public InternalRamAllocated
       } poll_pid_t;
 
   protected:
+    OvmsMutex         m_poll_mutex;           // Concurrency protection
     uint8_t           m_poll_state;           // Current poll state
     canbus*           m_poll_bus;             // Bus to poll on
     const poll_pid_t* m_poll_plist;           // Head of poll list
