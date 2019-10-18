@@ -38,6 +38,8 @@
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
 #endif
+#include "ovms_mutex.h"
+#include "ovms_semaphore.h"
 
 #include "rt_types.h"
 #include "rt_battmon.h"
@@ -480,17 +482,24 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     void ObdInit();
     void ObdTicker1();
     void ObdTicker10();
+    bool ObdRequest(uint16_t txid, uint16_t rxid, uint32_t request, string& response, int timeout_ms=3000);
 
   public:
     // Shell commands:
     static void shell_obd_showdtc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void shell_obd_cleardtc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void shell_obd_resetdtc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void shell_obd_request(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   protected:
     void ResetDTCStats();
     void FormatDTC(StringWriter& buf, int i, cluster_dtc& e);
     void SendDTC(int i, cluster_dtc& e);
+
+  protected:
+    string              twizy_obd_rxbuf;
+    OvmsMutex           twizy_obd_request;
+    OvmsSemaphore       twizy_obd_rxwait;
 
   protected:
     cluster_dtc_store   twizy_cluster_dtc = {};

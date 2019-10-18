@@ -1,6 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Twizy: send custom OBD2 requests, output response as hex dump
+  New command:
+    xrt obd request cluster|bms|charger|broadcast <request>
+    xrt obd request device <txid> <rxid> <request>
+  Note: request types need to be supported by the poller, i.e.
+    currently only 8/16 bit PID requests with mode 01, 02, 09, 10, 1A, 21 or 22
 - Scripting: new Javascript APIs:
     - OvmsEvents.Raise(event, [delay_ms])
     - id = OvmsNotify.Raise(type, subtype, message)

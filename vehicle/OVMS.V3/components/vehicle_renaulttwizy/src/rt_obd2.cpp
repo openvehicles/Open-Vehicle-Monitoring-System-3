@@ -48,7 +48,15 @@ using namespace std;
 #define CLUSTER_RXID              0x763
 #define CLUSTER_PID_VIN           0x81
 #define CLUSTER_PID_DTC           0x13
+
+#define BMS_TXID                  0x79B
+#define BMS_RXID                  0x7BB
+
+#define CHARGER_TXID              0x792
+#define CHARGER_RXID              0x793
+
 #define SESSION_EXTDIAG           0xC0
+
 
 const OvmsVehicle::poll_pid_t twizy_poll_default[] = {
   // Note: poller ticker cycles at 3600 seconds = max period
@@ -76,6 +84,15 @@ void OvmsVehicleRenaultTwizy::ObdInit()
     "Resets internal DTC buffer and presence counters.\n"
     "No change is done on the car side.");
 
+  OvmsCommand* obd;
+  obd = cmd_xrt->RegisterCommand("obd", "OBD2 tools");
+  cmd = obd->RegisterCommand("request", "Send OBD2 request, output response");
+  cmd->RegisterCommand("device", "Send OBD2 request to a device", shell_obd_request, "<txid> <rxid> <request>", 3, 3);
+  cmd->RegisterCommand("broadcast", "Send OBD2 request as broadcast", shell_obd_request, "<request>", 1, 1);
+  cmd->RegisterCommand("cluster", "Send OBD2 request to cluster (display)", shell_obd_request, "<request>", 1, 1);
+  cmd->RegisterCommand("bms", "Send OBD2 request to BMS", shell_obd_request, "<request>", 1, 1);
+  cmd->RegisterCommand("charger", "Send OBD2 request to charger (BCB)", shell_obd_request, "<request>", 1, 1);
+
 #if 0
   // Test:
   const uint8_t test[] = {
@@ -98,8 +115,12 @@ void OvmsVehicleRenaultTwizy::ObdInit()
 
 void OvmsVehicleRenaultTwizy::ObdTicker1()
 {
+  // skip ticker when ObdRequest is waiting for response:
+  if (!twizy_obd_rxwait.IsAvail())
+    return;
+
+  // determine polling state:
   int new_state;
-  
   if (!twizy_flags.EnableWrite)
     new_state = 0;
   else if (twizy_flags.Charging)
@@ -120,7 +141,7 @@ void OvmsVehicleRenaultTwizy::ObdTicker1()
 void OvmsVehicleRenaultTwizy::IncomingPollReply(
   canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
 {
-  static string rxbuf;
+  string& rxbuf = twizy_obd_rxbuf;
 
   // init / fill rx buffer:
   if (m_poll_ml_frame == 0) {
@@ -171,6 +192,51 @@ void OvmsVehicleRenaultTwizy::IncomingPollReply(
       break;
     }
   }
+
+  // single poll?
+  if (!twizy_obd_rxwait.IsAvail()) {
+    // yes: stop poller & signal response
+    PollSetPidList(m_can1, NULL);
+    twizy_obd_rxwait.Give();
+  }
+}
+
+
+bool OvmsVehicleRenaultTwizy::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t request, string& response, int timeout_ms /*=3000*/)
+{
+  OvmsMutexLock lock(&twizy_obd_request);
+
+  // prepare single poll:
+  OvmsVehicle::poll_pid_t poll[] = {
+    { txid, rxid, 0, 0, { 1, 1, 1 } },
+    { 0, 0, 0, 0, { 0, 0, 0 } }
+  };
+  if (request < 0x10000) {
+    poll[0].type = (request & 0xff00) >> 8;
+    poll[0].pid = request & 0xff;
+  } else {
+    poll[0].type = (request & 0xff0000) >> 16;
+    poll[0].pid = request & 0xffff;
+  }
+
+  // stop default polling:
+  PollSetPidList(m_can1, NULL);
+  vTaskDelay(pdMS_TO_TICKS(100));
+
+  // clear rx semaphore, start single poll:
+  twizy_obd_rxwait.Take(0);
+  PollSetPidList(m_can1, poll);
+
+  // wait for response:
+  bool rxok = twizy_obd_rxwait.Take(pdMS_TO_TICKS(timeout_ms));
+  if (rxok == pdTRUE)
+    response = twizy_obd_rxbuf;
+
+  // restore default polling:
+  twizy_obd_rxwait.Give();
+  PollSetPidList(m_can1, twizy_poll_default);
+
+  return (rxok == pdTRUE);
 }
 
 
@@ -404,4 +470,76 @@ void OvmsVehicleRenaultTwizy::shell_obd_resetdtc(int verbosity, OvmsWriter* writ
   twizy->ResetDTCStats();
 
   writer->puts("OVMS DTC buffer has been cleared.");
+}
+
+
+void OvmsVehicleRenaultTwizy::shell_obd_request(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+{
+  OvmsVehicleRenaultTwizy* twizy = GetInstance(writer);
+  if (!twizy)
+    return;
+
+  uint16_t txid = 0, rxid = 0;
+  uint32_t req = 0;
+  string response;
+
+  // parse args:
+  string device = cmd->GetName();
+  if (device == "device") {
+    if (argc < 3) {
+      writer->puts("ERROR: too few args, need: txid rxid request");
+      return;
+    }
+    txid = strtol(argv[0], NULL, 16);
+    rxid = strtol(argv[1], NULL, 16);
+    req = strtol(argv[2], NULL, 16);
+  } else {
+    if (argc < 1) {
+      writer->puts("ERROR: too few args, need: request");
+      return;
+    }
+    req = strtol(argv[0], NULL, 16);
+    if (device == "cluster") {
+      txid = CLUSTER_TXID;
+      rxid = CLUSTER_RXID;
+    } else if (device == "bms") {
+      txid = BMS_TXID;
+      rxid = BMS_RXID;
+    } else if (device == "charger") {
+      txid = CHARGER_TXID;
+      rxid = CHARGER_RXID;
+    } else { // "broadcast"
+      txid = 0x7df;
+      rxid = 0;
+    }
+  }
+
+  // validate request:
+  uint8_t mode = (req <= 0xffff) ? ((req & 0xff00) >> 8) : ((req & 0xff0000) >> 16);
+  if (mode != 0x01 && mode != 0x02 && mode != 0x09 &&
+      mode != 0x10 && mode != 0x1A && mode != 0x21 && mode != 0x22) {
+    writer->puts("ERROR: mode must be one of: 01, 02, 09, 10, 1A, 21 or 22");
+    return;
+  } else if (req > 0xffffff) {
+    writer->puts("ERROR: PID must be 8 or 16 bit");
+    return;
+  }
+
+  // execute request:
+  if (!twizy->ObdRequest(txid, rxid, req, response)) {
+    writer->puts("ERROR: timeout waiting for response");
+    return;
+  }
+
+  // output response as hex dump:
+  writer->puts("Response:");
+  char *buf = NULL;
+  size_t rlen = response.size(), offset = 0;
+  do {
+    rlen = FormatHexDump(&buf, response.data() + offset, rlen, 16);
+    offset += 16;
+    writer->puts(buf ? buf : "-");
+  } while (rlen);
+  if (buf)
+    free(buf);
 }
