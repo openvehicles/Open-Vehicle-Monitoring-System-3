@@ -146,12 +146,12 @@ bool Pushover::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry
   if (!MyNetManager.m_connected_any)
     {
     ESP_LOGD(TAG,"IncomingNotification: Ignore notification (%s:%s:%s) because no network conn",type->m_name,entry->GetSubType(),entry->GetValue().c_str());
-    return false;
+    return true;
     } 
   else if (MyConfig.GetParamValueBool("pushover","enable", false) == false)
     {
     ESP_LOGD(TAG,"IncomingNotification: Ignore notification (%s:%s:%s) (pushover not enabled)",type->m_name,entry->GetSubType(),entry->GetValue().c_str());
-    return false;
+    return true;
     }
   ESP_LOGD(TAG,"IncomingNotification: Handling notification (%s:%s:%s)",type->m_name,entry->GetSubType(),entry->GetValue().c_str());      
 
@@ -174,7 +174,7 @@ bool Pushover::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry
     if (priority == "")
       {
       ESP_LOGD(TAG,"IncomingNotification: No priority set -> ignore notification");
-      return false;
+      return true;
       }
     }
 
