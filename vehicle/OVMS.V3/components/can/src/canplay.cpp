@@ -202,7 +202,7 @@ canplay::canplay(const char* type, std::string format, canformat::canformat_serv
   m_speed = 1;
 
   m_msgcount = 0;
-  xTaskCreatePinnedToCore(PlayTask, "OVMS CanPlay", 4096, (void*)this, 10, &m_task, 1);
+  xTaskCreatePinnedToCore(PlayTask, "OVMS CanPlay", 4096, (void*)this, 10, &m_task, CORE(1));
   }
 
 canplay::~canplay()

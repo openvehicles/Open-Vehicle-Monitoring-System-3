@@ -170,7 +170,7 @@ obd2ecu::obd2ecu(const char* name, canbus* can)
   m_starttime = time(NULL);
   LoadMap();
 
-  xTaskCreatePinnedToCore(OBD2ECU_task, "OVMS OBDII ECU", 6144, (void*)this, 5, &m_task, 1);
+  xTaskCreatePinnedToCore(OBD2ECU_task, "OVMS OBDII ECU", 6144, (void*)this, 5, &m_task, CORE(1));
 
   MyCan.RegisterListener(m_rxqueue);
   }

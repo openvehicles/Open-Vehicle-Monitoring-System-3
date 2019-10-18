@@ -173,7 +173,7 @@ canlog::canlog(const char* type, std::string format, canformat::canformat_serve_
 
   int queuesize = MyConfig.GetParamValueInt("can", "log.queuesize",100);
   m_queue = xQueueCreate(queuesize, sizeof(CAN_log_message_t));
-  xTaskCreatePinnedToCore(RxTask, "OVMS CanLog", 4096, (void*)this, 10, &m_task, 1);
+  xTaskCreatePinnedToCore(RxTask, "OVMS CanLog", 4096, (void*)this, 10, &m_task, CORE(1));
   }
 
 canlog::~canlog()

@@ -72,7 +72,7 @@ SevconClient::SevconClient(OvmsVehicleRenaultTwizy* twizy)
   m_cfgmode_request = false;
 
   InitMonitoring();
-  xTaskCreatePinnedToCore(SevconAsyncTaskEntry, "OVMS SevconAsync", 4*1024, (void*)this, 10, &m_asynctask, 1);
+  xTaskCreatePinnedToCore(SevconAsyncTaskEntry, "OVMS SevconAsync", 4*1024, (void*)this, 10, &m_asynctask, CORE(1));
 
   // register shell commands:
 
