@@ -119,6 +119,7 @@ class OvmsVehicle : public InternalRamAllocated
     canbus* m_can1;
     canbus* m_can2;
     canbus* m_can3;
+    canbus* m_can4;
 
   private:
     void VehicleTicker1(std::string event, void* data);
@@ -130,6 +131,7 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void IncomingFrameCan1(CAN_frame_t* p_frame);
     virtual void IncomingFrameCan2(CAN_frame_t* p_frame);
     virtual void IncomingFrameCan3(CAN_frame_t* p_frame);
+    virtual void IncomingFrameCan4(CAN_frame_t* p_frame);
     virtual void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
 
   protected:

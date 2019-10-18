@@ -1,13 +1,12 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          14th March 2017
+;    Date:          27th March 2019
 ;
 ;    Changes:
 ;    1.0  Initial release
 ;
-;    (C) 2011       Michael Stegen / Stegen Electronics
-;    (C) 2011-2017  Mark Webb-Johnson
-;    (C) 2011        Sonny Chen @ EPRO/DX
+;    (C) 2019       Marko Juhanne
+;
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -26,47 +25,42 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
-;
-; Portions of this are based on the work of Thomas Barth, and licensed
-; under MIT license.
-; Copyright (c) 2017, Thomas Barth, barth-dev.de
-; https://github.com/ThomasBarth/ESP32-CAN-Driver
 */
 
-#ifndef __ESP32CAN_H__
-#define __ESP32CAN_H__
+#ifndef __OVMS_SWCAN_H__
+#define __OVMS_SWCAN_H__
 
-#include <stdint.h>
-#include "can.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/queue.h"
-#include "freertos/semphr.h"
-#include "freertos/task.h"
-#include "driver/gpio.h"
-#include "esp_intr.h"
-#include "soc/dport_reg.h"
-#include <math.h>
+#include "mcp2515.h"
+#include "ovms_led.h"
 
-class esp32can : public canbus
+enum TransceiverMode { tmode_normal, tmode_sleep, tmode_highvoltagewakeup, tmode_highspeed };
+
+class swcan : public mcp2515
   {
+
   public:
-    esp32can(const char* name, int txpin, int rxpin);
-    ~esp32can();
+    swcan(const char* name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin, int intpin, bool hw_cs=true);
+    ~swcan();
 
   public:
     esp_err_t Start(CAN_mode_t mode, CAN_speed_t speed);
     esp_err_t Stop();
-
-  public:
-    esp_err_t Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
-    void TxCallback(CAN_frame_t* p_frame, bool success);
-
-  public:
     void SetPowerMode(PowerMode powermode);
+    void SetTransceiverMode(TransceiverMode opmode);
+    bool AsynchronousInterruptHandler(CAN_frame_t* frame, bool* frameReceived);
+    void TxCallback(CAN_frame_t* frame, bool success);
+    //void AutoInit();
+    ovms_led * m_status_led, * m_tx_led, * m_rx_led;
 
-  public:
-    gpio_num_t m_txpin;               // TX pin
-    gpio_num_t m_rxpin;               // RX pin
+  private:
+    void SystemUp(std::string event, void* data);
+    void ServerConnected(std::string event, void* data);
+    void ServerDisconnected(std::string event, void* data);
+    void ModemEvent(std::string event, void* data);
+
+    void DoSetTransceiverMode(bool mode0, bool mode1);
+  	TransceiverMode m_tmode;
+
   };
 
-#endif //#ifndef __ESP32CAN_H__
+#endif //#ifndef __OVMS_SWCAN_H__

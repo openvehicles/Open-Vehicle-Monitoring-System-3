@@ -131,6 +131,7 @@ class simcom : public pcp, public InternalRamAllocated
     GsmNMEA      m_nmea;
     int          m_line_unfinished;
     std::string  m_line_buffer;
+    bool         m_pincode_required;
 
   protected:
     void SetState1(SimcomState1 newstate);

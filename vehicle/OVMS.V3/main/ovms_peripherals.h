@@ -43,6 +43,10 @@
 #include "mcp2515.h"
 #endif // #ifdef CONFIG_OVMS_COMP_MCP2515
 
+#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+#include "swcan.h"
+#endif // #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+
 #ifdef CONFIG_OVMS_COMP_ESP32CAN
 #include "esp32can.h"
 #endif // #ifdef CONFIG_OVMS_COMP_ESP32CAN
@@ -107,6 +111,16 @@
 #define MAX7317_EGPIO_7           8
 #define MAX7317_EGPIO_8           9
 
+#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+#define MAX7317_SWCAN_MODE0         4   // EGPIO_3
+#define MAX7317_SWCAN_MODE1         5   // EGPIO_4
+#define VSPI_PIN_MCP2515_SWCAN_CS   33  // EXP2
+#define VSPI_PIN_MCP2515_SWCAN_INT  32  // EXP1
+#define MAX7317_SWCAN_STATUS_LED    7   // EGPIO_6
+#define MAX7317_SWCAN_TX_LED        8   // EGPIO_7
+#define MAX7317_SWCAN_RX_LED        9   // EGPIO_8
+#endif // #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+
 #ifdef CONFIG_OVMS_HW_BASE_3_0
 #define MODEM_GPIO_RX             16
 #define MODEM_GPIO_TX             17
@@ -154,6 +168,10 @@ class Peripherals : public InternalRamAllocated
     mcp2515* m_mcp2515_1;
     mcp2515* m_mcp2515_2;
 #endif // #ifdef CONFIG_OVMS_COMP_MCP2515
+
+#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+    swcan* m_mcp2515_swcan;
+#endif // #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
     sdcard* m_sdcard;

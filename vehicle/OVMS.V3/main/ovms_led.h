@@ -1,13 +1,12 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          14th March 2017
+;    Date:          27th March 2019
 ;
 ;    Changes:
 ;    1.0  Initial release
 ;
-;    (C) 2011       Michael Stegen / Stegen Electronics
-;    (C) 2011-2017  Mark Webb-Johnson
-;    (C) 2011        Sonny Chen @ EPRO/DX
+;    (C) 2019       Marko Juhanne
+;
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -26,47 +25,37 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
-;
-; Portions of this are based on the work of Thomas Barth, and licensed
-; under MIT license.
-; Copyright (c) 2017, Thomas Barth, barth-dev.de
-; https://github.com/ThomasBarth/ESP32-CAN-Driver
 */
 
-#ifndef __ESP32CAN_H__
-#define __ESP32CAN_H__
+#ifndef __OVMS_LED_H__
+#define __OVMS_LED_H__
 
-#include <stdint.h>
-#include "can.h"
 #include "freertos/FreeRTOS.h"
-#include "freertos/queue.h"
-#include "freertos/semphr.h"
-#include "freertos/task.h"
-#include "driver/gpio.h"
-#include "esp_intr.h"
-#include "soc/dport_reg.h"
-#include <math.h>
+#include "freertos/timers.h"
 
-class esp32can : public canbus
+class ovms_led
   {
-  public:
-    esp32can(const char* name, int txpin, int rxpin);
-    ~esp32can();
 
   public:
-    esp_err_t Start(CAN_mode_t mode, CAN_speed_t speed);
-    esp_err_t Stop();
+    ovms_led(const char * name, int pin, int defaultState=0 );
+    ~ovms_led();
 
-  public:
-    esp_err_t Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
-    void TxCallback(CAN_frame_t* p_frame, bool success);
+    void Set( int state );
+    void SetDefaultState( int defaultState );
+    void Blink( int onDuration, int offDuration=-1, int count=1, int burstCount=1, int interBurstInterval=1000 );
 
-  public:
-    void SetPowerMode(PowerMode powermode);
-
-  public:
-    gpio_num_t m_txpin;               // TX pin
-    gpio_num_t m_rxpin;               // RX pin
+    void SetState( int state );
+    int pin;
+  	int transitions;
+    int blink_state;
+  	int state;
+  	int default_state;
+    int count;
+    int burst_count;
+    int inter_burst_interval;
+    int on_duration, off_duration;
+    TimerHandle_t m_timer;
   };
 
-#endif //#ifndef __ESP32CAN_H__
+#endif //#ifndef __OVMS_LED_H__
+

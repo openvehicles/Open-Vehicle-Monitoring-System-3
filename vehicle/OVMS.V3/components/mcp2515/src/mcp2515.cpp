@@ -45,17 +45,16 @@ static void MCP2515_isr(void *pvParameters)
   me->m_status.interrupts++;
 
   // we don't know the IRQ source and querying by SPI is too slow for an ISR,
-  // so we let RxCallback() figure out what to do
-
+  // so we let AsynchronousInterruptHandler() figure out what to do. 
   CAN_queue_msg_t msg;
-  msg.type = CAN_rxcallback;
+  msg.type = CAN_asyncinterrupthandler;
   msg.body.bus = me;
 
   //send callback request to main CAN processor task
   xQueueSendFromISR(MyCan.m_rxqueue,&msg,0);
   }
 
-mcp2515::mcp2515(const char* name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin, int intpin)
+mcp2515::mcp2515(const char* name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin, int intpin, bool hw_cs /*=true*/)
   : canbus(name)
   {
   m_spibus = spibus;
@@ -70,7 +69,14 @@ mcp2515::mcp2515(const char* name, spi* spibus, spi_nodma_host_device_t host, in
   m_devcfg.command_bits=0;
   m_devcfg.address_bits=0;
   m_devcfg.dummy_bits=0;
-  m_devcfg.spics_io_num=m_cspin;
+  if (hw_cs)
+    m_devcfg.spics_io_num=m_cspin;
+  else
+    {
+    // use software CS for this mcp2515
+    m_devcfg.spics_io_num=-1;
+    m_devcfg.spics_ext_io_num=m_cspin;
+    }
   m_devcfg.queue_size=7;                    // We want to be able to queue 7 transactions at a time
 
   esp_err_t ret = spi_nodma_bus_add_device(m_host, &m_spibus->m_buscfg, &m_devcfg, &m_spi);
@@ -87,7 +93,48 @@ mcp2515::mcp2515(const char* name, spi* spibus, spi_nodma_host_device_t host, in
 mcp2515::~mcp2515()
   {
   gpio_isr_handler_remove((gpio_num_t)m_intpin);
+  spi_nodma_bus_remove_device(m_spi);
   }
+
+
+esp_err_t mcp2515::WriteReg( uint8_t reg, uint8_t value )
+  {
+  uint8_t buf[16];
+  m_spibus->spi_cmd(m_spi, buf, 0, 3, CMD_WRITE, reg, value);
+  return ESP_OK;
+  }
+
+esp_err_t mcp2515::WriteRegAndVerify( uint8_t reg, uint8_t value, uint8_t read_back_mask )
+  {
+  uint8_t buf[16];
+  uint8_t * rcvbuf;
+  uint16_t timeout = 0;
+
+  rcvbuf = m_spibus->spi_cmd(m_spi, buf, 1, 2, CMD_READ, reg);
+  uint8_t origval = rcvbuf[0];
+  ESP_LOGD(TAG, "%s: Set register (0x%02x val 0x%02x->0x%02x)", this->GetName(), reg, origval, value);
+
+  WriteReg( reg, value );
+
+  // verify that register is actually changed by reading it back. 
+  do 
+    {
+    vTaskDelay(10 / portTICK_PERIOD_MS);
+
+    rcvbuf = m_spibus->spi_cmd(m_spi, buf, 1, 2, CMD_READ, reg);
+    rcvbuf[0] &= read_back_mask; // we check for consistency only these bits (we couldn't change some read-only bits)
+    ESP_LOGD(TAG, "%s:  - read register (0x%02x : 0x%02x)", this->GetName(), reg, rcvbuf[0]);
+    timeout += 10;
+    } while ( (rcvbuf[0] != value) && (timeout < MCP2515_TIMEOUT) );
+
+  if (timeout >= MCP2515_TIMEOUT) 
+    {
+    ESP_LOGE(TAG, "%s: Could not set register (0x%02x to val 0x%02x)", this->GetName(), reg, value);
+    return ESP_FAIL;
+    }
+  return ESP_OK;
+  }
+
 
 esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   {
@@ -101,18 +148,17 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   m_spibus->spi_cmd(m_spi, buf, 0, 1, CMD_RESET);
   vTaskDelay(50 / portTICK_PERIOD_MS);
 
+  // CANINTE (interrupt enable), disable all interrupts during configuration
+  WriteRegAndVerify(REG_CANINTE, 0b00000000);
+
   // Set CONFIG mode (abort transmisions, one-shot mode, clkout disabled)
-  m_spibus->spi_cmd(m_spi, buf, 0, 3, CMD_WRITE, 0x0f, 0b10011000);
-  vTaskDelay(50 / portTICK_PERIOD_MS);
+  WriteReg(REG_CANCTRL, 0b10011000);
 
   // Rx Buffer 0 control (receive all and enable buffer 1 rollover)
-  m_spibus->spi_cmd(m_spi, buf, 0, 3, CMD_WRITE, 0x60, 0b01100100);
-
-  // CANINTE (interrupt enable), all interrupts
-  m_spibus->spi_cmd(m_spi, buf, 0, 3, CMD_WRITE, 0x2b, 0b11111111);
+  WriteRegAndVerify(REG_RXB0CTRL, 0b01100100, 0b01101101);
 
   // BFPCTRL RXnBF PIN CONTROL AND STATUS
-  m_spibus->spi_cmd(m_spi, buf, 0, 3, CMD_WRITE, 0x0c,  0b00001100);
+  WriteRegAndVerify(REG_BFPCTRL, 0b00001100);
 
   // Bus speed
   uint8_t cnf1 = 0;
@@ -121,7 +167,10 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   switch (m_speed)
     {
     case CAN_SPEED_33KBPS:
-      cnf1=0x09; cnf2=0xbe; cnf3=0x07;
+      // Recommended SWCAN settings according to GMLAN specs (GMW3089): SJW=2 and Sample Point = 86,67%
+      cnf1=0x4f; // SJW=2, BRP=15
+      cnf2=0xad; // BTLMODE=1, SAM=0,  PHSEG1=5 (6 Tq), PRSEG=5 (6 Tq) 
+      cnf3=0x81; // SOF=1, WAKFIL=0, PHSEG2=1 (2 tQ)
       break;
     case CAN_SPEED_83KBPS:
       cnf1=0x03; cnf2=0xbe; cnf3=0x07;
@@ -142,19 +191,67 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
       cnf1=0x00; cnf2=0xd0; cnf3=0x82;
       break;
     }
-  m_spibus->spi_cmd(m_spi, buf, 0, 5, CMD_WRITE, 0x28, cnf3, cnf2, cnf1);
+  m_spibus->spi_cmd(m_spi, buf, 0, 5, CMD_WRITE, REG_CNF3, cnf3, cnf2, cnf1); 
 
   // Active/Listen Mode
+  uint8_t ret;
   if (m_mode == CAN_MODE_LISTEN)
-    m_spibus->spi_cmd(m_spi, buf, 0, 3, CMD_WRITE, 0x0f, 0b01100000);
+    ret=ChangeMode(CANSTAT_MODE_LISTEN);
   else
-    m_spibus->spi_cmd(m_spi, buf, 0, 3, CMD_WRITE, 0x0f, 0x00);
+    ret=ChangeMode(CANSTAT_MODE_NORMAL);
+  if (ret != ESP_OK)
+      return ESP_FAIL;
+
+  m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, REG_CANCTRL, CANSTAT_OSM | CANSTAT_ABAT, 0);
+
+  // finally verify configuration registers
+  uint8_t * rcvbuf = m_spibus->spi_cmd(m_spi, buf, 3, 2, CMD_READ, REG_CNF3);
+  if ( (cnf1!=rcvbuf[2]) or (cnf2!=rcvbuf[1]) or (cnf3!=rcvbuf[0]) )
+    {
+    ESP_LOGE(TAG, "%s: could not change configuration registers! (read CNF 0x%02x 0x%02x 0x%02x)", this->GetName(),
+      rcvbuf[2], rcvbuf[1], rcvbuf[0]);
+    return ESP_FAIL;
+    }
+
+  // CANINTE (interrupt enable), all interrupts
+  WriteReg(REG_CANINTE, 0b11111111);
 
   // And record that we are powered on
   pcp::SetPowerMode(On);
 
   return ESP_OK;
   }
+
+
+esp_err_t mcp2515::ChangeMode( uint8_t mode ) 
+  {
+  uint8_t buf[16];
+  uint8_t * rcvbuf;
+  uint16_t timeout = 0;
+
+  ESP_LOGD(TAG, "%s: Change op mode to 0x%02x", this->GetName(), mode);
+
+  m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, REG_CANCTRL, 0b11100000, mode);
+
+  // verify that mode is changed by polling CANSTAT register
+  do 
+    {
+    vTaskDelay(20 / portTICK_PERIOD_MS);
+
+    rcvbuf = m_spibus->spi_cmd(m_spi, buf, 1, 2, CMD_READ, REG_CANSTAT);
+    ESP_LOGD(TAG, "%s:  read CANSTAT register (0x%02x : 0x%02x)", this->GetName(), REG_CANSTAT, rcvbuf[0]);
+    timeout += 20;
+
+    } while ( ((rcvbuf[0] & 0b11100000) != mode) && (timeout < MCP2515_TIMEOUT) );
+
+  if (timeout >= MCP2515_TIMEOUT) 
+    {
+    ESP_LOGE(TAG, "%s: Could not change mode to 0x%02x", this->GetName(), mode);
+    return ESP_FAIL;
+    }
+  return ESP_OK;
+  }
+
 
 esp_err_t mcp2515::Stop()
   {
@@ -164,17 +261,41 @@ esp_err_t mcp2515::Stop()
 
   // RESET command
   m_spibus->spi_cmd(m_spi, buf, 0, 1, CMD_RESET);
-  vTaskDelay(10 / portTICK_PERIOD_MS);
+  vTaskDelay(50 / portTICK_PERIOD_MS);
 
   // BFPCTRL RXnBF PIN CONTROL AND STATUS
-  m_spibus->spi_cmd(m_spi, buf, 0, 3, CMD_WRITE, 0x0c, 0b00111100);
+  WriteRegAndVerify(REG_BFPCTRL, 0b00111100);
 
   // Set SLEEP mode
-  m_spibus->spi_cmd(m_spi, buf, 0, 3, CMD_WRITE, 0x0f, 0x30);
+  ChangeMode(CANSTAT_MODE_SLEEP);
 
   // And record that we are powered down
   pcp::SetPowerMode(Off);
 
+  return ESP_OK;
+  }
+
+esp_err_t mcp2515::ViewRegisters() 
+  {
+  uint8_t buf[16];
+  uint8_t cnf[3];
+  // fetch configuration registers
+  uint8_t * rcvbuf = m_spibus->spi_cmd(m_spi, buf, 8, 2, CMD_READ, REG_CNF3);
+  cnf[0] = rcvbuf[2];
+  cnf[1] = rcvbuf[1];
+  cnf[2] = rcvbuf[0];
+  ESP_LOGI(TAG, "%s: configuration registers: CNF 0x%02x 0x%02x 0x%02x", this->GetName(),
+      cnf[0], cnf[1], cnf[2]);
+  ESP_LOGI(TAG, "%s: CANINTE 0x%02x CANINTF 0x%02x EFLG 0x%02x CANSTAT 0x%02x CANCTRL 0x%02x", this->GetName(),
+      rcvbuf[3], rcvbuf[4], rcvbuf[5], rcvbuf[6], rcvbuf[7]);
+  // read error counters
+  rcvbuf = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, REG_TEC);
+  uint8_t errors_tx = rcvbuf[0];
+  uint8_t errors_rx = rcvbuf[1];
+  ESP_LOGI(TAG, "%s: tx_errors: 0x%02x. rx_errors: 0x%02x", this->GetName(),
+      errors_tx, errors_rx);
+  rcvbuf = m_spibus->spi_cmd(m_spi, buf, 1, 2, CMD_READ, REG_BFPCTRL);
+  ESP_LOGI(TAG, "%s: BFPCTRL 0x%02x", this->GetName(), rcvbuf[0]);
   return ESP_OK;
   }
 
@@ -238,12 +359,16 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=
   return ESP_OK;
   }
 
-bool mcp2515::RxCallback(CAN_frame_t* frame)
+// This function serves as asynchronous interrupt handler for both rx and tx tasks as well as error states
+// Returns true if this function needs to be called again (another frame may need handling or all error interrupts are not yet handled)
+bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameReceived)
   {
   uint8_t buf[16];
 
+  *frameReceived = false;
+
   // read interrupts (CANINTF 0x2c) and errors (EFLG 0x2d):
-  uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, 0x2c);
+  uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, REG_CANINTF);
   uint8_t intstat = p[0];
   uint8_t errflag = p[1];
 
@@ -300,6 +425,7 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
     frame->FIR.B.DLC = p[4] & 0x0f;
 
     memcpy(&frame->data,p+5,8);
+    *frameReceived=true;
     }
 
   // handle other interrupts that came in at the same time:
@@ -310,8 +436,16 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
     m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intstat & 0b00011100, 0x00);
     m_status.error_flags |= 0x0100;
 
-    if(xQueueReceive(m_txqueue, (void*)frame, 0) == pdTRUE)  // if any queued for later?
+    // send "tx success" callback request to main CAN processor task
+    CAN_queue_msg_t msg;
+    msg.type = CAN_txcallback;
+    msg.body.bus = this;
+    msg.body.frame = tx_frame;
+    xQueueSend(MyCan.m_rxqueue,&msg,0);
+
+    if(xQueueReceive(m_txqueue, (void*)frame, 0) == pdTRUE)  { // if any queued for later?
       Write(frame, 0);  // if so, send one
+      }
     }
 
   if (intstat & 0b11100000)
@@ -330,7 +464,17 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
       m_status.error_flags |= 0x0400;
       }
     // read error counters:
-    uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, 0x1c);
+    uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, REG_TEC);
+    if ( (intstat & 0b10000000) && (p[0] > m_status.errors_tx) )
+      {
+      ESP_LOGE(TAG, "AsynchronousInterruptHandler: error while sending frame. msgId 0x%x", tx_frame.MsgID);
+      // send "tx failed" callback request to main CAN processor task
+      CAN_queue_msg_t msg;
+      msg.type = CAN_txfailedcallback;
+      msg.body.bus = this;
+      msg.body.frame = tx_frame;
+      xQueueSend(MyCan.m_rxqueue,&msg,0);
+      }
     m_status.errors_tx = p[0];
     m_status.errors_rx = p[1];
 
@@ -342,20 +486,28 @@ bool mcp2515::RxCallback(CAN_frame_t* frame)
   if (errflag & 0b11000000)
     {
     m_status.error_flags |= 0x0800;
-    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2d, errflag & 0b11000000, 0x00);
+    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, REG_EFLG, errflag & 0b11000000, 0x00);
+    }
+  if ( (intstat & 0b10100000) && (errflag & 0b00111111) )
+    {
+    ESP_LOGW(TAG, "%s EFLG: %s%s%s%s%s%s", this->GetName(),
+      (errflag & 0b00100000) ? "Bus-off " : "",
+      (errflag & 0b00010000) ? "TX_Err_Passv " : "",
+      (errflag & 0b00001000) ? "RX_Err_Passv " : "",
+      (errflag & 0b00000100) ? "TX_Err_Warn " : "",
+      (errflag & 0b00000010) ? "RX_Err_Warn " : "",
+      (errflag & 0b00000001) ? "EWARN " : "" );
     }
 
   // clear error & wakeup interrupts:
   if (intstat & 0b11100000)
     {
     m_status.error_flags |= 0x1000;
-    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, 0x2c, intstat & 0b11100000, 0x00);
+    m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, REG_CANINTF, intstat & 0b11100000, 0x00);
     }
 
-  if(intflag & 0b00000011)   //  did we receive anything?
-    return true;
-  else
-    return false;
+  // Read the interrupt pin status and if it's still active (low), require another interrupt handling iteration
+  return !gpio_get_level((gpio_num_t)m_intpin);
   }
 
 void mcp2515::SetPowerMode(PowerMode powermode)
@@ -364,6 +516,7 @@ void mcp2515::SetPowerMode(PowerMode powermode)
   switch (powermode)
     {
     case  On:
+      ESP_LOGI(TAG, "%s: SetPowerMode on", this->GetName());
       if (m_mode != CAN_MODE_OFF)
         {
         Start(m_mode, m_speed);
@@ -372,6 +525,7 @@ void mcp2515::SetPowerMode(PowerMode powermode)
     case Sleep:
     case DeepSleep:
     case Off:
+      ESP_LOGI(TAG, "%s: SetPowerMode off", this->GetName());
       Stop();
       break;
     default:

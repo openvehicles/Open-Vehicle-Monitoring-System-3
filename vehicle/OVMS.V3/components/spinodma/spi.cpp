@@ -75,17 +75,23 @@ uint8_t* spi::spi_cmd(spi_nodma_device_handle_t spi, uint8_t* buf, int rxlen, in
   spi_nodma_transaction_t t;
   memset(&t, 0, sizeof(t));       //Zero out the transaction
   t.length=(txlen+rxlen)*8;       // Transmit length (in bits)
-  t.rxlength=(rxlen*8);           // Receive length (in bits)
+  // We are using spi_master_no_dma in full-duplex mode (even if below we return only the part received after transmitted bytes == half-duplex),
+  // so here we configure the library to copy all the data SPI registers during transaction (full-duplex)
+  t.rxlength=(txlen+rxlen)*8;   // Receive length (in bits) 
   t.tx_buffer=buf;                // Buffer to send
   t.rx_buffer=buf;                // Buffer to receive
   t.user=(void*)0;                // D/C needs to be set to 0
   if (LockBus(portMAX_DELAY))
     {
+    if (spi->cfg.spics_io_num == -1) // use software CS
+      spi_nodma_device_select(spi,0);
     ret=spi_nodma_device_transmit(spi, &t, portMAX_DELAY);  // Transmit!
+    if (spi->cfg.spics_io_num == -1) // use software CS
+      spi_nodma_device_deselect(spi);
     assert(ret==ESP_OK);            // Should have had no issues.
     UnlockBus();
     }
-  return buf + txlen;
+  return buf + txlen; // return only the data received after tx (half-duplex)
   }
 
 esp_err_t spi::spi_deselect(spi_nodma_device_handle_t spi)

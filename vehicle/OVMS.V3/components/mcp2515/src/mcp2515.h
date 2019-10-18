@@ -46,23 +46,56 @@
 #define CMD_LOAD_TXBUF    0b01000000
 #define CMD_READ_STATUS   0b10100000
 
+// CANSTAT register
+#define CANSTAT_MODE_CONFIG     0x10000000
+#define CANSTAT_MODE_LISTEN     0b01100000
+#define CANSTAT_MODE_LOOPBACK   0b01000000
+#define CANSTAT_MODE_SLEEP      0b00100000
+#define CANSTAT_MODE_NORMAL     0b00000000
+#define CANSTAT_ABAT            0b00010000  // Abort All Pending Transmissions bit
+#define CANSTAT_OSM             0b00001000  // One shot mode bit
+#define CANSTAT_CLKEN           0b00000100  // CLKOUT pin enable bit
+
+
+// Configuration Registers
+#define REG_CANSTAT         0x0E
+#define REG_CANCTRL         0x0F
+#define REG_BFPCTRL         0x0C
+#define REG_TEC             0x1C
+#define REG_REC             0x1D
+#define REG_CNF3            0x28
+#define REG_CNF2            0x29
+#define REG_CNF1            0x2A
+#define REG_CANINTE         0x2B
+#define REG_CANINTF         0x2C
+#define REG_EFLG            0x2D
+#define REG_TXRTSCTRL       0x0D
+
+#define REG_RXB0CTRL        0x60
+
+#define MCP2515_TIMEOUT     100 // milliseconds
+
 
 class mcp2515 : public canbus
   {
   public:
-    mcp2515(const char* name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin, int intpin);
+    mcp2515(const char* name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin, int intpin, bool hw_cs=true);
     ~mcp2515();
 
   public:
     esp_err_t Start(CAN_mode_t mode, CAN_speed_t speed);
     esp_err_t Stop();
+    esp_err_t WriteReg( uint8_t reg, uint8_t value );
+    esp_err_t WriteRegAndVerify( uint8_t reg, uint8_t value, uint8_t read_back_mask = 0xff);
+    esp_err_t ChangeMode( uint8_t mode );
+    esp_err_t ViewRegisters();
 
   public:
     esp_err_t Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
-    virtual bool RxCallback(CAN_frame_t* frame);
+    bool AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameReceived);
 
   public:
-    virtual void SetPowerMode(PowerMode powermode);
+    void SetPowerMode(PowerMode powermode);
 
   public:
     spi* m_spibus;

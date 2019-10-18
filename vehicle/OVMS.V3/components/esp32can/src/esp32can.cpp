@@ -99,6 +99,7 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
     CAN_queue_msg_t msg;
     msg.type = CAN_txcallback;
     msg.body.bus = me;
+    msg.body.frame = me->tx_frame;
     xQueueSendFromISR(MyCan.m_rxqueue, &msg, 0);
     }
 
@@ -333,8 +334,10 @@ esp_err_t esp32can::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*
   return ESP_OK;
   }
 
-void esp32can::TxCallback()
+void esp32can::TxCallback(CAN_frame_t* p_frame, bool success)
   {
+  canbus::TxCallback(p_frame, success);
+
   // TX buffer has become available; send next queued frame (if any):
   CAN_frame_t frame;
   if (xQueueReceive(m_txqueue, (void*)&frame, 0) == pdTRUE)
