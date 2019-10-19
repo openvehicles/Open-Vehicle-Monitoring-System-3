@@ -805,9 +805,9 @@ void can::IncomingFrame(CAN_frame_t* p_frame)
   {
   p_frame->origin->m_status.packets_rx++;
   p_frame->origin->m_watchdog_timer = monotonictime;
-  p_frame->origin->LogFrame(CAN_LogFrame_RX, p_frame);
 
   ExecuteCallbacks(p_frame, false, true /*ignored*/);
+  p_frame->origin->LogFrame(CAN_LogFrame_RX, p_frame);
   NotifyListeners(p_frame, false);
   }
 
