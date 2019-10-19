@@ -131,7 +131,7 @@ void powermgmt::WebCleanup()
   c.fieldset_end();
 
 #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
-  c.input("number", "Delay before GSM modem is turned off", "modemoff_delay", modemoff_delay.c_str(), 
+  c.input("number", "Delay before SIMCOM modem is turned off", "modemoff_delay", modemoff_delay.c_str(), 
     "Default: " STR(POWERMGMT_MODEMOFF_DELAY) " hours",
     "<p>0 = disabled</p>",
     "min=\"1\" step=\"1\"", "hours");
@@ -143,7 +143,7 @@ void powermgmt::WebCleanup()
     "min=\"1\" step=\"1\"", "hours");
 
   c.input("number", "Delay before OVMS is shut down (after initial 12V battery level alert)", "12v_shutdown_delay", b12v_shutdown_delay.c_str(), 
-    "Default: " STR(POWERMGMT_12V_SHUTDOWN_DELAY) " hours",
+    "Default: " STR(POWERMGMT_12V_SHUTDOWN_DELAY) " minutes",
     "<p>If 12V battery is depleted under certain threshold, an alarm is set. OVMS waits this time period during which user can begin charging the batteries. "
     "If this period is exceeded without canceled alarm, OVMS will be shut down to prevent further battery depletion.</p>",
     "min=\"1\" step=\"1\"", "minutes");

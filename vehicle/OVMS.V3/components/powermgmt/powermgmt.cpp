@@ -98,14 +98,14 @@ void powermgmt::Ticker1(std::string event, void* data)
 #ifdef CONFIG_OVMS_COMP_WIFI
       if (m_wifi_off)
         {
-        MyPeripherals->m_esp32wifi->SetPowerMode(Off);
+        MyPeripherals->m_esp32wifi->SetPowerMode(On);
         m_wifi_off = false;
         }
 #endif
 #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
       if (m_modem_off)
         {
-        MyPeripherals->m_simcom->SetPowerMode(Off);
+        MyPeripherals->m_simcom->SetPowerMode(On);
         m_modem_off = false;
         }
 #endif
