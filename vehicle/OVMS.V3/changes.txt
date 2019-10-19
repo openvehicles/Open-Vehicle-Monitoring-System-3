@@ -44,6 +44,11 @@ Open Vehicle Monitor System v3 - Change log
   New metrics:
     xrt.cfg.applied   -- yes = tuning has been applied to SEVCON
     xrt.cfg.ws        -- tuning profile loaded into working set
+- Powermgmt: New automatic power management module
+  Configuration via Web UI
+  Switch off SIMCOM and WiFi after certain (configurable) time period of idling/non-charging of 12V battery has lapsed.
+  Turn on previously switched off modules if 12V charging is initiated.
+  If 12V battery alert is received, shut down all the modules and OVMS after certain configurable grace period (default 30 minutes)
 
 2019-09-19 MWJ  3.2.005  OTA release
 - Default module/debug.tasks to FALSE
