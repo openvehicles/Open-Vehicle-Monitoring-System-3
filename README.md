@@ -42,8 +42,9 @@ provides data logging to SD card and to a server.
 ## Vehicle Support
 
 - _Native Integration_
+  - Chevrolet Volt / Opel Ampera
   - [Fiat 500e](https://docs.openvehicles.com/en/latest/components/vehicle_fiat500/docs/index.html)
-  - [Kia e-Niro](https://docs.openvehicles.com/en/latest/components/vehicle_kianiroev/docs/index.html)
+  - [Kia e-Niro / Hyundai Kona](https://docs.openvehicles.com/en/latest/components/vehicle_kianiroev/docs/index.html)
   - [Kia Soul EV](https://docs.openvehicles.com/en/latest/components/vehicle_kiasoulev/docs/index.html)
   - [Mitsubishi Trio (i-MiEV et 
   al)](https://docs.openvehicles.com/en/latest/components/vehicle_mitsubishi/docs/index.html)
@@ -55,10 +56,12 @@ provides data logging to SD card and to a server.
   (453)](https://docs.openvehicles.com/en/latest/components/vehicle_smarteq/docs/index.html)
   - [Tesla Model S](https://docs.openvehicles.com/en/latest/components/vehicle_teslamodels/docs/index.html)
   - [Tesla Roadster](https://docs.openvehicles.com/en/latest/components/vehicle_teslaroadster/docs/index.html)
+  - Think City
 - _General Support_
   - [DBC File Based](https://docs.openvehicles.com/en/latest/components/vehicle_dbc/docs/index.html)
-  - [OBD-II Standard](https://docs.openvehicles.com/en/latest/components/vehicle_obdii/docs/index.html)
   - [GPS Tracking](https://docs.openvehicles.com/en/latest/components/vehicle_track/docs/index.html)
+  - [OBD-II Standard](https://docs.openvehicles.com/en/latest/components/vehicle_obdii/docs/index.html)
+  - Zeva BMS
 
 
 ## Links
