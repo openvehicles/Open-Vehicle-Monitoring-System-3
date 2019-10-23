@@ -13,6 +13,11 @@ If you have console command access, a factory reset can be accomplished with thi
 
 That command will erase all configuration store, and reboot to an empty configuration.
 
+Note: to issue this command from the web shell or a remote shell (App, Server, …), you need
+to skip the confirmation step by adding the option ``-noconfirm``, i.e.::
+
+  OVMS# module factory reset -noconfirm
+
 If you don’t have console access, you can perform a factory reset by placing an empty file named “factoryreset.txt” in the root directory of an SD card and insert that SD into the (running) module. The file will be deleted and the module will reboot within about 30 seconds.
 
 If you don’t have console access (lost module password) and don’t have an SD card, you can perform a factory reset of the configuration store using the esptool.py tool from the Espressif ESP-IDF toolkit::
