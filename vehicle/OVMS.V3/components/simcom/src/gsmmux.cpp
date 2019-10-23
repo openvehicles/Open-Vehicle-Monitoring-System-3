@@ -137,7 +137,7 @@ void GsmMuxChannel::ProcessFrame(uint8_t* frame, size_t length, size_t iframepos
   {
   // Note the <length> provided excludes the start byte, stop byte, and checksum
   // The <frame> pointer itself points to the byte after the start byte
-  ESP_LOGV(TAG, "ChanProcessFrame(CHAN=%d, ADDR=%02x, CTRL=%02x, LEN=%d, IFP=%d)", m_channel, frame[0], frame[1], length, iframepos);
+  //ESP_LOGV(TAG, "ChanProcessFrame(CHAN=%d, ADDR=%02x, CTRL=%02x, LEN=%d, IFP=%d)", m_channel, frame[0], frame[1], length, iframepos);
   switch (m_state)
     {
     case ChanClosed:
@@ -266,6 +266,7 @@ void GsmMux::Process(OvmsBuffer* buf)
       {
       // Overflow frame
       ESP_LOGW(TAG, "Frame overflow (%d bytes)",m_framesize);
+      MyCommandApp.HexDump(TAG, "Frame head", (const char*)m_frame, 8*16);
       m_framepos = 0;
       m_framelen = 0;
       m_framemorelen = false;
@@ -275,7 +276,6 @@ void GsmMux::Process(OvmsBuffer* buf)
     uint8_t b = buf->Pop();
     if ((m_framepos == 0)&&(b != GSM0_SOF))
       {
-      m_framingerrors++;
       continue; // Skip to start of frame
       }
     if ((m_framepos == 1)&&(b == GSM0_SOF)) continue; // We found end of previous frame, so just skip it
@@ -305,10 +305,26 @@ void GsmMux::Process(OvmsBuffer* buf)
       m_framemorelen = false;
       // ESP_LOGI(TAG, "Frame length (second byte) = %d",m_framelen);
       }
-    if ((m_framepos == m_framelen)&&(b == GSM0_SOF))
+    if (m_framepos == m_framelen)
       {
-      // We have a complete frame...
-      ProcessFrame();
+      if (b == GSM0_SOF)
+        {
+        // We have a complete frame...
+        ProcessFrame();
+        }
+      else
+        {
+        // Frame error:
+        int channel = m_frame[1] >> 2;
+        ESP_LOGW(TAG, "Frame error: EOF mismatch (CHAN=%d, ADDR=%02x, CTRL=%02x, FCS=%02x, LEN=%d)",
+          channel, m_frame[1], m_frame[2], m_frame[m_framelen-2], m_framelen);
+        MyCommandApp.HexDump(TAG, "Frame dump", (const char*)m_frame, m_framelen);
+        // find next frame:
+        m_framepos = 0;
+        m_framelen = 0;
+        m_framemorelen = false;
+        m_framingerrors++;
+        }
       }
     }
   }
@@ -335,7 +351,6 @@ void GsmMux::ProcessFrame()
   GsmMuxChannel* chan = m_channels[channel];
   if (chan)
     {
-    m_framingerrors = 0;
     m_lastgoodrxframe = monotonictime;
     m_rxframecount++;
     chan->ProcessFrame(m_frame+1,m_framelen-3,m_frameipos-1);

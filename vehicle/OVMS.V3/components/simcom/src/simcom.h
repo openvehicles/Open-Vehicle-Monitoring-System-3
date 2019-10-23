@@ -33,6 +33,7 @@
 
 #include "gsmpppos.h"
 #include "gsmnmea.h"
+#include "ovms.h"
 #include "pcp.h"
 #include "ovms_events.h"
 #include "gsmmux.h"
@@ -132,6 +133,8 @@ class simcom : public pcp, public InternalRamAllocated
     int          m_line_unfinished;
     std::string  m_line_buffer;
     bool         m_pincode_required;
+    int          m_err_fifo_ovf;
+    int          m_err_buffer_full;
 
   protected:
     void SetState1(SimcomState1 newstate);
