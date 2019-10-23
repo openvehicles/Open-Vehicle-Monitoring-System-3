@@ -33,6 +33,7 @@
 
 #include <vector>
 #include <unistd.h>
+#include "ovms.h"
 #include "ovms_buffer.h"
 
 class simcom; // Forward declared
@@ -45,7 +46,7 @@ class GsmMux; // Forward declared
 #define GSM_MUX_CHAN_POLL 3
 #define GSM_MUX_CHAN_CMD  4
 
-class GsmMuxChannel
+class GsmMuxChannel : public InternalRamAllocated
   {
   public:
     GsmMuxChannel(GsmMux* mux, int channel, size_t buffersize);
@@ -70,7 +71,7 @@ class GsmMuxChannel
     OvmsBuffer m_buffer;
   };
 
-class GsmMux
+class GsmMux : public InternalRamAllocated
   {
   public:
     GsmMux(simcom* modem, size_t maxframesize = 2048);

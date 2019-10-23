@@ -85,6 +85,7 @@ static void SIMCOM_task(void *pvParameters)
 void simcom::Task()
   {
   SimcomOrUartEvent event;
+  uint8_t data[128];
 
   for(;;)
     {
@@ -100,11 +101,10 @@ void simcom::Task()
             size_t buffered_size = event.uart.size;
             while (buffered_size > 0)
               {
-              uint8_t data[16];
-              if (buffered_size>16) buffered_size = 16;
+              if (buffered_size>sizeof(data)) buffered_size = sizeof(data);
               int len = uart_read_bytes(m_uartnum, (uint8_t*)data, buffered_size, 100 / portTICK_RATE_MS);
               m_buffer.Push(data,len);
-              MyCommandApp.HexDump(TAG, "rx", (const char*)data, len);
+              //MyCommandApp.HexDump(TAG, "rx", (const char*)data, len);
               uart_get_buffered_data_len(m_uartnum, &buffered_size);
               SimcomState1 newstate = State1Activity();
               if ((newstate != m_state1)&&(newstate != None)) SetState1(newstate);
@@ -113,15 +113,28 @@ void simcom::Task()
             break;
           case UART_FIFO_OVF:
             uart_flush(m_uartnum);
+            m_err_fifo_ovf++;
+            ESP_LOGW(TAG, "UART hw fifo overflow");
             break;
           case UART_BUFFER_FULL:
             uart_flush(m_uartnum);
+            m_err_buffer_full++;
+            ESP_LOGW(TAG, "UART ring buffer full");
             break;
           case UART_BREAK:
+            ESP_LOGD(TAG, "UART rx break");
+            break;
           case UART_PARITY_ERR:
+            ESP_LOGW(TAG, "UART parity check error");
+            break;
           case UART_FRAME_ERR:
+            ESP_LOGW(TAG, "UART frame error");
+            break;
           case UART_PATTERN_DET:
+            ESP_LOGD(TAG, "UART pattern detected");
+            break;
           default:
+            ESP_LOGD(TAG, "UART unknown event type: %d", event.uart.type);
             break;
           }
         }
@@ -163,6 +176,9 @@ simcom::simcom(const char* name, uart_port_t uartnum, int baud, int rxpin, int t
   m_line_unfinished = -1;
   m_line_buffer.clear();
   m_pincode_required = false;
+  m_err_fifo_ovf = 0;
+  m_err_buffer_full = 0;
+
   StartTask();
 
   using std::placeholders::_1;
@@ -210,6 +226,11 @@ void simcom::SupportSummary(OvmsWriter* writer)
   writer->printf("    Ticker: %d\n    User Data: %d\n",
     m_state1_ticker,
     m_state1_userdata);
+  writer->printf(
+    "    HW FIFO overflows: %d\n"
+    "    Buffer overflows: %d\n"
+    , m_err_fifo_ovf
+    , m_err_buffer_full);
 
   if (m_state1_timeout_goto != None)
     {
@@ -276,13 +297,13 @@ void simcom::StartTask()
     // Set UART parameters
     uart_param_config(m_uartnum, &uart_config);
 
-    // Install UART driver, and get the queue.
-    uart_driver_install(m_uartnum, SIMCOM_BUF_SIZE * 2, SIMCOM_BUF_SIZE * 2, 10, &m_queue, 0);
-
     // Set UART pins
     uart_set_pin(m_uartnum, m_txpin, m_rxpin, 0, 0);
 
-    xTaskCreatePinnedToCore(SIMCOM_task, "OVMS SIMCOM", 4096, (void*)this, 5, &m_task, CORE(1));
+    // Install UART driver, and get the queue.
+    uart_driver_install(m_uartnum, SIMCOM_BUF_SIZE * 2, SIMCOM_BUF_SIZE * 2, 50, &m_queue, ESP_INTR_FLAG_LEVEL3);
+
+    xTaskCreatePinnedToCore(SIMCOM_task, "OVMS SIMCOM", 4096, (void*)this, 20, &m_task, CORE(1));
     }
   }
 
@@ -1128,6 +1149,11 @@ void simcom_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     writer->printf("  Ticker: %d\n  User Data: %d\n",
       MyPeripherals->m_simcom->m_state1_ticker,
       MyPeripherals->m_simcom->m_state1_userdata);
+    writer->printf(
+      "  HW FIFO overflows: %d\n"
+      "  Buffer overflows: %d\n"
+      , MyPeripherals->m_simcom->m_err_fifo_ovf
+      , MyPeripherals->m_simcom->m_err_buffer_full);
 
     if (MyPeripherals->m_simcom->m_state1_timeout_goto != simcom::None)
       {

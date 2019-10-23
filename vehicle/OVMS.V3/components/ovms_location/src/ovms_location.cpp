@@ -680,7 +680,7 @@ void OvmsLocations::ReloadMap()
     }
 
   // Reverse search, go through existing locations looking for those to delete
-  for (LocationMap::iterator it=m_locations.begin(); it!=m_locations.end(); ++it)
+  for (LocationMap::iterator it=m_locations.begin(); it!=m_locations.end();)
     {
     auto k = p->m_map.find(it->first);
     if (k == p->m_map.end())
@@ -688,7 +688,11 @@ void OvmsLocations::ReloadMap()
       // Location no longer exists
       // ESP_LOGI(TAG, "Location %s is removed",it->first.c_str());
       delete it->second;
-      m_locations.erase(it);
+      it = m_locations.erase(it);
+      }
+    else
+      {
+      it++;
       }
     }
 

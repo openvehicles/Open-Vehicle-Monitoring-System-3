@@ -610,12 +610,12 @@ void can::RemoveLoggers()
   {
   OvmsMutexLock lock(&m_loggermap_mutex);
 
-  for (canlog_map_t::iterator it=m_loggermap.begin(); it!=m_loggermap.end(); ++it)
+  for (canlog_map_t::iterator it=m_loggermap.begin(); it!=m_loggermap.end();)
     {
     it->second->Close();
     vTaskDelay(pdMS_TO_TICKS(100)); // give logger task time to finish
     delete it->second;
-    m_loggermap.erase(it);
+    it = m_loggermap.erase(it);
     }
   }
 
@@ -676,12 +676,12 @@ void can::RemovePlayers()
   {
   OvmsMutexLock lock(&m_playermap_mutex);
 
-  for (canplay_map_t::iterator it=m_playermap.begin(); it!=m_playermap.end(); ++it)
+  for (canplay_map_t::iterator it=m_playermap.begin(); it!=m_playermap.end();)
     {
     it->second->Close();
     vTaskDelay(pdMS_TO_TICKS(100)); // give logger task time to finish
     delete it->second;
-    m_playermap.erase(it);
+    it = m_playermap.erase(it);
     }
   }
 

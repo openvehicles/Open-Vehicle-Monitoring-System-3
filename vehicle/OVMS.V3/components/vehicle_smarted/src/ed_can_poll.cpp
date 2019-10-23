@@ -154,7 +154,7 @@ void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t 
 }
 
 void OvmsVehicleSmartED::PollReply_BMS_BattTemp(uint8_t* reply_data, uint16_t reply_len) {
-  int16_t Temps[4];
+  int16_t Temps[7];
   int n;
   
   for(n = 0; n < (7 * 2); n = n + 2){

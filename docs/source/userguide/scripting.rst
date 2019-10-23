@@ -16,7 +16,7 @@ Command scripts can also be stored in the /store/events/<eventname> directory st
 Note that the developer building firmware can optionally set the OVMS_DEV_SDCARDSCRIPTS build flag. If that is set, then the system will also check /sd/scripts and /sd/events for scripts.
 
 In addition to command scripts, more sophisticated scripting capabilities may be enabled if the JavaScript environment is enabled in the build. This is discussed in the next section of this guide.
-
+
 -------------
 JavaScripting
 -------------
@@ -97,7 +97,7 @@ The OVMS JavaScript engine supports the concept of modules (using the node.js st
     if (ind == '') print('\n');
   }
 
-By convention, modules such as this are placed in the ``/store/scripts/lib`` directory as ``<modulename>.js``. 
+By convention, modules such as this are placed in the ``/store/scripts/lib`` directory as ``<modulename>.js``.
 These modules can be loaded with:
 
 .. code-block:: javascript
@@ -112,9 +112,9 @@ And used as:
 
 To automatically load a custom module on startup, add the ``MyPlugin = require("lib/MyPlugin");`` line to ``ovmsmain.js``.
 
-There are a number of **internal modules** already provided with the firmware, and by convention these are 
-provided under the ``int/<modulename>`` namespace. The above JSON module is, for example, provided as 
-``int/JSON`` and automatically loaded into the global context. These internal modules can be directly used (so 
+There are a number of **internal modules** already provided with the firmware, and by convention these are
+provided under the ``int/<modulename>`` namespace. The above JSON module is, for example, provided as
+``int/JSON`` and automatically loaded into the global context. These internal modules can be directly used (so
 ``JSON.print(this)`` works directly).
 
 
@@ -122,21 +122,28 @@ provided under the ``int/<modulename>`` namespace. The above JSON module is, for
 Internal Objects and Functions/Methods
 --------------------------------------
 
-A number of OVMS objects have been exposed to the JavaScript engine, and are available for use by custom 
+A number of OVMS objects have been exposed to the JavaScript engine, and are available for use by custom
 scripts via the global context.
 
-The global context is the analog to the ``window`` object in a browser context, it can be referenced 
+The global context is the analog to the ``window`` object in a browser context, it can be referenced
 explicitly as ``this`` on the JavaScript toplevel.
 
 You can see the global context objects, methods, functions and modules with the ``JSON.print(this)``
 method::
 
   OVMS# script eval 'JSON.print(this)'
-  {
+    {
     "assert": function () { [native code] },
     "print": function () { [native code] },
     "OvmsCommand": {
       "Exec": function Exec() { [native code] }
+    },
+    "OvmsConfig": {
+      "Delete": function Delete() { [native code] },
+      "Get": function Get() { [native code] },
+      "Instances": function Instances() { [native code] },
+      "Params": function Params() { [native code] },
+      "Set": function Set() { [native code] }
     },
     "OvmsEvents": {
       "Raise": function Raise() { [native code] }
@@ -189,15 +196,15 @@ Global Context
     Assert that the given condition is true. If not, raise a JavaScript exception error with the given message.
 
 - ``print(string)``
-    Print the given string on the current terminal. If no terminal (for example a background script) then 
+    Print the given string on the current terminal. If no terminal (for example a background script) then
     print to the system console as an informational message.
 
 
 JSON
 ^^^^
 
-The JSON module is provided with a ``format`` and a ``print`` method, to format and/or print out a given 
-javascript object in JSON format. Both by default insert spacing and indentation for readability and accept an 
+The JSON module is provided with a ``format`` and a ``print`` method, to format and/or print out a given
+javascript object in JSON format. Both by default insert spacing and indentation for readability and accept an
 optional ``false`` as a second parameter to produce a compact version for transmission.
 
 - ``JSON.print(data)``
@@ -213,8 +220,8 @@ optional ``false`` as a second parameter to produce a compact version for transm
 PubSub
 ^^^^^^
 
-The PubSub module provides access to a Publish-Subscribe framework. In particular, this framework is used to 
-deliver events to the persistent JavaScript framework in a high performance flexible manner. An example script 
+The PubSub module provides access to a Publish-Subscribe framework. In particular, this framework is used to
+deliver events to the persistent JavaScript framework in a high performance flexible manner. An example script
 to print out the ticker.10 event is:
 
 .. code-block:: javascript
@@ -223,8 +230,8 @@ to print out the ticker.10 event is:
 
   PubSub.subscribe("ticker.10",myTicker);
 
-The above example created a function ``myTicker`` in global context, to print out the provided event name. 
-Then, the ``PubSub.subscribe`` module method is used to subscribe to the ``ticker.10`` event and have it call 
+The above example created a function ``myTicker`` in global context, to print out the provided event name.
+Then, the ``PubSub.subscribe`` module method is used to subscribe to the ``ticker.10`` event and have it call
 ``myTicker`` every ten seconds. The result is "Event: ticker.10" printed once every ten seconds.
 
 - ``id = PubSub.subscribe(topic, handler)``
@@ -242,8 +249,8 @@ OvmsCommand
 ^^^^^^^^^^^
 
 - ``str = OvmsCommand.Exec(command)``
-    The OvmsCommand object exposes one method “Exec”. This method is passed a single parameter as the command 
-    to be executed, runs that command, and then returns the textual output of the command as a string. For 
+    The OvmsCommand object exposes one method “Exec”. This method is passed a single parameter as the command
+    to be executed, runs that command, and then returns the textual output of the command as a string. For
     example::
 
       print(OvmsCommand.Exec("boot status"));
@@ -252,16 +259,29 @@ OvmsCommand
         Detected boot reason: PowerOn (1/14)
         Crash counters: 0 total, 0 early
 
+OvmsConfig
+^^^^^^^^^^
+
+- ``array = OvmsConfig.Params()``
+    Returns the list of available configuration parameters.
+- ``array = OvmsMetrics.Instances(param)``
+    Returns the list of instances for a specific parameter.
+- ``string = OvmsMetrics.Get(param,instance,default)``
+    Returns the specified parameter/instance value.
+- ``OvmsMetrics.Set(param,instance,value)``
+    Sets the specified parameter/instance value.
+- ``OvmsMetrics.Delete(param,instance)``
+    Deletes the specified parameter instance.
 
 OvmsEvents
 ^^^^^^^^^^
 
-This provides access to the OVMS event system. While you may raise system events, the primary use is to raise 
-custom events. Sending custom events is a lightweight method to inform the web UI (or other plugins) about 
-simple state changes. Use the prefix ``usr.`` on custom event names to prevent conflicts with later framework 
+This provides access to the OVMS event system. While you may raise system events, the primary use is to raise
+custom events. Sending custom events is a lightweight method to inform the web UI (or other plugins) about
+simple state changes. Use the prefix ``usr.`` on custom event names to prevent conflicts with later framework
 additions.
 
-Another use is the emulation of the ``setTimeout()`` and ``setInterval()`` browser methods by subscribing to a 
+Another use is the emulation of the ``setTimeout()`` and ``setInterval()`` browser methods by subscribing to a
 delayed event. Pattern:
 
 .. code-block:: javascript
@@ -270,7 +290,7 @@ delayed event. Pattern:
     // raise the timeout event again here to emulate setInterval()
   }
   PubSub.subscribe('usr.myplugin.timeout', myTimeoutHandler);
-  
+
   // start timeout:
   OvmsEvents.Raise('usr.myplugin.timeout', 1500);
 
@@ -306,15 +326,15 @@ OvmsNotify
     Send a notification of the given type and subtype with message as contents.
     Returns the message id allocated or 0 in case of failure.
     Examples:
-    
+
     .. code-block:: javascript
-    
+
       // send an info notification to the user:
       OvmsNotify.Raise("info", "usr.myplugin.status", "Alive and kicking!");
-      
+
       // send a JSON stream to a web plugin:
       OvmsNotify.Raise("stream", "usr.myplugin.update", JSON.format(streamdata, false));
-      
+
       // send a CSV data record to a server:
       OvmsNotify.Raise("data", "usr.myplugin.record", "*-MyStatus,0,86400,Alive");
 
@@ -354,4 +374,3 @@ The OvmsVehicle object is the most comprehensive, and exposes several methods to
     Start a cooldown charge
 - ``success = OvmsVehicle.StopCooldown()``
     Stop the cooldown charge
-

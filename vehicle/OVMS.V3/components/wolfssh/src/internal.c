@@ -2548,7 +2548,8 @@ static int DoChannelEof(WOLFSSH* ssh,
             ret = WS_INVALID_CHANID;
     }
 
-    channel->receivedEof = 1;
+    if (channel)
+      channel->receivedEof = 1;
 
     WLOG(WS_LOG_DEBUG, "Leaving DoChannelEof(), ret = %d", ret);
     return ret;

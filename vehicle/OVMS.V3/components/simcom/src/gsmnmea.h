@@ -38,7 +38,7 @@
 #include "driver/uart.h"
 #include "gsmmux.h"
 
-class GsmNMEA
+class GsmNMEA : public InternalRamAllocated
   {
   public:
     GsmNMEA(GsmMux* mux, int channel);

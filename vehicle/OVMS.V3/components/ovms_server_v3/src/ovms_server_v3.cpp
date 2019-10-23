@@ -573,13 +573,17 @@ void OvmsServerV3::RemoveClient(std::string id)
 
 void OvmsServerV3::CountClients()
   {
-  for (auto it = m_clients.begin(); it != m_clients.end(); ++it)
+  for (auto it = m_clients.begin(); it != m_clients.end();)
     {
     if (it->second < monotonictime)
       {
       // Expired, so delete it...
-      m_clients.erase(it);
       ESP_LOGI(TAG,"MQTT client %s has timed out",it->first.c_str());
+      it = m_clients.erase(it);
+      }
+    else
+      {
+      it++;
       }
     }
 
