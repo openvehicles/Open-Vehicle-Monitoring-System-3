@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Factory reset from web/remote shell by "module factory reset -noconfirm"
 - SWCAN: Support for add-on SWCAN module (see https://github.com/mjuhanne/OVMS-SWCAN)
     Add new "can4" bus (if compiled in)
     SWCAN leds (board and/or dongle):
