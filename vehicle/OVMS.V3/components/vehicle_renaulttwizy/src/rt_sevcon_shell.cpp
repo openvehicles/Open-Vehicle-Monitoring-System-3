@@ -970,9 +970,9 @@ void SevconClient::shell_cfg_tsmap(int verbosity, OvmsWriter* writer, OvmsComman
   }
   
   for (i=1; i<=4 && i<argc; i++) {
-    prc[i] = strtol(argv[i], &s, 10);
+    prc[i-1] = strtol(argv[i], &s, 10);
     if (*s == '@')
-      spd[i] = strtol(s+1, NULL, 10);
+      spd[i-1] = strtol(s+1, NULL, 10);
   }
   
   // execute:
