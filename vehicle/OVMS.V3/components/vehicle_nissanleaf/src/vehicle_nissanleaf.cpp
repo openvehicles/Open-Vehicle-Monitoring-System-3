@@ -642,6 +642,16 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
        */
       StandardMetrics.ms_v_env_cooling->SetValue(d[1] & 0x10);
       StandardMetrics.ms_v_env_heating->SetValue(d[1] & 0x02);
+
+      // Beta Values for testing
+      StandardMetrics.ms_v_env_nlccremotegen1->SetValue(d[1] & 0x0a);
+      StandardMetrics.ms_v_env_nlccheatorfan->SetValue(d[1] & 0x48);
+      StandardMetrics.ms_v_env_nlccremoteheat->SetValue(d[1] & 0x4b);
+      StandardMetrics.ms_v_env_nlccremotecool->SetValue(d[1] & 0x71);
+      StandardMetrics.ms_v_env_nlccauto->SetValue(d[1] & 0x76);
+      StandardMetrics.ms_v_env_nlcccool->SetValue(d[1] & 0x78);
+
+      // end of beta values
     }
       break;
     case 0x54c:
