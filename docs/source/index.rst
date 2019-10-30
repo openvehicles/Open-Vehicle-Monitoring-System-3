@@ -6,7 +6,7 @@ Open Vehicles Monitoring System
    :maxdepth: 1
    :caption: User Guides:
 
-   introduction
+   Overview <introduction>
    userguide/index
 
 .. toctree::
