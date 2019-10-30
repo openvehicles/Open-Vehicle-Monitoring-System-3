@@ -80,7 +80,7 @@ provides data logging to SD card and to a server.
 - _Developers_
   - [Developer Guide](https://docs.google.com/document/d/1q5M9Lb5jzQhJzPMnkMKwy4Es5YK12ACQejX_NWEixr0)
   - [Developer Mailing List & Archive](http://lists.openvehicles.com/mailman/listinfo/ovmsdev)
-  - [Server Source](https://github.com/openvehicles/Open-Vehicle-Monitoring-System/tree/master/server)
+  - [Server Source](https://github.com/openvehicles/Open-Vehicle-Server)
   - [Android App Source](https://github.com/openvehicles/Open-Vehicle-Android)
   - [iOS App Source](https://github.com/openvehicles/Open-Vehicle-iOS)
 
