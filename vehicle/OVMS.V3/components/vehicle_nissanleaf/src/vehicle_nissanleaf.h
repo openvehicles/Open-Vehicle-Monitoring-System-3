@@ -156,6 +156,13 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricFloat *m_soc_nominal;
     OvmsMetricInt *m_charge_count_qc;
     OvmsMetricInt *m_charge_count_l0l1l2;
+    OvmsMetricBool *m_climate_remotegen1;
+    OvmsMetricBool *m_climate_heatorfan;
+    OvmsMetricBool *m_climate_remoteheat;
+    OvmsMetricBool *m_climate_remotecool;
+    OvmsMetricBool *m_climate_auto;
+    OvmsMetricBool *m_climate_cool;
+
 
     float m_cum_energy_used_wh;				    	// Cumulated energy (in wh) used within 1 second ticker interval
     float m_cum_energy_recd_wh; 					// Cumulated energy (in wh) recovered  within 1 second ticker interval
