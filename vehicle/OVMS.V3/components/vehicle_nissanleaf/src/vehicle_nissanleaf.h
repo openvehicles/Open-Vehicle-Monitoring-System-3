@@ -163,7 +163,8 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricBool *m_climate_auto;
     OvmsMetricBool *m_climate_cool;
     OvmsMetricBool *m_climate_on;
-    OvmsMetricBool *m_climate_setpoint;
+    OvmsMetricBool *m_climate_on_beta;
+    OvmsMetricFloat *m_climate_setpoint;
 
 
     float m_cum_energy_used_wh;				    	// Cumulated energy (in wh) used within 1 second ticker interval
