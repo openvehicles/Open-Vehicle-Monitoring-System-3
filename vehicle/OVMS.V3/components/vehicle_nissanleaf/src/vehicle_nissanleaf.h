@@ -164,9 +164,9 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricBool *m_climate_cool;
     OvmsMetricBool *m_climate_on;
     OvmsMetricBool *m_climate_off;
-    OvmsMetricBool *m_climate_on_beta;
     OvmsMetricBool *m_climate_on_gen1;
     OvmsMetricBool *m_climate_off_gen1;
+    OvmsMetricFloat *m_climate_on_beta;
     OvmsMetricFloat *m_climate_fan_speed;
     OvmsMetricFloat *m_climate_setpoint;
 

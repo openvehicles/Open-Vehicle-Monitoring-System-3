@@ -123,7 +123,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_climate_cool = MyMetrics.InitBool("xnl.cc.cool", SM_STALE_NONE, false);
   m_climate_on = MyMetrics.InitBool("xnl.cc.on", SM_STALE_NONE, false);
   m_climate_off = MyMetrics.InitBool("xnl.cc.off", SM_STALE_NONE, false);
-  m_climate_on_beta = MyMetrics.InitBool("xnl.cc.on.beta", SM_STALE_NONE, false);
+  m_climate_on_beta = MyMetrics.InitFloat("xnl.cc.on.beta", SM_STALE_NONE, 0);
   m_climate_on_gen1 = MyMetrics.InitBool("xnl.cc.on.gen1", SM_STALE_NONE, false);
   m_climate_off_gen1 = MyMetrics.InitBool("xnl.cc.off.gen1", SM_STALE_NONE, false);
   m_climate_setpoint = MyMetrics.InitFloat("xnl.cc.setpoint", SM_STALE_NONE, 0, Celcius);
@@ -639,9 +639,12 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
     case 0x54a:
     {
       // Beta Values for testing
-      m_climate_on_beta->SetValue(d[0] & (d[0] == 0xa0 || d[0] == 0xda));
+      float cconbeta_float;
+      cconbeta_float = d[0];
+      m_climate_on_beta->SetValue(cconbeta_float);
+
       float setpoint_float;
-      setpoint_float = d[4];
+      setpoint_float = d[4] / 2;
       m_climate_setpoint->SetValue(setpoint_float);
 
       // end of beta values
