@@ -122,7 +122,10 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_climate_auto = MyMetrics.InitBool("xnl.cc.auto", SM_STALE_NONE, false);
   m_climate_cool = MyMetrics.InitBool("xnl.cc.cool", SM_STALE_NONE, false);
   m_climate_on = MyMetrics.InitBool("xnl.cc.on", SM_STALE_NONE, false);
+  m_climate_off = MyMetrics.InitBool("xnl.cc.off", SM_STALE_NONE, false);
   m_climate_on_beta = MyMetrics.InitBool("xnl.cc.on.beta", SM_STALE_NONE, false);
+  m_climate_on_gen1 = MyMetrics.InitBool("xnl.cc.on.gen1", SM_STALE_NONE, false);
+  m_climate_off_gen1 = MyMetrics.InitBool("xnl.cc.off.gen1", SM_STALE_NONE, false);
   m_climate_setpoint = MyMetrics.InitFloat("xnl.cc.setpoint", SM_STALE_NONE, 0, Celcius);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -664,13 +667,16 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_env_heating->SetValue(d[1] & 0x02);
 
       // Beta Values for testing
-      m_climate_on->SetValue(d[0] & 0x10);
-      m_climate_remotegen1->SetValue(d[1] & 0x0a);
-      m_climate_heatorfan->SetValue(d[1] & 0x48);
-      m_climate_remoteheat->SetValue(d[1] & 0x4b);
-      m_climate_remotecool->SetValue(d[1] & 0x71);
-      m_climate_auto->SetValue(d[1] & 0x76);
-      m_climate_cool->SetValue(d[1] & 0x78);
+      m_climate_on_gen1->SetValue(d[0] == 0x00);
+      m_climate_off_gen1->SetValue(d[0] == 0x01);
+      m_climate_on->SetValue(d[0] == 0x10);
+      m_climate_off->SetValue(d[0] == 0x11);
+      m_climate_remotegen1->SetValue(d[1] == 0x0a);
+      m_climate_heatorfan->SetValue(d[1] == 0x48);
+      m_climate_remoteheat->SetValue(d[1] == 0x4b);
+      m_climate_remotecool->SetValue(d[1] == 0x71);
+      m_climate_auto->SetValue(d[1] == 0x76);
+      m_climate_cool->SetValue(d[1] == 0x78);
 
       // end of beta values
     }
