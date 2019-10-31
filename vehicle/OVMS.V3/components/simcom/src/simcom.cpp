@@ -87,7 +87,23 @@ void simcom::Task()
   SimcomOrUartEvent event;
   uint8_t data[128];
 
-  for(;;)
+  // Init UART:
+  uart_config_t uart_config =
+    {
+    .baud_rate = m_baud,
+    .data_bits = UART_DATA_8_BITS,
+    .parity = UART_PARITY_DISABLE,
+    .stop_bits = UART_STOP_BITS_1,
+    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+    .rx_flow_ctrl_thresh = 122,
+    .use_ref_tick = 0,
+    };
+  uart_param_config(m_uartnum, &uart_config);
+  uart_set_pin(m_uartnum, m_txpin, m_rxpin, 0, 0);
+  uart_driver_install(m_uartnum, SIMCOM_BUF_SIZE*2, SIMCOM_BUF_SIZE*2, 50, (QueueHandle_t*)&m_queue, ESP_INTR_FLAG_LEVEL2);
+
+  // Queue processing loop:
+  while (m_task)
     {
     if (xQueueReceive(m_queue, (void *)&event, (portTickType)portMAX_DELAY))
       {
@@ -146,12 +162,20 @@ void simcom::Task()
           case SETSTATE:
             SetState1(event.simcom.data.newstate);
             break;
+          case SHUTDOWN:
+            m_task = 0;
+            break;
           default:
             break;
           }
         }
       }
     }
+
+  // Shutdown:
+  uart_driver_delete(m_uartnum);
+  m_queue = 0;
+  vTaskDelete(NULL);
   }
 
 simcom::simcom(const char* name, uart_port_t uartnum, int baud, int rxpin, int txpin, int pwregpio, int dtregpio)
@@ -284,26 +308,7 @@ void simcom::StartTask()
   {
   if (!m_task)
     {
-    uart_config_t uart_config =
-      {
-      .baud_rate = m_baud,
-      .data_bits = UART_DATA_8_BITS,
-      .parity = UART_PARITY_DISABLE,
-      .stop_bits = UART_STOP_BITS_1,
-      .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-      .rx_flow_ctrl_thresh = 122,
-      .use_ref_tick = 0,
-      };
-    // Set UART parameters
-    uart_param_config(m_uartnum, &uart_config);
-
-    // Set UART pins
-    uart_set_pin(m_uartnum, m_txpin, m_rxpin, 0, 0);
-
-    // Install UART driver, and get the queue.
-    uart_driver_install(m_uartnum, SIMCOM_BUF_SIZE * 2, SIMCOM_BUF_SIZE * 2, 50, &m_queue, ESP_INTR_FLAG_LEVEL3);
-
-    xTaskCreatePinnedToCore(SIMCOM_task, "OVMS SIMCOM", 4096, (void*)this, 20, &m_task, CORE(1));
+    xTaskCreatePinnedToCore(SIMCOM_task, "OVMS SIMCOM", 4096, (void*)this, 20, &m_task, CORE(0));
     }
   }
 
@@ -311,9 +316,11 @@ void simcom::StopTask()
   {
   if (m_task)
     {
-    uart_driver_delete(m_uartnum);
-    vTaskDelete(m_task);
-    m_task = 0;
+    SimcomOrUartEvent ev;
+    ev.simcom.type = SHUTDOWN;
+    xQueueSend(m_queue, &ev, portMAX_DELAY);
+    while (m_queue)
+      vTaskDelay(pdMS_TO_TICKS(10));
     }
   }
 

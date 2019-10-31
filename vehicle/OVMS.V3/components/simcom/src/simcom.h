@@ -63,7 +63,7 @@ class simcom : public pcp, public InternalRamAllocated
 
   protected:
     TaskHandle_t m_task;
-    QueueHandle_t m_queue;
+    volatile QueueHandle_t m_queue;
     uart_port_t m_uartnum;
     int m_baud;
     int m_rxpin;
@@ -92,7 +92,8 @@ class simcom : public pcp, public InternalRamAllocated
       };
     typedef enum
       {
-      SETSTATE = UART_EVENT_MAX+1000
+      SETSTATE = UART_EVENT_MAX+1000,
+      SHUTDOWN
       } event_type_t;
     typedef enum
       {
