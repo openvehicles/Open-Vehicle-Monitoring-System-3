@@ -122,7 +122,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_climate_auto = MyMetrics.InitBool("xnl.cc.auto", SM_STALE_MIN, false);
   m_climate_cool = MyMetrics.InitBool("xnl.cc.cool", SM_STALE_MIN, false);
   m_climate_on = MyMetrics.InitBool("xnl.cc.on", SM_STALE_MIN, false);
-  m_climate_setpoint = MyMetrics.InitFloat("xnl.cc.setpoint", SM_STALE_NONE, 0);
+  m_climate_setpoint = MyMetrics.InitFloat("xnl.cc.setpoint", SM_STALE_NONE, 0, Celcius);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
