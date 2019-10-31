@@ -633,7 +633,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x54a:
     {
-      m_climate_on->SetValue(d[0] & (0xa0 || 0xda));
+      m_climate_on->SetValue(d[0] & (d[0] == 0xa0 || d[0] == 0xda));
       m_climate_setpoint->SetValue(d[4]);
 
       // end of beta values
