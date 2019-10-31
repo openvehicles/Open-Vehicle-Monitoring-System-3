@@ -127,6 +127,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_climate_on_gen1 = MyMetrics.InitBool("xnl.cc.on.gen1", SM_STALE_NONE, false);
   m_climate_off_gen1 = MyMetrics.InitBool("xnl.cc.off.gen1", SM_STALE_NONE, false);
   m_climate_setpoint = MyMetrics.InitFloat("xnl.cc.setpoint", SM_STALE_NONE, 0, Celcius);
+  m_climate_fan_speed = MyMetrics.InitFloat("xnl.cc.fan.speed", SM_STALE_NONE, 0);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -667,6 +668,9 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_env_heating->SetValue(d[1] & 0x02);
 
       // Beta Values for testing
+      float fanspeed_float;
+      fanspeed_float = d[4];
+      m_climate_fan_speed->SetValue(fanspeed_float);
       m_climate_on_gen1->SetValue(d[0] == 0x00);
       m_climate_off_gen1->SetValue(d[0] == 0x01);
       m_climate_on->SetValue(d[0] == 0x10);
