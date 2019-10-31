@@ -38,9 +38,10 @@ static const char *TAG = "mcp2515";
 #include "esp_intr.h"
 #include "soc/dport_reg.h"
 
-static void MCP2515_isr(void *pvParameters)
+static IRAM_ATTR void MCP2515_isr(void *pvParameters)
   {
   mcp2515 *me = (mcp2515*)pvParameters;
+  BaseType_t task_woken = pdFALSE;
 
   me->m_status.interrupts++;
 
@@ -51,7 +52,13 @@ static void MCP2515_isr(void *pvParameters)
   msg.body.bus = me;
 
   //send callback request to main CAN processor task
-  xQueueSendFromISR(MyCan.m_rxqueue,&msg,0);
+  xQueueSendFromISR(MyCan.m_rxqueue, &msg, &task_woken);
+
+  // Yield to minimize latency if we have woken up a higher priority task:
+  if (task_woken == pdTRUE)
+    {
+    portYIELD_FROM_ISR();
+    }
   }
 
 mcp2515::mcp2515(const char* name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin, int intpin, bool hw_cs /*=true*/)
