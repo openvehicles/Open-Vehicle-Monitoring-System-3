@@ -115,17 +115,15 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_soc_nominal = new OvmsMetricFloat("xnl.v.b.soc.nominal", SM_STALE_HIGH, Percentage);
   m_charge_count_qc     = MyMetrics.InitInt("xnl.v.c.count.qc",     SM_STALE_NONE, 0);
   m_charge_count_l0l1l2 = MyMetrics.InitInt("xnl.v.c.count.l0l1l2", SM_STALE_NONE, 0);
-  m_climate_remotegen1 = MyMetrics.InitBool("xnl.cc.remotegen1", SM_STALE_MIN, false);
-  m_climate_heatorfan = MyMetrics.InitBool("xnl.cc.heatorfan", SM_STALE_MIN, false);
+  m_climate_fan_only = MyMetrics.InitBool("xnl.cc.fan.only", SM_STALE_MIN, false);
   m_climate_remoteheat = MyMetrics.InitBool("xnl.cc.remoteheat", SM_STALE_MIN, false);
   m_climate_remotecool = MyMetrics.InitBool("xnl.cc.remotecool", SM_STALE_MIN, false);
-  m_climate_auto = MyMetrics.InitBool("xnl.cc.auto", SM_STALE_MIN, false);
-  m_climate_cool = MyMetrics.InitBool("xnl.cc.cool", SM_STALE_MIN, false);
+  m_climate_cooling = MyMetrics.InitBool("xnl.cc.cooling", SM_STALE_MIN, false);
   m_climate_on = MyMetrics.InitBool("xnl.cc.on", SM_STALE_MIN, false);
   m_climate_off = MyMetrics.InitBool("xnl.cc.off", SM_STALE_MIN, false);
+  m_climate_on_beta1 = MyMetrics.InitBool("xnl.cc.on.beta1", SM_STALE_MIN, false);
+  m_climate_off_beta1 = MyMetrics.InitBool("xnl.cc.off.beta1", SM_STALE_MIN, false);
   m_climate_on_beta = MyMetrics.InitFloat("xnl.cc.on.beta", SM_STALE_MIN, 0);
-  m_climate_on_gen1 = MyMetrics.InitBool("xnl.cc.on.gen1", SM_STALE_MIN, false);
-  m_climate_off_gen1 = MyMetrics.InitBool("xnl.cc.off.gen1", SM_STALE_MIN, false);
   m_climate_setpoint = MyMetrics.InitFloat("xnl.cc.setpoint", SM_STALE_MIN, 0, Celcius);
   m_climate_fan_speed = MyMetrics.InitFloat("xnl.cc.fan.speed", SM_STALE_MIN, 0);
 
@@ -670,21 +668,19 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_env_cooling->SetValue(d[1] & 0x10);
       StandardMetrics.ms_v_env_heating->SetValue(d[1] & 0x02);
 
-      // Beta Values for testing
       float fanspeed_float;
-      fanspeed_float = d[4] / 8 - 0.5;
+      fanspeed_float = d[4] / 8;
       m_climate_fan_speed->SetValue(fanspeed_float);
-      
-      m_climate_on_gen1->SetValue(d[0] == 0x00);
-      m_climate_off_gen1->SetValue(d[0] == 0x01);
-      m_climate_on->SetValue(d[0] == 0x10);
+
+      m_climate_fan_only->SetValue(d[1] == 0x48);
+      m_climate_cooling->SetValue(d[1] == 0x78);
+
+      // The following values work only when car is on, so we need to use fan value to indicate ccrunning
+      m_climate_on->SetValue(d[0] == 0x10 & fanspeed_float > 0 & fanspeed_float < 8);
       m_climate_off->SetValue(d[0] == 0x11);
-      m_climate_remotegen1->SetValue(d[1] == 0x0a);
-      m_climate_heatorfan->SetValue(d[1] == 0x48);
+      // The following values work only when not connected to charger.
       m_climate_remoteheat->SetValue(d[1] == 0x4b);
       m_climate_remotecool->SetValue(d[1] == 0x71);
-      m_climate_auto->SetValue(d[1] == 0x76);
-      m_climate_cool->SetValue(d[1] == 0x78);
 
       // end of beta values
     }
@@ -698,6 +694,10 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
         StandardMetrics.ms_v_env_temp->SetValue(d[6] / 2.0 - 40);
         }
+
+      m_climate_on_beta1->SetValue(d[1] = 0x66);
+      m_climate_off_beta1->SetValue(d[1] = 0xff);
+
       break;
     case 0x54f:
       /* Climate control's measurement of temperature inside the car.
