@@ -676,7 +676,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       m_climate_cooling->SetValue(d[1] == 0x78);
 
       // The following values work only when car is on, so we need to use fan value to indicate ccrunning
-      m_climate_on->SetValue(d[0] == 0x10 & fanspeed_float > 0 & fanspeed_float < 8);
+      m_climate_on->SetValue((d[0] == 0x10) & (fanspeed_float > 0) & (fanspeed_float < 8));
       m_climate_off->SetValue(d[0] == 0x11);
       // The following values work only when not connected to charger.
       m_climate_remoteheat->SetValue(d[1] == 0x4b);
@@ -695,8 +695,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_env_temp->SetValue(d[6] / 2.0 - 40);
         }
 
-      m_climate_on_beta1->SetValue(d[1] = 0x66);
-      m_climate_off_beta1->SetValue(d[1] = 0xff);
+      m_climate_on_beta1->SetValue(d[1] == 0x66);
+      m_climate_off_beta1->SetValue(d[1] == 0xff);
 
       break;
     case 0x54f:
