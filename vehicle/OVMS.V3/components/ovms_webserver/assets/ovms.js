@@ -314,6 +314,8 @@ var monitorTimer, last_monotonic = 0;
 var ws, ws_inhibit = 0;
 var metrics = {};
 var shellhist = [""], shellhpos = 0;
+var loghist = [];
+const loghist_maxsize = 100;
 
 function initSocketConnection(){
   ws = new WebSocket('ws://' + location.host + '/msg');
@@ -350,6 +352,11 @@ function initSocketConnection(){
       else if (msgtype == "notify") {
         processNotification(msg.notify);
         $(".receiver").trigger("msg:notify", msg.notify);
+      }
+      else if (msgtype == "log") {
+        loghist.push(msg.log);
+        if (loghist.length > loghist_maxsize) loghist.shift();
+        $(".receiver").trigger("msg:log", msg.log);
       }
     }
   };

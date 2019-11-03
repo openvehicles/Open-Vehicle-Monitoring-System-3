@@ -66,10 +66,15 @@ WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t slot, size_t modifi
   m_mutex = xSemaphoreCreateMutex();
   m_job.type = WSTX_None;
   m_sent = m_ack = 0;
+  
+  // Register as logging console:
+  SetMonitoring(true);
+  MyCommandApp.RegisterConsole(this);
 }
 
 WebSocketHandler::~WebSocketHandler()
 {
+  MyCommandApp.DeregisterConsole(this);
   while (xQueueReceive(m_jobqueue, &m_job, 0) == pdTRUE)
     ClearTxJob(m_job);
   vQueueDelete(m_jobqueue);
@@ -204,6 +209,38 @@ void WebSocketHandler::ProcessTxJob()
       break;
     }
     
+    case WSTX_LogBuffers:
+    {
+      // Note: this sender loops over the buffered lines by index (kept in m_sent)
+      // Single log lines may be longer than our nominal XFER_CHUNK_SIZE, but that is
+      // very rarely the case, so we shouldn't need to additionally chunk them.
+      LogBuffers* lb = m_job.logbuffers;
+
+      // find next line:
+      int i;
+      LogBuffers::iterator it;
+      for (i=0, it=lb->begin(); i < m_sent && it != lb->end(); it++, i++);
+      
+      if (it != lb->end()) {
+        // encode & send:
+        std::string msg;
+        msg.reserve(strlen(*it)+128);
+        msg = "{\"log\":\"";
+        msg += json_encode(stripesc(*it));
+        msg += "\"}";
+        mg_send_websocket_frame(m_nc, WEBSOCKET_OP_TEXT, msg.data(), msg.size());
+        m_sent++;
+      }
+      else if (m_ack == m_sent) {
+        // done:
+        if (m_sent)
+          ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done, sent=%d lines", m_nc, m_job.type, m_sent);
+        ClearTxJob(m_job);
+      }
+      
+      break;
+    }
+    
     case WSTX_Config:
     {
       // todo: implement
@@ -233,6 +270,11 @@ void WebSocketTxJob::clear(size_t client)
         OvmsNotifyType* mt = notification->GetType();
         if (mt) mt->MarkRead(slot.reader, notification);
       }
+      break;
+    case WSTX_LogBuffers:
+      if (logbuffers)
+        logbuffers->release();
+      break;
     default:
       break;
   }
@@ -362,6 +404,19 @@ void WebSocketHandler::HandleIncomingMsg(std::string msg)
 
 
 /**
+ * OvmsWriter interface
+ */
+
+void WebSocketHandler::Log(LogBuffers* message)
+{
+  WebSocketTxJob job;
+  job.type = WSTX_LogBuffers;
+  job.logbuffers = message;
+  AddTxJob(job);
+}
+
+
+/**
  * WebSocketHandler slot registry:
  *  WebSocketSlots keep metrics modifiers once allocated (limited ressource)
  */
@@ -483,6 +538,7 @@ void OvmsWebServer::EventListener(std::string event, void* data)
 
   // forward events to all websocket clients:
   if (xSemaphoreTake(m_client_mutex, 0) != pdTRUE) {
+    // client list lock is not available, add to tx backlog:
     for (int i=0; i<m_client_cnt; i++) {
       auto& slot = m_client_slots[i];
       if (slot.handler) {
@@ -496,6 +552,7 @@ void OvmsWebServer::EventListener(std::string event, void* data)
     return;
   }
   
+  // client list locked; add tx jobs:
   for (auto slot: m_client_slots) {
     if (slot.handler) {
       WebSocketTxJob job = { WSTX_Event, strdup(event.c_str()) };

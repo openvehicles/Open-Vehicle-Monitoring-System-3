@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Web UI: log monitoring via web shell
+  Note: command "log monitor" doesn't apply, use the checkbox to disable.
 - Factory reset from web/remote shell by "module factory reset -noconfirm"
 - SWCAN: Support for add-on SWCAN module (see https://github.com/mjuhanne/OVMS-SWCAN)
     Add new "can4" bus (if compiled in)

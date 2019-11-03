@@ -68,7 +68,7 @@ Peripherals::Peripherals()
   tcpip_adapter_init();
 #endif // #if defined(CONFIG_OVMS_COMP_WIFI)||defined(CONFIG_OVMS_COMP_MODEM_SIMCOM)
 
-  gpio_install_isr_service(0);
+  gpio_install_isr_service(ESP_INTR_FLAG_IRAM);
 
   gpio_set_direction((gpio_num_t)VSPI_PIN_MISO, GPIO_MODE_INPUT);
   gpio_set_direction((gpio_num_t)VSPI_PIN_MOSI, GPIO_MODE_OUTPUT);

@@ -281,7 +281,7 @@ static esp_err_t spi_nodma_bus_initialize(spi_nodma_host_device_t host, spi_nodm
 	spihost[host]->hw=io_signal[host].hw;
 
 	if (init > 0) {
-		esp_intr_alloc(io_signal[host].irq, ESP_INTR_FLAG_INTRDISABLED, spi_intr, (void*)spihost[host], &spihost[host]->intr);
+		esp_intr_alloc(io_signal[host].irq, ESP_INTR_FLAG_IRAM|ESP_INTR_FLAG_INTRDISABLED, spi_intr, (void*)spihost[host], &spihost[host]->intr);
 		//Reset DMA
 		spihost[host]->hw->dma_conf.val|=SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST;
 		spihost[host]->hw->dma_out_link.start=0;

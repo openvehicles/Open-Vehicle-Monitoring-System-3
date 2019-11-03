@@ -62,14 +62,14 @@ class OvmsWriter
     virtual ~OvmsWriter();
 
   public:
-    virtual int puts(const char* s) = 0;
-    virtual int printf(const char* fmt, ...) = 0;
-    virtual ssize_t write(const void *buf, size_t nbyte) = 0;
+    virtual int puts(const char* s) { return 0; }
+    virtual int printf(const char* fmt, ...) { return 0; }
+    virtual ssize_t write(const void *buf, size_t nbyte) { return 0; }
     virtual char** SetCompletion(int index, const char* token) { return NULL; }
     virtual char** GetCompletions() { return NULL; }
     virtual void SetArgv(const char* const* argv) { return; }
     virtual const char* const* GetArgv() { return NULL; }
-    virtual void Log(LogBuffers* message) = 0;
+    virtual void Log(LogBuffers* message) {};
     virtual void Exit();
     virtual bool IsInteractive() { return true; }
     void RegisterInsertCallback(InsertCallback cb, void* ctx);
