@@ -121,8 +121,6 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_climate_cooling = MyMetrics.InitBool("xnl.cc.cooling", SM_STALE_MIN, false);
   m_climate_on = MyMetrics.InitBool("xnl.cc.on", SM_STALE_MIN, false);
   m_climate_off = MyMetrics.InitBool("xnl.cc.off", SM_STALE_MIN, false);
-  m_climate_on_beta1 = MyMetrics.InitBool("xnl.cc.on.beta1", SM_STALE_MIN, false);
-  m_climate_off_beta1 = MyMetrics.InitBool("xnl.cc.off.beta1", SM_STALE_MIN, false);
   m_climate_on_beta = MyMetrics.InitFloat("xnl.cc.on.beta", SM_STALE_MIN, 0);
   m_climate_setpoint = MyMetrics.InitFloat("xnl.cc.setpoint", SM_STALE_MIN, 0, Celcius);
   m_climate_fan_speed = MyMetrics.InitFloat("xnl.cc.fan.speed", SM_STALE_MIN, 0);
@@ -637,9 +635,6 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
     case 0x54a:
     {
       // Beta Values for testing
-      float cconbeta_float;
-      cconbeta_float = d[0];
-      m_climate_on_beta->SetValue(cconbeta_float);
 
       float setpoint_float;
       setpoint_float = d[4] / 2;
@@ -650,39 +645,66 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x54b:
     {
-      bool hvac_candidate;
-      // this might be a bit field? So far these 6 values indicate HVAC on
-      hvac_candidate =
-        d[1] == 0x0a || // Gen 1 Remote
-        d[1] == 0x48 || // Manual Heating or Fan Only
-        d[1] == 0x4b || // Gen 2 Remote Heating
-        d[1] == 0x71 || // Gen 2 Remote Cooling
-        d[1] == 0x76 || // Auto
-        d[1] == 0x78;   // Manual A/C on
-      StandardMetrics.ms_v_env_hvac->SetValue(hvac_candidate);
-      /* These may only reflect the centre console LEDs, which
-       * means they don't change when remote CC is operating.
-       * They should be replaced when we find better signals that
-       * indicate when heating or cooling is actually occuring.
-       */
-      StandardMetrics.ms_v_env_cooling->SetValue(d[1] & 0x10);
-      StandardMetrics.ms_v_env_heating->SetValue(d[1] & 0x02);
-
       float fanspeed_float;
       fanspeed_float = d[4] / 8;
       m_climate_fan_speed->SetValue(fanspeed_float);
 
-      m_climate_fan_only->SetValue(d[1] == 0x48);
-      m_climate_cooling->SetValue(d[1] == 0x78);
+      bool fan_only = false;
+      fan_only = (d[1] == 0x48);
+      m_climate_fan_only->SetValue(fan_only);
+
+      bool cooling = false;
+      cooling = (d[1] == 0x78);
+      m_climate_cooling->SetValue(cooling);
 
       // The following values work only when car is on, so we need to use fan value to indicate ccrunning
-      m_climate_on->SetValue((d[0] == 0x10) & (fanspeed_float > 0) & (fanspeed_float < 8));
-      m_climate_off->SetValue(d[0] == 0x11);
+      bool climate_on = false;
+      climate_on = (d[0] == 0x10);
+      m_climate_on->SetValue(climate_on);
+
       // The following values work only when not connected to charger.
       m_climate_remoteheat->SetValue(d[1] == 0x4b);
       m_climate_remotecool->SetValue(d[1] == 0x71);
 
-      // end of beta values
+      // Set more accurate climate control values for hvac, heating, cooling for 2013-2015 model year cars.
+      // leaving this legacy code part until someone tests the new logic in <2013 and >2015 cars.
+      if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) < 2013 && MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) > 2015)
+      {
+        bool hvac_candidate;
+        // this might be a bit field? So far these 6 values indicate HVAC on
+        hvac_candidate =
+          d[1] == 0x0a || // Gen 1 Remote
+          d[1] == 0x48 || // Manual Heating or Fan Only
+          d[1] == 0x4b || // Gen 2 Remote Heating
+          d[1] == 0x71 || // Gen 2 Remote Cooling
+          d[1] == 0x76 || // Auto
+          d[1] == 0x78;   // Manual A/C on
+        
+        StandardMetrics.ms_v_env_hvac->SetValue(hvac_candidate);
+        /* These may only reflect the centre console LEDs, which
+        * means they don't change when remote CC is operating.
+        * They should be replaced when we find better signals that
+        * indicate when heating or cooling is actually occuring.
+        */
+        StandardMetrics.ms_v_env_cooling->SetValue(d[1] & 0x10);
+        StandardMetrics.ms_v_env_heating->SetValue(d[1] & 0x02);
+      }
+
+      else
+      {
+        bool hvac_calculated = false;
+        hvac_calculated = (climate_on && (fanspeed_float > 0) && (fanspeed_float < 8));
+        StandardMetrics.ms_v_env_hvac->SetValue(hvac_calculated);
+
+        bool heating_calculated = false;
+        heating_calculated = (hvac_calculated && not fan_only && not cooling);
+        StandardMetrics.ms_v_env_heating->SetValue(heating_calculated);
+
+        StandardMetrics.ms_v_env_cooling->SetValue(cooling);
+        
+      }
+     
+
     }
       break;
     case 0x54c:
@@ -694,9 +716,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
         StandardMetrics.ms_v_env_temp->SetValue(d[6] / 2.0 - 40);
         }
-
-      m_climate_on_beta1->SetValue(d[1] == 0x66);
-      m_climate_off_beta1->SetValue(d[1] == 0xff);
+      
+      m_climate_off->SetValue((d[1] == 0xff) && not StandardMetrics.ms_v_env_hvac);
 
       break;
     case 0x54f:
