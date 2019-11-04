@@ -56,6 +56,7 @@ Charge Interruption Alerts  Yes
 =========================== ==============
 
 *OVMS currently supports 2011-2017 Nissan LEAF and Nissan e-NV200
+
 **Come HVAC Status Items require that HVAC is in ON position before powering down the vehicle.
 
 ----------------------
