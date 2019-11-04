@@ -62,7 +62,9 @@ WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t slot, size_t modifi
   m_modifier = modifier;
   m_reader = reader;
   m_jobqueue = xQueueCreate(50, sizeof(WebSocketTxJob));
-  m_jobqueue_overflow = 0;
+  m_jobqueue_overflow_status = 0;
+  m_jobqueue_overflow_logged = 0;
+  m_jobqueue_overflow_dropcnt = 0;
   m_mutex = xSemaphoreCreateMutex();
   m_job.type = WSTX_None;
   m_sent = m_ack = 0;
@@ -290,16 +292,13 @@ void WebSocketHandler::ClearTxJob(WebSocketTxJob &job)
 bool WebSocketHandler::AddTxJob(WebSocketTxJob job, bool init_tx)
 {
   if (xQueueSend(m_jobqueue, &job, 0) != pdTRUE) {
-    ++m_jobqueue_overflow;
-    if (m_jobqueue_overflow == 1)
-      ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow detected", m_nc);
+    m_jobqueue_overflow_status |= 1;
+    m_jobqueue_overflow_dropcnt++;
     return false;
   }
   else {
-    if (m_jobqueue_overflow) {
-      ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow resolved, %d drops", m_nc, m_jobqueue_overflow);
-      m_jobqueue_overflow = 0;
-    }
+    if (m_jobqueue_overflow_status & 1)
+      m_jobqueue_overflow_status++;
     if (init_tx && uxQueueMessagesWaiting(m_jobqueue) == 1)
       RequestPoll();
     return true;
@@ -358,9 +357,17 @@ int WebSocketHandler::HandleEvent(int ev, void* p)
     }
     
     case MG_EV_POLL:
-      // check for new transmission
       //ESP_LOGV(TAG, "WebSocketHandler[%p] EV_POLL qlen=%d jobtype=%d sent=%d ack=%d", m_nc, uxQueueMessagesWaiting(m_jobqueue), m_job.type, m_sent, m_ack);
+      // Check for new transmission:
       InitTx();
+      // Log queue overflows & resolves:
+      if (m_jobqueue_overflow_status > m_jobqueue_overflow_logged) {
+        m_jobqueue_overflow_logged = m_jobqueue_overflow_status;
+        if (m_jobqueue_overflow_status & 1)
+          ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow detected", m_nc);
+        else
+          ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow resolved, %u drops", m_nc, m_jobqueue_overflow_dropcnt);
+      }
       break;
     
     case MG_EV_SEND:
@@ -412,7 +419,8 @@ void WebSocketHandler::Log(LogBuffers* message)
   WebSocketTxJob job;
   job.type = WSTX_LogBuffers;
   job.logbuffers = message;
-  AddTxJob(job);
+  if (!AddTxJob(job))
+    message->release();
 }
 
 

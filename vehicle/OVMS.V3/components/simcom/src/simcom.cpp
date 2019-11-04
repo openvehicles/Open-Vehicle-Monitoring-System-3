@@ -308,7 +308,7 @@ void simcom::StartTask()
   {
   if (!m_task)
     {
-    xTaskCreatePinnedToCore(SIMCOM_task, "OVMS SIMCOM", 6*1024, (void*)this, 20, &m_task, CORE(0));
+    xTaskCreatePinnedToCore(SIMCOM_task, "OVMS SIMCOM", 4*1024, (void*)this, 20, &m_task, CORE(0));
     }
   }
 
