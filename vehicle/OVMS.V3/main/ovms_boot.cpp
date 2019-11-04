@@ -377,7 +377,7 @@ void Boot::ErrorCallback(XtExcFrame *frame, int core_id, bool is_abort)
         break;
     }
   while (i < OVMS_BT_LEVELS)
-    boot_data.crash_data.bt[i++].pc = NULL;
+    boot_data.crash_data.bt[i++].pc = 0;
   }
 
 void Boot::NotifyDebugCrash()
