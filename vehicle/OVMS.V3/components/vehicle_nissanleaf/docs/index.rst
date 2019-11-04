@@ -9,31 +9,54 @@ This vehicle type supports the Nissan Leaf and Nissan e-NV200.
 ----------------
 Support Overview
 ----------------
-
+^^^^^^^^^^^^^^^^
+Hardware
+^^^^^^^^^^^^^^^^
 =========================== ==============
-Function                    Support Status
+Item                        Support Status
 =========================== ==============
-Hardware                    Any OVMS v3 (or later) module. Vehicle support: 2011-2017 (24kWh & 30kWh)
+Module                      Any OVMS v3 (or later) module. Vehicle support: 2011-2017 (24kWh & 30kWh)
 Vehicle Cable               1779000 Nissan Leaf OBD-II to DB9 Data Cable for OVMS
 GSM Antenna                 1000500 Open Vehicles OVMS GSM Antenna (or any compatible antenna)
 GPS Antenna                 1020200 Universal GPS Antenna (SMA Connector) (or any compatible antenna)
-SOC Display                 Yes (by default based on GIDS)
-Range Display               Yes (by default based on GIDS)
-GPS Location                Yes (from modem module GPS)
-Speed Display               Yes (from vehicle speed PID)
-Temperature Display         Yes (from vehicle temperature PIDs)
-BMS v+t Display             Yes
-TPMS Display                Yes (If hardware available)
-Charge Status Display       Yes
-Charge Interruption Alerts  Yes
+=========================== ==============
+^^^^^^^^^^^^^^^^
+Controls
+^^^^^^^^^^^^^^^^
+=========================== ==============
+Function                    Support Status
+=========================== ==============
 Charge Control              Start charge only
 Cabin Pre-heat/cool Control Yes* (see info below)
 Lock/Unlock Vehicle         Not currently supported
 Valet Mode Control          Not currently supported
-Others
+=========================== ==============
+^^^^^^^^^^^^^^^^
+Metrics
+^^^^^^^^^^^^^^^^
+=========================== ==============
+Item                        Support Status
+=========================== ==============
+SOC                         Yes (by default based on GIDS)
+Range                       Yes (by default based on GIDS)
+GPS Location                Yes (from modem module GPS)
+Speed                       Yes (from vehicle speed PID)
+Cabin Temperature           Yes (from vehicle temperature PIDs)
+Ambient Temperature         Yes (from vehicle temperature PIDs)
+SetPoint Temperature        Yes (from vehicle hvac PIDs)**
+HVAC Fan Speed              Yes (from vehicle hvac PIDs)**
+HVAC Heating/Cooling Status Yes (from vehicle hvac PIDs)**
+HVAC On Status              Yes (from vehicle hvac PIDs)**
+HVAC Temperature Set        Yes (from vehicle hvac PIDs)**
+HVAC Ventilation Mode       Yes (from vehicle hvac PIDs)**
+BMS v+t                     Yes
+TPMS                        Yes (If hardware available)
+Charge Status               Yes
+Charge Interruption Alerts  Yes
 =========================== ==============
 
-OVMS currently supports 2011-2017 Nissan LEAF and Nissan e-NV200
+*OVMS currently supports 2011-2017 Nissan LEAF and Nissan e-NV200
+**Come HVAC Status Items require that HVAC is in ON position before powering down the vehicle.
 
 ----------------------
 Remote Climate Control
