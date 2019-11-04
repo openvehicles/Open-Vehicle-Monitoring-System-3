@@ -127,7 +127,7 @@ The OVMS uses two configuration options to calculate remaining range, whPerGid (
 Resources
 -----------------
 
-- Nissan LEAF supported added by Tom Parker, see `his wiki <https://carrott.org/emini/Nissan_Leaf_OVMS>`_ for lots of documentation and resources. Some info is outdated e.g climate control now turns off automatically.
+- Nissan LEAF support added by Tom Parker, see `his wiki <https://carrott.org/emini/Nissan_Leaf_OVMS>`_ for lots of documentation and resources. Some info is outdated e.g climate control now turns off automatically.
 - Nissan LEAF features are being added by Jaunius Kapkan, see _`his github profile <https://github.com/mjkapkan/Open-Vehicle-Monitoring-System-3>`_ to track the progress.
 - `MyNissanLEAF thread for Nissan CANbus decoding discussion <http://www.mynissanleaf.com/viewtopic.php?f=44&t=4131&hilit=open+CAN+discussion&start=440>`_
 
