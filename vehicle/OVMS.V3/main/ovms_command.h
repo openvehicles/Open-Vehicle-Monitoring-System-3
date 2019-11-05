@@ -250,7 +250,7 @@ class OvmsCommandTask : public TaskBase
     OvmsCommandState_t m_state;
   };
 
-class OvmsCommandApp
+class OvmsCommandApp : public OvmsWriter
   {
   public:
     OvmsCommandApp();
@@ -275,19 +275,28 @@ class OvmsCommandApp
 
   public:
     void ConfigureLogging();
+    void LogTask();
+    bool StartLogTask(FILE* file);
+    bool StopLogTask();
+    bool OpenLogfile();
+    bool CloseLogfile();
     bool SetLogfile(std::string path);
+    std::string GetLogfile() { return m_logfile_path; }
     void SetLoglevel(std::string tag, std::string level);
     void ExpireLogFiles(int verbosity, OvmsWriter* writer, int keepdays);
+    void ShowLogStatus(int verbosity, OvmsWriter* writer);
     static void ExpireTask(void* data);
     void EventHandler(std::string event, void* data);
 
   private:
-    void CycleLogfile();
+    bool CycleLogfile();
     void ReadConfig();
 
   private:
     int LogBuffer(LogBuffers* lb, const char* fmt, va_list args);
-    OvmsMutex m_fsync_mutex;
+
+  public:
+    void Log(LogBuffers* message);
 
   private:
     OvmsCommand m_root;
@@ -298,6 +307,11 @@ class OvmsCommandApp
     std::string m_logfile_path;
     size_t m_logfile_size;
     size_t m_logfile_maxsize;
+    TaskHandle_t m_logtask;
+    OvmsMutex m_logtask_mutex;
+    QueueHandle_t m_logtask_queue;
+    uint32_t m_logtask_dropcnt;
+    uint32_t m_logfile_cyclecnt;
 
   public:
     TaskHandle_t m_expiretask;

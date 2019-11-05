@@ -102,6 +102,21 @@ config OVMS_SYS_COMMAND_STACK_SIZE
     help
         The stack size of the OVMS Console and dynamic command tasks.
 
+config OVMS_LOGFILE_QUEUE_SIZE
+    int "Queue size for file logging"
+    default 100
+    depends on OVMS
+    help
+        The number of log messages that can be queued to the file logging task.
+        An entry needs 8 bytes of RAM.
+
+config OVMS_LOGFILE_TASK_PRIORITY
+    int "Task priority for file logging"
+    default 2
+    depends on OVMS
+    help
+        The RTOS priority for the file logging task ("OVMS FileLog").
+
 endmenu # System Options
 
 
