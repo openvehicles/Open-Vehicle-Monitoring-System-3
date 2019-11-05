@@ -417,7 +417,6 @@ class WebSocketHandler : public MgHandler, public OvmsWriter
     uint32_t                  m_jobqueue_overflow_status;
     uint32_t                  m_jobqueue_overflow_logged;
     uint32_t                  m_jobqueue_overflow_dropcnt;
-    SemaphoreHandle_t         m_mutex;
     WebSocketTxJob            m_job;
     int                       m_sent;
     int                       m_ack;

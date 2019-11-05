@@ -65,7 +65,6 @@ WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t slot, size_t modifi
   m_jobqueue_overflow_status = 0;
   m_jobqueue_overflow_logged = 0;
   m_jobqueue_overflow_dropcnt = 0;
-  m_mutex = xSemaphoreCreateMutex();
   m_job.type = WSTX_None;
   m_sent = m_ack = 0;
   
@@ -80,23 +79,6 @@ WebSocketHandler::~WebSocketHandler()
   while (xQueueReceive(m_jobqueue, &m_job, 0) == pdTRUE)
     ClearTxJob(m_job);
   vQueueDelete(m_jobqueue);
-  vSemaphoreDelete(m_mutex);
-}
-
-
-bool WebSocketHandler::Lock(TickType_t xTicksToWait)
-{
-  if (xSemaphoreGetMutexHolder(m_mutex) == xTaskGetCurrentTaskHandle())
-    return true;
-  else if (xSemaphoreTake(m_mutex, xTicksToWait) == pdTRUE)
-    return true;
-  else
-    return false;
-}
-
-void WebSocketHandler::Unlock()
-{
-  xSemaphoreGive(m_mutex);
 }
 
 
