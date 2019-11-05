@@ -48,6 +48,7 @@ static const char *TAG = "command";
 #include "ovms_script.h"
 #include "buffered_shell.h"
 #include "log_buffers.h"
+#include "ovms_semaphore.h"
 
 OvmsCommandApp MyCommandApp __attribute__ ((init_priority (1000)));
 
@@ -548,7 +549,7 @@ void help(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const c
   writer->puts("Use \"enable\" to enter secure (admin) mode.");
   }
 
-void Exit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void cmd_exit(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   writer->Exit();
   }
@@ -566,25 +567,55 @@ void log_level(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
 
 void log_file(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (argc == 0)
-    {
-    MyCommandApp.SetLogfile("");
-    writer->puts("Closed log file");
-    return;
-    }
-
-  if (MyConfig.ProtectedPath(argv[0]))
+  const char* path;
+  if (argc == 1)
+    path = argv[0];
+  else
+    path = MyConfig.GetParamValue("log", "file.path").c_str();
+  if (MyConfig.ProtectedPath(path))
     {
     writer->puts("Error: protected path");
     return;
     }
-
-  if (!MyCommandApp.SetLogfile(argv[0]))
+  if (!MyCommandApp.SetLogfile(path))
     {
     writer->puts("Error: VFS file cannot be opened for append");
     return;
     }
-  writer->printf("Logging to file: %s\n", argv[0]);
+  writer->printf("Logging to file: %s\n", path);
+  }
+
+void log_close(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string path = MyCommandApp.GetLogfile();
+  if (path.empty())
+    {
+    writer->puts("Error: no log file path has been set");
+    return;
+    }
+  if (MyCommandApp.CloseLogfile())
+    writer->printf("File logging to '%s' stopped\n", path.c_str());
+  else
+    writer->printf("Error: stop file logging to '%s' failed, see log for details\n", path.c_str());
+  }
+
+void log_open(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string path = MyCommandApp.GetLogfile();
+  if (path.empty())
+    {
+    writer->puts("Error: no log file path has been set");
+    return;
+    }
+  if (MyCommandApp.OpenLogfile())
+    writer->printf("File logging to '%s' started\n", path.c_str());
+  else
+    writer->printf("Error: start file logging to '%s' failed, see log for details\n", path.c_str());
+  }
+
+void log_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyCommandApp.ShowLogStatus(verbosity, writer);
   }
 
 void log_expire(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -691,13 +722,19 @@ OvmsCommandApp::OvmsCommandApp()
   m_logfile_path = "";
   m_logfile_size = 0;
   m_logfile_maxsize = 0;
+  m_logtask = NULL;
+  m_logtask_queue = NULL;
+  m_logtask_dropcnt = 0;
+  m_logfile_cyclecnt = 0;
   m_expiretask = 0;
 
   m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0, false);
-  m_root.RegisterCommand("exit", "End console session", Exit , "", 0, 0, false);
+  m_root.RegisterCommand("exit", "End console session", cmd_exit, "", 0, 0, false);
   OvmsCommand* cmd_log = MyCommandApp.RegisterCommand("log","LOG framework");
-  cmd_log->RegisterCommand("file", "Start logging to specified file", log_file , "<vfspath>", 0, 1);
-  cmd_log->RegisterCommand("close", "Stop logging to file", log_file);
+  cmd_log->RegisterCommand("file", "Start logging to specified file", log_file, "[<vfspath>]\nDefault: config log[file.path]", 0, 1);
+  cmd_log->RegisterCommand("open", "Start file logging", log_open);
+  cmd_log->RegisterCommand("close", "Stop file logging", log_close);
+  cmd_log->RegisterCommand("status", "Show logging status", log_status);
   cmd_log->RegisterCommand("expire", "Expire old log files", log_expire, "[<keepdays>]", 0, 1);
   OvmsCommand* level_cmd = cmd_log->RegisterCommand("level", "Set logging level", NULL, "$C [<tag>]", 0, 0, false);
   level_cmd->RegisterCommand("verbose", "Log at the VERBOSE level (5)", log_level , "[<tag>]", 0, 1);
@@ -837,35 +874,6 @@ int OvmsCommandApp::LogBuffer(LogBuffers* lb, const char* fmt, va_list args)
       }
     }
 
-  if (m_logfile)
-    {
-    // Log to the log file as well...
-    OvmsMutexLock fsynclock(&m_fsync_mutex);
-
-    // add timestamp:
-    time_t rawtime;
-    time(&rawtime);
-    struct tm* tmu = localtime(&rawtime);
-    char tb[64];
-    strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S %Z ", tmu);
-    m_logfile_size += fwrite(tb, 1, strlen(tb), m_logfile);
-
-    // add log entry:
-    std::string le = stripesc(buffer);
-    m_logfile_size += fwrite(le.data(), 1, le.size(), m_logfile);
-    
-    // check file size:
-    if (m_logfile_maxsize && m_logfile_size > (m_logfile_maxsize*1024))
-      {
-      CycleLogfile();
-      }
-    else
-      {
-      fflush(m_logfile);
-      fsync(fileno(m_logfile));
-      }
-    }
-
   lb->append(buffer);
   return ret;
   }
@@ -905,48 +913,279 @@ void OvmsCommandApp::Execute(int verbosity, OvmsWriter* writer, int argc, const 
     }
   }
 
+
+/**
+ * LogTask: file logging task
+ */
+
+struct LogTaskCmd
+  {
+  enum
+    {
+    LTC_Log,          // write data.logbuffers to file
+    LTC_Exit,         // close file, give data.cmdack, exit
+    } type;
+  union
+    {
+    LogBuffers*       logbuffers;
+    OvmsSemaphore*    cmdack;
+    } data;
+  };
+
+static void LogTaskEntry(void* me)
+  {
+  ((OvmsCommandApp*)me)->LogTask();
+  }
+
+void OvmsCommandApp::LogTask()
+  {
+  LogTaskCmd cmd;
+  time_t rawtime;
+  char tb[64];
+
+  for (;;)
+    {
+    if (xQueueReceive(m_logtask_queue, (void*)&cmd, (portTickType)portMAX_DELAY) == pdTRUE)
+      {
+      if (cmd.type == LogTaskCmd::LTC_Log)
+        {
+        // write logbuffers messages:
+        for (auto it = cmd.data.logbuffers->begin(); it != cmd.data.logbuffers->end(); it++)
+          {
+          // write timestamp:
+          time(&rawtime);
+          struct tm* tmu = localtime(&rawtime);
+          strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S %Z ", tmu);
+          m_logfile_size += fwrite(tb, 1, strlen(tb), m_logfile);
+          // write log entry:
+          std::string le = stripesc(*it);
+          m_logfile_size += fwrite(le.data(), 1, le.size(), m_logfile);
+          }
+        cmd.data.logbuffers->release();
+
+        // check file size:
+        if (m_logfile_maxsize && m_logfile_size > (m_logfile_maxsize*1024))
+          {
+          if (!CycleLogfile())
+            break;
+          }
+        else
+          {
+          fflush(m_logfile);
+          fsync(fileno(m_logfile));
+          }
+
+        // check file status:
+        if (ferror(m_logfile))
+          {
+          ESP_LOGE(TAG, "LogTask: writing to file failed, terminating");
+          break;
+          }
+        }
+      else if (cmd.type == LogTaskCmd::LTC_Exit)
+        {
+        break;
+        }
+      }
+    }
+
+  // cleanup & terminate:
+  if (m_logfile)
+    fclose(m_logfile);
+  LogTaskCmd drop;
+  while (xQueueReceive(m_logtask_queue, (void*)&drop, 0) == pdTRUE)
+    {
+    if (drop.type == LogTaskCmd::LTC_Log)
+      {
+      drop.data.logbuffers->release();
+      }
+    else if (drop.type == LogTaskCmd::LTC_Exit)
+      {
+      if (drop.data.cmdack)
+        drop.data.cmdack->Give();
+      }
+    }
+  vQueueDelete(m_logtask_queue);
+  m_logfile = NULL;
+  m_logtask_queue = NULL;
+  m_logtask = NULL;
+  if (cmd.type == LogTaskCmd::LTC_Exit && cmd.data.cmdack)
+    cmd.data.cmdack->Give();
+  vTaskDelete(NULL);
+  }
+
+bool OvmsCommandApp::StartLogTask(FILE* file)
+  {
+  OvmsMutexLock lock(&m_logtask_mutex);
+  m_logfile = file;
+  if (m_logtask)
+    return true;
+  // create queue:
+  m_logtask_dropcnt = 0;
+  m_logtask_queue = xQueueCreate(CONFIG_OVMS_LOGFILE_QUEUE_SIZE, sizeof(LogTaskCmd));
+  if (!m_logtask_queue)
+    {
+    ESP_LOGE(TAG, "StartLogTask: unable to create queue (out of memory)");
+    return false;
+    }
+  // create task:
+  BaseType_t res = xTaskCreatePinnedToCore(LogTaskEntry, "OVMS FileLog", 3*1024, (void*)this,
+    CONFIG_OVMS_LOGFILE_TASK_PRIORITY, &m_logtask, CORE(1));
+  if (res != pdPASS)
+    {
+    ESP_LOGE(TAG, "StartLogTask: unable to create task, error code=%d", res);
+    vQueueDelete(m_logtask_queue);
+    m_logtask_queue = NULL;
+    return false;
+    }
+  // register as logging console:
+  SetMonitoring(true);
+  MyCommandApp.RegisterConsole(this);
+  return true;
+  }
+
+bool OvmsCommandApp::StopLogTask()
+  {
+  OvmsMutexLock lock(&m_logtask_mutex);
+  if (!m_logtask)
+    return true;
+  // detach from logging:
+  SetMonitoring(false);
+  MyCommandApp.DeregisterConsole(this);
+  // send exit command to task:
+  OvmsSemaphore ack;
+  LogTaskCmd cmd;
+  cmd.type = LogTaskCmd::LTC_Exit;
+  cmd.data.cmdack = &ack;
+  if (xQueueSend(m_logtask_queue, &cmd, (portTickType)portMAX_DELAY) != pdTRUE)
+    {
+    ESP_LOGE(TAG, "StopLogTask: unable to send command to task");
+    return false;
+    }
+  // …and wait for it to finish:
+  ack.Take();
+  return true;
+  }
+
+bool OvmsCommandApp::CloseLogfile()
+  {
+  if (!m_logfile)
+    return true;
+  if (!StopLogTask())
+    return false;
+  ESP_LOGI(TAG, "CloseLogfile: file logging stopped");
+  return true;
+  }
+
+bool OvmsCommandApp::OpenLogfile()
+  {
+  if (m_logfile && !CloseLogfile())
+    return false;
+  if (m_logfile_path.empty())
+    return true;
+
+#ifdef CONFIG_OVMS_COMP_SDCARD
+  if (startsWith(m_logfile_path, "/sd") &&
+      (!MyPeripherals || !MyPeripherals->m_sdcard || !MyPeripherals->m_sdcard->isavailable()))
+    {
+    ESP_LOGW(TAG, "OpenLogfile: cannot open '%s', will retry on SD mount", m_logfile_path.c_str());
+    return false;
+    }
+#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
+
+  // get current file size:
+  struct stat st;
+  if (stat(m_logfile_path.c_str(), &st) == 0)
+    m_logfile_size = st.st_size;
+  else
+    m_logfile_size = 0;
+
+  // open file, start task:
+  FILE* file = fopen(m_logfile_path.c_str(), "a+");
+  if (file == NULL)
+    {
+    ESP_LOGE(TAG, "OpenLogfile: cannot open '%s'", m_logfile_path.c_str());
+    return false;
+    }
+  if (!StartLogTask(file))
+    {
+    ESP_LOGE(TAG, "OpenLogfile: cannot start log task on '%s'", m_logfile_path.c_str());
+    return false;
+    }
+
+  ESP_LOGI(TAG, "OpenLogfile: now logging to file '%s'", m_logfile_path.c_str());
+  return true;
+  }
+
 bool OvmsCommandApp::SetLogfile(std::string path)
   {
-  // close old file:
-  if (m_logfile)
+  if (path.empty())
     {
-    fclose(m_logfile);
-    m_logfile = NULL;
-    ESP_LOGI(TAG, "SetLogfile: file logging stopped");
+    // close:
+    if (m_logfile && !CloseLogfile())
+      {
+      ESP_LOGE(TAG, "SetLogfile: error closing '%s'", m_logfile_path.c_str());
+      return false;
+      }
+    m_logfile_path = "";
     }
-  // open new file:
-  if (!path.empty())
+  else
     {
+    // check new path:
     if (MyConfig.ProtectedPath(path))
       {
       ESP_LOGE(TAG, "SetLogfile: '%s' is a protected path", path.c_str());
       return false;
       }
-#ifdef CONFIG_OVMS_COMP_SDCARD
-    if (startsWith(path, "/sd") && (!MyPeripherals || !MyPeripherals->m_sdcard || !MyPeripherals->m_sdcard->isavailable()))
-      {
-      ESP_LOGW(TAG, "SetLogfile: cannot open '%s', will retry on SD mount", path.c_str());
+    // open:
+    m_logfile_path = path;
+    if (!OpenLogfile())
       return false;
-      }
-#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
-    struct stat st;
-    if (stat(path.c_str(), &st) == 0)
-      m_logfile_size = st.st_size;
-    else
-      m_logfile_size = 0;
-    FILE* file = fopen(path.c_str(), "a+");
-    if (file == NULL)
-      {
-      ESP_LOGE(TAG, "SetLogfile: cannot open '%s'", path.c_str());
-      return false;
-      }
-    else
-      {
-      ESP_LOGI(TAG, "SetLogfile: now logging to file '%s'", path.c_str());
-      }
-    m_logfile = file;
     }
   return true;
+  }
+
+bool OvmsCommandApp::CycleLogfile()
+  {
+  if (!m_logfile || m_logfile_path.empty())
+    return false;
+  fclose(m_logfile);
+  m_logfile = NULL;
+
+  char ts[20];
+  time_t tm = time(NULL);
+  strftime(ts, sizeof(ts), ".%Y%m%d-%H%M%S", localtime(&tm));
+  std::string archpath = m_logfile_path;
+  archpath.append(ts);
+  if (rename(m_logfile_path.c_str(), archpath.c_str()) == 0)
+    {
+    ESP_LOGI(TAG, "CycleLogfile: log file '%s' archived as '%s'", m_logfile_path.c_str(), archpath.c_str());
+    m_logfile_cyclecnt++;
+    }
+  else
+    {
+    ESP_LOGE(TAG, "CycleLogfile: rename log file '%s' to '%s' failed", m_logfile_path.c_str(), archpath.c_str());
+    }
+
+  return OpenLogfile();
+  }
+
+void OvmsCommandApp::Log(LogBuffers* msg)
+  {
+  if (!m_logtask || !m_logtask_queue)
+    {
+    msg->release();
+    return;
+    }
+  // send to LogTask:
+  LogTaskCmd cmd;
+  cmd.type = LogTaskCmd::LTC_Log;
+  cmd.data.logbuffers = msg;
+  if (xQueueSend(m_logtask_queue, &cmd, 0) != pdTRUE)
+    {
+    m_logtask_dropcnt++;
+    msg->release();
+    }
   }
 
 void OvmsCommandApp::SetLoglevel(std::string tag, std::string level)
@@ -971,24 +1210,6 @@ void OvmsCommandApp::SetLoglevel(std::string tag, std::string level)
     esp_log_level_set("*", (esp_log_level_t)level_num);
   else
     esp_log_level_set(tag.c_str(), (esp_log_level_t)level_num);
-  }
-
-void OvmsCommandApp::CycleLogfile()
-  {
-  if (!m_logfile)
-    return;
-  fclose(m_logfile);
-  m_logfile = NULL;
-  char ts[20];
-  time_t tm = time(NULL);
-  strftime(ts, sizeof(ts), ".%Y%m%d-%H%M%S", localtime(&tm));
-  std::string archpath = m_logfile_path;
-  archpath.append(ts);
-  if (rename(m_logfile_path.c_str(), archpath.c_str()) == 0)
-    ESP_LOGI(TAG, "CycleLogfile: log file '%s' archived as '%s'", m_logfile_path.c_str(), archpath.c_str());
-  else
-    ESP_LOGE(TAG, "CycleLogfile: rename log file '%s' to '%s' failed", m_logfile_path.c_str(), archpath.c_str());
-  SetLogfile(m_logfile_path);
   }
 
 void OvmsCommandApp::ExpireLogFiles(int verbosity, OvmsWriter* writer, int keepdays)
@@ -1081,6 +1302,25 @@ void OvmsCommandApp::ExpireTask(void* data)
   vTaskDelete(NULL);
   }
 
+void OvmsCommandApp::ShowLogStatus(int verbosity, OvmsWriter* writer)
+  {
+  writer->printf(
+    "Log listeners      : %u\n"
+    "File logging status: %s\n"
+    "  Log file path    : %s\n"
+    "  Current size     : %.1f kB\n"
+    "  Cycle size       : %u kB\n"
+    "  Cycle count      : %u\n"
+    "  Dropped messages : %u\n"
+    , m_consoles.size()
+    , m_logfile ? "active" : "inactive"
+    , m_logfile_path.empty() ? "-" : m_logfile_path.c_str()
+    , (float) m_logfile_size / 1024.0f
+    , m_logfile_maxsize
+    , m_logfile_cyclecnt
+    , m_logtask_dropcnt);
+  }
+
 void OvmsCommandApp::EventHandler(std::string event, void* data)
   {
   if (event == "config.changed")
@@ -1092,12 +1332,12 @@ void OvmsCommandApp::EventHandler(std::string event, void* data)
   else if (event == "sd.mounted")
     {
     if (startsWith(m_logfile_path, "/sd"))
-      SetLogfile(m_logfile_path);
+      OpenLogfile();
     }
   else if (event == "sd.unmounting")
     {
     if (startsWith(m_logfile_path, "/sd"))
-      SetLogfile("");
+      CloseLogfile();
     }
   else if (event == "ticker.3600")
     {
@@ -1125,12 +1365,8 @@ void OvmsCommandApp::ReadConfig()
 
   // configure log file:
   m_logfile_maxsize = MyConfig.GetParamValueInt("log", "file.maxsize", 1024);
-  if (MyConfig.GetParamValueBool("log", "file.enable", false) == false)
-    m_logfile_path = "";
-  else
-    m_logfile_path = MyConfig.GetParamValue("log", "file.path");
-  if (!m_logfile_path.empty())
-    SetLogfile(m_logfile_path);
+  if (MyConfig.GetParamValueBool("log", "file.enable", false) == true)
+    SetLogfile(MyConfig.GetParamValue("log", "file.path"));
   }
 
 

@@ -1,6 +1,10 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Logging: file logging moved to dedicated task (improved performance)
+  New commands:
+    log status      Show logging status
+    log open        (Re-)open currently set log file after "log close"
 - Web UI: log monitoring via web shell
   Note: command "log monitor" doesn't apply, use the checkbox to disable.
 - Factory reset from web/remote shell by "module factory reset -noconfirm"
