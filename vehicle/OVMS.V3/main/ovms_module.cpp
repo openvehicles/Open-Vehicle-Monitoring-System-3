@@ -112,6 +112,7 @@ static heap_task_info_params_t* params = NULL;
 static TaskHandle_t* tasklist = NULL;
 static TaskStatus_t* taskstatus = NULL;
 static uint32_t taskstatus_cnt = 0;
+static uint32_t taskstatus_time = 0;
 static uint32_t totalruntime = 0;
 static OvmsMutex taskstatus_mutex;
 static heap_task_block_t* before = NULL;
@@ -241,6 +242,7 @@ class TaskMap
         map[i].name.words[NAMELEN/4-1] |= 0x80000000;
         }
       taskstatus_cnt = uxTaskGetSystemState(taskstatus, MAX_TASKS, &totalruntime);
+      taskstatus_time = xTaskGetTickCount() / configTICK_RATE_HZ;
       for (UBaseType_t i = 0; i < taskstatus_cnt; ++i)
         {
         insert(taskstatus[i].xHandle, taskstatus[i].pcTaskName);
@@ -727,6 +729,14 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
     }
   bool showStack = (strcmp(cmd->GetName(),"stack") == 0);
 
+  // sample current task activity if last taskstatus fetched is too old:
+  uint32_t now = xTaskGetTickCount() / configTICK_RATE_HZ;
+  if (now - taskstatus_time > 3600)
+    {
+    get_tasks();
+    vTaskDelay(pdMS_TO_TICKS(2000));
+    }
+
   // copy last taskstatus for comparison:
   std::map<UBaseType_t, uint32_t> last_runtime;
   for (int i = 0; i < taskstatus_cnt; i++)
@@ -797,6 +807,14 @@ static void module_tasks_data(int verbosity, OvmsWriter* writer, OvmsCommand* cm
     if (writer)
       writer->printf("Can't allocate storage for task diagnostics\n");
     return;
+    }
+
+  // sample current task activity if last taskstatus fetched is too old:
+  uint32_t now = xTaskGetTickCount() / configTICK_RATE_HZ;
+  if (now - taskstatus_time > 3600)
+    {
+    get_tasks();
+    vTaskDelay(pdMS_TO_TICKS(2000));
     }
 
   // copy last taskstatus for comparison:
