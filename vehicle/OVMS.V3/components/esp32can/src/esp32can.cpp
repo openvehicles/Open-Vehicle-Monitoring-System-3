@@ -51,83 +51,58 @@ static portMUX_TYPE esp32can_spinlock = portMUX_INITIALIZER_UNLOCKED;
 #define ESP32CAN_ENTER_CRITICAL_ISR()   portENTER_CRITICAL_ISR(&esp32can_spinlock)
 #define ESP32CAN_EXIT_CRITICAL_ISR()    portEXIT_CRITICAL_ISR(&esp32can_spinlock)
 
-static inline uint32_t ESP32CAN_rxframe(esp32can *me, uint32_t interrupt, BaseType_t* task_woken)
+static inline void ESP32CAN_rxframe(esp32can *me, BaseType_t* task_woken)
   {
   static CAN_queue_msg_t msg;
-  uint32_t current_ir = interrupt;
+  uint8_t read_len = 0;
 
-  // Note: behaviour of the ESP32 CAN controller differs from SJA1000 here.
-  // From https://github.com/espressif/esp-idf/issues/4276#issuecomment-548753085:
-  //  
-  //  When bytes are received, they are written to the FIFO directly, and an
-  //  overflow is not detected until the 64th byte is written. The bytes of
-  //  the overflowing message will remain in the FIFO. The RMC should count
-  //  all messages received (up to 64 messages) regardless of whether they
-  //  were overflowing or not.
-  //  
-  //  Whenever you release the receiver buffer, and the buffer window shifts
-  //  to an overflowed message, the Data overrun interrupt will be set.
-  //  If that is the case, the message contents should be ignored, the
-  //  clear data overrun command set, and the receiver buffer released again.
-  //  Continue this process until RMC reaches zero, or until the buffer
-  //  window rotates to a valid message.
-  // 
-  // Additional note:
-  //  We really need to check the IR flags. RBS/DOS and RMC do not reflect
-  //  "buffer has valid message", so deliver false duplicates after the
-  //  overflow. Only RI reliably indicates validity.
-
-  while (current_ir & __CAN_IRQ_RX)
+  while (MODULE_ESP32CAN->SR.B.RBS)
     {
-    // Invalid message from FIFO overrun?
-    if (current_ir & __CAN_IRQ_DATA_OVERRUN)
+    // Record the origin
+    memset(&msg,0,sizeof(msg));
+    msg.type = CAN_frame;
+    msg.body.frame.origin = me;
+
+    // get FIR
+    msg.body.frame.FIR.U = MODULE_ESP32CAN->MBX_CTRL.FCTRL.FIR.U;
+
+    // check if this is a standard or extended CAN frame
+    if (msg.body.frame.FIR.B.FF == CAN_frame_std)
       {
-      // Clear data overrun, get next frame if any:
-      MODULE_ESP32CAN->CMR.B.CDO = 1;
-      MODULE_ESP32CAN->CMR.B.RRB = 1;
-      // Count and remember error event for main handler:
-      me->m_status.rxbuf_overflow++;
+      // Standard frame: Get Message ID
+      msg.body.frame.MsgID = ESP32CAN_GET_STD_ID;
+      // …deep copy data bytes
+      for (int k=0 ; k<msg.body.frame.FIR.B.DLC ; k++)
+        msg.body.frame.data.u8[k] = MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[k];
+      read_len += 3 + msg.body.frame.FIR.B.DLC;
       }
     else
       {
-      // Record the origin
-      memset(&msg,0,sizeof(msg));
-      msg.type = CAN_frame;
-      msg.body.frame.origin = me;
-
-      // get FIR
-      msg.body.frame.FIR.U = MODULE_ESP32CAN->MBX_CTRL.FCTRL.FIR.U;
-
-      // check if this is a standard or extended CAN frame
-      if (msg.body.frame.FIR.B.FF == CAN_frame_std)
-        {
-        // Standard frame: Get Message ID
-        msg.body.frame.MsgID = ESP32CAN_GET_STD_ID;
-        // …deep copy data bytes
-        for (int k=0 ; k<msg.body.frame.FIR.B.DLC ; k++)
-          msg.body.frame.data.u8[k] = MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[k];
-        }
-      else
-        {
-        // Extended frame: Get Message ID
-        msg.body.frame.MsgID = ESP32CAN_GET_EXT_ID;
-        // …deep copy data bytes
-        for (int k=0 ; k<msg.body.frame.FIR.B.DLC ; k++)
-          msg.body.frame.data.u8[k] = MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.EXT.data[k];
-        }
-
-      // Let the hardware know the frame has been read
-      MODULE_ESP32CAN->CMR.B.RRB = 1;
-
-      // Send frame to main CAN processor task
-      xQueueSendFromISR(MyCan.m_rxqueue, &msg, task_woken);
+      // Extended frame: Get Message ID
+      msg.body.frame.MsgID = ESP32CAN_GET_EXT_ID;
+      // …deep copy data bytes
+      for (int k=0 ; k<msg.body.frame.FIR.B.DLC ; k++)
+        msg.body.frame.data.u8[k] = MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.EXT.data[k];
+      read_len += 5 + msg.body.frame.FIR.B.DLC;
       }
 
-    current_ir = MODULE_ESP32CAN->IR.U & 0xff;
-    interrupt |= current_ir;
-    } // while (current_ir & __CAN_IRQ_RX)
+    // Let the hardware know the frame has been read
+    MODULE_ESP32CAN->CMR.B.RRB = 1;
 
-  return interrupt;
+    if (read_len <= 64)
+      {
+      // Frame is valid: send to main CAN processor task
+      xQueueSendFromISR(MyCan.m_rxqueue, &msg, task_woken);
+      }
+    else
+      {
+      // Hardware bug: this and all coming frames are invalid, flush out & exit:
+      while (MODULE_ESP32CAN->SR.B.RBS)
+        MODULE_ESP32CAN->CMR.B.RRB = 1;
+      break;
+      }
+
+    } // while (MODULE_ESP32CAN->SR.B.RBS)
   }
 
 static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
@@ -141,12 +116,12 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
   me->m_status.interrupts++;
 
   // Read interrupt status and clear flags
-  while ((interrupt = MODULE_ESP32CAN->IR.U & 0xff) != 0)
+  while ((interrupt = MODULE_ESP32CAN->IR.U) != 0)
     {
     // Handle RX frame(s) available interrupt:
     if ((interrupt & __CAN_IRQ_RX) != 0)
       {
-      interrupt = ESP32CAN_rxframe(me, interrupt, &task_woken);
+      ESP32CAN_rxframe(me, &task_woken);
       }
 
     // Handle TX complete interrupt:
@@ -174,6 +149,12 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
       me->m_status.error_flags = error_irqs << 16 | (MODULE_ESP32CAN->SR.U & 0b11001111) << 8 | MODULE_ESP32CAN->ECC.B.ECC;
       me->m_status.errors_rx = MODULE_ESP32CAN->RXERR.U;
       me->m_status.errors_tx = MODULE_ESP32CAN->TXERR.U;
+      // Clear data overrun:
+      if (error_irqs & __CAN_IRQ_DATA_OVERRUN)
+        {
+        me->m_status.rxbuf_overflow++;
+        MODULE_ESP32CAN->CMR.B.CDO = 1;
+        }
       // Request error log:
       CAN_queue_msg_t msg;
       msg.type = CAN_logerror;
