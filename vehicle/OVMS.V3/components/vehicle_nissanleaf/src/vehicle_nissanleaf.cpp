@@ -127,10 +127,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_climate_air_recirc = MyMetrics.InitBool("xnl.cc.air.recirc", SM_STALE_MIN, false);
   m_climate_air_fresh = MyMetrics.InitBool("xnl.cc.air.fresh", SM_STALE_MIN, false);
   m_climate_air_def = MyMetrics.InitBool("xnl.cc.air.def", SM_STALE_MIN, false);
-  m_climate_beta_off1 = MyMetrics.InitBool("xnl.cc.off.beta1", SM_STALE_MIN, false);
-  m_climate_beta_on1 = MyMetrics.InitBool("xnl.cc.on.beta1", SM_STALE_MIN, false);
-  m_climate_beta_on2 = MyMetrics.InitBool("xnl.cc.on.beta2", SM_STALE_MIN, false);
-  m_climate_beta_on3 = MyMetrics.InitBool("xnl.cc.on.beta3", SM_STALE_MIN, false);
+  // m_climate_beta_off1 = MyMetrics.InitBool("xnl.cc.off.beta1", SM_STALE_MIN, false);
   m_climate_beta_heatpump_cooling = MyMetrics.InitBool("xnl.cc.beta.heatpump.cooling", SM_STALE_MIN, false);
   m_climate_beta_ptc_heating = MyMetrics.InitBool("xnl.cc.beta.ptc.heating", SM_STALE_MIN, false);
   m_climate_setpoint = MyMetrics.InitFloat("xnl.cc.setpoint", SM_STALE_MIN, 0, Celcius);
@@ -645,16 +642,10 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x54a:
     {
-      // Beta Values for testing
-      m_climate_beta_on1->SetValue(d[1] == 0x10);
-      m_climate_beta_on2->SetValue(d[1] == 0x12);
-      m_climate_beta_on3->SetValue(d[1] == 0xA0);
-      // end of beta values
 
       float setpoint_float;
       setpoint_float = d[4] / 2;
       m_climate_setpoint->SetValue(setpoint_float);
-
       
     }
       break;
@@ -751,8 +742,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_env_temp->SetValue(d[6] / 2.0 - 40);
         }
       
-      // below true whn hvac on while charging so still beta
-      m_climate_beta_off1->SetValue(d[1] == 0xff);
+      // below true when hvac on while charging so must be used for something else. leaving for future use.
+      // m_climate_beta_off1->SetValue(d[1] == 0xff);
 
       break;
     case 0x54f:
