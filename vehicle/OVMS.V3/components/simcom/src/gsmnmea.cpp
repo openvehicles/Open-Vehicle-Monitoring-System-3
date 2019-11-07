@@ -232,6 +232,7 @@ void GsmNMEA::IncomingLine(const std::string line)
     if (m_gpstime_enabled)
       {
       int tm = utc_to_timestamp(date, time);
+      tm += (1024*7*86400); // Nasty kludge to workaround SIM5360 week rollover
       *StdMetrics.ms_m_timeutc = (int) tm;
       MyTime.Set(TAG, 2, true, tm);
       }
