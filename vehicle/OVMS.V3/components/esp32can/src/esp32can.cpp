@@ -77,7 +77,7 @@ static inline uint32_t ESP32CAN_rxframe(esp32can *me, uint32_t interrupt, BaseTy
   //  "buffer has valid message", so deliver false duplicates after the
   //  overflow. Only RI reliably indicates validity.
 
-  while (current_ir & (__CAN_IRQ_RX|__CAN_IRQ_DATA_OVERRUN))
+  while (current_ir & __CAN_IRQ_RX)
     {
     // Invalid message from FIFO overrun?
     if (current_ir & __CAN_IRQ_DATA_OVERRUN)
