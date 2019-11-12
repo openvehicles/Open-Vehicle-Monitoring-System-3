@@ -261,6 +261,7 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->printf("Tx err:    %20d\n",sbus->m_status.errors_tx);
   writer->printf("Tx ovrflw: %20d\n",sbus->m_status.txbuf_overflow);
   writer->printf("Wdg Resets:%20d\n",sbus->m_status.watchdog_resets);
+  writer->printf("Err Resets:%20d\n",sbus->m_status.error_resets);
   if (sbus->m_watchdog_timer>0)
     {
     writer->printf("Wdg Timer: %20d sec(s)\n",monotonictime-sbus->m_watchdog_timer);
@@ -544,7 +545,7 @@ bool canbus::StatusChanged()
   // simple checksum to prevent log flooding:
   uint32_t chksum = m_status.packets_rx + m_status.packets_tx + m_status.errors_rx + m_status.errors_tx
     + m_status.rxbuf_overflow + m_status.txbuf_overflow + m_status.error_flags + m_status.txbuf_delay
-    + m_status.watchdog_resets;
+    + m_status.watchdog_resets + m_status.error_resets;
   if (chksum != m_status_chksum)
     {
     m_status_chksum = chksum;
