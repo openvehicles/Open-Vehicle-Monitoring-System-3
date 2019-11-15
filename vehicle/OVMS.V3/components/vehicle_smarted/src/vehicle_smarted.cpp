@@ -168,6 +168,7 @@ void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
   m_enable_write    = MyConfig.GetParamValueBool("xse", "canwrite", false);
   m_lock_state      = MyConfig.GetParamValueBool("xse", "lockstate", false);
   m_reset_trip      = MyConfig.GetParamValueBool("xse", "reset.trip.charge", false);
+  m_notify_trip     = MyConfig.GetParamValueBool("xse", "notify.trip", true);
   
   m_preclima_time   = MyConfig.GetParamValueInt("xse", "preclimatime", 15);
   
@@ -213,7 +214,7 @@ void OvmsVehicleSmartED::vehicle_smarted_car_on(bool isOn) {
       StandardMetrics.ms_v_env_charging12v->SetValue(false);
     
     if (m_enable_write) PollSetState(1);
-    if (StandardMetrics.ms_v_pos_trip->AsFloat(0) > 0.1)
+    if (StandardMetrics.ms_v_pos_trip->AsFloat(0) > 0.1 && m_notify_trip)
 			NotifyTrip();
   }
 

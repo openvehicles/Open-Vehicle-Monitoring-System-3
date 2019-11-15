@@ -68,6 +68,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
     static void WebCfgCommands(PageEntry_t& p, PageContext_t& c);
+    static void WebCfgNotify(PageEntry_t& p, PageContext_t& c);
     void ConfigChanged(OvmsConfigParam* param);
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);
@@ -147,7 +148,8 @@ class OvmsVehicleSmartED : public OvmsVehicle
     bool m_enable_write;                    // canwrite
     bool m_lock_state;                      // Door lock/unlock state
     bool m_reset_trip;                      // Reset trip when charging else when env on
-    int m_preclima_time;                    // pre clima time (minutes)
+    bool m_notify_trip;                     // Notify Trip values after driving end (default=true)
+    int m_preclima_time;                    // pre clima time (default=15 minutes)
     int m_reboot_time;                      // Reboot time
 
   protected:

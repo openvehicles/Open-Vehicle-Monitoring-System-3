@@ -61,6 +61,7 @@ void OvmsVehicleSmartED::WebInit()
   //MyWebServer.RegisterPage("/xse/brakelight", "Brake Light",      OvmsWebServer::HandleCfgBrakelight,  PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xse/cellmon",    "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xse/commands",   "Commands",         WebCfgCommands,                      PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xse/notify",     "Notifys",          WebCfgNotify,                        PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 /**
@@ -73,6 +74,7 @@ void OvmsVehicleSmartED::WebDeInit()
   //MyWebServer.DeregisterPage("/xse/brakelight");
   MyWebServer.DeregisterPage("/xse/cellmon");
   MyWebServer.DeregisterPage("/xse/commands");
+  MyWebServer.DeregisterPage("/xse/notify");
 }
 
 /**
@@ -191,7 +193,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>This determines the Ideal Range.</p>",
     "min=\"90\" max=\"200\" step=\"1\"");
   
-  c.input_checkbox("change Display SOC = SOH", "soc_rsoc", soc_rsoc
+  c.input_checkbox("change Display SOC = SOH", "soc_rsoc", soc_rsoc,
     "<p>WARNING: change Displayed SOC to SOH and SOH to SOC.</p>");
   
   c.input_checkbox("Enable CAN write(Poll)", "canwrite", canwrite,
@@ -245,7 +247,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_slider("… Ignition Timeout", "egpio_timout", 5, "min",
     -1, egpio_timout.empty() ? 5 : atof(egpio_timout.c_str()), 5, 1, 30, 1,
     "<p>How long the Ignition should stay on in minutes.</p>");
-    
+
   c.input_slider("Restart Network Time", "reboot", 3, "min",
     atof(reboot.c_str()) > 0, atof(reboot.c_str()), 15, 0, 60, 1,
     "<p>Default 0=off. Restart Network automatic when no v2Server connection.</p>");
@@ -354,6 +356,46 @@ void OvmsVehicleSmartED::WebCfgCommands(PageEntry_t& p, PageContext_t& c)
 
   c.done();
 }
+
+/**
+ * WebCfgNotify: Vehicle Notify (URL /xse/notify)
+ */
+void OvmsVehicleSmartED::WebCfgNotify(PageEntry_t& p, PageContext_t& c)
+{
+  std::string error, info;;
+  bool trip;
+  
+  if (c.method == "POST") {
+    // process form submission:
+    trip = (c.getvar("trip") == "yes");
+
+    MyConfig.SetParamValueBool("xse", "notify.trip", trip);
+    
+    info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
+    c.head(200);
+    c.alert("success", info.c_str());
+  }
+  else {
+    // read configuration:
+    trip = MyConfig.GetParamValueBool("xse", "notify.trip", true);
+    c.head(200);
+  }
+
+  // generate form:
+  c.panel_start("primary", "Smart ED Vehicle Notifys");
+  c.form_start(p.uri);
+  
+  c.input_checkbox("Notify trip", "trip", trip,
+    "<p>Notify Trip values after driving end</p>");
+
+  c.print("<hr>");
+  c.input_button("default", "Save");
+  c.form_end();
+  c.panel_end();
+
+  c.done();
+}
+
 /**
  * GetDashboardConfig: smart ED specific dashboard setup
  */
