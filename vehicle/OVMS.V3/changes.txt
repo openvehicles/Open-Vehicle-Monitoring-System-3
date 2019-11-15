@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Renault Zoe: basic Metrics and charging status added, trip notify, web config for battery capacity
 - Logging: file logging moved to dedicated task (improved performance)
   New commands:
     log status      Show logging status
