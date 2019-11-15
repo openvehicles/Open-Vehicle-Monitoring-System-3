@@ -75,9 +75,28 @@ static const char *TAG = "v-smarted";
 #include "ovms_command.h"
 #include "metrics_standard.h"
 #include "ovms_notify.h"
+#include "ovms_utils.h"
 
 #include "vehicle_smarted.h"
 
+static const OvmsVehicle::poll_pid_t smarted_polls[] =
+{
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF111, {  0,120,999 } }, // rqChargerPN_HW
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0226, {  0,120,999 } }, // rqChargerVoltages
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0225, {  0,120,999 } }, // rqChargerAmps
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x022A, {  0,120,999 } }, // rqChargerSelCurrent
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0223, {  0,120,999 } }, // rqChargerTemperatures
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0201, {  0,300,600 } }, // rqBattTemperatures
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0202, {  0,300,600 } }, // rqBattModuleTemperatures
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0208, {  0,300,600 } }, // rqBattVolts
+  { 0, 0, 0x00, 0x00, { 0, 0, 0 } }
+};
+
+void OvmsVehicleSmartED::ObdInitPoll() {
+  // init poller:
+  PollSetPidList(m_can1, smarted_polls);
+  PollSetState(0);
+}
 
 /**
  * Incoming poll reply messages
