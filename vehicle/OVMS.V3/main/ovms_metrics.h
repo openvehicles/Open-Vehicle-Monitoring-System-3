@@ -231,9 +231,9 @@ class OvmsMetricString : public OvmsMetric
 
 /**
  * OvmsMetricBitset<bits>: metric wrapper for std::bitset<bits>
- *  - string representation as comma separated bit positions (beginning at 1) of set bits
+ *  - string representation as comma separated bit positions (beginning at startpos) of set bits
  */
-template <size_t N>
+template <size_t N, int startpos=1>
 class OvmsMetricBitset : public OvmsMetric
   {
   public:
@@ -258,7 +258,7 @@ class OvmsMetricBitset : public OvmsMetric
           {
           if (ss.tellp() > 0)
             ss << ',';
-          ss << i+1;
+          ss << startpos + i;
           }
         }
       return ss.str();
@@ -282,8 +282,9 @@ class OvmsMetricBitset : public OvmsMetric
         {
         std::istringstream ts(token);
         ts >> elem;
-        if (elem > 0 && elem <= N)
-          n_value[elem-1] = 1;
+        elem -= startpos;
+        if (elem >= 0 && elem < N)
+          n_value[elem] = 1;
         }
       SetValue(n_value);
       }
