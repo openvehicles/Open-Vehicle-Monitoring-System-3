@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Scripting API: OvmsMetrics.AsJSON() added
 - Logging: file logging moved to dedicated task (improved performance)
   New commands:
     log status      Show logging status

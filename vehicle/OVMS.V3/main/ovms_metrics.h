@@ -264,6 +264,14 @@ class OvmsMetricBitset : public OvmsMetric
       return ss.str();
       }
 
+    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
+      {
+      std::string json = "[";
+      json += AsString(defvalue, units, precision);
+      json += "]";
+      return json;
+      }
+
     void SetValue(std::string value)
       {
       std::bitset<N> n_value;
@@ -342,6 +350,14 @@ class OvmsMetricSet : public OvmsMetric
         ss << *i;
         }
       return ss.str();
+      }
+
+    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
+      {
+      std::string json = "[";
+      json += AsString(defvalue, units, precision);
+      json += "]";
+      return json;
       }
 
     void SetValue(std::string value)
