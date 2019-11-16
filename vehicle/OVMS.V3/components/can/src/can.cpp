@@ -530,9 +530,20 @@ void canbus::LogFrame(CAN_log_type_t type, const CAN_frame_t* frame)
 
 void canbus::LogStatus(CAN_log_type_t type)
   {
-  if (!MyCan.HasLogger() || (type==CAN_LogStatus_Error && !StatusChanged()))
-    return;
-  MyCan.LogStatus(this, type, &m_status);
+  if (type==CAN_LogStatus_Error)
+    {
+    if (!StatusChanged())
+      return;
+    ESP_LOGE(TAG,
+      "%s: intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d"
+      " txdelay=%d wdgreset=%d errreset=%d",
+      m_name, m_status.interrupts, m_status.packets_rx, m_status.packets_tx,
+      m_status.error_flags, m_status.errors_rx, m_status.errors_tx,
+      m_status.rxbuf_overflow, m_status.txbuf_overflow, m_status.txbuf_delay,
+      m_status.watchdog_resets, m_status.error_resets);
+    }
+  if (MyCan.HasLogger())
+    MyCan.LogStatus(this, type, &m_status);
   }
 
 void canbus::LogInfo(CAN_log_type_t type, const char* text)
@@ -543,8 +554,9 @@ void canbus::LogInfo(CAN_log_type_t type, const char* text)
 bool canbus::StatusChanged()
   {
   // simple checksum to prevent log flooding:
-  uint32_t chksum = m_status.packets_rx + m_status.packets_tx + m_status.errors_rx + m_status.errors_tx
-    + m_status.rxbuf_overflow + m_status.txbuf_overflow + m_status.error_flags + m_status.txbuf_delay
+  uint32_t chksum = m_status.errors_rx + m_status.errors_tx
+    + m_status.rxbuf_overflow + m_status.txbuf_overflow
+    + m_status.error_flags + m_status.txbuf_delay
     + m_status.watchdog_resets + m_status.error_resets;
   if (chksum != m_status_chksum)
     {
@@ -575,9 +587,7 @@ uint32_t can::AddLogger(canlog* logger, int filterc, const char* const* filterv)
 
 bool can::HasLogger()
   {
-  OvmsMutexLock lock(&m_loggermap_mutex);
-
-  return (m_loggermap.size() > 0);
+  return (m_loggermap.size() != 0);
   }
 
 canlog* can::GetLogger(uint32_t id)

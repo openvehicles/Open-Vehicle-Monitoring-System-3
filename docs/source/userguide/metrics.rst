@@ -84,6 +84,9 @@ m.serial                                                          Reserved for m
 m.tasks                                  20                       Task count (use ``module tasks`` to list)
 m.time.utc                               1572590910Sec            UTC time in seconds
 m.version                                3.2.005-155-g3133466f/…  Firmware version
+m.egpio.input                            0,1,2,3,4,5,6,7,9        EGPIO input port state (ports 0…9, present=high)
+m.egpio.monitor                          8,9                      EGPIO input monitoring ports
+m.egpio.output                           4,5,6,7,9                EGPIO output port state
 s.v2.connected                           yes                      yes = V2 (MP) server connected
 s.v2.peers                               1                        V2 clients connected
 s.v3.connected                                                    yes = V3 (MQTT) server connected

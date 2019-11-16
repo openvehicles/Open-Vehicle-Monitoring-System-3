@@ -34,6 +34,8 @@ Short javascript snippets can also be directly evaluated with::
 
 Such javascript code can also be placed in the /store/events/<eventname> directories, to be automatically executed when the specified event is triggered.
 
+.. note:: The scripting engine used is `Duktape <https://duktape.org/>`_. Duktape supports `ECMAScript E5/E5.1 <http://www.ecma-international.org/ecma-262/5.1/>`_ with some additions from later ECMAScript standards. Duktape does not emulate a browser environment, so you don't have window or document objects etc., just core Javascript plus the OVMS API and plugins.
+
 ---------------------
 Persistent JavaScript
 ---------------------
@@ -153,6 +155,7 @@ method::
     },
     "OvmsMetrics": {
       "AsFloat": function AsFloat() { [native code] },
+      "AsJSON": function AsJSON() { [native code] },
       "Value": function Value() { [native code] }
     },
     "OvmsNotify": {
@@ -317,6 +320,16 @@ OvmsMetrics
     Returns the string representation of the metric value.
 - ``num = OvmsMetrics.AsFloat(metricname)``
     Returns the float representation of the metric value.
+- ``str = OvmsMetrics.AsJSON(metricname)``
+    Returns the JSON representation of the metric value.
+
+Hint: to process array metrics from Javascript, parse their JSON representation using ``eval()``.
+Example:
+
+.. code-block:: javascript
+
+  var celltemps = eval(OvmsMetrics.AsJSON("v.b.c.temp"));
+  print("Temperature of cell 3: " + celltemps[2] + " °C\n");
 
 
 OvmsNotify

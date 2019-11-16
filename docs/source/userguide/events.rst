@@ -16,6 +16,8 @@ canopen.worker.stop                 <worker>  CANopen bus worker task stopping
 config.changed                                Configuration has changed
 config.mounted                                Configuration is mounted and available
 config.unmounted                              Configuration is unmounted and unavailable
+egpio.input.<port>.<state>                    EGPIO input port change (port=0…9, state=high/low)
+egpio.output.<port>.<state>                   EGPIO output port change (port=0…9, state=high/low)
 gps.lock.acquired                             GPS lock has been acquired
 gps.lock.lost                                 GPS lock has been lost
 housekeeping.init                             Housekeeping has initialised
