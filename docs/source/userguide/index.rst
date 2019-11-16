@@ -23,4 +23,5 @@ User Guide
    scripting
    factory
    ecu
+   egpio
    

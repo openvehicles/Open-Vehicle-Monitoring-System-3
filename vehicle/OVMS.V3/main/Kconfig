@@ -410,6 +410,16 @@ config OVMS_COMP_MAX7317
     help
         Enable to include support for MAX7317 GPIO expander.
 
+config OVMS_COMP_MAX7317_MONITOR_INTERVAL
+    int "MAX7317 port monitor default polling interval [ms]"
+    range 10 10000
+    default 50
+    depends on OVMS_COMP_MAX7317
+    help
+        The MAX7317 has no IRQ so needs to be polled to monitor port changes.
+        If enabled, the monitoring polls the ports with this interval by default.
+        The interval can be configured via param egpio[monitor.interval].
+
 config OVMS_COMP_ESP32CAN
     bool "Include support for ESP32 on-board CAN controller (can1)"
     default y
