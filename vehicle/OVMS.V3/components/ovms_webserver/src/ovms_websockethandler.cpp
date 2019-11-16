@@ -65,6 +65,7 @@ WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t slot, size_t modifi
   m_jobqueue_overflow_status = 0;
   m_jobqueue_overflow_logged = 0;
   m_jobqueue_overflow_dropcnt = 0;
+  m_jobqueue_overflow_dropcntref = 0;
   m_job.type = WSTX_None;
   m_sent = m_ack = 0;
   
@@ -345,10 +346,14 @@ int WebSocketHandler::HandleEvent(int ev, void* p)
       // Log queue overflows & resolves:
       if (m_jobqueue_overflow_status > m_jobqueue_overflow_logged) {
         m_jobqueue_overflow_logged = m_jobqueue_overflow_status;
-        if (m_jobqueue_overflow_status & 1)
+        if (m_jobqueue_overflow_status & 1) {
           ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow detected", m_nc);
-        else
-          ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow resolved, %u drops", m_nc, m_jobqueue_overflow_dropcnt);
+        }
+        else {
+          uint32_t dropcnt = m_jobqueue_overflow_dropcnt;
+          ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow resolved, %u drops", m_nc, dropcnt - m_jobqueue_overflow_dropcntref);
+          m_jobqueue_overflow_dropcntref = dropcnt;
+        }
       }
       break;
     
