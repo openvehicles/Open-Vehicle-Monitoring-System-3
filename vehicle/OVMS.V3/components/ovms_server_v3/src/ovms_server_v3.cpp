@@ -215,6 +215,11 @@ OvmsServerV3::OvmsServerV3(const char* name)
     MyOvmsServerV3Reader = MyNotify.RegisterReader("ovmsv3", COMMAND_RESULT_NORMAL, std::bind(OvmsServerV3ReaderCallback, _1, _2),
                                                    true, std::bind(OvmsServerV3ReaderFilterCallback, _1, _2));
     }
+  else
+    {
+    MyNotify.RegisterReader(MyOvmsServerV3Reader, "ovmsv3", COMMAND_RESULT_NORMAL, std::bind(OvmsServerV3ReaderCallback, _1, _2),
+                            true, std::bind(OvmsServerV3ReaderFilterCallback, _1, _2));
+    }
 
   // init event listener:
   MyEvents.RegisterEvent(TAG,"network.up", std::bind(&OvmsServerV3::NetUp, this, _1, _2));
