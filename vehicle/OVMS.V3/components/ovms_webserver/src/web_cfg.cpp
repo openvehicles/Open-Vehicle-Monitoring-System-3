@@ -2363,6 +2363,8 @@ void OvmsWebServer::HandleCfgLogging(PageEntry_t& p, PageContext_t& c)
       pmap["file.maxsize"] = c.getvar("file_maxsize");
     if (c.getvar("file_keepdays") != "")
       pmap["file.keepdays"] = c.getvar("file_keepdays");
+    if (c.getvar("file_syncperiod") != "")
+      pmap["file.syncperiod"] = c.getvar("file_syncperiod");
 
     file_path = c.getvar("file_path");
     pmap["file.path"] = file_path;
@@ -2433,6 +2435,9 @@ void OvmsWebServer::HandleCfgLogging(PageEntry_t& p, PageContext_t& c)
   }
   c.input_info("Download", download.c_str());
 
+  c.input("number", "Sync period", "file_syncperiod", pmap["file.syncperiod"].c_str(), "Default: 3",
+    "<p>How often to flush log buffer to SD: 0 = never/auto, &lt;0 = every n messages, &gt;0 = after n/2 seconds idle</p>",
+    "min=\"-1\" step=\"1\"");
   c.input("number", "Max file size", "file_maxsize", pmap["file.maxsize"].c_str(), "Default: 1024",
     "<p>When exceeding the size, the log will be archived suffixed with date &amp; time and a new file will be started. 0 = disable</p>",
     "min=\"0\" step=\"1\"", "kB");

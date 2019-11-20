@@ -943,10 +943,19 @@ void OvmsCommandApp::LogTask()
   time_t rawtime;
   char tb[64];
 
+  m_logtask_linecnt = 0;
+  m_logtask_fsynctime = 0;
+
+  // syncperiod: 0 = never, <0 = every n lines, >0 = after n/2 seconds idle
+  uint32_t linecnt_synced = 0;
+  int syncperiod = MyConfig.GetParamValueInt("log", "file.syncperiod", 3);
+  TickType_t timeout = (syncperiod<=0) ? portMAX_DELAY : pdMS_TO_TICKS(syncperiod*500);
+
   for (;;)
     {
-    if (xQueueReceive(m_logtask_queue, (void*)&cmd, (portTickType)portMAX_DELAY) == pdTRUE)
+    if (xQueueReceive(m_logtask_queue, (void*)&cmd, timeout) == pdTRUE)
       {
+      // cmd received:
       if (cmd.type == LogTaskCmd::LTC_Log)
         {
         // write logbuffers messages:
@@ -960,6 +969,7 @@ void OvmsCommandApp::LogTask()
           // write log entry:
           std::string le = stripesc(*it);
           m_logfile_size += fwrite(le.data(), 1, le.size(), m_logfile);
+          m_logtask_linecnt++;
           }
         cmd.data.logbuffers->release();
 
@@ -969,10 +979,13 @@ void OvmsCommandApp::LogTask()
           if (!CycleLogfile())
             break;
           }
-        else
+        else if (syncperiod < 0 && m_logtask_linecnt >= linecnt_synced - syncperiod)
           {
+          linecnt_synced = m_logtask_linecnt;
+          uint32_t t0 = esp_timer_get_time();
           fflush(m_logfile);
           fsync(fileno(m_logfile));
+          m_logtask_fsynctime += esp_timer_get_time() - t0;
           }
 
         // check file status:
@@ -985,6 +998,18 @@ void OvmsCommandApp::LogTask()
       else if (cmd.type == LogTaskCmd::LTC_Exit)
         {
         break;
+        }
+      }
+    else
+      {
+      // cmd timeout: anything to sync?
+      if (m_logtask_linecnt != linecnt_synced)
+        {
+        linecnt_synced = m_logtask_linecnt;
+        uint32_t t0 = esp_timer_get_time();
+        fflush(m_logfile);
+        fsync(fileno(m_logfile));
+        m_logtask_fsynctime += esp_timer_get_time() - t0;
         }
       }
     }
@@ -1312,13 +1337,17 @@ void OvmsCommandApp::ShowLogStatus(int verbosity, OvmsWriter* writer)
     "  Cycle size       : %u kB\n"
     "  Cycle count      : %u\n"
     "  Dropped messages : %u\n"
+    "  Messages logged  : %u\n"
+    "  Total fsync time : %.1f s\n"
     , m_consoles.size()
     , m_logfile ? "active" : "inactive"
     , m_logfile_path.empty() ? "-" : m_logfile_path.c_str()
     , (float) m_logfile_size / 1024.0f
     , m_logfile_maxsize
     , m_logfile_cyclecnt
-    , m_logtask_dropcnt);
+    , m_logtask_dropcnt
+    , m_logtask_linecnt
+    , m_logtask_fsynctime / 1e6);
   }
 
 void OvmsCommandApp::EventHandler(std::string event, void* data)
