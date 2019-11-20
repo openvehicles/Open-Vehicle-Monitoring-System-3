@@ -48,14 +48,12 @@
 
 using namespace std;
 
-void xse_recu(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-void xse_chargetimer(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-
 class OvmsVehicleSmartED : public OvmsVehicle
 {
   public:
     OvmsVehicleSmartED();
     ~OvmsVehicleSmartED();
+    static OvmsVehicleSmartED* GetInstance(OvmsWriter* writer=NULL);
 
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
@@ -66,9 +64,11 @@ class OvmsVehicleSmartED : public OvmsVehicle
   public:
     void WebInit();
     void WebDeInit();
+    void ObdInitPoll();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
     static void WebCfgCommands(PageEntry_t& p, PageContext_t& c);
+    static void WebCfgNotify(PageEntry_t& p, PageContext_t& c);
     void ConfigChanged(OvmsConfigParam* param);
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);
@@ -78,7 +78,6 @@ class OvmsVehicleSmartED : public OvmsVehicle
     virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
     virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t CommandWakeup();
-#ifdef CONFIG_OVMS_COMP_MAX7317
     virtual vehicle_command_t CommandSetChargeTimer(bool timeron, int hours, int minutes);
     virtual vehicle_command_t CommandClimateControl(bool enable);
     virtual vehicle_command_t CommandLock(const char* pin);
@@ -86,9 +85,15 @@ class OvmsVehicleSmartED : public OvmsVehicle
     virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
     virtual vehicle_command_t CommandActivateValet(const char* pin);
     virtual vehicle_command_t CommandDeactivateValet(const char* pin);
-#endif
-    
+    virtual vehicle_command_t CommandTrip(int verbosity, OvmsWriter* writer);
+
+  public:
+    static void xse_recu(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xse_chargetimer(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xse_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+
   protected:
+    int m_reboot_ticker;
     virtual void Ticker1(uint32_t ticker);
     virtual void Ticker10(uint32_t ticker);
     virtual void Ticker60(uint32_t ticker);
@@ -96,6 +101,9 @@ class OvmsVehicleSmartED : public OvmsVehicle
     void vehicle_smarted_car_on(bool isOn);
     TimerHandle_t m_locking_timer;
     
+    void NotifyTrip();
+    void NotifyValetEnabled();
+    void NotifyValetDisabled();
     void SaveStatus();
     void RestoreStatus();
     void HandleCharging();
@@ -115,10 +123,11 @@ class OvmsVehicleSmartED : public OvmsVehicle
     OvmsCommand *cmd_xse;
     
     OvmsMetricInt *mt_vehicle_time;             // vehicle time
-    OvmsMetricInt *mt_trip_start;               // trip since start
-    OvmsMetricInt *mt_trip_reset;               // trip since Reset
+    OvmsMetricFloat *mt_trip_start;             // trip since start
+    OvmsMetricFloat *mt_trip_reset;             // trip since Reset
     OvmsMetricBool *mt_hv_active;               // HV active
     OvmsMetricBool *mt_c_active;                // charge active
+    OvmsMetricBool *mt_bus_awake;               // can-bus aktiv
     OvmsMetricFloat *mt_bat_energy_used_start;  // display enery used/100km
     OvmsMetricFloat *mt_bat_energy_used_reset;  // display enery used/100km
     OvmsMetricFloat *mt_pos_odometer_start;     // ODOmeter at Start
@@ -138,6 +147,10 @@ class OvmsVehicleSmartED : public OvmsVehicle
     bool m_soc_rsoc;                        // Display SOC=SOC or rSOC=SOC
     bool m_enable_write;                    // canwrite
     bool m_lock_state;                      // Door lock/unlock state
+    bool m_reset_trip;                      // Reset trip when charging else when env on
+    bool m_notify_trip;                     // Notify Trip values after driving end (default=true)
+    int m_preclima_time;                    // pre clima time (default=15 minutes)
+    int m_reboot_time;                      // Reboot time
 
   protected:
     char NLG6_PN_HW[11] = "4519822221";           //!< Part number for NLG6 fast charging hardware
@@ -155,7 +168,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     OvmsMetricFloat *mt_nlg6_temp_socket;         //!< temperature of mains socket charger
     OvmsMetricFloat *mt_nlg6_temp_coolingplate;   //!< temperature of cooling plate 
     OvmsMetricString *mt_nlg6_pn_hw;              //!< Part number of base hardware (wo revisioning)
-    
+
     #define DEFAULT_BATTERY_CAPACITY 17600
     #define DEFAULT_BATTERY_AMPHOURS 53
     #define MAX_POLL_DATA_LEN 238
