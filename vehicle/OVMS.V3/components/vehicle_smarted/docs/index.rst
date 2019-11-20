@@ -32,3 +32,14 @@ Lock/Unlock Vehicle         No
 Valet Mode Control          No
 Others
 =========================== ==============
+
+
+--------
+Contents
+--------
+
+.. toctree::
+   :maxdepth: 1
+
+   metrics
+   commands

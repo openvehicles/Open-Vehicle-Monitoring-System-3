@@ -94,6 +94,7 @@ class OvmsVehicleRenaultZoe : public OvmsVehicle {
     // Renault ZOE specific metrics
     OvmsMetricFloat  *mt_pos_odometer_start;  // ODOmeter at Start
     OvmsMetricBool   *mt_bus_awake;           // can-bus awake status
+    OvmsMetricFloat  *mt_available_energy;    // Available Energy
 
   public:
     void WebInit();
@@ -115,6 +116,7 @@ class OvmsVehicleRenaultZoe : public OvmsVehicle {
     virtual vehicle_command_t CommandActivateValet(const char* pin);
     virtual vehicle_command_t CommandDeactivateValet(const char* pin);
     virtual vehicle_command_t CommandTrip(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
 		void NotifyTrip();
 
   protected:

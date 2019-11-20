@@ -61,6 +61,7 @@ void OvmsVehicleSmartED::WebInit()
   //MyWebServer.RegisterPage("/xse/brakelight", "Brake Light",      OvmsWebServer::HandleCfgBrakelight,  PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xse/cellmon",    "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xse/commands",   "Commands",         WebCfgCommands,                      PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xse/notify",     "Notifys",          WebCfgNotify,                        PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 /**
@@ -73,6 +74,7 @@ void OvmsVehicleSmartED::WebDeInit()
   //MyWebServer.DeregisterPage("/xse/brakelight");
   MyWebServer.DeregisterPage("/xse/cellmon");
   MyWebServer.DeregisterPage("/xse/commands");
+  MyWebServer.DeregisterPage("/xse/notify");
 }
 
 /**
@@ -84,7 +86,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   bool canwrite;
   bool soc_rsoc;
   bool lockstate;
-  std::string doorlock, doorunlock, ignition, doorstatus, rangeideal, egpio_timout;
+  std::string doorlock, doorunlock, ignition, doorstatus, rangeideal, egpio_timout, reboot;
 
   if (c.method == "POST") {
     // process form submission:
@@ -97,6 +99,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     soc_rsoc = (c.getvar("soc_rsoc") == "yes");
     canwrite  = (c.getvar("canwrite") == "yes");
     lockstate  = (c.getvar("lockstate") == "yes");
+    reboot = c.getvar("reboot");
 
     // validate:
     if (doorlock != "") {
@@ -135,6 +138,11 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
         error += "<li data-input=\"egpio_timout\">Ignition Timeout must be greater or equal 1.</li>";
       }
     }
+    if (!reboot.empty()) {
+      float n = atof(reboot.c_str());
+      if (n < 0 || n > 60)
+        error += "<li data-input=\"reboot\">Network restart time invalid, must be 0…60</li>";
+    }
     
     if (error == "") {
       // success:
@@ -144,6 +152,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("xse", "doorstatus.port", doorstatus);
       MyConfig.SetParamValue("xse", "rangeideal", rangeideal);
       MyConfig.SetParamValue("xse", "egpio_timout", egpio_timout);
+      MyConfig.SetParamValue("xse", "reboot", reboot);
       MyConfig.SetParamValueBool("xse", "soc_rsoc", soc_rsoc);
       MyConfig.SetParamValueBool("xse", "canwrite",   canwrite);
       MyConfig.SetParamValueBool("xse", "lockstate",   lockstate);
@@ -169,6 +178,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     doorstatus   = MyConfig.GetParamValue("xse", "doorstatus.port", "6");
     rangeideal   = MyConfig.GetParamValue("xse", "rangeideal", "135");
     egpio_timout = MyConfig.GetParamValue("xse", "egpio_timout", "5");
+    reboot       = MyConfig.GetParamValue("xse", "reboot", "0");
     soc_rsoc     = MyConfig.GetParamValueBool("xse", "soc_rsoc", false);
     canwrite     = MyConfig.GetParamValueBool("xse", "canwrite", false);
     lockstate    = MyConfig.GetParamValueBool("xse", "lockstate", false);
@@ -183,7 +193,8 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>This determines the Ideal Range.</p>",
     "min=\"90\" max=\"200\" step=\"1\"");
   
-  c.input_checkbox("Display real SOC = SOC", "soc_rsoc", soc_rsoc);
+  c.input_checkbox("change Display SOC = SOH", "soc_rsoc", soc_rsoc,
+    "<p>WARNING: change Displayed SOC to SOH and SOH to SOC.</p>");
   
   c.input_checkbox("Enable CAN write(Poll)", "canwrite", canwrite,
     "<p>Controls overall CAN write access, some functions depend on this.</p>");
@@ -236,6 +247,10 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_slider("… Ignition Timeout", "egpio_timout", 5, "min",
     -1, egpio_timout.empty() ? 5 : atof(egpio_timout.c_str()), 5, 1, 30, 1,
     "<p>How long the Ignition should stay on in minutes.</p>");
+
+  c.input_slider("Restart Network Time", "reboot", 3, "min",
+    atof(reboot.c_str()) > 0, atof(reboot.c_str()), 15, 0, 60, 1,
+    "<p>Default 0=off. Restart Network automatic when no v2Server connection.</p>");
 
   c.print("<hr>");
   c.input_button("default", "Save");
@@ -305,11 +320,11 @@ void OvmsVehicleSmartED::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   c.fieldset_start("Charge control");
 
   c.input_slider("Sufficient range", "suffrange", 3, "km",
-    atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 0, 0, 150, 1,
+    atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 75, 0, 150, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
 
   c.input_slider("Sufficient SOC", "suffsoc", 3, "%",
-    atof(suffsoc.c_str()) > 0, atof(suffsoc.c_str()), 0, 0, 100, 1,
+    atof(suffsoc.c_str()) > 0, atof(suffsoc.c_str()), 80, 0, 100, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
 
   c.fieldset_end();
@@ -341,6 +356,46 @@ void OvmsVehicleSmartED::WebCfgCommands(PageEntry_t& p, PageContext_t& c)
 
   c.done();
 }
+
+/**
+ * WebCfgNotify: Vehicle Notify (URL /xse/notify)
+ */
+void OvmsVehicleSmartED::WebCfgNotify(PageEntry_t& p, PageContext_t& c)
+{
+  std::string error, info;;
+  bool trip;
+  
+  if (c.method == "POST") {
+    // process form submission:
+    trip = (c.getvar("trip") == "yes");
+
+    MyConfig.SetParamValueBool("xse", "notify.trip", trip);
+    
+    info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
+    c.head(200);
+    c.alert("success", info.c_str());
+  }
+  else {
+    // read configuration:
+    trip = MyConfig.GetParamValueBool("xse", "notify.trip", true);
+    c.head(200);
+  }
+
+  // generate form:
+  c.panel_start("primary", "Smart ED Vehicle Notifys");
+  c.form_start(p.uri);
+  
+  c.input_checkbox("Notify trip", "trip", trip,
+    "<p>Notify Trip values after driving end</p>");
+
+  c.print("<hr>");
+  c.input_button("default", "Save");
+  c.form_end();
+  c.panel_end();
+
+  c.done();
+}
+
 /**
  * GetDashboardConfig: smart ED specific dashboard setup
  */
