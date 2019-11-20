@@ -122,6 +122,7 @@ void max7317::Output(uint8_t port, uint8_t level)
     std::string event = "egpio.output.";
     event.append(1, '0'+port);
     event.append(".high");
+    ESP_LOGD(TAG, "%s", event.c_str());
     MyEvents.SignalEvent(event, NULL);
     }
   else if (m_outputstate[port] && !level)
@@ -131,6 +132,7 @@ void max7317::Output(uint8_t port, uint8_t level)
     std::string event = "egpio.output.";
     event.append(1, '0'+port);
     event.append(".low");
+    ESP_LOGD(TAG, "%s", event.c_str());
     MyEvents.SignalEvent(event, NULL);
     }
   }
@@ -177,6 +179,7 @@ uint8_t max7317::Input(uint8_t port)
       std::string event = "egpio.input.";
       event.append(1, '0'+port);
       event.append(".high");
+      ESP_LOGD(TAG, "%s", event.c_str());
       MyEvents.SignalEvent(event, NULL);
       }
     else if (m_inputstate[port] && !level)
@@ -184,6 +187,7 @@ uint8_t max7317::Input(uint8_t port)
       std::string event = "egpio.input.";
       event.append(1, '0'+port);
       event.append(".low");
+      ESP_LOGD(TAG, "%s", event.c_str());
       MyEvents.SignalEvent(event, NULL);
       }
     m_inputstate[port] = level;
@@ -229,6 +233,7 @@ std::bitset<10> max7317::Inputs(std::bitset<10> ports)
         event = "egpio.input.";
         event.append(1, '0'+i);
         event.append(".high");
+        ESP_LOGD(TAG, "%s", event.c_str());
         MyEvents.SignalEvent(event, NULL);
         }
       else if (m_inputstate[i] && !pstate[i])
@@ -236,6 +241,7 @@ std::bitset<10> max7317::Inputs(std::bitset<10> ports)
         event = "egpio.input.";
         event.append(1, '0'+i);
         event.append(".low");
+        ESP_LOGD(TAG, "%s", event.c_str());
         MyEvents.SignalEvent(event, NULL);
         }
       }
@@ -278,7 +284,7 @@ bool max7317::CheckMonitor()
     if (!m_monitor_task)
       {
       xTaskCreatePinnedToCore(MonitorTaskEntry, "OVMS EGPIOmon",
-        3*512, (void*)this, 15, &m_monitor_task, CORE(1));
+        4*512, (void*)this, 15, &m_monitor_task, CORE(1));
       if (!m_monitor_task)
         {
         ESP_LOGE(TAG, "Monitor: unable to create task");
