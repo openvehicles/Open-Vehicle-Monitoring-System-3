@@ -1266,16 +1266,19 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     {
     // check 12V voltage:
     float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
-    float vref = StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat();
+    // …against the maximum of default and measured reference voltage, so alerts will also
+    //  be triggered if the measured ref follows a degrading battery:
+    float dref = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.6);
+    float vref = MAX(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
     bool alert_on = StandardMetrics.ms_v_bat_12v_voltage_alert->AsBool();
     float alert_threshold = MyConfig.GetParamValueFloat("vehicle", "12v.alert", 1.6);
-    if (vref > 0 && volt > 0 && vref - volt > alert_threshold && !alert_on)
+    if (!alert_on && volt > 0 && vref > 0 && vref-volt > alert_threshold)
       {
       StandardMetrics.ms_v_bat_12v_voltage_alert->SetValue(true);
       MyEvents.SignalEvent("vehicle.alert.12v.on", NULL);
       if (m_autonotifications) Notify12vCritical();
       }
-    else if (vref - volt < alert_threshold * 0.6 && alert_on)
+    else if (alert_on && volt > 0 && vref > 0 && vref-volt < alert_threshold*0.6)
       {
       StandardMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);
       MyEvents.SignalEvent("vehicle.alert.12v.off", NULL);
@@ -1418,7 +1421,8 @@ void OvmsVehicle::NotifyAlarmStopped()
 void OvmsVehicle::Notify12vCritical()
   {
   float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
-  float vref = StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat();
+  float dref = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.6);
+  float vref = MAX(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
 
   MyNotify.NotifyStringf("alert", "batt.12v.alert", "12V Battery critical: %.1fV (ref=%.1fV)", volt, vref);
   }
@@ -1426,7 +1430,8 @@ void OvmsVehicle::Notify12vCritical()
 void OvmsVehicle::Notify12vRecovered()
   {
   float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
-  float vref = StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat();
+  float dref = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.6);
+  float vref = MAX(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
 
   MyNotify.NotifyStringf("alert", "batt.12v.recovered", "12V Battery restored: %.1fV (ref=%.1fV)", volt, vref);
   }

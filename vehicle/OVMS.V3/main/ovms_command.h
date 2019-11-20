@@ -312,6 +312,8 @@ class OvmsCommandApp : public OvmsWriter
     QueueHandle_t m_logtask_queue;
     uint32_t m_logtask_dropcnt;
     uint32_t m_logfile_cyclecnt;
+    uint32_t m_logtask_linecnt;
+    uint32_t m_logtask_fsynctime;
 
   public:
     TaskHandle_t m_expiretask;

@@ -167,9 +167,9 @@ The ICCID is also displayed during the setup process and on the modem configurat
 
 .. image:: setup6.jpg
 
-^^^^^^^^^^^^^^^
+---------------
 Firmware Update
-^^^^^^^^^^^^^^^
+---------------
 
 .. image:: warning.png
   :width: 100px
@@ -193,37 +193,67 @@ Flash from File
 
 Using an SD CARD formatted as FAT, download the firmware update and place it in a file called **ovms3.bin** in the root directory of the SD CARD. Once the SD CARD is inserted the firmware update will start immediately.
 
+--------------
+12V Monitoring
+--------------
+
+.. note::
+  Since release 3.2.006 the 12V calibration and alert setup can be done from the
+  web UI's vehicle configuration page.
+
+As 12V batteries tend to die without warning and need to handle an additional unplanned constant 
+load from the OVMS, the module includes a 12V monitoring and alert system.
+
+
+^^^^^^^^^^^
+Calibration
+^^^^^^^^^^^
+
+The 12V voltage is measured using the incoming voltage that powers the OVMS. As the sensor used 
+by the module has some manufacturing tolerances you should do an initial calibration. Use a 
+voltage meter to measure the actual voltage somewhere suitable (e.g. at a 12V auxiliary equipment 
+plug), calibrate the OVMS to show the same. The calibration factor is set by…::
+
+  config set system.adc factor12v <factor>
+
+Calculate the <factor> using: ``oldFactor * (displayedVoltage / actualVoltage)``
+
+  * oldFactor is the old value set. If you have not changed it yet it is ``195.7``.
+  * displayedVoltage is the Voltage as displayed by the OVMS.
+  * actualVoltage is the Voltage as measured by hand using a voltmeter.
+
+The voltage is read once per second and smoothed over 5 samples, so after changing the factor, wait 
+5-10 seconds for the new reading to settle.
+
+
+^^^^^^^^^^^^^
+Configuration
+^^^^^^^^^^^^^
+
+The default 12V reference voltage (= fully charged & calmed down voltage level) can be set by…::
+
+  config set vehicle 12v.ref <voltage>
+
+This config value initializes metric ``v.b.12v.voltage.ref`` on boot. The metric will then be 
+updated automatically if your vehicle supports the ``v.e.charging12v`` flag. The measured reference 
+voltage reflects the health of the 12V battery and serves as the reference for the 12V alert, if 
+it's higher than the configured default.
+
+The 12V alert threshold can be set by…::
+
+  config set vehicle 12v.alert <voltagediff>
+
+The 12V alert threshold is defined by a relative value to the 12v reference voltage. If the actual 
+12V reading drops below ``12v.ref - 12v.alert``, the 12V alert is raised.
+
+The default reference voltage is 12.6V, the default alert threshold 1.6V, so the alert will be 
+triggered if the voltage drops below 11.0V. This is suitable for standard lead-acid type batteries. 
+If you've got another chemistry, change the values accordingly.
+
+
 ^^^^^^^^^^^^^^^
-12V Calibration
+Related Metrics
 ^^^^^^^^^^^^^^^
-
-The 12V voltage is measured using the incoming voltage that powers the OVMS. You can calibrate it using:
-
-``config set system.adc factor12v <factor>``
-
-The <factor> has to be calculated using:
-
-``oldFactor * (displayedVoltage / actualVoltage)``
-
-* oldFactor is the old value set. If you have not changed it yet it is 195.7
-* displayedVoltage is the Voltage as displayed by the OVMS.
-* actualVoltage is the Voltage as measured by hand using a voltmeter.
-
-The voltage is read once per second and smoothed over 5 samples, so after changing the factor, wait 5-10 seconds for the new reading to settle.
-
-The initial 12V reference voltage (= fully charged & calmed down voltage level) on startup & after reset can be set by
-
-``config set vehicle 12v.ref <voltage>``
-
-The default reference voltage is 12.6. The value will be updated automatically if your vehicle supports the v.e.charging12v flag.
-
-The 12V alert threshold can be set by
-
-``config set vehicle 12v.alert <voltagediff>``
-
-The 12V alert threshold is defined by a relative value to the 12v reference voltage with a default value of  1.6. If the actual 12V reading drops below 12v.ref - 12v.alert, the 12V alert is raised.
-
-Related metrics:
 
 ===================== ============= =======
 Metric                Example Value Meaning
@@ -235,3 +265,15 @@ v.b.12v.voltage.alert no            If the 12V critical alert is active (yes/no)
 v.e.charging12v       yes           If the 12V battery is charging or not (yes/no)
 ===================== ============= =======
 
+^^^^^^^^^^^^^^
+Related Events
+^^^^^^^^^^^^^^
+
+=================================== ========= =======
+Event                               Data      Purpose
+=================================== ========= =======
+vehicle.alert.12v.on                          12V system voltage is below alert threshold
+vehicle.alert.12v.off                         12V system voltage has recovered
+vehicle.charge.12v.start                      Vehicle 12V battery is charging
+vehicle.charge.12v.stop                       Vehicle 12V battery has stopped charging
+=================================== ========= =======
