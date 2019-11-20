@@ -8,6 +8,7 @@
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011        Sonny Chen @ EPRO/DX
+;    (C) 2019       Michael Balzer
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -28,53 +29,49 @@
 ; THE SOFTWARE.
 */
 
-#include <stdint.h>
-#include "pcp.h"
-#include "spi.h"
-#include <bitset>
-#include "ovms_timer.h"
-#include "ovms_semaphore.h"
-#include "ovms_mutex.h"
+#ifndef __OVMS_TIMER_H__
+#define __OVMS_TIMER_H__
 
-#ifndef __MAX7317_H__
-#define __MAX7317_H__
+#include "freertos/FreeRTOS.h"
+#include "freertos/timers.h"
+#include <functional>
 
-class max7317 : public pcp, public InternalRamAllocated
+class OvmsTimer
   {
   public:
-    max7317(const char* name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin);
-    ~max7317();
-
-  public:
-    void Output(uint8_t port, uint8_t level);
-    std::bitset<10> OutputState();
-    uint8_t Input(uint8_t port);
-    std::bitset<10> Inputs(std::bitset<10> ports);
-    std::bitset<10> InputState();
-    bool Monitor(std::bitset<10> ports, bool enable);
-    bool Monitor(uint8_t port, bool enable);
-    std::bitset<10> MonitorState();
-
-  public:
-    std::bitset<10> GetConfigMonitorPorts();
-    void AutoInit();
-    bool CheckMonitor();
-    void MonitorTask();
+    OvmsTimer(const char* name=NULL, int maxwait_ms=-1, bool autoreload=false);
+    ~OvmsTimer();
 
   protected:
-    spi* m_spibus;
-    spi_nodma_device_interface_config_t m_devcfg;
-    spi_nodma_host_device_t m_host;
-    int m_clockspeed;
-    int m_cspin;
-    spi_nodma_device_handle_t m_spi;
-    std::bitset<10> m_outputstate;
-    std::bitset<10> m_inputstate;
-    std::bitset<10> m_monitor_ports;
-    OvmsInterval* m_monitor_timer;
-    OvmsSemaphore m_monitor_semaphore;
-    OvmsMutex m_monitor_mutex;
-    TaskHandle_t m_monitor_task;
+    static void Callback(TimerHandle_t xTimer);
+
+  public:
+    bool Set(int time_ms, std::function<void()> callback);
+    bool Start(int time_ms, std::function<void()> callback);
+    bool Start();
+    bool Stop();
+    bool IsActive();
+    bool Reset();
+
+  protected:
+    const char* m_name;
+    TickType_t m_maxwait;
+    TimerHandle_t m_timer;
+    std::function<void()> m_callback;
   };
 
-#endif //#ifndef __MAX7317_H__
+class OvmsTimeout : public OvmsTimer
+  {
+  public:
+    OvmsTimeout(const char* name=NULL, int maxwait_ms=-1)
+      : OvmsTimer(name, maxwait_ms, false) {}
+  };
+
+class OvmsInterval : public OvmsTimer
+  {
+  public:
+    OvmsInterval(const char* name=NULL, int maxwait_ms=-1)
+      : OvmsTimer(name, maxwait_ms, true) {}
+  };
+
+#endif //__OVMS_TIMER_H__

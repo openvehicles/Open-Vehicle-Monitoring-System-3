@@ -1712,6 +1712,10 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
   std::string error, warn;
   bool init, ext12v, modem, server_v2, server_v3, scripting;
   bool dbc;
+  #ifdef CONFIG_OVMS_COMP_MAX7317
+    bool egpio;
+    std::string egpio_ports;
+  #endif //CONFIG_OVMS_COMP_MAX7317
   std::string vehicle_type, obd2ecu, wifi_mode, wifi_ssid_client, wifi_ssid_ap;
 
   if (c.method == "POST") {
@@ -1719,6 +1723,10 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
     init = (c.getvar("init") == "yes");
     dbc = (c.getvar("dbc") == "yes");
     ext12v = (c.getvar("ext12v") == "yes");
+    #ifdef CONFIG_OVMS_COMP_MAX7317
+      egpio = (c.getvar("egpio") == "yes");
+      egpio_ports = c.getvar("egpio_ports");
+    #endif //CONFIG_OVMS_COMP_MAX7317
     modem = (c.getvar("modem") == "yes");
     server_v2 = (c.getvar("server_v2") == "yes");
     server_v3 = (c.getvar("server_v3") == "yes");
@@ -1768,6 +1776,10 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("auto", "init", init);
       MyConfig.SetParamValueBool("auto", "dbc", dbc);
       MyConfig.SetParamValueBool("auto", "ext12v", ext12v);
+      #ifdef CONFIG_OVMS_COMP_MAX7317
+        MyConfig.SetParamValueBool("auto", "egpio", egpio);
+        MyConfig.SetParamValue("egpio", "monitor.ports", egpio_ports);
+      #endif //CONFIG_OVMS_COMP_MAX7317
       MyConfig.SetParamValueBool("auto", "modem", modem);
       MyConfig.SetParamValueBool("auto", "server.v2", server_v2);
       MyConfig.SetParamValueBool("auto", "server.v3", server_v3);
@@ -1802,6 +1814,10 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
     init = MyConfig.GetParamValueBool("auto", "init", true);
     dbc = MyConfig.GetParamValueBool("auto", "dbc", false);
     ext12v = MyConfig.GetParamValueBool("auto", "ext12v", false);
+    #ifdef CONFIG_OVMS_COMP_MAX7317
+      egpio = MyConfig.GetParamValueBool("auto", "egpio", false);
+      egpio_ports = MyConfig.GetParamValue("egpio", "monitor.ports");
+    #endif //CONFIG_OVMS_COMP_MAX7317
     modem = MyConfig.GetParamValueBool("auto", "modem", false);
     server_v2 = MyConfig.GetParamValueBool("auto", "server.v2", false);
     server_v3 = MyConfig.GetParamValueBool("auto", "server.v3", false);
@@ -1830,6 +1846,13 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
 
   c.input_checkbox("Autoload DBC files", "dbc", dbc,
     "<p>Enable to autoload DBC files (for reverse engineering).</p>");
+
+  #ifdef CONFIG_OVMS_COMP_MAX7317
+    c.input_checkbox("Start EGPIO monitor", "egpio", egpio,
+      "<p>Enable to monitor EGPIO input ports and generate metrics and events from changes.</p>");
+    c.input_text("EGPIO ports", "egpio_ports", egpio_ports.c_str(), "Ports to monitor",
+      "<p>Enter list of port numbers (0…9) to monitor, separated by spaces.</p>");
+  #endif //CONFIG_OVMS_COMP_MAX7317
 
   c.input_checkbox("Power on external 12V", "ext12v", ext12v,
     "<p>Enable to provide 12V to external devices connected to the module (i.e. ECU displays).</p>");

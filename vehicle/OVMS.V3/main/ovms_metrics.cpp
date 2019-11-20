@@ -117,6 +117,19 @@ static duk_ret_t DukOvmsMetricValue(duk_context *ctx)
     return 0;
   }
 
+static duk_ret_t DukOvmsMetricJSON(duk_context *ctx)
+  {
+  const char *mn = duk_to_string(ctx,0);
+  OvmsMetric *m = MyMetrics.Find(mn);
+  if (m)
+    {
+    duk_push_string(ctx, m->AsJSON().c_str());
+    return 1;  /* one return value */
+    }
+  else
+    return 0;
+  }
+
 static duk_ret_t DukOvmsMetricFloat(duk_context *ctx)
   {
   const char *mn = duk_to_string(ctx,0);
@@ -162,6 +175,7 @@ OvmsMetrics::OvmsMetrics()
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsMetrics");
   dto->RegisterDuktapeFunction(DukOvmsMetricValue, 1, "Value");
+  dto->RegisterDuktapeFunction(DukOvmsMetricJSON, 1, "AsJSON");
   dto->RegisterDuktapeFunction(DukOvmsMetricFloat, 1, "AsFloat");
   MyScripts.RegisterDuktapeObject(dto);
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE

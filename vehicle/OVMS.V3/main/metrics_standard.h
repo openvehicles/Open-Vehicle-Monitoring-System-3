@@ -58,6 +58,12 @@
 #define MS_N_WIFI_NETWORK           "m.net.wifi.network"
 #define MS_N_WIFI_SQ                "m.net.wifi.sq"
 
+#ifdef CONFIG_OVMS_COMP_MAX7317
+#define MS_M_EGPIO_INPUT            "m.egpio.input"
+#define MS_M_EGPIO_MONITOR          "m.egpio.monitor"
+#define MS_M_EGPIO_OUTPUT           "m.egpio.output"
+#endif //CONFIG_OVMS_COMP_MAX7317
+
 #define MS_S_V2_CONNECTED           "s.v2.connected"
 #define MS_S_V2_PEERS               "s.v2.peers"
 
@@ -217,6 +223,12 @@ class MetricsStandard
     OvmsMetricFloat*  ms_m_net_mdm_sq;              // Modem network signal quality [dbm]
     OvmsMetricString* ms_m_net_mdm_iccid;
     OvmsMetricString* ms_m_net_mdm_model;
+
+#ifdef CONFIG_OVMS_COMP_MAX7317
+    OvmsMetricBitset<10,0>* ms_m_egpio_input;       // EGPIO (MAX7317) input port state (ports 0…9)
+    OvmsMetricBitset<10,0>* ms_m_egpio_output;      // EGPIO (MAX7317) output port state
+    OvmsMetricBitset<10,0>* ms_m_egpio_monitor;     // EGPIO (MAX7317) input monitoring state
+#endif //CONFIG_OVMS_COMP_MAX7317
 
     OvmsMetricBool*   ms_s_v2_connected;            // True = V2 server connected [1]
     OvmsMetricInt*    ms_s_v2_peers;                // V2 clients connected [1]

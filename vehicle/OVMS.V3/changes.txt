@@ -1,6 +1,23 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- EGPIO/MAX7317: port input monitoring, metrics, events, documentation
+  New commands:
+    egpio status                    Show input, output & monitoring port status
+    egpio monitor status            Show input monitoring status
+    egpio monitor <on|off> [ports]  Enable/disable port monitoring
+  New configs:
+    [auto] egpio                    yes = Autostart port monitoring (default no)
+    [egpio] monitor.ports           Default ports to monitor (space separated)
+    [egpio] monitor.interval        Polling interval in ms (default 50)
+  New metrics:
+    m.egpio.input                   EGPIO input port state (ports 0…9, present=high)
+    m.egpio.monitor                 EGPIO input monitoring ports
+    m.egpio.output                  EGPIO output port state
+  New events:
+    egpio.input.<port>.<state>      EGPIO input port change (port=0…9, state=high/low)
+    egpio.output.<port>.<state>     EGPIO output port change (port=0…9, state=high/low)
+- Scripting API: OvmsMetrics.AsJSON() added
 - Renault Zoe: basic Metrics and charging status added, trip notify, web config for battery capacity
 - Logging: file logging moved to dedicated task (improved performance)
   New commands:
