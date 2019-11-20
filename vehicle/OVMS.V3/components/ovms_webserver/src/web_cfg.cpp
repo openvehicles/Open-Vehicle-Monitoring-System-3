@@ -527,6 +527,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
   std::string vehicleid, vehicletype, vehiclename, timezone, timezone_region, units_distance, pin;
+  std::string bat12v_factor, bat12v_ref, bat12v_alert;
 
   if (c.method == "POST") {
     // process form submission:
@@ -536,6 +537,9 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     timezone = c.getvar("timezone");
     timezone_region = c.getvar("timezone_region");
     units_distance = c.getvar("units_distance");
+    bat12v_factor = c.getvar("bat12v_factor");
+    bat12v_ref = c.getvar("bat12v_ref");
+    bat12v_alert = c.getvar("bat12v_alert");
     pin = c.getvar("pin");
 
     if (vehicleid.length() == 0)
@@ -559,6 +563,9 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("vehicle", "timezone", timezone);
       MyConfig.SetParamValue("vehicle", "timezone_region", timezone_region);
       MyConfig.SetParamValue("vehicle", "units.distance", units_distance);
+      MyConfig.SetParamValue("system.adc", "factor12v", bat12v_factor);
+      MyConfig.SetParamValue("vehicle", "12v.ref", bat12v_ref);
+      MyConfig.SetParamValue("vehicle", "12v.alert", bat12v_alert);
       if (!pin.empty())
         MyConfig.SetParamValue("password", "pin", pin);
 
@@ -584,12 +591,24 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     timezone = MyConfig.GetParamValue("vehicle", "timezone");
     timezone_region = MyConfig.GetParamValue("vehicle", "timezone_region");
     units_distance = MyConfig.GetParamValue("vehicle", "units.distance");
+    bat12v_factor = MyConfig.GetParamValue("system.adc", "factor12v");
+    bat12v_ref = MyConfig.GetParamValue("vehicle", "12v.ref");
+    bat12v_alert = MyConfig.GetParamValue("vehicle", "12v.alert");
     c.head(200);
   }
 
   // generate form:
   c.panel_start("primary", "Vehicle configuration");
   c.form_start(p.uri);
+
+  c.print(
+    "<ul class=\"nav nav-tabs\">"
+      "<li class=\"active\"><a data-toggle=\"tab\" href=\"#tab-vehicle\">Vehicle</a></li>"
+      "<li><a data-toggle=\"tab\" href=\"#tab-bat12v\">12V Monitor</a></li>"
+    "</ul>"
+    "<div class=\"tab-content\">"
+      "<div id=\"tab-vehicle\" class=\"tab-pane fade in active section-vehicle\">");
+
   c.input_select_start("Vehicle type", "vehicletype");
   c.input_select_option("&mdash;", "", vehicletype.empty());
   for (OvmsVehicleFactory::map_vehicle_t::iterator k=MyVehicleFactory.m_vmap.begin(); k!=MyVehicleFactory.m_vmap.end(); ++k)
@@ -624,31 +643,72 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
   c.input_radiobtn_end();
   c.input_password("PIN", "pin", "", "empty = no change",
     "<p>Vehicle PIN code used for unlocking etc.</p>", "autocomplete=\"section-vehiclepin new-password\"");
+
+  c.print(
+      "</div>"
+      "<div id=\"tab-bat12v\" class=\"tab-pane fade section-bat12v\">");
+
+  c.input_info("12V reading",
+      "<div class=\"receiver clearfix\">"
+        "<div class=\"metric number\" id=\"display-bat12v_voltage\">"
+          "<span class=\"value\">?</span>"
+          "<span class=\"unit\">V</span>"
+        "</div>"
+      "</div>");
+  c.input_slider("12V calibration", "bat12v_factor", 6, NULL,
+    -1, bat12v_factor.empty() ? 195.7 : atof(bat12v_factor.c_str()), 195.7, 175.0, 225.0, 0.1,
+    "<p>Adjust the calibration so the voltage displayed above matches your real voltage.</p>");
+
+  c.input("number", "12V reference", "bat12v_ref", bat12v_ref.c_str(), "Default: 12.6",
+    "<p>The nominal resting voltage level of your 12V battery when fully charged.</p>",
+    "min=\"10\" max=\"15\" step=\"0.1\"", "V");
+  c.input("number", "12V alert threshold", "bat12v_alert", bat12v_alert.c_str(), "Default: 1.6",
+    "<p>If the actual voltage drops this far below the maximum of configured and measured reference"
+    " level, an alert is sent.</p>",
+    "min=\"0\" max=\"3\" step=\"0.1\"", "V");
+
+  c.print(
+      "</div>"
+    "</div>"
+    "<br>");
+
   c.input_button("default", "Save");
   c.form_end();
   c.panel_end();
 
   c.print(
     "<script>"
-    "$.getJSON(\"" URL_ASSETS_ZONES_JSON "\", function(data) {"
-      "var items = [];"
-      "var region = $('#input-timezone_region').val();"
-      "$.each(data, function(key, val) {"
-        "items.push('<option data-tz=\"' + val + '\"' + (key==region ? ' selected' : '') + '>' + key + '</option>');"
+    "(function(){"
+      "$.getJSON(\"" URL_ASSETS_ZONES_JSON "\", function(data) {"
+        "var items = [];"
+        "var region = $('#input-timezone_region').val();"
+        "$.each(data, function(key, val) {"
+          "items.push('<option data-tz=\"' + val + '\"' + (key==region ? ' selected' : '') + '>' + key + '</option>');"
+        "});"
+        "$('#input-timezone_select').append(items.join(''));"
+        "$('#input-timezone_select').on('change', function(ev){"
+          "var opt = $(this).find('option:selected');"
+          "$('#input-timezone_region').val(opt.val());"
+          "var tz = opt.data(\"tz\");"
+          "if (tz) {"
+            "$('#input-timezone').val(tz);"
+            "$('#input-timezone').prop('readonly', true);"
+          "} else {"
+            "$('#input-timezone').prop('readonly', false);"
+          "}"
+        "}).trigger('change');"
       "});"
-      "$('#input-timezone_select').append(items.join(''));"
-      "$('#input-timezone_select').on('change', function(ev){"
-        "var opt = $(this).find('option:selected');"
-        "$('#input-timezone_region').val(opt.val());"
-        "var tz = opt.data(\"tz\");"
-        "if (tz) {"
-          "$('#input-timezone').val(tz);"
-          "$('#input-timezone').prop('readonly', true);"
-        "} else {"
-          "$('#input-timezone').prop('readonly', false);"
-        "}"
-      "}).trigger('change');"
-    "});"
+      "var $bat12v_factor = $('#input-bat12v_factor'),"
+        "$bat12v_display = $('#display-bat12v_voltage .value'),"
+        "oldfactor = $bat12v_factor.val() || 195.7;"
+      "var updatecalib = function(){"
+        "var newfactor = $bat12v_factor.val() || 195.7;"
+        "var voltage = metrics['v.b.12v.voltage'] * oldfactor / newfactor;"
+        "$bat12v_display.text(Number(voltage).toFixed(2));"
+      "};"
+      "$bat12v_factor.on(\"input change\", updatecalib);"
+      "$(\".receiver\").on(\"msg:metrics\", updatecalib).trigger(\"msg:metrics\");"
+    "})()"
     "</script>");
 
   c.done();

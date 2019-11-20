@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- 12V Monitor: web UI calibration aid & configuration
 - EGPIO/MAX7317: port input monitoring, metrics, events, documentation
   New commands:
     egpio status                    Show input, output & monitoring port status
