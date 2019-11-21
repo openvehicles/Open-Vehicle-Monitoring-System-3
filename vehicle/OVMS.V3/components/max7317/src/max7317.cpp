@@ -147,25 +147,27 @@ std::bitset<10> max7317::OutputState()
  */
 uint8_t max7317::Input(uint8_t port)
   {
-  uint8_t buf[4], *res;
+  uint8_t buf[2];
   uint8_t level;
   OvmsMutexLock lock(&m_monitor_mutex);
 
   // Read port state:
-  //  Note: MAX7317 SPI read needs a deselect between tx and rx (see specs pg. 8)
+  //  Note: MAX7317 SPI read needs a deselect between tx and rx (see specs pg. 8).
+  //  SPI always does tx & rx in parallel, so we must send a NOP (0x20,0) on the "rx"
+  //  command, as the MAX7317 would interpret (0,0) as a write of level 0 to port 0.
   if (port < 8)
     {
     m_spibus->spi_cmd(m_spi, buf, 0, 2, 0x8E, 0);
     m_spibus->spi_deselect(m_spi);
-    res = m_spibus->spi_cmd(m_spi, buf, 2, 0);
-    level = (res[1] & (1 << port)) ? 1 : 0;
+    m_spibus->spi_cmd(m_spi, buf, 0, 2, 0x20, 0);
+    level = (buf[1] & (1 << port)) ? 1 : 0;
     }
   else
     {
     m_spibus->spi_cmd(m_spi, buf, 0, 2, 0x8F, 0);
     m_spibus->spi_deselect(m_spi);
-    res = m_spibus->spi_cmd(m_spi, buf, 2, 0);
-    level = (res[1] & (1 << (port-8))) ? 1 : 0;
+    m_spibus->spi_cmd(m_spi, buf, 0, 2, 0x20, 0);
+    level = (buf[1] & (1 << (port-8))) ? 1 : 0;
     }
 
   // Update state & framework:
@@ -201,21 +203,27 @@ uint8_t max7317::Input(uint8_t port)
  */
 std::bitset<10> max7317::Inputs(std::bitset<10> ports)
   {
-  uint8_t buf[4], *res;
+  uint8_t buf[2];
   std::bitset<10> pstate;
   if (ports.none())
     return pstate;
   OvmsMutexLock lock(&m_monitor_mutex);
 
-  m_spibus->spi_cmd(m_spi, buf, 0, 2, 0x8E, 0);
-  m_spibus->spi_deselect(m_spi);
-  res = m_spibus->spi_cmd(m_spi, buf, 2, 0);
-  pstate = res[1];
-
-  m_spibus->spi_cmd(m_spi, buf, 0, 2, 0x8F, 0);
-  m_spibus->spi_deselect(m_spi);
-  res = m_spibus->spi_cmd(m_spi, buf, 2, 0);
-  pstate |= ((uint16_t)res[1] << 8);
+  // Read port state: see notes above
+  if ((ports & std::bitset<10>(0b0011111111)).any())
+    {
+    m_spibus->spi_cmd(m_spi, buf, 0, 2, 0x8E, 0);
+    m_spibus->spi_deselect(m_spi);
+    m_spibus->spi_cmd(m_spi, buf, 0, 2, 0x20, 0);
+    pstate = buf[1];
+    }
+  if ((ports & std::bitset<10>(0b1100000000)).any())
+    {
+    m_spibus->spi_cmd(m_spi, buf, 0, 2, 0x8F, 0);
+    m_spibus->spi_deselect(m_spi);
+    m_spibus->spi_cmd(m_spi, buf, 0, 2, 0x20, 0);
+    pstate |= ((uint16_t)buf[1] << 8);
+    }
 
   // Update state & framework:
   pstate &= ports;
