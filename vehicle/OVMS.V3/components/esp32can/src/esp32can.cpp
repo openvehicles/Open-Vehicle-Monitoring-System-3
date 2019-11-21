@@ -97,7 +97,6 @@ static inline uint32_t ESP32CAN_rxframe(esp32can *me, BaseType_t* task_woken)
       {
       // RMC overflow => reset controller:
       MODULE_ESP32CAN->MOD.B.RM = 1;
-      me->InitController();
       MODULE_ESP32CAN->MOD.B.RM = 0;
       error_irqs = __CAN_IRQ_DATA_OVERRUN;
       me->m_status.error_resets++;
@@ -252,7 +251,7 @@ esp32can::~esp32can()
   MyESP32can = NULL;
   }
 
-IRAM_ATTR void esp32can::InitController()
+void esp32can::InitController()
   {
   double __tq; // Time quantum
 
