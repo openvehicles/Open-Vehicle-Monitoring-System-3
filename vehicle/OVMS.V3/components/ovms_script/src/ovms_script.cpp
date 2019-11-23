@@ -1036,7 +1036,14 @@ static void script_ovms(bool print, int verbosity, OvmsWriter* writer,
     MyScripts.DuktapeEvalNoResult(script, writer);
     delete [] script;
 #else // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-    writer->puts("Error: No javascript engine available");
+    if (writer)
+      {
+      writer->puts("Error: No javascript engine available");
+      }
+    else
+      {
+      ESP_LOGE(TAG, "Error: No javascript engine available");
+      }
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
     fclose(sf);
     }
@@ -1051,7 +1058,16 @@ static void script_ovms(bool print, int verbosity, OvmsWriter* writer,
       bs->ProcessChars(cmdline, strlen(cmdline));
       }
     fclose(sf);
-    bs->Output(writer);
+    if (writer)
+      {
+      bs->Output(writer);
+      }
+    else
+      {
+      extram::string output;
+      bs->Dump(output);
+      ESP_LOGI(TAG, "%s", output.c_str());
+      }
     delete bs;
     delete [] cmdline;
     }
@@ -1096,7 +1112,9 @@ void OvmsScripts::AllScripts(std::string path)
   DIR *dir;
   struct dirent *dp;
   FILE *sf;
+  std::set<std::string> files;
 
+  // read dir, sort scripts by name:
   if ((dir = opendir (path.c_str())) != NULL)
     {
     while ((dp = readdir (dir)) != NULL)
@@ -1104,15 +1122,22 @@ void OvmsScripts::AllScripts(std::string path)
       std::string fpath = path;
       fpath.append("/");
       fpath.append(dp->d_name);
-      sf = fopen(fpath.c_str(), "r");
-      if (sf)
-        {
-        ESP_LOGI(TAG, "Running script %s", fpath.c_str());
-        script_ovms(false, COMMAND_RESULT_MINIMAL, ConsoleAsync::Instance(),
-          fpath.c_str(), sf, true);
-        }
+      files.insert(fpath);
       }
     closedir(dir);
+    }
+
+  // execute scripts:
+  for (auto it = files.begin(); it != files.end(); it++)
+    {
+    std::string fpath = *it;
+    sf = fopen(fpath.c_str(), "r");
+    if (sf)
+      {
+      ESP_LOGI(TAG, "Running script %s", fpath.c_str());
+      script_ovms(false, COMMAND_RESULT_MINIMAL, NULL, fpath.c_str(), sf, true);
+      // script_ovms() closes sf
+      }
     }
   }
 
