@@ -165,7 +165,11 @@ v.e.alarm                                                         yes = Alarm cu
 v.e.awake                                no                       yes = Vehicle/bus awake (switched on)
 v.e.c.config                                                      yes = ECU/controller in configuration state
 v.e.c.login                                                       yes = Module logged in at ECU/controller
-v.e.cabintemp                                                     Cabin temperature
+v.e.cabintemp                            20°C                     Cabin temperature
+v.e.cabinfan                             100%                     Cabin fan
+v.e.cabinsetpoint                        24°C                    Cabin set point
+v.e.cabinintake                          fresh                    Cabin intake type (fresh, recirc, etc)
+v.e.cabinvent                            feet,face                Cabin vent type (comma-separated list of feet, face, screen, etc)
 v.e.charging12v                          no                       yes = 12V battery charging
 v.e.cooling                                                       yes = Cooling
 v.e.drivemode                            33882626                 Active drive profile code (vehicle specific)
