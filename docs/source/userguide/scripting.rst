@@ -6,24 +6,42 @@ Scripting
 Command Scripts
 ---------------
 
-Lists of commands can be entered into a script file and stored in the VFS for execution (in the /store/scripts directory). These are called ‘command scripts’ and are simple sequential lists of OVMS commands. A command script can be executed with::
+Lists of commands can be entered into a script file and stored in the VFS for execution (in the 
+``/store/scripts`` directory). These are called ‘command scripts’ and are simple sequential lists of 
+OVMS commands. A command script can be executed with::
 
   OVMS# . <script>
   OVMS# script run <script>
 
-Command scripts can also be stored in the /store/events/<eventname> directory structure. Whenever events are triggered, all the scripts in the corresponding /store/events/<eventname> directory are executed.
+Command scripts can also be stored in the ``/store/events/<eventname>`` directory structure. 
+Whenever events are triggered, all the scripts in the corresponding ``/store/events/<eventname>`` 
+directory are executed. Event scripts are executed in alphanumerical order of their names. Good 
+practice is to prefix script names with 2-3 digit numbers in steps of 10 or 100 (i.e. first script 
+named ``50-…``), so new scripts can easily be integrated at a specific place.
 
-Note that the developer building firmware can optionally set the OVMS_DEV_SDCARDSCRIPTS build flag. If that is set, then the system will also check /sd/scripts and /sd/events for scripts.
+Output of background scripts without console association (e.g. event scripts) will be sent to the 
+log with tag ``script`` at "info" level.
 
-In addition to command scripts, more sophisticated scripting capabilities may be enabled if the JavaScript environment is enabled in the build. This is discussed in the next section of this guide.
+Note that the developer building firmware can optionally set the ``OVMS_DEV_SDCARDSCRIPTS`` build 
+flag. If that is set, then the system will also check ``/sd/scripts`` and ``/sd/events`` for 
+scripts. This should not be used for production builds, as you could hack the system just by 
+plugging in an SD card.
+
+In addition to command scripts, more sophisticated scripting capabilities may be enabled if the 
+JavaScript environment is enabled in the build. This is discussed in the next section of this guide.
 
 -------------
 JavaScripting
 -------------
 
-OVMS v3 includes a powerful JavaScript engine. In addition to the standard, relatively fixed, firmware flashed to the module, JavaScripting can be used to dynamically load script code to run alongside the standard firmware. This javascript code can respond to system events, and perform background monitoring and other such tasks.
+OVMS v3 includes a powerful JavaScript engine. In addition to the standard, relatively fixed, 
+firmware flashed to the module, JavaScripting can be used to dynamically load script code to run 
+alongside the standard firmware. This javascript code can respond to system events, and perform 
+background monitoring and other such tasks.
 
-The simplest way of running javascript is to place a piece of javascript code in the /store/scripts directory, with the file extension ‘.js’. Then, the standard mechanism of running scripts can be employed::
+The simplest way of running javascript is to place a piece of javascript code in the ``/store/scripts``
+directory, with the file extension ``.js``. Then, the standard mechanism of running scripts can be 
+employed::
 
   OVMS# . <script.js>
   OVMS# script run <script.js>
@@ -32,25 +50,35 @@ Short javascript snippets can also be directly evaluated with::
 
   OVMS# script eval <code>
 
-Such javascript code can also be placed in the /store/events/<eventname> directories, to be automatically executed when the specified event is triggered.
+Such javascript code can also be placed in the ``/store/events/<eventname>`` directories, to be 
+automatically executed when the specified event is triggered. The script file name suffix must be 
+``.js`` to run the Javascript interpreter.
 
-.. note:: The scripting engine used is `Duktape <https://duktape.org/>`_. Duktape supports `ECMAScript E5/E5.1 <http://www.ecma-international.org/ecma-262/5.1/>`_ with some additions from later ECMAScript standards. Duktape does not emulate a browser environment, so you don't have window or document objects etc., just core Javascript plus the OVMS API and plugins.
+.. note:: The scripting engine used is `Duktape <https://duktape.org/>`_. Duktape supports 
+  `ECMAScript E5/E5.1 <http://www.ecma-international.org/ecma-262/5.1/>`_ with some additions from 
+  later ECMAScript standards. Duktape does not emulate a browser environment, so you don't have window 
+  or document objects etc., just core Javascript plus the OVMS API and plugins.
 
 ---------------------
 Persistent JavaScript
 ---------------------
 
-When a javascript script is executed, it is evaluated in the global javascript context. Care should be taken that local variables may pollute that context, so it is in general recommended that all JavaScript scripts are wrapped::
+When a javascript script is executed, it is evaluated in the global javascript context. Care should 
+be taken that local variables may pollute that context, so it is in general recommended that all 
+JavaScript scripts are wrapped::
 
   (function(){
     … user code …
   })();
 
-It is also possible to deliberately load functions, and other code, into the global context persistently, and have that code permanently available and running. When the JavaScript engine initialises, it automatically runs a special startup script::
+It is also possible to deliberately load functions, and other code, into the global context 
+persistently, and have that code permanently available and running. When the JavaScript engine 
+initialises, it automatically runs a special startup script::
 
   /store/script/ovmsmain.js
 
-That script can in turn include other code. If you make a change to such persistent code, and want to reload it, you can with::
+That script can in turn include other code. If you make a change to such persistent code, and want 
+to reload it, you can with::
 
   OVMS# script reload
 
@@ -58,7 +86,8 @@ That script can in turn include other code. If you make a change to such persist
 JavaScript Modules
 ------------------
 
-The OVMS JavaScript engine supports the concept of modules (using the node.js style of exports). Such modules can be written like this:
+The OVMS JavaScript engine supports the concept of modules (using the node.js style of exports). 
+Such modules can be written like this:
 
 .. code-block:: javascript
 
