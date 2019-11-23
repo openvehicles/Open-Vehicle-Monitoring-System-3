@@ -97,9 +97,24 @@ void OvmsVehicleKiaNiroEv::IncomingCM(canbus* bus, uint16_t type, uint16_t pid, 
 	switch (pid)
 		{
 		case 0xb002:
-			if (m_poll_ml_frame == 1)
+			if (IsKona())
 				{
-				StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(3), Kilometers );
+				if (m_poll_ml_frame == 1)
+					{
+					odo=CAN_BYTE(6)<<16;
+					}
+					if (m_poll_ml_frame == 2)
+					{
+					odo+=CAN_UINT(0);
+					StdMetrics.ms_v_pos_odometer->SetValue(odo, GetConsoleUnits());
+					}
+				}
+			else
+				{
+				if (m_poll_ml_frame == 1)
+					{
+					StdMetrics.ms_v_pos_odometer->SetValue(CAN_UINT24(3), GetConsoleUnits() );
+					}
 				}
 			break;
 		}
@@ -248,6 +263,7 @@ void OvmsVehicleKiaNiroEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
 				if (m_poll_ml_frame == 3)
 					{
 					StdMetrics.ms_v_bat_12v_voltage->SetValue(((CAN_BYTE(2)<<8)+CAN_BYTE(1))/1000.0, Volts);
+					// ms_v_bat_12v_current doesn't seem to be right
 					StdMetrics.ms_v_bat_12v_current->SetValue((((int16_t)CAN_BYTE(4)<<8)+CAN_BYTE(3))/1000.0, Amps);
 					m_b_aux_soc->SetValue( CAN_BYTE(5), Percentage);
 					}
@@ -351,6 +367,7 @@ void OvmsVehicleKiaNiroEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
 					//MAx regen: ((CAN_BYTE(1)<<8) + CAN_BYTE(2))/100
 					m_c_power->SetValue( (float)CAN_UINT(2)/100.0, kW);
 					//m_c_power->SetValue( (float)CAN_UINT(2)/100.0, kW);
+					m_b_bms_relay->SetValue(CAN_BIT(6,0));
 					}
 				else if (m_poll_ml_frame == 2)
 					{
@@ -395,6 +412,7 @@ void OvmsVehicleKiaNiroEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
 					{
 					kia_battery_cum_discharge = (kia_battery_cum_discharge & 0xFFFFFF00) | ((uint32_t) CAN_BYTE(0));
 					kia_battery_cum_op_time = CAN_UINT32(1) / 3600;
+					m_b_bms_ignition->SetValue(CAN_BIT(5,2));
 					}
 				break;
 
@@ -456,7 +474,11 @@ void OvmsVehicleKiaNiroEv::IncomingBCM(canbus* bus, uint16_t type, uint16_t pid,
 			case 0xB00E:
 				if (m_poll_ml_frame == 1)
 					{
-					StdMetrics.ms_v_door_chargeport->SetValue(CAN_BIT(1,4));
+					// Charge door port not yet found for Kona - we'll fake it for now
+					if (!IsKona())
+						{
+						StdMetrics.ms_v_door_chargeport->SetValue(CAN_BIT(1,4));
+						}
 					}
 				break;
 
@@ -535,34 +557,61 @@ void OvmsVehicleKiaNiroEv::IncomingIGMP(canbus* bus, uint16_t type, uint16_t pid
 				if (m_poll_ml_frame == 1)
 					{
 					StdMetrics.ms_v_door_trunk->SetValue(CAN_BIT(1,7));
-					StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(1,5));
-					StdMetrics.ms_v_door_fr->SetValue(CAN_BIT(1,4));
-					StdMetrics.ms_v_door_rl->SetValue(CAN_BIT(1,0));
-					StdMetrics.ms_v_door_rr->SetValue(CAN_BIT(1,2));
-
 					StdMetrics.ms_v_door_hood->SetValue(CAN_BIT(2,0));
-
-					m_v_door_lock_rl->SetValue(CAN_BIT(1,1));
-					m_v_door_lock_rr->SetValue(CAN_BIT(1,3));
 
 					StdMetrics.ms_v_env_on->SetValue((CAN_BYTE(2) & 0x60)>0);
 
 					m_v_seat_belt_driver->SetValue(CAN_BIT(2,1));
 					m_v_seat_belt_passenger->SetValue(CAN_BIT(2,2));
+
+					/*
+					 * Car data is by driver, but metrics is left/right
+					 */
+					if (IsLHD())
+						{
+						StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(1,5));
+						StdMetrics.ms_v_door_fr->SetValue(CAN_BIT(1,4));
+						StdMetrics.ms_v_door_rl->SetValue(CAN_BIT(1,0));
+						StdMetrics.ms_v_door_rr->SetValue(CAN_BIT(1,2));
+						m_v_door_lock_rl->SetValue(CAN_BIT(1,1));
+						m_v_door_lock_rr->SetValue(CAN_BIT(1,3));
+						}
+						else
+						{
+						StdMetrics.ms_v_door_fr->SetValue(CAN_BIT(1,5));
+						StdMetrics.ms_v_door_fl->SetValue(CAN_BIT(1,4));
+						StdMetrics.ms_v_door_rr->SetValue(CAN_BIT(1,0));
+						StdMetrics.ms_v_door_rl->SetValue(CAN_BIT(1,2));
+						m_v_door_lock_rr->SetValue(CAN_BIT(1,1));
+						m_v_door_lock_rl->SetValue(CAN_BIT(1,3));
+						}
 					}
 				break;
 
 			case 0xbc04:
 				if (m_poll_ml_frame == 1)
 					{
-					m_v_door_lock_fl->SetValue(CAN_BIT(1,3));
-					m_v_door_lock_fr->SetValue(CAN_BIT(1,2));
-
-					m_v_seat_belt_back_left->SetValue(CAN_BIT(4,2));
 					m_v_seat_belt_back_middle->SetValue(CAN_BIT(4,3));
-					m_v_seat_belt_back_right->SetValue(CAN_BIT(4,4));
 
 					StdMetrics.ms_v_env_headlights->SetValue(CAN_BIT(5,4));
+
+					/*
+					 * Car data is by driver, but metrics is left/right
+					 */
+					if (IsLHD())
+						{
+						m_v_door_lock_fl->SetValue(CAN_BIT(1,3));
+						m_v_door_lock_fr->SetValue(CAN_BIT(1,2));
+						m_v_seat_belt_back_left->SetValue(CAN_BIT(4,2));
+						m_v_seat_belt_back_right->SetValue(CAN_BIT(4,4));
+						}
+						else
+						{
+						m_v_door_lock_fr->SetValue(CAN_BIT(1,3));
+						m_v_door_lock_fl->SetValue(CAN_BIT(1,2));
+						m_v_seat_belt_back_right->SetValue(CAN_BIT(4,2));
+						m_v_seat_belt_back_left->SetValue(CAN_BIT(4,4));
+						}
 					}
 				break;
 
@@ -576,3 +625,41 @@ void OvmsVehicleKiaNiroEv::IncomingIGMP(canbus* bus, uint16_t type, uint16_t pid
 			}
 		}
 	}
+
+/**
+ * Determine if this car is a Hyundai Kona
+ *
+ * Currently from VIN
+ */
+bool OvmsVehicleKiaNiroEv::IsKona()
+	{
+	if (m_vin[0] == 'K' && m_vin[1] == 'M' && m_vin[2] == 'H')
+		{
+		return true;
+		}
+	else
+		{
+		return false;
+		}
+	}
+
+/**
+ * Get console ODO units
+ *
+ * Currently from configuration
+ */
+metric_unit_t OvmsVehicleKiaNiroEv::GetConsoleUnits()
+	{
+	return MyConfig.GetParamValueBool("xkn", "consoleKilometers", true) ? Kilometers : Miles;
+	}
+
+/**
+ * Determine if this car is left hand drive
+ *
+ * Currently from configuration
+ */
+bool OvmsVehicleKiaNiroEv::IsLHD()
+	{
+	return MyConfig.GetParamValueBool("xkn", "leftDrive", true);
+	}
+

@@ -145,21 +145,99 @@ void xkn_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 
 	writer->printf("VIN\n");
 	writer->printf("Vin: %s \n", soul->m_vin);
-	if(soul->m_vin[2]=='A' || soul->m_vin[2]=='D')
+
+	//
+	// See https://en.wikipedia.org/wiki/Vehicle_identification_number#World_manufacturer_identifier
+	//
+	writer->printf("World manufacturer identifier: ");
+	if (soul->m_vin[0] == '5' && soul->m_vin[1] == 'X')
 		{
-		writer->printf("MPV/SUV/RV (Outside USA, Canada, Mexico)\n");
+		writer->printf("United States Hyundai/Kia\n");
 		}
-	else if(soul->m_vin[2]=='C')
+	else if (soul->m_vin[0] == 'K' && soul->m_vin[1] == 'M' && soul->m_vin[2] == 'H')
 		{
-		writer->printf("Commercial Vehicle\n");
+		writer->printf("South Korea Hyundai\n");
 		}
-	else if(soul->m_vin[2]=='D')
+	else if (soul->m_vin[0] == 'T' && soul->m_vin[1] == 'M' && soul->m_vin[2] == 'A')
 		{
-		writer->printf("MPV/SUV/RV (USA, Canada, Mexico)\n");
+		writer->printf("Czech Republic Hyundai\n");
 		}
-	else if(soul->m_vin[2]=='H')
+	else if (soul->m_vin[0] == '2' && soul->m_vin[1] == 'H' && soul->m_vin[2] == 'M')
 		{
-		writer->printf("Van\n");
+		writer->printf("Canada Hyundai\n");
+		}
+	else if (soul->m_vin[0] == '5' && soul->m_vin[1] == 'N' && soul->m_vin[2] == 'M')
+		{
+		writer->printf("United States Hyundai\n");
+		}
+	else if (soul->m_vin[0] == '5' && soul->m_vin[1] == 'N' && soul->m_vin[2] == 'P')
+		{
+		writer->printf("United States Hyundai\n");
+		}
+	else if (soul->m_vin[0] == '9' && soul->m_vin[1] == 'B' && soul->m_vin[2] == 'H')
+		{
+		writer->printf("Brazil Hyundai\n");
+		}
+	else if (soul->m_vin[0] == '9' && soul->m_vin[1] == '5' && soul->m_vin[2] == 'P')
+		{
+		writer->printf("Brazil CAOA/Hyundai\n");
+		}
+	else if (soul->m_vin[0] == 'L' && soul->m_vin[1] == 'B' && soul->m_vin[2] == 'E')
+		{
+		writer->printf("China Beijing Hyundai\n");
+		}
+	else if (soul->m_vin[0] == 'K' && soul->m_vin[1] == 'N')
+		{
+		writer->printf("South Korea Kia ");
+
+		if(soul->m_vin[2]=='A' || soul->m_vin[2]=='D')
+			{
+			writer->printf("MPV/SUV/RV (Outside USA, Canada, Mexico)\n");
+			}
+		else if(soul->m_vin[2]=='C')
+			{
+			writer->printf("Commercial Vehicle\n");
+			}
+		else if(soul->m_vin[2]=='D')
+			{
+			writer->printf("MPV/SUV/RV (USA, Canada, Mexico)\n");
+			}
+		else if(soul->m_vin[2]=='H')
+			{
+			writer->printf("Van\n");
+			}
+		else
+			{
+			writer->printf("\n");
+			}
+		}
+	else if (soul->m_vin[0] == 'M' && soul->m_vin[1] == 'S' && soul->m_vin[2] == '0')
+		{
+		writer->printf("Myanmar Kia\n");
+		}
+	else if (soul->m_vin[0] == 'P' && soul->m_vin[1] == 'N' && soul->m_vin[2] == 'A')
+		{
+		writer->printf("Malaysia Kia\n");
+		}
+	else if (soul->m_vin[0] == 'U' && soul->m_vin[1] == '5' && soul->m_vin[2] == 'Y')
+		{
+		writer->printf("Slovakia Kia\n");
+		}
+	else if (soul->m_vin[0] == '3' && soul->m_vin[1] == 'K' && soul->m_vin[2] == 'P')
+		{
+		writer->printf("Mexico Kia\n");
+		}
+	else if (soul->m_vin[0] == '9' && soul->m_vin[1] == 'U' && soul->m_vin[2] == 'W')
+		{
+		writer->printf("Uruguay Kia\n");
+		}
+	else if (soul->m_vin[0] == 'L' && soul->m_vin[1] == 'J' && soul->m_vin[2] == 'D')
+		{
+		writer->printf("China Dongfeng Yueda Kia\n");
+		}
+	else
+		{
+		writer->printf("Unknown %c%c%c\n",soul->m_vin[0],soul->m_vin[1],soul->m_vin[2]);
 		}
 
 	writer->printf("Vehicle Line: ");
@@ -171,12 +249,17 @@ void xkn_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 		{
 		writer->printf("Niro\n");
 		}
+	else 	if(soul->m_vin[3]=='K')
+		{
+		writer->printf("Kona\n"); // from Peters car
+		}
 	else
 		{
 		writer->printf("Unknown %c\n", soul->m_vin[3]);
 		}
 
 	writer->printf("Model: ");
+	// 5 = Peters Hyundai Kona
 	/*if(soul->m_vin[4]=='M')
 		{
 		writer->printf("Low grade\n");
@@ -206,23 +289,29 @@ void xkn_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 		writer->printf("Unknown %c\n", soul->m_vin[4]);
 		}
 
+	//
+	// See https://en.wikibooks.org/wiki/Vehicle_Identification_Numbers_(VIN_codes)/Hyundai/VIN_Codes#Model_Year
+	//
 	int year = soul->m_vin[9]-'F';
 	writer->printf("Model year: %04d\n", 2014 + year); //TODO Is off by a year. O and Q are not used.
 
 	writer->printf("Motor type: ");
 	if(soul->m_vin[7]=='E')
 		{
-		writer->printf("Battery [LiPB 350 V, 75 Ah] + Motor [3-phase AC 80 KW]\n");
+		writer->printf("Battery [LiPB 350 V, 75 Ah (39kWh)] + Motor [3-phase AC 80 KW]\n");
 		}
 	else if(soul->m_vin[7]=='G')
 		{
-		writer->printf("Battery [LiPB 356 V, 180 Ah] + Motor [3-phase AC 150 KW]\n");
+		writer->printf("Battery [LiPB 356 V, 180 Ah (64kWh)] + Motor [3-phase AC 150 KW]\n");
 		}
 	else
 		{
 		writer->printf("Unknown %c\n", soul->m_vin[7]);
 		}
 
+	//
+	// See https://en.wikibooks.org/wiki/Vehicle_Identification_Numbers_(VIN_codes)/Hyundai/VIN_Codes#Manufacturing_Plant_Code
+	//
 	writer->printf("Production plant: ");
 	if(soul->m_vin[10]=='5')
 		{
@@ -243,6 +332,10 @@ void xkn_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 	else if(soul->m_vin[10]=='Y')
 		{
 		writer->printf("Yangon (Myanmar)\n");
+		}
+	else if(soul->m_vin[10]=='U')
+		{
+		writer->printf("Ulsan (Korea)\n");
 		}
 	else
 		{
