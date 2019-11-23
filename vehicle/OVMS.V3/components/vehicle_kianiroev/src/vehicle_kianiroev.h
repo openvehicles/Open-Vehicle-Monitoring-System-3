@@ -120,6 +120,10 @@ class OvmsVehicleKiaNiroEv : public KiaVehicle
     void SetAutoDoorUnlock(uint8_t);
     void SetAutoDoorLock(uint8_t);
 
+    bool IsKona();
+    bool IsLHD();
+    metric_unit_t GetConsoleUnits();
+
     bool  kn_emergency_message_sent;
 
   protected:
@@ -171,6 +175,11 @@ class OvmsVehicleKiaNiroEv : public KiaVehicle
     int16_t smk_tester_present_seconds; //TODO Remove?
 
     bool kn_ldc_enabled;
+
+    uint32_t odo;
+
+    OvmsMetricBool*  m_b_bms_relay;
+    OvmsMetricBool*  m_b_bms_ignition;
 
     struct {
       unsigned char ChargingCCS : 1;
