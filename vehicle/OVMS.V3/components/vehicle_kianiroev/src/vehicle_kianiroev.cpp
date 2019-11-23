@@ -138,7 +138,7 @@ charging_profile niro_charge_steps[] = {
  */
 OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   {
-  ESP_LOGI(TAG, "Kia Niro EV v1.0 vehicle module");
+  ESP_LOGI(TAG, "Kia Niro / Hyundai Kona EV v1.0 vehicle module");
 
   StopTesterPresentMessages();
 
@@ -206,6 +206,9 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   m_b_bms_soc = MyMetrics.InitFloat("xkn.b.bms.soc", 10, 0, Percentage);
   m_b_aux_soc = MyMetrics.InitInt("xkn.b.aux.soc", 0, 0, Percentage);
 
+  m_b_bms_relay = MyMetrics.InitBool("xkn.b.bms.relay", 30, false, Other);
+  m_b_bms_ignition = MyMetrics.InitBool("xkn.b.bms.ignition", 30, false, Other);
+
   m_ldc_out_voltage = MyMetrics.InitFloat("xkn.ldc.out.volt", 10, 12, Volts);
   m_ldc_in_voltage = MyMetrics.InitFloat("xkn.ldc.in.volt", 10, 12, Volts);
   m_ldc_out_current = MyMetrics.InitFloat("xkn.ldc.out.amps", 10, 0, Amps);
@@ -258,7 +261,7 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   kn_shift_bits.CarOn = false;
 
   // init commands:
-  cmd_xkn = MyCommandApp.RegisterCommand("xkn","Kia Niro EV");
+  cmd_xkn = MyCommandApp.RegisterCommand("xkn","Kia Niro / Hyundai Kona EV");
   cmd_xkn->RegisterCommand("trip","Show trip info since last parked", xkn_trip_since_parked);
   cmd_xkn->RegisterCommand("tripch","Show trip info since last charge", xkn_trip_since_charge);
   cmd_xkn->RegisterCommand("tpms","Tire pressure monitor", xkn_tpms);
@@ -280,7 +283,7 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "app.connected", std::bind(&OvmsVehicleKiaNiroEv::EventListener, this, _1, _2));
 
-  MyConfig.RegisterParam("xkn", "Kia Niro EV spesific settings.", true, true);
+  MyConfig.RegisterParam("xkn", "Kia Niro / Hyundai Kona EV specific settings.", true, true);
   ConfigChanged(NULL);
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -304,7 +307,7 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
  */
 OvmsVehicleKiaNiroEv::~OvmsVehicleKiaNiroEv()
   {
-  ESP_LOGI(TAG, "Shutdown Kia Niro EV vehicle module");
+  ESP_LOGI(TAG, "Shutdown Kia Niro / Hyundai Kona EV vehicle module");
   MyWebServer.DeregisterPage("/bms/cellmon");
   }
 
@@ -313,7 +316,7 @@ OvmsVehicleKiaNiroEv::~OvmsVehicleKiaNiroEv()
  */
 void OvmsVehicleKiaNiroEv::ConfigChanged(OvmsConfigParam* param)
 	{
-  ESP_LOGD(TAG, "Kia Niro EV reload configuration");
+  ESP_LOGD(TAG, "Kia Niro / Hyundai Kona EV reload configuration");
 
   // Instances:
   // xkn
@@ -442,6 +445,12 @@ void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
 		kn_charge_bits.ChargingType2=false;
 		}
 
+	// AC charge current on kona not yet found, so we'll fake it by looking at battery power
+	if (IsKona())
+		{
+		kia_obc_ac_current=-StdMetrics.ms_v_bat_power->AsFloat(0, Watts)/kia_obc_ac_voltage;
+		}
+
   //Keep charging metrics up to date
 	if (kn_charge_bits.ChargingType2)  		// **** Type 2  charging ****
 		{
@@ -453,7 +462,25 @@ void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
 	  }
 
 	// Check for charging status changes:
-	bool isCharging = (kn_charge_bits.ChargingCCS || kn_charge_bits.ChargingType2) 	&& (CHARGE_CURRENT > 0);
+	bool isCharging=false;
+	if (IsKona())
+		{
+		if (m_b_bms_relay->IsStale() || m_b_bms_ignition->IsStale())
+			{
+			isCharging=false;
+			}
+		else
+			{
+			// See https://docs.google.com/spreadsheets/d/1JyJnXh7DOvzTl0cbWZRpW9qB_OgEOM-w_XOiAY_a64o/edit#gid=1990128420
+			isCharging = (m_b_bms_relay->AsBool(false)-m_b_bms_ignition->AsBool(false)) == 1;
+			}
+		// fake charge port door
+		StdMetrics.ms_v_door_chargeport->SetValue(isCharging);
+		}
+	else
+		{
+		isCharging = (kn_charge_bits.ChargingCCS || kn_charge_bits.ChargingType2) 	&& (CHARGE_CURRENT > 0);
+		}
 
 	if (isCharging)
 		{
@@ -470,8 +497,9 @@ void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
   		POLLSTATE_CHARGING;
   		kia_ready_for_chargepollstate = false;
   		kia_secs_with_no_client = 0; //Reset no client counter
-  }
-  // Wake up if car starts charging again
+	}
+
+	// Wake up if car starts charging again
 	if (m_poll_state==0 && kia_last_battery_cum_charge < kia_battery_cum_charge)
 		{
 			kia_secs_with_no_client=0;
@@ -495,7 +523,10 @@ void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
 			kia_secs_with_no_client++;
 			if(kia_secs_with_no_client>60)
 				{
-				ESP_LOGI(TAG,"NO CLIENTS. Turning off polling.");
+				if (m_poll_state!=0)
+					{
+					ESP_LOGI(TAG,"NO CLIENTS. Turning off polling.");
+					}
 				POLLSTATE_OFF;
 				}
 			}
@@ -1013,7 +1044,7 @@ class OvmsVehicleKiaNiroEvInit
 
 OvmsVehicleKiaNiroEvInit::OvmsVehicleKiaNiroEvInit()
   {
-  ESP_LOGI(TAG, "Registering Vehicle: Kia Niro EV (9000)");
+  ESP_LOGI(TAG, "Registering Vehicle: Kia Niro / Hyundai Kona EV (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleKiaNiroEv>("KN","Kia Niro EV");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleKiaNiroEv>("KN","Kia Niro / Hyundai Kona EV");
   }
