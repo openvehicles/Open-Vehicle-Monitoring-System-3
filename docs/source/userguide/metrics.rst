@@ -167,7 +167,7 @@ v.e.c.config                                                      yes = ECU/cont
 v.e.c.login                                                       yes = Module logged in at ECU/controller
 v.e.cabintemp                            20°C                     Cabin temperature
 v.e.cabinfan                             100%                     Cabin fan
-v.e.cabinsetpoint                        24°C                    Cabin set point
+v.e.cabinsetpoint                        24°C                     Cabin set point
 v.e.cabinintake                          fresh                    Cabin intake type (fresh, recirc, etc)
 v.e.cabinvent                            feet,face                Cabin vent type (comma-separated list of feet, face, screen, etc)
 v.e.charging12v                          no                       yes = 12V battery charging
