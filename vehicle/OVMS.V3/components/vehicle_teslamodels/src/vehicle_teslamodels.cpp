@@ -253,6 +253,7 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
 void OvmsVehicleTeslaModelS::IncomingFrameCan2(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
+  uint8_t b;
 
   switch (p_frame->MsgID)
     {
@@ -265,6 +266,14 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan2(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_pos_gpslock->SetValue(true);
         StandardMetrics.ms_v_pos_gpsmode->SetValue("TESLA");
         }
+      break;
+    case 0x318: // GWT CAR state
+      b = d[5]>>6;            if (b<2) StandardMetrics.ms_v_door_trunk->SetValue(b);
+      b = (d[1] >> 4) & 0x03; if (b<2) StandardMetrics.ms_v_door_fr->SetValue(b);
+      b = (d[1] >> 6);        if (b<2) StandardMetrics.ms_v_door_fl->SetValue(b);
+      b = (d[2] >> 6);        if (b<2) StandardMetrics.ms_v_door_rr->SetValue(b);
+      b = (d[3] >> 5) & 0x03; if (b<2) StandardMetrics.ms_v_door_rl->SetValue(b);
+      b = (d[6] >> 2) & 0x03; if (b<2) StandardMetrics.ms_v_door_hood->SetValue(b);
       break;
     case 0x3d8: // MCU GPS latitude / longitude
       StandardMetrics.ms_v_pos_latitude->SetValue((double)(((uint32_t)(d[3]&0x0f) << 24) +
