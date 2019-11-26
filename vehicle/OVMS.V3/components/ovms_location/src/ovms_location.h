@@ -98,6 +98,7 @@ class OvmsLocations
     float m_longitude;
     float m_park_latitude;
     float m_park_longitude;
+    float m_park_distance;
     LocationMap m_locations;
 
   public:
