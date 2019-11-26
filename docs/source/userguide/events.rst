@@ -57,6 +57,7 @@ egpio.output.<port>.<state>                   EGPIO output port change (port=0â€
 gps.lock.acquired                             GPS lock has been acquired
 gps.lock.lost                                 GPS lock has been lost
 housekeeping.init                             Housekeeping has initialised
+location.alert.flatbed.moved                  GPS movement of parked vehicle detected
 location.enter.<name>               <name>    The specified geolocation has been entered
 location.leave.<name>               <name>    The specified geolcation has been left
 network.down                                  All networks are down
