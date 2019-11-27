@@ -89,6 +89,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
         if (MyOvmsServerV3)
           {
           StandardMetrics.ms_s_v3_connected->SetValue(false);
+          StandardMetrics.ms_s_v3_peers->SetValue(0);
           MyOvmsServerV3->SetStatus("Error: Connection failed", true, OvmsServerV3::WaitReconnect);
           MyOvmsServerV3->m_connretry = 20;
           }
@@ -681,6 +682,7 @@ void OvmsServerV3::Disconnect()
     }
   m_connretry = 0;
   StandardMetrics.ms_s_v3_connected->SetValue(false);
+  StandardMetrics.ms_s_v3_peers->SetValue(0);
   }
 
 void OvmsServerV3::SetStatus(const char* status, bool fault /*=false*/, State newstate /*=Undefined*/)

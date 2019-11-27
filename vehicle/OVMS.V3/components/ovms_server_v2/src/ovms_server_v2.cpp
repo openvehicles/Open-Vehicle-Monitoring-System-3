@@ -805,6 +805,7 @@ void OvmsServerV2::Disconnect()
   m_buffer->EmptyAll();
   m_connretry = 0;
   StandardMetrics.ms_s_v2_connected->SetValue(false);
+  StandardMetrics.ms_s_v2_peers->SetValue(0);
   }
 
 void OvmsServerV2::Reconnect(int connretry)
@@ -818,6 +819,7 @@ void OvmsServerV2::Reconnect(int connretry)
   m_buffer->EmptyAll();
   m_connretry = connretry;
   StandardMetrics.ms_s_v2_connected->SetValue(false);
+  StandardMetrics.ms_s_v2_peers->SetValue(0);
   }
 
 size_t OvmsServerV2::IncomingData(uint8_t* data, size_t len)
