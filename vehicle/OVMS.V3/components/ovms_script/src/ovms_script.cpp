@@ -1146,6 +1146,7 @@ void OvmsScripts::EventScript(std::string event, void* data)
   std::string path;
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  // dispatch event to PubSub component:
   duktape_queue_t dmsg;
   memset(&dmsg, 0, sizeof(dmsg));
   dmsg.type = DUKTAPE_event;
@@ -1155,14 +1156,24 @@ void OvmsScripts::EventScript(std::string event, void* data)
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
 #ifdef CONFIG_OVMS_DEV_SDCARDSCRIPTS
+  // run event scripts on external storage:
   path=std::string("/sd/events/");
   path.append(event);
   AllScripts(path);
 #endif // #ifdef CONFIG_OVMS_DEV_SDCARDSCRIPTS
 
+  // run event scripts on internal storage:
   path=std::string("/store/events/");
   path.append(event);
   AllScripts(path);
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (event == "ticker.60")
+    {
+    // do garbage collection once per minute:
+    DuktapeCompact();
+    }
+#endif // CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
 OvmsScripts::OvmsScripts()
