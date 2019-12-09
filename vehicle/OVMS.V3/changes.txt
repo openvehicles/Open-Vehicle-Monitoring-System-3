@@ -2,6 +2,10 @@ Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
 
+2019-12-09 MWJ  3.2.007  OTA release
+- Minor change to web sheel (to decode line breaks in log messages)
+- Javascript: Conduct garbage collection per minute, to reduce memory consumption
+
 2019-11-30 MWJ  3.2.006  OTA release
 - 12V Monitor: web UI calibration aid & configuration
 - EGPIO/MAX7317: port input monitoring, metrics, events, documentation
