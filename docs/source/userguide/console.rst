@@ -73,7 +73,7 @@ In this case, ‘user’ is the username you use to ssh, and the public key is y
 
 You can also use SCP to copy files to and from the OVMS v3 VFS.
 
-A note about OpenSSH: with version 6.6, cipher aes128-cbc has been disabled by default and needs to be enabled manually, either on the command line:
+A note about OpenSSH: with version 6.6 (or later), cipher aes128-cbc has been disabled by default and needs to be enabled manually, either on the command line:
 
   ``ssh -c aes128-cbc user@ip``
 
