@@ -178,8 +178,8 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
       // Request TxCallback:
       CAN_queue_msg_t msg;
       msg.type = CAN_txcallback;
+      msg.body.frame = me->m_tx_frame;
       msg.body.bus = me;
-      msg.body.frame = me->tx_frame;
       xQueueSendFromISR(MyCan.m_rxqueue, &msg, &task_woken);
       }
 
