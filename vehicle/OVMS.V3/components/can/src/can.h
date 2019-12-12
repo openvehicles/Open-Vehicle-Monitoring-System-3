@@ -307,7 +307,7 @@ class canbus : public pcp, public InternalRamAllocated
     CAN_speed_t m_speed;
     CAN_mode_t m_mode;
     CAN_status_t m_status;
-    CAN_frame_t tx_frame;
+    CAN_frame_t m_tx_frame;       // saved copy of last TX frame to be used in txcallback
     uint32_t m_status_chksum;
     uint32_t m_watchdog_timer;
     QueueHandle_t m_txqueue;

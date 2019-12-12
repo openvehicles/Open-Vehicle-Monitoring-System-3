@@ -47,7 +47,7 @@ static IRAM_ATTR void MCP2515_isr(void *pvParameters)
 
   // we don't know the IRQ source and querying by SPI is too slow for an ISR,
   // so we let AsynchronousInterruptHandler() figure out what to do. 
-  CAN_queue_msg_t msg;
+  CAN_queue_msg_t msg = {};
   msg.type = CAN_asyncinterrupthandler;
   msg.body.bus = me;
 
@@ -446,8 +446,8 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameRecei
     // send "tx success" callback request to main CAN processor task
     CAN_queue_msg_t msg;
     msg.type = CAN_txcallback;
+    msg.body.frame = m_tx_frame;
     msg.body.bus = this;
-    msg.body.frame = tx_frame;
     xQueueSend(MyCan.m_rxqueue,&msg,0);
 
     if(xQueueReceive(m_txqueue, (void*)frame, 0) == pdTRUE)  { // if any queued for later?
@@ -474,12 +474,12 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameRecei
     uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, REG_TEC);
     if ( (intstat & 0b10000000) && (p[0] > m_status.errors_tx) )
       {
-      ESP_LOGE(TAG, "AsynchronousInterruptHandler: error while sending frame. msgId 0x%x", tx_frame.MsgID);
+      ESP_LOGE(TAG, "AsynchronousInterruptHandler: error while sending frame. msgId 0x%x", m_tx_frame.MsgID);
       // send "tx failed" callback request to main CAN processor task
       CAN_queue_msg_t msg;
       msg.type = CAN_txfailedcallback;
+      msg.body.frame = m_tx_frame;
       msg.body.bus = this;
-      msg.body.frame = tx_frame;
       xQueueSend(MyCan.m_rxqueue,&msg,0);
       }
     m_status.errors_tx = p[0];
