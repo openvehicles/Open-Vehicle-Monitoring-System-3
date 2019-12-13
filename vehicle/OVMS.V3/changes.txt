@@ -1,6 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
-????-??-?? ???  ???????  OTA release
+2019-12-13 MWJ  3.2.008  OTA release
+- Add support for 8MB PSRAM (in addition to current 4MB support)
+- Improvements to CAN driver, relating to obd2hud
+- Nissan Leaf: 40kWh option
 
 2019-12-09 MWJ  3.2.007  OTA release
 - Minor change to web sheel (to decode line breaks in log messages)
