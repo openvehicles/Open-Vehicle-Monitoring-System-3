@@ -1,0 +1,12 @@
+#!/bin/bash
+elf=~/esp/Open-Vehicle-Monitoring-System-3/vehicle/OVMS.V3/build/ovms3.elf
+for adr in $* ; do
+  if [[ "$adr" =~ "elf" ]] ; then
+    elf="$adr"
+  else
+    cmd+=" -ex 'l *${adr/:*/}'"
+  fi
+done
+cmd+=" -ex 'q'"
+echo "Using elf file: $elf"
+eval xtensa-esp32-elf-gdb -batch $elf $cmd 2>/dev/null 
