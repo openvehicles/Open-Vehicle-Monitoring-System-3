@@ -188,7 +188,7 @@ void can_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
     return;
     }
 
-  CAN_frame_t frame;
+  CAN_frame_t frame = {};
   frame.origin = sbus;
   frame.FIR.U = 0;
   frame.FIR.B.DLC = argc-1;
@@ -221,7 +221,7 @@ void can_rx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
     return;
     }
 
-  CAN_frame_t frame;
+  CAN_frame_t frame = {};
   frame.origin = sbus;
   frame.FIR.U = 0;
   frame.FIR.B.DLC = argc-1;
