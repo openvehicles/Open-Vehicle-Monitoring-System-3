@@ -872,12 +872,12 @@ void OvmsWebServer::HandleCfgNotification(PageEntry_t& p, PageContext_t& c)
       {
       if (pmap["user_key"].length() == 0)
         error += "<li data-input=\"user_key\">User key must not be empty</li>";
-      if (pmap["user_key"].find_first_not_of("abcdefghijklmnopqrstuvwxyz0123456789") != std::string::npos)
-        error += "<li data-input=\"user_key\">User key may only contain lower case ASCII letters and digits</li>";
+      if (pmap["user_key"].find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789") != std::string::npos)
+        error += "<li data-input=\"user_key\">User key may only contain ASCII letters and digits</li>";
       if (pmap["token"].length() == 0)
         error += "<li data-input=\"token\">Token must not be empty</li>";
-      if (pmap["token"].find_first_not_of("abcdefghijklmnopqrstuvwxyz0123456789") != std::string::npos)
-        error += "<li data-input=\"user_key\">Token may only contain lower case ASCII letters and digits</li>";
+      if (pmap["token"].find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789") != std::string::npos)
+        error += "<li data-input=\"user_key\">Token may only contain ASCII letters and digits</li>";
       }
 
     pmap["sound.normal"] = c.getvar("sound.normal");
