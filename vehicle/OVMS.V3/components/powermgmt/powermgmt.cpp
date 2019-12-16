@@ -125,7 +125,7 @@ void powermgmt::Ticker1(std::string event, void* data)
     return;
 
 #ifdef CONFIG_OVMS_COMP_WIFI
-  if (m_notcharging_timer > m_wifioff_delay*60*60) // hours to seconds
+  if (m_wifioff_delay && m_notcharging_timer > m_wifioff_delay*60*60) // hours to seconds
     {
     if (MyPeripherals->m_esp32wifi->GetPowerMode()==On)
       {
@@ -139,7 +139,7 @@ void powermgmt::Ticker1(std::string event, void* data)
 #endif
 
 #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
-  if (m_notcharging_timer > m_modemoff_delay*60*60) // hours to seconds
+  if (m_modemoff_delay && m_notcharging_timer > m_modemoff_delay*60*60) // hours to seconds
     {
     if (MyPeripherals->m_simcom->GetPowerMode()==On)
       {
