@@ -183,6 +183,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
     
     ESP_LOGI(TAG, "Send Wakeup Command");
     
+    RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+    
     CAN_frame_t frame;
     memset(&frame, 0, sizeof(frame));
 
@@ -197,6 +199,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
     frame.data.u8[2] = 0x00;
     frame.data.u8[3] = 0x00;
     m_can2->Write(&frame);
+    
+    m_can2->Stop();
 
     return Success;
 }

@@ -123,10 +123,8 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
   BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
   BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
   
-  RestoreStatus();
-  
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-  RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+  //RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   
   // init OBD2 poller:
   ObdInitPoll();
@@ -720,6 +718,7 @@ void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
 
 void OvmsVehicleSmartED::Ticker10(uint32_t ticker) {
   HandleCharging();
+  if (StandardMetrics.ms_v_bat_soc->AsFloat(0) == 0) RestoreStatus();
 #ifdef CONFIG_OVMS_COMP_MAX7317
   if(m_lock_state) {
     int level = MyPeripherals->m_max7317->Input((uint8_t)m_doorstatus_port);
