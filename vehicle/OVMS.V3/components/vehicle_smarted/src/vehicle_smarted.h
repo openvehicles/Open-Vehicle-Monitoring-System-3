@@ -41,7 +41,6 @@
 #include "ovms_config.h"
 #include "ovms_metrics.h"
 #include "ovms_command.h"
-#include "freertos/timers.h"
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
 #endif
@@ -99,8 +98,6 @@ class OvmsVehicleSmartED : public OvmsVehicle
     virtual void Ticker60(uint32_t ticker);
     void GetDashboardConfig(DashboardConfig& cfg);
     void vehicle_smarted_car_on(bool isOn);
-    TimerHandle_t m_locking_timer;
-    
     void NotifyTrip();
     void NotifyValetEnabled();
     void NotifyValetDisabled();
