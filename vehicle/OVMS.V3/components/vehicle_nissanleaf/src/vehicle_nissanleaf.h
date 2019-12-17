@@ -47,6 +47,8 @@
 #define GEN_1_30_NEW_CAR_AH 79
 #define GEN_2_40_NEW_CAR_GIDS 502
 #define GEN_2_40_NEW_CAR_AH 115
+#define GEN_2_62_NEW_CAR_GIDS 775
+#define GEN_2_62_NEW_CAR_AH 176
 #define REMOTE_COMMAND_REPEAT_COUNT 24 // number of times to send the remote command after the first time
 #define ACTIVATION_REQUEST_TIME 10 // tenths of a second to hold activation request signal
 
