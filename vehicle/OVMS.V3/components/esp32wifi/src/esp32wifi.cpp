@@ -863,6 +863,10 @@ void esp32wifi::EventWifiStaState(std::string event, void* data)
   {
   if (event == "system.wifi.sta.start")
     {
+      // Set hostname for DHCP request
+      std::string vehicleid = MyConfig.GetParamValue("vehicle", "id");
+      if (vehicleid.empty()) vehicleid = "ovms";
+      ESP_ERROR_CHECK(tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, vehicleid.c_str()));
     AdjustTaskPriority();
     }
   }
