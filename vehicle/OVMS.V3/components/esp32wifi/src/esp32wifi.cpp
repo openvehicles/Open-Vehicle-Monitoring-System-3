@@ -874,6 +874,29 @@ void esp32wifi::EventWifiApState(std::string event, void* data)
     AdjustTaskPriority();
     esp_wifi_get_mac(ESP_IF_WIFI_AP, m_mac_ap);
     tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &m_ip_info_ap);
+
+    // Disable routing (gateway) and DNS offer on DHCP server for AP:
+    // Note: disabling the DNS offer requires esp-idf fix in commit 4195d7c2eec2d93781d5f88fd71f5c7e1ee1ff20
+    esp_err_t err;
+    err = tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP);
+    if (err != ESP_OK)
+      {
+      ESP_LOGE(TAG, "AP: failed reconfiguring DHCP server; error=%d", err);
+      }
+    else
+      {
+      dhcps_offer_t opt_val = 0;
+      err = tcpip_adapter_dhcps_option(TCPIP_ADAPTER_OP_SET, TCPIP_ADAPTER_DOMAIN_NAME_SERVER, &opt_val, sizeof(opt_val));
+      if (err != ESP_OK)
+        ESP_LOGW(TAG, "AP: failed disabling DHCP DNS offer; error=%d", err);
+      err = tcpip_adapter_dhcps_option(TCPIP_ADAPTER_OP_SET, TCPIP_ADAPTER_ROUTER_SOLICITATION_ADDRESS, &opt_val, sizeof(opt_val));
+      if (err != ESP_OK)
+        ESP_LOGW(TAG, "AP: failed disabling DHCP routing offer; error=%d", err);
+      err = tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
+      if (err != ESP_OK)
+        ESP_LOGE(TAG, "AP: failed restarting DHCP server; error=%d", err);
+      }
+
     ESP_LOGI(TAG, "AP started with SSID: %s, MAC: " MACSTR ", IP: " IPSTR,
       m_wifi_ap_cfg.ap.ssid, MAC2STR(m_mac_ap), IP2STR(&m_ip_info_ap.ip));
     }
