@@ -29,6 +29,8 @@ OVMS hardware V3 supports up to three CAN bus connections. The connections to OV
     6     CAN3-L
     8     CAN3-H
 
+Note: the board schematics refer to CAN0,1,2.  These correspond to CAN1,2,3 here in the documentation and source code.  The first is handled by ESP32 i/o lines directly, and CAN2/3 are handled by MCP2515 ICs via SPI from the ESP.
+
 Vehicle CAN bus(s) are usually accesable via the vehicle's OBD2 port. Most modern cars have multiple CAN busses. The OBD2 'standard' CAN will be available on OBD2 **pin 6: CAN-H** and **pin 14: CAN-L**. However, modern vehicles (especially EV's) often have other CAN buses available on non-standard OBD2 pins.
 
 A voltmeter (ideally oscilloscope) can be used to determine which OBD2 pins contain CAN data:
