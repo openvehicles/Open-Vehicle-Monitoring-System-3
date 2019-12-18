@@ -416,3 +416,86 @@ The OvmsVehicle object is the most comprehensive, and exposes several methods to
     Start a cooldown charge
 - ``success = OvmsVehicle.StopCooldown()``
     Stop the cooldown charge
+
+
+--------------
+Test Utilities
+--------------
+
+You can use the web UI editor and shell to edit, upload and test script files. If you need many
+test cycles, a convenient alternative is to use shell scripts to automate the process.
+
+If you've configured ssh public key authentication, you can simply use ``scp`` to upload scripts
+and ``ssh`` to execute commands:
+
+.. code-block:: bash
+
+  #!/bin/bash
+  # Upload & execute a script file:
+
+  FILE="test.js"
+  PATH="/store/scripts/"
+
+  OVMS_HOST="yourovms.local"
+
+  SCP="/usr/bin/scp -q"
+  SSH="/usr/bin/ssh"
+
+  # Upload:
+  $SCP "${FILE}" "${OVMS_HOST}:${PATH}${FILE}"
+
+  # Execute:
+  $SSH "${OVMS_HOST}" "script run ${FILE}"
+
+Customize to your needs. If you want to test a plugin, simply replace the ``script run``
+command by ``script reload`` followed by some ``script eval`` calls to your plugin API.
+
+Note: this may be slow, as the ``ssh`` session needs to be negotiated for every command.
+
+A faster option is using the OVMS HTTP REST API. The following script uses ``curl`` to upload
+and execute a script:
+
+.. code-block:: bash
+
+  #!/bin/bash
+  # Upload & execute a script file:
+
+  FILE="test.js"
+  PATH="/store/scripts/"
+
+  OVMS_HOST="http://yourovms.local"
+  OVMS_USER="admin"
+  OVMS_PASS="yourpassword"
+
+  CURL="/usr/bin/curl -c .auth -b .auth"
+  SED="/usr/bin/sed"
+  DATE="/usr/bin/date"
+
+  # Login?
+  if [[ -e ".auth" ]] ; then
+    AUTHAGE=$(($($DATE +%s) - $($DATE +%s -r ".auth")))
+  else
+    AUTHAGE=3600
+  fi
+  if [[ "$AUTHAGE" -ge 3600 ]] ; then
+    RES=$($CURL "${OVMS_HOST}/login" --data-urlencode "username=${OVMS_USER}" --data-urlencode "password=${OVMS_PASS}" 2>/dev/null)
+    if [[ "$RES" =~ "Error" ]] ; then
+      echo -n "LOGIN ERROR: "
+      echo $RES | $SED -e 's:.*<li>\([^<]*\).*:\1:g'
+      rm .auth
+      exit 1
+    fi
+  fi
+
+  # Upload:
+  RES=$($CURL "${OVMS_HOST}/edit" --data-urlencode "path=${PATH}${FILE}" --data-urlencode "content@${FILE}" 2>/dev/null)
+  if [[ "$RES" =~ "Error" ]] ; then
+    echo -n "UPLOAD ERROR: "
+    echo $RES | $SED -e 's:.*<li>\([^<]*\).*:\1:g'
+    rm .auth
+    exit 1
+  fi
+
+  # Execute:
+  $CURL "${OVMS_HOST}/api/execute" --data-urlencode "command=script run ${FILE}"
+
