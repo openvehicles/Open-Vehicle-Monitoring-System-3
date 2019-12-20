@@ -86,6 +86,11 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
   must(writer);
   }
 
+static void module_tasks_data(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  must(writer);
+  }
+
 static void module_check(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   must(writer);
