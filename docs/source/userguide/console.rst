@@ -83,6 +83,8 @@ A note about OpenSSH: with version 6.6 (or later), cipher aes128-cbc has been di
 Console Basics
 --------------
 
+.. highlight:: none
+
 Let’s use SSH to demonstrate this::
 
   $ ssh ovms@ovms.local
@@ -153,6 +155,15 @@ You can also use “?” as part of a command to expand on the available options
   mode                 WIFI mode framework
   scan                 Perform a wifi scan
   status               Show wifi status
+
+  OVMS# wifi mode ?
+  ap                   Acts as a WIFI Access Point
+  apclient             Acts as a WIFI Access Point and Client
+  client               Connect to a WIFI network as a client
+  off                  Turn off wifi networking
+
+  OVMS# wifi mode client ?
+  Usage: wifi mode client <ssid> <bssid>
 
 The TAB key can also be used to expand on commands or parameter options::
 
