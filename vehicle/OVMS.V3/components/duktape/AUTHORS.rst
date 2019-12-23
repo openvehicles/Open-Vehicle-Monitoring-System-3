@@ -43,6 +43,27 @@ and agreed to irrevocably license their contributions under the Duktape
 * Remko Tronçon (https://el-tramo.be)
 * Romero Malaquias (rbsm@ic.ufal.br)
 * Michael Drake <michael.drake@codethink.co.uk>
+* Steven Don (https://github.com/shdon)
+* Simon Stone (https://github.com/sstone1)
+* \J. McC. (https://github.com/jmhmccr)
+* Jakub Nowakowski (https://github.com/jimvonmoon)
+* Tommy Nguyen (https://github.com/tn0502)
+* Fabrice Fontaine (https://github.com/ffontaine)
+* Christopher Hiller (https://github.com/boneskull)
+* Gonzalo Diethelm (https://github.com/gonzus)
+* Michal Kasperek (https://github.com/michalkas)
+* Andrew Janke (https://github.com/apjanke)
+* Steve Fan (https://github.com/stevefan1999)
+* Edward Betts (https://github.com/edwardbetts)
+* Ozhan Duz (https://github.com/webfolderio)
+* Akos Kiss (https://github.com/akosthekiss)
+* TheBrokenRail (https://github.com/TheBrokenRail)
+* Jesse Doyle (https://github.com/jessedoyle)
+* Gero Kuehn (https://github.com/dc6jgk)
+* James Swift (https://github.com/phraemer)
+* Luis de Bethencourt (https://github.com/luisbg)
+* Ian Whyman (https://github.com/v00d00)
+* Rick Sayre (https://github.com/whorfin)
 
 Other contributions
 ===================
@@ -81,6 +102,10 @@ bugs, provided ideas, etc; roughly in order of appearance):
 * https://github.com/chris-y
 * Laurent Zubiaur (https://github.com/lzubiaur)
 * Neil Kolban (https://github.com/nkolban)
+* Wilhelm Wanecek (https://github.com/wanecek)
+* Andrew Janke (https://github.com/apjanke)
+* Unamer (https://github.com/unamer)
+* Karl Dahlke (eklhad@gmail.com)
 
 If you are accidentally missing from this list, send me an e-mail
 (``sami.vaarala@iki.fi``) and I'll fix the omission.

@@ -6,7 +6,15 @@
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
+
+#if defined(_WIN32)
+#include <WinSock2.h>
+#define poll WSAPoll
+#pragma comment(lib, "ws2_32")
+#else
 #include <poll.h>
+#endif
+
 #include <time.h>
 
 #include "duktape.h"
@@ -52,7 +60,7 @@ static int poll_poll(duk_context *ctx) {
 	/*rc = ppoll(fds, n, &ts, NULL);*/
 	rc = poll(fds, n, timeout);
 	if (rc < 0) {
-		duk_error(ctx, DUK_ERR_ERROR, "%s (errno=%d)", strerror(errno), errno);
+		(void) duk_error(ctx, DUK_ERR_ERROR, "%s (errno=%d)", strerror(errno), errno);
 	}
 
 	duk_push_array(ctx);

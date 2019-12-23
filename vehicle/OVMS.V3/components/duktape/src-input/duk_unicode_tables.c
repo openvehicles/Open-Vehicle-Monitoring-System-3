@@ -9,7 +9,7 @@
  *  packed format.  These tables are used to match non-ASCII
  *  characters of complex productions by resorting to a linear
  *  range-by-range comparison.  This is very slow, but is expected
- *  to be very rare in practical Ecmascript source code, and thus
+ *  to be very rare in practical ECMAScript source code, and thus
  *  compactness is most important.
  *
  *  The tables are matched using uni_range_match() and the format
@@ -57,4 +57,8 @@
 
 #if defined(DUK_USE_REGEXP_CANON_WORKAROUND)
 #include "duk_unicode_re_canon_lookup.c"
+#endif
+
+#if defined(DUK_USE_REGEXP_CANON_BITMAP)
+#include "duk_unicode_re_canon_bitmap.c"
 #endif

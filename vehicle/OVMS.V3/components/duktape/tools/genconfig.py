@@ -917,6 +917,16 @@ def add_override_defines_section(opts, ret):
     ret.line('/* __OVERRIDE_DEFINES__ */')
     ret.empty()
 
+# Add a header snippet for conditional C/C++ include files.
+def add_conditional_includes_section(opts, ret):
+    ret.empty()
+    ret.line('/*')
+    ret.line(' *  Conditional includes')
+    ret.line(' */')
+    ret.empty()
+    ret.snippet_relative('platform_conditionalincludes.h.in')
+    ret.empty()
+
 # Development time helper: add DUK_ACTIVE which provides a runtime C string
 # indicating what DUK_USE_xxx config options are active at run time.  This
 # is useful in genconfig development so that one can e.g. diff the active
@@ -970,7 +980,11 @@ def generate_duk_config_header(opts, meta_dir):
     forced_opts = get_forced_options(opts)
     for doc in use_defs_list:
         if doc.get('warn_if_missing', False) and not forced_opts.has_key(doc['define']):
-            logger.warning('Recommended config option ' + doc['define'] + ' not provided')
+            # Awkward handling for DUK_USE_CPP_EXCEPTIONS + DUK_USE_FATAL_HANDLER.
+            if doc['define'] == 'DUK_USE_FATAL_HANDLER' and forced_opts.has_key('DUK_USE_CPP_EXCEPTIONS'):
+                pass  # DUK_USE_FATAL_HANDLER not critical with DUK_USE_CPP_EXCEPTIONS
+            else:
+                logger.warning('Recommended config option ' + doc['define'] + ' not provided')
 
     # Gather a map of "active options" for genbuiltins.py.  This is used to
     # implement proper optional built-ins, e.g. if a certain config option
@@ -1293,6 +1307,10 @@ def generate_duk_config_header(opts, meta_dir):
 
     add_override_defines_section(opts, ret)
 
+    # Some headers are only included if final DUK_USE_xxx option settings
+    # indicate they're needed, for example C++ <exception>.
+    add_conditional_includes_section(opts, ret)
+
     # Date provider snippet is after custom header and overrides, so that
     # the user may define e.g. DUK_USE_DATE_NOW_GETTIMEOFDAY in their
     # custom header.
@@ -1364,13 +1382,15 @@ def add_genconfig_optparse_options(parser, direct=False):
         with open(value, 'rb') as f:
             force_options_yaml.append(f.read())
     def add_force_option_define(option, opt, value, parser):
-        tmp = value.split('=')
-        if len(tmp) == 1:
-            doc = { tmp[0]: True }
-        elif len(tmp) == 2:
-            doc = { tmp[0]: tmp[1] }
+        defname, eq, defval = value.partition('=')
+        if not eq:
+            doc = { defname: True }
         else:
-            raise Exception('invalid option value: %r' % value)
+            defname, paren, defargs = defname.partition('(')
+            if not paren:
+                doc = { defname: defval }
+            else:
+                doc = { defname: { 'verbatim': '#define %s%s%s %s' % (defname, paren, defargs, defval) } }
         force_options_yaml.append(yaml.safe_dump(doc))
     def add_force_option_undefine(option, opt, value, parser):
         tmp = value.split('=')

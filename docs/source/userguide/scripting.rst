@@ -58,6 +58,8 @@ automatically executed when the specified event is triggered. The script file na
   `ECMAScript E5/E5.1 <http://www.ecma-international.org/ecma-262/5.1/>`_ with some additions from 
   later ECMAScript standards. Duktape does not emulate a browser environment, so you don't have window 
   or document objects etc., just core Javascript plus the OVMS API and plugins.
+  
+  Duktape builtin objects and functions: https://duktape.org/guide.html#duktapebuiltins
 
 ---------------------
 Persistent JavaScript
@@ -157,13 +159,16 @@ A number of OVMS objects have been exposed to the JavaScript engine, and are ava
 scripts via the global context.
 
 The global context is the analog to the ``window`` object in a browser context, it can be referenced
-explicitly as ``this`` on the JavaScript toplevel.
+explicitly as ``this`` on the JavaScript toplevel or as ``globalThis`` from any context.
 
 You can see the global context objects, methods, functions and modules with the ``JSON.print(this)``
 method::
 
   OVMS# script eval 'JSON.print(this)'
-    {
+  {
+    "performance": {
+      "now": function now() { [native code] }
+    },
     "assert": function () { [native code] },
     "print": function () { [native code] },
     "OvmsCommand": {
@@ -231,6 +236,9 @@ Global Context
     Print the given string on the current terminal. If no terminal (for example a background script) then
     print to the system console as an informational message.
 
+- ``performance.now()``
+    Returns monotonic time since boot in milliseconds, with microsecond resolution.
+
 
 JSON
 ^^^^
@@ -247,6 +255,13 @@ optional ``false`` as a second parameter to produce a compact version for transm
     Format data as JSON string, readable
 - ``str = JSON.format(data, false)``
     …compact (without spacing/indentation)
+
+.. note:: The ``JSON`` module is provided for compatibility with standard Javascript object dumps
+  and for readability. If performance is an issue, consider using the Duktape native builtins
+  ``Duktape.enc()`` and ``Duktape.dec()`` (see Duktape builtins).
+  
+  For example, ``Duktape.enc('JC', data)`` is equivalent to ``JSON.format(data, false)`` except for
+  the representation of functions. Using the ``JX`` encoding will omit unnecessary quotings.
 
 
 PubSub

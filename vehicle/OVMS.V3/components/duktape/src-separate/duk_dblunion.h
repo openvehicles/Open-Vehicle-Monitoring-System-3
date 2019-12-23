@@ -26,13 +26,14 @@
  *
  *    A B C D E F G H    Big endian (e.g. 68k)           DUK_USE_DOUBLE_BE
  *    H G F E D C B A    Little endian (e.g. x86)        DUK_USE_DOUBLE_LE
- *    D C B A H G F E    Mixed/cross endian (e.g. ARM)   DUK_USE_DOUBLE_ME
+ *    D C B A H G F E    Mixed endian (e.g. ARM FPA)     DUK_USE_DOUBLE_ME
  *
- *  ARM is a special case: ARM double values are in mixed/cross endian
- *  format while ARM duk_uint64_t values are in standard little endian
+ *  Legacy ARM (FPA) is a special case: ARM double values are in mixed
+ *  endian format while ARM duk_uint64_t values are in standard little endian
  *  format (H G F E D C B A).  When a double is read as a duk_uint64_t
  *  from memory, the register will contain the (logical) value
  *  E F G H A B C D.  This requires some special handling below.
+ *  See http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0056d/Bcfhgcgd.html.
  *
  *  Indexes of various types (8-bit, 16-bit, 32-bit) in memory relative to
  *  the logical (big endian) order:
@@ -226,47 +227,47 @@ typedef union duk_double_union duk_double_union;
 #if defined(DUK_USE_DOUBLE_ME)
 /* Macros for 64-bit ops + mixed endian doubles. */
 #define DUK__DBLUNION_SET_NAN_FULL(u)  do { \
-		(u)->ull[DUK_DBL_IDX_ULL0] = 0x000000007ff80000ULL; \
+		(u)->ull[DUK_DBL_IDX_ULL0] = DUK_U64_CONSTANT(0x000000007ff80000); \
 	} while (0)
 #define DUK__DBLUNION_IS_NAN_FULL(u) \
-	((((u)->ull[DUK_DBL_IDX_ULL0] & 0x000000007ff00000ULL) == 0x000000007ff00000ULL) && \
-	 ((((u)->ull[DUK_DBL_IDX_ULL0]) & 0xffffffff000fffffULL) != 0))
+	((((u)->ull[DUK_DBL_IDX_ULL0] & DUK_U64_CONSTANT(0x000000007ff00000)) == DUK_U64_CONSTANT(0x000000007ff00000)) && \
+	 ((((u)->ull[DUK_DBL_IDX_ULL0]) & DUK_U64_CONSTANT(0xffffffff000fffff)) != 0))
 #define DUK__DBLUNION_IS_NORMALIZED_NAN_FULL(u) \
-	((u)->ull[DUK_DBL_IDX_ULL0] == 0x000000007ff80000ULL)
+	((u)->ull[DUK_DBL_IDX_ULL0] == DUK_U64_CONSTANT(0x000000007ff80000))
 #define DUK__DBLUNION_IS_ANYINF(u) \
-	(((u)->ull[DUK_DBL_IDX_ULL0] & 0xffffffff7fffffffULL) == 0x000000007ff00000ULL)
+	(((u)->ull[DUK_DBL_IDX_ULL0] & DUK_U64_CONSTANT(0xffffffff7fffffff)) == DUK_U64_CONSTANT(0x000000007ff00000))
 #define DUK__DBLUNION_IS_POSINF(u) \
-	((u)->ull[DUK_DBL_IDX_ULL0] == 0x000000007ff00000ULL)
+	((u)->ull[DUK_DBL_IDX_ULL0] == DUK_U64_CONSTANT(0x000000007ff00000))
 #define DUK__DBLUNION_IS_NEGINF(u) \
-	((u)->ull[DUK_DBL_IDX_ULL0] == 0x00000000fff00000ULL)
+	((u)->ull[DUK_DBL_IDX_ULL0] == DUK_U64_CONSTANT(0x00000000fff00000))
 #define DUK__DBLUNION_IS_ANYZERO(u) \
-	(((u)->ull[DUK_DBL_IDX_ULL0] & 0xffffffff7fffffffULL) == 0x0000000000000000ULL)
+	(((u)->ull[DUK_DBL_IDX_ULL0] & DUK_U64_CONSTANT(0xffffffff7fffffff)) == DUK_U64_CONSTANT(0x0000000000000000))
 #define DUK__DBLUNION_IS_POSZERO(u) \
-	((u)->ull[DUK_DBL_IDX_ULL0] == 0x0000000000000000ULL)
+	((u)->ull[DUK_DBL_IDX_ULL0] == DUK_U64_CONSTANT(0x0000000000000000))
 #define DUK__DBLUNION_IS_NEGZERO(u) \
-	((u)->ull[DUK_DBL_IDX_ULL0] == 0x0000000080000000ULL)
+	((u)->ull[DUK_DBL_IDX_ULL0] == DUK_U64_CONSTANT(0x0000000080000000))
 #else
 /* Macros for 64-bit ops + big/little endian doubles. */
 #define DUK__DBLUNION_SET_NAN_FULL(u)  do { \
-		(u)->ull[DUK_DBL_IDX_ULL0] = 0x7ff8000000000000ULL; \
+		(u)->ull[DUK_DBL_IDX_ULL0] = DUK_U64_CONSTANT(0x7ff8000000000000); \
 	} while (0)
 #define DUK__DBLUNION_IS_NAN_FULL(u) \
-	((((u)->ull[DUK_DBL_IDX_ULL0] & 0x7ff0000000000000ULL) == 0x7ff0000000000000UL) && \
-	 ((((u)->ull[DUK_DBL_IDX_ULL0]) & 0x000fffffffffffffULL) != 0))
+	((((u)->ull[DUK_DBL_IDX_ULL0] & DUK_U64_CONSTANT(0x7ff0000000000000)) == DUK_U64_CONSTANT(0x7ff0000000000000)) && \
+	 ((((u)->ull[DUK_DBL_IDX_ULL0]) & DUK_U64_CONSTANT(0x000fffffffffffff)) != 0))
 #define DUK__DBLUNION_IS_NORMALIZED_NAN_FULL(u) \
-	((u)->ull[DUK_DBL_IDX_ULL0] == 0x7ff8000000000000ULL)
+	((u)->ull[DUK_DBL_IDX_ULL0] == DUK_U64_CONSTANT(0x7ff8000000000000))
 #define DUK__DBLUNION_IS_ANYINF(u) \
-	(((u)->ull[DUK_DBL_IDX_ULL0] & 0x7fffffffffffffffULL) == 0x7ff0000000000000ULL)
+	(((u)->ull[DUK_DBL_IDX_ULL0] & DUK_U64_CONSTANT(0x7fffffffffffffff)) == DUK_U64_CONSTANT(0x7ff0000000000000))
 #define DUK__DBLUNION_IS_POSINF(u) \
-	((u)->ull[DUK_DBL_IDX_ULL0] == 0x7ff0000000000000ULL)
+	((u)->ull[DUK_DBL_IDX_ULL0] == DUK_U64_CONSTANT(0x7ff0000000000000))
 #define DUK__DBLUNION_IS_NEGINF(u) \
-	((u)->ull[DUK_DBL_IDX_ULL0] == 0xfff0000000000000ULL)
+	((u)->ull[DUK_DBL_IDX_ULL0] == DUK_U64_CONSTANT(0xfff0000000000000))
 #define DUK__DBLUNION_IS_ANYZERO(u) \
-	(((u)->ull[DUK_DBL_IDX_ULL0] & 0x7fffffffffffffffULL) == 0x0000000000000000ULL)
+	(((u)->ull[DUK_DBL_IDX_ULL0] & DUK_U64_CONSTANT(0x7fffffffffffffff)) == DUK_U64_CONSTANT(0x0000000000000000))
 #define DUK__DBLUNION_IS_POSZERO(u) \
-	((u)->ull[DUK_DBL_IDX_ULL0] == 0x0000000000000000ULL)
+	((u)->ull[DUK_DBL_IDX_ULL0] == DUK_U64_CONSTANT(0x0000000000000000))
 #define DUK__DBLUNION_IS_NEGZERO(u) \
-	((u)->ull[DUK_DBL_IDX_ULL0] == 0x8000000000000000ULL)
+	((u)->ull[DUK_DBL_IDX_ULL0] == DUK_U64_CONSTANT(0x8000000000000000))
 #endif
 #else  /* DUK_USE_64BIT_OPS */
 /* Macros for no 64-bit ops, any endianness. */
@@ -413,7 +414,7 @@ typedef union duk_double_union duk_double_union;
 
 /* Some sign bit helpers. */
 #if defined(DUK_USE_64BIT_OPS)
-#define DUK_DBLUNION_HAS_SIGNBIT(u) (((u)->ull[DUK_DBL_IDX_ULL0] & 0x8000000000000000ULL) != 0)
+#define DUK_DBLUNION_HAS_SIGNBIT(u) (((u)->ull[DUK_DBL_IDX_ULL0] & DUK_U64_CONSTANT(0x8000000000000000)) != 0)
 #define DUK_DBLUNION_GET_SIGNBIT(u) (((u)->ull[DUK_DBL_IDX_ULL0] >> 63U))
 #else
 #define DUK_DBLUNION_HAS_SIGNBIT(u) (((u)->ui[DUK_DBL_IDX_UI0] & 0x80000000UL) != 0)

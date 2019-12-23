@@ -113,15 +113,14 @@ DUK_LOCAL duk_small_int_t duk__decode_hex_escape(const duk_uint8_t *p, duk_small
 	return t;
 }
 
-DUK_LOCAL int duk__transform_helper(duk_context *ctx, duk__transform_callback callback, const void *udata) {
-	duk_hthread *thr = (duk_hthread *) ctx;
+DUK_LOCAL int duk__transform_helper(duk_hthread *thr, duk__transform_callback callback, const void *udata) {
 	duk__transform_context tfm_ctx_alloc;
 	duk__transform_context *tfm_ctx = &tfm_ctx_alloc;
 	duk_codepoint_t cp;
 
 	tfm_ctx->thr = thr;
 
-	tfm_ctx->h_str = duk_to_hstring(ctx, 0);
+	tfm_ctx->h_str = duk_to_hstring(thr, 0);
 	DUK_ASSERT(tfm_ctx->h_str != NULL);
 
 	DUK_BW_INIT_PUSHBUF(thr, &tfm_ctx->bw, DUK_HSTRING_GET_BYTELEN(tfm_ctx->h_str));  /* initial size guess */
@@ -137,7 +136,7 @@ DUK_LOCAL int duk__transform_helper(duk_context *ctx, duk__transform_callback ca
 
 	DUK_BW_COMPACT(thr, &tfm_ctx->bw);
 
-	(void) duk_buffer_to_string(ctx, -1);  /* Safe if transform is safe. */
+	(void) duk_buffer_to_string(thr, -1);  /* Safe if transform is safe. */
 	return 1;
 }
 
@@ -170,7 +169,7 @@ DUK_LOCAL void duk__transform_callback_encode_uri(duk__transform_context *tfm_ct
 			goto uri_error;
 		}
 		cp1 = cp;
-		cp = ((cp1 - 0xd800L) << 10) + (cp2 - 0xdc00L) + 0x10000L;
+		cp = (duk_codepoint_t) (((cp1 - 0xd800L) << 10) + (cp2 - 0xdc00L) + 0x10000L);
 	} else if (cp > 0x10ffffL) {
 		/* Although we can allow non-BMP characters (they'll decode
 		 * back into surrogate pairs), we don't allow extended UTF-8
@@ -201,6 +200,7 @@ DUK_LOCAL void duk__transform_callback_encode_uri(duk__transform_context *tfm_ct
 
  uri_error:
 	DUK_ERROR_URI(tfm_ctx->thr, DUK_STR_INVALID_INPUT);
+	DUK_WO_NORETURN(return;);
 }
 
 DUK_LOCAL void duk__transform_callback_decode_uri(duk__transform_context *tfm_ctx, const void *udata, duk_codepoint_t cp) {
@@ -328,7 +328,7 @@ DUK_LOCAL void duk__transform_callback_decode_uri(duk__transform_context *tfm_ct
 			DUK_ASSERT(cp < 0x100000L);
 
 			DUK_BW_WRITE_RAW_XUTF8(tfm_ctx->thr, &tfm_ctx->bw, ((cp >> 10) + 0xd800L));
-			DUK_BW_WRITE_RAW_XUTF8(tfm_ctx->thr, &tfm_ctx->bw, ((cp & 0x03ffUL) + 0xdc00L));
+			DUK_BW_WRITE_RAW_XUTF8(tfm_ctx->thr, &tfm_ctx->bw, ((cp & 0x03ffL) + 0xdc00L));
 		} else {
 			DUK_BW_WRITE_RAW_XUTF8(tfm_ctx->thr, &tfm_ctx->bw, cp);
 		}
@@ -339,6 +339,7 @@ DUK_LOCAL void duk__transform_callback_decode_uri(duk__transform_context *tfm_ct
 
  uri_error:
 	DUK_ERROR_URI(tfm_ctx->thr, DUK_STR_INVALID_INPUT);
+	DUK_WO_NORETURN(return;);
 }
 
 #if defined(DUK_USE_SECTION_B)
@@ -379,6 +380,7 @@ DUK_LOCAL void duk__transform_callback_escape(duk__transform_context *tfm_ctx, c
 
  esc_error:
 	DUK_ERROR_TYPE(tfm_ctx->thr, DUK_STR_INVALID_INPUT);
+	DUK_WO_NORETURN(return;);
 }
 
 DUK_LOCAL void duk__transform_callback_unescape(duk__transform_context *tfm_ctx, const void *udata, duk_codepoint_t cp) {
@@ -411,25 +413,24 @@ DUK_LOCAL void duk__transform_callback_unescape(duk__transform_context *tfm_ctx,
  *  Eval needs to handle both a "direct eval" and an "indirect eval".
  *  Direct eval handling needs access to the caller's activation so that its
  *  lexical environment can be accessed.  A direct eval is only possible from
- *  Ecmascript code; an indirect eval call is possible also from C code.
+ *  ECMAScript code; an indirect eval call is possible also from C code.
  *  When an indirect eval call is made from C code, there may not be a
  *  calling activation at all which needs careful handling.
  */
 
-DUK_INTERNAL duk_ret_t duk_bi_global_object_eval(duk_context *ctx) {
-	duk_hthread *thr = (duk_hthread *) ctx;
+DUK_INTERNAL duk_ret_t duk_bi_global_object_eval(duk_hthread *thr) {
 	duk_hstring *h;
 	duk_activation *act_caller;
 	duk_activation *act_eval;
-	duk_activation *act;
 	duk_hcompfunc *func;
 	duk_hobject *outer_lex_env;
 	duk_hobject *outer_var_env;
 	duk_bool_t this_to_global = 1;
 	duk_small_uint_t comp_flags;
 	duk_int_t level = -2;
+	duk_small_uint_t call_flags;
 
-	DUK_ASSERT(duk_get_top(ctx) == 1 || duk_get_top(ctx) == 2);  /* 2 when called by debugger */
+	DUK_ASSERT(duk_get_top(thr) == 1 || duk_get_top(thr) == 2);  /* 2 when called by debugger */
 	DUK_ASSERT(thr->callstack_top >= 1);  /* at least this function exists */
 	DUK_ASSERT(thr->callstack_curr != NULL);
 	DUK_ASSERT((thr->callstack_curr->flags & DUK_ACT_FLAG_DIRECT_EVAL) == 0 || /* indirect eval */
@@ -443,7 +444,7 @@ DUK_INTERNAL duk_ret_t duk_bi_global_object_eval(duk_context *ctx) {
 	 *  activation doesn't exist, call must be indirect.
 	 */
 
-	h = duk_get_hstring_notsymbol(ctx, 0);
+	h = duk_get_hstring_notsymbol(thr, 0);
 	if (!h) {
 		/* Symbol must be returned as is, like any non-string values. */
 		return 1;  /* return arg as-is */
@@ -451,11 +452,11 @@ DUK_INTERNAL duk_ret_t duk_bi_global_object_eval(duk_context *ctx) {
 
 #if defined(DUK_USE_DEBUGGER_SUPPORT)
 	/* NOTE: level is used only by the debugger and should never be present
-	 * for an Ecmascript eval().
+	 * for an ECMAScript eval().
 	 */
 	DUK_ASSERT(level == -2);  /* by default, use caller's environment */
-	if (duk_get_top(ctx) >= 2 && duk_is_number(ctx, 1)) {
-		level = duk_get_int(ctx, 1);
+	if (duk_get_top(thr) >= 2 && duk_is_number(thr, 1)) {
+		level = duk_get_int(thr, 1);
 	}
 	DUK_ASSERT(level <= -2);  /* This is guaranteed by debugger code. */
 #endif
@@ -465,11 +466,11 @@ DUK_INTERNAL duk_ret_t duk_bi_global_object_eval(duk_context *ctx) {
 	comp_flags = DUK_COMPILE_EVAL;
 	act_eval = thr->callstack_curr;  /* this function */
 	DUK_ASSERT(act_eval != NULL);
-	if (thr->callstack_top >= (duk_size_t) -level) {
+	act_caller = duk_hthread_get_activation_for_level(thr, level);
+	if (act_caller != NULL) {
 		/* Have a calling activation, check for direct eval (otherwise
 		 * assume indirect eval.
 		 */
-		act_caller = thr->callstack + thr->callstack_top + level;  /* caller */
 		if ((act_caller->flags & DUK_ACT_FLAG_STRICT) &&
 		    (act_eval->flags & DUK_ACT_FLAG_DIRECT_EVAL)) {
 			/* Only direct eval inherits strictness from calling code
@@ -480,35 +481,31 @@ DUK_INTERNAL duk_ret_t duk_bi_global_object_eval(duk_context *ctx) {
 	} else {
 		DUK_ASSERT((act_eval->flags & DUK_ACT_FLAG_DIRECT_EVAL) == 0);
 	}
-	act_caller = NULL;  /* avoid dereference after potential callstack realloc */
-	act_eval = NULL;
 
-	duk_push_hstring_stridx(ctx, DUK_STRIDX_INPUT);  /* XXX: copy from caller? */
+	duk_push_hstring_stridx(thr, DUK_STRIDX_INPUT);  /* XXX: copy from caller? */
 	duk_js_compile(thr,
 	               (const duk_uint8_t *) DUK_HSTRING_GET_DATA(h),
 	               (duk_size_t) DUK_HSTRING_GET_BYTELEN(h),
 	               comp_flags);
-	func = (duk_hcompfunc *) duk_known_hobject(ctx, -1);
+	func = (duk_hcompfunc *) duk_known_hobject(thr, -1);
 	DUK_ASSERT(DUK_HOBJECT_IS_COMPFUNC((duk_hobject *) func));
 
 	/* [ source template ] */
 
 	/* E5 Section 10.4.2 */
-	DUK_ASSERT(thr->callstack_top >= 1);
-	act = thr->callstack_curr;  /* this function */
-	if (act->flags & DUK_ACT_FLAG_DIRECT_EVAL) {
+
+	if (act_eval->flags & DUK_ACT_FLAG_DIRECT_EVAL) {
 		DUK_ASSERT(thr->callstack_top >= 2);
-		act = thr->callstack + thr->callstack_top + level;  /* caller */
-		if (act->lex_env == NULL) {
-			DUK_ASSERT(act->var_env == NULL);
+		DUK_ASSERT(act_caller != NULL);
+		if (act_caller->lex_env == NULL) {
+			DUK_ASSERT(act_caller->var_env == NULL);
 			DUK_DDD(DUK_DDDPRINT("delayed environment initialization"));
 
 			/* this may have side effects, so re-lookup act */
-			duk_js_init_activation_environment_records_delayed(thr, act);
-			act = thr->callstack + thr->callstack_top + level;
+			duk_js_init_activation_environment_records_delayed(thr, act_caller);
 		}
-		DUK_ASSERT(act->lex_env != NULL);
-		DUK_ASSERT(act->var_env != NULL);
+		DUK_ASSERT(act_caller->lex_env != NULL);
+		DUK_ASSERT(act_caller->var_env != NULL);
 
 		this_to_global = 0;
 
@@ -520,14 +517,13 @@ DUK_INTERNAL duk_ret_t duk_bi_global_object_eval(duk_context *ctx) {
 			                     "var_env and lex_env to a fresh env, "
 			                     "this_binding to caller's this_binding"));
 
-			act_lex_env = act->lex_env;
-			act = NULL;  /* invalidated */
+			act_lex_env = act_caller->lex_env;
 
 			new_env = duk_hdecenv_alloc(thr,
 			                            DUK_HOBJECT_FLAG_EXTENSIBLE |
 			                            DUK_HOBJECT_CLASS_AS_FLAGS(DUK_HOBJECT_CLASS_DECENV));
 			DUK_ASSERT(new_env != NULL);
-			duk_push_hobject(ctx, (duk_hobject *) new_env);
+			duk_push_hobject(thr, (duk_hobject *) new_env);
 
 			DUK_ASSERT(DUK_HOBJECT_GET_PROTOTYPE(thr->heap, (duk_hobject *) new_env) == NULL);
 			DUK_HOBJECT_SET_PROTOTYPE(thr->heap, (duk_hobject *) new_env, act_lex_env);
@@ -537,7 +533,7 @@ DUK_INTERNAL duk_ret_t duk_bi_global_object_eval(duk_context *ctx) {
 			outer_lex_env = (duk_hobject *) new_env;
 			outer_var_env = (duk_hobject *) new_env;
 
-			duk_insert(ctx, 0);  /* stash to bottom of value stack to keep new_env reachable for duration of eval */
+			duk_insert(thr, 0);  /* stash to bottom of value stack to keep new_env reachable for duration of eval */
 
 			/* compiler's responsibility */
 			DUK_ASSERT(DUK_HOBJECT_HAS_NEWENV((duk_hobject *) func));
@@ -546,8 +542,8 @@ DUK_INTERNAL duk_ret_t duk_bi_global_object_eval(duk_context *ctx) {
 			                     "var_env and lex_env to caller's envs, "
 			                     "this_binding to caller's this_binding"));
 
-			outer_lex_env = act->lex_env;
-			outer_var_env = act->var_env;
+			outer_lex_env = act_caller->lex_env;
+			outer_var_env = act_caller->var_env;
 
 			/* compiler's responsibility */
 			DUK_ASSERT(!DUK_HOBJECT_HAS_NEWENV((duk_hobject *) func));
@@ -560,7 +556,6 @@ DUK_INTERNAL duk_ret_t duk_bi_global_object_eval(duk_context *ctx) {
 		outer_lex_env = thr->builtins[DUK_BIDX_GLOBAL_ENV];
 		outer_var_env = thr->builtins[DUK_BIDX_GLOBAL_ENV];
 	}
-	act = NULL;
 
 	/* Eval code doesn't need an automatic .prototype object. */
 	duk_js_push_closure(thr, func, outer_var_env, outer_lex_env, 0 /*add_auto_proto*/);
@@ -569,24 +564,34 @@ DUK_INTERNAL duk_ret_t duk_bi_global_object_eval(duk_context *ctx) {
 
 	if (this_to_global) {
 		DUK_ASSERT(thr->builtins[DUK_BIDX_GLOBAL] != NULL);
-		duk_push_hobject_bidx(ctx, DUK_BIDX_GLOBAL);
+		duk_push_hobject_bidx(thr, DUK_BIDX_GLOBAL);
 	} else {
 		duk_tval *tv;
 		DUK_ASSERT(thr->callstack_top >= 2);
-		act = thr->callstack + thr->callstack_top + level;  /* caller */
-		tv = thr->valstack + act->idx_bottom - 1;  /* this is just beneath bottom */
+		DUK_ASSERT(act_caller != NULL);
+		tv = (duk_tval *) (void *) ((duk_uint8_t *) thr->valstack + act_caller->bottom_byteoff - sizeof(duk_tval));  /* this is just beneath bottom */
 		DUK_ASSERT(tv >= thr->valstack);
-		duk_push_tval(ctx, tv);
+		duk_push_tval(thr, tv);
 	}
 
 	DUK_DDD(DUK_DDDPRINT("eval -> lex_env=%!iO, var_env=%!iO, this_binding=%!T",
 	                     (duk_heaphdr *) outer_lex_env,
 	                     (duk_heaphdr *) outer_var_env,
-	                     duk_get_tval(ctx, -1)));
+	                     duk_get_tval(thr, -1)));
 
 	/* [ env? source template closure this ] */
 
-	duk_call_method(ctx, 0);
+	call_flags = 0;
+	if (act_eval->flags & DUK_ACT_FLAG_DIRECT_EVAL) {
+		/* Set DIRECT_EVAL flag for the call; it's not strictly
+		 * needed for the 'inner' eval call (the eval body) but
+		 * current new.target implementation expects to find it
+		 * so it can traverse direct eval chains up to the real
+		 * calling function.
+		 */
+		call_flags |= DUK_CALL_FLAG_DIRECT_EVAL;
+	}
+	duk_handle_call_unprotected_nargs(thr, 0, call_flags);
 
 	/* [ env? source template result ] */
 
@@ -598,14 +603,14 @@ DUK_INTERNAL duk_ret_t duk_bi_global_object_eval(duk_context *ctx) {
  */
 
 #if defined(DUK_USE_GLOBAL_BUILTIN)
-DUK_INTERNAL duk_ret_t duk_bi_global_object_parse_int(duk_context *ctx) {
+DUK_INTERNAL duk_ret_t duk_bi_global_object_parse_int(duk_hthread *thr) {
 	duk_int32_t radix;
 	duk_small_uint_t s2n_flags;
 
-	DUK_ASSERT_TOP(ctx, 2);
-	duk_to_string(ctx, 0);  /* Reject symbols. */
+	DUK_ASSERT_TOP(thr, 2);
+	duk_to_string(thr, 0);  /* Reject symbols. */
 
-	radix = duk_to_int32(ctx, 1);
+	radix = duk_to_int32(thr, 1);
 
 	/* While parseInt() recognizes 0xdeadbeef, it doesn't recognize
 	 * ES2015 0o123 or 0b10001.
@@ -635,25 +640,22 @@ DUK_INTERNAL duk_ret_t duk_bi_global_object_parse_int(duk_context *ctx) {
 		radix = 10;
 	}
 
-	duk_dup_0(ctx);
-	duk_numconv_parse(ctx, radix, s2n_flags);
+	duk_dup_0(thr);
+	duk_numconv_parse(thr, (duk_small_int_t) radix, s2n_flags);
 	return 1;
 
  ret_nan:
-	duk_push_nan(ctx);
+	duk_push_nan(thr);
 	return 1;
 }
 #endif  /* DUK_USE_GLOBAL_BUILTIN */
 
 #if defined(DUK_USE_GLOBAL_BUILTIN)
-DUK_INTERNAL duk_ret_t duk_bi_global_object_parse_float(duk_context *ctx) {
+DUK_INTERNAL duk_ret_t duk_bi_global_object_parse_float(duk_hthread *thr) {
 	duk_small_uint_t s2n_flags;
-	duk_int32_t radix;
 
-	DUK_ASSERT_TOP(ctx, 1);
-	duk_to_string(ctx, 0);  /* Reject symbols. */
-
-	radix = 10;
+	DUK_ASSERT_TOP(thr, 1);
+	duk_to_string(thr, 0);  /* Reject symbols. */
 
 	/* XXX: check flags */
 	s2n_flags = DUK_S2N_FLAG_TRIM_WHITE |
@@ -667,7 +669,7 @@ DUK_INTERNAL duk_ret_t duk_bi_global_object_parse_float(duk_context *ctx) {
 	            DUK_S2N_FLAG_ALLOW_EMPTY_FRAC |
 	            DUK_S2N_FLAG_ALLOW_LEADING_ZERO;
 
-	duk_numconv_parse(ctx, radix, s2n_flags);
+	duk_numconv_parse(thr, 10 /*radix*/, s2n_flags);
 	return 1;
 }
 #endif  /* DUK_USE_GLOBAL_BUILTIN */
@@ -677,17 +679,17 @@ DUK_INTERNAL duk_ret_t duk_bi_global_object_parse_float(duk_context *ctx) {
  */
 
 #if defined(DUK_USE_GLOBAL_BUILTIN)
-DUK_INTERNAL duk_ret_t duk_bi_global_object_is_nan(duk_context *ctx) {
-	duk_double_t d = duk_to_number(ctx, 0);
-	duk_push_boolean(ctx, DUK_ISNAN(d));
+DUK_INTERNAL duk_ret_t duk_bi_global_object_is_nan(duk_hthread *thr) {
+	duk_double_t d = duk_to_number(thr, 0);
+	duk_push_boolean(thr, (duk_bool_t) DUK_ISNAN(d));
 	return 1;
 }
 #endif  /* DUK_USE_GLOBAL_BUILTIN */
 
 #if defined(DUK_USE_GLOBAL_BUILTIN)
-DUK_INTERNAL duk_ret_t duk_bi_global_object_is_finite(duk_context *ctx) {
-	duk_double_t d = duk_to_number(ctx, 0);
-	duk_push_boolean(ctx, DUK_ISFINITE(d));
+DUK_INTERNAL duk_ret_t duk_bi_global_object_is_finite(duk_hthread *thr) {
+	duk_double_t d = duk_to_number(thr, 0);
+	duk_push_boolean(thr, (duk_bool_t) DUK_ISFINITE(d));
 	return 1;
 }
 #endif  /* DUK_USE_GLOBAL_BUILTIN */
@@ -697,29 +699,29 @@ DUK_INTERNAL duk_ret_t duk_bi_global_object_is_finite(duk_context *ctx) {
  */
 
 #if defined(DUK_USE_GLOBAL_BUILTIN)
-DUK_INTERNAL duk_ret_t duk_bi_global_object_decode_uri(duk_context *ctx) {
-	return duk__transform_helper(ctx, duk__transform_callback_decode_uri, (const void *) duk__decode_uri_reserved_table);
+DUK_INTERNAL duk_ret_t duk_bi_global_object_decode_uri(duk_hthread *thr) {
+	return duk__transform_helper(thr, duk__transform_callback_decode_uri, (const void *) duk__decode_uri_reserved_table);
 }
 
-DUK_INTERNAL duk_ret_t duk_bi_global_object_decode_uri_component(duk_context *ctx) {
-	return duk__transform_helper(ctx, duk__transform_callback_decode_uri, (const void *) duk__decode_uri_component_reserved_table);
+DUK_INTERNAL duk_ret_t duk_bi_global_object_decode_uri_component(duk_hthread *thr) {
+	return duk__transform_helper(thr, duk__transform_callback_decode_uri, (const void *) duk__decode_uri_component_reserved_table);
 }
 
-DUK_INTERNAL duk_ret_t duk_bi_global_object_encode_uri(duk_context *ctx) {
-	return duk__transform_helper(ctx, duk__transform_callback_encode_uri, (const void *) duk__encode_uriunescaped_table);
+DUK_INTERNAL duk_ret_t duk_bi_global_object_encode_uri(duk_hthread *thr) {
+	return duk__transform_helper(thr, duk__transform_callback_encode_uri, (const void *) duk__encode_uriunescaped_table);
 }
 
-DUK_INTERNAL duk_ret_t duk_bi_global_object_encode_uri_component(duk_context *ctx) {
-	return duk__transform_helper(ctx, duk__transform_callback_encode_uri, (const void *) duk__encode_uricomponent_unescaped_table);
+DUK_INTERNAL duk_ret_t duk_bi_global_object_encode_uri_component(duk_hthread *thr) {
+	return duk__transform_helper(thr, duk__transform_callback_encode_uri, (const void *) duk__encode_uricomponent_unescaped_table);
 }
 
 #if defined(DUK_USE_SECTION_B)
-DUK_INTERNAL duk_ret_t duk_bi_global_object_escape(duk_context *ctx) {
-	return duk__transform_helper(ctx, duk__transform_callback_escape, (const void *) NULL);
+DUK_INTERNAL duk_ret_t duk_bi_global_object_escape(duk_hthread *thr) {
+	return duk__transform_helper(thr, duk__transform_callback_escape, (const void *) NULL);
 }
 
-DUK_INTERNAL duk_ret_t duk_bi_global_object_unescape(duk_context *ctx) {
-	return duk__transform_helper(ctx, duk__transform_callback_unescape, (const void *) NULL);
+DUK_INTERNAL duk_ret_t duk_bi_global_object_unescape(duk_hthread *thr) {
+	return duk__transform_helper(thr, duk__transform_callback_unescape, (const void *) NULL);
 }
 #endif  /* DUK_USE_SECTION_B */
 #endif  /* DUK_USE_GLOBAL_BUILTIN */

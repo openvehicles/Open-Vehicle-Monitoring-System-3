@@ -7,7 +7,7 @@
 /* For footprint efficient multiple value setting: arrays are much better than
  * varargs, format string with parsing is often better than string pointer arrays.
  */
-DUK_LOCAL void duk__inspect_multiple_uint(duk_context *ctx, const char *fmt, duk_int_t *vals) {
+DUK_LOCAL void duk__inspect_multiple_uint(duk_hthread *thr, const char *fmt, duk_int_t *vals) {
 	duk_int_t val;
 	const char *p;
 	const char *p_curr;
@@ -24,9 +24,9 @@ DUK_LOCAL void duk__inspect_multiple_uint(duk_context *ctx, const char *fmt, duk
 		val = *vals++;
 		if (val >= 0) {
 			/* Negative values are markers to skip key. */
-			duk_push_string(ctx, p_curr);
-			duk_push_uint(ctx, val);
-			duk_put_prop(ctx, -3);
+			duk_push_string(thr, p_curr);
+			duk_push_int(thr, val);
+			duk_put_prop(thr, -3);
 		}
 	}
 }
@@ -54,8 +54,7 @@ DUK_LOCAL void duk__inspect_multiple_uint(duk_context *ctx, const char *fmt, duk
 #define DUK__IDX_TSTATE   12
 #define DUK__IDX_VARIANT  13
 
-DUK_EXTERNAL void duk_inspect_value(duk_context *ctx, duk_idx_t idx) {
-	duk_hthread *thr = (duk_hthread *) ctx;
+DUK_EXTERNAL void duk_inspect_value(duk_hthread *thr, duk_idx_t idx) {
 	duk_tval *tv;
 	duk_heaphdr *h;
 	/* The temporary values should be in an array rather than individual
@@ -64,31 +63,31 @@ DUK_EXTERNAL void duk_inspect_value(duk_context *ctx, duk_idx_t idx) {
 	 */
 	duk_int_t vals[14];
 
-	DUK_UNREF(thr);
+	DUK_ASSERT_API_ENTRY(thr);
 
 	/* Assume two's complement and set everything to -1. */
-	DUK_MEMSET((void *) &vals, (int) 0xff, sizeof(vals));
+	duk_memset((void *) &vals, (int) 0xff, sizeof(vals));
 	DUK_ASSERT(vals[DUK__IDX_TYPE] == -1);  /* spot check one */
 
-	tv = duk_get_tval_or_unused(ctx, idx);
+	tv = duk_get_tval_or_unused(thr, idx);
 	h = (DUK_TVAL_IS_HEAP_ALLOCATED(tv) ? DUK_TVAL_GET_HEAPHDR(tv) : NULL);
 
 	vals[DUK__IDX_TYPE] = duk_get_type_tval(tv);
-	vals[DUK__IDX_ITAG] = (duk_uint_t) DUK_TVAL_GET_TAG(tv);
+	vals[DUK__IDX_ITAG] = (duk_int_t) DUK_TVAL_GET_TAG(tv);
 
-	duk_push_bare_object(ctx);  /* Invalidates 'tv'. */
+	duk_push_bare_object(thr);  /* Invalidates 'tv'. */
 	tv = NULL;
 
 	if (h == NULL) {
 		goto finish;
 	}
-	duk_push_pointer(ctx, (void *) h);
-	duk_put_prop_string(ctx, -2, "hptr");
+	duk_push_pointer(thr, (void *) h);
+	duk_put_prop_literal(thr, -2, "hptr");
 
 #if 0
 	/* Covers a lot of information, e.g. buffer and string variants. */
-	duk_push_uint(ctx, (duk_uint_t) DUK_HEAPHDR_GET_FLAGS(h));
-	duk_put_prop_string(ctx, -2, "hflags");
+	duk_push_uint(thr, (duk_uint_t) DUK_HEAPHDR_GET_FLAGS(h));
+	duk_put_prop_literal(thr, -2, "hflags");
 #endif
 
 #if defined(DUK_USE_REFERENCE_COUNTING)
@@ -133,7 +132,7 @@ DUK_EXTERNAL void duk_inspect_value(duk_context *ctx, duk_idx_t idx) {
 		}
 
 		vals[DUK__IDX_CLASS] = (duk_int_t) DUK_HOBJECT_GET_CLASS_NUMBER(h_obj);
-		vals[DUK__IDX_PBYTES] = (duk_int_t) DUK_HOBJECT_P_ALLOC_SIZE(h_obj),
+		vals[DUK__IDX_PBYTES] = (duk_int_t) DUK_HOBJECT_P_ALLOC_SIZE(h_obj);
 		vals[DUK__IDX_ESIZE] = (duk_int_t) DUK_HOBJECT_GET_ESIZE(h_obj);
 		vals[DUK__IDX_ENEXT] = (duk_int_t) DUK_HOBJECT_GET_ENEXT(h_obj);
 		vals[DUK__IDX_ASIZE] = (duk_int_t) DUK_HOBJECT_GET_ASIZE(h_obj);
@@ -167,62 +166,61 @@ DUK_EXTERNAL void duk_inspect_value(duk_context *ctx, duk_idx_t idx) {
 				vals[DUK__IDX_VARIANT] = 1;  /* buffer variant 1: dynamic */
 				vals[DUK__IDX_HBYTES] = (duk_uint_t) (sizeof(duk_hbuffer_dynamic));
 			}
-			vals[DUK__IDX_DBYTES] = (duk_uint_t) (DUK_HBUFFER_GET_SIZE(h_buf));
+			vals[DUK__IDX_DBYTES] = (duk_int_t) (DUK_HBUFFER_GET_SIZE(h_buf));
 		} else {
 			DUK_ASSERT(vals[DUK__IDX_VARIANT] == 0);  /* buffer variant 0: fixed */
-			vals[DUK__IDX_HBYTES] = (duk_uint_t) (sizeof(duk_hbuffer_fixed) + DUK_HBUFFER_GET_SIZE(h_buf));
+			vals[DUK__IDX_HBYTES] = (duk_int_t) (sizeof(duk_hbuffer_fixed) + DUK_HBUFFER_GET_SIZE(h_buf));
 		}
 		break;
 	}
 	}
 
  finish:
-	duk__inspect_multiple_uint(ctx,
+	duk__inspect_multiple_uint(thr,
 	    "type" "\x00" "itag" "\x00" "refc" "\x00" "hbytes" "\x00" "class" "\x00"
 	    "pbytes" "\x00" "esize" "\x00" "enext" "\x00" "asize" "\x00" "hsize" "\x00"
 	    "bcbytes" "\x00" "dbytes" "\x00" "tstate" "\x00" "variant" "\x00" "\x00",
 	    (duk_int_t *) &vals);
 }
 
-DUK_EXTERNAL void duk_inspect_callstack_entry(duk_context *ctx, duk_int_t level) {
-	duk_hthread *thr = (duk_hthread *) ctx;
+DUK_EXTERNAL void duk_inspect_callstack_entry(duk_hthread *thr, duk_int_t level) {
 	duk_activation *act;
 	duk_uint_fast32_t pc;
 	duk_uint_fast32_t line;
 
-	DUK_ASSERT_CTX_VALID(ctx);
+	DUK_ASSERT_API_ENTRY(thr);
 
-	/* -1             = top callstack entry, callstack[callstack_top - 1]
-	 * -callstack_top = bottom callstack entry, callstack[0]
+	/* -1   = top callstack entry
+	 * -2   = caller of level -1
+	 * etc
 	 */
-	if (level >= 0 || -level > (duk_int_t) thr->callstack_top) {
-		duk_push_undefined(ctx);
+	act = duk_hthread_get_activation_for_level(thr, level);
+	if (act == NULL) {
+		duk_push_undefined(thr);
 		return;
 	}
-	duk_push_bare_object(ctx);
-	DUK_ASSERT(level >= -((duk_int_t) thr->callstack_top) && level <= -1);
+	duk_push_bare_object(thr);
 
-	act = thr->callstack + thr->callstack_top + level;
 	/* Relevant PC is just before current one because PC is
 	 * post-incremented.  This should match what error augment
 	 * code does.
 	 */
 	pc = duk_hthread_get_act_prev_pc(thr, act);
 
-	duk_push_tval(ctx, &act->tv_func);
+	duk_push_tval(thr, &act->tv_func);
 
-	duk_push_uint(ctx, (duk_uint_t) pc);
-	duk_put_prop_stridx_short(ctx, -3, DUK_STRIDX_PC);
+	duk_push_uint(thr, (duk_uint_t) pc);
+	duk_put_prop_stridx_short(thr, -3, DUK_STRIDX_PC);
 
 #if defined(DUK_USE_PC2LINE)
-	line = duk_hobject_pc2line_query(ctx, -1, pc);
+	line = duk_hobject_pc2line_query(thr, -1, pc);
 #else
 	line = 0;
 #endif
-	duk_push_uint(ctx, (duk_uint_t) line);
-	duk_put_prop_stridx_short(ctx, -3, DUK_STRIDX_LINE_NUMBER);
+	duk_push_uint(thr, (duk_uint_t) line);
+	duk_put_prop_stridx_short(thr, -3, DUK_STRIDX_LINE_NUMBER);
 
-	duk_put_prop_stridx_short(ctx, -2, DUK_STRIDX_LC_FUNCTION);
+	duk_put_prop_stridx_short(thr, -2, DUK_STRIDX_LC_FUNCTION);
 	/* Providing access to e.g. act->lex_env would be dangerous: these
 	 * internal structures must never be accessible to the application.
 	 * Duktape relies on them having consistent data, and this consistency

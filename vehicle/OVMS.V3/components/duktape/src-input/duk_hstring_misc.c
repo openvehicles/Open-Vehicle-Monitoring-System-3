@@ -20,7 +20,7 @@ DUK_INTERNAL duk_ucodepoint_t duk_hstring_char_code_at_raw(duk_hthread *thr, duk
 	DUK_ASSERT_DISABLE(pos >= 0);  /* unsigned */
 	DUK_ASSERT(pos < (duk_uint_t) DUK_HSTRING_GET_CHARLEN(h));
 
-	boff = duk_heap_strcache_offset_char2byte(thr, h, (duk_uint32_t) pos);
+	boff = (duk_uint32_t) duk_heap_strcache_offset_char2byte(thr, h, (duk_uint32_t) pos);
 	DUK_DDD(DUK_DDDPRINT("charCodeAt: pos=%ld -> boff=%ld, str=%!O",
 	                     (long) pos, (long) boff, (duk_heaphdr *) h));
 	DUK_ASSERT_DISABLE(boff >= 0);
@@ -33,7 +33,7 @@ DUK_INTERNAL duk_ucodepoint_t duk_hstring_char_code_at_raw(duk_hthread *thr, duk
 	                     (const void *) p_start, (const void *) p_end,
 	                     (const void *) p));
 
-	/* For invalid UTF-8 (never happens for standard Ecmascript strings)
+	/* For invalid UTF-8 (never happens for standard ECMAScript strings)
 	 * return U+FFFD replacement character.
 	 */
 	if (duk_unicode_decode_xutf8(thr, &p, p_start, p_end, &cp1)) {
@@ -45,7 +45,7 @@ DUK_INTERNAL duk_ucodepoint_t duk_hstring_char_code_at_raw(duk_hthread *thr, duk
 			cp2 = 0;  /* If call fails, this is left untouched and won't match cp2 check. */
 			(void) duk_unicode_decode_xutf8(thr, &p, p_start, p_end, &cp2);
 			if (cp2 >= 0xdc00UL && cp2 <= 0xdfffUL) {
-				cp1 = ((cp1 - 0xd800UL) << 10) + (cp2 - 0xdc00UL) + 0x10000UL;
+				cp1 = (duk_ucodepoint_t) (((cp1 - 0xd800UL) << 10) + (cp2 - 0xdc00UL) + 0x10000UL);
 			}
 		}
 	} else {
@@ -56,9 +56,46 @@ DUK_INTERNAL duk_ucodepoint_t duk_hstring_char_code_at_raw(duk_hthread *thr, duk
 }
 
 /*
- *  duk_hstring charlen access
+ *  duk_hstring charlen, when lazy charlen disabled
  */
 
+#if !defined(DUK_USE_HSTRING_LAZY_CLEN)
+#if !defined(DUK_USE_HSTRING_CLEN)
+#error non-lazy duk_hstring charlen but DUK_USE_HSTRING_CLEN not set
+#endif
+DUK_INTERNAL void duk_hstring_init_charlen(duk_hstring *h) {
+	duk_uint32_t clen;
+
+	DUK_ASSERT(h != NULL);
+	DUK_ASSERT(!DUK_HSTRING_HAS_ASCII(h));
+	DUK_ASSERT(!DUK_HEAPHDR_HAS_READONLY((duk_heaphdr *) h));
+
+	clen = duk_unicode_unvalidated_utf8_length(DUK_HSTRING_GET_DATA(h), DUK_HSTRING_GET_BYTELEN(h));
+#if defined(DUK_USE_STRLEN16)
+	DUK_ASSERT(clen <= 0xffffUL);  /* Bytelength checked during interning. */
+	h->clen16 = (duk_uint16_t) clen;
+#else
+	h->clen = (duk_uint32_t) clen;
+#endif
+	if (DUK_LIKELY(clen == DUK_HSTRING_GET_BYTELEN(h))) {
+		DUK_HSTRING_SET_ASCII(h);
+	}
+}
+
+DUK_INTERNAL DUK_HOT duk_size_t duk_hstring_get_charlen(duk_hstring *h) {
+#if defined(DUK_USE_STRLEN16)
+	return h->clen16;
+#else
+	return h->clen;
+#endif
+}
+#endif  /* !DUK_USE_HSTRING_LAZY_CLEN */
+
+/*
+ *  duk_hstring charlen, when lazy charlen enabled
+ */
+
+#if defined(DUK_USE_HSTRING_LAZY_CLEN)
 #if defined(DUK_USE_HSTRING_CLEN)
 DUK_LOCAL DUK_COLD duk_size_t duk__hstring_get_charlen_slowpath(duk_hstring *h) {
 	duk_size_t res;
@@ -136,3 +173,24 @@ DUK_INTERNAL DUK_HOT duk_size_t duk_hstring_get_charlen(duk_hstring *h) {
 	return duk__hstring_get_charlen_slowpath(h);
 }
 #endif  /* DUK_USE_HSTRING_CLEN */
+#endif  /* DUK_USE_HSTRING_LAZY_CLEN */
+
+/*
+ *  Compare duk_hstring to an ASCII cstring.
+ */
+
+DUK_INTERNAL duk_bool_t duk_hstring_equals_ascii_cstring(duk_hstring *h, const char *cstr) {
+	duk_size_t len;
+
+	DUK_ASSERT(h != NULL);
+	DUK_ASSERT(cstr != NULL);
+
+	len = DUK_STRLEN(cstr);
+	if (len != DUK_HSTRING_GET_BYTELEN(h)) {
+		return 0;
+	}
+	if (duk_memcmp((const void *) cstr, (const void *) DUK_HSTRING_GET_DATA(h), len) == 0) {
+		return 1;
+	}
+	return 0;
+}

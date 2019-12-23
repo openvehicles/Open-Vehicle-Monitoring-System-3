@@ -23,13 +23,13 @@ typedef union {
 	} while (0)
 
 #define DUK__DBLUNION_CMP_TRUE(a,b)  do { \
-		if (DUK_MEMCMP((const void *) (a), (const void *) (b), sizeof(duk__test_double_union)) != 0) { \
+		if (duk_memcmp((const void *) (a), (const void *) (b), sizeof(duk__test_double_union)) != 0) { \
 			DUK__FAILED("double union compares false (expected true)"); \
 		} \
 	} while (0)
 
 #define DUK__DBLUNION_CMP_FALSE(a,b)  do { \
-		if (DUK_MEMCMP((const void *) (a), (const void *) (b), sizeof(duk__test_double_union)) == 0) { \
+		if (duk_memcmp((const void *) (a), (const void *) (b), sizeof(duk__test_double_union)) == 0) { \
 			DUK__FAILED("double union compares true (expected false)"); \
 		} \
 	} while (0)
@@ -174,7 +174,7 @@ DUK_LOCAL duk_uint_t duk__selftest_byte_order(void) {
 		DUK__FAILED("duk_uint32_t byte order");
 	}
 
-	if (u2.d != (double) 102030405060.0) {
+	if (!duk_double_equals(u2.d, 102030405060.0)) {
 		DUK__FAILED("double byte order");
 	}
 
@@ -187,10 +187,28 @@ DUK_LOCAL duk_uint_t duk__selftest_byte_order(void) {
 
 DUK_LOCAL duk_uint_t duk__selftest_bswap_macros(void) {
 	duk_uint_t error_count = 0;
+	volatile duk_uint32_t x32_input, x32_output;
 	duk_uint32_t x32;
+	volatile duk_uint16_t x16_input, x16_output;
 	duk_uint16_t x16;
 	duk_double_union du;
 	duk_double_t du_diff;
+#if defined(DUK_BSWAP64)
+	volatile duk_uint64_t x64_input, x64_output;
+	duk_uint64_t x64;
+#endif
+
+	/* Cover both compile time and runtime bswap operations, as these
+	 * may have different bugs.
+	 */
+
+	x16_input = 0xbeefUL;
+	x16 = x16_input;
+	x16 = DUK_BSWAP16(x16);
+	x16_output = x16;
+	if (x16_output != (duk_uint16_t) 0xefbeUL) {
+		DUK__FAILED("DUK_BSWAP16");
+	}
 
 	x16 = 0xbeefUL;
 	x16 = DUK_BSWAP16(x16);
@@ -198,11 +216,35 @@ DUK_LOCAL duk_uint_t duk__selftest_bswap_macros(void) {
 		DUK__FAILED("DUK_BSWAP16");
 	}
 
+	x32_input = 0xdeadbeefUL;
+	x32 = x32_input;
+	x32 = DUK_BSWAP32(x32);
+	x32_output = x32;
+	if (x32_output != (duk_uint32_t) 0xefbeaddeUL) {
+		DUK__FAILED("DUK_BSWAP32");
+	}
+
 	x32 = 0xdeadbeefUL;
 	x32 = DUK_BSWAP32(x32);
 	if (x32 != (duk_uint32_t) 0xefbeaddeUL) {
 		DUK__FAILED("DUK_BSWAP32");
 	}
+
+#if defined(DUK_BSWAP64)
+	x64_input = DUK_U64_CONSTANT(0x8899aabbccddeeff);
+	x64 = x64_input;
+	x64 = DUK_BSWAP64(x64);
+	x64_output = x64;
+	if (x64_output != (duk_uint64_t) DUK_U64_CONSTANT(0xffeeddccbbaa9988)) {
+		DUK__FAILED("DUK_BSWAP64");
+	}
+
+	x64 = DUK_U64_CONSTANT(0x8899aabbccddeeff);
+	x64 = DUK_BSWAP64(x64);
+	if (x64 != (duk_uint64_t) DUK_U64_CONSTANT(0xffeeddccbbaa9988)) {
+		DUK__FAILED("DUK_BSWAP64");
+	}
+#endif
 
 	/* >>> struct.unpack('>d', '4000112233445566'.decode('hex'))
 	 * (2.008366013071895,)
@@ -338,7 +380,7 @@ DUK_LOCAL duk_uint_t duk__selftest_double_rounding(void) {
 	 */
 	DUK__DOUBLE_INIT(&a, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 	DUK__DOUBLE_INIT(&b, 0x3c, 0xa0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
-	DUK_MEMSET((void *) &c, 0, sizeof(c));
+	duk_memset((void *) &c, 0, sizeof(c));
 	c.d = a.d + b.d;
 	if (!DUK__DOUBLE_COMPARE(&c, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)) {
 		DUK_D(DUK_DPRINT("broken result (native endiannesss): %02x %02x %02x %02x %02x %02x %02x %02x",
@@ -358,7 +400,7 @@ DUK_LOCAL duk_uint_t duk__selftest_double_rounding(void) {
 	 */
 	DUK__DOUBLE_INIT(&a, 0x3f, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01);
 	DUK__DOUBLE_INIT(&b, 0x3c, 0xa0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
-	DUK_MEMSET((void *) &c, 0, sizeof(c));
+	duk_memset((void *) &c, 0, sizeof(c));
 	c.d = a.d + b.d;
 	if (!DUK__DOUBLE_COMPARE(&c, 0x3f, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02)) {
 		DUK_D(DUK_DPRINT("broken result (native endiannesss): %02x %02x %02x %02x %02x %02x %02x %02x",
@@ -384,6 +426,7 @@ DUK_LOCAL duk_uint_t duk__selftest_double_rounding(void) {
 DUK_LOCAL duk_uint_t duk__selftest_fmod(void) {
 	duk_uint_t error_count = 0;
 	duk__test_double_union u1, u2;
+	volatile duk_double_t t1, t2, t3;
 
 	/* fmod() with integer argument and exponent 2^32 is used by e.g.
 	 * ToUint32() and some Duktape internals.
@@ -398,6 +441,22 @@ DUK_LOCAL duk_uint_t duk__selftest_fmod(void) {
 
 	u1.d = DUK_FMOD(73014444042.0, 4294967296.0);
 	u2.d = 10.0;
+	DUK__DBLUNION_CMP_TRUE(&u1, &u2);
+
+	/* 52-bit integer split into two parts:
+	 * >>> 0x1fedcba9876543
+	 * 8987183256397123
+	 * >>> float(0x1fedcba9876543) / float(2**53)
+	 * 0.9977777777777778
+	 */
+	u1.d = DUK_FMOD(8987183256397123.0, 4294967296.0);
+	u2.d = (duk_double_t) 0xa9876543UL;
+	DUK__DBLUNION_CMP_TRUE(&u1, &u2);
+	t1 = 8987183256397123.0;
+	t2 = 4294967296.0;
+	t3 = t1 / t2;
+	u1.d = DUK_FLOOR(t3);
+	u2.d = (duk_double_t) 0x1fedcbUL;
 	DUK__DBLUNION_CMP_TRUE(&u1, &u2);
 
 	/* C99 behavior is for fmod() result sign to mathc argument sign. */
@@ -458,7 +517,7 @@ DUK_LOCAL duk_uint_t duk__selftest_64bit_arithmetic(void) {
 	/* Catch a double-to-int64 cast issue encountered in practice. */
 	d = 2147483648.0;
 	i = (duk_int64_t) d;
-	if (i != 0x80000000LL) {
+	if (i != DUK_I64_CONSTANT(0x80000000)) {
 		DUK__FAILED("casting 2147483648.0 to duk_int64_t failed");
 	}
 #else
@@ -490,7 +549,7 @@ DUK_LOCAL duk_uint_t duk__selftest_cast_double_to_small_uint(void) {
 	u = (duk_small_uint_t) d1;
 	d2 = (duk_double_t) u;
 
-	if (!(d1 == 1.0 && u == 1 && d2 == 1.0 && d1 == d2)) {
+	if (!(duk_double_equals(d1, 1.0) && u == 1 && duk_double_equals(d2, 1.0) && duk_double_equals(d1, d2))) {
 		DUK__FAILED("double to duk_small_uint_t cast failed");
 	}
 
@@ -500,7 +559,7 @@ DUK_LOCAL duk_uint_t duk__selftest_cast_double_to_small_uint(void) {
 	uv = (duk_small_uint_t) d1v;
 	d2v = (duk_double_t) uv;
 
-	if (!(d1v == 1.0 && uv == 1 && d2v == 1.0 && d1v == d2v)) {
+	if (!(duk_double_equals(d1v, 1.0) && uv == 1 && duk_double_equals(d2v, 1.0) && duk_double_equals(d1v, d2v))) {
 		DUK__FAILED("double to duk_small_uint_t cast failed");
 	}
 
@@ -553,7 +612,7 @@ DUK_LOCAL duk_uint_t duk__selftest_alloc_funcs(duk_alloc_function alloc_func,
 	}
 
 	for (i = 1; i <= 256; i++) {
-		ptr = alloc_func(udata, i);
+		ptr = alloc_func(udata, (duk_size_t) i);
 		if (ptr == NULL) {
 			DUK_D(DUK_DPRINT("alloc failed, ignore"));
 			continue;  /* alloc failed, ignore */

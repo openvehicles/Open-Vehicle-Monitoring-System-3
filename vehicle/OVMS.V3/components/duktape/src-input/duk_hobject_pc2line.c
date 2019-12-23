@@ -13,7 +13,6 @@
 
 /* Generate pc2line data for an instruction sequence, leaving a buffer on stack top. */
 DUK_INTERNAL void duk_hobject_pc2line_pack(duk_hthread *thr, duk_compiler_instr *instrs, duk_uint_fast32_t length) {
-	duk_context *ctx = (duk_context *) thr;
 	duk_hbuffer_dynamic *h_buf;
 	duk_bitencoder_ctx be_ctx_alloc;
 	duk_bitencoder_ctx *be_ctx = &be_ctx_alloc;
@@ -27,15 +26,11 @@ DUK_INTERNAL void duk_hobject_pc2line_pack(duk_hthread *thr, duk_compiler_instr 
 
 	DUK_ASSERT(length <= DUK_COMPILER_MAX_BYTECODE_LENGTH);
 
-	/* XXX: add proper spare handling to dynamic buffer, to minimize
-	 * reallocs; currently there is no spare at all.
-	 */
-
 	num_header_entries = (length + DUK_PC2LINE_SKIP - 1) / DUK_PC2LINE_SKIP;
 	curr_offset = (duk_uint_fast32_t) (sizeof(duk_uint32_t) + num_header_entries * sizeof(duk_uint32_t) * 2);
 
-	duk_push_dynamic_buffer(ctx, (duk_size_t) curr_offset);
-	h_buf = (duk_hbuffer_dynamic *) duk_known_hbuffer(ctx, -1);
+	duk_push_dynamic_buffer(thr, (duk_size_t) curr_offset);
+	h_buf = (duk_hbuffer_dynamic *) duk_known_hbuffer(thr, -1);
 	DUK_ASSERT(DUK_HBUFFER_HAS_DYNAMIC(h_buf) && !DUK_HBUFFER_HAS_EXTERNAL(h_buf));
 
 	hdr = (duk_uint32_t *) DUK_HBUFFER_DYNAMIC_GET_DATA_PTR(thr->heap, h_buf);
@@ -63,7 +58,7 @@ DUK_INTERNAL void duk_hobject_pc2line_pack(duk_hthread *thr, duk_compiler_instr 
 		                     (long) hdr[hdr_index + 1]));
 #endif
 
-		DUK_MEMZERO(be_ctx, sizeof(*be_ctx));
+		duk_memzero(be_ctx, sizeof(*be_ctx));
 		be_ctx->data = ((duk_uint8_t *) hdr) + curr_offset;
 		be_ctx->length = (duk_size_t) DUK_PC2LINE_MAX_DIFF_LENGTH;
 
@@ -87,17 +82,17 @@ DUK_INTERNAL void duk_hobject_pc2line_pack(duk_hthread *thr, duk_compiler_instr 
 				duk_be_encode(be_ctx, 0, 1);
 			} else if (diff_line >= 1 && diff_line <= 4) {
 				/* 1 0 <2 bits> */
-				duk_be_encode(be_ctx, (0x02 << 2) + (diff_line - 1), 4);
+				duk_be_encode(be_ctx, (duk_uint32_t) ((0x02 << 2) + (diff_line - 1)), 4);
 			} else if (diff_line >= -0x80 && diff_line <= 0x7f) {
 				/* 1 1 0 <8 bits> */
 				DUK_ASSERT(diff_line + 0x80 >= 0 && diff_line + 0x80 <= 0xff);
-				duk_be_encode(be_ctx, (0x06 << 8) + (diff_line + 0x80), 11);
+				duk_be_encode(be_ctx, (duk_uint32_t) ((0x06 << 8) + (diff_line + 0x80)), 11);
 			} else {
 				/* 1 1 1 <32 bits>
 				 * Encode in two parts to avoid bitencode 24-bit limitation
 				 */
-				duk_be_encode(be_ctx, (0x07 << 16) + ((next_line >> 16) & 0xffffU), 19);
-				duk_be_encode(be_ctx, next_line & 0xffffU, 16);
+				duk_be_encode(be_ctx, (duk_uint32_t) ((0x07 << 16) + ((next_line >> 16) & 0xffff)), 19);
+				duk_be_encode(be_ctx, (duk_uint32_t) (next_line & 0xffff), 16);
 			}
 
 			curr_line = next_line;
@@ -114,11 +109,11 @@ DUK_INTERNAL void duk_hobject_pc2line_pack(duk_hthread *thr, duk_compiler_instr 
 	new_size = (duk_size_t) curr_offset;
 	duk_hbuffer_resize(thr, h_buf, new_size);
 
-	(void) duk_to_fixed_buffer(ctx, -1, NULL);
+	(void) duk_to_fixed_buffer(thr, -1, NULL);
 
 	DUK_DDD(DUK_DDDPRINT("final pc2line data: pc_limit=%ld, length=%ld, %lf bits/opcode --> %!ixT",
 	                     (long) length, (long) new_size, (double) new_size * 8.0 / (double) length,
-	                     (duk_tval *) duk_get_tval(ctx, -1)));
+	                     (duk_tval *) duk_get_tval(thr, -1)));
 }
 
 /* PC is unsigned.  If caller does PC arithmetic and gets a negative result,
@@ -174,7 +169,7 @@ DUK_LOCAL duk_uint_fast32_t duk__hobject_pc2line_query_raw(duk_hthread *thr, duk
 	 *  Iterate the bitstream (line diffs) until PC is reached
 	 */
 
-	DUK_MEMZERO(bd_ctx, sizeof(*bd_ctx));
+	duk_memzero(bd_ctx, sizeof(*bd_ctx));
 	bd_ctx->data = ((duk_uint8_t *) hdr) + start_offset;
 	bd_ctx->length = (duk_size_t) (DUK_HBUFFER_FIXED_GET_SIZE(buf) - start_offset);
 
@@ -223,7 +218,7 @@ DUK_LOCAL duk_uint_fast32_t duk__hobject_pc2line_query_raw(duk_hthread *thr, duk
 	return 0;
 }
 
-DUK_INTERNAL duk_uint_fast32_t duk_hobject_pc2line_query(duk_context *ctx, duk_idx_t idx_func, duk_uint_fast32_t pc) {
+DUK_INTERNAL duk_uint_fast32_t duk_hobject_pc2line_query(duk_hthread *thr, duk_idx_t idx_func, duk_uint_fast32_t pc) {
 	duk_hbuffer_fixed *pc2line;
 	duk_uint_fast32_t line;
 
@@ -233,15 +228,15 @@ DUK_INTERNAL duk_uint_fast32_t duk_hobject_pc2line_query(duk_context *ctx, duk_i
 	 * future work in debugger.rst).
 	 */
 
-	duk_get_prop_stridx(ctx, idx_func, DUK_STRIDX_INT_PC2LINE);
-	pc2line = (duk_hbuffer_fixed *) duk_get_hbuffer(ctx, -1);
+	duk_xget_owndataprop_stridx_short(thr, idx_func, DUK_STRIDX_INT_PC2LINE);
+	pc2line = (duk_hbuffer_fixed *) (void *) duk_get_hbuffer(thr, -1);
 	if (pc2line != NULL) {
 		DUK_ASSERT(!DUK_HBUFFER_HAS_DYNAMIC((duk_hbuffer *) pc2line) && !DUK_HBUFFER_HAS_EXTERNAL((duk_hbuffer *) pc2line));
-		line = duk__hobject_pc2line_query_raw((duk_hthread *) ctx, pc2line, (duk_uint_fast32_t) pc);
+		line = duk__hobject_pc2line_query_raw(thr, pc2line, (duk_uint_fast32_t) pc);
 	} else {
 		line = 0;
 	}
-	duk_pop(ctx);
+	duk_pop(thr);
 
 	return line;
 }

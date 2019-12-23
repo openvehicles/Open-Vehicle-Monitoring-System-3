@@ -1,10 +1,10 @@
 {
     "comment": "Metadata for Duktape sources", 
-    "duk_version_string": "2.1.1", 
+    "duk_version_string": "2.5.0", 
     "type": "duk_source_meta", 
-    "duk_version": 20101, 
-    "git_branch": "v2.1-maintenance", 
-    "git_commit": "9c8fba6392d1913cb5359be7b8f386fa3cdd8b4d", 
+    "duk_version": 20500, 
+    "git_branch": "master", 
+    "git_commit": "6001888049cb42656f8649db020e804bcdeca6a7", 
     "builtin_strings_info": [
         {
             "plain": "Undefined", 
@@ -39,7 +39,7 @@
         {
             "plain": "Array", 
             "base64": "QXJyYXk=", 
-            "define": "DUK_STRIDX_ARRAY"
+            "define": "DUK_STRIDX_UC_ARRAY"
         }, 
         {
             "plain": "String", 
@@ -59,7 +59,7 @@
         {
             "plain": "Date", 
             "base64": "RGF0ZQ==", 
-            "define": "DUK_STRIDX_DATE"
+            "define": "DUK_STRIDX_UC_DATE"
         }, 
         {
             "plain": "RegExp", 
@@ -357,6 +357,16 @@
             "define": "DUK_STRIDX_CALLER"
         }, 
         {
+            "plain": "apply", 
+            "base64": "YXBwbHk=", 
+            "define": "DUK_STRIDX_APPLY"
+        }, 
+        {
+            "plain": "construct", 
+            "base64": "Y29uc3RydWN0", 
+            "define": "DUK_STRIDX_CONSTRUCT"
+        }, 
+        {
             "plain": "deleteProperty", 
             "base64": "ZGVsZXRlUHJvcGVydHk=", 
             "define": "DUK_STRIDX_DELETE_PROPERTY"
@@ -375,6 +385,26 @@
             "plain": "ownKeys", 
             "base64": "b3duS2V5cw==", 
             "define": "DUK_STRIDX_OWN_KEYS"
+        }, 
+        {
+            "plain": "\u0081Symbol.toPrimitive\u00ff", 
+            "base64": "gVN5bWJvbC50b1ByaW1pdGl2Zf8=", 
+            "define": "DUK_STRIDX_WELLKNOWN_SYMBOL_TO_PRIMITIVE"
+        }, 
+        {
+            "plain": "\u0081Symbol.hasInstance\u00ff", 
+            "base64": "gVN5bWJvbC5oYXNJbnN0YW5jZf8=", 
+            "define": "DUK_STRIDX_WELLKNOWN_SYMBOL_HAS_INSTANCE"
+        }, 
+        {
+            "plain": "\u0081Symbol.toStringTag\u00ff", 
+            "base64": "gVN5bWJvbC50b1N0cmluZ1RhZ/8=", 
+            "define": "DUK_STRIDX_WELLKNOWN_SYMBOL_TO_STRING_TAG"
+        }, 
+        {
+            "plain": "\u0081Symbol.isConcatSpreadable\u00ff", 
+            "base64": "gVN5bWJvbC5pc0NvbmNhdFNwcmVhZGFibGX/", 
+            "define": "DUK_STRIDX_WELLKNOWN_SYMBOL_IS_CONCAT_SPREADABLE"
         }, 
         {
             "plain": "setPrototypeOf", 
@@ -407,6 +437,11 @@
             "define": "DUK_STRIDX_DATA"
         }, 
         {
+            "plain": "buffer", 
+            "base64": "YnVmZmVy", 
+            "define": "DUK_STRIDX_LC_BUFFER"
+        }, 
+        {
             "plain": "length", 
             "base64": "bGVuZ3Ro", 
             "define": "DUK_STRIDX_LENGTH"
@@ -432,8 +467,8 @@
             "define": "DUK_STRIDX_LINE_NUMBER"
         }, 
         {
-            "plain": "\u00ffTracedata", 
-            "base64": "/1RyYWNlZGF0YQ==", 
+            "plain": "\u0082Tracedata", 
+            "base64": "glRyYWNlZGF0YQ==", 
             "define": "DUK_STRIDX_INT_TRACEDATA"
         }, 
         {
@@ -452,74 +487,59 @@
             "define": "DUK_STRIDX_LC_POINTER"
         }, 
         {
-            "plain": "\u00ffValue", 
-            "base64": "/1ZhbHVl", 
-            "define": "DUK_STRIDX_INT_VALUE"
-        }, 
-        {
-            "plain": "\u00ffNext", 
-            "base64": "/05leHQ=", 
-            "define": "DUK_STRIDX_INT_NEXT"
-        }, 
-        {
-            "plain": "\u00ffBytecode", 
-            "base64": "/0J5dGVjb2Rl", 
-            "define": "DUK_STRIDX_INT_BYTECODE"
-        }, 
-        {
-            "plain": "\u00ffFormals", 
-            "base64": "/0Zvcm1hbHM=", 
-            "define": "DUK_STRIDX_INT_FORMALS"
-        }, 
-        {
-            "plain": "\u00ffVarmap", 
-            "base64": "/1Zhcm1hcA==", 
-            "define": "DUK_STRIDX_INT_VARMAP"
-        }, 
-        {
-            "plain": "\u00ffSource", 
-            "base64": "/1NvdXJjZQ==", 
-            "define": "DUK_STRIDX_INT_SOURCE"
-        }, 
-        {
-            "plain": "\u00ffPc2line", 
-            "base64": "/1BjMmxpbmU=", 
-            "define": "DUK_STRIDX_INT_PC2LINE"
-        }, 
-        {
-            "plain": "\u00ffThis", 
-            "base64": "/1RoaXM=", 
-            "define": "DUK_STRIDX_INT_THIS"
-        }, 
-        {
-            "plain": "\u00ffArgs", 
-            "base64": "/0FyZ3M=", 
-            "define": "DUK_STRIDX_INT_ARGS"
-        }, 
-        {
-            "plain": "\u00ffMap", 
-            "base64": "/01hcA==", 
-            "define": "DUK_STRIDX_INT_MAP"
-        }, 
-        {
-            "plain": "\u00ffVarenv", 
-            "base64": "/1ZhcmVudg==", 
-            "define": "DUK_STRIDX_INT_VARENV"
-        }, 
-        {
-            "plain": "\u00ffFinalizer", 
-            "base64": "/0ZpbmFsaXplcg==", 
-            "define": "DUK_STRIDX_INT_FINALIZER"
-        }, 
-        {
-            "plain": "\u00ffTarget", 
-            "base64": "/1RhcmdldA==", 
+            "plain": "\u0082Target", 
+            "base64": "glRhcmdldA==", 
             "define": "DUK_STRIDX_INT_TARGET"
         }, 
         {
-            "plain": "\u00ffHandler", 
-            "base64": "/0hhbmRsZXI=", 
-            "define": "DUK_STRIDX_INT_HANDLER"
+            "plain": "\u0082Next", 
+            "base64": "gk5leHQ=", 
+            "define": "DUK_STRIDX_INT_NEXT"
+        }, 
+        {
+            "plain": "\u0082Bytecode", 
+            "base64": "gkJ5dGVjb2Rl", 
+            "define": "DUK_STRIDX_INT_BYTECODE"
+        }, 
+        {
+            "plain": "\u0082Formals", 
+            "base64": "gkZvcm1hbHM=", 
+            "define": "DUK_STRIDX_INT_FORMALS"
+        }, 
+        {
+            "plain": "\u0082Varmap", 
+            "base64": "glZhcm1hcA==", 
+            "define": "DUK_STRIDX_INT_VARMAP"
+        }, 
+        {
+            "plain": "\u0082Source", 
+            "base64": "glNvdXJjZQ==", 
+            "define": "DUK_STRIDX_INT_SOURCE"
+        }, 
+        {
+            "plain": "\u0082Pc2line", 
+            "base64": "glBjMmxpbmU=", 
+            "define": "DUK_STRIDX_INT_PC2LINE"
+        }, 
+        {
+            "plain": "\u0082Map", 
+            "base64": "gk1hcA==", 
+            "define": "DUK_STRIDX_INT_MAP"
+        }, 
+        {
+            "plain": "\u0082Varenv", 
+            "base64": "glZhcmVudg==", 
+            "define": "DUK_STRIDX_INT_VARENV"
+        }, 
+        {
+            "plain": "\u0082Finalizer", 
+            "base64": "gkZpbmFsaXplcg==", 
+            "define": "DUK_STRIDX_INT_FINALIZER"
+        }, 
+        {
+            "plain": "\u0082Value", 
+            "base64": "glZhbHVl", 
+            "define": "DUK_STRIDX_INT_VALUE"
         }, 
         {
             "plain": "compile", 
@@ -565,11 +585,6 @@
             "plain": "jc", 
             "base64": "amM=", 
             "define": "DUK_STRIDX_JC"
-        }, 
-        {
-            "plain": "resume", 
-            "base64": "cmVzdW1l", 
-            "define": "DUK_STRIDX_RESUME"
         }, 
         {
             "plain": "{\"_undef\":true}", 
@@ -898,39 +913,43 @@
         "YXJndW1lbnRz", 
         "Y2FsbGVl", 
         "Y2FsbGVy", 
+        "YXBwbHk=", 
+        "Y29uc3RydWN0", 
         "ZGVsZXRlUHJvcGVydHk=", 
         "Z2V0", 
         "aGFz", 
         "b3duS2V5cw==", 
+        "gVN5bWJvbC50b1ByaW1pdGl2Zf8=", 
+        "gVN5bWJvbC5oYXNJbnN0YW5jZf8=", 
+        "gVN5bWJvbC50b1N0cmluZ1RhZ/8=", 
+        "gVN5bWJvbC5pc0NvbmNhdFNwcmVhZGFibGX/", 
         "c2V0UHJvdG90eXBlT2Y=", 
         "X19wcm90b19f", 
         "dG9TdHJpbmc=", 
         "dG9KU09O", 
         "dHlwZQ==", 
         "ZGF0YQ==", 
+        "YnVmZmVy", 
         "bGVuZ3Ro", 
         "c2V0", 
         "c3RhY2s=", 
         "cGM=", 
         "bGluZU51bWJlcg==", 
-        "/1RyYWNlZGF0YQ==", 
+        "glRyYWNlZGF0YQ==", 
         "bmFtZQ==", 
         "ZmlsZU5hbWU=", 
         "cG9pbnRlcg==", 
-        "/1ZhbHVl", 
-        "/05leHQ=", 
-        "/0J5dGVjb2Rl", 
-        "/0Zvcm1hbHM=", 
-        "/1Zhcm1hcA==", 
-        "/1NvdXJjZQ==", 
-        "/1BjMmxpbmU=", 
-        "/1RoaXM=", 
-        "/0FyZ3M=", 
-        "/01hcA==", 
-        "/1ZhcmVudg==", 
-        "/0ZpbmFsaXplcg==", 
-        "/1RhcmdldA==", 
-        "/0hhbmRsZXI=", 
+        "glRhcmdldA==", 
+        "gk5leHQ=", 
+        "gkJ5dGVjb2Rl", 
+        "gkZvcm1hbHM=", 
+        "glZhcm1hcA==", 
+        "glNvdXJjZQ==", 
+        "glBjMmxpbmU=", 
+        "gk1hcA==", 
+        "glZhcmVudg==", 
+        "gkZpbmFsaXplcg==", 
+        "glZhbHVl", 
         "Y29tcGlsZQ==", 
         "aW5wdXQ=", 
         "ZXJyQ3JlYXRl", 
@@ -940,7 +959,6 @@
         "YmFzZTY0", 
         "ang=", 
         "amM=", 
-        "cmVzdW1l", 
         "eyJfdW5kZWYiOnRydWV9", 
         "eyJfbmFuIjp0cnVlfQ==", 
         "eyJfaW5mIjp0cnVlfQ==", 
@@ -993,7 +1011,7 @@
         "c3RhdGlj", 
         "eWllbGQ="
     ], 
-    "git_describe": "v2.1.1", 
+    "git_describe": "v2.5.0", 
     "builtin_strings": [
         "Undefined", 
         "Null", 
@@ -1065,39 +1083,43 @@
         "arguments", 
         "callee", 
         "caller", 
+        "apply", 
+        "construct", 
         "deleteProperty", 
         "get", 
         "has", 
         "ownKeys", 
+        "\u0081Symbol.toPrimitive\u00ff", 
+        "\u0081Symbol.hasInstance\u00ff", 
+        "\u0081Symbol.toStringTag\u00ff", 
+        "\u0081Symbol.isConcatSpreadable\u00ff", 
         "setPrototypeOf", 
         "__proto__", 
         "toString", 
         "toJSON", 
         "type", 
         "data", 
+        "buffer", 
         "length", 
         "set", 
         "stack", 
         "pc", 
         "lineNumber", 
-        "\u00ffTracedata", 
+        "\u0082Tracedata", 
         "name", 
         "fileName", 
         "pointer", 
-        "\u00ffValue", 
-        "\u00ffNext", 
-        "\u00ffBytecode", 
-        "\u00ffFormals", 
-        "\u00ffVarmap", 
-        "\u00ffSource", 
-        "\u00ffPc2line", 
-        "\u00ffThis", 
-        "\u00ffArgs", 
-        "\u00ffMap", 
-        "\u00ffVarenv", 
-        "\u00ffFinalizer", 
-        "\u00ffTarget", 
-        "\u00ffHandler", 
+        "\u0082Target", 
+        "\u0082Next", 
+        "\u0082Bytecode", 
+        "\u0082Formals", 
+        "\u0082Varmap", 
+        "\u0082Source", 
+        "\u0082Pc2line", 
+        "\u0082Map", 
+        "\u0082Varenv", 
+        "\u0082Finalizer", 
+        "\u0082Value", 
         "compile", 
         "input", 
         "errCreate", 
@@ -1107,7 +1129,6 @@
         "base64", 
         "jx", 
         "jc", 
-        "resume", 
         "{\"_undef\":true}", 
         "{\"_nan\":true}", 
         "{\"_inf\":true}", 

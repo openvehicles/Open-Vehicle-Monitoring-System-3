@@ -1,5 +1,5 @@
 /*
- *  Heap Array object representation.  Used for actual Array instances.
+ *  Array object representation, used for actual Array instances.
  *
  *  All objects with the exotic array behavior (which must coincide with having
  *  internal class array) MUST be duk_harrays.  No other object can be a
@@ -9,11 +9,12 @@
 #if !defined(DUK_HARRAY_H_INCLUDED)
 #define DUK_HARRAY_H_INCLUDED
 
-#define DUK_ASSERT_HARRAY_VALID(h) do { \
-		DUK_ASSERT((h) != NULL); \
-		DUK_ASSERT(DUK_HOBJECT_IS_ARRAY((duk_hobject *) (h))); \
-		DUK_ASSERT(DUK_HOBJECT_HAS_EXOTIC_ARRAY((duk_hobject *) (h))); \
-	} while (0)
+#if defined(DUK_USE_ASSERTIONS)
+DUK_INTERNAL_DECL void duk_harray_assert_valid(duk_harray *h);
+#define DUK_HARRAY_ASSERT_VALID(h)  do { duk_harray_assert_valid((h)); } while (0)
+#else
+#define DUK_HARRAY_ASSERT_VALID(h)  do {} while (0)
+#endif
 
 #define DUK_HARRAY_LENGTH_WRITABLE(h)         (!(h)->length_nonwritable)
 #define DUK_HARRAY_LENGTH_NONWRITABLE(h)      ((h)->length_nonwritable)

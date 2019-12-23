@@ -62,10 +62,17 @@
 #define DUK_STR_BUFFER_TOO_LONG                  "buffer too long"
 #define DUK_STR_ALLOC_FAILED                     "alloc failed"
 #define DUK_STR_WRONG_BUFFER_TYPE                "wrong buffer type"
-#define DUK_STR_ENCODE_FAILED                    "encode failed"
-#define DUK_STR_DECODE_FAILED                    "decode failed"
+#define DUK_STR_BASE64_ENCODE_FAILED             "base64 encode failed"
+#define DUK_STR_SOURCE_DECODE_FAILED             "source decode failed"
+#define DUK_STR_UTF8_DECODE_FAILED               "utf-8 decode failed"
+#define DUK_STR_BASE64_DECODE_FAILED             "base64 decode failed"
+#define DUK_STR_HEX_DECODE_FAILED                "hex decode failed"
+#define DUK_STR_INVALID_BYTECODE                 "invalid bytecode"
 #define DUK_STR_NO_SOURCECODE                    "no sourcecode"
 #define DUK_STR_RESULT_TOO_LONG                  "result too long"
+#define DUK_STR_INVALID_CFUNC_RC                 "invalid C function rc"
+#define DUK_STR_INVALID_INSTANCEOF_RVAL          "invalid instanceof rval"
+#define DUK_STR_INVALID_INSTANCEOF_RVAL_NOPROTO  "instanceof rval has no .prototype"
 
 /* JSON */
 #define DUK_STR_FMT_PTR                          "%p"
@@ -75,7 +82,6 @@
 #define DUK_STR_CYCLIC_INPUT                     "cyclic input"
 
 /* Object property access */
-#define DUK_STR_PROXY_REVOKED                    "proxy revoked"
 #define DUK_STR_INVALID_BASE                     "invalid base value"
 #define DUK_STR_STRICT_CALLER_READ               "cannot read strict 'caller'"
 #define DUK_STR_PROXY_REJECTED                   "proxy rejected"
@@ -84,6 +90,7 @@
 #define DUK_STR_INVALID_DESCRIPTOR               "invalid descriptor"
 
 /* Proxy */
+#define DUK_STR_PROXY_REVOKED                    "proxy revoked"
 #define DUK_STR_INVALID_TRAP_RESULT              "invalid trap result"
 
 /* Variables */
@@ -108,6 +115,7 @@
 #define DUK_STR_CANNOT_DELETE_IDENTIFIER         "cannot delete identifier"
 #define DUK_STR_INVALID_EXPRESSION               "invalid expression"
 #define DUK_STR_INVALID_LVALUE                   "invalid lvalue"
+#define DUK_STR_INVALID_NEWTARGET                "invalid new.target"
 #define DUK_STR_EXPECTED_IDENTIFIER              "expected identifier"
 #define DUK_STR_EMPTY_EXPR_NOT_ALLOWED           "empty expression not allowed"
 #define DUK_STR_INVALID_FOR                      "invalid for statement"
@@ -124,7 +132,7 @@
 #define DUK_STR_INVALID_GETSET_NAME              "invalid getter/setter name"
 #define DUK_STR_FUNC_NAME_REQUIRED               "function name required"
 
-/* Regexp */
+/* RegExp */
 #define DUK_STR_INVALID_QUANTIFIER               "invalid regexp quantifier"
 #define DUK_STR_INVALID_QUANTIFIER_NO_ATOM       "quantifier without preceding atom"
 #define DUK_STR_INVALID_QUANTIFIER_VALUES        "quantifier values invalid (qmin > qmax)"
@@ -143,10 +151,9 @@
 /* Limits */
 #define DUK_STR_VALSTACK_LIMIT                   "valstack limit"
 #define DUK_STR_CALLSTACK_LIMIT                  "callstack limit"
-#define DUK_STR_CATCHSTACK_LIMIT                 "catchstack limit"
 #define DUK_STR_PROTOTYPE_CHAIN_LIMIT            "prototype chain limit"
 #define DUK_STR_BOUND_CHAIN_LIMIT                "function call bound chain limit"
-#define DUK_STR_C_CALLSTACK_LIMIT                "C call stack depth limit"
+#define DUK_STR_NATIVE_STACK_LIMIT               "C stack depth limit"
 #define DUK_STR_COMPILER_RECURSION_LIMIT         "compiler recursion limit"
 #define DUK_STR_BYTECODE_LIMIT                   "bytecode limit"
 #define DUK_STR_REG_LIMIT                        "register limit"
