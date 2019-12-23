@@ -180,7 +180,7 @@ static void duk__resolve_module_id(duk_context *ctx, const char *req_id, const c
 	return;
 
  resolve_error:
-	duk_error(ctx, DUK_ERR_TYPE_ERROR, "cannot resolve module id: %s", (const char *) req_id);
+	(void) duk_type_error(ctx, "cannot resolve module id: %s", (const char *) req_id);
 }
 
 /* Stack indices for better readability. */
@@ -263,7 +263,7 @@ static duk_ret_t duk__require(duk_context *ctx) {
 	 * done with Object.defineProperty().
 	 *
 	 * XXX: require.id could also be just made non-configurable, as there
-	 * is no practical reason to touch it (at least from Ecmascript code).
+	 * is no practical reason to touch it (at least from ECMAScript code).
 	 */
 	duk_push_c_function(ctx, duk__require, 1 /*nargs*/);
 	duk_push_string(ctx, "name");
@@ -307,7 +307,7 @@ static duk_ret_t duk__require(duk_context *ctx) {
 	 *  Call user provided module search function and build the wrapped
 	 *  module source code (if necessary).  The module search function
 	 *  can be used to implement pure Ecmacsript, pure C, and mixed
-	 *  Ecmascript/C modules.
+	 *  ECMAScript/C modules.
 	 *
 	 *  The module search function can operate on the exports table directly
 	 *  (e.g. DLL code can register values to it).  It can also return a
@@ -432,7 +432,7 @@ static duk_ret_t duk__require(duk_context *ctx) {
  delete_rethrow:
 	duk_dup(ctx, DUK__IDX_RESOLVED_ID);
 	duk_del_prop(ctx, DUK__IDX_MODLOADED);  /* delete Duktape.modLoaded[resolved_id] */
-	duk_throw(ctx);  /* rethrow original error */
+	(void) duk_throw(ctx);  /* rethrow original error */
 	return 0;  /* not reachable */
 }
 

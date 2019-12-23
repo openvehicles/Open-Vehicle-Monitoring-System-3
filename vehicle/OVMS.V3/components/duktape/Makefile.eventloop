@@ -2,20 +2,21 @@
 #  Example Makefile for building the eventloop example
 #
 
+CC = gcc
+
 evloop:
-	@echo "NOTE: The eventloop is example is intended to be used on Linux"
+	@echo "NOTE: The eventloop is an example intended to be used on Linux"
 	@echo "      or other common UNIX variants.  It is not fully portable."
 	@echo ""
 
-	gcc -o $@ -std=c99 -Wall -Wextra -O2 -Isrc \
+	$(CC) -o $@ -std=c99 -Wall -Wextra -O2 -Isrc \
 		examples/eventloop/main.c \
 		examples/eventloop/c_eventloop.c \
 		examples/eventloop/poll.c \
 		examples/eventloop/socket.c \
 		examples/eventloop/fileio.c \
-		examples/eventloop/ncurses.c \
 		src/duktape.c \
-		-lm -lncurses
+		-lm
 
 	@echo ""
 	@echo "NOTE: You must 'cd examples/eventloop' before you execute the"

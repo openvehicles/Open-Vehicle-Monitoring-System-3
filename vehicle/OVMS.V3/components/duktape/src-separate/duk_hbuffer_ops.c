@@ -1,12 +1,6 @@
 /*
  *  duk_hbuffer operations such as resizing and inserting/appending data to
  *  a dynamic buffer.
- *
- *  Append operations append to the end of the buffer and they are relatively
- *  efficient: the buffer is grown with a "spare" part relative to the buffer
- *  size to minimize reallocations.  Insert operations need to move existing
- *  data forward in the buffer with memmove() and are not very efficient.
- *  They are used e.g. by the regexp compiler to "backpatch" regexp bytecode.
  */
 
 #include "duk_internal.h"
@@ -30,6 +24,7 @@ DUK_INTERNAL void duk_hbuffer_resize(duk_hthread *thr, duk_hbuffer_dynamic *buf,
 
 	if (new_size > DUK_HBUFFER_MAX_BYTELEN) {
 		DUK_ERROR_RANGE(thr, "buffer too long");
+		DUK_WO_NORETURN(return;);
 	}
 
 	/*
@@ -58,7 +53,7 @@ DUK_INTERNAL void duk_hbuffer_resize(duk_hthread *thr, duk_hbuffer_dynamic *buf,
 		if (new_size > prev_size) {
 			DUK_ASSERT(new_size - prev_size > 0);
 #if defined(DUK_USE_ZERO_BUFFER_DATA)
-			DUK_MEMZERO((void *) ((char *) res + prev_size),
+			duk_memzero((void *) ((char *) res + prev_size),
 			            (duk_size_t) (new_size - prev_size));
 #endif
 		}
@@ -67,6 +62,7 @@ DUK_INTERNAL void duk_hbuffer_resize(duk_hthread *thr, duk_hbuffer_dynamic *buf,
 		DUK_HBUFFER_DYNAMIC_SET_DATA_PTR(thr->heap, buf, res);
 	} else {
 		DUK_ERROR_ALLOC_FAILED(thr);
+		DUK_WO_NORETURN(return;);
 	}
 
 	DUK_ASSERT(res != NULL || new_size == 0);

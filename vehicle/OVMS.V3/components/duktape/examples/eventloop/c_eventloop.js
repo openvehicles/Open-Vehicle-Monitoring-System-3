@@ -1,7 +1,7 @@
 /*
  *  C eventloop example (c_eventloop.c).
  *
- *  Ecmascript code to initialize the exposed API (setTimeout() etc) when
+ *  ECMAScript code to initialize the exposed API (setTimeout() etc) when
  *  using the C eventloop.
  *
  *  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Timers
@@ -16,8 +16,14 @@ function setTimeout(func, delay) {
     var bind_args;
     var timer_id;
 
+    // Delay can be optional at least in some contexts, so tolerate that.
+    // https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/setTimeout
     if (typeof delay !== 'number') {
-        throw new TypeError('delay is not a number');
+        if (typeof delay === 'undefined') {
+            delay = 0;
+        } else {
+            throw new TypeError('invalid delay');
+        }
     }
 
     if (typeof func === 'string') {
@@ -53,7 +59,11 @@ function setInterval(func, delay) {
     var timer_id;
 
     if (typeof delay !== 'number') {
-        throw new TypeError('delay is not a number');
+        if (typeof delay === 'undefined') {
+            delay = 0;
+        } else {
+            throw new TypeError('invalid delay');
+        }
     }
 
     if (typeof func === 'string') {
@@ -175,5 +185,8 @@ EventLoop.setReader = function(fd, cb_read) {
 
 EventLoop.write = function(fd, data) {
     // This simple example doesn't have support for write blocking / draining
-    var rc = Socket.write(fd, Duktape.Buffer(data));
+    if (typeof data === 'string') {
+        data = new TextEncoder().encode(data);
+    }
+    var rc = Socket.write(fd, data);
 }

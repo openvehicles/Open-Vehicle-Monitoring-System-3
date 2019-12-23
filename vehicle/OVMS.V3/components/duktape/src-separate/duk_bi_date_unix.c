@@ -15,19 +15,19 @@
 #define DUK__STRFTIME_BUF_SIZE  64
 
 #if defined(DUK_USE_DATE_NOW_GETTIMEOFDAY)
-/* Get current Ecmascript time (= UNIX/Posix time, but in milliseconds). */
-DUK_INTERNAL duk_double_t duk_bi_date_get_now_gettimeofday(duk_context *ctx) {
-	duk_hthread *thr = (duk_hthread *) ctx;
+/* Get current ECMAScript time (= UNIX/Posix time, but in milliseconds). */
+DUK_INTERNAL duk_double_t duk_bi_date_get_now_gettimeofday(void) {
 	struct timeval tv;
 	duk_double_t d;
 
 	if (gettimeofday(&tv, NULL) != 0) {
-		DUK_ERROR_INTERNAL(thr);
+		DUK_D(DUK_DPRINT("gettimeofday() failed"));
+		return 0.0;
 	}
 
+	/* As of Duktape 2.2.0 allow fractions. */
 	d = ((duk_double_t) tv.tv_sec) * 1000.0 +
-	    ((duk_double_t) (tv.tv_usec / 1000));
-	DUK_ASSERT(DUK_FLOOR(d) == d);  /* no fractions */
+	    ((duk_double_t) tv.tv_usec) / 1000.0;
 
 	return d;
 }
@@ -35,11 +35,14 @@ DUK_INTERNAL duk_double_t duk_bi_date_get_now_gettimeofday(duk_context *ctx) {
 
 #if defined(DUK_USE_DATE_NOW_TIME)
 /* Not a very good provider: only full seconds are available. */
-DUK_INTERNAL duk_double_t duk_bi_date_get_now_time(duk_context *ctx) {
+DUK_INTERNAL duk_double_t duk_bi_date_get_now_time(void) {
 	time_t t;
 
-	DUK_UNREF(ctx);
 	t = time(NULL);
+	if (t == (time_t) -1) {
+		DUK_D(DUK_DPRINT("time() failed"));
+		return 0.0;
+	}
 	return ((duk_double_t) t) * 1000.0;
 }
 #endif  /* DUK_USE_DATE_NOW_TIME */
@@ -60,7 +63,7 @@ DUK_INTERNAL duk_int_t duk_bi_date_get_local_tzoffset_gmtime(duk_double_t d) {
 		return 0;
 	}
 
-	/* If not within Ecmascript range, some integer time calculations
+	/* If not within ECMAScript range, some integer time calculations
 	 * won't work correctly (and some asserts will fail), so bail out
 	 * if so.  This fixes test-bug-date-insane-setyear.js.  There is
 	 * a +/- 24h leeway in this range check to avoid a test262 corner
@@ -111,10 +114,10 @@ DUK_INTERNAL duk_int_t duk_bi_date_get_local_tzoffset_gmtime(duk_double_t d) {
 	 *  Since we rely on the platform APIs for conversions between local
 	 *  time and UTC, we can't guarantee the above.  Rather, if the platform
 	 *  has historical DST rules they will be applied.  This seems to be the
-	 *  general preferred direction in Ecmascript standardization (or at least
+	 *  general preferred direction in ECMAScript standardization (or at least
 	 *  implementations) anyway, and even the equivalent year mapping should
 	 *  be disabled if the platform is known to handle DST properly for the
-	 *  full Ecmascript range.
+	 *  full ECMAScript range.
 	 *
 	 *  The following has useful discussion and links:
 	 *
@@ -129,7 +132,7 @@ DUK_INTERNAL duk_int_t duk_bi_date_get_local_tzoffset_gmtime(duk_double_t d) {
 	t = (time_t) (d / 1000.0);
 	DUK_DDD(DUK_DDDPRINT("timeval: %lf -> time_t %ld", (double) d, (long) t));
 
-	DUK_MEMZERO((void *) tms, sizeof(struct tm) * 2);
+	duk_memzero((void *) tms, sizeof(struct tm) * 2);
 
 #if defined(DUK_USE_DATE_TZO_GMTIME_R)
 	(void) gmtime_r(&t, &tms[0]);
@@ -139,9 +142,9 @@ DUK_INTERNAL duk_int_t duk_bi_date_get_local_tzoffset_gmtime(duk_double_t d) {
 	(void) localtime_s(&t, &tms[1]);
 #elif defined(DUK_USE_DATE_TZO_GMTIME)
 	tm_ptr = gmtime(&t);
-	DUK_MEMCPY((void *) &tms[0], tm_ptr, sizeof(struct tm));
+	duk_memcpy((void *) &tms[0], tm_ptr, sizeof(struct tm));
 	tm_ptr = localtime(&t);
-	DUK_MEMCPY((void *) &tms[1], tm_ptr, sizeof(struct tm));
+	duk_memcpy((void *) &tms[1], tm_ptr, sizeof(struct tm));
 #else
 #error internal error
 #endif
@@ -195,20 +198,20 @@ DUK_INTERNAL duk_int_t duk_bi_date_get_local_tzoffset_gmtime(duk_double_t d) {
 #endif  /* DUK_USE_DATE_TZO_GMTIME */
 
 #if defined(DUK_USE_DATE_PRS_STRPTIME)
-DUK_INTERNAL duk_bool_t duk_bi_date_parse_string_strptime(duk_context *ctx, const char *str) {
+DUK_INTERNAL duk_bool_t duk_bi_date_parse_string_strptime(duk_hthread *thr, const char *str) {
 	struct tm tm;
 	time_t t;
 	char buf[DUK__STRPTIME_BUF_SIZE];
 
-	/* copy to buffer with spare to avoid Valgrind gripes from strptime */
+	/* Copy to buffer with slack to avoid Valgrind gripes from strptime. */
 	DUK_ASSERT(str != NULL);
-	DUK_MEMZERO(buf, sizeof(buf));  /* valgrind whine without this */
+	duk_memzero(buf, sizeof(buf));  /* valgrind whine without this */
 	DUK_SNPRINTF(buf, sizeof(buf), "%s", (const char *) str);
 	buf[sizeof(buf) - 1] = (char) 0;
 
 	DUK_DDD(DUK_DDDPRINT("parsing: '%s'", (const char *) buf));
 
-	DUK_MEMZERO(&tm, sizeof(tm));
+	duk_memzero(&tm, sizeof(tm));
 	if (strptime((const char *) buf, "%c", &tm) != NULL) {
 		DUK_DDD(DUK_DDDPRINT("before mktime: tm={sec:%ld,min:%ld,hour:%ld,mday:%ld,mon:%ld,year:%ld,"
 		                     "wday:%ld,yday:%ld,isdst:%ld}",
@@ -220,7 +223,7 @@ DUK_INTERNAL duk_bool_t duk_bi_date_parse_string_strptime(duk_context *ctx, cons
 		t = mktime(&tm);
 		DUK_DDD(DUK_DDDPRINT("mktime() -> %ld", (long) t));
 		if (t >= 0) {
-			duk_push_number(ctx, ((duk_double_t) t) * 1000.0);
+			duk_push_number(thr, ((duk_double_t) t) * 1000.0);
 			return 1;
 		}
 	}
@@ -230,7 +233,7 @@ DUK_INTERNAL duk_bool_t duk_bi_date_parse_string_strptime(duk_context *ctx, cons
 #endif  /* DUK_USE_DATE_PRS_STRPTIME */
 
 #if defined(DUK_USE_DATE_PRS_GETDATE)
-DUK_INTERNAL duk_bool_t duk_bi_date_parse_string_getdate(duk_context *ctx, const char *str) {
+DUK_INTERNAL duk_bool_t duk_bi_date_parse_string_getdate(duk_hthread *thr, const char *str) {
 	struct tm tm;
 	duk_small_int_t rc;
 	time_t t;
@@ -239,7 +242,7 @@ DUK_INTERNAL duk_bool_t duk_bi_date_parse_string_getdate(duk_context *ctx, const
 	 * convenient for an embeddable interpreter.
 	 */
 
-	DUK_MEMZERO(&tm, sizeof(struct tm));
+	duk_memzero(&tm, sizeof(struct tm));
 	rc = (duk_small_int_t) getdate_r(str, &tm);
 	DUK_DDD(DUK_DDDPRINT("getdate_r() -> %ld", (long) rc));
 
@@ -247,7 +250,7 @@ DUK_INTERNAL duk_bool_t duk_bi_date_parse_string_getdate(duk_context *ctx, const
 		t = mktime(&tm);
 		DUK_DDD(DUK_DDDPRINT("mktime() -> %ld", (long) t));
 		if (t >= 0) {
-			duk_push_number(ctx, (duk_double_t) t);
+			duk_push_number(thr, (duk_double_t) t);
 			return 1;
 		}
 	}
@@ -257,23 +260,23 @@ DUK_INTERNAL duk_bool_t duk_bi_date_parse_string_getdate(duk_context *ctx, const
 #endif  /* DUK_USE_DATE_PRS_GETDATE */
 
 #if defined(DUK_USE_DATE_FMT_STRFTIME)
-DUK_INTERNAL duk_bool_t duk_bi_date_format_parts_strftime(duk_context *ctx, duk_int_t *parts, duk_int_t tzoffset, duk_small_uint_t flags) {
+DUK_INTERNAL duk_bool_t duk_bi_date_format_parts_strftime(duk_hthread *thr, duk_int_t *parts, duk_int_t tzoffset, duk_small_uint_t flags) {
 	char buf[DUK__STRFTIME_BUF_SIZE];
 	struct tm tm;
 	const char *fmt;
 
 	DUK_UNREF(tzoffset);
 
-	/* If the platform doesn't support the entire Ecmascript range, we need
+	/* If the platform doesn't support the entire ECMAScript range, we need
 	 * to return 0 so that the caller can fall back to the default formatter.
 	 *
-	 * For now, assume that if time_t is 8 bytes or more, the whole Ecmascript
+	 * For now, assume that if time_t is 8 bytes or more, the whole ECMAScript
 	 * range is supported.  For smaller time_t values (4 bytes in practice),
 	 * assumes that the signed 32-bit range is supported.
 	 *
 	 * XXX: detect this more correctly per platform.  The size of time_t is
 	 * probably not an accurate guarantee of strftime() supporting or not
-	 * supporting a large time range (the full Ecmascript range).
+	 * supporting a large time range (the full ECMAScript range).
 	 */
 	if (sizeof(time_t) < 8 &&
 	    (parts[DUK_DATE_IDX_YEAR] < 1970 || parts[DUK_DATE_IDX_YEAR] > 2037)) {
@@ -281,7 +284,7 @@ DUK_INTERNAL duk_bool_t duk_bi_date_format_parts_strftime(duk_context *ctx, duk_
 		return 0;
 	}
 
-	DUK_MEMZERO(&tm, sizeof(tm));
+	duk_memzero(&tm, sizeof(tm));
 	tm.tm_sec = parts[DUK_DATE_IDX_SECOND];
 	tm.tm_min = parts[DUK_DATE_IDX_MINUTE];
 	tm.tm_hour = parts[DUK_DATE_IDX_HOUR];
@@ -291,7 +294,7 @@ DUK_INTERNAL duk_bool_t duk_bi_date_format_parts_strftime(duk_context *ctx, duk_
 	tm.tm_wday = parts[DUK_DATE_IDX_WEEKDAY];
 	tm.tm_isdst = 0;
 
-	DUK_MEMZERO(buf, sizeof(buf));
+	duk_memzero(buf, sizeof(buf));
 	if ((flags & DUK_DATE_FLAG_TOSTRING_DATE) && (flags & DUK_DATE_FLAG_TOSTRING_TIME)) {
 		fmt = "%c";
 	} else if (flags & DUK_DATE_FLAG_TOSTRING_DATE) {
@@ -303,7 +306,20 @@ DUK_INTERNAL duk_bool_t duk_bi_date_format_parts_strftime(duk_context *ctx, duk_
 	(void) strftime(buf, sizeof(buf) - 1, fmt, &tm);
 	DUK_ASSERT(buf[sizeof(buf) - 1] == 0);
 
-	duk_push_string(ctx, buf);
+	duk_push_string(thr, buf);
 	return 1;
 }
 #endif  /* DUK_USE_DATE_FMT_STRFTIME */
+
+#if defined(DUK_USE_GET_MONOTONIC_TIME_CLOCK_GETTIME)
+DUK_INTERNAL duk_double_t duk_bi_date_get_monotonic_time_clock_gettime(void) {
+	struct timespec ts;
+
+	if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+		return (duk_double_t) ts.tv_sec * 1000.0 + (duk_double_t) ts.tv_nsec / 1000000.0;
+	} else {
+		DUK_D(DUK_DPRINT("clock_gettime(CLOCK_MONOTONIC) failed"));
+		return 0.0;
+	}
+}
+#endif

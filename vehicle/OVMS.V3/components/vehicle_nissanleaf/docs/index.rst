@@ -13,7 +13,7 @@ Support Overview
 =========================== ==============
 Function                    Support Status
 =========================== ==============
-Hardware                    Any OVMS v3 (or later) module. Vehicle support: 2011-2017 (24kWh & 30kWh)
+Hardware                    Any OVMS v3 (or later) module. Vehicle support: 2011-2017 (24kWh & 30kWh & custom battery)
 Vehicle Cable               1779000 Nissan Leaf OBD-II to DB9 Data Cable for OVMS
 GSM Antenna                 1000500 Open Vehicles OVMS GSM Antenna (or any compatible antenna)
 GPS Antenna                 1020200 Universal GPS Antenna (SMA Connector) (or any compatible antenna)
@@ -26,7 +26,7 @@ BMS v+t Display             Yes
 TPMS Display                Yes (If hardware available)
 Charge Status Display       Yes
 Charge Interruption Alerts  Yes
-Charge Control              Start charge only
+Charge Control              Start charge only (Stop charge in beta firmware stage)
 Cabin Pre-heat/cool Control Yes* (see info below)
 Lock/Unlock Vehicle         Not currently supported
 Valet Mode Control          Not currently supported
@@ -39,15 +39,15 @@ OVMS currently supports 2011-2017 Nissan LEAF and Nissan e-NV200
 Remote Climate Control
 ----------------------
 
-^^^^^^^^^^^^^^^^
-2011-2013 models
-^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^
+2011-2013 models (ZE0)
+^^^^^^^^^^^^^^^^^^^^^^
 
-Gen1 Cars (2011-2014) require a hardware modification to enable OVMS to control remote climate. Wire RC3 to TCU pin 11, `more info <https://carrott.org/emini/Nissan_Leaf_OVMS#Remote_Climate_Control)>`_
+Gen1 Cars (ZE0, 2011-2013) require a hardware modification to enable OVMS to control remote climate. Wire RC3 to TCU pin 11, `more info <https://carrott.org/emini/Nissan_Leaf_OVMS#Remote_Climate_Control)>`_
 
-^^^^^^^^^^^^^^^^
-2014-2016 models
-^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
+2014-2016 models (AZE0)
+^^^^^^^^^^^^^^^^^^^^^^^
 
 To use OVMS to activate remote climate the Nissan TCU (Telematics Control Unit) module must be unplugged if fitted (only on Acenta and Tekna models). The TCU is located behind the glovebox on LHD cars or on the right hand side of the drivers foot well on RHD cars. The large white plug on the rear of the TCU should be unplugged, push down tab in the middle and pull to unplug, `see video for RHD cars <https://photos.app.goo.gl/MuvpCaXQUjbCdoox6>`_ and `this page for LHD cars <http://www.arachnon.de/wb/pages/en/nissan-leaf/tcu.php>`_.
 
@@ -58,9 +58,9 @@ OVMS remote climate support will 'just work' on LEAF Visia models and Visia/Acen
 Note: If you prefer not to unplug the Nissan TCU, all OVMS functions appart from remote climate will function just fine alongside the Nissan TCU.
  
 
-^^^^^^^^^^^^^^^^
-2016-2017 models
-^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
+2016-2017 models (AZE0)
+^^^^^^^^^^^^^^^^^^^^^^^
 
 **Remote climate control may not work on 2016-2017 cars.** This is because in 2016 Nissan moved the TCU from the EV CAN bus to the CAR CAN bus.
 
@@ -74,24 +74,34 @@ or
 
 *Note: in latest OVMS fimware version model year and battery size can be set via the web config interface.*
 
-^^^^^^^^^^^^^
-30 kwh models
-^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
+2018+ models (ZE1)
+^^^^^^^^^^^^^^^^^^
 
-For models with a 30 kwhr battery pack, set  the capacity manually as follows:
+2018+ 40/62kWh LEAF is not yet supported. Please get in touch if your interested in helping to add support. Relevant 2018 CANbus messages have already been decoded and documented, see `MyNissanLEAF thread <https://mynissanleaf.com/viewtopic.php?f=44&t=4131&start=480>`_.
+
+^^^^^^^^^^^^^^^^^^^^^^^^
+Specific battery configs
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+For models with a 30 kWhr battery pack, set the capacity manually with:
 
 ``config set xnl maxGids 356``
 ``config set xnl newCarAh 79``
 
-*Note: in latest OVMS firmware version model year and battery size can be set via the web config interface.*
+For models with a 40 kWhr battery pack, set the capacity manually with:
 
+``config set xnl maxGids 502``
+``config set xnl newCarAh 115``
 
-^^^^^^^^^^^^
-2018+ models
-^^^^^^^^^^^^
+For models with a 62 kWhr battery pack, set the capacity manually with:
 
-2018+ 40kWh LEAF is not yet supported. Please get in touch if your interested in helping to add support. Relevant 2018 CANbus messages have already been decoded and documented, see `MyNissanLEAF thread <https://mynissanleaf.com/viewtopic.php?f=44&t=4131&start=480>`_.
+``config set xnl maxGids 775``
+``config set xnl newCarAh 176``
 
+*Note: In latest OVMS firmware version, model year and battery size can be set via the web config interface. This is easier and also the preferred method.*
+
+*Note 2: OVMS fully supports battery upgraded LEAFs, just set the capacity according to what battery is currently installed.*
 
 -----------------
 Range Calculation
@@ -105,5 +115,6 @@ Resources
 
 - Nissan LEAF supported added by Tom Parker, see `his wiki <https://carrott.org/emini/Nissan_Leaf_OVMS>`_ for lots of documentation and resources. Some info is outdated e.g climate control now turns off automatically.
 - `MyNissanLEAF thread for Nissan CANbus decoding discussion <http://www.mynissanleaf.com/viewtopic.php?f=44&t=4131&hilit=open+CAN+discussion&start=440>`_
+- Database files (.DBC) for ZE0 and AZE0 Leaf can be found here: `Github LEAF Canbus database files <https://github.com/dalathegreat/leaf_can_bus_messages>`_
 
 Assistance is appreciated as I haven't had time to try to override the TCU using the OVMS or find an alternative solution to prevent the TCU overriding the messages while still allowing the hands free microphone to work.

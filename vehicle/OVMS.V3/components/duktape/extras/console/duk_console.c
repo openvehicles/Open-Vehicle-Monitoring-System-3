@@ -13,25 +13,18 @@
 
 /* XXX: Add some form of log level filtering. */
 
-/* XXX: For now logs everything to stdout, V8/Node.js logs debug/info level
- * to stdout, warn and above to stderr.  Should this extra do the same?
- */
-
 /* XXX: Should all output be written via e.g. console.write(formattedMsg)?
  * This would make it easier for user code to redirect all console output
  * to a custom backend.
  */
 
-/* XXX: For now output is not flushed, add a flush flag, or maybe add flush
- * to info level and above only.
- */
-
 /* XXX: Init console object using duk_def_prop() when that call is available. */
 
 static duk_ret_t duk__console_log_helper(duk_context *ctx, const char *error_name) {
-	duk_idx_t i, n;
-
-	n = duk_get_top(ctx);
+	duk_uint_t flags = (duk_uint_t) duk_get_current_magic(ctx);
+	FILE *output = (flags & DUK_CONSOLE_STDOUT_ONLY) ? stdout : stderr;
+	duk_idx_t n = duk_get_top(ctx);
+	duk_idx_t i;
 
 	duk_get_global_string(ctx, "console");
 	duk_get_prop_string(ctx, -1, "format");
@@ -60,7 +53,10 @@ static duk_ret_t duk__console_log_helper(duk_context *ctx, const char *error_nam
 		duk_get_prop_string(ctx, -1, "stack");
 	}
 
-	printf("%s\n", duk_to_string(ctx, -1));
+	fprintf(output, "%s\n", duk_to_string(ctx, -1));
+	if (flags & DUK_CONSOLE_FLUSH) {
+		fflush(output);
+	}
 	return 0;
 }
 
@@ -98,15 +94,27 @@ static duk_ret_t duk__console_dir(duk_context *ctx) {
 	return duk__console_log_helper(ctx, 0);
 }
 
-static void duk__console_reg_vararg_func(duk_context *ctx, duk_c_function func, const char *name) {
+static void duk__console_reg_vararg_func(duk_context *ctx, duk_c_function func, const char *name, duk_uint_t flags) {
 	duk_push_c_function(ctx, func, DUK_VARARGS);
 	duk_push_string(ctx, "name");
 	duk_push_string(ctx, name);
 	duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE | DUK_DEFPROP_FORCE);  /* Improve stacktraces by displaying function name */
+	duk_set_magic(ctx, -1, (duk_int_t) flags);
 	duk_put_prop_string(ctx, -2, name);
 }
 
 void duk_console_init(duk_context *ctx, duk_uint_t flags) {
+	duk_uint_t flags_orig;
+
+	/* If both DUK_CONSOLE_STDOUT_ONLY and DUK_CONSOLE_STDERR_ONLY where specified,
+	 * just turn off DUK_CONSOLE_STDOUT_ONLY and keep DUK_CONSOLE_STDERR_ONLY.
+	 */
+	if ((flags & DUK_CONSOLE_STDOUT_ONLY) && (flags & DUK_CONSOLE_STDERR_ONLY)) {
+	    flags &= ~DUK_CONSOLE_STDOUT_ONLY;
+	}
+	/* Remember the (possibly corrected) flags we received. */
+	flags_orig = flags;
+
 	duk_push_object(ctx);
 
 	/* Custom function to format objects; user can replace.
@@ -125,33 +133,50 @@ void duk_console_init(duk_context *ctx, duk_uint_t flags) {
 		"})(Duktape.enc)");
 	duk_put_prop_string(ctx, -2, "format");
 
-	duk__console_reg_vararg_func(ctx, duk__console_assert, "assert");
-	duk__console_reg_vararg_func(ctx, duk__console_log, "log");
-	duk__console_reg_vararg_func(ctx, duk__console_log, "debug");  /* alias to console.log */
-	duk__console_reg_vararg_func(ctx, duk__console_trace, "trace");
-	duk__console_reg_vararg_func(ctx, duk__console_info, "info");
-	duk__console_reg_vararg_func(ctx, duk__console_warn, "warn");
-	duk__console_reg_vararg_func(ctx, duk__console_error, "error");
-	duk__console_reg_vararg_func(ctx, duk__console_error, "exception");  /* alias to console.error */
-	duk__console_reg_vararg_func(ctx, duk__console_dir, "dir");
+	flags = flags_orig;
+	if (!(flags & DUK_CONSOLE_STDOUT_ONLY) && !(flags & DUK_CONSOLE_STDERR_ONLY)) {
+	    /* No output indicators were specified; these levels go to stdout. */
+	    flags |= DUK_CONSOLE_STDOUT_ONLY;
+	}
+	duk__console_reg_vararg_func(ctx, duk__console_assert, "assert", flags);
+	duk__console_reg_vararg_func(ctx, duk__console_log, "log", flags);
+	duk__console_reg_vararg_func(ctx, duk__console_log, "debug", flags);  /* alias to console.log */
+	duk__console_reg_vararg_func(ctx, duk__console_trace, "trace", flags);
+	duk__console_reg_vararg_func(ctx, duk__console_info, "info", flags);
+
+	flags = flags_orig;
+	if (!(flags & DUK_CONSOLE_STDOUT_ONLY) && !(flags & DUK_CONSOLE_STDERR_ONLY)) {
+	    /* No output indicators were specified; these levels go to stderr. */
+	    flags |= DUK_CONSOLE_STDERR_ONLY;
+	}
+	duk__console_reg_vararg_func(ctx, duk__console_warn, "warn", flags);
+	duk__console_reg_vararg_func(ctx, duk__console_error, "error", flags);
+	duk__console_reg_vararg_func(ctx, duk__console_error, "exception", flags);  /* alias to console.error */
+	duk__console_reg_vararg_func(ctx, duk__console_dir, "dir", flags);
 
 	duk_put_global_string(ctx, "console");
 
 	/* Proxy wrapping: ensures any undefined console method calls are
-	 * ignored silently.  This is required specifically by the
-	 * DeveloperToolsWG proposal (and is implemented also by Firefox:
-	 * https://bugzilla.mozilla.org/show_bug.cgi?id=629607).
+	 * ignored silently.  This was required specifically by the
+	 * DeveloperToolsWG proposal (and was implemented also by Firefox:
+	 * https://bugzilla.mozilla.org/show_bug.cgi?id=629607).  This is
+	 * apparently no longer the preferred way of implementing console.
+	 * When Proxy is enabled, whitelist at least .toJSON() to avoid
+	 * confusing JX serialization of the console object.
 	 */
 
 	if (flags & DUK_CONSOLE_PROXY_WRAPPER) {
-		/* Tolerate errors: Proxy may be disabled. */
-		duk_peval_string_noresult(ctx,
+		/* Tolerate failure to initialize Proxy wrapper in case
+		 * Proxy support is disabled.
+		 */
+		(void) duk_peval_string_noresult(ctx,
 			"(function(){"
 			    "var D=function(){};"
+			    "var W={toJSON:true};"  /* whitelisted */
 			    "console=new Proxy(console,{"
 			        "get:function(t,k){"
 			            "var v=t[k];"
-			            "return typeof v==='function'?v:D;"
+			            "return typeof v==='function'||W[k]?v:D;"
 			        "}"
 			    "});"
 			"})();"

@@ -26,13 +26,6 @@
 #include "duktape.h"
 
 /*
- *  User declarations, e.g. prototypes for user functions used by Duktape
- *  macros.
- */
-
-DUK_USE_USER_DECLARE()
-
-/*
  *  Duktape includes (other than duk_features.h)
  *
  *  The header files expect to be included in an order which satisfies header
@@ -42,6 +35,7 @@ DUK_USE_USER_DECLARE()
  */
 
 #include "duk_dblunion.h"
+#include "duk_fltunion.h"
 #include "duk_replacements.h"
 #include "duk_jmpbuf.h"
 #include "duk_exception.h"
@@ -62,11 +56,13 @@ DUK_USE_USER_DECLARE()
 #include "duk_hobject.h"
 #include "duk_hcompfunc.h"
 #include "duk_hnatfunc.h"
+#include "duk_hboundfunc.h"
 #include "duk_hbufobj.h"
 #include "duk_hthread.h"
 #include "duk_harray.h"
 #include "duk_henv.h"
 #include "duk_hbuffer.h"
+#include "duk_hproxy.h"
 #include "duk_heap.h"
 #include "duk_debugger.h"
 #include "duk_debug.h"

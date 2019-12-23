@@ -54,7 +54,7 @@ DUK_INTERNAL void duk_heap_strtable_dump(duk_heap *heap) {
 		return;
 	}
 
-	DUK_MEMZERO((void *) count_len, sizeof(count_len));
+	duk_memzero((void *) count_len, sizeof(count_len));
 	for (i = 0; i < heap->st_size; i++) {
 		h = DUK__HEAPPTR_DEC16(heap, strtable[i]);
 		count_chain = 0;
@@ -166,7 +166,7 @@ DUK_LOCAL duk_hstring *duk__strtable_alloc_hstring(duk_heap *heap,
 		if (DUK_UNLIKELY(res == NULL)) {
 			goto alloc_error;
 		}
-		DUK_MEMZERO(res, sizeof(duk_hstring_external));
+		duk_memzero(res, sizeof(duk_hstring_external));
 #if defined(DUK_USE_EXPLICIT_NULL_INIT)
 		DUK_HEAPHDR_STRING_INIT_NULLS(&res->hdr);
 #endif
@@ -186,14 +186,14 @@ DUK_LOCAL duk_hstring *duk__strtable_alloc_hstring(duk_heap *heap,
 		if (DUK_UNLIKELY(res == NULL)) {
 			goto alloc_error;
 		}
-		DUK_MEMZERO(res, sizeof(duk_hstring));
+		duk_memzero(res, sizeof(duk_hstring));
 #if defined(DUK_USE_EXPLICIT_NULL_INIT)
 		DUK_HEAPHDR_STRING_INIT_NULLS(&res->hdr);
 #endif
 		DUK_HEAPHDR_SET_TYPE_AND_FLAGS(&res->hdr, DUK_HTYPE_STRING, 0);
 
 		data_tmp = (duk_uint8_t *) (res + 1);
-		DUK_MEMCPY(data_tmp, str, blen);
+		duk_memcpy(data_tmp, str, blen);
 		data_tmp[blen] = (duk_uint8_t) 0;
 		data = (const duk_uint8_t *) data_tmp;
 	}
@@ -221,11 +221,10 @@ DUK_LOCAL duk_hstring *duk__strtable_alloc_hstring(duk_heap *heap,
 		 * checks will be false.
 		 */
 		if (DUK_UNLIKELY(data[0] >= 0x80U)) {
-			if (data[0] == 0xffU) {
+			if (data[0] <= 0x81) {
 				DUK_HSTRING_SET_SYMBOL(res);
+			} else if (data[0] == 0x82U || data[0] == 0xffU) {
 				DUK_HSTRING_SET_HIDDEN(res);
-			} else if (data[0] <= 0xbf) {
-				/* Check equivalent to: (data[0] & 0xc0U) == 0x80U. */
 				DUK_HSTRING_SET_SYMBOL(res);
 			}
 		}
@@ -237,6 +236,12 @@ DUK_LOCAL duk_hstring *duk__strtable_alloc_hstring(duk_heap *heap,
 		 * The flag is set lazily for RAM strings.
 		 */
 		DUK_ASSERT(!DUK_HSTRING_HAS_ASCII(res));
+
+#if defined(DUK_USE_HSTRING_LAZY_CLEN)
+		/* Charlen initialized to 0, updated on-the-fly. */
+#else
+		duk_hstring_init_charlen(res);  /* Also sets ASCII flag. */
+#endif
 	}
 
 	DUK_DDD(DUK_DDDPRINT("interned string, hash=0x%08lx, blen=%ld, has_arridx=%ld, has_extdata=%ld",
@@ -279,6 +284,8 @@ DUK_LOCAL void duk__strtable_grow_inplace(duk_heap *heap) {
 	DUK_ASSERT(heap->st_size >= 2);
 	DUK_ASSERT((heap->st_size & (heap->st_size - 1)) == 0);  /* 2^N */
 	DUK_ASSERT(DUK__GET_STRTABLE(heap) != NULL);
+
+	DUK_STATS_INC(heap, stats_strtab_resize_grow);
 
 	new_st_size = heap->st_size << 1U;
 	DUK_ASSERT(new_st_size > heap->st_size);  /* No overflow. */
@@ -396,6 +403,8 @@ DUK_LOCAL void duk__strtable_shrink_inplace(duk_heap *heap) {
 	DUK_ASSERT((heap->st_size & (heap->st_size - 1)) == 0);  /* 2^N */
 	DUK_ASSERT(DUK__GET_STRTABLE(heap) != NULL);
 
+	DUK_STATS_INC(heap, stats_strtab_resize_shrink);
+
 	new_st_size = heap->st_size >> 1U;
 
 	/* Combine two buckets into a single one.  When we shrink, one hash
@@ -466,8 +475,10 @@ DUK_LOCAL DUK_COLD DUK_NOINLINE void duk__strtable_resize_check(duk_heap *heap) 
 	DUK_ASSERT(heap->strtable != NULL);
 #endif
 
+	DUK_STATS_INC(heap, stats_strtab_resize_check);
+
 	/* Prevent recursive resizing. */
-	if (DUK_UNLIKELY(heap->st_resizing)) {
+	if (DUK_UNLIKELY(heap->st_resizing != 0U)) {
 		DUK_D(DUK_DPRINT("prevent recursive strtable resize"));
 		return;
 	}
@@ -675,11 +686,12 @@ DUK_LOCAL duk_hstring *duk__strtab_romstring_lookup(duk_heap *heap, const duk_ui
 	}
 	lookup_hash &= 0xff;
 
-	curr = DUK_LOSE_CONST(duk_rom_strings_lookup[lookup_hash]);
+	curr = (duk_hstring *) DUK_LOSE_CONST(duk_rom_strings_lookup[lookup_hash]);
 	while (curr != NULL) {
+		/* Unsafe memcmp() because for zero blen, str may be NULL. */
 		if (strhash == DUK_HSTRING_GET_HASH(curr) &&
 		    blen == DUK_HSTRING_GET_BYTELEN(curr) &&
-		    DUK_MEMCMP((const void *) str, (const void *) DUK_HSTRING_GET_DATA(curr), blen) == 0) {
+		    duk_memcmp_unsafe((const void *) str, (const void *) DUK_HSTRING_GET_DATA(curr), blen) == 0) {
 			DUK_DDD(DUK_DDDPRINT("intern check: rom string: %!O, computed hash 0x%08lx, rom hash 0x%08lx",
 			                     curr, (unsigned long) strhash, (unsigned long) DUK_HSTRING_GET_HASH(curr)));
 			return curr;
@@ -699,6 +711,7 @@ DUK_INTERNAL duk_hstring *duk_heap_strtable_intern(duk_heap *heap, const duk_uin
 
 	/* Preliminaries. */
 
+	/* XXX: maybe just require 'str != NULL' even for zero size? */
 	DUK_ASSERT(heap != NULL);
 	DUK_ASSERT(blen == 0 || str != NULL);
 	DUK_ASSERT(blen <= DUK_HSTRING_MAX_BYTELEN);  /* Caller is responsible for ensuring this. */
@@ -717,8 +730,9 @@ DUK_INTERNAL duk_hstring *duk_heap_strtable_intern(duk_heap *heap, const duk_uin
 	while (h != NULL) {
 		if (DUK_HSTRING_GET_HASH(h) == strhash &&
 		    DUK_HSTRING_GET_BYTELEN(h) == blen &&
-		    DUK_MEMCMP((const void *) str, (const void *) DUK_HSTRING_GET_DATA(h), (size_t) blen) == 0) {
+		    duk_memcmp_unsafe((const void *) str, (const void *) DUK_HSTRING_GET_DATA(h), (size_t) blen) == 0) {
 			/* Found existing entry. */
+			DUK_STATS_INC(heap, stats_strtab_intern_hit);
 			return h;
 		}
 		h = h->hdr.h_next;
@@ -732,12 +746,14 @@ DUK_INTERNAL duk_hstring *duk_heap_strtable_intern(duk_heap *heap, const duk_uin
 #if defined(DUK_USE_ROM_STRINGS)
 	h = duk__strtab_romstring_lookup(heap, str, blen, strhash);
 	if (h != NULL) {
+		DUK_STATS_INC(heap, stats_strtab_intern_hit);
 		return h;
 	}
 #endif
 
 	/* Not found in string table; insert. */
 
+	DUK_STATS_INC(heap, stats_strtab_intern_miss);
 	h = duk__strtable_do_intern(heap, str, blen, strhash);
 	return h;  /* may be NULL */
 }
@@ -751,8 +767,8 @@ DUK_INTERNAL duk_hstring *duk_heap_strtable_intern(duk_heap *heap, const duk_uin
  */
 
 DUK_INTERNAL duk_hstring *duk_heap_strtable_intern_u32(duk_heap *heap, duk_uint32_t val) {
-	char buf[DUK__STRTAB_U32_MAX_STRLEN];
-	char *p;
+	duk_uint8_t buf[DUK__STRTAB_U32_MAX_STRLEN];
+	duk_uint8_t *p;
 
 	DUK_ASSERT(heap != NULL);
 
@@ -787,9 +803,66 @@ DUK_INTERNAL duk_hstring *duk_heap_strtable_intern_checked(duk_hthread *thr, con
 	res = duk_heap_strtable_intern(thr->heap, str, blen);
 	if (DUK_UNLIKELY(res == NULL)) {
 		DUK_ERROR_ALLOC_FAILED(thr);
+		DUK_WO_NORETURN(return NULL;);
 	}
 	return res;
 }
+
+#if defined(DUK_USE_LITCACHE_SIZE)
+DUK_LOCAL duk_uint_t duk__strtable_litcache_key(const duk_uint8_t *str, duk_uint32_t blen) {
+	duk_uintptr_t key;
+
+	DUK_ASSERT(DUK_USE_LITCACHE_SIZE > 0);
+	DUK_ASSERT(DUK_IS_POWER_OF_TWO((duk_uint_t) DUK_USE_LITCACHE_SIZE));
+
+	key = (duk_uintptr_t) blen ^ (duk_uintptr_t) str;
+	key &= (duk_uintptr_t) (DUK_USE_LITCACHE_SIZE - 1);  /* Assumes size is power of 2. */
+	/* Due to masking, cast is in 32-bit range. */
+	DUK_ASSERT(key <= DUK_UINT_MAX);
+	return (duk_uint_t) key;
+}
+
+DUK_INTERNAL duk_hstring *duk_heap_strtable_intern_literal_checked(duk_hthread *thr, const duk_uint8_t *str, duk_uint32_t blen) {
+	duk_uint_t key;
+	duk_litcache_entry *ent;
+	duk_hstring *h;
+
+	/* Fast path check: literal exists in literal cache. */
+	key = duk__strtable_litcache_key(str, blen);
+	ent = thr->heap->litcache + key;
+	if (ent->addr == str) {
+		DUK_DD(DUK_DDPRINT("intern check for cached, pinned literal: str=%p, blen=%ld -> duk_hstring %!O",
+		                   (const void *) str, (long) blen, (duk_heaphdr *) ent->h));
+		DUK_ASSERT(ent->h != NULL);
+		DUK_ASSERT(DUK_HSTRING_HAS_PINNED_LITERAL(ent->h));
+		DUK_STATS_INC(thr->heap, stats_strtab_litcache_hit);
+		return ent->h;
+	}
+
+	/* Intern and update (overwrite) cache entry. */
+	h = duk_heap_strtable_intern_checked(thr, str, blen);
+	ent->addr = str;
+	ent->h = h;
+	DUK_STATS_INC(thr->heap, stats_strtab_litcache_miss);
+
+	/* Pin the duk_hstring until the next mark-and-sweep.  This means
+	 * litcache entries don't need to be invalidated until the next
+	 * mark-and-sweep as their target duk_hstring is not freed before
+	 * the mark-and-sweep happens.  The pin remains even if the literal
+	 * cache entry is overwritten, and is still useful to avoid string
+	 * table traffic.
+	 */
+	if (!DUK_HSTRING_HAS_PINNED_LITERAL(h)) {
+		DUK_DD(DUK_DDPRINT("pin duk_hstring because it is a literal: %!O", (duk_heaphdr *) h));
+		DUK_ASSERT(!DUK_HEAPHDR_HAS_READONLY((duk_heaphdr *) h));
+		DUK_HSTRING_INCREF(thr, h);
+		DUK_HSTRING_SET_PINNED_LITERAL(h);
+		DUK_STATS_INC(thr->heap, stats_strtab_litcache_pin);
+	}
+
+	return h;
+}
+#endif  /* DUK_USE_LITCACHE_SIZE */
 
 DUK_INTERNAL duk_hstring *duk_heap_strtable_intern_u32_checked(duk_hthread *thr, duk_uint32_t val) {
 	duk_hstring *res;
@@ -800,6 +873,7 @@ DUK_INTERNAL duk_hstring *duk_heap_strtable_intern_u32_checked(duk_hthread *thr,
 	res = duk_heap_strtable_intern_u32(thr->heap, val);
 	if (DUK_UNLIKELY(res == NULL)) {
 		DUK_ERROR_ALLOC_FAILED(thr);
+		DUK_WO_NORETURN(return NULL;);
 	}
 	return res;
 }

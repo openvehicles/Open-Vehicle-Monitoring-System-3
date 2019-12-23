@@ -405,12 +405,14 @@ def main():
         'duk_api_inspect.c',
         'duk_api_memory.c',
         'duk_api_object.c',
+        'duk_api_random.c',
         'duk_api_string.c',
         'duk_api_time.c',
         'duk_api_debug.c',
         'duk_bi_array.c',
         'duk_bi_boolean.c',
         'duk_bi_buffer.c',
+        'duk_bi_cbor.c',
         'duk_bi_date.c',
         'duk_bi_date_unix.c',
         'duk_bi_date_windows.c',
@@ -423,11 +425,13 @@ def main():
         'duk_bi_math.c',
         'duk_bi_number.c',
         'duk_bi_object.c',
+        'duk_bi_performance.c',
         'duk_bi_pointer.c',
         'duk_bi_protos.h',
         'duk_bi_reflect.c',
         'duk_bi_regexp.c',
         'duk_bi_string.c',
+        'duk_bi_promise.c',
         'duk_bi_proxy.c',
         'duk_bi_symbol.c',
         'duk_bi_thread.c',
@@ -445,9 +449,12 @@ def main():
         'duk_error_macros.c',
         'duk_error_misc.c',
         'duk_error_throw.c',
+        'duk_fltunion.h',
         'duk_forwdecl.h',
         'duk_harray.h',
+        'duk_hboundfunc.h',
         'duk_hbuffer_alloc.c',
+        'duk_hbuffer_assert.c',
         'duk_hbuffer.h',
         'duk_hbuffer_ops.c',
         'duk_hbufobj.h',
@@ -457,6 +464,7 @@ def main():
         'duk_heap.h',
         'duk_heap_hashstring.c',
         'duk_heaphdr.h',
+        'duk_heaphdr_assert.c',
         'duk_heap_finalize.c',
         'duk_heap_markandsweep.c',
         'duk_heap_memory.c',
@@ -466,13 +474,16 @@ def main():
         'duk_heap_stringtable.c',
         'duk_hnatfunc.h',
         'duk_hobject_alloc.c',
+        'duk_hobject_assert.c',
         'duk_hobject_class.c',
         'duk_hobject_enum.c',
         'duk_hobject.h',
         'duk_hobject_misc.c',
         'duk_hobject_pc2line.c',
         'duk_hobject_props.c',
+        'duk_hproxy.h',
         'duk_hstring.h',
+        'duk_hstring_assert.c',
         'duk_hstring_misc.c',
         'duk_hthread_alloc.c',
         'duk_hthread_builtins.c',
@@ -506,13 +517,17 @@ def main():
         'duk_unicode.h',
         'duk_unicode_support.c',
         'duk_unicode_tables.c',
+        'duk_util.h',
         'duk_util_bitdecoder.c',
         'duk_util_bitencoder.c',
-        'duk_util.h',
         'duk_util_hashbytes.c',
-        'duk_util_misc.c',
         'duk_util_tinyrandom.c',
         'duk_util_bufwriter.c',
+        'duk_util_double.c',
+        'duk_util_cast.c',
+        'duk_util_memory.c',
+        'duk_util_memrw.c',
+        'duk_util_misc.c',
         'duk_selftest.c',
         'duk_selftest.h',
         'duk_strings.h',
@@ -783,6 +798,20 @@ def main():
         with open(os.path.join(tempdir, 'caseconv_re_canon_lookup.txt'), 'wb') as f:
             f.write(res)
 
+        logger.debug('- extract_caseconv canon bitmap')
+        res = exec_get_stdout([
+            sys.executable,
+            os.path.join(script_path, 'extract_caseconv.py'),
+            '--command=re_canon_bitmap',
+            '--unicode-data', os.path.join(tempdir, 'UnicodeData-expanded.tmp'),
+            '--special-casing', special_casing,
+            '--out-source', os.path.join(tempdir, 'duk_unicode_re_canon_bitmap.c.tmp'),
+            '--out-header', os.path.join(tempdir, 'duk_unicode_re_canon_bitmap.h.tmp'),
+            '--table-name-re-canon-bitmap', 'duk_unicode_re_canon_bitmap'
+        ])
+        with open(os.path.join(tempdir, 'caseconv_re_canon_bitmap.txt'), 'wb') as f:
+            f.write(res)
+
     # XXX: Now with configure.py part of the distributable, could generate
     # only those Unicode tables needed by desired configuration (e.g. BMP-only
     # tables if BMP-only was enabled).
@@ -823,7 +852,8 @@ def main():
         '#include "duk_unicode_idp_m_ids_noa.h"': read_file(os.path.join(tempdir, 'duk_unicode_idp_m_ids_noa.h.tmp'), strip_last_nl=True),
         '#include "duk_unicode_idp_m_ids_noabmp.h"': read_file(os.path.join(tempdir, 'duk_unicode_idp_m_ids_noabmp.h.tmp'), strip_last_nl=True),
         '#include "duk_unicode_caseconv.h"': read_file(os.path.join(tempdir, 'duk_unicode_caseconv.h.tmp'), strip_last_nl=True),
-        '#include "duk_unicode_re_canon_lookup.h"': read_file(os.path.join(tempdir, 'duk_unicode_re_canon_lookup.h.tmp'), strip_last_nl=True)
+        '#include "duk_unicode_re_canon_lookup.h"': read_file(os.path.join(tempdir, 'duk_unicode_re_canon_lookup.h.tmp'), strip_last_nl=True),
+        '#include "duk_unicode_re_canon_bitmap.h"': read_file(os.path.join(tempdir, 'duk_unicode_re_canon_bitmap.h.tmp'), strip_last_nl=True)
     })
 
     copy_and_replace(os.path.join(tempdir, 'src', 'duk_unicode_tables.c'), os.path.join(tempdir, 'src', 'duk_unicode_tables.c'), {
@@ -834,7 +864,8 @@ def main():
         '#include "duk_unicode_idp_m_ids_noa.c"': read_file(os.path.join(tempdir, 'duk_unicode_idp_m_ids_noa.c.tmp'), strip_last_nl=True),
         '#include "duk_unicode_idp_m_ids_noabmp.c"': read_file(os.path.join(tempdir, 'duk_unicode_idp_m_ids_noabmp.c.tmp'), strip_last_nl=True),
         '#include "duk_unicode_caseconv.c"': read_file(os.path.join(tempdir, 'duk_unicode_caseconv.c.tmp'), strip_last_nl=True),
-        '#include "duk_unicode_re_canon_lookup.c"': read_file(os.path.join(tempdir, 'duk_unicode_re_canon_lookup.c.tmp'), strip_last_nl=True)
+        '#include "duk_unicode_re_canon_lookup.c"': read_file(os.path.join(tempdir, 'duk_unicode_re_canon_lookup.c.tmp'), strip_last_nl=True),
+        '#include "duk_unicode_re_canon_bitmap.c"': read_file(os.path.join(tempdir, 'duk_unicode_re_canon_bitmap.c.tmp'), strip_last_nl=True)
     })
 
     # Create a combined source file, duktape.c, into a separate combined source
@@ -897,6 +928,7 @@ def main():
             'duk_builtins.c',
             'duk_error_macros.c',
             'duk_unicode_support.c',
+            'duk_util_memrw.c',
             'duk_util_misc.c',
             'duk_hobject_class.c'
         ]
