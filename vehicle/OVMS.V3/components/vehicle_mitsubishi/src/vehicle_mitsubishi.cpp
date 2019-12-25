@@ -33,6 +33,8 @@
 ;       - last charge: xmi charge
 ;    1.0.3
 ;       - add support for regen brake light
+;    1.0.4
+;       - Commands fix and add duration for last trip
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018  Mark Webb-Johnson
@@ -1000,6 +1002,7 @@ void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
       ms_v_trip_park_energy_recd->SetValue(0);
       m_v_trip_park_heating_kwh->SetValue(0);
       m_v_trip_park_ac_kwh->SetValue(0);
+      ms_v_trip_park_time_start->SetValue(StdMetrics.ms_m_timeutc->AsInt());
       if(has_odo == true && StandardMetrics.ms_v_bat_soc->AsFloat() > 0.0)
         {
           mi_park_trip_counter.Reset(POS_ODO);
@@ -1019,6 +1022,7 @@ void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
     		StdMetrics.ms_v_env_charging12v->SetValue(false);
         mi_park_trip_counter.Update(POS_ODO);
         ms_v_trip_park_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
+        ms_v_trip_park_time_stop->SetValue(StdMetrics.ms_m_timeutc->AsInt());
       }
     }
 

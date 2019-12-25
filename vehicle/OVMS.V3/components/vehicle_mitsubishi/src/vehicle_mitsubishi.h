@@ -118,6 +118,8 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     OvmsMetricFloat*  m_v_trip_park_ac_kwh  = MyMetrics.InitFloat("xmi.e.trip.park.ac.kwh", 10, 0, kWh);
     OvmsMetricFloat*  ms_v_trip_park_soc_start = MyMetrics.InitFloat("xmi.e.trip.park.soc.start", 10, 0, Percentage);
     OvmsMetricFloat*  ms_v_trip_park_soc_stop = MyMetrics.InitFloat("xmi.e.trip.park.soc.stop", 10, 0, Percentage);
+    OvmsMetricInt*    ms_v_trip_park_time_start = MyMetrics.InitInt("xmi.e.trip.park.time.start", 10, 0, Seconds);
+    OvmsMetricInt*    ms_v_trip_park_time_stop = MyMetrics.InitInt("xmi.e.trip.park.time.stop", 10, 0, Seconds);
 
     OvmsMetricFloat*  ms_v_pos_trip_charge = MyMetrics.InitFloat("xmi.e.trip.charge", 10, 0, Kilometers);
     OvmsMetricFloat*  ms_v_trip_charge_energy_used = MyMetrics.InitFloat("xmi.e.trip.charge.energy.used", 10, 0, kWh);
