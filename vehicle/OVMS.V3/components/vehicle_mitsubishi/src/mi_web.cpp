@@ -2,10 +2,10 @@
  * Project:      Open Vehicle Monitor System
  * Module:       Mitsubishi iMiEV, Citroen C-Zero, Peugeot iOn Webserver
  *
- * (c) 2018 Tamás Kovács
- * (c) 2018	Nikolay Shishkov <nshishkov@yahoo.com>
- * (c) 2018	Geir Øyvind Væidalo <geir@validalo.net>
- * (c) 2017  Michael Balzer <dexter@dexters-web.de>
+ * (C) 2018	    Nikolay Shishkov <nshishkov@yahoo.com>
+ * (C) 2018	    Geir Øyvind Væidalo <geir@validalo.net>
+ * (C) 2017     Michael Balzer <dexter@dexters-web.de>
+ * (C) 2018-2020 Tamás Kovács (KommyKT)
  *
  *Changes:
  ;    1.0.0  Initial release:
@@ -76,12 +76,14 @@ void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   std::string error,soh,ideal;
   bool oldheater,newcell;
 
-  if (c.method == "POST") {
+  if (c.method == "POST")
+  {
     // process form submission:
     oldheater = (c.getvar("oldheater") == "yes");
     newcell = (c.getvar("newcell") == "yes");
     // check:
-    if (error == "") {
+    if (error == "")
+    {
       // store:
       MyConfig.SetParamValueBool("xmi", "oldheater", oldheater);
       MyConfig.SetParamValueBool("xmi","newcell",newcell);
@@ -98,7 +100,8 @@ void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     c.head(400);
     c.alert("danger", error.c_str());
   }
-  else {
+  else
+  {
     // read configuration:
     oldheater = MyConfig.GetParamValueBool("xmi", "oldheater", false);
     newcell = MyConfig.GetParamValueBool("xmi","newcell", false);
@@ -128,7 +131,8 @@ void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 void OvmsVehicleMitsubishi::GetDashboardConfig(DashboardConfig& cfg)
 {
   OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
-  if(!trio->cfg_newcell){
+  if(!trio->cfg_newcell)
+  {
     cfg.gaugeset1 =
       "yAxis: [{"
         // Speed:
@@ -192,7 +196,9 @@ void OvmsVehicleMitsubishi::GetDashboardConfig(DashboardConfig& cfg)
           "{ from: 20, to: 75, className: 'normal-band border' },"
           "{ from: 75, to: 100, className: 'red-band border' }]"
       "}]";
-    }else{
+    }
+    else
+    {
       cfg.gaugeset1 =
         "yAxis: [{"
           // Speed:
