@@ -5,10 +5,10 @@
 ;    Changes:
 ;    1.0  Initial release
 ;
-;    (C) 2011       Michael Stegen / Stegen Electronics
-;    (C) 2011-2018  Mark Webb-Johnson
+;    (C) 2011        Michael Stegen / Stegen Electronics
+;    (C) 2011-2018   Mark Webb-Johnson
 ;    (C) 2011        Sonny Chen @ EPRO/DX
-;    (C) 2018       Tamás Kovács
+;    (C) 2018-2019   Tamás Kovács
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -142,13 +142,11 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     bool cfg_newcell;
 
     //variables for QuickCharge
-    unsigned int mi_est_range;
-    unsigned char mi_QC;
-    unsigned char mi_QC_counter;
-    unsigned char mi_last_good_SOC;
-    unsigned char mi_last_good_range;
+    bool mi_QC;
+
     //charge variables
     float mi_chargekwh;
+    bool mi_SC;
 
     MI_Trip_Counter mi_park_trip_counter;
     MI_Trip_Counter mi_charge_trip_counter;
