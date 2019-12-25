@@ -31,6 +31,8 @@
 ;       - trip since last charger: xmi tripch
 ;       - trip since power off: xmi trip
 ;       - last charge: xmi charge
+;    1.0.3
+;       - add support for regen brake light
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018  Mark Webb-Johnson
@@ -146,7 +148,8 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
 
   #ifdef CONFIG_OVMS_COMP_WEBSERVER
     MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
-  	WebInit();
+    MyWebServer.RegisterPage("cfg/brakelight", "Brake Light conntrol",OvmsWebServer::HandleCfgBrakelight,PageMenu_Vehicle,PageAuth_Cookie);
+    WebInit();
   #endif
 
   // init commands:
@@ -488,6 +491,8 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_pos_speed->SetValue((int)d[1] - 255.0, Kph);
       else
         StandardMetrics.ms_v_pos_speed->SetValue(d[1]);
+
+        CalculateAcceleration();
 
         StandardMetrics.ms_v_pos_odometer->SetValue(((int)d[2] << 8 ) + ((int)d[3] << 8) + d[4], Kilometers);
 
