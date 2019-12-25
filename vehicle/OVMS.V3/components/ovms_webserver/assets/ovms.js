@@ -289,6 +289,10 @@ function loadcmd(command, target, filter, timeout) {
         timeouthd = window.setTimeout(checkabort, timeout*1000);
       },
     },
+    "success": function(response, textStatus, request) {
+      var addtext = response.substring(lastlen);
+      add_output(filter({ "request": request, "text": addtext }));
+    },
     "error": function(request, textStatus, errorThrown) {
       console.log("loadcmd '" + command + "' ERROR: status=" + textStatus + ", httperror=" + errorThrown);
       var txt = xhrErrorInfo(request, textStatus, errorThrown);
