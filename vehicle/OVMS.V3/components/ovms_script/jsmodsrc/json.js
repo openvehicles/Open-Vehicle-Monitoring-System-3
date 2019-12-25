@@ -7,6 +7,10 @@
  *                d) t = JSON.format(data, false);  -- …compact (without spacing/indentation)
  */
 
+// Re-export builtin native JSON methods:
+exports.stringify = JSON.stringify;
+exports.parse = JSON.parse;
+
 exports.format = function(obj, ind)
   {
   var res = '';

@@ -243,9 +243,10 @@ Global Context
 JSON
 ^^^^
 
-The JSON module is provided with a ``format`` and a ``print`` method, to format and/or print out a given
-javascript object in JSON format. Both by default insert spacing and indentation for readability and accept an
-optional ``false`` as a second parameter to produce a compact version for transmission.
+The JSON module extends the native builtin ``JSON.stringify`` and ``JSON.parse`` methods by a 
+``format`` and a ``print`` method, to format and/or print out a given javascript object in JSON 
+format. Both by default insert spacing and indentation for readability and accept an optional 
+``false`` as a second parameter to produce a compact version for transmission.
 
 - ``JSON.print(data)``
     Output data (any Javascript data) as JSON, readable
@@ -255,10 +256,16 @@ optional ``false`` as a second parameter to produce a compact version for transm
     Format data as JSON string, readable
 - ``str = JSON.format(data, false)``
     …compact (without spacing/indentation)
+- ``JSON.stringify(value[, replacer[, space]])``
+    see `MDN JSON/stringify <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify>`_
+- ``JSON.parse(text[, reviver])``
+    see `MDN JSON/parse <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse>`_
 
 .. note:: The ``JSON`` module is provided for compatibility with standard Javascript object dumps
   and for readability. If performance is an issue, consider using the Duktape native builtins
-  ``Duktape.enc()`` and ``Duktape.dec()`` (see Duktape builtins).
+  ``JSON.stringify()`` / ``Duktape.enc()`` and ``JSON.parse()`` / ``Duktape.dec()`` (see Duktape 
+  builtins and `Duktape JSON <https://github.com/svaarala/duktape/blob/master/doc/json.rst>`_
+  for explanations of these).
   
   For example, ``Duktape.enc('JC', data)`` is equivalent to ``JSON.format(data, false)`` except for
   the representation of functions. Using the ``JX`` encoding will omit unnecessary quotings.
@@ -367,13 +374,17 @@ OvmsMetrics
 - ``str = OvmsMetrics.AsJSON(metricname)``
     Returns the JSON representation of the metric value.
 
-Hint: to process array metrics from Javascript, parse their JSON representation using ``eval()``.
-Example:
+Hint: to process array metrics from Javascript, parse their JSON representation using ``eval()``, 
+``JSON.parse()`` or ``Duktape.dec()``. Example:
 
 .. code-block:: javascript
 
   var celltemps = eval(OvmsMetrics.AsJSON("v.b.c.temp"));
   print("Temperature of cell 3: " + celltemps[2] + " °C\n");
+
+.. warning::
+  **Never use** ``eval()`` **on unsafe data, e.g. user input!**
+  ``eval()`` executes arbitrary Javascript, so can be exploited for code injection attacks.
 
 
 OvmsNotify
