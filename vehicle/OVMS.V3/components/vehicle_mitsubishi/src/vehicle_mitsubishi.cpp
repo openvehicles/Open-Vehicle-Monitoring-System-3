@@ -361,7 +361,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
           ms_v_charge_dc_kwh->SetValue((ms_v_charge_dc_kwh->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() / -360000.0)));
         }
 
-        if (StandardMetrics.ms_v_env_gear->AsInt() == -1 && StandardMetrics.ms_v_bat_power->AsInt() < 0 && (mi_QC != 0))
+        if (StandardMetrics.ms_v_env_gear->AsInt() == -1 && StandardMetrics.ms_v_bat_power->AsInt() < 0 && (mi_QC == true))
         {
           //set battery voltage/current to charge voltage/current, when car in Park, and charging
           StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
@@ -423,7 +423,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       case 0x389://freq10 // Charger voltage and current
       {
-        if (mi_QC == true && mi_SC == true)
+        if (mi_QC == false && mi_SC == true)
         {
           StandardMetrics.ms_v_charge_voltage->SetValue(d[1] * 1.0, Volts);
           StandardMetrics.ms_v_charge_current->SetValue(d[6] / 10.0, Amps);
@@ -860,7 +860,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
           StandardMetrics.ms_v_door_chargeport->SetValue(false);
           StandardMetrics.ms_v_env_charging12v->SetValue(false);
           StandardMetrics.ms_v_charge_type->SetValue("None");
-          if (StandardMetrics.ms_v_bat_soc->AsInt() < 92 && mi_QC == 0)
+          if (StandardMetrics.ms_v_bat_soc->AsInt() < 92 && mi_QC == false)
           {
             // Assume charge was interrupted
             StandardMetrics.ms_v_charge_state->SetValue("stopped");
