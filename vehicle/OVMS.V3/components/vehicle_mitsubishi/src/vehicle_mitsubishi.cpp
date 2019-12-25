@@ -41,6 +41,12 @@
 ;         -Pid 0x286
 ;       - New charge detection for Quick ChargerStatus
 ;         -Pid 0x697
+;     1.0.6
+;       - Get CAC from car (BETA), -> remove user settings
+;       - Real/displayed SOC,
+;       - Charge/discharge max current
+;         - Pid: 0x761 request - 0x762 response BMU ECU
+;       - Ideal range calculation 16.1kWh/100km
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018  Mark Webb-Johnson
@@ -73,13 +79,6 @@
 #define VERSION "1.0.2"
 
 static const char *TAG = "v-mitsubishi";
-typedef enum
-  {
-  CHARGER_STATUS_CHARGING,
-  CHARGER_STATUS_QUICK_CHARGING,
-  CHARGER_STATUS_FINISHED,
-  CHARGER_STATUS_INTERRUPTED
-  } ChargerStatus;
 
 OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   {
@@ -185,8 +184,6 @@ OvmsVehicleMitsubishi::~OvmsVehicleMitsubishi()
 void OvmsVehicleMitsubishi::ConfigChanged(OvmsConfigParam* param)
   {
     cfg_heater_old = MyConfig.GetParamValueBool("xmi", "oldheater", false);
-    cfg_soh = MyConfig.GetParamValueInt("xmi", "soh", 100 );
-    cfg_ideal = MyConfig.GetParamValueInt( "xmi", "ideal", 150 );
     cfg_newcell =  MyConfig.GetParamValueBool("xmi", "newcell", false);
     if (cfg_newcell){
       BmsSetCellArrangementVoltage(80, 8);
@@ -734,6 +731,53 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     }
 
+    case 0x762: // AH
+    {
+      if (d[0] == 16)
+      {
+        // Request CAC...
+        CAN_frame_t frame;
+        memset(&frame,0,sizeof(frame));
+        frame.origin = m_can1;
+        frame.FIR.U = 0;
+        frame.FIR.B.DLC = 3;
+        frame.FIR.B.FF = CAN_frame_std;
+        frame.MsgID = 0x761;
+        frame.data.u8[0] = 0x30;
+        frame.data.u8[1] = 0x08;
+        frame.data.u8[2] = 0x0A;
+        m_can1->Write(&frame);
+
+        //real SOC
+        OvmsMetricFloat* xmi_bat_soc_real = MyMetrics.InitFloat("xmi.b.soc.real", 10, 0, Percentage);
+        xmi_bat_soc_real->SetValue((d[4] / 2.0 - 5));
+
+        // displayed SOC
+        OvmsMetricFloat* xmi_bat_soc_display = MyMetrics.InitFloat("xmi.b.soc.display", 10, 0, Percentage);
+        xmi_bat_soc_display->SetValue((d[5] / 2.0 - 5));
+      }
+
+      if(d[0] == 36)
+      {
+        // battery "max" capacity
+        StandardMetrics.ms_v_bat_cac->SetValue(((d[3] * 256.0 + d[4]) / 10.0));
+
+        // battery remain capacity
+        ms_v_bat_cac_rem->SetValue(((d[5] * 256.0 + d[6]) / 10.0));
+
+        //max charging kW
+        ms_v_bat_max_input->SetValue(d[7] / 4.0);
+      }
+
+      if(d[0] == 37)
+      {
+        //max output kW
+        ms_v_bat_max_output->SetValue(d[1] / 4.0);
+      }
+
+      break;
+    }
+
     default:
     break;
     }
@@ -852,31 +896,6 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
       }
   } //Car in P "if" close
 
-  //Set soh value from settings
-  StandardMetrics.ms_v_bat_soh->SetValue(cfg_soh);
-
-  if (StandardMetrics.ms_v_env_gear->AsInt() != -1)
-  {
-    //  Trip consumption
-    if (StandardMetrics.ms_v_bat_soc->AsFloat() <= 10)
-    {
-      StandardMetrics.ms_v_bat_range_ideal->SetValue(0);
-    }
-    else
-    {
-      // Ideal range
-      int SOH = StandardMetrics.ms_v_bat_soh->AsFloat();
-      if (SOH == 0)
-        SOH = 100; //ideal range as 100% else with SOH
-
-      StandardMetrics.ms_v_bat_range_ideal->SetValue((
-      (StandardMetrics.ms_v_bat_soc->AsFloat() - 10) * cfg_ideal / 90.0) * SOH / 100.0);
-    }
-
-    //Car battery max capacity
-    StandardMetrics.ms_v_bat_cac->SetValue(48.0 * (StandardMetrics.ms_v_bat_soh->AsFloat() / 100));
-
-  }
   // Update trip data
   if (StdMetrics.ms_v_env_on->AsBool())
   {
@@ -896,6 +915,39 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
       ms_v_trip_charge_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
     }
   }
+
+  if (StandardMetrics.ms_v_bat_soc->AsFloat() <= 10)
+  {
+    StandardMetrics.ms_v_bat_range_ideal->SetValue(0);
+  }
+  else
+  {
+    int cell = 88;
+    if (cfg_newcell) {
+            cell = 80;
+    }
+    StdMetrics.ms_v_bat_range_ideal->SetValue(StdMetrics.ms_v_bat_soc->AsFloat() * StdMetrics.ms_v_bat_cac->AsFloat() * 3.7 * cell / 16100.0);
+    StdMetrics.ms_v_bat_soh->SetValue((StdMetrics.ms_v_bat_cac->AsFloat() / 48.0) * 100);
+  }
+}
+void OvmsVehicleMitsubishi::Ticker60(uint32_t ticker)
+{
+  if (StdMetrics.ms_v_env_on->AsBool() || mi_QC == true || mi_SC == true)
+  {
+    //Send a request to BMS ECU
+    CAN_frame_t frame;
+    memset(&frame,0,sizeof(frame));
+    frame.origin = m_can1;
+    frame.FIR.U = 0;
+    frame.FIR.B.DLC = 3;
+    frame.FIR.B.FF = CAN_frame_std;
+    frame.MsgID = 0x761;
+    frame.data.u8[0] = 0x02;
+    frame.data.u8[1] = 0x21;
+    frame.data.u8[2] = 0x01;
+    m_can1->Write(&frame);
+  }
+
 }
   /**
    * Takes care of setting all the state appropriate when the car is on

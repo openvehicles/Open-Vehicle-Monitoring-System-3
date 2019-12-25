@@ -116,7 +116,7 @@ void xmi_trip_since_parked(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 
 					writer->printf("Odometer: %.*f\n",0, ODO);
 				}else{
-					writer->printf("No trip data");
+					writer->printf("No trip data\n");
 				}
 
 		}
@@ -185,7 +185,7 @@ void xmi_trip_since_charge(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 					writer->printf("Odometer: %.*f\n",0, ODO);
 				}else
 				{
-					writer->printf("No trip data since last charge");
+					writer->printf("No trip data since last charge\n");
 				}
 }
 

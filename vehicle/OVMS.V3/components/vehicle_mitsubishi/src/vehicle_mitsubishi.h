@@ -62,7 +62,7 @@ public:
 	};
 
 class OvmsVehicleMitsubishi : public OvmsVehicle
-  {
+{
   public:
     OvmsVehicleMitsubishi();
     ~OvmsVehicleMitsubishi();
@@ -73,6 +73,7 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
 
   protected:
     virtual void Ticker1(uint32_t ticker);
+    virtual void Ticker60(uint32_t ticker);
     void ConfigChanged(OvmsConfigParam* param);
 
   protected:
@@ -129,6 +130,9 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     OvmsMetricFloat*  ms_v_trip_charge_soc_start = MyMetrics.InitFloat("xmi.e.trip.charge.soc.start", 10, 0, Percentage);
     OvmsMetricFloat*  ms_v_trip_charge_soc_stop = MyMetrics.InitFloat("xmi.e.trip.charge.soc.stop", 10, 0, Percentage);
 
+    OvmsMetricFloat* ms_v_bat_cac_rem = MyMetrics.InitFloat("xmi.v.bat.cac.rem", 10, 0, AmpHours);
+    OvmsMetricFloat* ms_v_bat_max_input = MyMetrics.InitFloat("xmi.v.bat.max.input", 10, 0, kW);
+    OvmsMetricFloat* ms_v_bat_max_output = MyMetrics.InitFloat("xmi.v.bat.max.output", 10, 0, kW);
 
     void vehicle_mitsubishi_car_on(bool isOn);
 
@@ -154,21 +158,18 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     bool has_odo;
     bool set_odo;
 
-#ifdef CONFIG_OVMS_COMP_WEBSERVER
-    // --------------------------------------------------------------------------
-    // Webserver subsystem
-    //  - implementation: mi_web.(h,cpp)
-    //
-  public:
-    void WebInit();
-    static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
+  #ifdef CONFIG_OVMS_COMP_WEBSERVER
+      // --------------------------------------------------------------------------
+      // Webserver subsystem
+      //  - implementation: mi_web.(h,cpp)
+      //
+    public:
+      void WebInit();
+      static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
+      void GetDashboardConfig(DashboardConfig& cfg);
+  #endif //CONFIG_OVMS_COMP_WEBSERVER
 
-  public:
-    void GetDashboardConfig(DashboardConfig& cfg);
-
-#endif //CONFIG_OVMS_COMP_WEBSERVER
-
-  };
+};
 
 #define POS_ODO			StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers)
 #endif //#ifndef __VEHICLE_MITSUBISHI_H__
