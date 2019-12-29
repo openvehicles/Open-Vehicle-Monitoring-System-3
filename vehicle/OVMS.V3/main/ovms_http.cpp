@@ -105,17 +105,9 @@ bool OvmsHttpClient::Request(std::string url, const char* method)
   req.append(path);
   req.append(" HTTP/1.0\r\nHost: ");
   req.append(server);
-  req.append("\r\nUser-Agent: ovms/");
-  #ifdef CONFIG_OVMS_HW_BASE_3_0
-  req.append("v3.0 (");
-  #endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
-  #ifdef CONFIG_OVMS_HW_BASE_3_1
-  req.append("v3.1 (");
-  #endif //#ifdef CONFIG_OVMS_HW_BASE_3_1
-  req.append(MyConfig.GetParamValue("vehicle","id",""));
-  req.append(" ");
-  req.append(StandardMetrics.ms_m_version->AsString());
-  req.append(")\r\n\r\n");
+  req.append("\r\nUser-Agent: ");
+  req.append(get_user_agent());
+  req.append("\r\n\r\n");
   if (Write(req.c_str(), req.length()) < 0)
     {
     ESP_LOGE(TAG, "Unable to write to server connection");

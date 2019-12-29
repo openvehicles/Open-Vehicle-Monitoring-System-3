@@ -81,29 +81,7 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
   mt_bat_energy_used_start = MyMetrics.InitFloat("xse.v.b.energy.used.start", SM_STALE_MID, 0, kWh);
   mt_bat_energy_used_reset = MyMetrics.InitFloat("xse.v.b.energy.used.reset", SM_STALE_MID, 0, kWh);
   mt_pos_odometer_start    = MyMetrics.InitFloat("xse.v.pos.odometer.start", SM_STALE_MID, 0, Kilometers);
-
-  mt_nlg6_present             = MyMetrics.InitBool("xse.v.nlg6.present", SM_STALE_MIN, false);
-  mt_nlg6_main_volts          = new OvmsMetricVector<float>("xse.v.nlg6.main.volts", SM_STALE_HIGH, Volts);
-  mt_nlg6_main_amps           = new OvmsMetricVector<float>("xse.v.nlg6.main.amps", SM_STALE_HIGH, Amps);
-  mt_nlg6_amps_setpoint       = MyMetrics.InitFloat("xse.v.nlg6.amps.setpoint", SM_STALE_MIN, 0, Amps);
-  mt_nlg6_amps_cablecode      = MyMetrics.InitFloat("xse.v.nlg6.amps.cablecode", SM_STALE_MIN, 0, Amps);
-  mt_nlg6_amps_chargingpoint  = MyMetrics.InitFloat("xse.v.nlg6.amps.chargingpoint", SM_STALE_MIN, 0, Amps);
-  mt_nlg6_dc_current          = MyMetrics.InitFloat("xse.v.nlg6.dc.current", SM_STALE_MIN, 0, Amps);
-  mt_nlg6_dc_hv               = MyMetrics.InitFloat("xse.v.nlg6.dc.hv", SM_STALE_MIN, 0, Volts);
-  mt_nlg6_dc_lv               = MyMetrics.InitFloat("xse.v.nlg6.dc.lv", SM_STALE_MIN, 0, Volts);
-  mt_nlg6_temps               = new OvmsMetricVector<float>("xse.v.nlg6.temps", SM_STALE_HIGH, Celcius);
-  mt_nlg6_temp_reported       = MyMetrics.InitFloat("xse.v.nlg6.temp.reported", SM_STALE_MIN, 0, Celcius);
-  mt_nlg6_temp_socket         = MyMetrics.InitFloat("xse.v.nlg6.temp.socket", SM_STALE_MIN, 0, Celcius);
-  mt_nlg6_temp_coolingplate   = MyMetrics.InitFloat("xse.v.nlg6.temp.coolingplate", SM_STALE_MIN, 0, Celcius);
-  mt_nlg6_pn_hw               = MyMetrics.InitString("xse.v.nlg6.pn.hw", SM_STALE_MIN, 0);
-
-  m_doorlock_port     = 9;
-  m_doorunlock_port   = 8;
-  m_ignition_port     = 7;
-  m_doorstatus_port   = 6;
-  m_range_ideal       = 135;
-  m_egpio_timout      = 5;
-  m_soc_rsoc          = false;
+  mt_real_soc              = MyMetrics.InitFloat("xse.v.b.real.soc", SM_STALE_MID, 0, Percentage);
   
   m_candata_timer     = 0;
   m_candata_poll      = 0;
@@ -114,14 +92,8 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
   cmd_xse->RegisterCommand("recu","Set recu..", xse_recu, "<up/down>",1,1);
   cmd_xse->RegisterCommand("charge","Set charging Timer..", xse_chargetimer, "<hour> <minutes> <on/off>", 3, 3);
   cmd_xse->RegisterCommand("trip", "Show vehicle trip", xse_trip);
-  
-  // BMS configuration:
-  BmsSetCellArrangementVoltage(93, 1);
-  BmsSetCellArrangementTemperature(3, 1);
-  BmsSetCellLimitsVoltage(2.0, 5.0);
-  BmsSetCellLimitsTemperature(-39, 200);
-  BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
-  BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
+  cmd_xse->RegisterCommand("bmsdiag", "Show BMS diagnostic", xse_bmsdiag);
+  cmd_xse->RegisterCommand("rptdata", "Show BMS RPTdata", xse_RPTdata);
   
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   //RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
@@ -211,7 +183,11 @@ void OvmsVehicleSmartED::vehicle_smarted_car_on(bool isOn) {
     if (!StandardMetrics.ms_v_charge_inprogress->AsBool())
       StandardMetrics.ms_v_env_charging12v->SetValue(false);
     
-    if (m_enable_write) PollSetState(1);
+    if (mt_c_active->AsBool()) {
+      if (m_enable_write) PollSetState(3);
+    } else {
+      if (m_enable_write) PollSetState(1);
+    }
     if (StandardMetrics.ms_v_pos_trip->AsFloat(0) > 0.1 && m_notify_trip)
 			NotifyTrip();
   }
@@ -336,6 +312,8 @@ void OvmsVehicleSmartED::HandleChargingStatus() {
           StandardMetrics.ms_v_env_charging12v->SetValue(true);
           // Reset charge kWh
           StandardMetrics.ms_v_charge_kwh->SetValue(0);
+          // set Poll state charging
+          if (m_enable_write) PollSetState(3);
           // Reset trip values
           if (m_reset_trip) {
             StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
@@ -447,7 +425,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
       0x518 01 4e 00 00 [f8 7f] c8 b4 // Charge duration? 
       */
       if (m_soc_rsoc) {
-        StandardMetrics.ms_v_bat_soh->SetValue((float) (d[7]/2.0));
+        mt_real_soc->SetValue((float) (d[7]/2.0));
       } else {
         StandardMetrics.ms_v_bat_soc->SetValue((float) (d[7]/2.0));
       }
@@ -466,7 +444,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
       if (m_soc_rsoc) {
         StandardMetrics.ms_v_bat_soc->SetValue(rsoc, Percentage);
       } else {
-        StandardMetrics.ms_v_bat_soh->SetValue(rsoc, Percentage);
+        mt_real_soc->SetValue(rsoc, Percentage);
       }
       StandardMetrics.ms_v_bat_cac->SetValue((DEFAULT_BATTERY_AMPHOURS * rsoc) / 100, AmpHours);
       break;
@@ -643,6 +621,15 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
       0x312 08 21 00 00 07 D0 07 D0
       Requires bytes 0 and 1, interpreted as a number.
       (0x0821 - 2000) * 0.2 = 14,6% 
+      */
+      break;
+    }
+    default: {
+      /*
+      if(p_frame->MsgID == 0x7EF)
+        ESP_LOGD(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+      if(p_frame->MsgID == 0x483)
+        ESP_LOGD(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       */
       break;
     }

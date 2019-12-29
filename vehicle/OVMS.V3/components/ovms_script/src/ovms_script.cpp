@@ -44,6 +44,7 @@ static const char *TAG = "script";
 #include "ovms_events.h"
 #include "console_async.h"
 #include "buffered_shell.h"
+#include "ovms_netmanager.h"
 
 OvmsScripts MyScripts __attribute__ ((init_priority (1600)));
 
@@ -675,6 +676,658 @@ static duk_ret_t DukOvmsConfigDelete(duk_context *ctx)
   return 0;
   }
 
+
+
+/***************************************************************************************************
+ * DuktapeObject
+ */
+
+/**
+ * Construct empty (uncoupled) DuktapeObject
+ */
+DuktapeObject::DuktapeObject()
+  {
+  }
+
+/**
+ * Construct DuktapeObject coupled to stack object
+ *  Stack: unchanged
+ */
+DuktapeObject::DuktapeObject(duk_context *ctx, int obj_idx)
+  {
+  Couple(ctx, obj_idx);
+  assert(IsCoupled());
+  }
+
+/**
+ * Destruct DuktapeObject
+ *  Note: no JS context here, override Finalize() for JS destructor
+ */
+DuktapeObject::~DuktapeObject()
+  {
+  }
+
+/**
+ * Ref: increment reference count
+ */
+void DuktapeObject::Ref()
+  {
+  Lock();
+  m_refcnt++;
+  // ESP_LOGD(TAG, "DuktapeObject::Ref cnt=%d", m_refcnt);
+  Unlock();
+  }
+
+/**
+ * Unref: decrement reference count, delete self if no references left
+ *  Returns true if instance has been deleted
+ */
+bool DuktapeObject::Unref()
+  {
+  Lock();
+  assert(m_refcnt > 0);
+  m_refcnt--;
+  // ESP_LOGD(TAG, "DuktapeObject::Unref cnt=%d", m_refcnt);
+  if (m_refcnt == 0)
+    {
+    delete this;
+    return true;
+    }
+  Unlock();
+  return false;
+  }
+
+/**
+ * Couple: set hidden instance pointer & finalizer on JS object
+ *  Stack: unchanged
+ */
+bool DuktapeObject::Couple(duk_context *ctx, int obj_idx)
+  {
+  OvmsRecMutexLock lock(&m_mutex);
+  duk_require_object(ctx, obj_idx);
+  m_object = duk_get_heapptr(ctx, obj_idx);
+  if (!m_object) return false;
+  duk_require_stack(ctx, 3);
+  duk_push_heapptr(ctx, m_object);
+  // set instance pointer:
+  duk_push_pointer(ctx, this);
+  duk_put_prop_string(ctx, -2, DUK_HIDDEN_SYMBOL("duktapeObject"));
+  // set finalizer:
+  duk_push_c_function(ctx, DuktapeFinalizer, 2 /*(object,heapDestruct)*/);
+  duk_set_finalizer(ctx, -2);
+  duk_pop(ctx);
+  Ref();
+  return true;
+  }
+
+/**
+ * Decouple: clear hidden instance pointer & finalizer on JS object
+ *  Stack: unchanged
+ */
+void DuktapeObject::Decouple(duk_context *ctx)
+  {
+    {
+    OvmsRecMutexLock lock(&m_mutex);
+    if (!m_object) return;
+    duk_require_stack(ctx, 3);
+    duk_push_heapptr(ctx, m_object);
+    // clear instance pointer:
+    duk_del_prop_string(ctx, -1, DUK_HIDDEN_SYMBOL("duktapeObject"));
+    // clear finalizer:
+    duk_push_undefined(ctx);
+    duk_set_finalizer(ctx, -2);
+    duk_pop(ctx);
+    m_object = NULL;
+    }
+  Unref();
+  }
+
+/**
+ * GetInstance: get hidden instance pointer from JS object
+ *  Returns null if no instance is attached
+ *  Stack: unchanged
+ */
+DuktapeObject* DuktapeObject::GetInstance(duk_context *ctx, int obj_idx)
+  {
+  DuktapeObject* instance = NULL;
+  duk_require_stack(ctx, 2);
+  if (duk_get_prop_string(ctx, obj_idx, DUK_HIDDEN_SYMBOL("duktapeObject")))
+    instance = (DuktapeObject*)duk_get_pointer(ctx, -1);
+  duk_pop(ctx);
+  return instance;
+  }
+
+/**
+ * DuktapeFinalizer: Duktape finalizer (destructor) entry
+ */
+duk_ret_t DuktapeObject::DuktapeFinalizer(duk_context *ctx)
+  {
+  DuktapeObject* me = GetInstance(ctx, 0);
+  bool heapDestruct = duk_opt_boolean(ctx, 1, false);
+  if (me) me->Finalize(ctx, heapDestruct);
+  return 0;
+  }
+
+/**
+ * Finalize: JS destructor, called by garbage collection
+ */
+void DuktapeObject::Finalize(duk_context *ctx, bool heapDestruct)
+  {
+  // ESP_LOGD(TAG, "DuktapeObject::Finalize heapDestruct=%d", heapDestruct);
+  Decouple(ctx); // deletes self if no reference left
+  }
+
+/**
+ * Push: push coupled JS object onto stack
+ *  Stack: [ … ] → [ … obj ]
+ */
+bool DuktapeObject::Push(duk_context *ctx)
+  {
+  OvmsRecMutexLock lock(&m_mutex);
+  if (!m_object) return false;
+  duk_require_stack(ctx, 1);
+  duk_push_heapptr(ctx, m_object);
+  return true;
+  }
+
+/**
+ * Register object with the global stash to prevent garbage collection
+ *  Stack: unchanged
+ */
+void DuktapeObject::Register(duk_context *ctx)
+  {
+  OvmsRecMutexLock lock(&m_mutex);
+  if (!m_object || m_registered) return;
+  // ESP_LOGD(TAG, "DuktapeObject::Register @globalStash");
+  duk_require_stack(ctx, 3);
+
+  // get registry:
+  duk_push_global_stash(ctx);
+  if (!duk_get_prop_string(ctx, -1, "duktapeObjectRegistry"))
+    {
+    // create registry:
+    duk_pop(ctx);
+    duk_push_object(ctx);
+    duk_dup(ctx, -1);
+    duk_put_prop_string(ctx, -3, "duktapeObjectRegistry");
+    }
+
+  // register using instance address as key:
+  duk_push_pointer(ctx, this);
+  duk_push_heapptr(ctx, m_object);
+  duk_put_prop(ctx, -3);
+
+  duk_pop_2(ctx); // registry & global stash
+
+  m_registry = NULL;
+  m_registered = true;
+  }
+
+/**
+ * Register with a specific registry object on the stack
+ *  Note: you need to ensure the object is stable until deregistration!
+ *  Stack: unchanged
+ */
+void DuktapeObject::Register(duk_context *ctx, int obj_idx)
+  {
+  OvmsRecMutexLock lock(&m_mutex);
+  if (!m_object || m_registered) return;
+  // ESP_LOGD(TAG, "DuktapeObject::Register @object");
+  duk_require_object(ctx, obj_idx);
+  duk_require_stack(ctx, 3);
+
+  // register using instance address as key:
+  duk_dup(ctx, obj_idx);
+  duk_push_pointer(ctx, this);
+  duk_push_heapptr(ctx, m_object);
+  duk_put_prop(ctx, -3);
+  duk_pop(ctx);
+
+  m_registry = duk_get_heapptr(ctx, obj_idx);
+  m_registered = true;
+  }
+
+/**
+ * Deregister:
+ *  Stack: unchanged
+ */
+void DuktapeObject::Deregister(duk_context *ctx)
+  {
+  OvmsRecMutexLock lock(&m_mutex);
+  if (!m_object || !m_registered) return;
+  // ESP_LOGD(TAG, "DuktapeObject::Deregister");
+  duk_require_stack(ctx, 3);
+
+  if (m_registry)
+    {
+    duk_push_heapptr(ctx, m_registry);
+    duk_push_pointer(ctx, this);
+    duk_del_prop(ctx, -2);
+    duk_pop(ctx); // registry
+    }
+  else
+    {
+    duk_push_global_stash(ctx);
+    if (duk_get_prop_string(ctx, -1, "duktapeObjectRegistry"))
+      {
+      duk_push_pointer(ctx, this);
+      duk_del_prop(ctx, -2);
+      }
+    duk_pop_2(ctx); // registry & global stash
+    }
+
+  m_registry = NULL;
+  m_registered = false;
+  }
+
+/**
+ * RequestCallback: request object method call by Duktape context
+ */
+void DuktapeObject::RequestCallback(const char* method, void* data /*=NULL*/)
+  {
+  Ref();
+  MyScripts.DuktapeRequestCallback(this, method, data);
+  }
+
+/**
+ * DuktapeCallback: call object method in Duktape context
+ */
+duk_ret_t DuktapeObject::DuktapeCallback(duk_context *ctx, duktape_queue_t &msg)
+  {
+  duk_ret_t res = CallMethod(ctx, msg.body.dt_callback.method, msg.body.dt_callback.data);
+  Unref();
+  return res;
+  }
+
+/**
+ * CallMethod: execute object method in Duktape context
+ *  Default implementation: no args, no return values, no error processing
+ */
+duk_ret_t DuktapeObject::CallMethod(duk_context *ctx, const char* method, void* data /*=NULL*/)
+  {
+  OvmsRecMutexLock lock(&m_mutex);
+  if (!IsCoupled()) return 0;
+  int entry_top = duk_get_top(ctx);
+  Push(ctx);
+  duk_push_string(ctx, method);
+  duk_call_prop(ctx, -2, 0);
+  // discard return values if any + this:
+  duk_pop_n(ctx, duk_get_top(ctx) - entry_top);
+  return 0;
+  }
+
+
+/***************************************************************************************************
+ * DuktapeHTTPRequest
+ */
+
+DuktapeHTTPRequest::DuktapeHTTPRequest(duk_context *ctx, int obj_idx)
+  : DuktapeObject(ctx, obj_idx)
+  {
+  if (!MyNetManager.MongooseRunning() || !MyNetManager.m_connected_any)
+    {
+    m_error = "network unavailable";
+    CallMethod(ctx, "fail");
+    return;
+    }
+
+  // get args:
+  duk_require_stack(ctx, 5);
+  if (duk_get_prop_string(ctx, 0, "url"))
+    m_url = duk_to_string(ctx, -1);
+  duk_pop(ctx);
+  if (duk_get_prop_string(ctx, 0, "post"))
+    {
+    m_ispost = true;
+    m_post = duk_to_string(ctx, -1);
+    }
+  duk_pop(ctx);
+  if (duk_get_prop_string(ctx, 0, "timeout"))
+    m_timeout = duk_to_int(ctx, -1);
+  duk_pop(ctx);
+  if (duk_get_prop_string(ctx, 0, "binary"))
+    m_binary = duk_to_boolean(ctx, -1);
+  duk_pop(ctx);
+
+  if (m_url.empty())
+    {
+    m_error = "missing argument: url";
+    CallMethod(ctx, "fail");
+    return;
+    }
+
+  // …request headers:
+  extram::string key, val;
+  bool have_useragent = false, have_contenttype = false;
+  
+  duk_get_prop_string(ctx, 0, "headers");
+  if (duk_is_array(ctx, -1))
+    {
+    for (int i=0; true; i++)
+      {
+      if (!duk_get_prop_index(ctx, -1, i))
+        {
+        // array end
+        duk_pop(ctx);
+        break;
+        }
+      if (duk_is_object(ctx, -1))
+        {
+        duk_enum(ctx, -1, 0);
+        while (duk_next(ctx, -1, true))
+          {
+          key = duk_to_string(ctx, -2);
+          val = duk_to_string(ctx, -1);
+          duk_pop_2(ctx);
+          m_headers.append(key);
+          m_headers.append(": ");
+          m_headers.append(val);
+          m_headers.append("\r\n");
+          if (key == "User-Agent")
+            have_useragent = true;
+          else if (key == "Content-Type")
+            have_contenttype = true;
+          }
+        duk_pop(ctx); // enum
+        }
+      duk_pop(ctx); // array element
+      }
+    }
+  duk_pop(ctx); // [array]
+  
+  // add defaults:
+  if (!have_useragent)
+    {
+    m_headers.append("User-Agent: ");
+    m_headers.append(get_user_agent().c_str());
+    m_headers.append("\r\n");
+    }
+  if (m_ispost && !have_contenttype)
+    {
+    m_headers.append("Content-Type: application/x-www-form-urlencoded\r\n");
+    }
+
+  // start initial request:
+  if (StartRequest(ctx))
+    {
+    // running, prevent deletion & GC:
+    Ref();
+    Register(ctx);
+    ESP_LOGD(TAG, "DuktapeHTTPRequest: started '%s'", m_url.c_str());
+    }
+  }
+
+bool DuktapeHTTPRequest::StartRequest(duk_context *ctx /*=NULL*/)
+  {
+  // create connection:
+  struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
+  struct mg_connect_opts opts = {};
+  opts.user_data = this;
+  const char* err;
+  opts.error_string = &err;
+  if (startsWith(m_url, "https://"))
+    {
+    opts.ssl_ca_cert = "*";
+    }
+  m_mgconn = mg_connect_http_opt(mgr, MongooseCallbackEntry, opts,
+    m_url.c_str(), m_headers.c_str(), m_ispost ? m_post.c_str() : NULL);
+
+  if (!m_mgconn)
+    {
+    ESP_LOGD(TAG, "DuktapeHTTPRequest: connect to '%s' failed: %s", m_url.c_str(), err);
+    m_error = (err && *err) ? err : "unknown";
+    if (ctx)
+      CallMethod(ctx, "fail");
+    else
+      RequestCallback("fail");
+    return false;
+    }
+
+  // connection created:
+  if (m_timeout > 0)
+    mg_set_timer(m_mgconn, mg_time() + (double)m_timeout / 1000);
+  return true;
+  }
+
+DuktapeHTTPRequest::~DuktapeHTTPRequest()
+  {
+  // ESP_LOGD(TAG, "~DuktapeHTTPRequest");
+  if (m_mgconn)
+    {
+    m_mgconn->user_data = NULL;
+    m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
+    m_mgconn = NULL;
+    }
+  }
+
+duk_ret_t DuktapeHTTPRequest::Create(duk_context *ctx)
+  {
+  // var request = HTTP.request({ args })
+  DuktapeHTTPRequest* request = new DuktapeHTTPRequest(ctx, 0);
+  request->Push(ctx);
+  return 1;
+  }
+
+void DuktapeHTTPRequest::MongooseCallbackEntry(struct mg_connection *nc, int ev, void *ev_data)
+  {
+  DuktapeHTTPRequest* me = (DuktapeHTTPRequest*)nc->user_data;
+  if (me) me->MongooseCallback(nc, ev, ev_data);
+  }
+
+void DuktapeHTTPRequest::MongooseCallback(struct mg_connection *nc, int ev, void *ev_data)
+  {
+  OvmsRecMutexLock lock(&m_mutex);
+  if (nc != m_mgconn) return; // ignore events of previous connections
+  switch (ev)
+    {
+    case MG_EV_CONNECT:
+      {
+      int err = *(int*) ev_data;
+      const char* errdesc = strerror(err);
+      ESP_LOGD(TAG, "DuktapeHTTPRequest: MG_EV_CONNECT err=%d/%s", err, errdesc);
+      if (err)
+        {
+        if (err == MG_SSL_ERROR)
+          m_error = "SSL error";
+        else
+          m_error = (errdesc && *errdesc) ? errdesc : "unknown";
+        RequestCallback("fail");
+        nc->flags |= MG_F_CLOSE_IMMEDIATELY;
+        }
+      }
+      break;
+
+    case MG_EV_HTTP_REPLY:
+      {
+      // response is complete, store:
+      http_message *hm = (http_message*) ev_data;
+      ESP_LOGD(TAG, "DuktapeHTTPRequest: MG_EV_HTTP_REPLY status=%d bodylen=%d", hm->resp_code, hm->body.len);
+      m_response_status = hm->resp_code;
+      m_response_statusmsg.assign(hm->resp_status_msg.p, hm->resp_status_msg.len);
+      m_response_body.assign(hm->body.p, hm->body.len);
+      extram::string key, val, location;
+      for (int i = 0; i < MG_MAX_HTTP_HEADERS && hm->header_names[i].len > 0; i++)
+        {
+        key.assign(hm->header_names[i].p, hm->header_names[i].len);
+        val.assign(hm->header_values[i].p, hm->header_values[i].len);
+        m_response_headers.push_back(std::make_pair(key, val));
+        if (key == "Location") location = val;
+        }
+
+      // follow redirect?
+      if (m_response_status == 301 || m_response_status == 302)
+        {
+        if (location.empty())
+          {
+          m_error = "redirect without location";
+          RequestCallback("fail");
+          }
+        else if (++m_redirectcnt > 5)
+          {
+          m_error = "too many redirects";
+          RequestCallback("fail");
+          }
+        else
+          {
+          ESP_LOGD(TAG, "DuktapeHTTPRequest: redirect code=%d to '%s'", m_response_status, location.c_str());
+          m_url = location;
+          m_response_status = 0;
+          m_response_statusmsg.clear();
+          m_response_body.clear();
+          m_response_headers.clear();
+          if (!StartRequest(NULL))
+            RequestCallback("fail");
+          }
+        }
+      else
+        {
+        RequestCallback("done");
+        }
+      // in any case, this connection is done:
+      nc->flags |= MG_F_CLOSE_IMMEDIATELY;
+      }
+      break;
+
+    case MG_EV_TIMER:
+      {
+      ESP_LOGD(TAG, "DuktapeHTTPRequest: MG_EV_TIMER");
+      m_error = "timeout";
+      RequestCallback("fail");
+      nc->flags |= MG_F_CLOSE_IMMEDIATELY;
+      }
+      break;
+
+    case MG_EV_CLOSE:
+      {
+      if (m_response_status == 0 && m_error.empty())
+        {
+        ESP_LOGD(TAG, "DuktapeHTTPRequest: MG_EV_CLOSE: abort");
+        m_error = "abort";
+        RequestCallback("fail");
+        }
+      else
+        {
+        ESP_LOGD(TAG, "DuktapeHTTPRequest: MG_EV_CLOSE status=%d", m_response_status);
+        }
+      // Mongoose part done:
+      nc->user_data = NULL;
+      m_mgconn = NULL;
+      Unref();
+      }
+      break;
+
+    default:
+      break;
+    }
+  }
+
+duk_ret_t DuktapeHTTPRequest::CallMethod(duk_context *ctx, const char* method, void* data /*=NULL*/)
+  {
+  OvmsRecMutexLock lock(&m_mutex);
+  if (!IsCoupled()) return 0;
+
+  duk_require_stack(ctx, 7);
+  int entry_top = duk_get_top(ctx);
+
+  Push(ctx);
+  int obj_idx = duk_get_top_index(ctx);
+  duk_get_prop_string(ctx, obj_idx, method);
+  bool callable = duk_is_callable(ctx, -1);
+  duk_pop(ctx);
+  if (callable) duk_push_string(ctx, method);
+  int nargs = 0;
+  bool deregister = false;
+
+  // update request.url, set request.redirectCount:
+  duk_push_string(ctx, m_url.c_str());
+  duk_put_prop_string(ctx, obj_idx, "url");
+  duk_push_int(ctx, m_redirectcnt);
+  duk_put_prop_string(ctx, obj_idx, "redirectCount");
+
+  // create results & method arguments:
+  if (strcmp(method, "done") == 0)
+    {
+    // done(response):
+    deregister = true;
+    ESP_LOGD(TAG, "DuktapeHTTPRequest: done status=%d bodylen=%d url='%s'",
+      m_response_status, m_response_body.size(), m_url.c_str());
+
+    // clear request.error:
+    duk_push_string(ctx, "");
+    duk_put_prop_string(ctx, obj_idx, "error");
+
+    // create response object:
+    duk_push_object(ctx);
+    duk_push_int(ctx, m_response_status);
+    duk_put_prop_string(ctx, -2, "statusCode");
+    duk_push_string(ctx, m_response_statusmsg.c_str());
+    duk_put_prop_string(ctx, -2, "statusText");
+
+    // …body:
+    if (m_binary)
+      {
+      void* p = duk_push_fixed_buffer(ctx, m_response_body.size());
+      memcpy(p, m_response_body.data(), m_response_body.size());
+      duk_put_prop_string(ctx, -2, "data");
+      }
+    else
+      {
+      duk_push_lstring(ctx, m_response_body.data(), m_response_body.size());
+      duk_put_prop_string(ctx, -2, "body");
+      }
+    m_response_body.clear();
+    m_response_body.shrink_to_fit();
+
+    // …response headers:
+    duk_push_array(ctx);
+    int i = 0;
+    for (auto it = m_response_headers.begin(); it != m_response_headers.end(); it++, i++)
+      {
+      duk_push_object(ctx);
+      duk_push_string(ctx, it->second.c_str());
+      duk_put_prop_string(ctx, -2, it->first.c_str());
+      duk_put_prop_index(ctx, -2, i);
+      }
+    duk_put_prop_string(ctx, -2, "headers");
+    m_response_headers.clear();
+
+    duk_dup(ctx, -1);
+    duk_put_prop_string(ctx, obj_idx, "response");
+    nargs++;
+    }
+  else if (strcmp(method, "fail") == 0)
+    {
+    // fail(error):
+    deregister = true;
+    ESP_LOGE(TAG, "DuktapeHTTPRequest: failed error='%s' url='%s'",
+      m_error.c_str(), m_url.c_str());
+
+    // set request.error:
+    duk_push_string(ctx, m_error.c_str());
+    duk_dup(ctx, -1);
+    duk_put_prop_string(ctx, obj_idx, "error");
+    nargs++;
+    }
+
+  // call method:
+  if (callable)
+    {
+    ESP_LOGD(TAG, "DuktapeHTTPRequest: calling method '%s' nargs=%d", method, nargs);
+    duk_call_prop(ctx, obj_idx, nargs);
+    }
+
+  // clear stack:
+  duk_pop_n(ctx, duk_get_top(ctx) - entry_top);
+  // allow GC:
+  if (deregister) Deregister(ctx);
+  return 0;
+  }
+
+
+/***************************************************************************************************
+ * OvmsScripts
+ */
+
 void OvmsScripts::RegisterDuktapeFunction(duk_c_function func, duk_idx_t nargs, const char* name)
   {
   duktape_registerfunction_t* fn = new duktape_registerfunction_t;
@@ -781,6 +1434,17 @@ void OvmsScripts::DuktapeCompact()
   memset(&dmsg, 0, sizeof(dmsg));
   dmsg.type = DUKTAPE_compact;
   DuktapeDispatchWait(&dmsg);
+  }
+
+void OvmsScripts::DuktapeRequestCallback(DuktapeObject* instance, const char* method, void* data)
+  {
+  duktape_queue_t dmsg;
+  memset(&dmsg, 0, sizeof(dmsg));
+  dmsg.type = DUKTAPE_callback;
+  dmsg.body.dt_callback.instance = instance;
+  dmsg.body.dt_callback.method = method;
+  dmsg.body.dt_callback.data = data;
+  DuktapeDispatch(&dmsg);
   }
 
 void *DukAlloc(void *udata, duk_size_t size)
@@ -983,6 +1647,14 @@ void OvmsScripts::DukTapeTask()
               *msg.body.dt_evalintresult.result = (int)duk_get_int(m_dukctx,-1);
               }
             duk_pop(m_dukctx);
+            }
+          break;
+        case DUKTAPE_callback:
+          if (m_dukctx != NULL)
+            {
+            // DuktapeObject callback (without result)
+            DuktapeObject* dto = msg.body.dt_callback.instance;
+            dto->DuktapeCallback(m_dukctx, msg);
             }
           break;
         default:
@@ -1212,6 +1884,9 @@ OvmsScripts::OvmsScripts()
   dto->RegisterDuktapeFunction(DukOvmsConfigSet, 3, "Set");
   dto->RegisterDuktapeFunction(DukOvmsConfigDelete, 2, "Delete");
   MyScripts.RegisterDuktapeObject(dto);
+  DuktapeObjectRegistration* dt_http = new DuktapeObjectRegistration("HTTP");
+  dt_http->RegisterDuktapeFunction(DuktapeHTTPRequest::Create, 1, "request");
+  RegisterDuktapeObject(dt_http);
 
   // Start the DukTape task...
   m_duktaskqueue = xQueueCreate(CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_QUEUE_SIZE,sizeof(duktape_queue_t));

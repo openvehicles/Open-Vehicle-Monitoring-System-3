@@ -1,5 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
+????-??-?? ???  ???????  OTA release
+- Scripting API: HTTP.request() added
+- SmartED: add BMS diagnose report
+  New commands:
+    xse rptdata     get a Battery Status Report
+    xse bmsdiag     get Battery Diagnose Report
+
 2019-12-13 MWJ  3.2.008  OTA release
 - Add support for 8MB PSRAM (in addition to current 4MB support)
 - Improvements to CAN driver, relating to obd2hud

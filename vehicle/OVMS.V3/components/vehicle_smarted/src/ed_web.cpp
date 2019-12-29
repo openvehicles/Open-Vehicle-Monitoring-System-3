@@ -32,8 +32,12 @@
 #include <sdkconfig.h>
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 
+#include <string.h>
 #include <stdio.h>
 #include <string>
+#include <sstream>
+#include <iomanip>
+#include <dirent.h>
 #include "ovms_metrics.h"
 #include "ovms_events.h"
 #include "ovms_config.h"
@@ -59,7 +63,8 @@ void OvmsVehicleSmartED::WebInit()
   MyWebServer.RegisterPage("/xse/features",   "Features",         WebCfgFeatures,                      PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xse/battery",    "Battery config",   WebCfgBattery,                       PageMenu_Vehicle, PageAuth_Cookie);
   //MyWebServer.RegisterPage("/xse/brakelight", "Brake Light",      OvmsWebServer::HandleCfgBrakelight,  PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/xse/cellmon",    "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  //MyWebServer.RegisterPage("/xse/cellmon",    "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xse/cellmon",    "BMS cell monitor", BmsCellMonitor,                      PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xse/commands",   "Commands",         WebCfgCommands,                      PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xse/notify",     "Notifys",          WebCfgNotify,                        PageMenu_Vehicle, PageAuth_Cookie);
 }
@@ -193,8 +198,8 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>This determines the Ideal Range.</p>",
     "min=\"90\" max=\"200\" step=\"1\"");
   
-  c.input_checkbox("change Display SOC = SOH", "soc_rsoc", soc_rsoc,
-    "<p>WARNING: change Displayed SOC to SOH and SOH to SOC.</p>");
+  c.input_checkbox("change Display SOC = realSOC", "soc_rsoc", soc_rsoc,
+    "<p>WARNING: change Displayed SOC to realSOC.</p>");
   
   c.input_checkbox("Enable CAN write(Poll)", "canwrite", canwrite,
     "<p>Controls overall CAN write access, some functions depend on this.</p>");
@@ -393,6 +398,786 @@ void OvmsVehicleSmartED::WebCfgNotify(PageEntry_t& p, PageContext_t& c)
   c.form_end();
   c.panel_end();
 
+  c.done();
+}
+
+/**
+ * BmsCellMonitor: display cell voltages & temperatures & capacitys
+ */
+void OvmsVehicleSmartED::BmsCellMonitor(PageEntry_t& p, PageContext_t& c)
+{
+  float stemwidth_v = 0.5, stemwidth_c = 0.5, stemwidth_t = 0.5;
+  float
+    volt_warn_def=BMS_DEFTHR_VWARN, volt_alert_def=BMS_DEFTHR_VALERT,
+    temp_warn_def=BMS_DEFTHR_TWARN, temp_alert_def=BMS_DEFTHR_TALERT;
+  float volt_warn=0, volt_alert=0, temp_warn=0, temp_alert=0;
+  bool alerts_enabled=true;
+
+  // get vehicle BMS configuration:
+  OvmsVehicle* vehicle = MyVehicleFactory.ActiveVehicle();
+  if (vehicle) {
+    int readings_v = vehicle->BmsGetCellArangementVoltage();
+    if (readings_v) {
+      stemwidth_v   = 0.1 + 20.0 / readings_v;  // 14 → 1.5 … 96 → 0.3
+      stemwidth_c   = 0.1 + 20.0 / readings_v;
+    }
+    int readings_t = vehicle->BmsGetCellArangementTemperature();
+    if (readings_t) {
+      stemwidth_t   = 0.1 + 10.0 / readings_t;  //  7 → 1.5 … 96 → 0.4
+    }
+    vehicle->BmsGetCellDefaultThresholdsVoltage(&volt_warn_def, &volt_alert_def);
+    vehicle->BmsGetCellDefaultThresholdsTemperature(&temp_warn_def, &temp_alert_def);
+  }
+
+  if (c.method == "POST") {
+    // process form submission:
+    
+    volt_warn = atof(c.getvar("volt_warn").c_str()) / 1000;
+    if (volt_warn > 0)
+      MyConfig.SetParamValueFloat("vehicle", "bms.dev.voltage.warn", volt_warn);
+    else
+      MyConfig.SetParamValue("vehicle", "bms.dev.voltage.warn", "");
+
+    volt_alert = atof(c.getvar("volt_alert").c_str()) / 1000;
+    if (volt_alert > 0)
+      MyConfig.SetParamValueFloat("vehicle", "bms.dev.voltage.alert", volt_alert);
+    else
+      MyConfig.SetParamValue("vehicle", "bms.dev.voltage.alert", "");
+
+    temp_warn = atof(c.getvar("temp_warn").c_str());
+    if (temp_warn > 0)
+      MyConfig.SetParamValueFloat("vehicle", "bms.dev.temp.warn", temp_warn);
+    else
+      MyConfig.SetParamValue("vehicle", "bms.dev.temp.warn", "");
+
+    temp_alert = atof(c.getvar("temp_alert").c_str());
+    if (temp_alert > 0)
+      MyConfig.SetParamValueFloat("vehicle", "bms.dev.temp.alert", temp_alert);
+    else
+      MyConfig.SetParamValue("vehicle", "bms.dev.temp.alert", "");
+
+    MyConfig.SetParamValueBool("vehicle", "bms.alerts.enabled", c.getvar("alerts_enabled") == "yes");
+    
+    if (c.getvar("action") == "save-reset" && vehicle)
+      vehicle->BmsResetCellStats();
+    
+    c.head(200);
+    c.alert("success", "<p>Saved.</p>");
+    c.print("<script>after(2, function(){ $('.modal').modal('hide'); });</script>");
+    c.done();
+    return;
+  }
+
+  // read config:
+  volt_warn = MyConfig.GetParamValueFloat("vehicle", "bms.dev.voltage.warn");
+  volt_alert = MyConfig.GetParamValueFloat("vehicle", "bms.dev.voltage.alert");
+  temp_warn = MyConfig.GetParamValueFloat("vehicle", "bms.dev.temp.warn");
+  temp_alert = MyConfig.GetParamValueFloat("vehicle", "bms.dev.temp.alert");
+  alerts_enabled = MyConfig.GetParamValueBool("vehicle", "bms.alerts.enabled", true);
+  
+  c.head(200);
+  PAGE_HOOK("body.pre");
+
+  c.print(
+    "<div class=\"panel panel-primary panel-single\">\n"
+      "<div class=\"panel-heading\">BMS Cell Monitor</div>\n"
+      "<div class=\"panel-body\">\n"
+        "<div class=\"row\">\n"
+          "<div class=\"receiver\" id=\"livestatus\">\n"
+            "<div id=\"voltchart\" style=\"width: 100%; max-width: 100%; height: 45vh; min-height: 280px; margin: 0 auto\"></div>\n"
+            "<div id=\"capachart\" style=\"width: 100%; max-width: 100%; height: 45vh; min-height: 280px; margin: 0 auto\"></div>\n"
+            "<div id=\"tempchart\" style=\"width: 100%; max-width: 100%; height: 25vh; min-height: 160px; margin: 0 auto\"></div>\n"
+          "</div>\n"
+        "</div>\n"
+      "</div>\n"
+      "<div class=\"panel-footer\">\n"
+        "<button class=\"btn btn-default\" data-toggle=\"modal\" data-target=\"#cfg-dialog\">Alert config</button>\n"
+        "<button class=\"btn btn-default\" data-cmd=\"bms reset\" data-target=\"#output\" data-watchcnt=\"0\">Reset min/max</button>\n"
+        "<samp id=\"output\" class=\"samp-inline\"></samp>\n"
+      "</div>\n"
+    "</div>\n"
+    "\n"
+    "<div class=\"modal fade\" id=\"cfg-dialog\" role=\"dialog\" data-backdrop=\"true\" data-keyboard=\"true\">\n"
+      "<div class=\"modal-dialog modal-lg\">\n"
+        "<div class=\"modal-content\">\n"
+          "<div class=\"modal-header\">\n"
+            "<button type=\"button\" class=\"close\" data-dismiss=\"modal\">&times;</button>\n"
+            "<h4 class=\"modal-title\">Alert configuration</h4>\n"
+          "</div>\n"
+          "<div class=\"modal-body\">\n");
+
+  // Alert configuration form:
+
+  std::ostringstream sval, sdef;
+  sval << std::fixed;
+  sdef << std::fixed;
+  
+  c.form_start(p.uri, "#cfg-result");
+
+  c.input_info("Thresholds",
+    "<p>Deviation warnings and alerts are triggered by cell deviation from the current average.</p>"
+    "<p>You may need to change the thresholds to adapt to the quality and age of your battery.</p>");
+
+  sval << std::setprecision(0);
+  sdef << std::setprecision(0);
+  sval.str(""); if (volt_warn > 0) sval << volt_warn * 1000;
+  sdef.str(""); sdef << "Default: " << volt_warn_def * 1000;
+  c.input("number", "Voltage warning", "volt_warn", sval.str().c_str(), sdef.str().c_str(),
+    NULL, "min=\"1\" step=\"1\"", "mV");
+  sval.str(""); if (volt_alert > 0) sval << volt_alert * 1000;
+  sdef.str(""); sdef << "Default: " << volt_alert_def * 1000;
+  c.input("number", "Voltage alert", "volt_alert", sval.str().c_str(), sdef.str().c_str(),
+    NULL, "min=\"1\" step=\"1\"", "mV");
+
+  sval << std::setprecision(1);
+  sdef << std::setprecision(1);
+  sval.str(""); if (temp_warn > 0) sval << temp_warn;
+  sdef.str(""); sdef << "Default: " << temp_warn_def;
+  c.input("number", "Temperature warning", "temp_warn", sval.str().c_str(), sdef.str().c_str(),
+    NULL, "min=\"0.1\" step=\"0.1\"", "°C");
+  sval.str(""); if (temp_alert > 0) sval << temp_alert;
+  sdef.str(""); sdef << "Default: " << temp_alert_def;
+  c.input("number", "Temperature alert", "temp_alert", sval.str().c_str(), sdef.str().c_str(),
+    NULL, "min=\"0.1\" step=\"0.1\"", "°C");
+
+  c.input_checkbox("Enable alert notifications", "alerts_enabled", alerts_enabled);
+
+  c.print(
+    "<div class=\"form-group\">"
+      "<div class=\"col-sm-offset-3 col-sm-9\">"
+        "<button type=\"submit\" class=\"btn btn-default\" name=\"action\" value=\"save\">Save</button> "
+        "<button type=\"submit\" class=\"btn btn-default\" name=\"action\" value=\"save-reset\">Save &amp; reset alerts</button> "
+      "</div>"
+    "</div>"
+    "<div class=\"form-group\">"
+      "<div class=\"col-sm-offset-3 col-sm-9\">"
+        "<div id=\"cfg-result\" class=\"modal-autoclear\"></div>"
+      "</div>"
+    "</div>");
+  c.form_end();
+
+  c.print(
+          "</div>\n"
+          "<div class=\"modal-footer\">\n"
+            "<button type=\"button\" class=\"btn btn-default\" data-dismiss=\"modal\">Close</button>\n"
+          "</div>\n"
+        "</div>\n"
+      "</div>\n"
+    "</div>\n"
+    "\n"
+    "\n"
+    "<style>\n"
+    "\n"
+    ".highcharts-boxplot-stem {\n"
+      "stroke-opacity: 1;\n"
+    "}\n"
+    ".highcharts-point {\n"
+      "stroke-width: 1px;\n"
+    "}\n"
+    ".night .highcharts-columnrange-series .highcharts-point {\n"
+      "fill-opacity: 0.6;\n"
+      "stroke-opacity: 0.6;\n"
+    "}\n"
+    "\n"
+    ".night .highcharts-legend-item text {\n"
+      "fill: #dddddd;\n"
+    "}\n"
+    "\n"
+    ".highcharts-plot-line {\n"
+      "fill: none;\n"
+      "stroke: #3625c3;\n"
+      "stroke-width: 2px;\n"
+    "}\n"
+    ".night .highcharts-plot-line {\n"
+      "stroke: #728def;\n"
+    "}\n"
+    ".highcharts-plot-band {\n"
+      "fill: #3625c3;\n"
+      "fill-opacity: 0.1;\n"
+    "}\n"
+    ".night .highcharts-plot-band {\n"
+      "fill: #728def;\n"
+      "fill-opacity: 0.2;\n"
+    "}\n"
+    "\n"
+    ".plot-line-sdmaxlo {\n"
+      "stroke: #3625c3;\n"
+      "stroke-width: 1px;\n"
+    "}\n"
+    ".plot-line-sdmaxhi {\n"
+      "stroke: #3625c3;\n"
+      "stroke-width: 1px;\n"
+    "}\n"
+    ".night .plot-line-sdmaxlo {\n"
+      "stroke: #728def;\n"
+    "}\n"
+    ".night .plot-line-sdmaxhi {\n"
+      "stroke: #728def;\n"
+    "}\n"
+    "\n"
+    ".highcharts-plot-line-label {\n"
+      "fill: #888;\n"
+      "font-size: 10px;\n"
+    "}\n"
+    "\n"
+    ".highcharts-color-1 {\n"
+      "fill: #ffb500;\n"
+      "stroke: #cc950e;\n"
+    "}\n"
+    ".highcharts-color-2 {\n"
+      "fill: #ff3400;\n"
+      "stroke: #ff3400;\n"
+    "}\n"
+    "\n"
+    "#voltchart .highcharts-point.highcharts-color-0 {\n"
+      "fill: #3625c3;\n"
+      "fill-opacity: 0.1;\n"
+      "stroke: #3625c3;\n"
+    "}\n"
+    ".night #voltchart .highcharts-point.highcharts-color-0 {\n"
+      "fill: #728def;\n"
+      "stroke: #728def;\n"
+    "}\n"
+    "\n"
+    "#voltchart .highcharts-boxplot-stem {\n"
+      "fill: #63cc7a;\n"
+      "fill-opacity: 1;\n"
+      "stroke: #63cc7a;\n"
+      "stroke-opacity: 1;\n"
+    "}\n"
+    ".night #voltchart .highcharts-boxplot-stem {\n"
+      "fill-opacity: 0.6;\n"
+      "stroke-opacity: 0.6;\n"
+    "}\n"
+    "\n"
+    "#voltchart .highcharts-boxplot-median {\n"
+      "stroke: #193e07;\n"
+      "stroke-width: 5px;\n"
+      "stroke-linecap: round;\n"
+    "}\n"
+    ".night #voltchart .highcharts-boxplot-median {\n"
+      "stroke: #afff45;\n"
+    "}\n"
+    "\n"
+    "#capachart .highcharts-point.highcharts-color-0 {\n"
+      "fill: #3625c3;\n"
+      "fill-opacity: 0.1;\n"
+      "stroke: #3625c3;\n"
+    "}\n"
+    ".night #capachart .highcharts-point.highcharts-color-0 {\n"
+      "fill: #728def;\n"
+      "stroke: #728def;\n"
+    "}\n"
+    "\n"
+    "#capachart .highcharts-boxplot-stem {\n"
+      "fill: #63cc7a;\n"
+      "fill-opacity: 1;\n"
+      "stroke: #63cc7a;\n"
+      "stroke-opacity: 1;\n"
+    "}\n"
+    ".night #capachart .highcharts-boxplot-stem {\n"
+      "fill-opacity: 0.6;\n"
+      "stroke-opacity: 0.6;\n"
+    "}\n"
+    "\n"
+    "#capachart .highcharts-boxplot-median {\n"
+      "stroke: #193e07;\n"
+      "stroke-width: 5px;\n"
+      "stroke-linecap: round;\n"
+    "}\n"
+    ".night #capachart .highcharts-boxplot-median {\n"
+      "stroke: #afff45;\n"
+    "}\n"
+    "\n"
+    "#tempchart .highcharts-point.highcharts-color-0 {\n"
+      "fill: #3625c3;\n"
+      "fill-opacity: 0.1;\n"
+      "stroke: #3625c3;\n"
+    "}\n"
+    ".night #tempchart .highcharts-point.highcharts-color-0 {\n"
+      "fill: #728def;\n"
+      "stroke: #728def;\n"
+    "}\n"
+    "\n"
+    "#tempchart .highcharts-boxplot-stem {\n"
+      "fill: #da9073;\n"
+      "fill-opacity: 1;\n"
+      "stroke: #da9073;\n"
+      "stroke-opacity: 1;\n"
+    "}\n"
+    ".night #tempchart .highcharts-boxplot-stem {\n"
+      "fill-opacity: 0.6;\n"
+      "stroke-opacity: 0.6;\n"
+    "}\n"
+    "\n"
+    "#tempchart .highcharts-boxplot-median {\n"
+      "stroke: #7d1313;\n"
+      "stroke-width: 5px;\n"
+      "stroke-linecap: round;\n"
+    "}\n"
+    ".night #tempchart .highcharts-boxplot-median {\n"
+      "stroke: #fdd02e;\n"
+    "}\n");
+  
+  c.printf(
+    "#voltchart .highcharts-boxplot-stem {\n"
+      "stroke-width: %.1f%%;\n"
+    "}\n"
+    "#capachart .highcharts-boxplot-stem {\n"
+      "stroke-width: %.1f%%;\n"
+    "}\n"
+    "#tempchart .highcharts-boxplot-stem {\n"
+      "stroke-width: %.1f%%;\n"
+    "}\n"
+    "</style>\n"
+    , stemwidth_v, stemwidth_c, stemwidth_t);
+
+  c.print(
+    "<script>\n"
+    "\n"
+    "/**\n"
+     "* Cell voltage chart\n"
+     "*/\n"
+    "\n"
+    "var voltchart;\n"
+    "\n"
+    "// get_volt_data: build boxplot dataset from metrics\n"
+    "function get_volt_data() {\n"
+      "var data = { cells: [], volts: [], devmax: [], voltmean: 0, sdlo: 0, sdhi: 0, sdmaxlo: 0, sdmaxhi: 0 };\n"
+      "var cnt = metrics[\"v.b.c.voltage\"] ? metrics[\"v.b.c.voltage\"].length : 0;\n"
+      "if (cnt == 0)\n"
+        "return data;\n"
+      "var i, act, min, max, devmax, dalert, dlow, dhigh, voffset;\n"
+      "voffset = metrics[\"xse.mybms.adc.volts.offset\"]/1000;\n"
+      "data.voltmean = metrics[\"v.b.p.voltage.avg\"]-voffset || 0;\n"
+      "data.sdlo = data.voltmean - (metrics[\"v.b.p.voltage.stddev\"] || 0);\n"
+      "data.sdhi = data.voltmean + (metrics[\"v.b.p.voltage.stddev\"] || 0);\n"
+      "data.sdmaxlo = data.voltmean - (metrics[\"v.b.p.voltage.stddev.max\"] || 0);\n"
+      "data.sdmaxhi = data.voltmean + (metrics[\"v.b.p.voltage.stddev.max\"] || 0);\n"
+      "for (i=0; i<cnt; i++) {\n"
+        "act = metrics[\"v.b.c.voltage\"][i]-voffset;\n"
+        "min = metrics[\"v.b.c.voltage.min\"][i]-voffset || act;\n"
+        "max = metrics[\"v.b.c.voltage.max\"][i]-voffset || act;\n"
+        "devmax = metrics[\"v.b.c.voltage.dev.max\"][i] || 0;\n"
+        "dalert = metrics[\"v.b.c.voltage.alert\"][i] || 0;\n"
+        "if (devmax > 0) {\n"
+          "dlow = data.voltmean;\n"
+          "dhigh = data.voltmean + devmax;\n"
+        "} else {\n"
+          "dlow = data.voltmean + devmax;\n"
+          "dhigh = data.voltmean;\n"
+        "}\n"
+        "data.cells.push(i+1);\n"
+        "data.volts.push([min,act,act,act,max]);\n"
+        "data.devmax.push({ x:i, low:dlow, high:dhigh, colorIndex:dalert,\n"
+            "id: ((devmax < 0) ? '▼ ' : '▲ ') + Math.abs(devmax * 1000).toFixed(0) + ' mV' });\n"
+      "}\n"
+      "return data;\n"
+    "}\n"
+    "\n"
+    "function update_volt_chart() {\n"
+      "var data = get_volt_data();\n"
+      "voltchart.xAxis[0].setCategories(data.cells);\n"
+      "voltchart.yAxis[0].removePlotLine('plot-line-mean');\n"
+      "voltchart.yAxis[0].addPlotLine({ id: 'plot-line-mean', className: 'plot-line-mean', value: data.voltmean, zIndex: 3 });\n"
+      "voltchart.yAxis[0].removePlotLine('plot-line-sdmaxlo');\n"
+      "voltchart.yAxis[0].addPlotLine({ id: 'plot-line-sdmaxlo', className: 'plot-line-sdmaxlo', value: data.sdmaxlo, zIndex: 3 });\n"
+      "voltchart.yAxis[0].removePlotLine('plot-line-sdmaxhi');\n"
+      "voltchart.yAxis[0].addPlotLine({ id: 'plot-line-sdmaxhi', className: 'plot-line-sdmaxhi', value: data.sdmaxhi, zIndex: 3, label: { text: 'Max Std Dev' } });\n"
+      "voltchart.yAxis[0].removePlotBand('plot-band-sd');\n"
+      "voltchart.yAxis[0].addPlotBand({ id: 'plot-band-sd', className: 'plot-band-sd', from: data.sdlo, to: data.sdhi });\n"
+      "voltchart.series[0].setData(data.volts);\n"
+      "voltchart.series[1].setData(data.devmax);\n"
+    "}\n"
+    "\n"
+    "function init_volt_chart() {\n"
+      "var data = get_volt_data();\n"
+      "voltchart = Highcharts.chart('voltchart', {\n"
+        "chart: {\n"
+          "type: 'boxplot',\n"
+          "events: {\n"
+            "load: function () {\n"
+              "$('#livestatus').on(\"msg:metrics\", function(e, update){\n"
+                "if (update[\"v.b.c.voltage\"] != null\n"
+                 "|| update[\"v.b.c.voltage.min\"] != null\n"
+                 "|| update[\"v.b.c.voltage.max\"] != null\n"
+                 "|| update[\"v.b.c.voltage.dev.max\"] != null\n"
+                 "|| update[\"v.b.c.voltage.alert\"] != null)\n"
+                  "update_volt_chart();\n"
+              "});\n"
+            "}\n"
+          "},\n"
+          "zoomType: 'y',\n"
+          "panning: true,\n"
+          "panKey: 'ctrl',\n"
+        "},\n"
+        "title: { text: null },\n"
+        "credits: { enabled: false },\n"
+        "legend: {\n"
+          "enabled: true,\n"
+          "align: 'center',\n"
+          "verticalAlign: 'bottom',\n"
+          "margin: 2,\n"
+          "padding: 2,\n"
+        "},\n"
+        "xAxis: { categories: data.cells },\n"
+        "yAxis: {\n"
+          "title: { text: null },\n"
+          "labels: { format: \"{value:.2f}V\" },\n"
+          "minTickInterval: 0.01,\n"
+          "minorTickInterval: 'auto',\n"
+          "plotLines: [\n"
+            "{ id: 'plot-line-mean', className: 'plot-line-mean', value: data.voltmean, zIndex: 3 },\n"
+            "{ id: 'plot-line-sdmaxlo', className: 'plot-line-sdmaxlo', value: data.sdmaxlo, zIndex: 3 },\n"
+            "{ id: 'plot-line-sdmaxhi', className: 'plot-line-sdmaxhi', value: data.sdmaxhi, zIndex: 3, label: { text: 'Max Std Dev' } },\n"
+          "],\n"
+          "plotBands: [{ id: 'plot-band-sd', className: 'plot-band-sd', from: data.sdlo, to: data.sdhi }],\n"
+        "},\n"
+        "tooltip: {\n"
+          "shared: true,\n"
+          "padding: 4,\n"
+          "positioner: function (labelWidth, labelHeight, point) {\n"
+            "return {\n"
+              "x: voltchart.plotLeft + Math.min(voltchart.plotWidth - labelWidth, Math.max(0, point.plotX - labelWidth/2)),\n"
+              "y: 0 };\n"
+          "},\n"
+          "headerFormat: 'Voltage #{point.key}: ',\n"
+          "pointFormatter: function () {\n"
+            "if (this.series.index == 0) {\n"
+              "return '<b>' + this.median.toFixed(3) + ' V</b>'\n"
+                "+ '  [' + this.low.toFixed(3) + ' – ' + this.high.toFixed(3) + ']<br/>';\n"
+            "} else {\n"
+              "return 'Max deviation: <b>' + this.id + '</b>';\n"
+            "}\n"
+          "},\n"
+        "},\n"
+        "series: [{\n"
+          "name: 'Voltage',\n"
+          "zIndex: 1,\n"
+          "data: data.volts,\n"
+          "whiskerLength: 0,\n"
+          "animation: {\n"
+            "duration: 100,\n"
+            "easing: 'easeOutExpo'\n"
+          "},\n"
+        "},{\n"
+          "name: 'Max deviation',\n"
+          "zIndex: 0,\n"
+          "type: 'columnrange',\n"
+          "data: data.devmax,\n"
+          "maxPointWidth: 35,\n"
+          "animation: {\n"
+            "duration: 100,\n"
+            "easing: 'easeOutExpo'\n"
+          "},\n"
+        "}]\n"
+      "});\n"
+      "$('#voltchart').data('chart', voltchart).addClass('has-chart');"
+    "}\n"
+    "\n"
+    "/**\n"
+     "* Cell capacity chart\n"
+     "*/\n"
+    "\n"
+    "var capachart;\n"
+    "\n"
+    "// get_capa_data: build boxplot dataset from metrics\n"
+    "function get_capa_data() {\n"
+      "var data = { cells: [], capas: [], devmax: [], capamean: 0, sdlo: 0, sdhi: 0, sdmaxlo: 0, sdmaxhi: 0 };\n"
+      "var cnt = metrics[\"xse.v.b.c.capacity\"] ? metrics[\"xse.v.b.c.capacity\"].length : 0;\n"
+      "if (cnt == 0)\n"
+        "return data;\n"
+      "var i, act, min, max, devmax, dlow, dhigh;\n"
+      "data.capamean = metrics[\"xse.v.b.p.capacity.avg\"] || 0;\n"
+      "data.sdlo = data.capamean - (metrics[\"xse.v.b.p.capacity.stddev\"] || 0);\n"
+      "data.sdhi = data.capamean + (metrics[\"xse.v.b.p.capacity.stddev\"] || 0);\n"
+      "data.sdmaxlo = data.capamean - (metrics[\"xse.v.b.p.capacity.stddev.max\"] || 0);\n"
+      "data.sdmaxhi = data.capamean + (metrics[\"xse.v.b.p.capacity.stddev.max\"] || 0);\n"
+      "for (i=0; i<cnt; i++) {\n"
+        "act = metrics[\"xse.v.b.c.capacity\"][i];\n"
+        "min = metrics[\"xse.v.b.c.capacity.min\"][i] || act;\n"
+        "max = metrics[\"xse.v.b.c.capacity.max\"][i] || act;\n"
+        "devmax = metrics[\"xse.v.b.c.capacity.dev.max\"][i] || 0;\n"
+        "if (devmax > 0) {\n"
+          "dlow = data.capamean;\n"
+          "dhigh = data.capamean + devmax;\n"
+        "} else {\n"
+          "dlow = data.capamean + devmax;\n"
+          "dhigh = data.capamean;\n"
+        "}\n"
+        "data.cells.push(i+1);\n"
+        "data.capas.push([min,act,act,act,max]);\n"
+        "data.devmax.push({ x:i, low:dlow, high:dhigh,\n"
+            "id: ((devmax < 0) ? '▼ ' : '▲ ') + Math.abs(devmax).toFixed(0) + ' As/10' });\n"
+      "}\n"
+      "return data;\n"
+    "}\n"
+    "\n"
+    "function update_capa_chart() {\n"
+      "var data = get_capa_data();\n"
+      "capachart.xAxis[0].setCategories(data.cells);\n"
+      "capachart.yAxis[0].removePlotLine('plot-line-mean');\n"
+      "capachart.yAxis[0].addPlotLine({ id: 'plot-line-mean', className: 'plot-line-mean', value: data.capamean, zIndex: 3 });\n"
+      "capachart.yAxis[0].removePlotLine('plot-line-sdmaxlo');\n"
+      "capachart.yAxis[0].addPlotLine({ id: 'plot-line-sdmaxlo', className: 'plot-line-sdmaxlo', value: data.sdmaxlo, zIndex: 3 });\n"
+      "capachart.yAxis[0].removePlotLine('plot-line-sdmaxhi');\n"
+      "capachart.yAxis[0].addPlotLine({ id: 'plot-line-sdmaxhi', className: 'plot-line-sdmaxhi', value: data.sdmaxhi, zIndex: 3, label: { text: 'Max Std Dev' } });\n"
+      "capachart.yAxis[0].removePlotBand('plot-band-sd');\n"
+      "capachart.yAxis[0].addPlotBand({ id: 'plot-band-sd', className: 'plot-band-sd', from: data.sdlo, to: data.sdhi });\n"
+      "capachart.series[0].setData(data.capas);\n"
+      "capachart.series[1].setData(data.devmax);\n"
+    "}\n"
+    "\n"
+    "function init_capa_chart() {\n"
+      "var data = get_capa_data();\n"
+      "capachart = Highcharts.chart('capachart', {\n"
+        "chart: {\n"
+          "type: 'boxplot',\n"
+          "events: {\n"
+            "load: function () {\n"
+              "$('#livestatus').on(\"msg:metrics\", function(e, update){\n"
+                "if (update[\"xse.v.b.c.capacity\"] != null\n"
+                 "|| update[\"xse.v.b.c.capacity.min\"] != null\n"
+                 "|| update[\"xse.v.b.c.capacity.max\"] != null\n"
+                 "|| update[\"xse.v.b.c.capacity.dev.max\"] != null)\n"
+                  "update_capa_chart();\n"
+              "});\n"
+            "}\n"
+          "},\n"
+          "zoomType: 'y',\n"
+          "panning: true,\n"
+          "panKey: 'ctrl',\n"
+        "},\n"
+        "title: { text: null },\n"
+        "credits: { enabled: false },\n"
+        "legend: {\n"
+          "enabled: true,\n"
+          "align: 'center',\n"
+          "verticalAlign: 'bottom',\n"
+          "margin: 2,\n"
+          "padding: 2,\n"
+        "},\n"
+        "xAxis: { categories: data.cells },\n"
+        "yAxis: {\n"
+          "title: { text: null },\n"
+          "labels: { format: \"{value:.0f}As/10\" },\n"
+          "minTickInterval: 1,\n"
+          "minorTickInterval: 'auto',\n"
+          "plotLines: [\n"
+            "{ id: 'plot-line-mean', className: 'plot-line-mean', value: data.capamean, zIndex: 3 },\n"
+            "{ id: 'plot-line-sdmaxlo', className: 'plot-line-sdmaxlo', value: data.sdmaxlo, zIndex: 3 },\n"
+            "{ id: 'plot-line-sdmaxhi', className: 'plot-line-sdmaxhi', value: data.sdmaxhi, zIndex: 3, label: { text: 'Max Std Dev' } },\n"
+          "],\n"
+          "plotBands: [{ id: 'plot-band-sd', className: 'plot-band-sd', from: data.sdlo, to: data.sdhi }],\n"
+        "},\n"
+        "tooltip: {\n"
+          "shared: true,\n"
+          "padding: 4,\n"
+          "positioner: function (labelWidth, labelHeight, point) {\n"
+            "return {\n"
+              "x: capachart.plotLeft + Math.min(capachart.plotWidth - labelWidth, Math.max(0, point.plotX - labelWidth/2)),\n"
+              "y: 0 };\n"
+          "},\n"
+          "headerFormat: 'Capacity #{point.key}: ',\n"
+          "pointFormatter: function () {\n"
+            "if (this.series.index == 0) {\n"
+              "var amps = this.median/360.0;"
+              "return '<b>' + this.median.toFixed(0) + ' As/10, ' + amps.toFixed(1) + ' Ah</b>'\n"
+                "+ '  [' + this.low.toFixed(0) + ' – ' + this.high.toFixed(0) + ']<br/>';\n"
+            "} else {\n"
+              "return 'Max deviation: <b>' + this.id + '</b>';\n"
+            "}\n"
+          "},\n"
+        "},\n"
+        "series: [{\n"
+          "name: 'Capacity',\n"
+          "zIndex: 1,\n"
+          "data: data.capas,\n"
+          "whiskerLength: 0,\n"
+          "animation: {\n"
+            "duration: 100,\n"
+            "easing: 'easeOutExpo'\n"
+          "},\n"
+        "},{\n"
+          "name: 'Max deviation',\n"
+          "zIndex: 0,\n"
+          "type: 'columnrange',\n"
+          "data: data.devmax,\n"
+          "maxPointWidth: 35,\n"
+          "animation: {\n"
+            "duration: 100,\n"
+            "easing: 'easeOutExpo'\n"
+          "},\n"
+        "}]\n"
+      "});\n"
+      "$('#capachart').data('chart', capachart).addClass('has-chart');"
+    "}\n"
+    "\n"
+    "\n"
+    "/**\n"
+     "* Cell temperature chart\n"
+     "*/\n"
+    "\n"
+    "var tempchart;\n"
+    "\n"
+    "// get_temp_data: build boxplot dataset from metrics\n"
+    "function get_temp_data() {\n"
+      "var data = { cells: [], temps: [], devmax: [], tempmean: 0, sdlo: 0, sdhi: 0, sdmaxlo: 0, sdmaxhi: 0 };\n"
+      "var cnt = metrics[\"v.b.c.temp\"] ? metrics[\"v.b.c.temp\"].length : 0;\n"
+      "if (cnt == 0)\n"
+        "return data;\n"
+      "var i, act, min, max, devmax, dalert, dlow, dhigh;\n"
+      "data.tempmean = metrics[\"v.b.p.temp.avg\"] || 0;\n"
+      "data.sdlo = data.tempmean - (metrics[\"v.b.p.temp.stddev\"] || 0);\n"
+      "data.sdhi = data.tempmean + (metrics[\"v.b.p.temp.stddev\"] || 0);\n"
+      "data.sdmaxlo = data.tempmean - (metrics[\"v.b.p.temp.stddev.max\"] || 0);\n"
+      "data.sdmaxhi = data.tempmean + (metrics[\"v.b.p.temp.stddev.max\"] || 0);\n"
+      "for (i=0; i<cnt; i++) {\n"
+        "act = metrics[\"v.b.c.temp\"][i];\n"
+        "min = metrics[\"v.b.c.temp.min\"][i] || act;\n"
+        "max = metrics[\"v.b.c.temp.max\"][i] || act;\n"
+        "devmax = metrics[\"v.b.c.temp.dev.max\"][i] || 0;\n"
+        "dalert = metrics[\"v.b.c.temp.alert\"][i] || 0;\n"
+        "if (devmax > 0) {\n"
+          "dlow = data.tempmean;\n"
+          "dhigh = data.tempmean + devmax;\n"
+        "} else {\n"
+          "dlow = data.tempmean + devmax;\n"
+          "dhigh = data.tempmean;\n"
+        "}\n"
+        "data.cells.push(i+1);\n"
+        "data.temps.push([min,act,act,act,max]);\n"
+        "data.devmax.push({ x:i, low:dlow, high:dhigh, colorIndex:dalert,\n"
+            "id: ((devmax < 0) ? '▼ ' : '▲ ') + Math.abs(devmax).toFixed(1) + ' °C' });\n"
+      "}\n"
+      "return data;\n"
+    "}\n"
+    "\n"
+    "function update_temp_chart() {\n"
+      "var data = get_temp_data();\n"
+      "tempchart.xAxis[0].setCategories(data.cells);\n"
+      "tempchart.yAxis[0].removePlotLine('plot-line-mean');\n"
+      "tempchart.yAxis[0].addPlotLine({ id: 'plot-line-mean', className: 'plot-line-mean', value: data.tempmean, zIndex: 3 });\n"
+      "tempchart.yAxis[0].removePlotLine('plot-line-sdmaxlo');\n"
+      "tempchart.yAxis[0].addPlotLine({ id: 'plot-line-sdmaxlo', className: 'plot-line-sdmaxlo', value: data.sdmaxlo, zIndex: 3 });\n"
+      "tempchart.yAxis[0].removePlotLine('plot-line-sdmaxhi');\n"
+      "tempchart.yAxis[0].addPlotLine({ id: 'plot-line-sdmaxhi', className: 'plot-line-sdmaxhi', value: data.sdmaxhi, zIndex: 3, label: { text: 'Max Std Dev' } });\n"
+      "tempchart.yAxis[0].removePlotBand('plot-band-sd');\n"
+      "tempchart.yAxis[0].addPlotBand({ id: 'plot-band-sd', className: 'plot-band-sd', from: data.sdlo, to: data.sdhi });\n"
+      "tempchart.series[0].setData(data.temps);\n"
+      "tempchart.series[1].setData(data.devmax);\n"
+    "}\n"
+    "\n"
+    "function init_temp_chart() {\n"
+      "var data = get_temp_data();\n"
+      "tempchart = Highcharts.chart('tempchart', {\n"
+        "chart: {\n"
+          "type: 'boxplot',\n"
+          "events: {\n"
+            "load: function () {\n"
+              "$('#livestatus').on(\"msg:metrics\", function(e, update){\n"
+                "if (update[\"v.b.c.temp\"] != null\n"
+                 "|| update[\"v.b.c.temp.min\"] != null\n"
+                 "|| update[\"v.b.c.temp.max\"] != null\n"
+                 "|| update[\"v.b.c.temp.dev.max\"] != null\n"
+                 "|| update[\"v.b.c.temp.alert\"] != null)\n"
+                  "update_temp_chart();\n"
+              "});\n"
+            "}\n"
+          "},\n"
+          "zoomType: 'y',\n"
+          "panning: true,\n"
+          "panKey: 'ctrl',\n"
+        "},\n"
+        "title: { text: null },\n"
+        "credits: { enabled: false },\n"
+        "legend: {\n"
+          "enabled: true,\n"
+          "align: 'center',\n"
+          "verticalAlign: 'bottom',\n"
+          "margin: 2,\n"
+          "padding: 2,\n"
+        "},\n"
+        "xAxis: { categories: data.cells },\n"
+        "yAxis: {\n"
+          "title: { text: null },\n"
+          "labels: { format: \"{value:.0f} °C\" },\n"
+          "minTickInterval: 1,\n"
+          "minorTickInterval: 'auto',\n"
+          "plotLines: [\n"
+            "{ id: 'plot-line-mean', className: 'plot-line-mean', value: data.tempmean, zIndex: 3 },\n"
+            "{ id: 'plot-line-sdmaxlo', className: 'plot-line-sdmaxlo', value: data.sdmaxlo, zIndex: 3 },\n"
+            "{ id: 'plot-line-sdmaxhi', className: 'plot-line-sdmaxhi', value: data.sdmaxhi, zIndex: 3, label: { text: 'Max Std Dev' } },\n"
+          "],\n"
+          "plotBands: [{ id: 'plot-band-sd', className: 'plot-band-sd', from: data.sdlo, to: data.sdhi }],\n"
+        "},\n"
+        "tooltip: {\n"
+          "shared: true,\n"
+          "padding: 4,\n"
+          "positioner: function (labelWidth, labelHeight, point) {\n"
+            "return {\n"
+              "x: tempchart.plotLeft + Math.min(tempchart.plotWidth - labelWidth, Math.max(0, point.plotX - labelWidth/2)),\n"
+              "y: 0 };\n"
+          "},\n"
+          "headerFormat: 'Temperature #{point.key}: ',\n"
+          "pointFormatter: function () {\n"
+            "if (this.series.index == 0) {\n"
+              "return '<b>' + this.median.toFixed(1) + ' °C</b>'\n"
+                "+ '  [' + this.low.toFixed(1) + ' – ' + this.high.toFixed(1) + ']<br/>';\n"
+            "} else {\n"
+              "return 'Max deviation: <b>' + this.id + '</b>';\n"
+            "}\n"
+          "},\n"
+        "},\n"
+        "series: [{\n"
+          "name: 'Temperature',\n"
+          "zIndex: 1,\n"
+          "data: data.temps,\n"
+          "whiskerLength: 0,\n"
+          "animation: {\n"
+            "duration: 100,\n"
+            "easing: 'easeOutExpo'\n"
+          "},\n"
+        "},{\n"
+          "name: 'Max deviation',\n"
+          "zIndex: 0,\n"
+          "type: 'columnrange',\n"
+          "data: data.devmax,\n"
+          "maxPointWidth: 35,\n"
+          "animation: {\n"
+            "duration: 100,\n"
+            "easing: 'easeOutExpo'\n"
+          "},\n"
+        "}]\n"
+      "});\n"
+      "$('#tempchart').data('chart', tempchart).addClass('has-chart');"
+    "}\n"
+    "\n"
+    "\n"
+    "/**\n"
+     "* Chart initialization\n"
+     "*/\n"
+    "\n"
+    "function init_charts() {\n"
+      "init_volt_chart();\n"
+      "init_capa_chart();\n"
+      "init_temp_chart();\n"
+    "}\n"
+    "\n"
+    "if (window.Highcharts) {\n"
+      "init_charts();\n"
+    "} else {\n"
+      "$.ajax({\n"
+        "url: \"" URL_ASSETS_CHARTS_JS "\",\n"
+        "dataType: \"script\",\n"
+        "cache: true,\n"
+        "success: function(){ init_charts(); }\n"
+      "});\n"
+    "}\n"
+    "\n"
+    "</script>\n");
+  
+  PAGE_HOOK("body.post");
   c.done();
 }
 

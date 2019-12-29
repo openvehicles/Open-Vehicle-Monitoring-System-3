@@ -271,6 +271,82 @@ format. Both by default insert spacing and indentation for readability and accep
   the representation of functions. Using the ``JX`` encoding will omit unnecessary quotings.
 
 
+HTTP
+^^^^
+
+The HTTP API provides asynchronous GET & POST requests for HTTP and HTTPS. Requests can return 
+text and binary data and follow 301/302 redirects automatically. Basic authentication is supported 
+(add username & password to the URL), digest authentication is not yet implemented.
+
+The handler automatically excludes the request objects from gargabe collection until finished 
+(success/failure), so you don't need to store a global reference to the request.
+
+- ``req = HTTP.request(cfg)``
+    Perform asynchronous HTTP/HTTPS GET or POST request.
+
+    Pass the request parameters using the ``cfg`` object:
+
+    - ``url``: standard URL/URI syntax, optionally including user auth and query string
+    - ``post``: optional POST data, set to an empty string to force a POST request. Note: you
+      need to provide this in encoded form. If no ``Content-Type`` header is given, it will 
+      default to ``x-www-form-urlencoded``.
+    - ``headers``: optional array of objects containing key-value pairs of request headers.
+      Note: ``User-Agent`` will be set to the standard OVMS user agent if not present here.
+    - ``timeout``: optional timeout in milliseconds, default: 120 seconds.
+    - ``binary``: optional flag: ``true`` = perform a binary request (see ``response`` object).
+    - ``done``: optional success callback function, called with the ``response`` object as argument,
+      with ``this`` pointing to the request object.
+    - ``fail``: optional error callback function, called with the ``error`` string as argument,
+      with ``this`` pointing to the request object.
+
+    The ``cfg`` object is extended and returned by the API (``req``). It will remain stable at 
+    least until the request has finished and callbacks have been executed. On completion, the 
+    ``req`` object may contain an updated ``url`` and a ``redirectCount`` if redirects have been 
+    followed. Member ``error`` (also passed to the ``fail`` callback) will be set to the error 
+    description if an error occurred.
+
+    On success, member object ``response`` will be present and contain:
+
+    - ``statusCode``: the numerical HTTP Status response code
+    - ``statusText``: the HTTP Status response text
+    - ``headers``: array of response headers, each represented by an object ``{ <name>: <value> }``
+    - ``body``: only for text requests: response body as a standard string
+    - ``data``: only for binary requests: response body as a Uint8Array
+
+    Notes: any HTTP response from the server is considered success, check ``response.statusCode`` 
+    for server specific errors. Callbacks are executed without an output channel, so all ``print`` 
+    outputs will be written to the system log. Hint: use ``JSON.print(this, false)`` in the callback 
+    to get a debug log dump of the request.
+
+    Examples:
+
+    .. code-block:: javascript
+      
+      // simple POST, ignore all results:
+      HTTP.request({ url: "http://smartplug.local/switch", post: "state=on&when=now" });
+      
+      // fetch and inspect a JSON object:
+      HTTP.request({
+        url: "http://solarcontroller.local/status?fmt=json",
+        done: function(resp) {
+          if (resp.statusCode == 200) {
+            var status = JSON.parse(resp.body);
+            if (status["power"] > 5000)
+              OvmsVehicle.StartCharge();
+            else if (status["power"] < 3000)
+              OvmsVehicle.StopCharge();
+          }
+        }
+      });
+      
+      // override user agent, log completed request object:
+      HTTP.request({
+        url: "https://dexters-web.de/f/test.json",
+        headers: [{ "User-Agent": "Mr. What Zit Tooya" }],
+        done: function() { JSON.print(this, false); }
+      });
+
+
 PubSub
 ^^^^^^
 

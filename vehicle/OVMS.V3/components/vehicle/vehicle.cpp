@@ -2019,6 +2019,7 @@ void OvmsVehicle::PollerSend()
 
   while (m_poll_plcur->txmoduleid != 0)
     {
+    if (m_poll_ml_remain > 7) return; // there are remaining poll replays from last poll.
     if ((m_poll_plcur->polltime[m_poll_state] > 0)&&
         ((m_poll_ticker % m_poll_plcur->polltime[m_poll_state] ) == 0))
       {

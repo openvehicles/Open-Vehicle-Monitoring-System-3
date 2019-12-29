@@ -43,3 +43,4 @@ Contents
 
    metrics
    commands
+   bmsdiag
