@@ -33,6 +33,9 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include "ovms_utils.h"
+#include "ovms_config.h"
+#include "metrics_standard.h"
+
 
 /**
  * chargestate_code: convert legacy chargestate key to code
@@ -238,32 +241,6 @@ std::string stripesc(const char* s)
     ++s;
     }
   return res;
-  }
-
-/**
- * startsWith: std::string prefix check
- */
-bool startsWith(const std::string& haystack, const std::string& needle)
-  {
-  return needle.length() <= haystack.length()
-    && std::equal(needle.begin(), needle.end(), haystack.begin());
-  }
-bool startsWith(const std::string& haystack, const char needle)
-  {
-  return !haystack.empty() && haystack.front() == needle;
-  }
-
-/**
- * endsWith: std::string suffix check
- */
-bool endsWith(const std::string& haystack, const std::string& needle)
-  {
-  return needle.length() <= haystack.length()
-    && std::equal(needle.begin(), needle.end(), haystack.end() - needle.length());
-  }
-bool endsWith(const std::string& haystack, const char needle)
-  {
-  return !haystack.empty() && haystack.back() == needle;
   }
 
 /**
@@ -489,4 +466,25 @@ std::string mqtt_topic(const std::string text)
       }
     }
 	return buf;
+  }
+
+/**
+ * get_user_agent: create User-Agent string from OVMS versions & vehicle ID
+ *  Scheme: "ovms/v<hw_version> (<vehicle_id> <sw_version>)"
+ */
+std::string get_user_agent()
+  {
+  std::string ua;
+  ua = "ovms/";
+  #ifdef CONFIG_OVMS_HW_BASE_3_0
+    ua.append("v3.0 (");
+  #endif
+  #ifdef CONFIG_OVMS_HW_BASE_3_1
+    ua.append("v3.1 (");
+  #endif
+  ua.append(MyConfig.GetParamValue("vehicle","id",""));
+  ua.append(" ");
+  ua.append(StandardMetrics.ms_m_version->AsString());
+  ua.append(")");
+  return ua;
   }

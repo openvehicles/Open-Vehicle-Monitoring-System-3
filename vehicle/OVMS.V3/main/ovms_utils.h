@@ -101,16 +101,34 @@ extram::string stripcr(const extram::string& text);
 std::string stripesc(const char* s);
 
 /**
- * startsWith: std::string prefix check
+ * startsWith: std::string et al prefix check
  */
-bool startsWith(const std::string& haystack, const std::string& needle);
-bool startsWith(const std::string& haystack, const char needle);
+template <class string_t>
+bool startsWith(const string_t& haystack, const std::string& needle)
+  {
+  return needle.length() <= haystack.length()
+    && std::equal(needle.begin(), needle.end(), haystack.begin());
+  }
+template <class string_t>
+bool startsWith(const string_t& haystack, const char needle)
+  {
+  return !haystack.empty() && haystack.front() == needle;
+  }
 
 /**
- * endsWith: std::string suffix check
+ * endsWith: std::string et al suffix check
  */
-bool endsWith(const std::string& haystack, const std::string& needle);
-bool endsWith(const std::string& haystack, const char needle);
+template <class string_t>
+bool endsWith(const string_t& haystack, const std::string& needle)
+  {
+  return needle.length() <= haystack.length()
+    && std::equal(needle.begin(), needle.end(), haystack.end() - needle.length());
+  }
+template <class string_t>
+bool endsWith(const string_t& haystack, const char needle)
+  {
+  return !haystack.empty() && haystack.back() == needle;
+  }
 
 /**
  * HexByte: Write a single byte as two hexadecimal characters
@@ -201,5 +219,11 @@ int rmtree(const std::string path);
  * path_exists: check if filesystem path exists
  */
 bool path_exists(const std::string path);
+
+/**
+ * get_user_agent: create User-Agent string from OVMS versions & vehicle ID
+ *  Scheme: "ovms/v<hw_version> (<vehicle_id> <sw_version>)"
+ */
+std::string get_user_agent();
 
 #endif //#ifndef __UTILS_H__

@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Scripting API: HTTP.request() added
 - SmartED: add BMS diagnose report
   New commands:
     xse rptdata     get a Battery Status Report
