@@ -77,7 +77,7 @@ It is also possible to deliberately load functions, and other code, into the glo
 persistently, and have that code permanently available and running. When the JavaScript engine 
 initialises, it automatically runs a special startup script::
 
-  /store/script/ovmsmain.js
+  /store/scripts/ovmsmain.js
 
 That script can in turn include other code. If you make a change to such persistent code, and want 
 to reload it, you can with::
