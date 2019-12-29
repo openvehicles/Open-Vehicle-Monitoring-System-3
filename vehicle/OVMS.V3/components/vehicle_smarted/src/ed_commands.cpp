@@ -122,6 +122,28 @@ void OvmsVehicleSmartED::xse_trip(int verbosity, OvmsWriter* writer, OvmsCommand
   smart->CommandTrip(verbosity, writer);
 }
 
+/**
+ * Show BMS diag values.
+ */
+void OvmsVehicleSmartED::xse_bmsdiag(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
+  OvmsVehicleSmartED* smart = GetInstance(writer);
+  if (!smart)
+    return;
+	
+  smart->BmsDiag(verbosity, writer);
+}
+
+/**
+ * Show BMS diag values.
+ */
+void OvmsVehicleSmartED::xse_RPTdata(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
+  OvmsVehicleSmartED* smart = GetInstance(writer);
+  if (!smart)
+    return;
+	
+  smart->printRPTdata(verbosity, writer);
+}
+
 bool OvmsVehicleSmartED::CommandSetRecu(bool on) {
   if(!m_enable_write)
     return false;
@@ -141,68 +163,69 @@ bool OvmsVehicleSmartED::CommandSetRecu(bool on) {
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeCurrent(uint16_t limit) {
-    /*The charging current changes with
-     0x512 00 00 1F FF 00 7C 00 00 auf 12A.
-     8A = 0x74, 12A = 0x7C and 32A = 0xA4 (as max. at 22kW).
-     So calculate an offset 0xA4 = d164: e.g. 12A = 0xA4 - 0x7C = 0x28 = d40 -> subtract from the maximum (0xA4 = 32A)
-      then divide by two to get the value for 20A (with 0.5A resolution).
-    */
-    if(!m_enable_write)
-      return Fail;
-    
-    CAN_frame_t frame;
-    memset(&frame, 0, sizeof(frame));
+  /*The charging current changes with
+   0x512 00 00 1F FF 00 7C 00 00 auf 12A.
+   8A = 0x74, 12A = 0x7C and 32A = 0xA4 (as max. at 22kW).
+   So calculate an offset 0xA4 = d164: e.g. 12A = 0xA4 - 0x7C = 0x28 = d40 -> subtract from the maximum (0xA4 = 32A)
+    then divide by two to get the value for 20A (with 0.5A resolution).
+  */
+  if(!m_enable_write)
+    return Fail;
+  
+  CAN_frame_t frame;
+  memset(&frame, 0, sizeof(frame));
 
-    frame.origin = m_can1;
-    frame.FIR.U = 0;
-    frame.FIR.B.DLC = 8;
-    frame.FIR.B.FF = CAN_frame_std;
-    frame.MsgID = 0x512;
-    frame.data.u8[0] = 0x00;
-    frame.data.u8[1] = 0x00;
-    frame.data.u8[2] = 0x1F;
-    frame.data.u8[3] = 0xFF;
-    frame.data.u8[4] = 0x00;
-    frame.data.u8[5] = (uint8_t) (100 + 2 * limit);
-    frame.data.u8[6] = 0x00;
-    frame.data.u8[7] = 0x00;
-    m_can1->Write(&frame);
+  frame.origin = m_can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 8;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x512;
+  frame.data.u8[0] = 0x00;
+  frame.data.u8[1] = 0x00;
+  frame.data.u8[2] = 0x1F;
+  frame.data.u8[3] = 0xFF;
+  frame.data.u8[4] = 0x00;
+  frame.data.u8[5] = (uint8_t) (100 + 2 * limit);
+  frame.data.u8[6] = 0x00;
+  frame.data.u8[7] = 0x00;
+  m_can1->Write(&frame);
 
-    return Success;
+  return Success;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
-    /*So we still have to get the car to wake up. Can someone please test these two queries when the car is asleep:
-    0x218 00 00 00 00 00 00 00 00 or
-    0x210 00 00 00 01 00 00 00 00
-    Both patterns should comply with the Bosch CAN bus spec. for waking up a sleeping bus with recessive bits.
-    0x423 01 00 00 00 will wake up the CAN bus but not the right on.
-    */
-    if(!m_enable_write)
-      return Fail;
-    
-    ESP_LOGI(TAG, "Send Wakeup Command");
-    
-    RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-    
-    CAN_frame_t frame;
-    memset(&frame, 0, sizeof(frame));
+  /*So we still have to get the car to wake up. Can someone please test these two queries when the car is asleep:
+  0x218 00 00 00 00 00 00 00 00 or
+  0x210 00 00 00 01 00 00 00 00
+  Both patterns should comply with the Bosch CAN bus spec. for waking up a sleeping bus with recessive bits.
+  0x423 01 00 00 00 will wake up the CAN bus but not the right on.
+  */
+  if(!m_enable_write)
+    return Fail;
+  
+  ESP_LOGI(TAG, "Send Wakeup Command");
+  
+  RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+  vTaskDelay(500 / portTICK_PERIOD_MS);
+  
+  CAN_frame_t frame;
+  memset(&frame, 0, sizeof(frame));
 
-    frame.origin = m_can2;
-    frame.FIR.U = 0;
-    frame.FIR.B.DLC = 4;
-    frame.FIR.B.FF = CAN_frame_std;
-    frame.MsgID = 0x210;
-    frame.callback = NULL;
-    frame.data.u8[0] = 0x01;
-    frame.data.u8[1] = 0x00;
-    frame.data.u8[2] = 0x00;
-    frame.data.u8[3] = 0x00;
-    m_can2->Write(&frame);
-    
-    m_can2->Stop();
+  frame.origin = m_can2;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 4;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x210;
+  frame.callback = NULL;
+  frame.data.u8[0] = 0x01;
+  frame.data.u8[1] = 0x00;
+  frame.data.u8[2] = 0x00;
+  frame.data.u8[3] = 0x00;
+  m_can2->Write(&frame);
+  vTaskDelay(500 / portTICK_PERIOD_MS);
+  m_can2->Stop();
 
-    return Success;
+  return Success;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandClimateControl(bool enable) {
@@ -218,129 +241,129 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandClimateControl(bool en
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool timeron, int hours, int minutes) {
 #ifdef CONFIG_OVMS_COMP_MAX7317
-    //Set the charge start time as seconds since midnight or 8 Bit hour and 8 bit minutes?
-    /*With
-     0x512 00 00 12 1E 00 00 00 00
-     if one sets e.g. the time at 18:30. If you now mask byte 3 (0x12) with 0x40 (and set the second bit to high there), the A / C function is also activated.
-    */
-    if(!m_enable_write)
-      return Fail;
+  //Set the charge start time as seconds since midnight or 8 Bit hour and 8 bit minutes?
+  /*With
+   0x512 00 00 12 1E 00 00 00 00
+   if one sets e.g. the time at 18:30. If you now mask byte 3 (0x12) with 0x40 (and set the second bit to high there), the A / C function is also activated.
+  */
+  if(!m_enable_write)
+    return Fail;
+  
+  // Try first Wakeup can if car sleep
+  if(!mt_bus_awake->AsBool()) {
+    CommandWakeup();
+    vTaskDelay(500 / portTICK_PERIOD_MS);
+  }
+  // Try unlock/lock doors to Wakeup Can
+  if(!mt_bus_awake->AsBool()) {
+    if (!MyConfig.IsDefined("password","pin")) return Fail;
     
-    // Try first Wakeup can if car sleep
-    if(!mt_bus_awake->AsBool()) {
-      CommandWakeup();
-      vTaskDelay(500 / portTICK_PERIOD_MS);
-    }
-    // Try unlock/lock doors to Wakeup Can
-    if(!mt_bus_awake->AsBool()) {
-      if (!MyConfig.IsDefined("password","pin")) return Fail;
-      
-      std::string vpin = MyConfig.GetParamValue("password","pin");
-      CommandUnlock(vpin.c_str());
-      vTaskDelay(600 / portTICK_PERIOD_MS);
-      CommandLock(vpin.c_str());
-      vTaskDelay(600 / portTICK_PERIOD_MS);
-      if(!mt_bus_awake->AsBool()) return Fail;
-    }
-    
-    ESP_LOGI(TAG,"ClimaStartTime: %d:%d", hours, minutes);
-    
-    CAN_frame_t frame;
-    memset(&frame, 0, sizeof(frame));
+    std::string vpin = MyConfig.GetParamValue("password","pin");
+    CommandUnlock(vpin.c_str());
+    vTaskDelay(600 / portTICK_PERIOD_MS);
+    CommandLock(vpin.c_str());
+    vTaskDelay(600 / portTICK_PERIOD_MS);
+    if(!mt_bus_awake->AsBool()) return Fail;
+  }
+  
+  ESP_LOGI(TAG,"ClimaStartTime: %d:%d", hours, minutes);
+  
+  CAN_frame_t frame;
+  memset(&frame, 0, sizeof(frame));
 
-    frame.origin = m_can1;
-    frame.FIR.U = 0;
-    frame.FIR.B.DLC = 8;
-    frame.FIR.B.FF = CAN_frame_std;
-    frame.MsgID = 0x512;
-    frame.data.u8[0] = 0x00;
-    frame.data.u8[1] = 0x00;
-    frame.data.u8[2] = ((uint8_t) hours & 0xff);
-    if (timeron) {
-        frame.data.u8[3] = ((uint8_t) minutes & 0xff) + 0x40; //(timerstart >> 8) & 0xff;
-    } else {
-        frame.data.u8[3] = ((uint8_t) minutes & 0xff); //((timerstart >> 8) & 0xff) + 0x40;
-    }
-    frame.data.u8[4] = 0x00;
-    frame.data.u8[5] = 0x00;
-    frame.data.u8[6] = 0x00;
-    frame.data.u8[7] = 0x00;
-    m_can1->Write(&frame);
-    vTaskDelay(50 / portTICK_PERIOD_MS);
-    m_can1->Write(&frame);
-    vTaskDelay(50 / portTICK_PERIOD_MS);
-    m_can1->Write(&frame);
-    
-    ESP_LOGI(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", frame.MsgID, frame.data.u8[0], frame.data.u8[1], frame.data.u8[2], frame.data.u8[3], frame.data.u8[4], frame.data.u8[5], frame.data.u8[6], frame.data.u8[7]);
-    return Success;
+  frame.origin = m_can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 8;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x512;
+  frame.data.u8[0] = 0x00;
+  frame.data.u8[1] = 0x00;
+  frame.data.u8[2] = ((uint8_t) hours & 0xff);
+  if (timeron) {
+      frame.data.u8[3] = ((uint8_t) minutes & 0xff) + 0x40; //(timerstart >> 8) & 0xff;
+  } else {
+      frame.data.u8[3] = ((uint8_t) minutes & 0xff); //((timerstart >> 8) & 0xff) + 0x40;
+  }
+  frame.data.u8[4] = 0x00;
+  frame.data.u8[5] = 0x00;
+  frame.data.u8[6] = 0x00;
+  frame.data.u8[7] = 0x00;
+  m_can1->Write(&frame);
+  vTaskDelay(50 / portTICK_PERIOD_MS);
+  m_can1->Write(&frame);
+  vTaskDelay(50 / portTICK_PERIOD_MS);
+  m_can1->Write(&frame);
+  
+  ESP_LOGI(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", frame.MsgID, frame.data.u8[0], frame.data.u8[1], frame.data.u8[2], frame.data.u8[3], frame.data.u8[4], frame.data.u8[5], frame.data.u8[6], frame.data.u8[7]);
+  return Success;
 #endif
-    return NotImplemented;
+  return NotImplemented;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandHomelink(int button, int durationms) {
-    bool enable;
-    time_t rawtime;
-    time ( &rawtime );
-    rawtime += m_preclima_time*60; // add 15 minutes
-    struct tm* tmu = localtime(&rawtime);
-    int hours = tmu->tm_hour;
-    int minutes = tmu->tm_min;
-    minutes = (minutes - (minutes % 5));
-    if (button == 0) {
-        enable = true;
-        return CommandSetChargeTimer(enable, hours, minutes);
-    }
-    if (button == 1) {
-        enable = false;
-        return CommandSetChargeTimer(enable, hours, minutes);
-    }
-    return NotImplemented;
+  bool enable;
+  time_t rawtime;
+  time ( &rawtime );
+  rawtime += m_preclima_time*60; // add 15 minutes
+  struct tm* tmu = localtime(&rawtime);
+  int hours = tmu->tm_hour;
+  int minutes = tmu->tm_min;
+  minutes = (minutes - (minutes % 5));
+  if (button == 0) {
+      enable = true;
+      return CommandSetChargeTimer(enable, hours, minutes);
+  }
+  if (button == 1) {
+      enable = false;
+      return CommandSetChargeTimer(enable, hours, minutes);
+  }
+  return NotImplemented;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandLock(const char* pin) {
 #ifdef CONFIG_OVMS_COMP_MAX7317
-    //switch 12v to GEP 1
-    MyPeripherals->m_max7317->Output(m_doorlock_port, 1);
-    vTaskDelay(500 / portTICK_PERIOD_MS);
-    MyPeripherals->m_max7317->Output(m_doorlock_port, 0);
-    StandardMetrics.ms_v_env_locked->SetValue(true);
-    return Success;
+  //switch 12v to GEP 1
+  MyPeripherals->m_max7317->Output(m_doorlock_port, 1);
+  vTaskDelay(500 / portTICK_PERIOD_MS);
+  MyPeripherals->m_max7317->Output(m_doorlock_port, 0);
+  StandardMetrics.ms_v_env_locked->SetValue(true);
+  return Success;
 #endif
-    return NotImplemented;
+  return NotImplemented;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandUnlock(const char* pin) {
 #ifdef CONFIG_OVMS_COMP_MAX7317
-    //switch 12v to GEP 2 
-    MyPeripherals->m_max7317->Output(m_doorunlock_port, 1);
-    vTaskDelay(500 / portTICK_PERIOD_MS);
-    MyPeripherals->m_max7317->Output(m_doorunlock_port, 0);
-    StandardMetrics.ms_v_env_locked->SetValue(false);
-    return Success;
+  //switch 12v to GEP 2 
+  MyPeripherals->m_max7317->Output(m_doorunlock_port, 1);
+  vTaskDelay(500 / portTICK_PERIOD_MS);
+  MyPeripherals->m_max7317->Output(m_doorunlock_port, 0);
+  StandardMetrics.ms_v_env_locked->SetValue(false);
+  return Success;
 #endif
-    return NotImplemented;
+  return NotImplemented;  
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandActivateValet(const char* pin) {
 #ifdef CONFIG_OVMS_COMP_MAX7317
-    ESP_LOGI(TAG,"Ignition EGPIO on port: %d", m_ignition_port);
-    MyPeripherals->m_max7317->Output(m_ignition_port, 1);
-    m_egpio_timer = m_egpio_timout;
-    StandardMetrics.ms_v_env_valet->SetValue(true);
-    return Success;
+  ESP_LOGI(TAG,"Ignition EGPIO on port: %d", m_ignition_port);
+  MyPeripherals->m_max7317->Output(m_ignition_port, 1);
+  m_egpio_timer = m_egpio_timout;
+  StandardMetrics.ms_v_env_valet->SetValue(true);
+  return Success;
 #endif
-    return NotImplemented;
+  return NotImplemented;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandDeactivateValet(const char* pin) {
 #ifdef CONFIG_OVMS_COMP_MAX7317
-    ESP_LOGI(TAG,"Ignition EGPIO off port: %d", m_ignition_port);
-    MyPeripherals->m_max7317->Output(m_ignition_port, 0);
-    m_egpio_timer = 0;
-    StandardMetrics.ms_v_env_valet->SetValue(false);
-    return Success;
+  ESP_LOGI(TAG,"Ignition EGPIO off port: %d", m_ignition_port);
+  MyPeripherals->m_max7317->Output(m_ignition_port, 0);
+  m_egpio_timer = 0;
+  StandardMetrics.ms_v_env_valet->SetValue(false);
+  return Success;
 #endif
-    return NotImplemented;
+  return NotImplemented;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandStat(int verbosity, OvmsWriter* writer) {
@@ -408,6 +431,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandStat(int verbosity, Ov
     }
 
   writer->printf("SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
+  writer->printf("realSOC: %s\n", (char*) mt_real_soc->AsUnitString("-", Native, 1).c_str());
 
   const char* range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("-", rangeUnit, 0).c_str();
   if (*range_ideal != '-')
@@ -442,6 +466,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandTrip(int verbosity, Ov
 	writer->printf("Driven: %s\n", (char*) StdMetrics.ms_v_pos_trip->AsUnitString("-", rangeUnit, 1).c_str());
 	writer->printf("Energy used: %s\n", (char*) StdMetrics.ms_v_bat_energy_used->AsUnitString("-", Native, 3).c_str());
 	writer->printf("Energy recd: %s\n", (char*) StdMetrics.ms_v_bat_energy_recd->AsUnitString("-", Native, 3).c_str());
+	writer->printf("SOC: %s, realSOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str(), (char*) mt_real_soc->AsUnitString("-", Native, 1).c_str());
 	
 	return Success;
 }
