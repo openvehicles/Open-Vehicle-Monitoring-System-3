@@ -821,13 +821,12 @@ void DuktapeObject::Finalize(duk_context *ctx, bool heapDestruct)
  * Push: push coupled JS object onto stack
  *  Stack: [ … ] → [ … obj ]
  */
-bool DuktapeObject::Push(duk_context *ctx)
+duk_idx_t DuktapeObject::Push(duk_context *ctx)
   {
   OvmsRecMutexLock lock(&m_mutex);
-  if (!m_object) return false;
+  if (!m_object) return DUK_INVALID_INDEX;
   duk_require_stack(ctx, 1);
-  duk_push_heapptr(ctx, m_object);
-  return true;
+  return duk_push_heapptr(ctx, m_object);
   }
 
 /**
@@ -1229,8 +1228,7 @@ duk_ret_t DuktapeHTTPRequest::CallMethod(duk_context *ctx, const char* method, v
   duk_require_stack(ctx, 7);
   int entry_top = duk_get_top(ctx);
 
-  Push(ctx);
-  int obj_idx = duk_get_top_index(ctx);
+  int obj_idx = Push(ctx);
   duk_get_prop_string(ctx, obj_idx, method);
   bool callable = duk_is_callable(ctx, -1);
   duk_pop(ctx);

@@ -194,7 +194,7 @@ class DuktapeObject
     virtual duk_ret_t CallMethod(duk_context *ctx, const char* method, void* data=NULL);
 
   public:
-    bool Push(duk_context *ctx);
+    duk_idx_t Push(duk_context *ctx);
 
   protected:
     OvmsRecMutex m_mutex;               // concurrency lock
