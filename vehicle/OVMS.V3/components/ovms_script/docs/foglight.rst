@@ -74,6 +74,11 @@ Config                    Default   Description
 .. note::
   You can add arbitrary config instances to defined sections
   simply by setting them: ``config set vehicle foglight.auto yes``
+  
+  *Update:*
+  Beginning with firmware release 3.2.009, a general configuration section ``usr`` is provided
+  for plugins. We recommend using this for all custom parameters now. Keep in mind to prefix
+  all instances introduced by the plugin name, so your plugin can nicely coexist with others.
 
 To store the config for simple & quick script access and implement the defaults, we
 introduce an **internal module member object** ``cfg``:
@@ -112,8 +117,13 @@ and parsing the output. This is done by the ``readconfig()`` function:
       }
     }
 
-Note that future OVMS releases will eventually add an OvmsConfig script API for direct
-access to the config store.
+**Update:** OVMS release 3.2.009 adds the ``OvmsConfig.GetValues()`` API. To use this, we would
+now omit the "foglight." prefix from our ``cfg`` properties. Reading the foglight configuration
+can then be reduced to a single line:
+
+.. code-block:: javascript
+    
+    Object.assign(cfg, OvmsConfig.GetValues("vehicle", "foglight."));
 
 
 Listen to Events

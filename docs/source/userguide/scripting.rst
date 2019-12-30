@@ -394,14 +394,43 @@ OvmsConfig
 
 - ``array = OvmsConfig.Params()``
     Returns the list of available configuration parameters.
-- ``array = OvmsMetrics.Instances(param)``
+- ``array = OvmsConfig.Instances(param)``
     Returns the list of instances for a specific parameter.
-- ``string = OvmsMetrics.Get(param,instance,default)``
+- ``string = OvmsConfig.Get(param,instance,default)``
     Returns the specified parameter/instance value.
-- ``OvmsMetrics.Set(param,instance,value)``
+- ``object = OvmsConfig.GetValues(param, [prefix])``
+    Gets all param instances matching the optional prefix with their associated values.
+    If a prefix is given, the returned property names will have the prefix removed.
+    Note: all values are returned as strings, you need to convert them as needed.
+- ``OvmsConfig.Set(param,instance,value)``
     Sets the specified parameter/instance value.
-- ``OvmsMetrics.Delete(param,instance)``
+- ``OvmsConfig.SetValues(param, prefix, object)``
+    Sets all properties of the given object as param instances after adding the prefix.
+    Note: non-string property values will be converted to their string representation.
+- ``OvmsConfig.Delete(param,instance)``
     Deletes the specified parameter instance.
+
+Beginning with firmware release 3.2.009, a dedicated configuration parameter ``usr`` is provided
+for plugins. You can add new config instances simply by setting them, for example by
+``OvmsConfig.Set("usr", "myplugin.level", 123)`` or by the ``config set`` command.
+
+Read plugin configuration example:
+
+.. code-block:: javascript
+  
+  // Set default configuration:
+  var cfg = { level: 100, enabled: "no" };
+  
+  // Read user configuration:
+  Object.assign(cfg, OvmsConfig.GetValues("usr", "myplugin."));
+  
+  if (cfg["enabled"] == "yes") {
+    print("I'm enabled at level " + Number(cfg["level"]));
+  }
+
+Keep in mind to prefix all newly introduced instances by a unique plugin name, so your plugin
+can nicely coexist with others.
+
 
 OvmsEvents
 ^^^^^^^^^^
