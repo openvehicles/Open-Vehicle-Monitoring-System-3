@@ -296,17 +296,8 @@ const std::string OvmsWebServer::MakeDigestAuth(const char* realm, const char* u
  */
 const std::string OvmsWebServer::ExecuteCommand(const std::string command, int verbosity /*=COMMAND_RESULT_NORMAL*/)
 {
-  std::string output;
-  BufferedShell* bs = new BufferedShell(false, verbosity);
-  if (!bs)
-    return output;
-  bs->SetSecure(true); // Note: assuming user is admin
-  output = "";
-  bs->ProcessChars(command.data(), command.size());
-  bs->ProcessChar('\n');
-  bs->Dump(output);
-  delete bs;
-  return output;
+  // Note: assuming user is admin (secure=true)
+  return BufferedShell::ExecuteCommand(command, true, verbosity);
 }
 
 
