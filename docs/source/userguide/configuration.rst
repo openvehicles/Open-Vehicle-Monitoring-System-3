@@ -42,3 +42,10 @@ The ‘config’ command is used to manipulate these configurations, as is fairl
   list                 Show configuration parameters/instances
   rm                   Remove parameter:instance
   set                  Set parameter:instance=value
+
+
+You can add new instances to parameters simply by setting them.
+
+Beginning with firmware release 3.2.009, a dedicated configuration section ``usr`` is provided
+for plugins. Take care to prefix all instances introduced by a unique plugin name, so your plugin
+can nicely coexist with others.

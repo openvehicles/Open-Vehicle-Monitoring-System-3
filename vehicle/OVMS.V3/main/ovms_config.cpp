@@ -247,6 +247,7 @@ OvmsConfig::OvmsConfig()
 
   RegisterParam("password", "Password store", true, false);
   RegisterParam("module", "Module configuration", true, true);
+  RegisterParam("usr", "Custom plugin configuration", true, true);
   }
 
 OvmsConfig::~OvmsConfig()

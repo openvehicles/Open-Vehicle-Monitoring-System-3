@@ -614,6 +614,64 @@ static duk_ret_t DukOvmsConfigInstances(duk_context *ctx)
   return 0;
   }
 
+static duk_ret_t DukOvmsConfigGetValues(duk_context *ctx)
+  {
+  const char *param = duk_to_string(ctx,0);
+  std::string prefix = duk_opt_string(ctx,1,"");
+
+  if (!MyConfig.ismounted()) return 0;
+
+  OvmsConfigParam *p = MyConfig.CachedParam(param);
+  if (p)
+    {
+    if (! p->Readable()) return 0;  // Parameter is protected, and not readable
+
+    duk_idx_t obj_idx = duk_push_object(ctx);
+    for (ConfigParamMap::iterator it=p->m_map.lower_bound(prefix); it!=p->m_map.end(); ++it)
+      {
+      if (!startsWith(it->first, prefix)) break;
+      duk_push_string(ctx, it->second.c_str());
+      duk_put_prop_string(ctx, obj_idx, it->first.substr(prefix.length()).c_str());
+      }
+    return 1;
+    }
+
+  return 0;
+  }
+
+static duk_ret_t DukOvmsConfigSetValues(duk_context *ctx)
+  {
+  const char *param = duk_to_string(ctx,0);
+  std::string prefix = duk_opt_string(ctx,1,"");
+  duk_require_object(ctx,2);
+
+  if (!duk_is_object(ctx,2)) return 0;
+  if (!MyConfig.ismounted()) return 0;
+
+  OvmsConfigParam *p = MyConfig.CachedParam(param);
+  if (p)
+    {
+    if (! p->Writable()) return 0;  // Parameter is not writeable
+
+    ConfigParamMap pmap = p->m_map;
+    std::string key, val;
+    duk_enum(ctx, 2, 0);
+    while (duk_next(ctx, -1, true))
+      {
+      key = duk_to_string(ctx, -2);
+      val = duk_to_string(ctx, -1);
+      duk_pop_2(ctx);
+      pmap[prefix+key] = val;
+      }
+    duk_pop(ctx);
+    p->m_map.clear();
+    p->m_map = std::move(pmap);
+    p->Save();
+    }
+
+  return 0;
+  }
+
 static duk_ret_t DukOvmsConfigGet(duk_context *ctx)
   {
   const char *param = duk_to_string(ctx,0);
@@ -821,13 +879,12 @@ void DuktapeObject::Finalize(duk_context *ctx, bool heapDestruct)
  * Push: push coupled JS object onto stack
  *  Stack: [ … ] → [ … obj ]
  */
-bool DuktapeObject::Push(duk_context *ctx)
+duk_idx_t DuktapeObject::Push(duk_context *ctx)
   {
   OvmsRecMutexLock lock(&m_mutex);
-  if (!m_object) return false;
+  if (!m_object) return DUK_INVALID_INDEX;
   duk_require_stack(ctx, 1);
-  duk_push_heapptr(ctx, m_object);
-  return true;
+  return duk_push_heapptr(ctx, m_object);
   }
 
 /**
@@ -1229,8 +1286,7 @@ duk_ret_t DuktapeHTTPRequest::CallMethod(duk_context *ctx, const char* method, v
   duk_require_stack(ctx, 7);
   int entry_top = duk_get_top(ctx);
 
-  Push(ctx);
-  int obj_idx = duk_get_top_index(ctx);
+  int obj_idx = Push(ctx);
   duk_get_prop_string(ctx, obj_idx, method);
   bool callable = duk_is_callable(ctx, -1);
   duk_pop(ctx);
@@ -1883,6 +1939,8 @@ OvmsScripts::OvmsScripts()
   dto->RegisterDuktapeFunction(DukOvmsConfigGet, 3, "Get");
   dto->RegisterDuktapeFunction(DukOvmsConfigSet, 3, "Set");
   dto->RegisterDuktapeFunction(DukOvmsConfigDelete, 2, "Delete");
+  dto->RegisterDuktapeFunction(DukOvmsConfigGetValues, 2, "GetValues");
+  dto->RegisterDuktapeFunction(DukOvmsConfigSetValues, 3, "SetValues");
   MyScripts.RegisterDuktapeObject(dto);
   DuktapeObjectRegistration* dt_http = new DuktapeObjectRegistration("HTTP");
   dt_http->RegisterDuktapeFunction(DuktapeHTTPRequest::Create, 1, "request");
