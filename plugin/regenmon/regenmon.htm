@@ -1,0 +1,126 @@
+<!--
+  Test/Development/Documentation page; install as plugin to test
+-->
+
+<style>
+.indicator > .label {
+  font-size: 150%;
+  line-height: 200%;
+  margin: 10px;
+  padding: 10px;
+  display: block;
+  border-radius: 50px;
+}
+.metric.number .label {
+  min-width: 8em;
+}
+.metric.number {
+  display: block;
+  float: none;
+  text-align: center;
+}
+</style>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">Regen Brake Monitor</div>
+  <div class="panel-body">
+
+    <div class="receiver" id="regenmon-receiver">
+
+      <div class="row">
+        <div class="col-sm-6">
+          <div class="metric chart" data-metric="v.p.acceleration" style="height:300px">
+            <div class="chart-box gaugechart" id="accel-gauge"/>
+          </div>
+          <div class="metric number" data-metric="v.p.acceleration" data-prec="2">
+            <span class="label">Acceleration:</span>
+            <span class="value">?</span>
+            <span class="unit">m/s²</span>
+          </div>
+          <div class="metric number" data-metric="v.p.speed" data-prec="1">
+            <span class="label">Speed:</span>
+            <span class="value">?</span>
+            <span class="unit">kph</span>
+          </div>
+          <div class="metric number" data-metric="v.b.power" data-prec="1">
+            <span class="label">Battery power:</span>
+            <span class="value">?</span>
+            <span class="unit">kW</span>
+          </div>
+          <br class="clearfix"/>
+        </div>
+        <div class="col-sm-6">
+          <div class="indicator" data-metric="v.e.regenbrake">
+            <span class="label label-default">REGEN</span>
+          </div>
+          <div class="indicator" data-metric="v.e.footbrake">
+            <span class="label label-default">FOOT</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+
+  /* Init acceleration gauge: */
+  $("#accel-gauge").chart({
+    chart: {
+      type: 'gauge',
+      spacing: [0, 0, 0, 0],
+      margin: [0, 0, 0, 0],
+      animation: { duration: 250, easing: 'easeOutExpo' },
+    },
+    title: { text: "Acceleration", verticalAlign: "middle", y: 75 },
+    credits: { enabled: false },
+    tooltip: { enabled: false },
+    plotOptions: {
+      gauge: { dataLabels: { enabled: false }, overshoot: 5 }
+    },
+    pane: [{
+      startAngle: -120, endAngle: 120, size: '100%', center: ['50%', '60%']
+    }],
+    yAxis: [{
+      title: { text: 'm/s²' },
+      className: 'accel',
+      reversed: false,
+      min: -2, max: 2,
+      minorTickInterval: 0.1, minorTickLength: 5, minorTickPosition: 'inside',
+      tickInterval: 0.5, tickPosition: 'inside', tickLength: 13,
+      labels: { step: 1, distance: -28, x: 0, y: 5, zIndex: 2 },
+    }],
+    series: [{
+      name: 'Acceleration', data: [0],
+      className: 'accel',
+      animation: { duration: 0 },
+      pivot: { radius: '10' },
+      dial: { radius: '88%', topWidth: 1, baseLength: '20%', baseWidth: 10, rearLength: '20%' },
+    }],
+    /* Update method: */
+    onUpdate: function(update) {
+      // Create gauge data set from metric:
+      var data = [ metrics["v.p.acceleration"] ];
+      // Update chart:
+      this.series[0].setData(data);
+    },
+  });
+
+  /* Init indicators: */
+  $('#regenmon-receiver').on('msg:metrics', function(e, update) {
+    $(this).find('.indicator').each(function() {
+      var $el = $(this), metric = $el.data("metric"), val = update[metric];
+      if (val == null)
+        return;
+      else if (val != 0)
+        $el.children().removeClass('label-default').addClass('label-danger');
+      else if (val == 0)
+        $el.children().removeClass('label-danger').addClass('label-default');
+    });
+  });
+
+})();
+</script>
