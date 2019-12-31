@@ -1,0 +1,177 @@
+<!--
+  Web UI page plugin:
+    Control & configuration frontend for Edimax module plugin (edimax.js)
+    Version 1.0  Michael Balzer <dexter@dexters-web.de>
+  
+  Recommended installation:
+    - Page:    /usr/edimax
+    - Label:   Edimax Smart Plug
+    - Menu:    Config
+    - Auth:    Cookie
+-->
+
+<div class="panel panel-primary panel-single">
+  <div class="panel-heading">Edimax Smart Plug</div>
+  <div class="panel-body">
+    <div class="alert alert-dismissible" style="display:none" />
+    <div class="receiver" id="edimax">
+
+      <fieldset><legend>State</legend>
+      <form class="form-horizontal" id="form-state">
+        <div class="form-group">
+          <label class="control-label col-sm-3">Power:</label>
+          <div class="col-sm-9">
+            <div class="btn-group action-edimax-set" data-toggle="buttons">
+              <label class="btn btn-default action-edimax-off"><input type="radio" name="power" value="off">OFF</label>
+              <label class="btn btn-default action-edimax-on"><input type="radio" name="power" value="on">ON</label>
+            </div>
+            <samp class="samp-inline" id="action-edimax-output"></samp>
+          </div>
+        </div>
+      </form>
+      </fieldset>
+
+      <fieldset><legend>Configuration</legend>
+      <form class="form-horizontal" id="form-cfg">
+        <div class="form-group">
+          <label class="control-label col-sm-3" for="input-ip">Edimax IP address:</label>
+          <div class="col-sm-9">
+            <input type="text" class="form-control font-monospace" name="ip" id="input-ip">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="control-label col-sm-3" for="input-user">… Username:</label>
+          <div class="col-sm-9">
+            <input type="text" class="form-control font-monospace" name="user" id="input-user"
+              autocomplete="section-edimax username">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="control-label col-sm-3" for="input-pass">… Password:</label>
+          <div class="col-sm-9">
+            <input type="password" class="form-control font-monospace" name="pass" id="input-pass"
+              autocomplete="section-edimax current-password">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="control-label col-sm-3" for="input-location">Location:</label>
+          <div class="col-sm-9">
+            <input type="text" class="form-control" name="location" id="input-location"
+              placeholder="optional: defined location name">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="control-label col-sm-3" for="input-soc_on">Power on at:</label>
+          <div class="col-sm-9">
+            <div class="form-control slider" id="soc_on" data-min="0" data-max="100" data-step="1" data-unit="% SOC" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="control-label col-sm-3" for="input-soc_off">Power off at:</label>
+          <div class="col-sm-9">
+            <div class="form-control slider" id="soc_off" data-min="0" data-max="100" data-step="1" data-unit="% SOC" />
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="col-sm-offset-3 col-sm-9">
+            <button type="button" class="btn btn-primary action-save">Save</button>
+          </div>
+        </div>
+      </form>
+      </fieldset>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  var edimax = { cfg: {}, state: { power: "", error: "" } };
+  var $actionset = $('#edimax .action-edimax-set > label');
+  var $actionres = $('#action-edimax-output');
+  var $alert = $('.alert');
+
+  // Alert utility:
+  function showAlert(type, text) {
+    var intro = {
+      "danger": "<strong>⚠</strong> ",
+      "success": "<strong>✓</strong> ",
+    };
+    $alert.attr('class', 'alert alert-' + type)
+      .html('<p class="lead">' + intro[type] + encode_html(text) + '</p>')
+      .show();
+  }
+
+  // State & UI update:
+  function update(data) {
+    $.extend(true, edimax, data);
+    // update state form:
+    $actionres.empty();
+    $actionset.removeClass('active');
+    if (edimax.state.power) {
+      $actionset.find('input[value='+edimax.state.power+']')
+        .prop('checked', true)
+        .parent().addClass('active');
+    }
+    // update config form:
+    $('#input-ip').val(edimax.cfg.ip);
+    $('#input-user').val(edimax.cfg.user);
+    $('#input-pass').val(edimax.cfg.pass);
+    $('#input-location').val(edimax.cfg.location);
+    $('#soc_on').slider({ checked: (edimax.cfg.soc_on != ""), value: Number(edimax.cfg.soc_on) });
+    $('#soc_off').slider({ checked: (edimax.cfg.soc_off != ""), value: Number(edimax.cfg.soc_off) });
+    // show error:
+    if (edimax.state.error) {
+      showAlert("danger", edimax.state.error);
+    }
+  }
+
+  // Listen to edimax events:
+  $('#edimax').on('msg:event', function(e, event) {
+    if (event == "usr.edimax.on")
+      update({ state: { power: "on" } });
+    else if (event == "usr.edimax.off")
+      update({ state: { power: "off" } });
+    else if (event == "usr.edimax.error" || event == "config.changed")
+      getInfo();
+  });
+
+  // Get state & config:
+  function getInfo() {
+    loadcmd('script eval edimax.info()').then(function(output) {
+      update(JSON.parse(output));
+    });
+  }
+
+  // Switch power:
+  $('.action-edimax-set input').on('change', function(e) {
+    $alert.hide();
+    edimax.state.power = $(this).val();
+    loadcmd('script eval edimax.set("'+edimax.state.power+'")', '#action-edimax-output');
+  });
+
+  // Save config:
+  $('.action-save').on('click', function(e) {
+    $alert.hide();
+    $actionres.empty();
+    var upd = { soc_on: "", soc_off: "" };
+    var inp = $('#form-cfg').serializeArray();
+    inp.map(el => upd[el["name"]] = el["value"]);
+    loadcmd('script eval \'OvmsConfig.SetValues("usr","edimax.",'+JSON.stringify(upd)+')\'').then(
+      function() {
+        showAlert("success", "OK, configuration saved!");
+      },
+      function(req,status,error) {
+        showAlert("danger", "Failed saving: " + status + "/" + error);
+      });
+  });
+
+  // Init:
+  $('#main').one('load', function(ev) {
+    $('.slider').slider();
+    getInfo();
+  });
+
+})();
+</script>
