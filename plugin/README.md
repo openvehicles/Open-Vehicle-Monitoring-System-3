@@ -1,5 +1,9 @@
 # Open-Vehicle-Monitoring-System-3 (OVMS3) Plugins
 
+## Home Automation
+
+- ``edimax``: Smart Plug control for Edimax models SP-1101W, SP-2101W et al
+
 ## General Vehicle Extensions
 
 - ``foglight``: Automatic speed adaptive fog light using OVMS GPIO port
