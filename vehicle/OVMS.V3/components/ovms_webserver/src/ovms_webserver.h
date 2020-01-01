@@ -441,7 +441,7 @@ typedef std::vector<WebSocketSlot> WebSocketSlots;
 class HttpCommandStream : public OvmsShell, public MgHandler
 {
   public:
-    HttpCommandStream(mg_connection* nc, std::string command, int verbosity=COMMAND_RESULT_VERBOSE);
+    HttpCommandStream(mg_connection* nc, extram::string command, bool javascript=false, int verbosity=COMMAND_RESULT_VERBOSE);
     ~HttpCommandStream();
 
   public:
@@ -450,7 +450,8 @@ class HttpCommandStream : public OvmsShell, public MgHandler
     static void CommandTask(void* object);
 
   public:
-    std::string               m_command;
+    extram::string            m_command;
+    bool                      m_javascript;
     TaskHandle_t              m_cmdtask;
     QueueHandle_t             m_writequeue;
     bool                      m_done;

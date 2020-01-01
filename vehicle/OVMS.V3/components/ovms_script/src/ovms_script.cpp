@@ -1021,13 +1021,6 @@ duk_ret_t DuktapeObject::CallMethod(duk_context *ctx, const char* method, void* 
 DuktapeHTTPRequest::DuktapeHTTPRequest(duk_context *ctx, int obj_idx)
   : DuktapeObject(ctx, obj_idx)
   {
-  if (!MyNetManager.MongooseRunning() || !MyNetManager.m_connected_any)
-    {
-    m_error = "network unavailable";
-    CallMethod(ctx, "fail");
-    return;
-    }
-
   // get args:
   duk_require_stack(ctx, 5);
   if (duk_get_prop_string(ctx, 0, "url"))
@@ -1102,6 +1095,14 @@ DuktapeHTTPRequest::DuktapeHTTPRequest(duk_context *ctx, int obj_idx)
   if (m_ispost && !have_contenttype)
     {
     m_headers.append("Content-Type: application/x-www-form-urlencoded\r\n");
+    }
+
+  // check network:
+  if (!MyNetManager.MongooseRunning() || !MyNetManager.m_connected_any)
+    {
+    m_error = "network unavailable";
+    CallMethod(ctx, "fail");
+    return;
     }
 
   // start initial request:
@@ -1666,7 +1667,10 @@ void OvmsScripts::DukTapeTask()
             duk_push_string(m_dukctx, msg.body.dt_evalnoresult.text);
             if (duk_peval(m_dukctx) != 0)
               {
-              ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
+              if (msg.writer)
+                msg.writer->printf("ERROR: %s\n",duk_safe_to_string(m_dukctx, -1));
+              else
+                ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
               }
             duk_pop(m_dukctx);
             }
@@ -1678,7 +1682,10 @@ void OvmsScripts::DukTapeTask()
             duk_push_string(m_dukctx, msg.body.dt_evalfloatresult.text);
             if (duk_peval(m_dukctx) != 0)
               {
-              ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
+              if (msg.writer)
+                msg.writer->printf("ERROR: %s\n",duk_safe_to_string(m_dukctx, -1));
+              else
+                ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
               *msg.body.dt_evalfloatresult.result = 0;
               }
             else
@@ -1695,7 +1702,10 @@ void OvmsScripts::DukTapeTask()
             duk_push_string(m_dukctx, msg.body.dt_evalintresult.text);
             if (duk_peval(m_dukctx) != 0)
               {
-              ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
+              if (msg.writer)
+                msg.writer->printf("ERROR: %s\n",duk_safe_to_string(m_dukctx, -1));
+              else
+                ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
               *msg.body.dt_evalintresult.result = 0;
               }
             else

@@ -253,14 +253,28 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsWebServer::HandleCommand(PageEntry_t& p, PageContext_t& c)
 {
-  std::string command = c.getvar("command", 2000);
+  std::string type = c.getvar("type");
+  bool javascript = (type == "js");
   std::string output = c.getvar("output");
+  extram::string command;
+  c.getvar("command", command);
+
+  if (!javascript && command.length() > 2000) {
+    c.head(400);
+    c.print("ERROR: command too long (max 2000 chars)");
+    c.done();
+    return;
+  }
 
   // Note: application/octet-stream default instead of text/plain is a workaround for an *old*
   //  Chrome/Webkit bug: chunked text/plain is always buffered for the first 1024 bytes.
   if (output == "text") {
     c.head(200,
       "Content-Type: text/plain; charset=utf-8\r\n"
+      "Cache-Control: no-cache");
+  } else if (output == "json") {
+    c.head(200,
+      "Content-Type: application/json; charset=utf-8\r\n"
       "Cache-Control: no-cache");
   } else {
     c.head(200,
@@ -271,7 +285,7 @@ void OvmsWebServer::HandleCommand(PageEntry_t& p, PageContext_t& c)
   if (command.empty())
     c.done();
   else
-    new HttpCommandStream(c.nc, command);
+    new HttpCommandStream(c.nc, command, javascript);
 }
 
 
@@ -3382,7 +3396,9 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
   }
   else
   {
-    if (path != "") {
+    if (path == "") {
+      path = "/store/";
+    } else if (path.back() != '/') {
       // read file:
       std::ifstream file(path, std::ios::in | std::ios::binary | std::ios::ate);
       if (file.is_open()) {
@@ -3408,13 +3424,30 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
   }
 
   c.printf(
+    "<style>\n"
+    "#input-content {\n"
+      "resize: vertical;\n"
+    "}\n"
+    "#output {\n"
+      "height: 200px;\n"
+      "resize: vertical;\n"
+    "}\n"
+    ".action-group > div > div {\n"
+      "margin-bottom: 10px;\n"
+    "}\n"
+    "@media (max-width: 767px) {\n"
+      ".action-group > div > div {\n"
+        "text-align: center !important;\n"
+      "}\n"
+    "}\n"
+    "</style>\n"
     "<div class=\"panel panel-primary\">\n"
       "<div class=\"panel-heading\">Text Editor</div>\n"
       "<div class=\"panel-body\">\n"
         "<form method=\"post\" action=\"%s\" target=\"#main\">\n"
           "<div class=\"form-group\">\n"
             "<div class=\"flex-group\">\n"
-              "<button type=\"button\" class=\"btn btn-default action-open\">Open…</button>\n"
+              "<button type=\"button\" class=\"btn btn-default action-open\" accesskey=\"O\"><u>O</u>pen…</button>\n"
               "<input type=\"text\" class=\"form-control font-monospace\" placeholder=\"File path\"\n"
                 "name=\"path\" id=\"input-path\" value=\"%s\" autocapitalize=\"none\" autocorrect=\"off\"\n"
                 "autocomplete=\"off\" spellcheck=\"false\">\n"
@@ -3433,14 +3466,31 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
               "autocapitalize=\"none\" autocorrect=\"off\" autocomplete=\"off\" spellcheck=\"false\"\n"
               "id=\"input-content\" name=\"content\">%s</textarea>\n"
           "</div>\n"
-          "<div class=\"text-center\">\n"
-            "<button type=\"reset\" class=\"btn btn-default\">Reset</button>\n"
-            "<button type=\"button\" class=\"btn btn-default action-reload\">Reload</button>\n"
-            "<button type=\"button\" class=\"btn btn-default action-saveas\">Save as…</button>\n"
-            "<button type=\"button\" class=\"btn btn-primary action-save\">Save</button>\n"
+          "<div class=\"row action-group\">\n"
+            "<div class=\"col-sm-6\">\n"
+              "<div class=\"text-left\">\n"
+                "<button type=\"button\" class=\"btn btn-default action-script-eval\" accesskey=\"V\">E<u>v</u>aluate JS</button>\n"
+                "<button type=\"button\" class=\"btn btn-default action-script-reload\">Reload JS Engine</button>\n"
+              "</div>\n"
+            "</div>\n"
+            "<div class=\"col-sm-6\">\n"
+              "<div class=\"text-right\">\n"
+                "<button type=\"reset\" class=\"btn btn-default\">Reset</button>\n"
+                "<button type=\"button\" class=\"btn btn-default action-reload\">Reload</button>\n"
+                "<button type=\"button\" class=\"btn btn-default action-saveas\">Save as…</button>\n"
+                "<button type=\"button\" class=\"btn btn-primary action-save\" accesskey=\"S\"><u>S</u>ave</button>\n"
+              "</div>\n"
+            "</div>\n"
           "</div>\n"
         "</form>\n"
         "<div class=\"filedialog\" id=\"fileselect\" />\n"
+        "<pre id=\"output\" style=\"display:none\" />\n"
+      "</div>\n"
+      "<div class=\"panel-footer\">\n"
+        "<p>Hints: you don't need to save to evaluate Javascript code. See <a target=\"_blank\"\n"
+          "href=\"https://docs.openvehicles.com/en/latest/userguide/scripting.html#testing-javascript-modules\"\n"
+          ">user guide</a> on how to test a module lib plugin w/o saving and reloading.\n"
+          "Use a second session to test a web plugin.</p>\n"
       "</div>\n"
     "</div>\n"
     , c.encode_html(content).c_str());
@@ -3487,13 +3537,58 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
       "});\n"
       "$('.action-save').on('click', function() {\n"
         "path = $('#input-path').val();\n"
-        "if (path)\n"
+        "if (path == '' || path.endsWith('/'))\n"
+          "$('.action-saveas').click();\n"
+        "else\n"
           "$('form').submit();\n"
       "});\n"
       "$('.action-reload').on('click', function() {\n"
         "path = $('#input-path').val();\n"
         "if (path)\n"
           "loaduri(\"#main\", \"get\", page.path, { \"path\": path });\n"
+      "});\n"
+      "// Reload Javascript engine:\n"
+      "$('.action-script-reload').on('click', function() {\n"
+        "$('#main').addClass('loading');\n"
+        "$ta.focus();\n"
+        "loadcmd('script reload', '#output').then(function(){\n"
+          "$('#main').removeClass('loading');\n"
+          "$('#output').show();\n"
+        "});\n"
+      "});\n"
+      "// Utility: select textarea line\n"
+      "function selectLine(line) {\n"
+        "var ta = $ta.get(0);\n"
+        "// find line:\n"
+        "var txt = ta.value;\n"
+        "var lines = txt.split('\\n');\n"
+        "if (!lines || lines.length < line) return;\n"
+        "var start = 0, end, i;\n"
+        "for (i = 0; i < line-1; i++)\n"
+          "start += lines[i].length + 1;\n"
+        "end = start + lines[i].length;\n"
+        "// select & show line:\n"
+        "ta.focus();\n"
+        "ta.value = txt.substr(0, end);\n"
+        "ta.scrollTop = ta.scrollHeight;\n"
+        "ta.value = txt;\n"
+        "ta.setSelectionRange(start, end);\n"
+      "}\n"
+      "// Evaluate input as Javascript:\n"
+      "$('.action-script-eval').on('click', function() {\n"
+        "$('#main').addClass('loading');\n"
+        "$ta.focus();\n"
+        "loadcmd({ command: $ta.val(), type: 'js' }, '#output').then(function(output){\n"
+          "$('#main').removeClass('loading');\n"
+          "$('#output').show();\n"
+          "if (output == \"\") {\n"
+            "$('#output').text(\"(OK, no output)\");\n"
+            "return;\n"
+          "}\n"
+          "var hasLine = output.match(/\\(line ([0-9]+)\\)/);\n"
+          "if (hasLine && hasLine.length >= 2)\n"
+            "selectLine(hasLine[1]);\n"
+        "});\n"
       "});\n"
       "/* textarea controls */\n"
       "$('.tac-wrap').on('click', function(ev) {\n"
