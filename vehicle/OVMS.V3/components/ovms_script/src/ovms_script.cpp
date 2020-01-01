@@ -1021,13 +1021,6 @@ duk_ret_t DuktapeObject::CallMethod(duk_context *ctx, const char* method, void* 
 DuktapeHTTPRequest::DuktapeHTTPRequest(duk_context *ctx, int obj_idx)
   : DuktapeObject(ctx, obj_idx)
   {
-  if (!MyNetManager.MongooseRunning() || !MyNetManager.m_connected_any)
-    {
-    m_error = "network unavailable";
-    CallMethod(ctx, "fail");
-    return;
-    }
-
   // get args:
   duk_require_stack(ctx, 5);
   if (duk_get_prop_string(ctx, 0, "url"))
@@ -1102,6 +1095,14 @@ DuktapeHTTPRequest::DuktapeHTTPRequest(duk_context *ctx, int obj_idx)
   if (m_ispost && !have_contenttype)
     {
     m_headers.append("Content-Type: application/x-www-form-urlencoded\r\n");
+    }
+
+  // check network:
+  if (!MyNetManager.MongooseRunning() || !MyNetManager.m_connected_any)
+    {
+    m_error = "network unavailable";
+    CallMethod(ctx, "fail");
+    return;
     }
 
   // start initial request:
