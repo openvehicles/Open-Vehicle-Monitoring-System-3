@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Web UI: editor extended by embedded Javascript evaluation
+- Webserver: /api/execute: support for Javascript evaluation
 - Scripting API: added OvmsConfig.GetValues() & OvmsConfig.SetValues()
 - Config: added dedicated "usr" param for plugin configurations
 - Scripting API: HTTP.request() added
