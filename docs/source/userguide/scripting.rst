@@ -151,6 +151,38 @@ provided under the ``int/<modulename>`` namespace. The above JSON module is, for
 ``JSON.print(this)`` works directly).
 
 
+----------------------------
+Testing JavaScript / Modules
+----------------------------
+
+Use the **editor** (see Tools menu) to test or evaluate arbitrary Javascript code. This can be done
+on the fly, i.e. without saving the code to a file first. Think of it as a server side Javascript
+shell.
+
+**Testing modules** normally involves reloading the engine, as the ``require()`` call caches all loaded 
+modules until restart. To avoid this during module development, use the following template code.
+This mimics the ``require()`` call without caching and allows to do tests within the same evaluation
+run:
+
+.. code-block:: javascript
+
+  // Load module:
+  mymodule = (function(){
+    exports = {};
+    
+    // … insert module code here …
+    
+    return exports;
+  })();
+  
+  // Module API tests:
+  mymodule.myfunction1();
+  JSON.print(mymodule.myfunction2());
+
+As the module is actually loaded into the global context this way just like using ``require()``,
+anything else using the module API (e.g. a web plugin) will also work after evaluation.
+
+
 --------------------------------------
 Internal Objects and Functions/Methods
 --------------------------------------

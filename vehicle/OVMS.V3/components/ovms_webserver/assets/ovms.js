@@ -29,6 +29,7 @@ function encode_html(s) {
 }
 
 function fix_minheight($el) {
+  if ($el.css("resize") != "none") return;
   var mh = parseInt($el.css("max-height")), h = $el.outerHeight();
   $el.css("min-height", mh ? Math.min(h, mh) : h);
 }
