@@ -126,7 +126,12 @@ function printInfo() {
 
 // Read & process config:
 function readConfig() {
-  Object.assign(cfg, OvmsConfig.GetValues("usr", "edimax."));
+  // check for config update:
+  var upd = Object.assign({}, cfg, OvmsConfig.GetValues("usr", "edimax."));
+  if (Duktape.enc('jx', upd) == Duktape.enc('jx', cfg))
+    return;
+  cfg = upd;
+  // process:
   state.error = "";
   state.auto = (cfg.ip != "" && (cfg.soc_on != "" || cfg.soc_off != ""));
   if (state.auto && !state.ticker) {
