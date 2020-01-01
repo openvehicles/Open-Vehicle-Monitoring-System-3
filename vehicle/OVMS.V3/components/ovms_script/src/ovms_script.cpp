@@ -1667,7 +1667,10 @@ void OvmsScripts::DukTapeTask()
             duk_push_string(m_dukctx, msg.body.dt_evalnoresult.text);
             if (duk_peval(m_dukctx) != 0)
               {
-              ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
+              if (msg.writer)
+                msg.writer->printf("ERROR: %s\n",duk_safe_to_string(m_dukctx, -1));
+              else
+                ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
               }
             duk_pop(m_dukctx);
             }
@@ -1679,7 +1682,10 @@ void OvmsScripts::DukTapeTask()
             duk_push_string(m_dukctx, msg.body.dt_evalfloatresult.text);
             if (duk_peval(m_dukctx) != 0)
               {
-              ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
+              if (msg.writer)
+                msg.writer->printf("ERROR: %s\n",duk_safe_to_string(m_dukctx, -1));
+              else
+                ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
               *msg.body.dt_evalfloatresult.result = 0;
               }
             else
@@ -1696,7 +1702,10 @@ void OvmsScripts::DukTapeTask()
             duk_push_string(m_dukctx, msg.body.dt_evalintresult.text);
             if (duk_peval(m_dukctx) != 0)
               {
-              ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
+              if (msg.writer)
+                msg.writer->printf("ERROR: %s\n",duk_safe_to_string(m_dukctx, -1));
+              else
+                ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
               *msg.body.dt_evalintresult.result = 0;
               }
             else

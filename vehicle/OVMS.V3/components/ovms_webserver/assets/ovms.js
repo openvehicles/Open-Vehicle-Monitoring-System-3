@@ -211,9 +211,14 @@ function standardTextFilter(msg) {
 }
 
 function loadcmd(command, target, filter, timeout) {
-  var $output, outmode = "";
+  var $output, outmode = "", args = {};
 
   if (!command) return null;
+  if (typeof command == "object") {
+    args = command;
+  } else {
+    args.command = command;
+  }
 
   if (typeof filter == "number") {
     timeout = filter; filter = null;
@@ -239,7 +244,7 @@ function loadcmd(command, target, filter, timeout) {
     filter = standardTextFilter;
 
   if (!timeout) {
-    if (/^(test |ota |copen .* scan)/.test(command))
+    if (args["type"] != "js" && /^(test |ota |copen .* scan)/.test(args.command))
       timeout = 300;
     else
       timeout = 20;
@@ -262,7 +267,7 @@ function loadcmd(command, target, filter, timeout) {
     if (autoscroll) $output.scrollTop($output.get(0).scrollHeight);
   };
 
-  xhr = $.ajax({ "type": "post", "url": "/api/execute", "data": { "command": command },
+  xhr = $.ajax({ "type": "post", "url": "/api/execute", "data": args,
     "timeout": 0,
     "beforeSend": function() {
       if ($output.length) {
@@ -294,7 +299,8 @@ function loadcmd(command, target, filter, timeout) {
       add_output(filter({ "request": request, "text": addtext }));
     },
     "error": function(request, textStatus, errorThrown) {
-      console.log("loadcmd '" + command + "' ERROR: status=" + textStatus + ", httperror=" + errorThrown);
+      var cmdinfo = (args.command.length > 200) ? args.command.substr(0,200)+"[…]" : args.command;
+      console.log("loadcmd '" + cmdinfo + "' ERROR: status=" + textStatus + ", httperror=" + errorThrown);
       var txt = xhrErrorInfo(request, textStatus, errorThrown);
       add_output(filter({ "request": request, "error": txt }));
     },

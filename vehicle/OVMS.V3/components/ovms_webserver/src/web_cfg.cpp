@@ -253,14 +253,28 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
  */
 void OvmsWebServer::HandleCommand(PageEntry_t& p, PageContext_t& c)
 {
-  std::string command = c.getvar("command", 2000);
+  std::string type = c.getvar("type");
+  bool javascript = (type == "js");
   std::string output = c.getvar("output");
+  extram::string command;
+  c.getvar("command", command);
+
+  if (!javascript && command.length() > 2000) {
+    c.head(400);
+    c.print("ERROR: command too long (max 2000 chars)");
+    c.done();
+    return;
+  }
 
   // Note: application/octet-stream default instead of text/plain is a workaround for an *old*
   //  Chrome/Webkit bug: chunked text/plain is always buffered for the first 1024 bytes.
   if (output == "text") {
     c.head(200,
       "Content-Type: text/plain; charset=utf-8\r\n"
+      "Cache-Control: no-cache");
+  } else if (output == "json") {
+    c.head(200,
+      "Content-Type: application/json; charset=utf-8\r\n"
       "Cache-Control: no-cache");
   } else {
     c.head(200,
@@ -271,7 +285,7 @@ void OvmsWebServer::HandleCommand(PageEntry_t& p, PageContext_t& c)
   if (command.empty())
     c.done();
   else
-    new HttpCommandStream(c.nc, command);
+    new HttpCommandStream(c.nc, command, javascript);
 }
 
 
