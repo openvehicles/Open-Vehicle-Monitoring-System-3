@@ -6,6 +6,7 @@
 
 ## General Vehicle Extensions
 
+- ``abrp``: Send live tour vehicle data to https://abetterrouteplanner.com
 - ``foglight``: Automatic speed adaptive fog light using OVMS GPIO port
 - ``regenmon``: Live monitoring for regenerative brakelight & acceleration level
 
