@@ -28,13 +28,13 @@
  * Declarations:
  *   CAR_MODEL: find your car model here: https://api.iternio.com/1/tlm/get_carmodels_list?api_key=32b2162f-9599-4647-8139-66e9f9528370
  *   OVMS_API_KEY : API_KEY to access to ABRP API, given by the developer
- *   TOKEN : Your token (corresponding to your abrp profile)
+ *   MY_TOKEN : Your token (corresponding to your abrp profile)
  *   URL : url to send telemetry to abrp following: https://iternio.com/index.php/iternio-telemetry-api/
  */
  
   const CAR_MODEL = "kia:niro:19:64:other";  
   const OVMS_API_KEY = "32b2162f-9599-4647-8139-66e9f9528370";
-  const MY_TOKEN = "aa9a68a1-dd57-49f6-bebf-847332fe1a5e";
+  const MY_TOKEN = "@@@@@@@@-@@@@-@@@@-@@@@-@@@@@@@@@@@@";
   const URL = "http://api.iternio.com/1/tlm/send";
   const CR = '\n';
   var objTLM;
