@@ -1,5 +1,5 @@
-OVMS3 Plugin: abrp
+<h1>OVMS3 Plugin: abrp</h1>
 
-Allow your OVMS box to send live data to "abetterrouteplanner.com".
+<p><strong>Allow your OVMS box to send live data to "abetterrouteplanner.com".</strong></p>
 
 See comments in js source code
