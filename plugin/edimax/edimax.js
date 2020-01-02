@@ -1,7 +1,7 @@
 /**
  * Module plugin:
  *  Smart Plug control for Edimax models SP-1101W, SP-2101W et al
- *  Version 1.0 by Michael Balzer <dexter@dexters-web.de>
+ *  Version 1.1 by Michael Balzer <dexter@dexters-web.de>
  *  Note: may need digest auth support to work with newer Edimax firmware (untested)
  * 
  * Installation:
