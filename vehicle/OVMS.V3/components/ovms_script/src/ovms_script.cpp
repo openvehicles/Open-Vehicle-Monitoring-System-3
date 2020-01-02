@@ -982,8 +982,15 @@ void DuktapeObject::Deregister(duk_context *ctx)
  */
 void DuktapeObject::RequestCallback(const char* method, void* data /*=NULL*/)
   {
-  Ref();
-  MyScripts.DuktapeRequestCallback(this, method, data);
+  if (MyScripts.DukTapeAvailable())
+    {
+    Ref();
+    MyScripts.DuktapeRequestCallback(this, method, data);
+    }
+  else
+    {
+    ESP_LOGE(TAG, "DuktapeObject::RequestCallback(%s) failed: Duktape not available", method);
+    }
   }
 
 /**
@@ -991,7 +998,11 @@ void DuktapeObject::RequestCallback(const char* method, void* data /*=NULL*/)
  */
 duk_ret_t DuktapeObject::DuktapeCallback(duk_context *ctx, duktape_queue_t &msg)
   {
-  duk_ret_t res = CallMethod(ctx, msg.body.dt_callback.method, msg.body.dt_callback.data);
+  duk_ret_t res = -1;
+  if (ctx)
+    res = CallMethod(ctx, msg.body.dt_callback.method, msg.body.dt_callback.data);
+  else
+    ESP_LOGE(TAG, "DuktapeObject::DuktapeCallback(%s) failed: Duktape shutdown", msg.body.dt_callback.method);
   Unref();
   return res;
   }
@@ -1687,6 +1698,13 @@ void OvmsScripts::DukTapeTask()
               }
             duk_pop(m_dukctx);
             }
+          else
+            {
+            if (msg.writer)
+              msg.writer->puts("ERROR: Duktape not started");
+            else
+              ESP_LOGE(TAG, "Duktape not started");
+            }
           break;
         case DUKTAPE_evalfloatresult:
           if (m_dukctx != NULL)
@@ -1706,6 +1724,14 @@ void OvmsScripts::DukTapeTask()
               *msg.body.dt_evalfloatresult.result = (float)duk_get_number(m_dukctx,-1);
               }
             duk_pop(m_dukctx);
+            }
+          else
+            {
+            if (msg.writer)
+              msg.writer->puts("ERROR: Duktape not started");
+            else
+              ESP_LOGE(TAG, "Duktape not started");
+            *msg.body.dt_evalfloatresult.result = 0;
             }
           break;
         case DUKTAPE_evalintresult:
@@ -1727,14 +1753,21 @@ void OvmsScripts::DukTapeTask()
               }
             duk_pop(m_dukctx);
             }
+          else
+            {
+            if (msg.writer)
+              msg.writer->puts("ERROR: Duktape not started");
+            else
+              ESP_LOGE(TAG, "Duktape not started");
+            *msg.body.dt_evalintresult.result = 0;
+            }
           break;
         case DUKTAPE_callback:
-          if (m_dukctx != NULL)
-            {
-            // DuktapeObject callback (without result)
-            DuktapeObject* dto = msg.body.dt_callback.instance;
-            dto->DuktapeCallback(m_dukctx, msg);
-            }
+          {
+          // DuktapeObject callback (without result)
+          DuktapeObject* dto = msg.body.dt_callback.instance;
+          dto->DuktapeCallback(m_dukctx, msg);
+          }
           break;
         default:
           ESP_LOGE(TAG,"Duktape: Unrecognised msg type 0x%04x",msg.type);
@@ -1930,6 +1963,9 @@ void OvmsScripts::EventScript(std::string event, void* data)
 OvmsScripts::OvmsScripts()
   {
   ESP_LOGI(TAG, "Initialising SCRIPTS (1600)");
+  m_dukctx = NULL;
+  m_duktaskid = NULL;
+  m_duktaskqueue = NULL;
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_NONE
   ESP_LOGI(TAG, "No javascript engines enabled (command scripting only)");

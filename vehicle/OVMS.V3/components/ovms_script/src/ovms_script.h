@@ -312,6 +312,7 @@ class OvmsScripts
   public:
     void DukTapeInit();
     void DukTapeTask();
+    bool DukTapeAvailable() { return m_dukctx != NULL; }
 
   protected:
     duk_context* m_dukctx;

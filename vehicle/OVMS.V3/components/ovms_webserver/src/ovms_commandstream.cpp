@@ -99,7 +99,11 @@ void HttpCommandStream::CommandTask(void* object)
   
   // execute command:
   if (me->m_javascript) {
-    MyScripts.DuktapeEvalNoResult(me->m_command.c_str(), me);
+    #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+      MyScripts.DuktapeEvalNoResult(me->m_command.c_str(), me);
+    #else
+      me->puts("ERROR: Javascript support disabled");
+    #endif
   } else {
     me->ProcessChars(me->m_command.data(), me->m_command.size());
     me->ProcessChar('\n');

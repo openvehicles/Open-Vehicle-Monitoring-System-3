@@ -259,6 +259,15 @@ void OvmsWebServer::HandleCommand(PageEntry_t& p, PageContext_t& c)
   extram::string command;
   c.getvar("command", command);
 
+#ifndef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (javascript) {
+    c.head(400);
+    c.print("ERROR: Javascript support disabled");
+    c.done();
+    return;
+  }
+#endif
+
   if (!javascript && command.length() > 2000) {
     c.head(400);
     c.print("ERROR: command too long (max 2000 chars)");
@@ -1808,7 +1817,10 @@ void OvmsWebServer::UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std:
 void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, warn;
-  bool init, ext12v, modem, server_v2, server_v3, scripting;
+  bool init, ext12v, modem, server_v2, server_v3;
+  #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+    bool scripting;
+  #endif
   bool dbc;
   #ifdef CONFIG_OVMS_COMP_MAX7317
     bool egpio;
@@ -1828,7 +1840,9 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
     modem = (c.getvar("modem") == "yes");
     server_v2 = (c.getvar("server_v2") == "yes");
     server_v3 = (c.getvar("server_v3") == "yes");
-    scripting = (c.getvar("scripting") == "yes");
+    #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+      scripting = (c.getvar("scripting") == "yes");
+    #endif
     vehicle_type = c.getvar("vehicle_type");
     obd2ecu = c.getvar("obd2ecu");
     wifi_mode = c.getvar("wifi_mode");
@@ -1881,7 +1895,9 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("auto", "modem", modem);
       MyConfig.SetParamValueBool("auto", "server.v2", server_v2);
       MyConfig.SetParamValueBool("auto", "server.v3", server_v3);
-      MyConfig.SetParamValueBool("auto", "scripting", scripting);
+      #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+        MyConfig.SetParamValueBool("auto", "scripting", scripting);
+      #endif
       MyConfig.SetParamValue("auto", "vehicle.type", vehicle_type);
       MyConfig.SetParamValue("auto", "obd2ecu", obd2ecu);
       MyConfig.SetParamValue("auto", "wifi.mode", wifi_mode);
@@ -1919,7 +1935,9 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
     modem = MyConfig.GetParamValueBool("auto", "modem", false);
     server_v2 = MyConfig.GetParamValueBool("auto", "server.v2", false);
     server_v3 = MyConfig.GetParamValueBool("auto", "server.v3", false);
-    scripting = MyConfig.GetParamValueBool("auto", "scripting", true);
+    #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+      scripting = MyConfig.GetParamValueBool("auto", "scripting", true);
+    #endif
     vehicle_type = MyConfig.GetParamValue("auto", "vehicle.type");
     obd2ecu = MyConfig.GetParamValue("auto", "obd2ecu");
     wifi_mode = MyConfig.GetParamValue("auto", "wifi.mode", "ap");
@@ -1939,8 +1957,10 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
     "<p>Note: if a crash occurs within 10 seconds after powering the module, autostart will be temporarily"
     " disabled. You may need to use the USB shell to access the module and fix the config.</p>");
 
-  c.input_checkbox("Enable scripting", "scripting", scripting,
-    "<p>Enable execution of user scripts as commands and on events.</p>");
+  #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+    c.input_checkbox("Enable Javascript engine (Duktape)", "scripting", scripting,
+      "<p>Enable execution of Javascript on the module (plugins, commands, event handlers).</p>");
+  #endif
 
   c.input_checkbox("Autoload DBC files", "dbc", dbc,
     "<p>Enable to autoload DBC files (for reverse engineering).</p>");
