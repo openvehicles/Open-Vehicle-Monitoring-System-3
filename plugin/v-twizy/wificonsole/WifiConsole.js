@@ -3,9 +3,7 @@
  * 
  * Module plugin: WifiConsole backend
  * 
- * Version 1.0   Michael Balzer <dexter@dexters-web.de>
- * 
- * Hardware: https://github.com/dexterbg/WifiConsole
+ * Version 1.1   Michael Balzer <dexter@dexters-web.de>
  * 
  * Enable:
  *  - install at above path
@@ -22,27 +20,24 @@ var cfg;
 
 // Read config:
 function readconfig() {
-  var cmdres, lines, line, i, key;
   cfg = {
     buttons: [0,1,2,3],
     label: { 0:"STD", 1:"PWR", 2:"ECO", 3:"ICE" },
   };
-  cmdres = OvmsCommand.Exec("config list xrt");
-  lines = cmdres.split("\n");
-  for (i = 0; i < lines.length; i++) {
-    line = lines[i].match(/profile([0-9]{2})?[._]([^:]*): (.*)/);
-    if (line && line.length == 4) {
-      if (line[2] == "buttons")
-        cfg.buttons = eval("[" + line[3] + "]");
-      else if (line[2] == "label")
-        cfg.label[Number(line[1])] = line[3];
-    }
-  }
+  var upd = OvmsConfig.GetValues("xrt", "profile");
+  if (upd["_buttons"])
+    cfg.buttons = eval("[" + upd["_buttons"] + "]");
+  Object.keys(upd).forEach(function(key) {
+    if (key.endsWith(".label"))
+      cfg.label[parseInt(key)] = upd[key];
+  });
 }
 
 // API method wificon.info():
 exports.info = function() {
   var key;
+  print("S:" + Math.floor(OvmsMetrics.AsFloat("v.b.soc")) + "\n");
+  print("A:" + OvmsMetrics.AsFloat("v.b.12v.voltage").toFixed(1) + "\n");
   print("P:" + OvmsMetrics.Value("xrt.cfg.profile") + "\n");
   var ws = OvmsMetrics.Value("xrt.cfg.ws");
   for (i = 0; i < cfg.buttons.length; i++) {
