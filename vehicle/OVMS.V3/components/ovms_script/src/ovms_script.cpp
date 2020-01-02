@@ -1209,9 +1209,11 @@ void DuktapeHTTPRequest::MongooseCallback(struct mg_connection *nc, int ev, void
       ESP_LOGD(TAG, "DuktapeHTTPRequest: MG_EV_CONNECT err=%d/%s", err, errdesc);
       if (err)
         {
+        #if MG_ENABLE_SSL
         if (err == MG_SSL_ERROR)
           m_error = "SSL error";
         else
+        #endif
           m_error = (errdesc && *errdesc) ? errdesc : "unknown";
         RequestCallback("fail");
         nc->flags |= MG_F_CLOSE_IMMEDIATELY;
