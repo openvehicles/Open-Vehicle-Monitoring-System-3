@@ -64,32 +64,20 @@
 
   // Fill json telemetry object
   function UpdateTelemetryObj(myJSON) {
-    var read_num = 0;
-    var read_str = "";
     var read_bool = false;
+   
+    myJSON.lat = OvmsMetrics.AsFloat(["v.p.latitude"]).toFixed(3);
+    myJSON.lon = OvmsMetrics.AsFloat(["v.p.longitude"]).toFixed(3);
+    myJSON.elevation = OvmsMetrics.AsFloat(["v.p.altitude"]).toFixed();
+    myJSON.power = OvmsMetrics.AsFloat(["v.b.power"]).toFixed(1);
 
-    //myJSON.lat = OvmsMetrics.AsFloat("v.p.latitude").toFixed(3);
-    //above code line works, except when value is undefined, after reboot for example
-    
-    read_num = Number(OvmsMetrics.Value("v.p.latitude"));
-    myJSON.lat = read_num.toFixed(3);
-
-    read_num = Number(OvmsMetrics.Value("v.p.longitude"));
-    myJSON.lon = read_num.toFixed(3);
-
-    read_num = Number(OvmsMetrics.Value("v.p.altitude"));
-    myJSON.elevation = read_num.toFixed();
-
-    read_num = Number(OvmsMetrics.Value("v.b.power"));
-    myJSON.power = read_num.toFixed(1);
-
-    myJSON.soc=Number(OvmsMetrics.Value("v.b.soc"));
-    myJSON.soh=Number(OvmsMetrics.Value("v.b.soh"));
-    myJSON.speed=Number(OvmsMetrics.Value("v.p.speed"));
-    myJSON.batt_temp=Number(OvmsMetrics.Value("v.b.temp"));
-    myJSON.ext_temp=Number(OvmsMetrics.Value("v.e.temp"));
-    myJSON.voltage=Number(OvmsMetrics.Value("v.b.voltage"));
-    myJSON.current=Number(OvmsMetrics.Value("v.b.current"));
+    myJSON.soc = OvmsMetrics.AsFloat("v.b.soc");
+    myJSON.soh = OvmsMetrics.AsFloat("v.b.soh");
+    myJSON.speed = OvmsMetrics.AsFloat("v.p.speed");
+    myJSON.batt_temp = OvmsMetrics.AsFloat("v.b.temp");
+    myJSON.ext_temp = OvmsMetrics.AsFloat("v.e.temp");
+    myJSON.voltage = OvmsMetrics.AsFloat("v.b.voltage");
+    myJSON.current = OvmsMetrics.AsFloat("v.b.current");
 
     var d = new Date();
     myJSON.utc = Math.trunc(d.getTime()/1000);
@@ -189,7 +177,7 @@
   exports.send = function(onoff) {
     if (onoff) {
       onetime();
-      objTimer = PubSub.subscribe("ticker.60", SendLiveData);
+      objTimer = PubSub.subscribe("ticker.60", SendLiveData); // update each 60s
     } else {
       PubSub.unsubscribe(objTimer);
     }
