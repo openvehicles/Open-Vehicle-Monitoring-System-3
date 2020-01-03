@@ -46,13 +46,13 @@
 
     <h3>Evaluate Javascript Code</h3>
 
-    <p>To execute Javascript, pass an object instead of the <code>command</code> string,
+    <p>To execute Javascript, either pass an object instead of the <code>command</code> string,
       containing the command as property "command" and a second property "type" with
-      value "js". Example:</p>
+      value "js", or simply use the wrapper call <code>loadjs()</code>. Example:</p>
 
     <p>
       <button type="button" class="btn btn-default"
-        onclick="loadcmd({ command:'print(OvmsVehicle.Type())', type:'js' }, '#out1js')">
+        onclick="loadjs('print(OvmsVehicle.Type())', '#out1js')">
         Show vehicle type
       </button>
     </p>
