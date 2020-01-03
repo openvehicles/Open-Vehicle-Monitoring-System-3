@@ -28,9 +28,13 @@ You can use the embedded website *tools/shell* and *tools/editor* of the OVMS bo
 
 Files to be created in **/store/scripts/**
     * **ovmsmain.js**, if not already exists
-    * **sendlivedata2abrp.js**, by copying the file below
+    * **sendlivedata2abrp.js**, by copying the file below and setting your own 'user token'
 
-This entire document is written with the RST syntax. In the right sidebar, you should find a link **show source**, which shows the RST source code.
+**Remark**: to get your own 'user token', you must connect with your login to abetterrouteplanner. In Settings/more Settings, there's an item 'Live Car Connection' with 2 buttons: 'Setup' and 'View live data'. 
+    * Click on Setup
+    * Click on Torque
+    * Click 4 times on 'Next', until having two fields to copy: 'Webserver URL' and 'User Email Address'.
+    * Copy the field 'User Email Address' and paste it in the source code const MY_TOKEN = ">>> PASTE HERE <<<";
 
 Script code
 ===========
