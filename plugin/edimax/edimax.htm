@@ -1,7 +1,7 @@
 <!--
   Web UI page plugin:
     Control & configuration frontend for Edimax module plugin (edimax.js)
-    Version 1.0  Michael Balzer <dexter@dexters-web.de>
+    Version 2.0  Michael Balzer <dexter@dexters-web.de>
   
   Recommended installation:
     - Page:    /usr/edimax
@@ -16,69 +16,104 @@
     <div class="alert alert-dismissible" style="display:none" />
     <div class="receiver" id="edimax">
 
-      <fieldset><legend>State</legend>
       <form class="form-horizontal" id="form-state">
-        <div class="form-group">
-          <label class="control-label col-sm-3">Power:</label>
-          <div class="col-sm-9">
-            <div class="btn-group action-edimax-set" data-toggle="buttons">
-              <label class="btn btn-default action-edimax-off"><input type="radio" name="power" value="off">OFF</label>
-              <label class="btn btn-default action-edimax-on"><input type="radio" name="power" value="on">ON</label>
+        <fieldset><legend>State</legend>
+          <div class="form-group">
+            <label class="control-label col-sm-3">Power:</label>
+            <div class="col-sm-9">
+              <div class="btn-group action-edimax-set" data-toggle="buttons">
+                <label class="btn btn-default action-edimax-off"><input type="radio" name="power" value="off">OFF</label>
+                <label class="btn btn-default action-edimax-on"><input type="radio" name="power" value="on">ON</label>
+              </div>
+              <samp class="samp-inline" id="action-edimax-output"></samp>
             </div>
-            <samp class="samp-inline" id="action-edimax-output"></samp>
           </div>
-        </div>
+        </fieldset>
       </form>
-      </fieldset>
 
-      <fieldset><legend>Configuration</legend>
       <form class="form-horizontal" id="form-cfg">
-        <div class="form-group">
-          <label class="control-label col-sm-3" for="input-ip">Edimax IP address:</label>
-          <div class="col-sm-9">
-            <input type="text" class="form-control font-monospace" name="ip" id="input-ip">
+
+        <fieldset><legend>Configuration</legend>
+          <div class="form-group">
+            <label class="control-label col-sm-3" for="input-ip">Edimax IP address:</label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control font-monospace" name="ip" id="input-ip">
+            </div>
           </div>
-        </div>
-        <div class="form-group">
-          <label class="control-label col-sm-3" for="input-user">… Username:</label>
-          <div class="col-sm-9">
-            <input type="text" class="form-control font-monospace" name="user" id="input-user"
-              autocomplete="section-edimax username">
+          <div class="form-group">
+            <label class="control-label col-sm-3" for="input-user">… Username:</label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control font-monospace" name="user" id="input-user"
+                autocomplete="section-edimax username">
+            </div>
           </div>
-        </div>
-        <div class="form-group">
-          <label class="control-label col-sm-3" for="input-pass">… Password:</label>
-          <div class="col-sm-9">
-            <input type="password" class="form-control font-monospace" name="pass" id="input-pass"
-              autocomplete="section-edimax current-password">
+          <div class="form-group">
+            <label class="control-label col-sm-3" for="input-pass">… Password:</label>
+            <div class="col-sm-9">
+              <input type="password" class="form-control font-monospace" name="pass" id="input-pass"
+                autocomplete="section-edimax current-password">
+            </div>
           </div>
-        </div>
-        <div class="form-group">
-          <label class="control-label col-sm-3" for="input-location">Location:</label>
-          <div class="col-sm-9">
-            <input type="text" class="form-control" name="location" id="input-location"
-              placeholder="optional: defined location name">
+          <div class="form-group">
+            <label class="control-label col-sm-3" for="input-location">Location:</label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control" name="location" id="input-location"
+                placeholder="optional: defined location name">
+            </div>
           </div>
-        </div>
-        <div class="form-group">
-          <label class="control-label col-sm-3" for="input-soc_on">Power on at:</label>
-          <div class="col-sm-9">
-            <div class="form-control slider" id="soc_on" data-min="0" data-max="100" data-step="1" data-unit="% SOC" />
+        </fieldset>
+
+        <fieldset><legend>Main Battery Guard</legend>
+          <div class="form-group">
+            <label class="control-label col-sm-3" for="input-soc_on">Power on at:</label>
+            <div class="col-sm-9">
+              <div class="form-control slider" id="soc_on" data-min="0" data-max="100" data-step="1" data-unit="% SOC" />
+            </div>
           </div>
-        </div>
-        <div class="form-group">
-          <label class="control-label col-sm-3" for="input-soc_off">Power off at:</label>
-          <div class="col-sm-9">
-            <div class="form-control slider" id="soc_off" data-min="0" data-max="100" data-step="1" data-unit="% SOC" />
+          <div class="form-group">
+            <label class="control-label col-sm-3" for="input-soc_off">Power off at:</label>
+            <div class="col-sm-9">
+              <div class="form-control slider" id="soc_off" data-min="0" data-max="100" data-step="1" data-unit="% SOC" />
+            </div>
           </div>
-        </div>
+          <div class="form-group">
+            <div class="col-sm-9 col-sm-offset-3">
+              <div class="checkbox">
+                <label><input type="checkbox" name="chg_stop_off" id="input-chg_stop_off" value="yes">Power off at charge stop</label>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset><legend>12V Battery Guard</legend>
+          <div class="form-group">
+            <label class="control-label col-sm-3" for="input-aux_volt_on">Power on at:</label>
+            <div class="col-sm-9">
+              <div class="form-control slider" id="aux_volt_on" data-min="10" data-max="15" data-step="0.1" data-unit="V" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="control-label col-sm-3" for="input-aux_volt_off">Power off at:</label>
+            <div class="col-sm-9">
+              <div class="form-control slider" id="aux_volt_off" data-min="10" data-max="15" data-step="0.1" data-unit="V" />
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="col-sm-9 col-sm-offset-3">
+              <div class="checkbox">
+                <label><input type="checkbox" name="aux_stop_off" id="input-aux_stop_off" value="yes">Power off at charge stop</label>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
         <div class="form-group">
           <div class="col-sm-offset-3 col-sm-9">
             <button type="button" class="btn btn-primary action-save">Save</button>
           </div>
         </div>
+
       </form>
-      </fieldset>
 
     </div>
   </div>
@@ -121,6 +156,10 @@
     $('#input-location').val(edimax.cfg.location);
     $('#soc_on').slider({ checked: (edimax.cfg.soc_on != ""), value: Number(edimax.cfg.soc_on) });
     $('#soc_off').slider({ checked: (edimax.cfg.soc_off != ""), value: Number(edimax.cfg.soc_off) });
+    $('#input-chg_stop_off').prop("checked", edimax.cfg.chg_stop_off == "yes");
+    $('#aux_volt_on').slider({ checked: (edimax.cfg.aux_volt_on != ""), value: Number(edimax.cfg.aux_volt_on) });
+    $('#aux_volt_off').slider({ checked: (edimax.cfg.aux_volt_off != ""), value: Number(edimax.cfg.aux_volt_off) });
+    $('#input-aux_stop_off').prop("checked", edimax.cfg.aux_stop_off == "yes");
     // show error:
     if (edimax.state.error) {
       showAlert("danger", edimax.state.error);
@@ -155,7 +194,10 @@
   $('.action-save').on('click', function(e) {
     $alert.hide();
     $actionres.empty();
-    var upd = { soc_on: "", soc_off: "" };
+    var upd = {
+      soc_on: "", soc_off: "", chg_stop_off: "",
+      aux_volt_on: "", aux_volt_off: "", aux_stop_off: ""
+    };
     var inp = $('#form-cfg').serializeArray();
     inp.map(el => upd[el["name"]] = el["value"]);
     loadcmd('script eval \'OvmsConfig.SetValues("usr","edimax.",'+JSON.stringify(upd)+')\'').then(
