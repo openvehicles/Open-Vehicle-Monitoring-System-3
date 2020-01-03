@@ -211,6 +211,10 @@ function standardTextFilter(msg) {
     return $('<div/>').text(msg.text).html();
 }
 
+function loadjs(command, target, filter, timeout) {
+  return loadcmd({ "command": command, type: "js" }, target, filter, timeout);
+}
+
 function loadcmd(command, target, filter, timeout) {
   var $output, outmode = "", args = {};
 
@@ -349,10 +353,11 @@ function initSocketConnection(){
         $(".receiver").trigger("msg:event", msg.event);
         $(".monitor[data-events]").each(function(){
           var cmd = $(this).data("updcmd");
+          var js = $(this).data("updjs");
           var evf = $(this).data("events");
-          if (cmd && evf && msg.event.match(evf)) {
+          if ((cmd || js) && evf && msg.event.match(evf)) {
             $(this).data("updlast", now());
-            loadcmd(cmd, $(this));
+            loadcmd({ command: js ? js : cmd, type: js ? "js" : "cmd" }, $(this));
           }
         });
       }
@@ -376,10 +381,11 @@ function initSocketConnection(){
 function monitorInit(force){
   $(".monitor").each(function(){
     var cmd = $(this).data("updcmd");
+    var js = $(this).data("updjs");
     var txt = $(this).text();
-    if (cmd && (force || !txt)) {
+    if ((cmd || js) && (force || !txt)) {
       $(this).data("updlast", now());
-      loadcmd(cmd, $(this));
+      loadcmd({ command: js ? js : cmd, type: js ? "js" : "cmd" }, $(this));
     }
   });
 }
@@ -401,11 +407,12 @@ function monitorUpdate(){
     var int = $(this).data("updint");
     var last = $(this).data("updlast");
     var cmd = $(this).data("updcmd");
-    if (!cnt || !cmd || (now()-last) < int)
+    var js = $(this).data("updjs");
+    if (!cnt || (!cmd && !js) || (now()-last) < int)
       return;
     $(this).data("updcnt", cnt-1);
     $(this).data("updlast", now());
-    loadcmd(cmd, $(this));
+    loadcmd({ command: js ? js : cmd, type: js ? "js" : "cmd" }, $(this));
   });
 }
 
@@ -1516,6 +1523,25 @@ $(function(){
     btn.prop("disabled", true);
     $(tgt).data("updcnt", 0);
     loadcmd(cmd, tgt).then(function(){
+      btn.prop("disabled", false);
+      $(tgt).data("updcnt", updcnt);
+      $(tgt).data("updint", updint);
+      $(tgt).data("updlast", now());
+    }, function(){
+      btn.prop("disabled", false);
+    });
+    event.stopPropagation();
+    return false;
+  });
+  $('body').on('click', '.btn[data-js]', function(event){
+    var btn = $(this);
+    var js = btn.data("js");
+    var tgt = btn.data("target");
+    var updcnt = btn.data("watchcnt") || 0;
+    var updint = btn.data("watchint") || 2;
+    btn.prop("disabled", true);
+    $(tgt).data("updcnt", 0);
+    loadjs(js, tgt).then(function(){
       btn.prop("disabled", false);
       $(tgt).data("updcnt", updcnt);
       $(tgt).data("updint", updint);

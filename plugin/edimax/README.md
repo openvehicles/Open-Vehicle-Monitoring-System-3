@@ -16,10 +16,17 @@ be configured via SOC levels.
   - `edimax = require("lib/edimax");`
 - Issue `script reload`
 - Install `edimax.htm` web plugin, recommended setup:
+  - Type:    Page
   - Page:    `/usr/edimax`
   - Label:   Edimax Smart Plug
   - Menu:    Config
   - Auth:    Cookie
+- Install `edimax-status.htm` web plugin, recommended setup:
+  - Type:    Hook
+  - Page:    `/status`
+  - Hook:    `body.post`
+
+The `edimax-status` plugin adds power control to the Status page's vehicle panel.
 
 ## Configuration
 
