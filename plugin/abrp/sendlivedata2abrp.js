@@ -68,6 +68,9 @@
     var read_str = "";
     var read_bool = false;
 
+    //myJSON.lat = OvmsMetrics.AsFloat("v.p.latitude").toFixed(3);
+    //above code line works, except when value is undefined, after reboot for example
+    
     read_num = Number(OvmsMetrics.Value("v.p.latitude"));
     myJSON.lat = read_num.toFixed(3);
 
@@ -186,7 +189,7 @@
   exports.send = function(onoff) {
     if (onoff) {
       onetime();
-      objTimer = PubSub.subscribe("ticker.5", SendLiveData);
+      objTimer = PubSub.subscribe("ticker.60", SendLiveData);
     } else {
       PubSub.unsubscribe(objTimer);
     }
