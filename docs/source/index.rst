@@ -8,6 +8,7 @@ Open Vehicles Monitoring System
 
    Overview <introduction>
    userguide/index
+   plugin/README
 
 .. toctree::
    :maxdepth: 1

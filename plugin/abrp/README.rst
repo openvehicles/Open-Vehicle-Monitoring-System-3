@@ -1,9 +1,8 @@
-*****************************************
-Send live data to abetterrouteplanner.com
-*****************************************
-abrp script example
-###################
+*****************************
+ABRP: abetterrouteplanner.com
+*****************************
 
+**Send live data to abetterrouteplanner.com**
 
 .. topic:: Overview
 
