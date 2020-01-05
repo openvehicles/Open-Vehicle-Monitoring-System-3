@@ -143,6 +143,31 @@ static duk_ret_t DukOvmsMetricFloat(duk_context *ctx)
     return 0;
   }
 
+static duk_ret_t DukOvmsMetricGetValues(duk_context *ctx)
+  {
+  const char *filter = duk_opt_string(ctx, 0, "");
+  bool decode = duk_opt_boolean(ctx, 1, false);
+
+  duk_idx_t obj_idx = duk_push_object(ctx);
+  for (OvmsMetric *m = MyMetrics.m_first; m; m = m->m_next)
+    {
+    if (*filter && !strstr(m->m_name, filter))
+      continue;
+    if (decode)
+      {
+      duk_push_string(ctx, m->AsJSON().c_str());
+      duk_json_decode(ctx, -1);
+      }
+    else
+      {
+      duk_push_string(ctx, m->AsString().c_str());
+      }
+    duk_put_prop_string(ctx, obj_idx, m->m_name);
+    }
+
+  return 1;
+  }
+
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
 MetricCallbackEntry::MetricCallbackEntry(const char* caller, MetricCallback callback)
@@ -177,6 +202,7 @@ OvmsMetrics::OvmsMetrics()
   dto->RegisterDuktapeFunction(DukOvmsMetricValue, 1, "Value");
   dto->RegisterDuktapeFunction(DukOvmsMetricJSON, 1, "AsJSON");
   dto->RegisterDuktapeFunction(DukOvmsMetricFloat, 1, "AsFloat");
+  dto->RegisterDuktapeFunction(DukOvmsMetricGetValues, 2, "GetValues");
   MyScripts.RegisterDuktapeObject(dto);
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }

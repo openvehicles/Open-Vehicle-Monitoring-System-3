@@ -1005,6 +1005,7 @@ void OvmsWebServer::HandleLogin(PageEntry_t& p, PageContext_t& c)
   c.input_password("Password", "password", "", NULL, NULL, "autocomplete=\"section-login current-password\"");
   c.input_button("default", "Login");
   c.form_end();
+  c.print("<script>$('#input-username').focus()</script>");
   c.panel_end();
   c.done();
 }
