@@ -66,7 +66,7 @@ provides data logging to SD card and to a server.
 
 ## Links
 
-- _User Ressources_
+- _User Resources_
   - [User and Developer Guides](https://docs.openvehicles.com/en/latest/)
   - [User Support Forum](https://www.openvehicles.com/forum)
   - [Android App](https://play.google.com/store/apps/details?id=com.openvehicles.OVMS&hl=en_US)
