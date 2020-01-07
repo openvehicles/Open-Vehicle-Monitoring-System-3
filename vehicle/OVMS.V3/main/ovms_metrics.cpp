@@ -136,7 +136,13 @@ static duk_ret_t DukOvmsMetricFloat(duk_context *ctx)
   OvmsMetric *m = MyMetrics.Find(mn);
   if (m)
     {
-    duk_push_number(ctx, m->AsFloat());
+    // Pushing the float metric as a (double) 'number' lets the float precision errors
+    // become significant in the resulting number; e.g. 11.08 becomes 11.079999923706055.
+    // Rounding the double value needs to determine the proper scale & double division.
+    // Another way is to send the float through the AsString() conversion (with 6 digits
+    // precision), then apply the JS Number() conversion:
+    duk_push_string(ctx, m->AsString().c_str());
+    duk_to_number(ctx, -1);
     return 1;  /* one return value */
     }
   else
