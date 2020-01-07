@@ -1,0 +1,203 @@
+<!--
+  Web UI page plugin:
+    Auxiliary (12V) Battery History Chart
+    Version 1.0  Michael Balzer <dexter@dexters-web.de>
+  
+  Dependencies:
+    - "auxbatmon.js" module plugin (metrics background recording)
+      (Note: will work without the module plugin, but can then only show live data)
+  
+  Installation:
+    - Type:    Page
+    - Page:    /usr/auxbatmon
+    - Label:   12V History
+    - Menu:    Tools
+    - Auth:    Cookie
+-->
+
+<style>
+#auxchart {
+  height: 80vh;
+  min-height: 265px;
+}
+.fullscreened #auxchart {
+  height: 100vh;
+}
+.highcharts-graph {
+  stroke-width: 4px;
+}
+.night .highcharts-color-1 {
+  fill: #c3c3c8;
+  stroke: #c3c3c8;
+}
+</style>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">12V Battery History</div>
+  <div class="panel-body">
+    <div class="receiver" id="auxreceiver">
+      <div class="chart-box linechart" id="auxchart"/>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  // Customization (needs to match module plugin):
+  const sampleInterval = 60;  // Seconds, needs to match a ticker event
+  const historyHours = 24;    // RAM ~ historyHours / sampleInterval
+
+  const tickerEvent = 'ticker.' + sampleInterval;
+  const maxEntries = historyHours * 3600 / sampleInterval;
+  var history = {
+    "time": null,
+    "v.b.12v.voltage": [],
+    "v.b.12v.voltage.ref": [],
+    "v.b.12v.current": [],
+    "v.c.temp": [],
+    "v.e.temp": [],
+  };
+  var auxchart;
+
+  function loadChart(chart) {
+    auxchart = chart;
+    $('.panel').addClass('loading');
+    // Load data:
+    loadjs('auxbatmon.dump()').done((data) => {
+      console.log("loadChart: read " + data.length + " bytes");
+      try {
+        history = JSON.parse(data);
+        console.log("loadChart: got " + history["v.b.12v.voltage"].length + " samples");
+        updateChart();
+      } catch (error) {
+        console.error(error);
+        confirmdialog("Error", "History data error, please check module plugin.", ["OK"]);
+      }
+    }).fail((req, status, error) => {
+      console.error(status, error);
+      confirmdialog("Error", "Can't get history: " + error, ["OK"]);
+    }).always(() => {
+      $('.panel').removeClass('loading');
+      // Start ticker:
+      $('#auxreceiver').on('msg:event', function(e, event) {
+        if (event == tickerEvent) {
+          ticker();
+        }
+      });
+    });
+  }
+
+  function ticker() {
+    // Add current metrics to history:
+    history["time"] = new Date().getTime();
+    Object.keys(history).forEach(function(key) {
+      if (key != "time") {
+        if (history[key].push(metrics[key]) > maxEntries)
+          history[key].splice(0, 1);
+      }
+    });
+    // Update chart:
+    updateChart();
+  }
+
+  function updateChart() {
+    // Calculate start time:
+    var start = history["time"]
+      - history["v.b.12v.voltage"].length * sampleInterval * 1000
+      - (new Date().getTimezoneOffset()) * 60 * 1000;
+    // Update data series:
+    auxchart.series[0].update({ data: history["v.b.12v.voltage"], pointStart: start }, false);
+    auxchart.series[1].update({ data: history["v.b.12v.voltage.ref"], pointStart: start }, false);
+    auxchart.series[2].update({ data: history["v.b.12v.current"], pointStart: start }, false);
+    auxchart.series[3].update({ data: history["v.c.temp"], pointStart: start }, false);
+    auxchart.series[4].update({ data: history["v.e.temp"], pointStart: start }, true);
+  }
+
+  // Init chart:
+  $("#auxchart").chart({
+    chart: {
+      type: 'spline',
+      events: {
+        load: function () { loadChart(this); }
+      },
+      zoomType: 'x',
+      panning: true,
+      panKey: 'ctrl',
+      animation: false,
+    },
+    title: { text: null },
+    credits: { enabled: false },
+    legend: {
+      align: 'center',
+      verticalAlign: 'bottom',
+    },
+    plotOptions: {
+      spline: {
+        marker: {
+          enabled: false,
+        },
+      },
+      series: {
+        animation: false,
+        pointInterval: sampleInterval * 1000,
+      },
+    },
+    tooltip: {
+      shared: true,
+      crosshairs: true,
+    },
+
+    // Axes:
+    xAxis: {
+      type: 'datetime',
+    },
+    yAxis: [{
+      title: { text: "Current [A] / Temperature [°C]" },
+      labels: { format: "{value:.0f}" },
+    },{
+      opposite: true,
+      title: { text: "Voltage [V]" },
+      labels: { format: "{value:.1f}" },
+    }],
+
+    // Data:
+    series: [{
+      name: 'Voltage',
+      tooltip: { valueSuffix: ' V' },
+      yAxis: 1,
+    },{
+      name: 'Reference',
+      tooltip: { valueSuffix: ' V' },
+      yAxis: 1,
+    },{
+      name: 'Current',
+      tooltip: { valueSuffix: ' A' },
+      yAxis: 0,
+    },{
+      name: 'Charger Temp',
+      tooltip: { valueSuffix: ' °C' },
+      yAxis: 0,
+    },{
+      name: 'Env Temp',
+      tooltip: { valueSuffix: ' °C' },
+      yAxis: 0,
+    }],
+
+    // Layout:
+    responsive: {
+      rules: [{
+        condition: { maxWidth: 500 },
+        chartOptions: {
+          yAxis: [{
+            title: { text: null },
+          },{
+            title: { text: null },
+          }],
+        },
+      }],
+    },
+  });
+
+})();
+</script>
