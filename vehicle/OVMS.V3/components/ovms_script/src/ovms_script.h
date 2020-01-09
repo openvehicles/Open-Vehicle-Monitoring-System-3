@@ -106,6 +106,7 @@ typedef struct
     struct
       {
       const char* text;
+      const char* filename;
       } dt_evalnoresult;
     struct
       {
@@ -302,7 +303,7 @@ class OvmsScripts
     void DuktapeDispatchWait(duktape_queue_t* msg);
 
   public:
-    void  DuktapeEvalNoResult(const char* text, OvmsWriter* writer=NULL);
+    void  DuktapeEvalNoResult(const char* text, OvmsWriter* writer=NULL, const char* filename=NULL);
     float DuktapeEvalFloatResult(const char* text, OvmsWriter* writer=NULL);
     int   DuktapeEvalIntResult(const char* text, OvmsWriter* writer=NULL);
     void  DuktapeReload();
