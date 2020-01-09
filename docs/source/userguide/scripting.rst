@@ -330,12 +330,15 @@ The handler automatically excludes the request objects from gargabe collection u
       with ``this`` pointing to the request object.
     - ``fail``: optional error callback function, called with the ``error`` string as argument,
       with ``this`` pointing to the request object.
+    - ``always``: optional final callback function, no arguments, ``this`` = request object.
 
     The ``cfg`` object is extended and returned by the API (``req``). It will remain stable at 
     least until the request has finished and callbacks have been executed. On completion, the 
     ``req`` object may contain an updated ``url`` and a ``redirectCount`` if redirects have been 
     followed. Member ``error`` (also passed to the ``fail`` callback) will be set to the error 
-    description if an error occurred.
+    description if an error occurred. The ``always`` callback if present is called in any case,
+    after a ``done`` or ``fail`` callback has been executed. Check ``this.error`` in the
+    ``always`` callback to know if an error occurred.
 
     On success, member object ``response`` will be present and contain:
 
@@ -375,7 +378,7 @@ The handler automatically excludes the request objects from gargabe collection u
       HTTP.request({
         url: "https://dexters-web.de/f/test.json",
         headers: [{ "User-Agent": "Mr. What Zit Tooya" }],
-        done: function() { JSON.print(this, false); }
+        always: function() { JSON.print(this, false); }
       });
 
 
