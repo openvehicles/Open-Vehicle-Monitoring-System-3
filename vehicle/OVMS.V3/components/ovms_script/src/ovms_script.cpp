@@ -1313,94 +1313,110 @@ duk_ret_t DuktapeHTTPRequest::CallMethod(duk_context *ctx, const char* method, v
   duk_require_stack(ctx, 7);
   int entry_top = duk_get_top(ctx);
 
-  int obj_idx = Push(ctx);
-  duk_get_prop_string(ctx, obj_idx, method);
-  bool callable = duk_is_callable(ctx, -1);
-  duk_pop(ctx);
-  if (callable) duk_push_string(ctx, method);
-  int nargs = 0;
   bool deregister = false;
 
-  // update request.url, set request.redirectCount:
-  duk_push_string(ctx, m_url.c_str());
-  duk_put_prop_string(ctx, obj_idx, "url");
-  duk_push_int(ctx, m_redirectcnt);
-  duk_put_prop_string(ctx, obj_idx, "redirectCount");
-
-  // create results & method arguments:
-  if (strcmp(method, "done") == 0)
+  while (method)
     {
-    // done(response):
-    deregister = true;
-    ESP_LOGD(TAG, "DuktapeHTTPRequest: done status=%d bodylen=%d url='%s'",
-      m_response_status, m_response_body.size(), m_url.c_str());
+    const char* followup_method = NULL;
 
-    // clear request.error:
-    duk_push_string(ctx, "");
-    duk_put_prop_string(ctx, obj_idx, "error");
+    // check method:
+    int obj_idx = Push(ctx);
+    duk_get_prop_string(ctx, obj_idx, method);
+    bool callable = duk_is_callable(ctx, -1);
+    duk_pop(ctx);
+    if (callable) duk_push_string(ctx, method);
+    int nargs = 0;
 
-    // create response object:
-    duk_push_object(ctx);
-    duk_push_int(ctx, m_response_status);
-    duk_put_prop_string(ctx, -2, "statusCode");
-    duk_push_string(ctx, m_response_statusmsg.c_str());
-    duk_put_prop_string(ctx, -2, "statusText");
+    // update request.url, set request.redirectCount:
+    duk_push_string(ctx, m_url.c_str());
+    duk_put_prop_string(ctx, obj_idx, "url");
+    duk_push_int(ctx, m_redirectcnt);
+    duk_put_prop_string(ctx, obj_idx, "redirectCount");
 
-    // …body:
-    if (m_binary)
+    // create results & method arguments:
+    if (strcmp(method, "done") == 0)
       {
-      void* p = duk_push_fixed_buffer(ctx, m_response_body.size());
-      memcpy(p, m_response_body.data(), m_response_body.size());
-      duk_put_prop_string(ctx, -2, "data");
-      }
-    else
-      {
-      duk_push_lstring(ctx, m_response_body.data(), m_response_body.size());
-      duk_put_prop_string(ctx, -2, "body");
-      }
-    m_response_body.clear();
-    m_response_body.shrink_to_fit();
+      // done(response):
+      followup_method = "always";
+      ESP_LOGD(TAG, "DuktapeHTTPRequest: done status=%d bodylen=%d url='%s'",
+        m_response_status, m_response_body.size(), m_url.c_str());
 
-    // …response headers:
-    duk_push_array(ctx);
-    int i = 0;
-    for (auto it = m_response_headers.begin(); it != m_response_headers.end(); it++, i++)
-      {
+      // clear request.error:
+      duk_push_string(ctx, "");
+      duk_put_prop_string(ctx, obj_idx, "error");
+
+      // create response object:
       duk_push_object(ctx);
-      duk_push_string(ctx, it->second.c_str());
-      duk_put_prop_string(ctx, -2, it->first.c_str());
-      duk_put_prop_index(ctx, -2, i);
+      duk_push_int(ctx, m_response_status);
+      duk_put_prop_string(ctx, -2, "statusCode");
+      duk_push_string(ctx, m_response_statusmsg.c_str());
+      duk_put_prop_string(ctx, -2, "statusText");
+
+      // …body:
+      if (m_binary)
+        {
+        void* p = duk_push_fixed_buffer(ctx, m_response_body.size());
+        memcpy(p, m_response_body.data(), m_response_body.size());
+        duk_put_prop_string(ctx, -2, "data");
+        }
+      else
+        {
+        duk_push_lstring(ctx, m_response_body.data(), m_response_body.size());
+        duk_put_prop_string(ctx, -2, "body");
+        }
+      m_response_body.clear();
+      m_response_body.shrink_to_fit();
+
+      // …response headers:
+      duk_push_array(ctx);
+      int i = 0;
+      for (auto it = m_response_headers.begin(); it != m_response_headers.end(); it++, i++)
+        {
+        duk_push_object(ctx);
+        duk_push_string(ctx, it->second.c_str());
+        duk_put_prop_string(ctx, -2, it->first.c_str());
+        duk_put_prop_index(ctx, -2, i);
+        }
+      duk_put_prop_string(ctx, -2, "headers");
+      m_response_headers.clear();
+
+      duk_dup(ctx, -1);
+      duk_put_prop_string(ctx, obj_idx, "response");
+      nargs++;
       }
-    duk_put_prop_string(ctx, -2, "headers");
-    m_response_headers.clear();
+    else if (strcmp(method, "fail") == 0)
+      {
+      // fail(error):
+      followup_method = "always";
+      ESP_LOGE(TAG, "DuktapeHTTPRequest: failed error='%s' url='%s'",
+        m_error.c_str(), m_url.c_str());
 
-    duk_dup(ctx, -1);
-    duk_put_prop_string(ctx, obj_idx, "response");
-    nargs++;
-    }
-  else if (strcmp(method, "fail") == 0)
-    {
-    // fail(error):
-    deregister = true;
-    ESP_LOGE(TAG, "DuktapeHTTPRequest: failed error='%s' url='%s'",
-      m_error.c_str(), m_url.c_str());
+      // set request.error:
+      duk_push_string(ctx, m_error.c_str());
+      duk_dup(ctx, -1);
+      duk_put_prop_string(ctx, obj_idx, "error");
+      nargs++;
+      }
+    else if (strcmp(method, "always") == 0)
+      {
+      // always():
+      deregister = true;
+      }
 
-    // set request.error:
-    duk_push_string(ctx, m_error.c_str());
-    duk_dup(ctx, -1);
-    duk_put_prop_string(ctx, obj_idx, "error");
-    nargs++;
-    }
+    // call method:
+    if (callable)
+      {
+      ESP_LOGD(TAG, "DuktapeHTTPRequest: calling method '%s' nargs=%d", method, nargs);
+      duk_call_prop(ctx, obj_idx, nargs);
+      }
 
-  // call method:
-  if (callable)
-    {
-    ESP_LOGD(TAG, "DuktapeHTTPRequest: calling method '%s' nargs=%d", method, nargs);
-    duk_call_prop(ctx, obj_idx, nargs);
-    }
+    // clear stack:
+    duk_pop_n(ctx, duk_get_top(ctx) - entry_top);
 
-  // clear stack:
-  duk_pop_n(ctx, duk_get_top(ctx) - entry_top);
+    // followup call:
+    method = followup_method;
+    } // while (method)
+
   // allow GC:
   if (deregister) Deregister(ctx);
   return 0;
