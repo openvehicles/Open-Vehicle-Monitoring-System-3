@@ -445,6 +445,39 @@ void DukOvmsFatalHandler(void *udata, const char *msg)
   abort();
   }
 
+void DukOvmsErrorHandler(duk_context *ctx, duk_idx_t err_idx, OvmsWriter *writer=NULL, const char *filename=NULL)
+  {
+  const char *error;
+  int linenumber = 0;
+  if (!filename) filename = "eval";
+
+  if (duk_is_error(ctx, err_idx))
+    {
+    duk_get_prop_string(ctx, err_idx, "fileName");
+    if (duk_is_string(ctx, -1))
+      filename = duk_get_string(ctx, -1);
+    duk_pop(ctx);
+    duk_get_prop_string(ctx, err_idx, "lineNumber");
+    linenumber = duk_get_number_default(ctx, -1, 0);
+    duk_pop(ctx);
+    }
+
+  error = duk_safe_to_string(ctx, err_idx);
+
+  if (writer)
+    {
+    // some errors have line numbers
+    if (linenumber == 0 || strstr(error, "(line "))
+      writer->printf("ERROR: %s\n", error);
+    else
+      writer->printf("ERROR: %s (line %d)\n", error, linenumber);
+    }
+  else
+    {
+    ESP_LOGE(TAG, "[%s:%d] %s", filename, linenumber, error);
+    }
+  }
+
 static duk_ret_t DukOvmsResolveModule(duk_context *ctx)
   {
   const char *module_id;
@@ -518,6 +551,33 @@ static duk_ret_t DukOvmsLoadModule(duk_context *ctx)
   return 1;
   }
 
+static void DukGetCallInfo(duk_context *ctx, std::string *filename, int *linenumber, std::string *function)
+  {
+  duk_require_stack(ctx, 3);
+  for (int i=-2; ; i--)
+    {
+    *filename = "";
+    *function = "";
+    duk_inspect_callstack_entry(ctx, i);
+    duk_get_prop_string(ctx, -1, "lineNumber");
+    *linenumber = duk_get_number_default(ctx, -1, 0);
+    duk_pop(ctx);
+    if (duk_get_prop_string(ctx, -1, "function"))
+      {
+      duk_get_prop_string(ctx, -1, "fileName");
+      *filename = duk_get_string_default(ctx, -1, "");
+      duk_pop(ctx);
+      duk_get_prop_string(ctx, -1, "name");
+      *function = duk_get_string_default(ctx, -1, "");
+      duk_pop(ctx);
+      }
+    duk_pop(ctx);
+    // skip internal modules:
+    if (!startsWith(*filename, "int/"))
+      break;
+    }
+  }
+
 static duk_ret_t DukOvmsPrint(duk_context *ctx)
   {
   const char *output = duk_safe_to_string(ctx,0);
@@ -525,9 +585,19 @@ static duk_ret_t DukOvmsPrint(duk_context *ctx)
   if (output != NULL)
     {
     if (duktapewriter != NULL)
-      { duktapewriter->printf("%s",output); }
+      {
+      duktapewriter->printf("%s",output);
+      }
     else
-      { ESP_LOGI(TAG,"%s",output); }
+      {
+      std::string filename, function;
+      int linenumber = 0;
+      DukGetCallInfo(ctx, &filename, &linenumber, &function);
+      if (function == "eval")
+        ESP_LOGI(TAG, "[%s:%d] %s", filename.c_str(), linenumber, output);
+      else
+        ESP_LOGI(TAG, "[%s:%d:%s] %s", filename.c_str(), linenumber, function.c_str(), output);
+      }
     }
   return 0;
   }
@@ -1483,13 +1553,14 @@ void OvmsScripts::DuktapeDispatchWait(duktape_queue_t* msg)
   msg->waitcompletion = NULL;
   }
 
-void OvmsScripts::DuktapeEvalNoResult(const char* text, OvmsWriter* writer)
+void OvmsScripts::DuktapeEvalNoResult(const char* text, OvmsWriter* writer, const char* filename /*=NULL*/)
   {
   duktape_queue_t dmsg;
   memset(&dmsg, 0, sizeof(dmsg));
   dmsg.type = DUKTAPE_evalnoresult;
   dmsg.writer = writer;
   dmsg.body.dt_evalnoresult.text = text;
+  dmsg.body.dt_evalnoresult.filename = filename;
   DuktapeDispatchWait(&dmsg);
   }
 
@@ -1690,7 +1761,7 @@ void OvmsScripts::DukTapeTask()
             duk_push_string(m_dukctx, "");
             if (duk_pcall_method(m_dukctx, 2) != 0)
               {
-              ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
+              DukOvmsErrorHandler(m_dukctx, -1);
               }
             duk_pop_2(m_dukctx);
             }
@@ -1706,13 +1777,13 @@ void OvmsScripts::DukTapeTask()
           if (m_dukctx != NULL)
             {
             // Execute script text (without result)
+            const char* filename = msg.body.dt_evalnoresult.filename;
+            if (!filename) filename = "eval";
             duk_push_string(m_dukctx, msg.body.dt_evalnoresult.text);
-            if (duk_peval(m_dukctx) != 0)
+            duk_push_string(m_dukctx, filename);
+            if (duk_pcompile(m_dukctx, DUK_COMPILE_EVAL) != 0 || duk_pcall(m_dukctx, 0) != 0)
               {
-              if (msg.writer)
-                msg.writer->printf("ERROR: %s\n",duk_safe_to_string(m_dukctx, -1));
-              else
-                ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
+              DukOvmsErrorHandler(m_dukctx, -1, msg.writer, filename);
               }
             duk_pop(m_dukctx);
             }
@@ -1731,10 +1802,7 @@ void OvmsScripts::DukTapeTask()
             duk_push_string(m_dukctx, msg.body.dt_evalfloatresult.text);
             if (duk_peval(m_dukctx) != 0)
               {
-              if (msg.writer)
-                msg.writer->printf("ERROR: %s\n",duk_safe_to_string(m_dukctx, -1));
-              else
-                ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
+              DukOvmsErrorHandler(m_dukctx, -1, msg.writer);
               *msg.body.dt_evalfloatresult.result = 0;
               }
             else
@@ -1759,10 +1827,7 @@ void OvmsScripts::DukTapeTask()
             duk_push_string(m_dukctx, msg.body.dt_evalintresult.text);
             if (duk_peval(m_dukctx) != 0)
               {
-              if (msg.writer)
-                msg.writer->printf("ERROR: %s\n",duk_safe_to_string(m_dukctx, -1));
-              else
-                ESP_LOGE(TAG,"Duktape: %s",duk_safe_to_string(m_dukctx, -1));
+              DukOvmsErrorHandler(m_dukctx, -1, msg.writer);
               *msg.body.dt_evalintresult.result = 0;
               }
             else
@@ -1835,7 +1900,7 @@ static void script_ovms(bool print, int verbosity, OvmsWriter* writer,
     char *script = new char[slen+1];
     memset(script,0,slen+1);
     fread(script,1,slen,sf);
-    MyScripts.DuktapeEvalNoResult(script, writer);
+    MyScripts.DuktapeEvalNoResult(script, writer, spath);
     delete [] script;
 #else // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
     if (writer)
