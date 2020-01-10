@@ -385,6 +385,98 @@ The handler automatically excludes the request objects from gargabe collection u
     Legacy alias for ``HTTP.Request()``, please do not use.
 
 
+VFS
+^^^
+
+The VFS API provides asynchronous loading and saving of files on ``/store`` and ``/sd``.
+Text and binary data is supported. Currently only complete files can be loaded, the saver
+supports an append mode. In any case, the data to save/load needs to fit into RAM twice,
+as the buffer needs to be converted to/from Javascript.
+
+The handler automatically excludes the request objects from gargabe collection until finished 
+(success/failure), so you don't need to store a global reference to the request.
+
+Loading or saving protected paths (``/store/ovms_config/…``) is not allowed. Saving to
+a path automatically creates missing directories.
+
+- ``req = VFS.Load(cfg)``
+    Perform asynchronous file load.
+
+    Pass the request parameters using the ``cfg`` object:
+
+    - ``path``: full file path, e.g. ``/sd/mydata/telemetry.json``
+    - ``binary``: optional flag: ``true`` = perform a binary request, returned ``data`` will
+      be an Uint8Array)
+    - ``done``: optional success callback function, called with the ``data`` content read as
+      the single argument, ``this`` pointing to the request object
+    - ``fail``: optional error callback function, called with the ``error`` string as argument,
+      with ``this`` pointing to the request object
+    - ``always``: optional final callback function, no arguments, ``this`` = request object
+
+    The ``cfg`` object is extended and returned by the API (``req``). It will remain stable at 
+    least until the request has finished and callbacks have been executed. On success, the 
+    ``req`` object contains a ``data`` property (also passed to the ``done`` callback), which
+    is either a string (text mode) or a Uint8Array (binary mode).
+    
+    Member ``error`` (also passed to the ``fail`` callback) will be set to the error 
+    description if an error occurred. The ``always`` callback if present is called in any case,
+    after a ``done`` or ``fail`` callback has been executed. Check ``this.error`` in the
+    ``always`` callback to know if an error occurred.
+
+    **Example**:
+
+    .. code-block:: javascript
+      
+      // Load a custom telemetry object from a JSON file on SD card:
+      var telemetry;
+      VFS.Load({
+        path: "/sd/mydata/telemetry.json",
+        done: function(data) {
+          telemetry = Duktape.dec('jx', data);
+          // …process telemetry…
+        },
+        fail: function(error) {
+          print("Error loading telemetry: " + error);
+        }
+      });
+
+- ``req = VFS.Save(cfg)``
+    Perform asynchronous file save.
+
+    Pass the request parameters using the ``cfg`` object:
+
+    - ``data``: the string or Uint8Array to save
+    - ``path``: full file path (missing directories will automatically be created)
+    - ``append``: optional flag: ``true`` = append to the end of the file (also creating the
+      file as necessary)
+    - ``done``: optional success callback function, called with no arguments, ``this`` pointing
+      to the request object
+    - ``fail``: optional error callback function, called with the ``error`` string as argument,
+      with ``this`` pointing to the request object
+    - ``always``: optional final callback function, no arguments, ``this`` = request object
+
+    The ``cfg`` object is extended and returned by the API (``req``). It will remain stable at 
+    least until the request has finished and callbacks have been executed.
+    
+    Member ``error`` (also passed to the ``fail`` callback) will be set to the error 
+    description if an error occurred. The ``always`` callback if present is called in any case,
+    after a ``done`` or ``fail`` callback has been executed. Check ``this.error`` in the
+    ``always`` callback to know if an error occurred.
+
+    **Example**:
+
+    .. code-block:: javascript
+      
+      // Save the above telemetry object in JSON format on SD card:
+      VFS.Save({
+        path: "/sd/mydata/telemetry.json",
+        data: Duktape.enc('jx', telemetry),
+        fail: function(error) {
+          print("Error saving telemetry: " + error);
+        }
+      });
+
+
 PubSub
 ^^^^^^
 
