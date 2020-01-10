@@ -60,7 +60,7 @@ function getPowerState() {
     print("Edimax: vehicle not at plug location (" + cfg.location + ")");
     return;
   }
-  HTTP.request({
+  HTTP.Request({
     url: "http://" + cfg.user + ":" + cfg.pass + "@" + cfg.ip + ":10000/smartplug.cgi",
     headers: [{ "Content-Type": "text/xml" }],
     post: '<?xml version="1.0" encoding="utf-8"?>'
@@ -94,7 +94,7 @@ function setPowerState(onoff) {
   }
   if (onoff != "on" && onoff != "off")
     onoff = onoff ? "on" : "off";
-  HTTP.request({
+  HTTP.Request({
     url: "http://" + cfg.user + ":" + cfg.pass + "@" + cfg.ip + ":10000/smartplug.cgi",
     headers: [{ "Content-Type": "text/xml" }],
     post: '<?xml version="1.0" encoding="utf-8"?>'
