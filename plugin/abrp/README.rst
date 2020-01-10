@@ -51,7 +51,7 @@ Usage
 How to make it run:
   - install as described in 'Installation'
   - add to /store/scripts/ovmsmain.js:
-                 abrp = require("sendlivedata2arbp");
+                 abrp = require("sendlivedata2abrp");
   - script reload
  
 With command lines in the OVMS android app, in the messages part:
