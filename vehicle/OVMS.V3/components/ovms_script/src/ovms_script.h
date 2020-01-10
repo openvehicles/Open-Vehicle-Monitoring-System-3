@@ -217,7 +217,7 @@ class DuktapeObject
  * 
  * Javascript API:
  *  create:
- *     var request = HTTP.request({
+ *     var request = HTTP.Request({
  *       url: "…",
  *       [headers: [{ "key": "value", … }, …]]    // Note: array members may contain multiple headers
  *       [post: "foo=bar&…",]                     // assumed x-www-form-urlencoded w/o Content-Type
