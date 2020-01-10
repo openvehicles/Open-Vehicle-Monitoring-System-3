@@ -310,7 +310,7 @@ The HTTP API provides asynchronous GET & POST requests for HTTP and HTTPS. Reque
 text and binary data and follow 301/302 redirects automatically. Basic authentication is supported 
 (add username & password to the URL), digest authentication is not yet implemented.
 
-The handler automatically excludes the request objects from gargabe collection until finished 
+The handler automatically excludes the request objects from garbage collection until finished 
 (success/failure), so you don't need to store a global reference to the request.
 
 - ``req = HTTP.request(cfg)``
