@@ -313,7 +313,7 @@ text and binary data and follow 301/302 redirects automatically. Basic authentic
 The handler automatically excludes the request objects from gargabe collection until finished 
 (success/failure), so you don't need to store a global reference to the request.
 
-- ``req = HTTP.request(cfg)``
+- ``req = HTTP.Request(cfg)``
     Perform asynchronous HTTP/HTTPS GET or POST request.
 
     Pass the request parameters using the ``cfg`` object:
@@ -353,15 +353,15 @@ The handler automatically excludes the request objects from gargabe collection u
     outputs will be written to the system log. Hint: use ``JSON.print(this, false)`` in the callback 
     to get a debug log dump of the request.
 
-    Examples:
+    **Examples**:
 
     .. code-block:: javascript
       
       // simple POST, ignore all results:
-      HTTP.request({ url: "http://smartplug.local/switch", post: "state=on&when=now" });
+      HTTP.Request({ url: "http://smartplug.local/switch", post: "state=on&when=now" });
       
       // fetch and inspect a JSON object:
-      HTTP.request({
+      HTTP.Request({
         url: "http://solarcontroller.local/status?fmt=json",
         done: function(resp) {
           if (resp.statusCode == 200) {
@@ -375,11 +375,14 @@ The handler automatically excludes the request objects from gargabe collection u
       });
       
       // override user agent, log completed request object:
-      HTTP.request({
+      HTTP.Request({
         url: "https://dexters-web.de/f/test.json",
         headers: [{ "User-Agent": "Mr. What Zit Tooya" }],
         always: function() { JSON.print(this, false); }
       });
+
+- ``HTTP.request()``
+    Legacy alias for ``HTTP.Request()``, please do not use.
 
 
 PubSub

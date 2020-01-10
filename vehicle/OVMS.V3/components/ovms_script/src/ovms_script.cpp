@@ -1254,7 +1254,7 @@ DuktapeHTTPRequest::~DuktapeHTTPRequest()
 
 duk_ret_t DuktapeHTTPRequest::Create(duk_context *ctx)
   {
-  // var request = HTTP.request({ args })
+  // var request = HTTP.Request({ args })
   DuktapeHTTPRequest* request = new DuktapeHTTPRequest(ctx, 0);
   request->Push(ctx);
   return 1;
@@ -2085,7 +2085,8 @@ OvmsScripts::OvmsScripts()
   dto->RegisterDuktapeFunction(DukOvmsConfigSetValues, 3, "SetValues");
   MyScripts.RegisterDuktapeObject(dto);
   DuktapeObjectRegistration* dt_http = new DuktapeObjectRegistration("HTTP");
-  dt_http->RegisterDuktapeFunction(DuktapeHTTPRequest::Create, 1, "request");
+  dt_http->RegisterDuktapeFunction(DuktapeHTTPRequest::Create, 1, "request"); // legacy
+  dt_http->RegisterDuktapeFunction(DuktapeHTTPRequest::Create, 1, "Request");
   RegisterDuktapeObject(dt_http);
 
   // Start the DukTape task...
