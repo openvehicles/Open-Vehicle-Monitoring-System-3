@@ -149,10 +149,10 @@ class OvmsVehicleSmartED : public OvmsVehicle
     OvmsMetricFloat *mt_pos_odometer_start;     // ODOmeter at Start
     OvmsMetricFloat *mt_real_soc;               // real state of charge
 
-    OvmsMetricInt *mt_ed_eco_accel;                     // eco score on acceleration over last 6 hours
-    OvmsMetricInt *mt_ed_eco_const;                     // eco score on constant driving over last 6 hours
-    OvmsMetricInt *mt_ed_eco_coast;                     // eco score on coasting over last 6 hours
-    OvmsMetricInt *mt_ed_eco_total;                     // eco score shown on dashboard over last 6 hours
+    OvmsMetricInt *mt_ed_eco_accel;             // eco score on acceleration over last 6 hours
+    OvmsMetricInt *mt_ed_eco_const;             // eco score on constant driving over last 6 hours
+    OvmsMetricInt *mt_ed_eco_coast;             // eco score on coasting over last 6 hours
+    OvmsMetricInt *mt_ed_eco_score;             // eco score shown on dashboard over last 6 hours
 
   private:
     unsigned int m_candata_timer;

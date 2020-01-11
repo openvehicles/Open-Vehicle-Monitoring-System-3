@@ -470,7 +470,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandTrip(int verbosity, Ov
   writer->printf("Acceleration: %s\n", (char*) mt_ed_eco_accel->AsUnitString("-", Percentage, 1).c_str());
   writer->printf("Steady Driving: %s\n", (char*) mt_ed_eco_const->AsUnitString("-", Percentage, 1).c_str());
   writer->printf("Coasting: %s\n", (char*) mt_ed_eco_coast->AsUnitString("-", Percentage, 1).c_str());
-  writer->printf("ECO Score: %s\n", (char*) mt_ed_eco_total->AsUnitString("-", Percentage, 1).c_str());
+  writer->printf("ECO Score: %s\n", (char*) mt_ed_eco_score->AsUnitString("-", Percentage, 1).c_str());
 
 	return Success;
 }

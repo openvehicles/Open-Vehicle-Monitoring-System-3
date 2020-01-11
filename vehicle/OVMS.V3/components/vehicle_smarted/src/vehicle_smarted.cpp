@@ -86,7 +86,7 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
   mt_ed_eco_accel          = MyMetrics.InitInt("xse.v.display.accel", SM_STALE_MIN, 50, Percentage);
   mt_ed_eco_const          = MyMetrics.InitInt("xse.v.display.const", SM_STALE_MIN, 50, Percentage);
   mt_ed_eco_coast          = MyMetrics.InitInt("xse.v.display.coast", SM_STALE_MIN, 50, Percentage);
-  mt_ed_eco_total          = MyMetrics.InitInt("xse.v.display.ecoscore", SM_STALE_MIN, 50, Percentage);
+  mt_ed_eco_score          = MyMetrics.InitInt("xse.v.display.ecoscore", SM_STALE_MIN, 50, Percentage);
 
   m_candata_timer     = 0;
   m_candata_poll      = 0;
@@ -567,7 +567,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
       mt_ed_eco_accel->SetValue(d[0] >> 1);
       mt_ed_eco_const->SetValue(d[1] >> 1);
       mt_ed_eco_coast->SetValue(d[2] >> 1);
-      mt_ed_eco_total->SetValue(d[3] >> 1);
+      mt_ed_eco_score->SetValue(d[3] >> 1);
       break;
     }
     case 0x418: //gear shift
