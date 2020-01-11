@@ -399,6 +399,8 @@ The handler automatically excludes the request objects from garbage collection u
 Loading or saving protected paths (``/store/ovms_config/…``) is not allowed. Saving to
 a path automatically creates missing directories.
 
+See :doc:`/plugin/auxbatmon/README` for a complete application usage example.
+
 - ``req = VFS.Load(cfg)``
     Perform asynchronous file load.
 

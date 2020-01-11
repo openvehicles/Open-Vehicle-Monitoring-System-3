@@ -1,10 +1,10 @@
 /**
  * Module plugin:
  *  Auxiliary (12V) Battery History Chart
- *  Version 1.0 by Michael Balzer <dexter@dexters-web.de>
+ *  Version 2.0 by Michael Balzer <dexter@dexters-web.de>
  * 
  * This module records a set of metrics with a fixed time interval.
- * Data is kept in RAM, a reboot or script reload will clear the history.
+ * History data is stored in a file and automatically restored on reboot/reload.
  * 
  * Installation:
  *  - Save as /store/scripts/lib/auxbatmon.js
@@ -17,7 +17,7 @@
  *  and the history size (default: 24 hours). Take care to match this in the web plugin.
  * 
  * Usage:
- *  - script eval auxbatmon.dump()  -- dump recorded history data in JSON format
+ *  - [script eval] auxbatmon.dump()  -- dump recorded history data in JSON format
  */
 
 // Customization (needs to match web plugin):
@@ -26,6 +26,8 @@ const historyHours = 24;    // RAM ~ historyHours / sampleInterval
 
 const tickerEvent = 'ticker.' + sampleInterval;
 const maxEntries = historyHours * 3600 / sampleInterval;
+const storeFile = "/store/usr/auxbatmon.jx";
+
 var history = {
   "time": null,
   "v.b.12v.voltage": [],
@@ -44,6 +46,10 @@ function ticker() {
         history[key].splice(0, 1);
     }
   });
+  if (globalThis.VFS) VFS.Save({
+    path: storeFile,
+    data: Duktape.enc('jx', history)
+  });
 }
 
 // History dump:
@@ -52,7 +58,19 @@ function dump() {
 }
 
 // Init:
-PubSub.subscribe(tickerEvent, ticker);
+if (globalThis.VFS) {
+  VFS.Load({
+    path: storeFile,
+    done: function(data) {
+      history = Duktape.dec('jx', data);
+    },
+    always: function() {
+      PubSub.subscribe(tickerEvent, ticker);
+    }
+  });
+} else {
+  PubSub.subscribe(tickerEvent, ticker);
+}
 
 // API methods:
 exports.dump = dump;
