@@ -151,14 +151,13 @@ static duk_ret_t DukOvmsMetricFloat(duk_context *ctx)
 
 static duk_ret_t DukOvmsMetricGetValues(duk_context *ctx)
   {
-  const char *filter = duk_opt_string(ctx, 0, "");
+  OvmsMetric *m;
   bool decode = duk_opt_boolean(ctx, 1, false);
-
   duk_idx_t obj_idx = duk_push_object(ctx);
-  for (OvmsMetric *m = MyMetrics.m_first; m; m = m->m_next)
+  
+  // helper: set object property from metric
+  auto set_metric = [ctx, obj_idx, decode](OvmsMetric *m)
     {
-    if (*filter && !strstr(m->m_name, filter))
-      continue;
     if (decode)
       {
       duk_push_string(ctx, m->AsJSON().c_str());
@@ -169,6 +168,41 @@ static duk_ret_t DukOvmsMetricGetValues(duk_context *ctx)
       duk_push_string(ctx, m->AsString().c_str());
       }
     duk_put_prop_string(ctx, obj_idx, m->m_name);
+    };
+
+  if (duk_is_array(ctx, 0))
+    {
+    // get metric names from array:
+    for (int i=0; duk_get_prop_index(ctx, 0, i); i++)
+      {
+      m = MyMetrics.Find(duk_to_string(ctx, -1));
+      if (m) set_metric(m);
+      duk_pop(ctx);
+      }
+    duk_pop(ctx);
+    }
+  else if (duk_is_object(ctx, 0))
+    {
+    // get metric names from object properties:
+    duk_enum(ctx, 0, 0);
+    while (duk_next(ctx, -1, true))
+      {
+      m = MyMetrics.Find(duk_to_string(ctx, -2));
+      if (m) set_metric(m);
+      duk_pop_2(ctx);
+      }
+    duk_pop(ctx);
+    }
+  else
+    {
+    // simple metric name substring filter:
+    const char *filter = duk_opt_string(ctx, 0, "");
+    for (m = MyMetrics.m_first; m; m = m->m_next)
+      {
+      if (*filter && !strstr(m->m_name, filter))
+        continue;
+      set_metric(m);
+      }
     }
 
   return 1;

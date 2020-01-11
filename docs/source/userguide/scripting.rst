@@ -611,18 +611,29 @@ OvmsMetrics
 - ``str = OvmsMetrics.AsJSON(metricname)``
     Returns the JSON representation of the metric value.
 - ``obj = OvmsMetrics.GetValues(filter, decode)``
-    Returns an object of all metrics matching the optional name filter (substring),
+    Returns an object of all metrics matching the optional name filter/template (see below),
     optionally decoded into Javascript types (i.e. numerical values will be JS numbers, arrays
     will be JS arrays etc.). The object returned is a snapshot, the values won't be updated.
+    
+    The ``filter`` argument may be a string (for substring matching as with ``metrics list``),
+    an array of full metric names, or an object of which the property names are used as
+    the metric names to get. The object won't be changed by the call, see ``Object.assign()``
+    for a simple way to merge objects. Passing an object is especially convenient if you
+    already have an object to collect metrics data.
 
 With the introduction of the ``OvmsMetrics.GetValues()`` call, you can get multiple metrics
 at once and let the system decode them for you. Using this you can for example do:
 
 .. code-block:: javascript
 
+  // Get all metrics matching substring "v.b.c." (vehicle battery cell):
   var metrics = OvmsMetrics.GetValues("v.b.c.", true);
   print("Temperature of cell 3: " + metrics["v.b.c.temp"][2] + " °C\n");
   print("Voltage of cell 7: " + metrics["v.b.c.voltage"][6] + " V\n");
+  
+  // Get some specific metrics:
+  var ovmsinfo = OvmsMetrics.GetValues(["m.version", "m.hardware"]);
+  JSON.print(ovmsinfo);
 
 This obsoletes the old pattern of parsing a metric's JSON representation using ``eval()``, 
 ``JSON.parse()`` or ``Duktape.dec()`` you may still find in some plugins. Example:
