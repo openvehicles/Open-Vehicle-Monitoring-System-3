@@ -82,7 +82,12 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
   mt_bat_energy_used_reset = MyMetrics.InitFloat("xse.v.b.energy.used.reset", SM_STALE_MID, 0, kWh);
   mt_pos_odometer_start    = MyMetrics.InitFloat("xse.v.pos.odometer.start", SM_STALE_MID, 0, Kilometers);
   mt_real_soc              = MyMetrics.InitFloat("xse.v.b.real.soc", SM_STALE_MID, 0, Percentage);
-  
+
+  mt_ed_eco_accel          = MyMetrics.InitInt("xse.v.display.accel", SM_STALE_MIN, 50, Percentage);
+  mt_ed_eco_const          = MyMetrics.InitInt("xse.v.display.const", SM_STALE_MIN, 50, Percentage);
+  mt_ed_eco_coast          = MyMetrics.InitInt("xse.v.display.coast", SM_STALE_MIN, 50, Percentage);
+  mt_ed_eco_score          = MyMetrics.InitInt("xse.v.display.ecoscore", SM_STALE_MIN, 50, Percentage);
+
   m_candata_timer     = 0;
   m_candata_poll      = 0;
   m_egpio_timer       = 0;
@@ -559,11 +564,10 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     }
     case 0x3F2: //Eco display
     {
-      /*myMetrics.->ECO_accel                             = rxBuf[0] >> 1;
-       myMetrics.->ECO_const                               = rxBuf[1] >> 1;
-       myMetrics.->ECO_coast                               = rxBuf[2] >> 1;
-       myMetrics.->ECO_total                               = rxBuf[3] >> 1;
-       */
+      mt_ed_eco_accel->SetValue(d[0] >> 1);
+      mt_ed_eco_const->SetValue(d[1] >> 1);
+      mt_ed_eco_coast->SetValue(d[2] >> 1);
+      mt_ed_eco_score->SetValue(d[3] >> 1);
       break;
     }
     case 0x418: //gear shift

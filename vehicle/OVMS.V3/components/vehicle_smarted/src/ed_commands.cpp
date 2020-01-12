@@ -462,12 +462,16 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandStat(int verbosity, Ov
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandTrip(int verbosity, OvmsWriter* writer) {
 	metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
-	
+
 	writer->printf("Driven: %s\n", (char*) StdMetrics.ms_v_pos_trip->AsUnitString("-", rangeUnit, 1).c_str());
 	writer->printf("Energy used: %s\n", (char*) StdMetrics.ms_v_bat_energy_used->AsUnitString("-", Native, 3).c_str());
 	writer->printf("Energy recd: %s\n", (char*) StdMetrics.ms_v_bat_energy_recd->AsUnitString("-", Native, 3).c_str());
 	writer->printf("SOC: %s, realSOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str(), (char*) mt_real_soc->AsUnitString("-", Native, 1).c_str());
-	
+  writer->printf("Acceleration: %s\n", (char*) mt_ed_eco_accel->AsUnitString("-", Percentage, 1).c_str());
+  writer->printf("Steady Driving: %s\n", (char*) mt_ed_eco_const->AsUnitString("-", Percentage, 1).c_str());
+  writer->printf("Coasting: %s\n", (char*) mt_ed_eco_coast->AsUnitString("-", Percentage, 1).c_str());
+  writer->printf("ECO Score: %s\n", (char*) mt_ed_eco_score->AsUnitString("-", Percentage, 1).c_str());
+
 	return Success;
 }
 
