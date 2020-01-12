@@ -66,4 +66,8 @@ xse.v.nlg6.temp.reported                 0°C                      Onboard Charg
 xse.v.nlg6.temp.socket                   0°C                      Onboard Charger socket Temperature
 xse.v.nlg6.temps                                                  Onboard Charger Temperatures
 xse.v.pos.odometer.start                 41940km                  Odo at last Ignition on. For Trip calc Value
+xse.v.display.accel                      89%                      Eco score on acceleration over last 6 hours
+xse.v.display.const                      18%                      Eco score on constant driving over last 6 hours
+xse.v.display.coast                      100%                     Eco score on coasting over last 6 hours
+xse.v.display.ecoscore                   69%                      Eco score shown on dashboard over last 6 hours
 ======================================== ======================== ============================================
