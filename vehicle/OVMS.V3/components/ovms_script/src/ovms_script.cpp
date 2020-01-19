@@ -1582,7 +1582,8 @@ DuktapeVFSLoad::DuktapeVFSLoad(duk_context *ctx, int obj_idx)
   // start loader:
   Ref();
   Register(ctx);
-  if (xTaskCreatePinnedToCore(LoadTask, "DuktapeVFSLoad", 5*512, this, 5, NULL, CORE(1)) != pdPASS)
+  if (xTaskCreatePinnedToCore(LoadTask, "DuktapeVFSLoad", 5*512, this,
+      CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_PRIORITY-1, NULL, CORE(1)) != pdPASS)
     {
     Deregister(ctx);
     Unref();
@@ -1848,7 +1849,8 @@ DuktapeVFSSave::DuktapeVFSSave(duk_context *ctx, int obj_idx)
   // start saver:
   Ref();
   Register(ctx);
-  if (xTaskCreatePinnedToCore(SaveTask, "DuktapeVFSSave", 5*512, this, 5, NULL, CORE(1)) != pdPASS)
+  if (xTaskCreatePinnedToCore(SaveTask, "DuktapeVFSSave", 5*512, this,
+      CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_PRIORITY-1, NULL, CORE(1)) != pdPASS)
     {
     Deregister(ctx);
     Unref();

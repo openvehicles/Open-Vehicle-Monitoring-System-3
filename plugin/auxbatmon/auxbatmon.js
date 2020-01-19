@@ -8,7 +8,7 @@
  * 
  * Installation:
  *  - Save as /store/scripts/lib/auxbatmon.js
- *  - Add to /store/scripts/ovmsmain.js: edimax = require("lib/auxbatmon");
+ *  - Add to /store/scripts/ovmsmain.js: auxbatmon = require("lib/auxbatmon");
  *  - Issue "script reload"
  *  - Install "auxbatmon.htm" web plugin
  * 
