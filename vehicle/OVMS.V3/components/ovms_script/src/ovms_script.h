@@ -43,6 +43,38 @@
 #include <list>
 #include <utility>
 
+/**
+ * DukContext: C++ wrapper for duk_context
+ */
+class DukContext
+  {
+  public:
+    DukContext(duk_context *ctx) { m_ctx = ctx; }
+    ~DukContext() {}
+
+    void Push(bool val)                   { duk_push_boolean(m_ctx, val); }
+    void Push(int val)                    { duk_push_number(m_ctx, val); }
+    void Push(short val)                  { duk_push_number(m_ctx, val); }
+    void Push(float val)                  { duk_push_number(m_ctx, round(((double)val) * 1e6) / 1e6); }
+    void Push(double val)                 { duk_push_number(m_ctx, val); }
+    void Push(const char* val)            { duk_push_string(m_ctx, val); }
+    void Push(const std::string &val)     { duk_push_lstring(m_ctx, val.data(), val.size()); }
+    void Push(const extram::string &val)  { duk_push_lstring(m_ctx, val.data(), val.size()); }
+
+    duk_idx_t PushArray()                 { return duk_push_array(m_ctx); }
+    duk_idx_t PushObject()                { return duk_push_object(m_ctx); }
+    duk_bool_t PutProp(duk_idx_t obj_idx, duk_uarridx_t arr_idx)
+      { return duk_put_prop_index(m_ctx, obj_idx, arr_idx); }
+    duk_bool_t PutProp(duk_idx_t obj_idx, const char* prop_name)
+      { return duk_put_prop_string(m_ctx, obj_idx, prop_name); }
+
+  public:
+    duk_context *m_ctx;
+  };
+
+/**
+ * Duktape Task Commands
+ */
 typedef enum
   {
   DUKTAPE_none = 0,             // Do nothing

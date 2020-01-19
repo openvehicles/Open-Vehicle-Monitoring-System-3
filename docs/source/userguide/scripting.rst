@@ -604,15 +604,16 @@ Note: to get the actual GPS coordinates, simply read metrics ``v.p.latitude``, `
 OvmsMetrics
 ^^^^^^^^^^^
 
-- ``str = OvmsMetrics.Value(metricname)``
-    Returns the string representation of the metric value.
+- ``str = OvmsMetrics.Value(metricname [,decode])``
+    Returns the typed value (default) or string representation (with ``decode`` = false)
+    of the metric value.
 - ``num = OvmsMetrics.AsFloat(metricname)``
     Returns the float representation of the metric value.
 - ``str = OvmsMetrics.AsJSON(metricname)``
     Returns the JSON representation of the metric value.
-- ``obj = OvmsMetrics.GetValues(filter, decode)``
+- ``obj = OvmsMetrics.GetValues([filter] [,decode])``
     Returns an object of all metrics matching the optional name filter/template (see below),
-    optionally decoded into Javascript types (i.e. numerical values will be JS numbers, arrays
+    by default decoded into Javascript types (i.e. numerical values will be JS numbers, arrays
     will be JS arrays etc.). The object returned is a snapshot, the values won't be updated.
     
     The ``filter`` argument may be a string (for substring matching as with ``metrics list``),
@@ -620,6 +621,9 @@ OvmsMetrics
     the metric names to get. The object won't be changed by the call, see ``Object.assign()``
     for a simple way to merge objects. Passing an object is especially convenient if you
     already have an object to collect metrics data.
+    
+    The ``decode`` argument defaults to ``true``, pass ``false`` to retrieve the metrics
+    string representations instead of typed values.
 
 With the introduction of the ``OvmsMetrics.GetValues()`` call, you can get multiple metrics
 at once and let the system decode them for you. Using this you can for example do:
@@ -627,7 +631,7 @@ at once and let the system decode them for you. Using this you can for example d
 .. code-block:: javascript
 
   // Get all metrics matching substring "v.b.c." (vehicle battery cell):
-  var metrics = OvmsMetrics.GetValues("v.b.c.", true);
+  var metrics = OvmsMetrics.GetValues("v.b.c.");
   print("Temperature of cell 3: " + metrics["v.b.c.temp"][2] + " °C\n");
   print("Voltage of cell 7: " + metrics["v.b.c.voltage"][6] + " V\n");
   

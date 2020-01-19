@@ -106,11 +106,16 @@ void metrics_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 
 static duk_ret_t DukOvmsMetricValue(duk_context *ctx)
   {
+  DukContext dc(ctx);
+  bool decode = duk_opt_boolean(ctx, 1, true);
   const char *mn = duk_to_string(ctx,0);
   OvmsMetric *m = MyMetrics.Find(mn);
   if (m)
     {
-    duk_push_string(ctx, m->AsString().c_str());
+    if (decode)
+      m->DukPush(dc);
+    else
+      dc.Push(m->AsString());
     return 1;  /* one return value */
     }
   else
@@ -136,13 +141,10 @@ static duk_ret_t DukOvmsMetricFloat(duk_context *ctx)
   OvmsMetric *m = MyMetrics.Find(mn);
   if (m)
     {
-    // Pushing the float metric as a (double) 'number' lets the float precision errors
+    // Pushing the float metric as a (double) 'number' directly lets the float precision errors
     // become significant in the resulting number; e.g. 11.08 becomes 11.079999923706055.
-    // Rounding the double value needs to determine the proper scale & double division.
-    // Another way is to send the float through the AsString() conversion (with 6 digits
-    // precision), then apply the JS Number() conversion:
-    duk_push_string(ctx, m->AsString().c_str());
-    duk_to_number(ctx, -1);
+    // To avoid this, we round the converted float to six digits precision:
+    duk_push_number(ctx, round(((double)m->AsFloat()) * 1e6) / 1e6);
     return 1;  /* one return value */
     }
   else
@@ -152,22 +154,18 @@ static duk_ret_t DukOvmsMetricFloat(duk_context *ctx)
 static duk_ret_t DukOvmsMetricGetValues(duk_context *ctx)
   {
   OvmsMetric *m;
-  bool decode = duk_opt_boolean(ctx, 1, false);
-  duk_idx_t obj_idx = duk_push_object(ctx);
+  DukContext dc(ctx);
+  bool decode = duk_opt_boolean(ctx, 1, true);
+  duk_idx_t obj_idx = dc.PushObject();
   
   // helper: set object property from metric
-  auto set_metric = [ctx, obj_idx, decode](OvmsMetric *m)
+  auto set_metric = [&dc, obj_idx, decode](OvmsMetric *m)
     {
     if (decode)
-      {
-      duk_push_string(ctx, m->AsJSON().c_str());
-      duk_json_decode(ctx, -1);
-      }
+      m->DukPush(dc);
     else
-      {
-      duk_push_string(ctx, m->AsString().c_str());
-      }
-    duk_put_prop_string(ctx, obj_idx, m->m_name);
+      dc.Push(m->AsString());
+    dc.PutProp(obj_idx, m->m_name);
     };
 
   if (duk_is_array(ctx, 0))
@@ -528,6 +526,13 @@ float OvmsMetric::AsFloat(const float defvalue, metric_unit_t units)
   return defvalue;
   }
 
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+void OvmsMetric::DukPush(DukContext &dc)
+  {
+  dc.Push(AsString());
+  }
+#endif
+
 void OvmsMetric::SetValue(std::string value)
   {
   }
@@ -672,6 +677,13 @@ int OvmsMetricInt::AsInt(const int defvalue, metric_unit_t units)
     return defvalue;
   }
 
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+void OvmsMetricInt::DukPush(DukContext &dc)
+  {
+  dc.Push(m_value);
+  }
+#endif
+
 void OvmsMetricInt::SetValue(int value, metric_unit_t units)
   {
   int nvalue = value;
@@ -758,6 +770,13 @@ int OvmsMetricBool::AsBool(const bool defvalue)
   else
     return defvalue;
   }
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+void OvmsMetricBool::DukPush(DukContext &dc)
+  {
+  dc.Push(m_value);
+  }
+#endif
 
 void OvmsMetricBool::SetValue(bool value)
   {
@@ -846,6 +865,14 @@ int OvmsMetricFloat::AsInt(const int defvalue, metric_unit_t units)
   return (int) AsFloat((float) defvalue, units);
   }
 
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+void OvmsMetricFloat::DukPush(DukContext &dc)
+  {
+  // dc.Push(m_value);
+  dc.Push(round(((double)m_value) * 1e6) / 1e6);
+  }
+#endif
+
 void OvmsMetricFloat::SetValue(float value, metric_unit_t units)
   {
   float nvalue = value;
@@ -898,6 +925,14 @@ std::string OvmsMetricString::AsString(const char* defvalue, metric_unit_t units
     return std::string(defvalue);
     }
   }
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+void OvmsMetricString::DukPush(DukContext &dc)
+  {
+  OvmsMutexLock lock(&m_mutex);
+  dc.Push(m_value);
+  }
+#endif
 
 void OvmsMetricString::SetValue(std::string value)
   {
