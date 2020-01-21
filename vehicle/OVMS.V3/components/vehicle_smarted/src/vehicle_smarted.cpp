@@ -39,14 +39,10 @@ static const char *TAG = "v-smarted";
 #include <string>
 #include <iomanip>
 #include "pcp.h"
-#include "ovms_metrics.h"
 #include "ovms_events.h"
-#include "ovms_config.h"
-#include "ovms_command.h"
 #include "metrics_standard.h"
 #include "ovms_notify.h"
 #include "ovms_peripherals.h"
-#include "ovms_boot.h"
 #include "ovms_netmanager.h"
 
 #include "vehicle_smarted.h"
@@ -69,7 +65,7 @@ OvmsVehicleSmartED* OvmsVehicleSmartED::GetInstance(OvmsWriter* writer /*=NULL*/
 OvmsVehicleSmartED::OvmsVehicleSmartED() {
   ESP_LOGI(TAG, "Start Smart ED vehicle module");
   
-  memset(m_vin, 0, sizeof(m_vin));
+  //memset(m_vin, 0, sizeof(m_vin));
   
   // init metrics:
   mt_vehicle_time          = MyMetrics.InitInt("xse.v.display.time", SM_STALE_MIN, 0, Minutes);
@@ -100,14 +96,14 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
   cmd_xse->RegisterCommand("bmsdiag", "Show BMS diagnostic", xse_bmsdiag);
   cmd_xse->RegisterCommand("rptdata", "Show BMS RPTdata", xse_RPTdata);
   
+  MyConfig.RegisterParam("xse", "Smart ED", true, true);
+  ConfigChanged(NULL);
+  
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-  //RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+  RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   
   // init OBD2 poller:
   ObdInitPoll();
-  
-  MyConfig.RegisterParam("xse", "Smart ED", true, true);
-  ConfigChanged(NULL);
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
@@ -127,9 +123,9 @@ OvmsVehicleSmartED::~OvmsVehicleSmartED() {
  */
 void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
   if (param && param->GetName() != "xse")
-      return;
-
-  ESP_LOGI(TAG, "Smart ED reload configuration");
+    return;
+  
+  ESP_LOGD(TAG, "Smart ED reload configuration");
   
   m_doorlock_port   = MyConfig.GetParamValueInt("xse", "doorlock.port", 9);
   m_doorunlock_port = MyConfig.GetParamValueInt("xse", "doorunlock.port", 8);
@@ -151,13 +147,6 @@ void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
   
   StandardMetrics.ms_v_charge_limit_soc->SetValue((float) MyConfig.GetParamValueInt("xse", "suffsoc", 0), Percentage );
   StandardMetrics.ms_v_charge_limit_range->SetValue((float) MyConfig.GetParamValueInt("xse", "suffrange", 0), Kilometers );
-
-#ifdef CONFIG_OVMS_COMP_MAX7317
-  MyPeripherals->m_max7317->Output(m_doorlock_port, 0);
-  MyPeripherals->m_max7317->Output(m_doorunlock_port, 0);
-  MyPeripherals->m_max7317->Output(m_ignition_port, 0);
-  MyPeripherals->m_max7317->Output((uint8_t)m_doorstatus_port,(uint8_t)1); // set port to input
-#endif
 }
 
 void OvmsVehicleSmartED::vehicle_smarted_car_on(bool isOn) {
@@ -641,11 +630,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
 }
 
 void OvmsVehicleSmartED::IncomingFrameCan2(CAN_frame_t* p_frame) {
-  //uint8_t *d = p_frame->data.u8;
   
-  switch (p_frame->MsgID) {
-    
-  }
 }
 /**
  * Update derived energy metrics while driving
@@ -709,9 +694,9 @@ void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
 
 void OvmsVehicleSmartED::Ticker10(uint32_t ticker) {
   HandleCharging();
-  if (StandardMetrics.ms_v_bat_soc->AsFloat(0) == 0) RestoreStatus();
 #ifdef CONFIG_OVMS_COMP_MAX7317
   if(m_lock_state) {
+    MyPeripherals->m_max7317->Output((uint8_t)m_doorstatus_port,(uint8_t)1); // set port to input
     int level = MyPeripherals->m_max7317->Input((uint8_t)m_doorstatus_port);
     StandardMetrics.ms_v_env_locked->SetValue(level == 1 ? false : true);
   }
@@ -723,6 +708,7 @@ void OvmsVehicleSmartED::Ticker10(uint32_t ticker) {
 }
 
 void OvmsVehicleSmartED::Ticker60(uint32_t ticker) {
+  if (StandardMetrics.ms_v_bat_soc->AsFloat(0) == 0) RestoreStatus();
 #ifdef CONFIG_OVMS_COMP_MAX7317
   if (m_egpio_timer > 0) {
     if (--m_egpio_timer == 0) {
@@ -789,11 +775,11 @@ const std::string OvmsVehicleSmartED::GetFeature(int key)
 }
 
 class OvmsVehicleSmartEDInit {
-    public:
-    OvmsVehicleSmartEDInit();
+  public:
+  OvmsVehicleSmartEDInit();
 } MyOvmsVehicleSmartEDInit __attribute__ ((init_priority (9000)));
 
 OvmsVehicleSmartEDInit::OvmsVehicleSmartEDInit() {
-    ESP_LOGI(TAG, "Registering Vehicle: SMART ED (9000)");
-    MyVehicleFactory.RegisterVehicle<OvmsVehicleSmartED>("SE", "Smart ED 3.Gen");
+  ESP_LOGI(TAG, "Registering Vehicle: SMART ED (9000)");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleSmartED>("SE", "Smart ED 3.Gen");
 }
