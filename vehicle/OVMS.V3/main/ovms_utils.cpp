@@ -488,3 +488,17 @@ std::string get_user_agent()
   ua.append(")");
   return ua;
   }
+
+/**
+ * float2double: minimize precision errors on float→double conversion
+ *  Casting a float to double sets the additional precision bits to 0, resulting in
+ *  the double to have a significant offset from the rounded float; e.g.
+ *  11.08 becomes 11.079999923706055.
+ *  (Is there a better implementation for this than sprintf/atof?)
+ */
+double float2double(float f)
+  {
+  char buf[16];
+  snprintf(buf, sizeof buf, "%g", f);
+  return atof(buf);
+  }

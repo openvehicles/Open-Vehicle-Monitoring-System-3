@@ -141,10 +141,7 @@ static duk_ret_t DukOvmsMetricFloat(duk_context *ctx)
   OvmsMetric *m = MyMetrics.Find(mn);
   if (m)
     {
-    // Pushing the float metric as a (double) 'number' directly lets the float precision errors
-    // become significant in the resulting number; e.g. 11.08 becomes 11.079999923706055.
-    // To avoid this, we round the converted float to six digits precision:
-    duk_push_number(ctx, round(((double)m->AsFloat()) * 1e6) / 1e6);
+    duk_push_number(ctx, float2double(m->AsFloat()));
     return 1;  /* one return value */
     }
   else
@@ -868,8 +865,7 @@ int OvmsMetricFloat::AsInt(const int defvalue, metric_unit_t units)
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 void OvmsMetricFloat::DukPush(DukContext &dc)
   {
-  // dc.Push(m_value);
-  dc.Push(round(((double)m_value) * 1e6) / 1e6);
+  dc.Push(m_value);
   }
 #endif
 
