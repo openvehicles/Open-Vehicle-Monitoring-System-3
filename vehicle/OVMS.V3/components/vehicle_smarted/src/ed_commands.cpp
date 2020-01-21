@@ -37,10 +37,7 @@ static const char *TAG = "v-smarted";
 #include <string>
 #include <iomanip>
 #include "pcp.h"
-#include "ovms_metrics.h"
 #include "ovms_events.h"
-#include "ovms_config.h"
-#include "ovms_command.h"
 #include "metrics_standard.h"
 #include "ovms_notify.h"
 #include "ovms_peripherals.h"
@@ -205,8 +202,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
   
   ESP_LOGI(TAG, "Send Wakeup Command");
   
-  RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-  vTaskDelay(500 / portTICK_PERIOD_MS);
+  //RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+  //vTaskDelay(500 / portTICK_PERIOD_MS);
   
   CAN_frame_t frame;
   memset(&frame, 0, sizeof(frame));
@@ -222,8 +219,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
   frame.data.u8[2] = 0x00;
   frame.data.u8[3] = 0x00;
   m_can2->Write(&frame);
-  vTaskDelay(500 / portTICK_PERIOD_MS);
-  m_can2->Stop();
+  //vTaskDelay(500 / portTICK_PERIOD_MS);
+  //m_can2->Stop();
 
   return Success;
 }
