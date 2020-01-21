@@ -1,6 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- SmartED: issue #293 fixed
+  change savestatus from store to sd
+  Add ecoscore system to drive report and web interface like defunct smart web app. (added by frantek)
 - New command: "vfs df" -- show disk usage
 - Scripting API: added VFS.Load() & VFS.Save()
 - Scripting API: renamed HTTP.request() to HTTP.Request() for API consistency
