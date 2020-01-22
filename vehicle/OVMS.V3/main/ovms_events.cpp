@@ -306,7 +306,8 @@ bool OvmsEvents::ScheduleEvent(event_queue_t* msg, uint32_t delay_ms)
   if (it == m_timers.end())
     {
     // create new timer:
-    timer = xTimerCreate("ScheduleEvent", pdMS_TO_TICKS(delay_ms), pdFALSE, msgdup, SignalScheduledEvent);
+    int timerticks = pdMS_TO_TICKS(delay_ms); if (timerticks<1) timerticks=1;
+    timer = xTimerCreate("ScheduleEvent", timerticks, pdFALSE, msgdup, SignalScheduledEvent);
     if (!timer)
       {
       delete msgdup;

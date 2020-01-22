@@ -6,6 +6,8 @@ AuxBatMon: 12V History Chart
 
 Version 2.0 by Michael Balzer <dexter@dexters-web.de>
 
+.. image:: auxbatmon-screenshot.png
+
 The module plugin records the relevant 12V battery metrics (voltage, reference voltage,
 current, charger and environment temperatures) once per minute for up to 24 hours by
 default.
