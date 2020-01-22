@@ -372,11 +372,8 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
               m_speedo_ticker = 0;
               m_speedo_ticker_max = MyConfig.GetParamValueInt("xtr", "digital.speedo.reps", 3);
               m_speedo_running = true;
-              m_speedo_timer = xTimerCreate("TR ticker",
-                1 / portTICK_PERIOD_MS,
-                pdTRUE,
-                this,
-                TeslaRoadsterSpeedoTimer);
+              int timerticks = pdMS_TO_TICKS(1); if (timerticks<1) timerticks=1;
+              m_speedo_timer = xTimerCreate("TR ticker", timerticks, pdTRUE, this, TeslaRoadsterSpeedoTimer);
               xTimerStart(m_speedo_timer,0);
               }
             }
@@ -1079,7 +1076,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandHomelink(int but
   m_can1->Write(&frame);
 
   m_homelink_timerbutton = button;
-  m_homelink_timer = xTimerCreate("Tesla Roadster Homelink Timer", durationms / portTICK_PERIOD_MS, pdTRUE, this, TeslaRoadsterHomelinkTimer);
+
+  int timerticks = pdMS_TO_TICKS(durationms); if (timerticks<1) timerticks=1;
+  m_homelink_timer = xTimerCreate("Tesla Roadster Homelink Timer", timerticks, pdTRUE, this, TeslaRoadsterHomelinkTimer);
   xTimerStart(m_homelink_timer, 0);
 
   return Success;
