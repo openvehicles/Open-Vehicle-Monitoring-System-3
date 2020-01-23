@@ -198,7 +198,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           }
         case 0x82: // Ambient Temperature
           {
-          StandardMetrics.ms_v_env_temp->SetValue(d[1]);
+          StandardMetrics.ms_v_env_temp->SetValue((int8_t)d[1]);
           break;
           }
         case 0x83: // GPS Latitude
