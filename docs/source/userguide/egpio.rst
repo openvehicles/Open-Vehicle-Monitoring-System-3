@@ -56,14 +56,18 @@ Commands
 
 EGPIO control is provided by the ``egpio`` command set:
 
-- ``egpio output <port> <level>`` -- set output level
-- ``egpio input <port>`` -- query input level
+- ``egpio output <port> <level> [<port> <level> …]`` -- set output level(s)
+- ``egpio input <port> [<port> …]`` -- query input level(s)
 - ``egpio status`` -- show output, input & monitor status
 - ``egpio monitor <on|off> [ports]`` -- enable/disable monitoring
 - ``egpio monitor status`` -- show current monitoring status
 
 To configure a port for input, it needs to be switched to output level high (1). That is done 
 automatically by the ``input`` and ``monitor`` commands.
+
+If you set multiple outputs, the ports will be set one at a time, so output levels will change
+with a slight delay. You can use this behaviour to set data lines before a clock line, e.g.
+when sending bits serially into a shift register.
 
 .. note::
   The MAX7317 needs active polling to detect input state changes. Monitoring is disabled by default, 
