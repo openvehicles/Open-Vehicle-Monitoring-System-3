@@ -297,6 +297,7 @@ class OvmsVehicle : public InternalRamAllocated
     uint16_t          m_poll_ml_remain;       // Bytes remainign for ML poll
     uint16_t          m_poll_ml_offset;       // Offset of ML poll
     uint16_t          m_poll_ml_frame;        // Frame number for ML poll
+    uint16_t          m_poll_wait;            // Wait for remaining poll replays
 
   protected:
     void PollSetPidList(canbus* bus, const poll_pid_t* plist);
