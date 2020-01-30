@@ -47,6 +47,8 @@ static const char *TAG = "v-smarted";
 
 #include "vehicle_smarted.h"
 
+#undef ABS
+#define ABS(n) (((n) < 0) ? -(n) : (n))
 
 OvmsVehicleSmartED* OvmsVehicleSmartED::GetInstance(OvmsWriter* writer /*=NULL*/) {
   OvmsVehicleSmartED* smart = (OvmsVehicleSmartED*) MyVehicleFactory.ActiveVehicle();
@@ -155,9 +157,6 @@ void OvmsVehicleSmartED::vehicle_smarted_car_on(bool isOn) {
     ESP_LOGI(TAG,"CAR IS ON");
     StandardMetrics.ms_v_env_awake->SetValue(isOn);
     
-    // charging 12v start
-    StandardMetrics.ms_v_env_charging12v->SetValue(true);
-    
     if (m_enable_write) PollSetState(2);
 
     // Reset trip values
@@ -172,10 +171,6 @@ void OvmsVehicleSmartED::vehicle_smarted_car_on(bool isOn) {
     // Log once that car is being turned off
     ESP_LOGI(TAG,"CAR IS OFF");
     StandardMetrics.ms_v_env_awake->SetValue(isOn);
-    
-    // charging 12v stop
-    if (!StandardMetrics.ms_v_charge_inprogress->AsBool())
-      StandardMetrics.ms_v_env_charging12v->SetValue(false);
     
     if (mt_c_active->AsBool()) {
       if (m_enable_write) PollSetState(3);
@@ -298,12 +293,9 @@ void OvmsVehicleSmartED::HandleChargingStatus() {
   if (port) {
     if (status) {
       // The car is charging
-      //StandardMetrics.ms_v_env_charging12v->SetValue(true);
       if (!StandardMetrics.ms_v_charge_inprogress->AsBool()) {
         if (!isCharging) {
           isCharging = true;
-          // charging 12v start
-          StandardMetrics.ms_v_env_charging12v->SetValue(true);
           // Reset charge kWh
           StandardMetrics.ms_v_charge_kwh->SetValue(0);
           // set Poll state charging
@@ -333,7 +325,6 @@ void OvmsVehicleSmartED::HandleChargingStatus() {
         StandardMetrics.ms_v_charge_mode->SetValue("standard");
         StandardMetrics.ms_v_charge_type->SetValue("type2");
         // charging 12v stop
-        StandardMetrics.ms_v_env_charging12v->SetValue(false);
         if (StandardMetrics.ms_v_bat_soc->AsInt() < 95) {
           // Assume the charge was interrupted
           ESP_LOGI(TAG,"Car charge session was interrupted");
@@ -346,7 +337,6 @@ void OvmsVehicleSmartED::HandleChargingStatus() {
           StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
         }
       }
-      //StandardMetrics.ms_v_env_charging12v->SetValue(false);
     }
   } else if (isCharging) {
     isCharging = false;
@@ -606,6 +596,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     case 0x3D7: //HV Status
     {   //HV active
       mt_hv_active->SetValue(d[0]);
+      StandardMetrics.ms_v_env_charging12v->SetValue(d[0]);
       break;
     }
     case 0x312: //Powerflow from/to Engine 
@@ -652,6 +643,13 @@ void OvmsVehicleSmartED::HandleEnergy() {
     else // (energy > 0.0f)
       StandardMetrics.ms_v_bat_energy_recd->SetValue( StandardMetrics.ms_v_bat_energy_recd->AsFloat() + energy);
   }
+}
+
+void OvmsVehicleSmartED::CalculateEfficiency() {
+  float consumption = 0;
+  if (StdMetrics.ms_v_pos_speed->AsFloat() >= 5)
+    consumption = ABS(StdMetrics.ms_v_bat_power->AsFloat(0, Watts)) / StdMetrics.ms_v_pos_speed->AsFloat();
+  StdMetrics.ms_v_bat_consumption->SetValue((StdMetrics.ms_v_bat_consumption->AsFloat() * 4 + consumption) / 5);
 }
 
 void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
