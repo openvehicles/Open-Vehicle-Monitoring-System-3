@@ -968,6 +968,7 @@ OvmsVehicle::OvmsVehicle()
   m_poll_ml_remain = 0;
   m_poll_ml_offset = 0;
   m_poll_ml_frame = 0;
+  m_poll_wait = 0;
 
   m_bms_voltages = NULL;
   m_bms_vmins = NULL;
@@ -2019,7 +2020,24 @@ void OvmsVehicle::PollerSend()
 
   while (m_poll_plcur->txmoduleid != 0)
     {
-    if (m_poll_ml_remain > 7) return; // there are remaining poll replays from last poll.
+    // there are remaining poll replays from last poll. we wait for it.
+    if (m_poll_ml_remain > 7)
+      {
+      if (m_poll_wait)
+        {
+        // ESP_LOGD(TAG,"wait last Polling for %02x: there are remaining poll replays", m_poll_plcur->pid);
+        m_poll_wait = 0;
+        m_poll_ml_remain = 0;
+        return;
+        }
+      else
+        {
+        // ESP_LOGD(TAG,"wait Polling for %02x: there are remaining poll replays", m_poll_plcur->pid);
+        m_poll_wait = 1;
+        return;
+        }
+      }
+    m_poll_wait = 0;
     if ((m_poll_plcur->polltime[m_poll_state] > 0)&&
         ((m_poll_ticker % m_poll_plcur->polltime[m_poll_state] ) == 0))
       {
@@ -2041,7 +2059,7 @@ void OvmsVehicle::PollerSend()
         m_poll_moduleid_high = 0x7ef;
         }
 
-      // ESP_LOGI(TAG, "Polling for %d/%02x (expecting %03x/%03x-%03x)",
+      // ESP_LOGD(TAG, "Polling for %d/%02x (expecting %03x/%03x-%03x)",
       //   m_poll_type,m_poll_pid,m_poll_moduleid_sent,m_poll_moduleid_low,m_poll_moduleid_high);
       CAN_frame_t txframe;
       memset(&txframe,0,sizeof(txframe));

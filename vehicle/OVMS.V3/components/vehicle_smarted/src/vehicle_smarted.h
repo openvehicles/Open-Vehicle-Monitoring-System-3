@@ -103,6 +103,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     virtual void Ticker10(uint32_t ticker);
     virtual void Ticker60(uint32_t ticker);
     void GetDashboardConfig(DashboardConfig& cfg);
+    virtual void CalculateEfficiency();
     void vehicle_smarted_car_on(bool isOn);    
     void NotifyTrip();
     void NotifyValetEnabled();
