@@ -226,4 +226,9 @@ bool path_exists(const std::string path);
  */
 std::string get_user_agent();
 
+/**
+ * float2double: minimize precision errors on float→double conversion
+ */
+double float2double(float f);
+
 #endif //#ifndef __UTILS_H__

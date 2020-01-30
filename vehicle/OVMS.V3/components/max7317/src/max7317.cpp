@@ -362,35 +362,41 @@ std::bitset<10> max7317::MonitorState()
 
 void max7317_output(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  int port = atoi(argv[0]);
-  if ((port <0)||(port>9))
+  for (int i = 0; i < argc-1; i += 2)
     {
-    writer->puts("Error: Port should be in range 0..9");
-    return;
-    }
-  int level = atoi(argv[1]);
-  if ((level<0)||(level>255))
-    {
-    writer->puts("Error: Level should be in range 0..255");
-    return;
-    }
+    int port = atoi(argv[i]);
+    if ((port <0)||(port>9))
+      {
+      writer->puts("Error: Port should be in range 0..9");
+      return;
+      }
+    int level = atoi(argv[i+1]);
+    if ((level<0)||(level>255))
+      {
+      writer->puts("Error: Level should be in range 0..255");
+      return;
+      }
 
-  MyPeripherals->m_max7317->Output((uint8_t)port,(uint8_t)level);
-  writer->printf("EGPIO port %d set to output level %d\n", port, level);
+    MyPeripherals->m_max7317->Output((uint8_t)port,(uint8_t)level);
+    writer->printf("EGPIO port %d set to output level %d\n", port, level);
+    }
   }
 
 void max7317_input(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  int port = atoi(argv[0]);
-  if ((port <0)||(port>9))
+  for (int i = 0; i < argc; i += 1)
     {
-    writer->puts("Error: Port should be in range 0..9");
-    return;
-    }
+    int port = atoi(argv[i]);
+    if ((port <0)||(port>9))
+      {
+      writer->puts("Error: Port should be in range 0..9");
+      return;
+      }
 
-  MyPeripherals->m_max7317->Output((uint8_t)port,(uint8_t)1); // set port to input
-  int level = MyPeripherals->m_max7317->Input((uint8_t)port);
-  writer->printf("EGPIO port %d has input level %d\n", port, level);
+    MyPeripherals->m_max7317->Output((uint8_t)port,(uint8_t)1); // set port to input
+    int level = MyPeripherals->m_max7317->Input((uint8_t)port);
+    writer->printf("EGPIO port %d has input level %d\n", port, level);
+    }
   }
 
 void max7317_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd,
@@ -510,11 +516,11 @@ Max7317Init::Max7317Init()
   OvmsCommand* cmd_egpio = MyCommandApp.RegisterCommand(
     "egpio", "EGPIO framework");
   cmd_egpio->RegisterCommand(
-    "output", "Set EGPIO output level", max7317_output,
-    "<port> <level>", 2, 2);
+    "output", "Set EGPIO output level(s)", max7317_output,
+    "<port> <level> [<port> <level> ...]", 2, 20);
   cmd_egpio->RegisterCommand(
-    "input", "Get EGPIO input level", max7317_input,
-    "<port>", 1, 1);
+    "input", "Get EGPIO input level(s)", max7317_input,
+    "<port> [<port> ...]", 1, 10);
   cmd_egpio->RegisterCommand(
     "status", "Show EGPIO status", max7317_status,
     NULL, 0, 0);

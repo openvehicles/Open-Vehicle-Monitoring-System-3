@@ -480,13 +480,13 @@ void OvmsWebServer::DestroyWebSocketHandler(WebSocketHandler* handler)
       if (m_client_cnt == 0)
         xTimerStop(m_update_ticker, 0);
       
-      // deregister:
-      MyNotify.ClearReader(m_client_slots[i].reader);
-      
       // destroy handler:
       mg_connection* nc = handler->m_nc;
       m_client_slots[i].handler = NULL;
       delete handler;
+      
+      // clear unqueued notifications if any:
+      MyNotify.ClearReader(m_client_slots[i].reader);
       
       ESP_LOGD(TAG, "WebSocket[%p] handler %p closed; %d clients active", nc, handler, m_client_cnt);
       MyEvents.SignalEvent("server.web.socket.closed", (void*)m_client_cnt);
