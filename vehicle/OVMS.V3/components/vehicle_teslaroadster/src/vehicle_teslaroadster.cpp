@@ -440,7 +440,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           memcpy(m_vin+7,d+1,7);
           m_type[0] = 'T';
           m_type[1] = 'R';
-          if ((d[3]=='A')||(d[3]=='B')) m_type[2] = '2'; else m_type[2] = '1';
+          if ((d[3]=='A')||(d[3]=='B')||(d[3]=='C')) m_type[2] = '2'; else m_type[2] = '1';
           if (d[1] == '3') m_type[3] = 'S'; else m_type[3] = 'N';
           m_type[4] = 0;
           StandardMetrics.ms_v_type->SetValue(m_type);
