@@ -930,7 +930,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << ","
     << StandardMetrics.ms_v_charge_climit->AsInt()
     << ","
-    << StandardMetrics.ms_v_charge_time->AsInt(0,Minutes)
+    << StandardMetrics.ms_v_charge_time->AsInt(0,Seconds)
     << ","
     << "0"  // car_charge_b4
     << ","
