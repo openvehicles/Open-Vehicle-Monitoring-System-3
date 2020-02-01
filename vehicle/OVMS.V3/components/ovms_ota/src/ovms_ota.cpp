@@ -514,6 +514,7 @@ void OvmsOTA::AutoFlashSD(std::string event, void* data)
     return;
     }
 
+  remove("/sd/ovms3.done"); // Ensure the target is removed first
   if (rename("/sd/ovms3.bin","/sd/ovms3.done") != 0)
     {
     ESP_LOGE(TAG, "AutoFlashSD Error: ovms3.bin could not be renamed to ovms3.done - check before rebooting");
