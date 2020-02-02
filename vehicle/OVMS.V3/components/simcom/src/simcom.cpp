@@ -120,7 +120,8 @@ void simcom::Task()
               if (buffered_size>sizeof(data)) buffered_size = sizeof(data);
               int len = uart_read_bytes(m_uartnum, (uint8_t*)data, buffered_size, 100 / portTICK_RATE_MS);
               m_buffer.Push(data,len);
-              //MyCommandApp.HexDump(TAG, "rx", (const char*)data, len);
+              if (m_state1 == NetDeepSleep)
+                { MyCommandApp.HexDump(TAG, "rx", (const char*)data, len); }
               uart_get_buffered_data_len(m_uartnum, &buffered_size);
               SimcomState1 newstate = State1Activity();
               if ((newstate != m_state1)&&(newstate != None)) SetState1(newstate);
