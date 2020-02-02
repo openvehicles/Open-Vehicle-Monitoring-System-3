@@ -644,9 +644,10 @@ void OvmsServerV3::Connect()
   address.append(":");
   address.append(m_port);
 
-  ESP_LOGI(TAG, "Connection is %s:%s %s/%s",
+  ESP_LOGI(TAG, "Connection is %s:%s %s/%s topic %s",
     m_server.c_str(), m_port.c_str(),
-    m_vehicleid.c_str(), m_user.c_str());
+    m_vehicleid.c_str(), m_user.c_str(),
+    m_topic_prefix.c_str());
 
   if (m_server.empty())
     {
