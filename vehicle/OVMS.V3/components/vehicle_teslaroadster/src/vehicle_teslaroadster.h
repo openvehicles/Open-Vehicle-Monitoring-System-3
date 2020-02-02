@@ -108,6 +108,7 @@ class OvmsVehicleTeslaRoadster : public OvmsVehicle
   protected:
     char m_vin[18];
     char m_type[5];
+    bool m_awake; // True if car is awake
     bool m_requesting_cac;
   };
 
