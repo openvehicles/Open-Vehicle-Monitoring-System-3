@@ -2,7 +2,7 @@ Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
 
-2020-02-03 MWJ  3.2.009  OTA release
+2020-02-03 MWJ  3.2.010 OTA release
 - EGPIO: address multiple ports by input & output command
 - SmartED: issue #293 fixed
   change savestatus from store to sd
@@ -24,6 +24,7 @@ Open Vehicle Monitor System v3 - Change log
 - #228 AutoFlashSD cleanup ovms3.done before rename
 - #293 Event queue overflow on startup
 - #299 Fix Tesla Roadster vehicle type for 2012 cars
+- #328 Tesla Roadster: Vehicle AWAKE metric not correct
 
 2019-12-13 MWJ  3.2.008  OTA release
 - Add support for 8MB PSRAM (in addition to current 4MB support)
