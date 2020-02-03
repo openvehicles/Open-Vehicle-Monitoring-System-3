@@ -352,7 +352,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           }
         case 0x96: // Doors / Charging yes/no
           {
-          m_awake = d[3] & 0x01;
+          m_awake = d[3] & 0x02;
           StandardMetrics.ms_v_door_fl->SetValue(d[1] & 0x01);
           StandardMetrics.ms_v_door_fr->SetValue(d[1] & 0x02);
           StandardMetrics.ms_v_door_chargeport->SetValue(d[1] & 0x04);
