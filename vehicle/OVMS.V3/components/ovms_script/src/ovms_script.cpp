@@ -1095,7 +1095,10 @@ duk_ret_t DuktapeObject::CallMethod(duk_context *ctx, const char* method, void* 
   int entry_top = duk_get_top(ctx);
   Push(ctx);
   duk_push_string(ctx, method);
-  duk_call_prop(ctx, -2, 0);
+  if (duk_pcall_prop(ctx, -2, 0) != 0)
+    {
+    DukOvmsErrorHandler(ctx, -1);
+    }
   // discard return values if any + this:
   duk_pop_n(ctx, duk_get_top(ctx) - entry_top);
   return 0;
@@ -1483,7 +1486,10 @@ duk_ret_t DuktapeHTTPRequest::CallMethod(duk_context *ctx, const char* method, v
     if (callable)
       {
       ESP_LOGD(TAG, "DuktapeHTTPRequest: calling method '%s' nargs=%d", method, nargs);
-      duk_call_prop(ctx, obj_idx, nargs);
+      if (duk_pcall_prop(ctx, obj_idx, nargs) != 0)
+        {
+        DukOvmsErrorHandler(ctx, -1);
+        }
       }
 
     // clear stack:
@@ -1733,7 +1739,10 @@ duk_ret_t DuktapeVFSLoad::CallMethod(duk_context *ctx, const char* method, void*
     if (callable)
       {
       //ESP_LOGD(TAG, "DuktapeVFSLoad: calling method '%s' nargs=%d", method, nargs);
-      duk_call_prop(ctx, obj_idx, nargs);
+      if (duk_pcall_prop(ctx, obj_idx, nargs) != 0)
+        {
+        DukOvmsErrorHandler(ctx, -1);
+        }
       }
 
     // clear stack:
@@ -1975,7 +1984,10 @@ duk_ret_t DuktapeVFSSave::CallMethod(duk_context *ctx, const char* method, void*
     if (callable)
       {
       //ESP_LOGD(TAG, "DuktapeVFSSave: calling method '%s' nargs=%d", method, nargs);
-      duk_call_prop(ctx, obj_idx, nargs);
+      if (duk_pcall_prop(ctx, obj_idx, nargs) != 0)
+        {
+        DukOvmsErrorHandler(ctx, -1);
+        }
       }
 
     // clear stack:
