@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- #311 OvmsEvents::ScheduleEvent with delay_ms < 10
 
 2020-02-03 MWJ  3.2.010 OTA release
 - EGPIO: address multiple ports by input & output command

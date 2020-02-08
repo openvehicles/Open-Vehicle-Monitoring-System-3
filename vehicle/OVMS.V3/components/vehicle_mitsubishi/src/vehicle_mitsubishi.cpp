@@ -151,7 +151,7 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
 
   #ifdef CONFIG_OVMS_COMP_WEBSERVER
     MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
-    MyWebServer.RegisterPage("cfg/brakelight", "Brake Light control",OvmsWebServer::HandleCfgBrakelight,PageMenu_Vehicle,PageAuth_Cookie);
+    MyWebServer.RegisterPage("/cfg/brakelight", "Brake Light control",OvmsWebServer::HandleCfgBrakelight,PageMenu_Vehicle,PageAuth_Cookie);
     WebInit();
   #endif
 
