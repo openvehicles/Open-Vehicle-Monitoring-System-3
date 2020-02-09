@@ -160,6 +160,7 @@
 #define MS_V_ENV_REGENBRAKE         "v.e.regenbrake"
 #define MS_V_ENV_AWAKE              "v.e.awake"
 #define MS_V_ENV_CHARGING12V        "v.e.charging12v"
+#define MS_V_ENV_AUX12V             "v.e.aux12v"
 #define MS_V_ENV_COOLING            "v.e.cooling"
 #define MS_V_ENV_HEATING            "v.e.heating"
 #define MS_V_ENV_HVAC               "v.e.hvac"
@@ -335,6 +336,7 @@ class MetricsStandard
     OvmsMetricBool*   ms_v_env_regenbrake;          // Regenerative braking state
     OvmsMetricBool*   ms_v_env_awake;               // Vehicle/bus awake (switched on)
     OvmsMetricBool*   ms_v_env_charging12v;         // 12V battery charging
+    OvmsMetricBool*   ms_v_env_aux12v;              // 12V auxiliary system is on
     OvmsMetricBool*   ms_v_env_cooling;
     OvmsMetricBool*   ms_v_env_heating;
     OvmsMetricBool*   ms_v_env_hvac;                // Climate control system state

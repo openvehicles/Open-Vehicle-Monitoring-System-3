@@ -294,6 +294,8 @@ bool OvmsEvents::ScheduleEvent(event_queue_t* msg, uint32_t delay_ms)
   TimerHandle_t timer;
   TimerList::iterator it;
   event_queue_t *msgdup = new event_queue_t(*msg);
+  int timerticks = pdMS_TO_TICKS(delay_ms); if (timerticks<1) timerticks=1;
+
   if (!msgdup)
     return false;
   // find available timer:
@@ -306,7 +308,6 @@ bool OvmsEvents::ScheduleEvent(event_queue_t* msg, uint32_t delay_ms)
   if (it == m_timers.end())
     {
     // create new timer:
-    int timerticks = pdMS_TO_TICKS(delay_ms); if (timerticks<1) timerticks=1;
     timer = xTimerCreate("ScheduleEvent", timerticks, pdFALSE, msgdup, SignalScheduledEvent);
     if (!timer)
       {
@@ -318,7 +319,7 @@ bool OvmsEvents::ScheduleEvent(event_queue_t* msg, uint32_t delay_ms)
   else
     {
     // update timer:
-    if (xTimerChangePeriod(timer, pdMS_TO_TICKS(delay_ms), 0) != pdPASS)
+    if (xTimerChangePeriod(timer, timerticks, 0) != pdPASS)
       {
       delete msgdup;
       return false;

@@ -87,7 +87,7 @@ OvmsVehicleTeslaRoadster::OvmsVehicleTeslaRoadster()
 
   memset(m_type,0,sizeof(m_type));
   memset(m_vin,0,sizeof(m_vin));
-  m_awake = false;
+  m_aux12v = false;
   m_requesting_cac = false;
 
   m_cooldown_running = false;
@@ -199,7 +199,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           }
         case 0x82: // Ambient Temperature
           {
-          if (m_awake)
+          if (m_aux12v)
             {
             StandardMetrics.ms_v_env_temp->SetValue((int8_t)d[1]);
             }
@@ -352,7 +352,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           }
         case 0x96: // Doors / Charging yes/no
           {
-          m_awake = d[3] & 0x02;
+          m_aux12v = d[3] & 0x02;
           StandardMetrics.ms_v_door_fl->SetValue(d[1] & 0x01);
           StandardMetrics.ms_v_door_fr->SetValue(d[1] & 0x02);
           StandardMetrics.ms_v_door_chargeport->SetValue(d[1] & 0x04);
@@ -364,13 +364,14 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           StandardMetrics.ms_v_env_headlights->SetValue(d[2] & 0x20);
           StandardMetrics.ms_v_door_hood->SetValue(d[2] & 0x40);
           StandardMetrics.ms_v_door_trunk->SetValue(d[2] & 0x80);
-          StandardMetrics.ms_v_env_awake->SetValue(m_awake);
+          StandardMetrics.ms_v_env_aux12v->SetValue(m_aux12v);
           StandardMetrics.ms_v_env_charging12v->SetValue(d[3] & 0x01);
           StandardMetrics.ms_v_env_cooling->SetValue(d[3] & 0x02);
           StandardMetrics.ms_v_env_alarm->SetValue(d[4] & 0x02);
           if (d[1] & 0x80)
             {
             StandardMetrics.ms_v_env_on->SetValue(true);
+            StandardMetrics.ms_v_env_awake->SetValue(true);
             if (MyConfig.GetParamValueBool("xtr", "digital.speedo", false))
               {
               // Digital speedo is enabled
@@ -385,6 +386,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           else
             {
             StandardMetrics.ms_v_env_on->SetValue(false);
+            StandardMetrics.ms_v_env_awake->SetValue(false);
             if (m_speedo_running)
               {
               m_speedo_running = false;
@@ -429,7 +431,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           }
         case 0xA3: // PEM, MOTOR, BATTERY temperatures
           {
-          if (m_awake)
+          if (m_aux12v)
             {
             StandardMetrics.ms_v_inv_temp->SetValue(d[1]);
             StandardMetrics.ms_v_charge_temp->SetValue(d[1]);
