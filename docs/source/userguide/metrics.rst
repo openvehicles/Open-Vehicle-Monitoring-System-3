@@ -162,6 +162,7 @@ v.d.rl                                                            yes = Rear lef
 v.d.rr                                                            yes = Rear right door open
 v.d.trunk                                                         yes = Trunk open
 v.e.alarm                                                         yes = Alarm currently sounding
+v.e.aux12v                                                        yes = Auxilliary 12v system is on
 v.e.awake                                no                       yes = Vehicle/bus awake (switched on)
 v.e.c.config                                                      yes = ECU/controller in configuration state
 v.e.c.login                                                       yes = Module logged in at ECU/controller
