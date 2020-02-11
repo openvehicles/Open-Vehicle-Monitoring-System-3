@@ -35,7 +35,9 @@ Valet Mode Control          tba
 Others                      tba
 =========================== ==============
 
-Other documents:
+---------------
+Other documents
+---------------
 
 :doc:'Pinout DB9 <pinout__db9>'
 
