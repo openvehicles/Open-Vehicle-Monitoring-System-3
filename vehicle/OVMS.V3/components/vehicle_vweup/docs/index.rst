@@ -37,7 +37,7 @@ Others                      tba
 
 Other documents:
 
-Pinout DB9: '<pinout__db9.rst>'_
+:doc:'Pinout DB9 <pinout__db9>'
 
 ====================================================================
 

@@ -30,6 +30,6 @@ OCU	DB9-F	Signal
 1	9	+12V Vehicle Power
 ======= ======= ===========================
 
-Back to index: '<index.rst>'_
+:doc:'Back to index <index>'
 
 ====================================================================
