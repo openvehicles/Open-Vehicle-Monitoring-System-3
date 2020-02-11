@@ -39,5 +39,5 @@ Others                      tba
 Other documents
 ---------------
 
-:doc:`pinout_db9`
+`pinout_db9`
 
