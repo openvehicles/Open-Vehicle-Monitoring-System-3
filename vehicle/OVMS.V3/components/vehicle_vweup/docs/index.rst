@@ -41,3 +41,7 @@ Other documents
 
 :doc:`pinout_db9`
 
+
+[I'm a relative reference to a repository file](../blob/master/LICENSE)
+
+
