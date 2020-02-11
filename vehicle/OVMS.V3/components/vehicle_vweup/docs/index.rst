@@ -37,7 +37,7 @@ Others                      tba
 
 Other documents:
 
-Pinout DB9: :ref:'pinout_db9'
+'Pinout DB9 <pinout__db9>'_
 
 ====================================================================
 
