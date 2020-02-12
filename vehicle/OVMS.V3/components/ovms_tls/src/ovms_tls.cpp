@@ -45,23 +45,23 @@ OvmsTLS::OvmsTLS()
   m_trustedcache = NULL;
 
   // Add our embedded trusted CAs
-  extern const char ca_addtrust_start[] asm("_binary_addtrust_crt_start");
-  m_trustlist.push_back(std::string(ca_addtrust_start));
+  extern const char addtrust[] asm("_binary_addtrust_crt_start");
+  m_trustlist.push_back(OvmsTrustedCert((char*)addtrust, false));
 
-  extern const char ca_dst_start[] asm("_binary_dst_crt_start");
-  m_trustlist.push_back(std::string(ca_dst_start));
+  extern const char dst[] asm("_binary_dst_crt_start");
+  m_trustlist.push_back(OvmsTrustedCert((char*)dst, false));
 
-  extern const char ca_digicert_global_start[] asm("_binary_digicert_global_crt_start");
-  m_trustlist.push_back(std::string(ca_digicert_global_start));
+  extern const char digicert_global[] asm("_binary_digicert_global_crt_start");
+  m_trustlist.push_back(OvmsTrustedCert((char*)digicert_global, false));
   }
 
 OvmsTLS::~OvmsTLS()
   {
   }
 
-void OvmsTLS::RegisterTrustedCA(std::string& pem)
+void OvmsTLS::RegisterTrustedCA(char* pem)
   {
-  m_trustlist.push_back(pem);
+  m_trustlist.push_back(OvmsTrustedCert(pem, true));
   ClearTrustedRaw();
   }
 
@@ -94,7 +94,7 @@ void OvmsTLS::BuildTrustedRaw()
        ++it)
     {
     count++;
-    size += it->length();
+    size += strlen(it->GetPEM());
     }
   size += 1; // Ending 0 termination
 
@@ -105,10 +105,26 @@ void OvmsTLS::BuildTrustedRaw()
        it != m_trustlist.end();
        ++it)
     {
-    strcpy(p,it->c_str());
-    p += it->length();
+    char *pem = it->GetPEM();
+    strcpy(p,pem);
+    p += strlen(pem);
     }
   *p = 0; // NULL terminate
 
   ESP_LOGI(TAG, "Built trusted CA cache (%d entries, %d bytes)",count,size);
+  }
+
+OvmsTrustedCert::OvmsTrustedCert(char* pem, bool needfree)
+  {
+  m_pem = pem;
+  m_needfree = needfree;
+  }
+
+OvmsTrustedCert::~OvmsTrustedCert()
+  {
+  }
+
+char *OvmsTrustedCert::GetPEM()
+  {
+  return m_pem;
   }

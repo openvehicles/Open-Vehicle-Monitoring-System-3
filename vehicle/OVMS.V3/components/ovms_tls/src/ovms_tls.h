@@ -34,7 +34,21 @@
 #include <string>
 #include <list>
 
-typedef std::list<std::string> TrustedCert_t;
+class OvmsTrustedCert
+  {
+  public:
+    OvmsTrustedCert(char* pem, bool needfree=false);
+    ~OvmsTrustedCert();
+
+  public:
+    char* GetPEM();
+
+  private:
+    char* m_pem;
+    bool m_needfree;
+  };
+
+typedef std::list<OvmsTrustedCert> TrustedCert_t;
 
 class OvmsTLS
   {
@@ -43,7 +57,7 @@ class OvmsTLS
     ~OvmsTLS();
 
   public:
-    void RegisterTrustedCA(std::string& pem);
+    void RegisterTrustedCA(char* pem);
     char* GetTrustedList();
 
   protected:
