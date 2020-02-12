@@ -2,6 +2,9 @@ Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
 - #311 OvmsEvents::ScheduleEvent with delay_ms < 10
+- #333 Support for SSL/TLS Trusted Certificate Authorities
+- #334 Support for SSL/TLS MQTT connections in Server v3
+- #335 Support for SSL/TLS MQTT connections in Server v2
 
 2020-02-03 MWJ  3.2.010 OTA release
 - EGPIO: address multiple ports by input & output command
