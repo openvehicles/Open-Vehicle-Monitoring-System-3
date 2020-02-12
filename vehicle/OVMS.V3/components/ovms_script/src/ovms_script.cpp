@@ -1140,7 +1140,7 @@ DuktapeHTTPRequest::DuktapeHTTPRequest(duk_context *ctx, int obj_idx)
   // …request headers:
   extram::string key, val;
   bool have_useragent = false, have_contenttype = false;
-  
+
   duk_get_prop_string(ctx, 0, "headers");
   if (duk_is_array(ctx, -1))
     {
@@ -1175,7 +1175,7 @@ DuktapeHTTPRequest::DuktapeHTTPRequest(duk_context *ctx, int obj_idx)
       }
     }
   duk_pop(ctx); // [array]
-  
+
   // add defaults:
   if (!have_useragent)
     {
@@ -1507,17 +1507,17 @@ duk_ret_t DuktapeHTTPRequest::CallMethod(duk_context *ctx, const char* method, v
 
 /***************************************************************************************************
  * DuktapeVFSLoad: load a file asynchronously
- * 
+ *
  * This is following a high-level approach, limitation is the file contents needs to fit in RAM
  * twice, as the read buffer is converted into a JS string/buffer.
  * Partial loading / block operations may be added later as needed, e.g. based on arguments.
- * 
+ *
  * Notes:
  * - Conditional synchronous operation doesn't make sense; async overhead is minimal
  *   and the stat() on "/sd" already needs at least 45 ms.
  * - On /store a Load() takes ~ 25 ms base +  5 ms per KB.
  * - On /sd    a Load() takes ~ 60 ms base + 30 ms per KB.
- * 
+ *
  * Javascript API:
  *   var request = VFS.Load({
  *     path: "…",
@@ -1760,11 +1760,11 @@ duk_ret_t DuktapeVFSLoad::CallMethod(duk_context *ctx, const char* method, void*
 
 /***************************************************************************************************
  * DuktapeVFSSave: save a file asynchronously
- * 
+ *
  * This is following a high-level approach, limitation is the file contents needs to fit in RAM
  * twice, as the JS buffer is copied for the saver.
  * Partial saving / block operations may be added later as needed, e.g. based on arguments.
- * 
+ *
  * Javascript API:
  *   var request = VFS.Save({
  *     data: string|u8buf
@@ -2252,7 +2252,7 @@ void OvmsScripts::DukTapeTask()
           // Compact DUKTAPE memory
           if (m_dukctx != NULL)
             {
-            ESP_LOGI(TAG,"Duktape: Compacting DukTape memory");
+            ESP_LOGD(TAG,"Duktape: Compacting DukTape memory");
             duk_gc(m_dukctx, 0);
             duk_gc(m_dukctx, 0);
             }
