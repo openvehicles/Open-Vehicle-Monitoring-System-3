@@ -7,4 +7,3 @@ Scripting
 
    ../../../userguide/scripting
    foglight
-

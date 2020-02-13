@@ -115,23 +115,16 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_soc_nominal = new OvmsMetricFloat("xnl.v.b.soc.nominal", SM_STALE_HIGH, Percentage);
   m_charge_count_qc     = MyMetrics.InitInt("xnl.v.c.count.qc",     SM_STALE_NONE, 0);
   m_charge_count_l0l1l2 = MyMetrics.InitInt("xnl.v.c.count.l0l1l2", SM_STALE_NONE, 0);
+  m_climate_vent = MyMetrics.InitString("v.e.cabin.vent", SM_STALE_MIN, 0);
+  m_climate_intake = MyMetrics.InitString("v.e.cabin.intake", SM_STALE_MIN, 0);
+  m_climate_setpoint = MyMetrics.InitFloat("v.e.cabin.setpoint", SM_STALE_NONE, 0, Celcius);
+  m_climate_fan_speed = MyMetrics.InitFloat("v.e.cabin.fan", SM_STALE_MIN, 0);
+  m_climate_fan_speed_limit = MyMetrics.InitFloat("v.e.cabin.fanlimit", SM_STALE_MIN, 0);
   m_climate_fan_only = MyMetrics.InitBool("xnl.cc.fan.only", SM_STALE_MIN, false);
   m_climate_remoteheat = MyMetrics.InitBool("xnl.cc.remoteheat", SM_STALE_MIN, false);
   m_climate_remotecool = MyMetrics.InitBool("xnl.cc.remotecool", SM_STALE_MIN, false);
-  m_climate_vent_off = MyMetrics.InitBool("xnl.cc.vent.off", SM_STALE_MIN, false);
-  m_climate_vent_face = MyMetrics.InitBool("xnl.cc.vent.face", SM_STALE_MIN, false);
-  m_climate_vent_facefeet = MyMetrics.InitBool("xnl.cc.vent.facefeet", SM_STALE_MIN, false);
-  m_climate_vent_feet = MyMetrics.InitBool("xnl.cc.vent.feet", SM_STALE_MIN, false);
-  m_climate_vent_deffeet = MyMetrics.InitBool("xnl.cc.vent.deffeet", SM_STALE_MIN, false);
-  m_climate_vent_def = MyMetrics.InitBool("xnl.cc.vent.def", SM_STALE_MIN, false);
-  m_climate_air_recirc = MyMetrics.InitBool("xnl.cc.air.recirc", SM_STALE_MIN, false);
-  m_climate_air_fresh = MyMetrics.InitBool("xnl.cc.air.fresh", SM_STALE_MIN, false);
-  m_climate_air_def = MyMetrics.InitBool("xnl.cc.air.def", SM_STALE_MIN, false);
-  // m_climate_beta_off1 = MyMetrics.InitBool("xnl.cc.off.beta1", SM_STALE_MIN, false);
-  m_climate_beta_heatpump_cooling = MyMetrics.InitBool("xnl.cc.beta.heatpump.cooling", SM_STALE_MIN, false);
-  m_climate_beta_ptc_heating = MyMetrics.InitBool("xnl.cc.beta.ptc.heating", SM_STALE_MIN, false);
-  m_climate_setpoint = MyMetrics.InitFloat("xnl.cc.setpoint", SM_STALE_MIN, 0, Celcius);
-  m_climate_fan_speed = MyMetrics.InitFloat("xnl.cc.fan.speed", SM_STALE_MIN, 0);
+  m_climate_dev_heatpump_cooling = MyMetrics.InitBool("xnl.cc.dev.heatpump.cooling", SM_STALE_MIN, false);
+  m_climate_dev_ptc_heating = MyMetrics.InitBool("xnl.cc.dev.ptc.heating", SM_STALE_MIN, false);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -660,20 +653,54 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       }
       
       m_climate_fan_speed->SetValue(fanspeed_float);
+      m_climate_fan_speed_limit->SetValue(7);
 
       bool fan_only = false;
       fan_only = (d[1] == 0x48 && fanspeed_float != 0);
       m_climate_fan_only->SetValue(fan_only);
 
-      m_climate_vent_off->SetValue(d[2] == 0x80);
-      m_climate_vent_face->SetValue(d[2] == 0x88);
-      m_climate_vent_facefeet->SetValue(d[2] == 0x90);
-      m_climate_vent_feet->SetValue(d[2] == 0x98);
-      m_climate_vent_deffeet->SetValue(d[2] == 0xA0);
-      m_climate_vent_def->SetValue(d[2] == 0xA8);
-      m_climate_air_recirc->SetValue(d[3] == 0x09);
-      m_climate_air_fresh->SetValue(d[3] == 0x12);
-      m_climate_air_def->SetValue(d[3] == 0x92);
+      switch (d[2])
+      {
+      case 0x80:
+        m_climate_vent->SetValue("off");
+        break;
+      case 0x88:
+        m_climate_vent->SetValue("face");
+        break;
+      case 0x90:
+        m_climate_vent->SetValue("face|feet");
+        break;
+      case 0x98:
+        m_climate_vent->SetValue("feet");
+        break;
+      case 0xA0:
+        m_climate_vent->SetValue("screen|feet");
+        break;
+      case 0xA8:
+        m_climate_vent->SetValue("screen");
+        break;
+      
+      default:
+        m_climate_vent->SetValue("unknown")
+        break;
+      }
+
+      switch (d[3])
+      {
+      case 0x09:
+        m_climate_intake->SetValue("recirc");
+        break;
+      case 0x12:
+        m_climate_intake->SetValue("fresh");
+        break;
+      case 0x92:
+        m_climate_intake->SetValue("defrost");
+        break;
+      
+      default:
+        m_climate_intake->SetValue("unknown")
+        break;
+      }
 
       bool cooling = false;
       cooling = (d[1] == 0x78);
@@ -687,8 +714,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       m_climate_remotecool->SetValue(d[1] == 0x71);
 
       // additional values passed only to xnl metrics. Still in beta state
-      m_climate_beta_heatpump_cooling->SetValue(d[1] & 0x10);
-      m_climate_beta_ptc_heating->SetValue(d[1] & 0x02);
+      m_climate_dev_heatpump_cooling->SetValue(d[1] & 0x10);
+      m_climate_dev_ptc_heating->SetValue(d[1] & 0x02);
       // end of beta values
 
       // Set more accurate climate control values for hvac, heating, cooling for 2013-2015 model year cars.
@@ -743,7 +770,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
       
       // below true when hvac on while charging so must be used for something else. leaving for future use.
-      // m_climate_beta_off1->SetValue(d[1] == 0xff);
+      // m_climate_dev_off1->SetValue(d[1] == 0xff);
 
       break;
     case 0x54f:
