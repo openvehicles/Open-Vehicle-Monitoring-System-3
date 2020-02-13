@@ -32,7 +32,7 @@
 #define __OVMS_TLS_H__
 
 #include <string>
-#include <list>
+#include <map>
 
 class OvmsTrustedCert
   {
@@ -42,13 +42,14 @@ class OvmsTrustedCert
 
   public:
     char* GetPEM();
+    bool IsInternal();
 
   private:
     char* m_pem;
     bool m_needfree;
   };
 
-typedef std::list<OvmsTrustedCert> TrustedCert_t;
+typedef std::map<std::string, OvmsTrustedCert*> TrustedCert_t;
 
 class OvmsTLS
   {
@@ -57,15 +58,20 @@ class OvmsTLS
     ~OvmsTLS();
 
   public:
-    void RegisterTrustedCA(char* pem);
     char* GetTrustedList();
+    int Count();
+    void Clear();
+    void Reload();
 
   protected:
     void BuildTrustedRaw();
     void ClearTrustedRaw();
+    void UpdatedConfig(std::string event, void* data);
+
+  public:
+    TrustedCert_t m_trustlist;
 
   protected:
-    TrustedCert_t m_trustlist;
     char* m_trustedcache;
   };
 
