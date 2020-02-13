@@ -9,7 +9,7 @@ SSL/TLS Trusted Certificate Authorities
 ---------------------------------------
 
 A default minimal list of trusted certificate authorities is provided with the firmware. you
-can see the current loaded list with the 'tls trust list' command:
+can see the current loaded list with the 'tls trust list' command::
 
   OVMS# tls trust list
   AddTrust External CA Root length 1521
@@ -25,10 +25,8 @@ can see the current loaded list with the 'tls trust list' command:
     basic constraints : CA=true
     key usage         : Key Cert Sign, CRL Sign
 
-  ...
-
 If you want to add to this list, you can place the PEM formatted root CA certificate in the
-/store/trustedca directory on your config partition. Then, reload the list with:
+/store/trustedca directory on your config partition. Then, reload the list with::
 
   OVMS# tls trust reload
   Reloading SSL/TLS trusted CA list
