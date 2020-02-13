@@ -124,6 +124,7 @@ class OvmsServerV2 : public OvmsServer
     std::string m_server;
     std::string m_password;
     std::string m_port;
+    bool m_tls;
 
     std::string m_token;
     RC4_CTX1 m_crypto_rx1;

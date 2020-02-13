@@ -47,7 +47,7 @@ static const char *TAG = "ovms-server-v2";
 #include "esp_system.h"
 #include "ovms_utils.h"
 #include "ovms_boot.h"
-
+#include "ovms_tls.h"
 
 // should this go in the .h or in the .cpp?
 typedef union {
@@ -749,7 +749,9 @@ void OvmsServerV2::Connect()
   m_server = MyConfig.GetParamValue("server.v2", "server");
   m_password = MyConfig.GetParamValue("server.v2", "password");
   m_port = MyConfig.GetParamValue("server.v2", "port");
-  if (m_port.empty()) m_port = "6867";
+  m_tls = MyConfig.GetParamValueBool("server.v2", "tls",false);
+
+  if (m_port.empty()) m_port = (m_tls)?"6870":"6867";
   std::string address(m_server);
   address.append(":");
   address.append(m_port);
@@ -784,6 +786,11 @@ void OvmsServerV2::Connect()
   const char* err;
   memset(&opts, 0, sizeof(opts));
   opts.error_string = &err;
+  if (m_tls)
+    {
+    opts.ssl_ca_cert = MyOvmsTLS.GetTrustedList();
+    opts.ssl_server_name = m_server.c_str();
+    }
   if ((m_mgconn = mg_connect_opt(mgr, address.c_str(), OvmsServerV2MongooseCallback, opts)) == NULL)
     {
     ESP_LOGE(TAG, "mg_connect(%s) failed: %s", address.c_str(), err);
