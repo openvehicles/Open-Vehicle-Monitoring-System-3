@@ -58,3 +58,16 @@ and we won't be able to access all control units.
 
 ====================================================================
 
+----------------------
+IDs on Comfort CAN Bus
+----------------------
+response <hhh l aa bb cc...>
+hhh: header
+l: length
+aa bb...: data
+
+ID	Conversion	Unit	Function		Comment
+---------------------------------------------------------------
+52F	ee/255		% 	State of Charge	(SoC)	
+
+
