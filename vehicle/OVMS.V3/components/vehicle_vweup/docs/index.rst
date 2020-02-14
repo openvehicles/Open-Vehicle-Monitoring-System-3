@@ -63,7 +63,7 @@ IDs on Comfort CAN Bus
 ----------------------
 response <hhh l aa bb cc...>
 
-hhh: header
+hhh: header ID
 
 l: length
 
