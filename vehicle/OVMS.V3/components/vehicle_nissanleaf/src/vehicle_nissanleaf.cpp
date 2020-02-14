@@ -681,7 +681,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         break;
       
       default:
-        m_climate_vent->SetValue("unknown")
+        m_climate_vent->SetValue("unknown");
         break;
       }
 
@@ -698,12 +698,9 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         break;
       
       default:
-        m_climate_intake->SetValue("unknown")
+        m_climate_intake->SetValue("unknown");
         break;
       }
-
-      bool cooling = false;
-      cooling = (d[1] == 0x78);
 
       // The following values work only when car is on, so we need to use fan value to indicate hvac on as described below
       bool climate_on = false;
@@ -720,7 +717,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       // Set more accurate climate control values for hvac, heating, cooling for 2013-2015 model year cars.
       // leaving this legacy code part until someone tests the new logic in <2013 and >2015 cars.
-      if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) < 2013 && MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) > 2015)
+      if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) > 2013 && MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) < 2015)
       {
         bool hvac_candidate;
         // this might be a bit field? So far these 6 values indicate HVAC on
@@ -747,6 +744,9 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         bool hvac_calculated = false;
         hvac_calculated = (climate_on && fanspeed_float != 0);
         StandardMetrics.ms_v_env_hvac->SetValue(hvac_calculated);
+
+        bool cooling = false;
+        cooling = (d[1] == 0x78);
 
         bool heating_calculated = false;
         heating_calculated = (hvac_calculated && not fan_only && not cooling);
