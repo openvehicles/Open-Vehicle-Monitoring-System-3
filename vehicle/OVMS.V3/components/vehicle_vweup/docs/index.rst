@@ -62,8 +62,11 @@ and we won't be able to access all control units.
 IDs on Comfort CAN Bus
 ----------------------
 response <hhh l aa bb cc...>
+
 hhh: header
+
 l: length
+
 aa bb...: data
 
 ======= =============== ======= ======================= =======
