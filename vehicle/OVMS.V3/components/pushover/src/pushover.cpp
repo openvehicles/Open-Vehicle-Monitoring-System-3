@@ -41,6 +41,7 @@ static const char *TAG = "pushover";
 #include "ovms_netmanager.h"
 #include "ovms_config.h"
 #include "ovms_events.h"
+#include "ovms_tls.h"
 
 
 #include "mongoose.h"
@@ -367,8 +368,7 @@ bool Pushover::SendMessageOpt( const std::string user_key, const std::string tok
   memset(&opts, 0, sizeof(opts));
   opts.error_string = &err;
 
-  // TODO: Add root certificate. Currently Pushover server certificate is not validated!
-  opts.ssl_ca_cert = "*";
+  opts.ssl_ca_cert = MyOvmsTLS.GetTrustedList();
 
   if ((m_mgconn = mg_connect_opt(mgr, _server.c_str(), PushoverMongooseCallback, opts)) == NULL)
     {
