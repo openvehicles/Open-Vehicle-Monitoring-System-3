@@ -47,6 +47,7 @@ static const char *TAG = "script";
 #include "console_async.h"
 #include "buffered_shell.h"
 #include "ovms_netmanager.h"
+#include "ovms_tls.h"
 
 OvmsScripts MyScripts __attribute__ ((init_priority (1600)));
 
@@ -1219,7 +1220,7 @@ bool DuktapeHTTPRequest::StartRequest(duk_context *ctx /*=NULL*/)
   if (startsWith(m_url, "https://"))
     {
     #if MG_ENABLE_SSL
-      opts.ssl_ca_cert = "*";
+      opts.ssl_ca_cert = MyOvmsTLS.GetTrustedList();
     #else
       m_error = "SSL support disabled";
       ESP_LOGD(TAG, "DuktapeHTTPRequest: connect to '%s' failed: %s", m_url.c_str(), m_error.c_str());
