@@ -568,6 +568,7 @@ static struct
     { "obd2ecu", true },
     { "dbc", true },
     { "plugin", true },
+    { "trustedca", true },
     { NULL, false }
   };
 
