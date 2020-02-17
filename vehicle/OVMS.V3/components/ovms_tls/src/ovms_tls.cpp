@@ -45,6 +45,7 @@ static const char *TAG = "tls";
 #include "ovms_tls.h"
 #include "mbedtls/x509.h"
 #include "mbedtls/x509_crt.h"
+#include "mbedtls/debug.h"
 
 OvmsTLS MyOvmsTLS __attribute__ ((init_priority (3000)));
 
@@ -142,6 +143,7 @@ void OvmsTLS::Clear()
 
 void OvmsTLS::Reload()
   {
+  mbedtls_debug_set_threshold(1);
   Clear();
 
   // Add our embedded trusted CAs
@@ -153,6 +155,9 @@ void OvmsTLS::Reload()
 
   extern const char digicert_global[] asm("_binary_digicert_global_crt_start");
   m_trustlist["DigiCert Global Root CA"] = new OvmsTrustedCert((char*)digicert_global, false);
+
+  extern const char starfield_class2[] asm("_binary_starfield_class2_crt_start");
+  m_trustlist["Starfield Class 2 CA"] = new OvmsTrustedCert((char*)starfield_class2, false);
 
   // Add trusted certs on disk (/store/trustedca)
   DIR *dir;
