@@ -45,6 +45,7 @@ static const char *TAG = "tls";
 #include "ovms_tls.h"
 #include "mbedtls/x509.h"
 #include "mbedtls/x509_crt.h"
+#include "mbedtls/debug.h"
 
 OvmsTLS MyOvmsTLS __attribute__ ((init_priority (3000)));
 
@@ -142,6 +143,7 @@ void OvmsTLS::Clear()
 
 void OvmsTLS::Reload()
   {
+  mbedtls_debug_set_threshold(1);
   Clear();
 
   // Add our embedded trusted CAs
