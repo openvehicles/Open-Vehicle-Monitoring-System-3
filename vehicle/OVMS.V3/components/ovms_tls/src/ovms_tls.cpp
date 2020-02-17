@@ -156,6 +156,9 @@ void OvmsTLS::Reload()
   extern const char digicert_global[] asm("_binary_digicert_global_crt_start");
   m_trustlist["DigiCert Global Root CA"] = new OvmsTrustedCert((char*)digicert_global, false);
 
+  extern const char starfield_class2[] asm("_binary_starfield_class2_crt_start");
+  m_trustlist["Starfield Class 2 CA"] = new OvmsTrustedCert((char*)starfield_class2, false);
+
   // Add trusted certs on disk (/store/trustedca)
   DIR *dir;
   struct dirent *dp;
