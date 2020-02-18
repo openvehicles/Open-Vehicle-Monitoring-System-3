@@ -27,3 +27,4 @@ Open Vehicles Monitoring System
    components/ovms_script/docs/index
    components/canopen/docs/index
    protocol_v2/index
+   protocol_httpapi/index
