@@ -88,7 +88,7 @@ Door state #1
 * bit2 = Charge port (open=1/closed=0)
 * bit3 = Pilot present (true=1/false=0) (always 1 on my 2.5)
 * bit4 = Charging (true=1/false=0)
-* bit5 = always 1â
+* bit5 = always 1
 * bit6 = Hand brake applied (true=1/false=0)
 * bit7 = Car ON ("ignition") (true=1/false=0)
 
@@ -99,7 +99,7 @@ Door state #2
 * bit6 = Bonnet (open=1/closed=0)
 * bit7 = Trunk (open=1/closed=0)
 
-Lock/Unlock stateâ
+Lock/Unlock state
 
 * 4 = car is locked
 * 5 = car is unlocked
