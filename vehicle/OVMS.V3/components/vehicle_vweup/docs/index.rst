@@ -1,3 +1,4 @@
+
 =======
 VW e-Up 
 =======
@@ -5,6 +6,22 @@ VW e-Up
 Vehicle Type: **VWUP**
 
 This vehicle type supports the VW e-UP, Skoda Citigo E IV and the Seat MII electric.
+
+
+-----------------
+Development notes
+-----------------
+
+When our pull request to the OVMS master repository is commited, these notes will be deleted.
+
+To compile this code you will need to check out this repository, check out the components 
+mongoose, libzip and zlib from  the OVMS master repostory and copy the file
+
+sdkconfig.default.hw31.vweup
+
+from the OVMS.V3/support folder to the OVMS.V3 folder and rename it to
+
+sdkconfig
 
 
 ----------------
