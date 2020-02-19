@@ -85,6 +85,8 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
   mt_ed_eco_const          = MyMetrics.InitInt("xse.v.display.const", SM_STALE_MIN, 50, Percentage);
   mt_ed_eco_coast          = MyMetrics.InitInt("xse.v.display.coast", SM_STALE_MIN, 50, Percentage);
   mt_ed_eco_score          = MyMetrics.InitInt("xse.v.display.ecoscore", SM_STALE_MIN, 50, Percentage);
+  
+  mt_ed_hv_off_time        = MyMetrics.InitInt("xse.hv.off.time", SM_STALE_MID, 0, Seconds);
 
   m_candata_timer     = 0;
   m_candata_poll      = 0;
@@ -142,6 +144,7 @@ void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
   m_lock_state      = MyConfig.GetParamValueBool("xse", "lockstate", false);
   m_reset_trip      = MyConfig.GetParamValueBool("xse", "reset.trip.charge", false);
   m_notify_trip     = MyConfig.GetParamValueBool("xse", "notify.trip", true);
+  m_gpio_highlow    = MyConfig.GetParamValueBool("xse", "gpio_highlow", false);
   
   m_preclima_time   = MyConfig.GetParamValueInt("xse", "preclimatime", 15);
   
@@ -149,6 +152,12 @@ void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
   
   StandardMetrics.ms_v_charge_limit_soc->SetValue((float) MyConfig.GetParamValueInt("xse", "suffsoc", 0), Percentage );
   StandardMetrics.ms_v_charge_limit_range->SetValue((float) MyConfig.GetParamValueInt("xse", "suffrange", 0), Kilometers );
+  
+#ifdef CONFIG_OVMS_COMP_MAX7317
+  MyPeripherals->m_max7317->Output(m_doorlock_port, (m_gpio_highlow ? 1 : 0));
+  MyPeripherals->m_max7317->Output(m_doorunlock_port, (m_gpio_highlow ? 1 : 0));
+  MyPeripherals->m_max7317->Output(m_ignition_port, 0);
+#endif
 }
 
 void OvmsVehicleSmartED::vehicle_smarted_car_on(bool isOn) {
@@ -347,13 +356,11 @@ void OvmsVehicleSmartED::HandleChargingStatus() {
 }
 
 void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
-    
-  if (m_candata_poll != 1 && mt_hv_active) {
+  if (m_candata_poll != 1) {
     ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
     mt_bus_awake->SetValue(true);
     //StandardMetrics.ms_v_env_awake->SetValue(true);
     m_candata_poll = 1;
-    //PollSetState(1);
     if (m_enable_write) PollSetState(1);
   }
   
@@ -669,6 +676,10 @@ void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
   HandleEnergy();
   if (mt_bus_awake->AsBool())
     HandleChargingStatus();
+  if (mt_hv_active->AsBool())
+    mt_ed_hv_off_time->SetValue(0);
+  else
+    mt_ed_hv_off_time->SetValue(mt_ed_hv_off_time->AsInt() + 1);
   
   // Handle Tripcounter
   if (mt_pos_odometer_start->AsFloat(0) == 0 && StandardMetrics.ms_v_pos_odometer->AsFloat(0) > 0.0) {

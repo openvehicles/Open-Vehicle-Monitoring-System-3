@@ -320,9 +320,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandHomelink(int button, i
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandLock(const char* pin) {
 #ifdef CONFIG_OVMS_COMP_MAX7317
   //switch 12v to GEP 1
-  MyPeripherals->m_max7317->Output(m_doorlock_port, 1);
+  MyPeripherals->m_max7317->Output(m_doorlock_port, (m_gpio_highlow ? 0 : 1));
   vTaskDelay(500 / portTICK_PERIOD_MS);
-  MyPeripherals->m_max7317->Output(m_doorlock_port, 0);
+  MyPeripherals->m_max7317->Output(m_doorlock_port, (m_gpio_highlow ? 1 : 0));
   StandardMetrics.ms_v_env_locked->SetValue(true);
   return Success;
 #endif
@@ -332,9 +332,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandLock(const char* pin) 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandUnlock(const char* pin) {
 #ifdef CONFIG_OVMS_COMP_MAX7317
   //switch 12v to GEP 2 
-  MyPeripherals->m_max7317->Output(m_doorunlock_port, 1);
+  MyPeripherals->m_max7317->Output(m_doorunlock_port, (m_gpio_highlow ? 0 : 1));
   vTaskDelay(500 / portTICK_PERIOD_MS);
-  MyPeripherals->m_max7317->Output(m_doorunlock_port, 0);
+  MyPeripherals->m_max7317->Output(m_doorunlock_port, (m_gpio_highlow ? 1 : 0));
   StandardMetrics.ms_v_env_locked->SetValue(false);
   return Success;
 #endif
