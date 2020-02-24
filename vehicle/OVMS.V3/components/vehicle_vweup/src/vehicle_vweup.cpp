@@ -49,6 +49,7 @@ static const char *TAG = "v-vweup";
 
 #include <stdio.h>
 #include "vehicle_vweup.h"
+#include "metrics_standard.h"
 
 OvmsVehicleVWeUP::OvmsVehicleVWeUP()
   {
