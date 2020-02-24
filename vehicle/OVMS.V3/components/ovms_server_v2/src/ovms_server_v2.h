@@ -40,6 +40,7 @@
 #include "ovms_netmanager.h"
 #include "ovms_buffer.h"
 #include "crypt_rc4.h"
+#include "crypt_md5.h"
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
 #include "ovms_mutex.h"
@@ -64,7 +65,6 @@ class OvmsServerV2 : public OvmsServer
     void ProcessServerMsg();
     void ProcessCommand(const char* payload);
     void Transmit(const std::string& message);
-    void Transmit(const char* message);
 
   protected:
     void TransmitMsgStat(bool always = false);
@@ -131,6 +131,11 @@ class OvmsServerV2 : public OvmsServer
     RC4_CTX2 m_crypto_rx2;
     RC4_CTX1 m_crypto_tx1;
     RC4_CTX2 m_crypto_tx2;
+
+    bool m_paranoid;
+    uint8_t m_pdigest[OVMS_MD5_SIZE];
+    std::string m_ptoken;
+    bool m_ptoken_ready;
 
     bool m_now_stat;
     bool m_now_gps;
