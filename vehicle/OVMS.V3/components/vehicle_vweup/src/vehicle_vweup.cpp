@@ -31,17 +31,21 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          18th February 2020
+;    Date:          24th February 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
 :           Code frame with correct TAG and vehicle/can registration
+;
+;    0.1.1  Started with some SOC capture demo code
 ;
 ;    (C) 2020       Chris van der Meijden
 */
 
 #include "ovms_log.h"
 static const char *TAG = "v-vweup";
+
+#define VERSION "0.1.1"
 
 #include <stdio.h>
 #include "vehicle_vweup.h"
@@ -58,8 +62,19 @@ OvmsVehicleVWeUP::~OvmsVehicleVWeUP()
   ESP_LOGI(TAG, "Stop VW e-Up vehicle module");
   }
 
-void OvmsVehicleVWeUP::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
   {
+  uint8_t *d = p_frame->data.u8;
+    
+  switch (p_frame->MsgID) {
+    case 0x654: // SOC (654 is a placeholder, we don't know the MsgID of the SOC yet)
+      StandardMetrics.ms_v_bat_soc->SetValue(d[3]/2.55);
+      break;
+    
+    default:
+      //ESP_LOGD(TAG, "IFC %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+      break;
+    }
   }
 
 void OvmsVehicleVWeUP::Ticker1(uint32_t ticker)
@@ -77,3 +92,6 @@ OvmsVehicleVWeUPInit::OvmsVehicleVWeUPInit()
 
   MyVehicleFactory.RegisterVehicle<OvmsVehicleVWeUP>("VWUP","VW e-Up");
   }
+
+
+

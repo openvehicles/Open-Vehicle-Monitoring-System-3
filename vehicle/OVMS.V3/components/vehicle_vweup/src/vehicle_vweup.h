@@ -43,7 +43,7 @@ class OvmsVehicleVWeUP : public OvmsVehicle
     ~OvmsVehicleVWeUP();
 
   public:
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingFrameCan3(CAN_frame_t* p_frame);
 
   protected:
     virtual void Ticker1(uint32_t ticker);
