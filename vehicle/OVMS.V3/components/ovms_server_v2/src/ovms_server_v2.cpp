@@ -39,7 +39,6 @@ static const char *TAG = "ovms-server-v2";
 #include "metrics_standard.h"
 #include "crypt_base64.h"
 #include "crypt_hmac.h"
-#include "crypt_md5.h"
 #include "crypt_crc.h"
 #include "ovms_server_v2.h"
 #include "ovms_netmanager.h"
@@ -278,6 +277,32 @@ void OvmsServerV2::ProcessServerMsg()
       uint8_t v = 0;
       RC4_crypt(&m_crypto_tx1, &m_crypto_tx2, &v, 1);
       }
+
+    if (m_paranoid)
+      {
+      // Paranoid mode welcome
+      char token[OVMS_PROTOCOL_V2_TOKENSIZE+1];
+
+      // Generate a random paranoid mode token
+      for (int k=0;k<OVMS_PROTOCOL_V2_TOKENSIZE;k++)
+        {
+        token[k] = (char)cb64[esp_random()%64];
+        }
+      token[OVMS_PROTOCOL_V2_TOKENSIZE] = 0;
+      m_ptoken = std::string(token);
+
+      // Transmit the token (unencrypted) to the server
+      m_ptoken_ready = false;
+      std::string msg("MP-0 ET");
+      msg.append(m_ptoken);
+      Transmit(msg);
+      m_ptoken_ready = true;
+
+      // Generate, and store, the digest for future use
+      std::string modpass = MyConfig.GetParamValue("password","module");
+      hmac_md5((uint8_t*) token, OVMS_PROTOCOL_V2_TOKENSIZE, (uint8_t*)modpass.c_str(), modpass.length(), m_pdigest);
+      }
+
     m_pending_notify_info = true;
     m_pending_notify_error = true;
     m_pending_notify_alert = true;
@@ -285,8 +310,16 @@ void OvmsServerV2::ProcessServerMsg()
     m_pending_notify_data_last = 0;
     m_pending_notify_data_retransmit = 0;
     m_connretry = 0;
+
     StandardMetrics.ms_s_v2_connected->SetValue(true);
-    SetStatus("OVMS V2 login successful, and crypto channel established", false, Connected);
+    if (m_paranoid)
+      {
+      SetStatus("OVMS V2 login successful, and crypto channel established (in paranoid mode)", false, Connected);
+      }
+    else
+      {
+      SetStatus("OVMS V2 login successful, and crypto channel established", false, Connected);
+      }
     return;
     }
 
@@ -306,6 +339,34 @@ void OvmsServerV2::ProcessServerMsg()
     return;
     }
 
+  if ((line.at(5) == 'E')&&(line.at(6) == 'M'))
+    {
+    char code[2]; code[0] = line.at(7); code[1] = 0;
+    uint8_t *d = new uint8_t[line.length()-6];
+    len = base64decode(line.c_str()+7,d+1);
+
+    RC4_CTX1* pm_crypto1 = new RC4_CTX1;
+    RC4_CTX2* pm_crypto2 = new RC4_CTX2;
+    RC4_setup(pm_crypto1, pm_crypto2, m_pdigest, OVMS_MD5_SIZE);
+    for (int k=0;k<1024;k++)
+      {
+      uint8_t zero = 0;
+      RC4_crypt(pm_crypto1, pm_crypto2, &zero, 1);
+      }
+    RC4_crypt(pm_crypto1, pm_crypto2, d, len);
+
+    line.erase(5);
+    line = std::string("MP-0 ");
+    line.append(code);
+    line.append((char*)d);
+    len = line.length();
+
+    delete pm_crypto1;
+    delete pm_crypto2;
+    delete d;
+    ESP_LOGI(TAG, "Decoded Paranoid Msg: %s",line.c_str());
+    }
+
   char code = line[5];
   const char* payload = line.c_str()+6;
 
@@ -313,7 +374,7 @@ void OvmsServerV2::ProcessServerMsg()
     {
     case 'A': // PING
       {
-      Transmit("MP-0 a");
+      Transmit(std::string("MP-0 a"));
       break;
       }
     case 'Z': // Peer connections
@@ -667,31 +728,43 @@ void OvmsServerV2::Transmit(const std::string& message)
     return;
 
   int len = message.length();
-  char* s = new char[len];
+  char* s = new char[(len*2)+4];
   memcpy(s,message.c_str(),len);
   ESP_LOGI(TAG, "Send %s",message.c_str());
 
-  RC4_crypt(&m_crypto_tx1, &m_crypto_tx2, (uint8_t*)s, len);
+  if ((m_ptoken_ready)&&
+      (s[5] != 'E')&&
+      (s[5] != 'A')&&
+      (s[5] != 'a')&&
+      (s[5] != 'g')&&
+      (s[5] != 'P'))
+    {
+    // We must convert the message to a paranoid one...
+    // The message is of the form MP-0 X...
+    // Where X is the code and ... is the (optional) data
+    char code[2]; code[0] = s[5]; code[1] = 0;
+    uint8_t* d = new uint8_t[len-6];
+    memcpy(d,s+6,len-6);
 
-  char* buf = new char[(len*2)+4];
-  base64encode((uint8_t*)s, len, (uint8_t*)buf);
-  strcat(buf,"\r\n");
-  mg_send(m_mgconn, buf, strlen(buf));
+    // Paranoid encrypt the message part of the transaction
+    RC4_CTX1* pm_crypto1 = new RC4_CTX1;
+    RC4_CTX2* pm_crypto2 = new RC4_CTX2;
+    RC4_setup(pm_crypto1, pm_crypto2, m_pdigest, OVMS_MD5_SIZE);
+    for (int k=0;k<1024;k++)
+      {
+      uint8_t zero = 0;
+      RC4_crypt(pm_crypto1, pm_crypto2, &zero, 1);
+      }
+    RC4_crypt(pm_crypto1, pm_crypto2, d, len-6);
 
-  delete [] buf;
-  delete [] s;
-  }
-
-void OvmsServerV2::Transmit(const char* message)
-  {
-  OvmsMutexLock mg(&m_mgconn_mutex);
-  if (!m_mgconn)
-    return;
-
-  int len = strlen(message);
-  char* s = new char[len];
-  memcpy(s,message,len);
-  ESP_LOGI(TAG, "Send %s",message);
+    strcpy(s,"MP-0 EM");
+    strcat(s,code);
+    base64encode(d, len-6, (uint8_t*)s+8);
+    // The messdage is now in paranoid mode...
+    delete d;
+    delete pm_crypto1;
+    delete pm_crypto2;
+    }
 
   RC4_crypt(&m_crypto_tx1, &m_crypto_tx2, (uint8_t*)s, len);
 
@@ -750,6 +823,7 @@ void OvmsServerV2::Connect()
   m_password = MyConfig.GetParamValue("server.v2", "password");
   m_port = MyConfig.GetParamValue("server.v2", "port");
   m_tls = MyConfig.GetParamValueBool("server.v2", "tls",false);
+  m_paranoid = MyConfig.GetParamValueBool("server.v2", "paranoid",false);
 
   if (m_port.empty()) m_port = (m_tls)?"6870":"6867";
   std::string address(m_server);
@@ -858,6 +932,9 @@ void OvmsServerV2::SendLogin(struct mg_connection *nc)
     }
   token[OVMS_PROTOCOL_V2_TOKENSIZE] = 0;
   m_token = std::string(token);
+
+  m_ptoken.clear();
+  m_ptoken_ready = false;
 
   uint8_t digest[OVMS_MD5_SIZE];
   hmac_md5((uint8_t*) token, OVMS_PROTOCOL_V2_TOKENSIZE, (uint8_t*)m_password.c_str(), m_password.length(), digest);
