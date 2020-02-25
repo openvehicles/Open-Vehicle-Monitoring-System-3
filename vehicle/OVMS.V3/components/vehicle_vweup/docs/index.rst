@@ -96,7 +96,7 @@ aa bb...: data
 ======= =================== ======= ======================= =======
 ID	Conversion	    Unit    Function		    Comment
 ======= =================== ======= ======================= =======
-???	??/2.55		    % 	    State of Charge	    (SoC)
+61A	d8/2.55 ???	    % 	    State of Charge	    (SoC)
 ???	((d2,d1)-1)/100     km/h    Speed		    (KMH)
 65F	3 Parts 5-7,1-7,1-7 String  VIN number		    (VIN)
 571	5+(.05*d0)	    Volt    12 Volt battery voltage (12V)

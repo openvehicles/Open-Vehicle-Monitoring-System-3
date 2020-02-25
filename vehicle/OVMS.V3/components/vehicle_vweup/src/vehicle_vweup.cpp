@@ -72,8 +72,8 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
     
   switch (p_frame->MsgID) {
 
-    case 0x654: // SOC (654 is a placeholder, we don't know the MsgID of the SOC yet)
-      StandardMetrics.ms_v_bat_soc->SetValue(d[3]/2.55);
+    case 0x61A: // SOC (calculation needs still to be corrected)
+      StandardMetrics.ms_v_bat_soc->SetValue(d[8]/2.55);
       break;
 
     case 0x65F: // VIN
