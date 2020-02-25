@@ -76,7 +76,7 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_bat_soc->SetValue(d[3]/2.55);
       break;
 
-    case 0x65F: // VIN (65F is only confirmed for e-Golf yet)
+    case 0x65F: // VIN
       switch (d[0]) {
           case 0x00:
             // Part 1
@@ -108,7 +108,7 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       }
       break;
 
-    case 0x351: // Speed - Not confirmed yet. What about the division by 190 for the e-Up?
+    case 0x351: // Speed - Placeholder. What about the division by 190 for the e-Up?
       StandardMetrics.ms_v_env_awake->SetValue(true);
 
       uint16_t car_speed16;
@@ -117,7 +117,7 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_pos_speed->SetValue(car_speed16);
       break;
 
-    case 0x571: // 12 Volt - Not confirmed yet.
+    case 0x571: // 12 Volt
       StandardMetrics.ms_v_bat_12v_voltage->SetValue(5 + (0.05 * d[0]));
       break;
     
