@@ -12,10 +12,12 @@ This vehicle type supports the VW e-UP, Skoda Citigo E IV and the Seat MII elect
 Development notes
 -----------------
 
+The code is highly experimental. Some MsgIDs used are not confirmed yet.
+
 When our pull request to the OVMS master repository is commited, these notes will be deleted.
 
 To compile this code you will need to check out this repository, check out the components 
-mongoose, libzip and zlib from  the OVMS master repostory and copy the file
+mongoose, libzip and zlib from the OVMS master repostory and copy the file
 
 sdkconfig.default.hw31.vweup
 
@@ -91,9 +93,12 @@ l: length
 
 aa bb...: data
 
-======= =============== ======= ======================= =======
-ID	Conversion	Unit	Function		Comment
-======= =============== ======= ======================= =======
-???	??/2.55		% 	State of Charge	(SoC)	
-======= =============== ======= ======================= =======
+======= =================== ======= ======================= =======
+ID	Conversion	    Unit    Function		    Comment
+======= =================== ======= ======================= =======
+???	??/2.55		    % 	    State of Charge	    (SoC)
+???	((d2,d1)-1)/100     km/h    Speed		    (KMH)
+654	3 Parts 5-7,1-7,1-7 String  VIN number		    (VIN)
+571	5+(.05*d0)	    Volt    12 Volt battery voltage (12V)
+======= =================== ======= ======================= =======
 
