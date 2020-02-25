@@ -38,6 +38,7 @@ static const char *TAG = "ovms-server-v3";
 #include "ovms_command.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
+#include "ovms_tls.h"
 
 OvmsServerV3 *MyOvmsServerV3 = NULL;
 size_t MyOvmsServerV3Modifier = 0;
@@ -615,6 +616,7 @@ void OvmsServerV3::Connect()
   m_user = MyConfig.GetParamValue("server.v3", "user");
   m_password = MyConfig.GetParamValue("password", "server.v3");
   m_port = MyConfig.GetParamValue("server.v3", "port");
+  m_tls = MyConfig.GetParamValueBool("server.v3","tls", false);
 
   m_topic_prefix = MyConfig.GetParamValue("server.v3", "topic.prefix", "");
   if(m_topic_prefix.empty())
@@ -639,7 +641,11 @@ void OvmsServerV3::Connect()
   m_conn_topic[1] = std::string(m_topic_prefix);
   m_conn_topic[1].append("client/+/command/+");
 
-  if (m_port.empty()) m_port = "1883";
+  if (m_port.empty())
+    {
+    m_port = (m_tls)?"8883":"1883";
+    }
+
   std::string address(m_server);
   address.append(":");
   address.append(m_port);
@@ -663,6 +669,11 @@ void OvmsServerV3::Connect()
   const char* err;
   memset(&opts, 0, sizeof(opts));
   opts.error_string = &err;
+  if (m_tls)
+    {
+    opts.ssl_ca_cert = MyOvmsTLS.GetTrustedList();
+    opts.ssl_server_name = m_server.c_str();
+    }
   if ((m_mgconn = mg_connect_opt(mgr, address.c_str(), OvmsServerV3MongooseCallback, opts)) == NULL)
     {
     ESP_LOGE(TAG, "mg_connect(%s) failed: %s", address.c_str(), err);

@@ -86,6 +86,7 @@ class OvmsServerV3 : public OvmsServer
     std::string m_user;
     std::string m_password;
     std::string m_port;
+    bool m_tls;
     std::string m_topic_prefix;
     std::string m_will_topic;
     std::string m_conn_topic[MQTT_CONN_NTOPICS];

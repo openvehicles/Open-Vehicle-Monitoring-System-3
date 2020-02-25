@@ -829,6 +829,7 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
 
       // configure server:
       MyConfig.SetParamValue("server.v2", "server", server);
+      MyConfig.SetParamValueBool("server.v2", "tls", true);
       if (error == "" && !server.empty()) {
         MyConfig.SetParamValue("vehicle", "id", vehicleid);
         MyConfig.SetParamValue("server.v2", "password", password);
