@@ -97,7 +97,7 @@ d0 d1...: data
 ID	Conversion	     Unit    Function		     Comment
 ======= ==================== ======= ======================= =======
 61A	d7/2.55 ???	     % 	     State of Charge	     (SoC)
-527	((d2,d1)-1)/100      km/h    Speed		     (KMH)
+320	d4*1.34	             km/h    Speed		     (KMH)
 65F	3 Msg d5-7,d1-7,d1-7 String  VIN number		     (VIN)
 571	5+(.05*d0)	     Volt    12 Volt battery voltage (12V)
 ======= ==================== ======= ======================= =======

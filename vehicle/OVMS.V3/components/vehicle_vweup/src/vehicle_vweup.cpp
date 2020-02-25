@@ -108,13 +108,10 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       }
       break;
 
-    case 0x527: // Speed - Unconfirmed. What about the division by 190 for the e-Up?
+    case 0x320: // Speed
       StandardMetrics.ms_v_env_awake->SetValue(true);
-
-      uint16_t car_speed16;
-      car_speed16 = ((d[2] << 8)+d[1]-1)/190;
       
-      StandardMetrics.ms_v_pos_speed->SetValue(car_speed16);
+      StandardMetrics.ms_v_pos_speed->SetValue(d[4]*1.34);
       break;
 
     case 0x571: // 12 Volt
