@@ -108,7 +108,7 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       }
       break;
 
-    case 0x351: // Speed - Placeholder. What about the division by 190 for the e-Up?
+    case 0x527: // Speed - Unconfirmed. What about the division by 190 for the e-Up?
       StandardMetrics.ms_v_env_awake->SetValue(true);
 
       uint16_t car_speed16;
