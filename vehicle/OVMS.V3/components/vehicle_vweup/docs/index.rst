@@ -85,20 +85,24 @@ OCU	DB9-F	Signal
 ----------------------
 IDs on Comfort CAN Bus
 ----------------------
-response <hhh l aa bb cc...>
+message <hhh ll d0 d1 d2...>
 
 hhh: header ID
 
-l: length
+ll: length
 
-aa bb...: data
+d0 d1...: data
 
 ======= =================== ======= ======================= =======
 ID	Conversion	    Unit    Function		    Comment
 ======= =================== ======= ======================= =======
 ???	??/2.55		    % 	    State of Charge	    (SoC)
 ???	((d2,d1)-1)/100     km/h    Speed		    (KMH)
+<<<<<<< HEAD
 654	3 Parts 5-7,1-7,1-7 String  VIN number		    (VIN)
+=======
+65F	3 Parts 5-7,1-7,1-7 String  VIN number		    (VIN)
+>>>>>>> f695f7e95277dc7f82407073e2c3acd464357986
 571	5+(.05*d0)	    Volt    12 Volt battery voltage (12V)
 ======= =================== ======= ======================= =======
 
