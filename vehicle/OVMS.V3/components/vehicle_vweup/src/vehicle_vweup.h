@@ -47,6 +47,7 @@ class OvmsVehicleVWeUP : public OvmsVehicle
 
   protected:
     virtual void Ticker1(uint32_t ticker);
+    char m_vin[16];
   };
 
 #endif //#ifndef __VEHICLE_VWEUP_H__
