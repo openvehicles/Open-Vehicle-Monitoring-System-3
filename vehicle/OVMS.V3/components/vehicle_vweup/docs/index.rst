@@ -37,11 +37,11 @@ Hardware                    Any OVMS v3 (or later) module. Vehicle support: 2020
 Vehicle Cable               Comfort CAN T26A (OCU connector cable, located under front passenger seat) to DB9 Data Cable for OVMS using pin 6 and 8 for can3
 GSM Antenna                 T4AC - R205 with fakra_sma adapter cable or 1000500 Open Vehicles OVMS GSM Antenna (or any compatible antenna)
 GPS Antenna                 T4AC - R50 with fakra_sma adapter cable or 1020200 Universal GPS Antenna (or any compatible antenna)
-SOC Display                 tba
+SOC Display                 Implemented but untested
 Range Display               tba
 Cabin Pre-heat/cool Control tba
 GPS Location                tba
-Speed Display               tba
+Speed Display               Implemented but untested
 Temperature Display         tba
 BMS v+t Display             tba
 TPMS Display                tba
@@ -50,12 +50,12 @@ Charge Interruption Alerts  tba
 Charge Control              tba
 Lock/Unlock Vehicle         tba
 Valet Mode Control          tba
-Others                      tba
+Others                      VIN and 12 volt battery status implemented but untested
 =========================== ==============
 
 
 ----------------------------------------
-Pinout OCU T4AC - OVMS DB9 adapter cable
+Pinout OCU T26A - OVMS DB9 adapter cable
 ----------------------------------------
 
 Because of the compilicated VAG OBD-gateway communication protocol
