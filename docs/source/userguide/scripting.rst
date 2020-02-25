@@ -385,6 +385,14 @@ The handler automatically excludes the request objects from garbage collection u
     Legacy alias for ``HTTP.Request()``, please do not use.
 
 
+.. note::
+  **SSL requests (https)** can take up to 12 seconds on an idle module.
+  SSL errors also may not reflect the actual error, for example an empty server response
+  with code 400 may be reported as a general "SSL error".
+  If you get "SSL error" on a valid request, you may need to install a custom root CA
+  certificate; see :doc:`ssltls`.
+
+
 VFS
 ^^^
 

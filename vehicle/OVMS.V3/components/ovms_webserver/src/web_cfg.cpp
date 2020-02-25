@@ -1307,10 +1307,12 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
   std::string error;
   std::string server, vehicleid, password, port;
   std::string updatetime_connected, updatetime_idle;
+  bool tls;
 
   if (c.method == "POST") {
     // process form submission:
     server = c.getvar("server");
+    tls = (c.getvar("tls") == "yes");
     vehicleid = c.getvar("vehicleid");
     password = c.getvar("password");
     port = c.getvar("port");
@@ -1342,6 +1344,7 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
     if (error == "") {
       // success:
       MyConfig.SetParamValue("server.v2", "server", server);
+      MyConfig.SetParamValueBool("server.v2", "tls", tls);
       MyConfig.SetParamValue("server.v2", "port", port);
       MyConfig.SetParamValue("vehicle", "id", vehicleid);
       if (password != "")
@@ -1364,6 +1367,7 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
   else {
     // read configuration:
     server = MyConfig.GetParamValue("server.v2", "server");
+    tls = MyConfig.GetParamValueBool("server.v2", "tls", false);
     vehicleid = MyConfig.GetParamValue("vehicle", "id");
     password = MyConfig.GetParamValue("server.v2", "password");
     port = MyConfig.GetParamValue("server.v2", "port");
@@ -1383,7 +1387,9 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
       "<li><code>api.openvehicles.com</code> <a href=\"https://www.openvehicles.com/user/register\" target=\"_blank\">Registration</a></li>"
       "<li><code>ovms.dexters-web.de</code> <a href=\"https://dexters-web.de/?action=NewAccount\" target=\"_blank\">Registration</a></li>"
     "</ul>");
-  c.input_text("Port", "port", port.c_str(), "optional, default: 6867");
+  c.input_checkbox("Enable TLS", "tls", tls,
+    "<p>Note: enable transport layer security (encryption) if your server supports it (all public OVMS servers do).</p>");
+  c.input_text("Port", "port", port.c_str(), "optional, default: 6867 (no TLS) / 6870 (TLS)");
   c.input_text("Vehicle ID", "vehicleid", vehicleid.c_str(), "Use ASCII letters, digits and '-'",
     NULL, "autocomplete=\"section-serverv2 username\"");
   c.input_password("Server password", "password", "", "empty = no change",
@@ -1414,10 +1420,12 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
   std::string error;
   std::string server, user, password, port, topic_prefix;
   std::string updatetime_connected, updatetime_idle;
+  bool tls;
 
   if (c.method == "POST") {
     // process form submission:
     server = c.getvar("server");
+    tls = (c.getvar("tls") == "yes");
     user = c.getvar("user");
     password = c.getvar("password");
     port = c.getvar("port");
@@ -1446,6 +1454,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     if (error == "") {
       // success:
       MyConfig.SetParamValue("server.v3", "server", server);
+      MyConfig.SetParamValueBool("server.v3", "tls", tls);
       MyConfig.SetParamValue("server.v3", "user", user);
       if (password != "")
         MyConfig.SetParamValue("password", "server.v3", password);
@@ -1469,6 +1478,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
   else {
     // read configuration:
     server = MyConfig.GetParamValue("server.v3", "server");
+    tls = MyConfig.GetParamValueBool("server.v3", "tls", false);
     user = MyConfig.GetParamValue("server.v3", "user");
     password = MyConfig.GetParamValue("password", "server.v3");
     port = MyConfig.GetParamValue("server.v3", "port");
@@ -1489,7 +1499,9 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
       "<li><code>io.adafruit.com</code> <a href=\"https://accounts.adafruit.com/users/sign_in\" target=\"_blank\">Registration</a></li>"
       "<li><a href=\"https://github.com/mqtt/mqtt.github.io/wiki/public_brokers\" target=\"_blank\">More public MQTT brokers</a></li>"
     "</ul>");
-  c.input_text("Port", "port", port.c_str(), "optional, default: 1883");
+  c.input_checkbox("Enable TLS", "tls", tls,
+    "<p>Note: enable transport layer security (encryption) if your server supports it.</p>");
+  c.input_text("Port", "port", port.c_str(), "optional, default: 1883 (no TLS) / 8883 (TLS)");
   c.input_text("Username", "user", user.c_str(), "Enter user login name",
     NULL, "autocomplete=\"section-serverv3 username\"");
   c.input_password("Password", "password", "", "Enter user password, empty = no change",

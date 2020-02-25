@@ -1,14 +1,13 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          5th July 2018
+;    Date:          14th March 2017
 ;
 ;    Changes:
 ;    1.0  Initial release
 ;
 ;    (C) 2011       Michael Stegen / Stegen Electronics
-;    (C) 2011-2018  Mark Webb-Johnson
-;    (C) 2011       Sonny Chen @ EPRO/DX
-;    (C) 2020       Chris van der Meijden
+;    (C) 2011-2017  Mark Webb-Johnson
+;    (C) 2011        Sonny Chen @ EPRO/DX
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -29,24 +28,53 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __VEHICLE_VWEUP_H__
-#define __VEHICLE_VWEUP_H__
+#ifndef __OVMS_TLS_H__
+#define __OVMS_TLS_H__
 
-#include "vehicle.h"
+#include <string>
+#include <map>
 
-using namespace std;
-
-class OvmsVehicleVWeUP : public OvmsVehicle
+class OvmsTrustedCert
   {
   public:
-    OvmsVehicleVWeUP();
-    ~OvmsVehicleVWeUP();
+    OvmsTrustedCert(char* pem, bool needfree=false);
+    ~OvmsTrustedCert();
 
   public:
-    void IncomingFrameCan3(CAN_frame_t* p_frame);
+    char* GetPEM();
+    bool IsInternal();
 
-  protected:
-    virtual void Ticker1(uint32_t ticker);
+  private:
+    char* m_pem;
+    bool m_needfree;
   };
 
-#endif //#ifndef __VEHICLE_VWEUP_H__
+typedef std::map<std::string, OvmsTrustedCert*> TrustedCert_t;
+
+class OvmsTLS
+  {
+  public:
+    OvmsTLS();
+    ~OvmsTLS();
+
+  public:
+    char* GetTrustedList();
+    int Count();
+    void Clear();
+    void Reload();
+
+  protected:
+    void BuildTrustedRaw();
+    void ClearTrustedRaw();
+    void UpdatedConfig(std::string event, void* data);
+
+  public:
+    TrustedCert_t m_trustlist;
+
+  protected:
+    char* m_trustedcache;
+  };
+
+extern OvmsTLS MyOvmsTLS;
+
+#endif //#ifndef __OVMS_TLS_H__
