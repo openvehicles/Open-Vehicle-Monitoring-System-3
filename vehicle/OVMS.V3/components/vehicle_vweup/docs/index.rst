@@ -12,10 +12,12 @@ This vehicle type supports the VW e-UP, Skoda Citigo E IV and the Seat MII elect
 Development notes
 -----------------
 
+The code is highly experimental. Most MsgIDs used are not confirmed yet.
+
 When our pull request to the OVMS master repository is commited, these notes will be deleted.
 
 To compile this code you will need to check out this repository, check out the components 
-mongoose, libzip and zlib from  the OVMS master repostory and copy the file
+mongoose, libzip and zlib from the OVMS master repostory and copy the file
 
 sdkconfig.default.hw31.vweup
 
