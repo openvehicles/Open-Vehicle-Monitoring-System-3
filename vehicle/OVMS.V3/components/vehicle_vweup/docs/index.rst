@@ -123,5 +123,6 @@ logged OBD2-codes    value             comments
 22 16 17             HV-system current
 ==================== ================= ===============
 
-**KCAN+obd_ .asc: remote heating test from ECU 75 (767/7D1)**
+**KCAN+obd_Klima_remote.asc: remote heating test from ECU 75 (767/7D1)**
+
 remote heating started at 200s, stopped at 230s, started again 250-280s
