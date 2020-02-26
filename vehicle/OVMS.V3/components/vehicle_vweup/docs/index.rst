@@ -110,8 +110,8 @@ the .asc files in this directory contain logs of all messages on the Comfort CAN
 filename             logged OBD2-codes value           comments 
 ==================== ================= =============== ========
 KCAN+obd_Testfahrt3  22 F4 5B          state of charge
-                     22 14 7D
-                     22 14 84
+.                    22 14 7D
+.                    22 14 84
                      22 14 7E
                      22 14 7F
                      22 14 9A
