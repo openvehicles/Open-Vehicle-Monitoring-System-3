@@ -35,11 +35,11 @@ Hardware                    Any OVMS v3 (or later) module. Vehicle support: 2020
 Vehicle Cable               Comfort CAN T26A (OCU connector cable, located under front passenger seat) to DB9 Data Cable for OVMS using pin 6 and 8 for can3
 GSM Antenna                 T4AC - R205 with fakra_sma adapter cable or 1000500 Open Vehicles OVMS GSM Antenna (or any compatible antenna)
 GPS Antenna                 T4AC - R50 with fakra_sma adapter cable or 1020200 Universal GPS Antenna (or any compatible antenna)
-SOC Display                 Implemented but untested
+SOC Display                 Yes (untested)
 Range Display               tba
 Cabin Pre-heat/cool Control tba
 GPS Location                tba
-Speed Display               Implemented but untested
+Speed Display               Yes (untested)
 Temperature Display         tba
 BMS v+t Display             tba
 TPMS Display                tba
@@ -48,7 +48,7 @@ Charge Interruption Alerts  tba
 Charge Control              tba
 Lock/Unlock Vehicle         tba
 Valet Mode Control          tba
-Others                      VIN and 12 volt battery status implemented but untested
+Others                      Odometer, VIN and 12 volt battery status implemented but untested
 =========================== ==============
 
 ----------------------------------------
@@ -94,9 +94,10 @@ d0 d1...: data
 ID	Conversion	     Unit    Function		     Comment
 ======= ==================== ======= ======================= =======
 61A	d7/2.55 ???	     % 	     State of Charge	     (SoC)
-320	d4*1.34	             km/h    Speed		     (KMH)
+320	(d4<<8+d3-1)/190     km/h    Speed		     (KMH)
 65F	3 Msg d5-7,d1-7,d1-7 String  VIN number		     (VIN)
 571	5+(.05*d0)	     Volt    12 Volt battery voltage (12V)
+65D	d3&f<<12|d2<<8|d1    km      Odometer		     (KM)
 ======= ==================== ======= ======================= =======
 
 All MsgID's are still unconfirmed. Code is experimental.

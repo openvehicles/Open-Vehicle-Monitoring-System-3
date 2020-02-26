@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          25th February 2020
+;    Date:          26th February 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -41,13 +41,17 @@
 ;
 ;    0.1.2  Added VIN, speed, 12 volt battery detection
 ;
+;    0.1.3  Added ODO, fixed speed
+;
 ;    (C) 2020       Chris van der Meijden
+;
+;    Big thanx to sharkcow and Dimitrie78.
 */
 
 #include "ovms_log.h"
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.1.2"
+#define VERSION "0.1.3"
 
 #include <stdio.h>
 #include "vehicle_vweup.h"
@@ -72,8 +76,8 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
     
   switch (p_frame->MsgID) {
 
-    case 0x61A: // SOC (calculation needs still to be corrected)
-      StandardMetrics.ms_v_bat_soc->SetValue(d[8]/2.55);
+    case 0x61A: // SOC - Calculation needs still to be corrected. 61A uncertain too. Could also be 5AC d[3].
+      StandardMetrics.ms_v_bat_soc->SetValue(d[7]/2.55);
       break;
 
     case 0x65F: // VIN
@@ -108,15 +112,14 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       }
       break;
 
+    case 0x65D: // ODO
+      StandardMetrics.ms_v_pos_odometer->SetValue( ((uint32_t)(d[3] & 0xf) << 12) | ((UINT)d[2] << 8) | d[1] );
+      break;
+
     case 0x320: // Speed
       StandardMetrics.ms_v_env_awake->SetValue(true);
 
-      // Unsure about speed calculation. How precice do we need to be?
-      // uint16_t car_speed16;
-      // car_speed16 = ((d[4] << 8)+d[5]-1)/200;      
-      // StandardMetrics.ms_v_pos_speed->SetValue(car_speed16);
-
-      StandardMetrics.ms_v_pos_speed->SetValue(d[4]*1.34);
+      StandardMetrics.ms_v_pos_speed->SetValue(((d[4] << 8) + d[3]-1)/190);
       break;
 
     case 0x571: // 12 Volt
