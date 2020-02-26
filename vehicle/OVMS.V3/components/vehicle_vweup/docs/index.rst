@@ -106,17 +106,19 @@ List of vehicle log files
 -------------------------
 the .asc files in this directory contain logs of all messages on the Comfort CAN while periodically issuing requests for certain known parameters at the OBD2-port.
 
-==================== ================= =============== ========
-filename             logged OBD2-codes value           comments 
-==================== ================= =============== ========
-KCAN+obd_Testfahrt3  22 F4 5B          state of charge
-.                    22 14 7D
-.                    22 14 84
-                     22 14 7E
-                     22 14 7F
-                     22 14 9A
-                     22 F4 49
-                     22 F4 0D
-                     22 14 85
-                     22 16 17
-==================== ================= =============== ========
+KCAN+obd_Testfahrt3.asc: short trip with motor data from ECU 01 (7E0)
+
+==================== ================= ===============
+logged OBD2-codes    value             comments 
+==================== ================= ===============
+22 F4 5B             state of charge
+22 14 7D             motor current
+22 14 84             motor voltage
+22 14 7E             motor power
+22 14 7F             motor torque
+22 14 9A             motor rpm
+22 F4 49             acc. pedal
+22 F4 0D             speed
+22 14 85             battery power
+22 16 17             HV-system current
+==================== ================= ===============
