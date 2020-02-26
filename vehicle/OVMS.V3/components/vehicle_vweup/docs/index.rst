@@ -106,7 +106,7 @@ List of vehicle log files
 -------------------------
 the .asc files in this directory contain logs of all messages on the Comfort CAN while periodically issuing requests for certain known parameters at the OBD2-port.
 
-KCAN+obd_Testfahrt3.asc: short trip with motor data from ECU 01 (7E0)
+**KCAN+obd_Testfahrt3.asc: short trip with motor data from ECU 01 (7E0/7E8)**
 
 ==================== ================= ===============
 logged OBD2-codes    value             comments 
@@ -122,3 +122,6 @@ logged OBD2-codes    value             comments
 22 14 85             battery power
 22 16 17             HV-system current
 ==================== ================= ===============
+
+**KCAN+obd_ .asc: remote heating test from ECU 75 (767/7D1)**
+remote heating started at 200s, stopped at 230s, started again 250-280s
