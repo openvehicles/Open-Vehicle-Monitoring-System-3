@@ -7,7 +7,6 @@ Vehicle Type: **VWUP**
 
 This vehicle type supports the VW e-UP, Skoda Citigo E IV and the Seat MII electric.
 
-
 -----------------
 Development notes
 -----------------
@@ -24,7 +23,6 @@ sdkconfig.default.hw31.vweup
 from the OVMS.V3/support folder to the OVMS.V3 folder and rename it to
 
 sdkconfig
-
 
 ----------------
 Support Overview
@@ -52,7 +50,6 @@ Lock/Unlock Vehicle         tba
 Valet Mode Control          tba
 Others                      VIN and 12 volt battery status implemented but untested
 =========================== ==============
-
 
 ----------------------------------------
 Pinout OCU T26A - OVMS DB9 adapter cable
@@ -103,3 +100,23 @@ ID	Conversion	     Unit    Function		     Comment
 ======= ==================== ======= ======================= =======
 
 All MsgID's are still unconfirmed. Code is experimental.
+
+-------------------------
+List of vehicle log files
+-------------------------
+the .asc files in this directory contain logs of all messages on the Comfort CAN while periodically issuing requests for certain known parameters at the OBD2-port.
+
+==================== ================= =============== ========
+filename             logged OBD2-codes value           comments 
+==================== ================= =============== ========
+KCAN+obd_Testfahrt3  22 F4 5B          state of charge
+                     22 14 7D
+                     22 14 84
+                     22 14 7E
+                     22 14 7F
+                     22 14 9A
+                     22 F4 49
+                     22 F4 0D
+                     22 14 85
+                     22 16 17
+==================== ================= =============== ========
