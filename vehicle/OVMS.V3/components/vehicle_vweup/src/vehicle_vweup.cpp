@@ -110,7 +110,12 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
 
     case 0x320: // Speed
       StandardMetrics.ms_v_env_awake->SetValue(true);
-      
+
+      // Unsure about speed calculation. How precice do we need to be?
+      // uint16_t car_speed16;
+      // car_speed16 = ((d[4] << 8)+d[5]-1)/200;      
+      // StandardMetrics.ms_v_pos_speed->SetValue(car_speed16);
+
       StandardMetrics.ms_v_pos_speed->SetValue(d[4]*1.34);
       break;
 
