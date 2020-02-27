@@ -98,6 +98,7 @@ ID	Conversion	     Unit    Function		     Comment
 65F	3 Msg d5-7,d1-7,d1-7 String  VIN number		     (VIN)
 571	5+(.05*d0)	     Volt    12 Volt battery voltage (12V)
 65D	d3&f<<12|d2<<8|d1    km      Odometer		     (KM)
+527	(d4/2)-50	     °C      Outdoor temperature     (OUT)
 ======= ==================== ======= ======================= =======
 
 All MsgID's are still unconfirmed. Code is experimental.
