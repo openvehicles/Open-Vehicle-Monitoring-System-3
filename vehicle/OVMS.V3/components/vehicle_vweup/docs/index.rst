@@ -125,9 +125,9 @@ logged OBD2-codes    value             comments
 22 16 17             HV-system current
 ==================== ================= ===============
 
-**KCAN+obd_charge90-100_part?.asc: charging from about 90% to 100%**
+**(https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN%2Bobd_charge90-100.asc "KCAN+obd_charge90-100.asc: charging from about 90% to 100%")**
 
-due to github filesize limits, the file was split into parts using dd. It is advised to combine the files although they may also be used individually (with probably one corrupted message at the divisions).
+car is charged from about 90% until it stops chargging, two different SoC codes are logged:
 
 ==================== =========================== ===============
 logged OBD2-codes    value                       comments 
