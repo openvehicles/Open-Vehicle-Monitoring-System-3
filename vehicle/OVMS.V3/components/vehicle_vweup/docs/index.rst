@@ -104,11 +104,12 @@ ID	Conversion	     Unit    Function		     Comment
 All MsgID's are still unconfirmed. Code is experimental.
 
 -------------------------
-List of vehicle log files
+Links to vehicle log files
 -------------------------
-the .asc files in this directory contain logs of all messages on the Comfort CAN while periodically issuing requests for certain known parameters at the OBD2-port.
+the .asc files behind these links contain logs of all messages on the Comfort CAN while periodically issuing requests for certain known parameters at the OBD2-port.
 
 **KCAN+obd_Testfahrt3.asc: short trip with motor data from ECU 01 (7E0/7E8):**
+
 **https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN%2Bobd_Testfahrt3.asc**
 
 ==================== ================= ===============
@@ -140,17 +141,20 @@ logged OBD2-codes    value                       comments
 ==================== =========================== ===============
 
 **KCAN+obd_Klima_remote.asc: remote heating test via OBD from ECU 75 (767/7D1):**
+
 **https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN%2Bobd_Klima_remote.asc**
 
 remote heating started via OBD at 200s, stopped at 230s, started again 250-280s
 
 **KCAN_Klima_remote_app_2x.asc: remote heating test via online app (no OBD):**
+
 **https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_Klima_remote_app_2x.asc**
 
 car was fully asleep (no messages on KCAN), remote heating turned on via app, then turned off again until car was fully asleep, then repeated the process
 
 **KCAN+obd_Testfahrt_Akku1.asc: short trip with battery data from ECU 8C (7E5/7D):**
-****
+
+**https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN%2Bobd_Testfahrt_Akku1.asc**
 
 ==================== ============================ ===============
 logged OBD2-codes    value                        comments 
