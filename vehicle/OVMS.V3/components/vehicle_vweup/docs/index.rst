@@ -108,7 +108,8 @@ List of vehicle log files
 -------------------------
 the .asc files in this directory contain logs of all messages on the Comfort CAN while periodically issuing requests for certain known parameters at the OBD2-port.
 
-**KCAN+obd_Testfahrt3.asc: short trip with motor data from ECU 01 (7E0/7E8)**
+**KCAN+obd_Testfahrt3.asc: short trip with motor data from ECU 01 (7E0/7E8):**
+**https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN%2Bobd_Testfahrt3.asc**
 
 ==================== ================= ===============
 logged OBD2-codes    value             comments 
@@ -125,9 +126,9 @@ logged OBD2-codes    value             comments
 22 16 17             HV-system current
 ==================== ================= ===============
 
-**KCAN+obd_charge90-100.asc: charging from about 90% to 100%:
+**KCAN+obd_charge90-100.asc: charging from about 90% to 100%:**
 
-https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN%2Bobd_charge90-100.asc**
+**https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN%2Bobd_charge90-100.asc**
 
 car is charged from about 90% until it stops chargging, two different SoC codes are logged:
 
@@ -138,15 +139,18 @@ logged OBD2-codes    value                       comments
 7E5 03 22 02 8C      state of charge from ECU 8C
 ==================== =========================== ===============
 
-**KCAN+obd_Klima_remote.asc: remote heating test via OBD from ECU 75 (767/7D1)**
+**KCAN+obd_Klima_remote.asc: remote heating test via OBD from ECU 75 (767/7D1):**
+**https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN%2Bobd_Klima_remote.asc**
 
 remote heating started via OBD at 200s, stopped at 230s, started again 250-280s
 
-**KCAN_Klima_remote_app_2x.asc: remote heating test via online app (no OBD)**
+**KCAN_Klima_remote_app_2x.asc: remote heating test via online app (no OBD):**
+**https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_Klima_remote_app_2x.asc**
 
 car was fully asleep (no messages on KCAN), remote heating turned on via app, then turned off again until car was fully asleep, then repeated the process
 
-**KCAN+obd_Testfahrt_Akku1.asc: short trip with battery data from ECU 8C (7E5/7D)**
+**KCAN+obd_Testfahrt_Akku1.asc: short trip with battery data from ECU 8C (7E5/7D):**
+****
 
 ==================== ============================ ===============
 logged OBD2-codes    value                        comments 
@@ -160,4 +164,4 @@ logged OBD2-codes    value                        comments
 22 18 8D             battery power loss
 22 02 8C             state of charge              gross?
 ==================== ============================ ===============
-:-/
+
