@@ -158,4 +158,4 @@ logged OBD2-codes    value                        comments
 22 18 8D             battery power loss
 22 02 8C             state of charge              gross?
 ==================== ============================ ===============
-
+:-/
