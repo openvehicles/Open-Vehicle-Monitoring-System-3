@@ -123,12 +123,9 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_climate_fan_only = MyMetrics.InitBool("xnl.cc.fan.only", SM_STALE_MIN, false);
   m_climate_remoteheat = MyMetrics.InitBool("xnl.cc.remoteheat", SM_STALE_MIN, false);
   m_climate_remotecool = MyMetrics.InitBool("xnl.cc.remotecool", SM_STALE_MIN, false);
-  m_climate_dev_new_cooling = MyMetrics.InitBool("xnl.cc.dev.new.cooling", SM_STALE_MIN, false);
-  m_climate_dev_new_heat_01 = MyMetrics.InitBool("xnl.cc.dev.new.heat01", SM_STALE_MIN, false);
   m_climate_dev_new_heat_only = MyMetrics.InitBool("xnl.cc.dev.new.heatonly", SM_STALE_MIN, false);
   m_climate_dev_new_heat_auto = MyMetrics.InitBool("xnl.cc.dev.new.heatauto", SM_STALE_MIN, false);
   m_climate_dev_new_hvac_off = MyMetrics.InitBool("xnl.cc.dev.new.hvacoff", SM_STALE_MIN, false);
-  m_climate_dev_ptc_heating = MyMetrics.InitBool("xnl.cc.dev.ptc.heating", SM_STALE_MIN, false);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -669,14 +666,14 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         m_climate_vent->SetValue("feet");
         break;
       case 0xA0:
-        m_climate_vent->SetValue("screen|feet");
+        m_climate_vent->SetValue("windscreen|feet");
         break;
       case 0xA8:
-        m_climate_vent->SetValue("screen");
+        m_climate_vent->SetValue("windscreen");
         break;
       
       default:
-        m_climate_vent->SetValue("unknown");
+        m_climate_vent->SetValue("");
         break;
       }
 
@@ -693,36 +690,30 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         break;
       
       default:
-        m_climate_intake->SetValue("unknown");
+        m_climate_intake->SetValue("");
         break;
       }
-
-      // The following values work only when car is on, so we need to use fan value to indicate hvac on as described below
-      bool climate_on = false;
-      climate_on = (d[0] == 0x10);
 
       // The following values work only when preheat is activated while connected to charger.
       m_climate_remoteheat->SetValue(d[1] == 0x4b);
       m_climate_remotecool->SetValue(d[1] == 0x71);
 
       // additional values passed only to xnl metrics. Still in beta state
-      m_climate_dev_new_cooling->SetValue(d[1] & 0x10);
-      m_climate_dev_ptc_heating->SetValue(d[1] & 0x02);
-
-      m_climate_dev_new_heat_01->SetValue(d[1] & 0x01);
-      m_climate_dev_new_heat_only->SetValue(d[1] & 0x49);
-      m_climate_dev_new_heat_auto->SetValue(d[1] & 0x49);
-      m_climate_dev_new_hvac_off->SetValue(d[1] & 0x08);
+      
+      m_climate_dev_new_heat_only->SetValue(d[1] == 0x49);
+      m_climate_dev_new_heat_auto->SetValue(d[1] == 0x49);
+      m_climate_dev_new_hvac_off->SetValue(d[1] == 0x08);
 
       // end of beta values
 
-      // Set more accurate climate control values for hvac, heating, cooling for 2013-2015 model year cars.
-      // leaving this legacy code part until someone tests the new logic in <2013 and >2015 cars.
-      
       bool hvac_calculated = false;
 
-      if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) > 2013 && MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) < 2015)
+      int model_year = MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR);
+
+      if (model_year < 2013)
       {
+        // leaving this legacy (mostly) code part until someone tests the new logic in <2013 cars.
+
         // this might be a bit field? So far these 6 values indicate HVAC on
         hvac_calculated =
           d[1] == 0x0a || // Gen 1 Remote
@@ -742,10 +733,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       }
 
       else
+      // More accurate climate control values for hvac, heating, cooling for 2013+ model year cars.
       {
-        
-        hvac_calculated = (climate_on && fanspeed_float != 0);
-        StandardMetrics.ms_v_env_hvac->SetValue(hvac_calculated);
 
         bool cooling = false;
         cooling = 
@@ -753,10 +742,13 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           d[1] == 0x79 || /* cool + heat */
           d[1] == 0x76;   /* cool + auto */
 
-        bool heating_calculated = false;
-        heating_calculated = (hvac_calculated && not fan_only && not cooling);
-        StandardMetrics.ms_v_env_heating->SetValue(heating_calculated);
+        bool heating = (d[1] & 0x01);
+        // The following values work only when car is on, so we need to use fan value to indicate hvac on as described below
+        bool climate_on = (d[0] == 0x10);
 
+        hvac_calculated = (climate_on && m_climate_fan_speed != 0);
+
+        StandardMetrics.ms_v_env_heating->SetValue(heating);
         StandardMetrics.ms_v_env_cooling->SetValue(cooling);
         
       }
@@ -768,11 +760,10 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x54a:
     {
-      // setpoint gets reset on hvac off, so we only update it while it's running
-      if (StandardMetrics.ms_v_env_hvac) 
+      // setpoint gets reset on heatin or cooling off, so we only update it while they are running
+      if (StandardMetrics.ms_v_env_heating || StandardMetrics.ms_v_env_cooling)
       {
-        float setpoint_float;
-        setpoint_float = d[4] / 2;
+        float setpoint_float = d[4] / 2;
         m_climate_setpoint->SetValue(setpoint_float);
       }
     }
