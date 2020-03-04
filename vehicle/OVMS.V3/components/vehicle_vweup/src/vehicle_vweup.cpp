@@ -47,7 +47,7 @@
 ;
 ;    0.1.5  Finalized SOC calculation (sharkcow), added estimated range
 ;
-:    0.1.6  Created a climate control template, removed 12 volt battery status
+;    0.1.6  Created a climate control first try, removed 12 volt battery status
 ;
 ;    (C) 2020       Chris van der Meijden
 ;
@@ -82,7 +82,7 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
 
   switch (p_frame->MsgID) {
 
-    case 0x61A: // SOC
+    case 0x61A: // SOC. Is this different for > 2019 models? 
       StandardMetrics.ms_v_bat_soc->SetValue(d[7]/2);
       StandardMetrics.ms_v_bat_range_ideal->SetValue((260 * (d[7]/2)) / 100.0); // This is dirty. Based on WLTP only. Should be based on SOH.
       break;
@@ -157,40 +157,55 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
   {
   unsigned char data[4];
   uint8_t length;
-  length = 4; // Uncertain if length is 4.
+  length = 8;
 
   canbus *comfBus;
   comfBus = m_can3;
 
   switch (command)
     {
-    // data values are placehoulders. We don't know them yet.
+    // data values are very beta. Untested.
     case ENABLE_CLIMATE_CONTROL:
       ESP_LOGI(TAG, "Enable Climate Control");
-      data[0] = 0x00;
-      data[1] = 0x00;
-      data[2] = 0x00;
-      data[3] = 0x00;
+      // 0x767 05 2F 09 B5 03 FF 55 55 climate on?
+      data[0] = 0x05;
+      data[1] = 0x2F;
+      data[2] = 0x09;
+      data[3] = 0xB5;
+      data[4] = 0x03;
+      data[5] = 0xFF;
+      data[6] = 0x55;
+      data[7] = 0x55;
       break;
     case DISABLE_CLIMATE_CONTROL:
       ESP_LOGI(TAG, "Disable Climate Control");
-      data[0] = 0x00;
-      data[1] = 0x00;
-      data[2] = 0x00;
-      data[3] = 0x00;
+      // 0x767 04 2F 09 B5 00 55 55 55 climate off?
+      data[0] = 0x04;
+      data[1] = 0x2F;
+      data[2] = 0x09;
+      data[3] = 0xB5;
+      data[4] = 0x00;
+      data[5] = 0x55;
+      data[6] = 0x55;
+      data[7] = 0x55;
       break;
     case AUTO_DISABLE_CLIMATE_CONTROL:
       ESP_LOGI(TAG, "Auto Disable Climate Control");
-      data[0] = 0x00;
-      data[1] = 0x00;
-      data[2] = 0x00;
-      data[3] = 0x00;
+      // 0x767 04 2F 09 B5 00 55 55 55 climate off?
+      data[0] = 0x04;
+      data[1] = 0x2F;
+      data[2] = 0x09;
+      data[3] = 0xB5;
+      data[4] = 0x00;
+      data[5] = 0x55;
+      data[6] = 0x55;
+      data[7] = 0x55;
       break;
     default:
       return;
     }
-    // Placehoulder. We don't understand how to write on the Comfort CAN yet
-    comfBus->WriteStandard(0x000, length, data);
+    // Does this work?
+    comfBus->WriteStandard(0x767, length, data);
   }
 
 ////////////////////////////////////////////////////////////////////////
