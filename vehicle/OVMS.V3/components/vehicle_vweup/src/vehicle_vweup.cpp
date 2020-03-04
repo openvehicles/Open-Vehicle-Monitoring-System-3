@@ -47,6 +47,8 @@
 ;
 ;    0.1.5  Finalized SOC calculation (sharkcow), added estimated range
 ;
+:    0.1.6  Created a climate control template, removed 12 volt battery status
+;
 ;    (C) 2020       Chris van der Meijden
 ;
 ;    Big thanx to sharkcow and Dimitrie78.
@@ -55,7 +57,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.1.5"
+#define VERSION "0.1.6"
 
 #include <stdio.h>
 #include "vehicle_vweup.h"
@@ -130,11 +132,6 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_pos_speed->SetValue(((d[4] << 8) + d[3]-1)/190);
       break;
 
-//  Not needed. ms_v_bat_12v_voltage is by default provided by the housekeeping from the OVMS ADC (supply voltage)
-//  case 0x571: // 12 Volt
-//    StandardMetrics.ms_v_bat_12v_voltage->SetValue(5 + (0.05 * d[0]));
-//    break;
-
     case 0x527: // Outdoor temperature - untested. Wrong ID? If right, d[4] or d[5]?
       StandardMetrics.ms_v_env_temp->SetValue((d[4]/2)-50);
       break;
@@ -144,6 +141,126 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       break;
     }
   }
+
+////////////////////////////////////////////////////////////////////////
+// Send a RemoteCommand on the CAN bus.
+//
+// Does nothing if @command is out of range
+
+
+// Begin of remote climate control template
+//
+// This is just a template and does nothing!
+// We are missing the CAN ID's yet to make it work
+
+void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
+  {
+  unsigned char data[4];
+  uint8_t length;
+  length = 4; // Uncertain if length is 4.
+
+  canbus *comfBus;
+  comfBus = m_can3;
+
+  switch (command)
+    {
+    // data values are placehoulders. We don't know them yet.
+    case ENABLE_CLIMATE_CONTROL:
+      ESP_LOGI(TAG, "Enable Climate Control");
+      data[0] = 0x00;
+      data[1] = 0x00;
+      data[2] = 0x00;
+      data[3] = 0x00;
+      break;
+    case DISABLE_CLIMATE_CONTROL:
+      ESP_LOGI(TAG, "Disable Climate Control");
+      data[0] = 0x00;
+      data[1] = 0x00;
+      data[2] = 0x00;
+      data[3] = 0x00;
+      break;
+    case AUTO_DISABLE_CLIMATE_CONTROL:
+      ESP_LOGI(TAG, "Auto Disable Climate Control");
+      data[0] = 0x00;
+      data[1] = 0x00;
+      data[2] = 0x00;
+      data[3] = 0x00;
+      break;
+    default:
+      return;
+    }
+    // Placehoulder. We don't understand how to write on the Comfort CAN yet
+    comfBus->WriteStandard(0x000, length, data);
+  }
+
+////////////////////////////////////////////////////////////////////////
+// implements the repeated sending of remote commands and releases
+// EV SYSTEM ACTIVATION REQUEST after an appropriate amount of time
+
+void OvmsVehicleVWeUP::RemoteCommandTimer()
+  {
+  ESP_LOGI(TAG, "RemoteCommandTimer %d", nl_remote_command_ticker);
+  if (nl_remote_command_ticker > 0)
+    {
+    nl_remote_command_ticker--;
+    if (nl_remote_command != AUTO_DISABLE_CLIMATE_CONTROL)
+      {
+      SendCommand(nl_remote_command);
+      }
+    if (nl_remote_command_ticker == 1 && nl_remote_command == ENABLE_CLIMATE_CONTROL)
+      {
+      xTimerStart(m_ccDisableTimer, 0);
+      }
+
+    // nl_remote_command_ticker is set to REMOTE_COMMAND_REPEAT_COUNT in
+    // RemoteCommandHandler() and we decrement it every 10th of a
+    // second, hence the following if statement evaluates to true
+    // ACTIVATION_REQUEST_TIME tenths after we start
+    }
+    else
+    {
+      xTimerStop(m_remoteCommandTimer, 0);
+    }
+  }
+
+void OvmsVehicleVWeUP::CcDisableTimer()
+  {
+  ESP_LOGI(TAG, "CcDisableTimer");
+  SendCommand(AUTO_DISABLE_CLIMATE_CONTROL);
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::RemoteCommandHandler(RemoteCommand command)
+  {
+  ESP_LOGI(TAG, "RemoteCommandHandler");
+
+  nl_remote_command = command;
+  nl_remote_command_ticker = REMOTE_COMMAND_REPEAT_COUNT;
+  xTimerStart(m_remoteCommandTimer, 0);
+
+  return Success;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::CommandHomelink(int button, int durationms)
+  {
+  ESP_LOGI(TAG, "CommandHomelink");
+  if (button == 0)
+    {
+    return RemoteCommandHandler(ENABLE_CLIMATE_CONTROL);
+    }
+  if (button == 1)
+    {
+    return RemoteCommandHandler(DISABLE_CLIMATE_CONTROL);
+    }
+  return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::CommandClimateControl(bool climatecontrolon)
+  {
+  ESP_LOGI(TAG, "CommandClimateControl");
+  return RemoteCommandHandler(climatecontrolon ? ENABLE_CLIMATE_CONTROL : DISABLE_CLIMATE_CONTROL);
+  }
+
+// End of remote climate contol template
 
 void OvmsVehicleVWeUP::Ticker1(uint32_t ticker)
   {
