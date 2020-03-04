@@ -155,7 +155,7 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
 
 void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
   {
-  unsigned char data[4];
+  unsigned char data[8];
   uint8_t length;
   length = 8;
 
