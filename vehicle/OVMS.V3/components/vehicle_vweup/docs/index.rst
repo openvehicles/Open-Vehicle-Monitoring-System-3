@@ -152,7 +152,7 @@ remote heating started via OBD at 200s, stopped at 230s, started again 250-280s
 
 car was fully asleep (no messages on KCAN), remote heating turned on via app, then turned off again until car was fully asleep, then repeated the process
 
-**KCAN+obd_Testfahrt_Akku1.asc: short trip with battery data from ECU 8C (7E5/7D):**
+**KCAN+obd_Testfahrt_Akku1.asc: short trip with battery data from ECU 8C (7E5/7ED):**
 
 **https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN%2Bobd_Testfahrt_Akku1.asc**
 
@@ -166,6 +166,23 @@ logged OBD2-codes    value                        comments
 22 1E 3B             battery voltage
 22 1E 3D             battery current
 22 18 8D             battery power loss
+22 02 8C             state of charge              gross?
+==================== ============================ ===============
+
+**KCAN+obd_rundown_6-0km.asc: complete rundown to vehicle turn off with battery data from ECU 01 & 8C (7E0/7E8 & 7E5/7ED):**
+
+**https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN%2Bobd_rundown_6-0km.asc**
+
+==================== ============================ ===============
+logged OBD2-codes    value                        comments 
+==================== ============================ ===============
+22 1E 34             minimum cell voltage & index
+22 1E 33             maximum cell voltage & index
+22 1E 0F             minimum temperature & sensor
+22 1E 0E             maximum temperature & sensor
+22 1E 3B             battery voltage
+22 1E 3D             battery current
+22 F4 5B             state of charge   		  net?
 22 02 8C             state of charge              gross?
 ==================== ============================ ===============
 
