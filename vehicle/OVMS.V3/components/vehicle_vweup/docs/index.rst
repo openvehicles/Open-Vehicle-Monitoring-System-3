@@ -36,7 +36,7 @@ Vehicle Cable               Comfort CAN T26A (OCU connector cable, located under
 GSM Antenna                 T4AC - R205 with fakra_sma adapter cable or 1000500 Open Vehicles OVMS GSM Antenna (or any compatible antenna)
 GPS Antenna                 T4AC - R50 with fakra_sma adapter cable or 1020200 Universal GPS Antenna (or any compatible antenna)
 SOC Display                 Yes (untested)
-Range Display               Yes (ideal range only, untested)
+Range Display               Yes (untested)
 Cabin Pre-heat/cool Control tba
 GPS Location                Yes (from modem module GPS)
 Speed Display               Yes (untested)

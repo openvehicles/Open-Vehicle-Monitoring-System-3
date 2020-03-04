@@ -78,9 +78,13 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
 
   switch (p_frame->MsgID) {
 
-    case 0x61A: // SOC - Calculation needs to be corrected. 0x52D is also a candidate.
+    case 0x61A: // SOC
       StandardMetrics.ms_v_bat_soc->SetValue(d[7]/2);
-      StandardMetrics.ms_v_bat_range_ideal->SetValue((260 * (d[7]/2)) / 100.0); // This is dirty. Based on WLTP only.
+      StandardMetrics.ms_v_bat_range_ideal->SetValue((260 * (d[7]/2)) / 100.0); // This is dirty. Based on WLTP only. Should be based on SOH.
+      break;
+
+    case 0x52D: // KM range left (estimated).
+      StandardMetrics.ms_v_bat_range_est->SetValue(d[0]);
       break;
 
     case 0x65F: // VIN
