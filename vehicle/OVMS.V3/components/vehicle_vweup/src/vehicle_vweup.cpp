@@ -79,8 +79,8 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
   switch (p_frame->MsgID) {
 
     case 0x61A: // SOC - Calculation needs to be corrected. 0x52D is also a candidate.
-      StandardMetrics.ms_v_bat_soc->SetValue(d[7]/2.55);
-      StandardMetrics.ms_v_bat_range_ideal->SetValue((260 * (d[7]/2.55)) / 100.0); // This is dirty. Based on WLTP only. Division by 2.55 is wrong too.
+      StandardMetrics.ms_v_bat_soc->SetValue(d[7]/2);
+      StandardMetrics.ms_v_bat_range_ideal->SetValue((260 * (d[7]/2)) / 100.0); // This is dirty. Based on WLTP only.
       break;
 
     case 0x65F: // VIN
@@ -127,7 +127,7 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
 //  Not needed. ms_v_bat_12v_voltage is by default provided by the housekeeping from the OVMS ADC (supply voltage)
 //  case 0x571: // 12 Volt
 //    StandardMetrics.ms_v_bat_12v_voltage->SetValue(5 + (0.05 * d[0]));
-//    break; 
+//    break;
 
     case 0x527: // Outdoor temperature - untested. Wrong ID? If right, d[4] or d[5]?
       StandardMetrics.ms_v_env_temp->SetValue((d[4]/2)-50);
@@ -159,5 +159,3 @@ OvmsVehicleVWeUPInit::OvmsVehicleVWeUPInit()
 
   MyVehicleFactory.RegisterVehicle<OvmsVehicleVWeUP>("VWUP","VW e-Up");
   }
-
-
