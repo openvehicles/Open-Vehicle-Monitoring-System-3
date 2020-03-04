@@ -48,7 +48,7 @@ Charge Interruption Alerts  tba
 Charge Control              tba
 Lock/Unlock Vehicle         tba
 Valet Mode Control          tba
-Others                      Odometer, VIN and 12 volt battery status implemented but untested
+Others                      Odometer and VIN implemented but untested
 =========================== ==============
 
 ----------------------------------------
