@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          27th February 2020
+;    Date:          4th March 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -41,9 +41,11 @@
 ;
 ;    0.1.2  Added VIN, speed, 12 volt battery detection
 ;
-;    0.1.3  Added ODO, fixed speed
+;    0.1.3  Added ODO (Dimitrie78), fixed speed
 ;
 ;    0.1.4  Added WLTP based ideal range, uncertain outdoor temperature
+;
+;    0.1.5  Finalized SOC calculation (sharkcow), added estimated range
 ;
 ;    (C) 2020       Chris van der Meijden
 ;
@@ -53,7 +55,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.1.4"
+#define VERSION "0.1.5"
 
 #include <stdio.h>
 #include "vehicle_vweup.h"
