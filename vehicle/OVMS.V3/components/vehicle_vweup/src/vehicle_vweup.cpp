@@ -167,13 +167,13 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
     // data values are very beta. Untested.
     case ENABLE_CLIMATE_CONTROL:
       ESP_LOGI(TAG, "Enable Climate Control");
-      // 0x767 05 2F 09 B5 03 FF 55 55 climate on?
-      data[0] = 0x05;
+      // 0x767 04 2F 09 B5 02 55 55 55 climate on?
+      data[0] = 0x04;
       data[1] = 0x2F;
       data[2] = 0x09;
       data[3] = 0xB5;
-      data[4] = 0x03;
-      data[5] = 0xFF;
+      data[4] = 0x02;
+      data[5] = 0x55;
       data[6] = 0x55;
       data[7] = 0x55;
       break;
