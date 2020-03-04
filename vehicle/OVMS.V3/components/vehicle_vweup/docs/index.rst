@@ -99,6 +99,7 @@ ID	Conversion	     Unit    Function		     	     Comment
 571	5+(.05*d0)	     Volt    12 Volt battery voltage 	     (12V)
 65D	d3&f<<12|d2<<8|d1    km      Odometer		     	     (KM)
 527	(d4/2)-50	     °C      Outdoor temperature     	     (OUT)
+52D	d0		     km	     Calculated range		     
 ======= ==================== ======= =============================== =======
 
 All MsgID's are still unconfirmed. Code is experimental.
