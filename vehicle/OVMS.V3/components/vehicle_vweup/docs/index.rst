@@ -132,7 +132,7 @@ logged OBD2-codes    value             comments
 
 **https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN%2Bobd_charge90-100.asc**
 
-car is charged from about 90% until it stops chargging, two different SoC codes are logged:
+car is charged from about 90% until it stops charging, two different SoC codes are logged:
 
 ==================== =========================== ===============
 logged OBD2-codes    value                       comments 
@@ -152,6 +152,18 @@ remote heating started via OBD at 200s, stopped at 230s, started again 250-280s
 **https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_Klima_remote_app_2x.asc**
 
 car was fully asleep (no messages on KCAN), remote heating turned on via app, then turned off again until car was fully asleep, then repeated the process
+
+**KCAN_remote_Klima_app_22_20C.asc (no OBD):**
+
+**https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_remote_Klima_app_22_20C.asc**
+
+remote heating activated for two different temperatures (22°C and 20°C, previous logs were all at 21°C)
+
+**KCAN_remote_Klima_manuell_test3.asc:**
+
+**https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_remote_Klima_manuell_test3.asc**
+
+unsuccessfull desperate attempt at getting heater to turn on with wild combinations of signals on 43D, 3E1 and 5E8... :(
 
 **KCAN+obd_Testfahrt_Akku1.asc: short trip with battery data from ECU 8C (7E5/7ED):**
 
