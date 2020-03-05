@@ -14,6 +14,23 @@ DELETE  /api/cookie
 
 Delete the session cookie and logout.
 
+------------------
+GET     /api/token
+------------------
+
+Return a list of registered API tokens.
+------------------
+POST    /api/token
+------------------
+
+Create an API token.
+
+--------------------------
+DELETE  /api/token/<TOKEN>
+--------------------------
+
+Delete the specified API token.
+
 ---------------------
 GET     /api/vehicles
 ---------------------
