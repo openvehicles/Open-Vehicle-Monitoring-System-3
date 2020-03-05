@@ -36,7 +36,7 @@ Vehicle Cable               Comfort CAN T26A (OCU connector cable, located under
 GSM Antenna                 T4AC - R205 with fakra_sma adapter cable or 1000500 Open Vehicles OVMS GSM Antenna (or any compatible antenna)
 GPS Antenna                 T4AC - R50 with fakra_sma adapter cable or 1020200 Universal GPS Antenna (or any compatible antenna)
 SOC Display                 Yes (untested)
-Range Display               Yes (ideal range only, untested)
+Range Display               Yes (untested)
 Cabin Pre-heat/cool Control tba
 GPS Location                Yes (from modem module GPS)
 Speed Display               Yes (untested)
@@ -98,6 +98,7 @@ ID	Conversion	     Unit    Function		     	     Comment
 65F	3 Msg d5-7,d1-7,d1-7 String  VIN number		     	     (VIN)
 571	5+(.05*d0)	     Volt    12 Volt battery voltage 	     (12V)
 65D	d3&f<<12|d2<<8|d1    km      Odometer		     	     (KM)
+3E3	(d2-100)/2           °C      Cabin temperature      	     (IN)
 527	(d4/2)-50	     °C      Outdoor temperature     	     (OUT)
 52D	d0		     km	     Calculated range		     
 ======= ==================== ======= =============================== =======

@@ -34,7 +34,16 @@
 
 #include "vehicle.h"
 
+#define REMOTE_COMMAND_REPEAT_COUNT 24 // number of times to send the remote command after the first time
+
 using namespace std;
+
+typedef enum
+  {
+  ENABLE_CLIMATE_CONTROL,
+  DISABLE_CLIMATE_CONTROL,
+  AUTO_DISABLE_CLIMATE_CONTROL
+  } RemoteCommand;
 
 class OvmsVehicleVWeUP : public OvmsVehicle
   {
@@ -47,7 +56,24 @@ class OvmsVehicleVWeUP : public OvmsVehicle
 
   protected:
     virtual void Ticker1(uint32_t ticker);
-    char m_vin[16];
+    char m_vin[17];
+
+  public:
+    vehicle_command_t CommandHomelink(int button, int durationms=1000);
+    vehicle_command_t CommandClimateControl(bool enable);
+    void RemoteCommandTimer();
+    void CcDisableTimer();
+
+  private:
+    void SendCommand(RemoteCommand);
+    OvmsVehicle::vehicle_command_t RemoteCommandHandler(RemoteCommand command);
+
+    RemoteCommand nl_remote_command; // command to send, see RemoteCommandTimer()
+    uint8_t nl_remote_command_ticker; // number remaining remote command frames to send
+
+    TimerHandle_t m_remoteCommandTimer;
+    TimerHandle_t m_ccDisableTimer;
+
   };
 
 #endif //#ifndef __VEHICLE_VWEUP_H__

@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          27th February 2020
+;    Date:          4th March 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -41,9 +41,13 @@
 ;
 ;    0.1.2  Added VIN, speed, 12 volt battery detection
 ;
-;    0.1.3  Added ODO, fixed speed
+;    0.1.3  Added ODO (Dimitrie78), fixed speed
 ;
 ;    0.1.4  Added WLTP based ideal range, uncertain outdoor temperature
+;
+;    0.1.5  Finalized SOC calculation (sharkcow), added estimated range
+;
+;    0.1.6  Created a climate control first try, removed 12 volt battery status
 ;
 ;    (C) 2020       Chris van der Meijden
 ;
@@ -53,7 +57,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.1.4"
+#define VERSION "0.1.6"
 
 #include <stdio.h>
 #include "vehicle_vweup.h"
@@ -78,9 +82,13 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
 
   switch (p_frame->MsgID) {
 
-    case 0x61A: // SOC - Calculation needs to be corrected. 0x52D is also a candidate.
+    case 0x61A: // SOC. Is this different for > 2019 models? 
       StandardMetrics.ms_v_bat_soc->SetValue(d[7]/2);
-      StandardMetrics.ms_v_bat_range_ideal->SetValue((260 * (d[7]/2)) / 100.0); // This is dirty. Based on WLTP only.
+      StandardMetrics.ms_v_bat_range_ideal->SetValue((260 * (d[7]/2)) / 100.0); // This is dirty. Based on WLTP only. Should be based on SOH.
+      break;
+
+    case 0x52D: // KM range left (estimated).
+      StandardMetrics.ms_v_bat_range_est->SetValue(d[0]);
       break;
 
     case 0x65F: // VIN
@@ -124,13 +132,12 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_pos_speed->SetValue(((d[4] << 8) + d[3]-1)/190);
       break;
 
-//  Not needed. ms_v_bat_12v_voltage is by default provided by the housekeeping from the OVMS ADC (supply voltage)
-//  case 0x571: // 12 Volt
-//    StandardMetrics.ms_v_bat_12v_voltage->SetValue(5 + (0.05 * d[0]));
-//    break;
-
     case 0x527: // Outdoor temperature - untested. Wrong ID? If right, d[4] or d[5]?
       StandardMetrics.ms_v_env_temp->SetValue((d[4]/2)-50);
+      break;
+
+    case 0x3E3: // Cabin temperature
+      StandardMetrics.ms_v_env_cabintemp->SetValue((d[2]-100)/2);
       break;
 
     default:
@@ -138,6 +145,141 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       break;
     }
   }
+
+////////////////////////////////////////////////////////////////////////
+// Send a RemoteCommand on the CAN bus.
+//
+// Does nothing if @command is out of range
+
+
+// Begin of remote climate control template
+//
+// This is just a template and does nothing!
+// We are missing the CAN ID's yet to make it work
+
+void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
+  {
+  unsigned char data[8];
+  uint8_t length;
+  length = 8;
+
+  canbus *comfBus;
+  comfBus = m_can3;
+
+  switch (command)
+    {
+    // data values are very beta. Untested.
+    case ENABLE_CLIMATE_CONTROL:
+      ESP_LOGI(TAG, "Enable Climate Control");
+      // 0x767 04 2F 09 B5 02 55 55 55 climate on?
+      data[0] = 0x04;
+      data[1] = 0x2F;
+      data[2] = 0x09;
+      data[3] = 0xB5;
+      data[4] = 0x02;
+      data[5] = 0x55;
+      data[6] = 0x55;
+      data[7] = 0x55;
+      break;
+    case DISABLE_CLIMATE_CONTROL:
+      ESP_LOGI(TAG, "Disable Climate Control");
+      // 0x767 04 2F 09 B5 00 55 55 55 climate off?
+      data[0] = 0x04;
+      data[1] = 0x2F;
+      data[2] = 0x09;
+      data[3] = 0xB5;
+      data[4] = 0x00;
+      data[5] = 0x55;
+      data[6] = 0x55;
+      data[7] = 0x55;
+      break;
+    case AUTO_DISABLE_CLIMATE_CONTROL:
+      ESP_LOGI(TAG, "Auto Disable Climate Control");
+      // 0x767 04 2F 09 B5 00 55 55 55 climate off?
+      data[0] = 0x04;
+      data[1] = 0x2F;
+      data[2] = 0x09;
+      data[3] = 0xB5;
+      data[4] = 0x00;
+      data[5] = 0x55;
+      data[6] = 0x55;
+      data[7] = 0x55;
+      break;
+    default:
+      return;
+    }
+    // Does this work?
+    comfBus->WriteStandard(0x767, length, data);
+  }
+
+////////////////////////////////////////////////////////////////////////
+// implements the repeated sending of remote commands and releases
+// EV SYSTEM ACTIVATION REQUEST after an appropriate amount of time
+
+void OvmsVehicleVWeUP::RemoteCommandTimer()
+  {
+  ESP_LOGI(TAG, "RemoteCommandTimer %d", nl_remote_command_ticker);
+  if (nl_remote_command_ticker > 0)
+    {
+    nl_remote_command_ticker--;
+    if (nl_remote_command != AUTO_DISABLE_CLIMATE_CONTROL)
+      {
+      SendCommand(nl_remote_command);
+      }
+    if (nl_remote_command_ticker == 1 && nl_remote_command == ENABLE_CLIMATE_CONTROL)
+      {
+      xTimerStart(m_ccDisableTimer, 0);
+      }
+
+    // nl_remote_command_ticker is set to REMOTE_COMMAND_REPEAT_COUNT in
+    // RemoteCommandHandler() and we decrement it every 10th of a
+    // second, hence the following if statement evaluates to true
+    // ACTIVATION_REQUEST_TIME tenths after we start
+    }
+    else
+    {
+      xTimerStop(m_remoteCommandTimer, 0);
+    }
+  }
+
+void OvmsVehicleVWeUP::CcDisableTimer()
+  {
+  ESP_LOGI(TAG, "CcDisableTimer");
+  SendCommand(AUTO_DISABLE_CLIMATE_CONTROL);
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::RemoteCommandHandler(RemoteCommand command)
+  {
+  ESP_LOGI(TAG, "RemoteCommandHandler");
+
+  nl_remote_command = command;
+  nl_remote_command_ticker = REMOTE_COMMAND_REPEAT_COUNT;
+  xTimerStart(m_remoteCommandTimer, 0);
+
+  return Success;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::CommandHomelink(int button, int durationms)
+  {
+  ESP_LOGI(TAG, "CommandHomelink");
+  if (button == 0)
+    {
+    return RemoteCommandHandler(ENABLE_CLIMATE_CONTROL);
+    }
+  if (button == 1)
+    {
+    return RemoteCommandHandler(DISABLE_CLIMATE_CONTROL);
+    }
+  return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::CommandClimateControl(bool climatecontrolon)
+  {
+  ESP_LOGI(TAG, "CommandClimateControl");
+  return RemoteCommandHandler(climatecontrolon ? ENABLE_CLIMATE_CONTROL : DISABLE_CLIMATE_CONTROL);
+  }
+
+// End of remote climate contol template
 
 void OvmsVehicleVWeUP::Ticker1(uint32_t ticker)
   {
