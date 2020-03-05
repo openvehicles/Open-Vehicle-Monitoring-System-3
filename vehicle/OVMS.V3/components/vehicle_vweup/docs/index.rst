@@ -101,6 +101,7 @@ ID	Conversion	     Unit    Function		     	     Comment
 3E3	(d2-100)/2           °C      Cabin temperature      	     (IN)
 527	(d4/2)-50	     °C      Outdoor temperature     	     (OUT)
 52D	d0		     km	     Calculated range		     
+470	d1 00,01,02	     Integer Status doors		     
 ======= ==================== ======= =============================== =======
 
 All MsgID's are still unconfirmed. Code is experimental.

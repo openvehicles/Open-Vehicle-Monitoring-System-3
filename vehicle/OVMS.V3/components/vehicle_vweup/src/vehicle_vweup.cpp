@@ -49,6 +49,8 @@
 ;
 ;    0.1.6  Created a climate control first try, removed 12 volt battery status
 ;
+;    0.1.7  Added status of doors
+;
 ;    (C) 2020       Chris van der Meijden
 ;
 ;    Big thanx to sharkcow and Dimitrie78.
@@ -57,7 +59,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.1.6"
+#define VERSION "0.1.7"
 
 #include <stdio.h>
 #include "vehicle_vweup.h"
