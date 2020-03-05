@@ -136,6 +136,10 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_env_temp->SetValue((d[4]/2)-50);
       break;
 
+    case 0x3E3: // Cabin temperature
+      StandardMetrics.ms_v_env_cabintemp->SetValue((d[2]-100)/2);
+      break;
+
     default:
       //ESP_LOGD(TAG, "IFC %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       break;
