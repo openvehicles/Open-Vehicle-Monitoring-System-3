@@ -88,7 +88,8 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       break;
 
     case 0x52D: // KM range left (estimated).
-      StandardMetrics.ms_v_bat_range_est->SetValue(d[0]);
+      if( d[0] != 0xFE )
+        StandardMetrics.ms_v_bat_range_est->SetValue(d[0]);
       break;
 
     case 0x65F: // VIN
@@ -138,6 +139,11 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
 
     case 0x3E3: // Cabin temperature
       StandardMetrics.ms_v_env_cabintemp->SetValue((d[2]-100)/2);
+      break;
+
+    case 0x470: // Doors
+      StandardMetrics.ms_v_door_fl->SetValue((d[1] & 0x01) > 0);
+      StandardMetrics.ms_v_door_fr->SetValue((d[1] & 0x02) > 0);
       break;
 
     default:
