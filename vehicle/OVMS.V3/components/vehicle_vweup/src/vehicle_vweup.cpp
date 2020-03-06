@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          4th March 2020
+;    Date:          6th March 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -140,7 +140,15 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       break;
 
     case 0x3E3: // Cabin temperature
-      StandardMetrics.ms_v_env_cabintemp->SetValue((d[2]-100)/2);
+      // We should use:
+      //
+      // StandardMetrics.ms_v_env_cabintemp->SetValue((d[2]-100)/2);
+      //
+      // which is not implemented in the app.
+      //
+      // So instead we use as a quick workaround the PEM temperature:
+      //
+      StandardMetrics.ms_v_inv_temp->SetValue((d[2]-100)/2);
       break;
 
     case 0x470: // Doors
