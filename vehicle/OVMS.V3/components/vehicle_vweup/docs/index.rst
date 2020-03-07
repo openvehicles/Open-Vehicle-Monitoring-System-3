@@ -115,6 +115,7 @@ the .asc files behind these links contain logs of all messages on the Comfort CA
 
 **https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN%2Bobd_Testfahrt3.asc**
 
+ECU 01 (7E0/7E8)
 ==================== ================= ===============
 logged OBD2-codes    value             comments 
 ==================== ================= ===============
@@ -201,4 +202,6 @@ logged OBD2-codes    value                        comments
 22 02 8C             state of charge              gross?
 ==================== ============================ ===============
 
+**https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_nur_KommSG_remote_Klima_App.asc**:
 
+Communication attempt of ECU for remote services without connection to vehicle
