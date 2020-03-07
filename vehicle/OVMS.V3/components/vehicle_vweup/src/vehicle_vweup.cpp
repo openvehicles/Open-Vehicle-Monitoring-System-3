@@ -51,6 +51,9 @@
 ;
 ;    0.1.7  Added status of doors
 ;
+;    0.1.8  Added config page for the webfrontend. Features canwrite and modelyear.
+;           Differentiation between model years is now possible.
+;
 ;    (C) 2020       Chris van der Meijden
 ;
 ;    Big thanx to sharkcow and Dimitrie78.
@@ -64,6 +67,10 @@ static const char *TAG = "v-vweup";
 #include <stdio.h>
 #include "vehicle_vweup.h"
 #include "metrics_standard.h"
+#include "ovms_webserver.h"
+#include "ovms_events.h"
+#include "ovms_metrics.h"
+
 
 OvmsVehicleVWeUP::OvmsVehicleVWeUP()
   {
@@ -71,12 +78,60 @@ OvmsVehicleVWeUP::OvmsVehicleVWeUP()
   memset (m_vin,0,sizeof(m_vin));
 
   RegisterCanBus(3,CAN_MODE_ACTIVE,CAN_SPEED_100KBPS);
+
+  MyConfig.RegisterParam("xnl", "VW e-Up", true, true);
+  ConfigChanged(NULL);
+
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+  WebInit();
+#endif
   }
 
 OvmsVehicleVWeUP::~OvmsVehicleVWeUP()
   {
   ESP_LOGI(TAG, "Stop VW e-Up vehicle module");
+
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+  WebDeInit();
+#endif
   }
+
+bool OvmsVehicleVWeUP::SetFeature(int key, const char *value)
+{
+  switch (key)
+  {
+    case 15:
+    {
+      int bits = atoi(value);
+      MyConfig.SetParamValueBool("xnl", "canwrite",  (bits& 1)!=0);
+      return true;
+    }
+    default:
+      return OvmsVehicle::SetFeature(key, value);
+  }
+}
+
+const std::string OvmsVehicleVWeUP::GetFeature(int key)
+{
+  switch (key)
+  {
+    case 15:
+    {
+      int bits =
+        ( MyConfig.GetParamValueBool("xnl", "canwrite",  false) ?  1 : 0);
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }
+    default:
+      return OvmsVehicle::GetFeature(key);
+  }
+}
+
+void OvmsVehicleVWeUP::ConfigChanged(OvmsConfigParam* param)
+{
+  ESP_LOGD(TAG, "Nissan Leaf reload configuration");
+}
 
 void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
   {
@@ -86,9 +141,12 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
 
     case 0x61A: // SOC. Is this different for > 2019 models? 
       StandardMetrics.ms_v_bat_soc->SetValue(d[7]/2);
-      // We need to find a way to differenciate 2013+ models from 2020+ models
-      // WTLP for 2013+ is 160, for 2020+ 260
-      StandardMetrics.ms_v_bat_range_ideal->SetValue((260 * (d[7]/2)) / 100.0); // This is dirty. Based on WLTP only. Should be based on SOH.
+      if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) >= 2020)
+        {
+          StandardMetrics.ms_v_bat_range_ideal->SetValue((260 * (d[7]/2)) / 100.0); // This is dirty. Based on WLTP only. Should be based on SOH.
+        } else {
+          StandardMetrics.ms_v_bat_range_ideal->SetValue((160 * (d[7]/2)) / 100.0); // This is dirty. Based on WLTP only. Should be based on SOH.
+        }
       break;
 
     case 0x52D: // KM range left (estimated).

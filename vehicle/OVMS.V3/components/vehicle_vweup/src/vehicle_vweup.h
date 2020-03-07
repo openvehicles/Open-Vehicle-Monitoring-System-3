@@ -33,8 +33,10 @@
 #define __VEHICLE_VWEUP_H__
 
 #include "vehicle.h"
+#include "ovms_webserver.h"
 
 #define REMOTE_COMMAND_REPEAT_COUNT 24 // number of times to send the remote command after the first time
+#define DEFAULT_MODEL_YEAR 2020
 
 using namespace std;
 
@@ -50,6 +52,11 @@ class OvmsVehicleVWeUP : public OvmsVehicle
   public:
     OvmsVehicleVWeUP();
     ~OvmsVehicleVWeUP();
+
+  public:
+    void ConfigChanged(OvmsConfigParam* param);
+    bool SetFeature(int key, const char* value);
+    const std::string GetFeature(int key);
 
   public:
     void IncomingFrameCan3(CAN_frame_t* p_frame);
@@ -73,6 +80,12 @@ class OvmsVehicleVWeUP : public OvmsVehicle
 
     TimerHandle_t m_remoteCommandTimer;
     TimerHandle_t m_ccDisableTimer;
+
+  public:
+    void WebInit();
+    void WebDeInit();
+    static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
+    static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
 
   };
 
