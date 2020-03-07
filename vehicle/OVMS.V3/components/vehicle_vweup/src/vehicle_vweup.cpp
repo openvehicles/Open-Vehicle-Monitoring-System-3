@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          6th March 2020
+;    Date:          7th March 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -86,6 +86,8 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
 
     case 0x61A: // SOC. Is this different for > 2019 models? 
       StandardMetrics.ms_v_bat_soc->SetValue(d[7]/2);
+      // We need to find a way to differenciate 2013+ models from 2020+ models
+      // WTLP for 2013+ is 160, for 2020+ 260
       StandardMetrics.ms_v_bat_range_ideal->SetValue((260 * (d[7]/2)) / 100.0); // This is dirty. Based on WLTP only. Should be based on SOH.
       break;
 
@@ -175,7 +177,9 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
 
 void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
   {
+  // OVMS crashes on signal 26 when not connected to the CAN bus. Needs to be resolved.
   unsigned char data[8];
+
   uint8_t length;
   length = 8;
 
@@ -184,7 +188,7 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
 
   switch (command)
     {
-    // data values are very beta. Untested.
+    // data values are wrong. We need to find the right ID's.
     case ENABLE_CLIMATE_CONTROL:
       ESP_LOGI(TAG, "Enable Climate Control");
       // 0x767 04 2F 09 B5 02 55 55 55 climate on?
