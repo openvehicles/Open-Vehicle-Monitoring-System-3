@@ -62,7 +62,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.1.7"
+#define VERSION "0.1.8"
 
 #include <stdio.h>
 #include "vehicle_vweup.h"
