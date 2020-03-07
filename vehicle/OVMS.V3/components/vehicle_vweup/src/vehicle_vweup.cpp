@@ -130,7 +130,7 @@ const std::string OvmsVehicleVWeUP::GetFeature(int key)
 
 void OvmsVehicleVWeUP::ConfigChanged(OvmsConfigParam* param)
 {
-  ESP_LOGD(TAG, "Nissan Leaf reload configuration");
+  ESP_LOGD(TAG, "VW e-Up reload configuration");
 }
 
 void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
