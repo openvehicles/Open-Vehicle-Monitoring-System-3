@@ -5,6 +5,7 @@ Open Vehicle Monitor System v3 - Change log
 - #333 Support for SSL/TLS Trusted Certificate Authorities
 - #334 Support for SSL/TLS MQTT connections in Server v3
 - #335 Support for SSL/TLS MQTT connections in Server v2
+- #343 TPMS message has no -1 setting for "disable" in ovms_server_v2.cpp
 
 2020-02-03 MWJ  3.2.010 OTA release
 - EGPIO: address multiple ports by input & output command

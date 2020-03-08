@@ -1150,6 +1150,20 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
     StandardMetrics.ms_v_tpms_rl_p->IsStale() ||
     StandardMetrics.ms_v_tpms_rr_p->IsStale();
 
+  bool defined =
+    StandardMetrics.ms_v_tpms_fl_p->IsDefined() ||
+    StandardMetrics.ms_v_tpms_fr_p->IsDefined() ||
+    StandardMetrics.ms_v_tpms_rl_p->IsDefined() ||
+    StandardMetrics.ms_v_tpms_rr_p->IsDefined();
+
+  int defstale;
+  if (!defined)
+    { defstale = -1; }
+  else if (stale)
+    { defstale = 0; }
+  else
+    { defstale = 1; }
+
   extram::ostringstream buffer;
   buffer
     << "MP-0 W"
@@ -1168,7 +1182,7 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
     << StandardMetrics.ms_v_tpms_rl_p->AsString("0",PSI)
     << ","
     << StandardMetrics.ms_v_tpms_rl_t->AsString("0")
-    << ((stale)?",0":",1")
+    << defstale
     ;
 
   Transmit(buffer.str().c_str());
