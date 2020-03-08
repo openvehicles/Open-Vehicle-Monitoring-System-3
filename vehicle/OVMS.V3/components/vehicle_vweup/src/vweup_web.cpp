@@ -113,9 +113,9 @@ void OvmsVehicleVWeUP::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
   c.fieldset_start("Remote Control");
   c.input_checkbox("Enable CAN writes", "canwrite", canwrite,
-    "<p>Controls overall CAN write access, some functions depend on this.</p>");
+    "<p>Controls overall CAN write access, climate control depends on this.</p>");
   c.input("number", "Model year", "modelyear", modelyear.c_str(), "Default: " STR(DEFAULT_MODEL_YEAR),
-    "<p>This determines the format of CAN write messages as it differs slightly between model years.</p>",
+    "<p>This determines the amount of kWh for the battery as it differs for pre 2020 models.</p>",
     "min=\"2013\" step=\"1\"", "");
   c.fieldset_end();
 

@@ -63,7 +63,7 @@ class OvmsVehicleVWeUP : public OvmsVehicle
 
   protected:
     virtual void Ticker1(uint32_t ticker);
-    char m_vin[17];
+    char m_vin[18];
 
   public:
     vehicle_command_t CommandHomelink(int button, int durationms=1000);

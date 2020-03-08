@@ -181,6 +181,7 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
             m_vin[14] = d[5];
             m_vin[15] = d[6];
             m_vin[16] = d[7];
+            m_vin[17] = 0;
             StandardMetrics.ms_v_vin->SetValue(m_vin);
             break;
       }
