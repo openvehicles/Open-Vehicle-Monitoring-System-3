@@ -703,6 +703,7 @@ void OvmsVehicleSmartED::BmsDiag(int verbosity, OvmsWriter* writer) {
   
   writer->puts("-------------------------------------------");
   writer->puts("---- ED Battery Management Diagnostics ----");
+  writer->puts("----         OVMS Version 1.0          ----");
   writer->puts("-------------------------------------------");
   
   writer->printf("Battery VIN: %s\n", (char*) mt_myBMS_BattVIN->AsString().c_str());
@@ -828,6 +829,7 @@ void OvmsVehicleSmartED::printRPTdata(int verbosity, OvmsWriter* writer) {
   
   writer->puts("-----------------------------------------");
   writer->puts("---       Battery Status Report       ---");
+  writer->puts("---         OVMS Version 1.0          ---");
   writer->puts("-----------------------------------------");
   
   writer->printf("Battery VIN: %s\n", (char*) mt_myBMS_BattVIN->AsString().c_str());
