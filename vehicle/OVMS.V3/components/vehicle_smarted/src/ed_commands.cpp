@@ -446,9 +446,15 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandStat(int verbosity, Ov
   if (*odometer != '-')
     writer->printf("ODO: %s\n", odometer);
 
-  const char* cac = StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str();
-  if (*cac != '-')
-    writer->printf("CAC: %s\n", cac);
+  const char* days = mt_v_bat_LastMeas_days->AsUnitString("-", Native, 0).c_str();
+  if (*days != '-') {
+    writer->printf("Last measurement      : %d day(s)\n", mt_v_bat_LastMeas_days->AsInt());
+    writer->printf("Measurement estimation: %.3f\n", mt_v_bat_Cap_meas_quality->AsFloat());
+    writer->printf("Actual estimation     : %.3f\n", mt_v_bat_Cap_combined_quality->AsFloat());
+    writer->printf("CAP mean: %5.0f As/10, %2.1f Ah\n", mt_v_bat_Cap_As_avg->AsFloat(), mt_v_bat_Cap_As_avg->AsFloat()/360.0);
+    writer->printf("CAP min : %5.0f As/10, %2.1f Ah\n", mt_v_bat_Cap_As_min->AsFloat(), mt_v_bat_Cap_As_min->AsFloat()/360.0);
+    writer->printf("CAP max : %5.0f As/10, %2.1f Ah\n", mt_v_bat_Cap_As_max->AsFloat(), mt_v_bat_Cap_As_max->AsFloat()/360.0);
+  }
 
   const char* soh = StdMetrics.ms_v_bat_soh->AsUnitString("-", Native, 1).c_str();
   if (*soh != '-')

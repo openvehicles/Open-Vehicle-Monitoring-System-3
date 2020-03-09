@@ -421,6 +421,17 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
         StandardMetrics.ms_v_bat_soc->SetValue((float) (d[7]/2.0));
       }
       StandardMetrics.ms_v_charge_climit->SetValue(d[1]/2.0);
+      switch(d[2]) {
+        case 0x20: // D-
+          StandardMetrics.ms_v_env_drivemode->SetValue(0);
+          break;
+        case 0x40: // D
+          StandardMetrics.ms_v_env_drivemode->SetValue(1);
+          break;
+        case 0x60: // D+
+          StandardMetrics.ms_v_env_drivemode->SetValue(2);
+          break;
+      }
       break;
     }
     case 0x2D5: //realSOC
@@ -437,7 +448,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
       } else {
         mt_real_soc->SetValue(rsoc, Percentage);
       }
-      StandardMetrics.ms_v_bat_cac->SetValue((DEFAULT_BATTERY_AMPHOURS * rsoc) / 100, AmpHours);
+      // StandardMetrics.ms_v_bat_cac->SetValue((DEFAULT_BATTERY_AMPHOURS * rsoc) / 100, AmpHours);
       break;
     }
     case 0x508: //HV ampere and charging yes/no
