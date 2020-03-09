@@ -179,6 +179,11 @@ logged OBD2-codes    value                        comments
 22 02 8C             state of charge              gross?
 ==================== ============================ ===============
 
+*https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_Schnellladen_Fahrt.asc:*
+
+Quick charge followed by a quick trip :)
+Useful to distinguish battery temperature from SoC as temperature keeps increasing (slightly) during the trip.
+
 **Remote Air Conditioning**
 
 *https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN%2Bobd_Klima_remote.asc:*
