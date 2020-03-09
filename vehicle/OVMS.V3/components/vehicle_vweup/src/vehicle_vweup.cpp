@@ -55,6 +55,7 @@
 ;           Differentiation between model years is now possible.
 ;
 ;    0.1.9  "Fixed" crash on climate control. Added A/C indicator.
+;           First shot on battery temperatur.
 ;
 ;    (C) 2020       Chris van der Meijden
 ;
@@ -215,6 +216,10 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
 
     case 0x527: // Outdoor temperature - untested. Wrong ID? If right, d[4] or d[5]?
       StandardMetrics.ms_v_env_temp->SetValue((d[4]/2)-50);
+      break;
+
+    case 0x6B4: // Battery temperature - this is a complete shot in the dark and untested.
+      StandardMetrics.ms_v_bat_temp->SetValue((d[5]-35)/4);
       break;
 
     case 0x3E3: // Cabin temperature

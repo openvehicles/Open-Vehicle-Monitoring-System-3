@@ -103,6 +103,7 @@ ID	Conversion	     Unit    Function		     	     Comment
 52D	d0		     km	     Calculated range		     
 470	d1 00,01,02	     Integer Status doors		     
 3E1	d4 > 0		     Integer Status remote climate control   
+6B4	(d5-35)/4	     °C      Battery temperature ???	     (BAT)
 ======= ==================== ======= =============================== =======
 
 All MsgID's are still unconfirmed. Code is experimental.
