@@ -40,7 +40,7 @@ Range Display               Yes
 Cabin Pre-heat/cool Control tba
 GPS Location                Yes (from modem module GPS)
 Speed Display               Yes (untested)
-Temperature Display         Yes (outdoor, cabin)
+Temperature Display         Yes (outdoor, cabin, battery ???)
 BMS v+t Display             tba
 TPMS Display                No
 Charge Status Display       tba
