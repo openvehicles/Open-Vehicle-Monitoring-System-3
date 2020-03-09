@@ -65,12 +65,24 @@ static const char *TAG = "v-vweup";
 #define VERSION "0.1.8"
 
 #include <stdio.h>
+#include "pcp.h"
 #include "vehicle_vweup.h"
 #include "metrics_standard.h"
 #include "ovms_webserver.h"
 #include "ovms_events.h"
 #include "ovms_metrics.h"
 
+void v_remoteCommandTimer(TimerHandle_t timer)
+  {
+  OvmsVehicleVWeUP* vwup = (OvmsVehicleVWeUP*) pvTimerGetTimerID(timer);
+  vwup->RemoteCommandTimer();
+  }
+
+void v_ccDisableTimer(TimerHandle_t timer)
+  {
+  OvmsVehicleVWeUP* vwup = (OvmsVehicleVWeUP*) pvTimerGetTimerID(timer);
+  vwup->CcDisableTimer();
+  }
 
 OvmsVehicleVWeUP::OvmsVehicleVWeUP()
   {
@@ -85,6 +97,9 @@ OvmsVehicleVWeUP::OvmsVehicleVWeUP()
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
 #endif
+
+  m_remoteCommandTimer = xTimerCreate("VW e-Up Remote Command", 100 / portTICK_PERIOD_MS, pdTRUE, this, v_remoteCommandTimer);
+  m_ccDisableTimer = xTimerCreate("VW e-Up  CC Disable", 1000 / portTICK_PERIOD_MS, pdFALSE, this, v_ccDisableTimer);
   }
 
 OvmsVehicleVWeUP::~OvmsVehicleVWeUP()
@@ -217,6 +232,16 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_door_fr->SetValue((d[1] & 0x02) > 0);
       break;
 
+    // Check for running hvac.
+    case 0x3E1:
+    {
+      bool hvac_on = false;
+      if (d[4] > 0) {
+        hvac_on = true;
+      }
+      StandardMetrics.ms_v_env_hvac->SetValue(hvac_on);
+    }
+
     default:
       //ESP_LOGD(TAG, "IFC %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       break;
@@ -236,7 +261,6 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
 
 void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
   {
-  // OVMS crashes on signal 26 when not connected to the CAN bus. Needs to be resolved.
   unsigned char data[8];
 
   uint8_t length;
@@ -287,8 +311,11 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
     default:
       return;
     }
-    // Does this work?
-    comfBus->WriteStandard(0x767, length, data);
+    // This crashes OVMS if not connected to the CAN bus!
+    // We need to find a way to check if we really are connected to the CAN bus.
+    // Till then, we disable this
+    //
+    // comfBus->WriteStandard(0x767, length, data);
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -297,23 +324,26 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
 
 void OvmsVehicleVWeUP::RemoteCommandTimer()
   {
-  ESP_LOGI(TAG, "RemoteCommandTimer %d", nl_remote_command_ticker);
-  if (nl_remote_command_ticker > 0)
+  ESP_LOGI(TAG, "RemoteCommandTimer %d", vwup_remote_command_ticker);
+  if (vwup_remote_command_ticker > 0)
     {
-    nl_remote_command_ticker--;
-    if (nl_remote_command != AUTO_DISABLE_CLIMATE_CONTROL)
+    vwup_remote_command_ticker--;
+    if (vwup_remote_command != AUTO_DISABLE_CLIMATE_CONTROL)
       {
-      SendCommand(nl_remote_command);
+      SendCommand(vwup_remote_command);
       }
-    if (nl_remote_command_ticker == 1 && nl_remote_command == ENABLE_CLIMATE_CONTROL)
+    if (vwup_remote_command_ticker == 1 && vwup_remote_command == ENABLE_CLIMATE_CONTROL)
       {
       xTimerStart(m_ccDisableTimer, 0);
       }
 
-    // nl_remote_command_ticker is set to REMOTE_COMMAND_REPEAT_COUNT in
+    // vwup_remote_command_ticker is set to REMOTE_COMMAND_REPEAT_COUNT in
     // RemoteCommandHandler() and we decrement it every 10th of a
     // second, hence the following if statement evaluates to true
     // ACTIVATION_REQUEST_TIME tenths after we start
+    //
+    // This mechanism is copied from the Nissan Leaf and it is completely
+    // uncertain, if this can be used for the VW e-Up this way.
     }
     else
     {
@@ -331,8 +361,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::RemoteCommandHandler(RemoteComm
   {
   ESP_LOGI(TAG, "RemoteCommandHandler");
 
-  nl_remote_command = command;
-  nl_remote_command_ticker = REMOTE_COMMAND_REPEAT_COUNT;
+  vwup_remote_command = command;
+  vwup_remote_command_ticker = REMOTE_COMMAND_REPEAT_COUNT;
   xTimerStart(m_remoteCommandTimer, 0);
 
   return Success;
@@ -341,14 +371,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::RemoteCommandHandler(RemoteComm
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::CommandHomelink(int button, int durationms)
   {
   ESP_LOGI(TAG, "CommandHomelink");
-  if (button == 0)
-    {
-    return RemoteCommandHandler(ENABLE_CLIMATE_CONTROL);
-    }
-  if (button == 1)
-    {
-    return RemoteCommandHandler(DISABLE_CLIMATE_CONTROL);
-    }
   return NotImplemented;
   }
 

@@ -32,6 +32,7 @@
 #ifndef __VEHICLE_VWEUP_H__
 #define __VEHICLE_VWEUP_H__
 
+#include "freertos/timers.h"
 #include "vehicle.h"
 #include "ovms_webserver.h"
 
@@ -75,8 +76,8 @@ class OvmsVehicleVWeUP : public OvmsVehicle
     void SendCommand(RemoteCommand);
     OvmsVehicle::vehicle_command_t RemoteCommandHandler(RemoteCommand command);
 
-    RemoteCommand nl_remote_command; // command to send, see RemoteCommandTimer()
-    uint8_t nl_remote_command_ticker; // number remaining remote command frames to send
+    RemoteCommand vwup_remote_command; // command to send, see RemoteCommandTimer()
+    uint8_t vwup_remote_command_ticker; // number remaining remote command frames to send
 
     TimerHandle_t m_remoteCommandTimer;
     TimerHandle_t m_ccDisableTimer;
