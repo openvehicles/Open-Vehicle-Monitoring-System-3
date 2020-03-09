@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          7th March 2020
+;    Date:          9th March 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -54,6 +54,8 @@
 ;    0.1.8  Added config page for the webfrontend. Features canwrite and modelyear.
 ;           Differentiation between model years is now possible.
 ;
+;    0.1.9  "Fixed" crash on climate control. Added A/C indicator.
+;
 ;    (C) 2020       Chris van der Meijden
 ;
 ;    Big thanx to sharkcow and Dimitrie78.
@@ -62,7 +64,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.1.8"
+#define VERSION "0.1.9"
 
 #include <stdio.h>
 #include "pcp.h"
