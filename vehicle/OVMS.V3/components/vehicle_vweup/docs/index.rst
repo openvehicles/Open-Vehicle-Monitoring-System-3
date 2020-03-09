@@ -42,7 +42,7 @@ GPS Location                Yes (from modem module GPS)
 Speed Display               Yes (untested)
 Temperature Display         Yes (outdoor, cabin)
 BMS v+t Display             tba
-TPMS Display                tba
+TPMS Display                No
 Charge Status Display       tba
 Charge Interruption Alerts  tba
 Charge Control              tba
