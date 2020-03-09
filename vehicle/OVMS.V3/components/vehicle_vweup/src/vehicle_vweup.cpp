@@ -234,7 +234,7 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_door_fr->SetValue((d[1] & 0x02) > 0);
       break;
 
-    // Check for running hvac.
+    // Check for running remote hvac.
     case 0x3E1:
     {
       bool hvac_on = false;
