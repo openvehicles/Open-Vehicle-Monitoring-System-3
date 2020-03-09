@@ -111,9 +111,9 @@ Links to vehicle log files
 -------------------------
 the .asc files behind these links contain logs of all messages on the Comfort CAN while periodically issuing requests for certain known parameters at the OBD2-port.
 
-**KCAN+obd_Testfahrt3.asc: short trip with motor data from ECU 01 (7E0/7E8):**
+**Motor data**
 
-**https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN%2Bobd_Testfahrt3.asc**
+*https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN%2Bobd_Testfahrt3.asc*
 
 ECU 01 (7E0/7E8)
 
