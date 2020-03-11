@@ -765,7 +765,7 @@ bool OvmsOTA::AutoFlash(bool force)
     target->label,
     info.version_server.c_str(),
     url.c_str());
-  MyNotify.NotifyStringf("info", "ota.update", "New OTA firmware %s is available for download", info.version_server.c_str());
+  MyNotify.NotifyStringf("info", "ota.update", "New OTA firmware %s is now being downloaded", info.version_server.c_str());
 
   // HTTP client request...
   OvmsHttpClient http(url);
