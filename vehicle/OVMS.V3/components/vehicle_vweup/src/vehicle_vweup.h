@@ -82,6 +82,8 @@ class OvmsVehicleVWeUP : public OvmsVehicle
     TimerHandle_t m_remoteCommandTimer;
     TimerHandle_t m_ccDisableTimer;
 
+    void vehicle_vweup_car_on(bool isOn);
+
   public:
     void WebInit();
     void WebDeInit();

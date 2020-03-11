@@ -104,6 +104,7 @@ ID	Conversion	     Unit    Function		     	     Comment
 470	d1 00,01,02	     Integer Status doors		     
 3E1	d4 > 0		     Integer Status remote climate control   
 6B4	(d5-35)/4	     °C      Battery temperature ???	     (BAT)
+575	d0 00 to 0F 	     Integer Key position		     (KEY)
 ======= ==================== ======= =============================== =======
 
 All MsgID's are still unconfirmed. Code is experimental.

@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          9th March 2020
+;    Date:          11th March 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -56,6 +56,8 @@
 ;
 ;    0.1.9  "Fixed" crash on climate control. Added A/C indicator.
 ;           First shot on battery temperatur.
+;
+;    0.2.0  Added key detection and car_on / pollingstate routine
 ;
 ;    (C) 2020       Chris van der Meijden
 ;
@@ -96,6 +98,7 @@ OvmsVehicleVWeUP::OvmsVehicleVWeUP()
 
   MyConfig.RegisterParam("xnl", "VW e-Up", true, true);
   ConfigChanged(NULL);
+  PollSetState(false);
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
@@ -210,7 +213,11 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       break;
 
     case 0x320: // Speed
-      StandardMetrics.ms_v_env_awake->SetValue(true);
+      // We need some awake message.
+      if (StandardMetrics.ms_v_env_awake->IsStale())
+      {
+        StandardMetrics.ms_v_env_awake->SetValue(false);
+      }
       StandardMetrics.ms_v_pos_speed->SetValue(((d[4] << 8) + d[3]-1)/190);
       break;
 
@@ -241,19 +248,60 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
 
     // Check for running remote hvac.
     case 0x3E1:
-    {
-      bool hvac_on = false;
-      if (d[4] > 0) {
-        hvac_on = true;
+        if (d[4] > 0) {
+          StandardMetrics.ms_v_env_hvac->SetValue(true);
+        } else {
+          StandardMetrics.ms_v_env_hvac->SetValue(false);
+        }
+      break;
+
+    case 0x575: // Key position
+      switch  (d[0]) {
+        case 0x00: // No key
+          vehicle_vweup_car_on(false);
+          break;
+        case 0x01: // Key in position 1, no ignition
+          vehicle_vweup_car_on(false);
+          break;
+        case 0x03: // Ignition is turned off
+          break;
+        case 0x05: // Ignition is turned on
+          break;
+        case 0x07: // Key in position 2, ignition on
+          vehicle_vweup_car_on(true);
+          break;
+        case 0x0F: // Key in position 3, start the engine
+          break;
       }
-      StandardMetrics.ms_v_env_hvac->SetValue(hvac_on);
-    }
+      break;
 
     default:
       //ESP_LOGD(TAG, "IFC %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       break;
     }
   }
+
+// Takes care of setting all the state appropriate when the car is on
+// or off.
+//
+void OvmsVehicleVWeUP::vehicle_vweup_car_on(bool isOn)
+  {
+  if (isOn && !StandardMetrics.ms_v_env_on->AsBool())
+    {
+    // Log once that car is being turned on
+    ESP_LOGI(TAG,"CAR IS ON");
+    StandardMetrics.ms_v_env_on->SetValue(true);
+    PollSetState(true);
+    }
+  else if (!isOn && StandardMetrics.ms_v_env_on->AsBool())
+    {
+    // Log once that car is being turned off
+    ESP_LOGI(TAG,"CAR IS OFF");
+    StandardMetrics.ms_v_env_on->SetValue(false);
+    PollSetState(false);
+    }
+  }
+
 
 ////////////////////////////////////////////////////////////////////////
 // Send a RemoteCommand on the CAN bus.
@@ -391,7 +439,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::CommandClimateControl(bool clim
 
 void OvmsVehicleVWeUP::Ticker1(uint32_t ticker)
   {
-  // Needs to be replaced with a CAN signal. This has a delay of 120 sec.
+  // This is just to be sure that we really have an asleep message. It has delay of 120 sec.
   if (StandardMetrics.ms_v_env_awake->IsStale())
     {
     StandardMetrics.ms_v_env_awake->SetValue(false);
