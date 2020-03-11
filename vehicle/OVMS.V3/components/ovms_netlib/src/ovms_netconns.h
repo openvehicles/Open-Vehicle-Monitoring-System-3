@@ -28,50 +28,60 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __OTA_H__
-#define __OTA_H__
+#ifndef __OVMS_NETCONNS_H__
+#define __OVMS_NETCONNS_H__
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "ovms_events.h"
 #include "ovms_mutex.h"
+#include "ovms_netmanager.h"
 
-struct ota_info
-  {
-  std::string version_firmware;
-  std::string version_server;
-  bool update_available;
-  std::string partition_running;
-  std::string partition_boot;
-  std::string changelog_server;
-  };
-
-class OvmsOTA
+class OvmsMongooseWrapper
   {
   public:
-    OvmsOTA();
-    ~OvmsOTA();
+    OvmsMongooseWrapper();
+    virtual ~OvmsMongooseWrapper();
 
   public:
-    static void GetStatus(ota_info& info, bool check_update=true);
+    virtual void Mongoose(struct mg_connection *nc, int ev, void *ev_data);
 
-  public:
-    void LaunchAutoFlash(bool force=false);
-    bool AutoFlash(bool force=false);
-    void Ticker600(std::string event, void* data);
-
-  public:
-    OvmsMutex m_flashing;
-    TaskHandle_t m_autotask;
-    int m_lastcheckday;
-    std::string m_lastnotifyversion;
-
-#ifdef CONFIG_OVMS_COMP_SDCARD
   protected:
-    void AutoFlashSD(std::string event, void* data);
-#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
+    OvmsMutex m_mgconn_mutex;
   };
 
-extern OvmsOTA MyOTA;
+class OvmsNetTcpClient: public OvmsMongooseWrapper
+  {
+  public:
+    OvmsNetTcpClient();
+    virtual ~OvmsNetTcpClient();
 
-#endif //#ifndef __OTA_H__
+  public:
+    virtual void Mongoose(struct mg_connection *nc, int ev, void *ev_data);
+
+  public:
+    bool Connect(std::string dest, struct mg_connect_opts opts);
+    void Disconnect();
+    size_t SendData(uint8_t *data, size_t length);
+    bool IsConnected();
+
+  public:
+    virtual void Connected();
+    virtual void ConnectionFailed();
+    virtual void ConnectionClosed();
+    virtual size_t IncomingData(void *data, size_t length);
+
+  public:
+    enum NetState
+      {
+      NetConnIdle = 0,
+      NetConnConnecting,
+      NetConnConnected,
+      NetConnDisconnected,
+      NetConnFailed
+      };
+
+  protected:
+    std::string m_dest;
+    struct mg_connection *m_mgconn;
+    NetState m_netstate;
+  };
+
+#endif //#ifndef __OVMS_NETCONNS_H__
