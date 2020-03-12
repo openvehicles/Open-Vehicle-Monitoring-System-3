@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          11th March 2020
+;    Date:          12th March 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -58,6 +58,8 @@
 ;           First shot on battery temperatur.
 ;
 ;    0.2.0  Added key detection and car_on / pollingstate routine
+;
+;    0.2.1  Removed battery temperature, corrected outdoor temperature
 ;
 ;    (C) 2020       Chris van der Meijden
 ;
@@ -230,11 +232,7 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       break;
 
     case 0x527: // Outdoor temperature - untested. Wrong ID? If right, d[4] or d[5]?
-      StandardMetrics.ms_v_env_temp->SetValue((d[4]/2)-50);
-      break;
-
-    case 0x6B4: // Battery temperature - this is a complete shot in the dark and untested.
-      StandardMetrics.ms_v_bat_temp->SetValue((d[5]-35)/4);
+      StandardMetrics.ms_v_env_temp->SetValue((d[5]/2)-50);
       break;
 
     case 0x3E3: // Cabin temperature

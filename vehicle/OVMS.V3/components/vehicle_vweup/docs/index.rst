@@ -40,7 +40,7 @@ Range Display               Yes
 Cabin Pre-heat/cool Control tba
 GPS Location                Yes (from modem module GPS)
 Speed Display               Yes (untested)
-Temperature Display         Yes (outdoor, cabin, battery ???)
+Temperature Display         Yes (outdoor, cabin)
 BMS v+t Display             tba
 TPMS Display                No
 Charge Status Display       tba
@@ -99,11 +99,10 @@ ID	Conversion	     Unit    Function		     	     Comment
 571	5+(.05*d0)	     Volt    12 Volt battery voltage 	     (12V)
 65D	d3&f<<12|d2<<8|d1    km      Odometer		     	     (KM)
 3E3	(d2-100)/2           °C      Cabin temperature      	     (IN)
-527	(d4/2)-50	     °C      Outdoor temperature     	     (OUT)
+527	(d5/2)-50	     °C      Outdoor temperature     	     (OUT)
 52D	d0		     km	     Calculated range		     
 470	d1 00,01,02	     Integer Status doors		     
 3E1	d4 > 0		     Integer Status remote climate control   
-6B4	(d5-35)/4	     °C      Battery temperature ???	     (BAT)
 575	d0 00 to 0F 	     Integer Key position		     (KEY)
 ======= ==================== ======= =============================== =======
 
