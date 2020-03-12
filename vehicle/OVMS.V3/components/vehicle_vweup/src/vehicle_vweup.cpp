@@ -99,6 +99,8 @@ OvmsVehicleVWeUP::OvmsVehicleVWeUP()
   MyConfig.RegisterParam("xnl", "VW e-Up", true, true);
   ConfigChanged(NULL);
   PollSetState(false);
+  vin_part1 = false;
+  vin_part2 = false;
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
@@ -182,28 +184,34 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
             m_vin[0] = d[5];
             m_vin[1] = d[6];
             m_vin[2] = d[7];
+            vin_part1 = true;
             break;
           case 0x01:
             // Part 2
-            m_vin[3] = d[1];
-            m_vin[4] = d[2];
-            m_vin[5] = d[3];
-            m_vin[6] = d[4];
-            m_vin[7] = d[5];
-            m_vin[8] = d[6];
-            m_vin[9] = d[7];
+            if (vin_part1) {
+              m_vin[3] = d[1];
+              m_vin[4] = d[2];
+              m_vin[5] = d[3];
+              m_vin[6] = d[4];
+              m_vin[7] = d[5];
+              m_vin[8] = d[6];
+              m_vin[9] = d[7];
+              vin_part2 = true;
+            }
             break;
           case 0x02:
             // Part 3 - VIN complete
-            m_vin[10] = d[1];
-            m_vin[11] = d[2];
-            m_vin[12] = d[3];
-            m_vin[13] = d[4];
-            m_vin[14] = d[5];
-            m_vin[15] = d[6];
-            m_vin[16] = d[7];
-            m_vin[17] = 0;
-            StandardMetrics.ms_v_vin->SetValue(m_vin);
+            if (vin_part2) {
+              m_vin[10] = d[1];
+              m_vin[11] = d[2];
+              m_vin[12] = d[3];
+              m_vin[13] = d[4];
+              m_vin[14] = d[5];
+              m_vin[15] = d[6];
+              m_vin[16] = d[7];
+              m_vin[17] = 0;
+              StandardMetrics.ms_v_vin->SetValue(m_vin);
+            }
             break;
       }
       break;

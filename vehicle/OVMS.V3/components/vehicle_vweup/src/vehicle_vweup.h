@@ -71,6 +71,8 @@ class OvmsVehicleVWeUP : public OvmsVehicle
     vehicle_command_t CommandClimateControl(bool enable);
     void RemoteCommandTimer();
     void CcDisableTimer();
+    bool vin_part1;
+    bool vin_part2;
 
   private:
     void SendCommand(RemoteCommand);
