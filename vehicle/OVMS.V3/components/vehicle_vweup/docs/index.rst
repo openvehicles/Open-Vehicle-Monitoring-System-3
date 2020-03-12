@@ -39,7 +39,7 @@ SOC Display                 Yes
 Range Display               Yes
 Cabin Pre-heat/cool Control tba
 GPS Location                Yes (from modem module GPS)
-Speed Display               Yes (untested)
+Speed Display               Yes
 Temperature Display         Yes (outdoor, cabin)
 BMS v+t Display             tba
 TPMS Display                No
@@ -105,8 +105,6 @@ ID	Conversion	     Unit    Function		     	     Comment
 3E1	d4 > 0		     Integer Status remote climate control   
 575	d0 00 to 0F 	     Integer Key position		     (KEY)
 ======= ==================== ======= =============================== =======
-
-All MsgID's are still unconfirmed. Code is experimental.
 
 -------------------------
 Links to vehicle log files
