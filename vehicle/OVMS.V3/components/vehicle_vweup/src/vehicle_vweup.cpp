@@ -168,12 +168,12 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
   switch (p_frame->MsgID) {
 
     case 0x61A: // SOC. Is this different for > 2019 models? 
-      StandardMetrics.ms_v_bat_soc->SetValue(d[7]/2);
+      StandardMetrics.ms_v_bat_soc->SetValue(d[7]/2.0);
       if (vwup_modelyear >= 2020)
         {
-          StandardMetrics.ms_v_bat_range_ideal->SetValue((260 * (d[7]/2)) / 100.0); // This is dirty. Based on WLTP only. Should be based on SOH.
+          StandardMetrics.ms_v_bat_range_ideal->SetValue((260 * (d[7]/2.0)) / 100.0); // This is dirty. Based on WLTP only. Should be based on SOH.
         } else {
-          StandardMetrics.ms_v_bat_range_ideal->SetValue((160 * (d[7]/2)) / 100.0); // This is dirty. Based on WLTP only. Should be based on SOH.
+          StandardMetrics.ms_v_bat_range_ideal->SetValue((160 * (d[7]/2.0)) / 100.0); // This is dirty. Based on WLTP only. Should be based on SOH.
         }
       break;
 
