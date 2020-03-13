@@ -73,6 +73,8 @@ class OvmsVehicleVWeUP : public OvmsVehicle
     void CcDisableTimer();
     bool vin_part1;
     bool vin_part2;
+    bool vwup_enable_write;
+    int vwup_modelyear;
 
   private:
     void SendCommand(RemoteCommand);

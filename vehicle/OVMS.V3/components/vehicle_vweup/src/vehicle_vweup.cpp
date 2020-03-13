@@ -98,7 +98,7 @@ OvmsVehicleVWeUP::OvmsVehicleVWeUP()
 
   RegisterCanBus(3,CAN_MODE_ACTIVE,CAN_SPEED_100KBPS);
 
-  MyConfig.RegisterParam("xnl", "VW e-Up", true, true);
+  MyConfig.RegisterParam("vwup", "VW e-Up", true, true);
   ConfigChanged(NULL);
   PollSetState(false);
   vin_part1 = false;
@@ -128,7 +128,7 @@ bool OvmsVehicleVWeUP::SetFeature(int key, const char *value)
     case 15:
     {
       int bits = atoi(value);
-      MyConfig.SetParamValueBool("xnl", "canwrite",  (bits& 1)!=0);
+      MyConfig.SetParamValueBool("vwup", "canwrite",  (bits& 1)!=0);
       return true;
     }
     default:
@@ -143,7 +143,7 @@ const std::string OvmsVehicleVWeUP::GetFeature(int key)
     case 15:
     {
       int bits =
-        ( MyConfig.GetParamValueBool("xnl", "canwrite",  false) ?  1 : 0);
+        ( MyConfig.GetParamValueBool("vwup", "canwrite",  false) ?  1 : 0);
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);
@@ -156,6 +156,9 @@ const std::string OvmsVehicleVWeUP::GetFeature(int key)
 void OvmsVehicleVWeUP::ConfigChanged(OvmsConfigParam* param)
 {
   ESP_LOGD(TAG, "VW e-Up reload configuration");
+  
+  vwup_enable_write  = MyConfig.GetParamValueBool("vwup", "canwrite", false);
+  vwup_modelyear     = MyConfig.GetParamValueInt("vwup", "modelyear", DEFAULT_MODEL_YEAR);
 }
 
 void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
@@ -166,7 +169,7 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
 
     case 0x61A: // SOC. Is this different for > 2019 models? 
       StandardMetrics.ms_v_bat_soc->SetValue(d[7]/2);
-      if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) >= 2020)
+      if (vwup_modelyear >= 2020)
         {
           StandardMetrics.ms_v_bat_range_ideal->SetValue((260 * (d[7]/2)) / 100.0); // This is dirty. Based on WLTP only. Should be based on SOH.
         } else {
@@ -297,14 +300,14 @@ void OvmsVehicleVWeUP::vehicle_vweup_car_on(bool isOn)
     // Log once that car is being turned on
     ESP_LOGI(TAG,"CAR IS ON");
     StandardMetrics.ms_v_env_on->SetValue(true);
-    PollSetState(true);
+    if (vwup_enable_write) PollSetState(true);
     }
   else if (!isOn && StandardMetrics.ms_v_env_on->AsBool())
     {
     // Log once that car is being turned off
     ESP_LOGI(TAG,"CAR IS OFF");
     StandardMetrics.ms_v_env_on->SetValue(false);
-    PollSetState(false);
+    if (vwup_enable_write) PollSetState(false);
     }
   }
 
@@ -438,7 +441,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::CommandHomelink(int button, int
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::CommandClimateControl(bool climatecontrolon)
   {
   ESP_LOGI(TAG, "CommandClimateControl");
-  return RemoteCommandHandler(climatecontrolon ? ENABLE_CLIMATE_CONTROL : DISABLE_CLIMATE_CONTROL);
+  if (vwup_enable_write)
+    return RemoteCommandHandler(climatecontrolon ? ENABLE_CLIMATE_CONTROL : DISABLE_CLIMATE_CONTROL);
+  else return NotImplemented;
   }
 
 // End of remote climate contol template
