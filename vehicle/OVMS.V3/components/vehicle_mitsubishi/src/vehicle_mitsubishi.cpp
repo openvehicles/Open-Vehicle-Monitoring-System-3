@@ -511,7 +511,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
         CalculateAcceleration();
 
-        StandardMetrics.ms_v_pos_odometer->SetValue(((int)d[2] << 8 ) + ((int)d[3] << 8) + d[4], Kilometers);
+        StandardMetrics.ms_v_pos_odometer->SetValue(((int)d[2] << 16 ) + ((int)d[3] << 8) + d[4], Kilometers);
 
         if(StandardMetrics.ms_v_pos_odometer->AsInt() > 0 && has_odo == false && StandardMetrics.ms_v_bat_soc->AsFloat() > 0)
         {
