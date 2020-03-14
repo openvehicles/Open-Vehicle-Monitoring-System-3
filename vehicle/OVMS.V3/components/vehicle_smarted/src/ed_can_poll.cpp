@@ -468,6 +468,8 @@ void OvmsVehicleSmartED::PollReply_BMS_BattCapacity(const char* reply_data, uint
   mt_v_bat_Cap_meas_quality->SetValue( value / 65535.0 );
   value = reply_data[422] * 256 + reply_data[423];
   mt_v_bat_Cap_combined_quality->SetValue( value / 65535.0 );
+  
+  StandardMetrics.ms_v_bat_cac->SetValue(mt_v_bat_Cap_As_avg->AsFloat()/360.0, AmpHours);
 }
 
 void OvmsVehicleSmartED::PollReply_NLG6_ChargerPN_HW(const char* reply_data, uint16_t reply_len) {
@@ -703,6 +705,7 @@ void OvmsVehicleSmartED::BmsDiag(int verbosity, OvmsWriter* writer) {
   
   writer->puts("-------------------------------------------");
   writer->puts("---- ED Battery Management Diagnostics ----");
+  writer->puts("----         OVMS Version 1.0          ----");
   writer->puts("-------------------------------------------");
   
   writer->printf("Battery VIN: %s\n", (char*) mt_myBMS_BattVIN->AsString().c_str());
@@ -828,6 +831,7 @@ void OvmsVehicleSmartED::printRPTdata(int verbosity, OvmsWriter* writer) {
   
   writer->puts("-----------------------------------------");
   writer->puts("---       Battery Status Report       ---");
+  writer->puts("---         OVMS Version 1.0          ---");
   writer->puts("-----------------------------------------");
   
   writer->printf("Battery VIN: %s\n", (char*) mt_myBMS_BattVIN->AsString().c_str());
