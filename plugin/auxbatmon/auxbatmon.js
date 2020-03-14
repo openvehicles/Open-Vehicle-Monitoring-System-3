@@ -1,7 +1,7 @@
 /**
  * Module plugin:
  *  Auxiliary (12V) Battery History Chart
- *  Version 2.0 by Michael Balzer <dexter@dexters-web.de>
+ *  Version 2.1 by Michael Balzer <dexter@dexters-web.de>
  * 
  * This module records a set of metrics with a fixed time interval.
  * History data is stored in a file and automatically restored on reboot/reload.
@@ -26,7 +26,7 @@ const historyHours = 24;    // RAM ~ historyHours / sampleInterval
 
 const tickerEvent = 'ticker.' + sampleInterval;
 const maxEntries = historyHours * 3600 / sampleInterval;
-const storeFile = "/store/usr/auxbatmon.jx";
+const storeFile = "/store/usr/auxbatmon.jx";  // empty string = no storage
 
 var history = {
   "time": null,
@@ -37,6 +37,11 @@ var history = {
   "v.e.temp": [],
 };
 
+// Saving to VFS may cause short blockings, so only allow when vehicle is off:
+function allowSave() {
+  return !OvmsMetrics.Value("v.e.on") && !OvmsMetrics.Value("v.c.charging");
+}
+
 // Ticker:
 function ticker() {
   history["time"] = new Date().getTime();
@@ -46,10 +51,12 @@ function ticker() {
         history[key].splice(0, 1);
     }
   });
-  if (globalThis.VFS) VFS.Save({
-    path: storeFile,
-    data: Duktape.enc('jx', history)
-  });
+  if (storeFile && allowSave()) {
+    VFS.Save({
+      path: storeFile,
+      data: Duktape.enc('jx', history)
+    });
+  }
 }
 
 // History dump:
@@ -58,7 +65,7 @@ function dump() {
 }
 
 // Init:
-if (globalThis.VFS) {
+if (storeFile) {
   VFS.Load({
     path: storeFile,
     done: function(data) {
