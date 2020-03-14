@@ -536,6 +536,7 @@ OvmsOTA::OvmsOTA()
   ESP_LOGI(TAG, "Initialising OTA (4400)");
 
   m_autotask = NULL;
+  m_lastcheckday = -1;
 
   MyConfig.RegisterParam("ota", "OTA setup and status", true, true);
 
@@ -639,9 +640,11 @@ void OvmsOTA::Ticker600(std::string event, void* data)
   time_t rawtime;
   time ( &rawtime );
   struct tm* tmu = localtime(&rawtime);
-  if ((tmu->tm_hour == MyConfig.GetParamValueInt("ota","auto.hour",2))&&
-      (MyNetManager.m_connected_wifi || MyConfig.GetParamValueBool("ota", "auto.allow.modem")))
+
+  if ((tmu->tm_hour == MyConfig.GetParamValueInt("ota","auto.hour",2)) &&
+      (tmu->tm_mday != m_lastcheckday))
     {
+    m_lastcheckday = tmu->tm_mday;  // So we only try once a day (unless cleared due to a temporary fault)
     LaunchAutoFlash();
     }
   }
@@ -649,6 +652,9 @@ void OvmsOTA::Ticker600(std::string event, void* data)
 static void OTAFlashTask(void *pvParameters)
   {
   bool force = (bool)pvParameters;
+
+  ESP_LOGD(TAG, "AutoFlash: Tasks is running%s",(force)?" forced":"");
+
   bool result = MyOTA.AutoFlash(force);
 
   if (result)
@@ -686,48 +692,56 @@ bool OvmsOTA::AutoFlash(bool force)
   if (running==NULL)
     {
     ESP_LOGW(TAG, "AutoFlash: Current running image cannot be determined - aborting");
+    m_lastcheckday = -1; // Allow to try again within the same day
     return false;
     }
 
   if (target==NULL)
     {
     ESP_LOGW(TAG, "AutoFlash: Target partition cannot be determined - aborting");
+    m_lastcheckday = -1; // Allow to try again within the same day
     return false;
     }
 
   if (running == target)
     {
     ESP_LOGW(TAG, "AutoFlash: Cannot flash to running image partition");
-    return false;
-    }
-
-  if (!MyNetManager.m_connected_wifi)
-    {
-    ESP_LOGW(TAG, "AutoFlash: Cannot flash without wifi connection");
+    m_lastcheckday = -1; // Allow to try again within the same day
     return false;
     }
 
   ota_info info;
   MyOTA.GetStatus(info, true);
-  if (!force)
-    {
-    if (info.version_server.length() == 0)
-      {
-      ESP_LOGW(TAG,"AutoFlash: Server version could not be determined");
-      return false;
-      }
 
-    if (buildverscmp(info.version_server,info.version_firmware) <= 0)
+  if (info.version_server.length() == 0)
+    {
+    ESP_LOGW(TAG,"AutoFlash: Server version could not be determined");
+    m_lastcheckday = -1; // Allow to try again within the same day
+    return false;
+    }
+
+  if ((!force) && (buildverscmp(info.version_server,info.version_firmware) <= 0))
+    {
+    ESP_LOGI(TAG,"AutoFlash: No new firmware available (%s is current)",info.version_server.c_str());
+    return false;
+    }
+
+  if ((!MyNetManager.m_connected_wifi) && (!MyConfig.GetParamValueBool("ota", "auto.allow.modem", false)))
+    {
+    ESP_LOGW(TAG, "AutoFlash: Cannot flash without wifi connection, or auto.allow.modem");
+    if (info.version_server.compare(m_lastnotifyversion) != 0)
       {
-      ESP_LOGI(TAG,"AutoFlash: No new firmware available");
-      return false;
+      MyNotify.NotifyStringf("info", "ota.update", "New firmware %s is available. Connect to WIFI to update", info.version_server.c_str());
+      m_lastnotifyversion = info.version_server;
       }
+    return false;
     }
 
   OvmsMutexLock m_lock(&m_flashing,0);
   if (!m_lock.IsLocked())
     {
     ESP_LOGW(TAG, "AutoFlash: Flash operation already in progress - cannot auto flash");
+    m_lastcheckday = -1; // Allow to try again within the same day
     return false;
     }
 
@@ -751,13 +765,14 @@ bool OvmsOTA::AutoFlash(bool force)
     target->label,
     info.version_server.c_str(),
     url.c_str());
-  MyNotify.NotifyStringf("info", "ota.update", "New OTA firmware %s is available for download", info.version_server.c_str());
+  MyNotify.NotifyStringf("info", "ota.update", "New OTA firmware %s is now being downloaded", info.version_server.c_str());
 
   // HTTP client request...
   OvmsHttpClient http(url);
   if (!http.IsOpen())
     {
     ESP_LOGE(TAG, "AutoFlash: http://%s request failed", url.c_str());
+    m_lastcheckday = -1; // Allow to try again within the same day
     return false;
     }
 
@@ -765,6 +780,7 @@ bool OvmsOTA::AutoFlash(bool force)
   if (expected < 32)
     {
     ESP_LOGE(TAG, "AutoFlash: Expected download file size (%d) is invalid", expected);
+    m_lastcheckday = -1; // Allow to try again within the same day
     return false;
     }
 
@@ -807,6 +823,7 @@ bool OvmsOTA::AutoFlash(bool force)
     {
     ESP_LOGE(TAG, "AutoFlash: Download file size (%d) does not match expected (%d)", filesize, expected);
     esp_ota_end(otah);
+    m_lastcheckday = -1; // Allow to try again within the same day
     return false;
     }
 

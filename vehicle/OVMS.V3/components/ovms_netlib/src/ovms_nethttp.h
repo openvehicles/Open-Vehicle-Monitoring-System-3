@@ -28,50 +28,59 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __OTA_H__
-#define __OTA_H__
+#ifndef __OVMS_NETHTTP_H__
+#define __OVMS_NETHTTP_H__
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "ovms_events.h"
 #include "ovms_mutex.h"
+#include "ovms_netconns.h"
+#include "ovms_netmanager.h"
+#include "ovms_buffer.h"
 
-struct ota_info
-  {
-  std::string version_firmware;
-  std::string version_server;
-  bool update_available;
-  std::string partition_running;
-  std::string partition_boot;
-  std::string changelog_server;
-  };
-
-class OvmsOTA
+class OvmsNetHttpAsyncClient: public OvmsNetTcpClient
   {
   public:
-    OvmsOTA();
-    ~OvmsOTA();
+    OvmsNetHttpAsyncClient();
+    virtual ~OvmsNetHttpAsyncClient();
 
   public:
-    static void GetStatus(ota_info& info, bool check_update=true);
+    enum NetHttpState
+      {
+      NetHttpIdle = 0,
+      NetHttpConnecting,
+      NetHttpHeaders,
+      NetHttpBody,
+      NetHttpComplete,
+      NetHttpFailed
+      };
 
   public:
-    void LaunchAutoFlash(bool force=false);
-    bool AutoFlash(bool force=false);
-    void Ticker600(std::string event, void* data);
+    bool Request(std::string url, const char* method = "GET");
+    int ResponseCode();
+    size_t BodySize();
+    OvmsNetHttpAsyncClient::NetHttpState GetState();
+    OvmsBuffer* GetBuffer();
 
-  public:
-    OvmsMutex m_flashing;
-    TaskHandle_t m_autotask;
-    int m_lastcheckday;
-    std::string m_lastnotifyversion;
-
-#ifdef CONFIG_OVMS_COMP_SDCARD
   protected:
-    void AutoFlashSD(std::string event, void* data);
-#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
+    virtual void Connected();
+    virtual void ConnectionFailed();
+    virtual void ConnectionClosed();
+    virtual size_t IncomingData(void *data, size_t length);
+
+  public:
+    virtual void HeadersAvailable();
+    virtual void BodyAvailable();
+
+  protected:
+    OvmsBuffer* m_buf;
+    std::string m_url;
+    bool m_tls;
+    std::string m_dest;
+    std::string m_server;
+    std::string m_path;
+    const char* m_method;
+    NetHttpState m_httpstate;
+    size_t m_bodysize;
+    int m_responsecode;
   };
 
-extern OvmsOTA MyOTA;
-
-#endif //#ifndef __OTA_H__
+#endif //#ifndef __OVMS_NETCONNS_H__

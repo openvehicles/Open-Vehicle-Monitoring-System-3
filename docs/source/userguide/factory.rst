@@ -2,6 +2,8 @@
 Factory Reset
 =============
 
+.. highlight:: none
+
 --------------------
 Module Configuration
 --------------------
@@ -110,6 +112,39 @@ Note: if you were running an OTA partition before, you also need to switch back 
 partition as shown above.
 
 
+--------------------
+Full Reflash via USB
+--------------------
+
+If you accidentally did an ``erase_flash`` or erased the wrong region, you will need to 
+do a full reflash of your module (including the boot loader and partitioning scheme).
+
+The need for a full reflash will typically show by the USB output of the module boot being
+just something like::
+
+  rst:0x10 (RTCWDT_RTC_RESET),boot:0x3f (SPI_FAST_FLASH_BOOT)
+  flash read err, 1000
+  ets_main.c 371
+  ets Jun  8 2016 00:22:57
+
+To do a full reflash, download the three .bin files from the release you want to flash, e.g. from
+
+  https://ovms.dexters-web.de/firmware/ota/v3.2/edge/
+
+Then issue::
+
+  esptool.py \
+    --chip esp32 --port /dev/tty.SLAB_USBtoUART --baud 921600 \
+    --before "default_reset" --after "hard_reset" \
+    write_flash --compress --flash_mode "dio" --flash_freq "40m" --flash_size detect \
+    0x1000 bootloader.bin 0x10000 ovms3.bin 0x8000 partitions.bin
+
+…replacing the port and file paths accordingly for your system.
+
+If this fails, open a support ticket on https://www.openvehicles.com and attach a log of the
+boot process, or install the developer environment and do a ``make flash``.
+
+
 ---------------------
 Installing esptool.py
 ---------------------
@@ -124,8 +159,3 @@ The package normally can be installed without manual download using the python p
   sudo pip install esptool
 
 .. warning:: You can brick your module using the esptool. Only use the commands shown above.
-
-.. note:: If you accidentally did an ``erase_flash`` or erased the wrong region, you will need to 
-  do a full reflash of your module (including the boot loader and paritioning scheme). Post a log 
-  of the boot process on the OVMS user forum and ask for help, or install the developer environment 
-  and do a ``make flash``.
