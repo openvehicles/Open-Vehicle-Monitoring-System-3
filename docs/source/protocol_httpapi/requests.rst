@@ -19,6 +19,7 @@ GET     /api/token
 ------------------
 
 Return a list of registered API tokens.
+
 ------------------
 POST    /api/token
 ------------------

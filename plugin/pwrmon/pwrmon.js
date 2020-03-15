@@ -1,6 +1,6 @@
 /**
  * Module plugin: PwrMon – Trip Power/Energy Chart
- *  Version 1.0 by Michael Balzer <dexter@dexters-web.de>
+ *  Version 1.1 by Michael Balzer <dexter@dexters-web.de>
  * 
  * This module records trip metrics by odometer distance.
  * History data is stored in a file and automatically restored on reboot/reload.
@@ -38,6 +38,11 @@ var history = {
 var lastOdo = 0;
 var saveOdo = 0;
 
+// Saving to VFS may cause short blockings, so only allow when vehicle is off:
+function allowSave() {
+  return !OvmsMetrics.Value("v.e.on") && !OvmsMetrics.Value("v.c.charging");
+}
+
 // Ticker:
 function ticker() {
   if (OvmsMetrics.Value("v.e.on") == "no") {
@@ -55,7 +60,7 @@ function ticker() {
       history[key].splice(0, 1);
   });
 
-  if (storeFile && lastOdo - saveOdo >= storeDistance) {
+  if (storeFile && allowSave() && lastOdo - saveOdo >= storeDistance) {
     saveOdo = lastOdo;
     VFS.Save({ path: storeFile, data: Duktape.enc('jx', history) });
   }

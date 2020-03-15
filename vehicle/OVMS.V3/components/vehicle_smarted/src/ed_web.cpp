@@ -93,6 +93,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   bool canwrite;
   bool soc_rsoc;
   bool lockstate;
+  bool gpio_highlow;
   std::string doorlock, doorunlock, ignition, doorstatus, rangeideal, egpio_timout, reboot;
 
   if (c.method == "POST") {
@@ -107,6 +108,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     canwrite  = (c.getvar("canwrite") == "yes");
     lockstate  = (c.getvar("lockstate") == "yes");
     reboot = c.getvar("reboot");
+    gpio_highlow = (c.getvar("gpio_highlow") == "yes");
 
     // validate:
     if (doorlock != "") {
@@ -163,6 +165,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("xse", "soc_rsoc", soc_rsoc);
       MyConfig.SetParamValueBool("xse", "canwrite",   canwrite);
       MyConfig.SetParamValueBool("xse", "lockstate",   lockstate);
+      MyConfig.SetParamValueBool("xse", "gpio_highlow",   gpio_highlow);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
@@ -189,6 +192,7 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     soc_rsoc     = MyConfig.GetParamValueBool("xse", "soc_rsoc", false);
     canwrite     = MyConfig.GetParamValueBool("xse", "canwrite", false);
     lockstate    = MyConfig.GetParamValueBool("xse", "lockstate", false);
+    gpio_highlow = MyConfig.GetParamValueBool("xse", "gpio_highlow", false);
     c.head(200);
   }
 
@@ -206,8 +210,11 @@ void OvmsVehicleSmartED::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Enable CAN write(Poll)", "canwrite", canwrite,
     "<p>Controls overall CAN write access, some functions depend on this.</p>");
   
-  c.input_checkbox("Enable Door lock/unlock Status)", "lockstate", lockstate,
+  c.input_checkbox("Enable Door lock/unlock Status", "lockstate", lockstate,
     "<p>Only needed when External door status wired to expansion.</p>");
+  
+  c.input_checkbox("Change EGPIO direction", "gpio_highlow", gpio_highlow,
+    "<p>Change EGPIO direction. (HIGH -> LOW | LOW -> HIGH)</br>Only for Door lock/unlock</p>");
 
   c.input_select_start("… Vehicle lock port", "doorlock");
   c.input_select_option("EGPIO_2", "3", doorlock == "3");

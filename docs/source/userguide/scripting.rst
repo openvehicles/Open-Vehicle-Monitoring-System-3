@@ -487,6 +487,21 @@ See :doc:`/plugin/auxbatmon/README` for a complete application usage example.
       });
 
 
+.. warning::
+  **File I/O, especially saving, can cause short freezes of the module!**
+  
+  Minimize save frequency and, if possible, avoid saving while the vehicle is in operation
+  (driving / charging), by using a check like:
+  
+  .. code-block:: javascript
+    
+    // Saving to VFS may cause short blockings, so only allow when vehicle is off:
+    function allowSave() {
+      return !OvmsMetrics.Value("v.e.on") && !OvmsMetrics.Value("v.c.charging");
+    }
+
+
+
 PubSub
 ^^^^^^
 
