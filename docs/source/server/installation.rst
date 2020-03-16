@@ -50,6 +50,7 @@ You will need, at a minimum, the following modules from CPAN (or from your distr
 * Email::Sender::Simple
 * Net::SSLeay
 * JSON::XS
+* Protocol::WebSocket
 
 -----------
 MySQL Setup
