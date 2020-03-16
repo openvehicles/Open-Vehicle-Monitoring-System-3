@@ -49,6 +49,7 @@ using namespace std;
 void OvmsVehicleVWeUP::WebInit()
 {
   // vehicle menu:
+  MyWebServer.RegisterPage("/vwup/hardware", "Hardware",         WebCfgHardware,                      PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/vwup/features", "Features",         WebCfgFeatures,                      PageMenu_Vehicle, PageAuth_Cookie);
 }
 
@@ -57,6 +58,7 @@ void OvmsVehicleVWeUP::WebInit()
  */
 void OvmsVehicleVWeUP::WebDeInit()
 {
+  MyWebServer.DeregisterPage("/vwup/hardware");
   MyWebServer.DeregisterPage("/vwup/features");
 }
 
@@ -129,3 +131,62 @@ void OvmsVehicleVWeUP::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.done();
 }
 
+/**
+ * WebCfgHardware: setup how connexted to the vehicle (URL /vwup/config)
+ */
+void OvmsVehicleVWeUP::WebCfgHardware(PageEntry_t& p, PageContext_t& c)
+{
+  std::string error;
+  std::string how_connected;
+
+
+  if (c.method == "POST") {
+    // process form submission:
+    how_connected = c.getvar("how_connected");
+
+    // check:
+    if (how_connected != "0") {
+        error += "<li data-input=\"hw_connected\">At the moment only T26A is implemented.</li>";
+    }
+
+    if (error == "") {
+      // store:
+      MyConfig.SetParamValue("vwup", "how_connected",   how_connected);
+
+      c.head(200);
+      c.alert("success", "<p class=\"lead\">VW e-Up hardware configuration saved.</p>");
+      MyWebServer.OutputHome(p, c);
+      c.done();
+      return;
+    }
+    // output error, return to form:
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    c.head(400);
+    c.alert("danger", error.c_str());
+  }
+  else {
+    // read configuration:
+    how_connected = MyConfig.GetParamValue("vwup", "how_connected", "0");
+
+    c.head(200);
+  }
+
+  // generate form:
+
+  c.panel_start("primary", "VW e-Up hardware configuration");
+  c.form_start(p.uri);
+
+  c.print("<br>This configuration page is a placeholder without function.<br>At the moment only T26A is implemented.<br><br>");
+
+  c.input_radiobtn_start("Connection type", "how_connected");
+  c.input_radiobtn_option("how_connected", "T26A", "0", how_connected == "0");
+  c.input_radiobtn_option("how_connected", "T26A + Bluetooth", "1", how_connected == "1");
+  c.input_radiobtn_option("how_connected", "OBD", "1", how_connected == "2");
+  c.input_radiobtn_end();
+
+  c.print("<hr>");
+  c.input_button("default", "Save");
+  c.form_end();
+  c.panel_end();
+  c.done();
+}

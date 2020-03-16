@@ -93,7 +93,7 @@ class OvmsVehicleVWeUP : public OvmsVehicle
     void WebInit();
     void WebDeInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
-    static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
+    static void WebCfgHardware(PageEntry_t& p, PageContext_t& c);
 
   };
 
