@@ -5,24 +5,8 @@ VW e-Up
 
 Vehicle Type: **VWUP**
 
-This vehicle type supports the VW e-UP, Skoda Citigo E IV and the Seat MII electric.
+This vehicle type supports the VW e-UP (2013+, 2020+ ), Skoda Citigo E IV and the Seat MII electric (2020+).
 
------------------
-Development notes
------------------
-
-The code is highly experimental. Some MsgIDs used are not confirmed yet.
-
-When our pull request to the OVMS master repository is commited, these notes will be deleted.
-
-To compile this code you will need to check out this repository, check out the components 
-mongoose, libzip and zlib from the OVMS master repostory and copy the file
-
-sdkconfig.default.hw31.vweup
-
-from the OVMS.V3/support folder to the OVMS.V3 folder and rename it to
-
-sdkconfig
 
 ----------------
 Support Overview
@@ -65,7 +49,6 @@ Advantage is a faster and easier development.
 Disadvantage is that we won't have all vehicle information available
 and we won't be able to access all control units.
 
-
 ======= ======= ===========================
 OCU	DB9-F	Signal
 ======= ======= ===========================
@@ -78,6 +61,35 @@ OCU	DB9-F	Signal
 14	8	can3 H (Comfort-can High)
 1	9	+12V Vehicle Power
 ======= ======= ===========================
+
+For confectioning the T26A adapter cable you can use a standard 26 pin ribbon cable (2x13 pins, 2,54mm grid dimension) and a DB9 female D-Sub connector.
+
+To make a GPS adapter cable to connect to the original VW fakra socket you can use a double fakra male connector with two SMA male connectors attached.
+
+-----------------
+User notes
+-----------------
+
+* Disconnect the T26A cable and the fakra cable from the OCU (online communiction unit) located beneath the passenger seat.
+* Connect the confectioned T26A adapter DB9 cable attached to the OVMS to the VW T26A plug.
+* Optional: Connect your GPS fakra adapter to the VW fakra cable.
+* Configure OVMS as discribed in the OVMS user manual
+* Register and connect OVMS to a server (as guided within the OVMS setup)
+* Install the OVMS app on your smartphone or tablet and configure to connect to the server
+* Enjoy :-)
+
+-----------------
+Development notes
+-----------------
+
+To compile the code you will need to check out the repository, check out the components 
+mongoose, libzip and zlib  and copy the file
+
+sdkconfig.default.hw31
+
+from the OVMS.V3/support folder to the OVMS.V3 folder and rename it to
+
+sdkconfig
 
 ----------------------
 IDs on Comfort CAN Bus
