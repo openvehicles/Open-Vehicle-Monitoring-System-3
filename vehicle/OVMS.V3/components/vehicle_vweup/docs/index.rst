@@ -64,7 +64,7 @@ OCU	DB9-F	Signal
 
 For confectioning the T26A adapter cable you can use a standard 26 pin ribbon cable (2x13 pins, 2,54mm grid dimension) and a DB9 female D-Sub connector.
 
-To make a GPS adapter cable to connect to the original VW fakra socket you can use a double fakra male connector with two SMA male connectors attached.
+To make a GSM/GPS adapter cable to connect to the original VW fakra socket you can use a double fakra male connector with two SMA male connectors attached.
 
 -----------------
 User notes
@@ -72,7 +72,7 @@ User notes
 
 * Disconnect the T26A cable and the fakra cable from the OCU (online communiction unit) located beneath the passenger seat.
 * Connect the confectioned T26A adapter DB9 cable attached to the OVMS to the VW T26A plug.
-* Optional: Connect your GPS fakra adapter to the VW fakra cable.
+* Connect your GMS/GPS fakra adapter to the VW fakra cable.
 * Configure OVMS as discribed in the OVMS user manual
 * Register and connect OVMS to a server (as guided within the OVMS setup)
 * Install the OVMS app on your smartphone or tablet and configure to connect to the server
