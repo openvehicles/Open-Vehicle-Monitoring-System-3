@@ -70,7 +70,7 @@ To make a GSM/GPS adapter cable to connect to the original VW fakra socket you c
 User notes
 -----------------
 
-* Disconnect the T26A cable and the fakra cable from the OCU (online communiction unit) located beneath the passenger seat.
+* Disconnect the T26A cable and the fakra cable from the OCU (online communication unit) located beneath the passenger seat.
 * Connect the confectioned T26A adapter DB9 cable attached to the OVMS to the VW T26A plug.
 * Connect your GMS/GPS fakra adapter to the VW fakra cable.
 * Configure OVMS as discribed in the OVMS user manual
