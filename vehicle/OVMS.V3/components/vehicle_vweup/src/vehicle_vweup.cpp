@@ -81,6 +81,11 @@ static const char *TAG = "v-vweup";
 #include "ovms_events.h"
 #include "ovms_metrics.h"
 
+static const OvmsVehicle::poll_pid_t vwup_polls[] =
+{
+  { 0, 0, 0x00, 0x00, { 0, 0, 0 } }
+};
+
 void v_remoteCommandTimer(TimerHandle_t timer)
   {
   OvmsVehicleVWeUP* vwup = (OvmsVehicleVWeUP*) pvTimerGetTimerID(timer);
@@ -102,7 +107,8 @@ OvmsVehicleVWeUP::OvmsVehicleVWeUP()
 
   MyConfig.RegisterParam("vwup", "VW e-Up", true, true);
   ConfigChanged(NULL);
-  PollSetState(false);
+  PollSetPidList(m_can3, vwup_polls);
+  PollSetState(0);
   vin_part1 = false;
   vin_part2 = false;
   vin_part3 = false;
@@ -308,14 +314,14 @@ void OvmsVehicleVWeUP::vehicle_vweup_car_on(bool isOn)
     // Log once that car is being turned on
     ESP_LOGI(TAG,"CAR IS ON");
     StandardMetrics.ms_v_env_on->SetValue(true);
-    if (vwup_enable_write) PollSetState(true);
+    if (vwup_enable_write) PollSetState(1);
     }
   else if (!isOn && StandardMetrics.ms_v_env_on->AsBool())
     {
     // Log once that car is being turned off
     ESP_LOGI(TAG,"CAR IS OFF");
     StandardMetrics.ms_v_env_on->SetValue(false);
-    if (vwup_enable_write) PollSetState(false);
+    if (vwup_enable_write) PollSetState(0);
     }
   }
 
