@@ -39,7 +39,7 @@ Others                      Odometer, VIN, front doors status
 Pinout OCU T26A - OVMS DB9 adapter cable
 ----------------------------------------
 
-Because of the compilicated VAG OBD-gateway communication protocol
+Because of the complicated VAG OBD-gateway communication protocol
 we directly tap into the comfort can bus over the OCU cable.
 
 The OCU connector is located under the passenger seat.
