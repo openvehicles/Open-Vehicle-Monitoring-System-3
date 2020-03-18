@@ -168,11 +168,11 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
         case 0x06: // Timer/Plugin setting and timer confirmation
           {
-          if (d[0] == 0x1b)
+          if (d[1] == 0x1b)
             {
             StandardMetrics.ms_v_charge_timermode->SetValue(d[4] != 0);
             }
-          else if (d[0] == 0x1a)
+          else if (d[1] == 0x1a)
             {
             StandardMetrics.ms_v_charge_timerstart->SetValue(((int)d[4]<<8)+d[5]);
             }
