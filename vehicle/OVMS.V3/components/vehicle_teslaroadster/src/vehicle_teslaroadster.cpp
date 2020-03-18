@@ -233,6 +233,29 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
             StandardMetrics.ms_v_pos_altitude->SetValue(((int)d[5]<<8)+d[4]);
           break;
           }
+        case 0x87: // Gear shift status every 10 seconds for v2.x cars
+          {
+          if (m_type[2] != '2')	// This only works for v2.x cars
+            break;
+          switch(d[1] & 0xE0)
+            {
+            case 0x20:  // Off or Park
+              StandardMetrics.ms_v_env_gear->SetValue(0);
+              break;
+            case 0x40:  // Reverse
+              StandardMetrics.ms_v_env_gear->SetValue(-1);
+              break;
+            case 0x60:  // Neutral
+              StandardMetrics.ms_v_env_gear->SetValue(0);
+              break;
+            case 0x80:  // Drive
+              StandardMetrics.ms_v_env_gear->SetValue(1);
+              break;
+            default:    // Ignore any transitional values
+              break;
+            }
+          break;
+          }
         case 0x88: // Charging Current / Duration
           {
           StandardMetrics.ms_v_charge_current->SetValue((float)d[1]);
@@ -511,6 +534,30 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
       {
       switch(d[0])
         {
+        case 0x01:   // Data to dashboard PRND display 10x per second
+          {
+          if (m_type[2] != '1')	// This only works for v1.x cars
+            break;
+          switch(d[3])
+            {
+            case 0:  // Off
+            case 0x3f:  // Park
+              StandardMetrics.ms_v_env_gear->SetValue(0);
+              break;
+            case 0x3e:  // Reverse
+              StandardMetrics.ms_v_env_gear->SetValue(-1);
+              break;
+            case 0x3b:  // Neutral
+              StandardMetrics.ms_v_env_gear->SetValue(0);
+              break;
+            case 0x2f:  // Drive
+              StandardMetrics.ms_v_env_gear->SetValue(1);
+              break;
+            default:    // Ignore some transitional values
+              break;
+            }
+          break;
+          }
         case 0x02:   // Data to dashboard
           {
           if ((m_speedo_running)&&(d[2] != m_speedo_rawspeed))
