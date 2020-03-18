@@ -5,7 +5,7 @@ VW e-Up
 
 Vehicle Type: **VWUP**
 
-This vehicle type supports the VW e-UP (2013+, 2020+ ), Skoda Citigo E IV and the Seat MII electric (2020+).
+This vehicle type supports the VW e-UP (2013-, 2020-), Skoda Citigo E IV and the Seat MII electric (2020-).
 
 
 ----------------
@@ -62,7 +62,11 @@ OCU	DB9-F	Signal
 1	9	+12V Vehicle Power
 ======= ======= ===========================
 
-For confectioning the T26A adapter cable you can use a standard 26 pin ribbon cable (2x13 pins, 2,54mm grid dimension) and a DB9 female D-Sub connector.
+.. image:: grinded_ribbon.png
+  :width: 100px
+  :align: right
+
+For confectioning the T26A adapter cable you can use a standard 26 pin ribbon cable (2x13 pins, 2,54mm grid dimension) and a DB9 female D-Sub connector. You will need to grind down the rim of the socket of the ribbon cable.
 
 To make a GSM/GPS adapter cable to connect to the original VW fakra socket you can use a double fakra male connector with two SMA male connectors attached.
 
@@ -118,9 +122,9 @@ ID	Conversion	     Unit    Function		     	         Comment
 575	d0 00 to 0F 	     Integer Key position		         (KEY)
 ======= ==================== ======= =================================== =======
 
--------------------------
+--------------------------
 Links to vehicle log files
--------------------------
+--------------------------
 the .asc files behind these links contain logs of all messages on the Comfort CAN while periodically issuing requests for certain known parameters at the OBD2-port.
 
 **Motor data**
