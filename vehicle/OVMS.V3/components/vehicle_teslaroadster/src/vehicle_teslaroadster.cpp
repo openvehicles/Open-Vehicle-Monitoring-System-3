@@ -585,8 +585,8 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
             float power = amps * (((400.0-370.0)*soc/100.0)+370) / 1000.0;     // estimate Voltage by SOC
             StandardMetrics.ms_v_bat_power->SetValue((float)power);
             }
-          }
           break;
+          }
         }
       break;
       }
