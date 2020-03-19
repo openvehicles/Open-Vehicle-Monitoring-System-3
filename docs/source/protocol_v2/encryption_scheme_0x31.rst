@@ -14,7 +14,7 @@ The arguments to the MP-* startup command are:
 * <digest>: Must be the password, or api token, for that user
 * <car id>: Must be the vehicle ID to connect to, or the special value '*' to request connection to the first vehicle on that user's account
 
-Once the partner has been authenticated, a response 'MP-S 1 <user> <vehicleid>' will be sent from the server to indicate a successful authentication.
+Once the partner has been authenticated, a response 'MP-S 1 <user> <vehicleid> <list-of-all-other-vehicles>' will be sent from the server to indicate a successful authentication.
 
 From then onwards, the messages are in plaintext with no further encryption or encoding. Lines are terminated with CR+LF.
 

@@ -57,6 +57,7 @@ provides data logging to SD card and to a server.
   - [Tesla Model S](https://docs.openvehicles.com/en/latest/components/vehicle_teslamodels/docs/index.html)
   - [Tesla Roadster](https://docs.openvehicles.com/en/latest/components/vehicle_teslaroadster/docs/index.html)
   - Think City
+  - [VW e-Up](https://docs.openvehicles.com/en/latest/components/vehicle_vweup/docs/index.html)
 - _General Support_
   - [DBC File Based](https://docs.openvehicles.com/en/latest/components/vehicle_dbc/docs/index.html)
   - [GPS Tracking](https://docs.openvehicles.com/en/latest/components/vehicle_track/docs/index.html)
