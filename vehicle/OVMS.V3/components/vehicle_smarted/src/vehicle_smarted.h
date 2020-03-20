@@ -156,6 +156,8 @@ class OvmsVehicleSmartED : public OvmsVehicle
     OvmsMetricInt *mt_ed_eco_score;             // eco score shown on dashboard over last 6 hours
     
     OvmsMetricInt *mt_ed_hv_off_time;           // HV off Timer
+    
+    OvmsMetricFloat *mt_12v_batt_voltage;       // 12V Batt Voltage from can
 
   private:
     unsigned int m_candata_timer;
@@ -176,6 +178,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     bool m_notify_trip;                     // Notify Trip values after driving end (default=true)
     int m_preclima_time;                    // pre clima time (default=15 minutes)
     int m_reboot_time;                      // Reboot time
+    bool m_reboot;                          // Reboot Module or Restart Network
     bool m_gpio_highlow;                    // EGPIO direction
     
     uint16_t HVcontactState;                // contactor state: 0 := OFF, 2 := ON
@@ -281,6 +284,15 @@ class OvmsVehicleSmartED : public OvmsVehicle
 
   public:
     void BmsResetCellCapacitys();
+  
+  private:
+    void AutoSetRecu();
+    bool m_auto_set_recu;
+  
+  protected:
+    void RestartNetwork();
+    void ShutDown();
+    int m_shutdown_ticker;
 };
 
 #endif //#ifndef __VEHICLE_SMARTED_H__

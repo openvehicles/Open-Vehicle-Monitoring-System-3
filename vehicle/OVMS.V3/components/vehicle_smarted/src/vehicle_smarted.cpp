@@ -44,6 +44,7 @@ static const char *TAG = "v-smarted";
 #include "ovms_notify.h"
 #include "ovms_peripherals.h"
 #include "ovms_netmanager.h"
+#include "ovms_boot.h"
 
 #include "vehicle_smarted.h"
 
@@ -87,10 +88,14 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
   mt_ed_eco_score          = MyMetrics.InitInt("xse.v.display.ecoscore", SM_STALE_MIN, 50, Percentage);
   
   mt_ed_hv_off_time        = MyMetrics.InitInt("xse.hv.off.time", SM_STALE_MID, 0, Seconds);
+  
+  mt_12v_batt_voltage      = MyMetrics.InitFloat("xse.v.b.12v.voltage", SM_STALE_MID, 0, Volts);
 
   m_candata_timer     = 0;
   m_candata_poll      = 0;
   m_egpio_timer       = 0;
+  
+  m_shutdown_ticker   = 15*60;
   
   // init commands:
   cmd_xse = MyCommandApp.RegisterCommand("xse","SmartED 451 Gen.3");
@@ -116,7 +121,7 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
 
 OvmsVehicleSmartED::~OvmsVehicleSmartED() {
   ESP_LOGI(TAG, "Stop Smart ED vehicle module");
-    
+  
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebDeInit();
 #endif
@@ -149,6 +154,9 @@ void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
   m_preclima_time   = MyConfig.GetParamValueInt("xse", "preclimatime", 15);
   
   m_reboot_time     = MyConfig.GetParamValueInt("xse", "reboot", 0);
+  m_reboot          = MyConfig.GetParamValueBool("xse", "doreboot", false);
+  
+  m_auto_set_recu   = MyConfig.GetParamValueBool("xse", "autosetrecu", false);
   
   StandardMetrics.ms_v_charge_limit_soc->SetValue((float) MyConfig.GetParamValueInt("xse", "suffsoc", 0), Percentage );
   StandardMetrics.ms_v_charge_limit_range->SetValue((float) MyConfig.GetParamValueInt("xse", "suffrange", 0), Kilometers );
@@ -307,8 +315,6 @@ void OvmsVehicleSmartED::HandleChargingStatus() {
           isCharging = true;
           // Reset charge kWh
           StandardMetrics.ms_v_charge_kwh->SetValue(0);
-          // set Poll state charging
-          if (m_enable_write) PollSetState(3);
           // Reset trip values
           if (m_reset_trip) {
             StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
@@ -317,6 +323,8 @@ void OvmsVehicleSmartED::HandleChargingStatus() {
             StandardMetrics.ms_v_pos_trip->SetValue(0);
           }
         }
+        // set Poll state charging
+        if (m_enable_write) PollSetState(3);
         
         StandardMetrics.ms_v_charge_pilot->SetValue(true);
         StandardMetrics.ms_v_charge_inprogress->SetValue(true);
@@ -329,6 +337,7 @@ void OvmsVehicleSmartED::HandleChargingStatus() {
       // The car is not charging
       if (StandardMetrics.ms_v_charge_inprogress->AsBool()) {
         // The charge has completed/stopped
+        if (m_enable_write) PollSetState(1);
         StandardMetrics.ms_v_charge_pilot->SetValue(false);
         StandardMetrics.ms_v_charge_inprogress->SetValue(false);
         StandardMetrics.ms_v_charge_mode->SetValue("standard");
@@ -479,7 +488,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
       float LV;
       LV = ((float) d[3]);
       LV = LV / 10.0;
-      StandardMetrics.ms_v_bat_12v_voltage->SetValue(LV, Volts);
+      mt_12v_batt_voltage->SetValue(LV, Volts);
       break;
     }
     case 0x412: //ODO
@@ -700,20 +709,13 @@ void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
     StandardMetrics.ms_v_pos_trip->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat(0) - mt_pos_odometer_start->AsFloat(0));
   }
   
-  // Handle v2Server connection
-  if (StandardMetrics.ms_s_v2_connected->AsBool() || m_reboot_time == 0) {
-    m_reboot_ticker = m_reboot_time * 60; // set reboot ticker
-  }
-  else if (m_reboot_ticker > 0 && --m_reboot_ticker == 0) {
-    SaveStatus();
-    MyNetManager.RestartNetwork();
-    m_reboot_ticker = m_reboot_time * 60;
-    //MyBoot.Restart(); // restart Module
-  }
+  RestartNetwork();
+  ShutDown();
 }
 
 void OvmsVehicleSmartED::Ticker10(uint32_t ticker) {
   HandleCharging();
+  AutoSetRecu();
 #ifdef CONFIG_OVMS_COMP_MAX7317
   if(m_lock_state) {
     MyPeripherals->m_max7317->Output((uint8_t)m_doorstatus_port,(uint8_t)1); // set port to input
@@ -740,6 +742,64 @@ void OvmsVehicleSmartED::Ticker60(uint32_t ticker) {
 #endif
 }
 
+void OvmsVehicleSmartED::RestartNetwork() {
+  // Handle v2Server connection
+  if (StandardMetrics.ms_s_v2_connected->AsBool() || m_reboot_time == 0) {
+    m_reboot_ticker = m_reboot_time * 60; // set reboot ticker
+  }
+  else if (m_reboot_ticker > 0 && --m_reboot_ticker == 0) {
+    SaveStatus();
+    if (m_reboot) {
+      MyBoot.Restart();
+    } else {
+      MyNetManager.RestartNetwork();
+    }
+    m_reboot_ticker = m_reboot_time * 60;
+  }
+}
+
+void OvmsVehicleSmartED::AutoSetRecu() {
+  if (StandardMetrics.ms_v_env_on->AsBool() && m_auto_set_recu) {
+    if (StandardMetrics.ms_v_env_drivemode->AsInt(1) != 2) {
+      while(StandardMetrics.ms_v_env_drivemode->AsInt(1) != 2) {
+        CommandSetRecu(true);
+        vTaskDelay(50 / portTICK_PERIOD_MS);
+      }
+      MyEvents.SignalEvent("v-smarted.xse.recu.up",NULL);
+    }
+  }
+}
+
+void OvmsVehicleSmartED::ShutDown() {
+  float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
+  
+  if (volt > 0 && volt > 10.5) {
+    m_shutdown_ticker = 15 * 60;
+  } 
+  else if (volt > 0 && volt < 10.5 && --m_shutdown_ticker == 0) {
+    ESP_LOGW(TAG,"Powering off");
+    MyEvents.SignalEvent("v-smarted.power.off",NULL);
+    MyNotify.NotifyString("alert", "v-smarted.power.off", "Shutting down OVMS to prevent Battery drain");
+    vTaskDelay(500 / portTICK_PERIOD_MS); // make sure all notifications all transmitted before powerring down
+#ifdef CONFIG_OVMS_COMP_WIFI
+    MyPeripherals->m_esp32wifi->SetPowerMode(Off);
+#endif
+#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+    MyPeripherals->m_simcom->SetPowerMode(Off);
+#endif
+#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
+    MyPeripherals->m_mcp2515_swcan->SetPowerMode(Off);
+#endif
+#ifdef CONFIG_OVMS_COMP_ESP32CAN
+    MyPeripherals->m_esp32can->SetPowerMode(Off);
+#endif
+#ifdef CONFIG_OVMS_COMP_EXT12V
+    MyPeripherals->m_ext12v->SetPowerMode(Off);
+#endif
+    MyPeripherals->m_esp32->SetPowerMode(Off);
+  }
+}
+
 /**
  * SetFeature: V2 compatibility config wrapper
  *  Note: V2 only supported integer values, V3 values may be text
@@ -763,6 +823,18 @@ bool OvmsVehicleSmartED::SetFeature(int key, const char *value)
     case 26:
       MyConfig.SetParamValue("xse", "preclimatime", value);
       return true;
+    case 29:
+    {
+      int bits = atoi(value);
+      MyConfig.SetParamValueBool("xse", "doreboot",  (bits& 1)!=0);
+      return true;
+    }
+    case 30:
+    {
+      int bits = atoi(value);
+      MyConfig.SetParamValueBool("xse", "autosetrecu",  (bits& 1)!=0);
+      return true;
+    }
     default:
       return OvmsVehicle::SetFeature(key, value);
   }
@@ -789,6 +861,20 @@ const std::string OvmsVehicleSmartED::GetFeature(int key)
     }
     case 26:
       return MyConfig.GetParamValue("xse", "preclimatime", STR(15));
+    case 29:
+    {
+      int bits = ( MyConfig.GetParamValueBool("xse", "doreboot",  false) ?  1 : 0);
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }
+    case 30:
+    {
+      int bits = ( MyConfig.GetParamValueBool("xse", "autosetrecu",  false) ?  1 : 0);
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }
     default:
       return OvmsVehicle::GetFeature(key);
   }
