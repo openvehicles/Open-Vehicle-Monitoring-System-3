@@ -143,7 +143,9 @@ void OvmsTLS::Clear()
 
 void OvmsTLS::Reload()
   {
+#ifdef CONFIG_MBEDTLS_DEBUG
   mbedtls_debug_set_threshold(1);
+#endif //CONFIG_MBEDTLS_DEBUG
   Clear();
 
   // Add our embedded trusted CAs
