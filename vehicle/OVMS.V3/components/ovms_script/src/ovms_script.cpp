@@ -2557,9 +2557,11 @@ void OvmsScripts::EventScript(std::string event, void* data)
 OvmsScripts::OvmsScripts()
   {
   ESP_LOGI(TAG, "Initialising SCRIPTS (1600)");
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   m_dukctx = NULL;
   m_duktaskid = NULL;
   m_duktaskqueue = NULL;
+#endif // CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_NONE
   ESP_LOGI(TAG, "No javascript engines enabled (command scripting only)");
