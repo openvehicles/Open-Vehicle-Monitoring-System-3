@@ -13,6 +13,9 @@ static const char *TAG = "v-smarted";
 
 void OvmsVehicleSmartED::SaveStatus() {
 	if (MyPeripherals->m_sdcard->isavailable()) {
+    if (!path_exists("/sd/usr/") && mkpath("/sd/usr/") != 0) {
+      return;
+    }
     FILE *sf = NULL;
     sf = fopen("/sd/usr/SmartEDsatus.dat", "w");
     if (sf == NULL) {
