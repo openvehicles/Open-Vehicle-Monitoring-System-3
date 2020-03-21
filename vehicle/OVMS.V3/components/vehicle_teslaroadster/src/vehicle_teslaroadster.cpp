@@ -174,7 +174,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
             }
           else if (d[1] == 0x1a)
             {
-            StandardMetrics.ms_v_charge_timerstart->SetValue(((int)d[4]<<8)+d[5]);
+            StandardMetrics.ms_v_charge_timerstart->SetValue(((int)d[4]*60+d[5])*60);
             }
           break;
           }
