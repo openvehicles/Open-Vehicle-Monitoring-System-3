@@ -228,7 +228,7 @@ canplay::~canplay()
 
 void canplay::PlayTask(void *context)
   {
-  canplay* me = (canplay*) context;
+//  canplay* me = (canplay*) context;
 
 //  CAN_log_message_t msg;
 //  while (me->InputMsg(&msg))

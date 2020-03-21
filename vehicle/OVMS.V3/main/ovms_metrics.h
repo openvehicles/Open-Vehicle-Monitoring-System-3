@@ -79,6 +79,8 @@ typedef enum : uint8_t
   Seconds       = 50,
   Minutes       = 51,
   Hours         = 52,
+  TimeUTC       = 53,
+  TimeLocal     = 54,
 
   Degrees       = 60,
 

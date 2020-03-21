@@ -123,7 +123,7 @@ MetricsStandard::MetricsStandard()
   ms_v_charge_kwh = new OvmsMetricFloat(MS_V_CHARGE_KWH, SM_STALE_MID, kWh);
   ms_v_charge_mode = new OvmsMetricString(MS_V_CHARGE_MODE, SM_STALE_MID);
   ms_v_charge_timermode = new OvmsMetricBool(MS_V_CHARGE_TIMERMODE, SM_STALE_MID);
-  ms_v_charge_timerstart = new OvmsMetricInt(MS_V_CHARGE_TIMERSTART, SM_STALE_MID);
+  ms_v_charge_timerstart = new OvmsMetricInt(MS_V_CHARGE_TIMERSTART, SM_STALE_MID, TimeUTC);
   ms_v_charge_state = new OvmsMetricString(MS_V_CHARGE_STATE, SM_STALE_MID);
   ms_v_charge_substate = new OvmsMetricString(MS_V_CHARGE_SUBSTATE, SM_STALE_MID);
   ms_v_charge_type = new OvmsMetricString(MS_V_CHARGE_TYPE, SM_STALE_MID);
