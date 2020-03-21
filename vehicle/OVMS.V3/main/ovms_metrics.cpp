@@ -1148,11 +1148,11 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
       else if (to == Hours) return value/3600;
       break;
     case Minutes:
-      if (to == Seconds || to == TimeUTC || to == TimeLocal) return value*60;
+      if (to == Seconds) return value*60;
       else if (to == Hours) return value/60;
       break;
     case Hours:
-      if (to == Seconds || to == TimeUTC || to == TimeLocal) return value*3600;
+      if (to == Seconds) return value*3600;
       else if (to == Minutes) return value*60;
       break;
     case Kph:
