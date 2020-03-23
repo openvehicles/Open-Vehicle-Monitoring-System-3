@@ -224,4 +224,9 @@ unsuccessfull desperate attempt at getting heater to turn on with wild combinati
 
 Communication attempt of ECU for remote services without connection to vehicle
 
+*https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_nur_KommSG_remote_Klima_App.asc:*
+
+unsuccessfull attempt sending 400 08 0C 02 A0 04 04 04 00 00 without communication ECU connected
+
+*https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_wakeup_ID400_errors.asc:*
 
