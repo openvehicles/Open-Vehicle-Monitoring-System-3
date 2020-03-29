@@ -36,6 +36,8 @@
 
 using namespace std;
 
+#define TS_CANDATA_TIMEOUT 10
+
 class OvmsVehicleTeslaModelS: public OvmsVehicle
   {
   public:
@@ -48,6 +50,7 @@ class OvmsVehicleTeslaModelS: public OvmsVehicle
     void IncomingFrameCan3(CAN_frame_t* p_frame);
 
   protected:
+    virtual void Ticker1(uint32_t ticker);
     virtual void Notify12vCritical();
     virtual void Notify12vRecovered();
     virtual void NotifyBmsAlerts();
@@ -56,6 +59,7 @@ class OvmsVehicleTeslaModelS: public OvmsVehicle
     char m_vin[18];
     char m_type[5];
     uint16_t m_charge_w;
+    unsigned int m_candata_timer;
   };
 
 #endif //#ifndef __VEHICLE_TESLAMODELS_H__
