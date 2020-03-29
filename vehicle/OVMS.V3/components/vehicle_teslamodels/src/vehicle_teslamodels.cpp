@@ -87,12 +87,6 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
 
-  if (m_candata_timer < TS_CANDATA_TIMEOUT)
-    {
-    StandardMetrics.ms_v_env_awake->SetValue(true);
-    }
-  m_candata_timer = TS_CANDATA_TIMEOUT;
-
   switch (p_frame->MsgID)
     {
     case 0x102: // BMS current and voltage
@@ -267,6 +261,12 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan2(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
   uint8_t b;
+
+  if (m_candata_timer < TS_CANDATA_TIMEOUT)
+    {
+    StandardMetrics.ms_v_env_awake->SetValue(true);
+    }
+  m_candata_timer = TS_CANDATA_TIMEOUT;
 
   switch (p_frame->MsgID)
     {
