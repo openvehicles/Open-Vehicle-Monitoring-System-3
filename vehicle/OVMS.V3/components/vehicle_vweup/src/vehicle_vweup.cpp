@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          15th March 2020
+;    Date:          30th March 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -63,6 +63,8 @@
 ;
 ;    0.2.2  Collect VIN only once
 ;
+;    0.2.3  Redesign climate control, removed bluetooth template
+;
 ;    (C) 2020       Chris van der Meijden
 ;
 ;    Big thanx to sharkcow and Dimitrie78.
@@ -71,10 +73,9 @@
 #include "ovms_log.h"
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.1.9"
+#define VERSION "0.2.3"
 
 #include <stdio.h>
-#include "pcp.h"
 #include "vehicle_vweup.h"
 #include "metrics_standard.h"
 #include "ovms_webserver.h"
@@ -85,18 +86,6 @@ static const OvmsVehicle::poll_pid_t vwup_polls[] =
 {
   { 0, 0, 0x00, 0x00, { 0, 0, 0 }, 0 }
 };
-
-void v_remoteCommandTimer(TimerHandle_t timer)
-  {
-  OvmsVehicleVWeUP* vwup = (OvmsVehicleVWeUP*) pvTimerGetTimerID(timer);
-  vwup->RemoteCommandTimer();
-  }
-
-void v_ccDisableTimer(TimerHandle_t timer)
-  {
-  OvmsVehicleVWeUP* vwup = (OvmsVehicleVWeUP*) pvTimerGetTimerID(timer);
-  vwup->CcDisableTimer();
-  }
 
 OvmsVehicleVWeUP::OvmsVehicleVWeUP()
   {
@@ -112,13 +101,11 @@ OvmsVehicleVWeUP::OvmsVehicleVWeUP()
   vin_part1 = false;
   vin_part2 = false;
   vin_part3 = false;
+  vwup_remote_climate_ticker = 0;
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
 #endif
-
-  m_remoteCommandTimer = xTimerCreate("VW e-Up Remote Command", 100 / portTICK_PERIOD_MS, pdTRUE, this, v_remoteCommandTimer);
-  m_ccDisableTimer = xTimerCreate("VW e-Up  CC Disable", 1000 / portTICK_PERIOD_MS, pdFALSE, this, v_ccDisableTimer);
   }
 
 OvmsVehicleVWeUP::~OvmsVehicleVWeUP()
@@ -339,6 +326,7 @@ void OvmsVehicleVWeUP::vehicle_vweup_car_on(bool isOn)
 
 void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
   {
+
   unsigned char data[8];
 
   uint8_t length;
@@ -347,10 +335,19 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
   canbus *comfBus;
   comfBus = m_can3;
 
+  bool new_data;
+  new_data = false;
+
   switch (command)
     {
     // data values are wrong. We need to find the right ID's.
     case ENABLE_CLIMATE_CONTROL:
+      if (vwup_remote_climate_ticker == 0) {
+        vwup_remote_climate_ticker = 1800;
+      } else {
+        ESP_LOGI(TAG, "Enable Climate Control - already enabled");
+        break;
+      }
       ESP_LOGI(TAG, "Enable Climate Control");
       // 0x767 04 2F 09 B5 02 55 55 55 climate on?
       data[0] = 0x04;
@@ -361,8 +358,14 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
       data[5] = 0x55;
       data[6] = 0x55;
       data[7] = 0x55;
+      new_data = true;
       break;
     case DISABLE_CLIMATE_CONTROL:
+      if (vwup_remote_climate_ticker == 0) {
+        ESP_LOGI(TAG, "Disable Climate Control - already disabled");
+        break;
+      } 
+      vwup_remote_climate_ticker = 0;
       ESP_LOGI(TAG, "Disable Climate Control");
       // 0x767 04 2F 09 B5 00 55 55 55 climate off?
       data[0] = 0x04;
@@ -373,6 +376,7 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
       data[5] = 0x55;
       data[6] = 0x55;
       data[7] = 0x55;
+      new_data = true;
       break;
     case AUTO_DISABLE_CLIMATE_CONTROL:
       ESP_LOGI(TAG, "Auto Disable Climate Control");
@@ -385,6 +389,7 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
       data[5] = 0x55;
       data[6] = 0x55;
       data[7] = 0x55;
+      new_data = true;
       break;
     default:
       return;
@@ -393,46 +398,10 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
     // We need to find a way to check if we really are connected to the CAN bus.
     // Till then, we disable this
     //
-    // comfBus->WriteStandard(0x767, length, data);
-  }
-
-////////////////////////////////////////////////////////////////////////
-// implements the repeated sending of remote commands and releases
-// EV SYSTEM ACTIVATION REQUEST after an appropriate amount of time
-
-void OvmsVehicleVWeUP::RemoteCommandTimer()
-  {
-  ESP_LOGI(TAG, "RemoteCommandTimer %d", vwup_remote_command_ticker);
-  if (vwup_remote_command_ticker > 0)
-    {
-    vwup_remote_command_ticker--;
-    if (vwup_remote_command != AUTO_DISABLE_CLIMATE_CONTROL)
-      {
-      SendCommand(vwup_remote_command);
-      }
-    if (vwup_remote_command_ticker == 1 && vwup_remote_command == ENABLE_CLIMATE_CONTROL)
-      {
-      xTimerStart(m_ccDisableTimer, 0);
-      }
-
-    // vwup_remote_command_ticker is set to REMOTE_COMMAND_REPEAT_COUNT in
-    // RemoteCommandHandler() and we decrement it every 10th of a
-    // second, hence the following if statement evaluates to true
-    // ACTIVATION_REQUEST_TIME tenths after we start
-    //
-    // This mechanism is copied from the Nissan Leaf and it is completely
-    // uncertain, if this can be used for the VW e-Up this way.
+    if (new_data) {
+      // comfBus->WriteStandard(0x767, length, data);
+      ESP_LOGI(TAG, "Wrote Climate Control Message to Comfort CAN.");
     }
-    else
-    {
-      xTimerStop(m_remoteCommandTimer, 0);
-    }
-  }
-
-void OvmsVehicleVWeUP::CcDisableTimer()
-  {
-  ESP_LOGI(TAG, "CcDisableTimer");
-  SendCommand(AUTO_DISABLE_CLIMATE_CONTROL);
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::RemoteCommandHandler(RemoteCommand command)
@@ -440,8 +409,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::RemoteCommandHandler(RemoteComm
   ESP_LOGI(TAG, "RemoteCommandHandler");
 
   vwup_remote_command = command;
-  vwup_remote_command_ticker = REMOTE_COMMAND_REPEAT_COUNT;
-  xTimerStart(m_remoteCommandTimer, 0);
+  SendCommand(vwup_remote_command);
 
   return Success;
   }
@@ -468,6 +436,17 @@ void OvmsVehicleVWeUP::Ticker1(uint32_t ticker)
   if (StandardMetrics.ms_v_env_awake->IsStale())
     {
     StandardMetrics.ms_v_env_awake->SetValue(false);
+    }
+
+  // Autodisable climate control ticker (30 min.)
+  if (vwup_remote_climate_ticker != 0) 
+    {
+    vwup_remote_climate_ticker--;
+    if (vwup_remote_climate_ticker == 1) 
+      {
+        vwup_remote_climate_ticker = 0;
+        SendCommand(AUTO_DISABLE_CLIMATE_CONTROL);
+      }
     }
   }
 

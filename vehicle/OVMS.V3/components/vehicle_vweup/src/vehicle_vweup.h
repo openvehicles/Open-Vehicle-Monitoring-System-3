@@ -32,11 +32,9 @@
 #ifndef __VEHICLE_VWEUP_H__
 #define __VEHICLE_VWEUP_H__
 
-#include "freertos/timers.h"
 #include "vehicle.h"
 #include "ovms_webserver.h"
 
-#define REMOTE_COMMAND_REPEAT_COUNT 24 // number of times to send the remote command after the first time
 #define DEFAULT_MODEL_YEAR 2020
 
 using namespace std;
@@ -76,6 +74,7 @@ class OvmsVehicleVWeUP : public OvmsVehicle
     bool vin_part3;
     bool vwup_enable_write;
     int vwup_modelyear;
+    int vwup_remote_climate_ticker;
 
   private:
     void SendCommand(RemoteCommand);
@@ -83,9 +82,6 @@ class OvmsVehicleVWeUP : public OvmsVehicle
 
     RemoteCommand vwup_remote_command; // command to send, see RemoteCommandTimer()
     uint8_t vwup_remote_command_ticker; // number remaining remote command frames to send
-
-    TimerHandle_t m_remoteCommandTimer;
-    TimerHandle_t m_ccDisableTimer;
 
     void vehicle_vweup_car_on(bool isOn);
 

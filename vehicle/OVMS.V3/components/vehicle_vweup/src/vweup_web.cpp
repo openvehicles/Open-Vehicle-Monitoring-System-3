@@ -180,7 +180,7 @@ void OvmsVehicleVWeUP::WebCfgHardware(PageEntry_t& p, PageContext_t& c)
 
   c.input_radiobtn_start("Connection type", "how_connected");
   c.input_radiobtn_option("how_connected", "T26A", "0", how_connected == "0");
-  c.input_radiobtn_option("how_connected", "T26A + Bluetooth", "1", how_connected == "1");
+  c.input_radiobtn_option("how_connected", "T26A + OBD", "1", how_connected == "1");
   c.input_radiobtn_option("how_connected", "OBD", "1", how_connected == "2");
   c.input_radiobtn_end();
 
