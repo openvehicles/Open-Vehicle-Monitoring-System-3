@@ -83,13 +83,14 @@ class OvmsVehicleVWeUP : public OvmsVehicle
     OvmsVehicle::vehicle_command_t RemoteCommandHandler(RemoteCommand command);
 
     RemoteCommand vwup_remote_command; // command to send, see RemoteCommandTimer()
-    uint8_t vwup_remote_command_ticker; // number remaining remote command frames to send
 
     void vehicle_vweup_car_on(bool isOn);
+    TimerHandle_t m_sendOcuHeartbeat;
 
   public:
     void WebInit();
     void WebDeInit();
+    void SendOcuHeartbeat();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgHardware(PageEntry_t& p, PageContext_t& c);
     virtual vehicle_command_t CommandWakeup();

@@ -65,7 +65,7 @@
 ;
 ;    0.2.3  Redesign climate control, removed bluetooth template
 ;
-;    0.2.4  First implementation of the ringbus
+;    0.2.4  First implementation of the ringbus and ocu heartbeat
 ;
 ;    (C) 2020       Chris van der Meijden
 ;
@@ -78,6 +78,7 @@ static const char *TAG = "v-vweup";
 #define VERSION "0.2.4"
 
 #include <stdio.h>
+#include "pcp.h"
 #include "vehicle_vweup.h"
 #include "metrics_standard.h"
 #include "ovms_webserver.h"
@@ -88,6 +89,12 @@ static const OvmsVehicle::poll_pid_t vwup_polls[] =
 {
   { 0, 0, 0x00, 0x00, { 0, 0, 0 }, 0 }
 };
+
+void sendOcuHeartbeat(TimerHandle_t timer)
+  {
+  OvmsVehicleVWeUP* vwup = (OvmsVehicleVWeUP*) pvTimerGetTimerID(timer);
+  vwup->SendOcuHeartbeat();
+  }
 
 OvmsVehicleVWeUP::OvmsVehicleVWeUP()
   {
@@ -110,6 +117,8 @@ OvmsVehicleVWeUP::OvmsVehicleVWeUP()
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
 #endif
+
+  m_sendOcuHeartbeat = xTimerCreate("VW e-Up OCU heartbeat", 1000 / portTICK_PERIOD_MS, pdTRUE, this, sendOcuHeartbeat);
   }
 
 OvmsVehicleVWeUP::~OvmsVehicleVWeUP()
@@ -289,8 +298,12 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       break;
 
     case 0x400: // Welcome to the ring
-      switch  (d[0]) {
-        case 0x1D: // Our wakeup call is detected
+      if (d[1] == 0x31 ) { // We should go to sleep, not sure if we need that here
+          ESP_LOGI(TAG, "Comfort CAN calls for sleep");
+          xTimerStop(m_sendOcuHeartbeat, 0);
+          break;
+      }
+      if (d[0] == 0x1D) { // Our wakeup call is detected
           CAN_frame_t frame;
           memset(&frame, 0, sizeof(frame));
 
@@ -314,8 +327,12 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       break;
 
     case 0x436: // Working in the ring. Who is this?
-      switch  (d[0]) {
-        case 0x1D: // We are called in the ring
+      if (d[1] == 0x31 ) { // We should go to sleep
+          ESP_LOGI(TAG, "Comfort CAN calls for sleep");
+          xTimerStop(m_sendOcuHeartbeat, 0);
+          break;
+      }
+      if (d[0] == 0x1D) { // We are called in the ring
           CAN_frame_t frame;
           memset(&frame, 0, sizeof(frame));
 
@@ -402,9 +419,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::CommandWakeup() {
   frame.data.u8[5] = 0x14; // What does this?
   frame.data.u8[6] = 0x00;
   frame.data.u8[7] = 0x00;
-  m_can3->Write(&frame);
-  //vTaskDelay(500 / portTICK_PERIOD_MS);
-  //m_can3->Stop();
+  if (vwup_enable_write) m_can3->Write(&frame);
+
+  vTaskDelay(100 / portTICK_PERIOD_MS);
+  xTimerStart(m_sendOcuHeartbeat, 0);
 
   return Success;
 }
@@ -502,6 +520,29 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::RemoteCommandHandler(RemoteComm
 
   return Success;
   }
+
+void OvmsVehicleVWeUP::SendOcuHeartbeat()
+  {
+  CAN_frame_t frame;
+  memset(&frame, 0, sizeof(frame));
+
+  frame.origin = m_can3;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 8;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x5A9;
+  frame.callback = NULL;
+  frame.data.u8[0] = 0x00;
+  frame.data.u8[1] = 0x00;
+  frame.data.u8[2] = 0x00;
+  frame.data.u8[3] = 0x00;
+  frame.data.u8[4] = 0x00;
+  frame.data.u8[5] = 0x00;
+  frame.data.u8[6] = 0x00;
+  frame.data.u8[7] = 0x00;
+  if (vwup_enable_write) m_can3->Write(&frame);
+  }
+
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::CommandHomelink(int button, int durationms)
   {
