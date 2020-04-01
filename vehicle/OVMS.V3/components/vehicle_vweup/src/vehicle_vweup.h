@@ -75,6 +75,8 @@ class OvmsVehicleVWeUP : public OvmsVehicle
     bool vwup_enable_write;
     int vwup_modelyear;
     int vwup_remote_climate_ticker;
+    bool ocu_working;
+    bool ocu_what;
 
   private:
     void SendCommand(RemoteCommand);
@@ -90,7 +92,7 @@ class OvmsVehicleVWeUP : public OvmsVehicle
     void WebDeInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgHardware(PageEntry_t& p, PageContext_t& c);
-
+    virtual vehicle_command_t CommandWakeup();
   };
 
 #endif //#ifndef __VEHICLE_VWEUP_H__

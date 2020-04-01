@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          30th March 2020
+;    Date:          01st April 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -65,6 +65,8 @@
 ;
 ;    0.2.3  Redesign climate control, removed bluetooth template
 ;
+;    0.2.4  First implementation of the ringbus
+;
 ;    (C) 2020       Chris van der Meijden
 ;
 ;    Big thanx to sharkcow and Dimitrie78.
@@ -73,7 +75,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.2.3"
+#define VERSION "0.2.4"
 
 #include <stdio.h>
 #include "vehicle_vweup.h"
@@ -102,6 +104,8 @@ OvmsVehicleVWeUP::OvmsVehicleVWeUP()
   vin_part2 = false;
   vin_part3 = false;
   vwup_remote_climate_ticker = 0;
+  ocu_working = false;
+  ocu_what = false;
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
@@ -284,6 +288,64 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       }
       break;
 
+    case 0x400: // Welcome to the ring
+      switch  (d[0]) {
+        case 0x1D: // Our wakeup call is detected
+          CAN_frame_t frame;
+          memset(&frame, 0, sizeof(frame));
+
+          frame.origin = m_can3;
+          frame.FIR.U = 0;
+          frame.FIR.B.DLC = 8;
+          frame.FIR.B.FF = CAN_frame_std;
+          frame.MsgID = 0x43D;
+          frame.callback = NULL;
+          frame.data.u8[0] = 0x00;
+          frame.data.u8[1] = 0x01;
+          frame.data.u8[2] = 0x02;
+          frame.data.u8[3] = 0x00;
+          frame.data.u8[4] = 0x00;
+          frame.data.u8[5] = 0x14;
+          frame.data.u8[6] = 0x00;
+          frame.data.u8[7] = 0x00;
+          if(vwup_enable_write) m_can3->Write(&frame);
+          break;
+      }
+      break;
+
+    case 0x436: // Working in the ring. Who is this?
+      switch  (d[0]) {
+        case 0x1D: // We are called in the ring
+          CAN_frame_t frame;
+          memset(&frame, 0, sizeof(frame));
+
+          frame.origin = m_can3;
+          frame.FIR.U = 0;
+          frame.FIR.B.DLC = 8;
+          frame.FIR.B.FF = CAN_frame_std;
+          frame.MsgID = 0x43D;
+          frame.callback = NULL;
+          frame.data.u8[0] = 0x00;
+          if (ocu_working) {
+            frame.data.u8[1] = 0x01;
+          } else {
+            frame.data.u8[1] = 0x11; // Ready to sleep. This is very important!
+          }
+          frame.data.u8[2] = 0x02;
+          frame.data.u8[3] = 0x00;
+          frame.data.u8[4] = 0x00;
+          if (ocu_what) { // This is not understood yet
+            frame.data.u8[5] = 0x14;
+          } else {
+            frame.data.u8[5] = 0x10;
+          }
+          frame.data.u8[6] = 0x00;
+          frame.data.u8[7] = 0x00;
+          if(vwup_enable_write) m_can3->Write(&frame);
+          break;
+      }
+      break;
+
     default:
       // This will log all unknown incoming frames
       // ESP_LOGD(TAG, "IFC %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
@@ -313,6 +375,40 @@ void OvmsVehicleVWeUP::vehicle_vweup_car_on(bool isOn)
   }
 
 
+// Wakeup implentation over the VW ring commands
+// We need to register in the ring with a call to our self from 43D with 0x1D in the first byte
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::CommandWakeup() {
+
+  if(!vwup_enable_write)
+    return Fail;
+  
+  ESP_LOGI(TAG, "Send Wakeup Command");
+  
+  CAN_frame_t frame;
+  memset(&frame, 0, sizeof(frame));
+
+  frame.origin = m_can3;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 8;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x43D;
+  frame.callback = NULL;
+  frame.data.u8[0] = 0x1D;
+  frame.data.u8[1] = 0x02;
+  frame.data.u8[2] = 0x02;
+  frame.data.u8[3] = 0x00;
+  frame.data.u8[4] = 0x00;
+  frame.data.u8[5] = 0x14; // What does this?
+  frame.data.u8[6] = 0x00;
+  frame.data.u8[7] = 0x00;
+  m_can3->Write(&frame);
+  //vTaskDelay(500 / portTICK_PERIOD_MS);
+  //m_can3->Stop();
+
+  return Success;
+}
+
 ////////////////////////////////////////////////////////////////////////
 // Send a RemoteCommand on the CAN bus.
 //
@@ -330,7 +426,7 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
   unsigned char data[8];
 
   uint8_t length;
-  length = 8;
+  length = 4;
 
   canbus *comfBus;
   comfBus = m_can3;
@@ -340,7 +436,7 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
 
   switch (command)
     {
-    // data values are wrong. We need to find the right ID's.
+    // This is a placeholder. We need to find out the right procedure.
     case ENABLE_CLIMATE_CONTROL:
       if (vwup_remote_climate_ticker == 0) {
         vwup_remote_climate_ticker = 1800;
@@ -349,15 +445,14 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
         break;
       }
       ESP_LOGI(TAG, "Enable Climate Control");
-      // 0x767 04 2F 09 B5 02 55 55 55 climate on?
-      data[0] = 0x04;
-      data[1] = 0x2F;
-      data[2] = 0x09;
-      data[3] = 0xB5;
-      data[4] = 0x02;
-      data[5] = 0x55;
-      data[6] = 0x55;
-      data[7] = 0x55;
+
+      CommandWakeup();
+
+      // 0x69E 29 58 00 01 climate on?
+      data[0] = 0x29;
+      data[1] = 0x58;
+      data[2] = 0x00;
+      data[3] = 0x01;
       new_data = true;
       break;
     case DISABLE_CLIMATE_CONTROL:
@@ -367,39 +462,33 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
       } 
       vwup_remote_climate_ticker = 0;
       ESP_LOGI(TAG, "Disable Climate Control");
-      // 0x767 04 2F 09 B5 00 55 55 55 climate off?
-      data[0] = 0x04;
-      data[1] = 0x2F;
-      data[2] = 0x09;
-      data[3] = 0xB5;
-      data[4] = 0x00;
-      data[5] = 0x55;
-      data[6] = 0x55;
-      data[7] = 0x55;
+      // 0x69E 29 58 00 00 climate off?
+      data[0] = 0x29;
+      data[1] = 0x58;
+      data[2] = 0x00;
+      data[3] = 0x00;
       new_data = true;
       break;
     case AUTO_DISABLE_CLIMATE_CONTROL:
+      vwup_remote_climate_ticker = 0;
       ESP_LOGI(TAG, "Auto Disable Climate Control");
-      // 0x767 04 2F 09 B5 00 55 55 55 climate off?
-      data[0] = 0x04;
-      data[1] = 0x2F;
-      data[2] = 0x09;
-      data[3] = 0xB5;
-      data[4] = 0x00;
-      data[5] = 0x55;
-      data[6] = 0x55;
-      data[7] = 0x55;
+      // 0x69E 29 58 00 00 climate off?
+      data[0] = 0x29;
+      data[1] = 0x58;
+      data[2] = 0x00;
+      data[3] = 0x00;
       new_data = true;
       break;
     default:
       return;
     }
-    // This crashes OVMS if not connected to the CAN bus!
-    // We need to find a way to check if we really are connected to the CAN bus.
-    // Till then, we disable this
-    //
+    
     if (new_data) {
-      // comfBus->WriteStandard(0x767, length, data);
+      // This does not work untill we find theright procedure
+      // This also crashes OVMS if we are not connected to the comfort CAN
+      comfBus->WriteStandard(0x69E, length, data);
+      ocu_working = true;
+      if (vwup_remote_climate_ticker == 0) ocu_working = false;
       ESP_LOGI(TAG, "Wrote Climate Control Message to Comfort CAN.");
     }
   }
@@ -444,7 +533,6 @@ void OvmsVehicleVWeUP::Ticker1(uint32_t ticker)
     vwup_remote_climate_ticker--;
     if (vwup_remote_climate_ticker == 1) 
       {
-        vwup_remote_climate_ticker = 0;
         SendCommand(AUTO_DISABLE_CLIMATE_CONTROL);
       }
     }
