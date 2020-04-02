@@ -326,7 +326,8 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       }
       break;
 
-    case 0x436: // Working in the ring. Who is this?
+    case 0x436:
+    case 0x439: // Working in the ring. Who are these and why do they differ on some cars?
       if (d[1] == 0x31 ) { // We should go to sleep
           ESP_LOGI(TAG, "Comfort CAN calls for sleep");
           xTimerStop(m_sendOcuHeartbeat, 0);
