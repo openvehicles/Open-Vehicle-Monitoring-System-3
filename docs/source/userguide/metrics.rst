@@ -151,7 +151,7 @@ v.c.substate                                                      scheduledstop,
 v.c.temp                                 16°C                     Charger temperature
 v.c.time                                 0Sec                     Duration of running charge
 v.c.timermode                                                     yes = timer enabled
-v.c.timerstart                                                    Time timer is due to start
+v.c.timerstart                                                    Time timer is due to start, seconds since midnight UTC
 v.c.type                                                          undefined, type1, type2, chademo, roadster, teslaus, supercharger, ccs
 v.c.voltage                              0V                       Momentary charger supply voltage
 v.d.cp                                   yes                      yes = Charge port open

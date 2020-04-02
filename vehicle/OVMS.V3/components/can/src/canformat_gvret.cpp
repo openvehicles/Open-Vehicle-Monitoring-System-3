@@ -27,10 +27,10 @@
 #include "ovms_log.h"
 static const char *TAG = "canformat-gvret";
 
+#include "canformat_gvret.h"
 #include <errno.h>
 #include <endian.h>
 #include "pcp.h"
-#include "canformat_gvret.h"
 
 ////////////////////////////////////////////////////////////////////////
 // Initialisation and Registration

@@ -54,7 +54,7 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   for (OvmsMetric* m=MyMetrics.m_first; m != NULL; m=m->m_next)
     {
     const char *k = m->m_name;
-    std::string v = m->AsString();
+    std::string v = m->AsUnitString("", m->GetUnits() == TimeUTC ? TimeLocal : m->GetUnits());
     bool match = false;
     for (int i=0;i<argc;i++)
       if (strstr(k,argv[i]))
@@ -74,9 +74,7 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
       if (v.empty())
         writer->printf("%s\n",k);
       else
-        writer->printf("%-40.40s %s%s\n",
-          k,v.c_str(),OvmsMetricUnitLabel(m->GetUnits()));
-      
+        writer->printf("%-40.40s %s\n", k, v.c_str());
       found = true;
       }
     }
@@ -636,8 +634,18 @@ std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units, i
   if (IsDefined())
     {
     char buffer[33];
+    int value = m_value;
     if ((units != Other)&&(units != m_units))
-      itoa(UnitConvert(m_units,units,m_value),buffer,10);
+      value = UnitConvert(m_units,units,m_value);
+    if (units == TimeUTC || units == TimeLocal)
+      {
+      int seconds = value % 60;
+      value /= 60;
+      int minutes = value % 60;
+      value /= 60;
+      int hours = value;
+      snprintf(buffer, sizeof(buffer), "%02u:%02u:%02u", hours, minutes, seconds);
+      }
     else
       itoa (m_value,buffer,10);
     return buffer;
@@ -967,6 +975,7 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
     case Seconds:      return "Sec";
     case Minutes:      return "Min";
     case Hours:        return "Hour";
+    case TimeUTC:      return "UTC";
     case Degrees:      return "°";
     case Kph:          return "km/h";
     case Mph:          return "Mph";
@@ -1042,12 +1051,25 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
       else if (to == Hours) return value/3600;
       break;
     case Minutes:
-      if (to == Seconds) return value*60;
+      if (to == Seconds || to == TimeUTC || to == TimeLocal) return value*60;
       else if (to == Hours) return value/60;
       break;
     case Hours:
-      if (to == Seconds) return value*3600;
+      if (to == Seconds || to == TimeUTC || to == TimeLocal) return value*3600;
       else if (to == Minutes) return value*60;
+      break;
+    case TimeUTC:
+      if (to == TimeLocal)
+        {
+        time_t now;
+        time(&now);
+        now -= now % (24*60*60);        // Back to midnight UTC
+        now += value;                   // The target time today
+        struct tm* tmu = localtime(&now);
+        return (tmu->tm_hour * 60 + tmu->tm_min) * 60 + tmu->tm_sec;
+        }
+      else if (to == Minutes) return value/60;
+      else if (to == Hours) return value/3600;
       break;
     case Kph:
       if (to == Mph) return (value*5)/8;

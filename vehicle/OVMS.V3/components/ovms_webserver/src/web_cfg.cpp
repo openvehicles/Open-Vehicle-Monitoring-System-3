@@ -27,7 +27,9 @@
 */
 
 #include "ovms_log.h"
+#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
 static const char *TAG = "webserver";
+#endif
 
 #include <string.h>
 #include <stdio.h>
