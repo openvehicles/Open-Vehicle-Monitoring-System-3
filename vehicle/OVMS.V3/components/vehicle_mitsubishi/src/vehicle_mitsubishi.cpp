@@ -46,6 +46,11 @@
 ;       - Charge/discharge max current
 ;         - Pid: 0x761 request - 0x762 response BMU ECU
 ;       - Ideal range calculation 16.1kWh/100km
+;     1.0.7
+;       - Add comfort variables (fan speed, vent type, intake type)
+;	- Odometer fix
+;     1.0.8.
+;       - Add door lock status (beta)
 ;
 ;    (C) 2011         Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018    Mark Webb-Johnson
@@ -75,7 +80,7 @@
 #include <stdio.h>
 #include "vehicle_mitsubishi.h"
 
-#define VERSION "1.0.2"
+#define VERSION "1.0.8"
 
 static const char *TAG = "v-mitsubishi";
 
@@ -454,28 +459,52 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
          * legs+windshield 7-9 windshield)
          */
 
-        //heating level
-        if (((int)d[0] << 4 ) == 112)
+       //heating level
+        if (((int)d[0] & 15) == 7)
         {
-          //in the middle
-        }else if (((int)d[0] << 4 ) > 112)
+          //ESP_LOGI(TAG, "Middle");
+          //in the middle "off"
+        }else if (((int)d[0] & 15) < 7)
         {
-          // Warm
+        //  ESP_LOGI(TAG, "cooling");
+          // Cooling
         }
-        else if (((int)d[0] << 4) < 112)
+        else if (((int)d[0] & 15) > 7)
         {
-          //Cold
+        //  ESP_LOGI(TAG, "Heating");
+          //Heating
+        }
+        //ESP_LOGI(TAG,"Heat level: %d", (int)d[0] & 15  );
+        //Recirculation pushed
+        if(((int)d[0] & 64) != 0)
+        {
+          StandardMetrics.ms_v_env_cabinintake->SetValue("Recirculation");
+        }
+        else
+        {
+          StandardMetrics.ms_v_env_cabinintake->SetValue("Fresh");
         }
 
-      if (((int)d[0] >> 7) == 1)
+      	//AC button
+      	if (((int)d[0] & 128) != 0)
+      	{
+          StandardMetrics.ms_v_env_hvac->SetValue(true);
+      	}
+      	else
+      	{
+          StandardMetrics.ms_v_env_hvac->SetValue(false);
+      	}
+	
+      //Fan Speed
+      float fanSpeed = ((d[1] & 15 )*12.5)+0.5;
+      StandardMetrics.ms_v_env_cabinfan->SetValue((int)fanSpeed);
+      //Max pushed
+      if(((int)d[0] & 32) != 0)
       {
-        // AC on
-        StandardMetrics.ms_v_env_hvac->SetValue(true);
+      	StandardMetrics.ms_v_env_cabinfan->SetValue(110);
       }
-      else
-      {
-        StandardMetrics.ms_v_env_hvac->SetValue(false);
-      }
+	      
+        //Vent Direction      
 
       string ventDirection = "-";
       switch ((d[1] & 240 >> 4)) {
@@ -499,6 +528,8 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
           ventDirection = "Windshield";
         break;
       }
+	 StandardMetrics.ms_v_env_cabinvent->SetValue(ventDirection);
+	      
       break;
     }
 
@@ -675,8 +706,14 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         else
         {
         }
-        if ((d[2] & 192) != 0) //??
+        if ((d[2] & 12) != 0) //door lock disabled
         {
+          StandardMetrics.ms_v_env_locked->SetValue(false);
+        }
+
+        if ((d[2] & 192) != 0) //door lock enbled
+        {
+          StandardMetrics.ms_v_env_locked->SetValue(true);
         }
         break;
       }
