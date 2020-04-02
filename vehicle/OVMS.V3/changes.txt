@@ -1,12 +1,18 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+
+2020-04-03 MWJ  3.2.011 OTA release
+- #327 Tesla Roadster: Vehicle AWAKE metric not correct
 - #311 OvmsEvents::ScheduleEvent with delay_ms < 10
 - #333 Support for SSL/TLS Trusted Certificate Authorities
 - #334 Support for SSL/TLS MQTT connections in Server v3
 - #335 Support for SSL/TLS MQTT connections in Server v2
+- #338 SSL/TLS maximum segment size forced to 2048 bytes
+- #341 Support paranoid mode in server v2
 - #343 TPMS message has no -1 setting for "disable" in ovms_server_v2.cpp
 - #342 OTA updates available (when not on wifi)
+- #351 Tesla Model S: Spurious vehicle idle alerts after vehicle firmware update
 
 2020-02-03 MWJ  3.2.010 OTA release
 - EGPIO: address multiple ports by input & output command
