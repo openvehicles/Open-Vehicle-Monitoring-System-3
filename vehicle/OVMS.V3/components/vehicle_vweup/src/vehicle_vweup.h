@@ -75,6 +75,7 @@ class OvmsVehicleVWeUP : public OvmsVehicle
     bool vwup_enable_write;
     int vwup_modelyear;
     int vwup_remote_climate_ticker;
+    bool ocu_awake;
     bool ocu_working;
     bool ocu_what;
 

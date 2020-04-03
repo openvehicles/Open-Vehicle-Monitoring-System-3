@@ -67,6 +67,8 @@
 ;
 ;    0.2.4  First implementation of the ringbus and ocu heartbeat
 ;
+;    0.2.5  Fixed heartbeat
+;
 ;    (C) 2020       Chris van der Meijden
 ;
 ;    Big thanx to sharkcow and Dimitrie78.
@@ -75,7 +77,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.2.4"
+#define VERSION "0.2.5"
 
 #include <stdio.h>
 #include "pcp.h"
@@ -111,6 +113,7 @@ OvmsVehicleVWeUP::OvmsVehicleVWeUP()
   vin_part2 = false;
   vin_part3 = false;
   vwup_remote_climate_ticker = 0;
+  ocu_awake = false;
   ocu_working = false;
   ocu_what = false;
 
@@ -118,7 +121,6 @@ OvmsVehicleVWeUP::OvmsVehicleVWeUP()
   WebInit();
 #endif
 
-  m_sendOcuHeartbeat = xTimerCreate("VW e-Up OCU heartbeat", 1000 / portTICK_PERIOD_MS, pdTRUE, this, sendOcuHeartbeat);
   }
 
 OvmsVehicleVWeUP::~OvmsVehicleVWeUP()
@@ -301,9 +303,13 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
     case 0x40C: // We know this one too. Climatronic.
     case 0x436: // Working in the ring. 
     case 0x439: // Who 436 and 439 and why do they differ on some cars?
-      if (d[1] == 0x31 ) { // We should go to sleep
+      if (d[1] == 0x31 && ocu_awake) { // We should go to sleep
           ESP_LOGI(TAG, "Comfort CAN calls for sleep");
           xTimerStop(m_sendOcuHeartbeat, 0);
+          xTimerDelete(m_sendOcuHeartbeat, 0);
+          m_sendOcuHeartbeat = NULL;
+          ocu_awake = false;
+          vwup_remote_climate_ticker = 0;
           break;
       }
       if (d[0] == 0x1D) { // We are called in the ring
@@ -333,6 +339,7 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
           frame.data.u8[6] = 0x00;
           frame.data.u8[7] = 0x00;
           if(vwup_enable_write) m_can3->Write(&frame); // We answer.
+          ocu_awake = true;
           break;
       }
       break;
@@ -374,32 +381,36 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::CommandWakeup() {
   if(!vwup_enable_write)
     return Fail;
   
-  ESP_LOGI(TAG, "Send Wakeup Command");
+  if(!ocu_awake) {
+    ESP_LOGI(TAG, "Send Wakeup Command");
   
-  CAN_frame_t frame;
-  memset(&frame, 0, sizeof(frame));
+    CAN_frame_t frame;
+    memset(&frame, 0, sizeof(frame));
 
-  frame.origin = m_can3;
-  frame.FIR.U = 0;
-  frame.FIR.B.DLC = 8;
-  frame.FIR.B.FF = CAN_frame_std;
-  frame.MsgID = 0x43D;
-  frame.callback = NULL;
-  frame.data.u8[0] = 0x1D;
-  frame.data.u8[1] = 0x02;
-  frame.data.u8[2] = 0x02;
-  frame.data.u8[3] = 0x00;
-  frame.data.u8[4] = 0x00;
-  frame.data.u8[5] = 0x14; // What does this?
-  frame.data.u8[6] = 0x00;
-  frame.data.u8[7] = 0x00;
-  if (vwup_enable_write) m_can3->Write(&frame);
+    frame.origin = m_can3;
+    frame.FIR.U = 0;
+    frame.FIR.B.DLC = 8;
+    frame.FIR.B.FF = CAN_frame_std;
+    frame.MsgID = 0x43D;
+    frame.callback = NULL;
+    frame.data.u8[0] = 0x1D;
+    frame.data.u8[1] = 0x02;
+    frame.data.u8[2] = 0x02;
+    frame.data.u8[3] = 0x00;
+    frame.data.u8[4] = 0x00;
+    frame.data.u8[5] = 0x14; // What does this?
+    frame.data.u8[6] = 0x00;
+    frame.data.u8[7] = 0x00;
+    if (vwup_enable_write) m_can3->Write(&frame);
 
-  ocu_working = true;
+    ocu_working = true;
+    ocu_awake = true;
 
-  vTaskDelay(100 / portTICK_PERIOD_MS);
-  xTimerStart(m_sendOcuHeartbeat, 0);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
 
+    m_sendOcuHeartbeat = xTimerCreate("VW e-Up OCU heartbeat", 1000 / portTICK_PERIOD_MS, pdTRUE, this, sendOcuHeartbeat);
+    xTimerStart(m_sendOcuHeartbeat, 0);
+  }
   return Success;
 }
 
@@ -482,6 +493,7 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
       // This also crashes OVMS if we are not connected to the comfort CAN
       comfBus->WriteStandard(0x69E, length, data);
       ocu_working = true;
+      ocu_awake = true;
       if (vwup_remote_climate_ticker == 0) ocu_working = false;
       ESP_LOGI(TAG, "Wrote Climate Control Message to Comfort CAN.");
     }
