@@ -224,13 +224,20 @@ unsuccessfull desperate attempt at getting heater to turn on with wild combinati
 
 Communication attempt of ECU for remote services without connection to vehicle
 
-*https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_nur_KommSG_remote_Klima_App.asc:*
+*https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_wakeup_ID400_errors.asc:*
 
 unsuccessfull attempt sending 400 0C 02 A0 04 04 04 00 00 without communication ECU connected
 
-*https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_wakeup_ID400_errors.asc:*
+*https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_Klima_test_5A7_failed.asc:*
 
 unsuccessfull attempt sending 5A7 60 16 00 00 00 00 00 00 every second without communication ECU connected
 
-*https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_Klima_test_5A7_failed.asc:*
+*https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_OCU_connect.asc:*
+
+Initial messages when OCU is connected to car
+
+*https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_remote_Klima_gateway_failed2.asc:*
+
+Unsuccessful attempt of putting CANoe between OCU and car as gateway to determine direction of messages (there seems to be a problem with ACK signals)
+
 
