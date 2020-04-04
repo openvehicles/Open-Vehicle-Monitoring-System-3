@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          01st April 2020
+;    Date:          04th April 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -69,9 +69,11 @@
 ;
 ;    0.2.5  Fixed heartbeat
 ;
+;    0.2.6  Refined climate control template
+;
 ;    (C) 2020       Chris van der Meijden
 ;
-;    Big thanx to sharkcow and Dimitrie78.
+;    Big thanx to sharkcow, Dimitrie78 and E-Imo.
 */
 
 #include "ovms_log.h"
@@ -181,7 +183,7 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
 
   switch (p_frame->MsgID) {
 
-    case 0x61A: // SOC. Is this different for > 2019 models? 
+    case 0x61A: // SOC. 
       StandardMetrics.ms_v_bat_soc->SetValue(d[7]/2.0);
       if (vwup_modelyear >= 2020)
         {
@@ -249,7 +251,7 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_pos_speed->SetValue(((d[4] << 8) + d[3]-1)/190);
       break;
 
-    case 0x527: // Outdoor temperature - untested. Wrong ID? If right, d[4] or d[5]?
+    case 0x527: // Outdoor temperature
       StandardMetrics.ms_v_env_temp->SetValue((d[5]/2)-50);
       break;
 
@@ -270,7 +272,7 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_door_fr->SetValue((d[1] & 0x02) > 0);
       break;
 
-    // Check for running remote hvac.
+    // Check for running hvac.
     case 0x3E1:
         if (d[4] > 0) {
           StandardMetrics.ms_v_env_hvac->SetValue(true);
@@ -299,11 +301,11 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
       }
       break;
 
-    case 0x400: // Welcome from ILM
+    case 0x400: // Welcome to the ring from ILM
     case 0x40C: // We know this one too. Climatronic.
     case 0x436: // Working in the ring. 
     case 0x439: // Who 436 and 439 and why do they differ on some cars?
-      if (d[1] == 0x31 && ocu_awake) { // We should go to sleep
+      if (d[1] == 0x31 && ocu_awake) { // We should go to sleep, no matter what
           ESP_LOGI(TAG, "Comfort CAN calls for sleep");
           xTimerStop(m_sendOcuHeartbeat, 0);
           xTimerDelete(m_sendOcuHeartbeat, 0);
@@ -331,7 +333,7 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
           frame.data.u8[2] = 0x02;
           frame.data.u8[3] = 0x00;
           frame.data.u8[4] = 0x00;
-          if (ocu_what) { // This is not understood yet
+          if (ocu_what) { // This is not implemented yet.
             frame.data.u8[5] = 0x14;
           } else {
             frame.data.u8[5] = 0x10;
@@ -362,6 +364,10 @@ void OvmsVehicleVWeUP::vehicle_vweup_car_on(bool isOn)
     ESP_LOGI(TAG,"CAR IS ON");
     StandardMetrics.ms_v_env_on->SetValue(true);
     if (vwup_enable_write) PollSetState(1);
+    // Turn off eventually running climate control timer
+    // Needs to be tested
+    ocu_working = false;
+    vwup_remote_climate_ticker = 0;
     }
   else if (!isOn && StandardMetrics.ms_v_env_on->AsBool())
     {
@@ -375,7 +381,7 @@ void OvmsVehicleVWeUP::vehicle_vweup_car_on(bool isOn)
 
 // Wakeup implentation over the VW ring commands
 // We need to register in the ring with a call to our self from 43D with 0x1D in the first byte
-
+//
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::CommandWakeup() {
 
   if(!vwup_enable_write)
@@ -401,7 +407,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::CommandWakeup() {
     frame.data.u8[5] = 0x14; // What does this?
     frame.data.u8[6] = 0x00;
     frame.data.u8[7] = 0x00;
-    if (vwup_enable_write) m_can3->Write(&frame);
+    m_can3->Write(&frame);
 
     ocu_working = true;
     ocu_awake = true;
@@ -411,6 +417,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::CommandWakeup() {
     m_sendOcuHeartbeat = xTimerCreate("VW e-Up OCU heartbeat", 1000 / portTICK_PERIOD_MS, pdTRUE, this, sendOcuHeartbeat);
     xTimerStart(m_sendOcuHeartbeat, 0);
   }
+  // This can be done better. Gives always success, even when already awake.
   return Success;
 }
 
@@ -418,13 +425,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::CommandWakeup() {
 // Send a RemoteCommand on the CAN bus.
 //
 // Does nothing if @command is out of range
-
-
-// Begin of remote climate control template
 //
-// This is just a template and does nothing!
-// We are missing the CAN ID's yet to make it work
-
 void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
   {
 
@@ -441,14 +442,19 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
 
   switch (command)
     {
-    // This is a placeholder. We need to find out the right procedure.
+    // This is still a placeholder. We need to find out the right procedure.
     case ENABLE_CLIMATE_CONTROL:
+      if (StandardMetrics.ms_v_env_on->AsBool()) {
+        ESP_LOGI(TAG, "Climate Control can't be enabled - car is on");
+        break;
+      }
       if (vwup_remote_climate_ticker == 0) {
         vwup_remote_climate_ticker = 1800;
       } else {
         ESP_LOGI(TAG, "Enable Climate Control - already enabled");
         break;
       }
+
       ESP_LOGI(TAG, "Enable Climate Control");
 
       CommandWakeup();
@@ -461,6 +467,10 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
       new_data = true;
       break;
     case DISABLE_CLIMATE_CONTROL:
+      if (StandardMetrics.ms_v_env_on->AsBool()) {
+        ESP_LOGI(TAG, "Climate Control is already disabled - car is on");
+        break;
+      }
       if (vwup_remote_climate_ticker == 0) {
         ESP_LOGI(TAG, "Disable Climate Control - already disabled");
         break;
@@ -475,6 +485,10 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
       new_data = true;
       break;
     case AUTO_DISABLE_CLIMATE_CONTROL:
+      if (StandardMetrics.ms_v_env_on->AsBool()) {
+        ESP_LOGI(TAG, "Error: CC AUTO_DISABLE when car is on");
+        break;
+      }
       vwup_remote_climate_ticker = 0;
       ESP_LOGI(TAG, "Auto Disable Climate Control");
       // 0x69E 29 58 00 00 climate off?
@@ -545,8 +559,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::CommandClimateControl(bool clim
     return RemoteCommandHandler(climatecontrolon ? ENABLE_CLIMATE_CONTROL : DISABLE_CLIMATE_CONTROL);
   else return NotImplemented;
   }
-
-// End of remote climate contol template
 
 void OvmsVehicleVWeUP::Ticker1(uint32_t ticker)
   {
