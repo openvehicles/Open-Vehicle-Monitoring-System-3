@@ -647,7 +647,7 @@ std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units, i
       snprintf(buffer, sizeof(buffer), "%02u:%02u:%02u", hours, minutes, seconds);
       }
     else
-      itoa (m_value,buffer,10);
+      itoa (value,buffer,10);
     return buffer;
     }
   else
