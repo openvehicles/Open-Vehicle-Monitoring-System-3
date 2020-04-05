@@ -103,7 +103,7 @@ The Tesla Roadster specific configuration options are in configuration parameter
 ==================== ======= ===========
 Instance             Default Description
 ==================== ======= ===========
-digital.speedo       no      Set to *yes* to enable digital speedometer
+digital.speedo       no      Set to *yes* to enable digital speedometer (2.x cars only)
 digital.speedo.reps  3       Number of CAN bus repeat transmissions
 cooldown.timelimit   60      Number of minutes after which cooldown is stopped
 cooldown.templimit   31      Temperature (in Celcius) after which cooldown is stopped
@@ -120,7 +120,7 @@ Tesla Roadster Notes
 #. OVMS v3 can calculate an overall battery health metric. This metric is calculated using our own algorithm and is in no way approved by Tesla. Battery health is dependent on many factors, and hard to bring down to just one simple number.
 #. The Tesla Roadster requires the ignition key to be on, and manual switches turned, to cool/heat the cabin. It is not technically possible to do this remotely via OVMS.
 
-The digital speedometer function replaces the AMPS display in the dashboard instrument cluster with the vehicle speed. This is an experimental feature, and works 99% of the time, but sometimes the car *wins* and displays AMPS for a split second. A better solution is to use the HUD functionality of OVMS v3 and install an external Heads Up Display in the car.
+The digital speedometer function replaces the AMPS display in the dashboard instrument cluster with the vehicle speed. It is only supported on v2.x cars (not v1.5). This is an experimental feature, and works 99% of the time, but sometimes the car *wins* and displays AMPS for a split second. A better solution is to use the HUD functionality of OVMS v3 and install an external Heads Up Display in the car.
 
 ------
 Thanks

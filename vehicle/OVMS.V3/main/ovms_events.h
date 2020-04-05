@@ -117,6 +117,11 @@ class OvmsEvents
     bool m_trace;
     TaskHandle_t m_taskid;
     QueueHandle_t m_taskqueue;
+
+  public:
+    EventCallbackEntry* m_current_callback;
+    std::string m_current_event;
+    uint32_t m_current_started;
   };
 
 extern OvmsEvents MyEvents;
