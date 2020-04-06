@@ -105,6 +105,7 @@ hhh: header ID
 ll: length
 
 d0 d1...: data
+bxx: bit number
 
 ======= ==================== ======= =================================== =======
 ID	Conversion	     Unit    Function		     	         Comment
@@ -120,6 +121,7 @@ ID	Conversion	     Unit    Function		     	         Comment
 470	d1 00,01,02	     Integer Status doors		     
 3E1	d4		     Integer Blower speed (57,66,7D,98,BB,DE,FA)
 575	d0 00 to 0F 	     Integer Key position		         (KEY)
+569	b07			     "AC"-LED
 ======= ==================== ======= =================================== =======
 
 --------------------------
