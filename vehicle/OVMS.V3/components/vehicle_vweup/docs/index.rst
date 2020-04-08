@@ -107,22 +107,24 @@ ll: length
 d0 d1...: data
 bxx: bit number
 
-======= ==================== ======= =================================== =======
-ID	Conversion	     Unit    Function		     	         Comment
-======= ==================== ======= =================================== =======
-61A	d7/2   		     % 	     State of Charge (relative)	         (SoC)
-320	(d4<<8+d3-1)/190     km/h    Speed		     	         (KMH)
-65F	3 Msg d5-7,d1-7,d1-7 String  VIN number		     	         (VIN)
-571	5+(.05*d0)	     Volt    12 Volt battery voltage 	         (12V)
-65D	d3&f<<12|d2<<8|d1    km      Odometer		     	         (KM)
-3E3	(d2-100)/2           °C      Cabin temperature      	         (IN)
-527	(d5/2)-50	     °C      Outdoor temperature     	         (OUT)
+======= ==================== ======= =========================================== =======
+ID	Conversion	     Unit    Function		     	         	 Comment
+======= ==================== ======= =========================================== =======
+61A	d7/2   		     % 	     State of Charge (relative)	         	 (SoC)
+320	(d4<<8+d3-1)/190     km/h    Speed		     	         	 (KMH)
+65F	3 Msg d5-7,d1-7,d1-7 String  VIN number		     	         	 (VIN)
+571	5+(.05*d0)	     Volt    12 Volt battery voltage 	         	 (12V)
+65D	d3&f<<12|d2<<8|d1    km      Odometer		     	         	 (KM)
+3E3	(d2-100)/2           °C      Cabin temperature      	         	 (IN)
+527	(d5/2)-50	     °C      Outdoor temperature     	         	 (OUT)
 52D	d0		     km	     Calculated range		     
 470	d1 00,01,02	     Integer Status doors		     
 3E1	d4		     Integer Blower speed (57,66,7D,98,BB,DE,FA)
-575	d0 00 to 0F 	     Integer Key position		         (KEY)
+575	d0 00 to 0F 	     Integer Key position		         	 (KEY)
 569	b07			     "AC"-LED
-======= ==================== ======= =================================== =======
+69C	d1/10+10	     °C      temperature setpoint for remote AC
+				     (only in message D2 <d1> 00 1E 1E 0A 00 00)
+======= ==================== ======= =========================================== =======
 
 --------------------------
 Links to vehicle log files
@@ -241,5 +243,17 @@ Initial messages when OCU is connected to car
 *https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_remote_Klima_gateway_failed2.asc:*
 
 Unsuccessful attempt of putting CANoe between OCU and car as gateway to determine direction of messages (there seems to be a problem with ACK signals)
+
+*https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_remote_Klima_setpoint_19C.asc*
+*https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_remote_Klima_setpoint_20C.asc*
+*https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_remote_Klima_setpoint_20.5C.asc*
+*https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_remote_Klima_setpoint_22C.asc:*
+
+KCAN messages when temperature setpoint is changed via Car Net (car is asleep in between)
+
+*https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_remote_Klima_OBD_manual_1%2B4_works.asc*
+*https://github.com/sharkcow/VW-e-UP-OBD-CAN-logs/blob/master/KCAN_remote_Klima_OBD_manual_1%2B4once_works_turnsoff.asc:*
+
+starting of remote AC via OBD commands. Except for one instance (at the end of first file), AC always turns off again right away... :(
 
 
