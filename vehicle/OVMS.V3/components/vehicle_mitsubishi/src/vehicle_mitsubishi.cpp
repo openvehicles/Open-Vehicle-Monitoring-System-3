@@ -1027,7 +1027,6 @@ void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
       mi_park_trip_counter.Update(POS_ODO);
       ms_v_trip_park_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
       ms_v_trip_park_time_stop->SetValue(StdMetrics.ms_m_timeutc->AsInt());
-      SaveTripHistory();
     }
 }
 
