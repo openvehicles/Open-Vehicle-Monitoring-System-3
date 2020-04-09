@@ -48,9 +48,10 @@
 ;       - Ideal range calculation 16.1kWh/100km
 ;     1.0.7
 ;       - Add comfort variables (fan speed, vent type, intake type)
-;	- Odometer fix
+;	      - Odometer fix
 ;     1.0.8.
 ;       - Add door lock status (beta)
+;
 ;
 ;    (C) 2011         Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018    Mark Webb-Johnson
@@ -156,7 +157,7 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
 
   #ifdef CONFIG_OVMS_COMP_WEBSERVER
     MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
-    MyWebServer.RegisterPage("/cfg/brakelight", "Brake Light control",OvmsWebServer::HandleCfgBrakelight,PageMenu_Vehicle,PageAuth_Cookie);
+    MyWebServer.RegisterPage("/cfg/brakelight", "Brake Light control", OvmsWebServer::HandleCfgBrakelight, PageMenu_Vehicle, PageAuth_Cookie);
     WebInit();
   #endif
 
@@ -455,11 +456,11 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
          *
          * byte 1, bits 0-3: ventilation level (if AUTO is chosen, the
          * automatically calculated level is returned) byte 1, bits 4-7:
-         * ventilation direction (1-2 face, 3 legs+face, 4 -5legs, 6
+         * ventilation direction (1-2 face, 3 legs+face, 4-5legs, 6
          * legs+windshield 7-9 windshield)
          */
 
-       //heating level
+        //heating level
         if (((int)d[0] & 15) == 7)
         {
           //ESP_LOGI(TAG, "Middle");
@@ -485,52 +486,50 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
           StandardMetrics.ms_v_env_cabinintake->SetValue("Fresh");
         }
 
-      	//AC button
-      	if (((int)d[0] & 128) != 0)
-      	{
+        //AC button
+        if (((int)d[0] & 128) != 0)
+        {
           StandardMetrics.ms_v_env_hvac->SetValue(true);
-      	}
-      	else
-      	{
+        }
+        else
+        {
           StandardMetrics.ms_v_env_hvac->SetValue(false);
-      	}
-	
-      //Fan Speed
-      float fanSpeed = ((d[1] & 15 )*12.5)+0.5;
-      StandardMetrics.ms_v_env_cabinfan->SetValue((int)fanSpeed);
-      //Max pushed
-      if(((int)d[0] & 32) != 0)
-      {
-      	StandardMetrics.ms_v_env_cabinfan->SetValue(110);
-      }
-	      
-        //Vent Direction      
+        }
+        //Fan Speed
+        float fanSpeed = ((d[1] & 15 )*12.5)+0.5;
+        StandardMetrics.ms_v_env_cabinfan->SetValue((int)fanSpeed);
+        //Max pushed
+        if(((int)d[0] & 32) != 0)
+        {
+          StandardMetrics.ms_v_env_cabinfan->SetValue(110);
+        }
+        //Vent Direction
+        string ventDirection = "-";
+        switch ((d[1] >> 4)) {
+          case 1:
+          case 2:
+            ventDirection = "Face";
+          break;
+          case 3:
+          case 4:
+            ventDirection = "Legs + Face";
+          break;
+          case 5:
+          case 6:
+            ventDirection = "Legs";
+          break;
+          case 7:
+          case 8:
+            ventDirection = "Legs + Windshield";
+          break;
+          case 9:
+            ventDirection = "Windshield";
+          break;
+        }
+        StandardMetrics.ms_v_env_cabinvent->SetValue(ventDirection);
 
-      string ventDirection = "-";
-      switch ((d[1] & 240 >> 4)) {
-        case 1:
-        case 2:
-          ventDirection = "Face";
+        ESP_LOGD(TAG, "Vent direction: %s", StandardMetrics.ms_v_env_cabinvent->AsString().c_str());
         break;
-        case 3:
-        case 4:
-          ventDirection = "Legs + Face";
-        break;
-        case 5:
-        case 6:
-          ventDirection = "Legs";
-        break;
-        case 7:
-        case 8:
-          ventDirection = "Legs + Windshield";
-        break;
-        case 9:
-          ventDirection = "Windshield";
-        break;
-      }
-	 StandardMetrics.ms_v_env_cabinvent->SetValue(ventDirection);
-	      
-      break;
     }
 
     case 0x412://freq10 // Speed and odometer
@@ -661,33 +660,23 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
           ms_v_env_highbeam->SetValue(false);
         }
 
-        if ((d[1] & 32) != 0 )  //Headlight
-        {
-		       // ESP_LOGI(TAG, "Headlight2 on");
-        }
-        else
-        {
-
-        }
-
+        //Windshield wipers Front
+        if ((d[1] & 8) != 0 )
+          ESP_LOGD(TAG, "Windwshiled wiper front");
+        //Windshield wipers Front
+        if ((d[1] & 16) != 0 )
+          ESP_LOGD(TAG, "Windwshiled wiper rear");
+        if ((d[1] & 32) != 0)
+          //ESP_LOGI(TAG, "Lamp1");
         if ((d[1] & 64) != 0)
-        { //Parkinglight
-		      //ESP_LOGI(TAG, "Parkinglight on");
-        }
-        else
-        {
+          //ESP_LOGI(TAG, "Lamp2");
+        //Windows Defrost
+        if ((d[6] & 8) != 0 )
+          ESP_LOGD(TAG, "Windshield defrost");
 
-        }
 
         if ((d[2] & 1) != 0) //any Door + trunk
-        { //OPEN
-            //StandardMetrics.ms_v_door_fr->SetValue(true);
-        }
-        else
-        {
-              //StandardMetrics.ms_v_door_fr->SetValue(false);
-        }
-
+          ESP_LOGD(TAG, "Any Door?");
 
         if ((d[2] & 2) != 0) //LHD Driver Door
         { //OPEN
@@ -697,15 +686,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
           StandardMetrics.ms_v_door_fl->SetValue(false);
         }
-        if ((d[2] & 3) != 0) //??
-        {
-        }
-        if ((d[2] & 128) != 0) //??
-        {
-        }
-        else
-        {
-        }
+
         if ((d[2] & 12) != 0) //door lock disabled
         {
           StandardMetrics.ms_v_env_locked->SetValue(false);
@@ -715,6 +696,11 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
           StandardMetrics.ms_v_env_locked->SetValue(true);
         }
+
+        //Rear window defrost
+        if ((d[6] & 8) != 0 )
+          ESP_LOGD(TAG, "Rear Windows defrost");
+
         break;
       }
 
@@ -979,10 +965,12 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
 }
 void OvmsVehicleMitsubishi::Ticker60(uint32_t ticker)
 {
+
   if (StdMetrics.ms_v_env_on->AsBool() || mi_QC == true || mi_SC == true)
   {
     //Send a request to BMS ECU
-    CAN_frame_t frame;
+
+   CAN_frame_t frame;
     memset(&frame,0,sizeof(frame));
     frame.origin = m_can1;
     frame.FIR.U = 0;
@@ -1039,6 +1027,7 @@ void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
       mi_park_trip_counter.Update(POS_ODO);
       ms_v_trip_park_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
       ms_v_trip_park_time_stop->SetValue(StdMetrics.ms_m_timeutc->AsInt());
+      SaveTripHistory();
     }
 }
 
