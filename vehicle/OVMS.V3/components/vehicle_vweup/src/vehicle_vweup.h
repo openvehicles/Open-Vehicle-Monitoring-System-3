@@ -78,6 +78,10 @@ class OvmsVehicleVWeUP : public OvmsVehicle
     bool ocu_awake;
     bool ocu_working;
     bool ocu_what;
+    bool vweup_cc_on;
+    int fas_counter_on;
+    int fas_counter_off;
+    bool dev_mode;
 
   private:
     void SendCommand(RemoteCommand);
@@ -92,6 +96,8 @@ class OvmsVehicleVWeUP : public OvmsVehicle
     void WebInit();
     void WebDeInit();
     void SendOcuHeartbeat();
+    void CCOn();
+    void CCOff();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgHardware(PageEntry_t& p, PageContext_t& c);
     virtual vehicle_command_t CommandWakeup();
