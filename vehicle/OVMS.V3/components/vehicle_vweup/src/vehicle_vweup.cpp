@@ -547,7 +547,7 @@ void OvmsVehicleVWeUP::CCOn()
     data[7] = 0x00;
     if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x5A7, length, data);
 
-    // d4 could be a counter?
+    // d5 could be a counter?
     data[0] = 0x80;
     data[1] = 0x20;
     data[2] = 0x29;
