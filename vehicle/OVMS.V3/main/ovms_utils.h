@@ -231,4 +231,10 @@ std::string get_user_agent();
  */
 double float2double(float f);
 
+/**
+ * idtag: create object instance tag for registrations
+ */
+std::string idtag(const char* tag, void* instance);
+#define IDTAG idtag(TAG,this)
+
 #endif //#ifndef __UTILS_H__
