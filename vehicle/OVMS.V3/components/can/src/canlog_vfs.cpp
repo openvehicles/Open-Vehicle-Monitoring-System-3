@@ -30,6 +30,7 @@ static const char *TAG = "canlog-vfs";
 #include "can.h"
 #include "canformat.h"
 #include "canlog_vfs.h"
+#include "ovms_utils.h"
 #include "ovms_config.h"
 #include "ovms_peripherals.h"
 
@@ -92,13 +93,13 @@ canlog_vfs::canlog_vfs(std::string path, std::string format)
   m_path = path;
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG, "sd.mounted", std::bind(&canlog_vfs::MountListener, this, _1, _2));
-  MyEvents.RegisterEvent(TAG, "sd.unmounting", std::bind(&canlog_vfs::MountListener, this, _1, _2));
+  MyEvents.RegisterEvent(IDTAG, "sd.mounted", std::bind(&canlog_vfs::MountListener, this, _1, _2));
+  MyEvents.RegisterEvent(IDTAG, "sd.unmounting", std::bind(&canlog_vfs::MountListener, this, _1, _2));
   }
 
 canlog_vfs::~canlog_vfs()
   {
-  MyEvents.DeregisterEvent(TAG);
+  MyEvents.DeregisterEvent(IDTAG);
 
   if (m_file != NULL)
     {
