@@ -1,0 +1,327 @@
+In archive /home/chris/OVMS/Open-Vehicle-Monitoring-System-3/vehicle/OVMS.V3/build/vehicle_thinkcity/libvehicle_thinkcity.a:
+
+tc_web.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .literal._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$22 00000014  00000000  00000000  00000034  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  1 .literal._ZN20OvmsVehicleThinkCity14WebCfgFeaturesER9PageEntryR11PageContext 00000160  00000000  00000000  00000048  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  2 .literal._ZN20OvmsVehicleThinkCity7WebInitEv 00000044  00000000  00000000  000001a8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  3 .literal._ZN20OvmsVehicleThinkCity18GetDashboardConfigER15DashboardConfig 00000008  00000000  00000000  000001ec  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  4 .literal.startup._GLOBAL__sub_I__ZN20OvmsVehicleThinkCity7WebInitEv 00000008  00000000  00000000  000001f4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  5 .literal.exit._GLOBAL__sub_D__ZN20OvmsVehicleThinkCity7WebInitEv 00000008  00000000  00000000  000001fc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  6 .text         00000000  00000000  00000000  00000204  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  7 .data         00000000  00000000  00000000  00000204  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+  8 .bss          00000000  00000000  00000000  00000204  2**0
+                  ALLOC
+  9 .rodata.str1.1 00000869  00000000  00000000  00000204  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 10 .text._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$22 00000062  00000000  00000000  00000a70  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 11 .text._ZN20OvmsVehicleThinkCity13WebCfgBatteryER9PageEntryR11PageContext 00000005  00000000  00000000  00000ad4  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 12 .text._ZN20OvmsVehicleThinkCity14WebCfgFeaturesER9PageEntryR11PageContext 00000347  00000000  00000000  00000adc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 13 .text._ZN20OvmsVehicleThinkCity7WebInitEv 00000094  00000000  00000000  00000e24  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 14 .text._ZN20OvmsVehicleThinkCity10WebBattMonER9PageEntryR11PageContext 00000005  00000000  00000000  00000eb8  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 15 .text._ZN20OvmsVehicleThinkCity18GetDashboardConfigER15DashboardConfig 00000010  00000000  00000000  00000ec0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 16 .text.startup._GLOBAL__sub_I__ZN20OvmsVehicleThinkCity7WebInitEv 0000000e  00000000  00000000  00000ed0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 17 .ctors        00000004  00000000  00000000  00000ee0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 18 .text.exit._GLOBAL__sub_D__ZN20OvmsVehicleThinkCity7WebInitEv 0000000e  00000000  00000000  00000ee4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 19 .dtors        00000004  00000000  00000000  00000ef4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 20 .bss._ZStL8__ioinit 00000001  00000000  00000000  00000ef8  2**0
+                  ALLOC
+ 21 .debug_frame  000000d0  00000000  00000000  00000ef8  2**2
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 22 .debug_info   00014dbf  00000000  00000000  00000fc8  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 23 .debug_abbrev 00000b50  00000000  00000000  00015d87  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 24 .debug_loc    000010ad  00000000  00000000  000168d7  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 25 .debug_aranges 00000050  00000000  00000000  00017984  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 26 .debug_ranges 00000138  00000000  00000000  000179d4  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 27 .debug_line   00000e89  00000000  00000000  00017b0c  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 28 .debug_str    0002eecb  00000000  00000000  00018995  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 29 .comment      0000003b  00000000  00000000  00047860  2**0
+                  CONTENTS, READONLY
+ 30 .xtensa.info  00000038  00000000  00000000  0004789b  2**0
+                  CONTENTS, READONLY
+ 31 .xt.lit       00000030  00000000  00000000  000478d3  2**0
+                  CONTENTS, RELOC, READONLY
+ 32 .xt.prop      000001bc  00000000  00000000  00047903  2**0
+                  CONTENTS, RELOC, READONLY
+
+vehicle_thinkcity.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .group        00000014  00000000  00000000  00000034  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  1 .group        0000000c  00000000  00000000  00000048  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  2 .group        0000000c  00000000  00000000  00000054  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  3 .group        0000000c  00000000  00000000  00000060  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  4 .group        0000000c  00000000  00000000  0000006c  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  5 .group        0000000c  00000000  00000000  00000078  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  6 .group        0000000c  00000000  00000000  00000084  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  7 .group        0000000c  00000000  00000000  00000090  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  8 .group        0000000c  00000000  00000000  0000009c  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  9 .group        0000000c  00000000  00000000  000000a8  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 10 .group        0000000c  00000000  00000000  000000b4  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 11 .group        0000000c  00000000  00000000  000000c0  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 12 .group        0000000c  00000000  00000000  000000cc  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 13 .group        0000000c  00000000  00000000  000000d8  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 14 .group        0000000c  00000000  00000000  000000e4  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 15 .group        0000000c  00000000  00000000  000000f0  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 16 .group        0000000c  00000000  00000000  000000fc  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 17 .group        0000000c  00000000  00000000  00000108  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 18 .group        0000000c  00000000  00000000  00000114  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 19 .group        0000000c  00000000  00000000  00000120  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 20 .group        0000000c  00000000  00000000  0000012c  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 21 .group        0000000c  00000000  00000000  00000138  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 22 .group        0000000c  00000000  00000000  00000144  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 23 .group        0000000c  00000000  00000000  00000150  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 24 .group        0000000c  00000000  00000000  0000015c  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 25 .literal._ZN20OvmsVehicleThinkCityD2Ev 00000008  00000000  00000000  00000168  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 26 .literal._ZN20OvmsVehicleThinkCityD0Ev 00000008  00000000  00000000  00000170  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 27 .literal._ZN20OvmsVehicleThinkCity17IncomingFrameCan1EP11CAN_frame_t 000000c0  00000000  00000000  00000178  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 28 .literal._ZN20OvmsVehicleThinkCity17IncomingPollReplyEP6canbusttPhht 0000003c  00000000  00000000  00000238  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 29 .literal._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$23 00000014  00000000  00000000  00000274  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 30 .literal._ZN20OvmsVehicleThinkCity7Ticker1Ej 000000c8  00000000  00000000  00000288  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 31 .literal._ZN20OvmsVehicleThinkCityC2Ev 0000002c  00000000  00000000  00000350  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 32 .literal._Z13CreateVehicleI20OvmsVehicleThinkCityEP11OvmsVehiclev 00000008  00000000  00000000  0000037c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 33 .literal._ZN20OvmsVehicleThinkCity9LogValuesEv 0000029c  00000000  00000000  00000384  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 34 .literal._ZN24OvmsVehicleThinkCityInitC2Ev 0000003c  00000000  00000000  00000620  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 35 .literal.startup._GLOBAL__sub_I$09000__ZN20OvmsVehicleThinkCityC2Ev 00000008  00000000  00000000  0000065c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 36 .literal.startup._GLOBAL__sub_I__ZN20OvmsVehicleThinkCityC2Ev 00000008  00000000  00000000  00000664  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 37 .literal.exit._GLOBAL__sub_D__ZN20OvmsVehicleThinkCityC2Ev 00000008  00000000  00000000  0000066c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 38 .text         00000000  00000000  00000000  00000674  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 39 .data         00000000  00000000  00000000  00000674  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+ 40 .bss          00000000  00000000  00000000  00000674  2**0
+                  ALLOC
+ 41 .text._ZN11OvmsVehicle25GetNotifyChargeStateDelayEPKc 00000007  00000000  00000000  00000674  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 42 .text._ZN11OvmsVehicle17NotifiedVehicleOnEv 00000005  00000000  00000000  0000067c  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 43 .text._ZN11OvmsVehicle18NotifiedVehicleOffEv 00000005  00000000  00000000  00000684  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 44 .text._ZN11OvmsVehicle20NotifiedVehicleAwakeEv 00000005  00000000  00000000  0000068c  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 45 .text._ZN11OvmsVehicle21NotifiedVehicleAsleepEv 00000005  00000000  00000000  00000694  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 46 .text._ZN11OvmsVehicle26NotifiedVehicleChargeStartEv 00000005  00000000  00000000  0000069c  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 47 .text._ZN11OvmsVehicle25NotifiedVehicleChargeStopEv 00000005  00000000  00000000  000006a4  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 48 .text._ZN11OvmsVehicle28NotifiedVehicleChargePrepareEv 00000005  00000000  00000000  000006ac  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 49 .text._ZN11OvmsVehicle27NotifiedVehicleChargeFinishEv 00000005  00000000  00000000  000006b4  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 50 .text._ZN11OvmsVehicle28NotifiedVehicleChargePilotOnEv 00000005  00000000  00000000  000006bc  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 51 .text._ZN11OvmsVehicle29NotifiedVehicleChargePilotOffEv 00000005  00000000  00000000  000006c4  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 52 .text._ZN11OvmsVehicle29NotifiedVehicleCharge12vStartEv 00000005  00000000  00000000  000006cc  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 53 .text._ZN11OvmsVehicle28NotifiedVehicleCharge12vStopEv 00000005  00000000  00000000  000006d4  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 54 .text._ZN11OvmsVehicle21NotifiedVehicleLockedEv 00000005  00000000  00000000  000006dc  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 55 .text._ZN11OvmsVehicle23NotifiedVehicleUnlockedEv 00000005  00000000  00000000  000006e4  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 56 .text._ZN11OvmsVehicle22NotifiedVehicleValetOnEv 00000005  00000000  00000000  000006ec  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 57 .text._ZN11OvmsVehicle23NotifiedVehicleValetOffEv 00000005  00000000  00000000  000006f4  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 58 .text._ZN11OvmsVehicle27NotifiedVehicleHeadlightsOnEv 00000005  00000000  00000000  000006fc  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 59 .text._ZN11OvmsVehicle28NotifiedVehicleHeadlightsOffEv 00000005  00000000  00000000  00000704  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 60 .text._ZN11OvmsVehicle22NotifiedVehicleAlarmOnEv 00000005  00000000  00000000  0000070c  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 61 .text._ZN11OvmsVehicle23NotifiedVehicleAlarmOffEv 00000005  00000000  00000000  00000714  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 62 .text._ZN11OvmsVehicle25NotifiedVehicleChargeModeEPKc 00000005  00000000  00000000  0000071c  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 63 .text._ZN11OvmsVehicle26NotifiedVehicleChargeStateEPKc 00000005  00000000  00000000  00000724  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 64 .text._ZN20OvmsVehicleThinkCity8Ticker10Ej 00000005  00000000  00000000  0000072c  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 65 .text._ZN20OvmsVehicleThinkCity22CommandDeactivateValetEPKc 00000007  00000000  00000000  00000734  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 66 .text._ZN20OvmsVehicleThinkCityD2Ev 00000016  00000000  00000000  0000073c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 67 .text._ZN20OvmsVehicleThinkCityD0Ev 00000016  00000000  00000000  00000754  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 68 .rodata.str1.1 00000a8b  00000000  00000000  0000076a  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 69 .text._ZN20OvmsVehicleThinkCity17IncomingFrameCan1EP11CAN_frame_t 000005ff  00000000  00000000  000011f8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 70 .text._ZN20OvmsVehicleThinkCity17IncomingPollReplyEP6canbusttPhht 000000be  00000000  00000000  000017f8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 71 .text._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$23 00000062  00000000  00000000  000018b8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 72 .text._ZN20OvmsVehicleThinkCity7Ticker1Ej 000002de  00000000  00000000  0000191c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 73 .text._ZN20OvmsVehicleThinkCityC2Ev 0000006a  00000000  00000000  00001bfc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 74 .text._Z13CreateVehicleI20OvmsVehicleThinkCityEP11OvmsVehiclev 00000016  00000000  00000000  00001c68  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 75 .text._ZN20OvmsVehicleThinkCity9LogValuesEv 0000064c  00000000  00000000  00001c80  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 76 .text._ZN24OvmsVehicleThinkCityInitC2Ev 000000de  00000000  00000000  000022cc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 77 .text.startup._GLOBAL__sub_I$09000__ZN20OvmsVehicleThinkCityC2Ev 0000000e  00000000  00000000  000023ac  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 78 .ctors.56535  00000004  00000000  00000000  000023bc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 79 .text.startup._GLOBAL__sub_I__ZN20OvmsVehicleThinkCityC2Ev 0000000e  00000000  00000000  000023c0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 80 .ctors        00000004  00000000  00000000  000023d0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 81 .text.exit._GLOBAL__sub_D__ZN20OvmsVehicleThinkCityC2Ev 0000000e  00000000  00000000  000023d4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 82 .dtors        00000004  00000000  00000000  000023e4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 83 .rodata._ZTV20OvmsVehicleThinkCity 00000154  00000000  00000000  000023e8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
+ 84 .bss.OvmsVehicleThinkCityInit 00000001  00000000  00000000  0000253c  2**0
+                  ALLOC
+ 85 .rodata._ZL11obdii_polls 00000078  00000000  00000000  0000253c  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 86 .bss._ZStL8__ioinit 00000001  00000000  00000000  000025b4  2**0
+                  ALLOC
+ 87 .debug_frame  000003a0  00000000  00000000  000025b4  2**2
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 88 .debug_info   00011cac  00000000  00000000  00002954  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 89 .debug_abbrev 00000df6  00000000  00000000  00014600  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 90 .debug_loc    00000ae7  00000000  00000000  000153f6  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 91 .debug_aranges 00000148  00000000  00000000  00015edd  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 92 .debug_ranges 00000230  00000000  00000000  00016025  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 93 .debug_line   00001598  00000000  00000000  00016255  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 94 .debug_str    0001b7b9  00000000  00000000  000177ed  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 95 .comment      0000003b  00000000  00000000  00032fa6  2**0
+                  CONTENTS, READONLY
+ 96 .xtensa.info  00000038  00000000  00000000  00032fe1  2**0
+                  CONTENTS, READONLY
+ 97 .xt.lit       00000060  00000000  00000000  00033019  2**0
+                  CONTENTS, RELOC, READONLY
+ 98 .xt.lit._Z13CreateVehicleI20OvmsVehicleThinkCityEP11OvmsVehiclev 00000008  00000000  00000000  00033079  2**0
+                  CONTENTS, RELOC, READONLY
+ 99 .xt.prop      00000588  00000000  00000000  00033081  2**0
+                  CONTENTS, RELOC, READONLY
+100 .xt.prop._Z13CreateVehicleI20OvmsVehicleThinkCityEP11OvmsVehiclev 00000030  00000000  00000000  00033609  2**0
+                  CONTENTS, RELOC, READONLY
+101 .xt.prop._ZN11OvmsVehicle25GetNotifyChargeStateDelayEPKc 00000024  00000000  00000000  00033639  2**0
+                  CONTENTS, RELOC, READONLY
+102 .xt.prop._ZN11OvmsVehicle17NotifiedVehicleOnEv 00000024  00000000  00000000  0003365d  2**0
+                  CONTENTS, RELOC, READONLY
+103 .xt.prop._ZN11OvmsVehicle18NotifiedVehicleOffEv 00000024  00000000  00000000  00033681  2**0
+                  CONTENTS, RELOC, READONLY
+104 .xt.prop._ZN11OvmsVehicle20NotifiedVehicleAwakeEv 00000024  00000000  00000000  000336a5  2**0
+                  CONTENTS, RELOC, READONLY
+105 .xt.prop._ZN11OvmsVehicle21NotifiedVehicleAsleepEv 00000024  00000000  00000000  000336c9  2**0
+                  CONTENTS, RELOC, READONLY
+106 .xt.prop._ZN11OvmsVehicle26NotifiedVehicleChargeStartEv 00000024  00000000  00000000  000336ed  2**0
+                  CONTENTS, RELOC, READONLY
+107 .xt.prop._ZN11OvmsVehicle25NotifiedVehicleChargeStopEv 00000024  00000000  00000000  00033711  2**0
+                  CONTENTS, RELOC, READONLY
+108 .xt.prop._ZN11OvmsVehicle28NotifiedVehicleChargePrepareEv 00000024  00000000  00000000  00033735  2**0
+                  CONTENTS, RELOC, READONLY
+109 .xt.prop._ZN11OvmsVehicle27NotifiedVehicleChargeFinishEv 00000024  00000000  00000000  00033759  2**0
+                  CONTENTS, RELOC, READONLY
+110 .xt.prop._ZN11OvmsVehicle28NotifiedVehicleChargePilotOnEv 00000024  00000000  00000000  0003377d  2**0
+                  CONTENTS, RELOC, READONLY
+111 .xt.prop._ZN11OvmsVehicle29NotifiedVehicleChargePilotOffEv 00000024  00000000  00000000  000337a1  2**0
+                  CONTENTS, RELOC, READONLY
+112 .xt.prop._ZN11OvmsVehicle29NotifiedVehicleCharge12vStartEv 00000024  00000000  00000000  000337c5  2**0
+                  CONTENTS, RELOC, READONLY
+113 .xt.prop._ZN11OvmsVehicle28NotifiedVehicleCharge12vStopEv 00000024  00000000  00000000  000337e9  2**0
+                  CONTENTS, RELOC, READONLY
+114 .xt.prop._ZN11OvmsVehicle21NotifiedVehicleLockedEv 00000024  00000000  00000000  0003380d  2**0
+                  CONTENTS, RELOC, READONLY
+115 .xt.prop._ZN11OvmsVehicle23NotifiedVehicleUnlockedEv 00000024  00000000  00000000  00033831  2**0
+                  CONTENTS, RELOC, READONLY
+116 .xt.prop._ZN11OvmsVehicle22NotifiedVehicleValetOnEv 00000024  00000000  00000000  00033855  2**0
+                  CONTENTS, RELOC, READONLY
+117 .xt.prop._ZN11OvmsVehicle23NotifiedVehicleValetOffEv 00000024  00000000  00000000  00033879  2**0
+                  CONTENTS, RELOC, READONLY
+118 .xt.prop._ZN11OvmsVehicle27NotifiedVehicleHeadlightsOnEv 00000024  00000000  00000000  0003389d  2**0
+                  CONTENTS, RELOC, READONLY
+119 .xt.prop._ZN11OvmsVehicle28NotifiedVehicleHeadlightsOffEv 00000024  00000000  00000000  000338c1  2**0
+                  CONTENTS, RELOC, READONLY
+120 .xt.prop._ZN11OvmsVehicle22NotifiedVehicleAlarmOnEv 00000024  00000000  00000000  000338e5  2**0
+                  CONTENTS, RELOC, READONLY
+121 .xt.prop._ZN11OvmsVehicle23NotifiedVehicleAlarmOffEv 00000024  00000000  00000000  00033909  2**0
+                  CONTENTS, RELOC, READONLY
+122 .xt.prop._ZN11OvmsVehicle25NotifiedVehicleChargeModeEPKc 00000024  00000000  00000000  0003392d  2**0
+                  CONTENTS, RELOC, READONLY
+123 .xt.prop._ZN11OvmsVehicle26NotifiedVehicleChargeStateEPKc 00000024  00000000  00000000  00033951  2**0
+                  CONTENTS, RELOC, READONLY
+124 .xt.prop._ZTV20OvmsVehicleThinkCity 0000000c  00000000  00000000  00033975  2**0
+                  CONTENTS, RELOC, READONLY

@@ -1,0 +1,236 @@
+In archive /home/chris/OVMS/Open-Vehicle-Monitoring-System-3/vehicle/OVMS.V3/build/vehicle_chevrolet_c6_corvette/libvehicle_chevrolet_c6_corvette.a:
+
+vehicle_chevrolet_c6_corvette.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .group        00000014  00000000  00000000  00000034  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  1 .group        0000000c  00000000  00000000  00000048  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  2 .group        0000000c  00000000  00000000  00000054  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  3 .group        0000000c  00000000  00000000  00000060  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  4 .group        0000000c  00000000  00000000  0000006c  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  5 .group        0000000c  00000000  00000000  00000078  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  6 .group        0000000c  00000000  00000000  00000084  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  7 .group        0000000c  00000000  00000000  00000090  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  8 .group        0000000c  00000000  00000000  0000009c  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  9 .group        0000000c  00000000  00000000  000000a8  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 10 .group        0000000c  00000000  00000000  000000b4  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 11 .group        0000000c  00000000  00000000  000000c0  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 12 .group        0000000c  00000000  00000000  000000cc  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 13 .group        0000000c  00000000  00000000  000000d8  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 14 .group        0000000c  00000000  00000000  000000e4  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 15 .group        0000000c  00000000  00000000  000000f0  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 16 .group        0000000c  00000000  00000000  000000fc  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 17 .group        0000000c  00000000  00000000  00000108  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 18 .group        0000000c  00000000  00000000  00000114  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 19 .group        0000000c  00000000  00000000  00000120  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 20 .group        0000000c  00000000  00000000  0000012c  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 21 .group        0000000c  00000000  00000000  00000138  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 22 .group        0000000c  00000000  00000000  00000144  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 23 .group        0000000c  00000000  00000000  00000150  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 24 .group        0000000c  00000000  00000000  0000015c  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 25 .literal._ZN30OvmsVehicleChevroletC6CorvetteD2Ev 00000018  00000000  00000000  00000168  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 26 .literal._ZN30OvmsVehicleChevroletC6CorvetteD0Ev 00000008  00000000  00000000  00000180  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 27 .literal._ZN30OvmsVehicleChevroletC6Corvette17IncomingPollReplyEP6canbusttPhht 00000040  00000000  00000000  00000188  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 28 .literal._ZN30OvmsVehicleChevroletC6CorvetteC2Ev 0000002c  00000000  00000000  000001c8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 29 .literal._Z13CreateVehicleI30OvmsVehicleChevroletC6CorvetteEP11OvmsVehiclev 00000008  00000000  00000000  000001f4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 30 .literal._ZN34OvmsVehicleChevroletC6CorvetteInitC2Ev 0000003c  00000000  00000000  000001fc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 31 .literal.startup._GLOBAL__sub_I$09000__ZN30OvmsVehicleChevroletC6CorvetteC2Ev 00000008  00000000  00000000  00000238  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 32 .literal.startup._GLOBAL__sub_I__ZN30OvmsVehicleChevroletC6CorvetteC2Ev 00000008  00000000  00000000  00000240  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 33 .literal.exit._GLOBAL__sub_D__ZN30OvmsVehicleChevroletC6CorvetteC2Ev 00000008  00000000  00000000  00000248  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 34 .text         00000000  00000000  00000000  00000250  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 35 .data         00000000  00000000  00000000  00000250  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+ 36 .bss          00000000  00000000  00000000  00000250  2**0
+                  ALLOC
+ 37 .text._ZN11OvmsVehicle25GetNotifyChargeStateDelayEPKc 00000007  00000000  00000000  00000250  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 38 .text._ZN11OvmsVehicle17NotifiedVehicleOnEv 00000005  00000000  00000000  00000258  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 39 .text._ZN11OvmsVehicle18NotifiedVehicleOffEv 00000005  00000000  00000000  00000260  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 40 .text._ZN11OvmsVehicle20NotifiedVehicleAwakeEv 00000005  00000000  00000000  00000268  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 41 .text._ZN11OvmsVehicle21NotifiedVehicleAsleepEv 00000005  00000000  00000000  00000270  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 42 .text._ZN11OvmsVehicle26NotifiedVehicleChargeStartEv 00000005  00000000  00000000  00000278  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 43 .text._ZN11OvmsVehicle25NotifiedVehicleChargeStopEv 00000005  00000000  00000000  00000280  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 44 .text._ZN11OvmsVehicle28NotifiedVehicleChargePrepareEv 00000005  00000000  00000000  00000288  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 45 .text._ZN11OvmsVehicle27NotifiedVehicleChargeFinishEv 00000005  00000000  00000000  00000290  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 46 .text._ZN11OvmsVehicle28NotifiedVehicleChargePilotOnEv 00000005  00000000  00000000  00000298  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 47 .text._ZN11OvmsVehicle29NotifiedVehicleChargePilotOffEv 00000005  00000000  00000000  000002a0  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 48 .text._ZN11OvmsVehicle29NotifiedVehicleCharge12vStartEv 00000005  00000000  00000000  000002a8  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 49 .text._ZN11OvmsVehicle28NotifiedVehicleCharge12vStopEv 00000005  00000000  00000000  000002b0  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 50 .text._ZN11OvmsVehicle21NotifiedVehicleLockedEv 00000005  00000000  00000000  000002b8  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 51 .text._ZN11OvmsVehicle23NotifiedVehicleUnlockedEv 00000005  00000000  00000000  000002c0  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 52 .text._ZN11OvmsVehicle22NotifiedVehicleValetOnEv 00000005  00000000  00000000  000002c8  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 53 .text._ZN11OvmsVehicle23NotifiedVehicleValetOffEv 00000005  00000000  00000000  000002d0  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 54 .text._ZN11OvmsVehicle27NotifiedVehicleHeadlightsOnEv 00000005  00000000  00000000  000002d8  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 55 .text._ZN11OvmsVehicle28NotifiedVehicleHeadlightsOffEv 00000005  00000000  00000000  000002e0  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 56 .text._ZN11OvmsVehicle22NotifiedVehicleAlarmOnEv 00000005  00000000  00000000  000002e8  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 57 .text._ZN11OvmsVehicle23NotifiedVehicleAlarmOffEv 00000005  00000000  00000000  000002f0  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 58 .text._ZN11OvmsVehicle25NotifiedVehicleChargeModeEPKc 00000005  00000000  00000000  000002f8  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 59 .text._ZN11OvmsVehicle26NotifiedVehicleChargeStateEPKc 00000005  00000000  00000000  00000300  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 60 .rodata.str1.1 00000101  00000000  00000000  00000305  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 61 .text._ZN30OvmsVehicleChevroletC6CorvetteD2Ev 0000002e  00000000  00000000  00000408  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 62 .text._ZN30OvmsVehicleChevroletC6CorvetteD0Ev 00000016  00000000  00000000  00000438  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 63 .text._ZN30OvmsVehicleChevroletC6Corvette17IncomingPollReplyEP6canbusttPhht 000001d6  00000000  00000000  00000450  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 64 .text._ZN30OvmsVehicleChevroletC6CorvetteC2Ev 00000066  00000000  00000000  00000628  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 65 .text._Z13CreateVehicleI30OvmsVehicleChevroletC6CorvetteEP11OvmsVehiclev 00000016  00000000  00000000  00000690  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 66 .text._ZN34OvmsVehicleChevroletC6CorvetteInitC2Ev 000000de  00000000  00000000  000006a8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 67 .text.startup._GLOBAL__sub_I$09000__ZN30OvmsVehicleChevroletC6CorvetteC2Ev 0000000e  00000000  00000000  00000788  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 68 .ctors.56535  00000004  00000000  00000000  00000798  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 69 .text.startup._GLOBAL__sub_I__ZN30OvmsVehicleChevroletC6CorvetteC2Ev 0000000e  00000000  00000000  0000079c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 70 .ctors        00000004  00000000  00000000  000007ac  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 71 .text.exit._GLOBAL__sub_D__ZN30OvmsVehicleChevroletC6CorvetteC2Ev 0000000e  00000000  00000000  000007b0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 72 .dtors        00000004  00000000  00000000  000007c0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 73 .rodata._ZTV30OvmsVehicleChevroletC6Corvette 00000154  00000000  00000000  000007c4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
+ 74 .bss.MyOvmsVehicleChevroletC6CorvetteInit 00000001  00000000  00000000  00000918  2**0
+                  ALLOC
+ 75 .rodata._ZL11obdii_polls 000000d8  00000000  00000000  00000918  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 76 .bss._ZStL8__ioinit 00000001  00000000  00000000  000009f0  2**0
+                  ALLOC
+ 77 .debug_frame  00000310  00000000  00000000  000009f0  2**2
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 78 .debug_info   0000d7ef  00000000  00000000  00000d00  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 79 .debug_abbrev 00000c25  00000000  00000000  0000e4ef  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 80 .debug_loc    000008f4  00000000  00000000  0000f114  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 81 .debug_aranges 00000118  00000000  00000000  0000fa08  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 82 .debug_ranges 00000290  00000000  00000000  0000fb20  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 83 .debug_line   00000e8c  00000000  00000000  0000fdb0  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 84 .debug_str    00016c87  00000000  00000000  00010c3c  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 85 .comment      0000003b  00000000  00000000  000278c3  2**0
+                  CONTENTS, READONLY
+ 86 .xtensa.info  00000038  00000000  00000000  000278fe  2**0
+                  CONTENTS, READONLY
+ 87 .xt.lit       00000040  00000000  00000000  00027936  2**0
+                  CONTENTS, RELOC, READONLY
+ 88 .xt.lit._Z13CreateVehicleI30OvmsVehicleChevroletC6CorvetteEP11OvmsVehiclev 00000008  00000000  00000000  00027976  2**0
+                  CONTENTS, RELOC, READONLY
+ 89 .xt.prop      0000036c  00000000  00000000  0002797e  2**0
+                  CONTENTS, RELOC, READONLY
+ 90 .xt.prop._Z13CreateVehicleI30OvmsVehicleChevroletC6CorvetteEP11OvmsVehiclev 00000030  00000000  00000000  00027cea  2**0
+                  CONTENTS, RELOC, READONLY
+ 91 .xt.prop._ZN11OvmsVehicle25GetNotifyChargeStateDelayEPKc 00000024  00000000  00000000  00027d1a  2**0
+                  CONTENTS, RELOC, READONLY
+ 92 .xt.prop._ZN11OvmsVehicle17NotifiedVehicleOnEv 00000024  00000000  00000000  00027d3e  2**0
+                  CONTENTS, RELOC, READONLY
+ 93 .xt.prop._ZN11OvmsVehicle18NotifiedVehicleOffEv 00000024  00000000  00000000  00027d62  2**0
+                  CONTENTS, RELOC, READONLY
+ 94 .xt.prop._ZN11OvmsVehicle20NotifiedVehicleAwakeEv 00000024  00000000  00000000  00027d86  2**0
+                  CONTENTS, RELOC, READONLY
+ 95 .xt.prop._ZN11OvmsVehicle21NotifiedVehicleAsleepEv 00000024  00000000  00000000  00027daa  2**0
+                  CONTENTS, RELOC, READONLY
+ 96 .xt.prop._ZN11OvmsVehicle26NotifiedVehicleChargeStartEv 00000024  00000000  00000000  00027dce  2**0
+                  CONTENTS, RELOC, READONLY
+ 97 .xt.prop._ZN11OvmsVehicle25NotifiedVehicleChargeStopEv 00000024  00000000  00000000  00027df2  2**0
+                  CONTENTS, RELOC, READONLY
+ 98 .xt.prop._ZN11OvmsVehicle28NotifiedVehicleChargePrepareEv 00000024  00000000  00000000  00027e16  2**0
+                  CONTENTS, RELOC, READONLY
+ 99 .xt.prop._ZN11OvmsVehicle27NotifiedVehicleChargeFinishEv 00000024  00000000  00000000  00027e3a  2**0
+                  CONTENTS, RELOC, READONLY
+100 .xt.prop._ZN11OvmsVehicle28NotifiedVehicleChargePilotOnEv 00000024  00000000  00000000  00027e5e  2**0
+                  CONTENTS, RELOC, READONLY
+101 .xt.prop._ZN11OvmsVehicle29NotifiedVehicleChargePilotOffEv 00000024  00000000  00000000  00027e82  2**0
+                  CONTENTS, RELOC, READONLY
+102 .xt.prop._ZN11OvmsVehicle29NotifiedVehicleCharge12vStartEv 00000024  00000000  00000000  00027ea6  2**0
+                  CONTENTS, RELOC, READONLY
+103 .xt.prop._ZN11OvmsVehicle28NotifiedVehicleCharge12vStopEv 00000024  00000000  00000000  00027eca  2**0
+                  CONTENTS, RELOC, READONLY
+104 .xt.prop._ZN11OvmsVehicle21NotifiedVehicleLockedEv 00000024  00000000  00000000  00027eee  2**0
+                  CONTENTS, RELOC, READONLY
+105 .xt.prop._ZN11OvmsVehicle23NotifiedVehicleUnlockedEv 00000024  00000000  00000000  00027f12  2**0
+                  CONTENTS, RELOC, READONLY
+106 .xt.prop._ZN11OvmsVehicle22NotifiedVehicleValetOnEv 00000024  00000000  00000000  00027f36  2**0
+                  CONTENTS, RELOC, READONLY
+107 .xt.prop._ZN11OvmsVehicle23NotifiedVehicleValetOffEv 00000024  00000000  00000000  00027f5a  2**0
+                  CONTENTS, RELOC, READONLY
+108 .xt.prop._ZN11OvmsVehicle27NotifiedVehicleHeadlightsOnEv 00000024  00000000  00000000  00027f7e  2**0
+                  CONTENTS, RELOC, READONLY
+109 .xt.prop._ZN11OvmsVehicle28NotifiedVehicleHeadlightsOffEv 00000024  00000000  00000000  00027fa2  2**0
+                  CONTENTS, RELOC, READONLY
+110 .xt.prop._ZN11OvmsVehicle22NotifiedVehicleAlarmOnEv 00000024  00000000  00000000  00027fc6  2**0
+                  CONTENTS, RELOC, READONLY
+111 .xt.prop._ZN11OvmsVehicle23NotifiedVehicleAlarmOffEv 00000024  00000000  00000000  00027fea  2**0
+                  CONTENTS, RELOC, READONLY
+112 .xt.prop._ZN11OvmsVehicle25NotifiedVehicleChargeModeEPKc 00000024  00000000  00000000  0002800e  2**0
+                  CONTENTS, RELOC, READONLY
+113 .xt.prop._ZN11OvmsVehicle26NotifiedVehicleChargeStateEPKc 00000024  00000000  00000000  00028032  2**0
+                  CONTENTS, RELOC, READONLY
+114 .xt.prop._ZTV30OvmsVehicleChevroletC6Corvette 0000000c  00000000  00000000  00028056  2**0
+                  CONTENTS, RELOC, READONLY

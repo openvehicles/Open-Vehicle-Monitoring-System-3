@@ -1,0 +1,201 @@
+In archive /home/chris/OVMS/Open-Vehicle-Monitoring-System-3/vehicle/OVMS.V3/build/powermgmt/libpowermgmt.a:
+
+powermgmt.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .group        00000014  00000000  00000000  00000034  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  1 .group        00000014  00000000  00000000  00000048  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  2 .group        00000018  00000000  00000000  0000005c  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  3 .group        0000000c  00000000  00000000  00000074  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  4 .group        0000000c  00000000  00000000  00000080  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  5 .literal._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM9powermgmtFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 00000008  00000000  00000000  0000008c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  6 .literal._ZN9powermgmtD2Ev 00000008  00000000  00000000  00000094  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  7 .literal._ZN9powermgmtD0Ev 00000008  00000000  00000000  0000009c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  8 .literal._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM9powermgmtFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000008  00000000  00000000  000000a4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  9 .literal._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$20 00000014  00000000  00000000  000000ac  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 10 .literal._ZN9powermgmt7Ticker1ENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPv 00000098  00000000  00000000  000000c0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 11 .literal._ZN9powermgmt13ConfigChangedENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPv 00000074  00000000  00000000  00000158  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 12 .literal._ZNSt8functionIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEC5ISt5_BindIFSt7_Mem_fnIM9powermgmtFvS5_S6_EEPSC_St12_PlaceholderILi1EESH_ILi2EEEEvEET_ 0000000c  00000000  00000000  000001cc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 13 .literal._ZN9powermgmtC2Ev 000000b0  00000000  00000000  000001d8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 14 .literal.startup._GLOBAL__sub_I$08500_MyPowerMgmt 00000008  00000000  00000000  00000288  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 15 .literal.exit._GLOBAL__sub_D$08500_MyPowerMgmt 00000008  00000000  00000000  00000290  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 16 .literal.startup._GLOBAL__sub_I_MyPowerMgmt 00000008  00000000  00000000  00000298  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 17 .literal.exit._GLOBAL__sub_D_MyPowerMgmt 00000008  00000000  00000000  000002a0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 18 .text         00000000  00000000  00000000  000002a8  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 19 .data         00000000  00000000  00000000  000002a8  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+ 20 .bss          00000000  00000000  00000000  000002a8  2**0
+                  ALLOC
+ 21 .text._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM9powermgmtFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 00000037  00000000  00000000  000002a8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 22 .text._ZN9powermgmtD2Ev 00000016  00000000  00000000  000002e0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 23 .text._ZN9powermgmtD0Ev 00000016  00000000  00000000  000002f8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 24 .text._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM9powermgmtFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000044  00000000  00000000  00000310  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 25 .rodata.str1.1 00000232  00000000  00000000  00000354  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 26 .text._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$20 00000062  00000000  00000000  00000588  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 27 .text._ZN9powermgmt7Ticker1ENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPv 00000279  00000000  00000000  000005ec  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 28 .text._ZN9powermgmt13ConfigChangedENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPv 00000129  00000000  00000000  00000868  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 29 .text._ZNSt14_Function_baseD2Ev 00000012  00000000  00000000  00000994  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 30 .text._ZNSt8functionIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEC2ISt5_BindIFSt7_Mem_fnIM9powermgmtFvS5_S6_EEPSC_St12_PlaceholderILi1EESH_ILi2EEEEvEET_ 00000035  00000000  00000000  000009a8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 31 .text._ZN9powermgmtC2Ev 000001b3  00000000  00000000  000009e0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 32 .text.startup._GLOBAL__sub_I$08500_MyPowerMgmt 0000000e  00000000  00000000  00000b94  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 33 .ctors.57035  00000004  00000000  00000000  00000ba4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 34 .text.exit._GLOBAL__sub_D$08500_MyPowerMgmt 0000000e  00000000  00000000  00000ba8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 35 .dtors.57035  00000004  00000000  00000000  00000bb8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 36 .text.startup._GLOBAL__sub_I_MyPowerMgmt 0000000e  00000000  00000000  00000bbc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 37 .ctors        00000004  00000000  00000000  00000bcc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 38 .text.exit._GLOBAL__sub_D_MyPowerMgmt 0000000e  00000000  00000000  00000bd0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 39 .dtors        00000004  00000000  00000000  00000be0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 40 .rodata._ZTV9powermgmt 00000010  00000000  00000000  00000be4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
+ 41 .bss.MyPowerMgmt 00000020  00000000  00000000  00000bf4  2**2
+                  ALLOC
+ 42 .bss._ZStL8__ioinit 00000001  00000000  00000000  00000bf4  2**0
+                  ALLOC
+ 43 .debug_frame  00000160  00000000  00000000  00000bf4  2**2
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 44 .debug_info   0001b326  00000000  00000000  00000d54  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 45 .debug_abbrev 00000dae  00000000  00000000  0001c07a  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 46 .debug_loc    00001447  00000000  00000000  0001ce28  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 47 .debug_aranges 00000088  00000000  00000000  0001e26f  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 48 .debug_ranges 000000f0  00000000  00000000  0001e2f7  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 49 .debug_line   000012d3  00000000  00000000  0001e3e7  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 50 .debug_str    00039310  00000000  00000000  0001f6ba  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 51 .comment      0000003b  00000000  00000000  000589ca  2**0
+                  CONTENTS, READONLY
+ 52 .xtensa.info  00000038  00000000  00000000  00058a05  2**0
+                  CONTENTS, READONLY
+ 53 .xt.lit._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM9powermgmtFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 00000008  00000000  00000000  00058a3d  2**0
+                  CONTENTS, RELOC, READONLY
+ 54 .xt.lit       00000050  00000000  00000000  00058a45  2**0
+                  CONTENTS, RELOC, READONLY
+ 55 .xt.lit._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM9powermgmtFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000008  00000000  00000000  00058a95  2**0
+                  CONTENTS, RELOC, READONLY
+ 56 .xt.lit._ZNSt8functionIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEC5ISt5_BindIFSt7_Mem_fnIM9powermgmtFvS5_S6_EEPSC_St12_PlaceholderILi1EESH_ILi2EEEEvEET_ 00000008  00000000  00000000  00058a9d  2**0
+                  CONTENTS, RELOC, READONLY
+ 57 .xt.prop._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM9powermgmtFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 0000003c  00000000  00000000  00058aa5  2**0
+                  CONTENTS, RELOC, READONLY
+ 58 .xt.prop      000002c4  00000000  00000000  00058ae1  2**0
+                  CONTENTS, RELOC, READONLY
+ 59 .xt.prop._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM9powermgmtFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000060  00000000  00000000  00058da5  2**0
+                  CONTENTS, RELOC, READONLY
+ 60 .xt.prop._ZNSt8functionIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEC5ISt5_BindIFSt7_Mem_fnIM9powermgmtFvS5_S6_EEPSC_St12_PlaceholderILi1EESH_ILi2EEEEvEET_ 0000000c  00000000  00000000  00058e05  2**0
+                  CONTENTS, RELOC, READONLY
+ 61 .xt.prop._ZNSt14_Function_baseD2Ev 00000030  00000000  00000000  00058e11  2**0
+                  CONTENTS, RELOC, READONLY
+ 62 .xt.prop._ZNSt8functionIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEC2ISt5_BindIFSt7_Mem_fnIM9powermgmtFvS5_S6_EEPSC_St12_PlaceholderILi1EESH_ILi2EEEEvEET_ 00000024  00000000  00000000  00058e41  2**0
+                  CONTENTS, RELOC, READONLY
+ 63 .xt.prop._ZTV9powermgmt 0000000c  00000000  00000000  00058e65  2**0
+                  CONTENTS, RELOC, READONLY
+
+powermgmt_web.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .literal._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$22 00000014  00000000  00000000  00000034  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  1 .literal._ZN9powermgmt21WebCfgPowerManagementER9PageEntryR11PageContext 00000288  00000000  00000000  00000048  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  2 .literal._ZN9powermgmt7WebInitEv 00000024  00000000  00000000  000002d0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  3 .literal._ZN9powermgmt10WebCleanupEv 00000014  00000000  00000000  000002f4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  4 .literal.startup._GLOBAL__sub_I__ZN9powermgmt7WebInitEv 00000008  00000000  00000000  00000308  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  5 .literal.exit._GLOBAL__sub_D__ZN9powermgmt7WebInitEv 00000008  00000000  00000000  00000310  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  6 .text         00000000  00000000  00000000  00000318  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  7 .data         00000000  00000000  00000000  00000318  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+  8 .bss          00000000  00000000  00000000  00000318  2**0
+                  ALLOC
+  9 .rodata.str1.1 0000060a  00000000  00000000  00000318  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 10 .text._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$22 00000062  00000000  00000000  00000924  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 11 .text._ZN9powermgmt21WebCfgPowerManagementER9PageEntryR11PageContext 000006ba  00000000  00000000  00000988  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 12 .text._ZN9powermgmt7WebInitEv 0000004c  00000000  00000000  00001044  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 13 .text._ZN9powermgmt10WebCleanupEv 00000023  00000000  00000000  00001090  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 14 .text.startup._GLOBAL__sub_I__ZN9powermgmt7WebInitEv 0000000e  00000000  00000000  000010b4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 15 .ctors        00000004  00000000  00000000  000010c4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 16 .text.exit._GLOBAL__sub_D__ZN9powermgmt7WebInitEv 0000000e  00000000  00000000  000010c8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 17 .dtors        00000004  00000000  00000000  000010d8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 18 .bss._ZStL8__ioinit 00000001  00000000  00000000  000010dc  2**0
+                  ALLOC
+ 19 .debug_frame  000000a0  00000000  00000000  000010dc  2**2
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 20 .debug_info   0001593a  00000000  00000000  0000117c  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 21 .debug_abbrev 00000b19  00000000  00000000  00016ab6  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 22 .debug_loc    00002995  00000000  00000000  000175cf  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 23 .debug_aranges 00000048  00000000  00000000  00019f64  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 24 .debug_ranges 00000268  00000000  00000000  00019fac  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 25 .debug_line   00000f34  00000000  00000000  0001a214  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 26 .debug_str    0002ee03  00000000  00000000  0001b148  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 27 .comment      0000003b  00000000  00000000  00049f4b  2**0
+                  CONTENTS, READONLY
+ 28 .xtensa.info  00000038  00000000  00000000  00049f86  2**0
+                  CONTENTS, READONLY
+ 29 .xt.lit       00000030  00000000  00000000  00049fbe  2**0
+                  CONTENTS, RELOC, READONLY
+ 30 .xt.prop      0000018c  00000000  00000000  00049fee  2**0
+                  CONTENTS, RELOC, READONLY

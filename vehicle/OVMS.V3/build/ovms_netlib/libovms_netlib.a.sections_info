@@ -1,0 +1,223 @@
+In archive /home/chris/OVMS/Open-Vehicle-Monitoring-System-3/vehicle/OVMS.V3/build/ovms_netlib/libovms_netlib.a:
+
+ovms_netconns.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .group        0000000c  00000000  00000000  00000034  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  1 .group        0000000c  00000000  00000000  00000040  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  2 .literal._ZN19OvmsMongooseWrapperD2Ev 00000008  00000000  00000000  0000004c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  3 .literal._ZN16OvmsNetTcpClientD2Ev 00000010  00000000  00000000  00000054  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  4 .literal._ZN19OvmsMongooseWrapperD0Ev 00000008  00000000  00000000  00000064  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  5 .literal._ZN16OvmsNetTcpClientD0Ev 00000008  00000000  00000000  0000006c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  6 .literal._ZN16OvmsNetTcpClient8MongooseEP13mg_connectioniPv 00000040  00000000  00000000  00000074  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  7 .literal._ZN19OvmsMongooseWrapperC2Ev 00000008  00000000  00000000  000000b4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  8 .literal._ZN16OvmsNetTcpClientC2Ev 00000008  00000000  00000000  000000bc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  9 .literal._ZN16OvmsNetTcpClient7ConnectENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE15mg_connect_opts 00000020  00000000  00000000  000000c4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 10 .literal._ZN16OvmsNetTcpClient10DisconnectEv 00000004  00000000  00000000  000000e4  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 11 .literal._ZN16OvmsNetTcpClient8SendDataEPhj 0000001c  00000000  00000000  000000e8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 12 .literal.startup._GLOBAL__sub_I__ZN19OvmsMongooseWrapperC2Ev 00000008  00000000  00000000  00000104  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 13 .literal.exit._GLOBAL__sub_D__ZN19OvmsMongooseWrapperC2Ev 00000008  00000000  00000000  0000010c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 14 .text         00000000  00000000  00000000  00000114  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 15 .data         00000000  00000000  00000000  00000114  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+ 16 .bss          00000000  00000000  00000000  00000114  2**0
+                  ALLOC
+ 17 .text._ZL27OvmsMongooseWrapperCallbackP13mg_connectioniPv 00000017  00000000  00000000  00000114  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 18 .text._ZN19OvmsMongooseWrapper8MongooseEP13mg_connectioniPv 00000005  00000000  00000000  0000012c  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 19 .text._ZN16OvmsNetTcpClient16ConnectionClosedEv 00000005  00000000  00000000  00000134  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 20 .text._ZN16OvmsNetTcpClient12IncomingDataEPvj 00000007  00000000  00000000  0000013c  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 21 .text._ZN19OvmsMongooseWrapperD2Ev 00000016  00000000  00000000  00000144  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 22 .text._ZN16OvmsNetTcpClientD2Ev 00000036  00000000  00000000  0000015c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 23 .text._ZN19OvmsMongooseWrapperD0Ev 00000016  00000000  00000000  00000194  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 24 .text._ZN16OvmsNetTcpClientD0Ev 00000016  00000000  00000000  000001ac  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 25 .rodata.str1.1 00000116  00000000  00000000  000001c2  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 26 .text._ZN16OvmsNetTcpClient8MongooseEP13mg_connectioniPv 000000e2  00000000  00000000  000002d8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 27 .text._ZN19OvmsMongooseWrapperC2Ev 00000016  00000000  00000000  000003bc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 28 .text._ZN16OvmsNetTcpClientC2Ev 00000026  00000000  00000000  000003d4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 29 .text._ZN16OvmsNetTcpClient7ConnectENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE15mg_connect_opts 00000062  00000000  00000000  000003fc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 30 .text._ZN16OvmsNetTcpClient10DisconnectEv 0000001e  00000000  00000000  00000460  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 31 .text._ZN16OvmsNetTcpClient11IsConnectedEv 00000011  00000000  00000000  00000480  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 32 .text._ZN16OvmsNetTcpClient8SendDataEPhj 0000004a  00000000  00000000  00000494  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 33 .text.startup._GLOBAL__sub_I__ZN19OvmsMongooseWrapperC2Ev 0000000e  00000000  00000000  000004e0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 34 .ctors        00000004  00000000  00000000  000004f0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 35 .text.exit._GLOBAL__sub_D__ZN19OvmsMongooseWrapperC2Ev 0000000e  00000000  00000000  000004f4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 36 .dtors        00000004  00000000  00000000  00000504  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 37 .rodata._ZTV19OvmsMongooseWrapper 00000014  00000000  00000000  00000508  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
+ 38 .rodata._ZTV16OvmsNetTcpClient 00000024  00000000  00000000  0000051c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
+ 39 .bss._ZStL8__ioinit 00000001  00000000  00000000  00000540  2**0
+                  ALLOC
+ 40 .debug_frame  000001a8  00000000  00000000  00000540  2**2
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 41 .debug_info   00007128  00000000  00000000  000006e8  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 42 .debug_abbrev 00000a10  00000000  00000000  00007810  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 43 .debug_loc    0000018d  00000000  00000000  00008220  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 44 .debug_aranges 000000a0  00000000  00000000  000083ad  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 45 .debug_ranges 00000090  00000000  00000000  0000844d  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 46 .debug_line   00000c14  00000000  00000000  000084dd  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 47 .debug_str    000085de  00000000  00000000  000090f1  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 48 .comment      0000003b  00000000  00000000  000116cf  2**0
+                  CONTENTS, READONLY
+ 49 .xtensa.info  00000038  00000000  00000000  0001170a  2**0
+                  CONTENTS, READONLY
+ 50 .xt.lit       00000060  00000000  00000000  00011742  2**0
+                  CONTENTS, RELOC, READONLY
+ 51 .xt.prop      00000390  00000000  00000000  000117a2  2**0
+                  CONTENTS, RELOC, READONLY
+ 52 .xt.prop._ZTV19OvmsMongooseWrapper 0000000c  00000000  00000000  00011b32  2**0
+                  CONTENTS, RELOC, READONLY
+ 53 .xt.prop._ZTV16OvmsNetTcpClient 0000000c  00000000  00000000  00011b3e  2**0
+                  CONTENTS, RELOC, READONLY
+
+ovms_nethttp.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .group        0000000c  00000000  00000000  00000034  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  1 .literal._ZN22OvmsNetHttpAsyncClientD2Ev 00000018  00000000  00000000  00000040  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  2 .literal._ZN22OvmsNetHttpAsyncClientD0Ev 00000008  00000000  00000000  00000058  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  3 .literal._ZN22OvmsNetHttpAsyncClient16ConnectionFailedEv 00000010  00000000  00000000  00000060  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  4 .literal._ZN22OvmsNetHttpAsyncClient16ConnectionClosedEv 00000010  00000000  00000000  00000070  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  5 .literal._ZN22OvmsNetHttpAsyncClient16HeadersAvailableEv 00000010  00000000  00000000  00000080  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  6 .literal._ZN22OvmsNetHttpAsyncClient13BodyAvailableEv 00000014  00000000  00000000  00000090  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  7 .literal._ZN22OvmsNetHttpAsyncClient12IncomingDataEPvj 000000a0  00000000  00000000  000000a4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  8 .literal._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE12_M_constructIPKcEEvT_S8_St20forward_iterator_tag$isra$20 00000010  00000000  00000000  00000144  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  9 .literal._ZN22OvmsNetHttpAsyncClient9ConnectedEv 00000060  00000000  00000000  00000154  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 10 .literal._ZN22OvmsNetHttpAsyncClientC2Ev 00000008  00000000  00000000  000001b4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 11 .literal._ZN22OvmsNetHttpAsyncClient7RequestENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPKc 000000a0  00000000  00000000  000001bc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 12 .literal.startup._GLOBAL__sub_I__ZN22OvmsNetHttpAsyncClientC2Ev 00000008  00000000  00000000  0000025c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 13 .literal.exit._GLOBAL__sub_D__ZN22OvmsNetHttpAsyncClientC2Ev 00000008  00000000  00000000  00000264  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 14 .text         00000000  00000000  00000000  0000026c  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 15 .data         00000000  00000000  00000000  0000026c  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+ 16 .bss          00000000  00000000  00000000  0000026c  2**0
+                  ALLOC
+ 17 .text._ZN22OvmsNetHttpAsyncClientD2Ev 0000004e  00000000  00000000  0000026c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 18 .text._ZN22OvmsNetHttpAsyncClientD0Ev 00000016  00000000  00000000  000002bc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 19 .rodata.str1.1 0000036f  00000000  00000000  000002d2  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 20 .text._ZN22OvmsNetHttpAsyncClient16ConnectionFailedEv 00000026  00000000  00000000  00000644  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 21 .text._ZN22OvmsNetHttpAsyncClient16ConnectionClosedEv 00000026  00000000  00000000  0000066c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 22 .text._ZN22OvmsNetHttpAsyncClient16HeadersAvailableEv 0000001e  00000000  00000000  00000694  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 23 .text._ZN22OvmsNetHttpAsyncClient13BodyAvailableEv 0000002a  00000000  00000000  000006b4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 24 .text._ZN22OvmsNetHttpAsyncClient12IncomingDataEPvj 0000023c  00000000  00000000  000006e0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 25 .text._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE12_M_constructIPKcEEvT_S8_St20forward_iterator_tag$isra$20 0000005d  00000000  00000000  0000091c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 26 .text._ZN22OvmsNetHttpAsyncClient9ConnectedEv 000000de  00000000  00000000  0000097c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 27 .text._ZN22OvmsNetHttpAsyncClientC2Ev 0000004d  00000000  00000000  00000a5c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 28 .text._ZN22OvmsNetHttpAsyncClient7RequestENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPKc 000001f6  00000000  00000000  00000aac  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 29 .text._ZN22OvmsNetHttpAsyncClient12ResponseCodeEv 00000008  00000000  00000000  00000ca4  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 30 .text._ZN22OvmsNetHttpAsyncClient8BodySizeEv 00000008  00000000  00000000  00000cac  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 31 .text._ZN22OvmsNetHttpAsyncClient8GetStateEv 00000008  00000000  00000000  00000cb4  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 32 .text._ZN22OvmsNetHttpAsyncClient9GetBufferEv 00000007  00000000  00000000  00000cbc  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 33 .text.startup._GLOBAL__sub_I__ZN22OvmsNetHttpAsyncClientC2Ev 0000000e  00000000  00000000  00000cc4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 34 .ctors        00000004  00000000  00000000  00000cd4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 35 .text.exit._GLOBAL__sub_D__ZN22OvmsNetHttpAsyncClientC2Ev 0000000e  00000000  00000000  00000cd8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 36 .dtors        00000004  00000000  00000000  00000ce8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 37 .rodata._ZTV22OvmsNetHttpAsyncClient 0000002c  00000000  00000000  00000cec  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
+ 38 .bss._ZStL8__ioinit 00000001  00000000  00000000  00000d18  2**0
+                  ALLOC
+ 39 .debug_frame  000001a8  00000000  00000000  00000d18  2**2
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 40 .debug_info   0000a0e1  00000000  00000000  00000ec0  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 41 .debug_abbrev 00000b0f  00000000  00000000  0000afa1  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 42 .debug_loc    00000cb0  00000000  00000000  0000bab0  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 43 .debug_aranges 000000a0  00000000  00000000  0000c760  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 44 .debug_ranges 000001c0  00000000  00000000  0000c800  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 45 .debug_line   00000f7d  00000000  00000000  0000c9c0  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 46 .debug_str    000107cb  00000000  00000000  0000d93d  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 47 .comment      0000003b  00000000  00000000  0001e108  2**0
+                  CONTENTS, READONLY
+ 48 .xtensa.info  00000038  00000000  00000000  0001e143  2**0
+                  CONTENTS, READONLY
+ 49 .xt.lit       00000068  00000000  00000000  0001e17b  2**0
+                  CONTENTS, RELOC, READONLY
+ 50 .xt.prop      000004ec  00000000  00000000  0001e1e3  2**0
+                  CONTENTS, RELOC, READONLY
+ 51 .xt.prop._ZTV22OvmsNetHttpAsyncClient 0000000c  00000000  00000000  0001e6cf  2**0
+                  CONTENTS, RELOC, READONLY

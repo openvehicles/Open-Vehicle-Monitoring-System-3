@@ -1,0 +1,44 @@
+In archive /home/chris/OVMS/Open-Vehicle-Monitoring-System-3/vehicle/OVMS.V3/build/strverscmp/libstrverscmp.a:
+
+strverscmp.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .literal.strverscmp 0000000c  00000000  00000000  00000034  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  1 .text         00000000  00000000  00000000  00000040  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  2 .data         00000000  00000000  00000000  00000040  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+  3 .bss          00000000  00000000  00000000  00000040  2**0
+                  ALLOC
+  4 .text.strverscmp 000000ca  00000000  00000000  00000040  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  5 .rodata.result_type$1889 00000024  00000000  00000000  0000010a  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  6 .rodata.next_state$1888 0000000c  00000000  00000000  0000012e  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  7 .debug_frame  00000028  00000000  00000000  0000013c  2**2
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+  8 .debug_info   000001a0  00000000  00000000  00000164  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+  9 .debug_abbrev 000000c0  00000000  00000000  00000304  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 10 .debug_loc    000001e1  00000000  00000000  000003c4  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 11 .debug_aranges 00000020  00000000  00000000  000005a5  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 12 .debug_ranges 00000010  00000000  00000000  000005c5  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 13 .debug_line   000001de  00000000  00000000  000005d5  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 14 .debug_str    000001e5  00000000  00000000  000007b3  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 15 .comment      0000003b  00000000  00000000  00000998  2**0
+                  CONTENTS, READONLY
+ 16 .xtensa.info  00000038  00000000  00000000  000009d3  2**0
+                  CONTENTS, READONLY
+ 17 .xt.lit       00000008  00000000  00000000  00000a0b  2**0
+                  CONTENTS, RELOC, READONLY
+ 18 .xt.prop      00000084  00000000  00000000  00000a13  2**0
+                  CONTENTS, RELOC, READONLY

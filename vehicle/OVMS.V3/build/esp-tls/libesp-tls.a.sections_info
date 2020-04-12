@@ -1,0 +1,108 @@
+In archive /home/chris/OVMS/Open-Vehicle-Monitoring-System-3/vehicle/OVMS.V3/build/esp-tls/libesp-tls.a:
+
+esp_tls.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .literal.mbedtls_cleanup 00000028  00000000  00000000  00000034  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  1 .literal.tls_write 00000018  00000000  00000000  0000005c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  2 .literal.tls_read 0000001c  00000000  00000000  00000074  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  3 .literal.tcp_write 00000004  00000000  00000000  00000090  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  4 .literal.tcp_read 00000004  00000000  00000000  00000094  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  5 .literal.get_port 00000014  00000000  00000000  00000098  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  6 .literal.esp_tls_low_level_conn 000001e4  00000000  00000000  000000ac  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  7 .literal.esp_tls_init_global_ca_store 0000001c  00000000  00000000  00000290  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  8 .literal.esp_tls_set_global_ca_store 00000038  00000000  00000000  000002ac  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  9 .literal.esp_tls_get_global_ca_store 00000004  00000000  00000000  000002e4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 10 .literal.esp_tls_free_global_ca_store 00000008  00000000  00000000  000002e8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 11 .literal.esp_tls_conn_delete 0000000c  00000000  00000000  000002f0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 12 .literal.esp_tls_conn_new 00000038  00000000  00000000  000002fc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 13 .literal.esp_tls_conn_new_async 00000004  00000000  00000000  00000334  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 14 .literal.esp_tls_conn_http_new 00000014  00000000  00000000  00000338  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 15 .literal.esp_tls_get_bytes_avail 00000014  00000000  00000000  0000034c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 16 .literal.esp_tls_conn_http_new_async 00000014  00000000  00000000  00000360  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 17 .text         00000000  00000000  00000000  00000374  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 18 .data         00000000  00000000  00000000  00000374  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+ 19 .bss          00000000  00000000  00000000  00000374  2**0
+                  ALLOC
+ 20 .text.mbedtls_cleanup 0000007e  00000000  00000000  00000374  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 21 .rodata.str1.1 000006a4  00000000  00000000  000003f2  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 22 .text.tls_write 0000003e  00000000  00000000  00000a98  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 23 .text.tls_read 00000048  00000000  00000000  00000ad8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 24 .text.tcp_write 00000019  00000000  00000000  00000b20  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 25 .text.tcp_read 00000019  00000000  00000000  00000b3c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 26 .text.get_port 0000004c  00000000  00000000  00000b58  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 27 .text.esp_tls_low_level_conn 0000076a  00000000  00000000  00000ba4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 28 .text.esp_tls_init_global_ca_store 00000048  00000000  00000000  00001310  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 29 .text.esp_tls_set_global_ca_store 0000009e  00000000  00000000  00001358  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 30 .text.esp_tls_get_global_ca_store 0000000a  00000000  00000000  000013f8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 31 .text.esp_tls_free_global_ca_store 00000019  00000000  00000000  00001404  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 32 .text.esp_tls_conn_delete 00000026  00000000  00000000  00001420  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 33 .text.esp_tls_conn_new 000000b8  00000000  00000000  00001448  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 34 .text.esp_tls_conn_new_async 00000018  00000000  00000000  00001500  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 35 .text.esp_tls_conn_http_new 00000048  00000000  00000000  00001518  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 36 .text.esp_tls_get_bytes_avail 0000002f  00000000  00000000  00001560  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 37 .text.esp_tls_conn_http_new_async 0000004a  00000000  00000000  00001590  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 38 .bss.global_cacert 00000004  00000000  00000000  000015dc  2**2
+                  ALLOC
+ 39 .debug_frame  000001a8  00000000  00000000  000015dc  2**2
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 40 .debug_info   00003489  00000000  00000000  00001784  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 41 .debug_abbrev 0000055c  00000000  00000000  00004c0d  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 42 .debug_loc    00000a8b  00000000  00000000  00005169  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 43 .debug_aranges 000000a0  00000000  00000000  00005bf4  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 44 .debug_ranges 00000170  00000000  00000000  00005c94  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 45 .debug_line   00000e06  00000000  00000000  00005e04  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 46 .debug_str    00001a91  00000000  00000000  00006c0a  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 47 .comment      0000003b  00000000  00000000  0000869b  2**0
+                  CONTENTS, READONLY
+ 48 .xtensa.info  00000038  00000000  00000000  000086d6  2**0
+                  CONTENTS, READONLY
+ 49 .xt.lit       00000088  00000000  00000000  0000870e  2**0
+                  CONTENTS, RELOC, READONLY
+ 50 .xt.prop      000007ec  00000000  00000000  00008796  2**0
+                  CONTENTS, RELOC, READONLY

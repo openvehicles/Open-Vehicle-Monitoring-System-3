@@ -1,0 +1,851 @@
+In archive /home/chris/OVMS/Open-Vehicle-Monitoring-System-3/vehicle/OVMS.V3/build/vehicle_kianiroev/libvehicle_kianiroev.a:
+
+kn_incoming_c_can.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .literal.startup._GLOBAL__sub_I__ZN20OvmsVehicleKiaNiroEv17IncomingFrameCan1EP11CAN_frame_t 00000008  00000000  00000000  00000034  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  1 .literal.exit._GLOBAL__sub_D__ZN20OvmsVehicleKiaNiroEv17IncomingFrameCan1EP11CAN_frame_t 00000008  00000000  00000000  0000003c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  2 .text         00000000  00000000  00000000  00000044  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  3 .data         00000000  00000000  00000000  00000044  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+  4 .bss          00000000  00000000  00000000  00000044  2**0
+                  ALLOC
+  5 .text._ZN20OvmsVehicleKiaNiroEv17IncomingFrameCan1EP11CAN_frame_t 0000006d  00000000  00000000  00000044  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  6 .text.startup._GLOBAL__sub_I__ZN20OvmsVehicleKiaNiroEv17IncomingFrameCan1EP11CAN_frame_t 0000000e  00000000  00000000  000000b4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  7 .ctors        00000004  00000000  00000000  000000c4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+  8 .text.exit._GLOBAL__sub_D__ZN20OvmsVehicleKiaNiroEv17IncomingFrameCan1EP11CAN_frame_t 0000000e  00000000  00000000  000000c8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  9 .dtors        00000004  00000000  00000000  000000d8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 10 .bss._ZStL8__ioinit 00000001  00000000  00000000  000000dc  2**0
+                  ALLOC
+ 11 .debug_frame  00000058  00000000  00000000  000000dc  2**2
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 12 .debug_info   00002fb1  00000000  00000000  00000134  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 13 .debug_abbrev 000006d9  00000000  00000000  000030e5  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 14 .debug_loc    00000067  00000000  00000000  000037be  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 15 .debug_aranges 00000030  00000000  00000000  00003825  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 16 .debug_ranges 00000020  00000000  00000000  00003855  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 17 .debug_line   000008f8  00000000  00000000  00003875  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 18 .debug_str    000027f7  00000000  00000000  0000416d  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 19 .comment      0000003b  00000000  00000000  00006964  2**0
+                  CONTENTS, READONLY
+ 20 .xtensa.info  00000038  00000000  00000000  0000699f  2**0
+                  CONTENTS, READONLY
+ 21 .xt.lit       00000010  00000000  00000000  000069d7  2**0
+                  CONTENTS, RELOC, READONLY
+ 22 .xt.prop      000000a8  00000000  00000000  000069e7  2**0
+                  CONTENTS, RELOC, READONLY
+
+vehicle_kianiroev.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .group        00000014  00000000  00000000  00000034  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  1 .group        00000020  00000000  00000000  00000048  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  2 .group        00000014  00000000  00000000  00000068  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  3 .group        00000014  00000000  00000000  0000007c  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  4 .group        0000000c  00000000  00000000  00000090  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  5 .group        0000000c  00000000  00000000  0000009c  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  6 .group        0000000c  00000000  00000000  000000a8  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  7 .group        0000000c  00000000  00000000  000000b4  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  8 .group        0000000c  00000000  00000000  000000c0  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  9 .group        0000000c  00000000  00000000  000000cc  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 10 .group        0000000c  00000000  00000000  000000d8  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 11 .group        0000000c  00000000  00000000  000000e4  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 12 .group        0000000c  00000000  00000000  000000f0  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 13 .group        0000000c  00000000  00000000  000000fc  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 14 .group        0000000c  00000000  00000000  00000108  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 15 .group        0000000c  00000000  00000000  00000114  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 16 .group        0000000c  00000000  00000000  00000120  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 17 .group        0000000c  00000000  00000000  0000012c  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 18 .group        0000000c  00000000  00000000  00000138  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 19 .group        0000000c  00000000  00000000  00000144  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 20 .group        0000000c  00000000  00000000  00000150  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 21 .group        0000000c  00000000  00000000  0000015c  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 22 .group        0000000c  00000000  00000000  00000168  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 23 .group        0000000c  00000000  00000000  00000174  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 24 .group        0000000c  00000000  00000000  00000180  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 25 .group        0000000c  00000000  00000000  0000018c  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 26 .group        0000000c  00000000  00000000  00000198  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 27 .group        0000000c  00000000  00000000  000001a4  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 28 .group        0000000c  00000000  00000000  000001b0  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+ 29 .literal._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM20OvmsVehicleKiaNiroEvFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 00000008  00000000  00000000  000001bc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 30 .literal._ZN10KiaVehicleD5Ev 00000018  00000000  00000000  000001c4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 31 .literal._ZN20OvmsVehicleKiaNiroEv9Ticker300Ej 00000004  00000000  00000000  000001dc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 32 .literal._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM20OvmsVehicleKiaNiroEvFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000008  00000000  00000000  000001e0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 33 .literal._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$32 00000014  00000000  00000000  000001e8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 34 .literal._ZN20OvmsVehicleKiaNiroEvD2Ev 0000002c  00000000  00000000  000001fc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 35 .literal._ZN20OvmsVehicleKiaNiroEvD0Ev 00000008  00000000  00000000  00000228  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 36 .literal._ZN20OvmsVehicleKiaNiroEv10SetFeatureEiPKc 00000054  00000000  00000000  00000230  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 37 .literal._ZN20OvmsVehicleKiaNiroEv10GetFeatureB5cxx11Ei 00000070  00000000  00000000  00000284  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 38 .literal._ZN20OvmsVehicleKiaNiroEv13EventListenerENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPv 00000014  00000000  00000000  000002f4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 39 .literal._ZN20OvmsVehicleKiaNiroEv13ConfigChangedEP15OvmsConfigParam 000000a0  00000000  00000000  00000308  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 40 .literal._ZN20OvmsVehicleKiaNiroEvC2Ev 000003b4  00000000  00000000  000003a8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 41 .literal._Z13CreateVehicleI20OvmsVehicleKiaNiroEvEP11OvmsVehiclev 00000008  00000000  00000000  0000075c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 42 .literal._ZN20OvmsVehicleKiaNiroEv24vehicle_kianiroev_car_onEb 00000070  00000000  00000000  00000764  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 43 .literal._ZN20OvmsVehicleKiaNiroEv14HandleChargingEv 000000dc  00000000  00000000  000007d4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 44 .literal._ZN20OvmsVehicleKiaNiroEv16HandleChargeStopEv 000000a4  00000000  00000000  000008b0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 45 .literal._ZN20OvmsVehicleKiaNiroEv16SetChargeMetricsEfffb 00000080  00000000  00000000  00000954  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 46 .literal._ZN20OvmsVehicleKiaNiroEv20calcMinutesRemainingEf 00000058  00000000  00000000  000009d4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 47 .literal._ZN20OvmsVehicleKiaNiroEv20UpdateMaxRangeAndSOHEv 000000b0  00000000  00000000  00000a2c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 48 .literal._ZN20OvmsVehicleKiaNiroEv13LeftIndicatorEb 00000004  00000000  00000000  00000adc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 49 .literal._ZN20OvmsVehicleKiaNiroEv14RightIndicatorEb 00000004  00000000  00000000  00000ae0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 50 .literal._ZN20OvmsVehicleKiaNiroEv12RearDefoggerEb 00000004  00000000  00000000  00000ae4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 51 .literal._ZN20OvmsVehicleKiaNiroEv11FoldMirrorsEb 00000004  00000000  00000000  00000ae8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 52 .literal._ZN20OvmsVehicleKiaNiroEv8ACCRelayEbPKc 00000008  00000000  00000000  00000aec  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 53 .literal._ZN20OvmsVehicleKiaNiroEv11SetDoorLockEbPKc 00000014  00000000  00000000  00000af4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 54 .literal._ZN20OvmsVehicleKiaNiroEv9IGN1RelayEbPKc 00000008  00000000  00000000  00000b08  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 55 .literal._ZN20OvmsVehicleKiaNiroEv9IGN2RelayEbPKc 00000008  00000000  00000000  00000b10  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 56 .literal._ZN20OvmsVehicleKiaNiroEv10StartRelayEbPKc 00000008  00000000  00000000  00000b18  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 57 .literal._ZN20OvmsVehicleKiaNiroEv9OpenTrunkEPKc 00000010  00000000  00000000  00000b20  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 58 .literal._ZN20OvmsVehicleKiaNiroEv7Ticker1Ej 0000016c  00000000  00000000  00000b30  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 59 .literal._ZN24OvmsVehicleKiaNiroEvInitC2Ev 0000003c  00000000  00000000  00000c9c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 60 .literal.startup._GLOBAL__sub_I$09000_niro_charge_steps 00000008  00000000  00000000  00000cd8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 61 .literal.startup._GLOBAL__sub_I_niro_charge_steps 00000008  00000000  00000000  00000ce0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 62 .literal.exit._GLOBAL__sub_D_niro_charge_steps 00000008  00000000  00000000  00000ce8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 63 .text         00000000  00000000  00000000  00000cf0  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 64 .data         00000000  00000000  00000000  00000cf0  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+ 65 .bss          00000000  00000000  00000000  00000cf0  2**0
+                  ALLOC
+ 66 .text._ZN11OvmsVehicle25GetNotifyChargeStateDelayEPKc 00000007  00000000  00000000  00000cf0  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 67 .text._ZN11OvmsVehicle17NotifiedVehicleOnEv 00000005  00000000  00000000  00000cf8  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 68 .text._ZN11OvmsVehicle18NotifiedVehicleOffEv 00000005  00000000  00000000  00000d00  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 69 .text._ZN11OvmsVehicle20NotifiedVehicleAwakeEv 00000005  00000000  00000000  00000d08  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 70 .text._ZN11OvmsVehicle21NotifiedVehicleAsleepEv 00000005  00000000  00000000  00000d10  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 71 .text._ZN11OvmsVehicle26NotifiedVehicleChargeStartEv 00000005  00000000  00000000  00000d18  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 72 .text._ZN11OvmsVehicle25NotifiedVehicleChargeStopEv 00000005  00000000  00000000  00000d20  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 73 .text._ZN11OvmsVehicle28NotifiedVehicleChargePrepareEv 00000005  00000000  00000000  00000d28  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 74 .text._ZN11OvmsVehicle27NotifiedVehicleChargeFinishEv 00000005  00000000  00000000  00000d30  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 75 .text._ZN11OvmsVehicle28NotifiedVehicleChargePilotOnEv 00000005  00000000  00000000  00000d38  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 76 .text._ZN11OvmsVehicle29NotifiedVehicleChargePilotOffEv 00000005  00000000  00000000  00000d40  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 77 .text._ZN11OvmsVehicle29NotifiedVehicleCharge12vStartEv 00000005  00000000  00000000  00000d48  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 78 .text._ZN11OvmsVehicle28NotifiedVehicleCharge12vStopEv 00000005  00000000  00000000  00000d50  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 79 .text._ZN11OvmsVehicle21NotifiedVehicleLockedEv 00000005  00000000  00000000  00000d58  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 80 .text._ZN11OvmsVehicle23NotifiedVehicleUnlockedEv 00000005  00000000  00000000  00000d60  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 81 .text._ZN11OvmsVehicle22NotifiedVehicleValetOnEv 00000005  00000000  00000000  00000d68  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 82 .text._ZN11OvmsVehicle23NotifiedVehicleValetOffEv 00000005  00000000  00000000  00000d70  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 83 .text._ZN11OvmsVehicle27NotifiedVehicleHeadlightsOnEv 00000005  00000000  00000000  00000d78  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 84 .text._ZN11OvmsVehicle28NotifiedVehicleHeadlightsOffEv 00000005  00000000  00000000  00000d80  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 85 .text._ZN11OvmsVehicle22NotifiedVehicleAlarmOnEv 00000005  00000000  00000000  00000d88  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 86 .text._ZN11OvmsVehicle23NotifiedVehicleAlarmOffEv 00000005  00000000  00000000  00000d90  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 87 .text._ZN11OvmsVehicle25NotifiedVehicleChargeModeEPKc 00000005  00000000  00000000  00000d98  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 88 .text._ZN11OvmsVehicle26NotifiedVehicleChargeStateEPKc 00000005  00000000  00000000  00000da0  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 89 .text._ZN20OvmsVehicleKiaNiroEv8Ticker10Ej 00000005  00000000  00000000  00000da8  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 90 .text._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM20OvmsVehicleKiaNiroEvFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 00000037  00000000  00000000  00000db0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 91 .text._ZN10KiaVehicleD2Ev 0000002e  00000000  00000000  00000de8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 92 .text._ZN10KiaVehicleD0Ev 00000016  00000000  00000000  00000e18  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 93 .text._ZN20OvmsVehicleKiaNiroEv9Ticker300Ej 0000000e  00000000  00000000  00000e30  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 94 .text._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM20OvmsVehicleKiaNiroEvFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000044  00000000  00000000  00000e40  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 95 .rodata.str1.1 000008d0  00000000  00000000  00000e84  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 96 .text._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$32 00000062  00000000  00000000  00001754  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 97 .text._ZN20OvmsVehicleKiaNiroEvD2Ev 0000004e  00000000  00000000  000017b8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 98 .text._ZN20OvmsVehicleKiaNiroEvD0Ev 00000016  00000000  00000000  00001808  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 99 .text._ZN20OvmsVehicleKiaNiroEv10SetFeatureEiPKc 000000e8  00000000  00000000  00001820  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+100 .text._ZN20OvmsVehicleKiaNiroEv10GetFeatureB5cxx11Ei 00000100  00000000  00000000  00001908  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+101 .rodata._ZN20OvmsVehicleKiaNiroEv10GetFeatureB5cxx11Ei 00000040  00000000  00000000  00001a08  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
+102 .text._ZN20OvmsVehicleKiaNiroEv13EventListenerENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPv 00000038  00000000  00000000  00001a48  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+103 .text._ZN20OvmsVehicleKiaNiroEv13ConfigChangedEP15OvmsConfigParam 0000018f  00000000  00000000  00001a80  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+104 .text._ZN20OvmsVehicleKiaNiroEvC2Ev 00000a11  00000000  00000000  00001c10  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+105 .text._Z13CreateVehicleI20OvmsVehicleKiaNiroEvEP11OvmsVehiclev 00000016  00000000  00000000  00002624  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+106 .text._ZN20OvmsVehicleKiaNiroEv24vehicle_kianiroev_car_onEb 000001cb  00000000  00000000  0000263c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+107 .text._ZN20OvmsVehicleKiaNiroEv14HandleChargingEv 0000061a  00000000  00000000  00002808  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+108 .text._ZN20OvmsVehicleKiaNiroEv16HandleChargeStopEv 00000284  00000000  00000000  00002e24  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+109 .text._ZN20OvmsVehicleKiaNiroEv16SetChargeMetricsEfffb 00000166  00000000  00000000  000030a8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+110 .text._ZN20OvmsVehicleKiaNiroEv20calcMinutesRemainingEf 000001a1  00000000  00000000  00003210  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+111 .text._ZN20OvmsVehicleKiaNiroEv20UpdateMaxRangeAndSOHEv 00000237  00000000  00000000  000033b4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+112 .text._ZN20OvmsVehicleKiaNiroEv13LeftIndicatorEb 0000003c  00000000  00000000  000035ec  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+113 .text._ZN20OvmsVehicleKiaNiroEv14RightIndicatorEb 0000003c  00000000  00000000  00003628  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+114 .text._ZN20OvmsVehicleKiaNiroEv12RearDefoggerEb 0000003e  00000000  00000000  00003664  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+115 .text._ZN20OvmsVehicleKiaNiroEv11FoldMirrorsEb 0000003c  00000000  00000000  000036a4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+116 .text._ZN20OvmsVehicleKiaNiroEv8ACCRelayEbPKc 00000052  00000000  00000000  000036e0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+117 .text._ZN20OvmsVehicleKiaNiroEv11SetDoorLockEbPKc 0000005c  00000000  00000000  00003734  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+118 .text._ZN20OvmsVehicleKiaNiroEv9IGN1RelayEbPKc 00000052  00000000  00000000  00003790  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+119 .text._ZN20OvmsVehicleKiaNiroEv9IGN2RelayEbPKc 00000052  00000000  00000000  000037e4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+120 .text._ZN20OvmsVehicleKiaNiroEv10StartRelayEbPKc 00000052  00000000  00000000  00003838  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+121 .text._ZN20OvmsVehicleKiaNiroEv9OpenTrunkEPKc 00000045  00000000  00000000  0000388c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+122 .text._ZN20OvmsVehicleKiaNiroEv13RequestNotifyEj 00000011  00000000  00000000  000038d4  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+123 .text._ZN20OvmsVehicleKiaNiroEv8DoNotifyEv 00000029  00000000  00000000  000038e8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+124 .text._ZN20OvmsVehicleKiaNiroEv7Ticker1Ej 000006ff  00000000  00000000  00003914  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+125 .text._ZN24OvmsVehicleKiaNiroEvInitC2Ev 000000de  00000000  00000000  00004014  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+126 .text.startup._GLOBAL__sub_I$09000_niro_charge_steps 0000000e  00000000  00000000  000040f4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+127 .ctors.56535  00000004  00000000  00000000  00004104  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+128 .text.startup._GLOBAL__sub_I_niro_charge_steps 0000000e  00000000  00000000  00004108  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+129 .ctors        00000004  00000000  00000000  00004118  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+130 .text.exit._GLOBAL__sub_D_niro_charge_steps 0000000e  00000000  00000000  0000411c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+131 .dtors        00000004  00000000  00000000  0000412c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+132 .rodata._ZTV10KiaVehicle 00000154  00000000  00000000  00004130  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
+133 .rodata._ZTV20OvmsVehicleKiaNiroEv 00000158  00000000  00000000  00004284  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
+134 .bss.MyOvmsVehicleKiaNiroEvInit 00000001  00000000  00000000  000043dc  2**0
+                  ALLOC
+135 .data.niro_charge_steps 0000006c  00000000  00000000  000043dc  2**2
+                  CONTENTS, ALLOC, LOAD, DATA
+136 .rodata._ZL23vehicle_kianiroev_polls 00000228  00000000  00000000  00004448  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+137 .bss._ZStL8__ioinit 00000001  00000000  00000000  00004670  2**0
+                  ALLOC
+138 .debug_frame  000005c8  00000000  00000000  00004670  2**2
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+139 .debug_info   00026352  00000000  00000000  00004c38  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+140 .debug_abbrev 00001021  00000000  00000000  0002af8a  2**0
+                  CONTENTS, READONLY, DEBUGGING
+141 .debug_loc    000030de  00000000  00000000  0002bfab  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+142 .debug_aranges 00000200  00000000  00000000  0002f089  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+143 .debug_ranges 00000428  00000000  00000000  0002f289  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+144 .debug_line   00002692  00000000  00000000  0002f6b1  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+145 .debug_str    0004d9b8  00000000  00000000  00031d43  2**0
+                  CONTENTS, READONLY, DEBUGGING
+146 .comment      0000003b  00000000  00000000  0007f6fb  2**0
+                  CONTENTS, READONLY
+147 .xtensa.info  00000038  00000000  00000000  0007f736  2**0
+                  CONTENTS, READONLY
+148 .xt.lit._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM20OvmsVehicleKiaNiroEvFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 00000008  00000000  00000000  0007f76e  2**0
+                  CONTENTS, RELOC, READONLY
+149 .xt.lit._ZN10KiaVehicleD5Ev 00000008  00000000  00000000  0007f776  2**0
+                  CONTENTS, RELOC, READONLY
+150 .xt.lit       000000f0  00000000  00000000  0007f77e  2**0
+                  CONTENTS, RELOC, READONLY
+151 .xt.lit._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM20OvmsVehicleKiaNiroEvFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000008  00000000  00000000  0007f86e  2**0
+                  CONTENTS, RELOC, READONLY
+152 .xt.lit._Z13CreateVehicleI20OvmsVehicleKiaNiroEvEP11OvmsVehiclev 00000008  00000000  00000000  0007f876  2**0
+                  CONTENTS, RELOC, READONLY
+153 .xt.prop._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM20OvmsVehicleKiaNiroEvFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 0000003c  00000000  00000000  0007f87e  2**0
+                  CONTENTS, RELOC, READONLY
+154 .xt.prop._ZN10KiaVehicleD5Ev 0000000c  00000000  00000000  0007f8ba  2**0
+                  CONTENTS, RELOC, READONLY
+155 .xt.prop      00000e34  00000000  00000000  0007f8c6  2**0
+                  CONTENTS, RELOC, READONLY
+156 .xt.prop._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM20OvmsVehicleKiaNiroEvFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000060  00000000  00000000  000806fa  2**0
+                  CONTENTS, RELOC, READONLY
+157 .xt.prop._Z13CreateVehicleI20OvmsVehicleKiaNiroEvEP11OvmsVehiclev 00000030  00000000  00000000  0008075a  2**0
+                  CONTENTS, RELOC, READONLY
+158 .xt.prop._ZN11OvmsVehicle25GetNotifyChargeStateDelayEPKc 00000024  00000000  00000000  0008078a  2**0
+                  CONTENTS, RELOC, READONLY
+159 .xt.prop._ZN11OvmsVehicle17NotifiedVehicleOnEv 00000024  00000000  00000000  000807ae  2**0
+                  CONTENTS, RELOC, READONLY
+160 .xt.prop._ZN11OvmsVehicle18NotifiedVehicleOffEv 00000024  00000000  00000000  000807d2  2**0
+                  CONTENTS, RELOC, READONLY
+161 .xt.prop._ZN11OvmsVehicle20NotifiedVehicleAwakeEv 00000024  00000000  00000000  000807f6  2**0
+                  CONTENTS, RELOC, READONLY
+162 .xt.prop._ZN11OvmsVehicle21NotifiedVehicleAsleepEv 00000024  00000000  00000000  0008081a  2**0
+                  CONTENTS, RELOC, READONLY
+163 .xt.prop._ZN11OvmsVehicle26NotifiedVehicleChargeStartEv 00000024  00000000  00000000  0008083e  2**0
+                  CONTENTS, RELOC, READONLY
+164 .xt.prop._ZN11OvmsVehicle25NotifiedVehicleChargeStopEv 00000024  00000000  00000000  00080862  2**0
+                  CONTENTS, RELOC, READONLY
+165 .xt.prop._ZN11OvmsVehicle28NotifiedVehicleChargePrepareEv 00000024  00000000  00000000  00080886  2**0
+                  CONTENTS, RELOC, READONLY
+166 .xt.prop._ZN11OvmsVehicle27NotifiedVehicleChargeFinishEv 00000024  00000000  00000000  000808aa  2**0
+                  CONTENTS, RELOC, READONLY
+167 .xt.prop._ZN11OvmsVehicle28NotifiedVehicleChargePilotOnEv 00000024  00000000  00000000  000808ce  2**0
+                  CONTENTS, RELOC, READONLY
+168 .xt.prop._ZN11OvmsVehicle29NotifiedVehicleChargePilotOffEv 00000024  00000000  00000000  000808f2  2**0
+                  CONTENTS, RELOC, READONLY
+169 .xt.prop._ZN11OvmsVehicle29NotifiedVehicleCharge12vStartEv 00000024  00000000  00000000  00080916  2**0
+                  CONTENTS, RELOC, READONLY
+170 .xt.prop._ZN11OvmsVehicle28NotifiedVehicleCharge12vStopEv 00000024  00000000  00000000  0008093a  2**0
+                  CONTENTS, RELOC, READONLY
+171 .xt.prop._ZN11OvmsVehicle21NotifiedVehicleLockedEv 00000024  00000000  00000000  0008095e  2**0
+                  CONTENTS, RELOC, READONLY
+172 .xt.prop._ZN11OvmsVehicle23NotifiedVehicleUnlockedEv 00000024  00000000  00000000  00080982  2**0
+                  CONTENTS, RELOC, READONLY
+173 .xt.prop._ZN11OvmsVehicle22NotifiedVehicleValetOnEv 00000024  00000000  00000000  000809a6  2**0
+                  CONTENTS, RELOC, READONLY
+174 .xt.prop._ZN11OvmsVehicle23NotifiedVehicleValetOffEv 00000024  00000000  00000000  000809ca  2**0
+                  CONTENTS, RELOC, READONLY
+175 .xt.prop._ZN11OvmsVehicle27NotifiedVehicleHeadlightsOnEv 00000024  00000000  00000000  000809ee  2**0
+                  CONTENTS, RELOC, READONLY
+176 .xt.prop._ZN11OvmsVehicle28NotifiedVehicleHeadlightsOffEv 00000024  00000000  00000000  00080a12  2**0
+                  CONTENTS, RELOC, READONLY
+177 .xt.prop._ZN11OvmsVehicle22NotifiedVehicleAlarmOnEv 00000024  00000000  00000000  00080a36  2**0
+                  CONTENTS, RELOC, READONLY
+178 .xt.prop._ZN11OvmsVehicle23NotifiedVehicleAlarmOffEv 00000024  00000000  00000000  00080a5a  2**0
+                  CONTENTS, RELOC, READONLY
+179 .xt.prop._ZN11OvmsVehicle25NotifiedVehicleChargeModeEPKc 00000024  00000000  00000000  00080a7e  2**0
+                  CONTENTS, RELOC, READONLY
+180 .xt.prop._ZN11OvmsVehicle26NotifiedVehicleChargeStateEPKc 00000024  00000000  00000000  00080aa2  2**0
+                  CONTENTS, RELOC, READONLY
+181 .xt.prop._ZN10KiaVehicleD2Ev 00000024  00000000  00000000  00080ac6  2**0
+                  CONTENTS, RELOC, READONLY
+182 .xt.prop._ZN10KiaVehicleD0Ev 00000024  00000000  00000000  00080aea  2**0
+                  CONTENTS, RELOC, READONLY
+183 .xt.prop._ZTV10KiaVehicle 0000000c  00000000  00000000  00080b0e  2**0
+                  CONTENTS, RELOC, READONLY
+184 .xt.prop._ZTV20OvmsVehicleKiaNiroEv 0000000c  00000000  00000000  00080b1a  2**0
+                  CONTENTS, RELOC, READONLY
+
+kn_can_poll.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .literal._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$22 00000014  00000000  00000000  00000034  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  1 .literal._ZN20OvmsVehicleKiaNiroEv11IncomingBMCEP6canbusttPhht$part$10$constprop$28 000000ec  00000000  00000000  00000048  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  2 .literal._ZN20OvmsVehicleKiaNiroEv14IncomingAirConEP6canbusttPhht 00000040  00000000  00000000  00000134  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  3 .literal._ZN20OvmsVehicleKiaNiroEv14IncomingAbsEspEP6canbusttPhht 0000000c  00000000  00000000  00000174  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  4 .literal._ZN20OvmsVehicleKiaNiroEv11IncomingOBCEP6canbusttPhht 0000005c  00000000  00000000  00000180  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  5 .literal._ZN20OvmsVehicleKiaNiroEv12IncomingVMCUEP6canbusttPhht 00000038  00000000  00000000  000001dc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  6 .literal._ZN20OvmsVehicleKiaNiroEv11IncomingMCUEP6canbusttPhht 0000000c  00000000  00000000  00000214  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  7 .literal._ZN20OvmsVehicleKiaNiroEv11IncomingBMCEP6canbusttPhht 00000004  00000000  00000000  00000220  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  8 .literal._ZN20OvmsVehicleKiaNiroEv6IsKonaEv 00000008  00000000  00000000  00000224  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  9 .literal._ZN20OvmsVehicleKiaNiroEv11IncomingBCMEP6canbusttPhht$part$11$constprop$27 000000b0  00000000  00000000  0000022c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 10 .literal._ZN20OvmsVehicleKiaNiroEv11IncomingBCMEP6canbusttPhht 00000004  00000000  00000000  000002dc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 11 .literal._ZN20OvmsVehicleKiaNiroEv15GetConsoleUnitsEv 00000020  00000000  00000000  000002e0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 12 .literal._ZN20OvmsVehicleKiaNiroEv10IncomingCMEP6canbusttPhht 00000018  00000000  00000000  00000300  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 13 .literal._ZN20OvmsVehicleKiaNiroEv5IsLHDEv 00000020  00000000  00000000  00000318  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 14 .literal._ZN20OvmsVehicleKiaNiroEv12IncomingIGMPEP6canbusttPhht$part$24$constprop$25 00000078  00000000  00000000  00000338  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 15 .literal._ZN20OvmsVehicleKiaNiroEv17IncomingPollReplyEP6canbusttPhht 00000034  00000000  00000000  000003b0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 16 .literal._ZN20OvmsVehicleKiaNiroEv12IncomingIGMPEP6canbusttPhht 00000004  00000000  00000000  000003e4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 17 .literal.startup._GLOBAL__sub_I__ZN20OvmsVehicleKiaNiroEv17IncomingPollReplyEP6canbusttPhht 00000008  00000000  00000000  000003e8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 18 .literal.exit._GLOBAL__sub_D__ZN20OvmsVehicleKiaNiroEv17IncomingPollReplyEP6canbusttPhht 00000008  00000000  00000000  000003f0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 19 .text         00000000  00000000  00000000  000003f8  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 20 .data         00000000  00000000  00000000  000003f8  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+ 21 .bss          00000000  00000000  00000000  000003f8  2**0
+                  ALLOC
+ 22 .rodata.str1.1 0000009d  00000000  00000000  000003f8  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 23 .text._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$22 00000062  00000000  00000000  00000498  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 24 .text._ZN20OvmsVehicleKiaNiroEv11IncomingBMCEP6canbusttPhht$part$10$constprop$28 000004bc  00000000  00000000  000004fc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 25 .text._ZN20OvmsVehicleKiaNiroEv14IncomingAirConEP6canbusttPhht 0000009c  00000000  00000000  000009b8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 26 .text._ZN20OvmsVehicleKiaNiroEv14IncomingAbsEspEP6canbusttPhht 00000032  00000000  00000000  00000a54  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 27 .text._ZN20OvmsVehicleKiaNiroEv11IncomingOBCEP6canbusttPhht 00000111  00000000  00000000  00000a88  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 28 .text._ZN20OvmsVehicleKiaNiroEv12IncomingVMCUEP6canbusttPhht 0000022e  00000000  00000000  00000b9c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 29 .text._ZN20OvmsVehicleKiaNiroEv11IncomingMCUEP6canbusttPhht 0000004a  00000000  00000000  00000dcc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 30 .text._ZN20OvmsVehicleKiaNiroEv11IncomingBMCEP6canbusttPhht 0000001e  00000000  00000000  00000e18  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 31 .text._ZN20OvmsVehicleKiaNiroEv6IsKonaEv 0000001a  00000000  00000000  00000e38  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 32 .text._ZN20OvmsVehicleKiaNiroEv11IncomingBCMEP6canbusttPhht$part$11$constprop$27 000002ce  00000000  00000000  00000e54  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 33 .text._ZN20OvmsVehicleKiaNiroEv11IncomingBCMEP6canbusttPhht 0000001a  00000000  00000000  00001124  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 34 .text._ZN20OvmsVehicleKiaNiroEv15GetConsoleUnitsEv 00000044  00000000  00000000  00001140  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 35 .text._ZN20OvmsVehicleKiaNiroEv10IncomingCMEP6canbusttPhht 000000a2  00000000  00000000  00001184  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 36 .text._ZN20OvmsVehicleKiaNiroEv5IsLHDEv 0000003f  00000000  00000000  00001228  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 37 .text._ZN20OvmsVehicleKiaNiroEv12IncomingIGMPEP6canbusttPhht$part$24$constprop$25 000001eb  00000000  00000000  00001268  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 38 .text._ZN20OvmsVehicleKiaNiroEv17IncomingPollReplyEP6canbusttPhht 00000138  00000000  00000000  00001454  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 39 .text._ZN20OvmsVehicleKiaNiroEv12IncomingIGMPEP6canbusttPhht 0000001a  00000000  00000000  0000158c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 40 .text.startup._GLOBAL__sub_I__ZN20OvmsVehicleKiaNiroEv17IncomingPollReplyEP6canbusttPhht 0000000e  00000000  00000000  000015a8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 41 .ctors        00000004  00000000  00000000  000015b8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 42 .text.exit._GLOBAL__sub_D__ZN20OvmsVehicleKiaNiroEv17IncomingPollReplyEP6canbusttPhht 0000000e  00000000  00000000  000015bc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 43 .dtors        00000004  00000000  00000000  000015cc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 44 .bss._ZStL8__ioinit 00000001  00000000  00000000  000015d0  2**0
+                  ALLOC
+ 45 .debug_frame  000001d8  00000000  00000000  000015d0  2**2
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 46 .debug_info   0000bd63  00000000  00000000  000017a8  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 47 .debug_abbrev 00000ab6  00000000  00000000  0000d50b  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 48 .debug_loc    00000e7f  00000000  00000000  0000dfc1  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 49 .debug_aranges 000000b0  00000000  00000000  0000ee40  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 50 .debug_ranges 000000d0  00000000  00000000  0000eef0  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 51 .debug_line   000012e5  00000000  00000000  0000efc0  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 52 .debug_str    00018a2c  00000000  00000000  000102a5  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 53 .comment      0000003b  00000000  00000000  00028cd1  2**0
+                  CONTENTS, READONLY
+ 54 .xtensa.info  00000038  00000000  00000000  00028d0c  2**0
+                  CONTENTS, READONLY
+ 55 .xt.lit       00000098  00000000  00000000  00028d44  2**0
+                  CONTENTS, RELOC, READONLY
+ 56 .xt.prop      00000984  00000000  00000000  00028ddc  2**0
+                  CONTENTS, RELOC, READONLY
+
+kn_can_send.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .literal._ZN20OvmsVehicleKiaNiroEv19SendCanMessage_syncEthhhhhhhh 00000014  00000000  00000000  00000034  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  1 .literal._ZN20OvmsVehicleKiaNiroEv14SendCanMessageEthhhhhhhh 00000010  00000000  00000000  00000048  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  2 .literal._ZN20OvmsVehicleKiaNiroEv20SendCanMessageTripleEthhhhhhhh 00000018  00000000  00000000  00000058  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  3 .literal._ZN20OvmsVehicleKiaNiroEv17SendTesterPresentEth 00000004  00000000  00000000  00000070  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  4 .literal._ZN20OvmsVehicleKiaNiroEv25SendTesterPresentMessagesEv 0000000c  00000000  00000000  00000074  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  5 .literal._ZN20OvmsVehicleKiaNiroEv14SetSessionModeEth 00000004  00000000  00000000  00000080  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  6 .literal._ZN20OvmsVehicleKiaNiroEv24SendCommandInSessionModeEthhhhhhhhh 00000020  00000000  00000000  00000084  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  7 .literal._ZN20OvmsVehicleKiaNiroEv17Send_IGMP_CommandEhhh 00000004  00000000  00000000  000000a4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  8 .literal._ZN20OvmsVehicleKiaNiroEv16Send_BCM_CommandEhhh 00000004  00000000  00000000  000000a8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  9 .literal._ZN20OvmsVehicleKiaNiroEv16Send_SMK_CommandEhhhhhhh 00000004  00000000  00000000  000000ac  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 10 .literal._ZN20OvmsVehicleKiaNiroEv16Send_EBP_CommandEhhh 00000004  00000000  00000000  000000b0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 11 .literal.startup._GLOBAL__sub_I__ZN20OvmsVehicleKiaNiroEv19SendCanMessage_syncEthhhhhhhh 00000008  00000000  00000000  000000b4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 12 .literal.exit._GLOBAL__sub_D__ZN20OvmsVehicleKiaNiroEv19SendCanMessage_syncEthhhhhhhh 00000008  00000000  00000000  000000bc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 13 .text         00000000  00000000  00000000  000000c4  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 14 .data         00000000  00000000  00000000  000000c4  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+ 15 .bss          00000000  00000000  00000000  000000c4  2**0
+                  ALLOC
+ 16 .rodata.str1.1 0000004b  00000000  00000000  000000c4  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 17 .text._ZN20OvmsVehicleKiaNiroEv19SendCanMessage_syncEthhhhhhhh 000000f9  00000000  00000000  00000110  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 18 .text._ZN20OvmsVehicleKiaNiroEv14SendCanMessageEthhhhhhhh 000000b8  00000000  00000000  0000020c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 19 .text._ZN20OvmsVehicleKiaNiroEv20SendCanMessageTripleEthhhhhhhh 000000f0  00000000  00000000  000002c4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 20 .text._ZN20OvmsVehicleKiaNiroEv17SetHeadLightDelayEb 00000005  00000000  00000000  000003b4  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 21 .text._ZN20OvmsVehicleKiaNiroEv22SetOneThouchTurnSignalEh 00000005  00000000  00000000  000003bc  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 22 .text._ZN20OvmsVehicleKiaNiroEv17SetAutoDoorUnlockEh 00000005  00000000  00000000  000003c4  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 23 .text._ZN20OvmsVehicleKiaNiroEv15SetAutoDoorLockEh 00000005  00000000  00000000  000003cc  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 24 .text._ZN20OvmsVehicleKiaNiroEv25StopTesterPresentMessagesEv 00000016  00000000  00000000  000003d4  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 25 .text._ZN20OvmsVehicleKiaNiroEv17SendTesterPresentEth 0000002c  00000000  00000000  000003ec  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 26 .text._ZN20OvmsVehicleKiaNiroEv25SendTesterPresentMessagesEv 00000078  00000000  00000000  00000418  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 27 .text._ZN20OvmsVehicleKiaNiroEv14SetSessionModeEth 00000026  00000000  00000000  00000490  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 28 .text._ZN20OvmsVehicleKiaNiroEv24SendCommandInSessionModeEthhhhhhhhh 000000d0  00000000  00000000  000004b8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 29 .text._ZN20OvmsVehicleKiaNiroEv17Send_IGMP_CommandEhhh 00000030  00000000  00000000  00000588  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 30 .text._ZN20OvmsVehicleKiaNiroEv16Send_BCM_CommandEhhh 00000030  00000000  00000000  000005b8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 31 .text._ZN20OvmsVehicleKiaNiroEv16Send_SMK_CommandEhhhhhhh 00000038  00000000  00000000  000005e8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 32 .text._ZN20OvmsVehicleKiaNiroEv16Send_EBP_CommandEhhh 0000002e  00000000  00000000  00000620  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 33 .text.startup._GLOBAL__sub_I__ZN20OvmsVehicleKiaNiroEv19SendCanMessage_syncEthhhhhhhh 0000000e  00000000  00000000  00000650  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 34 .ctors        00000004  00000000  00000000  00000660  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 35 .text.exit._GLOBAL__sub_D__ZN20OvmsVehicleKiaNiroEv19SendCanMessage_syncEthhhhhhhh 0000000e  00000000  00000000  00000664  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 36 .dtors        00000004  00000000  00000000  00000674  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 37 .bss._ZStL8__ioinit 00000001  00000000  00000000  00000678  2**0
+                  ALLOC
+ 38 .debug_frame  000001c0  00000000  00000000  00000678  2**2
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 39 .debug_info   00003892  00000000  00000000  00000838  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 40 .debug_abbrev 000006cf  00000000  00000000  000040ca  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 41 .debug_loc    000004a2  00000000  00000000  00004799  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 42 .debug_aranges 00000098  00000000  00000000  00004c3b  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 43 .debug_ranges 00000088  00000000  00000000  00004cd3  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 44 .debug_line   00000bca  00000000  00000000  00004d5b  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 45 .debug_str    000026b0  00000000  00000000  00005925  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 46 .comment      0000003b  00000000  00000000  00007fd5  2**0
+                  CONTENTS, READONLY
+ 47 .xtensa.info  00000038  00000000  00000000  00008010  2**0
+                  CONTENTS, READONLY
+ 48 .xt.lit       00000068  00000000  00000000  00008048  2**0
+                  CONTENTS, RELOC, READONLY
+ 49 .xt.prop      000003e4  00000000  00000000  000080b0  2**0
+                  CONTENTS, RELOC, READONLY
+
+kn_web.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .group        00000014  00000000  00000000  00000034  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  1 .group        00000014  00000000  00000000  00000048  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  2 .literal._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$22 00000014  00000000  00000000  0000005c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  3 .literal._ZN20OvmsVehicleKiaNiroEv7WebInitEv 00000084  00000000  00000000  00000070  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  4 .literal._ZN20OvmsVehicleKiaNiroEv18GetDashboardConfigER15DashboardConfig 00000008  00000000  00000000  000000f4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  5 .literal._ZSteqIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_ 00000004  00000000  00000000  000000fc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  6 .literal._ZStplIcSt11char_traitsIcESaIcEENSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_RKS8_ 00000010  00000000  00000000  00000100  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  7 .literal._ZN20OvmsVehicleKiaNiroEv14WebCfgFeaturesER9PageEntryR11PageContext 0000018c  00000000  00000000  00000110  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  8 .literal._ZN20OvmsVehicleKiaNiroEv13WebCfgBatteryER9PageEntryR11PageContext 00000310  00000000  00000000  0000029c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  9 .literal.startup._GLOBAL__sub_I__ZN20OvmsVehicleKiaNiroEv7WebInitEv 00000008  00000000  00000000  000005ac  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 10 .literal.exit._GLOBAL__sub_D__ZN20OvmsVehicleKiaNiroEv7WebInitEv 00000008  00000000  00000000  000005b4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 11 .text         00000000  00000000  00000000  000005bc  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 12 .data         00000000  00000000  00000000  000005bc  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+ 13 .bss          00000000  00000000  00000000  000005bc  2**0
+                  ALLOC
+ 14 .rodata.str1.1 00000c40  00000000  00000000  000005bc  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 15 .text._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$22 00000062  00000000  00000000  000011fc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 16 .text._ZN20OvmsVehicleKiaNiroEv7WebInitEv 0000011c  00000000  00000000  00001260  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 17 .text._ZN20OvmsVehicleKiaNiroEv18GetDashboardConfigER15DashboardConfig 00000010  00000000  00000000  0000137c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 18 .text._ZSteqIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_ 00000016  00000000  00000000  0000138c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 19 .text._ZStplIcSt11char_traitsIcESaIcEENSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_RKS8_ 00000040  00000000  00000000  000013a4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 20 .text._ZN20OvmsVehicleKiaNiroEv14WebCfgFeaturesER9PageEntryR11PageContext 000003c8  00000000  00000000  000013e4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 21 .text._ZN20OvmsVehicleKiaNiroEv13WebCfgBatteryER9PageEntryR11PageContext 00000872  00000000  00000000  000017ac  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 22 .text.startup._GLOBAL__sub_I__ZN20OvmsVehicleKiaNiroEv7WebInitEv 0000000e  00000000  00000000  00002020  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 23 .ctors        00000004  00000000  00000000  00002030  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 24 .text.exit._GLOBAL__sub_D__ZN20OvmsVehicleKiaNiroEv7WebInitEv 0000000e  00000000  00000000  00002034  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 25 .dtors        00000004  00000000  00000000  00002044  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 26 .bss._ZStL8__ioinit 00000001  00000000  00000000  00002048  2**0
+                  ALLOC
+ 27 .debug_frame  000000e8  00000000  00000000  00002048  2**2
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 28 .debug_info   00016c57  00000000  00000000  00002130  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 29 .debug_abbrev 00000ba4  00000000  00000000  00018d87  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 30 .debug_loc    00004e3a  00000000  00000000  0001992b  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 31 .debug_aranges 00000060  00000000  00000000  0001e765  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 32 .debug_ranges 00000358  00000000  00000000  0001e7c5  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 33 .debug_line   000012e0  00000000  00000000  0001eb1d  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 34 .debug_str    0002ef01  00000000  00000000  0001fdfd  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 35 .comment      0000003b  00000000  00000000  0004ecfe  2**0
+                  CONTENTS, READONLY
+ 36 .xtensa.info  00000038  00000000  00000000  0004ed39  2**0
+                  CONTENTS, READONLY
+ 37 .xt.lit       00000038  00000000  00000000  0004ed71  2**0
+                  CONTENTS, RELOC, READONLY
+ 38 .xt.lit._ZSteqIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_ 00000008  00000000  00000000  0004eda9  2**0
+                  CONTENTS, RELOC, READONLY
+ 39 .xt.lit._ZStplIcSt11char_traitsIcESaIcEENSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_RKS8_ 00000008  00000000  00000000  0004edb1  2**0
+                  CONTENTS, RELOC, READONLY
+ 40 .xt.prop      000001ec  00000000  00000000  0004edb9  2**0
+                  CONTENTS, RELOC, READONLY
+ 41 .xt.prop._ZSteqIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_ 00000030  00000000  00000000  0004efa5  2**0
+                  CONTENTS, RELOC, READONLY
+ 42 .xt.prop._ZStplIcSt11char_traitsIcESaIcEENSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_RKS8_ 00000030  00000000  00000000  0004efd5  2**0
+                  CONTENTS, RELOC, READONLY
+
+kn_commands.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .literal._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$16 00000014  00000000  00000000  00000034  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  1 .literal._ZN20OvmsVehicleKiaNiroEv11CommandLockEPKc 00000004  00000000  00000000  00000048  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  2 .literal._ZN20OvmsVehicleKiaNiroEv13CommandUnlockEPKc 00000004  00000000  00000000  0000004c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  3 .literal._Z8xkn_ign1iP10OvmsWriterP11OvmsCommandiPKPKc 00000014  00000000  00000000  00000050  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  4 .literal._Z13xkn_acc_relayiP10OvmsWriterP11OvmsCommandiPKPKc 00000014  00000000  00000000  00000064  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  5 .literal._Z15xkn_start_relayiP10OvmsWriterP11OvmsCommandiPKPKc 00000014  00000000  00000000  00000078  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  6 .literal._Z7xkn_auxiP10OvmsWriterP11OvmsCommandiPKPKc 00000030  00000000  00000000  0000008c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  7 .literal._Z7xkn_viniP10OvmsWriterP11OvmsCommandiPKPKc 000000f8  00000000  00000000  000000bc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  8 .literal._Z8xkn_tpmsiP10OvmsWriterP11OvmsCommandiPKPKc 00000068  00000000  00000000  000001b4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  9 .literal._Z21xkn_trip_since_parkediP10OvmsWriterP11OvmsCommandiPKPKc 000000d8  00000000  00000000  0000021c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 10 .literal._Z21xkn_trip_since_chargeiP10OvmsWriterP11OvmsCommandiPKPKc 000000dc  00000000  00000000  000002f4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 11 .literal.startup._GLOBAL__sub_I__ZN20OvmsVehicleKiaNiroEv11CommandLockEPKc 00000008  00000000  00000000  000003d0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 12 .literal.exit._GLOBAL__sub_D__ZN20OvmsVehicleKiaNiroEv11CommandLockEPKc 00000008  00000000  00000000  000003d8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 13 .text         00000000  00000000  00000000  000003e0  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 14 .data         00000000  00000000  00000000  000003e0  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+ 15 .bss          00000000  00000000  00000000  000003e0  2**0
+                  ALLOC
+ 16 .rodata.str1.1 00000492  00000000  00000000  000003e0  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 17 .text._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$16 00000062  00000000  00000000  00000874  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 18 .text._ZN20OvmsVehicleKiaNiroEv11CommandLockEPKc 00000019  00000000  00000000  000008d8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 19 .text._ZN20OvmsVehicleKiaNiroEv13CommandUnlockEPKc 00000019  00000000  00000000  000008f4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 20 .text._Z8xkn_ign1iP10OvmsWriterP11OvmsCommandiPKPKc 0000002c  00000000  00000000  00000910  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 21 .text._Z8xkn_ign2iP10OvmsWriterP11OvmsCommandiPKPKc 00000005  00000000  00000000  0000093c  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 22 .text._Z13xkn_acc_relayiP10OvmsWriterP11OvmsCommandiPKPKc 0000002c  00000000  00000000  00000944  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 23 .text._Z15xkn_start_relayiP10OvmsWriterP11OvmsCommandiPKPKc 0000002c  00000000  00000000  00000970  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 24 .text._Z7xkn_sjbiP10OvmsWriterP11OvmsCommandiPKPKc 00000005  00000000  00000000  0000099c  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 25 .text._Z7xkn_bcmiP10OvmsWriterP11OvmsCommandiPKPKc 00000005  00000000  00000000  000009a4  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 26 .text._Z24xkn_set_head_light_delayiP10OvmsWriterP11OvmsCommandiPKPKc 00000005  00000000  00000000  000009ac  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 27 .text._Z29xkn_set_one_touch_turn_signaliP10OvmsWriterP11OvmsCommandiPKPKc 00000005  00000000  00000000  000009b4  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 28 .text._Z24xkn_set_auto_door_unlockiP10OvmsWriterP11OvmsCommandiPKPKc 00000005  00000000  00000000  000009bc  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 29 .text._Z22xkn_set_auto_door_lockiP10OvmsWriterP11OvmsCommandiPKPKc 00000005  00000000  00000000  000009c4  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 30 .text._Z7xkn_auxiP10OvmsWriterP11OvmsCommandiPKPKc 0000009c  00000000  00000000  000009cc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 31 .text._Z7xkn_viniP10OvmsWriterP11OvmsCommandiPKPKc 000002f3  00000000  00000000  00000a68  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 32 .text._Z8xkn_tpmsiP10OvmsWriterP11OvmsCommandiPKPKc 0000019f  00000000  00000000  00000d5c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 33 .text._Z21xkn_trip_since_parkediP10OvmsWriterP11OvmsCommandiPKPKc 00000330  00000000  00000000  00000efc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 34 .text._Z21xkn_trip_since_chargeiP10OvmsWriterP11OvmsCommandiPKPKc 00000340  00000000  00000000  0000122c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 35 .text.startup._GLOBAL__sub_I__ZN20OvmsVehicleKiaNiroEv11CommandLockEPKc 0000000e  00000000  00000000  0000156c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 36 .ctors        00000004  00000000  00000000  0000157c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 37 .text.exit._GLOBAL__sub_D__ZN20OvmsVehicleKiaNiroEv11CommandLockEPKc 0000000e  00000000  00000000  00001580  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 38 .dtors        00000004  00000000  00000000  00001590  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 39 .bss._ZStL8__ioinit 00000001  00000000  00000000  00001594  2**0
+                  ALLOC
+ 40 .debug_frame  000001f0  00000000  00000000  00001594  2**2
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 41 .debug_info   0000e5a5  00000000  00000000  00001784  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 42 .debug_abbrev 00000b58  00000000  00000000  0000fd29  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 43 .debug_loc    00001cdf  00000000  00000000  00010881  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 44 .debug_aranges 00000088  00000000  00000000  00012560  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 45 .debug_ranges 000000c0  00000000  00000000  000125e8  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 46 .debug_line   00001235  00000000  00000000  000126a8  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 47 .debug_str    0001ef48  00000000  00000000  000138dd  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 48 .comment      0000003b  00000000  00000000  00032825  2**0
+                  CONTENTS, READONLY
+ 49 .xtensa.info  00000038  00000000  00000000  00032860  2**0
+                  CONTENTS, READONLY
+ 50 .xt.lit       00000068  00000000  00000000  00032898  2**0
+                  CONTENTS, RELOC, READONLY
+ 51 .xt.prop      000007b0  00000000  00000000  00032900  2**0
+                  CONTENTS, RELOC, READONLY

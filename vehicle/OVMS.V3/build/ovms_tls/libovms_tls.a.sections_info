@@ -1,0 +1,216 @@
+In archive /home/chris/OVMS/Open-Vehicle-Monitoring-System-3/vehicle/OVMS.V3/build/ovms_tls/libovms_tls.a:
+
+ovms_tls.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .group        00000014  00000000  00000000  00000034  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  1 .group        00000014  00000000  00000000  00000048  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  2 .group        00000014  00000000  00000000  0000005c  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  3 .group        00000014  00000000  00000000  00000070  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  4 .group        00000014  00000000  00000000  00000084  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  5 .group        00000014  00000000  00000000  00000098  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  6 .group        00000014  00000000  00000000  000000ac  2**2
+                  CONTENTS, READONLY, EXCLUDE, GROUP, LINK_ONCE_DISCARD
+  7 .literal._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM7OvmsTLSFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 00000008  00000000  00000000  000000c0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  8 .literal._Z8tls_listiP10OvmsWriterP11OvmsCommandiPKPKc 0000004c  00000000  00000000  000000c8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  9 .literal._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM7OvmsTLSFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000008  00000000  00000000  00000114  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 10 .literal._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$37 00000014  00000000  00000000  0000011c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 11 .literal._ZN7OvmsTLSC2Ev 0000009c  00000000  00000000  00000130  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 12 .literal._ZN7OvmsTLS15ClearTrustedRawEv 00000014  00000000  00000000  000001cc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 13 .literal._ZN7OvmsTLS15BuildTrustedRawEv 00000028  00000000  00000000  000001e0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 14 .literal._ZN7OvmsTLS14GetTrustedListEv 00000004  00000000  00000000  00000208  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 15 .literal._Z10tls_statusiP10OvmsWriterP11OvmsCommandiPKPKc 00000014  00000000  00000000  0000020c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 16 .literal._ZN15OvmsTrustedCertC2EPcb 00000014  00000000  00000000  00000220  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 17 .literal._ZN15OvmsTrustedCertD2Ev 00000018  00000000  00000000  00000234  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 18 .literal._ZNSt8_Rb_treeINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt4pairIKS5_P15OvmsTrustedCertESt10_Select1stISA_ESt4lessIS5_ESaISA_EE8_M_eraseEPSt13_Rb_tree_nodeISA_E 0000000c  00000000  00000000  0000024c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 19 .literal._ZN7OvmsTLS5ClearEv 00000014  00000000  00000000  00000258  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 20 .literal._Z9tls_cleariP10OvmsWriterP11OvmsCommandiPKPKc 0000000c  00000000  00000000  0000026c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 21 .literal._ZN7OvmsTLSD2Ev 00000008  00000000  00000000  00000278  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 22 .literal._ZStltIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EESA_ 00000004  00000000  00000000  00000280  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 23 .literal._ZNSt8_Rb_treeINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt4pairIKS5_P15OvmsTrustedCertESt10_Select1stISA_ESt4lessIS5_ESaISA_EE24_M_get_insert_unique_posERS7_ 0000000c  00000000  00000000  00000284  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 24 .literal._ZNSt8_Rb_treeINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt4pairIKS5_P15OvmsTrustedCertESt10_Select1stISA_ESt4lessIS5_ESaISA_EE29_M_get_insert_hint_unique_posESt23_Rb_tree_const_iteratorISA_ERS7_ 00000020  00000000  00000000  00000290  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 25 .literal._ZNSt3mapINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEP15OvmsTrustedCertSt4lessIS5_ESaISt4pairIKS5_S7_EEEixEOS5_ 00000024  00000000  00000000  000002b0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 26 .literal._ZN7OvmsTLS6ReloadEv 000000d0  00000000  00000000  000002d4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 27 .literal._Z10tls_reloadiP10OvmsWriterP11OvmsCommandiPKPKc 00000010  00000000  00000000  000003a4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 28 .literal._ZN7OvmsTLS13UpdatedConfigENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPv 00000004  00000000  00000000  000003b4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 29 .literal.startup._GLOBAL__sub_I$03000_MyOvmsTLS 00000008  00000000  00000000  000003b8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 30 .literal.exit._GLOBAL__sub_D$03000_MyOvmsTLS 00000008  00000000  00000000  000003c0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 31 .text         00000000  00000000  00000000  000003c8  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 32 .data         00000000  00000000  00000000  000003c8  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+ 33 .bss          00000000  00000000  00000000  000003c8  2**0
+                  ALLOC
+ 34 .text._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM7OvmsTLSFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 00000037  00000000  00000000  000003c8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 35 .rodata.str1.1 000003be  00000000  00000000  000003ff  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 36 .text._Z8tls_listiP10OvmsWriterP11OvmsCommandiPKPKc 000000d7  00000000  00000000  000007c0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 37 .text._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM7OvmsTLSFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000044  00000000  00000000  00000898  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 38 .text._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$37 00000062  00000000  00000000  000008dc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 39 .text._ZN7OvmsTLSC2Ev 00000170  00000000  00000000  00000940  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 40 .text._ZN7OvmsTLS5CountEv 00000007  00000000  00000000  00000ab0  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 41 .text._ZN7OvmsTLS15ClearTrustedRawEv 00000031  00000000  00000000  00000ab8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 42 .text._ZN7OvmsTLS15BuildTrustedRawEv 00000093  00000000  00000000  00000aec  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 43 .text._ZN7OvmsTLS14GetTrustedListEv 00000014  00000000  00000000  00000b80  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 44 .text._Z10tls_statusiP10OvmsWriterP11OvmsCommandiPKPKc 00000036  00000000  00000000  00000b94  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 45 .text._ZN15OvmsTrustedCertC2EPcb 0000003a  00000000  00000000  00000bcc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 46 .text._ZN15OvmsTrustedCertD2Ev 00000037  00000000  00000000  00000c08  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 47 .text._ZN15OvmsTrustedCert10IsInternalEv 00000010  00000000  00000000  00000c40  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 48 .text._ZN15OvmsTrustedCert6GetPEMEv 00000007  00000000  00000000  00000c50  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 49 .text._ZNSt8_Rb_treeINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt4pairIKS5_P15OvmsTrustedCertESt10_Select1stISA_ESt4lessIS5_ESaISA_EE8_M_eraseEPSt13_Rb_tree_nodeISA_E 0000002b  00000000  00000000  00000c58  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 50 .text._ZN7OvmsTLS5ClearEv 0000004e  00000000  00000000  00000c84  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 51 .text._Z9tls_cleariP10OvmsWriterP11OvmsCommandiPKPKc 0000001b  00000000  00000000  00000cd4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 52 .text._ZN7OvmsTLSD2Ev 00000018  00000000  00000000  00000cf0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 53 .text._ZStltIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EESA_ 00000012  00000000  00000000  00000d08  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 54 .text._ZNSt8_Rb_treeINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt4pairIKS5_P15OvmsTrustedCertESt10_Select1stISA_ESt4lessIS5_ESaISA_EE24_M_get_insert_unique_posERS7_ 0000006d  00000000  00000000  00000d1c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 55 .text._ZNSt8_Rb_treeINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt4pairIKS5_P15OvmsTrustedCertESt10_Select1stISA_ESt4lessIS5_ESaISA_EE29_M_get_insert_hint_unique_posESt23_Rb_tree_const_iteratorISA_ERS7_ 000000dc  00000000  00000000  00000d8c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 56 .text._ZNSt3mapINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEP15OvmsTrustedCertSt4lessIS5_ESaISt4pairIKS5_S7_EEEixEOS5_ 000000d8  00000000  00000000  00000e68  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 57 .text._ZN7OvmsTLS6ReloadEv 000001de  00000000  00000000  00000f40  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 58 .text._Z10tls_reloadiP10OvmsWriterP11OvmsCommandiPKPKc 0000002b  00000000  00000000  00001120  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 59 .text._ZN7OvmsTLS13UpdatedConfigENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPv 0000000e  00000000  00000000  0000114c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 60 .text.startup._GLOBAL__sub_I$03000_MyOvmsTLS 0000000e  00000000  00000000  0000115c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 61 .ctors.62535  00000004  00000000  00000000  0000116c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 62 .text.exit._GLOBAL__sub_D$03000_MyOvmsTLS 0000000e  00000000  00000000  00001170  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 63 .dtors.62535  00000004  00000000  00000000  00001180  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 64 .bss.MyOvmsTLS 0000001c  00000000  00000000  00001184  2**2
+                  ALLOC
+ 65 .debug_frame  00000298  00000000  00000000  00001184  2**2
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 66 .debug_info   00014371  00000000  00000000  0000141c  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 67 .debug_abbrev 00000df1  00000000  00000000  0001578d  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 68 .debug_loc    00001a54  00000000  00000000  0001657e  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 69 .debug_aranges 000000f0  00000000  00000000  00017fd2  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 70 .debug_ranges 000002e8  00000000  00000000  000180c2  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 71 .debug_line   0000139d  00000000  00000000  000183aa  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 72 .debug_str    00026cba  00000000  00000000  00019747  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 73 .comment      0000003b  00000000  00000000  00040401  2**0
+                  CONTENTS, READONLY
+ 74 .xtensa.info  00000038  00000000  00000000  0004043c  2**0
+                  CONTENTS, READONLY
+ 75 .xt.lit._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM7OvmsTLSFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 00000008  00000000  00000000  00040474  2**0
+                  CONTENTS, RELOC, READONLY
+ 76 .xt.lit       00000088  00000000  00000000  0004047c  2**0
+                  CONTENTS, RELOC, READONLY
+ 77 .xt.lit._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM7OvmsTLSFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000008  00000000  00000000  00040504  2**0
+                  CONTENTS, RELOC, READONLY
+ 78 .xt.lit._ZNSt8_Rb_treeINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt4pairIKS5_P15OvmsTrustedCertESt10_Select1stISA_ESt4lessIS5_ESaISA_EE8_M_eraseEPSt13_Rb_tree_nodeISA_E 00000008  00000000  00000000  0004050c  2**0
+                  CONTENTS, RELOC, READONLY
+ 79 .xt.lit._ZStltIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EESA_ 00000008  00000000  00000000  00040514  2**0
+                  CONTENTS, RELOC, READONLY
+ 80 .xt.lit._ZNSt8_Rb_treeINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt4pairIKS5_P15OvmsTrustedCertESt10_Select1stISA_ESt4lessIS5_ESaISA_EE24_M_get_insert_unique_posERS7_ 00000008  00000000  00000000  0004051c  2**0
+                  CONTENTS, RELOC, READONLY
+ 81 .xt.lit._ZNSt8_Rb_treeINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt4pairIKS5_P15OvmsTrustedCertESt10_Select1stISA_ESt4lessIS5_ESaISA_EE29_M_get_insert_hint_unique_posESt23_Rb_tree_const_iteratorISA_ERS7_ 00000008  00000000  00000000  00040524  2**0
+                  CONTENTS, RELOC, READONLY
+ 82 .xt.lit._ZNSt3mapINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEP15OvmsTrustedCertSt4lessIS5_ESaISt4pairIKS5_S7_EEEixEOS5_ 00000008  00000000  00000000  0004052c  2**0
+                  CONTENTS, RELOC, READONLY
+ 83 .xt.prop._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM7OvmsTLSFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 0000003c  00000000  00000000  00040534  2**0
+                  CONTENTS, RELOC, READONLY
+ 84 .xt.prop      000004d4  00000000  00000000  00040570  2**0
+                  CONTENTS, RELOC, READONLY
+ 85 .xt.prop._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM7OvmsTLSFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000060  00000000  00000000  00040a44  2**0
+                  CONTENTS, RELOC, READONLY
+ 86 .xt.prop._ZNSt8_Rb_treeINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt4pairIKS5_P15OvmsTrustedCertESt10_Select1stISA_ESt4lessIS5_ESaISA_EE8_M_eraseEPSt13_Rb_tree_nodeISA_E 00000048  00000000  00000000  00040aa4  2**0
+                  CONTENTS, RELOC, READONLY
+ 87 .xt.prop._ZStltIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EESA_ 00000030  00000000  00000000  00040aec  2**0
+                  CONTENTS, RELOC, READONLY
+ 88 .xt.prop._ZNSt8_Rb_treeINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt4pairIKS5_P15OvmsTrustedCertESt10_Select1stISA_ESt4lessIS5_ESaISA_EE24_M_get_insert_unique_posERS7_ 000000c0  00000000  00000000  00040b1c  2**0
+                  CONTENTS, RELOC, READONLY
+ 89 .xt.prop._ZNSt8_Rb_treeINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt4pairIKS5_P15OvmsTrustedCertESt10_Select1stISA_ESt4lessIS5_ESaISA_EE29_M_get_insert_hint_unique_posESt23_Rb_tree_const_iteratorISA_ERS7_ 00000108  00000000  00000000  00040bdc  2**0
+                  CONTENTS, RELOC, READONLY
+ 90 .xt.prop._ZNSt3mapINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEP15OvmsTrustedCertSt4lessIS5_ESaISt4pairIKS5_S7_EEEixEOS5_ 000000d8  00000000  00000000  00040ce4  2**0
+                  CONTENTS, RELOC, READONLY
+
+usertrust.crt.txt.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .rodata.embedded 0000082f  00000000  00000000  00000034  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+
+dst.crt.txt.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .rodata.embedded 000004b1  00000000  00000000  00000034  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+
+digicert_global.crt.txt.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .rodata.embedded 0000053b  00000000  00000000  00000034  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+
+starfield_class2.crt.txt.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .rodata.embedded 000005bd  00000000  00000000  00000034  2**0
+                  CONTENTS, ALLOC, LOAD, DATA

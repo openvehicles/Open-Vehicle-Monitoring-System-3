@@ -1,0 +1,231 @@
+In archive /home/chris/OVMS/Open-Vehicle-Monitoring-System-3/vehicle/OVMS.V3/build/vfsedit/libvfsedit.a:
+
+openemacs.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .literal.editor_set_status_message 00000018  00000000  00000000  00000034  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  1 .literal.editor_free_row 0000000c  00000000  00000000  0000004c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  2 .literal.editor_free_cut_buffer 00000008  00000000  00000000  00000058  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  3 .literal.editor_free 00000014  00000000  00000000  00000060  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  4 .literal.console_buffer_open 00000004  00000000  00000000  00000074  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  5 .literal.is_separator 0000000c  00000000  00000000  00000078  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  6 .literal.editor_update_syntax 00000034  00000000  00000000  00000084  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  7 .literal.editor_select_syntax_highlight_based_on_filename_suffix 0000000c  00000000  00000000  000000b8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  8 .literal.editor_update_row 00000010  00000000  00000000  000000c4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  9 .literal.editor_insert_row 00000014  00000000  00000000  000000d4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 10 .literal.editor_delete_row 00000008  00000000  00000000  000000e8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 11 .literal.editor_rows_to_string 00000008  00000000  00000000  000000f0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 12 .literal.editor_row_insert_char 00000014  00000000  00000000  000000f8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 13 .literal.editor_row_append_string 0000000c  00000000  00000000  0000010c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 14 .literal.editor_row_delete_char 00000008  00000000  00000000  00000118  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 15 .literal.editor_insert_char 0000000c  00000000  00000000  00000120  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 16 .literal.editor_insert_newline 00000010  00000000  00000000  0000012c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 17 .literal.editor_delete_char 00000010  00000000  00000000  0000013c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 18 .literal.editor_open 00000030  00000000  00000000  0000014c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 19 .literal.editor_save 00000034  00000000  00000000  0000017c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 20 .literal.abuf_append 00000008  00000000  00000000  000001b0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 21 .literal.abuf_free 00000004  00000000  00000000  000001b8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 22 .literal.editor_refresh_screen 000000c4  00000000  00000000  000001bc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 23 .literal.editor_read_key 00000014  00000000  00000000  00000280  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 24 .literal.editor_recenter_vertically 00000008  00000000  00000000  00000294  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 25 .literal.editor_search 00000048  00000000  00000000  0000029c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 26 .literal.console_buffer_close 0000002c  00000000  00000000  000002e4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 27 .literal.editor_process_keypress 00000060  00000000  00000000  00000310  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 28 .literal.editor_request_window_size 00000010  00000000  00000000  00000370  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 29 .literal.editor_init 00000014  00000000  00000000  00000380  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 30 .text         00000000  00000000  00000000  00000394  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 31 .data         00000000  00000000  00000000  00000394  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+ 32 .bss          00000000  00000000  00000000  00000394  2**0
+                  ALLOC
+ 33 .rodata.str1.1 0000066b  00000000  00000000  00000394  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 34 .text.editor_set_status_message 00000065  00000000  00000000  00000a00  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 35 .text.editor_free_row 0000002f  00000000  00000000  00000a68  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 36 .text.editor_free_cut_buffer 00000034  00000000  00000000  00000a98  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 37 .text.editor_free 00000045  00000000  00000000  00000acc  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 38 .text.console_buffer_open 00000012  00000000  00000000  00000b14  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 39 .text.is_separator 0000002d  00000000  00000000  00000b28  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 40 .text.editor_row_has_open_comment 00000042  00000000  00000000  00000b58  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 41 .text.editor_update_syntax 000002f5  00000000  00000000  00000b9c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 42 .text.editor_syntax_to_color 00000034  00000000  00000000  00000e94  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 43 .text.editor_select_syntax_highlight_based_on_filename_suffix 00000055  00000000  00000000  00000ec8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 44 .text.editor_update_row 000000c6  00000000  00000000  00000f20  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 45 .text.editor_insert_row 000000c7  00000000  00000000  00000fe8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 46 .text.editor_delete_row 0000005d  00000000  00000000  000010b0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 47 .text.editor_rows_to_string 00000077  00000000  00000000  00001110  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 48 .text.editor_row_insert_char 00000091  00000000  00000000  00001188  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 49 .text.editor_row_append_string 0000004c  00000000  00000000  0000121c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 50 .text.editor_row_delete_char 00000035  00000000  00000000  00001268  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 51 .text.editor_insert_char 00000066  00000000  00000000  000012a0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 52 .text.editor_insert_newline 00000094  00000000  00000000  00001308  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 53 .text.editor_delete_char 000000c6  00000000  00000000  0000139c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 54 .text.editor_open 000000df  00000000  00000000  00001464  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 55 .text.editor_save 00000092  00000000  00000000  00001544  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 56 .text.abuf_append 00000035  00000000  00000000  000015d8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 57 .text.abuf_free 00000015  00000000  00000000  00001610  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 58 .text.editor_refresh_screen 000002fb  00000000  00000000  00001628  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 59 .text.editor_read_key 000001b4  00000000  00000000  00001924  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 60 .text.editor_move_cursor_to_x_position 00000029  00000000  00000000  00001ad8  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 61 .text.editor_move_cursor_by_arrow_key_input 0000019a  00000000  00000000  00001b04  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 62 .text.editor_recenter_vertically 00000082  00000000  00000000  00001ca0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 63 .text.editor_search 0000029a  00000000  00000000  00001d24  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 64 .text.console_buffer_close 00000082  00000000  00000000  00001fc0  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 65 .text.editor_process_keypress 000002fa  00000000  00000000  00002044  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 66 .text.editor_request_window_size 00000045  00000000  00000000  00002340  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 67 .text.editor_init 0000004a  00000000  00000000  00002388  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+ 68 .data.SYNTAX_HIGHLIGHT_DATABASE 00000040  00000000  00000000  000023d4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 69 .data.JAVASCRIPT_SYNTAX_HIGHLIGHT_KEYWORDS 00000140  00000000  00000000  00002414  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 70 .data.JAVASCRIPT_SYNTAX_HIGHLIGHT_FILE_EXTENSIONS 0000000c  00000000  00000000  00002554  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 71 .data.PYTHON_SYNTAX_HIGHLIGHT_KEYWORDS 000000c4  00000000  00000000  00002560  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 72 .data.PYTHON_SYNTAX_HIGHLIGHT_FILE_EXTENSIONS 00000008  00000000  00000000  00002624  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 73 .data.GO_SYNTAX_HIGHLIGHT_KEYWORDS 00000078  00000000  00000000  0000262c  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 74 .data.GO_SYNTAX_HIGHLIGHT_FILE_EXTENSIONS 00000008  00000000  00000000  000026a4  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 75 .data.C_SYNTAX_HIGHLIGHT_KEYWORDS 000000ac  00000000  00000000  000026ac  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 76 .data.C_SYNTAX_HIGHLIGHT_FILE_EXTENSIONS 00000018  00000000  00000000  00002758  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, DATA
+ 77 .debug_frame  00000340  00000000  00000000  00002770  2**2
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 78 .debug_info   00002c24  00000000  00000000  00002ab0  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 79 .debug_abbrev 000003f3  00000000  00000000  000056d4  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 80 .debug_loc    0000169f  00000000  00000000  00005ac7  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 81 .debug_aranges 00000128  00000000  00000000  00007166  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 82 .debug_ranges 00000230  00000000  00000000  0000728e  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 83 .debug_line   00001c17  00000000  00000000  000074be  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 84 .debug_str    00001182  00000000  00000000  000090d5  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 85 .comment      0000003b  00000000  00000000  0000a257  2**0
+                  CONTENTS, READONLY
+ 86 .xtensa.info  00000038  00000000  00000000  0000a292  2**0
+                  CONTENTS, READONLY
+ 87 .xt.lit       000000f0  00000000  00000000  0000a2ca  2**0
+                  CONTENTS, RELOC, READONLY
+ 88 .xt.prop      00001410  00000000  00000000  0000a3ba  2**0
+                  CONTENTS, RELOC, READONLY
+
+vfsedit.o:     file format elf32-xtensa-le
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .literal._Z15vfs_edit_insertP10OvmsWriterPvc 0000000c  00000000  00000000  00000034  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  1 .literal._Z8vfs_editiP10OvmsWriterP11OvmsCommandiPKPKc 0000003c  00000000  00000000  00000040  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  2 .text         00000000  00000000  00000000  0000007c  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  3 .data         00000000  00000000  00000000  0000007c  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+  4 .bss          00000000  00000000  00000000  0000007c  2**0
+                  ALLOC
+  5 .text._Z14vfs_edit_writeP12editor_statePKcj 00000015  00000000  00000000  0000007c  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  6 .text._Z15vfs_edit_insertP10OvmsWriterPvc 0000002a  00000000  00000000  00000094  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  7 .rodata.str1.1 00000040  00000000  00000000  000000be  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  8 .text._Z8vfs_editiP10OvmsWriterP11OvmsCommandiPKPKc 000000b9  00000000  00000000  00000100  2**2
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  9 .debug_frame  00000058  00000000  00000000  000001bc  2**2
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 10 .debug_info   0000a1d2  00000000  00000000  00000214  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 11 .debug_abbrev 000008e7  00000000  00000000  0000a3e6  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 12 .debug_loc    00000307  00000000  00000000  0000accd  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 13 .debug_aranges 00000030  00000000  00000000  0000afd4  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 14 .debug_ranges 000000e8  00000000  00000000  0000b004  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 15 .debug_line   000009e1  00000000  00000000  0000b0ec  2**0
+                  CONTENTS, RELOC, READONLY, DEBUGGING
+ 16 .debug_str    000181c2  00000000  00000000  0000bacd  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 17 .comment      0000003b  00000000  00000000  00023c8f  2**0
+                  CONTENTS, READONLY
+ 18 .xtensa.info  00000038  00000000  00000000  00023cca  2**0
+                  CONTENTS, READONLY
+ 19 .xt.lit       00000010  00000000  00000000  00023d02  2**0
+                  CONTENTS, RELOC, READONLY
+ 20 .xt.prop      000000a8  00000000  00000000  00023d12  2**0
+                  CONTENTS, RELOC, READONLY
