@@ -104,14 +104,12 @@ class OvmsEvents
     static esp_err_t ReceiveSystemEvent(void *ctx, system_event_t *event);
     void SignalSystemEvent(system_event_t *event);
     const EventMap& Map() { return m_map; }
-    OvmsRecMutex* MapMutex() { return &m_map_mutex; }
 
   protected:
     bool ScheduleEvent(event_queue_t* msg, uint32_t delay_ms);
 
   protected:
     EventMap m_map;
-    OvmsRecMutex m_map_mutex;
     TimerList m_timers;
     OvmsMutex m_timers_mutex;
 

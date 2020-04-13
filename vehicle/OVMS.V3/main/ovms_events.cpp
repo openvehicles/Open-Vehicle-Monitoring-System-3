@@ -68,7 +68,6 @@ void event_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
 void event_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  OvmsRecMutexLock lock(MyEvents.MapMutex());
   writer->printf("Event map has %d listeners, and queue has %d/%d entries\n",
     MyEvents.Map().size(),
     uxQueueMessagesWaiting(MyEvents.m_taskqueue),
@@ -87,7 +86,6 @@ void event_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 void event_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   std::string event;
-  OvmsRecMutexLock lock(MyEvents.MapMutex());
   for (EventMap::const_iterator itm=MyEvents.Map().begin(); itm != MyEvents.Map().end(); ++itm)
     {
     if (argc > 0 && itm->first.find(argv[0]) == std::string::npos)
@@ -109,7 +107,6 @@ void event_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
 
 int event_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
   {
-  OvmsRecMutexLock lock(MyEvents.MapMutex());
   return MyEvents.Map().Validate(writer, argc, argv[0], complete);
   }
 
@@ -208,8 +205,6 @@ void OvmsEvents::HandleQueueSignalEvent(event_queue_t* msg)
       ESP_LOGD(TAG, "Signal(%s)",m_current_event.c_str());
     }
 
-  m_map_mutex.Lock();
-
   auto k = m_map.find(m_current_event);
   if (k != m_map.end())
     {
@@ -242,8 +237,6 @@ void OvmsEvents::HandleQueueSignalEvent(event_queue_t* msg)
       }
     }
 
-  m_map_mutex.Unlock();
-
   MyScripts.EventScript(m_current_event, msg->body.signal.data);
 
   m_current_event.clear();
@@ -261,7 +254,6 @@ void OvmsEvents::FreeQueueSignalEvent(event_queue_t* msg)
 
 void OvmsEvents::RegisterEvent(std::string caller, std::string event, EventCallback callback)
   {
-  OvmsRecMutexLock lock(&m_map_mutex);
   auto k = m_map.find(event);
   if (k == m_map.end())
     {
@@ -280,7 +272,6 @@ void OvmsEvents::RegisterEvent(std::string caller, std::string event, EventCallb
 
 void OvmsEvents::DeregisterEvent(std::string caller)
   {
-  OvmsRecMutexLock lock(&m_map_mutex);
   EventMap::iterator itm=m_map.begin();
   while (itm!=m_map.end())
     {
