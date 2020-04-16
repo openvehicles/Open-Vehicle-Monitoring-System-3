@@ -885,7 +885,6 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
 
 void OvmsVehicleMitsubishi::Ticker60(uint32_t ticker)
 {
-/*
   if (StdMetrics.ms_v_env_on->AsBool() || mi_QC == true || mi_SC == true)
   {
     //Send a request to BMS ECU
@@ -901,7 +900,6 @@ void OvmsVehicleMitsubishi::Ticker60(uint32_t ticker)
     frame.data.u8[2] = 0x01;
     m_can1->Write(&frame);
   }
-*/
 }
 
   /**
