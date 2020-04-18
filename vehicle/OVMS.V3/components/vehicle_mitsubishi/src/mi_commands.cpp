@@ -80,7 +80,7 @@ void xmi_trip_since_parked(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 	// Recuperation
 	float recuparation = trio->ms_v_trip_park_energy_recd->AsFloat();
 	// ODO
-	float ODO = StdMetrics.ms_v_pos_odometer->AsFloat();
+	float odometer = StdMetrics.ms_v_pos_odometer->AsFloat();
 	// heating kwh
 	float heatenergy = trio->ms_v_trip_park_heating_kwh->AsFloat();
 	float coolingenergy = trio->ms_v_trip_park_ac_kwh->AsFloat();
@@ -92,9 +92,9 @@ void xmi_trip_since_parked(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 	{
 		writer->printf("TRIP\n\n");
 
-		writer->printf("Distance: %.*f\n", distance);
+		writer->printf("Distance: %.*fkm\n", 1, distance);
 		writer->printf("Trip time: %02d:%02d.%02d\n", hours, minutes, num_seconds);
-		writer->printf("Soc: %.*f%% - %.*f%% \n\n",1, soc_start,1, soc_stop);
+		writer->printf("Soc: %.*f%% - %.*f%% \n\n", 1, soc_start, 1, soc_stop);
 
 		if(MyConfig.GetParamValue("vehicle", "units.distance") == "M")
 		{
@@ -114,7 +114,7 @@ void xmi_trip_since_parked(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 		writer->printf("Heater energy usage: %.*fkWh\n", 6, heatenergy);
 		writer->printf("AC energy usage: %.*fkWh\n\n", 6, coolingenergy);
 
-		writer->printf("Odometer: %.*f\n",0, ODO);
+		writer->printf("Odometer: %.*f\n", 0, odometer);
 	}
 	else
 	{
@@ -139,7 +139,7 @@ void xmi_trip_since_charge(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 
 
 	// Trip distance
-	float distance = trio->ms_v_pos_trip_charge->AsFloat();
+	float distance = trio->ms_v_pos_trip_charge->AsFloat(rangeUnit);
 	// Total consumption
 	float totalConsumption = trio->ms_v_trip_charge_energy_used->AsFloat(kWh) - trio->ms_v_trip_charge_energy_recd->AsFloat(kWh);
 	// Consumption
@@ -150,7 +150,7 @@ void xmi_trip_since_charge(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 	// Recuperation
 	float recuparation = trio->ms_v_trip_charge_energy_recd->AsFloat();
 	// ODO
-	float ODO = StdMetrics.ms_v_pos_odometer->AsFloat();
+	float odometer = StdMetrics.ms_v_pos_odometer->AsFloat();
 	// heating kwh
 	float heatenergy = trio->ms_v_trip_charge_heating_kwh->AsFloat();
 	float coolingenergy = trio->ms_v_trip_charge_ac_kwh->AsFloat();
@@ -162,8 +162,8 @@ void xmi_trip_since_charge(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 	{
 		writer->printf("TRIP SINCE CHARGE\n\n");
 
-		writer->printf("Distance: %.*f\n", distance);
-		writer->printf("Soc: %.*f%% - %.*f%% \n\n",1, soc_start,1, soc_stop);
+		writer->printf("Distance: %.*fkm\n", 1, distance);
+		writer->printf("Soc: %.*f%% - %.*f%% \n\n", 1, soc_start, 1, soc_stop);
 
 		if(MyConfig.GetParamValue("vehicle", "units.distance") == "M")
 		{
@@ -183,7 +183,7 @@ void xmi_trip_since_charge(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 		writer->printf("Heater energy usage: %.*fkWh\n", 6, heatenergy);
 		writer->printf("AC energy usage: %.*fkWh\n\n", 6, coolingenergy);
 
-		writer->printf("Odometer: %.*f\n",0, ODO);
+		writer->printf("Odometer: %.*f\n", 0, odometer);
 	}else
 	{
 		writer->printf("No trip data since last charge\n");
