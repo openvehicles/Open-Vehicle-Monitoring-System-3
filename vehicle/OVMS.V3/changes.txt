@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- #357 tpms rear left temperature incorrect in v2 protocol
 
 2020-04-03 MWJ  3.2.011 OTA release
 - #327 Tesla Roadster: Vehicle AWAKE metric not correct
