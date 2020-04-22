@@ -478,9 +478,18 @@ void OvmsVehicleKiaNiroEv::Ticker1(uint32_t ticker)
 		StdMetrics.ms_v_door_chargeport->SetValue(isCharging);
 		}
 	else
-		{
-		isCharging = (kn_charge_bits.ChargingCCS || kn_charge_bits.ChargingType2) 	&& (CHARGE_CURRENT > 0);
-		}
+  //use same logic on eNiro as Kona to prevent false charging messages when regenerating Issue#
+  {
+  if (m_b_bms_relay->IsStale() || m_b_bms_ignition->IsStale())
+    {
+    isCharging=false;
+    }
+  else
+    {
+    // See https://docs.google.com/spreadsheets/d/1JyJnXh7DOvzTl0cbWZRpW9qB_OgEOM-w_XOiAY_a64o/edit#gid=1990128420
+    isCharging = (m_b_bms_relay->AsBool(false)-m_b_bms_ignition->AsBool(false)) == 1;
+    }
+  }
 
 	if (isCharging)
 		{
