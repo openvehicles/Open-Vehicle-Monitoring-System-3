@@ -51,6 +51,9 @@
 ;	      - Odometer fix
 ;     1.0.8.
 ;       - Add door lock status (beta)
+;     1.0.9
+;       - Charge detection fix
+;       - update xmi charge command Stop SOC during charge
 ;
 ;
 ;    (C) 2011         Michael Stegen / Stegen Electronics
@@ -81,7 +84,7 @@
 #include <stdio.h>
 #include "vehicle_mitsubishi.h"
 
-#define VERSION "1.0.8"
+#define VERSION "1.0.9"
 
 static const char *TAG = "v-mitsubishi";
 
@@ -124,13 +127,13 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
     has_odo = false;
   }
 
+
   // reset charge counter
 
   ms_v_trip_charge_energy_recd->SetValue(0);
   ms_v_trip_charge_energy_used->SetValue(0);
   ms_v_trip_charge_heating_kwh->SetValue(0);
   ms_v_trip_charge_ac_kwh->SetValue(0);
-
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
 
@@ -250,7 +253,8 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_inv_temp->SetValue((float)d[3] - 40);
 
         //charger detection
-        if(d[0] == 14  && d[1] == 116 ) // charger connected
+        //if(d[0] == 14  && d[1] == 116 ) // charger connected
+        if((d[1] & 32 ) != 0)
         {
           mi_SC = true;
           if(d[2] == 100) //charging (d[2] <= 99 prepare charge?)
@@ -309,7 +313,9 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       case 0x346://freq50 // Estimated range, Handbrake state
       {
-        StandardMetrics.ms_v_bat_range_est->SetValue(d[7]);
+
+        (mi_QC) ? StandardMetrics.ms_v_bat_range_est->SetValue(0) : StandardMetrics.ms_v_bat_range_est->SetValue(d[7]);
+
         if ((d[4] & 32) == 0)
         {
           StandardMetrics.ms_v_env_handbrake->SetValue(false);
@@ -360,11 +366,12 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
           ms_v_charge_dc_kwh->SetValue((ms_v_charge_dc_kwh->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() / -360000.0)));
         }
 
-        if (StandardMetrics.ms_v_env_gear->AsInt() == -1 && StandardMetrics.ms_v_bat_power->AsInt() < 0 && (mi_QC == true))
+        if (mi_QC == true)
         {
           //set battery voltage/current to charge voltage/current, when car in Park, and charging
           StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
           StandardMetrics.ms_v_charge_current->SetValue(StandardMetrics.ms_v_bat_current->AsFloat() * 1.0);
+          StandardMetrics.ms_v_charge_kwh->SetValue(ms_v_charge_dc_kwh->AsFloat());
         }
 
         //min power
@@ -782,6 +789,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
       {
         StandardMetrics.ms_v_charge_state->SetValue("charging");
         v_c_time->SetValue(StandardMetrics.ms_v_charge_time->AsInt());
+        v_c_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
         // if charge and DC current is negative cell balancing is active. If charging battery current is negative, discharge is positive
         if ((StandardMetrics.ms_v_bat_current->AsFloat() < 0) && (mi_QC == false) && StandardMetrics.ms_v_bat_soc->AsInt() > 92 && StandardMetrics.ms_v_charge_mode->AsString() != "Balancing")
         {
@@ -899,6 +907,7 @@ void OvmsVehicleMitsubishi::Ticker60(uint32_t ticker)
     frame.data.u8[1] = 0x21;
     frame.data.u8[2] = 0x01;
     m_can1->Write(&frame);
+
   }
 }
 
