@@ -4,7 +4,8 @@
  * Module plugin:
  *  Throttle charge current and/or stop charge if charger gets too hot.
  * 
- * Version 1.0   Michael Balzer <dexter@dexters-web.de>
+ * Version 1.1   Michael Balzer <dexter@dexters-web.de>
+ *  - added notifications
  * 
  * Enable:
  *  - install at above path
@@ -77,7 +78,7 @@ function readConfig() {
 
 // Ticker:
 function ticker() {
-  var ctemp, level, ltemp;
+  var ctemp, level, ltemp, success, msg;
 
   ctemp = OvmsMetrics.AsFloat("v.c.temp");
   if (state.temp === ctemp) return;
@@ -93,16 +94,27 @@ function ticker() {
   // set & configure new level:
   state.level = level;
   state.amps = (level > 0) ? Number(cfg["t"+level+".amps"]) : 0;
+  msg = "Temp " + ctemp + "C = Level " + level + ":\n";
   if (state.amps < 0) {
-    print("temp " + ctemp + " = level " + level + ": stopping charge");
-    if (!OvmsVehicle.StopCharge())
-      print("ERROR: StopCharge() failed");
+    success = OvmsVehicle.StopCharge();
+    if (success)
+      msg += "Charge stopped";
+    else
+      msg += "ERROR stopping charge; take manual control!";
   } else {
-    print("temp " + ctemp + " = level " + level + ": setting charge current to "
-      + ((state.amps > 0) ? state.amps + " amps" : "unlimited"));
-    if (!OvmsVehicle.SetChargeCurrent(state.amps))
-      print("ERROR: SetChargeCurrent() failed");
+    success = OvmsVehicle.SetChargeCurrent(state.amps);
+    if (success)
+      msg += "Charge current set to "
+        + ((state.amps > 0) ? state.amps + "A" : "unlimited");
+    else
+      msg += "ERROR setting charge current to "
+        + ((state.amps > 0) ? state.amps + "A" : "unlimited")
+        + "; take manual control!";
   }
+
+  // log & notify:
+  print(msg);
+  OvmsNotify.Raise("alert", "usr.chgthrottle.status", "ChgThrottle: " + msg);
 }
 
 // Init:
