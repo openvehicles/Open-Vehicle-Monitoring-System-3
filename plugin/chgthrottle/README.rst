@@ -4,7 +4,7 @@ ChgThrottle: Protect Charger
 
 **Throttle charge current / stop charge if charger gets too hot**
 
-Version 1.0 by Michael Balzer <dexter@dexters-web.de>
+Version 1.1 by Michael Balzer <dexter@dexters-web.de>
 
 The plugin monitors the charger temperature. It can reduce the charge current or
 stop a running charge process if the charger temperature exceeds on of three defined
@@ -52,7 +52,9 @@ Usage
 Simply configure as desired, the plugin will monitor the charger temperature automatically
 and react as configured.
 
-State changes are logged. Use ``info()`` to show the current state:
+Use ``config set usr chgthrottle.enabled no`` to disable the plugin, ``… yes`` to enable again.
+
+State changes are logged and sent as notifications. Use ``info()`` to show the current state:
 
 .. code-block:: none
 
