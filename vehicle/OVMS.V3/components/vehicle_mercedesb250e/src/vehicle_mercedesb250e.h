@@ -40,6 +40,16 @@ class OvmsVehicleMercedesB250e : public OvmsVehicle
   public:
     OvmsVehicleMercedesB250e();
     ~OvmsVehicleMercedesB250e();
+
+  public:
+    void IncomingFrameCan1(CAN_frame_t* p_frame);
+
+  protected:
+    OvmsMetricFloat *mt_ed_eco_accel;             // eco score on acceleration over last 6 hours
+    OvmsMetricFloat *mt_ed_eco_const;             // eco score on constant driving over last 6 hours
+    OvmsMetricFloat *mt_ed_eco_coast;             // eco score on coasting over last 6 hours
+    OvmsMetricFloat *mt_ed_eco_score;             // eco score shown on dashboard over last 6 hours
+    
   };
 
 #endif //#ifndef __VEHICLE_MERCEDESB250E_H__

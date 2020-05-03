@@ -31,18 +31,32 @@
 #include "ovms_log.h"
 static const char *TAG = "v-mercedesb250e";
 
+#define VERSION "1.0.0"
+
 #include <stdio.h>
+#include "metrics_standard.h"
+#include "ovms_metrics.h"
+
+
 #include "vehicle_mercedesb250e.h"
 
 OvmsVehicleMercedesB250e::OvmsVehicleMercedesB250e()
-  {
-  ESP_LOGI(TAG, "Generic MERCEDESB250E vehicle module");
-  }
+{
+  ESP_LOGI(TAG, "Start Mercedes-Benz B250E vehicle module");
+
+  mt_ed_eco_accel          = MyMetrics.InitFloat("xse.v.display.accel", SM_STALE_MIN, 0, Percentage);
+  mt_ed_eco_const          = MyMetrics.InitFloat("xse.v.display.const", SM_STALE_MIN, 0, Percentage);
+  mt_ed_eco_coast          = MyMetrics.InitFloat("xse.v.display.coast", SM_STALE_MIN, 0, Percentage);
+  mt_ed_eco_score          = MyMetrics.InitFloat("xse.v.display.ecoscore", SM_STALE_MIN, 0, Percentage);
+
+  
+  RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+}
 
 OvmsVehicleMercedesB250e::~OvmsVehicleMercedesB250e()
-  {
+{
   ESP_LOGI(TAG, "Shutdown MERCEDESB250E vehicle module");
-  }
+}
 
 class OvmsVehicleMercedesB250eInit
   {
@@ -50,9 +64,34 @@ class OvmsVehicleMercedesB250eInit
 } MyOvmsVehicleMercedesB250eInit  __attribute__ ((init_priority (9000)));
 
 OvmsVehicleMercedesB250eInit::OvmsVehicleMercedesB250eInit()
-  {
+{
   ESP_LOGI(TAG, "Registering Vehicle: MERCEDESB250E (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleMercedesB250e>("MERCEDESB250E","Empty vehicle");
-  }
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleMercedesB250e>("MB", "Mercedes-Benz B250E, W242");
+}
 
+void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
+{
+  uint8_t *d = p_frame->data.u8;
+   
+  switch (p_frame->MsgID) {
+  case 0x34F: // Range
+    {
+      StandardMetrics.ms_v_bat_range_est->SetValue((float)d[7]); // HV Voltage
+      ESP_LOGD(TAG, "Range from %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+      break;
+    }
+  case 0x3F2: //Eco display
+    {
+      mt_ed_eco_accel->SetValue((float)d[0] * 0.5);
+      mt_ed_eco_const->SetValue((float)d[1] * 0.5);
+      mt_ed_eco_coast->SetValue((float)d[2] * 0.5);
+      mt_ed_eco_score->SetValue((float)d[3] * 0.5);
+      ESP_LOGD(TAG, "ECO from %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+      break;
+    }
+  default:
+    //ESP_LOGD(TAG, "IFC %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+    break;
+  }  
+}
