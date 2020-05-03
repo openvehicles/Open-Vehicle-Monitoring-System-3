@@ -75,6 +75,12 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
   uint8_t *d = p_frame->data.u8;
    
   switch (p_frame->MsgID) {
+  case 0x19F: // Speedo
+    {
+      float speed = ( ((d[0]&0xf) << 8) + d[1] ) * 0.1; 
+      StandardMetrics.ms_v_pos_speed->SetValue(speed); // 
+      break;
+    }
   case 0x203: // Wheel speeds
     {
       /* Using wheel speed for speedo meter, as I have not yet found a better number */
@@ -82,15 +88,14 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
       float fr_speed = ( ((d[2]&0xf) << 8) + d[3] ) * 0.0603504; 
       float rl_speed = ( ((d[4]&0xf) << 8) + d[5] ) * 0.0603504; 
       float rr_speed = ( ((d[5]&0xf) << 8) + d[7] ) * 0.0603504; 
-      float speed = (fl_speed + fr_speed + rl_speed + rr_speed) / 4; // Average of all four wheels :)
-      StandardMetrics.ms_v_pos_speed->SetValue(speed); // 
+      // Don't post it, as wheels may be spinning. 0x19F is the correct MsgID for speed
+      // StandardMetrics.ms_v_pos_speed->SetValue(fl_speed); // 
       ESP_LOGD(TAG, "Speeds: FL %3d, FR %3d, RL %3d, RR %3d", (int)fl_speed, (int)fr_speed, (int)rl_speed, (int)rr_speed);
       break;
     }
-  case 0x33D:
+  case 0x205: // 12V battery voltage
     {
-      StandardMetrics.ms_v_bat_power->SetValue(d[4]-100); // Current power, direct watts, offset 100. 
-      ESP_LOGD(TAG, "POWER from %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+      StandardMetrics.ms_v_bat_12v_voltage->SetValue(d[1]*0.1); // 
       break;
     }	
     // case 0x34E: // Distance Today, Distance since reset
