@@ -293,6 +293,9 @@ class OvmsVehicleSmartED : public OvmsVehicle
     void RestartNetwork();
     void ShutDown();
     int m_shutdown_ticker;
+  
+  protected:
+    void TempPoll();
 };
 
 #endif //#ifndef __VEHICLE_SMARTED_H__
