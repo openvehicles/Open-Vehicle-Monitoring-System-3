@@ -75,6 +75,12 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
   uint8_t *d = p_frame->data.u8;
    
   switch (p_frame->MsgID) {
+  case 0x105: // Motor RPM
+    {
+      int rpm = ((d[0]&0x3f) << 8) + d[1]; 
+      StandardMetrics.ms_v_mot_rpm->SetValue(rpm); // 
+      break;
+    }
   case 0x19F: // Speedo
     {
       float speed = ( ((d[0]&0xf) << 8) + d[1] ) * 0.1; 
