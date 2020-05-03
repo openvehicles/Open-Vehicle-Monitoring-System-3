@@ -75,6 +75,17 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
   uint8_t *d = p_frame->data.u8;
    
   switch (p_frame->MsgID) {
+  case 0x203: // Wheel speeds
+    {
+      /* Using wheel speed for speedo meter, as I have not yet found a better number */
+      float fl_speed = ( ((d[0]&0xf) << 8) + d[1] ) * 0.0603504; 
+      float fr_speed = ( ((d[2]&0xf) << 8) + d[3] ) * 0.0603504; 
+      float rl_speed = ( ((d[4]&0xf) << 8) + d[5] ) * 0.0603504; 
+      float rr_speed = ( ((d[5]&0xf) << 8) + d[7] ) * 0.0603504; 
+      StandardMetrics.ms_v_pos_speed->SetValue(fl_speed); // HV Voltage
+      ESP_LOGD(TAG, "Speeds: FL %3d, FR %3d, RL %3d, RR %3d", (int)fl_speed, (int)fr_speed, (int)rl_speed, (int)rr_speed);
+      break;
+    }
   case 0x34F: // Range
     {
       StandardMetrics.ms_v_bat_range_est->SetValue((float)d[7]); // HV Voltage
