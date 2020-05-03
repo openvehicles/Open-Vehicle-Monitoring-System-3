@@ -141,6 +141,49 @@ void OvmsVehicleSmartED::xse_RPTdata(int verbosity, OvmsWriter* writer, OvmsComm
   smart->printRPTdata(verbosity, writer);
 }
 
+void OvmsVehicleSmartED::TempPoll() {
+  vTaskDelay(300 / portTICK_PERIOD_MS);
+  uint8_t data[8] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+
+  canbus *obd;
+  obd = m_can1;
+  
+  data[0] = 0x02;
+  data[1] = 0x10;
+  data[2] = 0x92;
+  obd->WriteStandard(0x7A2, 8, data);
+  vTaskDelay(50 / portTICK_PERIOD_MS);
+  
+  data[0] = 0x02;
+  data[1] = 0xe3;
+  data[2] = 0x01;
+  obd->WriteStandard(0x7A2, 8, data);
+  vTaskDelay(50 / portTICK_PERIOD_MS);
+  
+  data[0] = 0x02;
+  data[1] = 0x21;
+  data[2] = 0x12;
+  obd->WriteStandard(0x7A2, 8, data);
+  vTaskDelay(50 / portTICK_PERIOD_MS);
+  
+  data[0] = 0x02;
+  data[1] = 0x21;
+  data[2] = 0x12;
+  obd->WriteStandard(0x7A2, 8, data);
+  vTaskDelay(50 / portTICK_PERIOD_MS);
+  
+  data[0] = 0x02;
+  data[1] = 0xe3;
+  data[2] = 0x01;
+  obd->WriteStandard(0x7A2, 8, data);
+  vTaskDelay(50 / portTICK_PERIOD_MS);
+  
+  data[0] = 0x02;
+  data[1] = 0x10;
+  data[2] = 0x81;
+  obd->WriteStandard(0x7A2, 8, data);
+}
+
 bool OvmsVehicleSmartED::CommandSetRecu(bool on) {
   if(!m_enable_write)
     return false;
@@ -202,25 +245,23 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
   
   ESP_LOGI(TAG, "Send Wakeup Command");
   
-  //RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-  //vTaskDelay(500 / portTICK_PERIOD_MS);
-  
-  CAN_frame_t frame;
-  memset(&frame, 0, sizeof(frame));
+  if(!mt_bus_awake->AsBool()) {
+    CAN_frame_t frame;
+    memset(&frame, 0, sizeof(frame));
 
-  frame.origin = m_can2;
-  frame.FIR.U = 0;
-  frame.FIR.B.DLC = 4;
-  frame.FIR.B.FF = CAN_frame_std;
-  frame.MsgID = 0x210;
-  frame.callback = NULL;
-  frame.data.u8[0] = 0x01;
-  frame.data.u8[1] = 0x00;
-  frame.data.u8[2] = 0x00;
-  frame.data.u8[3] = 0x00;
-  m_can2->Write(&frame);
-  //vTaskDelay(500 / portTICK_PERIOD_MS);
-  //m_can2->Stop();
+    frame.origin = m_can2;
+    frame.FIR.U = 0;
+    frame.FIR.B.DLC = 4;
+    frame.FIR.B.FF = CAN_frame_std;
+    frame.MsgID = 0x210;
+    frame.callback = NULL;
+    frame.data.u8[0] = 0x01;
+    frame.data.u8[1] = 0x00;
+    frame.data.u8[2] = 0x00;
+    frame.data.u8[3] = 0x00;
+    m_can2->Write(&frame);
+  }
+  TempPoll();
 
   return Success;
 }
@@ -342,13 +383,19 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandUnlock(const char* pin
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandActivateValet(const char* pin) {
+  if (StandardMetrics.ms_v_bat_soc->AsFloat() > 20) {
 #ifdef CONFIG_OVMS_COMP_MAX7317
-  ESP_LOGI(TAG,"Ignition EGPIO on port: %d", m_ignition_port);
-  MyPeripherals->m_max7317->Output(m_ignition_port, 1);
-  m_egpio_timer = m_egpio_timout;
-  StandardMetrics.ms_v_env_valet->SetValue(true);
-  return Success;
+    ESP_LOGI(TAG,"Ignition EGPIO on port: %d", m_ignition_port);
+    MyPeripherals->m_max7317->Output(m_ignition_port, 1);
+    m_egpio_timer = m_egpio_timout;
+    StandardMetrics.ms_v_env_valet->SetValue(true);
+    MyNotify.NotifyString("info", "valet.enabled", "Ignition on");
+    return Success;
 #endif
+  } else {
+    MyNotify.NotifyString("info", "valet.enabled", "Soc below 20%, can't activate Ignition");
+    return Fail;
+  }
   return NotImplemented;
 }
 
@@ -358,6 +405,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandDeactivateValet(const 
   MyPeripherals->m_max7317->Output(m_ignition_port, 0);
   m_egpio_timer = 0;
   StandardMetrics.ms_v_env_valet->SetValue(false);
+  MyNotify.NotifyString("info", "valet.disabled", "Ignition off");
   return Success;
 #endif
   return NotImplemented;
@@ -485,9 +533,9 @@ void OvmsVehicleSmartED::NotifyTrip() {
 }
 
 void OvmsVehicleSmartED::NotifyValetEnabled() {
-  MyNotify.NotifyString("info", "valet.enabled", "Ignition on");
+  // MyNotify.NotifyString("info", "valet.enabled", "Ignition on");
 }
 
 void OvmsVehicleSmartED::NotifyValetDisabled() {
-  MyNotify.NotifyString("info", "valet.disabled", "Ignition off");
+  // MyNotify.NotifyString("info", "valet.disabled", "Ignition off");
 }

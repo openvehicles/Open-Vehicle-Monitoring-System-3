@@ -161,6 +161,8 @@ void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
   StandardMetrics.ms_v_charge_limit_soc->SetValue((float) MyConfig.GetParamValueInt("xse", "suffsoc", 0), Percentage );
   StandardMetrics.ms_v_charge_limit_range->SetValue((float) MyConfig.GetParamValueInt("xse", "suffrange", 0), Kilometers );
   
+  if (!m_enable_write) PollSetState(0);
+  
 #ifdef CONFIG_OVMS_COMP_MAX7317
   MyPeripherals->m_max7317->Output(m_doorlock_port, (m_gpio_highlow ? 1 : 0));
   MyPeripherals->m_max7317->Output(m_doorunlock_port, (m_gpio_highlow ? 1 : 0));
@@ -173,6 +175,7 @@ void OvmsVehicleSmartED::vehicle_smarted_car_on(bool isOn) {
     // Log once that car is being turned on
     ESP_LOGI(TAG,"CAR IS ON");
     StandardMetrics.ms_v_env_awake->SetValue(isOn);
+    StandardMetrics.ms_v_env_valet->SetValue(isOn);
     
     if (m_enable_write) PollSetState(2);
 
@@ -188,6 +191,7 @@ void OvmsVehicleSmartED::vehicle_smarted_car_on(bool isOn) {
     // Log once that car is being turned off
     ESP_LOGI(TAG,"CAR IS OFF");
     StandardMetrics.ms_v_env_awake->SetValue(isOn);
+    StandardMetrics.ms_v_env_valet->SetValue(isOn);
     
     if (mt_c_active->AsBool()) {
       if (m_enable_write) PollSetState(3);
@@ -506,8 +510,10 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     {
       uint32_t time = (d[0] * 60 + d[1]) * 60;
       mt_vehicle_time->SetValue(time, Seconds);
-      time = (d[2] * 60 + d[3]) * 60;
-      StandardMetrics.ms_v_charge_timerstart->SetValue(time, Seconds);
+      if(d[3] != 0xFF) {
+        time = (d[2] * 60 + (d[3] & 0x40 ? d[3]-0x40 : d[3]) * 60);
+        StandardMetrics.ms_v_charge_timerstart->SetValue(time, Seconds);
+      }
       break;
     }
     case 0x423: // Ignition, doors, windows, lock, lights, turn signals, rear window heating
@@ -565,7 +571,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     case 0x452: // Temp Airflow
     {
       StandardMetrics.ms_v_env_cooling->SetValue(d[0] > 0);
-      StandardMetrics.ms_v_env_cabintemp->SetValue(d[0]*0.5);
+      // StandardMetrics.ms_v_env_cabintemp->SetValue(d[0]*0.5);
       break;
     }
     case 0x3F2: //Eco display
@@ -635,13 +641,19 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
       */
       break;
     }
+    
+    // Polling IDs
+    case 0x7a3:
+    {
+      // 7a3 8 04 61 12 64 00 00 00 00
+      if (d[0] == 0x04 && d[1] == 0x61 && d[2] == 0x12) {
+        StandardMetrics.ms_v_env_cabintemp->SetValue(d[3]/10.0);
+      }
+      // ESP_LOGD(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+      break;
+    }
     default: {
-      /*
-      if(p_frame->MsgID == 0x7EF)
-        ESP_LOGD(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
-      if(p_frame->MsgID == 0x483)
-        ESP_LOGD(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
-      */
+      // ESP_LOGV(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       break;
     }
   }
@@ -687,7 +699,7 @@ void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
       mt_bus_awake->SetValue(false);
       //StandardMetrics.ms_v_env_awake->SetValue(false);
       StandardMetrics.ms_v_env_hvac->SetValue(false);
-      if (m_enable_write) PollSetState(0);
+      PollSetState(0);
       m_candata_poll = 0;
       // save metrics for crash reboot
       SaveStatus();
@@ -722,10 +734,6 @@ void OvmsVehicleSmartED::Ticker10(uint32_t ticker) {
     int level = MyPeripherals->m_max7317->Input((uint8_t)m_doorstatus_port);
     StandardMetrics.ms_v_env_locked->SetValue(level == 1 ? false : true);
   }
-  if (m_egpio_timer > 0 && StandardMetrics.ms_v_door_fl->AsBool()) {
-    MyPeripherals->m_max7317->Output(m_ignition_port, 0);
-    StandardMetrics.ms_v_env_valet->SetValue(false);
-  }
 #endif
 }
 
@@ -737,7 +745,14 @@ void OvmsVehicleSmartED::Ticker60(uint32_t ticker) {
       ESP_LOGI(TAG,"Ignition EGPIO off port: %d", m_ignition_port);
       MyPeripherals->m_max7317->Output(m_ignition_port, 0);
       StandardMetrics.ms_v_env_valet->SetValue(false);
+      MyNotify.NotifyString("info", "valet.disabled", "Ignition off");
     }
+  }
+  if (StandardMetrics.ms_v_env_valet->AsBool() && StandardMetrics.ms_v_bat_soc->AsFloat(0) < 20) {
+    MyPeripherals->m_max7317->Output(m_ignition_port, 0);
+    StandardMetrics.ms_v_env_valet->SetValue(false);
+    MyNotify.NotifyString("info", "valet.disabled", "Ignition off");
+    m_egpio_timer = 0;
   }
 #endif
 }
@@ -759,7 +774,7 @@ void OvmsVehicleSmartED::RestartNetwork() {
 }
 
 void OvmsVehicleSmartED::AutoSetRecu() {
-  if (StandardMetrics.ms_v_env_on->AsBool() && m_auto_set_recu) {
+  if (StandardMetrics.ms_v_env_on->AsBool() && m_auto_set_recu && m_enable_write) {
     if (StandardMetrics.ms_v_env_drivemode->AsInt(1) != 2) {
       while(StandardMetrics.ms_v_env_drivemode->AsInt(1) != 2) {
         CommandSetRecu(true);
@@ -808,31 +823,40 @@ bool OvmsVehicleSmartED::SetFeature(int key, const char *value)
 {
   switch (key)
   {
+    case 0:
+    {
+      int bits = atoi(value);
+      MyConfig.SetParamValueBool("xse", "doreboot",  (bits& 1)!=0);
+      return true;
+    }
+    case 1:
+      MyConfig.SetParamValue("xse", "reboot", value);
+      return true;
+    case 2:
+      MyConfig.SetParamValue("xse", "preclimatime", value);
+      return true;
+    case 3:
+      MyConfig.SetParamValue("xse", "egpio_timout", value);
+      return true;
+    case 4:
+    {
+      int bits = atoi(value);
+      MyConfig.SetParamValueBool("xse", "autosetrecu",  (bits& 1)!=0);
+      return true;
+    }
     case 10:
       MyConfig.SetParamValue("xse", "suffsoc", value);
       return true;
     case 11:
       MyConfig.SetParamValue("xse", "suffrange", value);
       return true;
+    case 12:
+      MyConfig.SetParamValue("xse", "rangeideal", value);
+      return true;
     case 15:
     {
       int bits = atoi(value);
       MyConfig.SetParamValueBool("xse", "canwrite",  (bits& 1)!=0);
-      return true;
-    }
-    case 26:
-      MyConfig.SetParamValue("xse", "preclimatime", value);
-      return true;
-    case 29:
-    {
-      int bits = atoi(value);
-      MyConfig.SetParamValueBool("xse", "doreboot",  (bits& 1)!=0);
-      return true;
-    }
-    case 30:
-    {
-      int bits = atoi(value);
-      MyConfig.SetParamValueBool("xse", "autosetrecu",  (bits& 1)!=0);
       return true;
     }
     default:
@@ -848,29 +872,35 @@ const std::string OvmsVehicleSmartED::GetFeature(int key)
 {
   switch (key)
   {
-    case 10:
-      return MyConfig.GetParamValue("xse", "suffsoc", STR(0));
-    case 11:
-      return MyConfig.GetParamValue("xse", "suffrange", STR(0));
-    case 15:
-    {
-      int bits = ( MyConfig.GetParamValueBool("xse", "canwrite",  false) ?  1 : 0);
-      char buf[4];
-      sprintf(buf, "%d", bits);
-      return std::string(buf);
-    }
-    case 26:
-      return MyConfig.GetParamValue("xse", "preclimatime", STR(15));
-    case 29:
+    case 0:
     {
       int bits = ( MyConfig.GetParamValueBool("xse", "doreboot",  false) ?  1 : 0);
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);
     }
-    case 30:
+    case 1:
+      return MyConfig.GetParamValue("xse", "reboot", STR(0));
+    case 2:
+      return MyConfig.GetParamValue("xse", "preclimatime", STR(15));
+    case 3:
+      return MyConfig.GetParamValue("xse", "egpio_timout", STR(5));
+    case 4:
     {
       int bits = ( MyConfig.GetParamValueBool("xse", "autosetrecu",  false) ?  1 : 0);
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }
+    case 10:
+      return MyConfig.GetParamValue("xse", "suffsoc", STR(0));
+    case 11:
+      return MyConfig.GetParamValue("xse", "suffrange", STR(0));
+    case 12:
+      return MyConfig.GetParamValue("xse", "rangeideal", STR(135));
+    case 15:
+    {
+      int bits = ( MyConfig.GetParamValueBool("xse", "canwrite",  false) ?  1 : 0);
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);
