@@ -4,8 +4,8 @@
  * Module plugin:
  *  Throttle charge current and/or stop charge if charger gets too hot.
  * 
- * Version 1.1   Michael Balzer <dexter@dexters-web.de>
- *  - added notifications
+ * Version 1.2   Michael Balzer <dexter@dexters-web.de>
+ *  - notify initially, then on level-up during charge, else on level-down
  * 
  * Enable:
  *  - install at above path
@@ -48,6 +48,8 @@ var state = {
   temp: null,
   level: null,
   amps: null,
+  charging: null,
+  notified: null,
 };
 
 // Output info:
@@ -71,30 +73,38 @@ function readConfig() {
     print("throttling disabled");
     PubSub.unsubscribe(state.ticker);
     state.ticker = false;
-    state.temp = state.level = state.amps = null;
+    state.temp = state.level = state.amps = state.charging = state.notified = null;
     OvmsVehicle.SetChargeCurrent(0); // unlimited
   }
 }
 
 // Ticker:
 function ticker() {
-  var ctemp, level, ltemp, success, msg;
+  var charging, ctemp, level, ltemp, success, msg;
 
+  charging = OvmsMetrics.Value("v.c.charging");
   ctemp = OvmsMetrics.AsFloat("v.c.temp");
-  if (state.temp === ctemp) return;
 
-  // determine new threshold level:
-  state.temp = ctemp;
-  for (level = 3; level >= 1; --level) {
-    ltemp = Number(cfg["t"+level+".temp"]);
-    if (ltemp && ctemp >= ltemp) break;
+  // determine current threshold level:
+  if (state.temp === ctemp) {
+    level = state.level;
+  } else {
+    state.temp = ctemp;
+    for (level = 3; level >= 1; --level) {
+      ltemp = Number(cfg["t"+level+".temp"]);
+      if (ltemp && ctemp >= ltemp) break;
+    }
   }
-  if (state.level === level) return;
+
+  // check for state change:
+  if (state.charging === charging && state.level === level)
+    return;
+  state.charging = charging;
+  state.level = level;
 
   // set & configure new level:
-  state.level = level;
   state.amps = (level > 0) ? Number(cfg["t"+level+".amps"]) : 0;
-  msg = "Temp " + ctemp + "C = Level " + level + ":\n";
+  msg = (charging ? "Charging" : "Not charging") + ", Temp " + ctemp + "C = Level " + level + ":\n";
   if (state.amps < 0) {
     success = OvmsVehicle.StopCharge();
     if (success)
@@ -112,9 +122,17 @@ function ticker() {
         + "; take manual control!";
   }
 
-  // log & notify:
+  // log:
   print(msg);
-  OvmsNotify.Raise("alert", "usr.chgthrottle.status", "ChgThrottle: " + msg);
+
+  // notify initially, then on level-up during charge, else on level-down:
+  if ( (state.notified === null) ||
+       (charging && level > state.notified) ||
+      (!charging && level < state.notified) )
+  {
+    state.notified = level;
+    OvmsNotify.Raise("alert", "usr.chgthrottle.status", "ChgThrottle: " + msg);
+  }
 }
 
 // Init:
