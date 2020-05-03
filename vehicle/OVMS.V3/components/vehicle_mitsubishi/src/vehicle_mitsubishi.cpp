@@ -48,9 +48,13 @@
 ;       - Ideal range calculation 16.1kWh/100km
 ;     1.0.7
 ;       - Add comfort variables (fan speed, vent type, intake type)
-;	- Odometer fix
+;	      - Odometer fix
 ;     1.0.8.
 ;       - Add door lock status (beta)
+;     1.0.9
+;       - Charge detection fix
+;       - update xmi charge command Stop SOC during charge
+;
 ;
 ;    (C) 2011         Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018    Mark Webb-Johnson
@@ -80,7 +84,7 @@
 #include <stdio.h>
 #include "vehicle_mitsubishi.h"
 
-#define VERSION "1.0.8"
+#define VERSION "1.0.9"
 
 static const char *TAG = "v-mitsubishi";
 
@@ -123,13 +127,13 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
     has_odo = false;
   }
 
+
   // reset charge counter
 
   ms_v_trip_charge_energy_recd->SetValue(0);
   ms_v_trip_charge_energy_used->SetValue(0);
   ms_v_trip_charge_heating_kwh->SetValue(0);
   ms_v_trip_charge_ac_kwh->SetValue(0);
-
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
 
@@ -156,7 +160,7 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
 
   #ifdef CONFIG_OVMS_COMP_WEBSERVER
     MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
-    MyWebServer.RegisterPage("/cfg/brakelight", "Brake Light control",OvmsWebServer::HandleCfgBrakelight,PageMenu_Vehicle,PageAuth_Cookie);
+    MyWebServer.RegisterPage("/cfg/brakelight", "Brake Light control", OvmsWebServer::HandleCfgBrakelight, PageMenu_Vehicle, PageAuth_Cookie);
     WebInit();
   #endif
 
@@ -210,14 +214,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
     {
       case 0x101: //freq10 //Key status
       {
-        if (d[0] == 4)
-        {
-          vehicle_mitsubishi_car_on(true);
-        }else if (d[0] ==0)
-        {
-          vehicle_mitsubishi_car_on(false);
-        }
-
+        (d[0] == 4) ? vehicle_mitsubishi_car_on(true) : vehicle_mitsubishi_car_on(false);
       break;
       }
 
@@ -233,9 +230,9 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
       }
 
-      case 0x231://freq50 // Brake pedal pressed?
+      case 0x231://freq50 // Brake pedal switch
       {
-        if (d[4] ==0) {
+        if (d[4] == 0) {
           //Brake not pressed
         } else if (d[4] == 2) {
           /* Brake pressed*/
@@ -256,7 +253,8 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_inv_temp->SetValue((float)d[3] - 40);
 
         //charger detection
-        if(d[0] == 14  && d[1] == 116 ) // charger connected
+        //if(d[0] == 14  && d[1] == 116 ) // charger connected
+        if((d[1] & 32 ) != 0)
         {
           mi_SC = true;
           if(d[2] == 100) //charging (d[2] <= 99 prepare charge?)
@@ -315,7 +313,9 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       case 0x346://freq50 // Estimated range, Handbrake state
       {
-        StandardMetrics.ms_v_bat_range_est->SetValue(d[7]);
+
+        (mi_QC) ? StandardMetrics.ms_v_bat_range_est->SetValue(0) : StandardMetrics.ms_v_bat_range_est->SetValue(d[7]);
+
         if ((d[4] & 32) == 0)
         {
           StandardMetrics.ms_v_env_handbrake->SetValue(false);
@@ -366,11 +366,12 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
           ms_v_charge_dc_kwh->SetValue((ms_v_charge_dc_kwh->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() / -360000.0)));
         }
 
-        if (StandardMetrics.ms_v_env_gear->AsInt() == -1 && StandardMetrics.ms_v_bat_power->AsInt() < 0 && (mi_QC == true))
+        if (mi_QC == true)
         {
           //set battery voltage/current to charge voltage/current, when car in Park, and charging
           StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
           StandardMetrics.ms_v_charge_current->SetValue(StandardMetrics.ms_v_bat_current->AsFloat() * 1.0);
+          StandardMetrics.ms_v_charge_kwh->SetValue(ms_v_charge_dc_kwh->AsFloat());
         }
 
         //min power
@@ -397,14 +398,9 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         ms_v_trip_park_heating_kwh->SetValue(ms_v_trip_park_heating_kwh->AsFloat() + (ms_v_env_heating_watt->AsFloat() / 36000000));
         ms_v_trip_charge_heating_kwh->SetValue(ms_v_trip_charge_heating_kwh->AsFloat() + (ms_v_env_heating_watt->AsFloat() / 36000000));
 
-        if (ms_v_env_heating_watt->AsFloat() > 0.0)
-        {
-          StandardMetrics.ms_v_env_heating->SetValue(true);
-        }
-        else
-        {
-          StandardMetrics.ms_v_env_heating->SetValue(false);
-        }
+        //Heating is "run"
+        (ms_v_env_heating_watt->AsFloat() > 0.0) ? StandardMetrics.ms_v_env_heating->SetValue(true): StandardMetrics.ms_v_env_heating->SetValue(false);
+
 
         if ( cfg_heater_old )
         {
@@ -455,11 +451,11 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
          *
          * byte 1, bits 0-3: ventilation level (if AUTO is chosen, the
          * automatically calculated level is returned) byte 1, bits 4-7:
-         * ventilation direction (1-2 face, 3 legs+face, 4 -5legs, 6
+         * ventilation direction (1-2 face, 3 legs+face, 4-5legs, 6
          * legs+windshield 7-9 windshield)
          */
 
-       //heating level
+        //heating level
         if (((int)d[0] & 15) == 7)
         {
           //ESP_LOGI(TAG, "Middle");
@@ -475,86 +471,65 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
           //Heating
         }
         //ESP_LOGI(TAG,"Heat level: %d", (int)d[0] & 15  );
+
         //Recirculation pushed
-        if(((int)d[0] & 64) != 0)
-        {
-          StandardMetrics.ms_v_env_cabinintake->SetValue("Recirculation");
-        }
-        else
-        {
-          StandardMetrics.ms_v_env_cabinintake->SetValue("Fresh");
-        }
+        ((d[0] & 64) != 0) ? StandardMetrics.ms_v_env_cabinintake->SetValue("Recirculation") : StandardMetrics.ms_v_env_cabinintake->SetValue("Fresh");
 
-      	//AC button
-      	if (((int)d[0] & 128) != 0)
-      	{
-          StandardMetrics.ms_v_env_hvac->SetValue(true);
-      	}
-      	else
-      	{
-          StandardMetrics.ms_v_env_hvac->SetValue(false);
-      	}
-	
-      //Fan Speed
-      float fanSpeed = ((d[1] & 15 )*12.5)+0.5;
-      StandardMetrics.ms_v_env_cabinfan->SetValue((int)fanSpeed);
-      //Max pushed
-      if(((int)d[0] & 32) != 0)
-      {
-      	StandardMetrics.ms_v_env_cabinfan->SetValue(110);
-      }
-	      
-        //Vent Direction      
+        //AC button
+        ((d[0] & 128) != 0) ? StandardMetrics.ms_v_env_hvac->SetValue(true) : StandardMetrics.ms_v_env_hvac->SetValue(false);
 
-      string ventDirection = "-";
-      switch ((d[1] & 240 >> 4)) {
-        case 1:
-        case 2:
-          ventDirection = "Face";
+        //Fan Speed
+        float fanSpeed = ((d[1] & 15 )*12.5)+0.5;
+        //Max pushed
+        ((d[0] & 32) != 0) ? StandardMetrics.ms_v_env_cabinfan->SetValue(110) : StandardMetrics.ms_v_env_cabinfan->SetValue((int)fanSpeed);
+
+        //Vent Direction
+        string ventDirection = "-";
+        switch ((d[1] >> 4)) {
+          case 1:
+          case 2:
+            ventDirection = "Face";
+          break;
+          case 3:
+          case 4:
+            ventDirection = "Legs + Face";
+          break;
+          case 5:
+          case 6:
+            ventDirection = "Legs";
+          break;
+          case 7:
+          case 8:
+            ventDirection = "Legs + Windshield";
+          break;
+          case 9:
+            ventDirection = "Windshield";
+          break;
+        }
+        StandardMetrics.ms_v_env_cabinvent->SetValue(ventDirection);
+
         break;
-        case 3:
-        case 4:
-          ventDirection = "Legs + Face";
-        break;
-        case 5:
-        case 6:
-          ventDirection = "Legs";
-        break;
-        case 7:
-        case 8:
-          ventDirection = "Legs + Windshield";
-        break;
-        case 9:
-          ventDirection = "Windshield";
-        break;
-      }
-	 StandardMetrics.ms_v_env_cabinvent->SetValue(ventDirection);
-	      
-      break;
     }
 
     case 0x412://freq10 // Speed and odometer
     {
-      if (d[1] > 200)
-        StandardMetrics.ms_v_pos_speed->SetValue((int)d[1] - 255.0, Kph);
-      else
-        StandardMetrics.ms_v_pos_speed->SetValue(d[1]);
+      (d[1] > 200) ? StandardMetrics.ms_v_pos_speed->SetValue((int)d[1] - 255.0, Kph) : StandardMetrics.ms_v_pos_speed->SetValue(d[1]);
 
-        CalculateAcceleration();
+      CalculateAcceleration();
 
-        StandardMetrics.ms_v_pos_odometer->SetValue(((int)d[2] << 16 ) + ((int)d[3] << 8) + d[4], Kilometers);
+      StandardMetrics.ms_v_pos_odometer->SetValue(((int)d[2] << 16 ) + ((int)d[3] << 8) + d[4], Kilometers);
 
-        if(StandardMetrics.ms_v_pos_odometer->AsInt() > 0 && has_odo == false && StandardMetrics.ms_v_bat_soc->AsFloat() > 0)
+      if(StandardMetrics.ms_v_pos_odometer->AsInt() > 0 && has_odo == false && StandardMetrics.ms_v_bat_soc->AsFloat() > 0)
+      {
+        has_odo = true;
+        if (!set_odo)
         {
-          has_odo = true;
-          if (!set_odo)
-          {
-            mi_charge_trip_counter.Reset(POS_ODO);
-            ms_v_trip_charge_soc_start->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
-            ms_v_trip_charge_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
-            set_odo = true;
-          }
+          mi_charge_trip_counter.Reset(POS_ODO);
+          ms_v_trip_charge_soc_start->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
+          ms_v_trip_charge_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
+          set_odo = true;
         }
+      }
 
 
     break;
@@ -604,117 +579,54 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
     case 0x424://freq25 // Lights and doors
       {
-        //Windshield wipers	424	1	if bit5 = 1 then on else off
-        //Rear window defrost	424	6	if bit5 = 1 then on else off
+        //Fog lights front
+        ((d[0] & 8 ) != 0) ? ms_v_env_frontfog->SetValue(true) : ms_v_env_frontfog->SetValue(false);
 
-        if ( (d[0] & 4) != 0) //headlight
-        { // ON
-          StandardMetrics.ms_v_env_headlights->SetValue(true);
-        }
-        else
-        {
-          StandardMetrics.ms_v_env_headlights->SetValue(false);
-        }
+        //Fog lights rear
+        ((d[0] & 16) != 0) ? ms_v_env_rearfog->SetValue(true) :ms_v_env_rearfog->SetValue(false);
 
-        if ((d[0] & 8 ) != 0) //Fog lights front
-        { // ON
-          ms_v_env_frontfog->SetValue(true);
-        }
-        else
-        {
-          ms_v_env_frontfog->SetValue(false);
-        }
+        //Warning lights on
+        (((d[1] & 1) != 0) && ((d[1] & 2) != 0)) ? ms_v_env_warninglight->SetValue(true) : ms_v_env_warninglight->SetValue(false);
 
-        if ((d[0] & 16) != 0) //Fog lights rear
-        {// ON
-          ms_v_env_rearfog->SetValue(true);
-        }
-        else
-        {
-          ms_v_env_rearfog->SetValue(false);
-        }
+        // Blinker right
+        ((d[1] & 1) != 0) ? ms_v_env_blinker_right->SetValue(true) : ms_v_env_blinker_right->SetValue(false);
 
-        if ((d[1] & 1) != 0)// Blinker right
-        { // ON
-          ms_v_env_blinker_right->SetValue(true);
-        }
-        else
-        {
-          ms_v_env_blinker_right->SetValue(false);
-        }
+        //Blinker left
+        ((d[1] & 2) != 0) ? ms_v_env_blinker_left->SetValue(true) : ms_v_env_blinker_left->SetValue(false);
 
-        if ((d[1] & 2) != 0) //Blinker left
-        { // ON
-          ms_v_env_blinker_left->SetValue(true);
-        }
-        else
-        {
-          ms_v_env_blinker_left->SetValue(false);
-        }
+        //Highbeam
+        ((d[1] & 4) != 0) ? ms_v_env_highbeam->SetValue(true) : ms_v_env_highbeam->SetValue(false);
 
-        if ((d[1] & 4) != 0)// Highbeam
-        { // ON
-          ms_v_env_highbeam->SetValue(true);
-        }
-        else
-        {
-          ms_v_env_highbeam->SetValue(false);
-        }
+        //Headlight
+        ((d[1] & 32) != 0) ? StandardMetrics.ms_v_env_headlights->SetValue(true) : StandardMetrics.ms_v_env_headlights->SetValue(false);
 
-        if ((d[1] & 32) != 0 )  //Headlight
-        {
-		       // ESP_LOGI(TAG, "Headlight2 on");
-        }
-        else
-        {
+        //Highbeam
+        ((d[1] & 64) != 0) ? ms_v_env_lowbeam->SetValue(true) : ms_v_env_lowbeam->SetValue(false);
 
-        }
+        //Windshield wipers Front
+        //((d[1] & 8) != 0) ? : ;
 
-        if ((d[1] & 64) != 0)
-        { //Parkinglight
-		      //ESP_LOGI(TAG, "Parkinglight on");
-        }
-        else
-        {
+        //Windshield wipers Front
+        //((d[1] & 16) != 0 ) ? : ;
 
-        }
+        //One or more door open except driver door
+        bool door = false;
+        ((d[2] & 1) != 0) ?  door = true : door = false ;
 
-        if ((d[2] & 1) != 0) //any Door + trunk
-        { //OPEN
-            //StandardMetrics.ms_v_door_fr->SetValue(true);
-        }
-        else
-        {
-              //StandardMetrics.ms_v_door_fr->SetValue(false);
-        }
+          StandardMetrics.ms_v_door_fr->SetValue(door);
+          StandardMetrics.ms_v_door_rl->SetValue(door);
+          StandardMetrics.ms_v_door_rr->SetValue(door);
+          StandardMetrics.ms_v_door_trunk->SetValue(door);
 
+        //Driver door open
+        ((d[2] & 2) != 0) ? StandardMetrics.ms_v_door_fl->SetValue(true) : StandardMetrics.ms_v_door_fl->SetValue(false);
 
-        if ((d[2] & 2) != 0) //LHD Driver Door
-        { //OPEN
-          StandardMetrics.ms_v_door_fl->SetValue(true);
-        }
-        else
-        {
-          StandardMetrics.ms_v_door_fl->SetValue(false);
-        }
-        if ((d[2] & 3) != 0) //??
-        {
-        }
-        if ((d[2] & 128) != 0) //??
-        {
-        }
-        else
-        {
-        }
-        if ((d[2] & 12) != 0) //door lock disabled
-        {
-          StandardMetrics.ms_v_env_locked->SetValue(false);
-        }
+        //Doors locked
+        ((d[2] & 64) != 0) ? StandardMetrics.ms_v_env_locked->SetValue(true) : StandardMetrics.ms_v_env_locked->SetValue(false);
 
-        if ((d[2] & 192) != 0) //door lock enbled
-        {
-          StandardMetrics.ms_v_env_locked->SetValue(true);
-        }
+        //rear window heating, mirror heating
+        //((d[6] & 8) != 0 ) ? : ;
+
         break;
       }
 
@@ -877,6 +789,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
       {
         StandardMetrics.ms_v_charge_state->SetValue("charging");
         v_c_time->SetValue(StandardMetrics.ms_v_charge_time->AsInt());
+        v_c_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
         // if charge and DC current is negative cell balancing is active. If charging battery current is negative, discharge is positive
         if ((StandardMetrics.ms_v_bat_current->AsFloat() < 0) && (mi_QC == false) && StandardMetrics.ms_v_bat_soc->AsInt() > 92 && StandardMetrics.ms_v_charge_mode->AsString() != "Balancing")
         {
@@ -977,12 +890,13 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
     StdMetrics.ms_v_bat_soh->SetValue((StdMetrics.ms_v_bat_cac->AsFloat() / 48.0) * 100);
   }
 }
+
 void OvmsVehicleMitsubishi::Ticker60(uint32_t ticker)
 {
   if (StdMetrics.ms_v_env_on->AsBool() || mi_QC == true || mi_SC == true)
   {
     //Send a request to BMS ECU
-    CAN_frame_t frame;
+   CAN_frame_t frame;
     memset(&frame,0,sizeof(frame));
     frame.origin = m_can1;
     frame.FIR.U = 0;
@@ -993,9 +907,10 @@ void OvmsVehicleMitsubishi::Ticker60(uint32_t ticker)
     frame.data.u8[1] = 0x21;
     frame.data.u8[2] = 0x01;
     m_can1->Write(&frame);
-  }
 
+  }
 }
+
   /**
    * Takes care of setting all the state appropriate when the car is on
    * or off. Centralized so we can more easily make on and off mirror

@@ -2,6 +2,11 @@ Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
 
+2020-04-22 MWJ  3.2.012 OTA release
+- #357 tpms rear left temperature incorrect in v2 protocol
+- #354 Flush UART buffer when power cycling modem
+- General stability improvements to CAN logging and playback
+
 2020-04-03 MWJ  3.2.011 OTA release
 - #327 Tesla Roadster: Vehicle AWAKE metric not correct
 - #311 OvmsEvents::ScheduleEvent with delay_ms < 10

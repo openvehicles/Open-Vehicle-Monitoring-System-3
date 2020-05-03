@@ -1182,6 +1182,7 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
     << StandardMetrics.ms_v_tpms_rl_p->AsString("0",PSI)
     << ","
     << StandardMetrics.ms_v_tpms_rl_t->AsString("0")
+    << ","
     << defstale
     ;
 
