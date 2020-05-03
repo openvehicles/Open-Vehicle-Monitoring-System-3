@@ -82,13 +82,23 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
       float fr_speed = ( ((d[2]&0xf) << 8) + d[3] ) * 0.0603504; 
       float rl_speed = ( ((d[4]&0xf) << 8) + d[5] ) * 0.0603504; 
       float rr_speed = ( ((d[5]&0xf) << 8) + d[7] ) * 0.0603504; 
-      StandardMetrics.ms_v_pos_speed->SetValue(fl_speed); // HV Voltage
+      float speed = (fl_speed + fr_speed + rl_speed + rr_speed) / 4; // Average of all four wheels :)
+      StandardMetrics.ms_v_pos_speed->SetValue(speed); // 
       ESP_LOGD(TAG, "Speeds: FL %3d, FR %3d, RL %3d, RR %3d", (int)fl_speed, (int)fr_speed, (int)rl_speed, (int)rr_speed);
       break;
     }
+  case 0x33D:
+    {
+      StandardMetrics.ms_v_bat_power->SetValue(d[4]-100); // Current power, direct watts, offset 100. 
+      ESP_LOGD(TAG, "POWER from %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+      break;
+    }	
+    // case 0x34E: // Distance Today, Distance since reset
   case 0x34F: // Range
     {
-      StandardMetrics.ms_v_bat_range_est->SetValue((float)d[7]); // HV Voltage
+      StandardMetrics.ms_v_bat_range_est->SetValue((float)d[7]); // Car's estimate on remainging range
+      /* This is really an average, but let's move this when better is found*/
+      StandardMetrics.ms_v_bat_consumption->SetValue((float)d[1]*0.5/1.609344); // Consumption per distance
       ESP_LOGD(TAG, "Range from %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       break;
     }
