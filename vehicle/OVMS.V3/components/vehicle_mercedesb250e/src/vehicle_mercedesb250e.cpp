@@ -85,7 +85,9 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
   case 0x19F: // Speedo
     {
       float speed = ( ((d[0]&0xf) << 8) + d[1] ) * 0.1; 
-      StandardMetrics.ms_v_pos_speed->SetValue(speed); // 
+      float odo   = ( (d[5] << 16) + (d[6] << 8) + (d[7]) ) * 0.1;
+      StandardMetrics.ms_v_pos_speed->SetValue(speed); // speed in km/h
+      StandardMetrics.ms_v_pos_odometer->SetValue(odo); // ODO km
       break;
     }
   case 0x203: // Wheel speeds
@@ -102,7 +104,7 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
   case 0x205: // 12V battery voltage
     {
-      StandardMetrics.ms_v_bat_12v_voltage->SetValue(d[1]*0.1); // 
+      StandardMetrics.ms_v_bat_12v_voltage->SetValue(d[1]*0.1); // Volts
       break;
     }	
   case 0x33D: // Momentary power
@@ -110,7 +112,7 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_bat_power->SetValue(d[4]-100); // kW 
       break;
     }	
-    // case 0x34E: // Distance Today, Distance since reset
+    // case 0x34E: // Distance Today , Distance since reset, scale is 0.1 km
   case 0x34F: // Range
     {
       StandardMetrics.ms_v_bat_range_est->SetValue((float)d[7]); // Car's estimate on remainging range
