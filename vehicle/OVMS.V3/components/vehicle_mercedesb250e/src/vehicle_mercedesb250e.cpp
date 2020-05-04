@@ -105,6 +105,11 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_bat_12v_voltage->SetValue(d[1]*0.1); // 
       break;
     }	
+  case 0x33D: // Momentary power
+    {
+      StandardMetrics.ms_v_bat_power->SetValue(d[4]-100); // kW 
+      break;
+    }	
     // case 0x34E: // Distance Today, Distance since reset
   case 0x34F: // Range
     {
