@@ -372,11 +372,11 @@ config OVMS_VEHICLE_VWEUP
         Enable to include support for VW e-Up vehicle.
 
 config OVMS_VEHICLE_MERCEDESB250E
-    bool "Include support for base Mercedes-Benz B250E vehicle stub"
+    bool "Include support for Mercedes-Benz B250E (W242) vehicle"
     default n
     depends on OVMS
     help
-        Enable to include support for base NONE vehicle stub.
+        Enable to include support for Mercedes-Benz B250E (W242) vehicle.
 
 config OVMS_VEHICLE_RXTASK_STACK
     int "Stack size for vehicle RX task"
