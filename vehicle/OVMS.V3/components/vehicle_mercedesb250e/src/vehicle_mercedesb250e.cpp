@@ -5,9 +5,7 @@
 ;    Changes:
 ;    1.0  Initial release
 ;
-;    (C) 2011       Michael Stegen / Stegen Electronics
-;    (C) 2011-2017  Mark Webb-Johnson
-;    (C) 2011        Sonny Chen @ EPRO/DX
+;    (C) 2020       Jarkko Ruoho
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +24,15 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
+;
+; Currently support only passive listening of the CAN bus. 
+; 
+; Testing status: "Works for me", meaning everything is tried just once.  
+;
+; Most data is reverse engineered from Mercedes Benz B250E (W242), year 2015. 
+; vehicle_smarted.cpp was used as an example, and some MsgID's are the same. 
+; Some MsgID's matched other Mercedes models. OpenDBC was helpfull here: 
+; https://github.com/commaai/opendbc/blob/master/mercedes_benz_e350_2010.dbc
 */
 
 #include "ovms_log.h"
@@ -79,7 +86,7 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
     {
       int rpm = ((d[0]&0x3f) << 8) + d[1]; 
       StandardMetrics.ms_v_mot_rpm->SetValue(rpm); // RPM
-      StandardMetrics.ms_v_env_throttle->SetValue(d[4]/2.50); // Drive pedal state [%]
+      StandardMetrics.ms_v_env_throttle->SetValue(d[4]/2.50); // Drive pedal state [%], raw values are from 0 to 250
       break;
     }
   case 0x19F: // Speedo
@@ -99,7 +106,8 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
       float rr_speed = ( ((d[5]&0xf) << 8) + d[7] ) * 0.0603504; 
       // Don't post it, as wheels may be spinning. 0x19F is the correct MsgID for speed
       // StandardMetrics.ms_v_pos_speed->SetValue(fl_speed); // 
-      ESP_LOGD(TAG, "Speeds: FL %3d, FR %3d, RL %3d, RR %3d", (int)fl_speed, (int)fr_speed, (int)rl_speed, (int)rr_speed);
+      ESP_LOGD(TAG, "Speeds: FL %3d, FR %3d, RL %3d, RR %3d",
+	       (int)fl_speed, (int)fr_speed, (int)rl_speed, (int)rr_speed);
       break;
     }
   case 0x205: // 12V battery voltage
@@ -116,9 +124,10 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
   case 0x34F: // Range
     {
       StandardMetrics.ms_v_bat_range_est->SetValue((float)d[7]); // Car's estimate on remainging range
-      /* This is really an average, but let's move this when better is found*/
+      /* This is really an average, but let's move this when better is found */
       StandardMetrics.ms_v_bat_consumption->SetValue((float)d[1]*0.5/1.609344); // Consumption per distance
-      ESP_LOGD(TAG, "Range from %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+      ESP_LOGD(TAG, "Range from %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
+	       p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       break;
     }
   case 0x3F2: //Eco display
@@ -127,11 +136,13 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
       mt_ed_eco_const->SetValue((float)d[1] * 0.5);
       mt_ed_eco_coast->SetValue((float)d[2] * 0.5);
       mt_ed_eco_score->SetValue((float)d[3] * 0.5);
-      ESP_LOGD(TAG, "ECO from %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+      ESP_LOGD(TAG, "ECO from %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
+	       p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       break;
     }
   default:
-    //ESP_LOGD(TAG, "IFC %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+    //ESP_LOGD(TAG, "IFC %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
+    //p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
     break;
   }  
 }
