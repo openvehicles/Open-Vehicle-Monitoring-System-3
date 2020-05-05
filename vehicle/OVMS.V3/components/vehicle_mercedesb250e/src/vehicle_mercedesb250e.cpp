@@ -51,10 +51,12 @@ OvmsVehicleMercedesB250e::OvmsVehicleMercedesB250e()
 {
   ESP_LOGI(TAG, "Start Mercedes-Benz B250E vehicle module");
 
-  mt_ed_eco_accel          = MyMetrics.InitFloat("xse.v.display.accel", SM_STALE_MIN, 0, Percentage);
-  mt_ed_eco_const          = MyMetrics.InitFloat("xse.v.display.const", SM_STALE_MIN, 0, Percentage);
-  mt_ed_eco_coast          = MyMetrics.InitFloat("xse.v.display.coast", SM_STALE_MIN, 0, Percentage);
-  mt_ed_eco_score          = MyMetrics.InitFloat("xse.v.display.ecoscore", SM_STALE_MIN, 0, Percentage);
+  mt_mb_trip_reset         = MyMetrics.InitFloat("xmb.v.display.trip.reset", SM_STALE_MIN, 0, Kilometers);
+  mt_mb_trip_start         = MyMetrics.InitFloat("xmb.v.display.trip.start", SM_STALE_MIN, 0, Kilometers);
+  mt_mb_eco_accel          = MyMetrics.InitFloat("xmb.v.display.accel", SM_STALE_MIN, 0, Percentage);
+  mt_mb_eco_const          = MyMetrics.InitFloat("xmb.v.display.const", SM_STALE_MIN, 0, Percentage);
+  mt_mb_eco_coast          = MyMetrics.InitFloat("xmb.v.display.coast", SM_STALE_MIN, 0, Percentage);
+  mt_mb_eco_score          = MyMetrics.InitFloat("xmb.v.display.ecoscore", SM_STALE_MIN, 0, Percentage);
 
   
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
@@ -120,7 +122,13 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_bat_power->SetValue(d[4]-100); // kW 
       break;
     }	
-    // case 0x34E: // Distance Today , Distance since reset, scale is 0.1 km
+    
+  case 0x34E:  // Distance Today , Distance since reset, scale is 0.1 km
+    {
+      float trip_start = (float)d[1] * 256 + (float)d[0];
+      float trip_reset = (float)d[3] * 256 + (float)d[2];
+      mt_mb_trip_start->SetValue((float)trip_start * 0.1);
+      mt_mb_trip_reset->SetValue((float)trip_reset * 0.1);
   case 0x34F: // Range
     {
       StandardMetrics.ms_v_bat_range_est->SetValue((float)d[7]); // Car's estimate on remainging range
@@ -132,10 +140,10 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
   case 0x3F2: //Eco display
     {
-      mt_ed_eco_accel->SetValue((float)d[0] * 0.5);
-      mt_ed_eco_const->SetValue((float)d[1] * 0.5);
-      mt_ed_eco_coast->SetValue((float)d[2] * 0.5);
-      mt_ed_eco_score->SetValue((float)d[3] * 0.5);
+      mt_mb_eco_accel->SetValue((float)d[0] * 0.5);
+      mt_mb_eco_const->SetValue((float)d[1] * 0.5);
+      mt_mb_eco_coast->SetValue((float)d[2] * 0.5);
+      mt_mb_eco_score->SetValue((float)d[3] * 0.5);
       ESP_LOGD(TAG, "ECO from %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
 	       p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       break;
