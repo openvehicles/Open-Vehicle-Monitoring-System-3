@@ -51,7 +51,7 @@
   const MY_TOKEN = "@@@@@@@@-@@@@-@@@@-@@@@-@@@@@@@@@@@@";
   const TIMER_INTERVAL = "ticker.60";                         // every minute
   const EVENT_MOTORS_ON = "vehicle.on";
-  const URL = "http://@@@@.@@@/@@";
+  const URL = "http://api.iternio.com/1/tlm/send";
   const CR = '\n';
 
   var objTLM;
