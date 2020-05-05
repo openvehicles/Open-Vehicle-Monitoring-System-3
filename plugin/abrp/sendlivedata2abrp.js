@@ -6,7 +6,7 @@
  *  This version uses the embedded GSM of OVMS, so there's an impact on data consumption
  *  /!\ requires OVMS firmware version 3.2.008-147 minimum (for HTTP call)
  *
- * Version 1.1   2020   dar63 (forum https://www.openvehicles.com)
+ * Version 1.2   2020   dar63 (forum https://www.openvehicles.com)
  *
  * Enable:
  *  - install at above path
@@ -19,6 +19,11 @@
  *  - script eval abrp.onetime()      => to launch one time the request to abrp server
  *  - script eval abrp.send(1)        => toggle send data to abrp
  *  -                      (0)        => stop sending data
+ *
+ * Version 1.2 updates:
+ *  - based now on OVMS configuration to store user token, car model and url
+ *  - review messages sent during charge
+ *  - send a message when vehicle is on before moving to update abrp
  *
  * Version 1.1 fix and update:
  *  - fixed the utc refreshing issue
@@ -41,16 +46,49 @@
  *   objTimer : timer object
  */
 
-  const CAR_MODEL = "kia:niro:19:64:other";
+  const CAR_MODEL = "@@:@@:@@:@@:@@";
   const OVMS_API_KEY = "32b2162f-9599-4647-8139-66e9f9528370";
   const MY_TOKEN = "@@@@@@@@-@@@@-@@@@-@@@@-@@@@@@@@@@@@";
   const TIMER_INTERVAL = "ticker.60";                         // every minute
-  const URL = "http://api.iternio.com/1/tlm/send";
+  const EVENT_MOTORS_ON = "vehicle.on";
+  const URL = "http://@@@@.@@@/@@";
   const CR = '\n';
 
   var objTLM;
-  var objTimer;
-  var sHasChanged;
+  var objTimer, objEvent;
+  var sHasChanged = "";
+  var bMotorsOn = false;
+
+  var abrp_cfg = {
+    "url": URL,                     // abrp api url (by default, URL)
+    "user_token": MY_TOKEN,         // token (by default, MY_TOKEN)
+    "car_model": CAR_MODEL          // car model (by defeult, CAR_MODEL)
+  };
+
+  // check if json object is empty
+  function isJsonEmpty(obj) {
+    for(var key in obj) {
+      if(obj.hasOwnProperty(key))
+        return false;
+      }
+    return true;
+  }
+
+  // Read & process config:
+  function readConfig() {
+    // check if config exist
+    var read_cfg = OvmsConfig.GetValues("usr", "abrp.");
+    print(JSON.stringify(read_cfg) + CR);
+    if (isJsonEmpty(read_cfg) == true) {
+      // no config yet, set the default values
+      OvmsConfig.SetValues("usr","abrp.",abrp_cfg);
+    } else {
+      // config existing
+      abrp_cfg.url = read_cfg.url;
+      abrp_cfg.user_token = read_cfg.user_token;
+      abrp_cfg.car_model = read_cfg.car_model;
+    }
+  }
 
   // Make json telemetry object
   function InitTelemetryObj() {
@@ -59,7 +97,7 @@
       "soc": 0,
       "soh": 0,
       "speed": 0,
-      "car_model": CAR_MODEL,
+      "car_model": abrp_cfg.car_model,
       "lat": 0,
       "lon": 0,
       "alt": 0,
@@ -81,6 +119,11 @@
 
     sHasChanged = "";
 
+    if (bMotorsOn) {
+      sHasChanged = "_MOTORS-ON";
+      bMotorsOn = false;
+    }
+
     read_num = Number(OvmsMetrics.Value("v.b.soc"));
     if (myJSON.soc != read_num) {
       myJSON.soc = read_num;
@@ -95,7 +138,7 @@
 
     if ( (myJSON.soh + myJSON.soc) == 0 ) {
       // Sometimes the canbus is not readable, and abrp doesn't like 0 values
-      print("canbus not readable: reset module and then put motors on");
+      print("canbus not readable: reset module and then put motors on" + CR);
       return false;
     }
 
@@ -118,7 +161,7 @@
 
     read_num = Number(OvmsMetrics.Value("v.p.altitude"));
     read_num = read_num.toFixed();
-    if ( (myJSON.alt > (read_num-3)) && (myJSON.alt < (read_num+3)) ) {
+    if ( (myJSON.alt > (read_num-2)) && (myJSON.alt < (read_num+2)) ) {
       myJSON.alt = read_num;
       sHasChanged += "_ALT:" + myJSON.alt + "m";
     }
@@ -135,12 +178,21 @@
     myJSON.utc = Math.trunc(Date.now()/1000);
     //myJSON.utc = OvmsMetrics.Value("m.time.utc");
 
-    read_bool = Boolean(OvmsMetrics.Value("v.c.charging"));
-    if (read_bool == true) {
+    // read_bool = Boolean(OvmsMetrics.Value("v.c.charging"));
+    // v.c.charging is also on when regen => not wanted here
+    read_str = OvmsMetrics.Value("v.c.state");
+    if ( (read_str == "charging") || (read_str == "topoff") ) {
       myJSON.is_charging = 1;
+      read_str = OvmsMetrics.Value("v.c.mode");
+      if (sHasChanged != "") {
+        sHasChanged += "_CHRG:" + read_str + "(" + OvmsMetrics.Value("v.c.charging") + ")";
+        print("Charging in mode " + read_str + CR);
+      }
     } else {
       myJSON.is_charging = 0;
     }
+
+    myJSON.car_model = abrp_cfg.car_model;
 
     return (sHasChanged != "");
   }
@@ -192,11 +244,11 @@
 
   // Return full url with JSON telemetry object
   function GetUrlABRP() {
-    var urljson = URL;
+    var urljson = abrp_cfg.url;
     urljson += "?";
     urljson += "api_key=" + OVMS_API_KEY;
     urljson += "&";
-    urljson += "token=" + MY_TOKEN;
+    urljson += "token=" + abrp_cfg.user_token;
     urljson += "&";
     urljson += "tlm=" + encodeURIComponent(JSON.stringify(objTLM));
     print(urljson + CR);
@@ -219,18 +271,27 @@
     }
   }
 
+  function Reactivate_MotorsOn() {
+    bMotorsOn = true;
+    SendLiveData();
+  }
+
   function InitTimer() {
     objTimer = PubSub.subscribe(TIMER_INTERVAL, SendLiveData);
+    objEvent = PubSub.subscribe(EVENT_MOTORS_ON, SendLiveData);
   }
 
   function CloseTimer() {
+    PubSub.unsubscribe(objEvent);
     PubSub.unsubscribe(objTimer);
+    objEvent = null;
     objTimer = null;
   }
 
   // API method abrp.onetime():
   //   Read and send data, but only once, no timer launched
   exports.onetime = function() {
+    readConfig();
     InitTelemetry();
     SendLiveData();
     CloseTelemetry();
@@ -239,6 +300,7 @@
   // API method abrp.info():
   //   Do not send any data, just read vehicle data and writes in the console
   exports.info = function() {
+    readConfig();
     InitTelemetry();
     UpdateTelemetry();
     CloseTelemetry();
@@ -248,6 +310,7 @@
   //   Checks every minut if important data has changed, and send it
   exports.send = function(onoff) {
     if (onoff) {
+      readConfig();
       if (objTimer != null) {
         print("Already running !" + CR);
         return;
