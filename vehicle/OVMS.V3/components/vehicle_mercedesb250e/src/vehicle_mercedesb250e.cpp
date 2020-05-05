@@ -3,7 +3,7 @@
 ;    Date:          4th May 2020
 ;
 ;    Changes:
-;    1.0  Initial release
+;    0.1  Initial release
 ;
 ;    (C) 2020       Jarkko Ruoho
 ;
@@ -38,10 +38,9 @@
 #include "ovms_log.h"
 static const char *TAG = "v-mercedesb250e";
 
-#define VERSION "1.0.0"
+#define VERSION "0.1.0"
 
 #include <stdio.h>
-#include "metrics_standard.h"
 #include "ovms_metrics.h"
 
 
@@ -121,14 +120,14 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
     {
       StandardMetrics.ms_v_bat_power->SetValue(d[4]-100); // kW 
       break;
-    }	
-    
+    }	    
   case 0x34E:  // Distance Today , Distance since reset, scale is 0.1 km
     {
       float trip_start = (float)d[1] * 256 + (float)d[0];
       float trip_reset = (float)d[3] * 256 + (float)d[2];
-      mt_mb_trip_start->SetValue((float)trip_start * 0.1);
-      mt_mb_trip_reset->SetValue((float)trip_reset * 0.1);
+      mt_mb_trip_start->SetValue(trip_start * 0.1);
+      mt_mb_trip_reset->SetValue(trip_reset * 0.1);
+    }      
   case 0x34F: // Range
     {
       StandardMetrics.ms_v_bat_range_est->SetValue((float)d[7]); // Car's estimate on remainging range
@@ -154,3 +153,4 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
     break;
   }  
 }
+
