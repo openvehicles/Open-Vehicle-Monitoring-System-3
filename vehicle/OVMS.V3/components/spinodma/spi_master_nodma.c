@@ -76,6 +76,7 @@ Main driver's function is 'spi_nodma_transfer_data()'
 #include "freertos/ringbuf.h"
 #include "soc/soc.h"
 #include "soc/dport_reg.h"
+#include "soc/spi_periph.h"
 #include "soc/uart_struct.h"
 #include "driver/uart.h"
 #include "driver/gpio.h"
@@ -96,32 +97,6 @@ static const char *SPI_TAG = "spi_nodma_master";
     }
 
 /*
- Stores a bunch of per-spi-peripheral data.
-*/
-typedef struct {
-    const uint8_t spiclk_out;       //GPIO mux output signals
-    const uint8_t spid_out;
-    const uint8_t spiq_out;
-    const uint8_t spiwp_out;
-    const uint8_t spihd_out;
-    const uint8_t spid_in;          //GPIO mux input signals
-    const uint8_t spiq_in;
-    const uint8_t spiwp_in;
-    const uint8_t spihd_in;
-    const uint8_t spics_out[3];     // /CS GPIO output mux signals
-    const uint8_t spiclk_native;    //IO pins of IO_MUX muxed signals
-    const uint8_t spid_native;
-    const uint8_t spiq_native;
-    const uint8_t spiwp_native;
-    const uint8_t spihd_native;
-    const uint8_t spics0_native;
-    const uint8_t irq;              //irq source for interrupt mux
-    const uint8_t irq_dma;          //dma irq source for interrupt mux
-    const periph_module_t module;   //peripheral module, for enabling clock etc
-    spi_dev_t *hw;                  //Pointer to the hardware registers
-} spi_signal_conn_t;
-
-/*
  Bunch of constants for every SPI peripheral: GPIO signals, irqs, hw addr of registers etc
 */
 static const spi_signal_conn_t io_signal[3]={
@@ -136,12 +111,12 @@ static const spi_signal_conn_t io_signal[3]={
         .spiwp_in=SPIWP_IN_IDX,
         .spihd_in=SPIHD_IN_IDX,
         .spics_out={SPICS0_OUT_IDX, SPICS1_OUT_IDX, SPICS2_OUT_IDX},
-        .spiclk_native=6,
-        .spid_native=8,
-        .spiq_native=7,
-        .spiwp_native=10,
-        .spihd_native=9,
-        .spics0_native=11,
+        .spiclk_iomux_pin=6,
+        .spid_iomux_pin=8,
+        .spiq_iomux_pin=7,
+        .spiwp_iomux_pin=10,
+        .spihd_iomux_pin=9,
+        .spics0_iomux_pin=11,
         .irq=ETS_SPI1_INTR_SOURCE,
         .irq_dma=ETS_SPI1_DMA_INTR_SOURCE,
         .module=PERIPH_SPI_MODULE,
@@ -157,12 +132,12 @@ static const spi_signal_conn_t io_signal[3]={
         .spiwp_in=HSPIWP_IN_IDX,
         .spihd_in=HSPIHD_IN_IDX,
         .spics_out={HSPICS0_OUT_IDX, HSPICS1_OUT_IDX, HSPICS2_OUT_IDX},
-        .spiclk_native=14,
-        .spid_native=13,
-        .spiq_native=12,
-        .spiwp_native=2,
-        .spihd_native=4,
-        .spics0_native=15,
+        .spiclk_iomux_pin=14,
+        .spid_iomux_pin=13,
+        .spiq_iomux_pin=12,
+        .spiwp_iomux_pin=2,
+        .spihd_iomux_pin=4,
+        .spics0_iomux_pin=15,
         .irq=ETS_SPI2_INTR_SOURCE,
         .irq_dma=ETS_SPI2_DMA_INTR_SOURCE,
         .module=PERIPH_HSPI_MODULE,
@@ -178,12 +153,12 @@ static const spi_signal_conn_t io_signal[3]={
         .spiwp_in=VSPIWP_IN_IDX,
         .spihd_in=VSPIHD_IN_IDX,
         .spics_out={VSPICS0_OUT_IDX, VSPICS1_OUT_IDX, VSPICS2_OUT_IDX},
-        .spiclk_native=18,
-        .spid_native=23,
-        .spiq_native=19,
-        .spiwp_native=22,
-        .spihd_native=21,
-        .spics0_native=5,
+        .spiclk_iomux_pin=18,
+        .spid_iomux_pin=23,
+        .spiq_iomux_pin=19,
+        .spiwp_iomux_pin=22,
+        .spihd_iomux_pin=21,
+        .spics0_iomux_pin=5,
         .irq=ETS_SPI3_INTR_SOURCE,
         .irq_dma=ETS_SPI3_DMA_INTR_SOURCE,
         .module=PERIPH_VSPI_MODULE,
@@ -230,11 +205,11 @@ static esp_err_t spi_nodma_bus_initialize(spi_nodma_host_device_t host, spi_nodm
     memcpy(&spihost[host]->cur_bus_config, bus_config, sizeof(spi_nodma_bus_config_t));
 
     //Check if the selected pins correspond to the native pins of the peripheral
-    if (bus_config->mosi_io_num >= 0 && bus_config->mosi_io_num!=io_signal[host].spid_native) native=false;
-    if (bus_config->miso_io_num >= 0 && bus_config->miso_io_num!=io_signal[host].spiq_native) native=false;
-    if (bus_config->sclk_io_num >= 0 && bus_config->sclk_io_num!=io_signal[host].spiclk_native) native=false;
-    if (bus_config->quadwp_io_num >= 0 && bus_config->quadwp_io_num!=io_signal[host].spiwp_native) native=false;
-    if (bus_config->quadhd_io_num >= 0 && bus_config->quadhd_io_num!=io_signal[host].spihd_native) native=false;
+    if (bus_config->mosi_io_num >= 0 && bus_config->mosi_io_num!=io_signal[host].spid_iomux_pin) native=false;
+    if (bus_config->miso_io_num >= 0 && bus_config->miso_io_num!=io_signal[host].spiq_iomux_pin) native=false;
+    if (bus_config->sclk_io_num >= 0 && bus_config->sclk_io_num!=io_signal[host].spiclk_iomux_pin) native=false;
+    if (bus_config->quadwp_io_num >= 0 && bus_config->quadwp_io_num!=io_signal[host].spiwp_iomux_pin) native=false;
+    if (bus_config->quadhd_io_num >= 0 && bus_config->quadhd_io_num!=io_signal[host].spihd_iomux_pin) native=false;
 
     spihost[host]->no_gpio_matrix=native;
     if (native) {
@@ -394,7 +369,7 @@ esp_err_t spi_nodma_bus_add_device(spi_nodma_host_device_t host, spi_nodma_bus_c
 
     //Set CS pin, CS options
     if (dev_config->spics_io_num > 0) {
-        if (spihost[host]->no_gpio_matrix &&dev_config->spics_io_num == io_signal[host].spics0_native && freecs==0) {
+        if (spihost[host]->no_gpio_matrix &&dev_config->spics_io_num == io_signal[host].spics0_iomux_pin && freecs==0) {
             //Again, the cs0s for all SPI peripherals map to pin mux source 1, so we use that instead of a define.
             PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[dev_config->spics_io_num], 1);
         } else {
@@ -1006,9 +981,9 @@ bool spi_nodma_uses_native_pins(spi_nodma_device_handle_t handle)
 //--------------------------------------------------------------------
 void spi_nodma_get_native_pins(int host, int *sdi, int *sdo, int *sck)
 {
-	*sdo = io_signal[host].spid_native;
-	*sdi = io_signal[host].spiq_native;
-	*sck = io_signal[host].spiclk_native;
+	*sdo = io_signal[host].spid_iomux_pin;
+	*sdi = io_signal[host].spiq_iomux_pin;
+	*sck = io_signal[host].spiclk_iomux_pin;
 }
 
 /*
