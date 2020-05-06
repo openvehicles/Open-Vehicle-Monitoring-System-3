@@ -471,7 +471,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     {
     if (m_validate && argc >= m_min)
       {
-      int used = m_validate(writer, this, argc, argv, false);
+      int used = m_validate(writer, this, argc > m_max ? m_max : argc, argv, false);
       if (used < 0)
         {
         if (argc > 0 && strcmp(argv[argc-1],"?") != 0)
