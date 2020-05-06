@@ -119,6 +119,14 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_bat_12v_voltage->SetValue(d[1]*0.1); // Volts
       break;
     }	
+  case 0x2FF: // TPMS
+    {
+      StandardMetrics.ms_v_tpms_fl_p->SetValue((float)d[3]*2.5); // Volts
+      StandardMetrics.ms_v_tpms_fr_p->SetValue((float)d[4]*2.5); // Volts
+      StandardMetrics.ms_v_tpms_rl_p->SetValue((float)d[5]*2.5); // Volts
+      StandardMetrics.ms_v_tpms_rr_p->SetValue((float)d[6]*2.5); // Volts
+      break;
+    }	
   case 0x33D: // Momentary power
     {
       float power = d[4]-100; // Percents, +/- 100
