@@ -50,13 +50,16 @@ OvmsVehicleMercedesB250e::OvmsVehicleMercedesB250e()
 {
   ESP_LOGI(TAG, "Start Mercedes-Benz B250E vehicle module");
 
-  mt_mb_trip_reset         = MyMetrics.InitFloat("xmb.v.display.trip.reset", SM_STALE_MIN, 0, Kilometers);
-  mt_mb_trip_start         = MyMetrics.InitFloat("xmb.v.display.trip.start", SM_STALE_MIN, 0, Kilometers);
-  mt_mb_eco_accel          = MyMetrics.InitFloat("xmb.v.display.accel", SM_STALE_MIN, 0, Percentage);
-  mt_mb_eco_const          = MyMetrics.InitFloat("xmb.v.display.const", SM_STALE_MIN, 0, Percentage);
-  mt_mb_eco_coast          = MyMetrics.InitFloat("xmb.v.display.coast", SM_STALE_MIN, 0, Percentage);
-  mt_mb_eco_score          = MyMetrics.InitFloat("xmb.v.display.ecoscore", SM_STALE_MIN, 0, Percentage);
-
+  mt_mb_trip_reset     = MyMetrics.InitFloat("xmb.v.display.trip.reset", SM_STALE_MIN, 0, Kilometers);
+  mt_mb_trip_start     = MyMetrics.InitFloat("xmb.v.display.trip.start", SM_STALE_MIN, 0, Kilometers);
+  mt_mb_eco_accel      = MyMetrics.InitFloat("xmb.v.display.accel", SM_STALE_MIN, 0, Percentage);
+  mt_mb_eco_const      = MyMetrics.InitFloat("xmb.v.display.const", SM_STALE_MIN, 0, Percentage);
+  mt_mb_eco_coast      = MyMetrics.InitFloat("xmb.v.display.coast", SM_STALE_MIN, 0, Percentage);
+  mt_mb_eco_score      = MyMetrics.InitFloat("xmb.v.display.ecoscore", SM_STALE_MIN, 0, Percentage);
+  mt_mb_fl_speed       = MyMetrics.InitFloat("xmb.v.fl_speed", SM_STALE_MIN, 0, Kph);
+  mt_mb_fr_speed       = MyMetrics.InitFloat("xmb.v.fr_speed", SM_STALE_MIN, 0, Kph);
+  mt_mb_rl_speed       = MyMetrics.InitFloat("xmb.v.rl_speed", SM_STALE_MIN, 0, Kph);
+  mt_mb_rr_speed       = MyMetrics.InitFloat("xmb.v.rr_speed", SM_STALE_MIN, 0, Kph);
   
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 }
@@ -105,10 +108,10 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
       float fr_speed = ( ((d[2]&0xf) << 8) + d[3] ) * 0.0603504; 
       float rl_speed = ( ((d[4]&0xf) << 8) + d[5] ) * 0.0603504; 
       float rr_speed = ( ((d[5]&0xf) << 8) + d[7] ) * 0.0603504; 
-      // Don't post it, as wheels may be spinning. 0x19F is the correct MsgID for speed
-      // StandardMetrics.ms_v_pos_speed->SetValue(fl_speed); // 
-      ESP_LOGD(TAG, "Speeds: FL %3d, FR %3d, RL %3d, RR %3d",
-	       (int)fl_speed, (int)fr_speed, (int)rl_speed, (int)rr_speed);
+      mt_mb_fl_speed->SetValue(fl_speed); // km/h alread
+      mt_mb_fr_speed->SetValue(fr_speed); // km/h alread
+      mt_mb_rl_speed->SetValue(rl_speed); // km/h alread
+      mt_mb_rr_speed->SetValue(rr_speed); // km/h alread
       break;
     }
   case 0x205: // 12V battery voltage
@@ -119,11 +122,10 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
   case 0x33D: // Momentary power
     {
       float power = d[4]-100; // Percents, +/- 100
-      if (power > 0) 
-	power *= 1.32; // 132 is the total power promised by manufacturer
-      else
-	power *= 0.5; // I just guess that maximum recuperation would be 50kW, probably less	
-      StandardMetrics.ms_v_bat_power->SetValue(d[4]-100); // kW 
+      power *= 1.32; // 132 is the total power promised by manufacturer
+      if (power < -50) 
+	power = -50; // I just guess that maximum recuperation would be 50kW, probably less
+      StandardMetrics.ms_v_bat_power->SetValue(power); // kW 
       break;
     }	    
   case 0x34E:  // Distance Today , Distance since reset, scale is 0.1 km
@@ -150,8 +152,6 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
 	mt_mb_eco_const->SetValue((float)d[1] * 0.5);
 	mt_mb_eco_coast->SetValue((float)d[2] * 0.5);
 	mt_mb_eco_score->SetValue((float)d[3] * 0.5);
-	ESP_LOGD(TAG, "ECO from %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
-		 p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       }
       break;
     }
