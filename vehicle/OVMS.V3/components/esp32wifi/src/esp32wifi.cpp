@@ -417,7 +417,7 @@ void esp32wifi::SetPowerMode(PowerMode powermode)
       break;
     case Sleep:
       if (!m_poweredup) PowerUp();
-      esp_wifi_set_ps(WIFI_PS_MODEM);
+      esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
       break;
     case DeepSleep:
       if (!m_poweredup) PowerUp();
