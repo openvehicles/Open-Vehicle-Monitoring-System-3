@@ -50,16 +50,17 @@ OvmsVehicleMercedesB250e::OvmsVehicleMercedesB250e()
 {
   ESP_LOGI(TAG, "Start Mercedes-Benz B250E vehicle module");
 
-  mt_mb_trip_reset     = MyMetrics.InitFloat("xmb.v.display.trip.reset", SM_STALE_MIN, 0, Kilometers);
-  mt_mb_trip_start     = MyMetrics.InitFloat("xmb.v.display.trip.start", SM_STALE_MIN, 0, Kilometers);
-  mt_mb_eco_accel      = MyMetrics.InitFloat("xmb.v.display.accel", SM_STALE_MIN, 0, Percentage);
-  mt_mb_eco_const      = MyMetrics.InitFloat("xmb.v.display.const", SM_STALE_MIN, 0, Percentage);
-  mt_mb_eco_coast      = MyMetrics.InitFloat("xmb.v.display.coast", SM_STALE_MIN, 0, Percentage);
-  mt_mb_eco_score      = MyMetrics.InitFloat("xmb.v.display.ecoscore", SM_STALE_MIN, 0, Percentage);
-  mt_mb_fl_speed       = MyMetrics.InitFloat("xmb.v.fl_speed", SM_STALE_MIN, 0, Kph);
-  mt_mb_fr_speed       = MyMetrics.InitFloat("xmb.v.fr_speed", SM_STALE_MIN, 0, Kph);
-  mt_mb_rl_speed       = MyMetrics.InitFloat("xmb.v.rl_speed", SM_STALE_MIN, 0, Kph);
-  mt_mb_rr_speed       = MyMetrics.InitFloat("xmb.v.rr_speed", SM_STALE_MIN, 0, Kph);
+  mt_mb_trip_reset        = MyMetrics.InitFloat("xmb.v.display.trip.reset", SM_STALE_MIN, 0, Kilometers);
+  mt_mb_trip_start        = MyMetrics.InitFloat("xmb.v.display.trip.start", SM_STALE_MIN, 0, Kilometers);
+  mt_mb_consumption_start = MyMetrics.InitFloat("xmb.v.display.consumption.start", SM_STALE_MIN, 0, kWh);
+  mt_mb_eco_accel         = MyMetrics.InitFloat("xmb.v.display.accel", SM_STALE_MIN, 0, Percentage);
+  mt_mb_eco_const         = MyMetrics.InitFloat("xmb.v.display.const", SM_STALE_MIN, 0, Percentage);
+  mt_mb_eco_coast         = MyMetrics.InitFloat("xmb.v.display.coast", SM_STALE_MIN, 0, Percentage);
+  mt_mb_eco_score         = MyMetrics.InitFloat("xmb.v.display.ecoscore", SM_STALE_MIN, 0, Percentage);
+  mt_mb_fl_speed          = MyMetrics.InitFloat("xmb.v.fl_speed", SM_STALE_MIN, 0, Kph);
+  mt_mb_fr_speed          = MyMetrics.InitFloat("xmb.v.fr_speed", SM_STALE_MIN, 0, Kph);
+  mt_mb_rl_speed          = MyMetrics.InitFloat("xmb.v.rl_speed", SM_STALE_MIN, 0, Kph);
+  mt_mb_rr_speed          = MyMetrics.InitFloat("xmb.v.rr_speed", SM_STALE_MIN, 0, Kph);
   
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 }
@@ -150,7 +151,15 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
          this until a better value is found */
       float range_est   = (float)(d[6]&0x7)*256 + (float)d[7]; // Car's estimate on remainging range
       StandardMetrics.ms_v_bat_range_est->SetValue(range_est); // km
-      StandardMetrics.ms_v_bat_consumption->SetValue(consumption); // Wh/km
+      mt_mb_consumption_start->SetValue(consumption);
+      break;
+    }
+  case 0x3eb: // Range
+    {
+      float consumption = (float)(d[0])*256 + (float)d[1];
+      if (d[0] < 255) { // Update only with feasible results
+	StandardMetrics.ms_v_bat_consumption->SetValue(consumption); // Wh/km
+      }
       break;
     }
   case 0x3F2: //Eco display
