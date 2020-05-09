@@ -158,7 +158,7 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
     {
       float consumption = (float)(d[0])*256 + (float)d[1];
       if (d[0] < 255) { // Update only with feasible results
-	StandardMetrics.ms_v_bat_consumption->SetValue(consumption); // Wh/km
+	StandardMetrics.ms_v_bat_consumption->SetValue(consumption*0.1); // Wh/km
       }
       break;
     }
