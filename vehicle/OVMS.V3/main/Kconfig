@@ -378,6 +378,20 @@ config OVMS_VEHICLE_MERCEDESB250E
     help
         Enable to include support for Mercedes-Benz B250E (W242) vehicle.
 
+config OVMS_VEHICLE_CADILLAC_C2_CTS
+    bool "Include support for Cadillac 2nd gen CTS vehicle"
+    default n
+    depends on OVMS
+    help
+        Enable to include support for Cadillac 2nd gen CTS vehicle.
+
+config OVMS_VEHICLE_CHEVROLET_C6_CORVETTE
+    bool "Include support for Chevrolet C6 Corvette vehicle"
+    default n
+    depends on OVMS
+    help
+        Enable to include support for Chevrolet C6 Corvette vehicle.
+
 config OVMS_VEHICLE_RXTASK_STACK
     int "Stack size for vehicle RX task"
     default 6144
