@@ -13,7 +13,8 @@ ms_v_bat_12v_voltage          Resolution of 0.1 V
 ms_v_bat_power                Car reports percents, so the kW is just calculated by multiplying by 132 kW. Negative side is saturated to -50 kW. This is just guess work..
 ms_v_bat_range_est
 ms_v_bat_consumption          Instantious consumption, Wh/km
-ms_v_tpms_*_p                 
+ms_v_tpms_*_p
+ms_v_env_cabinsetpoint        There are two figures, left and right. Using just one for now.
 ============================= ============================================
 
 

@@ -117,7 +117,15 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
   case 0x205: // 12V battery voltage
     {
-      StandardMetrics.ms_v_bat_12v_voltage->SetValue(d[1]*0.1); // Volts
+      StandardMetrics.ms_v_bat_12v_voltage->SetValue((float)d[1]*0.1); // Volts
+      break;
+    }	
+  case 0x20B: // HVAC
+    {
+      StandardMetrics.ms_v_env_cabinsetpoint->SetValue((float)d[0]*0.1+10); // deg C
+      // d[1] is right side set temp
+      // d[4] ls nible, could be ms_v_env_cabinfan
+      // d[5] contain ms_v_env_cooling and heating, possibly separated for drive and park      
       break;
     }	
   case 0x2FF: // TPMS
