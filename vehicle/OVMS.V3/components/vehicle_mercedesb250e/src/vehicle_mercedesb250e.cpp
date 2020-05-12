@@ -52,7 +52,7 @@ OvmsVehicleMercedesB250e::OvmsVehicleMercedesB250e()
 
   mt_mb_trip_reset        = MyMetrics.InitFloat("xmb.v.display.trip.reset", SM_STALE_MIN, 0, Kilometers);
   mt_mb_trip_start        = MyMetrics.InitFloat("xmb.v.display.trip.start", SM_STALE_MIN, 0, Kilometers);
-  mt_mb_consumption_start = MyMetrics.InitFloat("xmb.v.display.consumption.start", SM_STALE_MIN, 0, kWh);
+  mt_mb_consumption_start = MyMetrics.InitFloat("xmb.v.display.consumption.start", SM_STALE_MIN, 0, WattHoursPK);
   mt_mb_eco_accel         = MyMetrics.InitFloat("xmb.v.display.accel", SM_STALE_MIN, 0, Percentage);
   mt_mb_eco_const         = MyMetrics.InitFloat("xmb.v.display.const", SM_STALE_MIN, 0, Percentage);
   mt_mb_eco_coast         = MyMetrics.InitFloat("xmb.v.display.coast", SM_STALE_MIN, 0, Percentage);
@@ -130,10 +130,14 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
     }	
   case 0x2FF: // TPMS
     {
-      StandardMetrics.ms_v_tpms_fl_p->SetValue((float)d[3]*2.5); // Volts
-      StandardMetrics.ms_v_tpms_fr_p->SetValue((float)d[4]*2.5); // Volts
-      StandardMetrics.ms_v_tpms_rl_p->SetValue((float)d[5]*2.5); // Volts
-      StandardMetrics.ms_v_tpms_rr_p->SetValue((float)d[6]*2.5); // Volts
+      if (d[3] < 255)
+	StandardMetrics.ms_v_tpms_fl_p->SetValue((float)d[3]*2.5); // Volts
+      if (d[4] < 255)
+	StandardMetrics.ms_v_tpms_fr_p->SetValue((float)d[4]*2.5); // Volts
+      if (d[5] < 255)
+	StandardMetrics.ms_v_tpms_rl_p->SetValue((float)d[5]*2.5); // Volts
+      if (d[6] < 255)
+	StandardMetrics.ms_v_tpms_rr_p->SetValue((float)d[6]*2.5); // Volts
       break;
     }	
   case 0x33D: // Momentary power
@@ -147,8 +151,8 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
     }	    
   case 0x34E:  // Distance Today , Distance since reset, scale is 0.1 km
     {
-      float trip_start = (float)d[1] * 256 + (float)d[0];
-      float trip_reset = (float)d[3] * 256 + (float)d[2];
+      float trip_start =  (float)d[0] * 256 * 256 + (float)d[1] * 256 + (float)d[2];
+      float trip_reset = (float)d[3] * 256 * 256 + (float)d[4] * 256 + (float)d[5];
       mt_mb_trip_start->SetValue(trip_start * 0.1);
       mt_mb_trip_reset->SetValue(trip_reset * 0.1);
     }      
@@ -162,7 +166,7 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
       mt_mb_consumption_start->SetValue(consumption);
       break;
     }
-  case 0x3eb: // Range
+  case 0x3eb: 
     {
       float consumption = (float)(d[0])*256 + (float)d[1];
       if (d[0] < 255) { // Update only with feasible results
