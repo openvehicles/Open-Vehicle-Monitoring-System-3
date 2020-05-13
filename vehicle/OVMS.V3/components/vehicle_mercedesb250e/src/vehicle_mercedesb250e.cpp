@@ -145,23 +145,25 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
       float power = d[4]-100; // Percents, +/- 100
       power *= 1.32; // 132 is the total power promised by manufacturer
       if (power < -50) 
-	power = -50; // I just guess that maximum recuperation would be 50kW, probably less
+        power = -50; // I just guess that maximum recuperation would be 50kW, probably less
       StandardMetrics.ms_v_bat_power->SetValue(power); // kW 
       break;
     }	    
   case 0x34E:  // Distance Today , Distance since reset, scale is 0.1 km
-    {
-      float trip_start =  (float)d[0] * 256 * 256 + (float)d[1] * 256 + (float)d[2];
-      float trip_reset = (float)d[3] * 256 * 256 + (float)d[4] * 256 + (float)d[5];
-      mt_mb_trip_start->SetValue(trip_start * 0.1);
-      mt_mb_trip_reset->SetValue(trip_reset * 0.1);
+    { 
+      int trip_start = d[0] * 256 * 256 + d[1] * 256 + d[2];
+      int trip_reset = d[3] * 256 * 256 + d[4] * 256 + d[5];
+      if (trip_start < 0xfffffe) // for some reason undefined value here is 0xfffffe
+	mt_mb_trip_start->SetValue(trip_start * 0.1); 
+      if (trip_reset < 0xfffffe) 
+        mt_mb_trip_reset->SetValue(trip_reset * 0.1);
     }      
   case 0x34F: // Range
     {
       float consumption = (float)(d[0]&0x7)*256 + (float)d[1];
       /* Consumption is really an average over trip_start distance. But we'll have to use
          this until a better value is found */
-      int range  = (int)(d[6]&0x7)*256 + (int)d[7]; // Car's estimate on remainging range
+      int range  = (d[6]&0x7)*256 + d[7]; // Car's estimate on remainging range
       if (range < 2047)
 	StandardMetrics.ms_v_bat_range_est->SetValue((float)range); // km
       mt_mb_consumption_start->SetValue(consumption);
