@@ -131,13 +131,13 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
   case 0x2FF: // TPMS
     {
       if (d[3] < 255)
-	StandardMetrics.ms_v_tpms_fl_p->SetValue((float)d[3]*2.5); // Volts
+	StandardMetrics.ms_v_tpms_fl_p->SetValue((float)d[3]*2.5); // KPa
       if (d[4] < 255)
-	StandardMetrics.ms_v_tpms_fr_p->SetValue((float)d[4]*2.5); // Volts
+	StandardMetrics.ms_v_tpms_fr_p->SetValue((float)d[4]*2.5); // KPa
       if (d[5] < 255)
-	StandardMetrics.ms_v_tpms_rl_p->SetValue((float)d[5]*2.5); // Volts
+	StandardMetrics.ms_v_tpms_rl_p->SetValue((float)d[5]*2.5); // KPa
       if (d[6] < 255)
-	StandardMetrics.ms_v_tpms_rr_p->SetValue((float)d[6]*2.5); // Volts
+	StandardMetrics.ms_v_tpms_rr_p->SetValue((float)d[6]*2.5); // KPa
       break;
     }	
   case 0x33D: // Momentary power
@@ -161,8 +161,9 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
       float consumption = (float)(d[0]&0x7)*256 + (float)d[1];
       /* Consumption is really an average over trip_start distance. But we'll have to use
          this until a better value is found */
-      float range_est   = (float)(d[6]&0x7)*256 + (float)d[7]; // Car's estimate on remainging range
-      StandardMetrics.ms_v_bat_range_est->SetValue(range_est); // km
+      int range  = (int)(d[6]&0x7)*256 + (int)d[7]; // Car's estimate on remainging range
+      if (range < 2047)
+	StandardMetrics.ms_v_bat_range_est->SetValue((float)range); // km
       mt_mb_consumption_start->SetValue(consumption);
       break;
     }
