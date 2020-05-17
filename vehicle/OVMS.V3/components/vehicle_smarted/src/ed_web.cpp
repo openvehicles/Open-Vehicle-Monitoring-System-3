@@ -60,14 +60,14 @@ using namespace std;
 void OvmsVehicleSmartED::WebInit()
 {
   // vehicle menu:
-  MyWebServer.RegisterPage("/xse/features",   "Features",         WebCfgFeatures,                      PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/xse/battery",    "Battery config",   WebCfgBattery,                       PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xse/features",   "Features",          WebCfgFeatures,                      PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xse/battery",    "Battery config",    WebCfgBattery,                       PageMenu_Vehicle, PageAuth_Cookie);
   //MyWebServer.RegisterPage("/xse/brakelight", "Brake Light",      OvmsWebServer::HandleCfgBrakelight,  PageMenu_Vehicle, PageAuth_Cookie);
-  //MyWebServer.RegisterPage("/xse/cellmon",    "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/xse/eco",        "Eco Scores",       WebCfgEco,                           PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/xse/cellmon",    "BMS cell monitor", BmsCellMonitor,                      PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/xse/commands",   "Commands",         WebCfgCommands,                      PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/xse/notify",     "Notifys",          WebCfgNotify,                        PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xse/cellmon",    "BMS Cell Monitor",  WebCfgBmsCellMonitor,                PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xse/eco",        "Eco Scores",        WebCfgEco,                           PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xse/cellcapa",   "BMS Cell Capacity", WebCfgBmsCellCapacity,               PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xse/commands",   "Commands",          WebCfgCommands,                      PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xse/notify",     "Notifys",           WebCfgNotify,                        PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 /**
@@ -80,6 +80,7 @@ void OvmsVehicleSmartED::WebDeInit()
   MyWebServer.DeregisterPage("/xse/eco");
   //MyWebServer.DeregisterPage("/xse/brakelight");
   MyWebServer.DeregisterPage("/xse/cellmon");
+  MyWebServer.DeregisterPage("/xse/cellcapa");
   MyWebServer.DeregisterPage("/xse/commands");
   MyWebServer.DeregisterPage("/xse/notify");
 }
@@ -411,11 +412,11 @@ void OvmsVehicleSmartED::WebCfgNotify(PageEntry_t& p, PageContext_t& c)
 }
 
 /**
- * BmsCellMonitor: display cell voltages & temperatures & capacitys
+ * WebCfgBmsCellMonitor: display cell voltages & temperatures
  */
-void OvmsVehicleSmartED::BmsCellMonitor(PageEntry_t& p, PageContext_t& c)
+void OvmsVehicleSmartED::WebCfgBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
 {
-  float stemwidth_v = 0.5, stemwidth_c = 0.5, stemwidth_t = 0.5;
+  float stemwidth_v = 0.5, stemwidth_t = 0.5;
   float
     volt_warn_def=BMS_DEFTHR_VWARN, volt_alert_def=BMS_DEFTHR_VALERT,
     temp_warn_def=BMS_DEFTHR_TWARN, temp_alert_def=BMS_DEFTHR_TALERT;
@@ -428,7 +429,6 @@ void OvmsVehicleSmartED::BmsCellMonitor(PageEntry_t& p, PageContext_t& c)
     int readings_v = vehicle->BmsGetCellArangementVoltage();
     if (readings_v) {
       stemwidth_v   = 0.1 + 20.0 / readings_v;  // 14 → 1.5 … 96 → 0.3
-      stemwidth_c   = 0.1 + 20.0 / readings_v;
     }
     int readings_t = vehicle->BmsGetCellArangementTemperature();
     if (readings_t) {
@@ -494,7 +494,6 @@ void OvmsVehicleSmartED::BmsCellMonitor(PageEntry_t& p, PageContext_t& c)
         "<div class=\"row\">\n"
           "<div class=\"receiver\" id=\"livestatus\">\n"
             "<div id=\"voltchart\" style=\"width: 100%; max-width: 100%; height: 45vh; min-height: 280px; margin: 0 auto\"></div>\n"
-            "<div id=\"capachart\" style=\"width: 100%; max-width: 100%; height: 45vh; min-height: 280px; margin: 0 auto\"></div>\n"
             "<div id=\"tempchart\" style=\"width: 100%; max-width: 100%; height: 25vh; min-height: 160px; margin: 0 auto\"></div>\n"
           "</div>\n"
         "</div>\n"
@@ -502,6 +501,7 @@ void OvmsVehicleSmartED::BmsCellMonitor(PageEntry_t& p, PageContext_t& c)
       "<div class=\"panel-footer\">\n"
         "<button class=\"btn btn-default\" data-toggle=\"modal\" data-target=\"#cfg-dialog\">Alert config</button>\n"
         "<button class=\"btn btn-default\" data-cmd=\"bms reset\" data-target=\"#output\" data-watchcnt=\"0\">Reset min/max</button>\n"
+        "<button class=\"btn btn-default\" data-cmd=\"xse getvolts\" data-target=\"#output\" data-watchcnt=\"0\">Get Voltages</button>\n"
         "<samp id=\"output\" class=\"samp-inline\"></samp>\n"
       "</div>\n"
     "</div>\n"
@@ -668,36 +668,6 @@ void OvmsVehicleSmartED::BmsCellMonitor(PageEntry_t& p, PageContext_t& c)
       "stroke: #afff45;\n"
     "}\n"
     "\n"
-    "#capachart .highcharts-point.highcharts-color-0 {\n"
-      "fill: #3625c3;\n"
-      "fill-opacity: 0.1;\n"
-      "stroke: #3625c3;\n"
-    "}\n"
-    ".night #capachart .highcharts-point.highcharts-color-0 {\n"
-      "fill: #728def;\n"
-      "stroke: #728def;\n"
-    "}\n"
-    "\n"
-    "#capachart .highcharts-boxplot-stem {\n"
-      "fill: #63cc7a;\n"
-      "fill-opacity: 1;\n"
-      "stroke: #63cc7a;\n"
-      "stroke-opacity: 1;\n"
-    "}\n"
-    ".night #capachart .highcharts-boxplot-stem {\n"
-      "fill-opacity: 0.6;\n"
-      "stroke-opacity: 0.6;\n"
-    "}\n"
-    "\n"
-    "#capachart .highcharts-boxplot-median {\n"
-      "stroke: #193e07;\n"
-      "stroke-width: 5px;\n"
-      "stroke-linecap: round;\n"
-    "}\n"
-    ".night #capachart .highcharts-boxplot-median {\n"
-      "stroke: #afff45;\n"
-    "}\n"
-    "\n"
     "#tempchart .highcharts-point.highcharts-color-0 {\n"
       "fill: #3625c3;\n"
       "fill-opacity: 0.1;\n"
@@ -732,14 +702,11 @@ void OvmsVehicleSmartED::BmsCellMonitor(PageEntry_t& p, PageContext_t& c)
     "#voltchart .highcharts-boxplot-stem {\n"
       "stroke-width: %.1f%%;\n"
     "}\n"
-    "#capachart .highcharts-boxplot-stem {\n"
-      "stroke-width: %.1f%%;\n"
-    "}\n"
     "#tempchart .highcharts-boxplot-stem {\n"
       "stroke-width: %.1f%%;\n"
     "}\n"
     "</style>\n"
-    , stemwidth_v, stemwidth_c, stemwidth_t);
+    , stemwidth_v, stemwidth_t);
 
   c.print(
     "<script>\n"
@@ -756,17 +723,16 @@ void OvmsVehicleSmartED::BmsCellMonitor(PageEntry_t& p, PageContext_t& c)
       "var cnt = metrics[\"v.b.c.voltage\"] ? metrics[\"v.b.c.voltage\"].length : 0;\n"
       "if (cnt == 0)\n"
         "return data;\n"
-      "var i, act, min, max, devmax, dalert, dlow, dhigh, voffset;\n"
-      "voffset = metrics[\"xse.mybms.adc.volts.offset\"]/1000;\n"
-      "data.voltmean = metrics[\"v.b.p.voltage.avg\"]-voffset || 0;\n"
+      "var i, act, min, max, devmax, dalert, dlow, dhigh;\n"
+      "data.voltmean = metrics[\"v.b.p.voltage.avg\"] || 0;\n"
       "data.sdlo = data.voltmean - (metrics[\"v.b.p.voltage.stddev\"] || 0);\n"
       "data.sdhi = data.voltmean + (metrics[\"v.b.p.voltage.stddev\"] || 0);\n"
       "data.sdmaxlo = data.voltmean - (metrics[\"v.b.p.voltage.stddev.max\"] || 0);\n"
       "data.sdmaxhi = data.voltmean + (metrics[\"v.b.p.voltage.stddev.max\"] || 0);\n"
       "for (i=0; i<cnt; i++) {\n"
-        "act = metrics[\"v.b.c.voltage\"][i]-voffset;\n"
-        "min = metrics[\"v.b.c.voltage.min\"][i]-voffset || act;\n"
-        "max = metrics[\"v.b.c.voltage.max\"][i]-voffset || act;\n"
+        "act = metrics[\"v.b.c.voltage\"][i];\n"
+        "min = metrics[\"v.b.c.voltage.min\"][i] || act;\n"
+        "max = metrics[\"v.b.c.voltage.max\"][i] || act;\n"
         "devmax = metrics[\"v.b.c.voltage.dev.max\"][i] || 0;\n"
         "dalert = metrics[\"v.b.c.voltage.alert\"][i] || 0;\n"
         "if (devmax > 0) {\n"
@@ -882,144 +848,6 @@ void OvmsVehicleSmartED::BmsCellMonitor(PageEntry_t& p, PageContext_t& c)
         "}]\n"
       "});\n"
       "$('#voltchart').data('chart', voltchart).addClass('has-chart');"
-    "}\n"
-    "\n"
-    "/**\n"
-     "* Cell capacity chart\n"
-     "*/\n"
-    "\n"
-    "var capachart;\n"
-    "\n"
-    "// get_capa_data: build boxplot dataset from metrics\n"
-    "function get_capa_data() {\n"
-      "var data = { cells: [], capas: [], devmax: [], capamean: 0, sdlo: 0, sdhi: 0, sdmaxlo: 0, sdmaxhi: 0 };\n"
-      "var cnt = metrics[\"xse.v.b.c.capacity\"] ? metrics[\"xse.v.b.c.capacity\"].length : 0;\n"
-      "if (cnt == 0)\n"
-        "return data;\n"
-      "var i, act, min, max, devmax, dlow, dhigh;\n"
-      "data.capamean = metrics[\"xse.v.b.p.capacity.avg\"] || 0;\n"
-      "data.sdlo = data.capamean - (metrics[\"xse.v.b.p.capacity.stddev\"] || 0);\n"
-      "data.sdhi = data.capamean + (metrics[\"xse.v.b.p.capacity.stddev\"] || 0);\n"
-      "data.sdmaxlo = data.capamean - (metrics[\"xse.v.b.p.capacity.stddev.max\"] || 0);\n"
-      "data.sdmaxhi = data.capamean + (metrics[\"xse.v.b.p.capacity.stddev.max\"] || 0);\n"
-      "for (i=0; i<cnt; i++) {\n"
-        "act = metrics[\"xse.v.b.c.capacity\"][i];\n"
-        "min = metrics[\"xse.v.b.c.capacity.min\"][i] || act;\n"
-        "max = metrics[\"xse.v.b.c.capacity.max\"][i] || act;\n"
-        "devmax = metrics[\"xse.v.b.c.capacity.dev.max\"][i] || 0;\n"
-        "if (devmax > 0) {\n"
-          "dlow = data.capamean;\n"
-          "dhigh = data.capamean + devmax;\n"
-        "} else {\n"
-          "dlow = data.capamean + devmax;\n"
-          "dhigh = data.capamean;\n"
-        "}\n"
-        "data.cells.push(i+1);\n"
-        "data.capas.push([min,act,act,act,max]);\n"
-        "data.devmax.push({ x:i, low:dlow, high:dhigh,\n"
-            "id: ((devmax < 0) ? '▼ ' : '▲ ') + Math.abs(devmax).toFixed(0) + ' As/10' });\n"
-      "}\n"
-      "return data;\n"
-    "}\n"
-    "\n"
-    "function update_capa_chart() {\n"
-      "var data = get_capa_data();\n"
-      "capachart.xAxis[0].setCategories(data.cells);\n"
-      "capachart.yAxis[0].removePlotLine('plot-line-mean');\n"
-      "capachart.yAxis[0].addPlotLine({ id: 'plot-line-mean', className: 'plot-line-mean', value: data.capamean, zIndex: 3 });\n"
-      "capachart.yAxis[0].removePlotLine('plot-line-sdmaxlo');\n"
-      "capachart.yAxis[0].addPlotLine({ id: 'plot-line-sdmaxlo', className: 'plot-line-sdmaxlo', value: data.sdmaxlo, zIndex: 3 });\n"
-      "capachart.yAxis[0].removePlotLine('plot-line-sdmaxhi');\n"
-      "capachart.yAxis[0].addPlotLine({ id: 'plot-line-sdmaxhi', className: 'plot-line-sdmaxhi', value: data.sdmaxhi, zIndex: 3, label: { text: 'Max Std Dev' } });\n"
-      "capachart.yAxis[0].removePlotBand('plot-band-sd');\n"
-      "capachart.yAxis[0].addPlotBand({ id: 'plot-band-sd', className: 'plot-band-sd', from: data.sdlo, to: data.sdhi });\n"
-      "capachart.series[0].setData(data.capas);\n"
-      "capachart.series[1].setData(data.devmax);\n"
-    "}\n"
-    "\n"
-    "function init_capa_chart() {\n"
-      "var data = get_capa_data();\n"
-      "capachart = Highcharts.chart('capachart', {\n"
-        "chart: {\n"
-          "type: 'boxplot',\n"
-          "events: {\n"
-            "load: function () {\n"
-              "$('#livestatus').on(\"msg:metrics\", function(e, update){\n"
-                "if (update[\"xse.v.b.c.capacity\"] != null\n"
-                 "|| update[\"xse.v.b.c.capacity.min\"] != null\n"
-                 "|| update[\"xse.v.b.c.capacity.max\"] != null\n"
-                 "|| update[\"xse.v.b.c.capacity.dev.max\"] != null)\n"
-                  "update_capa_chart();\n"
-              "});\n"
-            "}\n"
-          "},\n"
-          "zoomType: 'y',\n"
-          "panning: true,\n"
-          "panKey: 'ctrl',\n"
-        "},\n"
-        "title: { text: null },\n"
-        "credits: { enabled: false },\n"
-        "legend: {\n"
-          "enabled: true,\n"
-          "align: 'center',\n"
-          "verticalAlign: 'bottom',\n"
-          "margin: 2,\n"
-          "padding: 2,\n"
-        "},\n"
-        "xAxis: { categories: data.cells },\n"
-        "yAxis: {\n"
-          "title: { text: null },\n"
-          "labels: { format: \"{value:.0f}As/10\" },\n"
-          "minTickInterval: 1,\n"
-          "minorTickInterval: 'auto',\n"
-          "plotLines: [\n"
-            "{ id: 'plot-line-mean', className: 'plot-line-mean', value: data.capamean, zIndex: 3 },\n"
-            "{ id: 'plot-line-sdmaxlo', className: 'plot-line-sdmaxlo', value: data.sdmaxlo, zIndex: 3 },\n"
-            "{ id: 'plot-line-sdmaxhi', className: 'plot-line-sdmaxhi', value: data.sdmaxhi, zIndex: 3, label: { text: 'Max Std Dev' } },\n"
-          "],\n"
-          "plotBands: [{ id: 'plot-band-sd', className: 'plot-band-sd', from: data.sdlo, to: data.sdhi }],\n"
-        "},\n"
-        "tooltip: {\n"
-          "shared: true,\n"
-          "padding: 4,\n"
-          "positioner: function (labelWidth, labelHeight, point) {\n"
-            "return {\n"
-              "x: capachart.plotLeft + Math.min(capachart.plotWidth - labelWidth, Math.max(0, point.plotX - labelWidth/2)),\n"
-              "y: 0 };\n"
-          "},\n"
-          "headerFormat: 'Capacity #{point.key}: ',\n"
-          "pointFormatter: function () {\n"
-            "if (this.series.index == 0) {\n"
-              "var amps = this.median/360.0;"
-              "return '<b>' + this.median.toFixed(0) + ' As/10, ' + amps.toFixed(1) + ' Ah</b>'\n"
-                "+ '  [' + this.low.toFixed(0) + ' – ' + this.high.toFixed(0) + ']<br/>';\n"
-            "} else {\n"
-              "return 'Max deviation: <b>' + this.id + '</b>';\n"
-            "}\n"
-          "},\n"
-        "},\n"
-        "series: [{\n"
-          "name: 'Capacity',\n"
-          "zIndex: 1,\n"
-          "data: data.capas,\n"
-          "whiskerLength: 0,\n"
-          "animation: {\n"
-            "duration: 100,\n"
-            "easing: 'easeOutExpo'\n"
-          "},\n"
-        "},{\n"
-          "name: 'Max deviation',\n"
-          "zIndex: 0,\n"
-          "type: 'columnrange',\n"
-          "data: data.devmax,\n"
-          "maxPointWidth: 35,\n"
-          "animation: {\n"
-            "duration: 100,\n"
-            "easing: 'easeOutExpo'\n"
-          "},\n"
-        "}]\n"
-      "});\n"
-      "$('#capachart').data('chart', capachart).addClass('has-chart');"
     "}\n"
     "\n"
     "\n"
@@ -1169,7 +997,6 @@ void OvmsVehicleSmartED::BmsCellMonitor(PageEntry_t& p, PageContext_t& c)
     "\n"
     "function init_charts() {\n"
       "init_volt_chart();\n"
-      "init_capa_chart();\n"
       "init_temp_chart();\n"
     "}\n"
     "\n"
@@ -1187,6 +1014,99 @@ void OvmsVehicleSmartED::BmsCellMonitor(PageEntry_t& p, PageContext_t& c)
     "</script>\n");
   
   PAGE_HOOK("body.post");
+  c.done();
+}
+
+/**
+ * WebCfgBmsCellCapacity: display cell capacitys
+ */
+void OvmsVehicleSmartED::WebCfgBmsCellCapacity(PageEntry_t& p, PageContext_t& c)
+{
+  c.head(200);
+  c.printf(
+    "<div class=\"panel panel-primary panel-single\">"
+    "<div class=\"panel-heading\">Smart ED BMS Cell Capacity</div>"
+    "<div class=\"panel-body\">"
+      "<div class=\"receiver\" id=\"livestatus\">"
+        "<div id=\"container\" class=\"container\"></div>"
+      "</div>"
+    "</div>"
+    "<div class=\"panel-footer\">"
+    "<p></p>\n"
+      "<samp id=\"output\" class=\"samp-inline\"></samp>\n"
+    "</div>\n"
+    "</div>\n"
+    "\n"
+    "<style>\n"
+    ".outer {\n"
+      "width: 600px;\n"
+      "height: 200px;\n"
+      "margin: 1em auto;\n"
+    "}\n"
+    ".container {\n"
+      "min-width: 300px;\n"
+      "width: 100%;\n"
+      "max-width: 100%;\n"
+      "height: 45vh;\n"
+      "min-height: 280px;\n"
+      "margin: 1em auto;\n"
+    "}\n"
+    "@media (max-width: 600px) {\n"
+      ".outer {\n"
+        "width: 100%%;\n"
+        "height: 400px;\n"
+      "}\n"
+      ".container {\n"
+        "min-width: 300px;\n"
+        "width: 100%;\n"
+        "height: 45vh;\n"
+        "min-height: 280px;\n"
+        "margin: 1em auto;\n"
+      "}\n"
+    "}\n"
+    "</style>\n"
+    "\n"
+    "<script>\n"
+    "(function(){\n"
+    "$(\"#container\").chart({\n"
+        "chart: { type: 'column', zoomType: 'xy' },\n"
+        "title: { text: null },\n"
+        "credits: { enabled: false },\n"
+        "xAxis: {\n"
+          "crosshair: true\n"
+        "},\n"
+        "yAxis: {\n"
+          "min: 10000,\n"
+          "title: {\n"
+            "text: 'Capacity As/10'\n"
+          "}\n"
+        "},\n"
+        "tooltip: {\n"
+          "headerFormat: 'Cell #{point.key} <table>',\n"
+          "pointFormatter: function () {\n"
+          "var amps = this.y/360.0;\n"
+          "return '<tr><td>Capacity: </td>' +\n"
+            "'<td style=\"padding:0\"><b>' + this.y + ' As/10</b></td></tr>' +\n"
+            "'<tr><td>Amps: </td>' +\n"
+            "'<td style=\"padding:0\"><b>' + amps.toFixed(1) + ' Ah</b></td></tr>';\n"
+          "},\n"
+          "footerFormat: '</table>',\n"
+          "shared: true,\n"
+          "useHTML: true\n"
+        "},\n"
+        "plotOptions: {\n"
+          "column: {\n"
+            "pointPadding: 0.2,\n"
+            "borderWidth: 0\n"
+          "}\n"
+        "},\n"
+        "series: [{\n"
+          "name: 'Capacity',\n"
+          "data: metrics[\"xse.v.b.c.capacity\"]\n"
+        "}]\n"
+      "});\n"
+    "})();\n"
+    "</script>\n");
   c.done();
 }
 

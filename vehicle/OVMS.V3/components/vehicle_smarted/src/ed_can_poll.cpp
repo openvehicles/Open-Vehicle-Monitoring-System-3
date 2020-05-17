@@ -93,7 +93,7 @@ static const OvmsVehicle::poll_pid_t smarted_polls[] =
   { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x022A, {  0,300,0,60 } }, // rqChargerSelCurrent
   { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0223, {  0,300,0,60 } }, // rqChargerTemperatures
   { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF190, {  0,300,600,0 } }, // rqBattVIN
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0208, {  0,300,600,0 } }, // rqBattVolts
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0208, {  0,300,600,60 } }, // rqBattVolts
   { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0310, {  0,300,600,0 } }, // rqBattCapacity
   { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0203, {  0,300,600,0 } }, // rqBattAmps
   { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0207, {  0,300,600,0 } }, // rqBattADCref
@@ -204,7 +204,7 @@ void OvmsVehicleSmartED::ObdInitPoll() {
  * Incoming poll reply messages
  */
 void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
-  static string rxbuf;
+  string& rxbuf = smarted_obd_rxbuf;
   static uint16_t last_pid = -1;
   
   if (pid != last_pid) {
@@ -327,6 +327,49 @@ void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t 
       break;
     }
   }
+  
+  // single poll?
+  if (!smarted_obd_rxwait.IsAvail()) {
+    // yes: stop poller & signal response
+    PollSetPidList(m_can1, NULL);
+    smarted_obd_rxwait.Give();
+  }
+}
+
+bool OvmsVehicleSmartED::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t request, string& response, int timeout_ms /*=3000*/) {
+  OvmsMutexLock lock(&smarted_obd_request);
+
+  // prepare single poll:
+  OvmsVehicle::poll_pid_t poll[] = {
+    { txid, rxid, 0, 0, { 1, 1, 1, 1 } },
+    { 0, 0, 0, 0, { 0, 0, 0, 0 } }
+  };
+  if (request < 0x10000) {
+    poll[0].type = (request & 0xff00) >> 8;
+    poll[0].pid = request & 0xff;
+  } else {
+    poll[0].type = (request & 0xff0000) >> 16;
+    poll[0].pid = request & 0xffff;
+  }
+
+  // stop default polling:
+  PollSetPidList(m_can1, NULL);
+  vTaskDelay(pdMS_TO_TICKS(100));
+
+  // clear rx semaphore, start single poll:
+  smarted_obd_rxwait.Take(0);
+  PollSetPidList(m_can1, poll);
+
+  // wait for response:
+  bool rxok = smarted_obd_rxwait.Take(pdMS_TO_TICKS(timeout_ms));
+  if (rxok == pdTRUE)
+    response = smarted_obd_rxbuf;
+
+  // restore default polling:
+  smarted_obd_rxwait.Give();
+  PollSetPidList(m_can1, smarted_polls);
+
+  return (rxok == pdTRUE);
 }
 
 void OvmsVehicleSmartED::PollReply_BMS_BattAmps(const char* reply_data, uint16_t reply_len) {
@@ -693,6 +736,12 @@ void OvmsVehicleSmartED::BmsResetCellCapacitys() {
     mt_v_bat_cell_cdevmax->ClearValue();
     mt_v_bat_pack_cstddev_max->SetValue(mt_v_bat_pack_cstddev->AsFloat());
   }
+}
+
+void OvmsVehicleSmartED::BmsResetCellStats() {
+  BmsResetCellVoltages();
+  BmsResetCellTemperatures();
+  BmsResetCellCapacitys();
 }
 
 void OvmsVehicleSmartED::BmsDiag(int verbosity, OvmsWriter* writer) {
