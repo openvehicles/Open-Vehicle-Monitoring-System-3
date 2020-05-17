@@ -3,7 +3,7 @@
 ;    Date:          4th May 2020
 ;
 ;    Changes:
-;    1.0  Initial release
+;    0.1  Initial release
 ;
 ;    (C) 2020       Jarkko Ruoho
 ;
@@ -36,12 +36,11 @@
 */
 
 #include "ovms_log.h"
-static const char *TAG = "v-mercedesb250e";
+static const char *TAG = "v-mbb250e";
 
-#define VERSION "1.0.0"
+#define VERSION "0.1.0"
 
 #include <stdio.h>
-#include "metrics_standard.h"
 #include "ovms_metrics.h"
 
 
@@ -51,11 +50,17 @@ OvmsVehicleMercedesB250e::OvmsVehicleMercedesB250e()
 {
   ESP_LOGI(TAG, "Start Mercedes-Benz B250E vehicle module");
 
-  mt_ed_eco_accel          = MyMetrics.InitFloat("xse.v.display.accel", SM_STALE_MIN, 0, Percentage);
-  mt_ed_eco_const          = MyMetrics.InitFloat("xse.v.display.const", SM_STALE_MIN, 0, Percentage);
-  mt_ed_eco_coast          = MyMetrics.InitFloat("xse.v.display.coast", SM_STALE_MIN, 0, Percentage);
-  mt_ed_eco_score          = MyMetrics.InitFloat("xse.v.display.ecoscore", SM_STALE_MIN, 0, Percentage);
-
+  mt_mb_trip_reset        = MyMetrics.InitFloat("xmb.v.display.trip.reset", SM_STALE_MIN, 0, Kilometers);
+  mt_mb_trip_start        = MyMetrics.InitFloat("xmb.v.display.trip.start", SM_STALE_MIN, 0, Kilometers);
+  mt_mb_consumption_start = MyMetrics.InitFloat("xmb.v.display.consumption.start", SM_STALE_MIN, 0, WattHoursPK);
+  mt_mb_eco_accel         = MyMetrics.InitFloat("xmb.v.display.accel", SM_STALE_MIN, 0, Percentage);
+  mt_mb_eco_const         = MyMetrics.InitFloat("xmb.v.display.const", SM_STALE_MIN, 0, Percentage);
+  mt_mb_eco_coast         = MyMetrics.InitFloat("xmb.v.display.coast", SM_STALE_MIN, 0, Percentage);
+  mt_mb_eco_score         = MyMetrics.InitFloat("xmb.v.display.ecoscore", SM_STALE_MIN, 0, Percentage);
+  mt_mb_fl_speed          = MyMetrics.InitFloat("xmb.v.fl_speed", SM_STALE_MIN, 0, Kph);
+  mt_mb_fr_speed          = MyMetrics.InitFloat("xmb.v.fr_speed", SM_STALE_MIN, 0, Kph);
+  mt_mb_rl_speed          = MyMetrics.InitFloat("xmb.v.rl_speed", SM_STALE_MIN, 0, Kph);
+  mt_mb_rr_speed          = MyMetrics.InitFloat("xmb.v.rr_speed", SM_STALE_MIN, 0, Kph);
   
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 }
@@ -104,40 +109,82 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
       float fr_speed = ( ((d[2]&0xf) << 8) + d[3] ) * 0.0603504; 
       float rl_speed = ( ((d[4]&0xf) << 8) + d[5] ) * 0.0603504; 
       float rr_speed = ( ((d[5]&0xf) << 8) + d[7] ) * 0.0603504; 
-      // Don't post it, as wheels may be spinning. 0x19F is the correct MsgID for speed
-      // StandardMetrics.ms_v_pos_speed->SetValue(fl_speed); // 
-      ESP_LOGD(TAG, "Speeds: FL %3d, FR %3d, RL %3d, RR %3d",
-	       (int)fl_speed, (int)fr_speed, (int)rl_speed, (int)rr_speed);
+      mt_mb_fl_speed->SetValue(fl_speed); // km/h alread
+      mt_mb_fr_speed->SetValue(fr_speed); // km/h alread
+      mt_mb_rl_speed->SetValue(rl_speed); // km/h alread
+      mt_mb_rr_speed->SetValue(rr_speed); // km/h alread
       break;
     }
   case 0x205: // 12V battery voltage
     {
-      StandardMetrics.ms_v_bat_12v_voltage->SetValue(d[1]*0.1); // Volts
+      StandardMetrics.ms_v_bat_12v_voltage->SetValue((float)d[1]*0.1); // Volts
+      break;
+    }	
+  case 0x20B: // HVAC
+    {
+      StandardMetrics.ms_v_env_cabinsetpoint->SetValue((float)d[0]*0.1+10); // deg C
+      // d[1] is right side set temp
+      // d[4] ls nible, could be ms_v_env_cabinfan
+      // d[5] contain ms_v_env_cooling and heating, possibly separated for drive and park      
+      break;
+    }	
+  case 0x2FF: // TPMS
+    {
+      if (d[3] < 255)
+	StandardMetrics.ms_v_tpms_fl_p->SetValue((float)d[3]*2.5); // KPa
+      if (d[4] < 255)
+	StandardMetrics.ms_v_tpms_fr_p->SetValue((float)d[4]*2.5); // KPa
+      if (d[5] < 255)
+	StandardMetrics.ms_v_tpms_rl_p->SetValue((float)d[5]*2.5); // KPa
+      if (d[6] < 255)
+	StandardMetrics.ms_v_tpms_rr_p->SetValue((float)d[6]*2.5); // KPa
       break;
     }	
   case 0x33D: // Momentary power
     {
-      StandardMetrics.ms_v_bat_power->SetValue(d[4]-100); // kW 
+      float power = d[4]-100; // Percents, +/- 100
+      power *= 1.32; // 132 is the total power promised by manufacturer
+      if (power < -50) 
+        power = -50; // I just guess that maximum recuperation would be 50kW, probably less
+      StandardMetrics.ms_v_bat_power->SetValue(power); // kW 
       break;
-    }	
-    // case 0x34E: // Distance Today , Distance since reset, scale is 0.1 km
+    }	    
+  case 0x34E:  // Distance Today , Distance since reset, scale is 0.1 km
+    { 
+      int trip_start = d[0] * 256 * 256 + d[1] * 256 + d[2];
+      int trip_reset = d[3] * 256 * 256 + d[4] * 256 + d[5];
+      if (trip_start < 0xfffffe) // for some reason undefined value here is 0xfffffe
+	mt_mb_trip_start->SetValue(trip_start * 0.1); 
+      if (trip_reset < 0xfffffe) 
+        mt_mb_trip_reset->SetValue(trip_reset * 0.1);
+    }      
   case 0x34F: // Range
     {
-      StandardMetrics.ms_v_bat_range_est->SetValue((float)d[7]); // Car's estimate on remainging range
-      /* This is really an average, but let's move this when better is found */
-      StandardMetrics.ms_v_bat_consumption->SetValue((float)d[1]*0.5/1.609344); // Consumption per distance
-      ESP_LOGD(TAG, "Range from %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
-	       p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+      float consumption = (float)(d[0]&0x7)*256 + (float)d[1];
+      /* Consumption is really an average over trip_start distance. But we'll have to use
+         this until a better value is found */
+      int range  = (d[6]&0x7)*256 + d[7]; // Car's estimate on remainging range
+      if (range < 2047)
+	StandardMetrics.ms_v_bat_range_est->SetValue((float)range); // km
+      mt_mb_consumption_start->SetValue(consumption);
+      break;
+    }
+  case 0x3eb: 
+    {
+      float consumption = (float)(d[0])*256 + (float)d[1];
+      if (d[0] < 255) { // Update only with feasible results
+	StandardMetrics.ms_v_bat_consumption->SetValue(consumption*0.1); // Wh/km
+      }
       break;
     }
   case 0x3F2: //Eco display
     {
-      mt_ed_eco_accel->SetValue((float)d[0] * 0.5);
-      mt_ed_eco_const->SetValue((float)d[1] * 0.5);
-      mt_ed_eco_coast->SetValue((float)d[2] * 0.5);
-      mt_ed_eco_score->SetValue((float)d[3] * 0.5);
-      ESP_LOGD(TAG, "ECO from %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
-	       p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+      if (d[0] <= 200) { // Eco values show as 0xff when the car is switched on/off 
+	mt_mb_eco_accel->SetValue((float)d[0] * 0.5);
+	mt_mb_eco_const->SetValue((float)d[1] * 0.5);
+	mt_mb_eco_coast->SetValue((float)d[2] * 0.5);
+	mt_mb_eco_score->SetValue((float)d[3] * 0.5);
+      }
       break;
     }
   default:

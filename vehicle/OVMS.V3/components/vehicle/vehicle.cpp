@@ -1531,6 +1531,22 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandHomelink(int button, int dura
   return NotImplemented;
   }
 
+#ifdef CONFIG_OVMS_COMP_TPMS
+
+bool OvmsVehicle::TPMSRead(std::vector<uint32_t> *tpms)
+  {
+  ESP_LOGE(TAG, "TPMS tyre IDs not implemented in this vehicle");
+  return false;
+  }
+
+bool OvmsVehicle::TPMSWrite(std::vector<uint32_t> &tpms)
+  {
+  ESP_LOGE(TAG, "TPMS tyre IDs not implemented in this vehicle");
+  return false;
+  }
+
+#endif // #ifdef CONFIG_OVMS_COMP_TPMS
+
 /**
  * CommandStat: default implementation of vehicle status output
  */
