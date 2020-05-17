@@ -47,8 +47,11 @@ static const char *TAG = "v-teslaroadster";
 #include "vehicle_teslaroadster_ctp.h"
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
+#include "ovms_peripherals.h"
 #include "metrics_standard.h"
 #include "ovms_utils.h"
+#include "driver/uart.h"
+#include "driver/gpio.h"
 
 OvmsVehicleTeslaRoadster* MyTeslaRoadster = NULL;
 
@@ -1156,6 +1159,151 @@ void OvmsVehicleTeslaRoadster::DoHomelinkStop()
   frame.data.u8[2] = m_homelink_timerbutton;
   m_can1->Write(&frame);
   }
+
+#ifdef CONFIG_OVMS_COMP_TPMS
+
+bool OvmsVehicleTeslaRoadster::TPMSRead(std::vector<uint32_t> *tpms)
+  {
+  gpio_set_direction((gpio_num_t)33, GPIO_MODE_OUTPUT);
+  gpio_set_direction((gpio_num_t)32, GPIO_MODE_INPUT);
+  gpio_set_pull_mode((gpio_num_t)33, GPIO_PULLUP_ONLY);
+  gpio_set_pull_mode((gpio_num_t)32, GPIO_PULLUP_ONLY);
+
+#ifdef CONFIG_OVMS_COMP_MAX7317
+  MyPeripherals->m_max7317->Output(9, 1); // Enable HIGH
+  vTaskDelay(200 / portTICK_PERIOD_MS);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+
+  uart_port_t uart = UART_NUM_2;
+  uart_config_t uart_config = {
+    .baud_rate = 9600,
+    .data_bits = UART_DATA_8_BITS,
+    .parity = UART_PARITY_DISABLE,
+    .stop_bits = UART_STOP_BITS_1,
+    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+    .rx_flow_ctrl_thresh = 122,
+    .use_ref_tick = 0,
+  };
+  uart_param_config(uart, &uart_config);
+  uart_set_pin(uart, 33, 32, 0, 0);
+  uart_driver_install(uart, 256, 256, 0, NULL, ESP_INTR_FLAG_LEVEL2);
+
+  const char req_msg[] = "\x0f\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0";
+
+  uart_flush(uart);
+  uart_write_bytes(uart, req_msg, 19);
+
+  uint8_t data[38];
+  int length = uart_read_bytes(uart, data, 19*2, 5000 / portTICK_PERIOD_MS);
+  if (length > 0)
+    {
+    MyCommandApp.HexDump(TAG, "tpms", (const char*)data, length);
+    }
+
+  MyPeripherals->m_max7317->Output(9, 0); // Enable LOW
+  uart_flush(uart);
+  uart_driver_delete(uart);
+
+  if (length != 38)
+    {
+    ESP_LOGE(TAG,"TPMS read was %d bytes (38 expected)",length);
+    return false;
+    }
+  else if ((data[19]!=0x0f) || (data[20]!= 0x05) || (data[37]!=0xf0))
+    {
+    ESP_LOGE(TAG,"TPMS read (38 bytes) was not formatted as expected");
+    return false;
+    }
+
+  for (int k=0;k<4;k++)
+    {
+    int offset = 21+(k*4);
+    uint32_t id = ((uint32_t)data[offset] << 24) +
+                      ((uint32_t)data[offset+1] << 16) +
+                      ((uint32_t)data[offset+2] << 8) +
+                      ((uint32_t)data[offset+3]);
+    ESP_LOGD(TAG,"TPMS read ID %08x",id);
+    tpms->push_back( id );
+    }
+  return true;
+  }
+
+bool OvmsVehicleTeslaRoadster::TPMSWrite(std::vector<uint32_t> &tpms)
+  {
+  gpio_set_direction((gpio_num_t)33, GPIO_MODE_OUTPUT);
+  gpio_set_direction((gpio_num_t)32, GPIO_MODE_INPUT);
+  gpio_set_pull_mode((gpio_num_t)33, GPIO_PULLUP_ONLY);
+  gpio_set_pull_mode((gpio_num_t)32, GPIO_PULLUP_ONLY);
+
+#ifdef CONFIG_OVMS_COMP_MAX7317
+  MyPeripherals->m_max7317->Output(9, 1); // Enable HIGH
+  vTaskDelay(200 / portTICK_PERIOD_MS);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+
+  uart_port_t uart = UART_NUM_2;
+  uart_config_t uart_config = {
+    .baud_rate = 9600,
+    .data_bits = UART_DATA_8_BITS,
+    .parity = UART_PARITY_DISABLE,
+    .stop_bits = UART_STOP_BITS_1,
+    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+    .rx_flow_ctrl_thresh = 122,
+    .use_ref_tick = 0,
+  };
+  uart_param_config(uart, &uart_config);
+  uart_set_pin(uart, 33, 32, 0, 0);
+  uart_driver_install(uart, 256, 256, 0, NULL, ESP_INTR_FLAG_LEVEL2);
+
+  char req_msg[] = "\x0f\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0";
+  int offset = 2;
+  for(uint32_t id : tpms)
+    {
+    ESP_LOGD(TAG,"TPMS write ID %08x",id);
+    req_msg[offset++] = (id>>24) & 0xff;
+    req_msg[offset++] = (id>>16) & 0xff;
+    req_msg[offset++] = (id>>8) & 0xff;
+    req_msg[offset++] = id & 0xff;
+    }
+
+  uart_flush(uart);
+  uart_write_bytes(uart, req_msg, 19);
+
+  uint8_t data[38];
+  int length = uart_read_bytes(uart, data, 19*2, 5000 / portTICK_PERIOD_MS);
+  if (length > 0)
+    {
+    MyCommandApp.HexDump(TAG, "tpms", (const char*)data, length);
+    }
+
+  MyPeripherals->m_max7317->Output(9, 0); // Enable LOW
+  uart_flush(uart);
+  uart_driver_delete(uart);
+
+  length = 38;
+  if (length != 38)
+    {
+    ESP_LOGE(TAG,"TPMS write was %d bytes (38 expected)",length);
+    return false;
+    }
+  else if ((data[19]!=0x0f) || (data[20]!= 0x09) || (data[37]!=0xf0))
+    {
+    ESP_LOGE(TAG,"TPMS write (38 bytes) was not formatted as expected");
+    return false;
+    }
+
+  for (int k=2;k<19;k++)
+    {
+    if (data[k] != data[k+19])
+      {
+      ESP_LOGE(TAG,"TPMS write did not verify correctly");
+      return false;
+      }
+    }
+
+  return true;
+  }
+
+#endif // #ifdef CONFIG_OVMS_COMP_TPMS
 
 void OvmsVehicleTeslaRoadster::Notify12vCritical()
   { // Not supported on Tesla Roadster
