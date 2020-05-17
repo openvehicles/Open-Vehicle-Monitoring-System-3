@@ -553,6 +553,13 @@ config OVMS_COMP_PUSHOVER
     help
         Enable to include support for Pushover. 
 
+config OVMS_COMP_TPMS
+    bool "Include support for TPMS tyre sets"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for TPMS tyre sets
+
 config OVMS_COMP_MODEM_SIMCOM
     bool "Include support for SIMCOM modems"
     default y

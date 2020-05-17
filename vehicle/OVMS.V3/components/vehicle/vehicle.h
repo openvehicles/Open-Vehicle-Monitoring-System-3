@@ -264,6 +264,12 @@ class OvmsVehicle : public InternalRamAllocated
     virtual vehicle_command_t CommandDeactivateValet(const char* pin);
     virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
 
+#ifdef CONFIG_OVMS_COMP_TPMS
+  public:
+    virtual bool TPMSRead(std::vector<uint32_t> *tpms);
+    virtual bool TPMSWrite(std::vector<uint32_t> &tpms);
+#endif // #ifdef CONFIG_OVMS_COMP_TPMS
+
   public:
     virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t ProcessMsgCommand(std::string &result, int command, const char* args);
