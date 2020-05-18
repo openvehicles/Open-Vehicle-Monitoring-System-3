@@ -1074,6 +1074,7 @@ void OvmsVehicleSmartED::WebCfgBmsCellCapacity(PageEntry_t& p, PageContext_t& c)
         "title: { text: null },\n"
         "credits: { enabled: false },\n"
         "xAxis: {\n"
+          "min: 1,\n"
           "crosshair: true\n"
         "},\n"
         "yAxis: {\n"
