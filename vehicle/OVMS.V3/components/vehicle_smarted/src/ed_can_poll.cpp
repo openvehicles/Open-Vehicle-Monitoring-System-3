@@ -331,7 +331,7 @@ void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t 
   // single poll?
   if (!smarted_obd_rxwait.IsAvail()) {
     // yes: stop poller & signal response
-    PollSetPidList(m_can1, NULL);
+    // PollSetPidList(m_can1, NULL);
     smarted_obd_rxwait.Give();
   }
 }
