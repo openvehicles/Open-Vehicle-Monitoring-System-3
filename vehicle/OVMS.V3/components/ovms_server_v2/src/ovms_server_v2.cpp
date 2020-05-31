@@ -194,7 +194,7 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
         if (MyOvmsServerV2)
           {
           MyOvmsServerV2->SetStatus("Error: Connection failed", true, OvmsServerV2::WaitReconnect);
-          MyOvmsServerV2->m_connretry = 20;
+          MyOvmsServerV2->m_connretry = 60;
           }
         }
       }
@@ -211,7 +211,7 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
         else
           {
           MyOvmsServerV2->SetStatus("Disconnected", false, OvmsServerV2::WaitReconnect);
-          MyOvmsServerV2->Reconnect(20);
+          MyOvmsServerV2->Reconnect(60);
           }
         }
       break;
@@ -237,7 +237,7 @@ void OvmsServerV2::ProcessServerMsg()
     if (sep == std::string::npos)
       {
       SetStatus("Error: Server response invalid (no token/digest separator)", true, WaitReconnect);
-      Reconnect(20);
+      Reconnect(60);
       return;
       }
     std::string token = std::string(line,7,sep-7);
@@ -246,8 +246,8 @@ void OvmsServerV2::ProcessServerMsg()
     if (m_token == token)
       {
       SetStatus("Error: Detected token replay attack/collision", true, WaitReconnect);
-      Reconnect(20);
-      m_connretry = 20; // Try again in 20 seconds...
+      Reconnect(60);
+      m_connretry = 60; // Try again in 60 seconds...
       return;
       }
     uint8_t sdigest[OVMS_MD5_SIZE];
@@ -257,7 +257,7 @@ void OvmsServerV2::ProcessServerMsg()
     if (digest.compare((char*)sdb) != 0)
       {
       SetStatus("Error: Server digest does not authenticate", true, WaitReconnect);
-      Reconnect(20);
+      Reconnect(60);
       return;
       }
     SetStatus("Server authentication ok. Now priming crypto.");
@@ -335,7 +335,7 @@ void OvmsServerV2::ProcessServerMsg()
   if (line.compare(0, 5, "MP-0 ") != 0)
     {
     SetStatus("Error: Invalid server message. Disconnecting.", true, WaitReconnect);
-    Reconnect(20);
+    Reconnect(60);
     return;
     }
 
@@ -869,7 +869,7 @@ void OvmsServerV2::Connect()
     {
     ESP_LOGE(TAG, "mg_connect(%s) failed: %s", address.c_str(), err);
     SetStatus("Error: Connection failed", true, WaitReconnect);
-    m_connretry = 20; // Try again in 20 seconds...
+    m_connretry = 60; // Try again in 60 seconds...
     return;
     }
   return;
@@ -950,7 +950,7 @@ void OvmsServerV2::SendLogin(struct mg_connection *nc)
   strcat(hello,"\r\n");
 
   mg_send(nc, hello, strlen(hello));
-  m_connretry = 30; // Give the server 30 seconds to respond
+  m_connretry = 60; // Give the server 60 seconds to respond
   }
 
 void OvmsServerV2::TransmitMsgStat(bool always)
