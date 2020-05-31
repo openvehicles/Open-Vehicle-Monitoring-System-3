@@ -149,8 +149,8 @@ void OvmsTLS::Reload()
   Clear();
 
   // Add our embedded trusted CAs
-  extern const char addtrust[] asm("_binary_addtrust_crt_start");
-  m_trustlist["AddTrust External CA Root"] = new OvmsTrustedCert((char*)addtrust, false);
+  extern const char usertrust[] asm("_binary_usertrust_crt_start");
+  m_trustlist["USERTrust RSA Certification Authority"] = new OvmsTrustedCert((char*)usertrust, false);
 
   extern const char dst[] asm("_binary_dst_crt_start");
   m_trustlist["DST Root CA X3"] = new OvmsTrustedCert((char*)dst, false);
