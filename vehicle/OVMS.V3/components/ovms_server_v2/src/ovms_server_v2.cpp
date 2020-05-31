@@ -136,7 +136,7 @@ static struct
   { "modem",     "apn.user" },             //  6 PARAM_GPRSUSER
   { "modem",     "apn.password" },         //  7 PARAM_GPRSPASS
   { "vehicle",   "id" },                   //  8 PARAM_VEHICLEID
-  { "server.v2", "password" },             //  9 PARAM_SERVERPASS
+  { "password", "server.v2" },             //  9 PARAM_SERVERPASS
   { "",          "" },                     // 10 PARAM_PARANOID
   { "",          "" },                     // 11 PARAM_S_GROUP1
   { "",          "" },                     // 12 PARAM_S_GROUP2
@@ -820,7 +820,7 @@ void OvmsServerV2::Connect()
   {
   m_vehicleid = MyConfig.GetParamValue("vehicle", "id");
   m_server = MyConfig.GetParamValue("server.v2", "server");
-  m_password = MyConfig.GetParamValue("server.v2", "password");
+  m_password = MyConfig.GetParamValue("password","server.v2");
   m_port = MyConfig.GetParamValue("server.v2", "port");
   m_tls = MyConfig.GetParamValueBool("server.v2", "tls",false);
   m_paranoid = MyConfig.GetParamValueBool("server.v2", "paranoid",false);
@@ -1977,15 +1977,15 @@ OvmsServerV2Init::OvmsServerV2Init()
   cmd_v2->RegisterCommand("stop","Stop an OVMS V2 Server Connection",ovmsv2_stop);
   cmd_v2->RegisterCommand("status","Show OVMS V2 Server connection status",ovmsv2_status);
 
-  MyConfig.RegisterParam("server.v2", "V2 Server Configuration", true, false);
+  MyConfig.RegisterParam("server.v2", "V2 Server Configuration", true, true);
   // Our instances:
   //   'server': The server name/ip
-  //   'password': The server password
   //   'port': The port to connect to (default: 6867)
   //   'updatetime.connected': Time between updates when one or more apps connected (default: 60)
   //   'updatetime.idle': Time between updates when no apps connected (default: 600)
   // Also note:
   //  Parameter "vehicle", instance "id", is the vehicle ID
+  //  Server Password has been movied to password/server.v2
   }
 
 void OvmsServerV2Init::AutoInit()

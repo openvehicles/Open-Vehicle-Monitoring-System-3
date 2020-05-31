@@ -89,7 +89,7 @@ void OvmsWebServer::HandleCfgInit(PageEntry_t& p, PageContext_t& c)
       c.method = "GET";
     }
   }
-  
+
   // todo… use function pointers, esp. if we need 'back' option
   if (startsWith(step, "1")) {
     if (!(step = MyWebServer.CfgInit1(p, c, step)).empty()) {
@@ -128,7 +128,7 @@ void OvmsWebServer::HandleCfgInit(PageEntry_t& p, PageContext_t& c)
       "<p>Your OVMS module is now ready to use. Please have a look at the menus for more options.</p>");
     OutputHome(p, c);
   }
-  
+
   c.done();
 }
 
@@ -209,7 +209,7 @@ void OvmsWebServer::CfgInitTicker()
     MyPeripherals->m_esp32wifi->StartAccessPointMode("OVMS", "OVMSinit");
     CfgInitSetStep("1.fail");
   }
-  
+
   else if (step == "2.test.start") {
     // reconfigure wifi to APCLIENT:
     std::string ap_ssid = MyConfig.GetParamValue("vehicle", "id");
@@ -308,7 +308,7 @@ void OvmsWebServer::CfgInitTicker()
     else {
       ESP_LOGI(TAG, "CfgInitTicker: step 5: modem enter state NetStart");
       MyPeripherals->m_simcom->SendSetState1(simcom::NetStart);
-      
+
     }
   }
 #endif
@@ -328,7 +328,7 @@ std::string OvmsWebServer::CfgInit1(PageEntry_t& p, PageContext_t& c, std::strin
   std::string moduleid, newpass1, newpass2;
 
   if (c.method == "POST") {
-    
+
     // check input:
     moduleid = c.getvar("moduleid");
     newpass1 = c.getvar("newpass1");
@@ -361,9 +361,9 @@ std::string OvmsWebServer::CfgInit1(PageEntry_t& p, PageContext_t& c, std::strin
     }
   }
   else {
-    
+
     moduleid = MyConfig.GetParamValue("vehicle", "id");
-    
+
     if (step == "1.test.connect") {
       if (MyPeripherals->m_esp32wifi->GetAPSSID() == moduleid) {
         // OK, user connected to new AP: proceed to step 2
@@ -376,7 +376,7 @@ std::string OvmsWebServer::CfgInit1(PageEntry_t& p, PageContext_t& c, std::strin
   }
 
   // display:
-  
+
   if (startsWith(step, "1.test")) {
     c.printf(
       "<div class=\"alert alert-info\">"
@@ -393,7 +393,7 @@ std::string OvmsWebServer::CfgInit1(PageEntry_t& p, PageContext_t& c, std::strin
       , moduleid.c_str());
     return "";
   }
-  
+
   if (step == "1.fail") {
     ESP_LOGI(TAG, "CfgInit1: AP test failed");
     if (MyBoot.GetEarlyCrashCount() > 0) {
@@ -422,7 +422,7 @@ std::string OvmsWebServer::CfgInit1(PageEntry_t& p, PageContext_t& c, std::strin
       "<li>Configure vehicle type and server</li>"
       "<li>Configure modem (if equipped)</li>"
     "</ol>");
-  
+
   // create some random passwords:
   std::ostringstream pwsugg;
   srand48(StdMetrics.ms_m_monotonic->AsInt() * StdMetrics.ms_m_freeram->AsInt());
@@ -430,16 +430,16 @@ std::string OvmsWebServer::CfgInit1(PageEntry_t& p, PageContext_t& c, std::strin
   for (int i=0; i<5; i++)
     pwsugg << " <code class=\"autoselect\">" << c.encode_html(pwgen(12)) << "</code>";
   pwsugg << "</p>";
-  
+
   // generate form:
   c.panel_start("primary", "Step 1/5: Secure Module");
-  
+
   c.print(
     "<p>Your module may currently be accessed by anyone in Wifi range using the default"
     " password, so we first should do something about that.</p>"
     "<p>This setup step will change both the Wifi access point and the module admin"
     " password, so the module is secured for both local and remote access.</p>");
-  
+
   c.form_start(p.uri);
   c.input_text("Module ID", "moduleid", moduleid.c_str(), "Use ASCII letters, digits and '-'",
     "<p>Enter a unique personal module/vehicle ID, e.g. your nickname or vehicle license plate number.</p>"
@@ -459,9 +459,9 @@ std::string OvmsWebServer::CfgInit1(PageEntry_t& p, PageContext_t& c, std::strin
       "</div>"
     "</div>");
   c.form_end();
-  
+
   c.panel_end();
-  
+
   c.alert("info",
     "<p class=\"lead\">What will happen next?</p>"
     "<p>The OVMS Wifi access point will be <strong>reconfigured</strong> to the new module ID and password,"
@@ -469,7 +469,7 @@ std::string OvmsWebServer::CfgInit1(PageEntry_t& p, PageContext_t& c, std::strin
     "<p>If you can't reconnect, <strong>don't panic</strong>.</p>"
     "<p>The module will revert to the old configuration if you don't reconnect within 5 minutes.</p>"
     "<p>Alternatively, you may simply unplug the module and start again.</p>");
-  
+
   return "";
 }
 
@@ -486,7 +486,7 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
   std::string ssid, pass, dns;
 
   if (c.method == "POST") {
-    
+
     // check input:
     ssid = c.getvar("ssid");
     pass = c.getvar("pass");
@@ -522,7 +522,7 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
   }
 
   // display:
-  
+
   if (startsWith(step, "2.test")) {
     c.printf(
       "<div class=\"alert alert-info\">"
@@ -539,7 +539,7 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
     OutputReconnect(p, c, "Testing internet connection…");
     return "";
   }
-  
+
   if (step == "2.fail.connect") {
     c.printf(
       "<div class=\"alert alert-warning\">"
@@ -560,7 +560,7 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
       "</div>"
       , ssid.c_str());
   }
-  
+
   // Wizard status:
   c.alert("info",
     "<p class=\"lead\">Quick setup wizard</p>"
@@ -571,14 +571,14 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
       "<li>Configure vehicle type and server</li>"
       "<li>Configure modem (if equipped)</li>"
     "</ol>");
-  
+
   // generate form:
   c.panel_start("primary", "Step 2/5: Connect to Internet");
-  
+
   c.print(
     "<p>Your module now needs an internet connection to download the latest firmware"
     " version from the OpenVehicles server.</p>");
-  
+
   c.form_start(p.uri);
 
   c.input_text("Wifi network SSID", "ssid", ssid.c_str(), "Enter Wifi SSID",
@@ -604,9 +604,9 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
       "</div>"
     "</div>");
   c.form_end();
-  
+
   c.panel_end();
-  
+
   c.printf(
     "<div class=\"alert alert-info\">"
       "<p class=\"lead\">What will happen next?</p>"
@@ -619,7 +619,7 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
       "<p>Alternatively, you may simply unplug the module and start again.</p>"
     "</div>"
     , MyConfig.GetParamValue("auto", "wifi.ssid.ap").c_str());
-  
+
   return "";
 }
 
@@ -659,7 +659,7 @@ std::string OvmsWebServer::CfgInit3(PageEntry_t& p, PageContext_t& c, std::strin
     server = MyConfig.GetParamValue("ota", "server");
   if (server.empty())
     server = "api.openvehicles.com/firmware/ota";
-  
+
   MyOTA.GetStatus(info, true);
 
   // check if update has been successful:
@@ -672,7 +672,7 @@ std::string OvmsWebServer::CfgInit3(PageEntry_t& p, PageContext_t& c, std::strin
   }
 
   // output:
-  
+
   if (info.version_server.empty()) {
     c.printf(
       "<div class=\"alert alert-danger\">"
@@ -684,7 +684,7 @@ std::string OvmsWebServer::CfgInit3(PageEntry_t& p, PageContext_t& c, std::strin
     // back to input:
     step = CfgInitSetStep("3");
   }
-  
+
   if (step == "3.update") {
     // Flash & reboot:
     c.print(
@@ -747,7 +747,7 @@ std::string OvmsWebServer::CfgInit3(PageEntry_t& p, PageContext_t& c, std::strin
       "<li>Configure vehicle type and server</li>"
       "<li>Configure modem (if equipped)</li>"
     "</ol>");
-  
+
   // form:
   c.panel_start("primary", "Step 3/5: Update Firmware");
   c.form_start(p.uri);
@@ -767,7 +767,7 @@ std::string OvmsWebServer::CfgInit3(PageEntry_t& p, PageContext_t& c, std::strin
     "</div>");
   c.form_end();
   c.panel_end();
-  
+
   c.alert("info",
     "<p class=\"lead\">What will happen next?</p>"
     "<p>The module will check the update server for a new firmware version, and automatically download"
@@ -775,7 +775,7 @@ std::string OvmsWebServer::CfgInit3(PageEntry_t& p, PageContext_t& c, std::strin
     "<p><strong>Don't panic</strong> if something goes wrong and the module gets stuck in the update.</p>"
     "<p>You can simply unplug and restart the module, it will show this form again so you can choose to"
     " retry or try another server.</p>");
-  
+
   return "";
 #else
     ESP_LOGI(TAG, "CfgInit3: OTA disabled, proceeding to step 4");
@@ -832,7 +832,7 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
       MyConfig.SetParamValueBool("server.v2", "tls", true);
       if (error == "" && !server.empty()) {
         MyConfig.SetParamValue("vehicle", "id", vehicleid);
-        MyConfig.SetParamValue("server.v2", "password", password);
+        MyConfig.SetParamValue("password","server.v2", password);
       }
 
       if (error == "") {
@@ -847,14 +847,14 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
       }
     }
   }
-  
+
   if (c.method == "GET") {
     // read configuration:
     vehicleid = MyConfig.GetParamValue("vehicle", "id");
     vehicletype = MyConfig.GetParamValue("auto", "vehicle.type");
     units_distance = MyConfig.GetParamValue("vehicle", "units.distance", "K");
     server = MyConfig.GetParamValue("server.v2", "server");
-    password = MyConfig.GetParamValue("server.v2", "password");
+    password = MyConfig.GetParamValue("password","server.v2");
     
     // default data server = ota server:
     if (server.empty()) {
@@ -867,7 +867,7 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
   }
 
   // output:
-  
+
   if (startsWith(step, "4.test")) {
     c.print(
       "<div class=\"modal fade\" id=\"test-dialog\" role=\"dialog\" data-backdrop=\"static\" data-keyboard=\"false\">"
@@ -904,7 +904,7 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
       "</script>");
     return "";
   }
-  
+
   if (step == "4.fail.vehicle") {
     c.printf(
       "<div class=\"alert alert-warning\">"
@@ -914,7 +914,7 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
         " and ask for support on the OpenVehicles forum.</p>"
       "</div>");
   }
-  
+
   // Wizard status:
   c.alert("info",
     "<p class=\"lead\">Quick setup wizard</p>"
@@ -925,7 +925,7 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
       "<li><strong>Configure vehicle type and server</strong></li>"
       "<li>Configure modem (if equipped)</li>"
     "</ol>");
-  
+
   // form:
   c.panel_start("primary", "Step 4/5: Vehicle &amp; Server");
   c.form_start(p.uri);
@@ -967,7 +967,7 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
     "</div>");
   c.form_end();
   c.panel_end();
-  
+
   c.alert("info",
     "<p class=\"lead\">What will happen next?</p>"
     "<p>The module will configure itself for your vehicle type.</p>"
@@ -1011,10 +1011,10 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
       MyConfig.SetParamValue("modem", "apn", apn);
       MyConfig.SetParamValue("modem", "apn.user", apn_user);
       MyConfig.SetParamValue("modem", "apn.password", apn_pass);
-      
+
       MyConfig.SetParamValueBool("modem", "enable.gps", gps);
       MyConfig.SetParamValueBool("modem", "enable.gpstime", gps);
-      
+
       if (modem) {
         // start test:
         ESP_LOGI(TAG, "CfgInit5: starting test");
@@ -1027,7 +1027,7 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
       }
     }
   }
-  
+
   if (c.method == "GET") {
     // read configuration:
     modem = MyConfig.GetParamValueBool("auto", "modem", false);
@@ -1042,7 +1042,7 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
   }
 
   // output:
-  
+
   if (startsWith(step, "5.test")) {
     c.print(
       "<div class=\"modal fade\" id=\"test-dialog\" role=\"dialog\" data-backdrop=\"static\" data-keyboard=\"false\">"
@@ -1081,7 +1081,7 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
       "</script>");
     return "";
   }
-  
+
   // Wizard status:
   c.alert("info",
     "<p class=\"lead\">Quick setup wizard</p>"
@@ -1092,7 +1092,7 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
       "<li>Configure vehicle type and server <span class=\"checkmark\">✔</span></li>"
       "<li><strong>Configure modem (if equipped)</strong></li>"
     "</ol>");
-  
+
   // form:
   c.panel_start("primary", "Step 5/5: Modem");
   c.form_start(p.uri);
@@ -1139,7 +1139,7 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
     "</div>");
   c.form_end();
   c.panel_end();
-  
+
   c.alert("info",
     "<p class=\"lead\">What will happen next?</p>"
     "<p>The modem will try to register with the mobile network using the APN data you enter.</p>"
