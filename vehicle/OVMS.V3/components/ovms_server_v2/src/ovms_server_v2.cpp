@@ -136,7 +136,7 @@ static struct
   { "modem",     "apn.user" },             //  6 PARAM_GPRSUSER
   { "modem",     "apn.password" },         //  7 PARAM_GPRSPASS
   { "vehicle",   "id" },                   //  8 PARAM_VEHICLEID
-  { "server.v2", "password" },             //  9 PARAM_SERVERPASS
+  { "password", "server.v2" },             //  9 PARAM_SERVERPASS
   { "",          "" },                     // 10 PARAM_PARANOID
   { "",          "" },                     // 11 PARAM_S_GROUP1
   { "",          "" },                     // 12 PARAM_S_GROUP2
@@ -194,7 +194,7 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
         if (MyOvmsServerV2)
           {
           MyOvmsServerV2->SetStatus("Error: Connection failed", true, OvmsServerV2::WaitReconnect);
-          MyOvmsServerV2->m_connretry = 20;
+          MyOvmsServerV2->m_connretry = 60;
           }
         }
       }
@@ -211,7 +211,7 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
         else
           {
           MyOvmsServerV2->SetStatus("Disconnected", false, OvmsServerV2::WaitReconnect);
-          MyOvmsServerV2->Reconnect(20);
+          MyOvmsServerV2->Reconnect(60);
           }
         }
       break;
@@ -237,7 +237,7 @@ void OvmsServerV2::ProcessServerMsg()
     if (sep == std::string::npos)
       {
       SetStatus("Error: Server response invalid (no token/digest separator)", true, WaitReconnect);
-      Reconnect(20);
+      Reconnect(60);
       return;
       }
     std::string token = std::string(line,7,sep-7);
@@ -246,8 +246,8 @@ void OvmsServerV2::ProcessServerMsg()
     if (m_token == token)
       {
       SetStatus("Error: Detected token replay attack/collision", true, WaitReconnect);
-      Reconnect(20);
-      m_connretry = 20; // Try again in 20 seconds...
+      Reconnect(60);
+      m_connretry = 60; // Try again in 60 seconds...
       return;
       }
     uint8_t sdigest[OVMS_MD5_SIZE];
@@ -257,7 +257,7 @@ void OvmsServerV2::ProcessServerMsg()
     if (digest.compare((char*)sdb) != 0)
       {
       SetStatus("Error: Server digest does not authenticate", true, WaitReconnect);
-      Reconnect(20);
+      Reconnect(60);
       return;
       }
     SetStatus("Server authentication ok. Now priming crypto.");
@@ -335,7 +335,7 @@ void OvmsServerV2::ProcessServerMsg()
   if (line.compare(0, 5, "MP-0 ") != 0)
     {
     SetStatus("Error: Invalid server message. Disconnecting.", true, WaitReconnect);
-    Reconnect(20);
+    Reconnect(60);
     return;
     }
 
@@ -820,7 +820,7 @@ void OvmsServerV2::Connect()
   {
   m_vehicleid = MyConfig.GetParamValue("vehicle", "id");
   m_server = MyConfig.GetParamValue("server.v2", "server");
-  m_password = MyConfig.GetParamValue("server.v2", "password");
+  m_password = MyConfig.GetParamValue("password","server.v2");
   m_port = MyConfig.GetParamValue("server.v2", "port");
   m_tls = MyConfig.GetParamValueBool("server.v2", "tls",false);
   m_paranoid = MyConfig.GetParamValueBool("server.v2", "paranoid",false);
@@ -869,7 +869,7 @@ void OvmsServerV2::Connect()
     {
     ESP_LOGE(TAG, "mg_connect(%s) failed: %s", address.c_str(), err);
     SetStatus("Error: Connection failed", true, WaitReconnect);
-    m_connretry = 20; // Try again in 20 seconds...
+    m_connretry = 60; // Try again in 60 seconds...
     return;
     }
   return;
@@ -950,7 +950,7 @@ void OvmsServerV2::SendLogin(struct mg_connection *nc)
   strcat(hello,"\r\n");
 
   mg_send(nc, hello, strlen(hello));
-  m_connretry = 30; // Give the server 30 seconds to respond
+  m_connretry = 60; // Give the server 60 seconds to respond
   }
 
 void OvmsServerV2::TransmitMsgStat(bool always)
@@ -1977,15 +1977,15 @@ OvmsServerV2Init::OvmsServerV2Init()
   cmd_v2->RegisterCommand("stop","Stop an OVMS V2 Server Connection",ovmsv2_stop);
   cmd_v2->RegisterCommand("status","Show OVMS V2 Server connection status",ovmsv2_status);
 
-  MyConfig.RegisterParam("server.v2", "V2 Server Configuration", true, false);
+  MyConfig.RegisterParam("server.v2", "V2 Server Configuration", true, true);
   // Our instances:
   //   'server': The server name/ip
-  //   'password': The server password
   //   'port': The port to connect to (default: 6867)
   //   'updatetime.connected': Time between updates when one or more apps connected (default: 60)
   //   'updatetime.idle': Time between updates when no apps connected (default: 600)
   // Also note:
   //  Parameter "vehicle", instance "id", is the vehicle ID
+  //  Server Password has been movied to password/server.v2
   }
 
 void OvmsServerV2Init::AutoInit()

@@ -847,7 +847,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
       "</script>";
   }
   c.input_info("SIM ICCID", info.c_str());
-  c.input_text("SIM card PIN code", "pincode", pincode.c_str(), "", 
+  c.input_text("SIM card PIN code", "pincode", pincode.c_str(), "",
     wrongpincode ? "<p style=\"color: red\">Wrong PIN code entered previously!</p>" : "<p>Not needed for Hologram SIM cards</p>");
 
   c.fieldset_start("Internet");
@@ -944,7 +944,7 @@ void OvmsWebServer::HandleCfgNotification(PageEntry_t& p, PageContext_t& c)
       pri.append(msg);
       pmap[buf] = pri;
     }
-   
+
     if (error == "") {
       if (c.getvar("action") == "save")
         {
@@ -957,7 +957,7 @@ void OvmsWebServer::HandleCfgNotification(PageEntry_t& p, PageContext_t& c)
         c.alert("success", "<p class=\"lead\">Pushover connection configured.</p>");
         OutputHome(p, c);
         c.done();
-        return;        
+        return;
         }
       else if (c.getvar("action") == "test")
         {
@@ -970,7 +970,7 @@ void OvmsWebServer::HandleCfgNotification(PageEntry_t& p, PageContext_t& c)
             c.getvar("token"),
             c.getvar("test_message"),
             atoi(c.getvar("test_priority").c_str()),
-            c.getvar("test_sound"), 
+            c.getvar("test_sound"),
             atoi(c.getvar("retry").c_str()),
             atoi(c.getvar("expire").c_str()),
             true /* receive server reply as reply/pushover-type notification */ ))
@@ -978,7 +978,7 @@ void OvmsWebServer::HandleCfgNotification(PageEntry_t& p, PageContext_t& c)
           c.alert("danger", "<p class=\"lead\">Could not send test message!</p>");
           }
         }
-    } 
+    }
     else {
       // output error, return to form:
       error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
@@ -1350,7 +1350,7 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("server.v2", "port", port);
       MyConfig.SetParamValue("vehicle", "id", vehicleid);
       if (password != "")
-        MyConfig.SetParamValue("server.v2", "password", password);
+        MyConfig.SetParamValue("password","server.v2", password);
       MyConfig.SetParamValue("server.v2", "updatetime.connected", updatetime_connected);
       MyConfig.SetParamValue("server.v2", "updatetime.idle", updatetime_idle);
 
@@ -1371,7 +1371,7 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
     server = MyConfig.GetParamValue("server.v2", "server");
     tls = MyConfig.GetParamValueBool("server.v2", "tls", false);
     vehicleid = MyConfig.GetParamValue("vehicle", "id");
-    password = MyConfig.GetParamValue("server.v2", "password");
+    password = MyConfig.GetParamValue("password", "server.v2");
     port = MyConfig.GetParamValue("server.v2", "port");
     updatetime_connected = MyConfig.GetParamValue("server.v2", "updatetime.connected");
     updatetime_idle = MyConfig.GetParamValue("server.v2", "updatetime.idle");
