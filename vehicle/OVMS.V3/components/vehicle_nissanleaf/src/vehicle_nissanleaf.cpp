@@ -631,6 +631,16 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           break;
         }
       break;
+    case 0x54a:
+    {
+      // setpoint gets reset on heatin or cooling off, so we only update it while they are running
+      if (StandardMetrics.ms_v_env_heating->AsBool() || StandardMetrics.ms_v_env_cooling->AsBool())
+      {
+        float setpoint_float = d[4] / 2;
+        m_climate_setpoint->SetValue(setpoint_float);
+      }
+    }
+      break;
     case 0x54b:
     {
       int fanspeed_int = d[4] / 8;
@@ -726,6 +736,10 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
                        d[1] == 0x79 || /* cool + heat */
                        d[1] == 0x76;   /* cool + auto */
 
+        // d[1] == 0x47 : heat + auto
+        // d[1] == 0x49 : heat only
+        // d[1] == 0x79 : heat + cool
+
         bool heating = (d[1] & 0x01);
 
         // The following value work only when car is on, so we need to use fan/heat/cool values to indicate hvac on as described below
@@ -742,16 +756,6 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       StandardMetrics.ms_v_env_hvac->SetValue(hvac_calculated);
      
 
-    }
-      break;
-    case 0x54a:
-    {
-      // setpoint gets reset on heatin or cooling off, so we only update it while they are running
-      if (StandardMetrics.ms_v_env_heating->AsBool() || StandardMetrics.ms_v_env_cooling->AsBool())
-      {
-        float setpoint_float = d[4] / 2;
-        m_climate_setpoint->SetValue(setpoint_float);
-      }
     }
       break;
     case 0x54c:
