@@ -39,7 +39,6 @@ static const char *TAG = "ovms-server-v2";
 #include "metrics_standard.h"
 #include "crypt_base64.h"
 #include "crypt_hmac.h"
-#include "crypt_md5.h"
 #include "crypt_crc.h"
 #include "ovms_server_v2.h"
 #include "ovms_netmanager.h"
@@ -47,7 +46,7 @@ static const char *TAG = "ovms-server-v2";
 #include "esp_system.h"
 #include "ovms_utils.h"
 #include "ovms_boot.h"
-
+#include "ovms_tls.h"
 
 // should this go in the .h or in the .cpp?
 typedef union {
@@ -137,7 +136,7 @@ static struct
   { "modem",     "apn.user" },             //  6 PARAM_GPRSUSER
   { "modem",     "apn.password" },         //  7 PARAM_GPRSPASS
   { "vehicle",   "id" },                   //  8 PARAM_VEHICLEID
-  { "server.v2", "password" },             //  9 PARAM_SERVERPASS
+  { "password", "server.v2" },             //  9 PARAM_SERVERPASS
   { "",          "" },                     // 10 PARAM_PARANOID
   { "",          "" },                     // 11 PARAM_S_GROUP1
   { "",          "" },                     // 12 PARAM_S_GROUP2
@@ -195,7 +194,7 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
         if (MyOvmsServerV2)
           {
           MyOvmsServerV2->SetStatus("Error: Connection failed", true, OvmsServerV2::WaitReconnect);
-          MyOvmsServerV2->m_connretry = 20;
+          MyOvmsServerV2->m_connretry = 60;
           }
         }
       }
@@ -212,7 +211,7 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
         else
           {
           MyOvmsServerV2->SetStatus("Disconnected", false, OvmsServerV2::WaitReconnect);
-          MyOvmsServerV2->Reconnect(20);
+          MyOvmsServerV2->Reconnect(60);
           }
         }
       break;
@@ -238,7 +237,7 @@ void OvmsServerV2::ProcessServerMsg()
     if (sep == std::string::npos)
       {
       SetStatus("Error: Server response invalid (no token/digest separator)", true, WaitReconnect);
-      Reconnect(20);
+      Reconnect(60);
       return;
       }
     std::string token = std::string(line,7,sep-7);
@@ -247,8 +246,8 @@ void OvmsServerV2::ProcessServerMsg()
     if (m_token == token)
       {
       SetStatus("Error: Detected token replay attack/collision", true, WaitReconnect);
-      Reconnect(20);
-      m_connretry = 20; // Try again in 20 seconds...
+      Reconnect(60);
+      m_connretry = 60; // Try again in 60 seconds...
       return;
       }
     uint8_t sdigest[OVMS_MD5_SIZE];
@@ -258,7 +257,7 @@ void OvmsServerV2::ProcessServerMsg()
     if (digest.compare((char*)sdb) != 0)
       {
       SetStatus("Error: Server digest does not authenticate", true, WaitReconnect);
-      Reconnect(20);
+      Reconnect(60);
       return;
       }
     SetStatus("Server authentication ok. Now priming crypto.");
@@ -278,6 +277,32 @@ void OvmsServerV2::ProcessServerMsg()
       uint8_t v = 0;
       RC4_crypt(&m_crypto_tx1, &m_crypto_tx2, &v, 1);
       }
+
+    if (m_paranoid)
+      {
+      // Paranoid mode welcome
+      char token[OVMS_PROTOCOL_V2_TOKENSIZE+1];
+
+      // Generate a random paranoid mode token
+      for (int k=0;k<OVMS_PROTOCOL_V2_TOKENSIZE;k++)
+        {
+        token[k] = (char)cb64[esp_random()%64];
+        }
+      token[OVMS_PROTOCOL_V2_TOKENSIZE] = 0;
+      m_ptoken = std::string(token);
+
+      // Transmit the token (unencrypted) to the server
+      m_ptoken_ready = false;
+      std::string msg("MP-0 ET");
+      msg.append(m_ptoken);
+      Transmit(msg);
+      m_ptoken_ready = true;
+
+      // Generate, and store, the digest for future use
+      std::string modpass = MyConfig.GetParamValue("password","module");
+      hmac_md5((uint8_t*) token, OVMS_PROTOCOL_V2_TOKENSIZE, (uint8_t*)modpass.c_str(), modpass.length(), m_pdigest);
+      }
+
     m_pending_notify_info = true;
     m_pending_notify_error = true;
     m_pending_notify_alert = true;
@@ -285,8 +310,16 @@ void OvmsServerV2::ProcessServerMsg()
     m_pending_notify_data_last = 0;
     m_pending_notify_data_retransmit = 0;
     m_connretry = 0;
+
     StandardMetrics.ms_s_v2_connected->SetValue(true);
-    SetStatus("OVMS V2 login successful, and crypto channel established", false, Connected);
+    if (m_paranoid)
+      {
+      SetStatus("OVMS V2 login successful, and crypto channel established (in paranoid mode)", false, Connected);
+      }
+    else
+      {
+      SetStatus("OVMS V2 login successful, and crypto channel established", false, Connected);
+      }
     return;
     }
 
@@ -302,8 +335,36 @@ void OvmsServerV2::ProcessServerMsg()
   if (line.compare(0, 5, "MP-0 ") != 0)
     {
     SetStatus("Error: Invalid server message. Disconnecting.", true, WaitReconnect);
-    Reconnect(20);
+    Reconnect(60);
     return;
+    }
+
+  if ((line.at(5) == 'E')&&(line.at(6) == 'M'))
+    {
+    char code[2]; code[0] = line.at(7); code[1] = 0;
+    uint8_t *d = new uint8_t[line.length()-6];
+    len = base64decode(line.c_str()+7,d+1);
+
+    RC4_CTX1* pm_crypto1 = new RC4_CTX1;
+    RC4_CTX2* pm_crypto2 = new RC4_CTX2;
+    RC4_setup(pm_crypto1, pm_crypto2, m_pdigest, OVMS_MD5_SIZE);
+    for (int k=0;k<1024;k++)
+      {
+      uint8_t zero = 0;
+      RC4_crypt(pm_crypto1, pm_crypto2, &zero, 1);
+      }
+    RC4_crypt(pm_crypto1, pm_crypto2, d, len);
+
+    line.erase(5);
+    line = std::string("MP-0 ");
+    line.append(code);
+    line.append((char*)d);
+    len = line.length();
+
+    delete pm_crypto1;
+    delete pm_crypto2;
+    delete d;
+    ESP_LOGI(TAG, "Decoded Paranoid Msg: %s",line.c_str());
     }
 
   char code = line[5];
@@ -313,7 +374,7 @@ void OvmsServerV2::ProcessServerMsg()
     {
     case 'A': // PING
       {
-      Transmit("MP-0 a");
+      Transmit(std::string("MP-0 a"));
       break;
       }
     case 'Z': // Peer connections
@@ -667,31 +728,43 @@ void OvmsServerV2::Transmit(const std::string& message)
     return;
 
   int len = message.length();
-  char* s = new char[len];
+  char* s = new char[(len*2)+4];
   memcpy(s,message.c_str(),len);
   ESP_LOGI(TAG, "Send %s",message.c_str());
 
-  RC4_crypt(&m_crypto_tx1, &m_crypto_tx2, (uint8_t*)s, len);
+  if ((m_ptoken_ready)&&
+      (s[5] != 'E')&&
+      (s[5] != 'A')&&
+      (s[5] != 'a')&&
+      (s[5] != 'g')&&
+      (s[5] != 'P'))
+    {
+    // We must convert the message to a paranoid one...
+    // The message is of the form MP-0 X...
+    // Where X is the code and ... is the (optional) data
+    char code[2]; code[0] = s[5]; code[1] = 0;
+    uint8_t* d = new uint8_t[len-6];
+    memcpy(d,s+6,len-6);
 
-  char* buf = new char[(len*2)+4];
-  base64encode((uint8_t*)s, len, (uint8_t*)buf);
-  strcat(buf,"\r\n");
-  mg_send(m_mgconn, buf, strlen(buf));
+    // Paranoid encrypt the message part of the transaction
+    RC4_CTX1* pm_crypto1 = new RC4_CTX1;
+    RC4_CTX2* pm_crypto2 = new RC4_CTX2;
+    RC4_setup(pm_crypto1, pm_crypto2, m_pdigest, OVMS_MD5_SIZE);
+    for (int k=0;k<1024;k++)
+      {
+      uint8_t zero = 0;
+      RC4_crypt(pm_crypto1, pm_crypto2, &zero, 1);
+      }
+    RC4_crypt(pm_crypto1, pm_crypto2, d, len-6);
 
-  delete [] buf;
-  delete [] s;
-  }
-
-void OvmsServerV2::Transmit(const char* message)
-  {
-  OvmsMutexLock mg(&m_mgconn_mutex);
-  if (!m_mgconn)
-    return;
-
-  int len = strlen(message);
-  char* s = new char[len];
-  memcpy(s,message,len);
-  ESP_LOGI(TAG, "Send %s",message);
+    strcpy(s,"MP-0 EM");
+    strcat(s,code);
+    base64encode(d, len-6, (uint8_t*)s+8);
+    // The messdage is now in paranoid mode...
+    delete d;
+    delete pm_crypto1;
+    delete pm_crypto2;
+    }
 
   RC4_crypt(&m_crypto_tx1, &m_crypto_tx2, (uint8_t*)s, len);
 
@@ -747,9 +820,12 @@ void OvmsServerV2::Connect()
   {
   m_vehicleid = MyConfig.GetParamValue("vehicle", "id");
   m_server = MyConfig.GetParamValue("server.v2", "server");
-  m_password = MyConfig.GetParamValue("server.v2", "password");
+  m_password = MyConfig.GetParamValue("password","server.v2");
   m_port = MyConfig.GetParamValue("server.v2", "port");
-  if (m_port.empty()) m_port = "6867";
+  m_tls = MyConfig.GetParamValueBool("server.v2", "tls",false);
+  m_paranoid = MyConfig.GetParamValueBool("server.v2", "paranoid",false);
+
+  if (m_port.empty()) m_port = (m_tls)?"6870":"6867";
   std::string address(m_server);
   address.append(":");
   address.append(m_port);
@@ -784,11 +860,16 @@ void OvmsServerV2::Connect()
   const char* err;
   memset(&opts, 0, sizeof(opts));
   opts.error_string = &err;
+  if (m_tls)
+    {
+    opts.ssl_ca_cert = MyOvmsTLS.GetTrustedList();
+    opts.ssl_server_name = m_server.c_str();
+    }
   if ((m_mgconn = mg_connect_opt(mgr, address.c_str(), OvmsServerV2MongooseCallback, opts)) == NULL)
     {
     ESP_LOGE(TAG, "mg_connect(%s) failed: %s", address.c_str(), err);
     SetStatus("Error: Connection failed", true, WaitReconnect);
-    m_connretry = 20; // Try again in 20 seconds...
+    m_connretry = 60; // Try again in 60 seconds...
     return;
     }
   return;
@@ -805,6 +886,7 @@ void OvmsServerV2::Disconnect()
   m_buffer->EmptyAll();
   m_connretry = 0;
   StandardMetrics.ms_s_v2_connected->SetValue(false);
+  StandardMetrics.ms_s_v2_peers->SetValue(0);
   }
 
 void OvmsServerV2::Reconnect(int connretry)
@@ -818,6 +900,7 @@ void OvmsServerV2::Reconnect(int connretry)
   m_buffer->EmptyAll();
   m_connretry = connretry;
   StandardMetrics.ms_s_v2_connected->SetValue(false);
+  StandardMetrics.ms_s_v2_peers->SetValue(0);
   }
 
 size_t OvmsServerV2::IncomingData(uint8_t* data, size_t len)
@@ -850,6 +933,9 @@ void OvmsServerV2::SendLogin(struct mg_connection *nc)
   token[OVMS_PROTOCOL_V2_TOKENSIZE] = 0;
   m_token = std::string(token);
 
+  m_ptoken.clear();
+  m_ptoken_ready = false;
+
   uint8_t digest[OVMS_MD5_SIZE];
   hmac_md5((uint8_t*) token, OVMS_PROTOCOL_V2_TOKENSIZE, (uint8_t*)m_password.c_str(), m_password.length(), digest);
 
@@ -864,7 +950,7 @@ void OvmsServerV2::SendLogin(struct mg_connection *nc)
   strcat(hello,"\r\n");
 
   mg_send(nc, hello, strlen(hello));
-  m_connretry = 30; // Give the server 30 seconds to respond
+  m_connretry = 60; // Give the server 60 seconds to respond
   }
 
 void OvmsServerV2::TransmitMsgStat(bool always)
@@ -881,8 +967,6 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     StandardMetrics.ms_v_bat_range_ideal->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_range_est->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_climit->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_charge_time->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_charge_kwh->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_timermode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_timerstart->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_cac->IsModifiedAndClear(MyOvmsServerV2Modifier) |
@@ -928,7 +1012,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << ","
     << StandardMetrics.ms_v_charge_climit->AsInt()
     << ","
-    << StandardMetrics.ms_v_charge_time->AsInt(0,Minutes)
+    << StandardMetrics.ms_v_charge_time->AsInt(0,Seconds)
     << ","
     << "0"  // car_charge_b4
     << ","
@@ -1066,6 +1150,20 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
     StandardMetrics.ms_v_tpms_rl_p->IsStale() ||
     StandardMetrics.ms_v_tpms_rr_p->IsStale();
 
+  bool defined =
+    StandardMetrics.ms_v_tpms_fl_p->IsDefined() ||
+    StandardMetrics.ms_v_tpms_fr_p->IsDefined() ||
+    StandardMetrics.ms_v_tpms_rl_p->IsDefined() ||
+    StandardMetrics.ms_v_tpms_rr_p->IsDefined();
+
+  int defstale;
+  if (!defined)
+    { defstale = -1; }
+  else if (stale)
+    { defstale = 0; }
+  else
+    { defstale = 1; }
+
   extram::ostringstream buffer;
   buffer
     << "MP-0 W"
@@ -1084,7 +1182,8 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
     << StandardMetrics.ms_v_tpms_rl_p->AsString("0",PSI)
     << ","
     << StandardMetrics.ms_v_tpms_rl_t->AsString("0")
-    << ((stale)?",0":",1")
+    << ","
+    << defstale
     ;
 
   Transmit(buffer.str().c_str());
@@ -1750,6 +1849,11 @@ OvmsServerV2::OvmsServerV2(const char* name)
     MyOvmsServerV2Reader = MyNotify.RegisterReader("ovmsv2", COMMAND_RESULT_NORMAL, std::bind(OvmsServerV2ReaderCallback, _1, _2),
                                                    true, std::bind(OvmsServerV2ReaderFilterCallback, _1, _2));
     }
+  else
+    {
+    MyNotify.RegisterReader(MyOvmsServerV2Reader, "ovmsv2", COMMAND_RESULT_NORMAL, std::bind(OvmsServerV2ReaderCallback, _1, _2),
+                            true, std::bind(OvmsServerV2ReaderFilterCallback, _1, _2));
+    }
 
   // init event listener:
   MyEvents.RegisterEvent(TAG,"network.up", std::bind(&OvmsServerV2::NetUp, this, _1, _2));
@@ -1873,15 +1977,15 @@ OvmsServerV2Init::OvmsServerV2Init()
   cmd_v2->RegisterCommand("stop","Stop an OVMS V2 Server Connection",ovmsv2_stop);
   cmd_v2->RegisterCommand("status","Show OVMS V2 Server connection status",ovmsv2_status);
 
-  MyConfig.RegisterParam("server.v2", "V2 Server Configuration", true, false);
+  MyConfig.RegisterParam("server.v2", "V2 Server Configuration", true, true);
   // Our instances:
   //   'server': The server name/ip
-  //   'password': The server password
   //   'port': The port to connect to (default: 6867)
   //   'updatetime.connected': Time between updates when one or more apps connected (default: 60)
   //   'updatetime.idle': Time between updates when no apps connected (default: 600)
   // Also note:
   //  Parameter "vehicle", instance "id", is the vehicle ID
+  //  Server Password has been movied to password/server.v2
   }
 
 void OvmsServerV2Init::AutoInit()

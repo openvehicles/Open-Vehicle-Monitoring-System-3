@@ -140,6 +140,7 @@ To issue a single call, e.g. to execute a command from a Wifi button,
 supply the password as ``apikey``:
 
 -  ``curl 'http://192.168.4.1/api/execute?apikey=password&command=xrt+cfg+info'``
+-  ``curl 'http://192.168.4.1/api/execute?apikey=password&type=js&command=print(Duktape.version)'``
 
 
 .. _w3schools.com: https://www.w3schools.com/

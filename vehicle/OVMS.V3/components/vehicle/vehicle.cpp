@@ -968,6 +968,7 @@ OvmsVehicle::OvmsVehicle()
   m_poll_ml_remain = 0;
   m_poll_ml_offset = 0;
   m_poll_ml_frame = 0;
+  m_poll_wait = 0;
 
   m_bms_voltages = NULL;
   m_bms_vmins = NULL;
@@ -1266,16 +1267,19 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     {
     // check 12V voltage:
     float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
-    float vref = StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat();
+    // …against the maximum of default and measured reference voltage, so alerts will also
+    //  be triggered if the measured ref follows a degrading battery:
+    float dref = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.6);
+    float vref = MAX(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
     bool alert_on = StandardMetrics.ms_v_bat_12v_voltage_alert->AsBool();
     float alert_threshold = MyConfig.GetParamValueFloat("vehicle", "12v.alert", 1.6);
-    if (vref > 0 && volt > 0 && vref - volt > alert_threshold && !alert_on)
+    if (!alert_on && volt > 0 && vref > 0 && vref-volt > alert_threshold)
       {
       StandardMetrics.ms_v_bat_12v_voltage_alert->SetValue(true);
       MyEvents.SignalEvent("vehicle.alert.12v.on", NULL);
       if (m_autonotifications) Notify12vCritical();
       }
-    else if (vref - volt < alert_threshold * 0.6 && alert_on)
+    else if (alert_on && volt > 0 && vref > 0 && vref-volt < alert_threshold*0.6)
       {
       StandardMetrics.ms_v_bat_12v_voltage_alert->SetValue(false);
       MyEvents.SignalEvent("vehicle.alert.12v.off", NULL);
@@ -1418,7 +1422,8 @@ void OvmsVehicle::NotifyAlarmStopped()
 void OvmsVehicle::Notify12vCritical()
   {
   float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
-  float vref = StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat();
+  float dref = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.6);
+  float vref = MAX(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
 
   MyNotify.NotifyStringf("alert", "batt.12v.alert", "12V Battery critical: %.1fV (ref=%.1fV)", volt, vref);
   }
@@ -1426,7 +1431,8 @@ void OvmsVehicle::Notify12vCritical()
 void OvmsVehicle::Notify12vRecovered()
   {
   float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
-  float vref = StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat();
+  float dref = MyConfig.GetParamValueFloat("vehicle", "12v.ref", 12.6);
+  float vref = MAX(StandardMetrics.ms_v_bat_12v_voltage_ref->AsFloat(), dref);
 
   MyNotify.NotifyStringf("alert", "batt.12v.recovered", "12V Battery restored: %.1fV (ref=%.1fV)", volt, vref);
   }
@@ -1524,6 +1530,22 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandHomelink(int button, int dura
   {
   return NotImplemented;
   }
+
+#ifdef CONFIG_OVMS_COMP_TPMS
+
+bool OvmsVehicle::TPMSRead(std::vector<uint32_t> *tpms)
+  {
+  ESP_LOGE(TAG, "TPMS tyre IDs not implemented in this vehicle");
+  return false;
+  }
+
+bool OvmsVehicle::TPMSWrite(std::vector<uint32_t> &tpms)
+  {
+  ESP_LOGE(TAG, "TPMS tyre IDs not implemented in this vehicle");
+  return false;
+  }
+
+#endif // #ifdef CONFIG_OVMS_COMP_TPMS
 
 /**
  * CommandStat: default implementation of vehicle status output
@@ -2014,6 +2036,24 @@ void OvmsVehicle::PollerSend()
 
   while (m_poll_plcur->txmoduleid != 0)
     {
+    // there are remaining poll replays from last poll. we wait for it.
+    if (m_poll_ml_remain > 7)
+      {
+      if (m_poll_wait)
+        {
+        // ESP_LOGD(TAG,"wait last Polling for %02x: there are remaining poll replays", m_poll_plcur->pid);
+        m_poll_wait = 0;
+        m_poll_ml_remain = 0;
+        return;
+        }
+      else
+        {
+        // ESP_LOGD(TAG,"wait Polling for %02x: there are remaining poll replays", m_poll_plcur->pid);
+        m_poll_wait = 1;
+        return;
+        }
+      }
+    m_poll_wait = 0;
     if ((m_poll_plcur->polltime[m_poll_state] > 0)&&
         ((m_poll_ticker % m_poll_plcur->polltime[m_poll_state] ) == 0))
       {
@@ -2035,7 +2075,7 @@ void OvmsVehicle::PollerSend()
         m_poll_moduleid_high = 0x7ef;
         }
 
-      // ESP_LOGI(TAG, "Polling for %d/%02x (expecting %03x/%03x-%03x)",
+      // ESP_LOGD(TAG, "Polling for %d/%02x (expecting %03x/%03x-%03x)",
       //   m_poll_type,m_poll_pid,m_poll_moduleid_sent,m_poll_moduleid_low,m_poll_moduleid_high);
       CAN_frame_t txframe;
       memset(&txframe,0,sizeof(txframe));

@@ -33,6 +33,9 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include "ovms_utils.h"
+#include "ovms_config.h"
+#include "metrics_standard.h"
+
 
 /**
  * chargestate_code: convert legacy chargestate key to code
@@ -238,32 +241,6 @@ std::string stripesc(const char* s)
     ++s;
     }
   return res;
-  }
-
-/**
- * startsWith: std::string prefix check
- */
-bool startsWith(const std::string& haystack, const std::string& needle)
-  {
-  return needle.length() <= haystack.length()
-    && std::equal(needle.begin(), needle.end(), haystack.begin());
-  }
-bool startsWith(const std::string& haystack, const char needle)
-  {
-  return !haystack.empty() && haystack.front() == needle;
-  }
-
-/**
- * endsWith: std::string suffix check
- */
-bool endsWith(const std::string& haystack, const std::string& needle)
-  {
-  return needle.length() <= haystack.length()
-    && std::equal(needle.begin(), needle.end(), haystack.end() - needle.length());
-  }
-bool endsWith(const std::string& haystack, const char needle)
-  {
-  return !haystack.empty() && haystack.back() == needle;
   }
 
 /**
@@ -489,4 +466,50 @@ std::string mqtt_topic(const std::string text)
       }
     }
 	return buf;
+  }
+
+/**
+ * get_user_agent: create User-Agent string from OVMS versions & vehicle ID
+ *  Scheme: "ovms/v<hw_version> (<vehicle_id> <sw_version>)"
+ */
+std::string get_user_agent()
+  {
+  std::string ua;
+  ua = "ovms/";
+  #ifdef CONFIG_OVMS_HW_BASE_3_0
+    ua.append("v3.0 (");
+  #endif
+  #ifdef CONFIG_OVMS_HW_BASE_3_1
+    ua.append("v3.1 (");
+  #endif
+  ua.append(MyConfig.GetParamValue("vehicle","id",""));
+  ua.append(" ");
+  ua.append(StandardMetrics.ms_m_version->AsString());
+  ua.append(")");
+  return ua;
+  }
+
+/**
+ * float2double: minimize precision errors on float→double conversion
+ *  Casting a float to double sets the additional precision bits to 0, resulting in
+ *  the double to have a significant offset from the rounded float; e.g.
+ *  11.08 becomes 11.079999923706055.
+ *  (Is there a better implementation for this than sprintf/atof?)
+ */
+double float2double(float f)
+  {
+  char buf[16];
+  snprintf(buf, sizeof buf, "%g", f);
+  return atof(buf);
+  }
+
+/**
+ * idtag: create object instance tag for registrations
+ */
+std::string idtag(const char* tag, void* instance)
+  {
+  std::ostringstream buf;
+  buf << tag << "-" << instance;
+  std::string res = buf.str();
+  return res;
   }

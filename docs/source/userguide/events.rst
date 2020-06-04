@@ -2,7 +2,43 @@
 Events
 ======
 
-Internally, OVMS raises events whenever significant events occur. An event is simply a name, along with associated data. Individual vehicle types may also issue their own events, and custom user events are also possible. Here is the list of standard system events in the OVMS v3 firmware:
+Internally, OVMS raises events whenever significant events occur. An event is a lightweight message 
+of a name plus optionally associated internal binary data. Event names are top-down structured (so 
+can be filtered by prefix) and sufficient to identify the source and type of the event. Individual 
+vehicle types may also issue their own events, and custom user events are also possible.
+
+To **bind a script to an event**, save the script in directory ``/store/events/<eventname>`` (hint: 
+directories can be created using the web UI editor). Whenever events are triggered, all the scripts 
+in the corresponding ``/store/events/<eventname>`` directory are executed. Event scripts are 
+executed in alphanumerical order of their names. Good practice is to prefix script names with 2-3 
+digit numbers in steps of 10 or 100 (i.e. first script named ``50-…``), so new scripts can easily be 
+integrated at a specific place. If the event script is written in Javascript, be sure to add the 
+suffix ``.js`` to the name. Other names will be executed using the standard command interpreter.
+
+If you want to **introduce a custom event** (e.g. for a plugin), prefix the event name by 
+``usr.<pluginname>.`` followed by the event purpose. :doc:`../components/ovms_script/docs/foglight`
+
+Be aware **events are processed in series** from a queue, so depending on the system load and the 
+list of registered event listeners, there may be some delay from event generation to e.g. a script 
+execution.
+
+--------
+Commands
+--------
+
+- ``event list [<key>]`` -- Show registered listeners for all or events matching a key
+  (part of the name)
+- ``event trace <on|off>`` -- Enable/disable logging of events at the "info" level.
+  Without tracing, events are also logged, but at the "debug" level.
+  Ticker events are never logged.
+- ``event raise [-d<delay_ms>] <event>`` -- Manually raise an event, optionally with a delay.
+  You can raise any event you like, but you shouldn't raise system events without
+  good knowledge of their effects.
+
+
+---------------
+Standard Events
+---------------
 
 =================================== ========= =======
 Event                               Data      Purpose
@@ -16,9 +52,12 @@ canopen.worker.stop                 <worker>  CANopen bus worker task stopping
 config.changed                                Configuration has changed
 config.mounted                                Configuration is mounted and available
 config.unmounted                              Configuration is unmounted and unavailable
+egpio.input.<port>.<state>                    EGPIO input port change (port=0…9, state=high/low)
+egpio.output.<port>.<state>                   EGPIO output port change (port=0…9, state=high/low)
 gps.lock.acquired                             GPS lock has been acquired
 gps.lock.lost                                 GPS lock has been lost
 housekeeping.init                             Housekeeping has initialised
+location.alert.flatbed.moved                  GPS movement of parked vehicle detected
 location.enter.<name>               <name>    The specified geolocation has been entered
 location.leave.<name>               <name>    The specified geolcation has been left
 network.down                                  All networks are down

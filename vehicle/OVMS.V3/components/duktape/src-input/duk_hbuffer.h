@@ -55,9 +55,6 @@
  *  Field access
  */
 
-/* Get/set the current user visible size, without accounting for a dynamic
- * buffer's "spare" (= usable size).
- */
 #if defined(DUK_USE_BUFLEN16)
 /* size stored in duk_heaphdr unused flag bits */
 #define DUK_HBUFFER_GET_SIZE(x)     ((x)->hdr.h_flags >> 16)
@@ -97,7 +94,7 @@
 #define DUK_HBUFFER_EXTERNAL_GET_SIZE(x)    DUK_HBUFFER_GET_SIZE((duk_hbuffer *) (x))
 #define DUK_HBUFFER_EXTERNAL_SET_SIZE(x,v)  DUK_HBUFFER_SET_SIZE((duk_hbuffer *) (x), (v))
 
-#define DUK_HBUFFER_FIXED_GET_DATA_PTR(heap,x)    ((duk_uint8_t *) (((duk_hbuffer_fixed *) (x)) + 1))
+#define DUK_HBUFFER_FIXED_GET_DATA_PTR(heap,x)    ((duk_uint8_t *) (((duk_hbuffer_fixed *) (void *) (x)) + 1))
 
 #if defined(DUK_USE_HEAPPTR16)
 #define DUK_HBUFFER_DYNAMIC_GET_DATA_PTR(heap,x) \
@@ -152,7 +149,7 @@
 				DUK_HBUFFER_EXTERNAL_GET_DATA_PTR((heap), (duk_hbuffer_external *) (x)) : \
 				DUK_HBUFFER_DYNAMIC_GET_DATA_PTR((heap), (duk_hbuffer_dynamic *) (x)) \
 		) : \
-		DUK_HBUFFER_FIXED_GET_DATA_PTR((heap), (duk_hbuffer_fixed *) (x)) \
+		DUK_HBUFFER_FIXED_GET_DATA_PTR((heap), (duk_hbuffer_fixed *) (void *) (x)) \
 	)
 #else
 /* Without heap pointer compression duk_hbuffer_dynamic and duk_hbuffer_external
@@ -161,8 +158,16 @@
 #define DUK_HBUFFER_GET_DATA_PTR(heap,x)  ( \
 	DUK_HBUFFER_HAS_DYNAMIC((x)) ? \
 		DUK_HBUFFER_DYNAMIC_GET_DATA_PTR((heap), (duk_hbuffer_dynamic *) (x)) : \
-		DUK_HBUFFER_FIXED_GET_DATA_PTR((heap), (duk_hbuffer_fixed *) (x)) \
+		DUK_HBUFFER_FIXED_GET_DATA_PTR((heap), (duk_hbuffer_fixed *) (void *) (x)) \
 	)
+#endif
+
+/* Validity assert. */
+#if defined(DUK_USE_ASSERTIONS)
+DUK_INTERNAL_DECL void duk_hbuffer_assert_valid(duk_hbuffer *h);
+#define DUK_HBUFFER_ASSERT_VALID(h)  do { duk_hbuffer_assert_valid((h)); } while (0)
+#else
+#define DUK_HBUFFER_ASSERT_VALID(h)  do {} while (0)
 #endif
 
 /*
@@ -177,7 +182,7 @@ struct duk_hbuffer {
 	 * it is useful for writing robust native code.
 	 */
 
-	/* Current size (not counting a dynamic buffer's "spare"). */
+	/* Current size. */
 #if defined(DUK_USE_BUFLEN16)
 	/* Stored in duk_heaphdr unused flags. */
 #else
@@ -235,7 +240,10 @@ struct duk_hbuffer_fixed {
 #if (DUK_USE_ALIGN_BY == 4)
 		duk_uint32_t dummy_for_align4;
 #elif (DUK_USE_ALIGN_BY == 8)
-		duk_double_t dummy_for_align8;
+		duk_double_t dummy_for_align8_1;
+#if defined(DUK_USE_64BIT_OPS)
+		duk_uint64_t dummy_for_align8_2;
+#endif
 #elif (DUK_USE_ALIGN_BY == 1)
 		/* no extra padding */
 #else

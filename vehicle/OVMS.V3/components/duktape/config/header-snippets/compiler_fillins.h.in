@@ -1,3 +1,10 @@
+#if !defined(DUK_U64_CONSTANT)
+#define DUK_U64_CONSTANT(x) x##ULL
+#endif
+#if !defined(DUK_I64_CONSTANT)
+#define DUK_I64_CONSTANT(x) x##LL
+#endif
+
 #if !defined(DUK_VA_COPY)
 /* We need va_copy() which is defined in C99 / C++11, so an awkward
  * replacement is needed for pre-C99 / pre-C++11 environments.  This
@@ -34,6 +41,7 @@
  */
 #define DUK_CAUSE_SEGFAULT()  do { *((volatile duk_uint32_t *) NULL) = (duk_uint32_t) 0xdeadbeefUL; } while (0)
 #endif
+
 #if !defined(DUK_UNREF)
 /* Macro for suppressing warnings for potentially unreferenced variables.
  * The variables can be actually unreferenced or unreferenced in some
@@ -43,16 +51,35 @@
  */
 #define DUK_UNREF(x)  do { (void) (x); } while (0)
 #endif
-#if !defined(DUK_NORETURN)
+
+/* Fillin for DUK_NORETURN; DUK_WO_NORETURN() is used to insert dummy
+ * dummy statements after noreturn calls to silence harmless compiler
+ * warnings, e.g.:
+ *
+ *   DUK_ERROR_TYPE(thr, "aiee");
+ *   DUK_WO_NORETURN(return 0;);
+ *
+ * Statements inside DUK_WO_NORETURN() must NEVER be actually reachable,
+ * and they're only included to satisfy the compiler.
+ */
+#if defined(DUK_NORETURN)
+#define DUK_WO_NORETURN(stmt) do { } while (0)
+#else
 #define DUK_NORETURN(decl)  decl
+#define DUK_WO_NORETURN(stmt) do { stmt } while (0)
 #endif
-#if !defined(DUK_UNREACHABLE)
+
+#if defined(DUK_UNREACHABLE)
+#define DUK_WO_UNREACHABLE(stmt) do { } while (0)
+#else
 /* Don't know how to declare unreachable point, so don't do it; this
  * may cause some spurious compilation warnings (e.g. "variable used
  * uninitialized").
  */
 #define DUK_UNREACHABLE()  do { } while (0)
+#define DUK_WO_UNREACHABLE(stmt) do { stmt } while (0)
 #endif
+
 #if !defined(DUK_LOSE_CONST)
 /* Convert any input pointer into a "void *", losing a const qualifier.
  * This is not fully portable because casting through duk_uintptr_t may
@@ -131,17 +158,30 @@
 #endif
 #endif
 
+#if defined(DUK_F_HAVE_64BIT)
+#if !defined(DUK_BSWAP64)
+#define DUK_BSWAP64(x) \
+	((((duk_uint64_t) (x)) >> 56U) | \
+	 ((((duk_uint64_t) (x)) >> 40U) & DUK_U64_CONSTANT(0xff00)) | \
+	 ((((duk_uint64_t) (x)) >> 24U) & DUK_U64_CONSTANT(0xff0000)) | \
+	 ((((duk_uint64_t) (x)) >> 8U) & DUK_U64_CONSTANT(0xff000000)) | \
+	 ((((duk_uint64_t) (x)) << 8U) & DUK_U64_CONSTANT(0xff00000000)) | \
+	 ((((duk_uint64_t) (x)) << 24U) & DUK_U64_CONSTANT(0xff0000000000)) | \
+	 ((((duk_uint64_t) (x)) << 40U) & DUK_U64_CONSTANT(0xff000000000000)) | \
+	 (((duk_uint64_t) (x)) << 56U))
+#endif
+#endif
 #if !defined(DUK_BSWAP32)
 #define DUK_BSWAP32(x) \
-	((((duk_uint32_t) (x)) >> 24) | \
-	 ((((duk_uint32_t) (x)) >> 8) & 0xff00UL) | \
-	 ((((duk_uint32_t) (x)) << 8) & 0xff0000UL) | \
-	 (((duk_uint32_t) (x)) << 24))
+	((((duk_uint32_t) (x)) >> 24U) | \
+	 ((((duk_uint32_t) (x)) >> 8U) & 0xff00UL) | \
+	 ((((duk_uint32_t) (x)) << 8U) & 0xff0000UL) | \
+	 (((duk_uint32_t) (x)) << 24U))
 #endif
 #if !defined(DUK_BSWAP16)
 #define DUK_BSWAP16(x) \
-	((duk_uint16_t) (x) >> 8) | \
-	((duk_uint16_t) (x) << 8)
+	((duk_uint16_t) (x) >> 8U) | \
+	((duk_uint16_t) (x) << 8U)
 #endif
 
 /* DUK_USE_VARIADIC_MACROS: required from compilers, so no fill-in. */

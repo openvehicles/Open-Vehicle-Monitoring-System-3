@@ -131,7 +131,7 @@ typedef struct {
 	} while (0)
 #else
 #define DUK__TVAL_SET_I48(tv,i)  do { \
-		(tv)->ull[DUK_DBL_IDX_ULL0] = (((duk_uint64_t) DUK_TAG_FASTINT) << 48) | (((duk_uint64_t) (i)) & 0x0000ffffffffffffULL); \
+		(tv)->ull[DUK_DBL_IDX_ULL0] = (((duk_uint64_t) DUK_TAG_FASTINT) << 48) | (((duk_uint64_t) (i)) & DUK_U64_CONSTANT(0x0000ffffffffffff)); \
 	} while (0)
 #define DUK__TVAL_SET_U32(tv,i)  do { \
 		(tv)->ull[DUK_DBL_IDX_ULL0] = (((duk_uint64_t) DUK_TAG_FASTINT) << 48) | (duk_uint64_t) (i); \
@@ -228,7 +228,7 @@ typedef struct {
 #define DUK_TVAL_SET_TVAL(tv,x)              do { *(tv) = *(x); } while (0)
 
 /* getters */
-#define DUK_TVAL_GET_BOOLEAN(tv)             ((duk_small_int_t) (tv)->us[DUK_DBL_IDX_US1])
+#define DUK_TVAL_GET_BOOLEAN(tv)             ((duk_small_uint_t) (tv)->us[DUK_DBL_IDX_US1])
 #if defined(DUK_USE_FASTINT)
 #define DUK_TVAL_GET_DOUBLE(tv)              ((tv)->d)
 #define DUK_TVAL_GET_FASTINT(tv)             DUK__TVAL_GET_FASTINT((tv))
@@ -244,7 +244,7 @@ typedef struct {
 		(out_fp) = (duk_c_function) (tv)->ui[DUK_DBL_IDX_UI1]; \
 	} while (0)
 #define DUK_TVAL_GET_LIGHTFUNC_FUNCPTR(tv)   ((duk_c_function) ((tv)->ui[DUK_DBL_IDX_UI1]))
-#define DUK_TVAL_GET_LIGHTFUNC_FLAGS(tv)     (((duk_small_int_t) (tv)->ui[DUK_DBL_IDX_UI0]) & 0xffffUL)
+#define DUK_TVAL_GET_LIGHTFUNC_FLAGS(tv)     (((duk_small_uint_t) (tv)->ui[DUK_DBL_IDX_UI0]) & 0xffffUL)
 #define DUK_TVAL_GET_STRING(tv)              ((duk_hstring *) (tv)->vp[DUK_DBL_IDX_VP1])
 #define DUK_TVAL_GET_OBJECT(tv)              ((duk_hobject *) (tv)->vp[DUK_DBL_IDX_VP1])
 #define DUK_TVAL_GET_BUFFER(tv)              ((duk_hbuffer *) (tv)->vp[DUK_DBL_IDX_VP1])
@@ -382,7 +382,7 @@ typedef struct {
 		duk_tval *duk__tv; \
 		duk__tv = (tv); \
 		duk__tv->t = DUK_TAG_BOOLEAN; \
-		duk__tv->v.i = (val); \
+		duk__tv->v.i = (duk_small_int_t) (val); \
 	} while (0)
 
 #if defined(DUK_USE_FASTINT)
@@ -513,7 +513,7 @@ typedef struct {
 #define DUK_TVAL_SET_TVAL(tv,x)            do { *(tv) = *(x); } while (0)
 
 /* getters */
-#define DUK_TVAL_GET_BOOLEAN(tv)           ((tv)->v.i)
+#define DUK_TVAL_GET_BOOLEAN(tv)           ((duk_small_uint_t) (tv)->v.i)
 #if defined(DUK_USE_FASTINT)
 #define DUK_TVAL_GET_DOUBLE(tv)            ((tv)->v.d)
 #define DUK_TVAL_GET_FASTINT(tv)           ((tv)->v.fi)
@@ -540,7 +540,7 @@ typedef struct {
 		(out_fp) = (tv)->v.lightfunc; \
 	} while (0)
 #define DUK_TVAL_GET_LIGHTFUNC_FUNCPTR(tv) ((tv)->v.lightfunc)
-#define DUK_TVAL_GET_LIGHTFUNC_FLAGS(tv)   ((duk_uint32_t) ((tv)->v_extra))
+#define DUK_TVAL_GET_LIGHTFUNC_FLAGS(tv)   ((duk_small_uint_t) ((tv)->v_extra))
 #define DUK_TVAL_GET_STRING(tv)            ((tv)->v.hstring)
 #define DUK_TVAL_GET_OBJECT(tv)            ((tv)->v.hobject)
 #define DUK_TVAL_GET_BUFFER(tv)            ((tv)->v.hbuffer)
@@ -605,11 +605,11 @@ DUK_INTERNAL_DECL duk_double_t duk_tval_get_number_unpacked_fastint(duk_tval *tv
 #define DUK_LFUNC_FLAGS_GET_MAGIC(lf_flags) \
 	((duk_int32_t) (duk_int8_t) (((duk_uint16_t) (lf_flags)) >> 8))
 #define DUK_LFUNC_FLAGS_GET_LENGTH(lf_flags) \
-	(((lf_flags) >> 4) & 0x0f)
+	(((lf_flags) >> 4) & 0x0fU)
 #define DUK_LFUNC_FLAGS_GET_NARGS(lf_flags) \
-	((lf_flags) & 0x0f)
+	((lf_flags) & 0x0fU)
 #define DUK_LFUNC_FLAGS_PACK(magic,length,nargs) \
-	(((magic) & 0xff) << 8) | ((length) << 4) | (nargs)
+	((((duk_small_uint_t) (magic)) & 0xffU) << 8) | ((length) << 4) | (nargs)
 
 #define DUK_LFUNC_NARGS_VARARGS             0x0f   /* varargs marker */
 #define DUK_LFUNC_NARGS_MIN                 0x00
@@ -621,12 +621,19 @@ DUK_INTERNAL_DECL duk_double_t duk_tval_get_number_unpacked_fastint(duk_tval *tv
 
 /* fastint constants etc */
 #if defined(DUK_USE_FASTINT)
-#define DUK_FASTINT_MIN           (-0x800000000000LL)
-#define DUK_FASTINT_MAX           0x7fffffffffffLL
+#define DUK_FASTINT_MIN           (DUK_I64_CONSTANT(-0x800000000000))
+#define DUK_FASTINT_MAX           (DUK_I64_CONSTANT(0x7fffffffffff))
 #define DUK_FASTINT_BITS          48
 
 DUK_INTERNAL_DECL void duk_tval_set_number_chkfast_fast(duk_tval *tv, duk_double_t x);
 DUK_INTERNAL_DECL void duk_tval_set_number_chkfast_slow(duk_tval *tv, duk_double_t x);
+#endif
+
+#if defined(DUK_USE_ASSERTIONS)
+DUK_INTERNAL_DECL void duk_tval_assert_valid(duk_tval *tv);
+#define DUK_TVAL_ASSERT_VALID(tv)  do { duk_tval_assert_valid((tv)); } while (0)
+#else
+#define DUK_TVAL_ASSERT_VALID(tv)  do {} while (0)
 #endif
 
 #endif  /* DUK_TVAL_H_INCLUDED */

@@ -52,6 +52,12 @@ MetricsStandard::MetricsStandard()
   ms_m_net_mdm_iccid = new OvmsMetricString(MS_N_MDM_ICCID, SM_STALE_MAX);
   ms_m_net_mdm_model = new OvmsMetricString(MS_N_MDM_MODEL, SM_STALE_MAX);
 
+#ifdef CONFIG_OVMS_COMP_MAX7317
+  ms_m_egpio_input = new OvmsMetricBitset<10,0>(MS_M_EGPIO_INPUT, SM_STALE_MAX);
+  ms_m_egpio_output = new OvmsMetricBitset<10,0>(MS_M_EGPIO_OUTPUT, SM_STALE_MAX);
+  ms_m_egpio_monitor = new OvmsMetricBitset<10,0>(MS_M_EGPIO_MONITOR, SM_STALE_MAX);
+#endif //CONFIG_OVMS_COMP_MAX7317
+
   ms_s_v2_connected = new OvmsMetricBool(MS_S_V2_CONNECTED);
   ms_s_v2_peers = new OvmsMetricInt(MS_S_V2_PEERS);
 
@@ -80,12 +86,12 @@ MetricsStandard::MetricsStandard()
   ms_v_bat_12v_current = new OvmsMetricFloat(MS_V_BAT_12V_CURRENT, SM_STALE_HIGH, Amps);
   ms_v_bat_12v_voltage_ref = new OvmsMetricFloat(MS_V_BAT_12V_VOLTAGE_REF, SM_STALE_HIGH, Volts);
   ms_v_bat_12v_voltage_alert = new OvmsMetricBool(MS_V_BAT_12V_VOLTAGE_ALERT, SM_STALE_MID);
-  
+
   ms_v_bat_pack_level_min = new OvmsMetricFloat(MS_V_BAT_PACK_LEVEL_MIN, SM_STALE_HIGH, Percentage);
   ms_v_bat_pack_level_max = new OvmsMetricFloat(MS_V_BAT_PACK_LEVEL_MAX, SM_STALE_HIGH, Percentage);
   ms_v_bat_pack_level_avg = new OvmsMetricFloat(MS_V_BAT_PACK_LEVEL_AVG, SM_STALE_HIGH, Percentage);
   ms_v_bat_pack_level_stddev = new OvmsMetricFloat(MS_V_BAT_PACK_LEVEL_STDDEV, SM_STALE_HIGH, Percentage);
-  
+
   ms_v_bat_pack_vmin = new OvmsMetricFloat(MS_V_BAT_PACK_VMIN, SM_STALE_HIGH, Volts);
   ms_v_bat_pack_vmax = new OvmsMetricFloat(MS_V_BAT_PACK_VMAX, SM_STALE_HIGH, Volts);
   ms_v_bat_pack_vavg = new OvmsMetricFloat(MS_V_BAT_PACK_VAVG, SM_STALE_HIGH, Volts);
@@ -103,7 +109,7 @@ MetricsStandard::MetricsStandard()
   ms_v_bat_cell_vmax = new OvmsMetricVector<float>(MS_V_BAT_CELL_VMAX, SM_STALE_HIGH, Volts);
   ms_v_bat_cell_vdevmax = new OvmsMetricVector<float>(MS_V_BAT_CELL_VDEVMAX, SM_STALE_HIGH, Volts);
   ms_v_bat_cell_valert = new OvmsMetricVector<short>(MS_V_BAT_CELL_VALERT, SM_STALE_HIGH, Other);
-  
+
   ms_v_bat_cell_temp = new OvmsMetricVector<float>(MS_V_BAT_CELL_TEMP, SM_STALE_HIGH, Celcius);
   ms_v_bat_cell_tmin = new OvmsMetricVector<float>(MS_V_BAT_CELL_TMIN, SM_STALE_HIGH, Celcius);
   ms_v_bat_cell_tmax = new OvmsMetricVector<float>(MS_V_BAT_CELL_TMAX, SM_STALE_HIGH, Celcius);
@@ -117,7 +123,7 @@ MetricsStandard::MetricsStandard()
   ms_v_charge_kwh = new OvmsMetricFloat(MS_V_CHARGE_KWH, SM_STALE_MID, kWh);
   ms_v_charge_mode = new OvmsMetricString(MS_V_CHARGE_MODE, SM_STALE_MID);
   ms_v_charge_timermode = new OvmsMetricBool(MS_V_CHARGE_TIMERMODE, SM_STALE_MID);
-  ms_v_charge_timerstart = new OvmsMetricInt(MS_V_CHARGE_TIMERSTART, SM_STALE_MID);
+  ms_v_charge_timerstart = new OvmsMetricInt(MS_V_CHARGE_TIMERSTART, SM_STALE_MID, TimeUTC);
   ms_v_charge_state = new OvmsMetricString(MS_V_CHARGE_STATE, SM_STALE_MID);
   ms_v_charge_substate = new OvmsMetricString(MS_V_CHARGE_SUBSTATE, SM_STALE_MID);
   ms_v_charge_type = new OvmsMetricString(MS_V_CHARGE_TYPE, SM_STALE_MID);
@@ -136,6 +142,10 @@ MetricsStandard::MetricsStandard()
   ms_v_charge_temp = new OvmsMetricFloat(MS_V_CHARGE_TEMP, SM_STALE_MID, Celcius);
   ms_v_env_temp = new OvmsMetricFloat(MS_V_ENV_TEMP, SM_STALE_MID, Celcius);
   ms_v_env_cabintemp = new OvmsMetricFloat(MS_V_ENV_CABINTEMP, SM_STALE_MID, Celcius);
+  ms_v_env_cabinfan = new OvmsMetricInt(MS_V_ENV_CABINFAN, SM_STALE_MID, Percentage);
+  ms_v_env_cabinsetpoint = new OvmsMetricFloat(MS_V_ENV_CABINSETPOINT, SM_STALE_MID, Celcius);
+  ms_v_env_cabinintake = new OvmsMetricString(MS_V_ENV_CABININTAKE, SM_STALE_MID);
+  ms_v_env_cabinvent = new OvmsMetricString(MS_V_ENV_CABINVENT, SM_STALE_MID);
 
   ms_v_door_fl = new OvmsMetricBool(MS_V_DOOR_FL, SM_STALE_MID);
   ms_v_door_fr = new OvmsMetricBool(MS_V_DOOR_FR, SM_STALE_MID);
@@ -153,6 +163,7 @@ MetricsStandard::MetricsStandard()
   ms_v_env_regenbrake = new OvmsMetricBool(MS_V_ENV_REGENBRAKE, SM_STALE_MID);
   ms_v_env_awake = new OvmsMetricBool(MS_V_ENV_AWAKE, SM_STALE_MID);
   ms_v_env_charging12v = new OvmsMetricBool(MS_V_ENV_CHARGING12V, SM_STALE_MID);
+  ms_v_env_aux12v = new OvmsMetricBool(MS_V_ENV_AUX12V, SM_STALE_MID);
   ms_v_env_cooling = new OvmsMetricBool(MS_V_ENV_COOLING, SM_STALE_MID);
   ms_v_env_heating = new OvmsMetricBool(MS_V_ENV_HEATING, SM_STALE_MID);
   ms_v_env_hvac = new OvmsMetricBool(MS_V_ENV_HVAC, SM_STALE_MID);

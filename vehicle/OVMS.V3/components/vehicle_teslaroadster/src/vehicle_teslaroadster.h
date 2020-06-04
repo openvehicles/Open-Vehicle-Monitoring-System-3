@@ -59,6 +59,12 @@ class OvmsVehicleTeslaRoadster : public OvmsVehicle
     virtual vehicle_command_t CommandDeactivateValet(const char* pin);
     virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
 
+#ifdef CONFIG_OVMS_COMP_TPMS
+  public:
+    virtual bool TPMSRead(std::vector<uint32_t> *tpms);
+    virtual bool TPMSWrite(std::vector<uint32_t> &tpms);
+#endif // #ifdef CONFIG_OVMS_COMP_TPMS
+
   public:
     TimerHandle_t m_homelink_timer;
     int m_homelink_timerbutton;
@@ -108,6 +114,7 @@ class OvmsVehicleTeslaRoadster : public OvmsVehicle
   protected:
     char m_vin[18];
     char m_type[5];
+    bool m_aux12v; // True if auxiliary 12v system is on
     bool m_requesting_cac;
   };
 

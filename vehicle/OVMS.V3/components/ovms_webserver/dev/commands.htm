@@ -126,6 +126,20 @@ h3 {
     </button></p>
 
 
+  <h3>Execute Javascript</h3>
+
+  <p>To execute Javascript code directly (i.e. without calling <code>script eval</code>),
+    simply exchange the <code>data-cmd / data-updcmd</code> attribute by
+    <code>data-js / data-updjs</code>. Example:</p>
+
+  <p>
+    <button type="button" class="btn btn-default" data-target="#out5"
+      data-js="JSON.print(OvmsConfig.GetValues('vehicle'))">
+      Show vehicle config
+    </button>
+    <pre id="out5" />
+  </p>
+
   </div>
 </div>
 

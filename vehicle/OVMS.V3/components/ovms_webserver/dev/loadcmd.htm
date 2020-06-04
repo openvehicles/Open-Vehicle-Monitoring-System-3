@@ -10,8 +10,8 @@
 
     <p class="lead"><code>[jqxhr=] loadcmd(command [,target] [,filter] [,timeout])</code></p>
 
-    <p>The <code>loadcmd()</code> function executes a shell command with asynchronous
-      streaming of the output into a target element or onto a function.</p>
+    <p>The <code>loadcmd()</code> function executes a shell command or evaluates javascript
+      code with asynchronous streaming of the output into a target element or onto a function.</p>
 
 
     <h3>Basic Usage</h3>
@@ -42,6 +42,25 @@
     <p>If the command output stops for <code>timeout</code> seconds, the request is
       aborted and a timeout error is shown. Default timeout is 20 seconds for standard
       commands, 300 seconds for known long running commands.</p>
+
+
+    <h3>Evaluate Javascript Code</h3>
+
+    <p>To execute Javascript, either pass an object instead of the <code>command</code> string,
+      containing the command as property "command" and a second property "type" with
+      value "js", or simply use the wrapper call <code>loadjs()</code>. Example:</p>
+
+    <p>
+      <button type="button" class="btn btn-default"
+        onclick="loadjs('print(OvmsVehicle.Type())', '#out1js')">
+        Show vehicle type
+      </button>
+    </p>
+    <pre id="out1js" />
+
+    <p>Javascript evaluation is not limited to a single command or line. Hint: to avoid
+      encoding complex JS code in the onclick attribute, store the code in some hidden
+      DOM element and read it via <code>$(…).text()</code>.</p>
 
 
     <h3>jqXHR Object</h3>

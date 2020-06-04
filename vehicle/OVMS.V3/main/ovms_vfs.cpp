@@ -44,6 +44,7 @@ static const char *TAG = "vfs";
 #include "ovms_vfs.h"
 #include "ovms_config.h"
 #include "ovms_command.h"
+#include "ovms_peripherals.h"
 #include "crypt_md5.h"
 
 #ifdef CONFIG_OVMS_COMP_EDITOR
@@ -430,6 +431,51 @@ class VfsTailCommand : public OvmsCommandTask
   };
 
 
+void vfs_df(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  FATFS *fs;
+  DWORD fre_clust;
+  uint64_t fre_sect, tot_sect;
+  int sector_size;
+  uint64_t size, free;
+
+  // drive "0:" = /store
+  if (f_getfree("0:", &fre_clust, &fs) == FR_OK)
+    {
+    tot_sect = (fs->n_fatent - 2) * fs->csize;
+    fre_sect = fre_clust * fs->csize;
+    #if FF_MAX_SS != FF_MIN_SS
+      sector_size = fs->ssize;
+    #else
+      sector_size = 512;
+    #endif
+    size = ((uint64_t) tot_sect) * sector_size / 1024;
+    free = ((uint64_t) fre_sect) * sector_size / 1024;
+    writer->printf("/store:  Size: %6llu kB  Avail: %6llu kB  Used: %3d%%\n",
+      size, free, (int)(100 - fre_sect * 100 / tot_sect));
+    }
+  else
+    {
+    writer->puts("ERROR: can't get df info for /store");
+    }
+
+#ifdef CONFIG_OVMS_COMP_SDCARD
+  // drive "1:" = /sd
+  sdmmc_card_t* card = MyPeripherals->m_sdcard->m_card;
+  if (card && f_getfree("1:", &fre_clust, &fs) == FR_OK)
+    {
+    tot_sect = (fs->n_fatent - 2) * fs->csize;
+    fre_sect = fre_clust * fs->csize;
+    sector_size = card->csd.sector_size;
+    size = ((uint64_t) tot_sect) * sector_size / (1024 * 1024);
+    free = ((uint64_t) fre_sect) * sector_size / (1024 * 1024);
+    writer->printf("/sd   :  Size: %6llu MB  Avail: %6llu MB  Used: %3d%%\n",
+      size, free, (int)(100 - fre_sect * 100 / tot_sect));
+    }
+#endif // #ifdef CONFIG_OVMS_COMP_SDCARD
+  }
+
+
 class VfsInit
   {
   public: VfsInit();
@@ -451,6 +497,7 @@ VfsInit::VfsInit()
   cmd_vfs->RegisterCommand("cp","VFS Copy a file",vfs_cp, "<source> <target>", 2, 2);
   cmd_vfs->RegisterCommand("append","VFS Append a line to a file",vfs_append, "<quoted line> <file>", 2, 2);
   cmd_vfs->RegisterCommand("tail","VFS output tail of a file",VfsTailCommand::Execute, "[-nrlines] <file>", 1, 2);
+  cmd_vfs->RegisterCommand("df","VFS show disk usage", vfs_df, "", 0, 0);
   #ifdef CONFIG_OVMS_COMP_EDITOR
   cmd_vfs->RegisterCommand("edit","VFS edit a file",vfs_edit, "<path>", 1, 1);
   #endif // #ifdef CONFIG_OVMS_COMP_EDITOR

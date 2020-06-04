@@ -27,10 +27,10 @@
 #include "ovms_log.h"
 static const char *TAG = "canformat-pcap";
 
+#include "canformat_pcap.h"
 #include <errno.h>
 #include <endian.h>
 #include "pcp.h"
-#include "canformat_pcap.h"
 
 class OvmsCanFormatPCAPInit
   {

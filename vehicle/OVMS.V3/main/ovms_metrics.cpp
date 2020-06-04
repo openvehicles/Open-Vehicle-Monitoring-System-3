@@ -54,7 +54,7 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   for (OvmsMetric* m=MyMetrics.m_first; m != NULL; m=m->m_next)
     {
     const char *k = m->m_name;
-    std::string v = m->AsString();
+    std::string v = m->AsUnitString("", m->GetUnits() == TimeUTC ? TimeLocal : m->GetUnits());
     bool match = false;
     for (int i=0;i<argc;i++)
       if (strstr(k,argv[i]))
@@ -74,9 +74,7 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
       if (v.empty())
         writer->printf("%s\n",k);
       else
-        writer->printf("%-40.40s %s%s\n",
-          k,v.c_str(),OvmsMetricUnitLabel(m->GetUnits()));
-      
+        writer->printf("%-40.40s %s\n", k, v.c_str());
       found = true;
       }
     }
@@ -106,11 +104,29 @@ void metrics_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 
 static duk_ret_t DukOvmsMetricValue(duk_context *ctx)
   {
+  DukContext dc(ctx);
+  bool decode = duk_opt_boolean(ctx, 1, true);
   const char *mn = duk_to_string(ctx,0);
   OvmsMetric *m = MyMetrics.Find(mn);
   if (m)
     {
-    duk_push_string(ctx, m->AsString().c_str());
+    if (decode)
+      m->DukPush(dc);
+    else
+      dc.Push(m->AsString());
+    return 1;  /* one return value */
+    }
+  else
+    return 0;
+  }
+
+static duk_ret_t DukOvmsMetricJSON(duk_context *ctx)
+  {
+  const char *mn = duk_to_string(ctx,0);
+  OvmsMetric *m = MyMetrics.Find(mn);
+  if (m)
+    {
+    duk_push_string(ctx, m->AsJSON().c_str());
     return 1;  /* one return value */
     }
   else
@@ -123,11 +139,66 @@ static duk_ret_t DukOvmsMetricFloat(duk_context *ctx)
   OvmsMetric *m = MyMetrics.Find(mn);
   if (m)
     {
-    duk_push_number(ctx, m->AsFloat());
+    duk_push_number(ctx, float2double(m->AsFloat()));
     return 1;  /* one return value */
     }
   else
     return 0;
+  }
+
+static duk_ret_t DukOvmsMetricGetValues(duk_context *ctx)
+  {
+  OvmsMetric *m;
+  DukContext dc(ctx);
+  bool decode = duk_opt_boolean(ctx, 1, true);
+  duk_idx_t obj_idx = dc.PushObject();
+  
+  // helper: set object property from metric
+  auto set_metric = [&dc, obj_idx, decode](OvmsMetric *m)
+    {
+    if (decode)
+      m->DukPush(dc);
+    else
+      dc.Push(m->AsString());
+    dc.PutProp(obj_idx, m->m_name);
+    };
+
+  if (duk_is_array(ctx, 0))
+    {
+    // get metric names from array:
+    for (int i=0; duk_get_prop_index(ctx, 0, i); i++)
+      {
+      m = MyMetrics.Find(duk_to_string(ctx, -1));
+      if (m) set_metric(m);
+      duk_pop(ctx);
+      }
+    duk_pop(ctx);
+    }
+  else if (duk_is_object(ctx, 0))
+    {
+    // get metric names from object properties:
+    duk_enum(ctx, 0, 0);
+    while (duk_next(ctx, -1, true))
+      {
+      m = MyMetrics.Find(duk_to_string(ctx, -2));
+      if (m) set_metric(m);
+      duk_pop_2(ctx);
+      }
+    duk_pop(ctx);
+    }
+  else
+    {
+    // simple metric name substring filter:
+    const char *filter = duk_opt_string(ctx, 0, "");
+    for (m = MyMetrics.m_first; m; m = m->m_next)
+      {
+      if (*filter && !strstr(m->m_name, filter))
+        continue;
+      set_metric(m);
+      }
+    }
+
+  return 1;
   }
 
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
@@ -162,7 +233,9 @@ OvmsMetrics::OvmsMetrics()
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsMetrics");
   dto->RegisterDuktapeFunction(DukOvmsMetricValue, 1, "Value");
+  dto->RegisterDuktapeFunction(DukOvmsMetricJSON, 1, "AsJSON");
   dto->RegisterDuktapeFunction(DukOvmsMetricFloat, 1, "AsFloat");
+  dto->RegisterDuktapeFunction(DukOvmsMetricGetValues, 2, "GetValues");
   MyScripts.RegisterDuktapeObject(dto);
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
@@ -448,6 +521,13 @@ float OvmsMetric::AsFloat(const float defvalue, metric_unit_t units)
   return defvalue;
   }
 
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+void OvmsMetric::DukPush(DukContext &dc)
+  {
+  dc.Push(AsString());
+  }
+#endif
+
 void OvmsMetric::SetValue(std::string value)
   {
   }
@@ -554,10 +634,20 @@ std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units, i
   if (IsDefined())
     {
     char buffer[33];
+    int value = m_value;
     if ((units != Other)&&(units != m_units))
-      itoa(UnitConvert(m_units,units,m_value),buffer,10);
+      value = UnitConvert(m_units,units,m_value);
+    if (units == TimeUTC || units == TimeLocal)
+      {
+      int seconds = value % 60;
+      value /= 60;
+      int minutes = value % 60;
+      value /= 60;
+      int hours = value;
+      snprintf(buffer, sizeof(buffer), "%02u:%02u:%02u", hours, minutes, seconds);
+      }
     else
-      itoa (m_value,buffer,10);
+      itoa (value,buffer,10);
     return buffer;
     }
   else
@@ -591,6 +681,13 @@ int OvmsMetricInt::AsInt(const int defvalue, metric_unit_t units)
   else
     return defvalue;
   }
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+void OvmsMetricInt::DukPush(DukContext &dc)
+  {
+  dc.Push(m_value);
+  }
+#endif
 
 void OvmsMetricInt::SetValue(int value, metric_unit_t units)
   {
@@ -679,6 +776,13 @@ int OvmsMetricBool::AsBool(const bool defvalue)
     return defvalue;
   }
 
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+void OvmsMetricBool::DukPush(DukContext &dc)
+  {
+  dc.Push(m_value);
+  }
+#endif
+
 void OvmsMetricBool::SetValue(bool value)
   {
   if (m_value != value)
@@ -766,6 +870,13 @@ int OvmsMetricFloat::AsInt(const int defvalue, metric_unit_t units)
   return (int) AsFloat((float) defvalue, units);
   }
 
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+void OvmsMetricFloat::DukPush(DukContext &dc)
+  {
+  dc.Push(m_value);
+  }
+#endif
+
 void OvmsMetricFloat::SetValue(float value, metric_unit_t units)
   {
   float nvalue = value;
@@ -819,6 +930,14 @@ std::string OvmsMetricString::AsString(const char* defvalue, metric_unit_t units
     }
   }
 
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+void OvmsMetricString::DukPush(DukContext &dc)
+  {
+  OvmsMutexLock lock(&m_mutex);
+  dc.Push(m_value);
+  }
+#endif
+
 void OvmsMetricString::SetValue(std::string value)
   {
   if (m_mutex.Lock())
@@ -856,6 +975,7 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
     case Seconds:      return "Sec";
     case Minutes:      return "Min";
     case Hours:        return "Hour";
+    case TimeUTC:      return "UTC";
     case Degrees:      return "°";
     case Kph:          return "km/h";
     case Mph:          return "Mph";
@@ -931,12 +1051,25 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
       else if (to == Hours) return value/3600;
       break;
     case Minutes:
-      if (to == Seconds) return value*60;
+      if (to == Seconds || to == TimeUTC || to == TimeLocal) return value*60;
       else if (to == Hours) return value/60;
       break;
     case Hours:
-      if (to == Seconds) return value*3600;
+      if (to == Seconds || to == TimeUTC || to == TimeLocal) return value*3600;
       else if (to == Minutes) return value*60;
+      break;
+    case TimeUTC:
+      if (to == TimeLocal)
+        {
+        time_t now;
+        time(&now);
+        now -= now % (24*60*60);        // Back to midnight UTC
+        now += value;                   // The target time today
+        struct tm* tmu = localtime(&now);
+        return (tmu->tm_hour * 60 + tmu->tm_min) * 60 + tmu->tm_sec;
+        }
+      else if (to == Minutes) return value/60;
+      else if (to == Hours) return value/3600;
       break;
     case Kph:
       if (to == Mph) return (value*5)/8;

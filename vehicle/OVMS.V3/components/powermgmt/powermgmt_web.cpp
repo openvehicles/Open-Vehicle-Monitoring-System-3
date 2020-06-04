@@ -27,7 +27,7 @@
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 
 #include "ovms_log.h"
-static const char *TAG = "powermgmt";
+//static const char *TAG = "powermgmt";
 #include "ovms_metrics.h"
 #include "ovms_config.h"
 #include "ovms_webserver.h"

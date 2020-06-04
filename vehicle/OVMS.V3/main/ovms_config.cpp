@@ -247,6 +247,7 @@ OvmsConfig::OvmsConfig()
 
   RegisterParam("password", "Password store", true, false);
   RegisterParam("module", "Module configuration", true, true);
+  RegisterParam("usr", "Custom plugin configuration", true, true);
   }
 
 OvmsConfig::~OvmsConfig()
@@ -343,8 +344,19 @@ void OvmsConfig::upgrade()
       }
     }
 
+  // Migrate server.v2 password (from server.v2 to password)
+  if (GetParamValueInt("module", "cfgversion") < 2020053100)
+    {
+    if (IsDefined("server.v2","password"))
+      {
+      std::string p = GetParamValue("server.v2", "password");
+      SetParamValue("password","server.v2",p);
+      DeleteInstance("server.v2","password");
+      }
+    }
+
   // Done, set config version:
-  SetParamValueInt("module", "cfgversion", 2018112200);
+  SetParamValueInt("module", "cfgversion", 2020053100);
   }
 
 void OvmsConfig::RegisterParam(std::string name, std::string title, bool writable, bool readable)
@@ -567,6 +579,7 @@ static struct
     { "obd2ecu", true },
     { "dbc", true },
     { "plugin", true },
+    { "trustedca", true },
     { NULL, false }
   };
 

@@ -38,12 +38,12 @@ DUK_INTERNAL DUK_COLD void duk_err_handle_error(duk_hthread *thr, duk_errcode_t 
 #if defined(DUK_USE_PARANOID_ERRORS)
 DUK_INTERNAL DUK_COLD void duk_err_require_type_index(duk_hthread *thr, const char *filename, duk_int_t linenumber, duk_idx_t idx, const char *expect_name) {
 	DUK_ERROR_RAW_FMT3(thr, filename, linenumber, DUK_ERR_TYPE_ERROR, "%s required, found %s (stack index %ld)",
-	                   expect_name, duk_get_type_name((duk_context *) thr, idx), (long) idx);
+	                   expect_name, duk_get_type_name(thr, idx), (long) idx);
 }
 #else
 DUK_INTERNAL DUK_COLD void duk_err_require_type_index(duk_hthread *thr, const char *filename, duk_int_t linenumber, duk_idx_t idx, const char *expect_name) {
 	DUK_ERROR_RAW_FMT3(thr, filename, linenumber, DUK_ERR_TYPE_ERROR, "%s required, found %s (stack index %ld)",
-	                   expect_name, duk_push_string_readable((duk_context *) thr, idx), (long) idx);
+	                   expect_name, duk_push_string_readable(thr, idx), (long) idx);
 }
 #endif
 DUK_INTERNAL DUK_COLD void duk_err_error_internal(duk_hthread *thr, const char *filename, duk_int_t linenumber) {
@@ -78,8 +78,8 @@ DUK_INTERNAL DUK_COLD void duk_err_type_invalid_trap_result(duk_hthread *thr, co
  * when non-verbose errors are used.
  */
 
-DUK_NORETURN(DUK_LOCAL_DECL void duk__err_shared(duk_hthread *thr, duk_uint_t code));
-DUK_LOCAL void duk__err_shared(duk_hthread *thr, duk_uint_t code) {
+DUK_NORETURN(DUK_LOCAL_DECL void duk__err_shared(duk_hthread *thr, duk_errcode_t code));
+DUK_LOCAL void duk__err_shared(duk_hthread *thr, duk_errcode_t code) {
 	DUK_ERROR_RAW(thr, NULL, 0, code, NULL);
 }
 DUK_INTERNAL DUK_COLD void duk_err_error(duk_hthread *thr) {
@@ -113,16 +113,35 @@ DUK_INTERNAL DUK_COLD void duk_default_fatal_handler(void *udata, const char *ms
 	DUK_UNREF(udata);
 	DUK_UNREF(msg);
 
+	msg = msg ? msg : "NULL";
+
 #if defined(DUK_USE_FATAL_HANDLER)
 	/* duk_config.h provided a custom default fatal handler. */
-	DUK_D(DUK_DPRINT("custom default fatal error handler called: %s", msg ? msg : "NULL"));
+	DUK_D(DUK_DPRINT("custom default fatal error handler called: %s", msg));
 	DUK_USE_FATAL_HANDLER(udata, msg);
+#elif defined(DUK_USE_CPP_EXCEPTIONS)
+	/* With C++ use a duk_fatal_exception which user code can catch in
+	 * a natural way.
+	 */
+	DUK_D(DUK_DPRINT("built-in default C++ fatal error handler called: %s", msg));
+	throw duk_fatal_exception(msg);
 #else
 	/* Default behavior is to abort() on error.  There's no printout
 	 * which makes this awkward, so it's always recommended to use an
 	 * explicit fatal error handler.
+	 *
+	 * ====================================================================
+	 * NOTE: If you are seeing this, you are most likely dealing with an
+	 * uncaught error.  You should provide a fatal error handler in Duktape
+	 * heap creation, and should consider using a protected call as your
+	 * first call into an empty Duktape context to properly handle errors.
+	 * See:
+	 *   - http://duktape.org/guide.html#error-handling
+	 *   - http://wiki.duktape.org/HowtoFatalErrors.html
+	 *   - http://duktape.org/api.html#taglist-protected
+	 * ====================================================================
 	 */
-	DUK_D(DUK_DPRINT("built-in default fatal error handler called: %s", msg ? msg : "NULL"));
+	DUK_D(DUK_DPRINT("built-in default fatal error handler called: %s", msg));
 	DUK_ABORT();
 #endif
 

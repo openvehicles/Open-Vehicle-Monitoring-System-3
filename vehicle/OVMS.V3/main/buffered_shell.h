@@ -56,6 +56,22 @@ class BufferedShell : public OvmsShell
     void Dump(extram::string&);
     char* Dump();
 
+  public:
+    template <class string_t>
+    static const string_t ExecuteCommand(const string_t command, bool secure=false,
+                                         int verbosity=COMMAND_RESULT_NORMAL)
+      {
+      string_t output;
+      BufferedShell* bs = new BufferedShell(false, verbosity);
+      if (!bs) return output;
+      bs->SetSecure(secure);
+      bs->ProcessChars(command.data(), command.size());
+      bs->ProcessChar('\n');
+      bs->Dump(output);
+      delete bs;
+      return output;
+      }
+
   protected:
     bool m_print;
     size_t m_left;

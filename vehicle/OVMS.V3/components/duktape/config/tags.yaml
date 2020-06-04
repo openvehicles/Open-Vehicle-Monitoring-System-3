@@ -4,16 +4,19 @@
 #
 
 ecmascript:
-  title: Ecmascript Edition 5 (ES5) options
+  title: ECMAScript Edition 5 (ES5) options
 
 ecmascript2015:
-  title: Ecmascript 2015 (ES6) options
+  title: ECMAScript 2015 (ES6) options
 
 ecmascript2016:
-  title: Ecmascript 2016 (ES7) options
+  title: ECMAScript 2016 (ES7) options
 
 ecmascript2017:
-  title: Ecmascript 2017 (ES8) options
+  title: ECMAScript 2017 (ES8) options
+
+ecmascript2018:
+  title: ECMAScript 2018 (ES9) options
 
 duktape:
   title: Duktape specific options
@@ -85,3 +88,15 @@ torture:
   description: >
     Development time options to stress test corner case handling by e.g.
     causing a garbage collection on every allocation.
+
+cbor:
+  title: CBOR
+
+codec:
+  title: Codecs
+
+encoding-api:
+  title: WHATWG Encoding API
+
+performance-api:
+  title: Performance API (High Resolution Time)

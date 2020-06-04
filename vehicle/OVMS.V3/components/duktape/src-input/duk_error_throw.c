@@ -1,8 +1,8 @@
 /*
- *  Create and throw an Ecmascript error object based on a code and a message.
+ *  Create and throw an ECMAScript error object based on a code and a message.
  *
- *  Used when we throw errors internally.  Ecmascript generated error objects
- *  are created by Ecmascript code, and the throwing is handled by the bytecode
+ *  Used when we throw errors internally.  ECMAScript generated error objects
+ *  are created by ECMAScript code, and the throwing is handled by the bytecode
  *  executor.
  */
 
@@ -25,8 +25,6 @@ DUK_INTERNAL void duk_err_create_and_throw(duk_hthread *thr, duk_errcode_t code,
 #else
 DUK_INTERNAL void duk_err_create_and_throw(duk_hthread *thr, duk_errcode_t code) {
 #endif
-	duk_context *ctx = (duk_context *) thr;
-
 #if defined(DUK_USE_VERBOSE_ERRORS)
 	DUK_DD(DUK_DDPRINT("duk_err_create_and_throw(): code=%ld, msg=%s, filename=%s, line=%ld",
 	                   (long) code, (const char *) msg,
@@ -36,7 +34,6 @@ DUK_INTERNAL void duk_err_create_and_throw(duk_hthread *thr, duk_errcode_t code)
 #endif
 
 	DUK_ASSERT(thr != NULL);
-	DUK_ASSERT(ctx != NULL);
 
 	/* Even though nested call is possible because we throw an error when
 	 * trying to create an error, the potential errors must happen before
@@ -62,10 +59,6 @@ DUK_INTERNAL void duk_err_create_and_throw(duk_hthread *thr, duk_errcode_t code)
 		duk_tval tv_val;
 		duk_hobject *h_err;
 
-#if 0  /* XXX: not always true because the second throw may come from a different coroutine */
-		DUK_ASSERT(thr->callstack_max == DUK_CALLSTACK_DEFAULT_MAX + DUK_CALLSTACK_GROW_STEP + 11);
-#endif
-		thr->callstack_max = DUK_CALLSTACK_DEFAULT_MAX;
 		thr->heap->creating_error = 0;
 
 		h_err = thr->builtins[DUK_BIDX_DOUBLE_ERROR];
@@ -82,30 +75,27 @@ DUK_INTERNAL void duk_err_create_and_throw(duk_hthread *thr, duk_errcode_t code)
 
 		/* No augmentation to avoid any allocations or side effects. */
 	} else {
-		/* Allow headroom for calls during error handling (see GH-191).
-		 * We allow space for 10 additional recursions, with one extra
-		 * for, e.g. a print() call at the deepest level.
+		/* Prevent infinite recursion.  Extra call stack and C
+		 * recursion headroom (see GH-191) is added for augmentation.
+		 * That is now signalled by heap->augmenting error and taken
+		 * into account in call handling without an explicit limit bump.
 		 */
-#if 0  /* XXX: not always true, second throw may come from a different coroutine */
-		DUK_ASSERT(thr->callstack_max == DUK_CALLSTACK_DEFAULT_MAX);
-#endif
-		thr->callstack_max = DUK_CALLSTACK_DEFAULT_MAX + DUK_CALLSTACK_GROW_STEP + 11;
 		thr->heap->creating_error = 1;
 
-		duk_require_stack(ctx, 1);
+		duk_require_stack(thr, 1);
 
 		/* XXX: usually unnecessary '%s' formatting here, but cannot
 		 * use 'msg' as a format string directly.
 		 */
 #if defined(DUK_USE_VERBOSE_ERRORS)
-		duk_push_error_object_raw(ctx,
+		duk_push_error_object_raw(thr,
 		                          code | DUK_ERRCODE_FLAG_NOBLAME_FILELINE,
 		                          filename,
 		                          line,
 		                          "%s",
 		                          (const char *) msg);
 #else
-		duk_push_error_object_raw(ctx,
+		duk_push_error_object_raw(thr,
 		                          code | DUK_ERRCODE_FLAG_NOBLAME_FILELINE,
 		                          NULL,
 		                          0,
@@ -120,12 +110,11 @@ DUK_INTERNAL void duk_err_create_and_throw(duk_hthread *thr, duk_errcode_t code)
 		 */
 #if defined(DUK_USE_AUGMENT_ERROR_THROW)
 		DUK_DDD(DUK_DDDPRINT("THROW ERROR (INTERNAL): %!iT (before throw augment)",
-		                     (duk_tval *) duk_get_tval(ctx, -1)));
+		                     (duk_tval *) duk_get_tval(thr, -1)));
 		duk_err_augment_error_throw(thr);
 #endif
 
-		duk_err_setup_ljstate1(thr, DUK_LJ_TYPE_THROW, DUK_GET_TVAL_NEGIDX(ctx, -1));
-		thr->callstack_max = DUK_CALLSTACK_DEFAULT_MAX;
+		duk_err_setup_ljstate1(thr, DUK_LJ_TYPE_THROW, DUK_GET_TVAL_NEGIDX(thr, -1));
 		thr->heap->creating_error = 0;
 
 		/* Error is now created and we assume no errors can occur any
@@ -155,8 +144,6 @@ DUK_INTERNAL void duk_err_create_and_throw(duk_hthread *thr, duk_errcode_t code)
  */
 
 DUK_INTERNAL void duk_error_throw_from_negative_rc(duk_hthread *thr, duk_ret_t rc) {
-	duk_context *ctx = (duk_context *) thr;
-
 	DUK_ASSERT(thr != NULL);
 	DUK_ASSERT(rc < 0);
 
@@ -170,6 +157,6 @@ DUK_INTERNAL void duk_error_throw_from_negative_rc(duk_hthread *thr, duk_ret_t r
 	 *  minimal: they're only really useful for low memory targets.
 	 */
 
-	duk_error_raw(ctx, -rc, NULL, 0, "error (rc %ld)", (long) rc);
-	DUK_UNREACHABLE();
+	duk_error_raw(thr, -rc, NULL, 0, "error (rc %ld)", (long) rc);
+	DUK_WO_NORETURN(return;);
 }

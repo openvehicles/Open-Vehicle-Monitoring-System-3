@@ -1,6 +1,88 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+
+2020-05-31 MWJ  3.2.013 OTA release
+- TLS Trusted CA update (for addtrust/usertrust)
+- TPMS subsystem, and support for K-Line TPMS ECU in Tesla Roadster
+- #374 The server.v2 config section should be read/write
+
+2020-04-22 MWJ  3.2.012 OTA release
+- #357 tpms rear left temperature incorrect in v2 protocol
+- #354 Flush UART buffer when power cycling modem
+- General stability improvements to CAN logging and playback
+
+2020-04-03 MWJ  3.2.011 OTA release
+- #327 Tesla Roadster: Vehicle AWAKE metric not correct
+- #311 OvmsEvents::ScheduleEvent with delay_ms < 10
+- #333 Support for SSL/TLS Trusted Certificate Authorities
+- #334 Support for SSL/TLS MQTT connections in Server v3
+- #335 Support for SSL/TLS MQTT connections in Server v2
+- #338 SSL/TLS maximum segment size forced to 2048 bytes
+- #341 Support paranoid mode in server v2
+- #343 TPMS message has no -1 setting for "disable" in ovms_server_v2.cpp
+- #342 OTA updates available (when not on wifi)
+- #351 Tesla Model S: Spurious vehicle idle alerts after vehicle firmware update
+
+2020-02-03 MWJ  3.2.010 OTA release
+- EGPIO: address multiple ports by input & output command
+- SmartED: issue #293 fixed
+  change savestatus from store to sd
+  Add ecoscore system to drive report and web interface like defunct smart web app. (added by frantek)
+- New command: "vfs df" -- show disk usage
+- Scripting API: added VFS.Load() & VFS.Save()
+- Scripting API: renamed HTTP.request() to HTTP.Request() for API consistency
+- Scripting API: added OvmsMetrics.GetValues()
+- Web UI: editor extended by embedded Javascript evaluation
+- Webserver: /api/execute: support for Javascript evaluation
+- Scripting API: added OvmsConfig.GetValues() & OvmsConfig.SetValues()
+- Config: added dedicated "usr" param for plugin configurations
+- Scripting API: HTTP.request() added
+- SmartED: add BMS diagnose report
+  New commands:
+    xse rptdata     get a Battery Status Report
+    xse bmsdiag     get Battery Diagnose Report
+- #225 Fix charge duration display in iOS App
+- #228 AutoFlashSD cleanup ovms3.done before rename
+- #293 Event queue overflow on startup
+- #299 Fix Tesla Roadster vehicle type for 2012 cars
+- #328 Tesla Roadster: Vehicle AWAKE metric not correct
+
+2019-12-13 MWJ  3.2.008  OTA release
+- Add support for 8MB PSRAM (in addition to current 4MB support)
+- Improvements to CAN driver, relating to obd2hud
+- Nissan Leaf: 40kWh option
+
+2019-12-09 MWJ  3.2.007  OTA release
+- Minor change to web sheel (to decode line breaks in log messages)
+- Javascript: Conduct garbage collection per minute, to reduce memory consumption
+
+2019-11-30 MWJ  3.2.006  OTA release
+- 12V Monitor: web UI calibration aid & configuration
+- EGPIO/MAX7317: port input monitoring, metrics, events, documentation
+  New commands:
+    egpio status                    Show input, output & monitoring port status
+    egpio monitor status            Show input monitoring status
+    egpio monitor <on|off> [ports]  Enable/disable port monitoring
+  New configs:
+    [auto] egpio                    yes = Autostart port monitoring (default no)
+    [egpio] monitor.ports           Default ports to monitor (space separated)
+    [egpio] monitor.interval        Polling interval in ms (default 50)
+  New metrics:
+    m.egpio.input                   EGPIO input port state (ports 0…9, present=high)
+    m.egpio.monitor                 EGPIO input monitoring ports
+    m.egpio.output                  EGPIO output port state
+  New events:
+    egpio.input.<port>.<state>      EGPIO input port change (port=0…9, state=high/low)
+    egpio.output.<port>.<state>     EGPIO output port change (port=0…9, state=high/low)
+- Scripting API: OvmsMetrics.AsJSON() added
+- Renault Zoe: basic Metrics and charging status added, trip notify, web config for battery capacity
+- Logging: file logging moved to dedicated task (improved performance)
+  New commands:
+    log status      Show logging status
+    log open        (Re-)open currently set log file after "log close"
+- Web UI: log monitoring via web shell
+  Note: command "log monitor" doesn't apply, use the checkbox to disable.
 - Factory reset from web/remote shell by "module factory reset -noconfirm"
 - SWCAN: Support for add-on SWCAN module (see https://github.com/mjuhanne/OVMS-SWCAN)
     Add new "can4" bus (if compiled in)

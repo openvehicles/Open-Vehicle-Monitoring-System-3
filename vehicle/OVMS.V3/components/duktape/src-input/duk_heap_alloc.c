@@ -34,19 +34,43 @@ DUK_INTERNAL void duk_free_hobject(duk_heap *heap, duk_hobject *h) {
 		/* Currently nothing to free */
 	} else if (DUK_HOBJECT_IS_THREAD(h)) {
 		duk_hthread *t = (duk_hthread *) h;
+		duk_activation *act;
+
 		DUK_FREE(heap, t->valstack);
-		DUK_FREE(heap, t->callstack);
-		DUK_FREE(heap, t->catchstack);
+
 		/* Don't free h->resumer because it exists in the heap.
 		 * Callstack entries also contain function pointers which
-		 * are not freed for the same reason.
+		 * are not freed for the same reason.  They are decref
+		 * finalized and the targets are freed if necessary based
+		 * on their refcount (or reachability).
 		 */
+		for (act = t->callstack_curr; act != NULL;) {
+			duk_activation *act_next;
+			duk_catcher *cat;
+
+			for (cat = act->cat; cat != NULL;) {
+				duk_catcher *cat_next;
+
+				cat_next = cat->parent;
+				DUK_FREE(heap, (void *) cat);
+				cat = cat_next;
+			}
+
+			act_next = act->parent;
+			DUK_FREE(heap, (void *) act);
+			act = act_next;
+		}
 
 		/* XXX: with 'caller' property the callstack would need
 		 * to be unwound to update the 'caller' properties of
 		 * functions in the callstack.
 		 */
+	} else if (DUK_HOBJECT_IS_BOUNDFUNC(h)) {
+		duk_hboundfunc *f = (duk_hboundfunc *) (void *) h;
+
+		DUK_FREE(heap, f->args);
 	}
+
 	DUK_FREE(heap, (void *) h);
 }
 
@@ -112,6 +136,63 @@ DUK_INTERNAL void duk_heap_free_heaphdr_raw(duk_heap *heap, duk_heaphdr *hdr) {
  *  after this call.
  */
 
+#if defined(DUK_USE_CACHE_ACTIVATION)
+DUK_LOCAL duk_size_t duk__heap_free_activation_freelist(duk_heap *heap) {
+	duk_activation *act;
+	duk_activation *act_next;
+	duk_size_t count_act = 0;
+
+	for (act = heap->activation_free; act != NULL;) {
+		act_next = act->parent;
+		DUK_FREE(heap, (void *) act);
+		act = act_next;
+#if defined(DUK_USE_DEBUG)
+		count_act++;
+#endif
+	}
+	heap->activation_free = NULL;  /* needed when called from mark-and-sweep */
+	return count_act;
+}
+#endif  /* DUK_USE_CACHE_ACTIVATION */
+
+#if defined(DUK_USE_CACHE_CATCHER)
+DUK_LOCAL duk_size_t duk__heap_free_catcher_freelist(duk_heap *heap) {
+	duk_catcher *cat;
+	duk_catcher *cat_next;
+	duk_size_t count_cat = 0;
+
+	for (cat = heap->catcher_free; cat != NULL;) {
+		cat_next = cat->parent;
+		DUK_FREE(heap, (void *) cat);
+		cat = cat_next;
+#if defined(DUK_USE_DEBUG)
+		count_cat++;
+#endif
+	}
+	heap->catcher_free = NULL;  /* needed when called from mark-and-sweep */
+
+	return count_cat;
+}
+#endif  /* DUK_USE_CACHE_CATCHER */
+
+DUK_INTERNAL void duk_heap_free_freelists(duk_heap *heap) {
+	duk_size_t count_act = 0;
+	duk_size_t count_cat = 0;
+
+#if defined(DUK_USE_CACHE_ACTIVATION)
+	count_act = duk__heap_free_activation_freelist(heap);
+#endif
+#if defined(DUK_USE_CACHE_CATCHER)
+	count_cat = duk__heap_free_catcher_freelist(heap);
+#endif
+	DUK_UNREF(heap);
+	DUK_UNREF(count_act);
+	DUK_UNREF(count_cat);
+
+	DUK_D(DUK_DPRINT("freed %ld activation freelist entries, %ld catcher freelist entries",
+	                 (long) count_act, (long) count_cat));
+}
+
 DUK_LOCAL void duk__free_allocated(duk_heap *heap) {
 	duk_heaphdr *curr;
 	duk_heaphdr *next;
@@ -175,15 +256,19 @@ DUK_LOCAL void duk__free_run_finalizers(duk_heap *heap) {
 	}
 
 	/* Prevent finalize_list processing and mark-and-sweep entirely.
-	 * Setting ms_running = 1 also prevents refzero handling from moving
-	 * objects away from the heap_allocated list (the flag name is a bit
-	 * misleading here).
+	 * Setting ms_running != 0 also prevents refzero handling from moving
+	 * objects away from the heap_allocated list.  The flag name is a bit
+	 * misleading here.
+	 *
+	 * Use a distinct value for ms_running here (== 2) so that assertions
+	 * can detect this situation separate from the normal runtime
+	 * mark-and-sweep case.  This allows better assertions (GH-2030).
 	 */
 	DUK_ASSERT(heap->pf_prevent_count == 0);
-	heap->pf_prevent_count = 1;
 	DUK_ASSERT(heap->ms_running == 0);
-	heap->ms_running = 1;
 	DUK_ASSERT(heap->ms_prevent_count == 0);
+	heap->pf_prevent_count = 1;
+	heap->ms_running = 2;  /* Use distinguishable value. */
 	heap->ms_prevent_count = 1;  /* Bump, because mark-and-sweep assumes it's bumped when ms_running is set. */
 
 	curr_limit = 0;  /* suppress warning, not used */
@@ -244,9 +329,9 @@ DUK_LOCAL void duk__free_run_finalizers(duk_heap *heap) {
 		}
 	}
 
-	DUK_ASSERT(heap->ms_running == 1);
-	heap->ms_running = 0;
+	DUK_ASSERT(heap->ms_running == 2);
 	DUK_ASSERT(heap->pf_prevent_count == 1);
+	heap->ms_running = 0;
 	heap->pf_prevent_count = 0;
 }
 #endif  /* DUK_USE_FINALIZER_SUPPORT */
@@ -317,6 +402,9 @@ DUK_INTERNAL void duk_heap_free(duk_heap *heap) {
 	 * are on the heap allocated list.
 	 */
 
+	DUK_D(DUK_DPRINT("freeing temporary freelists"));
+	duk_heap_free_freelists(heap);
+
 	DUK_D(DUK_DPRINT("freeing heap_allocated of heap: %p", (void *) heap));
 	duk__free_allocated(heap);
 
@@ -380,7 +468,7 @@ DUK_LOCAL duk_bool_t duk__init_heap_strings(duk_heap *heap) {
 	duk_bitdecoder_ctx *bd = &bd_ctx;  /* convenience */
 	duk_small_uint_t i;
 
-	DUK_MEMZERO(&bd_ctx, sizeof(bd_ctx));
+	duk_memzero(&bd_ctx, sizeof(bd_ctx));
 	bd->data = (const duk_uint8_t *) duk_strings_data;
 	bd->length = (duk_size_t) DUK_STRDATA_DATA_LENGTH;
 
@@ -473,8 +561,8 @@ DUK_LOCAL duk_bool_t duk__init_heap_thread(duk_heap *heap) {
 	/* XXX: this may now fail, and is not handled correctly */
 	duk_hthread_create_builtin_objects(thr);
 
-	/* default prototype (Note: 'thr' must be reachable) */
-	DUK_HOBJECT_SET_PROTOTYPE_UPDREF(thr, (duk_hobject *) thr, thr->builtins[DUK_BIDX_THREAD_PROTOTYPE]);
+	/* default prototype */
+	DUK_HOBJECT_SET_PROTOTYPE_INIT_INCREF(thr, (duk_hobject *) thr, thr->builtins[DUK_BIDX_THREAD_PROTOTYPE]);
 
 	return 1;
 }
@@ -590,6 +678,7 @@ DUK_LOCAL void duk__dump_type_sizes(void) {
 #if defined(DUK_USE_BUFFEROBJECT_SUPPORT)
 	DUK__DUMPSZ(duk_hbufobj);
 #endif
+	DUK__DUMPSZ(duk_hproxy);
 	DUK__DUMPSZ(duk_hbuffer);
 	DUK__DUMPSZ(duk_hbuffer_fixed);
 	DUK__DUMPSZ(duk_hbuffer_dynamic);
@@ -600,7 +689,8 @@ DUK_LOCAL void duk__dump_type_sizes(void) {
 	DUK__DUMPSZ(duk_heap);
 	DUK__DUMPSZ(duk_activation);
 	DUK__DUMPSZ(duk_catcher);
-	DUK__DUMPSZ(duk_strcache);
+	DUK__DUMPSZ(duk_strcache_entry);
+	DUK__DUMPSZ(duk_litcache_entry);
 	DUK__DUMPSZ(duk_ljstate);
 	DUK__DUMPSZ(duk_fixedbuffer);
 	DUK__DUMPSZ(duk_bitdecoder_ctx);
@@ -809,7 +899,7 @@ duk_heap *duk_heap_alloc(duk_alloc_function alloc_func,
 	 *  Zero the struct, and start initializing roughly in order
 	 */
 
-	DUK_MEMZERO(res, sizeof(*res));
+	duk_memzero(res, sizeof(*res));
 #if defined(DUK_USE_ASSERTIONS)
 	res->heap_initializing = 1;
 #endif
@@ -826,6 +916,12 @@ duk_heap *duk_heap_alloc(duk_alloc_function alloc_func,
 #if defined(DUK_USE_ASSERTIONS)
 	res->currently_finalizing = NULL;
 #endif
+#endif
+#if defined(DUK_USE_CACHE_ACTIVATION)
+	res->activation_free = NULL;
+#endif
+#if defined(DUK_USE_CACHE_CATCHER)
+	res->catcher_free = NULL;
 #endif
 	res->heap_thread = NULL;
 	res->curr_thread = NULL;
@@ -857,7 +953,7 @@ duk_heap *duk_heap_alloc(duk_alloc_function alloc_func,
 	res->dbg_write_flush_cb = NULL;
 	res->dbg_request_cb = NULL;
 	res->dbg_udata = NULL;
-	res->dbg_step_thread = NULL;
+	res->dbg_pause_act = NULL;
 #endif
 #endif  /* DUK_USE_EXPLICIT_NULL_INIT */
 
@@ -888,7 +984,7 @@ duk_heap *duk_heap_alloc(duk_alloc_function alloc_func,
 
 	/* XXX: use the pointer as a seed for now: mix in time at least */
 
-	/* The casts through duk_intptr_t is to avoid the following GCC warning:
+	/* The casts through duk_uintptr_t is to avoid the following GCC warning:
 	 *
 	 *   warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
 	 *
@@ -899,7 +995,7 @@ duk_heap *duk_heap_alloc(duk_alloc_function alloc_func,
 	DUK_D(DUK_DPRINT("using rom strings, force heap hash_seed to fixed value 0x%08lx", (long) DUK__FIXED_HASH_SEED));
 	res->hash_seed = (duk_uint32_t) DUK__FIXED_HASH_SEED;
 #else  /* DUK_USE_ROM_STRINGS */
-	res->hash_seed = (duk_uint32_t) (duk_intptr_t) res;
+	res->hash_seed = (duk_uint32_t) (duk_uintptr_t) res;
 #if !defined(DUK_USE_STRHASH_DENSE)
 	res->hash_seed ^= 5381;  /* Bernstein hash init value is normally 5381; XOR it in in case pointer low bits are 0 */
 #endif
@@ -939,17 +1035,17 @@ duk_heap *duk_heap_alloc(duk_alloc_function alloc_func,
 
 #if defined(DUK_USE_STRTAB_PTRCOMP)
 	/* zero assumption */
-	DUK_MEMZERO(res->strtable16, sizeof(duk_uint16_t) * st_initsize);
+	duk_memzero(res->strtable16, sizeof(duk_uint16_t) * st_initsize);
 #else
 #if defined(DUK_USE_EXPLICIT_NULL_INIT)
 	{
-		duk_small_uint_t i;
+		duk_uint32_t i;
 	        for (i = 0; i < st_initsize; i++) {
 			res->strtable[i] = NULL;
 	        }
 	}
 #else
-	DUK_MEMZERO(res->strtable, sizeof(duk_hstring *) * st_initsize);
+	duk_memzero(res->strtable, sizeof(duk_hstring *) * st_initsize);
 #endif  /* DUK_USE_EXPLICIT_NULL_INIT */
 #endif  /* DUK_USE_STRTAB_PTRCOMP */
 
@@ -959,12 +1055,29 @@ duk_heap *duk_heap_alloc(duk_alloc_function alloc_func,
 
 #if defined(DUK_USE_EXPLICIT_NULL_INIT)
 	{
-		duk_small_uint_t i;
+		duk_uint_t i;
 		for (i = 0; i < DUK_HEAP_STRCACHE_SIZE; i++) {
 			res->strcache[i].h = NULL;
 		}
 	}
 #endif
+
+	/*
+	 *  Init litcache
+	 */
+#if defined(DUK_USE_LITCACHE_SIZE)
+	DUK_ASSERT(DUK_USE_LITCACHE_SIZE > 0);
+	DUK_ASSERT(DUK_IS_POWER_OF_TWO((duk_uint_t) DUK_USE_LITCACHE_SIZE));
+#if defined(DUK_USE_EXPLICIT_NULL_INIT)
+	{
+		duk_uint_t i;
+		for (i = 0; i < DUK_USE_LITCACHE_SIZE; i++) {
+			res->litcache[i].addr = NULL;
+			res->litcache[i].h = NULL;
+		}
+	}
+#endif
+#endif  /* DUK_USE_LITCACHE_SIZE */
 
 	/* XXX: error handling is incomplete.  It would be cleanest if
 	 * there was a setjmp catchpoint, so that all init code could
@@ -1019,14 +1132,14 @@ duk_heap *duk_heap_alloc(duk_alloc_function alloc_func,
 
 #if !defined(DUK_USE_GET_RANDOM_DOUBLE)
 #if defined(DUK_USE_PREFER_SIZE) || !defined(DUK_USE_64BIT_OPS)
-	res->rnd_state = (duk_uint32_t) DUK_USE_DATE_GET_NOW((duk_context *) res->heap_thread);
+	res->rnd_state = (duk_uint32_t) duk_time_get_ecmascript_time(res->heap_thread);
 	duk_util_tinyrandom_prepare_seed(res->heap_thread);
 #else
-	res->rnd_state[0] = (duk_uint64_t) DUK_USE_DATE_GET_NOW((duk_context *) res->heap_thread);
+	res->rnd_state[0] = (duk_uint64_t) duk_time_get_ecmascript_time(res->heap_thread);
 	DUK_ASSERT(res->rnd_state[1] == 0);  /* Not filled here, filled in by seed preparation. */
 #if 0  /* Manual test values matching misc/xoroshiro128plus_test.c. */
-	res->rnd_state[0] = 0xdeadbeef12345678ULL;
-	res->rnd_state[1] = 0xcafed00d12345678ULL;
+	res->rnd_state[0] = DUK_U64_CONSTANT(0xdeadbeef12345678);
+	res->rnd_state[1] = DUK_U64_CONSTANT(0xcafed00d12345678);
 #endif
 	duk_util_tinyrandom_prepare_seed(res->heap_thread);
 	/* Mix in heap pointer: this ensures that if two Duktape heaps are
@@ -1037,7 +1150,7 @@ duk_heap *duk_heap_alloc(duk_alloc_function alloc_func,
 	{
 		duk_uint64_t tmp_u64;
 		tmp_u64 = 0;
-		DUK_MEMCPY((void *) &tmp_u64,
+		duk_memcpy((void *) &tmp_u64,
 		           (const void *) &res,
 		           (size_t) (sizeof(void *) >= sizeof(duk_uint64_t) ? sizeof(duk_uint64_t) : sizeof(void *)));
 		res->rnd_state[1] ^= tmp_u64;

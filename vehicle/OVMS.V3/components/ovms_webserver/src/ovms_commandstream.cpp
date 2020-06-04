@@ -35,6 +35,7 @@ static const char *TAG = "webcommand";
 #include "buffered_shell.h"
 #include "log_buffers.h"
 #include "ovms_webserver.h"
+#include "ovms_script.h"
 
 
 struct hcs_writebuf
@@ -44,7 +45,8 @@ struct hcs_writebuf
 };
 
 
-HttpCommandStream::HttpCommandStream(mg_connection* nc, std::string command, int verbosity /*=COMMAND_RESULT_NORMAL*/)
+HttpCommandStream::HttpCommandStream(mg_connection* nc, extram::string command,
+    bool javascript /*=false*/, int verbosity /*=COMMAND_RESULT_NORMAL*/)
   : OvmsShell(verbosity), MgHandler(nc)
   // Note: due to a gcc bug, the base classes MUST be done in this order,
   //  or compilation will fail with "error: generic thunk code fails for method […] printf".
@@ -52,13 +54,15 @@ HttpCommandStream::HttpCommandStream(mg_connection* nc, std::string command, int
   //  and https://gcc.gnu.org/bugzilla/show_bug.cgi?id=83549
   //  for details.
 {
-  ESP_LOGD(TAG, "HttpCommandStream[%p] init: handler=%p command='%s' verbosity=%d", nc, this, command.c_str(), verbosity);
+  ESP_LOGD(TAG, "HttpCommandStream[%p] init: handler=%p command='%s%s' verbosity=%d", nc, this,
+    command.substr(0,200).c_str(), (command.length()>200) ? " [...]" : "", verbosity);
   
-  Initialize(false);
-  SetSecure(true); // Note: assuming user is admin
   m_command = command;
+  m_javascript = javascript;
   m_done = false;
   m_sent = m_ack = 0;
+  Initialize(false);
+  SetSecure(true); // Note: assuming user is admin
   
   // create write queue & command task:
   m_writequeue = xQueueCreate(30, sizeof(hcs_writebuf));
@@ -78,8 +82,10 @@ HttpCommandStream::~HttpCommandStream()
 
 void HttpCommandStream::Initialize(bool print)
 {
-  OvmsShell::Initialize(print);
-  ProcessChar('\n');
+  if (!m_javascript) {
+    OvmsShell::Initialize(print);
+    ProcessChar('\n');
+  }
 }
 
 
@@ -87,13 +93,22 @@ void HttpCommandStream::CommandTask(void* object)
 {
   HttpCommandStream* me = (HttpCommandStream*) object;
   
-  ESP_LOGI(TAG, "HttpCommandStream[%p]: %d bytes free, executing: %s",
-    me->m_nc, heap_caps_get_free_size(MALLOC_CAP_8BIT), me->m_command.c_str());
+  ESP_LOGI(TAG, "HttpCommandStream[%p]: %d bytes free, executing: %s%s",
+    me->m_nc, heap_caps_get_free_size(MALLOC_CAP_8BIT),
+    me->m_command.substr(0,200).c_str(), (me->m_command.length()>200) ? " [...]" : "");
   
   // execute command:
-  me->ProcessChars(me->m_command.data(), me->m_command.size());
-  me->ProcessChar('\n');
-  
+  if (me->m_javascript) {
+    #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+      MyScripts.DuktapeEvalNoResult(me->m_command.c_str(), me);
+    #else
+      me->puts("ERROR: Javascript support disabled");
+    #endif
+  } else {
+    me->ProcessChars(me->m_command.data(), me->m_command.size());
+    me->ProcessChar('\n');
+  }
+
   me->m_done = true;
   
 #if MG_ENABLE_BROADCAST && WEBSRV_USE_MG_BROADCAST

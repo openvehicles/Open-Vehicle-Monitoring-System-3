@@ -16,7 +16,11 @@ See: [http://www.sphinx-doc.org/en/master/usage/installation.html](http://www.sp
 
 `pip install sphinx_rtd_theme`
 
-#### 3. Build the docs
+#### 3. Install Plugins
+
+`pip install m2r`
+
+#### 4. Build the docs
 
 `make html`
 

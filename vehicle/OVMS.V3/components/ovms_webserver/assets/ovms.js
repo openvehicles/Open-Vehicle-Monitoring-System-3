@@ -29,6 +29,7 @@ function encode_html(s) {
 }
 
 function fix_minheight($el) {
+  if ($el.css("resize") != "none") return;
   var mh = parseInt($el.css("max-height")), h = $el.outerHeight();
   $el.css("min-height", mh ? Math.min(h, mh) : h);
 }
@@ -210,10 +211,19 @@ function standardTextFilter(msg) {
     return $('<div/>').text(msg.text).html();
 }
 
+function loadjs(command, target, filter, timeout) {
+  return loadcmd({ "command": command, type: "js" }, target, filter, timeout);
+}
+
 function loadcmd(command, target, filter, timeout) {
-  var $output, outmode = "";
+  var $output, outmode = "", args = {};
 
   if (!command) return null;
+  if (typeof command == "object") {
+    args = command;
+  } else {
+    args.command = command;
+  }
 
   if (typeof filter == "number") {
     timeout = filter; filter = null;
@@ -239,7 +249,7 @@ function loadcmd(command, target, filter, timeout) {
     filter = standardTextFilter;
 
   if (!timeout) {
-    if (/^(test |ota |copen .* scan)/.test(command))
+    if (args["type"] != "js" && /^(test |ota |copen .* scan)/.test(args.command))
       timeout = 300;
     else
       timeout = 20;
@@ -262,7 +272,7 @@ function loadcmd(command, target, filter, timeout) {
     if (autoscroll) $output.scrollTop($output.get(0).scrollHeight);
   };
 
-  xhr = $.ajax({ "type": "post", "url": "/api/execute", "data": { "command": command },
+  xhr = $.ajax({ "type": "post", "url": "/api/execute", "data": args,
     "timeout": 0,
     "beforeSend": function() {
       if ($output.length) {
@@ -289,8 +299,13 @@ function loadcmd(command, target, filter, timeout) {
         timeouthd = window.setTimeout(checkabort, timeout*1000);
       },
     },
+    "success": function(response, textStatus, request) {
+      var addtext = response.substring(lastlen);
+      add_output(filter({ "request": request, "text": addtext }));
+    },
     "error": function(request, textStatus, errorThrown) {
-      console.log("loadcmd '" + command + "' ERROR: status=" + textStatus + ", httperror=" + errorThrown);
+      var cmdinfo = (args.command.length > 200) ? args.command.substr(0,200)+"[…]" : args.command;
+      console.log("loadcmd '" + cmdinfo + "' ERROR: status=" + textStatus + ", httperror=" + errorThrown);
       var txt = xhrErrorInfo(request, textStatus, errorThrown);
       add_output(filter({ "request": request, "error": txt }));
     },
@@ -314,6 +329,8 @@ var monitorTimer, last_monotonic = 0;
 var ws, ws_inhibit = 0;
 var metrics = {};
 var shellhist = [""], shellhpos = 0;
+var loghist = [];
+const loghist_maxsize = 100;
 
 function initSocketConnection(){
   ws = new WebSocket('ws://' + location.host + '/msg');
@@ -336,10 +353,11 @@ function initSocketConnection(){
         $(".receiver").trigger("msg:event", msg.event);
         $(".monitor[data-events]").each(function(){
           var cmd = $(this).data("updcmd");
+          var js = $(this).data("updjs");
           var evf = $(this).data("events");
-          if (cmd && evf && msg.event.match(evf)) {
+          if ((cmd || js) && evf && msg.event.match(evf)) {
             $(this).data("updlast", now());
-            loadcmd(cmd, $(this));
+            loadcmd({ command: js ? js : cmd, type: js ? "js" : "cmd" }, $(this));
           }
         });
       }
@@ -351,6 +369,11 @@ function initSocketConnection(){
         processNotification(msg.notify);
         $(".receiver").trigger("msg:notify", msg.notify);
       }
+      else if (msgtype == "log") {
+        loghist.push(msg.log);
+        if (loghist.length > loghist_maxsize) loghist.shift();
+        $(".receiver").trigger("msg:log", msg.log);
+      }
     }
   };
 }
@@ -358,10 +381,11 @@ function initSocketConnection(){
 function monitorInit(force){
   $(".monitor").each(function(){
     var cmd = $(this).data("updcmd");
+    var js = $(this).data("updjs");
     var txt = $(this).text();
-    if (cmd && (force || !txt)) {
+    if ((cmd || js) && (force || !txt)) {
       $(this).data("updlast", now());
-      loadcmd(cmd, $(this));
+      loadcmd({ command: js ? js : cmd, type: js ? "js" : "cmd" }, $(this));
     }
   });
 }
@@ -383,11 +407,12 @@ function monitorUpdate(){
     var int = $(this).data("updint");
     var last = $(this).data("updlast");
     var cmd = $(this).data("updcmd");
-    if (!cnt || !cmd || (now()-last) < int)
+    var js = $(this).data("updjs");
+    if (!cnt || (!cmd && !js) || (now()-last) < int)
       return;
     $(this).data("updcnt", cnt-1);
     $(this).data("updlast", now());
-    loadcmd(cmd, $(this));
+    loadcmd({ command: js ? js : cmd, type: js ? "js" : "cmd" }, $(this));
   });
 }
 
@@ -1498,6 +1523,25 @@ $(function(){
     btn.prop("disabled", true);
     $(tgt).data("updcnt", 0);
     loadcmd(cmd, tgt).then(function(){
+      btn.prop("disabled", false);
+      $(tgt).data("updcnt", updcnt);
+      $(tgt).data("updint", updint);
+      $(tgt).data("updlast", now());
+    }, function(){
+      btn.prop("disabled", false);
+    });
+    event.stopPropagation();
+    return false;
+  });
+  $('body').on('click', '.btn[data-js]', function(event){
+    var btn = $(this);
+    var js = btn.data("js");
+    var tgt = btn.data("target");
+    var updcnt = btn.data("watchcnt") || 0;
+    var updint = btn.data("watchint") || 2;
+    btn.prop("disabled", true);
+    $(tgt).data("updcnt", 0);
+    loadjs(js, tgt).then(function(){
       btn.prop("disabled", false);
       $(tgt).data("updcnt", updcnt);
       $(tgt).data("updint", updint);

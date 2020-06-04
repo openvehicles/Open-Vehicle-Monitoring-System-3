@@ -137,7 +137,7 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_radio_option("socnewcar", "relative to fixed value:", "yes", socnewcar == true);
   c.input_radio_end("");
   c.input("number", NULL, "maxgids", maxgids.c_str(), "Default: " STR(GEN_1_NEW_CAR_GIDS),
-      "<p>Enter the maximum GIDS value when fully charged. Default values are " STR(GEN_1_NEW_CAR_GIDS) " (24kwh) or " STR(GEN_1_30_NEW_CAR_GIDS) " (30kwh)</p>",
+      "<p>Enter the maximum GIDS value when fully charged. Default values are " STR(GEN_1_NEW_CAR_GIDS) " (24kWh) or " STR(GEN_1_30_NEW_CAR_GIDS) " (30kWh) or " STR(GEN_2_40_NEW_CAR_GIDS) " (40kWh)</p>",
       "min=\"1\" step=\"1\"", "GIDS");
 
   c.input_radio_start("SOH Display", "sohnewcar");
@@ -145,7 +145,7 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_radio_option("sohnewcar", "relative to fixed value:", "yes", sohnewcar == true);
   c.input_radio_end("");
   c.input("number", NULL, "newcarah", newcarah.c_str(), "Default: " STR(GEN_1_NEW_CAR_AH),
-      "<p>This is the usable capacity of your battery when new. Default values are " STR(GEN_1_NEW_CAR_AH) " (24kwh) or " STR(GEN_1_30_NEW_CAR_AH) " (30kwh)</p>",
+      "<p>This is the usable capacity of your battery when new. Default values are " STR(GEN_1_NEW_CAR_AH) " (24kWh) or " STR(GEN_1_30_NEW_CAR_AH) " (30kWh) or " STR(GEN_2_40_NEW_CAR_AH) " (40kWh)</p>",
       "min=\"1\" step=\"1\"", "Ah");
   c.fieldset_end();
 

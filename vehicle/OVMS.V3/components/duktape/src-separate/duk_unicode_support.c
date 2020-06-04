@@ -141,7 +141,7 @@ DUK_INTERNAL duk_small_int_t duk_unicode_encode_cesu8(duk_ucodepoint_t cp, duk_u
 		/*
 		 *  Unicode codepoints above U+FFFF are encoded as surrogate
 		 *  pairs here.  This ensures that all CESU-8 codepoints are
-		 *  16-bit values as expected in Ecmascript.  The surrogate
+		 *  16-bit values as expected in ECMAScript.  The surrogate
 		 *  pairs always get a 3-byte encoding (each) in CESU-8.
 		 *  See: http://en.wikipedia.org/wiki/Surrogate_pair
 		 *
@@ -280,8 +280,7 @@ DUK_INTERNAL duk_ucodepoint_t duk_unicode_decode_xutf8_checked(duk_hthread *thr,
 		return cp;
 	}
 	DUK_ERROR_INTERNAL(thr);
-	DUK_UNREACHABLE();
-	return 0;
+	DUK_WO_NORETURN(return 0;);
 }
 
 /* Compute (extended) utf-8 length without codepoint encoding validation,
@@ -398,6 +397,90 @@ DUK_INTERNAL duk_size_t duk_unicode_unvalidated_utf8_length(const duk_uint8_t *d
 }
 #endif  /* DUK_USE_PREFER_SIZE */
 
+/* Check whether a string is UTF-8 compatible or not. */
+DUK_INTERNAL duk_bool_t duk_unicode_is_utf8_compatible(const duk_uint8_t *buf, duk_size_t len) {
+	duk_size_t i = 0;
+#if !defined(DUK_USE_PREFER_SIZE)
+	duk_size_t len_safe;
+#endif
+
+	/* Many practical strings are ASCII only, so use a fast path check
+	 * to check chunks of bytes at once with minimal branch cost.
+	 */
+#if !defined(DUK_USE_PREFER_SIZE)
+	len_safe = len & ~0x03UL;
+	for (; i < len_safe; i += 4) {
+		duk_uint8_t t = buf[i] | buf[i + 1] | buf[i + 2] | buf[i + 3];
+		if (DUK_UNLIKELY((t & 0x80U) != 0U)) {
+			/* At least one byte was outside 0x00-0x7f, break
+			 * out to slow path (and remain there).
+			 *
+			 * XXX: We could also deal with the problem character
+			 * and resume fast path later.
+			 */
+			break;
+		}
+	}
+#endif
+
+	for (; i < len;) {
+		duk_uint8_t t;
+		duk_size_t left;
+		duk_size_t ncont;
+		duk_uint32_t cp;
+		duk_uint32_t mincp;
+
+		t = buf[i++];
+		if (DUK_LIKELY((t & 0x80U) == 0U)) {
+			/* Fast path, ASCII. */
+			continue;
+		}
+
+		/* Non-ASCII start byte, slow path.
+		 *
+		 * 10xx xxxx          -> continuation byte
+		 * 110x xxxx + 1*CONT -> [0x80, 0x7ff]
+		 * 1110 xxxx + 2*CONT -> [0x800, 0xffff], must reject [0xd800,0xdfff]
+		 * 1111 0xxx + 3*CONT -> [0x10000, 0x10ffff]
+		 */
+		left = len - i;
+		if (t <= 0xdfU) {  /* 1101 1111 = 0xdf */
+			if (t <= 0xbfU) {  /* 1011 1111 = 0xbf */
+				return 0;
+			}
+			ncont = 1;
+			mincp = 0x80UL;
+			cp = t & 0x1fU;
+		} else if (t <= 0xefU) {  /* 1110 1111 = 0xef */
+			ncont = 2;
+			mincp = 0x800UL;
+			cp = t & 0x0fU;
+		} else if (t <= 0xf7U) {  /* 1111 0111 = 0xf7 */
+			ncont = 3;
+			mincp = 0x10000UL;
+			cp = t & 0x07U;
+		} else {
+			return 0;
+		}
+		if (left < ncont) {
+			return 0;
+		}
+		while (ncont > 0U) {
+			t = buf[i++];
+			if ((t & 0xc0U) != 0x80U) {  /* 10xx xxxx */
+				return 0;
+			}
+			cp = (cp << 6) + (t & 0x3fU);
+			ncont--;
+		}
+		if (cp < mincp || cp > 0x10ffffUL || (cp >= 0xd800UL && cp <= 0xdfffUL)) {
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
 /*
  *  Unicode range matcher
  *
@@ -430,7 +513,7 @@ DUK_LOCAL duk_small_int_t duk__uni_range_match(const duk_uint8_t *unitab, duk_si
 	duk_bitdecoder_ctx bd_ctx;
 	duk_codepoint_t prev_re;
 
-	DUK_MEMZERO(&bd_ctx, sizeof(bd_ctx));
+	duk_memzero(&bd_ctx, sizeof(bd_ctx));
 	bd_ctx.data = (const duk_uint8_t *) unitab;
 	bd_ctx.length = (duk_size_t) unilen;
 
@@ -826,8 +909,8 @@ duk_codepoint_t duk__slow_case_conversion(duk_hthread *thr,
 	duk_codepoint_t start_i;
 	duk_codepoint_t start_o;
 
-	DUK_UNREF(thr);
 	DUK_ASSERT(bd_ctx != NULL);
+	DUK_UNREF(thr);
 
 	DUK_DDD(DUK_DDDPRINT("slow case conversion for codepoint: %ld", (long) cp));
 
@@ -982,7 +1065,7 @@ duk_codepoint_t duk__case_transform_helper(duk_hthread *thr,
 	}
 
 	/* 1:1 or special conversions, but not locale/context specific: script generated rules */
-	DUK_MEMZERO(&bd_ctx, sizeof(bd_ctx));
+	duk_memzero(&bd_ctx, sizeof(bd_ctx));
 	if (uppercase) {
 		bd_ctx.data = (const duk_uint8_t *) duk_unicode_caseconv_uc;
 		bd_ctx.length = (duk_size_t) sizeof(duk_unicode_caseconv_uc);
@@ -1009,15 +1092,14 @@ duk_codepoint_t duk__case_transform_helper(duk_hthread *thr,
  *  Replace valstack top with case converted version.
  */
 
-DUK_INTERNAL void duk_unicode_case_convert_string(duk_hthread *thr, duk_small_int_t uppercase) {
-	duk_context *ctx = (duk_context *) thr;
+DUK_INTERNAL void duk_unicode_case_convert_string(duk_hthread *thr, duk_bool_t uppercase) {
 	duk_hstring *h_input;
 	duk_bufwriter_ctx bw_alloc;
 	duk_bufwriter_ctx *bw;
 	const duk_uint8_t *p, *p_start, *p_end;
 	duk_codepoint_t prev, curr, next;
 
-	h_input = duk_require_hstring(ctx, -1);  /* Accept symbols. */
+	h_input = duk_require_hstring(thr, -1);  /* Accept symbols. */
 	DUK_ASSERT(h_input != NULL);
 
 	bw = &bw_alloc;
@@ -1064,9 +1146,9 @@ DUK_INTERNAL void duk_unicode_case_convert_string(duk_hthread *thr, duk_small_in
 	}
 
 	DUK_BW_COMPACT(thr, bw);
-	(void) duk_buffer_to_string(ctx, -1);  /* Safe, output is encoded. */
+	(void) duk_buffer_to_string(thr, -1);  /* Safe, output is encoded. */
 	/* invalidates h_buf pointer */
-	duk_remove_m2(ctx);
+	duk_remove_m2(thr);
 }
 
 #if defined(DUK_USE_REGEXP_SUPPORT)

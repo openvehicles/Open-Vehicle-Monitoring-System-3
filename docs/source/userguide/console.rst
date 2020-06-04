@@ -73,15 +73,23 @@ In this case, ‘user’ is the username you use to ssh, and the public key is y
 
 You can also use SCP to copy files to and from the OVMS v3 VFS.
 
-A note about OpenSSH: with version 6.6, cipher aes128-cbc has been disabled by default and needs to be enabled manually, either on the command line:
+.. note::
+  With OpenSSH version 6.6 (or later), cipher ``aes128-cbc`` has been disabled by default and
+  needs to be enabled manually, either on the command line::
 
-  ``ssh -c aes128-cbc user@ip``
+    ssh -c aes128-cbc user@ip
 
-…or by adding a host entry to your *~/.ssh/config*.
+  …or by adding a host entry to your ``~/.ssh/config`` file::
+  
+    Host ovmsname.local
+    Ciphers +aes128-cbc
+
 
 --------------
 Console Basics
 --------------
+
+.. highlight:: none
 
 Let’s use SSH to demonstrate this::
 
@@ -153,6 +161,15 @@ You can also use “?” as part of a command to expand on the available options
   mode                 WIFI mode framework
   scan                 Perform a wifi scan
   status               Show wifi status
+
+  OVMS# wifi mode ?
+  ap                   Acts as a WIFI Access Point
+  apclient             Acts as a WIFI Access Point and Client
+  client               Connect to a WIFI network as a client
+  off                  Turn off wifi networking
+
+  OVMS# wifi mode client ?
+  Usage: wifi mode client <ssid> <bssid>
 
 The TAB key can also be used to expand on commands or parameter options::
 

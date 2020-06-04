@@ -50,6 +50,7 @@
 #include "ovms_shell.h"
 #include "ovms_netmanager.h"
 #include "ovms_utils.h"
+#include "log_buffers.h"
 
 #define OVMS_GLOBAL_AUTH_FILE     "/store/.htpasswd"
 
@@ -358,6 +359,7 @@ enum WebSocketTxJobType
   WSTX_MetricsUpdate,         // payload: -
   WSTX_Config,                // payload: config (todo)
   WSTX_Notify,                // payload: notification
+  WSTX_LogBuffers,            // payload: logbuffers
 };
 
 struct WebSocketTxJob
@@ -368,6 +370,7 @@ struct WebSocketTxJob
     char*                     event;
     OvmsConfigParam*          config;
     OvmsNotifyEntry*          notification;
+    LogBuffers*               logbuffers;
   };
 
   void clear(size_t client);
@@ -379,7 +382,7 @@ struct WebSocketTxTodo
   WebSocketTxJob          job;
 };
 
-class WebSocketHandler : public MgHandler
+class WebSocketHandler : public MgHandler, public OvmsWriter
 {
   public:
     WebSocketHandler(mg_connection* nc, size_t slot, size_t modifier, size_t reader);
@@ -402,13 +405,19 @@ class WebSocketHandler : public MgHandler
     void Unsubscribe(std::string topic);
     bool IsSubscribedTo(std::string topic);
 
+  // OvmsWriter:
+  public:
+    void Log(LogBuffers* message);
+
   public:
     size_t                    m_slot;
     size_t                    m_modifier;         // "our" metrics modifier
     size_t                    m_reader;           // "our" notification reader id
     QueueHandle_t             m_jobqueue;
-    int                       m_jobqueue_overflow;
-    SemaphoreHandle_t         m_mutex;
+    uint32_t                  m_jobqueue_overflow_status;
+    uint32_t                  m_jobqueue_overflow_logged;
+    uint32_t                  m_jobqueue_overflow_dropcnt;
+    uint32_t                  m_jobqueue_overflow_dropcntref;
     WebSocketTxJob            m_job;
     int                       m_sent;
     int                       m_ack;
@@ -432,7 +441,7 @@ typedef std::vector<WebSocketSlot> WebSocketSlots;
 class HttpCommandStream : public OvmsShell, public MgHandler
 {
   public:
-    HttpCommandStream(mg_connection* nc, std::string command, int verbosity=COMMAND_RESULT_VERBOSE);
+    HttpCommandStream(mg_connection* nc, extram::string command, bool javascript=false, int verbosity=COMMAND_RESULT_VERBOSE);
     ~HttpCommandStream();
 
   public:
@@ -441,7 +450,8 @@ class HttpCommandStream : public OvmsShell, public MgHandler
     static void CommandTask(void* object);
 
   public:
-    std::string               m_command;
+    extram::string            m_command;
+    bool                      m_javascript;
     TaskHandle_t              m_cmdtask;
     QueueHandle_t             m_writequeue;
     bool                      m_done;

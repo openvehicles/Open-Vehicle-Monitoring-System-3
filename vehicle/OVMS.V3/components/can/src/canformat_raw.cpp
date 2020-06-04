@@ -27,10 +27,10 @@
 #include "ovms_log.h"
 static const char *TAG = "canformat-raw";
 
+#include "canformat_raw.h"
 #include <errno.h>
 #include <endian.h>
 #include "pcp.h"
-#include "canformat_raw.h"
 
 class OvmsCanFormatRawInit
   {

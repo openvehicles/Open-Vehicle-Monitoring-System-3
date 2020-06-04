@@ -63,6 +63,8 @@ class OvmsOTA
   public:
     OvmsMutex m_flashing;
     TaskHandle_t m_autotask;
+    int m_lastcheckday;
+    std::string m_lastnotifyversion;
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
   protected:

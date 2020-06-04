@@ -363,19 +363,21 @@ void Boot::ErrorCallback(XtExcFrame *frame, int core_id, bool is_abort)
   // (see panic.c::doBacktrace() for code template)
   #define _adjusted_pc(pc) (((pc) & 0x80000000) ? (((pc) & 0x3fffffff) | 0x40000000) : (pc))
   uint32_t i = 0, pc = frame->pc, sp = frame->a1;
-  boot_data.crash_data.bt[0].pc = _adjusted_pc(pc);
+  boot_data.crash_data.bt[i++].pc = _adjusted_pc(pc);
   pc = frame->a0;
-  while (++i < OVMS_BT_LEVELS)
+  while (i < OVMS_BT_LEVELS)
     {
     uint32_t psp = sp;
     if (!esp_stack_ptr_is_sane(sp))
         break;
     sp = *((uint32_t *) (sp - 0x10 + 4));
-    boot_data.crash_data.bt[i].pc = _adjusted_pc(pc - 3);
+    boot_data.crash_data.bt[i++].pc = _adjusted_pc(pc - 3);
     pc = *((uint32_t *) (psp - 0x10));
     if (pc < 0x40000000)
         break;
     }
+  while (i < OVMS_BT_LEVELS)
+    boot_data.crash_data.bt[i++].pc = 0;
   }
 
 void Boot::NotifyDebugCrash()

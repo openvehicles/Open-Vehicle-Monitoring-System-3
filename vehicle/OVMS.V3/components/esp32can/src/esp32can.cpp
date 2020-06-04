@@ -36,6 +36,8 @@
 #include "ovms_log.h"
 static const char *TAG = "esp32can";
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/portmacro.h"
 #include <string.h>
 #include "esp32can.h"
 #include "esp32can_regdef.h"
@@ -43,100 +45,187 @@ static const char *TAG = "esp32can";
 
 esp32can* MyESP32can = NULL;
 
-static IRAM_ATTR void ESP32CAN_rxframe(esp32can *me)
+static portMUX_TYPE esp32can_spinlock = portMUX_INITIALIZER_UNLOCKED;
+#define ESP32CAN_ENTER_CRITICAL()       portENTER_CRITICAL(&esp32can_spinlock)
+#define ESP32CAN_EXIT_CRITICAL()        portEXIT_CRITICAL(&esp32can_spinlock)
+#define ESP32CAN_ENTER_CRITICAL_ISR()   portENTER_CRITICAL_ISR(&esp32can_spinlock)
+#define ESP32CAN_EXIT_CRITICAL_ISR()    portEXIT_CRITICAL_ISR(&esp32can_spinlock)
+
+static inline uint32_t ESP32CAN_rxframe(esp32can *me, BaseType_t* task_woken)
   {
-  CAN_queue_msg_t msg;
+  static CAN_queue_msg_t msg;
+  uint32_t error_irqs = 0;
 
-  while (MODULE_ESP32CAN->SR.B.RBS)
+  // The ESP32 CAN controller works different from the SJA1000 here.
+  // 
+  // https://github.com/espressif/esp-idf/issues/4276:
+  // 
+  //  "When bytes are received, they are written to the FIFO directly,
+  //   and an overflow is not detected until the 64th byte is written.
+  //   The bytes of the overflowing message will remain in the FIFO.
+  //   The RMC should count all messages received (up to 64 messages)
+  //   regardless of whether they were overflowing or not."
+  // 
+  //  "Basically, what should happen is that whenever you release the
+  //   receiver buffer, and the buffer window shifts to an overflowed
+  //   message, the Data overrun interrupt will be set. If that is the
+  //   case, the message contents should be ignored, the clear data
+  //   overrun command set, and the receiver buffer released again.
+  //   Continue this process until RMC reaches zero, or until the
+  //   buffer window rotates to a valid message."
+  // 
+  // Results from single step tests:
+  // 
+  //  - The interrupt flags are set with a delay after RRB / CDO
+  //    → the RX loop must not use them (but can rely on the status flags)
+  // 
+  //  - At DOS, RMC tells us how many frames need to be discarded
+  //    → on DOS, issuing CDO, then RMC times RRB resyncs the RX to the next valid frame
+  // 
+  //  - DOS can become set on the last RRB (i.e. without any more message
+  //   in the FIFO, RMC=0 and no RI/RBS)
+  //    → the RX loop must check & handle DOS independent of the other indicators
+  // 
+  //  - After an overflow of the receive message counter RMC (at 64), the controller
+  //    cannot recover and continues to deliver wrong & corrupted frames, even if
+  //    clearing the FIFO completely until RMC=0
+  //    → if RMC reaches 64, the controller must be reset
+
+  while (MODULE_ESP32CAN->SR.B.RBS | MODULE_ESP32CAN->SR.B.DOS)
     {
-    // Record the origin
-    memset(&msg,0,sizeof(msg));
-    msg.type = CAN_frame;
-    msg.body.frame.origin = me;
-
-    //get FIR
-    msg.body.frame.FIR.U = MODULE_ESP32CAN->MBX_CTRL.FCTRL.FIR.U;
-
-    //check if this is a standard or extended CAN frame
-    if (msg.body.frame.FIR.B.FF==CAN_frame_std)
-      { // Standard frame
-      //Get Message ID
-      msg.body.frame.MsgID = ESP32CAN_GET_STD_ID;
-      //deep copy data bytes
-      for (int k=0 ; k<msg.body.frame.FIR.B.DLC ; k++)
-      	msg.body.frame.data.u8[k] = MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[k];
+    if (MODULE_ESP32CAN->RMC.B.RMC == 64)
+      {
+      // RMC overflow => reset controller:
+      MODULE_ESP32CAN->MOD.B.RM = 1;
+      MODULE_ESP32CAN->MOD.B.RM = 0;
+      error_irqs = __CAN_IRQ_DATA_OVERRUN;
+      me->m_status.error_resets++;
+      }
+    else if (MODULE_ESP32CAN->SR.B.DOS)
+      {
+      // FIFO overflow => clear overflow & discard <RMC> messages to resync:
+      error_irqs = __CAN_IRQ_DATA_OVERRUN;
+      MODULE_ESP32CAN->CMR.B.CDO = 1;
+      int8_t discard = MODULE_ESP32CAN->RMC.B.RMC;
+      while (discard--)
+        {
+        MODULE_ESP32CAN->CMR.B.RRB = 1;
+        me->m_status.rxbuf_overflow++;
+        }
       }
     else
-      { // Extended frame
-      //Get Message ID
-      msg.body.frame.MsgID = ESP32CAN_GET_EXT_ID;
-      //deep copy data bytes
-      for (int k=0 ; k<msg.body.frame.FIR.B.DLC ; k++)
-      	msg.body.frame.data.u8[k] = MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.EXT.data[k];
+      {
+      // Valid frame in receive buffer: record the origin
+      memset(&msg,0,sizeof(msg));
+      msg.type = CAN_frame;
+      msg.body.frame.origin = me;
+
+      // get FIR
+      msg.body.frame.FIR.U = MODULE_ESP32CAN->MBX_CTRL.FCTRL.FIR.U;
+
+      // check if this is a standard or extended CAN frame
+      if (msg.body.frame.FIR.B.FF == CAN_frame_std)
+        {
+        // Standard frame: Get Message ID
+        msg.body.frame.MsgID = ESP32CAN_GET_STD_ID;
+        // …deep copy data bytes
+        for (int k=0 ; k<msg.body.frame.FIR.B.DLC ; k++)
+          msg.body.frame.data.u8[k] = MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[k];
+        }
+      else
+        {
+        // Extended frame: Get Message ID
+        msg.body.frame.MsgID = ESP32CAN_GET_EXT_ID;
+        // …deep copy data bytes
+        for (int k=0 ; k<msg.body.frame.FIR.B.DLC ; k++)
+          msg.body.frame.data.u8[k] = MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.EXT.data[k];
+        }
+
+      // Request next frame:
+      MODULE_ESP32CAN->CMR.B.RRB = 1;
+
+      // Send frame to CAN framework:
+      xQueueSendFromISR(MyCan.m_rxqueue, &msg, task_woken);
       }
 
-    //send frame to main CAN processor task
-    xQueueSendFromISR(MyCan.m_rxqueue,&msg,0);
+    } // while (MODULE_ESP32CAN->SR.B.RBS | MODULE_ESP32CAN->SR.B.DOS)
 
-    //Let the hardware know the frame has been read.
-    MODULE_ESP32CAN->CMR.B.RRB=1;
-    }
+  return error_irqs;
   }
 
 static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
   {
   esp32can *me = (esp32can*)pvParameters;
+  BaseType_t task_woken = pdFALSE;
+  uint32_t interrupt;
 
-  me->m_status.interrupts++;
+  ESP32CAN_ENTER_CRITICAL_ISR();
 
   // Read interrupt status and clear flags
-  ESP32CAN_IRQ_t interrupt = (ESP32CAN_IRQ_t)MODULE_ESP32CAN->IR.U;
-
-  // Handle TX complete interrupt
-  if ((interrupt & __CAN_IRQ_TX) != 0)
+  while ((interrupt = MODULE_ESP32CAN->IR.U & 0xff) != 0)
     {
-  	// Request TxCallback:
-    CAN_queue_msg_t msg;
-    msg.type = CAN_txcallback;
-    msg.body.bus = me;
-    msg.body.frame = me->tx_frame;
-    xQueueSendFromISR(MyCan.m_rxqueue, &msg, 0);
-    }
+    me->m_status.interrupts++;
 
-  // Handle RX frame available interrupt
-  if ((interrupt & __CAN_IRQ_RX) != 0)
-    ESP32CAN_rxframe(me);
-
-  // Handle error interrupts.
-  uint8_t error_irqs = interrupt &
-      (__CAN_IRQ_ERR						//0x4
-      |__CAN_IRQ_DATA_OVERRUN	  //0x8
-      |__CAN_IRQ_ERR_PASSIVE		//0x20
-      |__CAN_IRQ_ARB_LOST			  //0x40
-      |__CAN_IRQ_BUS_ERR				//0x80
-      );
-  if (error_irqs)
-    {
-    me->m_status.error_flags = error_irqs << 16 | (MODULE_ESP32CAN->SR.U & 0b11001111) << 8 | MODULE_ESP32CAN->ECC.B.ECC;
-    me->m_status.errors_rx = MODULE_ESP32CAN->RXERR.U;
-    me->m_status.errors_tx = MODULE_ESP32CAN->TXERR.U;
-    if (error_irqs & __CAN_IRQ_DATA_OVERRUN)
+    // Handle RX frame(s) available & FIFO overflow interrupts:
+    if ((interrupt & (__CAN_IRQ_RX|__CAN_IRQ_DATA_OVERRUN)) != 0)
       {
-      me->m_status.rxbuf_overflow++;
-      MODULE_ESP32CAN->CMR.B.CDO = 1;
+      interrupt |= ESP32CAN_rxframe(me, &task_woken);
       }
-    // Request error log:
-    CAN_queue_msg_t msg;
-    msg.type = CAN_logerror;
-    msg.body.bus = me;
-    xQueueSendFromISR(MyCan.m_rxqueue, &msg, 0);
+
+    // Handle TX complete interrupt:
+    if ((interrupt & __CAN_IRQ_TX) != 0)
+      {
+      // Request TxCallback:
+      CAN_queue_msg_t msg;
+      msg.type = CAN_txcallback;
+      msg.body.frame = me->m_tx_frame;
+      msg.body.bus = me;
+      xQueueSendFromISR(MyCan.m_rxqueue, &msg, &task_woken);
+      }
+
+    // Handle error interrupts:
+    uint8_t error_irqs = interrupt &
+        (__CAN_IRQ_ERR						//0x4
+        |__CAN_IRQ_DATA_OVERRUN	  //0x8
+        |__CAN_IRQ_ERR_PASSIVE		//0x20
+        |__CAN_IRQ_ARB_LOST			  //0x40
+        |__CAN_IRQ_BUS_ERR				//0x80
+        );
+    if (error_irqs)
+      {
+      // Record error data:
+      me->m_status.error_flags = error_irqs << 16 | (MODULE_ESP32CAN->SR.U & 0b11001111) << 8 | MODULE_ESP32CAN->ECC.B.ECC;
+      me->m_status.errors_rx = MODULE_ESP32CAN->RXERR.U;
+      me->m_status.errors_tx = MODULE_ESP32CAN->TXERR.U;
+      // Request error log:
+      CAN_queue_msg_t msg;
+      msg.type = CAN_logerror;
+      msg.body.bus = me;
+      xQueueSendFromISR(MyCan.m_rxqueue, &msg, &task_woken);
+      }
+
+    // Handle wakeup interrupt:
+    if ((interrupt & __CAN_IRQ_WAKEUP) != 0)
+      {
+      // Todo
+      }
     }
 
-  // Handle wakeup interrupt:
-  if ((interrupt & (__CAN_IRQ_WAKEUP)) != 0)
+  ESP32CAN_EXIT_CRITICAL_ISR();
+
+  // Yield to minimize latency if we have woken up a higher priority task:
+  if (task_woken == pdTRUE)
     {
-    /*handler*/
+    portYIELD_FROM_ISR();
     }
+  }
+
+static void ESP32CAN_init(void *pvParameters)
+  {
+  esp32can *me = (esp32can*) pvParameters;
+  // Install CAN ISR:
+  esp_intr_alloc(ETS_CAN_INTR_SOURCE, ESP_INTR_FLAG_IRAM|ESP_INTR_FLAG_LEVEL3, ESP32CAN_isr, me, NULL);
+  vTaskDelete(NULL);
   }
 
 esp32can::esp32can(const char* name, int txpin, int rxpin)
@@ -146,15 +235,15 @@ esp32can::esp32can(const char* name, int txpin, int rxpin)
   m_rxpin = (gpio_num_t)rxpin;
   MyESP32can = this;
 
-  // Install CAN ISR
-  esp_intr_alloc(ETS_CAN_INTR_SOURCE, ESP_INTR_FLAG_IRAM, ESP32CAN_isr, this, NULL);
-
   // Due to startup order, we can't talk to MAX7317 during
   // initialisation. So, we'll just enter reset mode for the
   // on-chip controller, and let housekeeping power us down
   // after startup.
   m_powermode = Off;
   MODULE_ESP32CAN->MOD.B.RM = 1;
+
+  // Launch ISR allocator task on core 0:
+  xTaskCreatePinnedToCore(ESP32CAN_init, "esp32can init", 2048, (void*)this, 23, NULL, CORE(0));
   }
 
 esp32can::~esp32can()
@@ -162,40 +251,9 @@ esp32can::~esp32can()
   MyESP32can = NULL;
   }
 
-esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
+void esp32can::InitController()
   {
-  switch (speed)
-    {
-    case CAN_SPEED_33KBPS:
-    case CAN_SPEED_83KBPS:
-      /* XXX not yet */
-      ESP_LOGW(TAG,"%d not supported",speed);
-      return ESP_FAIL;
-    default:
-      break;
-    }
-
-  canbus::Start(mode, speed);
-
   double __tq; // Time quantum
-
-  m_mode = mode;
-  m_speed = speed;
-
-  // Enable module
-  DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_CAN_CLK_EN);
-  DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_CAN_RST);
-
-  // Configure TX pin
-  gpio_set_level(MyESP32can->m_txpin, 1);
-  gpio_set_direction(MyESP32can->m_txpin,GPIO_MODE_OUTPUT);
-  gpio_matrix_out(MyESP32can->m_txpin,CAN_TX_IDX,0,0);
-  gpio_pad_select_gpio(MyESP32can->m_txpin);
-
-  // Configure RX pin
-  gpio_set_direction(MyESP32can->m_rxpin,GPIO_MODE_INPUT);
-  gpio_matrix_in(MyESP32can->m_rxpin,CAN_RX_IDX,0);
-  gpio_pad_select_gpio(MyESP32can->m_rxpin);
 
   // Set to PELICAN mode
   MODULE_ESP32CAN->CDR.B.CAN_M=0x1;
@@ -255,17 +313,57 @@ esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
 
   // Clear interrupt flags
   (void)MODULE_ESP32CAN->IR.U;
+  }
+
+esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
+  {
+  switch (speed)
+    {
+    case CAN_SPEED_33KBPS:
+    case CAN_SPEED_83KBPS:
+      /* XXX not yet */
+      ESP_LOGW(TAG,"%d not supported",speed);
+      return ESP_FAIL;
+    default:
+      break;
+    }
+
+  canbus::Start(mode, speed);
+
+  m_mode = mode;
+  m_speed = speed;
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
   // Power up the matching SN65 transciever
   MyPeripherals->m_max7317->Output(MAX7317_CAN1_EN, 0);
 #endif // #ifdef CONFIG_OVMS_COMP_MAX7317
 
+  // Enable module
+  DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_CAN_CLK_EN);
+  DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_CAN_RST);
+
+  // Configure TX pin
+  gpio_set_level(MyESP32can->m_txpin, 1);
+  gpio_set_direction(MyESP32can->m_txpin,GPIO_MODE_OUTPUT);
+  gpio_matrix_out(MyESP32can->m_txpin,CAN_TX_IDX,0,0);
+  gpio_pad_select_gpio(MyESP32can->m_txpin);
+
+  // Configure RX pin
+  gpio_set_direction(MyESP32can->m_rxpin,GPIO_MODE_INPUT);
+  gpio_matrix_in(MyESP32can->m_rxpin,CAN_RX_IDX,0);
+  gpio_pad_select_gpio(MyESP32can->m_rxpin);
+
+  ESP32CAN_ENTER_CRITICAL();
+
+  InitController();
+
   // clear statistics:
   ClearStatus();
 
   // Showtime. Release Reset Mode.
   MODULE_ESP32CAN->MOD.B.RM = 0;
+
+  ESP32CAN_EXIT_CRITICAL();
 
   // And record that we are powered on
   pcp::SetPowerMode(On);
@@ -277,13 +375,17 @@ esp_err_t esp32can::Stop()
   {
   canbus::Stop();
 
+  ESP32CAN_ENTER_CRITICAL();
+
+  // Enter reset mode
+  MODULE_ESP32CAN->MOD.B.RM = 1;
+
+  ESP32CAN_EXIT_CRITICAL();
+
 #ifdef CONFIG_OVMS_COMP_MAX7317
   // Power down the matching SN65 transciever
   MyPeripherals->m_max7317->Output(MAX7317_CAN1_EN, 1);
 #endif // #ifdef CONFIG_OVMS_COMP_MAX7317
-
-  // Enter reset mode
-  MODULE_ESP32CAN->MOD.B.RM = 1;
 
   // And record that we are powered down
   pcp::SetPowerMode(Off);
@@ -301,9 +403,14 @@ esp_err_t esp32can::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*
     return ESP_OK;
     }
 
+  ESP32CAN_ENTER_CRITICAL();
+
   // check if TX buffer is available:
   if(MODULE_ESP32CAN->SR.B.TBS == 0)
+    {
+    ESP32CAN_EXIT_CRITICAL();
     return QueueWrite(p_frame, maxqueuewait);
+    }
 
   // copy frame information record
   MODULE_ESP32CAN->MBX_CTRL.FCTRL.FIR.U=p_frame->FIR.U;
@@ -327,6 +434,8 @@ esp_err_t esp32can::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*
 
   // Transmit frame
   MODULE_ESP32CAN->CMR.B.TR=1;
+
+  ESP32CAN_EXIT_CRITICAL();
 
   // stats & logging:
   canbus::Write(p_frame, maxqueuewait);

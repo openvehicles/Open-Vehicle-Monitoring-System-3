@@ -528,6 +528,7 @@ OvmsLocations::OvmsLocations()
   m_longitude = 0;
   m_park_latitude = 0;
   m_park_longitude = 0;
+  m_park_distance = 0;
 
   // Register our commands
   OvmsCommand* cmd_location = MyCommandApp.RegisterCommand("location","LOCATION framework");
@@ -638,6 +639,7 @@ void OvmsLocations::UpdatedVehicleOn(OvmsMetric* metric)
     {
     m_park_latitude = 0;
     m_park_longitude = 0;
+    m_park_distance = 0;
     }
   else
     {
@@ -718,11 +720,15 @@ void OvmsLocations::CheckTheft()
   if (alarm == 0) return;
 
   double dist = fabs(OvmsLocationDistance((double)m_latitude,(double)m_longitude,(double)m_park_latitude,(double)m_park_longitude));
-  if (dist > alarm)
+  m_park_distance = (m_park_distance * 4 + dist) / 5;
+  if (m_park_distance > alarm)
     {
     m_park_latitude = 0;
     m_park_longitude = 0;
-    MyNotify.NotifyString("alert", "flatbed.moved", "Vehicle is being transported while parked - possible theft/flatbed");
+    MyNotify.NotifyStringf("alert", "flatbed.moved",
+      "Vehicle is being transported while parked - possible theft/flatbed (@%0.6f,%0.6f)",
+      m_latitude, m_longitude);
+    MyEvents.SignalEvent("location.alert.flatbed.moved", NULL);
     }
   }
 

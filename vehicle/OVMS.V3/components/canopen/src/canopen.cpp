@@ -141,7 +141,7 @@ CANopenWorker* CANopen::Start(canbus* bus)
     {
     m_rxqueue = xQueueCreate(20, sizeof(CAN_frame_t));
     xTaskCreatePinnedToCore(CANopenRxTask, "OVMS COrx",
-      CONFIG_OVMS_COMP_CANOPEN_RX_STACK, (void*)this, 7, &m_rxtask, CORE(0));
+      CONFIG_OVMS_COMP_CANOPEN_RX_STACK, (void*)this, 15, &m_rxtask, CORE(0));
     MyCan.RegisterListener(m_rxqueue);
     }
 

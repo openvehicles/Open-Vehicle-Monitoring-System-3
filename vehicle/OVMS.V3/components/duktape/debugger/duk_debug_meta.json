@@ -23,6 +23,12 @@
         }, 
         {
             "args": [
+                "ABC_JUMP"
+            ], 
+            "name": "JUMP"
+        }, 
+        {
+            "args": [
                 "A_R", 
                 "BC_C"
             ], 
@@ -75,6 +81,13 @@
         {
             "args": [
                 "A_R", 
+                "BC_C"
+            ], 
+            "name": "GETVAR"
+        }, 
+        {
+            "args": [
+                "A_R", 
                 "BC_R"
             ], 
             "name": "BNOT"
@@ -99,20 +112,6 @@
                 "BC_R"
             ], 
             "name": "UNP"
-        }, 
-        {
-            "args": [
-                "A_R", 
-                "BC_R"
-            ], 
-            "name": "TYPEOF"
-        }, 
-        {
-            "args": [
-                "A_R", 
-                "BC_C"
-            ], 
-            "name": "TYPEOFID"
         }, 
         {
             "args": [
@@ -1277,34 +1276,6 @@
         {
             "args": [
                 "A_R", 
-                "B_R"
-            ], 
-            "name": "CSVAR_RR"
-        }, 
-        {
-            "args": [
-                "A_R", 
-                "B_C"
-            ], 
-            "name": "CSVAR_CR"
-        }, 
-        {
-            "args": [
-                "A_R", 
-                "B_R"
-            ], 
-            "name": "CSVAR_RC"
-        }, 
-        {
-            "args": [
-                "A_R", 
-                "B_C"
-            ], 
-            "name": "CSVAR_CC"
-        }, 
-        {
-            "args": [
-                "A_R", 
                 "BC_I"
             ], 
             "name": "CLOSURE"
@@ -1312,9 +1283,16 @@
         {
             "args": [
                 "A_R", 
+                "BC_R"
+            ], 
+            "name": "TYPEOF"
+        }, 
+        {
+            "args": [
+                "A_R", 
                 "BC_C"
             ], 
-            "name": "GETVAR"
+            "name": "TYPEOFID"
         }, 
         {
             "args": [
@@ -1329,12 +1307,6 @@
                 "BC_C"
             ], 
             "name": "DELVAR"
-        }, 
-        {
-            "args": [
-                "ABC_JUMP"
-            ], 
-            "name": "JUMP"
         }, 
         {
             "args": [
@@ -1413,6 +1385,9 @@
             "name": "ENDCATCH"
         }, 
         {
+            "args": [
+                "ABC_R"
+            ], 
             "name": "ENDFIN"
         }, 
         {
@@ -1420,6 +1395,9 @@
                 "BC_R"
             ], 
             "name": "THROW"
+        }, 
+        {
+            "name": "INVLHS"
         }, 
         {
             "args": [
@@ -1430,40 +1408,154 @@
         }, 
         {
             "args": [
-                "A_I", 
-                "BC_R"
+                "A_R", 
+                "B_R"
             ], 
-            "name": "EVALCALL"
+            "name": "CSVAR_RR"
+        }, 
+        {
+            "args": [
+                "A_R", 
+                "B_C"
+            ], 
+            "name": "CSVAR_CR"
+        }, 
+        {
+            "args": [
+                "A_R", 
+                "B_R"
+            ], 
+            "name": "CSVAR_RC"
+        }, 
+        {
+            "args": [
+                "A_R", 
+                "B_C"
+            ], 
+            "name": "CSVAR_CC"
         }, 
         {
             "args": [
                 "A_I", 
                 "BC_R"
             ], 
-            "name": "CALL"
+            "name": "CALL0"
         }, 
         {
             "args": [
                 "A_I", 
                 "BC_R"
             ], 
-            "name": "TAILCALL"
+            "name": "CALL1"
         }, 
         {
             "args": [
                 "A_I", 
                 "BC_R"
             ], 
-            "name": "NEW"
+            "name": "CALL2"
         }, 
         {
             "args": [
+                "A_I", 
+                "BC_R"
+            ], 
+            "name": "CALL3"
+        }, 
+        {
+            "args": [
+                "A_I", 
+                "BC_R"
+            ], 
+            "name": "CALL4"
+        }, 
+        {
+            "args": [
+                "A_I", 
+                "BC_R"
+            ], 
+            "name": "CALL5"
+        }, 
+        {
+            "args": [
+                "A_I", 
+                "BC_R"
+            ], 
+            "name": "CALL6"
+        }, 
+        {
+            "args": [
+                "A_I", 
+                "BC_R"
+            ], 
+            "name": "CALL7"
+        }, 
+        {
+            "args": [
+                "A_I", 
+                "BC_R"
+            ], 
+            "name": "CALL8"
+        }, 
+        {
+            "args": [
+                "A_I", 
+                "BC_R"
+            ], 
+            "name": "CALL9"
+        }, 
+        {
+            "args": [
+                "A_I", 
+                "BC_R"
+            ], 
+            "name": "CALL10"
+        }, 
+        {
+            "args": [
+                "A_I", 
+                "BC_R"
+            ], 
+            "name": "CALL11"
+        }, 
+        {
+            "args": [
+                "A_I", 
+                "BC_R"
+            ], 
+            "name": "CALL12"
+        }, 
+        {
+            "args": [
+                "A_I", 
+                "BC_R"
+            ], 
+            "name": "CALL13"
+        }, 
+        {
+            "args": [
+                "A_I", 
+                "BC_R"
+            ], 
+            "name": "CALL14"
+        }, 
+        {
+            "args": [
+                "A_I", 
+                "BC_R"
+            ], 
+            "name": "CALL15"
+        }, 
+        {
+            "args": [
+                "A_I", 
                 "BC_R"
             ], 
             "name": "NEWOBJ"
         }, 
         {
             "args": [
+                "A_I", 
                 "BC_R"
             ], 
             "name": "NEWARR"
@@ -1536,12 +1628,18 @@
             "name": "NEXTENUM"
         }, 
         {
-            "name": "INVLHS"
+            "args": [
+                "BC_R"
+            ], 
+            "name": "NEWTARGET"
         }, 
         {
             "name": "DEBUGGER"
         }, 
         {
+            "args": [
+                "ABC_I"
+            ], 
             "name": "NOP"
         }, 
         {
@@ -1551,58 +1649,39 @@
             "name": "INVALID"
         }, 
         {
-            "name": "UNUSED194"
-        }, 
-        {
-            "name": "UNUSED195"
-        }, 
-        {
-            "name": "UNUSED196"
-        }, 
-        {
-            "name": "UNUSED197"
-        }, 
-        {
-            "name": "UNUSED198"
-        }, 
-        {
-            "name": "UNUSED199"
-        }, 
-        {
-            "name": "UNUSED200"
-        }, 
-        {
-            "name": "UNUSED201"
-        }, 
-        {
-            "name": "UNUSED202"
-        }, 
-        {
-            "name": "UNUSED203"
-        }, 
-        {
-            "name": "UNUSED204"
-        }, 
-        {
-            "name": "UNUSED205"
-        }, 
-        {
-            "name": "UNUSED206"
-        }, 
-        {
             "name": "UNUSED207"
         }, 
         {
-            "name": "UNUSED208"
+            "args": [
+                "A_R", 
+                "B_R", 
+                "C_R"
+            ], 
+            "name": "GETPROPC_RR"
         }, 
         {
-            "name": "UNUSED209"
+            "args": [
+                "A_R", 
+                "B_C", 
+                "C_R"
+            ], 
+            "name": "GETPROPC_CR"
         }, 
         {
-            "name": "UNUSED210"
+            "args": [
+                "A_R", 
+                "B_R", 
+                "C_C"
+            ], 
+            "name": "GETPROPC_RC"
         }, 
         {
-            "name": "UNUSED211"
+            "args": [
+                "A_R", 
+                "B_C", 
+                "C_C"
+            ], 
+            "name": "GETPROPC_CC"
         }, 
         {
             "name": "UNUSED212"

@@ -665,6 +665,16 @@ tbody>div {
 .night .highcharts-button {
   fill: #b1b1b1;
 }
+.night .highcharts-legend-item text {
+  fill: #dddddd;
+}
+.night .highcharts-tooltip-box {
+  fill: #000000;
+  color: #bbbbbb;
+}
+.night .highcharts-tooltip text {
+  fill: #dddddd;
+}
 
 .gaugechart .highcharts-plot-band,
 .gaugechart .highcharts-pane {

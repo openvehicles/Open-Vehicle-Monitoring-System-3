@@ -62,34 +62,24 @@ WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t slot, size_t modifi
   m_modifier = modifier;
   m_reader = reader;
   m_jobqueue = xQueueCreate(50, sizeof(WebSocketTxJob));
-  m_jobqueue_overflow = 0;
-  m_mutex = xSemaphoreCreateMutex();
+  m_jobqueue_overflow_status = 0;
+  m_jobqueue_overflow_logged = 0;
+  m_jobqueue_overflow_dropcnt = 0;
+  m_jobqueue_overflow_dropcntref = 0;
   m_job.type = WSTX_None;
   m_sent = m_ack = 0;
+  
+  // Register as logging console:
+  SetMonitoring(true);
+  MyCommandApp.RegisterConsole(this);
 }
 
 WebSocketHandler::~WebSocketHandler()
 {
+  MyCommandApp.DeregisterConsole(this);
   while (xQueueReceive(m_jobqueue, &m_job, 0) == pdTRUE)
     ClearTxJob(m_job);
   vQueueDelete(m_jobqueue);
-  vSemaphoreDelete(m_mutex);
-}
-
-
-bool WebSocketHandler::Lock(TickType_t xTicksToWait)
-{
-  if (xSemaphoreGetMutexHolder(m_mutex) == xTaskGetCurrentTaskHandle())
-    return true;
-  else if (xSemaphoreTake(m_mutex, xTicksToWait) == pdTRUE)
-    return true;
-  else
-    return false;
-}
-
-void WebSocketHandler::Unlock()
-{
-  xSemaphoreGive(m_mutex);
 }
 
 
@@ -204,6 +194,38 @@ void WebSocketHandler::ProcessTxJob()
       break;
     }
     
+    case WSTX_LogBuffers:
+    {
+      // Note: this sender loops over the buffered lines by index (kept in m_sent)
+      // Single log lines may be longer than our nominal XFER_CHUNK_SIZE, but that is
+      // very rarely the case, so we shouldn't need to additionally chunk them.
+      LogBuffers* lb = m_job.logbuffers;
+
+      // find next line:
+      int i;
+      LogBuffers::iterator it;
+      for (i=0, it=lb->begin(); i < m_sent && it != lb->end(); it++, i++);
+      
+      if (it != lb->end()) {
+        // encode & send:
+        std::string msg;
+        msg.reserve(strlen(*it)+128);
+        msg = "{\"log\":\"";
+        msg += json_encode(stripesc(*it));
+        msg += "\"}";
+        mg_send_websocket_frame(m_nc, WEBSOCKET_OP_TEXT, msg.data(), msg.size());
+        m_sent++;
+      }
+      else if (m_ack == m_sent) {
+        // done:
+        if (m_sent)
+          ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done, sent=%d lines", m_nc, m_job.type, m_sent);
+        ClearTxJob(m_job);
+      }
+      
+      break;
+    }
+    
     case WSTX_Config:
     {
       // todo: implement
@@ -233,6 +255,11 @@ void WebSocketTxJob::clear(size_t client)
         OvmsNotifyType* mt = notification->GetType();
         if (mt) mt->MarkRead(slot.reader, notification);
       }
+      break;
+    case WSTX_LogBuffers:
+      if (logbuffers)
+        logbuffers->release();
+      break;
     default:
       break;
   }
@@ -248,16 +275,13 @@ void WebSocketHandler::ClearTxJob(WebSocketTxJob &job)
 bool WebSocketHandler::AddTxJob(WebSocketTxJob job, bool init_tx)
 {
   if (xQueueSend(m_jobqueue, &job, 0) != pdTRUE) {
-    ++m_jobqueue_overflow;
-    if (m_jobqueue_overflow == 1)
-      ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow detected", m_nc);
+    m_jobqueue_overflow_status |= 1;
+    m_jobqueue_overflow_dropcnt++;
     return false;
   }
   else {
-    if (m_jobqueue_overflow) {
-      ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow resolved, %d drops", m_nc, m_jobqueue_overflow);
-      m_jobqueue_overflow = 0;
-    }
+    if (m_jobqueue_overflow_status & 1)
+      m_jobqueue_overflow_status++;
     if (init_tx && uxQueueMessagesWaiting(m_jobqueue) == 1)
       RequestPoll();
     return true;
@@ -316,9 +340,21 @@ int WebSocketHandler::HandleEvent(int ev, void* p)
     }
     
     case MG_EV_POLL:
-      // check for new transmission
       //ESP_LOGV(TAG, "WebSocketHandler[%p] EV_POLL qlen=%d jobtype=%d sent=%d ack=%d", m_nc, uxQueueMessagesWaiting(m_jobqueue), m_job.type, m_sent, m_ack);
+      // Check for new transmission:
       InitTx();
+      // Log queue overflows & resolves:
+      if (m_jobqueue_overflow_status > m_jobqueue_overflow_logged) {
+        m_jobqueue_overflow_logged = m_jobqueue_overflow_status;
+        if (m_jobqueue_overflow_status & 1) {
+          ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow detected", m_nc);
+        }
+        else {
+          uint32_t dropcnt = m_jobqueue_overflow_dropcnt;
+          ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow resolved, %u drops", m_nc, dropcnt - m_jobqueue_overflow_dropcntref);
+          m_jobqueue_overflow_dropcntref = dropcnt;
+        }
+      }
       break;
     
     case MG_EV_SEND:
@@ -358,6 +394,20 @@ void WebSocketHandler::HandleIncomingMsg(std::string msg)
   else {
     ESP_LOGW(TAG, "WebSocketHandler[%p]: unhandled message: '%s'", m_nc, msg.c_str());
   }
+}
+
+
+/**
+ * OvmsWriter interface
+ */
+
+void WebSocketHandler::Log(LogBuffers* message)
+{
+  WebSocketTxJob job;
+  job.type = WSTX_LogBuffers;
+  job.logbuffers = message;
+  if (!AddTxJob(job))
+    message->release();
 }
 
 
@@ -430,13 +480,13 @@ void OvmsWebServer::DestroyWebSocketHandler(WebSocketHandler* handler)
       if (m_client_cnt == 0)
         xTimerStop(m_update_ticker, 0);
       
-      // deregister:
-      MyNotify.ClearReader(m_client_slots[i].reader);
-      
       // destroy handler:
       mg_connection* nc = handler->m_nc;
       m_client_slots[i].handler = NULL;
       delete handler;
+      
+      // clear unqueued notifications if any:
+      MyNotify.ClearReader(m_client_slots[i].reader);
       
       ESP_LOGD(TAG, "WebSocket[%p] handler %p closed; %d clients active", nc, handler, m_client_cnt);
       MyEvents.SignalEvent("server.web.socket.closed", (void*)m_client_cnt);
@@ -483,6 +533,7 @@ void OvmsWebServer::EventListener(std::string event, void* data)
 
   // forward events to all websocket clients:
   if (xSemaphoreTake(m_client_mutex, 0) != pdTRUE) {
+    // client list lock is not available, add to tx backlog:
     for (int i=0; i<m_client_cnt; i++) {
       auto& slot = m_client_slots[i];
       if (slot.handler) {
@@ -496,6 +547,7 @@ void OvmsWebServer::EventListener(std::string event, void* data)
     return;
   }
   
+  // client list locked; add tx jobs:
   for (auto slot: m_client_slots) {
     if (slot.handler) {
       WebSocketTxJob job = { WSTX_Event, strdup(event.c_str()) };

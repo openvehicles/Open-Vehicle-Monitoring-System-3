@@ -1,5 +1,5 @@
 /*
- *  Pure Ecmascript eventloop example.
+ *  Pure ECMAScript eventloop example.
  *
  *  Timer state handling is inefficient in this trivial example.  Timers are
  *  kept in an array sorted by their expiry time which works well for expiring
@@ -271,8 +271,7 @@ EventLoop.run = function() {
         try {
             Poll.poll(poll_set, wait);
         } catch (e) {
-            // Eat errors silently.  When resizing curses window an EINTR
-            // happens now.
+            // Eat errors silently.
         }
 
         /*
@@ -355,7 +354,10 @@ EventLoop.setReader = function(fd, cb_read) {
 
 EventLoop.write = function(fd, data) {
     // This simple example doesn't have support for write blocking / draining
-    var rc = Socket.write(fd, Duktape.Buffer(data));
+    if (typeof data === 'string') {
+        data = new TextEncoder().encode(data);
+    }
+    var rc = Socket.write(fd, data);
 }
 
 /*
@@ -370,8 +372,14 @@ function setTimeout(func, delay) {
     var timer_id;
     var evloop = EventLoop;
 
+    // Delay can be optional at least in some contexts, so tolerate that.
+    // https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/setTimeout
     if (typeof delay !== 'number') {
-        throw new TypeError('delay is not a number');
+        if (typeof delay === 'undefined') {
+            delay = 0;
+        } else {
+            throw new TypeError('invalid delay');
+        }
     }
     delay = Math.max(evloop.minimumDelay, delay);
 
@@ -419,7 +427,11 @@ function setInterval(func, delay) {
     var evloop = EventLoop;
 
     if (typeof delay !== 'number') {
-        throw new TypeError('delay is not a number');
+        if (typeof delay === 'undefined') {
+            delay = 0;
+        } else {
+            throw new TypeError('invalid delay');
+        }
     }
     delay = Math.max(evloop.minimumDelay, delay);
 

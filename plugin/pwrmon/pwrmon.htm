@@ -1,0 +1,360 @@
+<!--
+  Web UI page plugin: Trip Power/Energy History Chart
+    Version 1.0  Michael Balzer <dexter@dexters-web.de>
+  
+  Dependencies:
+    - OVMS firmware >= 3.2.008-250
+    - the vehicle must provide metrics v.b.energy.used & v.b.energy.recd
+  
+  Optional dependencies:
+    - "pwrmon.js" module plugin (metrics background recording)
+  
+  The chart will work without the module plugin, but can then only show live data.
+  
+  Installation:
+    - Type:    Page
+    - Page:    /usr/pwrmon
+    - Label:   Trip Power Chart
+    - Menu:    Tools
+    - Auth:    Cookie
+-->
+
+<style>
+#pwrchart {
+  height: 80vh;
+  min-height: 265px;
+}
+.fullscreened #pwrchart {
+  height: 100vh;
+}
+.highcharts-graph {
+  stroke-width: 4px;
+}
+
+.highcharts-color-0 {
+  fill: burlywood;
+  stroke: sandybrown;
+}
+.highcharts-color-1 {
+  fill: #434348;
+  stroke: #434348;
+}
+.highcharts-color-2 {
+  fill: orangered;
+  stroke: orangered;
+}
+.highcharts-color-3 {
+  fill: dodgerblue;
+  stroke: dodgerblue;
+}
+
+.highcharts-axis-labels.altitude {
+  fill: #905018;
+}
+.highcharts-axis-labels.speed {
+  fill: #434348;
+}
+.highcharts-axis-labels.power {
+  fill: orangered;
+}
+.highcharts-axis-labels.consumption {
+  fill: dodgerblue;
+}
+
+.night .highcharts-color-0 {
+  fill: #deb88785;
+}
+.night .highcharts-color-1 {
+  fill: #c3c3c8;
+  stroke: #c3c3c8;
+}
+.night .highcharts-axis-labels.altitude {
+  fill: sandybrown;
+}
+.night .highcharts-axis-labels.speed {
+  fill: #c3c3c8;
+}
+
+.highcharts-plot-line {
+  stroke: #cccccc;
+  stroke-width: 2px;
+}
+.night .highcharts-plot-line {
+  stroke: #584f4f;
+}
+.highcharts-plot-line.power, .night .highcharts-plot-line.power {
+  stroke: orangered;
+}
+.highcharts-plot-line.consumption, .night .highcharts-plot-line.consumption {
+  stroke: dodgerblue;
+}
+</style>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">Trip Power/Energy History</div>
+  <div class="panel-body">
+    <div class="receiver" id="chartreceiver">
+      <div class="chart-box linechart" id="pwrchart"/>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  const minSampleDistance = 0.3;    // [km]
+  const defaultZoom = 8;            // [km]
+
+  var history = {
+    "time": [],
+    "v.p.odometer": [],
+    "v.p.altitude": [],
+    "v.b.energy.used": [],
+    "v.b.energy.recd": [],
+  };
+  var lastOdo = 0;
+
+  var pwrchart;
+  var chartdata = {
+    tripstart: [],
+    altitude: [],
+    speed: [],
+    power: [],
+    consumption: [],
+  };
+
+  // loadChart: Highcharts callback after chart generation
+  function loadChart(chart) {
+    pwrchart = chart;
+    pwrchart.showLoading();
+    // Load data:
+    loadjs('pwrmon.dump()').done((data) => {
+      console.log("loadChart: read " + data.length + " bytes");
+      if (data.startsWith("ERROR")) {
+        console.error(data);
+      } else {
+        try {
+          history = JSON.parse(data);
+          console.log("loadChart: got " + history["time"].length + " samples");
+          loadHistory();
+        } catch (error) {
+          console.error(error);
+          confirmdialog("Error", "History data error, please check module plugin.", ["OK"]);
+        }
+      }
+    }).fail((req, status, error) => {
+      console.error(status, error);
+      confirmdialog("Error", "Can't get history: " + error, ["OK"]);
+    }).always(() => {
+      pwrchart.hideLoading();
+      // Listen to metrics updates:
+      $('#chartreceiver').on('msg:metrics', function(e, update) {
+        if (update["v.p.odometer"] || update["v.e.on"])
+          processUpdate();
+      });
+    });
+  }
+
+  // addDataPoint: convert history section to chart points
+  function addDataPoint(i) {
+    var odo = history["v.p.odometer"][i];
+    if (history["v.b.energy.used"][i] < history["v.b.energy.used"][i-1]) {
+      // trip start:
+      chartdata.tripstart.push({ value: odo });
+      chartdata.altitude.push([odo, null]);
+      chartdata.speed.push([odo, null]);
+      chartdata.power.push([odo, null]);
+      chartdata.consumption.push([odo, null]);
+      return 1;
+    } else {
+      // calculate average speed, power & consumption:
+      var d_t = history["time"][i] - history["time"][i-1];
+      var d_o = history["v.p.odometer"][i] - history["v.p.odometer"][i-1];
+      var d_e = (history["v.b.energy.used"][i]   - history["v.b.energy.recd"][i])
+              - (history["v.b.energy.used"][i-1] - history["v.b.energy.recd"][i-1]);
+      var avg_spd = d_o / d_t * 3600;
+      var avg_pwr = d_e / d_t * 3600;
+      var avg_con = d_e * 1000 / d_o;
+      // add chart series points:
+      chartdata.altitude.push([odo, history["v.p.altitude"][i]]);
+      chartdata.speed.push([odo, avg_spd]);
+      chartdata.power.push([odo, avg_pwr]);
+      chartdata.consumption.push([odo, avg_con]);
+      return 0;
+    }
+  }
+
+  // loadHistory: load history into chart
+  function loadHistory() {
+    var i;
+    for (i = 1; i < history["time"].length; i++) {
+      addDataPoint(i);
+    }
+    if (i == history["time"].length) {
+      lastOdo = history["v.p.odometer"][i-1];
+    }
+    console.log("loadHistory: got " + chartdata.altitude.length + " data points");
+    pwrchart.series[0].setData(chartdata.altitude, false);
+    pwrchart.series[1].setData(chartdata.speed, false);
+    pwrchart.series[2].setData(chartdata.power, false);
+    pwrchart.series[3].setData(chartdata.consumption, false);
+    pwrchart.xAxis[0].update({ plotLines: chartdata.tripstart }, false);
+    pwrchart.xAxis[0].setExtremes(lastOdo - defaultZoom, lastOdo, false);
+    pwrchart.redraw();
+  }
+
+  // processUpdate: add live data to chart
+  function processUpdate() {
+    // Check & get data:
+    if (metrics["v.e.on"] == false) {
+      lastOdo = 0;
+      return;
+    }
+    if (metrics["v.p.odometer"] - lastOdo < minSampleDistance)
+      return;
+    lastOdo = metrics["v.p.odometer"];
+
+    Object.keys(history).forEach(function(key) {
+      if (key == "time") {
+        history[key].push(new Date().getTime() / 1000);
+      } else {
+        history[key].push(metrics[key]);
+      }
+    });
+
+    // Update chart:
+    var zoom = pwrchart.xAxis[0].getExtremes();
+    var follow = zoom.max >= zoom.dataMax;
+    var zoomSize = zoom.userMax ? zoom.userMax - zoom.userMin : defaultZoom;
+    if (addDataPoint(history["time"].length - 1)) {
+      pwrchart.xAxis[0].update({ plotLines: chartdata.tripstart }, false);
+    }
+    var last = chartdata.altitude.length - 1;
+    pwrchart.series[0].addPoint(chartdata.altitude[last], false);
+    pwrchart.series[1].addPoint(chartdata.speed[last], false);
+    pwrchart.series[2].addPoint(chartdata.power[last], false);
+    pwrchart.series[3].addPoint(chartdata.consumption[last], false);
+    if (follow) {
+      pwrchart.xAxis[0].setExtremes(lastOdo - zoomSize, lastOdo, false);
+    }
+    pwrchart.redraw();
+  }
+
+  // Init chart:
+  $("#pwrchart").chart({
+    chart: {
+      type: 'spline',
+      events: {
+        load: function () { loadChart(this); }
+      },
+      zoomType: 'x',
+      panning: true,
+      panKey: 'ctrl',
+      animation: false,
+    },
+    title: { text: null },
+    credits: { enabled: false },
+    legend: {
+      align: 'center',
+      verticalAlign: 'bottom',
+      padding: 0,
+    },
+    plotOptions: {
+      spline: {
+        marker: {
+          enabled: false,
+        },
+      },
+      series: {
+        animation: false,
+      },
+    },
+    tooltip: {
+      shared: true,
+      crosshairs: true,
+      headerFormat: '<span style="font-size: 10px">{point.key} km</span><br/>',
+    },
+
+    // Axes:
+    xAxis: {
+      className: "odometer",
+      labels: { enabled: true, format: "{value:.0f}" },
+      minTickInterval: 1,
+    },
+
+    yAxis: [{
+      className: "altitude",
+      title: { text: null },
+      labels: { enabled: true, format: "{value:.0f} m" },
+      height: "45%", top: "55%",
+    },{
+      className: "speed",
+      title: { text: null },
+      labels: { enabled: true, format: "{value:.0f} kph" },
+      height: "45%", top: "55%", opposite: true,
+    },{
+      className: "power",
+      title: { text: null },
+      labels: { enabled: true, format: "{value:.0f} kW" },
+      height: "45%", top: "0%", offset: 0,
+      plotLines: [{ className: "power", value: 0 }],
+    },{
+      className: "consumption",
+      title: { text: null },
+      labels: { enabled: true, format: "{value:.0f} Wpk" },
+      height: "45%", top: "0%", offset: 0, opposite: true,
+      plotLines: [{ className: "consumption", value: 0 }],
+    }],
+
+    // Data:
+    series: [{
+      className: "altitude",
+      name: 'Altitude',
+      type: 'area',
+      tooltip: { valueSuffix: ' m', valueDecimals: 0 },
+      yAxis: 0,
+    },{
+      className: "speed",
+      name: 'øSpeed',
+      tooltip: { valueSuffix: ' kph', valueDecimals: 1 },
+      yAxis: 1,
+    },{
+      className: "power",
+      name: 'øPower',
+      tooltip: { valueSuffix: ' kW', valueDecimals: 1 },
+      yAxis: 2,
+    },{
+      className: "consumption",
+      name: 'øConsumption',
+      tooltip: { valueSuffix: ' Wh/km', valueDecimals: 1 },
+      yAxis: 3,
+    }],
+
+    // Layout:
+    responsive: {
+      rules: [{
+        condition: { maxWidth: 540 },
+        chartOptions: {
+          yAxis: [{
+            labels: { enabled: false },
+          },{
+            labels: { enabled: false },
+          },{
+            labels: { enabled: false },
+          },{
+            labels: { enabled: false },
+          }],
+        },
+      },{
+        condition: { maxHeight: 300 },
+        chartOptions: {
+          xAxis: [{
+            labels: { enabled: false },
+          }],
+        },
+      }],
+    },
+  });
+
+})();
+</script>

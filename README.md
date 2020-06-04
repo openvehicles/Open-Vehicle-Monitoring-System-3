@@ -46,6 +46,7 @@ provides data logging to SD card and to a server.
   - [Fiat 500e](https://docs.openvehicles.com/en/latest/components/vehicle_fiat500/docs/index.html)
   - [Kia e-Niro / Hyundai Kona](https://docs.openvehicles.com/en/latest/components/vehicle_kianiroev/docs/index.html)
   - [Kia Soul EV](https://docs.openvehicles.com/en/latest/components/vehicle_kiasoulev/docs/index.html)
+  - [Mercedes-Benz B250E](https://docs.openvehicles.com/en/latest/components/vehicle_mercedesb250e/docs/index.html)
   - [Mitsubishi Trio (i-MiEV et 
   al)](https://docs.openvehicles.com/en/latest/components/vehicle_mitsubishi/docs/index.html)
   - [Nissan Leaf](https://docs.openvehicles.com/en/latest/components/vehicle_nissanleaf/docs/index.html)
@@ -57,6 +58,7 @@ provides data logging to SD card and to a server.
   - [Tesla Model S](https://docs.openvehicles.com/en/latest/components/vehicle_teslamodels/docs/index.html)
   - [Tesla Roadster](https://docs.openvehicles.com/en/latest/components/vehicle_teslaroadster/docs/index.html)
   - Think City
+  - [VW e-Up](https://docs.openvehicles.com/en/latest/components/vehicle_vweup/docs/index.html)
 - _General Support_
   - [DBC File Based](https://docs.openvehicles.com/en/latest/components/vehicle_dbc/docs/index.html)
   - [GPS Tracking](https://docs.openvehicles.com/en/latest/components/vehicle_track/docs/index.html)
@@ -66,7 +68,7 @@ provides data logging to SD card and to a server.
 
 ## Links
 
-- _User Ressources_
+- _User Resources_
   - [User and Developer Guides](https://docs.openvehicles.com/en/latest/)
   - [User Support Forum](https://www.openvehicles.com/forum)
   - [Android App](https://play.google.com/store/apps/details?id=com.openvehicles.OVMS&hl=en_US)
@@ -80,7 +82,7 @@ provides data logging to SD card and to a server.
 - _Developers_
   - [Developer Guide](https://docs.google.com/document/d/1q5M9Lb5jzQhJzPMnkMKwy4Es5YK12ACQejX_NWEixr0)
   - [Developer Mailing List & Archive](http://lists.openvehicles.com/mailman/listinfo/ovmsdev)
-  - [Server Source](https://github.com/openvehicles/Open-Vehicle-Monitoring-System/tree/master/server)
+  - [Server Source](https://github.com/openvehicles/Open-Vehicle-Server)
   - [Android App Source](https://github.com/openvehicles/Open-Vehicle-Android)
   - [iOS App Source](https://github.com/openvehicles/Open-Vehicle-iOS)
 

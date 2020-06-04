@@ -47,8 +47,11 @@ static const char *TAG = "v-teslaroadster";
 #include "vehicle_teslaroadster_ctp.h"
 #include "ovms_metrics.h"
 #include "ovms_notify.h"
+#include "ovms_peripherals.h"
 #include "metrics_standard.h"
 #include "ovms_utils.h"
+#include "driver/uart.h"
+#include "driver/gpio.h"
 
 OvmsVehicleTeslaRoadster* MyTeslaRoadster = NULL;
 
@@ -87,6 +90,7 @@ OvmsVehicleTeslaRoadster::OvmsVehicleTeslaRoadster()
 
   memset(m_type,0,sizeof(m_type));
   memset(m_vin,0,sizeof(m_vin));
+  m_aux12v = false;
   m_requesting_cac = false;
 
   m_cooldown_running = false;
@@ -167,13 +171,13 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
         case 0x06: // Timer/Plugin setting and timer confirmation
           {
-          if (d[0] == 0x1b)
+          if (d[1] == 0x1b)
             {
             StandardMetrics.ms_v_charge_timermode->SetValue(d[4] != 0);
             }
-          else if (d[0] == 0x1a)
+          else if (d[1] == 0x1a)
             {
-            StandardMetrics.ms_v_charge_timerstart->SetValue(((int)d[4]<<8)+d[5]);
+            StandardMetrics.ms_v_charge_timerstart->SetValue(((int)d[4]*60+d[5])*60);
             }
           break;
           }
@@ -198,7 +202,10 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           }
         case 0x82: // Ambient Temperature
           {
-          StandardMetrics.ms_v_env_temp->SetValue(d[1]);
+          if (m_aux12v)
+            {
+            StandardMetrics.ms_v_env_temp->SetValue((int8_t)d[1]);
+            }
           break;
           }
         case 0x83: // GPS Latitude
@@ -227,6 +234,29 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
             StandardMetrics.ms_v_pos_altitude->SetValue(0);
           else
             StandardMetrics.ms_v_pos_altitude->SetValue(((int)d[5]<<8)+d[4]);
+          break;
+          }
+        case 0x87: // Gear shift status every 10 seconds for v2.x cars
+          {
+          if (m_type[2] != '2')	// This only works for v2.x cars
+            break;
+          switch(d[1] & 0xE0)
+            {
+            case 0x20:  // Off or Park
+              StandardMetrics.ms_v_env_gear->SetValue(0);
+              break;
+            case 0x40:  // Reverse
+              StandardMetrics.ms_v_env_gear->SetValue(-1);
+              break;
+            case 0x60:  // Neutral
+              StandardMetrics.ms_v_env_gear->SetValue(0);
+              break;
+            case 0x80:  // Drive
+              StandardMetrics.ms_v_env_gear->SetValue(1);
+              break;
+            default:    // Ignore any transitional values
+              break;
+            }
           break;
           }
         case 0x88: // Charging Current / Duration
@@ -348,6 +378,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           }
         case 0x96: // Doors / Charging yes/no
           {
+          m_aux12v = d[3] & 0x02;
           StandardMetrics.ms_v_door_fl->SetValue(d[1] & 0x01);
           StandardMetrics.ms_v_door_fr->SetValue(d[1] & 0x02);
           StandardMetrics.ms_v_door_chargeport->SetValue(d[1] & 0x04);
@@ -359,30 +390,29 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           StandardMetrics.ms_v_env_headlights->SetValue(d[2] & 0x20);
           StandardMetrics.ms_v_door_hood->SetValue(d[2] & 0x40);
           StandardMetrics.ms_v_door_trunk->SetValue(d[2] & 0x80);
-          StandardMetrics.ms_v_env_awake->SetValue(d[3] & 0x01);
+          StandardMetrics.ms_v_env_aux12v->SetValue(m_aux12v);
           StandardMetrics.ms_v_env_charging12v->SetValue(d[3] & 0x01);
           StandardMetrics.ms_v_env_cooling->SetValue(d[3] & 0x02);
           StandardMetrics.ms_v_env_alarm->SetValue(d[4] & 0x02);
           if (d[1] & 0x80)
             {
             StandardMetrics.ms_v_env_on->SetValue(true);
+            StandardMetrics.ms_v_env_awake->SetValue(true);
             if (MyConfig.GetParamValueBool("xtr", "digital.speedo", false))
               {
               // Digital speedo is enabled
               m_speedo_ticker = 0;
               m_speedo_ticker_max = MyConfig.GetParamValueInt("xtr", "digital.speedo.reps", 3);
               m_speedo_running = true;
-              m_speedo_timer = xTimerCreate("TR ticker",
-                1 / portTICK_PERIOD_MS,
-                pdTRUE,
-                this,
-                TeslaRoadsterSpeedoTimer);
+              int timerticks = pdMS_TO_TICKS(1); if (timerticks<1) timerticks=1;
+              m_speedo_timer = xTimerCreate("TR ticker", timerticks, pdTRUE, this, TeslaRoadsterSpeedoTimer);
               xTimerStart(m_speedo_timer,0);
               }
             }
           else
             {
             StandardMetrics.ms_v_env_on->SetValue(false);
+            StandardMetrics.ms_v_env_awake->SetValue(false);
             if (m_speedo_running)
               {
               m_speedo_running = false;
@@ -427,10 +457,13 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           }
         case 0xA3: // PEM, MOTOR, BATTERY temperatures
           {
-          StandardMetrics.ms_v_inv_temp->SetValue(d[1]);
-          StandardMetrics.ms_v_charge_temp->SetValue(d[1]);
-          StandardMetrics.ms_v_mot_temp->SetValue(d[2]);
-          StandardMetrics.ms_v_bat_temp->SetValue(d[6]);
+          if (m_aux12v)
+            {
+            StandardMetrics.ms_v_inv_temp->SetValue(d[1]);
+            StandardMetrics.ms_v_charge_temp->SetValue(d[1]);
+            StandardMetrics.ms_v_mot_temp->SetValue(d[2]);
+            StandardMetrics.ms_v_bat_temp->SetValue(d[6]);
+            }
           break;
           }
         case 0xA4: // 7 bytes start of VIN bytes i.e. "SFZRE2B"
@@ -443,7 +476,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           memcpy(m_vin+7,d+1,7);
           m_type[0] = 'T';
           m_type[1] = 'R';
-          if ((d[3]=='A')||(d[3]=='B')) m_type[2] = '2'; else m_type[2] = '1';
+          if ((d[3]=='A')||(d[3]=='B')||(d[3]=='C')) m_type[2] = '2'; else m_type[2] = '1';
           if (d[1] == '3') m_type[3] = 'S'; else m_type[3] = 'N';
           m_type[4] = 0;
           StandardMetrics.ms_v_type->SetValue(m_type);
@@ -504,6 +537,30 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
       {
       switch(d[0])
         {
+        case 0x01:   // Data to dashboard PRND display 10x per second
+          {
+          if (m_type[2] != '1')	// This only works for v1.x cars
+            break;
+          switch(d[3])
+            {
+            case 0:  // Off
+            case 0x3f:  // Park
+              StandardMetrics.ms_v_env_gear->SetValue(0);
+              break;
+            case 0x3e:  // Reverse
+              StandardMetrics.ms_v_env_gear->SetValue(-1);
+              break;
+            case 0x3b:  // Neutral
+              StandardMetrics.ms_v_env_gear->SetValue(0);
+              break;
+            case 0x2f:  // Drive
+              StandardMetrics.ms_v_env_gear->SetValue(1);
+              break;
+            default:    // Ignore some transitional values
+              break;
+            }
+          break;
+          }
         case 0x02:   // Data to dashboard
           {
           if ((m_speedo_running)&&(d[2] != m_speedo_rawspeed))
@@ -531,8 +588,8 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
             float power = amps * (((400.0-370.0)*soc/100.0)+370) / 1000.0;     // estimate Voltage by SOC
             StandardMetrics.ms_v_bat_power->SetValue((float)power);
             }
-          }
           break;
+          }
         }
       break;
       }
@@ -1079,7 +1136,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandHomelink(int but
   m_can1->Write(&frame);
 
   m_homelink_timerbutton = button;
-  m_homelink_timer = xTimerCreate("Tesla Roadster Homelink Timer", durationms / portTICK_PERIOD_MS, pdTRUE, this, TeslaRoadsterHomelinkTimer);
+
+  int timerticks = pdMS_TO_TICKS(durationms); if (timerticks<1) timerticks=1;
+  m_homelink_timer = xTimerCreate("Tesla Roadster Homelink Timer", timerticks, pdTRUE, this, TeslaRoadsterHomelinkTimer);
   xTimerStart(m_homelink_timer, 0);
 
   return Success;
@@ -1100,6 +1159,151 @@ void OvmsVehicleTeslaRoadster::DoHomelinkStop()
   frame.data.u8[2] = m_homelink_timerbutton;
   m_can1->Write(&frame);
   }
+
+#ifdef CONFIG_OVMS_COMP_TPMS
+
+bool OvmsVehicleTeslaRoadster::TPMSRead(std::vector<uint32_t> *tpms)
+  {
+  gpio_set_direction((gpio_num_t)33, GPIO_MODE_OUTPUT);
+  gpio_set_direction((gpio_num_t)32, GPIO_MODE_INPUT);
+  gpio_set_pull_mode((gpio_num_t)33, GPIO_PULLUP_ONLY);
+  gpio_set_pull_mode((gpio_num_t)32, GPIO_PULLUP_ONLY);
+
+#ifdef CONFIG_OVMS_COMP_MAX7317
+  MyPeripherals->m_max7317->Output(9, 1); // Enable HIGH
+  vTaskDelay(200 / portTICK_PERIOD_MS);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+
+  uart_port_t uart = UART_NUM_2;
+  uart_config_t uart_config = {
+    .baud_rate = 9600,
+    .data_bits = UART_DATA_8_BITS,
+    .parity = UART_PARITY_DISABLE,
+    .stop_bits = UART_STOP_BITS_1,
+    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+    .rx_flow_ctrl_thresh = 122,
+    .use_ref_tick = 0,
+  };
+  uart_param_config(uart, &uart_config);
+  uart_set_pin(uart, 33, 32, 0, 0);
+  uart_driver_install(uart, 256, 256, 0, NULL, ESP_INTR_FLAG_LEVEL2);
+
+  const char req_msg[] = "\x0f\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0";
+
+  uart_flush(uart);
+  uart_write_bytes(uart, req_msg, 19);
+
+  uint8_t data[38];
+  int length = uart_read_bytes(uart, data, 19*2, 5000 / portTICK_PERIOD_MS);
+  if (length > 0)
+    {
+    MyCommandApp.HexDump(TAG, "tpms", (const char*)data, length);
+    }
+
+  MyPeripherals->m_max7317->Output(9, 0); // Enable LOW
+  uart_flush(uart);
+  uart_driver_delete(uart);
+
+  if (length != 38)
+    {
+    ESP_LOGE(TAG,"TPMS read was %d bytes (38 expected)",length);
+    return false;
+    }
+  else if ((data[19]!=0x0f) || (data[20]!= 0x05) || (data[37]!=0xf0))
+    {
+    ESP_LOGE(TAG,"TPMS read (38 bytes) was not formatted as expected");
+    return false;
+    }
+
+  for (int k=0;k<4;k++)
+    {
+    int offset = 21+(k*4);
+    uint32_t id = ((uint32_t)data[offset] << 24) +
+                      ((uint32_t)data[offset+1] << 16) +
+                      ((uint32_t)data[offset+2] << 8) +
+                      ((uint32_t)data[offset+3]);
+    ESP_LOGD(TAG,"TPMS read ID %08x",id);
+    tpms->push_back( id );
+    }
+  return true;
+  }
+
+bool OvmsVehicleTeslaRoadster::TPMSWrite(std::vector<uint32_t> &tpms)
+  {
+  gpio_set_direction((gpio_num_t)33, GPIO_MODE_OUTPUT);
+  gpio_set_direction((gpio_num_t)32, GPIO_MODE_INPUT);
+  gpio_set_pull_mode((gpio_num_t)33, GPIO_PULLUP_ONLY);
+  gpio_set_pull_mode((gpio_num_t)32, GPIO_PULLUP_ONLY);
+
+#ifdef CONFIG_OVMS_COMP_MAX7317
+  MyPeripherals->m_max7317->Output(9, 1); // Enable HIGH
+  vTaskDelay(200 / portTICK_PERIOD_MS);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
+
+  uart_port_t uart = UART_NUM_2;
+  uart_config_t uart_config = {
+    .baud_rate = 9600,
+    .data_bits = UART_DATA_8_BITS,
+    .parity = UART_PARITY_DISABLE,
+    .stop_bits = UART_STOP_BITS_1,
+    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+    .rx_flow_ctrl_thresh = 122,
+    .use_ref_tick = 0,
+  };
+  uart_param_config(uart, &uart_config);
+  uart_set_pin(uart, 33, 32, 0, 0);
+  uart_driver_install(uart, 256, 256, 0, NULL, ESP_INTR_FLAG_LEVEL2);
+
+  char req_msg[] = "\x0f\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0";
+  int offset = 2;
+  for(uint32_t id : tpms)
+    {
+    ESP_LOGD(TAG,"TPMS write ID %08x",id);
+    req_msg[offset++] = (id>>24) & 0xff;
+    req_msg[offset++] = (id>>16) & 0xff;
+    req_msg[offset++] = (id>>8) & 0xff;
+    req_msg[offset++] = id & 0xff;
+    }
+
+  uart_flush(uart);
+  uart_write_bytes(uart, req_msg, 19);
+
+  uint8_t data[38];
+  int length = uart_read_bytes(uart, data, 19*2, 5000 / portTICK_PERIOD_MS);
+  if (length > 0)
+    {
+    MyCommandApp.HexDump(TAG, "tpms", (const char*)data, length);
+    }
+
+  MyPeripherals->m_max7317->Output(9, 0); // Enable LOW
+  uart_flush(uart);
+  uart_driver_delete(uart);
+
+  length = 38;
+  if (length != 38)
+    {
+    ESP_LOGE(TAG,"TPMS write was %d bytes (38 expected)",length);
+    return false;
+    }
+  else if ((data[19]!=0x0f) || (data[20]!= 0x09) || (data[37]!=0xf0))
+    {
+    ESP_LOGE(TAG,"TPMS write (38 bytes) was not formatted as expected");
+    return false;
+    }
+
+  for (int k=2;k<19;k++)
+    {
+    if (data[k] != data[k+19])
+      {
+      ESP_LOGE(TAG,"TPMS write did not verify correctly");
+      return false;
+      }
+    }
+
+  return true;
+  }
+
+#endif // #ifdef CONFIG_OVMS_COMP_TPMS
 
 void OvmsVehicleTeslaRoadster::Notify12vCritical()
   { // Not supported on Tesla Roadster

@@ -53,10 +53,10 @@ typedef duk_uint_fast16_t duk_small_uint_fast_t;
 #define DUK_SMALL_UINT_FAST_MIN   DUK_UINT_FAST16_MIN
 #define DUK_SMALL_UINT_FAST_MAX   DUK_UINT_FAST16_MAX
 
-/* Boolean values are represented with the platform 'int'. */
-typedef duk_small_int_t duk_bool_t;
-#define DUK_BOOL_MIN              DUK_SMALL_INT_MIN
-#define DUK_BOOL_MAX              DUK_SMALL_INT_MAX
+/* Boolean values are represented with the platform 'unsigned int'. */
+typedef duk_small_uint_t duk_bool_t;
+#define DUK_BOOL_MIN              DUK_SMALL_UINT_MIN
+#define DUK_BOOL_MAX              DUK_SMALL_UINT_MAX
 
 /* Index values must have at least 32-bit signed range. */
 typedef duk_int_t duk_idx_t;
@@ -125,5 +125,8 @@ typedef double duk_double_t;
 #endif
 #endif
 
-/* Type for public API calls. */
+/* Type used in public API declarations and user code.  Typedef maps to
+ * 'struct duk_hthread' like the 'duk_hthread' typedef which is used
+ * exclusively in internals.
+ */
 typedef struct duk_hthread duk_context;

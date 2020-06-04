@@ -264,6 +264,12 @@ class OvmsVehicle : public InternalRamAllocated
     virtual vehicle_command_t CommandDeactivateValet(const char* pin);
     virtual vehicle_command_t CommandHomelink(int button, int durationms=1000);
 
+#ifdef CONFIG_OVMS_COMP_TPMS
+  public:
+    virtual bool TPMSRead(std::vector<uint32_t> *tpms);
+    virtual bool TPMSWrite(std::vector<uint32_t> &tpms);
+#endif // #ifdef CONFIG_OVMS_COMP_TPMS
+
   public:
     virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t ProcessMsgCommand(std::string &result, int command, const char* args);
@@ -297,6 +303,7 @@ class OvmsVehicle : public InternalRamAllocated
     uint16_t          m_poll_ml_remain;       // Bytes remainign for ML poll
     uint16_t          m_poll_ml_offset;       // Offset of ML poll
     uint16_t          m_poll_ml_frame;        // Frame number for ML poll
+    uint16_t          m_poll_wait;            // Wait for remaining poll replays
 
   protected:
     void PollSetPidList(canbus* bus, const poll_pid_t* plist);

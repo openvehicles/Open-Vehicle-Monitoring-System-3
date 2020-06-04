@@ -35,6 +35,7 @@ static const char *TAG = "canlog";
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include "ovms_utils.h"
 #include "ovms_config.h"
 #include "ovms_command.h"
 #include "ovms_events.h"
@@ -169,7 +170,7 @@ canlog::canlog(const char* type, std::string format, canformat::canformat_serve_
 
   using std::placeholders::_1;
   using std::placeholders::_2;
-  MyEvents.RegisterEvent(TAG, "*", std::bind(&canlog::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(IDTAG, "*", std::bind(&canlog::EventListener, this, _1, _2));
 
   int queuesize = MyConfig.GetParamValueInt("can", "log.queuesize",100);
   m_queue = xQueueCreate(queuesize, sizeof(CAN_log_message_t));
@@ -178,6 +179,8 @@ canlog::canlog(const char* type, std::string format, canformat::canformat_serve_
 
 canlog::~canlog()
   {
+  MyEvents.DeregisterEvent(IDTAG);
+
   if (m_task)
     {
     vTaskDelete(m_task);

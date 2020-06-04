@@ -102,6 +102,21 @@ config OVMS_SYS_COMMAND_STACK_SIZE
     help
         The stack size of the OVMS Console and dynamic command tasks.
 
+config OVMS_LOGFILE_QUEUE_SIZE
+    int "Queue size for file logging"
+    default 100
+    depends on OVMS
+    help
+        The number of log messages that can be queued to the file logging task.
+        An entry needs 8 bytes of RAM.
+
+config OVMS_LOGFILE_TASK_PRIORITY
+    int "Task priority for file logging"
+    default 2
+    depends on OVMS
+    help
+        The RTOS priority for the file logging task ("OVMS FileLog").
+
 endmenu # System Options
 
 
@@ -349,6 +364,34 @@ config OVMS_VEHICLE_FIAT500
     help
         Enable to include support for FIAT 500 vehicle.
 
+config OVMS_VEHICLE_VWEUP
+    bool "Include support for VW e-Up vehicle"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for VW e-Up vehicle.
+
+config OVMS_VEHICLE_MERCEDESB250E
+    bool "Include support for Mercedes-Benz B250E (W242) vehicle"
+    default n
+    depends on OVMS
+    help
+        Enable to include support for Mercedes-Benz B250E (W242) vehicle.
+
+config OVMS_VEHICLE_CADILLAC_C2_CTS
+    bool "Include support for Cadillac 2nd gen CTS vehicle"
+    default n
+    depends on OVMS
+    help
+        Enable to include support for Cadillac 2nd gen CTS vehicle.
+
+config OVMS_VEHICLE_CHEVROLET_C6_CORVETTE
+    bool "Include support for Chevrolet C6 Corvette vehicle"
+    default n
+    depends on OVMS
+    help
+        Enable to include support for Chevrolet C6 Corvette vehicle.
+
 config OVMS_VEHICLE_RXTASK_STACK
     int "Stack size for vehicle RX task"
     default 6144
@@ -394,6 +437,16 @@ config OVMS_COMP_MAX7317
     depends on OVMS
     help
         Enable to include support for MAX7317 GPIO expander.
+
+config OVMS_COMP_MAX7317_MONITOR_INTERVAL
+    int "MAX7317 port monitor default polling interval [ms]"
+    range 10 10000
+    default 50
+    depends on OVMS_COMP_MAX7317
+    help
+        The MAX7317 has no IRQ so needs to be polled to monitor port changes.
+        If enabled, the monitoring polls the ports with this interval by default.
+        The interval can be configured via param egpio[monitor.interval].
 
 config OVMS_COMP_ESP32CAN
     bool "Include support for ESP32 on-board CAN controller (can1)"
@@ -499,6 +552,13 @@ config OVMS_COMP_PUSHOVER
     depends on MG_ENABLE_SSL
     help
         Enable to include support for Pushover. 
+
+config OVMS_COMP_TPMS
+    bool "Include support for TPMS tyre sets"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for TPMS tyre sets
 
 config OVMS_COMP_MODEM_SIMCOM
     bool "Include support for SIMCOM modems"

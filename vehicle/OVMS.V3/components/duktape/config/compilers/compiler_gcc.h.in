@@ -6,13 +6,17 @@
 #define DUK_VA_COPY(dest,src) __va_copy(dest,src)
 #endif
 
-#if defined(DUK_F_GCC_VERSION) && (DUK_F_GCC_VERSION >= 20500L)
-/* since gcc-2.5 */
+#if defined(DUK_F_GCC_VERSION) && (DUK_F_GCC_VERSION >= 20500L) && (DUK_F_GCC_VERSION < 50000L)
+/* Since gcc-2.5.
+ *
+ * Disabled temporarily in GCC 5+ because of an unresolved noreturn-related
+ * issue: https://github.com/svaarala/duktape/issues/2155.
+ */
 #define DUK_NORETURN(decl)  decl __attribute__((noreturn))
 #endif
 
 #if defined(DUK_F_GCC_VERSION) && (DUK_F_GCC_VERSION >= 40500L)
-/* since gcc-4.5 */
+/* Since gcc-4.5. */
 #define DUK_UNREACHABLE()  do { __builtin_unreachable(); } while (0)
 #endif
 
@@ -75,6 +79,7 @@
 #define DUK_USE_FLEX_ZEROSIZE
 #endif
 
+/* Since 4.6 one can '#pragma GCC diagnostic push/pop'. */
 #if defined(DUK_F_GCC_VERSION) && (DUK_F_GCC_VERSION >= 40600)
 #define DUK_USE_GCC_PRAGMAS
 #else
@@ -82,3 +87,13 @@
 #endif
 
 #define DUK_USE_PACK_GCC_ATTR
+
+/* Availability varies based on platform (between GCC 4.4 and 4.8), and there
+ * are apparently some bugs in GCC 4.x.  Check for GCC 5.0 before enabling
+ * these to be safe.
+ */
+#if defined(DUK_F_GCC_VERSION) && (DUK_F_GCC_VERSION >= 50000L)
+#define DUK_BSWAP64(x) ((duk_uint64_t) __builtin_bswap64((duk_uint64_t) (x)))
+#define DUK_BSWAP32(x) ((duk_uint32_t) __builtin_bswap32((duk_uint32_t) (x)))
+#define DUK_BSWAP16(x) ((duk_uint16_t) __builtin_bswap16((duk_uint16_t) (x)))
+#endif

@@ -31,6 +31,10 @@
 #include <stdint.h>
 #include "pcp.h"
 #include "spi.h"
+#include <bitset>
+#include "ovms_timer.h"
+#include "ovms_semaphore.h"
+#include "ovms_mutex.h"
 
 #ifndef __MAX7317_H__
 #define __MAX7317_H__
@@ -43,7 +47,19 @@ class max7317 : public pcp, public InternalRamAllocated
 
   public:
     void Output(uint8_t port, uint8_t level);
+    std::bitset<10> OutputState();
     uint8_t Input(uint8_t port);
+    std::bitset<10> Inputs(std::bitset<10> ports);
+    std::bitset<10> InputState();
+    bool Monitor(std::bitset<10> ports, bool enable);
+    bool Monitor(uint8_t port, bool enable);
+    std::bitset<10> MonitorState();
+
+  public:
+    std::bitset<10> GetConfigMonitorPorts();
+    void AutoInit();
+    bool CheckMonitor();
+    void MonitorTask();
 
   protected:
     spi* m_spibus;
@@ -52,6 +68,13 @@ class max7317 : public pcp, public InternalRamAllocated
     int m_clockspeed;
     int m_cspin;
     spi_nodma_device_handle_t m_spi;
+    std::bitset<10> m_outputstate;
+    std::bitset<10> m_inputstate;
+    std::bitset<10> m_monitor_ports;
+    OvmsInterval* m_monitor_timer;
+    OvmsSemaphore m_monitor_semaphore;
+    OvmsMutex m_monitor_mutex;
+    TaskHandle_t m_monitor_task;
   };
 
 #endif //#ifndef __MAX7317_H__

@@ -38,6 +38,7 @@ static const char *TAG = "ovms-server-v3";
 #include "ovms_command.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
+#include "ovms_tls.h"
 
 OvmsServerV3 *MyOvmsServerV3 = NULL;
 size_t MyOvmsServerV3Modifier = 0;
@@ -89,8 +90,9 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
         if (MyOvmsServerV3)
           {
           StandardMetrics.ms_s_v3_connected->SetValue(false);
+          StandardMetrics.ms_s_v3_peers->SetValue(0);
           MyOvmsServerV3->SetStatus("Error: Connection failed", true, OvmsServerV3::WaitReconnect);
-          MyOvmsServerV3->m_connretry = 20;
+          MyOvmsServerV3->m_connretry = 60;
           }
         }
       }
@@ -103,7 +105,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
         if (MyOvmsServerV3)
           {
           MyOvmsServerV3->Disconnect();
-          MyOvmsServerV3->m_connretry = 20;
+          MyOvmsServerV3->m_connretry = 60;
           }
         }
       else
@@ -168,7 +170,7 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
       if (MyOvmsServerV3)
         {
         MyOvmsServerV3->Disconnect();
-        MyOvmsServerV3->m_connretry = 20;
+        MyOvmsServerV3->m_connretry = 60;
         }
       break;
     default:
@@ -214,6 +216,11 @@ OvmsServerV3::OvmsServerV3(const char* name)
     {
     MyOvmsServerV3Reader = MyNotify.RegisterReader("ovmsv3", COMMAND_RESULT_NORMAL, std::bind(OvmsServerV3ReaderCallback, _1, _2),
                                                    true, std::bind(OvmsServerV3ReaderFilterCallback, _1, _2));
+    }
+  else
+    {
+    MyNotify.RegisterReader(MyOvmsServerV3Reader, "ovmsv3", COMMAND_RESULT_NORMAL, std::bind(OvmsServerV3ReaderCallback, _1, _2),
+                            true, std::bind(OvmsServerV3ReaderFilterCallback, _1, _2));
     }
 
   // init event listener:
@@ -609,6 +616,7 @@ void OvmsServerV3::Connect()
   m_user = MyConfig.GetParamValue("server.v3", "user");
   m_password = MyConfig.GetParamValue("password", "server.v3");
   m_port = MyConfig.GetParamValue("server.v3", "port");
+  m_tls = MyConfig.GetParamValueBool("server.v3","tls", false);
 
   m_topic_prefix = MyConfig.GetParamValue("server.v3", "topic.prefix", "");
   if(m_topic_prefix.empty())
@@ -633,14 +641,19 @@ void OvmsServerV3::Connect()
   m_conn_topic[1] = std::string(m_topic_prefix);
   m_conn_topic[1].append("client/+/command/+");
 
-  if (m_port.empty()) m_port = "1883";
+  if (m_port.empty())
+    {
+    m_port = (m_tls)?"8883":"1883";
+    }
+
   std::string address(m_server);
   address.append(":");
   address.append(m_port);
 
-  ESP_LOGI(TAG, "Connection is %s:%s %s/%s",
+  ESP_LOGI(TAG, "Connection is %s:%s %s/%s topic %s",
     m_server.c_str(), m_port.c_str(),
-    m_vehicleid.c_str(), m_user.c_str());
+    m_vehicleid.c_str(), m_user.c_str(),
+    m_topic_prefix.c_str());
 
   if (m_server.empty())
     {
@@ -656,6 +669,11 @@ void OvmsServerV3::Connect()
   const char* err;
   memset(&opts, 0, sizeof(opts));
   opts.error_string = &err;
+  if (m_tls)
+    {
+    opts.ssl_ca_cert = MyOvmsTLS.GetTrustedList();
+    opts.ssl_server_name = m_server.c_str();
+    }
   if ((m_mgconn = mg_connect_opt(mgr, address.c_str(), OvmsServerV3MongooseCallback, opts)) == NULL)
     {
     ESP_LOGE(TAG, "mg_connect(%s) failed: %s", address.c_str(), err);
@@ -676,6 +694,7 @@ void OvmsServerV3::Disconnect()
     }
   m_connretry = 0;
   StandardMetrics.ms_s_v3_connected->SetValue(false);
+  StandardMetrics.ms_s_v3_peers->SetValue(0);
   }
 
 void OvmsServerV3::SetStatus(const char* status, bool fault /*=false*/, State newstate /*=Undefined*/)

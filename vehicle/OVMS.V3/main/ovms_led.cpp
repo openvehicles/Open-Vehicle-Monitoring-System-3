@@ -91,7 +91,9 @@ void ovms_led::SetState( int newState )
   if (MyPeripherals) 
     {
  		state = newState;
+#ifdef CONFIG_OVMS_COMP_MAX7317
  		MyPeripherals->m_max7317->Output( pin, state ? 0 : 1);
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
  		}
   }
 

@@ -44,6 +44,9 @@
 #include "ovms_utils.h"
 #include "ovms_mutex.h"
 #include "dbc_number.h"
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+#include "ovms_script.h"
+#endif
 
 #define METRICS_MAX_MODIFIERS 32
 
@@ -76,6 +79,8 @@ typedef enum : uint8_t
   Seconds       = 50,
   Minutes       = 51,
   Hours         = 52,
+  TimeUTC       = 53,
+  TimeLocal     = 54,
 
   Degrees       = 60,
 
@@ -122,6 +127,9 @@ class OvmsMetric
     std::string AsUnitString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
     virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
     virtual float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+    virtual void DukPush(DukContext &dc);
+#endif
     virtual void SetValue(std::string value);
     virtual void SetValue(dbcNumber& value);
     virtual void operator=(std::string value);
@@ -160,6 +168,9 @@ class OvmsMetricBool : public OvmsMetric
     virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
     float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     int AsBool(const bool defvalue = false);
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+    void DukPush(DukContext &dc);
+#endif
     void SetValue(bool value);
     void operator=(bool value) { SetValue(value); }
     void SetValue(std::string value);
@@ -181,6 +192,9 @@ class OvmsMetricInt : public OvmsMetric
     virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
     float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     int AsInt(const int defvalue = 0, metric_unit_t units = Other);
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+    void DukPush(DukContext &dc);
+#endif
     void SetValue(int value, metric_unit_t units = Other);
     void operator=(int value) { SetValue(value); }
     void SetValue(std::string value);
@@ -202,6 +216,9 @@ class OvmsMetricFloat : public OvmsMetric
     virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
     float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     int AsInt(const int defvalue = 0, metric_unit_t units = Other);
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+    void DukPush(DukContext &dc);
+#endif
     void SetValue(float value, metric_unit_t units = Other);
     void operator=(float value) { SetValue(value); }
     void SetValue(std::string value);
@@ -220,6 +237,9 @@ class OvmsMetricString : public OvmsMetric
 
   public:
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+    void DukPush(DukContext &dc);
+#endif
     void SetValue(std::string value);
     void operator=(std::string value) { SetValue(value); }
 
@@ -231,9 +251,9 @@ class OvmsMetricString : public OvmsMetric
 
 /**
  * OvmsMetricBitset<bits>: metric wrapper for std::bitset<bits>
- *  - string representation as comma separated bit positions (beginning at 1) of set bits
+ *  - string representation as comma separated bit positions (beginning at startpos) of set bits
  */
-template <size_t N>
+template <size_t N, int startpos=1>
 class OvmsMetricBitset : public OvmsMetric
   {
   public:
@@ -258,10 +278,18 @@ class OvmsMetricBitset : public OvmsMetric
           {
           if (ss.tellp() > 0)
             ss << ',';
-          ss << i+1;
+          ss << startpos + i;
           }
         }
       return ss.str();
+      }
+
+    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
+      {
+      std::string json = "[";
+      json += AsString(defvalue, units, precision);
+      json += "]";
+      return json;
       }
 
     void SetValue(std::string value)
@@ -274,8 +302,9 @@ class OvmsMetricBitset : public OvmsMetric
         {
         std::istringstream ts(token);
         ts >> elem;
-        if (elem > 0 && elem <= N)
-          n_value[elem-1] = 1;
+        elem -= startpos;
+        if (elem >= 0 && elem < N)
+          n_value[elem] = 1;
         }
       SetValue(n_value);
       }
@@ -288,6 +317,27 @@ class OvmsMetricBitset : public OvmsMetric
       OvmsMutexLock lock(&m_mutex);
       return m_value;
       }
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+    void DukPush(DukContext &dc)
+      {
+      std::bitset<N> value;
+        {
+        OvmsMutexLock lock(&m_mutex);
+        value = m_value;
+        }
+      dc.PushArray();
+      int cnt = 0;
+      for (int i = 0; i < N; i++)
+        {
+        if (value[i])
+          {
+          dc.Push(i);
+          dc.PutProp(-2, cnt++);
+          }
+        }
+      }
+#endif
 
     void SetValue(std::bitset<N> value, metric_unit_t units = Other)
       {
@@ -344,6 +394,14 @@ class OvmsMetricSet : public OvmsMetric
       return ss.str();
       }
 
+    virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
+      {
+      std::string json = "[";
+      json += AsString(defvalue, units, precision);
+      json += "]";
+      return json;
+      }
+
     void SetValue(std::string value)
       {
       std::set<ElemType> n_value;
@@ -367,6 +425,24 @@ class OvmsMetricSet : public OvmsMetric
       OvmsMutexLock lock(&m_mutex);
       return m_value;
       }
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+    void DukPush(DukContext &dc)
+      {
+      std::set<ElemType> value;
+        {
+        OvmsMutexLock lock(&m_mutex);
+        value = m_value;
+        }
+      dc.PushArray();
+      int cnt = 0;
+      for (auto i = value.begin(); i != value.end(); i++)
+        {
+        dc.Push(*i);
+        dc.PutProp(-2, cnt++);
+        }
+      }
+#endif
 
     void SetValue(std::set<ElemType> value, metric_unit_t units = Other)
       {
@@ -449,6 +525,24 @@ class OvmsMetricVector : public OvmsMetric
       json += "]";
       return json;
       }
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+    void DukPush(DukContext &dc)
+      {
+      std::vector<ElemType, Allocator> value;
+        {
+        OvmsMutexLock lock(&m_mutex);
+        value = m_value;
+        }
+      dc.PushArray();
+      int cnt = 0;
+      for (auto i = value.begin(); i != value.end(); i++)
+        {
+        dc.Push(*i);
+        dc.PutProp(-2, cnt++);
+        }
+      }
+#endif
 
     virtual void SetValue(std::string value)
       {

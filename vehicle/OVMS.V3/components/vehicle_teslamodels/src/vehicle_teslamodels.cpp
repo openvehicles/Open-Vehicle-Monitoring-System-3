@@ -48,6 +48,7 @@ OvmsVehicleTeslaModelS::OvmsVehicleTeslaModelS()
   memset(m_vin,0,sizeof(m_vin));
   memset(m_type,0,sizeof(m_type));
   m_charge_w = 0;
+  m_candata_timer = TS_CANDATA_TIMEOUT;
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -72,6 +73,16 @@ OvmsVehicleTeslaModelS::~OvmsVehicleTeslaModelS()
 #endif
   }
 
+void OvmsVehicleTeslaModelS::Ticker1(uint32_t ticker)
+  {
+  if ((m_candata_timer > 0)&&(--m_candata_timer == 0))
+    {
+    // Car has gone to sleep
+    ESP_LOGI(TAG,"Car has gone to sleep (CAN bus timeout)");
+    StandardMetrics.ms_v_env_awake->SetValue(false);
+    }
+  }
+
 void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
@@ -93,28 +104,24 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
         case 1: // Park
           StandardMetrics.ms_v_env_gear->SetValue(0);
           StandardMetrics.ms_v_env_on->SetValue(false);
-          StandardMetrics.ms_v_env_awake->SetValue(false);
           StandardMetrics.ms_v_env_handbrake->SetValue(true);
           StandardMetrics.ms_v_env_charging12v->SetValue(false);
           break;
         case 2: // Reverse
           StandardMetrics.ms_v_env_gear->SetValue(-1);
           StandardMetrics.ms_v_env_on->SetValue(true);
-          StandardMetrics.ms_v_env_awake->SetValue(true);
           StandardMetrics.ms_v_env_handbrake->SetValue(false);
           StandardMetrics.ms_v_env_charging12v->SetValue(true);
           break;
         case 3: // Neutral
           StandardMetrics.ms_v_env_gear->SetValue(0);
           StandardMetrics.ms_v_env_on->SetValue(false);
-          StandardMetrics.ms_v_env_awake->SetValue(true);
           StandardMetrics.ms_v_env_handbrake->SetValue(false);
           StandardMetrics.ms_v_env_charging12v->SetValue(true);
           break;
         case 4: // Drive
           StandardMetrics.ms_v_env_gear->SetValue(1);
           StandardMetrics.ms_v_env_on->SetValue(true);
-          StandardMetrics.ms_v_env_awake->SetValue(true);
           StandardMetrics.ms_v_env_handbrake->SetValue(false);
           StandardMetrics.ms_v_env_charging12v->SetValue(true);
           break;
@@ -253,6 +260,13 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
 void OvmsVehicleTeslaModelS::IncomingFrameCan2(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
+  uint8_t b;
+
+  if (m_candata_timer < TS_CANDATA_TIMEOUT)
+    {
+    StandardMetrics.ms_v_env_awake->SetValue(true);
+    }
+  m_candata_timer = TS_CANDATA_TIMEOUT;
 
   switch (p_frame->MsgID)
     {
@@ -265,6 +279,14 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan2(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_pos_gpslock->SetValue(true);
         StandardMetrics.ms_v_pos_gpsmode->SetValue("TESLA");
         }
+      break;
+    case 0x318: // GWT CAR state
+      b = d[5]>>6;            if (b<2) StandardMetrics.ms_v_door_trunk->SetValue(b);
+      b = (d[1] >> 4) & 0x03; if (b<2) StandardMetrics.ms_v_door_fr->SetValue(b);
+      b = (d[1] >> 6);        if (b<2) StandardMetrics.ms_v_door_fl->SetValue(b);
+      b = (d[2] >> 6);        if (b<2) StandardMetrics.ms_v_door_rr->SetValue(b);
+      b = (d[3] >> 5) & 0x03; if (b<2) StandardMetrics.ms_v_door_rl->SetValue(b);
+      b = (d[6] >> 2) & 0x03; if (b<2) StandardMetrics.ms_v_door_hood->SetValue(b);
       break;
     case 0x3d8: // MCU GPS latitude / longitude
       StandardMetrics.ms_v_pos_latitude->SetValue((double)(((uint32_t)(d[3]&0x0f) << 24) +
