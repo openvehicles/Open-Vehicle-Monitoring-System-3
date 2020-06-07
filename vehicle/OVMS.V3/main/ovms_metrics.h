@@ -137,6 +137,7 @@ class OvmsMetric
     virtual uint32_t Age();
     virtual bool IsDefined();
     virtual bool IsFirstDefined();
+    virtual bool IsPersist();
     virtual bool IsStale();
     virtual void SetStale(bool stale);
     virtual void SetAutoStale(uint16_t seconds);
@@ -155,6 +156,7 @@ class OvmsMetric
     metric_unit_t m_units;
     metric_defined_t m_defined;
     bool m_stale;
+    bool m_persist;
   };
 
 class OvmsMetricBool : public OvmsMetric
@@ -224,6 +226,7 @@ class OvmsMetricFloat : public OvmsMetric
     void SetValue(std::string value);
     void SetValue(dbcNumber& value);
     void operator=(std::string value) { SetValue(value); }
+    virtual bool IsPersist();
 
   protected:
     float m_value;
