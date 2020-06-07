@@ -301,9 +301,12 @@ Push notification subscription 0x70 "p"
 
 This message is sent <apptoserver> A". It is used by app to register for push notifications, and is normally at the start of a connection. The <data> is made up of:
 
-<appid>,<pushtype>,<pushkeytype>{,<vehicleid>,<netpass>,<pushkeyvalue>}
+<appid>,<pushtype>,<pushkeytype>,<vehicleid>,<netpass>,<pushkeyvalue>
 
 The server will verify the credentials for each vehicle, and store the required notification information.
+
+Note: As of June 2020, only one vehicleid can be subscribed at a time. If multiple vehicles are
+required, then they should each be subscribed in individual messages.
 
 ----------------------------------------
 Server -> Server Record message 0x52 "R"
