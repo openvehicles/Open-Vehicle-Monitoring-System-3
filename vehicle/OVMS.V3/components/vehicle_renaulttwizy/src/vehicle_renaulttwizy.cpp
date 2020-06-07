@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-twizy";
 
-#define VERSION "1.4.0"
+#define VERSION "1.5.0"
 
 #include <stdio.h>
 #include <string>
@@ -120,6 +120,15 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
 #endif
+
+  // init internal state from persistent metrics:
+  twizy_soc = StdMetrics.ms_v_bat_soc->AsFloat() * 100;
+  twizy_odometer = StdMetrics.ms_v_pos_odometer->AsFloat() * 100;
+  twizy_tmotor = StdMetrics.ms_v_mot_temp->AsFloat();
+  if (StdMetrics.ms_v_bat_range_est->IsDefined())
+    twizy_range_est = StdMetrics.ms_v_bat_range_est->AsFloat();
+  twizy_speedpwr[CAN_SPEED_CONST].use = StdMetrics.ms_v_bat_energy_used->AsFloat() * 1000 * WH_DIV;
+  twizy_speedpwr[CAN_SPEED_CONST].rec = StdMetrics.ms_v_bat_energy_recd->AsFloat() * 1000 * WH_DIV;
 
   // init can bus:
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
