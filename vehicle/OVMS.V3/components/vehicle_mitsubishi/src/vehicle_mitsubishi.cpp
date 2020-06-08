@@ -54,7 +54,11 @@
 ;     1.0.9
 ;       - Charge detection fix
 ;       - update xmi charge command Stop SOC during charge
-;
+;       - set RR to 0 while charging on QC
+;     1.0.10
+;       - replace V1.0.6  with polling cac
+;       - Get External and Internal temp (beta)
+;       - Get Trip A/B value
 ;
 ;    (C) 2011         Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018    Mark Webb-Johnson
@@ -82,11 +86,28 @@
 
 #include "ovms_log.h"
 #include <stdio.h>
+#include <string.h>
+#include "pcp.h"
 #include "vehicle_mitsubishi.h"
+#include "metrics_standard.h"
+#include "ovms_metrics.h"
+#include "ovms_notify.h"
+#include <sys/param.h>
 
-#define VERSION "1.0.9"
+#define VERSION "1.0.10"
 
 static const char *TAG = "v-mitsubishi";
+
+// Pollstate 0 - car is off
+// Pollstate 1 - car is on
+// Pollstate 2 - car is charging
+static const OvmsVehicle::poll_pid_t vehicle_mitsubishi_polls[] =
+  {
+    { 0x761, 0x762, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x01, 		{       0,  10,   10 } }, 	// cac
+    { 0x771, 0x772, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x13, 		{       0,  10,   10 } },   //external/internal temp
+    { 0x782, 0x783, VEHICLE_POLL_TYPE_OBDIIGROUP,  0xCE, 		{       0,   5,    0 } },   //Trip A/B
+    { 0, 0, 0, 0, { 0, 0, 0 } }
+  };
 
 OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
 {
@@ -136,6 +157,8 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   ms_v_trip_charge_ac_kwh->SetValue(0);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
+  PollSetPidList(m_can1,vehicle_mitsubishi_polls);
+  PollSetState(0);
 
   //BMS
   //Disable BMS alerts by default
@@ -175,6 +198,7 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   // init configs:
   MyConfig.RegisterParam( "xmi", "Trio", true, true);
   ConfigChanged(NULL);
+
 
 }
 
@@ -694,19 +718,6 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
     {
       if (d[0] == 16)
       {
-        // Request CAC...
-        CAN_frame_t frame;
-        memset(&frame,0,sizeof(frame));
-        frame.origin = m_can1;
-        frame.FIR.U = 0;
-        frame.FIR.B.DLC = 3;
-        frame.FIR.B.FF = CAN_frame_std;
-        frame.MsgID = 0x761;
-        frame.data.u8[0] = 0x30;
-        frame.data.u8[1] = 0x08;
-        frame.data.u8[2] = 0x0A;
-        m_can1->Write(&frame);
-
         //real SOC
         OvmsMetricFloat* xmi_bat_soc_real = MyMetrics.InitFloat("xmi.b.soc.real", 10, 0, Percentage);
         xmi_bat_soc_real->SetValue((d[4] / 2.0 - 5));
@@ -767,6 +778,8 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
 
     if ((mi_QC == true) || (mi_SC == true))
     {
+
+      PollSetState(2);
       StandardMetrics.ms_v_env_charging12v->SetValue(true);
       if (! StandardMetrics.ms_v_charge_pilot->AsBool())
       {
@@ -787,6 +800,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
       }
       else
       {
+
         StandardMetrics.ms_v_charge_state->SetValue("charging");
         v_c_time->SetValue(StandardMetrics.ms_v_charge_time->AsInt());
         v_c_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
@@ -891,26 +905,6 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
   }
 }
 
-void OvmsVehicleMitsubishi::Ticker60(uint32_t ticker)
-{
-  if (StdMetrics.ms_v_env_on->AsBool() || mi_QC == true || mi_SC == true)
-  {
-    //Send a request to BMS ECU
-   CAN_frame_t frame;
-    memset(&frame,0,sizeof(frame));
-    frame.origin = m_can1;
-    frame.FIR.U = 0;
-    frame.FIR.B.DLC = 3;
-    frame.FIR.B.FF = CAN_frame_std;
-    frame.MsgID = 0x761;
-    frame.data.u8[0] = 0x02;
-    frame.data.u8[1] = 0x21;
-    frame.data.u8[2] = 0x01;
-    m_can1->Write(&frame);
-
-  }
-}
-
   /**
    * Takes care of setting all the state appropriate when the car is on
    * or off. Centralized so we can more easily make on and off mirror
@@ -941,6 +935,7 @@ void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
          }
 
        BmsResetCellStats();
+       PollSetState(1);
     }
     else if ( !isOn && StdMetrics.ms_v_env_on->AsBool() )
     {
@@ -954,6 +949,7 @@ void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
       mi_park_trip_counter.Update(POS_ODO);
       ms_v_trip_park_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
       ms_v_trip_park_time_stop->SetValue(StdMetrics.ms_m_timeutc->AsInt());
+      PollSetState(0);
     }
 }
 
