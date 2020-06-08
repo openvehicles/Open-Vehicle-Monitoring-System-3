@@ -77,8 +77,8 @@ MetricsStandard::MetricsStandard()
   ms_v_bat_coulomb_recd = new OvmsMetricFloat(MS_V_BAT_COULOMB_RECD, SM_STALE_MID, AmpHours);
   ms_v_bat_power = new OvmsMetricFloat(MS_V_BAT_POWER, SM_STALE_MID, kW);
   ms_v_bat_consumption = new OvmsMetricFloat(MS_V_BAT_CONSUMPTION, SM_STALE_MID, WattHoursPK);
-  ms_v_bat_energy_used = new OvmsMetricFloat(MS_V_BAT_ENERGY_USED, SM_STALE_MID, kWh);
-  ms_v_bat_energy_recd = new OvmsMetricFloat(MS_V_BAT_ENERGY_RECD, SM_STALE_MID, kWh);
+  ms_v_bat_energy_used = new OvmsMetricFloat(MS_V_BAT_ENERGY_USED, SM_STALE_MID, kWh, true);
+  ms_v_bat_energy_recd = new OvmsMetricFloat(MS_V_BAT_ENERGY_RECD, SM_STALE_MID, kWh, true);
   ms_v_bat_range_full = new OvmsMetricFloat(MS_V_BAT_RANGE_FULL, SM_STALE_HIGH, Kilometers);
   ms_v_bat_range_ideal = new OvmsMetricFloat(MS_V_BAT_RANGE_IDEAL, SM_STALE_HIGH, Kilometers);
   ms_v_bat_range_est = new OvmsMetricFloat(MS_V_BAT_RANGE_EST, SM_STALE_HIGH, Kilometers);
@@ -135,13 +135,13 @@ MetricsStandard::MetricsStandard()
   ms_v_charge_duration_range = new OvmsMetricInt(MS_V_CHARGE_DURATION_RANGE, SM_STALE_MID, Minutes);
   ms_v_charge_duration_soc = new OvmsMetricInt(MS_V_CHARGE_DURATION_SOC, SM_STALE_MID, Minutes);
 
-  ms_v_inv_temp = new OvmsMetricFloat(MS_V_INV_TEMP, SM_STALE_MID, Celcius);
+  ms_v_inv_temp = new OvmsMetricFloat(MS_V_INV_TEMP, SM_STALE_MID, Celcius, true);
   ms_v_bat_temp = new OvmsMetricFloat(MS_V_BAT_TEMP, SM_STALE_MID, Celcius, true);
   ms_v_mot_rpm = new OvmsMetricInt(MS_V_MOT_RPM, SM_STALE_MID);
   ms_v_mot_temp = new OvmsMetricFloat(MS_V_MOT_TEMP, SM_STALE_MID, Celcius, true);
-  ms_v_charge_temp = new OvmsMetricFloat(MS_V_CHARGE_TEMP, SM_STALE_MID, Celcius);
+  ms_v_charge_temp = new OvmsMetricFloat(MS_V_CHARGE_TEMP, SM_STALE_MID, Celcius, true);
   ms_v_env_temp = new OvmsMetricFloat(MS_V_ENV_TEMP, SM_STALE_MID, Celcius, true);
-  ms_v_env_cabintemp = new OvmsMetricFloat(MS_V_ENV_CABINTEMP, SM_STALE_MID, Celcius);
+  ms_v_env_cabintemp = new OvmsMetricFloat(MS_V_ENV_CABINTEMP, SM_STALE_MID, Celcius, true);
   ms_v_env_cabinfan = new OvmsMetricInt(MS_V_ENV_CABINFAN, SM_STALE_MID, Percentage);
   ms_v_env_cabinsetpoint = new OvmsMetricFloat(MS_V_ENV_CABINSETPOINT, SM_STALE_MID, Celcius);
   ms_v_env_cabinintake = new OvmsMetricString(MS_V_ENV_CABININTAKE, SM_STALE_MID);

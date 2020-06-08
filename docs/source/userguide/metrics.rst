@@ -57,9 +57,15 @@ changes::
 
   OVMS# metrics ?
   list                 Show all metrics
+  persist              Show persistent metrics info
   set                  Set the value of a metric
   trace                METRIC trace framework
 
+Some metrics are presistent across warm reboots. This prevents
+values such as SOC from being lost when firmware is updated (or in
+the event of a crash). You can display these with ``metrics list
+-p`` and view general information about presistent metrics with
+``metrics persist``.
 
 ----------------
 Standard Metrics
