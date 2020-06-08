@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- #377 Make some metrics (e.g. v.b.soc) persistent across warm reboots
+  This includes crashes and firmware updates
 
 2020-05-31 MWJ  3.2.013 OTA release
 - TLS Trusted CA update (for addtrust/usertrust)
