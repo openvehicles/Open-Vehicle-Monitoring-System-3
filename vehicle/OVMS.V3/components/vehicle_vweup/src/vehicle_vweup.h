@@ -75,10 +75,15 @@ class OvmsVehicleVWeUP : public OvmsVehicle
     bool vwup_enable_write;
     int vwup_modelyear;
     int vwup_remote_climate_ticker;
+    int vwup_cc_temp_int;
     bool ocu_awake;
     bool ocu_working;
     bool ocu_what;
+    bool ocu_wait;
     bool vweup_cc_on;
+    bool vweup_cc_turning_on;
+    bool signal_ok;
+    int cc_count;
     int fas_counter_on;
     int fas_counter_off;
     bool dev_mode;
@@ -91,15 +96,18 @@ class OvmsVehicleVWeUP : public OvmsVehicle
 
     void vehicle_vweup_car_on(bool isOn);
     TimerHandle_t m_sendOcuHeartbeat;
+    TimerHandle_t m_ccCountdown;
 
   public:
     void WebInit();
     void WebDeInit();
     void SendOcuHeartbeat();
+    void CCCountdown();
     void CCOn();
     void CCOff();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgHardware(PageEntry_t& p, PageContext_t& c);
+    static void WebCfgClimate(PageEntry_t& p, PageContext_t& c);
     virtual vehicle_command_t CommandWakeup();
   };
 

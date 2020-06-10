@@ -51,6 +51,7 @@ void OvmsVehicleVWeUP::WebInit()
   // vehicle menu:
   MyWebServer.RegisterPage("/vwup/hardware", "Hardware",         WebCfgHardware,                      PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/vwup/features", "Features",         WebCfgFeatures,                      PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/vwup/climate", "Climate control",         WebCfgClimate,                      PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 /**
@@ -60,6 +61,7 @@ void OvmsVehicleVWeUP::WebDeInit()
 {
   MyWebServer.DeregisterPage("/vwup/hardware");
   MyWebServer.DeregisterPage("/vwup/features");
+  MyWebServer.DeregisterPage("/vwup/climate");
 }
 
 /**
@@ -183,6 +185,66 @@ void OvmsVehicleVWeUP::WebCfgHardware(PageEntry_t& p, PageContext_t& c)
   c.input_radiobtn_option("how_connected", "T26A + OBD", "1", how_connected == "1");
   c.input_radiobtn_option("how_connected", "OBD", "1", how_connected == "2");
   c.input_radiobtn_end();
+
+  c.print("<hr>");
+  c.input_button("default", "Save");
+  c.form_end();
+  c.panel_end();
+  c.done();
+}
+
+/**
+ * WebCfgClimate: setup how connexted to the vehicle (URL /vwup/config)
+ */
+void OvmsVehicleVWeUP::WebCfgClimate(PageEntry_t& p, PageContext_t& c)
+{
+  std::string error;
+  std::string cc_temp;
+
+
+  if (c.method == "POST") {
+    // process form submission:
+    cc_temp = c.getvar("cc_temp");
+
+    if (error == "") {
+      // store:
+      MyConfig.SetParamValue("vwup", "cc_temp",   cc_temp);
+
+      c.head(200);
+      c.alert("success", "<p class=\"lead\">VW e-Up climate control configuration saved.</p>");
+      MyWebServer.OutputHome(p, c);
+      c.done();
+      return;
+    }
+    // output error, return to form:
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    c.head(400);
+    c.alert("danger", error.c_str());
+  }
+  else {
+    // read configuration:
+    cc_temp = MyConfig.GetParamValue("vwup", "cc_temp", "21");
+
+    c.head(200);
+  }
+
+  // generate form:
+
+  c.panel_start("primary", "VW e-Up climate control configuration");
+  c.form_start(p.uri);
+
+  c.print("<br>This page offers remote climate configuration.<br>The target temperature for the cabin can be set here.<br><br>");
+
+  c.fieldset_start("Climate control");
+
+  c.input_select_start("Cabin target temperature", "cc_temp");
+  c.input_select_option("18", "18", cc_temp == "18");
+  c.input_select_option("19", "19", cc_temp == "19");
+  c.input_select_option("20", "20", cc_temp == "20");
+  c.input_select_option("21", "21", cc_temp == "21");
+  c.input_select_option("22", "22", cc_temp == "22");
+  c.input_select_option("23", "23", cc_temp == "23");
+  c.input_select_end();
 
   c.print("<hr>");
   c.input_button("default", "Save");

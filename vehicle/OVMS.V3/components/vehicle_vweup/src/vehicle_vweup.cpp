@@ -91,15 +91,23 @@ static const char *TAG = "v-vweup";
 #include "ovms_events.h"
 #include "ovms_metrics.h"
 
+/*
 static const OvmsVehicle::poll_pid_t vwup_polls[] =
 {
   { 0, 0, 0x00, 0x00, { 0, 0, 0 }, 0 }
 };
+*/
 
 void sendOcuHeartbeat(TimerHandle_t timer)
   {
   OvmsVehicleVWeUP* vwup = (OvmsVehicleVWeUP*) pvTimerGetTimerID(timer);
   vwup->SendOcuHeartbeat();
+  }
+
+void ccCountdown(TimerHandle_t timer)
+  {
+  OvmsVehicleVWeUP* vwup = (OvmsVehicleVWeUP*) pvTimerGetTimerID(timer);
+  vwup->CCCountdown();
   }
 
 OvmsVehicleVWeUP::OvmsVehicleVWeUP()
@@ -111,8 +119,8 @@ OvmsVehicleVWeUP::OvmsVehicleVWeUP()
 
   MyConfig.RegisterParam("vwup", "VW e-Up", true, true);
   ConfigChanged(NULL);
-  PollSetPidList(m_can3, vwup_polls);
-  PollSetState(0);
+//  PollSetPidList(m_can3, vwup_polls);
+//  PollSetState(0);
   vin_part1 = false;
   vin_part2 = false;
   vin_part3 = false;
@@ -120,9 +128,14 @@ OvmsVehicleVWeUP::OvmsVehicleVWeUP()
   ocu_awake = false;
   ocu_working = false;
   ocu_what = false;
+  ocu_wait = false;
   vweup_cc_on = false;
+  vweup_cc_turning_on = false;
+  vwup_cc_temp_int = 21;
   fas_counter_on = 0;
   fas_counter_off = 0;
+  signal_ok = false;
+  cc_count = 0;
 
   dev_mode = false; // true disables writing on the comfort CAN. For code debugging only.
 
@@ -179,7 +192,45 @@ void OvmsVehicleVWeUP::ConfigChanged(OvmsConfigParam* param)
   
   vwup_enable_write  = MyConfig.GetParamValueBool("vwup", "canwrite", false);
   vwup_modelyear     = MyConfig.GetParamValueInt("vwup", "modelyear", DEFAULT_MODEL_YEAR);
+  vwup_cc_temp_int   = MyConfig.GetParamValueInt("vwup", "cc_temp", 21);
 }
+
+// Takes care of setting all the state appropriate when the car is on
+// or off.
+//
+void OvmsVehicleVWeUP::vehicle_vweup_car_on(bool isOn)
+  {
+  if (isOn && !StandardMetrics.ms_v_env_on->AsBool())
+    {
+    // Log once that car is being turned on
+    ESP_LOGI(TAG,"CAR IS ON");
+    StandardMetrics.ms_v_env_on->SetValue(true);
+    // if (vwup_enable_write && !dev_mode) PollSetState(1);
+    // Turn off eventually running climate control timer
+    if (ocu_awake) {
+      xTimerStop(m_sendOcuHeartbeat, 0); 
+      xTimerDelete(m_sendOcuHeartbeat, 0);
+      m_sendOcuHeartbeat = NULL;
+    }
+    if (cc_count != 0) {
+      xTimerStop(m_ccCountdown, 0);
+      xTimerDelete(m_ccCountdown, 0);
+      m_ccCountdown = NULL;
+    }
+    ocu_awake = false;
+    ocu_working = false;
+    vwup_remote_climate_ticker = 0;
+    fas_counter_on = 0;
+    fas_counter_off = 0;
+    }
+  else if (!isOn && StandardMetrics.ms_v_env_on->AsBool())
+    {
+    // Log once that car is being turned off
+    ESP_LOGI(TAG,"CAR IS OFF");
+    StandardMetrics.ms_v_env_on->SetValue(false);
+    // if (vwup_enable_write && !dev_mode) PollSetState(0);
+    }
+  }
 
 void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
   {
@@ -311,12 +362,17 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
     case 0x400: // Welcome to the ring from ILM
     case 0x40C: // We know this one too. Climatronic.
     case 0x436: // Working in the ring. 
-    case 0x439: // Who 436 and 439 and why do they differ on some cars?
+    case 0x439: // Who are 436 and 439 and why do they differ on some cars?
       if (d[1] == 0x31 && ocu_awake) { // We should go to sleep, no matter what
           ESP_LOGI(TAG, "Comfort CAN calls for sleep");
           xTimerStop(m_sendOcuHeartbeat, 0);
           xTimerDelete(m_sendOcuHeartbeat, 0);
           m_sendOcuHeartbeat = NULL;
+          if (cc_count != 0) {
+            xTimerStop(m_ccCountdown, 0);
+            xTimerDelete(m_ccCountdown, 0);
+            m_ccCountdown = NULL;
+          }
           ocu_awake = false;
           ocu_working = false;
           vwup_remote_climate_ticker = 0;
@@ -325,34 +381,35 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
           break;
       }
       if (d[0] == 0x1D) { // We are called in the ring
-          CAN_frame_t frame;
-          memset(&frame, 0, sizeof(frame));
 
-          frame.origin = m_can3;
-          frame.FIR.U = 0;
-          frame.FIR.B.DLC = 8;
-          frame.FIR.B.FF = CAN_frame_std;
-          frame.MsgID = 0x43D;
-          frame.callback = NULL;
-          frame.data.u8[0] = 0x00;
+          unsigned char data[8];
+          uint8_t length;
+          length = 8;
+
+          canbus *comfBus;
+          comfBus = m_can3;
+
+          data[0] = 0x00; // As it seems that we are always the highest in the ring we always send to 0x400
           if (ocu_working) {
-            frame.data.u8[1] = 0x01;
+            data[1] = 0x01;
             if (dev_mode) ESP_LOGI(TAG, "OCU working");
           } else {
-            frame.data.u8[1] = 0x11; // Ready to sleep. This is very important!
+            data[1] = 0x11; // Ready to sleep. This is very important!
             if (dev_mode) ESP_LOGI(TAG, "OCU ready to sleep");
           }
-          frame.data.u8[2] = 0x02;
-          frame.data.u8[3] = 0x00;
-          frame.data.u8[4] = 0x00;
-          if (ocu_what) { // This is not implemented yet.
-            frame.data.u8[5] = 0x14;
+          data[2] = 0x02;
+          data[3] = d[3]; // Not understood
+          data[4] = 0x00;
+          if (ocu_what) { // This is not understood and not implemented yet.
+            data[5] = 0x14;
           } else {
-            frame.data.u8[5] = 0x10;
+            data[5] = 0x10;
           }
-          frame.data.u8[6] = 0x00;
-          frame.data.u8[7] = 0x00;
-          if(vwup_enable_write && !dev_mode) m_can3->Write(&frame); // We answer.
+          data[6] = 0x00;
+          data[7] = 0x00;
+          vTaskDelay(50 / portTICK_PERIOD_MS);
+          if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x43D, length, data); // We answer
+
           ocu_awake = true;
           break;
       }
@@ -365,81 +422,27 @@ void OvmsVehicleVWeUP::IncomingFrameCan3(CAN_frame_t* p_frame)
     }
   }
 
-// Takes care of setting all the state appropriate when the car is on
-// or off.
-//
-void OvmsVehicleVWeUP::vehicle_vweup_car_on(bool isOn)
-  {
-  if (isOn && !StandardMetrics.ms_v_env_on->AsBool())
-    {
-    // Log once that car is being turned on
-    ESP_LOGI(TAG,"CAR IS ON");
-    StandardMetrics.ms_v_env_on->SetValue(true);
-    if (vwup_enable_write && !dev_mode) PollSetState(1);
-    // Turn off eventually running climate control timer
-    // Needs to be tested
-    ocu_working = false;
-    vwup_remote_climate_ticker = 0;
-    }
-  else if (!isOn && StandardMetrics.ms_v_env_on->AsBool())
-    {
-    // Log once that car is being turned off
-    ESP_LOGI(TAG,"CAR IS OFF");
-    StandardMetrics.ms_v_env_on->SetValue(false);
-    if (vwup_enable_write && !dev_mode) PollSetState(0);
-    }
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::RemoteCommandHandler(RemoteCommand command)
+{
+  ESP_LOGI(TAG, "RemoteCommandHandler");
+
+  vwup_remote_command = command;
+  SendCommand(vwup_remote_command);
+  if (signal_ok) {
+    signal_ok = false;
+    return Success;
   }
-
-
-// Wakeup implentation over the VW ring commands
-// We need to register in the ring with a call to our self from 43D with 0x1D in the first byte
-//
-OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::CommandWakeup() {
-
-  if(!vwup_enable_write)
-    return Fail;
-  
-  if(!ocu_awake) {
-    ESP_LOGI(TAG, "Send Wakeup Command");
-  
-    CAN_frame_t frame;
-    memset(&frame, 0, sizeof(frame));
-
-    frame.origin = m_can3;
-    frame.FIR.U = 0;
-    frame.FIR.B.DLC = 8;
-    frame.FIR.B.FF = CAN_frame_std;
-    frame.MsgID = 0x43D;
-    frame.callback = NULL;
-    frame.data.u8[0] = 0x1D;
-    frame.data.u8[1] = 0x02;
-    frame.data.u8[2] = 0x02;
-    frame.data.u8[3] = 0x00;
-    frame.data.u8[4] = 0x00;
-    frame.data.u8[5] = 0x14; // What does this?
-    frame.data.u8[6] = 0x00;
-    frame.data.u8[7] = 0x00;
-    if (!dev_mode) m_can3->Write(&frame);
-
-    ocu_working = true;
-    ocu_awake = true;
-
-    vTaskDelay(100 / portTICK_PERIOD_MS);
-
-    m_sendOcuHeartbeat = xTimerCreate("VW e-Up OCU heartbeat", 1000 / portTICK_PERIOD_MS, pdTRUE, this, sendOcuHeartbeat);
-    xTimerStart(m_sendOcuHeartbeat, 0);
-  }
-  // This can be done better. Gives always success, even when already awake.
-  return Success;
+  return NotImplemented;
 }
 
 ////////////////////////////////////////////////////////////////////////
 // Send a RemoteCommand on the CAN bus.
-//
+// 
 // Does nothing if @command is out of range
 //
 void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
   {
+
   switch (command)
     {
     case ENABLE_CLIMATE_CONTROL:
@@ -447,10 +450,12 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
         ESP_LOGI(TAG, "Climate Control can't be enabled - car is on");
         break;
       }
+
       if (fas_counter_off > 0 && fas_counter_off < 10) {
         ESP_LOGI(TAG, "Climate Control can't be enabled - CC off is still running");
         break;
       }
+
       if (vwup_remote_climate_ticker == 0) {
         vwup_remote_climate_ticker = 1800;
       } else {
@@ -460,11 +465,14 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
 
       ESP_LOGI(TAG, "Enable Climate Control");
 
+      vweup_cc_turning_on = true;
+
       CommandWakeup();
-      CCOn();
 
-      ocu_awake = true;
+      m_ccCountdown = xTimerCreate("VW e-Up CC Countdown", 1000 / portTICK_PERIOD_MS, pdTRUE, this, ccCountdown);
+      xTimerStart(m_ccCountdown, 0);
 
+      signal_ok = true;
       break;
     case DISABLE_CLIMATE_CONTROL:
       if (!vweup_cc_on) {
@@ -475,11 +483,13 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
         ESP_LOGI(TAG, "Climate Control is already disabled - car is on");
         break;
       }
-      if (fas_counter_on > 0 && fas_counter_on < 10) {
-        // ToDo: Wait till CC on is finished and then disable CC.
+
+      if ((fas_counter_on > 0 && fas_counter_on < 10) || ocu_wait) {
+        // Should we implement a "wait for turn off" timer here?
         ESP_LOGI(TAG, "Climate Control can't be disabled - CC on is still running");
         break;
       }
+
       if (vwup_remote_climate_ticker == 0) {
         ESP_LOGI(TAG, "Disable Climate Control - already disabled");
         break;
@@ -492,10 +502,12 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
       CCOff();
 
       ocu_awake = true;
+      signal_ok = true;
 
       break;
     case AUTO_DISABLE_CLIMATE_CONTROL:
       if (StandardMetrics.ms_v_env_on->AsBool()) {
+        // Should not be possible
         ESP_LOGI(TAG, "Error: CC AUTO_DISABLE when car is on");
         break;
       }
@@ -507,6 +519,7 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
       CCOff();
 
       ocu_awake = true;
+      signal_ok = true;
 
       break;
     default:
@@ -514,14 +527,132 @@ void OvmsVehicleVWeUP::SendCommand(RemoteCommand command)
     }
   }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::RemoteCommandHandler(RemoteCommand command)
-  {
-  ESP_LOGI(TAG, "RemoteCommandHandler");
+// Wakeup implentation over the VW ring commands
+// We need to register in the ring with a call to our self from 43D with 0x1D in the first byte
+//
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::CommandWakeup() {
 
-  vwup_remote_command = command;
-  SendCommand(vwup_remote_command);
+  if(!vwup_enable_write)
+    return Fail;
 
+  if(!ocu_awake) {
+    ESP_LOGI(TAG, "Send Wakeup Command");
+
+    unsigned char data[8];
+    uint8_t length;
+    length = 8;
+
+    canbus *comfBus;
+    comfBus = m_can3;
+
+    data[0] = 0x1D; // We call ourself to wake up the ring
+    data[1] = 0x02;
+    data[2] = 0x02;
+    data[3] = 0x00;
+    data[4] = 0x00;
+    data[5] = 0x14; // What does this do?
+    data[6] = 0x00;
+    data[7] = 0x00;
+    if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x43D, length, data);
+
+    vTaskDelay(50 / portTICK_PERIOD_MS);
+
+    data[0] = 0x00; // We need to talk to 0x400 first to get accepted in the ring
+    data[1] = 0x01;
+    data[2] = 0x02;
+    data[3] = 0x04; // This could be a problem
+    data[4] = 0x00;
+    data[5] = 0x14; // What does this do?
+    data[6] = 0x00;
+    data[7] = 0x00;
+    if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x43D, length, data);
+
+    ocu_working = true;
+    ocu_awake = true;
+
+    vTaskDelay(50 / portTICK_PERIOD_MS);
+
+    m_sendOcuHeartbeat = xTimerCreate("VW e-Up OCU heartbeat", 1000 / portTICK_PERIOD_MS, pdTRUE, this, sendOcuHeartbeat);
+    xTimerStart(m_sendOcuHeartbeat, 0);
+  }
+  // This can be done better. Gives always success, even when already awake.
   return Success;
+}
+
+void OvmsVehicleVWeUP::SendOcuHeartbeat()
+  {
+
+  if (!vweup_cc_on) {
+    fas_counter_on = 0;
+    if (fas_counter_off < 10 && !vweup_cc_turning_on) {
+	fas_counter_off++;
+        ocu_working = true;
+        if (dev_mode) ESP_LOGI(TAG, "OCU working");
+    } else {
+      if (vweup_cc_turning_on) {
+        ocu_working = true;
+        if (dev_mode) ESP_LOGI(TAG, "OCU working");
+      } else {
+        ocu_working = false;
+        if (dev_mode) ESP_LOGI(TAG, "OCU ready to sleep");
+      }
+    }
+  } else {
+    fas_counter_off = 0;
+    ocu_working = true;
+    if (dev_mode) ESP_LOGI(TAG, "OCU working");
+    if (fas_counter_on < 10) fas_counter_on++;
+  }
+
+  unsigned char data[8];
+  uint8_t length;
+  length = 8;
+
+  canbus *comfBus;
+  comfBus = m_can3;
+
+  data[0] = 0x00;
+  data[1] = 0x00;
+  data[2] = 0x00;
+  data[3] = 0x00;
+  data[4] = 0x00;
+  data[5] = 0x00;
+  data[6] = 0x00;
+  data[7] = 0x00;
+  if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x5A9, length, data);
+
+
+  if ((fas_counter_on > 0 && fas_counter_on < 10) || (fas_counter_off > 0 && fas_counter_off < 10)) {
+    data[0] = 0x60;
+    if (dev_mode) ESP_LOGI(TAG, "OCU Heartbeat - 5A7 60");
+  } else {
+    data[0] = 0x00;
+    if (dev_mode) ESP_LOGI(TAG, "OCU Heartbeat - 5A7 00");
+  }
+  data[1] = 0x16;
+  data[2] = 0x00;
+  data[3] = 0x00;
+  data[4] = 0x00;
+  data[5] = 0x00;
+  data[6] = 0x00;
+  data[7] = 0x00;
+  if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x5A7, length, data);
+
+  }
+
+void OvmsVehicleVWeUP::CCCountdown()
+  {
+    cc_count++;
+    ocu_wait = true;
+    if (cc_count == 20) {
+      CCOn();
+      xTimerStop(m_ccCountdown, 0);
+      xTimerDelete(m_ccCountdown, 0);
+      m_ccCountdown = NULL;
+      ocu_wait = false;
+      ocu_awake = true;
+      cc_count = 0;
+    }
   }
 
 void OvmsVehicleVWeUP::CCOn()
@@ -534,18 +665,56 @@ void OvmsVehicleVWeUP::CCOn()
     uint8_t length_s;
     length_s = 4;
 
+    unsigned char data_t[2];
+    uint8_t length_t;
+    length_t = 2;
+
     canbus *comfBus;
     comfBus = m_can3;
 
-    data[0] = 0x60;
-    data[1] = 0x16;
-    data[2] = 0x00;
-    data[3] = 0x00;
-    data[4] = 0x00;
-    data[5] = 0x00;
-    data[6] = 0x00;
-    data[7] = 0x00;
-    if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x5A7, length, data);
+    data_t[0] = 0x19;
+    data_t[1] = 0x52;
+    if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x69E, length_t, data_t);
+
+    data_s[0] = 0x90;
+    data_s[1] = 0x00;
+    data_s[2] = 0x19;
+    data_s[3] = 0x54;
+    if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x69E, length_s, data_s);
+
+    data_s[0] = 0x90;
+    data_s[1] = 0x00;
+    data_s[2] = 0x19;
+    data_s[3] = 0x54;
+    if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x69E, length_s, data_s);
+
+    data_t[0] = 0x14;
+    data_t[1] = 0x42;
+    if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x69E, length_t, data_t);
+
+    data_t[0] = 0x14;
+    data_t[1] = 0x43;
+    if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x69E, length_t, data_t);
+
+    data_t[0] = 0x19;
+    data_t[1] = 0x42;
+    if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x69E, length_t, data_t);
+
+    data_t[0] = 0x19;
+    data_t[1] = 0x43;
+    if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x69E, length_t, data_t);
+
+    data_t[0] = 0x14;
+    data_t[1] = 0x41;
+    if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x69E, length_t, data_t);
+
+    data_t[0] = 0x19;
+    data_t[1] = 0x41;
+    if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x69E, length_t, data_t);
+
+    data_t[0] = 0x19;
+    data_t[1] = 0x50;
+    if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x69E, length_t, data_t);
 
     // d5 could be a counter?
     data[0] = 0x80;
@@ -568,15 +737,45 @@ void OvmsVehicleVWeUP::CCOn()
     data[7] = 0x00;
     if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x69E, length, data);
 
+    data_t[0] = 0x14;
+    data_t[1] = 0x42;
+    if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x69E, length_t, data_t);
+
     data[0] = 0xC1;
     data[1] = 0xFF;
     data[2] = 0xFF;
     data[3] = 0xFF;
     data[4] = 0xFF;
     data[5] = 0x01;
-    data[6] = 0x6E;
+    data[6] = 0x6E;  // This is the target temperature. T = 10 + d6/10
+
+    if (vwup_cc_temp_int == 19) {
+      data[6] = 0x5A;
+      if (dev_mode) ESP_LOGI(TAG, "Cabin temperature set: 19");
+    }
+    if (vwup_cc_temp_int == 20) {
+      data[6] = 0x64;
+      if (dev_mode) ESP_LOGI(TAG, "Cabin temperature set: 20");
+    }
+    if (vwup_cc_temp_int == 21) {
+      data[6] = 0x6E;
+      if (dev_mode) ESP_LOGI(TAG, "Cabin temperature set: 21");
+    }
+    if (vwup_cc_temp_int == 22) {
+      data[6] = 0x78;
+      if (dev_mode) ESP_LOGI(TAG, "Cabin temperature set: 22");
+    }
+    if (vwup_cc_temp_int == 23) {
+      data[6] = 0x82;
+      if (dev_mode) ESP_LOGI(TAG, "Cabin temperature set: 23");
+    }
+
     data[7] = 0x00;
     if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x69E, length, data);
+
+    data_t[0] = 0x19;
+    data_t[1] = 0x53;
+    if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x69E, length_t, data_t);
 
     data[0] = 0xC2;
     data[1] = 0x1E;
@@ -598,24 +797,31 @@ void OvmsVehicleVWeUP::CCOn()
     data[7] = 0x6E;
     if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x69E, length, data);
 
-    data[0] = 0x60;
-    data[1] = 0x16;
-    data[2] = 0x00;
-    data[3] = 0x00;
-    data[4] = 0x00;
-    data[5] = 0x00;
-    data[6] = 0x00;
-    data[7] = 0x00;
-    if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x5A7, length, data);
+    data_t[0] = 0x19;
+    data_t[1] = 0x42;
+    if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x69E, length_t, data_t);
+
+    data_s[0] = 0x80;
+    data_s[1] = 0x00;
+    data_s[2] = 0x19;
+    data_s[3] = 0x55;
+    if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x69E, length_s, data_s);
+
+    data_s[0] = 0x80;
+    data_s[1] = 0x00;
+    data_s[2] = 0x19;
+    data_s[3] = 0x56;
+    if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x69E, length_s, data_s);
 
     data_s[0] = 0x29;
     data_s[1] = 0x58;
     data_s[2] = 0x00;
     data_s[3] = 0x01;
     if (vwup_enable_write && !dev_mode) comfBus->WriteStandard(0x69E, length_s, data_s);
-    
+
     ESP_LOGI(TAG, "Wrote Climate Control On Message to Comfort CAN.");
     vweup_cc_on = true;
+    vweup_cc_turning_on = false;
   }
 
 void OvmsVehicleVWeUP::CCOff()
@@ -712,70 +918,6 @@ void OvmsVehicleVWeUP::CCOff()
     vweup_cc_on = false;
   }
 
-void OvmsVehicleVWeUP::SendOcuHeartbeat()
-  {
-  if (!vweup_cc_on) {
-    fas_counter_on = 0;
-    if (fas_counter_off < 10) {
-	fas_counter_off++;
-        ocu_working = true;
-    } else {
-      ocu_working = false;
-    }
-  } else {
-    fas_counter_off = 0;
-    ocu_working = true;
-    if (fas_counter_on < 10) fas_counter_on++;
-  }
-
-  CAN_frame_t frame;
-  memset(&frame, 0, sizeof(frame));
-
-  frame.origin = m_can3;
-  frame.FIR.U = 0;
-  frame.FIR.B.DLC = 8;
-  frame.FIR.B.FF = CAN_frame_std;
-  frame.MsgID = 0x5A9;
-  frame.callback = NULL;
-  frame.data.u8[0] = 0x00;
-  frame.data.u8[1] = 0x00;
-  frame.data.u8[2] = 0x00;
-  frame.data.u8[3] = 0x00;
-  frame.data.u8[4] = 0x00;
-  frame.data.u8[5] = 0x00;
-  frame.data.u8[6] = 0x00;
-  frame.data.u8[7] = 0x00;
-  if (vwup_enable_write && !dev_mode) m_can3->Write(&frame);
-
-  CAN_frame_t frame2;
-  memset(&frame2, 0, sizeof(frame2));
-
-  frame2.origin = m_can3;
-  frame2.FIR.U = 0;
-  frame2.FIR.B.DLC = 8;
-  frame2.FIR.B.FF = CAN_frame_std;
-  frame2.MsgID = 0x5A7;
-  frame2.callback = NULL;
-  if ((fas_counter_on > 0 && fas_counter_on < 10) || (fas_counter_off > 0 && fas_counter_off < 10)) {
-    frame2.data.u8[0] = 0x60;
-    if (dev_mode) ESP_LOGI(TAG, "OCU Heartbeat - 5A7 60");
-  } else {
-    frame2.data.u8[0] = 0x00;
-    if (dev_mode) ESP_LOGI(TAG, "OCU Heartbeat - 5A7 00");
-  }
-  frame2.data.u8[1] = 0x16;
-  frame2.data.u8[2] = 0x00;
-  frame2.data.u8[3] = 0x00;
-  frame2.data.u8[4] = 0x00;
-  frame2.data.u8[5] = 0x00;
-  frame2.data.u8[6] = 0x00;
-  frame2.data.u8[7] = 0x00;
-  if (vwup_enable_write && !dev_mode) m_can3->Write(&frame2);
-
-
-  }
-
-
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::CommandHomelink(int button, int durationms)
   {
   ESP_LOGI(TAG, "CommandHomelink");
@@ -793,6 +935,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUP::CommandClimateControl(bool clim
 void OvmsVehicleVWeUP::Ticker1(uint32_t ticker)
   {
   // This is just to be sure that we really have an asleep message. It has delay of 120 sec.
+  // Do we still need this?
   if (StandardMetrics.ms_v_env_awake->IsStale())
     {
     StandardMetrics.ms_v_env_awake->SetValue(false);

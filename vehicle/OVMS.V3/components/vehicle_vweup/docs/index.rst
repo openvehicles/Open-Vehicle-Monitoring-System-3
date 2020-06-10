@@ -21,7 +21,7 @@ GSM Antenna                 T4AC - R205 with fakra_sma adapter cable or 1000500 
 GPS Antenna                 T4AC - R50 with fakra_sma adapter cable or 1020200 Universal GPS Antenna (or any compatible antenna)
 SOC Display                 Yes
 Range Display               Yes
-Cabin Pre-heat/cool Control tba
+Cabin Pre-heat/cool Control Yes
 GPS Location                Yes (from modem module GPS)
 Speed Display               Yes
 Temperature Display         Yes (outdoor, cabin)
@@ -83,6 +83,18 @@ User notes
 * Enjoy :-)
 
 -----------------
+Climate control
+-----------------
+
+Climate control works, as long as write access to the comfort can has been enabled in the app or in the OVMS webinterface (VW e-Up -> Features).
+
+Once the AC is turned on by the app there will be a delay of about 20 seconds till the AC actually starts in the car. Further 10 seconds all communication from the app to the car is blocked.
+
+The communication from the app to the car is also blocked for 10 seconds after the "AC off" command from the app to the car. There is no delay between the "AC turn off" signal of the app and the actually turning off in the car.
+
+The cabin target temperature can be set from the OVMS webinterface (VW e-Up -> Climate control).
+
+-----------------
 Development notes
 -----------------
 
@@ -124,6 +136,11 @@ ID	Conversion	     Unit    Function		     	         	 Comment
 569	b07			     "AC"-LED
 69C	d1/10+10	     °C      temperature setpoint for remote AC
 				     (only in message D2 <d1> 00 1E 1E 0A 00 00)
+43D	d1 01 or 11		     TX: Working or sleeping in the ring     	 (OCU)
+5A7	d1 16			     TX: OCU AC blocking signal
+5A9	all 00			     TX: OCU heartbeat
+6E9	multiple msg		     TX: AC on / off signals                 	 (AC)
+	d0 C1 d6 xx	     °C      TX: set cabin temperature for 69C       	 (CAB)
 ======= ==================== ======= =========================================== =======
 
 --------------------------
