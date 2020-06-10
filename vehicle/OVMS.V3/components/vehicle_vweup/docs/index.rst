@@ -98,6 +98,12 @@ The cabin target temperature can be set from the OVMS webinterface (VW e-Up -> C
 Development notes
 -----------------
 
+The code is NOT working at the moment! Last working code is from 04/11/20.
+
+We hope to get our car delivered on 7/7/20. After that I can comme back to serious developing and testing.
+
+Till then, this code is just here for anyone who is interested in the development process.
+
 To compile the code you will need to check out the repository, check out the components 
 mongoose, libzip and zlib  and copy the file
 
