@@ -26,6 +26,10 @@
 ; THE SOFTWARE.
 */
 
+// We're using ESP_EARLY_LOG* (direct USB console output) for protocol debug logging.
+// To enable protocol debug logging locally, uncomment:
+// #define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
+
 #include "ovms_log.h"
 static const char *TAG = "websocket";
 
@@ -85,7 +89,7 @@ WebSocketHandler::~WebSocketHandler()
 
 void WebSocketHandler::ProcessTxJob()
 {
-  //ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d, sent=%d ack=%d", m_nc, m_job.type, m_sent, m_ack);
+  ESP_EARLY_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d, sent=%d ack=%d", m_nc, m_job.type, m_sent, m_ack);
   
   // process job, send next chunk:
   switch (m_job.type)
@@ -93,7 +97,7 @@ void WebSocketHandler::ProcessTxJob()
     case WSTX_Event:
     {
       if (m_sent && m_ack) {
-        ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done", m_nc, m_job.type);
+        ESP_EARLY_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done", m_nc, m_job.type);
         ClearTxJob(m_job);
       } else {
         std::string msg;
@@ -138,7 +142,7 @@ void WebSocketHandler::ProcessTxJob()
       // send msg:
       if (i) {
         msg += "}}";
-        //ESP_LOGV(TAG, "WebSocket msg: %s", msg.c_str());
+        ESP_EARLY_LOGV(TAG, "WebSocket msg: %s", msg.c_str());
         mg_send_websocket_frame(m_nc, WEBSOCKET_OP_TEXT, msg.data(), msg.size());
         m_sent += i;
       }
@@ -146,7 +150,7 @@ void WebSocketHandler::ProcessTxJob()
       // done?
       if (!m && m_ack == m_sent) {
         if (m_sent)
-          ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done, sent=%d metrics", m_nc, m_job.type, m_sent);
+          ESP_EARLY_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done, sent=%d metrics", m_nc, m_job.type, m_sent);
         ClearTxJob(m_job);
       }
       
@@ -157,7 +161,7 @@ void WebSocketHandler::ProcessTxJob()
     {
       if (m_sent && m_ack == m_job.notification->GetValueSize()+1) {
         // done:
-        ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done, sent %d bytes", m_nc, m_job.type, m_sent);
+        ESP_EARLY_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done, sent %d bytes", m_nc, m_job.type, m_sent);
         ClearTxJob(m_job);
       } else {
         // build frame:
@@ -189,7 +193,7 @@ void WebSocketHandler::ProcessTxJob()
         
         // send frame:
         mg_send_websocket_frame(m_nc, op, msg.data(), msg.size());
-        //ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d: sent %d bytes, op=%04x", m_nc, m_job.type, m_sent, op);
+        ESP_EARLY_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d: sent %d bytes, op=%04x", m_nc, m_job.type, m_sent, op);
       }
       break;
     }
@@ -219,7 +223,7 @@ void WebSocketHandler::ProcessTxJob()
       else if (m_ack == m_sent) {
         // done:
         if (m_sent)
-          ESP_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done, sent=%d lines", m_nc, m_job.type, m_sent);
+          ESP_EARLY_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done, sent=%d lines", m_nc, m_job.type, m_sent);
         ClearTxJob(m_job);
       }
       
@@ -340,7 +344,7 @@ int WebSocketHandler::HandleEvent(int ev, void* p)
     }
     
     case MG_EV_POLL:
-      //ESP_LOGV(TAG, "WebSocketHandler[%p] EV_POLL qlen=%d jobtype=%d sent=%d ack=%d", m_nc, uxQueueMessagesWaiting(m_jobqueue), m_job.type, m_sent, m_ack);
+      ESP_EARLY_LOGV(TAG, "WebSocketHandler[%p] EV_POLL qlen=%d jobtype=%d sent=%d ack=%d", m_nc, uxQueueMessagesWaiting(m_jobqueue), m_job.type, m_sent, m_ack);
       // Check for new transmission:
       InitTx();
       // Log queue overflows & resolves:
@@ -359,7 +363,7 @@ int WebSocketHandler::HandleEvent(int ev, void* p)
     
     case MG_EV_SEND:
       // last transmission has finished
-      //ESP_LOGV(TAG, "WebSocketHandler[%p] EV_SEND qlen=%d jobtype=%d sent=%d ack=%d", m_nc, uxQueueMessagesWaiting(m_jobqueue), m_job.type, m_sent, m_ack);
+      ESP_EARLY_LOGV(TAG, "WebSocketHandler[%p] EV_SEND qlen=%d jobtype=%d sent=%d ack=%d", m_nc, uxQueueMessagesWaiting(m_jobqueue), m_job.type, m_sent, m_ack);
       ContinueTx();
       break;
     
