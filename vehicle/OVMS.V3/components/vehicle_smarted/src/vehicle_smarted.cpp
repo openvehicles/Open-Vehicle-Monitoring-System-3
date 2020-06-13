@@ -97,6 +97,9 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() {
   
   m_shutdown_ticker   = 15*60;
   
+  // 12v charging
+  m_charging_timer    = 0;
+  
   // init commands:
   cmd_xse = MyCommandApp.RegisterCommand("xse","SmartED 451 Gen.3");
   cmd_xse->RegisterCommand("recu","Set recu..", xse_recu, "<up/down>",1,1);
@@ -631,7 +634,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     case 0x3D7: //HV Status
     {   //HV active
       mt_hv_active->SetValue(d[0]);
-      StandardMetrics.ms_v_env_charging12v->SetValue(d[0]);
+      // StandardMetrics.ms_v_env_charging12v->SetValue(d[0]);
       break;
     }
     case 0x312: //Powerflow from/to Engine 
@@ -693,6 +696,18 @@ void OvmsVehicleSmartED::CalculateEfficiency() {
   StdMetrics.ms_v_bat_consumption->SetValue((StdMetrics.ms_v_bat_consumption->AsFloat() * 4 + consumption) / 5);
 }
 
+void OvmsVehicleSmartED::HandleCharging12v() {
+  if (mt_hv_active->AsBool())
+    m_charging_timer++;
+  else m_charging_timer = 0;
+  
+  if (m_charging_timer > 5) {
+    StandardMetrics.ms_v_env_charging12v->SetValue(true);
+  } else {
+    StandardMetrics.ms_v_env_charging12v->SetValue(false);
+  }
+}
+
 void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
   if (m_candata_timer > 0) {
     if (--m_candata_timer == 0) {
@@ -707,6 +722,7 @@ void OvmsVehicleSmartED::Ticker1(uint32_t ticker) {
       SaveStatus();
     }
   }
+  HandleCharging12v();
   HandleEnergy();
   if (mt_bus_awake->AsBool())
     HandleChargingStatus();
@@ -790,10 +806,10 @@ void OvmsVehicleSmartED::AutoSetRecu() {
 void OvmsVehicleSmartED::ShutDown() {
   float volt = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
   
-  if (volt > 0 && volt > 10.5) {
+  if (volt > 3 && volt > 10.5) {
     m_shutdown_ticker = 15 * 60;
   } 
-  else if (volt > 0 && volt < 10.5 && --m_shutdown_ticker == 0) {
+  else if (volt > 3 && volt < 10.5 && --m_shutdown_ticker == 0) {
     ESP_LOGW(TAG,"Powering off");
     MyEvents.SignalEvent("v-smarted.power.off",NULL);
     MyNotify.NotifyString("alert", "v-smarted.power.off", "Shutting down OVMS to prevent Battery drain");
