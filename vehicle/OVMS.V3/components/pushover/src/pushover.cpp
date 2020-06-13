@@ -143,16 +143,16 @@ bool Pushover::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* entry
   std::string sound;
   std::string msg;
 
+  if (MyConfig.GetParamValueBool("pushover","enable", false) == false)
+    {
+    //ESP_LOGD(TAG,"IncomingNotification: Ignore notification (%s:%s:%s) (pushover not enabled)",type->m_name,entry->GetSubType(),entry->GetValue().c_str());
+    return true;
+    }
   if (!MyNetManager.m_connected_any)
     {
     ESP_LOGD(TAG,"IncomingNotification: Ignore notification (%s:%s:%s) because no network conn",type->m_name,entry->GetSubType(),entry->GetValue().c_str());
     return true;
     } 
-  else if (MyConfig.GetParamValueBool("pushover","enable", false) == false)
-    {
-    ESP_LOGD(TAG,"IncomingNotification: Ignore notification (%s:%s:%s) (pushover not enabled)",type->m_name,entry->GetSubType(),entry->GetValue().c_str());
-    return true;
-    }
   ESP_LOGD(TAG,"IncomingNotification: Handling notification (%s:%s:%s)",type->m_name,entry->GetSubType(),entry->GetValue().c_str());      
 
   OvmsConfigParam* param = MyConfig.CachedParam("pushover");
@@ -196,18 +196,17 @@ void Pushover::EventListener(std::string event, void* data)
   std::string name, setting, pri, msg, sound;
   if ( (event == "ticker.1") || (event == "ticker.10") )
     return;
-  ESP_LOGD(TAG,"EventListener %s",event.c_str());
 
+  if (MyConfig.GetParamValueBool("pushover","enable", false) == false)
+    {
+    //ESP_LOGD(TAG,"EventListener: Ignore event (%s) (pushover not enabled)",event.c_str());
+    return;
+    }
   if (!MyNetManager.m_connected_any)
     {
     ESP_LOGD(TAG,"EventListener: Ignore event (%s) because no network conn",event.c_str());
     return;
     } 
-  else if (MyConfig.GetParamValueBool("pushover","enable", false) == false)
-    {
-    ESP_LOGD(TAG,"EventListener: Ignore event (%s) (pushover not enabled)",event.c_str());
-    return;
-    }
   ESP_LOGD(TAG,"EventListener: Handling event (%s)",event.c_str());      
 
   OvmsConfigParam* param = MyConfig.CachedParam("pushover");
