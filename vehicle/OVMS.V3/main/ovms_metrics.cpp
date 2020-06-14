@@ -60,6 +60,7 @@ struct persistent_metrics {
 };
 
 RTC_NOINIT_ATTR struct persistent_metrics pmetrics;
+static const char* pmetrics_reason;     /* reason pmetrics was zeroed */
 
 #define NUM_PERSISTENT_VALUES \
     ((int)(sizeof(pmetrics.values) / sizeof(pmetrics.values[0])))
@@ -138,6 +139,8 @@ void metrics_persist(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     writer->puts("Persistent metrics will be reset on the next boot");
   writer->printf("version %d, ", pmetrics.version);
   writer->printf("serial %d, ", pmetrics.serial);
+  if (pmetrics_reason != NULL)
+    writer->printf("%s caused reset, ", pmetrics_reason);
   writer->printf("%d bytes, and ", pmetrics.size);
   writer->printf("%d of %d slots used\n", pmetrics.used, NUM_PERSISTENT_VALUES);
   }
@@ -301,14 +304,16 @@ OvmsMetrics::OvmsMetrics()
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
   /* Persistent metrics initialization */
-  if (pmetrics.magic != PERSISTENT_METRICS_MAGIC ||
-    pmetrics.version != PERSISTENT_VERSION ||
-    pmetrics.size != sizeof(pmetrics))
+  const char* r;
+  if ((r = "magic", pmetrics.magic != PERSISTENT_METRICS_MAGIC) ||
+    (r = "version", pmetrics.version != PERSISTENT_VERSION) ||
+    (r = "size", pmetrics.size != sizeof(pmetrics)))
     {
     memset(&pmetrics, 0, sizeof(pmetrics));
     pmetrics.magic = PERSISTENT_METRICS_MAGIC;
     pmetrics.version = PERSISTENT_VERSION;
     pmetrics.size = sizeof(persistent_metrics);
+    pmetrics_reason = r;
     }
   ESP_LOGI(TAG, "Persistent metrics serial %u using %d bytes",
       pmetrics.serial++, sizeof(pmetrics));
