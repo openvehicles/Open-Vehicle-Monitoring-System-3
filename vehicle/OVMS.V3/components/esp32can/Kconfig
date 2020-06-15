@@ -26,7 +26,7 @@ config ESP_CAN_TXD_PIN_NUM
 
 choice ESP_CAN_SPEED
     prompt "Select the ESP_CAN_SPEED used for the ESP CAN Driver"
-	default CONFIG_CAN_SPEED_125KBPS
+	default CAN_SPEED_125KBPS
 	depends on ESPCAN
 	help
 		CAN_SPEED_100KBPS 		CAN Node runs at 100kBits.

@@ -798,8 +798,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
         }
       }
     }
-    else
-      if ((StandardMetrics.ms_v_charge_current->AsInt() == 0) && (StandardMetrics.ms_v_charge_voltage->AsInt() < 100))
+    else if ((StandardMetrics.ms_v_charge_current->AsInt() == 0) && (StandardMetrics.ms_v_charge_voltage->AsInt() < 100))
       {
         // Car is not charging
         if (StandardMetrics.ms_v_charge_pilot->AsBool())

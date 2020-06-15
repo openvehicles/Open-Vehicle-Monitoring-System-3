@@ -97,9 +97,9 @@ int strverscmp (const char *s1, const char *s2)
        if (!isdigit (*p2++))
          return 1;
 
-       return isdigit (*p2) ? -1 : diff;
+     return isdigit (*p2) ? -1 : diff;
 
-     default:
-       return state;
-   }
+   default:
+     return state;
  }
+}
