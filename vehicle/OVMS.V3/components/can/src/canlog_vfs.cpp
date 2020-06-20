@@ -47,6 +47,7 @@ void can_log_vfs_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int 
     else
       { MyCan.AddLogger(logger); }
     writer->printf("CAN logging to VFS active: %s\n", logger->GetInfo().c_str());
+    MyCan.LogInfo(NULL, CAN_LogInfo_Config, logger->GetInfo().c_str());
     }
   else
     {
@@ -136,7 +137,6 @@ bool canlog_vfs::Open()
     return false;
     }
 
-  LogInfo(NULL, CAN_LogInfo_Config, GetInfo().c_str());
   ESP_LOGI(TAG, "Now logging CAN messages to '%s'", m_path.c_str());
 
   std::string header = m_formatter->getheader();

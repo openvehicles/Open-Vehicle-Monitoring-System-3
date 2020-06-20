@@ -183,14 +183,19 @@ canlog::~canlog()
 
   if (m_task)
     {
-    vTaskDelete(m_task);
+    TaskHandle_t t = m_task;
     m_task = NULL;
+
+    vTaskDelete(t);
     }
 
   if (m_queue)
     {
+    QueueHandle_t q = m_queue;
+    m_queue = NULL;
+
     CAN_log_message_t msg;
-    while (xQueueReceive(m_queue, &msg, 0) == pdTRUE)
+    while (xQueueReceive(q, &msg, 0) == pdTRUE)
       {
       switch (msg.type)
         {
@@ -203,7 +208,7 @@ canlog::~canlog()
           break;
         }
       }
-    vQueueDelete(m_queue);
+    vQueueDelete(q);
     }
 
   if (m_formatter)
@@ -327,7 +332,7 @@ void canlog::LogFrame(canbus* bus, CAN_log_type_t type, const CAN_frame_t* frame
   {
   if (!IsOpen() || !bus || !frame) return;
 
-  if ((m_filter == NULL)||(m_filter->IsFiltered(frame)))
+  if (((m_filter == NULL)||(m_filter->IsFiltered(frame)))&&(m_queue))
     {
     CAN_log_message_t msg;
     msg.type = type;
@@ -347,7 +352,7 @@ void canlog::LogStatus(canbus* bus, CAN_log_type_t type, const CAN_status_t* sta
   {
   if (!IsOpen() || !bus) return;
 
-  if ((m_filter == NULL)||(m_filter->IsFiltered(bus)))
+  if (((m_filter == NULL)||(m_filter->IsFiltered(bus)))&&(m_queue))
     {
     CAN_log_message_t msg;
     msg.type = type;
@@ -367,7 +372,7 @@ void canlog::LogInfo(canbus* bus, CAN_log_type_t type, const char* text)
   {
   if (!IsOpen() || !text) return;
 
-  if ((m_filter == NULL)||(m_filter->IsFiltered(bus)))
+  if (((m_filter == NULL)||(m_filter->IsFiltered(bus)))&&(m_queue))
     {
     CAN_log_message_t msg;
     msg.type = type;
