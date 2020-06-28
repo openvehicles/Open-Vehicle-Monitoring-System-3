@@ -721,9 +721,6 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
 void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
 {
-  //Restore SOC after crash
-  //if (StandardMetrics.ms_v_bat_soc->AsFloat(0) == 0) RestoreStatus();
-
   // battery temp from battery pack avg
   StdMetrics.ms_v_bat_temp->SetValue(StdMetrics.ms_v_bat_pack_tavg->AsFloat());
 
@@ -824,7 +821,6 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
           ms_v_trip_charge_soc_start->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
           ms_v_trip_charge_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
           v_c_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
-          //SaveStatus();
 
         }
       }
@@ -920,7 +916,6 @@ void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
       ms_v_trip_park_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
       ms_v_trip_park_time_stop->SetValue(StdMetrics.ms_m_timeutc->AsInt());
       PollSetState(0);
-      //SaveStatus();
     }
 }
 
