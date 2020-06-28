@@ -36,54 +36,99 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
     switch (m_poll_moduleid_low)
 		{
 
-		// ****** BMU *****
-		case 0x762:
-    {
-
-      ESP_LOGW(TAG, "%03x TYPE:%x PID:%02x %02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", m_poll_moduleid_low, type, pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, mlremain);
-
-      break;
-    }
-
-    // ****** HVAC *****
-    case 0x772:
-    {
-      
-      if(m_poll_ml_frame == 0){
-        StandardMetrics.ms_v_env_cabintemp->SetValue((data[2] + data[3] - 68) / 10.0);
-      }
-
-      if(m_poll_ml_frame == 1){
-        StandardMetrics.ms_v_env_temp->SetValue((data[0] + data[1] - 68) / 10.0);
-      }
-
-      break;
-    }
-
-    // ****** METER  *****
-    case 0x783:
-    {
-      //ESP_LOGW(TAG, "%03x TYPE:%x PID:%02x %02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", m_poll_moduleid_low, type, pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, mlremain);
-      if(pid == 0xCE)
+  		// ****** BMU *****
+  		case 0x762:
       {
-        if(m_poll_ml_frame == 0){
-          trio->ms_v_trip_A->SetValue((((int)data[2] << 16 ) + ((int)data[1] << 8) + data[0])/10.0, Kilometers);
-          tripb += (int)data[3];
-        }
-        if(m_poll_ml_frame == 1){
-          tripb += ((int)data[1] << 16 ) + ((int)data[0] << 8);
-          trio->ms_v_trip_B->SetValue(tripb/10.0, Kilometers);
-          tripb = 0;
-        }
+        //ESP_LOGW(TAG, "%03x TYPE:%x PID:%02x %02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", m_poll_moduleid_low, type, pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, mlremain);
 
+        switch (m_poll_ml_frame) {
+          case 0:
+          {
+            OvmsMetricFloat* xmi_bat_soc_real = MyMetrics.InitFloat("xmi.b.soc.real", 10, 0, Percentage);
+            xmi_bat_soc_real->SetValue((data[0] / 2.0 - 5));
+
+            // displayed SOC
+            OvmsMetricFloat* xmi_bat_soc_display = MyMetrics.InitFloat("xmi.b.soc.display", 10, 0, Percentage);
+            xmi_bat_soc_display->SetValue((data[1] / 2.0 - 5));
+            break;
+          }
+
+          case 4:
+          {
+            // battery "max" capacity
+            StandardMetrics.ms_v_bat_cac->SetValue(((data[2] * 256.0 + data[3]) / 10.0));
+
+            // battery remain capacity
+            ms_v_bat_cac_rem->SetValue(((data[4] * 256.0 + data[5]) / 10.0));
+
+            //max charging kW
+            ms_v_bat_max_input->SetValue(data[6] / 4.0);
+            break;
+          }
+
+          case 5:
+          {
+            //max output kW
+            ms_v_bat_max_output->SetValue(data[0] / 4.0);
+            break;
+          }
+          default:
+          break;
+        }
+        break;
       }
-      break;
-    }
 
+      // ****** HVAC *****
+      case 0x772:
+      {
+        switch (m_poll_ml_frame) {
+          case 0:
+          {
+            StandardMetrics.ms_v_env_cabintemp->SetValue((data[2] + data[3] - 68) / 10.0);
+            break;
+          }
 
-    default:
-			ESP_LOGW(TAG, "Unknown module: %03x", m_poll_moduleid_low);
-			break;
+          case 1:
+          {
+            StandardMetrics.ms_v_env_temp->SetValue((data[0] + data[1] - 68) / 10.0);
+            break;
+          }
+          default:
+          break;
+        }
+        break;
+      }
+
+      // ****** METER  *****
+      case 0x783:
+      {
+        //ESP_LOGW(TAG, "%03x TYPE:%x PID:%02x %02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", m_poll_moduleid_low, type, pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, mlremain);
+        if(pid == 0xCE)
+        {
+          switch (m_poll_ml_frame) {
+            case 0:
+            {
+              trio->ms_v_trip_A->SetValue((((int)data[2] << 16 ) + ((int)data[1] << 8) + data[0])/10.0, Kilometers);
+              tripb += (int)data[3];
+              break;
+            }
+
+            case 1:
+            {
+              tripb += ((int)data[1] << 16 ) + ((int)data[0] << 8);
+              trio->ms_v_trip_B->SetValue(tripb/10.0, Kilometers);
+              tripb = 0;
+              break;
+            }
+            default:
+            break;
+          }
+        }
+        break;
+      }
+
+     default:
+		   ESP_LOGW(TAG, "Unknown module: %03x", m_poll_moduleid_low);
 	  }
 
 }

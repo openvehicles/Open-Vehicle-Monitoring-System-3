@@ -714,40 +714,6 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     }
 
-    case 0x762: // AH
-    {
-      if (d[0] == 16)
-      {
-        //real SOC
-        OvmsMetricFloat* xmi_bat_soc_real = MyMetrics.InitFloat("xmi.b.soc.real", 10, 0, Percentage);
-        xmi_bat_soc_real->SetValue((d[4] / 2.0 - 5));
-
-        // displayed SOC
-        OvmsMetricFloat* xmi_bat_soc_display = MyMetrics.InitFloat("xmi.b.soc.display", 10, 0, Percentage);
-        xmi_bat_soc_display->SetValue((d[5] / 2.0 - 5));
-      }
-
-      if(d[0] == 36)
-      {
-        // battery "max" capacity
-        StandardMetrics.ms_v_bat_cac->SetValue(((d[3] * 256.0 + d[4]) / 10.0));
-
-        // battery remain capacity
-        ms_v_bat_cac_rem->SetValue(((d[5] * 256.0 + d[6]) / 10.0));
-
-        //max charging kW
-        ms_v_bat_max_input->SetValue(d[7] / 4.0);
-      }
-
-      if(d[0] == 37)
-      {
-        //max output kW
-        ms_v_bat_max_output->SetValue(d[1] / 4.0);
-      }
-
-      break;
-    }
-
     default:
     break;
     }
@@ -755,6 +721,9 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
 void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
 {
+  //Restore SOC after crash
+  //if (StandardMetrics.ms_v_bat_soc->AsFloat(0) == 0) RestoreStatus();
+
   // battery temp from battery pack avg
   StdMetrics.ms_v_bat_temp->SetValue(StdMetrics.ms_v_bat_pack_tavg->AsFloat());
 
@@ -855,6 +824,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
           ms_v_trip_charge_soc_start->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
           ms_v_trip_charge_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
           v_c_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
+          //SaveStatus();
 
         }
       }
@@ -950,6 +920,7 @@ void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
       ms_v_trip_park_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
       ms_v_trip_park_time_stop->SetValue(StdMetrics.ms_m_timeutc->AsInt());
       PollSetState(0);
+      //SaveStatus();
     }
 }
 
