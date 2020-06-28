@@ -179,6 +179,13 @@ void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     }
   }
 
+void boot_clear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  memset(&boot_data,0,sizeof(boot_data_t));
+  boot_data.crc = boot_data.calc_crc();
+  writer->puts("Boot status data has been cleared.");
+  }
+
 Boot::Boot()
   {
   ESP_LOGI(TAG, "Initialising BOOT (1100)");
@@ -196,6 +203,12 @@ Boot::Boot()
     memset(&boot_data,0,sizeof(boot_data_t));
     m_bootreason = BR_PowerOn;
     ESP_LOGI(TAG, "Power cycle reset detected");
+    }
+  else if (boot_data.crc != boot_data.calc_crc())
+    {
+    memset(&boot_data,0,sizeof(boot_data_t));
+    m_bootreason = BR_PowerOn;
+    ESP_LOGW(TAG, "Boot data corruption detected, data cleared");
     }
   else
     {
@@ -244,12 +257,15 @@ Boot::Boot()
   boot_data.firmware_update = false;
   boot_data.stable_reached = false;
 
+  boot_data.crc = boot_data.calc_crc();
+
   // install error handler:
   xt_set_error_handler_callback(ErrorCallback);
 
   // Register our commands
   OvmsCommand* cmd_boot = MyCommandApp.RegisterCommand("boot","BOOT framework",boot_status, "", 0, 0, false);
   cmd_boot->RegisterCommand("status","Show boot system status",boot_status,"", 0, 0, false);
+  cmd_boot->RegisterCommand("clear","Clear/reset boot system status",boot_clear,"", 0, 0, false);
   }
 
 Boot::~Boot()
@@ -260,6 +276,20 @@ void Boot::SetStable()
   {
   boot_data.stable_reached = true;
   boot_data.crash_count_early = 0;
+  boot_data.crc = boot_data.calc_crc();
+  }
+
+void Boot::SetSoftReset()
+  {
+  boot_data.soft_reset = true;
+  boot_data.crc = boot_data.calc_crc();
+  }
+
+void Boot::SetFirmwareUpdate()
+  {
+  boot_data.soft_reset = false;
+  boot_data.firmware_update = true;
+  boot_data.crc = boot_data.calc_crc();
   }
 
 const char* Boot::GetBootReasonName()
@@ -378,6 +408,8 @@ void Boot::ErrorCallback(XtExcFrame *frame, int core_id, bool is_abort)
     }
   while (i < OVMS_BT_LEVELS)
     boot_data.crash_data.bt[i++].pc = 0;
+
+  boot_data.crc = boot_data.calc_crc();
   }
 
 void Boot::NotifyDebugCrash()

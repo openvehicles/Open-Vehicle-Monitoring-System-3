@@ -298,6 +298,33 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan2(CAN_frame_t* p_frame)
                                                            ((uint32_t)d[4] << 4) +
                                                            ((uint32_t)(d[3]&0xf0) >> 4)) / 1000000.0);
       break;
+    case 0x31f: // TPMS Baolong tyre pressures + temperatures
+      // Note: Baolong TPMS in Model S does not specify which wheel is which, so
+      // the numbers may not correspond to the correct wheel
+      // (further work needs to be done with this)
+      {
+      if (d[1]>0) // Front-left
+        {
+        StandardMetrics.ms_v_tpms_fl_p->SetValue((float)d[0] / 2.755, PSI);
+        StandardMetrics.ms_v_tpms_fl_t->SetValue((float)d[1] - 40);
+        }
+      if (d[3]>0) // Front-right
+        {
+        StandardMetrics.ms_v_tpms_fr_p->SetValue((float)d[2] / 2.755, PSI);
+        StandardMetrics.ms_v_tpms_fr_t->SetValue((float)d[3] - 40);
+        }
+      if (d[5]>0) // Rear-left
+        {
+        StandardMetrics.ms_v_tpms_rl_p->SetValue((float)d[4] / 2.755, PSI);
+        StandardMetrics.ms_v_tpms_rl_t->SetValue((float)d[5] - 40);
+        }
+      if (d[7]>0) // Rear-right
+        {
+        StandardMetrics.ms_v_tpms_rr_p->SetValue((float)d[6] / 2.755, PSI);
+        StandardMetrics.ms_v_tpms_rr_t->SetValue((float)d[7] - 40);
+        }
+      break;
+      }
     default:
       break;
     }

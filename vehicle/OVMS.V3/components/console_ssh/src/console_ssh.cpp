@@ -27,6 +27,11 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
+
+// We're using ESP_EARLY_LOG* (direct USB console output) for protocol debug logging.
+// To enable protocol debug logging locally, uncomment:
+// #define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
+
 #include <sys/stat.h>
 #define LWIP_POSIX_SOCKETS_IO_NAMES 0
 #include <lwip/def.h>
@@ -78,7 +83,7 @@ void OvmsSSH::EventHandler(struct mg_connection *nc, int ev, void *p)
     {
     case MG_EV_ACCEPT:
       {
-      ESP_LOGV(tag, "Event MG_EV_ACCEPT conn %p, data %p", nc, p);
+      ESP_EARLY_LOGV(tag, "Event MG_EV_ACCEPT conn %p, data %p", nc, p);
       ConsoleSSH* child = new ConsoleSSH(this, nc);
       nc->user_data = child;
       break;
@@ -86,7 +91,7 @@ void OvmsSSH::EventHandler(struct mg_connection *nc, int ev, void *p)
 
     case MG_EV_POLL:
       {
-      //ESP_LOGV(tag, "Event MG_EV_ACCEPT conn %p, data %p", nc, p);
+      //ESP_EARLY_LOGV(tag, "Event MG_EV_ACCEPT conn %p, data %p", nc, p);
       ConsoleSSH* child = (ConsoleSSH*)nc->user_data;
       if (child)
         {
@@ -116,7 +121,7 @@ void OvmsSSH::EventHandler(struct mg_connection *nc, int ev, void *p)
 
     case MG_EV_RECV:
       {
-      ESP_LOGV(tag, "Event MG_EV_RECV conn %p, data received %d", nc, *(int*)p);
+      ESP_EARLY_LOGV(tag, "Event MG_EV_RECV conn %p, data received %d", nc, *(int*)p);
       ConsoleSSH* child = (ConsoleSSH*)nc->user_data;
       child->Receive();
       }
@@ -124,7 +129,7 @@ void OvmsSSH::EventHandler(struct mg_connection *nc, int ev, void *p)
 
     case MG_EV_SEND:
       {
-      ESP_LOGV(tag, "Event MG_EV_SEND conn %p, data %p", nc, p);
+      ESP_EARLY_LOGV(tag, "Event MG_EV_SEND conn %p, data %p", nc, p);
       ConsoleSSH* child = (ConsoleSSH*)nc->user_data;
       child->Sent();
       break;
@@ -132,7 +137,7 @@ void OvmsSSH::EventHandler(struct mg_connection *nc, int ev, void *p)
 
     case MG_EV_CLOSE:
       {
-      ESP_LOGV(tag, "Event MG_EV_CLOSE conn %p, data %p", nc, p);
+      ESP_EARLY_LOGV(tag, "Event MG_EV_CLOSE conn %p, data %p", nc, p);
       ConsoleSSH* child = (ConsoleSSH*)nc->user_data;
       if (child)
         delete child;
@@ -325,7 +330,7 @@ void ConsoleSSH::Receive()
     }
   else
     {
-    ESP_LOGE(tag, "Timeout queueing message in ConsoleSSH::Receive\n");
+    ESP_EARLY_LOGE(tag, "Timeout queueing message in ConsoleSSH::Receive\n");
     mbuf *io = &m_connection->recv_mbuf;
     mbuf_remove(io, io->len);
     }
@@ -366,20 +371,20 @@ void ConsoleSSH::Send()
     {
     // Would need to check ret != WS_WANT_WRITE here if mg_send is changed to
     // return EWOUDBLOCK
-    ESP_LOGE(tag, "Error %d in wolfSSH_stream_send: %s", ret, GetErrorString(ret));
+    ESP_EARLY_LOGE(tag, "Error %d in wolfSSH_stream_send: %s", ret, GetErrorString(ret));
 
     m_connection->flags |= MG_F_SEND_AND_CLOSE;
     m_state = CLOSING;
     }
   else if (m_size < 0)
     {
-    ESP_LOGE(tag, "Error %d reading file in source scp: %s", m_size, strerror(m_size));
+    ESP_EARLY_LOGE(tag, "Error %d reading file in source scp: %s", m_size, strerror(m_size));
     m_connection->flags |= MG_F_SEND_AND_CLOSE;
     m_state = CLOSING;
     }
   else  // EOF on fread()
     {
-    ESP_LOGD(tag, "Sending %s completed", m_path.c_str());
+    ESP_EARLY_LOGD(tag, "Sending %s completed", m_path.c_str());
     m_state = SOURCE_RESPONSE;
     wolfSSH_stream_send(m_ssh, (uint8_t*)"", 1);
     }
@@ -401,7 +406,7 @@ int ConsoleSSH::GetResponse()
   if (rc < 1)
     return rc;
   if (m_state != SINK_LOOP || *m_buffer < ' ')
-    ESP_LOGD(tag, "response() received protocol ack byte %d", *m_buffer);
+    ESP_EARLY_LOGD(tag, "response() received protocol ack byte %d", *m_buffer);
   if (*m_buffer != 0)
     {
     // Read the rest of the protocol line or error message, stopping on the
@@ -521,7 +526,7 @@ void ConsoleSSH::HandleDeviceEvent(void* pEvent)
         rc = wolfSSH_stream_read(m_ssh, (uint8_t*)m_buffer, 1);
         if (rc < 1)
           break;
-        ESP_LOGD(tag, "SOURCE received protocol ack byte %d", *m_buffer);
+        ESP_EARLY_LOGD(tag, "SOURCE received protocol ack byte %d", *m_buffer);
         if (*m_buffer == 0)
           m_state = SOURCE_LOOP;
         else
@@ -786,7 +791,7 @@ void ConsoleSSH::HandleDeviceEvent(void* pEvent)
                   }
                 else
                   {
-                  ESP_LOGD(tag, "mkdir(\"%s\", 0777)", m_path.c_str());
+                  ESP_EARLY_LOGD(tag, "mkdir(\"%s\", 0777)", m_path.c_str());
                   if (mkdir(m_path.c_str(), 0777) < 0)
                     msg.append("mkdir: ").append(strerror(errno)).append("\n");
                   else
@@ -803,8 +808,8 @@ void ConsoleSSH::HandleDeviceEvent(void* pEvent)
                 msg.append("not a regular file\n");
               else
                 {
-                ESP_LOGD(tag, "fopen(\"%s\", \"w\")", m_path.c_str());
-		if ((m_file = fopen(m_path.c_str(), "w")) == NULL)
+                ESP_EARLY_LOGD(tag, "fopen(\"%s\", \"w\")", m_path.c_str());
+                if ((m_file = fopen(m_path.c_str(), "w")) == NULL)
                   msg.append("fopen: ").append(strerror(errno)).append("\n");
                 else
                   {
@@ -865,7 +870,7 @@ void ConsoleSSH::HandleDeviceEvent(void* pEvent)
         }
 
       case CLOSING:
-        ESP_LOGD(tag, "Reached CLOSING");
+        ESP_EARLY_LOGD(tag, "Reached CLOSING");
         // Try to read to let SSH process packets, but ignore anything delivered
         rc = wolfSSH_stream_read(m_ssh, (uint8_t*)m_buffer, BUFFER_SIZE);
         break;

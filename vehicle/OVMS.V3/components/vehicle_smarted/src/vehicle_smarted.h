@@ -310,6 +310,11 @@ class OvmsVehicleSmartED : public OvmsVehicle
   
   protected:
     void TempPoll();
+  
+  // charging 12V
+  protected:
+    void HandleCharging12v();
+    unsigned int m_charging_timer;
 };
 
 #endif //#ifndef __VEHICLE_SMARTED_H__

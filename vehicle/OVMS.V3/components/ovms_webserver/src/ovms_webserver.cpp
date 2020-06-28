@@ -29,6 +29,10 @@
 ; THE SOFTWARE.
 */
 
+// We're using ESP_EARLY_LOG* (direct USB console output) for protocol debug logging.
+// To enable debug logging locally, uncomment:
+// #define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
+
 #include "ovms_log.h"
 static const char *TAG = "webserver";
 
@@ -475,7 +479,7 @@ void OvmsWebServer::EventHandler(mg_connection *nc, int ev, void *p)
 
   //if (ev != MG_EV_POLL && ev != MG_EV_SEND)
   //if (nc->user_data)
-  //  ESP_LOGV(TAG, "EventHandler: conn=%p handler=%p ev=%d p=%p rxbufsz=%d, txbufsz=%d", nc, nc->user_data, ev, p, nc->recv_mbuf.size, nc->send_mbuf.size);
+  //  ESP_EARLY_LOGV(TAG, "EventHandler: conn=%p handler=%p ev=%d p=%p rxbufsz=%d, txbufsz=%d", nc, nc->user_data, ev, p, nc->recv_mbuf.size, nc->send_mbuf.size);
 
   // call attached handler:
   if (handler)
@@ -697,7 +701,7 @@ HttpDataSender::HttpDataSender(mg_connection* nc, MemRegionList xferlist, bool k
   m_size = 0;
   m_sent = 0;
   m_keepalive = keepalive;
-  //ESP_LOGV(TAG, "HttpDataSender[%p]: init %d regions", nc, m_xferlist.size());
+  ESP_EARLY_LOGV(TAG, "HttpDataSender[%p]: init %d regions", nc, m_xferlist.size());
 }
 
 HttpDataSender::HttpDataSender(mg_connection* nc, const uint8_t* data, size_t size, bool keepalive /*=true*/)
@@ -709,13 +713,13 @@ HttpDataSender::HttpDataSender(mg_connection* nc, const uint8_t* data, size_t si
   m_size = 0;
   m_sent = 0;
   m_keepalive = keepalive;
-  //ESP_LOGV(TAG, "HttpDataSender[%p]: init data=%p, %d bytes", nc, data, size);
+  ESP_EARLY_LOGV(TAG, "HttpDataSender[%p]: init data=%p, %d bytes", nc, data, size);
 }
 
 HttpDataSender::~HttpDataSender()
 {
   if (m_sent < m_size || m_xfer < m_xferlist.size()) {
-    ESP_LOGV(TAG, "HttpDataSender[%p]: abort region=%d/%d, data=%p, %d/%d bytes sent",
+    ESP_EARLY_LOGV(TAG, "HttpDataSender[%p]: abort region=%d/%d, data=%p, %d/%d bytes sent",
              m_nc, m_xfer+1, m_xferlist.size(), m_data, m_sent, m_size);
   }
 }
@@ -731,21 +735,21 @@ int HttpDataSender::HandleEvent(int ev, void* p)
         m_data = m_xferlist[m_xfer].first;
         m_size = m_xferlist[m_xfer].second;
         m_sent = 0;
-        //ESP_LOGV(TAG, "HttpDataSender[%p]: next region=%d data=%p, %d bytes", m_nc, m_xfer+1, m_data, m_size);
+        ESP_EARLY_LOGV(TAG, "HttpDataSender[%p]: next region=%d data=%p, %d bytes", m_nc, m_xfer+1, m_data, m_size);
       }
       if (m_sent < m_size) {
         // send next chunk:
         size_t len = MIN(m_size - m_sent, XFER_CHUNK_SIZE);
         mg_send_http_chunk(m_nc, (const char*) m_data + m_sent, len);
         m_sent += len;
-        //ESP_LOGV(TAG, "HttpDataSender[%p] data=%p sent %d/%d", m_nc, m_data, m_sent, m_size);
+        ESP_EARLY_LOGV(TAG, "HttpDataSender[%p] data=%p sent %d/%d", m_nc, m_data, m_sent, m_size);
       }
       else {
         // done:
         if (!m_keepalive)
           m_nc->flags |= MG_F_SEND_AND_CLOSE;
         mg_send_http_chunk(m_nc, "", 0);
-        //ESP_LOGV(TAG, "HttpDataSender[%p]: done", m_nc);
+        ESP_EARLY_LOGV(TAG, "HttpDataSender[%p]: done", m_nc);
         delete this;
       }
     }
@@ -768,13 +772,13 @@ HttpStringSender::HttpStringSender(mg_connection* nc, std::string* msg, bool kee
   m_msg = msg;
   m_sent = 0;
   m_keepalive = keepalive;
-  //ESP_LOGV(TAG, "HttpStringSender[%p]: init msg=%p, %d bytes", nc, m_msg, m_msg->size());
+  ESP_EARLY_LOGV(TAG, "HttpStringSender[%p]: init msg=%p, %d bytes", nc, m_msg, m_msg->size());
 }
 
 HttpStringSender::~HttpStringSender()
 {
   if (m_sent < m_msg->size()) {
-    ESP_LOGV(TAG, "HttpStringSender[%p]: abort msg=%p, %d bytes sent", m_nc, m_msg, m_sent);
+    ESP_EARLY_LOGV(TAG, "HttpStringSender[%p]: abort msg=%p, %d bytes sent", m_nc, m_msg, m_sent);
   }
   delete m_msg;
 }
@@ -790,14 +794,14 @@ int HttpStringSender::HandleEvent(int ev, void* p)
         size_t len = MIN(m_msg->size() - m_sent, XFER_CHUNK_SIZE);
         mg_send_http_chunk(m_nc, (const char*) m_msg->data() + m_sent, len);
         m_sent += len;
-        //ESP_LOGV(TAG, "HttpStringSender[%p] msg=%p sent %d/%d", m_nc, m_msg, m_sent, m_msg->size());
+        ESP_EARLY_LOGV(TAG, "HttpStringSender[%p] msg=%p sent %d/%d", m_nc, m_msg, m_sent, m_msg->size());
       }
       else {
         // done:
         if (!m_keepalive)
           m_nc->flags |= MG_F_SEND_AND_CLOSE;
         mg_send_http_chunk(m_nc, "", 0);
-        //ESP_LOGV(TAG, "HttpStringSender[%p]: done msg=%p, %d bytes sent", m_nc, m_msg, m_sent);
+        ESP_EARLY_LOGV(TAG, "HttpStringSender[%p]: done msg=%p, %d bytes sent", m_nc, m_msg, m_sent);
         delete this;
       }
     }

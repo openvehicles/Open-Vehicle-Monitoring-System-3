@@ -60,6 +60,7 @@ struct persistent_metrics {
 };
 
 RTC_NOINIT_ATTR struct persistent_metrics pmetrics;
+static const char* pmetrics_reason;     /* reason pmetrics was zeroed */
 
 #define NUM_PERSISTENT_VALUES \
     ((int)(sizeof(pmetrics.values) / sizeof(pmetrics.values[0])))
@@ -138,6 +139,8 @@ void metrics_persist(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     writer->puts("Persistent metrics will be reset on the next boot");
   writer->printf("version %d, ", pmetrics.version);
   writer->printf("serial %d, ", pmetrics.serial);
+  if (pmetrics_reason != NULL)
+    writer->printf("%s caused reset, ", pmetrics_reason);
   writer->printf("%d bytes, and ", pmetrics.size);
   writer->printf("%d of %d slots used\n", pmetrics.used, NUM_PERSISTENT_VALUES);
   }
@@ -301,14 +304,16 @@ OvmsMetrics::OvmsMetrics()
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
   /* Persistent metrics initialization */
-  if (pmetrics.magic != PERSISTENT_METRICS_MAGIC ||
-    pmetrics.version != PERSISTENT_VERSION ||
-    pmetrics.size != sizeof(pmetrics))
+  const char* r;
+  if ((r = "magic", pmetrics.magic != PERSISTENT_METRICS_MAGIC) ||
+    (r = "version", pmetrics.version != PERSISTENT_VERSION) ||
+    (r = "size", pmetrics.size != sizeof(pmetrics)))
     {
     memset(&pmetrics, 0, sizeof(pmetrics));
     pmetrics.magic = PERSISTENT_METRICS_MAGIC;
     pmetrics.version = PERSISTENT_VERSION;
     pmetrics.size = sizeof(persistent_metrics);
+    pmetrics_reason = r;
     }
   ESP_LOGI(TAG, "Persistent metrics serial %u using %d bytes",
       pmetrics.serial++, sizeof(pmetrics));
@@ -903,7 +908,7 @@ void OvmsMetricBool::SetValue(dbcNumber& value)
 OvmsMetricFloat::OvmsMetricFloat(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
   : OvmsMetric(name, autostale, units, persist)
   {
-  m_value = 0;
+  m_value = 0.0;
   m_valuep = NULL;
   if (!persist)
     return;
@@ -927,12 +932,12 @@ OvmsMetricFloat::OvmsMetricFloat(const char* name, uint16_t autostale, metric_un
       ESP_LOGE(TAG, "persist name field too small for OvmsMetricFloat (%s)", name);
       return;
       }
-
     ++pmetrics.used;
     }
 
   m_valuep = &vp->value;
-  if (*m_valuep != 0.0)
+  m_value = *m_valuep;
+  if (m_value != 0.0)
     SetModified(true);
   ESP_LOGI(TAG, "persist %s = %s", name, AsUnitString("?", units).c_str());
   }
@@ -951,15 +956,10 @@ std::string OvmsMetricFloat::AsString(const char* defvalue, metric_unit_t units,
       ss.precision(precision); // Set desired precision
       ss << fixed;
       }
-    float pvalue;
-    if (m_valuep != NULL)
-      pvalue = *m_valuep;
-    else
-      pvalue = m_value;
     if ((units != Other)&&(units != m_units))
-      ss << UnitConvert(m_units,units,pvalue);
+      ss << UnitConvert(m_units,units,m_value);
     else
-      ss << pvalue;
+      ss << m_value;
     std::string s(ss.str());
     return s;
     }
@@ -981,15 +981,10 @@ float OvmsMetricFloat::AsFloat(const float defvalue, metric_unit_t units)
   {
   if (IsDefined())
     {
-    float pvalue;
-    if (m_valuep != NULL)
-      pvalue = *m_valuep;
-    else
-      pvalue = m_value;
     if ((units != Other)&&(units != m_units))
-      return UnitConvert(m_units,units,pvalue);
+      return UnitConvert(m_units,units,m_value);
     else
-      return pvalue;
+      return m_value;
     }
   else
     return defvalue;
@@ -1011,17 +1006,11 @@ void OvmsMetricFloat::SetValue(float value, metric_unit_t units)
   {
   float nvalue = value;
   if ((units != Other)&&(units != m_units)) nvalue=UnitConvert(units,m_units,value);
-  float pvalue;
-  if (m_valuep != NULL)
-    pvalue = *m_valuep;
-  else
-    pvalue = m_value;
-  if (pvalue != nvalue)
+  if (m_value != nvalue)
     {
+    m_value = nvalue;
     if (m_valuep != NULL)
-      *m_valuep = nvalue;
-    else
-      m_value = nvalue;
+      *m_valuep = m_value;
     SetModified(true);
     }
   else
@@ -1031,18 +1020,11 @@ void OvmsMetricFloat::SetValue(float value, metric_unit_t units)
 void OvmsMetricFloat::SetValue(std::string value)
   {
   float nvalue = atof(value.c_str());
-  float pvalue;
-  if (m_valuep != NULL)
-    pvalue = *m_valuep;
-  else
-    pvalue = m_value;
-  if (pvalue != nvalue)
+  if (m_value != nvalue)
     {
     m_value = nvalue;
     if (m_valuep != NULL)
-      *m_valuep = nvalue;
-    else
-      m_value = nvalue;
+      *m_valuep = m_value;
     SetModified(true);
     }
   else
