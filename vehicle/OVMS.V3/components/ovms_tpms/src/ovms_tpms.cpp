@@ -190,7 +190,7 @@ void tpms_write(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     }
   else
     {
-    writer->printf("Error: Tyre IDs could not be writting to vehicle\n");
+    writer->printf("Error: Tyre IDs could not be written to the vehicle (or not implemented)\n");
     }
   }
 
