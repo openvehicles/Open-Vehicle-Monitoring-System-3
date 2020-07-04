@@ -1230,6 +1230,12 @@ bool OvmsVehicleTeslaRoadster::TPMSRead(std::vector<uint32_t> *tpms)
 
 bool OvmsVehicleTeslaRoadster::TPMSWrite(std::vector<uint32_t> &tpms)
   {
+  if (tpms.size() != 4)
+    {
+    ESP_LOGE(TAG,"Tesla Roadster only supports TPMS sets with 4 IDs");
+    return false;
+    }
+
   gpio_set_direction((gpio_num_t)33, GPIO_MODE_OUTPUT);
   gpio_set_direction((gpio_num_t)32, GPIO_MODE_INPUT);
   gpio_set_pull_mode((gpio_num_t)33, GPIO_PULLUP_ONLY);
