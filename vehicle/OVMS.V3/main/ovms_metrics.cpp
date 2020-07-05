@@ -1169,9 +1169,11 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
     case kPa:
       if (to == Pa) return value*1000;
       else if (to == PSI) return int((float)value * 0.14503773773020923);
+      break;
     case Pa:
       if (to == kPa) return value/1000;
       else if (to == PSI) return int((float)value * 0.00014503773773020923);
+      break;
     case PSI:
       if (to == kPa) return int((float)value * 6.894757293168361);
       else if (to == Pa) return int((float)value * 0.006894757293168361);
@@ -1266,9 +1268,11 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
     case kPa:
       if (to == Pa) return value*1000;
       else if (to == PSI) return value * 0.14503773773020923;
+      break;
     case Pa:
       if (to == kPa) return value/1000;
       else if (to == PSI) return value * 0.00014503773773020923;
+      break;
     case PSI:
       if (to == kPa) return value * 6.894757293168361;
       else if (to == Pa) return value * 0.006894757293168361;

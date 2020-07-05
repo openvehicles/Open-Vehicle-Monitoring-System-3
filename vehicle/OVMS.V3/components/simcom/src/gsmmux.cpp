@@ -151,6 +151,9 @@ void GsmMuxChannel::ProcessFrame(uint8_t* frame, size_t length, size_t iframepos
         if (m_channel==0) m_mux->m_state = GsmMux::DlciOpen;
         if (m_channel<GSM_MUX_CHANNELS) m_mux->StartChannel(m_channel+1);
         }
+#if __GNUC__ >= 7
+	[[fallthrough]];
+#endif
     case ChanOpen:
       if (frame[1] == (GSM_UIH + GSM_PF))
         {

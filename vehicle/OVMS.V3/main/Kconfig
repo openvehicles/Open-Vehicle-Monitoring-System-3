@@ -6,7 +6,7 @@ menuconfig OVMS
 
 config OVMS_VERSION_TAG
     string "A tag to describe the current build version"
-    default main
+    default "main"
     depends on OVMS
     help
         Custom builds should change this tag to describe themselves

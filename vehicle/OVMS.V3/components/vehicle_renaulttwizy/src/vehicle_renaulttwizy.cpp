@@ -491,6 +491,9 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandRe
       if (!CarLocked())
         break;
       // car is locked, continue with UnLock:
+#if __GNUC__ >= 7
+      [[fallthrough]];
+#endif
       
     case CMD_UnLock:
       res = m_sevcon->CfgUnlock();
