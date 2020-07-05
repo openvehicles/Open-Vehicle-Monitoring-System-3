@@ -361,12 +361,33 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan2(CAN_frame_t* p_frame)
           m_tpms_pos = 0;
           }
         }
-      else if ((m_tpms_cmd == Writing)&&(m_tpms_pos==0))
+      else if (m_tpms_cmd == Writing)
         {
-        if ((d[0]==0x30)&&(d[1]==0x03)&&(d[2]==0x14))
+        if ((m_tpms_pos==-30)&&(d[0]==0x06)&&(d[1]==0x50)&&(d[2]==0x03))
+          {
+          // Confirmation of UDS Diagnostic Session Control
+          m_tpms_pos = -21;
+          }
+        else if ((m_tpms_pos==-20)&&(d[0]==0x04)&&(d[1]==0x67)&&(d[2]==0x01))
+          {
+          m_tpms_uds_seed = ((uint16_t)d[3]<<8) + d[4];
+          m_tpms_pos = -11;
+          }
+        else if ((m_tpms_pos==-10)&&(d[0]==0x02)&&(d[1]==0x67)&&(d[2]==0x02))
+          {
+          // Successful UDS security access
+          m_tpms_pos = -1;
+          }
+        else if ((m_tpms_pos==0)&&(d[0]==0x30)&&(d[1]==0x03)&&(d[2]==0x14))
           {
           // Confirmation (from ECU) to start transmission
           m_tpms_pos = 3;
+          }
+        else if ((m_tpms_pos==100)&&(d[0]==0x03)&&(d[1]==0x6e)&&(d[2]==0xf0)&&(d[3]==0x90))
+          {
+          // Write is complete and successful
+          m_tpms_cmd = DoneWriting;
+          m_tpms_pos = 0;
           }
         }
       break;
@@ -409,7 +430,7 @@ bool OvmsVehicleTeslaModelS::TPMSRead(std::vector<uint32_t> *tpms)
   frame.FIR.B.DLC = 8;
   frame.FIR.B.FF = CAN_frame_std;
   frame.MsgID = 0x64f;     // TPMS ECU
-  frame.data.u8[0] = 0x03; // Extended read
+  frame.data.u8[0] = 0x03; // 3 bytes
   frame.data.u8[1] = 0x22; // Extended read
   frame.data.u8[2] = 0xf0; // PID
   frame.data.u8[3] = 0x90; // PID
@@ -465,7 +486,6 @@ bool OvmsVehicleTeslaModelS::TPMSRead(std::vector<uint32_t> *tpms)
 bool OvmsVehicleTeslaModelS::TPMSWrite(std::vector<uint32_t> &tpms)
   {
   CAN_frame_t frame;
-  memset(&frame,0,sizeof(frame));
 
   if (tpms.size() != 4)
     {
@@ -484,30 +504,77 @@ bool OvmsVehicleTeslaModelS::TPMSWrite(std::vector<uint32_t> &tpms)
     m_tpms_data[m_tpms_pos++] = id & 0xff;
     }
 
-  m_tpms_pos = 0;
-
+  memset(&frame,0,sizeof(frame));
   frame.origin = m_can2;
   frame.FIR.U = 0;
   frame.FIR.B.DLC = 8;
   frame.FIR.B.FF = CAN_frame_std;
   frame.MsgID = 0x64f;     // TPMS ECU
-  frame.data.u8[0] = 0x10; // Extended write
-  frame.data.u8[1] = 0x13; // Length
-  frame.data.u8[2] = 0x2e; // Extended write
-  frame.data.u8[3] = 0xf0; // PID
-  frame.data.u8[4] = 0x90; // PID
-  frame.data.u8[5] = m_tpms_data[0];
-  frame.data.u8[6] = m_tpms_data[1];
-  frame.data.u8[7] = m_tpms_data[2];
+  frame.data.u8[0] = 0x02; // 2 bytes
+  frame.data.u8[1] = 0x10; // UDS Diagnostic Session Control
+  frame.data.u8[2] = 0x03; // Type 3
   m_can2->Write(&frame);
 
+  m_tpms_pos = -30;
   m_tpms_cmd = Writing;
 
   for (int k=0; k<20; k++)
     {
     vTaskDelay(pdMS_TO_TICKS(100)); // Delay 100ms
     if (m_tpms_cmd != Writing) break;
-    if (m_tpms_pos == 3)
+    if (m_tpms_pos == -21)
+      {
+      // Write the UDS Security Access seed request
+      memset(&frame,0,sizeof(frame));
+      frame.origin = m_can2;
+      frame.FIR.U = 0;
+      frame.FIR.B.DLC = 8;
+      frame.FIR.B.FF = CAN_frame_std;
+      frame.MsgID = 0x64f;     // TPMS ECU
+      frame.data.u8[0] = 0x02; // 2 bytes
+      frame.data.u8[1] = 0x27; // UDS Security Access
+      frame.data.u8[2] = 0x01; // Type 1 Seed Request
+      m_can2->Write(&frame);
+      m_tpms_pos = -20;
+      }
+    else if (m_tpms_pos == -11)
+      {
+      // Calculate the UDS Security Access response and send
+      memset(&frame,0,sizeof(frame));
+      frame.origin = m_can2;
+      frame.FIR.U = 0;
+      frame.FIR.B.DLC = 8;
+      frame.FIR.B.FF = CAN_frame_std;
+      frame.MsgID = 0x64f;     // TPMS ECU
+      frame.data.u8[0] = 0x04; // 4 bytes
+      frame.data.u8[1] = 0x27; // UDS Security Access
+      frame.data.u8[2] = 0x02; // Type 2 Seed Response
+      frame.data.u8[3] = (m_tpms_uds_seed >> 8) | 0b01010010;
+      frame.data.u8[4] = (m_tpms_uds_seed & 0xff) & 0b01110010;
+      m_can2->Write(&frame);
+      m_tpms_pos = -10;
+      }
+    else if (m_tpms_pos == -1)
+      {
+      // Write the first frame
+      memset(&frame,0,sizeof(frame));
+      frame.origin = m_can2;
+      frame.FIR.U = 0;
+      frame.FIR.B.DLC = 8;
+      frame.FIR.B.FF = CAN_frame_std;
+      frame.MsgID = 0x64f;     // TPMS ECU
+      frame.data.u8[0] = 0x10; // Extended write
+      frame.data.u8[1] = 0x13; // Length
+      frame.data.u8[2] = 0x2e; // Extended write
+      frame.data.u8[3] = 0xf0; // PID
+      frame.data.u8[4] = 0x90; // PID
+      frame.data.u8[5] = m_tpms_data[0];
+      frame.data.u8[6] = m_tpms_data[1];
+      frame.data.u8[7] = m_tpms_data[2];
+      m_can2->Write(&frame);
+      m_tpms_pos = 0;
+      }
+    else if (m_tpms_pos == 3)
       {
       // Write the second frame
       memset(&frame,0,sizeof(frame));
@@ -544,8 +611,7 @@ bool OvmsVehicleTeslaModelS::TPMSWrite(std::vector<uint32_t> &tpms)
       frame.data.u8[5] = m_tpms_data[14];
       frame.data.u8[6] = m_tpms_data[15];
       frame.data.u8[7] = 0x00; // Padding
-      m_tpms_pos = 0;
-      m_tpms_cmd = DoneWriting;
+      m_tpms_pos = 100;
       m_can2->Write(&frame);
       }
     }
