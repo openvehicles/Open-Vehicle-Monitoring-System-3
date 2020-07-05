@@ -1029,6 +1029,9 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
         IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw),
         MAC2STR(m_sta_ap_info.bssid));
       // Falling through (no break) to ESP32WIFI_MODE_AP on purpose
+#if __GNUC__ >= 7
+      [[fallthrough]];
+#endif
     case ESP32WIFI_MODE_AP:
       writer->printf("\nAP SSID: %s\n  MAC: " MACSTR "\n  IP: " IPSTR "\n",
         m_wifi_ap_cfg.ap.ssid, MAC2STR(m_mac_ap), IP2STR(&m_ip_info_ap.ip));
