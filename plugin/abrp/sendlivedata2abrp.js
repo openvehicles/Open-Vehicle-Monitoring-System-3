@@ -46,12 +46,17 @@
  *   objTimer : timer object
  */
 
-  const CAR_MODEL = "@@:@@:@@:@@:@@";
+  const CAR_MODEL = "hyundai:kona:19:64:other";
   const OVMS_API_KEY = "32b2162f-9599-4647-8139-66e9f9528370";
-  const MY_TOKEN = "@@@@@@@@-@@@@-@@@@-@@@@-@@@@@@@@@@@@";
+  const MY_TOKEN = "3dab1011-4724-49b3-b46b-0c567bdeb7fc";
   const TIMER_INTERVAL = "ticker.60";                         // every minute
   const EVENT_MOTORS_ON = "vehicle.on";
   const URL = "http://api.iternio.com/1/tlm/send";
+  const DEFAULT_CFG = {
+    "url": URL,                     // abrp api url (by default, URL)
+    "user_token": MY_TOKEN,         // token (by default, MY_TOKEN)
+    "car_model": CAR_MODEL          // car model (by defeult, CAR_MODEL)
+  };
   const CR = '\n';
 
   var objTLM;
@@ -59,11 +64,8 @@
   var sHasChanged = "";
   var bMotorsOn = false;
 
-  var abrp_cfg = {
-    "url": URL,                     // abrp api url (by default, URL)
-    "user_token": MY_TOKEN,         // token (by default, MY_TOKEN)
-    "car_model": CAR_MODEL          // car model (by defeult, CAR_MODEL)
-  };
+  // initialise from default
+  var abrp_cfg = JSON.parse(JSON.stringify(DEFAULT_CFG));
 
   // check if json object is empty
   function isJsonEmpty(obj) {
@@ -304,6 +306,29 @@
     InitTelemetry();
     UpdateTelemetry();
     CloseTelemetry();
+  }
+
+  // API method abrp.resetConfig()
+  //   Resets stored config to default
+  exports.resetConfig = function() {
+    OvmsConfig.SetValues("usr","abrp.", DEFAULT_CFG);
+    print(JSON.stringify(abrp_cfg));
+    OvmsNotify.Raise("info", "usr.abrp.status", "ABRP::config changed");
+  }
+
+  // API method abrp.setConfigEntry()
+  //   Sets config values directly
+  exports.setConfigEntry = function(key, value) {
+    const possibleKeys= ["url", "user_token", "car_model"];
+    if(possibleKeys.indexOf(key) === -1) {
+      print("Invald key: use one of: " + JSON.stringify(possibleKeys));
+      return;
+    } 
+    readConfig();
+    abrp_cfg[key] = value;
+    OvmsConfig.SetValues("usr", "abrp.", abrp_cfg);
+    print(JSON.stringify(abrp_cfg));
+    OvmsNotify.Raise("info", "usr.abrp.status", "ABRP::config changed");
   }
 
   // API method abrp.send():
