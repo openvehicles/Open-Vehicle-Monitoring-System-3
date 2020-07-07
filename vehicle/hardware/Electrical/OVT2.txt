@@ -1,0 +1,26 @@
+Pinout: OVT2
+
+Sumitomo 6098-5622 female connector
+  http://prd.sws.co.jp/components/en/detail.php?number_s=60985622
+
+6098-5622 DB9-F    Signal
+--------- -------- --------
+18        7        CAN0-H
+2         8        CAN2-H
+6         1        K-Line
+13        5        CAN1-H
+19        2        CAN0-L
+3         6        CAN2-L
+20        3        GND
+1         9        +12V
+14        4        CAN1-L
+9         n/c      CAN2+Body (no connection at DB9-F)
+10        n/c      CAN2-Body (no connection at DB9-F)
+
+Pins #1 and #20 are 1.5mm pins, and the remaining are 0.64mm
+Pins #9 and #10 should be wired, but cable left unconnected at DB9 end
+
+Label: "OVT2" in black-on-white lettering, shrink to cable
+DB9-F: Moulded
+173851-2: Heat-shrink tubing to protect end of cable
+Cable should be 1metre in length.
