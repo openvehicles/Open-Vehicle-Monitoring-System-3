@@ -35,7 +35,7 @@ Cellular Modem Option and GSM Antenna
 
 The cellular modem option allows you to control your vehicle when out of wifi coverage range. The majority of OVMS users choose this option, and you will require it if you want to monitor your vehicle when away from home or office.
 
-Each OVMS modem module is provided with a Hologram SIM card pre-installed. This low cost service allows you to get cellular connectivity simply. It also allows you to roam between countries without worry.
+OVMS modules sold in USA and Europe are provided with a Hologram SIM card pre-installed. This low cost service allows you to get cellular connectivity simply. It also allows you to roam between countries without worry. For modules purchased from China, we recommend you purchase a Hologram SIM directly from the hologram.io store (also available on Amazon).
 
 Depending on settings, verbosity towards the OVMS server, rhythm of GPS tracking, etc, OVMS v3 will use between 1 and 3 Megabytes per month of data (when using the v2 server protocol).
 

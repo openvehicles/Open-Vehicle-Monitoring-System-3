@@ -1,0 +1,25 @@
+Connector: Tesla Model S X437A connector (later cars)
+
+173851-2 Signal
+-------- ---------------------------------
+
+1        +12V
+2        CAN4-H        (OVT2 OVMS CAN2-H)
+3        CAN4-L        (OVT2 OVMS CAN2-L)
+6        K-Line
+9        CAN2-H        (OVT2 OVMS Body-H n/c)
+10       CAN2-L        (OVT2 OVMS Body-L n/c)
+13       CAN6-H        (OVT2 OVMS CAN1-H)
+14       CAN6-L        (OVT2 OVMS CAN1-L)
+18       CAN3-H        (OVT2 OVMS CAN0-H)
+19       CAN3-L        (OVT2 OVMS CAN0-L)
+20       GND
+
+Tesla Model S:
+
+  CAN2: Body
+  CAN3: Powertrain
+  CAN4: Body Fault Tolerant
+  CAN6: Chassis
+
+Pins #1 and #20 are 1.5mm pins, and the remaining are 0.64mm

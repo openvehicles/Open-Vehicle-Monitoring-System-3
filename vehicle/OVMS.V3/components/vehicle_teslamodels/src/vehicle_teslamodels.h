@@ -74,6 +74,7 @@ class OvmsVehicleTeslaModelS: public OvmsVehicle
     tpms_command_t m_tpms_cmd;
     uint8_t m_tpms_data[16];
     int m_tpms_pos;
+    uint16_t m_tpms_uds_seed;
 #endif // #ifdef CONFIG_OVMS_COMP_TPMS
 
   protected:

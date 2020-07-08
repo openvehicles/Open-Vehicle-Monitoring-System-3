@@ -1,0 +1,24 @@
+Connector: Tesla Roadster DIAG connector
+
+173851-2 Signal
+-------- ---------------------------------
+1        CAN1-H        (OVT1 OVMS CAN0-H)
+2        CAN2-H        (OVT1 OVMS CAN2-H)
+3        K-Line        (OVT1 OVMS K-Line)
+4        CAN3-H        (OVT1 OVMS CAN1-H)
+5        CAN4-H
+6        CAN1-L        (OVT1 OVMS CAN0-L)
+7        CAN2-L        (OVT1 OVMS CAN2-L)
+9        GND
+10       +12V
+11       CAN3-L        (OVT1 OVMS CAN1-L)
+12       CAN4-L
+
+Tesla Roadster:
+
+  CAN1: VDS, Instruments, TPMS
+  CAN2: HVAC, ESS
+  CAN3: GS, SwitchPack, ABS, PEM, TCM
+  CAN4: OBDII
+
+  * All are connected to VMS
