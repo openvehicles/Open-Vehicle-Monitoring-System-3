@@ -19,6 +19,7 @@
  *  - script eval abrp.onetime()      => to launch one time the request to abrp server
  *  - script eval abrp.send(1)        => toggle send data to abrp
  *  -                      (0)        => stop sending data
+ *  - script eval abrp.resetConfig()  => reset configuration to defaults
  *
  * Version 1.2 updates:
  *  - based now on OVMS configuration to store user token, car model and url
@@ -52,6 +53,13 @@
   const TIMER_INTERVAL = "ticker.60";                         // every minute
   const EVENT_MOTORS_ON = "vehicle.on";
   const URL = "http://api.iternio.com/1/tlm/send";
+  
+  const DEFAULT_CFG = {
+    "url": URL,
+    "user_token": MY_TOKEN,      
+    "car_model": CAR_MODEL 
+  };
+
   const CR = '\n';
 
   var objTLM;
@@ -59,11 +67,8 @@
   var sHasChanged = "";
   var bMotorsOn = false;
 
-  var abrp_cfg = {
-    "url": URL,                     // abrp api url (by default, URL)
-    "user_token": MY_TOKEN,         // token (by default, MY_TOKEN)
-    "car_model": CAR_MODEL          // car model (by defeult, CAR_MODEL)
-  };
+  // initialise from default
+  var abrp_cfg = JSON.parse(JSON.stringify(DEFAULT_CFG));
 
   // check if json object is empty
   function isJsonEmpty(obj) {
@@ -92,7 +97,7 @@
 
   // Make json telemetry object
   function InitTelemetryObj() {
-    var myJSON = {
+    return {
       "utc": 0,
       "soc": 0,
       "soh": 0,
@@ -108,11 +113,14 @@
       "current": 0,
       "power": 0
     };
-    return myJSON;
   }
 
   // Fill json telemetry object
   function UpdateTelemetryObj(myJSON) {
+    if(!myJSON){
+      // if the data object is undefined or null then return early
+      return false;
+    }
     var read_num = 0;
     var read_str = "";
     var read_bool = false;
@@ -124,8 +132,10 @@
       bMotorsOn = false;
     }
 
-    read_num = Number(OvmsMetrics.Value("v.b.soc"));
-    if (myJSON.soc != read_num) {
+    // using Math.floor avoids rounding up of .5 values to next whole number
+    // as some vehicles report fractional values.  Abrp seems to only support integer values
+    read_num = Math.floor(Number(OvmsMetrics.Value("v.b.soc"))); 
+    if (myJSON.soc != read_num) {        
       myJSON.soc = read_num;
       sHasChanged += "_SOC:" + myJSON.soc + "%";
     }
@@ -152,16 +162,16 @@
       sHasChanged += "_LAT:" + myJSON.lat + "°";
     }
 
-    read_num = Number(OvmsMetrics.Value("v.p.longitude"));
+    read_num = Number(OvmsMetrics.AsFloat("v.p.longitude"));
     read_num = read_num.toFixed(3);
     if (myJSON.lon != read_num) {
       myJSON.lon = read_num;
       sHasChanged += "_LON:" + myJSON.lon + "°";
     }
 
-    read_num = Number(OvmsMetrics.Value("v.p.altitude"));
-    read_num = read_num.toFixed();
-    if ( (myJSON.alt > (read_num-2)) && (myJSON.alt < (read_num+2)) ) {
+    read_num = Number(OvmsMetrics.AsFloat("v.p.altitude"));
+    read_num = read_num.toFixed(1);
+    if (read_num <= (myJSON.alt - 2) || read_num >= (myJSON.alt + 2)) {
       myJSON.alt = read_num;
       sHasChanged += "_ALT:" + myJSON.alt + "m";
     }
@@ -194,7 +204,7 @@
 
     myJSON.car_model = abrp_cfg.car_model;
 
-    return (sHasChanged != "");
+    return (sHasChanged !== "");
   }
 
   // Show available vehicle data
@@ -304,6 +314,14 @@
     InitTelemetry();
     UpdateTelemetry();
     CloseTelemetry();
+  }
+
+  // API method abrp.resetConfig()
+  //   Resets stored config to default
+  exports.resetConfig = function() {
+    OvmsConfig.SetValues("usr","abrp.", DEFAULT_CFG);
+    print(JSON.stringify(abrp_cfg));
+    OvmsNotify.Raise("info", "usr.abrp.status", "ABRP::config changed");
   }
 
   // API method abrp.send():
