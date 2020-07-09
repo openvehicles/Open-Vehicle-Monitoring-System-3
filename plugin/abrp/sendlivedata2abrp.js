@@ -6,7 +6,7 @@
  *  This version uses the embedded GSM of OVMS, so there's an impact on data consumption
  *  /!\ requires OVMS firmware version 3.2.008-147 minimum (for HTTP call)
  *
- * Version 1.2   2020   dar63 (forum https://www.openvehicles.com)
+ * Version 1.3   2020   inf0mike (forum https://www.openvehicles.com)
  *
  * Enable:
  *  - install at above path
@@ -21,6 +21,11 @@
  *  -                      (0)        => stop sending data
  *  - script eval abrp.resetConfig()  => reset configuration to defaults
  *
+ * Version 1.3 updates:
+ *  - Fix for rounding of fractional SOC causing abrp to report SOC off by 1
+ *  - Fix for altitude never being sent
+ *  - New convenience method to reset config to defaults
+ * 
  * Version 1.2 updates:
  *  - based now on OVMS configuration to store user token, car model and url
  *  - review messages sent during charge
