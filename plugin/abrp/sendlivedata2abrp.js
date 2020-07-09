@@ -46,9 +46,9 @@
  *   objTimer : timer object
  */
 
-  const CAR_MODEL = "hyundai:kona:19:64:other";
+  const CAR_MODEL = "@@:@@:@@:@@:@@";
   const OVMS_API_KEY = "32b2162f-9599-4647-8139-66e9f9528370";
-  const MY_TOKEN = "3dab1011-4724-49b3-b46b-0c567bdeb7fc";
+  const MY_TOKEN = "@@@@@@@@-@@@@-@@@@-@@@@-@@@@@@@@@@@@";
   const TIMER_INTERVAL = "ticker.60";                         // every minute
   const EVENT_MOTORS_ON = "vehicle.on";
   const URL = "http://api.iternio.com/1/tlm/send";
@@ -131,8 +131,10 @@
       bMotorsOn = false;
     }
 
-    read_num = Number(OvmsMetrics.Value("v.b.soc"));
-    if (myJSON.soc != Math.floor(read_num)) {         // avoids rounding up of .5 values to next whole number
+    // using Math.floor avoids rounding up of .5 values to next whole number
+    // as some vehicles report fractional values.  Abrp seems to only support integer values
+    read_num = Math.floor(Number(OvmsMetrics.Value("v.b.soc"))); 
+    if (myJSON.soc != read_num) {        
       myJSON.soc = read_num;
       sHasChanged += "_SOC:" + myJSON.soc + "%";
     }
