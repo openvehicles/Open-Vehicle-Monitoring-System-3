@@ -19,6 +19,7 @@
  *  - script eval abrp.onetime()      => to launch one time the request to abrp server
  *  - script eval abrp.send(1)        => toggle send data to abrp
  *  -                      (0)        => stop sending data
+ *  - script eval abrp.resetConfig()  => reset configuration to defaults
  *
  * Version 1.2 updates:
  *  - based now on OVMS configuration to store user token, car model and url
@@ -319,21 +320,6 @@
   //   Resets stored config to default
   exports.resetConfig = function() {
     OvmsConfig.SetValues("usr","abrp.", DEFAULT_CFG);
-    print(JSON.stringify(abrp_cfg));
-    OvmsNotify.Raise("info", "usr.abrp.status", "ABRP::config changed");
-  }
-
-  // API method abrp.setConfigEntry()
-  //   Sets config values directly
-  exports.setConfigEntry = function(key, value) {
-    const possibleKeys= ["url", "user_token", "car_model"];
-    if(possibleKeys.indexOf(key) === -1) {
-      print("Invald key: use one of: " + JSON.stringify(possibleKeys));
-      return;
-    } 
-    readConfig();
-    abrp_cfg[key] = value;
-    OvmsConfig.SetValues("usr", "abrp.", abrp_cfg);
     print(JSON.stringify(abrp_cfg));
     OvmsNotify.Raise("info", "usr.abrp.status", "ABRP::config changed");
   }
