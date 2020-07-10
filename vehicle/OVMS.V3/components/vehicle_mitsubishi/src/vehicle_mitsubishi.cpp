@@ -104,6 +104,7 @@ static const char *TAG = "v-mitsubishi";
 static const OvmsVehicle::poll_pid_t vehicle_mitsubishi_polls[] =
   {
     { 0x761, 0x762, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x01, 		{       0,  10,   10 } }, 	// cac
+    { 0x765, 0x766, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x01, 		{       0,  10,    0 } },   // OBC
     { 0x771, 0x772, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x13, 		{       0,  10,   10 } },   //external/internal temp
     { 0x782, 0x783, VEHICLE_POLL_TYPE_OBDIIGROUP,  0xCE, 		{       0,   5,    0 } },   //Trip A/B
     { 0, 0, 0, 0, { 0, 0, 0 } }
@@ -410,7 +411,9 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       case 0x374://freq10 // Main Battery Soc
       {
-        StandardMetrics.ms_v_bat_soc->SetValue(((int)d[1] - 10 ) / 2.0, Percentage);
+        if (d[1] > 10)
+          StandardMetrics.ms_v_bat_soc->SetValue(((int)d[1] - 10 ) / 2.0, Percentage);
+
       break;
       }
 
