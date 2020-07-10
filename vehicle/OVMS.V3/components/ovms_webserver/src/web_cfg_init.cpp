@@ -581,9 +581,32 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
 
   c.form_start(p.uri);
 
+  c.printf(
+      "<div class=\"form-group\">\n"
+        "<label class=\"control-label col-sm-3\" for=\"input-ssid\">Wifi network SSID:</label>\n"
+        "<div class=\"col-sm-9\">\n"
+          "<div class=\"input-group\">\n"
+            "<input type=\"text\" class=\"form-control\" placeholder=\"Enter Wifi SSID\" name=\"ssid\"\n"
+              "id=\"input-ssid\" value=\"%s\" autocomplete=\"section-wifi-client username\">\n"
+            "<div class=\"input-group-btn\">\n"
+              "<button type=\"button\" class=\"btn btn-default action-wifiscan\" data-target=\"#input-ssid\">"
+                "<span class=\"hidden-xs\">Select</span><span class=\"hidden-sm hidden-md hidden-lg\">⊙</span>"
+              "</button>\n"
+            "</div>\n"
+          "</div>\n"
+          "<span class=\"help-block\">\n"
+            "<p>Please enter or select a Wifi network that provides access to the internet.</p>\n"
+            "<p>Note: you may later configure the OVMS to select among multiple Wifi networks.</p>\n"
+          "</span>\n"
+        "</div>\n"
+      "</div>\n"
+      , ssid.c_str());
+/*
   c.input_text("Wifi network SSID", "ssid", ssid.c_str(), "Enter Wifi SSID",
-    "<p>Please enter a Wifi network that provides access to the internet.</p>",
+    "<p>Please enter a Wifi network that provides access to the internet.</p>"
+    "<p>Note: you may later configure the OVMS to select among multiple Wifi networks.</p>",
     "autocomplete=\"section-wifi-client username\"");
+*/
   c.input_password("Wifi network password", "pass", "",
     (pass.empty()) ? "Enter Wifi password" : "Empty = no change (retry)",
     NULL, "autocomplete=\"section-wifi-client current-password\"");
@@ -606,6 +629,72 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
   c.form_end();
 
   c.panel_end();
+
+  c.print(
+    "<style>\n"
+    ".table>tbody>tr.active>td, .table>tbody>tr.active:hover>td {\n"
+      "background-color: #bed2e3;\n"
+      "cursor: pointer;\n"
+    "}\n"
+    ".night .table>tbody>tr.active>td {\n"
+      "background-color: #293746;\n"
+      "cursor: pointer;\n"
+    "}\n"
+    "</style>\n"
+    "<script>"
+    "$('.action-wifiscan').on('click', function(){\n"
+      "var tgt = $(this).data(\"target\");\n"
+      "var $tgt = $(tgt);\n"
+      "var ssid_sel = \"\";\n"
+      "var $dlg = $('<div id=\"wifiscan-dialog\" />').dialog({\n"
+        "size: 'lg',\n"
+        "title: 'Select Wifi Network',\n"
+        "body:\n"
+          "'<p id=\"wifiscan-info\">Scanning, please wait…</p>'+\n"
+          "'<table id=\"wifiscan-list\" class=\"table table-condensed table-border table-striped table-hover\">'+\n"
+          "'<thead><tr>'+\n"
+            "'<th class=\"col-xs-4\">AP SSID</th>'+\n"
+            "'<th class=\"col-xs-4 hidden-xs\">MAC Address</th>'+\n"
+            "'<th class=\"col-xs-1 text-center\">Chan</th>'+\n"
+            "'<th class=\"col-xs-1 text-center\">RSSI</th>'+\n"
+            "'<th class=\"col-xs-2 hidden-xs\">Auth</th>'+\n"
+          "'</tr></thead><tbody/></table>',\n"
+        "buttons: [\n"
+          "{ label: 'Cancel' },\n"
+          "{ label: 'Select', btnClass: 'primary', action: function(input) { $tgt.val(ssid_sel); } },\n"
+        "],\n"
+      "});\n"
+      "var $tb = $dlg.find('#wifiscan-list > tbody'), $info = $dlg.find('#wifiscan-info');\n"
+      "$tb.on(\"click\", \"tr\", function(ev) {\n"
+        "var $tr = $(this);\n"
+        "$tr.addClass(\"active\").siblings().removeClass(\"active\");\n"
+        "ssid_sel = $tr.children().first().text();\n"
+        "if (ssid_sel == '<HIDDEN>') ssid_sel = '';\n"
+      "}).on(\"dblclick\", \"tr\", function(ev) {\n"
+        "$dlg.modal(\"hide\");\n"
+        "$tgt.val(ssid_sel);\n"
+      "});\n"
+      "$dlg.addClass(\"loading\");\n"
+      "loadcmd(\"wifi scan -j\").then(function(output) {\n"
+        "$dlg.removeClass(\"loading\");\n"
+        "var res = JSON.parse(output);\n"
+        "if (res.error) {\n"
+          "$info.text(res.error);\n"
+        "} else if (res.list.length == 0) {\n"
+          "$info.text(\"Sorry, no networks found.\");\n"
+        "} else {\n"
+          "var i, ap;\n"
+          "$info.text(\"Available networks sorted by signal strength:\");\n"
+          "for (i = 0; i < res.list.length; i++) {\n"
+            "ap = res.list[i];\n"
+            "$('<tr><td>'+encode_html(ap.ssid)+'</td><td class=\"hidden-xs\">'+ap.bssid+\n"
+              "'</td><td class=\"text-center\">'+ap.chan+'</td><td class=\"text-center\">'+ap.rssi+\n"
+              "'</td><td class=\"hidden-xs\">'+ap.auth+'</td></tr>').appendTo($tb);\n"
+          "}\n"
+        "}\n"
+      "});\n"
+    "});\n"
+    "</script>");
 
   c.printf(
     "<div class=\"alert alert-info\">"

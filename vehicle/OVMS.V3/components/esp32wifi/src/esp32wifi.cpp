@@ -44,7 +44,6 @@ static const char *TAG = "esp32wifi";
 const char* const esp32wifi_mode_names[] = {
   "Modem is off",
   "Client mode",
-  "Scanning-Client mode",
   "Access-Point mode",
   "Access-Point + Client mode",
   "SCAN mode"
@@ -102,7 +101,7 @@ void wifi_mode_client(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
   if (argc == 0)
     {
     writer->puts("Starting WIFI as a client for any defined SSID");
-    me->StartScanningClientMode();
+    me->StartClientMode("", "");
     return;
     }
 
@@ -188,15 +187,43 @@ void wifi_mode_apclient(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int
     return;
     }
 
-  std::string stapassword = MyConfig.GetParamValue("wifi.ssid", argv[1]);
-  if (stapassword.empty())
+  std::string stassid, stapassword;
+  if (argc >= 2 && argv[1][0])
     {
-    writer->puts("Error: SSID password must be defined in config wifi.ssid");
-    return;
+    stassid = argv[1];
+    stapassword = MyConfig.GetParamValue("wifi.ssid", argv[1]);
+    if (stapassword.empty())
+      {
+      writer->puts("Error: SSID password must be defined in config wifi.ssid");
+      return;
+      }
     }
 
-  writer->puts("Starting WIFI as Access Point and Client...");
-  me->StartAccessPointClientMode(argv[0],appassword,argv[1],stapassword);
+  if (argc >= 3)
+    {
+    uint8_t bssid[6];
+    const char *p = argv[2];
+    if (strlen(p)!=17)
+      {
+      writer->puts("Error: If specified, bssid must be in format aa:aa:aa:aa:aa:aa");
+      return;
+      }
+    for (int k=0;k<6;k++)
+      {
+      char x[3] = { p[0], p[1], 0 };
+      p += 3;
+      bssid[k] = (uint8_t)strtol(x,NULL,16);
+      }
+    writer->printf("Starting WIFI as Access Point and client to %s (%02x:%02x:%02x:%02x:%02x:%02x)...\n",
+      stassid.c_str(),
+      bssid[0],bssid[1],bssid[2],bssid[3],bssid[4],bssid[5]);
+    me->StartAccessPointClientMode(argv[0], appassword, stassid, stapassword, bssid);
+    }
+  else
+    {
+    writer->puts("Starting WIFI as Access Point and Client...");
+    me->StartAccessPointClientMode(argv[0], appassword, stassid, stapassword);
+    }
   }
 
 void wifi_mode_off(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -221,13 +248,23 @@ void wifi_scan(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     return;
     }
 
-  if (me->GetMode() == ESP32WIFI_MODE_SCLIENT)
+  bool json = false;
+  if (argc >= 1 && strcmp(argv[0], "-j") == 0)
+    json = true;
+
+  me->Scan(writer, json);
+  }
+
+void wifi_reconnect(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  esp32wifi *me = MyPeripherals->m_esp32wifi;
+  if (me == NULL)
     {
-    writer->puts("Error: Can't scan while in scanning client mode");
+    writer->puts("Error: wifi peripheral could not be found");
     return;
     }
 
-  me->Scan(writer);
+  me->Reconnect(writer);
   }
 
 void wifi_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -252,13 +289,20 @@ esp32wifiInit::esp32wifiInit()
   ESP_LOGI(TAG, "Initialising ESP32WIFI (8000)");
 
   OvmsCommand* cmd_wifi = MyCommandApp.RegisterCommand("wifi","WIFI framework", wifi_status);
-  cmd_wifi->RegisterCommand("scan","Perform a wifi scan",wifi_scan);
+  cmd_wifi->RegisterCommand("scan", "Perform a wifi scan", wifi_scan, "[-j]\n-j = output in JSON format", 0, 1);
   cmd_wifi->RegisterCommand("status","Show wifi status",wifi_status);
+  cmd_wifi->RegisterCommand("reconnect","Reconnect wifi client",wifi_reconnect);
 
   OvmsCommand* cmd_mode = cmd_wifi->RegisterCommand("mode","WIFI mode framework");
-  cmd_mode->RegisterCommand("client","Connect to a WIFI network as a client",wifi_mode_client, "<ssid> <bssid>", 0, 2);
+  cmd_mode->RegisterCommand("client","Connect to a WIFI network as a client",wifi_mode_client,
+    "[<ssid>] [<bssid>]\n"
+    "Omit <ssid> or pass empty string to activate scanning mode.\n"
+    "Set <bssid> to a MAC address to bind to a specific access point.", 0, 2);
   cmd_mode->RegisterCommand("ap","Acts as a WIFI Access Point",wifi_mode_ap, "<ssid>", 1, 1);
-  cmd_mode->RegisterCommand("apclient","Acts as a WIFI Access Point and Client",wifi_mode_apclient, "<apssid> <stassid>", 2, 2);
+  cmd_mode->RegisterCommand("apclient","Acts as a WIFI Access Point and Client",wifi_mode_apclient,
+    "<apssid> [<stassid>] [<stabssid>]\n"
+    "Omit <stassid> or pass empty string to activate scanning mode.\n"
+    "Set <stabssid> to a MAC address to bind to a specific access point.", 1, 3);
   cmd_mode->RegisterCommand("off","Turn off wifi networking",wifi_mode_off);
   }
 
@@ -266,10 +310,15 @@ esp32wifi::esp32wifi(const char* name)
   : pcp(name)
   {
   m_mode = ESP32WIFI_MODE_OFF;
+  m_sta_ssid = "";
+  m_sta_password = "";
+  m_sta_bssid_set = false;
+  m_ap_ssid = "";
+  m_ap_password = "";
   m_previous_reason = 0;
   m_powermode = Off;
   m_poweredup = false;
-  m_stareconnect = false;
+  m_sta_reconnect = 0;
   m_sta_connected = false;
   m_sta_rssi = -1270;
   memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
@@ -290,7 +339,6 @@ esp32wifi::esp32wifi(const char* name)
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.connected",std::bind(&esp32wifi::EventWifiStaConnected, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.disconnected",std::bind(&esp32wifi::EventWifiStaDisconnected, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"ticker.1",std::bind(&esp32wifi::EventTimer1, this, _1, _2));
-  MyEvents.RegisterEvent(TAG,"ticker.10",std::bind(&esp32wifi::EventTimer10, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.scan.done",std::bind(&esp32wifi::EventWifiScanDone, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.start",std::bind(&esp32wifi::EventWifiApState, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.stop",std::bind(&esp32wifi::EventWifiApState, this, _1, _2));
@@ -344,7 +392,7 @@ void esp32wifi::AutoInit()
     stassid = MyConfig.GetParamValue("auto", "wifi.ssid.client");
     if (stassid.empty())
       {
-      StartScanningClientMode();
+      StartClientMode("", "");
       }
     else
       {
@@ -374,11 +422,7 @@ void esp32wifi::AutoInit()
       }
 
     stassid = MyConfig.GetParamValue("auto", "wifi.ssid.client");
-    if (stassid.empty())
-      {
-      ESP_LOGE(TAG, "AutoInit: Wifi client SSID must be specified in wifi.ssid.client");
-      }
-    else
+    if (!stassid.empty())
       {
       stapassword = MyConfig.GetParamValue("wifi.ssid", stassid);
       if (stapassword.empty())
@@ -387,14 +431,10 @@ void esp32wifi::AutoInit()
         }
       }
 
-    if (!appassword.empty() && !stapassword.empty())
+    if (!appassword.empty())
       StartAccessPointClientMode(apssid, appassword, stassid, stapassword);
-    else if (!appassword.empty())
-      StartAccessPointMode(apssid, appassword);
-    else if (!stapassword.empty())
-      StartClientMode(stassid, stapassword);
     else
-      ESP_LOGE(TAG, "AutoInit: no Wifi mode available, please fix configuration!");
+      StartClientMode(stassid, stapassword);
     }
   }
 
@@ -461,124 +501,136 @@ void esp32wifi::PowerDown()
 
 void esp32wifi::StartClientMode(std::string ssid, std::string password, uint8_t* bssid)
   {
-  m_stareconnect = false;
+  m_sta_reconnect = 0;
 
-  if ((m_mode == ESP32WIFI_MODE_AP)||(m_mode == ESP32WIFI_MODE_APCLIENT))
+  // mode reconfiguration?
+  if (m_mode == ESP32WIFI_MODE_AP || m_mode == ESP32WIFI_MODE_APCLIENT || m_sta_connected)
     {
     StopStation();
+    vTaskDelay(pdMS_TO_TICKS(500)); // wifi task cleanup time
     }
+
+  // set new mode config:
   m_mode = ESP32WIFI_MODE_CLIENT;
+  m_sta_ssid = ssid;
+  m_sta_password = password;
+  if (bssid)
+    {
+    m_sta_bssid_set = true;
+    memcpy(m_sta_bssid, bssid, sizeof(m_sta_bssid));
+    }
+  else
+    {
+    m_sta_bssid_set = false;
+    memset(m_sta_bssid, 0, sizeof(m_sta_bssid));
+    }
 
   if (m_powermode != On)
     {
     SetPowerMode(On);
     }
 
+  // configure wifi mode:
   {
   OvmsMutexLock exclusive(&m_mutex);
 
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
-  strcpy((char*)m_wifi_sta_cfg.sta.ssid, ssid.c_str());
-  strcpy((char*)m_wifi_sta_cfg.sta.password, password.c_str());
-  m_wifi_sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
-  m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
-  if (bssid == NULL)
-    {
-    m_wifi_sta_cfg.sta.bssid_set = 0;
-    }
-  else
-    {
-    m_wifi_sta_cfg.sta.bssid_set = 1;
-    memcpy(&m_wifi_sta_cfg.sta.bssid,bssid,6);
-    }
+  strcpy((char*)m_wifi_sta_cfg.sta.ssid, m_sta_ssid.c_str());
+  strcpy((char*)m_wifi_sta_cfg.sta.password, m_sta_password.c_str());
+  m_wifi_sta_cfg.sta.bssid_set = m_sta_bssid_set;
+  memcpy(&m_wifi_sta_cfg.sta.bssid, m_sta_bssid, 6);
   m_wifi_sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
   m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
   ESP_ERROR_CHECK(esp_wifi_start());
   }
 
-  ESP_ERROR_CHECK(esp_wifi_connect());
-  }
-
-void esp32wifi::StartScanningClientMode()
-  {
-  m_stareconnect = false;
-
-  if ((m_mode == ESP32WIFI_MODE_AP)||(m_mode == ESP32WIFI_MODE_APCLIENT))
-    {
-    StopStation();
-    }
-  m_mode = ESP32WIFI_MODE_SCLIENT;
-
-  if (m_powermode != On)
-    {
-    SetPowerMode(On);
-    }
-
-  {
-  OvmsMutexLock exclusive(&m_mutex);
-
-  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-  memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
-  m_wifi_sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
-  m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
-  ESP_ERROR_CHECK(esp_wifi_start());
-  }
-
-  // if we are triggered by a startup script, monotonictime will be zero which
-  // won't pass the test in EventTimer...()
-  m_nextscan = monotonictime+1;
+  StartConnect();
   }
 
 void esp32wifi::StartAccessPointMode(std::string ssid, std::string password)
   {
-  m_stareconnect = false;
+  m_sta_reconnect = 0;
 
-  if ((m_mode == ESP32WIFI_MODE_CLIENT)||(m_mode == ESP32WIFI_MODE_SCLIENT)||(m_mode == ESP32WIFI_MODE_AP))
+  // mode reconfiguration?
+  if (m_mode == ESP32WIFI_MODE_CLIENT || m_mode == ESP32WIFI_MODE_APCLIENT)
     {
     StopStation();
+    vTaskDelay(pdMS_TO_TICKS(500)); // wifi task cleanup time
     }
+
+  // set new mode config:
   m_mode = ESP32WIFI_MODE_AP;
+  m_ap_ssid = ssid;
+  m_ap_password = password;
 
   if (m_powermode != On)
     {
     SetPowerMode(On);
     }
 
+  // configure wifi mode:
   {
   OvmsMutexLock exclusive(&m_mutex);
 
-  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+  // we need APSTA mode to be able to do scans:
+  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
+
   memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
   m_wifi_ap_cfg.ap.ssid_len = 0;
   m_wifi_ap_cfg.ap.channel = 0;
   m_wifi_ap_cfg.ap.authmode = WIFI_AUTH_WPA2_PSK;
   m_wifi_ap_cfg.ap.ssid_hidden = 0;
   m_wifi_ap_cfg.ap.max_connection = 4;
-  m_wifi_ap_cfg.ap.beacon_interval=100;
-  strcpy((char*)m_wifi_ap_cfg.ap.ssid, ssid.c_str());
-  strcpy((char*)m_wifi_ap_cfg.ap.password, password.c_str());
+  m_wifi_ap_cfg.ap.beacon_interval = 100;
+  strcpy((char*)m_wifi_ap_cfg.ap.ssid, m_ap_ssid.c_str());
+  strcpy((char*)m_wifi_ap_cfg.ap.password, m_ap_password.c_str());
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &m_wifi_ap_cfg));
+
+  memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
+  m_wifi_sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
+  m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
+  ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
+
   ESP_ERROR_CHECK(esp_wifi_start());
   }
   }
 
-void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appassword, std::string stassid, std::string stapassword)
+void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appassword, std::string stassid, std::string stapassword, uint8_t* stabssid)
   {
-  m_stareconnect = false;
+  m_sta_reconnect = 0;
 
-  if ((m_mode == ESP32WIFI_MODE_CLIENT)||(m_mode == ESP32WIFI_MODE_SCLIENT)||(m_mode == ESP32WIFI_MODE_AP))
+  // mode reconfiguration?
+  if (m_mode == ESP32WIFI_MODE_CLIENT || m_mode == ESP32WIFI_MODE_AP || m_sta_connected)
     {
     StopStation();
+    vTaskDelay(pdMS_TO_TICKS(500)); // wifi task cleanup time
     }
+
+  // set new mode config:
   m_mode = ESP32WIFI_MODE_APCLIENT;
+  m_ap_ssid = apssid;
+  m_ap_password = appassword;
+  m_sta_ssid = stassid;
+  m_sta_password = stapassword;
+  if (stabssid)
+    {
+    m_sta_bssid_set = true;
+    memcpy(m_sta_bssid, stabssid, sizeof(m_sta_bssid));
+    }
+  else
+    {
+    m_sta_bssid_set = false;
+    memset(m_sta_bssid, 0, sizeof(m_sta_bssid));
+    }
 
   if (m_powermode != On)
     {
     SetPowerMode(On);
     }
 
+  // configure wifi mode:
   {
   OvmsMutexLock exclusive(&m_mutex);
 
@@ -591,13 +643,15 @@ void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appas
   m_wifi_ap_cfg.ap.ssid_hidden = 0;
   m_wifi_ap_cfg.ap.max_connection = 4;
   m_wifi_ap_cfg.ap.beacon_interval=100;
-  strcpy((char*)m_wifi_ap_cfg.ap.ssid, apssid.c_str());
-  strcpy((char*)m_wifi_ap_cfg.ap.password, appassword.c_str());
+  strcpy((char*)m_wifi_ap_cfg.ap.ssid, m_ap_ssid.c_str());
+  strcpy((char*)m_wifi_ap_cfg.ap.password, m_ap_password.c_str());
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &m_wifi_ap_cfg));
 
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
-  strcpy((char*)m_wifi_sta_cfg.sta.ssid, stassid.c_str());
-  strcpy((char*)m_wifi_sta_cfg.sta.password, stapassword.c_str());
+  strcpy((char*)m_wifi_sta_cfg.sta.ssid, m_sta_ssid.c_str());
+  strcpy((char*)m_wifi_sta_cfg.sta.password, m_sta_password.c_str());
+  m_wifi_sta_cfg.sta.bssid_set = m_sta_bssid_set;
+  memcpy(&m_wifi_sta_cfg.sta.bssid, m_sta_bssid, 6);
   m_wifi_sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
   m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
@@ -605,7 +659,28 @@ void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appas
   ESP_ERROR_CHECK(esp_wifi_start());
   }
 
-  ESP_ERROR_CHECK(esp_wifi_connect());
+  StartConnect();
+  }
+
+void esp32wifi::Reconnect(OvmsWriter* writer)
+  {
+  if (m_mode != ESP32WIFI_MODE_CLIENT && m_mode != ESP32WIFI_MODE_APCLIENT)
+    {
+    writer->puts("ERROR: wifi not in client or apclient mode");
+    return;
+    }
+
+  writer->puts("Starting Wifi client reconnect.");
+  if (!m_sta_connected)
+    {
+    m_sta_reconnect = monotonictime + 1;
+    }
+  else
+    {
+    esp_err_t res = esp_wifi_disconnect();
+    if (res != ESP_OK)
+      writer->printf("ERROR: Wifi disconnect failed, error=0x%x\n", res);
+    }
   }
 
 void esp32wifi::StopStation()
@@ -617,14 +692,15 @@ void esp32wifi::StopStation()
     ESP_LOGI(TAG, "Stopping WIFI station");
 
     MyEvents.SignalEvent("system.wifi.down",NULL);
-    if ((m_mode == ESP32WIFI_MODE_CLIENT)||(m_mode == ESP32WIFI_MODE_SCLIENT)||(m_mode == ESP32WIFI_MODE_APCLIENT))
-      { ESP_ERROR_CHECK(esp_wifi_disconnect()); }
+    if (m_mode == ESP32WIFI_MODE_CLIENT || m_mode == ESP32WIFI_MODE_APCLIENT)
+      ESP_ERROR_CHECK(esp_wifi_disconnect());
     ESP_ERROR_CHECK(esp_wifi_stop());
     m_mode = ESP32WIFI_MODE_OFF;
     }
 
-  m_stareconnect = false;
+  m_sta_reconnect = 0;
   m_sta_connected = false;
+
   memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
   memset(&m_mac_ap,0,sizeof(m_mac_ap));
@@ -635,35 +711,38 @@ void esp32wifi::StopStation()
   UpdateNetMetrics();
   }
 
-void esp32wifi::Scan(OvmsWriter* writer)
+void esp32wifi::Scan(OvmsWriter* writer, bool json)
   {
   uint16_t apCount = 0;
   esp_err_t res;
   wifi_ap_record_t* list = NULL;
+  esp32wifi_mode_t mode = m_mode;
 
-  if (m_powermode != On)
+  if (m_mode == ESP32WIFI_MODE_OFF)
     {
-    SetPowerMode(On);
+    if (m_powermode != On)
+      {
+      SetPowerMode(On);
+      }
+
+    {
+    OvmsMutexLock exclusive(&m_mutex);
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
+    m_wifi_sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
+    m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
+    ESP_ERROR_CHECK(esp_wifi_start());
+    }
     }
 
-  if (m_mode != ESP32WIFI_MODE_OFF)
-    {
-    StopStation();
-    }
-
-  {
-  OvmsMutexLock exclusive(&m_mutex);
-
-  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-  memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
-  m_wifi_sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
-  m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
-  ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
-  ESP_ERROR_CHECK(esp_wifi_start());
   m_mode = ESP32WIFI_MODE_SCAN;
-  }
+  esp_wifi_scan_stop();
+  if (m_sta_reconnect)
+    m_sta_reconnect = monotonictime + 10;
 
-  writer->puts("Scanning for WIFI Access Points...");
+  if (!json)
+    writer->puts("Scanning for WIFI Access Points...");
 
   wifi_scan_config_t scanConf;
   memset(&scanConf,0,sizeof(scanConf));
@@ -672,64 +751,122 @@ void esp32wifi::Scan(OvmsWriter* writer)
   scanConf.channel = 0;
   scanConf.show_hidden = true;
   scanConf.scan_type = WIFI_SCAN_TYPE_ACTIVE;
-  ESP_ERROR_CHECK(esp_wifi_scan_start(&scanConf, true));
-
-  res = esp_wifi_scan_get_ap_num(&apCount);
+  res = esp_wifi_scan_start(&scanConf, true);
   if (res != ESP_OK)
     {
-    ESP_LOGE(TAG, "EventWifiScanDone: can't get AP count, error=0x%x", res);
-    return;
+    if (json)
+      writer->printf("{\"error\":\"can't start scan, error=0x%x\"}", res);
+    else
+      writer->printf("ERROR: can't start scan, error=0x%x\n", res);
     }
 
-  if (apCount > 0)
+  if (res == ESP_OK)
     {
-    list = (wifi_ap_record_t *)InternalRamMalloc(sizeof(wifi_ap_record_t) * apCount);
-    res = esp_wifi_scan_get_ap_records(&apCount, list);
+    res = esp_wifi_scan_get_ap_num(&apCount);
     if (res != ESP_OK)
       {
-      ESP_LOGE(TAG, "EventWifiScanDone: can't get AP records, error=0x%x", res);
-      if (list) free(list);
-      return;
+      if (json)
+        writer->printf("{\"error\":\"can't get AP count, error=0x%x\"}", res);
+      else
+        writer->printf("ERROR: can't get AP count, error=0x%x\n", res);
       }
     }
 
-  writer->printf("\n%-32.32s %-17.17s %4s %4s %-22.22s\n","AP SSID","MAC ADDRESS","CHAN","RSSI","AUTHENTICATION");
-  writer->printf("%-32.32s %-17.17s %4s %4s %-22.22s\n","================================","=================","====","====","======================");
-  for (int k=0; k<apCount; k++)
+  if (res == ESP_OK && apCount > 0)
     {
-    std::string authmode;
-    switch(list[k].authmode)
+    list = (wifi_ap_record_t *)InternalRamMalloc(sizeof(wifi_ap_record_t) * apCount);
+    if (!list)
       {
-      case WIFI_AUTH_OPEN:
-        authmode = "WIFI_AUTH_OPEN";
-        break;
-      case WIFI_AUTH_WEP:
-        authmode = "WIFI_AUTH_WEP";
-        break;
-      case WIFI_AUTH_WPA_PSK:
-        authmode = "WIFI_AUTH_WPA_PSK";
-        break;
-      case WIFI_AUTH_WPA2_PSK:
-        authmode = "WIFI_AUTH_WPA2_PSK";
-        break;
-      case WIFI_AUTH_WPA_WPA2_PSK:
-        authmode = "WIFI_AUTH_WPA_WPA2_PSK";
-        break;
-      default:
-        authmode = "Unknown";
-        break;
+      if (json)
+        writer->printf("{\"error\":\"can't get AP records, out of memory\"}");
+      else
+        writer->printf("ERROR: can't get AP records, out of memory\n");
       }
-    writer->printf("%-32.32s %02x:%02x:%02x:%02x:%02x:%02x %4d %4d %s\n",
-      (strlen((char*)list[k].ssid)==0)?"<HIDDEN>":(char*)list[k].ssid,
-      list[k].bssid[0], list[k].bssid[1], list[k].bssid[2],
-      list[k].bssid[3], list[k].bssid[4], list[k].bssid[5],
-      list[k].primary, list[k].rssi, authmode.c_str());
+    else
+      {
+      res = esp_wifi_scan_get_ap_records(&apCount, list);
+      if (res != ESP_OK)
+        {
+        if (json)
+          writer->printf("{\"error\":\"can't get AP records, error=0x%x\"}", res);
+        else
+          writer->printf("ERROR: can't get AP records, error=0x%x\n", res);
+        }
+      }
     }
-  writer->puts("===================================================================================");
-  writer->printf("Scan complete: %d access point(s) found\n\n",apCount);
 
-  StopStation();
+  if (res == ESP_OK && list)
+    {
+    if (json)
+      {
+      writer->printf("{\"list\":[");
+      }
+    else
+      {
+      writer->printf("\n%-32.32s %-17.17s %4s %4s %-22.22s\n","AP SSID","MAC ADDRESS","CHAN","RSSI","AUTHENTICATION");
+      writer->printf("%-32.32s %-17.17s %4s %4s %-22.22s\n","================================","=================","====","====","==============");
+      }
+    for (int k=0; k<apCount; k++)
+      {
+      std::string authmode;
+      switch(list[k].authmode)
+        {
+        case WIFI_AUTH_OPEN:
+          authmode = "OPEN";
+          break;
+        case WIFI_AUTH_WEP:
+          authmode = "WEP";
+          break;
+        case WIFI_AUTH_WPA_PSK:
+          authmode = "WPA_PSK";
+          break;
+        case WIFI_AUTH_WPA2_PSK:
+          authmode = "WPA2_PSK";
+          break;
+        case WIFI_AUTH_WPA_WPA2_PSK:
+          authmode = "WPA_WPA2_PSK";
+          break;
+        default:
+          authmode = "Unknown";
+          break;
+        }
+      if (json)
+        {
+        std::string ssid = (strlen((char*)list[k].ssid)==0) ? "<HIDDEN>" : json_encode((std::string)(char*)list[k].ssid);
+        writer->printf("%s{\"ssid\":\"%s\",\"bssid\":\"%02x:%02x:%02x:%02x:%02x:%02x\",\"chan\":%d,\"rssi\":%d,\"auth\":\"%s\"}",
+          (k==0) ? "" : ",", ssid.c_str(),
+          list[k].bssid[0], list[k].bssid[1], list[k].bssid[2],
+          list[k].bssid[3], list[k].bssid[4], list[k].bssid[5],
+          list[k].primary, list[k].rssi, authmode.c_str());
+        }
+      else
+        {
+        writer->printf("%-32.32s %02x:%02x:%02x:%02x:%02x:%02x %4d %4d %s\n",
+          (strlen((char*)list[k].ssid)==0)?"<HIDDEN>":(char*)list[k].ssid,
+          list[k].bssid[0], list[k].bssid[1], list[k].bssid[2],
+          list[k].bssid[3], list[k].bssid[4], list[k].bssid[5],
+          list[k].primary, list[k].rssi, authmode.c_str());
+        }
+      }
+    if (json)
+      {
+      writer->puts("]}");
+      }
+    else
+      {
+      writer->puts("===========================================================================");
+      writer->printf("Scan complete: %d access point(s) found\n\n",apCount);
+      }
+    }
+
   if (list) free(list);
+
+  // restore mode:
+  m_mode = mode;
+  if (m_mode == ESP32WIFI_MODE_OFF)
+    {
+    ESP_ERROR_CHECK(esp_wifi_stop());
+    }
   }
 
 esp32wifi_mode_t esp32wifi::GetMode()
@@ -779,8 +916,6 @@ void esp32wifi::UpdateNetMetrics()
 void esp32wifi::EventWifiGotIp(std::string event, void* data)
   {
   system_event_info_t *info = (system_event_info_t*)data;
-  m_stareconnect = false;
-
   m_ip_info_sta = info->got_ip.ip_info;
   esp_wifi_get_mac(ESP_IF_WIFI_STA, m_mac_sta);
   UpdateNetMetrics();
@@ -802,6 +937,7 @@ void esp32wifi::EventWifiStaConnected(std::string event, void* data)
   system_event_sta_connected_t& conn = ((system_event_info_t*)data)->connected;
 
   m_sta_connected = true;
+  m_previous_reason = 0;
   UpdateNetMetrics();
 
   ESP_LOGI(TAG, "STA connected with SSID: %.*s, BSSID: " MACSTR ", Channel: %u, Auth: %s",
@@ -811,14 +947,11 @@ void esp32wifi::EventWifiStaConnected(std::string event, void* data)
     conn.authmode == WIFI_AUTH_WPA_PSK ? "WPA" :
     conn.authmode == WIFI_AUTH_WPA2_PSK ? "WPA2" :
     conn.authmode == WIFI_AUTH_WPA_WPA2_PSK ? "WPA/WPA2" : "Unknown");
-  m_previous_reason = 0;
   }
 
 void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
   {
   system_event_info_t *info = (system_event_info_t*)data;
-
-  m_sta_connected = false;
 
   if (info->disconnected.reason != m_previous_reason)
     {
@@ -827,22 +960,8 @@ void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
     m_previous_reason = info->disconnected.reason;
     }
 
-  if ((m_mode == ESP32WIFI_MODE_CLIENT) ||
-      (m_mode == ESP32WIFI_MODE_APCLIENT))
-    {
-    m_stareconnect = true;
-    memset(&m_ip_info_sta,0,sizeof(m_ip_info_sta));
-    }
-  else if (m_mode == ESP32WIFI_MODE_SCLIENT)
-    {
-    OvmsMutexLock exclusive(&m_mutex);
-
-    esp_wifi_disconnect();
-    memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
-    memset(&m_ip_info_sta,0,sizeof(m_ip_info_sta));
-    esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg);
-    m_nextscan = monotonictime + 30;
-    }
+  m_sta_connected = false;
+  memset(&m_ip_info_sta,0,sizeof(m_ip_info_sta));
 
   UpdateNetMetrics();
   }
@@ -876,7 +995,8 @@ void esp32wifi::EventWifiStaState(std::string event, void* data)
 void esp32wifi::EventWifiApState(std::string event, void* data)
   {
   if (event == "system.wifi.ap.start")
-    { // Start
+    {
+    // Start
     AdjustTaskPriority();
     esp_wifi_get_mac(ESP_IF_WIFI_AP, m_mac_ap);
     tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &m_ip_info_ap);
@@ -907,7 +1027,8 @@ void esp32wifi::EventWifiApState(std::string event, void* data)
       m_wifi_ap_cfg.ap.ssid, MAC2STR(m_mac_ap), IP2STR(&m_ip_info_ap.ip));
     }
   else
-    { // Stop
+    {
+    // Stop
     memset(&m_mac_ap,0,sizeof(m_mac_ap));
     memset(&m_ip_info_ap,0,sizeof(m_ip_info_ap));
     ESP_LOGI(TAG, "AP stopped");
@@ -928,27 +1049,37 @@ void esp32wifi::EventWifiApUpdate(std::string event, void* data)
 void esp32wifi::EventTimer1(std::string event, void* data)
   {
   UpdateNetMetrics();
+
+  // reconnect?
+  if ((m_mode == ESP32WIFI_MODE_CLIENT || m_mode == ESP32WIFI_MODE_APCLIENT)
+      && !m_sta_connected && m_sta_reconnect && monotonictime >= m_sta_reconnect)
+    {
+    StartConnect();
+    }
   }
 
-void esp32wifi::EventTimer10(std::string event, void* data)
+void esp32wifi::StartConnect()
   {
-  if (((m_mode == ESP32WIFI_MODE_CLIENT)||(m_mode == ESP32WIFI_MODE_APCLIENT))&&(m_stareconnect))
-    {
-    esp_wifi_connect();
-    }
+  // Note: due to a bug (undocumented feature?) in the esp-idf Wifi blob, we do not
+  // rely on esp_wifi_connect() picking the right AP, as it will do a round-robin
+  // scheme on first call among multiple APs of the same SSID. Instead we always
+  // do a scan and connect explicitly to the AP with the strongest signal.
 
-  if ((m_mode == ESP32WIFI_MODE_SCLIENT)&&(monotonictime > m_nextscan)&&(m_nextscan != 0))
-    {
-    // Start a scan
-    m_nextscan = 0;
-    wifi_scan_config_t scanConf;
-    memset(&scanConf,0,sizeof(scanConf));
-    scanConf.ssid = NULL;
-    scanConf.bssid = NULL;
-    scanConf.channel = 0;
-    scanConf.show_hidden = true;
-    ESP_ERROR_CHECK(esp_wifi_scan_start(&scanConf, false));
-    }
+  wifi_scan_config_t scanConf;
+  memset(&scanConf,0,sizeof(scanConf));
+  scanConf.ssid = NULL;
+  scanConf.bssid = NULL;
+  scanConf.channel = 0;
+  scanConf.show_hidden = true;
+  scanConf.scan_type = WIFI_SCAN_TYPE_ACTIVE;
+  esp_err_t res = esp_wifi_scan_start(&scanConf, false);
+  if (res != ESP_OK)
+    ESP_LOGE(TAG, "StartConnect: error 0x%x starting scan", res);
+  else
+    ESP_LOGV(TAG, "StartConnect: scan started");
+
+  // next regular scan in 10 seconds:
+  m_sta_reconnect = monotonictime + 10;
   }
 
 void esp32wifi::EventWifiScanDone(std::string event, void* data)
@@ -956,6 +1087,7 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
   uint16_t apCount = 0;
   esp_err_t res;
   wifi_ap_record_t* list = NULL;
+  std::string ssid, password;
 
   if (m_mode == ESP32WIFI_MODE_SCAN) return; // Let scan routine handle it
 
@@ -965,39 +1097,78 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
     ESP_LOGE(TAG, "EventWifiScanDone: can't get AP count, error=0x%x", res);
     return;
     }
-
-  if (apCount > 0)
+  if (apCount == 0)
     {
-    list = (wifi_ap_record_t *)InternalRamMalloc(sizeof(wifi_ap_record_t) * apCount);
-    res = esp_wifi_scan_get_ap_records(&apCount, list);
-    if (res != ESP_OK)
-      {
-      ESP_LOGE(TAG, "EventWifiScanDone: can't get AP records, error=0x%x", res);
-      return;
-      }
+    ESP_LOGV(TAG, "EventWifiScanDone: no access points found");
+    return;
     }
 
-  if (m_mode == ESP32WIFI_MODE_SCLIENT)
+  list = (wifi_ap_record_t *)InternalRamMalloc(sizeof(wifi_ap_record_t) * apCount);
+  if (!list)
     {
-    for (int k=0; (k<apCount)&&(m_wifi_sta_cfg.sta.ssid[0]==0); k++)
+    ESP_LOGE(TAG, "EventWifiScanDone: can't get AP records: out of internal memory");
+    return;
+    }
+  res = esp_wifi_scan_get_ap_records(&apCount, list);
+  if (res != ESP_OK)
+    {
+    ESP_LOGE(TAG, "EventWifiScanDone: can't get AP records, error=0x%x", res);
+    return;
+    }
+
+  if (m_mode != ESP32WIFI_MODE_AP && !m_sta_connected)
+    {
+    int ap_connect = -1;
+
+    // check scan results for usable networks:
+    for (int k=0; k<apCount; k++)
       {
-      std::string password = MyConfig.GetParamValue("wifi.ssid", (const char*)list[k].ssid);
-      if (!password.empty())
+      ESP_LOGV(TAG, "ScanDone: #%02d ssid='%s' bssid='" MACSTR "' chan=%d rssi=%d",
+        k+1, (const char*)list[k].ssid, MAC2STR(list[k].bssid), list[k].primary, list[k].rssi);
+      if (ap_connect >= 0)
+        continue;
+      if (m_sta_ssid.empty())
         {
-        ESP_LOGI(TAG,"Found SSID %s - trying to connect",(const char*)list[k].ssid);
-        memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
-        strcpy((char*)m_wifi_sta_cfg.sta.ssid, (const char*)list[k].ssid);
-        strcpy((char*)m_wifi_sta_cfg.sta.password, password.c_str());
-        m_wifi_sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
-        m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
-        ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
-        ESP_ERROR_CHECK(esp_wifi_connect());
+        // scanning mode:
+        password = MyConfig.GetParamValue("wifi.ssid", (const char*)list[k].ssid);
+        if (!password.empty())
+          ap_connect = k;
+        }
+      else
+        {
+        // fixed mode:
+        if ((m_sta_bssid_set && memcmp(m_sta_bssid, list[k].bssid, 6) == 0)
+            || (m_sta_ssid == (const char*)list[k].ssid))
+          {
+          password = m_sta_password;
+          ap_connect = k;
+          }
         }
       }
-    if (m_wifi_sta_cfg.sta.ssid[0]==0)
+
+    // connect:
+    if (ap_connect < 0)
       {
-      // Try another scan a bit later
-      m_nextscan = monotonictime + 30;
+      ESP_LOGV(TAG, "EventWifiScanDone: no known SSID found");
+      }
+    else
+      {
+      int k = ap_connect;
+      ssid = (const char*)list[k].ssid;
+      if (ssid.empty())
+        ssid = m_sta_ssid; // assume configured SSID on a hidden entry
+      ESP_LOGI(TAG, "ScanDone: connect to ssid='%s' bssid='" MACSTR "' chan=%d rssi=%d",
+        ssid.c_str(), MAC2STR(list[k].bssid), list[k].primary, list[k].rssi);
+      memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
+      strcpy((char*)m_wifi_sta_cfg.sta.ssid, ssid.c_str());
+      strcpy((char*)m_wifi_sta_cfg.sta.password, password.c_str());
+      m_wifi_sta_cfg.sta.bssid_set = true;
+      memcpy(m_wifi_sta_cfg.sta.bssid, list[k].bssid, sizeof(m_wifi_sta_cfg.sta.bssid));
+      m_wifi_sta_cfg.sta.channel = list[k].primary;
+      m_wifi_sta_cfg.sta.scan_method = WIFI_FAST_SCAN;
+      m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
+      ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
+      ESP_ERROR_CHECK(esp_wifi_connect());
       }
     }
 
@@ -1014,49 +1185,38 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
   {
   writer->printf("Power: %s\nMode: %s\n",
     MyPcpApp.FindPowerModeByType(m_powermode), esp32wifi_mode_names[m_mode]);
-  switch (m_mode)
+
+  if (m_mode == ESP32WIFI_MODE_CLIENT || m_mode == ESP32WIFI_MODE_APCLIENT)
     {
-    case ESP32WIFI_MODE_CLIENT:
-    case ESP32WIFI_MODE_SCLIENT:
-      writer->printf("\nSTA SSID: %s (%.1f dBm)\n  MAC: " MACSTR "\n  IP: " IPSTR "/" IPSTR "\n  GW: " IPSTR "\n  AP: " MACSTR "\n",
-        m_wifi_sta_cfg.sta.ssid, (float)m_sta_rssi/10, MAC2STR(m_mac_sta),
-        IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw),
-        MAC2STR(m_sta_ap_info.bssid));
-      break;
-    case ESP32WIFI_MODE_APCLIENT:
-      writer->printf("\nSTA SSID: %s (%.1f dBm)\n  MAC: " MACSTR "\n  IP: " IPSTR "/" IPSTR "\n  GW: " IPSTR "\n  AP: " MACSTR "\n",
-        m_wifi_sta_cfg.sta.ssid, (float)m_sta_rssi/10, MAC2STR(m_mac_sta),
-        IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw),
-        MAC2STR(m_sta_ap_info.bssid));
-      // Falling through (no break) to ESP32WIFI_MODE_AP on purpose
-#if __GNUC__ >= 7
-      [[fallthrough]];
-#endif
-    case ESP32WIFI_MODE_AP:
-      writer->printf("\nAP SSID: %s\n  MAC: " MACSTR "\n  IP: " IPSTR "\n",
-        m_wifi_ap_cfg.ap.ssid, MAC2STR(m_mac_ap), IP2STR(&m_ip_info_ap.ip));
-      wifi_sta_list_t sta_list;
-      tcpip_adapter_sta_list_t ip_list;
-      if (esp_wifi_ap_get_sta_list(&sta_list) == ESP_OK)
+    writer->printf("\nSTA SSID: %s (%.1f dBm) [%s]\n  MAC: " MACSTR "\n  IP: " IPSTR "/" IPSTR "\n  GW: " IPSTR "\n  AP: " MACSTR "\n",
+      m_wifi_sta_cfg.sta.ssid, (float)m_sta_rssi/10, (m_sta_ssid.empty()) ? "scanning" : "fixed", MAC2STR(m_mac_sta),
+      IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw),
+      MAC2STR(m_sta_ap_info.bssid));
+    }
+
+  if (m_mode == ESP32WIFI_MODE_AP || m_mode == ESP32WIFI_MODE_APCLIENT)
+    {
+    writer->printf("\nAP SSID: %s\n  MAC: " MACSTR "\n  IP: " IPSTR "\n",
+      m_wifi_ap_cfg.ap.ssid, MAC2STR(m_mac_ap), IP2STR(&m_ip_info_ap.ip));
+    wifi_sta_list_t sta_list;
+    tcpip_adapter_sta_list_t ip_list;
+    if (esp_wifi_ap_get_sta_list(&sta_list) == ESP_OK)
+      {
+      writer->printf("  AP Stations: %d\n", sta_list.num);
+      if (tcpip_adapter_get_sta_list(&sta_list, &ip_list) == ESP_OK)
         {
-        writer->printf("  AP Stations: %d\n", sta_list.num);
-        if (tcpip_adapter_get_sta_list(&sta_list, &ip_list) == ESP_OK)
-          {
-          for (int i=0; i<sta_list.num; i++)
-            writer->printf("    %d: MAC: " MACSTR ", IP: " IPSTR "\n", i+1, MAC2STR(ip_list.sta[i].mac), IP2STR(&ip_list.sta[i].ip));
-          }
-        else
-          {
-          for (int i=0; i<sta_list.num; i++)
-            writer->printf("    %d: MAC: " MACSTR "\n", i+1, MAC2STR(sta_list.sta[i].mac));
-          }
+        for (int i=0; i<sta_list.num; i++)
+          writer->printf("    %d: MAC: " MACSTR ", IP: " IPSTR "\n", i+1, MAC2STR(ip_list.sta[i].mac), IP2STR(&ip_list.sta[i].ip));
         }
       else
         {
-        writer->printf("  Stations: unknown\n");
+        for (int i=0; i<sta_list.num; i++)
+          writer->printf("    %d: MAC: " MACSTR "\n", i+1, MAC2STR(sta_list.sta[i].mac));
         }
-      break;
-    default:
-      break;
+      }
+    else
+      {
+      writer->printf("  Stations: unknown\n");
+      }
     }
   }
