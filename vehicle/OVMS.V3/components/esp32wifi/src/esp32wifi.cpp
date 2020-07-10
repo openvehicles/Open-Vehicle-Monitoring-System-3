@@ -546,7 +546,7 @@ void esp32wifi::StartClientMode(std::string ssid, std::string password, uint8_t*
   ESP_ERROR_CHECK(esp_wifi_start());
   }
 
-  StartConnect();
+  // connection started in EventWifiStaState()
   }
 
 void esp32wifi::StartAccessPointMode(std::string ssid, std::string password)
@@ -659,7 +659,7 @@ void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appas
   ESP_ERROR_CHECK(esp_wifi_start());
   }
 
-  StartConnect();
+  // connection started in EventWifiStaState()
   }
 
 void esp32wifi::Reconnect(OvmsWriter* writer)
@@ -989,6 +989,8 @@ void esp32wifi::EventWifiStaState(std::string event, void* data)
       ESP_LOGW(TAG, "failed to set hostname");
 
     AdjustTaskPriority();
+
+    StartConnect();
     }
   }
 
