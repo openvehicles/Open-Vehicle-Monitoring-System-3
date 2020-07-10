@@ -62,8 +62,14 @@ How to make it run:
                  ``abrp = require("sendlivedata2abrp");``
   - script reload
 
-With command lines in the OVMS android app, in the messages part:
+With command lines in the OVMS android or iOS app, in the messages part:
   - ``script eval abrp.info()``         => to display vehicle data to be sent to abrp
   - ``script eval abrp.onetime()``      => to launch one time the request to abrp server
   - ``script eval abrp.send(1)``        => toggle send data to abrp
   - ``script eval abrp.send(0)``        => stop sending data
+  - ``script eval abrp.resetConfig()``  => reset configuration to defaults
+
+Also in the messages part, configuration can be updated with:
+  - `` config set usr abrp.car_model <value>``
+  - `` config set usr abrp.url <value>``
+  - `` config set usr abrp.user_token <value>``

@@ -1669,6 +1669,16 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
     "<hr>"
     "<button type=\"submit\" class=\"btn btn-default center-block\">Save</button>"
     "</form>"
+    "<style>\n"
+    ".table>tbody>tr.active>td, .table>tbody>tr.active:hover>td {\n"
+      "background-color: #bed2e3;\n"
+      "cursor: pointer;\n"
+    "}\n"
+    ".night .table>tbody>tr.active>td {\n"
+      "background-color: #293746;\n"
+      "cursor: pointer;\n"
+    "}\n"
+    "</style>\n"
     "<script>"
     "function delRow(el){"
       "$(el).parent().parent().remove();"
@@ -1680,8 +1690,19 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
       "var row = $('"
           "<tr>"
             "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\"><strong>✖</strong></button></td>"
-            "<td><input type=\"text\" class=\"form-control\" name=\"' + pfx + '_ssid_' + nr + '\" placeholder=\"SSID\""
-              " autocomplete=\"section-wifi-' + pfx + ' username\"></td>"
+            "' + ((pfx == 'client') ? '"
+              "<td><div class=\"input-group\">"
+                "<input type=\"text\" class=\"form-control\" name=\"' + pfx + '_ssid_' + nr + '\" placeholder=\"SSID\""
+                " id=\"' + pfx + '_ssid_' + nr + '\" autocomplete=\"section-wifi-' + pfx + ' username\">"
+                "<div class=\"input-group-btn\">"
+                  "<button type=\"button\" class=\"btn btn-default action-wifiscan\" data-target=\"#' + pfx + '_ssid_' + nr + '\">"
+                    "<span class=\"hidden-xs\">Select</span><span class=\"hidden-sm hidden-md hidden-lg\">⊙</span>"
+                  "</button>"
+                "</div></div></td>"
+            "' : '"
+              "<td><input type=\"text\" class=\"form-control\" name=\"' + pfx + '_ssid_' + nr + '\" placeholder=\"SSID\""
+                " autocomplete=\"section-wifi-' + pfx + ' username\"></td>"
+            "') + '"
             "<td><input type=\"password\" class=\"form-control\" name=\"' + pfx + '_pass_' + nr + '\" placeholder=\"Passphrase\""
               " autocomplete=\"section-wifi-' + pfx + ' current-password\"></td>"
           "</tr>"
@@ -1689,6 +1710,58 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
       "$(el).parent().parent().before(row).prev().find(\"input\").first().focus();"
       "counter.val(nr);"
     "}"
+    "$('#panel-wifi-configuration').on('click', '.action-wifiscan', function(){\n"
+      "var tgt = $(this).data(\"target\");\n"
+      "var $tgt = $(tgt);\n"
+      "var ssid_sel = \"\";\n"
+      "var $dlg = $('<div id=\"wifiscan-dialog\" />').dialog({\n"
+        "size: 'lg',\n"
+        "title: 'Select Wifi Network',\n"
+        "body:\n"
+          "'<p id=\"wifiscan-info\">Scanning, please wait…</p>'+\n"
+          "'<table id=\"wifiscan-list\" class=\"table table-condensed table-border table-striped table-hover\">'+\n"
+          "'<thead><tr>'+\n"
+            "'<th class=\"col-xs-4\">AP SSID</th>'+\n"
+            "'<th class=\"col-xs-4 hidden-xs\">MAC Address</th>'+\n"
+            "'<th class=\"col-xs-1 text-center\">Chan</th>'+\n"
+            "'<th class=\"col-xs-1 text-center\">RSSI</th>'+\n"
+            "'<th class=\"col-xs-2 hidden-xs\">Auth</th>'+\n"
+          "'</tr></thead><tbody/></table>',\n"
+        "buttons: [\n"
+          "{ label: 'Cancel' },\n"
+          "{ label: 'Select', btnClass: 'primary', action: function(input) { $tgt.val(ssid_sel); } },\n"
+        "],\n"
+      "});\n"
+      "var $tb = $dlg.find('#wifiscan-list > tbody'), $info = $dlg.find('#wifiscan-info');\n"
+      "$tb.on(\"click\", \"tr\", function(ev) {\n"
+        "var $tr = $(this);\n"
+        "$tr.addClass(\"active\").siblings().removeClass(\"active\");\n"
+        "ssid_sel = $tr.children().first().text();\n"
+        "if (ssid_sel == '<HIDDEN>') ssid_sel = '';\n"
+      "}).on(\"dblclick\", \"tr\", function(ev) {\n"
+        "$dlg.modal(\"hide\");\n"
+        "$tgt.val(ssid_sel);\n"
+      "});\n"
+      "$dlg.addClass(\"loading\");\n"
+      "loadcmd(\"wifi scan -j\").then(function(output) {\n"
+        "$dlg.removeClass(\"loading\");\n"
+        "var res = JSON.parse(output);\n"
+        "if (res.error) {\n"
+          "$info.text(res.error);\n"
+        "} else if (res.list.length == 0) {\n"
+          "$info.text(\"Sorry, no networks found.\");\n"
+        "} else {\n"
+          "var i, ap;\n"
+          "$info.text(\"Available networks sorted by signal strength:\");\n"
+          "for (i = 0; i < res.list.length; i++) {\n"
+            "ap = res.list[i];\n"
+            "$('<tr><td>'+encode_html(ap.ssid)+'</td><td class=\"hidden-xs\">'+ap.bssid+\n"
+              "'</td><td class=\"text-center\">'+ap.chan+'</td><td class=\"text-center\">'+ap.rssi+\n"
+              "'</td><td class=\"hidden-xs\">'+ap.auth+'</td></tr>').appendTo($tb);\n"
+          "}\n"
+        "}\n"
+      "});\n"
+    "});\n"
     "</script>");
 
   c.panel_end();
@@ -1717,27 +1790,54 @@ void OvmsWebServer::OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std:
       "<table class=\"table\">"
         "<thead>"
           "<tr>"
-            "<th width=\"10%\"></th>"
-            "<th width=\"45%\">SSID</th>"
-            "<th width=\"45%\">Passphrase</th>"
+            "<th width=\"10%%\"></th>"
+            "<th width=\"45%%\">SSID</th>"
+            "<th width=\"45%%\">Passphrase</th>"
           "</tr>"
         "</thead>"
         "<tbody>"
     , _attr(prefix), max);
 
-  if (c.method == "POST") {
-    for (pos = 1; pos <= max; pos++) {
-      sprintf(buf, "%s_ssid_%d", prefix.c_str(), pos);
-      ssid = c.getvar(buf);
+  auto gen_row = [&c,&pos,&pos_autostart,&prefix,&ssid]() {
+    if (prefix == "client") {
+      // client entry: add network scanner/selector
       c.printf(
           "<tr>"
             "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\" %s><strong>✖</strong></button></td>"
-            "<td><input type=\"text\" class=\"form-control\" name=\"%s_ssid_%d\" value=\"%s\"></td>"
+            "<td><div class=\"input-group\">"
+              "<input type=\"text\" class=\"form-control\" name=\"%s_ssid_%d\" placeholder=\"SSID\" value=\"%s\""
+              " id=\"%s_ssid_%d\" autocomplete=\"section-wifi-%s username\">"
+              "<div class=\"input-group-btn\">"
+                "<button type=\"button\" class=\"btn btn-default action-wifiscan\" data-target=\"#%s_ssid_%d\">"
+                  "<span class=\"hidden-xs\">Select</span><span class=\"hidden-sm hidden-md hidden-lg\">⊙</span>"
+                "</button>"
+              "</div></div></td>"
             "<td><input type=\"password\" class=\"form-control\" name=\"%s_pass_%d\" placeholder=\"no change\"></td>"
           "</tr>"
       , (pos == pos_autostart) ? "disabled title=\"Current autostart network\"" : ""
       , _attr(prefix), pos, _attr(ssid)
+      , _attr(prefix), pos, _attr(prefix)
+      , _attr(prefix), pos
       , _attr(prefix), pos);
+    } else {
+      // ap entry:
+      c.printf(
+          "<tr>"
+            "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\" %s><strong>✖</strong></button></td>"
+            "<td><input type=\"text\" class=\"form-control\" name=\"%s_ssid_%d\" value=\"%s\" autocomplete=\"section-wifi-%s username\"></td>"
+            "<td><input type=\"password\" class=\"form-control\" name=\"%s_pass_%d\" placeholder=\"no change\"></td>"
+          "</tr>"
+      , (pos == pos_autostart) ? "disabled title=\"Current autostart network\"" : ""
+      , _attr(prefix), pos, _attr(ssid), _attr(prefix)
+      , _attr(prefix), pos);
+    }
+  };
+
+  if (c.method == "POST") {
+    for (pos = 1; pos <= max; pos++) {
+      sprintf(buf, "%s_ssid_%d", prefix.c_str(), pos);
+      ssid = c.getvar(buf);
+      gen_row();
     }
   }
   else {
@@ -1746,6 +1846,8 @@ void OvmsWebServer::OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std:
       ssid = kv.first;
       if (ssid == autostart_ssid)
         pos_autostart = pos;
+      gen_row();
+/*
       c.printf(
           "<tr>"
             "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\" %s><strong>✖</strong></button></td>"
@@ -1755,6 +1857,7 @@ void OvmsWebServer::OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std:
       , (pos == pos_autostart) ? "disabled title=\"Current autostart network\"" : ""
       , _attr(prefix), pos, _attr(ssid)
       , _attr(prefix), pos);
+*/
     }
   }
 
@@ -1876,20 +1979,15 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
     }
     if (wifi_mode == "client" || wifi_mode == "apclient") {
       if (wifi_ssid_client.empty()) {
-        if (wifi_mode == "apclient") {
-          error += "<li data-input=\"wifi_ssid_client\">Wifi client scan mode not supported for AP+Client!</li>";
+        // check for defined client SSIDs:
+        OvmsConfigParam* param = MyConfig.CachedParam("wifi.ssid");
+        int cnt = 0;
+        for (auto const& kv : param->m_map) {
+          if (kv.second != "")
+            cnt++;
         }
-        else {
-          // check for defined client SSIDs:
-          OvmsConfigParam* param = MyConfig.CachedParam("wifi.ssid");
-          int cnt = 0;
-          for (auto const& kv : param->m_map) {
-            if (kv.second != "")
-              cnt++;
-          }
-          if (cnt == 0) {
-            error += "<li data-input=\"wifi_ssid_client\">Wifi client scan mode invalid: no SSIDs defined!</li>";
-          }
+        if (cnt == 0) {
+          error += "<li data-input=\"wifi_ssid_client\">Wifi client scan mode invalid: no SSIDs defined!</li>";
         }
       }
       else if (MyConfig.GetParamValue("wifi.ssid", wifi_ssid_client).empty()) {
