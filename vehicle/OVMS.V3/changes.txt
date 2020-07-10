@@ -1,6 +1,14 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Wifi: scanning apclient mode, network selection dialog in wizard & wifi config,
+    scan support in all modes, fixed network selection by signal strength
+    (possibly also fixes issue #387)
+  New/updated commands:
+    wifi scan           -- can now be issued in any mode
+    wifi scan -j        -- output scan result as JSON object (for web UI)
+    wifi reconnect      -- request a client reconnect cycle
+    wifi mode apclient  -- now accepts empty stassid & optional stabssid
 - #377 Make some metrics (e.g. v.b.soc) persistent across warm reboots
   This includes crashes and firmware updates
 

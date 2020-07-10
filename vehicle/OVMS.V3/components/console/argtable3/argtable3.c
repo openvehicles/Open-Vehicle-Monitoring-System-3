@@ -270,7 +270,7 @@ extern   char *suboptarg;               /* getsubopt(3) external variable */
  */
 
 #ifndef lint
-static const char rcsid[]="$Id: getopt_long.c,v 1.1 2009/10/16 19:50:28 rodney Exp rodney $";
+static const char __attribute__ ((unused)) rcsid[]="$Id: getopt_long.c,v 1.1 2009/10/16 19:50:28 rodney Exp rodney $";
 #endif /* lint */
 /*-
  * Copyright (c) 2000 The NetBSD Foundation, Inc.
@@ -3071,6 +3071,7 @@ static int trex_charnode(TRex *exp,TRexBool isclass)
 					exp->_p++;
 					return node;
 				} //else default
+				/* fall through */
 			default:
 				t = *exp->_p; exp->_p++;
 				return trex_newnode(exp,t);

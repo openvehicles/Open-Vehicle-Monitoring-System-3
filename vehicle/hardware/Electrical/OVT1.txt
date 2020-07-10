@@ -1,0 +1,18 @@
+Pinout: OVT1
+
+173851-2 DB9-F    Signal
+-------- -------- --------
+1        7        CAN0-H
+2        8        CAN2-H
+3        1        K-Line
+4        5        CAN1-H
+6        2        CAN0-L
+7        6        CAN2-L
+9        3        GND
+10       9        +12V
+11       4        CAN1-L
+
+Label: "OVT1" in black-on-white lettering, shrink to cable
+DB9-F: Moulded
+173851-2: Heat-shrink tubing to protect end of cable
+Cable should be 1metre in length.

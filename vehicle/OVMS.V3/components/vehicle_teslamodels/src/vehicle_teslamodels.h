@@ -55,6 +55,28 @@ class OvmsVehicleTeslaModelS: public OvmsVehicle
     virtual void Notify12vRecovered();
     virtual void NotifyBmsAlerts();
 
+#ifdef CONFIG_OVMS_COMP_TPMS
+  public:
+    virtual bool TPMSRead(std::vector<uint32_t> *tpms);
+    virtual bool TPMSWrite(std::vector<uint32_t> &tpms);
+
+  protected:
+    typedef enum
+      {
+      Idle = 0,
+      Reading,
+      DoneReading,
+      ReadFailed,
+      Writing,
+      DoneWriting,
+      Writefailed
+    } tpms_command_t;
+    tpms_command_t m_tpms_cmd;
+    uint8_t m_tpms_data[16];
+    int m_tpms_pos;
+    uint16_t m_tpms_uds_seed;
+#endif // #ifdef CONFIG_OVMS_COMP_TPMS
+
   protected:
     char m_vin[18];
     char m_type[5];

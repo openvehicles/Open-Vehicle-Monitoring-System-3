@@ -146,7 +146,7 @@ OVMS v3 has a number of networking options to choose from. You can either use th
 GSM SIM Activation (Hologram)
 -----------------------------
 
-OVMS has partnered with Hologram and to provide a Hologram GSM SIM pre-installed in every OVMS modem board. In addition, Hologram have provided OVMS a coupon code valid for US$5 off data usage:
+OVMS has partnered with Hologram and to provide a Hologram GSM SIM pre-installed in every OVMS kit purchased from our partners in Europe and USA. For modules purchased from China, we recommend you purchase a Hologram SIM directly from the hologram.io store (also available on Amazon). In addition, Hologram have provided OVMS a coupon code valid for US$5 off data usage:
 
 Hologram Coupon Code: **OVMS**
 

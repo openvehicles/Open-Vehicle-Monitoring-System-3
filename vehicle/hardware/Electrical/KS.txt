@@ -1,0 +1,14 @@
+Pinout: KS
+
+J1962-M   DB9-F   Signal
+4         3       Chassis/Power GND
+6         7       CAN-H (primary CAN)
+14        2       CAN-L (primary CAN)
+1         5       CAN-H (alternate CAN)
+9         4       CAN-L (alternate CAN)
+16        9       +12V Vehicle Power
+
+Label: "KS" in black-on-white lettering, shrink to cable
+DB9-F Moulded
+J1962 end should be MALE plug with angle cable. DB9 end should be FEMALE.
+Both ends should be enclosed in shells, and cable should be 1metre in length.

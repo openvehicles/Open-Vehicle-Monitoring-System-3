@@ -1,0 +1,14 @@
+Pinout: HUD
+
+J1962-F   DA26-M  Signal
+4         8       Chassis/Power GND
+5         8       Chassis/Power GND
+6         16      CAN-H (primary CAN)
+14        6       CAN-L (primary CAN)
+16        18      +12V Vehicle Power
+
+Notes:
+Require 120ohm resistor between DA26 pins 16 and 6 (this can be either at J1962 or DA26 ends).
+J1962 pins 4 and 5 are both connected to single DA26 pin 8.
+J1962 end should be FEMALE plug with straight cable. DA26 end should be MALE.
+Both ends should be enclosed in shells, and cable should be 15cm in length.

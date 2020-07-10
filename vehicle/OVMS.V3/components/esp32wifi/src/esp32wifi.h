@@ -43,7 +43,6 @@
 typedef enum {
     ESP32WIFI_MODE_OFF = 0,   // Modem is off
     ESP32WIFI_MODE_CLIENT,    // Client mode
-    ESP32WIFI_MODE_SCLIENT,   // Scanning-Client mode
     ESP32WIFI_MODE_AP,        // Access point mode
     ESP32WIFI_MODE_APCLIENT,  // Access point + Client mode
     ESP32WIFI_MODE_SCAN,      // SCAN mode
@@ -65,11 +64,12 @@ class esp32wifi : public pcp, public InternalRamAllocated
 
   public:
     void StartClientMode(std::string ssid, std::string password, uint8_t* bssid=NULL);
-    void StartScanningClientMode();
     void StartAccessPointMode(std::string ssid, std::string password);
-    void StartAccessPointClientMode(std::string apssid, std::string appassword, std::string stassid, std::string stapassword);
+    void StartAccessPointClientMode(std::string apssid, std::string appassword, std::string stassid, std::string stapassword, uint8_t* stabssid=NULL);
     void StopStation();
-    void Scan(OvmsWriter* writer);
+    void StartConnect();
+    void Reconnect(OvmsWriter* writer);
+    void Scan(OvmsWriter* writer, bool json=false);
     esp32wifi_mode_t GetMode();
     std::string GetSSID();
     std::string GetAPSSID();
@@ -85,7 +85,6 @@ class esp32wifi : public pcp, public InternalRamAllocated
     void EventWifiApState(std::string event, void* data);
     void EventWifiApUpdate(std::string event, void* data);
     void EventTimer1(std::string event, void* data);
-    void EventTimer10(std::string event, void* data);
     void EventWifiScanDone(std::string event, void* data);
     void EventSystemShuttingDown(std::string event, void* data);
     void OutputStatus(int verbosity, OvmsWriter* writer);
@@ -94,6 +93,12 @@ class esp32wifi : public pcp, public InternalRamAllocated
     bool m_poweredup;
     OvmsMutex m_mutex;
     esp32wifi_mode_t m_mode;
+    std::string m_sta_ssid;
+    std::string m_sta_password;
+    bool m_sta_bssid_set;
+    uint8_t m_sta_bssid[6];
+    std::string m_ap_ssid;
+    std::string m_ap_password;
     uint8_t m_previous_reason;
     uint8_t m_mac_sta[6];
     uint8_t m_mac_ap[6];
@@ -102,9 +107,8 @@ class esp32wifi : public pcp, public InternalRamAllocated
     wifi_init_config_t m_wifi_init_cfg;
     wifi_config_t m_wifi_ap_cfg;
     wifi_config_t m_wifi_sta_cfg;
-    bool m_stareconnect;
-    uint32_t m_nextscan;
     bool m_sta_connected;
+    uint32_t m_sta_reconnect;
     wifi_ap_record_t m_sta_ap_info;
     int m_sta_rssi;                               // smoothed RSSI [dBm/10]
   };
