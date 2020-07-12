@@ -990,7 +990,12 @@ void esp32wifi::EventWifiStaState(std::string event, void* data)
 
     AdjustTaskPriority();
 
-    StartConnect();
+    // connect?
+    if ((m_mode == ESP32WIFI_MODE_CLIENT || m_mode == ESP32WIFI_MODE_APCLIENT)
+        && !m_sta_connected)
+      {
+      StartConnect();
+      }
     }
   }
 
@@ -1140,7 +1145,7 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
         {
         // fixed mode:
         if ((m_sta_bssid_set && memcmp(m_sta_bssid, list[k].bssid, 6) == 0)
-            || (m_sta_ssid == (const char*)list[k].ssid))
+            || (!m_sta_bssid_set && m_sta_ssid == (const char*)list[k].ssid))
           {
           password = m_sta_password;
           ap_connect = k;
