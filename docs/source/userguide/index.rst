@@ -25,3 +25,4 @@ User Guide
    factory
    ecu
    egpio
+   kline
