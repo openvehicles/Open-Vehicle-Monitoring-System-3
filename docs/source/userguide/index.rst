@@ -25,4 +25,5 @@ User Guide
    factory
    ecu
    egpio
+   tpms
    kline

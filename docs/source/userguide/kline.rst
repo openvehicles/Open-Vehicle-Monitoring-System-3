@@ -12,7 +12,6 @@ There are two installation options:
 In your K-Line expansion board kit you will find four brass stand offs with holes at one end and small bolts at the other.
 Use these to screw down the modem. Now, orient the K-line Expansion Board so the top left corner (marked with a white triangle) matches the white triangle on the modem board.
 Carefully push the K-Line Expansion Board into place (making sure that the pins align and are not bent). Once done, the four black screws can be used to secure it in place.
-
 #. If you are not using a modem module, you install the K-Line Expansion Board directly onto the main OVMS board. Screw the provided standoffs into the main board, and Carefully
 attach the provided pin headers into the main OVMS board.
 Now, orient the K-line Expansion Board so the top left corner (marked with a white triangle) matches the white triangle on the main OVMS board.
