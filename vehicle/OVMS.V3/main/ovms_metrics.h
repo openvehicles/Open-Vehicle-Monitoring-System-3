@@ -135,10 +135,11 @@ class OvmsMetric
     virtual void operator=(std::string value);
     virtual uint32_t LastModified();
     virtual uint32_t Age();
+    virtual bool CheckPersist();
     virtual bool IsDefined();
     virtual bool IsFirstDefined();
-    virtual bool IsPersist();
     virtual bool IsStale();
+    virtual void RefreshPersist();
     virtual void SetStale(bool stale);
     virtual void SetAutoStale(uint16_t seconds);
     virtual metric_unit_t GetUnits();
@@ -226,7 +227,8 @@ class OvmsMetricFloat : public OvmsMetric
     void SetValue(std::string value);
     void SetValue(dbcNumber& value);
     void operator=(std::string value) { SetValue(value); }
-    virtual bool IsPersist();
+    virtual bool CheckPersist();
+    virtual void RefreshPersist();
 
   protected:
     float m_value;
@@ -733,6 +735,9 @@ class OvmsMetrics
 
   public:
     size_t RegisterModifier();
+
+  public:
+    void EventSystemShutDown(std::string event, void* data);
 
   protected:
     size_t m_nextmodifier;
