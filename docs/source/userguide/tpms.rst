@@ -8,7 +8,7 @@ Support for this is vehicle-specific, and may require optional hardware boards, 
 The command to read the current TPMS wheel sensor IDs from the car is:
 
   OVMS# tpms read SET
-  (replace SET with your own identifier for this set of wheels, such as 'summer', 'winter', etc)
+(replace SET with your own identifier for this set of wheels, such as 'summer', 'winter', etc)
 
 You can check the stored wheel sensor ID sets with:
 
@@ -17,7 +17,7 @@ You can check the stored wheel sensor ID sets with:
 If you change wheels, you can write the new wheel IDs to the TPMS ECU in the car with:
 
   OVMS# tpms write SET
-  (replace SET with your own identifier for this set of wheels, such as 'summer', 'winter', etc)
+(replace SET with your own identifier for this set of wheels, such as 'summer', 'winter', etc)
 
 Note that in most cases the car must be switched on for the above commands to work. Please refer to your vehicle
 specific user guide for more information on this.

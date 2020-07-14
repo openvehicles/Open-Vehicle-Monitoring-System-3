@@ -9,24 +9,25 @@ The optional K-Line Expansion Board is available to extend the capabilities of t
 There are two installation options:
 
 #. If you are using a modem module, you install the K-Line Expansion Board on top of the modem. Unscrew the four black screws holding the modem in place.
-In your K-Line expansion board kit you will find four brass stand offs with holes at one end and small bolts at the other.
-Use these to screw down the modem. Now, orient the K-line Expansion Board so the top left corner (marked with a white triangle) matches the white triangle on the modem board.
-Carefully push the K-Line Expansion Board into place (making sure that the pins align and are not bent). Once done, the four black screws can be used to secure it in place.
+   In your K-Line expansion board kit you will find four brass stand offs with holes at one end and small bolts at the other.
+   Use these to screw down the modem. Now, orient the K-line Expansion Board so the top left corner (marked with a white triangle) matches the white triangle on the modem board.
+   Carefully push the K-Line Expansion Board into place (making sure that the pins align and are not bent). Once done, the four black screws can be used to secure it in place.
+
 #. If you are not using a modem module, you install the K-Line Expansion Board directly onto the main OVMS board. Screw the provided standoffs into the main board, and Carefully
-attach the provided pin headers into the main OVMS board.
-Now, orient the K-line Expansion Board so the top left corner (marked with a white triangle) matches the white triangle on the main OVMS board.
-Carefully push the K-Line Expansion Board into place (making sure that the pins align and are not bent). Once done, the four black screws can be used to secure it in place.
+   attach the provided pin headers into the main OVMS board.
+   Now, orient the K-line Expansion Board so the top left corner (marked with a white triangle) matches the white triangle on the main OVMS board.
+   Carefully push the K-Line Expansion Board into place (making sure that the pins align and are not bent). Once done, the four black screws can be used to secure it in place.
 
 .. image:: kline-2.jpg
 
 Next, the K-Line expansion board will need to be configured to match your vehicle's K-Line bus and ECU hardware requirements. Refer to your vehicle specific guide for
-information on what your vehicle requires.
+information on what your vehicle requires:
 
-S1 is used to turn on/off the extra 'master' mode components. For most vehicles, this should be OFF.
+* S1 is used to turn on/off the extra 'master' mode components. For most vehicles, this should be OFF.
 
-SW1 is used to select the power source for the K-Line bus.
-It can be #0 (no power connected), #1 (5v power from USB bus), #2 (5v power converted from vehicle's 12v power), or #3 (12v power direct from the vehicle).
-For most vehicles, either #2 or #3 is used.
+* SW1 is used to select the power source for the K-Line bus.
+  It can be #0 (no power connected), #1 (5v power from USB bus), #2 (5v power converted from vehicle's 12v power), or #3 (12v power direct from the vehicle).
+  For most vehicles, either #2 or #3 is used.
 
 The K-Line bus from the vehicle is connected via a vehicle specific cable. This connection is usually to pin #1 on the DB9 connector.
 In OVMS modules v3.2 and later (as well as some late v3.1 boards), this is internally connected to GEP7 (General Expansion Pin #7). This is necessary
