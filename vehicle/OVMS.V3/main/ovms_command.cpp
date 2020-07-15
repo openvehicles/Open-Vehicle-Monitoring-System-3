@@ -785,6 +785,31 @@ OvmsCommand* OvmsCommandApp::FindCommand(const char* name)
   return m_root.FindCommand(name);
   }
 
+OvmsCommand* OvmsCommandApp::FindCommandFullName(const char* name)
+  {
+  OvmsCommand* found = &m_root;
+  const char* p = name;
+
+  while (*p != 0)
+    {
+    const char* d = strchr(p,' ');
+    if (d)
+      {
+      std::string command(p,0,d-p);
+      found = found->FindCommand(command.c_str());
+      p = d+1;
+      }
+    else
+      {
+      found = found->FindCommand(p);
+      return found;
+      }
+    if (found==NULL) return found;
+    }
+
+  return found;
+  }
+
 void OvmsCommandApp::RegisterConsole(OvmsWriter* writer)
   {
   m_consoles.insert(writer);

@@ -2230,7 +2230,7 @@ void OvmsScripts::DukTapeTask()
 
   while(1)
     {
-    if (xQueueReceive(m_duktaskqueue, &msg, (portTickType)portMAX_DELAY)==pdTRUE)
+    if (xQueueReceive(m_duktaskqueue, &msg, pdMS_TO_TICKS(5000))==pdTRUE)
       {
       esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
       duktapewriter = msg.writer;
