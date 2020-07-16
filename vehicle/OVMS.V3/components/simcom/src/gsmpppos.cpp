@@ -64,10 +64,10 @@ static void GsmPPPOS_StatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
       ESP_LOGI(TAG, "   our_ipaddr  = %s", ipaddr_ntoa(&pppif->ip_addr));
       ESP_LOGI(TAG, "   his_ipaddr  = %s", ipaddr_ntoa(&pppif->gw));
       ESP_LOGI(TAG, "   netmask     = %s", ipaddr_ntoa(&pppif->netmask));
-      ip_addr_t dns = dns_getserver(0);
-      ESP_LOGI(TAG, "   DNS#0       = %s", ipaddr_ntoa(&dns));
+      const ip_addr_t* dns = dns_getserver(0);
+      ESP_LOGI(TAG, "   DNS#0       = %s", ipaddr_ntoa(dns));
       dns = dns_getserver(1);
-      ESP_LOGI(TAG, "   DNS#1       = %s", ipaddr_ntoa(&dns));
+      ESP_LOGI(TAG, "   DNS#1       = %s", ipaddr_ntoa(dns));
 #endif /* PPP_IPV4_SUPPORT */
 #if PPP_IPV6_SUPPORT
       ESP_LOGI(TAG, "   our6_ipaddr = %s", ip6addr_ntoa(netif_ip6_addr(pppif, 0)));

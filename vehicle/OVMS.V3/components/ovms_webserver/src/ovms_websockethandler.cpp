@@ -100,7 +100,7 @@ void WebSocketHandler::ProcessTxJob()
         ESP_EARLY_LOGV(TAG, "WebSocketHandler[%p]: ProcessTxJob type=%d done", m_nc, m_job.type);
         ClearTxJob(m_job);
       } else {
-        extram::string msg;
+        std::string msg;
         msg.reserve(128);
         msg = "{\"event\":\"";
         msg += m_job.event;
@@ -125,7 +125,7 @@ void WebSocketHandler::ProcessTxJob()
       for (i=0, m=MyMetrics.m_first; i < m_sent && m != NULL; m=m->m_next, i++);
       
       // build msg:
-      extram::string msg;
+      std::string msg;
       msg.reserve(2*XFER_CHUNK_SIZE+128);
       msg = "{\"metrics\":{";
       for (i=0; m && msg.size() < XFER_CHUNK_SIZE; m=m->m_next) {
@@ -134,7 +134,7 @@ void WebSocketHandler::ProcessTxJob()
           msg += '\"';
           msg += m->m_name;
           msg += "\":";
-          msg += m->AsJSON().c_str();
+          msg += m->AsJSON();
           i++;
         }
       }
@@ -165,7 +165,7 @@ void WebSocketHandler::ProcessTxJob()
         ClearTxJob(m_job);
       } else {
         // build frame:
-        extram::string msg;
+        std::string msg;
         msg.reserve(XFER_CHUNK_SIZE+128);
         int op;
         
@@ -174,7 +174,7 @@ void WebSocketHandler::ProcessTxJob()
           msg += "{\"notify\":{\"type\":\"";
           msg += m_job.notification->GetType()->m_name;
           msg += "\",\"subtype\":\"";
-          msg += mqtt_topic(m_job.notification->GetSubType()).c_str();
+          msg += mqtt_topic(m_job.notification->GetSubType());
           msg += "\",\"value\":\"";
           m_sent = 1;
         } else {
@@ -182,7 +182,7 @@ void WebSocketHandler::ProcessTxJob()
         }
         
         extram::string part = m_job.notification->GetValue().substr(m_sent-1, XFER_CHUNK_SIZE);
-        msg += json_encode(part).c_str();
+        msg += json_encode(part);
         m_sent += part.size();
         
         if (m_sent < m_job.notification->GetValueSize()+1) {

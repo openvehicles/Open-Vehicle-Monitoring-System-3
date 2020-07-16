@@ -66,14 +66,14 @@ void network_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   int dnsservers = 0;
   for (int k=0;k<DNS_MAX_SERVERS;k++)
     {
-    ip_addr_t srv = dns_getserver(k);
-    if (! ip_addr_isany(&srv))
+    const ip_addr_t* srv = dns_getserver(k);
+    if (! ip_addr_isany(srv))
       {
       dnsservers++;
-      if (srv.type == IPADDR_TYPE_V4)
-        writer->printf(" " IPSTR, IP2STR(&srv.u_addr.ip4));
-      else if (srv.type == IPADDR_TYPE_V6)
-        writer->printf(" " IPSTR, IP2STR(&srv.u_addr.ip6));
+      if (srv->type == IPADDR_TYPE_V4)
+        writer->printf(" " IPSTR, IP2STR(&srv->u_addr.ip4));
+      else if (srv->type == IPADDR_TYPE_V6)
+        writer->printf(" " IPSTR, IP2STR(&srv->u_addr.ip6));
       }
     }
   if (dnsservers == 0)
@@ -563,7 +563,7 @@ void OvmsNetManager::SaveDNSServer(ip_addr_t* dnsstore)
   {
   for (int i=0; i<DNS_MAX_SERVERS; i++)
     {
-    dnsstore[i] = dns_getserver(i);
+    dnsstore[i] = *dns_getserver(i);
     ESP_LOGD(TAG, "Saved DNS#%d %s", i, inet_ntoa(dnsstore[i]));
     }
   }
