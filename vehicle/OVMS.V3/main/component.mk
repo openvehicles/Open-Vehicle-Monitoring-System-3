@@ -5,7 +5,7 @@
 
 COMPONENT_ADD_INCLUDEDIRS := .
 COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive -T main/ovms_boot.ld \
-	-L$(HOME)/esp/xtensa-esp32-elf/xtensa-esp32-elf/sysroot/lib/esp32-psram
+	-mfix-esp32-psram-cache-issue
 
 OVMS_VERSION := $(shell git describe --always --tags --dirty)
 CPPFLAGS := -D OVMS_VERSION=\"$(OVMS_VERSION)\" $(CPPFLAGS)
