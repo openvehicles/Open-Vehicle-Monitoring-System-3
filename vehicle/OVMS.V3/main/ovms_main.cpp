@@ -22,10 +22,6 @@ extern "C"
   void app_main(void);
   }
 
-#ifdef CONFIG_SPIRAM_SUPPORT
-void* first2mb = NULL;
-#endif // #ifdef CONFIG_SPIRAM_SUPPORT
-
 static class FrameworkInit
   {
   public:
@@ -38,11 +34,6 @@ static class FrameworkInit
         CONFIG_LOG_DEFAULT_LEVEL == 2 ? "WARN" :
         CONFIG_LOG_DEFAULT_LEVEL == 1 ? "ERROR" : "None");
       esp_log_level_set("*",(esp_log_level_t)CONFIG_LOG_DEFAULT_LEVEL);
-
-#ifdef CONFIG_SPIRAM_SUPPORT
-      first2mb = heap_caps_malloc(1024*1024*2, MALLOC_CAP_SPIRAM);
-      ESP_LOGI(TAG, "Pre-allocated 2MB of SPIRAM at %p (workaround ESP32 bug)",first2mb);
-#endif // #ifdef CONFIG_SPIRAM_SUPPORT
 
       ESP_LOGI(TAG, "Initialising WATCHDOG...");
       esp_task_wdt_init(120, true);
