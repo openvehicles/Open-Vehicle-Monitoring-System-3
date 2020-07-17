@@ -39,6 +39,7 @@ static const char *TAG = "metrics";
 #include "ovms_command.h"
 #include "ovms_events.h"
 #include "ovms_script.h"
+#include "rom/rtc.h"
 #include "string.h"
 
 using namespace std;
@@ -389,8 +390,8 @@ OvmsMetrics::OvmsMetrics()
   MyScripts.RegisterDuktapeObject(dto);
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
-  /* Persistent metrics initialization */
-  if (!pmetrics_check())
+  /* Initialize persistent metrics on cold boot or corruption */
+  if (rtc_get_reset_reason(0) == POWERON_RESET || !pmetrics_check())
     pmetrics_init();
   ESP_LOGI(TAG, "Persistent metrics serial %u using %d bytes",
       pmetrics.serial++, sizeof(pmetrics));
