@@ -14,6 +14,12 @@ xrt.b.u.temp.max                         20°C                     Current trip/
 xrt.b.u.temp.min                         18.1429°C                Current trip/charge pack temp min
 xrt.b.u.volt.max                         55V                      Current trip/charge pack volt max
 xrt.b.u.volt.min                         50.2V                    Current trip/charge pack volt min
+xrt.bms.balancing                        2,4,8,10,13,14           Custom BMS: cell balancing status
+xrt.bms.error                            0                        Custom BMS: error status
+xrt.bms.state1                           4                        Custom BMS: main state
+xrt.bms.state2                           1                        Custom BMS: auxiliary state
+xrt.bms.temp                             52°C                     Custom BMS: internal temperature
+xrt.bms.type                             1                        Custom BMS: type (0=VirtualBMS, 1=eDriver BMS, 7=Standard)
 xrt.cfg.applied                          yes                      Tuning working set has been applied to SEVCON
 xrt.cfg.base                             2                        Tuning base profile (preop mode params)
 xrt.cfg.profile                          144,110,111,182,…        Tuning profile params

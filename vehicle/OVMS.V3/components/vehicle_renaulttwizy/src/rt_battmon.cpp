@@ -93,9 +93,16 @@ void OvmsVehicleRenaultTwizy::BatteryInit()
   m_batt_use_temp_min = MyMetrics.InitFloat("xrt.b.u.temp.min", SM_STALE_HIGH, 0, Celcius);
   m_batt_use_temp_max = MyMetrics.InitFloat("xrt.b.u.temp.max", SM_STALE_HIGH, 0, Celcius);
 
+  m_bms_type      = MyMetrics.InitInt("xrt.bms.type", SM_STALE_HIGH, 7);
+  m_bms_state1    = MyMetrics.InitInt("xrt.bms.state1", SM_STALE_HIGH, 0);
+  m_bms_state2    = MyMetrics.InitInt("xrt.bms.state2", SM_STALE_HIGH, 0);
+  m_bms_error     = MyMetrics.InitInt("xrt.bms.error", SM_STALE_HIGH, 0);
+  m_bms_balancing = MyMetrics.InitBitset<16>("xrt.bms.balancing", SM_STALE_HIGH, 0);
+  m_bms_temp      = MyMetrics.InitFloat("xrt.bms.temp", SM_STALE_HIGH, 0, Celcius);
+
   // BMS configuration:
-  //    Note: layout currently fixed to 2 voltages + 1 temperature per module,
-  //          this may need refinement for custom batteries
+  //    Note: layout initialized to 2 voltages + 1 temperature per module,
+  //          custom layouts will be configured by CAN frame 0x700 (see rt_can)
   BmsSetCellArrangementVoltage(batt_cell_count, 2);
   BmsSetCellArrangementTemperature(batt_cmod_count, 1);
   BmsSetCellLimitsVoltage(2.0, 5.0);
@@ -828,6 +835,7 @@ void OvmsVehicleRenaultTwizy::FormatCellData(int verbosity, OvmsWriter* writer, 
 
   int pack = 0; // currently fixed, TODO for addon packs: determine pack index for cell
   int volt_alert, temp_alert;
+  int cmod = cell / m_bms_readingspermodule_v;
 
   if (twizy_batt[pack].volt_alerts.test(cell))
     volt_alert = 3;
@@ -836,9 +844,9 @@ void OvmsVehicleRenaultTwizy::FormatCellData(int verbosity, OvmsWriter* writer, 
   else
     volt_alert = 1;
 
-  if (twizy_batt[pack].temp_alerts.test(cell >> 1))
+  if (twizy_batt[pack].temp_alerts.test(cmod))
     temp_alert = 3;
-  else if (twizy_batt[pack].temp_watches.test(cell >> 1))
+  else if (twizy_batt[pack].temp_watches.test(cmod))
     temp_alert = 2;
   else
     temp_alert = 1;
@@ -860,10 +868,10 @@ void OvmsVehicleRenaultTwizy::FormatCellData(int verbosity, OvmsWriter* writer, 
     CONV_CellVolt(twizy_cell[cell].volt_min),
     CONV_CellVolt(twizy_cell[cell].volt_max),
     CONV_CellVoltS(twizy_cell[cell].volt_maxdev),
-    CONV_Temp(twizy_cmod[cell >> 1].temp_act),
-    CONV_Temp(twizy_cmod[cell >> 1].temp_min),
-    CONV_Temp(twizy_cmod[cell >> 1].temp_max),
-    (int) (twizy_cmod[cell >> 1].temp_maxdev + 0.5));
+    CONV_Temp(twizy_cmod[cmod].temp_act),
+    CONV_Temp(twizy_cmod[cmod].temp_min),
+    CONV_Temp(twizy_cmod[cmod].temp_max),
+    (int) (twizy_cmod[cmod].temp_maxdev + 0.5));
 
 }
 
