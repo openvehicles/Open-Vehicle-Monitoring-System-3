@@ -238,6 +238,7 @@ void OvmsEvents::HandleQueueSignalEvent(event_queue_t* msg)
       }
     }
 
+  m_current_started = monotonictime;
   MyScripts.EventScript(m_current_event, msg->body.signal.data);
 
   m_current_event.clear();
