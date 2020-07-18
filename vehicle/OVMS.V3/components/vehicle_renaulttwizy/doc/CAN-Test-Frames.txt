@@ -42,6 +42,7 @@ can can1 rx standard 55F 00 8E 73 00 00 23 E2 3E
 
 # 16 cell layout:
 
+can can1 rx standard 700 00 00 33 53 34 00 00 00
 can can1 rx standard 424 11 40 04 26 41 64 00 42
 can can1 rx standard 554 46 45 45 44 45 45 46 45
 can can1 rx standard 556 33 63 34 33 53 34 33 5A
@@ -196,3 +197,24 @@ can can1 rx standard 59B 80 0C 65 5E 44 72 00 90
 can can1 rx standard 59B 80 0C 65 EE 44 72 00 90
 can can1 rx standard 59B 80 0C 65 00 44 72 00 90
 
+
+------------------------
+VirtualBMS / eDriver BMS
+------------------------
+
+# eDriver BMS: 14 cells, 3 cmods, charging + balancing, no errors:
+
+can can1 rx standard 700 04 20 00 00 00 32 8a 01
+can can1 rx standard 424 11 40 04 26 41 64 00 42
+can can1 rx standard 554 45 46 45 5C 00 00 00 00
+can can1 rx standard 556 33 63 34 33 53 34 33 5A
+can can1 rx standard 557 33 43 35 33 53 35 33 50
+can can1 rx standard 55E 33 43 34 33 43 36 00 D5
+can can1 rx standard 55F 00 8E 73 00 00 23 E2 3E
+can can1 rx standard 700 04 20 00 00 00 32 8a 01
+
+bms status
+me li xrt.bms.
+me li v.b.c.
+xrt batt temp
+xrt batt tdev

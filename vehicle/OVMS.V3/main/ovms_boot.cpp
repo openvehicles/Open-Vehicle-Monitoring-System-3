@@ -420,10 +420,13 @@ void Boot::ErrorCallback(XtExcFrame *frame, int core_id, bool is_abort)
     boot_data.crash_data.bt[i++].pc = 0;
 
   // Save Event debug info:
-  if (MyEvents.m_current_callback)
+  if (!MyEvents.m_current_event.empty())
     {
     strlcpy(boot_data.curr_event_name, MyEvents.m_current_event.c_str(), sizeof(boot_data.curr_event_name));
-    strlcpy(boot_data.curr_event_handler, MyEvents.m_current_callback->m_caller.c_str(), sizeof(boot_data.curr_event_handler));
+    if (MyEvents.m_current_callback)
+      strlcpy(boot_data.curr_event_handler, MyEvents.m_current_callback->m_caller.c_str(), sizeof(boot_data.curr_event_handler));
+    else
+      strlcpy(boot_data.curr_event_handler, "EventScript", sizeof(boot_data.curr_event_handler));
     boot_data.curr_event_runtime = monotonictime - MyEvents.m_current_started;
     }
   else

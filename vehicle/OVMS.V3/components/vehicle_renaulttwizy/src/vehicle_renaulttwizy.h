@@ -393,6 +393,16 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     //OvmsMetricFloat *m_batt_max_drive_pwr;
     //OvmsMetricFloat *m_batt_max_recup_pwr;
 
+    #define BMS_TYPE_VBMS   0                     // VirtualBMS
+    #define BMS_TYPE_EDRV   1                     // eDriver BMS
+    #define BMS_TYPE_ORIG   7                     // Standard Renault/LG BMS
+    OvmsMetricInt           *m_bms_type;          // 0x700[1] bits 5-7
+    OvmsMetricInt           *m_bms_state1;        // 0x700[0]
+    OvmsMetricInt           *m_bms_state2;        // 0x700[7]
+    OvmsMetricInt           *m_bms_error;         // 0x700[1] bits 0-4
+    OvmsMetricBitset<16>    *m_bms_balancing;     // 0x700[5,6]
+    OvmsMetricFloat         *m_bms_temp;          // internal BMS temperature
+    
     battery_pack twizy_batt[BATT_PACKS];
     battery_cmod twizy_cmod[BATT_CMODS];
     battery_cell twizy_cell[BATT_CELLS];
@@ -416,7 +426,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     #define BATT_SENSORS_READY    ((batt_cell_count==14) ? 63 : 127)  // value: group complete
     SemaphoreHandle_t m_batt_sensors = 0;
     bool m_batt_doreset = false;
-  
+    
   
   // --------------------------------------------------------------------------
   // Charge control subsystem

@@ -2359,7 +2359,7 @@ void OvmsVehicle::BmsSetCellArrangementVoltage(int readings, int readingspermodu
   m_bms_readings_v = readings;
   m_bms_readingspermodule_v = readingspermodule;
 
-  BmsResetCellVoltages();
+  BmsResetCellVoltages(true);
   }
 
 void OvmsVehicle::BmsSetCellArrangementTemperature(int readings, int readingspermodule)
@@ -2382,7 +2382,7 @@ void OvmsVehicle::BmsSetCellArrangementTemperature(int readings, int readingsper
   m_bms_readings_t = readings;
   m_bms_readingspermodule_t = readingspermodule;
 
-  BmsResetCellTemperatures();
+  BmsResetCellTemperatures(true);
   }
 
 int OvmsVehicle::BmsGetCellArangementVoltage(int* readings, int* readingspermodule)
@@ -2600,7 +2600,7 @@ void OvmsVehicle::BmsRestartCellTemperatures()
   m_bms_bitset_ct = 0;
   }
 
-void OvmsVehicle::BmsResetCellVoltages()
+void OvmsVehicle::BmsResetCellVoltages(bool full /*=false*/)
   {
   if (m_bms_readings_v > 0)
     {
@@ -2616,6 +2616,7 @@ void OvmsVehicle::BmsResetCellVoltages()
       m_bms_valerts[k] = 0;
       }
     m_bms_valerts_new = 0;
+    if (full) StandardMetrics.ms_v_bat_cell_voltage->ClearValue();
     StandardMetrics.ms_v_bat_cell_vmin->ClearValue();
     StandardMetrics.ms_v_bat_cell_vmax->ClearValue();
     StandardMetrics.ms_v_bat_cell_vdevmax->ClearValue();
@@ -2624,7 +2625,7 @@ void OvmsVehicle::BmsResetCellVoltages()
     }
   }
 
-void OvmsVehicle::BmsResetCellTemperatures()
+void OvmsVehicle::BmsResetCellTemperatures(bool full /*=false*/)
   {
   if (m_bms_readings_t > 0)
     {
@@ -2640,6 +2641,7 @@ void OvmsVehicle::BmsResetCellTemperatures()
       m_bms_talerts[k] = 0;
       }
     m_bms_talerts_new = 0;
+    if (full) StandardMetrics.ms_v_bat_cell_temp->ClearValue();
     StandardMetrics.ms_v_bat_cell_tmin->ClearValue();
     StandardMetrics.ms_v_bat_cell_tmax->ClearValue();
     StandardMetrics.ms_v_bat_cell_tdevmax->ClearValue();
@@ -2650,8 +2652,8 @@ void OvmsVehicle::BmsResetCellTemperatures()
 
 void OvmsVehicle::BmsResetCellStats()
   {
-  BmsResetCellVoltages();
-  BmsResetCellTemperatures();
+  BmsResetCellVoltages(false);
+  BmsResetCellTemperatures(false);
   }
 
 void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer)
@@ -2698,7 +2700,7 @@ void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer)
   writer->puts("Cells:");
   int kv = 0;
   int kt = 0;
-  for (int module = 0; module < (m_bms_readings_v/m_bms_readingspermodule_v); module++)
+  for (int module = 0; module < ((m_bms_readings_v+m_bms_readingspermodule_v-1)/m_bms_readingspermodule_v); module++)
     {
     writer->printf("    +");
     for (c=0;c<m_bms_readingspermodule_v;c++) { writer->printf("-------"); }
@@ -2708,12 +2710,18 @@ void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer)
     writer->printf("%3d |",module+1);
     for (c=0; c<m_bms_readingspermodule_v; c++)
       {
-      writer->printf(" %5.3fV",m_bms_voltages[kv++]);
+      if (kv < m_bms_readings_v)
+        writer->printf(" %5.3fV",m_bms_voltages[kv++]);
+      else
+        writer->printf("       ");
       }
     writer->printf(" |");
     for (c=0; c<m_bms_readingspermodule_t; c++)
       {
-      writer->printf(" %5.1fC",m_bms_temperatures[kt++]);
+      if (kt < m_bms_readings_t)
+        writer->printf(" %5.1fC",m_bms_temperatures[kt++]);
+      else
+        writer->printf("       ");
       }
     writer->puts(" |");
     }
