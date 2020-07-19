@@ -486,7 +486,7 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameRecei
     m_status.errors_rx = p[1];
 
     // log:
-    //LogStatus(CAN_LogStatus_Error);
+    LogStatus(CAN_LogStatus_Error);
     }
 
   // clear RX buffer overflow flags:
