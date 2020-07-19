@@ -896,6 +896,17 @@ static void module_fault(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
   abort();
   }
 
+static void module_trigger_twdt(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  ESP_LOGI(TAG,"Triggering task watchdog (on command)");
+  // trigger twdt on event task by blocking all events:
+  static auto covid19 = [](std::string event, void* data) { vTaskDelay(portMAX_DELAY); };
+  MyEvents.RegisterEvent(TAG, "ticker.1", covid19);
+  writer->puts(
+    "Task watchdog will be triggered in " STR(CONFIG_TASK_WDT_TIMEOUT_S) " seconds.\n"
+    "Note: important events will cause reset as soon as queue is full.");
+  }
+
 static void module_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   writer->puts("Resetting system...");
@@ -1052,6 +1063,8 @@ class OvmsModuleInit
     cmd_tasks->RegisterCommand("stack","Show module task usage with stack",module_tasks);
     cmd_tasks->RegisterCommand("data","Output module task stats record",module_tasks_data);
     cmd_module->RegisterCommand("fault","Abort fault the module",module_fault);
+    OvmsCommand* cmd_trigger = cmd_module->RegisterCommand("trigger","Trigger framework");
+    cmd_trigger->RegisterCommand("twdt","Trigger task watchdog timeout",module_trigger_twdt);
     cmd_module->RegisterCommand("reset","Reset module",module_reset);
     cmd_module->RegisterCommand("check","Check heap integrity",module_check);
     cmd_module->RegisterCommand("summary","Show module summary",module_summary);

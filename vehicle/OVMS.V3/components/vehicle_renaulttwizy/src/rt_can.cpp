@@ -290,17 +290,23 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
         for (int i = 0; i < BATT_CMODS; i++)
           twizy_cmod[i].temp_new = CAN_BYTE(i);
 
-        // update pack layout:
-        if (twizy_cmod[7].temp_new > 0 && twizy_cmod[7].temp_new < 0xf0) {
-          if (batt_cmod_count != 8) {
-            batt_cmod_count = 8;
-            BmsSetCellArrangementTemperature(batt_cmod_count, 1);
-          }
+        if (m_bms_type->AsInt() == BMS_TYPE_EDRV) {
+          // eDriver BMS: three cell temperature sensors + internal BMS temp
+          m_bms_temp->SetValue((int)CAN_BYTE(3) - 40);
         }
         else {
-          if (batt_cmod_count != 7) {
-            batt_cmod_count = 7;
-            BmsSetCellArrangementTemperature(batt_cmod_count, 1);
+          // update pack layout:
+          if (twizy_cmod[7].temp_new > 0 && twizy_cmod[7].temp_new < 0xf0) {
+            if (batt_cmod_count != 8) {
+              batt_cmod_count = 8;
+              BmsSetCellArrangementTemperature(batt_cmod_count, 1);
+            }
+          }
+          else {
+            if (batt_cmod_count != 7) {
+              batt_cmod_count = 7;
+              BmsSetCellArrangementTemperature(batt_cmod_count, 1);
+            }
           }
         }
         
@@ -642,29 +648,52 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       //   - Bytes 2-4: cell voltages #15 & #16 (encoded in 12 bits like #1-#14)
       //   - Bytes 5-6: balancing status (bits 15…0 = cells 16…1, 1 = balancing active)
       //   - Byte 7: BMS specific state #2 (auxiliary state or data)
+      // 
+      // Currently defined BMS types:
+      //   - 0 = VirtualBMS (BMS_TYPE_VBMS)
+      //   - 1 = eDriver BMS (BMS_TYPE_EDRV)
+      //   - 7 = Standard Renault/LG BMS (BMS_TYPE_ORIG)
+      // 
       if (CAN_BYTE(0) != 0x0ff)
       {
+        bool layout_changed = false;
+        
+        // BMS type & states
+        m_bms_state1->SetValue(CAN_BYTE(0));
+        m_bms_type->SetValue((CAN_BYTE(1) & 0b11100000) >> 5);
+        m_bms_error->SetValue(CAN_BYTE(1) & 0b00011111);
+        m_bms_balancing->SetValue(CAN_BYTE(5) << 8 | CAN_BYTE(6));
+        m_bms_state2->SetValue(CAN_BYTE(7));
+        
         // Battery cell voltages 15 + 16:
         twizy_cell[14].volt_new = ((UINT) CAN_BYTE(2) << 4) | ((UINT) CAN_NIBH(3));
         twizy_cell[15].volt_new = ((UINT) CAN_NIBL(3) << 8) | ((UINT) CAN_BYTE(4));
         
         // update pack layout:
+        if (m_bms_type->AsInt() == BMS_TYPE_EDRV) {
+          // eDriver BMS: three cell temperature sensors + internal BMS temp
+          if (batt_cmod_count != 3) {
+            batt_cmod_count = 3;
+            layout_changed = true;
+            BmsSetCellArrangementTemperature(batt_cmod_count, 1);
+          }
+        }
         if (twizy_cell[15].volt_new != 0 && twizy_cell[15].volt_new != 0x0fff) {
-          if (batt_cell_count != 16) {
+          if (layout_changed || batt_cell_count != 16) {
             batt_cell_count = 16;
-            BmsSetCellArrangementVoltage(batt_cell_count, 1);
+            BmsSetCellArrangementVoltage(batt_cell_count, (batt_cmod_count==3) ? 6 : 2);
           }
         }
         else if (twizy_cell[14].volt_new != 0 && twizy_cell[14].volt_new != 0x0fff) {
-          if (batt_cell_count != 15) {
+          if (layout_changed || batt_cell_count != 15) {
             batt_cell_count = 15;
-            BmsSetCellArrangementVoltage(batt_cell_count, 1);
+            BmsSetCellArrangementVoltage(batt_cell_count, (batt_cmod_count==3) ? 5 : 2);
           }
         }
         else {
-          if (batt_cell_count != 14) {
+          if (layout_changed || batt_cell_count != 14) {
             batt_cell_count = 14;
-            BmsSetCellArrangementVoltage(batt_cell_count, 2);
+            BmsSetCellArrangementVoltage(batt_cell_count, (batt_cmod_count==3) ? 5 : 2);
           }
         }
 

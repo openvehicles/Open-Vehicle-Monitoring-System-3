@@ -1,6 +1,14 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Renault Twizy: support VirtualBMS & eDriver BMS (3 cell temperature sensors)
+  New metrics:
+    xrt.bms.type        -- 0=VirtualBMS, 1=eDriver, 7=Standard
+    xrt.bms.state1      -- BMS specific main state
+    xrt.bms.state2      -- BMS specific aux state
+    xrt.bms.error       -- BMS specific error status
+    xrt.bms.temp        -- internal BMS temperature
+    xrt.bms.balancing   -- Cell balancing status
 - Wifi: scanning apclient mode, network selection dialog in wizard & wifi config,
     scan support in all modes, fixed network selection by signal strength
     (possibly also fixes issue #387)

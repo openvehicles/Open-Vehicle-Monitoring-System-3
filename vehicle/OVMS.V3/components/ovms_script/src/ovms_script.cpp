@@ -216,7 +216,6 @@ static duk_ret_t duk__handle_require(duk_context *ctx)
 		duk_int_t ret;
 
 		/* [ ... module source ] */
-
 		ret = duk_safe_call(ctx, duk__eval_module_source, NULL, 2, 1);
 		if (ret != DUK_EXEC_SUCCESS)
       {
@@ -516,8 +515,9 @@ static duk_ret_t DukOvmsLoadModule(duk_context *ctx)
       }
     else
       {
-      ESP_LOGD(TAG,"load_cb: id:'%s' (internally provided %d bytes)", module_id, mod->length);
+      ESP_LOGD(TAG,"load_cb: id:'%s' internally provided %s (%d bytes)", module_id, filename, mod->length);
       duk_push_lstring(ctx, mod->start, mod->length);
+      MyCommandApp.NotifyDuktapeModuleLoad(filename);
       return 1;
       }
     }
@@ -549,6 +549,8 @@ static duk_ret_t DukOvmsLoadModule(duk_context *ctx)
     duk_push_string(ctx, script);
     delete [] script;
     fclose(sf);
+    ESP_LOGD(TAG,"load_cb: id:'%s' vfs provided %s (%lu bytes)", module_id, filename, slen);
+    MyCommandApp.NotifyDuktapeModuleLoad(filename);
     }
 
   return 1;
@@ -613,27 +615,6 @@ static duk_ret_t DukOvmsAssert(duk_context *ctx)
     }
   duk_error(ctx, DUK_ERR_ERROR, "assertion failed: %s", duk_safe_to_string(ctx, 1));
   return 0;
-  }
-
-static duk_ret_t DukOvmsCommand(duk_context *ctx)
-  {
-  const char *cmd = duk_to_string(ctx,0);
-
-  if (cmd != NULL)
-    {
-    BufferedShell* bs = new BufferedShell(false, COMMAND_RESULT_NORMAL);
-    bs->SetSecure(true); // this is an authorized channel
-    bs->ProcessChars(cmd, strlen(cmd));
-    bs->ProcessChar('\n');
-    std::string val; bs->Dump(val);
-    delete bs;
-    duk_push_string(ctx, val.c_str());
-    return 1;  /* one return value */
-    }
-  else
-    {
-    return 0;
-    }
   }
 
 static duk_ret_t DukOvmsRaiseEvent(duk_context *ctx)
@@ -2217,7 +2198,9 @@ void OvmsScripts::DukTapeInit()
     delete [] script;
     fclose(sf);
     ESP_LOGI(TAG,"Duktape: Executing ovmsmain.js");
+    MyCommandApp.NotifyDuktapeModuleLoad("ovmsmain.js");
     duk_module_node_peval_main(m_dukctx, "ovmsmain.js");
+    MyCommandApp.NotifyDuktapeModuleUnload("ovmsmain.js");
     }
   }
 
@@ -2230,7 +2213,7 @@ void OvmsScripts::DukTapeTask()
 
   while(1)
     {
-    if (xQueueReceive(m_duktaskqueue, &msg, (portTickType)portMAX_DELAY)==pdTRUE)
+    if (xQueueReceive(m_duktaskqueue, &msg, pdMS_TO_TICKS(5000))==pdTRUE)
       {
       esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
       duktapewriter = msg.writer;
@@ -2239,6 +2222,7 @@ void OvmsScripts::DukTapeTask()
         case DUKTAPE_reload:
           {
           // Reload DUKTAPE engine
+          MyCommandApp.NotifyDuktapeModuleUnloadAll();
           if (m_dukctx != NULL)
             {
             ESP_LOGI(TAG,"Duktape: Clearing existing context");
@@ -2411,7 +2395,9 @@ static void script_ovms(bool print, int verbosity, OvmsWriter* writer,
     char *script = new char[slen+1];
     memset(script,0,slen+1);
     fread(script,1,slen,sf);
+    MyCommandApp.NotifyDuktapeModuleLoad(spath);
     MyScripts.DuktapeEvalNoResult(script, writer, spath);
+    MyCommandApp.NotifyDuktapeModuleUnload(spath);
     delete [] script;
 #else // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
     if (writer)
@@ -2580,11 +2566,9 @@ OvmsScripts::OvmsScripts()
   RegisterDuktapeModule(mod_json_js_start, mod_json_js_end - mod_json_js_start, "JSON");
 
   // Register standard functions
+  DuktapeObjectRegistration* dto;
   RegisterDuktapeFunction(DukOvmsPrint, 1, "print");
   RegisterDuktapeFunction(DukOvmsAssert, 2, "assert");
-  DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsCommand");
-  dto->RegisterDuktapeFunction(DukOvmsCommand, 1, "Exec");
-  RegisterDuktapeObject(dto);
   dto = new DuktapeObjectRegistration("OvmsEvents");
   dto->RegisterDuktapeFunction(DukOvmsRaiseEvent, 2, "Raise");
   RegisterDuktapeObject(dto);
@@ -2605,6 +2589,9 @@ OvmsScripts::OvmsScripts()
   dt_vfs->RegisterDuktapeFunction(DuktapeVFSLoad::Create, 1, "Load");
   dt_vfs->RegisterDuktapeFunction(DuktapeVFSSave::Create, 1, "Save");
   RegisterDuktapeObject(dt_vfs);
+
+  // Notify the command system that scripts are ready
+  MyCommandApp.NotifyDuktapeScriptsReady();
 
   // Start the DukTape task...
   m_duktaskqueue = xQueueCreate(CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_QUEUE_SIZE,sizeof(duktape_queue_t));

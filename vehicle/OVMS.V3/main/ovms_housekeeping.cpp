@@ -36,7 +36,6 @@ static const char *TAG = "housekeeping";
 #include <esp_system.h>
 #include <esp_ota_ops.h>
 #include <esp_heap_caps.h>
-#include <esp_task_wdt.h>
 #include "ovms.h"
 #include "ovms_housekeeping.h"
 #include "ovms_peripherals.h"
@@ -143,9 +142,6 @@ void Housekeeping::Init(std::string event, void* data)
   tick = 0;
   m_timer1 = xTimerCreate("Housekeep ticker",1000 / portTICK_PERIOD_MS,pdTRUE,this,HousekeepingTicker1);
   xTimerStart(m_timer1, 0);
-
-  ESP_LOGI(TAG, "Initialising WATCHDOG...");
-  esp_task_wdt_init(120, true);
 
   ESP_LOGI(TAG, "Starting PERIPHERALS...");
   MyPeripherals = new Peripherals();

@@ -189,7 +189,7 @@ class OvmsCommand : public ExternalRamAllocated
     virtual ~OvmsCommand();
 
   public:
-    OvmsCommand* RegisterCommand(const char* name, const char* title, 
+    OvmsCommand* RegisterCommand(const char* name, const char* title,
                                  void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*) = NULL,
                                  const char *usage = "", int min = 0, int max = 0, bool secure = true,
                                  int (*validate)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool) = NULL);
@@ -257,11 +257,12 @@ class OvmsCommandApp : public OvmsWriter
     virtual ~OvmsCommandApp();
 
   public:
-    OvmsCommand* RegisterCommand(const char* name, const char* title, 
+    OvmsCommand* RegisterCommand(const char* name, const char* title,
                                  void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*) = NULL,
                                  const char *usage = "", int min = 0, int max = 0, bool secure = true);
     bool UnregisterCommand(const char* name);
     OvmsCommand* FindCommand(const char* name);
+    OvmsCommand* FindCommandFullName(const char* name);
     void RegisterConsole(OvmsWriter* writer);
     void DeregisterConsole(OvmsWriter* writer);
     int Log(const char* fmt, ...);
@@ -317,6 +318,14 @@ class OvmsCommandApp : public OvmsWriter
 
   public:
     TaskHandle_t m_expiretask;
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  public:
+    void NotifyDuktapeScriptsReady();
+    void NotifyDuktapeModuleLoad(const char* filename);
+    void NotifyDuktapeModuleUnload(const char* filename);
+    void NotifyDuktapeModuleUnloadAll();
+#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   };
 
 extern OvmsCommandApp MyCommandApp;

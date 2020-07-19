@@ -78,6 +78,10 @@ typedef struct
   unsigned int crash_count_total;   // Total number of times system has crashed since power on
   crash_data_t crash_data;          // Register dump & backtrace info
   esp_reset_reason_t reset_hint;    // Copy of RTC_RESET_CAUSE_REG
+  char curr_event_name[32];         // Copy of MyEvents.m_current_event
+  char curr_event_handler[16];      // … MyEvents.m_current_callback->m_caller
+  uint16_t curr_event_runtime;      // … monotonictime-MyEvents.m_current_started
+  char wdt_tasknames[32];           // Pipe (|) separated list of the tasks that triggered the TWDT
   } boot_data_t;
 
 extern boot_data_t boot_data;

@@ -49,6 +49,9 @@ static const char *TAG = "command";
 #include "buffered_shell.h"
 #include "log_buffers.h"
 #include "ovms_semaphore.h"
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+#include "duktape.h"
+#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
 OvmsCommandApp MyCommandApp __attribute__ ((init_priority (1000)));
 
@@ -714,6 +717,90 @@ void disable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
   writer->SetSecure(false);
   }
 
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
+static duk_ret_t DukOvmsCommandExec(duk_context *ctx)
+  {
+  const char *cmd = duk_to_string(ctx,0);
+
+  if (cmd != NULL)
+    {
+    BufferedShell* bs = new BufferedShell(false, COMMAND_RESULT_NORMAL);
+    bs->SetSecure(true); // this is an authorized channel
+    bs->ProcessChars(cmd, strlen(cmd));
+    bs->ProcessChar('\n');
+    std::string val; bs->Dump(val);
+    delete bs;
+    duk_push_string(ctx, val.c_str());
+    return 1;  /* one return value */
+    }
+  else
+    {
+    return 0;
+    }
+  }
+
+//static void DukOvmsCommandRegisterRun(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+//  {
+//  writer->printf("Duktape: Command %s run\n",cmd->GetName());
+//  }
+
+static duk_ret_t DukOvmsCommandRegister(duk_context *ctx)
+  {
+  /* TODO: Complete implement
+  std::string filename, function;
+  int linenumber = 0;
+  DukGetCallInfo(ctx, &filename, &linenumber, &function);
+
+  const char *fullcommand = duk_to_string(ctx,0);
+  const char *name = duk_to_string(ctx,1);
+  const char *title = duk_to_string(ctx,2);
+  const char *usage = duk_to_string(ctx,3);
+  uint32_t min = duk_is_number(ctx,4) ? duk_to_uint32(ctx,4) : 0;
+  uint32_t max = duk_is_number(ctx,5) ? duk_to_uint32(ctx,5) : 0;
+
+  OvmsCommand* cmd = MyCommandApp.FindCommandFullName(fullcommand);
+  if (cmd == NULL)
+    {
+    ESP_LOGE(TAG,"Duktape: Script %s %s:%d trying to register unknown command %s/%s",
+        filename.c_str(), function.c_str(), linenumber, fullcommand, name);
+    return 0;
+    }
+
+  OvmsCommand* regcmd = cmd->RegisterCommand(name, title, DukOvmsCommandRegisterRun, usage, min, max);
+  ESP_LOGD(TAG,"Duktape: Script %s %s:%d registered command %s/%s",
+      filename.c_str(), function.c_str(), linenumber, fullcommand, name);
+  */
+
+  return 0;
+  }
+
+void OvmsCommandApp::NotifyDuktapeScriptsReady()
+  {
+  ESP_LOGD(TAG,"Duktape: scripts system is ready");
+  DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsCommand");
+  dto->RegisterDuktapeFunction(DukOvmsCommandExec, 1, "Exec");
+  dto->RegisterDuktapeFunction(DukOvmsCommandRegister, 6, "Register");
+  MyScripts.RegisterDuktapeObject(dto);
+  }
+
+void OvmsCommandApp::NotifyDuktapeModuleLoad(const char* filename)
+  {
+  ESP_LOGD(TAG,"Duktape: module load: %s",filename);
+  }
+
+void OvmsCommandApp::NotifyDuktapeModuleUnload(const char* filename)
+  {
+  ESP_LOGD(TAG,"Duktape: module unload: %s",filename);
+  }
+
+void OvmsCommandApp::NotifyDuktapeModuleUnloadAll()
+  {
+  ESP_LOGD(TAG,"Duktape: module unload all");
+  }
+
+#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
 OvmsCommandApp::OvmsCommandApp()
   {
   ESP_LOGI(TAG, "Initialising COMMAND (1000)");
@@ -783,6 +870,31 @@ bool OvmsCommandApp::UnregisterCommand(const char* name)
 OvmsCommand* OvmsCommandApp::FindCommand(const char* name)
   {
   return m_root.FindCommand(name);
+  }
+
+OvmsCommand* OvmsCommandApp::FindCommandFullName(const char* name)
+  {
+  OvmsCommand* found = &m_root;
+  const char* p = name;
+
+  while (*p != 0)
+    {
+    const char* d = strchr(p,' ');
+    if (d)
+      {
+      std::string command(p,0,d-p);
+      found = found->FindCommand(command.c_str());
+      p = d+1;
+      }
+    else
+      {
+      found = found->FindCommand(p);
+      return found;
+      }
+    if (found==NULL) return found;
+    }
+
+  return found;
   }
 
 void OvmsCommandApp::RegisterConsole(OvmsWriter* writer)

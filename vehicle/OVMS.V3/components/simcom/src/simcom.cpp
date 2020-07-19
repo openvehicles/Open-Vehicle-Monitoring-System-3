@@ -914,7 +914,9 @@ void simcom::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
     if (m_netreg != nreg)
       {
       m_netreg = nreg;
-      ESP_LOGI(TAG, "CREG Network Registration: %s",SimcomNetRegName(m_netreg));
+      const char *v = SimcomNetRegName(m_netreg);
+      StdMetrics.ms_m_net_mdm_netreg->SetValue(v);
+      ESP_LOGI(TAG, "CREG Network Registration: %s", v);
       }
     }
   else if (line.compare(0, 7, "+COPS: ") == 0)
