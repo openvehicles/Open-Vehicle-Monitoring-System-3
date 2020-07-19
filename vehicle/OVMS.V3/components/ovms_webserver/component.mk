@@ -48,6 +48,7 @@ $(COMPONENT_PATH)/assets/tables.js.gz : \
 	cat $^ | gzip -c > $@
 
 $(COMPONENT_PATH)/assets/style.css.gz : \
+	$(COMPONENT_PATH)/assets/intro.css \
 	$(COMPONENT_PATH)/assets/bootstrap.min.css \
 	$(COMPONENT_PATH)/assets/bootstrap-theme.min.css \
 	$(COMPONENT_PATH)/assets/highcharts.css \
