@@ -292,7 +292,11 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
 
         if (m_bms_type->AsInt() == BMS_TYPE_EDRV) {
           // eDriver BMS: three cell temperature sensors + internal BMS temp
-          m_bms_temp->SetValue((int)CAN_BYTE(3) - 40);
+          int bms_temp = (int)CAN_BYTE(3) - 40, prev_temp = m_bms_temp->AsInt();
+          m_bms_temp->SetValue(bms_temp);
+          if (bms_temp >= BMS_TEMP_ALERT && prev_temp < BMS_TEMP_ALERT) {
+            RequestNotify(SEND_BMSAlert);
+          }
         }
         else {
           // update pack layout:
@@ -659,11 +663,16 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
         bool layout_changed = false;
         
         // BMS type & states
-        m_bms_state1->SetValue(CAN_BYTE(0));
         m_bms_type->SetValue((CAN_BYTE(1) & 0b11100000) >> 5);
-        m_bms_error->SetValue(CAN_BYTE(1) & 0b00011111);
-        m_bms_balancing->SetValue(CAN_BYTE(5) << 8 | CAN_BYTE(6));
+        uint8_t bms_error = CAN_BYTE(1) & 0b00011111, prev_error = m_bms_error->AsInt();
+        m_bms_state1->SetValue(CAN_BYTE(0));
         m_bms_state2->SetValue(CAN_BYTE(7));
+        m_bms_error->SetValue(bms_error);
+        m_bms_balancing->SetValue(CAN_BYTE(5) << 8 | CAN_BYTE(6));
+        
+        if (bms_error && bms_error != prev_error) {
+          RequestNotify(SEND_BMSAlert);
+        }
         
         // Battery cell voltages 15 + 16:
         twizy_cell[14].volt_new = ((UINT) CAN_BYTE(2) << 4) | ((UINT) CAN_NIBH(3));

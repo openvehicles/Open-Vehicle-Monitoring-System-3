@@ -68,6 +68,17 @@ void OvmsVehicleRenaultTwizy::DoNotify()
     }
   }
 
+  // Send BMS alert?
+  if (which & SEND_BMSAlert) {
+    MyNotify.NotifyStringf("alert", "bms.status",
+      "BMS Alert:\nState1: %d (0x%x)\nState2: %d (0x%x)\nError: %d (0x%x)\nTemp: %d °C",
+      m_bms_state1->AsInt(), m_bms_state1->AsInt(),
+      m_bms_state2->AsInt(), m_bms_state2->AsInt(),
+      m_bms_error->AsInt(), m_bms_error->AsInt(),
+      m_bms_temp->AsInt());
+    twizy_notifications &= ~SEND_BMSAlert;
+  }
+
   // Send sufficient charge notifications?
   if (which & SEND_SuffCharge) {
     StringWriter buf(200);
