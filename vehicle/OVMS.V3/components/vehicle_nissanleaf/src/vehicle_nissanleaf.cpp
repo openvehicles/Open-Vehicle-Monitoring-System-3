@@ -191,6 +191,7 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_car_on(bool isOn)
     {
     // Log once that car is being turned off
     ESP_LOGI(TAG,"CAR IS OFF");
+    StandardMetrics.ms_v_env_awake->SetValue(false);
     }
 
   // Always set this value to prevent it from going stale
@@ -240,11 +241,11 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
         // is unsigned, so don't underflow it
         //
         // TODO quick charging can draw current from the vehicle
-        StandardMetrics.ms_v_charge_current->SetValue(0);
+        //StandardMetrics.ms_v_charge_current->SetValue(0);
         }
       else
         {
-        StandardMetrics.ms_v_charge_current->SetValue(StandardMetrics.ms_v_bat_current->AsFloat());
+        //StandardMetrics.ms_v_charge_current->SetValue(StandardMetrics.ms_v_bat_current->AsFloat());
         }
       StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
       break;
@@ -570,6 +571,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
       break;
     case 0x390:
+    {
       // Gen 2 Charger
       //
       // When the data is valid, can_databuffer[6] is the J1772 maximum
@@ -603,23 +605,33 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       // byte 6 is 0x00, correctly indicating we're unplugged, so we use that
       // for unplugged detection.
       //
-      if (d[3] == 0xb3 ||
-        d[3] == 0x00 ||
-        d[3] == 0x03)
-        {
+      // d[3] appears to be analog voltage signal, whilst d[1] is charge current
+      //if (d[3] == 0xb3 ||
+      //  d[3] == 0x00 ||
+      //  d[3] == 0x03)
+      //  {
         // can_databuffer[6] is the J1772 pilot current, 0.5A per bit
         // TODO enum?
-        StandardMetrics.ms_v_charge_type->SetValue("type1");
-        float current_limit = (d[6]) / 2;
-        StandardMetrics.ms_v_charge_climit->SetValue(current_limit);
-        }
-
-      if (d[5] != 0) //set pilot/port based on charger state
+      float current_limit = (d[6]) / 2;
+      StandardMetrics.ms_v_charge_climit->SetValue(current_limit);
+      if (current_limit > 0)
         {
-        StandardMetrics.ms_v_charge_pilot->SetValue(true);
-        StandardMetrics.ms_v_door_chargeport->SetValue(true);
+        StandardMetrics.ms_v_charge_type->SetValue("type1");
         }
-
+      //d[3] ramps from 0 to 0xB3 (179) but can sit at 1 due to capacitance?? set >90 to ensure valid signal
+      //use to set pilot signal
+      if (d[3] > 90)
+        {
+          StandardMetrics.ms_v_charge_pilot->SetValue(true);
+          StandardMetrics.ms_v_door_chargeport->SetValue(true); //may be bit somewhere else from BCM for this??
+          StandardMetrics.ms_v_charge_current->SetValue(d[1]/2); //AC charger current
+        }
+      else
+        {
+          StandardMetrics.ms_v_charge_pilot->SetValue(false);
+          StandardMetrics.ms_v_door_chargeport->SetValue(false);
+        }
+      //  }
       switch (d[5])
         {
         case 0x80:
@@ -631,10 +643,14 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         case 0x88:
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_CHARGING);
           break;
+        case 0x90: //this state appears just before 0x88 and after evse removed
+          vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
+          break;
         case 0x98:
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_PLUGGED_IN_TIMER_WAIT);
           break;
         }
+    }
       break;
     case 0x54a:
     {
@@ -922,11 +938,14 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         // Maybe J1772 is connected
         // can_databuffer[2] is the J1772 maximum available current, 0 if we're not plugged in
         // TODO enum?
-        StandardMetrics.ms_v_charge_type->SetValue("type1");
         uint8_t current_limit = d[2] / 5;
         StandardMetrics.ms_v_charge_climit->SetValue(current_limit);
-        StandardMetrics.ms_v_charge_pilot->SetValue(current_limit != 0);
-        StandardMetrics.ms_v_door_chargeport->SetValue(current_limit != 0);
+        if (current_limit > 0 && current_limit <= 32)
+          {
+          StandardMetrics.ms_v_charge_type->SetValue("type1");
+          StandardMetrics.ms_v_charge_pilot->SetValue(true);
+          StandardMetrics.ms_v_door_chargeport->SetValue(true);
+          }
         }
 
       switch (d[4])
@@ -1075,7 +1094,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
        */
        // The two lock bits are 0x10 driver door and 0x08 other doors.
        // We should only say "locked" if both are locked.
-       StandardMetrics.ms_v_env_locked->SetValue( (d[2] & 0x10) == 0x10); //only check driver door
+       // change to only check driver door, on AZE0 0x08 not always 1 when locked
+       StandardMetrics.ms_v_env_locked->SetValue( (d[2] & 0x10) == 0x10);
 
       switch ((d[1]>>1) & 3)
         {
@@ -1151,14 +1171,14 @@ void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
       data[3] = 0x00;
       break;
     case UNLOCK_DOORS:
-      ESP_LOGI(TAG, "Unlook Doors");
+      ESP_LOGI(TAG, "Unlock Doors");
       data[0] = 0x11;
       data[1] = 0x00;
       data[2] = 0x00;
       data[3] = 0x00;
       break;
     case LOCK_DOORS:
-      ESP_LOGI(TAG, "Look Doors");
+      ESP_LOGI(TAG, "Lock Doors");
       data[0] = 0x60;
       data[1] = 0x80;
       data[2] = 0x00;
