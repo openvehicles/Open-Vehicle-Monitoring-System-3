@@ -126,7 +126,7 @@ The digital speedometer function replaces the AMPS display in the dashboard inst
 TPMS Option
 -----------
 
-Reading and writing TPMS wheel sensor IDs from/to the Baolong TPMS ECU is supported in v2.x Tesla Roadsters using the optional OVMS K-Line Expansion Board. You will need a v3.2 module (or earlier module with K-line pin connected), and an OVT1 vehicle cable (clearly labelled with "OVT1" on the cable).
+Reading and writing TPMS wheel sensor IDs from/to the Baolong TPMS ECU is supported in v2.x Tesla Roadsters using the optional OVMS K-Line Expansion Board. You will need a v3.2 module (or v3.1 module labelled on board as July 2018 or later, with K-line pin connected), and an OVT1 vehicle cable (clearly labelled with "OVT1" on the cable).
 
 The optional OVMS K-line Expansion Board should be configured with SW1 set to position #2 (LDO 5v), and S1 in to OFF position (away from the ON label).
 
