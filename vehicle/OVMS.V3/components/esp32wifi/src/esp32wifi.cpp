@@ -40,6 +40,7 @@ static const char *TAG = "esp32wifi";
 #include "ovms_peripherals.h"
 #include "ovms_events.h"
 #include "metrics_standard.h"
+#include "lwip/inet.h"
 
 const char* const esp32wifi_mode_names[] = {
   "Modem is off",
@@ -279,6 +280,24 @@ void wifi_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   me->OutputStatus(verbosity, writer);
   }
 
+void wifi_static_ip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+    esp32wifi *me = MyPeripherals->m_esp32wifi;
+    if (me == NULL)
+      {
+      writer->puts("Error: wifi peripheral could not be found");
+      return;
+      }
+    if (argc == 4)
+      {
+      writer->puts("Starting client dhcp for STA....");
+      me->SetSTAStaticIP(argv[0], argv[1], argv[2], true);
+      return;
+      }
+    writer->puts("Setting static ip, sn, gw details for STA....");
+    me->SetSTAStaticIP(argv[0], argv[1], argv[2]);
+  }
+
 class esp32wifiInit
     {
     public: esp32wifiInit();
@@ -303,6 +322,10 @@ esp32wifiInit::esp32wifiInit()
     "<apssid> [<stassid>] [<stabssid>]\n"
     "Omit <stassid> or pass empty string to activate scanning mode.\n"
     "Set <stabssid> to a MAC address to bind to a specific access point.", 1, 3);
+  cmd_mode->RegisterCommand("ipstatic","Set static ip, subnet, gateway",wifi_static_ip,
+    "<ip> <sn> <gw> [dhcp]\n"
+    "Pass 1 to [dhcp] to reactivate client dhcp mode\n"
+    "Set static details if there is no dhcp server for client.", 3, 4);
   cmd_mode->RegisterCommand("off","Turn off wifi networking",wifi_mode_off);
   }
 
@@ -942,7 +965,7 @@ void esp32wifi::EventWifiStaConnected(std::string event, void* data)
 
   ESP_LOGI(TAG, "STA connected with SSID: %.*s, BSSID: " MACSTR ", Channel: %u, Auth: %s",
     conn.ssid_len, conn.ssid, MAC2STR(conn.bssid), conn.channel,
-    conn.authmode == WIFI_AUTH_OPEN ? "None" : 
+    conn.authmode == WIFI_AUTH_OPEN ? "None" :
     conn.authmode == WIFI_AUTH_WEP ? "WEP" :
     conn.authmode == WIFI_AUTH_WPA_PSK ? "WPA" :
     conn.authmode == WIFI_AUTH_WPA2_PSK ? "WPA2" :
@@ -1225,5 +1248,43 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
       {
       writer->printf("  Stations: unknown\n");
       }
+    }
+  }
+  void esp32wifi::SetSTAStaticIP(std::string ip, std::string sn, std::string gw, bool stadhcp)
+  {
+  if (m_mode !=  ESP32WIFI_MODE_AP && !stadhcp)
+    { //only set static details if in client mode
+    memset(&m_ip_static_sta,0,sizeof(m_ip_static_sta));
+    memset(&m_dns_static_sta,0,sizeof(m_dns_static_sta));
+    inet_aton(ip.c_str(), &m_ip_static_sta.ip);
+    inet_aton(gw.c_str(), &m_ip_static_sta.gw);
+    inet_aton(sn.c_str(), &m_ip_static_sta.netmask);
+
+    esp_err_t err;
+    err = tcpip_adapter_dhcpc_stop(TCPIP_ADAPTER_IF_STA);
+    if (err != ESP_OK)
+      {
+      ESP_LOGE(TAG, "DHCP: failed stopping DHCP server; error=%d", err);
+      }
+    err = tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_STA, &m_ip_static_sta);
+    if (err != ESP_OK)
+      {
+      ESP_LOGE(TAG, "TCPIP: failed setting static ip details, restarting dhcp; error=%d", err);
+      tcpip_adapter_dhcpc_start(TCPIP_ADAPTER_IF_STA);
+      }
+    else
+      {
+      inet_aton(gw.c_str(), &m_dns_static_sta.ip);
+      err = tcpip_adapter_set_dns_info(TCPIP_ADAPTER_IF_STA,TCPIP_ADAPTER_DNS_MAIN, &m_dns_static_sta);
+      if (err != ESP_OK)
+        {
+        ESP_LOGE(TAG, "TCPIP: failed setting static dns details; error=%d", err);
+        }
+      tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA,&m_ip_info_sta);
+      }
+    }
+  else
+    {
+    tcpip_adapter_dhcpc_start(TCPIP_ADAPTER_IF_STA);
     }
   }
