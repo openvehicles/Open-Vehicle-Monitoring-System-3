@@ -403,7 +403,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     OvmsMetricInt           *m_bms_error;         // 0x700[1] bits 0-4
     OvmsMetricBitset<16>    *m_bms_balancing;     // 0x700[5,6]
     OvmsMetricFloat         *m_bms_temp;          // internal BMS temperature
-    #define BMS_TEMP_ALERT  75                    // alert threshold
+    #define BMS_TEMP_ALERT  85                    // alert threshold
     
     battery_pack twizy_batt[BATT_PACKS];
     battery_cmod twizy_cmod[BATT_CMODS];
