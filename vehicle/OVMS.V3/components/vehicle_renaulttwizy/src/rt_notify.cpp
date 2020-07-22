@@ -68,6 +68,17 @@ void OvmsVehicleRenaultTwizy::DoNotify()
     }
   }
 
+  // Send BMS alert?
+  if (which & SEND_BMSAlert) {
+    MyNotify.NotifyStringf("alert", "bms.status",
+      "BMS Alert:\nState1: %d (0x%x)\nState2: %d (0x%x)\nError: %d (0x%x)\nTemp: %d °C",
+      m_bms_state1->AsInt(), m_bms_state1->AsInt(),
+      m_bms_state2->AsInt(), m_bms_state2->AsInt(),
+      m_bms_error->AsInt(), m_bms_error->AsInt(),
+      m_bms_temp->AsInt());
+    twizy_notifications &= ~SEND_BMSAlert;
+  }
+
   // Send sufficient charge notifications?
   if (which & SEND_SuffCharge) {
     StringWriter buf(200);
@@ -200,9 +211,9 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandStat(
   }
 
   // Estimated + Ideal Range:
-  const char* range_est = StdMetrics.ms_v_bat_range_est->AsString("?", rangeUnit, 0).c_str();
-  const char* range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("?", rangeUnit, 0).c_str();
-  writer->printf("Range: %s - %s\n", range_est, range_ideal);
+  const std::string range_est = StdMetrics.ms_v_bat_range_est->AsString("?", rangeUnit, 0);
+  const std::string range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("?", rangeUnit, 0);
+  writer->printf("Range: %s - %s\n", range_est.c_str(), range_ideal.c_str());
 
   // SOC + min/max:
   writer->printf("SOC: %s (%s..%s)\n",
@@ -211,9 +222,9 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandStat(
     (char*) m_batt_use_soc_max->AsUnitString("-", Native, 1).c_str());
 
   // ODOMETER:
-  const char* odometer = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
-  if (*odometer != '-')
-    writer->printf("ODO: %s\n", odometer);
+  const std::string odometer = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1);
+  if (odometer != "-")
+    writer->printf("ODO: %s\n", odometer.c_str());
 
   // BATTERY CAPACITY:
   if (cfg_bat_cap_actual_prc > 0)

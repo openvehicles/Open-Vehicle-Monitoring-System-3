@@ -46,7 +46,7 @@ static IRAM_ATTR void MCP2515_isr(void *pvParameters)
   me->m_status.interrupts++;
 
   // we don't know the IRQ source and querying by SPI is too slow for an ISR,
-  // so we let AsynchronousInterruptHandler() figure out what to do. 
+  // so we let AsynchronousInterruptHandler() figure out what to do.
   CAN_queue_msg_t msg = {};
   msg.type = CAN_asyncinterrupthandler;
   msg.body.bus = me;
@@ -123,8 +123,8 @@ esp_err_t mcp2515::WriteRegAndVerify( uint8_t reg, uint8_t value, uint8_t read_b
 
   WriteReg( reg, value );
 
-  // verify that register is actually changed by reading it back. 
-  do 
+  // verify that register is actually changed by reading it back.
+  do
     {
     vTaskDelay(10 / portTICK_PERIOD_MS);
 
@@ -134,7 +134,7 @@ esp_err_t mcp2515::WriteRegAndVerify( uint8_t reg, uint8_t value, uint8_t read_b
     timeout += 10;
     } while ( (rcvbuf[0] != value) && (timeout < MCP2515_TIMEOUT) );
 
-  if (timeout >= MCP2515_TIMEOUT) 
+  if (timeout >= MCP2515_TIMEOUT)
     {
     ESP_LOGE(TAG, "%s: Could not set register (0x%02x to val 0x%02x)", this->GetName(), reg, value);
     return ESP_FAIL;
@@ -176,7 +176,7 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
     case CAN_SPEED_33KBPS:
       // Recommended SWCAN settings according to GMLAN specs (GMW3089): SJW=2 and Sample Point = 86,67%
       cnf1=0x4f; // SJW=2, BRP=15
-      cnf2=0xad; // BTLMODE=1, SAM=0,  PHSEG1=5 (6 Tq), PRSEG=5 (6 Tq) 
+      cnf2=0xad; // BTLMODE=1, SAM=0,  PHSEG1=5 (6 Tq), PRSEG=5 (6 Tq)
       cnf3=0x81; // SOF=1, WAKFIL=0, PHSEG2=1 (2 tQ)
       break;
     case CAN_SPEED_83KBPS:
@@ -198,7 +198,7 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
       cnf1=0x00; cnf2=0xd0; cnf3=0x82;
       break;
     }
-  m_spibus->spi_cmd(m_spi, buf, 0, 5, CMD_WRITE, REG_CNF3, cnf3, cnf2, cnf1); 
+  m_spibus->spi_cmd(m_spi, buf, 0, 5, CMD_WRITE, REG_CNF3, cnf3, cnf2, cnf1);
 
   // Active/Listen Mode
   uint8_t ret;
@@ -230,7 +230,7 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
   }
 
 
-esp_err_t mcp2515::ChangeMode( uint8_t mode ) 
+esp_err_t mcp2515::ChangeMode( uint8_t mode )
   {
   uint8_t buf[16];
   uint8_t * rcvbuf;
@@ -241,7 +241,7 @@ esp_err_t mcp2515::ChangeMode( uint8_t mode )
   m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, REG_CANCTRL, 0b11100000, mode);
 
   // verify that mode is changed by polling CANSTAT register
-  do 
+  do
     {
     vTaskDelay(20 / portTICK_PERIOD_MS);
 
@@ -251,7 +251,7 @@ esp_err_t mcp2515::ChangeMode( uint8_t mode )
 
     } while ( ((rcvbuf[0] & 0b11100000) != mode) && (timeout < MCP2515_TIMEOUT) );
 
-  if (timeout >= MCP2515_TIMEOUT) 
+  if (timeout >= MCP2515_TIMEOUT)
     {
     ESP_LOGE(TAG, "%s: Could not change mode to 0x%02x", this->GetName(), mode);
     return ESP_FAIL;
@@ -282,7 +282,7 @@ esp_err_t mcp2515::Stop()
   return ESP_OK;
   }
 
-esp_err_t mcp2515::ViewRegisters() 
+esp_err_t mcp2515::ViewRegisters()
   {
   uint8_t buf[16];
   uint8_t cnf[3];

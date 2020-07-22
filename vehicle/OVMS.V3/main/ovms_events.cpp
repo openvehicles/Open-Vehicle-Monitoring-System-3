@@ -324,8 +324,9 @@ static void CheckQueueOverflow(const char* from, char* event)
     {
     // We've dropped a potentially important event, system is instable now.
     // As the event queue is full, a normal reboot is no option, so…
-    ESP_LOGE(TAG, "%s: lost important event => aborting in 5 seconds", from);
-    vTaskDelay(pdMS_TO_TICKS(5000)); // give log task some time to write to disk
+    ESP_LOGE(TAG, "%s: lost important event => aborting", from);
+    MyCommandApp.CloseLogfile();
+    vTaskDelay(pdMS_TO_TICKS(100));
     abort();
     }
   }

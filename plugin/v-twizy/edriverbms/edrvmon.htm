@@ -1,0 +1,213 @@
+<!--
+  Web UI page plugin:
+    eDriver BMS Monitor
+    Version 1.0  Michael Balzer <dexter@dexters-web.de>
+  
+  Dependencies:
+    - none
+  
+  Installation:
+    - Type:    Page
+    - Page:    /usr/edrvmon
+    - Label:   eDriver BMS
+    - Menu:    Vehicle
+    - Auth:    Cookie
+-->
+
+<style>
+td i {
+  font-style: normal;
+}
+td i.danger {
+  color: red;
+  font-weight: bold;
+}
+td i.warning {
+  color: orange;
+}
+td i.balance {
+  color: cornflowerblue;
+  font-weight: bold;
+}
+</style>
+
+
+<div class="panel panel-primary panel-single receiver" id="edrvmon">
+  <div class="panel-heading">eDriver BMS Monitor</div>
+  <div class="panel-body">
+    <div class="row">
+      <div class="col-sm-5">
+        <table id="tstate" class="table table-striped table-bordered table-hover" style="width:100%" />
+        <table id="tcmods" class="table table-striped table-bordered table-hover" style="width:100%" />
+      </div>
+      <div class="col-sm-7">
+        <table id="tcells" class="table table-striped table-bordered table-hover" style="width:100%" />
+      </div>
+    </div>
+  </div>
+  <div class="panel-footer">
+    <button type="button" class="btn btn-default" data-target="#cmdres" data-cmd="bms reset">Clear Alerts</button>
+    <samp class="samp-inline" id="cmdres"></samp>
+  </div>
+</div>
+
+
+<script>
+(function(){
+
+  // Alert thresholds:
+  const bmsTempAlert = 85;
+
+  // Code translations:
+  var statusName = {
+    0: "OFF",
+    1: "BMS INIT",
+    2: "TRANSITION",
+    3: "TRANSITION2",
+    4: "CHARGING",
+    5: "DRIVING",
+    6: "CHARGING END1",
+    7: "CHARGING END2",
+    8: "BMS CONFIG",
+    80: "BOOTLOADER READY",
+    81: "BOOTLOADER FLASHING",
+  };
+  var errorName = {
+    0: "ALL OK",
+    1: "EEPROM ERROR",
+    10: "INTERLOCK ERROR",
+    11: "INTERNAL ERROR",
+    12: "CURRENT SENSOR ERROR",
+  };
+  var auxstateName = {
+    0: "OFF",
+    1: "ON",
+  };
+  var alertName = {
+    0: '',
+    1: '<i class="warning">❓</i>',
+    2: '<i class="danger">⚠</i>',
+  };
+
+  function codeName(map, code) {
+    if (code == null) return "";
+    else if (map[code] != null) return map[code];
+    else return "Code " + code;
+  }
+
+  var $tstate, $tcmods, $tcells;
+
+  // Init tables:
+  $('#tstate').table({
+    responsive: false,
+    paging: false,
+    searching: false,
+    info: false,
+    ordering: false,
+    autoWidth: false,
+    columns: [
+      { title: "Name", className: "dt-body-left", width: "40%" },
+      { title: "Value", className: "dt-body-left", width: "60%" },
+    ],
+    rowId: 0,
+    initComplete: function(settings) {
+      $tstate = this.api();
+      $('#edrvmon').trigger('msg:metrics', metrics);
+    },
+  });
+
+  $('#tcmods').table({
+    responsive: false,
+    paging: false,
+    searching: false,
+    info: false,
+    autoWidth: false,
+    columns: [
+      { title: "#", className: "dt-body-center", width: "10%" },
+      { title: "Temp", className: "dt-body-right", width: "40%" },
+      { title: "Dev", className: "dt-body-right", width: "40%" },
+      { title: "Alrt", className: "dt-body-center", width: "10%" },
+    ],
+    rowId: 0,
+    initComplete: function(settings) {
+      $tcmods = this.api();
+      $('#edrvmon').trigger('msg:metrics', metrics);
+    },
+  });
+
+  $('#tcells').table({
+    responsive: true,
+    paging: false,
+    searching: false,
+    info: false,
+    autoWidth: false,
+    columns: [
+      { title: "#", className: "dt-body-center", width: "10%" },
+      { title: "Volt", className: "dt-body-right", width: "35%" },
+      { title: "Bal", className: "dt-body-center", width: "10%" },
+      { title: "Dev", className: "dt-body-right", width: "35%" },
+      { title: "Alrt", className: "dt-body-center", width: "10%" },
+    ],
+    rowId: 0,
+    initComplete: function(settings) {
+      $tcells = this.api();
+      $('#edrvmon').trigger('msg:metrics', metrics);
+    },
+  });
+
+  // Receiver event handling:
+  $('#edrvmon').on('msg:metrics', function(ev, upd) {
+    
+    var updkeys = Object.keys(upd).join();
+    
+    if ($tstate && /(xrt\.bms\.|v\.b\.(soc|voltage|current|coulomb|energy))/.test(updkeys)) {
+      var errorAlert = (metrics['xrt.bms.error'] > 0) ? ' '+alertName[2] : '';
+      var tempAlert = (metrics['xrt.bms.temp'] >= bmsTempAlert) ? ' '+alertName[2] : '';
+      var dstate = [
+        [ 'Status', codeName(statusName, metrics['xrt.bms.state1']) ],
+        [ 'Error', codeName(errorName, metrics['xrt.bms.error'])+errorAlert ],
+        [ 'Temperature', metrics['xrt.bms.temp']+' °C'+tempAlert ],
+        [ 'AUX Relay', codeName(auxstateName, metrics['xrt.bms.state2']) ],
+        [ 'SOC', Number(metrics['v.b.soc']).toFixed(1)+' %' ],
+        [ 'Voltage', Number(metrics['v.b.voltage']).toFixed(1)+' V' ],
+        [ 'Current', Number(metrics['v.b.current']).toFixed(1)+' A' ],
+        [ 'Coulomb used', Number(metrics['v.b.coulomb.used']).toFixed(2)+' Ah' ],
+        [ 'Coulomb recd', Number(metrics['v.b.coulomb.recd']).toFixed(2)+' Ah' ],
+        [ 'Energy used', Number(metrics['v.b.energy.used']).toFixed(2)+' kWh' ],
+        [ 'Energy recd', Number(metrics['v.b.energy.recd']).toFixed(2)+' kWh' ],
+      ];
+      $tstate.clear().rows.add(dstate).draw();
+    }
+
+    if ($tcmods && /v\.b\.c\.temp/.test(updkeys)) {
+      var dcmods = [];
+      for (var i = 0; i < metrics['v.b.c.temp'].length; i++) {
+        var row = [ i+1,
+          Number((metrics['v.b.c.temp']||[])[i]).toFixed(0)+' °C',
+          Number((metrics['v.b.c.temp.dev.max']||[])[i]).toFixed(1)+' °C',
+          codeName(alertName, (metrics['v.b.c.temp.alert']||[])[i]),
+        ];
+        dcmods.push(row);
+      }
+      $tcmods.clear().rows.add(dcmods).draw();
+    }
+
+    if ($tcells && /(xrt\.bms\.balancing|v\.b\.c\.voltage)/.test(updkeys)) {
+      var dcells = [];
+      var bal = metrics["xrt.bms.balancing"] || [];
+      for (var i = 0; i < metrics['v.b.c.voltage'].length; i++) {
+        var row = [ i+1,
+          Number((metrics['v.b.c.voltage']||[])[i]).toFixed(3)+' V',
+          bal.includes(i+1) ? '<i class="balance">⚖</i>' : '',
+          (Number((metrics['v.b.c.voltage.dev.max']||[])[i])*1000).toFixed(1)+' mV',
+          codeName(alertName, (metrics['v.b.c.voltage.alert']||[])[i]),
+        ];
+        dcells.push(row);
+      }
+      $tcells.clear().rows.add(dcells).draw();
+    }
+
+  });
+
+})();
+</script>

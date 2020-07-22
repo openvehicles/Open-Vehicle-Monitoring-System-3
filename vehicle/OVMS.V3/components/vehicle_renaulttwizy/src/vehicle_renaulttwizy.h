@@ -290,6 +290,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     #define SEND_ResetResult            (1<< 7)  // info/alert: RESET OK/FAIL
     #define SEND_SuffCharge             (1<< 8)  // info: sufficient SOC/range reached
     #define SEND_SDOLog                 (1<< 9)  // data: RT-ENG-SDO history entry
+    #define SEND_BMSAlert               (1<< 10) // alert: BMS error / temperature
     
   protected:
     unsigned int twizy_notifications = 0;
@@ -402,6 +403,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     OvmsMetricInt           *m_bms_error;         // 0x700[1] bits 0-4
     OvmsMetricBitset<16>    *m_bms_balancing;     // 0x700[5,6]
     OvmsMetricFloat         *m_bms_temp;          // internal BMS temperature
+    #define BMS_TEMP_ALERT  85                    // alert threshold
     
     battery_pack twizy_batt[BATT_PACKS];
     battery_cmod twizy_cmod[BATT_CMODS];

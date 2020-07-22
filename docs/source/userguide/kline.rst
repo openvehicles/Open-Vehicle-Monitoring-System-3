@@ -30,7 +30,7 @@ information on what your vehicle requires:
   For most vehicles, either #2 or #3 is used.
 
 The K-Line bus from the vehicle is connected via a vehicle specific cable. This connection is usually to pin #1 on the DB9 connector.
-In OVMS modules v3.2 and later (as well as some late v3.1 boards), this is internally connected to GEP7 (General Expansion Pin #7). This is necessary
+On OVMS modules v3.2 and later (as well as v3.1 boards labelled on board as July 2018 or later), this is internally connected to GEP7 (General Expansion Pin #7). This is necessary
 to bring the K-Line bus up to the internal expansion pins (for the K-Line Expansion Board to be able to reach it).
 
 If you have an earlier board, there is a relatively simply wiring modification that can be made to upgrade to this:

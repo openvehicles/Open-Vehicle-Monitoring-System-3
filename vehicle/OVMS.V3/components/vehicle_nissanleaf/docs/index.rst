@@ -86,7 +86,7 @@ Note: If you prefer not to unplug the Nissan TCU, all OVMS functions appart from
 2016-2017 models (AZE0)
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-**Remote climate control may not work on 2016-2017 cars.** This is because in 2016 Nissan moved the TCU from the EV CAN bus to the CAR CAN bus.
+**Remote climate control will only work when plugged in and actively charging on 2016-2017 models.** This is because in 2016 Nissan moved the TCU from the EV CAN bus to the CAR CAN bus.
 
 Set the model year as follows and if necessary configure 30 kWh model:
 
