@@ -75,7 +75,15 @@ class esp32wifi : public pcp, public InternalRamAllocated
     std::string GetAPSSID();
     void UpdateNetMetrics();
     void AdjustTaskPriority();
+<<<<<<< Updated upstream
     void SetSTAStaticIP(std::string ip, std::string sn, std::string gw, bool stadhcp=false);
+=======
+<<<<<<< Updated upstream
+=======
+    void StartDhcpClient();
+    void SetSTAStaticIP(std::string ip, std::string sn, std::string gw);
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 
   public:
     void EventWifiStaState(std::string event, void* data);
