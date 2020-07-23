@@ -11,3 +11,4 @@
 9652894,OVMS v3.1 3G Optional Modem Module (US Edition)
 9658635,Kia Soul OBD-II to DB9 Data Cable for OVMS
 9665972,OVMS Data Cable for Early Teslas
+9728447,OVMS K-line Option Expansion Board Module
