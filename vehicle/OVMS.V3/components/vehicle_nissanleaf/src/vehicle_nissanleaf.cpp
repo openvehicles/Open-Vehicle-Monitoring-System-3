@@ -1079,10 +1079,10 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
       break;
     case 0x35d:
       //charge port open signal, have not found state signal use 0x390
-      if (!StandardMetrics.ms_v_door_chargeport->AsBool())
-        {
-        StandardMetrics.ms_v_door_chargeport->SetValue(d[5] & 0x08);
-        }
+      //if (!StandardMetrics.ms_v_door_chargeport->AsBool())
+      //  {
+      //  StandardMetrics.ms_v_door_chargeport->SetValue(d[5] & 0x08);
+      //  }
       break;
     case 0x60d:
       StandardMetrics.ms_v_door_trunk->SetValue(d[0] & 0x80);
