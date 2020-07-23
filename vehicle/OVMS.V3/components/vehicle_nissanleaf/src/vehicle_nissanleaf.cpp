@@ -191,7 +191,7 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_car_on(bool isOn)
     {
     // Log once that car is being turned off
     ESP_LOGI(TAG,"CAR IS OFF");
-    StandardMetrics.ms_v_env_awake->SetValue(false);
+    //StandardMetrics.ms_v_env_awake->SetValue(false);
     }
 
   // Always set this value to prevent it from going stale
@@ -623,7 +623,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       if (d[3] > 90)
         {
           StandardMetrics.ms_v_charge_pilot->SetValue(true);
-          StandardMetrics.ms_v_door_chargeport->SetValue(true); //may be bit somewhere else from BCM for this??
+          StandardMetrics.ms_v_door_chargeport->SetValue(true); //see 0x35d, can't use as only open signal
           StandardMetrics.ms_v_charge_current->SetValue(d[1]/2); //AC charger current
         }
       else
@@ -944,7 +944,6 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           {
           StandardMetrics.ms_v_charge_type->SetValue("type1");
           StandardMetrics.ms_v_charge_pilot->SetValue(true);
-          StandardMetrics.ms_v_door_chargeport->SetValue(true);
           }
         }
 
@@ -1078,6 +1077,13 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_pos_odometer->SetValue(d[1] << 16 | d[2] << 8 | d[3], m_odometer_units);
         }
       break;
+    case 0x35d:
+      //charge port open signal, have not found state signal use 0x390
+      //if (!StandardMetrics.ms_v_door_chargeport->AsBool())
+      //  {
+      //  StandardMetrics.ms_v_door_chargeport->SetValue(d[5] & 0x08);
+      //  }
+      break;
     case 0x60d:
       StandardMetrics.ms_v_door_trunk->SetValue(d[0] & 0x80);
       StandardMetrics.ms_v_door_rr->SetValue(d[0] & 0x40);
@@ -1095,20 +1101,24 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
        // The two lock bits are 0x10 driver door and 0x08 other doors.
        // We should only say "locked" if both are locked.
        // change to only check driver door, on AZE0 0x08 not always 1 when locked
-       StandardMetrics.ms_v_env_locked->SetValue( (d[2] & 0x10) == 0x10);
+      StandardMetrics.ms_v_env_locked->SetValue((d[2] & 0x10) == 0x10);
 
       switch ((d[1]>>1) & 3)
         {
         case 0: // off
-          //StandardMetrics.ms_v_env_awake->SetValue(false);
+          vehicle_nissanleaf_car_on(false);
         case 1: // accessory
+          //vehicle_nissanleaf_car_on(false);
           StandardMetrics.ms_v_env_awake->SetValue(true);
         case 2: // on (not ready to drive)
           //vehicle_nissanleaf_car_on(false);
           StandardMetrics.ms_v_env_awake->SetValue(true);
-        case 3: // ready to drive
-          vehicle_nissanleaf_car_on(true);
+        case 3: // ready to drive, is triggered on unlock
           StandardMetrics.ms_v_env_awake->SetValue(true);
+          if (StandardMetrics.ms_v_env_footbrake->AsFloat()>0) //check footbrake to avoid false positive
+          {
+          vehicle_nissanleaf_car_on(true);
+          }
         }
 
       break;
@@ -1238,18 +1248,6 @@ void OvmsVehicleNissanLeaf::CcDisableTimer()
  */
 void OvmsVehicleNissanLeaf::Ticker1(uint32_t ticker)
   {
-  // FIXME
-  // detecting that on is stale and therefor should turn off probably shouldn't
-  // be done like this
-  // perhaps there should be a car on-off state tracker and event generator in
-  // the core framework?
-  // perhaps interested code should be able to subscribe to "onChange" and
-  // "onStale" events for each metric?
-  //if (StandardMetrics.ms_v_env_awake->IsStale())
-  //  {
-  //  StandardMetrics.ms_v_env_awake->SetValue(false);
-  //  }
-
   // Update any derived values
   // Energy used varies a lot during driving
   HandleEnergy();
@@ -1264,6 +1262,17 @@ void OvmsVehicleNissanLeaf::Ticker10(uint32_t ticker)
     // Range and Charging both mainly depend on SOC, which will change 1% in less than a minute when fast-charging.
     HandleRange();
     HandleCharging();
+    // FIXME
+    // detecting that on is stale and therefor should turn off probably shouldn't
+    // be done like this
+    // perhaps there should be a car on-off state tracker and event generator in
+    // the core framework?
+    // perhaps interested code should be able to subscribe to "onChange" and
+    // "onStale" events for each metric?
+    if (StandardMetrics.ms_v_env_awake->IsStale())
+      {
+      StandardMetrics.ms_v_env_awake->SetValue(false);
+      }
   }
 
 /**
