@@ -28,6 +28,9 @@
 ; THE SOFTWARE.
 */
 
+#include "ovms_log.h"
+static const char *TAG = "mutex";
+
 #include "ovms_mutex.h"
 
 /**
@@ -40,6 +43,18 @@ OvmsMutex::OvmsMutex()
 
 OvmsMutex::~OvmsMutex()
   {
+  // Note: no concurrency protection here to keep this lightweight.
+  //  If you need some, implement on application level.
+  TaskHandle_t holder = xSemaphoreGetMutexHolder(m_mutex);
+  if (holder == xTaskGetCurrentTaskHandle())
+    {
+    Unlock();
+    }
+  else if (holder)
+    {
+    ESP_LOGE(TAG, "attempt to delete an OvmsMutex still locked by %p => abort", holder);
+    abort();
+    }
   vSemaphoreDelete(m_mutex);
   }
 
@@ -79,6 +94,21 @@ OvmsRecMutex::OvmsRecMutex()
 
 OvmsRecMutex::~OvmsRecMutex()
   {
+  // Note: no concurrency protection here to keep this lightweight.
+  //  If you need some, implement on application level.
+  TaskHandle_t holder, me = xTaskGetCurrentTaskHandle();
+  while ((holder = xSemaphoreGetMutexHolder(m_mutex)) != NULL)
+    {
+    if (holder == me)
+      {
+      Unlock();
+      }
+    else
+      {
+      ESP_LOGE(TAG, "attempt to delete an OvmsRecMutex still locked by %p => abort", holder);
+      abort();
+      }
+    }
   vSemaphoreDelete(m_mutex);
   }
 
