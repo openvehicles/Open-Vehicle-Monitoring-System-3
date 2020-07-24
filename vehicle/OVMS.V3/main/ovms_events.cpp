@@ -175,7 +175,7 @@ void OvmsEvents::EventTask()
   esp_task_wdt_add(NULL); // WATCHDOG is active for this task
   while(1)
     {
-    if (xQueueReceive(m_taskqueue, &msg, (portTickType)portMAX_DELAY)==pdTRUE)
+    if (xQueueReceive(m_taskqueue, &msg, pdMS_TO_TICKS(5000)) == pdTRUE)
       {
       esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
       switch(msg.type)
@@ -183,20 +183,30 @@ void OvmsEvents::EventTask()
         case EVENT_none:
           break;
         case EVENT_signal:
+          m_current_event = msg.body.signal.event;
           HandleQueueSignalEvent(&msg);
+          esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
+          m_current_event.clear();
           break;
         default:
           break;
         }
       }
-    esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
+    else
+      {
+      // timeout on xQueueReceive means:
+      ESP_LOGE(TAG, "EventTask: [QueueTimeout] timer service / ticker timer has died => aborting");
+      m_current_event = "[QueueTimeout]";
+      m_current_started = monotonictime - 5;
+      MyCommandApp.CloseLogfile();
+      vTaskDelay(pdMS_TO_TICKS(100));
+      abort();
+      }
     }
   }
 
 void OvmsEvents::HandleQueueSignalEvent(event_queue_t* msg)
   {
-  m_current_event = std::string(msg->body.signal.event);
-
   // Log everything but the excessively verbose ticker signals
   if (m_current_event.compare(0,7,"ticker.") != 0)
     {
@@ -241,7 +251,6 @@ void OvmsEvents::HandleQueueSignalEvent(event_queue_t* msg)
   m_current_started = monotonictime;
   MyScripts.EventScript(m_current_event, msg->body.signal.data);
 
-  m_current_event.clear();
   FreeQueueSignalEvent(msg);
   }
 
