@@ -290,8 +290,6 @@ void wifi_dhcp_on(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   me->StartDhcpClient();
   }
 
-<<<<<<< Updated upstream
-=======
 void wifi_static_ip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
     esp32wifi *me = MyPeripherals->m_esp32wifi;
@@ -304,28 +302,6 @@ void wifi_static_ip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     me->SetSTAStaticIP(argv[0], argv[1], argv[2]);
   }
 
-<<<<<<< Updated upstream
-void wifi_static_ip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-    esp32wifi *me = MyPeripherals->m_esp32wifi;
-    if (me == NULL)
-      {
-      writer->puts("Error: wifi peripheral could not be found");
-      return;
-      }
-    if (argc == 4)
-      {
-      writer->puts("Starting client dhcp for STA....");
-      me->SetSTAStaticIP(argv[0], argv[1], argv[2], true);
-      return;
-      }
-    writer->puts("Setting static ip, sn, gw details for STA....");
-    me->SetSTAStaticIP(argv[0], argv[1], argv[2]);
-  }
-
-=======
->>>>>>> Stashed changes
->>>>>>> Stashed changes
 class esp32wifiInit
     {
     public: esp32wifiInit();
@@ -350,20 +326,10 @@ esp32wifiInit::esp32wifiInit()
     "<apssid> [<stassid>] [<stabssid>]\n"
     "Omit <stassid> or pass empty string to activate scanning mode.\n"
     "Set <stabssid> to a MAC address to bind to a specific access point.", 1, 3);
-<<<<<<< Updated upstream
-  cmd_mode->RegisterCommand("ipstatic","Set static ip, subnet, gateway",wifi_static_ip,
-    "<ip> <sn> <gw> [dhcp]\n"
-    "Pass 1 to [dhcp] to reactivate client dhcp mode\n"
-    "Set static details if there is no dhcp server for client.", 3, 4);
-=======
-<<<<<<< Updated upstream
-=======
   cmd_mode->RegisterCommand("ipstatic","Set static ip, subnet, gateway",wifi_static_ip,
     "<ip> <sn> <gw>\n"
     "Set static details if there is no dhcp server for client.", 3, 3);
   cmd_mode->RegisterCommand("dhcpc","Turn on DHCP client",wifi_dhcp_on);
->>>>>>> Stashed changes
->>>>>>> Stashed changes
   cmd_mode->RegisterCommand("off","Turn off wifi networking",wifi_mode_off);
   }
 
@@ -1288,13 +1254,7 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
       }
     }
   }
-<<<<<<< Updated upstream
-  void esp32wifi::SetSTAStaticIP(std::string ip, std::string sn, std::string gw, bool stadhcp)
-  {
-  if (m_mode !=  ESP32WIFI_MODE_AP && !stadhcp)
-=======
-<<<<<<< Updated upstream
-=======
+
   void esp32wifi::StartDhcpClient()
   {
   esp_err_t err;
@@ -1308,7 +1268,6 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
   void esp32wifi::SetSTAStaticIP(std::string ip, std::string sn, std::string gw)
   {
   if (m_mode ==  ESP32WIFI_MODE_CLIENT || m_mode ==  ESP32WIFI_MODE_APCLIENT)
->>>>>>> Stashed changes
     { //only set static details if in client mode
     memset(&m_ip_static_sta,0,sizeof(m_ip_static_sta));
     memset(&m_dns_static_sta,0,sizeof(m_dns_static_sta));
@@ -1339,12 +1298,4 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
       tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA,&m_ip_info_sta);
       }
     }
-  else
-    {
-    tcpip_adapter_dhcpc_start(TCPIP_ADAPTER_IF_STA);
-    }
   }
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
->>>>>>> Stashed changes
