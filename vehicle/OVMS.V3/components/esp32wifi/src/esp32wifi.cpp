@@ -299,7 +299,7 @@ void wifi_static_ip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
       return;
       }
     writer->puts("Setting static ip, sn, gw details for STA....");
-    me->SetSTAStaticIP(argv[0], argv[1], argv[2]);
+    me->SetSTAStaticIP();
   }
 
 class esp32wifiInit
@@ -327,8 +327,8 @@ esp32wifiInit::esp32wifiInit()
     "Omit <stassid> or pass empty string to activate scanning mode.\n"
     "Set <stabssid> to a MAC address to bind to a specific access point.", 1, 3);
   cmd_mode->RegisterCommand("ipstatic","Set static ip, subnet, gateway",wifi_static_ip,
-    "<ip> <sn> <gw>\n"
-    "Set static details if there is no dhcp server for client.", 3, 3);
+    "\nUse config set wifi.ssid \"<ssid>.ovms.staticip\" \"<ip>,<sn>,<gw>\"\n"
+    "To set static details before using this command.", 0, 0);
   cmd_mode->RegisterCommand("dhcpc","Turn on DHCP client",wifi_dhcp_on);
   cmd_mode->RegisterCommand("off","Turn off wifi networking",wifi_mode_off);
   }
@@ -682,7 +682,6 @@ void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appas
   m_wifi_sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
   m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
-
   ESP_ERROR_CHECK(esp_wifi_start());
   }
 
@@ -1203,6 +1202,11 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
       m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
       ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
       ESP_ERROR_CHECK(esp_wifi_connect());
+      std::string ipconfig = MyConfig.GetParamValue("wifi.ssid", ssid + ".ovms.staticip");
+      if (!ipconfig.empty())
+        {
+        SetSTAStaticIP();
+        }
       }
     }
 
@@ -1257,6 +1261,8 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
 
   void esp32wifi::StartDhcpClient()
   {
+    //clear static details and restart dhcp
+  MyConfig.SetParamValue("wifi.ssid", m_sta_ssid + ".ovms.staticip",NULL);
   esp_err_t err;
   err = tcpip_adapter_dhcpc_start(TCPIP_ADAPTER_IF_STA);
   if (err != ESP_OK)
@@ -1265,10 +1271,25 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
     }
   }
 
-  void esp32wifi::SetSTAStaticIP(std::string ip, std::string sn, std::string gw)
+  void esp32wifi::SetSTAStaticIP()
   {
   if (m_mode ==  ESP32WIFI_MODE_CLIENT || m_mode ==  ESP32WIFI_MODE_APCLIENT)
     { //only set static details if in client mode
+      // read static IP config:
+    std::string ipconfig = MyConfig.GetParamValue("wifi.ssid", m_sta_ssid + ".ovms.staticip");
+    if (ipconfig.empty())
+      {
+      ESP_LOGE(TAG, "TCPIP: no static ip details set");
+      return;
+      }
+    // parse static IP config, pattern "<ip>,<sn>,<gw>":
+    std::string ip, sn, gw;
+    std::istringstream sbuf(ipconfig);
+    std::getline(sbuf, ip, ',');
+    std::getline(sbuf, sn, ',');
+    std::getline(sbuf, gw, ',');
+    ESP_LOGI(TAG,"%s.ovms.staticip param set: %s",m_sta_ssid.c_str(),ipconfig.c_str());
+    ESP_LOGI(TAG,"STA config ip: %s, sn: %s, gw: %s",ip.c_str(), sn.c_str(), gw.c_str());
     memset(&m_ip_static_sta,0,sizeof(m_ip_static_sta));
     memset(&m_dns_static_sta,0,sizeof(m_dns_static_sta));
     inet_aton(ip.c_str(), &m_ip_static_sta.ip);
@@ -1280,22 +1301,22 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
     if (err != ESP_OK)
       {
       ESP_LOGE(TAG, "DHCP: failed stopping DHCP server; error=%d", err);
+      return;
       }
     err = tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_STA, &m_ip_static_sta);
     if (err != ESP_OK)
       {
       ESP_LOGE(TAG, "TCPIP: failed setting static ip details, restarting dhcp; error=%d", err);
       tcpip_adapter_dhcpc_start(TCPIP_ADAPTER_IF_STA);
+      return;
       }
-    else
+    inet_aton(gw.c_str(), &m_dns_static_sta.ip);
+    err = tcpip_adapter_set_dns_info(TCPIP_ADAPTER_IF_STA,TCPIP_ADAPTER_DNS_MAIN, &m_dns_static_sta);
+    if (err != ESP_OK)
       {
-      inet_aton(gw.c_str(), &m_dns_static_sta.ip);
-      err = tcpip_adapter_set_dns_info(TCPIP_ADAPTER_IF_STA,TCPIP_ADAPTER_DNS_MAIN, &m_dns_static_sta);
-      if (err != ESP_OK)
-        {
-        ESP_LOGE(TAG, "TCPIP: failed setting static dns details; error=%d", err);
-        }
-      tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA,&m_ip_info_sta);
+      ESP_LOGE(TAG, "TCPIP: failed setting static dns details; error=%d", err);
+      return;
       }
+    tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA,&m_ip_info_sta);
     }
   }
