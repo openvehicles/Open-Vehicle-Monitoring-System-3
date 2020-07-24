@@ -725,7 +725,7 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
   {
   OvmsMutexLock lock(&taskstatus_mutex);
   UBaseType_t num = uxTaskGetNumberOfTasks();
-  writer->printf("Number of Tasks =%3u%s    Stack:  Now   Max Total    Heap 32-bit SPIRAM C# PRI CPU%%\n", num,
+  writer->printf("Number of Tasks =%3u%s    Stack:  Now   Max Total    Heap 32-bit SPIRAM C# PRI CPU%% BPR/MH\n", num,
     num > MAX_TASKS ? ">max" : "    ");
   if (!allocate())
     {
@@ -773,11 +773,12 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
         uint32_t used = total - ((uint32_t)taskstatus[i].pxStackBase & 0xFFFF);
         int core = xTaskGetAffinity(taskstatus[i].xHandle);
         uint32_t runtime = taskstatus[i].ulRunTimeCounter - last_runtime[taskstatus[i].xTaskNumber];
-        writer->printf("%08X %4u %s %-15s %5u %5u %5u %7u%7u%7u  %c %3d %3.0f%%\n", taskstatus[i].xHandle,
+        writer->printf("%08X %4u %s %-15s %5u %5u %5u %7u%7u%7u  %c %3d %3.0f%% %3d/%2d\n", taskstatus[i].xHandle,
           taskstatus[i].xTaskNumber, states[taskstatus[i].eCurrentState], taskstatus[i].pcTaskName,
           used, total - taskstatus[i].usStackHighWaterMark, total, heaptotal, heap32bit, heapspi,
           (core == tskNO_AFFINITY) ? '*' : '0'+core, taskstatus[i].uxCurrentPriority,
-          diff_totalruntime ? ((float) runtime / diff_totalruntime * 100) : 0.0f);
+          diff_totalruntime ? ((float) runtime / diff_totalruntime * 100) : 0.0f,
+          taskstatus[i].uxBasePriority, taskstatus[i].uxMutexesHeld);
         if (showStack)
           {
           uint32_t* stack = (uint32_t*)(pxTaskGetStackStart(taskstatus[i].xHandle) + total);

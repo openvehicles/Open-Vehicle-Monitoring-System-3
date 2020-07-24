@@ -1599,15 +1599,20 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
   c.panel_start("primary", "Webserver configuration");
   c.form_start(p.uri);
 
-  c.input_checkbox("Enable file access", "enable_files", enable_files);
+  c.input_checkbox("Enable file access", "enable_files", enable_files,
+    "<p>If enabled, paths not handled by the webserver itself are mapped to files below the web root path.</p>"
+    "<p>Example: <code>&lt;img src=\"/icons/smiley.png\"&gt;</code> → file <code>/sd/icons/smiley.png</code>"
+    " (if root path is <code>/sd</code>)</p>");
   c.input_text("Root path", "docroot", docroot.c_str(), "Default: /sd");
   c.input_checkbox("Enable directory listings", "enable_dirlist", enable_dirlist);
 
   c.input_checkbox("Enable global file auth", "auth_global", auth_global,
     "<p>If enabled, file access is globally protected by the admin password (if set).</p>"
-    "<p>Disabling allows public access to directories without an auth file.</p>");
-  c.input_text("Directory auth file", "auth_file", auth_file.c_str(), "Default: .htaccess",
-    "<p>Note: sub directories do not inherit the parent auth file.</p>");
+    "<p>Disabling allows public access to directories without an auth file.</p>"
+    "<p>To protect a directory, you can e.g. copy the default auth file:"
+    " <code class=\"autoselect\">vfs cp /store/.htpasswd /sd/…/.htpasswd</code></p>");
+  c.input_text("Directory auth file", "auth_file", auth_file.c_str(), "Default: .htpasswd",
+    "<p>Note: sub directories do <u>not</u> inherit the parent auth file.</p>");
   c.input_text("Auth domain/realm", "auth_domain", auth_domain.c_str(), "Default: ovms");
 
   c.input_button("default", "Save");
