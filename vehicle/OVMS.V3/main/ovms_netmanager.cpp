@@ -44,6 +44,10 @@ static const char *TAG = "netmanager";
 #include "ovms_config.h"
 #include "ovms_module.h"
 
+#ifndef CONFIG_OVMS_NETMAN_TASK_PRIORITY
+#define CONFIG_OVMS_NETMAN_TASK_PRIORITY 5
+#endif
+
 OvmsNetManager MyNetManager __attribute__ ((init_priority (8999)));
 
 void network_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -713,6 +717,8 @@ static void MongooseRawTask(void *pvParameters)
 
 void OvmsNetManager::MongooseTask()
   {
+  int pri, lastpri = CONFIG_OVMS_NETMAN_TASK_PRIORITY;
+
   // Initialise the mongoose manager
   ESP_LOGD(TAG, "MongooseTask starting");
   mg_mgr_init(&m_mongoose_mgr, NULL);
@@ -723,8 +729,23 @@ void OvmsNetManager::MongooseTask()
   // Main event loop
   while (m_mongoose_running)
     {
-    mg_mgr_poll(&m_mongoose_mgr, 250);
+    // poll interfaces:
+    if (mg_mgr_poll(&m_mongoose_mgr, 250) == 0)
+      {
+      ESP_LOGD(TAG, "MongooseTask: no interfaces available => exit");
+      break;
+      }
+
+    // check for netmanager control jobs:
     ProcessJobs();
+
+    // Detect broken mutex priority inheritance:
+    // (may be removed if solved by esp-idf commit 22d636b7b0d6006e06b5b3cfddfbf6e2cf69b4b8)
+    if ((pri = uxTaskPriorityGet(NULL)) != lastpri)
+      {
+      ESP_LOGD(TAG, "MongooseTask: priority changed from %d to %d", lastpri, pri);
+      lastpri = pri;
+      }
     }
 
   m_mongoose_running = false;
@@ -757,7 +778,8 @@ void OvmsNetManager::StartMongooseTask()
       while (m_mongoose_task)
         vTaskDelay(pdMS_TO_TICKS(50));
       // start new task:
-      xTaskCreatePinnedToCore(MongooseRawTask, "OVMS NetMan", 8*1024, (void*)this, 5, &m_mongoose_task, CORE(1));
+      xTaskCreatePinnedToCore(MongooseRawTask, "OVMS NetMan", 8*1024, (void*)this,
+                              CONFIG_OVMS_NETMAN_TASK_PRIORITY, &m_mongoose_task, CORE(1));
       AddTaskToMap(m_mongoose_task);
       }
     }
