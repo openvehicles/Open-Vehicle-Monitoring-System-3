@@ -43,15 +43,23 @@ static const char *TAG = "v-nissanleaf";
 
 #define MAX_POLL_DATA_LEN 196
 
+enum poll_states
+  {
+  POLLSTATE_OFF,      //- car is off
+  POLLSTATE_ON,       //- car is on
+  POLLSTATE_RUNNING,  //- car is driving
+  POLLSTATE_CHARGING //- car is charging
+  };
+
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
   {
-    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, {  0,999,999 } }, // VIN [19]
-    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1203, {  0,999,999 } }, // QC [4]
-    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1205, {  0,999,999 } }, // L0/L1/L2 [4]
-    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 61, 61 } }, // bat [39/41]
-    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 67, 67 } }, // battery voltages [196]
-    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,307,307 } }, // battery temperatures [14]
-    { 0, 0, 0x00, 0x00, { 0, 0, 0 } }
+    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, {  0, 999, 999, 0 } }, // VIN [19]
+    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1203, {  0, 999, 999, 0 } }, // QC [4]
+    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1205, {  0, 999, 999, 0 } }, // L0/L1/L2 [4]
+    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 60, 60, 60 } }, // bat [39/41]
+    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 60, 60, 60 } }, // battery voltages [196]
+    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0, 300, 300, 300 } }, // battery temperatures [14]
+    { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 } }
   };
 
 void remoteCommandTimer(TimerHandle_t timer)
@@ -123,11 +131,12 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_climate_fan_only = MyMetrics.InitBool("xnl.cc.fan.only", SM_STALE_MIN, false);
   m_climate_remoteheat = MyMetrics.InitBool("xnl.cc.remoteheat", SM_STALE_MIN, false);
   m_climate_remotecool = MyMetrics.InitBool("xnl.cc.remotecool", SM_STALE_MIN, false);
+  MyMetrics.InitBool("v.e.on", SM_STALE_MIN, false);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
-  PollSetPidList(m_can2,obdii_polls);
-  PollSetState(0);
+  PollSetPidList(m_can1,obdii_polls);
+  PollSetState(POLLSTATE_OFF);
 
   MyConfig.RegisterParam("xnl", "Nissan Leaf", true, true);
   ConfigChanged(NULL);
@@ -180,7 +189,7 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_car_on(bool isOn)
     {
     // Log once that car is being turned on
     ESP_LOGI(TAG,"CAR IS ON");
-
+    PollSetState(POLLSTATE_ON);
     // Reset trip values
     StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
     StandardMetrics.ms_v_bat_energy_used->SetValue(0);
@@ -192,11 +201,12 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_car_on(bool isOn)
     // Log once that car is being turned off
     ESP_LOGI(TAG,"CAR IS OFF");
     //StandardMetrics.ms_v_env_awake->SetValue(false);
+    PollSetState(POLLSTATE_OFF);
     }
 
   // Always set this value to prevent it from going stale
   StandardMetrics.ms_v_env_on->SetValue(isOn);
-  PollSetState( (isOn) ? 1 : 0 );
+  //PollSetState( (isOn) ? 1 : 0 ); now based on vehicle states
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -494,6 +504,7 @@ void OvmsVehicleNissanLeaf::IncomingPollReply(canbus* bus, uint16_t type, uint16
 void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
+  StandardMetrics.ms_v_env_awake->SetValue(true);
 
   switch (p_frame->MsgID)
     {
@@ -560,7 +571,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
     case 0x284:
     {
       // certain CAN bus activity counts as state "awake"
-      StandardMetrics.ms_v_env_awake->SetValue(true);
+      //StandardMetrics.ms_v_env_awake->SetValue(true);
 
       uint16_t car_speed16 = d[4];
       car_speed16 = car_speed16 << 8;
@@ -642,6 +653,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           break;
         case 0x88:
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_CHARGING);
+          //switch to battery polling
+          PollSetState(POLLSTATE_CHARGING);
           break;
         case 0x90: //this state appears just before 0x88 and after evse removed
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
@@ -957,9 +970,13 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           break;
         case 0xb0: // Quick Charging
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_QUICK_CHARGING);
+          //switch to battery polling
+          PollSetState(POLLSTATE_CHARGING);
           break;
         case 0x60: // L2 Charging
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_CHARGING);
+          //switch to battery polling
+          PollSetState(POLLSTATE_CHARGING);
           break;
         case 0x40:
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_FINISHED);
@@ -981,6 +998,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
 void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
+  StandardMetrics.ms_v_env_awake->SetValue(true);
 
   switch (p_frame->MsgID)
     {
@@ -1028,10 +1046,12 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
           break;
         case 2: // Reverse
           StandardMetrics.ms_v_env_gear->SetValue(-1);
+          PollSetState(POLLSTATE_RUNNING);
           break;
         case 4: // Drive
         case 7: // Drive/B (ECO on some models)
           StandardMetrics.ms_v_env_gear->SetValue(1);
+          PollSetState(POLLSTATE_RUNNING);
           break;
         }
       break;
@@ -1109,12 +1129,12 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
           vehicle_nissanleaf_car_on(false);
         case 1: // accessory
           //vehicle_nissanleaf_car_on(false);
-          StandardMetrics.ms_v_env_awake->SetValue(true);
+          //StandardMetrics.ms_v_env_awake->SetValue(true);
         case 2: // on (not ready to drive)
           //vehicle_nissanleaf_car_on(false);
-          StandardMetrics.ms_v_env_awake->SetValue(true);
+          //StandardMetrics.ms_v_env_awake->SetValue(true);
         case 3: // ready to drive, is triggered on unlock
-          StandardMetrics.ms_v_env_awake->SetValue(true);
+          //StandardMetrics.ms_v_env_awake->SetValue(true);
           if (StandardMetrics.ms_v_env_footbrake->AsFloat()>0) //check footbrake to avoid false positive
           {
           vehicle_nissanleaf_car_on(true);
@@ -1446,11 +1466,8 @@ void OvmsVehicleNissanLeaf::HandleRange()
 // function sends that message even to Generation 1 cars which doesn't seem to
 // cause any problems.
 //
-
-OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::RemoteCommandHandler(RemoteCommand command)
+OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeup()
   {
-  ESP_LOGI(TAG, "RemoteCommandHandler");
-
   // Use GPIO to wake up GEN 1 Leaf with EV SYSTEM ACTIVATION REQUEST
   // TODO re-implement to support Gen 1 leaf
   //output_gpo3(TRUE);
@@ -1463,7 +1480,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::RemoteCommandHandler(Remot
   canbus* tcuBus = modelyear >= 2016 ? m_can2 : m_can1;
   unsigned char data = 0;
   tcuBus->WriteStandard(0x68c, 1, &data);
+  return Success;
+  }
 
+OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::RemoteCommandHandler(RemoteCommand command)
+  {
+  ESP_LOGI(TAG, "RemoteCommandHandler");
+  CommandWakeup();
   // The GEN 2 Nissan TCU module sends the command repeatedly, so we start
   // m_remoteCommandTimer (which calls RemoteCommandTimer()) to do this
   // EV SYSTEM ACTIVATION REQUEST is released in the timer too
