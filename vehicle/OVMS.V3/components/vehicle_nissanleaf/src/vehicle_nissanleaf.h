@@ -99,6 +99,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     vehicle_command_t CommandClimateControl(bool enable);
     vehicle_command_t CommandLock(const char* pin);
     vehicle_command_t CommandUnlock(const char* pin);
+    vehicle_command_t CommandWakeup();
     void RemoteCommandTimer();
     void CcDisableTimer();
 
