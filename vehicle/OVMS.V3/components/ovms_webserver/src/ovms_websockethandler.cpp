@@ -81,9 +81,11 @@ WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t slot, size_t modifi
 WebSocketHandler::~WebSocketHandler()
 {
   MyCommandApp.DeregisterConsole(this);
-  while (xQueueReceive(m_jobqueue, &m_job, 0) == pdTRUE)
-    ClearTxJob(m_job);
-  vQueueDelete(m_jobqueue);
+  if (m_jobqueue) {
+    while (xQueueReceive(m_jobqueue, &m_job, 0) == pdTRUE)
+      ClearTxJob(m_job);
+    vQueueDelete(m_jobqueue);
+  }
 }
 
 
@@ -278,6 +280,7 @@ void WebSocketHandler::ClearTxJob(WebSocketTxJob &job)
 
 bool WebSocketHandler::AddTxJob(WebSocketTxJob job, bool init_tx)
 {
+  if (!m_jobqueue) return false;
   if (xQueueSend(m_jobqueue, &job, 0) != pdTRUE) {
     m_jobqueue_overflow_status |= 1;
     m_jobqueue_overflow_dropcnt++;
@@ -294,6 +297,7 @@ bool WebSocketHandler::AddTxJob(WebSocketTxJob job, bool init_tx)
 
 bool WebSocketHandler::GetNextTxJob()
 {
+  if (!m_jobqueue) return false;
   if (xQueueReceive(m_jobqueue, &m_job, 0) == pdTRUE) {
     // init new job state:
     m_sent = m_ack = 0;
@@ -344,7 +348,8 @@ int WebSocketHandler::HandleEvent(int ev, void* p)
     }
     
     case MG_EV_POLL:
-      ESP_EARLY_LOGV(TAG, "WebSocketHandler[%p] EV_POLL qlen=%d jobtype=%d sent=%d ack=%d", m_nc, uxQueueMessagesWaiting(m_jobqueue), m_job.type, m_sent, m_ack);
+      ESP_EARLY_LOGV(TAG, "WebSocketHandler[%p] EV_POLL qlen=%d jobtype=%d sent=%d ack=%d", m_nc,
+        m_jobqueue ? uxQueueMessagesWaiting(m_jobqueue) : -1, m_job.type, m_sent, m_ack);
       // Check for new transmission:
       InitTx();
       // Log queue overflows & resolves:
@@ -363,7 +368,8 @@ int WebSocketHandler::HandleEvent(int ev, void* p)
     
     case MG_EV_SEND:
       // last transmission has finished
-      ESP_EARLY_LOGV(TAG, "WebSocketHandler[%p] EV_SEND qlen=%d jobtype=%d sent=%d ack=%d", m_nc, uxQueueMessagesWaiting(m_jobqueue), m_job.type, m_sent, m_ack);
+      ESP_EARLY_LOGV(TAG, "WebSocketHandler[%p] EV_SEND qlen=%d jobtype=%d sent=%d ack=%d", m_nc,
+        m_jobqueue ? uxQueueMessagesWaiting(m_jobqueue) : -1, m_job.type, m_sent, m_ack);
       ContinueTx();
       break;
     
