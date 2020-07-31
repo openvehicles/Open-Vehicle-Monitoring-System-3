@@ -100,9 +100,21 @@ Development notes
 
 The code is NOT working at the moment! Last working code is from 04/11/20.
 
-We hope to get our car delivered on 7/7/20. After that I can comme back to serious developing and testing.
+Our car has been delivered on 7/7/20. Now I can comme back to serious developing and testing.
+
+More to come soon ...
 
 Till then, this code is just here for anyone who is interested in the development process.
+
+We splitted the code into functional units depending on which hardware infrastructure the user uses.
+
+First we still have the original T26A approach, which can write to the Comfort CAN and will soon be able to manage the climate control of the car.
+
+Because T26A needs does not use the OBD socket and has very limited access to system information, a new OBD approach is now in development.
+
+Advantage is a more generic setup. Disadvantage is the missing write access to the CAN bus through the proprietary VAG gateway.
+
+THe user now has to choose in the vehicle configuration if "VW e-Up (Komfort CAN)" or "VW e-Up (OBD2)" is used.
 
 To compile the code you will need to check out the repository, check out the components 
 mongoose, libzip and zlib  and copy the file

@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          10th April 2020
+;    Date:          31th July 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -93,13 +93,6 @@ static const char *TAG = "vwup.t26";
 #include "ovms_events.h"
 #include "ovms_metrics.h"
 
-/*
-static const OvmsVehicle::poll_pid_t vwup_polls[] =
-{
-  { 0, 0, 0x00, 0x00, { 0, 0, 0 } }
-};
-*/
-
 void sendOcuHeartbeat(TimerHandle_t timer)
 {
     VWeUpT26 *vwup = (VWeUpT26 *)pvTimerGetTimerID(timer);
@@ -121,8 +114,6 @@ VWeUpT26::VWeUpT26()
 
     MyConfig.RegisterParam("vwup", "VW e-Up", true, true);
     ConfigChanged(NULL);
-    //  PollSetPidList(m_can3, vwup_polls);
-    //  PollSetState(0);
     vin_part1 = false;
     vin_part2 = false;
     vin_part3 = false;
@@ -206,7 +197,6 @@ void VWeUpT26::vehicle_vweup_car_on(bool isOn)
         // Log once that car is being turned on
         ESP_LOGI(TAG, "CAR IS ON");
         StandardMetrics.ms_v_env_on->SetValue(true);
-        // if (vwup_enable_write && !dev_mode) PollSetState(1);
         // Turn off eventually running climate control timer
         if (ocu_awake)
         {
@@ -231,7 +221,6 @@ void VWeUpT26::vehicle_vweup_car_on(bool isOn)
         // Log once that car is being turned off
         ESP_LOGI(TAG, "CAR IS OFF");
         StandardMetrics.ms_v_env_on->SetValue(false);
-        // if (vwup_enable_write && !dev_mode) PollSetState(0);
     }
 }
 
