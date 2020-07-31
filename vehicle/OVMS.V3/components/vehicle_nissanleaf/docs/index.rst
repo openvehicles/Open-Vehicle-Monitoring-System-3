@@ -9,9 +9,11 @@ This vehicle type supports the Nissan Leaf and Nissan e-NV200.
 ----------------
 Support Overview
 ----------------
+
 ^^^^^^^^^^^^^^^^
 Hardware
 ^^^^^^^^^^^^^^^^
+
 =========================== ==============
 Item                        Support Status
 =========================== ==============
@@ -20,20 +22,24 @@ Vehicle Cable               1779000 Nissan Leaf OBD-II to DB9 Data Cable for OVM
 GSM Antenna                 1000500 Open Vehicles OVMS GSM Antenna (or any compatible antenna)
 GPS Antenna                 1020200 Universal GPS Antenna (SMA Connector) (or any compatible antenna)
 =========================== ==============
+
 ^^^^^^^^^^^^^^^^
 Controls
 ^^^^^^^^^^^^^^^^
+
 =========================== ==============
 Function                    Support Status
 =========================== ==============
 Charge Control              Start charge only (Stop charge in beta firmware stage)
-Cabin Pre-heat/cool Control Yes* (see info below)
+Cabin Pre-heat/cool Control Yes [1]_ (see info below)
 Lock/Unlock Vehicle         Not currently supported
 Valet Mode Control          Not currently supported
 =========================== ==============
+
 ^^^^^^^^^^^^^^^^
 Metrics
 ^^^^^^^^^^^^^^^^
+
 =========================== ==============
 Item                        Support Status
 =========================== ==============
@@ -43,21 +49,21 @@ GPS Location                Yes (from modem module GPS)
 Speed                       Yes (from vehicle speed PID)
 Cabin Temperature           Yes (from vehicle temperature PIDs)
 Ambient Temperature         Yes (from vehicle temperature PIDs)
-SetPoint Temperature        Yes (from vehicle hvac PIDs)**
-HVAC Fan Speed              Yes (from vehicle hvac PIDs)**
-HVAC Heating/Cooling Status Yes (from vehicle hvac PIDs)**
-HVAC On Status              Yes (from vehicle hvac PIDs)**
-HVAC Temperature Setpoint   Yes (from vehicle hvac PIDs)**
-HVAC Ventilation Mode       Yes (from vehicle hvac PIDs)**
+SetPoint Temperature        Yes (from vehicle hvac PIDs) [2]_
+HVAC Fan Speed              Yes (from vehicle hvac PIDs) [2]_
+HVAC Heating/Cooling Status Yes (from vehicle hvac PIDs) [2]_
+HVAC On Status              Yes (from vehicle hvac PIDs) [2]_
+HVAC Temperature Setpoint   Yes (from vehicle hvac PIDs) [2]_
+HVAC Ventilation Mode       Yes (from vehicle hvac PIDs) [2]_
 BMS v+t                     Yes
 TPMS                        Yes (If hardware available)
 Charge Status               Yes
 Charge Interruption Alerts  Yes
 =========================== ==============
 
-*OVMS currently supports 2011-2017 Nissan LEAF and Nissan e-NV200
+.. [1] OVMS currently supports 2011-2017 Nissan LEAF and Nissan e-NV200
 
-**Some HVAC Status Items have been only verified with 2013-2016 MY cars and will only work if the year is set in configuraiton. Also HVAC needs to be in ON position before powering down the vehicle for the metrics to work during pre-heat.
+.. [2] Some HVAC Status Items have been only verified with 2013-2016 MY cars and will only work if the year is set in configuraiton. Also HVAC needs to be in ON position before powering down the vehicle for the metrics to work during pre-heat.
 
 ----------------------
 Remote Climate Control

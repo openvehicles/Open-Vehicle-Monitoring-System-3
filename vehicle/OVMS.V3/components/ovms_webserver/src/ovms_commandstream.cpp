@@ -78,9 +78,11 @@ HttpCommandStream::HttpCommandStream(mg_connection* nc, extram::string command,
 HttpCommandStream::~HttpCommandStream()
 {
   hcs_writebuf wbuf;
-  while (xQueueReceive(m_writequeue, &wbuf, 0) == pdTRUE)
-    free(wbuf.data);
-  vQueueDelete(m_writequeue);
+  if (m_writequeue) {
+    while (xQueueReceive(m_writequeue, &wbuf, 0) == pdTRUE)
+      free(wbuf.data);
+    vQueueDelete(m_writequeue);
+  }
 }
 
 
@@ -116,7 +118,7 @@ void HttpCommandStream::CommandTask(void* object)
   me->m_done = true;
   
 #if MG_ENABLE_BROADCAST && WEBSRV_USE_MG_BROADCAST
-  if (uxQueueMessagesWaiting(me->m_writequeue) > 0) {
+  if (m_writequeue && uxQueueMessagesWaiting(me->m_writequeue) > 0) {
     ESP_EARLY_LOGV(TAG, "HttpCommandStream[%p] RequestPollLast, qlen=%d done=%d sent=%d ack=%d", me->m_nc, uxQueueMessagesWaiting(me->m_writequeue), me->m_done, me->m_sent, me->m_ack);
     me->RequestPoll();
     ESP_EARLY_LOGV(TAG, "HttpCommandStream[%p] RequestPollDone, qlen=%d done=%d sent=%d ack=%d", me->m_nc, uxQueueMessagesWaiting(me->m_writequeue), me->m_done, me->m_sent, me->m_ack);
@@ -135,18 +137,20 @@ void HttpCommandStream::ProcessQueue()
   size_t txlen = 0;
   hcs_writebuf wbuf;
   
-  while (txlen < XFER_CHUNK_SIZE && xQueueReceive(m_writequeue, &wbuf, 0) == pdTRUE) {
-    if (m_nc) {
-      mg_send_http_chunk(m_nc, wbuf.data, wbuf.len);
-      txlen += wbuf.len;
+  if (m_writequeue) {
+    while (txlen < XFER_CHUNK_SIZE && xQueueReceive(m_writequeue, &wbuf, 0) == pdTRUE) {
+      if (m_nc) {
+        mg_send_http_chunk(m_nc, wbuf.data, wbuf.len);
+        txlen += wbuf.len;
+      }
+      free(wbuf.data);
     }
-    free(wbuf.data);
-  }
-  
-  if (txlen) {
-    m_sent += txlen;
-    ESP_EARLY_LOGV(TAG, "HttpCommandStream[%p] ProcessQueue txlen=%d, qlen=%d done=%d sent=%d ack=%d",
-      m_nc, txlen, uxQueueMessagesWaiting(m_writequeue), m_done, m_sent, m_ack);
+    
+    if (txlen) {
+      m_sent += txlen;
+      ESP_EARLY_LOGV(TAG, "HttpCommandStream[%p] ProcessQueue txlen=%d, qlen=%d done=%d sent=%d ack=%d",
+        m_nc, txlen, uxQueueMessagesWaiting(m_writequeue), m_done, m_sent, m_ack);
+    }
   }
 
   if (m_done && m_sent == m_ack) {
@@ -169,7 +173,7 @@ int HttpCommandStream::HandleEvent(int ev, void* p)
     case MG_EV_POLL:
       // check for new transmission:
       ESP_EARLY_LOGV(TAG, "HttpCommandStream[%p] EV_POLL qlen=%d done=%d sent=%d ack=%d",
-        m_nc, uxQueueMessagesWaiting(m_writequeue), m_done, m_sent, m_ack);
+        m_nc, m_writequeue ? uxQueueMessagesWaiting(m_writequeue) : -1, m_done, m_sent, m_ack);
       if (m_ack == m_sent)
         ProcessQueue();
       break;
@@ -177,14 +181,14 @@ int HttpCommandStream::HandleEvent(int ev, void* p)
     case MG_EV_SEND:
       // last transmission has finished:
       ESP_EARLY_LOGV(TAG, "HttpCommandStream[%p] EV_SEND qlen=%d done=%d sent=%d ack=%d",
-        m_nc, uxQueueMessagesWaiting(m_writequeue), m_done, m_sent, m_ack);
+        m_nc, m_writequeue ? uxQueueMessagesWaiting(m_writequeue) : -1, m_done, m_sent, m_ack);
       m_ack = m_sent;
       ProcessQueue();
       break;
     
     case MG_EV_CLOSE:
       ESP_EARLY_LOGV(TAG, "HttpCommandStream[%p] EV_CLOSE qlen=%d done=%d sent=%d ack=%d",
-        m_nc, uxQueueMessagesWaiting(m_writequeue), m_done, m_sent, m_ack);
+        m_nc, m_writequeue ? uxQueueMessagesWaiting(m_writequeue) : -1, m_done, m_sent, m_ack);
       // connection has been closed, possibly externally:
       // we need to let the command task finish normally to prevent problems
       // due to lost/locked ressources, so we just detach:
@@ -231,6 +235,9 @@ ssize_t HttpCommandStream::write(const void *buf, size_t nbyte)
 {
   if (!m_nc || nbyte == 0)
     return 0;
+  
+  if (!m_writequeue)
+    return nbyte;
   
   hcs_writebuf wbuf;
   wbuf.data = (char*) ExternalRamMalloc(nbyte);

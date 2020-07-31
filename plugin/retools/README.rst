@@ -6,6 +6,8 @@ REtools: Reverse Engineering UI
 
 Version 0.1 by Michael Balzer <dexter@dexters-web.de>
 
+.. image:: retools-screenshot.png
+
 This is a first implementation of a web frontend for the ``re`` commands.
 
 You'll need some understanding of the ``re`` system, the UI lacks user guidance.

@@ -292,7 +292,7 @@ class MgHandler : public ExternalRamAllocated
     static void HandlePoll(mg_connection* nc, int ev, void* p);
 
   public:
-    mg_connection*            m_nc;
+    mg_connection*            m_nc = NULL;
 };
 
 
@@ -314,12 +314,12 @@ class HttpDataSender : public MgHandler
     int HandleEvent(int ev, void* p);
 
   public:
-    MemRegionList             m_xferlist;         // list of memory regions to send
-    ssize_t                   m_xfer;             // current region in process
-    const uint8_t*            m_data;             // pointer to data
-    size_t                    m_size;             // size of data to send
-    size_t                    m_sent;             // size sent up to now
-    bool                      m_keepalive;        // false = close connection when done
+    MemRegionList             m_xferlist;             // list of memory regions to send
+    ssize_t                   m_xfer = 0;             // current region in process
+    const uint8_t*            m_data = NULL;          // pointer to data
+    size_t                    m_size = 0;             // size of data to send
+    size_t                    m_sent = 0;             // size sent up to now
+    bool                      m_keepalive = false;    // false = close connection when done
 };
 
 
@@ -337,9 +337,9 @@ class HttpStringSender : public MgHandler
     int HandleEvent(int ev, void* p);
 
   public:
-    std::string*              m_msg;              // pointer to data
-    size_t                    m_sent;             // size sent up to now
-    bool                      m_keepalive;        // false = close connection when done
+    std::string*              m_msg = NULL;           // pointer to data
+    size_t                    m_sent = 0;             // size sent up to now
+    bool                      m_keepalive = false;    // false = close connection when done
 };
 
 
@@ -410,17 +410,17 @@ class WebSocketHandler : public MgHandler, public OvmsWriter
     void Log(LogBuffers* message);
 
   public:
-    size_t                    m_slot;
-    size_t                    m_modifier;         // "our" metrics modifier
-    size_t                    m_reader;           // "our" notification reader id
-    QueueHandle_t             m_jobqueue;
-    uint32_t                  m_jobqueue_overflow_status;
-    uint32_t                  m_jobqueue_overflow_logged;
-    uint32_t                  m_jobqueue_overflow_dropcnt;
-    uint32_t                  m_jobqueue_overflow_dropcntref;
-    WebSocketTxJob            m_job;
-    int                       m_sent;
-    int                       m_ack;
+    size_t                    m_slot = 0;
+    size_t                    m_modifier = 0;         // "our" metrics modifier
+    size_t                    m_reader = 0;           // "our" notification reader id
+    QueueHandle_t             m_jobqueue = NULL;
+    uint32_t                  m_jobqueue_overflow_status = 0;
+    uint32_t                  m_jobqueue_overflow_logged = 0;
+    uint32_t                  m_jobqueue_overflow_dropcnt = 0;
+    uint32_t                  m_jobqueue_overflow_dropcntref = 0;
+    WebSocketTxJob            m_job = {};
+    int                       m_sent = 0;
+    int                       m_ack = 0;
     std::set<std::string>     m_subscriptions;
 };
 
@@ -451,12 +451,12 @@ class HttpCommandStream : public OvmsShell, public MgHandler
 
   public:
     extram::string            m_command;
-    bool                      m_javascript;
-    TaskHandle_t              m_cmdtask;
-    QueueHandle_t             m_writequeue;
-    bool                      m_done;
-    size_t                    m_sent;
-    int                       m_ack;
+    bool                      m_javascript = false;
+    TaskHandle_t              m_cmdtask = NULL;
+    QueueHandle_t             m_writequeue = NULL;
+    bool                      m_done = false;
+    size_t                    m_sent = 0;
+    int                       m_ack = 0;
 
   public:
     void Initialize(bool print);
