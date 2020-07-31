@@ -93,7 +93,8 @@ void OvmsVehicleRenaultTwizy::BatteryInit()
   m_batt_use_temp_min = MyMetrics.InitFloat("xrt.b.u.temp.min", SM_STALE_HIGH, 0, Celcius);
   m_batt_use_temp_max = MyMetrics.InitFloat("xrt.b.u.temp.max", SM_STALE_HIGH, 0, Celcius);
 
-  m_bms_type      = MyMetrics.InitInt("xrt.bms.type", SM_STALE_HIGH, 7);
+  twizy_bms_type  = BMS_TYPE_ORIG;
+  m_bms_type      = MyMetrics.InitInt("xrt.bms.type", SM_STALE_HIGH, BMS_TYPE_ORIG);
   m_bms_state1    = MyMetrics.InitInt("xrt.bms.state1", SM_STALE_HIGH, 0);
   m_bms_state2    = MyMetrics.InitInt("xrt.bms.state2", SM_STALE_HIGH, 0);
   m_bms_error     = MyMetrics.InitInt("xrt.bms.error", SM_STALE_HIGH, 0);

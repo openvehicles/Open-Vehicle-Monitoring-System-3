@@ -397,6 +397,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     #define BMS_TYPE_VBMS   0                     // VirtualBMS
     #define BMS_TYPE_EDRV   1                     // eDriver BMS
     #define BMS_TYPE_ORIG   7                     // Standard Renault/LG BMS
+    int                     twizy_bms_type;       // Internal copy of *m_bms_type
     OvmsMetricInt           *m_bms_type;          // 0x700[1] bits 5-7
     OvmsMetricInt           *m_bms_state1;        // 0x700[0]
     OvmsMetricInt           *m_bms_state2;        // 0x700[7]
