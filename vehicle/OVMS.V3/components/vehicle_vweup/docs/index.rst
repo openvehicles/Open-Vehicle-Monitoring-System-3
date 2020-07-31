@@ -114,7 +114,9 @@ Because T26A needs does not use the OBD socket and has very limited access to sy
 
 Advantage is a more generic setup. Disadvantage is the missing write access to the CAN bus through the proprietary VAG gateway.
 
-THe user now has to choose in the vehicle configuration if "VW e-Up (Komfort CAN)" or "VW e-Up (OBD2)" is used.
+The user now has to choose in the vehicle configuration if "VW e-Up (Komfort CAN)" or "VW e-Up (OBD2)" is used.
+
+CAVE: If you come from a previous with the "VWUP" vehicle config you must set that config to i.e. "Nissan Leaf (NL)" before flashing to this new version! Otherwise OVMS won't boot! After successfull reboot you must then set the vehicle config to either "VWUP (Komfort CAN)" or "VWUP (OBD)", whatever hardware setup you have.
 
 To compile the code you will need to check out the repository, check out the components 
 mongoose, libzip and zlib  and copy the file
