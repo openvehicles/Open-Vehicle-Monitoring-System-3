@@ -2381,7 +2381,7 @@ static void script_compact(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
-static void script_ovms(bool print, int verbosity, OvmsWriter* writer,
+static void script_ovms(int verbosity, OvmsWriter* writer,
   const char* spath, FILE* sf, bool secure=false)
   {
   char *ext = rindex(spath, '.');
@@ -2414,7 +2414,7 @@ static void script_ovms(bool print, int verbosity, OvmsWriter* writer,
   else
     {
     // Default: OVMS command script
-    BufferedShell* bs = new BufferedShell(print, verbosity);
+    BufferedShell* bs = new BufferedShell(false, verbosity);
     if (secure) bs->SetSecure(true);
     char* cmdline = new char[_COMMAND_LINE_LEN];
     while(fgets(cmdline, _COMMAND_LINE_LEN, sf) != NULL )
@@ -2467,8 +2467,7 @@ static void script_run(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int 
     writer->puts("Error: Script not found");
     return;
     }
-  script_ovms(verbosity != COMMAND_RESULT_MINIMAL, verbosity, writer,
-    path.c_str(), sf, writer->IsSecure());
+  script_ovms(verbosity, writer, path.c_str(), sf, writer->IsSecure());
   }
 
 void OvmsScripts::AllScripts(std::string path)
@@ -2499,7 +2498,7 @@ void OvmsScripts::AllScripts(std::string path)
     if (sf)
       {
       ESP_LOGI(TAG, "Running script %s", fpath.c_str());
-      script_ovms(false, COMMAND_RESULT_MINIMAL, NULL, fpath.c_str(), sf, true);
+      script_ovms(COMMAND_RESULT_MINIMAL, NULL, fpath.c_str(), sf, true);
       // script_ovms() closes sf
       }
     }
