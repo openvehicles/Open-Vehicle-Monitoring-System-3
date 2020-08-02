@@ -53,12 +53,12 @@ enum poll_states
 
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
   {
-    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, {  0, 999, 999, 0 } }, // VIN [19]
-    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1203, {  0, 999, 999, 0 } }, // QC [4]
-    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1205, {  0, 999, 999, 0 } }, // L0/L1/L2 [4]
-    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 60, 60, 60 } }, // bat [39/41]
-    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 60, 60, 60 } }, // battery voltages [196]
-    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0, 300, 300, 300 } }, // battery temperatures [14]
+    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, {  0, 999, 0, 0 } }, // VIN [19]
+    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1203, {  0, 999, 0, 0 } }, // QC [4]
+    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1205, {  0, 999, 0, 0 } }, // L0/L1/L2 [4]
+    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 60, 0, 60 } }, // bat [39/41]
+    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 60, 0, 60 } }, // battery voltages [196]
+    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0, 300, 0, 300 } }, // battery temperatures [14]
     { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 } }
   };
 
@@ -132,6 +132,8 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_climate_remoteheat = MyMetrics.InitBool("xnl.cc.remoteheat", SM_STALE_MIN, false);
   m_climate_remotecool = MyMetrics.InitBool("xnl.cc.remotecool", SM_STALE_MIN, false);
   MyMetrics.InitBool("v.e.on", SM_STALE_MIN, false);
+  MyMetrics.InitBool("v.e.awake", SM_STALE_MID, false);
+  MyMetrics.InitBool("v.vin", SM_STALE_NONE, "");
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -504,7 +506,6 @@ void OvmsVehicleNissanLeaf::IncomingPollReply(canbus* bus, uint16_t type, uint16
 void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
-  StandardMetrics.ms_v_env_awake->SetValue(true);
 
   switch (p_frame->MsgID)
     {
@@ -998,7 +999,6 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
 void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
-  StandardMetrics.ms_v_env_awake->SetValue(true);
 
   switch (p_frame->MsgID)
     {
@@ -1046,11 +1046,13 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
           break;
         case 2: // Reverse
           StandardMetrics.ms_v_env_gear->SetValue(-1);
+          StandardMetrics.ms_v_env_on->SetValue(true);
           PollSetState(POLLSTATE_RUNNING);
           break;
         case 4: // Drive
         case 7: // Drive/B (ECO on some models)
           StandardMetrics.ms_v_env_gear->SetValue(1);
+          StandardMetrics.ms_v_env_on->SetValue(true);
           PollSetState(POLLSTATE_RUNNING);
           break;
         }
@@ -1121,7 +1123,15 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
        // The two lock bits are 0x10 driver door and 0x08 other doors.
        // We should only say "locked" if both are locked.
        // change to only check driver door, on AZE0 0x08 not always 1 when locked
-      StandardMetrics.ms_v_env_locked->SetValue((d[2] & 0x10) == 0x10);
+      if ((d[2] & 0x10) == 0x10)
+        {
+        StandardMetrics.ms_v_env_locked->SetValue(true);
+        vehicle_nissanleaf_car_on(false);
+        }
+      else
+        {
+        StandardMetrics.ms_v_env_locked->SetValue(false);
+        }
 
       switch ((d[1]>>1) & 3)
         {
@@ -1129,13 +1139,13 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
           vehicle_nissanleaf_car_on(false);
         case 1: // accessory
           //vehicle_nissanleaf_car_on(false);
-          //StandardMetrics.ms_v_env_awake->SetValue(true);
+          StandardMetrics.ms_v_env_awake->SetValue(true);
         case 2: // on (not ready to drive)
           //vehicle_nissanleaf_car_on(false);
-          //StandardMetrics.ms_v_env_awake->SetValue(true);
+          StandardMetrics.ms_v_env_awake->SetValue(true);
         case 3: // ready to drive, is triggered on unlock
-          //StandardMetrics.ms_v_env_awake->SetValue(true);
-          if (StandardMetrics.ms_v_env_footbrake->AsFloat()>0) //check footbrake to avoid false positive
+          StandardMetrics.ms_v_env_awake->SetValue(true);
+          if (StandardMetrics.ms_v_env_footbrake->AsFloat() > 0) //check footbrake to avoid false positive
           {
           vehicle_nissanleaf_car_on(true);
           }
@@ -1169,7 +1179,7 @@ void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
     length = 1;
     tcuBus = m_can1;
     }
-
+  CommandWakeup();
   switch (command)
     {
     case ENABLE_CLIMATE_CONTROL:
@@ -1289,7 +1299,7 @@ void OvmsVehicleNissanLeaf::Ticker10(uint32_t ticker)
     // the core framework?
     // perhaps interested code should be able to subscribe to "onChange" and
     // "onStale" events for each metric?
-    if (StandardMetrics.ms_v_env_awake->IsStale())
+    if (StandardMetrics.ms_v_env_awake->AsBool() && StandardMetrics.ms_v_env_awake->IsStale())
       {
       StandardMetrics.ms_v_env_awake->SetValue(false);
       }
