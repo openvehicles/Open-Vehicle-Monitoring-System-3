@@ -185,10 +185,9 @@ void BufferedShell::Output(OvmsWriter* writer)
   {
   if (m_print)
     printf("\n");
-  if (m_output->empty())
-    m_output->release();
-  else
-    writer->Log(m_output);
+  for (LogBuffers::iterator i = m_output->begin(); i != m_output->end(); ++i)
+    writer->write(*i, strlen(*i));
+  m_output->release();
   m_output = NULL;
   }
 
