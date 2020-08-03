@@ -20,6 +20,16 @@ At one end of the module is the main DB9 connector you will use to connect to th
 
 At the other end of the module is the DA26 expansion connector, the USB diagnostic connector, and a Micro SD card slot.
 
+|clearfix|
+
+.. warning::
+  The **USB port** is a fragile PCB socket without reinforcement. Handle it carefully, do not apply force
+  when plugging or unplugging cables, to not bend the plug. If you need to use the port frequently, two dots
+  of hot glue at the port sides on the PCB can help to avoid breaking it off.
+  
+  If you open the module and take out the board, take care to guide the port carefully and correctly into it's case
+  hole when inserting the board into the casing again. Insert the board USB port side first.
+
 If removing/installing optional expansion boards (such as used for cellular connectivity), please take care to ensure you secure screw down the expansion board using the four pillar posts provided. Also, please ensure that the cellular modem connections are correct (follow the printed table on the modem board to know which antenna is which).
 
 .. image:: warning.png
