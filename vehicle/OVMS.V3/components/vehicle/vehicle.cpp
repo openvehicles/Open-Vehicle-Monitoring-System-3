@@ -1127,7 +1127,7 @@ void OvmsVehicle::RxTask()
       if ((frame.origin == m_poll_bus)&&(m_poll_plist))
         {
         // This is intended for our poller
-        ESP_LOGI(TAG, "Poller Rx candidate ID=%03x (expecting %03x-%03x)",frame.MsgID,m_poll_moduleid_low,m_poll_moduleid_high);
+        // ESP_LOGI(TAG, "Poller Rx candidate ID=%03x (expecting %03x-%03x)",frame.MsgID,m_poll_moduleid_low,m_poll_moduleid_high);
         if ((frame.MsgID >= m_poll_moduleid_low)&&(frame.MsgID <= m_poll_moduleid_high))
           {
           PollerReceive(&frame);
@@ -2041,14 +2041,14 @@ void OvmsVehicle::PollerSend()
       {
       if (m_poll_wait)
         {
-        ESP_LOGD(TAG,"wait last Polling for %02x: there are remaining poll replays", m_poll_plcur->pid);
+        // ESP_LOGD(TAG,"wait last Polling for %02x: there are remaining poll replays", m_poll_plcur->pid);
         m_poll_wait = 0;
         m_poll_ml_remain = 0;
         return;
         }
       else
         {
-        ESP_LOGD(TAG,"wait Polling for %02x: there are remaining poll replays", m_poll_plcur->pid);
+        // ESP_LOGD(TAG,"wait Polling for %02x: there are remaining poll replays", m_poll_plcur->pid);
         m_poll_wait = 1;
         return;
         }
@@ -2075,7 +2075,8 @@ void OvmsVehicle::PollerSend()
         m_poll_moduleid_high = 0x7ef;
         }
 
-      ESP_LOGD(TAG, "Polling for %d/%02x (expecting %03x/%03x-%03x)",m_poll_type,m_poll_pid,m_poll_moduleid_sent,m_poll_moduleid_low,m_poll_moduleid_high);
+      // ESP_LOGD(TAG, "Polling for %d/%02x (expecting %03x/%03x-%03x)",
+      //   m_poll_type,m_poll_pid,m_poll_moduleid_sent,m_poll_moduleid_low,m_poll_moduleid_high);
       CAN_frame_t txframe;
       memset(&txframe,0,sizeof(txframe));
       txframe.origin = m_poll_bus;
@@ -2124,7 +2125,7 @@ void OvmsVehicle::PollerSend()
 
 void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
   {
-  ESP_LOGI(TAG, "Receive Poll Response for %d/%02x",m_poll_type,m_poll_pid);
+  // ESP_LOGI(TAG, "Receive Poll Response for %d/%02x",m_poll_type,m_poll_pid);
   switch (m_poll_type)
     {
     case VEHICLE_POLL_TYPE_OBDIICURRENT:
@@ -2181,7 +2182,7 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
         m_poll_ml_offset = 4;
         m_poll_ml_frame = 0;
 
-        ESP_LOGI(TAG, "Poll ML first frame (frame=%d, remain=%d)",m_poll_ml_frame,m_poll_ml_remain);
+        // ESP_LOGI(TAG, "Poll ML first frame (frame=%d, remain=%d)",m_poll_ml_frame,m_poll_ml_remain);
         IncomingPollReply(frame->origin, m_poll_type, m_poll_pid, &frame->data.u8[4], 4, m_poll_ml_remain);
         return;
         }
@@ -2202,7 +2203,7 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
           m_poll_ml_remain = 0;
           }
         m_poll_ml_frame++;
-        ESP_LOGI(TAG, "Poll ML subsequent frame (frame=%d, remain=%d)",m_poll_ml_frame,m_poll_ml_remain);
+        // ESP_LOGI(TAG, "Poll ML subsequent frame (frame=%d, remain=%d)",m_poll_ml_frame,m_poll_ml_remain);
         IncomingPollReply(frame->origin, m_poll_type, m_poll_pid, &frame->data.u8[1], len, m_poll_ml_remain);
         return;
         }
@@ -2433,7 +2434,7 @@ void OvmsVehicle::BmsSetCellLimitsTemperature(float min, float max)
 
 void OvmsVehicle::BmsSetCellVoltage(int index, float value)
   {
-  ESP_LOGI(TAG,"BmsSetCellVoltage(%d,%f) c=%d", index, value, m_bms_bitset_cv);
+  // ESP_LOGI(TAG,"BmsSetCellVoltage(%d,%f) c=%d", index, value, m_bms_bitset_cv);
   if ((index<0)||(index>=m_bms_readings_v)) return;
   if ((value<m_bms_limit_vmin)||(value>m_bms_limit_vmax)) return;
   m_bms_voltages[index] = value;
@@ -2510,7 +2511,7 @@ void OvmsVehicle::BmsSetCellVoltage(int index, float value)
 
 void OvmsVehicle::BmsSetCellTemperature(int index, float value)
   {
-  ESP_LOGI(TAG,"BmsSetCellTemperature(%d,%f) c=%d", index, value, m_bms_bitset_ct);
+  // ESP_LOGI(TAG,"BmsSetCellTemperature(%d,%f) c=%d", index, value, m_bms_bitset_ct);
   if ((index<0)||(index>=m_bms_readings_t)) return;
   if ((value<m_bms_limit_tmin)||(value>m_bms_limit_tmax)) return;
   m_bms_temperatures[index] = value;
