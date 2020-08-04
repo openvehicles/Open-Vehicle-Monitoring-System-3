@@ -60,3 +60,6 @@ dkms.conf
 # Sphinx builds
 docs/build/
 .idea/
+
+#configs for Visual Studio Code
+.vscode/
