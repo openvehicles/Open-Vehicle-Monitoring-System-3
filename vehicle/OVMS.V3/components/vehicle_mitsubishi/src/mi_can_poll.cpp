@@ -33,7 +33,7 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
 {
   //ESP_LOGW(TAG, "%03x TYPE:%x PID:%02x Data:%02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", m_poll_moduleid_low, type, pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, mlremain);
 
-  	OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
+  	//OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
     switch (m_poll_moduleid_low)
 		{
   		// ****** BMU *****
@@ -89,13 +89,13 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
         switch (m_poll_ml_frame) {
           case 0:
           {
-            StandardMetrics.ms_v_env_cabintemp->SetValue((data[2] + data[3] - 68) / 10.0);
+            StandardMetrics.ms_v_env_temp->SetValue((data[2] + data[3] - 68) / 10.0);
             break;
           }
 
           case 1:
           {
-            StandardMetrics.ms_v_env_temp->SetValue((data[0] + data[1] - 68) / 10.0);
+            StandardMetrics.ms_v_env_cabintemp->SetValue((data[0] + data[1] - 68) / 10.0);
             break;
           }
           default:
@@ -112,7 +112,7 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
           switch (m_poll_ml_frame) {
             case 0:
             {
-              trio->ms_v_trip_A->SetValue((((int)data[2] << 16 ) + ((int)data[1] << 8) + data[0])/10.0, Kilometers);
+              ms_v_trip_A->SetValue((((int)data[2] << 16 ) + ((int)data[1] << 8) + data[0])/10.0, Kilometers);
               tripb += (int)data[3];
               break;
             }
@@ -120,7 +120,7 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
             case 1:
             {
               tripb += ((int)data[1] << 16 ) + ((int)data[0] << 8);
-              trio->ms_v_trip_B->SetValue(tripb/10.0, Kilometers);
+              ms_v_trip_B->SetValue(tripb/10.0, Kilometers);
               tripb = 0;
               break;
             }

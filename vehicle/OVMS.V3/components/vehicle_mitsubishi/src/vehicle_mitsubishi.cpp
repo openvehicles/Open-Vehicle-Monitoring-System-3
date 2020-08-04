@@ -59,6 +59,8 @@
 ;       - replace V1.0.6  with polling cac
 ;       - Get External and Internal temp (beta)
 ;       - Get Trip A/B value
+;     1.0.11
+;       - Calculate trip distance from TripB, more accurate than odometer 100m vs 1000m
 ;
 ;    (C) 2011         Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018    Mark Webb-Johnson
@@ -94,7 +96,7 @@
 #include "ovms_notify.h"
 #include <sys/param.h>
 
-#define VERSION "1.0.10"
+#define VERSION "1.0.11"
 
 static const char *TAG = "v-mitsubishi";
 
@@ -135,7 +137,7 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
 
   v_c_efficiency->SetValue(0);
 
-  if(POS_ODO > 0)
+  if(POS_ODO > 0.0)
   {
     has_odo = true;
 
@@ -548,7 +550,10 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       if(StandardMetrics.ms_v_pos_odometer->AsInt() > 0 && has_odo == false && StandardMetrics.ms_v_bat_soc->AsFloat() > 0)
       {
-        has_odo = true;
+        if(POS_ODO > 0.0)
+        {
+          has_odo = true;
+        }
         if (!set_odo)
         {
           mi_charge_trip_counter.Reset(POS_ODO);
@@ -844,7 +849,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
     //Current Trip
     if (mi_park_trip_counter.Started())
     {
-        mi_park_trip_counter.Update(POS_ODO);
+        mi_park_trip_counter.Update(ms_v_trip_B->AsFloat());
         StdMetrics.ms_v_pos_trip->SetValue(mi_park_trip_counter.GetDistance(), Kilometers);
         ms_v_pos_trip_park->SetValue(mi_charge_trip_counter.GetDistance(), Kilometers);
         ms_v_trip_park_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
@@ -898,7 +903,7 @@ void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
        ms_v_trip_park_time_start->SetValue(StdMetrics.ms_m_timeutc->AsInt());
        if(has_odo == true && StandardMetrics.ms_v_bat_soc->AsFloat() > 0.0)
          {
-           mi_park_trip_counter.Reset(POS_ODO);
+           mi_park_trip_counter.Reset(ms_v_trip_B->AsFloat());
            ms_v_trip_park_soc_start->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
          }
 
@@ -910,11 +915,11 @@ void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
       // Car is OFF
       StdMetrics.ms_v_env_on->SetValue( isOn );
       StdMetrics.ms_v_pos_speed->SetValue(0);
+      mi_park_trip_counter.Update(ms_v_trip_B->AsFloat());
       StdMetrics.ms_v_pos_trip->SetValue(mi_park_trip_counter.GetDistance());
       ms_v_pos_trip_park->SetValue(mi_park_trip_counter.GetDistance());
-      //StdMetrics.ms_v_pos_trip->SetValue( POS_ODO- mi_trip_start_odo );
+
       StdMetrics.ms_v_env_charging12v->SetValue(false);
-      mi_park_trip_counter.Update(POS_ODO);
       ms_v_trip_park_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
       ms_v_trip_park_time_stop->SetValue(StdMetrics.ms_m_timeutc->AsInt());
       PollSetState(0);
@@ -1064,7 +1069,7 @@ void MI_Trip_Counter::Update(float current_odo)
 }
 
   /*
-   * Returnstrueif the trip counter has been initialized properly.
+   * Returns true if the trip counter has been initialized properly.
    */
 bool MI_Trip_Counter::Started()
 {
