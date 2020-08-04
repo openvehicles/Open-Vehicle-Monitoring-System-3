@@ -61,5 +61,3 @@ dkms.conf
 docs/build/
 .idea/
 
-#configs for Visual Studio Code
-.vscode/
