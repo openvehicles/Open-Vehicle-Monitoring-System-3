@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+
+2020-08-04 MWJ  3.2.014  OTA release
 - Renault Twizy: support VirtualBMS & eDriver BMS (3 cell temperature sensors)
   New metrics:
     xrt.bms.type        -- 0=VirtualBMS, 1=eDriver, 7=Standard
@@ -19,6 +21,9 @@ Open Vehicle Monitor System v3 - Change log
     wifi mode apclient  -- now accepts empty stassid & optional stabssid
 - #377 Make some metrics (e.g. v.b.soc) persistent across warm reboots
   This includes crashes and firmware updates
+- Tesla Roadster support for TPMS
+- Tesla Model S support for Baolong TPMS
+- General stability improvements related to watchdog and task timeouts
 
 2020-05-31 MWJ  3.2.013 OTA release
 - TLS Trusted CA update (for addtrust/usertrust)
