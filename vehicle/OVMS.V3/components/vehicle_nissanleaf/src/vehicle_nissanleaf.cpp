@@ -1335,7 +1335,11 @@ void OvmsVehicleNissanLeaf::HandleCharging()
     {
     return;
     }
-
+  if (StdMetrics.ms_v_charge_mode->AsString().empty())
+    {
+    bool fast_charge = StandardMetrics.ms_v_charge_type->AsString() == "chademo";
+    StdMetrics.ms_v_charge_mode->SetValue(fast_charge ? "performance" : "standard");
+    }
   // Check if we have what is needed to calculate energy and remaining minutes
   if (m_cum_energy_charge_wh > 0)
     {
