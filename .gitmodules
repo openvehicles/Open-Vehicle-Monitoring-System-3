@@ -1,7 +1,6 @@
 [submodule "vehicle/OVMS.V3/components/mongoose/mongoose"]
 	path = vehicle/OVMS.V3/components/mongoose/mongoose
 	url = https://github.com/openvehicles/mongoose.git
-        ignore = dirty
 [submodule "vehicle/OVMS.V3/components/zip/zlib"]
 	path = vehicle/OVMS.V3/components/zip/zlib
 	url = https://github.com/openvehicles/zlib.git
