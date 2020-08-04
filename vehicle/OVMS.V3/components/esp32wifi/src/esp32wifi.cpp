@@ -281,55 +281,33 @@ void wifi_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   me->OutputStatus(verbosity, writer);
   }
 
-//void wifi_dhcp_on(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-//  {
-//  esp32wifi *me = MyPeripherals->m_esp32wifi;
-//  if (me == NULL)
-//    {
-//    writer->puts("Error: wifi peripheral could not be found");
-//    return;
-//    }
-//  me->StartDhcpClient();
-//  }
-
-void wifi_static_ip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void wifi_ip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
     esp32wifi *me = MyPeripherals->m_esp32wifi;
+    const char* ipmode = cmd->GetName();
     if (me == NULL)
       {
       writer->puts("Error: wifi peripheral could not be found");
       return;
       }
-    writer->puts("Setting static ip, sn, gw details for STA....");
-    if (argc == 1 && strcmp(argv[0],"false") == 0)
+    if (strcmp(ipmode, "dhcp")==0)
       {
-      me->SetSTAWifiIP(false);
+      writer->puts("Setting dynamic ip details for STA....");
+      me->StartDhcpClient();
       return;
       }
-    else if (argc == 1)
+    writer->puts("Setting static ip details for STA....");
+    if (argc ==  0)
       {
-      std::string ssid = me->GetSSID();
-      std::string ipconfig = MyConfig.GetParamValue("wifi.ssid", ssid + ".ovms.staticip");
-      if (ipconfig.empty())
-        {
-        ESP_LOGE(TAG, "TCPIP: no static ip details set for %s", ssid.c_str());
-        return;
-        }
-      // parse static IP config, pattern "<ip>,<sn>,<gw>":
-      std::string ip, sn, gw;
-      std::istringstream sbuf(ipconfig);
-      std::getline(sbuf, ip, ',');
-      std::getline(sbuf, sn, ',');
-      std::getline(sbuf, gw, ',');
-      ESP_LOGI(TAG,"%s.ovms.staticip param set: %s",ssid.c_str(),ipconfig.c_str());
-
-      me->SetSTAWifiIP(true, ip, sn , gw);
+      me->SetSTAWifiIP();
       return;
       }
-    else if (argc == 4)
+    else if (argc == 3)
       {
-      me->SetSTAWifiIP(true, argv[1], argv[2], argv[3]);
+      me->SetSTAWifiIP(argv[0], argv[1], argv[2]);
+      return;
       }
+    else writer->puts("Error: incorrect number of arguments");
   }
 
 class esp32wifiInit
@@ -356,16 +334,16 @@ esp32wifiInit::esp32wifiInit()
     "<apssid> [<stassid>] [<stabssid>]\n"
     "Omit <stassid> or pass empty string to activate scanning mode.\n"
     "Set <stabssid> to a MAC address to bind to a specific access point.", 1, 3);
-  cmd_mode->RegisterCommand("ipstatic","Set static ip, subnet, gateway",wifi_static_ip,
-    "<staticmode> [<ip> <subnet> <gateway>]\n"
-    "Example: true 192.168.12.34 255.255.255.0 192.168.12.1\n"
+  cmd_mode->RegisterCommand("off","Turn off wifi networking",wifi_mode_off);
+  OvmsCommand* cmd_mode_ip = cmd_wifi->RegisterCommand("ip","WIFI static/dhcp ip framework");
+  cmd_mode_ip->RegisterCommand("static","Set static ip, subnet, gateway",wifi_ip,
+    "[<ip> <subnet> <gateway>]\n"
+    "Example: 192.168.12.34 255.255.255.0 192.168.12.1\n"
     "The gateway will also be used as the DNS.\n"
     "Omit optional arguments to read the configured setup for the current SSID:\n"
     "Use config set wifi.ssid \"<ssid>.ovms.staticip\" \"<ip>,<subnet>,<gateway>\"\n"
-    "to configure persistent static details for an SSID.\n"
-    "<staticmode> false will set the wifi client to use dhcp.", 0, 4);
-  //cmd_mode->RegisterCommand("dhcpc","Turn on DHCP client",wifi_dhcp_on);
-  cmd_mode->RegisterCommand("off","Turn off wifi networking",wifi_mode_off);
+    "to configure persistent static details for a SSID.", 0, 3);
+  cmd_mode_ip->RegisterCommand("dhcp","Turn on dhcp client",wifi_ip);
   }
 
 esp32wifi::esp32wifi(const char* name)
@@ -1239,15 +1217,8 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
       ESP_ERROR_CHECK(esp_wifi_connect());
       std::string ipconfig = MyConfig.GetParamValue("wifi.ssid", ssid + ".ovms.staticip");
       if (!ipconfig.empty())
-        { // parse static IP config, pattern "<ip>,<sn>,<gw>":
-        std::string ip, sn, gw;
-        std::istringstream sbuf(ipconfig);
-        std::getline(sbuf, ip, ',');
-        std::getline(sbuf, sn, ',');
-        std::getline(sbuf, gw, ',');
-        ESP_LOGI(TAG,"%s.ovms.staticip param set: %s",ssid.c_str(),ipconfig.c_str());
-
-        SetSTAWifiIP(true, ip, sn , gw);
+        {
+        SetSTAWifiIP();
         }
       }
     }
@@ -1313,12 +1284,26 @@ void esp32wifi::StartDhcpClient()
     }
   }
 
-void esp32wifi::SetSTAWifiIP(bool staticmode, std::string ip, std::string sn, std::string gw)
+void esp32wifi::SetSTAWifiIP(std::string ip, std::string sn, std::string gw)
   {
-  if ((m_mode ==  ESP32WIFI_MODE_CLIENT || m_mode ==  ESP32WIFI_MODE_APCLIENT) && staticmode)
+  if (m_mode ==  ESP32WIFI_MODE_CLIENT || m_mode ==  ESP32WIFI_MODE_APCLIENT)
     { //only set static details if in client mode
       // read static IP config:
-
+    std::string ssid = GetSSID();
+    std::string ipconfig = MyConfig.GetParamValue("wifi.ssid", ssid + ".ovms.staticip");
+    if (!ipconfig.empty())
+      {// parse static IP config, pattern "<ip>,<sn>,<gw>":
+      std::istringstream sbuf(ipconfig);
+      std::getline(sbuf, ip, ',');
+      std::getline(sbuf, sn, ',');
+      std::getline(sbuf, gw, ',');
+      ESP_LOGI(TAG,"%s.ovms.staticip param set: %s",ssid.c_str(),ipconfig.c_str());
+      }
+    if (ip.empty())
+      {
+      ESP_LOGI(TAG,"%s.ovms.staticip param not set",ssid.c_str());
+      return;
+      }
     ESP_LOGI(TAG,"STA config ip: %s, sn: %s, gw: %s",ip.c_str(), sn.c_str(), gw.c_str());
     memset(&m_ip_static_sta,0,sizeof(m_ip_static_sta));
     memset(&m_dns_static_sta,0,sizeof(m_dns_static_sta));
@@ -1333,13 +1318,6 @@ void esp32wifi::SetSTAWifiIP(bool staticmode, std::string ip, std::string sn, st
       ESP_LOGE(TAG, "DHCP: failed stopping DHCP server; error=%d", err);
       return;
       }
-    //err = tcpip_adapter_set_dns_info(TCPIP_ADAPTER_IF_STA,TCPIP_ADAPTER_DNS_MAIN, &m_dns_static_sta);
-    //if (err != ESP_OK)
-    //  {
-    //  ESP_LOGE(TAG, "TCPIP: failed setting static dns details; error=%d", err);
-    //  return;
-    //  }
-    //SetDNSServer(&m_dns_static_sta.ip);
 
     err = tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_STA, &m_ip_static_sta);
     if (err != ESP_OK)
@@ -1348,11 +1326,13 @@ void esp32wifi::SetSTAWifiIP(bool staticmode, std::string ip, std::string sn, st
       tcpip_adapter_dhcpc_start(TCPIP_ADAPTER_IF_STA);
       return;
       }
-    dns_setserver(0,&m_dns_static_sta.ip);
+
+    err = tcpip_adapter_set_dns_info(TCPIP_ADAPTER_IF_STA,TCPIP_ADAPTER_DNS_MAIN, &m_dns_static_sta);
+    if (err != ESP_OK)
+      {
+      ESP_LOGE(TAG, "TCPIP: failed setting static dns details; error=%d", err);
+      return;
+      }
     tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA,&m_ip_info_sta);
-    }
-  else if (!staticmode)
-    {
-    StartDhcpClient();
     }
   }
