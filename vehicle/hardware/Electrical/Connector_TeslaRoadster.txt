@@ -16,9 +16,9 @@ Connector: Tesla Roadster DIAG connector
 
 Tesla Roadster:
 
-  CAN1: VDS, Instruments, TPMS
-  CAN2: HVAC, ESS
-  CAN3: GS, SwitchPack, ABS, PEM, TCM
+  CAN1: Instrumentation @1Mhz VDS, Instruments, TPMS
+  CAN2: ESS @125Kbps HVAC, ESS
+  CAN3: Powertrain @500Kbps GS, SwitchPack, ABS, PEM, TCM
   CAN4: OBDII
 
   * All are connected to VMS
