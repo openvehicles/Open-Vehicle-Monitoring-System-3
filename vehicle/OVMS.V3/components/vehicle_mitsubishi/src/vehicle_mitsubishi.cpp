@@ -54,7 +54,13 @@
 ;     1.0.9
 ;       - Charge detection fix
 ;       - update xmi charge command Stop SOC during charge
-;
+;       - set RR to 0 while charging on QC
+;     1.0.10
+;       - replace V1.0.6  with polling cac
+;       - Get External and Internal temp (beta)
+;       - Get Trip A/B value
+;     1.0.11
+;       - Calculate trip distance from TripB, more accurate than odometer 100m vs 1000m
 ;
 ;    (C) 2011         Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018    Mark Webb-Johnson
@@ -82,11 +88,29 @@
 
 #include "ovms_log.h"
 #include <stdio.h>
+#include <string.h>
+#include "pcp.h"
 #include "vehicle_mitsubishi.h"
+#include "metrics_standard.h"
+#include "ovms_metrics.h"
+#include "ovms_notify.h"
+#include <sys/param.h>
 
-#define VERSION "1.0.9"
+#define VERSION "1.0.11"
 
 static const char *TAG = "v-mitsubishi";
+
+// Pollstate 0 - car is off
+// Pollstate 1 - car is on
+// Pollstate 2 - car is charging
+static const OvmsVehicle::poll_pid_t vehicle_mitsubishi_polls[] =
+  {
+    { 0x761, 0x762, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x01, 		{       0,  10,   10 } }, 	// cac
+    { 0x765, 0x766, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x01, 		{       0,  10,    0 } },   // OBC
+    { 0x771, 0x772, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x13, 		{       0,  10,   10 } },   //external/internal temp
+    { 0x782, 0x783, VEHICLE_POLL_TYPE_OBDIIGROUP,  0xCE, 		{       0,   5,    0 } },   //Trip A/B
+    { 0, 0, 0, 0, { 0, 0, 0 } }
+  };
 
 OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
 {
@@ -113,7 +137,7 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
 
   v_c_efficiency->SetValue(0);
 
-  if(POS_ODO > 0)
+  if(POS_ODO > 0.0)
   {
     has_odo = true;
 
@@ -136,6 +160,8 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   ms_v_trip_charge_ac_kwh->SetValue(0);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
+  PollSetPidList(m_can1,vehicle_mitsubishi_polls);
+  PollSetState(0);
 
   //BMS
   //Disable BMS alerts by default
@@ -175,6 +201,7 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   // init configs:
   MyConfig.RegisterParam( "xmi", "Trio", true, true);
   ConfigChanged(NULL);
+
 
 }
 
@@ -386,7 +413,9 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       case 0x374://freq10 // Main Battery Soc
       {
-        StandardMetrics.ms_v_bat_soc->SetValue(((int)d[1] - 10 ) / 2.0, Percentage);
+        if (d[1] > 10)
+          StandardMetrics.ms_v_bat_soc->SetValue(((int)d[1] - 10 ) / 2.0, Percentage);
+
       break;
       }
 
@@ -521,7 +550,10 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       if(StandardMetrics.ms_v_pos_odometer->AsInt() > 0 && has_odo == false && StandardMetrics.ms_v_bat_soc->AsFloat() > 0)
       {
-        has_odo = true;
+        if(POS_ODO > 0.0)
+        {
+          has_odo = true;
+        }
         if (!set_odo)
         {
           mi_charge_trip_counter.Reset(POS_ODO);
@@ -690,53 +722,6 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     }
 
-    case 0x762: // AH
-    {
-      if (d[0] == 16)
-      {
-        // Request CAC...
-        CAN_frame_t frame;
-        memset(&frame,0,sizeof(frame));
-        frame.origin = m_can1;
-        frame.FIR.U = 0;
-        frame.FIR.B.DLC = 3;
-        frame.FIR.B.FF = CAN_frame_std;
-        frame.MsgID = 0x761;
-        frame.data.u8[0] = 0x30;
-        frame.data.u8[1] = 0x08;
-        frame.data.u8[2] = 0x0A;
-        m_can1->Write(&frame);
-
-        //real SOC
-        OvmsMetricFloat* xmi_bat_soc_real = MyMetrics.InitFloat("xmi.b.soc.real", 10, 0, Percentage);
-        xmi_bat_soc_real->SetValue((d[4] / 2.0 - 5));
-
-        // displayed SOC
-        OvmsMetricFloat* xmi_bat_soc_display = MyMetrics.InitFloat("xmi.b.soc.display", 10, 0, Percentage);
-        xmi_bat_soc_display->SetValue((d[5] / 2.0 - 5));
-      }
-
-      if(d[0] == 36)
-      {
-        // battery "max" capacity
-        StandardMetrics.ms_v_bat_cac->SetValue(((d[3] * 256.0 + d[4]) / 10.0));
-
-        // battery remain capacity
-        ms_v_bat_cac_rem->SetValue(((d[5] * 256.0 + d[6]) / 10.0));
-
-        //max charging kW
-        ms_v_bat_max_input->SetValue(d[7] / 4.0);
-      }
-
-      if(d[0] == 37)
-      {
-        //max output kW
-        ms_v_bat_max_output->SetValue(d[1] / 4.0);
-      }
-
-      break;
-    }
-
     default:
     break;
     }
@@ -767,6 +752,8 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
 
     if ((mi_QC == true) || (mi_SC == true))
     {
+
+      PollSetState(2);
       StandardMetrics.ms_v_env_charging12v->SetValue(true);
       if (! StandardMetrics.ms_v_charge_pilot->AsBool())
       {
@@ -787,6 +774,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
       }
       else
       {
+
         StandardMetrics.ms_v_charge_state->SetValue("charging");
         v_c_time->SetValue(StandardMetrics.ms_v_charge_time->AsInt());
         v_c_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
@@ -861,7 +849,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
     //Current Trip
     if (mi_park_trip_counter.Started())
     {
-        mi_park_trip_counter.Update(POS_ODO);
+        mi_park_trip_counter.Update(ms_v_trip_B->AsFloat());
         StdMetrics.ms_v_pos_trip->SetValue(mi_park_trip_counter.GetDistance(), Kilometers);
         ms_v_pos_trip_park->SetValue(mi_charge_trip_counter.GetDistance(), Kilometers);
         ms_v_trip_park_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
@@ -890,26 +878,6 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
   }
 }
 
-void OvmsVehicleMitsubishi::Ticker60(uint32_t ticker)
-{
-  if (StdMetrics.ms_v_env_on->AsBool() || mi_QC == true || mi_SC == true)
-  {
-    //Send a request to BMS ECU
-   CAN_frame_t frame;
-    memset(&frame,0,sizeof(frame));
-    frame.origin = m_can1;
-    frame.FIR.U = 0;
-    frame.FIR.B.DLC = 3;
-    frame.FIR.B.FF = CAN_frame_std;
-    frame.MsgID = 0x761;
-    frame.data.u8[0] = 0x02;
-    frame.data.u8[1] = 0x21;
-    frame.data.u8[2] = 0x01;
-    m_can1->Write(&frame);
-
-  }
-}
-
   /**
    * Takes care of setting all the state appropriate when the car is on
    * or off. Centralized so we can more easily make on and off mirror
@@ -935,24 +903,26 @@ void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
        ms_v_trip_park_time_start->SetValue(StdMetrics.ms_m_timeutc->AsInt());
        if(has_odo == true && StandardMetrics.ms_v_bat_soc->AsFloat() > 0.0)
          {
-           mi_park_trip_counter.Reset(POS_ODO);
+           mi_park_trip_counter.Reset(ms_v_trip_B->AsFloat());
            ms_v_trip_park_soc_start->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
          }
 
        BmsResetCellStats();
+       PollSetState(1);
     }
     else if ( !isOn && StdMetrics.ms_v_env_on->AsBool() )
     {
       // Car is OFF
       StdMetrics.ms_v_env_on->SetValue( isOn );
       StdMetrics.ms_v_pos_speed->SetValue(0);
+      mi_park_trip_counter.Update(ms_v_trip_B->AsFloat());
       StdMetrics.ms_v_pos_trip->SetValue(mi_park_trip_counter.GetDistance());
       ms_v_pos_trip_park->SetValue(mi_park_trip_counter.GetDistance());
-      //StdMetrics.ms_v_pos_trip->SetValue( POS_ODO- mi_trip_start_odo );
+
       StdMetrics.ms_v_env_charging12v->SetValue(false);
-      mi_park_trip_counter.Update(POS_ODO);
       ms_v_trip_park_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
       ms_v_trip_park_time_stop->SetValue(StdMetrics.ms_m_timeutc->AsInt());
+      PollSetState(0);
     }
 }
 
@@ -1099,7 +1069,7 @@ void MI_Trip_Counter::Update(float current_odo)
 }
 
   /*
-   * Returnstrueif the trip counter has been initialized properly.
+   * Returns true if the trip counter has been initialized properly.
    */
 bool MI_Trip_Counter::Started()
 {
