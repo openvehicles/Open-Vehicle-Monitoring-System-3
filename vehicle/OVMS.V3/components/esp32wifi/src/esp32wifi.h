@@ -75,6 +75,8 @@ class esp32wifi : public pcp, public InternalRamAllocated
     std::string GetAPSSID();
     void UpdateNetMetrics();
     void AdjustTaskPriority();
+    void StartDhcpClient();
+    void SetSTAWifiIP(std::string ip="", std::string sn="", std::string gw="");
 
   public:
     void EventWifiStaState(std::string event, void* data);
@@ -104,6 +106,8 @@ class esp32wifi : public pcp, public InternalRamAllocated
     uint8_t m_mac_ap[6];
     tcpip_adapter_ip_info_t m_ip_info_sta;
     tcpip_adapter_ip_info_t m_ip_info_ap;
+    tcpip_adapter_ip_info_t m_ip_static_sta;
+    tcpip_adapter_dns_info_t m_dns_static_sta;
     wifi_init_config_t m_wifi_init_cfg;
     wifi_config_t m_wifi_ap_cfg;
     wifi_config_t m_wifi_sta_cfg;

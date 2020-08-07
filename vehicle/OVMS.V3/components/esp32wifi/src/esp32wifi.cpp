@@ -33,6 +33,8 @@ static const char *TAG = "esp32wifi";
 
 #include <string.h>
 #include <string>
+#include <lwip/inet.h>
+#include <lwip/dns.h>
 #include "esp32wifi.h"
 #include "esp_wifi.h"
 #include "ovms.h"
@@ -279,6 +281,35 @@ void wifi_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   me->OutputStatus(verbosity, writer);
   }
 
+void wifi_ip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+    esp32wifi *me = MyPeripherals->m_esp32wifi;
+    const char* ipmode = cmd->GetName();
+    if (me == NULL)
+      {
+      writer->puts("Error: wifi peripheral could not be found");
+      return;
+      }
+    if (strcmp(ipmode, "dhcp")==0)
+      {
+      writer->puts("Setting dynamic ip details for STA....");
+      me->StartDhcpClient();
+      return;
+      }
+    writer->puts("Setting static ip details for STA....");
+    if (argc ==  0)
+      {
+      me->SetSTAWifiIP();
+      return;
+      }
+    else if (argc == 3)
+      {
+      me->SetSTAWifiIP(argv[0], argv[1], argv[2]);
+      return;
+      }
+    else writer->puts("Error: incorrect number of arguments");
+  }
+
 class esp32wifiInit
     {
     public: esp32wifiInit();
@@ -304,6 +335,15 @@ esp32wifiInit::esp32wifiInit()
     "Omit <stassid> or pass empty string to activate scanning mode.\n"
     "Set <stabssid> to a MAC address to bind to a specific access point.", 1, 3);
   cmd_mode->RegisterCommand("off","Turn off wifi networking",wifi_mode_off);
+  OvmsCommand* cmd_mode_ip = cmd_wifi->RegisterCommand("ip","WIFI static/dhcp ip framework");
+  cmd_mode_ip->RegisterCommand("static","Set static ip, subnet, gateway",wifi_ip,
+    "[<ip> <subnet> <gateway>]\n"
+    "Example: 192.168.12.34 255.255.255.0 192.168.12.1\n"
+    "The gateway will also be used as the DNS.\n"
+    "Omit optional arguments to read the configured setup for the current SSID:\n"
+    "Use config set wifi.ssid \"<ssid>.ovms.staticip\" \"<ip>,<subnet>,<gateway>\"\n"
+    "to configure persistent static details for a SSID.", 0, 3);
+  cmd_mode_ip->RegisterCommand("dhcp","Turn on dhcp client",wifi_ip);
   }
 
 esp32wifi::esp32wifi(const char* name)
@@ -655,7 +695,6 @@ void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appas
   m_wifi_sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
   m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
-
   ESP_ERROR_CHECK(esp_wifi_start());
   }
 
@@ -942,7 +981,7 @@ void esp32wifi::EventWifiStaConnected(std::string event, void* data)
 
   ESP_LOGI(TAG, "STA connected with SSID: %.*s, BSSID: " MACSTR ", Channel: %u, Auth: %s",
     conn.ssid_len, conn.ssid, MAC2STR(conn.bssid), conn.channel,
-    conn.authmode == WIFI_AUTH_OPEN ? "None" : 
+    conn.authmode == WIFI_AUTH_OPEN ? "None" :
     conn.authmode == WIFI_AUTH_WEP ? "WEP" :
     conn.authmode == WIFI_AUTH_WPA_PSK ? "WPA" :
     conn.authmode == WIFI_AUTH_WPA2_PSK ? "WPA2" :
@@ -1176,9 +1215,13 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
       m_wifi_sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
       ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &m_wifi_sta_cfg));
       ESP_ERROR_CHECK(esp_wifi_connect());
+      std::string ipconfig = MyConfig.GetParamValue("wifi.ssid", ssid + ".ovms.staticip");
+      if (!ipconfig.empty())
+        {
+        SetSTAWifiIP();
+        }
       }
     }
-
   if (list)
     free(list);
   }
@@ -1225,5 +1268,71 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
       {
       writer->printf("  Stations: unknown\n");
       }
+    }
+  }
+
+void esp32wifi::StartDhcpClient()
+  {
+  if (m_mode ==  ESP32WIFI_MODE_CLIENT || m_mode ==  ESP32WIFI_MODE_APCLIENT)
+    {
+    esp_err_t err;
+    err = tcpip_adapter_dhcpc_start(TCPIP_ADAPTER_IF_STA);
+    if (err != ESP_OK && err != ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STARTED)
+      {
+      ESP_LOGE(TAG, "TCPIP: failed starting dhcp client; error=%d", err);
+      }
+    }
+  }
+
+void esp32wifi::SetSTAWifiIP(std::string ip, std::string sn, std::string gw)
+  {
+  if (m_mode ==  ESP32WIFI_MODE_CLIENT || m_mode ==  ESP32WIFI_MODE_APCLIENT)
+    { //only set static details if in client mode
+      // read static IP config:
+    std::string ssid = GetSSID();
+    std::string ipconfig = MyConfig.GetParamValue("wifi.ssid", ssid + ".ovms.staticip");
+    if (!ipconfig.empty())
+      {// parse static IP config, pattern "<ip>,<sn>,<gw>":
+      std::istringstream sbuf(ipconfig);
+      std::getline(sbuf, ip, ',');
+      std::getline(sbuf, sn, ',');
+      std::getline(sbuf, gw, ',');
+      ESP_LOGI(TAG,"%s.ovms.staticip param set: %s",ssid.c_str(),ipconfig.c_str());
+      }
+    if (ip.empty())
+      {
+      ESP_LOGI(TAG,"%s.ovms.staticip param not set",ssid.c_str());
+      return;
+      }
+    ESP_LOGI(TAG,"STA config ip: %s, sn: %s, gw: %s",ip.c_str(), sn.c_str(), gw.c_str());
+    memset(&m_ip_static_sta,0,sizeof(m_ip_static_sta));
+    memset(&m_dns_static_sta,0,sizeof(m_dns_static_sta));
+    inet_aton(ip.c_str(), &m_ip_static_sta.ip);
+    inet_aton(gw.c_str(), &m_ip_static_sta.gw);
+    inet_aton(sn.c_str(), &m_ip_static_sta.netmask);
+    inet_aton(gw.c_str(), &m_dns_static_sta.ip);
+    esp_err_t err;
+    err = tcpip_adapter_dhcpc_stop(TCPIP_ADAPTER_IF_STA);
+    if (err != ESP_OK && err != ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STOPPED)
+      {
+      ESP_LOGE(TAG, "DHCP: failed stopping DHCP server; error=%d", err);
+      return;
+      }
+
+    err = tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_STA, &m_ip_static_sta);
+    if (err != ESP_OK)
+      {
+      ESP_LOGE(TAG, "TCPIP: failed setting static ip details, restarting dhcp; error=%d", err);
+      tcpip_adapter_dhcpc_start(TCPIP_ADAPTER_IF_STA);
+      return;
+      }
+
+    err = tcpip_adapter_set_dns_info(TCPIP_ADAPTER_IF_STA,TCPIP_ADAPTER_DNS_MAIN, &m_dns_static_sta);
+    if (err != ESP_OK)
+      {
+      ESP_LOGE(TAG, "TCPIP: failed setting static dns details; error=%d", err);
+      return;
+      }
+    tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA,&m_ip_info_sta);
     }
   }
