@@ -1849,20 +1849,11 @@ void OvmsWebServer::OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std:
     for (auto const& kv : param->m_map) {
       pos++;
       ssid = kv.first;
+      if (endsWith(ssid, ".ovms.staticip"))
+        continue;
       if (ssid == autostart_ssid)
         pos_autostart = pos;
       gen_row();
-/*
-      c.printf(
-          "<tr>"
-            "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\" %s><strong>✖</strong></button></td>"
-            "<td><input type=\"text\" class=\"form-control\" name=\"%s_ssid_%d\" value=\"%s\"></td>"
-            "<td><input type=\"password\" class=\"form-control\" name=\"%s_pass_%d\" placeholder=\"no change\"></td>"
-          "</tr>"
-      , (pos == pos_autostart) ? "disabled title=\"Current autostart network\"" : ""
-      , _attr(prefix), pos, _attr(ssid)
-      , _attr(prefix), pos);
-*/
     }
   }
 
@@ -1916,6 +1907,8 @@ void OvmsWebServer::UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std:
       error += "<li>SSID <code>" + ssid + "</code>: password is too short (min " + buf + " chars)</li>";
     }
     newmap[ssid] = pass;
+    if (param->IsDefined(ssid + ".ovms.staticip"))
+      newmap[ssid + ".ovms.staticip"] = param->GetValue(ssid + ".ovms.staticip");
     if (i == pos_autostart)
       ssid_autostart = ssid;
   }

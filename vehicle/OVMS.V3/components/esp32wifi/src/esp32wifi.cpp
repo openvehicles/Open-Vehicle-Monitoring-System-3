@@ -1290,14 +1290,17 @@ void esp32wifi::SetSTAWifiIP(std::string ip, std::string sn, std::string gw)
     { //only set static details if in client mode
       // read static IP config:
     std::string ssid = GetSSID();
-    std::string ipconfig = MyConfig.GetParamValue("wifi.ssid", ssid + ".ovms.staticip");
-    if (!ipconfig.empty())
-      {// parse static IP config, pattern "<ip>,<sn>,<gw>":
-      std::istringstream sbuf(ipconfig);
-      std::getline(sbuf, ip, ',');
-      std::getline(sbuf, sn, ',');
-      std::getline(sbuf, gw, ',');
-      ESP_LOGI(TAG,"%s.ovms.staticip param set: %s",ssid.c_str(),ipconfig.c_str());
+    if (ip.empty())
+      {
+      std::string ipconfig = MyConfig.GetParamValue("wifi.ssid", ssid + ".ovms.staticip");
+      if (!ipconfig.empty())
+        {// parse static IP config, pattern "<ip>,<sn>,<gw>":
+        std::istringstream sbuf(ipconfig);
+        std::getline(sbuf, ip, ',');
+        std::getline(sbuf, sn, ',');
+        std::getline(sbuf, gw, ',');
+        ESP_LOGI(TAG,"%s.ovms.staticip param set: %s",ssid.c_str(),ipconfig.c_str());
+        }
       }
     if (ip.empty())
       {

@@ -1,6 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Wifi client: support static IP configuration, manually set or automatically applied by SSID
+  New commands:
+    wifi ip static [<ip> <subnet> <gateway>]
+    wifi ip dhcp
+  New configs:
+    wifi.ssid "<ssid>.ovms.staticip" "<ip>,<subnet>,<gateway>"
 
 2020-08-04 MWJ  3.2.014  OTA release
 - Renault Twizy: support VirtualBMS & eDriver BMS (3 cell temperature sensors)
