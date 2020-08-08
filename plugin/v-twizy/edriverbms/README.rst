@@ -4,7 +4,7 @@ eDriver BMS Monitor
 
 **Status monitor for the Twizy custom eDriver BMS by Pascal Ripp**
 
-Version 1.0 by Michael Balzer <dexter@dexters-web.de>
+Version 2.0 by Michael Balzer <dexter@dexters-web.de>
 
 .. image:: edrvmon-screenshot.png
 
@@ -40,3 +40,10 @@ Installation
   - Menu:    Vehicle
   - Auth:    Cookie
 
+
+-------
+History
+-------
+
+  - V2.0 -- Added cell balancing time totals + SOC & voltage use/charge range
+  - V1.0 -- Initial release

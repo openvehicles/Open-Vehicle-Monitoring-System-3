@@ -1,7 +1,7 @@
 <!--
   Web UI page plugin:
     eDriver BMS Monitor
-    Version 1.0  Michael Balzer <dexter@dexters-web.de>
+    Version 2.0  Michael Balzer <dexter@dexters-web.de>
   
   Dependencies:
     - none
@@ -46,7 +46,7 @@ td i.balance {
     </div>
   </div>
   <div class="panel-footer">
-    <button type="button" class="btn btn-default" data-target="#cmdres" data-cmd="bms reset">Clear Alerts</button>
+    <button type="button" class="btn btn-default" data-target="#cmdres" data-cmd="xrt batt reset">Reset Monitor</button>
     <samp class="samp-inline" id="cmdres"></samp>
   </div>
 </div>
@@ -145,7 +145,8 @@ td i.balance {
       { title: "#", className: "dt-body-center", width: "10%" },
       { title: "Volt", className: "dt-body-right", width: "35%" },
       { title: "Bal", className: "dt-body-center", width: "10%" },
-      { title: "Dev", className: "dt-body-right", width: "35%" },
+      { title: "Btm", className: "dt-body-right", width: "15%" },
+      { title: "Dev", className: "dt-body-right", width: "20%" },
       { title: "Alrt", className: "dt-body-center", width: "10%" },
     ],
     rowId: 0,
@@ -160,7 +161,7 @@ td i.balance {
     
     var updkeys = Object.keys(upd).join();
     
-    if ($tstate && /(xrt\.bms\.|v\.b\.(soc|voltage|current|coulomb|energy))/.test(updkeys)) {
+    if ($tstate && /(xrt\.b|v\.b\.(soc|voltage|current|coulomb|energy))/.test(updkeys)) {
       var errorAlert = (metrics['xrt.bms.error'] > 0) ? ' '+alertName[2] : '';
       var tempAlert = (metrics['xrt.bms.temp'] >= bmsTempAlert) ? ' '+alertName[2] : '';
       var dstate = [
@@ -168,8 +169,12 @@ td i.balance {
         [ 'Error', codeName(errorName, metrics['xrt.bms.error'])+errorAlert ],
         [ 'Temperature', metrics['xrt.bms.temp']+' °C'+tempAlert ],
         [ 'AUX Relay', codeName(auxstateName, metrics['xrt.bms.state2']) ],
-        [ 'SOC', Number(metrics['v.b.soc']).toFixed(1)+' %' ],
-        [ 'Voltage', Number(metrics['v.b.voltage']).toFixed(1)+' V' ],
+        [ 'SOC', Number(metrics['v.b.soc']).toFixed(1)+' %'+
+          ' ['+Number(metrics['xrt.b.u.soc.min']).toFixed(1)+
+          ' - '+Number(metrics['xrt.b.u.soc.max']).toFixed(1)+']' ],
+        [ 'Voltage', Number(metrics['v.b.voltage']).toFixed(1)+' V'+
+          ' ['+Number(metrics['xrt.b.u.volt.min']).toFixed(1)+
+          ' - '+Number(metrics['xrt.b.u.volt.max']).toFixed(1)+']' ],
         [ 'Current', Number(metrics['v.b.current']).toFixed(1)+' A' ],
         [ 'Coulomb used', Number(metrics['v.b.coulomb.used']).toFixed(2)+' Ah' ],
         [ 'Coulomb recd', Number(metrics['v.b.coulomb.recd']).toFixed(2)+' Ah' ],
@@ -195,10 +200,12 @@ td i.balance {
     if ($tcells && /(xrt\.bms\.balancing|v\.b\.c\.voltage)/.test(updkeys)) {
       var dcells = [];
       var bal = metrics["xrt.bms.balancing"] || [];
+      var btm = metrics["xrt.bms.balancetime"] || [];
       for (var i = 0; i < metrics['v.b.c.voltage'].length; i++) {
         var row = [ i+1,
           Number((metrics['v.b.c.voltage']||[])[i]).toFixed(3)+' V',
           bal.includes(i+1) ? '<i class="balance">⚖</i>' : '',
+          (Number(btm[i]||0)/10).toFixed(1)+' s',
           (Number((metrics['v.b.c.voltage.dev.max']||[])[i])*1000).toFixed(1)+' mV',
           codeName(alertName, (metrics['v.b.c.voltage.alert']||[])[i]),
         ];
