@@ -651,7 +651,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       //  {
         // can_databuffer[6] is the J1772 pilot current, 0.5A per bit
         // TODO enum?
-      float current_limit = (d[6]) / 2;
+      float current_limit = d[6] / 2.0f;
       StandardMetrics.ms_v_charge_climit->SetValue(current_limit);
       if (current_limit > 0)
         {
@@ -663,7 +663,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       if (d[3] > 90)
         {
           StandardMetrics.ms_v_charge_pilot->SetValue(true);
-          StandardMetrics.ms_v_charge_current->SetValue(d[1]/2); //AC charger current
+          StandardMetrics.ms_v_charge_current->SetValue(d[1]/2.0f); //AC charger current
         }
       else
         {
