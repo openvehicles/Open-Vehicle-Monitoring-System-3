@@ -321,7 +321,7 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
           int bms_temp = (int)CAN_BYTE(3) - 40, prev_temp = m_bms_temp->AsInt();
           m_bms_temp->SetValue(bms_temp);
           if (bms_temp >= BMS_TEMP_ALERT && prev_temp < BMS_TEMP_ALERT) {
-            RequestNotify(SEND_BMSAlert);
+            RequestNotify(SEND_BMSAlert | SEND_BatteryStats);
           }
         }
         else {
@@ -695,10 +695,20 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
         m_bms_state1->SetValue(CAN_BYTE(0));
         m_bms_state2->SetValue(CAN_BYTE(7));
         m_bms_error->SetValue(bms_error);
-        m_bms_balancing->SetValue(CAN_BYTE(5) << 8 | CAN_BYTE(6));
+        
+        // Cell balancing status:
+        std::bitset<16> balancing(CAN_BYTE(5) << 8 | CAN_BYTE(6));
+        m_bms_balancing->SetValue(balancing);
+        if (balancing.any()) {
+          bms_been_balancing |= balancing;
+          for (int i = 0; i < 16; i++) {
+            if (balancing.test(i)) bms_balance_time[i]++;
+          }
+          m_bms_balancetime->SetValue(bms_balance_time);
+        }
         
         if (bms_error && bms_error != prev_error) {
-          RequestNotify(SEND_BMSAlert);
+          RequestNotify(SEND_BMSAlert | SEND_BatteryStats);
         }
         
         // Battery cell voltages 15 + 16:

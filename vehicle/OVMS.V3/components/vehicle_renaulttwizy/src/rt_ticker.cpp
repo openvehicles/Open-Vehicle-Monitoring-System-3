@@ -315,7 +315,7 @@ void OvmsVehicleRenaultTwizy::Ticker1(uint32_t ticker)
         twizy_chargestate = 4;
         
         // calculate battery capacity if charge started below 40% SOC:
-        if (twizy_soc_min < 4000)
+        if (twizy_soc_min < 4000 && twizy_cc_soc > twizy_soc_min)
         {
           // scale CC charge part by SOC range:
           charge = (twizy_cc_charge / (twizy_cc_soc - twizy_soc_min)) * twizy_cc_soc;

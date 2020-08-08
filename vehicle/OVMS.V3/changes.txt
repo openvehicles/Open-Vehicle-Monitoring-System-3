@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Renault Twizy: add eDriver/Virtual BMS data to RT-BAT-C & RT-BAT-P logs
 - Wifi client: support static IP configuration, manually set or automatically applied by SSID
   New commands:
     wifi ip static [<ip> <subnet> <gateway>]

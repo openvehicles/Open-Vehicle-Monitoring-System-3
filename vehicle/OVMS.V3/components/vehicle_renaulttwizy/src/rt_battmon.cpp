@@ -93,13 +93,16 @@ void OvmsVehicleRenaultTwizy::BatteryInit()
   m_batt_use_temp_min = MyMetrics.InitFloat("xrt.b.u.temp.min", SM_STALE_HIGH, 0, Celcius);
   m_batt_use_temp_max = MyMetrics.InitFloat("xrt.b.u.temp.max", SM_STALE_HIGH, 0, Celcius);
 
-  twizy_bms_type  = BMS_TYPE_ORIG;
-  m_bms_type      = MyMetrics.InitInt("xrt.bms.type", SM_STALE_HIGH, BMS_TYPE_ORIG);
-  m_bms_state1    = MyMetrics.InitInt("xrt.bms.state1", SM_STALE_HIGH, 0);
-  m_bms_state2    = MyMetrics.InitInt("xrt.bms.state2", SM_STALE_HIGH, 0);
-  m_bms_error     = MyMetrics.InitInt("xrt.bms.error", SM_STALE_HIGH, 0);
-  m_bms_balancing = MyMetrics.InitBitset<16>("xrt.bms.balancing", SM_STALE_HIGH, 0);
-  m_bms_temp      = MyMetrics.InitFloat("xrt.bms.temp", SM_STALE_HIGH, 0, Celcius);
+  twizy_bms_type      = BMS_TYPE_ORIG;
+  m_bms_type          = MyMetrics.InitInt("xrt.bms.type", SM_STALE_HIGH, BMS_TYPE_ORIG);
+  m_bms_state1        = MyMetrics.InitInt("xrt.bms.state1", SM_STALE_HIGH, 0);
+  m_bms_state2        = MyMetrics.InitInt("xrt.bms.state2", SM_STALE_HIGH, 0);
+  m_bms_error         = MyMetrics.InitInt("xrt.bms.error", SM_STALE_HIGH, 0);
+  m_bms_balancing     = MyMetrics.InitBitset<16>("xrt.bms.balancing", SM_STALE_HIGH, 0);
+  m_bms_balancetime   = new OvmsMetricVector<long>("xrt.bms.balancetime", SM_STALE_HIGH);
+  m_bms_temp          = MyMetrics.InitFloat("xrt.bms.temp", SM_STALE_HIGH, 0, Celcius);
+
+  bms_balance_time.insert(bms_balance_time.begin(), 16, 0);
 
   // BMS configuration:
   //    Note: layout initialized to 2 voltages + 1 temperature per module,
@@ -248,6 +251,12 @@ void OvmsVehicleRenaultTwizy::BatteryReset()
     pack.volt_alerts = 0;
     pack.last_temp_alerts = 0;
     pack.last_volt_alerts = 0;
+  }
+  
+  if (twizy_bms_type != BMS_TYPE_ORIG) {
+    bms_been_balancing.reset();
+    std::fill(bms_balance_time.begin(), bms_balance_time.end(), 0);
+    m_bms_balancetime->SetValue(bms_balance_time);
   }
   
   BmsResetCellStats();
@@ -800,6 +809,8 @@ void OvmsVehicleRenaultTwizy::FormatPackData(int verbosity, OvmsWriter* writer, 
   //  ,<temp_act>,<temp_min>,<temp_max>
   //  ,<cell_volt_stddev_max>,<cmod_temp_stddev_max>
   //  ,<max_drive_pwr>,<max_recup_pwr>
+  // eDriver / Virtual BMS extensions:
+  //  ,<bms_state1>,<bms_state2>,<bms_error>,<bms_temp>
 
   writer->printf(
     "RT-BAT-P,%d,86400"
@@ -808,7 +819,8 @@ void OvmsVehicleRenaultTwizy::FormatPackData(int verbosity, OvmsWriter* writer, 
     ",%d,%d,%d"
     ",%d,%d,%d"
     ",%d,%d"
-    ",%d,%d",
+    ",%d,%d"
+    ",%d,%d,%d,%d",
     pack+1,
     volt_alert, temp_alert,
     twizy_soc, twizy_soc_min, twizy_soc_max,
@@ -821,7 +833,11 @@ void OvmsVehicleRenaultTwizy::FormatPackData(int verbosity, OvmsWriter* writer, 
     CONV_CellVolt(twizy_batt[pack].cell_volt_stddev_max),
     (int) (twizy_batt[pack].cmod_temp_stddev_max + 0.5),
     (int) twizy_batt[pack].max_drive_pwr * 5,
-    (int) twizy_batt[pack].max_recup_pwr * 5);
+    (int) twizy_batt[pack].max_recup_pwr * 5,
+    m_bms_state1->AsInt(),
+    m_bms_state2->AsInt(),
+    m_bms_error->AsInt(),
+    m_bms_temp->AsInt());
 
 }
 
@@ -837,6 +853,7 @@ void OvmsVehicleRenaultTwizy::FormatCellData(int verbosity, OvmsWriter* writer, 
   int pack = 0; // currently fixed, TODO for addon packs: determine pack index for cell
   int volt_alert, temp_alert;
   int cmod = cell / m_bms_readingspermodule_v;
+  std::bitset<16> bms_balancing = m_bms_balancing->AsBitset();
 
   if (twizy_batt[pack].volt_alerts.test(cell))
     volt_alert = 3;
@@ -857,12 +874,15 @@ void OvmsVehicleRenaultTwizy::FormatCellData(int verbosity, OvmsWriter* writer, 
   //  ,<volt_alertstatus>,<temp_alertstatus>,
   //  ,<volt_act>,<volt_min>,<volt_max>,<volt_maxdev>
   //  ,<temp_act>,<temp_min>,<temp_max>,<temp_maxdev>
+  // eDriver / Virtual BMS extensions:
+  //  ,<balancing>,<been_balancing>,<balancetime>
 
   writer->printf(
     "RT-BAT-C,%d,86400"
     ",%d,%d"
     ",%d,%d,%d,%d"
-    ",%d,%d,%d,%d",
+    ",%d,%d,%d,%d"
+    ",%d,%d,%d",
     cell+1,
     volt_alert, temp_alert,
     CONV_CellVolt(twizy_cell[cell].volt_act),
@@ -872,7 +892,10 @@ void OvmsVehicleRenaultTwizy::FormatCellData(int verbosity, OvmsWriter* writer, 
     CONV_Temp(twizy_cmod[cmod].temp_act),
     CONV_Temp(twizy_cmod[cmod].temp_min),
     CONV_Temp(twizy_cmod[cmod].temp_max),
-    (int) (twizy_cmod[cmod].temp_maxdev + 0.5));
+    (int) (twizy_cmod[cmod].temp_maxdev + 0.5),
+    bms_balancing.test(cell) ? 1 : 0,
+    bms_been_balancing.test(cell) ? 1 : 0,
+    bms_balance_time[cell]);
 
 }
 
@@ -915,4 +938,7 @@ void OvmsVehicleRenaultTwizy::BatterySendDataUpdate(bool force)
     FormatCellData(COMMAND_RESULT_NORMAL, &buf, cell);
     MyNotify.NotifyString("data", "xrt.battery.log", buf.c_str());
   }
+
+  // Clear balancer collector:
+  bms_been_balancing.reset();
 }
