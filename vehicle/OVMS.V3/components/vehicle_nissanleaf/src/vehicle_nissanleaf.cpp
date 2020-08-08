@@ -226,14 +226,14 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
     {
     case CHARGER_STATUS_IDLE:
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-      StandardMetrics.ms_v_charge_state->SetValue("stopped");
       StandardMetrics.ms_v_charge_substate->SetValue("stopped");
+      StandardMetrics.ms_v_charge_state->SetValue("stopped");
       break;
     case CHARGER_STATUS_PLUGGED_IN_TIMER_WAIT:
       StandardMetrics.ms_v_door_chargeport->SetValue(true); //see 0x35d, can't use as only open signal
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-      StandardMetrics.ms_v_charge_state->SetValue("stopped");
       StandardMetrics.ms_v_charge_substate->SetValue("stopped");
+      StandardMetrics.ms_v_charge_state->SetValue("stopped");
       break;
     case CHARGER_STATUS_QUICK_CHARGING:
     case CHARGER_STATUS_CHARGING:
@@ -244,10 +244,10 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
         }
       StandardMetrics.ms_v_door_chargeport->SetValue(true); //see 0x35d, can't use as only open signal
       StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-      StandardMetrics.ms_v_charge_state->SetValue("charging");
-      StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
       fast_charge = StandardMetrics.ms_v_charge_type->AsString() == "chademo";
       StdMetrics.ms_v_charge_mode->SetValue(fast_charge ? "performance" : "standard");
+      StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+      StandardMetrics.ms_v_charge_state->SetValue("charging");
       PollSetState(POLLSTATE_CHARGING);
       // TODO only use battery current for Quick Charging, for regular charging
       // we should return AC line current and voltage, not battery
@@ -284,8 +284,8 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
         }
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
       StandardMetrics.ms_v_door_chargeport->SetValue(false);
-      StandardMetrics.ms_v_charge_state->SetValue("done");
       StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+      StandardMetrics.ms_v_charge_state->SetValue("done");
       PollSetState(POLLSTATE_OFF);
       break;
     }
