@@ -32,7 +32,7 @@ Function                    Support Status
 =========================== ==============
 Charge Control              Start charge only (Stop charge in beta firmware stage)
 Cabin Pre-heat/cool Control Yes [1]_ (see info below)
-Lock/Unlock Vehicle         Not currently supported
+Lock/Unlock Vehicle         Yes [3]_ (see info below)
 Valet Mode Control          Not currently supported
 =========================== ==============
 
@@ -65,6 +65,7 @@ Charge Interruption Alerts  Yes
 
 .. [2] Some HVAC Status Items have been only verified with 2013-2016 MY cars and will only work if the year is set in configuraiton. Also HVAC needs to be in ON position before powering down the vehicle for the metrics to work during pre-heat.
 
+.. [3] Lock/Unlock will work if CAR can bus is awake, this can be activated by turning on A/C
 ----------------------
 Remote Climate Control
 ----------------------
@@ -86,7 +87,7 @@ Note: Unplugging the TCU will disable Nissan EV connect / CARWINGS features e.g 
 OVMS remote climate support will 'just work' on LEAF Visia models and Visia/Acenta e-NV200 since these models do not have a TCU fitted.
 
 Note: If you prefer not to unplug the Nissan TCU, all OVMS functions appart from remote climate will function just fine alongside the Nissan TCU.
- 
+
 
 ^^^^^^^^^^^^^^^^^^^^^^^
 2016-2017 models (AZE0)
