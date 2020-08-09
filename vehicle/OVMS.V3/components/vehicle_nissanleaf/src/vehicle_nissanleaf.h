@@ -130,7 +130,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void SendCommand(RemoteCommand);
     OvmsVehicle::vehicle_command_t RemoteCommandHandler(RemoteCommand command);
     OvmsVehicle::vehicle_command_t CommandStartCharge();
-
+    virtual int GetNotifyChargeStateDelay(const char* state);
     RemoteCommand nl_remote_command; // command to send, see RemoteCommandTimer()
     uint8_t nl_remote_command_ticker; // number remaining remote command frames to send
     void PollReply_Battery(uint8_t reply_data[], uint16_t reply_len);
@@ -171,9 +171,10 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricFloat *m_climate_setpoint;
 
 
-    float m_cum_energy_used_wh;				    	// Cumulated energy (in wh) used within 1 second ticker interval
+    float m_cum_energy_used_wh;				    // Cumulated energy (in wh) used within 1 second ticker interval
     float m_cum_energy_recd_wh; 					// Cumulated energy (in wh) recovered  within 1 second ticker interval
     float m_cum_energy_charge_wh;					// Cumulated energy (in wh) charged within 10 second ticker interval
+    bool m_gen1_charger;					        // True if using original charger and 0x5bf messages, false if using 0x390 messages
   };
 
 #endif //#ifndef __VEHICLE_NISSANLEAF_H__

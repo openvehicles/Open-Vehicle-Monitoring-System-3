@@ -134,6 +134,8 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   MyMetrics.InitBool("v.e.on", SM_STALE_MIN, false);
   MyMetrics.InitBool("v.e.awake", SM_STALE_MID, false);
   MyMetrics.InitBool("v.vin", SM_STALE_NONE, "");
+  MyMetrics.InitString("v.c.state",SM_STALE_MID,"stopped");
+  m_gen1_charger = false;
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -219,17 +221,19 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_car_on(bool isOn)
 //
 void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus status)
   {
+  bool fast_charge;
   switch (status)
     {
     case CHARGER_STATUS_IDLE:
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-      StandardMetrics.ms_v_charge_state->SetValue("stopped");
       StandardMetrics.ms_v_charge_substate->SetValue("stopped");
+      StandardMetrics.ms_v_charge_state->SetValue("stopped");
       break;
     case CHARGER_STATUS_PLUGGED_IN_TIMER_WAIT:
+      StandardMetrics.ms_v_door_chargeport->SetValue(true); //see 0x35d, can't use as only open signal
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-      StandardMetrics.ms_v_charge_state->SetValue("stopped");
       StandardMetrics.ms_v_charge_substate->SetValue("stopped");
+      StandardMetrics.ms_v_charge_state->SetValue("stopped");
       break;
     case CHARGER_STATUS_QUICK_CHARGING:
     case CHARGER_STATUS_CHARGING:
@@ -238,48 +242,71 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
         StandardMetrics.ms_v_charge_kwh->SetValue(0); // Reset charge kWh
         m_cum_energy_charge_wh = 0.0f;
         }
+      StandardMetrics.ms_v_door_chargeport->SetValue(true); //see 0x35d, can't use as only open signal
       StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-      StandardMetrics.ms_v_charge_state->SetValue("charging");
+      fast_charge = StandardMetrics.ms_v_charge_type->AsString() == "chademo";
+      StdMetrics.ms_v_charge_mode->SetValue(fast_charge ? "performance" : "standard");
       StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
-
+      StandardMetrics.ms_v_charge_state->SetValue("charging");
+      PollSetState(POLLSTATE_CHARGING);
       // TODO only use battery current for Quick Charging, for regular charging
       // we should return AC line current and voltage, not battery
       // TODO does the leaf know the AC line current and voltage?
       // TODO v3 supports negative values here, what happens if we send a negative charge current to a v2 client?
-      if (StandardMetrics.ms_v_bat_current->AsFloat() < 0)
-        {
+      //if (StandardMetrics.ms_v_bat_current->AsFloat() < 0)
+      //  {
         // battery current can go negative when climate control draws more than
         // is available from the charger. We're abusing the line current which
         // is unsigned, so don't underflow it
         //
         // TODO quick charging can draw current from the vehicle
         //StandardMetrics.ms_v_charge_current->SetValue(0);
-        }
-      else
-        {
+      //  }
+      //else
+      //  {
         //StandardMetrics.ms_v_charge_current->SetValue(StandardMetrics.ms_v_bat_current->AsFloat());
+      //  }
+      if (m_gen1_charger)
+        {
+        StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
+        StandardMetrics.ms_v_charge_current->SetValue(StandardMetrics.ms_v_bat_current->AsFloat());
         }
-      StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
       break;
     case CHARGER_STATUS_FINISHED:
       // Charging finished
-      StandardMetrics.ms_v_charge_current->SetValue(0);
-      // TODO set this in ovms v2
-      // TODO the charger probably knows the line voltage, when we find where it's
-      // coded, don't zero it out when we're plugged in but not charging
-      StandardMetrics.ms_v_charge_voltage->SetValue(0);
+      if (m_gen1_charger)
+        {
+        StandardMetrics.ms_v_charge_current->SetValue(0);
+        StandardMetrics.ms_v_charge_voltage->SetValue(0);
+        // TODO set this in ovms v2
+        // TODO the charger probably knows the line voltage, when we find where it's
+        // coded, don't zero it out when we're plugged in but not charging
+        }
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-      StandardMetrics.ms_v_charge_state->SetValue("done");
+      StandardMetrics.ms_v_door_chargeport->SetValue(false);
       StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+      StandardMetrics.ms_v_charge_state->SetValue("done");
+      PollSetState(POLLSTATE_OFF);
       break;
     }
   if (status != CHARGER_STATUS_CHARGING && status != CHARGER_STATUS_QUICK_CHARGING)
     {
-    StandardMetrics.ms_v_charge_current->SetValue(0);
-    // TODO the charger probably knows the line voltage, when we find where it's
-    // coded, don't zero it out when we're plugged in but not charging
-    StandardMetrics.ms_v_charge_voltage->SetValue(0);
+    if (m_gen1_charger)
+      {
+      StandardMetrics.ms_v_charge_current->SetValue(0);
+      // TODO the charger probably knows the line voltage, when we find where it's
+      // coded, don't zero it out when we're plugged in but not charging
+      StandardMetrics.ms_v_charge_voltage->SetValue(0);
+      }
+    StandardMetrics.ms_v_charge_mode->SetValue("");
     }
+  }
+
+int OvmsVehicleNissanLeaf::GetNotifyChargeStateDelay(const char* state)
+  {
+    if (StandardMetrics.ms_m_monotonic->AsInt() < 10)
+      return 0; //avoid notify on boot triggered by setting delay
+    else return 5; //allow time for charger to handshake
   }
 
 void OvmsVehicleNissanLeaf::PollReply_Battery(uint8_t reply_data[], uint16_t reply_len)
@@ -624,7 +651,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       //  {
         // can_databuffer[6] is the J1772 pilot current, 0.5A per bit
         // TODO enum?
-      float current_limit = (d[6]) / 2;
+      float current_limit = d[6] / 2.0f;
       StandardMetrics.ms_v_charge_climit->SetValue(current_limit);
       if (current_limit > 0)
         {
@@ -632,16 +659,15 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
       //d[3] ramps from 0 to 0xB3 (179) but can sit at 1 due to capacitance?? set >90 to ensure valid signal
       //use to set pilot signal
+      StandardMetrics.ms_v_charge_voltage->SetValue(d[3]);
       if (d[3] > 90)
         {
           StandardMetrics.ms_v_charge_pilot->SetValue(true);
-          StandardMetrics.ms_v_door_chargeport->SetValue(true); //see 0x35d, can't use as only open signal
-          StandardMetrics.ms_v_charge_current->SetValue(d[1]/2); //AC charger current
+          StandardMetrics.ms_v_charge_current->SetValue(d[1]/2.0f); //AC charger current
         }
       else
         {
           StandardMetrics.ms_v_charge_pilot->SetValue(false);
-          StandardMetrics.ms_v_door_chargeport->SetValue(false);
         }
       //  }
       switch (d[5])
@@ -652,12 +678,13 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         case 0x83:
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_QUICK_CHARGING);
           break;
+        case 0x84:
+          vehicle_nissanleaf_charger_status(CHARGER_STATUS_FINISHED);
+          break;
         case 0x88:
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_CHARGING);
-          //switch to battery polling
-          PollSetState(POLLSTATE_CHARGING);
           break;
-        case 0x90: //this state appears just before 0x88 and after evse removed
+        case 0x90: //this state appears just before 0x88 and after evse removed (prepare/finish)
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
           break;
         case 0x98:
@@ -938,6 +965,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       }
       break;
     case 0x5bf:
+      m_gen1_charger = true;
       if (d[4] == 0xb0)
         {
         // Quick Charging
@@ -971,13 +999,9 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           break;
         case 0xb0: // Quick Charging
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_QUICK_CHARGING);
-          //switch to battery polling
-          PollSetState(POLLSTATE_CHARGING);
           break;
         case 0x60: // L2 Charging
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_CHARGING);
-          //switch to battery polling
-          PollSetState(POLLSTATE_CHARGING);
           break;
         case 0x40:
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_FINISHED);
@@ -1334,11 +1358,6 @@ void OvmsVehicleNissanLeaf::HandleCharging()
       !StandardMetrics.ms_v_charge_inprogress->AsBool() )
     {
     return;
-    }
-  if (StdMetrics.ms_v_charge_mode->AsString().empty())
-    {
-    bool fast_charge = StandardMetrics.ms_v_charge_type->AsString() == "chademo";
-    StdMetrics.ms_v_charge_mode->SetValue(fast_charge ? "performance" : "standard");
     }
   // Check if we have what is needed to calculate energy and remaining minutes
   if (m_cum_energy_charge_wh > 0)
