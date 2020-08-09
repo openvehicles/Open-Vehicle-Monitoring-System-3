@@ -1008,14 +1008,15 @@ void canbus::TxCallback(CAN_frame_t* p_frame, bool success)
   if (success)
     {
     m_status.packets_tx++;
+    MyCan.ExecuteCallbacks(p_frame, true, success);
     MyCan.NotifyListeners(p_frame, true);
     LogFrame(CAN_LogFrame_TX, p_frame);
     }
   else
     {
+    MyCan.ExecuteCallbacks(p_frame, true, success);
     LogFrame(CAN_LogFrame_TX_Fail, p_frame);
     }
-  MyCan.ExecuteCallbacks(p_frame, true, success);
   }
 
 /**
