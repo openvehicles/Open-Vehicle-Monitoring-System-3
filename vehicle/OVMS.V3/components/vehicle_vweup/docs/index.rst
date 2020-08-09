@@ -86,6 +86,8 @@ User notes
 Climate control
 -----------------
 
+This is still very alpha. It works but expect some hickups. You mostly need to start the remote climate control twice befor it starts. This is not understood yet and is very much work in progress.
+
 Climate control works, as long as write access to the comfort can has been enabled in the app or in the OVMS webinterface (VW e-Up -> Features).
 
 Once the AC is turned on by the app there will be a delay of about 20 seconds till the AC actually starts in the car. Further 10 seconds all communication from the app to the car is blocked.
@@ -97,14 +99,6 @@ The cabin target temperature can be set from the OVMS webinterface (VW e-Up -> C
 -----------------
 Development notes
 -----------------
-
-The code is NOT working at the moment! Last working code is from 04/11/20.
-
-Our car has been delivered on 7/7/20. Now I can comme back to serious developing and testing.
-
-More to come soon ...
-
-Till then, this code is just here for anyone who is interested in the development process.
 
 We splitted the code into functional units depending on which hardware infrastructure the user uses.
 

@@ -721,6 +721,18 @@ void VWeUpT26::CCOn()
     canbus *comfBus;
     comfBus = m_can3;
 
+    data[0] = 0x60;
+    data[1] = 0x16;
+    data[2] = 0x00;
+    data[3] = 0x00;
+    data[4] = 0x00;
+    data[5] = 0x00;
+    data[6] = 0x00;
+    data[7] = 0x00;
+    if (vwup_enable_write && !dev_mode)
+        comfBus->WriteStandard(0x5A7, length, data);
+
+/*
     data_t[0] = 0x19;
     data_t[1] = 0x52;
     if (vwup_enable_write && !dev_mode)
@@ -774,7 +786,7 @@ void VWeUpT26::CCOn()
     data_t[1] = 0x50;
     if (vwup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length_t, data_t);
-
+*/
     // d5 could be a counter?
     data[0] = 0x80;
     data[1] = 0x20;
@@ -797,12 +809,12 @@ void VWeUpT26::CCOn()
     data[7] = 0x00;
     if (vwup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length, data);
-
+/*
     data_t[0] = 0x14;
     data_t[1] = 0x42;
     if (vwup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length_t, data_t);
-
+*/
     data[0] = 0xC1;
     data[1] = 0xFF;
     data[2] = 0xFF;
@@ -845,12 +857,12 @@ void VWeUpT26::CCOn()
     data[7] = 0x00;
     if (vwup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length, data);
-
+/*
     data_t[0] = 0x19;
     data_t[1] = 0x53;
     if (vwup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length_t, data_t);
-
+*/
     data[0] = 0xC2;
     data[1] = 0x1E;
     data[2] = 0x1E;
@@ -872,7 +884,7 @@ void VWeUpT26::CCOn()
     data[7] = 0x6E;
     if (vwup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length, data);
-
+/*
     data_t[0] = 0x19;
     data_t[1] = 0x42;
     if (vwup_enable_write && !dev_mode)
@@ -891,6 +903,18 @@ void VWeUpT26::CCOn()
     data_s[3] = 0x56;
     if (vwup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length_s, data_s);
+*/
+
+    data[0] = 0x60;
+    data[1] = 0x16;
+    data[2] = 0x00;
+    data[3] = 0x00;
+    data[4] = 0x00;
+    data[5] = 0x00;
+    data[6] = 0x00;
+    data[7] = 0x00;
+    if (vwup_enable_write && !dev_mode)
+        comfBus->WriteStandard(0x5A7, length, data);
 
     data_s[0] = 0x29;
     data_s[1] = 0x58;
