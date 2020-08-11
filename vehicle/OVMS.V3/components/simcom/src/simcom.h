@@ -88,7 +88,8 @@ class simcom : public pcp, public InternalRamAllocated
       NetDeepSleep,       // PowerMode=DeepSleep: power save
       PoweringOff,        // Power off modem, then => CheckPowerOff
       PoweredOff,         // Maintain a powered off state
-      PowerOffOn          // Power off modem, then => PoweringOn
+      PowerOffOn,         // Power off modem, then => PoweringOn
+      Development         // Let developer handle modem themselves
       };
     typedef enum
       {

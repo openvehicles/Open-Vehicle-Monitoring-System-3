@@ -59,6 +59,7 @@ const char* SimcomState1Name(simcom::SimcomState1 state)
     case simcom::PoweringOff:    return "PoweringOff";
     case simcom::PoweredOff:     return "PoweredOff";
     case simcom::PowerOffOn:     return "PowerOffOn";
+    case simcom::Development:    return "Development";
     default:                     return "Undefined";
     };
   }
@@ -364,6 +365,9 @@ void simcom::SetPowerMode(PowerMode powermode)
     case Off:
       SetState1(PoweringOff);
       break;
+    case Devel:
+      SetState1(Development);
+      break;
     default:
       break;
     }
@@ -475,6 +479,8 @@ void simcom::State1Leave(SimcomState1 oldstate)
       break;
     case PoweredOff:
       break;
+    case Development:
+      break;
     default:
       break;
     }
@@ -585,6 +591,9 @@ void simcom::State1Enter(SimcomState1 newstate)
       m_state1_timeout_ticks = 3;
       m_state1_timeout_goto = PoweringOn;
       break;
+    case Development:
+      ESP_LOGI(TAG,"State: Enter Development state");
+      break;
     default:
       break;
     }
@@ -628,6 +637,21 @@ simcom::SimcomState1 simcom::State1Activity()
     case PoweredOff:
       // We shouldn't have any activity while powered off, so try again...
       return PoweringOff;
+      break;
+    case Development:
+      if (m_mux.IsMuxUp())
+        {
+        m_mux.Process(&m_buffer);
+        }
+      else
+        {
+        size_t needed = m_buffer.UsedSpace();
+        char* result = new char[needed+1];
+        m_buffer.Pop(needed, (uint8_t*)result);
+        result[needed] = 0;
+        MyCommandApp.HexDump(TAG, "rx", result, needed);
+        delete [] result;
+        }
       break;
     default:
       break;
@@ -784,6 +808,8 @@ simcom::SimcomState1 simcom::State1Ticker1()
     case PoweringOff:
       break;
     case PoweredOff:
+      break;
+    case Development:
       break;
     default:
       break;
@@ -1265,6 +1291,8 @@ void simcom_setstate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     newstate = simcom::PoweredOff;
   else if (strcmp(statename,"PowerOffOn")==0)
     newstate = simcom::PowerOffOn;
+  else if (strcmp(statename,"Development")==0)
+    newstate = simcom::Development;
 
   if (newstate == simcom::None)
     {
