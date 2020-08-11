@@ -36,7 +36,7 @@
 #include <map>
 #include "ovms_command.h"
 
-enum PowerMode { Undefined, On, Sleep, DeepSleep, Off };
+enum PowerMode { Undefined, On, Sleep, DeepSleep, Off, Devel };
 
 class pcp
   {

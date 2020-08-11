@@ -74,6 +74,7 @@ pcpapp::pcpapp()
   m_mappm["sleep"] = Sleep;
   m_mappm["deepsleep"] = DeepSleep;
   m_mappm["off"] = Off;
+  m_mappm["devel"] = Devel;
   powercmd = MyCommandApp.RegisterCommand("power","Power control",NULL,"$C $G$");
   }
 
