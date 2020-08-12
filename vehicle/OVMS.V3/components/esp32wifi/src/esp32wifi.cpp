@@ -897,6 +897,10 @@ void esp32wifi::Scan(OvmsWriter* writer, bool json)
       writer->printf("Scan complete: %d access point(s) found\n\n",apCount);
       }
     }
+  else if (res == ESP_OK && apCount == 0)
+    {
+    writer->puts("Scan complete: no access points found\n");
+    }
 
   if (list) free(list);
 
