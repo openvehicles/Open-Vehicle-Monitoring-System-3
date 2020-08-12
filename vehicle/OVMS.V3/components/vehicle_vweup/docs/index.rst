@@ -86,7 +86,7 @@ User notes
 Climate control
 -----------------
 
-This is still very alpha. It works but expect some hickups. You mostly need to start the remote climate control twice befor it starts. This is not understood yet and is very much work in progress.
+This is still very alpha. It works but expect some hickups. You mostly need to start the remote climate control twice before it starts, or wake up the car with with the remote key before starting climate control. This is not understood yet and is very much work in progress.
 
 Climate control works, as long as write access to the comfort can has been enabled in the app or in the OVMS webinterface (VW e-Up -> Features).
 

@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          31th July 2020
+;    Date:          12th August 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -75,6 +75,8 @@
 
 ;    0.2.8  Refactoring for T26A <-> OBD source separation (by SokoFromNZ)
 ;
+;    0.2.9  Fixed climate control
+;
 ;    (C) 2020       Chris van der Meijden
 ;
 ;    Big thanx to sharkcow, Dimitrie78 and E-Imo.
@@ -83,7 +85,7 @@
 #include "ovms_log.h"
 static const char *TAG = "vwup.t26";
 
-#define VERSION "0.2.8"
+#define VERSION "0.2.9"
 
 #include <stdio.h>
 #include "pcp.h"
