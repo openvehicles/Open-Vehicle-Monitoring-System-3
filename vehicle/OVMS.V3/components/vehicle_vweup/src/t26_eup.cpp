@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          12th August 2020
+;    Date:          13th August 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -77,6 +77,8 @@
 ;
 ;    0.2.9  Fixed climate control
 ;
+;    0.3.0  Added upgrade policy for pre vehicle id splitting versions
+;
 ;    (C) 2020       Chris van der Meijden
 ;
 ;    Big thanx to sharkcow, Dimitrie78 and E-Imo.
@@ -85,7 +87,7 @@
 #include "ovms_log.h"
 static const char *TAG = "vwup.t26";
 
-#define VERSION "0.2.9"
+#define VERSION "0.3.0"
 
 #include <stdio.h>
 #include "pcp.h"

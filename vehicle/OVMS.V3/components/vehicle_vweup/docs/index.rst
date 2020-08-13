@@ -8,6 +8,30 @@ Vehicle Type: **VWUP**
 This vehicle type supports the VW e-UP (2013-, 2020-), Skoda Citigo E IV and the Seat MII electric (2020-).
 
 
+-----------------
+Development notes
+-----------------
+
+We splitted the code into functional units depending on which hardware infrastructure the user uses.
+
+First we still have the original T26A approach, which can write to the Comfort CAN and is able to manage the climate control of the car.
+
+Because T26A does not use the OBD socket and has very limited access to system information, a new OBD approach is now in development.
+
+Advantage is a more generic setup. Disadvantage is the missing write access to the CAN bus through the proprietary VAG gateway.
+
+The user now has to choose in the vehicle configuration if "VW e-Up (Komfort CAN)" or "VW e-Up (OBD2)" is used. Please read the corresponding documentation here.
+
+To compile the code you will need to check out the repository, check out the components 
+mongoose, libzip and zlib  and copy the file
+
+sdkconfig.default.hw31
+
+from the OVMS.V3/support folder to the OVMS.V3 folder and rename it to
+
+sdkconfig
+
+
 ----------------
 Support Overview
 ----------------
@@ -39,8 +63,7 @@ Others                      Odometer, VIN, front doors status
 Pinout OCU T26A - OVMS DB9 adapter cable
 ----------------------------------------
 
-Because of the complicated VAG OBD-gateway communication protocol
-we directly tap into the comfort can bus over the OCU cable.
+For the T26A approach we directly tap into the comfort can bus over the OCU cable 
 
 The OCU connector is located under the passenger seat.
 
@@ -71,7 +94,7 @@ For confectioning the T26A adapter cable you can use a standard 26 pin ribbon ca
 To make a GSM/GPS adapter cable to connect to the original VW fakra socket you can use a double fakra male connector with two SMA male connectors attached.
 
 -----------------
-User notes
+User notes T26A
 -----------------
 
 * Disconnect the T26A cable and the fakra cable from the OCU (online communication unit) located beneath the passenger seat.
@@ -82,48 +105,24 @@ User notes
 * Install the OVMS app on your smartphone or tablet and configure to connect to the server
 * Enjoy :-)
 
------------------
-Climate control
------------------
+----------------------
+Climate control (T26A)
+----------------------
 
 This is still very alpha. It works but expect some hickups. You mostly need to start the remote climate control twice before it starts, or wake up the car with with the remote key before starting climate control. This is not understood yet and is very much work in progress.
 
-Climate control works, as long as write access to the comfort can has been enabled in the app or in the OVMS webinterface (VW e-Up -> Features).
+Climate control works, as long as write access to the comfort can has been enabled in the app or in the OVMS webinterface (VW e-Up ... -> Features).
 
 Once the AC is turned on by the app there will be a delay of about 20 seconds till the AC actually starts in the car. Further 10 seconds all communication from the app to the car is blocked.
 
 The communication from the app to the car is also blocked for 10 seconds after the "AC off" command from the app to the car. There is no delay between the "AC turn off" signal of the app and the actually turning off in the car.
 
-The cabin target temperature can be set from the OVMS webinterface (VW e-Up -> Climate control).
+The cabin target temperature can be set from the OVMS webinterface (VW e-Up ... -> Climate control).
 
------------------
-Development notes
------------------
 
-We splitted the code into functional units depending on which hardware infrastructure the user uses.
-
-First we still have the original T26A approach, which can write to the Comfort CAN and will soon be able to manage the climate control of the car.
-
-Because T26A needs does not use the OBD socket and has very limited access to system information, a new OBD approach is now in development.
-
-Advantage is a more generic setup. Disadvantage is the missing write access to the CAN bus through the proprietary VAG gateway.
-
-The user now has to choose in the vehicle configuration if "VW e-Up (Komfort CAN)" or "VW e-Up (OBD2)" is used.
-
-CAVE: If you come from a previous with the "VWUP" vehicle config you must set that config to i.e. "Nissan Leaf (NL)" before flashing to this new version! Otherwise OVMS won't boot! After successfull reboot you must then set the vehicle config to either "VWUP (Komfort CAN)" or "VWUP (OBD)", whatever hardware setup you have.
-
-To compile the code you will need to check out the repository, check out the components 
-mongoose, libzip and zlib  and copy the file
-
-sdkconfig.default.hw31
-
-from the OVMS.V3/support folder to the OVMS.V3 folder and rename it to
-
-sdkconfig
-
-----------------------
-IDs on Comfort CAN Bus
-----------------------
+-----------------------------
+IDs on Comfort CAN Bus (T26A)
+-----------------------------
 message <hhh ll d0 d1 d2...>
 
 hhh: header ID
@@ -156,6 +155,12 @@ ID	Conversion	     Unit    Function		     	         	 Comment
 6E9	multiple msg		     TX: AC on / off signals                 	 (AC)
 	d0 C1 d6 xx	     °C      TX: set cabin temperature for 69C       	 (CAB)
 ======= ==================== ======= =========================================== =======
+
+-----------------
+User notes OBD
+-----------------
+
+ToDo
 
 --------------------------
 Links to vehicle log files
