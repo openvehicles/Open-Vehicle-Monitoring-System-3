@@ -35,7 +35,7 @@
 #include "ovms_notify.h"
 #include "ovms_webserver.h"
 
-#include "vehicle_vweup.h"
+#include "t26_eup.h"
 
 using namespace std;
 
@@ -46,7 +46,7 @@ using namespace std;
 /**
  * WebInit: register pages
  */
-void OvmsVehicleVWeUP::WebInit()
+void VWeUpT26::WebInit()
 {
   // vehicle menu:
   MyWebServer.RegisterPage("/vwup/hardware", "Hardware",         WebCfgHardware,                      PageMenu_Vehicle, PageAuth_Cookie);
@@ -56,7 +56,7 @@ void OvmsVehicleVWeUP::WebInit()
 /**
  * WebDeInit: deregister pages
  */
-void OvmsVehicleVWeUP::WebDeInit()
+void VWeUpT26::WebDeInit()
 {
   MyWebServer.DeregisterPage("/vwup/hardware");
   MyWebServer.DeregisterPage("/vwup/features");
@@ -65,7 +65,7 @@ void OvmsVehicleVWeUP::WebDeInit()
 /**
  * WebCfgFeatures: configure general parameters (URL /vwup/config)
  */
-void OvmsVehicleVWeUP::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
+void VWeUpT26::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error;
   bool canwrite;
@@ -134,7 +134,7 @@ void OvmsVehicleVWeUP::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 /**
  * WebCfgHardware: setup how connexted to the vehicle (URL /vwup/config)
  */
-void OvmsVehicleVWeUP::WebCfgHardware(PageEntry_t& p, PageContext_t& c)
+void VWeUpT26::WebCfgHardware(PageEntry_t& p, PageContext_t& c)
 {
   std::string error;
   std::string how_connected;
