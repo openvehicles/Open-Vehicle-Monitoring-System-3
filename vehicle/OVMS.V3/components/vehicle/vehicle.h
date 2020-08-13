@@ -122,10 +122,12 @@ class OvmsVehicle : public InternalRamAllocated
     canbus* m_can4;
 
   private:
+    bool m_only_one_poll_per_second;  // Poller sends only one poll per tick/second even when more polls are active for the current tick/second
     void VehicleTicker1(std::string event, void* data);
     void VehicleConfigChanged(std::string event, void* data);
     void PollerSend();
     void PollerReceive(CAN_frame_t* frame);
+    void IncomingPollReplyInternal(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
 
   protected:
     virtual void IncomingFrameCan1(CAN_frame_t* p_frame);
@@ -308,6 +310,7 @@ class OvmsVehicle : public InternalRamAllocated
   protected:
     void PollSetPidList(canbus* bus, const poll_pid_t* plist);
     void PollSetState(uint8_t state);
+    void PollSetState(uint8_t state, bool only_one_poll_per_second);
 
   // BMS helpers
   protected:
