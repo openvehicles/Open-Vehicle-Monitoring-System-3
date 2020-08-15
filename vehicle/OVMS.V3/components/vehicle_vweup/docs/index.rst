@@ -12,15 +12,11 @@ This vehicle type supports the VW e-UP (2013-, 2020-), Skoda Citigo E IV and the
 Development notes
 -----------------
 
-We splitted the code into functional units depending on which hardware infrastructure the user uses.
+We prepared the code to use functional units depending on which hardware infrastructure the user uses.
 
-First we still have the original T26A approach, which can write to the Comfort CAN and is able to manage the climate control of the car.
+Under this vehicle component we use the original T26A approach, which can write to the Comfort CAN and is able to manage the climate control of the car.
 
-Because T26A does not use the OBD socket and has very limited access to system information, a new OBD approach is now in development.
-
-Advantage is a more generic setup. Disadvantage is the missing write access to the CAN bus through the proprietary VAG gateway.
-
-The user now has to choose in the vehicle configuration if "VW e-Up (Komfort CAN)" or "VW e-Up (OBD2)" is used. Please read the corresponding documentation here.
+Because T26A does not use the OBD socket and has very limited access to system information a new OBD approach is thought off, but not implemented here.
 
 To compile the code you will need to check out the repository, check out the components 
 mongoose, libzip and zlib  and copy the file
@@ -93,8 +89,13 @@ For confectioning the T26A adapter cable you can use a standard 26 pin ribbon ca
 
 To make a GSM/GPS adapter cable to connect to the original VW fakra socket you can use a double fakra male connector with two SMA male connectors attached.
 
+.. image:: fakra_sma.png
+  :width: 200px
+  :align: right
+
+
 -----------------
-User notes T26A
+User notes (T26A)
 -----------------
 
 * Disconnect the T26A cable and the fakra cable from the OCU (online communication unit) located beneath the passenger seat.
@@ -156,11 +157,6 @@ ID	Conversion	     Unit    Function		     	         	 Comment
 	d0 C1 d6 xx	     °C      TX: set cabin temperature for 69C       	 (CAB)
 ======= ==================== ======= =========================================== =======
 
------------------
-User notes OBD
------------------
-
-ToDo
 
 --------------------------
 Links to vehicle log files

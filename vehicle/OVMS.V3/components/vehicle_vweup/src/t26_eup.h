@@ -46,11 +46,11 @@ typedef enum
   AUTO_DISABLE_CLIMATE_CONTROL
   } RemoteCommand;
 
-class VWeUpT26 : public OvmsVehicle
+class OvmsVehicleVWeUpT26 : public OvmsVehicle
   {
   public:
-    VWeUpT26();
-    ~VWeUpT26();
+    OvmsVehicleVWeUpT26();
+    ~OvmsVehicleVWeUpT26();
 
   public:
     void ConfigChanged(OvmsConfigParam* param);

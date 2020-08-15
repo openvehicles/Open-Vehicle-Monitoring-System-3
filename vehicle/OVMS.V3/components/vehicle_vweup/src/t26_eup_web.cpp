@@ -44,7 +44,7 @@ using namespace std;
 /**
  * WebInit: register pages
  */
-void VWeUpT26::WebInit()
+void OvmsVehicleVWeUpT26::WebInit()
 {
   // vehicle menu:
   MyWebServer.RegisterPage("/vwup/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
@@ -54,7 +54,7 @@ void VWeUpT26::WebInit()
 /**
  * WebDeInit: deregister pages
  */
-void VWeUpT26::WebDeInit()
+void OvmsVehicleVWeUpT26::WebDeInit()
 {
   MyWebServer.DeregisterPage("/vwup/features");
   MyWebServer.DeregisterPage("/vwup/climate");
@@ -63,7 +63,7 @@ void VWeUpT26::WebDeInit()
 /**
  * WebCfgFeatures: configure general parameters (URL /vwup/config)
  */
-void VWeUpT26::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
+void OvmsVehicleVWeUpT26::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 {
   std::string error;
   bool canwrite;
@@ -136,7 +136,7 @@ void VWeUpT26::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 /**
  * WebCfgClimate: setup how connexted to the vehicle (URL /vwup/config)
  */
-void VWeUpT26::WebCfgClimate(PageEntry_t &p, PageContext_t &c)
+void OvmsVehicleVWeUpT26::WebCfgClimate(PageEntry_t &p, PageContext_t &c)
 {
   std::string error;
   std::string cc_temp;

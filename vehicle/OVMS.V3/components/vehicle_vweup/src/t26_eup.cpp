@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          13th August 2020
+;    Date:          15th August 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -79,6 +79,8 @@
 ;
 ;    0.3.0  Added upgrade policy for pre vehicle id splitting versions
 ;
+;    0.3.1  Removed alpha OBD source, corrected class name
+;
 ;    (C) 2020       Chris van der Meijden
 ;
 ;    Big thanx to sharkcow, Dimitrie78 and E-Imo.
@@ -87,7 +89,7 @@
 #include "ovms_log.h"
 static const char *TAG = "vwup.t26";
 
-#define VERSION "0.3.0"
+#define VERSION "0.3.1"
 
 #include <stdio.h>
 #include "pcp.h"
@@ -99,17 +101,17 @@ static const char *TAG = "vwup.t26";
 
 void sendOcuHeartbeat(TimerHandle_t timer)
 {
-    VWeUpT26 *vwup = (VWeUpT26 *)pvTimerGetTimerID(timer);
+    OvmsVehicleVWeUpT26 *vwup = (OvmsVehicleVWeUpT26 *)pvTimerGetTimerID(timer);
     vwup->SendOcuHeartbeat();
 }
 
 void ccCountdown(TimerHandle_t timer)
 {
-    VWeUpT26 *vwup = (VWeUpT26 *)pvTimerGetTimerID(timer);
+    OvmsVehicleVWeUpT26 *vwup = (OvmsVehicleVWeUpT26 *)pvTimerGetTimerID(timer);
     vwup->CCCountdown();
 }
 
-VWeUpT26::VWeUpT26()
+OvmsVehicleVWeUpT26::OvmsVehicleVWeUpT26()
 {
     ESP_LOGI(TAG, "Start VW e-Up T26A vehicle module");
     memset(m_vin, 0, sizeof(m_vin));
@@ -141,7 +143,7 @@ VWeUpT26::VWeUpT26()
 #endif
 }
 
-VWeUpT26::~VWeUpT26()
+OvmsVehicleVWeUpT26::~OvmsVehicleVWeUpT26()
 {
     ESP_LOGI(TAG, "Stop VW e-Up T26A vehicle module");
 
@@ -150,7 +152,7 @@ VWeUpT26::~VWeUpT26()
 #endif
 }
 
-bool VWeUpT26::SetFeature(int key, const char *value)
+bool OvmsVehicleVWeUpT26::SetFeature(int key, const char *value)
 {
     switch (key)
     {
@@ -165,7 +167,7 @@ bool VWeUpT26::SetFeature(int key, const char *value)
     }
 }
 
-const std::string VWeUpT26::GetFeature(int key)
+const std::string OvmsVehicleVWeUpT26::GetFeature(int key)
 {
     switch (key)
     {
@@ -182,7 +184,7 @@ const std::string VWeUpT26::GetFeature(int key)
     }
 }
 
-void VWeUpT26::ConfigChanged(OvmsConfigParam *param)
+void OvmsVehicleVWeUpT26::ConfigChanged(OvmsConfigParam *param)
 {
     ESP_LOGD(TAG, "VW e-Up reload configuration");
 
@@ -194,7 +196,7 @@ void VWeUpT26::ConfigChanged(OvmsConfigParam *param)
 // Takes care of setting all the state appropriate when the car is on
 // or off.
 //
-void VWeUpT26::vehicle_vweup_car_on(bool isOn)
+void OvmsVehicleVWeUpT26::vehicle_vweup_car_on(bool isOn)
 {
     if (isOn && !StandardMetrics.ms_v_env_on->AsBool())
     {
@@ -228,7 +230,7 @@ void VWeUpT26::vehicle_vweup_car_on(bool isOn)
     }
 }
 
-void VWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
+void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
 {
     uint8_t *d = p_frame->data.u8;
 
@@ -440,7 +442,7 @@ void VWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
     }
 }
 
-OvmsVehicle::vehicle_command_t VWeUpT26::RemoteCommandHandler(RemoteCommand command)
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::RemoteCommandHandler(RemoteCommand command)
 {
     ESP_LOGI(TAG, "RemoteCommandHandler");
 
@@ -459,7 +461,7 @@ OvmsVehicle::vehicle_command_t VWeUpT26::RemoteCommandHandler(RemoteCommand comm
 //
 // Does nothing if @command is out of range
 //
-void VWeUpT26::SendCommand(RemoteCommand command)
+void OvmsVehicleVWeUpT26::SendCommand(RemoteCommand command)
 {
 
     switch (command)
@@ -559,7 +561,7 @@ void VWeUpT26::SendCommand(RemoteCommand command)
 // Wakeup implentation over the VW ring commands
 // We need to register in the ring with a call to our self from 43D with 0x1D in the first byte
 //
-OvmsVehicle::vehicle_command_t VWeUpT26::CommandWakeup()
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandWakeup()
 {
 
     if (!vwup_enable_write)
@@ -612,7 +614,7 @@ OvmsVehicle::vehicle_command_t VWeUpT26::CommandWakeup()
     return Success;
 }
 
-void VWeUpT26::SendOcuHeartbeat()
+void OvmsVehicleVWeUpT26::SendOcuHeartbeat()
 {
 
     if (!vweup_cc_on)
@@ -692,7 +694,7 @@ void VWeUpT26::SendOcuHeartbeat()
         comfBus->WriteStandard(0x5A7, length, data);
 }
 
-void VWeUpT26::CCCountdown()
+void OvmsVehicleVWeUpT26::CCCountdown()
 {
     cc_count++;
     ocu_wait = true;
@@ -708,7 +710,7 @@ void VWeUpT26::CCCountdown()
     }
 }
 
-void VWeUpT26::CCOn()
+void OvmsVehicleVWeUpT26::CCOn()
 {
     unsigned char data[8];
     uint8_t length;
@@ -718,9 +720,9 @@ void VWeUpT26::CCOn()
     uint8_t length_s;
     length_s = 4;
 
-    unsigned char data_t[2];
-    uint8_t length_t;
-    length_t = 2;
+//    unsigned char data_t[2];
+//    uint8_t length_t;
+//    length_t = 2;
 
     canbus *comfBus;
     comfBus = m_can3;
@@ -932,7 +934,7 @@ void VWeUpT26::CCOn()
     vweup_cc_turning_on = false;
 }
 
-void VWeUpT26::CCOff()
+void OvmsVehicleVWeUpT26::CCOff()
 {
     unsigned char data[8];
     uint8_t length;
@@ -1034,13 +1036,13 @@ void VWeUpT26::CCOff()
     vweup_cc_on = false;
 }
 
-OvmsVehicle::vehicle_command_t VWeUpT26::CommandHomelink(int button, int durationms)
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandHomelink(int button, int durationms)
 {
     ESP_LOGI(TAG, "CommandHomelink");
     return NotImplemented;
 }
 
-OvmsVehicle::vehicle_command_t VWeUpT26::CommandClimateControl(bool climatecontrolon)
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandClimateControl(bool climatecontrolon)
 {
     ESP_LOGI(TAG, "CommandClimateControl");
     if (vwup_enable_write)
@@ -1049,7 +1051,7 @@ OvmsVehicle::vehicle_command_t VWeUpT26::CommandClimateControl(bool climatecontr
         return NotImplemented;
 }
 
-void VWeUpT26::Ticker1(uint32_t ticker)
+void OvmsVehicleVWeUpT26::Ticker1(uint32_t ticker)
 {
     // This is just to be sure that we really have an asleep message. It has delay of 120 sec.
     // Do we still need this?
