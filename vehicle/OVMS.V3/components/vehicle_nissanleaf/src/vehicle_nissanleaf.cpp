@@ -48,14 +48,14 @@ enum poll_states
   POLLSTATE_OFF,      //- car is off
   POLLSTATE_ON,       //- car is on
   POLLSTATE_RUNNING,  //- car is driving
-  POLLSTATE_CHARGING //- car is charging
+  POLLSTATE_CHARGING  //- car is charging
   };
 
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
   {
-    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, {  0, 999, 0, 0 } }, // VIN [19]
-    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1203, {  0, 999, 0, 0 } }, // QC [4]
-    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1205, {  0, 999, 0, 0 } }, // L0/L1/L2 [4]
+    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, {  0, 30, 0, 0 } }, // VIN [19]
+    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1203, {  0, 30, 0, 0 } }, // QC [4]
+    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1205, {  0, 30, 0, 0 } }, // L0/L1/L2 [4]
     { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 60, 0, 60 } }, // bat [39/41]
     { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 60, 0, 60 } }, // battery voltages [196]
     { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0, 300, 0, 300 } }, // battery temperatures [14]
@@ -193,6 +193,7 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_car_on(bool isOn)
     {
     // Log once that car is being turned on
     ESP_LOGI(TAG,"CAR IS ON");
+    PollSetBus(m_can2);
     PollSetState(POLLSTATE_ON);
     // Reset trip values
     StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
@@ -205,7 +206,10 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_car_on(bool isOn)
     // Log once that car is being turned off
     ESP_LOGI(TAG,"CAR IS OFF");
     //StandardMetrics.ms_v_env_awake->SetValue(false);
-    PollSetState(POLLSTATE_OFF);
+    if (StandardMetrics.ms_v_charge_state->AsString()  != "charging")
+      {
+      PollSetState(POLLSTATE_OFF);
+      }
     }
 
   // Always set this value to prevent it from going stale
@@ -221,7 +225,7 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_car_on(bool isOn)
 //
 void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus status)
   {
-  bool fast_charge;
+  bool fast_charge  = false;
   switch (status)
     {
     case CHARGER_STATUS_IDLE:
@@ -236,6 +240,7 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
       StandardMetrics.ms_v_charge_state->SetValue("stopped");
       break;
     case CHARGER_STATUS_QUICK_CHARGING:
+      fast_charge = true;
     case CHARGER_STATUS_CHARGING:
       if (!StandardMetrics.ms_v_charge_inprogress->AsBool())
         {
@@ -244,10 +249,11 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
         }
       StandardMetrics.ms_v_door_chargeport->SetValue(true); //see 0x35d, can't use as only open signal
       StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-      fast_charge = StandardMetrics.ms_v_charge_type->AsString() == "chademo";
+      StandardMetrics.ms_v_charge_type->SetValue(fast_charge ? "chademo" : "type1");
       StdMetrics.ms_v_charge_mode->SetValue(fast_charge ? "performance" : "standard");
       StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
       StandardMetrics.ms_v_charge_state->SetValue("charging");
+      PollSetBus(m_can1);
       PollSetState(POLLSTATE_CHARGING);
       // TODO only use battery current for Quick Charging, for regular charging
       // we should return AC line current and voltage, not battery
@@ -307,6 +313,13 @@ int OvmsVehicleNissanLeaf::GetNotifyChargeStateDelay(const char* state)
     if (StandardMetrics.ms_m_monotonic->AsInt() < 10)
       return 0; //avoid notify on boot triggered by setting delay
     else return 5; //allow time for charger to handshake
+  }
+
+// Use to switch can bus to poll without resetting poll ticker
+void OvmsVehicleNissanLeaf::PollSetBus(canbus* bus)
+  {
+  OvmsMutexLock lock(&m_poll_mutex);
+  m_poll_bus = bus;
   }
 
 void OvmsVehicleNissanLeaf::PollReply_Battery(uint8_t reply_data[], uint16_t reply_len)
@@ -376,7 +389,10 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Volt(uint8_t reply_data[], uint16_t re
   for(i=0; i<96; i++)
     {
     int millivolt = reply_data[i*2] << 8 | reply_data[i*2+1];
-    BmsSetCellVoltage(i, millivolt / 1000.0);
+    if (millivolt < 5000) //ignore invalid readings
+      {
+      BmsSetCellVoltage(i, millivolt / 1000.0);
+      }
     }
   }
 
@@ -473,8 +489,9 @@ void OvmsVehicleNissanLeaf::PollReply_VIN(uint8_t reply_data[], uint16_t reply_l
   //  < 0x79a 61 81
   // [ 0..16] 53 4a 4e 46 41 41 5a 45 30 55 3X 3X 3X 3X 3X 3X 3X
   // [17..18] 00 00
-
-  StandardMetrics.ms_v_vin->SetValue((char*)reply_data);
+  char buf[19];
+  strncpy(buf,(char*)reply_data,reply_len);
+  StandardMetrics.ms_v_vin->SetValue(buf); //(char*)reply_data
   }
 
 // Reassemble all pieces of a multi-frame reply.
@@ -651,28 +668,25 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       //  {
         // can_databuffer[6] is the J1772 pilot current, 0.5A per bit
         // TODO enum?
-      float current_limit = d[6] / 2.0f;
-      StandardMetrics.ms_v_charge_climit->SetValue(current_limit);
-      if (current_limit > 0)
-        {
-        StandardMetrics.ms_v_charge_type->SetValue("type1");
-        }
+      StandardMetrics.ms_v_charge_climit->SetValue(d[6] / 2.0f);
+      StandardMetrics.ms_v_charge_current->SetValue(d[1] / 2.0f);
       //d[3] ramps from 0 to 0xB3 (179) but can sit at 1 due to capacitance?? set >90 to ensure valid signal
       //use to set pilot signal
-      StandardMetrics.ms_v_charge_voltage->SetValue(d[3]);
-      if (d[3] > 90)
+      //d[4] appears to be chademo charge voltage
+      StandardMetrics.ms_v_charge_voltage->SetValue(d[4] > d[3] ? d[4] : d[3]);
+      if (d[3] > 90 || d[4] > 90)
         {
-          StandardMetrics.ms_v_charge_pilot->SetValue(true);
-          StandardMetrics.ms_v_charge_current->SetValue(d[1]/2.0f); //AC charger current
+        StandardMetrics.ms_v_charge_pilot->SetValue(true);
         }
       else
         {
-          StandardMetrics.ms_v_charge_pilot->SetValue(false);
+        StandardMetrics.ms_v_charge_pilot->SetValue(false);
         }
       //  }
       switch (d[5])
         {
         case 0x80:
+        case 0x82:
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
           break;
         case 0x83:
@@ -681,10 +695,18 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         case 0x84:
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_FINISHED);
           break;
-        case 0x88:
-          vehicle_nissanleaf_charger_status(CHARGER_STATUS_CHARGING);
+        case 0x88: // on evse power loss car still reports 0x88
+          if (StandardMetrics.ms_v_charge_pilot->AsBool())
+            {
+            vehicle_nissanleaf_charger_status(CHARGER_STATUS_CHARGING);
+            }
+          else
+            {
+            vehicle_nissanleaf_charger_status(CHARGER_STATUS_FINISHED);
+            }
           break;
         case 0x90: //this state appears just before 0x88 and after evse removed (prepare/finish)
+        case 0x92:
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
           break;
         case 0x98:
@@ -970,10 +992,10 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
         // Quick Charging
         // TODO enum?
-        StandardMetrics.ms_v_charge_type->SetValue("chademo");
+        //StandardMetrics.ms_v_charge_type->SetValue("chademo");
         StandardMetrics.ms_v_charge_climit->SetValue(120);
         StandardMetrics.ms_v_charge_pilot->SetValue(true);
-        StandardMetrics.ms_v_door_chargeport->SetValue(true);
+        //StandardMetrics.ms_v_door_chargeport->SetValue(true);
         }
       else
         {
@@ -984,7 +1006,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_charge_climit->SetValue(current_limit);
         if (current_limit > 0 && current_limit <= 32)
           {
-          StandardMetrics.ms_v_charge_type->SetValue("type1");
+          //StandardMetrics.ms_v_charge_type->SetValue("type1");
           StandardMetrics.ms_v_charge_pilot->SetValue(true);
           }
         }
@@ -1161,18 +1183,20 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
         {
         case 0: // off
           vehicle_nissanleaf_car_on(false);
+          break;
         case 1: // accessory
-          //vehicle_nissanleaf_car_on(false);
-          StandardMetrics.ms_v_env_awake->SetValue(true);
         case 2: // on (not ready to drive)
-          //vehicle_nissanleaf_car_on(false);
           StandardMetrics.ms_v_env_awake->SetValue(true);
+          PollSetBus(m_can2);
+          PollSetState(POLLSTATE_ON);
+          break;
         case 3: // ready to drive, is triggered on unlock
           StandardMetrics.ms_v_env_awake->SetValue(true);
           if (StandardMetrics.ms_v_env_footbrake->AsFloat() > 0) //check footbrake to avoid false positive
           {
           vehicle_nissanleaf_car_on(true);
           }
+          break;
         }
 
       break;
