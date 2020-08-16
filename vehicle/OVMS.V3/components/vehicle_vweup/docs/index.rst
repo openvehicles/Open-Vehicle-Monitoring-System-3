@@ -3,7 +3,7 @@
 VW e-Up 
 =======
 
-Vehicle Type: **VWUP**
+Vehicle Type: **VWUP.T26**
 
 This vehicle type supports the VW e-UP (2013-, 2020-), Skoda Citigo E IV and the Seat MII electric (2020-).
 
