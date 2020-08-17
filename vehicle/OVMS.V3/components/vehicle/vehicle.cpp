@@ -2045,18 +2045,12 @@ void OvmsVehicle::PollerSend()
   while (m_poll_plcur->txmoduleid != 0)
     {
     // there are remaining poll replays from last poll. we wait for it.
-    if (m_poll_ml_remain > 7)
+    // there are remaining poll replays from last poll. we wait for it.
+    if (m_poll_ml_remain > 0)
       {
-      if (m_poll_wait)
+      if (!m_poll_wait)
         {
-        // ESP_LOGD(TAG,"wait last Polling for %02x: there are remaining poll replays", m_poll_plcur->pid);
-        m_poll_wait = 0;
-        m_poll_ml_remain = 0;
-        return;
-        }
-      else
-        {
-        // ESP_LOGD(TAG,"wait Polling for %02x: there are remaining poll replays", m_poll_plcur->pid);
+        // ESP_LOGD(TAG, "wait Polling for %d/%02x: there are remaining poll replays (remain=%d)", m_poll_plcur->type, m_poll_plcur->pid, m_poll_ml_remain);
         m_poll_wait = 1;
         return;
         }
@@ -2133,7 +2127,7 @@ void OvmsVehicle::PollerSend()
 
 void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
   {
-  // ESP_LOGI(TAG, "Receive Poll Response for %d/%02x",m_poll_type,m_poll_pid);
+  // ESP_LOGD(TAG, "Receive Poll Response for %d/%02x",m_poll_type,m_poll_pid);
   switch (m_poll_type)
     {
     case VEHICLE_POLL_TYPE_OBDIICURRENT:
@@ -2186,12 +2180,12 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
         txframe.Write();
 
         // prepare frame processing, first frame contains first 4 bytes:
-        m_poll_ml_remain = (((uint16_t)(frame->data.u8[0]&0x0f))<<8) + frame->data.u8[1] - 2 - 4;
+        m_poll_ml_remain = (((uint16_t)(frame->data.u8[0]&0x0f))<<8) + frame->data.u8[1] - 2 - 4; // six data bytes already read (+ two type and length)
         m_poll_ml_offset = 4;
         m_poll_ml_frame = 0;
 
         // ESP_LOGI(TAG, "Poll ML first frame (frame=%d, remain=%d)",m_poll_ml_frame,m_poll_ml_remain);
-        IncomingPollReplyInternal(frame->origin, m_poll_type, m_poll_pid, &frame->data.u8[4], 4, m_poll_ml_remain);
+        IncomingPollReply(frame->origin, m_poll_type, m_poll_pid, &frame->data.u8[4], 4, m_poll_ml_remain);
         return;
         }
       else if (((frame->data.u8[0]>>4)==0x2)&&(m_poll_ml_remain>0))
