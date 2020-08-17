@@ -968,7 +968,9 @@ OvmsVehicle::OvmsVehicle()
   m_poll_ml_remain = 0;
   m_poll_ml_offset = 0;
   m_poll_ml_frame = 0;
-  m_poll_wait = 0;
+  m_poll_wait = false;
+  m_poll_max_per_ticker = 1;
+  m_poll_cnt_this_ticker = 0;
 
   m_bms_voltages = NULL;
   m_bms_vmins = NULL;
@@ -1022,8 +1024,6 @@ OvmsVehicle::OvmsVehicle()
   m_brakelight_start = 0;
   m_brakelight_basepwr = 0;
   m_brakelight_ignftbrk = false;
-
-  m_only_one_poll_per_second = true;
 
   m_rxqueue = xQueueCreate(CONFIG_OVMS_VEHICLE_CAN_RX_QUEUE_SIZE,sizeof(CAN_frame_t));
   xTaskCreatePinnedToCore(OvmsVehicleRxTask, "OVMS Vehicle",
@@ -2030,12 +2030,6 @@ void OvmsVehicle::PollSetState(uint8_t state)
     }
   }
 
-void OvmsVehicle::PollSetState(uint8_t state, bool only_one_poll_per_second)
-  {
-    m_only_one_poll_per_second = only_one_poll_per_second;
-    PollSetState(state);
-  }
-
 void OvmsVehicle::PollerSend()
   {
   OvmsMutexLock lock(&m_poll_mutex);
@@ -2044,18 +2038,17 @@ void OvmsVehicle::PollerSend()
 
   while (m_poll_plcur->txmoduleid != 0)
     {
-    // there are remaining poll replays from last poll. we wait for it.
-    // there are remaining poll replays from last poll. we wait for it.
+    // there are remaining poll replies from last poll. we wait for it.
     if (m_poll_ml_remain > 0)
       {
       if (!m_poll_wait)
         {
-        // ESP_LOGD(TAG, "wait Polling for %d/%02x: there are remaining poll replays (remain=%d)", m_poll_plcur->type, m_poll_plcur->pid, m_poll_ml_remain);
-        m_poll_wait = 1;
+        // ESP_LOGD(TAG, "wait Polling for %d/%02x: there are remaining poll replies (remain=%d)", m_poll_plcur->type, m_poll_plcur->pid, m_poll_ml_remain);
+        m_poll_wait = true;
         return;
         }
       }
-    m_poll_wait = 0;
+    m_poll_wait = false;
     if ((m_poll_plcur->polltime[m_poll_state] > 0)&&
         ((m_poll_ticker % m_poll_plcur->polltime[m_poll_state] ) == 0))
       {
@@ -2115,6 +2108,7 @@ void OvmsVehicle::PollerSend()
         }
       m_poll_bus->Write(&txframe);
       m_poll_plcur++;
+      m_poll_cnt_this_ticker++;
       return;
       }
     m_poll_plcur++;
@@ -2122,6 +2116,7 @@ void OvmsVehicle::PollerSend()
 
   m_poll_plcur = m_poll_plist;
   m_poll_ticker++;
+  m_poll_cnt_this_ticker = 0;
   if (m_poll_ticker > 3600) m_poll_ticker -= 3600;
   }
 
@@ -2287,7 +2282,8 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
 void OvmsVehicle::IncomingPollReplyInternal(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
   {
     IncomingPollReply(bus, type, pid, data, length, mlremain);
-    if (!m_only_one_poll_per_second && mlremain == 0) PollerSend();
+    // Send the next poll for this tick if we are not waiting for more data and if max is not reached yet
+    if (m_poll_ml_remain == 0 && (m_poll_cnt_this_ticker < m_poll_max_per_ticker || m_poll_max_per_ticker == 0)) PollerSend();
   }
 
 /**

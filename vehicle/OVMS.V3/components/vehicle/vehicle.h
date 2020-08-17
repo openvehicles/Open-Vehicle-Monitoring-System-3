@@ -122,7 +122,6 @@ class OvmsVehicle : public InternalRamAllocated
     canbus* m_can4;
 
   private:
-    bool m_only_one_poll_per_second;  // Poller sends only one poll per tick/second even when more polls are active for the current tick/second
     void VehicleTicker1(std::string event, void* data);
     void VehicleConfigChanged(std::string event, void* data);
     void PollerSend();
@@ -302,15 +301,19 @@ class OvmsVehicle : public InternalRamAllocated
     uint32_t          m_poll_moduleid_high;   // Expected response moduleid high mark
     uint16_t          m_poll_type;            // Expected type
     uint16_t          m_poll_pid;             // Expected PID
-    uint16_t          m_poll_ml_remain;       // Bytes remainign for ML poll
+    std::atomic<uint16_t> m_poll_ml_remain;   // Bytes remainign for ML poll
     uint16_t          m_poll_ml_offset;       // Offset of ML poll
     uint16_t          m_poll_ml_frame;        // Frame number for ML poll
-    uint16_t          m_poll_wait;            // Wait for remaining poll replays
+    bool              m_poll_wait;            // Wait for remaining poll replies
+    
+  private:
+    uint8_t           m_poll_max_per_ticker;  // How many polls are allowed (max) per tick/second. 0 = no limit
+    uint8_t           m_poll_cnt_this_ticker; // How many polls were already send in the current tick/second
 
   protected:
     void PollSetPidList(canbus* bus, const poll_pid_t* plist);
     void PollSetState(uint8_t state);
-    void PollSetState(uint8_t state, bool only_one_poll_per_second);
+    void PollSetThrottling(uint8_t max_polls_per_ticker) { m_poll_max_per_ticker = max_polls_per_ticker; }
 
   // BMS helpers
   protected:
