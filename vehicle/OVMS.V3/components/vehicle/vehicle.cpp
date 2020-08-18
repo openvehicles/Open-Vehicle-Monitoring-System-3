@@ -2012,7 +2012,7 @@ OvmsVehicle::vehicle_mode_t OvmsVehicle::VehicleModeKey(const std::string code)
 
 void OvmsVehicle::PollSetPidList(canbus* bus, const poll_pid_t* plist)
   {
-  OvmsMutexLock lock(&m_poll_mutex);
+  OvmsRecMutexLock lock(&m_poll_mutex);
   m_poll_bus = bus;
   m_poll_plist = plist;
   m_poll_ticker = 0;
@@ -2023,7 +2023,7 @@ void OvmsVehicle::PollSetState(uint8_t state)
   {
   if ((state < VEHICLE_POLL_NSTATES)&&(state != m_poll_state))
     {
-    OvmsMutexLock lock(&m_poll_mutex);
+    OvmsRecMutexLock lock(&m_poll_mutex);
     m_poll_state = state;
     m_poll_ticker = 0;
     m_poll_plcur = NULL;
@@ -2032,7 +2032,7 @@ void OvmsVehicle::PollSetState(uint8_t state)
 
 void OvmsVehicle::PollerSend()
   {
-  OvmsMutexLock lock(&m_poll_mutex);
+  OvmsRecMutexLock lock(&m_poll_mutex);
   if (!m_poll_bus || !m_poll_plist) return;
   if (m_poll_plcur == NULL) m_poll_plcur = m_poll_plist;
 
@@ -2122,6 +2122,7 @@ void OvmsVehicle::PollerSend()
 
 void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
   {
+  OvmsRecMutexLock lock(&m_poll_mutex);
   // ESP_LOGD(TAG, "Receive Poll Response for %d/%02x",m_poll_type,m_poll_pid);
   switch (m_poll_type)
     {

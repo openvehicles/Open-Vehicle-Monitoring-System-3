@@ -290,7 +290,7 @@ class OvmsVehicle : public InternalRamAllocated
       } poll_pid_t;
 
   protected:
-    OvmsMutex         m_poll_mutex;           // Concurrency protection
+    OvmsRecMutex      m_poll_mutex;           // Concurrency protection for recursive calls
     uint8_t           m_poll_state;           // Current poll state
     canbus*           m_poll_bus;             // Bus to poll on
     const poll_pid_t* m_poll_plist;           // Head of poll list
@@ -301,7 +301,7 @@ class OvmsVehicle : public InternalRamAllocated
     uint32_t          m_poll_moduleid_high;   // Expected response moduleid high mark
     uint16_t          m_poll_type;            // Expected type
     uint16_t          m_poll_pid;             // Expected PID
-    std::atomic<uint16_t> m_poll_ml_remain;   // Bytes remainign for ML poll
+    uint16_t          m_poll_ml_remain;       // Bytes remainign for ML poll
     uint16_t          m_poll_ml_offset;       // Offset of ML poll
     uint16_t          m_poll_ml_frame;        // Frame number for ML poll
     bool              m_poll_wait;            // Wait for remaining poll replies
