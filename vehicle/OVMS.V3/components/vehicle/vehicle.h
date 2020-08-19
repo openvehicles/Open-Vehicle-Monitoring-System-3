@@ -124,7 +124,7 @@ class OvmsVehicle : public InternalRamAllocated
   private:
     void VehicleTicker1(std::string event, void* data);
     void VehicleConfigChanged(std::string event, void* data);
-    void PollerSend();
+    void PollerSend(bool fromTicker);
     void PollerReceive(CAN_frame_t* frame);
     void IncomingPollReplyInternal(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
 
@@ -301,10 +301,15 @@ class OvmsVehicle : public InternalRamAllocated
     uint32_t          m_poll_moduleid_high;   // Expected response moduleid high mark
     uint16_t          m_poll_type;            // Expected type
     uint16_t          m_poll_pid;             // Expected PID
-    uint16_t          m_poll_ml_remain;       // Bytes remainign for ML poll
+    uint16_t          m_poll_ml_remain;       // Bytes remaining for ML poll
     uint16_t          m_poll_ml_offset;       // Offset of ML poll
     uint16_t          m_poll_ml_frame;        // Frame number for ML poll
-    bool              m_poll_wait;            // Wait for remaining poll replies
+    uint8_t           m_poll_wait;            // Wait counter for a reply from a sent poll or the bytes remaining.
+                                              // Gets set = 1 when a poll is sent.
+                                              // Gets set = 0 when a poll is received.
+                                              // Gets set = 2 when when bytes are remaining after receiving.
+                                              // Gets decremented every second.
+                                              // PollerSend() waits when > 0.
     
   private:
     uint8_t           m_poll_max_per_ticker;  // How many polls are allowed (max) per tick/second. 0 = no limit

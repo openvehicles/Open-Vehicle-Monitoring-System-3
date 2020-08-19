@@ -968,7 +968,7 @@ OvmsVehicle::OvmsVehicle()
   m_poll_ml_remain = 0;
   m_poll_ml_offset = 0;
   m_poll_ml_frame = 0;
-  m_poll_wait = false;
+  m_poll_wait = 0;
   m_poll_max_per_ticker = 1;
   m_poll_cnt_this_ticker = 0;
 
@@ -1218,7 +1218,7 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
 
   m_ticker++;
 
-  PollerSend();
+  PollerSend(true);
 
   Ticker1(m_ticker);
   if ((m_ticker % 10) == 0) Ticker10(m_ticker);
@@ -2030,25 +2030,23 @@ void OvmsVehicle::PollSetState(uint8_t state)
     }
   }
 
-void OvmsVehicle::PollerSend()
+void OvmsVehicle::PollerSend(bool fromTicker)
   {
   OvmsRecMutexLock lock(&m_poll_mutex);
   if (!m_poll_bus || !m_poll_plist) return;
   if (m_poll_plcur == NULL) m_poll_plcur = m_poll_plist;
 
-  while (m_poll_plcur->txmoduleid != 0)
+  // Only every second/ticker
+  if (fromTicker) 
     {
-    // there are remaining poll replies from last poll. we wait for it.
-    if (m_poll_ml_remain > 0)
-      {
-      if (!m_poll_wait)
-        {
-        // ESP_LOGD(TAG, "wait Polling for %d/%02x: there are remaining poll replies (remain=%d)", m_poll_plcur->type, m_poll_plcur->pid, m_poll_ml_remain);
-        m_poll_wait = true;
-        return;
-        }
-      }
-    m_poll_wait = false;
+    m_poll_cnt_this_ticker = 0;
+    if (m_poll_wait > 0) m_poll_wait--;
+    }
+
+  if (m_poll_wait > 0) return;
+
+  while (m_poll_plcur->txmoduleid != 0)
+    {      
     if ((m_poll_plcur->polltime[m_poll_state] > 0)&&
         ((m_poll_ticker % m_poll_plcur->polltime[m_poll_state] ) == 0))
       {
@@ -2107,6 +2105,7 @@ void OvmsVehicle::PollerSend()
           break;
         }
       m_poll_bus->Write(&txframe);
+      m_poll_wait = 1;
       m_poll_plcur++;
       m_poll_cnt_this_ticker++;
       return;
@@ -2116,7 +2115,6 @@ void OvmsVehicle::PollerSend()
 
   m_poll_plcur = m_poll_plist;
   m_poll_ticker++;
-  m_poll_cnt_this_ticker = 0;
   if (m_poll_ticker > 3600) m_poll_ticker -= 3600;
   }
 
@@ -2124,6 +2122,9 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
   {
   OvmsRecMutexLock lock(&m_poll_mutex);
   // ESP_LOGD(TAG, "Receive Poll Response for %d/%02x",m_poll_type,m_poll_pid);
+
+  m_poll_wait = 0;
+
   switch (m_poll_type)
     {
     case VEHICLE_POLL_TYPE_OBDIICURRENT:
@@ -2242,8 +2243,8 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
         txframe.Write();
 
         // prepare frame processing, first frame contains first 4 bytes:
-        m_poll_ml_remain = (((uint16_t)(frame->data.u8[0]&0x0f))<<8) + frame->data.u8[1] - 2 - 4; // six data bytes already read (+ two type and length)
-        m_poll_ml_offset = 4;
+        m_poll_ml_remain = (((uint16_t)(frame->data.u8[0]&0x0f))<<8) + frame->data.u8[1] - 3;
+        m_poll_ml_offset = 3;
         m_poll_ml_frame = 0;
 
         //ESP_LOGD(TAG, "Poll ML first frame (frame=%d, remain=%d)",m_poll_ml_frame,m_poll_ml_remain);
@@ -2283,8 +2284,12 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
 void OvmsVehicle::IncomingPollReplyInternal(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
   {
     IncomingPollReply(bus, type, pid, data, length, mlremain);
-    // Send the next poll for this tick if we are not waiting for more data and if max is not reached yet
-    if (m_poll_ml_remain == 0 && (m_poll_cnt_this_ticker < m_poll_max_per_ticker || m_poll_max_per_ticker == 0)) PollerSend();
+
+    // The mutex extends to here too (I hope)!
+    if (m_poll_ml_remain > 0) m_poll_wait = 2;
+
+    // Send the next poll for this tick if max is not reached yet or no max defined
+    if ((m_poll_cnt_this_ticker < m_poll_max_per_ticker || m_poll_max_per_ticker == 0)) PollerSend(false);
   }
 
 /**
