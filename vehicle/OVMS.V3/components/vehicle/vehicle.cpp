@@ -2016,6 +2016,8 @@ void OvmsVehicle::PollSetPidList(canbus* bus, const poll_pid_t* plist)
   m_poll_bus = bus;
   m_poll_plist = plist;
   m_poll_ticker = 0;
+  m_poll_cnt_this_ticker = 0;
+  m_poll_wait = 0;
   m_poll_plcur = NULL;
   }
 
@@ -2026,6 +2028,8 @@ void OvmsVehicle::PollSetState(uint8_t state)
     OvmsRecMutexLock lock(&m_poll_mutex);
     m_poll_state = state;
     m_poll_ticker = 0;
+    m_poll_cnt_this_ticker = 0;
+    m_poll_wait = 0;
     m_poll_plcur = NULL;
     }
   }
@@ -2033,8 +2037,11 @@ void OvmsVehicle::PollSetState(uint8_t state)
 void OvmsVehicle::PollerSend(bool fromTicker)
   {
   OvmsRecMutexLock lock(&m_poll_mutex);
+
   if (!m_poll_bus || !m_poll_plist) return;
   if (m_poll_plcur == NULL) m_poll_plcur = m_poll_plist;
+
+  // ESP_LOGD(TAG, "PollerSend(%d): pid=%X, m_poll_ticker=%u, m_poll_wait=%u, m_poll_cnt_this_ticker=%u", fromTicker, m_poll_plcur->pid, m_poll_ticker, m_poll_wait, m_poll_cnt_this_ticker);
 
   // Only every second/ticker
   if (fromTicker) 
@@ -2044,6 +2051,8 @@ void OvmsVehicle::PollerSend(bool fromTicker)
     }
 
   if (m_poll_wait > 0) return;
+
+  bool startedFromTop = m_poll_plcur == m_poll_plist;
 
   while (m_poll_plcur->txmoduleid != 0)
     {      
@@ -2108,6 +2117,7 @@ void OvmsVehicle::PollerSend(bool fromTicker)
       m_poll_wait = 1;
       m_poll_plcur++;
       m_poll_cnt_this_ticker++;
+      // ESP_LOGD(TAG, "Poll got send for pid=%X", m_poll_plcur->pid);
       return;
       }
     m_poll_plcur++;
@@ -2116,11 +2126,16 @@ void OvmsVehicle::PollerSend(bool fromTicker)
   m_poll_plcur = m_poll_plist;
   m_poll_ticker++;
   if (m_poll_ticker > 3600) m_poll_ticker -= 3600;
+
+  // Immediate recursive call when the loop didn't start from the top and the ticker called
+  // Reason: Multiple polls with 1 second ticker intervall should get called once every second (if m_poll_max_per_ticker=1) with no gaps between calls
+  if (!startedFromTop && fromTicker) PollerSend(true);
   }
 
 void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
   {
   OvmsRecMutexLock lock(&m_poll_mutex);
+
   // ESP_LOGD(TAG, "Receive Poll Response for %d/%02x",m_poll_type,m_poll_pid);
 
   m_poll_wait = 0;
