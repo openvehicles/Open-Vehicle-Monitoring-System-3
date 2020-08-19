@@ -166,7 +166,9 @@ OvmsVehicleNissanLeaf::~OvmsVehicleNissanLeaf()
   }
 
 void OvmsVehicleNissanLeaf::ConfigChanged(OvmsConfigParam* param)
-{
+  {
+  if (param && param->GetName() != "xnl")
+    return;
   ESP_LOGD(TAG, "Nissan Leaf reload configuration");
 
   // Note that we do not store a configurable maxRange like Kia Soal and Renault Twizy.
@@ -181,7 +183,8 @@ void OvmsVehicleNissanLeaf::ConfigChanged(OvmsConfigParam* param)
   StandardMetrics.ms_v_charge_limit_range->SetValue( (float) MyConfig.GetParamValueInt("xnl", "suffrange"), Kilometers );
 
   //TODO nl_enable_write = MyConfig.GetParamValueBool("xnl", "canwrite", false);
-}
+  m_enable_write = MyConfig.GetParamValueBool("xnl", "canwrite", false);
+  }
 
 
 // Takes care of setting all the state appropriate when the car is on
@@ -194,7 +197,7 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_car_on(bool isOn)
     // Log once that car is being turned on
     ESP_LOGI(TAG,"CAR IS ON");
     PollSetBus(m_can2);
-    PollSetState(POLLSTATE_ON);
+    if (m_enable_write) PollSetState(POLLSTATE_ON);
     // Reset trip values
     StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
     StandardMetrics.ms_v_bat_energy_used->SetValue(0);
@@ -254,7 +257,7 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
       StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
       StandardMetrics.ms_v_charge_state->SetValue("charging");
       PollSetBus(m_can1);
-      PollSetState(POLLSTATE_CHARGING);
+      if (m_enable_write) PollSetState(POLLSTATE_CHARGING);
       // TODO only use battery current for Quick Charging, for regular charging
       // we should return AC line current and voltage, not battery
       // TODO does the leaf know the AC line current and voltage?
@@ -1093,13 +1096,13 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
         case 2: // Reverse
           StandardMetrics.ms_v_env_gear->SetValue(-1);
           StandardMetrics.ms_v_env_on->SetValue(true);
-          PollSetState(POLLSTATE_RUNNING);
+          if (m_enable_write) PollSetState(POLLSTATE_RUNNING);
           break;
         case 4: // Drive
         case 7: // Drive/B (ECO on some models)
           StandardMetrics.ms_v_env_gear->SetValue(1);
           StandardMetrics.ms_v_env_on->SetValue(true);
-          PollSetState(POLLSTATE_RUNNING);
+          if (m_enable_write) PollSetState(POLLSTATE_RUNNING);
           break;
         }
       break;
@@ -1188,7 +1191,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
         case 2: // on (not ready to drive)
           StandardMetrics.ms_v_env_awake->SetValue(true);
           PollSetBus(m_can2);
-          PollSetState(POLLSTATE_ON);
+          if (m_enable_write) PollSetState(POLLSTATE_ON);
           break;
         case 3: // ready to drive, is triggered on unlock
           StandardMetrics.ms_v_env_awake->SetValue(true);
@@ -1211,6 +1214,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
 
 void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
   {
+  if (!m_enable_write) return; //disable commands unless canwrite is true
   unsigned char data[4];
   uint8_t length;
   canbus *tcuBus;
@@ -1532,6 +1536,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeup()
   // The Gen 2 Wakeup frame works on some Gen1, and doesn't cause a problem
   // so we send it on all models. We have to take care to send it on the
   // correct can bus in newer cars.
+  if (!m_enable_write) return Fail; //disable commands unless canwrite is true
   ESP_LOGI(TAG, "Sending Gen 2 Wakeup Frame");
   int modelyear = MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR);
   canbus* tcuBus = modelyear >= 2016 ? m_can2 : m_can1;
@@ -1542,6 +1547,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeup()
 
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::RemoteCommandHandler(RemoteCommand command)
   {
+  if (!m_enable_write) return Fail; //disable commands unless canwrite is true
   ESP_LOGI(TAG, "RemoteCommandHandler");
   CommandWakeup();
   // The GEN 2 Nissan TCU module sends the command repeatedly, so we start
