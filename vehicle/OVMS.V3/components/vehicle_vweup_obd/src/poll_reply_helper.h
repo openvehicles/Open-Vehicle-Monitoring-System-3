@@ -2,8 +2,12 @@
 #define __POLL_REPLY_HELPER_H__
 
 #include <string>
+#include <cmath>
+#include <cfloat>
+#include <iomanip>
+#include <sstream>
 
-#define DATA_CONVERTER_LENGTH_MAX 16 // DANGER: When changed also change DEBUG output of Store[]
+using namespace std;
 
 class PollReplyHelper
 {
@@ -12,13 +16,12 @@ public:
 
     bool FromUint8(const std::string &info, float &value, uint8_t shiftLeft = 0);
     bool FromUint16(const std::string &info, float &value, uint8_t shiftLeft = 0);
-    //float FromSint12();
+    bool FromInt32(const std::string &info, float &value, uint8_t shiftLeft = 0);
 
 private:
-    uint8_t StoreLength = 0;
-    uint8_t Store[DATA_CONVERTER_LENGTH_MAX];
+    string Store;
     uint16_t LastPid = 0;
-    uint16_t LastRemain = 0;
+    uint16_t LastRemain = 0;    
 };
 
 #endif //#ifndef __POLL_REPLY_HELPER_H__

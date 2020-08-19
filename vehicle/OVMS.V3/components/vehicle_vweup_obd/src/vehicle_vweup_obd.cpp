@@ -24,17 +24,18 @@ public:
 const OvmsVehicle::poll_pid_t vwup_polls[] = {
     // Note: poller ticker cycles at 3600 seconds = max period
     // { txid, rxid, type, pid, { VWUP_OFF, VWUP_ON, VWUP_CHARGING } }
-    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIISESSION, VWUP_CHARGER_EXTDIAG, {0, 30, 30}},
-    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_POWER_EFF, {0, 5, 10}},
-    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_POWER_LOSS, {0, 0, 10}},
-    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_AC_U, {0, 0, 5}},
-    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_AC_I, {0, 0, 5}},
-    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_DC_U, {0, 0, 5}},
-    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_DC_I, {0, 0, 5}},
+    // {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIISESSION, VWUP_CHARGER_EXTDIAG, {0, 30, 30}},
+    // {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_POWER_EFF, {0, 5, 10}},
+    // {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_POWER_LOSS, {0, 0, 10}},
+    // {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_AC_U, {0, 0, 5}},
+    // {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_AC_I, {0, 0, 5}},
+    // {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_DC_U, {0, 0, 5}},
+    // {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_DC_I, {0, 0, 5}},
 
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_U, {0, 5, 5}},
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_I, {0, 5, 5}},
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_SOC, {0, 20, 20}},
+    // {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_I, {0, 5, 5}},
+    // {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_SOC, {0, 20, 20}},
+    // {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_ENERGY_COUNTERS, {0, 5, 5}},
     {0, 0, 0, 0, {0, 0, 0}}};
 
 OvmsVehicleVWeUpObd::OvmsVehicleVWeUpObd()
@@ -48,9 +49,10 @@ OvmsVehicleVWeUpObd::OvmsVehicleVWeUpObd()
     // init polls:
     RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
     PollSetPidList(m_can1, vwup_polls);
-    PollSetThrottling(1);
     PollSetState(VWUP_OFF);
 
+    BatMgmtEnergyUsed = MyMetrics.InitFloat("vwup.batmgmt.enrg.used", SM_STALE_NONE, 0, kWh);
+    BatMgmtEnergyCharged = MyMetrics.InitFloat("vwup.batmgmt.enrg.chrgd", SM_STALE_NONE, 0, kWh);
     ChargerPowerEff = MyMetrics.InitFloat("vwup.chrgr.eff", 100, 0, Percentage);
     ChargerPowerLoss = MyMetrics.InitFloat("vwup.chrgr.loss", SM_STALE_NONE, 0, Watts);
     ChargerAC1U = MyMetrics.InitFloat("vwup.chrgr.ac1.u", SM_STALE_NONE, 0, Volts);
@@ -83,12 +85,10 @@ void OvmsVehicleVWeUpObd::CheckCarState()
         {
             ESP_LOGI(TAG, "Setting car state to CHARGING");
             StandardMetrics.ms_v_env_on->SetValue(false);
-            StandardMetrics.ms_v_charge_inprogress->SetValue(true);
             PollSetState(VWUP_CHARGING);
         }
         return;
     }
-    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
 
     if (voltageSaysOn)
     {
@@ -141,6 +141,19 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         {
             StandardMetrics.ms_v_bat_current->SetValue((value - 2044.0f) / 4.0f);
             VALUE_LOG(TAG, "VWUP_BAT_MGMT_I=%f => %f", value, StandardMetrics.ms_v_bat_current->AsFloat());
+        }
+        break;
+
+    case VWUP_BAT_MGMT_ENERGY_COUNTERS:
+        if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_USED", value, 8))
+        {
+            BatMgmtEnergyUsed->SetValue(value / ((0xFFFFFFFF / 2.0f) / 250200.0f));
+            VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_USED=%f => %f", value, BatMgmtEnergyUsed->AsFloat());
+        }
+        if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_CHARGED", value, 12))
+        {
+            BatMgmtEnergyCharged->SetValue(value / ((0xFFFFFFFF / 2.0f) / 250200.0f));
+            VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_CHARGED=%f => %f", value, BatMgmtEnergyCharged->AsFloat());
         }
         break;
 

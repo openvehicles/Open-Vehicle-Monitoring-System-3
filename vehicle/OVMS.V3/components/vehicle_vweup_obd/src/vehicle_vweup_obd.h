@@ -23,6 +23,7 @@
 #define VWUP_BAT_MGMT_SOC 0x028C
 #define VWUP_BAT_MGMT_U 0x1E3B
 #define VWUP_BAT_MGMT_I 0x1E3D
+#define VWUP_BAT_MGMT_ENERGY_COUNTERS 0x1E32
 #define VWUP_CHARGER_EXTDIAG 0x03
 #define VWUP_CHARGER_POWER_EFF 0x15D6
 #define VWUP_CHARGER_POWER_LOSS 0x15E1
@@ -37,16 +38,18 @@ public:
     OvmsVehicleVWeUpObd();
     ~OvmsVehicleVWeUpObd();
 
-    OvmsMetricFloat *ChargerPowerEff;  // Efficiency of the Charger [%]
-    OvmsMetricFloat *ChargerPowerLoss; // Power loss of Charger [W]
-    OvmsMetricFloat *ChargerAC1U;      // AC Voltage Phase 1
-    OvmsMetricFloat *ChargerAC2U;      // AC Voltage Phase 2
-    OvmsMetricFloat *ChargerAC1I;      // AC Current Phase 1
-    OvmsMetricFloat *ChargerAC2I;      // AC Current Phase 2
-    OvmsMetricFloat *ChargerDC1U;      // DC Voltage 1
-    OvmsMetricFloat *ChargerDC2U;      // DC Voltage 2
-    OvmsMetricFloat *ChargerDC1I;      // DC Current 1
-    OvmsMetricFloat *ChargerDC2I;      // DC Current 2
+    OvmsMetricFloat *ChargerPowerEff;      // Efficiency of the Charger [%]
+    OvmsMetricFloat *ChargerPowerLoss;     // Power loss of Charger [W]
+    OvmsMetricFloat *BatMgmtEnergyUsed;    // Total enery usage from battery [kWh]
+    OvmsMetricFloat *BatMgmtEnergyCharged; // Total enery charged (charger + recovered) to battery [kWh]
+    OvmsMetricFloat *ChargerAC1U;          // AC Voltage Phase 1
+    OvmsMetricFloat *ChargerAC2U;          // AC Voltage Phase 2
+    OvmsMetricFloat *ChargerAC1I;          // AC Current Phase 1
+    OvmsMetricFloat *ChargerAC2I;          // AC Current Phase 2
+    OvmsMetricFloat *ChargerDC1U;          // DC Voltage 1
+    OvmsMetricFloat *ChargerDC2U;          // DC Voltage 2
+    OvmsMetricFloat *ChargerDC1I;          // DC Current 1
+    OvmsMetricFloat *ChargerDC2I;          // DC Current 2
 
     void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
 
