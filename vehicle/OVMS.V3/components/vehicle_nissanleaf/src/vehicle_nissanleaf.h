@@ -176,6 +176,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     float m_cum_energy_recd_wh; 					// Cumulated energy (in wh) recovered  within 1 second ticker interval
     float m_cum_energy_charge_wh;					// Cumulated energy (in wh) charged within 10 second ticker interval
     bool m_gen1_charger;					        // True if using original charger and 0x5bf messages, false if using 0x390 messages
+    bool m_enable_write;                  // Enable/disable can write (polling and commands)
   };
 
 #endif //#ifndef __VEHICLE_NISSANLEAF_H__
