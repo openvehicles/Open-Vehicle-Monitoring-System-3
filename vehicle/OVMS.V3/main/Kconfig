@@ -371,6 +371,13 @@ config OVMS_VEHICLE_VWEUP
     help
         Enable to include support for VW e-Up vehicle.
 
+config OVMS_VEHICLE_VWEUP_OBD
+    bool "Include support for VW e-Up vehicle via OBD2"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for VW e-Up vehicle via OBD2.
+
 config OVMS_VEHICLE_MERCEDESB250E
     bool "Include support for Mercedes-Benz B250E (W242) vehicle"
     default n
