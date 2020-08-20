@@ -304,12 +304,15 @@ class OvmsVehicle : public InternalRamAllocated
     uint16_t          m_poll_ml_remain;       // Bytes remaining for ML poll
     uint16_t          m_poll_ml_offset;       // Offset of ML poll
     uint16_t          m_poll_ml_frame;        // Frame number for ML poll
-    uint8_t           m_poll_wait;            // Wait counter for a reply from a sent poll or the bytes remaining.
-                                              // Gets set = 1 when a poll is sent.
+    uint8_t           m_poll_wait;            // Wait counter for a reply from a sent poll or bytes remaining.
+                                              // Gets set = 2 when a poll is sent OR when bytes are remaining after receiving.
                                               // Gets set = 0 when a poll is received.
-                                              // Gets set = 2 when when bytes are remaining after receiving.
-                                              // Gets decremented every second.
-                                              // PollerSend() waits when > 0.
+                                              // Gets decremented with every second/tick in PollerSend().
+                                              // PollerSend() aborts when > 0.
+                                              // Why set = 2: When a poll gets send just before the next ticker occurs
+                                              //              PollerSend() decrements to 1 and doesn't send the next poll.
+                                              //              Only when the reply doesn't get in until the next ticker occurs
+                                              //              PollserSend() decrements to 0 and abandons the outstanding reply (=timeout)
     
   private:
     uint8_t           m_poll_max_per_ticker;  // How many polls are allowed (max) per tick/second. 0 = no limit

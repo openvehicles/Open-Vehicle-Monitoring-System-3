@@ -2114,7 +2114,7 @@ void OvmsVehicle::PollerSend(bool fromTicker)
           break;
         }
       m_poll_bus->Write(&txframe);
-      m_poll_wait = 1;
+      m_poll_wait = 2;
       m_poll_plcur++;
       m_poll_cnt_this_ticker++;
       // ESP_LOGD(TAG, "Poll got send for pid=%X", m_poll_plcur->pid);
@@ -2150,6 +2150,7 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
           (frame->data.u8[2] == m_poll_pid))
         {
         m_poll_ml_frame = 0;
+        m_poll_ml_remain = 0;
         IncomingPollReplyInternal(frame->origin, m_poll_type, m_poll_pid, &frame->data.u8[3], 5, 0);
         return;
         }
@@ -2290,6 +2291,7 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
       else if ((frame->data.u8[1] == 0x62)&&
                ((frame->data.u8[3]+(((uint16_t) frame->data.u8[2]) << 8)) == m_poll_pid))
         {
+        m_poll_ml_remain = 0;
         IncomingPollReplyInternal(frame->origin, m_poll_type, m_poll_pid, &frame->data.u8[4], 4, 0);
         }
       break;
