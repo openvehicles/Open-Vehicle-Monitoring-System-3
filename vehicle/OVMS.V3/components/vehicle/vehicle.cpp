@@ -2034,6 +2034,12 @@ void OvmsVehicle::PollSetState(uint8_t state)
     }
   }
 
+void OvmsVehicle::PollSetBusDirty(canbus* bus)
+  {
+  OvmsRecMutexLock lock(&m_poll_mutex);
+  m_poll_bus = bus;
+  }
+
 void OvmsVehicle::PollerSend(bool fromTicker)
   {
   OvmsRecMutexLock lock(&m_poll_mutex);

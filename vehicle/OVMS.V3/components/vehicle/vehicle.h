@@ -322,6 +322,7 @@ class OvmsVehicle : public InternalRamAllocated
     void PollSetPidList(canbus* bus, const poll_pid_t* plist);
     void PollSetState(uint8_t state);
     void PollSetThrottling(uint8_t max_polls_per_ticker) { m_poll_max_per_ticker = max_polls_per_ticker; }
+    void PollSetBusDirty(canbus* bus);
 
   // BMS helpers
   protected:
