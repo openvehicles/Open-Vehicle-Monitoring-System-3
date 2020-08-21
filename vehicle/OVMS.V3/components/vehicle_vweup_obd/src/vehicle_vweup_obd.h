@@ -18,6 +18,8 @@
 #define VWUP_BAT_MGMT_RX 0x7ED
 #define VWUP_CHARGER_TX 0x744
 #define VWUP_CHARGER_RX 0x7AE
+#define VWUP_MFD_TX 0x714
+#define VWUP_MFD_RX 0x77E
 
 // PIDs of ECUs
 #define VWUP_BAT_MGMT_SOC 0x028C
@@ -31,6 +33,7 @@
 #define VWUP_CHARGER_AC_I 0x41FB
 #define VWUP_CHARGER_DC_U 0x41F8
 #define VWUP_CHARGER_DC_I 0x41F9
+#define VWUP_MFD_ODOMETER 0x2203
 
 class OvmsVehicleVWeUpObd : public OvmsVehicle
 {
@@ -38,18 +41,23 @@ public:
     OvmsVehicleVWeUpObd();
     ~OvmsVehicleVWeUpObd();
 
-    OvmsMetricFloat *ChargerPowerEff;      // Efficiency of the Charger [%]
-    OvmsMetricFloat *ChargerPowerLoss;     // Power loss of Charger [W]
     OvmsMetricFloat *BatMgmtEnergyUsed;    // Total enery usage from battery [kWh]
     OvmsMetricFloat *BatMgmtEnergyCharged; // Total enery charged (charger + recovered) to battery [kWh]
+
     OvmsMetricFloat *ChargerAC1U;          // AC Voltage Phase 1
     OvmsMetricFloat *ChargerAC2U;          // AC Voltage Phase 2
     OvmsMetricFloat *ChargerAC1I;          // AC Current Phase 1
     OvmsMetricFloat *ChargerAC2I;          // AC Current Phase 2
+    OvmsMetricFloat *ChargerACP;           // AC Power
     OvmsMetricFloat *ChargerDC1U;          // DC Voltage 1
     OvmsMetricFloat *ChargerDC2U;          // DC Voltage 2
     OvmsMetricFloat *ChargerDC1I;          // DC Current 1
     OvmsMetricFloat *ChargerDC2I;          // DC Current 2
+    OvmsMetricFloat *ChargerDCP;           // DC Power
+    OvmsMetricFloat *ChargerPowerEff;      // Efficiency of the Charger [%] (from ECU)
+    OvmsMetricFloat *ChargerPowerLoss;     // Power loss of Charger [W] (from ECU)
+    OvmsMetricFloat *ChargerPowerEffCalc;  // Efficiency of the Charger [%] (calculated from U and I)
+    OvmsMetricFloat *ChargerPowerLossCalc; // Power loss of Charger [W] (calculated from U and I)
 
     void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
 

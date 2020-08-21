@@ -24,18 +24,20 @@ public:
 const OvmsVehicle::poll_pid_t vwup_polls[] = {
     // Note: poller ticker cycles at 3600 seconds = max period
     // { txid, rxid, type, pid, { VWUP_OFF, VWUP_ON, VWUP_CHARGING } }
-    // {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIISESSION, VWUP_CHARGER_EXTDIAG, {0, 30, 30}},
-    // {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_POWER_EFF, {0, 5, 10}},
-    // {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_POWER_LOSS, {0, 0, 10}},
-    // {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_AC_U, {0, 0, 5}},
-    // {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_AC_I, {0, 0, 5}},
-    // {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_DC_U, {0, 0, 5}},
-    // {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_DC_I, {0, 0, 5}},
-
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_U, {0, 5, 5}},
-    // {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_I, {0, 5, 5}},
-    // {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_SOC, {0, 20, 20}},
-    // {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_ENERGY_COUNTERS, {0, 5, 5}},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_I, {0, 5, 5}},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_SOC, {0, 20, 20}},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_ENERGY_COUNTERS, {0, 20, 20}},
+
+    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIISESSION, VWUP_CHARGER_EXTDIAG, {0, 30, 30}},
+    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_AC_U, {0, 0, 5}},
+    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_AC_I, {0, 0, 5}},
+    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_DC_U, {0, 0, 5}},
+    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_DC_I, {0, 0, 5}},
+    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_POWER_EFF, {0, 5, 10}}, // 5 @ VWUP_ON to detect charging
+    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_POWER_LOSS, {0, 0, 10}},
+
+    {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_ODOMETER, {0, 60, 60}},
     {0, 0, 0, 0, {0, 0, 0}}};
 
 OvmsVehicleVWeUpObd::OvmsVehicleVWeUpObd()
@@ -49,20 +51,26 @@ OvmsVehicleVWeUpObd::OvmsVehicleVWeUpObd()
     // init polls:
     RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
     PollSetPidList(m_can1, vwup_polls);
+    PollSetThrottling(0);
     PollSetState(VWUP_OFF);
 
     BatMgmtEnergyUsed = MyMetrics.InitFloat("vwup.batmgmt.enrg.used", SM_STALE_NONE, 0, kWh);
     BatMgmtEnergyCharged = MyMetrics.InitFloat("vwup.batmgmt.enrg.chrgd", SM_STALE_NONE, 0, kWh);
-    ChargerPowerEff = MyMetrics.InitFloat("vwup.chrgr.eff", 100, 0, Percentage);
-    ChargerPowerLoss = MyMetrics.InitFloat("vwup.chrgr.loss", SM_STALE_NONE, 0, Watts);
+
+    ChargerPowerEff = MyMetrics.InitFloat("vwup.chrgr.eff.ecu", 100, 0, Percentage);
+    ChargerPowerLoss = MyMetrics.InitFloat("vwup.chrgr.loss.ecu", SM_STALE_NONE, 0, Watts);
+    ChargerPowerEffCalc = MyMetrics.InitFloat("vwup.chrgr.eff.calc", 100, 0, Percentage);
+    ChargerPowerLossCalc = MyMetrics.InitFloat("vwup.chrgr.loss.calc", SM_STALE_NONE, 0, Watts);
     ChargerAC1U = MyMetrics.InitFloat("vwup.chrgr.ac1.u", SM_STALE_NONE, 0, Volts);
     ChargerAC2U = MyMetrics.InitFloat("vwup.chrgr.ac2.u", SM_STALE_NONE, 0, Volts);
     ChargerAC1I = MyMetrics.InitFloat("vwup.chrgr.ac1.i", SM_STALE_NONE, 0, Amps);
     ChargerAC2I = MyMetrics.InitFloat("vwup.chrgr.ac2.i", SM_STALE_NONE, 0, Amps);
+    ChargerACP = MyMetrics.InitFloat("vwup.chrgr.ac.p", SM_STALE_NONE, 0, Watts);
     ChargerDC1U = MyMetrics.InitFloat("vwup.chrgr.dc1.u", SM_STALE_NONE, 0, Volts);
     ChargerDC2U = MyMetrics.InitFloat("vwup.chrgr.dc2.u", SM_STALE_NONE, 0, Volts);
     ChargerDC1I = MyMetrics.InitFloat("vwup.chrgr.dc1.i", SM_STALE_NONE, 0, Amps);
     ChargerDC2I = MyMetrics.InitFloat("vwup.chrgr.dc2.i", SM_STALE_NONE, 0, Amps);
+    ChargerDCP = MyMetrics.InitFloat("vwup.chrgr.dc.p", SM_STALE_NONE, 0, Watts);
 }
 
 OvmsVehicleVWeUpObd::~OvmsVehicleVWeUpObd()
@@ -141,6 +149,18 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         {
             StandardMetrics.ms_v_bat_current->SetValue((value - 2044.0f) / 4.0f);
             VALUE_LOG(TAG, "VWUP_BAT_MGMT_I=%f => %f", value, StandardMetrics.ms_v_bat_current->AsFloat());
+
+            value = StandardMetrics.ms_v_bat_voltage->AsFloat() * StandardMetrics.ms_v_bat_current->AsFloat() / 1000.0f;
+            StandardMetrics.ms_v_bat_power->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_BAT_MGMT_POWER=%f => %f", value, StandardMetrics.ms_v_bat_power->AsFloat());
+        }
+        break;
+
+    case VWUP_BAT_MGMT_SOC:
+        if (PollReply.FromUint8("VWUP_BAT_MGMT_SOC", value))
+        {
+            StandardMetrics.ms_v_bat_soc->SetValue(value / 2.5f);
+            VALUE_LOG(TAG, "VWUP_BAT_MGMT_SOC=%f => %f", value, StandardMetrics.ms_v_bat_soc->AsFloat());
         }
         break;
 
@@ -157,11 +177,71 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         }
         break;
 
-    case VWUP_BAT_MGMT_SOC:
-        if (PollReply.FromUint8("VWUP_BAT_MGMT_SOC", value))
+    case VWUP_CHARGER_AC_U:
+        if (PollReply.FromUint16("VWUP_CHARGER_AC1_U", value))
         {
-            StandardMetrics.ms_v_bat_soc->SetValue(value / 2.5f);
-            VALUE_LOG(TAG, "VWUP_BAT_MGMT_SOC=%f => %f", value, StandardMetrics.ms_v_bat_soc->AsFloat());
+            ChargerAC1U->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_CHARGER_AC1_U=%f => %f", value, ChargerAC1U->AsFloat());
+        }
+        if (PollReply.FromUint16("VWUP_CHARGER_AC2_U", value, 2))
+        {
+            ChargerAC2U->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_CHARGER_AC2_U=%f => %f", value, ChargerAC2U->AsFloat());
+        }
+        break;
+
+    case VWUP_CHARGER_AC_I:
+        if (PollReply.FromUint8("VWUP_CHARGER_AC1_I", value))
+        {
+            ChargerAC1I->SetValue(value / 10.0f);
+            VALUE_LOG(TAG, "VWUP_CHARGER_AC1_I=%f => %f", value, ChargerAC1I->AsFloat());
+        }
+        if (PollReply.FromUint8("VWUP_CHARGER_AC2_I", value, 1))
+        {
+            ChargerAC2I->SetValue(value / 10.0f);
+            VALUE_LOG(TAG, "VWUP_CHARGER_AC2_I=%f => %f", value, ChargerAC2I->AsFloat());
+
+            value = ChargerAC1U->AsFloat() * ChargerAC1I->AsFloat() + ChargerAC2U->AsFloat() * ChargerAC2I->AsFloat();
+            ChargerACP->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_CHARGER_AC_P=%f => %f", value, ChargerACP->AsFloat());
+        }
+        break;
+
+    case VWUP_CHARGER_DC_U:
+        if (PollReply.FromUint16("VWUP_CHARGER_DC1_U", value))
+        {
+            ChargerDC1U->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_CHARGER_DC1_U=%f => %f", value, ChargerDC1U->AsFloat());
+        }
+        if (PollReply.FromUint16("VWUP_CHARGER_DC2_U", value, 2))
+        {
+            ChargerDC2U->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_CHARGER_DC2_U=%f => %f", value, ChargerDC2U->AsFloat());
+        }
+        break;
+
+    case VWUP_CHARGER_DC_I:
+        if (PollReply.FromUint16("VWUP_CHARGER_DC1_I", value))
+        {
+            ChargerDC1I->SetValue((value - 510.0f) / 5.0f);
+            VALUE_LOG(TAG, "VWUP_CHARGER_DC1_I=%f => %f", value, ChargerDC1I->AsFloat());
+        }
+        if (PollReply.FromUint16("VWUP_CHARGER_DC2_I", value, 2))
+        {
+            ChargerDC2I->SetValue((value - 510.0f) / 5.0f);
+            VALUE_LOG(TAG, "VWUP_CHARGER_DC2_I=%f => %f", value, ChargerDC2I->AsFloat());
+
+            value = ChargerDC1U->AsFloat() * ChargerDC1I->AsFloat() + ChargerDC2U->AsFloat() * ChargerDC2I->AsFloat();
+            ChargerDCP->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_CHARGER_DC_P=%f => %f", value, ChargerDCP->AsFloat());
+            
+            value = ChargerACP->AsFloat() - ChargerDCP->AsFloat();
+            ChargerPowerLossCalc->SetValue(value);            
+            VALUE_LOG(TAG, "VWUP_CHARGER_LOSS_CALC=%f => %f", value, ChargerPowerLossCalc->AsFloat());
+
+            value = ChargerACP->AsFloat() > 0 ? ChargerDCP->AsFloat() / ChargerACP->AsFloat() * 100.0f : 0.0f;
+            ChargerPowerEffCalc->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_CHARGER_EFF_CALC=%f => %f", value, ChargerPowerEffCalc->AsFloat());
         }
         break;
 
@@ -183,55 +263,11 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         }
         break;
 
-    case VWUP_CHARGER_AC_U:
-        if (PollReply.FromUint16("VWUP_CHARGER_AC1_U", value, 1))
+    case VWUP_MFD_ODOMETER:
+        if (PollReply.FromUint16("VWUP_MFD_ODOMETER", value))
         {
-            ChargerAC1U->SetValue(value);
-            VALUE_LOG(TAG, "VWUP_CHARGER_AC1_U=%f => %f", value, ChargerAC1U->AsFloat());
-        }
-        if (PollReply.FromUint16("VWUP_CHARGER_AC2_U", value, 3))
-        {
-            ChargerAC2U->SetValue(value);
-            VALUE_LOG(TAG, "VWUP_CHARGER_AC2_U=%f => %f", value, ChargerAC2U->AsFloat());
-        }
-        break;
-
-    case VWUP_CHARGER_AC_I:
-        if (PollReply.FromUint8("VWUP_CHARGER_AC1_I", value))
-        {
-            ChargerAC1I->SetValue(value / 10.0f);
-            VALUE_LOG(TAG, "VWUP_CHARGER_AC1_I=%f => %f", value, ChargerAC1I->AsFloat());
-        }
-        if (PollReply.FromUint8("VWUP_CHARGER_AC2_I", value, 1))
-        {
-            ChargerAC2I->SetValue(value / 10.0f);
-            VALUE_LOG(TAG, "VWUP_CHARGER_AC2_I=%f => %f", value, ChargerAC2I->AsFloat());
-        }
-        break;
-
-    case VWUP_CHARGER_DC_U:
-        if (PollReply.FromUint16("VWUP_CHARGER_DC1_U", value, 1))
-        {
-            ChargerDC1U->SetValue(value);
-            VALUE_LOG(TAG, "VWUP_CHARGER_DC1_U=%f => %f", value, ChargerDC1U->AsFloat());
-        }
-        if (PollReply.FromUint16("VWUP_CHARGER_DC2_U", value, 3))
-        {
-            ChargerDC2U->SetValue(value);
-            VALUE_LOG(TAG, "VWUP_CHARGER_DC2_U=%f => %f", value, ChargerDC2U->AsFloat());
-        }
-        break;
-
-    case VWUP_CHARGER_DC_I:
-        if (PollReply.FromUint16("VWUP_CHARGER_DC1_I", value, 1))
-        {
-            ChargerDC1I->SetValue((value - 510.0f) / 5.0f);
-            VALUE_LOG(TAG, "VWUP_CHARGER_DC1_I=%f => %f", value, ChargerDC1I->AsFloat());
-        }
-        if (PollReply.FromUint16("VWUP_CHARGER_DC2_I", value, 3))
-        {
-            ChargerDC2I->SetValue((value - 510.0f) / 5.0f);
-            VALUE_LOG(TAG, "VWUP_CHARGER_DC2_I=%f => %f", value, ChargerDC2I->AsFloat());
+            StandardMetrics.ms_v_pos_odometer->SetValue(value * 10.0f);
+            VALUE_LOG(TAG, "VWUP_MFD_ODOMETER=%f => %f", value, StandardMetrics.ms_v_pos_odometer->AsFloat());
         }
         break;
     }
