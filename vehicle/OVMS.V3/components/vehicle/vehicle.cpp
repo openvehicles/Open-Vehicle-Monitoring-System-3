@@ -2036,28 +2036,30 @@ void OvmsVehicle::PollSetState(uint8_t state)
 
 void OvmsVehicle::PollerSend(bool fromTicker)
   {
-  OvmsRecMutexLock lock(&m_poll_mutex);
+  // Don't do anything with no bus, no list or an empty list
+  if (!m_poll_bus || !m_poll_plist || m_poll_plist->txmoduleid == 0) return;
 
-  if (!m_poll_bus || !m_poll_plist) return;
+  OvmsRecMutexLock lock(&m_poll_mutex);
+  
   if (m_poll_plcur == NULL) m_poll_plcur = m_poll_plist;
 
   // ESP_LOGD(TAG, "PollerSend(%d): pid=%X, m_poll_ticker=%u, m_poll_wait=%u, m_poll_cnt_this_ticker=%u", fromTicker, m_poll_plcur->pid, m_poll_ticker, m_poll_wait, m_poll_cnt_this_ticker);
 
-  // Only every second/ticker
   if (fromTicker) 
     {
+    // Only every second/ticker
     m_poll_cnt_this_ticker = 0;
     if (m_poll_wait > 0) m_poll_wait--;
     }
-
   if (m_poll_wait > 0) return;
 
-  bool startedFromTop = m_poll_plcur == m_poll_plist;
+  auto start_plcur = m_poll_plcur;
+  do
+    {
+    // Loop until we are back where we started
 
-  while (m_poll_plcur->txmoduleid != 0)
-    {      
-    if ((m_poll_plcur->polltime[m_poll_state] > 0)&&
-        ((m_poll_ticker % m_poll_plcur->polltime[m_poll_state] ) == 0))
+    if ((m_poll_plcur->polltime[m_poll_state] > 0) &&
+        ((m_poll_ticker % m_poll_plcur->polltime[m_poll_state]) == 0))
       {
       // We need to poll this one...
       m_poll_type = m_poll_plcur->type;
@@ -2077,14 +2079,15 @@ void OvmsVehicle::PollerSend(bool fromTicker)
         m_poll_moduleid_high = 0x7ef;
         }
 
-      // ESP_LOGD(TAG, "Polling for %d/%02x (expecting %03x/%03x-%03x)",
-      //   m_poll_type,m_poll_pid,m_poll_moduleid_sent,m_poll_moduleid_low,m_poll_moduleid_high);
+      // ESP_LOGD(TAG, "Polling for %d/%02x (expecting %03x/%03x-%03x)",m_poll_type,m_poll_pid,m_poll_moduleid_sent,m_poll_moduleid_low,m_poll_moduleid_high);
+      
       CAN_frame_t txframe;
       memset(&txframe,0,sizeof(txframe));
       txframe.origin = m_poll_bus;
       txframe.MsgID = m_poll_moduleid_sent;
       txframe.FIR.B.FF = CAN_frame_std;
       txframe.FIR.B.DLC = 8;
+      
       switch (m_poll_plcur->type)
         {
         case VEHICLE_POLL_TYPE_OBDIICURRENT:
@@ -2113,23 +2116,26 @@ void OvmsVehicle::PollerSend(bool fromTicker)
           txframe.data.u8[3] = m_poll_pid & 0xff;
           break;
         }
+      
       m_poll_bus->Write(&txframe);
       m_poll_wait = 2;
       m_poll_plcur++;
       m_poll_cnt_this_ticker++;
+
       // ESP_LOGD(TAG, "Poll got send for pid=%X", m_poll_plcur->pid);
       return;
       }
+    
+    // This one doesn't need polling now... goto next one.
     m_poll_plcur++;
-    }
 
-  m_poll_plcur = m_poll_plist;
-  m_poll_ticker++;
-  if (m_poll_ticker > 3600) m_poll_ticker -= 3600;
+    // We are at the end of the list: start over
+    if (m_poll_plcur->txmoduleid == 0) m_poll_plcur = m_poll_plist;
 
-  // Immediate recursive call when the loop didn't start from the top and the ticker called
-  // Reason: Multiple polls with 1 second ticker intervall should get called once every second (if m_poll_max_per_ticker=1) with no gaps between calls
-  if (!startedFromTop && fromTicker) PollerSend(true);
+    } while (m_poll_plcur != start_plcur);
+
+    m_poll_ticker++;
+    if (m_poll_ticker > 3600) m_poll_ticker -= 3600;
   }
 
 void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
@@ -2302,11 +2308,11 @@ void OvmsVehicle::IncomingPollReplyInternal(canbus* bus, uint16_t type, uint16_t
   {
     IncomingPollReply(bus, type, pid, data, length, mlremain);
 
-    // The mutex extends to here too (I hope)!
+    // The mutex extends to here too
     if (m_poll_ml_remain > 0) m_poll_wait = 2;
 
-    // Send the next poll for this tick if max is not reached yet or no max defined
-    if ((m_poll_cnt_this_ticker < m_poll_max_per_ticker || m_poll_max_per_ticker == 0)) PollerSend(false);
+    // Send the next poll for this tick if we are not waiting AND max is not reached yet OR no max defined
+    if (m_poll_wait == 0 && (m_poll_cnt_this_ticker < m_poll_max_per_ticker || m_poll_max_per_ticker == 0)) PollerSend(false);
   }
 
 /**
