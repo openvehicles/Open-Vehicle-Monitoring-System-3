@@ -165,15 +165,15 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         break;
 
     case VWUP_BAT_MGMT_ENERGY_COUNTERS:
-        if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_USED", value, 8))
-        {
-            BatMgmtEnergyUsed->SetValue(value / ((0xFFFFFFFF / 2.0f) / 250200.0f));
-            VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_USED=%f => %f", value, BatMgmtEnergyUsed->AsFloat());
-        }
-        if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_CHARGED", value, 12))
+        if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_CHARGED", value, 8))
         {
             BatMgmtEnergyCharged->SetValue(value / ((0xFFFFFFFF / 2.0f) / 250200.0f));
             VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_CHARGED=%f => %f", value, BatMgmtEnergyCharged->AsFloat());
+        }
+        if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_USED", value, 12))
+        {
+            BatMgmtEnergyUsed->SetValue(value / ((0xFFFFFFFF / 2.0f) / 250200.0f));
+            VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_USED=%f => %f", value, BatMgmtEnergyUsed->AsFloat());
         }
         break;
 
