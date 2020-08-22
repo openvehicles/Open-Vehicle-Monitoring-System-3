@@ -2134,6 +2134,7 @@ void OvmsVehicle::PollerSend(bool fromTicker)
       m_poll_plcur = m_poll_plist;
       m_poll_ticker++;
       if (m_poll_ticker > 3600) m_poll_ticker -= 3600;
+      if (!fromTicker) break;
       }
     else
       {
