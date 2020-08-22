@@ -2050,10 +2050,10 @@ void OvmsVehicle::PollerSend(bool fromTicker)
     // Only every second/ticker
     m_poll_cnt_this_ticker = 0;
     if (m_poll_wait > 0) m_poll_wait--;
+    if (m_poll_wait == 0) m_poll_plstart = m_poll_plcur;
     }
   if (m_poll_wait > 0) return;
 
-  auto start_plcur = m_poll_plcur;
   do
     {
     // Loop until we are back where we started
@@ -2130,18 +2130,21 @@ void OvmsVehicle::PollerSend(bool fromTicker)
     
     if (m_poll_plcur->txmoduleid == 0)
       {
-      // We are at the end of the list: start over and tick      
+      // We are at the end of the list: start over     
       m_poll_plcur = m_poll_plist;
-      m_poll_ticker++;
-      if (m_poll_ticker > 3600) m_poll_ticker -= 3600;
-      if (!fromTicker) break;
       }
     else
       {
       m_poll_plcur++;
       }
 
-    } while (m_poll_plcur != start_plcur);
+    } while (m_poll_plcur != m_poll_plstart);
+    
+    if (fromTicker)
+      {
+      m_poll_ticker++;
+      if (m_poll_ticker > 3600) m_poll_ticker -= 3600;
+      }
   }
 
 void OvmsVehicle::PollerReceive(CAN_frame_t* frame)

@@ -295,6 +295,7 @@ class OvmsVehicle : public InternalRamAllocated
     canbus*           m_poll_bus;             // Bus to poll on
     const poll_pid_t* m_poll_plist;           // Head of poll list
     const poll_pid_t* m_poll_plcur;           // Current position in poll list
+    const poll_pid_t* m_poll_plstart;         // Position the ticker started at
     uint32_t          m_poll_ticker;          // Polling ticker
     uint32_t          m_poll_moduleid_sent;   // ModuleID last sent
     uint32_t          m_poll_moduleid_low;    // Expected response moduleid low mark
