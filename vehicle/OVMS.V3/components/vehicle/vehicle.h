@@ -124,6 +124,7 @@ class OvmsVehicle : public InternalRamAllocated
   private:
     void VehicleTicker1(std::string event, void* data);
     void VehicleConfigChanged(std::string event, void* data);
+    void PollerToNextEntry();
     void PollerSend(bool fromTicker);
     void PollerReceive(CAN_frame_t* frame);
     void IncomingPollReplyInternal(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
@@ -295,8 +296,7 @@ class OvmsVehicle : public InternalRamAllocated
     canbus*           m_poll_bus;             // Bus to poll on
     const poll_pid_t* m_poll_plist;           // Head of poll list
     const poll_pid_t* m_poll_plcur;           // Current position in poll list
-    const poll_pid_t* m_poll_plstart;         // Position the ticker started at
-    uint32_t          m_poll_ticker;          // Polling ticker
+    uint32_t          m_poll_ticker;          // Polling ticker: How many full cycles of list are done (max 3600 before reset)
     uint32_t          m_poll_moduleid_sent;   // ModuleID last sent
     uint32_t          m_poll_moduleid_low;    // Expected response moduleid low mark
     uint32_t          m_poll_moduleid_high;   // Expected response moduleid high mark

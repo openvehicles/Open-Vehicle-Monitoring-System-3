@@ -2050,13 +2050,12 @@ void OvmsVehicle::PollerSend(bool fromTicker)
     // Only every second/ticker
     m_poll_cnt_this_ticker = 0;
     if (m_poll_wait > 0) m_poll_wait--;
-    if (m_poll_wait == 0) m_poll_plstart = m_poll_plcur;
     }
   if (m_poll_wait > 0) return;
 
   do
     {
-    // Loop until we are back where we started
+    // Loop until I'm back at the start of the list
 
     if ((m_poll_plcur->polltime[m_poll_state] > 0) &&
         ((m_poll_ticker % m_poll_plcur->polltime[m_poll_state]) == 0))
@@ -2117,34 +2116,36 @@ void OvmsVehicle::PollerSend(bool fromTicker)
           break;
         }
       
-      m_poll_bus->Write(&txframe);
-      m_poll_wait = 2;
-      m_poll_plcur++;
-      m_poll_cnt_this_ticker++;
-
       // ESP_LOGD(TAG, "Poll got send for pid=%X", m_poll_plcur->pid);
+
+      m_poll_bus->Write(&txframe);
+
+      m_poll_wait = 2;
+      m_poll_cnt_this_ticker++;      
+      PollerToNextEntry();
+
       return;
       }
     
-    // This one doesn't need polling now... goto next one.
-    
-    if (m_poll_plcur->txmoduleid == 0)
-      {
-      // We are at the end of the list: start over     
-      m_poll_plcur = m_poll_plist;
-      }
-    else
-      {
-      m_poll_plcur++;
-      }
+    PollerToNextEntry();
+    }  while (m_poll_plcur != m_poll_plist);
+  }
 
-    } while (m_poll_plcur != m_poll_plstart);
-    
-    if (fromTicker)
-      {
-      m_poll_ticker++;
-      if (m_poll_ticker > 3600) m_poll_ticker -= 3600;
-      }
+void OvmsVehicle::PollerToNextEntry()
+  {
+
+  // Next entry in list
+  m_poll_plcur++;
+
+  // We are at the end of the list: start over and tick
+  if (m_poll_plcur->txmoduleid == 0)
+    {
+    m_poll_plcur = m_poll_plist;
+
+    m_poll_ticker++;
+    if (m_poll_ticker > 3600) m_poll_ticker -= 3600;
+    // ESP_LOGD(TAG, "PollerPlusPlus(): ticker ++");
+    }
   }
 
 void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
@@ -2320,8 +2321,13 @@ void OvmsVehicle::IncomingPollReplyInternal(canbus* bus, uint16_t type, uint16_t
     // The mutex extends to here too
     if (m_poll_ml_remain > 0) m_poll_wait = 2;
 
-    // Send the next poll for this tick if we are not waiting AND max is not reached yet OR no max defined
-    if (m_poll_wait == 0 && (m_poll_cnt_this_ticker < m_poll_max_per_ticker || m_poll_max_per_ticker == 0)) PollerSend(false);
+    // Send the next poll immediately if
+    // we are not waiting
+    // we are not at the top of the list (starting is left to the ticker!)
+    // max is not reached yet OR no max defined
+    if (m_poll_wait == 0 &&
+        m_poll_plcur != m_poll_plist &&
+        (m_poll_cnt_this_ticker < m_poll_max_per_ticker || m_poll_max_per_ticker == 0)) PollerSend(false);
   }
 
 /**
