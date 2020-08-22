@@ -139,6 +139,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void PollReply_VIN(uint8_t reply_data[], uint16_t reply_len);
     void PollReply_BMS_Volt(uint8_t reply_data[], uint16_t reply_len);
     void PollReply_BMS_Temp(uint8_t reply_data[], uint16_t reply_len);
+    void PollSetBus(canbus* bus);
 
     TimerHandle_t m_remoteCommandTimer;
     TimerHandle_t m_ccDisableTimer;
@@ -175,6 +176,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     float m_cum_energy_recd_wh; 					// Cumulated energy (in wh) recovered  within 1 second ticker interval
     float m_cum_energy_charge_wh;					// Cumulated energy (in wh) charged within 10 second ticker interval
     bool m_gen1_charger;					        // True if using original charger and 0x5bf messages, false if using 0x390 messages
+    bool m_enable_write;                  // Enable/disable can write (polling and commands)
   };
 
 #endif //#ifndef __VEHICLE_NISSANLEAF_H__
