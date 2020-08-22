@@ -2036,10 +2036,10 @@ void OvmsVehicle::PollSetState(uint8_t state)
 
 void OvmsVehicle::PollerSend(bool fromTicker)
   {
+  OvmsRecMutexLock lock(&m_poll_mutex);
+
   // Don't do anything with no bus, no list or an empty list
   if (!m_poll_bus || !m_poll_plist || m_poll_plist->txmoduleid == 0) return;
-
-  OvmsRecMutexLock lock(&m_poll_mutex);
   
   if (m_poll_plcur == NULL) m_poll_plcur = m_poll_plist;
 
