@@ -26,6 +26,8 @@
 #define VWUP_BAT_MGMT_U 0x1E3B
 #define VWUP_BAT_MGMT_I 0x1E3D
 #define VWUP_BAT_MGMT_ENERGY_COUNTERS 0x1E32
+#define VWUP_BAT_MGMT_CELL_MAX 0x1E33
+#define VWUP_BAT_MGMT_CELL_MIN 0x1E34
 #define VWUP_CHARGER_EXTDIAG 0x03
 #define VWUP_CHARGER_POWER_EFF 0x15D6
 #define VWUP_CHARGER_POWER_LOSS 0x15E1
@@ -43,6 +45,7 @@ public:
 
     OvmsMetricFloat *BatMgmtEnergyUsed;    // Total enery usage from battery [kWh]
     OvmsMetricFloat *BatMgmtEnergyCharged; // Total enery charged (charger + recovered) to battery [kWh]
+    OvmsMetricFloat *BatMgmtCellDelta;     // Highest voltage - lowest voltage of all cells [V]
 
     OvmsMetricFloat *ChargerAC1U;          // AC Voltage Phase 1
     OvmsMetricFloat *ChargerAC2U;          // AC Voltage Phase 2
@@ -65,6 +68,10 @@ protected:
     virtual void Ticker1(uint32_t ticker);
 
 private:
+
+    float BatMgmtCellMax;
+    float BatMgmtCellMin;
+
     PollReplyHelper PollReply;
 
     void CheckCarState();

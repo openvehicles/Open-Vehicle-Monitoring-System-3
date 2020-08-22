@@ -24,10 +24,12 @@ public:
 const OvmsVehicle::poll_pid_t vwup_polls[] = {
     // Note: poller ticker cycles at 3600 seconds = max period
     // { txid, rxid, type, pid, { VWUP_OFF, VWUP_ON, VWUP_CHARGING } }
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_U, {0, 5, 5}},
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_I, {0, 5, 5}},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_U, {0, 1, 5}},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_I, {0, 1, 5}},
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_SOC, {0, 20, 20}},
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_ENERGY_COUNTERS, {0, 20, 20}},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_CELL_MAX, {0, 20, 20}},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_CELL_MIN, {0, 20, 20}},
 
     {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIISESSION, VWUP_CHARGER_EXTDIAG, {0, 30, 30}},
     {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_AC_U, {0, 0, 5}},
@@ -56,6 +58,7 @@ OvmsVehicleVWeUpObd::OvmsVehicleVWeUpObd()
 
     BatMgmtEnergyUsed = MyMetrics.InitFloat("vwup.batmgmt.enrg.used", SM_STALE_NONE, 0, kWh);
     BatMgmtEnergyCharged = MyMetrics.InitFloat("vwup.batmgmt.enrg.chrgd", SM_STALE_NONE, 0, kWh);
+    BatMgmtCellDelta = MyMetrics.InitFloat("vwup.batmgmt.cell.delta", SM_STALE_NONE, 0, Volts);
 
     ChargerPowerEff = MyMetrics.InitFloat("vwup.chrgr.eff.ecu", 100, 0, Percentage);
     ChargerPowerLoss = MyMetrics.InitFloat("vwup.chrgr.loss.ecu", SM_STALE_NONE, 0, Watts);
@@ -174,6 +177,26 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         {
             BatMgmtEnergyUsed->SetValue(value / ((0xFFFFFFFF / 2.0f) / 250200.0f));
             VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_USED=%f => %f", value, BatMgmtEnergyUsed->AsFloat());
+        }
+        break;
+
+    case VWUP_BAT_MGMT_CELL_MAX:
+        if (PollReply.FromUint16("VWUP_BAT_MGMT_CELL_MAX", value))
+        {
+            BatMgmtCellMax = value / 4096.0f;
+            VALUE_LOG(TAG, "VWUP_BAT_MGMT_CELL_MAX=%f => %f", value, BatMgmtCellMax);
+        }
+        break;
+
+    case VWUP_BAT_MGMT_CELL_MIN:
+        if (PollReply.FromUint16("VWUP_BAT_MGMT_CELL_MIN", value))
+        {
+            BatMgmtCellMin = value / 4096.0f;
+            VALUE_LOG(TAG, "VWUP_BAT_MGMT_CELL_MIN=%f => %f", value, BatMgmtCellMin);
+
+            value = BatMgmtCellMax - BatMgmtCellMin;
+            BatMgmtCellDelta->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_BAT_MGMT_CELL_DELTA=%f => %f", value, BatMgmtCellDelta->AsFloat());
         }
         break;
 
