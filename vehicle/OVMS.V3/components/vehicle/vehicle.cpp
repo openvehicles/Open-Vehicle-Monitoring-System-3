@@ -2127,15 +2127,20 @@ void OvmsVehicle::PollerSend(bool fromTicker)
       }
     
     // This one doesn't need polling now... goto next one.
-    m_poll_plcur++;
-
-    // We are at the end of the list: start over
-    if (m_poll_plcur->txmoduleid == 0) m_poll_plcur = m_poll_plist;
+    
+    if (m_poll_plcur->txmoduleid == 0)
+      {
+      // We are at the end of the list: start over and tick      
+      m_poll_plcur = m_poll_plist;
+      m_poll_ticker++;
+      if (m_poll_ticker > 3600) m_poll_ticker -= 3600;
+      }
+    else
+      {
+      m_poll_plcur++;
+      }
 
     } while (m_poll_plcur != start_plcur);
-
-    m_poll_ticker++;
-    if (m_poll_ticker > 3600) m_poll_ticker -= 3600;
   }
 
 void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
