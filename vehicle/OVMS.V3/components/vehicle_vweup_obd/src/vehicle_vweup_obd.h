@@ -47,15 +47,7 @@ public:
     OvmsMetricFloat *BatMgmtEnergyCharged; // Total enery charged (charger + recovered) to battery [kWh]
     OvmsMetricFloat *BatMgmtCellDelta;     // Highest voltage - lowest voltage of all cells [V]
 
-    OvmsMetricFloat *ChargerAC1U;          // AC Voltage Phase 1
-    OvmsMetricFloat *ChargerAC2U;          // AC Voltage Phase 2
-    OvmsMetricFloat *ChargerAC1I;          // AC Current Phase 1
-    OvmsMetricFloat *ChargerAC2I;          // AC Current Phase 2
     OvmsMetricFloat *ChargerACP;           // AC Power
-    OvmsMetricFloat *ChargerDC1U;          // DC Voltage 1
-    OvmsMetricFloat *ChargerDC2U;          // DC Voltage 2
-    OvmsMetricFloat *ChargerDC1I;          // DC Current 1
-    OvmsMetricFloat *ChargerDC2I;          // DC Current 2
     OvmsMetricFloat *ChargerDCP;           // DC Power
     OvmsMetricFloat *ChargerPowerEff;      // Efficiency of the Charger [%] (from ECU)
     OvmsMetricFloat *ChargerPowerLoss;     // Power loss of Charger [W] (from ECU)
@@ -68,9 +60,17 @@ protected:
     virtual void Ticker1(uint32_t ticker);
 
 private:
+    float BatMgmtCellMax; // Maximum cell voltage
+    float BatMgmtCellMin; // Minimum cell voltage
 
-    float BatMgmtCellMax;
-    float BatMgmtCellMin;
+    float ChargerAC1U; // AC Voltage Phase 1
+    float ChargerAC2U; // AC Voltage Phase 2
+    float ChargerAC1I; // AC Current Phase 1
+    float ChargerAC2I; // AC Current Phase 2
+    float ChargerDC1U; // DC Voltage 1
+    float ChargerDC2U; // DC Voltage 2
+    float ChargerDC1I; // DC Current 1
+    float ChargerDC2I; // DC Current 2
 
     PollReplyHelper PollReply;
 
