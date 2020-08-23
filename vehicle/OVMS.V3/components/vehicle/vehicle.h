@@ -295,7 +295,6 @@ class OvmsVehicle : public InternalRamAllocated
     canbus*           m_poll_bus;             // Bus to poll on
     const poll_pid_t* m_poll_plist;           // Head of poll list
     const poll_pid_t* m_poll_plcur;           // Current position in poll list
-    const poll_pid_t* m_poll_plstart;         // Position the ticker started at
     uint32_t          m_poll_ticker;          // Polling ticker
     uint32_t          m_poll_moduleid_sent;   // ModuleID last sent
     uint32_t          m_poll_moduleid_low;    // Expected response moduleid low mark
@@ -314,15 +313,15 @@ class OvmsVehicle : public InternalRamAllocated
                                               //              PollerSend() decrements to 1 and doesn't send the next poll.
                                               //              Only when the reply doesn't get in until the next ticker occurs
                                               //              PollserSend() decrements to 0 and abandons the outstanding reply (=timeout)
-    
+
   private:
-    uint8_t           m_poll_max_per_ticker;  // How many polls are allowed (max) per tick/second. 0 = no limit
-    uint8_t           m_poll_cnt_this_ticker; // How many polls were already send in the current tick/second
+    uint8_t           m_poll_sequence_max;    // Polls allowed to be sent in sequence per time tick (second), default 1, 0 = no limit
+    uint8_t           m_poll_sequence_cnt;    // Polls already sent in the current time tick (second)
 
   protected:
     void PollSetPidList(canbus* bus, const poll_pid_t* plist);
     void PollSetState(uint8_t state);
-    void PollSetThrottling(uint8_t max_polls_per_ticker) { m_poll_max_per_ticker = max_polls_per_ticker; }
+    void PollSetThrottling(uint8_t sequence_max) { m_poll_sequence_max = sequence_max; }
 
   // BMS helpers
   protected:
