@@ -2244,7 +2244,11 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
           (frame->data.u8[2] == 0x40+m_poll_type)&&
           ((frame->data.u8[4]+(((uint16_t) frame->data.u8[3]) << 8))  == m_poll_pid))
         {
-
+        // First frame is 5 bytes header (2 ISO-TP, 3 OBDII), 3 bytes data:
+        // [first=1,lenH] [lenL] [type+40] [pid] [pid] [data0] [data1] [data2]
+        // Note that the value of 'len' includes the OBDII type and pid bytes,
+        // but we don't count these in the data we pass to IncomingPollReply.
+        //
         // First frame; send flow control frame:
         CAN_frame_t txframe;
         memset(&txframe,0,sizeof(txframe));
@@ -2269,8 +2273,9 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
         txframe.data.u8[2] = 0x01; // with 1 ms send interval (as fast as possible)
         txframe.Write();
 
-        // prepare frame processing, first frame contains three data bytes (-3) and value of u8[1] counts the two PID bytes as well (-2)
-        m_poll_ml_remain = (uint16_t)(frame->data.u8[1] - 3 - 2);
+        // prepare frame processing: First frame contains length which counts 2 pid and 1 type byte as well.
+        //                           And first frame also contains 3 data bytes.
+        m_poll_ml_remain = (((uint16_t)(frame->data.u8[0]&0x0f))<<8) + frame->data.u8[1] - 2 - 1 - 3;
         m_poll_ml_offset = 3;
         m_poll_ml_frame = 0;
 
@@ -2302,8 +2307,12 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
       else if ((frame->data.u8[1] == 0x62)&&
                ((frame->data.u8[3]+(((uint16_t) frame->data.u8[2]) << 8)) == m_poll_pid))
         {
+        uint16_t len;
+        len = (uint16_t) frame->data.u8[0] - 3;
         m_poll_ml_remain = 0;
-        IncomingPollReplyInternal(frame->origin, m_poll_type, m_poll_pid, &frame->data.u8[4], 4, 0);
+        m_poll_ml_frame = 0;
+        //ESP_LOGD(TAG, "Poll ML single frame (frame=%d, remain=%d)",m_poll_ml_frame,m_poll_ml_remain);
+        IncomingPollReplyInternal(frame->origin, m_poll_type, m_poll_pid, &frame->data.u8[4], len, 0);
         }
       break;
     }
