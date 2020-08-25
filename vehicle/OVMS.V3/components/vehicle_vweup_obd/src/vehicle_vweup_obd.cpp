@@ -10,6 +10,7 @@ static const char *TAG = "vwup.obd";
 #include "ovms_events.h"
 #include "ovms_metrics.h"
 
+
 class OvmsVehicleVWeUpObdInit
 {
 public:
@@ -84,6 +85,100 @@ OvmsVehicleVWeUpObd::~OvmsVehicleVWeUpObd()
 void OvmsVehicleVWeUpObd::Ticker1(uint32_t ticker)
 {
     CheckCarState();
+}
+
+void OvmsVehicleVWeUpObd::Ticker10(uint32_t ticker)
+{
+    // Option: with mongoose ala canlog_tcpclient.cpp
+
+//    if (ticker < 30) return;
+
+// WORKS BUT FREEZES OVMS SOMEHOW
+    // const char *payload = "Message from OVMS";
+
+    // char rx_buffer[128];
+    // char addr_str[128];
+    // int addr_family;
+    // int ip_protocol;
+
+    
+    // ESP_LOGW(TAG, "Trying to send TCP package...");
+
+
+    //     struct sockaddr_in destAddr;
+    //     destAddr.sin_addr.s_addr = inet_addr("192.168.254.6");
+    //     destAddr.sin_family = AF_INET;
+    //     destAddr.sin_port = htons(54321);
+    //     addr_family = AF_INET;
+    //     ip_protocol = IPPROTO_IP;
+    //     inet_ntoa_r(destAddr.sin_addr, addr_str, sizeof(addr_str) - 1);
+
+    //     int sock =  socket(addr_family, SOCK_STREAM, ip_protocol);
+    //     if (sock < 0) {
+    //         ESP_LOGE(TAG, "Unable to create socket: errno %d", errno);
+    //         return;
+    //     }
+    //     ESP_LOGI(TAG, "Socket created");
+
+    //     int err = connect(sock, (struct sockaddr *)&destAddr, sizeof(destAddr));
+    //     if (err != 0) {
+    //         ESP_LOGE(TAG, "Socket unable to connect: errno %d", errno);
+    //         return;
+    //     }
+    //     ESP_LOGI(TAG, "Successfully connected");
+
+    //     while (1) {
+    //         int err = send(sock, payload, strlen(payload), 0);
+    //         if (err < 0) {
+    //             ESP_LOGE(TAG, "Error occured during sending: errno %d", errno);
+    //             break;
+    //         }
+
+    //         // int len = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
+    //         // // Error occured during receiving
+    //         // if (len < 0) {
+    //         //     ESP_LOGE(TAG, "recv failed: errno %d", errno);
+    //         //     break;
+    //         // }
+    //         // // Data received
+    //         // else {
+    //         //     rx_buffer[len] = 0; // Null-terminate whatever we received and treat like a string
+    //         //     ESP_LOGI(TAG, "Received %d bytes from %s:", len, addr_str);
+    //         //     ESP_LOGI(TAG, "%s", rx_buffer);
+    //         // }
+
+    //         //vTaskDelay(2000 / portTICK_PERIOD_MS);
+    //         break;
+    //     }
+
+    //     //if (sock != -1) {
+    //         ESP_LOGE(TAG, "Shutting down socket and restarting...");
+    //         shutdown(sock, 0);
+    //         close(sock);
+    //     //}    
+    // ESP_LOGW(TAG, "TCP ended...");
+
+//https://github.com/nkolban/esp32-snippets/blob/master/sockets/client/socketClient.c
+    // ESP_LOGD(tag, "start");
+	// int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+	// ESP_LOGD(tag, "socket: rc: %d", sock);
+	// struct sockaddr_in serverAddress;
+	// serverAddress.sin_family = AF_INET;
+	// inet_pton(AF_INET, "192.168.1.200", &serverAddress.sin_addr.s_addr);
+	// serverAddress.sin_port = htons(9999);
+
+	// int rc = connect(sock, (struct sockaddr *)&serverAddress, sizeof(struct sockaddr_in));
+	// ESP_LOGD(tag, "connect rc: %d", rc);
+
+	// char *data = "Hello world";
+	// rc = send(sock, data, strlen(data), 0);
+	// ESP_LOGD(tag, "send: rc: %d", rc);
+
+	// rc = close(sock);
+	// ESP_LOGD(tag, "close: rc: %d", rc);
+
+	// vTaskDelete(NULL);
 }
 
 void OvmsVehicleVWeUpObd::CheckCarState()

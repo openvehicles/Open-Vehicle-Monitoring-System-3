@@ -5,8 +5,8 @@
 #include "poll_reply_helper.h"
 
 // So I can easily swap between logging all Values as Info or as Verbos
-#define VALUE_LOG(t, d, v1, v2) (ESP_LOGI(t, d, v1, v2))
-//#define VALUE_LOG(t,d,v1, v2)    (ESP_LOGV(t, d, v1, v2))
+// #define VALUE_LOG(t, d, v1, v2) (ESP_LOGI(t, d, v1, v2))
+#define VALUE_LOG(t,d,v1, v2)    (ESP_LOGV(t, d, v1, v2))
 
 // Car (poll) states
 #define VWUP_OFF 0
@@ -58,6 +58,7 @@ public:
 
 protected:
     virtual void Ticker1(uint32_t ticker);
+    virtual void Ticker10(uint32_t ticker);
 
 private:
     float BatMgmtCellMax; // Maximum cell voltage
