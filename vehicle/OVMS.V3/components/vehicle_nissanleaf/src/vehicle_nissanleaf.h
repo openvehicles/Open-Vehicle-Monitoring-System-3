@@ -35,7 +35,8 @@
 #include "freertos/timers.h"
 #include "vehicle.h"
 #include "ovms_webserver.h"
-
+#include "ovms_semaphore.h"
+#include "ovms_mutex.h"
 #include "nl_types.h"
 
 #define DEFAULT_MODEL_YEAR 2012
@@ -87,11 +88,13 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     ~OvmsVehicleNissanLeaf();
 
   public:
+    static OvmsVehicleNissanLeaf* GetInstance(OvmsWriter* writer=NULL);
     void ConfigChanged(OvmsConfigParam* param);
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);
 
   public:
+    bool ObdRequest(uint16_t txid, uint16_t rxid, uint32_t request, string& response, int timeout_ms /*=3000*/, uint8_t bus);
     void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void IncomingFrameCan1(CAN_frame_t* p_frame);
     void IncomingFrameCan2(CAN_frame_t* p_frame);
@@ -113,16 +116,19 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void WebDeInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
+    static void shell_obd_request(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   public:
     void GetDashboardConfig(DashboardConfig& cfg);
 
   private:
+    void CommandInit();
     void vehicle_nissanleaf_car_on(bool isOn);
     void vehicle_nissanleaf_charger_status(ChargerStatus status);
     void SendCanMessage(uint16_t id, uint8_t length, uint8_t *data);
     void Ticker1(uint32_t ticker);
     void Ticker10(uint32_t ticker);
+    void Ticker60(uint32_t ticker);
     void HandleEnergy();
     void HandleCharging();
     void HandleRange();
@@ -175,8 +181,14 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     float m_cum_energy_used_wh;				    // Cumulated energy (in wh) used within 1 second ticker interval
     float m_cum_energy_recd_wh; 					// Cumulated energy (in wh) recovered  within 1 second ticker interval
     float m_cum_energy_charge_wh;					// Cumulated energy (in wh) charged within 10 second ticker interval
-    bool m_gen1_charger;					        // True if using original charger and 0x5bf messages, false if using 0x390 messages
-    bool m_enable_write;                  // Enable/disable can write (polling and commands)
+    bool  m_gen1_charger;					        // True if using original charger and 0x5bf messages, false if using 0x390 messages
+    bool  m_enable_write;                 // Enable/disable can write (polling and commands
+
+  protected:
+    OvmsCommand*        cmd_xnl;
+    string              nl_obd_rxbuf;
+    OvmsMutex           nl_obd_request;
+    OvmsSemaphore       nl_obd_rxwait;
   };
 
 #endif //#ifndef __VEHICLE_NISSANLEAF_H__
