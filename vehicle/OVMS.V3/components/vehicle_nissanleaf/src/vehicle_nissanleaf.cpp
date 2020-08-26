@@ -321,7 +321,7 @@ int OvmsVehicleNissanLeaf::GetNotifyChargeStateDelay(const char* state)
 // Use to switch can bus to poll without resetting poll ticker
 void OvmsVehicleNissanLeaf::PollSetBus(canbus* bus)
   {
-  OvmsMutexLock lock(&m_poll_mutex);
+  OvmsRecMutexLock lock(&m_poll_mutex);
   m_poll_bus = bus;
   }
 
