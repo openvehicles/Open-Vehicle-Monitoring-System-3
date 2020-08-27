@@ -969,8 +969,8 @@ OvmsVehicle::OvmsVehicle()
   m_poll_ml_offset = 0;
   m_poll_ml_frame = 0;
   m_poll_wait = 0;
-  m_poll_max_per_ticker = 1;
-  m_poll_cnt_this_ticker = 0;
+  m_poll_sequence_max = 1;
+  m_poll_sequence_cnt = 0;
 
   m_bms_voltages = NULL;
   m_bms_vmins = NULL;
@@ -2016,7 +2016,7 @@ void OvmsVehicle::PollSetPidList(canbus* bus, const poll_pid_t* plist)
   m_poll_bus = bus;
   m_poll_plist = plist;
   m_poll_ticker = 0;
-  m_poll_cnt_this_ticker = 0;
+  m_poll_sequence_cnt = 0;
   m_poll_wait = 0;
   m_poll_plcur = NULL;
   }
@@ -2028,7 +2028,7 @@ void OvmsVehicle::PollSetState(uint8_t state)
     OvmsRecMutexLock lock(&m_poll_mutex);
     m_poll_state = state;
     m_poll_ticker = 0;
-    m_poll_cnt_this_ticker = 0;
+    m_poll_sequence_cnt = 0;
     m_poll_wait = 0;
     m_poll_plcur = NULL;
     }
@@ -2040,24 +2040,23 @@ void OvmsVehicle::PollerSend(bool fromTicker)
 
   // Don't do anything with no bus, no list or an empty list
   if (!m_poll_bus || !m_poll_plist || m_poll_plist->txmoduleid == 0) return;
-  
+
   if (m_poll_plcur == NULL) m_poll_plcur = m_poll_plist;
 
-  // ESP_LOGD(TAG, "PollerSend(%d): pid=%X, m_poll_ticker=%u, m_poll_wait=%u, m_poll_cnt_this_ticker=%u", fromTicker, m_poll_plcur->pid, m_poll_ticker, m_poll_wait, m_poll_cnt_this_ticker);
+  // ESP_LOGD(TAG, "PollerSend(%d): entry at[type=%02X, pid=%X], ticker=%u, wait=%u, cnt=%u/%u",
+  //          fromTicker, m_poll_plcur->type, m_poll_plcur->pid,
+  //          m_poll_ticker, m_poll_wait, m_poll_sequence_cnt, m_poll_sequence_max);
 
   if (fromTicker) 
     {
-    // Only every second/ticker
-    m_poll_cnt_this_ticker = 0;
+    // Timer ticker call: reset throttling counter, check response timeout
+    m_poll_sequence_cnt = 0;
     if (m_poll_wait > 0) m_poll_wait--;
-    if (m_poll_wait == 0) m_poll_plstart = m_poll_plcur;
     }
   if (m_poll_wait > 0) return;
 
-  do
+  while (m_poll_plcur->txmoduleid != 0)
     {
-    // Loop until we are back where we started
-
     if ((m_poll_plcur->polltime[m_poll_state] > 0) &&
         ((m_poll_ticker % m_poll_plcur->polltime[m_poll_state]) == 0))
       {
@@ -2079,7 +2078,8 @@ void OvmsVehicle::PollerSend(bool fromTicker)
         m_poll_moduleid_high = 0x7ef;
         }
 
-      // ESP_LOGD(TAG, "Polling for %d/%02x (expecting %03x/%03x-%03x)",m_poll_type,m_poll_pid,m_poll_moduleid_sent,m_poll_moduleid_low,m_poll_moduleid_high);
+      // ESP_LOGD(TAG, "PollerSend(%d): send [type=%02X, pid=%X], expecting %03x/%03x-%03x",
+      //          fromTicker, m_poll_type, m_poll_pid, m_poll_moduleid_sent, m_poll_moduleid_low, m_poll_moduleid_high);
       
       CAN_frame_t txframe;
       memset(&txframe,0,sizeof(txframe));
@@ -2111,7 +2111,7 @@ void OvmsVehicle::PollerSend(bool fromTicker)
           // 16 bit PID request:
           m_poll_ml_remain = 0;
           txframe.data.u8[0] = 0x03;
-          txframe.data.u8[1] = m_poll_type; //VEHICLE_POLL_TYPE_OBDIIEXTENDED;    // Get extended PID
+          txframe.data.u8[1] = m_poll_type;
           txframe.data.u8[2] = m_poll_pid >> 8;
           txframe.data.u8[3] = m_poll_pid & 0xff;
           break;
@@ -2120,31 +2120,20 @@ void OvmsVehicle::PollerSend(bool fromTicker)
       m_poll_bus->Write(&txframe);
       m_poll_wait = 2;
       m_poll_plcur++;
-      m_poll_cnt_this_ticker++;
+      m_poll_sequence_cnt++;
 
-      // ESP_LOGD(TAG, "Poll got send for pid=%X", m_poll_plcur->pid);
       return;
       }
-    
-    // This one doesn't need polling now... goto next one.
-    
-    if (m_poll_plcur->txmoduleid == 0)
-      {
-      // We are at the end of the list: start over     
-      m_poll_plcur = m_poll_plist;
-      }
-    else
-      {
-      m_poll_plcur++;
-      }
 
-    } while (m_poll_plcur != m_poll_plstart);
-    
-    if (fromTicker)
-      {
-      m_poll_ticker++;
-      if (m_poll_ticker > 3600) m_poll_ticker -= 3600;
-      }
+    // Poll entry is not due, check next
+    m_poll_plcur++;
+    }
+
+    // Completed checking all poll entries for the current m_poll_ticker
+    // ESP_LOGD(TAG, "PollerSend(%d): cycle complete for ticker=%u", fromTicker, m_poll_ticker);
+    m_poll_plcur = m_poll_plist;
+    m_poll_ticker++;
+    if (m_poll_ticker > 3600) m_poll_ticker -= 3600;
   }
 
 void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
@@ -2321,7 +2310,7 @@ void OvmsVehicle::IncomingPollReplyInternal(canbus* bus, uint16_t type, uint16_t
     if (m_poll_ml_remain > 0) m_poll_wait = 2;
 
     // Send the next poll for this tick if we are not waiting AND max is not reached yet OR no max defined
-    if (m_poll_wait == 0 && (m_poll_cnt_this_ticker < m_poll_max_per_ticker || m_poll_max_per_ticker == 0)) PollerSend(false);
+    if (m_poll_wait == 0 && (m_poll_sequence_cnt < m_poll_sequence_max || m_poll_sequence_max == 0)) PollerSend(false);
   }
 
 /**
