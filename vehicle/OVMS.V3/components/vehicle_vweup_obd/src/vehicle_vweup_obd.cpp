@@ -63,6 +63,7 @@ OvmsVehicleVWeUpObd::OvmsVehicleVWeUpObd()
     RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
     PollSetPidList(m_can1, vwup_polls);
     PollSetThrottling(0);
+    PollSetResponseSeparationTime(1);
     PollSetState(VWUP_OFF);
 
     BatMgmtEnergyUsed = MyMetrics.InitFloat("vwup.batmgmt.enrg.used", SM_STALE_NONE, 0, kWh);
