@@ -305,6 +305,7 @@ class OvmsVehicle : public InternalRamAllocated
       uint16_t type;
       uint16_t pid;
       uint16_t polltime[VEHICLE_POLL_NSTATES];
+      uint8_t  pollbus;
       } poll_pid_t;
 
   protected:
