@@ -167,7 +167,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   PollSetState(POLLSTATE_OFF);
   PollSetPidList(m_can1,obdii_polls);
-
+  PollSetResponseSeparationTime(0);
 
   MyConfig.RegisterParam("xnl", "Nissan Leaf", true, true);
   ConfigChanged(NULL);
@@ -1527,6 +1527,11 @@ void OvmsVehicleNissanLeaf::Ticker10(uint32_t ticker)
   }
 
 void OvmsVehicleNissanLeaf::Ticker60(uint32_t ticker)
+  {
+  PollOnceRequests();
+  }
+
+void OvmsVehicleNissanLeaf::PollOnceRequests()
   {
   if (m_enable_write && StandardMetrics.ms_v_env_awake->AsBool())
     {

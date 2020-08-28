@@ -122,7 +122,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void GetDashboardConfig(DashboardConfig& cfg);
 
   private:
-    void CommandInit();
+    void CommandInit(); // initialise shell commands specific to Leaf
     void vehicle_nissanleaf_car_on(bool isOn);
     void vehicle_nissanleaf_charger_status(ChargerStatus status);
     void SendCanMessage(uint16_t id, uint8_t length, uint8_t *data);
@@ -145,7 +145,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void PollReply_VIN(uint8_t reply_data[], uint16_t reply_len);
     void PollReply_BMS_Volt(uint8_t reply_data[], uint16_t reply_len);
     void PollReply_BMS_Temp(uint8_t reply_data[], uint16_t reply_len);
-    void PollSetBus(canbus* bus);
+    void PollOnceRequests(); // function to get obd pid data that only needs to be obtained once
 
     TimerHandle_t m_remoteCommandTimer;
     TimerHandle_t m_ccDisableTimer;
