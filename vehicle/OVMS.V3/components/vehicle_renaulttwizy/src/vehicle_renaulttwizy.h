@@ -93,6 +93,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     void CanResponder(const CAN_frame_t* p_frame);
     void IncomingFrameCan1(CAN_frame_t* p_frame);
     void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingPollError(canbus* bus, uint16_t type, uint16_t pid, uint16_t code);
     void Ticker1(uint32_t ticker);
     void Ticker10(uint32_t ticker);
     void ConfigChanged(OvmsConfigParam* param);
@@ -498,7 +499,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     void ObdInit();
     void ObdTicker1();
     void ObdTicker10();
-    bool ObdRequest(uint16_t txid, uint16_t rxid, uint32_t request, string& response, int timeout_ms=3000);
+    int ObdRequest(uint16_t txid, uint16_t rxid, uint32_t request, string& response, int timeout_ms=3000);
 
   public:
     // Shell commands:
@@ -514,6 +515,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
 
   protected:
     string              twizy_obd_rxbuf;
+    uint16_t            twizy_obd_rxerr;
     OvmsMutex           twizy_obd_request;
     OvmsSemaphore       twizy_obd_rxwait;
 
