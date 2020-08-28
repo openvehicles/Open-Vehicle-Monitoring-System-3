@@ -2281,11 +2281,25 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
 
   if (response_type == UDS_RESP_TYPE_NRC && error_type == m_poll_type)
     {
-    // Negative Response Code, forward to application:
-    m_poll_ml_remain = 0;
-    ESP_LOGD(TAG, "PollerReceive[%03X]: process OBD/UDS error %02X(%X) code=%02X",
-             frame->MsgID, m_poll_type, m_poll_pid, error_code);
-    IncomingPollError(frame->origin, m_poll_type, m_poll_pid, error_code);
+    // Negative Response Code:
+    if (error_code == UDS_RESP_NRC_RCRRP)
+      {
+      // Info: requestCorrectlyReceived-ResponsePending (server busy processing the request)
+      ESP_LOGD(TAG, "PollerReceive[%03X]: got OBD/UDS info %02X(%X) code=%02X (pending)",
+               frame->MsgID, m_poll_type, m_poll_pid, error_code);
+      // add some wait time:
+      m_poll_wait++;
+      return;
+      }
+    else
+      {
+      // Error: forward to application:
+      ESP_LOGD(TAG, "PollerReceive[%03X]: process OBD/UDS error %02X(%X) code=%02X",
+               frame->MsgID, m_poll_type, m_poll_pid, error_code);
+      IncomingPollError(frame->origin, m_poll_type, m_poll_pid, error_code);
+      // abort:
+      m_poll_ml_remain = 0;
+      }
     }
   else if (response_type == 0x40+m_poll_type && response_pid == m_poll_pid)
     {

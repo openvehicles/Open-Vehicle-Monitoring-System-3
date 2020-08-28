@@ -73,6 +73,7 @@ struct DashboardConfig;
 
 // OBD/UDS Negative Response Code
 #define UDS_RESP_TYPE_NRC               0x7F  // see ISO 14229 Annex A.1
+#define UDS_RESP_NRC_RCRRP              0x78  // … requestCorrectlyReceived-ResponsePending
 
 // Number of polling states supported
 #define VEHICLE_POLL_NSTATES            4
