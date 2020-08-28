@@ -2043,13 +2043,13 @@ void OvmsVehicle::PollSetState(uint8_t state)
 /**
  * PollSetResponseSeparationTime: configure ISO TP multi frame response timing
  *  See: https://en.wikipedia.org/wiki/ISO_15765-2
- *  
+ *
  *  @param septime
  *    Separation Time (ST), the minimum delay time between frames. Default: 25 milliseconds
  *    ST values up to 127 (0x7F) specify the minimum number of milliseconds to delay between frames,
  *    while values in the range 241 (0xF1) to 249 (0xF9) specify delays increasing from
  *    100 to 900 microseconds.
- *  
+ *
  *  The configuration is kept unchanged over calls to PollSetPidList() or PollSetState().
  */
 void OvmsVehicle::PollSetResponseSeparationTime(uint8_t septime)
@@ -2072,7 +2072,7 @@ void OvmsVehicle::PollerSend(bool fromTicker)
   //          fromTicker, m_poll_plcur->type, m_poll_plcur->pid,
   //          m_poll_ticker, m_poll_wait, m_poll_sequence_cnt, m_poll_sequence_max);
 
-  if (fromTicker) 
+  if (fromTicker)
     {
     // Timer ticker call: reset throttling counter, check response timeout
     m_poll_sequence_cnt = 0;
@@ -2105,14 +2105,28 @@ void OvmsVehicle::PollerSend(bool fromTicker)
 
       ESP_LOGD(TAG, "PollerSend(%d): send [type=%02X, pid=%X], expecting %03x/%03x-%03x",
                fromTicker, m_poll_type, m_poll_pid, m_poll_moduleid_sent, m_poll_moduleid_low, m_poll_moduleid_high);
-      
+
       CAN_frame_t txframe;
       memset(&txframe,0,sizeof(txframe));
-      txframe.origin = m_poll_bus;
+      switch (m_poll_plcur->pollbus)
+        {
+        case 1:
+          txframe.origin = m_can1;
+          break;
+        case 2:
+          txframe.origin = m_can2;
+          break;
+        case 3:
+          txframe.origin = m_can3;
+          break;
+        default:
+          txframe.origin = m_poll_bus;
+        }
+      m_poll_bus = txframe.origin;
       txframe.MsgID = m_poll_moduleid_sent;
       txframe.FIR.B.FF = CAN_frame_std;
       txframe.FIR.B.DLC = 8;
-      
+
       switch (m_poll_plcur->type)
         {
         // 16 bit PID requests:
@@ -2130,7 +2144,7 @@ void OvmsVehicle::PollerSend(bool fromTicker)
           txframe.data.u8[2] = m_poll_pid;
           break;
         }
-      
+
       m_poll_bus->Write(&txframe);
       m_poll_ml_frame = 0;
       m_poll_ml_offset = 0;
@@ -2168,9 +2182,9 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
     }
 
 
-  // 
+  //
   // Get & validate ISO-TP meta data
-  // 
+  //
 
   uint8_t  tp_frametype;          // ISO-TP frame type (0…3)
   uint8_t  tp_frameindex;         // TP cyclic frame index (0…15)
@@ -2229,9 +2243,9 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
     }
 
 
-  // 
+  //
   // Get & validate OBD/UDS meta data
-  // 
+  //
 
   uint8_t  response_type = 0;         // OBD/UDS response type tag (expected: 0x40 + request type)
   uint16_t response_pid = 0;          // OBD/UDS response PID (expected: request PID)
@@ -2275,9 +2289,9 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
     }
 
 
-  // 
+  //
   // Process OBD/UDS payload
-  // 
+  //
 
   if (response_type == UDS_RESP_TYPE_NRC && error_type == m_poll_type)
     {
