@@ -1224,7 +1224,6 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
         {
         SetSTAWifiIP();
         }
-      else StartDhcpClient();
       }
     }
   if (list)
