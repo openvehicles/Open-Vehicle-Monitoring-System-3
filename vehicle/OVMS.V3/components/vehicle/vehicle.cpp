@@ -2204,7 +2204,7 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
       {
       // This is most likely an indication there is a non ISO-TP device sending
       // in our expected RX ID range, so we log the frame and abort:
-      FormatHexDump(&hexdump, (const char*)frame->data.u8, 8);
+      FormatHexDump(&hexdump, (const char*)frame->data.u8, 8, 8);
       ESP_LOGW(TAG, "PollerReceive[%03X]: ignoring unknown/invalid ISO TP frame: %s",
                frame->MsgID, hexdump ? hexdump : "-");
       if (hexdump) free(hexdump);
@@ -2217,7 +2217,7 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
     {
     if (m_poll_ml_remain == 0 || tp_frameindex != (m_poll_ml_frame & 0x0f))
       {
-      FormatHexDump(&hexdump, (const char*)frame->data.u8, 8);
+      FormatHexDump(&hexdump, (const char*)frame->data.u8, 8, 8);
       ESP_LOGW(TAG, "PollerReceive[%03X]: unexpected/out of sequence ISO TP frame (%d vs %d), aborting poll %02X(%X): %s",
               frame->MsgID, tp_frameindex, m_poll_ml_frame & 0x0f, m_poll_type, m_poll_pid,
               hexdump ? hexdump : "-");
@@ -2313,7 +2313,7 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
   else
     {
     // This is most likely a late response to a previous poll, log & skip:
-    FormatHexDump(&hexdump, (const char*)frame->data.u8, 8);
+    FormatHexDump(&hexdump, (const char*)frame->data.u8, 8, 8);
     ESP_LOGW(TAG, "PollerReceive[%03X]: OBD/UDS response type/PID mismatch, got %02X(%X) vs %02X(%X) => ignoring: %s",
              frame->MsgID, response_type, response_pid, 0x40+m_poll_type, m_poll_pid, hexdump ? hexdump : "-");
     if (hexdump) free(hexdump);
