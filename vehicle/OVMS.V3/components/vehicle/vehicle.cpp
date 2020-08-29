@@ -2020,6 +2020,7 @@ void OvmsVehicle::PollSetPidList(canbus* bus, const poll_pid_t* plist)
   {
   OvmsRecMutexLock lock(&m_poll_mutex);
   m_poll_bus = bus;
+  m_poll_bus_default = bus;
   m_poll_plist = plist;
   m_poll_ticker = 0;
   m_poll_sequence_cnt = 0;
@@ -2106,23 +2107,26 @@ void OvmsVehicle::PollerSend(bool fromTicker)
       ESP_LOGD(TAG, "PollerSend(%d): send [type=%02X, pid=%X], expecting %03x/%03x-%03x",
                fromTicker, m_poll_type, m_poll_pid, m_poll_moduleid_sent, m_poll_moduleid_low, m_poll_moduleid_high);
 
-      CAN_frame_t txframe;
-      memset(&txframe,0,sizeof(txframe));
       switch (m_poll_plcur->pollbus)
         {
         case 1:
-          txframe.origin = m_can1;
+          m_poll_bus = m_can1;
           break;
         case 2:
-          txframe.origin = m_can2;
+          m_poll_bus = m_can2;
           break;
         case 3:
-          txframe.origin = m_can3;
+          m_poll_bus = m_can3;
+          break;
+        case 4:
+          m_poll_bus = m_can4;
           break;
         default:
-          txframe.origin = m_poll_bus;
+          m_poll_bus = m_poll_bus_default;
         }
-      m_poll_bus = txframe.origin;
+      CAN_frame_t txframe;
+      memset(&txframe,0,sizeof(txframe));
+      txframe.origin = m_poll_bus;
       txframe.MsgID = m_poll_moduleid_sent;
       txframe.FIR.B.FF = CAN_frame_std;
       txframe.FIR.B.DLC = 8;
