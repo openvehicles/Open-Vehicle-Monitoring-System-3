@@ -128,6 +128,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void SendCanMessage(uint16_t id, uint8_t length, uint8_t *data);
     void Ticker1(uint32_t ticker);
     void Ticker10(uint32_t ticker);
+    void Ticker60(uint32_t ticker);
     void HandleEnergy();
     void HandleCharging();
     void HandleRange();
@@ -144,6 +145,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void PollReply_VIN(uint8_t reply_data[], uint16_t reply_len);
     void PollReply_BMS_Volt(uint8_t reply_data[], uint16_t reply_len);
     void PollReply_BMS_Temp(uint8_t reply_data[], uint16_t reply_len);
+    void PollOnceRequests(); // function to get obd pid data that only needs to be obtained once
 
     TimerHandle_t m_remoteCommandTimer;
     TimerHandle_t m_ccDisableTimer;
