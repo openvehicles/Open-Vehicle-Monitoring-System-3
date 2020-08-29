@@ -1055,7 +1055,7 @@ int SendCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx)
 //    Class RSAKeyGenerator
 //-----------------------------------------------------------------------------
 
-RSAKeyGenerator::RSAKeyGenerator() : TaskBase("RSAKeyGen", 4096)
+RSAKeyGenerator::RSAKeyGenerator() : TaskBase("RSAKeyGen", 4096, 0)
   {
   Instantiate();
   }
