@@ -312,6 +312,7 @@ class OvmsVehicle : public InternalRamAllocated
     OvmsRecMutex      m_poll_mutex;           // Concurrency protection for recursive calls
     uint8_t           m_poll_state;           // Current poll state
     canbus*           m_poll_bus;             // Bus to poll on
+    canbus*           m_poll_bus_default;     // Bus default to poll on
     const poll_pid_t* m_poll_plist;           // Head of poll list
     const poll_pid_t* m_poll_plcur;           // Current position in poll list
     uint32_t          m_poll_ticker;          // Polling ticker
