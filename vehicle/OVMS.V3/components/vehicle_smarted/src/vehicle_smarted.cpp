@@ -65,7 +65,7 @@ OvmsVehicleSmartED* OvmsVehicleSmartED::GetInstance(OvmsWriter* writer /*=NULL*/
 /**
  * Constructor & destructor
  */
-OvmsVehicleSmartED::OvmsVehicleSmartED() {
+OvmsVehicleSmartED::OvmsVehicleSmartED() : smarted_obd_rxwait(1,1) {
   ESP_LOGI(TAG, "Start Smart ED vehicle module");
   
   //memset(m_vin, 0, sizeof(m_vin));
