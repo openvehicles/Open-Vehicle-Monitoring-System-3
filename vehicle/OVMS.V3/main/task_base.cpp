@@ -114,10 +114,14 @@ void Parent::DeleteChildren()
     }
   }
 
-TaskBase::TaskBase(const char* name, int stack, Parent* parent)
+TaskBase::TaskBase(const char* name,
+                   int stack /*=DEFAULT_STACK*/,
+                   UBaseType_t priority /*=DEFAULT_PRIORITY*/,
+                   Parent* parent /*=NULL*/)
   {
   m_name = name;
   m_stack = stack;
+  m_priority = priority;
   m_parent = parent;
   m_taskid = 0;
   }
@@ -128,7 +132,7 @@ TaskBase::~TaskBase()
 
 bool TaskBase::Instantiate()
   {
-  if (CreateTaskPinned(1, m_name, m_stack) != pdPASS)
+  if (CreateTaskPinned(1, m_name, m_stack, m_priority) != pdPASS)
     {
     // Use printf here because ESP_LOG requires heap allocations
     ::printf("\nInsufficient memory to create %s task\n", m_name);

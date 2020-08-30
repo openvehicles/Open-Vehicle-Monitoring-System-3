@@ -124,8 +124,9 @@ class OvmsVehicle : public InternalRamAllocated
   private:
     void VehicleTicker1(std::string event, void* data);
     void VehicleConfigChanged(std::string event, void* data);
-    void PollerSend();
+    void PollerSend(bool fromTicker);
     void PollerReceive(CAN_frame_t* frame);
+    void IncomingPollReplyInternal(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
 
   protected:
     virtual void IncomingFrameCan1(CAN_frame_t* p_frame);
@@ -289,7 +290,7 @@ class OvmsVehicle : public InternalRamAllocated
       } poll_pid_t;
 
   protected:
-    OvmsMutex         m_poll_mutex;           // Concurrency protection
+    OvmsRecMutex      m_poll_mutex;           // Concurrency protection for recursive calls
     uint8_t           m_poll_state;           // Current poll state
     canbus*           m_poll_bus;             // Bus to poll on
     const poll_pid_t* m_poll_plist;           // Head of poll list
@@ -300,14 +301,27 @@ class OvmsVehicle : public InternalRamAllocated
     uint32_t          m_poll_moduleid_high;   // Expected response moduleid high mark
     uint16_t          m_poll_type;            // Expected type
     uint16_t          m_poll_pid;             // Expected PID
-    uint16_t          m_poll_ml_remain;       // Bytes remainign for ML poll
+    uint16_t          m_poll_ml_remain;       // Bytes remaining for ML poll
     uint16_t          m_poll_ml_offset;       // Offset of ML poll
     uint16_t          m_poll_ml_frame;        // Frame number for ML poll
-    uint16_t          m_poll_wait;            // Wait for remaining poll replays
+    uint8_t           m_poll_wait;            // Wait counter for a reply from a sent poll or bytes remaining.
+                                              // Gets set = 2 when a poll is sent OR when bytes are remaining after receiving.
+                                              // Gets set = 0 when a poll is received.
+                                              // Gets decremented with every second/tick in PollerSend().
+                                              // PollerSend() aborts when > 0.
+                                              // Why set = 2: When a poll gets send just before the next ticker occurs
+                                              //              PollerSend() decrements to 1 and doesn't send the next poll.
+                                              //              Only when the reply doesn't get in until the next ticker occurs
+                                              //              PollserSend() decrements to 0 and abandons the outstanding reply (=timeout)
+
+  private:
+    uint8_t           m_poll_sequence_max;    // Polls allowed to be sent in sequence per time tick (second), default 1, 0 = no limit
+    uint8_t           m_poll_sequence_cnt;    // Polls already sent in the current time tick (second)
 
   protected:
     void PollSetPidList(canbus* bus, const poll_pid_t* plist);
     void PollSetState(uint8_t state);
+    void PollSetThrottling(uint8_t sequence_max) { m_poll_sequence_max = sequence_max; }
 
   // BMS helpers
   protected:

@@ -12,3 +12,4 @@
 9658635,Kia Soul OBD-II to DB9 Data Cable for OVMS
 9665972,OVMS Data Cable for Early Teslas
 9728447,OVMS K-line Option Expansion Board Module
+9730443,OVMS Data Cable for Later Tesla Model S/X
