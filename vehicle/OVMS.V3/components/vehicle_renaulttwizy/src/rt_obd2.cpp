@@ -61,10 +61,10 @@ using namespace std;
 const OvmsVehicle::poll_pid_t twizy_poll_default[] = {
   // Note: poller ticker cycles at 3600 seconds = max period
   // { txid, rxid, type, pid, { period_off, period_drive, period_charge } }
-  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIISESSION, SESSION_EXTDIAG,  { 0,   10,   60 } },
-  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIIGROUP,   CLUSTER_PID_VIN,  { 0, 3600, 3600 } },
-  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIIGROUP,   CLUSTER_PID_DTC,  { 0,   10,   60 } },
-  { 0, 0, 0, 0, { 0, 0, 0 } }
+  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIISESSION, SESSION_EXTDIAG,  { 0,   10,   60 },0 },
+  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIIGROUP,   CLUSTER_PID_VIN,  { 0, 3600, 3600 },0 },
+  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIIGROUP,   CLUSTER_PID_DTC,  { 0,   10,   60 },0 },
+  { 0, 0, 0, 0, { 0, 0, 0 },0 }
 };
 
 
@@ -221,8 +221,8 @@ int OvmsVehicleRenaultTwizy::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t r
 
   // prepare single poll:
   OvmsVehicle::poll_pid_t poll[] = {
-    { txid, rxid, 0, 0, { 1, 1, 1 } },
-    { 0, 0, 0, 0, { 0, 0, 0 } }
+    { txid, rxid, 0, 0, { 1, 1, 1 },0 },
+    { 0, 0, 0, 0, { 0, 0, 0 },0 }
   };
   if (request < 0x10000) {
     poll[0].type = (request & 0xff00) >> 8;
