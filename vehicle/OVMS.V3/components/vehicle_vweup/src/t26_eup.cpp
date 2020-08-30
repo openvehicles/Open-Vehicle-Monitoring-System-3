@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          15th August 2020
+;    Date:          30th August 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -81,6 +81,8 @@
 ;
 ;    0.3.1  Removed alpha OBD source, corrected class name
 ;
+;    0.3.2  First implementation of charging detection
+;
 ;    (C) 2020       Chris van der Meijden
 ;
 ;    Big thanx to sharkcow, Dimitrie78 and E-Imo.
@@ -89,7 +91,7 @@
 #include "ovms_log.h"
 static const char *TAG = "vwup.t26";
 
-#define VERSION "0.3.1"
+#define VERSION "0.3.2"
 
 #include <stdio.h>
 #include "pcp.h"
@@ -234,6 +236,9 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
 {
     uint8_t *d = p_frame->data.u8;
 
+    static bool isCharging = false;
+    static bool lastCharging = false;
+
     // This will log all incoming frames
     // ESP_LOGD(TAG, "IFC %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
 
@@ -345,6 +350,34 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
             StandardMetrics.ms_v_env_hvac->SetValue(false);
         }
         break;
+
+    case 0x61C: // Charge detection
+      if ((d[2] == 0x00) || (d[2] == 0x01)) {
+         isCharging = true;
+      } else {
+         isCharging = false;
+      }
+      if (isCharging != lastCharging) { 
+        if (isCharging) {
+          StandardMetrics.ms_v_charge_pilot->SetValue(true);
+          StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+          StandardMetrics.ms_v_door_chargeport->SetValue(true);
+          StandardMetrics.ms_v_charge_mode->SetValue("standard");
+          StandardMetrics.ms_v_charge_state->SetValue("charging");
+          StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+          ESP_LOGI(TAG,"Car charge session started");
+        } else {
+          StandardMetrics.ms_v_charge_pilot->SetValue(false);
+          StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+          StandardMetrics.ms_v_door_chargeport->SetValue(false);
+          StandardMetrics.ms_v_charge_mode->SetValue("standard");
+          StandardMetrics.ms_v_charge_state->SetValue("done");
+          StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+          ESP_LOGI(TAG,"Car charge session ended");
+        }
+      }
+      lastCharging = isCharging;
+      break;
 
     case 0x575: // Key position
         switch (d[0])

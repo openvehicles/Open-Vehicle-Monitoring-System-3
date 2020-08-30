@@ -47,8 +47,8 @@ Speed Display               Yes
 Temperature Display         Yes (outdoor, cabin)
 BMS v+t Display             tba
 TPMS Display                No
-Charge Status Display       tba
-Charge Interruption Alerts  tba
+Charge Status Display       Yes
+Charge Interruption Alerts  Yes (per notification on the charging state)
 Charge Control              tba
 Lock/Unlock Vehicle         tba
 Valet Mode Control          tba
@@ -155,6 +155,7 @@ ID	Conversion	     Unit    Function		     	         	 Comment
 5A9	all 00			     TX: OCU heartbeat
 6E9	multiple msg		     TX: AC on / off signals                 	 (AC)
 	d0 C1 d6 xx	     °C      TX: set cabin temperature for 69C       	 (CAB)
+61C	d2 00,01		     Charging			             	
 ======= ==================== ======= =========================================== =======
 
 
