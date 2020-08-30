@@ -111,6 +111,8 @@ class OvmsVehicleSmartED : public OvmsVehicle
     void NotifyTrip();
     void NotifyValetEnabled();
     void NotifyValetDisabled();
+    void NotifyValetHood();
+    void NotifyValetTrunk();
     void SaveStatus();
     void RestoreStatus();
     void HandleCharging();

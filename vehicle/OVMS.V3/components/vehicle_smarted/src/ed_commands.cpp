@@ -631,3 +631,11 @@ void OvmsVehicleSmartED::NotifyValetEnabled() {
 void OvmsVehicleSmartED::NotifyValetDisabled() {
   // MyNotify.NotifyString("info", "valet.disabled", "Ignition off");
 }
+
+void OvmsVehicleSmartED::NotifyValetHood() {
+  // MyNotify.NotifyString("alert", "valet.hood", "Vehicle hood opened while in valet mode");
+}
+
+void OvmsVehicleSmartED::NotifyValetTrunk() {
+  // MyNotify.NotifyString("alert", "valet.trunk", "Vehicle trunk opened while in valet mode");
+}

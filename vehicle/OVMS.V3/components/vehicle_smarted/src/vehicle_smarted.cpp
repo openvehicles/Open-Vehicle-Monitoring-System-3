@@ -766,7 +766,7 @@ void OvmsVehicleSmartED::Ticker60(uint32_t ticker) {
       MyNotify.NotifyString("info", "valet.disabled", "Ignition off");
     }
   }
-  if (StandardMetrics.ms_v_env_valet->AsBool() && StandardMetrics.ms_v_bat_soc->AsFloat(0) < 20) {
+  if (StandardMetrics.ms_v_env_valet->AsBool() && StandardMetrics.ms_v_bat_soc->AsFloat(0) < 20 && m_egpio_timer > 0) {
     MyPeripherals->m_max7317->Output(m_ignition_port, 0);
     StandardMetrics.ms_v_env_valet->SetValue(false);
     MyNotify.NotifyString("info", "valet.disabled", "Ignition off");
@@ -859,7 +859,13 @@ bool OvmsVehicleSmartED::SetFeature(int key, const char *value)
     case 4:
     {
       int bits = atoi(value);
-      MyConfig.SetParamValueBool("xse", "autosetrecu",  (bits& 1)!=0);
+      MyConfig.SetParamValueBool("xse", "autosetrecu", (bits& 1)!=0);
+      return true;
+    }
+    case 5:
+    {
+      int bits = atoi(value);
+      MyConfig.SetParamValueBool("xse", "reset.trip.charge", (bits& 1)!=0);
       return true;
     }
     case 10:
@@ -874,7 +880,7 @@ bool OvmsVehicleSmartED::SetFeature(int key, const char *value)
     case 15:
     {
       int bits = atoi(value);
-      MyConfig.SetParamValueBool("xse", "canwrite",  (bits& 1)!=0);
+      MyConfig.SetParamValueBool("xse", "canwrite", (bits& 1)!=0);
       return true;
     }
     default:
@@ -906,6 +912,13 @@ const std::string OvmsVehicleSmartED::GetFeature(int key)
     case 4:
     {
       int bits = ( MyConfig.GetParamValueBool("xse", "autosetrecu",  false) ?  1 : 0);
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }
+    case 5:
+    {
+      int bits = ( MyConfig.GetParamValueBool("xse", "reset.trip.charge",  false) ?  1 : 0);
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);
