@@ -318,12 +318,24 @@ void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t 
   // single poll?
   if (!smarted_obd_rxwait.IsAvail()) {
     // yes: stop poller & signal response
-    // PollSetPidList(m_can1, NULL);
+    PollSetPidList(m_can1, NULL);
+    smarted_obd_rxerr = 0;
     smarted_obd_rxwait.Give();
   }
 }
 
-bool OvmsVehicleSmartED::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t request, string& response, int timeout_ms /*=3000*/) {
+void OvmsVehicleSmartED::IncomingPollError(canbus* bus, uint16_t type, uint16_t pid, uint16_t code)
+{
+  // single poll?
+  if (!smarted_obd_rxwait.IsAvail()) {
+    // yes: stop poller & signal response
+    PollSetPidList(m_can1, NULL);
+    smarted_obd_rxerr = code;
+    smarted_obd_rxwait.Give();
+  }
+}
+
+int OvmsVehicleSmartED::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t request, string& response, int timeout_ms /*=3000*/) {
   OvmsMutexLock lock(&smarted_obd_request);
 
   // prepare single poll:
@@ -356,7 +368,7 @@ bool OvmsVehicleSmartED::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t reque
   smarted_obd_rxwait.Give();
   PollSetPidList(m_can1, smarted_polls);
 
-  return (rxok == pdTRUE);
+  return (rxok == pdFALSE) ? -1 : (int)smarted_obd_rxerr;
 }
 
 void OvmsVehicleSmartED::PollReply_BMS_BattAmps(const char* reply_data, uint16_t reply_len) {
