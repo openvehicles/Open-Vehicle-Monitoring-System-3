@@ -43,7 +43,7 @@ class Pushover : public InternalRamAllocated
 
   public:
     bool SendMessage( const std::string message, int priority, const std::string sound, bool replyNotification=false );
-    bool SendMessageOpt( const std::string user_key, const std::string token, 
+    bool SendMessageOpt( const std::string user_key, const std::string token,
       const std::string message, int priority, const std::string sound, int retry, int expire, bool replyNotification );
     bool SendMessageBlocking( const std::string message, std::string * reply, int priority, const std::string sound ); // Use only from different task..
     size_t IncomingData(uint8_t* data, size_t len);
@@ -66,4 +66,4 @@ class Pushover : public InternalRamAllocated
 extern Pushover MyPushoverClient;
 
 
-#endif //#ifndef __SIMCOM_H__
+#endif //#ifndef __PUSHOVER_H__

@@ -64,14 +64,14 @@ void powermgmt::WebCleanup()
     {
     // process form submission:
     enabled = (c.getvar("enabled") == "yes");
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_MODEM
     modemoff_delay = c.getvar("modemoff_delay");
 #endif
     wifioff_delay = c.getvar("wifioff_delay");
     b12v_shutdown_delay = c.getvar("12v_shutdown_delay");
 
     // check values
-    if (!modemoff_delay.empty()) 
+    if (!modemoff_delay.empty())
       {
       if (modemoff_delay.find_first_not_of("0123456789") != std::string::npos)
         error += "<li data-input=\"user_key\">Invalid Modem off delay!</li>";
@@ -88,7 +88,7 @@ void powermgmt::WebCleanup()
       {
       // store:
       MyConfig.SetParamValueBool("power", "enabled", enabled);
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_MODEM
       MyConfig.SetParamValue("power", "modemoff_delay", modemoff_delay);
 #endif
       MyConfig.SetParamValue("power", "wifioff_delay", wifioff_delay);
@@ -106,15 +106,15 @@ void powermgmt::WebCleanup()
     c.head(400);
     c.alert("danger", error.c_str());
     }
-  else 
+  else
     {
     // read configuration:
     enabled = MyConfig.GetParamValueBool("power", "enabled", false);
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_MODEM
     modemoff_delay = MyConfig.GetParamValue("power", "modemoff_delay", STR(POWERMGMT_MODEMOFF_DELAY));
 #endif
-    wifioff_delay = MyConfig.GetParamValue("power", "wifioff_delay", STR(POWERMGMT_WIFIOFF_DELAY)); 
-    b12v_shutdown_delay = MyConfig.GetParamValue("power", "12v_shutdown_delay", STR(POWERMGMT_12V_SHUTDOWN_DELAY)); 
+    wifioff_delay = MyConfig.GetParamValue("power", "wifioff_delay", STR(POWERMGMT_WIFIOFF_DELAY));
+    b12v_shutdown_delay = MyConfig.GetParamValue("power", "12v_shutdown_delay", STR(POWERMGMT_12V_SHUTDOWN_DELAY));
 
     c.head(200);
     }
@@ -130,19 +130,19 @@ void powermgmt::WebCleanup()
     "inactivity (non charging)</p>");
   c.fieldset_end();
 
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
-  c.input("number", "Delay before SIMCOM modem is turned off", "modemoff_delay", modemoff_delay.c_str(), 
+#ifdef CONFIG_OVMS_COMP_MODEM
+  c.input("number", "Delay before modem is turned off", "modemoff_delay", modemoff_delay.c_str(),
     "Default: " STR(POWERMGMT_MODEMOFF_DELAY) " hours",
     "<p>0 = disabled</p>",
     "min=\"1\" step=\"1\"", "hours");
 #endif
-  
-  c.input("number", "Delay before WiFi is turned off", "wifioff_delay", wifioff_delay.c_str(), 
+
+  c.input("number", "Delay before WiFi is turned off", "wifioff_delay", wifioff_delay.c_str(),
     "Default: " STR(POWERMGMT_WIFIOFF_DELAY) " hours",
     "<p>0 = disabled</p>",
     "min=\"1\" step=\"1\"", "hours");
 
-  c.input("number", "Delay before OVMS is shut down (after initial 12V battery level alert)", "12v_shutdown_delay", b12v_shutdown_delay.c_str(), 
+  c.input("number", "Delay before OVMS is shut down (after initial 12V battery level alert)", "12v_shutdown_delay", b12v_shutdown_delay.c_str(),
     "Default: " STR(POWERMGMT_12V_SHUTDOWN_DELAY) " minutes",
     "<p>If 12V battery is depleted under certain threshold, an alarm is set. OVMS waits this time period during which user can begin charging the batteries. "
     "If this period is exceeded without canceled alarm, OVMS will be shut down to prevent further battery depletion.</p>",

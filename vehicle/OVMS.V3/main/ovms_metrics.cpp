@@ -823,6 +823,13 @@ void OvmsMetric::ClearModified(size_t modifier)
   m_modified &= ~(1ul << modifier);
   }
 
+void OvmsMetric::Clear()
+  {
+  SetValue("");
+  m_defined = NeverDefined;
+  m_stale = true;
+  }
+
 OvmsMetricInt::OvmsMetricInt(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
   : OvmsMetric(name, autostale, units, persist)
   {
@@ -927,6 +934,12 @@ void OvmsMetricInt::SetValue(dbcNumber& value)
   SetValue(value.GetSignedInteger());
   }
 
+void OvmsMetricInt::Clear()
+  {
+  SetValue(0);
+  OvmsMetric::Clear();
+  }
+
 OvmsMetricBool::OvmsMetricBool(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
   : OvmsMetric(name, autostale, units, persist)
   {
@@ -1019,6 +1032,12 @@ void OvmsMetricBool::SetValue(std::string value)
 void OvmsMetricBool::SetValue(dbcNumber& value)
   {
   SetValue((bool)value.GetUnsignedInteger());
+  }
+
+void OvmsMetricBool::Clear()
+  {
+  SetValue(false);
+  OvmsMetric::Clear();
   }
 
 OvmsMetricFloat::OvmsMetricFloat(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
@@ -1155,6 +1174,12 @@ void OvmsMetricFloat::SetValue(dbcNumber& value)
   SetValue((float)value.GetDouble());
   }
 
+void OvmsMetricFloat::Clear()
+  {
+  SetValue(0);
+  OvmsMetric::Clear();
+  }
+
 OvmsMetricString::OvmsMetricString(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
   : OvmsMetric(name, autostale, units, persist)
   {
@@ -1201,6 +1226,12 @@ void OvmsMetricString::SetValue(std::string value)
     m_mutex.Unlock();
     SetModified(modified);
     }
+  }
+
+void OvmsMetricString::Clear()
+  {
+  SetValue("");
+  OvmsMetric::Clear();
   }
 
 const char* OvmsMetricUnitLabel(metric_unit_t units)

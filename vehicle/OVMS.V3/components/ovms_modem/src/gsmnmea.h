@@ -1,6 +1,6 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          14th March 2017
+;    Date:          9th December 2017
 ;
 ;    Changes:
 ;    1.0  Initial release
@@ -8,6 +8,7 @@
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011        Sonny Chen @ EPRO/DX
+;    (C) 2012-2017  Michael Balzer
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -28,43 +29,32 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __GSM_PPPOS_H__
-#define __GSM_PPPOS_H__
+#ifndef __GSM_NMEA_H__
+#define __GSM_NMEA_H__
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "driver/uart.h"
-#include "tcpip_adapter.h"
-extern "C"
-  {
-#include "netif/ppp/pppos.h"
-#include "netif/ppp/ppp.h"
-#include "netif/ppp/pppapi.h"
-  };
 #include "gsmmux.h"
-#include "ovms.h"
 
-class GsmPPPOS : public InternalRamAllocated
+class GsmNMEA : public InternalRamAllocated
   {
   public:
-    GsmPPPOS(GsmMux* mux, int channel);
-    ~GsmPPPOS();
+    GsmNMEA(GsmMux* mux, int channel_nmea, int channel_cmd);
+    ~GsmNMEA();
 
   public:
-    void IncomingData(uint8_t *data, size_t len);
-    void Initialise();
-    void Connect();
+    void IncomingLine(const std::string line);
+    void Startup();
     void Shutdown(bool hard=false);
-    const char* ErrCodeName(int errcode);
 
   public:
-    GsmMux*      m_mux;
-    int          m_channel;
-    ppp_pcb*     m_ppp;
-    struct netif m_ppp_netif;
-    bool         m_connected;
-    int          m_lasterrcode;
+    GsmMux*       m_mux;
+    int           m_channel_nmea;
+    int           m_channel_cmd;
+    bool          m_connected;
+    bool          m_gpstime_enabled;
   };
 
-#endif //#ifndef __GSM_PPPOS__
+#endif //#ifndef __GSM_NMEA__

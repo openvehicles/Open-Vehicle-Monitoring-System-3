@@ -33,7 +33,7 @@ static const char *TAG = "gsm-mux";
 
 #include <string.h>
 #include "gsmmux.h"
-#include "simcom.h"
+#include "ovms_modem.h"
 
 #define GSM_CR         0x02
 #define GSM_EA         0x01
@@ -149,7 +149,7 @@ void GsmMuxChannel::ProcessFrame(uint8_t* frame, size_t length, size_t iframepos
         m_state = ChanOpen; // SABM established
         if (m_channel != 0) m_mux->m_openchannels++;
         if (m_channel==0) m_mux->m_state = GsmMux::DlciOpen;
-        if (m_channel<GSM_MUX_CHANNELS) m_mux->StartChannel(m_channel+1);
+        if (m_channel < m_mux->m_channelcount) m_mux->StartChannel(m_channel+1);
         }
 #if __GNUC__ >= 7
 	[[fallthrough]];
@@ -169,10 +169,11 @@ void GsmMuxChannel::ProcessFrame(uint8_t* frame, size_t length, size_t iframepos
     }
   }
 
-GsmMux::GsmMux(simcom* modem, size_t maxframesize)
+GsmMux::GsmMux(modem* m, int channelcount, size_t maxframesize)
   {
+  m_channelcount = channelcount;
   m_state = DlciClosed;
-  m_modem = modem;
+  m_modem = m;
   m_frame = new uint8_t[maxframesize];
   m_framesize = maxframesize;
   m_framepos = 0;
@@ -188,10 +189,11 @@ GsmMux::GsmMux(simcom* modem, size_t maxframesize)
 
 GsmMux::~GsmMux()
   {
+  Shutdown();
   delete [] m_frame;
   }
 
-void GsmMux::Start()
+void GsmMux::Startup()
   {
   ESP_LOGI(TAG, "Start MUX");
   m_framingerrors = 0;
@@ -199,24 +201,27 @@ void GsmMux::Start()
   m_rxframecount = 0;
   m_txframecount = 0;
   m_channels.insert(m_channels.end(),new GsmMuxChannel(this,0,8));
-  for (int k=1; k<=GSM_MUX_CHANNELS; k++)
+  for (int k=1; k<=m_channelcount; k++)
     {
     m_channels.insert(m_channels.end(),
-      new GsmMuxChannel(this,k,(k==GSM_MUX_CHAN_DATA)?2048:512));
+      new GsmMuxChannel(this,k,CONFIG_OVMS_HW_MODEM_MUXCHANNEL_SIZE));
     }
   StartChannel(0);
   m_state = DlciOpening;
   }
 
-void GsmMux::Stop()
+void GsmMux::Shutdown()
   {
-  ESP_LOGI(TAG, "Stop MUX");
-  for (int k=0; k<m_channels.size(); k++)
+  if (m_channels.size() > 0)
     {
-    GsmMuxChannel* chan = m_channels[k];
-    if (chan) delete chan;
+    ESP_LOGI(TAG, "Stop MUX");
+    for (int k=0; k<m_channels.size(); k++)
+      {
+      GsmMuxChannel* chan = m_channels[k];
+      if (chan) delete chan;
+      }
+    m_channels.clear();
     }
-  m_channels.clear();
   m_state = DlciClosed;
   m_framepos = 0;
   m_frameipos = 0;
@@ -258,7 +263,13 @@ bool GsmMux::IsChannelOpen(int channel)
 
 bool GsmMux::IsMuxUp()
   {
-  return (m_openchannels == GSM_MUX_CHANNELS);
+  return (m_openchannels == m_channelcount);
+  }
+
+uint32_t GsmMux::GoodFrameAge()
+  {
+  if (m_openchannels != m_channelcount) return 0;
+  return (m_lastgoodrxframe > 0) ? (monotonictime-m_lastgoodrxframe) : 0;
   }
 
 void GsmMux::Process(OvmsBuffer* buf)

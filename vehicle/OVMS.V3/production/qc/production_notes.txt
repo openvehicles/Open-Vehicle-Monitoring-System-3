@@ -145,38 +145,38 @@ Second production batch is 2018020001**** - 2018020220****.
 
    Power modem into sleep mode, from command line:
 
-     OVMS# power simcom sleep
-     Power mode of simcom is now sleep
+     OVMS# power modem sleep
+     Power mode of modem is now sleep
 
-     I (50190) simcom: State: Enter PoweringOn state
-     I (50190) simcom: Power Cycle
-     V (50910) simcom: tx: 41 54 0d 0a                                     | AT..
-     D (50910) simcom: tx scmd ch=0 len=4   : AT||
-     V (51910) simcom: tx: 41 54 0d 0a                                     | AT..
-     D (51910) simcom: tx scmd ch=0 len=4   : AT||
-     V (52910) simcom: tx: 41 54 0d 0a                                     | AT..
-     D (52910) simcom: tx scmd ch=0 len=4   : AT||
-     V (53910) simcom: tx: 41 54 0d 0a                                     | AT..
-     D (53910) simcom: tx scmd ch=0 len=4   : AT||
-     V (54910) simcom: tx: 41 54 0d 0a                                     | AT..
-     D (54910) simcom: tx scmd ch=0 len=4   : AT||
-     V (55910) simcom: tx: 41 54 0d 0a                                     | AT..
-     D (55910) simcom: tx scmd ch=0 len=4   : AT||
-     V (56580) simcom: rx: 0d 0a 53 54 41 52 54 0d 0a                      | ..START..
-     I (56580) simcom: State: Enter PoweredOn state
+     I (50190) modem: State: Enter PoweringOn state
+     I (50190) modem: Power Cycle
+     V (50910) modem: tx: 41 54 0d 0a                                     | AT..
+     D (50910) modem: tx scmd ch=0 len=4   : AT||
+     V (51910) modem: tx: 41 54 0d 0a                                     | AT..
+     D (51910) modem: tx scmd ch=0 len=4   : AT||
+     V (52910) modem: tx: 41 54 0d 0a                                     | AT..
+     D (52910) modem: tx scmd ch=0 len=4   : AT||
+     V (53910) modem: tx: 41 54 0d 0a                                     | AT..
+     D (53910) modem: tx scmd ch=0 len=4   : AT||
+     V (54910) modem: tx: 41 54 0d 0a                                     | AT..
+     D (54910) modem: tx scmd ch=0 len=4   : AT||
+     V (55910) modem: tx: 41 54 0d 0a                                     | AT..
+     D (55910) modem: tx scmd ch=0 len=4   : AT||
+     V (56580) modem: rx: 0d 0a 53 54 41 52 54 0d 0a                      | ..START..
+     I (56580) modem: State: Enter PoweredOn state
 
    Cycle may repeat a few times, in order to power on modem, but make sure you
    get the ..START.. message. Then, look for the modem starting up:
 
      I (75940) gsm-mux: Channel #3 is open
-     V (75940) simcom: tx: f9 13 3f 01 96 f9                               | ..?...
-     V (75950) simcom: rx: f9 13 73 01 5d f9                               | ..s.].
+     V (75940) modem: tx: f9 13 3f 01 96 f9                               | ..?...
+     V (75950) modem: rx: f9 13 73 01 5d f9                               | ..s.].
      V (75950) gsm-mux: ProcessFrame(CHAN=4, ADDR=13, CTRL=73, FCS=5d, LEN=6)
      V (75950) gsm-mux: ChanProcessFrame(CHAN=4, ADDR=13, CTRL=73, LEN=3, IFP=3)
      I (75950) gsm-mux: Channel #4 is open
-     I (76910) simcom: State: Enter NetWait state
+     I (76910) modem: State: Enter NetWait state
      D (76910) gsm-nmea: GPS disabled
-     I (77910) simcom: State: Enter NetSleep state
+     I (77910) modem: State: Enter NetSleep state
 
    Check the metric to ensure the ICCID and modem model has been read correctly:
 
@@ -188,27 +188,27 @@ Second production batch is 2018020001**** - 2018020220****.
 
    With modem in sleep mode (as above), enable the GPS/GNS system:
 
-     OVMS# simcom muxtx 4 AT+CGPSNMEA=66;+CGPS=1,1
+     OVMS# modem muxtx 4 AT+CGPSNMEA=66;+CGPS=1,1
 
-     V (225328) simcom: mux tx: 41 54 2b 43 47 50 53 4e 4d 45 41 3d 36 36 3b 2b | AT+CGPSNMEA=66;+
-     V (225328) simcom: mux tx: 43 47 50 53 3d 31 2c 31 0d 0a                   | CGPS=1,1..
-     D (225328) simcom: tx mcmd ch=4 len=26  : AT+CGPSNMEA=66;+CGPS=1,1||
-     V (225328) simcom: tx: f9 11 ff 35 41 54 2b 43 47 50 53 4e 4d 45 41 3d | ...5AT+CGPSNMEA=
-     V (225328) simcom: tx: 36 36 3b 2b 43 47 50 53 3d 31 2c 31 0d 0a 28 f9 | 66;+CGPS=1,1..(.
-     V (225378) simcom: rx: f9 11 ff 0d 0d 0a 4f 4b 0d 0a 02 f9             | ......OK....
+     V (225328) modem: mux tx: 41 54 2b 43 47 50 53 4e 4d 45 41 3d 36 36 3b 2b | AT+CGPSNMEA=66;+
+     V (225328) modem: mux tx: 43 47 50 53 3d 31 2c 31 0d 0a                   | CGPS=1,1..
+     D (225328) modem: tx mcmd ch=4 len=26  : AT+CGPSNMEA=66;+CGPS=1,1||
+     V (225328) modem: tx: f9 11 ff 35 41 54 2b 43 47 50 53 4e 4d 45 41 3d | ...5AT+CGPSNMEA=
+     V (225328) modem: tx: 36 36 3b 2b 43 47 50 53 3d 31 2c 31 0d 0a 28 f9 | 66;+CGPS=1,1..(.
+     V (225378) modem: rx: f9 11 ff 0d 0d 0a 4f 4b 0d 0a 02 f9             | ......OK....
      V (225378) gsm-mux: ProcessFrame(CHAN=4, ADDR=11, CTRL=ff, FCS=02, LEN=12)
      V (225388) gsm-mux: ChanProcessFrame(CHAN=4, ADDR=11, CTRL=ff, LEN=9, IFP=3)
-     D (225388) simcom: rx line ch=4 len=2   : OK
+     D (225388) modem: rx line ch=4 len=2   : OK
 
    You should then start to see GPS/GNS messages coming in on channel #1:
 
-     V (227668) simcom: rx: f9 05 ff 33 24 47 4e 47 4e 53 2c 2c 2c 2c 2c 2c | ...3$GNGNS,,,,,,
-     V (227668) simcom: rx: 4e 4e 2c 2c 2c 2c 2c 2c 2a 35 33 0d 0a 84 f9 f9 | NN,,,,,,*53.....
+     V (227668) modem: rx: f9 05 ff 33 24 47 4e 47 4e 53 2c 2c 2c 2c 2c 2c | ...3$GNGNS,,,,,,
+     V (227668) modem: rx: 4e 4e 2c 2c 2c 2c 2c 2c 2a 35 33 0d 0a 84 f9 f9 | NN,,,,,,*53.....
      V (227678) gsm-mux: ProcessFrame(CHAN=1, ADDR=05, CTRL=ff, FCS=84, LEN=31)
      V (227678) gsm-mux: ChanProcessFrame(CHAN=1, ADDR=05, CTRL=ff, LEN=28, IFP=3)
      V (227678) gsm-nmea: IncomingLine: $GNGNS,,,,,,NN,,,,,,*53
-     V (227678) simcom: rx: 05 ff 33 24 47 50 52 4d 43 2c 2c 56 2c 2c 2c 2c | ..3$GPRMC,,V,,,,
-     V (227678) simcom: rx: 2c 2c 2c 2c 2c 2c 4e 2a 35 33 0d 0a 84 f9       | ,,,,,,N*53....
+     V (227678) modem: rx: 05 ff 33 24 47 50 52 4d 43 2c 2c 56 2c 2c 2c 2c | ..3$GPRMC,,V,,,,
+     V (227678) modem: rx: 2c 2c 2c 2c 2c 2c 4e 2a 35 33 0d 0a 84 f9       | ,,,,,,N*53....
      V (227678) gsm-mux: ProcessFrame(CHAN=1, ADDR=05, CTRL=ff, FCS=84, LEN=31)
      V (227678) gsm-mux: ChanProcessFrame(CHAN=1, ADDR=05, CTRL=ff, LEN=28, IFP=3)
      V (227678) gsm-nmea: IncomingLine: $GPRMC,,V,,,,,,,,,,N*53

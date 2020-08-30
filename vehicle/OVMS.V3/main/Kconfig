@@ -89,6 +89,41 @@ config OVMS_HW_CAN_TX_QUEUE_SIZE
     help
         The size of the CAN bus TX queue.
 
+config OVMS_HW_MODEM_BUFFER_SIZE
+    int "MODEM buffer size"
+    default 1024
+    depends on OVMS && OVMS_COMP_MODEM
+    help
+        The size of the buffer used for the modem.
+
+config OVMS_HW_MODEM_UART_SIZE
+    int "MODEM UART driver buffer size"
+    default 2048
+    depends on OVMS && OVMS_COMP_MODEM
+    help
+        The size of the UART driver buffers used for the modem.
+
+config OVMS_HW_MODEM_MUXCHANNEL_SIZE
+    int "MODEM MUX channels buffer size"
+    default 2048
+    depends on OVMS && OVMS_COMP_MODEM
+    help
+        The size of each MUX channel buffers used for the modem.
+
+config OVMS_HW_MODEM_QUEUE_SIZE
+    int "MODEM UART driver queue size"
+    default 50
+    depends on OVMS && OVMS_COMP_MODEM
+    help
+        The size of the UART driver queue used for the modem.
+
+config OVMS_HW_MODEM_STACK_SIZE
+    int "Stack size for MODEM task"
+    default 4096
+    depends on OVMS && OVMS_COMP_MODEM
+    help
+        The stack size of the OVMS Console and dynamic command tasks.
+
 endmenu # Hardware Support
 
 
@@ -551,7 +586,7 @@ config OVMS_COMP_PUSHOVER
     default y
     depends on MG_ENABLE_SSL
     help
-        Enable to include support for Pushover. 
+        Enable to include support for Pushover.
 
 config OVMS_COMP_TPMS
     bool "Include support for TPMS tyre sets"
@@ -560,10 +595,17 @@ config OVMS_COMP_TPMS
     help
         Enable to include support for TPMS tyre sets
 
+config OVMS_COMP_MODEM
+    bool "Include support for modems"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for modems
+
 config OVMS_COMP_MODEM_SIMCOM
     bool "Include support for SIMCOM modems"
     default y
-    depends on OVMS && OVMS_COMP_MAX7317
+    depends on OVMS && OVMS_COMP_MAX7317 && OVMS_COMP_MODEM
     help
         Enable to include support for SIMCOM modems
 

@@ -183,10 +183,10 @@ void Housekeeping::Init(std::string event, void* data)
     MyPeripherals->m_esp32wifi->AutoInit();
 #endif // CONFIG_OVMS_COMP_WIFI
 
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_MODEM
     ESP_LOGI(TAG, "Auto init modem (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
-    MyPeripherals->m_simcom->AutoInit();
-#endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+    MyPeripherals->m_modem->AutoInit();
+#endif // #ifdef CONFIG_OVMS_COMP_MODEM
 
     ESP_LOGI(TAG, "Auto init vehicle (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyVehicleFactory.AutoInit();

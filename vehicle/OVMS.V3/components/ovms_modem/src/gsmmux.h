@@ -36,15 +36,8 @@
 #include "ovms.h"
 #include "ovms_buffer.h"
 
-class simcom; // Forward declared
+class modem; // Forward declared
 class GsmMux; // Forward declared
-
-#define GSM_MUX_CHANNELS  4
-#define GSM_MUX_CHAN_CTRL 0
-#define GSM_MUX_CHAN_NMEA 1
-#define GSM_MUX_CHAN_DATA 2
-#define GSM_MUX_CHAN_POLL 3
-#define GSM_MUX_CHAN_CMD  4
 
 class GsmMuxChannel : public InternalRamAllocated
   {
@@ -74,12 +67,12 @@ class GsmMuxChannel : public InternalRamAllocated
 class GsmMux : public InternalRamAllocated
   {
   public:
-    GsmMux(simcom* modem, size_t maxframesize = 2048);
+    GsmMux(modem* m, int channelcount, size_t maxframesize = 2048);
     ~GsmMux();
 
   public:
-    void Start();
-    void Stop();
+    void Startup();
+    void Shutdown();
     void StartChannel(int channel);
     void StopChannel(int channel);
     void Process(OvmsBuffer* buf);
@@ -88,6 +81,7 @@ class GsmMux : public InternalRamAllocated
     size_t tx(int channel, const char* data, ssize_t size = -1);
     bool IsChannelOpen(int channel);
     bool IsMuxUp();
+    uint32_t GoodFrameAge();
 
   protected:
     void txfcs(uint8_t* data, size_t size, size_t ipos = 4);
@@ -103,6 +97,7 @@ class GsmMux : public InternalRamAllocated
 
   public:
     GsmMuxState m_state;
+    int m_channelcount;
     int m_openchannels;
     uint32_t m_framingerrors;
     uint32_t m_lastgoodrxframe;
@@ -110,7 +105,7 @@ class GsmMux : public InternalRamAllocated
     uint32_t m_txframecount;
 
   public:
-    simcom* m_modem;
+    modem* m_modem;
     uint8_t* m_frame;
     size_t m_framesize;
     size_t m_framepos;

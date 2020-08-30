@@ -27,7 +27,7 @@
 */
 
 #include "ovms_log.h"
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_MODEM
 static const char *TAG = "webserver";
 #endif
 
@@ -217,12 +217,12 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
     "<div class=\"col-sm-6 col-lg-4\">");
 
   c.panel_start("primary", "Modem");
-  output = ExecuteCommand("simcom status");
-  c.printf("<samp class=\"monitor\" data-updcmd=\"simcom status\" data-events=\"\\.modem\\.\">%s</samp>", _html(output));
+  output = ExecuteCommand("modem status");
+  c.printf("<samp class=\"monitor\" data-updcmd=\"modem status\" data-events=\"\\.modem\\.\">%s</samp>", _html(output));
   c.panel_end(
     "<ul class=\"list-inline\">"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power simcom on\">Start modem</button></li>"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power simcom off\">Stop modem</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power modem on\">Start modem</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power modem off\">Stop modem</button></li>"
       "<li><samp id=\"modem-cmdres\" class=\"samp-inline\"></samp></li>"
     "</ul>");
 
@@ -764,7 +764,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 }
 
 
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_MODEM
 /**
  * HandleCfgModem: configure APN & modem features (URL /cfg/modem)
  */
@@ -833,7 +833,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
       "<div class=\"receiver\">"
         "<code class=\"autoselect\" data-metric=\"m.net.mdm.iccid\">(power modem on to read)</code>"
         "&nbsp;"
-        "<button class=\"btn btn-default\" data-cmd=\"power simcom on\" data-target=\"#pso\">Power modem on</button>"
+        "<button class=\"btn btn-default\" data-cmd=\"power modem on\" data-target=\"#pso\">Power modem on</button>"
         "&nbsp;"
         "<samp id=\"pso\" class=\"samp-inline\"></samp>"
       "</div>"

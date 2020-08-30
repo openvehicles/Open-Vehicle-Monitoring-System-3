@@ -45,7 +45,7 @@ Peripherals::Peripherals()
   {
   ESP_LOGI(TAG, "Initialising OVMS Peripherals...");
 
-#if defined(CONFIG_OVMS_COMP_WIFI)||defined(CONFIG_OVMS_COMP_MODEM_SIMCOM)
+#if defined(CONFIG_OVMS_COMP_WIFI)||defined(CONFIG_OVMS_COMP_MODEM)
   if (MyConfig.IsDefined("network","mac"))
     {
     std::string mac = MyConfig.GetParamValue("network", "mac");
@@ -66,7 +66,7 @@ Peripherals::Peripherals()
     }
   ESP_LOGI(TAG, "  TCP/IP Adaptor");
   tcpip_adapter_init();
-#endif // #if defined(CONFIG_OVMS_COMP_WIFI)||defined(CONFIG_OVMS_COMP_MODEM_SIMCOM)
+#endif // #if defined(CONFIG_OVMS_COMP_WIFI)||defined(CONFIG_OVMS_COMP_MODEM)
 
   gpio_install_isr_service(ESP_INTR_FLAG_IRAM);
 
@@ -156,8 +156,8 @@ Peripherals::Peripherals()
   m_sdcard = new sdcard("sdcard", true, true, SDCARD_PIN_CD);
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
-  ESP_LOGI(TAG, "  SIMCOM MODEM");
+#ifdef CONFIG_OVMS_COMP_MODEM
+  ESP_LOGI(TAG, "  MODEM");
   gpio_config_t gpio_conf =
     {
     .pin_bit_mask = BIT(MODEM_GPIO_RX),
@@ -176,8 +176,8 @@ Peripherals::Peripherals()
     .intr_type = GPIO_INTR_DISABLE
     };
   gpio_config( &gpio_conf );
-  m_simcom = new simcom("simcom", UART_NUM_1, 115200, MODEM_GPIO_RX, MODEM_GPIO_TX, MODEM_EGPIO_PWR, MODEM_EGPIO_DTR);
-#endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+  m_modem = new modem("modem", UART_NUM_1, 115200, MODEM_GPIO_RX, MODEM_GPIO_TX, MODEM_EGPIO_PWR, MODEM_EGPIO_DTR);
+#endif // #ifdef CONFIG_OVMS_COMP_MODEM
 
 #ifdef CONFIG_OVMS_COMP_OBD2ECU
   m_obd2ecu = NULL;

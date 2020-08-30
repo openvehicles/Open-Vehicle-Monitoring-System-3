@@ -249,12 +249,6 @@ void GsmNMEA::IncomingLine(const std::string line)
 
 void GsmNMEA::Startup()
   {
-  if (!MyConfig.GetParamValueBool("modem", "enable.gps", false))
-    {
-    ESP_LOGD(TAG, "GPS disabled");
-    return;
-    }
-
   ESP_LOGI(TAG, "Startup");
 
   m_gpstime_enabled = MyConfig.GetParamValueBool("modem", "enable.gpstime", false);
@@ -262,7 +256,10 @@ void GsmNMEA::Startup()
   // Switch on GPS, subscribe to NMEA sentences…
   //   2 = $..RMC -- UTC time & date
   //  64 = $..GNS -- Position & fix data
-  m_mux->tx(GSM_MUX_CHAN_CMD, "AT+CGPSNMEA=66;+CGPS=1,1\r\n");
+  if (m_mux != NULL)
+    { m_mux->tx(m_channel_cmd, "AT+CGPSNMEA=66;+CGPS=1,1\r\n"); }
+  else
+    { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
 
   m_connected = true;
   }
@@ -273,7 +270,10 @@ void GsmNMEA::Shutdown(bool hard)
   ESP_LOGI(TAG, "Shutdown (direct)");
 
   // Switch off GPS:
-  m_mux->tx(GSM_MUX_CHAN_CMD, "AT+CGPS=0\r\n");
+  if (m_mux != NULL)
+    { m_mux->tx(m_channel_cmd, "AT+CGPS=0\r\n"); }
+  else
+    { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
 
   if (StdMetrics.ms_v_pos_gpslock->AsBool())
     {
@@ -285,14 +285,19 @@ void GsmNMEA::Shutdown(bool hard)
   }
 
 
-GsmNMEA::GsmNMEA(GsmMux* mux, int channel)
+GsmNMEA::GsmNMEA(GsmMux* mux, int channel_nmea, int channel_cmd)
   {
   m_mux = mux;
-  m_channel = channel;
+  m_channel_nmea = channel_nmea;
+  m_channel_cmd = channel_cmd;
   m_connected = false;
   m_gpstime_enabled = false;
   }
 
 GsmNMEA::~GsmNMEA()
   {
+  if (m_connected)
+    {
+    Shutdown();
+    }
   }

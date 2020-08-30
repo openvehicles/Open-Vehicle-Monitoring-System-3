@@ -109,7 +109,7 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/cfg/password", "Password", HandleCfgPassword, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/vehicle", "Vehicle", HandleCfgVehicle, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/wifi", "Wifi", HandleCfgWifi, PageMenu_Config, PageAuth_Cookie);
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_MODEM
   RegisterPage("/cfg/modem", "Modem", HandleCfgModem, PageMenu_Config, PageAuth_Cookie);
 #endif
 #ifdef CONFIG_OVMS_COMP_SERVER
@@ -389,21 +389,21 @@ void OvmsWebServer::RegisterPlugins()
   //    <key>.auth          [page] <PageAuth_t> code name
   //    <key>.menu          [page] <PageMenu_t> code name
   //    <key>.hook          [hook] Callback hook code
-  // 
+  //
   // Files:
   //    /store/plugin/<key>
 
   for (auto& kv: pmap) {
     if (!endsWith(kv.first, ".enable") || !strtobool(kv.second))
       continue;
-    
+
     key = kv.first.substr(0, kv.first.length() - 7);
     page = cp->GetValue(key+".page");
     hook = cp->GetValue(key+".hook");
     bool is_hook = cp->IsDefined(key+".hook");
     if (page == "" || (is_hook && hook == ""))
       continue;
-    
+
     if (is_hook) {
       m_plugin_parts.insert({ page + ":" + hook, PagePluginContent(key) });
       RegisterCallback("http.plugin", page, PluginCallback, -1);

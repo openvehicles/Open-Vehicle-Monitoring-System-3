@@ -59,14 +59,14 @@ powermgmt::powermgmt()
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
-#endif  
+#endif
   }
 
 powermgmt::~powermgmt()
   {
  #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebCleanup();
-#endif  
+#endif
  }
 
 void powermgmt::ConfigChanged(std::string event, void* data)
@@ -87,7 +87,7 @@ void powermgmt::Ticker1(std::string event, void* data)
   {
   if (!m_charging)
     m_notcharging_timer++;
-  
+
   if (StandardMetrics.ms_v_env_charging12v->AsBool())
     {
     if (!m_charging)
@@ -102,15 +102,15 @@ void powermgmt::Ticker1(std::string event, void* data)
         m_wifi_off = false;
         }
 #endif
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_MODEM
       if (m_modem_off)
         {
-        MyPeripherals->m_simcom->SetPowerMode(On);
+        MyPeripherals->m_modem->SetPowerMode(On);
         m_modem_off = false;
         }
 #endif
       }
-    } 
+    }
   else
     {
     if (m_charging)
@@ -131,22 +131,22 @@ void powermgmt::Ticker1(std::string event, void* data)
       {
       ESP_LOGW(TAG,"Powering off wifi");
       MyEvents.SignalEvent("powermgmt.wifi.off",NULL);
-      vTaskDelay(500 / portTICK_PERIOD_MS); // make sure all notifications all transmitted before powerring down WiFI 
+      vTaskDelay(500 / portTICK_PERIOD_MS); // make sure all notifications all transmitted before powerring down WiFI
       MyPeripherals->m_esp32wifi->SetPowerMode(Off);
       m_wifi_off = true;
       }
     }
 #endif
 
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_MODEM
   if (m_modemoff_delay && m_notcharging_timer > m_modemoff_delay*60*60) // hours to seconds
     {
-    if (MyPeripherals->m_simcom->GetPowerMode()==On)
+    if (MyPeripherals->m_modem->GetPowerMode()==On)
       {
       ESP_LOGW(TAG,"Powering off modem");
       MyEvents.SignalEvent("powermgmt.modem.off",NULL);
-      vTaskDelay(500 / portTICK_PERIOD_MS); // make sure all notifications all transmitted before powerring down modem 
-      MyPeripherals->m_simcom->SetPowerMode(Off);
+      vTaskDelay(500 / portTICK_PERIOD_MS); // make sure all notifications all transmitted before powerring down modem
+      MyPeripherals->m_modem->SetPowerMode(Off);
       m_modem_off = true;
       }
     }
@@ -163,8 +163,8 @@ void powermgmt::Ticker1(std::string event, void* data)
 #ifdef CONFIG_OVMS_COMP_WIFI
       MyPeripherals->m_esp32wifi->SetPowerMode(Off);
 #endif
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
-      MyPeripherals->m_simcom->SetPowerMode(Off);
+#ifdef CONFIG_OVMS_COMP_MODEM
+      MyPeripherals->m_modem->SetPowerMode(Off);
 #endif
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
       MyPeripherals->m_mcp2515_swcan->SetPowerMode(Off);
@@ -175,7 +175,7 @@ void powermgmt::Ticker1(std::string event, void* data)
 #ifdef CONFIG_OVMS_COMP_EXT12V
       MyPeripherals->m_ext12v->SetPowerMode(Off);
 #endif
-      MyPeripherals->m_esp32->SetPowerMode(DeepSleep);      
+      MyPeripherals->m_esp32->SetPowerMode(DeepSleep);
       }
     }
   else

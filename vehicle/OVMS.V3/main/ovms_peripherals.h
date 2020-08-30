@@ -67,9 +67,9 @@
 #include "sdcard.h"
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
-#include "simcom.h"
-#endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_MODEM
+#include "ovms_modem.h"
+#endif // #ifdef CONFIG_OVMS_COMP_MODEM
 
 #ifdef CONFIG_OVMS_COMP_OBD2ECU
 #include "obd2ecu.h"
@@ -177,9 +177,9 @@ class Peripherals : public InternalRamAllocated
     sdcard* m_sdcard;
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
-    simcom* m_simcom;
-#endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_MODEM
+    modem* m_modem;
+#endif // #ifdef CONFIG_OVMS_COMP_MODEM
 
 #ifdef CONFIG_OVMS_COMP_OBD2ECU
     obd2ecu* m_obd2ecu;

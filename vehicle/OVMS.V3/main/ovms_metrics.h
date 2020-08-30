@@ -147,6 +147,7 @@ class OvmsMetric
     virtual bool IsModifiedAndClear(size_t modifier);
     virtual void ClearModified(size_t modifier);
     virtual void SetModified(bool changed=true);
+    virtual void Clear();
 
   public:
     OvmsMetric* m_next;
@@ -179,6 +180,7 @@ class OvmsMetricBool : public OvmsMetric
     void SetValue(std::string value);
     void SetValue(dbcNumber& value);
     void operator=(std::string value) { SetValue(value); }
+    void Clear();
 
   protected:
     bool m_value;
@@ -203,6 +205,7 @@ class OvmsMetricInt : public OvmsMetric
     void SetValue(std::string value);
     void SetValue(dbcNumber& value);
     void operator=(std::string value) { SetValue(value); }
+    void Clear();
 
   protected:
     int m_value;
@@ -229,6 +232,7 @@ class OvmsMetricFloat : public OvmsMetric
     void operator=(std::string value) { SetValue(value); }
     virtual bool CheckPersist();
     virtual void RefreshPersist();
+    void Clear();
 
   protected:
     float m_value;
@@ -248,6 +252,7 @@ class OvmsMetricString : public OvmsMetric
 #endif
     void SetValue(std::string value);
     void operator=(std::string value) { SetValue(value); }
+    void Clear();
 
   protected:
     OvmsMutex m_mutex;

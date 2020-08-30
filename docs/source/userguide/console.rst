@@ -80,7 +80,7 @@ You can also use SCP to copy files to and from the OVMS v3 VFS.
     ssh -c aes128-cbc user@ip
 
   …or by adding a host entry to your ``~/.ssh/config`` file::
-  
+
     Host ovmsname.local
     Ciphers +aes128-cbc
 
@@ -142,7 +142,7 @@ At any time, you can use “?” to show the available commands. For example::
   script               Run a script
   sd                   SD CARD framework
   server               OVMS Server Connection framework
-  simcom               SIMCOM framework
+  modem                MODEM framework
   stat                 Show vehicle status
   store                STORE framework
   test                 Test framework

@@ -1,6 +1,6 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          9th December 2017
+;    Date:          14th March 2017
 ;
 ;    Changes:
 ;    1.0  Initial release
@@ -8,7 +8,6 @@
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011        Sonny Chen @ EPRO/DX
-;    (C) 2012-2017  Michael Balzer
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -29,31 +28,33 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __GSM_NMEA_H__
-#define __GSM_NMEA_H__
+#ifndef __SIMCOM_7000_H__
+#define __SIMCOM_7000_H__
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-#include "driver/uart.h"
-#include "gsmmux.h"
+#include "ovms_modem.h"
 
-class GsmNMEA : public InternalRamAllocated
+class simcom7000 : public modemdriver
   {
   public:
-    GsmNMEA(GsmMux* mux, int channel);
-    ~GsmNMEA();
+    simcom7000();
+    ~simcom7000();
 
   public:
-    void IncomingLine(const std::string line);
-    void Startup();
-    void Shutdown(bool hard=false);
+    const char* GetModel();
+    const char* GetName();
 
-  public:
-    GsmMux*       m_mux;
-    int           m_channel;
-    bool          m_connected;
-    bool          m_gpstime_enabled;
+    int GetMuxChannels()    { return 4; }
+    int GetMuxChannelCTRL() { return 0; }
+    int GetMuxChannelNMEA() { return 1; }
+    int GetMuxChannelDATA() { return 2; }
+    int GetMuxChannelPOLL() { return 3; }
+    int GetMuxChannelCMD()  { return 4; }
+
+    void PowerCycle();
+    bool State1Leave(modem::modem_state1_t oldstate);
+    bool State1Enter(modem::modem_state1_t newstate);
+    modem::modem_state1_t State1Activity(modem::modem_state1_t curstate);
+    modem::modem_state1_t State1Ticker1(modem::modem_state1_t curstate);
   };
 
-#endif //#ifndef __GSM_NMEA__
+#endif //#ifndef __SIMCOM_7000_H__

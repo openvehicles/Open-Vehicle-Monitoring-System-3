@@ -295,19 +295,19 @@ void OvmsWebServer::CfgInitTicker()
 #endif
   }
 
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_MODEM
   else if (step == "5.test.start") {
-    if (!MyPeripherals || !MyPeripherals->m_simcom) {
+    if (!MyPeripherals || !MyPeripherals->m_modem) {
       ESP_LOGE(TAG, "CfgInitTicker: step 5: modem not available");
       CfgInitSetStep("done");
     }
-    if (MyPeripherals->m_simcom->GetPowerMode() != On) {
+    if (MyPeripherals->m_modem->GetPowerMode() != On) {
       ESP_LOGI(TAG, "CfgInitTicker: step 5: modem power on");
-      MyPeripherals->m_simcom->SetPowerMode(On);
+      MyPeripherals->m_modem->SetPowerMode(On);
     }
     else {
       ESP_LOGI(TAG, "CfgInitTicker: step 5: modem enter state NetStart");
-      MyPeripherals->m_simcom->SendSetState1(simcom::NetStart);
+      MyPeripherals->m_modem->SendSetState1(modem::NetStart);
 
     }
   }
@@ -944,7 +944,7 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
     units_distance = MyConfig.GetParamValue("vehicle", "units.distance", "K");
     server = MyConfig.GetParamValue("server.v2", "server");
     password = MyConfig.GetParamValue("password","server.v2");
-    
+
     // default data server = ota server:
     if (server.empty()) {
       server = MyConfig.GetParamValue("ota", "server");
@@ -1149,7 +1149,7 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
                 "<p>The modem is connected when <strong>State: NetMode</strong> and <strong>PPP connected</strong>"
                 " have been established.</p>"
               "</div>"
-              "<pre class=\"monitor\" data-updcmd=\"simcom status\" data-events=\"system.modem\" data-updcnt=\"-1\" data-updint=\"5\"></pre>"
+              "<pre class=\"monitor\" data-updcmd=\"modem status\" data-events=\"system.modem\" data-updcnt=\"-1\" data-updint=\"5\"></pre>"
             "</div>"
             "<div class=\"modal-footer\">"
               "<button type=\"button\" class=\"btn btn-default\" name=\"action\" value=\"keep\">Keep &amp; proceed</button>"
@@ -1194,7 +1194,7 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
       "<div class=\"receiver\">"
         "<code class=\"autoselect\" data-metric=\"m.net.mdm.iccid\">(power modem on to read)</code>"
         "&nbsp;"
-        "<button class=\"btn btn-default\" data-cmd=\"power simcom on\" data-target=\"#pso\">Power modem on</button>"
+        "<button class=\"btn btn-default\" data-cmd=\"power modem on\" data-target=\"#pso\">Power modem on</button>"
         "&nbsp;"
         "<samp id=\"pso\" class=\"samp-inline\"></samp>"
       "</div>"

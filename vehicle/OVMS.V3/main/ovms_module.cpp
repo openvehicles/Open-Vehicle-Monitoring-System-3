@@ -1032,9 +1032,10 @@ static void module_summary(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
   writer->printf("  Hardware: %s\n",StandardMetrics.ms_m_hardware->AsString().c_str());
   writer->printf("  12v:      %0.1fv\n",StandardMetrics.ms_v_bat_12v_voltage->AsFloat());
 
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
-  MyPeripherals->m_simcom->SupportSummary(writer);
-#endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_MODEM
+  writer->puts("");
+  MyPeripherals->m_modem->SupportSummary(writer, true);
+#endif // #ifdef CONFIG_OVMS_COMP_MODEM
 
   MyConfig.SupportSummary(writer);
 
