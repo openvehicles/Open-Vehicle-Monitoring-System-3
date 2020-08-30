@@ -1526,7 +1526,7 @@ void modem::UpdateNetMetrics()
 ////////////////////////////////////////////////////////////////////////////////
 // Command interfaces
 
-void modem_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void cellular_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   std::string msg;
   for (int k=0; k<argc; k++)
@@ -1541,7 +1541,7 @@ void modem_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   MyModem->tx(msg.c_str(),msg.length());
   }
 
-void modem_muxtx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void cellular_muxtx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   int channel = atoi(argv[0]);
 
@@ -1558,7 +1558,7 @@ void modem_muxtx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   MyModem->muxtx(channel,msg.c_str(),msg.length());
   }
 
-void modem_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void cellular_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   std::string msg;
   for (int k=0; k<argc; k++)
@@ -1580,7 +1580,7 @@ void modem_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     }
   }
 
-void modem_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void cellular_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   MyModem->SupportSummary(writer, (strcmp(cmd->GetName(), "debug") == 0));
   }
@@ -1610,7 +1610,7 @@ void modem_setstate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   writer->printf("Error: Unrecognised state %s\n",statename);
   }
 
-void modem_drivers(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void cellular_drivers(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   writer->puts("Type       Name");
   for (OvmsModemFactory::map_modemdriver_t::iterator k=MyModemFactory.m_drivermap.begin();
@@ -1651,18 +1651,18 @@ ModemInit::ModemInit()
   {
   ESP_LOGI(TAG, "Initialising MODEM (4600)");
 
-  OvmsCommand* cmd_modem = MyCommandApp.RegisterCommand("modem","MODEM framework",modem_status, "", 0, 0, false);
-  cmd_modem->RegisterCommand("tx","Transmit data on MODEM",modem_tx, "", 1, INT_MAX);
-  cmd_modem->RegisterCommand("muxtx","Transmit data on MODEM MUX",modem_muxtx, "<chan> <data>", 2, INT_MAX);
-  cmd_modem->RegisterCommand("cmd","Send SIMCOM AT command",modem_cmd, "<command>", 1, INT_MAX);
-  cmd_modem->RegisterCommand("drivers","Show supported modem drivers",modem_drivers, "", 0, 0);
-  OvmsCommand* cmd_status = cmd_modem->RegisterCommand("status","Show MODEM status",modem_status, "[debug]", 0, 0, false);
-  cmd_status->RegisterCommand("debug","Show extended MODEM status",modem_status, "", 0, 0, false);
+  OvmsCommand* cmd_cellular = MyCommandApp.RegisterCommand("cellular","CELLULAR MODEM framework",cellular_status, "", 0, 0, false);
+  cmd_cellular->RegisterCommand("tx","Transmit data on CELLULAR MODEM",cellular_tx, "", 1, INT_MAX);
+  cmd_cellular->RegisterCommand("muxtx","Transmit data on CELLULAR MODEM MUX",cellular_muxtx, "<chan> <data>", 2, INT_MAX);
+  cmd_cellular->RegisterCommand("cmd","Send CELLULAR MODEM AT command",cellular_cmd, "<command>", 1, INT_MAX);
+  cmd_cellular->RegisterCommand("drivers","Show supported CELLULAR MODEM drivers",cellular_drivers, "", 0, 0);
+  OvmsCommand* cmd_status = cmd_cellular->RegisterCommand("status","Show CELLULAR MODEM status",cellular_status, "[debug]", 0, 0, false);
+  cmd_status->RegisterCommand("debug","Show extended CELLULAR MODEM status",cellular_status, "", 0, 0, false);
 
-  OvmsCommand* cmd_setstate = cmd_modem->RegisterCommand("setstate","MODEM state change framework");
+  OvmsCommand* cmd_setstate = cmd_cellular->RegisterCommand("setstate","CELLULAR MODEM state change framework");
   for (int x = modem::CheckPowerOff; x<=modem::PowerOffOn; x++)
     {
-    cmd_setstate->RegisterCommand(ModemState1Name((modem::modem_state1_t)x),"Force MODEM state change",modem_setstate);
+    cmd_setstate->RegisterCommand(ModemState1Name((modem::modem_state1_t)x),"Force CELLULAR MODEM state change",modem_setstate);
     }
 
   MyConfig.RegisterParam("modem", "Modem Configuration", true, true);
