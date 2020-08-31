@@ -49,11 +49,8 @@ static const char *TAG = "command";
 #include "buffered_shell.h"
 #include "log_buffers.h"
 #include "ovms_semaphore.h"
-#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-#include "duktape.h"
-#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
-OvmsCommandApp MyCommandApp __attribute__ ((init_priority (1000)));
+OvmsCommandApp MyCommandApp __attribute__ ((init_priority (1010)));
 
 bool CompareCharPtr::operator()(const char* a, const char* b)
   {
@@ -781,7 +778,7 @@ void OvmsCommandApp::NotifyDuktapeScriptsReady()
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsCommand");
   dto->RegisterDuktapeFunction(DukOvmsCommandExec, 1, "Exec");
   dto->RegisterDuktapeFunction(DukOvmsCommandRegister, 6, "Register");
-  MyScripts.RegisterDuktapeObject(dto);
+  MyDuktape.RegisterDuktapeObject(dto);
   }
 
 void OvmsCommandApp::NotifyDuktapeModuleLoad(const char* filename)
@@ -803,7 +800,7 @@ void OvmsCommandApp::NotifyDuktapeModuleUnloadAll()
 
 OvmsCommandApp::OvmsCommandApp()
   {
-  ESP_LOGI(TAG, "Initialising COMMAND (1000)");
+  ESP_LOGI(TAG, "Initialising COMMAND (1010)");
 
   m_logfile = NULL;
   m_logfile_path = "";

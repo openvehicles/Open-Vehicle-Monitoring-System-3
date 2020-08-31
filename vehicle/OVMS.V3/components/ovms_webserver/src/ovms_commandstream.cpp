@@ -60,14 +60,14 @@ HttpCommandStream::HttpCommandStream(mg_connection* nc, extram::string command,
 {
   ESP_EARLY_LOGD(TAG, "HttpCommandStream[%p] init: handler=%p command='%s%s' verbosity=%d", nc, this,
     command.substr(0,200).c_str(), (command.length()>200) ? " [...]" : "", verbosity);
-  
+
   m_command = command;
   m_javascript = javascript;
   m_done = false;
   m_sent = m_ack = 0;
   Initialize(false);
   SetSecure(true); // Note: assuming user is admin
-  
+
   // create write queue & command task:
   m_writequeue = xQueueCreate(30, sizeof(hcs_writebuf));
   char name[configMAX_TASK_NAME_LEN];
@@ -98,15 +98,15 @@ void HttpCommandStream::Initialize(bool print)
 void HttpCommandStream::CommandTask(void* object)
 {
   HttpCommandStream* me = (HttpCommandStream*) object;
-  
+
   ESP_LOGI(TAG, "HttpCommandStream[%p]: %d bytes free, executing: %s%s",
     me->m_nc, heap_caps_get_free_size(MALLOC_CAP_8BIT),
     me->m_command.substr(0,200).c_str(), (me->m_command.length()>200) ? " [...]" : "");
-  
+
   // execute command:
   if (me->m_javascript) {
     #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-      MyScripts.DuktapeEvalNoResult(me->m_command.c_str(), me);
+      MyDuktape.DuktapeEvalNoResult(me->m_command.c_str(), me);
     #else
       me->puts("ERROR: Javascript support disabled");
     #endif
@@ -116,7 +116,7 @@ void HttpCommandStream::CommandTask(void* object)
   }
 
   me->m_done = true;
-  
+
 #if MG_ENABLE_BROADCAST && WEBSRV_USE_MG_BROADCAST
   if (m_writequeue && uxQueueMessagesWaiting(me->m_writequeue) > 0) {
     ESP_EARLY_LOGV(TAG, "HttpCommandStream[%p] RequestPollLast, qlen=%d done=%d sent=%d ack=%d", me->m_nc, uxQueueMessagesWaiting(me->m_writequeue), me->m_done, me->m_sent, me->m_ack);
@@ -124,7 +124,7 @@ void HttpCommandStream::CommandTask(void* object)
     ESP_EARLY_LOGV(TAG, "HttpCommandStream[%p] RequestPollDone, qlen=%d done=%d sent=%d ack=%d", me->m_nc, uxQueueMessagesWaiting(me->m_writequeue), me->m_done, me->m_sent, me->m_ack);
   }
 #endif // MG_ENABLE_BROADCAST && WEBSRV_USE_MG_BROADCAST
-  
+
   while (me->m_nc)
     vTaskDelay(10/portTICK_PERIOD_MS);
   delete me;
@@ -136,7 +136,7 @@ void HttpCommandStream::ProcessQueue()
 {
   size_t txlen = 0;
   hcs_writebuf wbuf;
-  
+
   if (m_writequeue) {
     while (txlen < XFER_CHUNK_SIZE && xQueueReceive(m_writequeue, &wbuf, 0) == pdTRUE) {
       if (m_nc) {
@@ -145,7 +145,7 @@ void HttpCommandStream::ProcessQueue()
       }
       free(wbuf.data);
     }
-    
+
     if (txlen) {
       m_sent += txlen;
       ESP_EARLY_LOGV(TAG, "HttpCommandStream[%p] ProcessQueue txlen=%d, qlen=%d done=%d sent=%d ack=%d",
@@ -177,7 +177,7 @@ int HttpCommandStream::HandleEvent(int ev, void* p)
       if (m_ack == m_sent)
         ProcessQueue();
       break;
-    
+
     case MG_EV_SEND:
       // last transmission has finished:
       ESP_EARLY_LOGV(TAG, "HttpCommandStream[%p] EV_SEND qlen=%d done=%d sent=%d ack=%d",
@@ -185,7 +185,7 @@ int HttpCommandStream::HandleEvent(int ev, void* p)
       m_ack = m_sent;
       ProcessQueue();
       break;
-    
+
     case MG_EV_CLOSE:
       ESP_EARLY_LOGV(TAG, "HttpCommandStream[%p] EV_CLOSE qlen=%d done=%d sent=%d ack=%d",
         m_nc, m_writequeue ? uxQueueMessagesWaiting(m_writequeue) : -1, m_done, m_sent, m_ack);
@@ -197,11 +197,11 @@ int HttpCommandStream::HandleEvent(int ev, void* p)
       ProcessQueue();   // empty queue (no tx) to prevent task lockup on write
       ev = 0;           // prevent deletion by main event handler
       break;
-    
+
     default:
       break;
   }
-  
+
   return ev;
 }
 
@@ -235,20 +235,20 @@ ssize_t HttpCommandStream::write(const void *buf, size_t nbyte)
 {
   if (!m_nc || nbyte == 0)
     return 0;
-  
+
   if (!m_writequeue)
     return nbyte;
-  
+
   hcs_writebuf wbuf;
   wbuf.data = (char*) ExternalRamMalloc(nbyte);
   wbuf.len = nbyte;
   memcpy(wbuf.data, buf, nbyte);
-  
+
   if (xQueueSend(m_writequeue, &wbuf, portMAX_DELAY) != pdTRUE) {
     free(wbuf.data);
     return nbyte;
   }
-  
+
 #if MG_ENABLE_BROADCAST && WEBSRV_USE_MG_BROADCAST
   if (uxQueueMessagesWaiting(m_writequeue) == 1) {
     ESP_EARLY_LOGV(TAG, "HttpCommandStream[%p] RequestPoll, qlen=1 done=%d sent=%d ack=%d", m_nc, m_done, m_sent, m_ack);
@@ -258,7 +258,7 @@ ssize_t HttpCommandStream::write(const void *buf, size_t nbyte)
   else
 #endif // MG_ENABLE_BROADCAST && WEBSRV_USE_MG_BROADCAST
     ESP_EARLY_LOGV(TAG, "HttpCommandStream[%p] AddQueue, qlen=%d done=%d sent=%d ack=%d", m_nc, uxQueueMessagesWaiting(m_writequeue), m_done, m_sent, m_ack);
-  
+
   return nbyte;
 }
 

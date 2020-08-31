@@ -66,7 +66,7 @@ void test_javascript(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_NONE
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-  writer->printf("Javascript 1+2=%d\n", MyScripts.DuktapeEvalIntResult("1+2"));
+  writer->printf("Javascript 1+2=%d\n", MyDuktape.DuktapeEvalIntResult("1+2"));
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 

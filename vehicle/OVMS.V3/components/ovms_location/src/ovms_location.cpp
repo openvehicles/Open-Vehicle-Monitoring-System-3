@@ -585,7 +585,7 @@ OvmsLocations::OvmsLocations()
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsLocation");
   dto->RegisterDuktapeFunction(DukOvmsLocationStatus, 1, "Status");
-  MyScripts.RegisterDuktapeObject(dto);
+  MyDuktape.RegisterDuktapeObject(dto);
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 

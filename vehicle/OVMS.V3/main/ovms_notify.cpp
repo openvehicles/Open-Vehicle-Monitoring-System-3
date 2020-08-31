@@ -449,7 +449,7 @@ OvmsNotify::OvmsNotify()
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsNotify");
   dto->RegisterDuktapeFunction(DukOvmsNotifyRaise, 3, "Raise");
-  MyScripts.RegisterDuktapeObject(dto);
+  MyDuktape.RegisterDuktapeObject(dto);
 #endif // CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 

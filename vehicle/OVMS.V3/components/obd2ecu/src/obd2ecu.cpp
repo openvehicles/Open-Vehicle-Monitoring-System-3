@@ -132,7 +132,7 @@ float obd2pid::Execute()
     case Script:
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
       {
-      return MyScripts.DuktapeEvalFloatResult(m_script);
+      return MyDuktape.DuktapeEvalFloatResult(m_script);
       }
 #else // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
       return 0;

@@ -850,7 +850,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   dto->RegisterDuktapeFunction(DukOvmsVehicleStartCharge, 0, "StartCharge");
   dto->RegisterDuktapeFunction(DukOvmsVehicleStartCooldown, 0, "StartCooldown");
   dto->RegisterDuktapeFunction(DukOvmsVehicleStopCooldown, 0, "StopCooldown");
-  MyScripts.RegisterDuktapeObject(dto);
+  MyDuktape.RegisterDuktapeObject(dto);
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 

@@ -209,7 +209,7 @@ void Housekeeping::Init(std::string event, void* data)
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
     ESP_LOGI(TAG, "Auto init javascript (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
-    MyScripts.AutoInitDuktape();
+    MyDuktape.AutoInitDuktape();
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
     ESP_LOGI(TAG, "Auto init done (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));

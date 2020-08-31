@@ -387,7 +387,7 @@ OvmsMetrics::OvmsMetrics()
   dto->RegisterDuktapeFunction(DukOvmsMetricJSON, 1, "AsJSON");
   dto->RegisterDuktapeFunction(DukOvmsMetricFloat, 1, "AsFloat");
   dto->RegisterDuktapeFunction(DukOvmsMetricGetValues, 2, "GetValues");
-  MyScripts.RegisterDuktapeObject(dto);
+  MyDuktape.RegisterDuktapeObject(dto);
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
   /* Initialize persistent metrics on cold boot or corruption */
