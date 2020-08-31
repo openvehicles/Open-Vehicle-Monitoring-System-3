@@ -174,8 +174,12 @@ void OvmsVehicleSmartED::shell_obd_request(int verbosity, OvmsWriter* writer, Ov
   }
 
   // execute request:
-  if (!smart->ObdRequest(txid, rxid, req, response)) {
+  int err = smart->ObdRequest(txid, rxid, req, response);
+  if (err == -1) {
     writer->puts("ERROR: timeout waiting for response");
+    return;
+  } else if (err) {
+    writer->printf("ERROR: request failed with response error code %02X\n", err);
     return;
   }
 
@@ -220,8 +224,12 @@ void OvmsVehicleSmartED::shell_obd_request_volts(int verbosity, OvmsWriter* writ
   }
 
   // execute request:
-  if (!smart->ObdRequest(txid, rxid, req, response)) {
+  int err = smart->ObdRequest(txid, rxid, req, response);
+  if (err == -1) {
     writer->puts("ERROR: timeout waiting for response");
+    return;
+  } else if (err) {
+    writer->printf("ERROR: request failed with response error code %02X\n", err);
     return;
   }
 
@@ -242,11 +250,11 @@ void OvmsVehicleSmartED::TempPoll() {
   obd->WriteStandard(0x7A2, 8, data);
   vTaskDelay(50 / portTICK_PERIOD_MS);
   
-  data[0] = 0x02;
-  data[1] = 0xe3;
-  data[2] = 0x01;
-  obd->WriteStandard(0x7A2, 8, data);
-  vTaskDelay(50 / portTICK_PERIOD_MS);
+  // data[0] = 0x02;
+  // data[1] = 0xe3;
+  // data[2] = 0x01;
+  // obd->WriteStandard(0x7A2, 8, data);
+  // vTaskDelay(50 / portTICK_PERIOD_MS);
   
   data[0] = 0x02;
   data[1] = 0x21;
@@ -260,11 +268,11 @@ void OvmsVehicleSmartED::TempPoll() {
   obd->WriteStandard(0x7A2, 8, data);
   vTaskDelay(50 / portTICK_PERIOD_MS);
   
-  data[0] = 0x02;
-  data[1] = 0xe3;
-  data[2] = 0x01;
-  obd->WriteStandard(0x7A2, 8, data);
-  vTaskDelay(50 / portTICK_PERIOD_MS);
+  // data[0] = 0x02;
+  // data[1] = 0xe3;
+  // data[2] = 0x01;
+  // obd->WriteStandard(0x7A2, 8, data);
+  // vTaskDelay(50 / portTICK_PERIOD_MS);
   
   data[0] = 0x02;
   data[1] = 0x10;
@@ -630,4 +638,12 @@ void OvmsVehicleSmartED::NotifyValetEnabled() {
 
 void OvmsVehicleSmartED::NotifyValetDisabled() {
   // MyNotify.NotifyString("info", "valet.disabled", "Ignition off");
+}
+
+void OvmsVehicleSmartED::NotifyValetHood() {
+  // MyNotify.NotifyString("alert", "valet.hood", "Vehicle hood opened while in valet mode");
+}
+
+void OvmsVehicleSmartED::NotifyValetTrunk() {
+  // MyNotify.NotifyString("alert", "valet.trunk", "Vehicle trunk opened while in valet mode");
 }
