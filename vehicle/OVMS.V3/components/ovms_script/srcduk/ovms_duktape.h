@@ -186,7 +186,7 @@ class OvmsDuktape
     void AutoInitDuktape();
 
   protected:
-    void DuktapeDispatch(duktape_queue_t* msg, TickType_t queuewait=portMAX_DELAY);
+    bool DuktapeDispatch(duktape_queue_t* msg, TickType_t queuewait=portMAX_DELAY);
     void DuktapeDispatchWait(duktape_queue_t* msg);
 
   public:

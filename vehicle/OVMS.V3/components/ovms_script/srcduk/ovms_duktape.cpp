@@ -947,9 +947,12 @@ void OvmsDuktape::EventScript(std::string event, void* data)
   duktape_queue_t dmsg;
   memset(&dmsg, 0, sizeof(dmsg));
   dmsg.type = DUKTAPE_event;
-  dmsg.body.dt_event.name = event.c_str();
-  dmsg.body.dt_event.data = data;
-  DuktapeDispatch(&dmsg, 0);
+  dmsg.body.dt_event.name = strdup(event.c_str());
+  dmsg.body.dt_event.data = NULL; // data unused, may also be invalid in async script execution
+  if (!DuktapeDispatch(&dmsg, 0))
+    {
+    free((void*)dmsg.body.dt_event.name);
+    }
 
   if (event == "ticker.60")
     {
@@ -958,12 +961,17 @@ void OvmsDuktape::EventScript(std::string event, void* data)
     }
   }
 
-void OvmsDuktape::DuktapeDispatch(duktape_queue_t* msg, TickType_t queuewait /*=portMAX_DELAY*/)
+bool OvmsDuktape::DuktapeDispatch(duktape_queue_t* msg, TickType_t queuewait /*=portMAX_DELAY*/)
   {
   msg->waitcompletion = NULL;
   if (xQueueSend(m_duktaskqueue, msg, queuewait) != pdPASS)
     {
     ESP_LOGW(TAG, "DuktapeDispatch: msg type %u lost, queue full", msg->type);
+    return false;
+    }
+  else
+    {
+    return true;
     }
   }
 
@@ -1227,6 +1235,7 @@ void OvmsDuktape::DukTapeTask()
             duk_pop_2(m_dukctx);
             }
           }
+          free((void*)msg.body.dt_event.name);
           break;
         case DUKTAPE_autoinit:
           {
