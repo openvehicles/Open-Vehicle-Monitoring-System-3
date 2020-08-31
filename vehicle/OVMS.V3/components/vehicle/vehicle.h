@@ -45,19 +45,37 @@
 using namespace std;
 struct DashboardConfig;
 
-// Polling types supported:
+
+// ISO TP:
+//  (see https://en.wikipedia.org/wiki/ISO_15765-2)
+
+#define ISOTP_FT_SINGLE                 0
+#define ISOTP_FT_FIRST                  1
+#define ISOTP_FT_CONSECUTIVE            2
+#define ISOTP_FT_FLOWCTRL               3
+
+// OBD2/UDS Polling types supported:
 //  (see https://en.wikipedia.org/wiki/OBD-II_PIDs
 //   and https://en.wikipedia.org/wiki/Unified_Diagnostic_Services)
 
 #define VEHICLE_POLL_TYPE_NONE          0x00
+
+// OBD (ISO 15031) service identifiers supported:
 #define VEHICLE_POLL_TYPE_OBDIICURRENT  0x01 // Mode 01 "current data"
 #define VEHICLE_POLL_TYPE_OBDIIFREEZE   0x02 // Mode 02 "freeze frame data"
 #define VEHICLE_POLL_TYPE_OBDIIVEHICLE  0x09 // Mode 09 "vehicle information"
+
+// UDS (ISO 14229) & custom service identifiers supported:
 #define VEHICLE_POLL_TYPE_OBDIISESSION  0x10 // UDS: Diagnostic Session Control
-#define VEHICLE_POLL_TYPE_OBDII_1A  			0x1A // Mode 1A
+#define VEHICLE_POLL_TYPE_OBDII_1A      0x1A // Mode 1A
 #define VEHICLE_POLL_TYPE_OBDIIGROUP    0x21 // enhanced data by 8 bit PID
 #define VEHICLE_POLL_TYPE_OBDIIEXTENDED 0x22 // enhanced data by 16 bit PID
 
+// OBD/UDS Negative Response Code
+#define UDS_RESP_TYPE_NRC               0x7F  // see ISO 14229 Annex A.1
+#define UDS_RESP_NRC_RCRRP              0x78  // … requestCorrectlyReceived-ResponsePending
+
+// Number of polling states supported
 #define VEHICLE_POLL_NSTATES            4
 
 
@@ -126,7 +144,6 @@ class OvmsVehicle : public InternalRamAllocated
     void VehicleConfigChanged(std::string event, void* data);
     void PollerSend(bool fromTicker);
     void PollerReceive(CAN_frame_t* frame);
-    void IncomingPollReplyInternal(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
 
   protected:
     virtual void IncomingFrameCan1(CAN_frame_t* p_frame);
@@ -134,6 +151,7 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void IncomingFrameCan3(CAN_frame_t* p_frame);
     virtual void IncomingFrameCan4(CAN_frame_t* p_frame);
     virtual void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    virtual void IncomingPollError(canbus* bus, uint16_t type, uint16_t pid, uint16_t code);
 
   protected:
     int m_minsoc;            // The minimum SOC level before alert
@@ -317,11 +335,13 @@ class OvmsVehicle : public InternalRamAllocated
   private:
     uint8_t           m_poll_sequence_max;    // Polls allowed to be sent in sequence per time tick (second), default 1, 0 = no limit
     uint8_t           m_poll_sequence_cnt;    // Polls already sent in the current time tick (second)
+    uint8_t           m_poll_fc_septime;      // Flow control separation time for multi frame responses
 
   protected:
     void PollSetPidList(canbus* bus, const poll_pid_t* plist);
     void PollSetState(uint8_t state);
     void PollSetThrottling(uint8_t sequence_max) { m_poll_sequence_max = sequence_max; }
+    void PollSetResponseSeparationTime(uint8_t septime);
 
   // BMS helpers
   protected:
