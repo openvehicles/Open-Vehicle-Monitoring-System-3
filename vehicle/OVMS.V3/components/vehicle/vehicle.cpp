@@ -2065,7 +2065,7 @@ void OvmsVehicle::PollerSend(bool fromTicker)
   OvmsRecMutexLock lock(&m_poll_mutex);
 
   // Don't do anything with no bus, no list or an empty list
-  if (!m_poll_bus || !m_poll_plist || m_poll_plist->txmoduleid == 0) return;
+  if (!m_poll_bus_default || !m_poll_plist || m_poll_plist->txmoduleid == 0) return;
 
   if (m_poll_plcur == NULL) m_poll_plcur = m_poll_plist;
 
@@ -2122,8 +2122,9 @@ void OvmsVehicle::PollerSend(bool fromTicker)
           m_poll_bus = m_poll_bus_default;
         }
 
-      ESP_LOGD(TAG, "PollerSend(%d):PidlistPollBus(%d): send [type=%02X, pid=%X], expecting %03x/%03x-%03x",
-               fromTicker, m_poll_plcur->pollbus, m_poll_type, m_poll_pid, m_poll_moduleid_sent, m_poll_moduleid_low, m_poll_moduleid_high);
+      ESP_LOGD(TAG, "PollerSend(%d): send [bus=%d, type=%02X, pid=%X], expecting %03x/%03x-%03x",
+               fromTicker, m_poll_plcur->pollbus, m_poll_type, m_poll_pid, m_poll_moduleid_sent,
+               m_poll_moduleid_low, m_poll_moduleid_high);
 
       CAN_frame_t txframe;
       memset(&txframe,0,sizeof(txframe));

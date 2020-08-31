@@ -83,7 +83,7 @@ static const char *TAG = "v-vweup";
 
 static const OvmsVehicle::poll_pid_t vwup_polls[] =
 {
-  { 0, 0, 0x00, 0x00, { 0, 0, 0 },0 }
+  { 0, 0, 0x00, 0x00, { 0, 0, 0 }, 0 }
 };
 
 void v_remoteCommandTimer(TimerHandle_t timer)
