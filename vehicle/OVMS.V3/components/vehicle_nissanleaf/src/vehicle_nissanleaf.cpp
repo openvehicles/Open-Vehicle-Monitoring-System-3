@@ -41,7 +41,17 @@ static const char *TAG = "v-nissanleaf";
 #include "metrics_standard.h"
 #include "ovms_webserver.h"
 
-#define MAX_POLL_DATA_LEN 196
+#define MAX_POLL_DATA_LEN         196
+#define BMS_TXID                  0x79B
+#define BMS_RXID                  0x7BB
+#define CHARGER_TXID              0x797
+#define CHARGER_RXID              0x79a
+#define BROADCAST_TXID            0x7df
+#define BROADCAST_RXID            0x0
+
+#define VIN_PID                   0x81
+#define QC_COUNT_PID              0x1203
+#define L1L2_COUNT_PID            0x1205
 
 enum poll_states
   {
@@ -53,13 +63,14 @@ enum poll_states
 
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
   {
-    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x81, {  0, 30, 0, 0 } }, // VIN [19]
-    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1203, {  0, 30, 0, 0 } }, // QC [4]
-    { 0x797, 0x79a, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1205, {  0, 30, 0, 0 } }, // L0/L1/L2 [4]
-    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 60, 0, 60 } }, // bat [39/41]
-    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 60, 0, 60 } }, // battery voltages [196]
-    { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0, 300, 0, 300 } }, // battery temperatures [14]
-    { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 } }
+    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, VIN_PID, {  0, 900, 0, 0 }, 2 },           // VIN [19]
+    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, QC_COUNT_PID, {  0, 900, 0, 0 }, 2 },   // QC [2]
+    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, L1L2_COUNT_PID, {  0, 900, 0, 0 }, 2 }, // L0/L1/L2 [2]
+    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 60, 0, 60 }, 1 },   // bat [39/41]
+    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 60, 0, 60 }, 1 },   // battery voltages [196]
+    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0, 300, 0, 300 }, 1 }, // battery temperatures [14]
+    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x06, {  0, 0, 0, 0 }, 1 },   // battery shunts [96]
+    { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 }, 0 }
   };
 
 void remoteCommandTimer(TimerHandle_t timer)
@@ -447,9 +458,9 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Temp(uint8_t reply_data[], uint16_t re
 
 void OvmsVehicleNissanLeaf::PollReply_QC(uint8_t reply_data[], uint16_t reply_len)
   {
-  if (reply_len != 4)
+  if (reply_len != 2)
     {
-    ESP_LOGI(TAG, "PollReply_QC: len=%d != 4", reply_len);
+    ESP_LOGI(TAG, "PollReply_QC: len=%d != 2", reply_len);
     return;
     }
   //  > 0x797 22 12 03
@@ -465,9 +476,9 @@ void OvmsVehicleNissanLeaf::PollReply_QC(uint8_t reply_data[], uint16_t reply_le
 
 void OvmsVehicleNissanLeaf::PollReply_L0L1L2(uint8_t reply_data[], uint16_t reply_len)
   {
-  if (reply_len != 4)
+  if (reply_len != 2)
     {
-    ESP_LOGI(TAG, "PollReply_L0L1L2: len=%d != 4", reply_len);
+    ESP_LOGI(TAG, "PollReply_L0L1L2: len=%d != 2", reply_len);
     return;
     }
   //  > 0x797 22 12 05
