@@ -136,6 +136,22 @@ void event_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     }
   }
 
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
+static duk_ret_t DukOvmsRaiseEvent(duk_context *ctx)
+  {
+  const char *event = duk_to_string(ctx,0);
+  uint32_t delay_ms = duk_is_number(ctx,1) ? duk_to_uint32(ctx,1) : 0;
+
+  if (event != NULL)
+    {
+    MyEvents.SignalEvent(event, NULL, (size_t)0, delay_ms);
+    }
+  return 0;  /* no return value */
+  }
+
+#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
 OvmsEvents::OvmsEvents()
   {
   ESP_LOGI(TAG, "Initialising EVENTS (1200)");
@@ -162,6 +178,12 @@ OvmsEvents::OvmsEvents()
   m_taskqueue = xQueueCreate(CONFIG_OVMS_HW_EVENT_QUEUE_SIZE,sizeof(event_queue_t));
   xTaskCreatePinnedToCore(EventLaunchTask, "OVMS Events", 8192, (void*)this, 8, &m_taskid, CORE(1));
   AddTaskToMap(m_taskid);
+
+  #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsEvents");
+  dto->RegisterDuktapeFunction(DukOvmsRaiseEvent, 2, "Raise");
+  MyDuktape.RegisterDuktapeObject(dto);
+  #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
 OvmsEvents::~OvmsEvents()
