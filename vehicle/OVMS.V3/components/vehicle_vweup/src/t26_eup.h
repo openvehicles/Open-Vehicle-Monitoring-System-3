@@ -84,6 +84,7 @@ class OvmsVehicleVWeUpT26 : public OvmsVehicle
     bool vweup_cc_turning_on;
     bool signal_ok;
     int cc_count;
+    int cd_count;
     int fas_counter_on;
     int fas_counter_off;
     bool dev_mode;

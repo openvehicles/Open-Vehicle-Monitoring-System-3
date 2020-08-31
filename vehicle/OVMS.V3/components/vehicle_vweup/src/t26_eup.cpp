@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          30th August 2020
+;    Date:          31th August 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -82,6 +82,8 @@
 ;    0.3.1  Removed alpha OBD source, corrected class name
 ;
 ;    0.3.2  First implementation of charging detection
+;
+;    0.3.3  Buffer 0x61C ghost messages
 ;
 ;    (C) 2020       Chris van der Meijden
 ;
@@ -137,6 +139,7 @@ OvmsVehicleVWeUpT26::OvmsVehicleVWeUpT26()
     fas_counter_off = 0;
     signal_ok = false;
     cc_count = 0;
+    cd_count = 0;
 
     dev_mode = false; // true disables writing on the comfort CAN. For code debugging only.
 
@@ -352,13 +355,16 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
         break;
 
     case 0x61C: // Charge detection
+      cd_count++;
       if ((d[2] == 0x00) || (d[2] == 0x01)) {
          isCharging = true;
       } else {
          isCharging = false;
       }
       if (isCharging != lastCharging) { 
-        if (isCharging) {
+        // count till 3 messages in a row to stop ghost triggering
+        if (isCharging && cd_count == 3) {
+          cd_count = 0;
           StandardMetrics.ms_v_charge_pilot->SetValue(true);
           StandardMetrics.ms_v_charge_inprogress->SetValue(true);
           StandardMetrics.ms_v_door_chargeport->SetValue(true);
@@ -366,7 +372,9 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
           StandardMetrics.ms_v_charge_state->SetValue("charging");
           StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
           ESP_LOGI(TAG,"Car charge session started");
-        } else {
+        } 
+        if (!isCharging && cd_count == 3) {
+          cd_count = 0;
           StandardMetrics.ms_v_charge_pilot->SetValue(false);
           StandardMetrics.ms_v_charge_inprogress->SetValue(false);
           StandardMetrics.ms_v_door_chargeport->SetValue(false);
@@ -374,9 +382,13 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
           StandardMetrics.ms_v_charge_state->SetValue("done");
           StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
           ESP_LOGI(TAG,"Car charge session ended");
-        }
+        } 
+      } else {
+          cd_count = 0;
       }
-      lastCharging = isCharging;
+      if (cd_count == 0) {
+         lastCharging = isCharging;
+      }
       break;
 
     case 0x575: // Key position
