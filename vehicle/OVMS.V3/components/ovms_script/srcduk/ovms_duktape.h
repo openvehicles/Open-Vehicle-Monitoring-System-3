@@ -196,6 +196,8 @@ class OvmsDuktape
     void  DuktapeReload();
     void  DuktapeCompact(bool wait=true);
     void  DuktapeRequestCallback(DuktapeObject* instance, const char* method, void* data);
+    OvmsWriter* GetDuktapeWriter();
+    void DukGetCallInfo(duk_context *ctx, std::string *filename, int *linenumber, std::string *function);
 
   public:
     void DukTapeInit();
@@ -285,75 +287,7 @@ class DuktapeObject
     void* m_registry = NULL;            // optional heapptr to specific registry JS object
   };
 
-////////////////////////////////////////////////////////////////////////////////
-// DuktapeHTTPRequest: perform asynchronous HTTP request
-//  - uses GET/POST (if post data is given)
-//  - follows 301/302 redirects automatically (max 5 hops)
-//  - automatically prevents garbage collection while active
-//  - Note: any valid server response is considered a success (= triggers done callback)
-//  - TODO: implement request.abort() method
-//  - TODO: implement digest authentication
-//
-// Javascript API:
-//  create:
-//     var request = HTTP.Request({
-//       url: "…",
-//       [headers: [{ "key": "value", … }, …]]    // Note: array members may contain multiple headers
-//       [post: "foo=bar&…",]                     // assumed x-www-form-urlencoded w/o Content-Type
-//       [timeout: ms,]                           // default: 120 seconds
-//       [binary: bool,]                          // default: false
-//       [done: function(response){},]
-//       [fail: function(error){},]
-//     });
-//
-//  done(): (this = request, response = request.response)
-//    request.response = {
-//      statusCode: e.g. 200,
-//      statusText: e.g. "OK",
-//      [body: <string>,]                         // if binary=false
-//      [data: <Uint8Array>,]                     // if binary=true
-//      headers: [{ key: value }, …],
-//    }
-//
-//  fail(): (this = request, error = request.error)
-//    request.error = "error description"
-//
-//  also:
-//    request.url = last URL used if redirected
-//    request.redirectCount = number of redirects
-
-class DuktapeHTTPRequest : public DuktapeObject
-  {
-  public:
-    DuktapeHTTPRequest(duk_context *ctx, int obj_idx);
-    ~DuktapeHTTPRequest();
-    static duk_ret_t Create(duk_context *ctx);
-
-  protected:
-    bool StartRequest(duk_context *ctx=NULL);
-
-  public:
-    static void MongooseCallbackEntry(struct mg_connection *nc, int ev, void *ev_data);
-    void MongooseCallback(struct mg_connection *nc, int ev, void *ev_data);
-
-  public:
-    duk_ret_t CallMethod(duk_context *ctx, const char* method, void* data=NULL);
-
-  protected:
-    extram::string m_url;
-    int m_redirectcnt = 0;
-    bool m_ispost = false;
-    extram::string m_post;
-    int m_timeout = 120*1000;
-    bool m_binary = false;
-    extram::string m_headers;
-    extram::string m_error;
-    struct mg_connection *m_mgconn = NULL;
-    int m_response_status = 0;
-    extram::string m_response_statusmsg;
-    extram::string m_response_body;
-    std::list<std::pair<extram::string, extram::string>> m_response_headers;
-  };
+extern void DukOvmsErrorHandler(duk_context *ctx, duk_idx_t err_idx, OvmsWriter *writer=NULL, const char *filename=NULL);
 
 extern OvmsDuktape MyDuktape;
 
