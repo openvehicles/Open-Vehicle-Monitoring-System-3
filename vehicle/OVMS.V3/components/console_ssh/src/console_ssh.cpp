@@ -112,7 +112,7 @@ void OvmsSSH::EventHandler(struct mg_connection *nc, int ev, void *p)
           else
             {
             std::string fp = MyConfig.GetParamValue("ssh.info", "fingerprint", "[not available]");
-            MyCommandApp.Log("SSH server key installed with fingerprint %s", fp.c_str());
+            ESP_LOGI(tag, "SSH server key installed with fingerprint %s", fp.c_str());
             }
           }
         }
@@ -195,7 +195,7 @@ void OvmsSSH::NetManInit(std::string event, void* data)
   std::string skey = MyConfig.GetParamValueBinary("ssh.server", "key", std::string());
   if (skey.empty())
     {
-    MyCommandApp.Log("Generating SSH Server key, wait before attempting access.");
+    ESP_LOGI(tag, "Generating SSH Server key, wait before attempting access.");
     new RSAKeyGenerator();
     }
   else
@@ -1055,7 +1055,7 @@ int SendCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx)
 //    Class RSAKeyGenerator
 //-----------------------------------------------------------------------------
 
-RSAKeyGenerator::RSAKeyGenerator() : TaskBase("RSAKeyGen", 4096)
+RSAKeyGenerator::RSAKeyGenerator() : TaskBase("RSAKeyGen", 6*1024, 0)
   {
   Instantiate();
   }

@@ -1,6 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Notify: add explicit channel exclusion config syntax
+    config set notify <subtype> <…>
+    <…> options are now:
+     a) explicit inclusion: e.g. 'ovmsv2,ovmsv3' (only enable these)
+     b) explicit exclusion: e.g. '*,-ovmsv2,-ovmsv3' (only disable these)
+     '-' to disable all, empty/'*' to enable all
 - Renault Twizy: add eDriver/Virtual BMS data to RT-BAT-C & RT-BAT-P logs
 - Wifi client: support static IP configuration, manually set or automatically applied by SSID
   New commands:

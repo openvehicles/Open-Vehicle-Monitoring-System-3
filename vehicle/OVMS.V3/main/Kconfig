@@ -208,10 +208,11 @@ config OVMS_SC_JAVASCRIPT_DUKTAPE_STACK
 
 config OVMS_SC_JAVASCRIPT_DUKTAPE_QUEUE_SIZE
     int "JavaScript (DukTape) task queue size"
-    default 20
+    default 40
     depends on OVMS_SC_JAVASCRIPT_DUKTAPE
     help
         The size of the DukTape queue (for outstanding requests).
+        Should be >= OVMS_HW_EVENT_QUEUE_SIZE
 
 config OVMS_SC_JAVASCRIPT_DUKTAPE_PRIORITY
     int "JavaScript (DukTape) task priority"

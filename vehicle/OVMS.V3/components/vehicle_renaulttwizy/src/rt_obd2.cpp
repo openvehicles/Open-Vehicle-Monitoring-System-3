@@ -60,11 +60,11 @@ using namespace std;
 
 const OvmsVehicle::poll_pid_t twizy_poll_default[] = {
   // Note: poller ticker cycles at 3600 seconds = max period
-  // { txid, rxid, type, pid, { period_off, period_drive, period_charge } }
-  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIISESSION, SESSION_EXTDIAG,  { 0,   10,   60 } },
-  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIIGROUP,   CLUSTER_PID_VIN,  { 0, 3600, 3600 } },
-  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIIGROUP,   CLUSTER_PID_DTC,  { 0,   10,   60 } },
-  { 0, 0, 0, 0, { 0, 0, 0 } }
+  // { txid, rxid, type, pid, { period_off, period_drive, period_charge }, bus }
+  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIISESSION, SESSION_EXTDIAG,  { 0,   10,   60 }, 0 },
+  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIIGROUP,   CLUSTER_PID_VIN,  { 0, 3600, 3600 }, 0 },
+  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIIGROUP,   CLUSTER_PID_DTC,  { 0,   10,   60 }, 0 },
+  { 0, 0, 0, 0, { 0, 0, 0 }, 0 }
 };
 
 
@@ -197,19 +197,32 @@ void OvmsVehicleRenaultTwizy::IncomingPollReply(
   if (!twizy_obd_rxwait.IsAvail()) {
     // yes: stop poller & signal response
     PollSetPidList(m_can1, NULL);
+    twizy_obd_rxerr = 0;
     twizy_obd_rxwait.Give();
   }
 }
 
 
-bool OvmsVehicleRenaultTwizy::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t request, string& response, int timeout_ms /*=3000*/)
+void OvmsVehicleRenaultTwizy::IncomingPollError(canbus* bus, uint16_t type, uint16_t pid, uint16_t code)
+{
+  // single poll?
+  if (!twizy_obd_rxwait.IsAvail()) {
+    // yes: stop poller & signal response
+    PollSetPidList(m_can1, NULL);
+    twizy_obd_rxerr = code;
+    twizy_obd_rxwait.Give();
+  }
+}
+
+
+int OvmsVehicleRenaultTwizy::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t request, string& response, int timeout_ms /*=3000*/)
 {
   OvmsMutexLock lock(&twizy_obd_request);
 
   // prepare single poll:
   OvmsVehicle::poll_pid_t poll[] = {
-    { txid, rxid, 0, 0, { 1, 1, 1 } },
-    { 0, 0, 0, 0, { 0, 0, 0 } }
+    { txid, rxid, 0, 0, { 1, 1, 1 }, 0 },
+    { 0, 0, 0, 0, { 0, 0, 0 }, 0 }
   };
   if (request < 0x10000) {
     poll[0].type = (request & 0xff00) >> 8;
@@ -236,7 +249,7 @@ bool OvmsVehicleRenaultTwizy::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t 
   twizy_obd_rxwait.Give();
   PollSetPidList(m_can1, twizy_poll_default);
 
-  return (rxok == pdTRUE);
+  return (rxok == pdFALSE) ? -1 : (int)twizy_obd_rxerr;
 }
 
 
@@ -526,8 +539,12 @@ void OvmsVehicleRenaultTwizy::shell_obd_request(int verbosity, OvmsWriter* write
   }
 
   // execute request:
-  if (!twizy->ObdRequest(txid, rxid, req, response)) {
+  int err = twizy->ObdRequest(txid, rxid, req, response);
+  if (err == -1) {
     writer->puts("ERROR: timeout waiting for response");
+    return;
+  } else if (err) {
+    writer->printf("ERROR: request failed with response error code %02X\n", err);
     return;
   }
 

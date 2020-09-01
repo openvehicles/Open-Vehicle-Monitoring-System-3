@@ -73,6 +73,7 @@ struct DashboardConfig;
 
 // OBD/UDS Negative Response Code
 #define UDS_RESP_TYPE_NRC               0x7F  // see ISO 14229 Annex A.1
+#define UDS_RESP_NRC_RCRRP              0x78  // … requestCorrectlyReceived-ResponsePending
 
 // Number of polling states supported
 #define VEHICLE_POLL_NSTATES            4
@@ -304,12 +305,14 @@ class OvmsVehicle : public InternalRamAllocated
       uint16_t type;
       uint16_t pid;
       uint16_t polltime[VEHICLE_POLL_NSTATES];
+      uint8_t  pollbus;
       } poll_pid_t;
 
   protected:
     OvmsRecMutex      m_poll_mutex;           // Concurrency protection for recursive calls
     uint8_t           m_poll_state;           // Current poll state
     canbus*           m_poll_bus;             // Bus to poll on
+    canbus*           m_poll_bus_default;     // Bus default to poll on
     const poll_pid_t* m_poll_plist;           // Head of poll list
     const poll_pid_t* m_poll_plcur;           // Current position in poll list
     uint32_t          m_poll_ticker;          // Polling ticker

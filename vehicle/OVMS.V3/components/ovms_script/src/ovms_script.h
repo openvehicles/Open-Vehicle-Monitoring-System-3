@@ -335,7 +335,7 @@ class OvmsScripts
     void AutoInitDuktape();
 
   protected:
-    void DuktapeDispatch(duktape_queue_t* msg);
+    bool DuktapeDispatch(duktape_queue_t* msg, TickType_t queuewait=portMAX_DELAY);
     void DuktapeDispatchWait(duktape_queue_t* msg);
 
   public:
@@ -343,7 +343,7 @@ class OvmsScripts
     float DuktapeEvalFloatResult(const char* text, OvmsWriter* writer=NULL);
     int   DuktapeEvalIntResult(const char* text, OvmsWriter* writer=NULL);
     void  DuktapeReload();
-    void  DuktapeCompact();
+    void  DuktapeCompact(bool wait=true);
     void  DuktapeRequestCallback(DuktapeObject* instance, const char* method, void* data);
 
   public:

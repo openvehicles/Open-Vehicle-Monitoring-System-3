@@ -51,11 +51,11 @@ static const char *TAG = "v-smarteq";
 
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
 {
-  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x80, {  0,120,999 } }, // rqIDpart OBL_7KW_Installed
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,120,999 } }, // rqBattTemperatures
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, {  0,120,999 } }, // rqBattVoltages_P1
-  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,120,999 } }, // rqBattVoltages_P2
-  { 0, 0, 0x00, 0x00, { 0, 0, 0 } }
+  { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x80, {  0,120,999 }, 0 }, // rqIDpart OBL_7KW_Installed
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,120,999 }, 0 }, // rqBattTemperatures
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, {  0,120,999 }, 0 }, // rqBattVoltages_P1
+  { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, {  0,120,999 }, 0 }, // rqBattVoltages_P2
+  { 0, 0, 0x00, 0x00, { 0, 0, 0 }, 0 }
 };
 
 /**
