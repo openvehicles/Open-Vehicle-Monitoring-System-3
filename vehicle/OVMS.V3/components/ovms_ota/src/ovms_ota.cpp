@@ -549,7 +549,7 @@ OvmsOTA::OvmsOTA()
   MyEvents.RegisterEvent(TAG,"sd.mounted", std::bind(&OvmsOTA::AutoFlashSD, this, _1, _2));
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
-  OvmsCommand* cmd_ota = MyCommandApp.RegisterCommand("ota","OTA framework");
+  OvmsCommand* cmd_ota = MyCommandApp.RegisterCommand("ota","OTA framework", ota_status, "", 0, 0, false);
 
   OvmsCommand* cmd_otastatus = cmd_ota->RegisterCommand("status","Show OTA status",ota_status,"[nocheck]",0,1);
   cmd_otastatus->RegisterCommand("nocheck","…skip check for available update",ota_status);

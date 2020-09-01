@@ -814,7 +814,7 @@ OvmsCommandApp::OvmsCommandApp()
 
   m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0, false);
   m_root.RegisterCommand("exit", "End console session", cmd_exit, "", 0, 0, false);
-  OvmsCommand* cmd_log = MyCommandApp.RegisterCommand("log","LOG framework");
+  OvmsCommand* cmd_log = MyCommandApp.RegisterCommand("log","LOG framework", log_status, "", 0, 0, false);
   cmd_log->RegisterCommand("file", "Start logging to specified file", log_file, "[<vfspath>]\nDefault: config log[file.path]", 0, 1);
   cmd_log->RegisterCommand("open", "Start file logging", log_open);
   cmd_log->RegisterCommand("close", "Stop file logging", log_close);

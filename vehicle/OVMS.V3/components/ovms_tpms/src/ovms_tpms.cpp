@@ -199,7 +199,7 @@ OvmsTPMS::OvmsTPMS()
   ESP_LOGI(TAG, "Initialising TPMS (4700)");
 
   // Register our commands
-  OvmsCommand* cmd_tpms = MyCommandApp.RegisterCommand("tpms","TPMS framework");
+  OvmsCommand* cmd_tpms = MyCommandApp.RegisterCommand("tpms","TPMS framework", tpms_status, "", 0, 0, false);
   cmd_tpms->RegisterCommand("status","Show TPMS status",tpms_status);
   cmd_tpms->RegisterCommand("list","Show TPMS tyre sets",tpms_list);
   cmd_tpms->RegisterCommand("read","Read TPMS IDs to sepecified tyre set",tpms_read,"<set>",0,1);

@@ -182,7 +182,7 @@ esp_err_t sdcard::unmount(bool hard /*=false*/)
   {
   if (!m_mounted)
     return ESP_OK;
-  
+
   if (!hard)
     {
     if (!m_unmounting)
@@ -373,7 +373,7 @@ SDCardInit::SDCardInit()
 
   MyConfig.RegisterParam("sdcard", "SD CARD configuration", true, true);
 
-  OvmsCommand* cmd_sd = MyCommandApp.RegisterCommand("sd","SD CARD framework");
+  OvmsCommand* cmd_sd = MyCommandApp.RegisterCommand("sd","SD CARD framework", sdcard_status, "", 0, 0, false);
   cmd_sd->RegisterCommand("mount","Mount SD CARD",sdcard_mount);
   cmd_sd->RegisterCommand("unmount","Unmount SD CARD",sdcard_unmount,"[<maxwait_seconds>]",0,1);
   cmd_sd->RegisterCommand("status","Show SD CARD status",sdcard_status);

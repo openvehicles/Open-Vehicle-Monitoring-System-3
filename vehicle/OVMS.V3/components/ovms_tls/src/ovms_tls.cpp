@@ -109,7 +109,7 @@ OvmsTLS::OvmsTLS()
   m_trustedcache = NULL;
 
   OvmsCommand* cmd_tls = MyCommandApp.RegisterCommand("tls","SSL/TLS Framework",NULL,"",0,0);
-  OvmsCommand* cmd_trust = cmd_tls->RegisterCommand("trust","SSL/TLS Trusted CA Framework",NULL,"",0,0);
+  OvmsCommand* cmd_trust = cmd_tls->RegisterCommand("trust","SSL/TLS Trusted CA Framework", tls_status, "", 0, 0, false);
   cmd_trust->RegisterCommand("status","Show SSL/TLS Trusted CA status",tls_status, "",0,0);
   cmd_trust->RegisterCommand("clear","Clear SSL/TLS Trusted CA list",tls_clear, "",0,0);
   cmd_trust->RegisterCommand("reload","Reload SSL/TLS Trusted CA list",tls_reload, "",0,0);

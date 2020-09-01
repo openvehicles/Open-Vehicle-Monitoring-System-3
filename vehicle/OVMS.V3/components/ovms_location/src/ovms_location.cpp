@@ -531,7 +531,7 @@ OvmsLocations::OvmsLocations()
   m_park_distance = 0;
 
   // Register our commands
-  OvmsCommand* cmd_location = MyCommandApp.RegisterCommand("location","LOCATION framework");
+  OvmsCommand* cmd_location = MyCommandApp.RegisterCommand("location","LOCATION framework", location_status, "", 0, 0, false);
   cmd_location->RegisterCommand("list","Show all locations",location_list);
   cmd_location->RegisterCommand("set","Set the position of a location",location_set, "<name> [<latitude> <longitude> [<radius>]]", 1, 4);
   cmd_location->RegisterCommand("radius","Set the radius of a location",location_radius, "<name> <radius>", 2, 2, true, location_validate);

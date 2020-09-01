@@ -167,7 +167,7 @@ OvmsEvents::OvmsEvents()
   ESP_ERROR_CHECK(esp_event_loop_init(ReceiveSystemEvent, (void*)this));
 
   // Register our commands
-  OvmsCommand* cmd_event = MyCommandApp.RegisterCommand("event","EVENT framework");
+  OvmsCommand* cmd_event = MyCommandApp.RegisterCommand("event","EVENT framework", event_status, "", 0, 0, false);
   cmd_event->RegisterCommand("status","Show status of event system",event_status);
   cmd_event->RegisterCommand("list","List registered events",event_list,"[<key>]", 0, 1);
   cmd_event->RegisterCommand("raise","Raise a textual event",event_raise,"[-d<delay_ms>] <event>", 1, 2, true, event_validate);
