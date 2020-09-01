@@ -168,53 +168,6 @@ typedef struct
   } duktape_queue_t;
 
 ////////////////////////////////////////////////////////////////////////////////
-// OvmsDuktape
-//
-// Container for object registration and the main Duktape task
-
-class OvmsDuktape
-  {
-  public:
-    OvmsDuktape();
-    ~OvmsDuktape();
-
-  public:
-    void RegisterDuktapeFunction(duk_c_function func, duk_idx_t nargs, const char* name);
-    void RegisterDuktapeModule(const char* start, size_t length, const char* name);
-    duktape_registermodule_t* FindDuktapeModule(const char* name);
-    void RegisterDuktapeObject(DuktapeObjectRegistration* ob);
-    void AutoInitDuktape();
-
-  protected:
-    bool DuktapeDispatch(duktape_queue_t* msg, TickType_t queuewait=portMAX_DELAY);
-    void DuktapeDispatchWait(duktape_queue_t* msg);
-
-  public:
-    void  DuktapeEvalNoResult(const char* text, OvmsWriter* writer=NULL, const char* filename=NULL);
-    float DuktapeEvalFloatResult(const char* text, OvmsWriter* writer=NULL);
-    int   DuktapeEvalIntResult(const char* text, OvmsWriter* writer=NULL);
-    void  DuktapeReload();
-    void  DuktapeCompact(bool wait=true);
-    void  DuktapeRequestCallback(DuktapeObject* instance, const char* method, void* data);
-    OvmsWriter* GetDuktapeWriter();
-    void DukGetCallInfo(duk_context *ctx, std::string *filename, int *linenumber, std::string *function);
-
-  public:
-    void DukTapeInit();
-    void DukTapeTask();
-    bool DukTapeAvailable() { return m_dukctx != NULL; }
-    void EventScript(std::string event, void* data);
-
-  protected:
-    duk_context* m_dukctx;
-    TaskHandle_t m_duktaskid;
-    QueueHandle_t m_duktaskqueue;
-    DuktapeFunctionMap m_fnmap;
-    DuktapeModuleMap m_modmap;
-    DuktapeObjectMap m_obmap;
-  };
-
-////////////////////////////////////////////////////////////////////////////////
 // DuktapeObject: coupled C++ / JS object
 //
 //  Intended for API methods to attach internal API state to a JS object and provide
@@ -285,6 +238,81 @@ class DuktapeObject
     void* m_object = NULL;              // heapptr to JS object
     bool m_registered = false;          // registration state (true = GC prevented)
     void* m_registry = NULL;            // optional heapptr to specific registry JS object
+  };
+
+////////////////////////////////////////////////////////////////////////////////
+// DuktapeConsoleCommand
+
+class DuktapeConsoleCommand : public DuktapeObject
+  {
+  public:
+    DuktapeConsoleCommand(duk_context *ctx, int obj_idx, OvmsCommand* cmd, const char* module);
+    ~DuktapeConsoleCommand();
+
+  public:
+    OvmsCommand* m_cmd;
+    std::string m_module;
+  };
+
+////////////////////////////////////////////////////////////////////////////////
+// OvmsDuktape
+//
+// Container for object registration and the main Duktape task
+
+class OvmsDuktape
+  {
+  public:
+    OvmsDuktape();
+    ~OvmsDuktape();
+
+  public:
+    void RegisterDuktapeFunction(duk_c_function func, duk_idx_t nargs, const char* name);
+    void RegisterDuktapeModule(const char* start, size_t length, const char* name);
+    duktape_registermodule_t* FindDuktapeModule(const char* name);
+    void RegisterDuktapeObject(DuktapeObjectRegistration* ob);
+    void AutoInitDuktape();
+
+  protected:
+    bool DuktapeDispatch(duktape_queue_t* msg, TickType_t queuewait=portMAX_DELAY);
+    void DuktapeDispatchWait(duktape_queue_t* msg);
+
+  public:
+    void  DuktapeEvalNoResult(const char* text, OvmsWriter* writer=NULL, const char* filename=NULL);
+    float DuktapeEvalFloatResult(const char* text, OvmsWriter* writer=NULL);
+    int   DuktapeEvalIntResult(const char* text, OvmsWriter* writer=NULL);
+    void  DuktapeReload();
+    void  DuktapeCompact(bool wait=true);
+    void  DuktapeRequestCallback(DuktapeObject* instance, const char* method, void* data);
+    OvmsWriter* GetDuktapeWriter();
+    void DukGetCallInfo(duk_context *ctx, std::string *filename, int *linenumber, std::string *function);
+
+  public:
+    void NotifyDuktapeModuleLoad(const char* filename);
+    void NotifyDuktapeModuleUnload(const char* filename);
+    void NotifyDuktapeModuleUnloadAll();
+    bool RegisterDuktapeConsoleCommand(duk_context *ctx, int obj_idx,
+                                       const char* filename,
+                                       const char* parent,
+                                       const char* name, const char* title,
+                                       const char *usage = "", int min = 0, int max = 0);
+
+  public:
+    void DukTapeInit();
+    void DukTapeTask();
+    bool DukTapeAvailable() { return m_dukctx != NULL; }
+    void EventScript(std::string event, void* data);
+
+  protected:
+    duk_context* m_dukctx;
+    TaskHandle_t m_duktaskid;
+    QueueHandle_t m_duktaskqueue;
+    DuktapeFunctionMap m_fnmap;
+    DuktapeModuleMap m_modmap;
+    DuktapeObjectMap m_obmap;
+
+  public:
+    typedef std::map<OvmsCommand*, DuktapeConsoleCommand*> DuktapeCommandMap;
+    DuktapeCommandMap m_cmdmap;
   };
 
 extern void DukOvmsErrorHandler(duk_context *ctx, duk_idx_t err_idx, OvmsWriter *writer=NULL, const char *filename=NULL);

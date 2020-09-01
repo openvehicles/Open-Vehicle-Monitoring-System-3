@@ -35,6 +35,7 @@
 #include <string>
 #include <map>
 #include <set>
+#include <list>
 #include <limits.h>
 #include "ovms.h"
 #include "ovms_mutex.h"
@@ -318,13 +319,6 @@ class OvmsCommandApp : public OvmsWriter
 
   public:
     TaskHandle_t m_expiretask;
-
-#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-  public:
-    void NotifyDuktapeModuleLoad(const char* filename);
-    void NotifyDuktapeModuleUnload(const char* filename);
-    void NotifyDuktapeModuleUnloadAll();
-#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   };
 
 extern OvmsCommandApp MyCommandApp;

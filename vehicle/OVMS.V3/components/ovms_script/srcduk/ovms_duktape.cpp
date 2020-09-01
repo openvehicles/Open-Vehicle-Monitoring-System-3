@@ -477,7 +477,7 @@ static duk_ret_t DukOvmsLoadModule(duk_context *ctx)
       {
       ESP_LOGD(TAG,"load_cb: id:'%s' internally provided %s (%d bytes)", module_id, filename, mod->length);
       duk_push_lstring(ctx, mod->start, mod->length);
-      MyCommandApp.NotifyDuktapeModuleLoad(filename);
+      MyDuktape.NotifyDuktapeModuleLoad(filename);
       return 1;
       }
     }
@@ -510,7 +510,7 @@ static duk_ret_t DukOvmsLoadModule(duk_context *ctx)
     delete [] script;
     fclose(sf);
     ESP_LOGD(TAG,"load_cb: id:'%s' vfs provided %s (%lu bytes)", module_id, filename, slen);
-    MyCommandApp.NotifyDuktapeModuleLoad(filename);
+    MyDuktape.NotifyDuktapeModuleLoad(filename);
     }
 
   return 1;
@@ -860,6 +860,20 @@ void DuktapeObjectRegistration::RegisterWithDuktape(duk_context* ctx)
   }
 
 ////////////////////////////////////////////////////////////////////////////////
+// DuktapeConsoleCommand
+
+DuktapeConsoleCommand::DuktapeConsoleCommand(duk_context *ctx, int obj_idx, OvmsCommand* cmd, const char* module)
+  : DuktapeObject(ctx, obj_idx)
+  {
+  m_cmd = cmd;
+  m_module = std::string(module);
+  }
+
+DuktapeConsoleCommand::~DuktapeConsoleCommand()
+  {
+  }
+
+////////////////////////////////////////////////////////////////////////////////
 // OvmsDuktape
 //
 // This is the main OVMS Duktape registry and singleton utiltiy object
@@ -1080,9 +1094,102 @@ void OvmsDuktape::DukGetCallInfo(duk_context *ctx, std::string *filename, int *l
     }
   }
 
-void *DukAlloc(void *udata, duk_size_t size)
+void OvmsDuktape::NotifyDuktapeModuleLoad(const char* filename)
   {
-  return NULL;
+  ESP_LOGD(TAG,"Duktape: module load: %s",filename);
+
+  // We don't need to do anythign special with this
+  }
+
+void OvmsDuktape::NotifyDuktapeModuleUnload(const char* filename)
+  {
+  ESP_LOGD(TAG,"Duktape: module unload: %s",filename);
+
+  // We need to go through the registered duktape commands and
+  // unregister any belonging to the specified module
+  for (auto it = m_cmdmap.begin(); it != m_cmdmap.end(); ++it)
+    {
+    OvmsCommand* cmd = it->first;
+    DuktapeConsoleCommand* dcc = it->second;
+    if (dcc->m_module.compare(filename) == 0)
+      {
+      ESP_LOGD(TAG,"Duktape: unregister command %s/%s",
+        cmd->GetParent()->GetName(), cmd->GetName());
+      delete dcc;
+      cmd->GetParent()->UnregisterCommand(cmd->GetName());
+      delete cmd;
+      m_cmdmap.erase(it);
+      }
+    }
+  }
+
+void OvmsDuktape::NotifyDuktapeModuleUnloadAll()
+  {
+  ESP_LOGD(TAG,"Duktape: module unload all");
+
+  // We need to unregister all registered duktape commands
+  // (for all modules)
+  for (auto it = m_cmdmap.begin(); it != m_cmdmap.end(); ++it)
+    {
+    OvmsCommand* cmd = it->first;
+    DuktapeConsoleCommand* dcc = it->second;
+    ESP_LOGD(TAG,"Duktape: unregister command %s/%s",
+      cmd->GetParent()->GetName(), cmd->GetName());
+    delete dcc;
+    cmd->GetParent()->UnregisterCommand(cmd->GetName());
+    delete cmd;
+    }
+  m_cmdmap.clear();
+  }
+
+void DukOvmsCommandRegisterRun(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->printf("Command '%s' has been run\n", cmd->GetName());
+  }
+
+bool OvmsDuktape::RegisterDuktapeConsoleCommand(
+  duk_context *ctx, int obj_idx,
+  const char* filename,
+  const char* parent,
+  const char* name, const char* title,
+  const char *usage, int min, int max)
+  {
+  ESP_LOGD(TAG,"Duktape: register console command '%s'",name);
+
+  // We need to register the specified console command, to
+  // the specified module
+
+  OvmsCommand* cmd;
+  if (*parent == 0)
+    {
+    cmd = MyCommandApp.RegisterCommand(
+      name, title, DukOvmsCommandRegisterRun, usage, min, max);
+    }
+  else
+    {
+    OvmsCommand* pcmd = MyCommandApp.FindCommandFullName(parent);
+    if (pcmd == NULL)
+      {
+      ESP_LOGE(TAG,"Duktape: Script %s trying to register unknown command %s/%s",
+          filename, parent, name);
+      return false;
+      }
+    cmd = pcmd->RegisterCommand(
+      name, title, DukOvmsCommandRegisterRun, usage, min, max);
+    }
+
+  if (cmd != NULL)
+    {
+    DuktapeConsoleCommand *dcc = new DuktapeConsoleCommand(ctx, obj_idx, cmd, filename);
+    m_cmdmap[cmd] = dcc;
+    return true;
+    }
+  else
+    {
+    ESP_LOGE(TAG,"Duktape: Could not register command %s/%s for script %s",
+      parent, name, filename);
+    return false;
+    }
   }
 
 void OvmsDuktape::DukTapeInit()
@@ -1169,9 +1276,9 @@ void OvmsDuktape::DukTapeInit()
     delete [] script;
     fclose(sf);
     ESP_LOGI(TAG,"Duktape: Executing ovmsmain.js");
-    MyCommandApp.NotifyDuktapeModuleLoad("ovmsmain.js");
+    NotifyDuktapeModuleLoad("ovmsmain.js");
     duk_module_node_peval_main(m_dukctx, "ovmsmain.js");
-    MyCommandApp.NotifyDuktapeModuleUnload("ovmsmain.js");
+    NotifyDuktapeModuleUnload("ovmsmain.js");
     }
   }
 
@@ -1193,7 +1300,7 @@ void OvmsDuktape::DukTapeTask()
         case DUKTAPE_reload:
           {
           // Reload DUKTAPE engine
-          MyCommandApp.NotifyDuktapeModuleUnloadAll();
+          NotifyDuktapeModuleUnloadAll();
           if (m_dukctx != NULL)
             {
             ESP_LOGI(TAG,"Duktape: Clearing existing context");

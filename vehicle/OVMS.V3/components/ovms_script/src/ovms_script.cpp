@@ -87,9 +87,9 @@ static void script_ovms(int verbosity, OvmsWriter* writer,
     char *script = new char[slen+1];
     memset(script,0,slen+1);
     fread(script,1,slen,sf);
-    MyCommandApp.NotifyDuktapeModuleLoad(spath);
+    MyDuktape.NotifyDuktapeModuleLoad(spath);
     MyDuktape.DuktapeEvalNoResult(script, writer, spath);
-    MyCommandApp.NotifyDuktapeModuleUnload(spath);
+    MyDuktape.NotifyDuktapeModuleUnload(spath);
     delete [] script;
 #else // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
     if (writer)

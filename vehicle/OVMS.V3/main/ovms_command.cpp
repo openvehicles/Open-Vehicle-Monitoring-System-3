@@ -744,10 +744,9 @@ static duk_ret_t DukOvmsCommandExec(duk_context *ctx)
 
 static duk_ret_t DukOvmsCommandRegister(duk_context *ctx)
   {
-  /* TODO: Complete implement
   std::string filename, function;
   int linenumber = 0;
-  DukGetCallInfo(ctx, &filename, &linenumber, &function);
+  MyDuktape.DukGetCallInfo(ctx, &filename, &linenumber, &function);
 
   const char *fullcommand = duk_to_string(ctx,0);
   const char *name = duk_to_string(ctx,1);
@@ -756,35 +755,20 @@ static duk_ret_t DukOvmsCommandRegister(duk_context *ctx)
   uint32_t min = duk_is_number(ctx,4) ? duk_to_uint32(ctx,4) : 0;
   uint32_t max = duk_is_number(ctx,5) ? duk_to_uint32(ctx,5) : 0;
 
-  OvmsCommand* cmd = MyCommandApp.FindCommandFullName(fullcommand);
-  if (cmd == NULL)
-    {
-    ESP_LOGE(TAG,"Duktape: Script %s %s:%d trying to register unknown command %s/%s",
-        filename.c_str(), function.c_str(), linenumber, fullcommand, name);
-    return 0;
-    }
+  MyDuktape.RegisterDuktapeConsoleCommand(
+    ctx, 0,
+    filename.c_str(),
+    fullcommand,
+    name,
+    title,
+    usage,
+    min,
+    max);
 
-  OvmsCommand* regcmd = cmd->RegisterCommand(name, title, DukOvmsCommandRegisterRun, usage, min, max);
   ESP_LOGD(TAG,"Duktape: Script %s %s:%d registered command %s/%s",
       filename.c_str(), function.c_str(), linenumber, fullcommand, name);
-  */
 
   return 0;
-  }
-
-void OvmsCommandApp::NotifyDuktapeModuleLoad(const char* filename)
-  {
-  ESP_LOGD(TAG,"Duktape: module load: %s",filename);
-  }
-
-void OvmsCommandApp::NotifyDuktapeModuleUnload(const char* filename)
-  {
-  ESP_LOGD(TAG,"Duktape: module unload: %s",filename);
-  }
-
-void OvmsCommandApp::NotifyDuktapeModuleUnloadAll()
-  {
-  ESP_LOGD(TAG,"Duktape: module unload all");
   }
 
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
