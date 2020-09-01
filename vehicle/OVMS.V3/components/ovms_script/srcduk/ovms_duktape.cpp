@@ -1144,7 +1144,19 @@ void OvmsDuktape::NotifyDuktapeModuleUnloadAll()
 
 void DukOvmsCommandRegisterRun(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  writer->printf("Command '%s' has been run\n", cmd->GetName());
+  ESP_LOGD(TAG, "DukOvmsCommandRegisterRun(%s)",cmd->GetName());
+
+  auto it = MyDuktape.m_cmdmap.find(cmd);
+  if (it == MyDuktape.m_cmdmap.end())
+    {
+    ESP_LOGE(TAG, "Command '%s' cannot be found in registry",cmd->GetName());
+    return;
+    }
+  else
+    {
+    DuktapeConsoleCommand* dcc = it->second;
+    // Perform the callback
+    }
   }
 
 bool OvmsDuktape::RegisterDuktapeConsoleCommand(
