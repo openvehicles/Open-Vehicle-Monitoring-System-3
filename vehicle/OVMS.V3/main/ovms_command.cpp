@@ -772,15 +772,6 @@ static duk_ret_t DukOvmsCommandRegister(duk_context *ctx)
   return 0;
   }
 
-void OvmsCommandApp::NotifyDuktapeScriptsReady()
-  {
-  ESP_LOGD(TAG,"Duktape: scripts system is ready");
-  DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsCommand");
-  dto->RegisterDuktapeFunction(DukOvmsCommandExec, 1, "Exec");
-  dto->RegisterDuktapeFunction(DukOvmsCommandRegister, 6, "Register");
-  MyDuktape.RegisterDuktapeObject(dto);
-  }
-
 void OvmsCommandApp::NotifyDuktapeModuleLoad(const char* filename)
   {
   ESP_LOGD(TAG,"Duktape: module load: %s",filename);
@@ -832,6 +823,14 @@ OvmsCommandApp::OvmsCommandApp()
   monitor->RegisterCommand("no", "Don't monitor log", log_monitor);
   m_root.RegisterCommand("enable","Enter secure mode (enable access to all commands)", enable, "[<password>]", 0, 1, false);
   m_root.RegisterCommand("disable","Leave secure mode (disable access to most commands)", disable);
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
+  DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsCommand");
+  dto->RegisterDuktapeFunction(DukOvmsCommandExec, 1, "Exec");
+  dto->RegisterDuktapeFunction(DukOvmsCommandRegister, 6, "Register");
+  MyDuktape.RegisterDuktapeObject(dto);
+#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
 OvmsCommandApp::~OvmsCommandApp()

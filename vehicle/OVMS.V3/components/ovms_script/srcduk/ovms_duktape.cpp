@@ -881,9 +881,6 @@ OvmsDuktape::OvmsDuktape()
   extern const char mod_json_js_end[]       asm("_binary_json_js_end");
   RegisterDuktapeModule(mod_json_js_start, mod_json_js_end - mod_json_js_start, "JSON");
 
-  // Notify the command system that scripts are ready
-  MyCommandApp.NotifyDuktapeScriptsReady();
-
   // Start the DukTape task...
   m_duktaskqueue = xQueueCreate(CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_QUEUE_SIZE,sizeof(duktape_queue_t));
   xTaskCreatePinnedToCore(DukTapeLaunchTask, "OVMS DukTape",

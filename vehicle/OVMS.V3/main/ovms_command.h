@@ -321,7 +321,6 @@ class OvmsCommandApp : public OvmsWriter
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   public:
-    void NotifyDuktapeScriptsReady();
     void NotifyDuktapeModuleLoad(const char* filename);
     void NotifyDuktapeModuleUnload(const char* filename);
     void NotifyDuktapeModuleUnloadAll();
