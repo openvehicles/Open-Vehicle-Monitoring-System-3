@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          31th August 2020
+;    Date:          1st September 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -85,6 +85,8 @@
 ;
 ;    0.3.3  Buffer 0x61C ghost messages
 ;
+;    0.3.4  Climate Control is now beginning to work
+:
 ;    (C) 2020       Chris van der Meijden
 ;
 ;    Big thanx to sharkcow, Dimitrie78 and E-Imo.
@@ -534,11 +536,11 @@ void OvmsVehicleVWeUpT26::SendCommand(RemoteCommand command)
             break;
         }
 
-        ESP_LOGI(TAG, "Enable Climate Control");
-
         vweup_cc_turning_on = true;
 
         CommandWakeup();
+
+        ESP_LOGI(TAG, "Enable Climate Control");
 
         m_ccCountdown = xTimerCreate("VW e-Up CC Countdown", 1000 / portTICK_PERIOD_MS, pdTRUE, this, ccCountdown);
         xTimerStart(m_ccCountdown, 0);
@@ -614,14 +616,31 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandWakeup()
 
     if (!ocu_awake)
     {
-        ESP_LOGI(TAG, "Send Wakeup Command");
 
         unsigned char data[8];
         uint8_t length;
         length = 8;
 
+        unsigned char data2[2];
+        uint8_t length2;
+        length2 = 2;
+
         canbus *comfBus;
         comfBus = m_can3;
+
+        // This is a very dirty workaround to get the wakup of the ring working.
+        // We send 0x69E some values without knowing what they do.
+        // This throws an AsynchronousInterruptHandler error, but wakes 0x400
+        // So we wait two seconds and then call us in the ring 
+
+        data[0] = 0x14;
+        data[1] = 0x42;
+        if (vwup_enable_write && !dev_mode)
+            comfBus->WriteStandard(0x69E, length2, data2);
+
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+        ESP_LOGI(TAG, "Sent Wakeup Command - stage 1");
 
         data[0] = 0x1D; // We call ourself to wake up the ring
         data[1] = 0x02;
@@ -654,6 +673,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandWakeup()
 
         m_sendOcuHeartbeat = xTimerCreate("VW e-Up OCU heartbeat", 1000 / portTICK_PERIOD_MS, pdTRUE, this, sendOcuHeartbeat);
         xTimerStart(m_sendOcuHeartbeat, 0);
+
+        ESP_LOGI(TAG, "Sent Wakeup Command - stage 2");
     }
     // This can be done better. Gives always success, even when already awake.
     return Success;
@@ -743,7 +764,11 @@ void OvmsVehicleVWeUpT26::CCCountdown()
 {
     cc_count++;
     ocu_wait = true;
-    if (cc_count == 20)
+    if (cc_count == 5)
+    {
+        CCOff(); // This is weird. We first need to send a Climate Contol Off before it will turn on ???
+    }
+    if (cc_count == 10)
     {
         CCOn();
         xTimerStop(m_ccCountdown, 0);
@@ -880,7 +905,7 @@ void OvmsVehicleVWeUpT26::CCOn()
         if (dev_mode)
             ESP_LOGI(TAG, "Cabin temperature set: 19");
     }
-    if (vwup_cc_temp_int == 20)
+    if (vwup_cc_temp_int == 5)
     {
         data[6] = 0x64;
         if (dev_mode)
