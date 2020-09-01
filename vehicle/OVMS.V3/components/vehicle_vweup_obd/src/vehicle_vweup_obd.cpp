@@ -135,11 +135,14 @@ void OvmsVehicleVWeUpObd::CheckCarState()
         {
             ESP_LOGI(TAG, "Setting car state to CHARGING");
             StandardMetrics.ms_v_env_on->SetValue(false);
+            StandardMetrics.ms_v_charge_inprogress->SetValue(true);
             PollSetState(VWUP_CHARGING);
             TimeOffRequested = 0;
         }
         return;
     }
+    
+    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
 
     if (voltageSaysOn || currentSaysOn)
     {
