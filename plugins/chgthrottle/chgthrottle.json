@@ -1,0 +1,15 @@
+{
+  "name": "chgthrottle",
+  "title": "Charge Throttle: limit/stop charge if charger gets too hot",
+  "description": "Throttle charge current and/or stop charge if charger gets too hot.",
+  "group": "Electric Vehicles",
+  "info": "http://www.openvehicles.com/",
+  "maintainer": "Michael Balzer <dexter@dexters-web.de>",
+  "version": "1.2",
+  "prerequisites": ["ovms>=3.3.001"],
+  "elements": [{
+    "type": "module",
+    "path": "chgthrottle.js",
+    "name": "chgthrottle"
+  }]
+}
