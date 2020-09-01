@@ -1,3 +1,28 @@
+/**
+ * Project:      Open Vehicle Monitor System
+ * Module:       VW e-Up via OBD Port
+ * 
+ * (c) 2020 Soko
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
 #include "ovms_log.h"
 
 static const char *TAG = "vwup.obd";
@@ -10,7 +35,6 @@ static const char *TAG = "vwup.obd";
 #include "ovms_events.h"
 #include "ovms_metrics.h"
 
-
 class OvmsVehicleVWeUpObdInit
 {
 public:
@@ -21,12 +45,11 @@ public:
     }
 } OvmsVehicleVWeUpObdInit __attribute__((init_priority(9000)));
 
-// Last array (polltime) is for max. 4 different poll-states. I only use State=0 at the moment
 const OvmsVehicle::poll_pid_t vwup_polls[] = {
     // Note: poller ticker cycles at 3600 seconds = max period
     // { txid, rxid, type, pid, { VWUP_OFF, VWUP_ON, VWUP_CHARGING } }
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_U, {0, 1, 5}},
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_I, {0, 1, 5}},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_I, {30, 1, 5}}, // 30 in OFF needed: Car gets started with full 12V battery
     // Same tick & order important of above 2: VWUP_BAT_MGMT_I calculates the power
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_SOC, {0, 20, 20}},
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_ENERGY_COUNTERS, {0, 20, 20}},
@@ -35,10 +58,12 @@ const OvmsVehicle::poll_pid_t vwup_polls[] = {
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_CELL_MIN, {0, 20, 20}},
     // Same tick & order important of above 2: VWUP_BAT_MGMT_CELL_MIN calculates the delta
 
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_TEMP, {0, 20, 20}},
+
     {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIISESSION, VWUP_CHARGER_EXTDIAG, {0, 30, 30}},
 
     {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_AC_U, {0, 0, 5}},
-    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_AC_I, {0, 0, 5}},    
+    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_AC_I, {0, 0, 5}},
     // Same tick & order important of above 2: VWUP_CHARGER_AC_I calculates the AC power
     {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_DC_U, {0, 0, 5}},
     {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_DC_I, {0, 0, 5}},
@@ -70,12 +95,14 @@ OvmsVehicleVWeUpObd::OvmsVehicleVWeUpObd()
     BatMgmtEnergyCharged = MyMetrics.InitFloat("vwup.batmgmt.enrg.chrgd", SM_STALE_NONE, 0, kWh);
     BatMgmtCellDelta = MyMetrics.InitFloat("vwup.batmgmt.cell.delta", SM_STALE_NONE, 0, Volts);
 
-    ChargerPowerEff = MyMetrics.InitFloat("vwup.chrgr.eff.ecu", 100, 0, Percentage);
-    ChargerPowerLoss = MyMetrics.InitFloat("vwup.chrgr.loss.ecu", SM_STALE_NONE, 0, Watts);
+    ChargerPowerEffEcu = MyMetrics.InitFloat("vwup.chrgr.eff.ecu", 100, 0, Percentage);
+    ChargerPowerLossEcu = MyMetrics.InitFloat("vwup.chrgr.loss.ecu", SM_STALE_NONE, 0, Watts);
     ChargerPowerEffCalc = MyMetrics.InitFloat("vwup.chrgr.eff.calc", 100, 0, Percentage);
     ChargerPowerLossCalc = MyMetrics.InitFloat("vwup.chrgr.loss.calc", SM_STALE_NONE, 0, Watts);
-    ChargerACP = MyMetrics.InitFloat("vwup.chrgr.ac.p", SM_STALE_NONE, 0, Watts);
-    ChargerDCP = MyMetrics.InitFloat("vwup.chrgr.dc.p", SM_STALE_NONE, 0, Watts);
+    ChargerACPower = MyMetrics.InitFloat("vwup.chrgr.ac.p", SM_STALE_NONE, 0, Watts);
+    ChargerDCPower = MyMetrics.InitFloat("vwup.chrgr.dc.p", SM_STALE_NONE, 0, Watts);
+
+    TimeOffRequested = 0;
 }
 
 OvmsVehicleVWeUpObd::~OvmsVehicleVWeUpObd()
@@ -88,144 +115,77 @@ void OvmsVehicleVWeUpObd::Ticker1(uint32_t ticker)
     CheckCarState();
 }
 
-void OvmsVehicleVWeUpObd::Ticker10(uint32_t ticker)
-{
-    // Option: with mongoose ala canlog_tcpclient.cpp
-
-//    if (ticker < 30) return;
-
-// WORKS BUT FREEZES OVMS SOMEHOW
-    // const char *payload = "Message from OVMS";
-
-    // char rx_buffer[128];
-    // char addr_str[128];
-    // int addr_family;
-    // int ip_protocol;
-
-    
-    // ESP_LOGW(TAG, "Trying to send TCP package...");
-
-
-    //     struct sockaddr_in destAddr;
-    //     destAddr.sin_addr.s_addr = inet_addr("192.168.254.6");
-    //     destAddr.sin_family = AF_INET;
-    //     destAddr.sin_port = htons(54321);
-    //     addr_family = AF_INET;
-    //     ip_protocol = IPPROTO_IP;
-    //     inet_ntoa_r(destAddr.sin_addr, addr_str, sizeof(addr_str) - 1);
-
-    //     int sock =  socket(addr_family, SOCK_STREAM, ip_protocol);
-    //     if (sock < 0) {
-    //         ESP_LOGE(TAG, "Unable to create socket: errno %d", errno);
-    //         return;
-    //     }
-    //     ESP_LOGI(TAG, "Socket created");
-
-    //     int err = connect(sock, (struct sockaddr *)&destAddr, sizeof(destAddr));
-    //     if (err != 0) {
-    //         ESP_LOGE(TAG, "Socket unable to connect: errno %d", errno);
-    //         return;
-    //     }
-    //     ESP_LOGI(TAG, "Successfully connected");
-
-    //     while (1) {
-    //         int err = send(sock, payload, strlen(payload), 0);
-    //         if (err < 0) {
-    //             ESP_LOGE(TAG, "Error occured during sending: errno %d", errno);
-    //             break;
-    //         }
-
-    //         // int len = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
-    //         // // Error occured during receiving
-    //         // if (len < 0) {
-    //         //     ESP_LOGE(TAG, "recv failed: errno %d", errno);
-    //         //     break;
-    //         // }
-    //         // // Data received
-    //         // else {
-    //         //     rx_buffer[len] = 0; // Null-terminate whatever we received and treat like a string
-    //         //     ESP_LOGI(TAG, "Received %d bytes from %s:", len, addr_str);
-    //         //     ESP_LOGI(TAG, "%s", rx_buffer);
-    //         // }
-
-    //         //vTaskDelay(2000 / portTICK_PERIOD_MS);
-    //         break;
-    //     }
-
-    //     //if (sock != -1) {
-    //         ESP_LOGE(TAG, "Shutting down socket and restarting...");
-    //         shutdown(sock, 0);
-    //         close(sock);
-    //     //}    
-    // ESP_LOGW(TAG, "TCP ended...");
-
-//https://github.com/nkolban/esp32-snippets/blob/master/sockets/client/socketClient.c
-    // ESP_LOGD(tag, "start");
-	// int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-
-	// ESP_LOGD(tag, "socket: rc: %d", sock);
-	// struct sockaddr_in serverAddress;
-	// serverAddress.sin_family = AF_INET;
-	// inet_pton(AF_INET, "192.168.1.200", &serverAddress.sin_addr.s_addr);
-	// serverAddress.sin_port = htons(9999);
-
-	// int rc = connect(sock, (struct sockaddr *)&serverAddress, sizeof(struct sockaddr_in));
-	// ESP_LOGD(tag, "connect rc: %d", rc);
-
-	// char *data = "Hello world";
-	// rc = send(sock, data, strlen(data), 0);
-	// ESP_LOGD(tag, "send: rc: %d", rc);
-
-	// rc = close(sock);
-	// ESP_LOGD(tag, "close: rc: %d", rc);
-
-	// vTaskDelete(NULL);
-}
-
 void OvmsVehicleVWeUpObd::CheckCarState()
 {
+    ESP_LOGV(TAG, "CheckCarState(): 12V=%f ChargerEff=%f BatI=%f BatIModified=%u time=%u", StandardMetrics.ms_v_bat_12v_voltage->AsFloat(), ChargerPowerEffEcu->AsFloat(), StandardMetrics.ms_v_bat_current->AsFloat(), StandardMetrics.ms_v_bat_current->LastModified(), monotonictime);
+
+    // 12V Battery: if voltage >= 12.9 it is charging and the car must be on (or charging) for that
     bool voltageSaysOn = StandardMetrics.ms_v_bat_12v_voltage->AsFloat() >= 12.9f;
 
-    if (voltageSaysOn && ChargerPowerEff->AsFloat() > 0.0f)
+    // HV-Batt current: If there is a current flowing and the value is not older than 2 minutes (120 secs) we are on
+    bool currentSaysOn = StandardMetrics.ms_v_bat_current->AsFloat() != 0.0f &&
+                         (monotonictime - StandardMetrics.ms_v_bat_current->LastModified()) < 120;
+
+    // Charger ECU: When it reports an efficiency > 0 the car is charing
+    bool chargerSaysOn = ChargerPowerEffEcu->AsFloat() > 0.0f;
+
+    if (chargerSaysOn)
     {
         if (!IsCharging())
         {
             ESP_LOGI(TAG, "Setting car state to CHARGING");
             StandardMetrics.ms_v_env_on->SetValue(false);
             PollSetState(VWUP_CHARGING);
+            TimeOffRequested = 0;
         }
         return;
     }
 
-    if (voltageSaysOn)
+    if (voltageSaysOn || currentSaysOn)
     {
         if (!IsOn())
         {
             ESP_LOGI(TAG, "Setting car state to ON");
             StandardMetrics.ms_v_env_on->SetValue(true);
             PollSetState(VWUP_ON);
+            TimeOffRequested = 0;
         }
         return;
     }
 
-    if (!IsOff())
+    if (TimeOffRequested == 0)
     {
-        ESP_LOGI(TAG, "Setting car state to OFF");
-        StandardMetrics.ms_v_env_on->SetValue(false);
-        PollSetState(VWUP_OFF);
+        TimeOffRequested = monotonictime;
+        if (TimeOffRequested == 0)
+        {
+            // For the small chance we are requesting exactly at 0 time
+            TimeOffRequested--;
+        }
+        ESP_LOGI(TAG, "Car state to OFF requested. Waiting for possible re-activation ...");
     }
+
+    // When already OFF or I haven't waited for 60 seconds: return
+    if (IsOff() || (monotonictime - TimeOffRequested) < 60)
+    {
+        return;
+    }
+
+    // Set car to OFF
+    ESP_LOGI(TAG, "Wait is over: Setting car state to OFF");
+    StandardMetrics.ms_v_env_on->SetValue(false);
+    PollSetState(VWUP_OFF);
 }
 
 void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t remain)
 {
-    ESP_LOGD(TAG, "IncomingPollReply(type=%u, pid=%X, length=%u, remain=%u): called", type, pid, length, remain);
+    ESP_LOGV(TAG, "IncomingPollReply(type=%u, pid=%X, length=%u, remain=%u): called", type, pid, length, remain);
 
     // for (uint8_t i = 0; i < length; i++)
     // {
     //   ESP_LOGV(TAG, "data[%u]=%X", i, data[i]);
     // }
 
-    // If not all data is here then wait to the next call
+    // If not all data is here: wait for the next call
     if (!PollReply.AddNewData(pid, data, length, remain))
     {
         return;
@@ -296,6 +256,14 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         }
         break;
 
+    case VWUP_BAT_MGMT_TEMP:
+        if (PollReply.FromUint16("VWUP_BAT_MGMT_TEMP", value))
+        {
+            StandardMetrics.ms_v_bat_temp->SetValue(value / 64.0f);
+            VALUE_LOG(TAG, "VWUP_BAT_MGMT_TEMP=%f => %f", value, StandardMetrics.ms_v_bat_temp->AsFloat());
+        }
+        break;
+
     case VWUP_CHARGER_AC_U:
         if (PollReply.FromUint16("VWUP_CHARGER_AC1_U", value))
         {
@@ -321,8 +289,8 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
             VALUE_LOG(TAG, "VWUP_CHARGER_AC2_I=%f => %f", value, ChargerAC2I);
 
             value = ChargerAC1U * ChargerAC1I + ChargerAC2U * ChargerAC2I;
-            ChargerACP->SetValue(value);
-            VALUE_LOG(TAG, "VWUP_CHARGER_AC_P=%f => %f", value, ChargerACP->AsFloat());
+            ChargerACPower->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_CHARGER_AC_P=%f => %f", value, ChargerACPower->AsFloat());
         }
         break;
 
@@ -351,14 +319,14 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
             VALUE_LOG(TAG, "VWUP_CHARGER_DC2_I=%f => %f", value, ChargerDC2I);
 
             value = ChargerDC1U * ChargerDC1I + ChargerDC2U * ChargerDC2I;
-            ChargerDCP->SetValue(value);
-            VALUE_LOG(TAG, "VWUP_CHARGER_DC_P=%f => %f", value, ChargerDCP->AsFloat());
-            
-            value = ChargerACP->AsFloat() - ChargerDCP->AsFloat();
-            ChargerPowerLossCalc->SetValue(value);            
+            ChargerDCPower->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_CHARGER_DC_P=%f => %f", value, ChargerDCPower->AsFloat());
+
+            value = ChargerACPower->AsFloat() - ChargerDCPower->AsFloat();
+            ChargerPowerLossCalc->SetValue(value);
             VALUE_LOG(TAG, "VWUP_CHARGER_LOSS_CALC=%f => %f", value, ChargerPowerLossCalc->AsFloat());
 
-            value = ChargerACP->AsFloat() > 0 ? ChargerDCP->AsFloat() / ChargerACP->AsFloat() * 100.0f : 0.0f;
+            value = ChargerACPower->AsFloat() > 0 ? ChargerDCPower->AsFloat() / ChargerACPower->AsFloat() * 100.0f : 0.0f;
             ChargerPowerEffCalc->SetValue(value);
             VALUE_LOG(TAG, "VWUP_CHARGER_EFF_CALC=%f => %f", value, ChargerPowerEffCalc->AsFloat());
         }
@@ -369,16 +337,16 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         // This means no charging is happening at the moment (standardvalue replied for no charging is 0xFE)
         if (PollReply.FromUint8("VWUP_CHARGER_POWER_EFF", value))
         {
-            ChargerPowerEff->SetValue(value <= 250.0f ? value / 10.0f + 75.0f : 0.0f);
-            VALUE_LOG(TAG, "VWUP_CHARGER_POWER_EFF=%f => %f", value, ChargerPowerEff->AsFloat());
+            ChargerPowerEffEcu->SetValue(value <= 250.0f ? value / 10.0f + 75.0f : 0.0f);
+            VALUE_LOG(TAG, "VWUP_CHARGER_POWER_EFF=%f => %f", value, ChargerPowerEffEcu->AsFloat());
         }
         break;
 
     case VWUP_CHARGER_POWER_LOSS:
         if (PollReply.FromUint8("VWUP_CHARGER_POWER_LOSS", value))
         {
-            ChargerPowerLoss->SetValue(value * 20.0f);
-            VALUE_LOG(TAG, "VWUP_CHARGER_POWER_LOSS=%f => %f", value, ChargerPowerLoss->AsFloat());
+            ChargerPowerLossEcu->SetValue(value * 20.0f);
+            VALUE_LOG(TAG, "VWUP_CHARGER_POWER_LOSS=%f => %f", value, ChargerPowerLossEcu->AsFloat());
         }
         break;
 
