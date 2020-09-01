@@ -2125,7 +2125,7 @@ void OvmsVehicle::PollerSend(bool fromTicker)
       ESP_LOGD(TAG, "PollerSend(%d): send [bus=%d, type=%02X, pid=%X], expecting %03x/%03x-%03x",
                fromTicker, m_poll_plcur->pollbus, m_poll_type, m_poll_pid, m_poll_moduleid_sent,
                m_poll_moduleid_low, m_poll_moduleid_high);
-      
+
       CAN_frame_t txframe;
       memset(&txframe,0,sizeof(txframe));
       txframe.origin = m_poll_bus;
@@ -2191,11 +2191,13 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
   // 
   // Get & validate ISO-TP meta data
   // 
+
   uint8_t  tp_frametype;          // ISO-TP frame type (0…3)
   uint8_t  tp_frameindex;         // TP cyclic frame index (0…15)
   uint16_t tp_len;                // TP remaining payload length including this frame (0…4095)
   uint8_t* tp_data;               // TP frame data section address
   uint8_t  tp_datalen;            // TP frame data section length (0…7)
+
   tp_frametype = frame->data.u8[0] >> 4;
 
   switch (tp_frametype)
